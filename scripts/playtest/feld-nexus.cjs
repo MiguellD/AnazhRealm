@@ -704,10 +704,9 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
     const wave6hP2eV2Results = await safeEvaluate(page, () => {
         if (!r || !st || !st.playerMesh) return null;
         const out = {};
-        const Class = AnazhRealm;
 
         // 2. Phrase-Pool
-        const pool = Class.CREATURE_PROACTIVE_PHRASES;
+        const pool = AnazhRealm.CREATURE_PROACTIVE_PHRASES;
         // ALTLASTEN-NULL: sprite/geist-Stimmen sind gefallen — default trägt
         // jede Gattung; wesen (Hirsch) behält seine erdige Stimme.
         out.hasSpriteVariants = !pool.level_up_gather.sprite;
@@ -896,18 +895,17 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
     const wave6hP2eV3Results = await safeEvaluate(page, () => {
         if (!r || !st || !st.playerMesh) return null;
         const out = {};
-        const Class = AnazhRealm;
 
         // 1. Konstanten + Methoden existieren
-        out.weatherAllowed = Class.CREATURE_PROPOSED_OPS.has("weather");
-        out.voxelCarveAllowed = Class.CREATURE_PROPOSED_OPS.has("voxel_carve");
-        out.voxelFillAllowed = Class.CREATURE_PROPOSED_OPS.has("voxel_fill");
-        out.spawnBlueprintAllowed = Class.CREATURE_PROPOSED_OPS.has("spawn_blueprint");
-        out.chainAllowed = Class.CREATURE_PROPOSED_OPS.has("chain");
+        out.weatherAllowed = AnazhRealm.CREATURE_PROPOSED_OPS.has("weather");
+        out.voxelCarveAllowed = AnazhRealm.CREATURE_PROPOSED_OPS.has("voxel_carve");
+        out.voxelFillAllowed = AnazhRealm.CREATURE_PROPOSED_OPS.has("voxel_fill");
+        out.spawnBlueprintAllowed = AnazhRealm.CREATURE_PROPOSED_OPS.has("spawn_blueprint");
+        out.chainAllowed = AnazhRealm.CREATURE_PROPOSED_OPS.has("chain");
         // Forbidden: player_*, define_*, delete_*, set_mode
-        out.playerSpeedForbidden = !Class.CREATURE_PROPOSED_OPS.has("player_speed");
-        out.defineBlueprintForbidden = !Class.CREATURE_PROPOSED_OPS.has("define_blueprint");
-        out.setModeForbidden = !Class.CREATURE_PROPOSED_OPS.has("set_mode");
+        out.playerSpeedForbidden = !AnazhRealm.CREATURE_PROPOSED_OPS.has("player_speed");
+        out.defineBlueprintForbidden = !AnazhRealm.CREATURE_PROPOSED_OPS.has("define_blueprint");
+        out.setModeForbidden = !AnazhRealm.CREATURE_PROPOSED_OPS.has("set_mode");
 
         // 2. Validator: erlaubtes Programm
         const okWeather = r._isCreatureProposalAllowed(["weather", "rainy"]);

@@ -761,7 +761,6 @@ async function checkBandWFFluss({ page, check }) {
 // Built-in Souls (human/phoenix/dragon) bleiben NEUTRAL (getunte intrinsische Seelen).
 async function checkBandV18195AvatarSizeHp({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = AnazhRealm;
         const out = {};
 
 
@@ -783,7 +782,7 @@ async function checkBandV18195AvatarSizeHp({ page, check }) {
             out.humanHpMax = humanComputed.stats.hpMax;
             // Vergleich mit Direktrechnung ohne size-Mul: erwartet IDENTISCH
             const humanFinalTags = humanComputed.tags;
-            const directHp = A.STAT_FROM_TAGS.hpMax(humanFinalTags);
+            const directHp = AnazhRealm.STAT_FROM_TAGS.hpMax(humanFinalTags);
             out.humanNeutralDelta = Math.abs(humanComputed.stats.hpMax - directHp);
             // Bei built-in soulSize=1, sqrt(1)=1 → KEIN Delta zur Direkt-Form
             out.humanNeutralOk = out.humanNeutralDelta < 0.001;
@@ -802,7 +801,7 @@ async function checkBandV18195AvatarSizeHp({ page, check }) {
             st.player.soul = "bp_smallAvatar";
             const smallComputed = r.computePlayerStats();
             out.smallHpMax = smallComputed.stats.hpMax;
-            const smallDirect = A.STAT_FROM_TAGS.hpMax(smallComputed.tags);
+            const smallDirect = AnazhRealm.STAT_FROM_TAGS.hpMax(smallComputed.tags);
             out.smallSizeFactor = r._compoundSizeFactor({ parts: st.customSouls["bp_smallAvatar"].bodyParts });
             // Erwartung: smallHpMax = smallDirect * sqrt(smallSizeFactor)
             const expectedSmall = smallDirect * Math.sqrt(out.smallSizeFactor);
@@ -823,7 +822,7 @@ async function checkBandV18195AvatarSizeHp({ page, check }) {
             st.player.soul = "bp_largeAvatar";
             const largeComputed = r.computePlayerStats();
             out.largeHpMax = largeComputed.stats.hpMax;
-            const largeDirect = A.STAT_FROM_TAGS.hpMax(largeComputed.tags);
+            const largeDirect = AnazhRealm.STAT_FROM_TAGS.hpMax(largeComputed.tags);
             out.largeSizeFactor = r._compoundSizeFactor({ parts: st.customSouls["bp_largeAvatar"].bodyParts });
             out.largeHasMoreHpThanDirect = out.largeSizeFactor > 1 ? largeComputed.stats.hpMax > largeDirect : true;
             // small < large (selbst nach Mul, weil large viel größer ist)
@@ -840,7 +839,7 @@ async function checkBandV18195AvatarSizeHp({ page, check }) {
             const smallStamSqrt = Math.sqrt(out.smallSizeFactor);
             out.staminaMatchesFormula =
                 Math.abs(
-                    smallComputed.stats.staminaMax - A.STAT_FROM_TAGS.staminaMax(smallComputed.tags) * smallStamSqrt
+                    smallComputed.stats.staminaMax - AnazhRealm.STAT_FROM_TAGS.staminaMax(smallComputed.tags) * smallStamSqrt
                 ) < 0.1;
         } finally {
             // Wiederherstellen
@@ -889,12 +888,11 @@ async function checkBandV18195AvatarSizeHp({ page, check }) {
 // (MANA_REGEN_PER_SEC, M7 fährt ihn).
 async function checkBandV18196ManaSymmetry({ page, check }) {
     const res = await safeEvaluate(page, async () => {
-        const A = AnazhRealm;
         const out = {};
 
         // (M2) Formel: leere Tags → base 50, magieleitung 1 → 150, +resoniert 1 → 180
         {
-            const fn = A.STAT_FROM_TAGS.manaMax;
+            const fn = AnazhRealm.STAT_FROM_TAGS.manaMax;
             out.manaBase = fn({});
             out.manaFullMag = fn({ magieleitung: 1 });
             out.manaFullBoth = fn({ magieleitung: 1, resoniert: 1 });
@@ -1343,10 +1341,8 @@ async function checkBandKonvergenzTierBaum({ page, check }) {
 // Sim-Spur (die Darstellung sickert nie in die Sim); (S) mit gestubbtem Schalter (immer nah) erkennt die Linse den alten Zustand.
 async function checkBandTierFern({ page, check }) {
     const out = await safeEvaluate(page, async () => {
-        const s = st,
-            A = AnazhRealm;
         const o = { checks: {} };
-        const pm = s.playerMesh && s.playerMesh.position;
+        const pm = st.playerMesh && st.playerMesh.position;
         if (!pm) return { error: "kein Spieler" };
         // DIE KERN-ZEILE: die Grenze und die Hysterese der Grobstufe (tetrapoda lod.budget.kreatur)
         const BK = window.__tetrapodaCore && window.__tetrapodaCore.PORTAL_RENDER_CONFIG.lod.budget.kreatur;
@@ -1355,9 +1351,9 @@ async function checkBandTierFern({ page, check }) {
         if (!(abKern > 0) || !(hyst > 0)) return { error: "Kern-Zeile kreatur trägt kein ab/hyst" };
     
         // ── Harness-Disziplin: leere Bühne (keine Ambient-Separation), Frustum an ──
-        for (const c of s.creatures.slice()) r.removeCreature(c);
-        const saveMax = s.maxCreatures;
-        s.maxCreatures = 8;
+        for (const c of st.creatures.slice()) r.removeCreature(c);
+        const saveMax = st.maxCreatures;
+        st.maxCreatures = 8;
         const saveFrustum = r.isInFrustum;
         r.isInFrustum = function () {
             return true; // Bild-Gesetz und ferner Gang laufen nur inFrustum — für die Messung immer „im Bild"
@@ -1447,7 +1443,7 @@ async function checkBandTierFern({ page, check }) {
         r._gelenkStufe = saveStufe; // restaurieren (Gate-Hook-Lehre)
     
         // ── (H) HYSTERESE: Pendeln an der Kante schaltet nicht, gießt nicht ──
-        const memo = A._tierOfenMemo;
+        const memo = AnazhRealm._tierOfenMemo;
         const memoVor = memo ? memo.size : -1;
         const saveOfen = r._ofenKreaturTemplate;
         let gussCalls = 0;
@@ -1514,9 +1510,9 @@ async function checkBandTierFern({ page, check }) {
         const lauf = (ohneFern) => {
             Math.random = mulberry32(424242); // DIESELBE Folge je Lauf
             r._creatureAiFrame = 1000;
-            s.creatureAnimationTime = 100;
+            st.creatureAnimationTime = 100;
             // IDENTITÄTS-PIN: beide Läufe spawnen DENSELBEN Wolf (c7001); Echtzeit-Stempel uhr-frei.
-            s._creatureNetSeq = 7000;
+            st._creatureNetSeq = 7000;
             // der Lauf spawnt im FERN-Regime (1.4·Schwelle) — sonst wäre die Stufe in beiden Läufen inert
             const cw = spawnWolf(1.4 * fern);
             if (!cw) return null;
@@ -1542,7 +1538,7 @@ async function checkBandTierFern({ page, check }) {
                     cw.position.y,
                     cw.position.z,
                     cw.rotation.y,
-                    s.creatureEmotions[s.creatures.indexOf(cw)] === "happy" ? 1 : 0
+                    st.creatureEmotions[st.creatures.indexOf(cw)] === "happy" ? 1 : 0
                 );
             }
             r._gelenkStufe = saveStufe; // restaurieren
@@ -1573,7 +1569,7 @@ async function checkBandTierFern({ page, check }) {
         }
     
         r.isInFrustum = saveFrustum; // restaurieren (Gate-Hook-Lehre)
-        s.maxCreatures = saveMax;
+        st.maxCreatures = saveMax;
         return o;
     });
     if (!out || out.error) return check("Tier-Fern: die Bühne steht (Wolf gespawnt, Schalter erreichbar)", false, out ? out.error : "keine Antwort der Seite");
@@ -1599,8 +1595,6 @@ async function checkBandTierFern({ page, check }) {
 // sich, Abgrund ohne NaN, Luft-Sperre); Selbsttests S1 (hartes Blend) und S2 (_slopePitch ≡ 0).
 async function checkBandKoerperBewegung({ page, check }) {
     const out = await safeEvaluate(page, async () => {
-        const s = st,
-            A = AnazhRealm;
         const o = { checks: {} };
         for (const fn of [
             "_gaitGesetz",
@@ -1622,7 +1616,7 @@ async function checkBandKoerperBewegung({ page, check }) {
         // Fuß-IK beweisen S1, (D) und (E) an ihrer Wirkung).
         {
             const g = r._buildHumanGroup();
-            const pp = s.playerMesh.position;
+            const pp = st.playerMesh.position;
             const peer = { mesh: g, x: pp.x + 5, y: pp.y + 1, z: pp.z, yaw: 0, meshKind: "soul", soulName: "human",
                 walkPhase: 0, lastMovedAt: performance.now() / 1000, _gaitPX: pp.x + 4.95, _gaitPZ: pp.z };
             o.checks.konsumPeer = window.__consumes(r, "_p2pUpdatePeer", r, "_gaitTick", [peer, performance.now() / 1000, 1 / 60]);
@@ -1674,7 +1668,7 @@ async function checkBandKoerperBewegung({ page, check }) {
         }
         // ── Das Gang-Gesetz pur: ω = 2π·v/Λ, Stand und NaN ⇒ 0 ──
         {
-            const rg = s.playerMesh && s.playerMesh.userData && s.playerMesh.userData.rig;
+            const rg = st.playerMesh && st.playerMesh.userData && st.playerMesh.userData.rig;
             const g3 = rg ? r._gaitGesetz(rg, 3) : null;
             o.checks.ratePur =
                 !!g3 &&
@@ -1684,23 +1678,23 @@ async function checkBandKoerperBewegung({ page, check }) {
         }
     
         // ── Spieler-Konsumenten-Bühne: human-Rig + gestubbte Velocity ──
-        const p = s.player;
-        const mesh = s.playerMesh;
+        const p = st.player;
+        const mesh = st.playerMesh;
         if (!mesh || !mesh.userData) return { error: "kein Spieler-Mesh" };
         const savedSoul = p.soul;
         if (!mesh.userData.rig) r.applyPlayerSoul("human");
-        const pmesh = s.playerMesh;
+        const pmesh = st.playerMesh;
         if (!pmesh.userData.rig) return { error: "Spieler ohne Rig (koerper-Kern kalt?)" };
-        const savedVel = s.playerVel;
-        const savedUw = s.playerUnderwater;
+        const savedVel = st.playerVel;
+        const savedUw = st.playerUnderwater;
         const savedMounted = p.mountedArch;
         const savedPhase = p.walkPhase;
         const savedW = p._gaitW;
         const savedTick = p.animationLastTick;
-        s.playerUnderwater = false;
+        st.playerUnderwater = false;
         p.mountedArch = null;
         let vStub = 0;
-        s.playerVel = { x: () => vStub, z: () => vStub * 0, y: () => 0 };
+        st.playerVel = { x: () => vStub, z: () => vStub * 0, y: () => 0 };
         const fahre = (v, sek, t0) => {
             vStub = v;
             p.animationLastTick = -Infinity;
@@ -1719,7 +1713,7 @@ async function checkBandKoerperBewegung({ page, check }) {
         o.rateRatio = d1 > 0 ? d2 / d1 : 0;
         // K07: die Phasen-Rate folgt ω = 2π·v/Λ(v) des Gang-Gesetzes (nicht mehr ∝ v bei festem Schritt)
         {
-            const rgR = s.playerMesh.userData.rig;
+            const rgR = st.playerMesh.userData.rig;
             o.rateSoll = r._gaitGesetz(rgR, 6).omega / r._gaitGesetz(rgR, 3).omega;
         }
         o.checks.aRateVerdoppelt = o.rateRatio > 1 && Math.abs(o.rateRatio / o.rateSoll - 1) <= 0.1;
@@ -1728,7 +1722,7 @@ async function checkBandKoerperBewegung({ page, check }) {
         o.schritt1 = sd1;
         o.schritt2 = sd2;
         // K07: der Schritt folgt dem Gang-Gesetz (Λ/2 wächst mit dem Tempo) — gemessen am Konsumenten ± 10 %
-        const rgA = s.playerMesh.userData.rig;
+        const rgA = st.playerMesh.userData.rig;
         const soll1 = r._gaitGesetz(rgA, 3).schritt / 2,
             soll2 = r._gaitGesetz(rgA, 6).schritt / 2;
         o.checks.aSchrittKonstant =
@@ -1776,8 +1770,8 @@ async function checkBandKoerperBewegung({ page, check }) {
         // ── (E) FUSS-IK-KONSUM: Becken senkt sich auf gesenktem Boden, Abgrund ohne NaN ──
         {
             const rig = pmesh.userData.rig;
-            const soleY = pmesh.position.y - A.PLAYER_FOOT_OFFSET;
-            const saved = [s._kapselTraegerY, s._kapselStruktur, s.isInAir, pmesh.position.y];
+            const soleY = pmesh.position.y - AnazhRealm.PLAYER_FOOT_OFFSET;
+            const saved = [st._kapselTraegerY, st._kapselStruktur, st.isInAir, pmesh.position.y];
             const frisch = () => {
                 const ik = pmesh.userData._gaitIK;
                 if (ik) ik.probeL.g = ik.probeR.g = NaN;
@@ -1787,8 +1781,8 @@ async function checkBandKoerperBewegung({ page, check }) {
             // Vorher senkte die Bühne nur den Stempel eines Baus (`_kapselStruktur`): seit jeder Fuß seine Auflage liest, stand
             // er weiter auf dem echten Boden unter ihm (Gelände 90,37 m, am Genesis-Platz der Bau 91,33 m). Neun Stand-Takte.
             const becken = (dy, t0, luft = false) => {
-                [s._kapselTraegerY, s._kapselStruktur, s.isInAir] = [soleY, false, luft];
-                pmesh.position.y = soleY + A.PLAYER_FOOT_OFFSET - dy;
+                [st._kapselTraegerY, st._kapselStruktur, st.isInAir] = [soleY, false, luft];
+                pmesh.position.y = soleY + AnazhRealm.PLAYER_FOOT_OFFSET - dy;
                 frisch();
                 [vStub, p._gaitW, p.animationLastTick] = [0, 0, -Infinity];
                 for (let k = 0; k <= 8; k++) r.animatePlayerSoul(t0 + k / 60);
@@ -1803,7 +1797,7 @@ async function checkBandKoerperBewegung({ page, check }) {
             // (E2) LUFT-SPERRE (Leben-Prüfung N-D1): in der Luft erdet die Fuß-IK nie — derselbe gesenkte Boden senkt
             // das Becken NICHT
             const hLuft = becken(-0.25, 530, true);
-            [s._kapselTraegerY, s._kapselStruktur, s.isInAir, pmesh.position.y] = saved; // restaurieren
+            [st._kapselTraegerY, st._kapselStruktur, st.isInAir, pmesh.position.y] = saved; // restaurieren
             frisch();
             o.beckenLuft = hLuft;
             o.checks.eLuftSperre = Number.isFinite(hLuft) && Number.isFinite(h0) && Math.abs(hLuft - h0) < 0.02;
@@ -1814,8 +1808,8 @@ async function checkBandKoerperBewegung({ page, check }) {
         }
     
         // Spieler-Bühne restaurieren
-        s.playerVel = savedVel;
-        s.playerUnderwater = savedUw;
+        st.playerVel = savedVel;
+        st.playerUnderwater = savedUw;
         p.mountedArch = savedMounted;
         p.walkPhase = savedPhase;
         p._gaitW = savedW;
@@ -1824,9 +1818,9 @@ async function checkBandKoerperBewegung({ page, check }) {
     
         // ── (D) TIER-BODENKONTAKT auf dem 30°-Hang (gestubbter Boden) ──
         {
-            const pm = s.playerMesh.position;
-            const saveMax = s.maxCreatures;
-            s.maxCreatures = Math.max(saveMax || 0, s.creatures.length + 2);
+            const pm = st.playerMesh.position;
+            const saveMax = st.maxCreatures;
+            st.maxCreatures = Math.max(saveMax || 0, st.creatures.length + 2);
             const steig = Math.tan(Math.PI / 6); // 30°
             // 200 m über jeder Boden-Karte: der Stand-Leser der Sicht (_standSicht) trägt dort das Gesetz der Ebene
             const ebene = (x, z) => 210 + (z - pm.z) * steig;
@@ -1867,14 +1861,14 @@ async function checkBandKoerperBewegung({ page, check }) {
             o.checks.s2LensFires = Math.abs(o.s2PitchDeg) < 3; // ohne Formel kein Hang-Folgen
             r._koerperBodenUnter = savedSurf; // restaurieren
             // Boden-Caches der Welt-Kreaturen entstubben (kein stale Hang-Boden)
-            for (const cr of s.creatures) {
+            for (const cr of st.creatures) {
                 const ud = cr.userData || {};
                 delete ud.cachedGroundY;
                 // die vier Gesetz-Proben je Tier (_slopeProben) tragen sonst den 210-m-Hang des Stubs weiter
                 if (Array.isArray(ud._slopeProben)) for (const pr of ud._slopeProben) pr.g = NaN;
             }
             r.removeCreature(c);
-            s.maxCreatures = saveMax;
+            st.maxCreatures = saveMax;
         }
     
         return o;

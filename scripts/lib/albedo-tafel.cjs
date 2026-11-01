@@ -402,16 +402,15 @@ function tafelTabelle(u) {
 // liest von unten nach oben — die Zeilen kehren um (das Bild steht wie in der Welt). Die Kopie bucht beim Aufruf, das Ziel
 // wechselt sofort zurück.
 function laborZiel(R, W, H) {
-    const T = window.THREE,
-        gpu = !!R.isWebGPURenderer,
+    const gpu = !!R.isWebGPURenderer,
         gl = gpu ? null : R.getContext();
     if (gl) gl.getExtension("EXT_color_buffer_float");
-    const rt = new T[gpu ? "RenderTarget" : "WebGLRenderTarget"](W, H, { type: T.HalfFloatType, depthBuffer: true });
+    const rt = new THREE[gpu ? "RenderTarget" : "WebGLRenderTarget"](W, H, { type: THREE.HalfFloatType, depthBuffer: true });
     const lies = async () => {
         let roh = gpu ? R.readRenderTargetPixelsAsync(rt, 0, 0, W, H) : new Float32Array(W * H * 4);
         if (gl) gl.readPixels(0, 0, W, H, gl.RGBA, gl.FLOAT, roh);
         R.setRenderTarget(null);
-        if (gpu) roh = Float32Array.from(await roh, T.DataUtils.fromHalfFloat);
+        if (gpu) roh = Float32Array.from(await roh, THREE.DataUtils.fromHalfFloat);
         if (gpu && R.backend.isWebGPUBackend) return roh;
         const out = new Float32Array(W * H * 4);
         for (let y = 0; y < H; y++) out.set(roh.subarray((H - 1 - y) * W * 4, (H - y) * W * 4), y * W * 4);
@@ -427,7 +426,6 @@ function laborZiel(R, W, H) {
 // Felder, die die Brücke über die Naht reicht und der Wirt in seinen Stoff-Schlüssel schreibt.
 function laborAlbedo(o) {
     return (async () => {
-        const T = window.THREE;
         // die strenge CSP der Seiten erlaubt new Function nur im Aufruf von außen, nie nach einem await: jeder Name EINMAL zuerst
         const namen = new Map();
         const g = (n) => (n ? (namen.has(n) ? namen.get(n) : namen.set(n, new Function(`return typeof ${n} !== "undefined" ? ${n} : undefined;`)()).get(n)) : undefined);
@@ -460,17 +458,17 @@ function laborAlbedo(o) {
             for (let p = x; p; p = p.parent) if (p === w) return true;
             return false;
         };
-        const karte = new T.Mesh(
-            new T.PlaneGeometry(2, 2),
-            new T.MeshStandardMaterial({
-                color: new T.Color(0.18, 0.18, 0.18),
+        const karte = new THREE.Mesh(
+            new THREE.PlaneGeometry(2, 2),
+            new THREE.MeshStandardMaterial({
+                color: new THREE.Color(0.18, 0.18, 0.18),
                 roughness: 1,
                 metalness: 0,
-                side: T.DoubleSide,
+                side: THREE.DoubleSide,
             })
         );
-        const cam = new T.PerspectiveCamera(35, W / H, 0.01, 4000);
-        const amb = new T.AmbientLight(0xffffff, 0);
+        const cam = new THREE.PerspectiveCamera(35, W / H, 0.01, 4000);
+        const amb = new THREE.AmbientLight(0xffffff, 0);
         const lichter = [];
         sc.traverse((x) => {
             if (x.isLight) lichter.push([x, x.intensity]);
@@ -494,7 +492,7 @@ function laborAlbedo(o) {
             sc.fog = null;
             sc.background = null;
             sc.environment = null;
-            R.toneMapping = T.NoToneMapping;
+            R.toneMapping = THREE.NoToneMapping;
             // r184 schreibt die Licht-Stärke einmal je Bild (NodeUpdateType.FRAME): je Pass ein neues Bild, sonst trüge der
             // dunkle Pass das Licht des hellen (gemessen: Tiefschwarz hell = dunkel = 0,0058)
             const pass = async (e) => {
@@ -511,24 +509,24 @@ function laborAlbedo(o) {
         };
         // Die Stellungen der Kamera: wie in der Welt die TAFEL-BLICKE auf die Hülle der gewählten Züge, oder von oben.
         const stellungenFuer = (sel, blick) => {
-            const bb = new T.Box3();
+            const bb = new THREE.Box3();
             for (const x of sel) bb.expandByObject(x);
-            const c = bb.getCenter(new T.Vector3());
+            const c = bb.getCenter(new THREE.Vector3());
             if (blick === "oben") {
                 // Der Boden von oben: der Mittelpunkt ist der Ort des Labor-Blicks (im Wald der Spieler), die Höhe der
                 // Strahl auf die gewählten Züge.
                 const lc = g("camera") ? g("camera").position : c;
-                const ray = new T.Raycaster(new T.Vector3(lc.x, 1e4, lc.z), new T.Vector3(0, -1, 0));
+                const ray = new THREE.Raycaster(new THREE.Vector3(lc.x, 1e4, lc.z), new THREE.Vector3(0, -1, 0));
                 const hit = ray.intersectObjects(sel, false)[0];
                 const y = hit ? hit.point.y : c.y;
-                return [[new T.Vector3(lc.x, y + 14, lc.z + 0.01), new T.Vector3(lc.x, y, lc.z)]];
+                return [[new THREE.Vector3(lc.x, y + 14, lc.z + 0.01), new THREE.Vector3(lc.x, y, lc.z)]];
             }
-            const rad = Math.max(0.4, bb.getSize(new T.Vector3()).length() / 2);
+            const rad = Math.max(0.4, bb.getSize(new THREE.Vector3()).length() / 2);
             // `waagrecht` (der Baum, wie seine Karte in der Welt): die vier Seiten im Horizont, kein Blick von oben
             const w = blick === "waagrecht";
             return window.__tafelBlicke
                 .filter((d) => !(w && d[1] > 0.9))
-                .map((d) => [c.clone().addScaledVector(new T.Vector3(d[0], w ? 0 : d[1], d[2]).normalize(), rad * 2.6), c]);
+                .map((d) => [c.clone().addScaledVector(new THREE.Vector3(d[0], w ? 0 : d[1], d[2]).normalize(), rad * 2.6), c]);
         };
         sc.add(amb);
         const ergebnisse = [];
@@ -637,7 +635,6 @@ function laborAlbedo(o) {
 // (sein Composer bzw. der Renderer auf den Schirm) für dieselbe Karte zeigt.
 function laborKarte(o) {
     return (async () => {
-        const T = window.THREE;
         const g = (n) => (n ? new Function(`return typeof ${n} !== "undefined" ? ${n} : undefined;`)() : undefined);
         const R = g(o.studio.renderer),
             sc = g(o.studio.szene);
@@ -645,18 +642,18 @@ function laborKarte(o) {
             H = 64;
         const { rt, lies } = window.__laborZiel(R, W, H);
         const wurzel = g(o.studio.wurzel);
-        const bb = new T.Box3();
+        const bb = new THREE.Box3();
         if (wurzel) bb.setFromObject(wurzel);
-        const c = bb.isEmpty() ? new T.Vector3() : bb.getCenter(new T.Vector3());
+        const c = bb.isEmpty() ? new THREE.Vector3() : bb.getCenter(new THREE.Vector3());
         const y0 = bb.isEmpty() ? 0 : bb.min.y + 0.02;
-        const karte = new T.Mesh(
-            new T.PlaneGeometry(2, 2),
-            new T.MeshStandardMaterial({ color: new T.Color(0.18, 0.18, 0.18), roughness: 1, metalness: 0 })
+        const karte = new THREE.Mesh(
+            new THREE.PlaneGeometry(2, 2),
+            new THREE.MeshStandardMaterial({ color: new THREE.Color(0.18, 0.18, 0.18), roughness: 1, metalness: 0 })
         );
         karte.rotation.x = -Math.PI / 2;
         karte.position.set(c.x, y0, c.z);
         karte.updateMatrixWorld(true);
-        const cam = new T.PerspectiveCamera(35, 1, 0.01, 100);
+        const cam = new THREE.PerspectiveCamera(35, 1, 0.01, 100);
         cam.position.set(c.x, y0 + 2, c.z + 0.001);
         cam.lookAt(c.x, y0, c.z);
         cam.updateMatrixWorld(true);
@@ -674,7 +671,7 @@ function laborKarte(o) {
             for (const x of alle) x.visible = false;
             sc.add(karte);
             sc.fog = null;
-            R.toneMapping = T.LinearToneMapping;
+            R.toneMapping = THREE.LinearToneMapping;
             R.setRenderTarget(rt);
             R.setClearColor(0x000000, 0);
             R.clear();
@@ -694,7 +691,7 @@ function laborKarte(o) {
             R.toneMapping = alt.tm;
             const comp = o.studio.ausgabe ? g(o.studio.ausgabe) : null;
             const kams = [];
-            const groesse = R.getSize(new T.Vector2());
+            const groesse = R.getSize(new THREE.Vector2());
             cam.aspect = groesse.x / groesse.y;
             cam.updateProjectionMatrix();
             if (comp && comp.passes) {
@@ -705,7 +702,7 @@ function laborKarte(o) {
                     }
                 comp.render();
             } else R.render(sc, cam);
-            const db = R.getDrawingBufferSize(new T.Vector2());
+            const db = R.getDrawingBufferSize(new THREE.Vector2());
             // der Schirm dieses Takts (WebGL wie WebGPU): eine 2D-Fläche liest seine Mitte
             const k2 = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
             k2.drawImage(R.domElement, Math.floor(db.x / 2), db.y - 1 - Math.floor(db.y / 2), 1, 1, 0, 0, 1, 1); // die Zeile des GL-Lesens
@@ -731,7 +728,6 @@ function laborKarte(o) {
 // das Mittel der linearen Luma (Halb-Float, ungetont).
 function laborLaubGegenlicht(o) {
     o = o || {};
-    const T = window.THREE;
     const g = (n) => new Function(`return typeof ${n} !== "undefined" ? ${n} : undefined;`)();
     const R = g(o.studio.renderer),
         sc = g(o.studio.szene),
@@ -753,23 +749,23 @@ function laborLaubGegenlicht(o) {
     });
     if (!laub.length || !key) return { fehler: !key ? "kein keyLight" : "kein Laub am Subjekt" };
     wurzel.updateMatrixWorld(true);
-    const box = new T.Box3();
+    const box = new THREE.Box3();
     for (const x of laub) box.expandByObject(x);
-    const mitte = box.getCenter(new T.Vector3());
-    const fuss = new T.Vector3().setFromMatrixPosition(wurzel.matrixWorld);
+    const mitte = box.getCenter(new THREE.Vector3());
+    const fuss = new THREE.Vector3().setFromMatrixPosition(wurzel.matrixWorld);
     // Der Labor-Baum steht in seinem Mass (die Vorlage, nicht das Exemplar der Welt): mit `weltHoehe` rückt das Auge im
     // Verhältnis der Höhen heran — dieselbe Peilung, dieselbe Sonnen-Höhe wie die Welt-Seite.
     const abstand = (o.abstand || 8) * (o.weltHoehe > 0 ? (box.max.y - fuss.y) / o.weltHoehe : 1);
-    const auge = new T.Vector3(fuss.x, fuss.y + 1.7, fuss.z + abstand);
+    const auge = new THREE.Vector3(fuss.x, fuss.y + 1.7, fuss.z + abstand);
     const elev = Math.max(
         (5 * Math.PI) / 180,
         Math.atan2(mitte.y - auge.y, Math.hypot(mitte.x - auge.x, mitte.z - auge.z))
     );
-    const cam = new T.PerspectiveCamera(o.fov || 75, W / H, 0.05, 400);
+    const cam = new THREE.PerspectiveCamera(o.fov || 75, W / H, 0.05, 400);
     cam.position.copy(auge);
     cam.lookAt(mitte);
     cam.updateMatrixWorld(true);
-    const rt = new T.WebGLRenderTarget(W, H, { type: T.HalfFloatType, format: T.RGBAFormat, depthBuffer: true });
+    const rt = new THREE.WebGLRenderTarget(W, H, { type: THREE.HalfFloatType, format: THREE.RGBAFormat, depthBuffer: true });
     const lichter = [];
     sc.traverse((x) => {
         if (x.isLight) lichter.push([x, x.intensity]);
@@ -789,12 +785,12 @@ function laborLaubGegenlicht(o) {
         gl.readPixels(0, 0, W, H, gl.RGBA, gl.FLOAT, px);
         return px;
     };
-    const dh = new T.Vector3(auge.x - fuss.x, 0, auge.z - fuss.z).normalize();
+    const dh = new THREE.Vector3(auge.x - fuss.x, 0, auge.z - fuss.z).normalize();
     const schuss = (gegen) => {
         const sd = dh
             .clone()
             .multiplyScalar((gegen ? -1 : 1) * Math.cos(elev))
-            .add(new T.Vector3(0, Math.sin(elev), 0))
+            .add(new THREE.Vector3(0, Math.sin(elev), 0))
             .normalize();
         key.target.position.copy(mitte);
         key.position.copy(mitte.clone().add(sd.multiplyScalar(20)));
@@ -815,7 +811,7 @@ function laborLaubGegenlicht(o) {
         sc.background = null;
         sc.environment = null;
         key.castShadow = false; // der Stoff allein, wie die Welt-Seite unter `nurSonne`
-        R.toneMapping = T.NoToneMapping;
+        R.toneMapping = THREE.NoToneMapping;
         schuss(true);
         const ge = schuss(true),
             au = schuss(false);

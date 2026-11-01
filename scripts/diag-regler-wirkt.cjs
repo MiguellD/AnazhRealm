@@ -245,7 +245,7 @@ function ofenMessen(page, opts) {
         const altBaecker = B.koerper;
         if (o.taeter === "ohneOv") r._studioPraegung = () => null;
         if (o.taeter?.bruch) {
-            r.constructor._tierOfenMemo && r.constructor._tierOfenMemo.clear();
+            AnazhRealm._tierOfenMemo && AnazhRealm._tierOfenMemo.clear();
             B.koerper = function (core, id, seed, lod, ov) {
                 if (ov?.dials && ov.dials[o.taeter.bruch] === o.taeter.wert) throw new Error("Täter: der Mensch-Bäcker wirft");
                 return altBaecker.apply(this, arguments);

@@ -1435,7 +1435,6 @@ async function raumSeite(dorf, mut) {
 // Ufer und Regen am Ohr eingefroren, das Bild geht weiter) ist ROT beim Namen.
 const GESEHEN_SOLL = 0.6;
 async function gesehenSeite(m) {
-    const st = r.state;
     const adv = AnazhRealm.Gesetz("terrain:WASSER_GESETZ").wellen.adv;
     requestAnimationFrame(__klangW.spiel);
     let h = null;

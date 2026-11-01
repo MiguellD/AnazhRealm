@@ -78,7 +78,7 @@ function haken(o, key, fn) {
 // und die Pässe wechseln (die nahe Kaskade rendert jeden zweiten Frame, die ferne seltener) — ein Perzentil über die
 // Takte spränge zwischen den Moden.
 function passUhr() {
-    const rend = r.state.renderer;
+    const rend = st.renderer;
     const be = rend.backend;
     const uhr = { messen: false, aus: new Set(), stapel: [], idStapel: [], lauf: 0, baum: null, zaehl: {},
         uidPass: new Map(), frameZ: null, zStapel: [] };
@@ -341,7 +341,7 @@ function belegungSelbsttest() {
 // `_loopRender`, dann auf die GPU warten; Gesamtzeit / n ist die GPU-Zeit je Frame, wenn die GPU über der CPU liegt. Den
 // Zeitstempel-Pool leert sie vor und nach den Frames (der Spiel-Loop löst ihn je Frame auf, die Bank rendert ohne ihn).
 function bankRunde(n) {
-    const rend = r.state.renderer;
+    const rend = st.renderer;
     return window.AnazhHuelle.bankRunde(rend, n, () => {
         if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
         r._loopShadowUpdate(); // der Schatten-Takt wie im Loop (je Kaskade am echten Leser)
@@ -726,7 +726,6 @@ function ketteHash() {
 
 // DER ZUSTAND, den die Linse anfasst — vorher/nachher verglichen (`__zerlegeVergleich`).
 function zerlegeZustand() {
-    const st = r.state;
     const rend = st.renderer;
     const be = rend.backend;
     let n = 0,
@@ -831,7 +830,6 @@ function zerlegeVergleich(a, b) {
 // welchem rendert), die Knoten und Stufen der Post-Kette, der Schatten-Takt, die Frame-Anatomie.
 function zerlegeInventur(k) {
     return (async () => {
-        const st = r.state;
         const rend = st.renderer;
         rend.setAnimationLoop(null);
         window.__buehne();
@@ -851,7 +849,7 @@ function zerlegeInventur(k) {
             for (const e of baum)
                 if (e.eltern && passe[e.eltern] && !passe[e.eltern].kinder.includes(e.name))
                     passe[e.eltern].kinder.push(e.name);
-            const T = r.constructor.SCHATTEN_TAKT || { nahMax: 1, fernFaktor: 1 };
+            const T = AnazhRealm.SCHATTEN_TAKT || { nahMax: 1, fernFaktor: 1 };
             const mi = Math.max(1, Math.round(st._shadowMinInterval || 1));
             const kette = {};
             for (const u of k.kette || []) {
@@ -898,13 +896,12 @@ function zerlegeInventur(k) {
 // optional ein Bild aus dem Ausgabe-Pfad.
 function zerlegeMessen(k) {
     return (async () => {
-        const st = r.state;
         const rend = st.renderer;
         rend.setAnimationLoop(null);
         window.__buehne();
         const vorher = window.__zerlegeZustand();
         const uhr = window.__passUhr();
-        const T = r.constructor.SCHATTEN_TAKT || { nahMax: 1, fernFaktor: 1 };
+        const T = AnazhRealm.SCHATTEN_TAKT || { nahMax: 1, fernFaktor: 1 };
         const mi = Math.max(1, Math.round(st._shadowMinInterval || 1));
         const ggt = (a, b) => (b ? ggt(b, a % b) : a);
         const p0 = Math.min(T.nahMax, mi),
@@ -1222,9 +1219,8 @@ function zerlegeMessen(k) {
 // legt sie an und misst sie ALLEIN (Bank-Runden nur aus ihr), `ab` nimmt sie restlos weg.
 function zerlegeLast(k) {
     return (async () => {
-        const rend = r.state.renderer;
-        const T = window.THREE;
-        const TSL = T.TSL;
+        const rend = st.renderer;
+        const TSL = THREE.TSL;
         if (!k.an) {
             const L = window.__zerlegeLastZustand;
             if (!L) return { ab: false };
@@ -1236,12 +1232,12 @@ function zerlegeLast(k) {
             return { ab: true };
         }
         if (window.__zerlegeLastZustand) return { fehler: "Last steht schon" };
-        const db = rend.getDrawingBufferSize(new T.Vector2());
-        const rt = new T.RenderTarget(Math.round(db.x), Math.round(db.y), { depthBuffer: false });
+        const db = rend.getDrawingBufferSize(new THREE.Vector2());
+        const rt = new THREE.RenderTarget(Math.round(db.x), Math.round(db.y), { depthBuffer: false });
         rt.texture.name = "zerlege-selbsttest";
         const { Fn, Loop, float, vec2, vec4, uv, sin, cos } = TSL;
         const iter = Math.max(1, k.iter || 96);
-        const mat = new T.MeshBasicNodeMaterial();
+        const mat = new THREE.MeshBasicNodeMaterial();
         mat.name = "zerlege-selbsttest";
         mat.colorNode = Fn(() => {
             const p = uv().toVar();
@@ -1254,10 +1250,10 @@ function zerlegeLast(k) {
         })();
         // Der Vollbild-Pass: eine eigene Szene (ihr Name nennt den Pass an der Pass-Uhr) mit einer 2×2-Fläche vor einer
         // Orthogonal-Kamera — jedes Pixel des Ziels läuft einmal durch die Last.
-        const szene = new T.Scene();
+        const szene = new THREE.Scene();
         szene.name = "zerlege-selbsttest";
-        const kamera = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-        const flaeche = new T.Mesh(new T.PlaneGeometry(2, 2), mat);
+        const kamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        const flaeche = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
         flaeche.name = "zerlege-selbsttest";
         flaeche.frustumCulled = false;
         flaeche.position.z = -0.5;

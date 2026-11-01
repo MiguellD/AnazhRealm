@@ -2285,15 +2285,14 @@ async function checkBandPhasenBF({ page, check }) {
         // Einträge nie drankommen (Löcher im fernen Wasser) → der Tick trägt einen FIFO-Slot (ältester).
         // Behavioral: ein ferner Key wird trotz frischer naher Keys binnen weniger Ticks gezogen.
         out.waterIsoNoStarve = (() => {
-            const s = st;
-            const savedQ = s.pendingWaterIso;
+            const savedQ = st.pendingWaterIso;
             try {
-                const lpc = s.lastPlayerVoxelChunk || { cx: 0, cz: 0 };
+                const lpc = st.lastPlayerVoxelChunk || { cx: 0, cz: 0 };
                 // echte gestreamte Chunk-Keys: einer NAH am Spieler, einer FERN.
                 let nearKey = null;
                 let farKey = null;
                 let farDist = -1;
-                for (const k of s.voxelChunks.keys()) {
+                for (const k of st.voxelChunks.keys()) {
                     const ci = k.indexOf(",");
                     const kx = parseInt(k.slice(0, ci), 10);
                     const kz = parseInt(k.slice(ci + 1), 10);
@@ -2305,18 +2304,18 @@ async function checkBandPhasenBF({ page, check }) {
                     }
                 }
                 if (!nearKey || !farKey || nearKey === farKey) return null; // Welt zu klein → skip
-                s.pendingWaterIso = new Set([farKey]);
+                st.pendingWaterIso = new Set([farKey]);
                 let drawn = false;
                 for (let t = 0; t < 12 && !drawn; t++) {
                     // Dauer-Nachschub: jede Runde kommt der nahe Key frisch dazu
                     // (das CA-Wake-Muster) — er gewinnt jeden Distanz-Slot.
-                    s.pendingWaterIso.add(nearKey);
+                    st.pendingWaterIso.add(nearKey);
                     r._tickPendingWaterIso(2); // 1 Distanz-Slot + 1 FIFO-Slot
-                    if (!s.pendingWaterIso.has(farKey)) drawn = true;
+                    if (!st.pendingWaterIso.has(farKey)) drawn = true;
                 }
                 return drawn;
             } finally {
-                s.pendingWaterIso = savedQ;
+                st.pendingWaterIso = savedQ;
             }
         })();
         // E3-MANA-HUD: pfad → dritte Stats-Row sichtbar, Wert folgt p.mana; frieden → hidden (dort ist

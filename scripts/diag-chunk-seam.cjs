@@ -307,11 +307,10 @@ function spalt(px, py, pz, tris) {
     // Nachher (gemorpht): die Naht-Vertices sind
     // koinzident mit den groben → die T-junction ist zu.
     const morph = await page.evaluate(async () => {
-        const s = st;
         const span = r._voxelChunkConfig(0).span;
         // STALE-TEST: den Geomorph für ALLE Chunks FRISCH gegen die JETZT gestreamten Nachbar-
         // Meshes rechnen (falls ein Nachbar nach dem Finalize-Morph re-meshte = stale Target).
-        for (const [key, entry] of s.voxelChunks) {
+        for (const [key, entry] of st.voxelChunks) {
             if (!entry || entry.empty || !entry.mesh) continue;
             const [cx, cz] = key.split(",").map(Number);
             r._applyCrossLodGeomorph(cx, cz);
@@ -397,11 +396,10 @@ function spalt(px, py, pz, tris) {
 
     // ===== MESSUNG E — A1: Morph-Cap + STITCH-BAND (sichtbare Spalten gedeckt?) =====
     const stitch = await page.evaluate(() => {
-        const s = st;
         const span = r._voxelChunkConfig(0).span;
         let bandMeshes = 0,
             bandQuads = 0;
-        for (const [, entry] of s.voxelChunks) {
+        for (const [, entry] of st.voxelChunks) {
             if (entry && entry.lodStitchMesh && entry.lodStitchMesh.geometry.index) {
                 bandMeshes++;
                 bandQuads += entry.lodStitchMesh.geometry.index.count / 6;
@@ -413,14 +411,14 @@ function spalt(px, py, pz, tris) {
             capped = 0,
             visGap = 0,
             visGapUnbridged = 0;
-        for (const [key, entry] of s.voxelChunks) {
+        for (const [key, entry] of st.voxelChunks) {
             if (!entry || entry.empty || !entry.mesh) continue;
             const [cx, cz] = key.split(",").map(Number);
             const myLod = Number.isFinite(entry.lod) ? entry.lod : 0;
             const fineStep = r._voxelChunkConfig(myLod).step;
             const flat = fineStep * 0.7;
             const planes = nachbarn(cx, cz, span).filter(({ key }) => {
-                const nb = s.voxelChunks.get(key);
+                const nb = st.voxelChunks.get(key);
                 return nb && !nb.empty && nb.mesh && (Number.isFinite(nb.lod) ? nb.lod : 0) > myLod;
             });
             if (!planes.length) continue;
@@ -465,13 +463,12 @@ function spalt(px, py, pz, tris) {
 
     // ===== MESSUNG C — die ZEITLICHE Naht (async-Fenster beim Carve) =====
     const temporal = await page.evaluate(async () => {
-        const s = st;
         const span = r._voxelChunkConfig(0).span;
 
         // Spieler-Chunk + ein gleich-LODiger Grenz-Nachbar (pcx+1,pcz) — beide LOD0 (r0/r1),
         // sauber ohne LOD-Konfound. Carve auf die gemeinsame X-Ebene (straddelt beide).
-        const lpc = s.lastPlayerVoxelChunk;
-        const pm = s.playerMesh && s.playerMesh.position;
+        const lpc = st.lastPlayerVoxelChunk;
+        const pm = st.playerMesh && st.playerMesh.position;
         const pcx = lpc ? lpc.cx : pm ? Math.floor(pm.x / span) : 0;
         const pcz = lpc ? lpc.cz : pm ? Math.floor(pm.z / span) : 0;
 
@@ -486,8 +483,8 @@ function spalt(px, py, pz, tris) {
             dcx = 1,
             dcz = 0;
         for (const [a, b] of dirs) {
-            const e = s.voxelChunks.get(`${pcx + a},${pcz + b}`);
-            const pe = s.voxelChunks.get(`${pcx},${pcz}`);
+            const e = st.voxelChunks.get(`${pcx + a},${pcz + b}`);
+            const pe = st.voxelChunks.get(`${pcx},${pcz}`);
             if (e && !e.empty && e.mesh && pe && !pe.empty && pe.mesh) {
                 nb = { cx: pcx + a, cz: pcz + b };
                 dcx = a;
@@ -509,7 +506,7 @@ function spalt(px, py, pz, tris) {
         const cy0 = r._voxelSurfaceY(cx0, cz0);
 
         const uuidOf = (key) => {
-            const e = s.voxelChunks.get(key);
+            const e = st.voxelChunks.get(key);
             return e && e.mesh ? e.mesh.uuid : null;
         };
 
@@ -520,7 +517,7 @@ function spalt(px, py, pz, tris) {
         for (let cx = pcx - 2; cx <= pcx + 2; cx++)
             for (let cz = pcz - 2; cz <= pcz + 2; cz++) {
                 const key = `${cx},${cz}`;
-                if (s.voxelChunks.has(key)) region.push(key);
+                if (st.voxelChunks.has(key)) region.push(key);
             }
         const beforeUuid = {};
         for (const key of region) beforeUuid[key] = uuidOf(key);
@@ -528,7 +525,7 @@ function spalt(px, py, pz, tris) {
         const pKey = `${pcx},${pcz}`;
 
         // sauberes Dirty-Set, dann Carve (der Edit-Call selbst heilt nach T1 den Footprint sync)
-        if (s.dirtyVoxelChunks) s.dirtyVoxelChunks.clear();
+        if (st.dirtyVoxelChunks) st.dirtyVoxelChunks.clear();
         r.carveVoxel(cx0, cy0, cz0, 3.5);
 
         // T1-MASS: welche Chunks heilten IM Edit-Call (uuid schon geändert, BEVOR ein Tick lief)?
@@ -537,13 +534,13 @@ function spalt(px, py, pz, tris) {
             const u = uuidOf(key);
             if (u && u !== beforeUuid[key]) inEdit.push(key);
         }
-        const dirtyAfterCarve = s.dirtyVoxelChunks ? s.dirtyVoxelChunks.size : 0;
+        const dirtyAfterCarve = st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0;
 
         // die restlichen (Skirt) async über die Ticks heilen + Heal-Frame zählen
         const healFrame = {};
         let frames = 0;
         const MAXF = 120;
-        while ((s.dirtyVoxelChunks ? s.dirtyVoxelChunks.size : 0) > 0 && frames < MAXF) {
+        while ((st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0) > 0 && frames < MAXF) {
             frames++;
             try {
                 r._gameLoopTick(performance.now());
@@ -560,12 +557,12 @@ function spalt(px, py, pz, tris) {
         const asyncFrames = Object.values(healFrame).reduce((m, v) => Math.max(m, v), 0);
 
         // --- SYNC-Drain-Referenz: ein Drain heilt jeden Rest in EINEM Schritt (die T1-Maschinerie) ---
-        if (s.dirtyVoxelChunks) s.dirtyVoxelChunks.clear();
+        if (st.dirtyVoxelChunks) st.dirtyVoxelChunks.clear();
         const cz1 = dcx !== 0 ? (pcz + 0.5) * span : cz0; // leicht versetzt, frischer Edit
         r.carveVoxel(cx0, cy0 + 0.2, cz1, 3.5);
-        const dirtyBeforeDrain = s.dirtyVoxelChunks ? s.dirtyVoxelChunks.size : 0;
+        const dirtyBeforeDrain = st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0;
         const built = r._drainDirtyVoxelChunks();
-        const dirtyAfterDrain = s.dirtyVoxelChunks ? s.dirtyVoxelChunks.size : 0;
+        const dirtyAfterDrain = st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0;
 
         return {
             player: pKey,

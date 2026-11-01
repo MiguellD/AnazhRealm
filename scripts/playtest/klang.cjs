@@ -198,11 +198,9 @@ async function checkBandW4LofiPad({ page, check }) {
 // gate:klang-zensus (F) am Bus über den echten Leib-Löser.
 async function checkBandSchrittKlang({ page, check }) {
     const out = await safeEvaluate(page, () => {
-        const s = st,
-            A = AnazhRealm;
         const o = { checks: {} };
-        if (!A.SCHRITT_KLANG) return { error: "SCHRITT_KLANG-Tabelle fehlt" };
-        const T = A.SCHRITT_KLANG;
+        if (!AnazhRealm.SCHRITT_KLANG) return { error: "SCHRITT_KLANG-Tabelle fehlt" };
+        const T = AnazhRealm.SCHRITT_KLANG;
 
         // ── die Absenz-Wachen (der Konsum der EINEN Quelle beweist sich unten am Verhalten: (A) zählt Schritte nur über den
         // Tick aus animatePlayerSoul, S1 steht mit ω ≡ 0; Boden und Wasser am Fuß trägt die Stoff-Linse) ──
@@ -210,27 +208,27 @@ async function checkBandSchrittKlang({ page, check }) {
         o.checks.klangEineMaschine = window.__fehlt(r._playSchrittOneShot, /new\s+AudioContext/);
         o.checks.simUnberuehrt = window.__fehlt([r._stepFixedSim, r._loopFixedStep, r._stepCharacter], /_schrittKlang/);
         // Stimme-aus fail-closed an der Stimme selbst (headless: nie aktiviert)
-        o.checks.stimmeFailClosed = r._playSchrittOneShot({ gain: 0.05 }) === false && !s.symphony.enabled;
+        o.checks.stimmeFailClosed = r._playSchrittOneShot({ gain: 0.05 }) === false && !st.symphony.enabled;
 
         // ── Bühne: human-Rig + gestubbte Velocity (das koerper-Linsen-Muster) ──
-        const p = s.player;
-        if (!p || !s.playerMesh) return { error: "kein Spieler" };
+        const p = st.player;
+        if (!p || !st.playerMesh) return { error: "kein Spieler" };
         const savedSoul = p.soul;
-        if (!s.playerMesh.userData.rig) r.applyPlayerSoul("human");
-        if (!s.playerMesh.userData.rig) return { error: "Spieler ohne Rig (koerper-Kern kalt?)" };
+        if (!st.playerMesh.userData.rig) r.applyPlayerSoul("human");
+        if (!st.playerMesh.userData.rig) return { error: "Spieler ohne Rig (koerper-Kern kalt?)" };
         // die Bühne je Träger (Zustand, Spieler) beim Namen ihrer Felder — gesichert, gesetzt, am Ende zurück
         const merk = (t, k) => Object.fromEntries(k.map((f) => [f, t[f]]));
         const saved = [
-            [s, merk(s, ["playerVel", "playerUnderwater", "isInAir", "_fieldVy", "_schrittKlang"])],
+            [st, merk(st, ["playerVel", "playerUnderwater", "isInAir", "_fieldVy", "_schrittKlang"])],
             [p, merk(p, ["mountedArch", "walkPhase", "_gaitW", "animationLastTick", "_hitStopUntil"])],
         ];
-        Object.assign(s, { playerUnderwater: false, isInAir: false, _fieldVy: 0 });
+        Object.assign(st, { playerUnderwater: false, isInAir: false, _fieldVy: 0 });
         Object.assign(p, { mountedArch: null, _hitStopUntil: 0 });
         let vStub = 0;
-        s.playerVel = { x: () => vStub, z: () => 0, y: () => 0 };
-        const z = () => s._schrittKlang || { schritte: 0, landungen: 0, letzter: null };
+        st.playerVel = { x: () => vStub, z: () => 0, y: () => 0 };
+        const z = () => st._schrittKlang || { schritte: 0, landungen: 0, letzter: null };
         const frisch = () => {
-            s._schrittKlang = null;
+            st._schrittKlang = null;
         };
         // fährt sek Sekunden bei Tempo v; liefert Phase-Start (NACH dem
         // Anker-Tick bei t0) und Phase-Ende — die Soll-Schritte sind die
@@ -267,15 +265,15 @@ async function checkBandSchrittKlang({ page, check }) {
         o.schleichPhase = laufSchleich.ph1 - laufSchleich.ph0;
         o.checks.bSchleichNull = z().schritte === 0 && o.schleichPhase > 0;
         frisch();
-        s.isInAir = true; // Luft: Phase rückt weiter, aber kein Boden-Kontakt
+        st.isInAir = true; // Luft: Phase rückt weiter, aber kein Boden-Kontakt
         const laufLuft = fahre(6, 1.0, 500);
-        s.isInAir = false;
+        st.isInAir = false;
         o.luftPhase = laufLuft.ph1 - laufLuft.ph0;
         o.checks.bLuftNull = z().schritte === 0 && o.luftPhase > Math.PI;
         frisch();
-        s.playerUnderwater = true; // Schwimmen: die Schwimm-Phase rückt, kein Schritt
+        st.playerUnderwater = true; // Schwimmen: die Schwimm-Phase rückt, kein Schritt
         fahre(6, 1.0, 600);
-        s.playerUnderwater = false;
+        st.playerUnderwater = false;
         o.checks.bSchwimmNull = z().schritte === 0;
 
         // ── (C) der Deckel der Landung (das Timbre je Stoff misst die Stoff-Linse am Klang: gate:gegenstand-stoff --tafel) ──
@@ -288,7 +286,7 @@ async function checkBandSchrittKlang({ page, check }) {
             calls++;
             return true;
         };
-        const sym = s.symphony;
+        const sym = st.symphony;
         const savedSym = merk(sym, ["enabled", "ctx", "masterGain"]);
         sym.enabled = false;
         frisch();

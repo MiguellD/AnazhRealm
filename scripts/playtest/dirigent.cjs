@@ -192,7 +192,7 @@ async function checkBandV18278LoopErrorBoundary({ page, check }) {
 // NIE. `_nexusAdaptiveQuality(fps)` ist nur der fps-Eingang in DENSELBEN Regler.
 async function checkBandWellePerfENexusGovernor({ page, check }) {
     const res = await page.evaluate(() => {
-        const A = AnazhRealm; // window.AnazhRealm headless undefined (V18.259-Gotcha)
+        // die Klasse beim Namen AnazhRealm: window.AnazhRealm ist headless undefined (V18.259-Gotcha)
         const out = {};
         out.noGravityPflaster = window.__fehlt(r.selfAwarenessAnalyze, /gravity\s*\*=/);
         // KEIN Parallel-Governor mehr: selfAwarenessAnalyze ruft _nexusAdaptiveQuality NICHT.
@@ -210,20 +210,20 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
         st.perfRegulator = true;
         st.perfSense = r._perfSenseInit(); // sauberer Start (loadScale=1)
         const gBefore = st.gravity;
-        const L = A.PERF_LEVERS;
+        const L = AnazhRealm.PERF_LEVERS;
 
         // (1) ANHALTENDER FPS-DRUCK → der EINE Regler strafft ALLE Stellgrößen der Qualität (der Rand der Mesh-Zone ist ein
         // Wechsel-Abstand am Schirm, kein Stellglied — Regler-Sim S6).
         for (let i = 0; i < 90; i++) r._nexusAdaptiveQuality(15); // frameMs≈67 >> Soll
         out.tightenedBudget = st.architectureBuildBudgetPerFrame < 4;
         out.tightenedStream = st._voxelStreamBudgetMs < L.streamBudgetMs[1];
-        out.budgetFloor = st.architectureBuildBudgetPerFrame >= A.ARCH_QUALITY_BUDGET_MIN;
+        out.budgetFloor = st.architectureBuildBudgetPerFrame >= AnazhRealm.ARCH_QUALITY_BUDGET_MIN;
         out.gravityUntouchedLow = st.gravity === gBefore;
 
         // (2) FPS-LUFT (frameMs≈7 ≪ growMs) → relax zum MAXIMUM aller Stellgrößen. Viele Ticks: mit dem
         // Atem-Totband braucht der Integral-Term lange, bis loadScale auf 1.0 clampt (Gleichgewicht, err<0).
         for (let i = 0; i < 240; i++) r._nexusAdaptiveQuality(140);
-        out.relaxedBudget = st.architectureBuildBudgetPerFrame === A.ARCH_QUALITY_BUDGET_MAX;
+        out.relaxedBudget = st.architectureBuildBudgetPerFrame === AnazhRealm.ARCH_QUALITY_BUDGET_MAX;
         out.relaxedStream = Math.abs(st._voxelStreamBudgetMs - L.streamBudgetMs[1]) < 0.01;
         out.gravityUntouchedHigh = st.gravity === gBefore;
 
@@ -236,7 +236,7 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
         });
         const streamPos = (st._voxelStreamBudgetMs - L.streamBudgetMs[0]) / (L.streamBudgetMs[1] - L.streamBudgetMs[0]);
         const budgetPos = (b) =>
-            (b - A.ARCH_QUALITY_BUDGET_MIN) / (A.ARCH_QUALITY_BUDGET_MAX - A.ARCH_QUALITY_BUDGET_MIN);
+            (b - AnazhRealm.ARCH_QUALITY_BUDGET_MIN) / (AnazhRealm.ARCH_QUALITY_BUDGET_MAX - AnazhRealm.ARCH_QUALITY_BUDGET_MIN);
         const archPos = budgetPos(st.architectureBuildBudgetPerFrame);
         out.synergyStreamThrottledMore = streamPos < archPos - 0.1;
         out.synergyStreamPos = +streamPos.toFixed(2);
@@ -352,7 +352,7 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
         out.ceilingThrottles = st.perfSense.loadScale < 0.5;
         out.ceilingLoadScale = +st.perfSense.loadScale.toFixed(3);
         // der Passagier ist gekehrt: die toten Bang-Bang-Schwellen sind weg.
-        out.deadConstantsGone = A.ARCH_QUALITY_FPS_LOW === undefined && A.ARCH_QUALITY_FPS_HIGH === undefined;
+        out.deadConstantsGone = AnazhRealm.ARCH_QUALITY_FPS_LOW === undefined && AnazhRealm.ARCH_QUALITY_FPS_HIGH === undefined;
 
         st.perfSense = snap.sense;
         st.architectureCullingRadius = snap.radius;
@@ -646,10 +646,9 @@ async function checkBandV18165KonsoleHeil({ page, check }) {
 // durch, die Antennen läsen alte Werte) — fängt die ganze Getter-Schatten-Klasse.
 async function checkBandV18177AAA({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = AnazhRealm;
         const out = {};
         // LIVE-Werte (was die Antennen wirklich lesen), NICHT Source-Strings.
-        const aer = A.AERIAL || {};
+        const aer = AnazhRealm.AERIAL || {};
         out.microStrength = aer.microStrength;
         out.aoStrength = aer.aoStrength;
         out.aoCap = aer.aoCap;
@@ -657,7 +656,7 @@ async function checkBandV18177AAA({ page, check }) {
         // Doppel-Definitions-Wand: kein AKTIVER `static get AERIAL()` in der Klasse — gelesen am lebenden Deskriptor,
         // nie am Klassen-Text (der trüge nach dem Stamm-Schnitt nur den Kern): ein statischer Getter machte AERIAL zum
         // Accessor, und die §26-Zuweisung liefe im sloppy-Skript still ins Leere.
-        const dAerial = Object.getOwnPropertyDescriptor(A, "AERIAL") || {};
+        const dAerial = Object.getOwnPropertyDescriptor(AnazhRealm, "AERIAL") || {};
         out.noGetterShadow = "value" in dAerial && !dAerial.get;
         return out;
     });
@@ -681,7 +680,6 @@ async function checkBandV18177AAA({ page, check }) {
 // _tickCreatureScentStrike (wild-KI liest scent) · A4 applyOpToPart/applyWorkshopProcessToPart → Mana.
 async function checkBandV18210Verdrahtung({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = AnazhRealm;
         const out = {};
 
         // ============== A1: Γ7 WORLDGEN-HOOK ==============
@@ -698,7 +696,7 @@ async function checkBandV18210Verdrahtung({ page, check }) {
         // (A1e) ALLE N Varianten leben: über 8·N Seeds muss jeder Varianten-Bucket getroffen werden. Fängt
         // degenerierte Buckets (die fnv-1a-LOW-Bits sind mod 8 degeneriert → `_growTreeBlueprintForSpawn`
         // wählt mit den HOHEN Bits `hash >>> 24`).
-        const NVar = A.VARIANTS_PER_SPECIES;
+        const NVar = AnazhRealm.VARIANTS_PER_SPECIES;
         const keys = new Set();
         for (let s = 0; s < 8 * NVar; s++) {
             const k = r._growTreeBlueprintForSpawn("baum_eiche", 50000 + s);
@@ -1015,7 +1013,6 @@ async function checkBandRauschGesetz({ page, check }) {
     await page.evaluate(SK.SHADER_INSTALL);
     const res =
         (await safeEvaluate(page, () => {
-            const A = AnazhRealm;
             const out = {};
             const stoffe = [
                 "_terrainGeologyAlbedo",
@@ -1035,8 +1032,8 @@ async function checkBandRauschGesetz({ page, check }) {
             out.graph = window.__stoffGraph(st.voxelChunkMaterial);
             out.halm = window.__stoffGraph(r._foundryTreeMaterial("grass", null));
             // DIE ATLAS-BYTES: die MaterialX-Gradienten aus lookup3 (eigene Portierung), gepackt je Komponente × 4 Ecken
-            const P = A.RAUSCH_GESETZ.P;
-            const d = A._rauschAtlasDaten();
+            const P = AnazhRealm.RAUSCH_GESETZ.P;
+            const d = AnazhRealm._rauschAtlasDaten();
             const mxHash = window.mxLookup3; // die EINE Portierung (scripts/lib/shader-kosten.cjs, SHADER_INSTALL)
             // der Gradient als Wert der mx-Regel an den Einheits-Achsen: g = (grad(h,1,0,0), grad(h,0,1,0), grad(h,0,0,1))
             const mxGrad = (h, x, y, z) => {
@@ -1110,9 +1107,8 @@ async function checkBandRauschGesetz({ page, check }) {
 
 async function checkBandV18331ReplayDeterminism({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const s = st;
         const out = {};
-        if (!s.playerMesh || !s.playerVel) return out;
+        if (!st.playerMesh || !st.playerVel) return out;
         const DT = 1 / 60;
         const mkFrames = (seq) => {
             const fr = [];
@@ -1124,10 +1120,10 @@ async function checkBandV18331ReplayDeterminism({ page, check }) {
         const sy = r.getTerrainHeightAt(0, 0);
         const startY = (Number.isFinite(sy) ? sy : 5) + 2;
         // BÜHNE: die Ankunft der Welt (jeder Erst-Spawn auf 0/0), die Höhe aus dem Gesetz
-        s.playerMesh.position.set(0, startY, 0);
-        s.playerVel.setValue(0, 0, 0);
-        s._fieldVy = 0;
-        s.yaw = 0;
+        st.playerMesh.position.set(0, startY, 0);
+        st.playerVel.setValue(0, 0, 0);
+        st._fieldVy = 0;
+        st.yaw = 0;
         const start = r._replaySnapshotState();
         const framesA = mkFrames([
             [40, { w: true }],
@@ -1240,8 +1236,7 @@ async function checkBandPerfPanel({ page, check }) {
 // JEDEN Frame, Deko (prio ≥ 2) jeden 4.; K40 der Dauer-Strom: baut jeder Takt Terrain, läuft das Deko-Innere trotzdem jeden 4.
 async function checkBandExistenzBoden({ page, check }) {
     const out = await safeEvaluate(page, () => {
-        const s = st;
-        const pos = s.playerMesh.position;
+        const pos = st.playerMesh.position;
         const res = {};
         const leer = { remainingMs: () => 0 }; // die render-gebundene Maschine des Schöpfers
         const frameNo = r._schedFrameNo;
@@ -1255,14 +1250,14 @@ async function checkBandExistenzBoden({ page, check }) {
         }
         res.gesehen = gesehen;
         // (b) eine GEFÜLLTE Wasser-Queue schrumpft unter leerem Budget
-        if (!s.pendingWaterIso) s.pendingWaterIso = new Set();
-        for (const key of s.voxelChunks.keys()) {
-            s.pendingWaterIso.add(key);
-            if (s.pendingWaterIso.size >= 6) break;
+        if (!st.pendingWaterIso) st.pendingWaterIso = new Set();
+        for (const key of st.voxelChunks.keys()) {
+            st.pendingWaterIso.add(key);
+            if (st.pendingWaterIso.size >= 6) break;
         }
-        res.queueVor = s.pendingWaterIso.size;
-        for (let i = 0; i < 30 && s.pendingWaterIso.size > 0; i++) r._dispatchFrameJobs(r._buildDeferrableJobs(pos), leer);
-        res.queueNach = s.pendingWaterIso.size;
+        res.queueVor = st.pendingWaterIso.size;
+        for (let i = 0; i < 30 && st.pendingWaterIso.size > 0; i++) r._dispatchFrameJobs(r._buildDeferrableJobs(pos), leer);
+        res.queueNach = st.pendingWaterIso.size;
         // (c) SELBST-TEST: ein Sonde-Job prio 2 läuft auf einem Nicht-4er-Frame NICHT
         r._schedFrameNo = 1;
         let sondeLief = false;
@@ -1340,10 +1335,8 @@ async function checkBandGodray({ page, check }) {
 // Flugschreiber-Snapshot nennt `szeneSkala`.
 async function checkBandSzeneSkala({ page, check }) {
     const o = await safeEvaluate(page, () => {
-        const THREE = window.THREE;
-        const K = AnazhRealm;
-        const LAYER = K.FOLIAGE_LAYER;
-        const out = { MIN: K.SZENE_SKALA_MIN, SKALA: K.SZENE_SKALA };
+        const LAYER = AnazhRealm.FOLIAGE_LAYER;
+        const out = { MIN: AnazhRealm.SZENE_SKALA_MIN, SKALA: AnazhRealm.SZENE_SKALA };
         // (1) die EINE Szenen-Skala
         const traaWar = st._traa;
         const skWar = st.szeneSkala;

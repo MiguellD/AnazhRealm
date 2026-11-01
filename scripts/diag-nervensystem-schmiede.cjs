@@ -101,7 +101,6 @@ hauptLauf(async () => {
     const W = { bp: "klinge_langschwert", donor: "geraet_schwert", preset: "langschwert", entry: "klinge_spitzhacke", praefix: "klinge_", wahl: 2, name: "eine Klinge", art: "weapon", anzahl: 22, teile: 4, label: "Langschwert", place: { mode: "hand", dispatch: null } };
     const [eps, out] = await kernStufen.epsilonDraht(server, PORT, W, check, async () => {
         const res = { b: {}, d: {}, h: {} };
-        const A = AnazhRealm;
         const f = r._ensureAssetFoundry();
         const weapon = Object.values(f.recipes).filter((x) => x && x.kind === "weapon");
         res.b.toolCount = weapon.filter((x) => x.fx && x.fx.tool).length;
@@ -109,7 +108,7 @@ hauptLauf(async () => {
         // ===== D (dazu): die Werkzeug-Klasse dockt ueber donorTool (geraet_spitzhacke-Substanz), die Rollen =====
         try {
             const B = st.blueprints || {};
-            const KS = A.KIND_SUBSTANCE || {};
+            const KS = AnazhRealm.KIND_SUBSTANCE || {};
             res.d.spitzAbsent = !B.geraet_spitzhacke;
             res.d.substanzSpitz = KS.geraet_spitzhacke && Array.isArray(KS.geraet_spitzhacke.parts) ? KS.geraet_spitzhacke.parts.length : 0;
             res.d.weaponRole = B.klinge_langschwert ? r.computeBlueprintRole(B.klinge_langschwert) : null;

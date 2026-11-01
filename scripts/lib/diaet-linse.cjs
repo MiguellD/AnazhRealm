@@ -10,7 +10,6 @@
 
 // DER ZÄHLER (die Werkbank-Linse und gate:kamera-treue STAND).
 function diaetZaehler() {
-    const A = AnazhRealm;
     const rend = st.renderer;
     const be = rend.backend;
     const nf = rend._nodes.nodeFrame;
@@ -85,7 +84,7 @@ function diaetZaehler() {
         zaehle("gang" + art);
         if (v > 1) zaehle("wiederholt" + art);
     };
-    haken("refresh", A, "_diaetRefresh", function (obs, ro, frame, altNR) {
+    haken("refresh", AnazhRealm, "_diaetRefresh", function (obs, ro, frame, altNR) {
         const v = rahmen("pruef", () => roh.refresh(obs, ro, frame, altNR));
         zaehle("pruef");
         if (c && ro.attributes === null && ro.vertexBuffers) {
@@ -101,7 +100,7 @@ function diaetZaehler() {
         return v;
     });
     const bekannt = new WeakSet();
-    haken("vt", A, "_diaetVorTextur", function (ro) {
+    haken("vt", AnazhRealm, "_diaetVorTextur", function (ro) {
         zaehle("pruefVoll");
         if (c && ro._anazhObs === undefined && bekannt.has(ro)) {
             zaehle("ohneMeldung");
@@ -110,7 +109,7 @@ function diaetZaehler() {
         bekannt.add(ro);
         return roh.vt.call(this, ro);
     });
-    haken("ruhig", A, "_diaetRuhig", function (obs, ro, rr, rid) {
+    haken("ruhig", AnazhRealm, "_diaetRuhig", function (obs, ro, rr, rid) {
         const v = roh.ruhig.call(this, obs, ro, rr, rid);
         zaehle(ro._anazhBeweglich ? "lageVergleich" : "lageStatisch");
         if (c && v && !ro._anazhBeweglich && ro._anazhOd.worldMatrix.equals(ro.object.matrixWorld) !== true) {
@@ -119,7 +118,7 @@ function diaetZaehler() {
         }
         return v;
     });
-    haken("schreib", A, "_diaetGeteiltSchreiben", function (rr, ro, rid) {
+    haken("schreib", AnazhRealm, "_diaetGeteiltSchreiben", function (rr, ro, rid) {
         imGang++;
         try {
             return rahmen("gang", () => roh.schreib(rr, ro, rid));
@@ -135,7 +134,7 @@ function diaetZaehler() {
         n.object != null &&
         n.count === null &&
         !!(n.node && n.node.groupNode && n.node.groupNode.shared === true);
-    haken("og", A, "_diaetObjektGang", function (...a) {
+    haken("og", AnazhRealm, "_diaetObjektGang", function (...a) {
         imOG++;
         try {
             return rahmen("objektGang", () => roh.og.apply(this, a));

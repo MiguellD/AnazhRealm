@@ -56,10 +56,9 @@ hauptLauf(async () => {
     const out = await page.evaluate(async () => {
         const res = {};
         await window.__weltDa();
-        const AR = AnazhRealm;
         const f = r._ensureAssetFoundry();
-        await window.__weltDa(() => f && f.ready && f.recipes && AR._studioRenderConfig && AR._studioRenderConfig.lod);
-        const cfg = AR._studioRenderConfig;
+        await window.__weltDa(() => f && f.ready && f.recipes && AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod);
+        const cfg = AnazhRealm._studioRenderConfig;
         const B = cfg && cfg.lod && cfg.lod.budget;
         res.buch = !!B;
         if (!B) return res;
@@ -70,7 +69,7 @@ hauptLauf(async () => {
         // Die Gesetz-Bahn öffnen (Linsen-Naht: der Null-Renderer zeichnet den Welt-March nie, seine Kapsel-Liste ist
         // CPU-Daten) — die Plätze werden wirklich belegt, D misst die echte Füllung.
         r._weltMarchGezeichnet = () => true;
-        const N = AR.ANALOG_NAH_M;
+        const N = AnazhRealm.ANALOG_NAH_M;
         const TOT = 8; // das Totband des LOD-Ticks (Mesh → Fernform erst 8 m hinter der Grenze)
         res.grenze = N;
 
@@ -218,7 +217,7 @@ hauptLauf(async () => {
             res.d = {
                 voll: r._weltKapselnVollWarn === true || !!(wm && wm.kapselVoll),
                 cursor: wm ? wm.kapselCursor : -1,
-                kapazitaet: AR.WELT_MARCH.kapseln,
+                kapazitaet: AnazhRealm.WELT_MARCH.kapseln,
                 plaetze: wm ? wm.gesetzPlaetze : -1,
                 bloecke: wm ? wm.gesetzBloecke : -1,
                 wartet: wartend(),
@@ -385,7 +384,7 @@ hauptLauf(async () => {
                     0,
                     1,
                     null,
-                    Math.floor((pm.x + 200) / AR.SCATTER.regionM) + "," + Math.floor(pm.z / AR.SCATTER.regionM),
+                    Math.floor((pm.x + 200) / AnazhRealm.SCATTER.regionM) + "," + Math.floor(pm.z / AnazhRealm.SCATTER.regionM),
                     flat
                 );
                 const mit = absenz();
@@ -426,7 +425,7 @@ hauptLauf(async () => {
                         b.freiPlaetze = [];
                     }
                 wm.freiKapselSeg = new Map();
-                wm.kapselCursor = AR.WELT_MARCH.kapseln;
+                wm.kapselCursor = AnazhRealm.WELT_MARCH.kapseln;
                 wm.kapselVoll = false;
                 r._weltKapselnVollWarn = false;
                 r._weltBakeHunger = Infinity;

@@ -379,18 +379,17 @@ hauptLauf(async () => {
                 };
                 // ── K: die Karten in der Wahl (W7) — Linsen-Kameras über den 16 Karten (die Fixtur liegt fern jeder Welt-Karte).
                 {
-                    const T = window.THREE;
                     const g = r.state.archInstanceGroups.get(G);
                     const S = r._kaskadenSchmier();
                     const fixtur = new Set(alleK.flat());
                     const blick = (x, y, z, lx, ly, lz, fov = 30, aspekt = 1) => {
-                        const cam = new T.PerspectiveCamera(fov, aspekt, 1, 6000);
+                        const cam = new THREE.PerspectiveCamera(fov, aspekt, 1, 6000);
                         cam.position.set(x, y, z);
                         cam.lookAt(lx, ly, lz);
                         cam.updateMatrixWorld(true);
                         cam.updateProjectionMatrix();
                         S.frustum.setFromProjectionMatrix(
-                            new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse),
+                            new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse),
                             cam.coordinateSystem
                         );
                         r._passWahlLage(S, cam, -1);

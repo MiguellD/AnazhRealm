@@ -176,7 +176,7 @@ hauptLauf(async () => {
             const phantom = new window.THREE.Group();
             // BÜHNE: ein Phantom-Objekt ohne Boden (Entsorgungs-Mechanik)
             phantom.position.set(44, 6, -44);
-            r.state.buildMode = {
+            st.buildMode = {
                 active: true,
                 blueprintName: "stein_block",
                 phantomMesh: phantom,
@@ -184,7 +184,7 @@ hauptLauf(async () => {
             };
             r.confirmBuild();
             r._clearBuildMode();
-            const arches = r.state.architectures;
+            const arches = st.architectures;
             return arches.length ? arches[arches.length - 1].id : null;
         });
         check("A: Struktur gebaut + geteilte archId vergeben", typeof archId === "string", String(archId));
@@ -269,7 +269,7 @@ hauptLauf(async () => {
         await pageA.evaluate(() => {
             r._p2pVoiceCapable = () => true; // im Test: A „hat" ein LLM
             r.llmCall = async () => ({ say: "Antwort aus A's Stimme", program: null });
-            r.state.p2p.voiceShared = true;
+            st.p2p.voiceShared = true;
             r._p2pBroadcastSoul(); // voiceShared an B verteilen
         });
         await waitFor(
@@ -296,15 +296,15 @@ hauptLauf(async () => {
         // Welt-Snapshot über das Mesh. A wird Host, B Guest;
         // B holt A's Welt in Stücken über den DataChannel (kein WS-Relay).
         const worldIdA = await pageA.evaluate(() => {
-            r.state.p2p.role = "host";
-            r.state.worldMeta.role = "host";
+            st.p2p.role = "host";
+            st.worldMeta.role = "host";
             r._p2pBroadcastSoul(); // worldRole=host an B verteilen
-            return r.state.worldMeta.worldId;
+            return st.worldMeta.worldId;
         });
         await pageB.evaluate(() => {
-            r.state.p2p.role = "guest";
-            r.state.worldMeta.role = "guest";
-            r.state.p2p._testNoReload = true; // im Test nicht neu laden
+            st.p2p.role = "guest";
+            st.worldMeta.role = "guest";
+            st.p2p._testNoReload = true; // im Test nicht neu laden
         });
         // B muss A's Welt-Rolle (host) über den soul-Kanal erfahren.
         await waitFor(
@@ -477,7 +477,7 @@ hauptLauf(async () => {
             if (!obt.ok) return null;
             // Die Skelett-Welt ist nicht von Haus aus multiplayer — fürs Test
             // setzen, dass A's Portal ein Multiplayer-Tor ist.
-            r.state.blueprints["portal_skeleton"].portalMeta.multiplayer = true;
+            st.blueprints["portal_skeleton"].portalMeta.multiplayer = true;
             r.enterPortal({ type: "portal_skeleton", affordances: { isPortal: true } });
             return r._portalOverlay ? r._portalOverlay.world : null;
         });

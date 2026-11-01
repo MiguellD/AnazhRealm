@@ -236,25 +236,24 @@ function sammlerInstall() {
 // Pipeline), unsichtbar (ohne Farbe, ohne Tiefe) und ohne Abfrage in die Szene gehängt, damit ihre Pipelines bauen, während
 // der Ablauf fährt. B und G opak am Anfang der Liste, L durchsichtig am Ende.
 function stationenVorbau() {
-    const T = window.THREE;
     const stoff = (k, durchsichtig) => {
-        const m = new T.MeshBasicNodeMaterial({ transparent: durchsichtig });
-        m.colorNode = T.TSL.vec4(T.TSL.float(k), 0, 0, 1);
+        const m = new THREE.MeshBasicNodeMaterial({ transparent: durchsichtig });
+        m.colorNode = THREE.TSL.vec4(THREE.TSL.float(k), 0, 0, 1);
         m.colorWrite = false;
         m.depthWrite = false;
         return m;
     };
     const kasten = (name, m, ordnung) => {
-        const q = new T.Mesh(new T.BoxGeometry(0.5, 0.5, 0.5), m);
+        const q = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), m);
         q.name = name;
         q.frustumCulled = false;
         q.renderOrder = ordnung;
         st.scene.add(q);
         return q;
     };
-    const lm = new T.MeshBasicNodeMaterial();
-    lm.colorNode = T.TSL.vec4(T.TSL.vec3(r._szeneTiefe()), 1);
-    const leser = new T.Mesh(new T.PlaneGeometry(0.4, 0.4), lm);
+    const lm = new THREE.MeshBasicNodeMaterial();
+    lm.colorNode = THREE.TSL.vec4(THREE.TSL.vec3(r._szeneTiefe()), 1);
+    const leser = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.4), lm);
     leser.name = "verdeckung:tiefen-leser";
     leser.frustumCulled = false;
     leser.renderOrder = -1e6 + 1;
@@ -271,7 +270,6 @@ function stationenVorbau() {
 
 // Seite: die Phasen der Linse. `opts.phase` = ablauf | bruch | gift | letzter, `opts.roh` = die drei Hüllen abnehmen.
 async function verdeckungPhase(opts) {
-    const T = window.THREE;
     const rend = st.renderer;
     const be = rend.backend;
     const S = window.__verdeckung;
@@ -419,8 +417,7 @@ async function verdeckungPhase(opts) {
                 uz = P.z + nz * (s + 10);
             aus.bach = { x: Math.round(P.x), z: Math.round(P.z), ufer: s, start: [Math.round(ux), Math.round(uz)] };
             // ein Region-Bündel jenseits des Bachs: der Berg-Cull baut seinen Stellvertreter (Probe jeden queryTakt-ten Frame)
-            const KL = AnazhRealm;
-            const R = KL.ARCH_REGION_M;
+            const R = AnazhRealm.ARCH_REGION_M;
             const fx = P.x - nx * 700,
                 fz = P.z - nz * 700;
             const key = Math.floor(fx / R) + "," + Math.floor(fz / R);
@@ -434,7 +431,7 @@ async function verdeckungPhase(opts) {
                     st._regionBundles.delete(key);
                 }
             });
-            aus.takt = KL.BERG_CULL.queryTakt;
+            aus.takt = AnazhRealm.BERG_CULL.queryTakt;
             // der Ort steht: der Spieler am Ufer, die Welt zieht nach (Chunks, Wasser) — Takte ohne Warten (die Leine setzt
             // den Render aus, das Streamen läuft)
             st.playerMesh.position.set(ux, hh(ux, uz) + 1.2, uz);
@@ -524,9 +521,9 @@ async function verdeckungPhase(opts) {
             // je Station zeichnet nur IHR Kasten (die anderen trügen dieselbe Ordnung und schlössen die Abfrage dazwischen)
             for (const k of ["bruch", "gift", "letzter"]) stn[k].visible = false;
             const stelle = () => {
-                q.position.copy(new T.Vector3(0, 0, -3).applyQuaternion(cam.quaternion).add(cam.position));
+                q.position.copy(new THREE.Vector3(0, 0, -3).applyQuaternion(cam.quaternion).add(cam.position));
                 if (l) {
-                    l.position.copy(new T.Vector3(0.6, -0.4, -3.5).applyQuaternion(cam.quaternion).add(cam.position));
+                    l.position.copy(new THREE.Vector3(0.6, -0.4, -3.5).applyQuaternion(cam.quaternion).add(cam.position));
                     l.quaternion.copy(cam.quaternion);
                 }
             };

@@ -91,7 +91,6 @@ function proben(inj) {
     /* global buildDorf, dorfB, solids, promoteB, demoteB, player, keys, walkUpdate, dorfGroup, dorfCellars, dorf,
        STEP, PH, overlap, dorfBodenY */
     const out = { fehler: null };
-    const T = window.THREE;
     // ── B6 Epochen: Antike × 18/40/120 baut (die städtische Antike stürzte an `wm is not defined` ab, 3 von 3) ──
     const b6Lauf = () => {
         const b6 = { faelle: [] };
@@ -163,7 +162,7 @@ function proben(inj) {
     };
     // die Lab-Blickrichtung: vorwärts = (−sin yaw, −cos yaw)
     const yawZu = (dx, dz) => Math.atan2(-dx, -dz);
-    const ray = new T.Raycaster();
+    const ray = new THREE.Raycaster();
     // ── B1/B2/B3: Promotion · Tür · Treppen · Demotion ──
     const kandidaten = [];
     for (let bi = 0; bi < dorfB.length; bi++) if (dorfB[bi].lod === "chunk") kandidaten.push(bi);
@@ -228,7 +227,7 @@ function proben(inj) {
                 let kopfraum = null;
                 const klemm = laufe(300, yawZu(zi.x - st.x, zi.z - st.z), () => {
                     if (kopfraum !== null || !(player.pos.y - y0 >= 0.9 * soll)) return;
-                    ray.set(new T.Vector3(player.pos.x, player.pos.y + 0.3, player.pos.z), new T.Vector3(0, 1, 0));
+                    ray.set(new THREE.Vector3(player.pos.x, player.pos.y + 0.3, player.pos.z), new THREE.Vector3(0, 1, 0));
                     const h = ray.intersectObject(dorfGroup, true).find((x) => x.object.visible !== false);
                     kopfraum = h ? +(h.distance + 0.3).toFixed(2) : 99;
                 });
@@ -262,7 +261,7 @@ function proben(inj) {
     if (inj === "platte") {
         for (const bi of keller) {
             const B = dorfB[bi];
-            const g = new T.Mesh(new T.BoxGeometry(80, 0.3, 80), new T.MeshBasicMaterial());
+            const g = new THREE.Mesh(new THREE.BoxGeometry(80, 0.3, 80), new THREE.MeshBasicMaterial());
             g.position.set(B.q.x, B.q.y - 0.17, B.q.z);
             g.userData.basisPlatte = true;
             dorfGroup.add(g);
@@ -276,7 +275,7 @@ function proben(inj) {
         b4.keller++;
         const B = dorfB[bi];
         const m = welt(B, (kc.x0 + kc.x1) / 2 + 0.3, (kc.z0 + kc.z1) / 2 + 0.3);
-        ray.set(new T.Vector3(m.x, kc.floorY + 1.0, m.z), new T.Vector3(0, 1, 0));
+        ray.set(new THREE.Vector3(m.x, kc.floorY + 1.0, m.z), new THREE.Vector3(0, 1, 0));
         const hit = ray.intersectObject(dorfGroup, true).find((h) => h.object.visible !== false);
         if (hit && istBodenPlatte(hit.object)) b4.platteDecke++;
     }
@@ -328,7 +327,7 @@ function proben(inj) {
     for (let i = 0; i < 600 && b5.strahlen < 150; i++) {
         const x = W.x0 + (W.x1 - W.x0) * ((i * 0.618034) % 1);
         const z = W.z0 + (W.z1 - W.z0) * ((i * 0.381966 + 0.5) % 1);
-        ray.set(new T.Vector3(x, 900, z), new T.Vector3(0, -1, 0));
+        ray.set(new THREE.Vector3(x, 900, z), new THREE.Vector3(0, -1, 0));
         const hit = ray.intersectObject(dorfGroup, true).find((h) => h.object.visible !== false);
         if (!hit || hit.object !== boden) continue;
         b5.strahlen++;

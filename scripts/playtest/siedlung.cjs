@@ -1315,12 +1315,11 @@ async function checkBandArchetypBank({ page, check }) {
 async function checkBandLambda2HismSynthese({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
-        const A = AnazhRealm;
-        out.instanceTintFrozen = Object.isFrozen(A.INSTANCE_TINT);
+        out.instanceTintFrozen = Object.isFrozen(AnazhRealm.INSTANCE_TINT);
         out.instanceTintShape =
-            Number.isFinite(A.INSTANCE_TINT.rangeH) &&
-            Number.isFinite(A.INSTANCE_TINT.rangeS) &&
-            Number.isFinite(A.INSTANCE_TINT.rangeV);
+            Number.isFinite(AnazhRealm.INSTANCE_TINT.rangeH) &&
+            Number.isFinite(AnazhRealm.INSTANCE_TINT.rangeS) &&
+            Number.isFinite(AnazhRealm.INSTANCE_TINT.rangeV);
         // 50 baum_eiche mit verschiedenen Seeds; tintH/S/V sammeln (Λ.2: seed-deterministisch aus Bit-
         // Bändern in spawnArchitecture). Yaw-σ (_vegetationSampleSpawn via opts.rotationY) prüft die
         // checkBandWHWald-Familie, nicht dieses Band.

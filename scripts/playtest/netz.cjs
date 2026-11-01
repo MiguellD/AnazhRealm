@@ -1033,10 +1033,9 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
 // Welt-Snapshot oder Portal-Payload (GEMESSEN-schon-wahr, jetzt eingefroren).
 async function checkBandG8R0Sovereign({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const K = AnazhRealm;
         const out = {};
         // (1) SOVEREIGN_STATE benannt + eingefroren + die kanonischen Schlüssel.
-        const S = K.SOVEREIGN_STATE;
+        const S = AnazhRealm.SOVEREIGN_STATE;
         out.frozen =
             !!S && Object.isFrozen(S) && Object.isFrozen(S.excludedStateKeys) && Object.isFrozen(S.privateFields);
         out.namesRing =
@@ -1096,10 +1095,9 @@ async function checkBandG8R0Sovereign({ page, check }) {
 // souveränen Akt).
 async function checkBandG8R4Immunity({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const K = AnazhRealm;
         const out = {};
         // (1) revokedKeys benannt im innersten Ring + NIE im Snapshot.
-        out.revokedInRing = K.SOVEREIGN_STATE.excludedStateKeys.includes("revokedKeys");
+        out.revokedInRing = AnazhRealm.SOVEREIGN_STATE.excludedStateKeys.includes("revokedKeys");
         out.revokedNotInSnapshot = JSON.stringify(r.buildStateSnapshot()).indexOf("revokedKeys") < 0;
         // Zustand sichern, den wir mutieren. revokedKeys ist eine Map → echte Map-Kopie; ein
         // Object.assign-Klon ergäbe {} und der Restore bräche das nächste .set().
@@ -1228,7 +1226,6 @@ async function checkBandG8R5LivingImmune({ page, check }) {
 // ein revoziertes Ketten-Glied → Rolle lokal emergiert, Portal sanitisiert, Klemme am Leser, Sieb.
 async function checkBandTailleOmega3({ page, check }) {
     const res = await safeEvaluate(page, async () => {
-        const C = AnazhRealm;
         const out = {};
         const KEVIL = "ef".repeat(32);
         const savedRevoked = st.revokedKeys;
@@ -1308,7 +1305,7 @@ async function checkBandTailleOmega3({ page, check }) {
         out.matMagnitudeKept = st.materials["o3_gott"] && st.materials["o3_gott"].tags["härte"] === 1e6;
         const fit = r._harvestFitnessFromResist(r._architectureResistance({ type: "o3_mauer" }));
         out.wallBreakable = !!mauer && fit.fit > 0.01;
-        out.ceilFrozen = Object.isFrozen(C.MATERIAL_TAG_CEIL) && C.MATERIAL_TAG_CEIL["härte"] === 2;
+        out.ceilFrozen = Object.isFrozen(AnazhRealm.MATERIAL_TAG_CEIL) && AnazhRealm.MATERIAL_TAG_CEIL["härte"] === 2;
         // (4) das Rückruf-Sieb AM EINGANG: das Vergiftete kam NIE in den state.
         out.taintedFellAtGate = gift === undefined;
         // (5) die Tool-Wand: opClass-Müll fällt, das valide Werkzeug lebt.

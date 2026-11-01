@@ -71,10 +71,8 @@ const SCHLUPF = (spur, leib, ab, bein, uhr) => {
 // Knochen-Puffer an Band, Phase und Gewicht × Instanz-Matrix, die Uhr ist die Phase der Instanz. Mit `g` geht es unter der
 // Schwere g der Welt (state.gravity; v̂ misst mit ihr — die DSL setzt sie, die Zeile des Tiers muss sie lesen).
 const LAUF = (k) => {
-    const s = st;
-    const T = window.THREE;
     const core = window.__tetrapodaCore;
-    const [echt, wahl, g0] = [core.gangSchritt, AnazhRealm._gangWahl, s.gravity];
+    const [echt, wahl, g0] = [core.gangSchritt, AnazhRealm._gangWahl, st.gravity];
     // die Täter des Selbsttests (`taeter`): der Vor-Welle-Gang (fester Takt, feste Auslenkung) · der Satz wählt ohne das
     // Gedächtnis des Leibs (das rohe Tempo ohne die Gangart des Vor-Takts — so trabte vor `_gangWahl` jedes anlaufende
     // Satz-Tier bei Fr 0,55) · die Zeile des Tiers ohne die Schwere der Welt
@@ -82,14 +80,14 @@ const LAUF = (k) => {
         core.gangSchritt = () => ({ omega: 3.2, S: 0.06, schritt: 0.12, tast: 0.5, folge: core.GANG_FOLGE.trab });
     if (k.taeter === "satz") AnazhRealm._gangWahl = (g, v, dt, l, L, Z) => echt(v || 0, L, Z);
     if (k.taeter === "schwere") r._gangZeile = () => undefined;
-    if (k.g) s.gravity = -k.g;
-    const pm = s.playerMesh.position;
+    if (k.g) st.gravity = -k.g;
+    const pm = st.playerMesh.position;
     const x0 = pm.x + 40,
         z0 = pm.z + 40;
-    const saveMax = s.maxCreatures;
-    s.maxCreatures = Math.max(saveMax || 0, s.creatures.length + 4);
+    const saveMax = st.maxCreatures;
+    st.maxCreatures = Math.max(saveMax || 0, st.creatures.length + 4);
     const cr = r.spawnCreatureAt(x0, 30, z0, "happy", k.seele, { precise: true, bodySize: 1 });
-    s.maxCreatures = saveMax;
+    st.maxCreatures = saveMax;
     try {
         if (!cr) return { fehler: "Spawn " + k.seele };
         cr.userData.task = { name: "wait", args: {}, since: 0 };
@@ -105,12 +103,12 @@ const LAUF = (k) => {
         cr.updateMatrixWorld(true);
         const boden = cr.position.y;
         const lokal = pfoten.map((p) => {
-            const w = new T.Vector3().setFromMatrixPosition(p.matrixWorld);
+            const w = new THREE.Vector3().setFromMatrixPosition(p.matrixWorld);
             w.y = boden;
             return p.worldToLocal(w.clone());
         });
-        const hueft = new T.Vector3().setFromMatrixPosition(Tt.legHL.matrixWorld).y - boden;
-        const v = k.vh * Math.sqrt(-s.gravity * tb.beinL * (cr.scale.x || 1));
+        const hueft = new THREE.Vector3().setFromMatrixPosition(Tt.legHL.matrixWorld).y - boden;
+        const v = k.vh * Math.sqrt(-st.gravity * tb.beinL * (cr.scale.x || 1));
         const satz = k.satz && r._tierSatzFuer(cr);
         if (satz && !satz.fertig) r._tierSatzBacken(satz, 1e6);
         if (k.satz && !(satz && satz.fertig)) return { fehler: "kein Satz für " + k.seele };
@@ -120,17 +118,17 @@ const LAUF = (k) => {
         const ecken = (S ? pfoten : []).map((p, j) => {
             const e = S.knochen.findIndex((x) => x.nm === p.name);
             const { q, j: b } = S.knochen[e];
-            const m = new T.Matrix4().multiplyMatrices(q.m.skeleton.boneInverses[b], q.m.bindMatrix);
+            const m = new THREE.Matrix4().multiplyMatrices(q.m.skeleton.boneInverses[b], q.m.bindMatrix);
             return [e, lokal[j].clone().applyMatrix4(m.invert())];
         });
         const P = (z, [e, v]) =>
-            new T.Vector3(
+            new THREE.Vector3(
                 ...[0, 1, 2].map((i) =>
                     [v.x, v.y, v.z, 1].reduce((a, q, c) => a + q * S.tex.image.data[((z * S.J + e) * 3 + i) * 4 + c], 0)
                 )
             );
         if (satz) r._tierSatzEin(cr, satz);
-        const m4 = new T.Matrix4();
+        const m4 = new THREE.Matrix4();
         // Frame-Takt und Raten-Leiter: je Frame zieht der Leib weiter, ausgewertet (und gemessen) wird, wenn die ECHTE
         // Leiter (_creatureAnimDiv mit dem Takt des Gangs) es will — im Band ihrer Stufe 1/4 (0,8 × Fern-Distanz).
         const dt = 1 / (k.fps || 60),
@@ -190,7 +188,7 @@ const LAUF = (k) => {
             ...window.__schlupf(spur, leib, 60, hueft, uhr), // nach 60 Takten Einschwingen
         };
     } finally {
-        [core.gangSchritt, AnazhRealm._gangWahl, s.gravity] = [echt, wahl, g0];
+        [core.gangSchritt, AnazhRealm._gangWahl, st.gravity] = [echt, wahl, g0];
         delete r._gangZeile;
         if (cr) r.removeCreature(cr);
     }
@@ -204,13 +202,10 @@ const LAUF = (k) => {
 // Gang-Phase je Sekunde, Soll ≥ 1,5 beim Gehen) und die Schritt-Töne (state._schrittKlang.schritte) gegen 2·v·t/Λ, Λ der
 // Doppelschritt des Chokepoints (jeder Schritt klingt).
 const LEIB = (k) => {
-    const s = st,
-        A = AnazhRealm;
-    const T = window.THREE;
     const core = window.__tetrapodaCore;
-    const p = s.player;
-    if (!s.playerMesh.userData.rig) r.applyPlayerSoul("human");
-    const mesh = s.playerMesh;
+    const p = st.player;
+    if (!st.playerMesh.userData.rig) r.applyPlayerSoul("human");
+    const mesh = st.playerMesh;
     const rig = mesh.userData.rig;
     if (!rig) return { fehler: "Spieler ohne Rig" };
     if (k.stub) {
@@ -222,26 +217,26 @@ const LEIB = (k) => {
                 : { omega: 0, S: 0, schritt: 0, tast: 0.5 };
     }
     const gespeichert = {
-        vel: s.playerVel,
-        uw: s.playerUnderwater,
+        vel: st.playerVel,
+        uw: st.playerUnderwater,
         arch: p.mountedArch,
-        luft: s.isInAir,
-        tr: s._kapselTraegerY,
-        st: s._kapselStruktur,
+        luft: st.isInAir,
+        tr: st._kapselTraegerY,
+        st: st._kapselStruktur,
     };
     const pos0 = mesh.position.clone(),
         rot0 = mesh.rotation.y;
-    s.playerUnderwater = false;
+    st.playerUnderwater = false;
     p.mountedArch = null;
-    s.isInAir = false;
+    st.isInAir = false;
     let vx = 0;
-    s.playerVel = { x: () => vx, z: () => 0, y: () => 0 };
+    st.playerVel = { x: () => vx, z: () => 0, y: () => 0 };
     // ein ebener Ort fern jedes gebauten Chunks: der Stand-Leser trägt dort den Träger
     mesh.position.set(pos0.x + 4000, 50, pos0.z + 4000);
     mesh.rotation.y = Math.PI / 2; // Blick +x
-    const sohle = () => mesh.position.y - A.PLAYER_FOOT_OFFSET;
-    s._kapselTraegerY = sohle();
-    s._kapselStruktur = false;
+    const sohle = () => mesh.position.y - AnazhRealm.PLAYER_FOOT_OFFSET;
+    st._kapselTraegerY = sohle();
+    st._kapselStruktur = false;
     let t = 1000;
     const dt = 1 / 60;
     p.animationLastTick = -Infinity;
@@ -249,7 +244,7 @@ const LEIB = (k) => {
     mesh.updateMatrixWorld(true);
     const knoechel = [rig.legL.ankle, rig.legR.ankle];
     const lokal = knoechel.map((a) => {
-        const w = new T.Vector3().setFromMatrixPosition(a.matrixWorld);
+        const w = new THREE.Vector3().setFromMatrixPosition(a.matrixWorld);
         w.y = sohle();
         return a.worldToLocal(w.clone());
     });
@@ -259,7 +254,7 @@ const LEIB = (k) => {
     const zeileB = r._gangZeile(true);
     const massB = r._gaitBeinMass(rig);
     const ballenL = zeileB && zeileB.ballen > 0 ? zeileB.ballen * core.gangReich(massB.l1 + massB.l2) : 0;
-    const lokalB = lokal.map((v) => v.clone().add(new T.Vector3(0, 0, ballenL)));
+    const lokalB = lokal.map((v) => v.clone().add(new THREE.Vector3(0, 0, ballenL)));
     const beinM = massB.L;
     // die LOCK-LÖSER: je Takt und Bein, das im Stand-Fenster des Gesetzes geht (w ≥ 0,35) — trug es den Lock und
     // trägt es ihn danach nicht mehr, hat die Fuß-IK den stehenden Fuß gelöst
@@ -279,9 +274,9 @@ const LEIB = (k) => {
         }
         return out;
     };
-    const hw = new T.Vector3();
+    const hw = new THREE.Vector3();
     const huefte = () => (rig.hips.getWorldPosition(hw), hw.y - sohle());
-    const klang = () => (s._schrittKlang ? s._schrittKlang.schritte : 0);
+    const klang = () => (st._schrittKlang ? st._schrittKlang.schritte : 0);
     const ruheH = huefte();
     const zeilen = [];
     for (const [name, v] of [
@@ -344,12 +339,12 @@ const LEIB = (k) => {
     }
     r._gaitLegIK = ikAlt;
     if (k.stub) core.gangSchritt = window.__gangEcht;
-    s.playerVel = gespeichert.vel;
-    s.playerUnderwater = gespeichert.uw;
+    st.playerVel = gespeichert.vel;
+    st.playerUnderwater = gespeichert.uw;
     p.mountedArch = gespeichert.arch;
-    s.isInAir = gespeichert.luft;
-    s._kapselTraegerY = gespeichert.tr;
-    s._kapselStruktur = gespeichert.st;
+    st.isInAir = gespeichert.luft;
+    st._kapselTraegerY = gespeichert.tr;
+    st._kapselStruktur = gespeichert.st;
     mesh.position.copy(pos0);
     mesh.rotation.y = rot0;
     const taeter = "_gaitGesetz (fx.bewegung.gang)";
@@ -371,12 +366,10 @@ const LEIB = (k) => {
 // Takt-Quotient im Schritt, den der Bein-Winkel bei jeder Schwere gleich deckelt. --selftest: die Zeile ohne die Schwere der
 // Welt (der Vor-K07-Gang) → ROT.
 const SCHWERE = (k) => {
-    const s = st,
-        A = AnazhRealm;
     const core = window.__tetrapodaCore;
     const G_MOND = 1.62;
-    const rig = s.playerMesh.userData.rig;
-    const block = A._bewegungsBlock("gang", A.GANG_FELDER);
+    const rig = st.playerMesh.userData.rig;
+    const block = AnazhRealm._bewegungsBlock("gang", AnazhRealm.GANG_FELDER);
     const zeileEcht = r._gangZeile;
     if (k.stub) r._gangZeile = (mensch) => (mensch ? block : undefined);
     const beckenEcht = core.gangBecken;
@@ -386,17 +379,17 @@ const SCHWERE = (k) => {
         beckenG.push(Z && typeof Z.g === "number" ? Z.g : null);
         return beckenEcht.apply(this, a);
     };
-    const g0 = s.gravity;
+    const g0 = st.gravity;
     const o = {};
     try {
-        s.gravity = -G_MOND;
+        st.gravity = -G_MOND;
         const L = r._gaitBeinMass(rig).L;
         const gait = r._gaitGesetz(rig, 5.16);
         o.mensch = gait.omega / core.gangSchritt(5.16, L, Object.assign({}, block, { g: G_MOND })).omega;
         r._animateHumanoidRig(rig, 1000, 1, true, false, null, gait);
         o.becken = beckenG.length ? beckenG[beckenG.length - 1] : "nie gerufen";
     } finally {
-        s.gravity = g0;
+        st.gravity = g0;
         core.gangBecken = beckenEcht;
         r._gangZeile = zeileEcht;
     }
@@ -436,8 +429,7 @@ const STUDIO = (k) => {
     character.position.set(0, 0.05, 0);
     const cs = character.scale.x || 1;
     const bein = (L1 + L2) * cs;
-    const T = window.THREE;
-    const w = new T.Vector3();
+    const w = new THREE.Vector3();
     const spur = [[], []],
         leib = [];
     let phase = 0,

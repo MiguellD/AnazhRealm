@@ -2071,12 +2071,11 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
 // Legacy gen<3 = bit-identisch zu Pre-V18.203 (V18.181/Disziplin).
 async function checkBandV18203Gamma3FeldCharakter({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = AnazhRealm;
         const out = {};
 
         // (F1) FIELD_CHARACTER frozen Konstanten
-        if (A.FIELD_CHARACTER) {
-            const FC = A.FIELD_CHARACTER;
+        if (AnazhRealm.FIELD_CHARACTER) {
+            const FC = AnazhRealm.FIELD_CHARACTER;
             // Wellenlängen-Spreizung: lebendig 200, dichte 340, glut 520, magie 160
             out.allDifferent =
                 FC.lambdaLebendig !== FC.lambdaDichte &&
@@ -2125,7 +2124,7 @@ async function checkBandV18203Gamma3FeldCharakter({ page, check }) {
                 Math.abs(f1.magieleitung - f3.magieleitung) > 1e-6;
 
             // F4 ist nur Sanity (kein NaN/Infinity); die echte Bit-Identitäts-Probe inkl. Warp ist F9b.
-            const FC = A.FIELD_CHARACTER;
+            const FC = AnazhRealm.FIELD_CHARACTER;
             out.gen3ValuesFinite =
                 Number.isFinite(f3.lebendig) &&
                 Number.isFinite(f3.dichte) &&

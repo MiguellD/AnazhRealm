@@ -32,8 +32,7 @@ async function checkBandLambda4Streu({ page, check }) {
 // baute jeder Stoff sein eigenes Programm (1310-17: 43 Foundry-Stoffe, 43 Bauten; 5 Membranen, 5 Bauten).
 async function checkBandStoffSignatur({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const T = window.THREE;
-        const TSL = T.TSL;
+        const TSL = THREE.TSL;
         const k = (m) => m.customProgramCacheKey();
         const out = {};
         const a = r._foundryTreeMaterial("unknown", { roughness: 0.41, metalness: 0.1 });
@@ -73,7 +72,7 @@ async function checkBandStoffSignatur({ page, check }) {
         out.membran = k(ma.mat) === k(mb.mat);
         out.atem = typeof ma.u.time.value === "number" && ma.u !== mb.u;
         const bau = () => {
-            const m = new T.MeshStandardNodeMaterial();
+            const m = new THREE.MeshStandardNodeMaterial();
             m.colorNode = TSL.vec4(TSL.attribute("color", "vec3").mul(0.5), 1.0);
             return m;
         };

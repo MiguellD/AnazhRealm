@@ -156,12 +156,11 @@ hauptLauf(async () => {
             await tick();
             if (k.selbst) {
                 // DER ERZWUNGENE SATZ: ein Kapsel-Satz ohne Träger, 20 m vor dem Spieler — die Linse muss ihn nennen.
-                const T = window.THREE;
                 const pm = st.playerMesh.position;
-                const M = new T.Matrix4().makeTranslation(pm.x + 20, pm.y - 1.8, pm.z);
+                const M = new THREE.Matrix4().makeTranslation(pm.x + 20, pm.y - 1.8, pm.z);
                 const h = r._weltKapselSpawn("selbsttest:nah20", M, () => ({
-                    a: new T.Vector3(0, 0, 0),
-                    b: new T.Vector3(0, 2, 0),
+                    a: new THREE.Vector3(0, 0, 0),
+                    b: new THREE.Vector3(0, 2, 0),
                     r: 0.6,
                     farbe: { r: 0.5, g: 0.5, b: 0.5 },
                 }));

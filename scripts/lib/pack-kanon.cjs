@@ -14,7 +14,7 @@
 // verlustfrei, nicht nur „gleicher String rein/raus".
 "use strict";
 
-const { statikServer, nullSeite, jsonLesen } = require("./welt-boot.cjs");
+const { statikServer, nullSeite, jsonLesen, jsonSchreiben } = require("./welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
@@ -141,7 +141,7 @@ function comparePackToReply(pack, ser) {
 function writePack(dir, pack) {
     fs.mkdirSync(dir, { recursive: true });
     const f = path.join(dir, packFileName(pack.presetId, pack.seed, pack.lod));
-    fs.writeFileSync(f, JSON.stringify(pack) + "\n");
+    jsonSchreiben(f, pack, 0, "\n");
     return f;
 }
 

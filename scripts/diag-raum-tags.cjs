@@ -211,7 +211,6 @@ if (process.argv.includes("--selftest")) {
 const server = statikServer();
 
 async function probe() {
-    const AR = AnazhRealm;
     const P = Object.getPrototypeOf(r);
     const aus = { linse: null, sitzung: [], welt: null, zaehne: null };
     const hatGedaechtnis = typeof P._raumTagsRechnen === "function" && typeof P._raumTagSchluessel === "function";
@@ -396,7 +395,7 @@ async function probe() {
             const bp = st.blueprints[NAME];
             for (const p of bp.parts) if (p && typeof p === "object") p.material = "raum_stoff";
             const t = st.materials.raum_stoff.tags;
-            for (const k of AR.MATERIAL_TAG_KEYS) t[k] = 0;
+            for (const k of AnazhRealm.MATERIAL_TAG_KEYS) t[k] = 0;
             const vorher = rechne(bp);
             r._raumTagSchluessel = function (b, out) {
                 const m = st.materials;
@@ -408,7 +407,7 @@ async function probe() {
                 }
             };
             r.computeSpatialTags(bp);
-            for (const k of AR.MATERIAL_TAG_KEYS) t[k] = 1;
+            for (const k of AnazhRealm.MATERIAL_TAG_KEYS) t[k] = 1;
             const ist = r.computeSpatialTags(bp);
             const soll = rechne(bp);
             delete r._raumTagSchluessel;

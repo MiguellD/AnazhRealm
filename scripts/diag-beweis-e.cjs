@@ -42,7 +42,6 @@ const server = statikServer();
 // 12 Azimute um das Objekt, je zwei Renders (die aktive Gestalt an/aus, 160×90, Loop ruht) — der Azimut mit den
 // meisten vom Objekt geänderten Pixeln trägt Fern-UND Armlängen-Schuss.
 const SICHT_FN = async (a) => {
-    const THREE_ = window.THREE;
     const rend = st.renderer;
     const cam = st.camera;
     rend.setAnimationLoop(null);
@@ -73,7 +72,7 @@ const SICHT_FN = async (a) => {
             if (st.fernRing) r._tickFeldPass(st.fernRing);
         } catch {}
         r._schattenAlleNeu();
-        const rt = new THREE_.RenderTarget(160, 90, { depthBuffer: true, samples: 0 });
+        const rt = new THREE.RenderTarget(160, 90, { depthBuffer: true, samples: 0 });
         const prev = rend.getRenderTarget ? rend.getRenderTarget() : null;
         rend.setRenderTarget(rt);
         if (typeof rend.renderAsync === "function") await rend.renderAsync(st.scene, cam);
@@ -458,13 +457,12 @@ hauptLauf(async () => {
     // ── 3: Kamera je Klasse (Fern + Armlänge) — Objekt-Maße aus der Szene, Azimut aus der Blick-Wahl ──
     const objektInfo = () =>
         page.evaluate(() => {
-            const THREE_ = window.THREE;
             const k = {};
             const wolf = window.__beweisWolf;
             if (wolf) {
-                const box = new THREE_.Box3().setFromObject(wolf);
-                const c = box.getCenter(new THREE_.Vector3());
-                const sz = box.getSize(new THREE_.Vector3());
+                const box = new THREE.Box3().setFromObject(wolf);
+                const c = box.getCenter(new THREE.Vector3());
+                const sz = box.getSize(new THREE.Vector3());
                 k.kreatur = { x: c.x, y: c.y, z: c.z, sx: sz.x, sy: sz.y, sz: sz.z };
             }
             for (const [name, e] of [

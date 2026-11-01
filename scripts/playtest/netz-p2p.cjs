@@ -1208,15 +1208,14 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
     const w7p3Results = await safeEvaluate(page, async () => {
         const out = {};
         const p2p = st.p2p;
-        const K = AnazhRealm;
 
         out.stateFields =
             p2p.voiceShared === false &&
             p2p._voiceServedAt instanceof Map &&
             p2p._voiceRequests instanceof Map &&
-            Number.isInteger(K.P2P_VOICE_COOLDOWN_MS) &&
-            Number.isInteger(K.P2P_VOICE_TIMEOUT_MS) &&
-            Number.isInteger(K.P2P_VOICE_PROMPT_MAX);
+            Number.isInteger(AnazhRealm.P2P_VOICE_COOLDOWN_MS) &&
+            Number.isInteger(AnazhRealm.P2P_VOICE_TIMEOUT_MS) &&
+            Number.isInteger(AnazhRealm.P2P_VOICE_PROMPT_MAX);
 
         // Capability-Gate: ohne aktives LLM kann ich nicht teilen.
         const wasEnabled = st.llm.enabled;
@@ -1896,7 +1895,6 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
         // Wildnis darunter; ein Leser (`erbgut` ≥ 1) bekommt ihn. Die lebende Welt trägt das Erbgut nur synchron (kein
         // Takt dazwischen), ihr Erbgut-Merker bleibt unberührt.
         {
-            const T = AnazhRealm;
             const buehne = {
                 terme: [{ art: "insel", x: 0, z: 0, r: 420, plateau: 9, kuppel: 0.003, schelf: 60, grund: -15 }],
             };
@@ -1910,10 +1908,10 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
             }
             out.erbgutReise = {
                 altVerweigert: sentMsgs.length === 0,
-                teilbarWildnis: T._erbgutTeilbar({}, {}) === null,
-                teilbarLeser: T._erbgutTeilbar({ erbgut: buehne }, { erbgut: T.ERBGUT_PROTOKOLL }) === null,
-                verweigertAlt: /liest kein Erbgut/.test(String(T._erbgutTeilbar({ erbgut: buehne }, {}))),
-                stufe: T.ERBGUT_PROTOKOLL >= 1,
+                teilbarWildnis: AnazhRealm._erbgutTeilbar({}, {}) === null,
+                teilbarLeser: AnazhRealm._erbgutTeilbar({ erbgut: buehne }, { erbgut: AnazhRealm.ERBGUT_PROTOKOLL }) === null,
+                verweigertAlt: /liest kein Erbgut/.test(String(AnazhRealm._erbgutTeilbar({ erbgut: buehne }, {}))),
+                stufe: AnazhRealm.ERBGUT_PROTOKOLL >= 1,
             };
         }
         r._p2pSignal = origSignal;
@@ -2301,8 +2299,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
         // 4. KILLPLANE: ein Körper tief unter jedem Boden steht nach EINEM Charakter-Schritt auf der Oberfläche
         // (die leere Säule ist Bühne; die Wand-Kugel schiebt nicht seitlich).
         {
-            const s = st,
-                pm = s.playerMesh,
+            const pm = st.playerMesh,
                 pos = pm.position.clone();
             const buehne = {
                 _fieldSolid: () => false,
@@ -2313,16 +2310,16 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
             Object.assign(r, buehne);
             try {
                 pm.position.set(pos.x, -1e4, pos.z);
-                s._fieldVy = 0;
-                s.playerVel.setValue(0, 0, 0);
+                st._fieldVy = 0;
+                st.playerVel.setValue(0, 0, 0);
                 r._stepCharacter(AnazhRealm.FIXED_DT, 0);
                 const p1 = pm.position;
                 out.waterGate = p1.y > -1e3 && Math.abs(p1.y - r.findSurfaceAbove(p1.x, 0, p1.z)) < 3;
             } finally {
                 for (const k in buehne) delete r[k];
                 pm.position.copy(pos);
-                s._fieldVy = 0;
-                s.playerVel.setValue(0, 0, 0);
+                st._fieldVy = 0;
+                st.playerVel.setValue(0, 0, 0);
             }
         }
 
@@ -2710,10 +2707,9 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
 // klingt von selbst ab (Verwerfen, nicht Puffern; der Bucket settled).
 async function checkBandG8R1DampedChannel({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const K = AnazhRealm;
         const out = {};
         // (1) Konstanten verdrahtet.
-        out.consts = K.PORTAL_CHANNEL_RATE_MAX === 200 && K.PORTAL_CHANNEL_RATE_WINDOW_MS === 1000;
+        out.consts = AnazhRealm.PORTAL_CHANNEL_RATE_MAX === 200 && AnazhRealm.PORTAL_CHANNEL_RATE_WINDOW_MS === 1000;
         // (2) Der Kanal-Bucket bändigt eine Flut: 10000 Nachrichten in EINEM
         // Fenster → admittiert genau PORTAL_CHANNEL_RATE_MAX, Rest verworfen.
         const po = {};
@@ -2721,19 +2717,19 @@ async function checkBandG8R1DampedChannel({ page, check }) {
         for (let i = 0; i < 10000; i++) {
             if (r._portalChannelAdmit(po, 1000)) admitted++;
         }
-        out.channelCapsFlood = admitted === K.PORTAL_CHANNEL_RATE_MAX;
+        out.channelCapsFlood = admitted === AnazhRealm.PORTAL_CHANNEL_RATE_MAX;
         out.channelAdmitted = admitted;
         // (3) Der Bucket SETTLED: nach dem Fenster admittiert er wieder (der
         // EPS-Fixpunkt — leeres Fenster = Ruhe, kein „settled nie").
-        out.channelSettles = r._portalChannelAdmit(po, 1000 + K.PORTAL_CHANNEL_RATE_WINDOW_MS + 1) === true;
+        out.channelSettles = r._portalChannelAdmit(po, 1000 + AnazhRealm.PORTAL_CHANNEL_RATE_WINDOW_MS + 1) === true;
         // (4) Der per-Peer-Cap: 120 admittiert je Peer, der 121. fällt; ein
         // ANDERER Peer ist unabhängig (kein gemeinsamer Eimer).
         let pa = 0;
         for (let i = 0; i < 300; i++) {
-            if (r._p2pPeerRateAdmit("g8r1-test", "peerA", K.SUBWORLD_NET_PEER_RATE_MAX)) pa++;
+            if (r._p2pPeerRateAdmit("g8r1-test", "peerA", AnazhRealm.SUBWORLD_NET_PEER_RATE_MAX)) pa++;
         }
-        out.peerCaps = pa === K.SUBWORLD_NET_PEER_RATE_MAX;
-        out.peerIndependent = r._p2pPeerRateAdmit("g8r1-test", "peerB", K.SUBWORLD_NET_PEER_RATE_MAX) === true;
+        out.peerCaps = pa === AnazhRealm.SUBWORLD_NET_PEER_RATE_MAX;
+        out.peerIndependent = r._p2pPeerRateAdmit("g8r1-test", "peerB", AnazhRealm.SUBWORLD_NET_PEER_RATE_MAX) === true;
         if (r._p2pRate) delete r._p2pRate["g8r1-test"];
         return out;
     });

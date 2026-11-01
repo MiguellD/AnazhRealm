@@ -131,9 +131,9 @@ hauptLauf(async () => {
             };
             o.zensus = await zensus(st.scene);
             // W6-Selbsttest: ein Stoff mit 17 Karten fällt im Urteil beim Namen (er linkt nie: kein Shader-Fehler, keine Marke)
-            const T = THREE, sm = new T.MeshBasicNodeMaterial({ name: "selbsttest:17-karten" });
-            sm.colorNode = Array.from({ length: 17 }, () => T.TSL.texture(new T.DataTexture(new Uint8Array(4), 1, 1)).rgb).reduce((a, c) => a.add(c)); // prettier-ignore
-            o.selbst = await zensus(new T.Scene().add(Object.assign(new T.Mesh(new T.PlaneGeometry(), sm), { frustumCulled: false }))); // prettier-ignore
+            const sm = new THREE.MeshBasicNodeMaterial({ name: "selbsttest:17-karten" });
+            sm.colorNode = Array.from({ length: 17 }, () => THREE.TSL.texture(new THREE.DataTexture(new Uint8Array(4), 1, 1)).rgb).reduce((a, c) => a.add(c)); // prettier-ignore
+            o.selbst = await zensus(new THREE.Scene().add(Object.assign(new THREE.Mesh(new THREE.PlaneGeometry(), sm), { frustumCulled: false }))); // prettier-ignore
             o.ohneLink = ohneLink.length;
             o.linktNicht = window.__linktNicht || ["W5: der Link-Hörer fehlt (kein WebGL-Backend beim Start)"];
         } catch (e) {

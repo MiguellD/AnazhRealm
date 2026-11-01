@@ -24,8 +24,6 @@
 // Die Seiten-Funktion (als Quelle injiziert): o = { radien: { Klasse: m }, gw, gh, ort, dyn, neu } — Täter ist eine Fläche
 // einer Klasse mit Radius, näher am Auge als ihr Radius.
 function nahDeckungInSeite(o) {
-    const T = window.THREE;
-    const K = AnazhRealm;
     const cam = st.camera;
     cam.updateMatrixWorld(true);
     cam.updateProjectionMatrix();
@@ -47,8 +45,8 @@ function nahDeckungInSeite(o) {
     const gewicht = (p, art) => {
         if (!auge || !ziel) return 1;
         const n = nah ? (art === "rinde" ? nah.y : art === "boden" ? nah.z : nah.x) : undefined;
-        return K._durchsichtGewicht(
-            K.DURCHSICHT_ZAHLEN,
+        return AnazhRealm._durchsichtGewicht(
+            AnazhRealm.DURCHSICHT_ZAHLEN,
             p,
             { x: auge.x, y: auge.y, z: auge.z },
             { x: ziel.x, y: ziel.y, z: ziel.z },
@@ -137,12 +135,12 @@ function nahDeckungInSeite(o) {
                   return atlas.data[(y * atlas.width + x) * 4 + 3] / 255;
               }
             : null;
-    const m4 = new T.Matrix4();
-    const im = new T.Matrix4();
-    const va = new T.Vector3();
-    const vb = new T.Vector3();
-    const vc = new T.Vector3();
-    const bs = new T.Sphere();
+    const m4 = new THREE.Matrix4();
+    const im = new THREE.Matrix4();
+    const va = new THREE.Vector3();
+    const vb = new THREE.Vector3();
+    const vc = new THREE.Vector3();
+    const bs = new THREE.Sphere();
     // Die Dreiecke eines (Mesh, Instanz) in die Sammler legen, die `nimm(ax..cz)` zulässt. meta: { k, art, mat, cut, karte }
     const metaVon = new Map();
     const metaFuer = (kl, mat, karte) => {
@@ -163,7 +161,7 @@ function nahDeckungInSeite(o) {
     // `slotEntry[i]` ihrer Gruppe — die Zelle eines Eintrags in `o.ohne` deckt nie und verdeckt nie, wie jedes andere Ziel.
     const satzVon = new Map();
     for (const s of st.chunkSaetze ? st.chunkSaetze.values() : []) satzVon.set(s.mesh, s);
-    const zs = new T.Sphere();
+    const zs = new THREE.Sphere();
     const legeDreiecke = (obj, inst, nimm, sammle, kugel) => {
         const g = obj.geometry;
         const pos = g.attributes.position;
@@ -338,7 +336,7 @@ function nahDeckungInSeite(o) {
                 }
             }
     }
-    const kugel = new T.Sphere(E, D);
+    const kugel = new THREE.Sphere(E, D);
     st.scene.traverseVisible((obj) => {
         if (!zaehlt(obj) || (o.dyn == null && !dreht(obj))) return;
         jeInstanz(obj, kugel, (ob, i) => {
@@ -451,8 +449,8 @@ function nahDeckungInSeite(o) {
         return (lx * qx + ly * qy + lz * qz) * inv;
     };
     // ── die Strahlen ──
-    const dir = new T.Vector3();
-    const fwd = cam.getWorldDirection(new T.Vector3());
+    const dir = new THREE.Vector3();
+    const fwd = cam.getWorldDirection(new THREE.Vector3());
     const treffer = [];
     let deckung = 0;
     const jeKlasse = {};
@@ -522,9 +520,9 @@ function nahDeckungInSeite(o) {
     if (o.ziel) {
         const Z = o.ziel;
         const punkte = [[Z.x, Z.y, Z.z]].concat(Z.punkte || []);
-        const zv = new T.Vector3(Z.x, Z.y, Z.z).project(cam);
+        const zv = new THREE.Vector3(Z.x, Z.y, Z.z).project(cam);
         const imBild = punkte.every(([x, y, z]) => {
-            const v = new T.Vector3(x, y, z);
+            const v = new THREE.Vector3(x, y, z);
             const vorn = v.clone().applyMatrix4(cam.matrixWorldInverse).z < -near;
             v.project(cam);
             return vorn && Math.abs(v.x) <= 0.95 && Math.abs(v.y) <= 0.95;

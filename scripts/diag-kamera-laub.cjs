@@ -16,7 +16,7 @@
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf, wandEnde, selbsttestEnde, weltTor } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf, wandEnde, selbsttestEnde, weltTor, jsonLesen } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -153,7 +153,7 @@ const NINJA_WP = [
 ];
 const NINJA_RAND = 0.3; // Lab-Maß (der Runner R10)
 const WIESE = require("./lib/welt-orte.cjs").messort("wiese"); // der EINE Leser des Haushalts
-const HANG = JSON.parse(fs.readFileSync(path.join(root, "spec", "pruefbuehne", "stationen.json"), "utf8")).stationen.find(
+const HANG = jsonLesen(path.join(root, "spec", "pruefbuehne", "stationen.json")).stationen.find(
     (o) => o.id === "s2-hang30"
 );
 
@@ -365,7 +365,7 @@ function leibInstall(cfg) {
     L.fuss = (x, z, gier, pitch) => {
         r.setCameraMode("third");
         const y = r.getTerrainHeightAt(x, z);
-        st.playerMesh.position.set(x, y + r.constructor.PLAYER_FOOT_OFFSET + 0.02, z);
+        st.playerMesh.position.set(x, y + AnazhRealm.PLAYER_FOOT_OFFSET + 0.02, z);
         st._kapselTraegerY = y;
         st._kapselStruktur = false;
         st.yaw = gier;
@@ -463,7 +463,7 @@ async function leibWiese(arg) {
         // unter der GPU-Leine (29.10.: 4 Bilder in 4 400 Takten, Ferne 43,5, seit lod.K5 das Haus des Gangs auf L2 ohne Flügel,
         // der Schmuggel blind; das Abwarten riss an der Frist der Seite, 900 s). Ab hier wählt der Stamm jede Stufe am Abstand
         // (`_ankunftsFerne` 1): die Häuser der Wiese und der Gang (K4) messen die angekommene Welt.
-        if (r._weltOffen().ankunft) st._ankunftGleit = r.constructor.ANKUNFT_GLEIT_BILDER;
+        if (r._weltOffen().ankunft) st._ankunftGleit = AnazhRealm.ANKUNFT_GLEIT_BILDER;
         out.haeuser = [];
         for (const [typ, dx, dz] of [
             ["haus_alemannisch", 16, 6],
@@ -539,16 +539,15 @@ async function leibWiese(arg) {
             const v = L.vor(je.haus[0].b, 0, 0.8);
             L.fuss(v.x, v.z, v.gier + Math.PI, 0);
             out.w1Bau = L.ruft(() => r._pickArchitectureAtCrosshair(), r, "_durchsichtSteht");
-            out.w2Kern = L.ruft(() => L.ruhig(1), r.constructor, "_bewegungsBlock", (n) => n === "kamera");
+            out.w2Kern = L.ruft(() => L.ruhig(1), AnazhRealm, "_bewegungsBlock", (n) => n === "kamera");
         }
-        const T3 = window.THREE;
         const senke = [...(st.nahStreu ? st.nahStreu.senken.values() : [])].find((a) => a.ernte && a.anzahl > 0);
         const blk = senke && [...senke.bloecke.values()].find((b) => b.n > 0);
         if (blk) {
             if (!senke.geo.boundingSphere) senke.geo.computeBoundingSphere();
-            const ku = senke.geo.boundingSphere.clone().applyMatrix4(new T3.Matrix4().fromArray(blk.matrizen, 0));
+            const ku = senke.geo.boundingSphere.clone().applyMatrix4(new THREE.Matrix4().fromArray(blk.matrizen, 0));
             for (const d of [[1, 0, 0], [0, 0, 1], [-1, 0, 0], [0, 0, -1], [0, -1, 0]]) {
-                const D = new T3.Vector3(...d);
+                const D = new THREE.Vector3(...d);
                 r._fadenkreuzStrahl = () => ({ o: ku.center.clone().addScaledVector(D, -2 * ku.radius - 0.1), d: D });
                 out.w1Streu = out.w1Streu || L.ruft(() => r._pickScatterAtCrosshair(), r, "_durchsichtSteht");
             }
@@ -572,7 +571,7 @@ async function leibWiese(arg) {
                 const x = cx + Math.sin(th) * rad;
                 const z = cz + Math.cos(th) * rad;
                 const y = r.getTerrainHeightAt(x, z);
-                st.playerMesh.position.set(x, y + r.constructor.PLAYER_FOOT_OFFSET + 0.02, z);
+                st.playerMesh.position.set(x, y + AnazhRealm.PLAYER_FOOT_OFFSET + 0.02, z);
                 st._kapselTraegerY = y;
                 st.yaw = th + Math.PI / 2;
                 st.pitch = 0.2;
@@ -1196,7 +1195,7 @@ hauptLauf(async () => {
         const fdir = path.join(root, "spec", "abnahme");
         const abnahmeBrueche = AU.abnahmeSelbsttest(fdir);
         check("K4 Selbst-Test: die Abnahme-Zeile nennt jeden eingeschmuggelten Fall und jede Fixture beim Namen", abnahmeBrueche.length === 0, abnahmeBrueche.join(" · "));
-        for (const f of JSON.parse(fs.readFileSync(path.join(fdir, "faelle.json"), "utf8")).faelle)
+        for (const f of jsonLesen(path.join(fdir, "faelle.json")).faelle)
             console.log(`   Fixture ${f.name}: ${AU.abnahmeUrteil(AU.fixtureMessung(f, fdir), AU.SCHWELLEN).zeile}`);
         // K5 — DIE SOLL-TAFEL (K63, spec/abnahme/soll-tafel.json, AAAA Schritt 0): je sichtbarer Klasse das Soll (eigen,
         // gerechnet oder GELESEN — KOPF_SOLL aus dem Kern, die Toleranz der Albedo-Tafel), das Budget je LOD-Stufe aus dem
@@ -1204,7 +1203,7 @@ hauptLauf(async () => {
         // Albedo-Tafel). Die Wand: kein Bruch der Tafel (ein Ist von Hand, ein Verweis ohne Ziel oder ohne Leser, ein gerechnetes
         // Band ohne Rechnung, eine Messung über ihrem Rauschen, eine Haushalt-Klasse fehlt), Teilung und Maße geeicht, jeder
         // eingeschmuggelte Bruch fällt beim Namen; ein ROTES Maß ist der Auftrag der nächsten AAAA-Karte, nie ein Bruch der Wand.
-        const sollTafel = JSON.parse(fs.readFileSync(path.join(fdir, "soll-tafel.json"), "utf8"));
+        const sollTafel = jsonLesen(path.join(fdir, "soll-tafel.json"));
         // die Quelle des Urteils (abnahme-urteil `sollQuelle`): dieselbe, mit der der Schreiber der Tafel jede Messung prüft
         const sollQ = AU.standLeser(root).sollQuelle();
         const sollBrueche = AU.sollTafelSelbsttest(sollTafel, sollQ);
@@ -1266,7 +1265,7 @@ hauptLauf(async () => {
         }
         // die Prüfbühne, geboren wie im Spiel durch die Tür (`weltTor`)
         const tH = Date.now();
-        await bereit(adresse, JSON.parse(fs.readFileSync(path.join(root, "spec", "pruefbuehne", "welt.json"), "utf8")));
+        await bereit(adresse, jsonLesen(path.join(root, "spec", "pruefbuehne", "welt.json")));
         await page.evaluate(leibInstall, { R: LEIB_R });
         leib.hang = await page.evaluate(leibHang, { hang: HANG, n: LEIB_HANG_N });
         zeiten.hang = Date.now() - tH;

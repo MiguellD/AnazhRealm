@@ -939,11 +939,10 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         // Die Bühne ist die leere Säule ohne Sattel (wie die Killplane in koerper.cjs) — der geerbte Ort urteilt nie
         // mit.
         {
-            const s = st,
-                pm = s.playerMesh,
+            const pm = st.playerMesh,
                 pos = pm.position.clone(),
-                sta = s.player.stamina,
-                sattel = s.player.mountedArch;
+                sta = st.player.stamina,
+                sattel = st.player.mountedArch;
             const ohne = () => -Infinity;
             const buehne = {
                 _fieldSolid: () => false,
@@ -954,29 +953,29 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
                 _koerperWasser: () => pm.position.y + 3,
             };
             Object.assign(r, buehne);
-            s.player.mountedArch = null;
+            st.player.mountedArch = null;
             const vy = (k) => {
                 pm.position.copy(pos);
-                s._fieldVy = 0;
-                s.playerVel.setValue(0, 0, 0);
-                Object.assign(s.verbTafel, { sprint: false, sprung: false }, k); // die Leib-Felder der Verb-Tafel (leib.K5)
-                s.player.stamina = 100;
+                st._fieldVy = 0;
+                st.playerVel.setValue(0, 0, 0);
+                Object.assign(st.verbTafel, { sprint: false, sprung: false }, k); // die Leib-Felder der Verb-Tafel (leib.K5)
+                st.player.stamina = 100;
                 r._stepCharacter(AnazhRealm.FIXED_DT, 0);
-                return s._fieldVy;
+                return st._fieldVy;
             };
             try {
                 const tauch = vy({ sprint: true }),
                     auf = vy({ sprung: true }),
                     ruhe = vy({});
-                out.eyesFlagComputed = s.playerUnderwater === true && s.playerEyesUnderwater === true;
+                out.eyesFlagComputed = st.playerUnderwater === true && st.playerEyesUnderwater === true;
                 out.physicsUsesSwimFn = tauch < 0 && tauch < ruhe && auf > 0;
             } finally {
                 for (const k in buehne) delete r[k];
-                Object.assign(s.verbTafel, { sprint: false, sprung: false });
-                s._fieldVy = 0;
-                Object.assign(s.player, { mountedArch: sattel, stamina: sta });
+                Object.assign(st.verbTafel, { sprint: false, sprung: false });
+                st._fieldVy = 0;
+                Object.assign(st.player, { mountedArch: sattel, stamina: sta });
                 pm.position.copy(pos);
-                s.playerVel.setValue(0, 0, 0);
+                st.playerVel.setValue(0, 0, 0);
             }
         }
 
@@ -1604,16 +1603,15 @@ async function checkBandWetterVektor({ page, check }) {
 async function checkBandLookPhysik({ page, check }) {
     const { kartenEichung } = require(path.join(SKRIPTE, "lib", "licht-linsen.cjs"));
     const boot = await safeEvaluate(page, () => {
-        const K = AnazhRealm;
         const T = window.THREE || {};
         const rend = st && st.renderer;
         return {
-            meadow: K.MEADOW_GREEN,
-            tints: K.WEATHER_TINTS,
-            intensity: K.WEATHER_INTENSITY,
+            meadow: AnazhRealm.MEADOW_GREEN,
+            tints: AnazhRealm.WEATHER_TINTS,
+            intensity: AnazhRealm.WEATHER_INTENSITY,
             toneMapping: rend ? rend.toneMapping : null,
-            belichtung: K.BELICHTUNG ? { kurve: K.BELICHTUNG.kurve, zielKarte: K.BELICHTUNG.zielKarte } : null,
-            kurveConst: K.BELICHTUNG && T[K.BELICHTUNG.kurve] != null ? T[K.BELICHTUNG.kurve] : null,
+            belichtung: AnazhRealm.BELICHTUNG ? { kurve: AnazhRealm.BELICHTUNG.kurve, zielKarte: AnazhRealm.BELICHTUNG.zielKarte } : null,
+            kurveConst: AnazhRealm.BELICHTUNG && T[AnazhRealm.BELICHTUNG.kurve] != null ? T[AnazhRealm.BELICHTUNG.kurve] : null,
             colorMgmt: T.ColorManagement ? !!T.ColorManagement.enabled : null,
         };
     });
@@ -1662,11 +1660,10 @@ async function checkBandLookPhysik({ page, check }) {
 // Unendlich-Knoten. Selbsttest: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge und eine Sonne ohne Knoten werden rot.
 async function checkBandHimmelTag({ page, check }) {
     const probe = (stoerung) => {
-        const T = window.THREE;
         let kugel = null;
         if (stoerung === "kugel") {
-            kugel = new T.Mesh(new T.SphereGeometry(20, 8, 8), new T.MeshBasicMaterial({ color: 0xff66cc }));
-            kugel.userData.skyOffset = new T.Vector3(200, 300, 100);
+            kugel = new THREE.Mesh(new THREE.SphereGeometry(20, 8, 8), new THREE.MeshBasicMaterial({ color: 0xff66cc }));
+            kugel.userData.skyOffset = new THREE.Vector3(200, 300, 100);
             st.scene.add(kugel);
         }
         if (stoerung === "grenze") {

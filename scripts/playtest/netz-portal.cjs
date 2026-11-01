@@ -1107,14 +1107,13 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
     // ### Welt-Portal: Rolle + Built-in welt_portal ###
     const w12c1Results = await safeEvaluate(page, () => {
         const out = {};
-        const C = AnazhRealm;
 
         // Rolle "portal" in Label- + Farb-Konstanten.
-        out.roleLabel = !!C && !!C.BLUEPRINT_ROLE_LABELS && C.BLUEPRINT_ROLE_LABELS.portal === "Portal";
-        out.roleColor = !!C && !!C.BLUEPRINT_ROLE_COLORS && typeof C.BLUEPRINT_ROLE_COLORS.portal === "string";
+        out.roleLabel = !!AnazhRealm && !!AnazhRealm.BLUEPRINT_ROLE_LABELS && AnazhRealm.BLUEPRINT_ROLE_LABELS.portal === "Portal";
+        out.roleColor = !!AnazhRealm && !!AnazhRealm.BLUEPRINT_ROLE_COLORS && typeof AnazhRealm.BLUEPRINT_ROLE_COLORS.portal === "string";
 
         // PORTAL_SKELETON_WORLD-Konstante zeigt auf einen worlds/-Pfad.
-        out.skeletonConst = typeof C.PORTAL_SKELETON_WORLD === "string" && /^worlds\//.test(C.PORTAL_SKELETON_WORLD);
+        out.skeletonConst = typeof AnazhRealm.PORTAL_SKELETON_WORLD === "string" && /^worlds\//.test(AnazhRealm.PORTAL_SKELETON_WORLD);
 
         // Built-in welt_portal-Bauplan.
         const wp = st.blueprints && st.blueprints.welt_portal;
@@ -1153,9 +1152,9 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
 
         // _sanitizePortalMeta — fremdes Origin + Pfad-Traversal werden verworfen.
         const sanForeign = r._sanitizePortalMeta({ world: "https://evil.example/x" }, "fb");
-        out.sanitizeForeign = sanForeign.world === C.PORTAL_SKELETON_WORLD;
+        out.sanitizeForeign = sanForeign.world === AnazhRealm.PORTAL_SKELETON_WORLD;
         const sanTraversal = r._sanitizePortalMeta({ world: "worlds/../secret" }, "fb");
-        out.sanitizeTraversal = sanTraversal.world === C.PORTAL_SKELETON_WORLD;
+        out.sanitizeTraversal = sanTraversal.world === AnazhRealm.PORTAL_SKELETON_WORLD;
         const sanValid = r._sanitizePortalMeta({ world: "worlds/skeleton/index.html", label: "Test-Welt" }, "fb");
         out.sanitizeValid = sanValid.world === "worlds/skeleton/index.html" && sanValid.label === "Test-Welt";
 

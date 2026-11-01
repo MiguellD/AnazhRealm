@@ -238,8 +238,7 @@ const server = statikServer();
 // Szene, Zeit fest. Jeder Schuss ist ein echter Render in ein Ziel (160×120).
 function buehne() {
     return (async () => {
-        const T = window.THREE,
-            TSL = T.TSL;
+        const TSL = THREE.TSL;
         const rend = st.renderer;
         // (i) SCHLÜSSEL: jedes Hauptpass-Render-Objekt der Welt (Welt-Szene, Senken über ihren Zeichner) trägt nach der
         // Erst-Zeichnung den Schlüssel seines Baus; Kontrolle: die Aufzählbarkeit des Beobachters wechselt ihn.
@@ -285,20 +284,20 @@ function buehne() {
         const leg = (o, wirft = true, empfaengt = true) =>
             Object.assign(o, { castShadow: wirft, receiveShadow: empfaengt, frustumCulled: false });
         const lichtIn = (sc) => {
-            const l = new T.DirectionalLight(0xffffff, 3);
+            const l = new THREE.DirectionalLight(0xffffff, 3);
             l.position.set(6, 12, 4);
             l.castShadow = true;
             l.shadow.mapSize.set(256, 256);
             Object.assign(l.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 0.5, far: 50 });
             l.shadow.camera.updateProjectionMatrix();
-            sc.add(l, l.target, new T.AmbientLight(0xffffff, 0.35));
+            sc.add(l, l.target, new THREE.AmbientLight(0xffffff, 0.35));
         };
         const bodenIn = (g) => {
             const b = leg(
-                new T.Mesh(
-                    new T.PlaneGeometry(30, 30),
+                new THREE.Mesh(
+                    new THREE.PlaneGeometry(30, 30),
                     diaet(
-                        new T.MeshStandardNodeMaterial({
+                        new THREE.MeshStandardNodeMaterial({
                             colorNode: TSL.mix(TSL.color(0x2a6a2a), TSL.color(0xc8b080), TSL.positionWorld.x.div(30).add(0.5).clamp()),
                         })
                     )
@@ -309,9 +308,9 @@ function buehne() {
             g.add(b);
             return b;
         };
-        const szene = new T.Scene();
+        const szene = new THREE.Scene();
         lichtIn(szene);
-        const gruppe = new T.BundleGroup();
+        const gruppe = new THREE.BundleGroup();
         gruppe.name = "kamera-treue:BUEHNE";
         gruppe.matrixAutoUpdate = false;
         szene.add(gruppe);
@@ -320,9 +319,9 @@ function buehne() {
         const karten = [];
         for (let i = 0; i < farben.length; i++) {
             // Jede Karte ihr eigenes Programm (eigene Konstante): der Zeiger-Verlust trifft sie einzeln.
-            const m = new T.MeshStandardNodeMaterial({ side: T.DoubleSide, alphaTest: 0.5 });
+            const m = new THREE.MeshStandardNodeMaterial({ side: THREE.DoubleSide, alphaTest: 0.5 });
             m.colorNode = TSL.vec4(TSL.color(farben[i]), TSL.step(0.5, TSL.fract(TSL.uv().x.mul(3 + i))));
-            const k = new T.Mesh(new T.PlaneGeometry(2.4, 3), diaet(m));
+            const k = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 3), diaet(m));
             k.position.set(-8 + i * 2.1, 1.6, -3 + (i % 3) * 2.5);
             k.rotation.y = 0.4 * i;
             gruppe.add(leg(k));
@@ -330,13 +329,13 @@ function buehne() {
         }
         // Das LAUB: eine ausgeschnittene Instanz-Gruppe wie die Streu der Welt — eine Instanz-Mutation refresht ihren
         // Schatten-Bürger (Instanz-Wächter der Diät), im Replay gegen den geteilten Schatten-Stoff.
-        const laubStoff = new T.MeshStandardNodeMaterial({ side: T.DoubleSide, alphaTest: 0.5 });
+        const laubStoff = new THREE.MeshStandardNodeMaterial({ side: THREE.DoubleSide, alphaTest: 0.5 });
         // Weiches Alpha (eine Rampe wie ein Blatt-Rand): alphaTest 0,5 schneidet die Hälfte, 0 fast nichts.
         laubStoff.colorNode = TSL.vec4(TSL.color(0x3a8a2a), TSL.fract(TSL.uv().y.mul(5)));
         // Ein Blätterdach: flach liegende Karten über dem Boden werfen große ausgeschnittene Schatten.
-        const laub = new T.InstancedMesh(new T.PlaneGeometry(6, 6), diaet(laubStoff), 6);
+        const laub = new THREE.InstancedMesh(new THREE.PlaneGeometry(6, 6), diaet(laubStoff), 6);
         {
-            const m4 = new T.Matrix4();
+            const m4 = new THREE.Matrix4();
             for (let i = 0; i < 6; i++) {
                 m4.makeRotationX(-Math.PI / 2 + 0.25 * (i % 3)).setPosition(-7 + (i % 3) * 7, 3.5, -4 + Math.floor(i / 3) * 7);
                 laub.setMatrixAt(i, m4);
@@ -346,7 +345,7 @@ function buehne() {
         gruppe.add(leg(laub));
         const kisten = [];
         for (let i = 0; i < 3; i++) {
-            const kiste = new T.Mesh(new T.BoxGeometry(1.5, 1.5 + i, 1.5), diaet(new T.MeshStandardNodeMaterial({ color: 0x8a6a4a + i * 0x101010 })));
+            const kiste = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5 + i, 1.5), diaet(new THREE.MeshStandardNodeMaterial({ color: 0x8a6a4a + i * 0x101010 })));
             kisten.push(kiste);
             kiste.position.set(4 + i * 2.5, 0.75 + i / 2, 5 - i * 3);
             // die erste Kiste ist STATISCH (rückt über updateMatrix)
@@ -357,14 +356,14 @@ function buehne() {
         // DER SATZ: ein Diät-Objekt, dessen Ausschnitt (drawRange) je Pass wechselt wie ein Chunk-Satz der Welt
         // (`_chunkSatzPass`: das Hauptbild zeichnet seinen Abschnitt, die Kaskade ihren). Der Ausschnitt ist ein Draw-Parameter
         // (r184 liest ihn bei jedem Draw) — die STAND-Wand nennt jeden Voll-Refresh, den er auslöst, beim Namen.
-        const satz = new T.Mesh(new T.BoxGeometry(2, 1, 2), diaet(new T.MeshStandardNodeMaterial({ color: 0x6a8aaa })));
+        const satz = new THREE.Mesh(new THREE.BoxGeometry(2, 1, 2), diaet(new THREE.MeshStandardNodeMaterial({ color: 0x6a8aaa })));
         satz.name = "SATZ";
         satz.position.set(-4, 0.5, 6);
         gruppe.add(leg(satz));
         // je Pass sein Abschnitt, danach wieder der des Hauptbilds (der Schatten-Render läuft mitten im Hauptbild)
         szene.onBeforeRender = (_rr, _sc, cam) => satz.geometry.setDrawRange(0, cam === kam ? Infinity : 18);
         szene.onAfterRender = () => satz.geometry.setDrawRange(0, Infinity);
-        const kam = new T.PerspectiveCamera(60, 4 / 3, 0.1, 100);
+        const kam = new THREE.PerspectiveCamera(60, 4 / 3, 0.1, 100);
         const blick = (vz) => {
             kam.position.set(1, 7, 15 * vz);
             kam.lookAt(0, 0.5, 0);
@@ -422,7 +421,7 @@ function buehne() {
         rend._renderScene = zaehlUm(spielSzene);
         const W = 160,
             H = 120;
-        const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0 });
+        const rt = new THREE.RenderTarget(W, H, { depthBuffer: true, samples: 0 });
         const schuss = async (sc = szene) => {
             nf.update();
             rend.setRenderTarget(rt);
@@ -515,8 +514,7 @@ function buehne() {
             }
             rend._renderScene = zaehlUm(spielSzene);
             // (d)(e)(f)(g) DIE STAND-WAND: Prüfungen, Voll-Refreshs, Gänge und Uploads je Render-Abschnitt — der Zähler der Diät-Linse.
-            const A = AnazhRealm;
-            const schreibRoh = A._diaetGeteiltSchreiben;
+            const schreibRoh = AnazhRealm._diaetGeteiltSchreiben;
             const Z = window.__diaetZaehler();
             const gezaehlt = async (fn) => {
                 const z = Z.an();
@@ -533,13 +531,13 @@ function buehne() {
                 gruppe.isBundleGroup = false;
                 blick(1);
                 const sammle = new Map();
-                const pruefRoh = A._diaetRefresh;
-                A._diaetRefresh = function (obs, ro, frame, altNR) {
+                const pruefRoh = AnazhRealm._diaetRefresh;
+                AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
                     if (!ro.material.isShadowPassMaterial && karten.includes(ro.object))
                         sammle.set(ro.getNodeBuilderState(), ro.getBindings().filter((g) => g.bindings[0]?.groupNode?.shared === true).map((g) => g.id));
                     return pruefRoh(obs, ro, frame, altNR);
                 };
-                await schuss().finally(() => (A._diaetRefresh = pruefRoh));
+                await schuss().finally(() => (AnazhRealm._diaetRefresh = pruefRoh));
                 const jeProgramm = [...sammle.values()];
                 const alle = new Set();
                 for (const ids of jeProgramm) for (const id of ids) alle.add(id);
@@ -569,7 +567,7 @@ function buehne() {
                 // (f) ÄNDERUNG IM STAND: eine Kiste rückt, ein Blatt dreht — das Bild der Diät gleicht dem Bild, in dem jedes
                 // Objekt voll refresht (die Wahrheit ohne Diät); mit gemutetem Melder weicht sie ab (Lauf-Kontrolle).
                 const immer = () => true;
-                const m4 = new T.Matrix4();
+                const m4 = new THREE.Matrix4();
                 let schritt = 0;
                 const aendere = () => {
                     schritt++;
@@ -580,12 +578,12 @@ function buehne() {
                     laub.instanceMatrix.needsUpdate = true;
                 };
                 const mitDiaet = async (fn) => {
-                    const alt = A._diaetRefresh;
-                    if (fn) A._diaetRefresh = fn;
+                    const alt = AnazhRealm._diaetRefresh;
+                    if (fn) AnazhRealm._diaetRefresh = fn;
                     try {
                         return await schuss();
                     } finally {
-                        A._diaetRefresh = alt;
+                        AnazhRealm._diaetRefresh = alt;
                     }
                 };
                 const bild = {};
@@ -598,42 +596,42 @@ function buehne() {
                     const diaetBild = await mitDiaet(null);
                     const wahr = await mitDiaet(immer);
                     // der Täter: der Melder schweigt
-                    const regt = A._regt;
-                    A._regt = () => 0;
+                    const regt = AnazhRealm._regt;
+                    AnazhRealm._regt = () => 0;
                     aendere();
-                    const taeterBild = await mitDiaet(null).finally(() => (A._regt = regt));
+                    const taeterBild = await mitDiaet(null).finally(() => (AnazhRealm._regt = regt));
                     const wahr2 = await mitDiaet(immer);
                     bild[bundle ? "replay" : "direkt"] = { diaet: gleich(diaetBild, wahr), taeter: gleich(taeterBild, wahr2) };
                 }
                 stand.aenderung = bild;
                 // (g) VERSCHACHTELT: im Schatten-Render wirft nur ein Werfer ohne Diät (die Vendor-Bahn stellt die Kamera-Knoten);
                 // ein Diät-Stoff ohne Schatten zeichnet zuerst (renderOrder −1), dann startet der Diät-Boden den Schatten.
-                const szene2 = new T.Scene();
+                const szene2 = new THREE.Scene();
                 lichtIn(szene2);
-                const gruppe2 = new T.BundleGroup();
+                const gruppe2 = new THREE.BundleGroup();
                 gruppe2.name = "kamera-treue:VERSCHACHTELT";
                 szene2.add(gruppe2);
-                const stein = new T.Mesh(new T.BoxGeometry(2, 2, 2), diaet(new T.MeshStandardNodeMaterial({ color: 0x8080c0 })));
+                const stein = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), diaet(new THREE.MeshStandardNodeMaterial({ color: 0x8080c0 })));
                 stein.position.set(-6, 1, 3);
                 stein.renderOrder = -1;
                 gruppe2.add(leg(stein, false, false));
                 bodenIn(gruppe2);
-                const werfer = new T.Mesh(new T.BoxGeometry(2, 4, 2), new T.MeshStandardNodeMaterial({ color: 0x8a6a4a }));
+                const werfer = new THREE.Mesh(new THREE.BoxGeometry(2, 4, 2), new THREE.MeshStandardNodeMaterial({ color: 0x8a6a4a }));
                 werfer.position.set(3, 2, 0);
                 werfer.renderOrder = 1;
                 gruppe2.add(leg(werfer, true, false));
                 // Der Täter (Kontrolle): derselbe Gang mit stehendem `info.calls` — sein Stempel ist nur die Render-Id.
                 const taeterGang = (rr, ro, rid) => schreibRoh(Object.create(rr, { info: { value: { calls: rid } } }), ro, rid);
                 const mit2 = async (refresh, gang) => {
-                    const altR = A._diaetRefresh,
-                        altG = A._diaetGeteiltSchreiben;
-                    if (refresh) A._diaetRefresh = refresh;
-                    if (gang) A._diaetGeteiltSchreiben = gang;
+                    const altR = AnazhRealm._diaetRefresh,
+                        altG = AnazhRealm._diaetGeteiltSchreiben;
+                    if (refresh) AnazhRealm._diaetRefresh = refresh;
+                    if (gang) AnazhRealm._diaetGeteiltSchreiben = gang;
                     try {
                         return await schuss(szene2);
                     } finally {
-                        A._diaetRefresh = altR;
-                        A._diaetGeteiltSchreiben = altG;
+                        AnazhRealm._diaetRefresh = altR;
+                        AnazhRealm._diaetGeteiltSchreiben = altG;
                     }
                 };
                 const verschachtelt = {};
@@ -657,25 +655,25 @@ function buehne() {
             const senke = {};
             {
                 gruppe.isBundleGroup = false;
-                const sStoff = diaet(new T.MeshStandardNodeMaterial({ color: 0x9a5a3a }));
-                const sGeo = new T.BoxGeometry(1, 2, 1);
+                const sStoff = diaet(new THREE.MeshStandardNodeMaterial({ color: 0x9a5a3a }));
+                const sGeo = new THREE.BoxGeometry(1, 2, 1);
                 const lage = (m, dx) => {
-                    const m4 = new T.Matrix4();
+                    const m4 = new THREE.Matrix4();
                     for (let i = 0; i < 3; i++) {
                         m4.makeRotationY(0.5 * i).setPosition(-3 + dx + i * 1.6, 1, 6);
                         m.setMatrixAt(i, m4);
-                        m.setColorAt(i, new T.Color().setHSL(i / 3, 0.6, 0.5));
+                        m.setColorAt(i, new THREE.Color().setHSL(i / 3, 0.6, 0.5));
                     }
                     m.instanceMatrix.needsUpdate = true;
                     m.instanceColor.needsUpdate = true;
                     return leg(m);
                 };
-                const sA = lage(A._instanzMesh(sGeo, sStoff, 3), 0);
-                const sB = lage(A._instanzMesh(sGeo, sStoff, 3), 6);
-                A._instanzZahl(sA, 3);
-                A._instanzZahl(sB, 3);
-                const refA = lage(new T.InstancedMesh(sGeo, sStoff, 3), 0);
-                const refB = lage(new T.InstancedMesh(sGeo, sStoff, 3), 6);
+                const sA = lage(AnazhRealm._instanzMesh(sGeo, sStoff, 3), 0);
+                const sB = lage(AnazhRealm._instanzMesh(sGeo, sStoff, 3), 6);
+                AnazhRealm._instanzZahl(sA, 3);
+                AnazhRealm._instanzZahl(sB, 3);
+                const refA = lage(new THREE.InstancedMesh(sGeo, sStoff, 3), 0);
+                const refB = lage(new THREE.InstancedMesh(sGeo, sStoff, 3), 6);
                 const zustand = (o) => {
                     const ro = (o.__renderObjekte || []).find((x) => x.camera === kam);
                     return ro ? ro.getNodeBuilderState() : null;
@@ -704,19 +702,19 @@ function buehne() {
             // (j) WURF: je Werfer Haupt- und Schatten-Fragment (nur der Knoten-Bau, kein kaltes Programm); Soll s. Kopf.
             const wurf = { werfer: [] };
             {
-                const wSzene = new T.Scene();
-                const wl = new T.DirectionalLight(0xffffff, 3);
+                const wSzene = new THREE.Scene();
+                const wl = new THREE.DirectionalLight(0xffffff, 3);
                 wl.castShadow = true;
                 wSzene.add(wl, wl.target);
-                const karte = new T.DataTexture(new Uint8Array(16).fill(200), 2, 2);
-                const stoff = (name, o, colorNode) => Object.assign(new T.MeshStandardNodeMaterial(o), { name }, colorNode ? { colorNode } : {});
+                const karte = new THREE.DataTexture(new Uint8Array(16).fill(200), 2, 2);
+                const stoff = (name, o, colorNode) => Object.assign(new THREE.MeshStandardNodeMaterial(o), { name }, colorNode ? { colorNode } : {});
                 const probe = [
                     stoff("wurf:leer", {}),
                     stoff("wurf:voll", {}, TSL.vec4(TSL.mix(TSL.color(0x2a6a2a), TSL.color(0xc8b080), TSL.uv().x), 1)),
                     stoff("wurf:karte", { map: karte }),
                     stoff("wurf:ausschnitt", { alphaTest: 0.5 }, TSL.vec4(TSL.color(0x3a8a2a), TSL.step(0.5, TSL.fract(TSL.uv().x.mul(3))))),
                 ];
-                for (const m of probe) wSzene.add(Object.assign(new T.Mesh(new T.PlaneGeometry(2, 2), m), { castShadow: true, receiveShadow: true, frustumCulled: false }));
+                for (const m of probe) wSzene.add(Object.assign(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), m), { castShadow: true, receiveShadow: true, frustumCulled: false }));
                 const fang = [];
                 const odVor = rend._renderObjectDirect;
                 rend._renderObjectDirect = function (object, material, sc, camera, lightsNode, group, clip, passId) {
@@ -749,7 +747,7 @@ function buehne() {
             const pass = { aenderung: {} };
             {
                 const brecher = leg(
-                    new T.Mesh(new T.PlaneGeometry(3, 2), new T.MeshBasicNodeMaterial({ colorNode: TSL.vec4(TSL.vec3(TSL.viewportDepthTexture().x), 1) })),
+                    new THREE.Mesh(new THREE.PlaneGeometry(3, 2), new THREE.MeshBasicNodeMaterial({ colorNode: TSL.vec4(TSL.vec3(TSL.viewportDepthTexture().x), 1) })),
                     false,
                     false
                 );
@@ -776,8 +774,8 @@ function buehne() {
                 delete c.passGrund["#pass"];
                 pass.direkt = Object.values(c.passGrund).reduce((a, n) => a + n, 0);
                 Object.assign(pass, { replays: c.n.replayBuerger || 0, bild: gleich(await schuss(), await wahr()) });
-                const standRoh = A._passStand;
-                A._passStand = (it, zf, i) => {
+                const standRoh = AnazhRealm._passStand;
+                AnazhRealm._passStand = (it, zf, i) => {
                     if (it.object !== boden) return standRoh(it, zf, i);
                     const dr = it.geometry.drawRange,
                         alt = [dr.start, dr.count];
@@ -791,10 +789,10 @@ function buehne() {
                 try {
                     boden.geometry.setDrawRange(0, 3);
                     const b = await schuss();
-                    A._passStand = standRoh;
+                    AnazhRealm._passStand = standRoh;
                     pass.stumm = gleich(b, await wahr());
                 } finally {
-                    A._passStand = standRoh;
+                    AnazhRealm._passStand = standRoh;
                     boden.geometry.setDrawRange(0, Infinity);
                 }
                 for (const [name, fn] of [
@@ -808,7 +806,7 @@ function buehne() {
                     fn();
                     pass.aenderung[name] = gleich(await schuss(), await wahr());
                 }
-                pass.bruch = { urteil: A._passBruch(brecher.material, false) === true, melder: melder() - vor[0], tiefe: rend._callDepth - vor[1] };
+                pass.bruch = { urteil: AnazhRealm._passBruch(brecher.material, false) === true, melder: melder() - vor[0], tiefe: rend._callDepth - vor[1] };
                 marke(false);
                 szene.remove(brecher);
             }

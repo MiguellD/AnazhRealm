@@ -1933,13 +1933,12 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
 async function checkBandTailleOmega2({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
-        const C = AnazhRealm;
         out.constants =
-            Number.isFinite(C.TAILLE_UNKNOWN_FIELD_MAX) &&
-            Object.isFrozen(C.BLUEPRINT_KNOWN_KEYS) &&
-            Object.isFrozen(C.MATERIAL_KNOWN_KEYS) &&
-            Object.isFrozen(C.TOOL_KNOWN_KEYS) &&
-            Object.isFrozen(C.MANIFEST_KNOWN_KEYS);
+            Number.isFinite(AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX) &&
+            Object.isFrozen(AnazhRealm.BLUEPRINT_KNOWN_KEYS) &&
+            Object.isFrozen(AnazhRealm.MATERIAL_KNOWN_KEYS) &&
+            Object.isFrozen(AnazhRealm.TOOL_KNOWN_KEYS) &&
+            Object.isFrozen(AnazhRealm.MANIFEST_KNOWN_KEYS);
         // (1) Blueprint-Zwilling: xZukunft + provenance überleben bit-gleich.
         const KA = "ab".repeat(32);
         const live = {
@@ -1965,7 +1964,7 @@ async function checkBandTailleOmega2({ page, check }) {
             Array.isArray(deser.provenance) &&
             deser.provenance[0].by === KA;
         // (2) die Größen-Wand: ein >8-KiB-Feld fällt (Dämpfung, dokumentiert).
-        const fat = r._serializeBlueprint({ ...live, xRiese: "y".repeat(C.TAILLE_UNKNOWN_FIELD_MAX + 10) });
+        const fat = r._serializeBlueprint({ ...live, xRiese: "y".repeat(AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX + 10) });
         out.sizeWall = fat.xRiese === undefined && JSON.stringify(fat.xZukunft) === JSON.stringify(live.xZukunft);
         // (3) Manifest: Unbekanntes überlebt, die Sicherheits-Wand HÄLT weiter.
         const man = r._sanitizeImportedManifest({
@@ -2061,16 +2060,15 @@ async function checkBandTailleOmega2({ page, check }) {
 // platt wirken. Source-Probe + Konstante.
 async function checkBandV18207R5StructureTexture({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = AnazhRealm;
         const out = {};
 
         // (R1) R5_STRUCTURE_TEXTURE
-        if (A.R5_STRUCTURE_TEXTURE) {
-            out.microBoostValue = A.R5_STRUCTURE_TEXTURE.microBoost;
+        if (AnazhRealm.R5_STRUCTURE_TEXTURE) {
+            out.microBoostValue = AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost;
             out.microBoostSensible =
-                typeof A.R5_STRUCTURE_TEXTURE.microBoost === "number" &&
-                A.R5_STRUCTURE_TEXTURE.microBoost > 0 &&
-                A.R5_STRUCTURE_TEXTURE.microBoost < 5;
+                typeof AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost === "number" &&
+                AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost > 0 &&
+                AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost < 5;
         }
 
         return out;

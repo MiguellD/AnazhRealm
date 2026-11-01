@@ -158,7 +158,6 @@ const server = statikServer();
 function buehne(arg) {
     return (async () => {
         const { W, H, SCHWELLE, bilder } = arg;
-        const T = window.THREE;
         const rend = st.renderer;
         const E = AnazhRealm.SHADOW_TWIN_LAYER;
         const P = Object.getPrototypeOf(r);
@@ -179,9 +178,9 @@ function buehne(arg) {
         const schattenAlt = rend.shadowMap.enabled;
         const elternAlt = pm.parent;
         rend.shadowMap.enabled = true;
-        const szene = new T.Scene();
+        const szene = new THREE.Scene();
         szene.name = "ego-schatten:buehne";
-        const ziel = new T.RenderTarget(W, H, { depthBuffer: true });
+        const ziel = new THREE.RenderTarget(W, H, { depthBuffer: true });
         ziel.texture.name = "ego-schatten:bild";
         const knoten = [];
         const sammle = (o) => {
@@ -214,34 +213,34 @@ function buehne(arg) {
             r.setCameraMode("third");
             szene.add(pm);
             pm.updateMatrixWorld(true);
-            const box = new T.Box3().setFromObject(pm);
+            const box = new THREE.Box3().setFromObject(pm);
             const fuss = box.min.y;
             const mitte = pm.position.clone();
             mitte.y = fuss + 0.9;
-            const vorn = new T.Vector3(Math.sin(st.yaw), 0, Math.cos(st.yaw));
-            const rechts = new T.Vector3(-Math.cos(st.yaw), 0, Math.sin(st.yaw));
+            const vorn = new THREE.Vector3(Math.sin(st.yaw), 0, Math.cos(st.yaw));
+            const rechts = new THREE.Vector3(-Math.cos(st.yaw), 0, Math.sin(st.yaw));
             const fall = vorn
                 .clone()
                 .multiplyScalar(Math.cos(0.61))
                 .addScaledVector(rechts, Math.sin(0.61))
                 .normalize();
             const hoch = (30 * Math.PI) / 180;
-            const licht = new T.DirectionalLight(0xffffff, 6);
+            const licht = new THREE.DirectionalLight(0xffffff, 6);
             licht.position
                 .copy(mitte)
                 .addScaledVector(fall, -25 * Math.cos(hoch))
-                .add(new T.Vector3(0, 25 * Math.sin(hoch), 0));
+                .add(new THREE.Vector3(0, 25 * Math.sin(hoch), 0));
             licht.target.position.copy(mitte);
             licht.castShadow = true;
             licht.shadow.mapSize.set(1024, 1024);
             Object.assign(licht.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4, near: 0.5, far: 60 });
             licht.shadow.camera.layers.mask = dl.shadow.camera.layers.mask;
             licht.shadow.camera.updateProjectionMatrix();
-            szene.add(licht, licht.target, new T.AmbientLight(0xffffff, 1.5));
+            szene.add(licht, licht.target, new THREE.AmbientLight(0xffffff, 1.5));
             const diaet = (m) => r._materialObserverDiaet(m);
-            const boden = new T.Mesh(
-                new T.PlaneGeometry(16, 16),
-                diaet(new T.MeshStandardNodeMaterial({ color: 0xb0b0b0 }))
+            const boden = new THREE.Mesh(
+                new THREE.PlaneGeometry(16, 16),
+                diaet(new THREE.MeshStandardNodeMaterial({ color: 0xb0b0b0 }))
             );
             boden.rotation.x = -Math.PI / 2;
             boden.position.set(mitte.x, fuss, mitte.z);
@@ -345,11 +344,11 @@ function buehne(arg) {
                 const skin = pm.children.find((c) => c.userData?._creatureSkin);
                 const rig = pm.userData.rig;
                 const hand = rig?.armR?.wrist || skin;
-                const geraet = new T.Mesh(new T.BoxGeometry(0.05, 0.05, 0.05), new T.MeshBasicNodeMaterial());
+                const geraet = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.05), new THREE.MeshBasicNodeMaterial());
                 geraet.userData._gehalten = true;
                 geraet.visible = false;
                 hand.add(geraet);
-                const zw = new T.Mesh(new T.BoxGeometry(0.05, 0.05, 0.05), new T.MeshBasicNodeMaterial());
+                const zw = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.05), new THREE.MeshBasicNodeMaterial());
                 zw.layers.set(E);
                 zw.visible = false;
                 skin.add(zw);

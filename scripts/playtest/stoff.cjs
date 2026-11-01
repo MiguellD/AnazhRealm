@@ -207,7 +207,6 @@ async function checkBandV18223PbrKohaerenz({ page, check }) {
 // Spiels baut ihren Stoff mit colorNode (G1) — ein Bruch im Bau wirft dort beim Namen.
 async function checkBandWahrerAnblickSaeule1({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const THREE = window.THREE;
         const out = {};
 
         // LAUT: ohne TSL bricht der Helfer beim Namen (`_stoffBruch`), nie still mit dem Eingangs-Albedo

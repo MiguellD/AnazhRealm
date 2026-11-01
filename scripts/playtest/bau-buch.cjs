@@ -258,7 +258,6 @@ async function checkBandOmegaPhi1CoM({ page, check }) {
 // Flake.
 async function checkBandOmegaPhysisSaeuleI_II({ page, check }) {
     const res = await page.evaluate(() => {
-        const C = AnazhRealm;
         const mats = st.materials || {};
         let dense = mats.eisen ? "eisen" : null,
             light = mats.holz ? "holz" : null;
@@ -318,8 +317,8 @@ async function checkBandOmegaPhysisSaeuleI_II({ page, check }) {
         o.rollableWheels = r._blueprintProductVector(veh).rollable > 0;
         o.rollableTrunkZero = r._rollableFraction(P([pt(0, 0, 0, 0.5, 5, 0.5, dense, "cylinder")])) === 0; // vertikaler Stamm rollt nicht
         // ── Ω-L2 die Physik in den Rollen-Signaturen + das WAHRHEITS-BAND ──
-        const sigV = C.ROLE_SIGNATURES.vehicle,
-            sigA = C.ROLE_SIGNATURES.architecture;
+        const sigV = AnazhRealm.ROLE_SIGNATURES.vehicle,
+            sigA = AnazhRealm.ROLE_SIGNATURES.architecture;
         o.l2VehicleReadsPhysik = sigV.stability > 0 && sigV.rollable > 0;
         o.l2ArchReadsPhysik = sigA.stability > 0 && sigA.loadSound > 0;
         const topHeavyVeh = P(
@@ -338,10 +337,10 @@ async function checkBandOmegaPhysisSaeuleI_II({ page, check }) {
             r.computeBlueprintRole(st.blueprints.reittier_holzross) === "vehicle";
         // ── Ω-L3 Geltungsbereich-Markierung ──
         o.l3Marks =
-            C.AXIS_CLASS &&
-            C.AXIS_CLASS.stability === "physik" &&
-            C.AXIS_CLASS.magieleitung === "konvention" &&
-            C.AXIS_CLASS.spread === "form";
+            AnazhRealm.AXIS_CLASS &&
+            AnazhRealm.AXIS_CLASS.stability === "physik" &&
+            AnazhRealm.AXIS_CLASS.magieleitung === "konvention" &&
+            AnazhRealm.AXIS_CLASS.spread === "form";
         // ── Ω-W1 der Warum-Chip zitiert gerechnete Physik (KONSUM-Beweis) ──
         const why = r._blueprintRoleWhy(st.blueprints.reittier_holzross || veh);
         o.w1ConsumesPhysik = !!(why && Array.isArray(why.beitraege) && why.beitraege.some((b) => b.cls === "physik"));
@@ -2191,25 +2190,24 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
     void finalState;
     // ### Werkzeug-Domains + emergente Bauplan-Rolle ###
     const wave9aResults = await safeEvaluate(page, () => {
-        const AR = AnazhRealm;
         const out = {};
         try {
             // Konstanten
             out.toolDomainsFrozen =
-                Array.isArray(AR.TOOL_DOMAINS) && Object.isFrozen(AR.TOOL_DOMAINS) && AR.TOOL_DOMAINS.length === 6;
+                Array.isArray(AnazhRealm.TOOL_DOMAINS) && Object.isFrozen(AnazhRealm.TOOL_DOMAINS) && AnazhRealm.TOOL_DOMAINS.length === 6;
             out.toolDomainsContent = ["construction", "forging", "alchemy", "textile", "soulwork", "mechanism"].every(
-                (d) => AR.TOOL_DOMAINS.includes(d)
+                (d) => AnazhRealm.TOOL_DOMAINS.includes(d)
             );
-            out.domainToRoleFrozen = !!AR.DOMAIN_TO_ROLE && Object.isFrozen(AR.DOMAIN_TO_ROLE);
-            out.alchemyMapsToConsumable = AR.DOMAIN_TO_ROLE.alchemy === "consumable";
-            out.textileMapsToArmor = AR.DOMAIN_TO_ROLE.textile === "armor";
-            out.soulworkMapsToSoul = AR.DOMAIN_TO_ROLE.soulwork === "soul";
-            out.mechanismMapsToMachine = AR.DOMAIN_TO_ROLE.mechanism === "machine";
-            out.constructionMapsToArchitecture = AR.DOMAIN_TO_ROLE.construction === "architecture";
-            out.forgingIsSplit = AR.DOMAIN_TO_ROLE.forging === "forging-split";
-            out.forgingToolTags = Array.isArray(AR.FORGING_TOOL_TAGS) && AR.FORGING_TOOL_TAGS.includes("härte");
-            out.forgingArmorTags = Array.isArray(AR.FORGING_ARMOR_TAGS) && AR.FORGING_ARMOR_TAGS.includes("dichte");
-            out.defaultRole = AR.DEFAULT_BLUEPRINT_ROLE === "architecture";
+            out.domainToRoleFrozen = !!AnazhRealm.DOMAIN_TO_ROLE && Object.isFrozen(AnazhRealm.DOMAIN_TO_ROLE);
+            out.alchemyMapsToConsumable = AnazhRealm.DOMAIN_TO_ROLE.alchemy === "consumable";
+            out.textileMapsToArmor = AnazhRealm.DOMAIN_TO_ROLE.textile === "armor";
+            out.soulworkMapsToSoul = AnazhRealm.DOMAIN_TO_ROLE.soulwork === "soul";
+            out.mechanismMapsToMachine = AnazhRealm.DOMAIN_TO_ROLE.mechanism === "machine";
+            out.constructionMapsToArchitecture = AnazhRealm.DOMAIN_TO_ROLE.construction === "architecture";
+            out.forgingIsSplit = AnazhRealm.DOMAIN_TO_ROLE.forging === "forging-split";
+            out.forgingToolTags = Array.isArray(AnazhRealm.FORGING_TOOL_TAGS) && AnazhRealm.FORGING_TOOL_TAGS.includes("härte");
+            out.forgingArmorTags = Array.isArray(AnazhRealm.FORGING_ARMOR_TAGS) && AnazhRealm.FORGING_ARMOR_TAGS.includes("dichte");
+            out.defaultRole = AnazhRealm.DEFAULT_BLUEPRINT_ROLE === "architecture";
 
             // Default-Tools sind alle generic (domain=null)
             const tools = st.tools || {};
@@ -2220,7 +2218,7 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
             out.originalToolsGeneric = originalGenericNames.every((n) => tools[n] && tools[n].domain === null);
             out.domainToolsHaveDomain = Object.values(tools)
                 .filter((t) => t.builtIn && t.domain)
-                .every((t) => AR.TOOL_DOMAINS.includes(t.domain));
+                .every((t) => AnazhRealm.TOOL_DOMAINS.includes(t.domain));
 
             // Leerer Bauplan / nur generic-Werkzeuge → null Domain, role=architecture
             if (st.blueprints["test_9a_empty"]) r.deleteBlueprint("test_9a_empty");
@@ -2390,7 +2388,6 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
 
     // ### Domain-Werkzeuge + UI-Anzeige der Rolle ###
     const wave9bResults = await safeEvaluate(page, () => {
-        const AR = AnazhRealm;
         const out = {};
         try {
             // 5 neue Domain-Werkzeuge in state.tools
@@ -2424,20 +2421,20 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
 
             // Konstanten für UI: Labels + Farben
             out.roleLabelsFrozen =
-                !!AR.BLUEPRINT_ROLE_LABELS &&
-                Object.isFrozen(AR.BLUEPRINT_ROLE_LABELS) &&
-                AR.BLUEPRINT_ROLE_LABELS.architecture === "Bauwerk" &&
-                AR.BLUEPRINT_ROLE_LABELS.tool === "Werkzeug" &&
-                AR.BLUEPRINT_ROLE_LABELS.machine === "Maschine";
+                !!AnazhRealm.BLUEPRINT_ROLE_LABELS &&
+                Object.isFrozen(AnazhRealm.BLUEPRINT_ROLE_LABELS) &&
+                AnazhRealm.BLUEPRINT_ROLE_LABELS.architecture === "Bauwerk" &&
+                AnazhRealm.BLUEPRINT_ROLE_LABELS.tool === "Werkzeug" &&
+                AnazhRealm.BLUEPRINT_ROLE_LABELS.machine === "Maschine";
             out.domainLabelsFrozen =
-                !!AR.TOOL_DOMAIN_LABELS &&
-                Object.isFrozen(AR.TOOL_DOMAIN_LABELS) &&
-                AR.TOOL_DOMAIN_LABELS.forging === "Schmiede" &&
-                AR.TOOL_DOMAIN_LABELS.alchemy === "Alchemie";
+                !!AnazhRealm.TOOL_DOMAIN_LABELS &&
+                Object.isFrozen(AnazhRealm.TOOL_DOMAIN_LABELS) &&
+                AnazhRealm.TOOL_DOMAIN_LABELS.forging === "Schmiede" &&
+                AnazhRealm.TOOL_DOMAIN_LABELS.alchemy === "Alchemie";
             out.domainColorsFrozen =
-                !!AR.TOOL_DOMAIN_COLORS &&
-                Object.isFrozen(AR.TOOL_DOMAIN_COLORS) &&
-                typeof AR.TOOL_DOMAIN_COLORS.forging === "string";
+                !!AnazhRealm.TOOL_DOMAIN_COLORS &&
+                Object.isFrozen(AnazhRealm.TOOL_DOMAIN_COLORS) &&
+                typeof AnazhRealm.TOOL_DOMAIN_COLORS.forging === "string";
 
             // UI: Werkstatt-Status zeigt Rolle live nach Edit
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
@@ -3120,16 +3117,15 @@ async function checkBandV18164AutoConnect({ page, check }) {
 // unverändert (tag-neutral).
 async function checkBandV18214SkeletonMesh({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = AnazhRealm;
         const out = {};
 
         // ─── (T1) Source-Probes: die vier neuen Helper + Routing ─────
         // K24-N1: der Wurzelanlauf ist das Gesetz der Art (P.flare), die Röhre trägt nur ihre Rippen-Zahl; der Ersatz fiel
-        out.defaultFlareExists = Number.isInteger(A.STAMM_RIPPEN) && A.STAMM_RIPPEN > 0;
+        out.defaultFlareExists = Number.isInteger(AnazhRealm.STAMM_RIPPEN) && AnazhRealm.STAMM_RIPPEN > 0;
         out.speciesTreeParamsExists =
-            !!A.SPECIES_TREE_PARAMS && !!A.SPECIES_TREE_PARAMS.baum_tanne && !!A.SPECIES_TREE_PARAMS.baum_birke;
+            !!AnazhRealm.SPECIES_TREE_PARAMS && !!AnazhRealm.SPECIES_TREE_PARAMS.baum_tanne && !!AnazhRealm.SPECIES_TREE_PARAMS.baum_birke;
         if (out.speciesTreeParamsExists) {
-            const tp = A.SPECIES_TREE_PARAMS;
+            const tp = AnazhRealm.SPECIES_TREE_PARAMS;
             // Plan §3.7: Birke meidet Steilhang (slopeMax ≈ 0.6), Fichte/Tanne klettert (1.2+).
             out.tannenSlopeHigher = tp.baum_tanne.slopeMax > tp.baum_birke.slopeMax;
             out.allSpeciesHaveFlare = [
@@ -3182,7 +3178,7 @@ async function checkBandV18214SkeletonMesh({ page, check }) {
                 out.skelHasFlare =
                     Number.isFinite(bp._skeleton.flareAmp) &&
                     bp._skeleton.flareAmp > 0 &&
-                    bp._skeleton.flareLobes === A.STAMM_RIPPEN;
+                    bp._skeleton.flareLobes === AnazhRealm.STAMM_RIPPEN;
             }
 
             // ─── (T5) Behavioral: archFlattenBlueprint baut Tube+Cards ───

@@ -312,12 +312,11 @@ async function weltPruefen() {
             return bb.max.y - bb.min.y;
         };
         const spawnNorm = () => {
-            const s = st;
-            const pm = (s.playerMesh && s.playerMesh.position) || { x: 0, y: 5, z: 0 };
-            const alt = s.maxCreatures;
-            s.maxCreatures = Math.max(alt || 0, s.creatures.length + 2);
+            const pm = (st.playerMesh && st.playerMesh.position) || { x: 0, y: 5, z: 0 };
+            const alt = st.maxCreatures;
+            st.maxCreatures = Math.max(alt || 0, st.creatures.length + 2);
             const c = r.spawnCreatureAt(pm.x + 30, pm.y + 1, pm.z, "happy", "wolf", { precise: true });
-            s.maxCreatures = alt;
+            st.maxCreatures = alt;
             if (!c) return null;
             const n = hoehe(c) / (r._creatureBodySize(c.userData.netId) || 1);
             r.removeCreature(c);

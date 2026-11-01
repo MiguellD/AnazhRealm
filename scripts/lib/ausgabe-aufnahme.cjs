@@ -32,7 +32,7 @@ function seitenfehlerZaehlen() {
 }
 
 function saisonFest() {
-    if (r?.state) st.autoSeason = false;
+    if (st) st.autoSeason = false;
     else setTimeout(saisonFest, 50);
 }
 

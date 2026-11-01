@@ -645,7 +645,6 @@ const server = statikServer();
         befund = await page.evaluate(async (ORTE) => {
             const MESS = ORTE.mess;
             let HINAUS = null;
-            const T = window.THREE;
             const takt = () => {
                 try {
                     r._gameLoopTick(performance.now());
@@ -911,7 +910,7 @@ const server = statikServer();
             const cam = st.camera;
             const merk = { p: cam.position.clone(), q: cam.quaternion.clone() };
             const S = r._kaskadenSchmier();
-            const L = new T.Vector3(0.35, -0.85, 0.4).normalize(); // die Licht-Richtung (vom Licht fort)
+            const L = new THREE.Vector3(0.35, -0.85, 0.4).normalize(); // die Licht-Richtung (vom Licht fort)
             // die Höhlen-Dreiecke im Abschnitt gegen die, die das EINE Gesetz der Pass-Wahl (`_passTrifftBox`, in der Lage
             // des Hauptbilds) ohne die Höhlen-Sicht zöge
             const zaehl = (liste, lage) => {
@@ -950,7 +949,7 @@ const server = statikServer();
                     .__hoehlenStrahl(r, cam, ohne, { nx: 160, ny: 90 })
                     .fehlend.filter((f) => f.hoehle).length;
                 // die Kaskade: orthogonal, das Ziel in der Mitte, weit zum Licht hin
-                const licht = new T.OrthographicCamera(-90, 90, 90, -90, 0, 1600);
+                const licht = new THREE.OrthographicCamera(-90, 90, 90, -90, 0, 1600);
                 licht.coordinateSystem = cam.coordinateSystem;
                 licht.updateProjectionMatrix();
                 licht.position.set(bl.ziel[0] - L.x * 800, bl.ziel[1] - L.y * 800, bl.ziel[2] - L.z * 800);
@@ -1114,7 +1113,6 @@ const server = statikServer();
             // gerade Abstand darf durch Fels führen: die Grenze ist nur oben scharf); die Höhlen-Vertices in den Mündungs-Boxen des
             // Graphs (`tore`, Höhlen-Luft neben Himmels-Luft — die Wahrheit des Dichtefelds) tragen im Mittel mindestens 0,15.
             {
-                const A = AnazhRealm;
                 const bs = [...st.chunkSaetze.values()].find((q) => q.spec && q.spec.name === "bodenSatz");
                 const geo = bs && bs.geom;
                 const PA = geo && geo.attributes.position;
@@ -1217,8 +1215,8 @@ const server = statikServer();
                 const CA = geo && geo.attributes.color;
                 const NA = geo && geo.attributes.normal;
                 const GK = window.__gelaendeCore;
-                const G = A.TERRAIN_GEOLOGY;
-                const FS = A.FELS_STOFF;
+                const G = AnazhRealm.TERRAIN_GEOLOGY;
+                const FS = AnazhRealm.FELS_STOFF;
                 const wf = { ohneHimmel: 0, fremd: 0, gruen: 0, erst: null, streuung: null, albedo: null };
                 const kl = { steil: 0, fremd: 0, gruen: 0, erst: null };
                 if (HA && CA && NA && GK && typeof GK.felsFarbe === "function") {
@@ -1256,7 +1254,7 @@ const server = statikServer();
                             const ud = g.userData ? g.userData.felsFeuchte : undefined;
                             FE.fill(Number.isFinite(ud) ? ud : NaN, bl.vStart, bl.vStart + bl.vAnzahl);
                         }
-                    const B = FS ? FS.basis : GK.felsBasis(A.BODEN_FARBE.rock);
+                    const B = FS ? FS.basis : GK.felsBasis(AnazhRealm.BODEN_FARBE.rock);
                     const fuss = FS.netz.fuss; // die Kante des Nah-Netzes, die das Spiel liest (`FELS_STOFF.netz`, kein Zwilling daneben)
                     const soll = [0, 0, 0];
                     const pruefe = (i, him, z) => {
@@ -1331,7 +1329,7 @@ const server = statikServer();
                         if (!o.isLight || !o.layers.test(cam.layers)) return;
                         const c = o.color;
                         // die Klasse beim Namen: der Typ, und eine Unterklasse (eigener Licht-Knoten) dazu
-                        const stamm = T[o.type];
+                        const stamm = THREE[o.type];
                         const unter =
                             stamm && Object.getPrototypeOf(o) !== stamm.prototype ? "/" + o.constructor.name : "";
                         lichter.push({

@@ -36,20 +36,19 @@ async function bootPage(browser, nullRenderer) {
 // halfW = 1,04 · maxR). Eine bestehende Zelle statt des Schlüssels backt neu.
 async function installiereBacke(page) {
     await page.evaluate(() => {
-        const T = THREE;
         const R = 4 / 1.04,
             Y = 8 / 1.02;
         window.__fimpFlaeche = (dreiecke) => {
             const pos = [];
             for (const d of dreiecke)
                 for (let i = 0; i < 6; i += 2) pos.push(Math.max(-R, Math.min(R, -4 + 8 * d[i])), Math.min(Y, 8 * d[i + 1]), 0);
-            return new T.BufferGeometry().setAttribute("position", new T.Float32BufferAttribute(pos, 3));
+            return new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
         };
         window.__fimpRechteck = (u0, v0, u1, v1) => [
             [u0, v0, u1, v0, u1, v1],
             [u0, v0, u1, v1, u0, v1],
         ];
-        window.__fimpSaeule = () => new T.CylinderGeometry(R, R, Y, 32).translate(0, Y / 2, 0);
+        window.__fimpSaeule = () => new THREE.CylinderGeometry(R, R, Y, 32).translate(0, Y / 2, 0);
         // das Schicht-Format, das DIE WELT auf dem Probe-Renderer wählt (`_impostorAtlasFormat`: BC nur mit WebGPU-Ablage) —
         // bis S2b fragte die Probe `hasFeature`, und WebGL2 (s3tc) erzwang eine BC-Stufe, die die Welt dort nie fährt
         window.__fimpFormat = (ren) => {
@@ -63,7 +62,7 @@ async function installiereBacke(page) {
         };
         // DIE PROBE: ein frischer Renderer (W × H) und ein frischer Atlas im Format `fmt` — null, wo die Welt auf ihm kein BC fährt
         window.__fimpProbe = async (W, H, fmt) => {
-            const ren = new T.WebGPURenderer({ antialias: false });
+            const ren = new THREE.WebGPURenderer({ antialias: false });
             await ren.init();
             ren.setSize(W, H, false);
             if (fmt === "bc" && window.__fimpFormat(ren) !== "bc") return null;
@@ -87,17 +86,17 @@ async function installiereBacke(page) {
         };
         // die Probe-Gestalt aus Teilen (je Teil ohne Index, EINE Positions-Liste)
         window.__fimpTeile = (...teile) =>
-            new T.BufferGeometry().setAttribute("position", new T.Float32BufferAttribute(teile.flatMap((g) => [...g.toNonIndexed().attributes.position.array]), 3));
+            new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute(teile.flatMap((g) => [...g.toNonIndexed().attributes.position.array]), 3));
         // EIN Bild der Probe: die Objekte unter Umgebungslicht in `rt`, zurückgelesen (RGBA, Zeile 0 unten)
         window.__fimpBild = async (ren, rt, cam, ...o) => {
             ren.setRenderTarget(rt);
-            await ren.renderAsync(new T.Scene().add(...o, new T.AmbientLight(0xffffff, 3)), cam);
+            await ren.renderAsync(new THREE.Scene().add(...o, new THREE.AmbientLight(0xffffff, 3)), cam);
             return ren.readRenderTargetPixelsAsync(rt, 0, 0, rt.width, rt.height);
         };
         // die Karte einer Zelle als EINE Instanz in der Lage M (Skala s) über die echten Chokepoints (Belegen, Stempel)
         window.__fimpKarte = (z, mat, M, s) => {
-            const lf = r._impostorLeaf(z, new T.Matrix4(), 8);
-            const m = Object.assign(new T.InstancedMesh(r._lodInstanceFacade(lf.geom, 1), mat, 1), { frustumCulled: false });
+            const lf = r._impostorLeaf(z, new THREE.Matrix4(), 8);
+            const m = Object.assign(new THREE.InstancedMesh(r._lodInstanceFacade(lf.geom, 1), mat, 1), { frustumCulled: false });
             const sl = r._archGroupAlloc({ key: "gate:" + z.key, mesh: m, capacity: 1, liveCount: 0, slotRef: [], slotEntry: [] }, null).slot;
             return m.setMatrixAt(sl, M), r._lodSlotStamp({ mesh: m }, sl, s, false, lf), m;
         };
@@ -109,10 +108,10 @@ async function installiereBacke(page) {
                 if (typeof key === "string") {
                     z = r._impostorZelleNeu(at, key, "eiche", variant, null);
                     if (!r._impostorAtlasTexturen(at, z.idx + 1)) throw new Error("der Atlas hat keine Texturen (das Buch fehlt)");
-                    const mat = new T.MeshStandardNodeMaterial({ color: 0x3ca028, side: T.DoubleSide });
-                    const anker = new T.BufferGeometry().setAttribute("position", new T.Float32BufferAttribute([0, Y, 0, R, 0, 0, R, 0, 0], 3));
-                    const g = new T.Group();
-                    g.add(new T.Mesh(geo, mat), new T.Mesh(anker, mat));
+                    const mat = new THREE.MeshStandardNodeMaterial({ color: 0x3ca028, side: THREE.DoubleSide });
+                    const anker = new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute([0, Y, 0, R, 0, 0, R, 0, 0], 3));
+                    const g = new THREE.Group();
+                    g.add(new THREE.Mesh(geo, mat), new THREE.Mesh(anker, mat));
                     // die Probe-Gestalt liegt unter der Stufe, aus der die Karte backt (`_karteStufe`)
                     r._foundryCacheSet(r._foundryKoerperKey(z.preset, z.variant, r._karteStufe(z.preset), z.ov), g);
                 }
@@ -281,7 +280,6 @@ async function kleberProbe(page, fmtWunsch) {
     return await page.evaluate(async (fmtWunsch) => {
         const out = { err: null };
         try {
-            const T = THREE;
             const W = 192,
                 H = 128;
             // Ein frischer Atlas im Format des Probe-Renderers (die Seite fährt den Null-Renderer).
@@ -306,45 +304,45 @@ async function kleberProbe(page, fmtWunsch) {
             const z = await window.__fimpBacke(ren, at, "fimp:gateKarte|1", 91, tafel);
             const zV = await window.__fimpBacke(ren, at, "fimp:gateKarte|2", 92, window.__fimpSaeule());
             out.geschrieben = z.gebacken && zV.gebacken;
-            const leaf = r._impostorLeaf(z, new T.Matrix4(), H0);
-            const leafV = r._impostorLeaf(zV, new T.Matrix4(), H0);
+            const leaf = r._impostorLeaf(z, new THREE.Matrix4(), H0);
+            const leafV = r._impostorLeaf(zV, new THREE.Matrix4(), H0);
             const geo = r._lodInstanceFacade(leaf.geom, 2);
-            const mesh = new T.InstancedMesh(geo, mat, 2);
+            const mesh = new THREE.InstancedMesh(geo, mat, 2);
             mesh.frustumCulled = false;
             // Die Slots kommen aus dem ECHTEN Belege-Chokepoint (Marken, count, Sichtbarkeit).
             const gruppe = { key: "gate:kleber", mesh, capacity: 2, liveCount: 0, slotRef: [], slotEntry: [] };
             const refMonster = r._archGroupAlloc(gruppe, null);
             const refLebt = r._archGroupAlloc(gruppe, null);
-            const M = new T.Matrix4();
+            const M = new THREE.Matrix4();
             // Slot 0 (erst MONSTER, dann befreit): rechts im Bild. Slot 1 (LEBT): links im Bild — beim Befreien zieht er
             // in Slot 0 (Matrix UND Karte: das Layout der Nachher-Zählung liest seine umgezogene Schicht).
             // die Mitte des Monsters in Augenhöhe: die Karte kippt zum Auge (lod.K3) — so steht sie aufrecht und flutet
-            M.compose(new T.Vector3(6, 4 - 4000, 0), new T.Quaternion(), new T.Vector3(1000, 1000, 1000));
+            M.compose(new THREE.Vector3(6, 4 - 4000, 0), new THREE.Quaternion(), new THREE.Vector3(1000, 1000, 1000));
             mesh.setMatrixAt(refMonster.slot, M);
-            M.compose(new T.Vector3(-6, 0, 0), new T.Quaternion(), new T.Vector3(1, 1, 1));
+            M.compose(new THREE.Vector3(-6, 0, 0), new THREE.Quaternion(), new THREE.Vector3(1, 1, 1));
             mesh.setMatrixAt(refLebt.slot, M);
             mesh.instanceMatrix.needsUpdate = true;
             r._lodSlotStamp({ mesh }, refMonster.slot, 1, false, leafV);
             r._lodSlotStamp({ mesh }, refLebt.slot, 1, false, leaf);
-            const szene = new T.Scene();
+            const szene = new THREE.Scene();
             szene.add(mesh);
-            szene.add(new T.AmbientLight(0xffffff, 3));
-            const cam = new T.PerspectiveCamera(60, W / H, 0.5, 500);
+            szene.add(new THREE.AmbientLight(0xffffff, 3));
+            const cam = new THREE.PerspectiveCamera(60, W / H, 0.5, 500);
             // BÜHNE: eigene Szene des Impostor-Vergleichs
             cam.position.set(0, 4, 26);
             cam.lookAt(0, 4, 0);
             cam.updateMatrixWorld(true);
-            const rt = new T.RenderTarget(W, H);
+            const rt = new THREE.RenderTarget(W, H);
             ren.setRenderTarget(rt);
             // Die Schirm-Box des lebenden Quads (Anker −6, Halbbreite 4, Höhe 8) — in Quadranten geteilt.
             const px = (x, y) => {
-                const v = new T.Vector3(x, y, 0).project(cam);
+                const v = new THREE.Vector3(x, y, 0).project(cam);
                 return [((v.x + 1) / 2) * W, ((1 - v.y) / 2) * H];
             };
             const [x0, yUnten] = px(-10, 0),
                 [x1, yOben] = px(-2, 8);
             // EICHUNG der Lese-Richtung: ein Marker über dem Quad (allein gezeichnet) — liest die Rückgabe Zeile 0 oben?
-            const marker = new T.Mesh(new T.BoxGeometry(2, 2, 2), new T.MeshBasicMaterial({ color: 0xffffff }));
+            const marker = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), new THREE.MeshBasicMaterial({ color: 0xffffff }));
             marker.position.set(-6, 14, 0);
             szene.add(marker);
             mesh.visible = false;
@@ -387,7 +385,7 @@ async function kleberProbe(page, fmtWunsch) {
             // (2) DIE WAND: den Monster-Slot durch den ECHTEN Free-Chokepoint befreien — die Gruppe verdichtet.
             r._archGroupFree(gruppe, refMonster);
             out.umzug = (() => {
-                const chk = new T.Matrix4();
+                const chk = new THREE.Matrix4();
                 mesh.getMatrixAt(0, chk);
                 const e = chk.elements;
                 return (
@@ -412,14 +410,14 @@ async function kleberProbe(page, fmtWunsch) {
             // über einem Stamm durch den ECHTEN Bake, abseits des Ursprungs, gedreht und skaliert (r184 rechnet den positionNode VOR
             // der Instanz-Matrix — eine Karte, die mit ihrer Instanz dreht, stünde von vorn als Strich), aus jeder Hebung gegen
             // dieselbe Gestalt als Mesh (Deckung K/G, IoU; 180 m, 6°). Selbsttest: jeder Ring waagrecht gebacken (die Karte bis lod.K3).
-            const gO = window.__fimpTeile(new T.CylinderGeometry(3.6, 3.6, 1.2, 48).translate(0, 6.6, 0), new T.CylinderGeometry(0.3, 0.3, 6, 12).translate(0, 3, 0));
+            const gO = window.__fimpTeile(new THREE.CylinderGeometry(3.6, 3.6, 1.2, 48).translate(0, 6.6, 0), new THREE.CylinderGeometry(0.3, 0.3, 6, 12).translate(0, 3, 0));
             const echt = at.ringe;
             const zO = await window.__fimpBacke(ren, at, "fimp:gateKarte|3", 93, gO);
             at.ringe = Object.assign({}, echt, { ringe: echt.ringe.map((x) => Object.assign({}, x, { hebung: 0 })) });
             const zS = await window.__fimpBacke(ren, at, "fimp:gateKarte|4", 94, gO).finally(() => (at.ringe = echt));
-            const lage = new T.Matrix4().compose(new T.Vector3(30, 0, -10), new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), (-119 * Math.PI) / 180), new T.Vector3(1.5, 1.5, 1.5));
-            const camO = new T.PerspectiveCamera(6, 1, 1, 600),
-                rtO = new T.RenderTarget(128, 128);
+            const lage = new THREE.Matrix4().compose(new THREE.Vector3(30, 0, -10), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), (-119 * Math.PI) / 180), new THREE.Vector3(1.5, 1.5, 1.5));
+            const camO = new THREE.PerspectiveCamera(6, 1, 1, 600),
+                rtO = new THREE.RenderTarget(128, 128);
             // gedeckt = gezeichnet und nicht rot (die Tafel der Tiefe)
             const deckt = async (phi, ...o) => {
                 camO.position.set(30, 6 + 180 * Math.sin((phi * Math.PI) / 180), 180 * Math.cos((phi * Math.PI) / 180) - 10);
@@ -429,7 +427,7 @@ async function kleberProbe(page, fmtWunsch) {
             };
             const iou = (k, g) => ((n) => (k.forEach((b, i) => ((n[0] += b), (n[1] += g[i]), (n[2] += b & g[i]))), { deckung: +(n[0] / Math.max(1, n[1])).toFixed(3), iou: +(n[2] / Math.max(1, n[0] + n[1] - n[2])).toFixed(3) }))([0, 0, 0]);
             if (st.windUniforms) st.windUniforms.uWindStrength.value = 0; // der Wind ruht (wie C2)
-            const mG = Object.assign(new T.Mesh(gO, new T.MeshBasicMaterial({ side: T.DoubleSide })), { matrixAutoUpdate: false });
+            const mG = Object.assign(new THREE.Mesh(gO, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide })), { matrixAutoUpdate: false });
             mG.matrix.copy(lage);
             const [mO, mS] = [zO, zS].map((zz) => window.__fimpKarte(zz, mat, lage, 1.5));
             out.oben = { hebungen: echt.ringe.map((x) => x.hebung), schichtB: r._impostorCensus().schichtB, je: {} };
@@ -440,7 +438,7 @@ async function kleberProbe(page, fmtWunsch) {
             // (C7) DIE TIEFE JE TEXEL (w4-laub-karte, phyto-core `karteTiefe`): aus 0° vor einer Tafel 1,5 m vor der Achse steht die
             // Krone der Gestalt (5,4 m tief) davor, der Stamm dahinter — die Karte im Pixel-Tiefen-Versatz wie sie (depthNode).
             // SELBSTTEST: ihr Stoff ohne die Tiefe (`karteTiefeVersatz` = 0) steht auf ihrer Ebene, hinter der Tafel.
-            const wand = new T.Mesh(new T.PlaneGeometry(40, 40), new T.MeshBasicMaterial({ color: 0xff0000 }));
+            const wand = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
             wand.position.set(30, 6, -8.5);
             const davor = async (o) => (await deckt(0, o, wand)).reduce((s, b) => s + b, 0);
             const pc = globalThis.__phytoCore,
@@ -529,7 +527,6 @@ async function vergroessertProbe(page, fmtWunsch) {
     return await page.evaluate(async (fmtWunsch) => {
         const out = { err: null, fmt: fmtWunsch };
         try {
-            const T = THREE;
             const W = 128,
                 H = 128;
             const pr = await window.__fimpProbe(W, H, fmtWunsch);
@@ -549,7 +546,7 @@ async function vergroessertProbe(page, fmtWunsch) {
                 }
                 return window.__fimpFlaeche(d);
             };
-            const cam = new T.PerspectiveCamera(60, W / H, 0.05, 50);
+            const cam = new THREE.PerspectiveCamera(60, W / H, 0.05, 50);
             const d = 0.866; // ein Pixel 7,8 mm: ein Texel der Höhe (8 m / ch) misst ~4 px
             cam.position.set(0, 4, d);
             cam.lookAt(0, 4, 0);
@@ -557,10 +554,10 @@ async function vergroessertProbe(page, fmtWunsch) {
             out.pxJeTexel = +(8 / at.ch / ((2 * d * Math.tan(Math.PI / 6)) / H)).toFixed(2);
             const treppe = async (stufe, name) => {
                 const z = await window.__fimpBacke(ren, at, "fimp:gateKante|" + name, stufe ? 94 : 93, kante(stufe));
-                const rt = new T.RenderTarget(W, H);
+                const rt = new THREE.RenderTarget(W, H);
                 // der Wind ruht: die Probe misst die Karte, nie den Ausschlag des Augenblicks (die Treppe streute 0,248-0,372)
                 if (st.windUniforms) st.windUniforms.uWindStrength.value = 0;
-                const buf = await window.__fimpBild(ren, rt, cam, window.__fimpKarte(z, mat, new T.Matrix4(), 1));
+                const buf = await window.__fimpBild(ren, rt, cam, window.__fimpKarte(z, mat, new THREE.Matrix4(), 1));
                 let gleich = 0,
                     zeilen = 0,
                     vor = null;
@@ -641,19 +638,18 @@ async function windProbe(page) {
     return await page.evaluate(async (faelle) => {
         const out = { err: null, mess: [] };
         try {
-            const T = THREE;
             const W = 256;
             const { ren } = await window.__fimpProbe(W, W, "rgba8");
             r._windUniformsEnsure();
-            const wu = r._ensureWindCoupling(T.TSL);
-            const anker = new T.Vector3(30, 0, -10);
+            const wu = r._ensureWindCoupling(THREE.TSL);
+            const anker = new THREE.Vector3(30, 0, -10);
             const halb = 2; // Bild-Halbbreite in m (von oben): 1,6 cm je Pixel
-            const cam = new T.OrthographicCamera(-halb, halb, halb, -halb, 0.1, 200);
+            const cam = new THREE.OrthographicCamera(-halb, halb, halb, -halb, 0.1, 200);
             cam.position.set(anker.x, 60, anker.z);
             cam.up.set(0, 0, -1);
             cam.lookAt(anker.x, 0, anker.z);
             cam.updateMatrixWorld(true);
-            const rt = new T.RenderTarget(W, W);
+            const rt = new THREE.RenderTarget(W, W);
             // der Schwerpunkt des Säulen-Bilds, Pixel → Welt (Bild-x = Welt +x, Bild-y (unten → oben) = Welt −z)
             const schwerpunkt = async (mesh) => {
                 const buf = await window.__fimpBild(ren, rt, cam, mesh);
@@ -663,21 +659,21 @@ async function windProbe(page) {
                 return n ? { x: w(sx), z: -w(sy) } : null;
             };
             const baue = (phi, s, wind, stoff) => {
-                const g = new T.CylinderGeometry(0.3, 0.3, 10, 8, 20);
+                const g = new THREE.CylinderGeometry(0.3, 0.3, 10, 8, 20);
                 g.translate(0, 5, 0);
-                g.setAttribute("aH0", new T.InstancedBufferAttribute(new Float32Array([10 * s]), 1));
-                const mat = new T.MeshBasicNodeMaterial({ color: 0xffffff });
+                g.setAttribute("aH0", new THREE.InstancedBufferAttribute(new Float32Array([10 * s]), 1));
+                const mat = new THREE.MeshBasicNodeMaterial({ color: 0xffffff });
                 if (wind && stoff === "gras")
-                    mat.positionNode = T.TSL.positionLocal.add(
-                        r._windSwayOffset(T.TSL, { ampX: 1.5, hoehe: T.TSL.positionGeometry.y })
+                    mat.positionNode = THREE.TSL.positionLocal.add(
+                        r._windSwayOffset(THREE.TSL, { ampX: 1.5, hoehe: THREE.TSL.positionGeometry.y })
                     );
                 else if (wind) r._baumWindStoff(mat, "bark", { ht: 10, delta: 0.3, an: 1 });
-                const mesh = new T.InstancedMesh(g, mat, 1);
+                const mesh = new THREE.InstancedMesh(g, mat, 1);
                 mesh.frustumCulled = false;
-                const M = new T.Matrix4().compose(
+                const M = new THREE.Matrix4().compose(
                     anker,
-                    new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), (phi * Math.PI) / 180),
-                    new T.Vector3(s, s, s)
+                    new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), (phi * Math.PI) / 180),
+                    new THREE.Vector3(s, s, s)
                 );
                 mesh.setMatrixAt(0, M);
                 mesh.instanceMatrix.needsUpdate = true;

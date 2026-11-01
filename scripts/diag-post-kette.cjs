@@ -468,7 +468,6 @@ const server = statikServer();
 // Pixel enthält, ist es dasselbe Wasser; liest es den Nachbar-Block (der Pfahl, nah), ist es durchsichtig — ein heller Saum.
 function saumProbe(ort) {
     return (async () => {
-        const T = window.THREE;
         const rend = st.renderer;
         rend.setAnimationLoop(null);
         window.__buehne();
@@ -484,10 +483,10 @@ function saumProbe(ort) {
             cam.lookAt(x0, y0, z0 - 10);
             cam.updateMatrixWorld(true);
         };
-        const gruppe = new T.Group();
+        const gruppe = new THREE.Group();
         gruppe.name = "post-kette:SAUM";
         const [wasser, grund] = window.__postWasser; // das Wasser und der Grund der Bühne (`buehne`), an ihrem Ort
-        const pfahl = new T.Mesh(new T.BoxGeometry(0.5, 4, 0.5), new T.MeshBasicNodeMaterial({ color: 0x000000 }));
+        const pfahl = new THREE.Mesh(new THREE.BoxGeometry(0.5, 4, 0.5), new THREE.MeshBasicNodeMaterial({ color: 0x000000 }));
         pfahl.position.set(x0 + 2.5, y0 - 3, z0 - 9);
         pfahl.rotation.z = 0.35;
         for (const m of [wasser, grund, pfahl]) {
@@ -495,7 +494,7 @@ function saumProbe(ort) {
             gruppe.add(m);
         }
         st.scene.add(gruppe);
-        const db = rend.getDrawingBufferSize(new T.Vector2());
+        const db = rend.getDrawingBufferSize(new THREE.Vector2());
         const W = Math.round(db.x),
             H = Math.round(db.y);
         const aufnahme = async () => {
@@ -513,7 +512,7 @@ function saumProbe(ort) {
             const a = await aufnahme();
             const knoten = r._szeneTiefeKnoten,
                 wert = r._szeneTiefeWert;
-            r._szeneTiefeKnoten = T.TSL.viewportDepthTexture();
+            r._szeneTiefeKnoten = THREE.TSL.viewportDepthTexture();
             r._szeneTiefeWert = r._szeneTiefeKnoten;
             let b;
             try {
@@ -560,7 +559,6 @@ function saumProbe(ort) {
 // DIE BÜHNE (Seiten-Kontext): die echte Welt-Szene, der echte Frame, eigene Gegenstände vor der Kamera.
 function buehne(nFrames, nachtLicht) {
     return (async () => {
-        const T = window.THREE;
         const rend = st.renderer;
         rend.setAnimationLoop(null);
         window.__buehne();
@@ -584,27 +582,27 @@ function buehne(nFrames, nachtLicht) {
             cam.updateMatrixWorld(true);
         };
         setzeKamera();
-        const gruppe = new T.Group();
+        const gruppe = new THREE.Group();
         gruppe.name = "post-kette:BUEHNE";
-        const stoff = (hex) => new T.MeshBasicNodeMaterial({ color: hex });
-        const nah = new T.Mesh(new T.BoxGeometry(1.6, 1.6, 1.6), stoff(0xff2020));
+        const stoff = (hex) => new THREE.MeshBasicNodeMaterial({ color: hex });
+        const nah = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.6, 1.6), stoff(0xff2020));
         nah.position.set(x0, y0, z0 - 6);
-        const fern = new T.Mesh(new T.BoxGeometry(12, 12, 1), stoff(0x20ff20));
+        const fern = new THREE.Mesh(new THREE.BoxGeometry(12, 12, 1), stoff(0x20ff20));
         fern.position.set(x0, y0, z0 - 16);
         // Das Wasser: der echte Stoff (er liest die EINE Szenen-Tiefe), mit den Attributen, die er trägt.
         // Die Wicklung wie das Iso-Wasser: die Vorderseite nach UNTEN — der Stoff zeichnet BackSide (die Oberseite von oben).
-        const wg = new T.PlaneGeometry(24, 24, 4, 4);
+        const wg = new THREE.PlaneGeometry(24, 24, 4, 4);
         wg.rotateX(Math.PI / 2);
         const nV = wg.attributes.position.count;
-        wg.setAttribute("aFlow", new T.BufferAttribute(new Float32Array(nV * 2), 2));
-        wg.setAttribute("aShore", new T.BufferAttribute(new Float32Array(nV).fill(1), 1));
-        wg.setAttribute("aWave", new T.BufferAttribute(new Float32Array(nV), 1));
-        const wasser = new T.Mesh(wg, r._ensureHydroSurfaceMaterial());
+        wg.setAttribute("aFlow", new THREE.BufferAttribute(new Float32Array(nV * 2), 2));
+        wg.setAttribute("aShore", new THREE.BufferAttribute(new Float32Array(nV).fill(1), 1));
+        wg.setAttribute("aWave", new THREE.BufferAttribute(new Float32Array(nV), 1));
+        const wasser = new THREE.Mesh(wg, r._ensureHydroSurfaceMaterial());
         wasser.position.set(x0, y0 - 3, z0 - 14);
         // Der Grund 0,3 m unter dem Spiegel, weiß: der optische Weg ist endlich und kurz, der Grund scheint durch, die Farbe
         // des Wassers hängt an der Szenen-Tiefe (ohne Grund läge dahinter die Welt über Genesis 57 m tiefer — der Durchlass 0, jede
         // Tiefe gäbe dieselbe Farbe).
-        const grund = new T.Mesh(new T.PlaneGeometry(24, 24), stoff(0xffffff));
+        const grund = new THREE.Mesh(new THREE.PlaneGeometry(24, 24), stoff(0xffffff));
         grund.rotation.x = -Math.PI / 2;
         grund.position.set(x0, y0 - 3.3, z0 - 14);
         window.__postWasser = [wasser, grund]; // der Saum (`saumProbe`) misst an DEMSELBEN Wasser über demselben Grund
@@ -686,7 +684,7 @@ function buehne(nFrames, nachtLicht) {
             const ab = r._szeneTiefeKnoten && r._szeneTiefeKnoten.value;
             if (ab && ab.isDataTexture === true && rend.backend.has(ab) && rend.backend.get(ab).texture) {
                 const g = rend.backend.get(ab).texture;
-                const db = rend.getDrawingBufferSize(new T.Vector2());
+                const db = rend.getDrawingBufferSize(new THREE.Vector2());
                 const bpr = Math.ceil((g.width * 4) / 256) * 256;
                 const buf = dev.createBuffer({
                     size: bpr * g.height,
@@ -776,7 +774,7 @@ function buehne(nFrames, nachtLicht) {
             w.abbild = await wasserFarbe();
             const knoten = r._szeneTiefeKnoten,
                 wert = r._szeneTiefeWert;
-            r._szeneTiefeKnoten = T.TSL.viewportDepthTexture();
+            r._szeneTiefeKnoten = THREE.TSL.viewportDepthTexture();
             r._szeneTiefeWert = r._szeneTiefeKnoten;
             try {
                 w.umgehaengt.push(r._tiefenKnotenTausch());
@@ -839,7 +837,7 @@ function buehne(nFrames, nachtLicht) {
             // Rausch-Bump schwarz (ohne den Bump auch dort beleuchtet) — Luma 32,4 / 32,4 —, seit material.K5 beleuchtet: 33,4 / 35,0;
             // die Fläche allein 33,0 / 33,0.
             const SCHICHT = 31;
-            const flach = new T.Mesh(new T.PlaneGeometry(60, 40), new T.MeshBasicNodeMaterial({ color: 0xffffff }));
+            const flach = new THREE.Mesh(new THREE.PlaneGeometry(60, 40), new THREE.MeshBasicNodeMaterial({ color: 0xffffff }));
             flach.material.fog = false;
             flach.frustumCulled = false;
             flach.layers.set(SCHICHT);

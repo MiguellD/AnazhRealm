@@ -346,14 +346,14 @@ hauptLauf(async () => {
             }
             // der Hub liest das Gesetz: die Wind-Zeile hebt die Dünung, der Treiber (A12) das Kräuseln — beide doppelt heben
             // ihn im Verhältnis, jede allein hebt ihn (keine Zeile ist ein toter Zwilling)
-            const K = AnazhRealm, G0 = K.Gesetz, W0 = K.WASSER_WELLE, WG = G0("terrain:WASSER_GESETZ", null);
+            const G0 = AnazhRealm.Gesetz, W0 = AnazhRealm.WASSER_WELLE, WG = G0("terrain:WASSER_GESETZ", null);
             const hubMit = (w, t) => {
-                K.Gesetz = (pfad, fb) => (pfad === "terrain:WASSER_GESETZ" ? { ...WG, wind: WG.wind.map((x) => x * w) } : G0(pfad, fb));
-                K.WASSER_WELLE = { ...W0, treiber: W0.treiber.map((x) => x * t) };
+                AnazhRealm.Gesetz = (pfad, fb) => (pfad === "terrain:WASSER_GESETZ" ? { ...WG, wind: WG.wind.map((x) => x * w) } : G0(pfad, fb));
+                AnazhRealm.WASSER_WELLE = { ...W0, treiber: W0.treiber.map((x) => x * t) };
                 try {
-                    return K._wasserHubM();
+                    return AnazhRealm._wasserHubM();
                 } finally {
-                    [K.Gesetz, K.WASSER_WELLE] = [G0, W0];
+                    [AnazhRealm.Gesetz, AnazhRealm.WASSER_WELLE] = [G0, W0];
                 }
             };
             res.hub = { hub: hubMit(1, 1), beide: hubMit(2, 2), nurWind: hubMit(2, 1), nurTreiber: hubMit(1, 2), wind: WG.wind, treiber: W0.treiber };
@@ -562,7 +562,6 @@ hauptLauf(async () => {
         // 6-m-Raster den Durchstich (Ring > Chunk + 5 cm), und ob der Ring-Stoff der Boden-Stoff des Chunks ist (die Gesetze
         // `_wegeBodenFarbe` und `_terrainGeologyAlbedo` bauen ihn, die Licht-Knoten des Chunk-Stoffs trägt er).
         try {
-            const T9 = THREE;
             const gebaut9 = () => {
                 let n = 0;
                 for (const e of st.voxelChunks ? st.voxelChunks.values() : [])
@@ -656,9 +655,9 @@ hauptLauf(async () => {
             const stoffNaht9 = fr9 && (fr9.stoffe ? fr9.stoffe.naht : fr9.material);
             res.nahtSlotsRing = slots(stoffNaht9).join(",");
             st.scene.updateMatrixWorld(true);
-            const ray = new T9.Raycaster();
-            const ab = new T9.Vector3(0, -1, 0);
-            const o9 = new T9.Vector3();
+            const ray = new THREE.Raycaster();
+            const ab = new THREE.Vector3(0, -1, 0);
+            const o9 = new THREE.Vector3();
             const hoch = (obj, x, z) => {
                 o9.set(x, 4000, z);
                 ray.set(o9, ab);
@@ -669,7 +668,7 @@ hauptLauf(async () => {
             const span9 = r._voxelChunkConfig().span;
             const wl9 = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
             // die volle Schale 0 (der Träger, das ganze Index-Muster) — der Strahl trifft jedes ihrer Dreiecke, ob frei oder Naht
-            const ringMesh = new T9.Mesh(geosVon(fr9)[0], new T9.MeshBasicMaterial({ side: T9.DoubleSide }));
+            const ringMesh = new THREE.Mesh(geosVon(fr9)[0], new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
             // DIE RING-HÖHE ÜBER EIN FACH-RASTER (8 m): der Strahl prüft nur die Dreiecke der Schale 0, deren Kasten den Punkt
             // trägt — der Strahl gegen die ganze Schale (15 000 Dreiecke je Probe) trug den Großteil der Linsen-Zeit.
             const ringFach = new Map();
@@ -696,13 +695,13 @@ hauptLauf(async () => {
                         }
                 }
             }
-            const rA = new T9.Vector3();
-            const rB = new T9.Vector3();
-            const rC = new T9.Vector3();
-            const rT = new T9.Vector3();
-            const rN = new T9.Vector3(); // die Normale des getroffenen Dreiecks (die Weiche des Saums liest sie)
-            const rE1 = new T9.Vector3();
-            const rE2 = new T9.Vector3();
+            const rA = new THREE.Vector3();
+            const rB = new THREE.Vector3();
+            const rC = new THREE.Vector3();
+            const rT = new THREE.Vector3();
+            const rN = new THREE.Vector3(); // die Normale des getroffenen Dreiecks (die Weiche des Saums liest sie)
+            const rE1 = new THREE.Vector3();
+            const rE2 = new THREE.Vector3();
             const ringY = (x, z) => {
                 const liste = ringFach.get(Math.floor(x / 8) * 65536 + Math.floor(z / 8));
                 if (!liste) return null;
@@ -762,10 +761,10 @@ hauptLauf(async () => {
                     neu[v * 3 + 1] = P.getY(v) + (Tg.getY(v) - P.getY(v)) * f;
                     neu[v * 3 + 2] = P.getZ(v) + (Tg.getZ(v) - P.getZ(v)) * f;
                 }
-                const geo = new T9.BufferGeometry();
-                geo.setAttribute("position", new T9.BufferAttribute(neu, 3));
+                const geo = new THREE.BufferGeometry();
+                geo.setAttribute("position", new THREE.BufferAttribute(neu, 3));
                 geo.setIndex(m.geometry.index);
-                g = new T9.Mesh(geo, m.material);
+                g = new THREE.Mesh(geo, m.material);
                 g.matrixWorld.copy(m.matrixWorld);
                 morphMemo.set(m, g);
                 return g;

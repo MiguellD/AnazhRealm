@@ -544,7 +544,6 @@ async function checkBandV18133Forage({ page, check }) {
 // dominiert stein. Alte 2-arg-Aufrufer ohne y bleiben bit-identisch.
 async function checkBandV18197GammaMStrata({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = AnazhRealm;
         const out = {};
 
         // (S3) MIGRATION-TOLERANZ: 2-arg Aufruf gibt das alte Verhalten
@@ -558,7 +557,7 @@ async function checkBandV18197GammaMStrata({ page, check }) {
             const z = (Math.random() - 0.5) * 600;
             const surfY = r._voxelSurfaceY ? r._voxelSurfaceY(x, z) : null;
             if (!Number.isFinite(surfY)) continue;
-            if (surfY - (surfY - A.STRATA_STEIN_DEPTH) !== A.STRATA_STEIN_DEPTH) continue;
+            if (surfY - (surfY - AnazhRealm.STRATA_STEIN_DEPTH) !== AnazhRealm.STRATA_STEIN_DEPTH) continue;
             const mat = r._terrainMaterialAt(x, z); // 2-arg, kein y
             if (mat === "erde") {
                 erdePt = { x, z, surfY };
@@ -576,14 +575,14 @@ async function checkBandV18197GammaMStrata({ page, check }) {
 
             // (S5) TIEF UNTER der Oberfläche (y = surfY - STRATA_STEIN_DEPTH - 5):
             // STRATA forciert stein.
-            const deepY = erdePt.surfY - A.STRATA_STEIN_DEPTH - 5;
+            const deepY = erdePt.surfY - AnazhRealm.STRATA_STEIN_DEPTH - 5;
             const deepMat = r._terrainMaterialAt(erdePt.x, erdePt.z, deepY);
             out.deepMat = deepMat;
             out.deepIsStein = deepMat === "stein";
 
             // (S6) GRENZ-FALL: genau auf STRATA_STEIN_DEPTH-Schwelle bleibt
             // erde (strikte >-Wand, kein Off-by-one)
-            const onThresholdY = erdePt.surfY - A.STRATA_STEIN_DEPTH;
+            const onThresholdY = erdePt.surfY - AnazhRealm.STRATA_STEIN_DEPTH;
             const onMat = r._terrainMaterialAt(erdePt.x, erdePt.z, onThresholdY);
             out.thresholdMat = onMat;
             out.thresholdStaysSame = onMat === "erde";
@@ -609,7 +608,6 @@ async function checkBandV18197GammaMStrata({ page, check }) {
 // die Γ-M-Triade (Strata horizontal + Lichen Patina + Iron-Bands vertikal).
 async function checkBandV18200GammaMIronBands({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = AnazhRealm;
         const out = {};
 
         // (I2) Determinismus: zweimal gleicher (x,z) → gleicher Wert
@@ -650,7 +648,7 @@ async function checkBandV18200GammaMIronBands({ page, check }) {
             const z = (i * 257 + 13) % 1500;
             const surfY = r._voxelSurfaceY ? r._voxelSurfaceY(x, z) : null;
             if (!Number.isFinite(surfY)) continue;
-            const deepY = surfY - A.IRON_BANDS.minDepth - 10;
+            const deepY = surfY - AnazhRealm.IRON_BANDS.minDepth - 10;
             const mat = r._terrainMaterialAt(x, z, deepY);
             probedDeep++;
             if (mat === "stein") steinHits++;
@@ -668,11 +666,11 @@ async function checkBandV18200GammaMIronBands({ page, check }) {
         for (let i = 0; i < 1000; i++) {
             const x = (i * 31.4) % 3000;
             const z = (i * 27.9) % 3000;
-            if (r._eisenAderAt(x, z) > A.IRON_BANDS.threshold) {
+            if (r._eisenAderAt(x, z) > AnazhRealm.IRON_BANDS.threshold) {
                 const surfY = r._voxelSurfaceY ? r._voxelSurfaceY(x, z) : null;
                 if (Number.isFinite(surfY)) {
                     const f = r.worldFieldAt ? r.worldFieldAt(x, z) : null;
-                    if (f && (f.dichte || 0) > A.IRON_BANDS.dichteFloor) {
+                    if (f && (f.dichte || 0) > AnazhRealm.IRON_BANDS.dichteFloor) {
                         highAderPoint = { x, z, surfY };
                         break;
                     }
@@ -681,11 +679,11 @@ async function checkBandV18200GammaMIronBands({ page, check }) {
         }
         out.foundIronPoint = !!highAderPoint;
         if (highAderPoint) {
-            const deepY = highAderPoint.surfY - A.IRON_BANDS.minDepth - 5;
+            const deepY = highAderPoint.surfY - AnazhRealm.IRON_BANDS.minDepth - 5;
             const mat = r._terrainMaterialAt(highAderPoint.x, highAderPoint.z, deepY);
             out.ironPointGivesEisen = mat === "eisen";
             // Plus: an NIEDRIGER Tiefe (< minDepth) bleibt stein-Schicht
-            const midDepth = highAderPoint.surfY - (A.STRATA_STEIN_DEPTH + 2);
+            const midDepth = highAderPoint.surfY - (AnazhRealm.STRATA_STEIN_DEPTH + 2);
             const midMat = r._terrainMaterialAt(highAderPoint.x, highAderPoint.z, midDepth);
             out.midDepthStaysStein = midMat === "stein"; // Iron-Schwelle nicht erreicht (zu flach)
         }
@@ -898,7 +896,6 @@ async function checkBandV18211SkeletonGrammar({ page, check }) {
 // Ω-C Canopy-Shell (als ABWESENHEIT geprüft).
 async function checkBandV18212GigantRestsubschritte({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = AnazhRealm;
         const out = {};
 
         // ─── Ω-K2 BAUM-FÜSSE ───
@@ -968,7 +965,7 @@ async function checkBandV18212GigantRestsubschritte({ page, check }) {
         // ─── Ω-C CANOPY-SHELL — GESCHNITTEN ───
         // Foundry-Wald + Fern-Ring (das Kronendach der Arten) tragen die Ferne; das Band prüft die ABWESENHEIT von Konstante
         // und State (die Methoden bewacht gate:altlasten).
-        out.cConstGone = !A.CANOPY_SHELL;
+        out.cConstGone = !AnazhRealm.CANOPY_SHELL;
         out.cStateGone = st.canopyShell === undefined && st.canopyShellMaterial === undefined;
 
         return out;
@@ -1001,7 +998,6 @@ async function checkBandV18212GigantRestsubschritte({ page, check }) {
 // Welt-Erzeuger mehr, gezeichnet hatte sie nur die litter-Streu als belaubte Alias-Eiche.
 async function checkBandV18215AtemberaubenderWald({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = AnazhRealm;
         const out = {};
 
         // ─── (W2) baum_totholz ist aus SPECIES_TREE_PARAMS + dem Foundry-Alias GEFALLEN (die Stamm-Grammatik fiel K24) ─
@@ -1009,7 +1005,7 @@ async function checkBandV18215AtemberaubenderWald({ page, check }) {
         // LIVE-Buch) löst baum_totholz auf das stehende Studio-Totholz auf — nie auf die belaubte Eiche (der Alias).
         const totholzPreset = r._foundryPresetFor("baum_totholz");
         out.totholzFort =
-            !(A.SPECIES_TREE_PARAMS && A.SPECIES_TREE_PARAMS.baum_totholz) &&
+            !(AnazhRealm.SPECIES_TREE_PARAMS && AnazhRealm.SPECIES_TREE_PARAMS.baum_totholz) &&
             (totholzPreset == null || totholzPreset === "totholz");
 
         // ─── (W5) Behavioral: Spezies-Distinktion in computeCompoundTags ─
@@ -1060,7 +1056,6 @@ async function checkBandV18215AtemberaubenderWald({ page, check }) {
 // prüfen Substanz (Grammar + Params + Variation) + Pipeline (candidates + Sub-Spawn-Pfad).
 async function checkBandV18216KarstUndUnderstory({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = AnazhRealm;
         const out = {};
 
         // ─── (A) KARST: die Studio-Art karst (_phytoArt, K24) + Params + Variation ───────
@@ -1071,7 +1066,7 @@ async function checkBandV18216KarstUndUnderstory({ page, check }) {
         const skK = r._lastTreeSkeleton;
         r._lastTreeSkeleton = null;
         out.karstFlareAmp =
-            !("flare" in (A.SPECIES_TREE_PARAMS.baum_karst || {})) && !!skK && Math.abs(skK.flareAmp - 0.9) < 1e-9;
+            !("flare" in (AnazhRealm.SPECIES_TREE_PARAMS.baum_karst || {})) && !!skK && Math.abs(skK.flareAmp - 0.9) < 1e-9;
 
         // ─── (B) Drei Unterholz-Arten als Studio-Arten (_phytoArt, K24) ─────────────────────
         const artKind = (sp) => {
@@ -1175,7 +1170,6 @@ async function checkBandV18216KarstUndUnderstory({ page, check }) {
 // Sprung); zwei Peers mit gleichem worldSeed bauen den IDENTISCHEN Pool.
 async function checkBandV18217VariantenPool({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = AnazhRealm;
         const out = {};
 
         // ─── (B) Behavioral: Fresh-Welt hat Pool ──────────────────────
@@ -1206,7 +1200,7 @@ async function checkBandV18217VariantenPool({ page, check }) {
                     ARTEN.every(
                         (sp) =>
                             Array.isArray(newMeta.variantSeed[sp]) &&
-                            newMeta.variantSeed[sp].length === A.VARIANTS_PER_SPECIES
+                            newMeta.variantSeed[sp].length === AnazhRealm.VARIANTS_PER_SPECIES
                     ) && r._variantSeedsFor("stein_block") === null;
             } finally {
                 st.worldMeta = savedFresh;
@@ -1292,7 +1286,7 @@ async function checkBandV18217VariantenPool({ page, check }) {
             const migrated = r._variantSeedsFor("baum_tanne");
             out.migrationFillsPool = !!(
                 Array.isArray(migrated) &&
-                migrated.length === A.VARIANTS_PER_SPECIES &&
+                migrated.length === AnazhRealm.VARIANTS_PER_SPECIES &&
                 st.worldMeta.variantSeed.baum_tanne === migrated
             );
         } finally {
@@ -1346,19 +1340,18 @@ async function checkBandV18217VariantenPool({ page, check }) {
 // + Distanz-Chooser mit Hysterese.
 async function checkBandV18218LODStufen({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = AnazhRealm;
         const out = {};
 
         // ─── (B) Distanz-Chooser ───
         // Die Probe liest die Schwellen aus LOD_DISTANCES (thresh01/thresh12/hysteresis), keine festen Meter.
-        const t01r = A.LOD_DISTANCES.thresh01;
-        const t12r = A.LOD_DISTANCES.thresh12;
+        const t01r = AnazhRealm.LOD_DISTANCES.thresh01;
+        const t12r = AnazhRealm.LOD_DISTANCES.thresh12;
         out.choose50 = r._chooseLODForDistance(t01r * 0.6) === 0; // klar unter thresh01 → LOD0
         out.choose100 = r._chooseLODForDistance((t01r + t12r) / 2) === 1; // zwischen den Schwellen → LOD1
         out.choose200 = r._chooseLODForDistance(t12r * 1.25) === 2; // klar über thresh12 → LOD2
         out.choose0 = r._chooseLODForDistance(0) === 0;
-        const t01 = A.LOD_DISTANCES.thresh01;
-        const h = A.LOD_DISTANCES.hysteresis;
+        const t01 = AnazhRealm.LOD_DISTANCES.thresh01;
+        const h = AnazhRealm.LOD_DISTANCES.hysteresis;
         // Hysterese: cur=0 + dist=85m → bleibt 0 (innerhalb +h Buffer)
         out.hyst0to1Below = r._chooseLODForDistance(t01 + h * 0.5, 0) === 0; // 85 → 0
         out.hyst0to1Above = r._chooseLODForDistance(t01 + h * 2, 0) === 1; // 100 → 1
@@ -1367,7 +1360,7 @@ async function checkBandV18218LODStufen({ page, check }) {
         out.hyst1to0Above = r._chooseLODForDistance(t01 - h * 0.5, 1) === 1; // 75 → 1
         // Mehrstufen-Sprung: jenseits ZWEIER Schwellen springt die Wahl durch (sonst stand die region-
         // private Fern-Streu, die nur nach 2 zurückwandern darf, für immer auf L0).
-        const t12 = A.LOD_DISTANCES.thresh12;
+        const t12 = AnazhRealm.LOD_DISTANCES.thresh12;
         out.sprung0to2 = r._chooseLODForDistance(t12 + h * 2, 0) === 2;
         out.sprung2to0 = r._chooseLODForDistance(Math.max(0, t01 - h * 2), 2) === 0;
         // W1 — DIE FERNFORM IST KONSUM, nicht Quelltext: die Fels-Zellen einer NEU GEBAUTEN Region tragen jenseits der
@@ -1375,13 +1368,13 @@ async function checkBandV18218LODStufen({ page, check }) {
         // stehen sie ohne Geometrie, zurück auf "gesetz" als Gesetz-Platz (headless `wartet`, die Gesetz-Bahn zeichnet
         // nur ein echter Renderer) — nie mit Slots. Diesseits der Grenze trägt das Studio-Mesh.
         {
-            const B = A._studioRenderConfig && A._studioRenderConfig.lod && A._studioRenderConfig.lod.budget;
+            const B = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod && AnazhRealm._studioRenderConfig.lod.budget;
             const map = r._ensureScatterRegionMap();
             const pm = st.playerMesh && st.playerMesh.position;
             if (B && B.rock && pm && r._foundryEnabled()) {
                 const felsFern = (reg) =>
                     (reg && Array.isArray(reg.cells) ? reg.cells : []).filter(
-                        (c) => c.layer === "rock" && c.lod >= 2 && Math.hypot(c.x - pm.x, c.z - pm.z) >= A.ANALOG_NAH_M
+                        (c) => c.layer === "rock" && c.lod >= 2 && Math.hypot(c.x - pm.x, c.z - pm.z) >= AnazhRealm.ANALOG_NAH_M
                     );
                 const bau = (k) => {
                     const [x, z] = k.split(",").map(Number);
@@ -1395,7 +1388,7 @@ async function checkBandV18218LODStufen({ page, check }) {
                     const n = felsFern(reg).length;
                     if (n > best) [best, key] = [n, k];
                 }
-                const RM = A.SCATTER.regionM;
+                const RM = AnazhRealm.SCATTER.regionM;
                 for (let dz = -1; dz <= 1 && !key; dz++)
                     for (let dx = -1; dx <= 1 && !key; dx++) {
                         const k = Math.floor(pm.x / RM) + dx + "," + (Math.floor(pm.z / RM) + dz);
@@ -1632,7 +1625,6 @@ async function checkBandV18219bisVollendung({ page, check }) {
 // identische Geometrie (kein Sprung), bit-genauer Determinismus.
 async function checkBandV18224ScatterPromotion({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = AnazhRealm;
         const out = {};
 
         // KONSUM: der nächste Takt des Loops (Dispatcher-Takt Nr. 4: der Deko-Boden greift) ruft das Streu-Streaming
@@ -1663,7 +1655,7 @@ async function checkBandV18224ScatterPromotion({ page, check }) {
             // der innerM-Skip lässt nur die 64m um den Spieler frei, der Rest der
             // 256m-Region streut → die echte Dichte ist messbar.
             const pp = { x: ppm.x, y: ppm.y, z: ppm.z };
-            const SC = A.SCATTER;
+            const SC = AnazhRealm.SCATTER;
             const regX = Math.floor(pp.x / SC.regionM);
             const regZ = Math.floor(pp.z / SC.regionM);
             // Region direkt generieren (umgeht den Frame-Tick)
@@ -1721,7 +1713,7 @@ async function checkBandV18224ScatterPromotion({ page, check }) {
                 // Eine frische Scatter-Cell bauen + promovieren
                 // BÜHNE: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
                 const pp2 = { x: 5000, y: 50, z: 5000 };
-                const SC = A.SCATTER;
+                const SC = AnazhRealm.SCATTER;
                 const regX2 = Math.floor(pp2.x / SC.regionM);
                 const regZ2 = Math.floor(pp2.z / SC.regionM);
                 const region = r._scatterRegion(regX2, regZ2, pp2);

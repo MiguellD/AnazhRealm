@@ -129,16 +129,15 @@ const server = statikServer();
 // die Schatten-Karte zeichnet, und die GPU-Textur ihrer Farbe; das Bild: Luma unter der Kiste gegen freies Licht.
 function karteOhneFarbe() {
     return (async () => {
-        const T = window.THREE,
-            TSL = T.TSL;
+        const TSL = THREE.TSL;
         const rend = st.renderer;
         const be = rend.backend;
         const aus = { gelaufen: false };
         const schattenAlt = rend.shadowMap.enabled;
         rend.shadowMap.enabled = true;
-        const szene = new T.Scene();
+        const szene = new THREE.Scene();
         szene.name = "ziel-zensus:schatten-buehne";
-        const licht = new T.DirectionalLight(0xffffff, 3);
+        const licht = new THREE.DirectionalLight(0xffffff, 3);
         // schräges Licht (von +x): der Schatten der Kiste fällt links neben sie (Boden x ∈ [−8,5; −6]), sichtbar von oben
         licht.position.set(10, 20, 0);
         licht.castShadow = true;
@@ -149,21 +148,21 @@ function karteOhneFarbe() {
         licht.shadow.shadowNode = sn;
         r._kaskadenZiele({ _shadowNodes: [sn] });
         aus.huelle = Object.prototype.hasOwnProperty.call(sn, "setupRenderTarget");
-        szene.add(licht, licht.target, new T.AmbientLight(0xffffff, 0.2));
-        const boden = new T.Mesh(new T.PlaneGeometry(20, 20), new T.MeshStandardNodeMaterial({ color: 0xc8c8c8 }));
+        szene.add(licht, licht.target, new THREE.AmbientLight(0xffffff, 0.2));
+        const boden = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.MeshStandardNodeMaterial({ color: 0xc8c8c8 }));
         boden.rotation.x = -Math.PI / 2;
         boden.receiveShadow = true;
-        const kiste = new T.Mesh(new T.BoxGeometry(4, 4, 4), new T.MeshStandardNodeMaterial({ color: 0x806040 }));
+        const kiste = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 4), new THREE.MeshStandardNodeMaterial({ color: 0x806040 }));
         kiste.position.set(-4, 3, 0);
         kiste.castShadow = true;
         szene.add(boden, kiste);
-        const kam = new T.OrthographicCamera(-10, 10, 10, -10, 0.1, 100);
+        const kam = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 100);
         // BÜHNE: eigene Szene der Ziel-Bühne
         kam.position.set(0, 40, 0);
         kam.up.set(0, 0, -1);
         kam.lookAt(0, 0, 0);
         kam.updateMatrixWorld(true);
-        const ziel = new T.RenderTarget(64, 64, { depthBuffer: true });
+        const ziel = new THREE.RenderTarget(64, 64, { depthBuffer: true });
         ziel.texture.name = "ziel-zensus:schatten-bild";
         // die Pässe in die Schatten-Karte: ihre Tiefe ist die Karten-Tiefe (DepthTexture des Schatten-Ziels)
         let schattenPaesse = 0,

@@ -158,7 +158,6 @@ function kenntMitGestalt(id, rechnet) {
 // jedem Edit und (f) der Zug der Welt-Uhr — verglichen als JSON-Text, byte-gleich oder nicht; dazu (f) das Wetter (Wort, Übergang)
 // und das Leben je Zelle, die Stufe 2 noch verlangt
 function abdruck(bauten) {
-    const st = r.state;
     const edits = (st.worldMeta.voxelEdits || []).map((e) => [e.mode, e.r, e.x, e.y, e.z]);
     const B = (st.architectures || [])
         .filter((e) => bauten.includes(String(e.id)))
@@ -183,22 +182,22 @@ function abdruck(bauten) {
 // ob es feuerte und seine Erzählung im Wissen steht, ob das Tagebuch das Gesetz eines Mitspielers erinnert (`_gesetzGeber`);
 // `vor`: die Hashes der Vorlagen (`GESETZ_VORLAGEN` über den EINEN Satz-Parser) und jedes Gesetzes, das die Welt schon trägt
 function gesetzSicht(H, k0) {
-    const R = r.state.worldRules;
+    const R = st.worldRules;
     const g = R.find((x) => r._regelHash(x) === H) || (!H && R.filter((x) => x.source === "human").pop());
-    const vorlagen = r.constructor.GESETZ_VORLAGEN.map((s) => r._regelAusSatz(s).program);
+    const vorlagen = AnazhRealm.GESETZ_VORLAGEN.map((s) => r._regelAusSatz(s).program);
     return {
         vor: vorlagen
             .map(([, cond, effect]) => ({ cond, effect }))
             .concat(R)
             .map((x) => r._regelHash(x)),
         H: g && r._regelHash(g),
-        k: Math.floor(r.state.spielZeit / 3),
+        k: Math.floor(st.spielZeit / 3),
         wurf:
             g &&
             [...Array(40).keys()].map((i) => r.dslEvalCond(g.cond, r.dslCtx({ seed: r._worldRuleSeed(g, k0 + i) }))) +
                 "",
-        wirkt: !!g && g.fires > 0 && r.state.knowledgeBase.some((e) => e.content === g.effect[1]),
-        erinnert: r.state.worldJournal.entries.some((e) => e.text.startsWith("Das Gesetz von")),
+        wirkt: !!g && g.fires > 0 && st.knowledgeBase.some((e) => e.content === g.effect[1]),
+        erinnert: st.worldJournal.entries.some((e) => e.text.startsWith("Das Gesetz von")),
     };
 }
 // Byte-gleich je Teil des Abdrucks (JSON-Text)
@@ -206,11 +205,11 @@ const gleichIn = (A, B) => (k) => JSON.stringify(A[k]) === JSON.stringify(B[k]);
 // (f) DER SPRUNG: A springt in den Zug vor dem nächsten Sturm am Ort, `ab` Züge voraus (die Front einen Zug davor ohne Sturm)
 // → [die Uhr nach dem Sprung, die Uhr im Sturm] in s
 function sturmSprung(ab) {
-    const [Z, p] = [r.constructor.WETTER_ZUG_SEK, r.state.playerMesh.position];
+    const [Z, p] = [AnazhRealm.WETTER_ZUG_SEK, st.playerMesh.position];
     const sturm = (k) => r._wetterAmOrt(p.x, p.z, k * Z) === "stormy";
-    let k = Math.floor(r.state.spielZeit / Z) + ab;
+    let k = Math.floor(st.spielZeit / Z) + ab;
     while (!sturm(k) || sturm(k - 1)) k++;
-    return [(r.state.spielZeit = k * Z - Z + 1), k * Z + 1];
+    return [(st.spielZeit = k * Z - Z + 1), k * Z + 1];
 }
 
 // (d) DAS GESETZ JE TAKT, wie `_lockstepTickPeers` es trägt: ein Takt von dt ms (seit dem vorigen Verbrauchs-Takt) verbraucht
@@ -256,7 +255,7 @@ const SCHUB_GESETZ = { reserve: 2, aufhol: 10, fixMs: 1000 / 60 }; // das Gesetz
 // Im Seiten-Kontext (der Loop läuft über die Pumpe, der Null-Renderer zeichnet nichts): die Probe hängt am Spiel-Takt
 // `p2pTick` und am Empfang `_p2pMsgPos`.
 function installiere(alteTuer) {
-    r.state.p2p.lockstepDebug = true; // die Spuren des Leibs (A je seq, der Ghost bei B) für (e)
+    st.p2p.lockstepDebug = true; // die Spuren des Leibs (A je seq, der Ghost bei B) für (e)
     const mp = (window.__mp = {
         peerTakte: 0,
         ursprung: 0,
@@ -685,8 +684,7 @@ hauptLauf(async () => {
         // Ende und nie einen festen Verzug: der Ort allein war blind, der feste Verzug las einen Schub vor dem Fenster
         // als Täter.
         const lsGesetz = await pageB.evaluate(() => {
-            const K = r.constructor;
-            return { reserve: K.LOCKSTEP.jitterReserve, aufhol: K.LOCKSTEP.aufholJeSchritt, fixMs: K.FIXED_DT * 1000 };
+            return { reserve: AnazhRealm.LOCKSTEP.jitterReserve, aufhol: AnazhRealm.LOCKSTEP.aufholJeSchritt, fixMs: AnazhRealm.FIXED_DT * 1000 };
         });
         // DER LANGE TAKT IN SCHRITTEN: der Ghost bei B verbraucht erst, wenn seit seinem letzten Takt ZUFLUSS_SOLL
         // Schritte von A angekommen sind — ein Takt trägt so immer das Doppelte der alten Kappe, gleich wie schnell A
@@ -944,7 +942,7 @@ hauptLauf(async () => {
                 ` · wirkt bei A ${A.wirkt}, bei B ${B.wirkt} · B erinnert das Gesetz von A ${B.erinnert}`
         );
         // die Selbsttests: A sagt die Vorlage → nicht neu; B's dsl-Kanal taub → B ohne das Gesetz
-        const v = await gesetz(await pageA.evaluate(() => r.constructor.GESETZ_VORLAGEN[0]), true);
+        const v = await gesetz(await pageA.evaluate(() => AnazhRealm.GESETZ_VORLAGEN[0]), true);
         await pageB.evaluate(() => ((window.__dsl = r._p2pMsgDsl), (r._p2pMsgDsl = () => {})));
         const t = await gesetz("wann immer es zufällig passt, dann erzähle Der Kanal ist taub", false);
         await pageB.evaluate(() => (r._p2pMsgDsl = window.__dsl));

@@ -63,10 +63,9 @@ function installWieseSicht() {
         kam.updateMatrixWorld(true);
         // Die Lage der Linsen-Kamera wie im Haken (`_passSicht`: EINE Rechnung je Pass — Frustum, Auge — nach dem EINEN
         // Gesetz der Pass-Wahl, der Satz bekommt sie gereicht).
-        const T = window.THREE;
         const S = {
-            frustum: new T.Frustum().setFromProjectionMatrix(
-                new T.Matrix4().multiplyMatrices(kam.projectionMatrix, kam.matrixWorldInverse),
+            frustum: new THREE.Frustum().setFromProjectionMatrix(
+                new THREE.Matrix4().multiplyMatrices(kam.projectionMatrix, kam.matrixWorldInverse),
                 kam.coordinateSystem
             ),
         };

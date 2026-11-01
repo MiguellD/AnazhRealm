@@ -142,8 +142,7 @@ function wasserFluss() {
 
 // ── Q6-Körper ──
 async function wasserKoerper(o = {}) {
-    const A = AnazhRealm;
-    const DT = A.FIXED_DT;
+    const DT = AnazhRealm.FIXED_DT;
     const ziel = o.see || (await window.__wasserOrte({})).see.mitte;
     const seeAm = window.__wasserSeeAm(r, ziel);
     if (seeAm.fehler) return { fehler: seeAm.fehler };
@@ -159,11 +158,11 @@ async function wasserKoerper(o = {}) {
     // (8 Kopf-Einheiten zu PLAYER_KH, die Gestalt des Avatars — `_buildHumanGroup`).
     const kc = window.__koerperCore;
     const LP = kc && typeof kc.labProportionen === "function" ? kc.labProportionen() : null;
-    const koerperH = 8 * (Number.isFinite(A.PLAYER_KH) ? A.PLAYER_KH : 0.2125);
+    const koerperH = 8 * (Number.isFinite(AnazhRealm.PLAYER_KH) ? AnazhRealm.PLAYER_KH : 0.2125);
     const brust = LP ? (LP.nippleY / LP.H) * koerperH : 0.72 * koerperH;
-    const FUSS = A.PLAYER_FOOT_OFFSET;
+    const FUSS = AnazhRealm.PLAYER_FOOT_OFFSET;
     const pm = st.playerMesh;
-    const SG = A._schwimmGesetz();
+    const SG = AnazhRealm._schwimmGesetz();
     // Die Welt läuft weiter (der Spiel-Loop ist der Ort des Streamings) — die Sim-Schritte hier sind dieselben, die
     // `_loopFixedStep` je Frame ruft (`_stepFixedSim`). Der Loop ruht, solange die Probe steppt.
     const leib = window.__wasserLeib();
@@ -321,7 +320,7 @@ async function wasserKoerper(o = {}) {
                 .filter(Boolean)
                 .map((t) => Object.assign(t, { amGrund: spiegel - t.sohleUnterSpiegel < gm + 0.5 }));
             const b = tierLage("wolf", 8, true);
-            const soll = R(A._verhaltenGesetz().wasser.schwimmTiefeM, 3);
+            const soll = R(AnazhRealm._verhaltenGesetz().wasser.schwimmTiefeM, 3);
             if (b) aus.baumlos = { sohleUnterSpiegel: b.sohleUnterSpiegel, soll };
         } finally {
             pm.position.copy(playerAlt);
@@ -355,7 +354,7 @@ async function wasserKoerper(o = {}) {
         const gang = () => Object.assign(gehen(), { temperatur: R(r._temperaturAt(spiegel, tauSee)) });
         const feld = (dT) =>
             (r._temperaturFeld = (y, tr) => {
-                const F = A.prototype._temperaturFeld.call(r, y, tr);
+                const F = AnazhRealm.prototype._temperaturFeld.call(r, y, tr);
                 return { ...F, mittel: F.mittel + dT };
             });
         Object.assign(st, { autoSeason: false, seasonPhase: 0.875 });
@@ -1083,7 +1082,6 @@ async function wasserUferFarbe(o = {}) {
     let paritaet = null;
     if (r._getVoxelWorker() && proben.length) {
         await r._voxelWorkerSyncState({ op: "init" });
-        const T = window.THREE;
         const span = r._voxelChunkConfig(0).span;
         let vertices = 0,
             abweichend = 0,
@@ -1102,12 +1100,12 @@ async function wasserUferFarbe(o = {}) {
                 soll[i + 2] = c[2];
             }
             const spalte = soll.slice();
-            const g = new T.BufferGeometry();
-            g.setAttribute("position", new T.BufferAttribute(pos, 3));
-            g.setAttribute("normal", new T.BufferAttribute(new Float32Array(m.normals), 3));
-            g.setAttribute("aHimmel", new T.BufferAttribute(new Float32Array(m.himmel), 1));
-            g.setAttribute("color", new T.BufferAttribute(soll, 3));
-            g.setIndex(new T.BufferAttribute(new Uint32Array(m.indices), 1));
+            const g = new THREE.BufferGeometry();
+            g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+            g.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(m.normals), 3));
+            g.setAttribute("aHimmel", new THREE.BufferAttribute(new Float32Array(m.himmel), 1));
+            g.setAttribute("color", new THREE.BufferAttribute(soll, 3));
+            g.setIndex(new THREE.BufferAttribute(new Uint32Array(m.indices), 1));
             r._felsStoff(g);
             for (let i = 0; i < pos.length; i += 3) {
                 vertices++;
@@ -1146,7 +1144,6 @@ async function wasserUferFarbe(o = {}) {
 
 // ── Q7-Bild ──
 async function wasserBild(o = {}) {
-    const T = window.THREE;
     const renderer = st.renderer;
     if (!renderer || !renderer.backend || renderer.backend.isNullBackend) return { fehler: "kein echter Renderer" };
     const mat = r._ensureHydroSurfaceMaterial();
@@ -1197,26 +1194,26 @@ async function wasserBild(o = {}) {
                 b = a + NR + 1;
             idx.push(a, a + 1, b, b, a + 1, b + 1);
         }
-    const geom = new T.BufferGeometry();
-    geom.setAttribute("position", new T.Float32BufferAttribute(pos, 3));
-    geom.setAttribute("aFlow", new T.Float32BufferAttribute(flow, 2));
-    geom.setAttribute("aDepth", new T.Float32BufferAttribute(depth, 1));
-    geom.setAttribute("aWave", new T.Float32BufferAttribute(nul, 1));
-    geom.setAttribute("aSlope", new T.Float32BufferAttribute(steil, 1));
-    geom.setAttribute("color", new T.Float32BufferAttribute(farbe, 3));
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    geom.setAttribute("aFlow", new THREE.Float32BufferAttribute(flow, 2));
+    geom.setAttribute("aDepth", new THREE.Float32BufferAttribute(depth, 1));
+    geom.setAttribute("aWave", new THREE.Float32BufferAttribute(nul, 1));
+    geom.setAttribute("aSlope", new THREE.Float32BufferAttribute(steil, 1));
+    geom.setAttribute("color", new THREE.Float32BufferAttribute(farbe, 3));
     geom.setIndex(idx);
     const W = o.w || 512,
         H = o.h || 288;
-    const szene = new T.Scene();
-    szene.background = new T.Color(0, 0, 0);
-    const wasser = new T.Mesh(geom, mat);
+    const szene = new THREE.Scene();
+    szene.background = new THREE.Color(0, 0, 0);
+    const wasser = new THREE.Mesh(geom, mat);
     wasser.frustumCulled = false;
     szene.add(wasser);
-    const cam = new T.PerspectiveCamera(50, W / H, 0.5, 400);
+    const cam = new THREE.PerspectiveCamera(50, W / H, 0.5, 400);
     cam.position.set(OX + RAD + 26, OY + 20, OZ);
     cam.lookAt(OX + RAD - 6, OY, OZ);
     cam.updateMatrixWorld(true);
-    const rt = new T.RenderTarget(W, H);
+    const rt = new THREE.RenderTarget(W, H);
     // DIE SZENEN-TIEFE DES BILDS (Integration K host-vram × Welle L wasser): das Wasser liest den Grund hinter sich aus
     // dem Tiefen-Abbild des Hauptbilds (`_szeneTiefe`; `_tiefenAbbild` zieht es nur für die Szene und die Kamera des
     // Spiels). Für den Render der Probe zieht der Zug das Abbild aus IHRER Tiefe — wie im Spiel aus dem Hauptbild;
@@ -1249,7 +1246,7 @@ async function wasserBild(o = {}) {
     };
     // Die Maske: derselbe Bogen auf schwarz, ruhig weiß, Stromschnelle rot (1 = ruhig, 2 = Stromschnelle).
     // (Die Wicklung zeigt nach unten wie die des Sheets — das Wasser-Material zeichnet BackSide, die Maske beide.)
-    const maskMat = new T.MeshBasicNodeMaterial({ vertexColors: true, side: T.DoubleSide });
+    const maskMat = new THREE.MeshBasicNodeMaterial({ vertexColors: true, side: THREE.DoubleSide });
     wasser.material = maskMat;
     const mPix = await lese();
     wasser.material = mat;
@@ -1387,7 +1384,6 @@ async function wasserBild(o = {}) {
 // Kamera am Auge quer zum Wind: lit = Pixel über 4/255; eine Schliere = ein senkrechter Lauf ≥ 4 lit Pixel; die Neigung
 // = (rechts − links) / (rechts + links) der diagonalen Nachbarn im Lauf (der Wind treibt die Schlieren schräg).
 async function wasserRegen(o = {}) {
-    const T = window.THREE;
     const renderer = st.renderer;
     if (!renderer || !renderer.backend || renderer.backend.isNullBackend) return { fehler: "kein echter Renderer" };
     const W = o.w || 640,
@@ -1395,7 +1391,7 @@ async function wasserRegen(o = {}) {
     renderer.setAnimationLoop(null);
     const wetterAlt = st.weather;
     const camAlt = st.camera;
-    const cam = new T.PerspectiveCamera(camAlt.fov, W / H, camAlt.near, camAlt.far);
+    const cam = new THREE.PerspectiveCamera(camAlt.fov, W / H, camAlt.near, camAlt.far);
     cam.position.copy(camAlt.position);
     const t = 61.3;
     const wd = r._windDirAt(t);
@@ -1403,7 +1399,7 @@ async function wasserRegen(o = {}) {
     cam.lookAt(cam.position.x - wd.z, cam.position.y, cam.position.z + wd.x);
     cam.updateMatrixWorld(true);
     cam.updateProjectionMatrix();
-    const rt = new T.RenderTarget(W, H);
+    const rt = new THREE.RenderTarget(W, H);
     let px = null,
         mesh = null,
         eltern = null;
@@ -1417,8 +1413,8 @@ async function wasserRegen(o = {}) {
         mesh = sys && sys.mesh;
         if (!mesh) return { fehler: "kein Regen-Objekt" };
         eltern = mesh.parent;
-        const szene = new T.Scene();
-        szene.background = new T.Color(0, 0, 0);
+        const szene = new THREE.Scene();
+        szene.background = new THREE.Color(0, 0, 0);
         szene.add(mesh);
         renderer.setRenderTarget(rt);
         renderer.render(szene, cam);
@@ -1474,11 +1470,10 @@ async function wasserRegen(o = {}) {
 // Spieler schwimmt dort nicht (`_stepFixedSim`), die Kamera taucht nicht (`_applyDayNightToScene`), das Tier schwimmt nicht
 // (`updateCreatures`, sein Grund der Höhlen-Boden — wie ihn `_koerperBodenUnter` liefert).
 async function wasserHoehle(o = {}) {
-    const A = AnazhRealm;
     const cfg = r._voxelChunkConfig(0);
     const { dim, dimY, step, span, floorDrop } = cfg;
     const oy = (st.terrainBaseHeight || 0) - floorDrop;
-    const S = A.CELL_STATE;
+    const S = AnazhRealm.CELL_STATE;
     const dq = dim * dim;
     const R = wasserRund(2);
     const hoehlen = [];
@@ -1544,7 +1539,7 @@ async function wasserHoehle(o = {}) {
     const wahl = [];
     for (let q = 0; q < raum.length && wahl.length < (o.n || 6); q += Math.max(1, Math.floor(raum.length / 6)))
         wahl.push(raum[q]);
-    const FUSS = A.PLAYER_FOOT_OFFSET;
+    const FUSS = AnazhRealm.PLAYER_FOOT_OFFSET;
     const leib = window.__wasserLeib();
     let schwimmFrames = 0,
         kameraUnter = 0,
@@ -2662,10 +2657,9 @@ async function wasserBank(o = {}) {
             }
         return best ? { d: bd, sp: best[2], hw: best[3] } : null;
     };
-    const T = window.THREE;
-    const v = new T.Vector3(),
-        n = new T.Vector3();
-    const nm = new T.Matrix3();
+    const v = new THREE.Vector3(),
+        n = new THREE.Vector3();
+    const nm = new THREE.Matrix3();
     for (const [, e] of st.voxelChunks || []) {
         if (!e || !e.mesh || e.lod !== 0 || !e.mesh.geometry) continue;
         const g = e.mesh.geometry;
@@ -2809,12 +2803,11 @@ function wasserLeib() {
 // neu gebaut) tragen in den Scheiben vorher Pflanzen, danach keine. Wer nicht folgt, liest eine eigene Fläche — die Kontrolle
 // (das Gesetz allein) nie, sonst ist die Probe blind.
 async function wasserMutation(o = {}) {
-    const A = AnazhRealm;
     const [RHO, TIEF] = [3, 3];
     const ort = o.ort || (await window.__wasserOrte({})).see.ufer;
     await window.__wasserStrom(ort, 3);
     const sicht = window.__wasserSichtNetz();
-    const baum = Object.keys(A.FOREST.crown)[0];
+    const baum = Object.keys(AnazhRealm.FOREST.crown)[0];
     const [zufall, R] = [window.__phytoCore.mulberry32(0x2545f491), wasserRund(1)]; // der Vorlagen-RNG (phyto-core)
     const drin = (x, z) => punkte.some((p) => (x - p.x) ** 2 + (z - p.z) ** 2 <= RHO * RHO);
     // im Wasser einer Scheibe steht, was in ihr unter ihrem Spiegel wurzelt (am Hang ragt ihr Rand über ihn)
@@ -2854,10 +2847,10 @@ async function wasserMutation(o = {}) {
     };
     const leib = window.__wasserLeib();
     const c = punkte.length ? wasserTier(r, punkte[0].x, punkte[0].b, punkte[0].z, "wolf") : null;
-    const takt = Math.max(1, A.KREATUR_RUHE.takt);
+    const takt = Math.max(1, AnazhRealm.KREATUR_RUHE.takt);
     const urteil = (p) => {
         const u = {};
-        leib.setze(p.x, p.b + A.PLAYER_FOOT_OFFSET + 0.02, p.z);
+        leib.setze(p.x, p.b + AnazhRealm.PLAYER_FOOT_OFFSET + 0.02, p.z);
         leib.takt();
         u.leib = !!st.playerUnderwater;
         if (st.camera) {

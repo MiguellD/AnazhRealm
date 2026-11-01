@@ -323,20 +323,19 @@ async function checkBandV1767WorkshopDomainEmergent({ page, check }) {
 // Verjüngung + Hohlkehle). Physik-Garant: Tempel steht, 1:7-Säulen knicken nicht, Balance gerechnet.
 async function checkBandOmegaGrammatik({ page, check }) {
     const res = await page.evaluate(() => {
-        const C = AnazhRealm;
         const o = {};
         // ── Ω-B1/B4 der klassische Tempel — AUSLÖSCHUNGS-WELLE: der temple-Blueprint + der
         // _classicalTempleVariant-Seed-Roller sind gefallen; die LEBENDE Grammatik-Maschine
         // (_buildClassicalTemple + CLASSICAL_ORDERS) bleibt und wird DIREKT geprobt.
         const temple = { parts: r._buildClassicalTemple("dorisch") };
         o.templeOk = !!(temple && Array.isArray(temple.parts) && temple.parts.length > 80);
-        const fluteSet = [C.CLASSICAL_ORDERS.dorisch.flutes, C.CLASSICAL_ORDERS.ionisch.flutes];
+        const fluteSet = [AnazhRealm.CLASSICAL_ORDERS.dorisch.flutes, AnazhRealm.CLASSICAL_ORDERS.ionisch.flutes];
         const shafts = temple.parts.filter((p) => p.shape === "flutedColumn");
         o.doricShafts = shafts.length > 10 && shafts.every((p) => p.size.z < p.size.x && fluteSet.includes(p.flutes));
         o.pediment =
             temple.parts.filter((p) => p.shape === "box" && p.rotation && Math.abs(p.rotation.z) > 0.05).length === 2;
         o.tympanon = temple.parts.filter((p) => p.shape === "gableTriangle").length === 2; // geschlossener Giebel
-        o.orders = !!(C.CLASSICAL_ORDERS && C.CLASSICAL_ORDERS.dorisch && C.CLASSICAL_ORDERS.ionisch);
+        o.orders = !!(AnazhRealm.CLASSICAL_ORDERS && AnazhRealm.CLASSICAL_ORDERS.dorisch && AnazhRealm.CLASSICAL_ORDERS.ionisch);
         // Ω-B4 GENERATIV: N Ordnungen×Parameter → N verschiedene Tempel, ALLE physik-garant.
         // (Der _classicalTempleVariant-Seed-Roller fiel; die Grammatik selbst — Ordnung ×
         // columnsFront — spannt den Varianten-Raum, jede Ausprägung bleibt physik-garant.)
@@ -400,7 +399,7 @@ async function checkBandOmegaGrammatik({ page, check }) {
         o.swordOk = !!(sword && Array.isArray(sword.parts));
         const blades = o.swordOk ? sword.parts.filter((p) => p.shape === "bladeProfile") : [];
         o.realBlade = blades.length === 1 && blades[0].tipWidth < 1 && typeof blades[0].fuller === "number"; // distale Verjüngung + Hohlkehle
-        o.oakeshott = !!(C.OAKESHOTT_TYPES && C.OAKESHOTT_TYPES.XII && C.OAKESHOTT_TYPES.XV);
+        o.oakeshott = !!(AnazhRealm.OAKESHOTT_TYPES && AnazhRealm.OAKESHOTT_TYPES.XII && AnazhRealm.OAKESHOTT_TYPES.XV);
         o.swordImplement = o.swordOk && r._isGraspableBladeForm(sword) === true; // gestreckt + spitz → Klinge
         try {
             const bg = r._makePartGeometry({
@@ -451,23 +450,22 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
     void finalState;
     // ### Compound-Tag-Affordances (Erkennung + UI) ###
     const wave10bResults = await safeEvaluate(page, () => {
-        const AR = AnazhRealm;
         const out = {};
         try {
-            out.thresholdsFrozen = !!AR.AFFORDANCE_THRESHOLDS && Object.isFrozen(AR.AFFORDANCE_THRESHOLDS);
+            out.thresholdsFrozen = !!AnazhRealm.AFFORDANCE_THRESHOLDS && Object.isFrozen(AnazhRealm.AFFORDANCE_THRESHOLDS);
             // Vision-Korrektur 10b.2: Form-Whitelists (WHEEL/LENS/AXIS_SHAPES)
             // wurden ENTFERNT — Affordances emergieren räumlich + tag-basiert,
             // nicht aus shape-Listen.
             out.noShapeWhitelists =
-                typeof AR.WHEEL_SHAPES === "undefined" &&
-                typeof AR.LENS_SHAPES === "undefined" &&
-                typeof AR.AXIS_SHAPES === "undefined";
+                typeof AnazhRealm.WHEEL_SHAPES === "undefined" &&
+                typeof AnazhRealm.LENS_SHAPES === "undefined" &&
+                typeof AnazhRealm.AXIS_SHAPES === "undefined";
             out.thresholdsAreSpatial =
-                AR.AFFORDANCE_THRESHOLDS.moveable.minSupportParts === 2 &&
-                AR.AFFORDANCE_THRESHOLDS.moveable.midlineFactor === 0.5 &&
-                AR.AFFORDANCE_THRESHOLDS.moveable.dichteMin === 0.3 &&
-                AR.AFFORDANCE_THRESHOLDS.magnifying.axialAlignmentMin === 0.6;
-            out.affordanceLabelsExist = !!AR.AFFORDANCE_LABELS && AR.AFFORDANCE_LABELS.moveable === "fahrbar";
+                AnazhRealm.AFFORDANCE_THRESHOLDS.moveable.minSupportParts === 2 &&
+                AnazhRealm.AFFORDANCE_THRESHOLDS.moveable.midlineFactor === 0.5 &&
+                AnazhRealm.AFFORDANCE_THRESHOLDS.moveable.dichteMin === 0.3 &&
+                AnazhRealm.AFFORDANCE_THRESHOLDS.magnifying.axialAlignmentMin === 0.6;
+            out.affordanceLabelsExist = !!AnazhRealm.AFFORDANCE_LABELS && AnazhRealm.AFFORDANCE_LABELS.moveable === "fahrbar";
 
             out.emptyBpEmpty = Object.keys(r.computeBlueprintAffordances(null)).length === 0;
             out.bpNoParts = Object.keys(r.computeBlueprintAffordances({ parts: [] })).length === 0;
@@ -518,11 +516,11 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
             out.scopeIsMagnifying = r.computeBlueprintAffordances(st.blueprints.test_10b_scope).magnifying === true;
 
             // ── W10 ext. — radiating (resonanz-strahlendes Compound) ──
-            out.radiatingLabel = AR.AFFORDANCE_LABELS.radiating === "strahlend";
+            out.radiatingLabel = AnazhRealm.AFFORDANCE_LABELS.radiating === "strahlend";
             out.radiatingThresholds =
-                !!AR.AFFORDANCE_THRESHOLDS.radiating &&
-                AR.AFFORDANCE_THRESHOLDS.radiating.minParts === 3 &&
-                AR.AFFORDANCE_THRESHOLDS.radiating.resoniertMin === 1.5;
+                !!AnazhRealm.AFFORDANCE_THRESHOLDS.radiating &&
+                AnazhRealm.AFFORDANCE_THRESHOLDS.radiating.minParts === 3 &&
+                AnazhRealm.AFFORDANCE_THRESHOLDS.radiating.resoniertMin === 1.5;
             // Ein radialer Quarz-Cluster (≥3 Parts, um einen Kern
             // gespreizt, NICHT auf einer Achse) strahlt.
             if (st.blueprints["test_10ext_radiator"]) r.deleteBlueprint("test_10ext_radiator");
@@ -571,11 +569,11 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
             st.architectures = st.architectures.filter((e) => e.type !== "test_10ext_radiator");
 
             // ── W10 ext. — broadcasting (leitfähiger Relais-Mast) ──
-            out.broadcastingLabel = AR.AFFORDANCE_LABELS.broadcasting === "sendend";
+            out.broadcastingLabel = AnazhRealm.AFFORDANCE_LABELS.broadcasting === "sendend";
             out.broadcastingThresholds =
-                !!AR.AFFORDANCE_THRESHOLDS.broadcasting &&
-                AR.AFFORDANCE_THRESHOLDS.broadcasting.alignMin === 0.6 &&
-                AR.AFFORDANCE_THRESHOLDS.broadcasting.leitfaehigMin === 0.4;
+                !!AnazhRealm.AFFORDANCE_THRESHOLDS.broadcasting &&
+                AnazhRealm.AFFORDANCE_THRESHOLDS.broadcasting.alignMin === 0.6 &&
+                AnazhRealm.AFFORDANCE_THRESHOLDS.broadcasting.leitfaehigMin === 0.4;
             // Der Quarz-Mast (aufrecht, axial, leitfähig) → broadcasting.
             out.mastIsBroadcasting = r.computeBlueprintAffordances(st.blueprints.test_10ext_mast).broadcasting === true;
             // Der radiale Cluster ist KEIN Mast → NICHT broadcasting.
@@ -689,11 +687,11 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
             );
 
             // ── W10 ext. balancing (gründende Form) ──
-            out.balancingLabel = AR.AFFORDANCE_LABELS.balancing === "gründend";
+            out.balancingLabel = AnazhRealm.AFFORDANCE_LABELS.balancing === "gründend";
             out.balancingThresholds =
-                !!AR.AFFORDANCE_THRESHOLDS.balancing &&
-                AR.AFFORDANCE_THRESHOLDS.balancing.bottomHeavyMin === 0.6 &&
-                AR.AFFORDANCE_THRESHOLDS.balancing.dichteMin === 1.5;
+                !!AnazhRealm.AFFORDANCE_THRESHOLDS.balancing &&
+                AnazhRealm.AFFORDANCE_THRESHOLDS.balancing.bottomHeavyMin === 0.6 &&
+                AnazhRealm.AFFORDANCE_THRESHOLDS.balancing.dichteMin === 1.5;
             // Eine breite, flache, schwere Stein-Box-Plattform gründet.
             if (st.blueprints["test_10ext_platform"]) r.deleteBlueprint("test_10ext_platform");
             r.cloneBlueprint("stein_block", "test_10ext_platform");
@@ -729,11 +727,11 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
             emoR.chaos = chaosBefore0;
 
             // ── W10 ext. lifting (Auftriebs-Feld) ──
-            out.liftingLabel = AR.AFFORDANCE_LABELS.lifting === "hebend";
+            out.liftingLabel = AnazhRealm.AFFORDANCE_LABELS.lifting === "hebend";
             out.liftingThresholds =
-                !!AR.AFFORDANCE_THRESHOLDS.lifting &&
-                AR.AFFORDANCE_THRESHOLDS.lifting.magieMin === 1.5 &&
-                AR.AFFORDANCE_THRESHOLDS.lifting.dichteMax === 1.0;
+                !!AnazhRealm.AFFORDANCE_THRESHOLDS.lifting &&
+                AnazhRealm.AFFORDANCE_THRESHOLDS.lifting.magieMin === 1.5 &&
+                AnazhRealm.AFFORDANCE_THRESHOLDS.lifting.dichteMax === 1.0;
             // Ein Quarz-Cone-Cluster (magie 1.7, dichte 0.65) hebt.
             if (st.blueprints["test_10ext_lifter"]) r.deleteBlueprint("test_10ext_lifter");
             r.cloneBlueprint("stein_block", "test_10ext_lifter");
@@ -1155,7 +1153,6 @@ async function checkBandTailleOmega6({ page, check }) {
 // trägt zusätzlich eine harte Schranke (0.35): dort wird Übersprechen zur falschen ROLLE.
 async function checkBandPsi0Winkel({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = AnazhRealm;
         const cos = (a, b) => {
             const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
             let dot = 0;
@@ -1193,11 +1190,11 @@ async function checkBandPsi0Winkel({ page, check }) {
             return { max: Math.round(max * 1000) / 1000, warn, top };
         };
         return {
-            role: maxCos(A.ROLE_SIGNATURES),
-            form: maxCos(A.FORM_ROLE_SIGNATURES),
-            motion: maxCos(A.MOTION_ROLE_SIGNATURES),
-            workshop: maxCos(A.WORKSHOP_DOMAIN_SIGNATURES),
-            op: maxCos(A.OP_CLASS_SIGNATURES),
+            role: maxCos(AnazhRealm.ROLE_SIGNATURES),
+            form: maxCos(AnazhRealm.FORM_ROLE_SIGNATURES),
+            motion: maxCos(AnazhRealm.MOTION_ROLE_SIGNATURES),
+            workshop: maxCos(AnazhRealm.WORKSHOP_DOMAIN_SIGNATURES),
+            op: maxCos(AnazhRealm.OP_CLASS_SIGNATURES),
         };
     });
     // FROZEN-Baseline: ROLE max 0.931 / 7 Paare > 0.85 (die bewusste

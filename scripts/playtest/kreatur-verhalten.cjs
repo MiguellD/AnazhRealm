@@ -1326,10 +1326,8 @@ async function checkBandTierSeparation({ page, check }) {
         return v;
     };
     const out = await safeEvaluate(page, async () => {
-        const s = st,
-            A = AnazhRealm;
         const o = { checks: {} };
-        const pm = s.playerMesh && s.playerMesh.position;
+        const pm = st.playerMesh && st.playerMesh.position;
         if (!pm) return { error: "kein Spieler" };
     
         // Test-Spot: 80–150 m vom Spieler, über Wasser (Determinismus-Fenster, s. Kopf).
@@ -1349,8 +1347,8 @@ async function checkBandTierSeparation({ page, check }) {
         const distXZ = (a, b) => Math.hypot(a.position.x - b.x, a.position.z - b.z);
         const gap = (a, b) => Math.hypot(a.position.x - b.position.x, a.position.z - b.position.z);
     
-        const saveMax = s.maxCreatures;
-        s.maxCreatures = Math.max(saveMax || 0, s.creatures.length + 4);
+        const saveMax = st.maxCreatures;
+        st.maxCreatures = Math.max(saveMax || 0, st.creatures.length + 4);
         const spawn = (spot, soul, bodySize) =>
             r.spawnCreatureAt(spot.x, spot.y, spot.z, "happy", soul, { precise: true, bodySize });
         const cleanup = (list) => list.forEach((c) => c && r.removeCreature(c));
@@ -1378,7 +1376,7 @@ async function checkBandTierSeparation({ page, check }) {
         o.aGap = gap(a1, a2);
         // SCHLUSS-WELLE 17.07. — die Separations-Zahlen wohnen im tetrapoda-
         // Gesetzbuch (VERHALTEN.separation, _verhaltenGesetz fail-closed).
-        o.aBodyRadius = r._kreaturRaum(a1) / A._verhaltenGesetz().separation.raumKugel; // die Körper-Kugel des Leibs (Welle LF)
+        o.aBodyRadius = r._kreaturRaum(a1) / AnazhRealm._verhaltenGesetz().separation.raumKugel; // die Körper-Kugel des Leibs (Welle LF)
         o.aPlayerDist = distXZ(a1, pm);
         o.checks.aStacked0 = o.a0 < 1e-6;
         o.checks.aSeparated = o.aGap > o.aBodyRadius;
@@ -1492,8 +1490,8 @@ async function checkBandTierSeparation({ page, check }) {
     
         // ── (D) LEIB AN LEIB, (E) TIER AM SPIELER, (F) LOCKSTEP, (C2) SELBST-TEST ──
         {
-            const steuerRoh = A._steuerGesetz;
-            const steht = Object.create(steuerRoh.call(A));
+            const steuerRoh = AnazhRealm._steuerGesetz;
+            const steht = Object.create(steuerRoh.call(AnazhRealm));
             steht.steuerSchritt = (st) => {
                 st.v = 0;
             };
@@ -1552,11 +1550,11 @@ async function checkBandTierSeparation({ page, check }) {
                 a.userData._stossV = { x: v0, z: 0 };
                 const res = { minAbstand: Infinity, dvStoesser: 0, dvZiel: 0, massen: null, kontakt: -1 };
                 // die Reibung eines Takts (μ·g·dt, μ des Stoffs unter ihm) nimmt dem gleitenden Stoßer auch im Stoß-Takt Fahrt — sie zählt nicht
-                const reib = (r._stoff(r._kontaktStoffAt(spot.x, spot.z, spot.y)).mu * Math.abs(s.gravity)) / 60;
+                const reib = (r._stoff(r._kontaktStoffAt(spot.x, spot.z, spot.y)).mu * Math.abs(st.gravity)) / 60;
                 const mA = masse(a);
                 const mB = masse(b);
                 res.massen = mA > 0 && mB > 0 ? mB / mA : null;
-                A._steuerGesetz = () => steht;
+                AnazhRealm._steuerGesetz = () => steht;
                 try {
                     let vaVor = vx(a);
                     for (let k = 0; k < 120; k++) {
@@ -1572,7 +1570,7 @@ async function checkBandTierSeparation({ page, check }) {
                         vaVor = vx(a);
                     }
                 } finally {
-                    A._steuerGesetz = steuerRoh;
+                    AnazhRealm._steuerGesetz = steuerRoh;
                 }
                 res.lage = [a.position.x, a.position.z, b.position.x, b.position.z];
                 cleanup([a, b]);
@@ -1590,7 +1588,7 @@ async function checkBandTierSeparation({ page, check }) {
             o.leib.lockstepAbw = abw;
             // (E) TIER AM SPIELER: ein Wolf mit 4 m/s gegen den stehenden Spieler
             {
-                const pmM = s.playerMesh;
+                const pmM = st.playerMesh;
                 // der Spieler steht für die Probe auf dem Boden eines freien Flecks (im Gate steht er auf der Plattform
                 // über dem Gelände — ohne gemeinsame Höhe berührt ihn kein Leib); danach zurück
                 const pmAlt = pmM.position.clone();
@@ -1598,7 +1596,7 @@ async function checkBandTierSeparation({ page, check }) {
                 if (spotE)
                     pmM.position.set(
                         spotE.x,
-                        r.getTerrainHeightAt(spotE.x, spotE.z) + A.PLAYER_FOOT_OFFSET,
+                        r.getTerrainHeightAt(spotE.x, spotE.z) + AnazhRealm.PLAYER_FOOT_OFFSET,
                         spotE.z
                     );
                 const w0 = { x: pmM.position.x - 2.2, y: pmM.position.y, z: pmM.position.z };
@@ -1606,9 +1604,9 @@ async function checkBandTierSeparation({ page, check }) {
                 if (w) {
                     stellen(w, w0.x, w0.z);
                     w.userData._stossV = { x: 4, z: 0 };
-                    s.playerVel.setValue(0, s.playerVel.y(), 0);
+                    st.playerVel.setValue(0, st.playerVel.y(), 0);
                     const sp = { minAbstand: Infinity, dvSpieler: 0 };
-                    A._steuerGesetz = () => steht;
+                    AnazhRealm._steuerGesetz = () => steht;
                     try {
                         for (let k = 0; k < 90; k++) {
                             takt(1 / 60);
@@ -1618,15 +1616,15 @@ async function checkBandTierSeparation({ page, check }) {
                                 az: pmM.position.z,
                                 bx: pmM.position.x,
                                 bz: pmM.position.z,
-                                r: A.PLAYER_WALL_RADIUS,
+                                r: AnazhRealm.PLAYER_WALL_RADIUS,
                             };
                             sp.minAbstand = Math.min(sp.minAbstand, streckeAbstand(PW, PS) - PW.r - PS.r);
-                            sp.dvSpieler = Math.max(sp.dvSpieler, Math.hypot(s.playerVel.x(), s.playerVel.z()));
+                            sp.dvSpieler = Math.max(sp.dvSpieler, Math.hypot(st.playerVel.x(), st.playerVel.z()));
                         }
                     } finally {
-                        A._steuerGesetz = steuerRoh;
+                        AnazhRealm._steuerGesetz = steuerRoh;
                     }
-                    s.playerVel.setValue(0, s.playerVel.y(), 0);
+                    st.playerVel.setValue(0, st.playerVel.y(), 0);
                     cleanup([w]);
                     o.leib.spieler = sp;
                 }
@@ -1641,8 +1639,8 @@ async function checkBandTierSeparation({ page, check }) {
             }
         }
     
-        s.maxCreatures = saveMax;
-        o.creaturesAfter = s.creatures.length;
+        st.maxCreatures = saveMax;
+        o.creaturesAfter = st.creatures.length;
         return o;
     });
     if (!out || out.error) return check("Tier-Separation: die Bühne steht", false, out ? out.error : "keine Antwort der Seite");
@@ -1682,17 +1680,15 @@ async function checkBandTierSeparation({ page, check }) {
 // und Kopie ruhen · (G) die Ruhe der Leiber (Leser, Erwachen, Nah-Gestalt, Feld, Bild, KI) · (T)(W) · Selbsttests S1–S11.
 async function checkBandKreaturKosten({ page, check }) {
     const out = await safeEvaluate(page, async () => {
-        const s = st,
-            A = AnazhRealm;
         const o = { checks: {} };
-        const pm = s.playerMesh && s.playerMesh.position;
+        const pm = st.playerMesh && st.playerMesh.position;
         if (!pm) return { error: "kein Spieler" };
         const core = window.__tetrapodaCore;
         if (!core || !Array.isArray(core.STAND_POSE)) return { error: "tetrapoda-Kern kalt (STAND_POSE fehlt)" };
         const SP = core.STAND_POSE;
     
-        const saveMax = s.maxCreatures;
-        s.maxCreatures = Math.max(saveMax || 0, s.creatures.length + 6);
+        const saveMax = st.maxCreatures;
+        st.maxCreatures = Math.max(saveMax || 0, st.creatures.length + 6);
         const spawnAt = (dx, dz) => {
             const x = pm.x + dx,
                 z = pm.z + dz;
@@ -1748,8 +1744,8 @@ async function checkBandKreaturKosten({ page, check }) {
         for (const tag of Object.keys(probes)) probes[tag].userData._probeTag = tag;
         // nur die Proben im Nah-Kreis: die Tiere der Welt (der Bestand zeichnet bis zur Kappe) nähmen ihnen die Plätze der
         // nahLeiber, und eine Probe im Tier-Satz zeichnet keinen Baum
-        const welt = s.creatures.filter((c) => !Object.values(probes).includes(c));
-        for (const c of welt) s.creatures.splice(s.creatures.indexOf(c), 1);
+        const welt = st.creatures.filter((c) => !Object.values(probes).includes(c));
+        for (const c of welt) st.creatures.splice(st.creatures.indexOf(c), 1);
         pin();
         const savedACM = r._animateCompoundMotion;
         let counts = { voll: 0, halb: 0, viertel: 0, hinter: 0 };
@@ -1841,8 +1837,8 @@ async function checkBandKreaturKosten({ page, check }) {
         o.devStub = maxDev(probeS);
         o.checks.s2LensFires = Number.isFinite(devRePose) && devRePose > 0.05 && o.devStub > 0.05;
         cleanup([probes.voll, probes.halb, probes.viertel, probes.hinter]);
-        s.creatures.push(...welt);
-        s.maxCreatures = saveMax;
+        st.creatures.push(...welt);
+        st.maxCreatures = saveMax;
     
         // ── (C) DIE GELENK-GESTALT DES MENSCHEN: die Grobstufe gebaut + am ECHTEN Peer-Tick über den EINEN Schalter ──
         const g = r._buildHumanGroup();
@@ -1854,8 +1850,8 @@ async function checkBandKreaturKosten({ page, check }) {
         const istNah = () =>
             mf.istFern === false &&
             mf.nah.visible === true &&
-            mf.meshes.every((m) => !m.layers.isEnabled(0) && m.castShadow === m.layers.isEnabled(A.SHADOW_TWIN_LAYER)) &&
-            (!mf.zwilling || mf.meshes.some((m) => m.layers.isEnabled(A.SHADOW_TWIN_LAYER)));
+            mf.meshes.every((m) => !m.layers.isEnabled(0) && m.castShadow === m.layers.isEnabled(AnazhRealm.SHADOW_TWIN_LAYER)) &&
+            (!mf.zwilling || mf.meshes.some((m) => m.layers.isEnabled(AnazhRealm.SHADOW_TWIN_LAYER)));
         const istFern = () =>
             mf.istFern === true && mf.nah.visible === false && mf.meshes.every((m) => m.layers.isEnabled(0));
         if (mf && mf.nah && mf.fern) {
@@ -1902,7 +1898,7 @@ async function checkBandKreaturKosten({ page, check }) {
     
         // ── (R) STARR-BINDUNG + KÖRPER-KUGEL ──
         const T3 = window.THREE;
-        const recW = A.TETRAPODA_SOUL_MAP && A.TETRAPODA_SOUL_MAP.wolf;
+        const recW = AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP.wolf;
         const starrZensus = (root) => {
             const z = { meshes: 0, skins: 0, unverschmolzen: 0, ungecullt: 0, ohneKugel: 0, breit: [] };
             const seen = new Set();
@@ -2005,30 +2001,30 @@ async function checkBandKreaturKosten({ page, check }) {
         o.checks.rZwillingKnochen =
             zw.meshes > 0 && zw.geskinnt === zw.meshes && zw.knochen > 0 && zw.fremd === 0 && zw.geprueft > 0;
         // (S3) SELBST-TEST: ohne Starr-Bindung zählt die Linse die unverschmolzenen Teile
-        const saveStarr = A._ofenStarrBinden;
-        const saveMemo = A._tierOfenMemo;
-        A._ofenStarrBinden = function () {};
-        A._tierOfenMemo = new Map();
+        const saveStarr = AnazhRealm._ofenStarrBinden;
+        const saveMemo = AnazhRealm._tierOfenMemo;
+        AnazhRealm._ofenStarrBinden = function () {};
+        AnazhRealm._tierOfenMemo = new Map();
         const wolfRoh = recW ? r._ofenKreaturTemplate(recW, null, 0) : null;
         o.s3Roh = wolfRoh ? starrZensus(wolfRoh.root) : null;
-        A._ofenStarrBinden = saveStarr; // restaurieren (Gate-Hook-Lehre)
-        A._tierOfenMemo = saveMemo;
+        AnazhRealm._ofenStarrBinden = saveStarr; // restaurieren (Gate-Hook-Lehre)
+        AnazhRealm._tierOfenMemo = saveMemo;
         o.checks.s3LensFires = !!o.s3Roh && o.s3Roh.unverschmolzen > 0;
         // (T) SCHMAL (W7): r184 weitet jeden 16-bit-Index auf 32 bit (der Stamm hält ihn schmal, `_backendGesetz`), die Foundry
         // lieferte Uint32-Indizes und float32-Haut-Gewichte — der Spieler trug 8 MB, 1,7 MB davon Breite ohne Gewinn.
         o.checks.tSchmal = !!o.rWolf && !!o.rMensch && o.rWolf.breit.length === 0 && o.rMensch.breit.length === 0;
         // (S4) SELBST-TEST: mit den alten Formen (Index wie geliefert, Gewicht float32) nennt die Linse die Breite
-        const saveSchmal = A._indexSchmal;
-        const saveGewicht = A._hautGewicht;
-        A._indexSchmal = (arr) => arr;
-        A._hautGewicht = (arr, is) =>
+        const saveSchmal = AnazhRealm._indexSchmal;
+        const saveGewicht = AnazhRealm._hautGewicht;
+        AnazhRealm._indexSchmal = (arr) => arr;
+        AnazhRealm._hautGewicht = (arr, is) =>
             new T3.BufferAttribute(arr instanceof Float32Array ? arr : Float32Array.from(arr), is || 4);
-        A._tierOfenMemo = new Map();
+        AnazhRealm._tierOfenMemo = new Map();
         const wolfBreit = recW ? r._ofenKreaturTemplate(recW, null, 0) : null;
         o.s4Breit = wolfBreit ? starrZensus(wolfBreit.root).breit : null;
-        A._indexSchmal = saveSchmal; // restaurieren (Gate-Hook-Lehre)
-        A._hautGewicht = saveGewicht;
-        A._tierOfenMemo = saveMemo;
+        AnazhRealm._indexSchmal = saveSchmal; // restaurieren (Gate-Hook-Lehre)
+        AnazhRealm._hautGewicht = saveGewicht;
+        AnazhRealm._tierOfenMemo = saveMemo;
         o.checks.s4LensFires = !!o.s4Breit && o.s4Breit.length > 0;
     
         // ── (W) DER WERFER JE GESTALT (S3, Lehre 19): die Kern-Zeile sagt, welche Stufe wirft (`schatten`) und welcher
@@ -2039,7 +2035,7 @@ async function checkBandKreaturKosten({ page, check }) {
         const T3W = T3;
         const PCW = window.__phytoCore;
         const maskeK = new T3W.Layers();
-        maskeK.enable(A.SHADOW_TWIN_LAYER);
+        maskeK.enable(AnazhRealm.SHADOW_TWIN_LAYER);
         const ketteSichtbar = (o, bis) => {
             for (let p = o; p; p = p.parent) {
                 if (p.visible === false) return false;
@@ -2084,7 +2080,7 @@ async function checkBandKreaturKosten({ page, check }) {
         const WURF_SOLL = { kreatur: { draws: 1, tris: 6200 }, koerper: { draws: 5, tris: 38000 } };
         const budgetFang = new Map();
         const saveBudget = r._ofenBudget;
-        const saveMemoW = A._tierOfenMemo;
+        const saveMemoW = AnazhRealm._tierOfenMemo;
         const saveFrustumW = r.isInFrustum;
         r._ofenBudget = function (core, kind, lod) {
             const aus = saveBudget.apply(this, arguments);
@@ -2094,7 +2090,7 @@ async function checkBandKreaturKosten({ page, check }) {
         r.isInFrustum = function () {
             return true; // der Stufen-Schalter läuft nur im Bild — für die Messung immer „im Bild"
         };
-        A._tierOfenMemo = new Map(); // ein frischer Guss je Gestalt: der Ausgang des Ofens wird gefangen
+        AnazhRealm._tierOfenMemo = new Map(); // ein frischer Guss je Gestalt: der Ausgang des Ofens wird gefangen
         const wurfTeil = (core, kind) => {
             const B = core && core.PORTAL_RENDER_CONFIG && core.PORTAL_RENDER_CONFIG.lod.budget[kind];
             const z1 = B && B[1];
@@ -2321,7 +2317,7 @@ async function checkBandKreaturKosten({ page, check }) {
         const kcW = window.__koerperCore;
         const BT = tcW.PORTAL_RENDER_CONFIG.lod.budget.kreatur;
         const BM = kcW.PORTAL_RENDER_CONFIG.lod.budget.koerper;
-        const SM = A.TETRAPODA_SOUL_MAP || {};
+        const SM = AnazhRealm.TETRAPODA_SOUL_MAP || {};
         for (const art of ["wolf", "fox", "bear", "deer"]) {
             const seele = Object.keys(SM).find((k) => SM[k] === art);
             budgetFang.clear();
@@ -2467,7 +2463,7 @@ async function checkBandKreaturKosten({ page, check }) {
         }
         r._ofenBudget = saveBudget; // restaurieren (Gate-Hook-Lehre)
         r.isInFrustum = saveFrustumW;
-        A._tierOfenMemo = saveMemoW;
+        AnazhRealm._tierOfenMemo = saveMemoW;
         o.checks.wWerfer = o.w.length === 5 && o.w.every((x) => x.gruen === true);
         o.checks.s5LensFires = o.w.some((x) => x.s5Rot === true);
         o.deckungMin = DECKUNG_MIN;
@@ -2541,7 +2537,7 @@ async function checkBandKreaturKosten({ page, check }) {
             const mK = seeleF ? r._buildCreatureGroup(seeleF) : null;
             const glK = mK && mK.userData && mK.userData._gelenk;
             if (!glK) return null;
-            const remote = s.p2p.remoteCreatures;
+            const remote = st.p2p.remoteCreatures;
             const rcK = { mesh: mK, peerId: "__linseF" };
             remote.set("__linseF|1", rcK);
             const zuK = (d, gehen) => {
@@ -2590,10 +2586,9 @@ async function checkBandKreaturKosten({ page, check }) {
         // der Matrix-Gang ist `scene.updateMatrixWorld()` wie im Render. Gezählt: volle Schritte (`_kreaturHuellenKontakt`
         // je Schritt), die Zeit der Schritte (`_kreaturLaufTakt` trägt das dt), die Gänge in ein angehängtes Kind.
         o.g = (() => {
-            const T3 = window.THREE;
-            const R = A.KREATUR_RUHE;
+            const R = AnazhRealm.KREATUR_RUHE;
             if (!R) return { fehler: "KREATUR_RUHE fehlt" };
-            const cam = s.camera;
+            const cam = st.camera;
             const blick = (dx, dz) => {
                 cam.position.set(pm.x, pm.y + 2, pm.z);
                 cam.lookAt(pm.x + dx, pm.y + 2, pm.z + dz);
@@ -2604,7 +2599,7 @@ async function checkBandKreaturKosten({ page, check }) {
             if (!probe) return { fehler: "Spawn fehlgeschlagen" };
             const u = probe.userData;
             u._kzVersuch = true;
-            const kind = new T3.Object3D();
+            const kind = new THREE.Object3D();
             kind.position.set(0, 1, 0);
             const kindGang = kind.updateMatrixWorld;
             kind.updateMatrixWorld = function (f) {
@@ -2626,7 +2621,7 @@ async function checkBandKreaturKosten({ page, check }) {
                     if (setze) setze();
                     r._loopFrustumCulling();
                     r.updateCreatures(0.02);
-                    s.scene.updateMatrixWorld();
+                    st.scene.updateMatrixWorld();
                 }
             };
             const nullen = () => {
@@ -2634,7 +2629,7 @@ async function checkBandKreaturKosten({ page, check }) {
                 g.gaenge = 0;
             };
             const kindStimmt = () => {
-                const soll = new T3.Matrix4()
+                const soll = new THREE.Matrix4()
                     .compose(probe.position, probe.quaternion, probe.scale)
                     .multiply(kind.matrix);
                 let d = 0;
@@ -2707,7 +2702,7 @@ async function checkBandKreaturKosten({ page, check }) {
                 probe.position.z -= 5;
                 // (G4) NAH: 40 m hinter dem Blick (diesseits der Nah-Gestalt) — jeder Takt ein Schritt
                 blick(1, 0);
-                const nahX = -Math.min(40, A.ANALOG_NAH_M);
+                const nahX = -Math.min(40, AnazhRealm.ANALOG_NAH_M);
                 const pinNah = () => {
                     probe.position.x = pm.x + nahX;
                     probe.position.z = pm.z;
@@ -2733,13 +2728,13 @@ async function checkBandKreaturKosten({ page, check }) {
                 if (u._steuer) u._steuer.v = 0;
                 takt(3);
                 const ruhte7 = u._ruht === true;
-                const iW = s.creatures.indexOf(probe);
-                s.creatures.splice(iW, 1);
-                s.leichname.push(probe);
+                const iW = st.creatures.indexOf(probe);
+                st.creatures.splice(iW, 1);
+                st.leichname.push(probe);
                 r._tickKreaturRuhe(0.02, pm);
                 g.g7 = { ruhteVorher: ruhte7, wach: u._ruht === false };
-                s.leichname.splice(s.leichname.indexOf(probe), 1);
-                s.creatures.splice(iW, 0, probe);
+                st.leichname.splice(st.leichname.indexOf(probe), 1);
+                st.creatures.splice(iW, 0, probe);
                 // (G8) DIE NAH-GESTALT ruht nie: ein Leib, dessen Mesh noch die Gestalt trägt (`_kzNah` — er kreuzte eben
                 // `aus` nach außen, der Ziegel schaltet erst in seinem Takt), zeichnet und wirft in die Kaskaden (bis
                 // 306 m) — ruhte er, stünde sein Werfer, wo die Ruhe begann (Prüfung K59-1: 10 m daneben, 1 Werfer statt 0)
@@ -2851,7 +2846,7 @@ async function checkBandKreaturKosten({ page, check }) {
         })();
         {
             const G = o.g || {};
-            const R = A.KREATUR_RUHE || {};
+            const R = AnazhRealm.KREATUR_RUHE || {};
             o.checks.gRuht =
                 !!G.g1 &&
                 G.g1.ruht &&
@@ -2883,8 +2878,8 @@ async function checkBandKreaturKosten({ page, check }) {
                 !!G.g11 && G.g11.band === 3 && G.g11.ruht && G.g11.schritte >= 5 && G.g11.ki === G.g11.schritte;
         }
     
-        o.ruheTakt = A.KREATUR_RUHE && A.KREATUR_RUHE.takt;
-        o.creaturesAfter = s.creatures.length;
+        o.ruheTakt = AnazhRealm.KREATUR_RUHE && AnazhRealm.KREATUR_RUHE.takt;
+        o.creaturesAfter = st.creatures.length;
         return o;
     });
     if (!out || out.error) return check("Kreatur-Kosten: die Bühne steht", false, out ? out.error : "keine Antwort der Seite");

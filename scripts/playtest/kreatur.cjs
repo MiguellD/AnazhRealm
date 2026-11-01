@@ -677,7 +677,6 @@ async function checkBandWelle6HBuildAndPersist({ page, check, errors, finalState
     const wave6hP2dResults = await safeEvaluate(page, () => {
         if (!r || !st || !st.playerMesh) return null;
         const out = {};
-        const Class = AnazhRealm;
 
         // 3. _creatureSkillKeyForMemory mappt korrekt
         const sk1 = r._creatureSkillKeyForMemory("gathered", { material: "holz" });
@@ -842,7 +841,7 @@ async function checkBandWelle6HBuildAndPersist({ page, check, errors, finalState
         out.snapshotHasNoSpecs = !snap.creatureSpecializations && !snap.specializations;
 
         // 15. NICHT in NON_BROADCASTABLE_OPS (es gibt keine specialization-DSL-Op)
-        out.noSpecDslOp = !Class.NON_BROADCASTABLE_OPS.has("specialization");
+        out.noSpecDslOp = !AnazhRealm.NON_BROADCASTABLE_OPS.has("specialization");
 
         return out;
     });
@@ -1292,7 +1291,6 @@ async function checkBandWelle6HCreatureStats({ page, check, errors, finalState }
     const wave6hP2f2Results = await safeEvaluate(page, () => {
         if (!r || !st || !st.playerMesh) return null;
         const out = {};
-        const Class = AnazhRealm;
 
         // 2. Neu gespawnte Kreatur hat equipped-Slots initial null
         const player = st.playerMesh.position;
@@ -1375,9 +1373,9 @@ async function checkBandWelle6HCreatureStats({ page, check, errors, finalState }
 
         // 9. NON_BROADCASTABLE_OPS-Mitgliedschaft
         out.opsNonBroadcast =
-            Class.NON_BROADCASTABLE_OPS.has("creature_equip_tool") &&
-            Class.NON_BROADCASTABLE_OPS.has("creature_equip_armor") &&
-            Class.NON_BROADCASTABLE_OPS.has("creature_unequip");
+            AnazhRealm.NON_BROADCASTABLE_OPS.has("creature_equip_tool") &&
+            AnazhRealm.NON_BROADCASTABLE_OPS.has("creature_equip_armor") &&
+            AnazhRealm.NON_BROADCASTABLE_OPS.has("creature_unequip");
 
         // 10. describeProgram-Einträge
         const d1 = r.describeProgram(["creature_equip_tool", 0, "schmiede-hammer"]);
@@ -1488,7 +1486,6 @@ async function checkBandWelle6HCreatureStats({ page, check, errors, finalState }
     const wave6hP2f3Results = await safeEvaluate(page, () => {
         if (!r || !st || !st.playerMesh) return null;
         const out = {};
-        const Class = AnazhRealm;
 
         // 2. Neu gespawnte Kreatur hat boosts = []
         const player = st.playerMesh.position;
@@ -1586,7 +1583,7 @@ async function checkBandWelle6HCreatureStats({ page, check, errors, finalState }
         out.dslAppliedBoost = Array.isArray(cDsl.userData.boosts) && cDsl.userData.boosts.length === 1;
 
         // 11. NON_BROADCASTABLE-Mitgliedschaft
-        out.opNonBroadcast = Class.NON_BROADCASTABLE_OPS.has("creature_apply_boost");
+        out.opNonBroadcast = AnazhRealm.NON_BROADCASTABLE_OPS.has("creature_apply_boost");
 
         // 12. describeProgram
         const desc = r.describeProgram(["creature_apply_boost", 0, tonicName]);
@@ -1708,7 +1705,6 @@ async function checkBandWelle6HCreatureStats({ page, check, errors, finalState }
 // materialisiert IM Spieler (≥ 3 m radial); Restore/Peer-Sicht bleiben PRECISE (bit-treu).
 async function checkBandWDRittSpawn({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = AnazhRealm;
         const out = {};
         // (1) die Sitz-Hüfte beweist gate:vehicle-drive am Aufsitzen (sitzKern); (2) die Klemme: ein Spawn IM Spieler (1 m) landet auf ≥3 m; precise bleibt.
         const pm = st.playerMesh.position;
@@ -1716,7 +1712,7 @@ async function checkBandWDRittSpawn({ page, check }) {
         st.maxCreatures = st.creatures.length + 2;
         const nah = r.spawnCreatureAt(pm.x + 1, pm.y, pm.z, "happy", "wesen");
         const dNah = nah ? Math.hypot(nah.position.x - pm.x, nah.position.z - pm.z) : -1;
-        out.klemmeWirkt = !!nah && dNah >= (A.CREATURE_SPAWN_CLEAR_M || 3) - 1e-6;
+        out.klemmeWirkt = !!nah && dNah >= (AnazhRealm.CREATURE_SPAWN_CLEAR_M || 3) - 1e-6;
         const genau = r.spawnCreatureAt(pm.x + 1, pm.y, pm.z, "happy", "wesen", { precise: true });
         const dGenau = genau ? Math.hypot(genau.position.x - pm.x, genau.position.z - pm.z) : -1;
         out.preciseUnberuehrt = !!genau && Math.abs(dGenau - 1) < 1e-6;
@@ -1738,23 +1734,22 @@ async function checkBandWDRittSpawn({ page, check }) {
 // Spieler-Symmetrie): größere Kreaturen sind robuster aber langsamer.
 async function checkBandV18208CreatureSizeSymmetry({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = AnazhRealm;
         const out = {};
 
         // (C2) Vergleich: kleine Kreatur (sizeFactor < 1) vs große (>1)
-        if (!A.CREATURE_SOULS) {
+        if (!AnazhRealm.CREATURE_SOULS) {
             out.creatureSoulsExists = false;
             return out;
         }
         out.creatureSoulsExists = true;
 
         // Liste aller built-in Kreatur-Seelen
-        const souls = Object.keys(A.CREATURE_SOULS);
+        const souls = Object.keys(AnazhRealm.CREATURE_SOULS);
         out.soulCount = souls.length;
 
         const stats = {};
         for (const sn of souls) {
-            const soul = A.CREATURE_SOULS[sn];
+            const soul = AnazhRealm.CREATURE_SOULS[sn];
             if (!soul || !Array.isArray(soul.bodyParts)) continue;
             const sizeFactor = r._compoundSizeFactor({ parts: soul.bodyParts });
             const fakeCreature = { userData: { soul: sn, boosts: [] } };

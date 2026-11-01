@@ -826,10 +826,8 @@ function mxLookup3(x, y, z) {
 
 function rauschProbe() {
     return (async () => {
-        const T = window.THREE;
-        const TSL = T.TSL;
-        const A = AnazhRealm;
-        const R = A.RAUSCH_GESETZ;
+        const TSL = THREE.TSL;
+        const R = AnazhRealm.RAUSCH_GESETZ;
         const P = R.P;
         const [SA, SB] = R.schraeg;
         const ra = r._rauschAtlas();
@@ -904,10 +902,10 @@ function rauschProbe() {
             return R.skala * lerp(s(0), s(1), blende(fz));
         };
         const N = 64;
-        const rt = new T.RenderTarget(N, N, { type: T.FloatType, depthBuffer: false });
-        const szene = new T.Scene();
-        const kam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-        const quad = new T.Mesh(new T.PlaneGeometry(2, 2), new T.MeshBasicNodeMaterial());
+        const rt = new THREE.RenderTarget(N, N, { type: THREE.FloatType, depthBuffer: false });
+        const szene = new THREE.Scene();
+        const kam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicNodeMaterial());
         quad.frustumCulled = false;
         szene.add(quad);
         const sc = TSL.screenCoordinate;

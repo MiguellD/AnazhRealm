@@ -32,7 +32,6 @@ const BLICKE = [
 
 function fernwaldLinse(opts) {
     return (async () => {
-        const T = window.THREE;
         st.renderer.setAnimationLoop(null);
         const W = opts.w || 1280,
             H = opts.h || 720;
@@ -63,14 +62,14 @@ function fernwaldLinse(opts) {
             for (let i = 0; i < atlas.mesh.count; i++)
                 if (!gesetzt.has(AnazhRealm.IMPOSTOR_ATLAS_GRUPPE + "#" + i))
                     streuSlots.push({ key: AnazhRealm.IMPOSTOR_ATLAS_GRUPPE, slot: i });
-        const null3 = new T.Matrix4().makeScale(0, 0, 0);
+        const null3 = new THREE.Matrix4().makeScale(0, 0, 0);
         const verstecke = (aus, liste) => {
             const nurSlots = liste !== undefined;
             for (const s of liste || slots) {
                 const g = st.archInstanceGroups.get(s.key);
                 if (!g || !g.mesh) continue;
                 if (aus) {
-                    s.__fw = new T.Matrix4();
+                    s.__fw = new THREE.Matrix4();
                     g.mesh.getMatrixAt(s.slot, s.__fw);
                     g.mesh.setMatrixAt(s.slot, null3); // ein Null-3×3-Slot zeichnet nichts (der Karten-Shader verwirft ihn)
                 } else {

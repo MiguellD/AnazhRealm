@@ -748,11 +748,9 @@ async function k1Ende(browser, K) {
         if (NUR_K5) return k5Ende(browser, await k5Lauf(page));
         if (NUR_K1) return k1Ende(browser, await k1Lauf(browser, page));
         out = await page.evaluate(() => {
-            const s = st,
-                A = AnazhRealm;
             const o = { checks: {} };
             // KERN-PFLICHT: die Schwung-/Gefühls-Gesetze leben NUR im schmiede-Gesetzbuch (ARENA).
-            const AG = A._arenaGesetz();
+            const AG = AnazhRealm._arenaGesetz();
             if (!AG || !AG.schwung || !AG.gefuehl) return { error: "ARENA-Gesetz fehlt" };
             const K = AG.schwung;
             const G = AG.gefuehl;
@@ -783,7 +781,7 @@ async function k1Ende(browser, K) {
 
             // ── (A) DAUER ∝ √I — ein ECHTER Blueprint durch die ECHTE Quelle, ρ(holz) × 2 in der Stoff-Zeile ──
             const box = (m, sz, p) => ({ shape: "box", material: m, size: sz, position: p || { x: 0, y: 0, z: 0 } });
-            const blu = s.blueprints;
+            const blu = st.blueprints;
             const leicht = {
                 name: "_kg_klinge",
                 parts: [
@@ -791,7 +789,7 @@ async function k1Ende(browser, K) {
                     box("holz", { x: 0.6, y: 0.6, z: 0.6 }, { x: 0, y: 1.5, z: 0 }),
                 ],
             };
-            const zeile = s.materials.holz;
+            const zeile = st.materials.holz;
             const rho = zeile.rho;
             const mess = () => [r._swingDynamics(leicht).swingInertia, r._swingDauerFuerBlueprint(leicht)];
             const [I1, D1] = mess();
@@ -816,20 +814,20 @@ async function k1Ende(browser, K) {
             o.checks.werkstattLiestQuelle = ruft(() => r._blueprintAbilityStats(alsWaffe), "_swingDauerFuerBlueprint");
 
             // ── Bühne für (B)/(C)/(E): Waffe in die Hand, bekannte Blickrichtung ──
-            const p = s.player;
-            const pm = s.playerMesh;
+            const p = st.player;
+            const pm = st.playerMesh;
             if (!p || !pm) return { error: "kein Spieler" };
             // der Stand der Bühne, je Feld [Halter, Name] — am Ende kehrt jedes zurück
             const BUEHNE = [
-                [s, "yaw"],
+                [st, "yaw"],
                 [p, "equipped"],
                 [p, "_swing"],
                 [p, "_hitStopUntil"],
-                [s, "_landImpactPending"],
+                [st, "_landImpactPending"],
                 [p, "lastAttackAt"],
-                [s, "maxCreatures"],
-                [s, "playerVel"],
-                [s, "playerUnderwater"],
+                [st, "maxCreatures"],
+                [st, "playerVel"],
+                [st, "playerUnderwater"],
                 [p, "mountedArch"],
                 [p, "walkPhase"],
                 [p, "_gaitW"],
@@ -838,9 +836,9 @@ async function k1Ende(browser, K) {
             const saved = Object.fromEntries(BUEHNE.map(([h, k]) => [k, h[k]]));
             blu._kg_klinge = leicht;
             p.equipped = { held: "_kg_klinge" };
-            s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 4);
-            s.yaw = 0; // Blick nach +z (die _loopCamera-Konvention)
-            s.pitch = 0;
+            st.maxCreatures = Math.max(st.maxCreatures || 0, st.creatures.length + 4);
+            st.yaw = 0; // Blick nach +z (die _loopCamera-Konvention)
+            st.pitch = 0;
             // die Klinge folgt dem Fadenkreuz: die ECHTE Kamera steht auf dem Blick
             r.setCameraMode("first");
             r._loopCamera(900);
@@ -861,8 +859,8 @@ async function k1Ende(browser, K) {
             // die Klinge zielt durchs Fadenkreuz und fegt den Bogen ±arcHalf.
             {
                 const b = new THREE.Box3().setFromObject(cNeben);
-                const c = s.camera.position;
-                s.pitch = Math.atan2((b.min.y + b.max.y) / 2 - c.y, Math.max(0.5, cNeben.position.z - c.z));
+                const c = st.camera.position;
+                st.pitch = Math.atan2((b.min.y + b.max.y) / 2 - c.y, Math.max(0.5, cNeben.position.z - c.z));
                 r._loopCamera(901);
             }
             // ── KONSUM der EINEN Quellen am Zähl-Spion: Klick → Schwung → Dauer, HUD, Hit-Stop, Fall → Gefälle (den Klang misst Q11 halten.K2 am Bus) ──
@@ -873,9 +871,9 @@ async function k1Ende(browser, K) {
             if (p._swing) p._swing.lastT = 0;
             o.checks.anzeigeLiestHitStop = !!p._swing && ruft(() => r._tickKampfSchwung(0.001), "_hitStopFactor");
             p._swing = null;
-            s._statsHudLastTick = s._statsHudTooltipLastTick = 0;
+            st._statsHudLastTick = st._statsHudTooltipLastTick = 0;
             o.checks.hudLiestQuelle = ruft(() => r.tickStatsHud(1e6), "_playerSwingDauer");
-            s._statsHudLastTick = s._statsHudTooltipLastTick = 0;
+            st._statsHudLastTick = st._statsHudTooltipLastTick = 0;
 
             const schwinge = (t0) => {
                 // ein voller Schwung über die synthetische Anzeige-Uhr; zählt die
@@ -903,7 +901,7 @@ async function k1Ende(browser, K) {
             // ── (B) SWEEP: Neben-Ziel EINMAL, Rücken-Ziel NIE, Juice feuert ──
             const hpNeben0 = cNeben.userData.hp;
             const hpRueck0 = cRuecken.userData.hp;
-            s._landImpactPending = 0;
+            st._landImpactPending = 0;
             const lauf1 = schwinge(1000);
             o.sweep = lauf1;
             o.checks.bTrifftNeben = lauf1.okStart && cNeben.userData.hp < hpNeben0;
@@ -913,7 +911,7 @@ async function k1Ende(browser, K) {
             o.freeze = lauf1.tHit !== null ? p._hitStopUntil - lauf1.tHit : null;
             o.checks.bHitStopGesetzt =
                 o.freeze !== null && o.freeze >= G.freezeMinSec - 1e-9 && o.freeze <= G.freezeMaxSec + 1e-9;
-            o.checks.bKameraImpuls = (s._landImpactPending || 0) >= G.dipMin - 1e-9;
+            o.checks.bKameraImpuls = (st._landImpactPending || 0) >= G.dipMin - 1e-9;
             // ein zweiter Schwung trifft WIEDER (der Dedup gilt JE Schwung, nicht
             // global) — das Ziel re-pinnen (der Knockback schob es hinaus).
             const pinNeben = () =>
@@ -946,12 +944,12 @@ async function k1Ende(browser, K) {
             p._swing = null;
             // (C2) der GANZE Leib steht (halten.K2): mitten im Strike gleitet das Ziel
             if (!pm.userData.rig) r.applyPlayerSoul("human");
-            const mesh = s.playerMesh;
+            const mesh = st.playerMesh;
             if (!mesh.userData.rig) return { error: "Spieler ohne Rig (koerper-Kern kalt?)" };
-            s.playerUnderwater = false;
+            st.playerUnderwater = false;
             p.mountedArch = null;
             let vStub = 5;
-            s.playerVel = { x: () => vStub, z: () => 0, y: () => 0 };
+            st.playerVel = { x: () => vStub, z: () => 0, y: () => 0 };
             const hand = () => mesh.userData.rig.armR.wrist.getWorldPosition(new THREE.Vector3()).sub(mesh.position);
             o.handM = [];
             const gehe = (t0, n) => {
@@ -971,15 +969,15 @@ async function k1Ende(browser, K) {
             };
             o.checks.cGangFriert = gehe(6000, 30) === 0 && o.handM[0] === 0;
             // (C3) die FIXE SIM läuft WÄHREND des Hit-Stops weiter (Fixed-Akku-Probe)
-            s.playerVel = saved.playerVel; // die Sim braucht den ECHTEN Body (kein Stub)
-            const simT0 = s._fixedSimTime;
+            st.playerVel = saved.playerVel; // die Sim braucht den ECHTEN Body (kein Stub)
+            const simT0 = st._fixedSimTime;
             const steps1 = r._loopFixedStep(0.05, performance.now() / 1000);
             const steps2 = r._loopFixedStep(0.05, performance.now() / 1000 + 0.05);
             o.simSteps = steps1 + steps2;
-            o.simDelta = s._fixedSimTime - simT0;
+            o.simDelta = st._fixedSimTime - simT0;
             o.checks.cSimLaeuftWeiter = o.simSteps >= 2 && o.simDelta > 0;
             // (C4) Gegenprobe: vor dem Treffer läuft die Anzeige-Uhr (der Halt ist ein Fenster ab ihm)
-            s.playerVel = { x: () => vStub, z: () => 0, y: () => 0 };
+            st.playerVel = { x: () => vStub, z: () => 0, y: () => 0 };
             p._hitStopAb = 8000;
             o.checks.cGegenprobeLaeuft = gehe(7000, 30) > 0 && o.handM[1] > 0.001;
             // (S1) SELBST-TEST: _hitStopFactor ≡ 1 gestubbt → trotz Hit-Stop läuft die Uhr

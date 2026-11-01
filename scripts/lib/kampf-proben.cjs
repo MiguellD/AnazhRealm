@@ -6,7 +6,6 @@
 // die Probe das Verhalten trotzdem — so ist die Linse auf dem alten Stand rot und benennt den Defekt) ──
 async function WELLE_L(ort) {
     const s = st,
-        A = AnazhRealm,
         p = s.player,
         pm = s.playerMesh;
     const w = { z: {}, c: {}, fehler: [] };
@@ -102,7 +101,7 @@ async function WELLE_L(ort) {
     // die Wesen der Probe hält die Probe: der Lebenszyklus nimmt sie in den Bestand ihrer Region, aber er zeichnet sie nicht
     // ab, solange die Probe sie zwischen zwei Klicks parkt (fern, außer Blick — oekologie.K2#2: dort lebt ein Tier als Zahl)
     r._bestandEntkoerpern = function (c) {
-        if (!tiere.includes(c)) return A.prototype._bestandEntkoerpern.call(this, c);
+        if (!tiere.includes(c)) return AnazhRealm.prototype._bestandEntkoerpern.call(this, c);
     };
     // JE PRÜFUNG IHR EIGENER ABBRUCH: fehlt einer Prüfung ihre Naht (ein älterer Stand), nennt sie
     // sich mit dem Fehler, und die übrigen laufen weiter.
@@ -176,7 +175,7 @@ async function WELLE_L(ort) {
         // am Leib, auch in der Höhe (Posten 5). `halte` stellt ihn je Takt zurück, `zurueck` an die Lage davor.
         const amBoden = () => {
             const alt = { x: pm.position.x, y: pm.position.y, z: pm.position.z };
-            const P = { x: alt.x, y: r.getTerrainHeightAt(alt.x, alt.z) + A.PLAYER_FOOT_OFFSET, z: alt.z };
+            const P = { x: alt.x, y: r.getTerrainHeightAt(alt.x, alt.z) + AnazhRealm.PLAYER_FOOT_OFFSET, z: alt.z };
             const halte = () => pm.position.set(P.x, P.y, P.z);
             halte();
             return { P, halte, zurueck: () => pm.position.set(alt.x, alt.y, alt.z) };
@@ -272,7 +271,7 @@ async function WELLE_L(ort) {
             w.c.s5 = w.z.s5 === 0;
         }
         // (T3) die Hit-Stop-Energie: Grossschwert und Keule auf denselben Brust-Punkt
-        const G = A._arenaGesetz().gefuehl;
+        const G = AnazhRealm._arenaGesetz().gefuehl;
         const stopEnergie = (name) => {
             ausruesten(name);
             stelle(hirsch, 1.6);
@@ -303,12 +302,12 @@ async function WELLE_L(ort) {
             const sv = c.userData._stossV;
             const dv = sv ? Math.hypot(sv.x, sv.z) : 0;
             const masse = r._leibMasse(c);
-            const steuerRoh = A._steuerGesetz;
-            const steht = Object.create(steuerRoh.call(A));
+            const steuerRoh = AnazhRealm._steuerGesetz;
+            const steht = Object.create(steuerRoh.call(AnazhRealm));
             steht.steuerSchritt = (st) => {
                 st.v = 0;
             };
-            A._steuerGesetz = () => steht;
+            AnazhRealm._steuerGesetz = () => steht;
             try {
                 // wie der Loop: der feste Sim-Schritt trägt den Stoß, dann der Kreatur-Takt
                 for (let k = 0; k < 90; k++) {
@@ -317,7 +316,7 @@ async function WELLE_L(ort) {
                     r.updateCreatures(1 / 60);
                 }
             } finally {
-                A._steuerGesetz = steuerRoh;
+                AnazhRealm._steuerGesetz = steuerRoh;
             }
             const weg = Math.hypot(c.position.x - x0, c.position.z - z0);
             parke(c);
@@ -441,7 +440,7 @@ async function WELLE_L(ort) {
         // Brust; (G1) dieselbe Tafel nach je einer Kern-Zahl (MAT.*.rho × 1,25 · dauerProSqrtIKg × 0,8 · MAT.eisen.sigY ×
         // 1,5), (G2) Kraft ÷ Güte = Leib, (S12) _trefferWirkung ≡ 1 ═══
         const sc = globalThis.__schmiedeCore;
-        const AG = A._arenaGesetz();
+        const AG = AnazhRealm._arenaGesetz();
         const GS = {};
         {
             const ids = Object.keys(sc.REZEPT_ZU_GATTUNG).filter(
@@ -695,7 +694,7 @@ async function WELLE_L(ort) {
         // (T9) EINE Güte je Gerät: der Schadens-Faktor (_heldGueteFaktor) und die Güte des Werks (computeBlueprintQuality —
         // Werkstoff-Kraft, Equip-Fold) lesen dasselbe Lehren-Urteil des Kerns (schmiede gueteFaktor → Anteil)
         {
-            const GU = A._arenaGesetz().guete;
+            const GU = AnazhRealm._arenaGesetz().guete;
             let uneins = 0,
                 n9 = 0;
             const proben9 = [];
@@ -784,7 +783,7 @@ async function WELLE_L(ort) {
             c.userData._stossV = null;
             c.position.copy(c0);
             c.updateMatrixWorld(true);
-            w.z.sweepFormel = window.__fehlt(A.prototype._kampfSweepTick, /Math\.(sin|cos)\(/) ? 0 : 1;
+            w.z.sweepFormel = window.__fehlt(AnazhRealm.prototype._kampfSweepTick, /Math\.(sin|cos)\(/) ? 0 : 1;
             w.c.sweepBlickVorn = konsum.sweepBlick && w.z.sweepFormel === 0;
         }
         // (G2) keine typeof-Probe auf eine EIGENE Methode in den Methoden, die die Welle L (Kampf und Maus) schrieb —
@@ -817,13 +816,13 @@ async function WELLE_L(ort) {
                 "_uiSchubladeOffen",
                 "_uiZeigerFrei",
             ];
-            const eigene = Object.getOwnPropertyNames(A.prototype).filter(
-                (n) => typeof (Object.getOwnPropertyDescriptor(A.prototype, n) || {}).value === "function"
+            const eigene = Object.getOwnPropertyNames(AnazhRealm.prototype).filter(
+                (n) => typeof (Object.getOwnPropertyDescriptor(AnazhRealm.prototype, n) || {}).value === "function"
             );
             const eigenTypeof = new RegExp(
                 "typeof this\\.(?:" + eigene.join("|").replace(/\$/g, "\\$") + ') === "function"'
             );
-            const selbst = welleL.filter((m) => !window.__fehlt(A.prototype[m], eigenTypeof));
+            const selbst = welleL.filter((m) => !window.__fehlt(AnazhRealm.prototype[m], eigenTypeof));
             w.z.typeofSelbst = selbst.join(",") || "–";
             w.c.keinTypeofSelbst = selbst.length === 0;
         }
@@ -831,7 +830,7 @@ async function WELLE_L(ort) {
         // (_trefferErreichbar), und das liest den kreatur-Leib (_kreaturLeib) — kein eigenes Körpermaß (2 × Skala) im
         // Treffer-Pfad.
         {
-            const grobPfade = [A.prototype._kampfSweepTick, A.prototype._tickPfeile, A.prototype._pfeilSehne].filter(
+            const grobPfade = [AnazhRealm.prototype._kampfSweepTick, AnazhRealm.prototype._tickPfeile, AnazhRealm.prototype._pfeilSehne].filter(
                 Boolean
             );
             w.z.grobFremd = window.__fehlt(grobPfade, /\.scale\.x\b/) ? 0 : 1;
@@ -842,7 +841,7 @@ async function WELLE_L(ort) {
         const grobTor = (c, x, z, sp) => r._trefferErreichbar(c, x, z, sp);
         const gestaltSchar = [];
         {
-            const G = A._verhaltenGesetz().groessen;
+            const G = AnazhRealm._verhaltenGesetz().groessen;
             const groessen = [...new Set(G.flatMap((k) => [k.min, k.max]))].sort((a, b) => a - b);
             let n = 0;
             for (const seele of ["wesen", "wolf", "fuchs", "baer"]) {
@@ -1089,7 +1088,7 @@ async function WELLE_L(ort) {
             s.pitch = Math.PI / 4;
             kamera();
             const cam = s.camera.position.clone();
-            const zp = r._blickZiel(A.BLICK_ZIEL_M);
+            const zp = r._blickZiel(AnazhRealm.BLICK_ZIEL_M);
             const Z = V3().set(zp.x, zp.y, zp.z);
             const weite = Z.distanceTo(cam);
             const vorher = (s._pfeile || []).length;
@@ -1219,7 +1218,7 @@ async function WELLE_L(ort) {
                     weit: serieR(1.8, -0.77),
                     nah: serieR(1.3, -0.6),
                     // der Code des Dispatchers ohne Kommentare (die Kommentare zitieren die alte Zahl)
-                    toreZahl: window.__fehlt(A.prototype.tryMouseBreak, /reachMaxM/) ? 0 : 1,
+                    toreZahl: window.__fehlt(AnazhRealm.prototype.tryMouseBreak, /reachMaxM/) ? 0 : 1,
                 };
             } finally {
                 delete r._pickArchitectureAtCrosshair;
@@ -1295,7 +1294,7 @@ async function WELLE_L(ort) {
                                   : "Sweep vorbei",
                 };
             };
-            const K = A._arenaGesetz().schwung;
+            const K = AnazhRealm._arenaGesetz().schwung;
             const matrix = (waffen, modi) => {
                 const faelle = [];
                 for (const mode of modi) {
@@ -1419,7 +1418,7 @@ async function WELLE_L(ort) {
                         const g = k * 2.4;
                         const x = ortAlt.x + Math.sin(g) * (40 + 8 * k);
                         const z = ortAlt.z + Math.cos(g) * (40 + 8 * k);
-                        pm.position.set(x, r.getTerrainHeightAt(x, z) + A.PLAYER_FOOT_OFFSET, z);
+                        pm.position.set(x, r.getTerrainHeightAt(x, z) + AnazhRealm.PLAYER_FOOT_OFFSET, z);
                         pm.updateMatrixWorld(true);
                         neige(0);
                         const w0 = r._pickArchitectureAtCrosshair();
@@ -1429,7 +1428,7 @@ async function WELLE_L(ort) {
                         const abH = H.hit ? strahlAb(V3().set(H.x, H.y, H.z)) : Infinity;
                         // der Boden unter dem geneigten Fadenkreuz liegt sicher in Arm-Länge (am Hang abwärts läge er dahinter)
                         frei =
-                            waagrecht && !r._pickArchitectureAtCrosshair() && abH >= 1.5 && abH <= A.FORAGE.reach - 1.5;
+                            waagrecht && !r._pickArchitectureAtCrosshair() && abH >= 1.5 && abH <= AnazhRealm.FORAGE.reach - 1.5;
                         ortK = k;
                     }
                     ernte.ortK = frei ? ortK : -1;
@@ -1438,7 +1437,7 @@ async function WELLE_L(ort) {
                         const k = klick(wolf);
                         ernte.push({ soll, ziel: !!(frei && ziel), ab, verb: k.verb, dmg: k.dmg });
                     };
-                    const armLaenge = A.FORAGE.reach;
+                    const armLaenge = AnazhRealm.FORAGE.reach;
                     const bodenPunkt = () => {
                         const H = r._raycastWorldHit(30);
                         return H.hit ? V3().set(H.x, H.y, H.z) : null;
@@ -1596,7 +1595,7 @@ async function WELLE_L(ort) {
                         strecke = {
                             a: V3().set(B.x, B.y, B.z),
                             b: V3().set(Tt.x, Tt.y, Tt.z),
-                            rad: A._arenaGesetz().schwung.bladeRadiusM,
+                            rad: AnazhRealm._arenaGesetz().schwung.bladeRadiusM,
                         };
                 } else {
                     const [cr, ax, ay, az, bx, by, bz, rad] = arg;
@@ -1892,8 +1891,8 @@ async function WELLE_L(ort) {
                     const mag = (p.stats && p.stats.tags && p.stats.tags.magieleitung) || 0;
                     const regen = {
                         hp: 0,
-                        st: s.playerUnderwater ? 0 : A.STAMINA_REGEN_PER_SEC,
-                        mana: A.MANA_REGEN_PER_SEC * (1 + mag),
+                        st: s.playerUnderwater ? 0 : AnazhRealm.STAMINA_REGEN_PER_SEC,
+                        mana: AnazhRealm.MANA_REGEN_PER_SEC * (1 + mag),
                     };
                     schritt(
                         "tickPlayerVitals " + (i + 1),
@@ -1911,7 +1910,7 @@ async function WELLE_L(ort) {
                 w.z.leben = lauf();
                 zurueck();
                 // Selbst-Test (S11): die alte Zeile als Hülle um die Neuberechnung
-                const neu = A.prototype.recomputePlayerStats;
+                const neu = AnazhRealm.prototype.recomputePlayerStats;
                 r.recomputePlayerStats = function (...a) {
                     const c = neu.apply(this, a);
                     const pl = this.state.player;
@@ -2006,7 +2005,7 @@ async function WELLE_L(ort) {
                     s._pfeile.splice(s._pfeile.indexOf(pf), 1);
                 }
             }
-            pfeilAus.wirtZylinder = !window.__fehlt(A.prototype._pfeilMeshAttach, /CylinderGeometry\(0\.015/);
+            pfeilAus.wirtZylinder = !window.__fehlt(AnazhRealm.prototype._pfeilMeshAttach, /CylinderGeometry\(0\.015/);
             // ein leerer Guss bricht laut (Nachbesserung 2 + 3): der Ofen liefert nichts — null ODER eine Gruppe ohne ein einziges
             // Mesh (jedes _foundryBuildMesh gab null), die Vorlage frisch — der Pfeil darf nicht still unsichtbar fliegen
             if (fn("_pfeilVorlage")) {
@@ -2053,7 +2052,7 @@ async function WELLE_L(ort) {
             } finally {
                 delete r._fieldGradient;
             }
-            const K = A._arenaGesetz().gefuehl;
+            const K = AnazhRealm._arenaGesetz().gefuehl;
             for (let k = 0; k < Math.ceil((K.kippDauerSec + 0.2) / 0.05); k++) r.updateCreatures(0.05);
             hT.updateMatrixWorld(true);
             const q = hT.getWorldQuaternion(new THREE.Quaternion());
@@ -2088,7 +2087,7 @@ async function WELLE_L(ort) {
                 }
             } finally {
                 r.p2pSend = sendRoh;
-                if (r.p2pSend === A.prototype.p2pSend) delete r.p2pSend;
+                if (r.p2pSend === AnazhRealm.prototype.p2pSend) delete r.p2pSend;
                 for (const [key, rc] of s.p2p.remoteCreatures)
                     if (rc.peerId === peer) r._disposeRemoteCreature(key, rc);
             }
@@ -2107,8 +2106,8 @@ async function WELLE_L(ort) {
                 "_tickLeichname",
             ]);
             // über die Deskriptoren (nie A.prototype[n]: ein Getter liefe mit dem Prototyp als this und legte seinen Cache dort ab)
-            tod.fragen = Object.getOwnPropertyNames(A.prototype).filter((n) => {
-                const d = Object.getOwnPropertyDescriptor(A.prototype, n);
+            tod.fragen = Object.getOwnPropertyNames(AnazhRealm.prototype).filter((n) => {
+                const d = Object.getOwnPropertyDescriptor(AnazhRealm.prototype, n);
                 return (
                     n !== "constructor" &&
                     !FRAGT_ERLAUBT.has(n) &&
@@ -2223,15 +2222,15 @@ async function WELLE_L(ort) {
                 Math.sqrt(r._segSegDistSq(a.x, a.y, a.z, b.x, b.y, b.z, c2.x, c2.y, c2.z, d.x, d.y, d.z));
             const spaltSpieler = (c) => {
                 // die Achse der Spieler-Kapsel zwischen ihren Kappen (Fuß + Radius … Saum − Radius)
-                const rK = A.PLAYER_WALL_RADIUS;
-                const P0 = V3().set(pm.position.x, pm.position.y - A.PLAYER_FOOT_OFFSET + rK, pm.position.z);
+                const rK = AnazhRealm.PLAYER_WALL_RADIUS;
+                const P0 = V3().set(pm.position.x, pm.position.y - AnazhRealm.PLAYER_FOOT_OFFSET + rK, pm.position.z);
                 const P1 = V3().set(
                     pm.position.x,
-                    pm.position.y + A.PLAYER_FOOT_OFFSET + A.PLAYER_STEP_UP - rK,
+                    pm.position.y + AnazhRealm.PLAYER_FOOT_OFFSET + AnazhRealm.PLAYER_STEP_UP - rK,
                     pm.position.z
                 );
                 let m = Infinity;
-                for (const k of kopfKapseln(c)) m = Math.min(m, abst(k.a, k.b, P0, P1) - k.r - A.PLAYER_WALL_RADIUS);
+                for (const k of kopfKapseln(c)) m = Math.min(m, abst(k.a, k.b, P0, P1) - k.r - AnazhRealm.PLAYER_WALL_RADIUS);
                 return m;
             };
             const spaltTier = (c, z) => {
@@ -2313,7 +2312,7 @@ async function WELLE_L(ort) {
             for (let d = 0; d <= 240 && !frei(fx, fz); d += 24)
                 for (let k = 0; k < 8 && !frei(fx, fz); k++)
                     ((fx = pm.position.x + d * Math.cos(k * 0.785)), (fz = pm.position.z + d * Math.sin(k * 0.785)));
-            const P = { x: fx, y: r.getTerrainHeightAt(fx, fz) + A.PLAYER_FOOT_OFFSET, z: fz };
+            const P = { x: fx, y: r.getTerrainHeightAt(fx, fz) + AnazhRealm.PLAYER_FOOT_OFFSET, z: fz };
             const halte = () => {
                 pm.position.set(P.x, P.y, P.z);
                 s.playerVel.setValue(0, s.playerVel.y(), 0);
@@ -2439,7 +2438,7 @@ async function WELLE_L(ort) {
                             ).toFixed(2),
                             hop: +(j2.userData._hopH || 0).toFixed(2),
                         };
-                        const KN = A._bissGesetz().kopfNeigung;
+                        const KN = AnazhRealm._bissGesetz().kopfNeigung;
                         const dcT = r.damageCreature;
                         r.damageCreature = function (c2, amount, opts) {
                             if (c2 === r2 && opts && opts.source === "jagd") reh.bisse++;
@@ -2496,7 +2495,7 @@ async function WELLE_L(ort) {
                         // erster Rest im Band der Klemme liegt (Rand 0,05 rad = REH_SOLL.kopfRest), trägt die Probe; ihr Glied steht im Bericht.
                         const R0 = { x: P.x + ortR[0], z: P.z + ortR[1] + 1.6 };
                         const gW = r.getTerrainHeightAt(R0.x, R0.z - 1.3);
-                        const KL = A._bissGesetz().kopfNeigung;
+                        const KL = AnazhRealm._bissGesetz().kopfNeigung;
                         const reiheGier = [0, 0.2, -0.2, 0.4, -0.4, 0.6, -0.6, 0.8, -0.8, 1.0, -1.0, 1.2, -1.2].map(
                             (d) => Math.PI / 2 - 0.4 + d
                         );
@@ -2625,7 +2624,7 @@ async function WELLE_L(ort) {
                         if (wolfS && ort) {
                             P.x = P0.x + ort[0];
                             P.z = P0.z + ort[1];
-                            P.y = r.getTerrainHeightAt(P.x, P.z) + A.PLAYER_FOOT_OFFSET + 3.5;
+                            P.y = r.getTerrainHeightAt(P.x, P.z) + AnazhRealm.PLAYER_FOOT_OFFSET + 3.5;
                             halte();
                             wolfS.position.set(P.x + 0.4, r.getTerrainHeightAt(P.x + 0.4, P.z + 6), P.z + 6);
                             wolfS.rotation.set(0, Math.PI, 0);
@@ -2647,7 +2646,7 @@ async function WELLE_L(ort) {
                                     const w2 = r._kreaturBissRadial(wolfS, null);
                                     if (w2 !== null && w2 < minWaag) minWaag = w2;
                                     const m = r._kreaturMaul(wolfS, {});
-                                    const hop = A._bissGesetz().geste.hop ? r._kreaturSprungHoehe(wolfS) : 0;
+                                    const hop = AnazhRealm._bissGesetz().geste.hop ? r._kreaturSprungHoehe(wolfS) : 0;
                                     if (m && !(wolfS.userData._hopH > 0))
                                         minUeber = Math.min(
                                             minUeber,
@@ -2688,7 +2687,7 @@ async function WELLE_L(ort) {
             ausruesten("klinge_langbogen");
             const rec = r._heldBogenRecipe();
             const t = rec.fx.task;
-            const mA = A._arenaGesetz().bogen.mArrow;
+            const mA = AnazhRealm._arenaGesetz().bogen.mArrow;
             const vSoll = () => Math.sqrt((2 * sc.ableitenBogen(t).energie) / mA);
             const st = () => (s.pfeileStecken || []).length;
             const los = () => {
@@ -2813,7 +2812,7 @@ async function WELLE_L(ort) {
         await teil("Q11 Satz", async () => {
             pm.position.set(
                 ort.spieler[0],
-                r.getTerrainHeightAt(...ort.spieler) + A.PLAYER_FOOT_OFFSET,
+                r.getTerrainHeightAt(...ort.spieler) + AnazhRealm.PLAYER_FOOT_OFFSET,
                 ort.spieler[1]
             );
             await window.__weltStehtNach();
@@ -3003,11 +3002,11 @@ async function WELLE_L(ort) {
                 }, // (S13) eine Art-Tafel: graben nach task.art, ein Abbau-Profil für alle
                 _implementProfile: () => ({ minePower: 1.6, cutPower: 1.6 }),
                 _ernteBand: (b) => (/sichel/.test(b && b.name) ? 0.6 : 0), // (S15) ein Namens-Sonderfall
-                _wearPerStrike: () => A.WEAR_PER_STRIKE_BASE / 5, // (S16) der Spender
-                _trefferPaar: (w, z, ...a) => A.prototype._trefferPaar.call(r, "stahl", "stein", ...a), // (S19) alle Paare gleich
+                _wearPerStrike: () => AnazhRealm.WEAR_PER_STRIKE_BASE / 5, // (S16) der Spender
+                _trefferPaar: (w, z, ...a) => AnazhRealm.prototype._trefferPaar.call(r, "stahl", "stein", ...a), // (S19) alle Paare gleich
             };
             try {
-                const satz = { hand: { halb: A.WEAR_STAT_FLOOR + (1 - A.WEAR_STAT_FLOOR) / 2 } };
+                const satz = { hand: { halb: AnazhRealm.WEAR_STAT_FLOOR + (1 - AnazhRealm.WEAR_STAT_FLOOR) / 2 } };
                 for (const z of ZIELE.slice(0, 4)) satz.hand[z] = await klick(null, z);
                 for (const id of ids) satz[id] = await zeile(id);
                 Object.assign(w.z, {
@@ -3110,21 +3109,20 @@ async function WELLE_L(ort) {
 // Takt des Lebenszyklus lang (taktS Spiel-Zeit, auch ohne Bild-Schleife: an der Uhr des Stands zählte eine Wiederkehr ohne
 // Marke sein Intervall ein zweites Mal, `wiederkehr-alter`), dann `saveState`. `abdruck` ist K5_ABDRUCK.
 async function K5_VOR(abdruck) {
-    const s = st,
-        p = s.player,
-        pm = s.playerMesh;
+    const p = st.player,
+        pm = st.playerMesh;
     const K = { sturz: [], lage: [] };
-    s.renderer.setAnimationLoop(null);
+    st.renderer.setAnimationLoop(null);
     await r._gliederBestellen("wolf");
     r.setGameMode("pfad");
     r.clearCreatures();
     const P = pm.position.clone();
     const bau = (e) => Math.hypot(e.position.x - P.x, e.position.z - P.z) < 14;
-    while (s.architectures.some(bau) || !r._landAt(P.x, P.z, 0.2)) P.x += 24;
+    while (st.architectures.some(bau) || !r._landAt(P.x, P.z, 0.2)) P.x += 24;
     P.y = r.getTerrainHeightAt(P.x, P.z) + AnazhRealm.PLAYER_FOOT_OFFSET;
     let t = 1e4,
         quelle;
-    const takt = (dt) => (r._loopFixedStep(dt, (t += dt)), r.updateCreatures(dt), (s.spielZeit += dt));
+    const takt = (dt) => (r._loopFixedStep(dt, (t += dt)), r.updateCreatures(dt), (st.spielZeit += dt));
     const dp = r.damagePlayer;
     r.damagePlayer = (a, q) => dp.call(r, a, (quelle = q));
     const neu = (seele, dx, dz, gier) => {
@@ -3140,8 +3138,8 @@ async function K5_VOR(abdruck) {
         r.recomputePlayerStats({ voll: true });
         p.hp *= anteil;
         pm.position.copy(ort);
-        s.playerVel.setValue(0, vy, 0);
-        [s._fieldVy, s.isInAir, s._landImpactPending, quelle] = [vy, true, 0, null];
+        st.playerVel.setValue(0, vy, 0);
+        [st._fieldVy, st.isInAir, st._landImpactPending, quelle] = [vy, true, 0, null];
         return p.hp;
     };
     for (const [h, vy] of [
@@ -3152,8 +3150,8 @@ async function K5_VOR(abdruck) {
         [4, -8],
     ]) {
         const hp0 = ruhe(1, P.clone().setY(P.y + h), vy);
-        for (let k = 0; k < 600 && (k < 2 || s.isInAir); k++) takt(1 / 60);
-        K.sturz.push({ v: s._landImpactPending, d: hp0 - p.hp, quelle });
+        for (let k = 0; k < 600 && (k < 2 || st.isInAir); k++) takt(1 / 60);
+        K.sturz.push({ v: st._landImpactPending, d: hp0 - p.hp, quelle });
     }
     for (const hz of [60, 15]) {
         const w = neu("wolf", 20, 20, 0.7);
@@ -3172,7 +3170,7 @@ async function K5_VOR(abdruck) {
     K.vorTod = abdruck();
     const hpMax0 = ruhe(1e-4) / 1e-4;
     const [wolf, seele] = [neu("wolf", 0.4, 6, Math.PI), p.soul];
-    for (let k = 0; k < 1200 && !(p.respawnGraceUntil > s.spielZeit); k++) takt(1 / 60);
+    for (let k = 0; k < 1200 && !(p.respawnGraceUntil > st.spielZeit); k++) takt(1 / 60);
     const [e, a] = [p.emotions, r._genesisPlattform().position];
     K.tod = {
         q: quelle,
@@ -3181,10 +3179,10 @@ async function K5_VOR(abdruck) {
             p.hp === p.hpMax,
             p.deathWoundIntensity === 1,
             !dp.call(r, 1e5, "jagd"),
-            s.lifeField.size > 0,
+            st.lifeField.size > 0,
             p.soul === seele,
             e.sorrow > 0.25 && e.awe > 0.15,
-            s.worldJournal.entries.some((x) => x.type === "loss"),
+            st.worldJournal.entries.some((x) => x.type === "loss"),
             p.hpMax < hpMax0,
             ((p.stamina = 1),
             r.tickPlayerVitals((p.deathLastTick = 0) + 1),
@@ -3198,7 +3196,7 @@ async function K5_VOR(abdruck) {
     // `recomputePlayerStats` (hpMax · staminaMax · manaMax · defense) — das getragene Werk (der Brustpanzer, seine Teile aus
     // Eisen · Bronze · Holz), die Nahrung (der Lebenssaft, sein Inhalt aus Kraut · Fleisch, `activateConsumable`); dann trägt der
     // Leib den Brustpanzer und hat gegessen (600 s), und beides reist im Stand (der Abdruck `werte`).
-    const bp = s.blueprints;
+    const bp = st.blueprints;
     const werte = () => (r.recomputePlayerStats(), [p.hpMax, p.staminaMax, p.manaMax, p.stats.defense]);
     const klon = (von, mat, teil) => {
         const b = (bp._k5 = JSON.parse(JSON.stringify(bp[von])));
@@ -3259,11 +3257,10 @@ function K5_ABDRUCK() {
 // (`__schmiedeCore`): vor · masse (MAT.*.rho × 1,25) · schneide (die Stoff-Zeile des Werks, sigY × 1,5); jeder Ruf nimmt zuerst
 // den letzten Lauf zurück (Halt, Kern, Schwung).
 async function K1_BILD(lauf) {
-    const s = st,
-        p = s.player,
-        pm = s.playerMesh,
+    const p = st.player,
+        pm = st.playerMesh,
         sc = globalThis.__schmiedeCore,
-        bp = s.blueprints.klinge_langschwert;
+        bp = st.blueprints.klinge_langschwert;
     // DAS BILD MIT FRIST: ein verborgener Tab zeichnet nie (rAF schläft — K1_BILD stand 300 s still), ein stehender Loop auch
     // nicht; nach 10 s ohne Bild ROT beim Namen, mit der Sichtbarkeit der Seite
     const bild = () =>
@@ -3289,7 +3286,7 @@ async function K1_BILD(lauf) {
     r.setCameraMode("third");
     const start = (window.__k1start = window.__k1start || pm.position.clone());
     pm.position.copy(start);
-    const f = r._blickVorn(s.yaw, 0),
+    const f = r._blickVorn(st.yaw, 0),
         d = 0.5 * r._kampfBladeReach() + 0.5,
         [x, z] = [start.x + f.x * d, start.z + f.z * d];
     const c = (window.__k1tier = window.__k1tier || r.spawnCreatureAt(x, start.y, z, "happy", "wesen"));
@@ -3312,8 +3309,8 @@ async function K1_BILD(lauf) {
         const F = r._fadenkreuzStrahl(),
             v = r._leibMitte(c).sub(F.o).normalize();
         if ((out.zielFehl = v.distanceTo(F.d)) < 0.03) break;
-        s.yaw += 0.6 * um(Math.atan2(v.x, v.z) - Math.atan2(F.d.x, F.d.z));
-        s.pitch += 0.6 * (Math.asin(v.y) - Math.asin(F.d.y));
+        st.yaw += 0.6 * um(Math.atan2(v.x, v.z) - Math.atan2(F.d.x, F.d.z));
+        st.pitch += 0.6 * (Math.asin(v.y) - Math.asin(F.d.y));
     }
     r._kampfHitJuice = function (cr, now, u) {
         if (cr === c && u && !out.traf) Object.assign(out, u, { traf: true });
@@ -3324,7 +3321,7 @@ async function K1_BILD(lauf) {
         return Object.getPrototypeOf(r).damageCreature.apply(this, arguments);
     };
     try {
-        s.isPointerLocked = true;
+        st.isPointerLocked = true;
         r.tryMouseBreak();
         for (let i = 0; i < 600 && !out.traf && p._swing; i++) (halte(), await bild());
     } finally {

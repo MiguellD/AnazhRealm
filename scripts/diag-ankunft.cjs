@@ -1370,8 +1370,7 @@ async function probe(arg) {
             // Stamm VOR dem Spieler, jenseits der Ebene des Ziels): keine Rinde fällt; (c) 3rd, der Spieler 2,5 m vor dem Baum mit dem Rücken zu ihm (der Stamm
             // zwischen Kamera und Brust): die Rinde am Sicht-Strahl fällt ganz — die Durchsicht wirkt.
             {
-                const K = AnazhRealm;
-                const ds = (m.durchsicht = { formel: typeof K._durchsichtGewicht === "function" && !!K.DURCHSICHT_ZAHLEN });
+                const ds = (m.durchsicht = { formel: typeof AnazhRealm._durchsichtGewicht === "function" && !!AnazhRealm.DURCHSICHT_ZAHLEN });
                 // DER KONSUM AM RUF (Spion am Ruf, kein Quelltext): die Proben durch die Bildmitte ohne eigenes Band nehmen den
                 // EINEN Strahl, der Stoff-Knoten der Durchsicht rechnet die EINE Formel (sein Zwischenspeicher leer: er baut neu)
                 const nahStreu = st.nahStreu && st.nahStreu.senken && st.nahStreu.senken.size > 0;
@@ -1382,7 +1381,7 @@ async function probe(arg) {
                     _hasMagnifyingInSight: ruft(r, "_hasMagnifyingInSight", r, "_fadenkreuzStrahl", []),
                     _pickScatterAtCrosshair: nahStreu ? ruft(r, "_pickScatterAtCrosshair", r, "_fadenkreuzStrahl", []) : null,
                     _kampfKlingenAchse: ruft(r, "_kampfKlingenAchse", r, "_fadenkreuzStrahl", [{ rahmen, reach: rahmen.reach, ziel: null }, {}]),
-                    _kameraDurchsichtNode: ruft(r, "_kameraDurchsichtNode", K, "_durchsichtGewicht", [THREE.TSL, "rinde"]),
+                    _kameraDurchsichtNode: ruft(r, "_kameraDurchsichtNode", AnazhRealm, "_durchsichtGewicht", [THREE.TSL, "rinde"]),
                 };
                 r._kamDurchKnoten = knoten;
                 // das Ziel und sein Auge, wie `_kamZielSetzen` sie schreibt (dieselben Werte wie uKamZiel · uKamAuge)
@@ -1393,7 +1392,7 @@ async function probe(arg) {
                 const gewicht = (q) => {
                     const z = ziel();
                     // die Rinde mit ihrem Nah-Radius (uKamNah.y, wie `_kamZielSetzen` ihn schreibt)
-                    return K._durchsichtGewicht(K.DURCHSICHT_ZAHLEN, q, z.auge, { x: z.x, y: z.y, z: z.z }, z.w, z.nr);
+                    return AnazhRealm._durchsichtGewicht(AnazhRealm.DURCHSICHT_ZAHLEN, q, z.auge, { x: z.x, y: z.y, z: z.z }, z.w, z.nr);
                 };
                 // die Punkte der Stamm-Hülle (die Seiten jeder Blocker-Box, 0,1 m Raster) bis 3 m vom Ziel (1st das Auge, 3rd
                 // die Brust)

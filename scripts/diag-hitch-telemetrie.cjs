@@ -350,7 +350,6 @@ function erstWandInstall(BUNDLE_FRAMES) {
     // neuer Stoff in einem Bundle, das Vendor-Versprechen seiner Pipeline erfüllt sich nie. Gemessen: wie viele Frames nach
     // der fertigen Pipeline (r184-Zustand) trägt die Aufnahme des Bundles den Bürger wieder. Der Gegen-Lauf mit stummer
     // Anmeldung MUSS ihn verlieren (sonst wäre die Wand blind).
-    const T3 = window.THREE;
     const P3 = rend._pipelines;
     // je Bundle-Gruppe und Aufnahme (Kamera · Kontext): die Objekte ihrer letzten Aufnahme
     const traegt = new Map();
@@ -402,9 +401,9 @@ function erstWandInstall(BUNDLE_FRAMES) {
     };
     const probeMesh = (mat, dx, d) => {
         const cam = st.camera;
-        const dir = new T3.Vector3();
+        const dir = new THREE.Vector3();
         cam.getWorldDirection(dir);
-        const m = new T3.Mesh(new T3.BoxGeometry(0.6, 0.6, 0.6), mat);
+        const m = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), mat);
         m.position.copy(cam.position).addScaledVector(dir, d);
         m.position.x += dx;
         m.frustumCulled = false;
@@ -417,7 +416,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
     // schluckt sie und nennt ihren Schreiber (`fremd`), das Urteil gilt allein der Anmeldung
     let szeneGang = 0;
     const buendel = () => {
-        const bg = new T3.BundleGroup();
+        const bg = new THREE.BundleGroup();
         const P = (bg.userData.probe = { n: 0, fremd: [] });
         Object.defineProperty(bg, "needsUpdate", {
             set(v) {
@@ -432,7 +431,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
     // DER FREMDE NEUBAU im Gegen-Lauf: ein Atlas wächst (der echte Weg über `initTexture`) im ersten Bild nach der fertigen
     // Pipeline — am Läufer fiel er in dieses Fenster und spielte den Bürger ohne Anmeldung ins Bündel
     const atlasWaechst = () => {
-        const t = new T3.DataTexture(new Uint8Array(16), 2, 2);
+        const t = new THREE.DataTexture(new Uint8Array(16), 2, 2);
         t.needsUpdate = true;
         rend.initTexture(t);
         t.image = { data: new Uint8Array(64), width: 4, height: 4 };
@@ -496,7 +495,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
     const bundleNeubauAufDerBuehne = async (ohneAnmeldung) => {
         const ruheMs = await ruhe();
         serie++;
-        const M = new T3.MeshBasicNodeMaterial();
+        const M = new THREE.MeshBasicNodeMaterial();
         M.colorNode = TSL.vec3(0.31, 0.47, 0.12 + 0.0011 * serie);
         const b2 = buendel();
         const B = probeMesh(M, 0.45, 4);
@@ -551,7 +550,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
             popRoh.call(this).catch(() => {});
             return new Promise(() => {});
         };
-        const M = new T3.MeshBasicNodeMaterial();
+        const M = new THREE.MeshBasicNodeMaterial();
         M.colorNode = TSL.vec3(0.52, 0.18 + 0.0013 * serie, 0.61);
         const bg = buendel();
         const C = probeMesh(M, 0, 3.5);
@@ -616,7 +615,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
             if (lvl === "ERROR" && /PIPELINE-ABSAGE/.test(String(m))) zeilen.push(String(m));
             return logRoh.apply(this, arguments);
         };
-        const M = new T3.MeshBasicNodeMaterial();
+        const M = new THREE.MeshBasicNodeMaterial();
         M.name = "wand-absage-stoff";
         M.colorNode = TSL.vec3(0.71, 0.33, 0.09 + 0.0013 * serie);
         const D = probeMesh(M, 0, 3.5);

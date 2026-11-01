@@ -448,8 +448,7 @@ function zielLesen(k) {
 // restlos ab.
 function zielSchmuggel(an) {
     const rend = st.renderer;
-    const T = window.THREE;
-    const TSL = T.TSL;
+    const TSL = THREE.TSL;
     const S = window.__zielSchmuggelStand;
     if (!an) {
         if (!S) return { ab: false };
@@ -463,39 +462,39 @@ function zielSchmuggel(an) {
     const tiefe =
         st.scenePass && st.scenePass.getTextureNode ? st.scenePass.getTextureNode("depth").value : null;
     if (!tiefe) return { fehler: "keine Szenen-Tiefe (Post-Kette fehlt)" };
-    const db = rend.getDrawingBufferSize(new T.Vector2());
+    const db = rend.getDrawingBufferSize(new THREE.Vector2());
     const W = Math.max(1, Math.round(db.x)),
         H = Math.max(1, Math.round(db.y));
     const weg = [];
     const ziel = (name, w, h, o) => {
-        const z = new T.RenderTarget(w, h, Object.assign({ depthBuffer: false }, o || {}));
+        const z = new THREE.RenderTarget(w, h, Object.assign({ depthBuffer: false }, o || {}));
         z.texture.name = name;
         weg.push(z);
         return z;
     };
     const ohneLeser = ziel("zensus-selbsttest:ohne-leser", 64, 64);
-    const bloom = ziel("zensus-selbsttest:bloom", W, H, { type: T.HalfFloatType });
+    const bloom = ziel("zensus-selbsttest:bloom", W, H, { type: THREE.HalfFloatType });
     const leser = ziel("zensus-selbsttest:leser", 8, 8);
     const paarA = ziel("zensus-selbsttest:paar-a", 128, 128);
     const paarB = ziel("zensus-selbsttest:paar-b", 128, 128);
     // das ausgewiesene Szenen-Ziel in 64 bit: für die Dauer des Schmuggels weist es sich als Szenen-Ziel aus
     // (`__zielAusgabe`), das echte bleibt unberührt (ein Format-Wechsel des echten Ziels zur Laufzeit bricht die Bündel)
-    const ausgabe = ziel("zensus-selbsttest:ausgabe", W, H, { type: T.HalfFloatType });
+    const ausgabe = ziel("zensus-selbsttest:ausgabe", W, H, { type: THREE.HalfFloatType });
     const kopie = ziel("zensus-selbsttest:kopie-ziel", 4, 4, { depthBuffer: true });
     kopie.setSize(W, H);
-    kopie.depthTexture = new T.DepthTexture(W, H);
+    kopie.depthTexture = new THREE.DepthTexture(W, H);
     kopie.depthTexture.name = "zensus-selbsttest:tiefe-kopie";
     const daten = new Float32Array(64 * 64 * 4);
     for (let i = 0; i < daten.length; i++) daten[i] = (i % 9) / 8;
-    const f32 = new T.DataTexture(daten, 64, 64, T.RGBAFormat, T.FloatType);
+    const f32 = new THREE.DataTexture(daten, 64, 64, THREE.RGBAFormat, THREE.FloatType);
     f32.name = "zensus-selbsttest:f32";
     f32.needsUpdate = true;
     weg.push(f32);
     const stoff = (knoten) => {
-        const m = new T.MeshBasicNodeMaterial();
+        const m = new THREE.MeshBasicNodeMaterial();
         m.name = "zensus-selbsttest";
         if (knoten) m.colorNode = knoten;
-        else m.color = new T.Color(0x33aa55);
+        else m.color = new THREE.Color(0x33aa55);
         weg.push(m);
         return m;
     };
@@ -506,10 +505,10 @@ function zielSchmuggel(an) {
     const liesF32 = stoff(TSL.texture(f32));
     const liesAusgabe = stoff(TSL.texture(ausgabe.texture));
     const liesTiefe = stoff(TSL.vec4(TSL.texture(kopie.depthTexture).r, 0, 0, 1));
-    const szene = new T.Scene();
+    const szene = new THREE.Scene();
     szene.name = "zensus-selbsttest";
-    const kamera = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    const flaeche = new T.Mesh(new T.PlaneGeometry(2, 2), farbe);
+    const kamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const flaeche = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), farbe);
     flaeche.frustumCulled = false;
     flaeche.position.z = -0.5;
     szene.add(flaeche);

@@ -58,7 +58,7 @@ function haengerAn() {
         H.namen.push(e);
         return e;
     };
-    const rend = r.state.renderer;
+    const rend = st.renderer;
     // DER KNOTEN-BAU (r184 `Nodes.getForRender`): die CPU-Hälfte einer Erst-Zeichnung — der TSL-Graph des Stoffs wird zu
     // WGSL gebaut, synchron, wenn ein RenderObject zum ersten Mal zeichnet und sein Schlüssel nicht im Bau-Cache liegt.
     // Je synchronem Bau die Dauer, der Stoff und der Auftraggeber; ein asynchroner Bau (`buildAsync`, in Schritten mit
@@ -1284,7 +1284,7 @@ function latenzAn(k) {
     };
     // der GT des Einsteigens quer neben dem Start in der Reichweite des Gesetzes, gezeichnet — sonst mäße die Probe nur den Leib
     L.wagenStellen = async () => {
-        const f = r._blickVorn(st.yaw, 0), d = 0.85 * r.constructor.MOUNT_RANGE_M, x = L.start.x + f.z * d, z = L.start.z - f.x * d;
+        const f = r._blickVorn(st.yaw, 0), d = 0.85 * AnazhRealm.MOUNT_RANGE_M, x = L.start.x + f.z * d, z = L.start.z - f.x * d;
         L.wagen = L.wagen || r.spawnArchitecture("fahrzeug_gt", { x, y: r.getTerrainHeightAt(x, z) + 0.5, z }, { silent: true, precise: true, rotationY: st.yaw });
         for (let i = 0; i < 1800 && !r._archIsRendered(L.wagen); i++, await wache()) if (i % 12 === 0) r._rebuildArchitectureMesh(L.wagen);
         if (!r._archIsRendered(L.wagen)) throw new Error("latenz einsteigen: der GT ist nicht gezeichnet");

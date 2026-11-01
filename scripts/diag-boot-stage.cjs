@@ -39,7 +39,7 @@
 // die Platte trug, ist ROT beim Namen, ebenso ein Leser, der noch von der Platte kommt (`wechselUrteil`; --selftest füttert
 // es mit Bruch-Daten).
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, sleep, hauptLauf, nullSeite, urteilEnde, pngDatei, argOpt: OPT } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, sleep, hauptLauf, nullSeite, urteilEnde, pngDatei, argOpt: OPT, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const HL = require("./lib/haenger-linse.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -55,7 +55,7 @@ const KERN = require("../cores.manifest.json").find((k) => k.id === OPT("--kern-
 const server = statikServer({ wandle: (p, roh) => (KERN?.scripts.includes(p.slice(1)) ? roh + "//" : roh) });
 // (Seite) trägt die gehaltene Taste den Leib um `m`? Der Weg in einem Atem von 200 ms, waagrecht — der Fall zählt nicht.
 async function LEIB_WEG(m) {
-    const p = () => r?.state.playerMesh?.position;
+    const p = () => st.playerMesh?.position;
     const a = p() && p().clone();
     await window.sleep(200);
     return !!a && Math.hypot(p().x - a.x, p().z - a.z) >= m;
@@ -174,7 +174,7 @@ function KALT_PROBE() {
     setInterval(() => {
         const o = { t: Math.round(performance.now()) };
         A.marken.push(performance.mark("anazh-kalt").startTime);
-        if (r && r.state) {
+        if (r && st) {
             if (!A.buchDa && r._foundry && r._foundry.ready && r._foundry.recipes) A.buchDa = o.t;
             try {
                 const L = r._weltbildLuecken();
@@ -184,7 +184,6 @@ function KALT_PROBE() {
                 o.fehlt = ["Probe warf: " + e.message];
             }
             // der Ring (der Boden um den Spieler bis zu seinem Ziel) und das erste gezeichnete Lade-Bild
-            const st = r.state;
             o.ring = [st._activeRingRadius, st.chunkRingRadius];
             o.bilder = r._gpuLeine ? r._gpuLeine.gerendert : 0;
             const f = r._foundry;
@@ -294,8 +293,8 @@ async function kaltLauf() {
         });
     });
     const liste = path.join(profil, "lieferung.json");
-    const wechsel = KERN && wechselUrteil(JSON.parse(fs.readFileSync(liste)), out.lieferung.liste, KERN.id);
-    if (profilBenannt && !KERN) fs.writeFileSync(liste, JSON.stringify(out.lieferung.liste));
+    const wechsel = KERN && wechselUrteil(jsonLesen(liste), out.lieferung.liste, KERN.id);
+    if (profilBenannt && !KERN) jsonSchreiben(liste, out.lieferung.liste, 0);
     Object.assign(out, { tK, druecke, offen, bild, zweit });
     await browser.close();
     server.close();
@@ -328,12 +327,12 @@ async function kaltLauf() {
         familie: KALT_PFLANZEN,
     };
     if (OPT("--spur") && spur)
-        fs.writeFileSync(OPT("--spur"), JSON.stringify({ spur, seite }));
+        jsonSchreiben(OPT("--spur"), { spur, seite }, 0);
     out.halter = HL.ankunftsHalter(spur, seite);
     [out.kosten, out.vorBild] = [out.halter.kosten, out.halter.vorBild];
     delete out.marken;
     const json = OPT("--json");
-    if (json) fs.writeFileSync(json, JSON.stringify(out, null, 1));
+    if (json) jsonSchreiben(json, out);
     // je Sekunde: der Stand am Ende der Sekunde (die letzte Probe) und die blockierten ms des Haupt-Threads
     const S = Math.ceil((tK || out.weltbildDa) / 1000);
     const blockiert = new Array(S + 1).fill(0);
@@ -402,7 +401,7 @@ async function kaltLauf() {
 hauptLauf(async () => {
     if (ARGV.includes("--kalt")) return kaltLauf();
     if (OPT("--spur-lesen")) {
-        const { spur, seite } = JSON.parse(fs.readFileSync(OPT("--spur-lesen")));
+        const { spur, seite } = jsonLesen(OPT("--spur-lesen"));
         return console.log(halterZeilen(HL.ankunftsHalter(spur, seite)));
     }
     const SELFTEST = ARGV.includes("--selftest");

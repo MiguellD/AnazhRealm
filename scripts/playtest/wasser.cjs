@@ -916,15 +916,14 @@ async function checkBandWellePerfHWaterIsoQueue({ page, check }) {
 // bleibt trocken, Worker↔Main bauen bit-identische Wasser-Cells (kein Architektur-Stempel).
 async function checkBandV17117FarWater({ page, check }) {
     const res = await page.evaluate(async () => {
-        const s = st;
-        const h = s.hydrosphere;
+        const h = st.hydrosphere;
         if (!h || !h.ready) return { error: "hydrosphere not ready" };
         const out = {};
         const cfg = r._voxelChunkConfig(0);
         const span = cfg.span;
-        const base = s.terrainBaseHeight || 0;
+        const base = st.terrainBaseHeight || 0;
         const oy = base - cfg.floorDrop;
-        const WL = typeof s.waterLevel === "number" ? s.waterLevel : 0;
+        const WL = typeof st.waterLevel === "number" ? st.waterLevel : 0;
         const WATER = AnazhRealm.CELL_STATE.WATER;
         const regHalf = (h.dim * h.cell) / 2; // ±1024
         // Der Ozean-Chunk liegt am Meer-Ort des Gesetzes (`__wasserOrt`: jenseits des Kontinents); der Land-Chunk jenseits der Heimat über Chunk-Indizes
@@ -1035,7 +1034,6 @@ async function checkBandV17117FarWater({ page, check }) {
 // V11.0-d.1 (Pfeiler D — Wasser ↔ Kreaturen): die Kosten und Quellen des Wasser-Kontext-Helpers, der Boden-Cache des Tiers.
 async function checkBandWelleV11D1WaterContext({ page, check }) {
     const res = await page.evaluate(() => {
-        const THREE = window.THREE;
         const out = {};
 
         // Ob der Helper der EINEN Wahrheit folgt (inWater, Tiefe), prüft die Mutation am Verhalten (gate:wasser-leben K12 M);
@@ -1299,7 +1297,6 @@ async function checkBandV18129HochBecken({ page, check }) {
 // die Grenze des Pegels übers Jahr, im Sommer schneefrei am Ufer — gate:wasser-leben S2.)
 async function checkBandV18194Gamma6Befoerderung({ page, check }) {
     const res = await safeEvaluate(page, async () => {
-        const s = st;
         const out = {};
 
         // (G3) FALSE-SWIM: der Körper liest EINE Wasser-Wahrheit (`_koerperWasser`, Welle L Q6), und sie kennt die DECKE
@@ -1312,10 +1309,10 @@ async function checkBandV18194Gamma6Befoerderung({ page, check }) {
         // Der Höhlen-Chunk unter dem See des Gesetzes (`__wasserChunk("hoehle")`: die Heimat trägt seit K16 keinen See).
         out.hoehlenChunk = await window.__wasserChunk("hoehle");
         const cfg = r._voxelChunkConfig(0);
-        const oy = (s.terrainBaseHeight || 0) - cfg.floorDrop;
+        const oy = (st.terrainBaseHeight || 0) - cfg.floorDrop;
         const ZS = AnazhRealm.CELL_STATE;
         const dq = cfg.dim * cfg.dim;
-        for (const [key, e] of s.voxelChunks || []) {
+        for (const [key, e] of st.voxelChunks || []) {
             if (!e || !e.waterCells) continue;
             const c = e.waterCells;
             const [kx, kz] = key.split(",").map(Number);
@@ -1362,7 +1359,7 @@ async function checkBandV18194Gamma6Befoerderung({ page, check }) {
         let archSeen = 0;
         let archWithBlockers = 0;
         let archStoneSolid = 0;
-        for (const a of s.architectures || []) {
+        for (const a of st.architectures || []) {
             if (!a) continue;
             archSeen++;
             if (Array.isArray(a.blockerAABBs) && a.blockerAABBs.length > 0) {
@@ -1413,7 +1410,6 @@ async function checkBandWasserWahrheit({ page, check }) {
         await window.__weltDa((r) => !!(r.state.hydrosphere && r.state.hydrosphere.ready));
     });
     const out = (await safeEvaluate(page, async () => {
-        const AR = AnazhRealm;
         const o = { fails: [] };
         const fail = (msg) => o.fails.push(msg);
         // DER WELT-TICK AM SCHEIN-CHUNK (Konsum am Ruf, F5): ein ruhender Chunk 0,0 ohne Bewegung; der Spion zählt, ob
@@ -1437,8 +1433,8 @@ async function checkBandWasserWahrheit({ page, check }) {
             step = cfg0.step; // 1.8
         const K = 2;
         const runCliff = (computeFn) => {
-            const SOLID = AR.CELL_STATE.SOLID;
-            const WATER = AR.CELL_STATE.WATER;
+            const SOLID = AnazhRealm.CELL_STATE.SOLID;
+            const WATER = AnazhRealm.CELL_STATE.WATER;
             const cells = new Uint8Array(dim * dim * dimY);
             const dimSq = dim * dim;
             // Plateau (i ≤ 11): SOLID ≤ 39, WATER @40 (Lauf). Tal (i ≥ 12): SOLID ≤ 7,
@@ -1499,7 +1495,7 @@ async function checkBandWasserWahrheit({ page, check }) {
         // benannten Senken des Flussnetzes (selten): die Heimat-Kachel trägt nicht immer ein Ufer — gesucht wird in den
         // Kacheln bis zum zweiten Ring, die nahen zuerst (wie Klang-Zensus und `__wasserOrt`).
         let shore = null;
-        const kachel = AR.HYDROSPHERE.regionSize;
+        const kachel = AnazhRealm.HYDROSPHERE.regionSize;
         const ringe = [];
         for (let rx = -2; rx <= 2; rx++) for (let rz = -2; rz <= 2; rz++) ringe.push([rx, rz]);
         ringe.sort((a, b) => Math.hypot(a[0], a[1]) - Math.hypot(b[0], b[1]));
@@ -1647,8 +1643,8 @@ async function checkBandWasserWahrheit({ page, check }) {
         // F3 (Graben am Fluss): ein Schnitt liegt in der Region, und das Level trägt den Stand von vorher (eine Zunge
         // auf dem Land, j 7) — die Kappe des Gesetzes öffnet dem Land keine Haut, über ihr steht kein Wasser mehr.
         const runRuhe = (capFn, kappeHoch) => {
-            const SOLID = AR.CELL_STATE.SOLID;
-            const WATER = AR.CELL_STATE.WATER;
+            const SOLID = AnazhRealm.CELL_STATE.SOLID;
+            const WATER = AnazhRealm.CELL_STATE.WATER;
             const d = 8,
                 dy = 16,
                 dSq = d * d,
@@ -1713,8 +1709,8 @@ async function checkBandWasserWahrheit({ page, check }) {
         // Ein See (Flut-Dach j 40) mit Live-Dach überall gleich, nur EINE Spalte hat der Automat geleert (−1): das Sheet
         // zeichnet sie nie als Grube unter dem Spiegel.
         const runLeer = (computeFn) => {
-            const WATER = AR.CELL_STATE.WATER;
-            const SOLID = AR.CELL_STATE.SOLID;
+            const WATER = AnazhRealm.CELL_STATE.WATER;
+            const SOLID = AnazhRealm.CELL_STATE.SOLID;
             const dimSq = dim * dim;
             const cells = new Uint8Array(dimSq * dimY);
             for (let c = 0; c < dimSq; c++) {
@@ -1779,14 +1775,14 @@ async function checkBandWasserWahrheit({ page, check }) {
             };
             // der Täter an der Naht: das Netz bekommt den View des Satzes statt seiner Kopie
             if (haeltView) shim._wasserNetzBau = (cx, cz, pos, idx) => r._wasserNetzBau.call(shim, cx, cz, mesh.geometry.attributes.position.array, idx);
-            const h0 = AR._wasserNetzHoehe(netzFn.call(shim, 0, 0), 5, 5);
+            const h0 = AnazhRealm._wasserNetzHoehe(netzFn.call(shim, 0, 0), 5, 5);
             // das Verdichten: Bereich 2 rückt nach vorn, ein dritter Bereich (fremd, y 2) zieht in seinen alten Platz
             alt.copyWithin(0, 12, 24);
             alt.set(quad(30, 30, 2), 12);
             const neu = new Float32Array(12);
             neu.set(alt.subarray(0, 12));
             mesh.geometry.attributes.position.array = neu.subarray(0, 12);
-            const h1 = AR._wasserNetzHoehe(netzFn.call(shim, 0, 0), 5, 5);
+            const h1 = AnazhRealm._wasserNetzHoehe(netzFn.call(shim, 0, 0), 5, 5);
             return { h0, h1 };
         };
         const f7 = runNetz(r._wasserNetz);
@@ -1811,10 +1807,9 @@ async function checkBandWasserWahrheit({ page, check }) {
 async function checkBandWasserSheetSpiegel({ page, check }) {
     await safeEvaluate(page, require(path.join(SKRIPTE, "lib", "wasser-linse.cjs")).WASSER_INSTALL);
     const steer = await safeEvaluate(page, async () => {
-        const s = st;
-        if (!s || !s.playerMesh) return { err: "kein Spieler" };
-        const px = s.playerMesh.position.x,
-            pz = s.playerMesh.position.z;
+        if (!st || !st.playerMesh) return { err: "kein Spieler" };
+        const px = st.playerMesh.position.x,
+            pz = st.playerMesh.position.z;
         const O = (await window.__wasserOrte({ mess: [px, pz] }));
         // DAS NÄCHSTE WASSER: See ODER Fluss, was näher liegt — das Gelände des Kerns füllt keine Mulden mehr (Senken
         // ≤ 1/km²), der nächste benannte See lag 5 km weit, und der Strom baute dort in der Frist keinen Chunk (0 verglichen)
@@ -1826,13 +1821,13 @@ async function checkBandWasserSheetSpiegel({ page, check }) {
             .sort((a, b) => Math.hypot(a.x - px, a.z - pz) - Math.hypot(b.x - px, b.z - pz))[0];
         if (!spot) return { err: "kein See und kein Fluss in der Welt (`__wasserOrte`)" };
         // Spieler ans Wasser (Body-frei seit V18.331 — nur die Mesh-Position treibt das Streaming).
-        s.playerMesh.position.set(spot.x, spot.L + 3, spot.z);
+        st.playerMesh.position.set(spot.x, spot.L + 3, spot.z);
         // Streaming-Pump: der Worker baut die Chunks um den Spieler + liefert waterCells.
         // bis der Ort steht: Chunks um den Spieler mit Wasser-Zellen (das EINE Warten, welt-boot `__gebautNach`), mindestens 280 Takte
         const steht = () => {
             let n = 0;
-            for (const e of s.voxelChunks.values()) if (e && e.waterCells && e.waterCells.length) n++;
-            return s.voxelChunks.size > 8 && n > 0;
+            for (const e of st.voxelChunks.values()) if (e && e.waterCells && e.waterCells.length) n++;
+            return st.voxelChunks.size > 8 && n > 0;
         };
         const pumpe = async (i) => {
             try {
@@ -1846,7 +1841,7 @@ async function checkBandWasserSheetSpiegel({ page, check }) {
         };
         for (let i = 0; i < 280; i++) await pumpe(i);
         await window.__gebautNach("Chunks mit Wasser-Zellen am Ort", { fertig: steht, takt: pumpe, max: 4000 });
-        return { x: +spot.x.toFixed(1), z: +spot.z.toFixed(1), L: +spot.L.toFixed(1), chunks: s.voxelChunks.size };
+        return { x: +spot.x.toFixed(1), z: +spot.z.toFixed(1), L: +spot.L.toFixed(1), chunks: st.voxelChunks.size };
     });
     const report = (await safeEvaluate(page, async () => {
         const out = {

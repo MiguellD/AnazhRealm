@@ -84,7 +84,6 @@ async function checkBandFeldStellvertreter({ page, check }) {
     };
     const mitBudget = (a) => Object.assign(a, { budgetPano: budget(a.wgslPano), budgetMarch: budget(a.wgslMarch) });
     const probe = function probe(modus) {
-        const T = window.THREE;
         const W = AnazhRealm.WELT_MARCH;
         if (st.feldPass) r._feldPassDispose();
         st.weltMarch = null;
@@ -101,8 +100,8 @@ async function checkBandFeldStellvertreter({ page, check }) {
         }
         let s = 12345;
         const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
-        const box = () => [{ box: true, c: new T.Vector3(1, 2, 1), h: new T.Vector3(1, 2, 1) }];
-        const M = new T.Matrix4();
+        const box = () => [{ box: true, c: new THREE.Vector3(1, 2, 1), h: new THREE.Vector3(1, 2, 1) }];
+        const M = new THREE.Matrix4();
         const handles = [];
         for (let i = 0; i < 300; i++) {
             M.makeTranslation((rnd() - 0.5) * 600, rnd() * 20, (rnd() - 0.5) * 600);
@@ -147,8 +146,8 @@ async function checkBandFeldStellvertreter({ page, check }) {
         cam.lookAt(0, 0, 0);
         cam.updateMatrixWorld(true);
         r._tickFeldPass({ anchorX: fp.anchorX, anchorZ: fp.anchorZ });
-        const vp = new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
-        const ident = new T.Matrix4().multiplyMatrices(fp.U.vp.value, fp.U.invVP.value);
+        const vp = new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+        const ident = new THREE.Matrix4().multiplyMatrices(fp.U.vp.value, fp.U.invVP.value);
         let abwVp = 0,
             abwIdent = 0;
         for (let i = 0; i < 16; i++) {
@@ -181,7 +180,7 @@ async function checkBandFeldStellvertreter({ page, check }) {
             abwIdent,
             march: {
                 instanziert: fp.march.geometry.isInstancedBufferGeometry === true,
-                rueckseite: fp.matMarch.side === T.BackSide,
+                rueckseite: fp.matMarch.side === THREE.BackSide,
                 tiefe: fp.matMarch.depthNode != null,
                 vertex:
                     vertexTexte.some((t) => /fn feldStellvertreter\(i: u32/.test(t)) &&

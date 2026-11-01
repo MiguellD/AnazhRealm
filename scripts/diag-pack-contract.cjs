@@ -18,7 +18,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const PK = require("./lib/pack-kanon.cjs");
-const { hauptLauf, urteilEnde } = require("./lib/welt-boot.cjs");
+const { hauptLauf, urteilEnde, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.PACK_GATE_PORT || 4562);
@@ -73,7 +73,7 @@ async function selftest() {
         const buf = Buffer.from(bad.meshes[0].attrs.position.b64, "base64");
         buf[4] ^= 0xff;
         bad.meshes[0].attrs.position.b64 = buf.toString("base64");
-        fs.writeFileSync(file, JSON.stringify(bad));
+        jsonSchreiben(file, bad, 0);
         const d1 = PK.comparePackToReply(PK.readPack(file), ser);
         check(
             d1.some((x) => /position: sha256-Divergenz/.test(x)),
@@ -83,7 +83,7 @@ async function selftest() {
         const bad2 = PK.readPack(file);
         bad2.meshes[0].attrs.position.b64 = pos.toString("base64");
         bad2.meshes[0].index.b64 = idx.subarray(0, 8).toString("base64");
-        fs.writeFileSync(file, JSON.stringify(bad2));
+        jsonSchreiben(file, bad2, 0);
         const d2 = PK.comparePackToReply(PK.readPack(file), ser);
         check(
             d2.some((x) => /index: Byte-Länge/.test(x)),

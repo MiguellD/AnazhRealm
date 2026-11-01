@@ -81,9 +81,7 @@ function bildZiele(q) {
 const bildZieleGut = (z) => !Object.keys(z).length;
 
 function probe(selbsttest) {
-    const T = window.THREE;
-    const A = r.constructor;
-    const K = A.SCHATTEN_KASKADE;
+    const K = AnazhRealm.SCHATTEN_KASKADE;
     const cam = st.camera;
     const csm = st.csmNode;
     const aus = { selbsttest };
@@ -121,8 +119,8 @@ function probe(selbsttest) {
         const lw = csm.lights[i];
         lw.shadow.updateMatrices(lw);
         const c = lw.shadow.camera;
-        const m = new T.Matrix4().multiplyMatrices(c.projectionMatrix, c.matrixWorldInverse);
-        return new T.Frustum().setFromProjectionMatrix(m, c.coordinateSystem);
+        const m = new THREE.Matrix4().multiplyMatrices(c.projectionMatrix, c.matrixWorldInverse);
+        return new THREE.Frustum().setFromProjectionMatrix(m, c.coordinateSystem);
     };
     // DIE LAGE eines Passes, wie sie der echte Haken legt (`_passWahlLage`: Frustum, Auge, Scheibe der Kaskade, Blende) —
     // das Soll jedes Lesers ist das EINE Gesetz in dieser Lage. i ≥ 0: die Kaskade i, sonst das Hauptbild.
@@ -157,15 +155,15 @@ function probe(selbsttest) {
     };
     const empfaenger = () => {
         cam.updateMatrixWorld(true);
-        const m = new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
-        const blickFr = new T.Frustum().setFromProjectionMatrix(m, cam.coordinateSystem);
+        const m = new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+        const blickFr = new THREE.Frustum().setFromProjectionMatrix(m, cam.coordinateSystem);
         const far = Math.min(cam.far, csm.maxFar);
-        const dir = cam.getWorldDirection(new T.Vector3());
+        const dir = cam.getWorldDirection(new THREE.Vector3());
         const yaw = Math.atan2(dir.x, dir.z);
-        const halb = Math.atan(Math.tan(T.MathUtils.degToRad(cam.fov) / 2) * cam.aspect);
+        const halb = Math.atan(Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2) * cam.aspect);
         const fr = csm.lights.map((_l, i) => frustumVon(i));
-        const p = new T.Vector3(),
-            v = new T.Vector3();
+        const p = new THREE.Vector3(),
+            v = new THREE.Vector3();
         let n = 0,
             schlecht = 0;
         const jeKaskade = csm.lights.map(() => 0);
@@ -252,8 +250,8 @@ function probe(selbsttest) {
         const gehalten = csm._anazhFit.every((f, i) => f.bild === vor[i]);
         const f0 = csm._anazhFit[0];
         const bild0 = f0.bild;
-        const ph = new T.Vector3(f0.x0 + f0.W / 2, f0.y0 + f0.H / 2, f0.zt + 20).applyMatrix4(f0.basisInv.clone().invert());
-        const hoch = { huelle: new T.Box3().setFromCenterAndSize(ph, new T.Vector3(6, 6, 6)) };
+        const ph = new THREE.Vector3(f0.x0 + f0.W / 2, f0.y0 + f0.H / 2, f0.zt + 20).applyMatrix4(f0.basisInv.clone().invert());
+        const hoch = { huelle: new THREE.Box3().setFromCenterAndSize(ph, new THREE.Vector3(6, 6, 6)) };
         boden.bloecke.set("__wc:hoch", hoch);
         let neuGelegt = false,
             wirft = false;
@@ -280,10 +278,9 @@ function probe(selbsttest) {
     // bis zum ganzen Rand).
     const k8 = (art) => {
         const res = { art, grenze: [], budget: [], faelle: [], loecher: 0, namen: [], geprueft: 0, neu: [] };
-        const C = r.constructor;
-        const PW0 = C.PASS_WAHL;
+        const PW0 = AnazhRealm.PASS_WAHL;
         const P = Object.getPrototypeOf(r);
-        C.PASS_WAHL = Object.freeze(Object.assign({}, PW0, { saumM: Object.freeze([0, 0]) }));
+        AnazhRealm.PASS_WAHL = Object.freeze(Object.assign({}, PW0, { saumM: Object.freeze([0, 0]) }));
         if (art === "untreu")
             r._passLageHaelt = function (a, s, an) {
                 if (s[84] === 0 && s[27] === 1) return true;
@@ -348,7 +345,7 @@ function probe(selbsttest) {
                 const st = Math.abs(n.x) * hx + Math.abs(n.y) * hy + Math.abs(n.z) * hz + rr;
                 if (n.x * cx + n.y * cy + n.z * cz + P.constant < -st) return false;
             }
-            const v = new T.Vector3(cx, cy, cz).applyMatrix4(fit.basisInv);
+            const v = new THREE.Vector3(cx, cy, cz).applyMatrix4(fit.basisInv);
             const sl = Math.abs(d.x) * hx + Math.abs(d.y) * hy + Math.abs(d.z) * hz + rr;
             let s0 = 0,
                 s1 = Math.max(0, v.z - fit.zb + sl);
@@ -445,7 +442,7 @@ function probe(selbsttest) {
             nachTakt();
             res.neu = csm.lights.map((_l, k) => gen(k) !== gH[k]);
         } finally {
-            C.PASS_WAHL = PW0;
+            AnazhRealm.PASS_WAHL = PW0;
             delete r._passLageHaelt;
             delete r._wahlHaelt;
             delete r._passTrifft;
@@ -465,19 +462,19 @@ function probe(selbsttest) {
         // ±200 m um den Spieler, in einer Schatten-Gruppe der Wahl — am Null-Renderer stehen sonst zu wenige Werfer am Rand der
         // Scheiben (erst 40° Drehung ließ ohne Rand-Prüfung ein Loch; in der echten Welt fehlten nach ±3° schon 14 Werfer), und
         // ihr Licht-Weg ist der längste der Box: der Licht-Rand trägt an ihnen seine ganze Breite
-        const pfahl = new T.BoxGeometry(2, 2, 2);
+        const pfahl = new THREE.BoxGeometry(2, 2, 2);
         const np = pfahl.attributes.position.count;
-        pfahl.setAttribute("aLodLevel", new T.BufferAttribute(new Float32Array(np).fill(3), 1));
-        pfahl.setAttribute("aH0", new T.BufferAttribute(new Float32Array(np).fill(2), 1));
-        pfahl.setAttribute("aH0L", new T.BufferAttribute(new Float32Array(np).fill(2), 1));
+        pfahl.setAttribute("aLodLevel", new THREE.BufferAttribute(new Float32Array(np).fill(3), 1));
+        pfahl.setAttribute("aH0", new THREE.BufferAttribute(new Float32Array(np).fill(2), 1));
+        pfahl.setAttribute("aH0L", new THREE.BufferAttribute(new Float32Array(np).fill(2), 1));
         const wald = r._archInstanceGroupFor(
             "__k8:wald",
             0,
-            { geom: pfahl, mat: new T.MeshBasicMaterial(), castShadow: true, shadowTwin: true },
+            { geom: pfahl, mat: new THREE.MeshBasicMaterial(), castShadow: true, shadowTwin: true },
             null
         );
         const pfaehle = [];
-        const Mw = new T.Matrix4();
+        const Mw = new THREE.Matrix4();
         for (let i = -25; i < 25; i++)
             for (let j = -25; j < 25; j++) {
                 const x = pm.x + i * 8 + 4,
@@ -520,10 +517,10 @@ function probe(selbsttest) {
     aus.k1Abend = empfaenger();
     // K5 — die längste Kante der Referenz-Scheibe trägt die Karte
     {
-        const far = A.PERF_SHADOW_RANGE_MAX * A.SCHATTEN_FERN_FAKTOR;
+        const far = AnazhRealm.PERF_SHADOW_RANGE_MAX * AnazhRealm.SCHATTEN_FERN_FAKTOR;
         const br = [];
         csm.customSplitsCallback(csm.cascades, cam.near, far, br);
-        const halb = Math.tan(T.MathUtils.degToRad(cam.fov) / 2) * K.bezugAspekt;
+        const halb = Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2) * K.bezugAspekt;
         const saum = [0, 1];
         aus.k5 = aus.karten.map((n, i) => {
             r._kaskadenSaum(br, i, csm.fade === true, saum);
@@ -569,8 +566,8 @@ function probe(selbsttest) {
         blick(0);
         const roh = r._kaskadenHuellen;
         if (huellenRegel) r._kaskadenHuellen = huellenRegel;
-        const tal = { huelle: new T.Box3() };
-        const hang = { huelle: new T.Box3() };
+        const tal = { huelle: new THREE.Box3() };
+        const hang = { huelle: new THREE.Box3() };
         try {
             // das Tal: ein Boden IN der nahen Scheibe (1 m über ihrer Unterkante, 95 % ihrer Tiefe), tief unter jeder
             // Bundle-Hülle — ein Empfänger, den nur seine eigene Boden-Hülle ins Band holt
@@ -578,24 +575,24 @@ function probe(selbsttest) {
             const mf = csm.mainFrustum.vertices;
             const unten = (t) => {
                 const e = [0, 1, 2, 3].map((j) =>
-                    new T.Vector3().lerpVectors(mf.near[j], mf.far[j], t).applyMatrix4(cam.matrixWorld)
+                    new THREE.Vector3().lerpVectors(mf.near[j], mf.far[j], t).applyMatrix4(cam.matrixWorld)
                 );
                 e.sort((p, q) => p.y - q.y);
                 return e[0].add(e[1]).multiplyScalar(0.5);
             };
-            const pt = new T.Vector3().lerpVectors(unten(ab[0]), unten(ab[1]), 0.95);
+            const pt = new THREE.Vector3().lerpVectors(unten(ab[0]), unten(ab[1]), 0.95);
             pt.y += 1;
-            tal.huelle.setFromCenterAndSize(pt, new T.Vector3(20, 2, 20));
+            tal.huelle.setFromCenterAndSize(pt, new THREE.Vector3(20, 2, 20));
             boden.bloecke.set("__w7:tal", tal);
             alleNeu();
             r._kaskadenPassen(csm);
             const talDrin = frustumVon(NAH).containsPoint(pt);
             // der Hang: im Licht-Raum über dem Zentrum der nahen Box, 30 m über ihrer nahen Ebene
             const f0 = csm._anazhFit[NAH];
-            const ph = new T.Vector3(f0.x0 + f0.W / 2, f0.y0 + f0.H / 2, f0.zt + 30).applyMatrix4(
+            const ph = new THREE.Vector3(f0.x0 + f0.W / 2, f0.y0 + f0.H / 2, f0.zt + 30).applyMatrix4(
                 f0.basisInv.clone().invert()
             );
-            hang.huelle.setFromCenterAndSize(ph, new T.Vector3(6, 6, 6));
+            hang.huelle.setFromCenterAndSize(ph, new THREE.Vector3(6, 6, 6));
             boden.bloecke.set("__w7:hang", hang);
             alleNeu();
             r._kaskadenPassen(csm);
@@ -631,8 +628,8 @@ function probe(selbsttest) {
     r._kaskadenPassen(csm);
     const map = st._regionBundles;
     const kasten = (x, y, z, s) => {
-        const bg = new T.BundleGroup();
-        const m = new T.Mesh(new T.BoxGeometry(s, s, s), new T.MeshBasicMaterial());
+        const bg = new THREE.BundleGroup();
+        const m = new THREE.Mesh(new THREE.BoxGeometry(s, s, s), new THREE.MeshBasicMaterial());
         m.position.set(x, y, z);
         m.castShadow = true;
         bg.add(m);
@@ -647,14 +644,14 @@ function probe(selbsttest) {
     // W3 — hinter dem Blick, aber zwischen Licht und naher Scheibe: Box-Zentrum der Kaskade 0, 15 m zum Licht hin
     const f0 = csm._anazhFit[0];
     const hinterInv = f0.basisInv.clone().invert();
-    const p3 = new T.Vector3(f0.x0 + f0.W / 2, f0.y0 + f0.H / 2, f0.zt - 15).applyMatrix4(hinterInv);
+    const p3 = new THREE.Vector3(f0.x0 + f0.W / 2, f0.y0 + f0.H / 2, f0.zt - 15).applyMatrix4(hinterInv);
     const hinter = kasten(p3.x, p3.y, p3.z, 3);
     hinter.userData._sichtHaupt = false;
     map.set("__w7:hinter", hinter);
     // W4 — EINE Region, zwei Werfer: einer in der nahen Box, einer 2 km fern. Die Region wirft (ihre Hülle schneidet die
     // Box), der ferne Werfer ruht im Pass — die Wahl gilt je Werfer, nicht je Region.
     const zwei = kasten(p3.x, p3.y, p3.z, 2);
-    const weit = new T.Mesh(new T.BoxGeometry(4, 4, 4), new T.MeshBasicMaterial());
+    const weit = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 4), new THREE.MeshBasicMaterial());
     weit.position.set(pm.x + 2000, pm.y, pm.z);
     weit.castShadow = true;
     zwei.add(weit);
@@ -870,7 +867,7 @@ function probe(selbsttest) {
     // gegen das Soll, beim Namen. `alt` = die alte Regel (jede Instanz in jedem Pass). ──
     const w8 = (alt) => {
         const lu = r._ensureLodUniforms();
-        const D = r.constructor.LOD_DISTANCES;
+        const D = AnazhRealm.LOD_DISTANCES;
         const set = r._instanzWahlGruppen();
         const res = {
             falsch: [],
@@ -883,18 +880,18 @@ function probe(selbsttest) {
             abend: null,
         };
         const stamm = (stufe) => {
-            const g = new T.CylinderGeometry(2, 2, 10, 8, 1);
+            const g = new THREE.CylinderGeometry(2, 2, 10, 8, 1);
             g.translate(0, 5, 0);
             const n = g.attributes.position.count;
-            g.setAttribute("aLodLevel", new T.BufferAttribute(new Float32Array(n).fill(stufe), 1));
-            g.setAttribute("aH0", new T.BufferAttribute(new Float32Array(n).fill(10), 1));
-            g.setAttribute("aH0L", new T.BufferAttribute(new Float32Array(n).fill(10), 1));
+            g.setAttribute("aLodLevel", new THREE.BufferAttribute(new Float32Array(n).fill(stufe), 1));
+            g.setAttribute("aH0", new THREE.BufferAttribute(new Float32Array(n).fill(10), 1));
+            g.setAttribute("aH0L", new THREE.BufferAttribute(new Float32Array(n).fill(10), 1));
             return g;
         };
         // der Stoff der Probe trägt die Maske (wie jeder Stufen-Stoff der Foundry, Kanal Farbe: auch der Schattenpass liest
         // sie); die Gruppe U trägt einen Stoff OHNE Maske — die GPU zeichnet jede ihrer Instanzen voll, ein Fenster schnitte
         // dort ein Loch
-        const stoff = new T.MeshBasicMaterial();
+        const stoff = new THREE.MeshBasicMaterial();
         stoff.userData.foundryCrossfade = true;
         stoff.userData.foundryCrossfadeKanal = "farbe";
         // die Gruppen der Welt, deren Stoff die Maske nicht trägt (die Wahl liest dort nur das Gesetz, kein Fenster)
@@ -911,12 +908,12 @@ function probe(selbsttest) {
             U: r._archInstanceGroupFor(
                 "__w8:baum",
                 3,
-                { geom: stamm(2), mat: new T.MeshBasicMaterial(), castShadow: false },
+                { geom: stamm(2), mat: new THREE.MeshBasicMaterial(), castShadow: false },
                 null
             ),
         };
         res.gruppen = Object.values(G).filter((g) => g.wahl).length;
-        const M = new T.Matrix4();
+        const M = new THREE.Matrix4();
         const setze = (g, name, x, z, s) => {
             const ref = r._archGroupAlloc(g, null);
             const y = r._voxelSurfaceY(x, z);
@@ -935,7 +932,7 @@ function probe(selbsttest) {
             const ist = g.mesh.visible ? gezeichnet(g) : "";
             const s = soll.slice().sort().join(",");
             if (ist !== s)
-                res.falsch.push(`${name}: ${r.constructor._instanzKlasse(g.key)} zeichnet [${ist}] statt [${s}]`);
+                res.falsch.push(`${name}: ${AnazhRealm._instanzKlasse(g.key)} zeichnet [${ist}] statt [${s}]`);
             return ist;
         };
         const danach = () => {
@@ -1008,7 +1005,7 @@ function probe(selbsttest) {
             // (2) Mittag, Blick in Licht-Richtung (der Schatten läuft vom Auge weg): der Zwilling H mitten in der fernen
             // Scheibe, so hoch, dass seine Maske vom Auge etwas behält — er wirft in k1, nicht in k0.
             leere(G.Z);
-            const L = new T.Vector3().subVectors(csm.light.target.position, csm.light.position).setY(0).normalize();
+            const L = new THREE.Vector3().subVectors(csm.light.target.position, csm.light.position).setY(0).normalize();
             blick(Math.atan2(L.x, L.z));
             const c1 = cam.position.clone();
             const far = Math.min(cam.far, csm.maxFar);
@@ -1084,16 +1081,16 @@ function probe(selbsttest) {
             r._instanzWahlPass = function (art, S2) {
                 return ohneKapsel(S2.lage, () => P._instanzWahlPass.call(this, art, S2));
             };
-        const geo = new T.BoxGeometry(1, 2, 1);
+        const geo = new THREE.BoxGeometry(1, 2, 1);
         geo.translate(0, 1, 0);
         const nv = geo.attributes.position.count;
-        geo.setAttribute("aLodLevel", new T.BufferAttribute(new Float32Array(nv).fill(3), 1));
-        geo.setAttribute("aH0", new T.BufferAttribute(new Float32Array(nv).fill(2), 1));
-        geo.setAttribute("aH0L", new T.BufferAttribute(new Float32Array(nv).fill(2), 1));
+        geo.setAttribute("aLodLevel", new THREE.BufferAttribute(new Float32Array(nv).fill(3), 1));
+        geo.setAttribute("aH0", new THREE.BufferAttribute(new Float32Array(nv).fill(2), 1));
+        geo.setAttribute("aH0L", new THREE.BufferAttribute(new Float32Array(nv).fill(2), 1));
         const Z = r._archInstanceGroupFor(
             "__w9:zwilling",
             0,
-            { geom: geo, mat: new T.MeshBasicMaterial(), castShadow: true, shadowTwin: true },
+            { geom: geo, mat: new THREE.MeshBasicMaterial(), castShadow: true, shadowTwin: true },
             null
         );
         const map9 = st._regionBundles;
@@ -1128,8 +1125,8 @@ function probe(selbsttest) {
             if (!res.punkt) return res;
             const [px, py, pz] = res.punkt;
             // der Werfer eines Bündels (eine Box 1 m) und die Instanz der Wahl am Punkt
-            bg = new T.BundleGroup();
-            const kiste = new T.Mesh(new T.BoxGeometry(1, 1, 1), new T.MeshBasicMaterial());
+            bg = new THREE.BundleGroup();
+            const kiste = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial());
             kiste.position.set(px, py + 0.5, pz);
             kiste.castShadow = true;
             bg.add(kiste);
@@ -1137,7 +1134,7 @@ function probe(selbsttest) {
             bg.updateMatrixWorld(true);
             map9.set("__w9:kapsel", bg);
             const ref = r._archGroupAlloc(Z, null);
-            Z.mesh.setMatrixAt(ref.slot, new T.Matrix4().makeTranslation(px, py, pz));
+            Z.mesh.setMatrixAt(ref.slot, new THREE.Matrix4().makeTranslation(px, py, pz));
             r._lodSlotStamp(Z, ref.slot, 1, false, null);
             r._shadowFrame = (r._shadowFrame || 0) + 1;
             alleNeu();
@@ -1218,7 +1215,7 @@ function probe(selbsttest) {
         // kennt sie ihn, steht die Höhe ihres höchsten Werfers über ihm
         aus.w6TotOben = null;
         if (aus.w6Tot) {
-            const S = { v: new T.Vector3(), basisInv: new T.Matrix4() };
+            const S = { v: new THREE.Vector3(), basisInv: new THREE.Matrix4() };
             tot.position.y += 500;
             const p = tot.position;
             r._kaskadenWerferOben([], S, p.x - 1, p.x + 1, p.y - 1, p.y + 1);
@@ -1254,7 +1251,7 @@ function probe(selbsttest) {
     // Knoten trägt ein eigenes Wurf-Feld neben der Ebene (sonst schriebe ein Werfer an ihr vorbei). Jeder zeichnende Knoten
     // der Szene: gesehen ⇔ wirft. ──
     {
-        const E = 1 << r.constructor.SHADOW_TWIN_LAYER;
+        const E = 1 << AnazhRealm.SHADOW_TWIN_LAYER;
         const kams = st.csmNode && st.csmNode.lights ? st.csmNode.lights.map((l) => l.shadow.camera) : [];
         const urteil = (maske) => {
             const fremd = [],
@@ -1296,7 +1293,7 @@ function probe(selbsttest) {
         };
         // ein Licht ohne Wurf-Ebene (wie vor K72 jedes Licht ohne Wurf): die Kaskade sähe es nicht
         if (selbsttest) {
-            const amb = new T.AmbientLight(0xffffff, 0);
+            const amb = new THREE.AmbientLight(0xffffff, 0);
             amb.name = "__w10:licht";
             amb.layers.mask = 1;
             st.scene.add(amb);
@@ -1310,15 +1307,15 @@ function probe(selbsttest) {
 
     // ── Z1: die Karten-Ziele — der Knoten baut sein Ziel durch die Hülle (wie r184 setupRenderTarget) ──
     {
-        const rt = new T.RenderTarget(8, 8);
-        const dt = new T.DepthTexture(8, 8);
+        const rt = new THREE.RenderTarget(8, 8);
+        const dt = new THREE.DepthTexture(8, 8);
         rt.depthTexture = dt;
         const knoten = { setupRenderTarget: () => ({ shadowMap: rt, depthTexture: dt }) };
         r._kaskadenZiele({ _shadowNodes: [knoten] });
         const z = knoten.setupRenderTarget({}, {});
         aus.z1 = {
-            farbe: z.shadowMap.texture.format === T.RedFormat,
-            tiefe: z.depthTexture.type === T.UnsignedShortType,
+            farbe: z.shadowMap.texture.format === THREE.RedFormat,
+            tiefe: z.depthTexture.type === THREE.UnsignedShortType,
             namen: rt.texture.name === "kaskade0:farbe" && dt.name === "kaskade0:tiefe",
             // die Karte ohne Farbe (0710-1, Ziel-Zensus: die Farbe hatte keinen Leser): auf WebGPU legt die GPU die Farbe nie
             // an, der Kontext des Ziels trägt keinen Farb-Anhang; die echte Karte trägt keine GPU-Textur ihrer Farbe
@@ -1464,7 +1461,7 @@ function probe(selbsttest) {
                     break;
                 }
             }
-            const R = r.constructor.ARCH_REGION_M;
+            const R = AnazhRealm.ARCH_REGION_M;
             const pm = st.playerMesh.position;
             const rx0 = Math.round(pm.x / R) - 1,
                 rz0 = Math.round(pm.z / R) - 1;

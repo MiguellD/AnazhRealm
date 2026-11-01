@@ -118,9 +118,8 @@ hauptLauf(async () => {
 
     // PHASE 1 — Compiler auf Prototyp-Ebene wrappen + Warmup (alle Pipelines EINMAL kompilieren)
     const setup = await ruf("Setup", async () => {
-        const s = st;
-        if (!s.rendererReady || !window.__origRender) return { err: "renderer nicht bereit" };
-        if (s.renderer._isHeadlessNull) return { err: "Null-Renderer — die Linse braucht den ECHTEN Renderer (sonst blind, das ist der ganze Punkt)" };
+        if (!st.rendererReady || !window.__origRender) return { err: "renderer nicht bereit" };
+        if (st.renderer._isHeadlessNull) return { err: "Null-Renderer — die Linse braucht den ECHTEN Renderer (sonst blind, das ist der ganze Punkt)" };
         // WIEDERHOLUNG vs. ERST-COMPILE: die streamende Welt bringt neue Objekte, deren ERST-Compiles kein Env-Churn sind.
         // Die Klasse ist ein WIEDERHOLTER Compile: dieselbe Pipeline (derselbe
         // Quelltext, derselbe Zustand) noch einmal, weil ein Cache-Schlüssel seine Identität verliert. Darum trägt
@@ -173,20 +172,20 @@ hauptLauf(async () => {
             };
         }
         let backend = "?";
-        try { const b = s.renderer.backend; if (b) backend = b.isWebGPUBackend ? "WebGPU" : b.isWebGLBackend ? "WebGL2" : b.constructor?.name || "?"; } catch {}
-        s.renderer.render = window.__origRender;
-        s.postProcessingFailed = true;
+        try { const b = st.renderer.backend; if (b) backend = b.isWebGPUBackend ? "WebGPU" : b.isWebGLBackend ? "WebGL2" : b.constructor?.name || "?"; } catch {}
+        st.renderer.render = window.__origRender;
+        st.postProcessingFailed = true;
         // Der App-Loop RUHT: die Linse treibt ihre Frames selbst (sonst rendert er parallel mit und
         // verdoppelt die Compile-Last auf dem langsamen Runner).
-        if (typeof s.renderer.setAnimationLoop === "function") s.renderer.setAnimationLoop(null);
-        const cam = s.camera, pm = s.playerMesh;
+        if (typeof st.renderer.setAnimationLoop === "function") st.renderer.setAnimationLoop(null);
+        const cam = st.camera, pm = st.playerMesh;
         if (cam && pm) { cam.position.set(pm.position.x, pm.position.y + 1.6, pm.position.z); cam.lookAt(pm.position.x + 30, pm.position.y + 1, pm.position.z); cam.updateMatrixWorld(true); }
         // die Bühne: Mittag, Sonne, ohne Übergang — VOR dem Warmup (die Umgebung malt sich gleich danach aus diesem Himmel).
         // Die Sonne setzt der Halter selbst (`__wetterSetzen`: der eine Zug, den der Halt durchlässt, danach hält die Uhr).
         window.__wetterSetzen("sunny");
-        s.timeOfDay = 0.5;
-        if (s.world) s.world.timeOfDay = 0.5;
-        window.__buehneStand = () => ({ wetter: s.weather, uebergang: !!s.weatherTransition, saison: s.season, zeit: s.timeOfDay, bauten: (s.architectures || []).length });
+        st.timeOfDay = 0.5;
+        if (st.world) st.world.timeOfDay = 0.5;
+        window.__buehneStand = () => ({ wetter: st.weather, uebergang: !!st.weatherTransition, saison: st.season, zeit: st.timeOfDay, bauten: (st.architectures || []).length });
         window.__buehne0 = window.__buehneStand();
         window.__wetterSeq0 = window.__wetterBuch(0).seq;
         // DAS BAU-BUCH: die beiden Schreiber der Bau-Menge (`spawnArchitecture`
@@ -197,9 +196,9 @@ hauptLauf(async () => {
         for (const [weg, art] of [["spawnArchitecture", "an"], ["removeArchitecture", "weg"]]) {
             const roh = r[weg];
             r[weg] = function (...a) {
-                const n0 = (s.architectures || []).length;
+                const n0 = (st.architectures || []).length;
                 const v = roh.apply(this, a);
-                const n1 = (s.architectures || []).length;
+                const n1 = (st.architectures || []).length;
                 if (n1 !== n0 && window.__bauBuch.length < 20) {
                     const e = art === "an" ? v : a[0];
                     window.__bauBuch.push(`${art} ${e?.type || "?"} durch ${window.__spielStapel()}`);
@@ -240,8 +239,8 @@ hauptLauf(async () => {
         };
         // DAS OBJEKT JEDES COMPILES beim Namen: der Haken an renderObject trägt das Objekt der laufenden Zeichnung
         window.__ccName = name;
-        const roRoh = s.renderer.renderObject;
-        s.renderer.renderObject = function (o) {
+        const roRoh = st.renderer.renderObject;
+        st.renderer.renderObject = function (o) {
             const vor = window.__ccObjekt;
             window.__ccObjekt = o;
             try { return roRoh.apply(this, arguments); } finally { window.__ccObjekt = vor; }
@@ -261,7 +260,7 @@ hauptLauf(async () => {
         window.__schwer = [];
         window.__warmSchritt = () => {
             const objs = [];
-            s.scene.traverse((o) => { if ((o.isMesh || o.isPoints || o.isLine || o.isSprite) && o.visible) objs.push(o); });
+            st.scene.traverse((o) => { if ((o.isMesh || o.isPoints || o.isLine || o.isSprite) && o.visible) objs.push(o); });
             const kalt = new Map();
             for (const o of objs) {
                 const k = schluessel(o);
@@ -285,7 +284,7 @@ hauptLauf(async () => {
                 window.__imWarm = true;
                 try { r._loopRender(); } catch {} finally { window.__imWarm = false; }
                 let lichter = 0;
-                s.scene.traverseVisible((o) => { if (o.isLight) lichter++; });
+                st.scene.traverseVisible((o) => { if (o.isLight) lichter++; });
                 objs.forEach((o, i) => (o.visible = vorher[i]));
                 const v = (versuche.get(k) || 0) + 1;
                 versuche.set(k, v);
@@ -316,7 +315,7 @@ hauptLauf(async () => {
             r._loopRender = function () {};
             if (!window.__buehneLos) {
                 window.__wetterHalten(); // das Wetter hält (die EINE Wetter-Wache)
-                s.timeOfDay = window.__buehne0.zeit; // Mittag hält (ein Takt rückt die Uhr bis 1 s vor)
+                st.timeOfDay = window.__buehne0.zeit; // Mittag hält (ein Takt rückt die Uhr bis 1 s vor)
             }
             try { r._gameLoopTick(performance.now()); } catch {} finally { if (eigen) r._loopRender = echt; else delete r._loopRender; }
             return { cc: cnt() - c0 };
@@ -382,13 +381,13 @@ hauptLauf(async () => {
     // Compile bezahlte den aufgestauten swiftshader-Rückstand aller Bilder davor. Der Warmup baut darum ohne Budget
     // (alles im ersten vollen Bild, wie der
     // Vendor); vor der Ruhe gilt wieder das Budget des Spiels — Ruhe und Leerlauf messen das Spiel.
-    if (!setup.err) await ruf("Erst-Budget aus (Warmup)", () => { const C = AnazhRealm; window.__erstBudget = C.ERST_BAU_MS; C.ERST_BAU_MS = Infinity; });
+    if (!setup.err) await ruf("Erst-Budget aus (Warmup)", () => {  window.__erstBudget = AnazhRealm.ERST_BAU_MS; AnazhRealm.ERST_BAU_MS = Infinity; });
     if (!setup.err) {
         setup.scheiben = await warmNeu("Warmup");
         log(`Schlüssel-Warmup: ${setup.scheiben} Aufrufe`);
         for (let i = 0; i < 10; i++) {
             // SELBSTTEST: die Uhr der Welt läuft frei und der Wetter-Zug wird fällig — die Bühnen-Wand MUSS rot werden
-            if (SELBSTTEST_BUEHNE && i === 5) await ruf("Selbsttest-Bühne", () => { window.__buehneLos = true; const s = st; s.weatherEffectTime = 0; s.spielZeit += 120; });
+            if (SELBSTTEST_BUEHNE && i === 5) await ruf("Selbsttest-Bühne", () => { window.__buehneLos = true;  st.weatherEffectTime = 0; st.spielZeit += 120; });
             if (SELBSTTEST_PROGRAMM && i === 5) await ruf("Selbsttest-Programm", () => { r.dslRun(["spawn_village", ["near_player"]], { source: "selbsttest" }); });
             await frame(`Warmup-Frame ${i}`);
         }
@@ -451,11 +450,10 @@ hauptLauf(async () => {
         const b0 = await stand();
         for (const c of [[0.85, 0.55, 0.30], [0.55, 0.75, 0.95], [0.30, 0.10, 0.15], [0.70, 0.80, 0.70]]) {
             await ruf(`Env-Regenerierung ${c.join(",")}`, (c) => {
-                const s = st;
-                s.skyboxUniforms.himmelTint.value.setRGB(c[0], c[1], c[2]);
-                s._skyEnvLastRegenMs = -1e9; // die Raten-Drossel umgehen → echte Regenerierung erzwingen
+                st.skyboxUniforms.himmelTint.value.setRGB(c[0], c[1], c[2]);
+                st._skyEnvLastRegenMs = -1e9; // die Raten-Drossel umgehen → echte Regenerierung erzwingen
                 try { r._ensureSkyEnvironment(true); } catch {}
-                if (window.__selbsttestChurn && s.scene?.environment) s.scene.environment = s.scene.environment.clone();
+                if (window.__selbsttestChurn && st.scene?.environment) st.scene.environment = st.scene.environment.clone();
                 try { r._loopRender(); } catch {}
             }, c);
         }

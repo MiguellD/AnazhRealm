@@ -2377,10 +2377,9 @@ async function probeLeben(expected) {
         // Hüftgelenk (Mitte beider) gegen den Anker längs/quer im Rahmen des Wagens, der Blick des Leibs gegen die Fahrt;
         // nach dem Absteigen steht die Hüfte, wo sie vorher stand.
         if (start) {
-            const T = window.THREE;
-            const V = new T.Vector3();
-            const H1 = new T.Vector3();
-            const H2 = new T.Vector3();
+            const V = new THREE.Vector3();
+            const H1 = new THREE.Vector3();
+            const H2 = new THREE.Vector3();
             const pm = st.playerMesh;
             const rigR = () => pm.userData && pm.userData.rig;
             const huefteRel = () => {
@@ -2484,10 +2483,10 @@ async function probeLeben(expected) {
                         if (!ziele.has(g.mesh)) ziele.set(g.mesh, new Set());
                         ziele.get(g.mesh).add(ref.slot);
                     }
-                    const rc = new T.Raycaster();
+                    const rc = new THREE.Raycaster();
                     rc.far = 2.5;
-                    const O = new T.Vector3();
-                    const Dq = new T.Vector3();
+                    const O = new THREE.Vector3();
+                    const Dq = new THREE.Vector3();
                     glas = { n: 0, aussen: 0, wer: {} };
                     for (let i = 0; i < strahlProben.length; i += 5) {
                         O.set(strahlProben[i], strahlProben[i + 1], strahlProben[i + 2]);

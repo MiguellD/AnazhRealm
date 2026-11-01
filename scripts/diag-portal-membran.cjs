@@ -175,8 +175,7 @@ async function blickProbe(opts) {
 // DIE UHR STEHT JE LAUF (M2): Film, Welle und Puls lesen die Uhr des Membran-Ticks, die Wolken die des Himmels — bis M2
 // die Wanduhr des letzten Takts (milchweiß 3,2–5,5 % in 5 Läufen); seit A8 hält die Bühne jede Uhr des Bilds auf T.
 async function hellProbe() {
-    const T = window.THREE;
-    const TSL = T.TSL;
+    const TSL = THREE.TSL;
     const rend = st.renderer;
     rend.setAnimationLoop(null);
     const W = 480,
@@ -299,11 +298,11 @@ async function hellProbe() {
                 zielWeiss: k ? k.wtZiel / n : 0,
             };
         };
-        const P = new T.Vector3();
+        const P = new THREE.Vector3();
         const imBild = recs
             .filter((rec) => {
                 rec.mesh.getWorldPosition(P);
-                return P.sub(cam.position).normalize().dot(cam.getWorldDirection(new T.Vector3())) > 0.5;
+                return P.sub(cam.position).normalize().dot(cam.getWorldDirection(new THREE.Vector3())) > 0.5;
             })
             .map((rec) => rec.tor.gestalt);
         return {
@@ -568,18 +567,17 @@ hauptLauf(async () => {
         // Scharnier geschwenkt landet — die Mitte der gezeichneten Geometrie unter der Slot-Matrix gegen
         // Eintrag · Welt-Skala · (h + R(w)·(Basis · Mitte − h)).
         if (recF && recF._fluegel && recF._fluegel.length) {
-            const T = window.THREE;
-            const ew = r._archEntryWorldMatrix(entry, new T.Matrix4());
+            const ew = r._archEntryWorldMatrix(entry, new THREE.Matrix4());
             const ws = r._foundryWorldScaleMatrix(recF.tor.gestalt);
-            const M = new T.Matrix4();
-            const Y = new T.Vector3(0, 1, 0);
+            const M = new THREE.Matrix4();
+            const Y = new THREE.Vector3(0, 1, 0);
             let abweichung = 0;
             let basis = 0;
             for (const fl of recF._fluegel) {
                 const t = fl.tuer;
                 const geo = fl.g.mesh.geometry;
                 if (!geo.boundingBox) geo.computeBoundingBox();
-                const c = geo.boundingBox.getCenter(new T.Vector3());
+                const c = geo.boundingBox.getCenter(new THREE.Vector3());
                 fl.g.mesh.getMatrixAt(fl.ref.slot, M);
                 const ist = c.clone().applyMatrix4(M);
                 const q = c.clone();

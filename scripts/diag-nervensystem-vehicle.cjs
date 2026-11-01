@@ -77,11 +77,10 @@ hauptLauf(async () => {
     const W = { bp: "fahrzeug_gt", donor: "fahrzeug_wagen", preset: "gt", praefix: "fahrzeug_", wahl: 2, name: "ein Fahrzeug", art: "vehicle", anzahl: 5, teile: 17 };
     const [eps, out] = await kernStufen.epsilonDraht(server, PORT, W, check, async () => {
         const res = { c: {}, d: {}, f: {} };
-        const A = AnazhRealm;
         const f = r._ensureAssetFoundry();
         // ===== C: die MERGE-SEMANTIK direkt (first-wins + disjunkt), mit Restore =====
         try {
-            const orig = A._studioRenderConfig;
+            const orig = AnazhRealm._studioRenderConfig;
             const origState = st.studioRenderConfig;
             // KONSUM: der Chokepoint mergt über das Gesetz (phyto-core kerneVereinen), nie über einen Inline-Zwilling.
             const PC = window.__phytoCore, kv = PC.kerneVereinen;
@@ -94,10 +93,10 @@ hauptLauf(async () => {
                 },
             });
             PC.kerneVereinen = kv;
-            const pks = A._studioRenderConfig.lod.kindStages;
+            const pks = AnazhRealm._studioRenderConfig.lod.kindStages;
             res.c.treeKept = JSON.stringify(pks.tree); // erwartet [7,8] — der Erst-Kern fuehrt
             res.c.torMerged = JSON.stringify(pks.tor); // erwartet [1] — disjunkt kommt an
-            A._studioRenderConfig = orig;
+            AnazhRealm._studioRenderConfig = orig;
             st.studioRenderConfig = origState;
         } catch (e) {
             res.c.err = (e && e.message) || String(e);

@@ -200,12 +200,11 @@ function installHoehlenStrahl() {
     };
     // die Strahlen einer Kamera: je Bild-Punkt Ursprung und Richtung (orthogonal: weit vor der Nah-Ebene, `vor`)
     const strahlen = (kamera, NX, NY, vor, f) => {
-        const T = window.THREE;
         kamera.updateMatrixWorld();
-        const inv = new T.Matrix4().copy(kamera.projectionMatrix).invert();
+        const inv = new THREE.Matrix4().copy(kamera.projectionMatrix).invert();
         const welt = kamera.matrixWorld;
-        const a = new T.Vector3(),
-            e = new T.Vector3();
+        const a = new THREE.Vector3(),
+            e = new THREE.Vector3();
         // die NDC-Tiefe der Nah-Ebene (WebGPU 0…1, WebGL −1…1)
         const zNah = kamera.coordinateSystem === 2001 ? 0 : -1;
         for (let yy = 0; yy < NY; yy++)
@@ -290,16 +289,15 @@ function installHoehlenStrahl() {
     };
     window.__hoehlenSchatten = (r, auge, licht, liste, opt) => {
         const o = opt || {};
-        const T = window.THREE;
         const R = raster(r, o.zelle || 4);
         if (!R) return { fehler: "kein Boden-Satz" };
         licht.updateMatrixWorld();
-        const lm = new T.Matrix4().multiplyMatrices(licht.projectionMatrix, licht.matrixWorldInverse);
-        const lfr = new T.Frustum().setFromProjectionMatrix(lm, licht.coordinateSystem);
+        const lm = new THREE.Matrix4().multiplyMatrices(licht.projectionMatrix, licht.matrixWorldInverse);
+        const lfr = new THREE.Frustum().setFromProjectionMatrix(lm, licht.coordinateSystem);
         // zum Licht: gegen die Blick-Achse der Licht-Kamera
-        const L = new T.Vector3(0, 0, 1).transformDirection(licht.matrixWorld);
+        const L = new THREE.Vector3(0, 0, 1).transformDirection(licht.matrixWorld);
         const imAbschnitt = new Set(liste);
-        const p = new T.Vector3();
+        const p = new THREE.Vector3();
         const aus = { empfaenger: 0, beschattet: 0, lecks: [] };
         const WEIT = o.weit || 400;
         strahlen(auge, o.nx || 160, o.ny || 90, 0, (ox, oy, oz, dx, dy, dz, vor, tEnde) => {

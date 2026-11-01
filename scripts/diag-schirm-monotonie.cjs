@@ -348,8 +348,7 @@ async function welt() {
         selbst = {};
         // (a) ein VERKEHRTES Gesetz: die Probe-Gruppe liest `_schirm()` und zeichnet mehr Instanzen, je kleiner der Schirm
         await page.evaluate(() => {
-            const T = window.THREE;
-            const probe = new T.InstancedMesh(new T.BoxGeometry(1, 1, 1), new T.MeshBasicMaterial(), 64);
+            const probe = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial(), 64);
             probe.name = "schirmProbe";
             probe.frustumCulled = false;
             st.scene.add(probe);

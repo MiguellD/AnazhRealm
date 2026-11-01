@@ -1013,7 +1013,6 @@ async function checkBandWelle993WaterLodSeam({ page, check }) {
 // ist LAZY (erster echter Material-Build) → hier Konstruktion + Vertrag; Look + Maps misst die Sonde diag-csm (git-Archiv).
 async function checkBandV18130CsmShadow({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = AnazhRealm;
         const out = {};
         out.vendorSymbol = typeof window.THREE.CSMShadowNode === "function";
         const csm = st.csmNode;
@@ -1024,9 +1023,9 @@ async function checkBandV18130CsmShadow({ page, check }) {
             out.isShadowNode = st.directionalLight && st.directionalLight.shadow.shadowNode === csm;
             out.mode = csm.mode;
             const span = r._voxelChunkConfig(0).span;
-            const e0 = (A.DETAIL_CASCADE[0].maxRing + 0.5) * span;
-            const F = A.SCHATTEN_FERN_FAKTOR;
-            const fars = [A.PERF_SHADOW_RANGE_MIN * F, A.PERF_SHADOW_RANGE_MAX * F, 400 * F];
+            const e0 = (AnazhRealm.DETAIL_CASCADE[0].maxRing + 0.5) * span;
+            const F = AnazhRealm.SCHATTEN_FERN_FAKTOR;
+            const fars = [AnazhRealm.PERF_SHADOW_RANGE_MIN * F, AnazhRealm.PERF_SHADOW_RANGE_MAX * F, 400 * F];
             let kante = true,
                 minAnteil = 1;
             const zeilen = [];
@@ -1034,7 +1033,7 @@ async function checkBandV18130CsmShadow({ page, check }) {
                 const breaks = [];
                 csm.customSplitsCallback(csm.cascades, 0.5, far, breaks);
                 if (breaks.length !== csm.cascades || breaks[breaks.length - 1] !== 1) kante = false;
-                if (Math.abs(breaks[0] - A.SCHATTEN_KASKADE.kontaktM / far) > 1e-9) kante = false;
+                if (Math.abs(breaks[0] - AnazhRealm.SCHATTEN_KASKADE.kontaktM / far) > 1e-9) kante = false;
                 if (Math.abs(breaks[1] - Math.min(0.85, e0 / far)) > 1e-9) kante = false;
                 let prev = breaks[0];
                 for (const b of breaks.slice(1)) {
@@ -1050,7 +1049,7 @@ async function checkBandV18130CsmShadow({ page, check }) {
             const decke =
                 st.atmosphere && Number.isFinite(st.atmosphere.shadowRange)
                     ? st.atmosphere.shadowRange
-                    : A.PERF_SHADOW_RANGE_MAX;
+                    : AnazhRealm.PERF_SHADOW_RANGE_MAX;
             const applied = Number.isFinite(r._shadowRangeApplied) ? r._shadowRangeApplied : decke;
             out.maxFarIstReichweite = Math.abs(csm.maxFar - applied * F) < 1e-6;
             out.maxFar = +csm.maxFar.toFixed(1);
@@ -1295,14 +1294,13 @@ async function checkBandV18150Ride({ page, check }) {
 
 async function checkBandGammaGenese({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = AnazhRealm;
         const out = {};
         const origGen = st.worldMeta ? st.worldMeta.genVersion : undefined;
         try {
             if (!st.worldMeta) st.worldMeta = {};
             st.worldMeta.genVersion = 2;
             // (1) Struktur: Konstanten frozen.
-            out.struct = Object.isFrozen(A.FEUCHTE);
+            out.struct = Object.isFrozen(AnazhRealm.FEUCHTE);
             // (2) FEUCHTE am ECHTEN Fluss: der Senkrecht-Walk findet die Bank
             // (erste Land-Zelle neben der Mittellinie) — dort muss das Feld
             // mindestens den schilf-floor tragen; Legacy-Tor an derselben Stelle.
@@ -1358,7 +1356,7 @@ async function checkBandGammaGenese({ page, check }) {
             // Nah-Streu liest, differenzieren an kontrollierten Umwelten — Farn im Schatten (die Feuchte hebt seine
             // Licht-Grenze), Schilf nur am gemessenen Ufer (Pflicht-Band), Blume im Licht.
             const boden =
-                A._studioRenderConfig && A._studioRenderConfig.placement && A._studioRenderConfig.placement.boden;
+                AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.placement && AnazhRealm._studioRenderConfig.placement.boden;
             const wG = window.__phytoCore && window.__phytoCore.bodenGewicht;
             if (boden && typeof wG === "function" && boden.farn && boden.schilf && boden.blume) {
                 out.gesetz = {
@@ -1532,23 +1530,22 @@ async function checkBandGammaGenese({ page, check }) {
 // Math-Probe der Formel + Source-Probe in Main + Worker (V17.100-Bit-Vertrag).
 async function checkBandV18199GammaMLichen({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = AnazhRealm;
         const out = {};
 
         // (L1) die LICHEN-Konstanten
-        if (A.LICHEN) {
-            out.feuchteLo = A.LICHEN.feuchteLo;
-            out.feuchteHi = A.LICHEN.feuchteHi;
-            out.dichteLo = A.LICHEN.dichteLo;
-            out.dichteHi = A.LICHEN.dichteHi;
-            out.strength = A.LICHEN.strength;
+        if (AnazhRealm.LICHEN) {
+            out.feuchteLo = AnazhRealm.LICHEN.feuchteLo;
+            out.feuchteHi = AnazhRealm.LICHEN.feuchteHi;
+            out.dichteLo = AnazhRealm.LICHEN.dichteLo;
+            out.dichteHi = AnazhRealm.LICHEN.dichteHi;
+            out.strength = AnazhRealm.LICHEN.strength;
             // Die Flechten-Farbe ist die der Boden-Palette (Studio PORTAL_GROUND.flechte nach dem Farb-Gesetz).
-            out.tint = A.BODEN_FARBE.flechte;
+            out.tint = AnazhRealm.BODEN_FARBE.flechte;
             out.constsSensible =
-                A.LICHEN.feuchteLo < A.LICHEN.feuchteHi &&
-                A.LICHEN.dichteLo < A.LICHEN.dichteHi &&
-                A.LICHEN.strength > 0 &&
-                A.LICHEN.strength < 1 &&
+                AnazhRealm.LICHEN.feuchteLo < AnazhRealm.LICHEN.feuchteHi &&
+                AnazhRealm.LICHEN.dichteLo < AnazhRealm.LICHEN.dichteHi &&
+                AnazhRealm.LICHEN.strength > 0 &&
+                AnazhRealm.LICHEN.strength < 1 &&
                 Array.isArray(out.tint) &&
                 out.tint.length === 3;
         }
@@ -1562,7 +1559,7 @@ async function checkBandV18199GammaMLichen({ page, check }) {
             return t * t * (3 - 2 * t);
         };
         const noise2D = r._voxelNoise ? (x, z) => r._voxelNoise.noise2D(x, z) : null;
-        const LCH = A.LICHEN;
+        const LCH = AnazhRealm.LICHEN;
         const calcLichen = (feuchte, dichte, x, z) => {
             const cluster = noise2D ? (noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5 : 0.5;
             return (
@@ -1620,7 +1617,6 @@ async function checkBandV18199GammaMLichen({ page, check }) {
 // packt (packedDirt, Main ↔ Worker bit-identisch) + das Gras weicht. Proben: KONSUM + Feld-Logik.
 async function checkBandWahrerAnblickPfade({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = AnazhRealm;
         const out = {};
 
         // (A) Logik: fern jeden Flusses → kein Pfad
@@ -1643,7 +1639,7 @@ async function checkBandWahrerAnblickPfade({ page, check }) {
                 delete r._pathFieldAt;
             }
         };
-        const dD = (c) => Math.hypot(c[0] - A.BODEN_FARBE.dirt[0], c[1] - A.BODEN_FARBE.dirt[1], c[2] - A.BODEN_FARBE.dirt[2]);
+        const dD = (c) => Math.hypot(c[0] - AnazhRealm.BODEN_FARBE.dirt[0], c[1] - AnazhRealm.BODEN_FARBE.dirt[1], c[2] - AnazhRealm.BODEN_FARBE.dirt[2]);
         let d0 = 0;
         let d1 = 0;
         for (let gx = -200; gx <= 200; gx += 37) {
@@ -2343,9 +2339,8 @@ async function checkBandTodZensus({ page, check }) {
 // als Sprint × TAKT_DECKEL_S; Selbsttests: die gepinnte Position und der fehlende Takt-Deckel werden rot, dieser an JEDEM Wolf (W10).
 async function checkBandBewegungUnterLast({ page, check }) {
     const out = await safeEvaluate(page, async (selftest) => {
-        const s = st;
-        const mesh = s.playerMesh;
-        if (!mesh || !s.playerVel) return { error: "kein Spieler" };
+        const mesh = st.playerMesh;
+        if (!mesh || !st.playerVel) return { error: "kein Spieler" };
         const span = r._voxelChunkConfig(0).span;
         const tick = (t) => {
             try {
@@ -2371,24 +2366,24 @@ async function checkBandBewegungUnterLast({ page, check }) {
     
         const resetSim = (spot) => {
             mesh.position.set(spot.x, spot.y, spot.z);
-            s.playerVel.setValue(0, 0, 0);
-            s._fieldVy = 0;
-            s._fieldWasGrounded = false;
-            s._groundedCache = false;
-            s.isInAir = false;
-            s.isJumping = false;
-            s.onSteepSlope = false;
-            s._jumpPressedAt = -Infinity;
-            s._spaceWasDown = false;
-            s.yaw = 0;
-            s.keys = { w: true }; // W gehalten (die Walk-Linsen-Simulation)
-            s._fixedAccumulator = 0;
-            s._fixedSimPos = null;
-            s._fixedPrevPos = null;
-            s._fixedSimTime = 0;
+            st.playerVel.setValue(0, 0, 0);
+            st._fieldVy = 0;
+            st._fieldWasGrounded = false;
+            st._groundedCache = false;
+            st.isInAir = false;
+            st.isJumping = false;
+            st.onSteepSlope = false;
+            st._jumpPressedAt = -Infinity;
+            st._spaceWasDown = false;
+            st.yaw = 0;
+            st.keys = { w: true }; // W gehalten (die Walk-Linsen-Simulation)
+            st._fixedAccumulator = 0;
+            st._fixedSimPos = null;
+            st._fixedPrevPos = null;
+            st._fixedSimTime = 0;
         };
         const simPos = () => {
-            const p = s._fixedSimPos || mesh.position;
+            const p = st._fixedSimPos || mesh.position;
             return { x: p.x, y: p.y, z: p.z };
         };
     
@@ -2407,15 +2402,15 @@ async function checkBandBewegungUnterLast({ page, check }) {
                 tick((t += 330));
                 if (pin) {
                     mesh.position.set(spot.x, spot.y, spot.z);
-                    if (s._fixedSimPos) s._fixedSimPos.set(spot.x, spot.y, spot.z);
-                    if (s._fixedPrevPos) s._fixedPrevPos.set(spot.x, spot.y, spot.z);
+                    if (st._fixedSimPos) st._fixedSimPos.set(spot.x, spot.y, spot.z);
+                    if (st._fixedPrevPos) st._fixedPrevPos.set(spot.x, spot.y, spot.z);
                 }
                 const p = simPos();
                 if (p.y < minY) minY = p.y;
                 // Körper-Mitte im Soliden = geclippt (die Disziplin: _fieldSolid,
                 // NICHT getTerrainHeightAt — letzteres lügt am Überhang).
                 if (r._fieldSolid(p.x, p.y + 0.9, p.z)) clipTicks++;
-                if (s._frameOverBudget) overBudgetSeen = true;
+                if (st._frameOverBudget) overBudgetSeen = true;
             }
             const end = simPos();
             return {
@@ -2437,35 +2432,34 @@ async function checkBandBewegungUnterLast({ page, check }) {
         if (selftest) o.pinned = heavyRun(nearSpot, 20, true);
     
         // ── (b)+(c) OHNE GEBAUTEN SPIELER-CHUNK: gestallter Worker + Fern-Teleport ──
-        const savedWorker = s.voxelWorker;
+        const savedWorker = st.voxelWorker;
         const stalled = { postMessage() {}, terminate() {} }; // schluckt jede Anfrage — der Mesh kommt NIE
-        s.voxelWorker = stalled;
+        st.voxelWorker = stalled;
         const farKey = `${Math.floor(farSpot.x / span)},${Math.floor(farSpot.z / span)}`;
         // Prämisse sichern: dort steht KEIN Chunk (weit außerhalb des Rings)
-        const preEntry = s.voxelChunks ? s.voxelChunks.get(farKey) : null;
+        const preEntry = st.voxelChunks ? st.voxelChunks.get(farKey) : null;
         o.premiseNoChunk = !preEntry || !preEntry.mesh;
         o.b = heavyRun(farSpot, 60, false);
-        const postEntry = s.voxelChunks ? s.voxelChunks.get(farKey) : null;
+        const postEntry = st.voxelChunks ? st.voxelChunks.get(farKey) : null;
         // die Prämisse HIELT über den ganzen Lauf (der Stall wirkte — kein Sync-Leck)
         o.premiseHeld = !postEntry || !postEntry.mesh;
-        o.pendingAfter = s.voxelMeshPending ? s.voxelMeshPending.size : 0;
+        o.pendingAfter = st.voxelMeshPending ? st.voxelMeshPending.size : 0;
         // WIEDERHERSTELLEN (die Gate-Hook-Lehre: sichern + restaurieren, nie löschen)
-        s.voxelWorker = savedWorker;
+        st.voxelWorker = savedWorker;
     
         // ── (d) DIE PAUSE: der Loop ruht 10 s (versteckter Tab, Debugger, Lade-Stau), die Uhr läuft.
         // Vier Wölfe laufen auf den stehenden Spieler zu; im ersten Takt nach der Pause trägt kein Tier weiter als
         // sein Sprint (Steuer-Gesetz: sprintTempo der Hüft-Höhe) × den Takt-Deckel. deckelAus (Selbst-Test) hebt
         // den Deckel auf — der ungedeckelte Takt (Tempo × Pause) MUSS die Linse rot machen.
-        const K = AnazhRealm;
         const pauseLauf = (deckelAus) => {
             resetSim(nearSpot);
-            s.keys = {};
-            const deckel = K.TAKT_DECKEL_S == null || !Number.isFinite(K.TAKT_DECKEL_S) ? 0.1 : K.TAKT_DECKEL_S;
+            st.keys = {};
+            const deckel = AnazhRealm.TAKT_DECKEL_S == null || !Number.isFinite(AnazhRealm.TAKT_DECKEL_S) ? 0.1 : AnazhRealm.TAKT_DECKEL_S;
             const W = [];
             const absage = [];
             const opt = { precise: true, bodySize: 1, absage: (g) => absage.push(`Wolf-Spawn abgesagt: ${g}`) };
-            const maxAlt = s.maxCreatures; // RAUM für die vier Wölfe: die Population ist nicht die Frage der Linse (zurück unten)
-            s.maxCreatures = Math.max(maxAlt, s.creatures.length + 4);
+            const maxAlt = st.maxCreatures; // RAUM für die vier Wölfe: die Population ist nicht die Frage der Linse (zurück unten)
+            st.maxCreatures = Math.max(maxAlt, st.creatures.length + 4);
             for (let i = 0; i < 24 && W.length < 4; i++) {
                 const a = (i * 2.399963) % (2 * Math.PI);
                 const x = nearSpot.x + Math.sin(a) * 22;
@@ -2480,7 +2474,7 @@ async function checkBandBewegungUnterLast({ page, check }) {
             // jede fällige Aktion startet (tempo 0); `lastTick` ∞ hält den Lebenszyklus, der den ältesten Wolf ohne Beute nähme
             const RUHIG = { _verhaltenAktion: null, _verhaltenNext: Infinity, _hopV: 0, _hopH: 0 };
             const ruhig = () => W.forEach((c) => Object.assign(c.userData, RUHIG));
-            const leben = s.faunaLifecycle || {};
+            const leben = st.faunaLifecycle || {};
             const lebenAlt = leben.lastTick;
             leben.lastTick = Infinity;
             let t = performance.now();
@@ -2490,24 +2484,24 @@ async function checkBandBewegungUnterLast({ page, check }) {
             }
             const vor = W.map((c) => [c.position.x, c.position.z]);
             const vVor = W.map((c) => (c.userData._steuer ? c.userData._steuer.v : 0));
-            const grenze = W.map((c) => K._steuerGesetz().sprintTempo(r._kreaturHueftL(c)) * deckel);
-            const alt = K.TAKT_DECKEL_S;
-            if (deckelAus) K.TAKT_DECKEL_S = Infinity;
+            const grenze = W.map((c) => AnazhRealm._steuerGesetz().sprintTempo(r._kreaturHueftL(c)) * deckel);
+            const alt = AnazhRealm.TAKT_DECKEL_S;
+            if (deckelAus) AnazhRealm.TAKT_DECKEL_S = Infinity;
             ruhig();
             tick((t += 10000)); // DIE PAUSE: 10 s Wanduhr ohne Takt
-            if (deckelAus) K.TAKT_DECKEL_S = alt;
+            if (deckelAus) AnazhRealm.TAKT_DECKEL_S = alt;
             const weg = W.map((c, i) => Math.hypot(c.position.x - vor[i][0], c.position.z - vor[i][1]));
             // DIE VORBEDINGUNG DES TÄTERS, laut: jeder Wolf lief vor der Pause auf seinem Lage-Pfad und blieb im Pausen-Takt auf
             // ihm (keine Aktion, Tempo > 0) — sonst urteilt die Linse nichts, und sein Name steht im Urteil
             leben.lastTick = lebenAlt;
             const halt = W.map((c, i) => {
                 const u = c.userData;
-                if (!s.creatures.includes(c)) return `Wolf ${i}: fiel im Pausen-Takt`;
+                if (!st.creatures.includes(c)) return `Wolf ${i}: fiel im Pausen-Takt`;
                 if (u._verhaltenAktion) return `Wolf ${i}: Aktion ${u._verhaltenAktion.name}`;
                 return vVor[i] > 0 && u._steuer && u._steuer.v > 0 ? null : `Wolf ${i}: steht (vVor ${vVor[i]})`;
             }).filter(Boolean).concat(absage);
             for (const c of W) r.removeCreature(c);
-            s.maxCreatures = maxAlt;
+            st.maxCreatures = maxAlt;
             const ueber = weg.filter((w, i) => !(w <= grenze[i] + 0.05)).length;
             return { n: W.length, deckel, weg, grenze, vVor, ueber, halt, max: Math.max(0, ...weg) };
         };

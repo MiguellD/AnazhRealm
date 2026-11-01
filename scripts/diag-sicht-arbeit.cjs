@@ -777,9 +777,6 @@ const server = statikServer();
         await warteAufWelt(page, 120000);
         await page.evaluate(SICHT.SICHT_INSTALL);
         befund = await page.evaluate(async (MESS) => {
-            const r = window.anazhRealm,
-                st = r.state,
-                T = window.THREE;
             const P = Object.getPrototypeOf(r);
             const takt = () => {
                 try {
@@ -798,8 +795,8 @@ const server = statikServer();
             const boden = r._voxelSurfaceY(MESS.x, MESS.z);
             // Die Stellvertreter-Kaskaden (wie gate:chunk-satz): Ortho-Kameras über dem Blick, k0 ±120 m, k1 ±400 m, die
             // Mitte ein halbes Feld vor dem Auge — sie laufen mit, wenn der Blick dreht oder geht.
-            const kaskaden = [new T.OrthographicCamera(-120, 120, 120, -120, 0, 1600)];
-            kaskaden.push(new T.OrthographicCamera(-400, 400, 400, -400, 0, 1600));
+            const kaskaden = [new THREE.OrthographicCamera(-120, 120, 120, -120, 0, 1600)];
+            kaskaden.push(new THREE.OrthographicCamera(-400, 400, 400, -400, 0, 1600));
             const stelle = (yaw, vor) => {
                 const ex = ppos.x + Math.sin(yaw) * vor,
                     ez = ppos.z - Math.cos(yaw) * vor;
@@ -1056,7 +1053,7 @@ const server = statikServer();
                         const [g, w1] = gruppe(null);
                         if (g) {
                             const R = w1.refs[0];
-                            const m = new T.Matrix4();
+                            const m = new THREE.Matrix4();
                             g.mesh.getMatrixAt(R.slot, m);
                             r._archGroupFree(g, R);
                             const R2 = r._archGroupAlloc(g, null);
@@ -1125,13 +1122,13 @@ const server = statikServer();
             stelle(0, 0);
             const dl = st.directionalLight;
             if (dl?.target) {
-                const tagLang = 60 * 60 * (st.dayLengthMinutes || r.constructor.DAY_LENGTH_DEFAULT_MINUTES);
+                const tagLang = 60 * 60 * (st.dayLengthMinutes || AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES);
                 st.timeOfDay = 0.42;
                 if (st.world) st.world.timeOfDay = 0.42;
-                const mitte = kaskaden.map((c) => new T.Vector3(cam.position.x, boden, cam.position.z - c.right * 0.5));
+                const mitte = kaskaden.map((c) => new THREE.Vector3(cam.position.x, boden, cam.position.z - c.right * 0.5));
                 const lichtStellen = () => {
                     r._applyDayNightToScene();
-                    const L0 = new T.Vector3().subVectors(dl.position, dl.target.position).normalize();
+                    const L0 = new THREE.Vector3().subVectors(dl.position, dl.target.position).normalize();
                     kaskaden.forEach((c, i) => {
                         c.position.copy(mitte[i]).addScaledVector(L0, 800);
                         c.lookAt(mitte[i]);
@@ -1168,7 +1165,7 @@ const server = statikServer();
             // vergleichende Schreiber (`_satzSetze`) findet dieselben Indizes am selben Platz.
             stelle(0, 0);
             reif();
-            const dichtNach = r.constructor.CHUNK_SATZ_ABSCHNITT.dichtNach;
+            const dichtNach = AnazhRealm.CHUNK_SATZ_ABSCHNITT.dichtNach;
             r._chunkSatzRuht = function (s, ab, key) {
                 ab.dicht = false;
                 if (ab.ruhe < dichtNach) ab.ruhe = dichtNach;
@@ -1225,7 +1222,7 @@ const server = statikServer();
                         S.frustum.setFromProjectionMatrix(S.m, cam.coordinateSystem);
                         const Lw = r._passWahlLage(S, cam, -1);
                         return Object.assign({}, Lw, {
-                            fr: new T.Frustum().copy(S.frustum),
+                            fr: new THREE.Frustum().copy(S.frustum),
                             halt: 0,
                             rand: 0,
                             dreh: 0,
@@ -1358,8 +1355,8 @@ const server = statikServer();
             const nw = st.nahWiese;
             if (!nw || !nw.senken.size || [...nw.kacheln.values()].every((k) => !k.bueschel.length)) aus.code.wieseLiest = "leer";
             else {
-                const m = new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
-                const Lg = r._passWahlLage({ frustum: new T.Frustum().setFromProjectionMatrix(m, cam.coordinateSystem) }, cam, -1);
+                const m = new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+                const Lg = r._passWahlLage({ frustum: new THREE.Frustum().setFromProjectionMatrix(m, cam.coordinateSystem) }, cam, -1);
                 const trifft = (lage) => {
                     const alt = r._passTrifft, eigen = Object.prototype.hasOwnProperty.call(r, "_passTrifft");
                     let n = 0;

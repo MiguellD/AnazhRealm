@@ -101,7 +101,6 @@ const TAFEL_BLICKE = [
 function albedoSicht(opts) {
     return (async () => {
         opts = opts || {};
-        const T = window.THREE;
         const sc = st.scene,
             rend = st.renderer;
         rend.setAnimationLoop(null);
@@ -166,7 +165,7 @@ function albedoSicht(opts) {
                         await ticke(600, () => r._archIsRendered(e));
                         // Ein frisch gesetztes Exemplar zieht seine Instanz-Gruppe erst im nächsten Takt nach.
                         await ticke(gesetzt ? 20 : 0, () => false);
-                        pos = new T.Vector3(e.position.x, e.position.y, e.position.z);
+                        pos = new THREE.Vector3(e.position.x, e.position.y, e.position.z);
                         eintrag = e;
                     }
                 } else if (ex.typ === "tier") {
@@ -194,7 +193,7 @@ function albedoSicht(opts) {
                     if (c) {
                         await ticke(gesetzt ? 120 : 0, () => false);
                         if (window.__tiereHalten) window.__tiereHalten();
-                        pos = new T.Vector3(c.position.x, c.position.y, c.position.z);
+                        pos = new THREE.Vector3(c.position.x, c.position.y, c.position.z);
                         kreatur = c;
                     }
                 } else if (ex.typ === "mensch") {
@@ -231,7 +230,7 @@ function albedoSicht(opts) {
                                 }
                             }
                     if (b >= W0.baeume && nah > W0.frei && r._landAt(x, zz) && !(r._nassAt && r._nassAt(x, zz)))
-                        pos = new T.Vector3(x, r._voxelSurfaceY(x, zz), zz);
+                        pos = new THREE.Vector3(x, r._voxelSurfaceY(x, zz), zz);
                     else verweigert = `die Stelle ${x}/${zz} trägt keinen Wald-Boden (${b} Bäume, der nächste ${nah.toFixed(1)} m)`;
                 }
                 exemplare.push({ zeile: z, pos, gesetzt, verweigert, eintrag, kreatur });
@@ -256,7 +255,7 @@ function albedoSicht(opts) {
                 const vh = r._lodTreeVisHeight(e),
                     f = vh > 0 ? r._lodPerceptionDistance(1, vh) : 1;
                 const ab = [4.2, (D.thresh01 + D.thresh12) / 2, D.thresh12 * 1.6][n] / f / Math.SQRT2;
-                const auge = new T.Vector3(e.position.x + ab, e.position.y + 1.7, e.position.z + ab);
+                const auge = new THREE.Vector3(e.position.x + ab, e.position.y + 1.7, e.position.z + ab);
                 r._lodAuge = () => auge;
                 try {
                     await ticke(600, zeigt);
@@ -271,13 +270,13 @@ function albedoSicht(opts) {
             // einer Hand-Konstante hinge, bräche an der zweiten Uhr; Emission fällt in hell − dunkel heraus. Die Schüsse ticken nicht mehr.
             if (opts.uhr != null) window.__buehne({ uhr: opts.uhr });
         }
-        const karte = new T.Mesh(
-            new T.PlaneGeometry(2, 2),
-            new T.MeshStandardNodeMaterial({
-                color: new T.Color(0.18, 0.18, 0.18),
+        const karte = new THREE.Mesh(
+            new THREE.PlaneGeometry(2, 2),
+            new THREE.MeshStandardNodeMaterial({
+                color: new THREE.Color(0.18, 0.18, 0.18),
                 roughness: 1,
                 metalness: 0,
-                side: T.DoubleSide,
+                side: THREE.DoubleSide,
             })
         );
         karte.name = "graukarte";
@@ -318,7 +317,7 @@ function albedoSicht(opts) {
         const amb = st.ambientLight || lichtAlt.map((e) => e[0]).find((l) => l.isAmbientLight);
         let ambEigen = null;
         if (!amb) {
-            ambEigen = new T.AmbientLight(0xffffff, 0);
+            ambEigen = new THREE.AmbientLight(0xffffff, 0);
             sc.add(ambEigen);
         }
         const A = amb || ambEigen;
@@ -368,9 +367,9 @@ function albedoSicht(opts) {
         // `e` (der Eintrag des Exemplars): in seiner Gruppe nur SEIN Platz — die nächste Instanz war, solange seine Stufe reiste,
         // ein Nachbar (die frische Birke maß als Karte 0,17 mit 73k Pixeln eines anderen Baums)
         const ziel = (m, um, e) => {
-            const bb = new T.Box3().setFromBufferAttribute(m.geometry.attributes.position);
-            const bs = { center: bb.getCenter(new T.Vector3()), radius: bb.getSize(new T.Vector3()).length() / 2 };
-            const M = new T.Matrix4(),
+            const bb = new THREE.Box3().setFromBufferAttribute(m.geometry.attributes.position);
+            const bs = { center: bb.getCenter(new THREE.Vector3()), radius: bb.getSize(new THREE.Vector3()).length() / 2 };
+            const M = new THREE.Matrix4(),
                 mw = m.matrixWorld;
             let best = null;
             const n = m.isInstancedMesh ? m.count : 1;
@@ -382,15 +381,15 @@ function albedoSicht(opts) {
                     M.premultiply(mw);
                 } else M.copy(mw);
                 const s = Math.max(
-                    new T.Vector3().setFromMatrixColumn(M, 0).length(),
-                    new T.Vector3().setFromMatrixColumn(M, 1).length()
+                    new THREE.Vector3().setFromMatrixColumn(M, 0).length(),
+                    new THREE.Vector3().setFromMatrixColumn(M, 1).length()
                 );
                 // DIE KARTE: ihr Quad ist die Einheits-Strecke (0,0,0)–(0,1,0), ihr Rahmen reist je Instanz (`aKarte` y, z: Halbbreite
                 // und Höhe, × Skala) — aus der Strecke stand die Birke als Kugel von 1,6 m statt ihrer 15 m im Schuss
                 const ka = m.geometry.attributes.aKarte;
                 const hb = (ka ? ka.getY(i) : Math.max(bb.max.x, bb.max.z, -bb.min.x, -bb.min.z)) * s,
                     hh = ka ? (ka.getZ(i) * s) / 2 : 0;
-                const c = ka ? new T.Vector3().setFromMatrixPosition(M).setY(M.elements[13] + hh) : bs.center.clone().applyMatrix4(M);
+                const c = ka ? new THREE.Vector3().setFromMatrixPosition(M).setY(M.elements[13] + hh) : bs.center.clone().applyMatrix4(M);
                 const d = Math.hypot(c.x - um.x, c.z - um.z);
                 if (!best || d < best.d) best = { c, rad: ka ? Math.hypot(hb, hh) : bs.radius * s, d, hb };
             }
@@ -401,8 +400,8 @@ function albedoSicht(opts) {
         // auf den Ursprung — eine Säule über dem Exemplar nahm sie mit, die Hülle reichte 70 m hoch).
         const zielSatz = (m, um, R) => {
             const p = m.geometry.attributes.position;
-            const v = new T.Vector3();
-            const bb = new T.Box3();
+            const v = new THREE.Vector3();
+            const bb = new THREE.Box3();
             // Eine geskinnte Haut (Tier, Spieler) liegt erst nach ihren Knochen an ihrem Ort (`getVertexPosition`).
             for (let i = 0; i < p.count; i++) {
                 if (m.isSkinnedMesh && m.getVertexPosition) m.getVertexPosition(i, v);
@@ -411,8 +410,8 @@ function albedoSicht(opts) {
                 if (v.distanceTo(um) <= R) bb.expandByPoint(v);
             }
             if (bb.isEmpty()) return null;
-            const c = bb.getCenter(new T.Vector3());
-            return { c, rad: bb.getSize(new T.Vector3()).length() / 2, d: Math.hypot(c.x - um.x, c.z - um.z) };
+            const c = bb.getCenter(new THREE.Vector3());
+            return { c, rad: bb.getSize(new THREE.Vector3()).length() / 2, d: Math.hypot(c.x - um.x, c.z - um.z) };
         };
         // DER SATZ DES EXEMPLARS: ein Stoff-Satz trägt viele Exemplare in EINEM Mesh (`_bauSatzBlock`: je lebende Instanz ihre
         // n Ecken ab dem Bereichs-Anfang, `slotEntry[i]` ihr Eintrag) — sonst zeichnete der Schuss die Nachbarn mit. Ein Ausschnitt zeichnet
@@ -456,17 +455,17 @@ function albedoSicht(opts) {
                 }
                 ix[k] = j;
             }
-            const g2 = new T.BufferGeometry();
+            const g2 = new THREE.BufferGeometry();
             for (const [name, a] of Object.entries(m.geometry.attributes)) {
                 if (!a.array) throw new Error(`satzAusschnitt(${s.art}): das Attribut ${name} trägt kein eigenes Feld`);
                 const w = a.itemSize;
                 const out = new a.array.constructor(alt.length * w);
                 for (let j = 0; j < alt.length; j++) for (let c = 0; c < w; c++) out[j * w + c] = a.array[alt[j] * w + c];
                 if (basis && name === "aRegler") for (let j = 0; j < alt.length; j++) out[j * w + 1] = 0;
-                g2.setAttribute(name, new T.BufferAttribute(out, w, a.normalized));
+                g2.setAttribute(name, new THREE.BufferAttribute(out, w, a.normalized));
             }
-            g2.setIndex(new T.BufferAttribute(ix, 1));
-            const t = new T.Mesh(g2, m.material);
+            g2.setIndex(new THREE.BufferAttribute(ix, 1));
+            const t = new THREE.Mesh(g2, m.material);
             t.name = m.name;
             t.userData = Object.assign({}, m.userData, { satzAusschnitt: s.art, satzStufen: [...stufen] });
             t.matrixAutoUpdate = false;
@@ -552,15 +551,15 @@ function albedoSicht(opts) {
                     const stellungen = [];
                     if (w.blick === "oben") {
                         const y = r._voxelSurfaceY(um.x, um.z);
-                        stellungen.push([new T.Vector3(um.x, y + 14, um.z + 0.01), new T.Vector3(um.x, y, um.z)]);
+                        stellungen.push([new THREE.Vector3(um.x, y + 14, um.z + 0.01), new THREE.Vector3(um.x, y, um.z)]);
                     } else {
-                        const bb = new T.Box3();
+                        const bb = new THREE.Box3();
                         for (const zz of ziele.values())
                             bb.expandByPoint(zz.c.clone().addScalar(zz.rad)).expandByPoint(
                                 zz.c.clone().addScalar(-zz.rad)
                             );
-                        const c = bb.getCenter(new T.Vector3());
-                        const rad = Math.max(0.4, bb.getSize(new T.Vector3()).length() / 2);
+                        const c = bb.getCenter(new THREE.Vector3());
+                        const rad = Math.max(0.4, bb.getSize(new THREE.Vector3()).length() / 2);
                         // DAS EXEMPLAR ALLEIN (die Tiefen-Scheibe wie Karte gegen Gestalt, S2b): eine Instanz-Gruppe zeichnet jede Instanz
                         // ihrer Stufe — gezählt werden nur die Tiefe und die Spalten des Exemplars: schräg seine Kugel, waagrecht (jede Stufe
                         // einer Zeile `blick: "waagrecht"`, der Baum) seine Halbbreite `hb` (die Fichte L1 zählte mit ihrem Wald 119k Pixel
@@ -574,7 +573,7 @@ function albedoSicht(opts) {
                         for (const d of window.__tafelBlicke)
                             if (!(waag && d[1] > 0.9))
                                 stellungen.push([
-                                    c.clone().addScaledVector(new T.Vector3(d[0], waag ? 0 : d[1], d[2]).normalize(), rad * 2.6),
+                                    c.clone().addScaledVector(new THREE.Vector3(d[0], waag ? 0 : d[1], d[2]).normalize(), rad * 2.6),
                                     c,
                                     inst && [rad * 2.6 - (karte || hb), rad * 2.6 + (karte || hb), (hb * 1.05 * H) / (rad * 2.6 * 0.6306)],
                                 ]);
@@ -624,7 +623,7 @@ function albedoSicht(opts) {
                 }
                 ausschnitteFort();
                 // Die Selbst-Eichung der Tafel: die 18-%-Karte liest 0,180 (sonst ist kein Wert der Tafel eine Albedo).
-                cam.position.copy(karte.position).add(new T.Vector3(0, 0, 2.2));
+                cam.position.copy(karte.position).add(new THREE.Vector3(0, 0, 2.2));
                 cam.lookAt(karte.position);
                 [cam.near, cam.far] = kamAlt.nf;
                 cam.updateProjectionMatrix();
@@ -665,9 +664,8 @@ function albedoSicht(opts) {
 // hinein, `lies()` dicht als Float32 (die Zeilen liegen auf 256 Byte, 8 Byte je Pixel), `bundles()` frischt jede Bündel-Gruppe
 // (`window.__bundlesNeu`, welt-boot)
 function linsenZiel(W, H) {
-    const T = window.THREE,
-        { renderer: rend, scene: sc } = st,
-        rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
+    const { renderer: rend, scene: sc } = st,
+        rt = new THREE.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: THREE.HalfFloatType });
     const zeichne = (cam) => {
         if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
         rend.setRenderTarget(rt);
@@ -682,7 +680,7 @@ function linsenZiel(W, H) {
         lies: async () => {
             const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H),
                 s = px.length > W * 4 * H ? Math.ceil(W / 32) * 128 : W * 4;
-            return Float32Array.from({ length: W * 4 * H }, (_x, i) => T.DataUtils.fromHalfFloat(px[((i / (W * 4)) | 0) * s + (i % (W * 4))]));
+            return Float32Array.from({ length: W * 4 * H }, (_x, i) => THREE.DataUtils.fromHalfFloat(px[((i / (W * 4)) | 0) * s + (i % (W * 4))]));
         },
         bundles: window.__bundlesNeu, // das EINE Bündel-Neu der Seite (welt-boot)
         // DIE RUHE DER LINSE: ihre Karten, Kugeln und Licht-Varianten sind neue Stoffe und Programme — der erste Render baut die
@@ -706,7 +704,6 @@ function linsenZiel(W, H) {
 function lichtBilanz(o) {
     return (async () => {
         o = o || {};
-        const T = window.THREE;
         const sc = st.scene,
             rend = st.renderer;
         rend.setAnimationLoop(null);
@@ -715,19 +712,19 @@ function lichtBilanz(o) {
         const gy = r._voxelSurfaceY(pp.x, pp.z);
         const dl = st.directionalLight;
         const sd = dl.position.clone().sub(dl.target.position).normalize();
-        const hz = new T.Vector3(sd.x, 0, sd.z).normalize();
+        const hz = new THREE.Vector3(sd.x, 0, sd.z).normalize();
         const W = 64,
             H = 64;
-        const karte = new T.Mesh(
-            new T.PlaneGeometry(1.2, 1.2),
-            new T.MeshStandardNodeMaterial({ color: new T.Color(0.18, 0.18, 0.18), roughness: 1, metalness: 0 })
+        const karte = new THREE.Mesh(
+            new THREE.PlaneGeometry(1.2, 1.2),
+            new THREE.MeshStandardNodeMaterial({ color: new THREE.Color(0.18, 0.18, 0.18), roughness: 1, metalness: 0 })
         );
-        const basis = new T.Vector3(pp.x + 6, gy + 45, pp.z + 6);
+        const basis = new THREE.Vector3(pp.x + 6, gy + 45, pp.z + 6);
         sc.add(karte);
         // DIE ATMOSPHÄRE AM AUGE DER KARTE (D3): Sonne, Himmel und Umgebung rechnet die Welt für die Höhe des Auges
         // (`_atmoSonne`, `_atmoTakt`; Hillaire) — die Linse misst das Licht an der Karte, also mit dem Auge dort (45 m über dem
         // Boden), die Umgebung frisch gezeichnet; danach gilt das Auge des Spielers.
-        st.camera.position.copy(basis.clone().add(new T.Vector3(0, 1.5, 0)));
+        st.camera.position.copy(basis.clone().add(new THREE.Vector3(0, 1.5, 0)));
         st.camera.updateMatrixWorld(true);
         r._applyDayNightToScene();
         r._ensureSkyEnvironment(true);
@@ -745,7 +742,7 @@ function lichtBilanz(o) {
         const { rt, zeichne, lies, bundles, ruhe, ohneLuft, kamera } = window.__linsenZiel(W, H);
         const kamZurueck = kamera(cam);
         let luftZurueck;
-        const lagen = { oben: new T.Vector3(0, 1, 0), zurSonne: hz.clone(), vonSonne: hz.clone().negate() };
+        const lagen = { oben: new THREE.Vector3(0, 1, 0), zurSonne: hz.clone(), vonSonne: hz.clone().negate() };
         const mess = async (n) => {
             karte.position.copy(basis);
             karte.lookAt(basis.clone().add(n));
@@ -827,7 +824,6 @@ const TAG_UHREN = Array.from({ length: 100 }, (_, i) => i / 100);
 const TAG_UHREN_KURZ = [0, 0.25, 0.27, 0.28, 0.33, 0.5, 0.72, 0.73, 0.75];
 function tagKurve(o) {
     return (async () => {
-        const T = window.THREE;
         const rend = st.renderer;
         rend.setAnimationLoop(null);
         window.__buehne();
@@ -885,8 +881,8 @@ function tagKurve(o) {
                     // DER ANKER: die 18-%-Karte waagrecht, 2,5 m vor dem Auge, 0,6 m unter ihm, ohne Schatten — das Licht der Welt
                     // durch die Belichtung und die Tonkurve, gezählt 3 Pixel in ihrer Mitte
                     const cam = st.camera;
-                    const km = new T.Mesh(new T.PlaneGeometry(1, 1), new T.MeshStandardNodeMaterial({ color: new T.Color(0.18, 0.18, 0.18), roughness: 1 }));
-                    km.position.copy(cam.position).addScaledVector(cam.getWorldDirection(new T.Vector3()).setY(0).normalize(), 2.5).y -= 0.6;
+                    const km = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshStandardNodeMaterial({ color: new THREE.Color(0.18, 0.18, 0.18), roughness: 1 }));
+                    km.position.copy(cam.position).addScaledVector(cam.getWorldDirection(new THREE.Vector3()).setY(0).normalize(), 2.5).y -= 0.6;
                     km.rotation.x = -Math.PI / 2;
                     st.scene.add(km);
                     const q = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
@@ -1014,7 +1010,6 @@ function tagKurveSelbsttest() {
 function nahFernSicht(opts) {
     return (async () => {
         opts = opts || {};
-        const T = window.THREE;
         const sc = st.scene,
             rend = st.renderer;
         rend.setAnimationLoop(null);
@@ -1088,7 +1083,7 @@ function nahFernSicht(opts) {
         sc.traverse((o) => {
             if (o.isLight) lichter.push([o, o.intensity]);
         });
-        const A = new T.AmbientLight(0xffffff, Math.PI);
+        const A = new THREE.AmbientLight(0xffffff, Math.PI);
         sc.add(A);
         const envAlt = sc.environment,
             fogAlt = sc.fog;
@@ -1101,7 +1096,7 @@ function nahFernSicht(opts) {
         const luftZurueck = ohneLuft();
         // Die Kamera blickt ORTHOGONAL hinab: beide Schüsse sehen denselben Fußabdruck (2 × `fuss`), auch wo der Fern-Ring
         // unter dem Quadrat tiefer liegt — perspektivisch sah er dort einen größeren (60 m tiefer: ein Drittel mehr Fläche).
-        const cam = new T.OrthographicCamera(-halb, halb, halb, -halb, 1, H + 1000);
+        const cam = new THREE.OrthographicCamera(-halb, halb, halb, -halb, 1, H + 1000);
         // DAS GESETZ AN DER STELLE (die dritte Zahl, der Richter des Täters): beide Leser lesen `_fernRingTeile` — der
         // Fern-Ring an seinen Schnapp-Punkten (Schale 0: 24 m), die Karte des Boden-Stoffs im Raster N — hier das Mittel
         // derselben Formel (Boden unter dem Kronendach × Saison zur Deckung) fein über den Fußabdruck (32 × 32 Punkte).
@@ -1410,7 +1405,6 @@ function nahFernUrteil(messung, band) {
 function laubGegenlicht(opts) {
     return (async () => {
         opts = opts || {};
-        const T = window.THREE;
         const sc = st.scene,
             rend = st.renderer;
         rend.setAnimationLoop(null);
@@ -1439,10 +1433,10 @@ function laubGegenlicht(opts) {
         let freiAlt = null;
         if (!laub.length && !vorher) return { fehler: "keine Laub-Senke der Art " + art };
         // Das Exemplar: die nächste Instanz zum Spieler (ab 6 m, sonst stünde das Auge im Stamm).
-        const m4 = new T.Matrix4(),
-            p = new T.Vector3(),
-            q = new T.Quaternion(),
-            s = new T.Vector3();
+        const m4 = new THREE.Matrix4(),
+            p = new THREE.Vector3(),
+            q = new THREE.Quaternion(),
+            s = new THREE.Vector3();
         let ziel = null;
         const gef = (x, z) => [r._voxelSurfaceY(x + 2, z) - r._voxelSurfaceY(x - 2, z), r._voxelSurfaceY(x, z + 2) - r._voxelSurfaceY(x, z - 2)].map((v) => v / 4);
         for (const o of opts.haus || opts.boden ? [] : laub) {
@@ -1474,8 +1468,8 @@ function laubGegenlicht(opts) {
                 const d = pr && r._foundry.recipes[pr] && r._foundry.recipes[pr].kind === "haus" ? Math.hypot(e.position.x - von[0], e.position.z - von[1]) : Infinity;
                 if (!(d < (ziel ? ziel.d : Infinity))) continue;
                 const box = e.instSlots.map((sl) => st.archInstanceGroups.get(sl.key) && [st.archInstanceGroups.get(sl.key), sl.slot]).filter((gs) => gs && gs[0].mesh && !gs[0].shadowTwin)
-                    .reduce((b, [g, i]) => (g.mesh.getMatrixAt(i, m4), b.union((g.mesh.geometry.boundingBox || (g.mesh.geometry.computeBoundingBox(), g.mesh.geometry.boundingBox)).clone().applyMatrix4(m4.premultiply(g.mesh.matrixWorld)))), new T.Box3());
-                if (!box.isEmpty()) ziel = { d, e, preset: pr, box, fuss: new T.Vector3(e.position.x, e.position.y, e.position.z) };
+                    .reduce((b, [g, i]) => (g.mesh.getMatrixAt(i, m4), b.union((g.mesh.geometry.boundingBox || (g.mesh.geometry.computeBoundingBox(), g.mesh.geometry.boundingBox)).clone().applyMatrix4(m4.premultiply(g.mesh.matrixWorld)))), new THREE.Box3());
+                if (!box.isEmpty()) ziel = { d, e, preset: pr, box, fuss: new THREE.Vector3(e.position.x, e.position.y, e.position.z) };
             }
         }
         // DER BODEN (F6): die Stelle S (± 6 m, 12–90 m vom Anker) im Boden-Satz, eben (am Hang trägt die grobe Normale des Rings die
@@ -1490,7 +1484,7 @@ function laubGegenlicht(opts) {
                 }
             const g = kand.length && !opts.ziel ? await r._fernAuftrag("teile", { punkte: new Float64Array(kand.flatMap((c) => c.pkt.flat())) }) : null;
             const c = kand.find((c, i) => !g || c.h.every((y, j) => Math.abs(g.law[i * 5 + j] - y) <= 0.5));
-            if (c) ziel = { d: 0, box: new T.Box3(new T.Vector3(c.x - 6, Math.min(...c.h) - 0.5, c.z - 6), new T.Vector3(c.x + 6, Math.max(...c.h) + 0.5, c.z + 6)), fuss: new T.Vector3(c.x, c.h[0], c.z) };
+            if (c) ziel = { d: 0, box: new THREE.Box3(new THREE.Vector3(c.x - 6, Math.min(...c.h) - 0.5, c.z - 6), new THREE.Vector3(c.x + 6, Math.max(...c.h) + 0.5, c.z + 6)), fuss: new THREE.Vector3(c.x, c.h[0], c.z) };
         }
         if (vorher) ziel = vorher.ziel;
         if (!ziel) return { fehler: opts.haus ? "kein Haus" : opts.boden ? "keine Stelle im Boden-Satz" : "kein Exemplar der Art" };
@@ -1498,11 +1492,11 @@ function laubGegenlicht(opts) {
             return { fehler: `das Haus steht in Stufe ${ziel.e._lodLevel}, nicht ${opts.stufe}` };
         // der Schuss der Gestalt nur am Exemplar des Plans in seiner Gestalt (sonst stünde ein fremder Baum im Vergleich)
         if (opts.karte === 1 && opts.ziel && ziel.d > 1.5) return (window.__karteGestalt = null), { fehler: "das Exemplar zeigt keine Gestalt", d: +ziel.d.toFixed(1) };
-        const mitte = ziel.box.getCenter(new T.Vector3());
+        const mitte = ziel.box.getCenter(new THREE.Vector3());
         const hoehe = ziel.box.max.y - ziel.fuss.y;
         const blickVon = opts.anker && !opts.ziel ? opts.anker : [pp.x, pp.z];
         const tal = opts.hang && !opts.ziel ? gef(ziel.fuss.x, ziel.fuss.z) : null;
-        let dh = (tal ? new T.Vector3(-tal[0], 0, -tal[1]) : new T.Vector3(blickVon[0] - ziel.fuss.x, 0, blickVon[1] - ziel.fuss.z)).normalize();
+        let dh = (tal ? new THREE.Vector3(-tal[0], 0, -tal[1]) : new THREE.Vector3(blickVon[0] - ziel.fuss.x, 0, blickVon[1] - ziel.fuss.z)).normalize();
         // DAS SPIEL-AUGE (S2b): `wechsel` stellt das Auge in den Abstand, ab dem das Spiel die Karte zeigt — die Stufen-Wahl
         // (`_chooseLODForDistance`) aus der Karte heraus für die Höhe des Exemplars, die nächste Distanz mit Karte —, mal `wechsel`;
         // `augeH` ist die Augenhöhe über dem Boden (Ego 1,6, Third 3,5).
@@ -1537,7 +1531,7 @@ function laubGegenlicht(opts) {
                 if (!best || n < best.n) best = { n, ux, uz };
             }
             if (best && opts.plan) {
-                dh = new T.Vector3(best.ux, 0, best.uz);
+                dh = new THREE.Vector3(best.ux, 0, best.uz);
                 verdeckt = best.n;
             }
         }
@@ -1545,7 +1539,7 @@ function laubGegenlicht(opts) {
         // einschwingen); mit `ziel` steht das Auge am Spieler.
         // mit `auge` (x, z) steht das Auge genau am Plan-Ort (der Spieler darf beim Einschwingen rutschen)
         const auge = opts.ziel
-            ? new T.Vector3(opts.auge ? opts.auge[0] : pp.x, 0, opts.auge ? opts.auge[1] : pp.z)
+            ? new THREE.Vector3(opts.auge ? opts.auge[0] : pp.x, 0, opts.auge ? opts.auge[1] : pp.z)
             : ziel.fuss.clone().add(dh.clone().multiplyScalar(abstand));
         auge.y = r._voxelSurfaceY(auge.x, auge.z) + (opts.augeH || 1.7);
         // `l1`: die Schwelle der Karte, unter der das Exemplar im Auge seine L1 VOLL zeigt (der Schuss der Gestalt) — jenseits
@@ -1585,7 +1579,7 @@ function laubGegenlicht(opts) {
             const sd = dh
                 .clone()
                 .multiplyScalar((gegen ? -1 : 1) * Math.cos(elev))
-                .add(new T.Vector3(0, Math.sin(elev), 0))
+                .add(new THREE.Vector3(0, Math.sin(elev), 0))
                 .normalize();
             dl.target.position.copy(mitte);
             dl.position.copy(mitte.clone().add(sd.multiplyScalar(200)));
@@ -1668,7 +1662,7 @@ function laubGegenlicht(opts) {
                 cam.updateMatrixWorld(true);
                 const rand = [0, 0]; // die Box im Bild, um die Mitte (die Zeilen-Richtung des Rücklesens zählt nicht)
                 for (let k = 0; k < 8; k++) {
-                    const e = new T.Vector3(k & 1 ? ziel.box.max.x : ziel.box.min.x, k & 2 ? ziel.box.max.y : ziel.box.min.y, k & 4 ? ziel.box.max.z : ziel.box.min.z).project(cam);
+                    const e = new THREE.Vector3(k & 1 ? ziel.box.max.x : ziel.box.min.x, k & 2 ? ziel.box.max.y : ziel.box.min.y, k & 4 ? ziel.box.max.z : ziel.box.min.z).project(cam);
                     rand[0] = Math.max(rand[0], Math.abs(e.x));
                     rand[1] = Math.max(rand[1], Math.abs(e.y));
                 }
@@ -1678,8 +1672,8 @@ function laubGegenlicht(opts) {
                 dl.castShadow = wurf;
                 // DIE STELLE IM BILD (der Boden): gezählt wird je Schuss, was waagrecht in 6 m um S liegt (Orts-Stoff: die Welt-Lage je Pixel)
                 if (opts.boden) {
-                    const os = new T.MeshBasicNodeMaterial({ side: T.DoubleSide }), sicht = alle.filter((m) => m.visible), stoffe = sicht.map((m) => m.material);
-                    os.colorNode = T.TSL.vec4(T.TSL.positionWorld.sub(T.TSL.uniform(ziel.fuss.clone())), 1);
+                    const os = new THREE.MeshBasicNodeMaterial({ side: THREE.DoubleSide }), sicht = alle.filter((m) => m.visible), stoffe = sicht.map((m) => m.material);
+                    os.colorNode = THREE.TSL.vec4(THREE.TSL.positionWorld.sub(THREE.TSL.uniform(ziel.fuss.clone())), 1);
                     sicht.forEach((m) => (m.material = os));
                     const o = await lies("der Ort der Stelle");
                     sicht.forEach((m, i) => (m.material = stoffe[i]));
@@ -1734,7 +1728,7 @@ function laubGegenlicht(opts) {
                 const breit = Math.max(ziel.box.max.x - ziel.box.min.x, ziel.box.max.z - ziel.box.min.z, 2);
                 const fov = (cam.fov * Math.PI) / 180;
                 cam.position.set(mitte.x, kopf + (0.75 * breit) / Math.tan(fov / 2), mitte.z);
-                cam.quaternion.setFromEuler(new T.Euler(-Math.PI / 2, 0, 0));
+                cam.quaternion.setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
                 cam.updateMatrixWorld(true);
                 const krone = await lies("die Krone von oben");
                 const lichter = [];
@@ -1745,7 +1739,7 @@ function laubGegenlicht(opts) {
                 // jedes Programms), die übrigen Lichter und der Himmel still
                 const envA = sc.environment;
                 let amb = st.ambientLight || lichter.map((e) => e[0]).find((l) => l.isAmbientLight);
-                const ambEigen = amb ? null : new T.AmbientLight(0xffffff, 0);
+                const ambEigen = amb ? null : new THREE.AmbientLight(0xffffff, 0);
                 if (ambEigen) sc.add((amb = ambEigen));
                 const ambFarbe = amb.color.clone();
                 let hell, dunkel;
@@ -1764,9 +1758,9 @@ function laubGegenlicht(opts) {
                     for (const [l, i] of lichter) l.intensity = i;
                     sc.environment = envA;
                 }
-                const karte = new T.Mesh(
-                    new T.PlaneGeometry(breit * 2, breit * 2),
-                    new T.MeshStandardNodeMaterial({ color: new T.Color(0.18, 0.18, 0.18), roughness: 1, metalness: 0 })
+                const karte = new THREE.Mesh(
+                    new THREE.PlaneGeometry(breit * 2, breit * 2),
+                    new THREE.MeshStandardNodeMaterial({ color: new THREE.Color(0.18, 0.18, 0.18), roughness: 1, metalness: 0 })
                 );
                 karte.rotation.x = -Math.PI / 2;
                 karte.position.set(mitte.x, kopf + 0.05, mitte.z);
@@ -1871,24 +1865,24 @@ function lab(rgb) {
 // Normale so viele Grad neben dem Azimut der Sonne (0 zur Sonne); `feld` liegt waagrecht. Das Urteil ist absolut (`weg`): 0,9–1,1.
 function lichtWeg(opts) {
     return (async () => {
-        const T = window.THREE, sc = st.scene, rend = st.renderer, cam = st.camera, fp = st.feldPass;
+        const sc = st.scene, rend = st.renderer, cam = st.camera, fp = st.feldPass;
         const [, art, grad] = /^([a-z]+)(\d*)$/.exec(opts.weg), senkrecht = grad !== "" || art === "spiegel";
         rend.setAnimationLoop(null);
         window.__buehne({ uhr: opts.uhr });
         await r._himmelFrisch();
         if (!fp) return { fehler: "kein Feld-Pass" };
         r._weltLichtTakt();
-        const pp = st.playerMesh.position, o = new T.Vector3(pp.x, r._voxelSurfaceY(pp.x, pp.z) + 45, pp.z), unten = new T.Vector3(0.001, -1, 0);
+        const pp = st.playerMesh.position, o = new THREE.Vector3(pp.x, r._voxelSurfaceY(pp.x, pp.z) + 45, pp.z), unten = new THREE.Vector3(0.001, -1, 0);
         const W = 32, zl = window.__linsenZiel(W, W), rt = zl.rt, alle = [], dl = st.directionalLight, wurf = dl.castShadow;
         // die Normale der senkrechten Fläche: waagrecht, `grad` Grad neben dem Azimut der Sonne — das Auge blickt gegen sie
-        const nh = dl.position.clone().sub(dl.target.position).setY(0).normalize().applyAxisAngle(new T.Vector3(0, 1, 0), ((+grad || 0) * Math.PI) / 180);
+        const nh = dl.position.clone().sub(dl.target.position).setY(0).normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), ((+grad || 0) * Math.PI) / 180);
         sc.traverse((m) => (m.isMesh || m.isSprite || m.isPoints) && alle.push([m, m.visible]));
         let luftZurueck;
         const kamZurueck = zl.kamera(cam);
-        const flaeche = (mat, kipp) => Object.assign(new T.Mesh(new T.PlaneGeometry(40, 40).rotateX(kipp), mat), { frustumCulled: false });
-        const karte = flaeche(new T.MeshStandardNodeMaterial({ color: new T.Color(0.18, 0.18, 0.18), roughness: 1, metalness: 0 }), -Math.PI / 2);
+        const flaeche = (mat, kipp) => Object.assign(new THREE.Mesh(new THREE.PlaneGeometry(40, 40).rotateX(kipp), mat), { frustumCulled: false });
+        const karte = flaeche(new THREE.MeshStandardNodeMaterial({ color: new THREE.Color(0.18, 0.18, 0.18), roughness: 1, metalness: 0 }), -Math.PI / 2);
         const see = flaeche(r._ensureHydroSurfaceMaterial(), Math.PI / 2), n = see.geometry.attributes.position.count;
-        [["aFlow", 2, 0], ["aWave", 1, 0], ["aDepth", 1, 20], ["aSlope", 1, 0]].forEach(([a, k, v]) => see.geometry.setAttribute(a, new T.Float32BufferAttribute(new Float32Array(n * k).fill(v), k)));
+        [["aFlow", 2, 0], ["aWave", 1, 0], ["aDepth", 1, 20], ["aSlope", 1, 0]].forEach(([a, k, v]) => see.geometry.setAttribute(a, new THREE.Float32BufferAttribute(new Float32Array(n * k).fill(v), k)));
         // DER KÖRPER IM FLÜSSIGEN WASSER (stoffe.K3, wie die Bühne von diag-post-kette): `wasser` und `spiegel` stehen mit Auge,
         // Karte und Fläche 10 m unter der tiefsten Linie, über der Eis beginnt (`_eisLinien`), höchstens am Auge des Orts — 43 m
         // über dem Dorf (127,8 m) lag die Fläche seit stoffe.K3-2 im Eis des Sommers (die Linie 102,3 m an ihrer Säule), und Eis
@@ -1906,7 +1900,7 @@ function lichtWeg(opts) {
             r._tickFeldPass(st.fernRing);
             for (const [m] of alle) m.visible = m === ding;
             [karte, see].forEach((m) => (m.visible = m === ding));
-            if (wand) karte.position.copy(o).add(blick), karte.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), blick.clone().normalize().negate()), karte.updateMatrixWorld(true);
+            if (wand) karte.position.copy(o).add(blick), karte.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), blick.clone().normalize().negate()), karte.updateMatrixWorld(true);
             zl.bundles();
             await zl.ruhe(cam, "der Lichtweg");
             const px = await zl.lies(), s = [0, 0, 0];
@@ -1922,7 +1916,7 @@ function lichtWeg(opts) {
             if (art === "panorama") {
                 for (let i = 0; i < fp.panoDaten.length; i += 4) fp.panoDaten.set([0.18, 0.18, 0.18, 3000], i);
                 fp.panoTex.needsUpdate = true;
-                weg = await lies(fp.mesh, new T.Vector3(1, -0.1, 0));
+                weg = await lies(fp.mesh, new THREE.Vector3(1, -0.1, 0));
             } else if (art === "spiegel") {
                 // DER SPIEGEL: über einer Wasser-Fläche (Feld-Zellen Art 1) 30 m voraus eine graue Wand (18 %, ihre Fläche 45° neben
                 // der Sonne: Sonne und Himmel, kein Glanz der Karte im Rücken des Auges), das Auge 2 m darüber blickt 25° hinab (Öffnung 20°) — jeder gespiegelte Strahl verlässt den Schirm, das
@@ -1934,7 +1928,7 @@ function lichtWeg(opts) {
                 for (let j = 0; j < n; j++)
                     for (let i = 0; i < n; i++) {
                         const istWand = -(w(i, I0, o.x) * nh.x + w(j, J0, o.z) * nh.z) > 30, h = istWand ? H + 60 : H - 0.6, b = Math.floor(j / K.block) * S.nb + Math.floor(i / K.block);
-                        S.daten.set([T.DataUtils.toHalfFloat(h), S.leer, S.leer, 0], (j * n + i) * 4);
+                        S.daten.set([THREE.DataUtils.toHalfFloat(h), S.leer, S.leer, 0], (j * n + i) * 4);
                         S.stoff.set(istWand ? [108, 108, 108, 0] : [0, 0, 0, 1], (j * n + i) * 4);
                         S.hoechste[b] = Math.max(S.hoechste[b], h);
                     }
@@ -1951,7 +1945,7 @@ function lichtWeg(opts) {
                     await window.__erstRuhe(lauf, {}, "der Spiegel");
                     for (let k = 0; k < 3; k++) lauf(), await sleep(200);
                     const [Wr, Hr] = [L.rt.width, L.rt.height], px = await rend.readRenderTargetPixelsAsync(L.rt, 0, 0, Wr, Hr), sch = px.length / Hr;
-                    weg = [0, 1, 2].map((c) => { let a = 0; for (let y = (Hr >> 1) - 4; y < (Hr >> 1) + 4; y++) for (let x = (Wr >> 1) - 4; x < (Wr >> 1) + 4; x++) a += T.DataUtils.fromHalfFloat(px[y * sch + x * 4 + c]); return a / 64; });
+                    weg = [0, 1, 2].map((c) => { let a = 0; for (let y = (Hr >> 1) - 4; y < (Hr >> 1) + 4; y++) for (let x = (Wr >> 1) - 4; x < (Wr >> 1) + 4; x++) a += THREE.DataUtils.fromHalfFloat(px[y * sch + x * 4 + c]); return a / 64; });
                 } finally {
                     [S.daten, S.stoff, S.hoechste].forEach((d, k) => d.set(alt[k]));
                     [S.tex, S.stoffTex, S.hTex].forEach((t) => (t.needsUpdate = true));
@@ -1961,8 +1955,8 @@ function lichtWeg(opts) {
                 }
             } else if (art === "feld") {
                 // der graue Kasten: waagrecht 2,5 m unter dem Auge, senkrecht 12 m voraus mit der dünnen Achse auf `nh`
-                const m = senkrecht ? new T.Matrix4().makeRotationY(Math.atan2(-nh.z, nh.x)).setPosition(o.clone().addScaledVector(nh, -12)) : new T.Matrix4().makeTranslation(o.x, o.y - 2.5, o.z);
-                const h = r._weltKapselSpawn("lichtweg:" + opts.weg, m, () => [{ box: true, c: new T.Vector3(), h: senkrecht ? new T.Vector3(0.5, 20, 20) : new T.Vector3(20, 0.5, 20), farbe: { r: 0.18, g: 0.18, b: 0.18 } }]);
+                const m = senkrecht ? new THREE.Matrix4().makeRotationY(Math.atan2(-nh.z, nh.x)).setPosition(o.clone().addScaledVector(nh, -12)) : new THREE.Matrix4().makeTranslation(o.x, o.y - 2.5, o.z);
+                const h = r._weltKapselSpawn("lichtweg:" + opts.weg, m, () => [{ box: true, c: new THREE.Vector3(), h: senkrecht ? new THREE.Vector3(0.5, 20, 20) : new THREE.Vector3(20, 0.5, 20), farbe: { r: 0.18, g: 0.18, b: 0.18 } }]);
                 weg = await lies(fp.march, senkrecht ? nh.clone().negate() : unten).finally(() => r._weltFeldFrei(h));
             } else {
                 const mit = await lies(see, unten), R = AnazhRealm._wasserKoerper(AnazhRealm.Gesetz("terrain:WASSER_GESETZ"));
@@ -2102,14 +2096,13 @@ function kantenLinie(Y, W, H, kante, schwelle, schritt) {
 // 0,4–1,5 km) und verlangt ≥ 12 Stufen zwischen L0 und S im grünen Kanal.
 function luftTiefe(o) {
     return (async () => {
-        const T = window.THREE;
         const cam = st.camera;
         const U = st.luft.U;
         const R = o.ref;
         const W = 480;
         const H = 270;
         const fov0 = cam.fov;
-        if (st.renderer.toneMapping !== T.NeutralToneMapping) throw new Error("__luftTiefe: die Rückrechnung kennt nur die Neutral-Kurve");
+        if (st.renderer.toneMapping !== THREE.NeutralToneMapping) throw new Error("__luftTiefe: die Rückrechnung kennt nur die Neutral-Kurve");
         st.renderer.setAnimationLoop(null);
         window.__buehne(o.wetter && { wetter: o.wetter });
         const PU = st.postProcessingUniforms;
@@ -2172,8 +2165,8 @@ function luftTiefe(o) {
             cam.lookAt(gx + Math.sin(az) * 1e3, gy - (o.wetter ? 140 : 44), gz - Math.cos(az) * 1e3);
             cam.updateMatrixWorld(true);
         };
-        const s = new T.Vector3();
-        const q = new T.Vector3();
+        const s = new THREE.Vector3();
+        const q = new THREE.Vector3();
         const unter = (t) => gy + s.y * t < gesetz(gx + s.x * t, gz + s.z * t);
         const treffer = (xx, yy, D) => {
             const nx = ((xx + 0.5) / W) * 2 - 1;
@@ -2209,7 +2202,7 @@ function luftTiefe(o) {
             const D = await window.__spiegelDaten();
             const L0 = await schuss(0, k);
             const S = await schuss(1, k);
-            D.iv = new T.Matrix4().fromArray(D.ivp);
+            D.iv = new THREE.Matrix4().fromArray(D.ivp);
             const bd = R.baenderM.map((d) => ({ d, q: [[], [], []], dk: [], dh: [] }));
             const gez = [];
             const fern = {};
@@ -2275,7 +2268,7 @@ function luftTiefe(o) {
             const so = uhr(b);
             const az = so.az + Math.PI;
             const [wx, wz] = [gx + Math.sin(az) * R.weiss.m, gz - Math.cos(az) * R.weiss.m];
-            const tafel = new T.Mesh(new T.PlaneGeometry(R.weiss.seite, R.weiss.seite), new T.MeshStandardMaterial());
+            const tafel = new THREE.Mesh(new THREE.PlaneGeometry(R.weiss.seite, R.weiss.seite), new THREE.MeshStandardMaterial());
             tafel.position.set(wx, gesetz(wx, wz) + R.weiss.seite, wz);
             st.scene.add(tafel);
             try {
@@ -2507,7 +2500,6 @@ function kartenEichung(kurve, ev = 1) {
 // 24 m prüfen den Dach-Pool an ihrer Mitte. `haus`: nur die Schwelle, an die der Spieler tritt (die Tür öffnet).
 function naesseSicht(o) {
     return (async () => {
-        const T = window.THREE;
         const cam = st.camera;
         const p = st.playerMesh.position;
         // DIE DACH-BAUTEN OHNE HÜLLE (`NAESSE.dachArten`): `dach: "ziel"` nennt den nächsten, `dach: "pruefen"` prüft jeden im
@@ -2534,7 +2526,7 @@ function naesseSicht(o) {
         if (o.ort === "dorf" && !e) throw new Error("NÄSSE: kein Haus mit Hülle und Tür am Ort");
         const k = e ? e._hausHuelleSkala || 1 : 1;
         const [co, si] = e ? [Math.cos(e.rotationY || 0), Math.sin(e.rotationY || 0)] : [1, 0];
-        const welt = (x, y, z) => new T.Vector3(e.position.x + (x * co + z * si) * k, e.position.y + y * k, e.position.z + (z * co - x * si) * k);
+        const welt = (x, y, z) => new THREE.Vector3(e.position.x + (x * co + z * si) * k, e.position.y + y * k, e.position.z + (z * co - x * si) * k);
         const lokal = (v) => [((v.x - e.position.x) * co - (v.z - e.position.z) * si) / k, (v.y - e.position.y) / k, ((v.x - e.position.x) * si + (v.z - e.position.z) * co) / k];
         const boxen = e ? e._hausHuelle.teile.filter((t) => t.art === "box" && t.rolle === "fest") : [];
         const fl = (t) => t.h[0] * t.h[2];
@@ -2571,7 +2563,7 @@ function naesseSicht(o) {
         const ohne = await schuss("rainy", 0);
         if (sprite) sprite.layers.enable(0);
         const Y = luma709;
-        const strahl = new T.Vector3();
+        const strahl = new THREE.Vector3();
         const klasse = (x, y) => {
             if (!e) return y > H * 0.55 ? "aussen" : null;
             strahl.set(((x + 0.5) / W) * 2 - 1, 1 - ((y + 0.5) / H) * 2, 1).unproject(cam).sub(cam.position).normalize();

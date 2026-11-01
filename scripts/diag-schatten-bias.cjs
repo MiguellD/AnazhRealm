@@ -268,7 +268,6 @@ async function buehneBauen() {
 
 // DIE PROBE (in der Seite): Werfer und Akne-Platten, je Sonne
 async function probe(cfg) {
-    const T = window.THREE;
     const rend = st.renderer;
     const { bx, bz } = window.__sb;
     const W = cfg.W,
@@ -365,8 +364,8 @@ async function probe(cfg) {
     };
     const lichtDir = () => {
         const dl = st.directionalLight;
-        const a = new T.Vector3(),
-            b = new T.Vector3();
+        const a = new THREE.Vector3(),
+            b = new THREE.Vector3();
         dl.getWorldPosition(a);
         dl.target.getWorldPosition(b);
         return b.sub(a).normalize(); // von der Sonne zum Boden
@@ -392,7 +391,7 @@ async function probe(cfg) {
         const pos = g.attributes.position;
         const idx = g.index;
         const n = idx ? idx.count : pos.count;
-        const v = new T.Vector3();
+        const v = new THREE.Vector3();
         const ecken = [];
         const nV = pos.count;
         const welt = new Float32Array(nV * 3);
@@ -436,7 +435,7 @@ async function probe(cfg) {
                     `slot ${ref.key} cs=${g && g.mesh && g.mesh.castShadow} ebn=${g && g.mesh && g.mesh.layers.mask}`
                 );
             if (!g || !g.mesh || !g.mesh.castShadow || !g.mesh.layers.test(ebenen)) continue;
-            const m = new T.Matrix4();
+            const m = new THREE.Matrix4();
             g.mesh.getMatrixAt(ref.slot, m);
             g.mesh.updateMatrixWorld(true);
             m.premultiply(g.mesh.matrixWorld);
@@ -452,7 +451,7 @@ async function probe(cfg) {
         const ctx = cv.getContext("2d");
         ctx.fillStyle = "#fff";
         const cam = st.camera;
-        const v = new T.Vector3();
+        const v = new THREE.Vector3();
         const px = (x, y, z) => {
             v.set(x, y, z);
             abbild(v);
@@ -648,7 +647,7 @@ async function probe(cfg) {
     // Werfer (danach gesetzt) ist der einzige seiner Art. Gemerkt wird je Slot-HALTER (`slotRef`), nie je Index — die Gruppe
     // verdichtet beim Freigeben (`_instanzUmzug`) und tauscht je Pass (`_archGroupTausch`), der Halter trägt seinen Slot mit;
     // ein freigegebener bleibt frei.
-    const NULL_MATRIX = new T.Matrix4().makeScale(0, 0, 0);
+    const NULL_MATRIX = new THREE.Matrix4().makeScale(0, 0, 0);
     const artSlots = (typ, ohne) => {
         const aus = [];
         for (const g of st.archInstanceGroups.values()) {
@@ -672,7 +671,7 @@ async function probe(cfg) {
         const merk = [];
         const gruppen = new Set();
         for (const [g, h, i] of artSlots(typ)) {
-            const m = new T.Matrix4();
+            const m = new THREE.Matrix4();
             g.mesh.getMatrixAt(i, m);
             merk.push([g, h, m]);
             g.mesh.setMatrixAt(i, NULL_MATRIX);
@@ -697,7 +696,7 @@ async function probe(cfg) {
     const fremdNach = (typ, merk, eigen, eintrag) => {
         const bekannt = new Set(merk.map((x) => x[1]));
         for (const h of eigen || []) bekannt.add(h);
-        const m = new T.Matrix4();
+        const m = new THREE.Matrix4();
         let n = 0;
         for (const [g, , i] of artSlots(typ, bekannt)) {
             if (eintrag && g.slotEntry[i] === eintrag) continue;
@@ -951,7 +950,7 @@ async function probe(cfg) {
         };
         const E = maske(dreiecke, projiziert);
         const S = maske(dreiecke, () => {});
-        const v = new T.Vector3(o.x, o.gy, o.z).project(st.camera);
+        const v = new THREE.Vector3(o.x, o.gy, o.z).project(st.camera);
         const cx = Math.round(((v.x + 1) / 2) * W),
             cy = Math.round(((1 - v.y) / 2) * H);
         const bw = 96,
@@ -1064,14 +1063,14 @@ async function probe(cfg) {
         isoAn();
         isoEbene([e.mesh], e.instSlots, true);
         const dreiecke = werferDreiecke([e.mesh], e.instSlots || []);
-        const lo = new T.Vector3(Infinity, Infinity, Infinity),
-            hi = new T.Vector3(-Infinity, -Infinity, -Infinity);
+        const lo = new THREE.Vector3(Infinity, Infinity, Infinity),
+            hi = new THREE.Vector3(-Infinity, -Infinity, -Infinity);
         for (let i = 0; i < dreiecke.length; i += 3) {
-            lo.min(new T.Vector3(dreiecke[i], dreiecke[i + 1], dreiecke[i + 2]));
-            hi.max(new T.Vector3(dreiecke[i], dreiecke[i + 1], dreiecke[i + 2]));
+            lo.min(new THREE.Vector3(dreiecke[i], dreiecke[i + 1], dreiecke[i + 2]));
+            hi.max(new THREE.Vector3(dreiecke[i], dreiecke[i + 1], dreiecke[i + 2]));
         }
         const mitte = lo.clone().add(hi).multiplyScalar(0.5);
-        const nrm = new T.Vector3(
+        const nrm = new THREE.Vector3(
             Math.sin(neigung) * Math.sin(psi),
             Math.cos(neigung),
             Math.sin(neigung) * Math.cos(psi)
@@ -1090,14 +1089,14 @@ async function probe(cfg) {
             lz: mitte.z,
         };
         kamSetzen(k);
-        const zurSonne = new T.Vector3(-d.x, -d.y, -d.z);
-        const auge = new T.Vector3(k.px, k.py, k.pz);
+        const zurSonne = new THREE.Vector3(-d.x, -d.y, -d.z);
+        const auge = new THREE.Vector3(k.px, k.py, k.pz);
         const hell = [];
-        const a = new T.Vector3(),
-            b = new T.Vector3(),
-            c = new T.Vector3(),
-            n = new T.Vector3(),
-            g = new T.Vector3();
+        const a = new THREE.Vector3(),
+            b = new THREE.Vector3(),
+            c = new THREE.Vector3(),
+            n = new THREE.Vector3(),
+            g = new THREE.Vector3();
         for (let i = 0; i < dreiecke.length; i += 9) {
             a.fromArray(dreiecke, i);
             b.fromArray(dreiecke, i + 3);

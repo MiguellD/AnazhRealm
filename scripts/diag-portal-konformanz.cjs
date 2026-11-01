@@ -170,7 +170,7 @@ function abdruck(heim) {
     const w = st?.architectures.find((e) => e.id === p.mountedArch);
     const g = st
         ? {
-              leib: { seele: p.soul || "human", teile: st.customSouls[p.soul || "human"]?.bodyParts || null, praegung: st.workshop.studioOv[r.constructor.KOERPER_HOST_RECIPE] || null },
+              leib: { seele: p.soul || "human", teile: st.customSouls[p.soul || "human"]?.bodyParts || null, praegung: st.workshop.studioOv[AnazhRealm.KOERPER_HOST_RECIPE] || null },
               inventar: { slots: p.inventory, hotbar: st.hotbar },
               wield: p.equipped,
               reittier: w && {

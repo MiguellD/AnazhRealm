@@ -136,7 +136,6 @@ function geraeteHoerer() {
 // Der Prüf-Raum in der Seite: `wurzel` (was die Welt-GPU zeichnet und der Zensus liest), `zeichne(n)` (n Bilder der Welt-
 // GPU), `drehe()` (63° Gier), `leib` (der Welt-Leib, dessen Index der Täter T2 weitet), `leibWechsel()` (zeichnet ihn).
 function pruefRaum(echt) {
-    const T = window.THREE;
     const rend = st.renderer;
     const F = (window.__frostWand = { echt });
     // DAS EINE WARTEN AUF EINE BÜHNE (Werkstatt-Vorschau, Ich-, Hof-, Feed-Bühne), bis ihr Renderer `bis(Zeichnungen)` trägt:
@@ -145,8 +144,8 @@ function pruefRaum(echt) {
     // nie im Takt der Wanduhr (bis 25.10. zählte er je 50/200 ms, 20/180 s bis ROT); fehlt die Bühne, zählt er und nennt sie
     // die Bilder einer Bühne zählen erst, wenn jedes sichtbare Mesh in ihrem Blick gezeichnet hat (die Erst-Zeichnung baut
     // asynchron, ein Bild ohne seine Bürger ist kein Bild der Bühne)
-    const blick = new T.Frustum(),
-        m4 = new T.Matrix4();
+    const blick = new THREE.Frustum(),
+        m4 = new THREE.Matrix4();
     F.gezeichnet = (s) => {
         const b = s && s.renderer && s.renderer.buehne;
         if (!b) return 0;
@@ -194,13 +193,13 @@ function pruefRaum(echt) {
         return { weg: "spielpfad" };
     }
     rend.setAnimationLoop(null);
-    const scene = new T.Scene();
-    scene.background = new T.Color(0x6688aa);
-    scene.add(new T.HemisphereLight(0xffffff, 0x445533, 2.2));
-    const sonne = new T.DirectionalLight(0xffffff, 2.0);
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x6688aa);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x445533, 2.2));
+    const sonne = new THREE.DirectionalLight(0xffffff, 2.0);
     sonne.position.set(3, 6, 4);
     scene.add(sonne);
-    const pivot = new T.Group();
+    const pivot = new THREE.Group();
     scene.add(pivot);
     // headless steht der Welt-Leib selbst auf der Probe-Bühne: `applyPlayerSoul` legt den neuen in die Welt-Szene,
     // `leibWechsel` holt ihn her
@@ -208,9 +207,9 @@ function pruefRaum(echt) {
     pivot.add(traeger);
     // ein Ring farbiger Kisten auf dem Drehteller: die Drehung ändert die Bildmitte sichtbar
     for (let i = 0; i < 8; i++) {
-        const k = new T.Mesh(
-            new T.BoxGeometry(0.35, 0.5 + 0.15 * i, 0.35),
-            new T.MeshStandardNodeMaterial({ color: new T.Color().setHSL(i / 8, 0.7, 0.5) })
+        const k = new THREE.Mesh(
+            new THREE.BoxGeometry(0.35, 0.5 + 0.15 * i, 0.35),
+            new THREE.MeshStandardNodeMaterial({ color: new THREE.Color().setHSL(i / 8, 0.7, 0.5) })
         );
         const w = (i / 8) * Math.PI * 2;
         k.position.set(Math.cos(w) * 1.1, 0.3, Math.sin(w) * 1.1);
@@ -223,7 +222,7 @@ function pruefRaum(echt) {
             o.frustumCulled = false;
         });
     zeigeAlles(pivot);
-    const cam = new T.PerspectiveCamera(45, 16 / 9, 0.05, 100);
+    const cam = new THREE.PerspectiveCamera(45, 16 / 9, 0.05, 100);
     // BÜHNE: eigene Szene des Frost-Bilds
     cam.position.set(0, 1.0, 3.0);
     cam.lookAt(0, 0.7, 0);
@@ -248,7 +247,7 @@ function pruefRaum(echt) {
     };
     // DAS BILD der Probe-Bühne: die Welt-GPU zeichnet in ein Ziel, das Ziel wird zurückgelesen (256 × 144, RGBA8, kein
     // Zeilen-Rand); headless fehlt die WebGPU-Leinwand im Bildschirm-Schuss — ein verworfener Befehlspuffer schreibt nichts.
-    const ziel = new T.RenderTarget(256, 144);
+    const ziel = new THREE.RenderTarget(256, 144);
     F.bild = async () => {
         scene.updateMatrixWorld(true);
         rend.setRenderTarget(ziel);
@@ -993,12 +992,11 @@ hauptLauf(async () => {
 
     // P2 — DER PFAD UND DER ZWANG: ein Index ungerader Länge der Ich-Bühne, neu (wie `_gpuAbschied`), ganz und ab Element 1
     const p2 = await page.evaluate(async () => {
-        const T = window.THREE,
-            W = window.__frostHoer.puffer,
+        const W = window.__frostHoer.puffer,
             st = r.state.ichStage;
-        const g = new T.BufferGeometry().setIndex([0, 1, 2, 0, 1]);
+        const g = new THREE.BufferGeometry().setIndex([0, 1, 2, 0, 1]);
         g.index.name = "Ich-Bühne Probe-Index";
-        const m = new T.Mesh(g.setAttribute("position", new T.Float32BufferAttribute(new Array(9).fill(0), 3)));
+        const m = new THREE.Mesh(g.setAttribute("position", new THREE.Float32BufferAttribute(new Array(9).fill(0), 3)));
         m.frustumCulled = false;
         st.scene.add(m);
         let bruch = "";
@@ -1029,17 +1027,16 @@ hauptLauf(async () => {
     // DIE TÄTER — die Wand beweist sich an jedem Lauf.
     console.log("\n=== DIE TÄTER (die Wachen und die Bild-Probe beißen) ===");
     const t1 = await page.evaluate(async () => {
-        const T = window.THREE;
         const F = window.__frostWand;
-        const geo = new T.BufferGeometry();
-        geo.setAttribute("position", new T.BufferAttribute(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]), 3));
-        geo.setIndex(new T.BufferAttribute(new Uint16Array([0, 1, 3]), 1));
-        const m = new T.Mesh(geo, new T.MeshBasicNodeMaterial({ color: 0xff00ff }));
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]), 3));
+        geo.setIndex(new THREE.BufferAttribute(new Uint16Array([0, 1, 3]), 1));
+        const m = new THREE.Mesh(geo, new THREE.MeshBasicNodeMaterial({ color: 0xff00ff }));
         m.name = "frost-taeter-bereich";
         m.frustumCulled = false;
         if (F.echt) {
             const cam = st.camera;
-            m.position.copy(new T.Vector3(0, 0, -2).applyQuaternion(cam.quaternion).add(cam.position));
+            m.position.copy(new THREE.Vector3(0, 0, -2).applyQuaternion(cam.quaternion).add(cam.position));
         }
         F.wurzel.add(m);
         await F.zeichne(F.echt ? 8 : 1);
