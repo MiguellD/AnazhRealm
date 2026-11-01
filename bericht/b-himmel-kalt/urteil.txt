@@ -1,0 +1,12 @@
+lauf 1 exit 1
+  die Klasse Pflanzen bis zum Weltbild: 115 ms Haupt-Faden (Streu 98 · Gestalt 10 · Wald-Plan 6 · Saat 1)
+  die Phasen (t · Haupt-Faden belegt bis dahin): HTML da 0.01 s · 0 ms | Skripte da 0.35 s · 229 ms | DOM bereit 1.26 s · 1124 ms | welt steht 1.85 s · 1708 ms | Buch da 2.09 s · 1858 ms | buch steht 2.09 s · 1858 ms | boden steht 3.53 s · 3214 ms | dorf steht 3.53 s · 3214 ms | streu steht 3.53 s · 3214 ms | erstes Lade-Bild 3.53 s · 3214 ms | leib steht 4.55 s · 3724 ms | licht steht 5.17 s · 4320 ms | horizont steht 11.47 s · 10144 ms | Weltbild 11.47 s · 10144 ms | Kontrolle 13.94 s · 11871 ms | Ring am Ziel 16.26 s · 11898 ms
+  ❌ das halbe Weltbild: [AnazhRealm V18.546.158] [WARN] Der Sinkflug zeigt im Bild 1211 in 21 m eine Lücke: 1 Bäume und Bauten wachsen · 1 ferne Bäume werden gemalt (Täter: suv L2 in 150 m ungebaut)
+lauf 2 exit 1
+  die Klasse Pflanzen bis zum Weltbild: 88 ms Haupt-Faden (Streu 65 · Gestalt 9 · Wald-Plan 13 · Saat 0)
+  die Phasen (t · Haupt-Faden belegt bis dahin): HTML da 0.01 s · 0 ms | Skripte da 0.38 s · 228 ms | DOM bereit 1.19 s · 1002 ms | welt steht 1.80 s · 1613 ms | Buch da 2.04 s · 1750 ms | buch steht 2.04 s · 1750 ms | boden steht 3.55 s · 3185 ms | dorf steht 3.55 s · 3185 ms | streu steht 3.55 s · 3185 ms | erstes Lade-Bild 3.55 s · 3185 ms | leib steht 4.76 s · 3984 ms | licht steht 5.04 s · 4270 ms | horizont steht 12.20 s · 10927 ms | Weltbild 12.20 s · 10927 ms | Kontrolle 14.58 s · 12653 ms | Ring am Ziel 17.28 s · 12653 ms
+  ❌ das halbe Weltbild: [AnazhRealm V18.546.158] [WARN] Der Sinkflug zeigt im Bild 1048 in 11 m eine Lücke: 1 Bäume und Bauten wachsen · 1 ferne Bäume werden gemalt (Täter: suv L2 in 150 m ungebaut)
+lauf 3 exit 1
+  die Klasse Pflanzen bis zum Weltbild: 119 ms Haupt-Faden (Streu 74 · Gestalt 20 · Wald-Plan 24 · Saat 1)
+  die Phasen (t · Haupt-Faden belegt bis dahin): HTML da 0.01 s · 0 ms | Skripte da 0.40 s · 255 ms | DOM bereit 1.47 s · 1301 ms | welt steht 2.09 s · 1921 ms | Buch da 3.74 s · 3395 ms | boden steht 3.74 s · 3395 ms | buch steht 3.74 s · 3395 ms | erstes Lade-Bild 3.74 s · 3395 ms | leib steht 4.87 s · 4107 ms | licht steht 5.05 s · 4247 ms | horizont steht 13.85 s · 12349 ms | Weltbild 13.85 s · 12349 ms | Kontrolle 15.21 s · 13690 ms | Ring am Ziel 18.86 s · 13850 ms
+  ❌ das halbe Weltbild: [AnazhRealm V18.546.158] [WARN] Der Sinkflug zeigt im Bild 1019 in 11 m eine Lücke: 1 Bäume und Bauten wachsen · 1 ferne Bäume werden gemalt (Täter: suv L2 in 150 m ungebaut)

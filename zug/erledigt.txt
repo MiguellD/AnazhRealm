@@ -178,3 +178,4 @@ takt-z132a-gtx gemessen punkte 25ac4c0c gtx: 0 grün / 5 rot
 takt-z132b-gtx gemessen punkte 25ac4c0c gtx: 0 grün / 5 rot
 z132-abab nicht-langsamer abab 25ac4c0c gegen 20d09a04: w-ego 4+4 nicht-langsamer · stadt 4+4 nicht-langsamer
 wiese-takt-abab nicht-langsamer abab 0be0cbe6 gegen 25ac4c0c: w-ego 4+4 nicht-langsamer · stadt 4+4 nicht-langsamer
+b-himmel-kalt Exit0 station ankunft-kalt.sh an 1d9c4dbb
