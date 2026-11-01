@@ -359,3 +359,4 @@ takt-z132b-gtx 1 punkte sha=25ac4c0c485570ed887cffb7f175d430264f86bf geraet=gtx 
 wiese-takt-abab 2 abab A=25ac4c0c485570ed887cffb7f175d430264f86bf B=0be0cbe61cfe627673cda07e23990c01d1ccb9f2 zellen=w-ego,stadt
 b-himmel-kalt 2 station sha=1d9c4dbbd740023b59938e6bc51ff38385ba37c5 lauf=ankunft-kalt.sh
 p2-haar.K21-gtx 1 punkte sha=75614bb6090df300feadc176acd595c1bba975f4 geraet=gtx nur=haar.K2#1
+p2-spielgang.K31-gtx 1 punkte sha=e78e0d28add8d33d21549677656d36797633d7e2 geraet=gtx nur=spielgang.K3#1
