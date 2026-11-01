@@ -2740,34 +2740,11 @@ class AnazhRealm_siedlung_ort {
     _genesisOrt(playerPos) {
         const plan = this._genesisPlan;
         if (!plan || !playerPos) return;
-        // DER BELAG (die Grau-Fassung `weg`, die Art, die der Boden heute kennt): das Rund des Kerns (eine Scheibe seines
-        // Radius), die Speichen, der Ring-Weg, die Mall, die Wege und die Terrasse gehen in die EINE Wege-Karte
-        // (`_stlWegeBuild`, je Schlüssel einmal) — der Boden malt sie, die Wiese weicht ihnen; die Rasen-Keile bleiben Rasen
-        const G = globalThis.__fachwerkCore.GENESIS_ORT;
-        this._stlWegeBuild(
-            {
-                roads: plan.roads.concat([
-                    {
-                        pts: [
-                            { x: 0, z: 0 },
-                            { x: 0.02, z: 0 },
-                        ],
-                        w: 2 * G.kern.r,
-                    },
-                ]),
-                feldwege: plan.feldwege,
-                platz: {
-                    cx: 0,
-                    cz: G.terrasse.cz,
-                    ex: G.terrasse.ex,
-                    ez: G.terrasse.ez,
-                    phi: 0,
-                    typ: G.terrasse.belag,
-                },
-            },
-            plan.ort,
-            "genesis"
-        );
+        // DER BELAG: jede Fläche des Plans mit ihrem Belag (fachwerk `zonen` · `belag`: das Kopfstein des Stein-Gesetzes, der Rasen
+        // des Gras-Gesetzes, die getretene Erde) geht EINMAL in die EINE Wege-Karte (`_stlWegeBuild`, Schlüssel „genesis") — der
+        // Boden zeichnet sie, die Wiese, die Streu und die Natur-Wand lesen dieselben Bytes. Bis hierher baute der Wirt den Kern als
+        // 2-cm-Straße und die Terrasse aus Gesetz-Konstanten, jede Fläche als Erde, die Rasen-Keile ohne Leser: der Platz lag braun.
+        this._stlWegeBuild({ zonen: plan.zonen }, plan.ort, "genesis");
         this._genesisVorschau(plan, playerPos);
         const fertig = this._genesisWerkeFertig || (this._genesisWerkeFertig = new Set());
         let budget = AnazhRealm.GENESIS_JE_TAKT;

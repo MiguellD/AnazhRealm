@@ -561,7 +561,9 @@ function buildGenesis(){
   const v2=FC.ortPlan(FC.genesisLayout(FC.genesisSaat(WELT.seed), FC.GENESIS_ORT.tafel.map(t=>t.welt)), M0, GK.ortCtx(L));
   const Lb=Object.assign({},L,{erdbau:GK.erdbauNormal(v2.erdbau)}), y0=v2.platz.y, H=(x,z)=>GK.hoehe(Lb,M0.x+x,M0.z+z,true)-y0;
   // DER BODEN: ein Gitter über die Zonen (ohne das Viertel), je Ecke die Höhe samt Erdbau und die Farbe ihrer Zone
-  const FARBE={weg:0x8a7f6c, gras:0x5f7d3a, feld:0x2f4a24, grundriss:0x8c8c8c, gehege:0x7a6a4a, graben:0x4a4033, wasser:0x3a4a52, ort:0x9a8f78};
+  // das Pflaster ist der Stein des Stein-Gesetzes (porta STEIN_GESETZ.kopfstein, seine Farbe) — dieselbe Zeile wie der Boden der Welt
+  const KS=window.__portaCore.STEIN_GESETZ;
+  const FARBE={weg:0x8a7f6c, gras:0x5f7d3a, pflaster:KS.farbe[KS.kopfstein.stein], feld:0x2f4a24, grundriss:0x8c8c8c, gehege:0x7a6a4a, graben:0x4a4033, wasser:0x3a4a52, ort:0x9a8f78};
   const hu=v2.zonen.filter(q=>q.art!=='ort'&&!/^feldweg/.test(q.name)).reduce((b,q)=>[Math.min(b[0],q.huelle[0]),Math.min(b[1],q.huelle[1]),Math.max(b[2],q.huelle[2]),Math.max(b[3],q.huelle[3])],[Infinity,Infinity,-Infinity,-Infinity]);
   const d=2.5, nx=Math.ceil((hu[2]-hu[0])/d), nz=Math.ceil((hu[3]-hu[1])/d), pos=new Float32Array((nx+1)*(nz+1)*3), col=new Float32Array(pos.length), idx=[], c3=new THREE.Color();
   for(let j=0;j<=nz;j++) for(let i=0;i<=nx;i++){ const o=(j*(nx+1)+i)*3, x=hu[0]+i*d, z=hu[1]+j*d, q=FC.genesisZone(v2,x,z);

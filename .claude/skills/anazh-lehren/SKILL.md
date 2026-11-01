@@ -38,7 +38,8 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   Baustein (`_wasserBlick`); ein Stau ist Gesetz des Spiegels (`atlasSpiegel` liest die Felder, gelaende-core `stauFelder`, im
   Faden gerechnet, `_stauFelder` bestellt sie; der Automat ruht auf ihm). Heute keine EINE Wahrheit: 8 Schreiber, die Seen doppelt (Gelände-Kern und Stamm); der Spiegel ist Kern.
 - ORT: der Genesis-Ort ist EIN Plan des Ort-Gesetzes (fachwerk `GENESIS_ORT` → `genesisLayout` → `ortPlan`, der erste Auftrag
-  des Voxel-Fadens; der Wirt liest ihn, `_genesisOrt`, seine Flächen sind Grundriss der Natur-Wand), jedes Bauwerk und jeder Dorfweg sind Grundriss gegen Natur, das Dorf EIN Plan des
+  des Voxel-Fadens; der Wirt liest ihn, `_genesisOrt`, seine Flächen sind Grundriss der Natur-Wand, ihr `belag` ein Kanal der EINEN
+  Wege-Karte: `WEGE_KARTE.belag` rg8snorm — der Boden zeichnet Kopfstein aus porta `STEIN_GESETZ.kopfstein` und Rasen aus `WIESEN_GRUND`), jedes Bauwerk und jeder Dorfweg sind Grundriss gegen Natur, das Dorf EIN Plan des
   Fachwerk-Studios auf dem Gelände-Kern (`_ortPlaene`), jeder Wurf des Felds weicht ihm (`FELD_WURF`, `_weichtDemBau`). Heute hält die
   Instanz-Wand (`_naturWand`) Bauten frei, die Schicht (Halm, Nah-Wiese) noch nicht.
 - GESTALT < 64 m Studio-Mesh + LOD-Kette, EIN Auge der Stufen (`_lodAuge`), jede Karte eine Schicht des EINEN Atlas, gebacken aus

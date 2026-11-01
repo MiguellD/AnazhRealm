@@ -13,7 +13,7 @@ class AnazhRealm_gelaende_boden {
     // Karte (fern, ungebaut) oder ohne Boden an einer Ecke. DER EINE LESER DES GEZEICHNETEN BODENS (K21): Stand-Leser, Nah-Wiese
     // (Fuß, Hang, Grün) und Nah-Streu (Fuß, Hang) lesen nur ihn — bis K21 lasen Wiese und Streu nur die Karte des Eigners, im
     // Rand-Streifen fiel kaum ein Büschel (Dichte 0,11 gegen 1,31 je m², gate:koerper-stand K7). `aus` (optional) trägt den
-    // Grün-Kanal (0…1) der Karte, die an jeder Ecke gewinnt; welche Karten ein Rechteck liest, nennt `_bodenSichtChunks`.
+    // Grün-Kanal (0…1) der Karte, die an jeder Ecke gewinnt, mit dem Belag der Wege-Karte (der Rasen grünt, das Pflaster deckt); welche Karten ein Rechteck liest, nennt `_bodenSichtChunks`.
     // `stufe` (optional, 0…1) legt das Stufen-Gewicht fest, statt es am Auge zu messen: die Enden des Geomorphs, Lage (0) und
     // Ziel (1), zwischen denen der Fuß der Streu dem Auge folgt (`_streuFuss`).
     _bodenSichtAt(x, z, aus, stufe) {
@@ -106,7 +106,13 @@ class AnazhRealm_gelaende_boden {
                     gruen = 0;
                 }
         if (!(y > -Infinity)) return null;
-        if (aus) aus.gruen = gruen;
+        if (aus) {
+            // DER BELAG (`_wegeBelagAt`, die Flächen eines Plans): der Rasen grünt den Grund, das Pflaster deckt ihn — der Boden-Stoff
+            // zeichnet beide (`_wegeBodenFarbe`), Wiese und Schritt lesen sie hier
+            const B = this._bodenBelagAus || (this._bodenBelagAus = {});
+            this._wegeBelagAt(x, z, B);
+            aus.gruen = (gruen > B.rasen ? gruen : B.rasen) * (1 - B.pflaster);
+        }
         return y;
     }
     // Die Karte EINES Chunks (ax, az) bilinear am Punkt in ihrem eigenen Raster (Schritt ihrer Stufe / Teilung): { y, gruen }

@@ -1819,6 +1819,7 @@ class AnazhRealm_vegetation_baum {
             for (const b of wk.siedlungen) {
                 const je = new Map();
                 for (const f of b.formen) {
+                    if (f.sperr === -Infinity) continue; // der Rasen eines Plans ist kein Weg (`_stlWegeBuild`)
                     const r = AnazhRealm._wegeFormRadius(f) + 1;
                     const [gx0, gx1] = [
                         Math.floor((Math.min(f.ax, f.bx) - r) / G),

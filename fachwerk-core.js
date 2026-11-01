@@ -8487,17 +8487,18 @@
     // über dasselbe Wege-Gesetz wie das Dorf). Rein und ohne THREE: der Voxel-Faden rechnet ihn als ersten Auftrag. Konvention:
     // +x Ost, +z Nord, Winkel mathematisch (0° Ost, 90° Nord), die Slots a_k = achseGrad + k · 360/slots (k 0 die Achse ohne
     // Tor). `gier` zeigt die +z des Elements (atan2(dx, dz), die Regel von spawnArchitecture): Tor, Bank und Wache zur Mitte, das
-    // Haus (Tür −z) mit der Tür zum Wasser. `belag` je Fläche ist dasselbe Feld wie `platz.typ` (gras · weg): die Grau-Fassung
-    // legt `weg`, auf `pflaster` stellt der Wirt, sobald der Boden den Term trägt. Vorbild: Greensward 1858 (Mall → Terrasse →
+    // Haus (Tür −z) mit der Tür zum Wasser. `belag` je Fläche (dasselbe Feld wie `platz.typ`) ist die Art ihres Bodens: `pflaster`
+    // (das Kopfstein des Stein-Gesetzes, porta STEIN_GESETZ.kopfstein), `gras` (der Rasen des Gras-Gesetzes), `weg` (getretene
+    // Erde); der Wirt malt jede Fläche mit ihrem Belag in die EINE Wege-Karte. Vorbild: Greensward 1858 (Mall → Terrasse →
     // Teich, Wiese gegen Ramble), der Hub mit EINEM Wienie in der Achse, die Tore als Bilder (Peach's Castle).
     var GENESIS_ORT = {
         version: 1,
         achseGrad: 90,
         slots: 11,
-        kern: { r: 10, platten: 4, belag: "weg" }, // das Rondell; sein Erdbau: `platten` Quadrate um 90°/platten gedreht, EINE Höhe
-        speiche: { r0: 10, r1: 20, b: 3, belag: "weg" }, // auf a_1 … a_10; die Speiche der Achse ist die Mall
+        kern: { r: 10, platten: 4, belag: "pflaster" }, // das Rondell; sein Erdbau: `platten` Quadrate um 90°/platten gedreht, EINE Höhe
+        speiche: { r0: 10, r1: 20, b: 3, belag: "pflaster" }, // auf a_1 … a_10; die Speiche der Achse ist die Mall
         keil: { r0: 10, r1: 20, belag: "gras" }, // die Rasen-Keile zwischen den Speichen
-        ring: { r0: 20, r1: 24, torR: 22, teile: 24, belag: "weg" }, // der Ring-Weg: die Tore stehen auf ihm (Sehne 12,4 m)
+        ring: { r0: 20, r1: 24, torR: 22, teile: 24, belag: "pflaster" }, // der Ring-Weg: die Tore stehen auf ihm (Sehne 12,4 m)
         freiraum: { r: 32, belag: "gras" }, // keine Krone, kein Busch, kein Fels
         guertel: { r0: 32, r1: 55 }, // der Wald des Felds (Feld-Wurf, Park-Gestalt); die Wege und die Mall führen hindurch
         // DIE SLOT-TAFEL Welt ↔ k (die Gestalt jedes Tors trägt sein Bauplan): in den Bildwinkeln von S1 und S2 stehen die
@@ -8516,13 +8517,13 @@
         ],
         vorschau: { r: 30, nahM: 14 }, // auf dem Weg hinter ihrem Tor, erst ≤ nahM vor ihm
         torGrund: { ex: 2.1, ez: 0.75 }, // die Grundfläche eines Tors (der Sockel seiner Substanz, 4,2 × 1,5 m): kein Stand darin
-        mall: { b: 10, z1: 100, belag: "weg", streifen: 10, streifenBelag: "gras" }, // die Achse ab dem Kern bis zur Terrasse
+        mall: { b: 10, z1: 100, belag: "pflaster", streifen: 10, streifenBelag: "gras" }, // die Achse ab dem Kern bis zur Terrasse
         allee: { x: 7.5, z0: 30, z1: 100, schritt: 10, art: "eiche", samen: 2 }, // 2 × 8 Eichen, EINE Art, 2 Samen
-        terrasse: { cz: 106, ex: 15, ez: 6, belag: "weg", laterneX: 12 }, // der Brunnen in ihrer Mitte (Wienie der Achse)
+        terrasse: { cz: 106, ex: 15, ez: 6, belag: "pflaster", laterneX: 12 }, // der Brunnen in ihrer Mitte (Wienie der Achse)
         brunnen: { r: 2 },
         // die Treppen der Terrasse zum Ufer (die Terrasse steht `unterTerrasseM − ueberSpiegelM` über ihm): je Seite längs ihrer
         // Nordkante, das Gefälle des Fuß-Wegs (ORT_GESETZ.gefaelle)
-        rampe: { z: 113.5, x0: 13, x1: 23, b: 3, belag: "weg" },
+        rampe: { z: 113.5, x0: 13, x1: 23, b: 3, belag: "pflaster" },
         teich: { cz: 140, a: 40, b: 25, unterTerrasseM: 1.5, tiefeM: 1.5, bettRandM: 3, scheiben: 6 }, // Ellipse, Spiegel unter der Terrasse
         ufer: { a: 50, b: 35, belag: "gras", ueberSpiegelM: 0.3, teile: 36 }, // der Rasen um den Teich, der den Spiegel hält
         bootshaus: { x: -52, z: 148, kultur: "alemannisch", hofR: 10, belag: "gras" }, // jenseits der Mesh-Zone von M (r 156,9)
@@ -8680,25 +8681,43 @@
         }
         return d;
     }
-    // DIE ZONE AM PUNKT (plan-lokal): die erklärte Fläche, die dort gilt — die letzte der Liste, deren Form ihn trägt (die Folge
-    // ist das Gesetz: vom Allgemeinen zum Besonderen, der Grundriss zuletzt) —, oder null (der Grund des Felds). Arten: flaeche
-    // (gras · weg, betretbar), wasser, gehege, graben, grundriss (Tor, Haus, Fels, Ausstattung), feld (der Gürtel), ort (ein
-    // anderer Ort: das Start-Viertel). Leser: die Posen-Linse, der Wirt (die Natur-Wand der Flächen).
-    function zoneTraegt(q, x, z) {
-        var h = q.huelle;
-        if (x < h[0] || z < h[1] || x > h[2] || z > h[3]) return false;
+    // DER RAND DER ZONE q am Punkt (plan-lokal, m): der vorzeichenbehaftete Abstand zu ihrer Kante — innen negativ, außen
+    // positiv, auf der Kante 0. Die EINE Geometrie der Formen: das Urteil „trägt" (`zoneTraegt`, ≤ 0) und der Maler des Bodens
+    // (die Wege-Karte malt den Belag jeder Fläche mit weicher Kante, `_wegeFormAbstand`). Kreis, Ring, Kasten und Band exakt; die
+    // Ellipse über ihr Gradienten-Maß (f/|∇f|, f = √((x/a)² + (z/b)²) − 1): an der Kante exakt, das Vorzeichen überall.
+    function zoneRand(q, x, z) {
         var dx = x - q.cx;
         var dz = z - q.cz;
-        if (q.form === "kreis") return dx * dx + dz * dz <= q.r * q.r;
-        if (q.form === "ring") return dx * dx + dz * dz >= q.r0 * q.r0 && dx * dx + dz * dz <= q.r1 * q.r1;
-        if (q.form === "ellipse") return (dx * dx) / (q.a * q.a) + (dz * dz) / (q.b * q.b) <= 1;
+        if (q.form === "kreis") return Math.hypot(dx, dz) - q.r;
+        if (q.form === "ring") {
+            var d = Math.hypot(dx, dz);
+            return Math.max(q.r0 - d, d - q.r1);
+        }
         if (q.form === "kasten") {
             var c = Math.cos(q.phi);
             var s = Math.sin(q.phi);
-            return Math.abs(dx * c - dz * s) <= q.ex && Math.abs(dx * s + dz * c) <= q.ez;
+            var lx = Math.abs(dx * c - dz * s) - q.ex;
+            var lz = Math.abs(dx * s + dz * c) - q.ez;
+            return Math.hypot(Math.max(lx, 0), Math.max(lz, 0)) + Math.min(Math.max(lx, lz), 0);
         }
-        if (q.form === "band") return laufAbstand(q.pts, x, z) <= q.w / 2;
+        if (q.form === "band") return laufAbstand(q.pts, x, z) - q.w / 2;
+        if (q.form === "ellipse") {
+            var u = dx / q.a;
+            var v = dz / q.b;
+            var n = Math.hypot(u, v);
+            if (!(n > 0)) return -Math.min(q.a, q.b);
+            return ((n - 1) * n) / Math.hypot(u / q.a, v / q.b);
+        }
         throw new Error("fachwerk genesisZone: die Zone " + q.name + " trägt die fremde Form " + q.form);
+    }
+    // DIE ZONE AM PUNKT (plan-lokal): die erklärte Fläche, die dort gilt — die letzte der Liste, deren Form ihn trägt (die Folge
+    // ist das Gesetz: vom Allgemeinen zum Besonderen, der Grundriss zuletzt) —, oder null (der Grund des Felds). Arten: flaeche
+    // (gras · weg · pflaster, betretbar), wasser, gehege, graben, grundriss (Tor, Haus, Fels, Ausstattung), feld (der Gürtel), ort
+    // (ein anderer Ort: das Start-Viertel). Leser: die Posen-Linse, der Wirt (die Natur-Wand der Flächen).
+    function zoneTraegt(q, x, z) {
+        var h = q.huelle;
+        if (x < h[0] || z < h[1] || x > h[2] || z > h[3]) return false;
+        return zoneRand(q, x, z) <= 0;
     }
     function genesisZone(plan, x, z) {
         var zs = plan && plan.zonen;
@@ -9441,6 +9460,7 @@
         genesisLayout: genesisLayout,
         genesisZone: genesisZone,
         genesisZoneTraegt: zoneTraegt, // trägt die Zone q den Punkt (plan-lokal)? (Leser: die Fläche des Wirts, `_genesisFlaeche`)
+        genesisZoneRand: zoneRand, // der Rand der Zone q am Punkt, innen negativ (Leser: der Maler des Belags, `_wegeFormAbstand`)
         genesisZoneAbstand: genesisZoneAbstand,
         genesisPose: genesisPose, // das Urteil einer Pose (das Gesetz der Stationen; Leser: die Posen-Linse, das Labor)
         genesisPosen: genesisPosen, // jede Pose des Plans in ihrem Urteil (Leser: die Posen-Linse, das Labor)
