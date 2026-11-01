@@ -37,7 +37,17 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const {
+    statikServer,
+    starteBrowser,
+    laufUhr,
+    taeterFaelle,
+    selbsttestEnde,
+    jsonKlon,
+    fehlerText,
+    seiteZu,
+    rotListe,
+} = require("./lib/welt-boot.cjs");
 const SK = require("./lib/shader-kosten.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 
@@ -288,7 +298,7 @@ function selbsttest() {
     };
     if (urteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteil(gruen).join(" · "));
     const mit = (f) => {
-        const z = JSON.parse(JSON.stringify(gruen));
+        const z = jsonKlon(gruen);
         f(z);
         return z;
     };
@@ -977,21 +987,12 @@ function buehne(nFrames, nachtLicht) {
                 `Godrays mit der Sonne im Bild: Stärke ${out.godray.staerke} · ${out.godray.aenderungPct} % der Pixel geändert (Rausch-Boden ${out.godray.rauschenPct} %)`
             );
     } catch (e) {
-        out = { error: e?.message || String(e) };
+        out = { error: fehlerText(e) };
     }
-    await browser.close();
-    server.close();
-    if (!out || out.error) {
-        console.log("FEHLER:", out ? out.error : "?");
-        process.exit(1);
-    }
+    await seiteZu(browser, server, out);
     out.konsolenFehler = konsolenFehler;
     const v = urteil(out);
-    if (v.length) {
-        console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
-        for (const s of v) console.log("   • " + s);
-        process.exit(1);
-    }
+    rotListe(v);
     const a = out.ausgabe.abtastungen;
     console.log(
         `\n✅ GRÜN — fünf Wege durch die Weiche ohne Fehler (mit der Drift ohne r184s Abschied), der Direktpfad zeichnet mit Tiefe, die Post-Kette ohne Leinwand-Tiefe und ohne Rahmen-Ziel; ` +

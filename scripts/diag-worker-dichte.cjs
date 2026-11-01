@@ -25,7 +25,7 @@
 //                                                      „byte-gleich"
 // Port: WORKER_DICHTE_PORT (Default 4392). Exit 1 bei Drift, Längen-Mismatch, Page-Error oder rotem Selbsttest.
 "use strict";
-const { statikServer, nullRenderer, starteBrowser, hauptLauf, argOpt: opt, booteWelt, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { statikServer, nullRenderer, starteBrowser, hauptLauf, argOpt: opt, booteWelt, jsonSchreiben, jsonKlon } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const liesText = (datei) => fs.readFileSync(datei, "utf8");
 const path = require("path");
@@ -1968,7 +1968,7 @@ async function faden(page, url) {
         });
     }
     // K4 BAU: der Zähler des Spiels (`_fadenUmgangen`) — je Sync-Stelle `_syncBau`, sonst das Buch „FADEN-UMGANGEN"
-    const F = await page.evaluate(() => JSON.parse(JSON.stringify({ ...window.__faden, bau: r._syncBauten() })));
+    const F = await page.evaluate(() => jsonKlon({ ...window.__faden, bau: r._syncBauten() }));
     const mb = (b) => (b / 1e6).toFixed(2);
     const summe = (o) => Object.values(o || {}).reduce((a, b) => a + b, 0);
     const proMin = {};

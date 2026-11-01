@@ -155,7 +155,7 @@ function urteil(b) {
 }
 
 function selbsttest() {
-    const { taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+    const { taeterFaelle, selbsttestEnde, jsonKlon } = require("./lib/welt-boot.cjs");
     const ja = (L) => Object.fromEntries(L.map((k) => [k, true]));
     const gruen = {
         zensus: { werke: 900, taeter: [] },
@@ -176,7 +176,7 @@ function selbsttest() {
         },
     };
     const fehler = urteil(gruen).map((x) => "grün: " + x);
-    const klon = () => JSON.parse(JSON.stringify(gruen));
+    const klon = () => jsonKlon(gruen);
     const Z = (b, k) => b.tempo.zeilen.find((z) => schluessel(z) === k);
     const Zs = (k, o) => (b) => Object.assign(Z(b, k), o);
     const T = (art, o) => (b) => b.zensus.taeter.push({ wer: "felsturm#174", ort: "-913.7/-900.7", art, ...o });

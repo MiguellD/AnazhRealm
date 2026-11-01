@@ -33,7 +33,7 @@
 //   node scripts/diag-ankunft.cjs [--selftest]          Port: ANKUNFT_PORT (Standard 4601)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, jsonKlon, fehlerStapel } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.ANKUNFT_PORT || 4601);
@@ -411,25 +411,6 @@ async function probe(arg) {
     // eine Taste an `ziel` (keydown · keyup · keypress) und der Fokus beim Namen
     const taste = (ziel, typ, key, code = key, mehr) => ziel.dispatchEvent(new KeyboardEvent(typ, { key, code, bubbles: true, ...mehr }));
     const fokus = (a = document.activeElement) => (a ? a.id || a.tagName : null);
-    // der Spion am Ruf: lieferer[name] zählt (und delegiert), solange wer.methode(...args) läuft — true = gerufen
-    const ruft = (wer, methode, lieferer, name, args) => {
-        const eigen = Object.prototype.hasOwnProperty.call(lieferer, name);
-        const echt = lieferer[name];
-        let n = 0;
-        lieferer[name] = function (...x) {
-            n++;
-            return echt.apply(this, x);
-        };
-        try {
-            wer[methode](...args);
-        } catch {
-            /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
-        } finally {
-            if (eigen) lieferer[name] = echt;
-            else delete lieferer[name];
-        }
-        return n > 0;
-    };
     const zeilen = () => Array.from(document.querySelectorAll("#chat-output > div")).map((d) => d.textContent);
     const buch = await r._foundryAwaitBook(45000);
     await __takte(30, 30);
@@ -443,7 +424,7 @@ async function probe(arg) {
         // die Render-Schleife fragt das Weltbild, solange es nicht steht (Spion am Ruf)
         const daVor = st._weltbildDa;
         st._weltbildDa = 0;
-        m.schleifeFragt = ruft(r, "_loopRender", r, "_ankunftsBild", [performance.now()]);
+        m.schleifeFragt = __rufe(r, "_loopRender", r, "_ankunftsBild", [performance.now()]) > 0;
         st._weltbildDa = daVor;
         if (ls) {
             // Die Welt wächst, bis sie steht (`_weltbildFehlt` leer, höchstens 90 s) — vor dem Rundblick im Blick, vor den Fällen
@@ -915,7 +896,7 @@ async function probe(arg) {
         } else m.faelle = { fehler: ls ? "kein _ankunftsBild" : "kein Ladeschirm" };
         m.gestartet = true;
     } catch (e) {
-        out.lade = Object.assign(out.lade || {}, { err: (e && e.stack) || String(e) });
+        out.lade = Object.assign(out.lade || {}, { err: fehlerStapel(e) });
     }
     // ── LH (w4-ankunft-2): die Hülle eines Studio-Baums, ihr Skelett aus dem Gedächtnis genommen, wächst vor dem Bild nicht und
     // danach im Takt der Hüllen; der Lade-Takt gespielt, je ein Stück im Bild und dahinter fehlt: ohne Leerlauf baut er nur das im
@@ -948,7 +929,7 @@ async function probe(arg) {
         }
         m.gestartet = true;
     } catch (e) {
-        out.huelle = { err: (e && e.stack) || String(e) };
+        out.huelle = { err: fehlerStapel(e) };
     }
     // ── L1: das Fadenkreuz ──
     try {
@@ -975,7 +956,7 @@ async function probe(arg) {
         }
         m.gestartet = true;
     } catch (e) {
-        out.kreuz = Object.assign(out.kreuz || {}, { err: (e && e.stack) || String(e) });
+        out.kreuz = Object.assign(out.kreuz || {}, { err: fehlerStapel(e) });
     }
     // ── L2b: die Hilfe ──
     try {
@@ -1005,7 +986,7 @@ async function probe(arg) {
         m.v1Saetze = v1.length;
         m.gestartet = true;
     } catch (e) {
-        out.hilfe = Object.assign(out.hilfe || {}, { err: (e && e.stack) || String(e) });
+        out.hilfe = Object.assign(out.hilfe || {}, { err: fehlerStapel(e) });
     }
     // ── L3: das Gespräch ──
     try {
@@ -1044,7 +1025,7 @@ async function probe(arg) {
         }
         m.gestartet = true;
     } catch (e) {
-        out.gespraech = Object.assign(out.gespraech || {}, { err: (e && e.stack) || String(e) });
+        out.gespraech = Object.assign(out.gespraech || {}, { err: fehlerStapel(e) });
     }
     // ── L7: der Start-Gurt ──
     try {
@@ -1078,7 +1059,7 @@ async function probe(arg) {
         m.katalogArten = Array.from(arten);
         m.gestartet = true;
     } catch (e) {
-        out.gurt = Object.assign(out.gurt || {}, { err: (e && e.stack) || String(e) });
+        out.gurt = Object.assign(out.gurt || {}, { err: fehlerStapel(e) });
     }
     // ── LK: die Kamera und die Pflanzen ──
     try {
@@ -1371,10 +1352,10 @@ async function probe(arg) {
                 const knoten = r._kamDurchKnoten;
                 r._kamDurchKnoten = {};
                 m.konsum = {
-                    _hasMagnifyingInSight: ruft(r, "_hasMagnifyingInSight", r, "_fadenkreuzStrahl", []),
-                    _pickScatterAtCrosshair: nahStreu ? ruft(r, "_pickScatterAtCrosshair", r, "_fadenkreuzStrahl", []) : null,
-                    _kampfKlingenAchse: ruft(r, "_kampfKlingenAchse", r, "_fadenkreuzStrahl", [{ rahmen, reach: rahmen.reach, ziel: null }, {}]),
-                    _kameraDurchsichtNode: ruft(r, "_kameraDurchsichtNode", K, "_durchsichtGewicht", [THREE.TSL, "rinde"]),
+                    _hasMagnifyingInSight: __rufe(r, "_hasMagnifyingInSight", r, "_fadenkreuzStrahl", []) > 0,
+                    _pickScatterAtCrosshair: nahStreu ? __rufe(r, "_pickScatterAtCrosshair", r, "_fadenkreuzStrahl", []) > 0 : null,
+                    _kampfKlingenAchse: __rufe(r, "_kampfKlingenAchse", r, "_fadenkreuzStrahl", [{ rahmen, reach: rahmen.reach, ziel: null }, {}]) > 0,
+                    _kameraDurchsichtNode: __rufe(r, "_kameraDurchsichtNode", K, "_durchsichtGewicht", [THREE.TSL, "rinde"]) > 0,
                 };
                 r._kamDurchKnoten = knoten;
                 // das Ziel und sein Auge, wie `_kamZielSetzen` sie schreibt (dieselben Werte wie uKamZiel · uKamAuge)
@@ -1528,14 +1509,14 @@ async function probe(arg) {
         }
         m.gestartet = true;
     } catch (e) {
-        out.kamera = Object.assign(out.kamera || {}, { err: (e && e.stack) || String(e) });
+        out.kamera = Object.assign(out.kamera || {}, { err: fehlerStapel(e) });
     }
     // ── D6: die KI nennt die Ursache ──
     try {
         const m = { gestartet: false };
         out.ki = m;
         const llm = st.llm;
-        const alt = JSON.parse(JSON.stringify({ enabled: llm.enabled, provider: llm.provider, oll: llm.providerConfig.ollama }));
+        const alt = jsonKlon({ enabled: llm.enabled, provider: llm.provider, oll: llm.providerConfig.ollama });
         // (a) „Aktivieren" mit einem lokalen Endpunkt ohne Dienst
         llm.provider = "ollama";
         llm.enabled = false;
@@ -1572,7 +1553,7 @@ async function probe(arg) {
         llm.lastError = null;
         m.gestartet = true;
     } catch (e) {
-        out.ki = Object.assign(out.ki || {}, { err: (e && e.stack) || String(e) });
+        out.ki = Object.assign(out.ki || {}, { err: fehlerStapel(e) });
     }
     // ── D9 + D8: das Dorf vor dir, zwei Kanäle ──
     try {
@@ -1723,7 +1704,7 @@ async function probe(arg) {
         k.gestartet = true;
         m.gestartet = true;
     } catch (e) {
-        out.dorf = Object.assign(out.dorf || {}, { err: (e && e.stack) || String(e) });
+        out.dorf = Object.assign(out.dorf || {}, { err: fehlerStapel(e) });
     }
     return out;
 }
