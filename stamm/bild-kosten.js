@@ -412,6 +412,11 @@ class AnazhRealm_bild_kosten {
                                 this._alphaTest = v;
                             },
                         });
+                        // DIE SCHATTEN-FORM JE KASKADE EINMAL (w4-b-knoten): r184 legt je Licht einen Schatten-Stoff an, jeden
+                        // mit EIGENEM Grund-Knoten `vec4(0,0,0,1)` — dessen id steht im Programm-Schlüssel, und ein Werfer ohne
+                        // Ausschnitt (`_wurfOhneFarbe`) wirft mit ihm: jede der drei Kaskaden baute dieselbe Form neu (headless
+                        // kalt 01.11.: 14 Bauten EINES Programms, je Werfer k0 · k1 · k2). Jeder Schatten-Stoff trägt den EINEN.
+                        sm.colorNode = AnazhRealm._schattenGrund();
                         still.add(sm);
                     }
                     sm.version = material.version;
@@ -511,18 +516,24 @@ class AnazhRealm_bild_kosten {
                 // — außer im VORBAU des Stufen-Vorlaufs (`_stufenVorlaufWahl`): unter dem Ladeschirm baut eine Arena, deren Form
                 // steht, ihr Programm auch in dem Pass, in den gerade keine ihrer Instanzen fällt, ohne Draw. Jede Kaskade rendert
                 // in ihr eigenes Ziel (der Schlüssel trägt den Render-Kontext): der Vorlauf-Baum in 30 m fällt in keine nahe — kam
-                // er im Gang näher, kompilierte sie dort kalt.
+                // er im Gang näher, kompilierte sie dort kalt. DER VORBAU NACH DEM BILD (w4-b-knoten): ein Bau ohne Draw steht
+                // nicht im ersten Bild — unter dem Ladeschirm merkt die Erst-Zeichnung seinen Pass nur vor (`vorgemerkt`), er baut
+                // nach dem Bild (headless kalt 01.11.: der Vorbau einer Laub-Arena hielt 169 ms Haupt-Faden vor dem Bild).
                 const vorbau = ro.getDrawParameters() === null;
-                if (
-                    vorbau &&
-                    !(
-                        object.isGeometrieArena === true &&
-                        object.geometry.index !== null &&
-                        scene === welt.state.scene &&
-                        welt._ladeTakt()
-                    )
-                )
-                    return;
+                const ctx = this._currentRenderContext.id;
+                const k = passId == null ? ctx : ctx + "|" + passId;
+                let merk;
+                if (vorbau) {
+                    if (!(object.isGeometrieArena === true && object.geometry.index !== null && scene === welt.state.scene))
+                        return;
+                    merk = E.vorgemerkt.get(object);
+                    if (welt._ladeTakt()) {
+                        if (merk === undefined) E.vorgemerkt.set(object, (merk = new Set()));
+                        merk.add(k);
+                        return;
+                    }
+                    if (merk === undefined || !merk.has(k) || !welt.state._weltbildDa) return;
+                }
                 const aufnahme = this._currentRenderBundle;
                 if (aufnahme !== null) ro.bundle = aufnahme.bundleGroup;
                 // DIE BÜHNE DER KARTE (`_karteWeltBacken`) zeichnet wie die Welt: sie wiederholt ihren Bake, bis jeder Bürger
@@ -548,12 +559,11 @@ class AnazhRealm_bild_kosten {
                 const ungebaut =
                     ro._nodeBuilderState === null &&
                     N.get(ro).nodeBuilderState === undefined &&
-                    N.nodeBuilderCache.get(ro.initialCacheKey) === undefined;
-                const ctx = this._currentRenderContext.id;
-                const k = passId == null ? ctx : ctx + "|" + passId;
+                    N.nodeBuilderCache.get(N.getForRenderCacheKey(ro)) === undefined;
                 let pass = buehne ? undefined : E.gezeichnet.get(object);
                 const vor = vorbau ? E.vorgebaut.get(object) : undefined;
-                if (vorbau && ((pass !== undefined && pass.has(k)) || (vor !== undefined && vor.has(k)))) return;
+                if (vorbau && ((pass !== undefined && pass.has(k)) || (vor !== undefined && vor.has(k))))
+                    return void merk.delete(k);
                 if (pass !== undefined && pass.has(k)) {
                     // der Neubau eines Objekts, das in diesem Pass schon zeichnete: wie der Vendor, im Frame
                     if (ungebaut) E.neubauN++;
@@ -586,6 +596,7 @@ class AnazhRealm_bild_kosten {
                 if (vorbau) {
                     if (vor === undefined) E.vorgebaut.set(object, new Set([k]));
                     else vor.add(k);
+                    merk.delete(k);
                 } else if (gezeichnet && !buehne) {
                     if (pass === undefined) E.gezeichnet.set(object, (pass = new Set()));
                     pass.add(k);
@@ -620,8 +631,40 @@ class AnazhRealm_bild_kosten {
                 aufnehmen: new WeakSet(), // Bundles, versiegelt ohne einen Bürger — ihr Siegel setzt die Marke (`_renderBundle`)
                 gezeichnet: new WeakMap(), // Objekt → die Pässe (Render-Kontext|Pass-Kennung), in denen es schon zeichnete
                 vorgebaut: new WeakMap(), // Arena → die Pässe, in denen der Vorbau ihr Programm ohne Draw baute
+                vorgemerkt: new WeakMap(), // Arena → die Pässe ohne Draw unter dem Ladeschirm: ihr Vorbau folgt nach dem Bild
             };
         return this._erstZeichnung;
+    }
+    // Der EINE Grund-Knoten jedes Schatten-Stoffs (r184 `vec4(0,0,0,1)`, je Licht neu gebaut) — `renderObject` oben
+    static _schattenGrund() {
+        return AnazhRealm.__schattenGrund || (AnazhRealm.__schattenGrund = THREE.TSL.vec4(0, 0, 0, 1));
+    }
+    // DER BAU-SCHLÜSSEL AUS DEM STOFF-GESETZ (w4-b-knoten): r184 schlüsselt den Knoten-Bau (`Nodes.getForRender`, der Cache
+    // `nodeBuilderCache`) mit dem Schlüssel des Render-Objekts (`initialCacheKey`), und darin trägt JEDE Zahl des Stoffs den
+    // Term „0"/„1" (`getMaterialCacheKey`). Die Zahlen in BAU_NEUTRAL liest der Bau nie als Wert — nur als Stoff-Referenz
+    // (`materialMetalness`, `getFloat("emissiveIntensity")`, die Umgebung im `onObjectUpdate`; Vendor gelesen, gate:vendor-anker
+    // pinnt die Stellen): Stoffe EINER Gestalt (EIN Graph je Signatur, `_graphTeilen`) mit Metall 0 und 0,1 bauten byte-gleich
+    // je ein Programm (headless kalt 01.11.: die Karten-Bühne dreimal dasselbe). Der Bau-Schlüssel ist der r184s, gelesen mit
+    // diesen Zahlen als 1 — Pipeline, Neuanlage des Render-Objekts und jeder andere Leser behalten den Vendor-Schlüssel; gemerkt
+    // je Render-Objekt (`delete` zählt `usedTimes` unter demselben). Der Rufer: der Anschluss des Renderers nach init().
+    _gestaltSchluessel(renderer) {
+        const N = renderer && renderer._nodes;
+        if (!N || typeof N.getForRenderCacheKey !== "function")
+            return this.log("BAU-SCHLÜSSEL: r184-Nodes.getForRenderCacheKey nicht gefunden (Vendor-Drift)", "ERROR");
+        if (N.__anazhBauSchluessel) return;
+        const NEUTRAL = AnazhRealm.BAU_NEUTRAL;
+        const blick = { get: (m, p) => (NEUTRAL.includes(p) && typeof m[p] === "number" ? 1 : Reflect.get(m, p, m)) };
+        N.getForRenderCacheKey = function (ro) {
+            if (ro._anazhBau !== undefined) return ro._anazhBau;
+            const m = ro.material;
+            let k = ro.initialCacheKey;
+            if (m && NEUTRAL.some((p) => m[p] === 0)) {
+                const sicht = Object.create(ro, { material: { value: new Proxy(m, blick) } });
+                k = ro.getMaterialCacheKey.call(sicht) + ro.getDynamicCacheKey();
+            }
+            return (ro._anazhBau = k);
+        };
+        N.__anazhBauSchluessel = true;
     }
 
     // DIE ABSAGE EINER PIPELINE (Welle K): r184 verschluckt die Absage von createRenderPipelineAsync (`catch(e){}`,
@@ -3758,6 +3801,9 @@ AnazhRealm.SCHATTEN_FERN_FAKTOR = 1.8;
 // DIE ERST-ZEICHNUNG (`_configureRenderer`): je Render-Aufruf der Welt-Szene baut der erste Erst-Bau immer, jeder weitere nur,
 // solange der Aufruf unter dieser Zeit (ms) baute — ein Frame trägt so höchstens einen schweren Knoten-Bau je Pass.
 AnazhRealm.ERST_BAU_MS = 4;
+// DER BAU-SCHLÜSSEL (`_gestaltSchluessel`): die Zahlen eines Stoffs, die der Knoten-Bau nur als Stoff-Referenz liest — ihr
+// Wert (0 oder nicht) teilt kein Programm
+AnazhRealm.BAU_NEUTRAL = Object.freeze(["roughness", "metalness", "envMapIntensity", "emissiveIntensity"]);
 // DER SCHATTEN-TAKT je Kaskade (_loopShadowUpdate): die nahe Kaskade (seit schatten.K1 die Kontakt-Kaskade, 15 m) rendert im
 // Regler-Intervall, höchstens jeden `nahMax`-ten Frame (laufende Tiere werfen nah); jede weitere im `fernFaktor`-fachen Takt.
 AnazhRealm.SCHATTEN_TAKT = Object.freeze({ nahMax: 2, fernFaktor: 3 });
