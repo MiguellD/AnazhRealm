@@ -361,3 +361,4 @@ b-himmel-kalt 2 station sha=1d9c4dbbd740023b59938e6bc51ff38385ba37c5 lauf=ankunf
 p2-haar.K21-gtx 1 punkte sha=75614bb6090df300feadc176acd595c1bba975f4 geraet=gtx nur=haar.K2#1
 p2-spielgang.K31-gtx 1 punkte sha=e78e0d28add8d33d21549677656d36797633d7e2 geraet=gtx nur=spielgang.K3#1
 general-25ac-gtx 1 punkte sha=25ac4c0c485570ed887cffb7f175d430264f86bf geraet=gtx
+z140-abab 3 abab A=25ac4c0c485570ed887cffb7f175d430264f86bf B=1e90e7cd850ad32a8567bad9a5a8b241593a8e93 zellen=w-ego,stadt
