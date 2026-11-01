@@ -144,7 +144,7 @@
   },
   "bauen.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–2) · hotbar 24/24 (Eingaben 2–2) an 715754fc headless — offen: bauen.K1#2 radeon: Station seit der Messung geändert — zuletzt an 3ef20f9f: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 3)) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt d · bauen.K1#2 gtx: Station seit der Messung geändert — zuletzt an b895650c: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 3)) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt d",
+   "beleg": "Maschine: gehalten: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–2) · hotbar 24/24 (Eingaben 2–2) an 715754fc headless — offen: bauen.K1#2 radeon: Station seit der Messung geändert · bauen.K1#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "bauen.K1#1",
@@ -161,7 +161,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 3ef20f9f: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 3)) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt d",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     },
     {
@@ -170,7 +170,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an b895650c: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 3)) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt d",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     }
    ]
@@ -383,7 +383,7 @@
      "gruen": true,
      "zahl": "Drift Kamera ≤ 0° neben dem Fahrtvektor (Schlupf bis 4.7°) · Rückkehr 1.08 s nach 67° Orbit · Ruck p95 0.002 m (165) · FOV-Schreiber [_kamFov]",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an b4bcf19c: EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ EXIT 0)",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true
     }
    ]
@@ -407,7 +407,7 @@
      "gruen": true,
      "zahl": "nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.74 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 0.8° · Hang 17.4°",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an b4bcf19c: EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ EXIT 0)",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true
     },
     {
@@ -425,7 +425,7 @@
      "gruen": true,
      "zahl": "nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.74 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 0.8° · Hang 17.4°",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an b4bcf19c: EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ EXIT 0)",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true
     }
    ]
@@ -800,7 +800,7 @@
      "gruen": true,
      "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an b4bcf19c: EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: == SICHT first (44.4 s): wiese fein 1.1/200 · streu 0.5/344 · huf 0.2/202 · rad 0.1/200 | hang fein 4.3/200 · streu 0.9/714 · huf 0.",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true
     }
    ]
@@ -1600,7 +1600,7 @@
   },
   "lod.K5": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 715754fc headless — offen: lod.K5#1 radeon: Station seit der Messung geändert — zuletzt an d0c33d40: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: fenster · Exit 0) · lod.K5#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an b895650c: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+   "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 715754fc headless — offen: lod.K5#1 radeon: Station seit der Messung geändert · lod.K5#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "lod.K5#1",
@@ -1608,7 +1608,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an d0c33d40: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: fenster · Exit 0)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     },
     {
@@ -1617,7 +1617,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an b895650c: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     },
     {
@@ -1714,7 +1714,7 @@
   },
   "material.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Station seit der Messung geändert · material.K1#1 gtx: Station seit der Messung geändert — zuletzt an b895650c: Deckel 10 s gerissen — beendet, UNGEMESSEN · material.K1#2 radeon: Station seit der Messung geändert · material.K1#2 gtx: Station seit der Messung geändert — zuletzt an b4bcf19c: EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Station seit der Messung geändert · material.K1#1 gtx: Station seit der Messung geändert · material.K1#2 radeon: Station seit der Messung geändert · material.K1#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "material.K1#1",
@@ -1731,7 +1731,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an b895650c: Deckel 10 s gerissen — beendet, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     },
     {
@@ -1749,7 +1749,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an b4bcf19c: EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     }
    ]
@@ -1780,7 +1780,7 @@
   },
   "material.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.983 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2389 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3 an 715754fc radeon · gehalten: Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.984 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2389 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal an b3f9ae95 gtx · gehalten: haus@0.5 l1 0.992/l2 0.983 · birke@0.5 l1 0.992/karte 0.998 · fichte@0.5 l1 1.001/karte 0.958 · haus@0.27 l1 0.992/l2 0.983 · birke@0.27 l1 0.994/karte 1.000 · fichte@0.27 l1 1.000/karte 0.958 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3 an b3f9ae95 radeon — offen: material.K3#2 gtx: Station seit der Messung geändert — zuletzt an b4bcf19c: EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ort · Exit 0)",
+   "beleg": "Maschine: gehalten: Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.983 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2389 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3 an 715754fc radeon · gehalten: Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.984 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2389 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal an b3f9ae95 gtx · gehalten: haus@0.5 l1 0.992/l2 0.983 · birke@0.5 l1 0.992/karte 0.998 · fichte@0.5 l1 1.001/karte 0.958 · haus@0.27 l1 0.992/l2 0.983 · birke@0.27 l1 0.994/karte 1.000 · fichte@0.27 l1 1.000/karte 0.958 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3 an b3f9ae95 radeon — offen: material.K3#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "material.K3#1",
@@ -1797,7 +1797,7 @@
      "gruen": true,
      "zahl": "Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.984 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2389 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an b4bcf19c: EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ort · Exit 0)",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true
     },
     {
@@ -1815,7 +1815,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an b4bcf19c: EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ort · Exit 0)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     }
    ]
@@ -1887,7 +1887,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +18) — zuletzt an b895650c: Deckel 33 s gerissen — beendet, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     }
    ]
@@ -1920,7 +1920,7 @@
      "gruen": true,
      "zahl": "Soll-Orte alle 81/81 ≥ 0,9 (min 0.983), Wege je Tag 5–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.204 m), Sprünge 0, Plan bit-gleich true",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +18) — zuletzt an ab040980: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: (21 s))",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true
     }
    ]
@@ -2531,7 +2531,7 @@
   },
   "siedlung.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 715754fc headless — offen: siedlung.K1#2 radeon: Station seit der Messung geändert — zuletzt an 3ef20f9f: Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 4 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ A · siedlung.K1#2 gtx: Station seit der Messung geändert — zuletzt an b895650c: Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 8 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ A",
+   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 715754fc headless — offen: siedlung.K1#2 radeon: Station seit der Messung geändert · siedlung.K1#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "siedlung.K1#1",
@@ -2548,7 +2548,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 3ef20f9f: Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 4 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ A",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     },
     {
@@ -2557,7 +2557,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an b895650c: Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 8 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ A",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     }
    ]
@@ -2581,7 +2581,7 @@
      "gruen": true,
      "zahl": "Z1 7/8 Saaten · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 1424 m vom Genesis-Ort · Mauer 21 Segmente/3 Türme, Pool 104 · Schuss vom acker 103 m vor der Mitte, 3.5 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 103.23 m · Luma 62.1 σ 25.9 schwarz 0.0 % weiß 0.0 % ·",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an b4bcf19c: EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: })",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true
     },
     {
@@ -2599,7 +2599,7 @@
      "gruen": true,
      "zahl": "ZIPF ζ 1.022 [0.956; 1.158] über 8 Saaten, Mauer und Graph 7/7 · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 · Mauer 21 Segmente, Pool 104 · mittags ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.5 · Dämmerung ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.25 (Exit 0)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an b4bcf19c: EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: })",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true
     }
    ]
@@ -3166,7 +3166,7 @@
   },
   "studios.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Station seit der Messung geändert · studios.K4#1 gtx: Station seit der Messung geändert — zuletzt an b895650c: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · studios.K4#2 radeon: ungemessen (R10) · studios.K4#2 gtx: ungemessen (R10) — zuletzt an b4bcf19c: EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: K4 portale: Differenz — · ROT: das Werk tor_kathedrale steht nach 30 s nicht in der Welt (keine Instanz der Familie f:) (36.5 s))",
+   "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Station seit der Messung geändert · studios.K4#1 gtx: Station seit der Messung geändert · studios.K4#2 radeon: ungemessen (R10) · studios.K4#2 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "studios.K4#1",
@@ -3183,7 +3183,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an b895650c: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     },
     {
@@ -3201,7 +3201,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an b4bcf19c: EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: K4 portale: Differenz — · ROT: das Werk tor_kathedrale steht nach 30 s nicht in der Welt (keine Instanz der Familie f:) (36.5 s))",
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     }
    ]
@@ -3291,7 +3291,7 @@
      "gruen": true,
      "zahl": "Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 13.6 s, 3 fressen: tier:wolf 12459 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.18 m · Luma 89.2 σ 39.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an b4bcf19c: EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.32 m · Luma 44.3 σ 20.2 schwarz 0.0 % weiß 0.0 % · S",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true
     }
    ]
@@ -3552,7 +3552,7 @@
   },
   "vegetation.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57343 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 radeon · gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Station seit der Messung geändert · vegetation.K4#2 gtx: Station seit der Messung geändert — zuletzt an b4bcf19c: EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 0.2 s)",
+   "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57343 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 radeon · gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Station seit der Messung geändert · vegetation.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "vegetation.K4#1",
@@ -3569,7 +3569,7 @@
      "gruen": true,
      "zahl": "42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an b4bcf19c: EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 0.2 s)",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true
     },
     {
@@ -3587,7 +3587,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an b4bcf19c: EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 0.2 s)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     }
    ]
@@ -3724,6 +3724,6 @@
  },
  "rueckfall": [],
  "kopfVoll": "b895650c7dc2e303a3299ed17b04c6350d002437",
- "zeit": "2026-11-01T00:05:49.999Z",
+ "zeit": "2026-11-01T00:28:07.931Z",
  "vorher": "b895650c"
 }
