@@ -74,7 +74,7 @@ hauptLauf(async () => {
     console.log("=== ZWEIT-KERN — TEIL A: die statischen Absenzen (Node) ===");
     for (const [name, ok, detail] of staticLaws()) check(name, ok, detail);
 
-    const W = { bp: "fahrzeug_gt", donor: "fahrzeug_wagen", preset: "gt", praefix: "fahrzeug_", wahl: 2, name: "ein Fahrzeug", art: "vehicle", anzahl: 5, teile: 17 };
+    const W = { bp: "fahrzeug_gt", donor: "fahrzeug_wagen", preset: "gt", praefix: "fahrzeug_", wahl: 2, name: "ein Fahrzeug", art: "vehicle", teile: 17 };
     const [eps, out] = await kernStufen.epsilonDraht(server, PORT, W, check, async () => {
         const res = { c: {}, d: {}, f: {} };
         const A = AnazhRealm;

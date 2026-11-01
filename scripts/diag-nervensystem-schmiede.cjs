@@ -8,8 +8,8 @@
 //   S (statisch, Node, Absenzen): der Auto-Register-Chokepoint vergleicht keinen kind-String (M8) ·
 //     die Donor-Zeile geraet_schwert traegt kein portalMeta/roleManual (der Alt-Blueprint ist PHYSISCH
 //     gefallen) · die Hand waermt keine Pipeline vor. --selftest: das Faust-Verdikt (H-F).
-//   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die 22 Klingen-
-//     Rezepte (Waffen UND Werkzeuge) · kindStages.weapon == [0] gemerged (tree/
+//   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die Klingen-
+//     Rezepte seines Kerns (Waffen UND Werkzeuge, das Soll aus schmiede-core) · kindStages.weapon == [0] gemerged (tree/
 //     vehicle/gate unberuehrt) · Auto-Blueprint klinge_langschwert entsteht am
 //     EINEN Chokepoint (Donor-Klon, KEIN _grownSpecies) · die generische
 //     klinge_-Regel loest auf · die Place-Aufloesung liefert mode "hand", der
@@ -98,7 +98,7 @@ hauptLauf(async () => {
     console.log("=== ε-BEWEIS SCHMIEDE — TEIL S: die statischen Absenzen (Node) ===");
     for (const [name, ok, detail] of staticLaws()) check(name, ok, detail);
 
-    const W = { bp: "klinge_langschwert", donor: "geraet_schwert", preset: "langschwert", entry: "klinge_spitzhacke", praefix: "klinge_", wahl: 2, name: "eine Klinge", art: "weapon", anzahl: 22, teile: 4, label: "Langschwert", place: { mode: "hand", dispatch: null } };
+    const W = { bp: "klinge_langschwert", donor: "geraet_schwert", preset: "langschwert", entry: "klinge_spitzhacke", praefix: "klinge_", wahl: 2, name: "eine Klinge", art: "weapon", teile: 4, label: "Langschwert", place: { mode: "hand", dispatch: null } };
     const [eps, out] = await kernStufen.epsilonDraht(server, PORT, W, check, async () => {
         const res = { b: {}, d: {}, h: {} };
         const A = AnazhRealm;

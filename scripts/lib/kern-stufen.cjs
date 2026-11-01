@@ -25,6 +25,31 @@ function seitenStufen(raeume) {
     return aus;
 }
 
+// In der Seite: `await page.evaluate(seitenRezepte, kernRaeume())` — je Art die Rezept-ids, die ihre Kerne deklarieren: dieselben
+// Tafeln, die die Brücke ins Buch reicht (jeder Zweit-Kern `PRESETS`, der Haupt-Kern an `__terrainCore.PHYTO_PRESETS`). Die
+// Soll-Zahl einer ε-Linse ist die Länge dieser Liste, nie eine gepflegte Zahl (bis w4-tore-teile2 trug porta „7“ fest, das
+// Rondell bringt zehn Tore).
+function seitenRezepte(raeume) {
+    const aus = {};
+    for (const ns of raeume) {
+        const k = globalThis[ns];
+        const P = (k && (k.PRESETS || k.PHYTO_PRESETS)) || {};
+        for (const id of Object.keys(P)) {
+            const art = P[id] && P[id].kind;
+            if (art && !(aus[art] = aus[art] || []).includes(id)) aus[art].push(id);
+        }
+    }
+    return aus;
+}
+
+// Der Vergleich der Rezepte einer Art: das Live-Buch (`live`, die ids der Art) trägt genau die Liste ihrer Kerne (`kern`) — ein
+// fehlendes und ein fremdes Rezept beim Namen.
+function rezeptAbweichung(live, kern) {
+    if (!kern || !kern.length) return ["keine Kern-Deklaration der Art gelesen"];
+    const [L, K] = [new Set(live || []), new Set(kern)];
+    return [...kern.filter((id) => !L.has(id)).map((id) => "fehlt " + id), ...[...L].filter((id) => !K.has(id)).map((id) => "fremd " + id)];
+}
+
 // Der Vergleich: jede deklarierte Art trägt im Live-Buch (`live` = `_studioRenderConfig.lod.kindStages`) ihre Liste —
 // jede Abweichung beim Namen der Art.
 function stufenAbweichung(live, kern) {
@@ -56,7 +81,7 @@ async function epsilonSeite(w) {
     await window.__weltDa(() => f && f.ready && f.recipes && f.recipes[w.preset] && A._studioRenderConfig && A._studioRenderConfig.lod && A._studioRenderConfig.lod.kindStages);
     const fehler = (x) => x?.message || String(x);
     const rez = f.recipes[w.preset];
-    const out = { b: { kind: rez.kind, s: rez.s, anzahl: Object.values(f.recipes).filter((x) => x && x.kind === rez.kind).length, ks: JSON.parse(JSON.stringify(A._studioRenderConfig.lod.kindStages)) }, d: {}, p: {}, e: { meshCount: {} }, f: {} };
+    const out = { b: { kind: rez.kind, s: rez.s, ids: Object.keys(f.recipes).filter((id) => f.recipes[id] && f.recipes[id].kind === rez.kind), ks: JSON.parse(JSON.stringify(A._studioRenderConfig.lod.kindStages)) }, d: {}, p: {}, e: { meshCount: {} }, f: {} };
     const { d, p, e } = out;
     try {
         const B = st.blueprints || {};
@@ -116,12 +141,15 @@ async function epsilonSeite(w) {
     return out;
 }
 
-// Der Spruch des ε-Drahts — dieselben Wände je Domäne: w wie oben, dazu name (das Werk im Satz), art, anzahl (Rezepte der Art im
-// Buch), teile (Parts der Substanz), label (oder null), place { mode, siteTag, dispatch } (oder null); `kern` = seitenStufen.
-function epsilonUrteil(check, { b, d, p, e }, w, kern) {
+// Der Spruch des ε-Drahts — dieselben Wände je Domäne: w wie oben, dazu name (das Werk im Satz), art, teile (Parts der Substanz),
+// label (oder null), place { mode, siteTag, dispatch } (oder null); `kern` = seitenStufen, `rez` = seitenRezepte (das Soll der
+// Rezepte je Art aus den Kernen).
+function epsilonUrteil(check, { b, d, p, e }, w, kern, rez) {
     const stufen = w.stufen || [0];
     check(`B: das LIVE-Buch traegt ${w.preset} als kind:${w.art} (Worker-Draht lebt)`, b.kind === w.art, String(b.kind));
-    check(`B: alle ${w.anzahl} Rezepte der Art ${w.art} im Buch`, b.anzahl === w.anzahl, String(b.anzahl));
+    const soll = (rez && rez[w.art]) || [];
+    const abR = rezeptAbweichung(b.ids, soll);
+    check(`B: das Buch traegt genau die ${soll.length} Rezepte der Art ${w.art}, die die Kerne deklarieren`, abR.length === 0, abR.join(" · ") || (b.ids || []).join(" "));
     const ab = stufenAbweichung(b.ks, kern);
     check("B: der Ingest-Merge traegt die Stufen-Liste JEDES Kerns (kein Kern ueberschreibt einen anderen)", ab.length === 0, ab.join(" · ") || `${Object.keys(kern).length} Arten`);
     check(`D: Auto-Blueprint ${w.bp} registriert (Donor-Klon)`, d.blueprint === true && d.parts >= w.teile, d.err || `parts=${d.parts}`);
@@ -170,12 +198,30 @@ async function epsilonDraht(server, port, W, check, probe) {
     const { browser, page } = await require("./welt-boot.cjs").nullSeite({ frist: 180000 });
     await server.zeige(page, 30000);
     const eps = await page.evaluate(epsilonSeite, W);
+    // das Soll der Rezepte im selben Moment wie das Buch: vor der eigenen Probe der Linse (vehicle injiziert Probe-Kern und -Preset)
+    const rez = await page.evaluate(seitenRezepte, kernRaeume());
     const out = probe && (await page.evaluate(probe));
     const kern = await page.evaluate(seitenStufen, kernRaeume());
     await browser.close();
     server.close();
-    epsilonUrteil(check, eps, W, kern);
+    epsilonUrteil(check, eps, W, kern, rez);
     return [eps, out, kern];
 }
 
-module.exports = { epsilonDraht, geklemmteStufe, selbsttest };
+// Selbsttest der Rezept-Wand (die Mutanten): ein Buch ohne ein Rezept seiner Kerne und ein Buch mit einem fremden fallen je beim
+// Namen, ein treues Buch nicht, eine Art ohne Kern-Deklaration nie still.
+function rezeptSelbsttest() {
+    const kern = ["drachentor", "lyra", "tiertor"];
+    const fehlt = rezeptAbweichung(["drachentor", "tiertor"], kern);
+    const fremd = rezeptAbweichung([...kern, "abschrift"], kern);
+    return (
+        fehlt.length === 1 &&
+        fehlt[0] === "fehlt lyra" &&
+        fremd.length === 1 &&
+        fremd[0] === "fremd abschrift" &&
+        rezeptAbweichung(kern, kern).length === 0 &&
+        rezeptAbweichung(["drachentor"], []).length === 1
+    );
+}
+
+module.exports = { epsilonDraht, geklemmteStufe, selbsttest, rezeptSelbsttest };

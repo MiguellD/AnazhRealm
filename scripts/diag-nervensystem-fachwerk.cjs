@@ -10,8 +10,8 @@
 //   S (statisch, Node): Manifest traegt fachwerk (ns __fachwerkCore) · Absenzen: der Auto-Register-
 //     Chokepoint vergleicht keinen kind-String (M8), die Donor-Zeile haus_basis traegt kein
 //     portalMeta/roleManual (der Alt-Blueprint ist PHYSISCH gefallen). --selftest streicht die Manifest-Zeile.
-//   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die 32 Haus-
-//     Rezepte (Dial-Drift-Wand: s.W == der Kern-PRESETS-Wert) · kindStages.haus ==
+//   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die Haus-
+//     Rezepte seines Kerns (das Soll aus fachwerk-core, kern-stufen; Dial-Drift-Wand: s.W == der Kern-PRESETS-Wert) · kindStages.haus ==
 //     [0,1,2,3] gemerged (tree/vehicle/gate/weapon unberuehrt) · Auto-Blueprint
 //     haus_alemannisch entsteht am EINEN Chokepoint (Donor-Klon, KEIN
 //     _grownSpecies) · die generische haus_-Regel loest auf · die Place-
@@ -84,7 +84,7 @@ hauptLauf(async () => {
     const kernAlemannischW = FCn.PRESETS.alemannisch.s.W;
     const kernParamsRows = FCn.PARAMS_BY_KIND.haus.length;
 
-    const W = { bp: "haus_alemannisch", donor: "haus_basis", preset: "alemannisch", entry: "haus_hanseatisch", praefix: "haus_", stufen: [0, 1, 2, 3], name: "ein Haus", art: "haus", anzahl: 32, teile: 6, label: "Alemannisch · steil, hell", place: { mode: "settlement", siteTag: "haus", dispatch: "settlement" } };
+    const W = { bp: "haus_alemannisch", donor: "haus_basis", preset: "alemannisch", entry: "haus_hanseatisch", praefix: "haus_", stufen: [0, 1, 2, 3], name: "ein Haus", art: "haus", teile: 6, label: "Alemannisch · steil, hell", place: { mode: "settlement", siteTag: "haus", dispatch: "settlement" } };
     const [eps, out] = await kernStufen.epsilonDraht(server, PORT, W, check, async () => {
         const res = { b: {}, f: {} };
         const f = r._ensureAssetFoundry();
