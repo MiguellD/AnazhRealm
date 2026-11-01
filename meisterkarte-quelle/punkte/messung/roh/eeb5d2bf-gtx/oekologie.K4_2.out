@@ -50,6 +50,10 @@ const n0 = (s.worldMeta.taten ||= []).length;
 p.hp = p.stats.hpMax;
 const heim = { x: o.x - 45, z: o.z };
 pm.set(heim.x + 140, y(heim.x + 140, heim.z) + 1.8, heim.z);
+s.camera.position.set(pm.x, pm.y + 1.6, pm.z);
+s.camera.lookAt(pm.x + 1, pm.y + 1.6, pm.z);
+s.camera.updateMatrixWorld(true);
+r._loopFrustumCulling();
 s.maxCreatures = Math.max(s.maxCreatures || 0, 12);
 const woelfe = r._kreaturWurf({ x: heim.x, z: heim.z }, "wolf", "happy", r._faunaRng("rudel"), 7);
 for (const c of woelfe) {
@@ -106,8 +110,8 @@ s.worldMeta.taten.length = n0;
 return aus;
 }
 [linse-gpu] nvidia/pascal
-RUDEL-GEFUEHL {"woelfe":1,"gegen":false,"sicht":"first","dauer":0,"umstelltS":null,"umstellt":0,"furcht":{"chaos":0,"sorrow":0,"joy":0,"hope":0},"opfer":0,"situation":[0.904,0,0.904],"triumph":{"joy":0,"hope":0.012},"chaosNach":0.078}
-RUDEL-GEFUEHL {"woelfe":1,"gegen":true,"sicht":"first","dauer":0,"umstelltS":null,"umstellt":0,"furcht":{"chaos":0,"sorrow":0,"joy":0,"hope":0},"opfer":0,"situation":[0.839,0,0.839],"triumph":{"joy":0,"hope":0.015},"chaosNach":0}
+RUDEL-GEFUEHL {"woelfe":6,"gegen":false,"sicht":"first","dauer":36.85,"umstelltS":16.85,"umstellt":0.365,"furcht":{"chaos":0.908,"sorrow":0,"joy":0,"hope":0},"opfer":4,"situation":[0.538,0.631,0.904],"triumph":{"joy":0.269,"hope":0.151},"chaosNach":0.463}
+RUDEL-GEFUEHL {"woelfe":5,"gegen":true,"sicht":"first","dauer":36.85,"umstelltS":null,"umstellt":0,"furcht":{"chaos":0,"sorrow":0,"joy":0,"hope":0.068},"opfer":4,"situation":[0.839,0.839,0.839],"triumph":{"joy":0,"hope":0},"chaosNach":0}
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
