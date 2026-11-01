@@ -174,3 +174,4 @@ takt-z128a-gtx gemessen punkte 20d09a04 gtx: 0 grün / 8 rot
 takt-z128b-gtx gemessen punkte 20d09a04 gtx: 0 grün / 8 rot
 z126-abab nicht-langsamer abab e0f42f9d gegen 9e40c93c: w-ego 4+4 nicht-langsamer · stadt 2+2 nicht-langsamer
 z128-abab LANGSAMER abab 20d09a04 gegen e0f42f9d: w-ego 4+4 LANGSAMER · stadt 4+4 LANGSAMER
+takt-z132a-gtx gemessen punkte 25ac4c0c gtx: 0 grün / 5 rot
