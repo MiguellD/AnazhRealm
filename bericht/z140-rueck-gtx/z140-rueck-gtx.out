@@ -1,0 +1,9 @@
+Punkte-Maschine: 3 Station(en) in 3 Läufen auf gtx am 3242d6ad · Sitzung 3 Proben in EINER Welt (Deckel Σ 1 min) · Zeit 0 Läufe ~0 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~0 min (Soll-Minuten ohne Sitzung) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  SITZUNG gtx · die Welt steht nach 6.3 s (Schloss nach 0.01 min) · 3 Proben · Welt :27804
+  SITZUNG der Grund der Welt: 77 Größen in 0 s
+  SITZUNG Ort wiese vor leib.K1#1: 22.9 s (768 Takte, 81 Chunks)
+  GRÜN leib.K1#1 · schlechtester von 1 Läufen p95 ms ego/gehen 43.3 · third/gehen 43 · ego/wechsel 29.4 · third/wechsel 48.9 · Bild 16.7 ms · Sitzung · Exit 0 · 0.39 min
+  ROT  material.K4#1 · lack spiegelTreue 0.2513 (73970 px in der Ebene, 38 Blöcke, Einfall 54.2°, Normale [0.074,0.989,0.128]) · glas spiegelTreue 0.2331 (5640 px in der Ebene, 12 Blöcke, Einfall 64.8°, Normale [0.08,0.991,0.105]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5003448888888892 sunny · [linse-gpu] nvidia/pascal · Sitzung · Exit 0 · 0.1 min
+  ROT  haar.K1#1 · arm ROT strich 0.3493 Soll [0.4358,0.6538] — strich 0.3493 < 0.4358 · third ROT strich 0.174 Soll [0.4358,0.6538] — strich 0.174 < 0.4358 · Sitzung · Exit 0 · 0.4 min
+  SITZUNG Fahrt 82.9 s (Soll ≤ 1800 s) · 3 Proben · Grundstellung 0×
+→ meisterkarte-quelle\punkte\messung\3242d6ad-gtx.json
