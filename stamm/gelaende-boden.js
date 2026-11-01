@@ -467,6 +467,7 @@ class AnazhRealm_gelaende_boden {
         this._genesisPlan = v2;
         this._genesisPlanMs = r.ms;
         this._genesisWerkeFertig = null;
+        this._genesisAbsagen = null;
         this._erdbauSetzen(key, v2.erdbau);
         this._grundrissGitter = null; // die Flächen des Plans sind Grundriss der EINEN Natur-Wand
         this.log(

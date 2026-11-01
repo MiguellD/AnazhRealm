@@ -2735,8 +2735,11 @@ class AnazhRealm_siedlung_ort {
     // der Welt (`_genesisPlan`, aus dem Faden): je Element EIN Eintrag mit eigener id, idempotent über die Existenz-Probe, in der
     // Folge der Ankunft (`_genesisWerke`), höchstens `GENESIS_JE_TAKT` neue Einträge je Takt (Lehre 25); die Vorschauen erst vor
     // ihrem Tor (`_genesisVorschau`). Stehen alle Tore, trägt `worldMeta.genesisOrt.steht` es (die Prüfbühne der Werkbank wartet
-    // darauf). Bis zum Plan stellte der Wirt einen Ring der Kern-Portale aus der Reihenfolge der Baupläne (R 11, Sehne 6,9 m) um
-    // eine Stein-Scheibe und die Vorschauen aus einer eigenen Tafel.
+    // darauf). DIE ABSAGE DER WURZEL ist laut und gezählt: ein Element, dessen Bau die Wurzel absagt (ihr Grund, `SETZ_GRUND`: die
+    // Tat des Spielers, das Wasser, ein unbekannter Bauplan), steht nicht, zählt nie als Tor und meldet sich beim Namen über den
+    // EINEN Melder; `_genesisAbsagen` (id → Grund) ist der Zähler. Bis hierher buchte der Wirt eine Absage still als fertig und
+    // als stehendes Tor und meldete danach „die 10 Tore stehen". Bis zum Plan stellte der Wirt einen Ring der Kern-Portale aus der
+    // Reihenfolge der Baupläne (R 11, Sehne 6,9 m) um eine Stein-Scheibe und die Vorschauen aus einer eigenen Tafel.
     _genesisOrt(playerPos) {
         const plan = this._genesisPlan;
         if (!plan || !playerPos) return;
@@ -2747,11 +2750,13 @@ class AnazhRealm_siedlung_ort {
         this._stlWegeBuild({ zonen: plan.zonen }, plan.ort, "genesis");
         this._genesisVorschau(plan, playerPos);
         const fertig = this._genesisWerkeFertig || (this._genesisWerkeFertig = new Set());
+        const abgesagt = this._genesisAbsagen || (this._genesisAbsagen = new Map());
         let budget = AnazhRealm.GENESIS_JE_TAKT;
         let tore = 0;
         let toreDa = 0;
         for (const w of this._genesisWerke(plan, playerPos)) {
             if (w.art === "tor") tore++;
+            if (abgesagt.has(w.id)) continue;
             if (fertig.has(w.id)) {
                 if (w.art === "tor") toreDa++;
                 continue;
@@ -2759,6 +2764,13 @@ class AnazhRealm_siedlung_ort {
             if (budget <= 0) break;
             const z = this._genesisWerkSetzen(w, plan);
             if (z === "warte") continue;
+            if (z !== "steht" && z !== "gesetzt") {
+                abgesagt.set(w.id, z);
+                this._bruchMelden(
+                    `GENESIS-ORT: ${w.id} (${w.typ}) steht nicht — die Wurzel sagte ab: ${z} (${AnazhRealm.SETZ_GRUND[z] || AnazhRealm.SETZ_GRUND.unbenannt}); ${abgesagt.size} Elemente des Plans abgesagt`
+                );
+                continue;
+            }
             fertig.add(w.id);
             if (w.art === "tor") toreDa++;
             if (z === "gesetzt") budget--;
@@ -2890,7 +2902,7 @@ class AnazhRealm_siedlung_ort {
     }
     // EIN ELEMENT DES PLANS STEHT (der EINE Bau `spawnArchitecture`, mit seiner id und als Werk: es weicht keinem Bau und keiner
     // Fläche des Plans, `_weichtDemBau`; eine Tat, die seinen Ort nahm, hält, `ausGesetz`): "steht" (die id ist da), "gesetzt",
-    // "warte" (der Bauplan kommt erst mit dem Buch, der Grund reift), "fehlt" (die Wurzel sagte ab). DER UMZUG EINER ÄLTEREN FORM
+    // "warte" (der Bauplan kommt erst mit dem Buch, der Grund reift) oder der Grund, mit dem die Wurzel absagte (`SETZ_GRUND`). DER UMZUG EINER ÄLTEREN FORM
     // (`_genesisUmzug`): vor dem ersten Tor fällt, was die ältere Form innerhalb des Ring-Wegs trug — ein Tor desselben Bauplans
     // neben seinem Slot (das Tor des Plans steht auf dem Slot) und eine Vorschau samt ihrem Stempel (sie steht neu, wenn der
     // Spieler vor ihr Tor tritt).
@@ -2917,7 +2929,7 @@ class AnazhRealm_siedlung_ort {
             }
         );
         if (e) return "gesetzt";
-        return absage === "buch" ? "warte" : "fehlt";
+        return absage === "buch" ? "warte" : absage || "unbenannt";
     }
     _genesisUmzug(w, plan) {
         const o = plan.ort;

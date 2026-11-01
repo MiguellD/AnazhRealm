@@ -126,6 +126,18 @@
     ]
    ]
   ],
+  "ortabsage": [
+   [
+    "lichtung",
+    "W8 Ort"
+   ],
+   [
+    [
+     "if (opts.ausGesetz === true && position && this._tatSperrt(position.x, position.z)) return nein(\"tat\");",
+     "if (opts.ausGesetz === true && position && (this._tatSperrt(position.x, position.z) || opts.id === \"genesis:tor:3\")) return nein(\"tat\");"
+    ]
+   ]
+  ],
   "baugrund": [
    [
     "bau",

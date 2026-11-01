@@ -15,10 +15,11 @@
 //       darunter, der Korridor ist begehbar (stetig, solide)
 //   W7  BAU IM BAU: kein Haus des Drehbuch-Dorfs steht in einem Bau, der vor ihm stand, vor keiner Haustür dessen Wand;
 //       derselbe Akt ein zweites Mal am selben Anker: kein Haus, Brunnen oder Stand des zweiten Dorfs steht im ersten
-//   W8  DIE LICHTUNG: die Genesis-Plattform ist ein Grundriss derselben Wand — über ihrer Scheibe keine Krone, keine
-//       Kachel-Pflanze; der Hain der KI wächst weder dort noch im Grundriss eines Dorf-Hauses (Gegenprobe 150 m weiter: er
-//       wächst), jede Absage nennt die Lichtung. DER GENESIS-PLATZ: die Sohle liegt ≤ 0,3 m über dem Boden, die Lichtung ist
-//       der Platz des Rings (Tore + 4 m), ein Damm räumt den Hain aus seinen Boxen.
+//   W8  DIE LICHTUNG: der Freiraum des Genesis-Orts (fachwerk GENESIS_ORT.freiraum, der Plan bestimmt beide Radien) ist ein
+//       Grundriss derselben Wand — über ihm keine Krone, keine Kachel-Pflanze, auf dem Band bis zur Reichweite der Nah-Streu
+//       davor wachsen sie (die Probe sieht); der Hain der KI wächst weder dort noch im Grundriss eines Dorf-Hauses (Gegenprobe
+//       150 m weiter: er wächst), jede Absage nennt den Grund der Natur-Wand (NATUR_WAND_GRUND). DER ORT: kein Element des
+//       Plans fällt still (die Absage der Wurzel steht beim Namen, `_genesisAbsagen`), ein Damm räumt den Hain aus seinen Boxen.
 //   W10 SPIELGANG: Tür, Keller, jeder Lauf bis zum Dachboden, auch am Spur-Rand — kein Hub > 0,3 m je Schritt, kein Tier im Haus;
 //       mit der Phase start JEDES Haus des Start-Dorfs (aus seinem Plan); sein Innen-Bild misst siedlung.K1 Staffel 2 in der Sitzung
 //   W9  DAS GRUND-DATUM (S4): je Box des Körper-Satzes (fachwerk `grundVon`) kein Büschel der Nah-Wiese, dessen Halme
@@ -64,9 +65,10 @@ const BILD = process.argv.includes("--bild");
 //   promotion: die Promotion läuft an der Wand vorbei (und Region wie Neubau lassen die Zellen stehen — sonst erreicht
 //       keine den Ring)
 //   nahstreu: die Nah-Streu läuft an der Wand vorbei
-//   lichtung: DIE LICHTUNG (W8): die Wand kennt die Genesis-Plattform nicht (ihr Bauplan trägt keine Lichtung)
-//   schwebe: DIE SCHEIBE SCHWEBT: die Plattform steht 5 m über dem Grund
-//   platz: DER PLATZ IST NUR DIE SCHEIBE: die Lichtung trägt den Ring der Tore nicht (6,5 m statt Kreis + Tor-Tiefe)
+//   lichtung: DIE LICHTUNG (W8): die Wand kennt die Flächen des Genesis-Orts nicht
+//   platz: DER FREIRAUM IST NUR DER KERN: die Wand hält 0,3 des Freiraums frei
+//   ortabsage: DIE ABSAGE DER WURZEL (W8 Ort): die Wurzel sagt einem Tor des Plans ab (`tat`) — der Wirt muss es beim Namen
+//       melden, nie still als stehend buchen
 //   baugrund: EIN BAU OHNE HAUS-ZEILE TRÄGT KEINEN GRUNDRISS: Tor, Esse, Brunnen, Damm — die Natur wirft in ihn,
 //       nichts räumt
 //   weg: DIE WAND KENNT DEN WEG NICHT: Weg, Platz und Acker eines Dorfs urteilen nur über die Wiese
@@ -1161,15 +1163,34 @@ async function proben(phasen) {
                 (a) => a && /^welt_/.test(a.type) && Math.hypot(a.position.x - L.x, a.position.z - L.z) < 30
             );
             w8.tore = tore.length;
-            // die Kachel-Pflanzen um die Kamera auf der Plattform (die Nah-Streu reicht 24 m)
+            // DIE ABSAGEN DER WURZEL (der Zähler des Wirts, `_genesisAbsagen`: id → Grund) — kein Element des Plans fällt still
+            w8.absagen = [...(r._genesisAbsagen || new Map())].map(([id, g]) => `${id} (${g})`);
+            // DIE KACHEL-PFLANZEN AM RAND DES FREIRAUMS (der Freiraum des Plans bestimmt beide Radien): der Spieler steht auf seinem
+            // Rand zwischen zwei Toren, die Nah-Streu (`NAH_STREU.radius` um die Kamera) reicht hinein und hinaus — innen (d < r)
+            // ist jede Pflanze ein Bruch, außen bis r + Reichweite beweist sie, dass die Probe sieht. Bis hierher stand die Kamera in
+            // der Mitte und zählte im 30-m-Kreis: im Freiraum r 32 trug er keine Pflanze, die Linse konnte nie GRÜN werden.
+            const NSR = A.NAH_STREU.radius;
+            const GO = FC.GENESIS_ORT;
+            const randOrt = Array.from({ length: GO.slots }, (_, k) => {
+                const a = ((GO.achseGrad + ((k + 0.5) * 360) / GO.slots) * Math.PI) / 180;
+                return [L.x + Math.cos(a) * L.r, L.z + Math.sin(a) * L.r];
+            }).find(([qx, qz]) => r._landAt(qx, qz, 0.5) && Number.isFinite(hh(qx, qz)));
             w8.pflanzen = 0;
             w8.aufScheibe = 0;
-            for (const kk of (s.nahStreu && s.nahStreu.kacheln.values()) || [])
-                for (const it of kk.items || []) {
-                    const d = abstand(it.x, it.z);
-                    if (d < 30) w8.pflanzen++;
-                    if (d < L.r) w8.aufScheibe++;
-                }
+            w8.band = [L.r, L.r + NSR];
+            if (!randOrt) w8.fehler = "kein trockener Ort auf dem Rand des Freiraums";
+            else {
+                stell(randOrt[0], hh(randOrt[0], randOrt[1]) + 2.2, randOrt[1]);
+                w8.randRuhe = await ruheAn(randOrt[0], randOrt[1]);
+                for (const kk of (s.nahStreu && s.nahStreu.kacheln.values()) || [])
+                    for (const it of kk.items || []) {
+                        const d = abstand(it.x, it.z);
+                        if (d >= L.r && d <= L.r + NSR) w8.pflanzen++;
+                        if (d < L.r) w8.aufScheibe++;
+                    }
+                stell(L.x, yM + 2.2, L.z);
+                await ruheAn(L.x, L.z, 20);
+            }
             // DIE STREU der Lichtung: innerhalb 64 m um den Spieler baut keine Region Streu (`SCATTER.innerM`) — der Spieler
             // steht 120 m daneben, die Regionen über der Plattform bauen neu (durch die Wand). Der Aufbau zählt die lebenden
             // Zellen dieser neu gebauten Regionen (die Menge, über die die Wand urteilt); der 40-m-Kreis steht als Zahl daneben.
@@ -1271,6 +1292,7 @@ async function proben(phasen) {
                 w8.chatGewachsen = neuC.length;
                 for (const e of neuC) r.removeArchitecture(e);
                 w8.chatSatz = el ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(0, 240) : null;
+                w8.lichtungGrund = A.NATUR_WAND_GRUND.lichtung; // der Grund der Natur-Wand im Satz (die EINE Quelle des Worts)
             }
             const h0 = H[0];
             if (h0) {
@@ -1366,7 +1388,9 @@ async function proben(phasen) {
         // Kasten); auf dem Gras-Anger gilt seine Grenze (`sperr`, das Gesetzbuch: kein Baum tiefer als 1 m im Anger)
         {
             const formen = [];
-            for (const b of (s.wegeKarte && s.wegeKarte.siedlungen) || []) for (const f of b.formen) formen.push(f);
+            // die Flächen eines Plans (`zone`, der Genesis-Ort) urteilt W8 an der Natur-Wand des Orts
+            for (const b of (s.wegeKarte && s.wegeKarte.siedlungen) || [])
+                for (const f of b.formen) if (f.typ !== "zone") formen.push(f);
             const abstand = (f, px, pz) => {
                 if (f.typ === "kasten") {
                     const co = Math.cos(f.phi || 0);
@@ -1982,7 +2006,13 @@ function urteil(o) {
                 f.push(
                     `W8 Aufbau: ${w.zellenNeu} lebende Streu-Zellen in den neu gebauten Regionen um den Genesis-Ort (im 40-m-Kreis ${w.zellen})${w.streuSteht ? "" : " (die Regionen kamen nicht zur Ruhe)"} (Soll ≥ 20)`
                 );
-            if (!(w.pflanzen >= 20)) f.push(`W8 Aufbau: ${w.pflanzen} Kachel-Pflanzen im 30-m-Kreis (Soll ≥ 20)`);
+            if (!w.randRuhe) f.push("W8 Aufbau: die Nah-Streu kam am Rand des Freiraums nicht zur Ruhe");
+            if (!(w.pflanzen >= 20))
+                f.push(`W8 Aufbau: ${w.pflanzen} Kachel-Pflanzen im Band r ${w.band.join("–")} m vor dem Freiraum (Soll ≥ 20)`);
+            if (w.absagen.length)
+                f.push(
+                    `W8 Ort: ${w.absagen.length} Elemente des Genesis-Orts stehen nicht — die Wurzel sagte ab: ${w.absagen.slice(0, 6).join(" · ")}`
+                );
             if (!(w.tore >= 1))
                 f.push(`W8 Aufbau: ${w.tore} Tore um die Mitte (der Ort-Takt setzte keins)`);
             if (!(w.gegenprobe >= 1))
@@ -2003,9 +2033,11 @@ function urteil(o) {
                 stumm.push(`der Hain im Freiraum fiel ohne Eintrag (ergebnis lichtung ${w.kiWeichtPlattform})`);
             if (
                 w.chatGewachsen === 0 &&
-                !(/Lichtung/.test(w.chatSatz || "") && !/gewachsen|gepflanzt/.test(w.chatSatz || ""))
+                !((w.chatSatz || "").includes(w.lichtungGrund) && !/gewachsen|gepflanzt/.test(w.chatSatz || ""))
             )
-                stumm.push(`der Chat sagt „${w.chatSatz}" bei 0 Bäumen (Soll: die Lichtung benannt, nie „gewachsen")`);
+                stumm.push(
+                    `der Chat sagt „${w.chatSatz}" bei 0 Bäumen (Soll: der Grund der Natur-Wand „${w.lichtungGrund}", nie „gewachsen")`
+                );
             if (w.chatBaeume) stumm.push(`der Satz pflanzte ${w.chatBaeume} Bäume in den Freiraum`);
             if (stumm.length) f.push(`W8 Absage: ${stumm.join(" · ")}`);
         }
