@@ -98,3 +98,11 @@ Die Plattform-Probe des Gates (`scripts/lib/plattform-probe.cjs`) baut jeden Fal
 
 Die Art `arena` (42 Gestalten, `ARENA_ARTEN`) ist **seed-variant** (`arenaStrom`); ihr Vertrag steht im Kopf des Kerns,
 eingefroren je Hof in `golden/arena.json`, geprüft von `gate:schmiede-contract` und `gate:kampf-gefuehl` Q16.
+
+**Re-Mint der Faltung (01.11.2026):** jedes Teil trägt den Stoff, der es IST (`ARENA_STOFF`: Holz · Lack · Stroh · Tuch ·
+Schnur · Polster · Eisen · Stahl · Messing, je Material EIN Gitter); auf die Zeile `draws` faltet das Budget-Gesetz der Brücke
+(phyto-core `budgetErzwingen`), nie der Kern — vorher fiel jede Art auf EINEN Stoff je Seh-Klasse (`stoff`/`metall` der Art),
+die Brücke hatte in 0 von 252 Fällen etwas zu falten, jetzt in 36 (Draws vorher bis 5, nach der Faltung bis 2). Geometrie
+unverändert: alle 5 Fälle tragen dieselben `vertices`, `objects` wächst (Saat 22 → 32, Waffenhof 55 → 81, Schnitthof 40 → 56,
+Schießbahn 42 → 50; der Hof 9 byte-gleich). Die Lieferung der Welt trägt je Dreieck byte-gleich die Ecken des Studio-Baus
+(252 Fälle, Same 1 und 2, gemessen am Kanal im vm); die Faltung ist Konsument, `gate:asset-contract` Selbsttest (11).

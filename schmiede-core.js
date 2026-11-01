@@ -143,6 +143,20 @@
                 metalness: 0,
                 envMapIntensity: 0.6,
             }),
+            // die Fasern der Arena (w4-arena-welt, additiv): das Stroh der Puppen, Rollen und Ziele, das Tuch der Wämser und
+            // Banner — matter als Schnur und Leder, die Farbe trägt der Vertex (der Haut-Stoff ist weiß)
+            stroh: new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 0.88,
+                metalness: 0,
+                envMapIntensity: 0.4,
+            }),
+            tuch: new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 0.92,
+                metalness: 0,
+                envMapIntensity: 0.4,
+            }),
             // Overlays (basisfarbig → tragen auch ungelitt, glühen im Bloom)
             bone: new THREE.MeshBasicMaterial({ color: 0xcdb38a }),
             hand: new THREE.MeshBasicMaterial({ color: 0x66a8ff }),
@@ -174,6 +188,8 @@
             cord: "stoff",
             wood: "stoff",
             lack: "stoff",
+            stroh: "stoff",
+            tuch: "stoff",
             bone: "glut",
             hand: "glut",
             bal: "glut",
@@ -197,6 +213,9 @@
             cord: "schnur",
             wood: "holz",
             lack: "lack",
+            // Stroh und Leinen sind Pflanzen-Faser wie die Schnur (Halm, Flachs, Hanf): das Band der Schnur urteilt sie
+            stroh: "schnur",
+            tuch: "schnur",
             bone: "lehre",
             hand: "lehre",
             bal: "lehre",
@@ -3642,8 +3661,10 @@
     // Stufe: L0 · L1 · Wurf (Stufe 3, NUR-WURF, ihre Fernform `__fern`) auf der Zeile der Ausstattung (L0 3 400 / 2 · L1 620 / 2
     // · Wurf 48 / 1). Die Kollision trägt jede Gestalt selbst (`__huelle`, Kollision == Optik je Saat und Regler), die
     // Substanz der Art ist die der Pell. Die Farbe als Vertex-Albedo (FARB-GESETZ: das Hex ist sRGB-Absicht,
-    // der Vertex trägt seinen linearen Wert, der Stoff ist weiß), je Stufe höchstens zwei Stoffe (stoff · metall), die
-    // Streuung aus einem Strom je (Same, Salz) — nie Math.random. Der Ursprung jedes Glieds ist sein Gelenk.
+    // der Vertex trägt seinen linearen Wert, der Stoff ist weiß), jedes Teil in dem Stoff, der es IST (`ARENA_STOFF`, je
+    // Stoff EIN Gitter) — auf die Zeile `draws` faltet das Budget-Gesetz am Studio-Ausgang (phyto-core budgetErzwingen,
+    // nur innerhalb EINER Seh-Klasse), nie der Kern. Die Streuung aus einem Strom je (Same, Salz) — nie Math.random. Der
+    // Ursprung jedes Glieds ist sein Gelenk.
     // DAS GESETZ DES GERÄTS (`geraet*`): Pendel, Drehung, Feder und Leib antworten dem EINEN Stoß — der Impuls des Schlags
     // (trefferUrteil p, verstärkt um ARENA.gefuehl.wucht) gegen die wirksame Masse des Geräts am Kontakt, das EINE
     // Impuls-Gesetz `stossImpuls` (der Wirt rechnet mit DIESER Funktion) —, Masse und Trägheit aus der Gestalt mal ρ ihres
@@ -3690,9 +3711,13 @@
         if (st === "messing") return MAT.bronze.rho;
         return ARENA_RHO[st] || RHO.holz;
     }
-    // Die Seh-Klasse und der Welt-Stoff jedes Arena-Stoffs (die Substanz des Wirts kennt holz · leder · eisen · stahl · bronze ·
-    // erde): Stroh, Polster, Seil und Tuch tragen als Leder (sie halten den Leib, Pfeil und Klinge), der Ton als Erde.
-    var ARENA_METALL = { eisen: 1, stahl: 1, messing: 1 };
+    // DER STOFF JEDES TEILS (die Faltung ist der Konsument, gate:asset-contract (11)): das Material, das sein Stoff IST — Holz ·
+    // Lack (bemaltes Holz, Papier und gebrannter Ton der Ziele) · Stroh · Tuch · Schnur · Polster (Leder, mit Werg gestopft) ·
+    // Eisen · Stahl · Messing; die Seh-Klasse trägt das Material (`__seh`: die Metalle metall, alles andere stoff). Je Material
+    // EIN Gitter in dieser Reihe — auf die Zeile `draws` faltet das Budget-Gesetz der Brücke, die kleinere Fläche in die größere.
+    var ARENA_STOFF = { holz: "wood", lack: "lack", ton: "lack", stroh: "stroh", tuch: "tuch", schnur: "cord", polster: "leather", eisen: "iron", stahl: "steelRaw", messing: "brass" };
+    // Der Welt-Stoff jedes Arena-Stoffs (die Substanz des Wirts kennt holz · leder · eisen · stahl · bronze · erde): Stroh,
+    // Polster, Seil und Tuch tragen als Leder (sie halten den Leib, Pfeil und Klinge), der Ton als Erde.
     var ARENA_WELTSTOFF = { holz: "holz", lack: "holz", stroh: "leder", polster: "leder", schnur: "leder", tuch: "leder", ton: "erde", eisen: "eisen", stahl: "stahl", messing: "bronze" };
 
     // Ein Strom je (Same, Salz): nur Ganzzahl-Arithmetik (plattformgleich), eigene Ströme halten die Gestalt über die Stufen
@@ -4348,7 +4373,8 @@
     }
 
     // ── DER BAU (B2): je Teil die Geometrie seiner Form in der Teilung der Stufe, gelegt, gefärbt (Vertex = lineare Albedo ×
-    //    Tönung aus dem Strom × Erdsaum), je Seh-Klasse in EIN Gitter verschmolzen, auf das Raster gelegt. ──
+    //    Tönung aus dem Strom × Erdsaum), je Material seines Stoffs (`ARENA_STOFF`) in EIN Gitter verschmolzen, auf das Raster
+    //    gelegt. Die Faltung auf die Zeile `draws` ist das Budget-Gesetz am Studio-Ausgang, nie dieser Bau. ──
     function arenaTeilung(n, stufe, detail, min) {
         var f = (stufe === 1 ? 0.5 : 1) * detail;
         return Math.max(min, Math.round(n * f));
@@ -4406,20 +4432,20 @@
         var z = arenaStrom(seed, A.salz),
             detail = 1,
             zeile = ARENA_BUDGET[stufe].tris;
-        var stoffMat = hautStoff({ holz: M.wood, lack: M.lack, schnur: M.cord, leder: M.leather }[A.stoff || "holz"]);
-        var metallMat = hautStoff({ eisen: M.iron, stahl: M.steelRaw, messing: M.brass }[A.metall || "eisen"]);
         for (var versuch = 0; ; versuch++) {
             z = arenaStrom(seed, A.salz);
-            var klassen = { stoff: { pos: [], nrm: [], col: [], idx: [] }, metall: { pos: [], nrm: [], col: [], idx: [] } },
+            var klassen = {},
                 n = 0;
             for (var i = 0; i < teile.length; i++) {
                 var t = teile[i],
                     ton = t.st === "lack" ? 0.97 + 0.06 * z() : 0.94 + 0.12 * z();
                 if (bleibt.indexOf(t) < 0) continue; // die Tönung zog jedes Teil: die Farbe springt nie zwischen den Stufen
+                var mk = ARENA_STOFF[t.st];
+                if (!mk) throw new Error("arena " + id + ": der Stoff '" + t.st + "' trägt kein Material (ARENA_STOFF)");
                 var g = arenaGeo(t, stufe, detail);
                 var q = new THREE.Quaternion().setFromEuler(new THREE.Euler(t.r[0], t.r[1], t.r[2]));
                 g.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(t.p[0], t.p[1], t.p[2]), q, new THREE.Vector3(t.s[0], t.s[1], t.s[2])));
-                var K = klassen[ARENA_METALL[t.st] ? "metall" : "stoff"];
+                var K = klassen[mk] || (klassen[mk] = { pos: [], nrm: [], col: [], idx: [] });
                 var P = g.attributes.position, N = g.attributes.normal, o = K.pos.length / 3;
                 var basis = arenaLin(t.c), farben = t.farben ? t.farben.map(arenaLin) : null;
                 for (var v = 0; v < P.count; v++) {
@@ -4438,10 +4464,12 @@
             if (n <= zeile || versuch === 4) break;
             detail *= Math.min(0.97, zeile / n);
         }
-        var grp = new THREE.Group();
-        ["stoff", "metall"].forEach(function (k) {
+        var grp = new THREE.Group(),
+            reihe = [];
+        for (var st in ARENA_STOFF) if (reihe.indexOf(ARENA_STOFF[st]) < 0) reihe.push(ARENA_STOFF[st]);
+        reihe.forEach(function (k) {
             var K = klassen[k];
-            if (!K.idx.length) return;
+            if (!K || !K.idx.length) return;
             var geo = new THREE.BufferGeometry();
             var r = function (arr, q) {
                 var f = new Float32Array(arr.length);
@@ -4452,7 +4480,7 @@
             geo.setAttribute("normal", new THREE.BufferAttribute(r(K.nrm, 16384), 3));
             geo.setAttribute("color", new THREE.BufferAttribute(r(K.col, 4096), 3));
             geo.setIndex(K.idx);
-            var mesh = new THREE.Mesh(geo, k === "metall" ? metallMat : stoffMat);
+            var mesh = new THREE.Mesh(geo, hautStoff(M[k]));
             mesh.castShadow = mesh.receiveShadow = true;
             grp.add(mesh);
         });
