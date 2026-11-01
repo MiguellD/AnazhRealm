@@ -191,8 +191,8 @@ async function kreaturProben(r, T, opts) {
         return c;
     };
     const warte = (c) => r.assignCreatureTask(c, "wait", {}, { silent: true }); // das Tier wartet (still)
-    const leeren = () => {
-        for (const c of s.creatures.slice()) r.removeCreature(c); // jedes Tier der Welt fort
+    const leeren = (L = s.creatures.slice()) => {
+        for (const c of L) r.removeCreature(c); // jedes Tier der Welt fort (oder die Liste L)
     };
     const ruhig = (c) => {
         c.userData.emotions = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
@@ -411,7 +411,7 @@ async function kreaturProben(r, T, opts) {
             r.clearCreatures();
             // ein Geist: aus der Liste gefallen, aber noch in der Szene (eingefroren, sichtbar, zahlt jeden Pass)
             const geister = meine.filter((c) => c.parent && !s.creatures.includes(c));
-            for (const g of geister) r.removeCreature(g);
+            leeren(geister);
             return { vorher: meine.length, geister: geister.length };
         } finally {
             if (taeter === "geister") delete r.clearCreatures;
@@ -749,7 +749,7 @@ async function kreaturProben(r, T, opts) {
                     const g = pf.leib[n].gier;
                     wegQ += Math.abs(dx * Math.cos(g) - dz * Math.sin(g));
                     wegH += Math.abs(dx * Math.sin(g) + dz * Math.cos(g));
-                    wegL += Math.hypot(pf.leib[n].x - pf.leib[n - 1].x, pf.leib[n].z - pf.leib[n - 1].z);
+                    wegL += ab(pf.leib[n], pf.leib[n - 1]);
                 }
             }
             return wegL > 0 ? { q: +(wegQ / wegL).toFixed(3), l: +(wegH / wegL).toFixed(3) } : null;
@@ -903,7 +903,7 @@ async function kreaturProben(r, T, opts) {
             r.tickFaunaLifecycle();
             for (const c of genannt) R.gefallen += !s.creatures.includes(c);
             genannt.clear();
-            for (const c of [...s.creatures, ...s.leichname]) r.removeCreature(c);
+            leeren([...s.creatures, ...s.leichname]);
         }
         return {
             jagdFrames: F.jagd[0] + F.hetzen[0],
@@ -985,7 +985,7 @@ async function kreaturProben(r, T, opts) {
             const t = { n: glieder.length, fremdN: fremd.length, wurf: anteil(), summe: 0, bilder: 0, fluchtTakte: 0 };
             Object.assign(t, { fs: 0, fb: 0, fMin: 1, phi: [0, 0], lauf: [], weg: glieder.map(() => 0), id: [0, 0] });
             Object.assign(t, { enge: 0, engst: [Infinity] });
-            const [alt, ab] = [glieder.map((c) => c.position.clone()), []];
+            const [alt, flucht0] = [glieder.map((c) => c.position.clone()), []];
             for (let k = 0; k < (art === "blick" ? 1200 : fremd.length ? 36000 : 3600); k++) {
                 const g0 = fremd.length && [6000, 18000].find((k0) => k >= k0 && k < k0 + 3600);
                 const x = flucht ? -30 + (1.4 * k) / 60 : g0 ? -30 + (1.4 * (k - g0)) / 60 : 45;
@@ -1011,17 +1011,15 @@ async function kreaturProben(r, T, opts) {
                     const [p, fl] = [c.position, c.userData._motionZustand === "flucht"];
                     // DIE ENGE: das engste Paar in seinem Paar-Raum (dem Raum der Separation, `_kreaturRaum` beider)
                     for (const b of glieder.slice(0, i)) {
-                        const q =
-                            Math.hypot(p.x - b.position.x, p.z - b.position.z) /
-                            (r._kreaturRaum(c) + r._kreaturRaum(b));
+                        const q = ab(p, b.position) / (r._kreaturRaum(c) + r._kreaturRaum(b));
                         if (q < e[0]) e = [+q.toFixed(2), b.userData.name, c.userData.name, (k / 60) | 0];
                     }
-                    const d = Math.hypot(p.x - alt[i].x, p.z - alt[i].z);
+                    const d = ab(p, alt[i]);
                     if (d > 1 / 60) ((sx += (p.x - alt[i].x) / d), (sz += (p.z - alt[i].z) / d), nl++);
                     alt[i].copy(p);
                     if (fl && d > 1 / 60) t.lauf[i] = t.lauf[i] || [k, c.userData._alarmEigen];
-                    ab[i] = fl ? ab[i] || p.clone() : null;
-                    if (ab[i]) t.weg[i] = Math.max(t.weg[i], Math.hypot(p.x - ab[i].x, p.z - ab[i].z));
+                    flucht0[i] = fl ? flucht0[i] || p.clone() : null;
+                    if (flucht0[i]) t.weg[i] = Math.max(t.weg[i], ab(p, flucht0[i]));
                 });
                 if (fliehen && nl >= 3) ((t.phi[0] += Math.hypot(sx, sz) / nl), t.phi[1]++);
                 if (k >= 600) t.enge += e[0];
@@ -1403,7 +1401,7 @@ async function kreaturProben(r, T, opts) {
         r.dslRun(["creatures_speed_mul", 5], { source: "nexus" });
         const hoch = r._creatureMoveCharacter(c0).speedMul;
         // (e) DIE NEXUS-GEBURT: fern und nie im Blick (dasselbe Gesetz wie die natürliche Geburt).
-        for (const c of tiere) r.removeCreature(c);
+        leeren(tiere);
         kamera(1, 0);
         const vorN = s.creatures.length;
         r.dslRun(["spawn_creature", ["at_player"], 4, "happy"], { source: "nexus" });
@@ -1830,7 +1828,7 @@ async function kreaturProben(r, T, opts) {
                 if (riss) Q.risse++;
                 if (kette && riss && beute.userData.kadaver) R.fleischEnde = +beute.userData.kadaver.fleisch.toFixed(1);
                 for (const G of R.gaeste) delete G.c;
-                for (const c of [...s.creatures, ...s.leichname]) r.removeCreature(c);
+                leeren([...s.creatures, ...s.leichname]);
             }
         }
         return { riss: R };
@@ -2654,7 +2652,7 @@ async function kreaturProben(r, T, opts) {
                     (e) =>
                         e &&
                         e.seed >>> 0 === sl.seed >>> 0 &&
-                        Math.hypot(e.position.x - (ox + sl.x), e.position.z - (oz + sl.z)) < 1
+                        ab(e.position, { x: ox + sl.x, z: oz + sl.z }) < 1
                 )
             );
         if (opts && opts.ort) return { stadt: await stadtTag(opts.ort), sicht: taeter ? sicht : undefined };
@@ -2699,10 +2697,14 @@ async function kreaturProben(r, T, opts) {
         // DIE STUFEN (stadt-takt3, die Simulations-Stufen): im Graphen hängt nur der Leib mit Gestalt, und die Gestalt trägt nur,
         // wer nah am Auge steht (`gestaltM`; ohne Bild ist jeder im Blick) — jenseits `zahlM` und dem Weg eines Takts der
         // Ruhenden (`fernS`, samt dem Arm der Kamera) ruht jeder als Zahl. Gezählt: die Leiber im Graphen, wer fern in ihm
-        // hängt, wer fern keine Zahl ist, die Zahlen
-        const stufen = (BW = A.BEWOHNER, a = r._lodAuge() || pm, z = { imGraph: 0, fern: 0, ohneZahl: 0, zahl: 0 }) => {
-            for (const { leib: g, zahl } of S.liste) {
+        // hängt, wer fern keine Zahl ist, die Zahlen. DER SCHLAF (die stehende Zahl, `zahlSteht`): wer schläft (ein Ende auf
+        // dem Weg des Auges), schläft nie länger, als das Auge bis `zahlM` braucht — Täter: die Wache schläft blind
+        const stufen = (BW = A.BEWOHNER, a = r._lodAuge() || pm, z = { imGraph: 0, fern: 0, ohneZahl: 0, zahl: 0, schlaf: 0, zuLang: 0 }) => {
+            for (const { leib: g, zahl, zahlE: e } of S.liste) {
                 const d = ab(g.position, a);
+                if (e && hat("bewohner-schlaf")) e.bis = Infinity;
+                z.schlaf += e && e.bis > -Infinity;
+                z.zuLang += e && e.bis - r._bewohnerAugeWeg.weg > d - BW.zahlM + 1e-6;
                 z.zahl += !!zahl;
                 z.imGraph += !!g.parent;
                 z.fern += !!g.parent && d > BW.gestaltM + 0.5;
@@ -3347,8 +3349,8 @@ function urteil(name, z) {
         // DIE STUFEN (stadt-takt3): kein Leib fern im Graphen, fern jeder eine Zahl
         const sf = z.stufen;
         soll(
-            !sf.fern && !sf.ohneZahl && sf.zahl > 0,
-            `die Stufen: ${sf.fern} Leiber fern im Graphen, ${sf.ohneZahl} fern ohne Zahl (${sf.imGraph} im Graphen, ${sf.zahl} Zahlen; Soll 0, 0, > 0)`
+            !sf.fern && !sf.ohneZahl && !sf.zuLang && sf.schlaf > 0,
+            `die Stufen: ${sf.fern} Leiber fern im Graphen, ${sf.ohneZahl} fern ohne Zahl, ${sf.zuLang} schlafen zu lang (${sf.imGraph} im Graphen, ${sf.zahl} Zahlen, ${sf.schlaf} schlafen; Soll 0, 0, 0, > 0)`
         );
         // DER TAG (mensch.K2): das Gesetz der Uhr, bit-gleich je Same, jeder trifft seine Soll-Orte, springt nie nah, und wer
         // nach 1 h Abwesenheit zurückkommt, findet jeden auf ±2 m dort, wo ihn sah, wer blieb
@@ -3823,6 +3825,7 @@ const TAETER = {
     bewohner: [
         ["bewohner-haus", /Haus ohne Bewohner/],
         ["bewohner-menge", /als Leib gezeichnet.*die Stufen: [1-9]/],
+        ["bewohner-schlaf", / [1-9]\d* schlafen zu/],
         ["bewohner-plan6", /Soll-Orte über 24 Spielstunden/],
         ["bewohner-sprung", /Sprung im Nahbereich/],
         ["bewohner-uhr", /der Tag beginnt mit Geschichte/],
