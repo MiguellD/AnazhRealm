@@ -2860,6 +2860,7 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "_speicherOhnePlatte",
         "_nebenFaeden",
         "_voxelFadenQuelle",
+        "_bodenFaden",
         "_hydroWelt",
         "_stauHoert",
         "_fernMemoGen",

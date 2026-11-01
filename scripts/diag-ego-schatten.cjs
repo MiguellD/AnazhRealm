@@ -137,21 +137,17 @@ function selbsttest() {
     selbsttestEnde(fehler);
 }
 
-if (process.argv.includes("--selftest")) {
+const { statikServer, starteBrowser, laufUhr, path, fs, SELBSTTEST, argOpt, wandEnde } = require("./lib/welt-boot.cjs");
+
+if (SELBSTTEST) {
     console.log("=== EGO-SCHATTEN — Selbsttest (ohne Browser) ===");
     selbsttest();
     process.exit(0);
 }
 
-const { statikServer, starteBrowser, laufUhr, wandEnde } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
-const fs = require("fs");
-const path = require("path");
 
-const BILDER = (() => {
-    const i = process.argv.indexOf("--bilder");
-    return i > 0 ? path.resolve(process.argv[i + 1]) : null;
-})();
+const BILDER = argOpt("--bilder") && path.resolve(argOpt("--bilder"));
 const server = statikServer();
 
 // DIE BÜHNE (Seiten-Kontext): der echte Renderer, der echte Leib, die echte Regel; eigene Szene, Zeit fest.
@@ -269,9 +265,8 @@ function buehne(arg) {
             const schuss = async (name) => {
                 await window.__erstRuhe(frame, { erstFristMs: 60000 }, "die Ego-Schatten-Bühne");
                 frame();
-                const px = await rend.readRenderTargetPixelsAsync(ziel, 0, 0, W, H);
-                const u8 = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
-                const zeile = u8.length / H;
+                const u8 = await window.__zielLesen(ziel, W, H);
+                const zeile = W * 4;
                 const l = new Float32Array(W * H);
                 for (let y = 0; y < H; y++)
                     for (let x = 0; x < W; x++) {

@@ -31,14 +31,10 @@
 // Exit: 0 grün · 1 rot.
 // ============================================================================
 "use strict";
-const fs = require("fs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
+const { ausDatei, SELBSTTEST, stammLib, vm } = require("./lib/welt-boot.cjs");
 
-const root = path.resolve(__dirname, "..");
-const PHYTO = fs.readFileSync(path.join(root, "phyto-core.js"), "utf8");
-const KERN = fs.readFileSync(path.join(root, "foundry-core.js"), "utf8");
-const vm = require("vm");
+const PHYTO = ausDatei("phyto-core.js");
+const KERN = ausDatei("foundry-core.js");
 
 // Der Karten-Codec aus einer phyto-core-Quelle (echt oder injiziert), in einer eigenen Sandbox geladen.
 function codecAus(phytoSrc) {
@@ -48,6 +44,7 @@ function codecAus(phytoSrc) {
 }
 // linear → sRGB nach IEC 61966-2-1: die Referenz der Linse (abnahme-urteil linSrgb), unabhängig vom Codec.
 const { linSrgb } = require("./lib/abnahme-urteil.cjs");
+const { absorber } = require("./lib/asset-worker-harness.cjs");
 const srgbSoll = (v) => Math.round(linSrgb(v) * 255);
 function kartenFarbe(core) {
     const fehler = [];
@@ -94,10 +91,6 @@ function kartenSaum(core, presets, ic) {
 
 // Ein absorbierender Proxy: frisst jeden THREE-Aufruf der Top-Level-Ausführung des Kerns — nur die Daten zählen
 // (dieselbe Lade-Art wie gate:studio-vertrag).
-function absorber() {
-    const a = new Proxy(function () {}, { get: () => a, apply: () => a, construct: () => a });
-    return a;
-}
 // Die Daten des Pflanzen-Kerns (phyto-core + foundry-core, wie cores.manifest.json sie lädt): PRESETS und
 // PORTAL_RENDER_CONFIG. null, wenn der Kern nicht lädt.
 function kernDaten(phytoSrc, kernSrc) {
@@ -193,7 +186,7 @@ function pruefe(o = {}) {
 }
 
 function main() {
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         const echt = pruefe();
         // der Codec gebrochen als Hülle: Stufe 0 ungekodiert (linear), Stufe 1 aus den sRGB-Bytes gemittelt
         const codec = (bruch) => { const c = Object.assign({}, codecAus(PHYTO)); const m0 = c.impostorMips; c.impostorMips = (lin, ...a) => bruch(m0(lin, ...a), lin); return c; };

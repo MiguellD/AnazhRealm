@@ -14,8 +14,8 @@ const {
     wandEnde,
     selbsttestEnde,
     starteBrowser,
+    path,
 } = require("./lib/welt-boot.cjs");
-const path = require("path");
 
 const PORT = Number(process.env.FAHR_LEBEN_PORT || 4413);
 const schalter = (f) => process.argv.includes(f);

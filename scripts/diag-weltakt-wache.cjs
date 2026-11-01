@@ -27,7 +27,7 @@
 //   node scripts/diag-weltakt-wache.cjs [--selftest]   (npm run gate:weltakt-wache; Port WELTAKT_WACHE_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, nullRenderer, nullSeite, selbsttestEnde, hauptLauf, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, nullRenderer, nullSeite, selbsttestEnde, hauptLauf, wandEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL, weltaktUrteil, weltaktSelbsttest } = require("./lib/ausgabe-aufnahme.cjs");
 const MESS = require("./lib/welt-orte.cjs").messort("wiese");
 
@@ -76,7 +76,7 @@ function tatSelbsttest() {
     return [...(rot("").length || !rot("taten.1.antwort").includes("K1 Tat 2 am Ort (12,-7) ohne antwort nach 24 Schritten Vogel-Uhr") ? ["(T) tatUrteil rot am heilen Fall oder die stumme Tat 2 ohne Namen"] : []), ...Object.keys(faelle).filter((f) => !rot(f).length).map((f) => `(T) tatUrteil blind: ${f}`)];
 }
 
-if (process.argv.includes("--selftest")) {
+if (SELBSTTEST) {
     console.log("=== WELT-WACHE — Selbsttest des Urteils (ohne Browser) ===");
     const v = weltaktSelbsttest();
     v.push(...tatSelbsttest());

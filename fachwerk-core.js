@@ -6291,10 +6291,12 @@
             });
             ausTeil(g, geo, "holz");
         };
-        // das Nasse an Joch und Pfahl: dunkler und kühler, je tiefer (die Bahn bleicht, der Pfahl steht im Wasser)
+        // das Nasse an Joch und Pfahl: dunkler und kühler, je tiefer (die Bahn bleicht, der Pfahl steht im Wasser) und je älter —
+        // frisch trocken, im Mittel der Welt (0,5) 0,425 wie bisher, alt 0,85 (studios.K1: mit 0,25 + 0,35·W bewegte die Brücke
+        // an keinem Rand ein Pixel um 18 Luma, der Regler war tot)
         var nass = function (geo, ton) {
             ausFaerbe(geo, "holz", W, function (_x, y) {
-                var t = Math.max(0, Math.min(1, -(y - m.yJ) / 1.2)) * (0.25 + 0.35 * W);
+                var t = Math.max(0, Math.min(1, -(y - m.yJ) / 1.2)) * (0.85 * W);
                 return { ton: [ton[0] * (1 - t * 0.55), ton[1] * (1 - t * 0.5), ton[2] * (1 - t * 0.42)] };
             });
             ausTeil(g, geo, "holz");

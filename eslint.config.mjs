@@ -122,6 +122,7 @@ export default [
                 importScripts: "readonly",
                 postMessage: "readonly",
                 onmessage: "writable",
+                MessageChannel: "readonly", // der Takt der Reihe im Voxel-Faden (die Nachrichten des Bodens gehen vor)
                 URLSearchParams: "readonly",
                 SimplexNoise: "readonly",
                 Float32Array: "readonly",

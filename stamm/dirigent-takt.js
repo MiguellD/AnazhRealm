@@ -271,6 +271,12 @@ class AnazhRealm_dirigent_takt {
                 // Welle-A-Maschinerie ist weg; Cell-Feld ist DERIVED (V9.74),
                 // Wasser-Reaktion läuft via Voxel-Chunk-Rebuild.
 
+                // ### Das Spiegel-Feld ### (D10) — im Takt der Welt, nie im Bild: das Fenster folgt dem Auge dieses Takts, ein
+                // Auftrag fliegt, der nächste Takt trägt seine Antwort ein. Bis studios-heim-stand rief `_loopRender` ihn: jedes
+                // Bild der ruhenden Welt schickte den nächsten Auftrag, jede Antwort landete zwischen zwei Bildern, das Wasser am
+                // Bach der Mess-Wiese wechselte unter der stehenden Welt (gate:ziel-zensus RUNDUNG: dieselbe Phase 0,011 der Pixel)
+                if (!ruht) this._spiegelFeldTakt();
+
                 // ### Rendering ###
                 // VOR dem Render: entscheiden, ob die Schatten-Map neu muss (im Stand gecacht). Eine erste Zeichnung baut
                 // verteilt und kompiliert asynchron (die Erst-Zeichnung, `_configureRenderer`) — kein Vorwärmen.
@@ -393,19 +399,21 @@ class AnazhRealm_dirigent_takt {
                                 ? `Wald offen ${o.wald}`
                                 : o.karten
                                   ? `Karten offen ${o.karten}`
-                                  : o.felder
-                                    ? `Felder offen ${o.felder}`
-                                    : o.dorf
-                                      ? `Dorf offen ${o.dorf}`
-                                      : o.leib
-                                        ? "Leib offen"
-                                        : o.leute
-                                          ? `Leute offen ${o.leute}`
-                                          : o.huellen
-                                            ? `Hüllen offen ${o.huellen}`
-                                            : o.ankunft
-                                              ? `Ankunft gleitet ${o.ankunft}`
-                                              : null;
+                                  : o.spiegel
+                                    ? `Spiegel offen ${o.spiegel}`
+                                    : o.felder
+                                      ? `Felder offen ${o.felder}`
+                                      : o.dorf
+                                        ? `Dorf offen ${o.dorf}`
+                                        : o.leib
+                                          ? "Leib offen"
+                                          : o.leute
+                                            ? `Leute offen ${o.leute}`
+                                            : o.huellen
+                                              ? `Hüllen offen ${o.huellen}`
+                                              : o.ankunft
+                                                ? `Ankunft gleitet ${o.ankunft}`
+                                                : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -427,7 +435,7 @@ class AnazhRealm_dirigent_takt {
     // Was die Welt noch baut: Foundry-Aufträge (wartend, im Flug, Antworten vor der Freigabe — auch die gehaltenen: Laub-Körper
     // vor dem Blatt-Atlas, das Buch vor dem Wirt, B3a), Chunks (schmutzig, im Bau) und der Wald (die Plan-Schlange, die
     // Pflanz-Gänge, die wartenden Pflanzungen, K69) und die Karten (die Schlange des Karten-Takts, wartend und backend bis
-    // zur Lieferung in den Atlas), die Felder (die Schuld der EINEN Bake-Uhr, `_weltBakeSchuld`), das Dorf (`_dorfOffen`), der Leib des Spielers (`leib`) und die Leiber der Bewohner,
+    // zur Lieferung in den Atlas), der Spiegel (die Aufträge des Spiegel-Felds bis zum Eintrag), die Felder (die Schuld der EINEN Bake-Uhr, `_weltBakeSchuld`), das Dorf (`_dorfOffen`), der Leib des Spielers (`leib`) und die Leiber der Bewohner,
     // deren Feld noch nicht gebacken ist (mit Bild, wer draußen ist — `_kzLeib` vorab, mensch.K2) — jede Linse liest SIE, nie
     // die Marken; wer „nichts offen" fragt, liest JEDES Feld.
     _weltOffen() {
@@ -440,6 +448,7 @@ class AnazhRealm_dirigent_takt {
                 chunks: 0,
                 wald: 0,
                 karten: 0,
+                spiegel: 0,
                 felder: 0,
                 leiber: 0,
                 dorf: 0,
@@ -456,8 +465,12 @@ class AnazhRealm_dirigent_takt {
               (f.buch ? 1 : 0)
             : 0;
         o.foundry += this._foundryIngestQueue ? this._foundryIngestQueue.length : 0;
+        // … samt den Nähten im Faden (w4-b-boden2): Eintritte ohne Antwort (`_bodenImFlug`) und Teile, die der Takt noch anlegt
         o.chunks =
-            (st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0) + (st.voxelMeshPending ? st.voxelMeshPending.size : 0);
+            (st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0) +
+            (st.voxelMeshPending ? st.voxelMeshPending.size : 0) +
+            (this._bodenImFlug | 0) +
+            (this._bodenTeile ? this._bodenTeile.length : 0);
         // DER STAU IM FADEN (`_stauFelder`): sein Auftrag baut, bis die Felder ankamen (`_stauAn`) — bis ci-werk-wasser stand die
         // Welt, während er flog, und gate:werk-im-wasser D zählte den Stausee nach dem Reload vor seiner Antwort
         o.stau = this._stauImFlug ? 1 : 0;
@@ -486,6 +499,11 @@ class AnazhRealm_dirigent_takt {
             (this._saatOffen ? this._saatOffen.size : 0) +
             (st.pendingVegSpawns ? st.pendingVegSpawns.length : 0);
         o.karten = this._impostorBakeQueue ? this._impostorBakeQueue.length : 0;
+        // DER SPIEGEL IM FADEN (D10, `_spiegelFeldTakt`): bis jeder Auftrag des Spiegel-Felds gebacken und im Takt eingetragen ist
+        // (wartend, im Flug, die Antwort vor ihrem Eintrag) — bis studios-heim-stand stand die Welt, während der Faden das Feld
+        // noch backte (am Bach der Mess-Wiese 16 von 24 Aufträgen offen, als die Linse ihre Bilder schoss)
+        const sf = st.spiegelFeld;
+        o.spiegel = sf ? sf.auftraege.length + (sf.imFlug ? 1 : 0) : 0;
         o.felder = this._weltBakeSchuld();
         o.dorf = this._dorfOffen();
         // DER LEIB DES SPIELERS (Lehre 13, Existenz vor Framerate): auf echter GPU gießt der Loop den Avatar erst, wenn seine
@@ -1342,9 +1360,9 @@ class AnazhRealm_dirigent_takt {
             },
             {
                 name: "morphFolge",
-                prio: 1, // Welt-Substanz: die Naht eines Nachbarn, dessen Stufe wechselte (`_tickMorphFolge`), nach dem Strom
-                run: (ms) => {
-                    this._tickMorphFolge(st._frameChunksBuilt ? 0 : Math.min(ms, AnazhRealm.MORPH_FOLGE_MS));
+                prio: 1, // Welt-Substanz: die Nähte, die der Faden morphte (`_tickMorphFolge` legt sie an), nach dem Strom
+                run: () => {
+                    this._tickMorphFolge();
                 },
             },
             {
@@ -1718,8 +1736,6 @@ class AnazhRealm_dirigent_takt {
         const pp = this._ensurePostProcessing();
         // DER LICHT-TAKT (K11): die Plätze des Licht-Pools und die Fenster-Glut für dieses Bild (die Kamera steht)
         this._leuchtTakt();
-        // das Spiegel-Feld des Wassers folgt dem Auge (D10, ein Worker-Auftrag zur Zeit)
-        this._spiegelFeldTakt();
         // Die Kehraus-Marke vor dem Frame: was dieser Frame zeichnet, trägt einen höheren Zähler.
         const zaehlerVor = this._gpuKehrausMarke();
         // DIE SZENEN-SKALA am Szenen-Pass: nie je Last (jeder Ziel-Wechsel unter lebenden Bündeln war die Destroyed-Klasse,

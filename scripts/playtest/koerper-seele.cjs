@@ -3,7 +3,7 @@
 // 15 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, ohneWurf } = require("../playtest.cjs");
 
 // Der EINE „in der Hand“-Slot (Werkzeug + Waffe, kein Rollen-Schloss): equipHeld nimmt JEDEN
 // Bauplan; das Gerät faltet über die Equip-Pipeline in die Kombat-Stats (kein eigener
@@ -1263,7 +1263,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (reflexResults && !reflexResults.error) {
+    if (ohneWurf(check, "Reflex-Tests Block lief ohne Exception", reflexResults, true)) {
         // (2) Chat
         check("Reflex 2: 'schade mir 42' chat-pattern → DSL ['damage', 42, ...]", reflexResults.damageChatParses);
         check("Reflex 2: 'trink X' chat-pattern → DSL ['apply_boost', ...]", reflexResults.trinkChatParses);
@@ -1318,8 +1318,6 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
             reflexResults.boostTagBonusFromCompound
         );
         check("Reflex 6: Boost-Dauer aus consumableMeta.durationSeconds", reflexResults.boostUsesBlueprintDuration);
-    } else if (reflexResults && reflexResults.error) {
-        check("Reflex-Tests Block lief ohne Exception", false, reflexResults.error);
     }
 
     // ### Welle 6.D Etappe 3b — Equipment + Aura ###
@@ -1418,7 +1416,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6d3bResults && !wave6d3bResults.error) {
+    if (ohneWurf(check, "Welle 6.D Etappe 3b: Test-Block lief ohne Exception", wave6d3bResults, true)) {
         check("Welle 6.D Etappe 3b: ARMOR_STAT_WEIGHT == 0.3", wave6d3bResults.armorWeight03);
         check("Welle 6.D Etappe 3b: TOOL_STAT_WEIGHT == 0.15", wave6d3bResults.toolWeight015);
         check(
@@ -1466,8 +1464,6 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
             "Welle 6.D Etappe 3b: buildStateSnapshot persistiert playerEquipped (held)",
             wave6d3bResults.snapHasEquipped
         );
-    } else if (wave6d3bResults && wave6d3bResults.error) {
-        check("Welle 6.D Etappe 3b: Test-Block lief ohne Exception", false, wave6d3bResults.error);
     }
 
     // ### Welle 6.D Etappe 3a — Tod, Min-Regel-Hybrid, Konsumables ###
@@ -1575,7 +1571,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6d3aResults && !wave6d3aResults.error) {
+    if (ohneWurf(check, "Welle 6.D Etappe 3a: Test-Block lief ohne Exception", wave6d3aResults, true)) {
         // Schaden
         check(
             "Welle 6.D Etappe 3a: damage-Op in NON_BROADCASTABLE_OPS (privat)",
@@ -1611,8 +1607,6 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
             wave6d3aResults.applyBoostNonBroadcast
         );
         check("Welle 6.D Etappe 3a: buildStateSnapshot persistiert consumables", wave6d3aResults.snapHasConsumables);
-    } else if (wave6d3aResults && wave6d3aResults.error) {
-        check("Welle 6.D Etappe 3a: Test-Block lief ohne Exception", false, wave6d3aResults.error);
     }
 
     // ### Boosts (temporäre Tag-Deltas) ###
@@ -1731,7 +1725,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6d2Results && !wave6d2Results.error) {
+    if (ohneWurf(check, "Welle 6.D Etappe 2: Test-Block lief ohne Exception", wave6d2Results, true)) {
         check("Welle 6.D Etappe 2: state.player.boosts ist Array", wave6d2Results.hasBoostsField);
         check(
             "Welle 6.D Etappe 2: BOOST_EMOTION_TAG-Map mit 6 Emotionen",
@@ -1773,8 +1767,6 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
             "Welle 6.D Etappe 2: Negativ-Kontrolle — außerhalb Reichweite KEIN Resonanz-Boost",
             wave6d2Results.resonanceNotTriggeredFar
         );
-    } else if (wave6d2Results && wave6d2Results.error) {
-        check("Welle 6.D Etappe 2: Test-Block lief ohne Exception", false, wave6d2Results.error);
     }
 
     // ### Custom-Seelen via DSL ###
@@ -1948,7 +1940,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6d17Results && !wave6d17Results.error) {
+    if (ohneWurf(check, "Welle 6.D Etappe 1.7: Test-Block lief ohne Exception", wave6d17Results, true)) {
         check(
             "Ich-H: der parallele Ich-Soul-Editor ist geschnitten (Schöpfung in der Werkstatt)",
             wave6d17Results.ichSoulEditorGone
@@ -1988,8 +1980,6 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
             "Welle 6.D Etappe 1.7: Löschen der aktiven Seele schaltet zurück auf 'human'",
             wave6d17Results.fallbackToHuman
         );
-    } else if (wave6d17Results && wave6d17Results.error) {
-        check("Welle 6.D Etappe 1.7: Test-Block lief ohne Exception", false, wave6d17Results.error);
     }
 
     if (wave6d16Results) {

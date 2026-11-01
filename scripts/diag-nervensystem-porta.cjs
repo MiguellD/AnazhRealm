@@ -8,8 +8,9 @@
 //   S (statisch, Node, Absenzen): der Auto-Register-Chokepoint vergleicht keinen kind-String (M8) · die
 //     Donor-Zeile tor_basis traegt kein portalMeta (der Alt-Blueprint ist PHYSISCH gefallen). Die Kette
 //     kindStages.gate beweist gate:porta-contract an der lod-Klemme. --selftest: die kern-stufen-Linse.
-//   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die 7 Tor-
-//     Rezepte · der Ingest-Merge traegt die Stufen-Liste JEDES Kerns (scripts/lib/kern-stufen.cjs) ·
+//   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt genau die Tor-Rezepte, die porta-core
+//     deklariert (das Soll aus dem Kern in der Seite, nie eine gepflegte Zahl; heute zehn — die sieben Ordnungen
+//     und Lyra, Vitruv, Tier-Tor des Rondells) · der Ingest-Merge traegt die Stufen-Liste JEDES Kerns (scripts/lib/kern-stufen.cjs) ·
 //     Auto-Blueprint tor_drachentor entsteht am EINEN Chokepoint (Donor-Klon,
 //     KEIN _grownSpecies) · die generische tor_-Regel loest auf · die Place-
 //     Aufloesung liefert mode "site" + siteTag "tor", der Dispatch streut NICHT
@@ -17,8 +18,7 @@
 //     liefert Meshes end-to-end (mat.color reist, BuildGroup baut) · die
 //     Distanz-Wahl lod=2 klemmt auf die groesste deklarierte Stufe ≤ 2.
 //   node scripts/diag-nervensystem-porta.cjs [--selftest]
-const { statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib } = require("./lib/welt-boot.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
 const PORT = Number(process.env.NERV_PORTA_PORT || 4431);
@@ -40,10 +40,11 @@ function staticLaws(q) {
 }
 
 hauptLauf(async () => {
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         console.log("=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===");
-        // V4: ein Buch mit abgeschriebener Stufen-Liste -> der Merge-Vergleich nennt die Art.
-        check("Selbst-Test 4: eine abgeschriebene Stufen-Liste faellt beim Namen (kern-stufen)", kernStufen.selbsttest());
+        // V4: ein Buch mit abgeschriebener Stufen-Liste -> der Merge-Vergleich nennt die Art; ein Buch ohne ein Rezept seiner
+        // Kerne oder mit einem fremden -> die Rezept-Wand nennt das Rezept (das Soll liest den Kern, nie eine gepflegte Zahl)
+        check("Selbst-Test 4: eine abgeschriebene Stufen-Liste, ein fehlendes und ein fremdes Rezept fallen beim Namen (kern-stufen)", kernStufen.selbsttest());
         // V6: portalMeta in der Donor-Zeile -> S6 feuert beim Namen
         const s6 = staticLaws((t) => stammLib.ersetze(t, null, /(\n {4}tor_basis: \{)/, "$1\n        portalMeta: {},"))[0];
         check("Selbst-Test 6: portalMeta in tor_basis -> S6 feuert", !s6[1], s6[2]);
@@ -54,11 +55,10 @@ hauptLauf(async () => {
     console.log("=== ε-BEWEIS PORTA — TEIL S: die statischen Absenzen (Node) ===");
     for (const [name, ok, detail] of staticLaws()) check(name, ok, detail);
 
-    const W = { bp: "tor_drachentor", donor: "tor_basis", preset: "drachentor", praefix: "tor_", wahl: 2, name: "ein Tor", art: "gate", anzahl: 7, teile: 4, label: "Drachentor", place: { mode: "site", siteTag: "tor", dispatch: null } };
+    const W = { bp: "tor_drachentor", donor: "tor_basis", preset: "drachentor", praefix: "tor_", wahl: 2, name: "ein Tor", art: "gate", teile: 4, label: "Drachentor", place: { mode: "site", siteTag: "tor", dispatch: null } };
     const [out, , kern] = await kernStufen.epsilonDraht(server, PORT, W, check);
     check("B: die Regler-Daten fliessen (drachentor.s.orders == 2)", out.b.s.orders === 2, String(out.b.s.orders));
-    const ksGate = JSON.stringify(out.b.ks.gate);
-    check("B: kindStages.gate == die Deklaration von porta-core (N7.5-Merge am Ingest; 3 = NUR-WURF)", ksGate === kern.gate, `${ksGate} (Kern ${kern.gate})`);
+    // kindStages.gate == die Deklaration von porta-core (3 = NUR-WURF) urteilt der EINE Draht je Art (stufenAbweichung oben)
     const fSoll = kern.gate ? kernStufen.geklemmteStufe(kern.gate, 2) : null;
     check(
         `F: die Distanz-Wahl 2 klemmt fuer kind:gate auf die groesste deklarierte Stufe ≤ 2 (${fSoll})`,

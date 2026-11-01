@@ -280,36 +280,47 @@ class AnazhRealm_stoff_karte {
         if (z._endeLoes) z._endeLoes(!!ok);
     }
 
-    // Das EINE Einheits-Quad der Karten (6 Verts auf der Stammachse, y ∈ {0,1}) mit DREI Vertex-Attributen: position,
-    // normal (PROBE (1,0,0): der InstanceNode macht daraus (cos r, 0, −sin r)/s → Rotation + Skala), uv (u = Ecke:
-    // ±1 = 2u−1, v = Höhe: Wind-Gewicht v²). Je Instanz EIN vec4 `aKarte` = (Schicht, Halbbreite, Höhe — template-
-    // lokal —, ±Sichthöhe), die Fassade ersetzt den Platzhalter je Slot; dazu instanceColor (Tint). Befund Echt-GPU 04.10.:
-    // mit color/aImpX/aFlex/aPhase/aOccl/aZelle/aRahmen trug die Pipeline 10 Vertex-Puffer (WebGPU-Grenze 8) — das
-    // @global-Bundle wurde ungültig, keine Karte zeichnete.
+    // Das EINE Einheits-Gitter der Karten (`KARTE_GITTER` Zellen auf der Stammachse, y ∈ 0..1, indiziert) mit DREI
+    // Vertex-Attributen: position, normal (PROBE (1,0,0): der InstanceNode macht daraus (cos r, 0, −sin r)/s → Rotation +
+    // Skala), uv (u = Spalte: ±1 = 2u−1, v = Höhe: Wind-Gewicht v²). Je Instanz EIN vec4 `aKarte` = (Schicht, Halbbreite,
+    // Höhe — template-lokal —, ±Sichthöhe), die Fassade ersetzt den Platzhalter je Slot; dazu instanceColor (Tint). Befund
+    // Echt-GPU 04.10.: mit color/aImpX/aFlex/aPhase/aOccl/aZelle/aRahmen trug die Pipeline 10 Vertex-Puffer (WebGPU-Grenze 8)
+    // — das @global-Bundle wurde ungültig, keine Karte zeichnete. DAS GITTER (heil-laub-tiefe): jede Ecke trägt die Tiefe
+    // ihrer Gestalt (der Stoff, `vertexNode`) — bis dahin ein Quad aus 2 Dreiecken, dessen Tiefe das Fragment schrieb. Unter
+    // ihrer Bild-Schwelle fallen die inneren Ecken auf die Ecken des Quads (der Stoff, `_morph`): es zeichnen dessen 2 Dreiecke.
     _impostorQuad(at) {
         if (at.quad) return at.quad;
-        const VC = 6;
-        const ecken = [
-            [0, 0],
-            [1, 0],
-            [1, 1],
-            [0, 1],
-        ];
-        const tri = [0, 1, 2, 0, 2, 3];
+        const [NX, NY] = AnazhRealm.KARTE_GITTER.zellen;
+        const VC = (NX + 1) * (NY + 1);
         const pos = new Float32Array(VC * 3),
             nor = new Float32Array(VC * 3),
             uv = new Float32Array(VC * 2),
             karte = new Float32Array(VC * 4);
-        for (let ti = 0; ti < VC; ti++) {
-            const c = ecken[tri[ti]];
-            pos[ti * 3 + 1] = c[1];
-            nor[ti * 3] = 1;
-            uv[ti * 2] = c[0];
-            uv[ti * 2 + 1] = c[1];
-            karte[ti * 4 + 1] = 1; // Platzhalter: Schicht 0, Rahmen 1 × 1, ohne Sichthöhe
-            karte[ti * 4 + 2] = 1;
-        }
+        for (let j = 0; j <= NY; j++)
+            for (let i = 0; i <= NX; i++) {
+                const k = j * (NX + 1) + i;
+                pos[k * 3 + 1] = j / NY;
+                nor[k * 3] = 1;
+                uv[k * 2] = i / NX;
+                uv[k * 2 + 1] = j / NY;
+                karte[k * 4 + 1] = 1; // Platzhalter: Schicht 0, Rahmen 1 × 1, ohne Sichthöhe
+                karte[k * 4 + 2] = 1;
+            }
+        // je Zelle zwei Dreiecke im Umlauf des alten Quads; die Diagonale läuft durch die Ecke zur Mitte des Gitters (ein Fächer
+        // um die Kuppel der Krone, links wie rechts gleich). Fallen die inneren Ecken auf das Quad (der Stoff, `_morph` 0), wird
+        // die Zelle mit der Mitte als unterer linker Ecke das alte Quad mit seiner Diagonale, jede andere entartet.
+        const idx = [];
+        for (let j = 0; j < NY; j++)
+            for (let i = 0; i < NX; i++) {
+                const a = j * (NX + 1) + i,
+                    b = a + 1,
+                    c = a + NX + 2,
+                    d = a + NX + 1;
+                if (i < NX / 2 === j < NY / 2) idx.push(a, b, c, a, c, d);
+                else idx.push(a, b, d, b, c, d);
+            }
         const g = new THREE.BufferGeometry();
+        g.setIndex(idx);
         g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
         g.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
         g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
@@ -635,18 +646,37 @@ class AnazhRealm_stoff_karte {
         const nOkt = S.select(nV.z.lessThan(0.0), S.vec2(1.0).sub(nO.yx.abs()).mul(nS), nO);
         // DIE TIEFE JE TEXEL (w4-laub-karte, phyto-core `karteTiefe`): wie weit die Fläche vor der Mitte des Rahmens liegt, im
         // Blick der Ansicht — die Kamera blickt aus `abst` auf die Mitte, ihre Sicht-Tiefe dort ist −abst (`uTiefe`: abst, hW,
-        // hH je Karte, `_karteWeltBacken`). Sie reist im vierten Kanal der Normale: r184 leert ihn auf 1 — ein leerer Texel
-        // trägt 1, ein deckender t (die rgba8-Mips mitteln 1 − Deckung · (1 − t), der Stoff teilt durch die Deckung in z).
+        // hH je Karte, `_karteWeltBacken`). Sie reist im vierten Kanal der Normale: die Leere (unten) schreibt ihn auf 1 — ein
+        // leerer Texel trägt 1, ein deckender t (die rgba8-Mips mitteln 1 − Deckung · (1 − t), der Stoff teilt durch die
+        // Deckung in z).
         B.uTiefe = S.uniform(new T.Vector3(1, 1, 1));
         const tiefe = globalThis.__phytoCore
             .karteTiefe(AnazhRealm._windTsl(S), S.positionView.z.add(B.uTiefe.x), B.uTiefe.y, B.uTiefe.z)
             .clamp(0.0, 1.0);
-        // r184 leert jedes Ziel außer dem ersten auf (0, 0, 0, 1): die Deckung reist in z (Normale) bzw. g (Sonnen-Sicht)
+        // die Leere trägt jedes Ziel außer dem ersten als (0, 0, 0, 1): die Deckung reist in z (Normale) bzw. g (Sonnen-Sicht)
         B.mrt = S.mrt({
             [namen[0]]: S.vec4(S.diffuseColor.rgb, 1.0),
             [namen[1]]: S.vec4(nOkt.mul(0.5).add(0.5), 1.0, tiefe),
             [namen[2]]: S.vec4(sicht.x, 1.0, sicht.y, 1.0),
         });
+        // DIE LEERE DES ZIELS (z120): vor der ersten Ansicht einer Karte ZEICHNET die Bühne ihr Ziel leer — ein Viereck über das
+        // ganze Ziel, Albedo (0, 0, 0, 0), Normale und Sonnen-Sicht (0, 0, 0, 1) —, ihr Pass leert nur die Tiefe. Bis z120 trug
+        // das Leeren des Passes die Leere: das WebGL2-Rückend von r184 erreicht mit keinem Leeren (autoClear wie clear()) eine
+        // Schicht ≥ 1 des Array-Ziels, eine Zeichnung erreicht sie (gemessen, Radeon WebGL2). Ihre Normale trug w = 0, die Mips
+        // der Tiefe (1 − (1 − w)/z) liefen an der Silhouette bis −90 m — jede Karte ab der zweiten Schicht stand hinter allem,
+        // was hinter ihr steht (gate:foundry-impostor C7 [rgba8] auf swiftshader: Karte vor der Tafel 0).
+        const leer = new T.MeshBasicNodeMaterial({ depthTest: false, depthWrite: false });
+        leer.vertexNode = S.vec4(S.positionGeometry.xy, 0.5, 1.0);
+        B.leere = {
+            szene: new T.Scene().add(
+                Object.assign(new T.Mesh(new T.PlaneGeometry(2, 2), leer), { frustumCulled: false })
+            ),
+            mrt: S.mrt({
+                [namen[0]]: S.vec4(0, 0, 0, 0),
+                [namen[1]]: S.vec4(0, 0, 0, 1),
+                [namen[2]]: S.vec4(0, 0, 0, 1),
+            }),
+        };
         this._karteBuehneSatz = B;
         return B;
     }
@@ -751,6 +781,7 @@ class AnazhRealm_stoff_karte {
             mip: rend.getActiveMipmapLevel(),
             mrt: rend.getMRT(),
             ac: rend.autoClear,
+            acf: rend.autoClearColor,
             farbe: rend.getClearColor(B.farbe),
             alpha: rend.getClearAlpha(),
         };
@@ -840,24 +871,33 @@ class AnazhRealm_stoff_karte {
                 this._buehneRender(rend, B.szene, L, "Karten-Sonne");
             }
             B.tiefe.value = B.schatten.depthTexture;
+            // das Ziel der Karte: BC die Bühne (die Ablage legt sie in ihre Schicht), rgba8 ihre Schicht im Array-Ziel
+            const schicht = bc ? 0 : z.idx;
+            if (iR === 0) {
+                // DIE LEERE (`B.leere`): gezeichnet über das ganze Ziel, der Pass leert nur die Tiefe
+                for (const t of B.ziel.textures) t.generateMipmaps = false;
+                B.ziel.viewport.set(0, 0, B.ziel.width, B.ziel.height);
+                rend.setMRT(B.leere.mrt);
+                rend.autoClear = true;
+                rend.autoClearColor = false;
+                rend.setRenderTarget(B.ziel, schicht);
+                this._buehneRender(rend, B.leere.szene, cam, "Karten-Leere");
+                rend.autoClearColor = vor.acf;
+                rend.setMRT(B.mrt);
+            }
             for (let v = 0; v < V; v++) {
                 // Ansicht v des Rings = die Gestalt aus Peilung v·360/V unter seiner Hebung (Kamera fest, Gestalt
                 // gegengedreht) in ihrer Zelle; WebGPU zeichnet von oben — der Stoff liest gespiegelt
                 B.wurzel.rotation.y = -v * dreh;
                 B.wurzel.updateMatrixWorld(true);
                 B.uBaum.value.makeRotationY(v * dreh); // Welt → Baum
-                rend.autoClear = iR === 0 && v === 0; // die erste Ansicht leert die Schicht (Farbe 0 = leer, Tiefe)
+                rend.autoClear = false; // die Schicht steht leer (die Leere des ersten Rings)
                 const zx = (v % tR) * bw,
                     zy = ring.y + Math.floor(v / tR) * bh;
-                if (bc) {
-                    B.ziel.viewport.set(zx, zy, bw, bh);
-                    rend.setRenderTarget(B.ziel);
-                } else {
-                    at.rt.viewport.set(zx, zy, bw, bh);
-                    // die Mips nach der letzten Ansicht des letzten Rings
-                    for (const t of at.rt.textures) t.generateMipmaps = letzter && v === V - 1;
-                    rend.setRenderTarget(at.rt, z.idx);
-                }
+                B.ziel.viewport.set(zx, zy, bw, bh);
+                // rgba8: die Mips nach der letzten Ansicht des letzten Rings (BC: die Ablage)
+                if (!bc) for (const t of B.ziel.textures) t.generateMipmaps = letzter && v === V - 1;
+                rend.setRenderTarget(B.ziel, schicht);
                 this._buehneRender(rend, B.szene, cam, "Karten-Bühne");
             }
             ganz = E.wartetN + E.verschoben === offen;
@@ -867,6 +907,7 @@ class AnazhRealm_stoff_karte {
             rend.setRenderTarget(vor.rt, vor.face, vor.mip);
             rend.setMRT(vor.mrt);
             rend.autoClear = vor.ac;
+            rend.autoClearColor = vor.acf;
             rend.setClearColor(vor.farbe, vor.alpha);
             for (const [u, w] of halt) {
                 if (u.value && u.value.copy && typeof w === "object") u.value.copy(w);
@@ -1281,7 +1322,9 @@ class AnazhRealm_stoff_karte {
             while (n < Math.max(at.n, 1)) n = Math.max(32, n * 2);
             const a = new Array(n).fill(0);
             for (let i = 0; i < alt.length; i++) a[i] = alt[i];
-            at.nadelU = (T || THREE.TSL).uniformArray(a, "float");
+            // DER FESTE NAME (w4-b-knoten, Lehre 23): ohne ihn schreibt r184 `NodeBuffer_<Knoten-id>` ins WGSL — die Bytes der
+            // Karten-Arena wanderten mit jeder Änderung der Bau-Reihenfolge (headless kalt 01.11.: NodeBuffer_189313 → _198261)
+            at.nadelU = (T || THREE.TSL).uniformArray(a, "float").setName("karteNadel");
             if (at.mat) at.mat.needsUpdate = true;
         }
         if (z) {
@@ -1310,6 +1353,14 @@ AnazhRealm.IMPOSTOR_ATLAS_GRUPPE = "impostor#fimp:atlas";
 // BC1-Albedo 298 KB + RGTC2-Normale 149 KB + Sonnen-Sicht 56 KB, 128 × 3584 samt Mips; waagrecht allein 0,28 MiB), das Wachsen
 // kopiert nur beim Einzug einer Art (Mess-Wiese 18 Karten in 18 Schichten).
 AnazhRealm.KARTEN_ATLAS_SCHRITT = 2;
+// DAS GITTER DER KARTE (heil-laub-tiefe, `_impostorQuad` und der Stoff): `zellen` Spalten × Zeilen, an deren Ecken der Stoff die
+// Tiefe der Gestalt liest (`vertexNode`; der frühe Tiefentest bleibt, kein frag_depth) — die Mitte trägt die Kuppel der Krone,
+// Rand und Fuß ihren Saum. `px` die Bild-Höhe der Karte in Pixeln der Szene, ab der ihr Gitter zu wachsen beginnt und ab der
+// es ganz steht: jede innere Kante schattiert ihre 2×2-Blöcke doppelt, an der fernen Karte so viel wie die Karte selbst — dort
+// zeichnen die zwei Dreiecke von f0dab43d (Radeon, Mess-Wiese Ego, Einzel-Frames in EINER Welt gegen die Karte von f0dab43d:
+// 4 × 4 an jeder Karte p50 +0,6 ms, 2 × 2 ab 64/128 px +0,1 ms). Je Instanz 8 Dreiecke (Mess-Wiese Ego: 2221 Karten, +13k
+// Dreiecke; 653 im Bild, Median 44 px hoch, 209 über 64 px, 53 über 128 px).
+AnazhRealm.KARTE_GITTER = Object.freeze({ zellen: Object.freeze([2, 2]), px: Object.freeze([64, 128]) });
 
 // Das Budget-Fenster der Welt-Karte je Takt (ms Haupt-Faden; die erste Karte eines Takts backt immer — Spike S1).
 AnazhRealm.KARTE_WELT_MS = 4;

@@ -4049,6 +4049,844 @@
         return { hoehe: map, gruen, zellen: zl, geaendert };
     }
 
+    // ═══ DER BODEN IM FADEN (w4-b-boden2, Lehre 14 · 24): die Vorlage des Satzes, die Naht und der Geomorph der Stufen ═══
+    // Aus dem Stamm in den Kern (`_satzPacke`, `_bodenNaht`, `_closestPtTri`, `_applyCrossLodGeomorph`, `_rebuildLodStitchBand`,
+    // `_chunkSatzViertel`, `_chunkSatzHuelle`): der voxel-worker rechnet sie an den Netzen, die er baut und hält — der Haupt-Faden
+    // legt nur die fertigen Puffer an. Dieselbe Rechnung, Zeile für Zeile; bis hierher trug der Haupt-Faden sie (Radeon kalt bis
+    // zum ersten Bild ≈ 1,0 s Boden: Einbau, Satz, Naht, Morph-Folge).
+
+    // DIE VERTEX-FORM DES SATZES (K44): packt `n` Vertices (Breite `is`, aus `src` ab Vertex 0) in die Form `form` nach `dst` ab
+    // Vertex `ab` (Breite 4) — "snorm8" (|x| ≤ 1 auf ±127), sonst roh (float16x4 oder Float32 × 4); `w` (optional) ein Skalar je
+    // Vertex für die vierte Komponente (snorm8: −1…1, sonst roh; ohne: Normale 0, Farbe 1). `nur` (optional): nur diese Vertices
+    // des Bereichs — jeder andere behält seine Bytes. EINE Quelle für Faden, Satz und Linse (gate:chunk-satz (f)).
+    function satzPacke(form, src, is, dst, ab, n, w, nur) {
+        const o0 = ab * 4;
+        const m = nur ? nur.length : n;
+        if (form === "snorm8")
+            for (let j = 0; j < m; j++) {
+                const v = nur ? nur[j] : j;
+                const q = v * is,
+                    o = o0 + v * 4;
+                for (let k = 0; k < 3; k++) {
+                    const x = src[q + k];
+                    dst[o + k] = Math.round((x > 1 ? 1 : x < -1 ? -1 : x) * 127);
+                }
+                const x = w ? w[v] : 0;
+                dst[o + 3] = Math.round((x > 1 ? 1 : x < -1 ? -1 : x) * 127);
+            }
+        else
+            for (let j = 0; j < m; j++) {
+                const v = nur ? nur[j] : j;
+                const q = v * is,
+                    o = o0 + v * 4;
+                dst[o] = src[q];
+                dst[o + 1] = src[q + 1];
+                dst[o + 2] = src[q + 2];
+                dst[o + 3] = w ? w[v] : 1;
+            }
+    }
+
+    // DER MORPH-CODE DES BODENS (K51-2): EIN Float je Vertex (`aMorphWeight`) trägt die Stufe des Chunks und das Naht-Gewicht
+    // (0…1) — 2 · Stufe + Naht; der Stoff liest beide (`_morphFaktor`)
+    function morphCode(lod, naht) {
+        return 2 * (lod | 0) + Math.max(0, Math.min(1, naht || 0));
+    }
+    function morphNaht(code) {
+        return code - 2 * Math.floor(code * 0.5);
+    }
+
+    // DIE NAHT DES NETZES (gehen-takt): was ein Naht-Morph berühren KANN, steht mit dem Netz fest — die Rand-Vertices (bis zum
+    // Morph-Band, 2 Schritte, an einer Kante: nur sie zieht der Morph an einen Nachbarn), die Rand-Dreiecke (≥ 1 Rand-Vertex: nur
+    // sie tragen Naht-Kanten) und je Seite (x−, x+, z−, z+) die Dreiecke, die ein FEINERER Nachbar als grobe Fläche liest (eine
+    // Ecke ≤ 1,5 Schritte an der Kante), je Seite die Rand-Vertices und je Vertex seine Seiten-Bits (16 = Rand, 1 x− · 2 x+ ·
+    // 4 z− · 8 z+). Obermengen (EPS): der Morph prüft jede Stelle exakt. P die Lage · idx der Index · (cx, cz) der Chunk ·
+    // S seine Kante · step sein Schritt.
+    function bodenNaht(P, idx, cx, cz, S, step) {
+        const ox = cx * S,
+            oz = cz * S;
+        const EPS = 1e-3; // die Rundung zwischen `i · span − x` (der Morph) und `x − cx · span` (hier)
+        const mb = 2 * step + EPS,
+            bnd = 1.5 * step + EPS;
+        const n = P.length / 3;
+        const rand = [];
+        const randSeite = [[], [], [], []];
+        const seiteV = new Uint8Array(n);
+        for (let v = 0; v < n; v++) {
+            const lx = P[v * 3] - ox,
+                lz = P[v * 3 + 2] - oz;
+            const an = [lx <= mb, lx >= S - mb, lz <= mb, lz >= S - mb];
+            if (!an.includes(true)) continue;
+            rand.push(v);
+            for (let s = 0; s < 4; s++) if (an[s]) randSeite[s].push(v);
+            seiteV[v] =
+                16 | (lx <= bnd ? 1 : 0) | (lx >= S - bnd ? 2 : 0) | (lz <= bnd ? 4 : 0) | (lz >= S - bnd ? 8 : 0);
+        }
+        const nT = Math.floor(idx.length / 3);
+        const randTri = [];
+        const seite = [[], [], [], []];
+        for (let q = 0; q < nT; q++) {
+            const f = seiteV[idx[q * 3]] | seiteV[idx[q * 3 + 1]] | seiteV[idx[q * 3 + 2]];
+            if (!f) continue;
+            randTri.push(q * 3);
+            for (let s = 0; s < 4; s++) if (f & (1 << s)) seite[s].push(q * 3);
+        }
+        return {
+            rand: Int32Array.from(rand),
+            randSeite: randSeite.map((l) => Int32Array.from(l)),
+            randTri: Int32Array.from(randTri),
+            seite: seite.map((l) => Int32Array.from(l)),
+            seiteV,
+        };
+    }
+
+    // DIE KANTEN-KANDIDATEN DES NAHT-BANDS (fahrt-takt): jede Kante der Grenz-Zeile liegt in einem Rand-Dreieck zwischen zwei
+    // Vertices an einer Seite — einmal je Netz, jede Kante einmal in der Reihe des Netzes
+    function nahtKanten(saum, idx) {
+        const seen = new Set();
+        const K = [];
+        for (const t of saum.randTri)
+            for (let e = 0; e < 3; e++) {
+                const a = idx[t + e],
+                    b = idx[t + ((e + 1) % 3)];
+                if (!(saum.seiteV[a] & 15) || !(saum.seiteV[b] & 15)) continue;
+                const k = a < b ? a * 200000 + b : b * 200000 + a;
+                if (seen.has(k)) continue;
+                seen.add(k);
+                K.push(a, b);
+            }
+        return Int32Array.from(K);
+    }
+
+    // Nächster Punkt auf dem Dreieck (T[t..t+8] = A,B,C) zu P → out[0..2] (Ericson, RTCD §5.1.5): Voronoi-Regionen Ecke/Kante/
+    // Innen. Für den Geomorph — robust auf der mehrwertigen Surface-Nets-Fläche (der nächste Vertex griffe die falsche Branche).
+    function closestPtTri(px, py, pz, T, t, out) {
+        const ax = T[t],
+            ay = T[t + 1],
+            az = T[t + 2];
+        const bx = T[t + 3],
+            by = T[t + 4],
+            bz = T[t + 5];
+        const cx = T[t + 6],
+            cy = T[t + 7],
+            cz = T[t + 8];
+        const abx = bx - ax,
+            aby = by - ay,
+            abz = bz - az;
+        const acx = cx - ax,
+            acy = cy - ay,
+            acz = cz - az;
+        const apx = px - ax,
+            apy = py - ay,
+            apz = pz - az;
+        const d1 = abx * apx + aby * apy + abz * apz;
+        const d2 = acx * apx + acy * apy + acz * apz;
+        if (d1 <= 0 && d2 <= 0) {
+            out[0] = ax;
+            out[1] = ay;
+            out[2] = az;
+            return;
+        }
+        const bpx = px - bx,
+            bpy = py - by,
+            bpz = pz - bz;
+        const d3 = abx * bpx + aby * bpy + abz * bpz;
+        const d4 = acx * bpx + acy * bpy + acz * bpz;
+        if (d3 >= 0 && d4 <= d3) {
+            out[0] = bx;
+            out[1] = by;
+            out[2] = bz;
+            return;
+        }
+        const vc = d1 * d4 - d3 * d2;
+        if (vc <= 0 && d1 >= 0 && d3 <= 0) {
+            const v = d1 / (d1 - d3);
+            out[0] = ax + abx * v;
+            out[1] = ay + aby * v;
+            out[2] = az + abz * v;
+            return;
+        }
+        const cpx = px - cx,
+            cpy = py - cy,
+            cpz = pz - cz;
+        const d5 = abx * cpx + aby * cpy + abz * cpz;
+        const d6 = acx * cpx + acy * cpy + acz * cpz;
+        if (d6 >= 0 && d5 <= d6) {
+            out[0] = cx;
+            out[1] = cy;
+            out[2] = cz;
+            return;
+        }
+        const vb = d5 * d2 - d1 * d6;
+        if (vb <= 0 && d2 >= 0 && d6 <= 0) {
+            const w = d2 / (d2 - d6);
+            out[0] = ax + acx * w;
+            out[1] = ay + acy * w;
+            out[2] = az + acz * w;
+            return;
+        }
+        const va = d3 * d6 - d5 * d4;
+        if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) {
+            const w = (d4 - d3) / (d4 - d3 + (d5 - d6));
+            out[0] = bx + (cx - bx) * w;
+            out[1] = by + (cy - by) * w;
+            out[2] = bz + (cz - bz) * w;
+            return;
+        }
+        const denom = 1 / (va + vb + vc);
+        const v = vb * denom,
+            w = vc * denom;
+        out[0] = ax + abx * v + acx * w;
+        out[1] = ay + aby * v + acy * w;
+        out[2] = az + abz * v + acz * w;
+    }
+
+    // DER GEOMORPH DER STUFEN-GRENZE (K51; aus dem Stamm `_applyCrossLodGeomorph`): zieht die Rand-Vertices des Netzes `r` auf die
+    // GROBE Fläche jedes gröberen Nachbarn des 3×3-Rings (Achse UND Ecke) — die T-Junction schließt. Schreibt nur Morph-Ziel und
+    // -Code (`r.t`, `r.w`); die Lage bleibt. `r` { cx, cz, lod, P, idx, basis (das Ziel der Stufe, die gröbste: P), t, w, naht
+    // (`bodenNaht` samt Gedächtnis: kand · treffer · morph · gesetzt · kanten), hasMorph, bandObj (das Naht-Band, null ohne) } ·
+    // `nachbar(cx, cz)` das Netz, das der Ring dort trägt (oder null) · `cfgVon(lod)` { span, step } · `gm` der Geomorph-Regler
+    // (die Lage der Karte). Das Gedächtnis (fahrt-takt, gehen-takt): je Richtung der Treffer gegen das Nachbar-Netz, je Nachbar-
+    // Netz und lesender Richtung seine Kandidaten, je Netz Abstand, Grenz-Zeile und Naht-Ziel jedes Vertex — der Teil-Morph
+    // rechnet nur die Vertices der Richtungen neu, deren Treffer wechselte, byte-gleich mit dem ganzen Morph.
+    // → null (nichts zu tun) oder { lage, karte, nahtNeu, hasMorph, gekappt, L (die gemorphte Lage, mit `karte`), band (mit
+    // `nahtNeu`: `bodenNahtBand` oder null) }.
+    function bodenMorph(r, nachbar, cfgVon, gm) {
+        const myLod = r.lod;
+        const cfg = cfgVon(myLod);
+        const span = cfg.span;
+        const fineStep = cfg.step;
+        const cx = r.cx,
+            cz = r.cz;
+        // die GRÖBEREN Nachbarn des 3×3-Rings (Achse UND Ecke, K51) — ein Vertex, den zwei Chunks derselben Stufe teilen,
+        // schmiegt sich in beiden an dieselbe grobe Fläche (Loch-Probe der Fern-Ring-Naht, L1 ↔ L2)
+        const coarseFaces = [];
+        for (let dx = -1; dx <= 1; dx++)
+            for (let dz = -1; dz <= 1; dz++) {
+                if (dx === 0 && dz === 0) continue;
+                const nb = nachbar(cx + dx, cz + dz);
+                if (!nb) continue;
+                if (nb.lod <= myLod) continue; // nur an einen GRÖBEREN Nachbarn anschmiegen
+                coarseFaces.push({ dx, dz, nb, nbLod: nb.lod });
+            }
+        // der XZ-Abstand eines Punkts zum Quadrat des Chunks (i, j) — für den Achsen-Nachbarn der Ebenen-Abstand, für die Ecke
+        // der Abstand zum Eck-Punkt; derselbe Wert in jedem Chunk, der den Punkt trägt
+        const quadratAbstand = (x, z, i, j) =>
+            Math.hypot(Math.max(i * span - x, 0, x - (i + 1) * span), Math.max(j * span - z, 0, z - (j + 1) * span));
+        // `quadratAbstand(x, z, i, j) > g`, ohne Wurzel, wo das Quadrat (mit Rundungs-Rand) schon entscheidet (gehen-takt)
+        const jenseits = (x, z, i, j, g) => {
+            const a = Math.max(i * span - x, 0, x - (i + 1) * span),
+                b = Math.max(j * span - z, 0, z - (j + 1) * span);
+            const q = a * a + b * b;
+            return q > g * g * (1 + 1e-9) ? true : q < g * g * (1 - 1e-9) ? false : Math.hypot(a, b) > g;
+        };
+        // Fast-Path: keine Stufen-Grenze UND kein alter Morph/Band → nichts zu tun (Normalfall)
+        if (coarseFaces.length === 0 && !r.hasMorph && !r.bandObj) return null;
+        const P = r.P;
+        const n = P.length / 3;
+        const tArr = r.t;
+        const wArr = r.w;
+        // DIE NAHT: nur die Rand-Vertices kann ein Morph ziehen — das Innere steht nach dem ersten Morph für immer auf dem Ziel
+        // seiner Stufe (Naht 0, Beitrag 0 im Abdruck); der erste Morph je Netz geht das ganze Netz
+        const saum = r.naht;
+        const R = saum.rand;
+        const alle = !saum.gesetzt;
+        // der Fingerabdruck des Morphs (die Karte zieht nur nach, wenn er sich ändert): je Vertex mit Naht ein Beitrag
+        const beitrag = (w, x, y, z, v) => {
+            const f = morphNaht(w);
+            return f > 0 ? f * (x * 1.31 + y * 1.73 + z * 1.13 + v) : 0;
+        };
+        const abdruck = (ganz) => {
+            let s = 0;
+            for (let q = 0, m = ganz ? n : R.length; q < m; q++) {
+                const v = ganz ? q : R[q];
+                s += beitrag(wArr[v], tArr[v * 3], tArr[v * 3 + 1], tArr[v * 3 + 2], v);
+            }
+            return s;
+        };
+        // Basis = das Ziel der Stufe (K51-2; die gröbste Stufe: die Position), Naht 0
+        const basis = r.basis;
+        const code0 = morphCode(myLod, 0);
+        const cp = [0, 0, 0]; // Scratch für den nächsten Punkt auf einem Dreieck
+        // DER TREFFER EINER RICHTUNG: je Vertex im Band des Nachbarn (`randSeite`, im Morph-Band) der nächste Punkt der groben
+        // Fläche, sein Abstand und sein Ebenen-Abstand, in der Reihe der Rand-Liste
+        const trefferVon = (face, coarseStep) => {
+            const nb = face.nb;
+            const nbIdx = nb.idx;
+            const ni = cx + face.dx,
+                nj = cz + face.dz;
+            const morphBand = fineStep * 2.0;
+            const fk = (face.dx + 1) * 3 + face.dz + 1;
+            const nbNaht = nb.naht;
+            const ab = face.dx === 0 ? 0 : 4; // die Hülle längs der Kante: x an einer z-Kante, sonst z
+            const quer = 4 - ab, // quer zur Kante (die Ecke: x)
+                vor = face.dx || face.dz; // der Nachbar liegt quer in + oder −
+            // Grobe Rand-DREIECKE als flaches Array: gemorpht wird Punkt → Dreieck auf die grobe OBERFLÄCHE, nie auf den nächsten
+            // groben VERTEX. Kandidaten: die Seite des Nachbarn, die diesem Chunk zugewandt ist (die Ecke liest seine x-Seite), in
+            // der Reihe seines Netzes; `box` die Hülle je Dreieck — einmal je Nachbar-Netz und Richtung (`kand`)
+            if (!nbNaht.kand[fk]) {
+                const nbP = nb.P;
+                const tris = [];
+                const box = [];
+                const bnd = coarseStep * 1.5;
+                for (const t of nbNaht.seite[face.dx === 1 ? 0 : face.dx === -1 ? 1 : face.dz === 1 ? 2 : 3]) {
+                    const i0 = nbIdx[t] * 3,
+                        i1 = nbIdx[t + 1] * 3,
+                        i2 = nbIdx[t + 2] * 3;
+                    if (
+                        jenseits(nbP[i0], nbP[i0 + 2], cx, cz, bnd) &&
+                        jenseits(nbP[i1], nbP[i1 + 2], cx, cz, bnd) &&
+                        jenseits(nbP[i2], nbP[i2 + 2], cx, cz, bnd)
+                    )
+                        continue;
+                    tris.push(
+                        nbP[i0],
+                        nbP[i0 + 1],
+                        nbP[i0 + 2],
+                        nbP[i1],
+                        nbP[i1 + 1],
+                        nbP[i1 + 2],
+                        nbP[i2],
+                        nbP[i2 + 1],
+                        nbP[i2 + 2]
+                    );
+                    for (let k = 0; k < 3; k++)
+                        box.push(
+                            Math.min(nbP[i0 + k], nbP[i1 + k], nbP[i2 + k]),
+                            Math.max(nbP[i0 + k], nbP[i1 + k], nbP[i2 + k])
+                        );
+                }
+                const nT = tris.length / 9;
+                let u0 = Infinity,
+                    u1 = -Infinity;
+                for (let q = 0; q < nT; q++) {
+                    u0 = Math.min(u0, box[q * 6 + ab]);
+                    u1 = Math.max(u1, box[q * 6 + ab + 1]);
+                }
+                const W = coarseStep;
+                const eimer = Array.from({ length: nT ? Math.floor((u1 - u0) / W) + 1 : 0 }, () => []);
+                for (let q = 0; q < nT; q++)
+                    for (
+                        let e = Math.floor((box[q * 6 + ab] - u0) / W), e1 = Math.floor((box[q * 6 + ab + 1] - u0) / W);
+                        e <= Math.min(e1, eimer.length - 1);
+                        e++
+                    )
+                        eimer[e].push(q);
+                // der Abstand der Hülle von der Kante, quer: die nahe Seite (Minimum bei +, Maximum bei −)
+                const schl = Float64Array.from({ length: nT }, (_, q) =>
+                    vor > 0 ? box[q * 6 + quer] : -box[q * 6 + quer + 1]
+                );
+                nbNaht.kand[fk] = {
+                    tris: Float64Array.from(tris),
+                    box: Float64Array.from(box),
+                    schl,
+                    u0,
+                    eimer: eimer.map((l) => Int32Array.from(l.sort((x, y) => schl[x] - schl[y] || x - y))),
+                };
+            }
+            const { tris, box, schl, u0, eimer } = nbNaht.kand[fk];
+            const out = { nb, v: [], d3: [], ziel: [], eben: [] };
+            if (tris.length === 0) return out;
+            // DIE EIMER (gehen-takt): ein Vertex fragt die Eimer von seinem aus nach außen, bis die Lücke längs der Kante weiter ist
+            // als sein bester Treffer; der Treffer ist das kleinste (Abstand, Dreieck) — byte-gleich mit der Reihe des Netzes
+            const nT = tris.length / 9;
+            const W = coarseStep;
+            const nE = eimer.length;
+            const besucht = new Int32Array(nT).fill(-1);
+            const nahe = saum.randSeite[face.dx === 1 ? 1 : face.dx === -1 ? 0 : face.dz === 1 ? 3 : 2];
+            // `best` = [Abstand², Dreieck, x, y, z] des laufenden Vertex `pv`
+            const best = new Float64Array(5);
+            const pv = new Float64Array(4);
+            const kandidat = (q) => {
+                if (besucht[q] === pv[3]) return;
+                besucht[q] = pv[3];
+                const px = pv[0],
+                    py = pv[1],
+                    pz = pv[2];
+                const b = q * 6;
+                const ax = box[b] - px,
+                    bx = px - box[b + 1],
+                    ay = box[b + 2] - py,
+                    by = py - box[b + 3],
+                    az = box[b + 4] - pz,
+                    bz = pz - box[b + 5];
+                const ex = ax > 0 ? ax : bx > 0 ? bx : 0,
+                    ey = ay > 0 ? ay : by > 0 ? by : 0,
+                    ez = az > 0 ? az : bz > 0 ? bz : 0;
+                if (ex * ex + ey * ey + ez * ez > best[0] * (1 + 1e-9) + 1e-9) return;
+                closestPtTri(px, py, pz, tris, q * 9, cp);
+                const ddx = px - cp[0],
+                    ddy = py - cp[1],
+                    ddz = pz - cp[2];
+                const d2 = ddx * ddx + ddy * ddy + ddz * ddz;
+                if (d2 < best[0] || (d2 === best[0] && q < best[1])) {
+                    best[0] = d2;
+                    best[1] = q;
+                    best[2] = cp[0];
+                    best[3] = cp[1];
+                    best[4] = cp[2];
+                }
+            };
+            let vorQ = -1;
+            for (const v of nahe) {
+                const px = P[v * 3],
+                    py = P[v * 3 + 1],
+                    pz = P[v * 3 + 2];
+                if (jenseits(px, pz, ni, nj, morphBand)) continue;
+                const dPlane = quadratAbstand(px, pz, ni, nj);
+                pv[0] = px;
+                pv[1] = py;
+                pv[2] = pz;
+                pv[3] = v;
+                best[0] = Infinity;
+                best[1] = -1;
+                best[2] = px;
+                best[3] = py;
+                best[4] = pz;
+                if (vorQ >= 0) kandidat(vorQ);
+                const pu = ab === 0 ? px : pz;
+                const e0 = Math.max(0, Math.min(nE - 1, Math.floor((pu - u0) / W)));
+                const weit = (luecke) => luecke > 0 && luecke * luecke > best[0] * (1 + 1e-9) + 1e-9;
+                const sp = vor * (quer === 0 ? px : pz);
+                const gehe = (e) => {
+                    for (const q of eimer[e]) {
+                        if (weit(schl[q] - sp)) break;
+                        kandidat(q);
+                    }
+                };
+                gehe(e0);
+                for (let e = e0 - 1; e >= 0 && !weit(pu - (u0 + (e + 1) * W)); e--) gehe(e);
+                for (let e = e0 + 1; e < nE && !weit(u0 + e * W - pu); e++) gehe(e);
+                vorQ = best[1];
+                out.v.push(v);
+                out.d3.push(Math.sqrt(best[0]));
+                out.ziel.push(best[2], best[3], best[4]);
+                out.eben.push(dPlane);
+            }
+            return out;
+        };
+        // Grenz-ZEILE (dPlane < flat) morpht voll (w=1), danach Falloff bis morphBand (kein interner Sprung). flat = 0.7·fineStep
+        // deckt die Surface-Nets-Offset-Streuung (~fineStep/2) ab.
+        const flat = fineStep * 0.7;
+        const morphBand = fineStep * 2.0;
+        // DER TREFFER JE RICHTUNG (gehen-takt): liest der Morph dasselbe Nachbar-Netz wie zuletzt, liest er ihn von hier (`treffer`)
+        const richtungen = [];
+        const an = new Array(9).fill(null);
+        for (const face of coarseFaces) {
+            const coarseStep = cfgVon(face.nbLod).step;
+            const fk = (face.dx + 1) * 3 + face.dz + 1;
+            if (!saum.treffer[fk] || saum.treffer[fk].nb !== face.nb) saum.treffer[fk] = trefferVon(face, coarseStep);
+            an[fk] = saum.treffer[fk];
+            // Morph-Cap: an Cliffs divergieren feine + grobe Fläche vertikal (bis ~28 m); jenseits des Caps bleibt w=0 und das
+            // Naht-Band überbrückt den Spalt.
+            richtungen.push({ tr: an[fk], achse: face.dx === 0 || face.dz === 0, snapCap: coarseStep * 2.5 });
+        }
+        // DER MORPH JE NACHBAR-SEITE (fahrt-takt, profiband.K1): je Richtung der Treffer, den der Morph anlegte (`an`), je Vertex
+        // Abstand, Grenz-Zeile und Naht-Ziel; der nächste rechnet nur die Vertices der Richtungen neu, deren Treffer wechselte
+        let M = saum.morph;
+        let A = null;
+        let inA = null;
+        if (alle || !M || M.netz !== r.bandObj)
+            M = saum.morph = {
+                an,
+                abst: new Float32Array(n).fill(Infinity), // der Abstand des gewinnenden Treffers je Vertex
+                band: new Uint8Array(n), // 1 = in der Grenz-Zeile (das Naht-Band hängt an ihr)
+                ziel: new Float32Array(n * 3), // das Naht-Ziel (der gröbere Nachbar) — das Band brückt dorthin, auch hinter dem Cap
+                netz: null,
+            };
+        else {
+            inA = new Uint8Array(n);
+            A = [];
+            for (let fk = 0; fk < 9; fk++) {
+                if (M.an[fk] === an[fk]) continue;
+                for (const tr of [M.an[fk], an[fk]])
+                    if (tr)
+                        for (const v of tr.v)
+                            if (!inA[v]) {
+                                inA[v] = 1;
+                                A.push(v);
+                            }
+            }
+            M.an = an;
+            if (A.length === 0) return null;
+        }
+        const { abst, band, ziel } = M;
+        // der Stand vor dem Teil-Morph (was er ändert, entscheidet, was nachzieht)
+        const alt = A && {
+            t: new Float32Array(A.length * 3),
+            w: new Float32Array(A.length),
+            b: new Uint8Array(A.length),
+            z: new Float32Array(A.length * 3),
+        };
+        if (A)
+            for (let q = 0; q < A.length; q++) {
+                const v = A[q];
+                for (let k = 0; k < 3; k++) {
+                    alt.t[q * 3 + k] = tArr[v * 3 + k];
+                    alt.z[q * 3 + k] = ziel[v * 3 + k];
+                    ziel[v * 3 + k] = 0;
+                }
+                alt.w[q] = wArr[v];
+                alt.b[q] = band[v];
+                abst[v] = Infinity;
+                band[v] = 0;
+            }
+        const abdruckAlt = A ? 0 : abdruck(alle);
+        if (alle) {
+            for (let v = 0; v < n * 3; v++) tArr[v] = basis[v];
+            wArr.fill(code0);
+            saum.gesetzt = true;
+        } else
+            for (const v of A || R) {
+                tArr[v * 3] = basis[v * 3];
+                tArr[v * 3 + 1] = basis[v * 3 + 1];
+                tArr[v * 3 + 2] = basis[v * 3 + 2];
+                wArr[v] = code0;
+            }
+        for (const { tr, achse, snapCap } of richtungen)
+            for (let m = 0; m < tr.v.length; m++) {
+                const v = tr.v[m],
+                    d3 = tr.d3[m],
+                    dPlane = tr.eben[m];
+                if (inA && !inA[v]) continue;
+                // A1 — die Band-Sammlung VOR dem Abstands-Skip: ein Eck-Vertex zwischen zwei groben Seiten gehört in die
+                // Grenz-Zeile, auch wenn das nähere Ziel von der anderen kam; das Band hängt an den ACHSEN-Kanten
+                if (dPlane <= flat && achse) band[v] = 1;
+                if (d3 >= abst[v]) continue; // ein näheres Face gewann diesen Vertex schon
+                abst[v] = d3;
+                tArr[v * 3] = ziel[v * 3] = tr.ziel[m * 3];
+                tArr[v * 3 + 1] = ziel[v * 3 + 1] = tr.ziel[m * 3 + 1];
+                tArr[v * 3 + 2] = ziel[v * 3 + 2] = tr.ziel[m * 3 + 2];
+                // Gewicht: 1 in der Grenz-Zeile (dPlane ≤ flat) → linear auf 0 bei morphBand; jenseits des Caps KEIN Naht-Morph
+                // (Naht 0): das Ziel bleibt das der Stufe (das Naht-Ziel trägt das Band)
+                const naht = d3 > snapCap ? 0 : Math.max(0, Math.min(1, (morphBand - dPlane) / (morphBand - flat)));
+                wArr[v] = morphCode(myLod, naht);
+                if (naht === 0) for (let k = 0; k < 3; k++) tArr[v * 3 + k] = basis[v * 3 + k];
+            }
+        // die gekappten Naht-Vertices (Cliff: das Naht-Ziel weiter als der Cap) — das Naht-Band brückt sie
+        let touched = false;
+        let gekappt = 0;
+        for (const v of R)
+            if (abst[v] < Infinity) {
+                touched = true;
+                if (morphNaht(wArr[v]) === 0) gekappt++;
+            }
+        r.hasMorph = touched;
+        // was der Teil-Morph änderte: die Lage (Hochladen), der Abdruck (Karte), die Grenz-Zeile (Naht-Band)
+        let lage = !A,
+            karte = false,
+            nahtNeu = !A;
+        if (A)
+            for (let q = 0; q < A.length; q++) {
+                const v = A[q],
+                    o = v * 3,
+                    p = q * 3;
+                const gleich =
+                    wArr[v] === alt.w[q] &&
+                    tArr[o] === alt.t[p] &&
+                    tArr[o + 1] === alt.t[p + 1] &&
+                    tArr[o + 2] === alt.t[p + 2];
+                if (!gleich) {
+                    lage = true;
+                    if (
+                        beitrag(wArr[v], tArr[o], tArr[o + 1], tArr[o + 2], v) !==
+                        beitrag(alt.w[q], alt.t[p], alt.t[p + 1], alt.t[p + 2], v)
+                    )
+                        karte = true;
+                }
+                if (
+                    band[v] !== alt.b[q] ||
+                    (band[v] &&
+                        (!gleich ||
+                            ziel[o] !== alt.z[p] ||
+                            ziel[o + 1] !== alt.z[p + 1] ||
+                            ziel[o + 2] !== alt.z[p + 2]))
+                )
+                    nahtNeu = true;
+            }
+        else karte = abdruck(false) !== abdruckAlt;
+        // DER BODEN-LESER LIEST, WAS GEZEICHNET WIRD (K51, Lehre 22): die Karte des Chunks kommt aus derselben gemorphten Lage —
+        // das Innere liegt auf seiner Lage (Naht 0), nur der Rand trägt einen Morph
+        let L = null;
+        if (karte) {
+            L = new Float32Array(P);
+            for (const v of R) {
+                const f = morphNaht(wArr[v]) * gm;
+                L[v * 3] = P[v * 3] + (tArr[v * 3] - P[v * 3]) * f;
+                L[v * 3 + 1] = P[v * 3 + 1] + (tArr[v * 3 + 1] - P[v * 3 + 1]) * f;
+                L[v * 3 + 2] = P[v * 3 + 2] + (tArr[v * 3 + 2] - P[v * 3 + 2]) * f;
+            }
+        }
+        let bandNeu;
+        if (nahtNeu) {
+            bandNeu = bodenNahtBand(r, band, ziel);
+            r.bandObj = bandNeu ? { n: bandNeu.P.length / 3 } : null;
+        }
+        M.netz = r.bandObj;
+        return { lage, karte, nahtNeu, hasMorph: touched, gekappt, L, band: bandNeu };
+    }
+
+    // DAS NAHT-BAND (A1, Arme-Leute-Transvoxel; aus dem Stamm `_rebuildLodStitchBand`): wo der Morph-Cap greift (Cliffs), bliebe
+    // ein Spalt. Pro Netz-KANTE der Grenz-Zeile (beide Enden in der Grenz-Zeile) der Skirt (ein kurzer senkrechter Vorhang unter
+    // der groben Kante, der Fang für Rest-Spalten) und, wo ein Ende die Naht nicht ganz schließt, ein Viereck von der feinen Kante
+    // (Lage) zur groben Fläche (das Naht-Ziel). Die feine Kante trägt Morph-Ziel und -Code, Normale und Stoff-Farbe ihres Quell-
+    // Vertex (sie wandert mit), die grobe Seite und der Skirt stehen fest (Code 0, Ziel = Lage). `r` das Netz (Lage, Ziel, Code,
+    // Normale, Farbe, Himmels-Sicht, Schutt, Ziel-Normale, Ziel-Farbe, Naht) · `bandVerts` je Vertex 1 in der Grenz-Zeile ·
+    // `nahtZiel` je Vertex das Naht-Ziel. → { P, N, C, NZ, FZ, MT, MW, HS, SC, I } oder null (kein Band).
+    function bodenNahtBand(r, bandVerts, nahtZiel) {
+        if (!bandVerts || !bandVerts.includes(1)) return null;
+        if (!nahtZiel) throw new Error("bodenNahtBand: kein Naht-Ziel");
+        const idx = r.idx;
+        const saum = r.naht;
+        // Kürzere Spannen überspringen (Sliver): dünne Risse (0.12–0.3 m) zeigen am Grazing-Winkel den Nachthimmel
+        const MIN_SPAN = 0.12;
+        // SKIRT: kurzer VERTIKALER Vorhang unter der groben Kante (nach unten, Tiefe ~ ein LOD-Schritt)
+        const SKIRT = 6.0;
+        const tA = r.t,
+            wA = r.w,
+            pA = r.P;
+        if (!saum.kanten) saum.kanten = nahtKanten(saum, idx);
+        // erst die Kanten (a, b, Brücke), dann die Puffer in ihrer Größe
+        const kanten = [];
+        {
+            const K = saum.kanten;
+            for (let q = 0; q < K.length; q += 2) {
+                const a = K[q],
+                    b = K[q + 1];
+                if (!bandVerts[a] || !bandVerts[b]) continue;
+                const spanA = Math.hypot(
+                    nahtZiel[a * 3] - pA[a * 3],
+                    nahtZiel[a * 3 + 1] - pA[a * 3 + 1],
+                    nahtZiel[a * 3 + 2] - pA[a * 3 + 2]
+                );
+                const spanB = Math.hypot(
+                    nahtZiel[b * 3] - pA[b * 3],
+                    nahtZiel[b * 3 + 1] - pA[b * 3 + 1],
+                    nahtZiel[b * 3 + 2] - pA[b * 3 + 2]
+                );
+                if (Math.max(spanA, spanB) < MIN_SPAN) continue;
+                // DIE BRÜCKE (rohe Kante → grobe Fläche) nur, wo der Morph die Naht NICHT schließt (K51): trägt er beide Enden
+                // ganz (Gewicht 1), zeichnet die feine Kante schon auf der groben Fläche
+                kanten.push(a, b, morphNaht(wA[a]) >= 1 && morphNaht(wA[b]) >= 1 ? 0 : 1);
+            }
+        }
+        if (kanten.length === 0) return null;
+        let nV = 0;
+        for (let k = 2; k < kanten.length; k += 3) nV += kanten[k] ? 8 : 4;
+        const [P, N, C, NZ, FZ, MT] = Array.from({ length: 6 }, () => new Float32Array(nV * 3));
+        const [MW, HS, SC] = Array.from({ length: 3 }, () => new Float32Array(nV));
+        // der Index in der Form, die `setIndex` aus einer Liste wählte (Uint16 bis 65 535 Ecken)
+        const I = nV - 1 >= 65535 ? new Uint32Array((nV / 4) * 6) : new Uint16Array((nV / 4) * 6);
+        let o = 0,
+            oi = 0;
+        const nA = r.nrm,
+            cA = r.col,
+            hA = r.him,
+            sA = r.sch,
+            nZ = r.nZ,
+            fZ = r.fZ;
+        // die Ecke o: Lage, Quell-Vertex v (Farbe, Himmel, Schutt, die Normale außer am Vorhang); `morph`: Ziel, Code, Ziel-Normale
+        // und -Farbe des Quell-Vertex (die feine Kante wandert mit), sonst fest (Ziel = Lage, Code 0)
+        const ecke = (x, y, z, v, morph, vorhang) => {
+            const o3 = o * 3;
+            P[o3] = x;
+            P[o3 + 1] = y;
+            P[o3 + 2] = z;
+            MT[o3] = morph ? tA[v * 3] : x;
+            MT[o3 + 1] = morph ? tA[v * 3 + 1] : y;
+            MT[o3 + 2] = morph ? tA[v * 3 + 2] : z;
+            MW[o] = morph ? wA[v] : 0;
+            N[o3] = vorhang || !nA ? 0 : nA[v * 3];
+            N[o3 + 1] = vorhang ? 0.2 : nA ? nA[v * 3 + 1] : 1;
+            N[o3 + 2] = vorhang || !nA ? 0 : nA[v * 3 + 2];
+            C[o3] = cA ? cA[v * 3] : 0.5;
+            C[o3 + 1] = cA ? cA[v * 3 + 1] : 0.5;
+            C[o3 + 2] = cA ? cA[v * 3 + 2] : 0.5;
+            for (let k = 0; k < 3; k++) {
+                NZ[o3 + k] = morph ? nZ[v * 3 + k] : N[o3 + k];
+                FZ[o3 + k] = morph ? fZ[v * 3 + k] : C[o3 + k];
+            }
+            HS[o] = hA[v];
+            SC[o] = sA[v];
+            o++;
+        };
+        const quad = () => {
+            I[oi++] = o - 4;
+            I[oi++] = o - 3;
+            I[oi++] = o - 2;
+            I[oi++] = o - 4;
+            I[oi++] = o - 2;
+            I[oi++] = o - 1;
+        };
+        for (let k = 0; k < kanten.length; k += 3) {
+            const a = kanten[k],
+                b = kanten[k + 1];
+            const tax = nahtZiel[a * 3],
+                tay = nahtZiel[a * 3 + 1],
+                taz = nahtZiel[a * 3 + 2],
+                tbx = nahtZiel[b * 3],
+                tby = nahtZiel[b * 3 + 1],
+                tbz = nahtZiel[b * 3 + 2];
+            if (kanten[k + 2]) {
+                ecke(pA[a * 3], pA[a * 3 + 1], pA[a * 3 + 2], a, true, false);
+                ecke(pA[b * 3], pA[b * 3 + 1], pA[b * 3 + 2], b, true, false);
+                ecke(tbx, tby, tbz, b, false, false);
+                ecke(tax, tay, taz, a, false, false);
+                quad();
+            }
+            // Skirt-Viereck (ta, tb, tb↓, ta↓) nach −SKIRT: Farbe vom groben Ziel-Vertex, Normale ~waagrecht-auswärts
+            ecke(tax, tay, taz, a, false, true);
+            ecke(tbx, tby, tbz, b, false, true);
+            ecke(tbx, tby - SKIRT, tbz, b, false, true);
+            ecke(tax, tay - SKIRT, taz, a, false, true);
+            quad();
+        }
+        return { P, N, C, NZ, FZ, MT, MW, HS, SC, I };
+    }
+
+    // DIE VORLAGE EINES BODEN-BEREICHS IM SATZ (aus dem Stamm `_chunkSatzLege` · `_chunkSatzViertel` · `_chunkSatzHuelle`): je
+    // gepacktem Attribut seine Vertex-Form (`satzPacke`), die VIERTEL (je Dreieck die Zelle seines Schwerpunkts um die Mitte der
+    // Lage, 0…3, oder 4 + sein Höhlen-Knoten; die Läufe der Zellen hintereinander, der Index ab Ecke 0, je Zelle ihre Zahl), je
+    // nicht leerer Zelle ihre Hülle über Lage und Ziel (roh, ohne Rand) und — mit `nur` (der Rand der Naht) — je Zelle die feste
+    // Kiste (die Lage jeder Ecke, das Ziel jeder Ecke außer dem Rand) samt ihren Rand-Ecken in der Reihe ihres Laufs (`festRand`).
+    // `formen` [[name, is, form, w]] die gepackten Attribute des Satzes · `A` je Name sein Array (position, aMorphTarget dabei) ·
+    // `li` der Index · `H` der Höhlen-Graph ({ tri, n }) oder null.
+    function satzVorlage(formen, A, li, H, nur) {
+        const P = A.position;
+        const Z = A.aMorphTarget || null;
+        const n = P.length / 3;
+        const gepackt = {};
+        for (const [name, is, form, w] of formen) {
+            const dst =
+                form === "snorm8"
+                    ? new Int8Array(n * 4)
+                    : form === "half"
+                      ? new root.Float16Array(n * 4)
+                      : new Float32Array(n * 4);
+            satzPacke(form, A[name], is, dst, 0, n, w ? A[w] : null);
+            gepackt[name] = dst;
+        }
+        let x0 = Infinity,
+            x1 = -Infinity,
+            z0 = Infinity,
+            z1 = -Infinity;
+        for (let k = 0; k < P.length; k += 3) {
+            if (P[k] < x0) x0 = P[k];
+            if (P[k] > x1) x1 = P[k];
+            if (P[k + 2] < z0) z0 = P[k + 2];
+            if (P[k + 2] > z1) z1 = P[k + 2];
+        }
+        // gegen die Schwerpunkt-SUMME (drei Ecken) verglichen: die Mitte × 3
+        const mx3 = 1.5 * (x0 + x1),
+            mz3 = 1.5 * (z0 + z1);
+        const nT = (li.length / 3) | 0;
+        const HT = H ? H.tri : null;
+        if (HT && HT.length !== nT) throw new Error(`satzVorlage: ${HT.length} Höhlen-Zellen für ${nT} Dreiecke`);
+        const nZ = 4 + (H ? H.n : 0);
+        const zelle = new Int32Array(nT);
+        const zahl = new Int32Array(nZ);
+        for (let t = 0, i = 0; t < nT; t++, i += 3) {
+            let z;
+            if (HT && HT[t] >= 0) z = 4 + HT[t];
+            else {
+                const a = li[i] * 3,
+                    c = li[i + 1] * 3,
+                    d = li[i + 2] * 3;
+                z = (P[a] + P[c] + P[d] > mx3 ? 1 : 0) + (P[a + 2] + P[c + 2] + P[d + 2] > mz3 ? 2 : 0);
+            }
+            zelle[t] = z;
+            zahl[z]++;
+        }
+        const start = new Int32Array(nZ);
+        for (let z = 1; z < nZ; z++) start[z] = start[z - 1] + zahl[z - 1] * 3;
+        const idx = new Uint32Array(nT * 3);
+        const pos = start.slice();
+        for (let t = 0, i = 0; t < nT; t++, i += 3) {
+            const p = pos[zelle[t]];
+            idx[p] = li[i];
+            idx[p + 1] = li[i + 1];
+            idx[p + 2] = li[i + 2];
+            pos[zelle[t]] = p + 3;
+        }
+        // je nicht leerer Zelle (in der Reihe der Zellen) die Hülle und, mit `nur`, die feste Kiste und die Rand-Ecken
+        const voll = [];
+        for (let z = 0; z < nZ; z++) if (zahl[z] > 0) voll.push(z);
+        const kisten = new Float64Array(voll.length * 6);
+        const fest = nur ? new Float64Array(voll.length * 6) : null;
+        const inR = nur ? new Uint8Array(n) : null;
+        if (nur) for (const v of nur) inR[v] = 1;
+        const marke = nur ? new Int32Array(n) : null;
+        const rv = [];
+        const rvAb = new Int32Array(voll.length + 1);
+        voll.forEach((z, zi) => {
+            const a0 = start[z],
+                a1 = start[z] + zahl[z] * 3;
+            let hx0 = Infinity,
+                hy0 = Infinity,
+                hz0 = Infinity,
+                hx1 = -Infinity,
+                hy1 = -Infinity,
+                hz1 = -Infinity;
+            let fx0 = Infinity,
+                fy0 = Infinity,
+                fz0 = Infinity,
+                fx1 = -Infinity,
+                fy1 = -Infinity,
+                fz1 = -Infinity;
+            for (let i = a0; i < a1; i++) {
+                const v = idx[i],
+                    o = v * 3;
+                let x = P[o],
+                    y = P[o + 1],
+                    zz = P[o + 2];
+                if (x < hx0) hx0 = x;
+                if (x > hx1) hx1 = x;
+                if (y < hy0) hy0 = y;
+                if (y > hy1) hy1 = y;
+                if (zz < hz0) hz0 = zz;
+                if (zz > hz1) hz1 = zz;
+                // das Morph-Ziel trägt Lage, sobald der Geomorph greift — Naht wie Stufe (K51-2)
+                if (Z) {
+                    const zx = Z[o],
+                        zy = Z[o + 1],
+                        zw = Z[o + 2];
+                    if (zx < hx0) hx0 = zx;
+                    if (zx > hx1) hx1 = zx;
+                    if (zy < hy0) hy0 = zy;
+                    if (zy > hy1) hy1 = zy;
+                    if (zw < hz0) hz0 = zw;
+                    if (zw > hz1) hz1 = zw;
+                }
+                if (!nur) continue;
+                if (x < fx0) fx0 = x;
+                if (x > fx1) fx1 = x;
+                if (y < fy0) fy0 = y;
+                if (y > fy1) fy1 = y;
+                if (zz < fz0) fz0 = zz;
+                if (zz > fz1) fz1 = zz;
+                if (inR[v]) {
+                    if (marke[v] !== zi + 1) {
+                        marke[v] = zi + 1;
+                        rv.push(v);
+                    }
+                    continue;
+                }
+                x = Z[o];
+                y = Z[o + 1];
+                zz = Z[o + 2];
+                if (x < fx0) fx0 = x;
+                if (x > fx1) fx1 = x;
+                if (y < fy0) fy0 = y;
+                if (y > fy1) fy1 = y;
+                if (zz < fz0) fz0 = zz;
+                if (zz > fz1) fz1 = zz;
+            }
+            kisten.set([hx0, hy0, hz0, hx1, hy1, hz1], zi * 6);
+            if (fest) fest.set([fx0, fy0, fz0, fx1, fy1, fz1], zi * 6);
+            rvAb[zi + 1] = rv.length;
+        });
+        return { gepackt, idx, zahl, kisten, fest, rv: nur ? Int32Array.from(rv) : null, rvAb: nur ? rvAb : null };
+    }
+
     // DER FELS-STOFF EINES BODEN-NETZES (K17; K17-2 aus dem Stamm `_felsStoff` in den Kern — der voxel-worker rechnet ihn beim
     // Chunk-Bau und reicht ihn per Transfer, der Haupt-Thread rechnet ihn nur im Sync-Bau): die Säulen-Farbe C ist eine Funktion
     // von (x, z); wo das Netz Fels ist, trägt der Vertex den Fels-Stoff (`felsFarbe`: Pakete, Rinde an konvexen Kanten aus der
@@ -5994,6 +6832,13 @@
         HIMMELS_SICHT: HIMMELS_SICHT,
         himmelsSicht: himmelsSicht,
         bodenKarte: bodenKarte,
+        satzPacke: satzPacke,
+        satzVorlage: satzVorlage,
+        morphCode: morphCode,
+        morphNaht: morphNaht,
+        bodenNaht: bodenNaht,
+        bodenMorph: bodenMorph,
+        bodenNahtBand: bodenNahtBand,
         STUFE_ZIEL: STUFE_ZIEL,
         stufeZiel: stufeZiel,
         felsStoff: felsStoff,

@@ -592,16 +592,25 @@ class AnazhRealm_kreatur_verhalten {
     // länger als ruheS, beginnt die nächste eine neue); dauert die Jagd dauerS — in der Hetze oder in der Pirsch danach —, bricht der
     // Jäger ab und ist ruheS erschöpft: er jagt nicht (`_kreaturErschoepft`). Liefert true, wenn die Jagd jetzt endet. Vorher hetzte das Rudel, bis die Beute fiel (der
     // Riss nach 7–9 Minuten, eine Quote je Jagd gab es nicht).
+    // DIE JAGD GEHÖRT DEM LEIB DES JÄGERS, NICHT SEINEM ZIEL: wechselt er zu einem anderen Leib, solange der alte lebt (der
+    // fliehende Hirsch führt das Rudel zum Spieler, zwei Leiber einer Herde), läuft DIESELBE Jagd weiter — erst der Riss oder
+    // der Abschied des alten Ziels endet sie. Bis heil-stationen-a3 begann jeder Wechsel eine neue Jagd: das Rudel pendelte
+    // zwischen Hirsch und Spieler, und keine Jagd endete (gate:kreatur-takt jagdkreis, Rudel-Jagd 9, 10, 37: 3 von 39 ohne Ende)
     _kreaturJagdEndet(creature, zielKey, hetze) {
         const ud = creature.userData;
         const now = this.state.creatureAnimationTime;
         const J = AnazhRealm._jagdGesetz().J;
-        // eine Jagd, deren letzte Hetze länger als eine Ruhe her ist, ist vorbei; erst die Hetze beginnt eine neue
-        if (ud._jagd && (ud._jagd.ziel !== zielKey || now - ud._jagd.zuletzt > J.ruheS)) ud._jagd = null;
+        const alt = ud._jagd;
+        // eine Jagd, deren letzte Hetze länger als eine Ruhe her ist, ist vorbei, ebenso die, deren Ziel nicht mehr lebt (der
+        // Spieler kehrt wieder, er lebt immer); erst die Hetze beginnt eine neue
+        const lebt = (k) =>
+            k === "spieler" || this.state.creatures.some((c) => c && c.userData && (c.userData.netId || c.uuid) === k);
+        if (alt && (now - alt.zuletzt > J.ruheS || (alt.ziel !== zielKey && !lebt(alt.ziel)))) ud._jagd = null;
         if (!ud._jagd) {
             if (!hetze) return false;
             ud._jagd = { ziel: zielKey, beginn: now, zuletzt: now };
         }
+        ud._jagd.ziel = zielKey; // das Ziel dieses Takts (Leser: die Jäger des Spielers)
         if (hetze) ud._jagd.zuletzt = now;
         if (now - ud._jagd.beginn < J.dauerS) return false;
         ud._jagd = null;

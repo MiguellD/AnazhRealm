@@ -17,7 +17,8 @@ const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile, zeitZeile } = require("./software-gpu.cjs");
-const { ohneKommentare, ast, wandere, zeileVon, karteVon, spaeteVon, pfadVon } = require("./stamm.cjs");
+const stammLib = require("./stamm.cjs");
+const { ohneKommentare, ast, wandere, zeileVon, karteVon, spaeteVon, pfadVon } = stammLib;
 
 // DER EINE SCHLAF (`await sleep(ms)`): in Node der Export, in jeder Seite derselbe Text als `window.sleep` (`WARTEN_SEITE`) —
 // eine Probe schläft in beiden Welten mit demselben Ruf, ein eigenes `new Promise((r) => setTimeout(r, ms))` ist ein Zwilling
@@ -36,11 +37,12 @@ function leihe(o, tausch) {
 // `const r = window.anazhRealm` / `const st = r.state` ist ein Zwilling (872 Bindungen fielen in w3u-nachfolge); wer einen
 // der Namen schreibt (ein fremdes Skript), bekommt eine gewöhnliche Variable
 const weltR = `for (const [n, f] of [["r", () => window.anazhRealm], ["st", () => window.anazhRealm && window.anazhRealm.state]]) Object.defineProperty(window, n, { get: f, set: (v) => Object.defineProperty(window, n, { value: v, writable: true }), configurable: true });`;
-// DIE EINE JSON-LESUNG (`jsonLesen(pfad)`, utf8): je Linse ein eigenes `JSON.parse(fs.readFileSync(pfad, "utf8"))` war ein Zwilling
-// (w4-himmel-uhr: 57 Stellen in 26 Linsen)
+// DIE EINE JSON-LESUNG (`jsonLesen(pfad)`): je Linse ein eigenes `JSON.parse(fs.readFileSync(pfad, "utf8"))` war ein Zwilling
+// (w4-himmel-uhr: 57 Stellen in 26 Linsen); sie liest über den EINEN Datei-Leser `ausDatei` (`pfad` ab der Wurzel des Baums
+// oder absolut) — bis w4-studios-heim3 trug er ein eigenes JSON-Flag, zwei Lesungen derselben Sache
 // … und die EINE JSON-Schreibung (`jsonSchreiben(pfad, wert, einzug = 1, ende = "")`, dieselben Bytes wie `fs.writeFileSync(pfad,
 // JSON.stringify(wert, null, einzug) + ende)`)
-const jsonLesen = (p) => JSON.parse(fs.readFileSync(p, "utf8"));
+const jsonLesen = (p) => JSON.parse(ausDatei(p));
 const jsonSchreiben = (p, o, n = 1, ende = "") => fs.writeFileSync(p, JSON.stringify(o, null, n) + ende);
 // DIE UHR DES LAUFS (`const log = laufUhr()`): jede Zeile trägt die Sekunden seit dem Ruf — je Linse ein eigenes `T0` samt
 // eigenem log war ein Zwilling
@@ -54,6 +56,26 @@ const laufUhr =
 // fehlt im Code; was keine Funktion ist, wirft). Die Wand: gate:betriebsgesetz STRIPPER-WAND.
 // DAS EINE WARTEN DER LINSEN (K-WANDUHR, Lehre 26: in Bau-Ereignissen, nie in Wanduhr-Sekunden) — Seiten-Funktionen als Text
 // in jede Seite (`WARTEN_SEITE`): `window.__seitenTakt()` ist ein Bild des Loops, ruht er, ein Takt von Hand.
+// DAS EINE BILD WIE IM LOOP (`window.__loopBild()`): der Schritt des Node-Frames (r184 rendert den Szenen-Pass je Frame,
+// updateBefore FRAME), dann `_loopRender` — ohne den Schritt zeichnete ein Hand-Aufruf nur das Post-Quad neu; je Linse eine
+// eigene Zeile davon war ein Zwilling (neun bis w4-b-knoten)
+function loopBild() {
+    st.renderer._nodes?.nodeFrame?.update();
+    r._loopRender();
+}
+// DIE EINE ZIEL-LESUNG (`await window.__zielLesen(ziel, W, H)`): die Pixel eines Ziels als Uint8Array in Zeilen zu W·4 Byte —
+// WebGPU kopiert jede Zeile auf 256 Byte ausgerichtet (bytesPerRow), r184 reicht das Polster durch (bei W·4 ∤ 256 lag jede Zeile
+// versetzt); je Linse ein eigenes Entpolstern war ein Zwilling (sechs bis w4-b-knoten)
+async function zielLesen(ziel, W, H) {
+    const px = await st.renderer.readRenderTargetPixelsAsync(ziel, 0, 0, W, H);
+    const roh = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
+    const zeile = W * 4,
+        schritt = roh.length > zeile * H ? Math.ceil(zeile / 256) * 256 : zeile;
+    if (schritt === zeile) return roh;
+    const u8 = new Uint8Array(zeile * H);
+    for (let y = 0; y < H; y++) u8.set(roh.subarray(y * schritt, y * schritt + zeile), y * zeile);
+    return u8;
+}
 async function seitenTakt() {
     const vor = r._weltStand ? r._weltStand.takte : -1;
     await new Promise((ok) => requestAnimationFrame(ok));
@@ -198,7 +220,7 @@ function png(u8, W, H) {
 // Bild neu (eine Linse blendet Klassen aus und ein, die Bühne wechselt)
 const bundlesNeu = () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
 const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
-const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
+const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
 // DIE WAND DER SPÄTEN MODULE (Pflicht-OFFEN B): in jeder Seite des Null-Renderers steht ein Zeuge am Ende der Prototyp-Kette des
 // Wirts und seiner Klasse — bis die späten Module verkabelt sind (ihr Versprechen `spaet`, `_spaetLaden`; nie das Erwachen, das
 // auf kein Bild wartet) merkt er jede Frage nach einem Namen, den der Wirt nicht trägt (`__vorSpaet`); ein Name eines Moduls, das
@@ -1112,6 +1134,11 @@ const hauptLauf = (rumpf, zuletzt) =>
         if (zuletzt) zuletzt();
         process.exit(2);
     });
+// DER EINE DATEI-LESER einer Linse: `ausDatei(p)` der Text (utf8), sein JSON liest `jsonLesen` durch ihn — `p` ab der Wurzel des
+// Baums oder absolut (bis zur Decke w3w-studios las jede Linse in eigenen Zeilen: fs.readFileSync(…, "utf8"), 86-mal)
+const ausDatei = (p) => fs.readFileSync(path.resolve(ROOT, p), "utf8");
+// DER EINE SCHALTER des Selbsttests jeder Linse (`--selftest`; bis zur Decke w3w-studios las ihn jede Linse selbst, 76-mal)
+const SELBSTTEST = process.argv.includes("--selftest");
 // DER EINE ARGUMENT-LESER einer Linse: `argOpt("--port", 4490)` — der Wert hinter dem Schalter, fehlt er (oder folgt ein
 // Schalter), die Vorgabe
 const argOpt = (k, d) => {
@@ -1365,6 +1392,12 @@ function scanWarteWand(dateien, rest = Object.assign({}, ...Object.values(requir
 }
 
 module.exports = {
+    fs,
+    path,
+    stammLib,
+    crypto: require("crypto"),
+    os: require("os"),
+    vm: require("vm"),
     studioKern,
     fadenScope,
     scanWarteWand,
@@ -1397,6 +1430,8 @@ module.exports = {
     hauptLauf,
     urteilEnde,
     argOpt,
+    ausDatei,
+    SELBSTTEST,
     waitFor,
     zweiImMesh,
     booteWelt,

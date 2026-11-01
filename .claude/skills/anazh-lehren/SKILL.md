@@ -46,7 +46,9 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   Instanz-Wand (`_naturWand`) Bauten frei, die Schicht (Halm, Nah-Wiese) noch nicht.
 - GESTALT < 64 m Studio-Mesh + LOD-Kette, EIN Auge der Stufen (`_lodAuge`), jede Karte eine Schicht des EINEN Atlas, gebacken aus
   ihrer Höhen-Stufe (`_karteStufe`), je Texel ihre Tiefe (phyto-core `karteTiefe`: die Karte steht in der Tiefe ihrer Gestalt —
-  Pixel-Tiefen-Versatz und Schatten-Ort; heute ohne Blick-Parallaxe, gate:foundry-impostor C7 misst sie), ihre Mips
+  gelesen an den Ecken ihres Gitters `KARTE_GITTER`, nie im Fragment: frag_depth schaltet den frühen Tiefentest ab; fern fällt das
+  Gitter auf das Quad; die Clip-Tiefe geht durch die Projektion der Kamera, WebGL2 trägt [−1, 1]; die Bühne ZEICHNET ihr Ziel leer
+  (`B.leere`: r184-WebGL2 leert keine Array-Schicht ≥ 1); heute ohne Blick-Parallaxe, gate:foundry-impostor C7 misst sie), ihre Mips
   deckungstreu mit dem Saum der Art in JEDEM Hebungs-Ring (phyto-core `karteSaum`/`karteSaumRinge`: die Zelle aus der Blattgröße in
   `treeParams`, Laub-Lappen, Nadel-Grate, der Kronen-Fuß im Bild des Rings; die GPU-Ablage `KARTE_RECHNER_WGSL` rechnet dasselbe Gesetz,
   `_karteSaumVon`), fern Glieder-Kapseln · jede Senke zeichnet über ihren Zeichner (`_instanzZeichner`: count 1 über einer InstancedBufferGeometry-Fassade,
@@ -108,8 +110,9 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
     Framerate (der Ring wächst im Strom bis zu seinem Ziel, nie an Bildrate oder Regler, `_ringWaechst`; der PID regelt nur
     die Qualität, nie die Existenz).
 14. **Schwere deterministische Arbeit:** gecacht + im Idle vorgebacken + frame-adaptiv, nie synchron auf dem Interaktions-Pfad (der
-    Chunk-Stoff entsteht im Worker, nie im Haupt-Thread; die Hydrosphäre, das Stau-Feld und die Platte des Bodens ebenso —
-    `--faden` in gate:worker-dichte zählt K4/K5 und den Stau). Heute ist der Faden bis zum ersten Weltbild 97 % belegt (W6).
+    Chunk-Stoff entsteht im Worker, nie im Haupt-Thread; die Hydrosphäre, das Stau-Feld, die Platte des Bodens, der Bestand des
+    Walds und der Wuchs der Spawn-Baupläne ebenso — `--faden` in gate:worker-dichte zählt K4/K5, den Stau und den Wuchs). Heute
+    ist der Faden bis zum ersten Weltbild 97 % belegt (W6).
 15. **git ist das Archiv:** kein Doppel-Archiv im Baum; Chronik = Commit-Message (Rumpf ≤ 600 Zeichen), vollendete Pläne fallen, Lehre =
     EINE Zeile hier, Offenes = PFLICHT-OFFEN; vor jedem Schnitt KONSUM prüfen (transitiv). Siegel-Wörter meiden auch Auftrags-, Zweig- und
     Bericht-Namen: der Name wandert in die Merge-Message, und die liest `gate:betriebsgesetz` am HEAD.

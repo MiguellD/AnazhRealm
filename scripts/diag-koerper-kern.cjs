@@ -21,7 +21,7 @@
 // und beweist, dass die Linse feuert (kein vakuoeses Gruen).
 // ============================================================================
 "use strict";
-const { urteilEnde } = require("./lib/welt-boot.cjs");
+const { urteilEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 require("../koerper-core.js");
 require("../phyto-core.js");
@@ -186,7 +186,7 @@ const wacheLeer = (P, b = "nachtwaechter", a = "waechter", W = {}) => {
 };
 
 // ────────────────────────────────────────────────────────────────────────────
-const selftest = process.argv.includes("--selftest");
+const selftest = SELBSTTEST;
 
 if (selftest) {
     // Vier injizierte Abweichungen (Morph, Proportionen, Landmarken, die Wache ohne Versatz) — jede MUSS die Linse zuenden.
