@@ -164,3 +164,4 @@ b-kalt-4b13 Exit0 station ankunft-kalt.sh an 4b13478b
 takt-z122a-gtx gemessen punkte eeb5d2bf gtx: 0 grün / 9 rot
 takt-z122b-gtx gemessen punkte eeb5d2bf gtx: 0 grün / 10 rot
 b-kalt-eeb5 Exit0 station ankunft-kalt.sh an eeb5d2bf
+z122-abab nicht-langsamer abab eeb5d2bf gegen 4b13478b: w-ego 4+4 nicht-langsamer · stadt 2+2 nicht-langsamer
