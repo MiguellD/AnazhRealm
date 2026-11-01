@@ -194,3 +194,4 @@ z143-abab nicht-langsamer abab baf9d828 gegen 1e90e7cd: w-ego 4+4 nicht-langsame
 albedo-haar-gtx gemessen punkte 776946bb gtx: 1 grün / 0 rot
 takt-z145a-gtx gemessen punkte 28dd7a47 gtx: 0 grün / 0 rot
 takt-z145b-gtx gemessen punkte 28dd7a47 gtx: 0 grün / 1 rot
+knoten-wurzel-kalt Exit0 station ankunft-kalt.sh an b7ea7cdc
