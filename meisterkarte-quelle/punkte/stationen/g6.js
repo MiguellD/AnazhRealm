@@ -939,10 +939,11 @@ const HW = (t) => {
 //     Regler des Spielers (R8): jedes Bild zählt, die Hänger-Linse nennt den Täter jedes Bilds über 33 ms.
 //   dauer (K5#1 K5#2, stellung ende, Ziel 14 s): nach jeder Probe, die die Welt lässt, zurück am Start — Bau, Tor, Nacht, das
 //     Anker-Fenster ein zweites Mal, der Stand des Endes; geurteilt aus dem Strom zwischen den Marken (≥ 20 min in EINER Seite).
-//   gang (K1 K2 K3 je #1 #2, mutiert — gründet die Stadt, stellt 50 Tiere —, ausnahme): ERST JEDES FENSTER, DANN DIE BÄNDER, je Ort
-//     ohne zweite Ankunft (w4-p2-profiband-k1): die Wiese, an der die Sitzung steht (Third und Ego stehend, gehend, Sprint, Sturm,
-//     Fahrt), dann die Genesis (EINE Ankunft: Third gehend und stehend, Ego stehend), dann die Stadt, dann die Bänder je Ort und das
-//     Dorf — unter der Uhr PB_KONST.budget, je Schritt seine gemessene Dauer (PB_SCHRITT_S); was die Uhr nicht mehr trägt, steht
+//   gang (K1 K2 K3 je #1 #2, mutiert — gründet die Stadt, stellt 50 Tiere —, ausnahme): ERST JEDES FENSTER, DANN DIE BÄNDER
+//     (w4-p2-profiband-k1): die Bewegungszellen zuerst — an der Wiese, an der die Sitzung steht (Ego gehend, Sprint, Sturm, Fahrt),
+//     dann die Genesis (EINE Ankunft, Third gehend) —, dann die Stand-Zellen, wo der Spieler steht, die Stadt, die Wiese in Third,
+//     die Bänder und das Dorf — unter der Uhr PB_KONST.budget, je Schritt seine gemessene Dauer samt der Ankunft, wenn der Spieler
+//     woanders steht (PB_SCHRITT_S); was die Uhr nicht mehr trägt, steht
 //     ungemessen beim Namen — eine Station wird nie grün ohne jede ihrer Zellen. Die Probe druckt ihre Zeile vor ihrem Deckel, auch
 //     mitten in einem Schritt (die Wache, PUNKTE_PROBE_DECKEL_S): ein gerissener Deckel ließ bis hierher keine Zeile.
 // JE ZELLE zählen ihre Bilder im Strom: die des eigenen Fensters (ohne sein Einschwingen) und — an den Stand-Zellen von E — jedes
@@ -971,17 +972,19 @@ const PB_KONST = {
 // Fenster) · Band 9,9–11,0 s (das Einschwingen reißt seinen Deckel 8 s: satzSchrumpft — der Satz schrumpft erst nach 600 Takten) —
 // Σ 257 s je Gang gegen die Uhr. Bis hierher schätzte die Probe 4–20 s je Schritt: GTX 20d09a04 drei von neun Schritten in 62,1 s
 // (genesis-ego 13,2 · genesis-third 17,5 · wiese-ego 31,4 s), die Radeon riss den Deckel 64 s mitten im dritten ohne Zeile.
+// Am Zweig (Radeon 4bb09632, die erste Fahrt dieser Reihe): das erste Umstellen nach dem Boot 12–16 s (die Welt der Sitzung steht
+// nach 17,7 s, ihr Wechsel der Sicht schwingt nach), Sprint 3,2 · Sturm 6,3 · Fahrt 4,5 s; der Schritt genesis-ego trug ohne den
+// Schritt davor die Ankunft (18,6 s) — darum zählt jeder Schritt die Ankunft (`ankunft`), wenn der Spieler woanders steht (`hier`).
 const PB_SCHRITT_S = Object.freeze({
-    wieseThird: 8,
-    wieseEgo: 12,
-    sprint: 6,
-    sturm: 9,
-    fahrt: 13,
-    genesisThird: 29,
-    genesisEgo: 7,
+    ankunft: 21,
+    wieseEgo: 21,
+    sprint: 5,
+    sturm: 8,
+    fahrt: 11,
+    gehen: 6,
+    stehen: 5,
     stadt: 80,
-    bandAmOrt: 14,
-    bandAnkunft: 34,
+    band: 12,
     dorf: 46,
 });
 const PB_PFAD = [
@@ -1184,16 +1187,21 @@ async function pbProbe(art, aus) {
         // K3): die Wiese, an der die Sitzung steht — der Sturm nach dem Sprint (die Bühne des nächsten Fensters springt zurück auf
         // Sonne, trocken, ohne Regen), die Fahrt zuletzt (danach steht der Spieler 40 m daneben) —, dann die Genesis mit EINER Ankunft
         const P = PB_SCHRITT_S;
-        await schritt("wiese-third", P.wieseThird, async () => {
-            await U("wiese", "third");
-            await Z("wiese-third-steht", S);
-        }, ["wiese-third-steht"]);
+        // wo der Spieler steht (die Sitzung bootet an der Wiese): ein Schritt an einem anderen Ort trägt die Ankunft
+        let hier = "wiese";
+        const Uo = async (ort, sicht) => {
+            hier = null;
+            await U(ort, sicht);
+            hier = ort;
+        };
+        const am = (ort, s) => s + (hier === ort ? 0 : P.ankunft);
+        // DIE BEWEGUNGSZELLEN (profiband.K1#1) zuerst: Wiese gehend, Sprint, Sturm, Fahrt, dann Genesis Third gehend
         await schritt("wiese-ego", P.wieseEgo, async () => {
-            await U("wiese", "ego");
-            await Z("wiese-ego-steht", S);
+            await Uo("wiese", "ego");
             await Z("wiese-ego-geht", { ...G, wandern: "bahn" });
-        }, ["wiese-ego-steht", "wiese-ego-geht"]);
-        await schritt("wiese-sprint", P.sprint, async () => {
+            await Z("wiese-ego-steht", S);
+        }, ["wiese-ego-geht", "wiese-ego-steht"]);
+        await schritt("wiese-sprint", am("wiese", P.sprint), async () => {
             await ev(SEITE.sprint);
             try {
                 await Z("wiese-ego-sprint", G);
@@ -1201,49 +1209,48 @@ async function pbProbe(art, aus) {
                 await ev(SEITE.sprintAus);
             }
         }, ["wiese-ego-sprint"]);
-        await schritt("wiese-sturm", P.sturm, async () => {
-            await U("wiese", "ego");
+        await schritt("wiese-sturm", am("wiese", P.sturm), async () => {
+            await Uo("wiese", "ego");
             try {
                 await Z("wiese-ego-sturm", { ...G, tiere: "50", wetter: "stormy", wandern: "bahn" });
             } finally {
                 sonst.geraeumt = await ev(SEITE.raeumen);
             }
         }, ["wiese-ego-sturm"]);
-        await schritt("wiese-fahrt", P.fahrt, () => Z("wiese-fahrt", { ...G, wandern: "fahrt" }), ["wiese-fahrt"]);
-        await schritt("genesis-third", P.genesisThird, async () => {
-            await U("genesis", "third");
+        await schritt("wiese-fahrt", am("wiese", P.fahrt), () => Z("wiese-fahrt", { ...G, wandern: "fahrt" }), ["wiese-fahrt"]);
+        await schritt("genesis-third-geht", am("genesis", P.gehen), async () => {
+            await Uo("genesis", "third");
             await Z("genesis-third-geht", { ...G, wandern: "bahn" });
+        }, ["genesis-third-geht"]);
+        // DIE STAND-ZELLEN (K2) am Ort, wo der Spieler steht, dann die Stadt, dann die Wiese in Third
+        await schritt("genesis-third-steht", am("genesis", P.stehen), async () => {
+            if (hier !== "genesis") await Uo("genesis", "third");
             await Z("genesis-third-steht", S);
-        }, ["genesis-third-geht", "genesis-third-steht"]);
-        await schritt("genesis-ego", P.genesisEgo, async () => {
-            await U("genesis", "ego");
+        }, ["genesis-third-steht"]);
+        await schritt("genesis-ego", am("genesis", P.stehen), async () => {
+            await Uo("genesis", "ego");
             await Z("genesis-ego-steht", S);
         }, ["genesis-ego-steht"]);
         await schritt("stadt", P.stadt, async () => {
-            await U("stadt", "ego");
+            await Uo("stadt", "ego");
             await Z("stadt-ego-geht", { ...G, wandern: "bahn" });
         }, ["stadt-ego-geht"]);
-        // DIE BÄNDER je Ort × Sicht, wo der Spieler steht zuerst (die Genesis), dann die Wiese (eine Ankunft), dann das Dorf
-        await schritt("band-genesis-ego", P.bandAmOrt, async () => {
-            await U("genesis", "ego");
-            await B("genesis", "ego");
-        }, ["band:genesis-ego"]);
-        await schritt("band-genesis-third", P.bandAmOrt, async () => {
-            await U("genesis", "third");
-            await B("genesis", "third");
-        }, ["band:genesis-third"]);
-        await schritt("band-wiese-third", P.bandAnkunft, async () => {
-            await U("wiese", "third");
-            await B("wiese", "third");
-        }, ["band:wiese-third"]);
-        await schritt("band-wiese-ego", P.bandAmOrt, async () => {
-            await U("wiese", "ego");
-            await B("wiese", "ego");
-        }, ["band:wiese-ego"]);
+        await schritt("wiese-third", am("wiese", P.stehen), async () => {
+            await Uo("wiese", "third");
+            await Z("wiese-third-steht", S);
+        }, ["wiese-third-steht"]);
+        // DIE BÄNDER (K3) je Ort × Sicht, wo der Spieler steht zuerst, dann das Dorf
+        for (const [ort, sicht] of hier === "genesis"
+            ? [["genesis", "ego"], ["genesis", "third"], ["wiese", "third"], ["wiese", "ego"]]
+            : [["wiese", "third"], ["wiese", "ego"], ["genesis", "ego"], ["genesis", "third"]])
+            await schritt("band-" + ort + "-" + sicht, am(ort, P.band), async () => {
+                await Uo(ort, sicht);
+                await B(ort, sicht);
+            }, ["band:" + ort + "-" + sicht]);
         await schritt("dorf", P.dorf, async () => {
-            await U("dorf", "ego");
+            await Uo("dorf", "ego");
             await B("dorf", "ego");
-            await U("dorf", "third");
+            await Uo("dorf", "third");
             await B("dorf", "third");
         }, ["band:dorf-ego", "band:dorf-third"]);
     }
