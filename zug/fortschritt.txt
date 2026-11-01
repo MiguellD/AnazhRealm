@@ -1447,3 +1447,4 @@
 2026-11-01 11:09:52 takt-z132b-gtx START 7 Stationen in 1 Läufen
 2026-11-01 11:14:59 takt-z132b-gtx material.K1#1,lod.K5#1,bauen.K1#2,fahrzeug.K2#1,ankunft.K2#1,ankunft.K3#1,klang.K4#1 OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN 5.0 · 7/7
 2026-11-01 11:15:20 z132-abab START 2 Zellen
+2026-11-01 11:27:18 z132-abab w-ego VERLÄNGERN 11.9 · 1/2 (2+2)
