@@ -1379,7 +1379,24 @@ function __bedienungOhr() {
         O.loaf = null;
     }
 }
-function bedienungTaeter(O, n = 6) {
+// DIE SPUR DER BEDIENUNG (`werkbank bedienung --spur`): was NACH dem Faden hält, steht in keinem LoAF — die Spur (Marke
+// „bed <was>" je Eingabe) nennt je langsamer Eingabe die Aufträge der anderen Prozesse (GPU, Compositor) ab 1 ms in ihrem
+// Fenster, je Faden und Name summiert.
+const BEDIENUNG_SPUR = ["blink.user_timing", "toplevel", "gpu", "viz"];
+function spurFenster(ev, was, ms) {
+    const m = ev.find((e) => /user_timing/.test(e.cat) && e.name === "bed " + was);
+    if (!m) return null;
+    const faden = new Map(ev.filter((e) => e.ph === "M" && e.name === "thread_name").map((e) => [e.pid + ":" + e.tid, e.args.name]));
+    const [a, b] = [m.ts, m.ts + (ms + 20) * 1000];
+    const je = new Map();
+    for (const e of ev) {
+        if (e.ph !== "X" || e.pid === m.pid || !(e.dur >= 1000) || e.ts >= b || e.ts + e.dur <= a) continue;
+        const name = (faden.get(e.pid + ":" + e.tid) || e.tid) + " " + (e.args && e.args.src_func ? "RunTask(" + e.args.src_func + ")" : e.name);
+        je.set(name, (je.get(name) || 0) + Math.min(b, e.ts + e.dur) - Math.max(a, e.ts));
+    }
+    return [...je].sort((x, y) => y[1] - x[1]).slice(0, 5).map(([k, us]) => k + " " + Math.round(us / 1000) + " ms");
+}
+function bedienungTaeter(O, n = 6, spur = null) {
     const r1 = (v) => Math.round(v);
     const je = new Map();
     for (const [id, name, t, ps, pe, d] of O.ev) if (!je.has(id) || d > je.get(id).d) je.set(id, { name, t, ps, pe, d });
@@ -1389,6 +1406,7 @@ function bedienungTaeter(O, n = 6) {
         .slice(0, n)
         .map((e) => {
             const z = { was: marke(e.t), ereignis: e.name, ms: e.d, warten: r1(e.ps - e.t), hoerer: r1(e.pe - e.ps) };
+            if (spur) z.prozesse = spurFenster(spur, z.was, e.d);
             if (!O.loaf) return Object.assign(z, { faden: null, stil: null, sperre: null, nach: null, skripte: [] });
             // die langen Bilder bis zum präsentierten (die Dauer ist auf 8 ms gerundet), die nach dem Hörer enden
             const lo = O.loaf.filter((f) => f.ende > e.pe && f.ende <= e.t + e.d + 8);
@@ -1417,12 +1435,23 @@ function bedienungSelbsttest() {
     if (!/^FrameRequestCallback 90 ms$/.test(tab.skripte[0]) || !/Stil erzwungen 12/.test(tab.skripte[1])) fehl.push("Skripte " + tab.skripte);
     if (klick.was !== "Platz1·1" || klick.faden !== 0 || klick.nach !== 59) fehl.push("Klick " + JSON.stringify(klick));
     if (bedienungTaeter(Object.assign({}, O, { loaf: null }))[0].faden !== null) fehl.push("ohne LoAF ist der Faden nicht null");
+    // die Spur: ein Auftrag des GPU-Prozesses im Fenster des Tab heißt beim Faden-Namen, einer der Seite und einer danach nie
+    const spur = [
+        { cat: "blink.user_timing", name: "bed Tab·1", ph: "R", pid: 1, tid: 1, ts: 100000 },
+        { ph: "M", name: "thread_name", pid: 2, tid: 5, args: { name: "CrGpuMain" } },
+        { ph: "X", name: "CompileShader", pid: 2, tid: 5, ts: 150000, dur: 80000 },
+        { ph: "X", name: "Seite", pid: 1, tid: 1, ts: 150000, dur: 90000 },
+        { ph: "X", name: "Danach", pid: 2, tid: 5, ts: 900000, dur: 50000 },
+    ];
+    const g = bedienungTaeter(O, 6, spur)[0].prozesse;
+    if (!g || g.length !== 1 || g[0] !== "CrGpuMain CompileShader 80 ms") fehl.push("Spur " + JSON.stringify(g));
     return fehl;
 }
 
 module.exports = {
     ANKUNFT_HALT_MS,
     BEDIENUNG_OHR: `(${__bedienungOhr.toString()})()`,
+    BEDIENUNG_SPUR,
     bedienungTaeter,
     bedienungSelbsttest,
     ankunftsHalter,

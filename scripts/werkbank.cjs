@@ -45,8 +45,9 @@
 //                                                           `kreis` geht eine Runde in [sek] Spiel-s und zählt die Tiere im Bild (`KREIS`, tiere.K5)
 //   node scripts/werkbank.cjs latenz [--proben 50] [--sicht ego,third] [--verb gehen,wechsel,springen,einsteigen,hieb] [--json datei] | --selbsttest | --verzugprobe
 //                                                           DIE LATENZ (leib.K1): Taste → erstes Bild mit bewegtem Leib, je Sicht × Verb, ROT über 50 ms
-//   node scripts/werkbank.cjs bedienung [--runden 3] [--bilder d]  DIE BEDIENUNG (spielgang.K3): HUD-Deckung im Bild des Spielers, INP über HUD und
-//                                                          Menü, der Täter je langsamer Eingabe; --bilder: Einstellungen und Ich im Bild
+//   node scripts/werkbank.cjs bedienung [--runden 3] [--bilder d] [--spur]  DIE BEDIENUNG (spielgang.K3): HUD-Deckung im Bild des Spielers, INP
+//                                                          über HUD und Menü, der Täter je langsamer Eingabe (--spur: auch im GPU-Prozess);
+//                                                          --bilder: Einstellungen und Ich im Bild
 //   node scripts/werkbank.cjs haenger [sek] [--ein s] [--regler voll|frei] [--tiere frei|halten] [--wandern bahn|sprung]
 //                                                           [--schwelle ms] [--probe] [--json datei] | haenger --auswerten <x.roh.json>
 //                                                           DIE HÄNGER-LINSE: jeder Frame über der Schwelle mit Ursache (scripts/lib/haenger-linse.cjs)
@@ -1872,6 +1873,12 @@ async function starte() {
                     const vorbau = await page.evaluate(`(() => { const V = ${r}._geistVorbauStand, U = ${r}._uiVorbauStand, S = ${r}.state.ichStage;
                         return { geist: V ? V.fertig.size : 0, ich: !!(S && S.vorgebaut), ui: !!(U && U.alle) }; })()`);
                     const bauStand = () => page.evaluate(`(() => { const E = ${r}._erstZeichnungStand(); return [E.bauN, E.bauMs, E.eingabeVerschoben, E.neubauN]; })()`);
+                    // `--spur`: die CDP-Spur über beide Gruppen — sie nennt, was nach dem Faden hält (`HL.BEDIENUNG_SPUR`)
+                    const spur = b.spur ? { cdp: await page.target().createCDPSession(), ev: [] } : null;
+                    if (spur) {
+                        spur.cdp.on("Tracing.dataCollected", (e) => e.value.forEach((x) => spur.ev.push(x)));
+                        await spur.cdp.send("Tracing.start", { traceConfig: { includedCategories: HL.BEDIENUNG_SPUR } });
+                    }
                     await page.evaluate("__loop(1)");
                     const inp = {};
                     for (const art of ["hud", "menue"]) {
@@ -1880,7 +1887,7 @@ async function starte() {
                         for (let i = 0; i < +b.runden; i++) {
                             const ziele = art === "hud" ? await page.$$("#hotbar .hotbar-slot") : ["Tab", "Tab", "KeyI", "Escape"];
                             for (const [k, ziel] of ziele.entries()) {
-                                await page.evaluate((m) => __bedOhr.m.push([performance.now(), m]), (art === "hud" ? (k ? "Platz" + k : "Hand") : ["Tab auf", "Tab zu", "I", "Esc"][k]) + "·" + (i + 1));
+                                await page.evaluate((m) => (__bedOhr.m.push([performance.now(), m]), performance.mark("bed " + m)), (art === "hud" ? (k ? "Platz" + k : "Hand") : ["Tab auf", "Tab zu", "I", "Esc"][k]) + "·" + (i + 1));
                                 await (art === "hud" ? ziel.click() : page.keyboard.press(ziel));
                                 await bilder();
                             }
@@ -1889,7 +1896,13 @@ async function starte() {
                         const bau1 = await bauStand();
                         inp[art].knotenBau = { n: bau1[0] - bau0[0], ms: Math.round(bau1[1] - bau0[1]), wartet: bau1[2] - bau0[2], neubau: bau1[3] - bau0[3] };
                     }
-                    const taeter = HL.bedienungTaeter(await page.evaluate("__bedOhr"));
+                    if (spur) {
+                        const komplett = new Promise((ok) => spur.cdp.once("Tracing.tracingComplete", ok));
+                        await spur.cdp.send("Tracing.end");
+                        await komplett;
+                        await spur.cdp.detach();
+                    }
+                    const taeter = HL.bedienungTaeter(await page.evaluate("__bedOhr"), 6, spur && spur.ev);
                     // DIE TAFELN IM BILD (`--bilder <ordner>`, nie im Urteil): nach der Messung je Tafel ein Schuss des Spielers, wenn
                     // die Eingabe ruht und was sie aufschob, steht — die Einstellungen (I) und das Ich mit seiner Bühne (Tab)
                     const tafeln = [];
@@ -3083,7 +3096,8 @@ hauptLauf(async () => {
     else if (cmd === "methode")
         o = await rufe("/methode", { name: a[0], terrain: hat("terrain"), quelle: opt("--quelle") });
     else if (cmd === "eval") o = await evalRuf(a[0]);
-    else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), bilder: opt("--bilder") ? path.resolve(opt("--bilder")) : undefined });
+    else if (cmd === "bedienung")
+        o = await rufe("/bedienung", { runden: opt("--runden", 3), bilder: opt("--bilder") ? path.resolve(opt("--bilder")) : undefined, spur: hat("spur") });
     else if (cmd === "albedo" && hat("nah-fern")) {
         // DIE ALBEDO NAH GEGEN FERN: je Ort im Chunk-Quadrat Boden-Satz gegen Fern-Ring aus 420 m, dazu das Gesetz an
         // der Stelle; `--selbsttest` (ohne Welt) prüft das Urteil: im Band grün (auch ein Ring, der im Band seiner Abtastung
