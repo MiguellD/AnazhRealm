@@ -153,3 +153,4 @@ z112-abab nicht-langsamer abab 8809ec6d gegen cdb2703d: w-ego 4+4 nicht-langsame
 z114-abab LANGSAMER abab 808464ca gegen f0dab43d: w-ego 2+2 LANGSAMER · stadt 4+4 LANGSAMER
 b-kalt-b895 Exit0 station ankunft-kalt.sh an b895650c
 a-spawn-gtx4 Exit0 station a-spawn.sh an b895650c
+z115-abab nicht-langsamer abab b895650c gegen 808464ca: w-ego 4+4 nicht-langsamer · stadt 4+4 nicht-langsamer

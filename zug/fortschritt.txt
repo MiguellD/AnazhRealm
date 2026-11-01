@@ -1386,3 +1386,5 @@
 2026-11-01 02:40:37 z115-abab w-ego VERLÄNGERN 12.2 · 1/2 (2+2)
 2026-11-01 02:57:09 z115-abab stadt VERLÄNGERN 16.5 · 2/2 (2+2)
 2026-11-01 03:09:27 z115-abab w-ego(4+4) nicht-langsamer 12.2 · verlängert (4+4)
+2026-11-01 03:25:37 z115-abab stadt(4+4) nicht-langsamer 16.1 · verlängert (4+4)
+2026-11-01 03:25:55 takt-z118ca-gtx START 25 Stationen in 1 Läufen
