@@ -517,30 +517,38 @@ class AnazhRealm_bild_kosten {
                 // steht, ihr Programm auch in dem Pass, in den gerade keine ihrer Instanzen fällt, ohne Draw. Jede Kaskade rendert
                 // in ihr eigenes Ziel (der Schlüssel trägt den Render-Kontext): der Vorlauf-Baum in 30 m fällt in keine nahe — kam
                 // er im Gang näher, kompilierte sie dort kalt. Seit w4-b-knoten baut er nach dem Bild (`_vorbauWahl`).
-                // DER GAST DER BEDIENUNG (spielgang.K3, `_vorbauBedienung`): was die nächste Eingabe zeigen wird (das Phantom
-                // eines Hotbar-Bauplans), baut hier vorab ohne Draw wie die Arena — nach dem Bild, höchstens EINER je Bild und
-                // nur, wenn die Eingabe ruht (`_eingabeRuht`); der Klick findet Knoten und Pipeline fertig vor.
+                // DER GAST DER BEDIENUNG (spielgang.K3, `_vorbauBedienung`): was die nächste Eingabe zeigen wird (der Geist eines
+                // Hotbar-Bauplans, der Leib einer Seele), baut hier vorab ohne Draw wie die Arena — nach dem Bild, unter der Frist
+                // des Render-Aufrufs und nur, wenn die Eingabe ruht (`_eingabeRuht`); der Klick findet Knoten und Pipeline vor.
                 const gast = object.__vorbauGast === true;
                 const vorbau = gast || ro.getDrawParameters() === null;
                 const ctx = this._currentRenderContext.id;
                 const k = passId == null ? ctx : ctx + "|" + passId;
                 let merk;
+                const aufnahme = this._currentRenderBundle;
                 if (vorbau) {
                     const arena = gast || (object.isGeometrieArena === true && object.geometry.index !== null);
-                    if (!arena || scene !== welt.state.scene || (gast && !welt._eingabeRuht())) return;
-                    const wahl = AnazhRealm._vorbauWahl(
-                        E,
-                        object,
-                        k,
-                        welt._ladeTakt(),
-                        welt.state._weltbildDa,
-                        N.nodeFrame.frameId,
-                        gast
-                    );
-                    if (wahl !== "bauen") return;
+                    if (!arena || scene !== welt.state.scene) return;
+                    const wahl =
+                        gast && !welt._eingabeRuht()
+                            ? null
+                            : AnazhRealm._vorbauWahl(
+                                  E,
+                                  object,
+                                  k,
+                                  welt._ladeTakt(),
+                                  welt.state._weltbildDa,
+                                  N.nodeFrame.frameId,
+                                  gast
+                              );
+                    if (wahl !== "bauen") {
+                        // ein Gast im Bündel (der Leib) wartet wie ein Bürger ohne Bau: sein Bündel nimmt neu auf, bis er
+                        // baute — versiegelt ohne ihn, spielte es ihn nie wieder vor
+                        if (gast && aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
+                        return;
+                    }
                     merk = E.vorgemerkt.get(object);
                 }
-                const aufnahme = this._currentRenderBundle;
                 if (aufnahme !== null) ro.bundle = aufnahme.bundleGroup;
                 // DIE BÜHNE DER KARTE (`_karteWeltBacken`) zeichnet wie die Welt: sie wiederholt ihren Bake, bis jeder Bürger
                 // zeichnete — ihre Hüllen wechseln den Stoff, darum zählt dort kein Pass, und ihre Bau-Frist gilt dem ganzen
@@ -603,7 +611,7 @@ class AnazhRealm_bild_kosten {
                     if (vor === undefined) E.vorgebaut.set(object, new Set([k]));
                     else vor.add(k);
                     merk.delete(k);
-                    E.vorbauBild = N.nodeFrame.frameId;
+                    if (bau >= 0) E.vorbauBild = N.nodeFrame.frameId; // nur ein Knoten-Bau nimmt den Platz des Bilds
                 } else if (gezeichnet && !buehne) {
                     if (pass === undefined) E.gezeichnet.set(object, (pass = new Set()));
                     pass.add(k);
@@ -650,13 +658,14 @@ class AnazhRealm_bild_kosten {
     static _vorbauWahl(E, arena, pass, lade, bild, frame, gast = false) {
         let merk = E.vorgemerkt.get(arena);
         if (lade) return (merk ? merk.add(pass) : E.vorgemerkt.set(arena, new Set([pass])), "merken");
-        // ein Gast der Bedienung merkt jeden Pass selbst vor, in dem er noch nicht baute (er kam nach dem Ladeschirm)
+        // ein Gast der Bedienung merkt jeden Pass selbst vor, in dem er noch nicht baute (er kam nach dem Ladeschirm), und baut
+        // wie jede Erst-Zeichnung unter der Frist des Render-Aufrufs (`ERST_BAU_MS`) — sein Schutz ist die ruhende Eingabe
         const vor = gast && bild ? E.vorgebaut.get(arena) : undefined;
         if (gast && bild && !(vor && vor.has(pass))) {
             if (!merk) E.vorgemerkt.set(arena, (merk = new Set()));
             merk.add(pass);
         }
-        return bild && merk && merk.has(pass) && E.vorbauBild !== frame ? "bauen" : null;
+        return bild && merk && merk.has(pass) && (gast || E.vorbauBild !== frame) ? "bauen" : null;
     }
     // Der EINE Grund-Knoten jedes Schatten-Stoffs (r184 `vec4(0,0,0,1)`, je Licht neu gebaut) — `renderObject` oben
     static _schattenGrund() {

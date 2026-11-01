@@ -1839,13 +1839,13 @@ async function starte() {
                     // der Klick fängt den Zeiger wie beim Spieler: im Spiel (`body.im-spiel`), die Übergänge laufen aus
                     await page.bringToFront();
                     await page.keyboard.press("Escape"); // jede offene Schublade fällt, wie beim Spieler
-                    await page.mouse.click(page.viewport().width / 2, page.viewport().height / 2);
+                    await page.click("#world-canvas"); // die Mitte der Leinwand, wie der Spieler
                     // der Fang ist ein EREIGNIS: `pointerlockchange` kommt nach dem Klick über den Browser-Prozess zurück — die
-                    // Linse wartet auf ihn (bis 2 s), statt den Zustand im selben Atemzug zu lesen (GTX c351b318: „OHNE
-                    // Zeiger-Fang", 13,33 %, das HUD maß den Zustand vor dem Ereignis); ohne Fang bleibt imSpiel false
-                    const imSpiel = await page.evaluate(
-                        `new Promise((ja) => { const t0 = performance.now(); const sieh = () => ${r}.state.isPointerLocked ? Promise.all(document.getAnimations().map((a) => a.finished)).then(() => ja(true)) : performance.now() - t0 > 2000 ? ja(false) : setTimeout(sieh, 20); sieh(); })`
-                    );
+                    // Linse wartet auf ihn (bis 2 s), statt den Zustand im selben Atemzug zu lesen (GTX c351b318 „OHNE
+                    // Zeiger-Fang", 13,33 %; headless am alten Lesen 2 von 8 Läufen); ohne Fang bleibt imSpiel false
+                    const imSpiel = await page
+                        .waitForFunction(`${r}.state.isPointerLocked && Promise.all(document.getAnimations().map((a) => a.finished))`, { timeout: 2000 })
+                        .then(Boolean, () => false);
                     await page.addStyleTag({ content: "body.__ohne-hud *:not(#world-canvas) { visibility: hidden !important; }" });
                     const bild = async (an) => (await page.evaluate(`document.body.classList.toggle("__ohne-hud", ${!an})`), AU.pngLesen(await page.screenshot()));
                     const [mit, ohne] = [await bild(true), await bild(false), await bild(true)];

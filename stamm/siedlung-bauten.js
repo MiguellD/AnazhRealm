@@ -1062,37 +1062,48 @@ class AnazhRealm_siedlung_bauten {
             done.add(name);
             return; // EINS pro Idle-Tick
         }
-        this._vorbauBedienung();
     }
 
-    // DER VORBAU DER BEDIENUNG (spielgang.K3): was die nächste Eingabe zeigt, steht gebaut, bevor sie kommt — der Geist jedes
-    // Hotbar-Bauplans (seine Studio-Gestalt am Ort des Spielers, sonst der Spender) und danach die Ich-Bühne (`_ichVorbau`).
-    // Ein Geist geht als GAST in die Szene (`__vorbauGast`): die Erst-Zeichnung baut Knoten und Pipeline ohne Draw — nach dem
-    // Bild, höchstens einen Bau je Bild, nur wenn die Eingabe ruht —, und er geht, sobald jedes seiner Render-Objekte fertig
-    // ist (`_vorbauFertig`); der Knoten-Bau bleibt seinem Schlüssel (`_renderObjekteLoesen`), die Pipeline im Cache, die Auswahl
-    // zeichnet im nächsten Bild. Gemessen (Radeon echt, werkbank bedienung): der erste Klick auf das Haus hielt das Bild 239 ms
-    // (zwei Knoten-Bauten seines Geists, 153 und 147 ms), der Wagen in der zweiten Runde 141 ms. Gerufen aus dem Vorbacken.
+    // DER VORBAU DER BEDIENUNG (Lehre 14: im Leerlauf vorgebacken, nie synchron auf dem Interaktions-Pfad) — der EINE Planer
+    // dessen, was die nächste Eingabe zeigt, das Nächste zuerst: der Geist jedes Hotbar-Bauplans (die Auswahl, `_geistVorbau`),
+    // die Ich-Bühne (Tab, `_ichVorbau`), das Ich mit jeder Schublade (`_uiVorbau`) und die Leiber jeder annehmbaren Seele (der
+    // Wechsel, `_leibVorwaermen`), je Takt ein Schritt. Ein Geist und ein Leib gehen als GAST in die Szene (`__vorbauGast`):
+    // die Erst-Zeichnung baut Knoten und Pipeline ohne Draw — nach dem Bild, unter der Frist des Render-Aufrufs —, bis jedes
+    // seiner Teile in jedem Pass steht (`_vorbauFehlt`). Gebaut wird nur, wenn die Welt steht (`_weltSteht`) und die Eingabe
+    // ruht (`_eingabeRuht`): der Leib-Vorbau baute bis dahin auch mitten in der Bedienung (Radeon headless: acht Knoten-Bauten
+    // „vorwaermen:human" zu 78–100 ms zwischen den Klicks). Kienspan (CPU-Raster) baut nie vor. Gerufen je Takt aus dem Loop.
     _vorbauBedienung() {
         const st = this.state;
-        if (!st._weltbildDa || !st.scene || !st.renderer || st.renderer._isHeadlessNull || !this._eingabeRuht()) return;
+        const R = st.renderer;
+        if (!st._weltbildDa || st._holzProfil === "kienspan" || !R || !R.__anazhErstZeichnung) return;
+        if (!this._eingabeRuht() || !this._weltSteht()) return;
+        if (this._geistVorbau() && this._ichVorbau() && this._uiVorbau()) this._leibVorwaermen();
+    }
+
+    // DIE GEISTER IM VORBAU (ein Schritt von `_vorbauBedienung`): je Hotbar-Bauplan EIN Geist — seine Studio-Gestalt am Ort
+    // des Spielers, sonst der Spender —, und er geht, sobald er steht; der Knoten-Bau bleibt seinem Schlüssel
+    // (`_renderObjekteLoesen`), die Pipeline im Cache, die Auswahl zeichnet im nächsten Bild. Gemessen (Radeon echt, werkbank
+    // bedienung, kalt): der erste Klick auf das Haus hielt das Bild 239 ms (zwei Knoten-Bauten seines Geists zu 153 und 147
+    // ms), der Wagen in der zweiten Runde 141 ms. Ein lädendes Studio fragt der Vorbau alle VORBAU_FRAGE_MS. true: jeder steht.
+    _geistVorbau() {
+        const st = this.state;
         const V =
-            this._bedienungVorbau ||
-            (this._bedienungVorbau = { fertig: new Set(), frage: new Map(), gast: null, name: null, seit: 0 });
+            this._geistVorbauStand || (this._geistVorbauStand = { fertig: new Set(), frage: new Map(), gast: null });
         if (V.gast) {
-            const zuLang = performance.now() - V.seit > AnazhRealm.VORBAU_GAST_MS;
-            if (!this._vorbauFertig(V.gast) && !zuLang) return;
-            if (zuLang)
-                this.log(
-                    `VORBAU: der Geist von ${V.name} stand nach ${AnazhRealm.VORBAU_GAST_MS} ms nicht fertig`,
-                    "WARN"
+            const fehlt = this._vorbauFehlt(V.gast.gruppe);
+            if (fehlt && ++V.gast.takte < AnazhRealm.VORBAU_TAKTE) return false;
+            if (fehlt)
+                this._bruchMelden(
+                    `GEIST-VORBAU: ${V.gast.name} steht nach ${V.gast.takte} Takten nicht ganz (${fehlt} Teile)`
                 );
-            st.scene.remove(V.gast);
-            this._disposeSoulGroup(V.gast);
-            V.fertig.add(V.name);
+            st.scene.remove(V.gast.gruppe);
+            this._disposeSoulGroup(V.gast.gruppe);
+            V.fertig.add(V.gast.name);
             V.gast = null;
-            return;
+            return false;
         }
         const pm = st.playerMesh ? st.playerMesh.position : null;
+        let offen = false;
         for (const name of Array.isArray(st.hotbar) ? st.hotbar : []) {
             if (!name || V.fertig.has(name)) continue;
             const bp = st.blueprints && st.blueprints[name];
@@ -1101,45 +1112,50 @@ class AnazhRealm_siedlung_bauten {
                 continue;
             }
             const jetzt = performance.now();
-            if (jetzt < (V.frage.get(name) || 0)) continue; // das Studio lädt — die nächste Frage kommt nach VORBAU_FRAGE_MS
-            let geist = this._studioGeist(bp, pm);
-            if (geist === null) {
+            offen = true;
+            if (jetzt < (V.frage.get(name) || 0)) continue;
+            let gruppe = this._studioGeist(bp, pm);
+            if (gruppe === null) {
                 V.frage.set(name, jetzt + AnazhRealm.VORBAU_FRAGE_MS);
                 continue;
             }
-            if (!geist) geist = this._buildPlacementGhost(bp, { donorOnly: true });
-            geist.name = "bedienung-vorbau";
-            geist.traverse((o) => {
+            if (!gruppe) gruppe = this._buildPlacementGhost(bp, { donorOnly: true });
+            gruppe.name = "vorbau:" + name;
+            gruppe.traverse((o) => {
                 if (!o.isMesh) return;
                 o.__vorbauGast = true;
                 o.frustumCulled = false; // der Gast muss in die Liste des Bilds, gleich wohin der Blick geht
                 o.castShadow = false;
                 o.raycast = () => {}; // kein Strahl trifft ihn
             });
-            if (pm) geist.position.copy(pm);
-            st.scene.add(geist);
-            Object.assign(V, { gast: geist, name, seit: performance.now() });
-            return;
+            if (pm) gruppe.position.copy(pm);
+            st.scene.add(gruppe);
+            V.gast = { gruppe, name, takte: 0 };
+            return false;
         }
-        if (this._ichVorbau()) this._uiVorbau();
+        return !offen;
     }
 
-    // Steht der Gast gebaut? Jedes Glied hat Render-Objekte, und jedes trägt seinen Knoten-Bau und eine fertige Pipeline.
-    _vorbauFertig(gruppe) {
-        const R = this.state.renderer;
-        let n = 0;
-        let fertig = true;
-        gruppe.traverse((o) => {
-            if (!fertig || !o.isMesh) return;
-            const ros = o.__renderObjekte;
-            if (!ros || !ros.length) return void (fertig = false);
-            for (const ro of ros) {
-                if (R._nodes.get(ro).nodeBuilderState === undefined || !R._pipelines.isReady(ro))
-                    return void (fertig = false);
-                n++;
-            }
+    // WAS EINEM GAST DES VORBAUS FEHLT (0: er steht): je sichtbarem Teil die Pässe, in die er gehört (das Auge und, wirft er,
+    // der Schatten), vorgebaut oder gezeichnet — und jedes seiner Render-Objekte trägt seinen Knoten-Bau und eine fertige
+    // Pipeline. Der Leser: `_geistVorbau` und `_leibVorwaermen`.
+    _vorbauFehlt(gruppe) {
+        const st = this.state;
+        const R = st.renderer;
+        const E = this._erstZeichnungStand();
+        let fehlt = 0;
+        gruppe.traverseVisible((o) => {
+            if (!o.isMesh) return;
+            const soll = +st.camera.layers.test(o.layers) + +(o.castShadow && R.shadowMap.enabled);
+            const p = E.vorgebaut.get(o) || E.gezeichnet.get(o);
+            const ros = o.__renderObjekte || [];
+            if (
+                (p ? p.size : 0) < soll ||
+                ros.some((ro) => !R._nodes.get(ro).nodeBuilderState || !R._pipelines.isReady(ro))
+            )
+                fehlt++;
         });
-        return fertig && n > 0;
+        return fehlt;
     }
 
     // KERN-PFLICHT-WAND: fehlt ein Gesetzbuch (AnazhRealm.GESETZ_KERNE) auf dem Main-Thread, SCHREIT die
@@ -2846,9 +2862,10 @@ AnazhRealm.CHUNK_SATZ = Object.freeze({
 // ein Abschnitt verdichtet seine Lücken (`verschnitt` seines Laufs) und, nach `dichtNach` Pässen mit ruhender Wahl, seine
 // Folge (dicht in Satz-Ordnung, exakt).
 AnazhRealm.CHUNK_SATZ_ABSCHNITT = Object.freeze({ luft: 1.2, ruheTakte: 600, verschnitt: 0.25, dichtNach: 30 });
-// DER VORBAU DER BEDIENUNG (`_vorbauBedienung`, spielgang.K3): so lange (ms) darf ein Gast bauen, bevor er laut geht, und so
-// oft (ms) fragt der Vorbau ein ladendes Studio erneut (wie die Heilung des Phantoms in `tickBuildMode`).
-AnazhRealm.VORBAU_GAST_MS = 20000;
+// DER VORBAU DER BEDIENUNG (`_vorbauBedienung`, spielgang.K3): so viele Takte darf ein Gast (Leib oder Geist) bauen, bevor
+// er laut geht (ein Bruch der Erst-Zeichnung), und so oft (ms) fragt der Vorbau ein ladendes Studio erneut (wie die Heilung
+// des Phantoms in `tickBuildMode`).
+AnazhRealm.VORBAU_TAKTE = 600;
 AnazhRealm.VORBAU_FRAGE_MS = 500;
 // DAS VERDICHTEN des Satzes (`_chunkSatzVerdichten`): nach der Ruhe-Frist schrumpft ein Satz, dessen Kapazität mehr als
 // `schwelle` × Ziel trägt, auf das Ziel = Inhalt × `luft` (Vertices: die Bereiche; Indizes: das Hochwasser der lebenden
