@@ -117,7 +117,13 @@ hauptLauf(async () => {
         return res;
     });
 
-    await seiteZu(browser, server, out, "\n===== RELOAD-TREUE — die Kreatur kehrt wie gegossen wieder =====\n", "fatal");
+    await seiteZu(
+        browser,
+        server,
+        out,
+        "\n===== RELOAD-TREUE — die Kreatur kehrt wie gegossen wieder =====\n",
+        "fatal"
+    );
     check(`(R) Wolf A unter Übergabe 3.5 gegossen (gussDials=${out.r.aGussDials})`, out.r.aGussDials === 3.5);
     check("(R) der Snapshot trägt die Guss-Dials (3.5)", out.r.snapTraegt === true);
     check(

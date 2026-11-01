@@ -37,7 +37,17 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, jsonKlon, fehlerText, seiteZu, rotListe } = require("./lib/welt-boot.cjs");
+const {
+    statikServer,
+    starteBrowser,
+    laufUhr,
+    taeterFaelle,
+    selbsttestEnde,
+    jsonKlon,
+    fehlerText,
+    seiteZu,
+    rotListe,
+} = require("./lib/welt-boot.cjs");
 const SK = require("./lib/shader-kosten.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 

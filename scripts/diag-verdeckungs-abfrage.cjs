@@ -201,7 +201,14 @@ function selbsttest() {
 
 if (process.argv.includes("--selftest")) selbsttest();
 
-const { statikServer, starteBrowser, selbsttest: selbstMarke, laufUhr, fehlerText, rotListe } = require("./lib/welt-boot.cjs");
+const {
+    statikServer,
+    starteBrowser,
+    selbsttest: selbstMarke,
+    laufUhr,
+    fehlerText,
+    rotListe,
+} = require("./lib/welt-boot.cjs");
 const { linsenGpu } = require("./lib/software-gpu.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 

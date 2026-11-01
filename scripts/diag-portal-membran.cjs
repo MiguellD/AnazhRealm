@@ -38,7 +38,15 @@
 //
 //   node scripts/diag-portal-membran.cjs [--ohne-blick]
 "use strict";
-const { statikServer, starteBrowser, hauptLauf, nullSeite, pruefer, wandEnde, fehlerText } = require("./lib/welt-boot.cjs");
+const {
+    statikServer,
+    starteBrowser,
+    hauptLauf,
+    nullSeite,
+    pruefer,
+    wandEnde,
+    fehlerText,
+} = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 const server = statikServer();

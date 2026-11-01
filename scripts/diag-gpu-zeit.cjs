@@ -33,7 +33,15 @@
 //   node scripts/diag-gpu-zeit.cjs      (npm run gate:gpu-zeit)
 // ─────────────────────────────────────────────────────────────────────────
 
-const { statikServer, warteAufWelt, nullSeite, pruefer, wandEnde, fehlerText, seiteZu } = require("./lib/welt-boot.cjs");
+const {
+    statikServer,
+    warteAufWelt,
+    nullSeite,
+    pruefer,
+    wandEnde,
+    fehlerText,
+    seiteZu,
+} = require("./lib/welt-boot.cjs");
 const server = statikServer();
 
 const { errs, check } = pruefer();
@@ -163,7 +171,12 @@ const { errs, check } = pruefer();
     } catch (e) {
         out = { error: fehlerText(e) };
     }
-    await seiteZu(browser, server, out, "\n===== GPU-ZEIT-WELLE — echtes gpuMs (timestamp-query) statt Subtraktions-Proxy =====\n");
+    await seiteZu(
+        browser,
+        server,
+        out,
+        "\n===== GPU-ZEIT-WELLE — echtes gpuMs (timestamp-query) statt Subtraktions-Proxy =====\n"
+    );
     check(
         `(2) perfSense führt gpuMs als eigene Phase (EWMA ${out.senseGpuMs != null ? (+out.senseGpuMs).toFixed(2) : "—"} ms · max ${out.senseGpuMax != null ? (+out.senseGpuMax).toFixed(1) : "—"})`,
         Number.isFinite(out.senseGpuMs) && Number.isFinite(out.senseGpuMax)

@@ -26,7 +26,15 @@
 //   node scripts/diag-erstarren.cjs      (npm run gate:erstarren)
 // ─────────────────────────────────────────────────────────────────────────
 
-const { statikServer, warteAufWelt, nullSeite, pruefer, wandEnde, fehlerText, seiteZu } = require("./lib/welt-boot.cjs");
+const {
+    statikServer,
+    warteAufWelt,
+    nullSeite,
+    pruefer,
+    wandEnde,
+    fehlerText,
+    seiteZu,
+} = require("./lib/welt-boot.cjs");
 const server = statikServer();
 
 const { errs, check } = pruefer();
@@ -204,7 +212,12 @@ const { errs, check } = pruefer();
     } catch (e) {
         out = { error: fehlerText(e) };
     }
-    await seiteZu(browser, server, out, "\n===== P0 — DIE ERSTARREN-LINSE (kalter Boot · Wander-Lauf · Membran-Wand) =====\n");
+    await seiteZu(
+        browser,
+        server,
+        out,
+        "\n===== P0 — DIE ERSTARREN-LINSE (kalter Boot · Wander-Lauf · Membran-Wand) =====\n"
+    );
     const L = out.lauf;
     console.log(
         `  Lauf: ${L.n} Ticks · Q1-Mittel ${L.q1} ms · Q4-Mittel ${L.q4} ms · max ${L.max} ms · >250 ms: ${L.ueber250} (${(L.anteil * 100).toFixed(1)} %)`

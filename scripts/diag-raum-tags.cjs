@@ -22,7 +22,15 @@
 //   node scripts/diag-raum-tags.cjs [--selftest]   (npm run gate:raum-tags)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde, wandEnde, jsonKlon } = require("./lib/welt-boot.cjs");
+const {
+    statikServer,
+    ROOT: root,
+    hauptLauf,
+    nullSeite,
+    selbsttestEnde,
+    wandEnde,
+    jsonKlon,
+} = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 
