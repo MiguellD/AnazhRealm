@@ -1,0 +1,60 @@
+{
+ "sha": "1f7541123b54d6717d1d7ec1f544dd3242720738",
+ "geraet": "radeon",
+ "zeit": "2026-11-01T15:43:37.843Z",
+ "host": "MiguellD",
+ "je": {
+  "haar.K2#1": {
+   "gruen": false,
+   "zahl": "arm ROT strich 0.4542 Soll [0.3554,0.533] — strich 0.4542 — albedo: veraltet seit 05268a48: foundry-core.js geändert (c:e5fa7ec5f0ec025a → c:efe0f4ee6c1dc556) · albedo — [0.01; 0.3] · third ROT strich 0.5022 Soll [0.3554,0.533] — strich 0.5022 — albedo: veraltet seit 05268a48: foundry-core.js geändert (c:e5fa7ec5f0ec025a → c:efe0f4ee6c1dc556) · albedo — [0.01; 0.3]",
+   "exit": 0,
+   "minuten": 0.34,
+   "grund": "ROT: arm ROT strich 0.4542 Soll [0.3554,0.533] — strich 0.4542 — albedo: veraltet seit 05268a48: foundry-core.js geändert (c:e5fa7ec5f0ec025a → c:efe0f4ee6c1dc556) · albedo — [0.01; 0.3] · third ROT strich 0.5022 Soll [0.3554,0.533] — strich 0.5022 — albedo: veraltet seit 05268a48: foundry-core.js geändert (c:e5fa7ec5f0ec025a → c:efe0f4ee6c1dc556) · albedo — [0.01; 0.3]",
+   "gpu": "amd/rdna-3",
+   "s": 20.1,
+   "zeit": "2026-11-01T15:43:37.843Z",
+   "abdruck": "b612c52e703b",
+   "port": 5410,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-01T15:43:07.846Z",
+  "port": 5410,
+  "warten": 0.05,
+  "bootS": 6.3,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "haar.K2#1",
+    "s": 19.5,
+    "takte": 531,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 42,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 47.3,
+  "minuten": 0.88
+ }
+}
