@@ -16,6 +16,9 @@
 //   W6 (Karten W3 + S5, ?holz=voll mit Schatten): jeder Stoff trägt je Stufe ≤ min(16, Gerät) Sampler-EINHEITEN, wie
 //      GL sie zählt (aktive Sampler × Feldgröße, nie Textur-Objekte), gezählt im GLSL OHNE Link (swiftshader linkt je Programm
 //      20–48 s); Selbsttests: ein Stoff mit 17 Karten fällt beim Namen, ein linkender Zensus ist ROT (r184-Drift)
+//   W7 (heil-webgl, z116) die GPU-Leine hält auch auf GL: jedes Bild des Takts trägt seinen Zaun (erledigt oder unterwegs) —
+//      ohne ihn lief die CPU der GPU beliebig voraus, auf swiftshader-GL warteten Links 108–183 s auf den Rückstau, die Frist
+//      riss; Selbsttest: eine Leine, die zeichnete und nichts band, fällt beim Namen
 //   node scripts/diag-webgl-probe.cjs
 // ─────────────────────────────────────────────────────────────────────────
 
@@ -102,6 +105,11 @@ hauptLauf(async () => {
             }
             o.frames = st.flightRecorder ? st.flightRecorder.frames : 0;
             o.spielerEndlich = !!pm && [pm.position.x, pm.position.y, pm.position.z].every(Number.isFinite);
+            // W7 — DIE GPU-LEINE HÄLT AUCH AUF GL (heil-webgl, z116): jedes Bild, das der Takt zeichnete, trägt seinen Zaun —
+            // erledigt oder unterwegs (`_gpuLeineBinden`). Ohne Zaun liefe die CPU der GPU beliebig voraus, und jede synchrone
+            // Frage (ein Link) wartete auf den ganzen Rückstau.
+            const L = r._gpuLeine;
+            o.leine = L ? { gerendert: L.gerendert, erledigt: L.erledigt, imFlug: L.imFlug, ausgesetzt: L.ausgesetzt } : null; // prettier-ignore
             // W6 (Karten W3 + S5): die Sampler-EINHEITEN je Stoff und Stufe, wie GL sie zählt — aktive Sampler-Uniforms
             // × Feldgröße, nie die Textur-Objekte des Stoffs — aus dem GLSL der Stufe, OHNE zu linken: aktiv ist ein
             // Sampler, den die Stufe nach seiner Deklaration liest (den Rest streicht der Treiber; belegt am echten
@@ -158,6 +166,8 @@ hauptLauf(async () => {
     const z = out.zensus || [];
     console.log(`  W6 Sampler je Stoff (Grenze vertex ${out.grenze && out.grenze[1]} · fragment ${out.grenze && out.grenze[2]}), ${z.length} Stoff-Stufen, ${out.ohneLink} Zensus-Pipelines ohne Link:`); // prettier-ignore
     for (const [k, n, , wo] of z.slice(0, 6)) console.log(`     ${String(n).padStart(2)} ${k} — ${wo}`);
+    const l = out.leine || {};
+    console.log(`  W7 GPU-Leine auf GL: gezeichnet=${l.gerendert} erledigt=${l.erledigt} unterwegs=${l.imFlug} ausgesetzt=${l.ausgesetzt}`); // prettier-ignore
     if (out.err) console.log(`  Probe-Fehler: ${out.err}`);
 
     const errs = [];
@@ -185,6 +195,11 @@ hauptLauf(async () => {
     if (!(z.length > 4 && selbst.length === 1 && selbst[0].startsWith("W6: selbsttest:17-karten fragment trägt 17 "))) errs.push(`W6-Selbsttest: der Stoff mit 17 Karten fällt nicht beim Namen (${selbst.join(" · ") || "kein Urteil"}; ${z.length} Stoffe) — die Linse ist blind`); // prettier-ignore
     else console.log(`  W6-Selbsttest ROT am Täter: ${selbst[0]}`);
     if (!(out.ohneLink > 0)) errs.push("W6: der Zensus linkt (compileAsync fragt seine Pipeline anders als mit eigener Versprechen-Liste — r184-Drift)"); // prettier-ignore
+    // W7: jedes gezeichnete Bild trägt seinen Zaun — erledigt oder unterwegs; der Selbsttest: eine Leine, die zeichnete und nichts
+    // band (der Stand vor heil-webgl), fällt beim Namen
+    const bindet = (x) => !!x && x.gerendert >= 1 && x.erledigt + x.imFlug >= 1;
+    if (!bindet(out.leine)) errs.push(`W7: die GPU-Leine bindet auf WebGL2 nicht (gezeichnet=${l.gerendert} erledigt=${l.erledigt} unterwegs=${l.imFlug}) — jedes Bild ginge ohne Zaun an die GPU, die CPU liefe ihr beliebig voraus (z116: Takte bis 183 s, die Frist riss)`); // prettier-ignore
+    if (bindet({ gerendert: 3, erledigt: 0, imFlug: 0 })) errs.push("W7-Selbsttest: eine Leine ohne Zaun fällt nicht — die Linse ist blind");
 
     require("./lib/welt-boot.cjs").wandEnde(errs, "die Kein-WebGPU-Geschichte ist BEWIESEN: der erzwungene WebGL2-Rückfall bootet eine LEBENDE, sichtbare Welt; die WGSL-Konsumenten + Bundles ruhen hinter der EINEN Backend-Wand, der Rückfall ist LAUT benannt, der Fern-Ring trägt auf CPU.");
 });
