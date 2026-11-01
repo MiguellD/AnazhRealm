@@ -275,8 +275,9 @@
    ],
    [
     [
-     "-Math.SQRT1_2 &&",
-     "Infinity &&"
+     "/koerper-core.js",
+     "L._wandKontaktNz < -Math.SQRT1_2 &&",
+     "L._wandKontaktNz < Infinity &&"
     ]
    ]
   ],
@@ -315,8 +316,9 @@
    ],
    [
     [
-     "-Math.SQRT1_2 &&",
-     "-2 &&"
+     "/koerper-core.js",
+     "L._wandKontaktNz < -Math.SQRT1_2 &&",
+     "L._wandKontaktNz < -2 &&"
     ]
    ]
   ],
