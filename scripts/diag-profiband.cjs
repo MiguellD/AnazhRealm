@@ -46,14 +46,9 @@
 //
 //   node scripts/diag-profiband.cjs [--selftest] [--messung <boot.json …>]          (npm run gate:profiband)
 "use strict";
-const { selbsttestEnde, jsonLesen, jsonKlon } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
+const { selbsttestEnde, SELBSTTEST, path, fs, stammLib, jsonLesen, ROOT: root, jsonKlon } = require("./lib/welt-boot.cjs");
 const DZ = require("./lib/draw-zaehler.cjs");
 const BAND = require("./lib/band-urteil.cjs");
-const stammLib = require("./lib/stamm.cjs");
-
-const root = path.join(__dirname, "..");
 
 // DIE ECHTE KLASSE (scripts/lib/stamm.cjs `ladeKlasse`, im vm wie der Wirt der Wiese) — kein Rumpf-Text, kein Zwilling; der
 // Selbsttest lädt einen veränderten Stamm (`monolith`) und fährt dieselben Proben.
@@ -978,8 +973,9 @@ function selbsttest() {
             !BAND.messortePruefen(haushalt).length
     );
     // S28 — DAS EINSCHWINGEN WARTET AUF DEN DORF-ZUG (Messort dorf: der Zug läuft): ein Export unterwegs und eine wachsende
-    // Siedlung halten die Welt offen, eine ruhige Welt meldet nichts. Und auf den SATZ, DER NOCH SCHRUMPFT (1310-1): ein Satz
-    // über seinem Ziel (`ueberSeit` ≥ 0) hält offen, ein ruhender (-1) nicht.
+    // Siedlung halten die Welt offen, eine ruhige Welt meldet nichts; ein Plan, dessen Takt ruht (`_dorfTaktLebt` false: der
+    // Messort ohne Dorf-Zug), wächst nie und hält nicht offen — derselbe Plan mit lebendem und mit ruhendem Takt. Und auf den
+    // SATZ, DER NOCH SCHRUMPFT (1310-1): ein Satz über seinem Ziel (`ueberSeit` ≥ 0) hält offen, ein ruhender (-1) nicht.
     const welt28 = (z) =>
         Object.assign(
             {
@@ -992,10 +988,15 @@ function selbsttest() {
             },
             z
         );
-    const o28 = BAND.einschwingOffen(welt28({ _autoSettlementQueue: { plan: { slots: [1, 2, 3] }, idx: 1 } }));
+    const dorf28 = [true, false].map(
+        (lebt) =>
+            BAND.einschwingOffen(
+                welt28({ _autoSettlementQueue: { plan: { slots: [1, 2, 3] }, idx: 1 }, _dorfTaktLebt: () => lebt })
+            ).dorfWaechst
+    );
     t(
-        "Einschwingen: eine wachsende Siedlung (1/3), ein Export unterwegs und zwei Lieferungen vor dem Ingest-Takt halten offen, die ruhige Welt nicht",
-        o28.dorfWaechst === "1/3" &&
+        "Einschwingen: eine wachsende Siedlung (1/3), ein Export unterwegs und zwei Lieferungen vor dem Ingest-Takt halten offen, derselbe Plan ohne Takt und die ruhige Welt nicht",
+        dorf28.join() === "1/3," &&
             BAND.einschwingOffen(welt28({ _autoSettlementPendingKey: "-4,-4" })).dorfExport === "-4,-4" &&
             BAND.einschwingOffen(welt28({ _foundryIngestQueue: [1, 2] })).foundryIngest === 2 &&
             Object.keys(BAND.einschwingOffen(welt28({}))).length === 0 &&
@@ -1081,7 +1082,7 @@ function selbsttest() {
     // wie sie w2B auf der GTX richtete (ohne Version), ist ROT — ohne Version, mit fremder
     // Messung, mit einer Gesamt-Zeile über der Summe der Klassen und gegen w2B zu weit (baum haupt 385 630 gegen 60 976).
     {
-        const probe = jsonLesen(path.join(root, "spec", "profiband", "probe-1110-12.json"));
+        const probe = jsonLesen("spec/profiband/probe-1110-12.json");
         const w2B = probe.boots.w2B.schritte.find((x) => x.name === "band").ergebnis.messung;
         const slot = (r, z) => Object.assign({ ort: "wiese", geraet: "gtx", sicht: "ego", datei: "probe", ratsche: r }, z);
         const alt31 = BAND.ratscheFrische({
@@ -1194,7 +1195,7 @@ function selbsttest() {
 }
 
 function main() {
-    if (process.argv.includes("--selftest")) return selbsttest();
+    if (SELBSTTEST) return selbsttest();
     const { haushalt } = BAND.ladeSpec();
     const errs = [];
     const h = BAND.haushaltPruefen(haushalt);
@@ -1207,7 +1208,7 @@ function main() {
         for (const f of BAND.ratschePruefen(e.ratsche, haushalt)) errs.push(`H2 [${e.datei}] ${f}`);
     // H2b DIE FRISCHE: gemessen, höchstens eine Version alt, am eigenen Ort × Gerät × Sicht, die Gesamt-Zeile feuert, und
     // gegen jede gegebene Messung (`--messung`) keine Zeile zu weit.
-    const version = jsonLesen(path.join(root, "package.json")).version;
+    const version = jsonLesen("package.json").version;
     const messungen = [];
     const mi = process.argv.indexOf("--messung");
     for (const d of mi >= 0 ? process.argv.slice(mi + 1).filter((x) => /\.json$/i.test(x)) : []) {

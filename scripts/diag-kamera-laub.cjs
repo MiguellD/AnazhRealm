@@ -16,12 +16,9 @@
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf, wandEnde, selbsttestEnde, weltTor, fehlerStapel } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf, wandEnde, selbsttestEnde, weltTor, jsonLesen, fehlerStapel, SELBSTTEST, path, stammLib, argOpt } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
-const fs = require("fs");
-const path = require("path");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
-const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.KAMERA_LAUB_PORT || 4611);
 const STAMM = process.env.KAMERA_LAUB_STAMM ? path.resolve(process.env.KAMERA_LAUB_STAMM) : null;
@@ -31,7 +28,7 @@ const STAMM = process.env.KAMERA_LAUB_STAMM ? path.resolve(process.env.KAMERA_LA
 // ihn trägt (26.10.: ROT am Ruck des Haus-Sprints, s. GANG)
 // `--bild`: die Welt zeichnet über die Weiche (Rezept `linse`), ohne den Null-Renderer — die Station eines Geräts (leib.K4)
 const BILD = process.argv.includes("--bild");
-const TEILE = (process.argv.includes("--teile") ? process.argv[process.argv.indexOf("--teile") + 1] : "laub,leib,gang,gang2,ninja").split(",");
+const TEILE = argOpt("--teile", "laub,leib,gang,gang2,ninja").split(",");
 // Die Nah-Radien der Messung (m) — fest in der Linse, damit Vorher und Nachher unter derselben Bedingung stehen.
 const RADIUS = Object.freeze({ third: 2.0, ritt: 3.0, first: 0.8 });
 const SAUM = 0.6; // der Saum der Durchsicht (KAMERA_DURCHSICHT.saumM): in 3rd endet die Nah-Kugel samt Saum vor dem Ziel
@@ -153,7 +150,7 @@ const NINJA_WP = [
 ];
 const NINJA_RAND = 0.3; // Lab-Maß (der Runner R10)
 const WIESE = require("./lib/welt-orte.cjs").messort("wiese"); // der EINE Leser des Haushalts
-const HANG = JSON.parse(fs.readFileSync(path.join(root, "spec", "pruefbuehne", "stationen.json"), "utf8")).stationen.find(
+const HANG = jsonLesen("spec/pruefbuehne/stationen.json").stationen.find(
     (o) => o.id === "s2-hang30"
 );
 
@@ -1101,7 +1098,7 @@ async function probe(arg) {
 }
 
 hauptLauf(async () => {
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         console.log("=== SELBST-TEST (ohne Welt) ===");
         // je Fall das Urteil über die Messung: `soll` null heißt 0 Täter, sonst nennt die Linse ihn beim Namen (Anfang der Zeile)
         const faelle = (k, urt, liste) => {
@@ -1189,7 +1186,7 @@ hauptLauf(async () => {
         const fdir = path.join(root, "spec", "abnahme");
         const abnahmeBrueche = AU.abnahmeSelbsttest(fdir);
         check("K4 Selbst-Test: die Abnahme-Zeile nennt jeden eingeschmuggelten Fall und jede Fixture beim Namen", abnahmeBrueche.length === 0, abnahmeBrueche.join(" · "));
-        for (const f of JSON.parse(fs.readFileSync(path.join(fdir, "faelle.json"), "utf8")).faelle)
+        for (const f of jsonLesen(path.join(fdir, "faelle.json")).faelle)
             console.log(`   Fixture ${f.name}: ${AU.abnahmeUrteil(AU.fixtureMessung(f, fdir), AU.SCHWELLEN).zeile}`);
         // K5 — DIE SOLL-TAFEL (K63, spec/abnahme/soll-tafel.json, AAAA Schritt 0): je sichtbarer Klasse das Soll (eigen,
         // gerechnet oder GELESEN — KOPF_SOLL aus dem Kern, die Toleranz der Albedo-Tafel), das Budget je LOD-Stufe aus dem
@@ -1197,7 +1194,7 @@ hauptLauf(async () => {
         // Albedo-Tafel). Die Wand: kein Bruch der Tafel (ein Ist von Hand, ein Verweis ohne Ziel oder ohne Leser, ein gerechnetes
         // Band ohne Rechnung, eine Messung über ihrem Rauschen, eine Haushalt-Klasse fehlt), Teilung und Maße geeicht, jeder
         // eingeschmuggelte Bruch fällt beim Namen; ein ROTES Maß ist der Auftrag der nächsten AAAA-Karte, nie ein Bruch der Wand.
-        const sollTafel = JSON.parse(fs.readFileSync(path.join(fdir, "soll-tafel.json"), "utf8"));
+        const sollTafel = jsonLesen(path.join(fdir, "soll-tafel.json"));
         // die Quelle des Urteils (abnahme-urteil `sollQuelle`): dieselbe, mit der der Schreiber der Tafel jede Messung prüft
         const sollQ = AU.standLeser(root).sollQuelle();
         const sollBrueche = AU.sollTafelSelbsttest(sollTafel, sollQ);
@@ -1259,7 +1256,7 @@ hauptLauf(async () => {
         }
         // die Prüfbühne, geboren wie im Spiel durch die Tür (`weltTor`)
         const tH = Date.now();
-        await bereit(adresse, JSON.parse(fs.readFileSync(path.join(root, "spec", "pruefbuehne", "welt.json"), "utf8")));
+        await bereit(adresse, jsonLesen("spec/pruefbuehne/welt.json"));
         await page.evaluate(leibInstall, { R: LEIB_R });
         leib.hang = await page.evaluate(leibHang, { hang: HANG, n: LEIB_HANG_N });
         zeiten.hang = Date.now() - tH;

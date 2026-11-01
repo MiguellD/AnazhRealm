@@ -2225,6 +2225,13 @@ class AnazhRealm_siedlung_bewohner {
         const [unten, oben] = stand
             ? [AnazhRealm.PLAYER_GROUND_SNAP, AnazhRealm.BEWOHNER.kopfM + AnazhRealm.PLAYER_STEP_UP]
             : [AnazhRealm.PLAYER_STEP_UP, AnazhRealm.BEWOHNER.kopfM];
+        // DER RAHMEN DER STRECKE (Lehre 25: der billige Filter zuerst): eine Box, deren achsparalleler Rahmen (er trägt auch die
+        // gedrehte, `obb`) den der Strecke samt Kapsel nicht schneidet, liegt weiter als die Kapsel — `_streckeBoxAbstand2` urteilt
+        // nur den Rest (1 µm über der Rundung). Bis w4-stationen-schnell-a maß jede Frage jede Box der Nachbarn ganz: die Liste des
+        // Start-Dorfs (24 283 Fragen) 1,52 → 1,04 s, ihre Stände bit-gleich
+        const Rr = R + 1e-6;
+        const [rx0, rx1] = a.x < e.x ? [a.x - Rr, e.x + Rr] : [e.x - Rr, a.x + Rr];
+        const [rz0, rz1] = a.z < e.z ? [a.z - Rr, e.z + Rr] : [e.z - Rr, a.z + Rr];
         let st = null;
         let memo = null;
         // der Boden der Strecke: das Gesetz und darüber die Trittfläche eines Werks (die Bahn der Brücke, `_trittUeber`) — die
@@ -2234,7 +2241,15 @@ class AnazhRealm_siedlung_bewohner {
             const boxen = ent.blockerAABBs;
             if (!boxen || ent._verkehrFaehrt) continue; // der fahrende Wagen ist ein Leib im Gedränge, keine Wand (`_verkehrImRaster`)
             for (const box of boxen) {
-                if (box.tritt || this._streckeBoxAbstand2(box, a.x, a.z, e.x, e.z) >= R * R) continue;
+                if (
+                    box.tritt ||
+                    box.maxX < rx0 ||
+                    box.minX > rx1 ||
+                    box.maxZ < rz0 ||
+                    box.minZ > rz1 ||
+                    this._streckeBoxAbstand2(box, a.x, a.z, e.x, e.z) >= R * R
+                )
+                    continue;
                 if (st === null) {
                     this._voxelEditKarte(); // trägt jeden neuen Edit nach: sein Zähler ist der Stand des Bodens
                     st = this._editGenZaehler | 0;

@@ -12,8 +12,7 @@
 // und Wiederkehr über einen Reload (allein: `--k5`, mit dem echten Renderer); die Selbst-Tests S3–S18 feuern je an ihrer
 // Naht, jede Naht restauriert; Q15 der Treffer je Kern-Mutation im Takt des Spiels, im Bild und am Labor (allein: `--k1`, mit dem
 // echten Renderer). Aufruf: node scripts/diag-kampf-gefuehl.cjs [--k5 | --k1]
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer, sleep, fehlerText } = require("./lib/welt-boot.cjs");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer, sleep, fehlerText, stammLib } = require("./lib/welt-boot.cjs");
 // Port über KAMPF_GEFUEHL_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4451.
 const PORT = Number(process.env.KAMPF_GEFUEHL_PORT || 4451);
 
@@ -557,7 +556,7 @@ function bogenK4Taeter(K) {
 // Wunde, Gnade, Lebens-Spur, Seele, Trauer und Journal; Inventar und Bindung überstehen den Tod, der Abdruck nach dem Reload
 // gleicht dem vor dem Speichern je Teil, das Alter des Fuchses eingeschlossen (das erste Bild der Wiederkehr zählt keinen Takt
 // des Lebens nach). Der Abdruck ist kanonisches JSON (K5_ABDRUCK, feste Reihe), sein Hash die Zahl.
-const hash = (o) => require("crypto").createHash("sha256").update(JSON.stringify(o)).digest("hex").slice(0, 12);
+const hash = (o) => stammLib.sha(JSON.stringify(o)).slice(0, 12);
 const f1 = (v) => (v === null || v === undefined ? "–" : Number(v).toFixed(2));
 // DER BERICHT einer Probe: JSON, Zahlen auf Tausendstel; `keys` (Leerzeichen-Liste) wählt die Größen
 const json = (o) => JSON.stringify(o, (k, x) => (typeof x === "number" ? +x.toFixed(3) : x));

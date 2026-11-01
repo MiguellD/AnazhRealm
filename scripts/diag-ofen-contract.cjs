@@ -28,22 +28,9 @@
 //   die Klasse zahnfleisch) → rot an zahn|headGroup (fehlt) und zahnfleisch|headGroup · (S3) korruptes Golden → rot.
 //   node scripts/diag-ofen-contract.cjs [--selftest]
 "use strict";
-const {
-    selbsttestEnde,
-    wandEnde,
-    fadenScope,
-    pruefer,
-    jsonLesen,
-    jsonSchreiben,
-    jsonKlon,
-} = require("./lib/welt-boot.cjs");
-const crypto = require("crypto");
-const fs = require("fs");
-const vm = require("vm");
-const path = require("path");
+const { selbsttestEnde, wandEnde, fadenScope, pruefer, jsonLesen, jsonSchreiben, jsonKlon, ausDatei, SELBSTTEST, path, fs, crypto, vm, stammLib, ROOT } = require("./lib/welt-boot.cjs");
 const { probeWand, objektAbdruck } = require("./lib/plattform-probe.cjs");
 
-const ROOT = path.resolve(__dirname, "..");
 const GOLDEN_DIR = path.join(ROOT, "spec/asset-contract/ofen/golden");
 const GOLDEN = path.join(GOLDEN_DIR, "bake.json");
 const QUELLEN = [
@@ -105,24 +92,18 @@ function fingerabdruck(g, fall) {
     if (sk) {
         for (const j of sk.joints)
             klassen[`${fall}|gelenk|${j.name}`] = {
-                sha256: crypto
-                    .createHash("sha256")
-                    .update(JSON.stringify([j.parent, j.pos, j.quat, j.scale]))
-                    .digest("hex"),
+                sha256: stammLib.sha(JSON.stringify([j.parent, j.pos, j.quat, j.scale])),
             };
         const rest = Object.assign({}, sk);
         delete rest.joints;
         klassen[`${fall}|beipack`] = {
-            sha256: crypto
-                .createHash("sha256")
-                .update(
-                    JSON.stringify(
-                        Object.keys(rest)
-                            .sort()
-                            .map((x) => [x, rest[x]])
-                    )
+            sha256: stammLib.sha(
+                JSON.stringify(
+                    Object.keys(rest)
+                        .sort()
+                        .map((x) => [x, rest[x]])
                 )
-                .digest("hex"),
+            ),
         };
     }
     return klassen;
@@ -195,7 +176,7 @@ function taeterStoff(sb, c, g) {
 // (Täter beim Namen) und hält die Bytes der Normale (sha256, die Prägung der Saat 99). B3a: jede Start-Leinwand ist eine
 // CPU-Leinwand (willReadFrequently) — ihr putImageData auf der GPU-Leinwand wartete im Faden auf den GPU-Prozess (Radeon kalt 2,27 s).
 const RINDE_SHA = "039367ab31640d7f";
-const BRUECKE = fs.readFileSync(path.join(ROOT, "foundry-bruecke.js"), "utf8");
+const BRUECKE = ausDatei("foundry-bruecke.js");
 function ofenStart(eingriff) {
     const sb = ladeOfen();
     let bild = null;
@@ -244,7 +225,7 @@ function ofenStart(eingriff) {
     } finally {
         for (const T in echt) sb[T] = echt[T];
     }
-    const sha = bild ? crypto.createHash("sha256").update(Buffer.from(bild.buffer)).digest("hex") : null;
+    const sha = bild ? stammLib.sha(Buffer.from(bild.buffer)) : null;
     return {
         gebrochen: zaehl.gebrochen,
         gpu: gpu.filter(Boolean).length,
@@ -266,7 +247,7 @@ function taeterRinde(sb) {
 }
 
 (async function main() {
-    const selbsttest = process.argv.includes("--selftest");
+    const selbsttest = SELBSTTEST;
     const sb = ladeOfen();
     check(
         "Ofen geladen (BAKERS_BY_KIND.kreatur + .koerper, __tetrapodaCore + __koerperCore)",

@@ -9,11 +9,9 @@
 // (Datei · Mesh · Attribut) — eine benannte Änderung, keine Meinung.
 //
 //   npm run gate:asset-contract
-const fs = require("fs");
-const path = require("path");
 const { runWithWorker, fingerprintMeshes, DATEN_KANAELE, ersteAbweichung } = require("./lib/asset-worker-harness.cjs");
 const { probeWand } = require("./lib/plattform-probe.cjs");
-const { hauptLauf, wandEnde, jsonLesen, jsonSchreiben, jsonKlon } = require("./lib/welt-boot.cjs");
+const { hauptLauf, wandEnde, jsonLesen, jsonSchreiben, jsonKlon, ausDatei, path, fs } = require("./lib/welt-boot.cjs");
 const {
     dek,
     bildDeckung,
@@ -445,7 +443,7 @@ hauptLauf(async () => {
         for (const [field, key] of DATEN_KANAELE) {
             const goldPath = path.join(DIR, key + ".json");
             if (!fs.existsSync(goldPath)) continue;
-            const gold = fs.readFileSync(goldPath, "utf8").trim();
+            const gold = ausDatei(goldPath).trim();
             const live = JSON.stringify(bookReply[field]);
             if (live === gold) continue;
             const a = live === undefined ? null : ersteAbweichung(bookReply[field], JSON.parse(gold));
