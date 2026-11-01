@@ -1457,3 +1457,4 @@
 2026-11-01 12:52:22 wiese-takt-abab w-ego(4+4) nicht-langsamer 12.1 · verlängert (4+4)
 2026-11-01 13:08:45 wiese-takt-abab stadt(4+4) nicht-langsamer 16.3 · verlängert (4+4)
 2026-11-01 13:45:04 b-himmel-kalt START 1 Stationen
+2026-11-01 13:49:33 b-himmel-kalt ankunft-kalt.sh Exit0 4.5 · 1/1
