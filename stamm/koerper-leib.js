@@ -430,14 +430,15 @@ class AnazhRealm_koerper_leib {
     // nach der die Tiere gehen — mit der Zweibeiner-Zeile fx.bewegung.gang; L = die GEBAUTE Beinlänge (einmal am Rig
     // vermessen, Welt-Maß aus der Gelenk-Skala). Die Phase bleibt weg-getrieben (2π je Doppelschritt Λ, ω = 2π·v/Λ).
     // Vorher eichte ein Faktor des Schritt-Blocks (4,0 × Bein ≈ 3,4 m je Schritt) den Takt auf 5,5 rad/s beim Basistempo:
-    // beim Gehen 0,34 Schritte/s, zwei Schritt-Töne in sechs Sekunden, der Fuß glitt 130 % des Wegs. `M` = die Bein-Maße
-    // (`_gaitBeinMass` des Rigs, beim Leib ohne Gestalt die seines Halters).
-    _gaitGesetz(M, speed) {
+    // beim Gehen 0,34 Schritte/s, zwei Schritt-Töne in sechs Sekunden, der Fuß glitt 130 % des Wegs. `traeger` = der Träger
+    // des Beins (`_gaitBeinMass`: das Rig oder der Leib ohne Gestalt) — Leib, Satz und Probe lesen das Gesetz an derselben
+    // Stelle, nie an einem Maß, das der Rufer selbst nahm.
+    _gaitGesetz(traeger, speed) {
         const core = typeof window !== "undefined" && window.__tetrapodaCore;
         if (!core || typeof core.gangSchritt !== "function")
             return AnazhRealm._kernPflichtBruch("tetrapoda:gangSchritt");
         const v = Number.isFinite(speed) && speed > 0 ? speed : 0;
-        return core.gangSchritt(v, M.L, this._gangZeile(true));
+        return core.gangSchritt(v, this._gaitBeinMass(traeger).L, this._gangZeile(true));
     }
     // DIE ZEILE DES GANGS IN DER WELT (K07): das Gang-Gesetz misst Froude-Zahl und Becken an der Schwere der Welt
     // (`state.gravity`, die DSL setzt sie) — Mensch und Tier lesen sie aus EINER Zeile, Schritt und Becken aus derselben
@@ -455,10 +456,12 @@ class AnazhRealm_koerper_leib {
     // Hüfte lotrecht (wpl) und längs (wz — das Becken des Menschen ist ungleich skaliert, 0,93 quer und längs: ein
     // Fußweg in Metern ist längs ein anderes Maß im Gelenk-Raum als lotrecht, sonst kurzt die Pose den Stand um 7 % und
     // der Fuß gleitet), die Beinlänge in Metern (L = (l1 + l2)·wpl — die L, an der das Gang-Gesetz die Schrittlänge misst).
-    _gaitBeinMass(rig) {
-        if (rig && rig._beinMass) return rig._beinMass;
-        const M = this._gaitBeinMessen(rig);
-        if (rig && M.L > 0.1) rig._beinMass = M;
+    // EIN Gedächtnis je Träger (`_beinMass`): das Rig misst sich beim ersten Ruf; der Leib ohne Gestalt (der Bewohner als
+    // Zahl, `_bewohnerGeburt`) trägt das Maß, das das Muster seiner Gestalt in seinen Maßen nahm (`_bewohnerBein`).
+    _gaitBeinMass(traeger) {
+        if (traeger && traeger._beinMass) return traeger._beinMass;
+        const M = this._gaitBeinMessen(traeger);
+        if (traeger && M.L > 0.1) traeger._beinMass = M;
         return M;
     }
     // DAS BEIN-MASS, FRISCH GEMESSEN (ohne das Gedächtnis des Rigs): so misst der Leib ohne Gestalt seins am Muster seiner
@@ -524,16 +527,16 @@ class AnazhRealm_koerper_leib {
     // DER EINE GANG-TICK (Chokepoint Spieler + Peers): Weg-Phase am Halter akkumulieren, Blend-Gewicht
     // glätten, Amplitude mit dem Tempo skalieren (≈1 Basis, 1.3 Sprint). opts.ik=true rüstet Fuß-IK —
     // NUR der lokale Avatar (Budget); Peers tragen Blend + Weg-Takt ohne Boden-IK. DER LEIB OHNE GESTALT (der Bewohner als
-    // Zahl, `_bewohnerGeburt`): seine Bein-Maße reisen am Halter (`beinMass`) — er geht dasselbe Gesetz ohne Rig, und
-    // trägt er seine Gestalt, misst ihr Rig dasselbe.
+    // Zahl, `_bewohnerGeburt`): er trägt sein Bein selbst (`_beinMass` am Halter, der Träger des Gesetzes) — er geht dasselbe
+    // Gesetz ohne Rig, und trägt er seine Gestalt, misst ihr Rig dasselbe.
     _gaitTick(mesh, halter, speed, dt, opts) {
         const rig = mesh && mesh.userData && mesh.userData.rig;
-        const M = halter && (halter.beinMass || (rig && this._gaitBeinMass(rig)));
-        if (!M) return null;
+        const traeger = halter && (halter._beinMass ? halter : rig);
+        if (!traeger) return null;
         const v = Number.isFinite(speed) && speed > 0 ? speed : 0;
         const d = Number.isFinite(dt) && dt > 0 ? dt : 0;
         const emoF = opts && Number.isFinite(opts.emoFaktor) && opts.emoFaktor > 0 ? opts.emoFaktor : 1;
-        const gs = this._gaitGesetz(M, v);
+        const gs = this._gaitGesetz(traeger, v);
         const g =
             halter._gait || (halter._gait = { w: 0, amp: 1, ik: null, S: 0, tast: 0.5, auf: Math.PI, omega: 0, L: 0 });
         // DER STEHENDE FUSS HÄLT (K07, tetrapoda `gangPhaseHaelt`): ändert sich die Zeile (Tempo, Gangart, Emotion), setzt
@@ -563,7 +566,7 @@ class AnazhRealm_koerper_leib {
         g.hub = gs.hub;
         g.auf = 2 * Math.PI * (1 - gs.tast);
         g.omega = gs.omega * emoF;
-        g.L = M.L;
+        g.L = this._gaitBeinMass(traeger).L;
         // ZWILLINGS-ABSCHIED (19.07.): der „|| 6"-Nebenzwilling fiel — der
         // Falsy-Arm (nur vor der Boot-Eichung erreichbar) liest die Eichungs-
         // Wahrheit selbst (fail-closed via _bewegungsKoeff, kurzgeschlossen).

@@ -492,7 +492,7 @@ class AnazhRealm_siedlung_bewohner {
     // des Felds), die Marke seines Hauses (`heim`), der Fern-Satz je Gestalt (`gattung`), sein Stand auf dem Gesetz (Lehre 22:
     // die Sohle liegt PLAYER_FOOT_OFFSET unter dem Ursprung des Leibs). Seine Gestalt (Rig und Haut, 63 Knoten) gießt erst die
     // Nähe im Blick aus dem EINEN Mensch-Bau (`_bewohnerGestalt`); bis dahin zeichnen ihn Satz und Feld aus der Zahl, und sein
-    // Gang geht am Bein seines Leibs (`beinMass`, `_bewohnerBein`) — gemessen am Muster seiner Gestalt (`_bewohnerMuster`, das
+    // Gang geht am Bein seines Leibs (`_beinMass`, `_bewohnerBein`) — gemessen am Muster seiner Gestalt (`_bewohnerMuster`, das
     // der Erste jeder Gestalt gießt: sein Leib trägt den Satz, sein Gang wird gebacken, seine Glieder zerlegt der Vorrat).
     // Bis stadt-takt3 goss jede Geburt den ganzen Leib in den Graphen: an stadt-voll 72 384 von 73 772 Knoten in 1 131
     // Leibern, je Gang des Kehraus 13,8 ms je Spitzen-Takt.
@@ -508,9 +508,10 @@ class AnazhRealm_siedlung_bewohner {
         g.scale.setScalar(b.groesse);
         // SEINE FARBEN (mensch.K4): das Feld liest sie an seinen Gliedern (`_tonFeldFarbe`), die Gestalt an jedem Teil (`__ton`)
         g.userData.__tonZeilen = b.tonZeilen;
-        // DAS TEMPO DES GANGS (mensch.K2): die Tempo-Einheit des Steuer-Gesetzes an seiner Beinlänge × `gang` des Tags
-        b.beinMass = this._bewohnerBein(M, b);
-        b.beinL = Math.max(0.3, b.beinMass.L);
+        // DAS TEMPO DES GANGS (mensch.K2): die Tempo-Einheit des Steuer-Gesetzes an seiner Beinlänge × `gang` des Tags — sein
+        // Bein trägt er im EINEN Gedächtnis des Gang-Gesetzes (`_beinMass`, `_gaitBeinMass`: der Träger ohne Rig)
+        b._beinMass = this._bewohnerBein(M, b);
+        b.beinL = Math.max(0.3, b._beinMass.L);
         b.tempo = globalThis.__tetrapodaCore.tempoEinheit(b.beinL) * window.__koerperCore.TAGES_GESETZ.gang;
         g.userData._hueftL = b.beinL; // die Kugel seines Blicks (`_kreaturAusserBlick`) misst an ihr
         // die Lage seiner Glieder nennt der Satz seiner Gestalt (`_kreaturGliederBacken`, `_kzLeib`)
