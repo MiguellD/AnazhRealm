@@ -279,36 +279,47 @@ class AnazhRealm_stoff_karte {
         if (z._endeLoes) z._endeLoes(!!ok);
     }
 
-    // Das EINE Einheits-Quad der Karten (6 Verts auf der Stammachse, y ∈ {0,1}) mit DREI Vertex-Attributen: position,
-    // normal (PROBE (1,0,0): der InstanceNode macht daraus (cos r, 0, −sin r)/s → Rotation + Skala), uv (u = Ecke:
-    // ±1 = 2u−1, v = Höhe: Wind-Gewicht v²). Je Instanz EIN vec4 `aKarte` = (Schicht, Halbbreite, Höhe — template-
-    // lokal —, ±Sichthöhe), die Fassade ersetzt den Platzhalter je Slot; dazu instanceColor (Tint). Befund Echt-GPU 04.10.:
-    // mit color/aImpX/aFlex/aPhase/aOccl/aZelle/aRahmen trug die Pipeline 10 Vertex-Puffer (WebGPU-Grenze 8) — das
-    // @global-Bundle wurde ungültig, keine Karte zeichnete.
+    // Das EINE Einheits-Gitter der Karten (`KARTE_GITTER` Zellen auf der Stammachse, y ∈ 0..1, indiziert) mit DREI
+    // Vertex-Attributen: position, normal (PROBE (1,0,0): der InstanceNode macht daraus (cos r, 0, −sin r)/s → Rotation +
+    // Skala), uv (u = Spalte: ±1 = 2u−1, v = Höhe: Wind-Gewicht v²). Je Instanz EIN vec4 `aKarte` = (Schicht, Halbbreite,
+    // Höhe — template-lokal —, ±Sichthöhe), die Fassade ersetzt den Platzhalter je Slot; dazu instanceColor (Tint). Befund
+    // Echt-GPU 04.10.: mit color/aImpX/aFlex/aPhase/aOccl/aZelle/aRahmen trug die Pipeline 10 Vertex-Puffer (WebGPU-Grenze 8)
+    // — das @global-Bundle wurde ungültig, keine Karte zeichnete. DAS GITTER (heil-laub-tiefe): jede Ecke trägt die Tiefe
+    // ihrer Gestalt (der Stoff, `vertexNode`) — bis dahin ein Quad aus 2 Dreiecken, dessen Tiefe das Fragment schrieb. Unter
+    // ihrer Bild-Schwelle fallen die inneren Ecken auf die Ecken des Quads (der Stoff, `_morph`): es zeichnen dessen 2 Dreiecke.
     _impostorQuad(at) {
         if (at.quad) return at.quad;
-        const VC = 6;
-        const ecken = [
-            [0, 0],
-            [1, 0],
-            [1, 1],
-            [0, 1],
-        ];
-        const tri = [0, 1, 2, 0, 2, 3];
+        const [NX, NY] = AnazhRealm.KARTE_GITTER.zellen;
+        const VC = (NX + 1) * (NY + 1);
         const pos = new Float32Array(VC * 3),
             nor = new Float32Array(VC * 3),
             uv = new Float32Array(VC * 2),
             karte = new Float32Array(VC * 4);
-        for (let ti = 0; ti < VC; ti++) {
-            const c = ecken[tri[ti]];
-            pos[ti * 3 + 1] = c[1];
-            nor[ti * 3] = 1;
-            uv[ti * 2] = c[0];
-            uv[ti * 2 + 1] = c[1];
-            karte[ti * 4 + 1] = 1; // Platzhalter: Schicht 0, Rahmen 1 × 1, ohne Sichthöhe
-            karte[ti * 4 + 2] = 1;
-        }
+        for (let j = 0; j <= NY; j++)
+            for (let i = 0; i <= NX; i++) {
+                const k = j * (NX + 1) + i;
+                pos[k * 3 + 1] = j / NY;
+                nor[k * 3] = 1;
+                uv[k * 2] = i / NX;
+                uv[k * 2 + 1] = j / NY;
+                karte[k * 4 + 1] = 1; // Platzhalter: Schicht 0, Rahmen 1 × 1, ohne Sichthöhe
+                karte[k * 4 + 2] = 1;
+            }
+        // je Zelle zwei Dreiecke im Umlauf des alten Quads; die Diagonale läuft durch die Ecke zur Mitte des Gitters (ein Fächer
+        // um die Kuppel der Krone, links wie rechts gleich). Fallen die inneren Ecken auf das Quad (der Stoff, `_morph` 0), wird
+        // die Zelle mit der Mitte als unterer linker Ecke das alte Quad mit seiner Diagonale, jede andere entartet.
+        const idx = [];
+        for (let j = 0; j < NY; j++)
+            for (let i = 0; i < NX; i++) {
+                const a = j * (NX + 1) + i,
+                    b = a + 1,
+                    c = a + NX + 2,
+                    d = a + NX + 1;
+                if (i < NX / 2 === j < NY / 2) idx.push(a, b, c, a, c, d);
+                else idx.push(a, b, d, b, c, d);
+            }
         const g = new THREE.BufferGeometry();
+        g.setIndex(idx);
         g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
         g.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
         g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
@@ -1309,6 +1320,14 @@ AnazhRealm.IMPOSTOR_ATLAS_GRUPPE = "impostor#fimp:atlas";
 // BC1-Albedo 298 KB + RGTC2-Normale 149 KB + Sonnen-Sicht 56 KB, 128 × 3584 samt Mips; waagrecht allein 0,28 MiB), das Wachsen
 // kopiert nur beim Einzug einer Art (Mess-Wiese 18 Karten in 18 Schichten).
 AnazhRealm.KARTEN_ATLAS_SCHRITT = 2;
+// DAS GITTER DER KARTE (heil-laub-tiefe, `_impostorQuad` und der Stoff): `zellen` Spalten × Zeilen, an deren Ecken der Stoff die
+// Tiefe der Gestalt liest (`vertexNode`; der frühe Tiefentest bleibt, kein frag_depth) — die Mitte trägt die Kuppel der Krone,
+// Rand und Fuß ihren Saum. `px` die Bild-Höhe der Karte in Pixeln der Szene, ab der ihr Gitter zu wachsen beginnt und ab der
+// es ganz steht: jede innere Kante schattiert ihre 2×2-Blöcke doppelt, an der fernen Karte so viel wie die Karte selbst — dort
+// zeichnen die zwei Dreiecke von f0dab43d (Radeon, Mess-Wiese Ego, Einzel-Frames in EINER Welt gegen die Karte von f0dab43d:
+// 4 × 4 an jeder Karte p50 +0,6 ms, 2 × 2 ab 64/128 px +0,1 ms). Je Instanz 8 Dreiecke (Mess-Wiese Ego: 2221 Karten, +13k
+// Dreiecke; 653 im Bild, Median 44 px hoch, 209 über 64 px, 53 über 128 px).
+AnazhRealm.KARTE_GITTER = Object.freeze({ zellen: Object.freeze([2, 2]), px: Object.freeze([64, 128]) });
 
 // Das Budget-Fenster der Welt-Karte je Takt (ms Haupt-Faden; die erste Karte eines Takts backt immer — Spike S1).
 AnazhRealm.KARTE_WELT_MS = 4;

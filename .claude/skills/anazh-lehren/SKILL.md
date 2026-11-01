@@ -42,7 +42,8 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   Instanz-Wand (`_naturWand`) Bauten frei, die Schicht (Halm, Nah-Wiese) noch nicht.
 - GESTALT < 64 m Studio-Mesh + LOD-Kette, EIN Auge der Stufen (`_lodAuge`), jede Karte eine Schicht des EINEN Atlas, gebacken aus
   ihrer Höhen-Stufe (`_karteStufe`), je Texel ihre Tiefe (phyto-core `karteTiefe`: die Karte steht in der Tiefe ihrer Gestalt —
-  Pixel-Tiefen-Versatz und Schatten-Ort; heute ohne Blick-Parallaxe, gate:foundry-impostor C7 misst sie), ihre Mips
+  gelesen an den Ecken ihres Gitters `KARTE_GITTER`, nie im Fragment: frag_depth schaltet den frühen Tiefentest ab; fern fällt das
+  Gitter auf das Quad; heute ohne Blick-Parallaxe, gate:foundry-impostor C7 misst sie), ihre Mips
   deckungstreu mit dem Saum der Art in JEDEM Hebungs-Ring (phyto-core `karteSaum`/`karteSaumRinge`: die Zelle aus der Blattgröße in
   `treeParams`, Laub-Lappen, Nadel-Grate, der Kronen-Fuß im Bild des Rings; die GPU-Ablage `KARTE_RECHNER_WGSL` rechnet dasselbe Gesetz,
   `_karteSaumVon`), fern Glieder-Kapseln · jede Senke zeichnet über ihren Zeichner (`_instanzZeichner`: count 1 über einer InstancedBufferGeometry-Fassade,
