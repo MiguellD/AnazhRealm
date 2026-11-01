@@ -341,3 +341,4 @@ takt-z122a-gtx 1 punkte sha=eeb5d2bfbcdae181388a990d13c434cd67b923a0 geraet=gtx 
 takt-z122b-gtx 1 punkte sha=eeb5d2bfbcdae181388a990d13c434cd67b923a0 geraet=gtx nur=mensch.K1#1,fahrzeug.K2#1,ankunft.K2#1,ankunft.K3#1,profiband.K5#1,klang.K4#1
 b-kalt-eeb5 2 station sha=eeb5d2bfbcdae181388a990d13c434cd67b923a0 lauf=ankunft-kalt.sh
 stadt4-abab 3 abab A=eeb5d2bfbcdae181388a990d13c434cd67b923a0 B=d46f055f6615e5469cc236846dde0346ce0c27b7 zellen=stadt,w-ego
+p-oeko-gtx 1 punkte sha=eeb5d2bfbcdae181388a990d13c434cd67b923a0 geraet=gtx nur=oekologie.K4#2
