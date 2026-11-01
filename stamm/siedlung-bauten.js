@@ -1091,12 +1091,33 @@ class AnazhRealm_siedlung_bauten {
     // seiner Teile in jedem Pass steht (`_vorbauFehlt`). Gebaut wird nur, wenn die Welt steht (`_weltSteht`) und die Eingabe
     // ruht (`_eingabeRuht`): der Leib-Vorbau baute bis dahin auch mitten in der Bedienung (Radeon headless: acht Knoten-Bauten
     // „vorwaermen:human" zu 78–100 ms zwischen den Klicks). Kienspan (CPU-Raster) baut nie vor. Gerufen je Takt aus dem Loop.
+    // DER TAKT DES VORBAUS (z140-takt): im Stehen ändert der Vorbau kein Bild — darum rechnet er nicht je Bild, sondern
+    // höchstens in jedem VORBAU_BILDER-ten gezeichneten Bild (der Zähler der GPU-Leine): der Planer und das EINE Bild danach
+    // (`_vorbauFrei`, die Gäste bauen nur dort; ihr Bündel nimmt nur dort auf). Je Bild gebaut lag er 40 s im Stand der
+    // Mess-Wiese (Radeon echt, Ego, 1e90e7cd: 576 Knoten-Schritte zu 6,8 ms im Mittel, CPU-Takt p95 im Stehen 8,7 → 18,6 ms;
+    // GTX Frame p95 17,1 → 25,0 ms).
     _vorbauBedienung() {
         const st = this.state;
         const R = st.renderer;
-        if (!st._weltbildDa || st._holzProfil === "kienspan" || !R || !R.__anazhErstZeichnung) return;
+        const L = this._gpuLeine;
+        const T = this._vorbauTakt || (this._vorbauTakt = { frei: false, bild: -1 });
+        if (T.frei && L && L.gerendert !== T.bild) T.frei = false; // sein Bild ist gezeichnet
+        if (!st._weltbildDa || st._holzProfil === "kienspan" || !R || !R.__anazhErstZeichnung || !L) return;
         if (!this._eingabeRuht() || !this._weltSteht()) return;
+        if (T.frei || L.gerendert - T.bild < AnazhRealm.VORBAU_BILDER) return;
         if (this._geistVorbau() && this._ichVorbau() && this._uiVorbau()) this._leibVorwaermen();
+        // das Bild danach gehört dem Gast: er baut dort, und sein Bündel (der Leib) nimmt dort auf
+        const V = this._geistVorbauStand;
+        const gast = (V && V.gast && V.gast.gruppe) || (st._leibVorwaermung && st._leibVorwaermung.leib);
+        if (gast) gast.traverse((o) => o.isBundleGroup === true && (o.needsUpdate = true));
+        [T.frei, T.bild] = [true, L.gerendert];
+    }
+
+    // DARF EIN GAST DES VORBAUS IN DIESEM BILD BAUEN? (der Leser: `_renderObjectDirect`) — nur im Bild, das der Takt des
+    // Vorbaus freigab, und nur bei ruhender Eingabe.
+    _vorbauFrei() {
+        const T = this._vorbauTakt;
+        return !!T && T.frei && this._eingabeRuht();
     }
 
     // DIE GEISTER IM VORBAU (ein Schritt von `_vorbauBedienung`): je Hotbar-Bauplan EIN Geist — seine Studio-Gestalt am Ort
@@ -2932,11 +2953,14 @@ AnazhRealm.CHUNK_SATZ = Object.freeze({
 // ein Abschnitt verdichtet seine Lücken (`verschnitt` seines Laufs) und, nach `dichtNach` Pässen mit ruhender Wahl, seine
 // Folge (dicht in Satz-Ordnung, exakt).
 AnazhRealm.CHUNK_SATZ_ABSCHNITT = Object.freeze({ luft: 1.2, ruheTakte: 600, verschnitt: 0.25, dichtNach: 30 });
-// DER VORBAU DER BEDIENUNG (`_vorbauBedienung`, spielgang.K3): so viele Takte darf ein Gast (Leib oder Geist) bauen, bevor
-// er laut geht (ein Bruch der Erst-Zeichnung), und so oft (ms) fragt der Vorbau ein ladendes Studio erneut (wie die Heilung
-// des Phantoms in `tickBuildMode`).
+// DER VORBAU DER BEDIENUNG (`_vorbauBedienung`, spielgang.K3): so viele Schritte (je VORBAU_BILDER Bilder einer) darf ein
+// Gast (Leib oder Geist) bauen, bevor er laut geht (ein Bruch der Erst-Zeichnung), und so oft (ms) fragt der Vorbau ein
+// ladendes Studio erneut (wie die Heilung des Phantoms in `tickBuildMode`).
 AnazhRealm.VORBAU_TAKTE = 600;
 AnazhRealm.VORBAU_FRAGE_MS = 500;
+// DER TAKT DES VORBAUS (gezeichnete Bilder, `_vorbauBedienung`): höchstens jedes 30. Bild trägt einen Vorbau-Schritt (3,3 %
+// der Bilder, unter dem Rand, den das p95 des Profi-Bands trägt — bei jeder Bildrate).
+AnazhRealm.VORBAU_BILDER = 30;
 // DAS VERDICHTEN des Satzes (`_chunkSatzVerdichten`): nach der Ruhe-Frist schrumpft ein Satz, dessen Kapazität mehr als
 // `schwelle` × Ziel trägt, auf das Ziel = Inhalt × `luft` (Vertices: die Bereiche; Indizes: das Hochwasser der lebenden
 // Abschnitte), mindestens vMin/iMin. Die Schwelle 1,5 liegt auf dem Wachs-Schritt der Vertices: nach einem Schrumpfen wächst
