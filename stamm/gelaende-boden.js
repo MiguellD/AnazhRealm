@@ -462,7 +462,8 @@ class AnazhRealm_gelaende_boden {
         const key = `genesis:${v2.seed}:${Math.round(v2.ort.x)},${Math.round(v2.ort.z)}:${FC.ortHash(v2.erdbau)}`;
         const wm = this.state.worldMeta || (this.state.worldMeta = {});
         const alt = wm.genesisOrt && typeof wm.genesisOrt === "object" ? wm.genesisOrt : null;
-        const altSplats = alt && alt.key !== key && wm.erdbau && Array.isArray(wm.erdbau[alt.key]) ? wm.erdbau[alt.key] : [];
+        const altSplats =
+            alt && alt.key !== key && wm.erdbau && Array.isArray(wm.erdbau[alt.key]) ? wm.erdbau[alt.key] : [];
         const folgen = wm.erdbau && wm.erdbau[key] ? null : this._bautenAmGrund(altSplats.concat(v2.erdbau));
         if (alt && alt.key !== key) this._erdbauOrtFaellt(alt.key);
         wm.genesisOrt = { key, x: v2.ort.x, z: v2.ort.z, steht: !!(alt && alt.key === key && alt.steht) };
@@ -512,7 +513,10 @@ class AnazhRealm_gelaende_boden {
         const R = globalThis.__gelaendeCore.ERDBAU.reichweiteM;
         let [x0, x1, z0, z1] = [Infinity, -Infinity, Infinity, -Infinity];
         for (const p of splats) {
-            const q = p.art === "trasse" ? [p.x0, p.x1, p.z0, p.z1, p.w / 2] : [p.cx, p.cx, p.cz, p.cz, Math.hypot(p.ex, p.ez)];
+            const q =
+                p.art === "trasse"
+                    ? [p.x0, p.x1, p.z0, p.z1, p.w / 2]
+                    : [p.cx, p.cx, p.cz, p.cz, Math.hypot(p.ex, p.ez)];
             x0 = Math.min(x0, q[0] - q[4]);
             x1 = Math.max(x1, q[1] + q[4]);
             z0 = Math.min(z0, q[2] - q[4]);
@@ -534,7 +538,8 @@ class AnazhRealm_gelaende_boden {
         let n = 0;
         for (const { e, u } of merk) {
             const jetzt = this._ueberGrund(e.position);
-            if (!Number.isFinite(jetzt) || Math.abs(jetzt - u) < 0.005 || !this.state.architectures.includes(e)) continue;
+            if (!Number.isFinite(jetzt) || Math.abs(jetzt - u) < 0.005 || !this.state.architectures.includes(e))
+                continue;
             const g = art.glied(e);
             g.position.y += u - jetzt;
             this.removeArchitecture(e, { still: true });
