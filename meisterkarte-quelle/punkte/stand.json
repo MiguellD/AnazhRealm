@@ -1887,7 +1887,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-takt.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +8) — zuletzt an eeb5d2bf: Deckel 33 s gerissen — beendet, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     }
    ]
@@ -2079,7 +2079,7 @@
   },
   "oekologie.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 6 Wölfe aus dem Wurf, der Spieler 45 m im Revier: Pirsch 0 s · umstellt 17.4 s · Lücke beim ersten Biss 125° · Pirsch im Frieden / am leeren Anker 0 / 0 Takte (Soll ≤ 600 s Kreatur-Uhr, 0 / 0) an 715754fc headless — offen: oekologie.K4#2 radeon: Station seit der Messung geändert · oekologie.K4#2 gtx: ROT: first ROT: umstellt null s, Furcht chaos 0 (Gegenlauf 0), 0 Jäger fallen, Triumph joy+hope 0.012 (Gegenlauf 0.015) an eeb5d2bf",
+   "beleg": "Maschine: gehalten: 6 Wölfe aus dem Wurf, der Spieler 45 m im Revier: Pirsch 0 s · umstellt 17.4 s · Lücke beim ersten Biss 125° · Pirsch im Frieden / am leeren Anker 0 / 0 Takte (Soll ≤ 600 s Kreatur-Uhr, 0 / 0) an 715754fc headless — offen: oekologie.K4#2 radeon: Station seit der Messung geändert · oekologie.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "oekologie.K4#1",
@@ -2103,9 +2103,10 @@
      "id": "oekologie.K4#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "first ROT: umstellt null s, Furcht chaos 0 (Gegenlauf 0), 0 Jäger fallen, Triumph joy+hope 0.012 (Gegenlauf 0.015)",
-     "sha": "eeb5d2bfbcdae181388a990d13c434cd67b923a0",
-     "grund": "ROT: first ROT: umstellt null s, Furcht chaos 0 (Gegenlauf 0), 0 Jäger fallen, Triumph joy+hope 0.012 (Gegenlauf 0.015)"
+     "zahl": null,
+     "sha": null,
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     }
    ]
   },
@@ -3724,6 +3725,6 @@
  },
  "rueckfall": [],
  "kopfVoll": "eeb5d2bfbcdae181388a990d13c434cd67b923a0",
- "zeit": "2026-11-01T05:45:26.822Z",
+ "zeit": "2026-11-01T06:07:21.631Z",
  "vorher": "eeb5d2bf"
 }
