@@ -375,3 +375,4 @@ z143-punkte-gtx 1 punkte sha=baf9d8280b0aa08441b436e9f93f6e17b221a7cc geraet=gtx
 knoten-wurzel-kalt 2 station sha=b7ea7cdc45f9736af0247f2945518f83c4d39939 lauf=ankunft-kalt.sh
 knoten-wurzel-abab 2 abab A=1e90e7cd850ad32a8567bad9a5a8b241593a8e93 B=b7ea7cdc45f9736af0247f2945518f83c4d39939 zellen=w-ego,stadt
 albedo-haar-gtx 1 punkte sha=776946bb0a00fade3ab047ab680c3a0ee40aea8e geraet=gtx nur=haar.K2#1
+z145-abab 3 abab A=baf9d8280b0aa08441b436e9f93f6e17b221a7cc B=28dd7a472451a64540c2fe70c8c58548ff37788c zellen=w-ego,stadt
