@@ -2,7 +2,7 @@
 // Wahrheits-Satz und ohne zweiten Fahr-Pfad; A statisch und numerisch (Node), B im lebenden Draht (Browser, Foundry an,
 // Null-Renderer). Jede Zeile trägt ihr Soll im Namen ihres Checks, der Selbst-Test je Verdikt einen Täter.
 //   node scripts/diag-vehicle-drive.cjs [--selftest]
-const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, studioKern, SELBSTTEST, stammLib } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, studioKern, jsonKlon, fehlerText, SELBSTTEST, stammLib } = require("./lib/welt-boot.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
 const server = statikServer();
@@ -232,7 +232,7 @@ hauptLauf(async () => {
                     res.book[id] = rec.fx && typeof rec.fx.fahrprofil === "object" ? rec.fx.fahrprofil : null;
             }
         } catch (e) {
-            res.bookErr = (e && e.message) || String(e);
+            res.bookErr = fehlerText(e);
         }
         // ===== B-c: das Host-Profil — Lab fuehrt (fahrzeug_gt) · Emergenz bleibt (fahrzeug_wagen) =====
         try {
@@ -250,8 +250,8 @@ hauptLauf(async () => {
             delete r.state.blueprints._drive_probe_wagen;
             r.state.blueprints._drive_probe_wagen = {
                 name: "_drive_probe_wagen",
-                parts: JSON.parse(JSON.stringify(sub.parts)),
-                connections: JSON.parse(JSON.stringify(sub.connections || [])),
+                parts: jsonKlon(sub.parts),
+                connections: jsonKlon(sub.connections || []),
             };
             const pWg = r._vehicleProfile({ type: "_drive_probe_wagen" });
             res.prof.wagen = pWg
@@ -283,7 +283,7 @@ hauptLauf(async () => {
             res.emerg.radCount = rad;
             delete r.state.blueprints._drive_probe_wagen; // Aufraeumen (die Probe hinterlaesst nichts)
         } catch (e) {
-            res.profErr = (e && e.message) || String(e);
+            res.profErr = fehlerText(e);
         }
         // ===== B-d: DIE FAHR-PROBE — nach N Fahr-Ticks bewegt sich der EINTRAG =====
         try {
@@ -353,7 +353,7 @@ hauptLauf(async () => {
                         res.drive.huelleKern = span > 3 && Math.abs(span - soll) < 0.05;
                     }
                 } catch (eD) {
-                    res.drive.donorErr = (eD && eD.message) || String(eD);
+                    res.drive.donorErr = fehlerText(eD);
                 }
                 // N Fahr-Ticks: der REITER ist die horizontale Autoritaet — pm faehrt,
                 // playerVel traegt die Fahrt-Richtung (Gier-/Phasen-Quelle des Chokepoints).
@@ -408,7 +408,7 @@ hauptLauf(async () => {
                 r.state._fieldVy = 0;
             }
         } catch (e) {
-            res.driveErr = (e && e.message) || String(e);
+            res.driveErr = fehlerText(e);
         }
         // ===== B-e (W5 Gegenstände): DAS FAHR-GEFÜHL IM ECHTEN BEWEGUNGS-PFAD =====
         // Der GT fährt durch den echten Sim-Schritt `_stepFixedSim` (Kapsel · Bewegung · Ritt-Sitz, 60 Hz) + den Frame-Tick:
@@ -522,7 +522,7 @@ hauptLauf(async () => {
                 r.state._fieldVy = 0;
             }
         } catch (e) {
-            res.gefuehlErr = (e && e.message) || String(e);
+            res.gefuehlErr = fehlerText(e);
         }
         // ===== B-f (W5 Gegenstände): DER STAND AM HANG =====
         // Je Hang-Probe (Steigung 12–35 % über ±2 m, trocken) parkt der GT längs und quer zum Hang (der Spawn-Pfad wie
@@ -564,7 +564,7 @@ hauptLauf(async () => {
             }
             res.stand = { proben: je.length, spaltM, je, steigung: hang.map((p) => +p.g.toFixed(2)) };
         } catch (e) {
-            res.standErr = (e && e.message) || String(e);
+            res.standErr = fehlerText(e);
         }
         void expected;
         return res;
