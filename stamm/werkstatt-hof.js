@@ -1404,8 +1404,14 @@ class AnazhRealm_werkstatt_hof {
         if (!stage.rendererReady) return false;
         this._ichStageShow((st.player && st.player.soul) || "human");
         this._buehneRender(stage.renderer, stage.scene, stage.camera, "Ich-Bühne");
-        if (!stage.renderer.buehne || stage.renderer.buehne.ganz) stage.vorgebaut = true;
-        return false;
+        const B = stage.renderer.buehne;
+        if (B && !B.ganz) return false;
+        stage.vorgebaut = true;
+        // das Ziel der Bühne schrumpft, bis Tab sie zeigt (`_buehneRender` stellt es auf ihren Schirm zurück): der Vorbau
+        // behält Programme und Pipelines (der Render-Kontext folgt Format und Proben, nie der Größe), nie ihre 360² × MSAA 4 im
+        // VRAM des Profi-Bands
+        if (B && B.rt) B.rt.setSize(1, 1);
+        return true;
     }
 
     // Ich-G — die Bühne + das Spec-Sheet auf den AKTUELLEN Körper aktualisieren (nach einem Seelen-Wechsel).

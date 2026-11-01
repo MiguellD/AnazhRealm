@@ -2660,7 +2660,8 @@ class AnazhRealm_werkstatt_hud {
     // Takt wieder verborgen, kein Bild sieht sie —, je Takt EINE. true: alles vorgebaut.
     _uiVorbau() {
         if (typeof document === "undefined") return true;
-        const V = this._uiVorbauStand || (this._uiVorbauStand = { ich: false, aus: new WeakSet() });
+        const V = this._uiVorbauStand || (this._uiVorbauStand = { ich: false, aus: new WeakSet(), alle: false });
+        if (V.alle) return true;
         if (!V.ich) {
             V.ich = true;
             this.renderInventoryUI();
@@ -2683,7 +2684,7 @@ class AnazhRealm_werkstatt_hud {
             el.style.visibility = sicht;
             return false;
         }
-        return true;
+        return (V.alle = true);
     }
 
     // Eine Schublade öffnet: der Zeiger wird frei (die Klicks gehören der Schublade) und ein gehaltenes Mahlen endet.
