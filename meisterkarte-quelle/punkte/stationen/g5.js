@@ -100,7 +100,9 @@ async function leibK4Seite(H) {
 // (`k5Bericht` mit S17 · S18 · S20). Mutiert: Tod, Inventar, Speichern.
 async function haltenK5Seite(H) {
     const KP = require(path.resolve("scripts/lib/kampf-proben.cjs"));
-    const D = H.quelle("scripts/diag-kampf-gefuehl.cjs", ["hash", "json", "zeig", "k5Verdict", "q14Verdict", "k5Bericht"]);
+    // `hash` der Linse liest `stammLib` (seit w4-verkehr-c2 EINE sha-Quelle) — der freie Name kommt mit (Radeon 25ac4c0c: „stammLib is not
+    // defined“, die Urteils-Zeile fehlte)
+    const D = H.quelle("scripts/diag-kampf-gefuehl.cjs", ["hash", "json", "zeig", "k5Verdict", "q14Verdict", "k5Bericht"], { stammLib: require(path.resolve("scripts/lib/stamm.cjs")) });
     await H.frist();
     await H.seite("await window.__weltStehtNach(); return 1;");
     H.schritt("welt");

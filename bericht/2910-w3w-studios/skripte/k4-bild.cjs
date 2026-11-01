@@ -327,7 +327,7 @@ H.fahre(async function k4Bild(H) {
     const t0 = Date.now();
     // der Ort des Spielers beim Start: jedes Werk steht von hier aus (das Auge wandert je Studio an seine Pose)
     const P = await welt("const p = r.state.playerMesh.position; return { x: p.x, y: p.y, z: p.z };");
-    const dOk = (z) => !!(z.differenz && z.differenz.anteil != null && z.differenz.anteil <= SOLL.differenz && z.welt.pixel > 0 && z.buehne.pixel > 0);
+    const dOk = (z) => !!(z && z.differenz && z.differenz.anteil != null && z.differenz.anteil <= SOLL.differenz && z.welt.pixel > 0 && z.buehne.pixel > 0);
     for (const sid of STUDIOS) {
         // ein Studio an der Frist fällt aus: die Probe trägt kein ganzes Urteil (die EINE Marke, punkte.cjs FRIST_MARKE)
         if (H.rest() < 8) {
@@ -412,7 +412,9 @@ H.fahre(async function k4Bild(H) {
             aus.fehler.push("Albedo: " + String((e && e.message) || e).slice(0, 300));
         }
     for (const sid of STUDIOS) {
+        // ein Studio hinter der Frist trägt keinen Eintrag (die Marke steht, kein Urteil) — nie ein Wurf, der sie verdeckt
         const z = aus.studios[sid];
+        if (!z) continue;
         if (!z.differenz) {
             console.log(`K4 ${sid}: ROT · Differenz — · Albedo — · ${z.grund || ""} (${z.sek} s)`);
             continue;
