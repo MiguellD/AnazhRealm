@@ -1445,3 +1445,4 @@
 2026-11-01 10:49:19 takt-z132a-gtx START 24 Stationen in 1 Läufen
 2026-11-01 11:09:30 takt-z132a-gtx tiere.K1#2,tiere.K3#2,mensch.K1#1,mensch.K5#1,mensch.K4#1,haar.K2#1,vegetation.K1#1,licht.K2#2,material.K2#1,lod.K1#1,licht.K3#1,studios.K2#2,studios.K3#2,studios.K4#1,siedlung.K1#2,siedlung.K4#2,spielgang.K3#1,fahrzeug.K2#2,profiband.K4#1,profiband.K1#1,profiband.K2#1,profiband.K3#1,profiband.K5#1,speicher.K4#2 OFFEN/OFFEN/OFFEN/OFFEN/ROT/ROT/ROT/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/ROT/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/ROT/OFFEN 20.1 · 24/24
 2026-11-01 11:09:52 takt-z132b-gtx START 7 Stationen in 1 Läufen
+2026-11-01 11:14:59 takt-z132b-gtx material.K1#1,lod.K5#1,bauen.K1#2,fahrzeug.K2#1,ankunft.K2#1,ankunft.K3#1,klang.K4#1 OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN 5.0 · 7/7
