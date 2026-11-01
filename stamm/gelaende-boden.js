@@ -462,6 +462,8 @@ class AnazhRealm_gelaende_boden {
         const key = `genesis:${v2.seed}:${Math.round(v2.ort.x)},${Math.round(v2.ort.z)}:${FC.ortHash(v2.erdbau)}`;
         const wm = this.state.worldMeta || (this.state.worldMeta = {});
         const alt = wm.genesisOrt && typeof wm.genesisOrt === "object" ? wm.genesisOrt : null;
+        const altSplats = alt && alt.key !== key && wm.erdbau && Array.isArray(wm.erdbau[alt.key]) ? wm.erdbau[alt.key] : [];
+        const folgen = wm.erdbau && wm.erdbau[key] ? null : this._bautenAmGrund(altSplats.concat(v2.erdbau));
         if (alt && alt.key !== key) this._erdbauOrtFaellt(alt.key);
         wm.genesisOrt = { key, x: v2.ort.x, z: v2.ort.z, steht: !!(alt && alt.key === key && alt.steht) };
         this._genesisPlan = v2;
@@ -469,6 +471,8 @@ class AnazhRealm_gelaende_boden {
         this._genesisWerkeFertig = null;
         this._genesisAbsagen = null;
         this._erdbauSetzen(key, v2.erdbau);
+        const gefolgt = this._bautenFolgenDemGrund(folgen);
+        if (gefolgt) this.log(`GENESIS-ORT: ${gefolgt} Bauten des Stands folgen dem Grund des Plans.`, "INFO");
         this._grundrissGitter = null; // die Flächen des Plans sind Grundriss der EINEN Natur-Wand
         this.log(
             `GENESIS-ORT: der Plan ${FC.ortHash(v2)} an ${v2.ort.x}/${v2.ort.z} aus dem Faden (${r.ms.toFixed(1)} ms)` +
@@ -494,6 +498,50 @@ class AnazhRealm_gelaende_boden {
         delete E[key];
         this._erdbauWirkt(weg, this._erdbauAmWasser(globalThis.__gelaendeCore.erdbauNormal(weg)), { erdbauOhne: ohne });
         return true;
+    }
+
+    // DIE BAUTEN FOLGEN DEM GRUND DES PLANS (der Umzug des Genesis-Orts, speicher.K5): ein Stand, dessen Grund ein anderer Plan
+    // (oder keiner) trug, lädt seine Bauten VOR dem Plan (der Plan kommt aus dem Faden) — der Erdbau des neuen hob den Grund
+    // unter ihnen, sie steckten darin (der Korpus 18.546.158: der Stein-Block an 0/15 14 cm im neuen Platz). Gemerkt wird je Bau
+    // des Stands im Kasten der Splats (samt `ERDBAU.reichweiteM`) seine Höhe über Grund (`_ueberGrund`, das Maß des Saves), VOR
+    // dem Wechsel; danach steht jeder, dessen Höhe über Grund sich änderte, in ihr neu auf (`removeArchitecture` und
+    // `_bauAusStand`, der Weg des Rückspielens). → die Merkliste [{ e, u }] oder null (kein Bau im Kasten)
+    _bautenAmGrund(splats) {
+        const L = this._standBauten();
+        if (!L.length || !splats.length) return null;
+        const R = globalThis.__gelaendeCore.ERDBAU.reichweiteM;
+        let [x0, x1, z0, z1] = [Infinity, -Infinity, Infinity, -Infinity];
+        for (const p of splats) {
+            const q = p.art === "trasse" ? [p.x0, p.x1, p.z0, p.z1, p.w / 2] : [p.cx, p.cx, p.cz, p.cz, Math.hypot(p.ex, p.ez)];
+            x0 = Math.min(x0, q[0] - q[4]);
+            x1 = Math.max(x1, q[1] + q[4]);
+            z0 = Math.min(z0, q[2] - q[4]);
+            z1 = Math.max(z1, q[3] + q[4]);
+        }
+        const merk = [];
+        for (const e of L) {
+            const p = e && e.position;
+            if (!p || p.x < x0 - R || p.x > x1 + R || p.z < z0 - R || p.z > z1 + R) continue;
+            const u = this._ueberGrund(p);
+            if (Number.isFinite(u)) merk.push({ e, u });
+        }
+        return merk.length ? merk : null;
+    }
+    // → die Zahl der Bauten, die neu aufstanden
+    _bautenFolgenDemGrund(merk) {
+        if (!merk) return 0;
+        const art = this._standTafel().find(([k]) => k === "architectures")[2];
+        let n = 0;
+        for (const { e, u } of merk) {
+            const jetzt = this._ueberGrund(e.position);
+            if (!Number.isFinite(jetzt) || Math.abs(jetzt - u) < 0.005 || !this.state.architectures.includes(e)) continue;
+            const g = art.glied(e);
+            g.position.y += u - jetzt;
+            this.removeArchitecture(e, { still: true });
+            if (this._bauAusStand(g, { herkunft: 1 }, null)) n++;
+            else this._bruchMelden(`GENESIS-ORT: ${g.type} ${g.id} stand auf dem Grund des Plans nicht wieder auf`);
+        }
+        return n;
     }
 
     // DIE ANKUNFT AM GENESIS-ORT (Pflicht F): der Spieler steht an der Mitte des Plans auf dem Grund (das EINE Boden-Gesetz samt
