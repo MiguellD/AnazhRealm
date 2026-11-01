@@ -2022,10 +2022,15 @@ class AnazhRealm_siedlung_ort {
     // Nexus. Der Zähler ist Welt-Gedächtnis (`worldMeta.bauSame`, reist im
     // Snapshot und zum Gast): als Sitzungs-Feld begann er nach jedem Reload neu, und derselbe Satz am selben Ort stellte einen
     // deckungsgleichen zweiten Hain.
-    _bauSame(art) {
+    // DER BLICK (`blick`): der Same, den der nächste Akt ziehen WIRD, ohne ihn zu ziehen — der Zähler bleibt. Ein Vorbau (der
+    // Geist eines Hotbar-Bauplans, `_geistVorbau`) ist kein Akt: er zog bis z140 je Hotbar-Art den nächsten Samen in den Bau-Modus,
+    // der Zähler im Welt-Gedächtnis lief im Stehen, und der nächste Wagen der Welt stand in einer anderen Gestalt (Lack Metall
+    // 0,7 → 0, material.K4 „zu wenig Pixel" an Radeon und GTX).
+    _bauSame(art, blick = false) {
         const wm = this.state.worldMeta || (this.state.worldMeta = {});
         const z = wm.bauSame && typeof wm.bauSame === "object" ? wm.bauSame : (wm.bauSame = {});
-        const n = (z[art] = (Number(z[art]) || 0) + 1);
+        const n = (Number(z[art]) || 0) + 1;
+        if (!blick) z[art] = n;
         const s = `${wm.seed || "anazh-realm-seed"}:${art}:${n}`;
         let h = 2166136261 >>> 0;
         for (let i = 0; i < s.length; i++) {
@@ -2058,11 +2063,14 @@ class AnazhRealm_siedlung_ort {
     // DER SAME DES NÄCHSTEN SETZENS JE ART (`bm.setzSame[art]`, bauen.K1): Phantom, Werkstatt-Vorschau und Kosten-Leiste lesen
     // ihn für jede Zeile — ein Platz für alle Arten zog bei jedem Zeilen-Wechsel (Eiche → Fels → Eiche) den nächsten Samen des
     // Welt-Stroms, die Eiche zeigte eine neue Gestalt ohne Karte (gate:s4-impostor-workshop B), der Strom lief ohne Setzen.
-    _werkSame(bp, name, bm) {
+    // `blick` (der Vorbau): der Same, den das Phantom zeigen WIRD — gemerkt oder der nächste des Stroms —, ohne zu merken oder
+    // zu ziehen (`_bauSame` mit Blick).
+    _werkSame(bp, name, bm, blick = false) {
         const wurf = bp ? bp._grownSeed || bp._rockSeedBase || bp._crystalSeedBase : null;
         const art = name != null ? name : bp && bp.name;
         if (wurf == null && bm) {
-            const je = bm.setzSame || (bm.setzSame = {});
+            const je = bm.setzSame || (blick ? {} : (bm.setzSame = {}));
+            if (blick) return je[art] || this._bauSame("bau:" + art, true);
             return je[art] || (je[art] = this._bauSame("bau:" + art));
         }
         const s = String(wurf != null ? wurf : art);
