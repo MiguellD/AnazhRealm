@@ -21,7 +21,6 @@
             "fachwerk:ausstattung:verwitterung": "Bild höchstens 0,90 %: das Gesetz (ausFaerbe) trägt den Erdsaum nur unter 0,25 m, die Sonnenbleiche × 1,05",
             "fachwerk:bank:verwitterung": "Bild 0 % (wie ausstattung)",
             "fachwerk:leiter:verwitterung": "Bild 0 % (wie ausstattung)",
-            "porta:gate:weather": "Bild höchstens 0,98 %: das Alter ist allein ein Stein-Versatz ± 1 cm (quadBlock), kein Stoff altert",
             "koerper:koerper:mass": "Bild höchstens 0,65 % (Haut in Knochen-Lage): die Haut folgt fatScale 1 → 1,7 nicht, ihre Rahmen wandern ≤ 7 mm",
             "koerper:koerper:hairVol": "Bild höchstens 0,61 %: die Strähnen-Dicke 0,5 → 2 verschiebt die Haar-Hülle kaum"
         }

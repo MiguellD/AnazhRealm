@@ -50,7 +50,6 @@ const { selbsttestEnde, SELBSTTEST, path, fs, stammLib, jsonLesen, ROOT: root } 
 const DZ = require("./lib/draw-zaehler.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 
-
 // DIE ECHTE KLASSE (scripts/lib/stamm.cjs `ladeKlasse`, im vm wie der Wirt der Wiese) — kein Rumpf-Text, kein Zwilling; der
 // Selbsttest lädt einen veränderten Stamm (`monolith`) und fährt dieselben Proben.
 let _A = null;

@@ -16,9 +16,6 @@
 
 const { statikServer, nullSeite, ausDatei, path, fs, stammLib, jsonLesen, ROOT } = require("./welt-boot.cjs");
 
-
-
-
 // ---------------------------------------------------------------------------
 // Kommentar-Stripper (die Falle: der Code darf das Wort im KOMMENTAR tragen,
 // der CODE darf es nicht — jeder Source-Grep läuft über den gestrippten Body).

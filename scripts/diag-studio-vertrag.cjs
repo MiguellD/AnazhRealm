@@ -22,7 +22,6 @@ const { ausDatei, path, fs, stammLib, vm, jsonLesen, ROOT: root } = require("./l
 //   node scripts/diag-studio-vertrag.cjs
 const { kanalImVm, ersteAbweichung, DATEN_KANAELE, absorber } = require("./lib/asset-worker-harness.cjs");
 
-
 // Die registrierten Studio-Kerne — N2 (Nervensystem-Plan, „Runtime = Validator"): die Liste
 // kommt aus cores.manifest.json, der EINEN Kern-Quelle (Worker-Boot `_ensureAssetFoundry` +
 // Platten-Stempel der Transport-Schale `_foundrySchale` + dieser Validator lesen sie). Je Eintrag: file = `vertrag`

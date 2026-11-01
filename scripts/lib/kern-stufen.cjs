@@ -4,7 +4,6 @@
 "use strict";
 const { jsonLesen, path, ROOT } = require("./welt-boot.cjs");
 
-
 // Die Namensräume der Kerne in der Seite — der Baum-Kern (phyto, ohne eigenen Raum) trägt seine Karte an `__terrainCore`
 // (foundry-core `__terrainCore.PORTAL_RENDER_CONFIG`).
 function kernRaeume(root = ROOT) {
