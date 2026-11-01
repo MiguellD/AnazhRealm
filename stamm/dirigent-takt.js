@@ -328,9 +328,10 @@ class AnazhRealm_dirigent_takt {
                     }
                 }
             }
-            // die Leiber jeder annehmbaren Seele bauen ihre Programme im Leerlauf (`_leibVorwaermen`, eigenes try/catch wie oben)
+            // was die nächste Eingabe zeigt, baut im Leerlauf vor — die Leiber, die Geister der Hotbar, die Ich-Bühne, die
+            // Schubladen (`_vorbauBedienung`, eigenes try/catch wie oben)
             try {
-                this._leibVorwaermen();
+                this._vorbauBedienung();
             } catch (err) {
                 this._loopErrorBoundary(err);
             }
