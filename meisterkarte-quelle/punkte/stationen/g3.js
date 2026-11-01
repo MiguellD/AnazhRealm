@@ -1569,7 +1569,7 @@ const NEUN_PFAD = [...BILD, "stamm/gelaende-*.js", "stamm/vegetation-*.js", "sta
 const neunStation = (kriterium, quelle, urteil, proben) => ({
     kriterium,
     staffel: 1,
-    geraet: ["radeon", "gtx"],
+    geraet: "radeon",
     probe: NEUN_PROBE,
     gpu: true,
     zeit: false,

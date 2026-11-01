@@ -4589,7 +4589,7 @@ const stationen = [
     {
         kriterium: "haar.K5",
         staffel: 1,
-        geraet: "gtx",
+        geraet: "radeon",
         probe: { sek: 10, befehl: FELL_HAUSHALT_BEFEHL, mutiert: true },
         gpu: true,
         zeit: false,

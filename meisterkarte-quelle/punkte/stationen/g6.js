@@ -1831,7 +1831,7 @@ module.exports = [
     {
         kriterium: "ankunft.K5",
         staffel: 1,
-        geraet: ["radeon", "gtx"],
+        geraet: "radeon",
         probe: ANKUNFT_KALT,
         gpu: true,
         zeit: true,
