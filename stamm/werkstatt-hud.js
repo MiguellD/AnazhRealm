@@ -2646,6 +2646,13 @@ class AnazhRealm_werkstatt_hud {
         } else if (el.textContent !== s) el.textContent = s;
     }
 
+    // DIE RUHE DER LEBENS-LEISTE (spielgang.K3, die Fläche nach Gesetz): `ruht` lässt sie weichen (`#stats-hud.ruht`); nur
+    // ein Wechsel berührt das DOM. Es rufen der Lebens-Takt (`tickStatsHud`, 10 Hz) und der Bogen je Bild (`_bogenHudZeige`).
+    _statsHudRuht(ruht) {
+        const hud = typeof document !== "undefined" ? document.getElementById("stats-hud") : null;
+        if (hud && hud.classList.contains("ruht") !== ruht) hud.classList.toggle("ruht", ruht);
+    }
+
     // Eine Schublade öffnet: der Zeiger wird frei (die Klicks gehören der Schublade) und ein gehaltenes Mahlen endet.
     _uiZeigerFrei() {
         this.state.verbTafel.gehalten.break = false;

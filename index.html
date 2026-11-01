@@ -1595,6 +1595,17 @@
                 flex: 1;
                 justify-content: center;
             }
+            /* DIE FLÄCHE NACH GESETZ (spielgang.K3): eine Zeile mit [hidden] fällt — `display: flex` oben schlug das [hidden]
+               des Browsers, Mana stand in frieden und der Bogen ohne Spannen (0 %) immer im Bild —, und die Leiste weicht,
+               wenn jede ihrer Größen ruht (`ruht`, `tickStatsHud`): sie kommt im selben Takt, sie geht in 0,6 s. */
+            #stats-hud .stats-hud-row[hidden] {
+                display: none;
+            }
+            #stats-hud.ruht {
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.6s ease;
+            }
             #stats-hud .stats-hud-glyph {
                 font-size: 14px;
                 min-width: 18px;

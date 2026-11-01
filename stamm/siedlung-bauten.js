@@ -950,18 +950,26 @@ class AnazhRealm_siedlung_bauten {
         return preset ? this._foundryGestaltFor(this._phantomWerk(bp, wo), preset) : null;
     }
     _buildStudioPlacementGhost(bp, wo) {
-        if (!bp || typeof bp.name !== "string") return null;
-        if (typeof this._foundryEnabled !== "function" || !this._foundryEnabled()) return null;
+        const grp = this._studioGeist(bp, wo);
+        const bm = this.state.buildMode;
+        // null = lädt noch (die Anfrage ist unterwegs) → tickBuildMode heilt den Donor-Ghost zur Studio-Gestalt; false = kann
+        // nicht → Donor-Ghost bleibt (fail-soft)
+        if (grp === null && bm) bm.phantomStudioPending = bp.name;
+        if (!grp) return null;
+        if (bm && bm.phantomStudioPending === bp.name) bm.phantomStudioPending = null;
+        return grp;
+    }
+    // DER STUDIO-GEIST eines Bauplans am Ort `wo` — rein, ohne den Zustand des Bau-Modus (das Phantom und sein Vorbau,
+    // `_vorbauBedienung`, bauen ihn gleich): die Gruppe, null (das Studio lädt noch, die Anfrage ist unterwegs) oder false.
+    _studioGeist(bp, wo) {
+        if (!bp || typeof bp.name !== "string") return false;
+        if (typeof this._foundryEnabled !== "function" || !this._foundryEnabled()) return false;
         const preset = this._foundryPresetForEntry({ type: bp.name });
-        if (!preset) return null;
+        if (!preset) return false;
         const werk = this._phantomWerk(bp, wo);
         const flat = this._foundryFlattenFor(werk, preset, 0);
-        if (!flat || !flat.instanceable || !Array.isArray(flat.leaves) || !flat.leaves.length) {
-            // null = lädt noch (die Anfrage ist unterwegs) → tickBuildMode heilt den Donor-
-            // Ghost zur Studio-Gestalt; false = kann nicht → Donor-Ghost bleibt (fail-soft).
-            if (flat === null && this.state.buildMode) this.state.buildMode.phantomStudioPending = bp.name;
-            return null;
-        }
+        if (!flat || !flat.instanceable || !Array.isArray(flat.leaves) || !flat.leaves.length)
+            return flat === null ? null : false;
         const grp = new THREE.Group();
         for (const leaf of flat.leaves) {
             if (!leaf.geom || !leaf.mat || leaf.shadowTwin) continue; // der Schatten-Zwilling ist kamera-unsichtbar
@@ -974,7 +982,7 @@ class AnazhRealm_siedlung_bauten {
             if (leaf.mat.color) mesh.userData._origColor = leaf.mat.color.getHex();
             grp.add(mesh);
         }
-        if (!grp.children.length) return null;
+        if (!grp.children.length) return false;
         const src = flat.leaves[0]._srcGroup;
         if (src) {
             src._liveRefs = (src._liveRefs || 0) + 1;
@@ -982,9 +990,6 @@ class AnazhRealm_siedlung_bauten {
         }
         grp.userData.studioGhost = true;
         grp.userData.studioGestalt = this._foundryGestaltFor(werk, preset);
-        if (this.state.buildMode && this.state.buildMode.phantomStudioPending === bp.name) {
-            this.state.buildMode.phantomStudioPending = null;
-        }
         return grp;
     }
 
@@ -1057,6 +1062,84 @@ class AnazhRealm_siedlung_bauten {
             done.add(name);
             return; // EINS pro Idle-Tick
         }
+        this._vorbauBedienung();
+    }
+
+    // DER VORBAU DER BEDIENUNG (spielgang.K3): was die nächste Eingabe zeigt, steht gebaut, bevor sie kommt — der Geist jedes
+    // Hotbar-Bauplans (seine Studio-Gestalt am Ort des Spielers, sonst der Spender) und danach die Ich-Bühne (`_ichVorbau`).
+    // Ein Geist geht als GAST in die Szene (`__vorbauGast`): die Erst-Zeichnung baut Knoten und Pipeline ohne Draw — nach dem
+    // Bild, höchstens einen Bau je Bild, nur wenn die Eingabe ruht —, und er geht, sobald jedes seiner Render-Objekte fertig
+    // ist (`_vorbauFertig`); der Knoten-Bau bleibt seinem Schlüssel (`_renderObjekteLoesen`), die Pipeline im Cache, die Auswahl
+    // zeichnet im nächsten Bild. Gemessen (Radeon echt, werkbank bedienung): der erste Klick auf das Haus hielt das Bild 239 ms
+    // (zwei Knoten-Bauten seines Geists, 153 und 147 ms), der Wagen in der zweiten Runde 141 ms. Gerufen aus dem Vorbacken.
+    _vorbauBedienung() {
+        const st = this.state;
+        if (!st._weltbildDa || !st.scene || !st.renderer || st.renderer._isHeadlessNull || !this._eingabeRuht()) return;
+        const V =
+            this._bedienungVorbau ||
+            (this._bedienungVorbau = { fertig: new Set(), frage: new Map(), gast: null, name: null, seit: 0 });
+        if (V.gast) {
+            const zuLang = performance.now() - V.seit > AnazhRealm.VORBAU_GAST_MS;
+            if (!this._vorbauFertig(V.gast) && !zuLang) return;
+            if (zuLang)
+                this.log(
+                    `VORBAU: der Geist von ${V.name} stand nach ${AnazhRealm.VORBAU_GAST_MS} ms nicht fertig`,
+                    "WARN"
+                );
+            st.scene.remove(V.gast);
+            this._disposeSoulGroup(V.gast);
+            V.fertig.add(V.name);
+            V.gast = null;
+            return;
+        }
+        const pm = st.playerMesh ? st.playerMesh.position : null;
+        for (const name of Array.isArray(st.hotbar) ? st.hotbar : []) {
+            if (!name || V.fertig.has(name)) continue;
+            const bp = st.blueprints && st.blueprints[name];
+            if (!bp || !this._isPlaceableBlueprint(bp)) {
+                V.fertig.add(name);
+                continue;
+            }
+            const jetzt = performance.now();
+            if (jetzt < (V.frage.get(name) || 0)) continue; // das Studio lädt — die nächste Frage kommt nach VORBAU_FRAGE_MS
+            let geist = this._studioGeist(bp, pm);
+            if (geist === null) {
+                V.frage.set(name, jetzt + AnazhRealm.VORBAU_FRAGE_MS);
+                continue;
+            }
+            if (!geist) geist = this._buildPlacementGhost(bp, { donorOnly: true });
+            geist.name = "bedienung-vorbau";
+            geist.traverse((o) => {
+                if (!o.isMesh) return;
+                o.__vorbauGast = true;
+                o.frustumCulled = false; // der Gast muss in die Liste des Bilds, gleich wohin der Blick geht
+                o.castShadow = false;
+                o.raycast = () => {}; // kein Strahl trifft ihn
+            });
+            if (pm) geist.position.copy(pm);
+            st.scene.add(geist);
+            Object.assign(V, { gast: geist, name, seit: performance.now() });
+            return;
+        }
+        if (typeof this._ichVorbau === "function") this._ichVorbau();
+    }
+
+    // Steht der Gast gebaut? Jedes Glied hat Render-Objekte, und jedes trägt seinen Knoten-Bau und eine fertige Pipeline.
+    _vorbauFertig(gruppe) {
+        const R = this.state.renderer;
+        let n = 0;
+        let fertig = true;
+        gruppe.traverse((o) => {
+            if (!fertig || !o.isMesh) return;
+            const ros = o.__renderObjekte;
+            if (!ros || !ros.length) return void (fertig = false);
+            for (const ro of ros) {
+                if (R._nodes.get(ro).nodeBuilderState === undefined || !R._pipelines.isReady(ro))
+                    return void (fertig = false);
+                n++;
+            }
+        });
+        return fertig && n > 0;
     }
 
     // KERN-PFLICHT-WAND: fehlt ein Gesetzbuch (AnazhRealm.GESETZ_KERNE) auf dem Main-Thread, SCHREIT die
@@ -2763,6 +2846,10 @@ AnazhRealm.CHUNK_SATZ = Object.freeze({
 // ein Abschnitt verdichtet seine Lücken (`verschnitt` seines Laufs) und, nach `dichtNach` Pässen mit ruhender Wahl, seine
 // Folge (dicht in Satz-Ordnung, exakt).
 AnazhRealm.CHUNK_SATZ_ABSCHNITT = Object.freeze({ luft: 1.2, ruheTakte: 600, verschnitt: 0.25, dichtNach: 30 });
+// DER VORBAU DER BEDIENUNG (`_vorbauBedienung`, spielgang.K3): so lange (ms) darf ein Gast bauen, bevor er laut geht, und so
+// oft (ms) fragt der Vorbau ein ladendes Studio erneut (wie die Heilung des Phantoms in `tickBuildMode`).
+AnazhRealm.VORBAU_GAST_MS = 20000;
+AnazhRealm.VORBAU_FRAGE_MS = 500;
 // DAS VERDICHTEN des Satzes (`_chunkSatzVerdichten`): nach der Ruhe-Frist schrumpft ein Satz, dessen Kapazität mehr als
 // `schwelle` × Ziel trägt, auf das Ziel = Inhalt × `luft` (Vertices: die Bereiche; Indizes: das Hochwasser der lebenden
 // Abschnitte), mindestens vMin/iMin. Die Schwelle 1,5 liegt auf dem Wachs-Schritt der Vertices: nach einem Schrumpfen wächst

@@ -517,20 +517,25 @@ class AnazhRealm_bild_kosten {
                 // steht, ihr Programm auch in dem Pass, in den gerade keine ihrer Instanzen fällt, ohne Draw. Jede Kaskade rendert
                 // in ihr eigenes Ziel (der Schlüssel trägt den Render-Kontext): der Vorlauf-Baum in 30 m fällt in keine nahe — kam
                 // er im Gang näher, kompilierte sie dort kalt. Seit w4-b-knoten baut er nach dem Bild (`_vorbauWahl`).
-                const vorbau = ro.getDrawParameters() === null;
+                // DER GAST DER BEDIENUNG (spielgang.K3, `_vorbauBedienung`): was die nächste Eingabe zeigen wird (das Phantom
+                // eines Hotbar-Bauplans), baut hier vorab ohne Draw wie die Arena — nach dem Bild, höchstens EINER je Bild und
+                // nur, wenn die Eingabe ruht (`_eingabeRuht`); der Klick findet Knoten und Pipeline fertig vor.
+                const gast = object.__vorbauGast === true;
+                const vorbau = gast || ro.getDrawParameters() === null;
                 const ctx = this._currentRenderContext.id;
                 const k = passId == null ? ctx : ctx + "|" + passId;
                 let merk;
                 if (vorbau) {
-                    const arena = object.isGeometrieArena === true && object.geometry.index !== null;
-                    if (!arena || scene !== welt.state.scene) return;
+                    const arena = gast || (object.isGeometrieArena === true && object.geometry.index !== null);
+                    if (!arena || scene !== welt.state.scene || (gast && !welt._eingabeRuht())) return;
                     const wahl = AnazhRealm._vorbauWahl(
                         E,
                         object,
                         k,
                         welt._ladeTakt(),
                         welt.state._weltbildDa,
-                        N.nodeFrame.frameId
+                        N.nodeFrame.frameId,
+                        gast
                     );
                     if (wahl !== "bauen") return;
                     merk = E.vorgemerkt.get(object);
@@ -642,9 +647,15 @@ class AnazhRealm_bild_kosten {
     // nicht im ersten Bild — unter dem Ladeschirm merkt die Erst-Zeichnung seinen Pass vor („merken"), nach dem Bild baut der
     // vorgemerkte („bauen"), höchstens EINER je Bild (jeder Pass ist ein Render-Aufruf mit eigenem Deckel); sonst null. Headless
     // kalt 01.11.: der Vorbau einer Laub-Arena hielt 169 ms Haupt-Faden vor dem Bild. Der Rufer: `_renderObjectDirect` oben.
-    static _vorbauWahl(E, arena, pass, lade, bild, frame) {
-        const merk = E.vorgemerkt.get(arena);
+    static _vorbauWahl(E, arena, pass, lade, bild, frame, gast = false) {
+        let merk = E.vorgemerkt.get(arena);
         if (lade) return (merk ? merk.add(pass) : E.vorgemerkt.set(arena, new Set([pass])), "merken");
+        // ein Gast der Bedienung merkt jeden Pass selbst vor, in dem er noch nicht baute (er kam nach dem Ladeschirm)
+        const vor = gast && bild ? E.vorgebaut.get(arena) : undefined;
+        if (gast && bild && !(vor && vor.has(pass))) {
+            if (!merk) E.vorgemerkt.set(arena, (merk = new Set()));
+            merk.add(pass);
+        }
         return bild && merk && merk.has(pass) && E.vorbauBild !== frame ? "bauen" : null;
     }
     // Der EINE Grund-Knoten jedes Schatten-Stoffs (r184 `vec4(0,0,0,1)`, je Licht neu gebaut) — `renderObject` oben

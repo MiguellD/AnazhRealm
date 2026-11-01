@@ -1840,7 +1840,12 @@ async function starte() {
                     await page.bringToFront();
                     await page.keyboard.press("Escape"); // jede offene Schublade fällt, wie beim Spieler
                     await page.mouse.click(page.viewport().width / 2, page.viewport().height / 2);
-                    const imSpiel = await page.evaluate(`${r}.state.isPointerLocked && Promise.all(document.getAnimations().map((a) => a.finished)).then(() => true)`);
+                    // der Fang ist ein EREIGNIS: `pointerlockchange` kommt nach dem Klick über den Browser-Prozess zurück — die
+                    // Linse wartet auf ihn (bis 2 s), statt den Zustand im selben Atemzug zu lesen (GTX c351b318: „OHNE
+                    // Zeiger-Fang", 13,33 %, das HUD maß den Zustand vor dem Ereignis); ohne Fang bleibt imSpiel false
+                    const imSpiel = await page.evaluate(
+                        `new Promise((ja) => { const t0 = performance.now(); const sieh = () => ${r}.state.isPointerLocked ? Promise.all(document.getAnimations().map((a) => a.finished)).then(() => ja(true)) : performance.now() - t0 > 2000 ? ja(false) : setTimeout(sieh, 20); sieh(); })`
+                    );
                     await page.addStyleTag({ content: "body.__ohne-hud *:not(#world-canvas) { visibility: hidden !important; }" });
                     const bild = async (an) => (await page.evaluate(`document.body.classList.toggle("__ohne-hud", ${!an})`), AU.pngLesen(await page.screenshot()));
                     const [mit, ohne] = [await bild(true), await bild(false), await bild(true)];
