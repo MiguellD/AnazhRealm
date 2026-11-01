@@ -160,3 +160,4 @@ takt-z119ca-gtx gemessen punkte 4b13478b gtx: 0 grün / 3 rot
 takt-z119cb-gtx gemessen punkte 4b13478b gtx: 0 grün / 4 rot
 z118c-abab nicht-langsamer abab c351b318 gegen b895650c: w-ego 2+2 nicht-langsamer · stadt 2+2 nicht-langsamer
 z119c-abab LANGSAMER abab 4b13478b gegen c351b318: w-ego 4+4 nicht-langsamer · stadt 4+4 LANGSAMER
+b-kalt-4b13 Exit0 station ankunft-kalt.sh an 4b13478b
