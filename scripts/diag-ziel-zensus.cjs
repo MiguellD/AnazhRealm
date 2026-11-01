@@ -15,10 +15,12 @@
 //       fällt beim Namen rot, nach dem Abbau steht kein Name des Selbsttests mehr im Zensus. Dazu ein eigenes
 //       64-bit-Ziel, das sich für die Dauer als Szenen-Ziel ausweist (`__zielAusgabe`): AUSGABE-FORMAT nennt es beim Namen.
 //   (r) DIE RUNDUNG DES AUSGABE-ZIELS (w4-ferne-blau): das Szenen-Ziel in 11/11/10 schreibt gedithert (`_ausgabeDither`). Echter
-//       Frame: die Sonde lief, der Versatz der Ditherung passt zur Rundung des Geräts (gegen null 0, zum nächsten ½); drei
-//       Frames unter der Bühne (der Szenen-Pass rendert einmal je Knoten-Frame): dieselbe Phase zweimal ist bit-gleich (die
-//       Welt steht), die zweite Phase ändert das Ausgabe-Bild Pixel für Pixel (das Ziel trägt sie) und lässt sein Mittel
-//       stehen (sie hebt nichts). Bis w4-ferne-blau hob ein Ausgleich das Mittel nach dem Lesen (W9).
+//       Frame: die Sonde lief, der Versatz der Ditherung passt zur Rundung des Geräts (gegen null 0, zum nächsten ½); vier
+//       Frames unter der Bühne (der Szenen-Pass rendert einmal je Knoten-Frame): dieselbe Phase dreimal, mit einer Pause
+//       dazwischen, ist bit-gleich (die ruhende Welt steht — was ein Faden ohne Takt nachreicht, landet in der Pause; ändert
+//       sich doch ein Pixel, nennt die Wand die Stände, die sich bewegten), die zweite Phase ändert das Ausgabe-Bild Pixel für
+//       Pixel (das Ziel trägt sie) und lässt sein Mittel stehen (sie hebt nichts). Bis w4-ferne-blau hob ein Ausgleich das
+//       Mittel nach dem Lesen (W9).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): das Urteil an gebauten Läufen — sauber grün, je Klasse ein
 // Täter beim Namen.
 //   node scripts/diag-ziel-zensus.cjs [--selftest]   (npm run gate:ziel-zensus)
@@ -33,8 +35,10 @@ const N_FRAMES = 8;
 // Der Schatten der Bühne: das Pixel unter der Kiste ist um mindestens so viel dunkler (Luma, 0–255) als das freie Licht.
 const SCHATTEN_MIN = 12;
 // Die Ditherung im Ausgabe-Bild: zwei Phasen ändern mindestens diesen Anteil der Pixel und das Mittel höchstens um so viele
-// Luma-Stufen; dieselbe Phase zweimal ändert höchstens `ruhe` (am Bach bewegt sich die Welt um 0,1 %).
-const DITHER = { anders: 0.05, mittel: 0.2, ruhe: 0.01 };
+// Luma-Stufen; dieselbe Phase dreimal (je `pause` ms dazwischen) ändert KEIN Pixel (`ruhe`). Bis studios-heim-stand trug die
+// Wand 1 % („am Bach bewegt sich die Welt um 0,1 %“): das Spiegel-Feld des Wassers backte aus dem Bild weiter, jede Antwort
+// seines Fadens wechselte das Wasser der ruhenden Welt (Radeon z121: 0,011 der Pixel, ROT; main bis 0,021 zwei Bilder später).
+const DITHER = { anders: 0.05, mittel: 0.2, ruhe: 0, pause: 250 };
 
 // Das Urteil der Wand über einen Lauf (rein).
 function urteil(z) {
@@ -58,7 +62,7 @@ function urteil(z) {
         if (!rd.rundung) v.push("RUNDUNG: die Sonde lief nicht — das Gerät schreibt 11/11/10, und keiner weiß, wie es rundet");
         else if (rd.versatz !== (rd.rundung === "gegen null" ? 0 : 0.5))
             v.push(`RUNDUNG: die Ditherung trägt den Versatz ${rd.versatz}, das Gerät rundet „${rd.rundung}“`);
-        if (!(rd.ruhe <= DITHER.ruhe)) v.push(`RUNDUNG: dieselbe Phase ändert ${rd.ruhe} der Pixel — die Welt steht nicht, der Vergleich misst sie statt der Ditherung`);
+        if (!(rd.ruhe <= DITHER.ruhe)) v.push(`RUNDUNG: dieselbe Phase ändert ${rd.ruhe} der Pixel — die Welt steht nicht (Spiegel, Licht, Welt, Bau: ${rd.staende}), der Vergleich misst sie statt der Ditherung`);
         else if (!(rd.anders >= DITHER.anders))
             v.push(`RUNDUNG: zwei Phasen der Ditherung ändern ${rd.anders} der Pixel (Soll ≥ ${DITHER.anders}) — das Ziel trägt sie nicht`);
         else if (!(Math.abs(rd.mittel) <= DITHER.mittel)) v.push(`RUNDUNG: die Ditherung verschiebt das Mittel um ${rd.mittel} Stufen`);
@@ -104,7 +108,8 @@ function selbsttest() {
         { name: "kein Versatz beim Runden zum nächsten", z: mit((z) => (z.rundung.rundung = "zum nächsten")), muss: /rundet „zum nächsten“/ },
         { name: "Ditherung erreicht das Ziel nicht", z: mit((z) => (z.rundung.anders = 0)), muss: /das Ziel trägt sie nicht/ },
         { name: "Ditherung hebt das Mittel", z: mit((z) => (z.rundung.mittel = 1.5)), muss: /verschiebt das Mittel um 1.5/ },
-        { name: "die Welt steht nicht", z: mit((z) => (z.rundung.ruhe = 0.3)), muss: /die Welt steht nicht/ },
+        // ein Pixel unter der ruhenden Welt, der Stand beim Namen
+        { name: "die Welt steht nicht", z: mit((z) => Object.assign(z.rundung, { ruhe: 1.3e-5, staende: "49 → 53" })), muss: /ändert 0.000013 der Pixel — die Welt steht nicht \(.*49 → 53\)/ },
         { name: "Rundungs-Probe blind", z: mit((z) => (z.rundung = {})), muss: /RUNDUNG: die Probe lief nicht/ },
     ];
     taeterFaelle(faelle, urteil, { fehler });
@@ -209,22 +214,28 @@ function karteOhneFarbe() {
     })();
 }
 
-function rundungProbe() {
+function rundungProbe(pause) {
     return (async () => {
         const rend = st.renderer,
             lu = r._ensureLodUniforms();
         const V = st._ausgabeVersatz;
         const aus = { gelaufen: true, format: st._ausgabeFormat || null, rundung: st._ausgabeRundung || null, versatz: V ? V.value : null };
-        // DREI FRAMES UNTER DER BÜHNE: der Szenen-Pass rendert einmal je Knoten-Frame (r184 PassNode), darum schaltet jeder Frame
-        // ihn selbst; die Bühne hält die Welt (die Bild-Uhr steht, Holz kienspan ohne Versatz) — nur das Rauschen wechselt.
+        // VIER FRAMES UNTER DER BÜHNE: der Szenen-Pass rendert einmal je Knoten-Frame (r184 PassNode), darum schaltet jeder Frame
+        // ihn selbst; die Bühne hält die Welt (die Bild-Uhr steht, Holz kienspan ohne Versatz, der Loop ruht) — nur das Rauschen
+        // wechselt. Vor dem zweiten und dritten Bild derselben Phase eine Pause (`pause` ms): was ein Faden der ruhenden Welt
+        // nachreicht, landet darin, und das Wasser liest den Spiegel des Bilds davor — es zeigt sich spätestens im dritten Bild.
+        // Die Stände, die ein Bild ohne Takt ändern, beim Namen: Spiegel-Feld, Licht der Welt, Welt-Regung, Bau-Regung.
+        const stand = () => [st.spiegelFeld?.stand, r._weltLicht().stand, r._weltRegung, r._bauRegung];
         window.__buehne();
         await window.__ausgabeAufnahme(64, 48, 1, { satz: "messung" }); // die Erst-Ruhe
         const db = rend.getDrawingBufferSize(new window.THREE.Vector2()),
             [W, H] = [Math.round(db.x), Math.round(db.y)];
         const [phase, vorOut, vorZiel, nf] = [lu.uDitherT.value, rend.getOutputRenderTarget(), rend.getRenderTarget(), rend._nodes.nodeFrame];
-        const b = [];
+        const vor = stand(),
+            b = [];
         try {
-            for (const t of [0, 0, 0.5]) {
+            for (const t of [0, 0, 0, 0.5]) {
+                if (b.length && !t) await sleep(pause);
                 const rt = new window.THREE.RenderTarget(W, H, { depthBuffer: true, samples: 0 });
                 lu.uDitherT.value = t;
                 nf.update();
@@ -246,10 +257,11 @@ function rundungProbe() {
                 if (p[o] !== q[o] || p[o + 1] !== q[o + 1] || p[o + 2] !== q[o + 2]) n++;
                 d += luma709(q, o) - luma709(p, o); // die EINE Luma aus abnahme-urteil (AUSGABE_INSTALL)
             }
-            return [+(n / (W * H)).toFixed(3), +(d / (W * H)).toFixed(3)];
+            return [+(n / (W * H)).toFixed(3), +(d / (W * H)).toFixed(3), n];
         };
-        const [anders, mittel] = vergleich(b[1], b[2]);
-        return Object.assign(aus, { ruhe: vergleich(b[0], b[1])[0], anders, mittel });
+        // die Ruhe genau (das dritte Bild trägt, was nach dem ersten landete): jedes Pixel zählt, zwei Ziffern, nie auf 0 gerundet
+        const [[anders, mittel], n] = [vergleich(b[2], b[3]), vergleich(b[0], b[2])[2]];
+        return Object.assign(aus, { ruhe: +(n / (W * H)).toPrecision(2), staende: vor + " → " + stand(), anders, mittel });
     })();
 }
 
@@ -336,7 +348,7 @@ function rundungProbe() {
         out.karte = await page.evaluate(karteOhneFarbe);
         log(`Karte ohne Farbe: ${JSON.stringify(out.karte)}`);
         // (r) die Rundung des Ausgabe-Ziels am echten Frame
-        out.rundung = await page.evaluate(rundungProbe);
+        out.rundung = await page.evaluate(rundungProbe, DITHER.pause);
         log(`Rundung: ${JSON.stringify(out.rundung)}`);
         out.gpuFehler = await page.evaluate(() => window.__gpuFehlerZ.slice(0, 5));
     } catch (e) {
