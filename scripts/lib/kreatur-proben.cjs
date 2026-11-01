@@ -2884,17 +2884,14 @@ async function kreaturProben(r, T, opts) {
         const gegangen = (g) => liste.some((b) => b.leib === g && SD.wSpur.get(b).gesamt > 0.5);
         // DIE STÄNDE (mensch.K3 Staffel 2, `_bewohnerStandPruefen`): nach dem Tag liegen je zwei Stände der Liste ≥ `raumM`
         // auseinander, auch die aus der Hülle oder der Spur gerückten — sonst findet, wer Platz machte, seinen Stand nie frei.
-        // Täter (Selbsttest), gezählt und zurück: der zweite Stand 0,3 m neben dem ersten
-        const staende = [...new Set(liste.flatMap((b) => ["heim", "platz", "werk", "besuch"].map((k) => b.orte[k])))];
-        const [st0, st1] = staende.filter(Boolean);
-        const st1alt = st1 && { x: st1.x, z: st1.z };
-        if (hat("bewohner-stapel") && st1) Object.assign(st1, { x: st0.x + 0.3, z: st0.z });
-        const stapel = [];
-        for (const [i, p] of staende.entries())
-            for (const q of staende.slice(i + 1))
-                if (p && q && ab(p, q) < A.BEWOHNER.raumM - 1e-6)
-                    stapel.push(`${q3(p.x)}/${q3(p.z)} ↔ ${q3(q.x)}/${q3(q.z)}: ${q3(ab(p, q))} m`);
-        if (st1) Object.assign(st1, st1alt);
+        // Täter (Selbsttest), gezählt und zurück: der zweite Stand 0,3 m neben dem ersten (Stand: wer einen Ursprung trägt)
+        const staende = [...new Set(liste.flatMap((b) => Object.values(b.orte)))].filter((o) => o && o.ur);
+        const [s0, s1, alt] = [...staende.slice(0, 2), [staende[1].x, staende[1].z]];
+        if (hat("bewohner-stapel")) [s1.x, s1.z] = [s0.x + 0.3, s0.z];
+        const stapel = staende.flatMap((p, i) =>
+            staende.slice(i + 1).flatMap((q) => (ab(p, q) < A.BEWOHNER.raumM - 1e-6 ? [`${q3(p.x)}/${q3(p.z)}`] : []))
+        );
+        [s1.x, s1.z] = alt;
         const unter = liste.filter((b) => !(treffer.get(b) >= 0.9));
         // der Heimkehrer geht 1 h vor jeder Prüf-Stunde fort und findet die neu Geborenen (Takt 0). Täter: geboren am Ziel
         const wiederkehr = async () => {
@@ -2969,8 +2966,7 @@ async function kreaturProben(r, T, opts) {
             },
             ohnePlatz: ohnePlatz.length,
             ohnePlatzWer: ohnePlatz.slice(0, 4).map(wer),
-            stapelN: stapel.length,
-            stapel: stapel.slice(0, 4),
+            stapel,
             huellen: hausE.filter((e) => e._hausHuelle).length,
             wege: SD.zahl(),
             wiederkehr: await wiederkehr(),
@@ -3385,7 +3381,7 @@ function urteil(name, z) {
             `der Blick der Stehenden: ${b.quote} von ${b.n} auf ihr Ziel, ${b.sektorMax} in einer Richtung`
         );
         soll(!z.ohnePlatz, `ohne Platz: ${z.ohnePlatz} (${z.ohnePlatzWer.join(" · ")})`);
-        soll(!z.stapelN, `Stände gestapelt: ${z.stapelN} Paare näher als raumM (${z.stapel.join(" · ")})`);
+        soll(!z.stapel.length, `Stände gestapelt: ${z.stapel.length} näher als raumM (${z.stapel.slice(0, 4)})`);
         // jedes Haus trägt die Hülle seines Studios (die Wand der Wege)
         soll(z.huellen === z.haeuser, `${z.haeuser - z.huellen} Häuser ohne Hülle`);
     }
