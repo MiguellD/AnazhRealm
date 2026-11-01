@@ -16,7 +16,8 @@
 //       ihre `hilfe`-Sätze) und jede Taste (`KEYBINDING_LABELS`); der Satz für Unbekanntes trägt keine zweite Liste.
 //   L3  DAS GESPRÄCH — Enter öffnet das Feld, Enter im Feld sendet und gibt die Welt zurück (W läuft wieder), Esc ohne
 //       Senden; Enter auf einem fokussierten Knopf gehört dem Knopf.
-//   L7  DER START-GURT — die Hotbar eines neuen Spielers liest den Katalog (`_katalogSichtbar`): je Studio-Art EIN Werk.
+//   L7  DER START-GURT — die Hotbar eines neuen Spielers liest den Katalog (`_katalogSichtbar`): je Studio-Art EIN Werk (die
+//       Art: `_gurtArt`, der kind des Rezepts, am Ort sein Ort — der Spielplatz zählt einmal).
 //   LK  DIE KAMERA UND DIE PFLANZEN — die Stamm-Blocker eines Studio-Baums tragen seine Welt-Skala; die 3rd-Kamera (zu Fuß
 //       und im Ritt) rückt nur vor Boden und Bau ein, nie vor einer Pflanze, und fährt gleitend hinaus; jeder Pflanzen-Stoff
 //       trägt die DURCHSICHT (maskNode, nie im Schatten-Pass): sie nimmt nur, was zwischen Auge und Spieler liegt (die EINE
@@ -1060,12 +1061,8 @@ async function probe(arg) {
         out.gurt = m;
         m.buch = !!(buch && buch.ok);
         m.hotbar = st.hotbar.slice();
-        const f = r._foundry;
-        const artVon = (name) => {
-            const pr = r._foundryPresetFor(name);
-            const rec = pr && f && f.recipes ? f.recipes[pr] : null;
-            return rec && typeof rec.kind === "string" ? rec.kind : null;
-        };
+        // die Art liest die EINE Zuordnung des Gurts (`_gurtArt`: der kind des Studio-Rezepts, am Ort sein Ort) — bis
+        // w4-koerper-park las die Linse ihren eigenen kind-Zwilling und nannte jedes Gerät des Spielplatzes eine fehlende Art
         const AD = AnazhRealm.ALT_DOPPEL || {};
         m.eintraege = m.hotbar.filter(Boolean).map((name) => {
             const bp = st.blueprints[name];
@@ -1073,14 +1070,14 @@ async function probe(arg) {
                 name,
                 sichtbar: !!bp && r._katalogSichtbar(name, bp),
                 altDoppel: AD[name] || null,
-                art: bp ? artVon(name) : null,
+                art: bp ? r._gurtArt(name) : null,
                 platzierbar: !!bp && r._isPlaceableBlueprint(bp),
             };
         });
         const arten = new Set();
         for (const name of Object.keys(st.blueprints))
             if (r._katalogSichtbar(name) && r._isPlaceableBlueprint(st.blueprints[name])) {
-                const a = artVon(name);
+                const a = r._gurtArt(name);
                 if (a) arten.add(a);
             }
         m.katalogArten = Array.from(arten);

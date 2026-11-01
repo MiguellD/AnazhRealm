@@ -288,15 +288,22 @@ class AnazhRealm_studio_bruecke {
         const gurt = [];
         for (const name of Object.keys(bps)) {
             if (!this._katalogSichtbar(name, bps[name]) || !this._isPlaceableBlueprint(bps[name])) continue;
-            const preset = this._foundryPresetFor(name);
-            const rec = preset ? f.recipes[preset] : null;
-            const ort = rec && rec.fx && rec.fx.place && rec.fx.place.mode === "site" && rec.fx.place.siteTag;
-            const art = rec && typeof rec.kind === "string" ? (ort ? "ort:" + ort : rec.kind) : null;
+            const art = this._gurtArt(name);
             if (!art || arten.has(art)) continue;
             arten.add(art);
             gurt.push(name);
         }
         return gurt;
+    }
+    // DIE ART IM GURT (die EINE Zuordnung, die der Gurt legt und gate:ankunft L7 urteilt): der kind des Studio-Rezepts eines
+    // Namens, am Ort sein Ort („ort:" + `fx.place.siteTag`); null für einen Namen ohne Studio-Rezept oder bei kaltem Buch
+    _gurtArt(name) {
+        const f = this._foundry;
+        const preset = f && f.recipes ? this._foundryPresetFor(name) : null;
+        const rec = preset ? f.recipes[preset] : null;
+        if (!rec || typeof rec.kind !== "string") return null;
+        const ort = rec.fx && rec.fx.place && rec.fx.place.mode === "site" && rec.fx.place.siteTag;
+        return ort ? "ort:" + ort : rec.kind;
     }
 
     // Nach der Buch-Ankunft: ein Name ohne Bauplan fällt aus der Hotbar (laut), und eine ganz leere Hotbar bekommt den
