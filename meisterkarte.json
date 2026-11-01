@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "baf9d828",
-    "zeit": "2026-11-01T20:50:40.016Z",
+    "zeit": "2026-11-01T21:14:31.500Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -1444,7 +1444,7 @@
           "punkte": 0,
           "staffel": "1 = Klasse haar (Strähnen-Kohärenz gegen REF, Albedo-Band) an einem Gerät · 2 = 50 Seeds ohne zwei gleiche Frisuren, beide Geräte",
           "messung": "werkbank bild --klasse haar auf Armlänge und im Third; Gestalt-Distanz je Seed-Paar.",
-          "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/werkbank.cjs +2) · haar.K2#1 gtx: ROT: arm ROT strich 0.4935 Soll [0.3554,0.533] — strich 0.4935 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3] · third ROT strich 0.444 Soll [0.3554,0.533] — strich 0.444 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3] an baf9d828",
+          "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/werkbank.cjs +2) · haar.K2#1 gtx: ROT: arm ROT strich 0.4783 Soll [0.3554,0.533] — strich 0.4783 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3] · third ROT strich 0.5015 Soll [0.3554,0.533] — strich 0.5015 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3] an baf9d828",
           "schlupfloch": "Ein Haar-Helm je Rolle bestünde die Klasse: 50 Seeds ohne zwei gleiche verlangen das Genom.",
           "maschine": true
         },
@@ -3560,7 +3560,7 @@
           "punkte": 0,
           "staffel": "1 = Median ≤ 5 s an einem Gerät UND ≤ 10 s am anderen · 2 = ≤ 5 s an beiden",
           "messung": "`diag-boot-stage --kalt --echt`, ≥ 4 Boots je Gerät mit leerer Platte (IDB und Cache geleert, auch direkt nach bump-version); t = erste angenommene Eingabe (ein KeyboardEvent bewegt den Leib ≥ 0,1 m) UND erstes Ausgabe-Bild über `ausgabe-aufnahme.cjs`, das K2 besteht — nie `state._weltbildDa`.",
-          "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: ungemessen (R10) · ankunft.K1#1 gtx: ungemessen (R10) · ankunft.K1#2 radeon: ungemessen (R10) · ankunft.K1#2 gtx: ungemessen (R10)",
+          "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: ungemessen (R10) · ankunft.K1#1 gtx: ungemessen (R10) — zuletzt an baf9d828: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) 0, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolle · ankunft.K1#2 radeon: ungemessen (R10) · ankunft.K1#2 gtx: ungemessen (R10)",
           "schlupfloch": "Den Ladeschirm früher fallen lassen, während das Bild halb ist, oder `_weltbildDa` früher setzen: t entsteht nur aus einer Eingabe mit Wirkung und einem Bild, das K2 besteht; ein gefälschtes `_weltbildDa` ändert die Zahl nicht (Selbsttest).",
           "maschine": true
         },
