@@ -1,0 +1,256 @@
+From 2f065970446123ec9e3625d29e3ac13a0acc0f90 Mon Sep 17 00:00:00 2001
+From: MiguellD <87209049+MiguellD@users.noreply.github.com>
+Date: Sat, 31 Oct 2026 23:13:26 +0000
+Subject: [PATCH 2/2] Abgabe w4-stationen-schnell-a: die Fahrt in der EINEN
+ Welt (fahrzeug.K3#2, K4#1, K4#2) (Zwischenstand)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+FAHR_SITZUNG fuhr gate:fahr-leben ganz in einer eigenen Null-Welt (alle Zeilen T0–F7, das Urteil liest T4/T5), `wait` hielt die
+Probe an ihr, zwischen Ritt und Blick ging die Grundstellung durch die Tür: GTX b4bcf19c >= 90 s. Jetzt WELT -> T5 -> BLICK -> T4 in
+der Welt der Sitzung (probeLeben per Anker, Verdikte der Linse), jede Frist bis zum Deckel; nach dem Ritt legt die Probe den Takt
+neu aus (tempo4.js löscht `_gameLoopTick`), blick.js gibt ihn zurück. Lokal alle drei GRÜN: Ort 33,0 · WELT 59,5 · T5 4,7 · BLICK
+60,3 · T4 4,2 s. GTX hergeleitet ~50–56 s.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018GqBDYgvKFxx7BBDKhxUFp
+---
+ bericht/2010-buendel-abab/blick.js            |  33 +++--
+ meisterkarte-quelle/punkte/stationen/g5.js    |  18 +--
+ .../punkte/stationen/proben-welt.cjs          | 121 +++++++++++++++++-
+ 3 files changed, 146 insertions(+), 26 deletions(-)
+
+diff --git a/bericht/2010-buendel-abab/blick.js b/bericht/2010-buendel-abab/blick.js
+index 4ed85374..b94fa5dd 100644
+--- a/bericht/2010-buendel-abab/blick.js
++++ b/bericht/2010-buendel-abab/blick.js
+@@ -24,17 +24,23 @@ const H = { phase: "hin", n: 0, halt: null, um: 0, g0: null, spur: [] };
+ let e = null;
+ const kurs = () => e.rotationY + Math.PI / 2; // Studio-Wagen: Bug +x
+ const wink = (a) => Math.round((Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) * 1800) / Math.PI) / 10;
+-// 1. der Spieler am Hang, die Welt steht (echter Loop, höchstens 60 s)
++// 1. der Spieler am Hang, die Welt steht: das EINE Einschwingen (`__weltStehtNach`) in Takten der CPU wie `rollen` der Linse
++// (diag-koerper-stand: je Schritt ein Takt der Welt, jedes fünfte Mal Luft für die GPU-Leine), der Loop ruht derweil — bis w4-ssa-E
++// lief der Loop, 1,5 s Uhr, dann ein Blick je 100 ms im Bild-Takt, höchstens 60 s, danach fuhr der Blick in einer Welt, die nicht stand
+ st.playerMesh.position.set(steil.x, hh(steil.x, steil.z) + 2, steil.z);
+ if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+ st._fieldVy = 0;
+-loopAn();
+ const tw0 = performance.now();
+-await warte(1500);
+-while (performance.now() - tw0 < 60000 && !(typeof r._weltSteht === "function" && r._weltSteht())) await warte(100);
++let weltTakte;
++try {
++    weltTakte = await window.__weltStehtNach(() => r._gameLoopTick(performance.now()));
++} catch (x) {
++    return { fehler: String(x && x.message).slice(0, 300), steil };
++}
+ const weltStandS = +((performance.now() - tw0) / 1000).toFixed(1);
+-const weltSteht = typeof r._weltSteht === "function" ? r._weltSteht() : null;
+-// 2. der GT bergab, aufsitzen (Third)
++const weltSteht = r._weltSteht();
++loopAn();
++// 2. der GT bergab, aufsitzen (Third); der Bau im Takt des Loops (`__gebautNach`, wie tempo4.js) statt alle 200 ms, höchstens 45 s
+ st.playerMesh.position.set(steil.x, hh(steil.x, steil.z) + 1.2, steil.z);
+ if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+ e = r.spawnArchitecture("fahrzeug_gt", { x: steil.x, y: hh(steil.x, steil.z) + 0.5, z: steil.z }, { silent: true, precise: true, rotationY: ab - Math.PI / 2 });
+@@ -42,10 +48,11 @@ if (!e) {
+     loopAus();
+     return { fehler: "GT nicht gesetzt", steil };
+ }
+-const tb0 = performance.now();
+-while (!e.instanced && !e.mesh && performance.now() - tb0 < 45000) {
+-    r._rebuildArchitectureMesh(e);
+-    await warte(200);
++try {
++    await window.__gebautNach(e, { fertig: () => !!(e.instanced || e.mesh) });
++} catch (x) {
++    loopAus();
++    return { fehler: String(x && x.message).slice(0, 300), steil };
+ }
+ r.setCameraMode("third");
+ const mr = r.mountArchitecture(e);
+@@ -178,10 +185,12 @@ try {
+     ende = String(x && x.message);
+ } finally {
+     loopAus();
+-    delete r._gameLoopTick;
++    // der Takt der Welt zurück (`_gameLoopTick` ist ihr EIGENES Feld: `delete` nahm ihn ihr bis zum nächsten Welt-Wechsel — bis
++    // w4-ssa-E legte ihn die Grundstellung durch die Tür neu aus, jetzt fährt T4 danach in derselben Welt)
++    r._gameLoopTick = roh;
+     for (const k of ["w", "a", "s", "d"]) st.keys[k] = false;
+ }
+-const res = { ende, steil: { x: +steil.x.toFixed(1), z: +steil.z.toFixed(1), neigung: steil.neigung, ab: +ab.toFixed(3) }, weltStandS, weltSteht, mount: !!(mr && mr.ok), bilder, spurN: H.spur.length, spurAuszug: H.spur.filter((_s, i) => i % 15 === 0), gpuFehler: gf.slice(0, 5) };
++const res = { ende, steil: { x: +steil.x.toFixed(1), z: +steil.z.toFixed(1), neigung: steil.neigung, ab: +ab.toFixed(3) }, weltStandS, weltTakte, weltSteht, mount: !!(mr && mr.ok), bilder, spurN: H.spur.length, spurAuszug: H.spur.filter((_s, i) => i % 15 === 0), gpuFehler: gf.slice(0, 5) };
+ try {
+     r.dismountArchitecture();
+     r.removeArchitecture(e);
+diff --git a/meisterkarte-quelle/punkte/stationen/g5.js b/meisterkarte-quelle/punkte/stationen/g5.js
+index 209a78c0..719643dc 100644
+--- a/meisterkarte-quelle/punkte/stationen/g5.js
++++ b/meisterkarte-quelle/punkte/stationen/g5.js
+@@ -473,19 +473,11 @@ const LATENZ_HALT_SITZUNG = sitzung(33,
+         "teil SPIEL{N} $W eval '" + HIT_LESEN + "'"
+     )
+ );
+-// DIE FAHRT IN EINEM LAUF (fahrzeug.K3#2, fahrzeug.K4#1, fahrzeug.K4#2, Zwillinge, 29.10.): gate:fahr-leben (T4, T5; eigene Null-Welt auf
+-// {PORT}+20001) läuft NEBEN der Welt der Sitzung; darin der Ritt (tempo4.js auf dem Weg der Probe, WELT — w4-heil-fahrzeug 30.10.),
+-// die Grundstellung, der Blick am Steilhang (blick.js, BLICK); die Zeilen der Linse danach (FAHR). Bis dahin fuhr jede der drei
+-// Stationen die Linse und ihren Boot für sich.
+-const FAHR_SITZUNG = sitzung(33,
+-    '( env FAHR_LEBEN_PORT=$LP node scripts/diag-fahr-leben.cjs; echo "@@PUNKTE@@ EXIT $?" ) > "$L/fahr.out" 2>&1 &',
+-    "boot",
+-    'teil WELT $W eval "$(cat "$K/bericht/3010-heil-fahrzeug/tempo4.js")"',
+-    "boot",
+-    'teil BLICK $W eval "$(cat "$K/bericht/2010-buendel-abab/blick.js")"',
+-    "wait",
+-    'echo "@@PUNKTE@@ FAHR"; cat "$L/fahr.out"'
+-);
++// DIE FAHRT IN EINEM LAUF (fahrzeug.K3#2, fahrzeug.K4#1, fahrzeug.K4#2, Zwillinge, 29.10.): der Ritt (tempo4.js auf dem Weg der Probe,
++// WELT — w4-heil-fahrzeug 30.10.), T5, der Blick am Steilhang (blick.js, BLICK) und T4 von gate:fahr-leben (FAHR) — alle in der EINEN
++// Welt der Sitzung (proben-welt.cjs `fahrWelt`; bis w4-ssa-E lief die Linse ganz in einer eigenen Null-Welt daneben, und `wait` hielt
++// die Probe an ihr fest: GTX ≥ 90 s). Bis 29.10. fuhr jede der drei Stationen die Linse und ihren Boot für sich.
++const FAHR_SITZUNG = { befehl: PW.torBefehl(PW.fahrWelt, "1cf3af98d5d09a6fc3133debf068e158d50a1401", "b94fa5dd03dd4d249cefef435955dbf233102710"), sek: 33 };
+ // ───────────────────────── DIE PROBEN DER STADT IN DER SITZUNG (29.10., stationen/sitzung-seite.js) ─────────────────────────
+ // Das Gesetz des Schöpfers: eine Fahrt durch jedes System ≤ 30 min samt Dauerlast — keine dieser Stationen bootet mehr eine Welt.
+ const { probeBefehl } = require("./sitzung-seite.js");
+diff --git a/meisterkarte-quelle/punkte/stationen/proben-welt.cjs b/meisterkarte-quelle/punkte/stationen/proben-welt.cjs
+index 94b8cf71..0630c8d4 100644
+--- a/meisterkarte-quelle/punkte/stationen/proben-welt.cjs
++++ b/meisterkarte-quelle/punkte/stationen/proben-welt.cjs
+@@ -459,6 +459,125 @@ async function fadenZaehler(tor) {
+     if (blind || k4) process.exitCode = 1;
+ }
+ 
++// ───────── fahrzeug.K3#2 · fahrzeug.K4#1 · fahrzeug.K4#2 — DIE FAHRT IN DER EINEN WELT (EIN Lauf, Zwillinge) ─────────
++// Bis w4-ssa-E (31.10.) fuhr FAHR_SITZUNG (g5.js) gate:fahr-leben GANZ in einer eigenen Null-Welt neben der Sitzung (eigener Browser
++// und Server auf {PORT}+20001, alle Zeilen T0–F7, dazu die zweite Seite der Fahr-Bahn an jedem Tor des Genesis-Rings) — die Urteile
++// lesen davon nur T4 und T5 —, und zwischen Ritt und Blick ging die Grundstellung nach dem Weg des Ritts durch die Tür (/reload).
++// GTX b4bcf19c, e0139769, 379e5f56, 3ed95dcf: ≥ 90 s, zuletzt „@@PUNKTE@@ EXIT 0" (das Ende des Blicks): `wait` hielt die Probe an der
++// Null-Welt fest, bis der Deckel kam. Jetzt in der EINEN Welt der Sitzung, in der Reihe der Orte: der Ritt (tempo4.js, WELT) an der
++// Mess-Wiese, wo die Sitzung steht; T5 (`probeLeben` per Anker auf das Tempo der Kamera gekürzt) auf der Strecke der Wiese (100 m vor
++// dem Weg des Ritts — nach dem Ritt, damit dessen Bahn-Suche die Welt findet, wie sie steht: die Bahn-Wache von T5 räumt ihre Spur); der
++// Blick am Steilhang (blick.js, BLICK; er schwingt dort ein); T4 (gekürzt auf den Wechsel) am selben Hang NACH dem Blick (die Bahn-Wache
++// von T4 räumt den Hang, der Blick fährt ihn, wie er steht). T4/T5 urteilen die Verdikte der Linse (wechselVerdict; tempoVerdict mit
++// kernTempo des Kerns), Name und Wortlaut der Zeilen wie gate:fahr-leben, unter FAHR. Die Proben-Dateien des Koordinations-Baums
++// stehen per Blob fest (argv: tempo4.js, blick.js).
++async function fahrWelt(tor) {
++    const fs = require("fs");
++    const path = require("path");
++    const crypto = require("crypto");
++    const L = "scripts/diag-fahr-leben.cjs";
++    const P = "scripts/lib/fahr-proben.cjs";
++    const t0 = Date.now();
++    const zeit = [];
++    const datei = (rel, blob) => {
++        const roh = fs.readFileSync(path.join(process.env.K, rel));
++        const b = crypto.createHash("sha1").update("blob " + roh.length + "\0").update(roh).digest("hex");
++        if (b !== blob) throw new Error(rel + " ist Blob " + b + ", die Station kennt " + blob);
++        return roh.toString("utf8");
++    };
++    const ritt = datei("bericht/3010-heil-fahrzeug/tempo4.js", tor.arg[0]);
++    const blick = datei("bericht/2010-buendel-abab/blick.js", tor.arg[1]);
++    // die Verdikte der Linse und die Namen ihrer Zeilen T4/T5, wörtlich aus ihrem Text (je genau einmal, sonst laut)
++    const d = new Function(tor.dekl(L, ["taeter", "WECHSEL", "wechselVerdict"]) + "\nreturn { taeter, wechselVerdict };")();
++    const text = fs.readFileSync(L, "utf8");
++    const name = (k) => {
++        const m = text.match(new RegExp('"' + k + ' [^"\\n]+"', "g")) || [];
++        if (m.length !== 1) throw new Error(L + ": die Zeile " + k + " steht " + m.length + "-mal im Text (Soll 1)");
++        return JSON.parse(m[0]);
++    };
++    const F = require(path.resolve(P));
++    require(path.resolve("vehicle-core.js"));
++    const mo = require(path.resolve("scripts/lib/band-urteil.cjs")).ladeSpec("wiese").ort.spieler;
++    // probeLeben je Teil: T1/T0 (der GT geradeaus), T2 (die Suche des Hangs) und alles ab dem Pferd fallen; T5 ohne T4, T4 ohne T5
++    const KURZ = [
++        ["const gt = await gtAmStart();", "const gt = null;"],
++        ['const hangOrt = window.__weltOrt("hang", {', 'const hangOrt = 0 && window.__weltOrt("hang", {'],
++        ["        // (3) Das Pferd: der richtungs-folgende Ritt ohne Lenk-Gesetz (W in Blick-Richtung +x).\n", "        aufraeumen();\n        return res;\n"],
++    ];
++    const tempo = tor.quelle(P, "probeLeben", [...KURZ, ['const steil = window.__weltOrt("hang", { min: 17, max: 32, basis: 3, bergab: [30, 12], rMax: 800 });', "const steil = null;"]]);
++    const wechsel = tor.quelle(P, "probeLeben", [...KURZ, ["const g5 = await gtAmStart();", "const g5 = null;"], ["bilder(120, () => st._kamFovVersatz);", "0 && bilder(120, () => st._kamFovVersatz);"]]);
++    const page = await tor.seite();
++    tor.karte();
++    // die Seiten-Werkzeuge, die die Linse in ihrer Welt trägt (welt-boot CODE_OF_SEITE: `__fehlt` der FOV-Schreiber von T5 — die
++    // Werkbank legt nur WARTEN_SEITE in ihre Seite), und die Spione der Linse
++    await page.evaluate(require(path.resolve("scripts/lib/welt-boot.cjs")).CODE_OF_SEITE);
++    await page.evaluate(`window.__tempoSpion = ${F.tempoSpion}; window.__ruckJeBild = ${F.ruckJeBild};`);
++    // DIE FRIST: jeder Ruf an die Werkbank höchstens bis kurz vor den Deckel DIESES Laufs; reißt einer, endet die Probe mit der EINEN
++    // Marke (punkte.cjs FRIST_MARKE: kein Urteil, UNGEMESSEN) — nie fährt ein Teil neben einem Rumpf, der in der Seite weiterläuft
++    const deckelS = Number(process.env.PUNKTE_PROBE_DECKEL_S) || 90;
++    const rest = () => Math.max(1000, t0 + (deckelS - 2) * 1000 - Date.now());
++    const riss = (wo, e) => {
++        if (!/: Frist \d+ ms/.test(String(e))) return false;
++        console.log("@@PUNKTE@@ FRIST " + deckelS + " s der Probe gerissen — " + wo + " (" + ((Date.now() - t0) / 1000).toFixed(1) + " s)");
++        return true;
++    };
++    // WELT und BLICK: der Rumpf über die Werkbank (`/eval`), die Antwort, wie `werkbank eval` sie druckt. Danach der Takt der Welt,
++    // wie der Welt-Wechsel ihn auslegt (`_weltAbschied`: `_takt`): tempo4.js räumt seinen Fahrer mit `delete r._gameLoopTick` und
++    // nimmt der Welt damit ihr EIGENES Feld — in der Maschine geht die Grundstellung nach dem Weg des Ritts durch die Tür und legt es
++    // neu aus; hier takten T5, der Blick und T4 in derselben Welt nach ihm (lokal ohne ihn: jedes Einschwingen danach hing, „DIE WELT
++    // HÄNGT … ohne Bau-Ereignis")
++    const welt = async (wo, code) => {
++        const t = Date.now();
++        console.log("@@PUNKTE@@ " + wo);
++        const a = await tor.ruf("/eval", { code }, rest()).catch((e) => ({ fehler: String((e && e.message) || e) }));
++        console.log(JSON.stringify(a, null, 1));
++        console.log("@@PUNKTE@@ EXIT " + (a && a.ergebnis && !a.ergebnis.fehler ? 0 : 1));
++        zeit.push(wo + " " + ((Date.now() - t) / 1000).toFixed(1));
++        if (riss(wo, a && a.fehler)) return false;
++        await page.evaluate(() => {
++            const r = window.anazhRealm;
++            if (typeof r._gameLoopTick !== "function") r._gameLoopTick = r._takt;
++        });
++        return true;
++    };
++    // T5 und T4: `probeLeben` in der Seite, mit derselben Frist (null: gerissen, die Marke steht)
++    const leben = async (wo, fn) => {
++        const [t, ms] = [Date.now(), rest()];
++        let uhr = null;
++        const frist = new Promise((_ok, nein) => (uhr = setTimeout(() => nein(new Error(wo + ": Frist " + ms + " ms")), ms)));
++        const o = await Promise.race([page.evaluate("(" + fn + ")(" + JSON.stringify({ messort: mo }) + ")"), frist]).catch((e) => ({ riss: e }));
++        clearTimeout(uhr);
++        zeit.push(wo + " " + ((Date.now() - t) / 1000).toFixed(1));
++        if (o && o.riss && riss(wo, o.riss)) return null;
++        if (o && o.riss) throw o.riss;
++        return o || {};
++    };
++    // DER ORT DER PROBE (wie fahrzeug.K3#1): die Mess-Wiese — die Sitzung stellt und beruhigt sie VOR dem Deckel (punkte.cjs `probeOrt`
++    // liest den Ort aus diesem Befehl); hier findet die Probe sie stehend (der Ritt sucht seine Bahn an `__messWiese`, dem Ort selbst)
++    const t1 = Date.now();
++    const ort = await tor.ruf("/umstellen", { ort: "wiese", sicht: "ego" }, rest()).then(() => null, (e) => e);
++    zeit.push("Ort " + ((Date.now() - t1) / 1000).toFixed(1));
++    if (ort && riss("der Ort", ort.message)) return;
++    if (ort) throw ort;
++    if (!(await welt("WELT", ritt))) return;
++    const o5 = await leben("T5", tempo);
++    if (!o5 || !(await welt("BLICK", blick))) return;
++    const o4 = await leben("T4", wechsel);
++    if (!o4) return;
++    // die Zeilen der Linse (`check` von gate:fahr-leben), T4 vor T5
++    const zeilen = [];
++    const check = (n, ok, z) => zeilen.push(`  ${ok ? "✅" : "❌"} ${n}${z ? " — " + z : ""}`);
++    for (const o of [o4, o5]) if (o.err) check("Probe ohne Ausnahme", false, String(o.err).split("\n")[0]);
++    const vW = d.wechselVerdict(o4.wechsel);
++    check(name("T4"), vW.length === 0, `${JSON.stringify(o4.wechsel)}${d.taeter(vW)}`);
++    const v5 = F.tempoVerdict(o5.tempo && Object.assign(o5.tempo, F.kernTempo(globalThis.__vehicleCore)));
++    check(name("T5"), v5.length === 0, `${JSON.stringify(o5.tempo)}${d.taeter(v5)}`);
++    console.log("@@PUNKTE@@ FAHR");
++    for (const z of zeilen) console.log(z);
++    console.log("  (" + zeit.join(" s · ") + " s in der Welt der Sitzung, " + ((Date.now() - t0) / 1000).toFixed(1) + " s gesamt)");
++    console.log("@@PUNKTE@@ EXIT " + (vW.length || v5.length ? 1 : 0));
++}
++
+ // ───────── fahrzeug.K5#1 — die Rückmeldung (gate:fahr-leben `--rueckmeldung`) und der Motor am Klang-Abgriff (gate:klang-zensus F) ─────────
+ // RM: die Seiten-Probe des Gates (`probeLeben` mit `nurRueck`, scripts/lib/fahr-proben.cjs) — Glatt, Drift, Hang je 240 Bilder,
+ // dazu die Mutante; das Urteil `rueckBericht` der Linse. (F) Motor: `koerperSeite` der Klang-Linse, die Anker lassen Landung und
+@@ -1015,4 +1134,4 @@ async function karteHebung(tor) {
+     process.exitCode = errs.length ? 1 : 0;
+ }
+ 
+-module.exports = { sitzungTor, torBefehl, kollisionTempo, bodenRollen, tierKreis, sprungKadenz, fadenZaehler, fahrRueck, fahrWegenetz, fahrVerkehr, wasserGraben, naesseDorf, werkbankLinse, karteHebung };
++module.exports = { sitzungTor, torBefehl, kollisionTempo, bodenRollen, tierKreis, sprungKadenz, fadenZaehler, fahrWelt, fahrRueck, fahrWegenetz, fahrVerkehr, wasserGraben, naesseDorf, werkbankLinse, karteHebung };
+-- 
+2.43.0
+

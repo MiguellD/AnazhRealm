@@ -229,10 +229,12 @@ const k1Zahl = (k) =>
 // über ihren Knopf „In der Welt ansehen" (die Übergabe der Hülle), die Welt setzt es über den EINEN Übergabe-Kanal; Pose = die
 // Vorschau-Kamera der Welt (Gier 0,6 · Neigung 0,32 · fov 45, Rahmen-Gesetz `_workshopRahmen`), beide aus dem Ausgabe-Pfad;
 // Bild-Differenz über der Vereinigung der Masken (ΔLuma > 18 oder nur eine Seite), dazu die Albedo-Tafel beider Seiten je Studio.
+// Seit w4-stationen-schnell im Browser der Sitzung (die Bühne eine zweite Seite derselben Herkunft, die Frist 6 s unter {SEK}), das
+// Auge an der Pose und das Werk am Bau-Ereignis (`__gebautNach`) statt 30 s Wanduhr je Studio (GTX b4bcf19c: ≥ 90 s, 2 Studios).
 const K4_BEFEHL = [
     "bash",
     "-c",
-    `set -u; K=$(cygpath -m '{KOORD}'); A=$(cygpath -m '{AUS}'); export WERKBANK_PORT=$(({PORT}+20000)); node "$K/bericht/2910-w3w-studios/skripte/k4-bild.cjs" "$A" {PORT}`,
+    `set -u; K=$(cygpath -m '{KOORD}'); A=$(cygpath -m '{AUS}'); export WERKBANK_PORT=$(({PORT}+20000)); node "$K/bericht/2910-w3w-studios/skripte/k4-bild.cjs" "$A" {PORT} {SEK}`,
 ];
 // DIE FAHRT (29.10., ≤ 30 min je Gerät): 90 s statt 900 s — sieben Studios in EINER Probe; die Welt trägt danach ihre Werke (mutiert)
 const K4_STUDIOS = ["garage", "portale", "schmiede", "fachwerk", "terrain", "koerperstudio", "tetrapoda"];
@@ -336,9 +338,13 @@ async function probeStudios(H) {
 }
 const STUDIO_PROBE = probeBefehl(probeStudios, 75);
 // DER BILD-WEG (bauen.K1#2): die Linse diag-werkstatt-weg mit `--echt` (`wegHelfer` mit dem Haken am Render des Takts, `wegLauf` über
-// echte Eingaben) in der Welt der Sitzung — die Seite neu (die Foundry der Seite leer: der erste Bau jedes Werks ist kalt), die Bühne
-// (Mittag · Sonne · Sommer), dann 8 Läufe: jedes Werk zweimal (kalt, warm), jeder Weg mit kalt und warm, Lage und Sicht im Wechsel.
-// Bis 29.10. drei frische Browser (je Weg ein leeres Profil) × 24 Läufe = 72 (Soll 10 min, Radeon b3f9ae95 43,7 min).
+// echte Eingaben) in der warmen Welt der Sitzung — die Bühne (Mittag · Sonne · Sommer), dann 8 Läufe: jedes Werk zweimal (kalt, warm),
+// jeder Weg mit kalt und warm, Lage und Sicht im Wechsel. KALT räumt die Linse selbst (`wegHelfer`: der erste Lauf eines Werks nimmt
+// seine Körper aus der Foundry, `_foundryCacheEvict`) — bis w4-stationen-schnell lud die Probe dafür die Seite neu (ein Ganz-Welt-Boot
+// je Lauf, und die Welt füllte die Foundry bis zum ersten Lauf wieder); der Ort der Läufe liegt beim Spieler (die Linse sucht um ihn,
+// steht er ferner als 160 m von der Genesis-Lichtung — die Mess-Wiese 1 082 m: bis dahin sprang der erste Lauf über 1 km in eine kalte
+// Gegend, GTX b4bcf19c 0/8 nach 80 s). Bis 29.10. drei frische Browser (je Weg ein leeres Profil) × 24 Läufe = 72 (Soll 10 min,
+// Radeon b3f9ae95 43,7 min).
 const BILD_FAELLE = [
     ["werkstatt", "schöpfer", "Eiche", "Ego"],
     ["rezeptbuch", "frieden mit Material", "Haus", "Third"],
@@ -355,8 +361,6 @@ async function probeBildWeg(H) {
     const { buehne } = require(path.resolve("scripts/lib/welt-boot.cjs"));
     const { page } = await H.verbinde();
     await page.setViewport({ width: 1280, height: 720 }); // das Fenster der Linse (--echt); die Grundstellung stellt 1920 × 1080 zurück
-    await H.lade(page);
-    await page.evaluate(() => window.__weltDa((w) => !!(w.state.renderer && w.state.renderer.backend)));
     await H.ereignisStrom(page);
     const { frei } = await page.evaluate(L.probe, { nurOrt: true });
     await buehne(page);
@@ -1211,8 +1215,9 @@ const alle = [
     // von der ersten Eingabe bis zum von der GPU abgearbeiteten Bild, in dem jede L0-Senke des Werks für die Kamera der Szene zog
     // (der Haken am Render des Takts, gezählt am Backend); der Bau-Hash des Bilds gleicht dem L0-Bau derselben Anfrage im Werk.
     // kalt = der erste Bau des Werks im frischen Profil (4 je Weg), warm = jeder weitere (20 je Weg); p95 je Weg und Klasse.
-    // IN DER SITZUNG (29.10., `probeBildWeg`): die Seite neu im Browser der Sitzung (die Foundry der Seite leer: der erste Bau jedes
-    // Werks ist kalt), 8 Läufe (BILD_FAELLE: jedes Werk kalt und warm, jeder Weg mit beiden Klassen, Lage und Sicht im Wechsel).
+    // IN DER SITZUNG (29.10., `probeBildWeg`): die warme Welt der Sitzung, der erste Bau jedes Werks kalt (die Linse räumt seine
+    // Körper aus der Foundry; bis w4-stationen-schnell die Seite neu), 8 Läufe (BILD_FAELLE: jedes Werk kalt und warm, jeder Weg mit
+    // beiden Klassen, Lage und Sicht im Wechsel).
     {
         kriterium: "bauen.K1",
         staffel: 2,

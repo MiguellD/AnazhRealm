@@ -1,0 +1,221 @@
+From c1d0d6c576276358453c2a1002871a74a1547195 Mon Sep 17 00:00:00 2001
+From: MiguellD <87209049+MiguellD@users.noreply.github.com>
+Date: Sat, 31 Oct 2026 23:10:08 +0000
+Subject: [PATCH 1/3] =?UTF-8?q?Abgabe=20w4-stationen-schnell-a:=20die=20Al?=
+ =?UTF-8?q?bedo-Tafel=20taktet=20im=20Bild=20der=20Werkbank,=20liest=20und?=
+ =?UTF-8?q?=20wertet=20ohne=20R=C3=BCckruf=20je=20Element=20aus=20und=20ei?=
+ =?UTF-8?q?cht=20nur=20im=20Gang=20der=20Karte?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+`__werkTakt` gibt sein nächstes Bild als Versprechen; die Tafel taktet darin statt 50 ms Schlaf je Takt (rund 680 Takte: 34 s Schlaf → 0). `lies` füllt in einer Schleife (Node 640 × 400: 46 → 6 ms je Pass, rund 385 Pässe), `albedoAuswerten` rechnet über eine flache Liste (491 → 214 ms je Zeile, jede Zahl bit-gleich bei Deckung 0–100 %), die Karte der Eichung schießt nur der Gang, der sie liest (20 von 21 Schüssen fallen). Takt-Zahlen, Bedingungen und Urteile unberührt; Atome licht-linsen −53, werkbank −4.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018GqBDYgvKFxx7BBDKhxUFp
+---
+ scripts/lib/licht-linsen.cjs | 92 +++++++++++++++++++-----------------
+ scripts/werkbank.cjs         | 11 +++--
+ 2 files changed, 55 insertions(+), 48 deletions(-)
+
+diff --git a/scripts/lib/licht-linsen.cjs b/scripts/lib/licht-linsen.cjs
+index ba2acaac..cbcd7153 100644
+--- a/scripts/lib/licht-linsen.cjs
++++ b/scripts/lib/licht-linsen.cjs
+@@ -12,41 +12,40 @@ const { luma709, cielab, linSrgb } = require("./abnahme-urteil.cjs");
+ // DIE AUSWERTUNG beider Albedo-Linsen (Welt r184 und Labor r128 lesen DIESE Funktion): `hell`/`dunkel` sind lineare
+ // RGBA-Werte (Float32, je Pixel 4), `deckung` die Alpha-Schwelle eines gezählten Pixels. Albedo = hell − dunkel (die
+ // Emission und jedes Licht außer dem Umgebungslicht fallen heraus), dazu das Bild (sRGB-kodiert, Rest magenta).
++// DIE PIXEL IN EINER LISTE (w4-stationen-schnell-a, 31.10.): je Pixel der Deckung a0 a1 a2 Emission flach hintereinander, die
++// Luma je Pixel einmal (`luma709` am Versatz), jede Gruppe eine Wahl über den Index — bis dahin je Pixel ein eigenes Feld, je
++// Gruppe ein Filter und zwei Sortierungen mit Vergleicher (Node, 4 Blicke 640 × 400, 265 k Pixel: 491 → 214 ms); Summen in
++// derselben Reihe, dieselben Quantile, jede Zahl bit-gleich (Deckung 0 bis 100 % geprüft)
+ function albedoAuswerten(hell, dunkel, W, H, deckung, name) {
+     const pix = [];
+     for (let i = 0; i < W * H; i++) {
+         if (!(hell[i * 4 + 3] > deckung)) continue;
+-        const a = [0, 1, 2].map((c) => Math.max(0, hell[i * 4 + c] - dunkel[i * 4 + c]));
+-        const em = (dunkel[i * 4] + dunkel[i * 4 + 1] + dunkel[i * 4 + 2]) / 3;
+-        pix.push([a[0], a[1], a[2], em]);
++        for (let c = 0; c < 3; c++) pix.push(Math.max(0, hell[i * 4 + c] - dunkel[i * 4 + c]));
++        pix.push((dunkel[i * 4] + dunkel[i * 4 + 1] + dunkel[i * 4 + 2]) / 3);
+     }
+-    const Y = (p) => luma709(p);
+-    const mittel = (arr) => {
+-        if (!arr.length) return null;
+-        const m = [0, 0, 0, 0];
+-        for (const p of arr) for (let c = 0; c < 4; c++) m[c] += p[c];
+-        return m.map((v) => v / arr.length);
+-    };
+-    const fmt = (m, n) =>
+-        m
++    const n = pix.length / 4;
++    const ya = Float64Array.from({ length: n }, (_x, k) => luma709(pix, k * 4));
++    // das Mittel der Pixel k, für die `wahl(k)` gilt
++    const mittel = (wahl) => {
++        let [m, z] = [[0, 0, 0, 0], 0];
++        for (let k = 0; k < n; k++) if (wahl(k) && ++z) for (let c = 0; c < 4; c++) m[c] += pix[k * 4 + c];
++        m = m.map((v) => v / z);
++        return z
+             ? {
+-                  anteil: +(n / Math.max(1, pix.length)).toFixed(2),
++                  anteil: +(z / Math.max(1, n)).toFixed(2),
+                   rgb: m
+                       .slice(0, 3)
+                       .map((v) => +v.toFixed(4))
+                       .join("/"),
+-                  Y: +Y(m).toFixed(4),
++                  Y: +luma709(m).toFixed(4),
+                   emission: +m[3].toFixed(3),
+               }
+             : null;
+-    const istGruen = (p) => p[1] > p[0] * 1.08 && p[1] > p[2] * 1.08;
+-    const gruen = pix.filter(istGruen);
+-    const rest = pix.filter((p) => !istGruen(p));
+-    const ys = rest.map(Y).sort((a, b) => a - b);
++    };
++    const istGruen = (k) => pix[k * 4 + 1] > pix[k * 4] * 1.08 && pix[k * 4 + 1] > pix[k * 4 + 2] * 1.08;
++    const ys = ya.filter((_y, k) => !istGruen(k)).sort();
+     const med = ys.length ? ys[Math.floor(ys.length / 2)] : 0;
+-    const hellR = rest.filter((p) => Y(p) >= med),
+-        dunkR = rest.filter((p) => Y(p) < med);
+-    const yAll = pix.map(Y).sort((a, b) => a - b);
++    const yAll = ya.slice().sort();
+     const q = (f) => (yAll.length ? +yAll[Math.min(yAll.length - 1, Math.floor(f * yAll.length))].toFixed(3) : null);
+     const img = { data: new Uint8ClampedArray(W * H * 4) };
+     for (let i = 0; i < W * H; i++) {
+@@ -55,7 +54,7 @@ function albedoAuswerten(hell, dunkel, W, H, deckung, name) {
+         // Augenschein, die Zahlen hängen nicht an der Zeilen-Ordnung.
+         // das Alpha setzt `__png` deckend (welt-boot)
+         if (!(hell[o + 3] > deckung)) {
+-            img.data.set([255, 0, 255], o);
++            img.data[o] = img.data[o + 2] = 255; // Magenta (Grün bleibt 0)
+             continue;
+         }
+         for (let c = 0; c < 3; c++)
+@@ -63,11 +62,11 @@ function albedoAuswerten(hell, dunkel, W, H, deckung, name) {
+     }
+     return {
+         name,
+-        pixel: pix.length,
+-        gesamt: fmt(mittel(pix), pix.length),
+-        gruen: fmt(mittel(gruen), gruen.length),
+-        hell: fmt(mittel(hellR), hellR.length),
+-        dunkel: fmt(mittel(dunkR), dunkR.length),
++        pixel: n,
++        gesamt: mittel(() => true),
++        gruen: mittel(istGruen),
++        hell: mittel((k) => !istGruen(k) && ya[k] >= med),
++        dunkel: mittel((k) => !istGruen(k) && ya[k] < med),
+         Yq: [q(0.05), q(0.25), q(0.5), q(0.75), q(0.95)].join("/"),
+         png: window.__png(img.data, W, H),
+     };
+@@ -118,15 +117,11 @@ function albedoSicht(opts) {
+         // in der Welt — nach einer Tafel misst kein Band mehr in derselben Welt.
+         const exemplare = [];
+         if (opts.zeilen) {
++            // DER TAKT DER TAFEL ist der Takt der Werkbank und sein Bild (`__werkTakt`; die Tafel misst nur in ihr): bis 31.10. schlief
++            // ein eigener Zwilling je Takt 50 ms — an Genesis trugen die rund 680 Takte einer Tafel (die gesetzten Exemplare, das Auge
++            // der Stufen je Zeile und Uhr) 34 s Schlaf, nie das Werk; Bedingung und Zahl der Takte bleiben
+             const ticke = async (n, fertig) => {
+-                for (let i = 0; i < n && !fertig(); i++) {
+-                    try {
+-                        window.__buehne();
+-                        if (window.__ortSchritt) window.__ortSchritt();
+-                        r._gameLoopTick(performance.now());
+-                    } catch {}
+-                    await sleep(50);
+-                }
++                for (let i = 0; i < n && !fertig(); i++) await window.__werkTakt();
+             };
+             for (const z of opts.zeilen) {
+                 const ex = (z.welt && z.welt.exemplar) || {};
+@@ -623,14 +618,18 @@ function albedoSicht(opts) {
+                     );
+                 }
+                 ausschnitteFort();
+-                // Die Selbst-Eichung der Tafel: die 18-%-Karte liest 0,180 (sonst ist kein Wert der Tafel eine Albedo).
+-                cam.position.copy(karte.position).add(new T.Vector3(0, 0, 2.2));
+-                cam.lookAt(karte.position);
+-                [cam.near, cam.far] = kamAlt.nf;
+-                cam.updateProjectionMatrix();
+-                cam.updateMatrixWorld(true);
+-                const sk = await schuss((m) => m === karte);
+-                ergebnisse.push(window.__albedoAuswerten(sk.hell, sk.dunkel, W, H, 0, "graukarte"));
++                // Die Selbst-Eichung der Tafel: die 18-%-Karte liest 0,180 (sonst ist kein Wert der Tafel eine Albedo) — im Gang, der
++                // sie liest (`opts.eichen`, die Werkbank: der Gang der übrigen Zeilen); bis 31.10. schoss jeder Gang der Tafel sie, 20
++                // von 21 Karten las keiner
++                if (opts.eichen) {
++                    cam.position.copy(karte.position).add(new T.Vector3(0, 0, 2.2));
++                    cam.lookAt(karte.position);
++                    [cam.near, cam.far] = kamAlt.nf;
++                    cam.updateProjectionMatrix();
++                    cam.updateMatrixWorld(true);
++                    const sk = await schuss((m) => m === karte);
++                    ergebnisse.push(window.__albedoAuswerten(sk.hell, sk.dunkel, W, H, 0, "graukarte"));
++                }
+             }
+         } finally {
+             ausschnitteFort();
+@@ -679,10 +678,15 @@ function linsenZiel(W, H) {
+     return {
+         rt,
+         zeichne,
++        // DIE LESUNG in einer Schleife (w4-stationen-schnell-a, 31.10.; dieselbe Wandlung je Element, dieselben Zahlen): bis dahin
++        // füllte `Float32Array.from` mit Rückruf je Element (Node, 640 × 400: 46 → 6 ms je Pass, die Albedo-Tafel ~385 Pässe)
+         lies: async () => {
+             const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H),
+                 s = px.length > W * 4 * H ? Math.ceil(W / 32) * 128 : W * 4;
+-            return Float32Array.from({ length: W * 4 * H }, (_x, i) => T.DataUtils.fromHalfFloat(px[((i / (W * 4)) | 0) * s + (i % (W * 4))]));
++            const aus = new Float32Array(W * 4 * H);
++            for (let i = 0; i < aus.length; i++)
++                aus[i] = T.DataUtils.fromHalfFloat(px[((i / (W * 4)) | 0) * s + (i % (W * 4))]);
++            return aus;
+         },
+         bundles: window.__bundlesNeu, // das EINE Bündel-Neu der Seite (welt-boot)
+         // DIE RUHE DER LINSE: ihre Karten, Kugeln und Licht-Varianten sind neue Stoffe und Programme — der erste Render baut die
+diff --git a/scripts/werkbank.cjs b/scripts/werkbank.cjs
+index 05063696..e7451999 100644
+--- a/scripts/werkbank.cjs
++++ b/scripts/werkbank.cjs
+@@ -856,7 +856,9 @@ async function starte() {
+             }));
+         for (const i of [AUSGABE_INSTALL, LL.LINSEN_INSTALL, ZAEHLER_INSTALL, BAND.EINSCHWING_INSTALL, FLUSS_INSTALL, DIAET.DIAET_INSTALL, SICHT.SICHT_INSTALL])
+             await page.evaluate(i);
+-        // DER TAKT DER WERKBANK: die Bühne, der Ort und ein Takt des Loops (ein Wurf des Loops bricht die Probe nicht); dazu die
++        // DER TAKT DER WERKBANK: die Bühne, der Ort und ein Takt des Loops (ein Wurf des Loops bricht die Probe nicht), sein
++        // Versprechen ist das nächste Bild — wer im Schritt der Seite taktet (Ort, Band, Albedo-Tafel), wartet darauf, nie an der
++        // Wanduhr (Lehre 26; bis 31.10. schliefen Band und Tafel je Takt 50 ms, der Ort trug denselben Takt als Zwilling); dazu die
+         // ungebauten Werke in der Mesh-Zone (`architectureCullingRadius` um den Spieler)
+         await page.evaluate(() => {
+             // DER LOOP der Werkbank: an (der Spiel-Loop über rAF) oder aus (die Welt steht zwischen den Befehlen)
+@@ -867,6 +869,7 @@ async function starte() {
+                     if (window.__ortSchritt) __ortSchritt();
+                     r._gameLoopTick(performance.now());
+                 } catch {}
++                return new Promise(requestAnimationFrame);
+             };
+             window.__ungebaut = (r = anazhRealm, st = r.state, pm = st.playerMesh.position) =>
+                 (st.architectures || []).filter(
+@@ -2263,15 +2266,15 @@ async function starte() {
+                     // DIE WELT-SEITE DER ALBEDO-TAFEL: dieselbe Linse, je Tafel-Zeile Exemplar · Klasse · Stoff.
+                     const t = AT.ladeTafel();
+                     // DAS AUGE DER STUFE (`exemplar.stufe`, K63-n7, S8) wählt die Stufe JEDES Exemplars neu — jede solche Zeile misst in ihrem eigenen Gang NACH
+-                    // den übrigen, die Karte der Eichung liest der erste Gang
++                    // den übrigen, die Karte der Eichung liest der erste Gang — nur er schießt sie (`eichen`)
+                     // DIE UHR-SPALTEN (`uhren`, material.K3 Staffel 2): jede Stufen-Zeile misst zu jeder Uhr der Tafel — die erste ist
+                     // die Bühne (Mittag), jede weitere steht als `<id>@<uhr>`
+                     const nahZ = t.zeilen.filter((z) => Number.isInteger(z.welt.exemplar.stufe)),
+                         liste = [];
+                     for (const uhr of t.uhren)
+                         for (const zeilen of [...(uhr === 0.5 ? [t.zeilen.filter((z) => !nahZ.includes(z))] : []), ...nahZ.map((z) => [z])])
+-                            for (const e of await seite("__albedoSicht", { zeilen, w: 640, h: 400, uhr }))
+-                                if (e.name !== "graukarte" || zeilen.length > 1) liste.push(uhr === 0.5 ? e : Object.assign(e, { id: e.id + "@" + uhr }));
++                            for (const e of await seite("__albedoSicht", { zeilen, w: 640, h: 400, uhr, eichen: zeilen.length > 1 }))
++                                liste.push(uhr === 0.5 ? e : Object.assign(e, { id: e.id + "@" + uhr }));
+                     const ordner = path.resolve(b.ordner || ablage("albedo-tafel"));
+                     fs.mkdirSync(ordner, { recursive: true });
+                     const welt = {};
+-- 
+2.43.0
+
