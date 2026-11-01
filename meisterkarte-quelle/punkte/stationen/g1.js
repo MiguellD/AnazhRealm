@@ -1,7 +1,8 @@
 // Stationen der Gruppe I (src/g1.js): je Kriterium und Staffel EINE Station — Befehl im Spiel-Baum am SHA, Urteil über
 // seine Ausgabe, Pfad für R6. Format und Regeln: punkte/punkte.cjs (Kopf).
 // Erfasst ist jedes Kriterium der Gruppe mit Punkten (gelaende K1–K5, wetter K1 K2 K3 K5, physik K1 K2, feld K2 K3, stoffe K2 K3;
-// physik K2 ist zugleich das Ziel des Zweigs kontakt-tempo). Die Messschuld M30–M43 trägt kein Kriterium der Gruppe I.
+// physik K2 ist zugleich das Ziel des Zweigs kontakt-tempo); dazu (p3-stationen-g12) physik K4 K5, stoffe K4, wetter K4 und feld K5
+// über die EINE Welt-Probe (weltProbeLauf). Die Messschuld M30–M43 trägt kein Kriterium der Gruppe I.
 // Was kein Werkzeug im Spiel-Baum misst, steht NICHT in der Liste (der Läufer verlangt ein argv), sondern in
 // `module.exports.fehlt` mit befehl: null und dem Grund — das Kriterium bleibt dort Hand-Buchung, bis das Werkzeug steht.
 "use strict";
@@ -117,6 +118,518 @@ const K2_PROBE = {
     mutiert: true,
     
 };
+
+// ───────── DIE WELT-PROBE (p3-stationen-g12, 01.11.): sieben Kriterien ohne Station in EINER Welt am Null-Renderer ─────────
+// physik.K4 · physik.K5 · stoffe.K4 · wetter.K4 · feld.K5 (hier) und luftwasser.K3 · luftwasser.K4 (stationen/g2.js) messen, was
+// die Welt dem Spieler hält, zeichnet oder an den Leib gibt — gelesen an den Lesern des Spiels (die Hand `heldMesh`, die Gelenke
+// des Leibs, die Strömung `_waterFlowAt`, die Täter-Klasse `_taeterKlasse`, die gezeichnete Nah-Streu, der Boden-Leser
+// `_bodenSichtAt` mit dem Schnee-Gesetz des Kerns, die Vertex-Farben, aus denen die Welt ihre Albedo liest — Lehre 19). Der Lauf
+// bootet die Welt EINMAL (Produktions-Seite, statikServer auf {PORT}), dann je Probe ihre Seiten-Funktion; die Zeile
+// „WELTPROBE <name> {…}“ und {AUS} tragen das Maß. Die Stationen beider Dateien tragen DENSELBEN Befehl: Zwillinge, EIN Lauf.
+// Die Reihe ist die Abhängigkeit: Saison, Uhr und Feld setzt jede Probe selbst; die mit Spielzeit-Sprung (alter, schnee) zuletzt.
+// DER GRUND jeder Probe (in der Seite): der Takt des Spiels (`_gameLoopTick`, 60 Hz), Stehen an einem Ort (die Welt schwingt ein,
+// `__weltStehtNach`), der Spielzeit-Sprung in Tagen über das Wort der Uhr (`setTimeOfDay`, je 6 h drei Takte — der Tag zählt
+// `_uhrSetzen`), das Wetter trocken in Ruhe (sonnig, der Halt, die Nässe am Fixpunkt).
+function weltGrund(r, T) {
+    const s = r.state;
+    const A = r.constructor;
+    let t = performance.now();
+    s.perfRegulator = false;
+    const takt = (n = 1) => {
+        for (let i = 0; i < n; i++) r._gameLoopTick((t += 1000 / 60));
+    };
+    const y = (x, z) => r._voxelSurfaceY(x, z);
+    const stehen = async (x, z) => {
+        s.playerMesh.position.set(x, y(x, z) + A.PLAYER_FOOT_OFFSET, z);
+        s.playerVel.setValue(0, 0, 0);
+        await window.__weltStehtNach(() => takt());
+        takt(30);
+    };
+    const tage = (n) => {
+        for (let k = 0; k < n * 4; k++) {
+            r.setTimeOfDay((s.timeOfDay + 0.25) % 1, "regler");
+            takt(3);
+        }
+    };
+    const trocken = () => {
+        r._setWeather("sunny", "human");
+        s.weatherEffectTime = -1e9;
+        r._naesseTakt(1e6);
+        r.setTimeOfDay(0.5, "regler");
+        takt(2);
+    };
+    const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+    // DIE GEZEICHNETE NAH-STREU (feld.K5, luftwasser.K4): je Senke ihre gezeichneten Glieder (`bloecke[].ids` über den Kacheln
+    // `kacheln.items` — dieselbe Zählung wie feld.K4, diag-stand-takt) am Ort `drin(x, z)`; Blumen = Senken der Art `blume*` (die
+    // Streu wählt sie auf lebendigem Boden, stamm/vegetation-streu.js)
+    const streu = (drin) => {
+        const ns = s.nahStreu;
+        const n = { alle: 0, blumen: 0 };
+        if (!ns) return n;
+        for (const a of ns.senken.values())
+            for (const [key, b] of a.bloecke) {
+                const k = ns.kacheln.get(key);
+                if (!k) continue;
+                const ids = new Set(b.ids);
+                for (const it of k.items)
+                    if (ids.has(it.id) && drin(it.x, it.z)) {
+                        n.alle++;
+                        if (/^blume/.test(a.preset || "")) n.blumen++;
+                    }
+            }
+        return n;
+    };
+    return { s, A, takt, y, stehen, tage, trocken, r3, streu };
+}
+// DER LAUF (im Spiel-Baum, cwd; Node): argv {AUS} {PORT} und die Proben als JSON [[name, Seiten-Funktion, Optionen]]; die Optionen
+// tragen die Messorte des Haushalts (scripts/lib/welt-orte.cjs, `messort`). Ein Wurf einer Probe ist ihr Fehler beim Namen, nie
+// der Abbruch der übrigen.
+async function weltProbeLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const { statikServer, nullSeite, warteAufWelt } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const { messort } = require(path.resolve("scripts/lib/welt-orte.cjs"));
+    const [aus, port, grund, probenText] = process.argv.slice(1);
+    const orte = Object.fromEntries(["wiese", "dorf"].map((id) => [id, messort(id)]));
+    const erg = { proben: {}, fehler: [] };
+    const server = statikServer();
+    let browser = null;
+    try {
+        await server.lausche(Number(port));
+        const ns = await nullSeite({ frist: 1800000 });
+        browser = ns.browser;
+        const seite = ns.page;
+        seite.setDefaultTimeout(1200000);
+        seite.on("pageerror", (e) => erg.fehler.length < 8 && erg.fehler.push(String(e.message || e).split("\n")[0].slice(0, 200)));
+        await server.zeige(seite, 240000, "index.html", "networkidle0");
+        await warteAufWelt(seite, 300000);
+        await seite.evaluate(async () => {
+            while (!(window.anazhRealm && window.anazhRealm.erwacht)) await new Promise((ok) => setTimeout(ok, 50));
+            await window.anazhRealm.erwacht;
+            window.anazhRealm.state.renderer.setAnimationLoop(null);
+        });
+        for (const [name, fn, o] of JSON.parse(probenText)) {
+            const t0 = Date.now();
+            let e;
+            try {
+                e = await seite.evaluate("(" + fn + ")(window.anazhRealm, THREE, " + JSON.stringify(Object.assign({ orte }, o)) + ", (" + grund + ")(window.anazhRealm, THREE))");
+            } catch (x) {
+                e = { fehler: String((x && x.message) || x).split("\n")[0].slice(0, 300) };
+            }
+            e = Object.assign({}, e || { fehler: "die Probe gab nichts zurück" }, { sek: Math.round((Date.now() - t0) / 100) / 10 });
+            erg.proben[name] = e;
+            console.log("WELTPROBE " + name + " " + JSON.stringify(e));
+        }
+    } catch (x) {
+        erg.fehler.push(String((x && x.message) || x).split("\n")[0].slice(0, 300));
+    } finally {
+        if (browser) await browser.close().catch(() => {});
+        server.close();
+    }
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+    console.log("WELTPROBE-ENDE " + JSON.stringify({ proben: Object.keys(erg.proben), fehler: erg.fehler }));
+}
+
+// physik.K4 — DAS SEIL AM LEIB: die Schmiede der Welt (ihre Gattungen als Baupläne `klinge_<id>` im Buch) und das Seil darin
+// (Flegel, Kette, Morgenstern: ein Glied hängt am Griff). Gibt es eines, hält der Spieler es (`equipHeld`, die Studio-Gestalt in der
+// Hand), geht 1,5 s und bleibt stehen; 3 s lang je Takt die Lage jedes Teils im Rahmen der Hand: der Schwung (die größte Abweichung
+// eines Teils von seiner Lage beim Halt), die Länge Hand → fernstes Teil (ihr Band über die Takte) und die Energie des fernsten
+// Teils (mittleres v² in der ersten gegen die letzte Sekunde).
+async function seilProbe(r, T, o, G) {
+    const { s, takt, stehen, r3 } = G;
+    const pm = s.playerMesh;
+    for (let i = 0; i < 600 && !Object.keys(s.blueprints || {}).some((k) => /^klinge_/.test(k)); i++) takt(), await new Promise((ok) => setTimeout(ok, 10));
+    const klingen = Object.keys(s.blueprints || {}).filter((k) => /^klinge_/.test(k));
+    const seile = klingen.filter((k) => /flegel|seil|kette|morgenstern|flail/i.test(k));
+    const aus = { klingen: klingen.length, seile, je: {} };
+    if (!seile.length) return Object.assign(aus, { namen: klingen.map((k) => k.slice(7)) });
+    await stehen(o.orte.wiese.x, o.orte.wiese.z);
+    for (const name of seile) {
+        r.equipHeld(name);
+        let h = null;
+        for (let i = 0; i < 400 && !((h = pm.userData && pm.userData.heldMesh) && h.userData && h.userData.foundryHeld); i++) takt(), await new Promise((ok) => setTimeout(ok, 10));
+        if (!h) {
+            aus.je[name] = { fehler: "keine Gestalt in der Hand" };
+            continue;
+        }
+        const teile = [];
+        h.traverse((m) => m.isMesh && m !== h && teile.push(m));
+        const inv = new T.Matrix4();
+        const lage = () => {
+            h.updateMatrixWorld(true);
+            inv.copy(h.matrixWorld).invert();
+            return teile.map((m) => new T.Box3().setFromObject(m).getCenter(new T.Vector3()).applyMatrix4(inv));
+        };
+        s.keys.w = true;
+        takt(90);
+        s.keys.w = false;
+        const L0 = lage();
+        const fern = L0.reduce((b, p, i) => (p.length() > L0[b].length() ? i : b), 0);
+        let schwung = 0;
+        const laengen = [];
+        const v2 = [];
+        let vor = L0;
+        for (let k = 0; k < 180; k++) {
+            takt();
+            const L = lage();
+            L.forEach((p, i) => (schwung = Math.max(schwung, p.distanceTo(L0[i]))));
+            laengen.push(L[fern].length());
+            v2.push(L[fern].distanceToSquared(vor[fern]) * 3600);
+            vor = L;
+        }
+        const mittel = (a) => a.reduce((x, y) => x + y, 0) / Math.max(1, a.length);
+        aus.je[name] = {
+            teile: teile.length,
+            schwungM: r3(schwung),
+            laengeM: [r3(Math.min(...laengen)), r3(Math.max(...laengen))],
+            energie: [r3(mittel(v2.slice(0, 60))), r3(mittel(v2.slice(120)))],
+        };
+        r.equipHeld(null);
+    }
+    return aus;
+}
+// das Urteil (physik.K4#1): ein Seil der Schmiede am Leib — es schwingt (≥ 5 cm im Rahmen der Hand), die Länge hält ±2 %, die
+// Energie fällt (letzte Sekunde ≤ ½ der ersten, die erste > 0)
+function seilUrteil(e) {
+    if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE seil" };
+    if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler };
+    if (!e.seile || !e.seile.length)
+        return { gruen: false, zahl: "kein Seil am Leib: 0 von " + e.klingen + " Gattungen der Schmiede tragen ein Seil (" + (e.namen || []).join(", ") + ")" };
+    const ok = Object.entries(e.je).filter(([, x]) => !x.fehler && x.schwungM >= 0.05 && x.laengeM[1] <= 1.02 * x.laengeM[0] && x.energie[0] > 0 && x.energie[1] <= 0.5 * x.energie[0]);
+    return {
+        gruen: ok.length > 0,
+        zahl: Object.entries(e.je).map(([n, x]) => n + (x.fehler ? " " + x.fehler : " Schwung " + x.schwungM + " m, Länge " + x.laengeM.join("–") + " m, v² " + x.energie.join(" → "))).join(" · ") +
+            " (Soll: Schwung ≥ 0,05 m, Länge ±2 %, v² letzte ≤ ½ erste Sekunde)",
+    };
+}
+
+// physik.K5 — DER STOSS IM GANG: an der Mess-Wiese geht der Spieler (die Taste w, der Takt des Spiels) 1,5 s, dann wirkt eine
+// Kraft von 200 N für 0,2 s quer zur Gier auf seinen Leib — Δv = F·dt / m je Takt in die Geschwindigkeit, die die Bewegung
+// integriert (`playerVel`), m die Masse des EINEN Impuls-Gesetzes (`_leibMasse`) —, und er geht 2,5 s weiter. Derselbe Gang ohne
+// Stoß ist die Bahn B. Gemessen je Takt die Wurzel und die Knöchel (`ankle1`, `ankle-1`, koerper-core) quer zur Gier gegen B: der
+// Ausfall (die größte Abweichung eines Knöchels in Stoß-Richtung), die Erholung (ab wann die Wurzel quer wieder mit B geht, ≤ 5 cm/s)
+// und der Sturz (die Wurzel ≥ 0,3 m unter B oder der Leib tot). Die Mutanten: die Gegen-Richtung (der Ausfall folgt ihr) und die
+// Masse ×2 (der Ausfall wird kleiner).
+async function stossProbe(r, T, o, G) {
+    const { s, A, takt, stehen, r3 } = G;
+    const pm = s.playerMesh;
+    let x0 = o.orte.wiese.x;
+    const z0 = o.orte.wiese.z;
+    for (let i = 0; i < 20 && !r._landAt(x0, z0, 2); i++) x0 += 12;
+    const masse0 = r._leibMasse.bind(r);
+    const knoechel = [];
+    pm.traverse((n) => /^ankle-?1$/.test(n.name) && knoechel.push(n));
+    if (!knoechel.length) return { fehler: "kein Knöchel (ankle1/ankle-1) am Leib des Spielers" };
+    const gang = async (kraft, richtung, massenFaktor) => {
+        r._leibMasse = (k) => masse0(k) * (k === pm ? massenFaktor : 1);
+        try {
+            await stehen(x0, z0);
+            s.yaw = 0;
+            const quer = new T.Vector3(Math.cos(s.yaw), 0, -Math.sin(s.yaw));
+            const m = r._leibMasse(pm);
+            s.keys.w = true;
+            takt(90);
+            const bahn = [];
+            const w = new T.Vector3();
+            for (let k = 0; k < 162; k++) {
+                if (kraft && k < 12) {
+                    const dv = (kraft * richtung * (1 / 60)) / m;
+                    const v = s.playerVel;
+                    v.setValue(v.x() + quer.x * dv, v.y(), v.z() + quer.z * dv);
+                }
+                takt();
+                pm.updateMatrixWorld(true);
+                bahn.push([pm.position.dot(quer), pm.position.y, ...knoechel.map((n) => n.getWorldPosition(w).dot(quer))]);
+            }
+            s.keys.w = false;
+            return { m, bahn, tot: !!(s.player && s.player.dead) };
+        } finally {
+            r._leibMasse = masse0;
+        }
+    };
+    const B = await gang(0, 1, 1);
+    const lesen = (P, richtung) => {
+        let ausfall = 0;
+        let quer = 0;
+        let erholt = null;
+        let sturz = P.tot;
+        for (let k = 0; k < P.bahn.length; k++) {
+            const [q, h, ...f] = P.bahn[k];
+            const [qb, hb, ...fb] = B.bahn[k];
+            quer = Math.max(quer, richtung * (q - qb));
+            f.forEach((x, i) => (ausfall = Math.max(ausfall, richtung * (x - fb[i]))));
+            if (h < hb - 0.3) sturz = true;
+            const v = k > 0 ? Math.abs(q - qb - (P.bahn[k - 1][0] - B.bahn[k - 1][0])) * 60 : 1;
+            if (k >= 12 && v <= 0.05 && erholt === null) erholt = k / 60;
+            if (v > 0.05) erholt = null;
+        }
+        return { masse: r3(P.m), ausfallM: r3(ausfall), querM: r3(quer), erholtS: erholt === null ? null : r3(erholt), sturz };
+    };
+    const echt = lesen(await gang(200, 1, 1), 1);
+    const gegen = lesen(await gang(200, -1, 1), -1);
+    const schwer = lesen(await gang(200, 1, 2), 1);
+    return { ort: [r3(x0), r3(z0)], knoechel: knoechel.length, echt, gegen, schwer };
+}
+// das Urteil (physik.K5#1): Ausfallschritt ≥ 10 cm in Stoß-Richtung, Erholung ≤ 1,5 s, kein Sturz; die Gegen-Richtung zieht den
+// Ausfall mit (≥ 10 cm auf der anderen Seite), die doppelte Masse macht ihn kleiner (≤ 0,8 ×) — eine abgespielte Stolper-Animation
+// (Schlupfloch der Staffel) folgte weder Richtung noch Masse
+function stossUrteil(e) {
+    if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE stoss" };
+    if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler };
+    const [a, g, m] = [e.echt || {}, e.gegen || {}, e.schwer || {}];
+    const rot = [];
+    if (!(a.ausfallM >= 0.1)) rot.push("kein Ausfallschritt");
+    if (!(a.erholtS !== null && a.erholtS <= 1.5)) rot.push("keine Erholung ≤ 1,5 s");
+    if (a.sturz) rot.push("Sturz");
+    if (!(g.ausfallM >= 0.1)) rot.push("die Gegen-Richtung zieht nicht");
+    if (!(a.ausfallM > 0 && m.ausfallM <= 0.8 * a.ausfallM)) rot.push("die Masse ×2 zieht nicht");
+    const z = (x) => "Ausfall " + x.ausfallM + " m, Wurzel quer " + x.querM + " m, erholt " + (x.erholtS === null ? "nie" : x.erholtS + " s") + (x.sturz ? ", STURZ" : "");
+    return {
+        gruen: !rot.length,
+        zahl: "200 N × 0,2 s quer im Gang (" + a.masse + " kg): " + z(a) + " · Gegen-Richtung " + z(g) + " · Masse ×2 " + z(m) +
+            (rot.length ? " · ROT " + rot.join(", ") : "") + " (Soll Ausfall ≥ 0,1 m, ≤ 1,5 s, kein Sturz)",
+    };
+}
+
+// feld.K5 — DER PFLEGE-AKT AM ORT: die Zelle des Lebens-Felds (LIFE_FIELD.cell) unter der Mess-Wiese, der Spieler am Rand des
+// Blocks; gezählt die gezeichnete Nah-Streu (alle, Blumen) in der Mitte des 3×3-Blocks und in der Nachbarzelle daneben (zwei Zellen
+// weiter, außerhalb des Blocks) — vorher, nach 60 s Ruhe (das Rauschen) und 60 s nach dem Akt (die DSL-Op `deposit_life` am Ort der
+// Mitte, Menge LIFE_FIELD.max, über den EINEN Weg `dslRun`). Dazu das Feld, das der Akt schreibt (`auraAt.lebendig`): ohne Hub
+// wäre die Probe blind.
+async function feldProbe(r, T, o, G) {
+    const { s, A, takt, stehen, r3 } = G;
+    const C = A.LIFE_FIELD.cell;
+    const cx = Math.floor(o.orte.wiese.x / C);
+    const cz = Math.floor(o.orte.wiese.z / C);
+    const zelle = (i) => [(cx + i) * C, (cz) * C];
+    const drin = (i) => (x, z) => x >= zelle(i)[0] && x < zelle(i)[0] + C && z >= zelle(i)[1] && z < zelle(i)[1] + C;
+    const mitte = [(cx + 0.5) * C, (cz + 0.5) * C];
+    const nachbar = [(cx + 2.5) * C, (cz + 0.5) * C];
+    const lies = () => ({
+        mitte: G.streu(drin(0)),
+        nachbar: G.streu(drin(2)),
+        feld: [r3(r.auraAt(mitte[0], mitte[1]).lebendig), r3(r.auraAt(nachbar[0], nachbar[1]).lebendig)],
+    });
+    const stand = [(cx + 1.5) * C, (cz + 0.5) * C];
+    await stehen(stand[0], stand[1]);
+    const vor = lies();
+    takt(3600);
+    const ruhe = lies();
+    s.playerMesh.position.set(mitte[0], G.y(mitte[0], mitte[1]) + A.PLAYER_FOOT_OFFSET, mitte[1]);
+    const akt = r.dslRun(["deposit_life", null, A.LIFE_FIELD.max], { source: "spieler" });
+    await stehen(stand[0], stand[1]);
+    takt(3600);
+    const nach = lies();
+    return { zelleM: C, mitte, nachbar, vor, ruhe, nach, akt: !!akt };
+}
+// das Urteil (feld.K5#1): der Akt hebt das Feld der Mitte (≥ 0,1), die gezeichnete Streu am Ort wächst — Blumen +≥ 3 oder alle
+// +≥ 10 % (je über dem Doppelten des Rauschens) —, die Nachbarzelle bleibt im Rauschen (|Δ| ≤ Rauschen + 1); ohne Streu am Ort blind
+function feldUrteil(e) {
+    if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE feld" };
+    if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler };
+    const { vor, ruhe, nach } = e;
+    const d = (a, b, k, w) => b[w][k] - a[w][k];
+    const rausch = Math.max(...["alle", "blumen"].flatMap((k) => ["mitte", "nachbar"].map((w) => Math.abs(d(vor, ruhe, k, w)))));
+    const hub = nach.feld[0] - ruhe.feld[0];
+    const blumen = d(ruhe, nach, "blumen", "mitte");
+    const alle = d(ruhe, nach, "alle", "mitte");
+    const gesehen = blumen >= Math.max(3, 2 * rausch + 1) || alle >= Math.max(0.1 * ruhe.mitte.alle, 2 * rausch + 1, 5);
+    const ruhig = ["alle", "blumen"].every((k) => Math.abs(d(ruhe, nach, k, "nachbar")) <= rausch + 1);
+    const blind = !(ruhe.mitte.alle + ruhe.nachbar.alle > 0);
+    const rot = [hub >= 0.1 ? null : "der Akt hebt das Feld nicht", gesehen ? null : "am Ort nichts gesehen", ruhig ? null : "die Nachbarzelle bewegt sich",
+        blind ? "keine gezeichnete Streu am Ort" : null].filter(Boolean);
+    return {
+        gruen: !rot.length,
+        zahl: "Feld der Mitte " + ruhe.feld[0] + " → " + nach.feld[0] + " · Streu der Mitte " + ruhe.mitte.alle + " → " + nach.mitte.alle + " (Blumen " + ruhe.mitte.blumen +
+            " → " + nach.mitte.blumen + "), Nachbarzelle " + ruhe.nachbar.alle + " → " + nach.nachbar.alle + " (Blumen " + ruhe.nachbar.blumen + " → " + nach.nachbar.blumen +
+            "), Rauschen ±" + rausch + (rot.length ? " · ROT " + rot.join(", ") : "") + " (Soll: Blumen +≥ 3 oder alle +≥ 10 % am Ort, Nachbar im Rauschen)",
+    };
+}
+
+// stoffe.K4 — DIE VERWITTERUNG NACH 30 TAGEN: am Dorf des Haushalts die Albedo, aus der die Welt ihr Bild zeichnet (Lehre 19:
+// die Welt liest Vertex-Farben — je Glied im Umkreis von 60 m die Vertex-Farbe × die Stoff-Farbe × die Farbe der Instanz; die Sätze
+// der Welt (`bodenSatz`, `bauSatz`, `streuSatz`: Geometrie in Welt-Lage) je Vertex am Ort, eine Instanz an ihrem Ursprung), je Klasse
+// (`_taeterKlasse`, ohne Himmel, Wasser und Leiber) und LAGE der Fläche (die Welt-Normale: nord −z, süd +z, oben +y) gemittelt; vorher
+// (zweimal: das Rauschen) und nach einem Spielzeit-Sprung von 30 Tagen (das Wetter läuft frei), jedes Mal trocken in Ruhe zu Mittag
+// (die Nässe des Regens zählt wetter.K2, nie das Alter). Die Δ je Klasse und Lage (größter Kanal, linear).
+async function alterProbe(r, T, o, G) {
+    const { s, takt, stehen, tage, trocken, r3 } = G;
+    const D = o.orte.dorf;
+    s.autoSeason = false;
+    r.setSeason("sommer");
+    await stehen(D.x, D.z);
+    const lies = () => {
+        const aus = {};
+        const c = new T.Color();
+        const n = new T.Vector3();
+        const p = new T.Vector3();
+        const nm = new T.Matrix3();
+        const im = new T.Matrix4();
+        const wm = new T.Matrix4();
+        const P = s.playerMesh.position;
+        const sammle = (kl, lage, rgb) => {
+            const e = (aus[kl] ||= {});
+            const q = (e[lage] ||= [0, 0, 0, 0]);
+            q[0] += rgb[0], q[1] += rgb[1], q[2] += rgb[2], q[3]++;
+        };
+        s.scene.traverse((m) => {
+            if (!m.isMesh || !m.visible || !m.geometry || !m.geometry.attributes.normal) return;
+            const kl = r._taeterKlasse(m);
+            if (/^UNBENANNT|^leer:|himmel|sky|wasser|water|^spieler|^bewohner|^tier:|^vogel/i.test(kl)) return;
+            const g = m.geometry;
+            const pos = g.attributes.position;
+            const nor = g.attributes.normal;
+            const col = g.attributes.color;
+            const mc = m.material && !Array.isArray(m.material) && m.material.color ? m.material.color : c.setRGB(1, 1, 1);
+            const inst = m.isInstancedMesh ? Math.min(m.count, 64) : 1;
+            for (let i = 0; i < inst; i++) {
+                if (m.isInstancedMesh) m.getMatrixAt(i, im), wm.multiplyMatrices(m.matrixWorld, im);
+                else wm.copy(m.matrixWorld);
+                const ox = wm.elements[12], oz = wm.elements[14];
+                if (m.isInstancedMesh && Math.hypot(ox - P.x, oz - P.z) > 60) continue;
+                nm.getNormalMatrix(wm);
+                const ic = m.isInstancedMesh && m.instanceColor ? [m.instanceColor.getX(i), m.instanceColor.getY(i), m.instanceColor.getZ(i)] : [1, 1, 1];
+                const schritt = m.isInstancedMesh ? Math.max(1, Math.floor(pos.count / 400)) : Math.max(1, Math.floor(pos.count / 300000));
+                for (let v = 0; v < pos.count; v += schritt) {
+                    if (!m.isInstancedMesh && (p.fromBufferAttribute(pos, v).applyMatrix4(wm), Math.hypot(p.x - P.x, p.z - P.z) > 60)) continue;
+                    n.fromBufferAttribute(nor, v).applyMatrix3(nm).normalize();
+                    const lage = n.y > 0.7 ? "oben" : n.z < -0.5 ? "nord" : n.z > 0.5 ? "sued" : null;
+                    if (!lage) continue;
+                    const vc = col ? [col.getX(v), col.getY(v), col.getZ(v)] : [1, 1, 1];
+                    sammle(kl, lage, [vc[0] * mc.r * ic[0], vc[1] * mc.g * ic[1], vc[2] * mc.b * ic[2]]);
+                }
+            }
+        });
+        for (const e of Object.values(aus)) for (const [l, q] of Object.entries(e)) e[l] = q[3] ? [q[0] / q[3], q[1] / q[3], q[2] / q[3], q[3]] : null;
+        return aus;
+    };
+    trocken();
+    const vor = lies();
+    trocken();
+    const zwei = lies();
+    tage(30);
+    trocken();
+    await stehen(D.x, D.z);
+    const nach = lies();
+    const tag = (s.worldMeta && s.worldMeta.tag) || 0;
+    const delta = (a, b) => (a && b ? Math.max(...[0, 1, 2].map((k) => Math.abs(b[k] - a[k]))) : null);
+    const je = {};
+    for (const kl of Object.keys(vor)) {
+        if (!nach[kl]) continue;
+        const d = {};
+        for (const l of ["nord", "sued", "oben"]) if (vor[kl][l] && nach[kl][l] && vor[kl][l][3] >= 20) d[l] = r3(delta(vor[kl][l], nach[kl][l]));
+        const rausch = Math.max(0, ...Object.keys(d).map((l) => delta(vor[kl][l], zwei[kl] && zwei[kl][l]) || 0));
+        if (Object.keys(d).length) je[kl] = Object.assign(d, { rausch: r3(rausch) });
+    }
+    return { dorf: [D.x, D.z], tag, klassen: Object.keys(je).length, je };
+}
+// das Urteil (stoffe.K4#1): ≥ 1 Klasse ändert ihre Albedo nach 30 Tagen messbar (größter Kanal ≥ 0,02 über ihrem Rauschen) und
+// abhängig von der Lage (die Lagen der Klasse weichen um ≥ die Hälfte der größten ab) — ein Regler, der alles gleich altern ließe
+// (Schlupfloch der Staffel), ist ROT
+function alterUrteil(e) {
+    if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE alter" };
+    if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler };
+    const liste = Object.entries(e.je || {}).map(([kl, d]) => {
+        const w = ["nord", "sued", "oben"].filter((l) => d[l] != null).map((l) => d[l]);
+        const max = Math.max(...w);
+        return { kl, d, max, spanne: max - Math.min(...w), lagen: w.length };
+    }).sort((a, b) => b.max - a.max);
+    const altert = liste.filter((x) => x.max >= 0.02 + x.d.rausch);
+    const lage = altert.filter((x) => x.lagen >= 2 && x.spanne >= 0.5 * x.max);
+    const z = (x) => x.kl + " " + ["nord", "sued", "oben"].filter((l) => x.d[l] != null).map((l) => l + " " + x.d[l]).join("/");
+    return {
+        gruen: lage.length > 0 && e.tag >= 30,
+        zahl: "Tag " + e.tag + ", " + liste.length + " Klassen im Umkreis 60 m des Dorfs · größte Δ der Albedo nach 30 Tagen: " +
+            (liste.slice(0, 3).map(z).join(" · ") || "keine") + " · " + altert.length + " altern (≥ 0,02), " + lage.length + " nach Lage (Soll ≥ 1)",
+    };
+}
+
+// wetter.K4 — DIE SCHNEE-DECKE MIT TIEFE: die Saison als Wort des Spielers (winter), ein Spielzeit-Sprung von 10 Tagen, dann der
+// nächste Ort über der Schneegrenze der Saison (Ringe um die Mess-Wiese bis 3 km: das Schnee-Gesetz des Kerns an der Makro-Höhe
+// ≥ 0,95, Land); dort die Deckung (je 2 m im Kreis von 20 m der gezeichnete Boden `_bodenSichtAt` und sein Schnee — dasselbe
+// Gesetz mit dem Versatz, den die Welt trägt, `_schneeGilt`, wie der Boden-Leser `_bodenFarbeAt`) und die Tiefe am Fuß (der
+// gezeichnete Boden über der Sohle des stehenden Leibs nach 1 s). Die Gegenprobe: dieselbe Tiefe an der Mess-Wiese im Sommer nach
+// 10 weiteren Tagen (die Schneegrenze zieht mit der Saison hinauf, `_schneeTakt`; ohne Schnee sinkt kein Fuß).
+async function schneeProbe(r, T, o, G) {
+    const { s, A, takt, stehen, tage, r3 } = G;
+    const K = globalThis.__gelaendeCore;
+    const L = r._gelaende();
+    s.autoSeason = false;
+    if (!r.setSeason("winter")) return { fehler: "das Wort winter gilt nicht" };
+    tage(10);
+    const schnee = (x, yy, z) => K.schnee(L, yy, x, z, r._schneeGilt());
+    const W = o.orte.wiese;
+    let ort = null;
+    for (let d = 0; d <= 3000 && !ort; d += 100)
+        for (let k = 0; k < (d ? 32 : 1) && !ort; k++) {
+            const x = W.x + d * Math.cos((k / 32) * 2 * Math.PI);
+            const z = W.z + d * Math.sin((k / 32) * 2 * Math.PI);
+            if (r._landAt(x, z, 1) && schnee(x, r._terrainMacroSurfaceY(x, z), z) >= 0.95) ort = [x, z];
+        }
+    if (!ort) return { fehler: "kein Ort über der Schneegrenze binnen 3 km (Versatz " + r3(r._schneeGilt()) + ")" };
+    const tiefe = async (x, z) => {
+        await stehen(x, z);
+        takt(60);
+        const p = s.playerMesh.position;
+        const b = r._bodenSichtAt(p.x, p.z);
+        return { tiefeM: b == null ? null : r3(b - (p.y - A.PLAYER_FOOT_OFFSET)), schnee: b == null ? null : r3(schnee(p.x, b, p.z)) };
+    };
+    const fuss = await tiefe(ort[0], ort[1]);
+    const versatz = r3(r._schneeGilt());
+    const tag = (s.worldMeta && s.worldMeta.tag) || 0;
+    let n = 0;
+    let weiss = 0;
+    for (let dx = -20; dx <= 20; dx += 2)
+        for (let dz = -20; dz <= 20; dz += 2) {
+            if (dx * dx + dz * dz > 400) continue;
+            const b = r._bodenSichtAt(ort[0] + dx, ort[1] + dz);
+            if (b == null) continue;
+            n++;
+            if (schnee(ort[0] + dx, b, ort[1] + dz) >= 0.5) weiss++;
+        }
+    r.setSeason("sommer");
+    tage(10);
+    const gegen = await tiefe(W.x, W.z);
+    gegen.versatz = r3(r._schneeGilt());
+    r.setSeason("winter");
+    return { ort: ort.map(r3), hoeheM: r3(r._terrainMacroSurfaceY(ort[0], ort[1])), versatz, tag, proben: n, deckung: n ? r3(weiss / n) : null, fuss, gegen };
+}
+// das Urteil (wetter.K4#1): Deckung ≥ 60 % (≥ 100 Proben des gezeichneten Bodens) UND der Fuß ≥ 5 cm unter der Schnee-Fläche; an
+// der Wiese ohne Schnee (< 0,5) sinkt er ≤ 1 cm — ein weißer Multiplikator allein (Schlupfloch der Staffel) trüge keine Tiefe
+function schneeUrteil(e) {
+    if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE schnee" };
+    if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler };
+    const [f, g] = [e.fuss || {}, e.gegen || {}];
+    const rot = [];
+    if (!(e.proben >= 100 && e.deckung >= 0.6)) rot.push("Deckung");
+    if (!(f.tiefeM >= 0.05)) rot.push("der Fuß sinkt nicht");
+    if (!(g.schnee < 0.5 && g.tiefeM != null && g.tiefeM <= 0.01)) rot.push("die Gegenprobe ohne Schnee");
+    return {
+        gruen: !rot.length,
+        zahl: "Winter Tag " + e.tag + " an " + (e.ort || []).join("/") + " (" + e.hoeheM + " m, Versatz " + e.versatz + "): Deckung " + e.deckung + " aus " + e.proben +
+            " Proben, der Fuß " + f.tiefeM + " m unter dem Boden (Schnee " + f.schnee + ") · Sommer an der Wiese " + g.tiefeM + " m (Schnee " + g.schnee + ", Versatz " + g.versatz + ")" +
+            (rot.length ? " · ROT " + rot.join(", ") : "") + " (Soll Deckung ≥ 0,6, Fuß ≥ 0,05 m, ohne Schnee ≤ 0,01 m)",
+    };
+}
+
+// DER BEFEHL der Welt-Probe: der Lauf, der Grund und die Proben [name, Seiten-Funktion] als Text (eine Hilfe der Seite, `helfer`,
+// steht vor der Probe in ihrem Rumpf); `weltZeile` liest das Maß einer Probe aus {AUS} oder der Zeile des Laufs
+const weltBefehl = (proben, helfer = []) => [
+    "node",
+    "-e",
+    "(" + weltProbeLauf + ")()",
+    "{AUS}",
+    "{PORT}",
+    String(weltGrund),
+    JSON.stringify(proben.map(([n, f, o]) => [n, "async (r, T, o, G) => {\n" + helfer.map(String).join("\n") + "\nreturn await (" + f + ")(r, T, o, G);\n}", o || {}])),
+];
+const weltZeile = (j, lauf, name) => (j && j.proben && j.proben[name]) || jsonZeile(lauf.stdout, new RegExp("^WELTPROBE " + name + " "));
+const WELT_G1 = weltBefehl([["seil", seilProbe], ["stoss", stossProbe], ["feld", feldProbe], ["alter", alterProbe], ["schnee", schneeProbe]]);
+const WELT_PFAD = ["stamm/dirigent-*.js", "stamm/daten.js", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs", "spec/profiband/haushalt.json"];
+
+// DIE ROH-AUSGABE der Welt-Probe am main 25ac4c0c (01.11., Cloud, headless): die Proben jeder Station urteilen sie und ihre Mutanten
+const WELT_ROH = {"seil": {"klingen": 22, "seile": [], "je": {}, "namen": ["langschwert", "saebel", "degen", "grossschwert", "dolch", "messer", "langbogen", "kriegsbogen", "reiterbogen", "recurvebogen", "streitkolben", "kriegsaxt", "kriegshammer", "keule", "faellaxt", "spaltmaul", "vorschlaghammer", "beil", "spitzhacke", "spaten", "schaufel", "sichel"]}, "stoss": {"ort": [-280.4, -1045.6], "knoechel": 4, "echt": {"masse": 89.022, "ausfallM": 0.008, "querM": 0.008, "erholtS": 0.2, "sturz": false}, "gegen": {"masse": 89.022, "ausfallM": 0.008, "querM": 0.008, "erholtS": 0.2, "sturz": false}, "schwer": {"masse": 178.043, "ausfallM": 0.004, "querM": 0.004, "erholtS": 0.2, "sturz": false}}, "feld": {"zelleM": 16, "mitte": [-280, -1048], "nachbar": [-248, -1048], "vor": {"mitte": {"alle": 29, "blumen": 26}, "nachbar": {"alle": 30, "blumen": 24}, "feld": [0.855, 0.658]}, "ruhe": {"mitte": {"alle": 29, "blumen": 26}, "nachbar": {"alle": 30, "blumen": 24}, "feld": [0.855, 0.658]}, "nach": {"mitte": {"alle": 29, "blumen": 26}, "nachbar": {"alle": 30, "blumen": 24}, "feld": [1, 0.658]}, "akt": true}, "alter": {"dorf": [-841, -861], "tag": 30, "klassen": 14, "je": {"bodenSatz": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "formationenSatz": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "streuSatz": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "bauSatz": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "f:birke:L0": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "f:eiche:L0": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "f:fichte:L0": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "f:tanne:L0": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "f:birke:L1": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "f:eiche:L1": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "f:fichte:L1": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "f:weide:L1": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "f:strauch:L1": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "f:tanne:L1": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}}}, "schnee": {"ort": [-280.4, -1045.6], "hoeheM": 27.612, "versatz": -160, "tag": 40, "proben": 317, "deckung": 1, "fuss": {"tiefeM": -0.01, "schnee": 1}, "gegen": {"tiefeM": -0.01, "schnee": 0, "versatz": 0}}};
+const weltRoh = (name, aendern) => "WELTPROBE " + name + " " + JSON.stringify(aendern(JSON.parse(JSON.stringify(WELT_ROH[name]))));
 
 module.exports = [
     // ── gelaende.K1 ──
@@ -1911,6 +2424,111 @@ module.exports = [
         ],
         quelle: "1 = Körper fallen und ruhen (5 Kisten ≤ 2 s, Zittern ≤ 1 cm), ein Wagen wirft ein Fass um",
     },
+
+    // ───────── DIE WELT-PROBE (p3-stationen-g12): physik.K4 · physik.K5 · feld.K5 · stoffe.K4 · wetter.K4 — EIN Lauf (Zwillinge),
+    // die Seiten-Proben und Urteile oben (weltProbeLauf). Gefahren 01.11. in der Cloud am main 25ac4c0c (headless, Null-Renderer):
+    // der Boot 15 s, die Proben 0–20 s — jede ROT beim Namen dessen, was der Welt fehlt.
+    // physik.K4 — an main 25ac4c0c ROT: 0 von 22 Gattungen der Schmiede tragen ein Seil (langschwert … sichel), kein Löser am Leib.
+    {
+        kriterium: "physik.K4",
+        staffel: 1,
+        geraet: "headless",
+        befehl: WELT_G1,
+        gpu: false,
+        zeit: false,
+        minuten: 12,
+        urteil: (j, lauf) => seilUrteil(weltZeile(j, lauf, "seil")),
+        proben: [
+            { name: "die Messung am main 25ac4c0c", stdout: weltRoh("seil", (x) => x), gruen: false },
+            { name: "ein Flegel schwingt, die Länge hält, die Energie fällt", stdout: weltRoh("seil", (x) => Object.assign(x, { seile: ["klinge_flegel"], je: { klinge_flegel: { teile: 9, schwungM: 0.31, laengeM: [1.18, 1.2], energie: [0.84, 0.12] } } })), gruen: true },
+            { name: "das Seil starr am Griff (kein Löser)", stdout: weltRoh("seil", (x) => Object.assign(x, { seile: ["klinge_flegel"], je: { klinge_flegel: { teile: 9, schwungM: 0.004, laengeM: [1.2, 1.2], energie: [0, 0] } } })), gruen: false },
+            { name: "das Seil dehnt sich (ein Sinus ohne Länge)", stdout: weltRoh("seil", (x) => Object.assign(x, { seile: ["klinge_flegel"], je: { klinge_flegel: { teile: 9, schwungM: 0.3, laengeM: [1.0, 1.3], energie: [0.8, 0.1] } } })), gruen: false },
+            { name: "der Schwung bleibt (ohne Dämpfung)", stdout: weltRoh("seil", (x) => Object.assign(x, { seile: ["klinge_flegel"], je: { klinge_flegel: { teile: 9, schwungM: 0.3, laengeM: [1.19, 1.2], energie: [0.8, 0.79] } } })), gruen: false },
+        ],
+        pfad: ["stamm/koerper-*.js", "stamm/bau-*.js", "stamm/studio-bruecke.js", "schmiede-core.js", "koerper-core.js", "foundry-core.js", ...WELT_PFAD],
+        quelle: "1 = ein Leser (das Schmiede-Seil schwingt in der Welt am Leib)",
+    },
+    // physik.K5 — an main 25ac4c0c ROT: der Leib (89,0 kg) weicht 200 N × 0,2 s quer im Gang um 0,008 m (Knöchel 0,008 m), erholt nach 0,2 s;
+    // die Gegen-Richtung 0,008 m, die Masse ×2 0,004 m — die Kapsel trägt keinen Schritt, die Bewegung schluckt den Stoß.
+    {
+        kriterium: "physik.K5",
+        staffel: 1,
+        geraet: "headless",
+        befehl: WELT_G1,
+        gpu: false,
+        zeit: false,
+        minuten: 12,
+        urteil: (j, lauf) => stossUrteil(weltZeile(j, lauf, "stoss")),
+        proben: [
+            { name: "die Messung am main 25ac4c0c", stdout: weltRoh("stoss", (x) => x), gruen: false },
+            { name: "Ausfallschritt, Erholung, Richtung und Masse folgen", stdout: weltRoh("stoss", (x) => Object.assign(x, { echt: { masse: 89, ausfallM: 0.24, querM: 0.18, erholtS: 0.9, sturz: false }, gegen: { masse: 89, ausfallM: 0.23, querM: 0.17, erholtS: 0.9, sturz: false }, schwer: { masse: 178, ausfallM: 0.12, querM: 0.09, erholtS: 0.7, sturz: false } })), gruen: true },
+            { name: "eine abgespielte Stolper-Animation (die Masse zieht nicht)", stdout: weltRoh("stoss", (x) => Object.assign(x, { echt: { masse: 89, ausfallM: 0.24, querM: 0.18, erholtS: 0.9, sturz: false }, gegen: { masse: 89, ausfallM: 0.23, querM: 0.17, erholtS: 0.9, sturz: false }, schwer: { masse: 178, ausfallM: 0.24, querM: 0.18, erholtS: 0.9, sturz: false } })), gruen: false },
+            { name: "er stürzt", stdout: weltRoh("stoss", (x) => Object.assign(x, { echt: { masse: 89, ausfallM: 0.4, querM: 0.5, erholtS: null, sturz: true }, gegen: x.gegen, schwer: x.schwer })), gruen: false },
+        ],
+        pfad: ["stamm/koerper-*.js", "stamm/kreatur-verhalten.js", "koerper-core.js", "tetrapoda-core.js", ...WELT_PFAD],
+        quelle: "1 = ein Stoß von 200 N für 0,2 s beim Gehen führt zu Ausfallschritt und Erholung ≤ 1,5 s ohne Sturz, an einem Gerät",
+    },
+    // feld.K5 — an main 25ac4c0c ROT: der Akt hebt das Feld der Mitte 0,855 → 1, die gezeichnete Streu dort bleibt 29 (26 Blumen), die
+    // Nachbarzelle 30 (24) — die Streu liest das frozen worldFieldAt, nie den Akt.
+    {
+        kriterium: "feld.K5",
+        staffel: 1,
+        geraet: "headless",
+        befehl: WELT_G1,
+        gpu: false,
+        zeit: false,
+        minuten: 12,
+        urteil: (j, lauf) => feldUrteil(weltZeile(j, lauf, "feld")),
+        proben: [
+            { name: "die Messung am main 25ac4c0c", stdout: weltRoh("feld", (x) => x), gruen: false },
+            { name: "die Blumen wachsen am Ort, der Nachbar ruht", stdout: weltRoh("feld", (x) => Object.assign(x, { nach: { mitte: { alle: 36, blumen: 33 }, nachbar: { alle: 30, blumen: 24 }, feld: [1, 0.658] } })), gruen: true },
+            { name: "ein globaler Tint: der Nachbar wächst mit", stdout: weltRoh("feld", (x) => Object.assign(x, { nach: { mitte: { alle: 36, blumen: 33 }, nachbar: { alle: 37, blumen: 31 }, feld: [1, 0.658] } })), gruen: false },
+            { name: "der Akt wirkt nicht aufs Feld (die Probe wäre blind)", stdout: weltRoh("feld", (x) => Object.assign(x, { nach: { mitte: { alle: 36, blumen: 33 }, nachbar: { alle: 30, blumen: 24 }, feld: [0.855, 0.658] } })), gruen: false },
+        ],
+        pfad: ["stamm/feld-*.js", "stamm/vegetation-*.js", "phyto-core.js", ...WELT_PFAD],
+        quelle: "1 = ein Leser sichtbar am Ort an einem Gerät",
+    },
+    // stoffe.K4 — an main 25ac4c0c ROT: nach 30 Tagen (Tag 30) in 14 Klassen um das Dorf (bodenSatz, bauSatz, streuSatz, formationenSatz,
+    // die Bäume) keine Albedo gealtert — größte Δ bauSatz süd 0,001; der Regler `verwitterung` kennt keine Zeit.
+    {
+        kriterium: "stoffe.K4",
+        staffel: 1,
+        geraet: "headless",
+        befehl: WELT_G1,
+        gpu: false,
+        zeit: false,
+        minuten: 12,
+        urteil: (j, lauf) => alterUrteil(weltZeile(j, lauf, "alter")),
+        proben: [
+            { name: "die Messung am main 25ac4c0c", stdout: weltRoh("alter", (x) => x), gruen: false },
+            { name: "Moos auf den Nordflächen des Baus", stdout: weltRoh("alter", (x) => ((x.je.bauSatz = { nord: 0.06, sued: 0.01, oben: 0.02, rausch: 0 }), x)), gruen: true },
+            { name: "ein Regler nach Spielzeit (alles altert gleich)", stdout: weltRoh("alter", (x) => ((x.je.bauSatz = { nord: 0.05, sued: 0.05, oben: 0.05, rausch: 0 }), x)), gruen: false },
+            { name: "kein Sprung (Tag 0)", stdout: weltRoh("alter", (x) => ((x.je.bauSatz = { nord: 0.06, sued: 0.01, oben: 0.02, rausch: 0 }), (x.tag = 0), x)), gruen: false },
+        ],
+        pfad: ["stamm/stoff-*.js", "stamm/bau-*.js", "stamm/gelaende-*.js", "stamm/siedlung-*.js", "stamm/bild-himmel.js", "fachwerk-core.js", "gelaende-core.js", ...WELT_PFAD],
+        quelle: "1 = nach einem Spielzeit-Sprung von 30 Tagen ändert sich ≥ 1 Stoff messbar im Bild, abhängig von Nässe oder Lage",
+    },
+    // wetter.K4 — an main 25ac4c0c ROT: der Winter (Tag 40, die Schneegrenze −160 m) deckt die Mess-Wiese ganz (Deckung 1 aus 317 Proben),
+    // der Fuß steht 0,01 m ÜBER dem Boden — der Leib steht auf dem Gesetz, die Decke trägt keine Tiefe; im Sommer dort kein Schnee.
+    {
+        kriterium: "wetter.K4",
+        staffel: 1,
+        geraet: "headless",
+        befehl: WELT_G1,
+        gpu: false,
+        zeit: false,
+        minuten: 12,
+        urteil: (j, lauf) => schneeUrteil(weltZeile(j, lauf, "schnee")),
+        proben: [
+            { name: "die Messung am main 25ac4c0c", stdout: weltRoh("schnee", (x) => x), gruen: false },
+            { name: "der Fuß sinkt 12 cm in den Schnee", stdout: weltRoh("schnee", (x) => ((x.fuss = { tiefeM: 0.12, schnee: 1 }), x)), gruen: true },
+            { name: "der Fuß sinkt auch ohne Schnee (ein Versatz des Leibs)", stdout: weltRoh("schnee", (x) => ((x.fuss = { tiefeM: 0.12, schnee: 1 }), (x.gegen = { tiefeM: 0.12, schnee: 0, versatz: 0 }), x)), gruen: false },
+            { name: "ein weißer Multiplikator ohne Tiefe", stdout: weltRoh("schnee", (x) => ((x.deckung = 1), x)), gruen: false },
+            { name: "die Decke dünn (Deckung 0,4)", stdout: weltRoh("schnee", (x) => ((x.fuss = { tiefeM: 0.12, schnee: 1 }), (x.deckung = 0.4), x)), gruen: false },
+        ],
+        pfad: ["stamm/bild-himmel.js", "stamm/gelaende-*.js", "stamm/koerper-*.js", "gelaende-core.js", ...WELT_PFAD],
+        quelle: "1 = Schnee-Deckung ≥ 60 % über der Schneegrenze der Saison UND der Fuß sinkt ≥ 5 cm ein, an einer Pose",
+    },
 ];
 
 // ── NICHT FASSBAR (befehl: null): kein Werkzeug im Spiel-Baum misst das Soll dieser Staffel als EIN Befehl am SHA ──
@@ -1919,9 +2537,6 @@ module.exports.fehlt = [
     { kriterium: "wetter.K2", staffel: 2, befehl: null, grund: "Werkzeug und Welt fehlen: werkbank licht --naesse misst nur Ego an Wiese und Dorf — keine Trocken-Kurve, kein Third; die Welt trägt keine Pfütze (stamm/ kennt kein Pfützen-Gesetz, 25.10. an d43cb61c), die Mulden-Korrelation r ≥ 0,5 hätte nichts zu messen" },
     { kriterium: "stoffe.K1", staffel: 2, befehl: null, grund: "nicht gebaut: 7/7 verlangt je Stoff auch Albedo → Luma (das Ausgabe-Bild der echten GPU; headless zählt sie nie), T_zünd für Stein, Eisen, Erde und Wasser (sie brennen nicht), T_schmelz für jeden Stoff außer Wasser (kein Leser einer Phase: Esse, Lava) und μ des Wassers (eine Flüssigkeit trägt keinen Gleitenden); am Zweig stoffe-k1-tafel 4–5 von 7 je Stoff" },
     { kriterium: "physik.K3", staffel: 2, befehl: null, grund: "nicht gebaut (w3t-koerper baute Staffel 1, den EINEN Löser `_freiSchritt`): der Lastpfad bleibt ein Urteil (`stamm/bau-buch.js` `_loadPath`, das Werk stürzt als Pendel um eine Kante, `_werkSturzSchritt`) — kein Teil eines Werks wird ein freier Körper, also kein Einsturz; Trümmer leben nicht über den Reload (der Stand trägt Lage und Gier, nie die Drehung des Körpers); 100 freie Körper wach kosten 9 ms je Sim-Schritt (Node, flacher Boden; Soll 1 ms an der GTX-CPU)" },
-    // DER SPIKE w4-stationen-a (31.10., am main 94c079cb): Kriterien ohne jede Station — was dem Spiel fehlt, beim Namen
-    { kriterium: "wetter.K4", staffel: 1, befehl: null, grund: "unmessbar ohne neues Spiel (Spike w4-stationen-a am main 94c079cb): der Schnee ist eine Boden-Farbe — gelaende-core `schnee` an der Höhe, die Grenze folgt dem Pegel (`schneeVersatz`, `_schneeTakt` in stamm/bild-himmel.js); einen Leser der Schnee-Tiefe am Fuß gibt es nicht, der Leib steht auf dem Gesetz (0 Treffer einsinken/Spur/Schnee-Tiefe im Stamm). Die Tiefe (der Fuß sinkt ≥ 5 cm) ist schon für 1 Pflicht (Schlupfloch der Staffel): ohne Schnee-Decke mit Tiefe misst keine Station" },
-    { kriterium: "physik.K4", staffel: 1, befehl: null, grund: "unmessbar ohne neues Spiel (Spike w4-stationen-a am main 94c079cb): kein Seil-, Tuch- oder Weich-Löser in Stamm und Kernen — `stepRope` (8 Verlet-Segmente) lebt nur in worlds/schmiede/schmiede.js, das Seil des Brunnens ist starre Geometrie (fachwerk-core `ausDreh`), das Tuch am Leib (Rolle `segel`, stamm/koerper-leib.js) dreht einen Sinus mit dem Wind — das Schlupfloch der Staffel. Ohne Löser schwingt kein Flegel am Leib" },
-    { kriterium: "physik.K5", staffel: 1, befehl: null, grund: "unmessbar ohne neues Spiel (Spike w4-stationen-a am main 94c079cb): kein aktiver Leib — der Spieler ist eine Kapsel (PLAYER_FOOT_OFFSET, die Boden-Haftung), das EINE Impuls-Gesetz (`STOSS`, `_freiStoss` in stamm/koerper-bewegung.js) stößt freie Körper, Wagen und Kreaturen; kein Gleichgewicht, kein Ausfallschritt, keine Erholung (0 Treffer Gleichgewicht/Stolpern/Ragdoll im Stamm; `KAMPF_AUSFALL_M` ist der Ausfall des Schwungs). Ein Stoß von 200 N trägt keinen Schritt, den eine Station messen könnte" },
-    { kriterium: "stoffe.K4", staffel: 1, befehl: null, grund: "unmessbar ohne neues Spiel (Spike w4-stationen-a am main 94c079cb): kein Alter im Stoff — `verwitterung` ist ein Regler der Fachwerk-Rezepte (0…1, Vorgabe 0,5), das Fels-Moos liest `_feuchteAt` (Fluss-Abstand und Höhe, keine Zeit, stamm/gelaende-boden.js); was nach 30 Spieltagen im Bild wandert — die Schneegrenze am Pegel und mit dem Pegel die Ufer-Feuchte —, ist Stoffe K3 (Eis und Schmelze, EIN Heim), kein Altern nach Nässe oder Lage" },
 ];
+// DIE WELT-PROBE für die Gruppe II (stationen/g2.js: luftwasser.K3, luftwasser.K4): der Lauf, der Grund, der Befehl und der Leser der Zeile
+module.exports.weltProbe = { lauf: weltProbeLauf, grund: weltGrund, befehl: weltBefehl, zeile: weltZeile };

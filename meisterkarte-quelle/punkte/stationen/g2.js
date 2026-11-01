@@ -1,6 +1,7 @@
 // Stationen der Gruppe II (src/g2.js). Format und Regeln: punkte/punkte.cjs (Kopf).
 // Erfasst: jedes Kriterium mit Punkten am Kopf (tiere.K1 · tiere.K3 · oekologie.K5 · mensch.K2 · mensch.K3), mensch.K4 (Zweig w3v-leib-menge), luftwasser.K1 (Zweig vogel-zensus), luftwasser.K2#1 (Zweig w3s-schwarm) und #2 (Zweig w3u-leittier), luftwasser.K5 (Zweig schwarm), mensch.K5#1, vegetation.K2#1 (Zweig boe-zeit), vegetation.K1 und K5 (Zweig w3w-wald) und jedes der
-// Messschuld M30–M43 (M40 mensch.K1 · M41 vegetation.K4 · M42 tiere.K3); kein Stau-Zweig kippt ein Kriterium der Gruppe II.
+// Messschuld M30–M43 (M40 mensch.K1 · M41 vegetation.K4 · M42 tiere.K3); kein Stau-Zweig kippt ein Kriterium der Gruppe II. Dazu
+// (p3-stationen-g12) luftwasser.K3 und K4 über die Welt-Probe der Gruppe I, haar.K3 (headless) und haar.K5 (GTX).
 // Was sich nicht als Station fassen lässt, steht in `fehlt` (befehl: null, grund beim Namen) — die Liste der Stationen
 // bleibt dadurch lauffähig (pruefeStationen verlangt je Eintrag ein argv).
 "use strict";
@@ -2020,6 +2021,373 @@ const AFFEKT_K5_PROBEN = (() => {
         { name: "die Welt bootet nicht", stdout: "AFFEKT_K5 FEHLER Waiting failed: 300000ms exceeded", gruen: false },
     ];
 })();
+
+// ───────── DIE WELT-PROBE der Gruppe II (p3-stationen-g12, 01.11.): luftwasser.K3 · luftwasser.K4 am Null-Renderer ─────────
+// Der Lauf, der Grund und die Form der Zeile sind die der Gruppe I (stationen/g1.js `weltProbe`: EIN Boot, je Probe ihre
+// Seiten-Funktion, die Zeile „WELTPROBE <name> {…}“); hier stehen nur die Proben dieser Gruppe und ihre Urteile.
+const WP = require("./g1.js").weltProbe;
+
+// DIE TIERE EINER ART AM ORT (luftwasser.K3, K4): jedes Wesen (`state.creatures`) und jede Instanz einer Senke, deren Täter-Klasse
+// (`_taeterKlasse`, die Klasse des Draw-Zensus) oder Art die Art nennt (`muster`), im Kreis `rM` um (x, z); je Glied Lage und
+// Blick (die Gier des Steuer-Gesetzes: vorn = lokales +z, tetrapoda `steuerSchritt`). Rückgabe [{ x, z, fx, fz, klasse }]
+function artAmOrt(r, T, muster, x, z, rM) {
+    const s = r.state;
+    const re = new RegExp(muster, "i");
+    const aus = [];
+    const q = new T.Quaternion();
+    const p = new T.Vector3();
+    const sk = new T.Vector3();
+    const v = new T.Vector3();
+    const m4 = new T.Matrix4();
+    const nimm = (wm, kl) => {
+        wm.decompose(p, q, sk);
+        if (Math.hypot(p.x - x, p.z - z) > rM) return;
+        v.set(0, 0, 1).applyQuaternion(q);
+        const n = Math.hypot(v.x, v.z) || 1;
+        aus.push({ x: p.x, z: p.z, fx: v.x / n, fz: v.z / n, klasse: kl });
+    };
+    for (const c of s.creatures || []) {
+        const u = c.userData || {};
+        const kl = r._taeterKlasse(c);
+        if (re.test(kl + " " + (u.species || "") + " " + (u.art || "") + " " + (c.name || ""))) c.updateMatrixWorld(true), nimm(c.matrixWorld, kl);
+    }
+    s.scene.traverse((m) => {
+        if (!m.isInstancedMesh || !m.visible) return;
+        const kl = r._taeterKlasse(m);
+        if (!re.test(kl)) return;
+        for (let i = 0; i < m.count; i++) m.getMatrixAt(i, m4), nimm(m4.premultiply(m.matrixWorld), kl);
+    });
+    return aus;
+}
+
+// luftwasser.K3 — DIE FISCHE IM BACH: der nächste Lauf der Hydrosphäre um die Mess-Wiese (Ringe bis 1,5 km: die Mitte des Laufs
+// `_hydroRiverAt` centerness > 0,7, nass, mit Strömung `_waterFlowAt` — der Leser des Bewegungs-Chokepoints, gate:kopplung F1); der
+// Spieler steht am Wasser, 10 s Takt des Spiels; dann je Fisch im Wasser binnen 40 m (Klasse oder Art fisch) seine Ausrichtung gegen
+// die Strömung an seinem Ort: cos(Blick, −Strömung), gemittelt. Die Mutation: die Strömung umgekehrt (am EINEN Leser), 10 s Takt,
+// die Ausrichtung gegen die umgekehrte.
+async function fischeProbe(r, T, o, G) {
+    const { s, takt, stehen, r3 } = G;
+    const W = o.orte.wiese;
+    let bach = null;
+    for (let d = 0; d <= 1500 && !bach; d += 25)
+        for (let k = 0; k < (d ? 48 : 1) && !bach; k++) {
+            const x = W.x + d * Math.cos((k / 48) * 2 * Math.PI);
+            const z = W.z + d * Math.sin((k / 48) * 2 * Math.PI);
+            const rv = r._hydroRiverAt(x, z);
+            if (rv && rv.centerness > 0.7 && r._waterFlowAt(x, z) && r._nassAt(x, z)) bach = [x, z];
+        }
+    if (!bach) return { fehler: "kein Bach mit Strömung binnen 1,5 km der Mess-Wiese" };
+    await stehen(bach[0], bach[1]);
+    const lies = () => {
+        const F = artAmOrt(r, T, "fisch|fish|forelle|lachs|karpfen|hecht|barsch|aal", bach[0], bach[1], 40).filter((f) => r._nassAt(f.x, f.z));
+        const cos = F.map((f) => {
+            const w = r._waterFlowAt(f.x, f.z);
+            const n = w && Math.hypot(w.x, w.z);
+            return n > 1e-6 ? -(f.fx * w.x + f.fz * w.z) / n : null;
+        }).filter((c) => c !== null);
+        return { fische: F.length, mitStroemung: cos.length, ausrichtung: cos.length ? r3(cos.reduce((a, b) => a + b, 0) / cos.length) : null, klassen: [...new Set(F.map((f) => f.klasse))].slice(0, 4) };
+    };
+    takt(600);
+    const vor = lies();
+    const fluss = r._waterFlowAt;
+    r._waterFlowAt = function (x, z) {
+        const w = fluss.call(this, x, z);
+        return w && { x: -w.x, z: -w.z };
+    };
+    try {
+        takt(600);
+        var umgekehrt = lies();
+    } finally {
+        r._waterFlowAt = fluss;
+    }
+    const w = r._waterFlowAt(bach[0], bach[1]);
+    // die Kontrolle des Lesers: dieselbe Zählung über jedes Tier binnen 300 m (sieht er keines, ist die Probe blind)
+    const kontrolle = artAmOrt(r, T, "^tier:|^vogel", bach[0], bach[1], 300).length;
+    return { bach: bach.map(r3), stroemungMs: r3(Math.hypot(w.x, w.z)), vor, umgekehrt, kontrolle };
+}
+// das Urteil (luftwasser.K3#1): ≥ 3 Fische im Bach, ihre Ausrichtung gegen die Strömung ≥ 0,8 — und ebenso gegen die umgekehrte
+// (Fische auf festen Bahnen, Schlupfloch der Staffel, stünden dann mit ihr)
+function fischeUrteil(e) {
+    if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE fische" };
+    if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler };
+    const [a, b] = [e.vor || {}, e.umgekehrt || {}];
+    const gut = (x) => x.mitStroemung >= 3 && x.ausrichtung >= 0.8;
+    return {
+        gruen: gut(a) && gut(b) && e.kontrolle > 0,
+        zahl: "Bach " + (e.bach || []).join("/") + " (" + e.stroemungMs + " m/s): " + a.fische + " Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung " + a.ausrichtung +
+             " · umgekehrt " + b.fische + " Fische, " + b.ausrichtung + (a.klassen && a.klassen.length ? " (" + a.klassen.join(", ") + ")" : "") + " · der Leser sieht " + e.kontrolle +
+            " Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden)",
+    };
+}
+
+// luftwasser.K4 — DIE BESTÄUBER AM BLÜTEN-ANTEIL: neun Orte im Gitter 40 m um die Mess-Wiese; je Ort steht der Spieler, 3 s Takt,
+// dann im Kreis von 12 m der Blüten-Anteil (gezeichnete Nah-Streu der Art blume* je gezeichnetem Glied, `G.streu`) und die Bestäuber
+// (Wesen oder Instanzen der Klasse insekt, Biene, Hummel, Falter, Schmetterling, Fliege). Die Korrelation r (Pearson) über die Orte.
+async function bestaeuberProbe(r, T, o, G) {
+    const { takt, stehen, r3 } = G;
+    const W = o.orte.wiese;
+    const orte = [];
+    for (const dx of [-40, 0, 40])
+        for (const dz of [-40, 0, 40]) {
+            const [x, z] = [W.x + dx, W.z + dz];
+            if (!r._landAt(x, z, 1)) continue;
+            await stehen(x, z);
+            takt(180);
+            const n = G.streu((a, b) => Math.hypot(a - x, b - z) <= 12);
+            const b = artAmOrt(r, T, "insekt|biene|hummel|falter|schmetterling|fliege|bestaeub|bestäub", x, z, 12).length;
+            orte.push([r3(x), r3(z), n.alle ? r3(n.blumen / n.alle) : 0, n.blumen, n.alle, b]);
+        }
+    const kontrolle = artAmOrt(r, T, "^tier:|^vogel", W.x, W.z, 300).length;
+    const korr = (a, b) => {
+        const n = a.length;
+        const ma = a.reduce((x, y) => x + y, 0) / n;
+        const mb = b.reduce((x, y) => x + y, 0) / n;
+        let sab = 0, saa = 0, sbb = 0;
+        for (let i = 0; i < n; i++) (sab += (a[i] - ma) * (b[i] - mb)), (saa += (a[i] - ma) ** 2), (sbb += (b[i] - mb) ** 2);
+        return saa > 0 && sbb > 0 ? r3(sab / Math.sqrt(saa * sbb)) : null;
+    };
+    return { orte, kontrolle, r: orte.length >= 3 ? korr(orte.map((x) => x[2]), orte.map((x) => x[5])) : null };
+}
+// das Urteil (luftwasser.K4#1): ≥ 6 Orte, Bestäuber an ihnen (Σ ≥ 9), r(Blüten-Anteil, Bestäuber) ≥ 0,5 — ein Schwarm ohne
+// Feld-Leser (Schlupfloch der Staffel) korrelierte nicht mit den Blüten am Ort
+function bestaeuberUrteil(e) {
+    if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE bestaeuber" };
+    if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler };
+    const O = e.orte || [];
+    const summe = O.reduce((a, x) => a + x[5], 0);
+    const anteile = O.map((x) => x[2]);
+    return {
+        gruen: O.length >= 6 && summe >= 9 && e.r !== null && e.r >= 0.5 && e.kontrolle > 0,
+        zahl: O.length + " Orte, Blüten-Anteil " + (O.length ? Math.min(...anteile) + "–" + Math.max(...anteile) : "—") + " (" + O.reduce((a, x) => a + x[3], 0) + " Blumen in " +
+            O.reduce((a, x) => a + x[4], 0) + " Gliedern), " + summe + " Bestäuber, r " + e.r + " · der Leser sieht " + e.kontrolle + " Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5)",
+    };
+}
+const WELT_G2 = WP.befehl([["fische", fischeProbe], ["bestaeuber", bestaeuberProbe]], [artAmOrt]);
+
+// ───────── haar.K3 — DAS HAAR IM EINEN WIND (p3-stationen-g12, 01.11.) ─────────
+// DIE SZENE (in der Seite der Werkbank, r = Welt, T = THREE): am Ort des Spielers die Bühne (Mittag, Sonne, Sommer), der Spieler steht;
+// das Haar = die Teile seines Leibs der Klasse spieler:kopf/hair (`_kopfKlasse`, die Teilung der Werkbank), Third; die Pose des Leibs
+// gehalten (`__halten` leib: seine Uhr steht — ohne den Halt trug das Atmen des Leibs 19–27 Luma-Stufen je Bild in beiden Blöcken,
+// r −0,5, und verdeckte jedes Wind-Signal), die Welt-Uhr läuft. Die Kamera 0,6 m
+// vor der Mitte des Haars, von der Seite der vier (Welt-Achsen), die sein meistes Bild trägt; seine Maske: das Bild mit Haar gegen
+// das Bild ohne (> 18 je Kanal, die Bündel neu nach jedem Wechsel). Dann vier Blöcke zu je fünf Bildern im Takt des
+// Spiels (je Bild EIN Takt von 1/4 s, `_gameLoopTick` zeichnet selbst): Wind stark · Wind 0 · stark · 0 — die Böen-Drift der
+// Wind-Uhr `_windWob` ×4 (die Sonne der Bühne trägt 0,35–0,49 m/s, zu leise für jedes Haar) bzw. 0: der EINE Wind `_windAt` und
+// jeder seiner Leser folgen ihr. Je Bild die Bewegung des Haars (mittlere
+// Luma-Differenz zum Bild davor in der Maske) und der Wind am Ort (`_windAt(x, z, spielZeit).ms`). r (Pearson) über die Bilder:
+// ein Vertex-Sinus ohne Feld (Schlupfloch der Staffel) bewegte sich in beiden Blöcken gleich.
+async function haarWindSzene(r, T, o) {
+    const st = r.state, rend = st.renderer, cam = st.camera;
+    rend.setAnimationLoop(null);
+    window.__buehne({});
+    r.setCameraMode("third");
+    window.__halten(["leib", "tiere"]);
+    const { x: W, y: H } = rend.getDrawingBufferSize(new T.Vector2());
+    // der Leib des Spielers wächst nach dem Start der Werkbank (der Ofen liefert ihn im Faden): bis 120 s auf sein Haar warten
+    const haar = [];
+    for (let k = 0; k < 120 && !haar.length; k++) {
+        st.playerMesh.traverse((m) => m.isMesh && r._kopfKlasse(m)[1] === "spieler:kopf/hair" && haar.push(m));
+        if (!haar.length) r._gameLoopTick(performance.now()), await sleep(1000);
+    }
+    if (!haar.length) return { fehler: "keine Klasse spieler:kopf/hair am Leib des Spielers nach 120 s" };
+    // die Sicht Third zeigt den Kopf erst nach ihrem Takt (Ego blendet ihn aus), der Leib steht nach dem Fall des Starts
+    for (let k = 0; k < 4; k++) r.setCameraMode("third"), r._gameLoopTick(performance.now());
+    st.playerMesh.updateMatrixWorld(true);
+    const box = new T.Box3();
+    haar.forEach((m) => box.expandByObject(m));
+    const c = box.getCenter(new T.Vector3());
+    let blick = null;
+    const stellen = () => {
+        cam.position.copy(c).addScaledVector(blick, o.abstand);
+        cam.lookAt(c);
+        cam.updateMatrixWorld(true);
+    };
+    const schuss = async () => (stellen(), (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8);
+    const L = (u, i) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
+    // die Seite mit dem meisten Haar im Bild (der Leib dreht im Third frei gegen die Gier, `_loopCamera`): vier Blicke, je die Maske
+    let maske = [];
+    let mit = null;
+    for (const w of [0, 0.5, 1, 1.5]) {
+        blick = new T.Vector3(Math.sin(Math.PI * w), 0, Math.cos(Math.PI * w));
+        haar.forEach((m) => (m.visible = false));
+        window.__bundlesNeu();
+        const ohne = await schuss();
+        haar.forEach((m) => (m.visible = true));
+        window.__bundlesNeu();
+        const mi = await schuss();
+        const ma = [];
+        for (let p = 0, i = 0; p < W * H; p++, i += 4)
+            if (Math.abs(mi[i] - ohne[i]) > 18 || Math.abs(mi[i + 1] - ohne[i + 1]) > 18 || Math.abs(mi[i + 2] - ohne[i + 2]) > 18) ma.push(i);
+        if (ma.length > maske.length) [maske, mit, o.seite] = [ma, mi, w];
+    }
+    blick = new T.Vector3(Math.sin(Math.PI * o.seite), 0, Math.cos(Math.PI * o.seite));
+    if (maske.length < 200) return { fehler: "das Haar trägt " + maske.length + " Pixel im Bild (< 200)", pixel: maske.length };
+    // das Rauschen des Bilds: derselbe Schuss ohne Takt dazwischen
+    const noch = await schuss();
+    let rd = 0;
+    for (const i of maske) rd += Math.abs(L(noch, i) - L(mit, i));
+    const wob = r._windWob;
+    let t = performance.now();
+    let vor = mit;
+    const bilder = [];
+    try {
+        for (const an of [true, false, true, false]) {
+            r._windWob = an ? (u) => o.faktor * wob(u) : () => 0;
+            for (let k = 0; k < o.je; k++) {
+                r._gameLoopTick((t += 250));
+                const u = await schuss();
+                let d = 0;
+                for (const i of maske) d += Math.abs(L(u, i) - L(vor, i));
+                vor = u;
+                bilder.push([+r._windAt(c.x, c.z, st.spielZeit).ms.toFixed(3), +(d / maske.length).toFixed(3), an ? 1 : 0]);
+            }
+        }
+    } finally {
+        r._windWob = wob;
+    }
+    const a = bilder.slice(1).map((b) => b[0]);
+    const b = bilder.slice(1).map((x) => x[1]);
+    const ma = a.reduce((x, y) => x + y, 0) / a.length;
+    const mb = b.reduce((x, y) => x + y, 0) / b.length;
+    let sab = 0, saa = 0, sbb = 0;
+    for (let i = 0; i < a.length; i++) (sab += (a[i] - ma) * (b[i] - mb)), (saa += (a[i] - ma) ** 2), (sbb += (b[i] - mb) ** 2);
+    const mittel = (an) => { const x = bilder.slice(1).filter((q) => q[2] === an).map((q) => q[1]); return +(x.reduce((p, q) => p + q, 0) / x.length).toFixed(3); };
+    return { pixel: maske.length, seite: o.seite, schirm: [W, H], rauschen: +(rd / maske.length).toFixed(3), bilder, r: saa > 0 && sbb > 0 ? +(sab / Math.sqrt(saa * sbb)).toFixed(3) : null, bewegungAn: mittel(1), bewegungAus: mittel(0) };
+}
+// DER LAUF (im Spiel-Baum, cwd; headless): EINE Werkbank an der Weiche (swiftshader, kienspan) auf {PORT}+20000; der Spieler steht, wo
+// die Welt ihn gebiert (ein `umstellen` an die Mess-Wiese kostete swiftshader 8 min Ring — das Haar braucht keinen Ring, der Wind
+// weht an jedem Ort), das Fenster 640 × 360 (ein Bild ≈ 14 s); die Zeile „HAAR-WIND {…}“ und {AUS} tragen das Maß.
+async function haarWindLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const { werkbankTor, werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const [aus, port, szene] = process.argv.slice(1);
+    const W = Number(port) + 20000;
+    let erg;
+    const tor = werkbankTor(W, ["--ort", "wiese"]);
+    try {
+        await tor.bereit;
+        for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+        const f = await werkbankRuf(W, "/fenster", { w: 640, h: 360 });
+        if (!f || f.fehler) throw new Error("fenster 640 360: " + JSON.stringify(f).slice(0, 200));
+        const a = await werkbankRuf(W, "/eval", { code: "return await (" + szene + ")(r, T, " + JSON.stringify({ abstand: 0.6, je: 5, faktor: 4 }) + ");" });
+        if (!a || !a.ergebnis) throw new Error("eval: " + JSON.stringify(a).slice(0, 300));
+        erg = a.ergebnis;
+    } catch (e) {
+        erg = { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 400) };
+    } finally {
+        tor.stop();
+    }
+    console.log("HAAR-WIND " + JSON.stringify(erg));
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+}
+// das Urteil (haar.K3#1): r(Wind am Ort, Bewegung des Haars) ≥ 0,6 über ≥ 20 Bilder, das Haar ≥ 200 Pixel, und es bewegt sich im Wind
+// sichtbar (≥ 0,5 Luma-Stufen je Bild über dem Rauschen des Bilds und ≥ 2 × so viel wie ohne Wind)
+function haarWindUrteil(e) {
+    if (!e) return { gruen: false, zahl: "keine Zeile HAAR-WIND" };
+    if (e.fehler) return { gruen: false, zahl: "Lauf: " + e.fehler };
+    const n = (e.bilder || []).length;
+    const gruen = n >= 20 && e.pixel >= 200 && e.r !== null && e.r >= 0.6 && e.bewegungAn >= 0.5 + (e.rauschen || 0) && e.bewegungAn >= 2 * e.bewegungAus;
+    return {
+        gruen,
+        zahl: "Haar " + e.pixel + " px, " + n + " Bilder: Bewegung im Wind " + e.bewegungAn + " gegen ohne Wind " + e.bewegungAus + " Luma-Stufen je Bild (Rauschen " + e.rauschen + "), r(Wind, Bewegung) " + e.r +
+            " (Soll r ≥ 0,6, ≥ 0,5 Stufen und ≥ 2 × ohne Wind)",
+    };
+}
+const HAAR_WIND_BEFEHL = ["node", "-e", "(" + haarWindLauf + ")()", "{AUS}", "{PORT}", String(haarWindSzene)];
+
+// ───────── haar.K5 — DAS FELL ZAHLT AM SCHIRM (p3-stationen-g12, 01.11.) ─────────
+// DIE BÜHNE (in der Seite der Sitzung, r = Welt, T = THREE): Mittag · Sonne · Sommer (`__buehne`), jedes Wesen fällt, dann die
+// FESTE Herde — acht Wölfe aus dem Gesetz der Tetrapoda (Glieder bestellt) vor dem Auge in 4 · 8 · 15 · 25 · 40 · 60 · 90 · 130 m,
+// abwechselnd quer versetzt (die Herde steht in JEDER Distanz: Schlupfloch der Staffel); 40 Takte des Spiels, die Tiere gehalten.
+// Je Wolf sein Abstand zum Auge und ob seine Strähnen und Schale zeichnen (das Fell-Bildschirm-Gesetz `_fellBildschirmGesetz`:
+// `_fellAn`, darunter trägt die Haut mit FELL_LOOK); dann EIN gezählter Frame (`__drawZensus`, alle Pässe samt Wurf): die Befehle
+// jeder Klasse tier* (der Leib `tier:wolf`, der Satz `tier-satz`).
+async function fellHaushaltSzene(r, T, o) {
+    const s = r.state, cam = s.camera;
+    s.renderer.setAnimationLoop(null);
+    window.__buehne();
+    if (typeof r._gliederBestellen === "function") await r._gliederBestellen("wolf");
+    for (const c of [...s.creatures]) r.removeCreature(c);
+    const p = s.playerMesh.position;
+    const [fx, fz, qx, qz] = [-Math.sin(s.yaw), -Math.cos(s.yaw), Math.cos(s.yaw), -Math.sin(s.yaw)];
+    const herde = o.abstaende.map((d, i) => {
+        const q = (i % 2 ? 1 : -1) * Math.min(0.25 * d, 8);
+        const [x, z] = [p.x + fx * d + qx * q, p.z + fz * d + qz * q];
+        return r.spawnCreatureAt(x, r._voxelSurfaceY(x, z) + 0.5, z, "happy", "wolf", { precise: true });
+    }).filter(Boolean);
+    for (let i = 0; i < 40; i++) {
+        window.__buehne();
+        r._gameLoopTick(performance.now());
+        await sleep(25);
+    }
+    window.__tiereHalten();
+    const fell = herde.map((c) => {
+        const tB = c.userData._tierBaum;
+        return [+Math.hypot(c.position.x - cam.position.x, c.position.z - cam.position.z).toFixed(1), tB ? tB._fellAn !== false : null, tB && tB.straehnen ? tB.straehnen.length : 0];
+    });
+    const z = await window.__drawZensus({ alle: true });
+    const tier = z.klassen.filter((k) => /^tier/.test(k.klasse));
+    return { herde: herde.length, fell, tierCmd: tier.reduce((a, k) => a + (k.cmd || 0), 0), klassen: tier.map((k) => [k.klasse, k.cmd || 0, k.je || {}]), gesamt: z.gesamt };
+}
+// Der Lauf (im Spiel-Baum, cwd): die Welt der Sitzung (punkte.cjs fahreSitzung, ihr Log nennt die Karte), die Bühne über `/eval` an
+// Port {PORT}+20000; die Zeile „FELL-HAUSHALT {…}“ und {AUS}.
+async function fellHaushaltLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const { werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const [aus, port, szene] = process.argv.slice(1);
+    const W = Number(port) + 20000;
+    let erg;
+    try {
+        for (const z of fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8").split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+        const a = await werkbankRuf(W, "/eval", { code: "return await (" + szene + ")(r, T, " + JSON.stringify({ abstaende: [4, 8, 15, 25, 40, 60, 90, 130] }) + ");" });
+        erg = a && a.ergebnis ? a.ergebnis : { fehler: "eval: " + JSON.stringify(a).slice(0, 300) };
+    } catch (e) {
+        erg = { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 400) };
+    }
+    console.log("FELL-HAUSHALT " + JSON.stringify(erg));
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+}
+// das Urteil (haar.K5#1): die Herde steht (8 Wölfe), nah (≤ 8 m) zeichnet jeder Wolf Strähnen und Schale, fern (≥ 40 m) keiner — die
+// Haut trägt —, und alle Klassen tier* zusammen ≤ 30 Befehle über alle Pässe (der Haushalt der Klasse tier, spec/profiband/haushalt.json)
+function fellHaushaltUrteil(e) {
+    if (!e) return { gruen: false, zahl: "keine Zeile FELL-HAUSHALT" };
+    if (e.fehler) return { gruen: false, zahl: "Lauf: " + e.fehler };
+    const F = e.fell || [];
+    const nah = F.filter((x) => x[0] <= 8);
+    const fern = F.filter((x) => x[0] >= 40);
+    const rot = [];
+    if (!(e.herde >= 8)) rot.push("die Herde steht nicht (" + e.herde + " von 8)");
+    if (!(nah.length && nah.every((x) => x[1] === true && x[2] > 0))) rot.push("nah ohne Strähnen");
+    if (!(fern.length && fern.every((x) => x[1] === false))) rot.push("fern mit Strähnen");
+    if (!(e.tierCmd <= 30)) rot.push("tier " + e.tierCmd + " Befehle");
+    return {
+        gruen: !rot.length,
+        zahl: "Herde " + e.herde + ", Fell an je Abstand " + F.map((x) => x[0] + " m " + (x[1] ? "an" : "aus")).join(" · ") + " · tier " + e.tierCmd + " Befehle (" +
+            (e.klassen || []).map((k) => k[0] + " " + k[1]).join(", ") + ")" + (rot.length ? " · ROT " + rot.join(", ") : "") + " (Soll nah an, fern aus, ≤ 30 Befehle)",
+    };
+}
+const FELL_HAUSHALT_BEFEHL = ["node", "-e", "(" + fellHaushaltLauf + ")()", "{AUS}", "{PORT}", String(fellHaushaltSzene)];
+
+// DIE ROH-AUSGABE der Welt-Probe der Gruppe II am main 25ac4c0c (01.11., Cloud, headless): die Proben der Stationen urteilen sie und ihre Mutanten
+const WELT_ROH2 = {"fische": {"bach": [-309.768, -822.525], "stroemungMs": 1.027, "vor": {"fische": 0, "mitStroemung": 0, "ausrichtung": null, "klassen": []}, "umgekehrt": {"fische": 0, "mitStroemung": 0, "ausrichtung": null, "klassen": []}, "kontrolle": 0}, "bestaeuber": {"orte": [[-320.4, -1085.6, 0.623, 48, 77, 0], [-320.4, -1045.6, 0.576, 38, 66, 0], [-320.4, -1005.6, 0.241, 14, 58, 0], [-280.4, -1085.6, 0.821, 46, 56, 0], [-280.4, -1045.6, 0.829, 68, 82, 0], [-280.4, -1005.6, 0.441, 30, 68, 0], [-240.4, -1085.6, 0.743, 52, 70, 0], [-240.4, -1045.6, 0.667, 50, 75, 0], [-240.4, -1005.6, 0.31, 18, 58, 0]], "kontrolle": 11, "r": null}};
+const weltRoh2 = (name, aendern) => "WELTPROBE " + name + " " + JSON.stringify(aendern(JSON.parse(JSON.stringify(WELT_ROH2[name]))));
+// die Form der Zeile FELL-HAUSHALT, gefüllt mit den Zahlen des Spikes w4-stationen-a (31.10., main 94c079cb, swiftshader ohne Wurf: tier:wolf 29
+// + tier-satz 3 = 32 Befehle; der Fell-Schalter nach FELL_BILDSCHIRM um 8–12 m) — keine Messung dieser Probe, die steht an der GTX aus
+const FELL_ROH = {"herde": 8, "fell": [[4.1, true, 212], [8.2, true, 212], [15.3, false, 212], [25.6, false, 212], [40.2, false, 212], [60.4, false, 212], [90.1, false, 212], [130.3, false, 212]], "tierCmd": 32, "klassen": [["tier:wolf", 29, {"haupt": 29}], ["tier-satz", 3, {"haupt": 3}]], "gesamt": null};
+const fellRoh = (aendern) => "[linse-gpu] nvidia/pascal\nFELL-HAUSHALT " + JSON.stringify(aendern(JSON.parse(JSON.stringify(FELL_ROH))));
+
+// DIE PROBEN von haar.K3 (die Zeile HAAR-WIND): HAAR_WIND_ROH ist die Messung am main 25ac4c0c (01.11., Cloud, swiftshader, über
+// `punkte.cjs run --farm`), die Mutanten die Schlupflöcher der Staffel
+const HAAR_WIND_ROH = {"pixel": 7135, "seite": 0, "schirm": [640, 360], "rauschen": 0, "bilder": [[5.212, 20.849, 1], [5.322, 0.024, 1], [5.431, 0.008, 1], [5.54, 0.052, 1], [5.647, 0, 1], [0, 0.233, 0], [0, 0.044, 0], [0, 0.001, 0], [0, 0.001, 0], [0, 0.052, 0], [6.252, 0.559, 1], [6.344, 0.123, 1], [6.434, 0.058, 1], [6.52, 0.011, 1], [6.602, 0.001, 1], [0, 0.346, 0], [0, 0, 0], [0, 0, 0], [0, 0.08, 0], [0, 0.001, 0]], "r": 0.079, "bewegungAn": 0.093, "bewegungAus": 0.076};
+const haarWindRoh = (aendern) => "[linse-gpu] google/swiftshader\nHAAR-WIND " + JSON.stringify(aendern(JSON.parse(JSON.stringify(HAAR_WIND_ROH))));
+const HAAR_WIND_PROBEN = [
+    { name: "die Messung am main 25ac4c0c (das Haar starr)", stdout: haarWindRoh((x) => x), gruen: false },
+    { name: "das Haar weht im Wind und ruht ohne ihn", stdout: haarWindRoh((x) => Object.assign(x, { bewegungAn: 3.1, bewegungAus: 0.2, r: 0.91 })), gruen: true },
+    { name: "ein Vertex-Sinus ohne Feld (bewegt sich ohne Wind gleich)", stdout: haarWindRoh((x) => Object.assign(x, { bewegungAn: 3.1, bewegungAus: 3.0, r: 0.04 })), gruen: false },
+    { name: "das Haar nicht im Bild", stdout: haarWindRoh(() => ({ fehler: "das Haar trägt 73 Pixel im Bild (< 200)", pixel: 73 })), gruen: false },
+];
 
 const stationen = [
     {
@@ -4155,6 +4523,87 @@ const stationen = [
     // GTX geschätzt × 1,3: ⌈1,5 × 26,5⌉ = 40 s
     jahrStation(1, JAHR_KRONEN, JAHR_KRONEN, ["sommer", "winter"], "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose", 23),
     jahrStation(2, JAHR_LAUF, JAHR_LAUF, ["sommer", "winter", "fruehling"], "2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte", 10),
+
+    // ───────── DIE WELT-PROBE der Gruppe II (p3-stationen-g12): luftwasser.K3 · luftwasser.K4 — EIN Lauf (Zwillinge), die Proben und
+    // Urteile oben (fischeProbe, bestaeuberProbe; Lauf und Grund stationen/g1.js). Gefahren 01.11. in der Cloud am main 25ac4c0c
+    // (headless, Null-Renderer): der Lauf 62 s.
+    // luftwasser.K3 — an main 25ac4c0c ROT: der Bach 223 m nördlich der Mess-Wiese (1,03 m/s) trägt 0 Fische, auch nach der Umkehr.
+    {
+        kriterium: "luftwasser.K3",
+        staffel: 1,
+        geraet: "headless",
+        befehl: WELT_G2,
+        gpu: false,
+        zeit: false,
+        minuten: 8,
+        urteil: (j, lauf) => fischeUrteil(WP.zeile(j, lauf, "fische")),
+        proben: [
+            { name: "die Messung am main 25ac4c0c", stdout: weltRoh2("fische", (x) => x), gruen: false },
+            { name: "zwölf Fische stehen gegen die Strömung, auch gegen die umgekehrte", stdout: weltRoh2("fische", (x) => Object.assign(x, { vor: { fische: 12, mitStroemung: 12, ausrichtung: 0.91, klassen: ["tier:forelle"] }, umgekehrt: { fische: 12, mitStroemung: 12, ausrichtung: 0.88, klassen: ["tier:forelle"] }, kontrolle: 14 })), gruen: true },
+            { name: "Fische auf festen Bahnen (die Umkehr zieht nicht)", stdout: weltRoh2("fische", (x) => Object.assign(x, { vor: { fische: 12, mitStroemung: 12, ausrichtung: 0.91, klassen: ["tier:forelle"] }, umgekehrt: { fische: 12, mitStroemung: 12, ausrichtung: -0.9, klassen: ["tier:forelle"] }, kontrolle: 14 })), gruen: false },
+            { name: "zwei Fische", stdout: weltRoh2("fische", (x) => Object.assign(x, { vor: { fische: 2, mitStroemung: 2, ausrichtung: 1, klassen: [] }, umgekehrt: { fische: 2, mitStroemung: 2, ausrichtung: 1, klassen: [] }, kontrolle: 2 })), gruen: false },
+        ],
+        pfad: ["stamm/wasser-*.js", "stamm/kreatur-*.js", "stamm/dirigent-*.js", "tetrapoda-core.js", "gelaende-core.js", "voxel-worker.js", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs", "spec/profiband/haushalt.json"],
+        quelle: "1 = Fische stehen gegen die Strömung des Kerns (Ausrichtung zur Strömung ≥ 0,8)",
+    },
+    // luftwasser.K4 — an main 25ac4c0c ROT: neun Orte der Mess-Wiese, Blüten-Anteil 0,241–0,829 (344 Blumen in 610 gezeichneten Gliedern),
+    // 0 Bestäuber (der Leser sieht 11 Tiere binnen 300 m), r ohne Wert.
+    {
+        kriterium: "luftwasser.K4",
+        staffel: 1,
+        geraet: "headless",
+        befehl: WELT_G2,
+        gpu: false,
+        zeit: false,
+        minuten: 8,
+        urteil: (j, lauf) => bestaeuberUrteil(WP.zeile(j, lauf, "bestaeuber")),
+        proben: [
+            { name: "die Messung am main 25ac4c0c", stdout: weltRoh2("bestaeuber", (x) => x), gruen: false },
+            { name: "die Bestäuber folgen den Blüten", stdout: weltRoh2("bestaeuber", (x) => ((x.orte = x.orte.map((o) => [...o.slice(0, 5), Math.round(o[2] * 10)])), (x.r = 0.97), x)), gruen: true },
+            { name: "ein Schwarm ohne Feld-Leser (überall gleich viele)", stdout: weltRoh2("bestaeuber", (x) => ((x.orte = x.orte.map((o) => [...o.slice(0, 5), 4])), (x.r = null), x)), gruen: false },
+            { name: "die Bestäuber meiden die Blüten", stdout: weltRoh2("bestaeuber", (x) => ((x.orte = x.orte.map((o) => [...o.slice(0, 5), Math.round((1 - o[2]) * 10)])), (x.r = -0.97), x)), gruen: false },
+        ],
+        pfad: ["stamm/vegetation-*.js", "stamm/kreatur-*.js", "stamm/feld-*.js", "stamm/dirigent-*.js", "tetrapoda-core.js", "phyto-core.js", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs", "spec/profiband/haushalt.json"],
+        quelle: "1 = die Dichte der Bestäuber korreliert mit dem Blüten-Anteil am Ort (r ≥ 0,5)",
+    },
+    // ───────── haar.K3 — das Haar im EINEN Wind (haarWindLauf, haarWindSzene oben). Die Staffel nennt kein Gerät: headless (swiftshader).
+    // An main 25ac4c0c ROT (Cloud, 4,6 min): das Haar 7 135 px, im Wind ×4 (5,2–6,6 m/s am Ort) 0,093 Luma-Stufen je Bild gegen 0,076
+    // ohne Wind, r 0,079 — die Strähnen tragen keinen Wind-Term.
+    {
+        kriterium: "haar.K3",
+        staffel: 1,
+        geraet: "headless",
+        befehl: HAAR_WIND_BEFEHL,
+        gpu: false,
+        zeit: false,
+        minuten: 15,
+        urteil: (j, lauf) => haarWindUrteil(j || jsonZeile(lauf.stdout, /^HAAR-WIND /)),
+        proben: HAAR_WIND_PROBEN,
+        pfad: ["koerper-core.js", "stamm/koerper-*.js", "stamm/stoff-material.js", "stamm/studio-bruecke.js", "stamm/dirigent-*.js", "phyto-core.js", "scripts/werkbank.cjs",
+            "scripts/lib/welt-boot.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/software-gpu.cjs", "scripts/lib/welt-orte.cjs"],
+        quelle: "1 = Mähne bzw. Haar korreliert mit dem Wind am Ort (r ≥ 0,6)",
+    },
+    // ───────── haar.K5 — das Fell zahlt am Schirm (fellHaushaltLauf, fellHaushaltSzene oben): eine Probe der Sitzung auf der GTX (die
+    // Staffel 1 verlangt EIN Gerät; der Wurf der Kaskaden zählt nur an der Karte, kienspan zeichnet ihn nie — darum keine headless-Station).
+    // DIE FAHRT: GTX 1 785 → 1 795 von 1 800 s (der Deckel 10 s: acht Wölfe, 40 Takte, EIN gezählter Frame). Ungemessen bis zur Fahrt.
+    {
+        kriterium: "haar.K5",
+        staffel: 1,
+        geraet: "gtx",
+        probe: { sek: 10, befehl: FELL_HAUSHALT_BEFEHL, mutiert: true },
+        gpu: true,
+        zeit: false,
+        minuten: 3,
+        urteil: (j, lauf) => fellHaushaltUrteil(j || jsonZeile(lauf.stdout, /^FELL-HAUSHALT /)),
+        proben: [
+            { name: "der Spike w4-stationen-a (swiftshader, ohne Wurf): 32 Befehle", stdout: fellRoh((x) => x), gruen: false },
+            { name: "im Haushalt, nah an, fern aus", stdout: fellRoh((x) => ((x.tierCmd = 24), (x.klassen = [["tier:wolf", 21, {}], ["tier-satz", 3, {}]]), x)), gruen: true },
+            { name: "Strähnen in jeder Distanz", stdout: fellRoh((x) => ((x.tierCmd = 24), (x.fell = x.fell.map((f) => [f[0], true, f[2]])), x)), gruen: false },
+            { name: "die Herde steht nicht", stdout: fellRoh((x) => ((x.tierCmd = 6), (x.herde = 2), (x.fell = x.fell.slice(0, 2)), x)), gruen: false },
+        ],
+        pfad: ["tetrapoda-core.js", "foundry-core.js", "stamm/kreatur-*.js", "stamm/studio-bruecke.js", "stamm/stoff-instanz.js", "spec/profiband/haushalt.json", "scripts/lib/draw-zaehler.cjs", "scripts/werkbank.cjs"],
+        quelle: "1 = Strähnen nah, Schale/Karte fern, im Haushalt der Klasse (tier ≤ 30 Befehle) an einem Gerät",
+    },
 ];
 
 // Nicht als Station fassbar (heute): je Kriterium und Staffel der Grund beim Namen. Sie tragen keine Punkte der Maschine;
@@ -4171,34 +4620,10 @@ const fehlt = [
     },
     // DER SPIKE w4-stationen-a (31.10., am main 94c079cb): Kriterien ohne jede Station — was dem Spiel fehlt, beim Namen
     {
-        kriterium: "haar.K3",
-        staffel: 1,
-        befehl: null,
-        grund: "unmessbar ohne neues Spiel (Spike w4-stationen-a am main 94c079cb): Haar und Fell sind starr — die Schalen und Strähnen (der Fell-Stoff in stamm/studio-bruecke.js) tragen keinen Wind-Term und keine Trägheit; der EINE Wind (`_windAt`) bewegt am Leib nur die Rolle `segel` (stamm/koerper-leib.js). Ohne Wind-Leser im Haar gibt es keine Korrelation zu messen",
-    },
-    {
         kriterium: "haar.K4",
         staffel: 2,
         befehl: null,
         grund: "nicht gebaut (w4-stationen-a baute Staffel 1): ein Tuch des EINEN XPBD-Lösers gibt es nicht — die Kleidung wird aus der Haut extrudiert (foundry-core `_garmentFromSkin`, K45-2) und folgt der Haut, ein Tuch-Löser fehlt der Welt (physik.K4); ohne Tuch keine Durchdringung beim Gang zu zählen",
-    },
-    {
-        kriterium: "haar.K5",
-        staffel: 1,
-        befehl: null,
-        grund: "nicht gebaut, der Spike ist ROT (w4-stationen-a am main 94c079cb, Prüfbühne swiftshader, `__drawZensus` an einer festen Herde von 8 Wölfen 4–60 m vor dem Ego-Auge): tier:wolf 29 + tier-satz 3 = 32 Befehle im Hauptbild über dem Haushalt tier 30 — ohne den Wurf (kienspan zeichnet keine Kaskaden; an der Karte kommt er dazu). Die Strähnen schalten nach dem Fell-Bildschirm-Gesetz (`FELL_BILDSCHIRM`, stamm/kreatur-verhalten.js); die Probe gehört an die Karte, die Fahrt (Radeon 1 775 / GTX 1 770 von 1 800 s) trägt sie erst, wenn das Soll hält",
-    },
-    {
-        kriterium: "luftwasser.K3",
-        staffel: 1,
-        befehl: null,
-        grund: "unmessbar ohne neues Spiel (Spike w4-stationen-a am main 94c079cb): es gibt keine Fische (0 Treffer in Stamm und tetrapoda-core); die Strömung des Kerns advektiert nur am Bewegungs-Chokepoint (gate:kopplung F1) — nichts steht gegen sie, dessen Ausrichtung eine Station messen könnte",
-    },
-    {
-        kriterium: "luftwasser.K4",
-        staffel: 1,
-        befehl: null,
-        grund: "unmessbar ohne neues Spiel (Spike w4-stationen-a am main 94c079cb): es gibt keine Insekten und keine Bestäuber (0 Treffer Insekt/Bestäuber in Stamm und Kernen) — die Korrelation mit dem Blüten-Anteil hätte nichts zu zählen",
     },
     // vegetation.K1#2 (w4-sitzung-reif, 30.10.): die Staffel verlangt acht Schüsse an zwei Orten — die Arbeit ihres Plans (vegetationDeckel:
     // Mess-Wiese Ego und Third warm 2 × 5 s, Genesis kalt 15 s und Third 5 s, je Wiesen-Schuss 15 s) ist 150 s, über dem Gesetz der Fahrt
