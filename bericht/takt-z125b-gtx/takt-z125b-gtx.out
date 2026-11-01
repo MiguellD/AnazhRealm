@@ -1,0 +1,19 @@
+Punkte-Maschine: 5 Station(en) in 4 Läufen auf gtx am 9e40c93c · Sitzung 4 Proben in EINER Welt (Deckel Σ 1 min) · Zeit 0 Läufe ~0 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~0 min (Soll-Minuten ohne Sitzung) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  SITZUNG gtx · die Welt steht nach 5.2 s (Schloss nach 0.01 min) · 4 Proben · Welt :27804
+  SITZUNG der Grund der Welt: 77 Größen in 0 s
+  SITZUNG Ort genesis vor mensch.K1#1: 21.9 s (731 Takte, 81 Chunks)
+  OFFEN mensch.K1#1 · Deckel 33 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor fahrzeug.K2#1: 3.3 s (im Spiel 45.9 ms, durch die Tür)
+  SITZUNG die Welt vor fahrzeug.K2#1: 12.5 s (690 Takte, 81 Chunks, nach der Tür)
+  OFFEN fahrzeug.K2#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor ankunft.K2#1: 4.6 s (im Spiel 41.7 ms, durch die Tür)
+  SITZUNG die Welt vor ankunft.K2#1: 12.8 s (730 Takte, 81 Chunks, nach der Tür)
+  SITZUNG ankunft.K2#1 ließ die Zeichenkette verändert: zeichner.renderer zeichner.postKette zeichner.faden — kein Urteil (Werkzeug-Bruch), die Grundstellung folgt
+  OFFEN ankunft.K2#1 · Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: kein Bild der Kontrolle (t(Kontrolle) 0 ms, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: @@ 1.9 s · kalt: t(Kontrolle) — · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer $C → keiner · zeichner.postKette fort · zeichner.faden da → keiner) · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN ankunft.K3#1 · Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 2 Zweit-Boots mit Kontrolle von außen (Exit 0) · [linse-gpu] nvidia/pascal) · Täter: @@ 1.9 s · kalt: t(Kontrolle) — · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer $C → keiner · zeichner.postKette fort · zeichner.faden da → keiner) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor klang.K4#1: 2.6 s (im Spiel 65.3 ms, durch die Tür)
+  SITZUNG die Welt vor klang.K4#1: 16.3 s (742 Takte, 81 Chunks, nach der Tür)
+  OFFEN klang.K4#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG DER ORT IM DECKEL (die Probe zog weiter als 250 m von dem Ort, an dem die Sitzung sie begann — ihr Deckel trug den Ring): fahrzeug.K2#1 1142 m (Ring 4 → -1), klang.K4#1 1087 m (Ring 4 → -1)
+  SITZUNG Fahrt 145.2 s (Soll ≤ 1800 s) · 4 Proben · Grundstellung 3×
+→ meisterkarte-quelle\punkte\messung\9e40c93c-gtx.json

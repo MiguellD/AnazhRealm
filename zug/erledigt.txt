@@ -168,3 +168,4 @@ z122-abab nicht-langsamer abab eeb5d2bf gegen 4b13478b: w-ego 4+4 nicht-langsame
 stadt4-abab nicht-langsamer abab d46f055f gegen eeb5d2bf: stadt 2+2 nicht-langsamer · w-ego 2+2 nicht-langsamer
 p-oeko-gtx gemessen punkte eeb5d2bf gtx: 1 grün / 9 rot
 takt-z125a-gtx gemessen punkte 9e40c93c gtx: 0 grün / 8 rot
+takt-z125b-gtx gemessen punkte 9e40c93c gtx: 0 grün / 8 rot
