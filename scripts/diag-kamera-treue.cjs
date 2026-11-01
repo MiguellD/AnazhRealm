@@ -14,11 +14,9 @@
 //       volle Refresh; Kontrolle: ein Stempel nur aus der Render-Id < 0,98.
 //   (h) SENKE — zwei Senken EINES Stoffs zeichnen aus EINEM Knoten-Zustand, bild-gleich mit r184s InstancedMesh.
 //   (i) SCHLÜSSEL (B-K1) — jedes Hauptpass-Render-Objekt der Welt trägt nach der Erst-Zeichnung den Schlüssel seines Baus.
-//   (j) WURF (B-K1, Lehre 26) — Hauptpass und Wurf verwerfen gleich; ohne Ausschnitt wirft ein Werfer ohne Farb-Graph.
-//   (k) EIN BAU (w4-b-knoten) — Stoffe EINER Gestalt (Metall 0/0,5, mit und ohne Index) teilen EINEN Knoten-Zustand,
-//       byte-gleich mit dem eigenen Bau; zwei Lichter tragen EINEN Schatten-Grund, ein Werfer wirft aus EINEM Zustand; eine
-//       Arena ohne Draw baut unter dem Ladeschirm nicht (vorgemerkt), nach dem Bild schon. Leser: `_gestaltSchluessel` ·
-//       `_schattenGrund` · der Vorbau der Erst-Zeichnung (`_configureRenderer`).
+//   (j) WURF (B-K1, Lehre 26) — Hauptpass und Wurf verwerfen gleich; ohne Ausschnitt wirft ein Werfer ohne Farb-Graph, in zwei
+//       Lichter aus EINEM Knoten-Zustand (w4-b-knoten, `_schattenGrund`); (h) zählt dazu Metall und Index (`_gestaltSchluessel`).
+//   (k) VORBAU (w4-b-knoten) — ein Bau ohne Draw merkt unter dem Ladeschirm vor, nach dem Bild baut er (`_vorbauWahl`).
 //   LAUF — kein Spiel-Bild und kein Kehraus-Puffer während der Bühne (der Loop ruht).
 //   node scripts/diag-kamera-treue.cjs [--selftest]   (--selftest: das Urteil über grün und je einen injizierten Täter)
 "use strict";
@@ -65,7 +63,7 @@ function urteil(z) {
     if (sk.kontrolle !== true)
         v.push("SENKE: zwei r184-InstancedMesh EINES Stoffs tragen nicht zwei Knoten-Zustände — die Lauf-Kontrolle ist blind");
     if (sk.geteilt !== true)
-        v.push("SENKE: zwei Senken EINES Stoffs und EINER Geometrie tragen zwei Knoten-Zustände — die uuid je InstancedMesh steht wieder im Schlüssel (Programm je Senke)");
+        v.push("SENKE: zwei Senken EINER Gestalt (Metall 0 und 0,5, mit und ohne Index) tragen zwei Knoten-Zustände — uuid, Zahl oder Index im Bau-Schlüssel");
     if (!(sk.bild >= BILD_SOLL))
         v.push(`SENKE: der Zeichner zeichnet ${sk.bild} gleich mit r184s InstancedMesh derselben Matrizen (Soll ≥ ${BILD_SOLL}) — Lage, Farbe oder Wurf je Instanz weichen ab`);
     if (!(sk.blind < BLIND_GRENZE))
@@ -77,27 +75,13 @@ function urteil(z) {
     if (Object.keys(ks.veraltet || {}).length) v.push(`SCHLÜSSEL: ${namen(ks.veraltet)} — nach der Erst-Zeichnung ein anderer Schlüssel als der des Baus`);
     if (ks.kontrolle !== true) v.push("SCHLÜSSEL: die Kontrolle ist blind");
     if (!wu.leer || wu.leer.verwirft) v.push("WURF: das Standard-Fragment fehlt oder verwirft — die Probe ist blind");
+    if (!(wu.lichter >= 2) || wu.formen !== 1) v.push(`WURF: wurf:voll wirft in ${wu.lichter} Lichter aus ${wu.formen} Zuständen (Soll 2 aus 1)`);
+    if (z.vorbau !== "merken,,bauen") v.push(`VORBAU: Ladeschirm, Bild des letzten, danach ${z.vorbau} (Soll merken,,bauen)`);
     if (!(wu.werfer || []).some((x) => x.aus && x.haupt)) v.push("WURF: kein Ausschnitt verwirft — die Probe ist blind");
     for (const x of wu.werfer || []) {
         if (x.haupt !== x.wurf) v.push(`WURF: ${x.name} — Hauptpass verwirft ${x.haupt}, Wurf verwirft ${x.wurf}`);
         if (!x.aus && x.farbe) v.push(`WURF: ${x.name} — ohne Ausschnitt trägt der Wurf den Farb-Graphen`);
     }
-    // (k) EIN BAU (w4-b-knoten): EIN Knoten-Zustand je Gestalt, EIN Schatten-Grund je Licht-Satz, der Vorbau nach dem Bild
-    const ba = z.bau || {};
-    if (ba.geteilt !== true)
-        v.push("EIN BAU: zwei Stoffe EINER Gestalt (Metall 0 und 0,5, indexiert und nicht) tragen zwei Knoten-Zustände — eine Zahl oder der Index, den der Bau nie liest, steht im Bau-Schlüssel (`_gestaltSchluessel`)");
-    if (ba.byte !== true) v.push("EIN BAU: der geteilte Knoten-Zustand ist nicht byte-gleich mit dem eigenen Bau des zweiten Stoffs — der Bau-Schlüssel teilt, was der Bau trennt");
-    if (ba.kontrolle !== true) v.push("EIN BAU: ein Stoff mit alphaTest teilt den Zustand eines ohne — der Bau-Schlüssel verliert eine Zahl, die der Bau liest (oder die Kontrolle ist blind)");
-    if (!(ba.lichter >= 2)) v.push(`EIN BAU: der Werfer warf in ${ba.lichter || 0} Schatten-Stoffe (Soll 2) — die Kaskaden-Probe ist blind`);
-    else {
-        if (ba.grund !== true) v.push("EIN BAU: die Schatten-Stoffe der zwei Lichter tragen verschiedene Grund-Knoten — jede Kaskade baut die Form neu (`_schattenGrund`)");
-        if (ba.wurfZustaende !== 1) v.push(`EIN BAU: EIN Werfer ohne Ausschnitt wirft aus ${ba.wurfZustaende} Knoten-Zuständen in zwei Lichter (Soll 1) — die Schatten-Form baut je Kaskade`);
-    }
-    const vb = ba.vorbau || {};
-    if (vb.vorBild !== false || vb.gemerkt !== true)
-        v.push(`VORBAU: eine Arena ohne Draw unter dem Ladeschirm baute ${vb.vorBild ? "vor dem Bild" : "nicht"}${vb.gemerkt ? "" : " und merkte nichts vor"} — was nicht im ersten Bild steht, baut nach ihm`);
-    if (vb.nachBild !== true) v.push("VORBAU: die vorgemerkte Arena baute nach dem Bild nicht — ihr Programm fehlt dem ersten Schritt");
-    if (vb.imBild !== true) v.push("VORBAU: eine Arena mit Instanz baute unter dem Ladeschirm nicht — die Vorbau-Probe ist blind");
     // DIE STAND-WAND: im Stand kostet die Diät nur die Prüfung — kein Voll-Refresh, kein zweiter Gang über einen
     // Knoten oder eine geteilte Gruppe im selben Render, kein Upload; Programme mit denselben Quellen teilen EINE Gruppe;
     // eine Änderung im Stand erreicht das Bild wie ein voller Refresh.
@@ -150,17 +134,9 @@ function selbsttest() {
         aufnahme: { gezeichnet: 13, verfolgt: 13, schattenRenders: 1, unterOverride: 0 },
         bild: { replay: 1, fremd: 1, ohneStapel: 0.62, schattenBundle: 0.91, xGegenY: 0.31 },
         senke: { geteilt: true, kontrolle: true, bild: 1, blind: 0.95 },
-        bau: {
-            geteilt: true,
-            byte: true,
-            kontrolle: true,
-            lichter: 2,
-            grund: true,
-            wurfZustaende: 1,
-            vorbau: { vorBild: false, gemerkt: true, imBild: true, nachBild: true },
-        },
         schluessel: { geprueft: 69, veraltet: {}, kontrolle: true },
-        wurf: { leer: { verwirft: false }, werfer: [{ name: "wurf:voll", farbe: false }, { name: "wurf:schnitt", aus: true, haupt: true, wurf: true }] },
+        wurf: { leer: { verwirft: false }, lichter: 2, formen: 1, werfer: [{ name: "wurf:voll", farbe: false }, { name: "wurf:schnitt", aus: true, haupt: true, wurf: true }] },
+        vorbau: "merken,,bauen",
         stand: {
             teilen: { programme: 8, gruppenJeProgramm: 1, gruppen: 1 },
             direkt: ruhig,
@@ -200,19 +176,12 @@ function selbsttest() {
         { name: "Änderungs-Probe blind", z: mit("stand.aenderung.direkt", { taeter: 1 }), muss: /die Änderungs-Probe ist blind/ },
         { name: "Gruppe je Programm", z: mit("stand.teilen", { gruppen: 8 }), muss: /tragen 8 geteilte Gruppen statt 1/ },
         { name: "Teilen blind", z: mit("stand.teilen", { programme: 0 }), muss: /TEILEN: 0 Karten-Programme/ },
-        { name: "Programm je Senke", z: mit("senke", { geteilt: false }), muss: /SENKE: zwei Senken EINES Stoffs/ },
+        { name: "Programm je Senke", z: mit("senke", { geteilt: false }), muss: /SENKE: zwei Senken EINER Gestalt/ },
+        { name: "Form je Kaskade", z: mit("wurf", { formen: 2 }), muss: /aus 2 Zuständen/ },
+        { name: "Vorbau vor dem Bild", z: { ...gruen, vorbau: "bauen,bauen,bauen" }, muss: /danach bauen,bauen,bauen/ },
         { name: "Senken-Kontrolle blind", z: mit("senke", { kontrolle: false }), muss: /SENKE: zwei r184-InstancedMesh/ },
         { name: "Senke zeichnet anders", z: mit("senke", { bild: 0.97 }), muss: /SENKE: der Zeichner zeichnet 0.97/ },
         { name: "Senken-Bild blind", z: mit("senke", { blind: 0.999 }), muss: /SENKE: ohne die Senke/ },
-        { name: "Zahl im Bau-Schlüssel", z: mit("bau", { geteilt: false }), muss: /EIN BAU: zwei Stoffe EINER Gestalt/ },
-        { name: "geteilt, was der Bau trennt", z: mit("bau", { byte: false }), muss: /nicht byte-gleich/ },
-        { name: "Bau-Schlüssel verliert alphaTest", z: mit("bau", { kontrolle: false }), muss: /ein Stoff mit alphaTest teilt/ },
-        { name: "Grund je Licht", z: mit("bau", { grund: false }), muss: /verschiedene Grund-Knoten/ },
-        { name: "Form je Kaskade", z: mit("bau", { wurfZustaende: 2 }), muss: /wirft aus 2 Knoten-Zuständen in zwei Lichter/ },
-        { name: "Kaskaden-Probe blind", z: mit("bau", { lichter: 1 }), muss: /warf in 1 Schatten-Stoffe/ },
-        { name: "Vorbau vor dem Bild", z: mit("bau.vorbau", { vorBild: true, gemerkt: false }), muss: /VORBAU: eine Arena ohne Draw unter dem Ladeschirm baute vor dem Bild und merkte nichts vor/ },
-        { name: "Vorbau fällt nach dem Bild aus", z: mit("bau.vorbau", { nachBild: false }), muss: /baute nach dem Bild nicht/ },
-        { name: "Vorbau-Probe blind", z: mit("bau.vorbau", { imBild: false }), muss: /die Vorbau-Probe ist blind/ },
         { name: "Diät nach Anlage (B-K1)", z: mit("schluessel", { veraltet: { bauSatz: 1 } }), muss: /SCHLÜSSEL: bauSatz ×1/ },
         { name: "Schlüssel-Kontrolle blind", z: mit("schluessel", { kontrolle: false }), muss: /die Kontrolle ist blind/ },
         { name: "Welt ohne Render-Objekt", z: mit("schluessel", { geprueft: 0 }), muss: /die Welt zeichnete kein Render-Objekt/ },
@@ -437,13 +406,7 @@ function buehne() {
             rend.setRenderTarget(rt);
             rend.render(sc, kam);
             rend.setRenderTarget(null);
-            const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
-            const roh = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
-            const zeile = W * 4,
-                schritt = roh.length > zeile * H ? Math.ceil(zeile / 256) * 256 : zeile;
-            const u8 = new Uint8Array(zeile * H);
-            for (let y = 0; y < H; y++) u8.set(roh.subarray(y * schritt, y * schritt + zeile), y * zeile);
-            return u8;
+            return window.__zielLesen(rt, W, H);
         };
         const gleich = (a, b) => {
             let g = 0;
@@ -679,12 +642,14 @@ function buehne() {
                     m.frustumCulled = false;
                     return m;
                 };
+                // die zweite Senke EINER Gestalt: Metall 0,5 und ohne Index (beides liest der Bau nie, `_gestaltSchluessel`)
+                const [stoffB, geoB] = [diaet(new T.MeshStandardNodeMaterial({ color: 0x9a5a3a, metalness: 0.5 })), sGeo.toNonIndexed()];
                 const sA = lage(A._instanzMesh(sGeo, sStoff, 3), 0);
-                const sB = lage(A._instanzMesh(sGeo, sStoff, 3), 6);
+                const sB = lage(A._instanzMesh(geoB, stoffB, 3), 6);
                 A._instanzZahl(sA, 3);
                 A._instanzZahl(sB, 3);
                 const refA = lage(new T.InstancedMesh(sGeo, sStoff, 3), 0);
-                const refB = lage(new T.InstancedMesh(sGeo, sStoff, 3), 6);
+                const refB = lage(new T.InstancedMesh(geoB, stoffB, 3), 6);
                 const zustand = (o) => {
                     const ro = (o.__renderObjekte || []).find((x) => x.camera === kam);
                     return ro ? ro.getNodeBuilderState() : null;
@@ -714,9 +679,9 @@ function buehne() {
             const wurf = { werfer: [] };
             {
                 const wSzene = new T.Scene();
-                const wl = new T.DirectionalLight(0xffffff, 3);
-                wl.castShadow = true;
-                wSzene.add(wl, wl.target);
+                // zwei Lichter: jedes trägt seinen Schatten-Stoff — die Form eines Werfers baut EINMAL (`_schattenGrund`)
+                for (const wl of [new T.DirectionalLight(0xffffff, 3), new T.DirectionalLight(0xffffff, 1)])
+                    (wSzene.add(wl, wl.target), (wl.castShadow = true));
                 const karte = new T.DataTexture(new Uint8Array(16).fill(200), 2, 2);
                 const stoff = (name, o, colorNode) => Object.assign(new T.MeshStandardNodeMaterial(o), { name }, colorNode ? { colorNode } : {});
                 const probe = [
@@ -731,7 +696,7 @@ function buehne() {
                 rend._renderObjectDirect = function (object, material, sc, camera, lightsNode, group, clip, passId) {
                     const ro = this._objects.get(object, material, sc, camera, lightsNode, this._currentRenderContext, clip, passId);
                     const w = material.isShadowPassMaterial === true;
-                    fang.push([object.material.name, w, ro.getNodeBuilderState().fragmentShader]);
+                    fang.push([object.material.name, w, ro.getNodeBuilderState().fragmentShader, ro.getNodeBuilderState()]);
                     if (!w) this._nodes.updateBefore(ro); // der Hauptpass startet die Kaskade
                 };
                 try {
@@ -747,95 +712,15 @@ function buehne() {
                 wurf.leer = leer && { verwirft: verwirft(leer) };
                 for (const { name, alphaTest } of probe.slice(1))
                     wurf.werfer.push({ name, aus: alphaTest > 0, haupt: verwirft(frag(name, false)), wurf: verwirft(frag(name, true)), farbe: frag(name, true) !== leer });
+                const formen = fang.filter((f) => f[0] === "wurf:voll" && f[1]).map((f) => f[3]);
+                [wurf.lichter, wurf.formen] = [formen.length, new Set(formen).size];
                 for (const m of probe) m.dispose();
             }
-            // (k) EIN BAU (w4-b-knoten): Stoffe EINER Gestalt (EIN Graph) mit Metall 0 und 0,5, die eine Kiste indexiert, die
-            // andere nicht, zeichnen aus EINEM Knoten-Zustand — byte-gleich mit dem eigenen Bau der zweiten; ein Stoff, dessen
-            // Zahl der Bau liest (alphaTest), trägt seinen eigenen (Kontrolle). Zwei werfende Lichter tragen EINEN Schatten-Grund,
-            // und ein Werfer ohne Ausschnitt wirft in beide aus EINEM Zustand. DER VORBAU: eine Arena ohne Draw in der Welt-Szene
-            // baut unter dem Ladeschirm nicht (sie merkt vor), nach dem Bild baut sie; mit einer Instanz baut sie im Bild.
-            const bau = {};
-            {
-                const kSzene = new T.Scene();
-                for (const x of [6, -6]) {
-                    const l = new T.DirectionalLight(0xffffff, 1.5);
-                    l.position.set(x, 12, 4);
-                    l.castShadow = true;
-                    l.shadow.mapSize.set(256, 256);
-                    Object.assign(l.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 0.5, far: 50 });
-                    l.shadow.camera.updateProjectionMatrix();
-                    kSzene.add(l, l.target);
-                }
-                const graph = TSL.vec4(TSL.color(0x7a5a3a).mul(TSL.uv().x.add(0.5)), 1);
-                const stoff = (o) => Object.assign(new T.MeshStandardNodeMaterial({ roughness: 0.6, ...o }), { colorNode: graph });
-                const kiste = (m, x, ohneIndex) => {
-                    const g = new T.BoxGeometry(1.5, 1.5, 1.5);
-                    const k = new T.Mesh(ohneIndex ? g.toNonIndexed() : g, m);
-                    Object.assign(k, { castShadow: true, receiveShadow: false, frustumCulled: false });
-                    k.position.set(x, 0.75, 0);
-                    kSzene.add(k);
-                    return k;
-                };
-                const [kA, kB, kC] = [kiste(stoff({ metalness: 0 }), -4), kiste(stoff({ metalness: 0.5 }), 0, true), kiste(stoff({ alphaTest: 0.5 }), 4)];
-                blick(1);
-                await schuss(kSzene);
-                const ros = (o) => [...(o.__renderObjekte || [])];
-                const zs = (ro) => (ro ? ro.getNodeBuilderState() : null);
-                const haupt = (o) => zs(ros(o).find((x) => x.camera === kam && x.material.isShadowPassMaterial !== true));
-                bau.geteilt = !!haupt(kA) && haupt(kA) === haupt(kB);
-                bau.kontrolle = !!haupt(kC) && haupt(kC) !== haupt(kA);
-                const roB = ros(kB).find((x) => x.camera === kam);
-                if (roB) {
-                    const b = rend._nodes._createNodeBuilder(roB, roB.material);
-                    b.build();
-                    bau.byte = b.vertexShader === zs(roB).vertexShader && b.fragmentShader === zs(roB).fragmentShader;
-                }
-                const wurfRos = ros(kA).filter((x) => x.material.isShadowPassMaterial === true);
-                bau.lichter = new Set(wurfRos.map((x) => x.material)).size;
-                bau.grund = new Set(wurfRos.map((x) => x.material.colorNode)).size === 1;
-                bau.wurfZustaende = new Set(wurfRos.map(zs)).size;
-                for (const o of [kA, kB, kC]) (o.material.dispose(), o.geometry.dispose());
-                // DER VORBAU in der Welt-Szene: nur die Proben-Schicht im Blick, ohne Schatten (die Welt bleibt außen vor)
-                const E = r._erstZeichnung;
-                const SCHICHT = 30;
-                const arena = (n) => {
-                    const g = new T.InstancedBufferGeometry().copy(new T.BoxGeometry(1, 1, 1));
-                    g.instanceCount = n;
-                    const a = new T.Mesh(g, stoff({ metalness: 0.2 + n * 0.01, roughness: 0.3, side: T.DoubleSide }));
-                    Object.assign(a, { isGeometrieArena: true, frustumCulled: false, castShadow: false });
-                    a.layers.set(SCHICHT);
-                    st.scene.add(a);
-                    return a;
-                };
-                const leer = arena(0);
-                const voll = arena(1);
-                const gebaut = (o) => ros(o).some((x) => x.camera === kam && rend._nodes.get(x).nodeBuilderState !== undefined);
-                const maske = kam.layers.mask;
-                const schatten = rend.shadowMap.enabled;
-                const da = st._weltbildDa;
-                let lade = null;
-                kam.layers.set(SCHICHT);
-                rend.shadowMap.enabled = false;
-                try {
-                    lade = window.leihe(r, { _ladeTakt: () => true });
-                    st._weltbildDa = 0;
-                    await schuss(st.scene);
-                    bau.vorbau = { vorBild: gebaut(leer), gemerkt: !!(E && E.vorgemerkt && E.vorgemerkt.get(leer)), imBild: gebaut(voll) };
-                    lade();
-                    lade = null;
-                    st._weltbildDa = da;
-                    await schuss(st.scene);
-                    bau.vorbau.nachBild = gebaut(leer);
-                } finally {
-                    if (lade) lade();
-                    st._weltbildDa = da;
-                    kam.layers.mask = maske;
-                    rend.shadowMap.enabled = schatten;
-                    for (const a of [leer, voll]) (st.scene.remove(a), a.material.dispose(), a.geometry.dispose());
-                }
-            }
+            // (k) DER VORBAU NACH DEM BILD (w4-b-knoten, `_vorbauWahl`): unter dem Ladeschirm merkt er vor, nach dem Bild baut er — je Bild einer
+            const E0 = { vorgemerkt: new WeakMap(), vorbauBild: 7 };
+            const vorbau = [[1, 0, 7], [0, 1, 7], [0, 1, 8]].map(([l, b, f]) => A._vorbauWahl(E0, E0, 1, l, b, f)).join();
             return {
-                bau,
+                vorbau,
                 wurf,
                 schluessel,
                 senke,

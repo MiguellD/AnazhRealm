@@ -516,23 +516,24 @@ class AnazhRealm_bild_kosten {
                 // — außer im VORBAU des Stufen-Vorlaufs (`_stufenVorlaufWahl`): unter dem Ladeschirm baut eine Arena, deren Form
                 // steht, ihr Programm auch in dem Pass, in den gerade keine ihrer Instanzen fällt, ohne Draw. Jede Kaskade rendert
                 // in ihr eigenes Ziel (der Schlüssel trägt den Render-Kontext): der Vorlauf-Baum in 30 m fällt in keine nahe — kam
-                // er im Gang näher, kompilierte sie dort kalt. DER VORBAU NACH DEM BILD (w4-b-knoten): ein Bau ohne Draw steht
-                // nicht im ersten Bild — unter dem Ladeschirm merkt die Erst-Zeichnung seinen Pass nur vor (`vorgemerkt`), er baut
-                // nach dem Bild (headless kalt 01.11.: der Vorbau einer Laub-Arena hielt 169 ms Haupt-Faden vor dem Bild).
+                // er im Gang näher, kompilierte sie dort kalt. Seit w4-b-knoten baut er nach dem Bild (`_vorbauWahl`).
                 const vorbau = ro.getDrawParameters() === null;
                 const ctx = this._currentRenderContext.id;
                 const k = passId == null ? ctx : ctx + "|" + passId;
                 let merk;
                 if (vorbau) {
-                    if (!(object.isGeometrieArena === true && object.geometry.index !== null && scene === welt.state.scene))
-                        return;
+                    const arena = object.isGeometrieArena === true && object.geometry.index !== null;
+                    if (!arena || scene !== welt.state.scene) return;
+                    const wahl = AnazhRealm._vorbauWahl(
+                        E,
+                        object,
+                        k,
+                        welt._ladeTakt(),
+                        welt.state._weltbildDa,
+                        N.nodeFrame.frameId
+                    );
+                    if (wahl !== "bauen") return;
                     merk = E.vorgemerkt.get(object);
-                    if (welt._ladeTakt()) {
-                        if (merk === undefined) E.vorgemerkt.set(object, (merk = new Set()));
-                        merk.add(k);
-                        return;
-                    }
-                    if (merk === undefined || !merk.has(k) || !welt.state._weltbildDa) return;
                 }
                 const aufnahme = this._currentRenderBundle;
                 if (aufnahme !== null) ro.bundle = aufnahme.bundleGroup;
@@ -597,6 +598,7 @@ class AnazhRealm_bild_kosten {
                     if (vor === undefined) E.vorgebaut.set(object, new Set([k]));
                     else vor.add(k);
                     merk.delete(k);
+                    E.vorbauBild = N.nodeFrame.frameId;
                 } else if (gezeichnet && !buehne) {
                     if (pass === undefined) E.gezeichnet.set(object, (pass = new Set()));
                     pass.add(k);
@@ -632,8 +634,18 @@ class AnazhRealm_bild_kosten {
                 gezeichnet: new WeakMap(), // Objekt → die Pässe (Render-Kontext|Pass-Kennung), in denen es schon zeichnete
                 vorgebaut: new WeakMap(), // Arena → die Pässe, in denen der Vorbau ihr Programm ohne Draw baute
                 vorgemerkt: new WeakMap(), // Arena → die Pässe ohne Draw unter dem Ladeschirm: ihr Vorbau folgt nach dem Bild
+                vorbauBild: -1, // das Bild (nodeFrame.frameId) des letzten Vorbaus nach dem Bild — höchstens einer je Bild
             };
         return this._erstZeichnung;
+    }
+    // DER VORBAU NACH DEM BILD (w4-b-knoten): ein Bau ohne Draw (die Arena im Pass, in den keine ihrer Instanzen fällt) steht
+    // nicht im ersten Bild — unter dem Ladeschirm merkt die Erst-Zeichnung seinen Pass vor („merken"), nach dem Bild baut der
+    // vorgemerkte („bauen"), höchstens EINER je Bild (jeder Pass ist ein Render-Aufruf mit eigenem Deckel); sonst null. Headless
+    // kalt 01.11.: der Vorbau einer Laub-Arena hielt 169 ms Haupt-Faden vor dem Bild. Der Rufer: `_renderObjectDirect` oben.
+    static _vorbauWahl(E, arena, pass, lade, bild, frame) {
+        const merk = E.vorgemerkt.get(arena);
+        if (lade) return (merk ? merk.add(pass) : E.vorgemerkt.set(arena, new Set([pass])), "merken");
+        return bild && merk && merk.has(pass) && E.vorbauBild !== frame ? "bauen" : null;
     }
     // Der EINE Grund-Knoten jedes Schatten-Stoffs (r184 `vec4(0,0,0,1)`, je Licht neu gebaut) — `renderObject` oben
     static _schattenGrund() {
