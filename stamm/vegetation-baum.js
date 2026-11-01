@@ -2609,7 +2609,15 @@ class AnazhRealm_vegetation_baum {
             // DER STAND DER BEREITSCHAFT (`_bereitStand`): ein Studio-Eintrag, der zu diesem Stand nicht platz-bereit war und
             // bestellt hat, wartet auf das Ereignis, das ihn ändert — kein Peek, kein zweiter Bau-Ruf je Takt
             const stand = fAn ? this._bereitStand(this._lodAuge()) : -1;
+            // IM SINKFLUG VOR DEM BILD baut nur, was das Bild aus der Höhe zeigt (`_blickDerAnkunft`, b-himmel): die Nähe unter dem
+            // Schirm wächst im Flug, nah zuerst — vor der Kontrolle gehört der Takt dem Himmel, dem Horizont und dem Leib
+            const ausHoehe = !!this.state._sinkflug && !this.state._weltbildDa;
             for (const entry of nahOffen) {
+                if (
+                    ausHoehe &&
+                    !this._blickDerAnkunft(entry.position.x, entry.position.z, AnazhRealm.ERSTER_BLICK.dingM)
+                )
+                    continue;
                 if (this._schlaeft(entry, wunsch)) continue; // er schläft auf seiner Zusage (oben)
                 const fPre = fAn ? this._foundryPresetForEntry(entry) : null;
                 if (fPre && entry._platzNein === stand) continue;

@@ -974,10 +974,10 @@ class AnazhRealm_dirigent_ankunft {
         const yaw = Number.isFinite(st.yaw) ? st.yaw : 0;
         const fov = cam && cam.fov > 0 ? cam.fov : 75;
         const asp = cam && cam.aspect > 0 ? cam.aspect : 1;
-        // die Neigung der Kamera (der untere Rand des Schirms, `_unterDemBlick`): ihre Welt-Richtung, ohne Kamera waagrecht
-        const dy = cam
-            ? cam.getWorldDirection(this._ersterBlickRichtung || (this._ersterBlickRichtung = new THREE.Vector3())).y
-            : 0;
+        // die Neigung der Kamera (der untere Rand des Schirms, `_unterDemBlick`): die Höhe ihrer Blick-Achse (−z der Welt-Matrix,
+        // wie das Rig sie zuletzt setzte — ohne Neuberechnung je Frage), ohne Kamera waagrecht
+        const m = cam && cam.matrixWorld.elements;
+        const dy = m ? -m[9] / (Math.hypot(m[8], m[9], m[10]) || 1) : 0;
         const B = this._ersterBlickWert;
         if (
             B &&
