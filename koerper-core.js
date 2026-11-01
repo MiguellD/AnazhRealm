@@ -3540,12 +3540,25 @@
         stangeM: 0.02,
         // die Pole des Knies beim Klettern: ein Kranz von seitlich (90°) über vorn (0°) bis seitlich-hinten (120°), je etwas auf und ab —
         // nach vorn allein trug der Pol das Knie in die Wand
-        kniePole: Object.freeze(
-            [90, 60, 30, 0, 120, 75, 45, 15].reduce(function (L, w) {
-                var r = (w * Math.PI) / 180;
-                return L.concat([Object.freeze([Math.sin(r), 0.3, Math.cos(r)]), Object.freeze([Math.sin(r), -0.3, Math.cos(r)])]);
-            }, [])
-        ),
+        // (je Winkel w der Pol [sin w, ±0,3, cos w] als Zahl: die Daten rufen beim Laden keine Transzendente — Plattform-Probe v7)
+        kniePole: Object.freeze([
+            Object.freeze([1, 0.3, 0]),
+            Object.freeze([1, -0.3, 0]),
+            Object.freeze([0.866, 0.3, 0.5]),
+            Object.freeze([0.866, -0.3, 0.5]),
+            Object.freeze([0.5, 0.3, 0.866]),
+            Object.freeze([0.5, -0.3, 0.866]),
+            Object.freeze([0, 0.3, 1]),
+            Object.freeze([0, -0.3, 1]),
+            Object.freeze([0.866, 0.3, -0.5]),
+            Object.freeze([0.866, -0.3, -0.5]),
+            Object.freeze([0.966, 0.3, 0.259]),
+            Object.freeze([0.966, -0.3, 0.259]),
+            Object.freeze([0.707, 0.3, 0.707]),
+            Object.freeze([0.707, -0.3, 0.707]),
+            Object.freeze([0.259, 0.3, 0.966]),
+            Object.freeze([0.259, -0.3, 0.966]),
+        ]),
         // die Stange in den Fingern: über der Mitte der Hand (m); der Bogen des Umsetzens steigt bis zu diesem Anteil des Schwungs
         griffVersatz: 0.02,
         bogenHoch: 0.85,
