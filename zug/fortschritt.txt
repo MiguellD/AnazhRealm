@@ -1461,3 +1461,4 @@
 2026-11-01 13:58:01 p2-haar.K21-gtx START 1 Stationen in 1 Läufen
 2026-11-01 14:03:09 p2-haar.K21-gtx haar.K2#1 GRÜN 5.0 · 1/1
 2026-11-01 14:30:07 p2-spielgang.K31-gtx START 1 Stationen in 1 Läufen
+2026-11-01 14:35:16 p2-spielgang.K31-gtx spielgang.K3#1 GRÜN 5.0 · 1/1
