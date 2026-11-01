@@ -118,18 +118,19 @@ async function checkBandV18493CoSchoepferStudio({ page, check }) {
             out.fels = r._studioBlueprintForWord("fels");
             out.unbekannt = r._studioBlueprintForWord("quasselstrippe");
             // (dass JEDES Teil mit Ziel sein Wort trägt — jede Baum-Art und jede andere —, prüft gate:nervensystem S am Stammbaum)
-            // Ein sicher trockener Fleck nahe dem Spieler (der Test soll nie am Zufall des Sees hängen) — 50 m vor der
-            // Genesis-Mitte: ihre Lichtung ist ein Grundriss der Natur-Wand, dort wächst keine Eiche, deren Krone über die
-            // Scheibe reicht (Integration Welle L, Entscheid D3; die Eiche reicht mit Hain-Streuung bis ~36 m).
+            // Ein sicher trockener Fleck nahe dem Spieler (der Test soll nie am Zufall des Sees hängen) — jenseits des
+            // Parks des Genesis-Orts: seine Flächen sind Grundriss der Natur-Wand, dort wächst keine Eiche (Integration Welle L,
+            // Entscheid D3; der Plan der Welt, `_genesisFlaeche`).
             const p = st.playerMesh.position;
             const gM = r._genesisMitte();
+            // der Hain streut bis ~36 m um seinen Ort: kein Punkt seiner Scheibe auf einer Fläche des Genesis-Orts (die Ringe um die
+            // Mitte jenseits ihres Parks, 120–200 m)
+            const frei = (x, z) =>
+                [0, 12, 24, 36].every((d) => [0, 1, 2, 3, 4, 5, 6, 7].every((k) => !r._genesisFlaeche(x + d * Math.cos(k), z + d * Math.sin(k))));
             let spot = null;
-            for (let i = 0; i < 64 && !spot; i++) {
-                const a = i * 0.618 * Math.PI * 2,
-                    d = 20 + (i % 8) * 8;
-                const x = p.x + Math.cos(a) * d,
-                    z = p.z + Math.sin(a) * d;
-                if (Math.hypot(x - gM.x, z - gM.z) >= 50 && r._landAt(x, z, 2)) spot = { x, z };
+            for (let i = 0; i < 48 && !spot; i++) {
+                const [x, z] = [gM.x + Math.cos(i / 2.5) * (120 + (i >> 4) * 40), gM.z + Math.sin(i / 2.5) * (120 + (i >> 4) * 40)];
+                if (frei(x, z) && r._landAt(x, z, 2)) spot = { x, z };
             }
             out.spot = !!spot;
             const vorher = archs.length;

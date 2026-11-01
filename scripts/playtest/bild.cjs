@@ -873,15 +873,23 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         }
 
         // --- Der Genesis-Ort (Pflicht F) ---
-        // Nach dem ersten Spawn trägt die Welt den Plan ihres Orts (aus dem Faden), und der Spieler kam an seiner Mitte an
-        const M = r._genesisMitte();
-        out.genesisArchExists = !!(r._genesisPlan && M && Math.hypot(st.playerMesh.position.x - M.x, st.playerMesh.position.z - M.z) < 40);
-        // Idempotenz: weitere Takte setzen kein Element des Plans ein zweites Mal (die id ist der Stempel)
-        for (let i = 0; i < 2; i++) r._genesisOrt(st.playerMesh.position);
-        const before = st.architectures.length;
-        r._genesisOrt(st.playerMesh.position);
-        const ids = st.architectures.filter((a) => a && typeof a.id === "string" && a.id.startsWith("genesis:")).map((a) => a.id);
-        out.genesisIdempotent = ids.length === new Set(ids).size && st.architectures.length - before <= 12;
+        // Nach dem ersten Spawn trägt die Welt den Plan ihres Orts (aus dem Faden), der Spieler kam an seiner Mitte an. DER UMZUG
+        // (die Migrations-Probe): ein Tor des Plans steht in der älteren Form neben seinem Slot (R 11, ohne die id des Plans) —
+        // der Ort-Takt setzt es auf seinen Slot, die ältere Form fällt (`_genesisUmzug`); weitere Takte setzen kein Element ein
+        // zweites Mal (die id ist der Stempel). Der Umzug nennt keinen alten Namen.
+        const [P, pm] = [r._genesisPlan, st.playerMesh.position];
+        const t = P.tore[0];
+        const id = "genesis:tor:" + t.k;
+        out.genesisArchExists = Math.hypot(pm.x - P.ort.x, pm.z - P.ort.z) < 40;
+        r._genesisOrt(pm);
+        r.removeArchitecture(st.architectures.find((a) => a.id === id));
+        r._genesisWerkeFertig.delete(id);
+        const w = Math.atan2(t.z, t.x);
+        const alt = r.spawnArchitecture(r._genesisTorTypen().get(t.welt), { x: P.ort.x + 11 * Math.cos(w), y: pm.y, z: P.ort.z + 11 * Math.sin(w) }, { silent: true });
+        for (let i = 0; i < 3; i++) r._genesisOrt(pm);
+        const ids = st.architectures.map((a) => a.id).filter((i) => /^genesis:/.test(i));
+        const neu = st.architectures.find((a) => a.id === id);
+        out.genesisIdempotent = ids.length === new Set(ids).size && !st.architectures.includes(alt) && Math.hypot(neu.position.x - P.ort.x - t.x, neu.position.z - P.ort.z - t.z) <= 0.5;
 
         // --- Adaptives Wasser ---
         out.waterAdaptive = Number.isFinite(st.waterLevel);
@@ -913,7 +921,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         );
         check("Gras-Material ist geteilt (ein Draw-Call-Material)", v829Results.grassMatShared);
         check("Der Genesis-Ort steht nach dem Spawn als Plan der Welt (Ankunft an seiner Mitte)", v829Results.genesisArchExists);
-        check("Der Genesis-Ort setzt jedes Element EINMAL (keine Doppel-id)", v829Results.genesisIdempotent);
+        check("Der Genesis-Ort setzt jedes Element EINMAL, ein Tor der älteren Form rückt auf seinen Slot (der Umzug)", v829Results.genesisIdempotent);
         check("state.waterLevel ist gesetzt (adaptiv)", v829Results.waterAdaptive);
     } else {
         check("Die lebendige Welt Tests laufen", false, v829Results ? v829Results.error : "no result");

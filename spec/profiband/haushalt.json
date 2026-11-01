@@ -98,6 +98,22 @@
                     "pass": "haupt",
                     "dreieckeJe": 60000,
                     "quelle": "Synthese §4 W3 (Tor-L0 auf das Band 60 000, porta-core LOD-Budget)"
+                },
+                {
+                    "name": "Tor L2 auf dem Ring-Weg R 22",
+                    "art": "gate",
+                    "stufen": [2],
+                    "pass": "haupt",
+                    "dreieckeJe": 12500,
+                    "quelle": "porta-core LOD-Budget L2 ≤ 12 500 (der Genesis-Ort, Pflicht F); ort-wirt Radeon S2 Ego 61000dae: 10 Tore auf ihren Slots, das größte L2-Tor 4 590 im Wurf"
+                },
+                {
+                    "name": "Tor-Wurf je Tor in der nahen Kaskade",
+                    "art": "gate",
+                    "stufen": [2, 3],
+                    "pass": "k0",
+                    "dreieckeJe": 12000,
+                    "quelle": "porta-core LOD-Budget L3 ≤ 12 000 und 1 Befehl je Tor (der Genesis-Ort, Pflicht F); ort-wirt Radeon S2 Ego 61000dae"
                 }
             ]
         },
