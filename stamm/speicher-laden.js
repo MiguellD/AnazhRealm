@@ -532,7 +532,14 @@ class AnazhRealm_speicher_laden {
     _loadStateRestoreLeben(state) {
         const L = state.playerLeben;
         const pl = this.state.player;
-        if (!L || typeof L !== "object" || !pl) return;
+        // der Stand ERSETZT die Nahrung (EINE Grundstellung, `_standRueckspielen`): ein vor dem Laden getrunkener Trank fällt,
+        // statt neben der Nahrung des Stands weiterzuwirken — auch ein Stand ohne Lebenswerte lädt ohne Nahrung
+        if (pl && Array.isArray(pl.boosts))
+            pl.boosts = pl.boosts.filter((b) => !String(b.source).startsWith("consume:"));
+        if (!L || typeof L !== "object" || !pl) {
+            if (pl) this.recomputePlayerStats();
+            return;
+        }
         const anteil = (v, leer) => (Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : leer);
         pl.deathWoundIntensity = anteil(L.wunde, 0);
         for (const n of Array.isArray(L.nahrung) ? L.nahrung : [])
