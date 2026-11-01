@@ -2624,7 +2624,7 @@ hauptLauf(async () => {
                     let kronen = 0;
                     for (let gx = Math.floor((x0 - 20) / F.cell); gx <= Math.floor((x1 + 20) / F.cell); gx++)
                         for (let gz = Math.floor((z0 - 20) / F.cell); gz <= Math.floor((z1 + 20) / F.cell); gz++)
-                            for (const d of r._forestCellDarts(gx, gz, seedInt) || []) {
+                            for (const d of r._forestGeborene(gx, gz, seedInt)) {
                                 if (
                                     dachW.some(
                                         (ob) =>
