@@ -2919,18 +2919,22 @@ class AnazhRealm_studio_bruecke {
         if (!namen) return null;
         // Analog-Import: das Glied wird KAPSEL (Achse + Radius + Farbe aus dem Skelett-Raum, ~32 Byte statt
         // 128 KB Brick), DEDUP je Gattung + Glied; jede Instanz posiert sie per eigener Knochen-Matrix. Der
-        // March digitalisiert am Schirm; Voxel-Glieder-Bricks gibt es nicht mehr (kein Parallelpfad).
+        // March digitalisiert am Schirm; Voxel-Glieder-Bricks gibt es nicht mehr (kein Parallelpfad). DER LEIB OHNE GESTALT
+        // (der Bewohner als Zahl, `_bewohnerGeburt`) nennt die Lage jedes Glieds selbst (`_gliedLage`: der Gang-Satz seiner
+        // Gestalt, dieselbe Lage, die sein Feld danach schreibt) — sein Glied trägt keinen Teil.
         const tb = cr.userData._tierBaum;
+        const lage = cr.userData._gliedLage;
         const glieder = [];
         for (const nm of namen) {
-            const a = nm.name ? tb && tb.teile && tb.teile[nm.name] : (tb && tb.wrap) || cr;
-            if (!a) {
+            const a = lage ? null : nm.name ? tb && tb.teile && tb.teile[nm.name] : (tb && tb.wrap) || cr;
+            if (!a && !lage) {
                 for (const gl of glieder) this._weltFeldFrei(gl.handle);
                 return null;
             }
-            a.updateMatrixWorld(true);
+            if (a) a.updateMatrixWorld(true);
             const key = nm.key;
-            const handle = this._weltKapselSpawn(key, a.matrixWorld, () => this._gliedKapseln.get(key), einblenden);
+            const M = a ? a.matrixWorld : lage(nm.name);
+            const handle = this._weltKapselSpawn(key, M, () => this._gliedKapseln.get(key), einblenden);
             if (!handle) {
                 for (const gl of glieder) this._weltFeldFrei(gl.handle);
                 return null; // Erschöpfung: ganz oder gar nicht — kein halber Wolf

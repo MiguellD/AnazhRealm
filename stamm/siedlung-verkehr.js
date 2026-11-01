@@ -570,10 +570,12 @@ class AnazhRealm_siedlung_verkehr {
     // im selben Bild). Bis w4-verkehr-c2 wählte das Maß der Bewohner (`BEWOHNER.nahLeiber`, 4) die Bedeutendsten (stadt-voll um
     // 10 Uhr fuhr jeder dritte Wagen im Bild leer, 4266 von 12098 Wagen-Bildern), danach urteilte der Takt vor dem Wechsel der
     // Stufe: der Wagen, der ins Bild kam, fuhr ein Bild lang leer (10 Uhr 24×, 23 Uhr 11× „im Bild ohne gezeichneten Fahrer").
+    // DIE GESTALT AM STEUER (die Simulations-Stufen, `_bewohnerGestalt`): nur der Fahrer, dessen Wagen die Stufe trägt, trägt sie —
+    // gegossen, wenn er ins Bild kommt, abgegeben, wenn er geht; ungezeichnet ist sein Leib die Zahl ohne Leib-Knoten.
     _verkehrSitz(W, p) {
         const g = W.b.leib;
         const e = W.entry;
-        const sicht = this._archTraegt(e);
+        const sicht = this._bewohnerGestalt(W.S, W.b, this._archTraegt(e));
         if (sicht !== g.visible) g.visible = sicht;
         if (!sicht) {
             // ungezeichnet folgt der Leib seinem Wagen nur mit der Lage (kein Knochen): wer ihn liest (die Linse, die Ankunft),
@@ -610,6 +612,7 @@ class AnazhRealm_siedlung_verkehr {
         const b = W.b;
         const g = b.leib;
         const e = W.entry;
+        this._bewohnerWecken(S, b); // ruhte er (die stehende Zahl schläft nach dem Weg des Auges), nimmt ihn der Takt auf
         b.amSteuer = true;
         [b.kreis, b.nah, b.weg, b.drehen, b.vx, b.vz, b.platz] = [false, false, null, null, 0, 0, false];
         this._bewohnerRasterLage(S, b);

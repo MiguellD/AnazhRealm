@@ -497,13 +497,50 @@ class AnazhRealm_siedlung_bewohner {
             }
     }
 
-    // DIE GEBURT EINES BEWOHNERS: der EINE Mensch-Bau unter den Dials seiner Gestalt (die Übergabe des Spielers ruht — der
-    // Sentinel des Mitspielers), die Marke seines Hauses (`heim`), der Fern-Satz je Gestalt (`gattung`), sein Stand auf dem
-    // Gesetz (Lehre 22: die Sohle liegt PLAYER_FOOT_OFFSET unter dem Ursprung des Leibs). Er hält seine Haltung jenseits der
-    // Stufen-Grenze (`haltungFest`: kein Sprung in die A-Pose der Vorlage); die Glieder der Gestalt (`_tierBaum`: Teile, Hülle,
-    // Ruhe) trägt der Glieder-Satz des Welt-March (`_kzLeib`).
+    // DIE GEBURT EINES BEWOHNERS (die Simulations-Stufen: der Schnitt der Besten — GTA, Hitman, Cities): sein Leib ist zuerst
+    // eine ZAHL — die Wurzel ohne Kinder und außerhalb des Graphen (`b.leib`: Ort, Blick, Größe, das Gedächtnis, die Glieder
+    // des Felds), die Marke seines Hauses (`heim`), der Fern-Satz je Gestalt (`gattung`), sein Stand auf dem Gesetz (Lehre 22:
+    // die Sohle liegt PLAYER_FOOT_OFFSET unter dem Ursprung des Leibs). Seine Gestalt (Rig und Haut, 63 Knoten) gießt erst die
+    // Nähe im Blick aus dem EINEN Mensch-Bau (`_bewohnerGestalt`); bis dahin zeichnen ihn Satz und Feld aus der Zahl, und sein
+    // Gang geht am Bein seines Leibs (`_beinMass`, `_bewohnerBein`) — gemessen am Muster seiner Gestalt (`_bewohnerMuster`, das
+    // der Erste jeder Gestalt gießt: sein Leib trägt den Satz, sein Gang wird gebacken, seine Glieder zerlegt der Vorrat).
+    // Bis stadt-takt3 goss jede Geburt den ganzen Leib in den Graphen: an stadt-voll 72 384 von 73 772 Knoten in 1 131
+    // Leibern, je Gang des Kehraus 13,8 ms je Spitzen-Takt.
     _bewohnerGeburt(S, b) {
         const G = S.gestalten[b.gestalt];
+        const M = G.muster || (G.muster = this._bewohnerMuster(S, b));
+        if (!M) return void (b.leib = false); // laut beim Guss (`_bewohnerGuss`)
+        const g = new THREE.Group();
+        g.rotation.order = "YXZ"; // die Ordnung des Mensch-Baus (`_buildHumanGroup`): die Gier außen
+        g.name = "bewohner";
+        g.userData.heim = b.heim;
+        g.userData.gattung = M.userData.gattung;
+        g.scale.setScalar(b.groesse);
+        // SEINE FARBEN (mensch.K4): das Feld liest sie an seinen Gliedern (`_tonFeldFarbe`), die Gestalt an jedem Teil (`__ton`)
+        g.userData.__tonZeilen = b.tonZeilen;
+        // DAS TEMPO DES GANGS (mensch.K2): die Tempo-Einheit des Steuer-Gesetzes an seiner Beinlänge × `gang` des Tags — sein
+        // Bein trägt er im EINEN Gedächtnis des Gang-Gesetzes (`_beinMass`, `_gaitBeinMass`: der Träger ohne Rig)
+        b._beinMass = this._bewohnerBein(M, b);
+        b.beinL = Math.max(0.3, b._beinMass.L);
+        b.tempo = globalThis.__tetrapodaCore.tempoEinheit(b.beinL) * window.__koerperCore.TAGES_GESETZ.gang;
+        g.userData._hueftL = b.beinL; // die Kugel seines Blicks (`_kreaturAusserBlick`) misst an ihr
+        // die Lage seiner Glieder nennt der Satz seiner Gestalt (`_kreaturGliederBacken`, `_kzLeib`)
+        g.userData._gliedLage = (nm) => this._bewohnerGliedLage(S, b, nm);
+        this._bewohnerStellen(b, g, b.x, b.z);
+        g.rotation.y = b.blick;
+        // DER LEIB OHNE SZENEN-GANG (die Klasse der Ruhe, K59: `_ruhendeWurzel`): seine Matrizen stehen, der Szenen-Gang
+        // überspringt ihn; was ihn bewegt (Atem, Gang, Schritt — `_tickBewohner`), zieht sie selbst nach (`_leibMatrix`)
+        g.updateMatrixWorld(true);
+        g.updateMatrixWorld = AnazhRealm._ruhendeWurzel;
+        g.visible = false; // sichtbar macht ihn erst die Nah-Wahl (`_tickBewohner`), mit seiner Gestalt
+        g.userData._menge = true; // der Mensch der Menge: sein Feld wählt das Stufen-Gesetz am Schirm (`_feldGrenzen`)
+        b.leib = g;
+        if (G.satz === null) G.satz = this._bewohnerSatz(S, b);
+    }
+
+    // DER GUSS EINER GESTALT: der EINE Mensch-Bau unter ihren Dials (die Übergabe des Spielers ruht — der Sentinel des
+    // Mitspielers); fail-closed ohne Rig oder Gelenk-Gestalt (laut, null)
+    _bewohnerGuss(S, G) {
         const alt = this._activePeerUebergabe;
         this._activePeerUebergabe = {};
         let g = null;
@@ -512,26 +549,26 @@ class AnazhRealm_siedlung_bewohner {
         } finally {
             this._activePeerUebergabe = alt;
         }
-        const gl = g && g.userData._gelenk;
-        if (!g || !g.userData.rig || !gl) {
-            b.leib = false;
-            if (g) this._disposeSoulGroup(g);
-            return this._bruchMelden(`BEWOHNER: der Mensch-Bau lieferte keinen Leib („${S.plan.name || "?"}")`);
-        }
-        g.name = "bewohner";
-        g.userData.heim = b.heim;
-        g.userData.gattung = `mensch:${S.key}:${b.gestalt}`;
-        g.scale.setScalar(b.groesse);
-        // Breite und Tiefe seines Genoms tragen die Hüllen (im Raum des Leibs, nach der Haut — wie die Matrix seines Satzes);
-        // das Rig, die Glieder des Felds und der Stand bleiben in seiner Höhe. SEINE FARBEN (mensch.K4): jedes Teil liest seine
-        // Palette aus der Ton-Tafel (`userData.__ton` [Kopf, Gestalt], `_tonFaktor`), das Feld seine Glieder (`_tonFeldFarbe`)
-        g.userData.__tonZeilen = b.tonZeilen;
+        if (g && g.userData.rig && g.userData._gelenk) return g;
+        if (g) this._disposeSoulGroup(g);
+        this._bruchMelden(`BEWOHNER: der Mensch-Bau lieferte keine Gestalt („${S.plan.name || "?"}")`);
+        return null;
+    }
+
+    // DIE MASSE EINES LEIBS an seiner Gestalt (`g`): Breite und Tiefe seines Genoms tragen die Hüllen (im Raum des Leibs, nach
+    // der Haut — wie die Matrix seines Satzes; das Rig, die Glieder des Felds und der Stand bleiben in seiner Höhe), jedes Teil
+    // liest seine Palette aus der Ton-Tafel (`userData.__ton` [Kopf, Gestalt], `_tonFaktor`), und DER WURF IST DER SATZ
+    // (`_bewohnerSatz`): kein Teil wirft, auch der nahe nicht. Er hält seine Haltung jenseits der Stufen-Grenze
+    // (`haltungFest`: kein Sprung in die A-Pose der Vorlage); die Glieder der Gestalt (`_tierBaum`: Teile, Hülle, Ruhe).
+    _bewohnerMasse(g, b) {
         g.traverse((n) => {
             if (n.isSkinnedMesh) n.scale.set(b.breite, 1, b.tiefe);
-            if (n.isMesh) n.userData.__ton = b.tonZeilen;
+            if (n.isMesh) {
+                n.userData.__ton = b.tonZeilen;
+                n.castShadow = false;
+            }
         });
-        this._bewohnerStellen(b, g, b.x, b.z);
-        g.rotation.y = b.blick;
+        const gl = g.userData._gelenk;
         gl.haltungFest = true;
         const teile = {};
         gl.nah.traverse((n) => {
@@ -540,23 +577,99 @@ class AnazhRealm_siedlung_bewohner {
         const ruhe = {};
         for (const [k, p, q, s] of gl.ruhe || []) if (k.name) ruhe[k.name] = { position: p, quaternion: q, scale: s };
         g.userData._tierBaum = { teile, wrap: gl.nah.parent, ruhe };
-        // DER LEIB OHNE SZENEN-GANG (die Klasse der Ruhe, K59: `_ruhendeWurzel`): seine Matrizen stehen, der Szenen-Gang
-        // überspringt ihn; was ihn bewegt (Atem, Gang, Schritt — `_tickBewohner`), zieht sie selbst nach (`_leibMatrix`)
+    }
+
+    // DAS MUSTER EINER GESTALT (der Erste, der sie trägt, `b`: sein Leib in seinen Maßen — die Gestalt, die bis stadt-takt3 sein
+    // eigener Leib war): nie im Graphen; an ihm steht der Satz (`_bewohnerSatz`) und wird der Gang gebacken
+    // (`_bewohnerGangBacken`), an ihm misst jeder Leib seiner Gestalt sein Bein (`_bewohnerBein`), seine Grenze der
+    // Grobstufe (`_bewohnerGelenkAb`), und der Glied-Vorrat zerlegt es (`_gliederBestellen`, gereiht am Ort der Siedlung).
+    _bewohnerMuster(S, b) {
+        const g = this._bewohnerGuss(S, S.gestalten[b.gestalt]);
+        if (!g) return null;
+        g.name = "bewohner-muster";
+        g.userData.gattung = `mensch:${S.key}:${b.gestalt}`;
+        g.userData.__tonZeilen = b.tonZeilen;
+        g.scale.setScalar(b.groesse);
+        this._bewohnerMasse(g, b);
+        g.userData._haeute = [];
+        g.traverse((n) => n.isSkinnedMesh && g.userData._haeute.push(n));
+        g.position.set(S.ox, 0, S.oz); // fest am Ort der Siedlung: der Satz backt an ihm jedes Mal dieselben Zahlen
+        g.rotation.y = b.blick; // in der Gier seines Ersten (sein Rig misst das Bein wie dessen Leib, `_bewohnerBein`)
         g.updateMatrixWorld(true);
-        g.updateMatrixWorld = AnazhRealm._ruhendeWurzel;
-        // DAS TEMPO DES GANGS (mensch.K2): die Tempo-Einheit des Steuer-Gesetzes an seiner Beinlänge × `gang` des Tags
-        b.beinL = Math.max(0.3, this._gaitBeinMass(g.userData.rig).L);
-        b.tempo = globalThis.__tetrapodaCore.tempoEinheit(b.beinL) * window.__koerperCore.TAGES_GESETZ.gang;
-        // DER WURF IST DER SATZ (`_bewohnerSatz`): kein Teil des Leibs wirft, auch der nahe nicht — die Kaskaden zeichnen jeden
-        // Bewohner im Nah-Kreis aus dem Wurf-Satz seiner Gestalt; sichtbar wird der Leib erst durch die Nah-Wahl (`_tickBewohner`)
-        g.traverse((n) => {
-            if (n.isMesh) n.castShadow = false;
-        });
-        g.visible = false;
-        g.userData._menge = true; // der Mensch der Menge: sein Feld wählt das Stufen-Gesetz am Schirm (`_feldGrenzen`)
+        this._gliederBestellen(g);
+        return g;
+    }
+
+    // DAS BEIN EINES LEIBS (das Gang-Gesetz misst daran Schritt und Takt, `_gaitTick`): am Muster seiner Gestalt in seinen
+    // Maßen und seiner Gier bei der Geburt gemessen (Größe, Breite, Tiefe, `blick` — dieselben Rechnungen wie an seinem eigenen
+    // Rig, `_gaitBeinMessen`: bis stadt-takt3 maß es der Leib, gestellt, in derselben Lage), danach steht das Muster wieder in
+    // den Maßen seines Ersten.
+    _bewohnerBein(M, b) {
+        const H = M.userData._haeute;
+        const [s0, y0] = [M.scale.x, M.rotation.y];
+        const h0 = H.map((n) => n.scale.clone());
+        M.scale.setScalar(b.groesse);
+        M.rotation.y = b.blick;
+        for (const n of H) n.scale.set(b.breite, 1, b.tiefe);
+        this._gelenkRuhe(M); // die Pose seines Baus (der Klon der Vorlage): so stand sein Leib, als er maß
+        const B = this._gaitBeinMessen(M.userData.rig);
+        M.scale.setScalar(s0);
+        M.rotation.y = y0;
+        H.forEach((n, i) => n.scale.copy(h0[i]));
+        M.updateMatrixWorld(true);
+        return B;
+    }
+
+    // DIE GRENZE DER GROBSTUFE eines Leibs in Metern (`_gelenkAb`, die Raten-Leiter `_creatureAnimDiv` liest sie): das Gesetz
+    // seiner Gestalt (die Gelenk-Gestalt ihres Musters, je Schirm `zeilen` einmal gerechnet) × seine Größe
+    _bewohnerGelenkAb(S, b, zeilen) {
+        const gl = S.gestalten[b.gestalt].muster.userData._gelenk;
+        return this._gelenkGrenzen(gl, zeilen).grenzen[0].ab * (b.leib.scale.x || 1);
+    }
+
+    // DIE GESTALT DES LEIBS (die Simulations-Stufe der Nähe, `gestaltM`): `an` gießt sie aus dem EINEN Mensch-Bau
+    // (`_bewohnerGuss`, die Dials seiner Gestalt) in die Wurzel seines Leibs — Rig und Haut als ihre Kinder, ihre Felder
+    // (`BEWOHNER_GESTALT`), seine Maße und Farben (`_bewohnerMasse`), gestellt in seinen Gang — und hängt den Leib in die
+    // Szene; sonst verlässt sie Szene und Leib über die EINE Entsorgung (`_disposeSoulGroup`: Geometrie, Render-Objekte, die
+    // Vorlagen des Ofens), die Wurzel bleibt die Zahl. Liefert, ob er sie trägt.
+    _bewohnerGestalt(S, b, an) {
+        const g = b.leib;
+        const u = g.userData;
+        if (!an) {
+            if (!u._gelenk) return false;
+            if (g.parent) g.parent.remove(g);
+            const h = new THREE.Group();
+            for (const c of g.children.slice()) h.add(c);
+            this._disposeSoulGroup(h);
+            for (const k of AnazhRealm.BEWOHNER_GESTALT) delete u[k];
+            g.visible = false;
+            return false;
+        }
+        if (u._gelenk) return true;
+        const h = this._bewohnerGuss(S, S.gestalten[b.gestalt]);
+        if (!h) return false;
+        for (const c of h.children.slice()) g.add(c);
+        for (const k of AnazhRealm.BEWOHNER_GESTALT) if (k in h.userData) u[k] = h.userData[k];
+        this._bewohnerMasse(g, b);
+        this._animateHuman(g, b.uhr + b.atem, b.walkPhase || 0, !!b.weg, false, null, b._gait);
+        this._leibMatrix(g);
         this.state.scene.add(g);
-        b.leib = g;
-        if (G.satz === null) G.satz = this._bewohnerSatz(S, b);
+        return true;
+    }
+
+    // DIE LAGE DES GLIEDS `nm` in der Welt (der Leib ohne Gestalt nennt sie selbst, `_gliedLage`): die Zeile seines Teils im
+    // Gang-Satz seiner Gestalt (`_bewohnerGangLage`) auf der Wurzel seines Leibs — ohne Satz und Teil die Wurzel
+    _bewohnerGliedLage(S, b, nm) {
+        const Z = S.gestalten && S.gestalten[b.gestalt].satz;
+        const g = b.leib;
+        const R = (this._bewohnerGliedR || (this._bewohnerGliedR = new THREE.Matrix4())).compose(
+            g.position,
+            g.quaternion,
+            g.scale
+        );
+        const W = this._bewohnerGliedW || (this._bewohnerGliedW = new THREE.Matrix4());
+        const j = Z && Z.lageTeile ? Z.lageTeile.indexOf(nm) : -1;
+        return j < 0 ? W.copy(R) : this._bewohnerGangLage(Z, b, j, R, W);
     }
 
     // DER STAND DES LEIBS an (x, z): auf dem Boden jedes Körpers (Q4: die Fels-Grenze, nie das Dach), an der Tür auf ihrer
@@ -573,9 +686,9 @@ class AnazhRealm_siedlung_bewohner {
     // NUR-WURF-Stufe 3 (`wurf`, Studio-Vertrag B2: nie gezeigt, nur auf der Wurf-Ebene, jeder im Nah-Kreis, auch die Nah-Wahl;
     // Lehre 26: der Schatten ist derselbe Leib), EINE Senke je Stufe. Befehle je Gestalt: einer im Auge, der Wurf je Kaskade (bis
     // mensch.K4 Haut, Rest im Stoff des größten Kleids und Wurf). DER GANG IM SATZ: das EINE Gang-Gesetz des nahen Leibs in
-    // EINEM Band — `gangPhasen` Phasen des Doppelschritts und der Stand (`_bewohnerGangPose`, am Leib `b` seiner Gestalt), je
-    // Instanz Phase und Gewicht seines Gangs (`_bewohnerSatzSchreiben`). Ein Bewohner im Satz ist eine Matrix; der Satz geht
-    // mit seiner Siedlung.
+    // EINEM Band — `gangPhasen` Phasen des Doppelschritts und der Stand (`_bewohnerGangPose`, am Muster seiner Gestalt im
+    // Tempo ihres Ersten `b`), je Instanz Phase und Gewicht seines Gangs (`_bewohnerSatzSchreiben`). Ein Bewohner im Satz ist
+    // eine Matrix; der Satz geht mit seiner Siedlung.
     _bewohnerSatz(S, b) {
         const G = S.gestalten[b.gestalt];
         const senken = [];
@@ -599,7 +712,7 @@ class AnazhRealm_siedlung_bewohner {
         return this._gangSatz(
             { name: "bewohner-satz", inventar: "bewohner", n: AnazhRealm.BEWOHNER.gangPhasen, quellen, cap, senken },
             // der Stand zuerst (der Satz steht, bis sein Gang gebacken ist — `_bewohnerGangBacken` im Takt)
-            (Z) => this._bewohnerGangPose(b.leib, Object.assign(Z, { gebacken: 0, tempo: b.tempo }), Z.n)
+            (Z) => this._bewohnerGangPose(G.muster, Object.assign(Z, { gebacken: 0, tempo: b.tempo }), Z.n)
         );
     }
 
@@ -666,6 +779,23 @@ class AnazhRealm_siedlung_bewohner {
             }
         }
         if (!Z.lageVon) return;
+        const R = (this._bewohnerFeldR || (this._bewohnerFeldR = new THREE.Matrix4())).compose(
+            g.position,
+            g.quaternion,
+            g.scale
+        );
+        const W = this._bewohnerFeldW || (this._bewohnerFeldW = new THREE.Matrix4());
+        const an = this.state.creaturesHidden !== true;
+        for (let i = 0; i < gl.length; i++) {
+            this._weltFeldMatrix(gl[i].handle, this._bewohnerGangLage(Z, b, Z.lageVon[i], R, W));
+            this._weltFeldAktiv(gl[i].handle, an);
+        }
+    }
+
+    // DIE LAGE DES TEILS j im Gang (der EINE Mischer der Lagen, Feld und Glied lesen ihn): die Zeilen des Gang-Satzes `Z`,
+    // gemischt, wie der Knoten des Satzes mischt (`_gangSatzKnoten`: der Stand gegen die Phasen k0 und k1 nach dem Gewicht des
+    // Gangs von `b`; ungebacken der Stand), auf der Wurzel `R` → `W`
+    _bewohnerGangLage(Z, b, j, R, W) {
         const K = Z.lageTeile.length;
         const L = Z.lagen;
         const w = Z.fertig ? b._gaitW || 0 : 0;
@@ -674,40 +804,27 @@ class AnazhRealm_siedlung_bewohner {
         const k0 = Math.min(Z.n - 1, Math.floor(f));
         const k1 = (k0 + 1) % Z.n;
         const t = f - k0;
-        const R = (this._bewohnerFeldR || (this._bewohnerFeldR = new THREE.Matrix4())).compose(
-            g.position,
-            g.quaternion,
-            g.scale
-        );
         const M = this._bewohnerFeldM || (this._bewohnerFeldM = new THREE.Matrix4());
-        const W = this._bewohnerFeldW || (this._bewohnerFeldW = new THREE.Matrix4());
         const E = M.elements;
-        const an = this.state.creaturesHidden !== true;
-        for (let i = 0; i < gl.length; i++) {
-            const j = Z.lageVon[i];
-            const s = (Z.n * K + j) * 16;
-            const a0 = (k0 * K + j) * 16;
-            const a1 = (k1 * K + j) * 16;
-            for (let e = 0; e < 16; e++) {
-                const q = L[a0 + e] + (L[a1 + e] - L[a0 + e]) * t;
-                E[e] = L[s + e] + (q - L[s + e]) * w;
-            }
-            this._weltFeldMatrix(gl[i].handle, W.multiplyMatrices(R, M));
-            this._weltFeldAktiv(gl[i].handle, an);
+        const s = (Z.n * K + j) * 16;
+        const a0 = (k0 * K + j) * 16;
+        const a1 = (k1 * K + j) * 16;
+        for (let e = 0; e < 16; e++) {
+            const q = L[a0 + e] + (L[a1 + e] - L[a0 + e]) * t;
+            E[e] = L[s + e] + (q - L[s + e]) * w;
         }
+        return W.multiplyMatrices(R, M);
     }
 
     // DER GANG WIRD GEBACKEN (Lehre 14: schwere deterministische Arbeit im Takt, nie als Spitze): je Takt höchstens `je`
-    // Phasen am ersten Leib der Gestalt, der nicht als Leib lebt (ein Leib der Nah-Wahl trägt seine eigene Pose); sind alle
-    // gebacken, lädt die Textur EINMAL neu und der Satz geht (`fertig`). Liefert, ob ein Satz eben fertig wurde.
+    // Phasen am Muster der Gestalt (`_bewohnerMuster`: kein lebender Leib wird dafür gestellt); sind alle gebacken, lädt die
+    // Textur EINMAL neu und der Satz geht (`fertig`). Liefert, ob ein Satz eben fertig wurde.
     _bewohnerGangBacken(S, je) {
         let fertig = false;
-        S.gestalten.forEach((G, gi) => {
+        S.gestalten.forEach((G) => {
             const Z = G.satz;
-            if (!Z || Z.fertig || je <= 0) return;
-            const b = S.liste.find((x) => x.gestalt === gi && x.leib && !x.nah && !x.amSteuer);
-            if (!b) return;
-            for (; je > 0 && Z.gebacken < Z.n; je--) this._bewohnerGangPose(b.leib, Z, Z.gebacken++);
+            if (!Z || Z.fertig || je <= 0 || !G.muster) return;
+            for (; je > 0 && Z.gebacken < Z.n; je--) this._bewohnerGangPose(G.muster, Z, Z.gebacken++);
             if (Z.gebacken >= Z.n) {
                 Z.tex.needsUpdate = true;
                 Z.fertig = fertig = true;
@@ -787,6 +904,9 @@ class AnazhRealm_siedlung_bewohner {
     // Je Leib: jenseits der Nah-Grenze der Glieder-Satz (`_kzLeib`, echte GPU), diesseits der Satz seiner Gestalt
     // (`_bewohnerSatzSchreiben`, neu nur, wenn eine Lage oder Wahl wechselt) — nur die Nah-Wahl lebt als Leib: der
     // Stufen-Schalter (`_gelenkStufe`) und das EINE Gang-Gesetz (`_gaitTick` → `_animateHuman`: Gang, Stand mit Kontrapost).
+    // DIE SIMULATIONS-STUFEN (stadt-takt3): die Gestalt trägt nur, wer nah und im Blick steht (`_bewohnerGestalt`, die
+    // Kandidaten der Nah-Wahl); wer jenseits `zahlM` oder außer Blick ist, ruht als Zahl (`_bewohnerZahl`) und geht im Takt
+    // der Ruhenden.
     _tickBewohner(delta) {
         const st = this.state;
         const pm = st.playerMesh;
@@ -800,12 +920,28 @@ class AnazhRealm_siedlung_bewohner {
         const tag = Number.isFinite(st.timeOfDay) ? st.timeOfDay : 0.5;
         const stunde = (((tag % 1) + 1) % 1) * 24;
         let geburten = 0;
+        let gestalten = 0;
         let wege = 0;
         let ankuenfte = 0;
         let frist = null; // die Frist der Listen dieses Takts (`listeMs`), gestellt mit dem ersten Schritt einer Liste
         const auge = this._lodAuge() || p; // das Auge der Stufen: Feld, Nah-Wahl, Stufe und Takt der Leiber messen von ihm
         const arm = Math.hypot(auge.x - p.x, auge.z - p.z);
         const NF = this._feldGrenzen(true); // die Grenzen des Felds der Menge, EINMAL je Takt (die Epoche, `_feldGrenzen`)
+        const zeilen = this._schirm().hoehe; // der Schirm des Takts (die Grenze der Grobstufe je Gestalt, `_bewohnerGelenkAb`)
+        // DER BLICK DES TAKTS (die Simulations-Stufen): der Frustum des Vor-Takts mit dem Rand der Drehung (`_blickRand`, EINMAL
+        // je Takt im Kreatur-Takt gerechnet) und das Licht des Wurfs — ohne Bild (der Null-Renderer) und bei schneller Drehung
+        // (kein Rand) ist keiner außer Blick
+        const BZ = this._bewohnerBlick || (this._bewohnerBlick = { fr: null, rand: -1, licht: null });
+        BZ.fr = echt && this._blickRand >= 0 ? this._frustumCache || null : null;
+        BZ.rand = this._blickRand;
+        BZ.licht = BZ.fr ? this._kreaturLicht() : null;
+        const imBlick = (g) => !BZ.fr || !this._kreaturAusserBlick(g, BZ.fr, BZ.rand);
+        // DER WEG DES AUGES (die Wache der Stufe, `zahlSteht`): die Summe seiner Schritte von Takt zu Takt — sie ist nie
+        // kürzer als seine Verschiebung seit irgendeinem Takt (Dreiecks-Ungleichung; auch ein Sprung der Kamera, auch über
+        // Takte ohne Siedlung), darum kommt keine stehende Zahl dem Auge näher, als dieser Weg seit ihrer Prüfung wuchs
+        const AW = this._bewohnerAugeWeg || (this._bewohnerAugeWeg = { x: auge.x, z: auge.z, weg: 0 });
+        AW.weg += Math.hypot(auge.x - AW.x, auge.z - AW.z);
+        [AW.x, AW.z] = [auge.x, auge.z];
         // DER SPIELER IST EIN LEIB (mensch.K5, „Ausweichen ohne Berührung"): sein Lauf dieses Takts (`_spielerLageAlt`, der
         // Kreatur-Takt rechnet ihn vor diesem) und sein Weg `ausweichS` voraus (`voraus`) — jeder Bewohner weicht ihm wie einem
         // Gehenden mit Vorrang (`_bewohnerAusweichen`), wer steht, macht ihm Platz (`_bewohnerPlatz`); steht er (unter 0,2 m/s,
@@ -869,9 +1005,10 @@ class AnazhRealm_siedlung_bewohner {
             S.uhrStunde = stunde;
             const sprung = Math.min(dU, 24 - dU) >= BW.sprungH;
             if (sprung || S.aktivListe !== S.liste) {
-                [S.aktivListe, S.aktiv, S.ruhend, S.raster, S.taktUhr] = [S.liste, S.liste.slice(), [], new Map(), 0];
+                [S.aktivListe, S.aktiv, S.ruhend, S.zahlSteht, S.raster, S.taktUhr] = [S.liste, S.liste.slice(), [], [], new Map(), 0]; // prettier-ignore
                 [S.planI, S.ruhSoll] = [0, 0];
                 S.liste.forEach((b, i) => Object.assign(b, { nr: i, ruht: false, rk: undefined, uhr: 0, uhrAb: 0 }));
+                S.liste.forEach((b) => Object.assign(b, { zahl: false, zahlE: null, ruheDt: 0 })); // wach, ohne Stufe
                 for (const b of S.liste) this._bewohnerRasterLage(S, b);
             }
             const koepfe = (S.koepfe = this._bewohnerKoepfe || (this._bewohnerKoepfe = []));
@@ -882,13 +1019,50 @@ class AnazhRealm_siedlung_bewohner {
             // gestaffelte Takt ohne sie, und fiel eine Wende auf seinen Takt, rechnete `zielUhr` mit der Uhr seines letzten Takts
             for (const b of S.ruhend.splice(0, Math.floor(S.ruhSoll))) this._bewohnerWecken(S, b);
             S.ruhSoll -= Math.floor(S.ruhSoll);
-            // DIE WACHE (mensch.K3): wechselt eine Hülle im Rechteck der Wege, prüft jeder Gehende den Rest seines Wegs
+            // DIE WACHE DER STUFE (stadt-takt3): die stehende Zahl (`zahlSteht`) wartet auf keinen Takt — der Plan, die Wache der
+            // Wege und dieser Blick wecken sie: wer die Stufe der Zahl verlässt (`_bewohnerZahl` am Auge dieses Takts: diesseits
+            // `zahlM`, in den Blick oder seinen Wurf). Geprüft wird nach dem Weg des Auges (`AW`): wer jenseits `zahlM` steht,
+            // schläft, bis das Auge den Rest bis zur Grenze gegangen sein kann (`bis` seines Eintrags) — nur wer diesseits
+            // außer Blick ist, geht in jedem Takt durch den Blick. Der Eintrag gilt, solange er sein Zeichen trägt (`zahlE`:
+            // jeder Weckruf nimmt es, `_bewohnerWecken`). Bis hier ging jede stehende Zahl jeden Takt durch beide Proben (an
+            // stadt-voll 902 Zahlen, 974 Proben je Takt, ~1,4 ms)
+            const ZS = S.zahlSteht || (S.zahlSteht = []);
+            let zn = 0;
+            for (let i = 0; i < ZS.length; i++) {
+                const e = ZS[i];
+                const b = e.b;
+                if (b.zahlE !== e) continue; // geweckt (Plan, Wache, Platz, Verkehr): er fällt aus der Liste
+                if (e.bis > AW.weg) {
+                    ZS[zn++] = e; // das Auge kann ihm noch nicht über die Grenze gekommen sein
+                    continue;
+                }
+                if (!b.ruht || !b.zahl || !this._bewohnerZahlSteht(b, echt)) {
+                    b.zahlE = null;
+                    if (b.ruht) S.ruhend.push(b); // er steht nicht mehr still: sein Takt ist der der Ruhenden (`fernS`)
+                    continue;
+                }
+                const q = b.leib.position;
+                b.dA2 = (q.x - auge.x) ** 2 + (q.z - auge.z) ** 2;
+                if (!this._bewohnerZahl(b, 0, BZ)) {
+                    this._bewohnerWecken(S, b);
+                    continue;
+                }
+                const rest = Math.sqrt(b.dA2) - BW.zahlM;
+                e.bis = rest > 0 ? AW.weg + rest : -Infinity;
+                ZS[zn++] = e;
+            }
+            ZS.length = zn;
+            // DIE WACHE (mensch.K3): wechselt eine Hülle im Rechteck der Wege, prüft jeder Gehende den Rest seines Wegs, und
+            // jeder Stand weicht ihr — geweckt wird, wen sie traf (sein Stand rückte, sein Weg fiel: `betroffen`); bis stadt-takt3
+            // weckte jeder Wechsel jeden Kopf (an stadt-voll 1 131 in einem Takt, je Hülle, die im Gang der Stadt kam und ging)
             if (S.wache.stand !== S.wegeStand) {
                 const trifft = this._bewohnerWechsel(S, S.wegeStand);
                 S.wegeStand = S.wache.stand;
-                for (const b of S.liste) this._bewohnerWecken(S, b);
-                for (const gang = this._bewohnerStandPruefen(S, trifft); !gang.next().done;); // ganz, in diesem Takt
-                this._bewohnerWegPruefen(S, trifft);
+                const betroffen = this._bewohnerBetroffen || (this._bewohnerBetroffen = new Set());
+                betroffen.clear();
+                for (const gang = this._bewohnerStandPruefen(S, trifft, betroffen); !gang.next().done;); // ganz, in diesem Takt
+                this._bewohnerWegPruefen(S, trifft, betroffen);
+                for (const b of betroffen) this._bewohnerWecken(S, b);
             }
             let anders = false; // eine Wahl wechselt: der Satz neu (`_bewohnerSatzSchreiben`); sonst rücken die Bewegten
             const bewegt = this._bewohnerBewegt || (this._bewohnerBewegt = []);
@@ -1031,7 +1205,19 @@ class AnazhRealm_siedlung_bewohner {
                 }
                 if (b.weg) {
                     b.gehDt = (b.gehDt || 0) + delta;
-                    const div = Math.max(1, this._creatureAnimDiv(Math.sqrt(ad2), this._gelenkAb(g), 0, delta, true));
+                    // die Zahl geht in ihrem Takt (`fernS`) mit aller Zeit seit dem letzten (`_bewohnerUhrNach`) — nie gröber
+                    const div = b.zahl
+                        ? 1
+                        : Math.max(
+                              1,
+                              this._creatureAnimDiv(
+                                  Math.sqrt(ad2),
+                                  this._bewohnerGelenkAb(S, b, zeilen),
+                                  0,
+                                  delta,
+                                  true
+                              )
+                          );
                     if ((b.gehTakt = ((b.gehTakt || 0) + 1) % div) === 0) {
                         const dt = b.gehDt;
                         b.gehDt = 0;
@@ -1070,11 +1256,18 @@ class AnazhRealm_siedlung_bewohner {
                 const kreis = !b.drinnen && !(echt && this._kzBesitztFeld(g));
                 if (kreis !== b.kreis) anders = true;
                 b.kreis = kreis;
+                // DIE GESTALT (die Simulations-Stufe der Nähe, `_bewohnerGestalt`): sie gießt erst die Nah-Wahl (unten), und sie
+                // bleibt, solange er nah (`gestaltM` vom Auge) und im Blick steht — ein Tausch der Bedeutendsten gießt nie neu;
+                // wer die Zone verlässt, gibt sie ab, sobald er nicht mehr lebt. Kandidat der Nah-Wahl ist nur, wer im Blick ist.
+                const zone = kreis && ad2 < BW.gestaltM * BW.gestaltM && imBlick(g);
+                if (!zone && u._gelenk && !b.nah) this._bewohnerGestalt(S, b, false);
                 const rN = b.nah ? BW.nahM + BW.nahHystM : BW.nahM;
-                if (kreis && ad2 < rN * rN) {
-                    // die Bedeutung (`_bedeutung`: Größe am Schirm mal Gang), wer lebt, mit der Hysterese der Gestalt bedeutender
+                if (zone && ad2 < rN * rN) {
+                    // die Bedeutung (`_bedeutung`: Größe am Schirm mal Gang), wer lebt, mit der Hysterese seiner Gestalt (ihr
+                    // Muster: dieselbe Gelenk-Gestalt) bedeutender
                     const bd = this._bedeutung(g.scale.y || 1, Math.sqrt(ad2), b.weg ? b.tempoJetzt : 0);
-                    b.bedeutung = b.nah ? bd / (1 - u._gelenk.hyst) ** 2 : bd;
+                    const hyst = S.gestalten[b.gestalt].muster.userData._gelenk.hyst;
+                    b.bedeutung = b.nah ? bd / (1 - hyst) ** 2 : bd;
                     nah.push(b);
                 }
             }
@@ -1083,6 +1276,13 @@ class AnazhRealm_siedlung_bewohner {
             // Nah-Kreis steht im Satz seiner Gestalt; der Wechsel schaltet nur `visible` und schreibt die Sätze neu
             nah.sort((a, b) => b.bedeutung - a.bedeutung);
             if (nah.length > BW.nahLeiber) nah.length = BW.nahLeiber;
+            // DIE GESTALT DER NAH-WAHL: wer gewählt ist und keine trägt, bekommt sie jetzt aus dem EINEN Mensch-Bau — je Takt
+            // höchstens `gestaltenJeTakt`; wer darüber wartet, steht bis zum nächsten Takt im Satz
+            for (let i = 0; i < nah.length; i++)
+                if (!nah[i].leib.userData._gelenk) {
+                    if (gestalten < BW.gestaltenJeTakt && this._bewohnerGestalt(S, nah[i], true)) gestalten++;
+                    else nah.splice(i--, 1);
+                }
             for (const b of koepfe) {
                 const g = b.leib;
                 if (!g) continue;
@@ -1099,14 +1299,17 @@ class AnazhRealm_siedlung_bewohner {
                 }
                 const dK = b.uhrAb === S.taktUhr ? delta : S.taktUhr + delta - b.uhrAb; // seine Zeit seit seinem letzten Takt
                 [b.uhr, b.animDt, b.uhrAb] = [b.uhr + dK, (b.animDt || 0) + dK, S.taktUhr + delta];
+                // die Wende und das Ausklingen gehen mit der Zeit, die er als Zahl ruhte (`_bewohnerUhrNach`)
+                const dR = delta + (b.ruheDt || 0);
+                b.ruheDt = 0;
                 // DER BLICK AM ZIEL: wer steht, wendet sich seinem Ziel zu (`_bewohnerDrehen`)
-                if (b.drehen != null && this._bewohnerDrehen(b, delta, echt, S)) {
+                if (b.drehen != null && this._bewohnerDrehen(b, dR, echt, S)) {
                     bewegt.push(b);
                     b.lageNeu = true;
                 }
                 // jenseits der Nah-Wahl klingt der Gang im Stand aus (das Gewicht des EINEN Gang-Tick)
                 if (!istNah && !b.weg && b._gaitW > 0) {
-                    this._bewohnerGangSchritt(b, 0, delta, echt, S);
+                    this._bewohnerGangSchritt(b, 0, dR, echt, S);
                     bewegt.push(b);
                 }
                 if (!istNah) continue;
@@ -1117,7 +1320,7 @@ class AnazhRealm_siedlung_bewohner {
                 if (!this._gelenkStufe(g, auge, b.lageAuge)) {
                     const geht = !!b.weg;
                     const om = b._gait ? b._gait.omega : 0;
-                    const div = this._creatureAnimDiv(Math.sqrt(b.dA2), this._gelenkAb(g), om, delta, geht);
+                    const div = this._creatureAnimDiv(Math.sqrt(b.dA2), this._bewohnerGelenkAb(S, b, zeilen), om, delta, geht); // prettier-ignore
                     if (div !== 0 && (b.takt = (b.takt + 1) % div) === 0) {
                         const dtA = Math.min(0.25, b.animDt);
                         b.animDt = 0;
@@ -1136,20 +1339,53 @@ class AnazhRealm_siedlung_bewohner {
             const m = Math.max(spV, st.sprintSpeed || 0, st.speed || 0) * BW.fernS;
             const innen = Math.max(BW.nahM + BW.nahHystM, kDeckel + spV * BW.ausweichS) + m;
             S.aktiv = koepfe.filter(
-                (b) => b.leib !== false && !(b.ruht = this._bewohnerRuhig(b, innen, m + arm, echt, NF))
+                (b) => b.leib !== false && !(b.ruht = this._bewohnerRuhig(b, innen, m + arm, echt, NF, BZ))
             );
-            for (const b of koepfe) if (b.ruht) S.ruhend.push(b);
+            for (const b of koepfe) {
+                if (!b.ruht) continue;
+                // wer als Zahl ruht, trägt keine Gestalt (die Nah-Wahl ließ ihn in diesem Takt außer Blick los)
+                if (b.zahl && b.leib.userData._gelenk) this._bewohnerGestalt(S, b, false);
+                // DIE STEHENDE ZAHL (`_bewohnerZahlSteht`) wartet in `zahlSteht` auf ihren Weckruf (die Wache der Stufe oben),
+                // jeder andere Ruhende im Takt `fernS`
+                if (!b.zahl || !this._bewohnerZahlSteht(b, echt)) S.ruhend.push(b);
+                else if (!b.zahlE) ZS.push((b.zahlE = { b, bis: -Infinity })); // geprüft im nächsten Takt
+            }
             [S.koepfe, S.taktUhr] = [null, S.taktUhr + delta];
         }
+    }
+
+    // DIE ZAHL (die Simulations-Stufe der Ferne, der Schnitt der Besten — GTA, Hitman, Cities): wer jenseits `zahlM` vom Auge
+    // der Stufen steht (samt seinem Weg `m` bis zu seinem nächsten Takt: keine Grenze, die er bis dahin kreuzt) oder außer
+    // Blick ist — seine Körper-Kugel samt Saum und dem Rand der Drehung außer dem Frustum (`_kreaturAusserBlick`, die EINE
+    // Frage des Blicks), auf der Seite des Satzes auch sein Wurf (`_kreaturWurfAusserBlick`; das Feld wirft nicht) —, ruht als
+    // Zahl: Ort, Ziel und Zeit, ohne Gestalt (der Leib ohne Knoten im Graphen), im Takt der Ruhenden (`fernS`) — sein Gang, seine
+    // Wende und sein Ausklingen gehen dort mit aller Zeit seit dem letzten (`_bewohnerUhrNach`), sein Ausweichen wie im Takt.
+    // Wer noch ankommt, lebt (die Nah-Wahl) oder am Steuer sitzt, ist nie Zahl; ohne Bild ist kein Blick (`BZ.fr` null).
+    _bewohnerZahl(b, m, BZ) {
+        if (b.ankunft || b.nah || b.amSteuer || !(b.dA2 >= 0)) return false;
+        if (Math.sqrt(b.dA2) > AnazhRealm.BEWOHNER.zahlM + m) return true;
+        const g = b.leib;
+        if (!BZ.fr || !this._kreaturAusserBlick(g, BZ.fr, BZ.rand)) return false;
+        return b.drinnen || this._kzBesitztFeld(g) || this._kreaturWurfAusserBlick(g, BZ.fr, BZ.licht);
+    }
+    // DIE STEHENDE ZAHL: nichts im Gang — kein Weg, kein Platz, keine Tür, keine Wende, kein Ausklingen —, und mit Bild draußen
+    // ihr Feld gebacken (`_kzLeib` backt es in ihrem Takt): sie braucht keinen Takt, bis etwas sie weckt
+    _bewohnerZahlSteht(b, echt) {
+        const feld = !echt || b.drinnen || b.leib.userData._kzVersuch === true;
+        return feld && b.da && !b.weg && !b.platz && !b.hinaus && b.drehen == null && !(b._gaitW > 0);
     }
 
     // DER RUHENDE (bewohner-takt, `_tickBewohner`): er trägt einen Leib, steht an seinem Ziel ohne Weg, ohne Vorhaben (Tür, Platz,
     // Ankunft), ohne Wende und Gang, lebt nicht als Leib — und ist drinnen oder steht jenseits von `innen` (der Kreis des Lebens
     // und der Raum des Spielers, dazu sein Weg `m` bis zum nächsten Takt des Ruhenden), mit Bild diesseits der Grenze seiner Seite
     // am Auge der Stufen (`_feldGrenzen`: im Satz unter `aus`, im Feld über `ein`, je um `m` — darin der Arm der Kamera, das Auge
-    // kreist um den Spieler) — keine Grenze, die er bis dahin kreuzt. `N` die Grenzen des Felds dieses Takts.
-    _bewohnerRuhig(b, innen, m, echt, N) {
-        if (!b.leib || !b.da || b.weg || b.platz || b.hinaus || b.ankunft || b.nah || b.drehen != null || b._gaitW > 0)
+    // kreist um den Spieler) — keine Grenze, die er bis dahin kreuzt. `N` die Grenzen des Felds dieses Takts. Dazu ruht die
+    // ZAHL (`_bewohnerZahl`, die Marke `zahl`), auch wer geht.
+    _bewohnerRuhig(b, innen, m, echt, N, BZ) {
+        if (!b.leib) return false;
+        b.zahl = this._bewohnerZahl(b, m, BZ);
+        if (b.zahl) return true;
+        if (!b.da || b.weg || b.platz || b.hinaus || b.ankunft || b.nah || b.drehen != null || b._gaitW > 0)
             return false;
         if (b.drinnen) return true;
         if (b.d2 < innen * innen) return false;
@@ -1162,15 +1398,20 @@ class AnazhRealm_siedlung_bewohner {
 
     // DIE UHR DES RUHENDEN (bewohner-takt): seine Zeit seit seinem letzten Takt (`uhrAb` auf der Uhr der Siedlung `taktUhr`),
     // bevor ein Leser sie liest (der Plan, `_bewohnerZiel`); WECKEN nimmt ihn in diesen Takt (`koepfe`), sonst in den nächsten.
+    // Wer als Zahl ging, sich wandte oder ausklang (`_bewohnerZahl`), trägt dieselbe Zeit in seinen Schritt (`gehDt`) und
+    // seine Wende (`ruheDt`) — die Zeit geht nie verloren.
     _bewohnerUhrNach(S, b) {
         if (!b.ruht || b.uhrAb === S.taktUhr) return;
         const d = S.taktUhr - b.uhrAb;
         [b.uhr, b.animDt, b.uhrAb] = [b.uhr + d, (b.animDt || 0) + d, S.taktUhr];
+        if (b.weg) b.gehDt = (b.gehDt || 0) + d;
+        else if (b.drehen != null || b._gaitW > 0) b.ruheDt = (b.ruheDt || 0) + d;
     }
     _bewohnerWecken(S, b) {
         if (!b.ruht) return;
         this._bewohnerUhrNach(S, b);
         b.ruht = false;
+        b.zahlE = null; // sein Eintrag der stehenden Zahl gilt nicht mehr (`zahlSteht`)
         (S.koepfe || S.aktiv).push(b);
     }
 
@@ -2345,7 +2586,8 @@ class AnazhRealm_siedlung_bewohner {
             kanten[j].push(i, w);
         };
         const kanten = G.kanten.map((k) => k.slice());
-        const N = { knoten, kanten, baeume: new Map(), frei: erbe || new Map(), stand: S.wache.stand };
+        const raster = this._bewohnerKnotenRaster(G);
+        const N = { knoten, kanten, baeume: new Map(), frei: erbe || new Map(), stand: S.wache.stand, raster };
         const teil = new Int32Array(knoten.length);
         const N2 = AnazhRealm.BEWOHNER.naehtM ** 2;
         for (;;) {
@@ -2368,17 +2610,23 @@ class AnazhRealm_siedlung_bewohner {
                 n++;
             }
             if (n < 2) break;
-            // der kürzeste freie Schritt aus dem Teil des ersten Knotens hinaus
+            // der kürzeste freie Schritt aus dem Teil des ersten Knotens hinaus — die Paare bis `naehtM` aus den Nachbar-Zellen
+            // des Rasters (je Zelle `naehtM`: keiner näher liegt weiter fort), in der Reihe der Knoten bei gleicher Länge; bis
+            // stadt-takt3 ging jeder Knoten jeden anderen (an stadt-voll 1 765², 3,3 ms je Wechsel der Wache)
             const paare = [];
+            const { M, R } = raster;
             for (let i = 0; i < knoten.length; i++) {
                 if (teil[i] !== 0) continue;
-                for (let j = 0; j < knoten.length; j++) {
-                    if (teil[j] === 0) continue;
-                    const d = (knoten[i].x - knoten[j].x) ** 2 + (knoten[i].z - knoten[j].z) ** 2;
-                    if (d <= N2) paare.push([d, i, j]);
-                }
+                const [cx, cz] = [Math.floor(knoten[i].x / M), Math.floor(knoten[i].z / M)];
+                for (let dx = -1; dx <= 1; dx++)
+                    for (let dz = -1; dz <= 1; dz++)
+                        for (const j of R.get((cx + dx) * 2097152 + cz + dz) || []) {
+                            if (teil[j] === 0) continue;
+                            const d = (knoten[i].x - knoten[j].x) ** 2 + (knoten[i].z - knoten[j].z) ** 2;
+                            if (d <= N2) paare.push([d, i, j]);
+                        }
             }
-            paare.sort((p, q) => p[0] - q[0]);
+            paare.sort((p, q) => p[0] - q[0] || p[1] - q[1] || p[2] - q[2]);
             const naht = paare.find(([, i, j]) => this._bewohnerKante(N, i, j));
             if (!naht) {
                 this._bruchMelden(
@@ -2427,8 +2675,8 @@ class AnazhRealm_siedlung_bewohner {
 
     // DER REST DES WEGS nach einem Wechsel der Wache: wer geht, prüft die Beine vor sich (vom Leib bis zum Ziel, ohne das Bein
     // durch die eigene Tür), die eine gewechselte Hülle berühren (`trifft`, `_bewohnerWechsel`; null: jedes); trifft eines
-    // eine Wand, legt er den Weg neu von hier (`_bewohnerWeg`, im nächsten Takt).
-    _bewohnerWegPruefen(S, trifft = null) {
+    // eine Wand, legt er den Weg neu von hier (`_bewohnerWeg`, im nächsten Takt). Wen es traf, nennt `betroffen` (der Weckruf).
+    _bewohnerWegPruefen(S, trifft = null, betroffen = null) {
         for (const b of S.liste) {
             if (!b.weg || !b.leib) continue;
             const o = b.orte;
@@ -2439,6 +2687,7 @@ class AnazhRealm_siedlung_bewohner {
                 if (tuerBein || (trifft && !trifft(p, q)) || !this._bewohnerWand(p, q)) continue;
                 b.weg = null;
                 b.stand = null;
+                if (betroffen) betroffen.add(b);
                 break;
             }
         }
@@ -2446,7 +2695,8 @@ class AnazhRealm_siedlung_bewohner {
 
     // DIE WECHSEL SEIT EINEM STAND der Wache (ihr Buch, `_blockerWacheMelden`): die Probe, ob eine Strecke a → e eine Hülle
     // berührt, die seit `seit` wechselte (ihr Kasten samt Kapsel und Spur, wie die Wache); null, wenn das Buch nicht so weit
-    // zurück reicht — dann urteilt der Leser alles neu.
+    // zurück reicht — dann urteilt der Leser alles neu. Die Probe trägt ihr Buch (`H`: die Kästen, `r`: der Rand) — ein Leser,
+    // der seine Orte im Raster hält, fragt nur die Zellen der Kästen (`_bewohnerStandPruefen`).
     _bewohnerWechsel(S, seit) {
         const w = S.wache;
         const L = w.wechsel || [];
@@ -2454,25 +2704,26 @@ class AnazhRealm_siedlung_bewohner {
         if (!(n >= 0 && n <= L.length)) return null;
         const H = L.slice(L.length - n);
         const r = AnazhRealm.PLAYER_WALL_RADIUS + AnazhRealm.BEWOHNER.spurM + 1;
-        return (a, e) => {
-            const x0 = Math.min(a.x, e.x) - r;
-            const x1 = Math.max(a.x, e.x) + r;
-            const z0 = Math.min(a.z, e.z) - r;
-            const z1 = Math.max(a.z, e.z) + r;
-            for (const h of H) if (h[1] >= x0 && h[0] <= x1 && h[3] >= z0 && h[2] <= z1) return true;
-            return false;
-        };
+        return Object.assign(
+            (a, e) => {
+                const x0 = Math.min(a.x, e.x) - r;
+                const x1 = Math.max(a.x, e.x) + r;
+                const z0 = Math.min(a.z, e.z) - r;
+                const z1 = Math.max(a.z, e.z) + r;
+                for (const h of H) if (h[1] >= x0 && h[0] <= x1 && h[3] >= z0 && h[2] <= z1) return true;
+                return false;
+            },
+            { H, r }
+        );
     }
 
     // DER ANSCHLUSS eines Orts: der nächste der `anschlussN` nächsten Knoten des Netzes, den er in gerader Linie frei
     // erreicht (`_bewohnerWand`). Kein Knoten: laut, und -1 (die Strecke trägt
-    // keinen Weg, `_bewohnerStrecke`: er bleibt) — nie durch die Wand zum nächsten.
+    // keinen Weg, `_bewohnerStrecke`: er bleibt) — nie durch die Wand zum nächsten. Die Nächsten nennt das Raster der Knoten
+    // (`_bewohnerKnotenNaechste`); bis stadt-takt3 ordnete jede Frage alle Knoten (an stadt-voll 1 765 je Probe des Auswegs).
     _bewohnerAnschluss(N, o) {
         if (o._knoten !== undefined) return o._knoten;
-        const nah = N.knoten
-            .map((q, i) => ({ i, d: (q.x - o.x) ** 2 + (q.z - o.z) ** 2 }))
-            .sort((a, b) => a.d - b.d)
-            .slice(0, AnazhRealm.BEWOHNER.anschlussN);
+        const nah = this._bewohnerKnotenNaechste(N, o, AnazhRealm.BEWOHNER.anschlussN);
         const frei = nah.find((c) => !this._bewohnerWand(o, N.knoten[c.i]));
         const k = frei ? frei.i : -1;
         if (k < 0) this._bruchMelden(`BEWOHNER: der Ort ${o.x.toFixed(1)}/${o.z.toFixed(1)} erreicht keinen Weg frei`);
@@ -2480,10 +2731,50 @@ class AnazhRealm_siedlung_bewohner {
         return k;
     }
 
+    // DAS RASTER DER KNOTEN eines Netz-Grunds (Lehre 25: der billige Filter zuerst; je Zelle der Kante `naehtM` die Knoten in
+    // ihrer Reihe, einmal je Grund): die Naht fragt die Paare bis `naehtM` (`_bewohnerNetz`), der Anschluss die Nächsten.
+    _bewohnerKnotenRaster(G) {
+        if (G.raster) return G.raster;
+        const M = AnazhRealm.BEWOHNER.naehtM;
+        const R = new Map();
+        let [x0, x1, z0, z1] = [Infinity, -Infinity, Infinity, -Infinity];
+        G.knoten.forEach((q, i) => {
+            const [cx, cz] = [Math.floor(q.x / M), Math.floor(q.z / M)];
+            [x0, x1, z0, z1] = [Math.min(x0, cx), Math.max(x1, cx), Math.min(z0, cz), Math.max(z1, cz)];
+            const k = cx * 2097152 + cz;
+            const l = R.get(k);
+            if (l) l.push(i);
+            else R.set(k, [i]);
+        });
+        return (G.raster = { M, R, x0, x1, z0, z1 });
+    }
+    // DIE `k` NÄCHSTEN KNOTEN um o ({ i, d } nach Abstand², bei gleichem in der Reihe der Knoten — dieselbe Folge wie die
+    // Ordnung aller): Ring um Ring der Zellen, bis kein Knoten jenseits des Rings näher liegen kann als der k-te
+    _bewohnerKnotenNaechste(N, o, k) {
+        const { M, R, x0, x1, z0, z1 } = N.raster || this._bewohnerKnotenRaster(N);
+        const [cx, cz] = [Math.floor(o.x / M), Math.floor(o.z / M)];
+        const rMax = Math.max(cx - x0, x1 - cx, cz - z0, z1 - cz, 0);
+        const kand = [];
+        for (let r = 0; r <= rMax; r++) {
+            for (let dx = -r; dx <= r; dx++)
+                for (let dz = -r; dz <= r; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+                    for (const i of R.get((cx + dx) * 2097152 + cz + dz) || []) {
+                        const q = N.knoten[i];
+                        kand.push({ i, d: (q.x - o.x) ** 2 + (q.z - o.z) ** 2 });
+                    }
+                }
+            // jenseits des Rings r liegt jeder Knoten weiter als r · M (o steht in der Mitte-Zelle)
+            if (kand.length >= k && kand.filter((c) => c.d <= (r * M) ** 2).length >= k) break;
+        }
+        return kand.sort((a, b) => a.d - b.d || a.i - b.i).slice(0, k);
+    }
+
     // DER AUSWEG eines Orts, der keinen Knoten frei erreicht (`_bewohnerStrecke`): der nächste Punkt im Ring um ihn (bis
     // `auswegM`, je 0,6 m zwölf Richtungen), den er in gerader Linie frei erreicht — `ausDerWand`: steht er selbst in einer
-    // Hülle, zählt die Linie nicht —, der frei steht (mit `rand` Raum), Land ist, in keinem Grundriss liegt, `raum` (Stände)
-    // nicht näher als `raumM` trägt und selbst einen Knoten frei erreicht. Gemerkt je Stand der Wache (`o._ausweg`); null: keiner.
+    // Hülle, zählt die Linie nicht —, der frei steht (mit `rand` Raum), Land ist, in keinem Grundriss liegt, im Raum keines
+    // anderen Stands liegt (`raum(q)`: näher als `raumM`) und selbst einen Knoten frei erreicht. Gemerkt je Stand der Wache
+    // (`o._ausweg`); null: keiner.
     _bewohnerAusweg(N, o, ausDerWand = false, raum = null, rand = 0, frei = null, weit = AnazhRealm.BEWOHNER.auswegM) {
         if (o._ausweg !== undefined) return o._ausweg;
         const BW = AnazhRealm.BEWOHNER;
@@ -2493,8 +2784,7 @@ class AnazhRealm_siedlung_bewohner {
                 const q = { x: o.x + Math.cos((i * Math.PI) / 6) * r, z: o.z + Math.sin((i * Math.PI) / 6) * r };
                 // die billigen Proben zuerst (Lehre 25): die Spur, der Raum, der Grundriss — dann die Wand und das Land
                 if (frei && !frei(q)) continue;
-                if (raum && raum.some((p) => p !== o && (p.x - q.x) ** 2 + (p.z - q.z) ** 2 < BW.raumM * BW.raumM))
-                    continue;
+                if (raum && raum(q)) continue;
                 const g = this._imGrundriss(q.x, q.z, BW.saumM);
                 if (g === "haus" || g === "bau") continue;
                 if (this._bewohnerWand(q, q, true, rand) || (!ausDerWand && this._bewohnerWand(o, q))) continue;
@@ -2513,20 +2803,60 @@ class AnazhRealm_siedlung_bewohner {
     // IN RATEN (Lehre 14): je geprüftem Stand ein Schritt (`yield`) — bei der Geburt der Liste treibt sie der Bewohner-Takt nach
     // Zeit (`listeWerk`), nach einem Wechsel der Wache geht sie ganz. Bis bewohner-takt prüfte die Geburt jeden Stand im Takt
     // der fertigen Liste: am Start-Dorf 43 ms, die Aufgabe 90 ms (swiftshader kalt).
-    *_bewohnerStandPruefen(S, trifft) {
+    // DER RAUM DER ANDEREN (Lehre 25: der billige Filter zuerst): die Ursprünge der Stände im Raster `raumM` (je Ursprung sein
+    // Stand), gebaut erst, wenn ein Ursprung den Ausweg sucht — je Probe die 3 × 3 Zellen um sie; bis stadt-takt3 baute jeder
+    // getroffene Stand eine Liste aller und ging sie je Probe ganz (an stadt-voll ~2 800 Stände, 4,9 ms je Spitzen-Takt der
+    // Wache). Ein Stand rückt nur nach seinem Ursprung — die Ursprünge sind derselbe Raum für jeden Stand eines Gangs. Wen ein
+    // gerückter Stand trifft, nennt `betroffen` (der Weckruf der Wache, `_tickBewohner`). DIE STÄNDE DES WECHSELS: trägt die
+    // Probe ihr Buch (`trifft.H`, `_bewohnerWechsel`), fragt sie nur die Stände in den Zellen seiner Kästen (`_bewohnerStaende`,
+    // in der Reihe der Stände) — bis stadt-takt3 ging jeder Wechsel jeden Stand der Stadt durch die Probe.
+    *_bewohnerStandPruefen(S, trifft, betroffen = null) {
         const BW = AnazhRealm.BEWOHNER;
         const N = this._bewohnerNetz(S);
-        const staende = new Set();
-        for (const b of S.liste)
-            for (const k of ["heim", "platz", "werk", "besuch"]) if (b.orte[k]) staende.add(b.orte[k]);
-        S.listeRest = staende.size; // der Rest des Werks (`_weltOffen` leute): je Stand einer
-        for (const o of staende) {
+        const T = this._bewohnerStaende(S);
+        const staende = T.alle;
+        S.listeRest = staende.length; // der Rest des Werks (`_weltOffen` leute): je Stand einer
+        let reihe = staende;
+        if (trifft && trifft.H) {
+            const { R, M } = this._bewohnerStaendeRaster(S, T);
+            const ix = new Set();
+            for (const h of trifft.H)
+                for (let cx = Math.floor((h[0] - trifft.r) / M); cx <= Math.floor((h[1] + trifft.r) / M); cx++)
+                    for (let cz = Math.floor((h[2] - trifft.r) / M); cz <= Math.floor((h[3] + trifft.r) / M); cz++)
+                        for (const i of R.get(cx * 2097152 + cz) || []) ix.add(i);
+            reihe = [...ix].sort((a, b) => a - b).map((i) => staende[i]);
+        }
+        const RM = BW.raumM;
+        const zelle = (x, z) => Math.floor(x / RM) * 2097152 + Math.floor(z / RM);
+        let raster = null;
+        const raumVon = (o) => (q) => {
+            if (!raster) {
+                // je Stand die Lage seines Ursprungs als Zahl (ein Stand, der noch nicht geprüft wurde, steht an ihm)
+                raster = new Map();
+                for (const p of staende) {
+                    const u = p.ur || p;
+                    const k = zelle(u.x, u.z);
+                    const l = raster.get(k);
+                    if (l) l.push(p, u.x, u.z);
+                    else raster.set(k, [p, u.x, u.z]);
+                }
+            }
+            const [cx, cz] = [Math.floor(q.x / RM), Math.floor(q.z / RM)];
+            for (let dx = -1; dx <= 1; dx++)
+                for (let dz = -1; dz <= 1; dz++) {
+                    const l = raster.get((cx + dx) * 2097152 + cz + dz);
+                    if (l)
+                        for (let n = 0; n < l.length; n += 3)
+                            if (l[n] !== o && (l[n + 1] - q.x) ** 2 + (l[n + 2] - q.z) ** 2 < RM * RM) return true;
+                }
+            return false;
+        };
+        for (const o of reihe) {
             S.listeRest--;
             const ur = o.ur || (o.ur = { x: o.x, z: o.z });
             if (trifft && !trifft(o, o) && !trifft(ur, ur)) continue;
-            const raum = [...staende].filter((p) => p !== o).map((p) => p.ur || p);
             const neu = (rand, frei, weit) =>
-                this._bewohnerAusweg(N, { x: ur.x, z: ur.z }, true, raum, rand, frei, weit);
+                this._bewohnerAusweg(N, { x: ur.x, z: ur.z }, true, raumVon(o), rand, frei, weit);
             // DER STAND WEICHT DER SPUR (PFLICHT-OFFEN C): wer stundenlang steht, steht nie in der Spur eines Wagens
             // (`_verkehrAufSpur`) — sein Ausweg reicht dafür bis `spurAuswegM` (die Gasse daneben, die Lücke zwischen zwei Häusern);
             // trägt keiner, steht er, wo er stand (der Wagen hält vor ihm, und er macht Platz, `_verkehrFolge`)
@@ -2551,15 +2881,44 @@ class AnazhRealm_siedlung_bewohner {
                     _ausweg: undefined,
                     _wegeStand: undefined,
                 });
+                T.R = null; // das Raster der Stände legt ihn an seiner neuen Lage neu (`_bewohnerStaendeRaster`)
                 for (const b of S.liste)
                     if (b.leib && !b.drinnen && (b.ziel === o || b.stand === o)) {
                         Object.assign(b, { weg: null, stand: null, wegRest: null });
                         if (b.ziel === o) b.da = false;
+                        if (betroffen) betroffen.add(b);
                     }
             }
             yield;
         }
         S.listeRest = 0;
+    }
+
+    // DIE STÄNDE EINER LISTE (je Kopf heim · platz · werk · besuch, jeder einmal, in der Reihe der Liste) — einmal je Liste
+    _bewohnerStaende(S) {
+        let T = S.staendeT;
+        if (T && T.liste === S.liste) return T;
+        const alle = new Set();
+        for (const b of S.liste)
+            for (const k of ["heim", "platz", "werk", "besuch"]) if (b.orte[k]) alle.add(b.orte[k]);
+        return (S.staendeT = { liste: S.liste, alle: [...alle], R: null });
+    }
+    // DAS RASTER DER STÄNDE (je Zelle `M` die Nummern der Stände an ihrer Lage und ihrem Ursprung) — neu, wenn einer rückte
+    _bewohnerStaendeRaster(S, T) {
+        if (T.R) return T;
+        const M = 8;
+        const R = new Map();
+        const lege = (i, x, z) => {
+            const k = Math.floor(x / M) * 2097152 + Math.floor(z / M);
+            const l = R.get(k);
+            if (!l) R.set(k, [i]);
+            else if (l[l.length - 1] !== i) l.push(i);
+        };
+        T.alle.forEach((o, i) => {
+            lege(i, o.x, o.z);
+            if (o.ur) lege(i, o.ur.x, o.ur.z);
+        });
+        return Object.assign(T, { R, M });
     }
 
     // DER BAUM der kürzesten Wege ab einem Knoten (Dijkstra, binärer Haufen) — je Start-Knoten einmal gerechnet, gemerkt.
@@ -2633,6 +2992,8 @@ class AnazhRealm_siedlung_bewohner {
         for (const G of S.gestalten || []) {
             this._tonZeileFrei(G.tonZeile);
             if (G.satz) this._gangSatzAbschied(G.satz);
+            if (G.muster) this._disposeSoulGroup(G.muster); // das Muster geht mit (nie im Graphen, `_bewohnerMuster`)
+            G.muster = null;
             for (const key of G.keys) {
                 const v = memo && memo.get(key);
                 if (v && v.__ofen) v.__ofen.fest = false;
@@ -2643,6 +3004,7 @@ class AnazhRealm_siedlung_bewohner {
         S.listeWerk = null;
         S.gestalten = null;
         S.netz = null; // das Netz hing an der Wache (`frei`, `stand`): mit der Liste entsteht es neu
+        S.staendeT = null; // die Stände und ihr Raster gingen mit der Liste (`_bewohnerStaende`)
         this._ofenMemoRaeumen();
     }
     _bewohnerFortAlle() {
@@ -2668,7 +3030,11 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_bewohner]);
 // je Muskel] der Genom-Achsen (0…1), Breite und Tiefe je höchstens ±restMax (die Breite trägt auch der Kopf: mit ±6 % lag die
 // Kopf-Breite 0,098 über MENSCH_SOLL 0,096) · platzAnteil = so viele
 // stehen am Tag auf dem Dorfplatz · raumM = der persönliche Raum zwischen zwei Ständen · saumM = der Saum um jeden Grundriss ·
-// geburtenJeTakt = Leiber je Takt (Klon aus dem Memo ~1 ms) · listeMs = so viele ms rechnet das Werk der Liste je Takt
+// geburtenJeTakt = Leiber je Takt (die Wurzel des Leibs — den Klon aus dem Memo, ~1 ms, trägt die Gestalt) · DIE
+// SIMULATIONS-STUFEN (stadt-takt3): zahlM = jenseits so vieler Meter vom Auge ruht ein Bewohner als Zahl (`_bewohnerZahl`,
+// auch außer Blick) · gestaltM = so nah vom Auge (und im Blick) behält er die Gestalt, die ihm die Nah-Wahl goss
+// (`_bewohnerGestalt`: ein Tausch der Bedeutendsten gießt nie neu) · gestaltenJeTakt = so viele Gestalten gießt ein Takt ·
+// listeMs = so viele ms rechnet das Werk der Liste je Takt
 // (`_bewohnerListe` in Raten je Frage an das Netz, `_bewohnerStandPruefen` je Stand; ohne Bild trägt ein Takt das ganze) ·
 // fernFaktor = jenseits nearM × fernFaktor gehen die Leiber ·
 // nahM (+ nahHystM zurück) / nahLeiber = so nah und so viele leben als Leib (Atem, Stufen), jeder andere im Nah-Kreis steht
@@ -2709,6 +3075,9 @@ AnazhRealm.BEWOHNER = Object.freeze({
     raumM: 1.5,
     saumM: 0.45,
     geburtenJeTakt: 2,
+    zahlM: 60,
+    gestaltM: 15,
+    gestaltenJeTakt: 2,
     listeMs: 4,
     fernFaktor: 1.25,
     nahM: 8,
@@ -2758,3 +3127,17 @@ AnazhRealm.BEWOHNER = Object.freeze({
     spielerRaumM: 0.5,
     zeugeM: 25,
 });
+// DIE FELDER DER GESTALT an der Wurzel des Leibs (`_bewohnerGestalt`): was der Mensch-Bau an seine Gruppe schreibt
+// (`_buildHumanGroup`) und die Glieder ihres Gelenk-Baums (`_bewohnerMasse`) — sie kommen mit der Gestalt und gehen mit ihr;
+// ohne sie ist der Leib die Zahl.
+AnazhRealm.BEWOHNER_GESTALT = Object.freeze([
+    "_koerperDials",
+    "rig",
+    "parts",
+    "skinnedMesh",
+    "material",
+    "hautTon",
+    "_leibV",
+    "_gelenk",
+    "_tierBaum",
+]);
