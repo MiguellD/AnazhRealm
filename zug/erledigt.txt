@@ -189,3 +189,4 @@ z140-takt-abab LANGSAMER abab 5a341855 gegen 25ac4c0c: w-ego 4+4 LANGSAMER · st
 takt-z143a-gtx gemessen punkte baf9d828 gtx: 0 grün / 2 rot
 takt-z143b-gtx gemessen punkte baf9d828 gtx: 0 grün / 2 rot
 z140-rueck-gtx gemessen punkte 3242d6ad gtx: 1 grün / 2 rot
+z143-punkte-gtx gemessen punkte baf9d828 gtx: 0 grün / 2 rot
