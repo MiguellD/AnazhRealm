@@ -272,6 +272,10 @@ function werkVerdict(m) {
         );
     if (m.gesendetSame !== m.werkSame)
         out.push(`der Mitspieler bekommt den Samen ${m.gesendetSame}, das Werk trägt ${m.werkSame}`);
+    // der Vorbau der Bedienung ist kein Akt: er zieht keinen Samen
+    if (!m.vorbau || !Array.isArray(m.vorbau.zieht)) out.push("der Vorbau der Bedienung ungeprüft (Vorbedingung)");
+    else if (m.vorbau.zieht.length)
+        out.push(`der Vorbau der Bedienung zieht Samen im Stehen: ${m.vorbau.zieht.join(", ")} — der nächste Bau der Welt steht anders`);
     // Jedes Setzen ein neues Werk: nach dem Setzen zeigt das Phantom den nächsten Samen.
     if (m.naechsterSame == null) out.push("nach dem Setzen kein Phantom mit Samen (Vorbedingung)");
     else if (m.naechsterSame === m.werkSame)
@@ -578,6 +582,33 @@ async function probe(argW) {
             if (st.buildMode.active) r._clearBuildMode();
             if (st.uiActiveDrawer) r.closeAllDrawers();
             r.setGameMode("schöpfer");
+            // DER VORBAU ZIEHT KEINEN SAMEN (w4-z140-rueckfall): ein Schritt des Geist-Vorbaus (`_geistVorbau`, der Planer der
+            // Bedienung) fragt jeden Hotbar-Bauplan nach seinem Studio-Geist — er darf das Welt-Gedächtnis (`worldMeta.bauSame`)
+            // und den Samen des nächsten Setzens (`buildMode.setzSame`) nicht ändern. Befund 1e90e7cd: er zog je Hotbar-Art den
+            // nächsten Samen, der nächste Wagen der Welt stand in einer anderen Gestalt (Lack Metall 0,7 → 0, material.K4).
+            {
+                const stand = () => JSON.stringify([st.worldMeta.bauSame || {}, st.buildMode.setzSame || {}]);
+                const vorher = stand(), [z0, s0] = JSON.parse(vorher);
+                const hotAlt = st.hotbar.slice(), vAlt = r._geistVorbauStand;
+                st.hotbar[5] = NAME;
+                r._geistVorbauStand = undefined;
+                try {
+                    r._geistVorbau();
+                    const [z1, s1] = JSON.parse(stand());
+                    const anders = (a, b) => [...new Set([...Object.keys(a), ...Object.keys(b)])].filter((k) => a[k] !== b[k]);
+                    m.vorbau = { zieht: [...anders(z0, z1), ...anders(s0, s1).map((k) => "setzSame:" + k)] };
+                } finally {
+                    const V = r._geistVorbauStand;
+                    if (V && V.gast) {
+                        st.scene.remove(V.gast.gruppe);
+                        r._disposeSoulGroup(V.gast.gruppe);
+                    }
+                    r._geistVorbauStand = vAlt;
+                    st.hotbar.splice(0, st.hotbar.length, ...hotAlt);
+                    st.worldMeta.bauSame = z0;
+                    if (Object.keys(s0).length || st.buildMode.setzSame) st.buildMode.setzSame = s0;
+                }
+            }
             // ein schräger Blick weg von der Plattform: die Drehung des Phantoms ist nicht 0
             stelle();
             st.yaw = Math.atan2(frei.x - plat.position.x, frei.z - plat.position.z) + 0.7;
@@ -1502,6 +1533,7 @@ hauptLauf(async () => {
             mindest: 7.4,
             naechsterSame: 2034871155,
             huelleReicht: 1.1,
+            vorbau: { zieht: [] },
             konsum: { "_workshopFoundryPreviewGroup → _werkSame": true, "_heldFoundryGroup → _werkSame": true, "_buildStudioPlacementGhost → _phantomWerk am Ort": true },
             stumm: [],
         };
@@ -1535,6 +1567,10 @@ hauptLauf(async () => {
             [mitK({ naechsterSame: 1785671328 }), "das nächste Setzen zeigt dasselbe Werk"],
             // die Hülle reicht über die Klemme (Integration V18.536)
             [mitK({ huelleReicht: 10.3 }), "die Hülle des Werks reicht 10.3 m, die Klemme misst 3.9 m"],
+            // der Vorbau zieht den Samen des Wagens (Befund 1e90e7cd, material.K4)
+            [mitK({ vorbau: { zieht: ["bau:fahrzeug_gt", "setzSame:fahrzeug_gt"] } }), "der Vorbau der Bedienung zieht Samen im Stehen: bau:fahrzeug_gt"],
+            // die Probe lief nicht
+            [mitK({ vorbau: undefined }), "der Vorbau der Bedienung ungeprüft"],
         ]);
         // Brennglas: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
         const gesundB = {
