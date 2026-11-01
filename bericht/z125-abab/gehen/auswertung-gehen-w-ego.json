@@ -1,0 +1,414 @@
+{
+ "boots": [
+  "w-ego-A1",
+  "w-ego-A2",
+  "w-ego-A3",
+  "w-ego-A4",
+  "w-ego-B1",
+  "w-ego-B2",
+  "w-ego-B3",
+  "w-ego-B4"
+ ],
+ "urteile": [
+  {
+   "gang": "steht",
+   "titel": "fps",
+   "ma": 49.175,
+   "mb": 48.65,
+   "d": -0.5249999999999986,
+   "sig": 0.7185053931599953,
+   "u": "nicht langsamer",
+   "t": -1.0333424457407558
+  },
+  {
+   "gang": "steht",
+   "titel": "Frame p50 ms",
+   "ma": 16.7,
+   "mb": 18.75,
+   "d": 2.0500000000000007,
+   "sig": 2.8521921393903322,
+   "u": "nicht langsamer",
+   "t": 1.0164595024389023
+  },
+  {
+   "gang": "steht",
+   "titel": "Frame p95 ms",
+   "ma": 25.150000000000002,
+   "mb": 25.1,
+   "d": -0.05000000000000071,
+   "sig": 0.04082482904638544,
+   "u": "nicht langsamer",
+   "t": -1.7320508075689387
+  },
+  {
+   "gang": "steht",
+   "titel": "Frame p99 ms",
+   "ma": 25.4,
+   "mb": 25.35,
+   "d": -0.04999999999999716,
+   "sig": 0.12247448713915896,
+   "u": "nicht langsamer",
+   "t": -0.5773502691895926
+  },
+  {
+   "gang": "steht",
+   "titel": "CPU-Takt p50 ms",
+   "ma": 4.4,
+   "mb": 4.55,
+   "d": 0.14999999999999947,
+   "sig": 0.39370039370059057,
+   "u": "nicht langsamer",
+   "t": 0.5388159060803227
+  },
+  {
+   "gang": "steht",
+   "titel": "CPU-Takt p95 ms",
+   "ma": 5.7250000000000005,
+   "mb": 6.050000000000001,
+   "d": 0.3250000000000002,
+   "sig": 0.782889945437203,
+   "u": "nicht langsamer",
+   "t": 0.5870804835979633
+  },
+  {
+   "gang": "steht",
+   "titel": "CPU-Takt p99 ms",
+   "ma": 7.15,
+   "mb": 7.4,
+   "d": 0.25,
+   "sig": 0.747217059048663,
+   "u": "nicht langsamer",
+   "t": 0.4731602234073839
+  },
+  {
+   "gang": "steht",
+   "titel": "GPU-Durchsatz p50 ms",
+   "ma": 20.2,
+   "mb": 20.375,
+   "d": 0.1750000000000007,
+   "sig": 0.3529636430757892,
+   "u": "nicht langsamer",
+   "t": 0.7011695914588901
+  },
+  {
+   "gang": "steht",
+   "titel": "k0 p50 ms",
+   "ma": 0.24,
+   "mb": 0.525,
+   "d": 0.28500000000000003,
+   "sig": 0.13447428502629538,
+   "u": "LANGSAMER",
+   "t": 2.997233747682828
+  },
+  {
+   "gang": "steht",
+   "titel": "GPU p95 ms (lauf)",
+   "ma": 2.3874999999999997,
+   "mb": 2.4924999999999997,
+   "d": 0.10499999999999998,
+   "sig": 0.12513326229797306,
+   "u": "nicht langsamer",
+   "t": 1.1866742808604958
+  },
+  {
+   "gang": "steht",
+   "titel": "GPU je Bild ms (gpu-bank)",
+   "ma": 19.585,
+   "mb": 19.87,
+   "d": 0.28500000000000014,
+   "sig": 0.3600231474039775,
+   "u": "nicht langsamer",
+   "t": 1.1195137539978057
+  },
+  {
+   "gang": "steht",
+   "titel": "Belegung p50 ms",
+   "ma": 7.1125,
+   "mb": 7.52,
+   "d": 0.40749999999999975,
+   "sig": 0.7316733105241257,
+   "u": "nicht langsamer",
+   "t": 0.7876357089671834
+  },
+  {
+   "gang": "steht",
+   "titel": "Belegung p95 ms",
+   "ma": 9.9725,
+   "mb": 10.4825,
+   "d": 0.5099999999999998,
+   "sig": 1.4403442875460941,
+   "u": "nicht langsamer",
+   "t": 0.5007475803157214
+  },
+  {
+   "gang": "steht",
+   "titel": "außer Takt p95 ms",
+   "ma": 1.3475,
+   "mb": 1.3849999999999998,
+   "d": 0.03749999999999987,
+   "sig": 0.15339219884553015,
+   "u": "nicht langsamer",
+   "t": 0.34573471785482696
+  },
+  {
+   "gang": "steht",
+   "titel": "Lebenszyklus p95 ms",
+   "ma": 0.1525,
+   "mb": 0.1675,
+   "d": 0.015000000000000013,
+   "sig": 0.020615528128088294,
+   "u": "nicht langsamer",
+   "t": 1.0289915108550542
+  },
+  {
+   "gang": "steht",
+   "titel": "über 33 ms %",
+   "ma": null,
+   "mb": null,
+   "d": null,
+   "sig": null,
+   "u": "–",
+   "t": null
+  },
+  {
+   "gang": "steht",
+   "titel": "KI-Uhr Mittel ms",
+   "ma": null,
+   "mb": null,
+   "d": null,
+   "sig": null,
+   "u": "–",
+   "t": null
+  },
+  {
+   "gang": "steht",
+   "titel": "KI-Uhr p95 ms",
+   "ma": null,
+   "mb": null,
+   "d": null,
+   "sig": null,
+   "u": "–",
+   "t": null
+  },
+  {
+   "gang": "steht",
+   "titel": "KI-Uhr p99 ms",
+   "ma": null,
+   "mb": null,
+   "d": null,
+   "sig": null,
+   "u": "–",
+   "t": null
+  },
+  {
+   "gang": "steht",
+   "titel": "KI-Takt EWMA ms",
+   "ma": 0.8674999999999999,
+   "mb": 0.9974999999999999,
+   "d": 0.13,
+   "sig": 0.1235246264245852,
+   "u": "nicht langsamer",
+   "t": 1.4883490720026253
+  },
+  {
+   "gang": "geht",
+   "titel": "fps",
+   "ma": 44.675000000000004,
+   "mb": 43.425000000000004,
+   "d": -1.25,
+   "sig": 0.9928914005737653,
+   "u": "nicht langsamer",
+   "t": -1.7804232687933679
+  },
+  {
+   "gang": "geht",
+   "titel": "Frame p50 ms",
+   "ma": 25,
+   "mb": 25,
+   "d": 0,
+   "sig": 0,
+   "u": "nicht langsamer",
+   "t": null
+  },
+  {
+   "gang": "geht",
+   "titel": "Frame p95 ms",
+   "ma": 33.4,
+   "mb": 33.4,
+   "d": 0,
+   "sig": 0,
+   "u": "nicht langsamer",
+   "t": null
+  },
+  {
+   "gang": "geht",
+   "titel": "Frame p99 ms",
+   "ma": 33.55,
+   "mb": 35.625,
+   "d": 2.075000000000003,
+   "sig": 2.8652370466216817,
+   "u": "nicht langsamer",
+   "t": 1.0241711572814376
+  },
+  {
+   "gang": "geht",
+   "titel": "CPU-Takt p50 ms",
+   "ma": 11.875,
+   "mb": 13.3,
+   "d": 1.4250000000000007,
+   "sig": 1.7448734433572344,
+   "u": "nicht langsamer",
+   "t": 1.1549573030948304
+  },
+  {
+   "gang": "geht",
+   "titel": "CPU-Takt p95 ms",
+   "ma": 18.325,
+   "mb": 21.425,
+   "d": 3.1000000000000014,
+   "sig": 2.857008925432331,
+   "u": "nicht langsamer",
+   "t": 1.5344936462504006
+  },
+  {
+   "gang": "geht",
+   "titel": "CPU-Takt p99 ms",
+   "ma": 24.825,
+   "mb": 29.925,
+   "d": 5.100000000000001,
+   "sig": 4.909090207631824,
+   "u": "nicht langsamer",
+   "t": 1.4692109664006636
+  },
+  {
+   "gang": "geht",
+   "titel": "GPU-Durchsatz p50 ms",
+   "ma": 22.225,
+   "mb": 22.875,
+   "d": 0.6499999999999986,
+   "sig": 0.45368858629387343,
+   "u": "nicht langsamer",
+   "t": 2.0261449005179064
+  },
+  {
+   "gang": "geht",
+   "titel": "k0 p50 ms",
+   "ma": 0.6625,
+   "mb": 0.655,
+   "d": -0.007499999999999951,
+   "sig": 0.013994046353122234,
+   "u": "nicht langsamer",
+   "t": -0.7579367289598615
+  },
+  {
+   "gang": "geht",
+   "titel": "GPU p95 ms (lauf)",
+   "ma": 2.7749999999999995,
+   "mb": 2.7925,
+   "d": 0.017500000000000515,
+   "sig": 0.03824264635194579,
+   "u": "nicht langsamer",
+   "t": 0.6471502289294547
+  },
+  {
+   "gang": "geht",
+   "titel": "GPU je Bild ms (gpu-bank)",
+   "ma": null,
+   "mb": null,
+   "d": null,
+   "sig": null,
+   "u": "–",
+   "t": null
+  },
+  {
+   "gang": "geht",
+   "titel": "Belegung p50 ms",
+   "ma": 20.04,
+   "mb": 21.0975,
+   "d": 1.057500000000001,
+   "sig": 1.1356257452758516,
+   "u": "nicht langsamer",
+   "t": 1.3169222769304814
+  },
+  {
+   "gang": "geht",
+   "titel": "Belegung p95 ms",
+   "ma": 26.6475,
+   "mb": 28.45,
+   "d": 1.8024999999999984,
+   "sig": 1.649933079451002,
+   "u": "nicht langsamer",
+   "t": 1.5449838408147405
+  },
+  {
+   "gang": "geht",
+   "titel": "außer Takt p95 ms",
+   "ma": 2.2575000000000003,
+   "mb": 2.1025,
+   "d": -0.15500000000000025,
+   "sig": 0.1625576820700886,
+   "u": "nicht langsamer",
+   "t": -1.3484635077001046
+  },
+  {
+   "gang": "geht",
+   "titel": "Lebenszyklus p95 ms",
+   "ma": 0.1,
+   "mb": 0.10500000000000001,
+   "d": 0.0050000000000000044,
+   "sig": 0.007071067811865473,
+   "u": "nicht langsamer",
+   "t": 1.000000000000001
+  },
+  {
+   "gang": "geht",
+   "titel": "über 33 ms %",
+   "ma": null,
+   "mb": null,
+   "d": null,
+   "sig": null,
+   "u": "–",
+   "t": null
+  },
+  {
+   "gang": "geht",
+   "titel": "KI-Uhr Mittel ms",
+   "ma": null,
+   "mb": null,
+   "d": null,
+   "sig": null,
+   "u": "–",
+   "t": null
+  },
+  {
+   "gang": "geht",
+   "titel": "KI-Uhr p95 ms",
+   "ma": null,
+   "mb": null,
+   "d": null,
+   "sig": null,
+   "u": "–",
+   "t": null
+  },
+  {
+   "gang": "geht",
+   "titel": "KI-Uhr p99 ms",
+   "ma": null,
+   "mb": null,
+   "d": null,
+   "sig": null,
+   "u": "–",
+   "t": null
+  },
+  {
+   "gang": "geht",
+   "titel": "KI-Takt EWMA ms",
+   "ma": 0.9625,
+   "mb": 1.2025000000000001,
+   "d": 0.2400000000000001,
+   "sig": 0.25118054595582573,
+   "u": "nicht langsamer",
+   "t": 1.3512641023928424
+  }
+ ]
+}
