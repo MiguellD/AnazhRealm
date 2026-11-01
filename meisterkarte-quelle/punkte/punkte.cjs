@@ -368,6 +368,60 @@ const trifftPfad = (datei, pfad) => pfad.some((g) => globRegex(g).test(datei));
 const toteGlobs = (pfad, dateien) => pfad.filter((g) => { const re = globRegex(g); return !dateien.some((f) => re.test(f)); });
 const pfadGrund = (tot, wo) => "pfad-Glob trifft " + wo + " keine Datei (R6 blind): " + tot.join(", ");
 
+// ───────────────────────────────── Haken (die Wand HAKEN) ─────────────────────────────────
+// DIE WAND HAKEN (w4-z140-rueckfall): eine Station ruft einen Haken der Seite (`window.__<name>(`), den weder das Spiel am Kopf
+// (scripts/, stamm/, index.html) noch die Stationen selbst setzen. Befund GTX 1e90e7cd: haar.K1#1 und klang.K2#1 riefen
+// `__tiereHalten`, das w4-mess-platz (31.10.) in `__halten` umbenannt hatte — die Szene warf, haar.K1 schoss zwei schwarze Bilder
+// und hieß „bild.schwarz 1", als wäre es das Fell. Gesetzt heißt: `window.__x =` (auch `||=`, `??=`), ein Name im Installations-
+// Verzeichnis einer Linse (`Object.entries({ … })` vor `window.__${…}`, ohne führende Striche) oder ein Schlüssel `__x:` der
+// Stationen. Gerufen heißt: `window.__x(` ohne `?.`.
+const HAKEN_SETZT = /window\.__([A-Za-z0-9_]+)\s*(?:\|\||\?\?)?=(?!=)/g;
+const HAKEN_RUF = /window\.__([A-Za-z0-9_]+)\(/g;
+function hakenGesetzt(texte) {
+    const da = new Set();
+    for (const t of texte) {
+        for (const m of t.matchAll(HAKEN_SETZT)) da.add(m[1]);
+        for (const m of t.matchAll(/(?:^|[{,\s])__([A-Za-z0-9_]+)\s*:/g)) da.add(m[1]);
+        if (t.includes("window.__${"))
+            for (const m of t.matchAll(/Object\.entries\(\{([^}]*)\}\)/g))
+                for (const n of m[1].split(",")) if (/^\s*_*[A-Za-z0-9_]+\s*$/.test(n)) da.add(n.trim().replace(/^_+/, ""));
+    }
+    return da;
+}
+// je Station die gerufenen Haken, die niemand setzt: ["<id> ruft window.__x", …]; `text(st)` liefert ihren Quelltext samt Proben
+const toteHaken = (stationen, da, text) =>
+    stationen.flatMap((st) => [...new Set([...text(st).matchAll(HAKEN_RUF)].map((m) => m[1]))].filter((h) => !da.has(h)).map((h) => schluessel(st) + " ruft window.__" + h));
+// der Quelltext einer Station: ihr Eintrag (Befehl, Probe, env) samt jeder Datei, die er unter @KOORD@ oder {KOORD} nennt
+function stationText(st) {
+    let t = JSON.stringify(st, (k, v) => (typeof v === "function" ? String(v) : v));
+    for (const m of t.matchAll(/(?:@KOORD@|\{KOORD\})\/([^"\s'\\]+\.(?:js|cjs))/g)) {
+        const f = path.join(KOORD, m[1]);
+        if (fs.existsSync(f)) t += "\n" + fs.readFileSync(f, "utf8");
+    }
+    return t;
+}
+// was am Kopf und in den Stationen gesetzt ist: das Spiel (scripts/, stamm/, index.html am SHA) und jede .js/.cjs der Stationen
+// samt den Skripten ihrer Berichte (bericht/**/skripte)
+function hakenAm(repo, kopf) {
+    const spiel = git(["grep", "-h", "-F", "window.__", kopf, "--", "scripts", "stamm", "index.html"], repo);
+    // die Linsen mit Installations-Verzeichnis ganz (ihr `Object.entries({ … })` steht über mehrere Zeilen)
+    const verzeichnis = git(["grep", "-l", "-F", "window.__${", kopf, "--", "scripts", "stamm"], repo)
+        .split(/\r?\n/)
+        .filter(Boolean)
+        .map((z) => git(["show", z], repo));
+    const eigen = [DIR, path.join(DIR, "stationen")].flatMap((d) => fs.readdirSync(d).filter((n) => /\.c?js$/.test(n)).map((n) => fs.readFileSync(path.join(d, n), "utf8")));
+    const skripte = [];
+    const geh = (d, tiefe) => {
+        for (const n of fs.existsSync(d) ? fs.readdirSync(d, { withFileTypes: true }) : []) {
+            const p = path.join(d, n.name);
+            if (n.isDirectory() && tiefe < 3) geh(p, tiefe + 1);
+            else if (n.isFile() && /\.c?js$/.test(n.name) && /[\\/]skripte[\\/]/.test(p)) skripte.push(fs.readFileSync(p, "utf8"));
+        }
+    };
+    geh(path.join(KOORD, "bericht"), 0);
+    return hakenGesetzt([spiel, ...verzeichnis, ...eigen, ...skripte]);
+}
+
 // ───────────────────────────────── Zeuge der Karte (Wand GPU) ─────────────────────────────────
 const ZEUGE_DATEI = path.join(DIR, "gpu-zeuge.cjs");
 const KARTE = /^\[linse-gpu\] ((?:amd|nvidia|intel|apple|qualcomm|arm)\/\S+)/i;
@@ -3158,6 +3212,14 @@ async function selbsttest(o = {}) {
     {
         const tg = toteGlobs(["stamm/kampf.js", "worlds/schmiede/schmiede-core.js", "stamm/kreatur-*.js"], ["stamm/kampf.js", "stamm/kreatur-leben.js", "schmiede-core.js"]);
         pruef("WAND PFAD der tote Glob beim Namen", tg.join() === "worlds/schmiede/schmiede-core.js", tg.join());
+        // DIE WAND HAKEN: gesetzt (direkt, ||=, Verzeichnis einer Linse, Schlüssel), gerufen ohne ?. — der umbenannte Halter beim Namen
+        const da = hakenGesetzt([
+            "window.__halten = ${halten}; window.__buehne ||= f;",
+            "Object.entries({ wasserOrte, __wasserKroneVon }).map(([n, f]) => `window.__${n.replace(/^_+/, \"\")} = ${f};`)",
+            "const L = { __aufnahmeRuhig: [1] };",
+        ]);
+        const th = toteHaken([{ kriterium: "haar.K1", staffel: 1, t: "window.__tiereHalten(); window.__halten(); window.__wasserOrte({}); window.__wasserKroneVon(1); window.__aufnahmeRuhig(1); window.__buehne(); window.__weg?.()" }], da, (st) => st.t);
+        pruef("WAND HAKEN der umbenannte Halter beim Namen, jeder gesetzte still", th.join() === "haar.K1#1 ruft window.__tiereHalten", th.join());
         let w = buchen("kopf", [s1], [M("a1", "radeon", "gelaende.K4#1", s1, true)], keine, h, [], { tot: () => ["worlds/schmiede/schmiede-core.js"] });
         pruef("WAND PFAD toter Glob am Kopf → 0", w.je["gelaende.K4"].punkte === 0 && /trifft am Kopf keine Datei \(R6 blind\): worlds\/schmiede/.test(w.je["gelaende.K4"].beleg), w.je["gelaende.K4"].beleg);
         const alt = [M("a1", "radeon", "gelaende.K4#1", s1, true, undefined, {})];
@@ -3875,6 +3937,8 @@ if (require.main === module) {
                 const t = toteGlobs(st.pfad, dateien);
                 if (t.length) fehler.push(schluessel(st) + ": " + pfadGrund(t, "am Kopf " + kopf.slice(0, 8)));
             }
+            // DIE WAND HAKEN am Kopf: jeder gerufene Haken der Seite ist gesetzt
+            for (const h of toteHaken(stationen, hakenAm(repo, kopf), stationText)) fehler.push(h + " — niemand setzt ihn am Kopf " + kopf.slice(0, 8) + " (Wand HAKEN)");
             for (const st of stationen) console.log("  " + schluessel(st) + " · " + geraeteVon(st).join("+") + (st.gpu ? " · GPU" : "") + (st.zeit ? " · Zeit" : " · Bild") + (st.probe ? " · Sitzung ≤ " + probeSek(st) + " s" : "") + " · " + st.minuten + " min · " + befehlVon(st).join(" ") + " · " + abdruck(st));
             for (const e of fehlt) console.log("  FEHLT " + e.kriterium + "#" + e.staffel + " · " + String(e.grund).slice(0, 140));
             for (const f of fehler) console.log("  ROT " + f);

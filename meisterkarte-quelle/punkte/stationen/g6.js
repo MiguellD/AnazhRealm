@@ -149,7 +149,7 @@ async function windSeite(o) {
     const warte = (ms) => new Promise((f) => setTimeout(f, ms));
     try {
         if (st.symphony.enabled) r.disposeSymphony();
-        window.__tiereHalten();
+        window.__halten();
         window.__wetterSetzen("sunny");
         if (st.cameraMode !== "first") r.setCameraMode("first");
         // DER SPIELER STEHT, WO `umstellen` IHN LIESS (windLauf, vor dem Deckel von der Sitzung eingeschwungen) — nur der Blick wird

@@ -4054,6 +4054,9 @@ const stationen = [
     // vor seinem Fell quer zum Leib, 0,5 m über seiner Mitte; third: 4 m quer, 1 m darüber (der Blick des Third). Soll: strich der REF
     // ref-fell.png ± 20 % = [0,4358; 0,6538]. Headless/swiftshader (kienspan, 1920×1080, Spawn) am Kopf haar-fell-soll: arm
     // 0,3026 (vor dem Strich der Schale 0,2804), third 0,2518 — ROT erwartet, bis die Strähne Kontrast gegen die Unterwolle trägt.
+    // DIE SZENE BEIM NAMEN (w4-z140-rueckfall): der Halter der Tiere ist `__halten` (ausgabe-aufnahme, seit w4-mess-platz 31.10.;
+    // `__tiereHalten` fiel dort) — bis dahin warf die Szene, `$K` blieb leer, und beide Schüsse sahen ein schwarzes Bild (GTX
+    // 1e90e7cd „bild.schwarz 1"). Scheitert die Szene, trägt jede Schuss-Zeile ihren Fehler (`fehl` über die Antwort neben {AUS}).
     sollKlasseStation({
         kriterium: "haar.K1",
         id: "fell",
@@ -4062,7 +4065,7 @@ const stationen = [
         mutiert: true,
         vorher: [
             "node scripts/werkbank.cjs umstellen --ort wiese --sicht ego > \"$B-umstellen.txt\" 2>&1",
-            "K=$(node scripts/werkbank.cjs eval 'const s = r.state, p = s.playerMesh.position; for (const c of [...s.creatures]) r.removeCreature(c); const x = p.x - Math.sin(s.yaw) * 3, z = p.z - Math.cos(s.yaw) * 3; const c = r.spawnCreatureAt(x, r._voxelSurfaceY(x, z) + 0.5, z, \"happy\", \"wolf\", { precise: true }); for (let i = 0; i < 60; i++) { window.__buehne(); r._gameLoopTick(performance.now()); await sleep(50); } window.__tiereHalten(); const b = new T.Box3().setFromObject(c), m = b.getCenter(new T.Vector3()), g = b.getSize(new T.Vector3()), q = g.x > g.z; const kam = (d, h) => [m.x + (q ? 0 : d), m.y + h, m.z + (q ? d : 0), m.x, m.y, m.z].map((v) => +v.toFixed(2)); return { arm: kam(0.7 + Math.min(g.x, g.z) / 2, 0.5), third: kam(4 + Math.min(g.x, g.z) / 2, 1) };' | erg); echo \"WOLF $K\"",
+            "node scripts/werkbank.cjs eval 'const s = r.state, p = s.playerMesh.position; for (const c of [...s.creatures]) r.removeCreature(c); const x = p.x - Math.sin(s.yaw) * 3, z = p.z - Math.cos(s.yaw) * 3; const c = r.spawnCreatureAt(x, r._voxelSurfaceY(x, z) + 0.5, z, \"happy\", \"wolf\", { precise: true }); for (let i = 0; i < 60; i++) { window.__buehne(); r._gameLoopTick(performance.now()); await sleep(50); } window.__halten(); const b = new T.Box3().setFromObject(c), m = b.getCenter(new T.Vector3()), g = b.getSize(new T.Vector3()), q = g.x > g.z; const kam = (d, h) => [m.x + (q ? 0 : d), m.y + h, m.z + (q ? d : 0), m.x, m.y, m.z].map((v) => +v.toFixed(2)); return { arm: kam(0.7 + Math.min(g.x, g.z) / 2, 0.5), third: kam(4 + Math.min(g.x, g.z) / 2, 1) };' > \"$B-wolf.txt\" 2>&1; K=$(erg < \"$B-wolf.txt\" 2>/dev/null); echo \"WOLF $K\"; case \"$K\" in *arm*) ;; *) fehl \"$B-wolf.txt\" arm; fehl \"$B-wolf.txt\" third;; esac",
         ],
         schuesse: {
             arm: "$(node -e 'console.log(JSON.parse(process.argv[1]).arm.join(\" \"))' \"$K\")",
