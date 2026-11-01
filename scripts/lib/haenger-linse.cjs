@@ -1352,8 +1352,79 @@ function latenzSelbsttest() {
     });
 }
 
+// DER TÄTER DER BEDIENUNG (`werkbank bedienung`, spielgang.K3; Gebot 10): das Ohr der Seite sammelt je Interaktion die
+// Event-Timing-Einträge und die langen Bilder (LoAF, über 50 ms), die Linse setzt vor jede Eingabe ihre Marke (`m`).
+// `bedienungTaeter` zerlegt die langsamsten in warten (bis zum Hörer) · hoerer · faden (nach dem Hörer bis zum Ende des
+// letzten langen Bilds: rAF-Skripte, Stil, Layout, Malen) · stil (davon ab styleAndLayoutStart) · sperre (davon die
+// Blockade der langen Bilder, blockingDuration — ein Faden ohne Sperre wartete auf das Bild, nicht auf Arbeit) · nach (nach
+// dem Faden bis zum präsentierten Bild: Raster, GPU, Vorlage) und nennt die teuersten Skripte. Ohne LoAF bleibt der Faden null.
+function __bedienungOhr() {
+    const O = (window.__bedOhr = { m: [], ev: [], loaf: [] });
+    new PerformanceObserver((l) => {
+        for (const e of l.getEntries())
+            if (e.interactionId) O.ev.push([e.interactionId, e.name, e.startTime, e.processingStart, e.processingEnd, e.duration]);
+    }).observe({ type: "event", durationThreshold: 16 });
+    try {
+        new PerformanceObserver((l) => {
+            for (const e of l.getEntries())
+                O.loaf.push({
+                    t: e.startTime,
+                    ende: e.startTime + e.duration,
+                    sl: e.styleAndLayoutStart,
+                    bl: e.blockingDuration,
+                    s: e.scripts.map((s) => [s.invoker + (s.sourceFunctionName ? " " + s.sourceFunctionName : ""), s.duration, s.forcedStyleAndLayoutDuration]),
+                });
+        }).observe({ type: "long-animation-frame" });
+    } catch {
+        O.loaf = null;
+    }
+}
+function bedienungTaeter(O, n = 6) {
+    const r1 = (v) => Math.round(v);
+    const je = new Map();
+    for (const [id, name, t, ps, pe, d] of O.ev) if (!je.has(id) || d > je.get(id).d) je.set(id, { name, t, ps, pe, d });
+    const marke = (t) => O.m.reduce((w, [mt, was]) => (mt <= t ? was : w), "?");
+    return [...je.values()]
+        .sort((a, b) => b.d - a.d)
+        .slice(0, n)
+        .map((e) => {
+            const z = { was: marke(e.t), ereignis: e.name, ms: e.d, warten: r1(e.ps - e.t), hoerer: r1(e.pe - e.ps) };
+            if (!O.loaf) return Object.assign(z, { faden: null, stil: null, sperre: null, nach: null, skripte: [] });
+            // die langen Bilder bis zum präsentierten (die Dauer ist auf 8 ms gerundet), die nach dem Hörer enden
+            const lo = O.loaf.filter((f) => f.ende > e.pe && f.ende <= e.t + e.d + 8);
+            const fadenEnde = Math.min(e.t + e.d, Math.max(e.pe, ...lo.map((f) => f.ende)));
+            const skripte = lo.flatMap((f) => f.s).sort((a, b) => b[1] - a[1]).slice(0, 3);
+            return Object.assign(z, {
+                faden: r1(fadenEnde - e.pe),
+                stil: r1(lo.reduce((s, f) => s + (f.sl > 0 ? f.ende - f.sl : 0), 0)),
+                sperre: r1(lo.reduce((s, f) => s + (f.bl || 0), 0)),
+                nach: r1(e.t + e.d - fadenEnde),
+                skripte: skripte.map(([was, d, f]) => `${was} ${r1(d)} ms${f >= 1 ? ` (Stil erzwungen ${r1(f)})` : ""}`),
+            });
+        });
+}
+// der Selbsttest der Zerlegung: ein Tab mit langem Bild nennt Faden, Stil und Skript; ein Klick ohne LoAF trägt alles nach
+// dem Hörer in „nach“
+function bedienungSelbsttest() {
+    const O = {
+        m: [[0, "Tab·1"], [500, "Platz1·1"]],
+        ev: [[1, "keydown", 100, 110, 140, 240], [1, "keyup", 150, 151, 152, 40], [2, "pointerup", 600, 601, 605, 64]],
+        loaf: [{ t: 140, ende: 300, sl: 260, bl: 70, s: [["FrameRequestCallback", 90, 0], ["KeyboardEvent.keydown", 30, 12]] }],
+    };
+    const [tab, klick] = bedienungTaeter(O);
+    const fehl = [];
+    if (tab.was !== "Tab·1" || tab.warten !== 10 || tab.hoerer !== 30 || tab.faden !== 160 || tab.stil !== 40 || tab.sperre !== 70 || tab.nach !== 40) fehl.push("Tab " + JSON.stringify(tab));
+    if (!/^FrameRequestCallback 90 ms$/.test(tab.skripte[0]) || !/Stil erzwungen 12/.test(tab.skripte[1])) fehl.push("Skripte " + tab.skripte);
+    if (klick.was !== "Platz1·1" || klick.faden !== 0 || klick.nach !== 59) fehl.push("Klick " + JSON.stringify(klick));
+    if (bedienungTaeter(Object.assign({}, O, { loaf: null }))[0].faden !== null) fehl.push("ohne LoAF ist der Faden nicht null");
+    return fehl;
+}
+
 module.exports = {
     ANKUNFT_HALT_MS,
+    BEDIENUNG_OHR: `(${__bedienungOhr.toString()})()`,
+    bedienungTaeter,
+    bedienungSelbsttest,
     ankunftsHalter,
     ankunftsHalterTafel,
     latenzAn,

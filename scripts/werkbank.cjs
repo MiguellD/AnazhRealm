@@ -45,7 +45,8 @@
 //                                                           `kreis` geht eine Runde in [sek] Spiel-s und zählt die Tiere im Bild (`KREIS`, tiere.K5)
 //   node scripts/werkbank.cjs latenz [--proben 50] [--sicht ego,third] [--verb gehen,wechsel,springen,einsteigen,hieb] [--json datei] | --selbsttest | --verzugprobe
 //                                                           DIE LATENZ (leib.K1): Taste → erstes Bild mit bewegtem Leib, je Sicht × Verb, ROT über 50 ms
-//   node scripts/werkbank.cjs bedienung [--runden 3]       DIE BEDIENUNG (spielgang.K3): HUD-Deckung im Bild des Spielers, INP über HUD und Menü
+//   node scripts/werkbank.cjs bedienung [--runden 3] [--bilder d]  DIE BEDIENUNG (spielgang.K3): HUD-Deckung im Bild des Spielers, INP über HUD und
+//                                                          Menü, der Täter je langsamer Eingabe; --bilder: Einstellungen und Ich im Bild
 //   node scripts/werkbank.cjs haenger [sek] [--ein s] [--regler voll|frei] [--tiere frei|halten] [--wandern bahn|sprung]
 //                                                           [--schwelle ms] [--probe] [--json datei] | haenger --auswerten <x.roh.json>
 //                                                           DIE HÄNGER-LINSE: jeder Frame über der Schwelle mit Ursache (scripts/lib/haenger-linse.cjs)
@@ -1862,19 +1863,52 @@ async function starte() {
                     let deckt = 0;
                     for (let i = 0; i < mit.u8.length; i += 4) deckt += [0, 1, 2].some((k) => Math.abs(mit.u8[i + k] - ohne.u8[i + k]) > 12);
                     const bilder = () => page.evaluate("new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)))");
+                    // DER TÄTER JE EINGABE (Gebot 10): neben dem Ohr die Event-Timing-Einträge und die langen Bilder (LoAF) —
+                    // `HL.bedienungTaeter` zerlegt jede langsame Interaktion in Warten · Hörer · Faden (rAF, Stil+Layout) · nach
+                    // dem Faden (Raster, GPU, Vorlage) und nennt das Skript beim Namen
+                    await page.evaluate(HL.BEDIENUNG_OHR);
+                    // der Stand des Vorbaus vor der ersten Eingabe und je Gruppe die Knoten-Bauten der Erst-Zeichnung (ein Bau
+                    // im Klick-Pfad hält das nächste Bild)
+                    const vorbau = await page.evaluate(`(() => { const V = ${r}._geistVorbauStand, U = ${r}._uiVorbauStand, S = ${r}.state.ichStage;
+                        return { geist: V ? V.fertig.size : 0, ich: !!(S && S.vorgebaut), ui: !!(U && U.alle) }; })()`);
+                    const bauStand = () => page.evaluate(`(() => { const E = ${r}._erstZeichnungStand(); return [E.bauN, E.bauMs, E.eingabeVerschoben, E.neubauN]; })()`);
                     await page.evaluate("__loop(1)");
                     const inp = {};
                     for (const art of ["hud", "menue"]) {
+                        const bau0 = await bauStand();
                         await page.evaluate(`${r}._inp.je.clear(); ${r}._inp.n0 = performance.interactionCount`);
-                        for (let i = 0; i < +b.runden; i++)
-                            for (const ziel of art === "hud" ? await page.$$("#hotbar .hotbar-slot") : ["Tab", "Tab", "KeyI", "Escape"]) {
+                        for (let i = 0; i < +b.runden; i++) {
+                            const ziele = art === "hud" ? await page.$$("#hotbar .hotbar-slot") : ["Tab", "Tab", "KeyI", "Escape"];
+                            for (const [k, ziel] of ziele.entries()) {
+                                await page.evaluate((m) => __bedOhr.m.push([performance.now(), m]), (art === "hud" ? (k ? "Platz" + k : "Hand") : ["Tab auf", "Tab zu", "I", "Esc"][k]) + "·" + (i + 1));
                                 await (art === "hud" ? ziel.click() : page.keyboard.press(ziel));
                                 await bilder();
                             }
+                        }
                         inp[art] = await page.evaluate(`${r}._bedienungInp()`);
+                        const bau1 = await bauStand();
+                        inp[art].knotenBau = { n: bau1[0] - bau0[0], ms: Math.round(bau1[1] - bau0[1]), wartet: bau1[2] - bau0[2], neubau: bau1[3] - bau0[3] };
+                    }
+                    const taeter = HL.bedienungTaeter(await page.evaluate("__bedOhr"));
+                    // DIE TAFELN IM BILD (`--bilder <ordner>`, nie im Urteil): nach der Messung je Tafel ein Schuss des Spielers, wenn
+                    // die Eingabe ruht und was sie aufschob, steht — die Einstellungen (I) und das Ich mit seiner Bühne (Tab)
+                    const tafeln = [];
+                    if (b.bilder) {
+                        fs.mkdirSync(b.bilder, { recursive: true });
+                        const ruhe = () => page.evaluate(`new Promise((ok) => { let n = 0; const f = () => (++n >= 40 && ${r}._eingabeRuht() ? ok() : requestAnimationFrame(f)); requestAnimationFrame(f); })`);
+                        for (const [taste, zu, name] of [["KeyI", "Escape", "einstellungen"], ["Tab", "Tab", "ich"]]) {
+                            await page.keyboard.press(taste);
+                            await ruhe();
+                            await ruhe();
+                            const datei = path.join(b.bilder, "bedienung-" + name + ".png");
+                            await page.screenshot({ path: datei });
+                            tafeln.push(datei);
+                            await page.keyboard.press(zu);
+                            await bilder();
+                        }
                     }
                     await loopAus();
-                    return send({ deckungPct: +((100 * deckt) / (mit.W * mit.H)).toFixed(2), bild: [mit.W, mit.H], imSpiel, inp, ort: aktOrt });
+                    return send({ deckungPct: +((100 * deckt) / (mit.W * mit.H)).toFixed(2), bild: [mit.W, mit.H], imSpiel, inp, vorbau, taeter, tafeln, ort: aktOrt });
                 }
                 if (req.url === "/gpu-bank")
                     return send(
@@ -3049,7 +3083,7 @@ hauptLauf(async () => {
     else if (cmd === "methode")
         o = await rufe("/methode", { name: a[0], terrain: hat("terrain"), quelle: opt("--quelle") });
     else if (cmd === "eval") o = await evalRuf(a[0]);
-    else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3) });
+    else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), bilder: opt("--bilder") ? path.resolve(opt("--bilder")) : undefined });
     else if (cmd === "albedo" && hat("nah-fern")) {
         // DIE ALBEDO NAH GEGEN FERN: je Ort im Chunk-Quadrat Boden-Satz gegen Fern-Ring aus 420 m, dazu das Gesetz an
         // der Stelle; `--selbsttest` (ohne Welt) prüft das Urteil: im Band grün (auch ein Ring, der im Band seiner Abtastung
@@ -3719,7 +3753,7 @@ hauptLauf(async () => {
     else if (cmd === "gpu-bank") o = await rufe("/gpu-bank", { n: a[0], runden: opt("--runden", 3) });
     else if (cmd === "latenz") {
         if (SELBST) {
-            selbsttestEnde(HL.latenzSelbsttest(), "das Latenz-Urteil nennt jede fehlende Größe beim Namen"); // ohne Welt: das Urteil
+            selbsttestEnde([...HL.latenzSelbsttest(), ...HL.bedienungSelbsttest()], "das Latenz-Urteil nennt jede fehlende Größe beim Namen, der Täter der Bedienung zerlegt Warten, Hörer, Faden, Stil und nach dem Faden"); // ohne Welt: das Urteil
             process.exit(0);
         }
         // die Verzug-Probe (in der Welt): 3 Bilder Verzug im Eingabe-Pfad sind ROT und heben den Median um mindestens 2 Bilder
