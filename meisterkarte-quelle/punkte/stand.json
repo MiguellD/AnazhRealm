@@ -1,5 +1,5 @@
 {
- "kopf": "e0f42f9d",
+ "kopf": "20d09a04",
  "je": {
   "affekt.K1": {
    "punkte": 2,
@@ -831,7 +831,7 @@
   },
   "haar.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Station seit der Messung geändert · haar.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/band-urteil.cjs, scripts/lib/fernwald-linse.cjs +3)",
+   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Station seit der Messung geändert · haar.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +11)",
    "stationen": [
     {
      "id": "haar.K2#1",
@@ -848,7 +848,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/band-urteil.cjs, scripts/lib/fernwald-linse.cjs +3)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +11)",
      "ungemessen": true
     }
    ]
@@ -1431,7 +1431,7 @@
   },
   "licht.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Verhältnis 5.067 (5–12,5), Schatten-Anteil 0.1974 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an 715754fc radeon · gehalten: Verhältnis 5.333 (5–12,5), Schatten-Anteil 0.1875 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an b4bcf19c gtx — offen: licht.K2#2 radeon: Station seit der Messung geändert · licht.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/band-urteil.cjs, scripts/lib/fernwald-linse.cjs +3) — zuletzt an 9e40c93c: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0)",
+   "beleg": "Maschine: gehalten: Verhältnis 5.067 (5–12,5), Schatten-Anteil 0.1974 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an 715754fc radeon · gehalten: Verhältnis 5.333 (5–12,5), Schatten-Anteil 0.1875 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an b4bcf19c gtx — offen: licht.K2#2 radeon: Station seit der Messung geändert · licht.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +9) — zuletzt an 9e40c93c: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0)",
    "stationen": [
     {
      "id": "licht.K2#1",
@@ -1466,7 +1466,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/band-urteil.cjs, scripts/lib/fernwald-linse.cjs +3) — zuletzt an 9e40c93c: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +9) — zuletzt an 9e40c93c: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0)",
      "ungemessen": true
     }
    ]
@@ -1532,7 +1532,7 @@
      "gruen": true,
      "zahl": "größter Sprung 0.056 EV/s (Soll ≤ 0,1) · Hub klar ↔ Regen 0.94 EV · 127 s, Wörter standen · [linse-gpu] nvidia/pascal",
      "sha": "b895650c7dc2e303a3299ed17b04c6350d002437",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +10)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +13)",
      "gehalten": true
     }
    ]
@@ -1953,7 +1953,7 @@
   },
   "mensch.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: mensch.K4#1 radeon: Station seit der Messung geändert · mensch.K4#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +10) · mensch.K4#2 headless: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/diag-mensch-anatomie.cjs +7)",
+   "beleg": "Maschine: 0 — offen: mensch.K4#1 radeon: Station seit der Messung geändert · mensch.K4#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +14) · mensch.K4#2 headless: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/diag-mensch-anatomie.cjs +7)",
    "stationen": [
     {
      "id": "mensch.K4#1",
@@ -1970,7 +1970,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +10)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +14)",
      "ungemessen": true
     },
     {
@@ -2108,7 +2108,7 @@
      "gruen": true,
      "zahl": "first GRÜN: Wurf 6 Wölfe, umstellt 16.85 s, Furcht chaos 0.908 (Gegenlauf 0), 4 Jäger fallen, Triumph joy+hope 0.42 (Gegenlauf 0)",
      "sha": "eeb5d2bfbcdae181388a990d13c434cd67b923a0",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +5)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +11)",
      "gehalten": true
     }
    ]
@@ -2301,7 +2301,7 @@
   },
   "profiband.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: ungemessen (R10) — zuletzt an 3ef20f9f: Deckel 64 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +10) — zuletzt an 4b13478b: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen · profiband.K1#2 radeon: ungemessen (R10) · profiband.K1#2 gtx: Station seit der Messung geändert — zuletzt an b4bcf19c: die Fahrt riss 1800 s (in siedlung.K4#2) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: ungemessen (R10) — zuletzt an 3ef20f9f: Deckel 64 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +13) — zuletzt an 4b13478b: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen · profiband.K1#2 radeon: ungemessen (R10) · profiband.K1#2 gtx: Station seit der Messung geändert — zuletzt an b4bcf19c: die Fahrt riss 1800 s (in siedlung.K4#2) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "profiband.K1#1",
@@ -2319,7 +2319,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +10) — zuletzt an 4b13478b: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +13) — zuletzt an 4b13478b: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
      "ungemessen": true,
      "beide": true
     },
@@ -2345,7 +2345,7 @@
   },
   "profiband.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: ungemessen (R10) · profiband.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +10) — zuletzt an 4b13478b: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen · profiband.K2#2 radeon: ungemessen (R10) · profiband.K2#2 gtx: Station seit der Messung geändert — zuletzt an b4bcf19c: die Fahrt riss 1800 s (in siedlung.K4#2) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: ungemessen (R10) · profiband.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +13) — zuletzt an 4b13478b: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen · profiband.K2#2 radeon: ungemessen (R10) · profiband.K2#2 gtx: Station seit der Messung geändert — zuletzt an b4bcf19c: die Fahrt riss 1800 s (in siedlung.K4#2) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "profiband.K2#1",
@@ -2362,7 +2362,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +10) — zuletzt an 4b13478b: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +13) — zuletzt an 4b13478b: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
      "ungemessen": true
     },
     {
@@ -2387,7 +2387,7 @@
   },
   "profiband.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: ungemessen (R10) — zuletzt an 3ef20f9f: Deckel 64 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K3#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +10) — zuletzt an 4b13478b: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen · profiband.K3#2 radeon: ungemessen (R10) · profiband.K3#2 gtx: Station seit der Messung geändert — zuletzt an b4bcf19c: die Fahrt riss 1800 s (in siedlung.K4#2) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: ungemessen (R10) — zuletzt an 3ef20f9f: Deckel 64 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K3#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +13) — zuletzt an 4b13478b: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen · profiband.K3#2 radeon: ungemessen (R10) · profiband.K3#2 gtx: Station seit der Messung geändert — zuletzt an b4bcf19c: die Fahrt riss 1800 s (in siedlung.K4#2) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "profiband.K3#1",
@@ -2405,7 +2405,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +10) — zuletzt an 4b13478b: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +13) — zuletzt an 4b13478b: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
      "ungemessen": true,
      "beide": true
     },
@@ -2473,7 +2473,7 @@
   },
   "profiband.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: ungemessen (R10) · profiband.K5#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +10) — zuletzt an 4b13478b: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen · profiband.K5#2 radeon: ungemessen (R10) · profiband.K5#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +29)",
+   "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: ungemessen (R10) · profiband.K5#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +13) — zuletzt an 4b13478b: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen · profiband.K5#2 radeon: ungemessen (R10) · profiband.K5#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +29)",
    "stationen": [
     {
      "id": "profiband.K5#1",
@@ -2490,7 +2490,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +10) — zuletzt an 4b13478b: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +13) — zuletzt an 4b13478b: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
      "ungemessen": true
     },
     {
@@ -2829,7 +2829,7 @@
      "gruen": true,
      "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 66/66 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 66/66 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 66/66 | ✅ Dichte über den Reload: Linie 490 Löcher, 0 korrupt",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +46)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +47)",
      "gehalten": true
     },
     {
@@ -2862,7 +2862,7 @@
      "gruen": true,
      "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 59/59",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +46)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +47)",
      "gehalten": true
     },
     {
@@ -2871,14 +2871,14 @@
      "gruen": true,
      "zahl": "✅ (V) Korpus: 65 Stände 18.530.0 … 18.546.129 und 1 Kopf laden am Kopf — Bauten 330/330 · Gruben 198/198 · Inventar 183/183 · ganz 66/66 | ✅ (V) Versions-Stufe 18.546.129: ihr Stand steht im Korpus (bump-version.cjs)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +46)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +47)",
      "gehalten": true
     }
    ]
   },
   "spielgang.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: spielgang.K3#1 radeon: Station seit der Messung geändert · spielgang.K3#1 gtx: ROT: HUD deckt 3.95 % (1920×1080, im Spiel) · INP HUD 72 ms (50) · Menü 288 ms (20) an 9e40c93c",
+   "beleg": "Maschine: 0 — offen: spielgang.K3#1 radeon: Station seit der Messung geändert · spielgang.K3#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +9) — zuletzt an 4b13478b: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
    "stationen": [
     {
      "id": "spielgang.K3#1",
@@ -2893,9 +2893,10 @@
      "id": "spielgang.K3#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "HUD deckt 3.95 % (1920×1080, im Spiel) · INP HUD 72 ms (50) · Menü 288 ms (20)",
-     "sha": "9e40c93c35c13e0c3ca6bf23542256a8b3aba94e",
-     "grund": "ROT: HUD deckt 3.95 % (1920×1080, im Spiel) · INP HUD 72 ms (50) · Menü 288 ms (20)"
+     "zahl": null,
+     "sha": null,
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +9) — zuletzt an 4b13478b: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
+     "ungemessen": true
     }
    ]
   },
@@ -3513,7 +3514,7 @@
   },
   "vegetation.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: Station seit der Messung geändert · vegetation.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +10)",
+   "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: Station seit der Messung geändert · vegetation.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +13)",
    "stationen": [
     {
      "id": "vegetation.K1#1",
@@ -3530,7 +3531,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +10)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +13)",
      "ungemessen": true
     }
    ]
@@ -3732,7 +3733,7 @@
   }
  },
  "rueckfall": [],
- "kopfVoll": "e0f42f9ded85356026b589e9e434144f933a98f1",
- "zeit": "2026-11-01T07:04:14.717Z",
- "vorher": "9e40c93c"
+ "kopfVoll": "20d09a043dcfba9257879da204d5aa73570a764b",
+ "zeit": "2026-11-01T07:26:29.732Z",
+ "vorher": "e0f42f9d"
 }

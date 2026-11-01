@@ -103,3 +103,4 @@
 2026-11-01T07:29 karte=161 (gebucht am 9e40c93c, buche.sh)
 2026-11-01T07:51 karte=161 (gebucht am 9e40c93c, buche.sh)
 2026-11-01T08:04 karte=161 (gebucht am e0f42f9d, buche.sh)
+2026-11-01T08:26 karte=161 (gebucht am 20d09a04, buche.sh)
