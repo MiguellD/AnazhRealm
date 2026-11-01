@@ -2474,16 +2474,17 @@ async function kreaturProben(r, T, opts) {
                 minute += (dt / tagS) * 1440;
                 const draus = liste.filter((b) => !b.drinnen).map((b) => b.leib.position);
                 for (const b of liste) {
-                    const { x, z } = b.leib.position;
+                    const P = b.leib.position;
+                    const { x, z } = P;
                     const innen0 = b.drinnen ? b.orte.tuer.haus : null;
                     const sp =
                         wSpur.get(b) ||
                         wSpur
                             .set(b, { x, z, innen: innen0, ziel: b.ziel, n: new Set(), gesamt: 0, ax: x, az: z })
                             .get(b);
-                    const d = ab(b.leib.position, sp);
+                    const d = ab(P, sp);
                     sp.gesamt += d;
-                    if (d > 2 && Math.min(ab(sp, pm), ab(b.leib.position, pm)) < nahR) WG.sprungN++;
+                    if (d > 2 && Math.min(ab(sp, pm), ab(P, pm)) < nahR) WG.sprungN++;
                     kandW.length = 0;
                     r._blockerUmPlatz(x, z, 4, kandW);
                     let innen = innen0;
@@ -2496,7 +2497,7 @@ async function kreaturProben(r, T, opts) {
                         if (durchTuer(e, sp.x, sp.z, x, z)) WG.tuer++;
                         else WG.falsch.push(`${b.rolle} #${b.heim} an ${nameVon(e)}`);
                     }
-                    const fuss = b.leib.position.y - A.PLAYER_FOOT_OFFSET * (b.groesse || 1);
+                    const fuss = P.y - A.PLAYER_FOOT_OFFSET * (b.groesse || 1);
                     const imLeib = (box) =>
                         box.topY > fuss + A.PLAYER_STEP_UP && box.botY < fuss + 1.7 * (b.groesse || 1);
                     const wand = b.drinnen
@@ -2517,13 +2518,11 @@ async function kreaturProben(r, T, opts) {
                     sp.ziel = b.ziel;
                     // (am Steuer gehört der Leib dem Wagen: ob er steckt, urteilt der Verkehr — gate:fahr-leben VK `fest`)
                     const da =
-                        b.amSteuer ||
-                        (b.drinnen ? !b.hinaus : !b.ziel || (!b.drinnenSoll && ab(b.leib.position, b.ziel) < 1.5));
+                        b.amSteuer || (b.drinnen ? !b.hinaus : !b.ziel || (!b.drinnenSoll && ab(P, b.ziel) < 1.5));
                     if (da || Math.hypot(x - sp.ax, z - sp.az) >= 1) Object.assign(sp, { ax: x, az: z, seit: minute });
                     else if (minute - sp.seit >= 5 && !sp.steckt) stecken.push(wann(b));
                     // die Berührung: ein anderer Leib draußen näher als zwei Kapseln
-                    const nah =
-                        !b.drinnen && draus.some((q) => q !== b.leib.position && ab(q, b.leib.position) < 2 * RW);
+                    const nah = !b.drinnen && draus.some((q) => q !== P && ab(q, P) < 2 * RW);
                     if (nah && !sp.nah) beruehr.push(wann(b));
                     Object.assign(sp, { x, z, innen, nah, steckt: !da && minute - sp.seit >= 5 });
                 }
@@ -2661,7 +2660,10 @@ async function kreaturProben(r, T, opts) {
                         Math.hypot(e.position.x - (ox + sl.x), e.position.z - (oz + sl.z)) < 1
                 )
             );
-        if (opts && opts.ort) return { stadt: await stadtTag(opts.ort), sicht: taeter ? sicht : undefined };
+        // DER ORT der Probe (`--ort`): ein Messort mit Gründung (stadt · stadt-voll) misst seine Stadt, der Genesis-Ort sein
+        // Start-Dorf (das Dorf, das der Wirt dort baut); ohne Ort beide — das Start-Dorf, dann die Stadt am Messort stadt
+        const ort = opts && opts.ort;
+        if (ort && ort !== "genesis") return { stadt: await stadtTag(ort), sicht: taeter ? sicht : undefined };
         const S = await startDorf(restore);
         const plan = S.plan;
         const hausE = s.architectures.filter(
@@ -2941,7 +2943,7 @@ async function kreaturProben(r, T, opts) {
             huellen: hausE.filter((e) => e._hausHuelle).length,
             wege: SD.zahl(),
             wiederkehr: await wiederkehr(),
-            stadt: await stadtTag(),
+            stadt: ort ? undefined : await stadtTag(),
             sicht: taeter ? sicht : undefined,
         });
     });
@@ -3315,7 +3317,7 @@ function urteil(name, z) {
             `${wo}Wege ${v.wegeMin}–${v.wegeMax} (${v.ausser}), ${v.steckenN} Steckenbleiber (${v.stecken}), auf Wegen ${v.aufWeg} (Soll ≥ 0,85), Strecke min ${v.streckeMin} m (Soll ≥ 100 je Tag: ${v.kurz}), Berührung: ${v.beruehrN} (${v.beruehr})`
         );
     }
-    // das Start-Dorf (ohne `--ort`: seine Wege)
+    // das Start-Dorf (ohne `--ort` und am Genesis-Ort: seine Wege)
     if (name === "bewohner" && z.wege) {
         const [sg, b, wk] = [z.satzGang || {}, z.blick, z.wiederkehr || { ueberN: "ungemessen" }];
         soll(
