@@ -1676,7 +1676,8 @@ class AnazhRealm_studio_bruecke {
     //   (1) Bauplan-Namen, die Rezept-ids mit ihrem Träger, der Name hinter einem Art-Präfix (`baum_eiche` → „eiche", auch
     //       bei kaltem Buch);
     //   (2) die Namen der Werke: das Kopf-Wort des Rezept-`lab` und des Träger-Labels (vor „·"/„—": „Feuerstelle",
-    //       „Ziehbrunnen", „Alemannisch", „Kristall-Geode");
+    //       „Ziehbrunnen", „Alemannisch", „Kristall-Geode") — nie ein Art-Wort aus (3) („Lyra-Tor" → „lyra", „tor"
+    //       benennt die Art);
     //   (3) die Art-Wörter des Art-Gesetzes: der Präfix-Stamm („baum", „haus", „fahrzeug") und der Stamm des Spenders,
     //       der kein eigener Bauplan ist („fahrzeug_wagen" → „wagen") → das erste Werk der Art;
     //   (4) die Studio-Namen, deren Kompositum-Kopf ein Art-Wort ist („Fachwerkhaus" → das erste Haus).
@@ -1738,12 +1739,8 @@ class AnazhRealm_studio_bruecke {
                     if (!artVon[n]) artVon[n] = k;
                 }
         }
-        // (2)
-        for (const id of ids) {
-            const t = traeger[id];
-            if (t) for (const w of [...kopf(recipes[id].lab), ...kopf(label(t))]) setze(1, w, t);
-        }
-        // (3) und (4): ein Wort, das zwei Arten benennt, fällt (Spender „tor_basis"/„haus_basis" → „basis").
+        // (3) und (4): ein Wort, das zwei Arten benennt, fällt (Spender „tor_basis"/„haus_basis" → „basis"). Die Art-Wörter
+        // stehen VOR den Namen der Werke fest: (2) nimmt keines davon (unten).
         const eindeutig = (s, paare) => {
             const arten = new Map();
             for (const [w, t] of paare) {
@@ -1768,6 +1765,13 @@ class AnazhRealm_studio_bruecke {
             if (typeof sp === "string" && !bps[sp]) artPaare.push([sp.split("_").pop(), ziel]);
         }
         eindeutig(2, artPaare);
+        // (2) Ein Art-Wort benennt seine Art, nie das Werk, dessen Label es als Grundwort trägt: „Lyra-Tor" ist ein Tor —
+        // „lyra" führt zu ihm, „tor" bleibt das erste Werk der Art (w4-tore-teile2: das Label nahm „tor" dem Drachentor,
+        // der Satz „stell ein drachentor auf" verlor seine Absicht; gate:nervensystem S „Wort am Knoten vorbei").
+        for (const id of ids) {
+            const t = traeger[id];
+            if (t) for (const w of [...kopf(recipes[id].lab), ...kopf(label(t))]) if (!stufen[2].has(w)) setze(1, w, t);
+        }
         // (4) Ein Studio-Name, dessen Kopf (der letzte Teil des Kompositums) ein Art-Wort ist, ist ein Werk dieser Art:
         // „Fachwerkhaus" ist ein Haus. „Anatomie", „Porta", „Phytogenesis" benennen keine Art und bleiben stumm.
         const studioPaare = [];
@@ -2164,10 +2168,10 @@ class AnazhRealm_studio_bruecke {
             this._scatterRefillPending = true;
             return this._impostorZelleNeu(at, key, preset, variant, ovK);
         }
-        // Der Null-Renderer bäckt nie: der Rahmen der Zelle kommt aus der L1-Geometrie (fehlt sie: EINMAL anfordern)
-        // bzw. der deklarierten Stufe der Art (Tor gate=[0] aus L0) — Höhe box.max.y (Anker Stammbasis), Breite der
-        // radiale Vertex-Scan, Formel in phyto-core (__phytoCore.scanRadialXZ / impostorFrame, wie der Studio-Bäcker).
-        const bakeLod = this._foundryDeclaredStage(preset, 1);
+        // Der Null-Renderer bäckt nie: der Rahmen der Zelle kommt aus der Gestalt, aus der die Karte backt (`_karteStufe`,
+        // die Höhen-Stufe; fehlt sie: EINMAL anfordern) — Höhe box.max.y (Anker Stammbasis), Breite der radiale Vertex-Scan,
+        // Formel in phyto-core (__phytoCore.scanRadialXZ / impostorFrame, wie der Studio-Bäcker).
+        const bakeLod = this._karteStufe(preset);
         const gkey = this._foundryKoerperKey(preset, variant, bakeLod, ovK);
         const group = this._foundryCacheGet(gkey);
         if (group === undefined) {
@@ -2228,7 +2232,7 @@ class AnazhRealm_studio_bruecke {
         }
         // Mit echtem Renderer trägt die Karte erst gebacken: bis dahin liefert der Flatten für die Baum-Fernstufe NICHTS
         // (false), nie Geometrie — nah trägt die Wunsch-Stufe, fern wartet der Baum (ein Karten-Ding hat keinen Satz).
-        // Headless/Null-Renderer trägt der Rahmen aus der L1-Geometrie (dort bäckt nie einer).
+        // Headless/Null-Renderer trägt der Rahmen aus der Gestalt der Karte (`_karteStufe`; dort bäckt nie einer).
         const rendB = this.state && this.state.renderer;
         if (!z.gebacken && rendB && !rendB._isHeadlessNull) {
             if (wer) wer.wecke(z.ende);

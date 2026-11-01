@@ -39,17 +39,19 @@ class AnazhRealm_stoff_material {
         return mat;
     }
 
-    // DER HALM DER FERNE (w4-gras-saum, `NAH_WIESE.fern`): derselbe Halm-Stoff (das Studio-Gras L2 der Nah-Wiese), sein
-    // Positions-Knoten trägt das Gesetz der Ferne je Instanz — d der Abstand ihres Fußes (der Ursprung der Instanz über die
-    // Naht `_weltNaht`) zum Auge der Wiese (`_halmFerneAuge`, das der Sicht-Satz für denselben Pass legt), o ihre Ordnung
-    // (dieselbe Rechnung wie `_wieseOrdnung`: die Lage auf 1/256 m, PCG, die oberen 24 Bit), der Anteil a = (radius/d)^dichte
-    // × (1 − Saum vor `bis`) (`_wieseAnteil`). Steht o unter a, steht das Büschel ganz; darüber, im Band bis a · (1 + `rand`),
-    // sinkt es in den Boden (das Büschel × v um seinen Fuß) statt zu springen — an der Übergabe (a = 1) steht jedes. Sein Fuß
-    // trägt die Fläche der Nachbarn: die Mitte jedes Halms (`aCenter`, um den Fuß des Büschels) rückt waagrecht um
-    // f = (d/radius)^(dichte/2) bis `breitMax` nach außen, die Ecken auf dem Boden (um diese Mitte) um √f — Höhe und Neigung der
-    // Halme bleiben (mit dem vollen f am Fuß lasen die L2-Halme ab 25 m im Third als flache Fächer, Radeon 31.10.).
-    // Diesseits der Übergabe (d < radius) legt der Sicht-Satz dasselbe Büschel als Nah-Wiese — hier steht es nicht. EIN Knoten
-    // für jede Vorlage (EIN Programm); der Wind schwingt mit dem Büschel (× v).
+    // DER HALM DER FERNE (w4-gras-saum, w4-gras-l2, `NAH_WIESE.fern`): derselbe Halm-Stoff (das Studio-Gras L2 der Nah-Wiese),
+    // sein Positions-Knoten trägt das Gesetz der Ferne je Instanz — d der Abstand ihres Fußes (der Ursprung der Instanz über
+    // die Naht `_weltNaht`) zum Auge der Wiese (`_halmFerneAuge`, das der Sicht-Satz für denselben Pass legt), o ihre Ordnung
+    // (dieselbe Rechnung wie `_wieseOrdnung`: die Lage auf 1/256 m, PCG, die oberen 24 Bit), Anteil a und Streckung s aus dem
+    // EINEN Gesetz `_wieseFern` über der TSL-Algebra (Takt und Sicht-Satz rechnen es in Zahlen). Steht o unter a, steht das
+    // Büschel ganz; darüber, im Band bis a · (1 + `rand`), sinkt es in den Boden (das Büschel × v um seinen Fuß) statt zu
+    // springen — an der Übergabe (a = 1, s = 1) steht jedes, wie die Nähe es legt. DIE STRECKUNG: die ganze Gestalt des
+    // Büschels waagrecht um s — die Mitte jedes Halms (`aCenter`, um den Fuß des Büschels) und der Halm um sie (Fuß UND
+    // Spitze), die Höhe bleibt; die Ähre (ihr `aCenter` die Spitze des Stängels, über dem Fuß) wandert mit der Spitze, ihre
+    // Ährchen bleiben in ihrer Größe (gestreckt lasen sie im Modell der Station als helle Striche am Horizont). Bis
+    // w4-gras-l2 rückten nur die Mitten (höchstens 2,5×) und die Füße um √f — die Halme blieben schmal, jenseits 30 m lag der
+    // Boden frei. Diesseits der Übergabe (d < radius) legt der Sicht-Satz dasselbe Büschel als Nah-Wiese — hier steht es
+    // nicht. EIN Knoten für jede Vorlage (EIN Programm); der Wind schwingt mit dem Büschel (× v).
     _halmFerne(mat) {
         const da = this._halmFerneStoffe && this._halmFerneStoffe.get(mat);
         if (da) return da;
@@ -70,29 +72,27 @@ class AnazhRealm_stoff_material {
                 .shiftRight(8)
                 .toFloat()
                 .mul(1 / 16777216);
-            const anteil = T.min(T.float(1), T.float(NW.radius).div(d.max(1e-3)).pow(F.dichte)).mul(
-                T.float(1).sub(T.smoothstep(F.bis - F.saum, F.bis, d))
-            );
+            const A = AnazhRealm._windTsl(T);
+            const G = AnazhRealm._wieseFern(A, d);
+            const anteil = G.anteil;
             const v = anteil
                 .mul(1 + F.rand)
                 .sub(o)
                 .div(anteil.mul(F.rand).max(1e-6))
                 .clamp(0, 1)
                 .mul(T.step(NW.radius, d));
-            const f = d
-                .div(NW.radius)
-                .max(1)
-                .pow(F.dichte / 2)
-                .min(F.breitMax);
             const c = T.attribute("aCenter", "vec3");
             const rel = T.positionLocal.sub(c);
-            const fuss = T.mix(T.float(1), f.sqrt(), T.step(T.positionGeometry.y, 1e-4));
+            // die Mitte rückt um s, der Halm streckt sich um sie waagrecht um s (quer); die Ähre (aCenter über dem Fuß) wandert
+            // nur, in ihrer Größe (quer 1)
+            const s = G.streck;
+            const quer = T.mix(s, T.float(1), T.step(1e-4, c.y));
             const sk = this._foundryWorldScaleMatrix("gras").elements[0];
             const sway = this._windSwayOffset(T, { ampX: 1.5, hoehe: T.positionGeometry.y.mul(sk) });
             this._halmFerneKnoten = T.vec3(
-                c.x.mul(f).add(rel.x.mul(fuss)),
+                c.x.mul(s).add(rel.x.mul(quer)),
                 c.y.add(rel.y),
-                c.z.mul(f).add(rel.z.mul(fuss))
+                c.z.mul(s).add(rel.z.mul(quer))
             )
                 .mul(v)
                 .add(sway.mul(v));
@@ -884,6 +884,8 @@ class AnazhRealm_stoff_material {
                                         _at.mapNode = _Ta.texture(_at.map);
                                         _at.nmapNode = _Ta.texture(_at.nmap);
                                         _at.lmapNode = _Ta.texture(_at.lmap);
+                                        // die Tiefe je Texel: mit BC eine eigene Schicht, rgba8 trägt sie in der Normale
+                                        _at.tmapNode = _at.tmap ? _Ta.texture(_at.tmap) : null;
                                     }
                                     const _V = _Ta.float(_at.V); // die Peilungen je Ring
                                     // DIE HEBUNGS-RINGE (lod.K3): die Tafel der Schicht (phyto-core `karteRinge`, aufsteigend) — je
@@ -891,8 +893,7 @@ class AnazhRealm_stoff_material {
                                     const _rg = _at.ringe.ringe;
                                     const _Hs = _at.masse.h;
                                     const _alg = AnazhRealm._windTsl(_Ta); // die Algebra der Gesetze (`karteRingHalbe`)
-                                    const _uv = _Ta.attribute("uv", "vec2");
-                                    const _ecke = _uv.x.mul(_Ta.float(2.0)).sub(_Ta.float(1.0)); // die Ecke ±1
+                                    const _uvRoh = _Ta.attribute("uv", "vec2"); // die Ecke im Gitter (`_uv` unten: wo sie steht)
                                     // (Schicht, Halbbreite, Höhe, ±Sichthöhe)
                                     const _karte = _Ta.attribute("aKarte", "vec4");
                                     const _rahmen = _karte.yz;
@@ -924,6 +925,40 @@ class AnazhRealm_stoff_material {
                                         _Ta.cameraPosition.xz.sub(_naht.anker.xz).length().max(1e-4)
                                     );
                                     const _phiF = _Ta.varying(_phiV, "vKarteHebung");
+                                    // ── DAS GITTER IM BILD (heil-laub-tiefe, `KARTE_GITTER`): ab der Bild-Höhe px[1] steht das Gitter der
+                                    //    Karte (die Tiefe ihrer Gestalt an seinen Ecken, `vertexNode` unten); unter px[0] fallen seine
+                                    //    inneren Ecken auf die Ecken des Quads (jede innere Zelle entartet, es zeichnen die zwei Dreiecke
+                                    //    der Karte, eben wie bis w4-laub-karte) — dazwischen gleiten sie stetig (CDLOD-Art, wie der Boden
+                                    //    K51) und die Tiefe wächst mit. Die Ecke trägt ihre gleitende Lage als uv, das Fragment liest
+                                    //    dieselbe: Bild und Atlas bleiben in jeder Lage des Gitters. Die Bild-Höhe misst der Pixel der
+                                    //    Szene (die Halbhöhe der gekippten Karte über ihrem Abstand, Projektion × Höhe der Szene). ──
+                                    const _gK = AnazhRealm.KARTE_GITTER;
+                                    const _hPhiV = globalThis.__phytoCore.karteRingHalbe(_alg, _hHv, _rahmen.x, _phiV);
+                                    const _bildH = _hPhiV
+                                        .mul(_sV)
+                                        .mul(_Ta.cameraProjectionMatrix.element(1).y.mul(_Ta.screenSize.y))
+                                        .div(
+                                            _Ta.cameraPosition
+                                                .sub(_naht.anker)
+                                                .sub(_Ta.vec3(0.0, _hHv.mul(_sV), 0.0))
+                                                .length()
+                                                .max(1e-3)
+                                        );
+                                    const _morph = _bildH
+                                        .sub(_gK.px[0])
+                                        .div(_gK.px[1] - _gK.px[0])
+                                        .clamp(0.0, 1.0);
+                                    const _fang = (n) => (Math.floor(n / 2) + 0.5) / n; // die Schwelle, an der die Ecke fällt
+                                    const _uvV = _Ta.mix(
+                                        _Ta.vec2(
+                                            _Ta.step(_fang(_gK.zellen[0]), _uvRoh.x),
+                                            _Ta.step(_fang(_gK.zellen[1]), _uvRoh.y)
+                                        ),
+                                        _uvRoh,
+                                        _morph
+                                    );
+                                    const _uv = _Ta.varying(_uvV, "vKarteUv"); // das Fragment: die Ecke, wo sie steht
+                                    const _ecke = _uv.x.mul(_Ta.float(2.0)).sub(_Ta.float(1.0)); // die Ecke ±1
                                     // ── exakte Anker-Peilung im Fragment: posW = Anker + right·k + Hub der gekippten Karte entlang
                                     //    look (right ⟂ look) ⇒ ang(look) = atan2(−h) + atan2(k, d'), d' = √(|h|²−k²) — kein
                                     //    Varying-Emissions-Risiko, exakt; d' trägt den Hub (`_dAchse` zieht ihn ab). ──
@@ -955,11 +990,14 @@ class AnazhRealm_stoff_material {
                                                 .div(_eR[i + 1] - _eR[i])
                                                 .clamp(0.0, 1.0)
                                         );
+                                    // der feste Name (Lehre 23, w4-b-knoten): ohne ihn trägt das WGSL `NodeBuffer_<Knoten-id>`
                                     if (!_at.ringTafel)
-                                        _at.ringTafel = _Ta.uniformArray(
-                                            _rg.map((r, i) => new THREE.Vector4(_eR[i], r.teiler, r.y, 0)),
-                                            "vec4"
-                                        );
+                                        _at.ringTafel = _Ta
+                                            .uniformArray(
+                                                _rg.map((r, i) => new THREE.Vector4(_eR[i], r.teiler, r.y, 0)),
+                                                "vec4"
+                                            )
+                                            .setName("karteRingTafel");
                                     const _ring = _at.ringTafel.element(
                                         _rF
                                             .add(this._ditherIGN(_Ta, 1))
@@ -1001,19 +1039,16 @@ class AnazhRealm_stoff_material {
                                     // τ Ansichten je Zeile ab der ersten Zeile des Rings (phyto-core `karteRinge`).
                                     const _vZ = _Ta.float(1.0).sub(_vIn);
                                     const _yW = _ring.z;
-                                    const _zelle = (a) => {
+                                    // die Zelle der Peilung a, gelesen an der Spalte u (0..1 in ihrer Ansicht)
+                                    const _zelle = (a, u) => {
                                         const x0 = _Ta.mod(a, _tW).mul(_bw);
                                         const y0 = _yW.add(_Ta.floor(a.div(_tW)).mul(_bh));
                                         const uv = _Ta.vec2(
-                                            x0.add(_uIn.mul(_bw)).div(_at.cw),
+                                            x0.add(u.mul(_bw)).div(_at.cw),
                                             y0.add(_vZ.mul(_bh)).div(_Hs)
                                         );
-                                        return { x0, y0, uv };
+                                        return { x0, y0, uv, u };
                                     };
-                                    const _zA = _zelle(_v0),
-                                        _zB = _zelle(_v1);
-                                    const _uvA = _zA.uv;
-                                    const _uvB = _zB.uv;
                                     // DER STAMM-STRICH (Echt-GPU 05.10., Höhen-Sonde): die Anker-Peilung ist für das ganze Quad
                                     // dieselbe; steht sie GENAU auf einer Ansichts-Grenze, kippt ihr Rundungs-Rauschen einzelne Pixel
                                     // auf die Nachbar-Ansicht (v0 springt um 1 bzw. 7). Die Hardware-Ableitung des 2×2-Blocks las den
@@ -1030,6 +1065,15 @@ class AnazhRealm_stoff_material {
                                             .sample(this._laubVersatz(_Ta, uv, _gX, _gY))
                                             .depth(_schicht)
                                             .grad(_gX, _gY);
+                                    // Die Tiefe der Gestalt liest das Fragment nicht (heil-laub-tiefe): sie steht an den Ecken des
+                                    // Gitters (`vertexNode`, unten). Das Fragment liest jede Ansicht an ihrer Spalte: eine Blick-Parallaxe
+                                    // aus EINER Tiefen-Schicht verschob die zwei Ansichten 45° auseinander in den Schatten der jeweils
+                                    // anderen (die Probe der Welle w4-laub-karte, eine Kugel 3,4 m neben der Achse: IoU 0,446 statt 0,582
+                                    // ohne sie).
+                                    const _zA = _zelle(_v0, _uIn),
+                                        _zB = _zelle(_v1, _uIn);
+                                    const _uvA = _zA.uv;
+                                    const _uvB = _zB.uv;
                                     // DIE VERGRÖSSERTE KARTE (K20, 12.10.): steht ein Texel der Stufe 0 auf mehr als einem Pixel, liest
                                     // die Karte ihre Zelle KUBISCH (B-Spline, vier bilineare Abgriffe in der eigenen Ansicht) statt
                                     // bilinear. Die Stufe 0 ist binär (Karten-Gesetz, BC1): bilinear gelesen schnitt der alphaTest
@@ -1044,7 +1088,7 @@ class AnazhRealm_stoff_material {
                                         .sub(_Ta.float(1.0))
                                         .clamp(0.0, 1.0);
                                     const _kubisch = (tex, z) => {
-                                        const cx = _uIn.mul(_bw).sub(_Ta.float(0.5));
+                                        const cx = z.u.mul(_bw).sub(_Ta.float(0.5));
                                         const cy = _vZ.mul(_bh).sub(_Ta.float(0.5));
                                         const ix = _Ta.floor(cx),
                                             iy = _Ta.floor(cy);
@@ -1227,6 +1271,152 @@ class AnazhRealm_stoff_material {
                                         .clamp(0.0, 1.0);
                                     const _sicht = _Ta.mix(_s2.y, _s2.x, _hoch);
                                     mat.receivedShadowNode = (schatten) => schatten.mul(_sicht);
+                                    // ── DIE KARTE IN DER TIEFE IHRER GESTALT (w4-laub-karte; im Vertex seit heil-laub-tiefe): sie steht
+                                    //    nicht auf ihrer Ebene durch die Stammachse — jede Ecke ihres Gitters (`KARTE_GITTER`) rückt
+                                    //    entlang ihres Sicht-Strahls um die Tiefe der Gestalt an ihrer Stelle. Der Fuß steht im Boden, wo
+                                    //    der Stamm steht (die Tafel schnitt ihn als Gerade), Nachbar-Karten verdecken einander wie ihre Kronen,
+                                    //    die Blende zur Gestalt mischt zwei Flächen in derselben Tiefe statt einer Tafel hinter der
+                                    //    Krone, und den Schatten empfängt sie an demselben Punkt. Bis heil-laub-tiefe schrieb das
+                                    //    FRAGMENT diese Tiefe (depthNode → frag_depth): kein Karten-Fragment ging mehr durch den frühen
+                                    //    Tiefentest, die volle Schattierung lief unter jeder Lage des Walds (z114, GTX, Mess-Wiese Ego
+                                    //    steht, gpu-bank 15,41 → 20,52 ms; Radeon in EINER Welt gpu-bank +3,7 ms, Einzel-Frame p50
+                                    //    +5,3 ms — frag_depth allein +3,9, die BC4-Probe im Fragment allein +0,4).
+                                    //    Jetzt liest jede Ecke die Tiefe je Texel (phyto-core `karteTiefe`: BC die Schicht `tmap`,
+                                    //    rgba8 der vierte Kanal der Normale, vormultipliziert mit der Deckung in z) auf der Mip-Stufe,
+                                    //    deren Texel eine halbe Gitter-Zelle misst (die Ablage mittelt dort die deckenden Texel), in
+                                    //    beiden Ansichten ihrer Peilung und beiden Ringen ihrer Hebung, gemischt wie das Fragment sie
+                                    //    mischt. Ein Punkt (u, v, w) der Ansicht a (Peilung θ_a, Hebung e) liegt im Blick des Auges
+                                    //    (Peilung θ, Hebung φ, δ = θ − θ_a) um u·cos φ·sin δ + v·(cos e·sin φ − sin e·cos φ·cos δ) +
+                                    //    w·(cos e·cos φ·cos δ + sin e·sin φ) vor der Ebene der Karte (`wAuge`). Der Clip-Raum rückt NUR
+                                    //    die Tiefe: x, y und w der Ecke bleiben — Bild, Interpolation und Ableitungen des Fragments sind
+                                    //    die der ebenen Karte; der Rasterer zieht die Tiefe zwischen den Ecken. ──
+                                    const _dreh = (2 * Math.PI) / _at.V;
+                                    const _ntT = _at.fmt === "rgba8" ? 1 : _at.nt; // die Tiefe liegt im Maß der Normale
+                                    const _gNX = _gK.zellen[0];
+                                    // die Peilung der Achse (das Fragment rechnet sie aus seinem Ort zurück, die Ecke kennt den Anker)
+                                    const _fVv = _Ta
+                                        .fract(
+                                            _peil(
+                                                _Ta.cameraPosition.x.sub(_naht.anker.x),
+                                                _Ta.cameraPosition.z.sub(_naht.anker.z)
+                                            )
+                                                .sub(_peil(_m0.z.negate(), _m0.x))
+                                                .div(_Ta.float(6.283185307179586))
+                                                .add(_Ta.float(2.0))
+                                        )
+                                        .mul(_V);
+                                    const _v0v = _Ta.floor(_fVv),
+                                        _fbv = _Ta.fract(_fVv),
+                                        _v1v = _Ta.mod(_v0v.add(1.0), _V);
+                                    let _rFv = _Ta.float(0.0);
+                                    for (let i = 0; i + 1 < _rg.length; i++)
+                                        _rFv = _rFv.add(
+                                            _phiV
+                                                .sub(_eR[i])
+                                                .div(_eR[i + 1] - _eR[i])
+                                                .clamp(0.0, 1.0)
+                                        );
+                                    const _cPv = _Ta.cos(_phiV),
+                                        _sPv = _Ta.sin(_phiV);
+                                    const _uKv = _uvV.x.mul(2.0).sub(1.0).mul(_rahmen.x); // die Spalte der Ecke (Meter der Vorlage)
+                                    const _tiefeRing = (i) => {
+                                        const R = _at.ringTafel.element(i);
+                                        const eR = R.x,
+                                            tR = R.y;
+                                        const bw = _Ta.float(_at.cw).div(tR),
+                                            bh = _Ta.float(_at.ch).div(tR);
+                                        const hE = globalThis.__phytoCore.karteRingHalbe(_alg, _hHv, _rahmen.x, eR);
+                                        const vC = _uvV.y
+                                            .mul(2.0)
+                                            .sub(1.0)
+                                            .mul(_hPhiV.div(hE.mul(_Ta.cos(_phiV.sub(eR)).max(1e-3))))
+                                            .mul(0.5)
+                                            .add(0.5);
+                                        // die Stufe: ein Texel misst eine halbe Gitter-Zelle der Ansicht; die Probe bleibt einen
+                                        // halben Texel der Stufe in IHRER Ansicht (die Nachbar-Ansicht liegt Kante an Kante)
+                                        const stufe = _Ta.log2(bw.div(_ntT * 2 * _gNX)).max(0.0);
+                                        const texel = _Ta.exp2(stufe).mul(_ntT);
+                                        const hu = texel.mul(0.5).div(bw).min(0.5),
+                                            hv = texel.mul(0.5).div(bh).min(0.5);
+                                        const uIn = _uvV.x.clamp(hu, _Ta.float(1.0).sub(hu));
+                                        const vZ = _Ta.float(1.0).sub(vC.clamp(hv, _Ta.float(1.0).sub(hv)));
+                                        const cE = _Ta.cos(eR),
+                                            sE = _Ta.sin(eR);
+                                        const vBild = vC.mul(2.0).sub(1.0).mul(hE); // die Höhe im Bild des Rings
+                                        const blick = (a, delta) => {
+                                            const uvT = _Ta.vec2(
+                                                _Ta.mod(a, tR).mul(bw).add(uIn.mul(bw)).div(_at.cw),
+                                                R.z
+                                                    .add(_Ta.floor(a.div(tR)).mul(bh))
+                                                    .add(vZ.mul(bh))
+                                                    .div(_Hs)
+                                            );
+                                            let t;
+                                            if (_at.fmt !== "rgba8")
+                                                t = _at.tmapNode.sample(uvT).depth(_schicht).level(stufe).r;
+                                            else {
+                                                const n = _at.nmapNode.sample(uvT).depth(_schicht).level(stufe);
+                                                t = _Ta.select(
+                                                    n.z.greaterThan(0.01),
+                                                    _Ta.float(1.0).sub(_Ta.float(1.0).sub(n.w).div(n.z.max(1e-3))),
+                                                    _Ta.float(0.5)
+                                                );
+                                            }
+                                            const w = globalThis.__phytoCore.karteTiefeVersatz(
+                                                _alg,
+                                                t,
+                                                _rahmen.x,
+                                                _hHv
+                                            );
+                                            const sD = _Ta.sin(delta),
+                                                cD = _Ta.cos(delta);
+                                            return _uKv
+                                                .mul(_cPv.mul(sD))
+                                                .add(vBild.mul(cE.mul(_sPv).sub(sE.mul(_cPv).mul(cD))))
+                                                .add(w.mul(cE.mul(_cPv).mul(cD).add(sE.mul(_sPv))));
+                                        };
+                                        return _Ta.mix(
+                                            blick(_v0v, _fbv.mul(_dreh)),
+                                            blick(_v1v, _fbv.sub(1.0).mul(_dreh)),
+                                            _fbv
+                                        );
+                                    };
+                                    const _i0v = _rFv.floor().min(_rg.length - 1);
+                                    // × Instanz-Skala: Meter der Welt; × _morph: die fallende Karte steht eben (unter px[0] wie bis w4-laub-karte)
+                                    const _wAugeV = _Ta
+                                        .mix(
+                                            _tiefeRing(_i0v.toInt()),
+                                            _tiefeRing(
+                                                _i0v
+                                                    .add(1.0)
+                                                    .min(_rg.length - 1)
+                                                    .toInt()
+                                            ),
+                                            _rFv.sub(_i0v).clamp(0.0, 1.0)
+                                        )
+                                        .mul(_sV)
+                                        .mul(_morph);
+                                    const _pVv = _Ta.positionView;
+                                    const _clip = _Ta.modelViewProjection;
+                                    // die gerückte Tiefe der Ecke im Sicht-Raum, in der Spanne der Kamera (eine Ecke, die ihre Tiefe
+                                    // hinter die Nah-Ebene rückte, fiele sonst samt Dreieck aus dem Clip-Raum), durch DIESELBE
+                                    // Projektion wie jede Ecke der Welt: sie trägt den Tiefen-Raum des Rückends (WebGPU [0, 1], der
+                                    // WebGL2-Rückfall [−1, 1]). Eine Tiefe aus [0, 1] stellte unter WebGL2 jede Karte hinter das, was
+                                    // hinter ihr steht (z120: gate:foundry-impostor C7 auf swiftshader, Karte vor der Tafel 0).
+                                    const _zV = _pVv.z
+                                        .mul(_Ta.float(1.0).sub(_wAugeV.div(_pVv.length().max(1e-3))))
+                                        .clamp(_Ta.cameraFar.negate(), _Ta.cameraNear.negate());
+                                    const _zClip = _Ta.cameraProjectionMatrix.mul(_Ta.vec4(0.0, 0.0, _zV, 1.0));
+                                    mat.vertexNode = _Ta.vec4(
+                                        _clip.x,
+                                        _clip.y,
+                                        _zClip.z.div(_zClip.w).mul(_clip.w),
+                                        _clip.w
+                                    );
+                                    const _wAuge = _Ta.varying(_wAugeV, "vKarteTiefe");
+                                    mat.receivedShadowPositionNode = _Ta.positionWorld.add(
+                                        _Ta.cameraPosition.sub(_Ta.positionWorld).normalize().mul(_wAuge)
+                                    );
                                     // ── CAMERA-FACING (Vertex) im VORLAGEN-Raum: der positionNode läuft VOR der Instanz-Matrix
                                     //    (r184, WGSL gelesen), die Matrix dreht, skaliert und schiebt das Quad danach. Also blickt die
                                     //    Karte in der Vorlage auf das Auge, wie die Instanz es sieht: Auge im Objekt-Raum minus Anker
@@ -1243,13 +1433,10 @@ class AnazhRealm_stoff_material {
                                     const _lx = _lkX.div(_ll);
                                     const _lz = _lkZ.div(_ll);
                                     // right = cross(up, look) = (look.z, 0, −look.x)
-                                    const _off = _ecke.mul(_rahmen.x);
+                                    const _off = _uvV.x.mul(2.0).sub(1.0).mul(_rahmen.x); // die Ecke, wo sie steht
                                     const _cPhi = _Ta.cos(_phiV),
                                         _sPhi = _Ta.sin(_phiV);
-                                    const _bV = _Ta.positionGeometry.y
-                                        .mul(2.0)
-                                        .sub(1.0)
-                                        .mul(globalThis.__phytoCore.karteRingHalbe(_alg, _hHv, _rahmen.x, _phiV));
+                                    const _bV = _uvV.y.mul(2.0).sub(1.0).mul(_hPhiV);
                                     // DER WIND DER KARTE (K19): derselbe Wind-Term wie Rinde und Laub der nahen Stufen (phyto-core
                                     // `windAusschlag`, das Stamm-Glied: ζ = uv.y, die Kronenspitze pendelt ζ²) — die Last aus der
                                     // Wind-Zeile des Wetters, die Böe aus WIND_BOE, die Richtung uWindDir, H = Rahmen-Höhe × Instanz-Skala,
@@ -1276,7 +1463,7 @@ class AnazhRealm_stoff_material {
                                                 .mul(globalThis.__phytoCore.WIND_GESETZ.kF)
                                                 .div(_Hk),
                                             H: _Hk,
-                                            zeta: _uv.y,
+                                            zeta: _uvV.y,
                                             rho: _Ta.float(0),
                                             phi: _ortK.mul(-_WB.k),
                                             psi: _Ta.float(0),

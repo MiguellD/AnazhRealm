@@ -4,7 +4,7 @@
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const path = require("path");
-const { safeEvaluate, ohneWurf } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar, ohneWurf } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
 
 // Ω-PHYSIS Säule IV — Wahrheits-Spiegel: die gerechnete Physik treibt Ω-W2 (physik-wahre
@@ -565,7 +565,7 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (v801Results && !v801Results.error) {
+    if (ohneWurf(check, "V8.01 Drawer-Scroll + Canvas-Sync", v801Results)) {
         check(
             `Alle ${v801Results.drawerCount} Drawer haben .drawer-scroll-Wrapper (Inhalt scrollt, Rahmen bleibt fest)`,
             v801Results.allDrawersWrapped
@@ -585,8 +585,6 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
             "_workshopSyncCanvasSize zieht canvas.width an CSS-rect.width nach (Drawer-Resize → Render-Pixel mitwachsen)",
             v801Results.canvasSyncWorks
         );
-    } else if (v801Results && v801Results.error) {
-        check(`evaluate-Fehler — ${v801Results.error}`, false);
     }
 
     // ### Shape-Drag-Drop + Klick-Klick-Connection ###
@@ -827,7 +825,7 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (v803Results && !v803Results.error) {
+    if (ohneWurf(check, "V8.03 Camera-CAD + Palette", v803Results)) {
         check("#workshop-preview-row im DOM (Layout-Container)", v803Results.previewRowInDom);
         check("#workshop-side-palette im DOM (seitliche Drag-Sources)", v803Results.sidePaletteInDom);
         check(
@@ -846,8 +844,6 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
             "CSS: .drawer-scroll hat overscroll-behavior:contain (zweite Verteidigung gegen Wheel-Bleed)",
             v803Results.overscrollContain
         );
-    } else if (v803Results && v803Results.error) {
-        check(`evaluate-Fehler — ${v803Results.error}`, false);
     }
 }
 
@@ -1116,13 +1112,7 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (!ring4Results || ring4Results.error) {
-        check(
-            "Ring 4: Symphonie-Snapshot erreichbar",
-            false,
-            ring4Results && ring4Results.error ? ring4Results.error : "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 4: Symphonie-Snapshot erreichbar", ring4Results)) {
         check("Ring 4: initSymphony aktiviert Audio-Pipeline", ring4Results.initOk);
         check("Welle 5 Klang: Master = UMWELT.masterBasis × Regler (EIN Mischpult)", ring4Results.masterAusGesetz);
         check("Welle 5 Klang: der Bus der Klang-Welt hängt am Umgebungs-Regler", ring4Results.busAmRegler);
@@ -1204,13 +1194,7 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (!uiResults || uiResults.error) {
-        check(
-            "UI: Drawer-Snapshot erreichbar",
-            false,
-            uiResults && uiResults.error ? uiResults.error : "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "UI: Drawer-Snapshot erreichbar", uiResults)) {
         check("UI V2: #topbar im DOM", uiResults.topbarInDom);
         check("UI V2: #statusbar im DOM", uiResults.statusbarInDom);
         check(
@@ -1312,7 +1296,7 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (freeScreenResults && !freeScreenResults.error) {
+    if (erreichbar(check, "UI-Putz freier Bildschirm: Tests laufen", freeScreenResults)) {
         check("UI-Putz freier Bildschirm: body.hud-hidden blendet das HUD aus", freeScreenResults.hudHides);
         check("UI-Putz freier Bildschirm: erneutes Umschalten zeigt das HUD wieder", freeScreenResults.hudReturns);
     }
@@ -1351,13 +1335,7 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (!uiActionsResults || uiActionsResults.error) {
-        check(
-            "UI V2: Quick/Help-Snapshot erreichbar",
-            false,
-            uiActionsResults && uiActionsResults.error ? uiActionsResults.error : "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "UI V2: Quick/Help-Snapshot erreichbar", uiActionsResults)) {
         check(
             "UI-Putz V18.35: die duplizierten Welt-Aktionen sind aufgelöst (kein #quick-actions)",
             uiActionsResults.quickActionsGone
@@ -1478,13 +1456,7 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (!uiAbilitiesResults || uiAbilitiesResults.error) {
-        check(
-            "UI: Abilities-Snapshot erreichbar",
-            false,
-            uiAbilitiesResults && uiAbilitiesResults.error ? uiAbilitiesResults.error : "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "UI: Abilities-Snapshot erreichbar", uiAbilitiesResults)) {
         check("UI: Leerer State zeigt Hinweis-Text", uiAbilitiesResults.emptyStateShown);
         check(
             "UI: Hinzugefügte Ability erscheint als Row",
@@ -1556,13 +1528,7 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (!uiTuningResults || uiTuningResults.error) {
-        check(
-            "UI: Tuning-Snapshot erreichbar",
-            false,
-            uiTuningResults && uiTuningResults.error ? uiTuningResults.error : "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "UI: Tuning-Snapshot erreichbar", uiTuningResults)) {
         check("UI: Alle drei Tuning-Slider sind im DOM", uiTuningResults.allSlidersPresent);
         check(
             "UI: Initialer Slider-Wert spiegelt state.player-Default",
@@ -1590,13 +1556,7 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (!uiV2Results || uiV2Results.error) {
-        check(
-            "UI V2: Identity-Snapshot erreichbar",
-            false,
-            uiV2Results && uiV2Results.error ? uiV2Results.error : "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "UI V2: Identity-Snapshot erreichbar", uiV2Results)) {
         check("UI V2: Tag/Nacht-Toggle entfernt (Nacht der EINE Stil)", uiV2Results.themeToggleGone);
         check("UI V2: kein data-theme-Attribut mehr (Theme statisch)", uiV2Results.noThemeAttr);
     }
@@ -1632,13 +1592,7 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (!consoleResults || consoleResults.error) {
-        check(
-            "UI V2: Konsole-Snapshot erreichbar",
-            false,
-            consoleResults && consoleResults.error ? consoleResults.error : "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "UI V2: Konsole-Snapshot erreichbar", consoleResults)) {
         check(
             "UI V2: #chat-output, #log, #chat-input leben in der Konsole",
             consoleResults.chatOutputInside && consoleResults.logInside && consoleResults.chatInputInside

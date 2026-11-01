@@ -147,7 +147,8 @@ class AnazhRealm_vegetation_wiese {
                 // das Licht der STEHENDEN Kronen (dasselbe Register wie die Laub-Streu): in der Mitte einer Krone 0,43, an
                 // ihrer Kante 0,67 — dort wächst die Narbe nach dem Labor-Gesetz auf 52 % bzw. 81 %
                 const L = licht(x, z);
-                const hang = this._slopeAt(x, z, boden);
+                const eb = {}; // die Ebene des Hangs (gx, gz) — auf ihr steht das Büschel (`_nahWieseKachelDaten`)
+                const hang = this._slopeAt(x, z, boden, 1, eb);
                 const rk = cl((hang - GS.lo) / (GS.hi - GS.lo));
                 const pfad = this._pfadFeldAt(x, z, y);
                 // der Pfad dünnt über sein Welt-Feld (der Labor-Abstand `td` zum Studio-Pfad trägt hier nicht)
@@ -159,7 +160,7 @@ class AnazhRealm_vegetation_wiese {
                 // Radius die Weite der gezeichneten Vorlagen
                 if (Gb.erdbauGrund(E, x, z, reich * sb)) continue;
                 const f = WT(x, z, L, m, [1, 1, 1], 0);
-                out.push({ x, y, z, s: sb, rot, vorlage, o, f, gi, gj });
+                out.push({ x, y, z, s: sb, rot, vorlage, o, f, gi, gj, gx: eb.gx, gz: eb.gz });
             }
         }
         out.sort((a, b) => a.o - b.o);
@@ -387,22 +388,41 @@ class AnazhRealm_vegetation_wiese {
         return o;
     }
 
-    // DER ANTEIL DER FERNE (rein, derselbe Term im Stoff `_halmFerne`): bis zur Übergabe jedes Büschel, dahinter
-    // (radius/d)^dichte — die Büschel je Pixel des Schirms bleiben, die je Fläche der Welt fallen —, samt dem Band, in dem ein
-    // Büschel in den Boden sinkt (× (1 + `rand`)): unter dieser Ordnung zeichnet der Stoff noch einen Halm
+    // DAS GESETZ DER FERNE (rein, `NAH_WIESE.fern`, EINE Rechnung über einer Algebra A — die Zahlen für Takt und Sicht-Satz,
+    // TSL für den Stoff `_halmFerne`; bis w4-gras-l2 standen hier und im Stoff zwei Abschriften desselben Terms): je Abstand
+    // d des Büschel-Fußes vom Auge die STRECKUNG s = (d/radius)^streck in [1, streckMax] — die Gestalt des Büschels waagrecht
+    // um s, es trägt die Fläche von s² Zellen — und der ANTEIL der stehenden Büschel a = min(1, Ziel/s) × (1 − Saum vor `bis`),
+    // das Ziel der Deckung je Fläche 1 bis `voll` (Anzahl × s = 1: an der Übergabe die Wiese der Nähe), dahinter
+    // (voll/d)^fall. So hält die Ferne die Deckung am Schirm (die Zahlen bei `NAH_WIESE`), die Büschel je Pixel bleiben (Lehre 25).
+    static _wieseFern(A, d) {
+        const NW = AnazhRealm.NAH_WIESE,
+            F = NW.fern;
+        const s = A.min(A.k(F.streckMax), A.max(A.k(1), A.pow(A.max(A.mul(d, A.k(1 / NW.radius)), A.k(1e-3)), A.k(F.streck)))); // prettier-ignore
+        const ziel = A.min(A.k(1), A.pow(A.max(A.mul(d, A.k(1 / F.voll)), A.k(1e-3)), A.k(-F.fall)));
+        const t = A.min(A.k(1), A.max(A.k(0), A.mul(A.add(d, A.k(F.saum - F.bis)), A.k(1 / F.saum))));
+        const saum = A.add(A.k(1), A.mul(A.k(-1), A.mul(A.mul(t, t), A.add(A.k(3), A.mul(t, A.k(-2))))));
+        return { streck: s, anteil: A.mul(A.min(A.k(1), A.mul(ziel, A.pow(s, A.k(-1)))), saum) };
+    }
+
+    // DER ANTEIL DER FERNE (das Gesetz `_wieseFern` in Zahlen): unter dieser Ordnung zeichnet der Stoff noch einen Halm — der
+    // Anteil samt dem Band, in dem ein Büschel in den Boden sinkt (× (1 + `rand`))
     static _wieseAnteil(d) {
-        const NW = AnazhRealm.NAH_WIESE;
-        return Math.min(1, (NW.radius / Math.max(d, 1e-3)) ** NW.fern.dichte) * (1 + NW.fern.rand);
+        return (
+            AnazhRealm._wieseFern(globalThis.__phytoCore.WIND_ZAHLEN, d).anteil * (1 + AnazhRealm.NAH_WIESE.fern.rand)
+        );
     }
 
     // EINE KACHEL DER FERNE: die Büschel ihrer Kacheln der Nähe mit Ordnung unter `anteil` (steht die Kachel der Nähe, liest
     // sie deren Büschel), nach o geordnet, mit ihren Karten und ihrem Wasser; null, solange eine Kachel der Nähe auf ihren
-    // Boden wartet (eine jenseits des Chunk-Rings trägt nichts)
+    // Boden wartet (eine jenseits des Chunk-Rings trägt nichts). Ein Büschel der Ferne streckt sich bis `streckMax`: sein Kreis
+    // vor dem Grund der Häuser (`erdbauGrund`, S4) ist die Weite der Vorlagen × seine Skala × streckMax — kein gestreckter Halm
+    // steht in einem Haus.
     _nahWieseFernKachel(fx, fz, anteil, reich) {
         const NW = AnazhRealm.NAH_WIESE;
         const [K, k6] = [NW.fern.kachel, NW.kachel];
         const n = K / k6;
         const nw = this.state.nahWiese;
+        const [Gb, E, weit] = [globalThis.__gelaendeCore, this._erdbauLage(), reich * NW.fern.streckMax];
         const bueschel = [];
         const chunkKarten = new Map();
         chunkKarten.rechteck = [fx * K - 0.34, fz * K - 0.34, (fx + 1) * K + 0.34, (fz + 1) * K + 0.34];
@@ -418,7 +438,7 @@ class AnazhRealm_vegetation_wiese {
                 for (const [ck, m] of karten) chunkKarten.set(ck, m);
                 for (const x of b) {
                     if (x.o >= anteil) break;
-                    bueschel.push(x);
+                    if (!Gb.erdbauGrund(E, x.x, x.z, weit * x.s)) bueschel.push(x);
                 }
             }
         bueschel.sort((a, b) => a.o - b.o);
@@ -429,8 +449,9 @@ class AnazhRealm_vegetation_wiese {
         );
     }
 
-    // DER BLOCK einer Kachel der Ferne je Vorlage v: ihre Büschel dieser Vorlage (Lage, Ordnung), je Teil der Ferne die
-    // Matrizen (Basis × Teil) und der Tint — gebaut, wenn die Kachel oder die Vorlage neu kommt; der Sicht-Satz kopiert nur
+    // DER BLOCK einer Kachel der Ferne je Vorlage v: ihre Büschel dieser Vorlage (Lage, Ordnung, Skala, Hang — die Kugel des
+    // gestreckten Büschels im Sicht-Satz), je Teil der Ferne die Matrizen (Basis × Teil) und der Tint — gebaut, wenn die
+    // Kachel oder die Vorlage neu kommt; der Sicht-Satz kopiert nur
     _nahWieseFernBlock(k, v, vl) {
         const alt = k.bloecke[v];
         if (alt && alt.flat === vl.flat) return alt;
@@ -439,10 +460,18 @@ class AnazhRealm_vegetation_wiese {
         const idx = [];
         for (let i = 0; i < k.bueschel.length; i++) if (k.bueschel[i].vorlage === v) idx.push(i);
         const [n0, F64] = [idx.length, Float64Array];
-        const B = { flat: vl.flat, o: new F64(n0), x: new F64(n0), z: new F64(n0), farben: new Float32Array(n0 * 3) };
+        const B = { flat: vl.flat, o: new F64(n0), x: new F64(n0), y: new F64(n0), z: new F64(n0), s: new F64(n0), g: new F64(n0), farben: new Float32Array(n0 * 3) }; // prettier-ignore
         B.matrizen = vl.fern.map(() => new Float32Array(n0 * 16));
         idx.forEach((i, n) => {
-            [B.o[n], B.x[n], B.z[n]] = [k.bueschel[i].o, k.bueschel[i].x, k.bueschel[i].z];
+            const b = k.bueschel[i];
+            [B.o[n], B.x[n], B.y[n], B.z[n], B.s[n], B.g[n]] = [
+                b.o,
+                b.x,
+                b.y,
+                b.z,
+                b.s,
+                Math.hypot(b.gx || 0, b.gz || 0),
+            ];
             B.farben.set(k.farben.subarray(i * 3, i * 3 + 3), n * 3);
             m4.fromArray(k.basis, i * 16);
             vl.fern.forEach((a, j) => B.matrizen[j].set(mw.multiplyMatrices(m4, a.lokal).elements, n * 16));
@@ -451,9 +480,13 @@ class AnazhRealm_vegetation_wiese {
         return B;
     }
 
-    // Die Daten einer Kachel (Kante K, die Ferne trägt ihre eigene): je Büschel die Basis-Matrix (Ort · Drehung · Skala — die
-    // Welt-Skala des Studio-Teils hängt der Sicht-Satz an) und sein Tint (`farben`, n×3), die Hysterese der Stufe (`l1`) und
-    // die Kachel-Kugel ohne Büschel-Radius (grober Cull vor dem Büschel-Test).
+    // Die Daten einer Kachel (Kante K, die Ferne trägt ihre eigene): je Büschel die Basis-Matrix (Ort · Hang · Drehung · Skala
+    // — die Welt-Skala des Studio-Teils hängt der Sicht-Satz an) und sein Tint (`farben`, n×3), die Hysterese der Stufe (`l1`)
+    // und die Kachel-Kugel ohne Büschel-Radius (grober Cull vor dem Büschel-Test). DER HANG (w4-gras-l2): das Büschel steht
+    // auf der Ebene seines Hangs (der Gradient gx, gz aus `_slopeAt`, den die Platzierung ohnehin liest) — y += gx·x + gz·z
+    // über seiner Fläche, die Halme bleiben lotrecht. Bis dahin lag der Fuß jedes Büschels waagrecht in der Höhe seiner Mitte:
+    // für die Nähe (0,5 m Radius) wenige Zentimeter, für die gestreckte Ferne (bis 7,4 m) an der Mess-Wiese p90 0,5–1,0 m Luft
+    // oder Boden über den Halmen, an der Ebene 0,07–0,29 m (Gesetz, 30–200 m im Blick der Station).
     _nahWieseKachelDaten(tx, tz, bueschel, K = AnazhRealm.NAH_WIESE.kachel) {
         const n = bueschel.length;
         const basis = new Float32Array(n * 16);
@@ -465,17 +498,22 @@ class AnazhRealm_vegetation_wiese {
         const up = this._tmpWieseUp || (this._tmpWieseUp = new THREE.Vector3(0, 1, 0));
         let y0 = Infinity,
             y1 = -Infinity,
-            sMax = 0;
+            sMax = 0,
+            gMax = 0;
         for (let i = 0; i < n; i++) {
             const b = bueschel[i];
             pv.set(b.x, b.y, b.z);
             q.setFromAxisAngle(up, b.rot);
             sv.set(b.s, b.s, b.s);
-            m4.compose(pv, q, sv).toArray(basis, i * 16);
+            const e = m4.compose(pv, q, sv).elements;
+            const [gx, gz] = [b.gx || 0, b.gz || 0];
+            for (let c = 0; c < 3; c++) e[4 * c + 1] += gx * e[4 * c] + gz * e[4 * c + 2];
+            m4.toArray(basis, i * 16);
             farben.set(b.f, i * 3);
             if (b.y < y0) y0 = b.y;
             if (b.y > y1) y1 = b.y;
             if (b.s > sMax) sMax = b.s;
+            gMax = Math.max(gMax, Math.hypot(gx, gz));
         }
         return {
             bueschel,
@@ -487,6 +525,7 @@ class AnazhRealm_vegetation_wiese {
             y0: n ? y0 : 0,
             y1: n ? y1 : 0,
             sMax,
+            gMax,
         };
     }
 
@@ -605,8 +644,9 @@ class AnazhRealm_vegetation_wiese {
         const H = NW.kachel * 0.5;
         for (const k of nw.kacheln.values()) {
             const n = k.bueschel.length;
-            if (!n || !this._passTrifft(L, k.mx, (k.y0 + k.y1) / 2, k.mz, H, (k.y1 - k.y0) / 2, H, k.sMax * rMax))
-                continue;
+            // die Kugel des Büschels wächst mit seinem Hang (y += g · r über seiner Fläche)
+            const rk = k.sMax * rMax * (1 + k.gMax);
+            if (!n || !this._passTrifft(L, k.mx, (k.y0 + k.y1) / 2, k.mz, H, (k.y1 - k.y0) / 2, H, rk)) continue;
             for (let i = 0; i < n; i++) {
                 const b = k.bueschel[i];
                 const d = Math.hypot(b.x - ax, b.z - az);
@@ -614,7 +654,7 @@ class AnazhRealm_vegetation_wiese {
                 const l1 = this._nahStufe(NW.stufe1, NW.stufe1Rand, d, k.l1[i]);
                 k.l1[i] = l1 ? 1 : 0;
                 const vl = ziel[l1 ? 1 : 2][b.vorlage];
-                if (!vl || !this._passTrifft(L, b.x, b.y + vl.cy * b.s, b.z, 0, 0, 0, vl.r * b.s)) continue;
+                if (!vl || !this._passTrifft(L, b.x, b.y + vl.cy * b.s, b.z, 0, 0, 0, vl.r * b.s * (1 + Math.hypot(b.gx || 0, b.gz || 0)))) continue; // prettier-ignore
                 m4.fromArray(k.basis, i * 16);
                 for (const a of vl.senken) {
                     if (a.anzahl >= a.kap) {
@@ -638,22 +678,27 @@ class AnazhRealm_vegetation_wiese {
                 }
             }
         }
-        // DIE FERNE: je Kachel der Ferne, die der Pass trifft (ihr Rand trägt die Büschel und ihren breiteren Fuß), jedes ihrer
-        // Büschel jenseits der Übergabe, dessen Ordnung unter dem Anteil seines Abstands liegt (`_wieseAnteil`, samt dem Band, in
-        // dem es sinkt) — seine Matrizen stehen im Block der Kachel, der Satz kopiert nur; wie hoch es steht, wählt der Stoff am
-        // Auge dieses Passes (`_halmFerneAuge`)
+        // DIE FERNE: je Kachel der Ferne, die der Pass trifft (ihr Rand trägt die gestreckten Büschel), jedes ihrer Büschel
+        // jenseits der Übergabe, dessen Ordnung unter dem Anteil seines Abstands liegt (das Gesetz `_wieseFern`, samt dem Band,
+        // in dem es sinkt) und dessen gestreckte Kugel der Pass trifft (Radius × s: bis w4-gras-l2 zog die Kachel jedes ihrer
+        // Büschel, auch die neben dem Blick) — seine Matrizen stehen im Block der Kachel, der Satz kopiert nur; wie weit es
+        // sich streckt und wie hoch es steht, rechnet der Stoff am Auge dieses Passes (`_halmFerneAuge`)
         if (this._halmFerneAuge) this._halmFerneAuge.value.set(ax, we[13], az);
         const F = NW.fern;
         const HF = F.kachel * 0.5;
+        const ZAHLEN = globalThis.__phytoCore.WIND_ZAHLEN;
         for (const k of nw.fern ? nw.fern.kacheln.values() : []) {
-            if (!k.bueschel.length || !this._passTrifft(L, k.mx, (k.y0 + k.y1) / 2, k.mz, HF, (k.y1 - k.y0) / 2, HF, k.sMax * rMax * F.breitMax)) continue; // prettier-ignore
+            if (!k.bueschel.length || !this._passTrifft(L, k.mx, (k.y0 + k.y1) / 2, k.mz, HF, (k.y1 - k.y0) / 2, HF, k.sMax * rMax * F.streckMax * (1 + k.gMax))) continue; // prettier-ignore
             for (let v = 0; v < 2; v++) {
                 const vl = ziel[2][v];
                 if (!vl || !vl.fern.length) continue;
                 const B = this._nahWieseFernBlock(k, v, vl);
                 for (let i = 0; i < B.o.length; i++) {
                     const d = Math.hypot(B.x[i] - ax, B.z[i] - az);
-                    if (d < NW.radius - 0.01 || B.o[i] >= AnazhRealm._wieseAnteil(d) * 1.001) continue;
+                    if (d < NW.radius - 0.01) continue;
+                    const g = AnazhRealm._wieseFern(ZAHLEN, d);
+                    if (B.o[i] >= g.anteil * (1 + F.rand) * 1.001) continue;
+                    if (!this._passTrifft(L, B.x[i], B.y[i] + vl.cy * B.s[i], B.z[i], 0, 0, 0, vl.r * B.s[i] * g.streck * (1 + B.g[i]))) continue; // prettier-ignore
                     // je Teil der Slot des Büschels (ohne Hülle je Büschel: der Satz läuft in jedem Frame, das das Auge bewegt)
                     for (let j = 0; j < vl.fern.length; j++) {
                         const a = vl.fern[j];
@@ -1998,31 +2043,27 @@ class AnazhRealm_vegetation_wiese {
     }
 
     // DER WALD FÄLLT AM ORT (K69, Lehre 25): legt ein Ort seinen Erdbau über die Flächen im Kasten x0…x1 · z0…z1, ändern sich
-    // die Darts nur in den Zellen, die der Kasten samt Böschung (`ERDBAU.reichweiteM`, dazu die Hang-Probe von 2 m) oder samt der
-    // größten Krone (`KRONE_MAX_M`: `ortFrei` fragt die Krone gegen die Fläche) berührt. Nur sie fallen aus dem Dart-Gedächtnis
-    // des Stands (der Stand bleibt), mit ihnen das Urteil jedes Darts, der sie als Nachbarn liest (±2 Zellen, `_forestDartSteht`),
-    // die Freistand-Antwort jedes Orts, der diese Urteile liest (±4 Zellen darum, `_forestStehtFrei`), und die Gestalt des Orts
-    // dort (`_ortSameFaellt`). Bis K69 fiel das Gedächtnis der ganzen Welt (`_forestDartMemo = null`, ein neuer Stand) — und mit
-    // ihm jede Gestalt jedes Orts. → die Zahl der gefallenen Zellen.
+    // die geborenen Darts nur in den Zellen, die der Kasten samt Böschung (`ERDBAU.reichweiteM`, dazu die Hang-Probe von 2 m)
+    // oder samt der größten Krone (`KRONE_MAX_M`: `ortFrei` fragt die Krone gegen die Fläche) berührt — und mit ihnen der Bestand
+    // jeder Zelle, die sie als Urteils-Nachbarn liest (±`WALD_PLAN.urteil`). Nur diese fallen aus dem Dart-Gedächtnis des Stands
+    // (der Stand bleibt; der Fall legt die geborenen Darts neu an, `_forestGeborenKarte`, und der Faden rechnet am neuen
+    // Stand-Schlüssel), mit ihnen die Freistand-Antwort jedes Orts, der diesen Bestand liest (±4 Zellen darum,
+    // `_forestStehtFrei`), und die Gestalt des Orts dort (`_ortSameFaellt`). Bis K69 fiel das Gedächtnis der ganzen Welt
+    // (`_forestDartMemo = null`, ein neuer Stand) — und mit ihm jede Gestalt jedes Orts. → die Zahl der gefallenen Zellen.
     _forestDartsFallen(x0, z0, x1, z1) {
         const memo = this._forestDartMemo;
         if (!memo || !memo.size) return 0;
         const C = AnazhRealm.FOREST.cell;
+        const U = AnazhRealm.WALD_PLAN.urteil;
         const R = Math.max(globalThis.__gelaendeCore.ERDBAU.reichweiteM + 2, AnazhRealm.KRONE_MAX_M);
         const ga = Math.floor((x0 - R) / C);
         const gb = Math.floor((x1 + R) / C);
         const ha = Math.floor((z0 - R) / C);
         const hb = Math.floor((z1 + R) / C);
         let n = 0;
-        for (let gx = ga; gx <= gb; gx++) for (let gz = ha; gz <= hb; gz++) if (memo.delete(gx + "," + gz)) n++;
+        for (let gx = ga - U; gx <= gb + U; gx++)
+            for (let gz = ha - U; gz <= hb + U; gz++) if (memo.delete(gx + "," + gz)) n++;
         if (n) this._forestDartFall = (this._forestDartFall | 0) + 1; // kein stehender Kasten gilt mehr (`_waldPlanSteht`)
-        const steht = this._forestStehtMemo;
-        if (steht)
-            for (let gx = ga - 2; gx <= gb + 2; gx++)
-                for (let gz = ha - 2; gz <= hb + 2; gz++) {
-                    const d = memo.get(gx + "," + gz);
-                    if (d) for (const o of d) steht.delete(o);
-                }
         const fm = this._freistandMemo;
         if (fm && fm.size && this._freistandMemoVon === memo)
             for (const k of fm.keys()) {
@@ -2035,26 +2076,65 @@ class AnazhRealm_vegetation_wiese {
         return n;
     }
 
-    // BORN-Darts einer Zelle, reine Funktion von (cx,cz,seed): standDensity-Wurf → Boden/Wasser → Slope →
-    // Arten-Nische → reverse-J-Größe → Mammut. Nur geborene Darts treten in die Kronen-Schüchternheit ein.
-    _forestCellDarts(cx, cz, seedInt) {
-        // Zell-Memo über Aufrufe: jeder Chunk liest ±2 Rand-Zellen (~4× Redundanz), und die Dart-Generierung
-        // (`_voxelSurfaceY`-Scan + Slope + Feuchte) dominiert die Plant-Zeit. Seed-gebunden (Welt-Wechsel
-        // leert), bounded (voll → clear); Instanz-Feld, kein state/Snapshot. Die Wahrheit zuerst (`_forestGesetzWahr`): wie
-        // der Chunk-Bau (`_acquireVoxelChunkBuild`) steht die Hydro-Kachel der Zelle vor der Frage; vor dem Worldgen ist die
-        // Antwort vorläufig (`vorlaeufig`) und kein Gedächtnis.
+    // DER BESTAND EINER ZELLE (w4-b-pflanzen): ihre STEHENDEN Darts — die geborenen (`_forestGeborene`), die das Urteil der
+    // Kronen-Schüchternheit trägt (phyto-core `forestStehende` über die geborenen Darts der Zellen ±2), in der Reihe ihrer
+    // Geburt. Zell-Memo über Aufrufe (das Dart-Gedächtnis des Stands, `_forestDartStand`): seed-gebunden, bounded (voll →
+    // clear); Instanz-Feld, kein state/Snapshot. Die Wahrheit zuerst (`_forestGesetzWahr`): wie der Chunk-Bau
+    // (`_acquireVoxelChunkBuild`) stehen die Hydro-Kacheln der Zelle und ihrer Urteils-Nachbarn (±2) vor der Frage; vor dem
+    // Worldgen ist die Antwort vorläufig (`vorlaeufig`) und kein Gedächtnis. Mit Voxel-Faden rechnet der Wald-Faden jeden
+    // Bestand (`_waldFadenSchicken`) und der Haupt-Faden urteilt keinen Dart; ohne Faden (und vorläufig) urteilt hier dasselbe
+    // Gesetz. `geborenMerk` (optional, der vorläufige Pflanz-Gang): die geborenen Darts je Zelle ohne Stand-Gedächtnis.
+    // Bis w4-b-pflanzen trug das Gedächtnis die GEBORENEN Darts und jeder Leser urteilte selbst (`_forestDartSteht`).
+    _forestCellDarts(cx, cz, seedInt, geborenMerk) {
         const memoKey = cx + "," + cz;
         let memo = null;
+        const C = AnazhRealm.FOREST.cell;
         if (this._forestGesetzWahr()) {
             this._forestDartStand(seedInt);
             memo = this._forestDartMemo;
             const hit = memo.get(memoKey);
             if (hit) return hit;
-            const C = AnazhRealm.FOREST.cell;
-            // fehlt die Kachel, ist sie im Faden bestellt (Karte hydro-faden) — die Antwort bis dahin ist vorläufig
-            if (this._ensureHydroTilesAround((cx + 0.5) * C, (cz + 0.5) * C, C)) memo = null;
+            // fehlt eine Kachel, ist sie im Faden bestellt (Karte hydro-faden) — die Antwort bis dahin ist vorläufig
+            if (this._ensureHydroTilesAround((cx + 0.5) * C, (cz + 0.5) * C, (AnazhRealm.WALD_PLAN.urteil + 1) * C))
+                memo = null;
         }
-        // Die Pflanz-Logik lebt EINMAL in phyto-core (planForestCell); hier nur Memo + Welt-Reads als ctx-
+        const G = memo ? this._forestGeborenKarte() : geborenMerk || new Map();
+        const geboren = (gx, gz) => {
+            const k = gx + "," + gz;
+            let a = G.get(k);
+            if (!a) G.set(k, (a = this._forestGeborene(gx, gz, seedInt, !memo)));
+            return a;
+        };
+        const out = globalThis.__phytoCore.forestStehende(cx, cz, geboren, AnazhRealm.FOREST.pack);
+        if (!memo) {
+            out.vorlaeufig = true;
+            return out;
+        }
+        if (memo.size > 8192) {
+            memo.clear(); // bounded — die Front ist lokal, ein Clear kostet nur Re-Compute
+            this._forestDartFall = (this._forestDartFall | 0) + 1;
+        }
+        memo.set(memoKey, out);
+        return out;
+    }
+
+    // Das Gedächtnis der GEBORENEN Darts am Stand des Dart-Gedächtnisses (`_forestDartMemo`, `_forestDartFall`, `_erdbauStand`
+    // — derselbe Schlüssel wie der des Fadens, `_waldStandSchluessel`): die Urteils-Nachbarn eines Bestands sind die Zellen des
+    // nächsten. Ein neuer Stand, ein Fall (die Schranke) oder ein Erdbau legt es neu an.
+    _forestGeborenKarte() {
+        const stand = this._waldStandSchluessel();
+        let K = this._forestGeboren;
+        if (!K || K.memo !== this._forestDartMemo || K.stand !== stand || K.karte.size > 16384)
+            K = this._forestGeboren = { memo: this._forestDartMemo, stand, karte: new Map() };
+        return K.karte;
+    }
+
+    // Die GEBORENEN Darts einer Zelle, reine Funktion von (cx, cz, seed): standDensity-Wurf → Boden/Wasser → Slope →
+    // Arten-Nische → reverse-J-Größe → Mammut (phyto-core `planForestCell`). Nur geborene Darts treten in die
+    // Kronen-Schüchternheit ein (`forestStehende`); ihr Leser ist der Bestand (`_forestCellDarts`). `vorlaeufig`: die Antwort
+    // steht vor der Wahrheit des Gesetzes (oder ohne die Kacheln ihrer Nachbarn) und wird nie gemerkt.
+    _forestGeborene(cx, cz, seedInt, vorlaeufig) {
+        // Die Pflanz-Logik lebt EINMAL in phyto-core (planForestCell); hier nur die Welt-Reads als ctx-
         // Funktionen (Oberfläche · Wasser · Slope · Feuchte · fbm). Ohne Kern → leerer Wald.
         const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
         // Das Wasser eines Darts ist das Gesetz über SEINEM Boden (`_atlasWaterLevelAt`, die Hälfte von `_landAt`, aus der
@@ -2093,21 +2173,13 @@ class AnazhRealm_vegetation_wiese {
                       ortFrei: (x, z, T) => this._ortFrei(x, z, T),
                   })
                 : [];
-        if (!memo) {
-            out.vorlaeufig = true;
-            return out;
-        }
-        if (memo.size > 8192) {
-            memo.clear(); // bounded — die Front ist lokal, ein Clear kostet nur Re-Compute
-            this._forestDartFall = (this._forestDartFall | 0) + 1;
-        }
-        memo.set(memoKey, out);
+        if (vorlaeufig) out.vorlaeufig = true;
         return out;
     }
 
     // DER WALD PLANT IM TAKT (K69, Lehre 14 + 25): eine frische Wald-Zelle zu planen kostet 1–3 ms (`planForestCell`, ~160
-    // Sichthöhen); die Gestalt EINES Baums in frischem Wald fragt bis zu 13 × 13 Zellen (der Freistand ±4, das Urteil jedes
-    // Nachbarn ±2: `WALD_PLAN.reich`). Bis K69 plante der erste Frager am Stück — beim Gang ins Dorf die Ausstattung des Dorfs
+    // Sichthöhen); die Gestalt EINES Baums in frischem Wald fragt bis zu 9 × 9 Zellen (den Bestand im Freistand ±4,
+    // `WALD_PLAN.reich`; das Urteil jedes Darts trägt sein Bestand). Bis K69 plante der erste Frager am Stück — beim Gang ins Dorf die Ausstattung des Dorfs
     // 366 Zellen in EINER Aufgabe neben dem Takt (551 ms, Null-Renderer), ein Takt 113 Zellen (245 ms). Jetzt fragt die
     // Gestalt des Orts (`_ortGestaltSame`) hier: steht der Plan um (x, z), gilt ihr Urteil sofort; fehlen Zellen, bestellt sie
     // sie in der Schlange des Walds (`_tickWaldPlan`) und wartet — wie auf ein kaltes Buch, so warten ihre Leser schon (die
@@ -2116,7 +2188,7 @@ class AnazhRealm_vegetation_wiese {
     // bestellt die Frage neu.
     // DER STEHENDE KASTEN BLEIBT STEHEN (w4-ankunft-2): stand der Kasten einer Zelle, steht er, bis eine Zelle aus dem Gedächtnis
     // fällt (`_forestDartFall`: ein Erdbau, die Schranke) oder ein neues Gedächtnis kommt — bis dahin fragte jede Gestalt seine
-    // 169 Zellen neu (swiftshader kalt bis zum Bild 0,6–0,9 s).
+    // Zellen neu (169, swiftshader kalt bis zum Bild 0,6–0,9 s).
     _waldPlanSteht(x, z) {
         const memo = this._forestDartMemo;
         if (!memo) return false;
@@ -2173,18 +2245,14 @@ class AnazhRealm_vegetation_wiese {
         return steht;
     }
 
-    // Der Zell-Kasten, den der Pflanz-Gang eines Chunks liest: seine Zellen samt ±2 (das Urteil jedes Darts).
+    // Der Zell-Kasten, den der Pflanz-Gang eines Chunks liest: seine Zellen — ihr Bestand trägt das Urteil schon (bis
+    // w4-b-pflanzen samt ±2, die Nachbarn des Urteils im Haupt-Faden).
     _waldPflanzKasten(cx, cz) {
         const { span } = this._voxelChunkConfig();
         const C = AnazhRealm.FOREST.cell;
         const ox = cx * span;
         const oz = cz * span;
-        return [
-            Math.floor(ox / C) - 2,
-            Math.floor(oz / C) - 2,
-            Math.floor((ox + span) / C) + 2,
-            Math.floor((oz + span) / C) + 2,
-        ];
+        return [Math.floor(ox / C), Math.floor(oz / C), Math.floor((ox + span) / C), Math.floor((oz + span) / C)];
     }
 
     // DIE SCHLANGE DES WALDS (K69): der Takt-Planer (Job `waldPlan`, Welt-Substanz) nimmt die bestellten Zellen
@@ -2297,6 +2365,13 @@ class AnazhRealm_vegetation_wiese {
         return !!(this.state.voxelWorker && this._voxelFadenQuelle);
     }
 
+    // Der Stand, an dem der Wald-Faden seine geborenen Darts merkt (die Urteils-Nachbarn des Bestands, voxel-worker
+    // `waldDarts`): das Dart-Gedächtnis des Main (Same, Buch, Hydrosphäre — `_forestDartGen`), sein Fall (Erdbau, Schranke)
+    // und der Erdbau — wechselt einer, rechnet der Faden jede Zelle neu, wie der Main sie neu fragt.
+    _waldStandSchluessel() {
+        return (this._forestDartGen | 0) + "|" + (this._forestDartFall | 0) + "|" + (this._erdbauStand | 0);
+    }
+
     // DER STOFF DES WALDS IM FADEN (K60-3, B-Wald): JEDE offene Zelle der Schlange reist, sobald sie bestellt ist — nah zuerst,
     // je Auftrag `WALD_PLAN.faden` Zellen, alle zugleich im Flug; der Faden rechnet je Takt den nächsten (`rang`, seine Schlange
     // `waldAuftraege`), jede Antwort landet für sich per Transfer (`_waldDartsAn`). Bis B-Wald hielt die Schlange 2 Aufträge im
@@ -2317,19 +2392,22 @@ class AnazhRealm_vegetation_wiese {
         const liste = this._waldPlanListe(flug);
         if (!liste.length) return;
         const C = AnazhRealm.FOREST.cell;
+        const R = (AnazhRealm.WALD_PLAN.urteil + 1) * C;
         const extras = this._forestExtraSpecies();
         const erd = this._erdbauStand | 0;
+        const stand = this._waldStandSchluessel();
         for (let a = 0; a < liste.length; a += N) {
             const zellen = [];
             for (let b = a; b < Math.min(liste.length, a + N); b++) {
                 const g = liste[b][2];
-                // fehlt ihre Kachel, ist sie im Faden bestellt (Karte hydro-faden): die Zelle wartet in der Schlange
-                if (this._ensureHydroTilesAround((g[0] + 0.5) * C, (g[1] + 0.5) * C, C)) continue;
+                // fehlt eine Kachel der Zelle oder ihrer Urteils-Nachbarn, ist sie im Faden bestellt (Karte hydro-faden): die
+                // Zelle wartet in der Schlange
+                if (this._ensureHydroTilesAround((g[0] + 0.5) * C, (g[1] + 0.5) * C, R)) continue;
                 flug.add(liste[b][1]);
                 zellen.push(g[0], g[1]);
             }
             if (!zellen.length) continue;
-            this._voxelWorkerWaldDarts(new Int32Array(zellen), seedInt, extras, liste[a][0]).then(
+            this._voxelWorkerWaldDarts(new Int32Array(zellen), seedInt, extras, liste[a][0], stand).then(
                 (r) => this._waldDartsAn(memo, zellen, r, erd),
                 (e) => {
                     this._waldDartsAn(memo, zellen, null, erd); // die Zellen bleiben in der Schlange, der Takt schickt neu
@@ -2339,9 +2417,9 @@ class AnazhRealm_vegetation_wiese {
         }
     }
 
-    // Die Darts des Fadens ins Gedächtnis ihres Stands: ein gewechselter Stand oder ein Erdbau seit dem Auftrag
-    // (`_erdbauStand`, K69: der Faden rechnete am alten Grund) verwirft sie — die Zellen bleiben in der Schlange, ein neuer
-    // Auftrag rechnet sie; eine inzwischen gerechnete Zelle behält ihre Darts (die Urteile der Nachbarn merken die Objekte).
+    // Der Bestand des Fadens ins Gedächtnis seines Stands: ein gewechselter Stand oder ein Erdbau seit dem Auftrag
+    // (`_erdbauStand`, K69: der Faden rechnete am alten Grund) verwirft ihn — die Zellen bleiben in der Schlange, ein neuer
+    // Auftrag rechnet sie; eine inzwischen gerechnete Zelle behält ihre Darts (die Gedächtnisse je Feld merken die Objekte).
     // Die Schranke des Gedächtnisses greift VOR der Lieferung, nie mitten in ihr (Prüfung K60-3-1).
     // Was seit dem letzten Takt bestellt wurde oder verworfen zurückblieb, reist mit dieser Ankunft, nie erst im nächsten Takt.
     _waldDartsAn(memo, zellen, r, erd) {
@@ -2536,7 +2614,14 @@ AnazhRealm.GRASS_SLOPE = Object.freeze({ lo: 0.7, hi: 1.3 });
 // mit 0,75 m Austritts-Rand. Der Cull urteilt erst ab der Mesh-Zone (Cull-Radius 100–150 m) und am Karten-Horizont
 // (Totband 16 m): ihm genügt ein Meter (`STAND_RAND_FERN_M`) — beim Gehen geht er viermal seltener.
 AnazhRealm.STAND_RAND_M = 0.25;
-// DER WALD PLANT IM TAKT (K69, `_waldPlanSteht` · `_tickWaldPlan`): die Gestalt eines Baums liest die Wald-Zellen bis ±`reich`
-// um seine Zelle (der Freistand ±4, das Urteil jedes Nachbarn ±2); ohne Wald-Faden plant der Takt frische Zellen höchstens
-// `ms` lang, mit ihm reist jede bestellte Zelle sofort, in Aufträgen von `faden` Zellen, alle im Flug (`_waldFadenSchicken`).
-AnazhRealm.WALD_PLAN = Object.freeze({ reich: 6, ms: 3, faden: 64 });
+// DER WALD PLANT IM TAKT (K69, `_waldPlanSteht` · `_tickWaldPlan`): die Gestalt eines Baums liest den Bestand der Wald-Zellen
+// bis ±`reich` um seine Zelle (der Freistand ±4); der Bestand jeder Zelle trägt sein Urteil (die geborenen Darts der Zellen
+// ±`urteil`, die Reihe des Kerns `FOREST_URTEIL_REIHE` — die Kacheln dieser Nachbarn stehen vor jeder Bestellung). Ohne
+// Wald-Faden plant der Takt frische Zellen höchstens `ms` lang, mit ihm reist jede bestellte Zelle sofort, in Aufträgen von
+// `faden` Zellen, alle im Flug (`_waldFadenSchicken`). Bis w4-b-pflanzen las die Gestalt ±6 (das Urteil im Haupt-Faden).
+AnazhRealm.WALD_PLAN = Object.freeze({
+    reich: 4,
+    urteil: Math.max(...globalThis.__phytoCore.FOREST_URTEIL_REIHE.map(Math.abs)),
+    ms: 3,
+    faden: 64,
+});

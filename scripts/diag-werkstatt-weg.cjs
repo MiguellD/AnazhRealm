@@ -20,10 +20,7 @@
 //   --bild fährt NUR L-BILD (Bauen K1 Staffel 2) auf swiftshader, --echt dasselbe auf der Karte.
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, halteBis, pruefer, hauptLauf, nullRenderer, starteBrowser, buehne, wandEnde, selbsttestEnde, jsonSchreiben } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, halteBis, pruefer, hauptLauf, nullRenderer, starteBrowser, buehne, wandEnde, selbsttestEnde, SELBSTTEST, path, fs, stammLib, jsonSchreiben } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.WERKSTATT_WEG_PORT || 4623);
 const NUR_VERBEN = process.argv.includes("--verben");
@@ -355,9 +352,13 @@ async function probe(argW) {
     )
         await tick(1, 100);
     await tick(10, 30);
-    // Ein trockener, freier Ort abseits der Genesis-Lichtung (die Natur-Wand hält die Scheibe frei): der Spieler steht dort.
+    // Ein trockener, freier Ort abseits der Genesis-Lichtung (die Natur-Wand hält die Scheibe frei): der Spieler steht dort. Die Suche
+    // geht um die Lichtung, wo der Spieler steht — steht er ferner als ihr Ring (160 m: die warme Welt der Sitzung, Mess-Wiese 1 082 m
+    // von der Lichtung), um ihn: bis w4-stationen-schnell sprang der erste Lauf über 1 km in eine kalte Gegend, und sein Werk wartete
+    // hinter ihrem Ring (GTX b4bcf19c: der erste Fall stand nach 80 s nicht im Bild)
     const plat = r._genesisPlattform();
-    const P0 = plat ? plat.position : st.playerMesh.position;
+    const SP = st.playerMesh.position;
+    const P0 = plat && Math.hypot(plat.position.x - SP.x, plat.position.z - SP.z) <= 160 ? plat.position : SP;
     let frei = null;
     for (let ring = 40; ring <= 160 && !frei; ring += 12)
         for (let k = 0; k < 16 && !frei; k++) {
@@ -1035,6 +1036,13 @@ function wegHelfer(arg) {
             st.pitch = -0.45;
             lauf = { name: o.name, vorher: new Set(st.architectures), h0: habe(), n0: zeilen().length, kosten, hotbarAlt, kalt: !gebaut.has(o.name) };
             gebaut.add(o.name);
+            // KALT heißt: die Foundry hält das Werk nicht (der Bild-Weg, Bauen K1 Staffel 2) — sein erster Lauf räumt jeden Körper seiner
+            // Art über die EINE Räumungs-Naht (`_foundryCacheEvict`: eine lebende Senke behält ihre Gestalt, der nächste Leser fragt neu),
+            // auch in der warmen Welt der Sitzung; im frischen Profil räumt sie nichts. Bis w4-stationen-schnell lud die Probe der Sitzung
+            // dafür die Seite neu (ein Ganz-Welt-Boot je Lauf), und die Welt füllte die Foundry vor dem ersten Lauf wieder (die Eiche
+            // des Walds).
+            const art = arg.bild && lauf.kalt && r._foundry && r._foundryPresetFor(o.name);
+            if (art) for (const k of [...r._foundry.cache.keys()]) if (k.split("|")[0] === art) r._foundryCacheEvict(k);
             window.__eingabeStrom.length = 0;
             return st.hotbar.indexOf(o.name);
         },
@@ -1315,7 +1323,7 @@ async function wegProbe(page, frei, bild) {
 }
 
 hauptLauf(async () => {
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         console.log("=== SELBST-TEST — die Verdikte und die Wand nennen ihre Täter ===");
         const gesund = {
             gestartet: true,

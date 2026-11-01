@@ -42,15 +42,11 @@
 // Der save-server läuft vorher (`npm start`, :4312 — am OMEN der Mess-Klon); die Werkbank startet und stoppt die Folge selbst
 // (ein Boot je Aufruf; `--serie` hält das Profil für den Zweit-Boot).
 "use strict";
-const { werkbankRuf, hauptLauf, sleep, selbsttestEnde, argOpt: opt, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const os = require("os");
-const path = require("path");
+const { werkbankRuf, hauptLauf, sleep, selbsttestEnde, argOpt: opt, path, fs, os, jsonLesen, jsonSchreiben, ROOT: root } = require("./lib/welt-boot.cjs");
 const { spawn, execSync } = require("child_process");
 const BAND = require("./lib/band-urteil.cjs");
 const { wetterUrteil, weltaktUrteil } = require("./lib/ausgabe-aufnahme.cjs");
 
-const root = path.resolve(__dirname, "..");
 const argv = process.argv.slice(2);
 
 // DIE FOLGE je Messort — fest; die Ordnung ist das Gesetz der Messung. Die Mess-Wiese trägt die volle Folge. Der Genesis-Ring
@@ -1219,7 +1215,7 @@ async function selbsttest() {
             {
                 ortGestellt: [
                     "aufgestellt am Ort wiese, nicht genesis",
-                    "Ort-Takt [], der Ort will [_genesisPortalRing,_portalApproachPrefetch]",
+                    "Ort-Takt [], der Ort will [_genesisOrt]",
                 ],
                 geraet: { schluessel: "radeon", text: "amd rdna-3" },
                 sicht: "ego",
@@ -1258,7 +1254,7 @@ async function selbsttest() {
         pruefe("die Band-Linse schrieb kein Urteil", bandBefunde(M(undefined)), /^BAND band: die Band-Linse schrieb kein Urteil/);
         pruefe("die Band schrieb keine Messung", bandBefunde(null), /keine Messung/);
         // DIE GEGENPROBE 1110-12 (spec/profiband/probe-1110-12.json): beide Boots ROT beim Namen
-        const probe = jsonLesen(path.join(root, "spec", "profiband", "probe-1110-12.json"));
+        const probe = jsonLesen("spec/profiband/probe-1110-12.json");
         const bandVon = (j) => j.schritte.find((s) => s.name === "band").ergebnis.messung;
         pruefe("1110-12 w2B (Wiese)", bandBefunde(bandVon(probe.boots.w2B)), /^BAND-LINSE ratsche: einzelstuecke k0: 37964 dreiecke über der Ratsche 0/);
         pruefe("1110-12 g2B (Genesis)", bandBefunde(bandVon(probe.boots.g2B)), /^BAND-LINSE ratsche: boden haupt: 101954 dreiecke über der Ratsche 95817/);
@@ -1521,7 +1517,7 @@ function streuungCli() {
 // (je Block das erste Band nach dem Eingriff verworfen) — je Schalter Δ gegen die Grund-Nachbarn, Rauschband, Erst-Zeichnung;
 // ROT, wenn der Null-Schalter außerhalb des Rauschbands liegt (die Methode misst den Eingriff mit), Takt oder Bänder fehlen.
 function schalterCli() {
-    const datei = argv[argv.indexOf("--schalter") + 1];
+    const datei = opt("--schalter");
     const { bloecke } = jsonLesen(datei);
     const u = schalterUrteil(bloecke.filter(Boolean));
     console.log(`\n=== DAS SCHALTER-URTEIL: ${bloecke.length} Blöcke, Grund σ ${u.sigma} ms, Erst-Zeichnung der Grund-Blöcke ${u.erstGrund} ms ===`);
@@ -1545,7 +1541,7 @@ function schalterCli() {
 // Befunde seiner Wachen und die Band-Linse (jede Rot-Zeile, die die Basis-Seite A nicht trägt). Exit 1, sobald einer steht.
 function urteilCli() {
     const lies = (d) => jsonLesen(path.resolve(d));
-    const j = lies(argv[argv.indexOf("--urteil") + 1]);
+    const j = lies(opt("--urteil"));
     const bd = opt("--basis", null);
     const basis = bd ? bandMessungAus(lies(bd)) : null;
     const wachen = (j.befunde || []).filter((b) => !/^(BAND|BAND-LINSE|BASIS|ORT band|RAHMEN-ZIEL band)\b/.test(b));

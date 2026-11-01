@@ -8,7 +8,7 @@
  *  3) QUELLTEXT-WAND (PFLICHT-OFFEN D3 Teil 3, Karte D3d): keine Präsenz-Probe liest Quelltext. Ein LESER ist in scripts/
  *     (ohne Kommentare, Literale bleiben) jeder Griff nach Spiel-Quelltext als Text — in der Seite `__codeOf`/`__dokuOf`
  *     (Ruf oder Alias), `<r|P|A|…>.x.toString()` und `String(r._x)`; in Node der virtuelle Stamm (`stammLib.text`,
- *     `textAusRev`) und `readFileSync` auf Spiel-Code (*.js, index.html). Eine Absenz liest über den EINEN Helfer
+ *     `textAusRev`) und `readFileSync` bzw. `ausDatei` auf Spiel-Code (*.js, index.html). Eine Absenz liest über den EINEN Helfer
  *     (`window.__fehlt` aus scripts/lib/welt-boot.cjs, `stammLib.fehlt`) und zählt nie. Jeder andere Leser steht je Datei
  *     und Art in spec/profiband/ratsche-quelltext.json: `liste` die Struktur- und Mess-Leser mit Zweck, `ratsche` die
  *     Präsenz-Reste beim Namen (sie sinkt nur). ROT beim Namen (Datei:Zeile): ein Leser über der Zahl seiner Datei; ROT:
@@ -58,7 +58,7 @@ function staleBefund(gateFiles, present) {
 // Pfad als Datenwert (`{ world: "worlds/x/index.html" }`) ist kein Lesen.
 function findWorldSourceReads(code) {
     const hits = [];
-    const re = /\b(readFileSync|readFile|fetch|require)\s*\(/g;
+    const re = /\b(readFileSync|readFile|ausDatei|fetch|require)\s*\(/g;
     for (let m; (m = re.exec(code)) !== null; ) {
         let depth = 1,
             j = re.lastIndex;
@@ -80,7 +80,7 @@ const SPIEL = String.raw`\b(?:r|P|A|R|proto|realm)(?:\.[\w$]+|\[[^\]\n]+\])*`;
 const LESER = {
     seite: new RegExp(String.raw`\b__(?:code|doku)Of\b(?!\s*=[^=>])|${SPIEL}\.toString\(\)|\bString\(\s*${SPIEL}\._[\w$]*\s*\)`, "g"),
     stamm: /\b(?:stammLib|stamm|S|L)\.(?:text|textAusRev)\(/g,
-    datei: new RegExp("readFileSync" + ARG, "g"),
+    datei: new RegExp("(?:readFileSync|ausDatei)" + ARG, "g"), // der EINE Datei-Leser (welt-boot `ausDatei`) ist ein Leser wie readFileSync
 };
 const SPIEL_DATEI = /\.(?:c|m)?js["'`]|index\.html|versionsDatei/;
 const HELFER = /__fehlt\(|(?<!function )\bfehlt\(/g;
@@ -141,6 +141,7 @@ function selbsttest() {
     const fang = [
         `const src = fs.readFile` + `Sync(path.join(__dirname, "..", "worlds", "fluid/fluid.js"), "utf8");`,
         "const b = await (await fetch('worlds/skeleton/skeleton.js')).text();",
+        `const t = aus` + `Datei("worlds/fluid/fluid.js");`,
         `const m = JSON.parse(fs.readFile` + `Sync(\n  path.join(__dirname, "..", "worlds", file),\n  "utf8"));`,
     ];
     const frei = [
@@ -156,7 +157,7 @@ function selbsttest() {
         absenz: w(`out.ok = window.${F}(r._x, /y/) && stammLib.${"fe" + "hlt"}("_x", /y/);`),
         kommentar: w(`// window.${C}(r._x) erklärt nur\nconst x = 1;`),
         roh: w(`const s = r._x${TS};\nconst t = Str` + `ing(r._y);`),
-        node: w(`const q = ${T}(root);\nconst h = fs.readFile` + `Sync(path.join(root, "index.html"), "utf8");`),
+        node: w(`const q = ${T}(root);\nconst h = fs.readFile` + `Sync(path.join(root, "index.html"), "utf8");\nconst k = aus` + `Datei("phyto-core.js");`),
         gelistet: w(`const q = ${T}(root);`, { liste: { "scripts/x-probe.cjs": { stamm: 1 } } }),
         hoch: w(`const q = ${T}(root);`, { ratsche: { "scripts/x-probe.cjs": { stamm: 2 } } }),
         beide: w("", { liste: { "scripts/x-probe.cjs": {} }, ratsche: { "scripts/x-probe.cjs": {} } }),
@@ -168,7 +169,7 @@ function selbsttest() {
         !f.absenz.length &&
         !f.kommentar.length &&
         f.roh.length === 2 &&
-        f.node.length === 2 &&
+        f.node.length === 3 &&
         !f.gelistet.length &&
         f.hoch.length === 1 &&
         /sinkt nach/.test(f.hoch[0]) &&
