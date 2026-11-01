@@ -159,12 +159,15 @@ const probeSek = (st, geraet) => {
     const e = Object.values(deckelEintraege(st));
     return geraet ? sekRoh(st) : Math.max(sekRoh(st), ...e);
 };
-function abdruck(st, hilfe = hilfeText()) {
+// der Abdruck JE KARTE (geraet): der Deckel dieser Karte aus der Deckel-Tafel steht darin — ein neuer Radeon-Deckel misst die Radeon
+// neu, nie die GTX; ohne Eintrag (und ohne Karte) Byte für Byte wie bisher
+function abdruck(st, hilfe = hilfeText(), geraet = null) {
+    const dk = geraet && st.probe && deckelVon()[geraet] && deckelVon()[geraet][schluessel(st)] != null ? { [geraet]: deckelVon()[geraet][schluessel(st)] } : null;
     const roh = JSON.stringify({
         k: st.kriterium, s: st.staffel, g: geraeteVon(st), b: st.befehl, e: st.env || {}, gpu: !!st.gpu,
         u: String(st.urteil), p: st.pfad, q: st.quelle, h: hilfe,
         ...(st.probe ? { pr: [st.probe.befehl, sekRoh(st), ...(st.probe.mutiert ? ["mutiert"] : []), ...(st.probe.stellung ? [st.probe.stellung] : []),
-            ...(Object.keys(deckelEintraege(st)).length ? [deckelEintraege(st)] : [])] } : {}),
+            ...(dk ? [dk] : [])] } : {}),
     });
     return crypto.createHash("sha1").update(roh).digest("hex").slice(0, 12);
 }
@@ -1664,7 +1667,7 @@ const eichOffen = (meine, m, sha, ab) =>
 const EICH_FAKTOR = 1.5, DECKEL_MIN_S = 10;
 function eichTafel(stationen, m, geraet, hilfe = hilfeText()) {
     const reihe = sitzungsReihe(gruppiere(stationen.filter((st) => st.probe && geraeteVon(st).includes(geraet))));
-    const zahl = (st) => [m && m.je, m && m.ungemessen].map((x) => x && x[schluessel(st)]).find((e) => e && e.eich && e.abdruck === abdruck(st, hilfe));
+    const zahl = (st) => [m && m.je, m && m.ungemessen].map((x) => x && x[schluessel(st)]).find((e) => e && e.eich && e.abdruck === abdruck(st, hilfe, geraet));
     // der Ort im Deckel der letzten Sitzung (stromKopf `ortImDeckel`): wie weit der Lauf im eigenen Deckel zog — der Täter beim Namen
     const ort = new Map(((m && m.sitzung && m.sitzung.strom && m.sitzung.strom.ortImDeckel) || []).map((e) => [e.probe, e.m]));
     const zeilen = reihe.map((g) => {
@@ -2025,7 +2028,7 @@ function auswahl(opt) {
     }
     if (opt.eich) {
         const d = messDatei(sha, opt.geraet), hilfe = hilfeText();
-        meine = eichOffen(meine, fs.existsSync(d) ? JSON.parse(fs.readFileSync(d, "utf8")) : null, sha, (st) => abdruck(st, hilfe));
+        meine = eichOffen(meine, fs.existsSync(d) ? JSON.parse(fs.readFileSync(d, "utf8")) : null, sha, (st) => abdruck(st, hilfe, opt.geraet));
     }
     // DIE DAUER BRAUCHT IHREN ANFANG (w4-linsen-b; 3ed95dcf GTX: profiband.K4 fuhr in eich1, profiband.K5 allein in eich2 — „kein Stand des
     // Anfangs“, die Zahl „Dauer undefined min in undefined Seite(n)“): eine Probe mit `stellung: "ende"` urteilt über den Strom seit den
@@ -2287,7 +2290,7 @@ async function run(opt) {
     // DIE WAND PFAD: eine Station mit totem Glob am SHA fährt nie — sie ist ROT beim Glob (R6 wäre für ihn blind)
     for (const st of meine.filter((s) => tot(s).length)) {
         const grund = pfadGrund(tot(st), "am " + sha.slice(0, 8));
-        m.je[schluessel(st)] = { gruen: false, zahl: grund, exit: null, minuten: 0, grund, zeit: new Date().toISOString(), abdruck: abdruck(st, hilfe), ...(opt.farm ? { host } : {}) };
+        m.je[schluessel(st)] = { gruen: false, zahl: grund, exit: null, minuten: 0, grund, zeit: new Date().toISOString(), abdruck: abdruck(st, hilfe, opt.geraet), ...(opt.farm ? { host } : {}) };
         console.log("  ROT  " + schluessel(st) + " · " + grund);
     }
     meine = meine.filter((s) => !tot(s).length);
@@ -2314,7 +2317,7 @@ async function run(opt) {
         g.forEach((st, i) => {
             const id = ids[i];
             if (aus && i > 0 && fs.existsSync(aus.roh)) fs.copyFileSync(aus.roh, path.join(rohDir, id.replace("#", "_") + ".out"));
-            const e = stationsEintrag(es[i], { zeit, abdruck: abdruck(st, hilfe), port: wie.port, bahn: wie.bahn, host: opt.farm ? host : null, zwilling: i > 0 ? ids[0] : null, modus: wie.modus });
+            const e = stationsEintrag(es[i], { zeit, abdruck: abdruck(st, hilfe, opt.geraet), port: wie.port, bahn: wie.bahn, host: opt.farm ? host : null, zwilling: i > 0 ? ids[0] : null, modus: wie.modus });
             eintragen(m, id, e);
             console.log(stationsZeile(id, e));
             // die Zahl der Eich-Fahrt (eichEintrag) — die Sekunden VOR der Id: der Fortschritt liest das Urteil aus „<Urteil> <id>“
@@ -2437,7 +2440,7 @@ function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
         const id = schluessel(st);
         const tot = opt.tot ? opt.tot(st) : [];
         if (tot.length) return { gruen: false, ungemessen: true, tot: true, grund: pfadGrund(tot, "am Kopf") };
-        const ab = abdruck(st, hilfe);
+        const ab = abdruck(st, hilfe, g);
         let alt = 0, fremd = 0, unbekannt = 0, ohneZeugen = null, taeter = [], linse = 0, linsenTaeter = [], unlesbar = null, zuletzt = null;
         const frisch = [];
         for (const m of messungen) {
@@ -2734,10 +2737,11 @@ function planCli(opt) {
             const w = id + "|" + m.geraet;
             if (!juengste[w] || String(e.zeit) > String(juengste[w].zeit)) juengste[w] = e;
         }
-    const ab = Object.fromEntries(stationen.map((st) => [schluessel(st), abdruck(st)]));
+    const st0 = Object.fromEntries(stationen.map((st) => [schluessel(st), st])), hilfe = hilfeText(), abJe = new Map();
+    const ab = (id, g) => abJe.get(id + "|" + g) || abJe.set(id + "|" + g, abdruck(st0[id], hilfe, g)).get(id + "|" + g);
     const da = (id, g) => {
         const e = juengste[id + "|" + g];
-        return e && (!e.abdruck || e.abdruck === ab[id]) ? e : null;
+        return e && (!e.abdruck || !st0[id] || e.abdruck === ab(id, g)) ? e : null;
     };
     // ein Heil-Versuch ist jedes Kriterium, das ein Commit beim Namen nennt, UND jedes, dessen Zweig laut weg.json (wellen: Staffel →
     // Zweig) im Zug landete — 28.10.: „Merge siedlung-k1-innen in integ-probe" nennt kein Kriterium, der Plan übersprang siedlung.K1#2,
@@ -2935,11 +2939,11 @@ async function selbsttest(o = {}) {
         const mitTafel = (t, f) => { deckelTafel = t; try { return f(); } finally { deckelTafel = {}; } };
         const abd0 = abdruck(jk(), "hilfe");
         const jf = [mitTafel({ radeon: { "profiband.K1#1": 40 } }, () => [fa({ probe: jk().probe }), fahrtSumme([jk()], "radeon").deckel, fahrtSumme([jk()], "gtx").deckel,
-            probeSek(jk(), "radeon"), probeSek(jk(), "gtx"), abdruck(jk(), "hilfe")]),
+            probeSek(jk(), "radeon"), probeSek(jk(), "gtx"), abdruck(jk(), "hilfe", "radeon"), abdruck(jk(), "hilfe", "gtx"), abdruck(jk(), "hilfe")]),
             mitTafel({ radeon: { "profiband.K1#1": 60 } }, () => [fa({ probe: jk().probe }), fa({ probe: jk({ ausnahme: "der Boot der Radeon dauert" }).probe })]),
             mitTafel({ gtx: { "profiband.K1#1": 0 } }, () => fa({ probe: jk().probe })), mitTafel({ gtx: { "profiband.K1#1": 20 } }, () => fa({ geraet: "radeon", beide: undefined, probe: jk().probe }))];
-        pruef("DECKEL-TAFEL je Karte ihr Deckel (Fahrt, Läufer), ohne Eintrag probe.sek; 60 s ohne ausnahme, 0 s, eine fremde Karte ROT beim Namen; der Abdruck ohne Eintrag unverändert",
-            jf[0][0] === "" && jf[0][1] === 40 && jf[0][2] === 10 && jf[0][3] === 40 && jf[0][4] === 10 && jf[0][5] !== abd0 && abdruck(jk(), "hilfe") === abd0 &&
+        pruef("DECKEL-TAFEL je Karte ihr Deckel (Fahrt, Läufer), ohne Eintrag probe.sek; 60 s ohne ausnahme, 0 s, eine fremde Karte ROT beim Namen; der Abdruck je Karte: nur der Eintrag DIESER Karte ändert ihn",
+            jf[0][0] === "" && jf[0][1] === 40 && jf[0][2] === 10 && jf[0][3] === 40 && jf[0][4] === 10 && jf[0][5] !== abd0 && jf[0][6] === abd0 && jf[0][7] === abd0 && abdruck(jk(), "hilfe", "radeon") === abd0 &&
             /Deckel 60 s über 45 s ohne ausnahme/.test(jf[1][0]) && jf[1][1] === "" && /deckel.json: .* je Karte eine ganze Zahl ≥ 1/.test(jf[2]) && /deckel.json: {"gtx":20}/.test(jf[3]),
             JSON.stringify(jf));
         // DIE NAHRUNG FÄLLT vor dem Rückspielen (NAHRUNG_FAELLT, Radeon 25ac4c0c: „consume:_k5“) — der Code der Grundstellung trägt sie vor
