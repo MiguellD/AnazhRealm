@@ -703,27 +703,39 @@ async function probeLeben(expected) {
             r._uhrSetzen(stunde / 24, "regler");
             const bereit = () =>
                 S.liste && S.liste.every((b) => b.leib) && S.verkehr && S.verkehr.wagen.every((W) => W.b.amSteuer);
+            // der Spieler steht am Markt neben der Trasse (nie in ihr): der erste freie Punkt der Ringe, 4 m und mehr von jeder Mitte
+            // — sobald die Stadt ihr Netz trägt, auch solange sie noch ankommt. Bis w4-verkehr-c3 trat er erst zur Messung dorthin und
+            // stand davor in der Mitte der Stadt auf ihrer einzigen Kreuzung: der Wagen vor ihm wartete die ganze Ankunft (123 s) mit
+            // dem Schlüssel der Kreuzung, die Stadt stand dahinter, und jede erste Fahrt trug den Stau, den die Probe selbst stellte
+            // (10 Uhr: die Uhr jeder Fahrt 133–146 s im ersten Bild der Messung, die längste 310 und 325 s; in der Messung ≤ 180 s)
+            let [platz, gesucht] = [null, false];
+            const neben = (VK) => {
+                gesucht = true;
+                for (let rr = 6; rr <= 30 && !platz; rr += 2)
+                    for (let k = 0; k < 16 && !platz; k++) {
+                        const [x, z] = [
+                            S.ox + Math.cos((k * Math.PI) / 8) * rr,
+                            S.oz + Math.sin((k * Math.PI) / 8) * rr,
+                        ];
+                        const g = r._imGrundriss(x, z, 0.5);
+                        if (
+                            g !== "haus" &&
+                            g !== "bau" &&
+                            r._landAt(x, z) &&
+                            VK.strecken.every((s) => s.mitte.every((q) => Math.hypot(q.x - x, q.z - z) > 4))
+                        )
+                            platz = { x, z };
+                    }
+                if (platz) stelle(platz.x, platz.z, 0.2);
+            };
             for (const weiter = window.__deckel("verkehr: die Stadt steht", 8000); weiter() && !bereit(); i++) {
+                if (!gesucht && S.verkehr) neben(S.verkehr);
                 frame(i);
                 if (i % 8 === 7) await window.sleep();
             }
             const VK = S.verkehr;
             if (!VK) throw new Error("die Stadt trägt keinen Verkehr");
-            // der Spieler steht am Markt neben der Trasse (nie in ihr): der erste freie Punkt der Ringe, 4 m und mehr von jeder Mitte
-            let platz = null;
-            for (let rr = 6; rr <= 30 && !platz; rr += 2)
-                for (let k = 0; k < 16 && !platz; k++) {
-                    const [x, z] = [S.ox + Math.cos((k * Math.PI) / 8) * rr, S.oz + Math.sin((k * Math.PI) / 8) * rr];
-                    const g = r._imGrundriss(x, z, 0.5);
-                    if (
-                        g !== "haus" &&
-                        g !== "bau" &&
-                        r._landAt(x, z) &&
-                        VK.strecken.every((s) => s.mitte.every((q) => Math.hypot(q.x - x, q.z - z) > 4))
-                    )
-                        platz = { x, z };
-                }
-            if (platz) stelle(platz.x, platz.z, 0.2);
+            if (!gesucht) neben(VK);
             const m = {
                 leib: 0,
                 leibOrte: [],
