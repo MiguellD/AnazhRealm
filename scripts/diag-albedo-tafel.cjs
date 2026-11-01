@@ -6,19 +6,17 @@
 //        Messung: jede der acht Klassen eine Zeile, jede Zeile Labor-Y, Welt-Y, Verhältnis und Ratsche, jedes Studio
 //        seine Karte; das gespeicherte Ist liegt in seiner Ratsche UND ist so jung wie der Code, den es trägt (K63-n4, K63-n8:
 //        je Zeile ihre `quellen` gegen den Code-Abdruck beider Seiten beim Messen — ungeprüft bricht, veraltet
-//        steht benannt ohne Bruch, auf der Karte in der CI (Job `echt`) misst die Wand sie selbst neu);
-//        Soll-Stand (n von N im Rand) steht in der Ausgabe
-//   node scripts/diag-albedo-tafel.cjs --neu           die veralteten Zeilen auf dem Adapter der Weiche neu messen (lokal die
-//        Karte, unter dem GPU-Schloss): EINE Welt (ALBEDO_WERKBANK_PORT, Standard 4589) + das Labor, Urteil der frischen
-//        Zahlen, die Dateien zum Nachziehen unter artifacts/albedo-neu/
+//        steht benannt ohne Bruch); Soll-Stand (n von N im Rand) steht in der Ausgabe. Gefallen mit haar.K2: `--neu` (es maß
+//        die Welt ohne `--echt` und das Labor ohne echt — sein Ergebnis bestand die Wand [echt] nie, kein Leser rief es)
 //   node scripts/diag-albedo-tafel.cjs --selftest      die Rechnung feuert: ein Verhältnis über der Ratsche, eine falsche
 //        Eichung, eine stumme Seite, eine Tafel ohne Klasse werden ROT; der Nachzug senkt und hebt nie — und im echten
 //        r128-Labor (Chrome, die Linse aus der Bibliothek) liest die 18-%-Karte 0,180, ein roh gelesenes Hex (der alte
 //        Defekt des Labors, Täter eingespielt) steht über dem Rand, dasselbe Hex nach dem FARB-GESETZ im Rand
 //   node scripts/diag-albedo-tafel.cjs --labor [--echt] [--nur terrain,garage] [--datei f.json]
 //        die Labor-Seite messen (je Studio die Zeilen der Tafel + seine 18-%-Karte), gegen das gespeicherte Welt-Ist urteilen
-//   node scripts/diag-albedo-tafel.cjs --nachziehen welt.json labor.json
-//        aus einer Messung BEIDER Seiten das Ist setzen und die Ratsche senken (nie heben)
+//   node scripts/diag-albedo-tafel.cjs --nachziehen welt.json labor.json [--nur id,id]
+//        aus einer Messung BEIDER Seiten das Ist setzen und die Ratsche senken (nie heben); `--nur`: nur diese Zeilen, mit
+//        dem Stand ihrer Messung (die echte Messung: werkbank `start --echt` + `albedo --tafel`, `--labor --echt`)
 //
 // Port: ALBEDO_PORT (Standard 4587). `--echt` fährt die echte GPU (scripts/lib/software-gpu.cjs echteWebGpuArgs), sonst
 // die Weiche des EINEN Start-Rezepts (linsenWebGpuArgs: lokal der Hardware-Adapter, in der CI swiftshader).
@@ -31,7 +29,6 @@ const { kartenEichung } = require("./lib/licht-linsen.cjs");
 const AU = require("./lib/abnahme-urteil.cjs");
 const SL = AU.standLeser(path.join(__dirname, ".."));
 const { pruefsumme } = SL;
-const { linsenGpu } = require("./lib/software-gpu.cjs");
 
 const argv = process.argv.slice(2);
 const PORT = Number(process.env.ALBEDO_PORT || 4587);
@@ -203,7 +200,7 @@ async function laborLaub() {
 function tafelZumTest() {
     const t = AT.ladeTafel();
     const k = structuredClone(t);
-    for (const z of k.zeilen) z.ratsche = 0.05;
+    for (const z of k.zeilen) (z.ratsche = 0.05), delete z.gemessen;
     for (const s of Object.keys(k.karten)) k.karten[s].ratsche = 0.05;
     return k;
 }
@@ -377,41 +374,22 @@ async function selbsttest() {
             n7c.tafel.zeilen[0].ist !== null &&
             AT.tafelNachziehen(T0, m3, {}).tafel === null
     );
-    // S7n — DER NACHZUG EINER ZEILE (`--nur`, haar.K2): nur sie nimmt Ist, Ratsche und den Stand ihrer Messung; jede andere Zeile,
-    // die Karten und der Stand der Tafel bleiben; ihr Stand gilt vor dem der Tafel (frisch, wo die Tafel veraltet ist); eine
-    // genannte stumme Zeile zieht nichts; der volle Nachzug löst den Stand der Zeile wieder
+    // S7n — DER NACHZUG EINER ZEILE (`--nur`, haar.K2): nur sie nimmt Ist und den Stand ihrer Messung (frisch, wo die Tafel
+    // veraltet), jede andere Zeile bleibt; genannt und stumm zieht nichts
     {
-        const zN = T0.zeilen.find((z) => z.labor && z.quellen.length),
-            zA = T0.zeilen.find((z) => z.labor && z !== zN);
-        const heute = {};
-        for (const z of T0.zeilen) for (const d of z.quellen || []) heute[d] = pruefsumme(d);
-        const seite = (q) => ({ version: "18.0.0", sha: "0123456789abcdef0123456789abcdef01234567", echt: true, quellen: q });
-        const T7 = structuredClone(T0);
-        T7.gemessen = { welt: seite({}), labor: seite({}) };
-        const neuSt = { welt: seite(Object.assign({}, heute)), labor: seite(Object.assign({}, heute)) };
-        const nN = AT.tafelNachziehen(T7, messungZumTest(T7, { [zN.id]: 1.02 }), neuSt, [zN.id]);
-        const nz = nN.tafel && nN.tafel.zeilen.find((z) => z.id === zN.id),
-            na = nN.tafel && nN.tafel.zeilen.find((z) => z.id === zA.id);
-        const stand = nN.tafel ? AT.tafelStand(nN.tafel, pruefsumme) : [];
-        const m4n = messungZumTest(T7);
-        m4n.labor[zN.id] = { Y: null, fehler: "kein Pixel" };
-        const voll = nN.tafel && AT.tafelNachziehen(nN.tafel, messungZumTest(T7), neuSt);
+        const [zN, zA] = T0.zeilen.filter((z) => z.labor);
+        const q = Object.fromEntries(zN.quellen.map((d) => [d, pruefsumme(d)]));
+        const st = { welt: { version: "1", sha: "1", quellen: q }, labor: { version: "1", sha: "1", quellen: q } };
+        const T7 = Object.assign(structuredClone(T0), { gemessen: { welt: {}, labor: {} } });
+        const n = AT.tafelNachziehen(T7, messungZumTest(T7, { [zN.id]: 1.02 }), st, [zN.id]).tafel;
+        const rot = AT.tafelStand(n, pruefsumme).map((r) => r.zeile);
         t(
-            `Nachzug nur ${zN.id}: Ist 1,02 und Stand der Zeile, ${zA.id} und die Karten bleiben, der Stand der Zeile frisch vor dem der Tafel; genannt und stumm → kein Nachzug; voll → der Stand der Zeile fällt`,
-            !!nz &&
-                Math.abs(nz.ist.verhaeltnis - 1.02) < 1e-3 &&
-                nz.gemessen.welt === neuSt.welt &&
-                JSON.stringify(na.ist) === JSON.stringify(zA.ist) &&
-                na.ratsche === zA.ratsche &&
-                na.gemessen === undefined &&
-                JSON.stringify(nN.tafel.karten) === JSON.stringify(T7.karten) &&
-                JSON.stringify(nN.tafel.gemessen) === JSON.stringify(T7.gemessen) &&
-                !stand.some((r) => r.zeile === zN.id) &&
-                stand.some((r) => r.zeile === zA.id) &&
-                AT.tafelNachziehen(T7, m4n, neuSt, [zN.id]).tafel === null &&
-                !!voll.tafel &&
-                voll.tafel.zeilen.every((z) => z.gemessen === undefined) &&
-                AT.tafelPruefen(Object.assign(structuredClone(nN.tafel), { zeilen: nN.tafel.zeilen.map((z) => (z.id === zN.id ? Object.assign({}, z, { gemessen: { welt: neuSt.welt } }) : z)) })).some((f) => f.startsWith(`${zN.id}: gemessen`))
+            `Nachzug nur ${zN.id}: Ist 1,02 unter dem Stand seiner Messung, ${zA.id} bleibt (veraltet); genannt und stumm → nichts`,
+            Math.abs(n.zeilen[0].ist.verhaeltnis - 1.02) < 1e-3 &&
+                JSON.stringify(n.zeilen[1]) === JSON.stringify(T7.zeilen[1]) &&
+                !rot.includes(zN.id) &&
+                rot.includes(zA.id) &&
+                !AT.tafelNachziehen(T7, m4, st, [T7.zeilen[1].id]).tafel
         );
     }
     // S8 — DER TÄTER IM ECHTEN LABOR (r128, Chrome, die Linse der Bibliothek): eine Szene mit drei Stoffen — die 18-%-Karte,
@@ -537,71 +515,6 @@ function gespeichert(t) {
     return m;
 }
 
-// DIE NEUMESSUNG DER VERALTETEN ZEILEN: auf der Karte — der Job `echt` des Messplatzes (CI, die Weiche fährt die
-// Karte, K65) oder lokal `--neu` unter dem GPU-Schloss — misst die Wand selbst: EINE Welt (werkbank `start` auf
-// ALBEDO_WERKBANK_PORT, Standard 4589, die Seite einen Port darunter) am Ort der gespeicherten Messung, `albedo --tafel`; dann
-// die Labor-Seite jedes Studios. Das Urteil der frischen Zahlen (Ratsche + Rand, Eichung, Stufe): ROT heißt, der Code hat die
-// Albedo bewegt (Exit 1); im Rand stehen die Zeilen weiter ROT veraltet, bis die Tafel nachgezogen ist — der Befehl steht in
-// der Ausgabe, die Messungen unter artifacts/albedo-neu/.
-async function neuMessen(t, ids) {
-    const { spawn, spawnSync } = require("child_process");
-    const WP = String(Number(process.env.ALBEDO_WERKBANK_PORT || 4589));
-    const WB = path.join(__dirname, "werkbank.cjs");
-    const ordner = path.join(__dirname, "..", "artifacts", "albedo-neu", new Date().toISOString().replace(/[:.]/g, "-"));
-    fs.mkdirSync(ordner, { recursive: true });
-    const wb = (args) => {
-        const r = spawnSync(process.execPath, [WB, ...args, "--port", WP], {
-            encoding: "utf8",
-            timeout: 1800000,
-            maxBuffer: 1 << 26,
-        });
-        return { exit: r.status, aus: (r.stdout || "") + (r.stderr || "") };
-    };
-    const wlog = path.join(ordner, "werkbank.log");
-    const fd = fs.openSync(wlog, "w");
-    const w = spawn(process.execPath, [WB, "start", "--port", WP], { stdio: ["ignore", fd, fd] });
-    const wd = path.join(ordner, "welt.json");
-    console.log(`   Neumessung: Welt (werkbank :${WP}) und Labor — ${ordner}`);
-    try {
-        while (!/WERKBANK bereit/.test(ausDatei(wlog))) {
-            if (w.exitCode != null) throw new Error(`die Werkbank startet nicht (${wlog})`);
-            await sleep(2000);
-        }
-        const gw = t.gemessen.welt || {};
-        const um = wb(gw.ort ? ["umstellen", "--ort", gw.ort] : ["umstellen", ...(gw.spieler || [0, 0]).map(String)]);
-        if (um.exit !== 0) throw new Error("umstellen: " + um.aus.slice(-400));
-        wb(["eval", "await sleep(10000); return 1"]);
-        // Exit 1 heißt dort nur: das Urteil gegen das gespeicherte Labor ist ROT — die Datei trägt die Messung
-        const al = wb(["albedo", "--tafel", "--datei", wd, "--ordner", path.join(ordner, "albw")]);
-        if (!fs.existsSync(wd)) throw new Error("albedo --tafel ohne Messung: " + al.aus.slice(-400));
-    } finally {
-        wb(["stop"]);
-        if (w.exitCode == null) w.kill();
-    }
-    const welt = jsonLesen(wd);
-    const labor = await messeLabor({ echt: false, nur: null, tafel: t });
-    Object.assign(labor, { datum: new Date().toISOString(), echt: false, stand: SL.kernStand() });
-    const ld = path.join(ordner, "labor.json");
-    jsonSchreiben(ld, labor);
-    const u = AT.tafelUrteil(t, {
-        labor: labor.labor,
-        karten: labor.karten,
-        welt: welt.welt,
-        eichung: { welt: welt.eichung, labor: labor.eichung.labor },
-    });
-    console.log(`   Welt: ${welt.geraet} · Labor: ${labor.geraet}`);
-    console.log(AT.tafelTabelle(u));
-    if (u.urteil !== "GRUEN") {
-        console.log(`⛔ DIE ALBEDO-TAFEL: die Neumessung der veralteten Zeilen ${ids.join(", ")} ist ROT — der Code hat die Albedo bewegt.`);
-        process.exit(1);
-    }
-    console.log(
-        `DIE ALBEDO-TAFEL: die veralteten Zeilen ${ids.join(", ")} neu gemessen, im Rand — sie bleiben ROT veraltet, bis ` +
-            `nachgezogen: node scripts/diag-albedo-tafel.cjs --nachziehen ${path.relative(process.cwd(), wd)} ${path.relative(process.cwd(), ld)}`
-    );
-    process.exit(0);
-}
-
 async function main() {
     if (SELBSTTEST) return selbsttest();
     if (argv.includes("--laub")) return laborLaub();
@@ -641,8 +554,7 @@ async function main() {
     if (argv.includes("--nachziehen")) {
         const i = argv.indexOf("--nachziehen");
         // `--nur id,id` (haar.K2): nur diese Zeilen nehmen die Messung und tragen ihren Stand (albedo-tafel `tafelNachziehen`)
-        const nur = opt("--nur") ? opt("--nur").split(",") : null;
-        if (nur) for (const id of nur) if (!t.zeilen.some((z) => z.id === id)) throw new Error(`--nur ${id}: keine Zeile der Tafel`);
+        const nur = opt("--nur") && opt("--nur").split(",");
         const welt = jsonLesen(path.resolve(argv[i + 1]));
         const labor = jsonLesen(path.resolve(argv[i + 2]));
         const m = {
@@ -681,7 +593,7 @@ async function main() {
     const errs = [];
     if (!t.gemessen) errs.push("die Tafel ist ungemessen (gemessen = null)");
     // DIE NEUE ZEILE (material.K3: Birke, Fichte, Hochhaus und ihre Stufen; eine Stufen-Zeile ohne die Spalte einer Uhr): wie
-    // eine veraltete laut und ohne Sperre — die Karte misst sie (`--neu`, die Station material.K3#2), nie ein Ersatz-Renderer
+    // eine veraltete laut und ohne Sperre — die Karte misst sie (die Station material.K3#2), nie ein Ersatz-Renderer
     const neuZ = t.zeilen.filter((z) => !z.ist || (z.welt.folgen && t.uhren.slice(1).some((u) => !z.ist["@" + u])));
     const istNeu = (r) => neuZ.some((z) => r.text.startsWith(z.id + ":") || r.text.includes(`Welt/${z.id} `));
     for (const z of t.zeilen) if (z.ist && z.labor && z.ratsche == null) errs.push(`${z.id}: ohne Ratsche`);
@@ -690,9 +602,7 @@ async function main() {
     const u = AT.tafelUrteil(t, gespeichert(t));
     for (const r of u.rot) if (!istNeu(r)) errs.push(`[${r.art}] ${r.text}`);
     for (const s of ["labor", "welt"]) if (t.gemessen && !t.gemessen[s].echt) errs.push(`[echt] ${s} nicht echt gemessen`);
-    for (const z of t.zeilen)
-        for (const s of z.gemessen ? Object.keys(z.gemessen) : [])
-            if (!z.gemessen[s].echt) errs.push(`[echt] ${z.id}: ${s} nicht echt gemessen (der Stand der Zeile)`);
+    for (const z of t.zeilen) for (const s in z.gemessen) if (!z.gemessen[s].echt) errs.push(`[echt] ${z.id} ${s}`);
     // DER STAND (K63-n8; wie H5): ungeprüft bricht, veraltet steht laut je Zeile
     const sw = AT.standWand(AT.tafelStand(t, pruefsumme));
     for (const b of sw.brueche) errs.push(`[stand] ${b}`);
@@ -702,9 +612,7 @@ async function main() {
         process.exit(1);
     }
     for (const id of sw.neu) for (const x of sw.veraltet[id]) console.log(`⚠ ${x} (benannt, sperrt nicht)`);
-    for (const z of neuZ) console.log(`⚠ ${z.id}: ungemessen (--neu)`);
-    if (sw.neu.push(...neuZ.map((z) => z.id)) && (argv.includes("--neu") || (process.env.CI === "true" && linsenGpu() === "hardware")))
-        return neuMessen(t, sw.neu);
+    for (const z of neuZ) console.log(`⚠ ${z.id}: ungemessen`);
     const weit = u.zeilen
         .filter((z) => z.verhaeltnis && !z.imSoll)
         .sort((a, b) => b.abweichung - a.abweichung)

@@ -772,11 +772,12 @@
     });
     // DAS HAAR LIEGT (haar.K2 — die Strähnen-Kohärenz gegen die REF ref-haar; foundry-core `__streuGeo`): jede Strähne einer
     // Schalen-Zeile (`zi`, `nacken` in haarStreu) wurzelt auf der Kappe ihres Stils und LIEGT auf ihr, EIN Band dem Strich der
-    // Zeile nach — sie SIND die Fläche des Haars (volle Dichte, je Strähne zwei Dreiecke statt vier der Kreuz-Karte):
+    // Zeile nach — sie SIND die Fläche des Haars (volle Dichte, je Strähne zwei Dreiecke statt vier der Kreuz-Karte), nur in der
+    // Zone, in der die Kopf-Haut den Ton der Kappe trägt (der Ofen: `haarZone`, die Regel ihrer Farbe):
     //   liegt  [Höhe der Wurzel, Höhe der Spitze] über der Kappe (Kopf-Raum, 1 ≈ 0,21 m: 2,5 und 5,5 mm — die Lage der Strähnen,
     //          die Spitze über der nächsten Wurzel; tiefer begrub die Haut die Wurzeln an der Haarlinie)
     //   t      die Breite (Wurzel 1,8 t, Spitze 0,65 t je Seite: 9 und 3 mm)
-    //   streu  die Streuung des Strichs (Anteil der Kreuz-Karten-Streuung) · faellt  die Schwere an Seite und Hinterkopf (dort
+    //   streu  die Streuung des Strichs (Anteil der Kreuz-Karten-Streuung) · faellt  die Schwere am Hinterkopf (dort
     //          liefe der Strich `d` sonst in die Normale: die Strähnen stünden in jede Richtung)
     //   rund   die Normale kippt zur Kante (rad): die Strähne ist rund, das Licht läuft quer über sie
     //   locke  [Locken je Umlauf, Ton ±]: Strähnen benachbarter Wurzel teilen den Ton ihrer Locke — auf 4 m (Third) ist die

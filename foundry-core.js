@@ -5446,7 +5446,7 @@ function __tierHautGelenke(geo, skinJoints) {
 // Strähne (`ton` ±, ein eigener Strom — die Lage der Strähnen bleibt die des alten Stroms), die Wurzel auf `wurzel` (Vorgabe 0,12).
 // Bis haar.K2 stand jede Strähne als Kreuz-Karte in `d` von der Schale ab: vorn tauchte sie in die Kappe, hinten stand sie dem
 // Blick entgegen — das Bild zeigte das Raster der Kappe (die Kopf-Haut) statt Strähnen.
-function __streuGeo(row, seed, tonRGB) {
+function __streuGeo(row, seed, tonRGB, zone) {
     let sLcg = seed >>> 0 || 1;
     const rnd = () => {
         sLcg = (sLcg * 1103515245 + 12345) >>> 0;
@@ -5504,9 +5504,10 @@ function __streuGeo(row, seed, tonRGB) {
         const qr = rnd();
         let px, py, pz;
         if (liegt) {
-            // die Wurzeln gleich dicht auf der Fläche (cos φ gleichverteilt aus demselben Zug), nie gehäuft am Scheitel
+            // die Wurzeln gleich dicht auf der Fläche (cos φ gleichverteilt aus demselben Zug), nie gehäuft am Scheitel, bis unter den
+            // Äquator der Schale — wo die Haut sie verdeckt, entscheidet ihr Feld (`haut`, unten)
             const cph = 1 - (2 * phi) / Math.PI;
-            if (cph < -0.05) continue;
+            if (cph < -0.5) continue;
             const sph = Math.sqrt(Math.max(0, 1 - cph * cph));
             const l = Math.round((row.l + qr * lj) / 0.004) * 0.004;
             if (l <= 0) continue;
@@ -5522,8 +5523,9 @@ function __streuGeo(row, seed, tonRGB) {
             const [r0, r1, r2] = R;
             r0.p.set(row.c[0] + ax * sph * Math.cos(theta), row.c[1] + ay * cph, row.c[2] + az * sph * Math.sin(theta));
             auf(r0.p, r0.n);
-            // DIE SCHWERE (`faellt`): an Seite und Hinterkopf zieht sie den Strich nach unten, auf dem Scheitel und über der Stirn nie
-            const sw = faellt * Math.max(0, 1 - r0.n.y - Math.max(0, r0.n.z));
+            // DIE SCHWERE (`faellt`): am Hinterkopf zieht sie den Strich nach unten (mit dem Anteil der Normale nach hinten), an der
+            // Seite und über der Stirn nie — dort läuft der Strich zurück (an der Schläfe zog sie ihn als Strich vor das Gesicht)
+            const sw = faellt * Math.max(0, -r0.n.z);
             tang(r0.f.set(row.d[0] + jx * streu, row.d[1] + jy * streu - sw, row.d[2] + jz * streu), r0.n);
             if (r0.f.lengthSq() < 1e-8) tang(r0.f.set(0, -1, 0), r0.n);
             r0.f.normalize();
@@ -5537,6 +5539,13 @@ function __streuGeo(row, seed, tonRGB) {
                 if (b.f.lengthSq() < 1e-8) b.f.copy(a.f);
                 b.f.normalize();
             }
+            // DIE ZONE DES HAARS (`zone`: trägt die Kopf-Haut dort den Ton der Kappe — die Regel ihrer Farbe, das nächste Primitiv):
+            // liegt ein Ende außerhalb, sinkt es auf die Kappe (unter die Haut, die Strähne taucht an der Haarlinie ein); liegen beide
+            // außerhalb, fällt die Strähne. Bis hier stach jede Strähne am Rand der Kappe um ihre Höhe aus der Haut (an Schläfe und
+            // Stirn Striche vor dem Gesicht), und ein Drittel der Strähnen lag ganz unter ihr
+            const unter = (g) => !!zone && !zone(g.p.x, g.p.y, g.p.z);
+            const tief = [unter(r0), unter(r2)];
+            if (tief[0] && tief[1]) continue;
             // das Band: EIN Glied von der Wurzel zur Spitze (die Wölbung unter ihm trägt ≤ l²/8R, unter der Höhe der Lage), quer
             // zur Sehne in der Fläche je Ende
             const b0 = sN * 4;
@@ -5545,7 +5554,7 @@ function __streuGeo(row, seed, tonRGB) {
                 [0, r0],
                 [1, r2],
             ]) {
-                const h = liegt[k];
+                const h = tief[k] ? 0 : liegt[k];
                 const w = k === 0 ? row.t * 1.8 : Math.max(0.001, row.t * 0.65);
                 v.crossVectors(r1.f, g.n).normalize();
                 const cc = k ? tonRGB : rootC;
@@ -8338,6 +8347,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     // keine Wurst auf dem Gesicht. Nur nah (lod 0) — die Grobstufe bleibt der Primitiv-Guss. Ohne Hüllen-Maschine
     // oder Gestalt-Tafel kein Mensch nah: LAUT (Integration W5-Körper; vorher fiel die Haut still weg — Kugel-Gesicht).
     const handMitte = {};
+    // die Zone des Haars auf der Kopf-Haut (wo sie den Ton der Kappe trägt), für die Strähnen (`__streuGeo` `zone`)
+    let haarZone = null;
     if (!fein) {
         if (typeof kern.surfaceNets !== "function" || !kern.MENSCH_GESTALT || !B.parts.head)
             throw new Error("MENSCH-HAUT: Hüllen-Maschine, MENSCH_GESTALT oder Kopf fehlt (fail-closed)");
@@ -8491,15 +8502,12 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         const col = new Float32Array(pa.count * 3);
         // je Ecke ihr Ton (mensch.K4, koerper `menschTon`): Haut, Lippe (die Mund-Linie eingeschlossen), Höhle, Braue, Haar-Kappe
         const ton = new Float32Array(pa.count);
-        for (let i = 0; i < pa.count; i++) {
-            const x = pa.getX(i),
-                y = pa.getY(i),
-                z = pa.getZ(i);
-            let best = prims[0],
-                bd = Infinity,
-                hoehle = null,
-                hd = Infinity;
-            for (const p of prims) {
+        // DAS NÄCHSTE PRIMITIV einer Liste an (x, y, z) (normierter Abstand |Mi·p|/r − 1) und sein Abstand: sein Stoff färbt die
+        // Haut dort — und die Kappe begrenzt das Haar (`haarZone`: die Strähnen liegen, wo die Haut den Ton der Kappe trägt)
+        const naechstes = (liste, x, y, z) => {
+            let best = liste[0],
+                bd = Infinity;
+            for (const p of liste) {
                 const m = p.Mi;
                 const qx = m[0] * x + m[4] * y + m[8] * z + m[12],
                     qy = m[1] * x + m[5] * y + m[9] * z + m[13],
@@ -8510,17 +8518,15 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                     best = p;
                 }
             }
-            for (const p of hoehlen) {
-                const m = p.Mi;
-                const qx = m[0] * x + m[4] * y + m[8] * z + m[12],
-                    qy = m[1] * x + m[5] * y + m[9] * z + m[13],
-                    qz = m[2] * x + m[6] * y + m[10] * z + m[14];
-                const d = Math.sqrt(qx * qx + qy * qy + qz * qz) / p.r - 1;
-                if (d < hd) {
-                    hd = d;
-                    hoehle = p;
-                }
-            }
+            return [best, bd];
+        };
+        haarZone = (x, y, z) => naechstes(prims, x, y, z)[0].node.material.userData.__klasse === "haarKappe";
+        for (let i = 0; i < pa.count; i++) {
+            const x = pa.getX(i),
+                y = pa.getY(i),
+                z = pa.getZ(i);
+            let [best] = naechstes(prims, x, y, z);
+            const [hoehle, hd] = naechstes(hoehlen, x, y, z);
             if (hd < KH.hoehleSaum && best.node.material.userData.__klasse !== "lips" && !imBrau(x, y, z, KH.brauBogen)) best = hoehle;
             const kl = best.node.material.userData.__klasse;
             if (kl !== "lips" && kl !== "haarKappe" && imBrau(x, y, z, 0)) {
@@ -8606,7 +8612,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             seedH++;
             const wirt = B.parts[row.teil];
             if (!wirt) continue;
-            const geo = __streuGeo(row, seedH, tonH);
+            const geo = __streuGeo(row, seedH, tonH, haarZone);
             if (geo) wirt.add(new THREE.Mesh(geo, matFuer("hair")));
         }
     }
