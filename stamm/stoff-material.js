@@ -46,12 +46,15 @@ class AnazhRealm_stoff_material {
     // EINEN Gesetz `_wieseFern` über der TSL-Algebra (Takt und Sicht-Satz rechnen es in Zahlen). Steht o unter a, steht das
     // Büschel ganz; darüber, im Band bis a · (1 + `rand`), sinkt es in den Boden (das Büschel × v um seinen Fuß) statt zu
     // springen — an der Übergabe (a = 1, s = 1) steht jedes, wie die Nähe es legt. DIE STRECKUNG: die ganze Gestalt des
-    // Büschels waagrecht um s — die Mitte jedes Halms (`aCenter`, um den Fuß des Büschels) und der Halm um sie (Fuß UND
-    // Spitze), die Höhe bleibt; die Ähre (ihr `aCenter` die Spitze des Stängels, über dem Fuß) wandert mit der Spitze, ihre
-    // Ährchen bleiben in ihrer Größe (gestreckt lasen sie im Modell der Station als helle Striche am Horizont). Bis
-    // w4-gras-l2 rückten nur die Mitten (höchstens 2,5×) und die Füße um √f — die Halme blieben schmal, jenseits 30 m lag der
-    // Boden frei. Diesseits der Übergabe (d < radius) legt der Sicht-Satz dasselbe Büschel als Nah-Wiese — hier steht es
-    // nicht. EIN Knoten für jede Vorlage (EIN Programm); der Wind schwingt mit dem Büschel (× v).
+    // Büschels waagrecht um s (die Lage seiner Halme), die Höhe bleibt. DIE BREITE (w4-p2-vegetation-k1, `_wieseFern` quer): der
+    // Fuß jedes Halms wird um q breit — seine Ecke rückt längs der Breiten-Richtung des Halms (t = Y × n, das Gesetz des
+    // Halm-Stoffs `_halmStoff`: u wächst längs t, die Mittel-Rippe bei u = 0) um u × aderM, das Maß ihrer Adern; die Spitze
+    // (u = 0) und die Ähre (über dem Fuß) folgen der Lage. Bis dahin las der Knoten die Mitte jedes Halms aus `aCenter` — die
+    // Konsum-Wand der Foundry streicht sie am Halm (nur Laub und Blüte tragen sie, `_foundrySchale`), der Leser las 0: die
+    // Ähre streckte sich mit, die Breite war die der Lage. Bis w4-gras-l2 rückten nur die Mitten (höchstens 2,5×) und die
+    // Füße um √f — die Halme blieben schmal, jenseits 30 m lag der Boden frei. Diesseits der Übergabe (d < radius) legt der
+    // Sicht-Satz dasselbe Büschel als Nah-Wiese — hier steht es nicht. EIN Knoten für jede Vorlage (EIN Programm); der Wind
+    // schwingt mit dem Büschel (× v).
     _halmFerne(mat) {
         const da = this._halmFerneStoffe && this._halmFerneStoffe.get(mat);
         if (da) return da;
@@ -59,6 +62,7 @@ class AnazhRealm_stoff_material {
         if (!this._halmFerneKnoten) {
             const NW = AnazhRealm.NAH_WIESE;
             const F = NW.fern;
+            const PC = globalThis.__phytoCore;
             this._halmFerneAuge = T.uniform(new THREE.Vector3());
             const ank = this._weltNaht(T).anker;
             const d = ank.xz.sub(this._halmFerneAuge.xz).length();
@@ -81,18 +85,24 @@ class AnazhRealm_stoff_material {
                 .div(anteil.mul(F.rand).max(1e-6))
                 .clamp(0, 1)
                 .mul(T.step(NW.radius, d));
-            const c = T.attribute("aCenter", "vec3");
-            const rel = T.positionLocal.sub(c);
-            // die Mitte rückt um s, der Halm streckt sich um sie waagrecht um s (quer); die Ähre (aCenter über dem Fuß) wandert
-            // nur, in ihrer Größe (quer 1)
-            const s = G.streck;
-            const quer = T.mix(s, T.float(1), T.step(1e-4, c.y));
             const sk = this._foundryWorldScaleMatrix("gras").elements[0];
+            // die Ecke um ihre Mittel-Rippe (Vorlage): t = Y × n (ein liegender Halm trägt keine Breiten-Richtung), u × aderM in
+            // Metern der Welt, durch die Welt-Skala in die Vorlage; nur der Fuß (y = 0, der Halm wurzelt im Boden) wird breit
+            const nG = T.normalize(T.normalGeometry);
+            const tq = T.cross(T.vec3(0.0, 1.0, 0.0), nG);
+            const tl = tq.length();
+            const seite = tq
+                .div(tl.max(1e-4))
+                .mul(T.step(0.02, tl))
+                .mul(T.uv().x.mul(PC.HALM_GESETZ.aderM / sk));
+            const fuss = T.float(1).sub(T.step(1e-4, T.positionGeometry.y));
+            const s = G.streck;
+            const breit = seite.mul(fuss.mul(G.quer.sub(s)));
             const sway = this._windSwayOffset(T, { ampX: 1.5, hoehe: T.positionGeometry.y.mul(sk) });
             this._halmFerneKnoten = T.vec3(
-                c.x.mul(s).add(rel.x.mul(quer)),
-                c.y.add(rel.y),
-                c.z.mul(s).add(rel.z.mul(quer))
+                T.positionLocal.x.mul(s).add(breit.x),
+                T.positionLocal.y,
+                T.positionLocal.z.mul(s).add(breit.z)
             )
                 .mul(v)
                 .add(sway.mul(v));

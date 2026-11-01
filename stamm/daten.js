@@ -431,9 +431,9 @@ class AnazhRealm_daten {
     // DIE FERNE (`fern`, w4-gras-saum, w4-gras-l2): bis 31.10. endete die Wiese bei `radius` (ein Ausdünnungs-Band 12–16 m,
     // dahinter der flache Boden — im Third eine Naht, beim Gehen wanderte die Kante mit). Jetzt zeichnen dieselben Büschel
     // (dieselbe Zelle, derselbe Wurf, die Studio-Stufe L2) weiter bis `bis`, nach dem EINEN Gesetz `_wieseFern`: die ganze
-    // Gestalt des Büschels streckt sich waagrecht um s = (d/radius)^`streck`, höchstens `streckMax` (Mitten UND Halme, die Ähren
-    // nur verschoben; Höhe bleibt, die Füße folgen der Ebene des Hangs) — ein Büschel trägt die Fläche von s² Zellen —, und die
-    // Anzahl folgt dem Ziel der Deckung: Anzahl × s = 1 bis `voll` (die Wiese der Nähe, an der Übergabe stetig), dahinter
+    // Gestalt des Büschels streckt sich waagrecht um s = (d/radius)^`streck`, höchstens `streckMax` (die Lage seiner Halme und
+    // Ähren; Höhe bleibt, die Füße folgen der Ebene seines Kreises) — ein Büschel trägt die Fläche von s² Zellen —, und die
+    // Anzahl folgt dem Ziel der Zahl am Schirm: Anzahl × s = 1 bis `voll` (die Wiese der Nähe, an der Übergabe stetig), dahinter
     // (voll/d)^`fall`; ein Büschel steht, solange seine Ordnung o darunter liegt, im Band `rand` (relativ) sinkt es in den
     // Boden statt zu springen, vor `bis` über `saum`. Die Kosten hängen am Schirm, nie an der Weite der Welt (Lehre 25).
     // Bis w4-gras-l2 fiel die Anzahl mit (radius/d)^4 und nur die Mitten rückten (höchstens 2,5×, die Füße √): an der
@@ -443,6 +443,13 @@ class AnazhRealm_daten {
     // 1,86 · 0,22 % · 4,5 % bei 65k (Blick-Keil + 11°; die Zeile nahWieseFern 60k), Ego 1,87 · 0,02 % · 1,3 %. `streckMax` 14
     // hält die Gestalt (7,4 m Radius) auf dem Boden: an der Ebene des Hangs p90 0,07 m bei 30 m, 0,11–0,29 m bei 50–200 m
     // (Gesetz, Mess-Wiese, im Blick der Station; waagrecht 0,5–1,0 m).
+    // DIE BREITE (w4-p2-vegetation-k1, `breitMax`): gemessen am Kopf 20d09a04 fiel die Blatt-Fläche je Fläche mit dem Ziel — die
+    // Halme trugen die Breite der Lage —, an der Mess-Wiese Third LAI 30–80 m 0,47 · 80–200 m 0,05 (Radeon und GTX). Jetzt wird
+    // der Fuß jedes Halms breit, bis Anzahl × Breite = 1 (`_wieseFern` quer: die Dichte gleitet, die Zahl der Büschel bleibt
+    // die des Schirms), höchstens `breitMax` × s: bis 69 m trägt die Ferne die Blatt-Fläche der Nähe, dahinter fällt sie mit
+    // (69/d)^1,5 — der Strahl des Third kreuzt bei 200 m noch ≈ 15 Halm-Lagen. Die Grenze hält den breiten Fuß auf dem Boden:
+    // auf der Ebene seines Kreises (`_wieseFernEbene`) schwebt die äußerste Ecke in 80–200 m p90 0,31 m (bei 9: 0,43 m), in
+    // 30–80 m 0,15 m. Werkbank Radeon, Pose der Station: 30–80 m 0,47 → satt (0 Grund-Pixel), Ferne 55 900 → 56 784 Dreiecke.
     // `bis` liegt am Ring der Chunks (Radius 4 × 43,2 m: jenseits trägt keine Boden-Karte, `_bodenKommtNie`) — dahinter ist
     // das Gras nach dem Studio der Boden (foundry-core `fernform` „boden"). `kachel` = die Kachel der Ferne (vier Kacheln der
     // Nähe), `vorlauf` = so weit näher, als sie gebaut ist, trägt eine Kachel der Ferne ihre Büschel schon.
@@ -464,6 +471,7 @@ class AnazhRealm_daten {
                     fall: 1.5,
                     streck: 3,
                     streckMax: 14,
+                    breitMax: 6,
                     rand: 0.2,
                     vorlauf: 8,
                     kachelnJeTakt: 4,

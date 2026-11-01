@@ -350,8 +350,17 @@ class AnazhRealm_vegetation_wiese {
                 Math.max(fx * K - 0.34 - cam.x, 0, cam.x - (fx + 1) * K - 0.34),
                 Math.max(fz * K - 0.34 - cam.z, 0, cam.z - (fz + 1) * K - 0.34)
             );
+        // der Kreis eines Büschels der Ferne vor dem Grund der Häuser (`erdbauGrund`, S4): die Weite der Vorlagen samt der Breite
+        // ihres Fußes (`halb` × (breitMax − 1), `_wieseFern` quer), × streckMax — eine andere Weite baut die Kachel neu
+        const vl = this.state.nahWiese.vorlagen;
+        const halb = Math.max(0, ...[0, 1].map((v) => (vl.get(v + ":L2") || {}).halb || 0));
+        const fuss = { reich, halb, kreis: (reich + halb * (F.breitMax - 1)) * F.streckMax };
         for (const [key, k] of fk)
-            if (!this._wasserKennungenGleich(k.wasser) || !this._bodenKartenStehen(k.chunkKarten) || k.reich !== reich)
+            if (
+                !this._wasserKennungenGleich(k.wasser) ||
+                !this._bodenKartenStehen(k.chunkKarten) ||
+                k.kreis !== fuss.kreis
+            )
                 fk.delete(key) && o.gefallen++;
         const R = Math.ceil(F.bis / K) + 1;
         const [cx, cz] = [Math.floor(cam.x / K), Math.floor(cam.z / K)];
@@ -376,7 +385,7 @@ class AnazhRealm_vegetation_wiese {
                 o.offen++;
                 continue;
             }
-            const k = this._nahWieseFernKachel(w.fx, w.fz, AnazhRealm._wieseAnteil(w.d - F.vorlauf), reich);
+            const k = this._nahWieseFernKachel(w.fx, w.fz, AnazhRealm._wieseAnteil(w.d - F.vorlauf), fuss, cam);
             if (!k) {
                 o.offen++;
                 continue;
@@ -393,7 +402,12 @@ class AnazhRealm_vegetation_wiese {
     // d des Büschel-Fußes vom Auge die STRECKUNG s = (d/radius)^streck in [1, streckMax] — die Gestalt des Büschels waagrecht
     // um s, es trägt die Fläche von s² Zellen — und der ANTEIL der stehenden Büschel a = min(1, Ziel/s) × (1 − Saum vor `bis`),
     // das Ziel der Deckung je Fläche 1 bis `voll` (Anzahl × s = 1: an der Übergabe die Wiese der Nähe), dahinter
-    // (voll/d)^fall. So hält die Ferne die Deckung am Schirm (die Zahlen bei `NAH_WIESE`), die Büschel je Pixel bleiben (Lehre 25).
+    // (voll/d)^fall. So hält die Ferne die Zahl der Büschel am Schirm (die Zahlen bei `NAH_WIESE`), die Büschel je Pixel bleiben
+    // (Lehre 25). DIE BREITE DES HALMS (w4-p2-vegetation-k1, die Lehre aus Tsushima: fern weniger Halme, jeder breiter, die Dichte
+    // gleitet): q = 1 / min(1, Ziel/s) — Anzahl × Breite = 1, jede Fläche trägt die Blatt-Fläche der Nähe —, höchstens
+    // `breitMax` × s; nur der Fuß des Halms wird breit, seine Spitze und die Ähre folgen der Lage (`_halmFerne`). Bis dahin trug
+    // der Halm die Breite der Lage (q = s): die Blatt-Fläche je Fläche fiel mit dem Ziel, an der Mess-Wiese Third LAI 14–30 m
+    // 1,93 · 30–80 m 0,47 · 80–200 m 0,05 (Radeon und GTX, 20d09a04) — jenseits 30 m ein Ring, durch den der Boden schien.
     static _wieseFern(A, d) {
         const NW = AnazhRealm.NAH_WIESE,
             F = NW.fern;
@@ -401,7 +415,8 @@ class AnazhRealm_vegetation_wiese {
         const ziel = A.min(A.k(1), A.pow(A.max(A.mul(d, A.k(1 / F.voll)), A.k(1e-3)), A.k(-F.fall)));
         const t = A.min(A.k(1), A.max(A.k(0), A.mul(A.add(d, A.k(F.saum - F.bis)), A.k(1 / F.saum))));
         const saum = A.add(A.k(1), A.mul(A.k(-1), A.mul(A.mul(t, t), A.add(A.k(3), A.mul(t, A.k(-2))))));
-        return { streck: s, anteil: A.mul(A.min(A.k(1), A.mul(ziel, A.pow(s, A.k(-1)))), saum) };
+        const dicht = A.min(A.k(1), A.mul(ziel, A.pow(s, A.k(-1))));
+        return { streck: s, quer: A.min(A.mul(s, A.k(F.breitMax)), A.pow(dicht, A.k(-1))), anteil: A.mul(dicht, saum) };
     }
 
     // DER ANTEIL DER FERNE (das Gesetz `_wieseFern` in Zahlen): unter dieser Ordnung zeichnet der Stoff noch einen Halm — der
@@ -414,15 +429,16 @@ class AnazhRealm_vegetation_wiese {
 
     // EINE KACHEL DER FERNE: die Büschel ihrer Kacheln der Nähe mit Ordnung unter `anteil` (steht die Kachel der Nähe, liest
     // sie deren Büschel), nach o geordnet, mit ihren Karten und ihrem Wasser; null, solange eine Kachel der Nähe auf ihren
-    // Boden wartet (eine jenseits des Chunk-Rings trägt nichts). Ein Büschel der Ferne streckt sich bis `streckMax`: sein Kreis
-    // vor dem Grund der Häuser (`erdbauGrund`, S4) ist die Weite der Vorlagen × seine Skala × streckMax — kein gestreckter Halm
-    // steht in einem Haus.
-    _nahWieseFernKachel(fx, fz, anteil, reich) {
+    // Boden wartet (eine jenseits des Chunk-Rings trägt nichts). Ein Büschel der Ferne streckt sich bis `streckMax` und sein
+    // Fuß wird breit (`_wieseFern` quer): sein Kreis vor dem Grund der Häuser (`erdbauGrund`, S4) ist `fuss.kreis` × seine Skala
+    // (`_nahWieseFernTakt`) — kein gestreckter Halm steht in einem Haus —, und er steht auf der Ebene des Kreises, den er am
+    // Auge dieses Baus bedeckt (`_wieseFernEbene`), nie auf der seines Fußes.
+    _nahWieseFernKachel(fx, fz, anteil, fuss, auge) {
         const NW = AnazhRealm.NAH_WIESE;
         const [K, k6] = [NW.fern.kachel, NW.kachel];
         const n = K / k6;
         const nw = this.state.nahWiese;
-        const [Gb, E, weit] = [globalThis.__gelaendeCore, this._erdbauLage(), reich * NW.fern.streckMax];
+        const [Gb, E, Z] = [globalThis.__gelaendeCore, this._erdbauLage(), globalThis.__phytoCore.WIND_ZAHLEN];
         const bueschel = [];
         const chunkKarten = new Map();
         chunkKarten.rechteck = [fx * K - 0.34, fz * K - 0.34, (fx + 1) * K + 0.34, (fz + 1) * K + 0.34];
@@ -438,15 +454,51 @@ class AnazhRealm_vegetation_wiese {
                 for (const [ck, m] of karten) chunkKarten.set(ck, m);
                 for (const x of b) {
                     if (x.o >= anteil) break;
-                    if (!Gb.erdbauGrund(E, x.x, x.z, weit * x.s)) bueschel.push(x);
+                    if (Gb.erdbauGrund(E, x.x, x.z, fuss.kreis * x.s)) continue;
+                    const g = AnazhRealm._wieseFern(Z, Math.hypot(x.x - auge.x, x.z - auge.z));
+                    bueschel.push(
+                        this._wieseFernEbene(x, (fuss.reich * g.streck + fuss.halb * (g.quer - g.streck)) * x.s)
+                    );
                 }
             }
         bueschel.sort((a, b) => a.o - b.o);
         const wasser = this._wasserKennungen(...chunkKarten.rechteck);
         return Object.assign(
-            { anteil, reich, chunkKarten, wasser, bloecke: [] },
+            { anteil, kreis: fuss.kreis, chunkKarten, wasser, bloecke: [] },
             this._nahWieseKachelDaten(fx, fz, bueschel, K)
         );
+    }
+
+    // DIE EBENE DER FERNE (w4-p2-vegetation-k1): ein Büschel der Ferne bedeckt am Auge des Baus den Radius ρ — es steht auf
+    // der Ebene, die den gezeichneten Boden (`_bodenSichtAt`, Lehre 22) über diesem Kreis am besten trägt: kleinste Quadrate
+    // über der Mitte und je vier Punkten auf ρ/2 und ρ (um 45° versetzt — die Summen von dx, dz und dx·dz fallen weg, die
+    // Gleichungen zerfallen: Höhe = Mittel, Hang = Σ d·y / Σ d²). Die Nähe steht auf dem Hang ihres Fußes (`_slopeAt`, 1 m);
+    // gestreckt und breit trug sie ihn über ihren ganzen Kreis: an der Mess-Wiese Third (Pose der Station, `breitMax` 6) schwebte
+    // die äußerste Ecke in 80–200 m p90 0,62 m über dem Boden (jedes fünfte Büschel über 0,3 m), auf der Ebene des Kreises 0,31 m
+    // (6,7 %), in 30–80 m 0,29 → 0,15 m. Trägt der Boden nicht alle neun Punkte (der Rand des Chunk-Rings), bleibt die Ebene
+    // des Fußes. Eine Kopie: das Büschel der Nähe behält seine.
+    _wieseFernEbene(b, rho) {
+        let n = 0,
+            sy = 0,
+            sxy = 0,
+            szy = 0,
+            sxx = 0,
+            szz = 0;
+        for (let i = 0; i < 9; i++) {
+            const r = i === 0 ? 0 : i <= 4 ? rho / 2 : rho;
+            const a = (i - 1) * (Math.PI / 2) + (i > 4 ? Math.PI / 4 : 0);
+            const [dx, dz] = [Math.cos(a) * r, Math.sin(a) * r];
+            const y = this._bodenSichtAt(b.x + dx, b.z + dz);
+            if (y === null) continue;
+            n++;
+            sy += y;
+            sxy += dx * y;
+            szy += dz * y;
+            sxx += dx * dx;
+            szz += dz * dz;
+        }
+        if (n < 9) return b;
+        return Object.assign({}, b, { y: sy / n, gx: sxy / sxx, gz: szy / szz });
     }
 
     // DER BLOCK einer Kachel der Ferne je Vorlage v: ihre Büschel dieser Vorlage (Lage, Ordnung, Skala, Hang — die Kugel des
@@ -552,7 +604,9 @@ class AnazhRealm_vegetation_wiese {
         const fern = [];
         let cy = null,
             r = 0,
-            weite = 0;
+            weite = 0,
+            halb = 0;
+        const HG = globalThis.__phytoCore.HALM_GESETZ;
         for (let p = 0; p < fl.leaves.length; p++) {
             const lf = fl.leaves[p];
             if (!lf || !lf.geom || !lf.mat)
@@ -577,12 +631,16 @@ class AnazhRealm_vegetation_wiese {
             kugel.copy(lf.geom.boundingSphere).applyMatrix4(lf.localMatrix);
             if (cy === null) cy = kugel.center.y;
             r = Math.max(r, kugel.radius + Math.hypot(kugel.center.x, kugel.center.z) + Math.abs(kugel.center.y - cy));
+            const U = lf.geom.attributes.uv;
             for (let i = 0, P = lf.geom.attributes.position; i < P.count; i++) {
                 ecke.fromBufferAttribute(P, i).applyMatrix4(lf.localMatrix);
                 weite = Math.max(weite, Math.hypot(ecke.x, ecke.z));
+                // DER HALBE FUSS (`halb`): die weiteste Ecke des Fußes um ihre Mittel-Rippe, u × aderM in Metern der Welt — so
+                // weit trägt die Breite der Ferne (`_wieseFern` quer) jede Ecke über die Lage hinaus
+                if (U && P.getY(i) <= 1e-4) halb = Math.max(halb, Math.abs(U.getX(i)) * HG.aderM);
             }
         }
-        nw.vorlagen.set(kopf, { flat: fl, senken, fern, cy: cy || 0, r, weite });
+        nw.vorlagen.set(kopf, { flat: fl, senken, fern, cy: cy || 0, r, weite, halb });
         nw.neu = true;
     }
 
@@ -687,8 +745,12 @@ class AnazhRealm_vegetation_wiese {
         const F = NW.fern;
         const HF = F.kachel * 0.5;
         const ZAHLEN = globalThis.__phytoCore.WIND_ZAHLEN;
+        // die weiteste Ecke eines Büschels der Ferne: die Lage um streckMax, der Fuß dazu um die Breite (`_wieseFern` quer, höchstens
+        // breitMax · s)
+        const hMax = Math.max((ziel[2][0] && ziel[2][0].halb) || 0, (ziel[2][1] && ziel[2][1].halb) || 0);
+        const fernMax = F.streckMax * (rMax + hMax * (F.breitMax - 1));
         for (const k of nw.fern ? nw.fern.kacheln.values() : []) {
-            if (!k.bueschel.length || !this._passTrifft(L, k.mx, (k.y0 + k.y1) / 2, k.mz, HF, (k.y1 - k.y0) / 2, HF, k.sMax * rMax * F.streckMax * (1 + k.gMax))) continue; // prettier-ignore
+            if (!k.bueschel.length || !this._passTrifft(L, k.mx, (k.y0 + k.y1) / 2, k.mz, HF, (k.y1 - k.y0) / 2, HF, k.sMax * fernMax * (1 + k.gMax))) continue; // prettier-ignore
             for (let v = 0; v < 2; v++) {
                 const vl = ziel[2][v];
                 if (!vl || !vl.fern.length) continue;
@@ -698,7 +760,7 @@ class AnazhRealm_vegetation_wiese {
                     if (d < NW.radius - 0.01) continue;
                     const g = AnazhRealm._wieseFern(ZAHLEN, d);
                     if (B.o[i] >= g.anteil * (1 + F.rand) * 1.001) continue;
-                    if (!this._passTrifft(L, B.x[i], B.y[i] + vl.cy * B.s[i], B.z[i], 0, 0, 0, vl.r * B.s[i] * g.streck * (1 + B.g[i]))) continue; // prettier-ignore
+                    if (!this._passTrifft(L, B.x[i], B.y[i] + vl.cy * B.s[i], B.z[i], 0, 0, 0, (vl.r * g.streck + vl.halb * (g.quer - g.streck)) * B.s[i] * (1 + B.g[i]))) continue; // prettier-ignore
                     // je Teil der Slot des Büschels (ohne Hülle je Büschel: der Satz läuft in jedem Frame, das das Auge bewegt)
                     for (let j = 0; j < vl.fern.length; j++) {
                         const a = vl.fern[j];
