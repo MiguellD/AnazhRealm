@@ -1407,3 +1407,4 @@
 2026-11-01 05:39:41 b-kalt-4b13 ankunft-kalt.sh Exit0 4.7 · 1/1
 2026-11-01 05:39:56 takt-z122a-gtx START 26 Stationen in 1 Läufen
 2026-11-01 06:00:06 takt-z122a-gtx tiere.K1#2,tiere.K3#2,oekologie.K4#2,mensch.K5#1,mensch.K4#1,haar.K2#1,vegetation.K1#1,licht.K2#2,material.K2#1,material.K1#1,lod.K1#1,lod.K5#1,licht.K3#1,studios.K2#2,studios.K3#2,bauen.K1#2,studios.K4#1,siedlung.K1#2,siedlung.K4#2,spielgang.K3#1,fahrzeug.K2#2,profiband.K4#1,profiband.K1#1,profiband.K2#1,profiband.K3#1,speicher.K4#2 OFFEN/OFFEN/ROT/OFFEN/ROT/ROT/ROT/ROT/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/ROT/OFFEN/OFFEN/ROT/ROT/ROT/OFFEN 20.1 · 26/26
+2026-11-01 06:00:26 takt-z122b-gtx START 6 Stationen in 1 Läufen
