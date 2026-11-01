@@ -4,8 +4,8 @@ const { wandEnde, argOpt, jsonLesen } = require("./lib/welt-boot.cjs");
 // gate:betriebsgesetz — die Maschine zum BETRIEBSGESETZ (CLAUDE.md).
 // Der Agenten-Betriebsmodus (früh „fertig" melden · Scope still verkleinern · OFFEN
 // umbenennen · nächste Welle erfinden) fällt nicht durch Vorsatz, sondern durch WÄNDE:
-//   1) SIEGEL-WORT-WAND: solange docs/PFLICHT-OFFEN.md Einträge trägt, ist ein
-//      HEAD-Commit mit fertig/RUND/vollendet/vollzogen/Schluss/SCOPE ZU rot.
+//   1) SIEGEL-WORT-WAND: solange docs/PFLICHT-OFFEN.md Einträge trägt, ist JEDER Commit des Stands (der Bereich der
+//      Wachstums-Wand, main: der HEAD) mit fertig/RUND/vollendet/vollzogen/Schluss/SCOPE ZU rot — beim Namen des Commits.
 //   2) FROZEN-LISTEN-WAND: max 5 Einträge (je ein Buchstabe; F seit 31.10., der freie Platz von D), wohlgeformt — Scope wächst nie still;
 //      dazu die LOGBUCH-WAND (kein „Stand-Stempel:", max 40 Zeilen).
 //   3) STAND-WAND: der CLAUDE.md-Stand bleibt ≤ 40 Zeilen (Chronik = git log, Lehre 15).
@@ -43,6 +43,9 @@ function siegelBefund(commitMsg, eintragZahl) {
     const m = commitMsg.match(SIEGEL_CI) || commitMsg.match(SIEGEL_CS);
     return m ? m[0] : null;
 }
+// je Nachricht „<sha> <Betreff>\n<Rumpf>" (git log --format="%h %B") der Befund beim Namen des Commits
+const siegelImStand = (msgs, n) =>
+    msgs.filter((m) => siegelBefund(m, n)).map((m) => `Commit ${m.trim().split("\n")[0]} trägt Siegel-Wort "${siegelBefund(m, n)}"`);
 
 function standZeilen(claudeText) {
     const zeilen = claudeText.split("\n");
@@ -324,10 +327,12 @@ const dateiDeckeBefund = (dateien) =>
 function main() {
     const errs = [];
     const [kopfRev, grundRev] = ["--kopf", "--grund"].map((n) => argOpt(n, null));
-    const gemessen = [];
+    const gemessen = [], msgs = []; // msgs: jede Nachricht des Stands für die Siegel-Wort-Wand (1)
     try {
         const zweig = process.env.GITHUB_REF_NAME || git(["rev-parse", "--abbrev-ref", "HEAD"]).trim();
         const staende = grundRev ? [[grundRev, kopfRev, "--grund"]] : wachstumsStaende(zweig, kopfRev);
+        const [g, k] = staende[0] || [];
+        msgs.push(...git(["log", "-z", "--format=%h %B", g ? `${g}..${k || ""}` : "-1"]).split("\0"));
         for (const [grund, kopf, name] of staende) {
             const { je, datei, frei, hand } = wachstumZwischen(
                 grund,
@@ -417,23 +422,10 @@ function main() {
         errs.push(`PFLICHT-OFFEN trägt ${posten.length} Einträge (max 5) — Scope wächst still`);
     if (liste) errs.push(...logbuchBefund(liste));
 
-    // 1) SIEGEL-WORT-WAND am HEAD-Commit
-    let headMsg = null;
-    try {
-        headMsg = git(["log", "-1", "--format=%B"]);
-    } catch {
-        // kein git (Tarball/CI-Sonderfall): die Wand kann den HEAD nicht lesen — ehrlich melden,
-        // nie stumm grün an dieser Teilprüfung vorbei (fail-soft wäre der Bruch).
-        errs.push("git log -1 nicht lesbar — die Siegel-Wort-Wand braucht den HEAD-Commit");
-    }
-    if (headMsg !== null) {
-        const befund = siegelBefund(headMsg, posten.length);
-        if (befund)
-            errs.push(
-                `HEAD-Commit trägt Siegel-Wort "${befund.trim()}" bei ${posten.length} Pflicht-OFFEN-Einträgen — ` +
-                    `„fertig" ist illegal bis die Frozen-Liste leer ist (BETRIEBSGESETZ #1)`
-            );
-    }
+    // 1) SIEGEL-WORT-WAND an jedem Commit des Stands — die Bereiche der Wachstums-Wand, main der HEAD; ist die Geschichte
+    // nicht lesbar, steht die Wachstums-Wand ROT beim Namen (nie stumm grün). 01.11.: z118 fiel am Bau, weil ein Rumpf MITTEN
+    // im Cloud-Zweig w4-stationen-schnell-a das Siegel trug — der Puls las nur den HEAD, der Zug (zug.cjs) liest basis..HEAD.
+    errs.push(...siegelImStand(msgs, posten.length).map((b) => `${b} bei ${posten.length} Pflicht-OFFEN-Einträgen (BETRIEBSGESETZ #1)`));
 
     // 3) STAND-WAND + 4) ABSENZ-WAND
     const claude = fs.readFileSync(path.join(root, "CLAUDE.md"), "utf8");
@@ -467,8 +459,9 @@ function main() {
     const t2 = siegelBefund("betriebsgesetz: siegel-wort-wand steht", 2); // darf nicht feuern
     const t3 = siegelBefund("welle vollendet", 0); // leere Liste: Siegel legal
     const t4 = siegelBefund("bericht: rund 60 assets pro sekunde", 2); // klein „rund" legal
-    if (!t1 || t2 || t3 || t4)
-        errs.push(`Selbsttest der Siegel-Wort-Wand versagt (t1=${t1} t2=${t2} t3=${t3} t4=${t4})`);
+    const t5 = siegelImStand(["a1 gut", "\nd5 x\n\nfertig"], 2).join(); // der Rumpf mitten im Zweig feuert beim Namen
+    if (!t1 || t2 || t3 || t4 || t5 !== 'Commit d5 x trägt Siegel-Wort "fertig"')
+        errs.push(`Selbsttest der Siegel-Wort-Wand versagt (t1=${t1} t2=${t2} t3=${t3} t4=${t4} t5=${t5})`);
     const l1 = logbuchBefund("> Stand-Stempel: 29.09. · V1.2.3\nA) x").length; // muss feuern
     const l2 = logbuchBefund("# Liste\nA) x — Status: offen").length; // darf nicht feuern
     const l3 = logbuchBefund(
