@@ -1158,14 +1158,14 @@ async function seiteZu(browser, server, out, kopf, feld = "error") {
 }
 
 // DIE TÄTER-FÄLLE eines Selbsttests ohne Browser: je Fall `[name, tat, muss]` (die Tat an einem frischen `klon()`) oder
-// `{ name, z, muss }` das Urteil; jedes `muss` (ein Muster oder eine Liste) trifft einen Befund, `null` verlangt keinen — sonst steht
+// `[name, z, muss]` das Urteil an `z` (die Form `{ name, z, muss }` dasselbe); jedes `muss` (ein Muster oder eine Liste) trifft einen Befund, `null` verlangt keinen — sonst steht
 // der Fall beim Namen in `fehler`; ohne `klon` ist der Klon der Fälle eine Kopie von `gruen`. `selbsttestEnde` schließt: ROT mit Exit 1,
 // sonst der Grün-Satz.
 function taeterFaelle(faelle, urteil, { fehler = [], gruen, klon = () => jsonKlon(gruen) } = {}) {
     for (const f of faelle) {
-        const [name, tat, muss] = Array.isArray(f) ? f : [f.name, null, f.muss];
-        const z = tat ? klon() : f.z;
-        if (tat) tat(z);
+        const [name, tat, muss] = Array.isArray(f) ? f : [f.name, f.z, f.muss];
+        const z = tat instanceof Function ? klon() : tat;
+        if (z !== tat) tat(z);
         const v = urteil(z);
         const fehlt =
             muss == null ? v.slice(0, v.length && 1) : [].concat(muss).filter((re) => !v.some((s) => re.test(s)));
@@ -1176,7 +1176,7 @@ function taeterFaelle(faelle, urteil, { fehler = [], gruen, klon = () => jsonKlo
     }
     return fehler;
 }
-// DIE ABWANDLUNG eines grünen Befunds (der Täter eines Falls `{ name, z: mit(pfad, wert), muss }`): ein frischer Klon, `wert`
+// DIE ABWANDLUNG eines grünen Befunds (der Täter eines Falls `[name, mit(pfad, wert), muss]`): ein frischer Klon, `wert`
 // gemischt in den Knoten unter `pfad` („a.b", leer = die Wurzel) — EINMAL hier statt eines Klon-Helfers je Linse
 const abwandlung = (gruen) => (pfad, wert) => {
     const z = jsonKlon(gruen);
