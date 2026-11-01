@@ -5560,6 +5560,16 @@
         AUS_MOOS = [0.6, 0.76, 0.45],
         AUS_BLEICHE = [1.12, 1.1, 1.06],
         AUS_RUSS = [0.2, 0.19, 0.18];
+    // DAS ALTER DES HOLZES (die Vergrauung, um das Mittel der Welt 0,5): Licht und Regen bauen das Lignin der Oberfläche ab, das
+    // Holz vergraut zum Silber — jede Fläche, die frei steht, die oben liegende am stärksten (Freilage 0,6 + 0,4·n_y), unten die
+    // geschützte am schwächsten. Über 0,5 zieht der Ton zum Silber (lineare Albedo AUS_SILBER, auf den Grundton der Rolle
+    // gerechnet — `ausAuf`), bis 0,7 der Freilage im ältesten Holz; unter 0,5 bleibt das frische Holz satt und warm (der Harz-Ton
+    // AUS_FRISCH × 0,6). Im Mittel der Welt (0,5) wirkt keiner der beiden Terme: die Bytes jedes Werks byte-alt (studios.K1: mit
+    // Erdsaum unter 0,25 m und Bleiche × 1,05 bewegten Ausstattung, Bank, Leiter und die acht Geräte des Spielplatzes an keinem
+    // Rand das Bild um 18 Luma, der Regler war tot).
+    var AUS_SILBER = [0.2, 0.2, 0.19],
+        AUS_FRISCH = [1.08, 0.9, 0.72],
+        _ausSilberF = null;
     function ausFaerbe(geo, rolle, w, fn) {
         var P = geo.attributes.position,
             N = geo.attributes.normal,
@@ -5600,6 +5610,20 @@
                     r *= 1 + (AUS_BLEICHE[0] - 1) * bl;
                     g *= 1 + (AUS_BLEICHE[1] - 1) * bl;
                     b *= 1 + (AUS_BLEICHE[2] - 1) * bl;
+                    var alt = (w - 0.5) * 2,
+                        frei = 0.6 + 0.4 * Math.max(0, ny);
+                    if (alt > 0) {
+                        if (!_ausSilberF) _ausSilberF = ausAuf(AUS_SILBER, "holz");
+                        var sg = 0.7 * alt * frei;
+                        r = r * (1 - sg) + _ausSilberF[0] * sg;
+                        g = g * (1 - sg) + _ausSilberF[1] * sg;
+                        b = b * (1 - sg) + _ausSilberF[2] * sg;
+                    } else if (alt < 0) {
+                        var fr = -0.6 * alt * frei;
+                        r *= 1 + (AUS_FRISCH[0] - 1) * fr;
+                        g *= 1 + (AUS_FRISCH[1] - 1) * fr;
+                        b *= 1 + (AUS_FRISCH[2] - 1) * fr;
+                    }
                 }
                 var ru = e && e.russ ? Math.max(0, Math.min(1, e.russ)) : 0;
                 r *= 1 + (AUS_RUSS[0] - 1) * ru;
