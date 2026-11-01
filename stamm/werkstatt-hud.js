@@ -2656,8 +2656,8 @@ class AnazhRealm_werkstatt_hud {
     // DER VORBAU DER SCHUBLADEN (spielgang.K3, aus `_vorbauBedienung`): die erste Öffnung des Ich und jeder Schublade trug die
     // kalten Wege ihres Baums im Tasten-Hörer und im ersten Bild — das erste Rezeptbuch mit seinen Bauplan-Analysen, den ersten
     // Stil, das erste Layout (Radeon echt, werkbank bedienung: Tab 82 ms im Hörer, die Einstellungen 81 ms Layout; warm 20 und
-    // 4 ms). Der Vorbau zeichnet das Ich einmal vor und legt und malt jede verborgene Tafel einmal (`_uiVorbauMalen`), je Takt
-    // EINE. true: alles vorgebaut.
+    // 4 ms). Der Vorbau zeichnet das Ich einmal vor und legt jede verborgene Schublade einmal aus — unsichtbar und im selben
+    // Takt wieder verborgen, kein Bild sieht sie —, je Takt EINE. true: alles vorgebaut.
     _uiVorbau() {
         if (typeof document === "undefined") return true;
         const V = this._uiVorbauStand || (this._uiVorbauStand = { ich: false, aus: new WeakSet(), alle: false });
@@ -2669,42 +2669,22 @@ class AnazhRealm_werkstatt_hud {
             this._ichRenderSpecSheet();
             return false;
         }
-        if (V.malt) return false; // eine Tafel steht noch im Bild (`_uiVorbauMalen`)
         for (const el of [
             document.getElementById("inventory-overlay"),
             ...document.querySelectorAll(".drawer[data-drawer]"),
         ]) {
             if (!el || V.aus.has(el)) continue;
             V.aus.add(el);
-            if (!el.hidden) continue; // offen ist sie gemalt
-            this._uiVorbauMalen(V, el);
+            if (!el.hidden) continue; // offen ist sie ausgelegt
+            const sicht = el.style.visibility;
+            el.style.visibility = "hidden";
+            el.hidden = false;
+            void el.offsetHeight; // Stil und Layout jetzt — die Eingabe ruht
+            el.hidden = true;
+            el.style.visibility = sicht;
             return false;
         }
         return (V.alle = true);
-    }
-
-    // EINE TAFEL EINMAL GEMALT (aus `_uiVorbau`): ihr [hidden] bleibt (keine Schublade gilt als offen, kein Klick erreicht sie),
-    // für UI_VORBAU_BILDER Bilder steht sie ausgelegt und gemalt — Deckkraft 0,004, unter einer Stufe je Kanal: kein Spieler
-    // sieht sie —, dann fällt ihr Stil zurück. So legt die erste Öffnung kein kaltes Layout und malt nicht mit kalten
-    // Programmen des GPU-Prozesses (headless, frisches Profil: das erste Tab trug 246 ms GPU-Aufgaben, das zweite 173).
-    _uiVorbauMalen(V, el) {
-        const stil = el.getAttribute("style");
-        V.malt = el;
-        Object.assign(el.style, {
-            display: "flex",
-            visibility: "visible",
-            contentVisibility: "visible",
-            opacity: "0.004",
-            pointerEvents: "none",
-        });
-        let n = AnazhRealm.UI_VORBAU_BILDER;
-        const zurueck = () => {
-            if (--n > 0 && el.hidden) return void requestAnimationFrame(zurueck); // öffnet der Spieler sie, gilt sofort ihr Stil
-            if (stil === null) el.removeAttribute("style");
-            else el.setAttribute("style", stil);
-            V.malt = null;
-        };
-        requestAnimationFrame(zurueck);
     }
 
     // Eine Schublade öffnet: der Zeiger wird frei (die Klicks gehören der Schublade) und ein gehaltenes Mahlen endet.
@@ -2856,9 +2836,6 @@ AnazhRealm.GERAET_GRENZEN = Object.freeze([
     "maxStorageTexturesPerShaderStage",
     "maxUniformBuffersPerShaderStage",
 ]);
-// Der Vorbau der Tafeln (`_uiVorbauMalen`, spielgang.K3): so viele Bilder steht eine verborgene Tafel unsichtbar gemalt im Bild,
-// damit der GPU-Prozess sie rastert, bevor die Taste sie öffnet.
-AnazhRealm.UI_VORBAU_BILDER = 4;
 
 // Was jede Emotion in der WELT bewirkt — die Legende, die das Aura-Rätsel löst (der
 // Schöpfer: "verstehe nicht, welche Farbe welche Emotion"). Aus den echten Welt-Effekten
