@@ -24,17 +24,23 @@ const H = { phase: "hin", n: 0, halt: null, um: 0, g0: null, spur: [] };
 let e = null;
 const kurs = () => e.rotationY + Math.PI / 2; // Studio-Wagen: Bug +x
 const wink = (a) => Math.round((Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) * 1800) / Math.PI) / 10;
-// 1. der Spieler am Hang, die Welt steht (echter Loop, höchstens 60 s)
+// 1. der Spieler am Hang, die Welt steht: das EINE Einschwingen (`__weltStehtNach`) in Takten der CPU wie `rollen` der Linse
+// (diag-koerper-stand: je Schritt ein Takt der Welt, jedes fünfte Mal Luft für die GPU-Leine), der Loop ruht derweil — bis w4-ssa-E
+// lief der Loop, 1,5 s Uhr, dann ein Blick je 100 ms im Bild-Takt, höchstens 60 s, danach fuhr der Blick in einer Welt, die nicht stand
 st.playerMesh.position.set(steil.x, hh(steil.x, steil.z) + 2, steil.z);
 if (st.playerVel) st.playerVel.setValue(0, 0, 0);
 st._fieldVy = 0;
-loopAn();
 const tw0 = performance.now();
-await warte(1500);
-while (performance.now() - tw0 < 60000 && !(typeof r._weltSteht === "function" && r._weltSteht())) await warte(100);
+let weltTakte;
+try {
+    weltTakte = await window.__weltStehtNach(() => r._gameLoopTick(performance.now()));
+} catch (x) {
+    return { fehler: String(x && x.message).slice(0, 300), steil };
+}
 const weltStandS = +((performance.now() - tw0) / 1000).toFixed(1);
-const weltSteht = typeof r._weltSteht === "function" ? r._weltSteht() : null;
-// 2. der GT bergab, aufsitzen (Third)
+const weltSteht = r._weltSteht();
+loopAn();
+// 2. der GT bergab, aufsitzen (Third); der Bau im Takt des Loops (`__gebautNach`, wie tempo4.js) statt alle 200 ms, höchstens 45 s
 st.playerMesh.position.set(steil.x, hh(steil.x, steil.z) + 1.2, steil.z);
 if (st.playerVel) st.playerVel.setValue(0, 0, 0);
 e = r.spawnArchitecture("fahrzeug_gt", { x: steil.x, y: hh(steil.x, steil.z) + 0.5, z: steil.z }, { silent: true, precise: true, rotationY: ab - Math.PI / 2 });
@@ -42,10 +48,11 @@ if (!e) {
     loopAus();
     return { fehler: "GT nicht gesetzt", steil };
 }
-const tb0 = performance.now();
-while (!e.instanced && !e.mesh && performance.now() - tb0 < 45000) {
-    r._rebuildArchitectureMesh(e);
-    await warte(200);
+try {
+    await window.__gebautNach(e, { fertig: () => !!(e.instanced || e.mesh) });
+} catch (x) {
+    loopAus();
+    return { fehler: String(x && x.message).slice(0, 300), steil };
 }
 r.setCameraMode("third");
 const mr = r.mountArchitecture(e);
@@ -178,10 +185,12 @@ try {
     ende = String(x && x.message);
 } finally {
     loopAus();
-    delete r._gameLoopTick;
+    // der Takt der Welt zurück (`_gameLoopTick` ist ihr EIGENES Feld: `delete` nahm ihn ihr bis zum nächsten Welt-Wechsel — bis
+    // w4-ssa-E legte ihn die Grundstellung durch die Tür neu aus, jetzt fährt T4 danach in derselben Welt)
+    r._gameLoopTick = roh;
     for (const k of ["w", "a", "s", "d"]) st.keys[k] = false;
 }
-const res = { ende, steil: { x: +steil.x.toFixed(1), z: +steil.z.toFixed(1), neigung: steil.neigung, ab: +ab.toFixed(3) }, weltStandS, weltSteht, mount: !!(mr && mr.ok), bilder, spurN: H.spur.length, spurAuszug: H.spur.filter((_s, i) => i % 15 === 0), gpuFehler: gf.slice(0, 5) };
+const res = { ende, steil: { x: +steil.x.toFixed(1), z: +steil.z.toFixed(1), neigung: steil.neigung, ab: +ab.toFixed(3) }, weltStandS, weltTakte, weltSteht, mount: !!(mr && mr.ok), bilder, spurN: H.spur.length, spurAuszug: H.spur.filter((_s, i) => i % 15 === 0), gpuFehler: gf.slice(0, 5) };
 try {
     r.dismountArchitecture();
     r.removeArchitecture(e);

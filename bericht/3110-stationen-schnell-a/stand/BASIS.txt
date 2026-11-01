@@ -1,0 +1,10 @@
+Die Commits der Arbeiter als git format-patch (Autor, Message; anwenden: git am --3way <dir>/*.patch), Stand 23:45 — beide sind in die Zweige übernommen:
+spiel-A/  Basis 8809ec6d · 3 Commits (Zweig w4-ssa-A @ 6270ce73)
+spiel-B/  Basis 8809ec6d · 1 Commits (Zweig w4-ssa-B @ 4c08981e)
+spiel-C/  Basis f0dab43d · 1 Commits (Zweig w4-ssa-C @ 20bf56ae)
+spiel-E/  Basis f0dab43d · 2 Commits (Zweig w4-ssa-E @ a5fa2037)
+spiel-D-studio/  Basis 47022bfc · 2 Commits — die zurückgehaltene Studio-Hülle (Revert f7c6b3df)
+koord-A/  Basis 359ce394 · 1 Commits (Zweig w4-ssa-A-koord @ be599ad4)
+koord-B/  Basis 359ce394 · 1 Commits (Zweig w4-ssa-B-koord @ 707984dc)
+koord-C/  Basis 359ce394 · 2 Commits (Zweig w4-ssa-C-koord @ 9cdbd7fe)
+koord-E/  Basis 359ce394 · 2 Commits (Zweig w4-ssa-E-koord @ 2f065970)

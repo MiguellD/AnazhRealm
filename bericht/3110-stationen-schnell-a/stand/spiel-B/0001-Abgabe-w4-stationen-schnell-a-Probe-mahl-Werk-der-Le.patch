@@ -1,0 +1,349 @@
+From 4c08981e91080a56e64e4f7a637ac362908b7f14 Mon Sep 17 00:00:00 2001
+From: MiguellD <87209049+MiguellD@users.noreply.github.com>
+Date: Sat, 31 Oct 2026 23:14:10 +0000
+Subject: [PATCH] Abgabe w4-stationen-schnell-a: Probe mahl, Werk der Leute
+ ohne Zeit, Wege-Messer an der Kapsel-Nachbarschaft (Zwischenstand)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+mahl: die Szene rudel bis zum ersten Riss, dann die Kette (7 200 Takte) — in der Welt der Sitzung lokal 3 s statt
+jagdkreis in eigener Null-Welt (100 Jagden); jagdkreis ohne Kette, Selbsttest 8 Täter beim Namen. leuteTakt: das Werk
+der Liste ohne Zeit statt je Bild 4 ms und 16 ms Schlaf (Wiederkehr 16 Runden 20,3 s CPU). Wege-Messer über
+_blockerNahe: 25,3 → 5,5 s je Tag, bit-gleich, auch mit blinder Wand. _bewohnerWand: Rahmen der Strecke zuerst, Liste
+1,52 → 1,04 s, Stände bit-gleich. DECKE +171 offen.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018GqBDYgvKFxx7BBDKhxUFp
+---
+ scripts/diag-kreatur-takt.cjs  |   2 +
+ scripts/lib/kreatur-proben.cjs | 123 ++++++++++++++++++++-------------
+ stamm/siedlung-bewohner.js     |  17 ++++-
+ 3 files changed, 92 insertions(+), 50 deletions(-)
+
+diff --git a/scripts/diag-kreatur-takt.cjs b/scripts/diag-kreatur-takt.cjs
+index abf0e2e8..7e218981 100644
+--- a/scripts/diag-kreatur-takt.cjs
++++ b/scripts/diag-kreatur-takt.cjs
+@@ -40,6 +40,8 @@ const DAUER_S = {
+     temperament: 1,
+     abstand: 1,
+     jagdkreis: 281,
++    // (w4-stationen-schnell-a: an derselben Maschine jagdkreis 50 + 79 s, mahl 11 + 30 s — mahl im Maß von jagdkreis)
++    mahl: 89,
+     rudel: 7,
+     querhang: 13,
+     ferngang: 1,
+diff --git a/scripts/lib/kreatur-proben.cjs b/scripts/lib/kreatur-proben.cjs
+index a61f7489..da2e578e 100644
+--- a/scripts/lib/kreatur-proben.cjs
++++ b/scripts/lib/kreatur-proben.cjs
+@@ -1694,9 +1694,12 @@ async function kreaturProben(r, T, opts) {
+         };
+     });
+ 
+-    // ── jagdkreis: der Kreislauf Jäger–Beute schließt sich am ECHTEN Takt: der Riss je Jagd, der Kadaver, das Mahl (die
+-    // Sprinter-Bühne fiel: ihr Täter, der Jagd-Weg im Schritt, steht in jagd und rudel, den Biss am Spieler trägt rudel) ──
+-    await buehne("jagdkreis", async (restore) => {
++    // ── jagdkreis: der Kreislauf Jäger–Beute schließt sich am ECHTEN Takt: der Riss je Jagd (die Sprinter-Bühne fiel: ihr Täter,
++    // der Jagd-Weg im Schritt, steht in jagd und rudel, den Biss am Spieler trägt rudel) · mahl (Tiere K2 Staffel 2): DIESELBEN
++    // Jagden der Szene rudel bis zum ersten Riss am gesunden Hirsch, dann trägt er die Kette — der Kadaver, das Rudel frisst,
++    // Fuchs und Bär kommen; die Quote misst nur jagdkreis (bis w4-stationen-schnell-a trug jagdkreis die Kette: wer das Mahl
++    // wollte, fuhr 100 Jagden) ──
++    const jagdkreis = async (restore, mahl) => {
+         r.setGameMode("pfad");
+         ruhigSpieler();
+         // Der alte Weg als Täter: der Gradient des Geruchs-Felds (vier Proben, die vor dem Schnitt die Richtung gaben).
+@@ -1773,7 +1776,7 @@ async function kreaturProben(r, T, opts) {
+             ["kitz", 4, 0.6, 20],
+         ]) {
+             const Q = (R.quote[szene] = { jagden: 0, risse: 0, erschoepft: 0 });
+-            for (let o = 0; o < n; o++) {
++            for (let o = 0; o < n && !(mahl && (szene !== "rudel" || R.rissS !== null)); o++) {
+                 s.creatureAnimationTime = 100;
+                 r._creatureAiFrame = 0;
+                 s.emotionField = undefined;
+@@ -1791,7 +1794,6 @@ async function kreaturProben(r, T, opts) {
+                 }
+                 woelfe.forEach(ruhig);
+                 r._kreaturVerbinden(woelfe);
+-                const kette = szene === "rudel" && R.rissS === null;
+                 const hetzer = new Set();
+                 let riss = false;
+                 for (let k = 0, ende = 5400; k < ende; k++) {
+@@ -1800,8 +1802,8 @@ async function kreaturProben(r, T, opts) {
+                     for (const c of woelfe) if (c.userData._motionZustand === "hetzen") hetzer.add(c);
+                     if (!riss && s.leichname.includes(beute)) {
+                         riss = true;
+-                        if (!kette) break;
+-                        R.rissS = +(k * dt).toFixed(1);
++                        if (szene === "rudel" && R.rissS === null) R.rissS = +(k * dt).toFixed(1);
++                        if (!mahl) break;
+                         R.fleisch0 = beute.userData.kadaver ? +beute.userData.kadaver.fleisch.toFixed(1) : null;
+                         for (const [seele, dz] of [
+                             ["fuchs", 18],
+@@ -1821,7 +1823,7 @@ async function kreaturProben(r, T, opts) {
+                         Q.erschoepft++;
+                         break;
+                     }
+-                    if (!riss || !kette) continue;
++                    if (!riss || !mahl) continue;
+                     if (woelfe.some((c) => c.userData._motionZustand === "fressen"))
+                         R.fressS = +(R.fressS + dt).toFixed(2);
+                     for (const G of R.gaeste)
+@@ -1832,13 +1834,14 @@ async function kreaturProben(r, T, opts) {
+                 }
+                 if (hetzer.size) Q.jagden++;
+                 if (riss) Q.risse++;
+-                if (kette && riss && beute.userData.kadaver) R.fleischEnde = +beute.userData.kadaver.fleisch.toFixed(1);
++                if (mahl && riss && beute.userData.kadaver) R.fleischEnde = +beute.userData.kadaver.fleisch.toFixed(1);
+                 for (const G of R.gaeste) delete G.c;
+                 for (const c of [...s.creatures, ...s.leichname]) r.removeCreature(c);
+             }
+         }
+         return { riss: R };
+-    });
++    };
++    for (const mahl of [false, true]) await buehne(mahl ? "mahl" : "jagdkreis", (restore) => jagdkreis(restore, mahl));
+ 
+     // ── rudel: DER SPIELER IST BEUTE im Wolfsrevier (oekologie.K4) — ein Rudel aus dem Wurf (`_kreaturWurf`, die Leine am
+     // Wurf-Ort), der stehende Spieler 45 m vom Wurf-Ort (jenseits der Neugier noticeRadius, in der Witterung scentRangeM);
+@@ -2361,8 +2364,19 @@ async function kreaturProben(r, T, opts) {
+             /* der Takt meldet selbst */
+         }
+     };
++    // DAS WERK DER LEUTE OHNE ZEIT (`_tickBewohner(0)`, wie die Ankunft in `uhrAuf`): mit Bild rechnet ein Takt der Bewohner
++    // `BEWOHNER.listeMs` an der Liste, zwei Geburten, acht Ankünfte — das Budget eines Bilds (Lehre 14). Wer auf die Leute wartet,
++    // ruft ihn, bis ihr Werk (`_weltOffen().leute`) fünf Takte nicht fällt: dann wartet es auf den Faden (die Vorlagen der
++    // Gestalten). Bis w4-stationen-schnell-a trug jedes Warten EINEN Takt der Bewohner je Bild und 16 ms Schlaf: an der Karte
++    // ging die Liste des Start-Dorfs über Hunderte Bilder, nach jeder Abwesenheit neu (die Wiederkehr: 16 Prüf-Stunden)
++    const leuteTakt = () => {
++        for (let n = Infinity, still = 0, m; still < 5 && (m = (r._tickBewohner(0), r._weltOffen().leute)); n = m)
++            still = m < n ? 0 : still + 1;
++    };
++    // Takt um Takt des Spiels, bis die Siedlung steht: je Takt das Bild, dann das Werk der Leute; der Schlaf gibt dem Faden das
++    // Wort (das Warten zählt der Deckel in Takten ohne Offenes, nie in Sekunden)
+     const bisDa = async (name, offen, max) => {
+-        for (const weiter = window.__deckel(name, max); weiter() && offen(); await sleep(16)) tick();
++        for (const weiter = window.__deckel(name, max); weiter() && offen(); await sleep()) (tick(), leuteTakt());
+     };
+     // DIE UHR AUF DER STUNDE h, nie an der Uhr des Boots: ihr Sprung stellt jeden dorthin, wo sein Tag ihn um h sieht
+     // (`_bewohnerAnkunft`, je Takt `ankunftJeTakt`) — gewiss über die Gegen-Stunde h + 12 (stünde die Uhr näher als `sprungH` an
+@@ -2474,20 +2488,24 @@ async function kreaturProben(r, T, opts) {
+                 minute += (dt / tagS) * 1440;
+                 const draus = liste.filter((b) => !b.drinnen).map((b) => b.leib.position);
+                 for (const b of liste) {
+-                    const { x, z } = b.leib.position;
++                    const P = b.leib.position;
++                    const { x, z } = P;
+                     const innen0 = b.drinnen ? b.orte.tuer.haus : null;
+                     const sp =
+                         wSpur.get(b) ||
+                         wSpur
+                             .set(b, { x, z, innen: innen0, ziel: b.ziel, n: new Set(), gesamt: 0, ax: x, az: z })
+                             .get(b);
+-                    const d = ab(b.leib.position, sp);
++                    const d = ab(P, sp);
+                     sp.gesamt += d;
+-                    if (d > 2 && Math.min(ab(sp, pm), ab(b.leib.position, pm)) < nahR) WG.sprungN++;
++                    if (d > 2 && Math.min(ab(sp, pm), ab(P, pm)) < nahR) WG.sprungN++;
++                    // die Bauten um den Leib (Tür und Wand) fragt nur, wer draußen ist (Lehre 25), und er fragt, was die Kapsel des
++                    // Spielers fragt: die Nachbarschaft ihres Radius (`_blockerNahe`, die Hülle jedes Baus, wie `_stepCharacterStructures`)
++                    // — bis w4-stationen-schnell-a jeden Platz 4 m um ihn (`_blockerUmPlatz`), am Start-Dorf 25,3 s Messer je Tag statt 5,5
+                     kandW.length = 0;
+-                    r._blockerUmPlatz(x, z, 4, kandW);
++                    if (!b.drinnen) r._blockerNahe(x, z, RW + 1e-6, -Infinity, kandW);
+                     let innen = innen0;
+-                    for (const e of b.drinnen ? [] : kandW) {
++                    for (const e of kandW) {
+                         const [t, l] = [kernVon(e), hausLage(e, x, z)];
+                         if (t && Math.abs(l.x) < t.W / 2 - 1e-3 && Math.abs(l.z) < t.D / 2 - 1e-3) innen = e;
+                     }
+@@ -2496,14 +2514,12 @@ async function kreaturProben(r, T, opts) {
+                         if (durchTuer(e, sp.x, sp.z, x, z)) WG.tuer++;
+                         else WG.falsch.push(`${b.rolle} #${b.heim} an ${nameVon(e)}`);
+                     }
+-                    const fuss = b.leib.position.y - A.PLAYER_FOOT_OFFSET * (b.groesse || 1);
++                    const fuss = P.y - A.PLAYER_FOOT_OFFSET * (b.groesse || 1);
+                     const imLeib = (box) =>
+                         box.topY > fuss + A.PLAYER_STEP_UP && box.botY < fuss + 1.7 * (b.groesse || 1);
+-                    const wand = b.drinnen
+-                        ? null
+-                        : kandW.find((e) =>
+-                              (e.blockerAABBs || []).some((q) => imLeib(q) && r._boxAbstand2(q, x, z) < RW * RW)
+-                          );
++                    const wand = kandW.find((e) =>
++                        (e.blockerAABBs || []).some((q) => imLeib(q) && r._boxAbstand2(q, x, z) < RW * RW)
++                    );
+                     if (wand) WG.wand.set(nameVon(wand), (WG.wand.get(nameVon(wand)) || 0) + 1);
+                     if (b.weg && !b.drinnen && d > 0) {
+                         WG.geh++;
+@@ -2517,13 +2533,12 @@ async function kreaturProben(r, T, opts) {
+                     sp.ziel = b.ziel;
+                     // (am Steuer gehört der Leib dem Wagen: ob er steckt, urteilt der Verkehr — gate:fahr-leben VK `fest`)
+                     const da =
+-                        b.amSteuer ||
+-                        (b.drinnen ? !b.hinaus : !b.ziel || (!b.drinnenSoll && ab(b.leib.position, b.ziel) < 1.5));
++                        b.amSteuer || (b.drinnen ? !b.hinaus : !b.ziel || (!b.drinnenSoll && ab(P, b.ziel) < 1.5));
+                     if (da || Math.hypot(x - sp.ax, z - sp.az) >= 1) Object.assign(sp, { ax: x, az: z, seit: minute });
+                     else if (minute - sp.seit >= 5 && !sp.steckt) stecken.push(wann(b));
+                     // die Berührung: ein anderer Leib draußen näher als zwei Kapseln
+                     const nah =
+-                        !b.drinnen && draus.some((q) => q !== b.leib.position && ab(q, b.leib.position) < 2 * RW);
++                        !b.drinnen && draus.some((q) => q !== P && Math.abs(q.x - x) < 2 * RW && ab(q, P) < 2 * RW);
+                     if (nah && !sp.nah) beruehr.push(wann(b));
+                     Object.assign(sp, { x, z, innen, nah, steckt: !da && minute - sp.seit >= 5 });
+                 }
+@@ -2661,7 +2676,10 @@ async function kreaturProben(r, T, opts) {
+                         Math.hypot(e.position.x - (ox + sl.x), e.position.z - (oz + sl.z)) < 1
+                 )
+             );
+-        if (opts && opts.ort) return { stadt: await stadtTag(opts.ort), sicht: taeter ? sicht : undefined };
++        // DER ORT der Probe (`--ort`): ein Messort mit Gründung (stadt · stadt-voll) misst seine Stadt, der Genesis-Ort sein
++        // Start-Dorf (das Dorf, das der Wirt dort baut); ohne Ort beide — das Start-Dorf, dann die Stadt am Messort stadt
++        const ort = opts && opts.ort;
++        if (ort && ort !== "genesis") return { stadt: await stadtTag(ort), sicht: taeter ? sicht : undefined };
+         const S = await startDorf(restore);
+         const plan = S.plan;
+         const hausE = s.architectures.filter(
+@@ -2878,11 +2896,11 @@ async function kreaturProben(r, T, opts) {
+                 r._uhrSetzen(T / 24, "regler");
+                 pm.copy(P);
+                 // die Vorlagen der Gestalten kommen aus dem Faden zurück (die Fortgegangenen gaben sie frei): die Freigabe
+-                // der Foundry wie je Bild, die Uhr steht (Takt 0)
+-                for (const weiter = W.__deckel("bewohner: die Wiederkehr", 60); weiter(); await sleep(16))
++                // der Foundry wie je Bild, die Uhr steht — das Werk der Leute ohne Zeit (`leuteTakt`), bis jeder zurück ist
++                for (const weiter = W.__deckel("bewohner: die Wiederkehr", 60); weiter(); await sleep())
+                     if (
+                         (r._tickFoundryIngest(),
+-                        r._tickBewohner(0),
++                        leuteTakt(),
+                         Sx().length && Sx().every((b) => b.leib !== null && !b.ankunft))
+                     )
+                         break;
+@@ -2941,7 +2959,7 @@ async function kreaturProben(r, T, opts) {
+             huellen: hausE.filter((e) => e._hausHuelle).length,
+             wege: SD.zahl(),
+             wiederkehr: await wiederkehr(),
+-            stadt: await stadtTag(),
++            stadt: ort ? undefined : await stadtTag(),
+             sicht: taeter ? sicht : undefined,
+         });
+     });
+@@ -3237,6 +3255,7 @@ const PROBEN = [
+     "temperament",
+     "abstand",
+     "jagdkreis",
++    "mahl",
+     "rudel",
+     "querhang",
+     "ferngang",
+@@ -3615,32 +3634,36 @@ function urteil(name, z) {
+             `die Lage im Leerlauf: der Leib steht ${z.steht}, ${z.fenster} Fenster ohne Zeit, Tafel ${z.tafel} von ${z.soll}`
+         );
+     }
+-    if (name === "jagdkreis") {
++    if (name === "jagdkreis" || name === "mahl") {
+         const R = z.riss;
+         // DAS BAND DER NATUR (MacNulty et al. 2012): ein Wolf reißt den gesunden Hirsch selten, vier ein Fünftel bis zwei
+-        // Fünftel der Jagden, das Kitz meist
+-        for (const [sz, lo, hi] of [
+-            ["einWolf", 0, 0.1],
+-            ["rudel", 0.2, 0.4],
+-            ["kitz", 0.6, 1],
+-        ]) {
+-            const Q = R.quote[sz],
+-                v = Q.jagden ? +(Q.risse / Q.jagden).toFixed(2) : null;
++        // Fünftel der Jagden, das Kitz meist — die Quote und das Ende jeder Jagd misst jagdkreis (alle 60 des Rudels), das Mahl
++        // misst mahl (es jagt nur bis zum ersten Riss)
++        if (name === "jagdkreis") {
++            for (const [sz, lo, hi] of [
++                ["einWolf", 0, 0.1],
++                ["rudel", 0.2, 0.4],
++                ["kitz", 0.6, 1],
++            ]) {
++                const Q = R.quote[sz],
++                    v = Q.jagden ? +(Q.risse / Q.jagden).toFixed(2) : null;
++                soll(
++                    Q.jagden >= 10 && v >= lo && v <= hi,
++                    `${v > hi ? "Beute ohne Leben" : "die Jagd reißt zu selten"} (${sz}): Riss-Quote ${Q.risse}/${Q.jagden} = ${v} außerhalb ${lo}–${hi} je Jagd (Beute ${Q.hp0} HP)`
++                );
++            }
++            const Q = R.quote.rudel;
+             soll(
+-                Q.jagden >= 10 && v >= lo && v <= hi,
+-                `${v > hi ? "Beute ohne Leben" : "die Jagd reißt zu selten"} (${sz}): Riss-Quote ${Q.risse}/${Q.jagden} = ${v} außerhalb ${lo}–${hi} je Jagd (Beute ${Q.hp0} HP)`
++                Q.jagden - Q.risse === Q.erschoepft,
++                `die Jagd hat kein Ende: ${Q.jagden - Q.risse - Q.erschoepft} von ${Q.jagden - Q.risse} enden nie`
+             );
+         }
+         soll(
+             R.rissS !== null,
+             `kein Riss: das Rudel fällt den gesunden Hirsch in keiner von ${R.quote.rudel.jagden} Jagden`
+         );
+-        const Q = R.quote.rudel;
+-        soll(
+-            Q.jagden - Q.risse === Q.erschoepft,
+-            `die Jagd hat kein Ende: ${Q.jagden - Q.risse - Q.erschoepft} von ${Q.jagden - Q.risse} enden nie`
+-        );
+-        if (R.rissS !== null) {
++        // die Kette nach dem Riss (nur mahl trägt sie: ihre Gäste kamen mit dem Riss)
++        if (R.gaeste.length) {
+             soll(R.fleisch0 > 0, "kein Kadaver: der gerissene Leib trägt kein Fleisch (_kreaturFaellt)");
+             soll(
+                 R.fleischEnde !== null && R.fleischEnde < R.fleisch0,
+@@ -3764,12 +3787,14 @@ const TAETER = {
+     ],
+     jagdkreis: [
+         ["jagd-gradient", /kein Riss/],
+-        ["jagd-aas", /kein Kadaver/],
+-        ["jagd-duft", /kein Geruch/],
+         ["jagd-hp", /Beute ohne Leben/],
+         ["jagd-flucht", /Beute ohne Leben \(rudel\)/],
+         ["jagd-ohne-ende", /die Jagd hat kein Ende/],
+         ["jagd-ohne-wunde", /reißt zu selten \(rudel\)/],
++    ],
++    mahl: [
++        ["jagd-aas", /kein Kadaver/],
++        ["jagd-duft", /kein Geruch/],
+         ["jagd-mager", /das Rudel frisst nicht/],
+     ],
+     rudel: [
+diff --git a/stamm/siedlung-bewohner.js b/stamm/siedlung-bewohner.js
+index 19cf135b..9c6c706d 100644
+--- a/stamm/siedlung-bewohner.js
++++ b/stamm/siedlung-bewohner.js
+@@ -2115,6 +2115,13 @@ class AnazhRealm_siedlung_bewohner {
+         const [unten, oben] = stand
+             ? [AnazhRealm.PLAYER_GROUND_SNAP, AnazhRealm.BEWOHNER.kopfM + AnazhRealm.PLAYER_STEP_UP]
+             : [AnazhRealm.PLAYER_STEP_UP, AnazhRealm.BEWOHNER.kopfM];
++        // DER RAHMEN DER STRECKE (Lehre 25: der billige Filter zuerst): eine Box, deren achsparalleler Rahmen (er trägt auch die
++        // gedrehte, `obb`) den der Strecke samt Kapsel nicht schneidet, liegt weiter als die Kapsel — `_streckeBoxAbstand2` urteilt
++        // nur den Rest (1 µm über der Rundung). Bis w4-stationen-schnell-a maß jede Frage jede Box der Nachbarn ganz: die Liste des
++        // Start-Dorfs (24 283 Fragen) 1,52 → 1,04 s, ihre Stände bit-gleich
++        const Rr = R + 1e-6;
++        const [rx0, rx1] = a.x < e.x ? [a.x - Rr, e.x + Rr] : [e.x - Rr, a.x + Rr];
++        const [rz0, rz1] = a.z < e.z ? [a.z - Rr, e.z + Rr] : [e.z - Rr, a.z + Rr];
+         let st = null;
+         let memo = null;
+         // der Boden der Strecke: das Gesetz und darüber die Trittfläche eines Werks (die Bahn der Brücke, `_trittUeber`) — die
+@@ -2124,7 +2131,15 @@ class AnazhRealm_siedlung_bewohner {
+             const boxen = ent.blockerAABBs;
+             if (!boxen || ent._verkehrFaehrt) continue; // der fahrende Wagen ist ein Leib im Gedränge, keine Wand (`_verkehrImRaster`)
+             for (const box of boxen) {
+-                if (box.tritt || this._streckeBoxAbstand2(box, a.x, a.z, e.x, e.z) >= R * R) continue;
++                if (
++                    box.tritt ||
++                    box.maxX < rx0 ||
++                    box.minX > rx1 ||
++                    box.maxZ < rz0 ||
++                    box.minZ > rz1 ||
++                    this._streckeBoxAbstand2(box, a.x, a.z, e.x, e.z) >= R * R
++                )
++                    continue;
+                 if (st === null) {
+                     this._voxelEditKarte(); // trägt jeden neuen Edit nach: sein Zähler ist der Stand des Bodens
+                     st = this._editGenZaehler | 0;
+-- 
+2.43.0
+

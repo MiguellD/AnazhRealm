@@ -321,10 +321,22 @@ const STADT_WAHL =
     "if (Number.isFinite(y) && r._landAt(x, z, 0.2) && (!hill || y > hill.y)) hill = { x, y, z, R }; } " +
     "window.__stadtWahl = { c, hill }; " +
     "return { seed: r.state.worldMeta && r.state.worldMeta.seed, staedte: out.length, wahl: c ? { cx: c.cx, cz: c.cz, nH: c.nH, stufe: c.stufe, d: c.d } : null, hill };";
+// DIE STADT WÄCHST IM TAKT (w4-ssa-C): die Welt der Sitzung steht an einem Ort ohne Dorf-Zug (`start --ort wiese`: der Haken
+// `__anazhAutoSettlement` false vor jeder Ladung) — die Stadt am Hügel wuchs dort nie, und der Stand fragte 60-mal je 1 s (GTX b4bcf19c
+// ≥ 90 s). Der Stand stellt den Spieler auf den Hügel, leiht der Welt den Zug wie im Spiel und die Decke des Umstellens
+// (`perfTargetMs` 1000: über dem Budget trüge der Zug je 8 Takte ein Haus) — `leihe`, zurück im finally: kein Zug überlebt die Probe —
+// und wartet im Bau-Ereignis (`__gebautNach`, der Takt der Werkbank je Bild), bis die Mauer steht und kein Zug und kein Export mehr läuft. Den Ring am Hügel baut er nicht ab (bis dahin `umstellen` dorthin: kein Bild sah ihn) — das Bild stellt am
+// Acker um und wartet dort, bis die Welt steht.
 const STADT_STAND =
-    "const P = r.state.stlMauer, q = r._autoSettlementQueue, c = window.__stadtWahl.c.site; let haeuser = 0; " +
+    "const c = window.__stadtWahl.c.site, h = window.__stadtWahl.hill, M = () => r.state.stlMauer; " +
+    "const steht = () => (M() ? M().top : 0) > 0 && !(r._autoSettlementQueue && r._autoSettlementQueue.plan) && !r._autoSettlementPendingKey; " +
+    "r.state.playerMesh.position.set(h.x, r._voxelSurfaceY(h.x, h.z) + 1.8, h.z); " +
+    "const zurueck = leihe(window, { __anazhAutoSettlement: true }), decke = leihe(r.state, { perfTargetMs: 1000 }); let takte = null; " +
+    "try { takte = await __gebautNach(\"die Stadt vom Hügel\", { fertig: steht, bau: () => {}, takt: async () => { __werkTakt(); await new Promise((ok) => requestAnimationFrame(ok)); }, max: 1800 }); } " +
+    "catch (e) { takte = String((e && e.message) || e).slice(0, 300); } finally { zurueck(); decke(); } " +
+    "const P = M(), q = r._autoSettlementQueue; let haeuser = 0; " +
     "for (const e of r.state.architectures) if (e && /^haus_/.test(e.type) && Math.hypot(e.position.x - c.x, e.position.z - c.z) < 400) haeuser++; " +
-    "return { mauer: P ? P.top : 0, zug: !!(q && q.plan), pending: r._autoSettlementPendingKey || null, haeuser };";
+    "return { mauer: P ? P.top : 0, zug: !!(q && q.plan), pending: r._autoSettlementPendingKey || null, haeuser, takte, zugHaken: window.__anazhAutoSettlement };";
 const STADT_KAMERA =
     "const c = window.__stadtWahl.c.site; let v2 = null; " +
     "for (const p of r._ortPlaene.values()) if (p && p.ort && p.mauer && (!v2 || Math.hypot(p.ort.x - c.x, p.ort.z - c.z) < Math.hypot(v2.ort.x - c.x, v2.ort.z - c.z))) v2 = p; " +
@@ -346,9 +358,7 @@ const STADT_HUEGEL = [
     "timeout 120 $W eval '" + STADT_WAHL + "' > \"$L/wahl.json\" 2>&1; echo '@@PUNKTE@@ WAHL'; cat \"$L/wahl.json\"; echo",
     "HILL=$(" + LIES("console.log(e.hill ? e.hill.x.toFixed(1) + \" \" + e.hill.z.toFixed(1) : \"\")") + " \"$L/wahl.json\" 2> /dev/null)",
     "[ -n \"$HILL\" ] || { echo '@@PUNKTE@@ KEINE STADT MIT ORT BINNEN 2 KM'; exit 4; }",
-    "timeout 300 $W umstellen $HILL > /dev/null 2>&1",
-    "for i in $(seq 1 60); do timeout 60 $W eval '" + STADT_STAND + "' > \"$L/stand.json\" 2>&1; " +
-        LIES("process.exit(e.mauer > 0 && !e.zug && !e.pending ? 0 : 1)") + " \"$L/stand.json\" 2> /dev/null && break; sleep 1; done",
+    "timeout 300 $W eval '" + STADT_STAND + "' > \"$L/stand.json\" 2>&1",
     "echo '@@PUNKTE@@ STAND'; cat \"$L/stand.json\"; echo",
     "timeout 60 $W eval '" + STADT_KAMERA + "' > \"$L/kamera.json\" 2>&1; echo '@@PUNKTE@@ KAMERA'; cat \"$L/kamera.json\"; echo",
     "K=$(" + LIES("console.log(e.pose ? e.pose.join(\" \") : \"\")") + " \"$L/kamera.json\" 2> /dev/null)",
@@ -357,7 +367,7 @@ const STADT_HUEGEL = [
 // DIE STADT IN EINEM LAUF (siedlung.K2#1 und #2, Zwillinge, 29.10.): Teil Z mit dem Zipf-Fit (`diag-settlement --nur-z --zipf`, Node,
 // 8 Saaten) läuft NEBEN der Stadt der Sitzung (seine Zeilen danach, Z), der Weg zum Hügel, bis die Mauer steht (STADT_HUEGEL), das
 // Bild mittags und in der Dämmerung; {AUS} = { mittag, daemmerung }. Bis dahin fuhr jede Staffel Teil Z und die Stadt für sich,
-// der Stand fragte alle 5 s. Die Stadt wächst am Hügel (mutiert).
+// der Stand fragte alle 5 s (bis w4-ssa-C 60-mal je 1 s, ohne Zug). Die Stadt wächst am Hügel (mutiert).
 const SIEDLUNG_SITZUNG = sitzung(10,
     "A=$(cygpath -m '{AUS}')",
     '( node scripts/diag-settlement.cjs --nur-z --zipf; echo "@@PUNKTE@@ EXIT $?" ) > "$L/zipf.out" 2>&1 &',
@@ -479,19 +489,11 @@ const LATENZ_HALT_SITZUNG = sitzung(33,
         "teil SPIEL{N} $W eval '" + HIT_LESEN + "'"
     )
 );
-// DIE FAHRT IN EINEM LAUF (fahrzeug.K3#2, fahrzeug.K4#1, fahrzeug.K4#2, Zwillinge, 29.10.): gate:fahr-leben (T4, T5; eigene Null-Welt auf
-// {PORT}+20001) läuft NEBEN der Welt der Sitzung; darin der Ritt (tempo4.js auf dem Weg der Probe, WELT — w4-heil-fahrzeug 30.10.),
-// die Grundstellung, der Blick am Steilhang (blick.js, BLICK); die Zeilen der Linse danach (FAHR). Bis dahin fuhr jede der drei
-// Stationen die Linse und ihren Boot für sich.
-const FAHR_SITZUNG = sitzung(33,
-    '( env FAHR_LEBEN_PORT=$LP node scripts/diag-fahr-leben.cjs; echo "@@PUNKTE@@ EXIT $?" ) > "$L/fahr.out" 2>&1 &',
-    "boot",
-    'teil WELT $W eval "$(cat "$K/bericht/3010-heil-fahrzeug/tempo4.js")"',
-    "boot",
-    'teil BLICK $W eval "$(cat "$K/bericht/2010-buendel-abab/blick.js")"',
-    "wait",
-    'echo "@@PUNKTE@@ FAHR"; cat "$L/fahr.out"'
-);
+// DIE FAHRT IN EINEM LAUF (fahrzeug.K3#2, fahrzeug.K4#1, fahrzeug.K4#2, Zwillinge, 29.10.): der Ritt (tempo4.js auf dem Weg der Probe,
+// WELT — w4-heil-fahrzeug 30.10.), T5, der Blick am Steilhang (blick.js, BLICK) und T4 von gate:fahr-leben (FAHR) — alle in der EINEN
+// Welt der Sitzung (proben-welt.cjs `fahrWelt`; bis w4-ssa-E lief die Linse ganz in einer eigenen Null-Welt daneben, und `wait` hielt
+// die Probe an ihr fest: GTX ≥ 90 s). Bis 29.10. fuhr jede der drei Stationen die Linse und ihren Boot für sich.
+const FAHR_SITZUNG = { befehl: PW.torBefehl(PW.fahrWelt, "1cf3af98d5d09a6fc3133debf068e158d50a1401", "b94fa5dd03dd4d249cefef435955dbf233102710"), sek: 33 };
 // ───────────────────────── DIE PROBEN DER STADT IN DER SITZUNG (29.10., stationen/sitzung-seite.js) ─────────────────────────
 // Das Gesetz des Schöpfers: eine Fahrt durch jedes System ≤ 30 min samt Dauerlast — keine dieser Stationen bootet mehr eine Welt.
 const { probeBefehl } = require("./sitzung-seite.js");
@@ -798,6 +800,7 @@ const DORF_PROBE = probeBefehl(probeDorf, 45, { DORF: dorfErwachen });
 // `grundVon`) bis zwei freie Blicke, das Auge 1,3 m über der Diele, der dunkelste Median (Luminanz linear) gegen den Boden im Schatten
 // derselben Stunde (von DIESEM Haus gegen die Sonne der erste Boden 1 m vor jedem Bau, dessen Strahl zur Sonne einen Werfer trifft,
 // das Auge 1,6 m hoch 3 m davor, 13 × 13 px). Bis 29.10. zwei Läufe der Linse in eigenen Browsern (Radeon b3f9ae95 10,72 min).
+// Seit w4-ssa-C die EINE Quelle des Innen-Bilds: die Kopie in gate:haus-welt (`--bild`) fiel, sie lief in keiner Wand mehr.
 async function startDorfInnen(o) {
     const THREE = window.THREE || T;
     const s = r.state, A = r.constructor, FC = window.__fachwerkCore, cam = s.camera, pm = s.playerMesh;
@@ -837,13 +840,18 @@ async function startDorfInnen(o) {
         if (s._fixedSimPos) s._fixedSimPos.copy(pm.position);
         for (let k = 0; k < 20; k++) r._stepFixedSim((t += DT), DT);
     };
+    // das Gesetzbuch je Haus EINMAL (w4-ssa-C: Gang und Innen-Bild bauten es je Haus zweimal — `HAUS(…).build`, das Teuerste der
+    // Seite neben dem Sim-Schritt; dasselbe Haus, dieselben Größen)
+    const gebaut = new Map();
     const gesetz = (e) => {
+        if (gebaut.has(e)) return gebaut.get(e);
         const pre = FC.PRESETS && FC.PRESETS[e.type.slice(5)];
         if (!pre) return null;
         const P = FC.hausParams(pre, e.studioOv || null);
         if (!(e.studioOv && e.studioOv.seed != null)) P.seed = e.seed;
         const Hh = FC.HAUS(THREE, FC.mat, P);
         Hh.build({ gelaende: false });
+        gebaut.set(e, Hh);
         return Hh;
     };
     // DAS START-DORF
@@ -877,7 +885,13 @@ async function startDorfInnen(o) {
         try {
             stell(e.position.x, e.position.y + 3, e.position.z);
             const l0 = () => e._servedLod === 0 && !!e._hausHuelle && e._hausHuelle.stufe === 0;
-            await window.__gebautNach(e, { fertig: l0, bau: () => {}, takt: () => pumpe(10), max: 40 }).catch(() => null);
+            // im Bau-Ereignis Takt um Takt (bis w4-ssa-C je Gang 10 Takte: der Gang begann bis zu 9 Bilder nach der Stufe 0)
+            const takt1 = () => {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch (_e) {}
+            };
+            await window.__gebautNach(e, { fertig: l0, bau: () => {}, takt: takt1, max: 400 }).catch(() => null);
             const Hh = gesetz(e);
             if (!Hh) {
                 h.fehler = "kein Gesetzbuch";
@@ -954,7 +968,13 @@ async function startDorfInnen(o) {
         }
     }
     // (2) DAS INNEN-BILD je Haus: die Welt steht, die Bühne (Mittag · Sonne · Sommer), der Loop ruht
-    if (performance.now() < ende) await window.__weltStehtNach(() => pumpe(1));
+    // Takt um Takt (das Einschwingen schläft selbst je 5 Takte; `pumpe(1)` schlief je Takt 10 ms dazu)
+    if (performance.now() < ende)
+        await window.__weltStehtNach(() => {
+            try {
+                r._gameLoopTick(performance.now());
+            } catch (_e) {}
+        });
     window.__buehne();
     s.renderer.setAnimationLoop(null);
     const [WB, HB] = [o.WB, o.HB];
@@ -1001,7 +1021,8 @@ async function startDorfInnen(o) {
                 e._hausHuelle && e._servedLod === 0 && r._bodenSichtChunks(mx0 - 1, mz0 - 1, mx1 + 1, mz1 + 1) && s.nahWiese && s.nahWiese.offen === 0 && s.nahWiese.kacheln.size > 0;
             stell(e.position.x, e.position.y + 1, e.position.z);
             let ruhig = 0;
-            await warteBis(() => (ruhig = steht() ? ruhig + 1 : 0) >= 3, 5, 120);
+            // drei ruhige Takte in Folge (bis w4-ssa-C je Gang 5 Takte: 15 Bilder je Haus, auch wenn es schon stand)
+            await warteBis(() => (ruhig = steht() ? ruhig + 1 : 0) >= 3, 1, 600);
             h.steht = !!steht();
             for (const m of boxen) {
                 let blicke = 0;
@@ -1057,6 +1078,13 @@ async function startDorfInnen(o) {
     return aus;
 }
 async function probeStartDorf(H) {
+    // DER ORT (w4-ssa-C): das Start-Dorf liegt am Genesis-Ort — die Sitzung stellt vor dem Deckel um (probeOrt liest das `umstellen`
+    // hier), die Probe findet den Ring dort warm; bis dahin baute sie ihn im eigenen Deckel (die Sitzung stand an der Mess-Wiese, 1,1 km davon).
+    // DAS FENSTER: 800 × 600, das der Linse, an dem jedes Urteil dieser Staffel fiel (ihr Browser ohne Viewport; bis 29.10.) — in der
+    // Sitzung erbte die Probe 1920 × 1080 der Grundstellung, 4,3-mal die Pixel je Bild und Takt, und fiel nie bis zu ihrem Urteil
+    await H.wb("/fenster", { w: 800, h: 600 }, 30000);
+    const u = await H.wb("/umstellen", { ort: "genesis", sicht: "ego" }, Math.max(5, H.rest() - 1) * 1000);
+    if (!u || u.fehler) throw new Error("umstellen genesis: " + JSON.stringify(u).slice(0, 300));
     if (!(await H.evalWelt("return typeof window.__ausgabeAufnahme === 'function';", 30000))) {
         const { AUSGABE_INSTALL } = require(H.path.resolve("scripts/lib/ausgabe-aufnahme.cjs"));
         await H.evalWelt(AUSGABE_INSTALL + "\nreturn true;", 30000);

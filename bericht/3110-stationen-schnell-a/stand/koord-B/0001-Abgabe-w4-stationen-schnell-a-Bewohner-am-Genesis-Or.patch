@@ -1,0 +1,222 @@
+From 707984dc661e57f1a3806be021afd198bd603b08 Mon Sep 17 00:00:00 2001
+From: MiguellD <87209049+MiguellD@users.noreply.github.com>
+Date: Sat, 31 Oct 2026 23:14:16 +0000
+Subject: [PATCH] Abgabe w4-stationen-schnell-a: Bewohner am Genesis-Ort,
+ Dorfplatz im Takt, Mahl in der Sitzung (Zwischenstand)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+mensch.K1#1/K2#2: die Sitzung stellt vor dem Deckel an den Genesis-Ort um (an der Mess-Wiese ist das Start-Dorf nie
+fällig, GTX b4bcf19c ≥ 90 s ohne Zeile), die Linse misst nur das Start-Dorf (--ort genesis, die Stadt liest kein
+Urteil), der Dorfplatz um 8 Uhr wartet im Bau-Ereignis und geht 80 Spiel-Takte statt 32 s Wanduhr. tiere.K2#2: die
+Probe mahl in der Welt der Sitzung statt der Null-Welt jagdkreis. GTX hergeleitet: Bewohner ≥ 90 → ~50–60 s,
+tiere.K2#2 ≥ 90 → ~20 s.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018GqBDYgvKFxx7BBDKhxUFp
+---
+ meisterkarte-quelle/punkte/stationen/g2.js | 139 +++++++++++++++++----
+ 1 file changed, 112 insertions(+), 27 deletions(-)
+
+diff --git a/meisterkarte-quelle/punkte/stationen/g2.js b/meisterkarte-quelle/punkte/stationen/g2.js
+index 83340921..dc93c648 100644
+--- a/meisterkarte-quelle/punkte/stationen/g2.js
++++ b/meisterkarte-quelle/punkte/stationen/g2.js
+@@ -1304,18 +1304,104 @@ function sollKlasseStation(o) {
+     };
+ }
+ 
+-// DIE PROBE BEWOHNER IN DER SITZUNG (mensch.K1#1 und mensch.K2#2, Zwillinge: EIN Lauf, zwei Urteile): `diag-kreatur-takt --werkbank
+-// --proben bewohner` (das Start-Dorf wächst, bis jeder Bewohner seinen Leib trägt; der Tag über 24 Spielstunden) und `platz-8.js` (Third
+-// am Dorfplatz, Uhr 8) mit dem Bild aus dem Ausgabe-Pfad. Die Probe des Spiels trägt ihre Spielstunden fest (headless 446 s, DAUER_S
+-// der Linse) — über dem Deckel der Sitzung, bis sie im Spiel-Baum kürzt
++// DER DORFPLATZ UM 8 UHR (mensch.K1#1; bis w4-stationen-schnell-a `platz-8.js` aus bericht/2210-messschuld-6cfce, M32): der Spieler am
++// Rand des Dorfplatzes des Start-Dorfs (derselbe Stand wie die Linse `bewohner`), Third, die Uhr als Spieler-Wort
++// (`processChatCommand` „setze uhrzeit 0.3333“). DIE WELT IM TAKT, nie an der Wanduhr: der Loop ruht, Takt um Takt der Seite, bis
++// jeder Bewohner angekommen ist und jeder Leib draußen sein Feld trägt (`__gebautNach`, das EINE Warten: `_weltOffen` leute · leiber),
++// dann 8 Spiel-Sekunden zu je TAKT_DECKEL_S im Takt des Spiels — bis dahin der Loop an der Wanduhr: bis 20 s Warten auf `_weltSteht`,
++// 4 s Schlaf, 8 s Bilder (GTX 3ed95dcf: 31 s, die Welt stand mit gehenden Bewohnern nie). Gezählt: Leiber (rig, heim) im Frustum der
++// Spiel-Kamera, gezeichnet (Leib, Satz oder Feld), Sichtlinie frei von Hausgrundrissen, und die davon in den 8 Spiel-Sekunden
++// ≥ 0,5 m gingen; fps = Bilder je Sekunde der Wanduhr in diesen Takten; das Bild aus dem Ausgabe-Pfad (b64png.cjs schreibt es)
++async function platzAcht(r, T) {
++    const UHR_T = 0.3333;
++    const s = r.state, wm = s.worldMeta, pm = s.playerMesh.position, A = r.constructor;
++    const zelle = wm.settlementCells && wm.settlementCells.start;
++    if (!zelle) return { fehler: "kein Start-Dorf" };
++    const plan = [...(r._ortPlaene || new Map()).values()].find((v) => v && v.ort && Math.abs(v.ort.x - zelle.x) < 0.5 && Math.abs(v.ort.z - zelle.z) < 0.5);
++    if (!plan) return { fehler: "kein Plan" };
++    const pz = plan.platz, pc = { x: plan.ort.x + pz.cx, z: plan.ort.z + pz.cz };
++    const lang = pz.ex >= pz.ez ? 0 : Math.PI / 2;
++    let stand = null;
++    for (const k of [0, 4, 2, -2, 1, 3, -1, -3]) for (const plus of [2, 5, 9]) {
++        if (stand) break;
++        const da = (k * Math.PI) / 4, a = (pz.phi || 0) + lang + da;
++        const ex = Math.abs(Math.cos(da)) * pz.ex + Math.abs(Math.sin(da)) * pz.ez + plus;
++        const x = pc.x - Math.cos(a) * ex, z = pc.z + Math.sin(a) * ex;
++        const g = r._imGrundriss(x, z, 0.5);
++        if (g !== "haus" && g !== "bau" && r._landAt(x, z)) stand = { x, z };
++    }
++    if (!stand) return { fehler: "kein Stand" };
++    s.renderer.setAnimationLoop(null);
++    r.processChatCommand("setze uhrzeit " + UHR_T);
++    const hS = r.getTerrainHeightAt(stand.x, stand.z);
++    pm.set(stand.x, hS + A.PLAYER_FOOT_OFFSET, stand.z);
++    if (s._fixedSimPos) s._fixedSimPos.copy(pm);
++    if (s.cameraMode !== "third") r.setCameraMode("third");
++    const cam = s.camera;
++    const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
++    // der Blick auf die Platzmitte (wie zielen.js: Vorzeichen der Gier/Neigung an der echten Kamera geprüft), je Messung zwei Takte der Seite
++    const mess = async () => { await window.__seitenTakt(); await window.__seitenTakt(); const p = cam.getWorldPosition(pm.clone()); const d = cam.getWorldDirection(pm.clone()); return { p, d, h: Math.atan2(d.x, d.z), v: Math.asin(Math.max(-1, Math.min(1, d.y))) }; };
++    for (let it = 0; it < 4; it++) {
++        const m0 = await mess();
++        const dx = pc.x - m0.p.x, dy = pm.y + 0.6 - m0.p.y, dz = pc.z - m0.p.z;
++        const hz = Math.atan2(dx, dz), vz = Math.atan2(dy, Math.hypot(dx, dz));
++        const y0 = s.yaw, p0 = s.pitch;
++        s.yaw = y0 + 0.1; const m1 = await mess(); const sy = Math.sign(wrap(m1.h - m0.h)) || 1;
++        s.yaw = y0; s.pitch = p0 + 0.05; const m2 = await mess(); const sp = Math.sign(m2.v - m0.v) || 1;
++        s.yaw = y0 + sy * wrap(hz - m0.h); s.pitch = p0 + sp * (vz - m0.v);
++    }
++    const takte = await window.__gebautNach("der Dorfplatz um 8 Uhr", { fertig: () => { const o = r._weltOffen(); return !o.leute && !o.leiber; } });
++    const leiber = () => s.scene.children.filter((o) => o && o.userData && o.userData.rig && o.userData.heim != null);
++    const gez = (b) => b.visible || b.userData._satz === true || (r._kzBesitztFeld && r._kzBesitztFeld(b));
++    const p0 = new Map(leiber().map((b) => [b, { x: b.position.x, z: b.position.z }]));
++    const t0 = performance.now();
++    let uhr = t0, bilder = 0;
++    for (let k = 0; k < Math.round(8 / A.TAKT_DECKEL_S); k++) {
++        uhr += A.TAKT_DECKEL_S * 1000;
++        r._gameLoopTick(uhr);
++        bilder++;
++        await window.sleep();
++    }
++    const fps = +(bilder / ((performance.now() - t0) / 1000)).toFixed(1);
++    cam.updateMatrixWorld(true);
++    const fr = new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
++    const auge = cam.getWorldPosition(new T.Vector3());
++    let imBild = 0, gehend = 0, alle = 0;
++    for (const b of leiber()) {
++        alle++;
++        if (!gez(b)) continue;
++        const brust = new T.Vector3(b.position.x, b.position.y + 0.4, b.position.z);
++        if (!fr.containsPoint(brust)) continue;
++        const d = auge.distanceTo(brust);
++        let frei = true;
++        for (let t = 0.6; t < d - 0.6 && frei; t += 0.5) { const k = t / d; if (r._imGrundriss(auge.x + (brust.x - auge.x) * k, auge.z + (brust.z - auge.z) * k, 0) === "haus") frei = false; }
++        if (!frei) continue;
++        imBild++;
++        const a = p0.get(b);
++        if (a && Math.hypot(b.position.x - a.x, b.position.z - a.z) >= 0.5) gehend++;
++    }
++    const { u8 } = await window.__ausgabeAufnahme(1920, 1080);
++    let b64 = "";
++    for (let i = 0; i < u8.length; i += 0x8000) b64 += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
++    b64 = btoa(b64);
++    return { b64, uhr: UHR_T, tod: +s.timeOfDay.toFixed(4), sicht: s.cameraMode, stand: [+stand.x.toFixed(1), +stand.z.toFixed(1)], platz: [+pc.x.toFixed(1), +pc.z.toFixed(1)], leiber: alle, imBild, gehendImBild: gehend, fps, takte, version: A.VERSION };
++}
++
++// DIE PROBE BEWOHNER IN DER SITZUNG (mensch.K1#1 und mensch.K2#2, Zwillinge: EIN Lauf, zwei Urteile) am GENESIS-ORT, dem Ort des
++// Start-Dorfs (`umstellen --ort genesis`: die Sitzung stellt EINMAL um, vor dem Deckel — nur dort ist das Start-Dorf fällig,
++// `_startDorfFaellig` nearM 260 m; an der Mess-Wiese bestellte die Probe nichts und wartete, GTX b4bcf19c ≥ 90 s ohne Zeile):
++// `diag-kreatur-takt --werkbank --proben bewohner --ort genesis` (das Start-Dorf wächst, bis jeder Bewohner seinen Leib trägt; der Tag
++// über 24 Spielstunden, die Wiederkehr; die Stadt am Messort stadt misst mensch.K3#2 headless — kein Urteil dieses Laufs liest sie)
++// und der Dorfplatz um 8 Uhr (`platzAcht`, Third) mit dem Bild aus dem Ausgabe-Pfad
+ const BEWOHNER_SITZUNG = { sek: 33, befehl: [
+     "bash",
+     "-c",
+     [
+         "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"; SK=\"$(printf %s '{KOORD}' | tr '\\\\' /)/bericht/2210-messschuld-6cfce/skripte\"",
+         "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
+-        "node scripts/diag-kreatur-takt.cjs --werkbank $W --proben bewohner",
+-        "node scripts/werkbank.cjs eval \"$(cat \"$SK/platz-8.js\")\" > \"$B-platz.txt\"",
++        "node scripts/werkbank.cjs umstellen --ort genesis > \"$B-umstellen.txt\" 2>&1",
++        "node scripts/diag-kreatur-takt.cjs --werkbank $W --proben bewohner --ort genesis",
++        "node scripts/werkbank.cjs eval 'return await (" + knapp(platzAcht) + ")(r, T);' > \"$B-platz.txt\"",
+         "node \"$SK/b64png.cjs\" \"$B-platz.txt\" \"$B-platz-8uhr-third.png\"",
+     ].join("\n"),
+ ] };
+@@ -2306,12 +2392,12 @@ const stationen = [
+         kriterium: "mensch.K1",
+         staffel: 1,
+         geraet: ["radeon", "gtx"],
+-        // M40 = M32 wiederholt (bericht/2210-messschuld-6cfce.md § M32, skripte/sitzung.sh + m32b-schritte.txt): EINE echte
+-        // Werkbank-Sitzung `--echt` gegen einen eigenen save-server, darin `diag-kreatur-takt --werkbank --proben bewohner`
+-        // (Quote, gegangene Menschen im Blick) und `platz-8.js` als `werkbank eval` (Third am Rand des Dorfplatzes, Uhr 8 als
+-        // Spieler-Wort, Loop 12 s, gezählt im Frustum der Spiel-Kamera, gezeichnet, Sichtlinie frei) mit dem Bild aus dem
+-        // Ausgabe-Pfad (`b64png.cjs` → <aus>-platz-8uhr-third.png). Ports: save-server {PORT}, Werkbank {PORT}+20000 (Seite −1).
+-        // platz-8.js und b64png.cjs leben im Koord-Baum (R6 sieht sie nicht; ihr Text steht hier per Pfad im Abdruck).
++        // M40 = M32 wiederholt (bericht/2210-messschuld-6cfce.md § M32, skripte/sitzung.sh + m32b-schritte.txt): in der Welt der
++        // Sitzung am Genesis-Ort `diag-kreatur-takt --werkbank --proben bewohner --ort genesis` (Quote, gegangene Menschen im Blick)
++        // und der Dorfplatz um 8 Uhr (`platzAcht` oben, bis w4-stationen-schnell-a `platz-8.js`: Third am Rand des Dorfplatzes, Uhr 8
++        // als Spieler-Wort, 8 Spiel-Sekunden im Takt des Spiels, gezählt im Frustum der Spiel-Kamera, gezeichnet, Sichtlinie frei) mit
++        // dem Bild aus dem Ausgabe-Pfad (`b64png.cjs` → <aus>-platz-8uhr-third.png). Ports: save-server {PORT}, Werkbank {PORT}+20000.
++        // b64png.cjs lebt im Koord-Baum (R6 sieht es nicht; sein Text steht hier per Pfad im Abdruck).
+         // IN DER SITZUNG (29.10.): EIN Lauf der Probe bewohner für mensch.K1#1 und mensch.K2#2 (BEWOHNER_SITZUNG, Zwillinge) —
+         // bis dahin fuhr jede ihn ganz
+         probe: { ...BEWOHNER_SITZUNG,  mutiert: true },
+@@ -2323,7 +2409,7 @@ const stationen = [
+             const p = jsonZeile(lauf.stdout, /^\{"uhr":/);
+             if (!z) return { gruen: false, zahl: "keine Zeile der Probe bewohner im Fenster (Exit " + lauf.exit + ")" };
+             if (z.fehler) return { gruen: false, zahl: "Probe-Fehler: " + z.fehler };
+-            if (!p) return { gruen: false, zahl: "kein Platz-Bild um 8 Uhr (platz-8.js / b64png, Exit " + lauf.exit + ")" };
++            if (!p) return { gruen: false, zahl: "kein Platz-Bild um 8 Uhr (platzAcht / b64png, Exit " + lauf.exit + ")" };
+             if (p.fehler) return { gruen: false, zahl: "Platz-Bild: " + p.fehler };
+             const ib = z.imBlick || {};
+             const gruen =
+@@ -2679,15 +2765,16 @@ const stationen = [
+     },
+ 
+     // ───────── tiere.K2 Staffel 2 — das Mahl und das Wolfsrevier im Bild (Zweig tiere-k2k4) ─────────
+-    // (1) das Mahl headless wie tiere.K2#1 (`diag-kreatur-takt --proben jagdkreis`, Port {PORT}+10000): nach dem ersten Riss des Rudels
+-    // am gesunden Hirsch frisst es ≥ 60 s der 120 s (z.riss.fressS), Fuchs oder Bär sind ≤ 120 s am Aas (gaeste[].kommtS) — im
+-    // Fenster der Werkbank misst die Probe ihren Sprinter am Spieler des Fensters (Sprint 7,88 m/s), darum nicht dort; (2) EINE
+-    // Werkbank-Sitzung `--echt` gegen einen eigenen save-server, das Wolfsrevier: der nächste Ort der Boden-Klasse wald 50–400 m
+-    // um den Spieler, der Spieler 30 m daneben (`umstellen`), vier Wölfe als Verband reißen am echten Takt ein Kitz und fressen
+-    // (≥ 2), geschossen aus dem Ausgabe-Pfad 8 m vor dem Riss, 2,2 m hoch, 1920×1080: die Wölfe im Bild (Klasse tier:wolf ≥ 800 px —
+-    // vier Sichtungen zu 200 px), die Abnahme GRÜN. Ports: save-server {PORT}, Werkbank {PORT}+20000.
+-    // IN DER SITZUNG (29.10.): das Mahl (jagdkreis, Null-Welt headless) läuft NEBEN dem Wolfsrevier der Sitzung, seine Zeilen danach;
+-    // das Revier räumt die Tiere und lässt vier Wölfe am Riss (mutiert)
++    // (1) das Mahl, die Probe `mahl` der Kreatur-Linse in der Welt der Sitzung (`diag-kreatur-takt --werkbank $W --proben mahl`): das
++    // Rudel gegen den gesunden Hirsch an den Orten der Szene rudel von jagdkreis, Jagd um Jagd bis zum ersten Riss, danach frisst
++    // es ≥ 60 s der 120 s (z.riss.fressS), Fuchs oder Bär sind ≤ 120 s am Aas (gaeste[].kommtS) — 120 Spiel-Sekunden sind 7 200 Takte
++    // des Kreatur-Takts, nie Wanduhr; (2) das Wolfsrevier: der nächste Ort der Boden-Klasse wald 50–400 m um den Spieler, der Spieler
++    // 30 m daneben (`umstellen`), vier Wölfe als Verband reißen am echten Takt ein Kitz und fressen (≥ 2), geschossen aus dem
++    // Ausgabe-Pfad 8 m vor dem Riss, 2,2 m hoch, 1920×1080: die Wölfe im Bild (Klasse tier:wolf ≥ 800 px — vier Sichtungen zu
++    // 200 px), die Abnahme GRÜN. Ports: save-server {PORT}, Werkbank {PORT}+20000; das Revier räumt die Tiere (mutiert).
++    // BIS w4-stationen-schnell-a lief das Mahl als ganze Probe jagdkreis in einer EIGENEN Null-Welt neben der Sitzung (eigener Browser,
++    // eigener Boot, 100 Jagden der Quote — GTX b4bcf19c: die BILD-Zeile stand, der Deckel 90 s riss im `wait`); ihr Grund „im Fenster
++    // misst die Probe ihren Sprinter am Spieler des Fensters“ fiel mit der Sprinter-Bühne (a1fed083), die Quote misst tiere.K2#1
+     {
+         kriterium: "tiere.K2",
+         staffel: 2,
+@@ -2698,7 +2785,7 @@ const stationen = [
+             [
+                 "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
+                 "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
+-                "( KREATUR_TAKT_PORT=$(( {PORT} + 10000 )) node scripts/diag-kreatur-takt.cjs --proben jagdkreis ) > \"$B-jagdkreis.out\" 2>&1 &",
++                "node scripts/diag-kreatur-takt.cjs --werkbank $W --proben mahl",
+                 "node scripts/werkbank.cjs fenster 1920 1080 > /dev/null 2>&1",
+                 "erg() { node -e 'const t = require(\"fs\").readFileSync(0, \"utf8\"); console.log(JSON.stringify(JSON.parse(t.slice(t.indexOf(\"{\"))).ergebnis))'; }",
+                 "O=$(node scripts/werkbank.cjs eval 'const pm = r.state.playerMesh.position; let O = null; for (let ring = 2; ring <= 16 && !O; ring++) for (let q = 0, n = ring * 6; q < n && !O; q++) { const a = (q / n) * 2 * Math.PI, x = pm.x + Math.cos(a) * ring * 25, z = pm.z + Math.sin(a) * ring * 25; if (r._landAt(x, z) && r._bodenKlasseAt(x, z) === \"wald\" && r._bodenKlasseAt(x + 30, z) !== \"fluss\" && r._kreaturGrundFrei(x, z) && r._kreaturGrundFrei(x + 30, z)) O = [+x.toFixed(1), +z.toFixed(1)]; } return O;' | erg); echo \"ORT $O\"",
+@@ -2707,17 +2794,15 @@ const stationen = [
+                 "node scripts/werkbank.cjs bild $(node -e 'console.log(JSON.parse(process.argv[1]).kamera.join(\" \"))' \"$R\") --w 1920 --h 1080 --klasse '^tier:' --ziel Riss --datei \"$B-wolfsrevier.png\" > \"$B-bild.txt\" 2>&1",
+                 "echo \"BILD $(grep -o '\"abnahme\": \"[^\"]*\"' \"$B-bild.txt\")\"",
+                 "cp \"$B-wolfsrevier.abnahme.json\" \"$A\"",
+-                "wait",
+-                "cat \"$B-jagdkreis.out\"",
+             ].join("\n"),
+         ],  mutiert: true },
+         gpu: true,
+         zeit: false,
+         minuten: 12,
+         urteil: (j, lauf) => {
+-            const z = probeZeile(lauf.stdout, "jagdkreis");
++            const z = probeZeile(lauf.stdout, "mahl");
+             const R = z && z.riss;
+-            if (!R || z.fehler) return { gruen: false, zahl: "keine Zeile der Probe jagdkreis (Exit " + lauf.exit + (z && z.fehler ? ": " + z.fehler : "") + ")" };
++            if (!R || z.fehler) return { gruen: false, zahl: "keine Zeile der Probe mahl (Exit " + lauf.exit + (z && z.fehler ? ": " + z.fehler : "") + ")" };
+             const rv = jsonZeile(lauf.stdout, /^REVIER /);
+             const w = j && j.klasse && (j.klasse.klassen || {})["tier:wolf"];
+             const b = (j && j.bild) || {};
+-- 
+2.43.0
+
