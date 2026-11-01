@@ -11,6 +11,167 @@ const { jsonZeile } = require("../hilfe.cjs");
 const zeilen = (t) => String(t || "").split(/\r?\n/);
 const SOFT = { LINSE_GPU: "software" };
 
+// ───────── DAS NETZ- UND PARSE-LOG DER FOUNDRY-FÄDEN (pipeline.K5, p3-stationen-g456) — läuft als `node -e` im Spiel-Baum ─────────
+// Die Welt bootet am Null-Renderer (der Bauer lebt im Faden, nie am Bild); jeder Faden der Seite hängt sich über CDP an
+// (Target.setAutoAttach, waitForDebuggerOnStart): VOR seinem ersten Skript legt die Probe einen Merker auf XMLHttpRequest.open
+// (async === false zählt, die Ziel-URL beim Namen) und hört Netz (Network: Bytes je URL) und Parse (Debugger.scriptParsed: jede
+// geparste URL) — erst dann läuft der Faden. Am Ende je Faden `THREE.REVISION` (die Kopie inline: 0 Bytes auf worlds/*/lib/three*,
+// aber ein THREE anderer Revision als die Welt ist ROT) gegen die Revision der Welt. Foundry-Faden = ein Faden, der foundry-bruecke.js
+// parste (Buch und Werk, stamm/studio-bruecke.js). Ein Faden, der vor dem Merker lief, ist BLIND beim Namen (ROT).
+async function foundryFadenLog(port, aus) {
+    const path = require("path");
+    const fs = require("fs");
+    const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const out = { weltRevision: null, faeden: [] };
+    const schreibe = () => {
+        fs.writeFileSync(aus, JSON.stringify(out));
+        console.log("FAEDEN " + JSON.stringify(out));
+    };
+    const server = WB.statikServer();
+    await server.lausche(Number(port));
+    const { browser, page } = await WB.nullSeite({ frist: 300000 });
+    try {
+        const cdp = await page.target().createCDPSession();
+        const namen = new Map();
+        const sitzungen = [];
+        cdp.on("Target.attachedToTarget", (e) => namen.set(e.sessionId, e.targetInfo.title || e.targetInfo.url));
+        cdp.on("sessionattached", async (s) => {
+            const f = { name: null, foundry: false, instrumentiert: false, threeBytes: 0, threeUrls: [], sync: [], revision: null, urls: {}, geparst: [] };
+            const req = new Map();
+            out.faeden.push(f);
+            sitzungen.push([s, f]);
+            s.on("Network.requestWillBeSent", (e) => req.set(e.requestId, e.request.url));
+            s.on("Network.loadingFinished", (e) => {
+                const u = req.get(e.requestId) || "?";
+                f.urls[u] = (f.urls[u] || 0) + Math.max(0, e.encodedDataLength || 0);
+            });
+            s.on("Debugger.scriptParsed", (e) => e.url && f.geparst.push(e.url));
+            try {
+                await s.send("Runtime.enable");
+                await s.send("Network.enable");
+                await s.send("Debugger.enable");
+                await s.send("Runtime.evaluate", {
+                    expression:
+                        "(() => { const L = (self.__punkteFaden = { sync: [] }); const o = XMLHttpRequest.prototype.open; " +
+                        "XMLHttpRequest.prototype.open = function (m, u, a) { if (a === false) L.sync.push(String(u)); return o.apply(this, arguments); }; return true; })()",
+                });
+                f.instrumentiert = true;
+            } catch (e) {
+                f.fehler = String(e.message).slice(0, 160);
+            }
+            await s.send("Runtime.runIfWaitingForDebugger").catch(() => {});
+        });
+        await cdp.send("Target.setAutoAttach", { autoAttach: true, waitForDebuggerOnStart: true, flatten: true });
+        await server.zeige(page, 120000);
+        await page.evaluate(() => window.__weltDa((r) => r._foundry && r._foundry.ready && r.state._weltbildDa > 0));
+        await WB.sleep(3000);
+        out.weltRevision = await page.evaluate(() => (typeof THREE !== "undefined" ? THREE.REVISION : null));
+        for (const [s, f] of sitzungen) {
+            f.name = namen.get(s.id()) || s.id();
+            const r = await s
+                .send("Runtime.evaluate", { expression: "JSON.stringify({ sync: (self.__punkteFaden || {}).sync || null, rev: typeof THREE !== 'undefined' && THREE ? String(THREE.REVISION) : null })", returnByValue: true })
+                .catch((e) => ({ result: { value: JSON.stringify({ fehler: e.message }) } }));
+            const v = JSON.parse(r.result.value || "{}");
+            if (v.sync) f.sync = v.sync.map((u) => u.replace(/^https?:\/\/[^/]+\//, "").split("?")[0]);
+            f.revision = v.rev;
+            f.foundry = f.geparst.some((u) => /\/foundry-bruecke\.js/.test(u));
+            const drei = (u) => /\/worlds\/[^/]+\/lib\/three[^/]*$/.test(u.split("?")[0]);
+            f.threeBytes = Object.entries(f.urls).filter(([u]) => drei(u)).reduce((a, [, b]) => a + b, 0);
+            f.threeUrls = [...new Set(f.geparst.filter(drei).map((u) => u.replace(/^https?:\/\/[^/]+\//, "").split("?")[0]))];
+            f.netz = Object.keys(f.urls).length;
+            f.geparst = f.geparst.length;
+            delete f.urls;
+        }
+    } catch (e) {
+        out.fehler = String(e.message).slice(0, 300);
+    } finally {
+        schreibe();
+        await browser.close().catch(() => {});
+        server.close();
+        process.exit(0);
+    }
+}
+
+// ───────── ZWEI BÄCKER ODER EINER (pipeline.K2, p3-stationen-g456) — läuft als `node -e` im Spiel-Baum, swiftshader ─────────
+// Die Karte eines Baums aus dem STUDIO: das Labor der Bäume (worlds/terrain, die Brücke `bakeImpostorAtlas` auf three r128) backt
+// seinen Atlas; gelesen wird die erste Zelle (Art und Saat aus `_impSpecs[0]`, die erste Ansicht) als RGBA-Bytes aus seinem Ziel.
+// Die Karte desselben Baums aus der WELT: der Bäcker der Welt (`_karteWeltBacken` auf ihrem Renderer, die Höhen-Stufe der Art)
+// backt eine Zelle derselben Art (ihre Gestalt 0) in einen frischen Atlas; gelesen wird sein Bühnen-Ziel nach dem ersten Ring. Verglichen
+// werden Bytes (sha1 und Länge) und die Art — „dieselben Zahlen lesen“ zählt nie (die Welt wählt die Gestalt 0 ihrer Art; gleiche
+// Bytes heißen derselbe Baum). Kann die Welt die Art nicht backen, steht es
+// beim Namen (ROT).
+async function karteZweiBaecker(port, aus) {
+    const path = require("path");
+    const fs = require("fs");
+    const crypto = require("crypto");
+    const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const out = { studio: null, welt: null };
+    const sha = (b64) => (b64 ? crypto.createHash("sha1").update(Buffer.from(b64, "base64")).digest("hex") : null);
+    const server = WB.statikServer();
+    await server.lausche(Number(port));
+    const browser = await WB.starteBrowser({ art: "linse", frist: 600000, viewport: { width: 640, height: 360 } });
+    try {
+        // DAS STUDIO: das Labor der Bäume bootet, sein Atlas steht (`_impRT` der Brücke, `_impSpecs` die Baubeschreibungen)
+        const ps = await browser.newPage();
+        await server.zeige(ps, 180000, "worlds/terrain/index.html");
+        // der Wald des Labors (sein Knopf ruft `buildForest`: die Gestalten je Art, die Baubeschreibungen, der Bake des Atlas)
+        await ps.waitForFunction(() => typeof buildForest === "function" && typeof renderer !== "undefined" && renderer, { timeout: 180000, polling: 500 });
+        await ps.evaluate(() => buildForest());
+        await ps.waitForFunction(() => typeof _impRT !== "undefined" && _impRT && _impSpecs.length > 0 && _impBakedSig, { timeout: 240000, polling: 500 });
+        out.studio = await ps.evaluate(() => {
+            const sp = _impSpecs[0];
+            const cw = _impRT.width / Math.max(1, _impK), ch = _impRT.height / Math.max(1, _impV);
+            const px = new Uint8Array(cw * ch * 4);
+            renderer.readRenderTargetPixels(_impRT, 0, 0, cw, ch, px);
+            let s = "";
+            for (let i = 0; i < px.length; i += 0x8000) s += String.fromCharCode.apply(null, px.subarray(i, i + 0x8000));
+            return { baecker: "bakeImpostorAtlas (three r" + THREE.REVISION + ")", art: sp.sp, saat: sp.seed, format: "rgba8 " + cw + "×" + ch, b: px.length, bytes: btoa(s) };
+        });
+        out.studio.sha = sha(out.studio.bytes);
+        delete out.studio.bytes;
+        await ps.close();
+        // DIE WELT: derselbe Baum (Art, Saat) durch den Bäcker der Welt auf ihrem Renderer, ein frischer Atlas
+        const pw = await browser.newPage();
+        await server.zeige(pw, 180000);
+        await pw.evaluate(() => window.__weltDa((r) => r._foundry && r._foundry.ready && r.state.rendererReady));
+        out.welt = await pw.evaluate(async (art, saat) => {
+            const r = window.anazhRealm, st = r.state;
+            const o = { baecker: "_karteWeltBacken (three r" + THREE.REVISION + ")", art: null, saat: null, format: null, b: 0, bytes: null };
+            const at = r._impostorAtlas();
+            if (!at) return Object.assign(o, { fehler: "die Welt trägt keinen Karten-Atlas" });
+            const preset = Object.keys(r._foundry.recipes || {}).find((k) => k === art || k.startsWith(art)) || null;
+            if (!preset) return Object.assign(o, { fehler: "die Welt kennt die Art „" + art + "“ des Studios nicht als Rezept" });
+            const z = r._impostorZelleNeu(at, "p3:" + preset + "|0", preset, 0, null);
+            if (!r._impostorAtlasTexturen(at, z.idx + 1)) return Object.assign(o, { fehler: "der Atlas hat keine Texturen" });
+            Object.assign(o, { art: preset, saat: "Gestalt 0" });
+            z._weltNeu = true;
+            let e = null;
+            for (const t0 = performance.now(); performance.now() - t0 < 120000; await new Promise((f) => setTimeout(f, 100))) {
+                e = r._karteWeltBacken(at, z);
+                if (e === true || e === 0 || e === false) break;
+            }
+            const B = r._karteBuehneSatz;
+            if (e === false || !B || !B.ziel) return Object.assign(o, { fehler: "die Welt backte keine Karte (" + e + ")" });
+            const rt = B.ziel;
+            const px = new Uint8Array(await st.renderer.readRenderTargetPixelsAsync(rt, 0, 0, rt.width, rt.height));
+            let s = "";
+            for (let i = 0; i < px.length; i += 0x8000) s += String.fromCharCode.apply(null, px.subarray(i, i + 0x8000));
+            return Object.assign(o, { format: (at.fmt || "?") + " " + rt.width + "×" + rt.height, b: px.length, bytes: btoa(s) });
+        }, out.studio.art, out.studio.saat);
+        out.welt.sha = sha(out.welt.bytes);
+        delete out.welt.bytes;
+        if (out.welt.fehler) out.fehler = out.welt.fehler;
+    } catch (e) {
+        out.fehler = String(e.message).split("\n")[0].slice(0, 300);
+    } finally {
+        fs.writeFileSync(aus, JSON.stringify(out));
+        console.log("KARTE " + JSON.stringify(out));
+        await browser.close().catch(() => {});
+        server.close();
+        process.exit(0);
+    }
+}
+
 // Studio-Seite → die Arten aus PARAMS_BY_KIND, die ihr werk() der Hülle schickt (worlds/<seite>/*.js `werk:`)
 const SEITEN = {
     garage: ["vehicle"],
@@ -109,6 +270,17 @@ const OLLAMA_AN =
     "catch(e){console.log('{}')}})\")\"; ";
 const OLLAMA_AUS = "[ -n \"$S\" ] && taskkill //F //IM ollama.exe > /dev/null 2>&1; exit $e";
 const OLLAMA_ENV = { ...SOFT, V1_PFAD_PORT: "{PORT}", KI_ENDPUNKT: "http://127.0.0.1:11434/", KI_MODELL: "qwen3:4b-instruct" };
+// DER KORPUS GEGEN DAS ECHTE MODELL (ki.K1#2 und ki.K5#1: EIN Lauf, zwei Urteile — die Antwortzeit misst derselbe Korpus wie K1)
+const KI_KORPUS_ECHT = [
+    "bash",
+    "-c",
+    OLLAMA_AN +
+        "node scripts/diag-v1-pfad.cjs --korpus --echt; e=$?; " +
+        "node -e \"const k=require('./spec/abnahme/ki-korpus.json'); " +
+        "console.log('NEGATIV ' + JSON.stringify(Object.keys(k.saetze).filter((s) => k.saetze[s].still))); " +
+        "console.log('KORPUS ' + Object.keys(k.saetze).length)\"; " +
+        OLLAMA_AUS,
+];
 const anbieterVon = (out) => {
     try {
         return JSON.parse((/^ANBIETER \S+ (.*)$/m.exec(out) || [])[1]);
@@ -297,7 +469,9 @@ const WEG_SICHTEN = ["Ego", "Third"];
 // ───────────────────────── DIE PROBEN IN DER SITZUNG (29.10., stationen/sitzung-seite.js) ─────────────────────────
 // Das Gesetz des Schöpfers: eine Fahrt durch jedes System ≤ 30 min samt Dauerlast — keine Station bootet mehr einen eigenen Browser.
 // Die Linse des Spiels läuft als Bibliothek (`H.linse`) im Browser der Welt der Sitzung; geschrumpft ist nur der Lauf.
-const { probeBefehl, ANKUNFT_PROBE, ANKUNFT_AUSNAHME } = require("./sitzung-seite.js");
+const { probeBefehl } = require("./sitzung-seite.js");
+// die EINE Probe der Ankunft samt Spur des Kalt-Boots (p3-stationen-g456): sie wohnt bei ihren Ankunfts-Stationen (stationen/g6.js)
+const { ANKUNFT_KALT } = require("./g6.js");
 
 // DIE STUDIOS (studios.K2#2 · K3#2, Zwillinge): der Gang der Linse diag-studio-huelle (`gang`: H3 die Folge, H8 die Kosten-Leiste mit
 // der Bank `?bank=12`, H7 die Sitzung mit dem Neuladen) über die acht Studios — je Studio eine Seite im Browser der Sitzung, geliefert
@@ -770,7 +944,7 @@ const alle = [
         kriterium: "pipeline.K4",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: { ...ANKUNFT_PROBE, mutiert: true,  sek: 10 },
+        probe: ANKUNFT_KALT,
         gpu: true,
         zeit: false,
         minuten: 1,
@@ -814,7 +988,7 @@ const alle = [
         kriterium: "pipeline.K4",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { ...ANKUNFT_PROBE, mutiert: true,  sek: 10 },
+        probe: ANKUNFT_KALT,
         gpu: true,
         zeit: false,
         minuten: 1,
@@ -846,6 +1020,76 @@ const alle = [
             "save-server.js",
         ],
         quelle: "2 = jede Lieferung (Blatt-Atlas, Dorf-Export, Karten) 100 %, ein geänderter Kern-SHA baut nur seine Art neu (0 fremde Neubauten), beide Geräte",
+    },
+
+    // ───────────── pipeline.K2 — EIN Karten-Bäcker (p3-stationen-g456): Byte-Vergleich der Karte aus Studio und Welt ─────────────
+    {
+        kriterium: "pipeline.K2",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "-e", "(" + karteZweiBaecker + ")(process.argv[1], process.argv[2]);", "{PORT}", "{AUS}"],
+        env: SOFT,
+        gpu: false,
+        zeit: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            j = j || jsonZeile(lauf.stdout, /^KARTE \{/);
+            if (!j || !j.studio || !j.welt) return { gruen: false, zahl: "keine KARTE-Zeile (Exit " + lauf.exit + ")" + (j && j.fehler ? ": " + j.fehler : "") };
+            const s = j.studio, w = j.welt;
+            const gleich = !!(s.sha && w.sha && s.sha === w.sha && s.b === w.b && s.art === w.art);
+            return {
+                gruen: gleich,
+                zahl:
+                    (gleich ? "byte-gleich: " : "zwei Bäcker: ") + "Studio " + (s.baecker || "?") + " " + (s.art || "?") + "/" + (s.saat == null ? "?" : s.saat) + " " +
+                    (s.format || "?") + " " + (s.b || 0) + " B sha " + String(s.sha || "—").slice(0, 10) + " ⇄ Welt " + (w.baecker || "?") + " " + (w.art || "?") + "/" +
+                    (w.saat == null ? "?" : w.saat) + " " + (w.format || "?") + " " + (w.b || 0) + " B sha " + String(w.sha || "—").slice(0, 10) +
+                    (j.fehler ? " · " + j.fehler : ""),
+            };
+        },
+        proben: [
+            { name: "dieselben Bytes aus beiden Bäckern", stdout: 'KARTE {"studio":{"baecker":"x","art":"eiche","saat":3,"format":"rgba8 128×256","b":131072,"sha":"ab12"},"welt":{"baecker":"x","art":"eiche","saat":3,"format":"rgba8 128×256","b":131072,"sha":"ab12"}}', gruen: true },
+            { name: "zwei Bäcker, die dieselben Zahlen lesen (gleiche Maße, andere Bytes)", stdout: 'KARTE {"studio":{"baecker":"bakeImpostorAtlas","art":"eiche","saat":3,"format":"rgba8 128×256","b":131072,"sha":"ab12"},"welt":{"baecker":"_karteWeltBacken","art":"eiche","saat":3,"format":"rgba8 128×256","b":131072,"sha":"cd34"}}', gruen: false },
+            { name: "die Welt backt nie", stdout: 'KARTE {"studio":{"baecker":"bakeImpostorAtlas","art":"eiche","saat":3,"b":131072,"sha":"ab12"},"welt":{"baecker":"_karteWeltBacken","sha":null,"b":0},"fehler":"die Welt backte keine Karte"}', gruen: false },
+        ],
+        pfad: ["foundry-bruecke.js", "foundry-core.js", "phyto-core.js", "worlds/terrain/", "stamm/stoff-karte.js", "stamm/studio-*.js", "cores.manifest.json", "scripts/lib/welt-boot.cjs"],
+        quelle: "1 = die Karte eines Baums aus Studio und Welt byte-gleich (EIN Bäcker)",
+    },
+    // ───────────── pipeline.K5 — EIN Bauer auf der Engine der Welt (p3-stationen-g456): Netz- und Parse-Log der Foundry-Fäden ─────────────
+    {
+        kriterium: "pipeline.K5",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "-e", "(" + foundryFadenLog + ")(process.argv[1], process.argv[2]);", "{PORT}", "{AUS}"],
+        gpu: false,
+        zeit: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            j = j || jsonZeile(lauf.stdout, /^FAEDEN \{/);
+            if (!j || !Array.isArray(j.faeden)) return { gruen: false, zahl: "keine FAEDEN-Zeile (Exit " + lauf.exit + ")" + (j && j.fehler ? ": " + j.fehler : "") };
+            const f = j.faeden.filter((x) => x.foundry);
+            if (!f.length) return { gruen: false, zahl: "kein Foundry-Faden gesehen (" + j.faeden.map((x) => x.name).join(", ") + ")" };
+            const blind = f.filter((x) => !x.instrumentiert);
+            const bytes = f.reduce((s, x) => s + x.threeBytes, 0);
+            const urls = [...new Set(f.flatMap((x) => x.threeUrls))];
+            const sync = f.flatMap((x) => x.sync);
+            const fremd = f.filter((x) => x.revision != null && String(x.revision) !== String(j.weltRevision));
+            return {
+                gruen: !blind.length && bytes === 0 && !urls.length && !sync.length && !fremd.length,
+                zahl:
+                    f.length + " Foundry-Fäden (" + f.map((x) => x.name).join(", ") + "): worlds/*/lib/three* " + bytes + " B über das Netz, geparst " +
+                    (urls.join(" · ") || "nichts") + " · synchrones XHR " + sync.length + (sync.length ? " (" + [...new Set(sync)].join(" · ").slice(0, 120) + ")" : "") +
+                    " · THREE im Faden " + (f.map((x) => (x.revision == null ? "—" : "r" + x.revision)).join("/")) + " gegen die Welt r" + j.weltRevision +
+                    (blind.length ? " · BLIND (der Faden lief vor der Instrumentierung): " + blind.map((x) => x.name).join(", ") : ""),
+            };
+        },
+        proben: [
+            { name: "die Fäden auf der Engine der Welt", stdout: 'FAEDEN {"weltRevision":"184","faeden":[{"name":"buch","foundry":true,"instrumentiert":true,"threeBytes":0,"threeUrls":[],"sync":[],"revision":"184"}]}', gruen: true },
+            { name: "r128 über das Netz und das Manifest synchron", stdout: 'FAEDEN {"weltRevision":"184","faeden":[{"name":"buch","foundry":true,"instrumentiert":true,"threeBytes":603312,"threeUrls":["worlds/terrain/lib/three-r128.min.js"],"sync":["cores.manifest.json"],"revision":"128"}]}', gruen: false },
+            { name: "eine Kopie inline (0 Bytes auf worlds/*/lib/three*, aber THREE r128 im Faden)", stdout: 'FAEDEN {"weltRevision":"184","faeden":[{"name":"buch","foundry":true,"instrumentiert":true,"threeBytes":0,"threeUrls":[],"sync":[],"revision":"128"}]}', gruen: false },
+            { name: "der Faden lief vor der Instrumentierung", stdout: 'FAEDEN {"weltRevision":"184","faeden":[{"name":"buch","foundry":true,"instrumentiert":false,"threeBytes":0,"threeUrls":[],"sync":[],"revision":null}]}', gruen: false },
+        ],
+        pfad: ["stamm/studio-bruecke.js", "foundry-bruecke.js", "cores.manifest.json", "worlds/terrain/lib/", "index.html", "scripts/lib/welt-boot.cjs"],
+        quelle: "1 = Netz- und Parse-Log des Foundry-Workers zeigt 0 Bytes auf worlds/*/lib/three* UND kein synchrones XHR",
     },
 
     // ───────────────────────────── KI ─────────────────────────────
@@ -928,16 +1172,7 @@ const alle = [
         // Täter des Werkzeugs (Prädikat nie geprüft, CSP-Türen, Satz-Zahl) sind ROT; das p95 Satz → Welt (Soll des Werkzeugs 6 s)
         // steht nicht in der Staffel und wird nur genannt. Das Prädikat liest state (Null-Renderer, R3: Mechanik) — das Bild-Prädikat
         // der Messung trägt die Station nicht (es fiel als blind, 10–17 % Ruhe-Rauschen ohne Tat).
-        befehl: [
-            "bash",
-            "-c",
-            OLLAMA_AN +
-                "node scripts/diag-v1-pfad.cjs --korpus --echt; e=$?; " +
-                "node -e \"const k=require('./spec/abnahme/ki-korpus.json'); " +
-                "console.log('NEGATIV ' + JSON.stringify(Object.keys(k.saetze).filter((s) => k.saetze[s].still))); " +
-                "console.log('KORPUS ' + Object.keys(k.saetze).length)\"; " +
-                OLLAMA_AUS,
-        ],
+        befehl: KI_KORPUS_ECHT,
         env: OLLAMA_ENV,
         gpu: false,
         zeit: false,
@@ -981,6 +1216,63 @@ const alle = [
         },
         pfad: KI_KORPUS_PFAD,
         quelle: "2 = das Soll mit Modell (gültig ≥ 95 %, Absicht ≥ 85 %, 0 Brüche, Negativ-Sätze scheitern benannt)",
+    },
+    // ki.K5 — die KI hält den Takt (p3-stationen-g456): Zwilling von ki.K1#2 (derselbe Korpus gegen qwen3:4b-instruct @ 127.0.0.1:11434,
+    // die Zeile ANBIETER beweist den Host mit dem Modell — kein Stub, kein Mitschnitt). Je Satz-Zeile „N ms → Welt M ms“: M ist Satz →
+    // erste Wirkung in der Welt (das Prädikat des Korpus liest state am Null-Renderer — die Wirkung, nie die Antwort). p95 über JEDEN
+    // Satz des Korpus (ein Satz ohne Wirkung zählt als ∞: kürzen durch Weglassen fällt), Soll lokal ≤ 6 s; der Korpus muss ganz laufen
+    // (das Schlupfloch „Vokabular fallen lassen“: s = n). Staffel 2 (Prompt-Tokens, Hänger, $ je Satz, beide Geräte) fehlt unten.
+    {
+        kriterium: "ki.K5",
+        staffel: 1,
+        geraet: "headless",
+        befehl: KI_KORPUS_ECHT,
+        env: OLLAMA_ENV,
+        gpu: false,
+        zeit: true,
+        minuten: 15,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const anb = anbieterVon(out);
+            if (!anb || anb.traegt !== true) return KEIN_ANBIETER(anb);
+            const n = +((/^KORPUS (\d+)$/m.exec(out) || [])[1] || 0);
+            const neg = (() => {
+                try {
+                    return JSON.parse((/^NEGATIV (.*)$/m.exec(out) || [])[1]);
+                } catch (_e) {
+                    return null;
+                }
+            })();
+            if (!neg) return { gruen: false, zahl: "keine NEGATIV-Zeile (Exit " + lauf.exit + ")" };
+            const s = [];
+            for (const l of zeilen(out)) {
+                const m = /^\s*(?:✓|✗)(?: ungültig)?(?: BRUCH)? „(.+?)“ (\d+) ms → Welt (—|\d+ ms)/.exec(l);
+                if (m) s.push({ satz: m[1], antwort: +m[2], welt: m[3] === "—" ? Infinity : parseInt(m[3], 10), negativ: neg.includes(m[1]) });
+            }
+            const pos = s.filter((x) => !x.negativ).map((x) => x.welt).sort((a, b) => a - b);
+            const p95 = pos.length ? pos[Math.ceil(0.95 * pos.length) - 1] : Infinity;
+            const wort = /^\s*(✅|❌) WORT der Korpus über den echten Chat-Pfad \(echter Anbieter\)/m.test(out);
+            const ms = (x) => (Number.isFinite(x) ? (x / 1000).toFixed(2) + " s" : "∞");
+            return {
+                gruen: wort && n > 0 && s.length === n && pos.length > 0 && p95 <= 6000,
+                zahl:
+                    "p95 Satz → Welt " + ms(p95) + " über " + pos.length + " Positiv-Sätze (Soll lokal ≤ 6 s; ohne Wirkung " + pos.filter((x) => !Number.isFinite(x)).length +
+                    ") · " + s.length + "/" + n + " Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434" + (wort ? "" : ", keine WORT-Zeile des echten Anbieters (Exit " + lauf.exit + ")"),
+            };
+        },
+        proben: (() => {
+            const kopf = 'ANBIETER 127.0.0.1:11434 {"traegt":true,"modelle":["qwen3:4b-instruct"]}\nNEGATIV ["sag nichts"]\nKORPUS 3\n';
+            const wort = "  ✅ WORT der Korpus über den echten Chat-Pfad (echter Anbieter): das Soll — 3 Sätze";
+            const satz = (t, w) => "  ✓ „" + t + "“ 900 ms → Welt " + w + " · {}";
+            return [
+                { name: "jede Wirkung ≤ 6 s", stdout: kopf + [satz("baue ein Haus", "2100 ms"), satz("mach es Nacht", "3900 ms"), "  ✓ „sag nichts“ 300 ms → Welt — · {}", wort].join("\n"), gruen: true },
+                { name: "ein Satz ohne Wirkung (p95 ∞)", stdout: kopf + [satz("baue ein Haus", "2100 ms"), satz("mach es Nacht", "—"), "  ✓ „sag nichts“ 300 ms → Welt — · {}", wort].join("\n"), gruen: false },
+                { name: "der Korpus gekürzt (2 von 3)", stdout: kopf + [satz("baue ein Haus", "2100 ms"), "  ✓ „sag nichts“ 300 ms → Welt — · {}", wort].join("\n"), gruen: false },
+                { name: "der Stub (kein Anbieter mit Modell)", stdout: 'ANBIETER 127.0.0.1:11434 {}\n' + satz("baue ein Haus", "100 ms"), gruen: false },
+            ];
+        })(),
+        pfad: KI_KORPUS_PFAD,
+        quelle: "1 = p95 Satz → erstes sichtbares Ergebnis gemessen mit Anbieter-Host im Netz-Log, an einem Gerät, im Soll (Haiku-Klasse ≤ 3 s, lokal ≤ 6 s)",
     },
     {
         kriterium: "ki.K2",
@@ -1829,4 +2121,9 @@ const alle = [
 
 // die fahrbaren Stationen sind die Liste, die Staffeln ohne Werkzeug (befehl: null, grund) stehen daneben in `fehlt`
 module.exports = alle.filter((st) => st.befehl !== null);
-module.exports.fehlt = alle.filter((st) => st.befehl === null);
+module.exports.fehlt = alle.filter((st) => st.befehl === null).concat([
+    // p3-stationen-g456 (01.11.): die Staffeln 2, deren Werkzeug fehlt — beim Namen
+    { kriterium: "pipeline.K2", staffel: 2, befehl: null, grund: "nicht gebaut (p3-stationen-g456): je Art mit Karte der Byte-Vergleich aus derselben Bake-Rechnung wie L0 — die Station der Staffel 1 (`karteZweiBaecker`) vergleicht EINE Zelle der ersten Art; je Art verlangt das Labor jede Art im Wald und die Welt jede Karten-Art, und solange zwei Bäcker backen (Studio `bakeImpostorAtlas` r128, Welt `_karteWeltBacken` r184), fällt schon die 1" },
+    { kriterium: "pipeline.K5", staffel: 2, befehl: null, grund: "nicht gebaut (p3-stationen-g456): „kalt bereit ≤ 300 ms an beiden Geräten“ verlangt die Bereitschaft des Foundry-Fadens am Kalt-Boot auf jeder Karte — die Probe der Ankunft in der Sitzung nennt sie nicht, ein eigener Lauf hat in der Fahrt keinen Platz (Radeon 1 790 / 1 800 s)" },
+    { kriterium: "ki.K5", staffel: 2, befehl: null, grund: "nicht gebaut (p3-stationen-g456): Prompt ≤ 4 000 Tokens (der Prompt ist nie gezählt: kein Zähler am Chat-Pfad), 0 Hänger > 100 ms während die KI-Werke bauen (`werkbank haenger` in derselben Sitzung — die Korpus-Linse läuft am Null-Renderer), ≤ 0,002 $ je Satz (kein Preis am lokalen Modell), beide Geräte (das Modell läuft nur am Laptop)" },
+]);
