@@ -1,5 +1,5 @@
 {
- "kopf": "baf9d828",
+ "kopf": "ab884210",
  "je": {
   "affekt.K1": {
    "punkte": 2,
@@ -325,7 +325,7 @@
      "gruen": true,
      "zahl": "6/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal)",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-werkstatt-weg.cjs, scripts/lib/abnahme-urteil.cjs)",
      "gehalten": true
     },
     {
@@ -935,7 +935,7 @@
   },
   "haar.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/werkbank.cjs +2) · haar.K2#1 gtx: ROT: arm ROT strich 0.4783 Soll [0.3554,0.533] — strich 0.4783 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3] · third ROT strich 0.5015 Soll [0.3554,0.533] — strich 0.5015 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3] an baf9d828",
+   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/werkbank.cjs +2) · haar.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +12)",
    "stationen": [
     {
      "id": "haar.K2#1",
@@ -950,9 +950,10 @@
      "id": "haar.K2#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "arm ROT strich 0.4783 Soll [0.3554,0.533] — strich 0.4783 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3] · third ROT strich 0.5015 Soll [0.3554,0.533] — strich 0.5015 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3]",
-     "sha": "baf9d8280b0aa08441b436e9f93f6e17b221a7cc",
-     "grund": "ROT: arm ROT strich 0.4783 Soll [0.3554,0.533] — strich 0.4783 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3] · third ROT strich 0.5015 Soll [0.3554,0.533] — strich 0.5015 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3]"
+     "zahl": null,
+     "sha": null,
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +12)",
+     "ungemessen": true
     }
    ]
   },
@@ -3157,7 +3158,7 @@
      "gruen": true,
      "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 95/95 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 95/95 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 95/95 | ✅ Dichte über den Reload: Linie 571 Löcher, 0 korrupt",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +50)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +52)",
      "gehalten": true
     },
     {
@@ -3190,7 +3191,7 @@
      "gruen": true,
      "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 88/88",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +50)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +52)",
      "gehalten": true
     },
     {
@@ -3199,7 +3200,7 @@
      "gruen": true,
      "zahl": "✅ (V) Korpus: 94 Stände 18.530.0 … 18.546.158 und 1 Kopf laden am Kopf — Bauten 475/475 · Gruben 285/285 · Inventar 270/270 · ganz 95/95 | ✅ (V) Versions-Stufe 18.546.158: ihr Stand steht im Korpus (bump-version.cjs)",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +50)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +52)",
      "gehalten": true
     }
    ]
@@ -4120,7 +4121,7 @@
   }
  },
  "rueckfall": [],
- "kopfVoll": "baf9d8280b0aa08441b436e9f93f6e17b221a7cc",
- "zeit": "2026-11-01T23:46:04.500Z",
+ "kopfVoll": "ab884210027d810411fe8e16f57192bb336d2af8",
+ "zeit": "2026-11-01T23:47:35.717Z",
  "vorher": "baf9d828"
 }

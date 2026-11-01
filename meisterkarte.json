@@ -1,13 +1,13 @@
 {
   "stand": "2026-11-01",
-  "kopf": "baf9d828",
-  "version": "V18.546.160",
+  "kopf": "ab884210",
+  "version": "V18.546.162",
   "skala": "2.0",
   "summe": 167,
   "max": 330,
   "maschine": {
-    "kopf": "baf9d828",
-    "zeit": "2026-11-01T23:46:04.500Z",
+    "kopf": "ab884210",
+    "zeit": "2026-11-01T23:47:35.717Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -1444,7 +1444,7 @@
           "punkte": 0,
           "staffel": "1 = Klasse haar (Strähnen-Kohärenz gegen REF, Albedo-Band) an einem Gerät · 2 = 50 Seeds ohne zwei gleiche Frisuren, beide Geräte",
           "messung": "werkbank bild --klasse haar auf Armlänge und im Third; Gestalt-Distanz je Seed-Paar.",
-          "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/werkbank.cjs +2) · haar.K2#1 gtx: ROT: arm ROT strich 0.4783 Soll [0.3554,0.533] — strich 0.4783 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3] · third ROT strich 0.5015 Soll [0.3554,0.533] — strich 0.5015 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3] an baf9d828",
+          "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/werkbank.cjs +2) · haar.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +12)",
           "schlupfloch": "Ein Haar-Helm je Rolle bestünde die Klasse: 50 Seeds ohne zwei gleiche verlangen das Genom.",
           "maschine": true
         },
@@ -4548,7 +4548,7 @@
     },
     {
       "stand": "2026-11-01",
-      "kopf": "baf9d828",
+      "kopf": "ab884210",
       "summe": 167,
       "max": 330,
       "skala": "2.0",
@@ -4556,7 +4556,7 @@
     }
   ],
   "text": {
-    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 01.11.2026, Kopf main baf9d828 (V18.546.160)",
+    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 01.11.2026, Kopf main ab884210 (V18.546.162)",
     "einleitung": [
       "Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.",
       "",
