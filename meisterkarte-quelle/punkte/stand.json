@@ -96,7 +96,7 @@
   },
   "ankunft.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K2#1 radeon: Station seit der Messung geändert · ankunft.K2#1 gtx: Station seit der Messung geändert — zuletzt an 20d09a04: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: kein Bild der Kontrolle (t(Kontrolle) 0 ms, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: @@ 1.9 s · kalt: t(Kontrolle) — · Werkz",
+   "beleg": "Maschine: 0 — offen: ankunft.K2#1 radeon: Station seit der Messung geändert · ankunft.K2#1 gtx: Station seit der Messung geändert — zuletzt an 25ac4c0c: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: kein Bild der Kontrolle (t(Kontrolle) 0 ms, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: @@ 2 s · kalt: t(Kontrolle) — · Werkzeu",
    "stationen": [
     {
      "id": "ankunft.K2#1",
@@ -113,14 +113,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 20d09a04: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: kein Bild der Kontrolle (t(Kontrolle) 0 ms, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: @@ 1.9 s · kalt: t(Kontrolle) — · Werkz",
+     "grund": "Station seit der Messung geändert — zuletzt an 25ac4c0c: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: kein Bild der Kontrolle (t(Kontrolle) 0 ms, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: @@ 2 s · kalt: t(Kontrolle) — · Werkzeu",
      "ungemessen": true
     }
    ]
   },
   "ankunft.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Station seit der Messung geändert · ankunft.K3#1 gtx: Station seit der Messung geändert — zuletzt an 20d09a04: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 2 Zweit-Boots mit Kontrolle von außen (Exit 0) · [linse-gpu] nvidia/pascal) · Täter: @@ 1.9 s · kalt: t(Kontrolle) — · Werk",
+   "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Station seit der Messung geändert · ankunft.K3#1 gtx: Station seit der Messung geändert — zuletzt an 25ac4c0c: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 2 Zweit-Boots mit Kontrolle von außen (Exit 0) · [linse-gpu] nvidia/pascal) · Täter: @@ 2 s · kalt: t(Kontrolle) — · Werkze",
    "stationen": [
     {
      "id": "ankunft.K3#1",
@@ -137,14 +137,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 20d09a04: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 2 Zweit-Boots mit Kontrolle von außen (Exit 0) · [linse-gpu] nvidia/pascal) · Täter: @@ 1.9 s · kalt: t(Kontrolle) — · Werk",
+     "grund": "Station seit der Messung geändert — zuletzt an 25ac4c0c: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 2 Zweit-Boots mit Kontrolle von außen (Exit 0) · [linse-gpu] nvidia/pascal) · Täter: @@ 2 s · kalt: t(Kontrolle) — · Werkze",
      "ungemessen": true
     }
    ]
   },
   "bauen.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–2) · hotbar 24/24 (Eingaben 2–2) an 715754fc headless — offen: bauen.K1#2 radeon: Station seit der Messung geändert · bauen.K1#2 gtx: Station seit der Messung geändert — zuletzt an 20d09a04: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 3)) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt d",
+   "beleg": "Maschine: gehalten: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–2) · hotbar 24/24 (Eingaben 2–2) an 715754fc headless — offen: bauen.K1#2 radeon: Station seit der Messung geändert · bauen.K1#2 gtx: Station seit der Messung geändert — zuletzt an 25ac4c0c: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 3)) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt d",
    "stationen": [
     {
      "id": "bauen.K1#1",
@@ -170,7 +170,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 20d09a04: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 3)) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt d",
+     "grund": "Station seit der Messung geändert — zuletzt an 25ac4c0c: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 3)) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt d",
      "ungemessen": true
     }
    ]
@@ -306,7 +306,7 @@
   },
   "fahrzeug.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: fahrzeug.K2#1 radeon: ungemessen (R10) · fahrzeug.K2#1 gtx: Station seit der Messung geändert — zuletzt an 20d09a04: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · fahrzeug.K2#2 radeon: ungemessen (R10) — zuletzt an 3ef20f9f: Deckel 55 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · fahrzeug.K2#2 gtx: ungemessen (R10) — zuletzt an 25ac4c0c: Deckel 55 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "beleg": "Maschine: 0 — offen: fahrzeug.K2#1 radeon: ungemessen (R10) · fahrzeug.K2#1 gtx: Station seit der Messung geändert — zuletzt an 25ac4c0c: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · fahrzeug.K2#2 radeon: ungemessen (R10) — zuletzt an 3ef20f9f: Deckel 55 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · fahrzeug.K2#2 gtx: ungemessen (R10) — zuletzt an 25ac4c0c: Deckel 55 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
    "stationen": [
     {
      "id": "fahrzeug.K2#1",
@@ -323,7 +323,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 20d09a04: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+     "grund": "Station seit der Messung geändert — zuletzt an 25ac4c0c: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
      "ungemessen": true
     },
     {
@@ -1192,7 +1192,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +19) — zuletzt an 20d09a04: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +19) — zuletzt an 25ac4c0c: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
      "ungemessen": true
     },
     {
@@ -1601,7 +1601,7 @@
   },
   "lod.K5": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 715754fc headless — offen: lod.K5#1 radeon: Station seit der Messung geändert · lod.K5#1 gtx: Station seit der Messung geändert — zuletzt an 20d09a04: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+   "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 715754fc headless — offen: lod.K5#1 radeon: Station seit der Messung geändert · lod.K5#1 gtx: Station seit der Messung geändert — zuletzt an 25ac4c0c: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
    "stationen": [
     {
      "id": "lod.K5#1",
@@ -1618,7 +1618,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 20d09a04: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+     "grund": "Station seit der Messung geändert — zuletzt an 25ac4c0c: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
      "ungemessen": true
     },
     {
@@ -1715,7 +1715,7 @@
   },
   "material.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Station seit der Messung geändert · material.K1#1 gtx: Station seit der Messung geändert — zuletzt an 20d09a04: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: @@ 4 s · Labor: Protoco · material.K1#2 radeon: Station seit der Messung geändert · material.K1#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Station seit der Messung geändert · material.K1#1 gtx: Station seit der Messung geändert — zuletzt an 25ac4c0c: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: @@ 4 s · Labor: Protoco · material.K1#2 radeon: Station seit der Messung geändert · material.K1#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "material.K1#1",
@@ -1732,7 +1732,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 20d09a04: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: @@ 4 s · Labor: Protoco",
+     "grund": "Station seit der Messung geändert — zuletzt an 25ac4c0c: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: @@ 4 s · Labor: Protoco",
      "ungemessen": true
     },
     {
@@ -3729,6 +3729,6 @@
  },
  "rueckfall": [],
  "kopfVoll": "25ac4c0c485570ed887cffb7f175d430264f86bf",
- "zeit": "2026-11-01T10:16:00.874Z",
+ "zeit": "2026-11-01T10:43:03.399Z",
  "vorher": "25ac4c0c"
 }
