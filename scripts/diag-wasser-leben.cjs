@@ -37,8 +37,7 @@
 // Port: WASSER_LEBEN_PORT (Standard 4623).
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, pngDatei, argOpt } = require("./lib/welt-boot.cjs");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, pngDatei, argOpt, jsonKlon, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { quellTeileVereinen, QUELL_KACHELN, WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 const { tslLecks } = require("./lib/shader-kosten.cjs");
 
@@ -555,7 +554,7 @@ function selbsttest() {
         },
     };
     gut.ueberall = [1, 2, 3, 4, 5].map((i) => ({ ort: [i * 900, i * 700], ...gut.mutation }));
-    const kopie = () => JSON.parse(JSON.stringify(gut));
+    const kopie = () => jsonKlon(gut);
     const taeter = [
         ["F1 BERGAUF", (b) => Object.assign(b.fluss, { steigend: 551, anteilSteigend: 0.142, anstiegM: 133.2 })],
         ["F2 BUCKEL", (b) => Object.assign(b.fluss, { buckelP90M: 1.2, querP90M: 9.65 })],
@@ -782,7 +781,7 @@ function selbsttest() {
     selbsttestEnde(fehler);
 }
 
-if (process.argv.includes("--selftest")) selbsttest();
+if (SELBSTTEST) selbsttest();
 else lauf();
 
 // DIE TEILE DER QUELL-PROBE: so viele Seiten nebeneinander (WASSER_QUELL_TEILE, Vorgabe 3 — am Läufer vier Kerne, die

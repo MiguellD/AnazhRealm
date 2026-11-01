@@ -3,7 +3,7 @@
 // 15 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, ohneWurf } = require("../playtest.cjs");
 
 // Der EINE „in der Hand“-Slot (Werkzeug + Waffe, kein Rollen-Schloss): equipHeld nimmt JEDEN
 // Bauplan; das Gerät faltet über die Equip-Pipeline in die Kombat-Stats (kein eigener
@@ -528,7 +528,7 @@ async function checkBandV1766FertigenFlow({ page, check }) {
         const savedArch = st.architectures.slice();
         // FERTIGEN rüstet das geschmiedete Werk aus (equipped.held/armor) — sauber zurücksetzen, sonst
         // zeigt eine spätere Band einen baumelnden Held (gelöschter Bauplan).
-        const savedEquipped = p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : null;
+        const savedEquipped = p.equipped ? jsonKlon(p.equipped) : null;
 
 
         // === ein DOMAIN-tragendes forging-Geraet vorbereiten (schoepfer = kein Stamina-Zug). EIN
@@ -729,7 +729,7 @@ async function checkBandV1772Library({ page, check }) {
         // aus der Substanz-Zeile (foundry-unabhängig) und räumt es am Ende wieder auf.
         const KS72 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
         if (blu._t_v1772) delete blu._t_v1772;
-        blu._t_v1772 = { name: "_t_v1772", parts: JSON.parse(JSON.stringify(KS72.geraet_spitzhacke.parts)) };
+        blu._t_v1772 = { name: "_t_v1772", parts: jsonKlon(KS72.geraet_spitzhacke.parts) };
         const G = blu._t_v1772;
         const A = blu.ruestung_brustpanzer;
         const T = blu.trank_lebenssaft;
@@ -758,7 +758,7 @@ async function checkBandV1772Library({ page, check }) {
         // (5) KONSUM — die vier Mach-Akte FEUERN rollen-gerecht (schöpfer = frei, kein Material/Station nötig).
         //     Snapshot des Player-States, danach restauriert.
         const savedMode = r.getGameMode();
-        const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
+        const savedEquip = p && p.equipped ? jsonKlon(p.equipped) : { held: null, armor: null };
         const savedBoosts = p && Array.isArray(p.boosts) ? p.boosts.slice() : [];
         const savedSoul = (p && p.soul) || "mensch";
         r.setGameMode("schöpfer");
@@ -829,7 +829,7 @@ async function checkBandV1773HeldMesh({ page, check }) {
         if (!pm) return out;
 
         // Snapshot — am Ende restauriert (kein dangling Held/Soul für die nächsten Bands).
-        const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
+        const savedEquip = p && p.equipped ? jsonKlon(p.equipped) : { held: null, armor: null };
         const savedSoul = (p && p.soul) || "mensch";
 
         // AUSLÖSCHUNGS-WELLE — geraet_spitzhacke fiel als Blueprint; Test-Blueprint aus der
@@ -838,7 +838,7 @@ async function checkBandV1773HeldMesh({ page, check }) {
         if (st.blueprints._t_v1773) delete st.blueprints._t_v1773;
         st.blueprints._t_v1773 = {
             name: "_t_v1773",
-            parts: JSON.parse(JSON.stringify(KS73.geraet_spitzhacke.parts)),
+            parts: jsonKlon(KS73.geraet_spitzhacke.parts),
         };
 
         // sauberer Start
@@ -952,7 +952,7 @@ async function checkBandV1784AvatarFormFit({ page, check }) {
         out.soulVals = `Körper=${round(fitBody)} Klumpen=${round(fitBlob)}`;
         // (3) KONSUM: ein körper-förmiger Custom-Avatar hat höhere Basis-Stats als ein Klumpen (gleiches Material)
         const savedSoul = p.soul;
-        const savedCustom = st.customSouls ? JSON.parse(JSON.stringify(st.customSouls)) : {};
+        const savedCustom = st.customSouls ? jsonKlon(st.customSouls) : {};
         st.customSouls = st.customSouls || {};
         st.customSouls["_av_body"] = { label: "body", bodyParts: bodyParts };
         st.customSouls["_av_blob"] = { label: "blob", bodyParts: blobParts };
@@ -1263,7 +1263,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (reflexResults && !reflexResults.error) {
+    if (ohneWurf(check, "Reflex-Tests Block lief ohne Exception", reflexResults, true)) {
         // (2) Chat
         check("Reflex 2: 'schade mir 42' chat-pattern → DSL ['damage', 42, ...]", reflexResults.damageChatParses);
         check("Reflex 2: 'trink X' chat-pattern → DSL ['apply_boost', ...]", reflexResults.trinkChatParses);
@@ -1318,8 +1318,6 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
             reflexResults.boostTagBonusFromCompound
         );
         check("Reflex 6: Boost-Dauer aus consumableMeta.durationSeconds", reflexResults.boostUsesBlueprintDuration);
-    } else if (reflexResults && reflexResults.error) {
-        check("Reflex-Tests Block lief ohne Exception", false, reflexResults.error);
     }
 
     // ### Welle 6.D Etappe 3b — Equipment + Aura ###
@@ -1342,7 +1340,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         // Setup: Custom-Bauplan für Armor + Werkzeug
         const savedSoul = st.player.soul;
         r.applyPlayerSoul("human");
-        const baselineStats = JSON.parse(JSON.stringify(st.player.stats));
+        const baselineStats = jsonKlon(st.player.stats);
 
         // Eisen-Rüstung-Bauplan
         st.blueprints.test_armor_eisen = {
@@ -1418,7 +1416,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6d3bResults && !wave6d3bResults.error) {
+    if (ohneWurf(check, "Welle 6.D Etappe 3b: Test-Block lief ohne Exception", wave6d3bResults, true)) {
         check("Welle 6.D Etappe 3b: ARMOR_STAT_WEIGHT == 0.3", wave6d3bResults.armorWeight03);
         check("Welle 6.D Etappe 3b: TOOL_STAT_WEIGHT == 0.15", wave6d3bResults.toolWeight015);
         check(
@@ -1466,8 +1464,6 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
             "Welle 6.D Etappe 3b: buildStateSnapshot persistiert playerEquipped (held)",
             wave6d3bResults.snapHasEquipped
         );
-    } else if (wave6d3bResults && wave6d3bResults.error) {
-        check("Welle 6.D Etappe 3b: Test-Block lief ohne Exception", false, wave6d3bResults.error);
     }
 
     // ### Welle 6.D Etappe 3a — Tod, Min-Regel-Hybrid, Konsumables ###
@@ -1575,7 +1571,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6d3aResults && !wave6d3aResults.error) {
+    if (ohneWurf(check, "Welle 6.D Etappe 3a: Test-Block lief ohne Exception", wave6d3aResults, true)) {
         // Schaden
         check(
             "Welle 6.D Etappe 3a: damage-Op in NON_BROADCASTABLE_OPS (privat)",
@@ -1611,8 +1607,6 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
             wave6d3aResults.applyBoostNonBroadcast
         );
         check("Welle 6.D Etappe 3a: buildStateSnapshot persistiert consumables", wave6d3aResults.snapHasConsumables);
-    } else if (wave6d3aResults && wave6d3aResults.error) {
-        check("Welle 6.D Etappe 3a: Test-Block lief ohne Exception", false, wave6d3aResults.error);
     }
 
     // ### Boosts (temporäre Tag-Deltas) ###
@@ -1628,7 +1622,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         // Setup: Save initial state für Vergleich
         st.player.boosts = [];
         r.recomputePlayerStats();
-        const baselineStats = JSON.parse(JSON.stringify(st.player.stats));
+        const baselineStats = jsonKlon(st.player.stats);
 
         // Test 1: addPlayerBoost fügt einen Boost hinzu + Stats ändern sich
         const added = r.addPlayerBoost({
@@ -1731,7 +1725,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6d2Results && !wave6d2Results.error) {
+    if (ohneWurf(check, "Welle 6.D Etappe 2: Test-Block lief ohne Exception", wave6d2Results, true)) {
         check("Welle 6.D Etappe 2: state.player.boosts ist Array", wave6d2Results.hasBoostsField);
         check(
             "Welle 6.D Etappe 2: BOOST_EMOTION_TAG-Map mit 6 Emotionen",
@@ -1773,8 +1767,6 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
             "Welle 6.D Etappe 2: Negativ-Kontrolle — außerhalb Reichweite KEIN Resonanz-Boost",
             wave6d2Results.resonanceNotTriggeredFar
         );
-    } else if (wave6d2Results && wave6d2Results.error) {
-        check("Welle 6.D Etappe 2: Test-Block lief ohne Exception", false, wave6d2Results.error);
     }
 
     // ### Custom-Seelen via DSL ###
@@ -1948,7 +1940,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6d17Results && !wave6d17Results.error) {
+    if (ohneWurf(check, "Welle 6.D Etappe 1.7: Test-Block lief ohne Exception", wave6d17Results, true)) {
         check(
             "Ich-H: der parallele Ich-Soul-Editor ist geschnitten (Schöpfung in der Werkstatt)",
             wave6d17Results.ichSoulEditorGone
@@ -1988,8 +1980,6 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
             "Welle 6.D Etappe 1.7: Löschen der aktiven Seele schaltet zurück auf 'human'",
             wave6d17Results.fallbackToHuman
         );
-    } else if (wave6d17Results && wave6d17Results.error) {
-        check("Welle 6.D Etappe 1.7: Test-Block lief ohne Exception", false, wave6d17Results.error);
     }
 
     if (wave6d16Results) {
@@ -2241,8 +2231,8 @@ async function checkBandPhasenBF({ page, check }) {
             const KSc7 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
             const w = KSc7.fahrzeug_wagen
                 ? {
-                      parts: JSON.parse(JSON.stringify(KSc7.fahrzeug_wagen.parts)),
-                      connections: JSON.parse(JSON.stringify(KSc7.fahrzeug_wagen.connections || [])),
+                      parts: jsonKlon(KSc7.fahrzeug_wagen.parts),
+                      connections: jsonKlon(KSc7.fahrzeug_wagen.connections || []),
                   }
                 : null;
             const h = st.blueprints.reittier_holzross;
@@ -2353,7 +2343,7 @@ async function checkBandPhasenBF({ page, check }) {
             const roles = r.computeMotionRoles(bp.parts, bp.connections) || [];
             const hasRad = roles.some((x) => x && x.role === "rad");
             // das Panel liest dieselben Gelenke: „rad" entsteht nur aus den Verbindungen
-            const wagen = JSON.parse(JSON.stringify({ name: "fahrzeug_wagen", parts: bp.parts, connections: bp.connections || [] }));
+            const wagen = jsonKlon({ name: "fahrzeug_wagen", parts: bp.parts, connections: bp.connections || [] });
             const panel = document.createElement("div");
             r._specRenderBody(panel, wagen);
             const line = panel.querySelector(".spec-motion-line");
@@ -2774,7 +2764,7 @@ async function checkBandW5Werkzeugabnutzung({ page, check }) {
         if (KSw5.geraet_spitzhacke) {
             st.blueprints._t_wear_spitz = {
                 name: "_t_wear_spitz",
-                parts: JSON.parse(JSON.stringify(KSw5.geraet_spitzhacke.parts)),
+                parts: jsonKlon(KSw5.geraet_spitzhacke.parts),
             };
         }
         let heldBp = st.blueprints && st.blueprints[heldName];

@@ -141,8 +141,8 @@ class AnazhRealm_gelaende_boden {
         };
     }
     // DIE KARTE DES ZIELS (K51-2): die Boden-Karte des Chunks aus seinen Morph-Zielen (`aMorphTarget` — das Netz der nächst
-    // gröberen Stufe, an der Naht der gröbere Nachbar), lazy beim ersten Leser im Übergangs-Band, neu nach jedem Naht-Morph
-    // (`_applyCrossLodGeomorph` leert sie). Der Stoff zeichnet Lage + (Ziel − Lage) · Faktor; Naht + Stufe − Naht · Stufe ist in
+    // gröberen Stufe, an der Naht der gröbere Nachbar) — der Faden schickt sie mit dem Netz und mit jedem Naht-Morph
+    // (`_bodenTeilLegen`, w4-b-boden2). Der Stoff zeichnet Lage + (Ziel − Lage) · Faktor; Naht + Stufe − Naht · Stufe ist in
     // der Stufe linear: die Karte der Lage (`surfMap`, Naht eingerechnet) und die des Ziels, gemischt mit dem Stufen-Gewicht.
     // Liefert die Misch-Funktion (Karte, Index) → Höhe am Punkt (x, z), oder null, wo das Gewicht 0 ist; `stufe` legt es fest.
     _bodenStufeMisch(E, ax, az, x, z, stufe) {
@@ -555,11 +555,12 @@ class AnazhRealm_gelaende_boden {
     // (Spawn/Streu/Boden/Material), NICHT in worldFieldAt (Hot-Path). Vier `_voxelSurfaceY`-Calls pro
     // Slope: OK für Punkt-Probes, nicht für Massen-Aufrufe.
     // h_dx, h_dz: Δ über 2 m → slope dimensionslos (m/m): ~0 flach, ~1 = 45°, ~2 Klippe.
-    _slopeAt(x, z, surf, eps) {
+    _slopeAt(x, z, surf, eps, aus) {
         // Die EINE Platzierungs-Slope-Quelle: |∇h| (m/m); Sampler + eps sind Parameter — Gras reicht die
         // gecachte surfMap, der Scatter-Bäcker getTerrainHeightAt ±2 m, Default _voxelSurfaceY. So lesen Gras
         // und Fels DIESELBE Steilheit. Die Fragment-Slope `aSlope`/`_steep` (Fels-FARBE) bleibt bewusst
-        // getrennt (gerenderte Normale pro Pixel).
+        // getrennt (gerenderte Normale pro Pixel). `aus` (DARF) nimmt den Gradienten selbst (gx, gz: die Ebene des
+        // Hangs, auf der ein Büschel der Nah-Wiese steht, `_nahWieseKachelDaten`).
         const s = surf || ((px, pz) => this._voxelSurfaceY(px, pz));
         const e = eps || 1;
         const yE = s(x + e, z);
@@ -567,10 +568,12 @@ class AnazhRealm_gelaende_boden {
         const yN = s(x, z - e);
         const yS = s(x, z + e);
         if (!Number.isFinite(yE) || !Number.isFinite(yW) || !Number.isFinite(yN) || !Number.isFinite(yS)) {
+            if (aus) aus.gx = aus.gz = 0;
             return 0;
         }
         const dxh = (yE - yW) / (2 * e);
         const dzh = (yS - yN) / (2 * e);
+        if (aus) [aus.gx, aus.gz] = [dxh, dzh];
         return Math.hypot(dxh, dzh);
     }
 
@@ -1352,8 +1355,8 @@ class AnazhRealm_gelaende_boden {
         geom.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
         // JEDE Terrain-Geometrie trägt die Morph-Attribute — WebGPU-strikt: ein NodeMaterial-`attribute()`
         // MUSS auf jedem Mesh existieren (sonst Pipeline-Crash), darum ZENTRAL hier. Default Identität
-        // (Ziel = Position, Gewicht 0), bis `_applyCrossLodGeomorph` Cross-LOD-Boundary-Vertices auf die
-        // grobe Nachbar-Oberfläche zieht. Render-only (Vertex-Shader), main-only, Physik-Position unberührt.
+        // (Ziel = Position, Gewicht 0), bis der Naht-Morph des Fadens (gelaende-core `bodenMorph`) Cross-LOD-Boundary-Vertices
+        // auf die grobe Nachbar-Oberfläche zieht. Render-only (Vertex-Shader), Physik-Position unberührt.
         geom.setAttribute("aMorphTarget", new THREE.Float32BufferAttribute(new Float32Array(positions), 3));
         geom.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(new Float32Array(positions.length / 3), 1));
         geom.setAttribute(
@@ -2451,13 +2454,14 @@ class AnazhRealm_gelaende_boden {
     }
 
     // DER MORPH-CODE DES BODENS (K51-2): EIN Float je Vertex (`aMorphWeight`) trägt die Stufe des Chunks und das Naht-Gewicht
-    // (0…1, `_applyCrossLodGeomorph`) — 2 · Stufe + Naht. Der Stoff liest beide: die Stufe wählt das Übergangs-Band, die Naht
-    // zieht die Grenz-Zeile an den gröberen Nachbarn; der Faktor ist Naht + Stufe − Naht · Stufe (`_morphFaktor`).
+    // (0…1, der Geomorph im Faden, gelaende-core `bodenMorph`) — 2 · Stufe + Naht. Der Stoff liest beide: die Stufe wählt das
+    // Übergangs-Band, die Naht zieht die Grenz-Zeile an den gröberen Nachbarn; der Faktor ist Naht + Stufe − Naht · Stufe
+    // (`_morphFaktor`). EINE Quelle mit dem Faden: gelaende-core `morphCode` · `morphNaht`.
     _morphCode(lod, naht) {
-        return 2 * (lod | 0) + Math.max(0, Math.min(1, naht || 0));
+        return globalThis.__gelaendeCore.morphCode(lod, naht);
     }
     _morphNaht(code) {
-        return code - 2 * Math.floor(code * 0.5);
+        return globalThis.__gelaendeCore.morphNaht(code);
     }
     _morphFaktor(code, x, z) {
         const s = this._morphNaht(code);

@@ -49,10 +49,7 @@
 //   node scripts/diag-werk-im-wasser.cjs [--selftest]
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, argOpt, weltTor, jsonLesen } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, argOpt, ausDatei, SELBSTTEST, path, stammLib, weltTor, jsonLesen, jsonKlon } = require("./lib/welt-boot.cjs");
 const { messort } = require("./lib/welt-orte.cjs");
 
 const SCHWELLE = {
@@ -411,12 +408,8 @@ async function probe(A) {
     const faden = st.voxelWorker;
     const f = r._ensureAssetFoundry();
     await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt);
-    if (st.renderer) {
-        st.renderer.render = function () {};
-        if (typeof st.renderer.renderAsync === "function") st.renderer.renderAsync = () => Promise.resolve();
-    }
-    st.postProcessingFailed = true;
-    const MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7];
+    __bildAus();
+    const MUSTER = __MUSTER;
     let tMs = performance.now();
     let nFrame = 0;
     const frame = () => {
@@ -1709,12 +1702,8 @@ async function probe(A) {
 // ±A.R m um den Damm) ohne Damm, mit Damm, nach dem Reload; die Invalidierungen des Automaten beim Abbau. ──
 async function dammProbe(A) {
     await window.__weltDa((w) => w.state.hydrosphere && w.state.hydrosphere.ready);
-    if (st.renderer) {
-        st.renderer.render = function () {};
-        if (typeof st.renderer.renderAsync === "function") st.renderer.renderAsync = () => Promise.resolve();
-    }
-    st.postProcessingFailed = true;
-    const MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7];
+    __bildAus();
+    const MUSTER = __MUSTER;
     let tMs = performance.now();
     let nFrame = 0;
     const frame = () => {
@@ -2132,7 +2121,7 @@ function selbsttest() {
         ["C leer", (b) => (b.ergebnis.versuche[0].gesetzt = 6), /C LEER/],
         ["D lief nicht", (b) => delete b.damm, /D: die Damm-Probe lief nicht/],
     ];
-    const fehler = taeterFaelle([["grüner Befund", () => {}], ...faelle], urteil, { klon: () => JSON.parse(JSON.stringify(gruen)) });
+    const fehler = taeterFaelle([["grüner Befund", () => {}], ...faelle], urteil, { klon: () => jsonKlon(gruen) });
     // die Leser-Linse gegen eingeschmuggelte Täter im echten Stamm (der Vor-Stand über den EINEN Helfer)
     const gifte = [
         [
@@ -2172,7 +2161,7 @@ function selbsttest() {
     taeterFaelle([{ name: "der echte Stamm" }, ...gifte.map(giftFall("Leser"))], leserUrteil, { fehler });
     // die Kern-Linse gegen eingeschmuggelte Täter im echten Kern (vm, ohne Browser)
     const vm = require("vm");
-    const kernSrc = fs.readFileSync(path.join(__dirname, "..", "vehicle-core.js"), "utf8");
+    const kernSrc = ausDatei("vehicle-core.js");
     const kernLaden = (s) => {
         const ctx = { console, Math, Object, Array, Number, JSON, Map, Set, isFinite, isNaN, Infinity, NaN };
         for (const T of [Float32Array, Float64Array, Uint8Array, Uint16Array, Uint32Array, Int32Array]) ctx[T.name] = T;
@@ -2422,8 +2411,8 @@ async function lauf() {
                 await p2.evaluateOnNewDocument(() => (window.__anazhChunkIdb = true));
                 await server.zeige(p2, 120000);
                 // die Bühne, geboren wie im Spiel durch die Tür (`weltTor`): ihre Klamm S6 trägt den Stau (s. Kopf D)
-                const buehne = jsonLesen(path.join(root, "spec", "pruefbuehne", "welt.json"));
-                const S6 = jsonLesen(path.join(root, "spec", "pruefbuehne", "stationen.json")).stationen.find((s) => s.id === "s6-klamm");
+                const buehne = jsonLesen("spec/pruefbuehne/welt.json");
+                const S6 = jsonLesen("spec/pruefbuehne/stationen.json").stationen.find((s) => s.id === "s6-klamm");
                 if (!S6) throw new Error("D: keine Station s6-klamm in spec/pruefbuehne/stationen.json");
                 await weltTor(p2, buehne);
                 const D = { takte: 1200, R: 40, fassen: 4 };
@@ -2460,5 +2449,5 @@ async function lauf() {
     process.exit(exit);
 }
 
-if (process.argv.includes("--selftest")) selbsttest();
+if (SELBSTTEST) selbsttest();
 else lauf();

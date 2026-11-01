@@ -12,9 +12,7 @@
 //     ~3077 ms) und liest ohne Rezept die Kern-GENRES-Tafel (fail-closed, 78 bpm).
 //   --selftest: injizierte Verletzungen machen die statischen Gesetze rot.
 //   node scripts/diag-nervensystem-labs.cjs [--selftest]
-const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, ausDatei, SELBSTTEST, fehlerText } = require("./lib/welt-boot.cjs");
 
 const server = statikServer();
 
@@ -38,9 +36,9 @@ function staticLaws(manifestSrc) {
 }
 
 hauptLauf(async () => {
-    const manifestSrc = fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8");
+    const manifestSrc = ausDatei("cores.manifest.json");
 
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         console.log("=== SELBST-TEST: die Labs-Linse feuert ===");
         const brokenManifest = JSON.stringify(JSON.parse(manifestSrc).filter((c) => c && c.id !== "klang"));
         const s1 = staticLaws(brokenManifest).find((l) => l[0].includes("klang-Kern"));
@@ -124,7 +122,7 @@ hauptLauf(async () => {
             res.k.semi2Restored = r._lofiScaleSemitone(2);
             emo.sorrow = s0;
         } catch (e) {
-            res.k.err = (e && e.message) || String(e);
+            res.k.err = fehlerText(e);
         }
         // ===== M: DER MOTION-ERSTKONSUMENT (die Schwanz-Rolle liest fx.motion) =====
         try {
@@ -160,7 +158,7 @@ hauptLauf(async () => {
             delete r._motionStudioProfile;
         } catch (e) {
             res.m = res.m || {};
-            res.m.err = (e && e.message) || String(e);
+            res.m.err = fehlerText(e);
         }
         // ===== D: DER KOERPER-DOCK (Abschieds-Welle A — Dials formen GEOMETRIE) =====
         try {
@@ -235,7 +233,7 @@ hauptLauf(async () => {
             if (cg2 && r._disposeSoulGroup) r._disposeSoulGroup(cg2);
         } catch (e) {
             res.d = res.d || {};
-            res.d.err = (e && e.message) || String(e);
+            res.d.err = fehlerText(e);
         }
         // ===== X: DIE AUSLÖSCHUNGS-GÜSSE (A5 — Wächter/Holzross/Glutwesen aus den Studio-Straßen) =====
         try {
@@ -307,7 +305,7 @@ hauptLauf(async () => {
             res.x.holzrossKern = !!hb && hb.parts[hb.parts.length - 1].material === "quarz";
         } catch (e) {
             res.x = res.x || {};
-            res.x.err = (e && e.message) || String(e);
+            res.x.err = fehlerText(e);
         }
         // ===== E: DIE EMOTIONS->PROFIL-BRUECKE (Abschieds-Welle B — beide Leser) =====
         try {
@@ -405,7 +403,7 @@ hauptLauf(async () => {
             };
         } catch (e) {
             res.e = res.e || {};
-            res.e.err = (e && e.message) || String(e);
+            res.e.err = fehlerText(e);
         }
         // ===== O: DER HOST-OFEN IN DER VORSCHAU (ERFINDER-WELLE — „waehle mensch/wolf
         // und nichts erscheint" ist tot: die EINE Vorschau-Quelle baeckt MESHFREI-Domaenen
@@ -437,7 +435,7 @@ hauptLauf(async () => {
             });
         } catch (e) {
             res.o = res.o || {};
-            res.o.err = (e && e.message) || String(e);
+            res.o.err = fehlerText(e);
         }
         return res;
     });

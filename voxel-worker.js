@@ -92,10 +92,31 @@ const state = {
     felsStoff: null,
 };
 
+// DIE NÄHTE GEHEN VOR (w4-b-boden2): ein Bau (50–200 ms) hielte jeden Eintritt des Bodens hinter sich — fahrend wartete die
+// Naht der Nachbarn p95 20 Takte (die Folge-Schlange des Haupt-Fadens hielt 6). Die Nachrichten des Bodens nimmt der Faden
+// sofort; jeder andere Auftrag geht in seiner Reihe (`reihe`), je einer in einem eigenen Takt — dazwischen kommt jeder Eintritt,
+// der während eines Baus ankam, zum Zug. Die Reihe der übrigen bleibt, wie der Main sie schickte.
+// DIE EINE REIHE (w4-b-boden3): fehlen einem Neben-Faden noch die Regionen des Voxel-Fadens (`hydroVom`), HÄLT sie — jede
+// Nachricht wartet in ihr, auch eine des Bodens, und nach der letzten Region geht sie weiter, wie der Main sie schickte. Bis
+// w4-b-boden3 nahm eine zweite Liste (`warten`) die Nachricht auf, die der Takt gerade zog, und legte sie nach den Regionen HINTER
+// die übrigen der Reihe: der Fern-Faden rechnete die Ring-Scheiben 1 und 2 vor der 0 (warten [1], Reihe [2, 3, 4]), und der Ring
+// hängte vier Scheiben in einem Takt ein (gate:fern-ring auf dem Linux-Läufer 2048 > 3 × 512, CI 41256591761).
+const BODEN_SOFORT = new Set(["boden-ein", "boden-aus", "boden-frei"]);
+const reihe = [];
+let reiheHaelt = false;
+const reiheTakt = new MessageChannel();
+reiheTakt.port1.onmessage = () => {
+    if (reiheHaelt || !reihe.length) return; // die letzte Region stößt sie wieder an (`hydroVom`)
+    nachricht(reihe.shift());
+    if (reihe.length) reiheTakt.port2.postMessage(0);
+};
 self.onmessage = function (e) {
+    if (!reiheHaelt && e.data && BODEN_SOFORT.has(e.data.type)) return void nachricht(e);
+    if (reihe.push(e) === 1) reiheTakt.port2.postMessage(0);
+};
+function nachricht(e) {
     const msg = e.data;
     if (!msg || !msg.type) return;
-    if (warten) return void warten.push(e); // die Regionen des Voxel-Fadens kommen zuerst (`hydroVom`)
     try {
         if (msg.type === "init" || msg.type === "state-set") {
             applyStateSnapshot(msg.snapshot);
@@ -139,6 +160,18 @@ self.onmessage = function (e) {
             // ohne Carve im 3×3) reist als Daten mit dem Auftrag.
             if (msg.platte) plattePost(msg);
             else chunkPost(msg, null);
+        } else if (msg.type === "boden-ein") {
+            // DER EINTRITT EINES NETZES (w4-b-boden2): der Geomorph seiner Naht und der Nachbarn, die es lesen (`bodenEin`)
+            bodenEin(msg);
+        } else if (msg.type === "boden-aus") {
+            // der Main trägt das Netz nicht mehr (Abbau, Prune, der Tausch eines Neubaus vor seinem Sync-Bau)
+            if (bodenRing.get(msg.key) === msg.bid) bodenRing.delete(msg.key);
+            bodenNeuAus(msg.key, msg.bid);
+            bodenOhneRing.delete(msg.bid);
+            boeden.delete(msg.bid);
+        } else if (msg.type === "boden-frei") {
+            // Netze, die der Main verwarf, ohne sie einzusetzen (ein Stand überholte sie)
+            for (const b of msg.bids) if (bodenOhneRing.delete(b)) bodenFaellt(b);
         } else if (msg.type === "zellen-frei") {
             // der Main trägt die Zellen nicht mehr: nur sie fallen, ein neuerer Bau desselben Chunks bleibt
             msg.keys.forEach((k, i) => {
@@ -307,15 +340,43 @@ self.onmessage = function (e) {
             stapel: err && err.stack ? String(err.stack) : null,
         });
     }
-};
+}
 
 // DIE ANTWORT EINES CHUNKS (per Transfer, Lehre 24): die Arrays des Baus; das Morph-Ziel (`morphZiel`, das der Geomorph des
 // Mains beschreibt) und in der gröbsten Stufe Normalen- und Farb-Ziel sind eigene Kopien — sie entstehen hier im Faden, nie im
 // Haupt-Faden (bis zur Karte hydro-faden kopierte `_buildVoxelChunkDataFromWorkerMesh` sie: 2,5 MB je Minute Fahrt).
-function chunkAntwort(mesh, lod) {
+function chunkAntwort(mesh, lod, cx, cz) {
     if (mesh.empty) return { type: "chunk-mesh-result", empty: true, lod: lod | 0 };
     const grob = !mesh.stufeZiel;
+    // DER BODEN KOMMT FERTIG (w4-b-boden2): die Naht des Netzes (gelaende-core `bodenNaht`) und die Vorlage seines Bereichs im
+    // Boden-Satz (`satzVorlage`: die Vertex-Form der gepackten Attribute, die Viertel samt Höhlen-Zellen, je Zelle die Hülle und
+    // die feste Kiste des Rands) — der Haupt-Faden legt sie nur an (`_chunkSatzEin`); bis hierher packte, sortierte und umhüllte
+    // er jedes Netz beim Einbau selbst
+    const cfg = voxelChunkConfig(lod);
+    const naht = G.bodenNaht(mesh.positions, mesh.indices, cx, cz, cfg.span, cfg.step);
+    const BS = state.bodenSatz;
+    if (!BS) throw new Error("chunkAntwort: die Formen des Boden-Satzes fehlen im Worker-Zustand (bodenSatz)");
+    const n = mesh.positions.length / 3;
+    const satz = G.satzVorlage(
+        BS.formen,
+        {
+            position: mesh.positions,
+            normal: mesh.normals,
+            color: mesh.colors,
+            aMorphWeight: new Float32Array(n).fill(G.morphCode(lod, 0)),
+            aMorphTarget: grob ? mesh.positions : mesh.stufeZiel,
+            aNormalZiel: grob ? mesh.normals : mesh.normalZiel,
+            aHimmel: mesh.himmel,
+            aFarbeZiel: grob ? mesh.colors : mesh.farbeZiel,
+            aSchutt: mesh.schutt,
+        },
+        mesh.indices,
+        { tri: mesh.hTri, n: mesh.hN },
+        naht.rand
+    );
     return {
+        naht,
+        satz,
         type: "chunk-mesh-result",
         empty: false,
         lod: lod | 0,
@@ -365,10 +426,16 @@ let zellenNr = 0;
 // Der Reply an den Main, die Puffer per Transfer: die Zellen behält der Faden als Kopie (`zellen`), die Platte bekommt den
 // Reply VOR dem Transfer (ihr Put klont hier im Faden).
 function chunkPost(msg, a) {
-    const antwort = a || chunkAntwort(buildChunkMesh(msg.cx, msg.cz, msg.lod, msg.saat || null), msg.lod);
+    const antwort =
+        a || chunkAntwort(buildChunkMesh(msg.cx, msg.cz, msg.lod, msg.saat || null), msg.lod, msg.cx, msg.cz);
     if (!a && msg.platte) platteLege(msg.platte, antwort);
-    const transfer = [];
-    for (const k in antwort) if (antwort[k] instanceof ArrayBuffer) transfer.push(antwort[k]);
+    // der Faden hält das Netz (`bodenHalten`) und morpht seine eigene Naht gleich mit dem Bau (`bodenSelbst`): der Main legt
+    // sie mit dem Einbau an, im selben Takt wie das Netz
+    if (!antwort.empty) {
+        antwort.bid = bodenHalten(antwort, msg.cx, msg.cz, msg.lod | 0);
+        antwort.teil = bodenSelbst(boeden.get(antwort.bid));
+    }
+    const transfer = puffer(antwort);
     if (antwort.waterCells && antwort.waterCells.byteLength) {
         antwort.zid = ++zellenNr;
         const k = msg.cx + "," + msg.cz;
@@ -380,6 +447,258 @@ function chunkPost(msg, a) {
     }
     antwort.requestId = msg.requestId;
     self.postMessage(antwort, transfer);
+}
+
+// DIE PUFFER EINER ANTWORT (Lehre 24): jeder ArrayBuffer in ihr, auch in verschachtelten Feldern (Naht, Satz, Teile) — je
+// einmal; der Faden schickt nie einen Puffer, den er selbst hält
+function puffer(o, aus = [], seen = new Set()) {
+    if (!o || typeof o !== "object") return aus;
+    if (o instanceof ArrayBuffer) {
+        if (!seen.has(o)) {
+            seen.add(o);
+            aus.push(o);
+        }
+        return aus;
+    }
+    if (ArrayBuffer.isView(o)) return puffer(o.buffer, aus, seen);
+    for (const k in o) puffer(o[k], aus, seen);
+    return aus;
+}
+
+// ═══ DER BODEN IM FADEN (w4-b-boden2, Lehre 14 · 24) ═══
+// Der Faden hält jedes Netz, das er baut (`boeden`, je Bau-Nummer `bid`: Lage, Index, Ziel der Stufe, Morph-Ziel und -Code,
+// der Stoff des Naht-Bands, die Karten, die Naht samt Gedächtnis), und je Chunk das Netz, das der Main trägt (`bodenRing`, der
+// Spiegel seines Rings: der Main meldet jeden Eintritt `boden-ein` und Austritt `boden-aus` in der Reihe seiner Wechsel). Ein
+// Eintritt morpht den Chunk und jeden feineren Nachbarn, der ihn in seiner neuen oder alten Stufe liest (die Folge des Wechsels,
+// K51-4) — gelaende-core `bodenMorph` · `bodenNahtBand` · `bodenKarte`, die Rechnung, die bis hierher der Haupt-Faden trug
+// (`_applyCrossLodGeomorph`, `_tickMorphFolge`, die Ziel-Karte in `_bodenStufeMisch`) — und schickt je gemorphtem Netz die
+// fertigen Puffer (`boden-morph`); der Main legt sie an (`_bodenTeilLegen`). Ein Netz, das der Main nie einsetzt (verworfen,
+// ein Stand überholte es), fällt mit `boden-frei` oder über `BODEN_OHNE_RING` als ältestes.
+const boeden = new Map();
+const bodenRing = new Map();
+const bodenOhneRing = new Map(); // bid → true, in der Reihe der Bauten
+// so viele Netze hält der Faden, die der Main (noch) nicht einsetzt — der Cache des Mains trägt eine Handvoll; ein älteres fällt,
+// und setzt der Main es doch ein, antwortet der Faden `fehlt` und der Chunk baut neu (`_bodenAntwort`)
+const BODEN_OHNE_RING = 64;
+let bodenNr = 0;
+const kopieF = (b) => new Float32Array(b.slice(0));
+
+// Das Netz eines Replys in den Halt des Fadens (Kopien: die Puffer des Replys gehen per Transfer an den Main) → seine `bid`
+function bodenHalten(a, cx, cz, lod) {
+    const P = kopieF(a.positions);
+    const N = a.naht;
+    const kopieI = (x) => x.slice();
+    const r = bodenNetz({
+        bid: ++bodenNr,
+        cx,
+        cz,
+        lod,
+        P,
+        idx: new Uint32Array(a.indices.slice(0)),
+        basis: a.stufeZiel ? kopieF(a.stufeZiel) : P,
+        t: kopieF(a.morphZiel),
+        nrm: kopieF(a.normals),
+        col: kopieF(a.colors),
+        him: kopieF(a.himmel),
+        sch: kopieF(a.schutt),
+        nZ: kopieF(a.normalZiel),
+        fZ: kopieF(a.farbeZiel),
+        karte: a.karteHoehe
+            ? {
+                  hoehe: kopieF(a.karteHoehe),
+                  gruen: new Uint8Array(a.karteGruen.slice(0)),
+                  zellen: new Int16Array(a.karteZellen.slice(0)),
+                  ref: P,
+              }
+            : null,
+        ziel: a.zielHoehe
+            ? {
+                  hoehe: kopieF(a.zielHoehe),
+                  gruen: new Uint8Array(a.zielGruen.slice(0)),
+                  zellen: new Int16Array(a.zielZellen.slice(0)),
+                  ref: null,
+              }
+            : null,
+        naht: {
+            rand: kopieI(N.rand),
+            randSeite: N.randSeite.map(kopieI),
+            randTri: kopieI(N.randTri),
+            seite: N.seite.map(kopieI),
+            seiteV: N.seiteV.slice(),
+        },
+    });
+    if (r.ziel) r.ziel.ref = r.basis; // die Lage der Ziel-Karte: das Morph-Ziel des Baus (unveränderlich, wie `basis`)
+    bodenOhneRing.set(r.bid, true);
+    if (bodenOhneRing.size > BODEN_OHNE_RING) {
+        const alt = bodenOhneRing.keys().next().value;
+        bodenOhneRing.delete(alt);
+        bodenFaellt(alt);
+    }
+    return r.bid;
+}
+// ein Netz, das der Main nie einsetzt, fällt aus dem Halt — und aus dem Voraus-Spiegel (`bodenNeu`)
+function bodenFaellt(bid) {
+    const r = boeden.get(bid);
+    if (r) bodenNeuAus(r.key, bid);
+    boeden.delete(bid);
+}
+
+// Ein Netz in den Halt: sein Morph-Code (die Stufe, Naht 0), das Gedächtnis seiner Naht, kein Morph, kein Band
+function bodenNetz(r) {
+    r.key = r.cx + "," + r.cz;
+    if (!r.w) r.w = new Float32Array(r.P.length / 3).fill(G.morphCode(r.lod, 0));
+    if (!r.naht) {
+        const cfg = voxelChunkConfig(r.lod);
+        r.naht = G.bodenNaht(r.P, r.idx, r.cx, r.cz, cfg.span, cfg.step);
+    }
+    Object.assign(r.naht, { kand: [], treffer: [], gesetzt: false, morph: null, kanten: null });
+    r.hasMorph = false;
+    r.bandObj = null;
+    boeden.set(r.bid, r);
+    return r;
+}
+
+// DIE KARTE EINER LAGE (Spiegel von `_bodenKarteNaht`): `art` "karte" die gezeichnete Lage samt Grün, "ziel" die Morph-Ziele
+// (eine Kopie der Lage: sie wandert weiter) — die erste rastert ganz, jede weitere nur, was gegen ihre Lage zog, an Ort und Stelle
+function bodenKarteNaht(r, lage, art) {
+    const BK = state.bodenKarte;
+    const ref = art === "karte" ? lage : new Float32Array(lage);
+    const alt = r[art];
+    const k =
+        r.idx.length < 3
+            ? null
+            : G.bodenKarte(
+                  ref,
+                  r.idx,
+                  art === "karte" ? r.col : null,
+                  r.cx,
+                  r.cz,
+                  voxelChunkConfig(r.lod),
+                  BK.teilung,
+                  BK.gruenSchwelle,
+                  alt,
+                  r.naht,
+                  !!alt
+              );
+    if (!k || !alt) return (r[art] = k && { hoehe: k.hoehe, gruen: k.gruen, zellen: k.zellen, ref });
+    alt.ref = ref;
+    return alt;
+}
+const karteKopie = (k) =>
+    k && { hoehe: k.hoehe.slice(), gruen: k.gruen.slice(), zellen: k.zellen.slice(), ref: k.ref.slice() };
+
+// Der Geomorph eines Netzes gegen den Ring (`bodenMorph`): hat er etwas geändert, ein Teil mit den fertigen Puffern — die Ziele
+// und Codes des Rands, die Karte der gezeichneten Lage, die Karte der Ziele, das Naht-Band samt seiner Satz-Vorlage
+function bodenTeil(r, nachbar, gm, teile) {
+    const m = G.bodenMorph(r, nachbar, voxelChunkConfig, gm);
+    if (!m) return;
+    const teil = { key: r.key, bid: r.bid, hasMorph: m.hasMorph, gekappt: m.gekappt };
+    if (m.lage) {
+        const R = r.naht.rand;
+        const tR = new Float32Array(R.length * 3);
+        const wR = new Float32Array(R.length);
+        for (let q = 0; q < R.length; q++) {
+            const v = R[q];
+            tR[q * 3] = r.t[v * 3];
+            tR[q * 3 + 1] = r.t[v * 3 + 1];
+            tR[q * 3 + 2] = r.t[v * 3 + 2];
+            wR[q] = r.w[v];
+        }
+        Object.assign(teil, { tR, wR });
+        // DIE KARTE DER ZIELE (`_bodenStufeMisch`): ihre Lage sind die Morph-Ziele — bis hierher rasterte der Haupt-Faden sie,
+        // wenn ein Leser sie nach dem Morph fragte; jetzt kommt sie mit ihm (die gröbste Stufe trägt keine)
+        if (r.lod < 3) teil.ziel = karteKopie(bodenKarteNaht(r, r.t, "ziel"));
+    }
+    if (m.karte) teil.karte = karteKopie(bodenKarteNaht(r, m.L, "karte"));
+    if (m.nahtNeu) {
+        teil.nahtNeu = true;
+        const B = m.band;
+        teil.band =
+            B &&
+            Object.assign(B, {
+                satz: G.satzVorlage(
+                    state.bodenSatz.formen,
+                    {
+                        position: B.P,
+                        normal: B.N,
+                        color: B.C,
+                        aMorphWeight: B.MW,
+                        aMorphTarget: B.MT,
+                        aNormalZiel: B.NZ,
+                        aHimmel: B.HS,
+                        aFarbeZiel: B.FZ,
+                        aSchutt: B.SC,
+                    },
+                    B.I,
+                    null,
+                    null
+                ),
+            });
+    }
+    teile.push(teil);
+}
+
+// der Nachbar im Spiegel des Rings (das Netz, das der Main an seiner Stelle trägt)
+const bodenNachbar = (x, z) => {
+    const b = bodenRing.get(x + "," + z);
+    return b === undefined ? null : boeden.get(b) || null;
+};
+// … und der Nachbar, wie ihn der Main beim Einbau tragen wird: sein jüngster Bau, den der Main noch nicht einsetzte
+// (`bodenNeu` — der Main setzt in der Reihe der Bauten ein), sonst der Spiegel
+const bodenNeu = new Map();
+const bodenVoraus = (x, z) => boeden.get(bodenNeu.get(x + "," + z)) || bodenNachbar(x, z);
+const bodenNeuAus = (key, bid) => bodenNeu.get(key) === bid && bodenNeu.delete(key);
+// DER STAND DER EIGENEN NAHT: `bodenMorph` liest von den Nachbarn nur, was je Bau-Nummer unveränderlich ist (Stufe, Lage,
+// Index, ihre Kandidaten) und nur von den GRÖBEREN — ihre Nummern und der Regler bestimmen die eigene Naht ganz
+function bodenStand(r, gm, nachbar) {
+    let s = String(gm);
+    for (let dx = -1; dx <= 1; dx++)
+        for (let dz = -1; dz <= 1; dz++) {
+            const nb = dx || dz ? nachbar(r.cx + dx, r.cz + dz) : null;
+            s += "," + (nb && nb.lod > r.lod ? nb.bid : "");
+        }
+    return s;
+}
+// DIE EIGENE NAHT MIT DEM BAU: der Faden morpht das neue Netz gegen den Ring, wie der Main ihn beim Einbau tragen wird
+// (`bodenVoraus`; `bodenGm`: der Regler des letzten Eintritts), und merkt sich den Stand — der Main legt den Teil mit dem
+// Einbau an; der Eintritt rechnet nur neu, wenn der Ring dann anders steht (bis hierher kam die Naht gehend 3–8 Takte nach
+// dem Netz, fahrend 9–22)
+let bodenGm = 1;
+function bodenSelbst(r) {
+    const teile = [];
+    bodenTeil(r, bodenVoraus, bodenGm, teile);
+    r.stand = bodenStand(r, bodenGm, bodenVoraus);
+    bodenNeu.set(r.key, r.bid);
+    return teile[0] || null;
+}
+
+// DER EINTRITT EINES NETZES IN DEN RING (`boden-ein`, `_bodenEin` des Mains): der Spiegel trägt es, der Geomorph geht über das
+// Netz (nur bei neuem Stand, `bodenSelbst`) und jeden feineren Nachbarn, der es liest (neue Stufe gröber als seine oder die
+// alte `alt`) — ein Netz des Haupt-Fadens (Sync-Bau) reist ganz mit (`netz`)
+function bodenEin(msg) {
+    bodenGm = msg.gm;
+    let r = boeden.get(msg.bid);
+    if (!r && msg.netz) r = bodenNetz(Object.assign(msg.netz, { bid: msg.bid, cx: msg.cx, cz: msg.cz, lod: msg.lod }));
+    if (!r) return void self.postMessage({ type: "boden-morph", key: msg.key, bid: msg.bid, fehlt: true, teile: [] });
+    const vor = bodenRing.get(msg.key);
+    if (vor !== undefined && vor !== r.bid) boeden.delete(vor);
+    bodenRing.set(msg.key, r.bid);
+    bodenNeuAus(msg.key, r.bid);
+    bodenOhneRing.delete(r.bid);
+    const teile = [];
+    const folge = []; // die Nachbarn, die der Eintritt morphte (gate:chunk-satz (p) liest sie: keiner, der ihn nicht liest)
+    if (r.stand !== bodenStand(r, msg.gm, bodenNachbar)) bodenTeil(r, bodenNachbar, msg.gm, teile);
+    for (let dx = -1; dx <= 1; dx++)
+        for (let dz = -1; dz <= 1; dz++) {
+            if (dx === 0 && dz === 0) continue;
+            const nb = bodenNachbar(r.cx + dx, r.cz + dz);
+            if (!nb) continue;
+            if (!(r.lod > nb.lod || (msg.alt != null && msg.alt > nb.lod))) continue;
+            folge.push(nb.key);
+            bodenTeil(nb, bodenNachbar, msg.gm, teile);
+        }
+    const antwort = { type: "boden-morph", key: msg.key, bid: r.bid, teile, folge };
+    self.postMessage(antwort, puffer(antwort));
 }
 
 // DIE PLATTE DES BODENS (Warm-Start, V18.484 — seit der Karte hydro-faden im Faden): der rohe Reply eines edit-freien Chunks
@@ -431,8 +750,13 @@ function plattePost(msg) {
                 })
         )
         .then((p) => {
-            // ein Reply ohne Morph-Ziel oder Boden-Karte ist eine alte Form: der Faden baut frisch
-            if (p && !p.empty && (!p.morphZiel || p.karteHoehe === undefined || p.zielHoehe === undefined)) p = null;
+            // ein Reply ohne Morph-Ziel, Boden-Karte, Naht oder Satz-Vorlage ist eine alte Form: der Faden baut frisch
+            if (
+                p &&
+                !p.empty &&
+                (!p.morphZiel || p.karteHoehe === undefined || p.zielHoehe === undefined || !p.naht || !p.satz)
+            )
+                p = null;
             if (p) p.vonPlatte = true;
             chunkPost(msg, p || null);
         })
@@ -853,6 +1177,9 @@ function applyStateSnapshot(snap) {
     if (snap.felsStoff) state.felsStoff = snap.felsStoff;
     // DIE BODEN-KARTE (w4-b-boden): Teilung und Wiesen-Wache des Stamms (`BODEN_KARTE_TEILUNG`, `TERRAIN_GEOLOGY`) — dieselben Zahlen
     if (snap.bodenKarte) state.bodenKarte = snap.bodenKarte;
+    // DIE FORMEN DES BODEN-SATZES (w4-b-boden2): je gepacktem Attribut [Name, Breite, Vertex-Form, Skalar der 4. Komponente] —
+    // dieselben, mit denen der Satz des Mains packt (`BODEN_SATZ_ATTR`, `_satzForm`)
+    if (snap.bodenSatz) state.bodenSatz = snap.bodenSatz;
     // DIE KONSTANTEN DER FERNE (B2): FOREST, die Selbstbeschattung der Krone, Schutt-Gewicht, Fels-Mittel, Gedächtnis
     if (snap.fern) state.fern = snap.fern;
     // DIE PLATTE DES BODENS (Karte hydro-faden): ob sie gilt, ihr Stempel und ihr Deckel
@@ -1001,17 +1328,15 @@ function hydroAntwort(h, daten) {
     return { region, transfer };
 }
 
-// DIE REGIONEN VOM VOXEL-FADEN (ein Neben-Faden, geboren nach ihrer Bestellung): jede Nachricht hinter seinem Stand wartet, bis
-// der Port sie gebracht hat (`hydro-an`) — derselbe Zustand wie in jedem Faden, der sie selbst rechnete.
-let warten = null;
+// DIE REGIONEN VOM VOXEL-FADEN (ein Neben-Faden, geboren nach ihrer Bestellung): die Reihe hält, bis der Port sie gebracht hat
+// (`hydro-an`) — jede Nachricht hinter seinem Stand wartet in ihr, derselbe Zustand wie in jedem Faden, der sie selbst rechnete.
 function hydroVom(port) {
-    warten = [];
+    reiheHaelt = true;
     port.onmessage = (e) => {
         if (!e.data.fertig) return void hydroSetzen(e.data.key, e.data.region);
         port.close();
-        const liste = warten;
-        warten = null;
-        for (const m of liste) self.onmessage(m);
+        reiheHaelt = false;
+        if (reihe.length) reiheTakt.port2.postMessage(0);
     };
 }
 

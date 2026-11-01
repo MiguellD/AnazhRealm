@@ -2,9 +2,7 @@
 // Console-Logs und prüft harte Invarianten — eine verletzte setzt exit=1 (CI bricht ab).
 // Env: PLAYTEST_SECONDS (Mindest-Warmup) · PLAYTEST_STRICT=0 (nur reporten) · braucht puppeteer.
 
-const fs = require("fs");
-const path = require("path");
-const { starteBrowser, startProc, eigenePorte, hauptLauf } = require("./lib/welt-boot.cjs");
+const { starteBrowser, startProc, eigenePorte, hauptLauf, fehlerText, path, fs } = require("./lib/welt-boot.cjs");
 
 // DURATION_MS ist nur der MINDEST-Warmup der zeit-getriebenen Systeme; robust gegen CI-Last macht
 // der count-basierte Pump unten (pumpt, bis die Ziel-Chunks WIRKLICH gebaut sind, statt Timer).
@@ -452,7 +450,7 @@ if (require.main === module) hauptLauf(async () => {
         try {
             return await fn(c);
         } catch (e) {
-            const msg = (e && e.message) || String(e);
+            const msg = fehlerText(e);
             check(fn.name, false, "Band-Fehler (geworfen): " + msg.slice(0, 200));
             // Tote-Seite-Signatur (protocolTimeout, detached frame, geschlossene Target/Session, toter Kontext):
             // der Renderer-Prozess ist gestorben → sauber abbrechen statt N-fach scheitern.
@@ -563,12 +561,7 @@ if (require.main === module) hauptLauf(async () => {
                 // Kurzer Settle-Pump: `_foundryRewarmColdTrees` (feuert am Prefetch-Ende,
                 // frame-budgetiert) baut kalt gebliebene Baum-Einträge in Reichweite —
                 // ein paar Ticks geben ihm deterministisch Raum, bevor die Bänder lesen.
-                for (let s = 0; s < 40; s++) {
-                    try {
-                        r._gameLoopTick(performance.now());
-                    } catch {}
-                    await sleep(0);
-                }
+                await __takte(40, 0);
             }
             // Worker wieder einhängen — die Folge-Bänder nutzen den echten async-Pfad
             // (er re-synct seine Worldgen-Kachel lazy beim ersten Request).

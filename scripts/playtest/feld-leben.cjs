@@ -3,7 +3,7 @@
 // 10 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
 // Lebendiges Feld, Lese-Seite: auraAt umhüllt das eingefrorene worldFieldAt; die lokale Aura HEBT die
 // Emotion (FIELD_TO_EMOTION: lebendige Region → peace), bleibt aber unter der 0.7-Trigger-Schwelle.
@@ -598,7 +598,7 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
         if (st.blueprints._t_w6a_haus) delete st.blueprints._t_w6a_haus;
         st.blueprints._t_w6a_haus = {
             name: "_t_w6a_haus",
-            parts: JSON.parse(JSON.stringify(KS6a.haus_basis.parts)),
+            parts: jsonKlon(KS6a.haus_basis.parts),
         };
         const entry = r.spawnArchitecture("_t_w6a_haus", { x: archX, y: archY, z: archZ }, { seed: 4242 });
         out.archEntrySpawned = !!entry;
@@ -736,7 +736,7 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
             if (st.blueprints._t_w6a3_haus) delete st.blueprints._t_w6a3_haus;
             st.blueprints._t_w6a3_haus = {
                 name: "_t_w6a3_haus",
-                parts: JSON.parse(JSON.stringify(KSa3.haus_basis.parts)),
+                parts: jsonKlon(KSa3.haus_basis.parts),
             };
             _entryA3 = r.spawnArchitecture("_t_w6a3_haus", { x: _savedX + 40, y: 0, z: _savedZ + 40 }, { seed: 9999 });
         } catch (e) {
@@ -836,7 +836,7 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
         if (st.blueprints._t_w6a45_haus) delete st.blueprints._t_w6a45_haus;
         st.blueprints._t_w6a45_haus = {
             name: "_t_w6a45_haus",
-            parts: JSON.parse(JSON.stringify(KSa45.haus_basis.parts)),
+            parts: jsonKlon(KSa45.haus_basis.parts),
         };
         const _archEntry = r.spawnArchitecture(
             "_t_w6a45_haus",
@@ -1369,7 +1369,7 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
         return out;
     });
 
-    if (wave6gResults && !wave6gResults.error) {
+    if (erreichbar(check, "Welle 6.G: Tests laufen", wave6gResults)) {
         // Inseln teilen die Surface-Nets-Pipeline mit den Voxel-Chunks: `_voxelChunkGeometry` nimmt einen
         // `densityFn`-Callback (Default = Welt-Chunks, Insel-Pfad übergibt `_islandDensityAt`).
         const r42a = await page.evaluate(() => {
@@ -1661,7 +1661,7 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
         return out;
     });
 
-    if (wave6gP2Results && !wave6gP2Results.error) {
+    if (erreichbar(check, "Welle 6.G P2: Tests laufen", wave6gP2Results)) {
         // Der `hasPopulateChunk`-Flag prüft das Voxel-Pendant `_populateVoxelChunkVegetation`
         // (umgewidmet im evaluate-Block; `populateChunkVegetation` ist gelöscht).
         check(
@@ -1909,7 +1909,7 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
         return out;
     });
 
-    if (wave6gP3Results && !wave6gP3Results.error) {
+    if (erreichbar(check, "W6.G P3: Tests laufen", wave6gP3Results)) {
         check(
             `W6.G P3: Felsbogen-Pfeiler lassen eine begehbare Lücke (Gap=${(wave6gP3Results.felsbogenGap || 0).toFixed(1)}m > 2m)`,
             wave6gP3Results.felsbogenWalkable
@@ -2040,7 +2040,7 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
         return out;
     });
 
-    if (wave6gP4Results && !wave6gP4Results.error) {
+    if (erreichbar(check, "W6.G P4: Tests laufen", wave6gP4Results)) {
         check("W6.G P4: _terrainMaterialAt liefert ein bekanntes Boden-Material", wave6gP4Results.returnsKnownMaterial);
         check("W6.G P4: lebendig-dominante Region → erde (Resonanz)", wave6gP4Results.lebendigYieldsErde);
         check("W6.G P4: dichte-dominante Region → stein (Resonanz)", wave6gP4Results.dichteYieldsStein);

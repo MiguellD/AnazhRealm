@@ -298,7 +298,17 @@ class AnazhRealm_siedlung_bauten {
     // keinen Gang über den Bestand. Bis hier schliefen im Stand beide Bau-Takte jedes Bild (Blick-Sonde 31.10., Radeon,
     // stadt-voll Third: 808 von 808 Bildern): ein Wagen fuhr als Karte 16,7 s bis 11 m an den Spieler, ein anderer ohne Bild bis
     // 1,8 m, und sein Satz stand weiß, wo er gebacken wurde — 181 m hinter ihm. Rückgabe: die Wechsel dieses Takts.
+    // DAS AUGE WANDERT (w4-verkehr-c3): der Abstand eines Bewegten ist eine Lage BEIDER — wandert das Auge seit dem letzten Takt
+    // (der Spieler geht, fährt, springt), urteilt jeder Fahrende (`_archFahrt`: der Wagen des Verkehrs zwischen Einsteigen und
+    // Parken, auch wer an der Kreuzung wartet) in diesem Takt mit; steht das Auge, nur wer selbst wanderte. Bis hier urteilte der
+    // Wartende nur nach seinem eigenen Schritt: sprang der Spieler an den Markt, stand der wartende Wagen in 8 m auf Stufe 1, der
+    // in 20 m auf der Karte (VK stadt-voll 10 Uhr, das erste Bild danach, 3 von 3 Läufen), bis der Gang über den Bestand (256
+    // Einträge je Bild, 5 Wechsel) ihn erreichte.
     _archBewegteUrteilen(pm, occlOn) {
+        const F = this._archFahrende;
+        const A = this._archBewegtAuge || (this._archBewegtAuge = { x: NaN, z: NaN });
+        if (F && F.size && (A.x !== pm.x || A.z !== pm.z)) for (const e of F) this._archBewegt(e);
+        [A.x, A.z] = [pm.x, pm.z];
         const B = this._archBewegte;
         if (!B || !B.size) return 0;
         const z = this._archStufeZaehler();
@@ -323,6 +333,14 @@ class AnazhRealm_siedlung_bauten {
     // Stufen-Wahl (`_archBewegteUrteilen`).
     _archBewegt(entry) {
         (this._archBewegte || (this._archBewegte = new Set())).add(entry);
+    }
+
+    // Ein Eintrag fährt (`an`) oder steht wieder (der Wagen des Verkehrs: `_verkehrEinsteigen`, `_verkehrParken`; der Abbau
+    // nimmt ihn mit): solange er fährt, urteilt er auch, wenn nur das Auge wandert (`_archBewegteUrteilen`).
+    _archFahrt(entry, an) {
+        const F = this._archFahrende || (this._archFahrende = new Set());
+        if (an) F.add(entry);
+        else F.delete(entry);
     }
 
     // Instanced Architektur auf andere LOD-Stufe: _archInstanceRemove → entry.type auf den neuen
@@ -1342,11 +1360,15 @@ class AnazhRealm_siedlung_bauten {
     }
 
     // Die Naht der gezeichneten Stufe (Instanz und Mesh, hinein und heraus): trägt der Eintrag seine Passagiere nicht mehr,
-    // verbergen sie sich im selben Takt — zeigen tut sie wieder, wer sie setzt (der Takt des Verkehrs setzt den Leib in den
-    // Sitz). Bis hier zeigte sich der Fahrer im Kreis `leibM` neben jedem Wagen: über der Karte und über dem Wagen, der noch
-    // lud (der fliegende Fahrer, Schöpfer-Fund 30.10.).
+    // verbergen sie sich im selben Takt; trägt er sie wieder, setzt der Sitz des Verkehrs den Fahrer im selben Takt
+    // (`_verkehrSitz` — Culling und Stufen-Wahl laufen nach dem Takt des Verkehrs). Bis hier zeigte sich der Fahrer im Kreis
+    // `leibM` neben jedem Wagen: über der Karte und über dem Wagen, der noch lud (der fliegende Fahrer, Schöpfer-Fund 30.10.).
     _kompositErbt(entry) {
-        if (!entry._passagiere || !entry._passagiere.size || this._archTraegt(entry)) return;
+        if (!entry._passagiere || !entry._passagiere.size) return;
+        const W = entry._verkehrWagen;
+        if (W && W.b.amSteuer && W.b.leib && entry._passagiere.has(W.b.leib))
+            return this._verkehrSitz(W, this._lodAuge() || this.state.playerMesh.position);
+        if (this._archTraegt(entry)) return;
         for (const g of entry._passagiere) g.visible = false;
     }
 
@@ -1489,18 +1511,7 @@ class AnazhRealm_siedlung_bauten {
         if (art === "boden")
             return {
                 name: "bodenSatz",
-                // DIE VERTEX-FORM (K44): die Normale trägt snorm8x4, die Farbe float16x4 (`_satzPacke`), der Chunk behält seine
-                // Float32-Arrays für jeden CPU-Leser. DER GEOMORPH DER STUFE (K51-2) bringt Normale und Stoff-Farbe des Ziels
-                // (`aNormalZiel` snorm8x4, `aFarbeZiel` float16x4); die vierte Komponente trägt je einen Skalar des Chunks
-                // (Morph-Code in der Farbe, Himmels-Sicht im Normal-Ziel, Schutt im Farb-Ziel) — 48 B je Vertex wie zuvor
-                attr: [
-                    ["position", 3],
-                    ["normal", 3, "snorm8"],
-                    ["color", 3, "half", "aMorphWeight"],
-                    ["aMorphTarget", 3],
-                    ["aNormalZiel", 3, "snorm8", "aHimmel"],
-                    ["aFarbeZiel", 3, "half", "aSchutt"],
-                ],
+                attr: AnazhRealm.BODEN_SATZ_ATTR,
                 mat: this._getVoxelChunkMaterial(),
                 schatten: true, // der Boden wirft (Hang auf Tal) — je Kaskade 1 Befehl, ihr Abschnitt
                 empfang: true,
@@ -1776,30 +1787,10 @@ class AnazhRealm_siedlung_bauten {
     }
 
     // Packt `n` Vertices (Breite `is`, aus `src` ab Vertex 0) in die Vertex-Form `form` nach `dst` ab Vertex `ab` (Breite 4).
-    // EINE Quelle für Satz und Linse (gate:chunk-satz (f) prüft den Bereich gegen genau diese Packung).
-    // `w` (optional): ein Skalar je Vertex für die vierte Komponente (snorm8: −1…1, sonst roh; ohne: Normale 0, Farbe 1).
-    static _satzPacke(form, src, is, dst, ab, n, w) {
-        const o0 = ab * 4;
-        if (form === "snorm8")
-            for (let v = 0; v < n; v++) {
-                const q = v * is,
-                    o = o0 + v * 4;
-                for (let k = 0; k < 3; k++) {
-                    const x = src[q + k];
-                    dst[o + k] = Math.round((x > 1 ? 1 : x < -1 ? -1 : x) * 127);
-                }
-                const x = w ? w[v] : 0;
-                dst[o + 3] = Math.round((x > 1 ? 1 : x < -1 ? -1 : x) * 127);
-            }
-        else
-            for (let v = 0; v < n; v++) {
-                const q = v * is,
-                    o = o0 + v * 4;
-                dst[o] = src[q];
-                dst[o + 1] = src[q + 1];
-                dst[o + 2] = src[q + 2];
-                dst[o + 3] = w ? w[v] : 1;
-            }
+    // EINE Quelle für Faden, Satz und Linse (gelaende-core `satzPacke`; gate:chunk-satz (f) prüft den Bereich gegen genau diese
+    // Packung). `w` (optional): ein Skalar je Vertex für die vierte Komponente; `nur` (optional): nur diese Vertices.
+    static _satzPacke(form, src, is, dst, ab, n, w, nur) {
+        globalThis.__gelaendeCore.satzPacke(form, src, is, dst, ab, n, w, nur);
     }
 
     // DER VERGLEICHENDE SCHREIBER der Sätze (K71): legt `quelle` (ein Array derselben Art, oder EIN Wert für `n` Plätze) ab
@@ -1917,22 +1908,44 @@ class AnazhRealm_siedlung_bauten {
                     );
             }
         if (!geom.index || !geom.index.array) throw new Error(`_chunkSatzEin(${art}, ${key}): kein Index`);
+        // DIE VORLAGE AUS DEM FADEN (w4-b-boden2, gelaende-core `satzVorlage`): ein Boden-Netz bringt seine gepackten Attribute,
+        // seine Viertel und Hüllen fertig mit — der Bereich legt sie nur an. Sie gilt einmal, für genau diese Ecken.
+        const V = geom.userData && geom.userData.satzVorlage;
+        // ein Faden-Netz ohne Vorlage: der Bereich packte, sortierte und umhüllte es hier — ein Bau neben dem Faden, laut
+        if (!V && art === "boden" && geom.userData && geom.userData.ausFaden)
+            this._fadenUmgangen("Satz-Vorlage eines Faden-Netzes");
+        if (V) {
+            geom.userData.satzVorlage = null;
+            if (V.idx.length !== geom.index.array.length)
+                throw new Error(`_chunkSatzEin(${art}, ${key}): die Vorlage des Fadens passt nicht zum Netz`);
+        }
         const vStart = this._chunkSatzVAlloc(s, n);
-        this._chunkSatzLege(s, vStart, geom.attributes, n, !!alt && alt.vStart === vStart);
-        return this._chunkSatzBuerger(s, key, geom, vStart, n, chunkKey);
+        this._chunkSatzLege(s, vStart, geom.attributes, n, !!alt && alt.vStart === vStart, V);
+        return this._chunkSatzBuerger(s, key, geom, vStart, n, chunkKey, V);
     }
 
     // Legt `n` Ecken (`A`: je Satz-Attribut sein Array) ab `vStart` in die Pool-Geometrie des Satzes. Jedes Attribut lädt
     // nur den Lauf, der sich ändert (K71, `_satzSetze`): ein Bereich, der am selben Ort neu eintritt (`amOrt`: der Cull
     // nahm die letzte Instanz einer Bau-Gruppe), trägt dort meist dieselben Bytes. Ein gepacktes Attribut packt dann erst
-    // in einen Vorrat und vergleicht; an einem fremden Ort packt es direkt.
-    _chunkSatzLege(s, vStart, A, n, amOrt) {
+    // in einen Vorrat und vergleicht; an einem fremden Ort packt es direkt. Mit der Vorlage des Fadens (`V`) liegt jedes
+    // gepackte Attribut schon in seiner Vertex-Form: der Bereich legt die Bytes nur hinein.
+    _chunkSatzLege(s, vStart, A, n, amOrt, vorlage = null) {
         const g = s.geom;
         const L = this._satzLauf || (this._satzLauf = [0, 0]);
         for (const { name, is, form, gis, w } of s.attr) {
             const ga = g.attributes[name];
             let quelle = A[name].array;
-            if (form && amOrt) {
+            const fertig = form && vorlage ? vorlage.gepackt[name] : null;
+            if (form && vorlage && !(fertig && fertig.length === n * gis))
+                throw new Error(`_chunkSatzLege: die Vorlage des Fadens trägt ${name} nicht in ${n} Ecken`);
+            if (fertig && !amOrt) {
+                ga.array.set(fertig, vStart * gis);
+                ga.addUpdateRange(vStart * gis, n * gis);
+                ga.needsUpdate = true;
+                continue;
+            }
+            if (fertig) quelle = fertig;
+            else if (form && amOrt) {
                 const V = this._satzVorrat || (this._satzVorrat = new Map());
                 let vr = V.get(ga.array.constructor);
                 if (!vr || vr.length < n * gis)
@@ -1954,7 +1967,7 @@ class AnazhRealm_siedlung_bauten {
 
     // Der Bürger eines gelegten Bereichs (`_chunkSatzEin`; der Bau-Satz in Raten, `_bauSatzRate`): seine Views, Zellen und
     // Hüllen — ab hier zeichnet er.
-    _chunkSatzBuerger(s, key, geom, vStart, n, chunkKey) {
+    _chunkSatzBuerger(s, key, geom, vStart, n, chunkKey, vorlage = null) {
         const li = geom.index.array;
         const ck = String(chunkKey);
         const komma = ck.indexOf(",");
@@ -1976,8 +1989,11 @@ class AnazhRealm_siedlung_bauten {
         this._chunkSatzViews(s, b);
         // Ein Boden-Chunk bringt seinen Höhlen-Graph (Welle 7): seine Zellen werden Knoten, verknüpft mit den Nachbarn
         if (geom.hoehle) this._hoehlenKnoten(s, b, geom.hoehle);
-        this._chunkSatzZellen(b, li, vStart, geom.zellen || null, geom.hoehle || null);
-        this._chunkSatzHuelle(s, b);
+        if (vorlage) this._chunkSatzVorlageLegen(s, b, vorlage);
+        else {
+            this._chunkSatzZellen(b, li, vStart, geom.zellen || null, geom.hoehle || null);
+            this._chunkSatzHuelle(s, b);
+        }
         if (b.hoehle) this._hoehlenVerknuepfe(s, b);
         // EIN FLÜCHTIGER BLOCK (K69, `_satzBlock`): seine Arrays sind Views der Werkbank — der Bereich hält keine davon (die
         // nächste Rechnung überschreibt sie), nur die Views in den Satz; wer die Werte braucht, rechnet sie aus `quelle` nach.
@@ -2012,6 +2028,57 @@ class AnazhRealm_siedlung_bauten {
             if (e < a || a % 3 !== 0 || e % 3 !== 0)
                 throw new Error(`_chunkSatzZellen(${b.key}): Grenze ${z} [${a}, ${e}) teilt kein ganzes Dreieck`);
             if (e > a) b.zellen.push({ bereich: b, idx: idx.subarray(a, e), huelle: new THREE.Box3() });
+        }
+    }
+
+    // DIE ZELLEN UND HÜLLEN AUS DER VORLAGE DES FADENS (w4-b-boden2, gelaende-core `satzVorlage`): die Viertel kommen sortiert
+    // (der Index ab Ecke 0, je Zelle ihre Zahl — die Höhlen-Zellen hinter den vier Vierteln, je ihr Knoten), je nicht leerer
+    // Zelle ihre Hülle über Lage und Ziel, und mit dem Rand der Naht die feste Kiste je Zelle samt ihren Rand-Ecken
+    // (`festRand`, den der erste Teil-Morph las) — dieselben Zahlen, die `_chunkSatzViertel` und `_chunkSatzHuelle` hier
+    // rechneten; der Bereich verschiebt nur den Index um seinen Anfang.
+    _chunkSatzVorlageLegen(s, b, V) {
+        const vs = b.vStart;
+        const idx = new Uint32Array(V.idx.length);
+        for (let i = 0; i < idx.length; i++) idx[i] = V.idx[i] + vs;
+        b.idx = idx;
+        b.iAnzahl = idx.length;
+        b.zellen = [];
+        let ab = 0;
+        for (let z = 0; z < V.zahl.length; z++) {
+            if (!(V.zahl[z] > 0)) continue;
+            const zl = { bereich: b, idx: idx.subarray(ab, ab + V.zahl[z] * 3), huelle: new THREE.Box3() };
+            if (z >= 4) {
+                zl.knoten = b.hoehle.knoten[z - 4];
+                zl.knoten.zelle = zl;
+            }
+            b.zellen.push(zl);
+            ab += V.zahl[z] * 3;
+        }
+        s.stand++;
+        const h = b.huelle || (b.huelle = new THREE.Box3());
+        h.makeEmpty();
+        const rand = AnazhRealm.SCHATTEN_KASKADE.randM;
+        const hub = s.spec.hub || 0;
+        const K = V.kisten;
+        b.zellen.forEach((zelle, zi) => {
+            const zh = zelle.huelle;
+            zh.min.set(K[zi * 6], K[zi * 6 + 1], K[zi * 6 + 2]);
+            zh.max.set(K[zi * 6 + 3], K[zi * 6 + 4], K[zi * 6 + 5]);
+            zh.expandByScalar(rand);
+            zh.min.y -= hub;
+            zh.max.y += hub;
+            h.union(zh);
+        });
+        if (V.fest) {
+            const F = V.fest;
+            b.festRand = {
+                nur: V.nur,
+                zellen: b.zellen,
+                je: b.zellen.map((_, zi) => ({
+                    kiste: [F[zi * 6], F[zi * 6 + 1], F[zi * 6 + 2], F[zi * 6 + 3], F[zi * 6 + 4], F[zi * 6 + 5]],
+                    rv: V.rv.subarray(V.rvAb[zi], V.rvAb[zi + 1]),
+                })),
+            };
         }
     }
 
@@ -2089,7 +2156,7 @@ class AnazhRealm_siedlung_bauten {
     // Hang zur Sonne hin wirft über die nahe Ebene). Der Boden-Shader zeichnet zwischen Position und Morph-Ziel; das Ziel
     // zählt nur, wo sein Gewicht greift (ungewichtete Ziele tragen keine Lage). Ein Satz, dessen Stoff die Fläche senkrecht
     // hebt (das Wasser, `spec.hub` = `_wasserHubM`), trägt den Hub oben und unten.
-    // `nur` (fahrt-takt): ein Schreiber, der nur diese Vertices des Bereichs bewegt (der Teil-Morph, `_applyCrossLodGeomorph`),
+    // `nur` (fahrt-takt): ein Schreiber, der nur diese Vertices des Bereichs bewegt (der Teil-Morph aus dem Faden, `_bodenTeilLegen`),
     // lässt jede andere Ecke stehen — je Zelle die feste Hülle (die Lage jeder Ecke, das Ziel jeder anderen) einmal je Bereich und
     // Rand, danach nur die Ziele des Rands; dieselbe Hülle wie über jede Ecke (Minimum und Maximum kennen keine Reihe).
     _chunkSatzHuelle(s, b, nur = null, von = 0, bis = -1) {
@@ -2230,7 +2297,8 @@ class AnazhRealm_siedlung_bauten {
         for (const fa of s.attr) {
             if (!namen.includes(fa.name) && !(fa.w && namen.includes(fa.w))) continue;
             const ga = s.geom.attributes[fa.name];
-            // ein gepacktes Attribut liest der Schreiber im Chunk (Float32) — der Satz packt es neu
+            // ein gepacktes Attribut liest der Schreiber im Chunk (Float32) — der Satz packt es neu; schrieb er nur `nur`
+            // (der Rand des Teil-Morphs), packt er nur sie: jede andere Ecke trägt ihre Bytes schon
             if (fa.form)
                 AnazhRealm._satzPacke(
                     fa.form,
@@ -2239,7 +2307,8 @@ class AnazhRealm_siedlung_bauten {
                     ga.array,
                     b.vStart,
                     b.vAnzahl,
-                    fa.w && b.geom.attributes[fa.w].array
+                    fa.w && b.geom.attributes[fa.w].array,
+                    nur
                 );
             ga.addUpdateRange(b.vStart * ga.itemSize, b.vAnzahl * ga.itemSize);
             ga.needsUpdate = true;
@@ -2769,6 +2838,19 @@ AnazhRealm.CHUNK_SATZ_ABSCHNITT = Object.freeze({ luft: 1.2, ruheTakte: 600, ver
 // der Satz erst, wenn sein Inhalt um ein Viertel zunimmt, und schrumpft erst wieder, wenn er ein Drittel verliert. Wächst der
 // Inhalt während der Frist um mehr als `stetig` (10 %), beginnt sie neu — ein Satz, der füllt, schrumpft nie.
 AnazhRealm.CHUNK_SATZ_VERDICHTEN = Object.freeze({ luft: 1.25, schwelle: 1.5, stetig: 1.1, vMin: 1024, iMin: 3072 });
+// DIE ATTRIBUTE DES BODEN-SATZES (K44, K51-2): die Normale trägt snorm8x4, die Farbe float16x4 (`_satzPacke`), der Chunk
+// behält seine Float32-Arrays für jeden CPU-Leser; der Geomorph der Stufe bringt Normale und Stoff-Farbe des Ziels
+// (`aNormalZiel` snorm8x4, `aFarbeZiel` float16x4); die vierte Komponente trägt je einen Skalar des Chunks (Morph-Code in der
+// Farbe, Himmels-Sicht im Normal-Ziel, Schutt im Farb-Ziel) — 48 B je Vertex. Leser: der Satz (`_chunkSatzArt`) und der
+// voxel-worker, der jede Vorlage in DIESEN Formen packt (`_bodenSatzFormen`, gelaende-core `satzVorlage`, w4-b-boden2).
+AnazhRealm.BODEN_SATZ_ATTR = Object.freeze([
+    ["position", 3],
+    ["normal", 3, "snorm8"],
+    ["color", 3, "half", "aMorphWeight"],
+    ["aMorphTarget", 3],
+    ["aNormalZiel", 3, "snorm8", "aHimmel"],
+    ["aFarbeZiel", 3, "half", "aSchutt"],
+]);
 
 // DER ANKER DER REIHE IM BÜNDEL (1310-9): ab diesem Weg des Auges stellen die Bündel ihre Kinder neu nach Abstand (je
 // Anker-Wechsel EINE Neuaufnahme jedes Bündels, nie je Frame).

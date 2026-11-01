@@ -337,8 +337,8 @@ async function checkBandV1775MakeActCost({ page, check }) {
         // Snapshot
         const savedMode = r.getGameMode();
         const savedSoul = (p && p.soul) || "mensch";
-        const savedInv = Array.isArray(p.inventory) ? JSON.parse(JSON.stringify(p.inventory)) : [];
-        const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
+        const savedInv = Array.isArray(p.inventory) ? jsonKlon(p.inventory) : [];
+        const savedEquip = p && p.equipped ? jsonKlon(p.equipped) : { held: null, armor: null };
         const invLen = Array.isArray(p.inventory) ? p.inventory.length : 27;
         if (st.customSouls) delete st.customSouls["bp_koerper_human"];
         if (st.blueprints["koerper_human"]) delete st.blueprints["koerper_human"].forgedPrecision;
@@ -382,7 +382,7 @@ async function checkBandV1775MakeActCost({ page, check }) {
         if (st.blueprints._t_v1775) delete st.blueprints._t_v1775;
         st.blueprints._t_v1775 = {
             name: "_t_v1775",
-            parts: JSON.parse(JSON.stringify(KS75.geraet_spitzhacke.parts)),
+            parts: jsonKlon(KS75.geraet_spitzhacke.parts),
         };
         const tb = st.blueprints["_t_v1775"];
         tb.forgedPrecision = 0.8;
@@ -523,7 +523,7 @@ async function checkBandV1786WorkshopCoherence({ page, check }) {
         // (1) der Schwert-Samen — AUSLÖSCHUNGS-WELLE: der Blueprint fiel, die Judge-Substanz lebt
         // eingefroren in KIND_SUBSTANCE.geraet_schwert (Klinge, schneidet, gehaltenes Implement).
         const KS86 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
-        const sw = KS86.geraet_schwert ? { parts: JSON.parse(JSON.stringify(KS86.geraet_schwert.parts)) } : null;
+        const sw = KS86.geraet_schwert ? { parts: jsonKlon(KS86.geraet_schwert.parts) } : null;
         out.schwertExists = !!(sw && Array.isArray(sw.parts) && sw.parts.length > 0);
         out.schwertRole = sw ? r.computeBlueprintRole(sw) : "(missing)";
         out.schwertHeld = out.schwertRole === "tool" || out.schwertRole === "weapon"; // ein Gerät in der Hand
@@ -568,7 +568,7 @@ async function checkBandM6ErnteSpawn({ page, check }) {
         const out = {};
         const pm = st.playerMesh.position;
         const savedMode = r.getGameMode();
-        const savedInv = JSON.parse(JSON.stringify(st.player.inventory));
+        const savedInv = jsonKlon(st.player.inventory);
         const savedStamina = st.player.stamina;
         let baum = null;
         let clampSpawn = null;
@@ -644,7 +644,7 @@ async function checkBandM6ErnteSpawn({ page, check }) {
             if (st.blueprints._t_m6_haus) delete st.blueprints._t_m6_haus;
             st.blueprints._t_m6_haus = {
                 name: "_t_m6_haus",
-                parts: JSON.parse(JSON.stringify(KSm6.haus_basis.parts)),
+                parts: jsonKlon(KSm6.haus_basis.parts),
             };
             clampSpawn = r.spawnArchitecture("_t_m6_haus", { x: pm.x, y: pm.y, z: pm.z }, { seed: 7 });
             const d = clampSpawn ? Math.hypot(clampSpawn.position.x - pm.x, clampSpawn.position.z - pm.z) : 0;

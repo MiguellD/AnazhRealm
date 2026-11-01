@@ -9,11 +9,9 @@
 // (Datei · Mesh · Attribut) — eine benannte Änderung, keine Meinung.
 //
 //   npm run gate:asset-contract
-const fs = require("fs");
-const path = require("path");
 const { runWithWorker, fingerprintMeshes, DATEN_KANAELE, ersteAbweichung } = require("./lib/asset-worker-harness.cjs");
 const { probeWand } = require("./lib/plattform-probe.cjs");
-const { hauptLauf, wandEnde, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { hauptLauf, wandEnde, jsonLesen, jsonSchreiben, jsonKlon, ausDatei, path, fs } = require("./lib/welt-boot.cjs");
 const {
     dek,
     bildDeckung,
@@ -445,7 +443,7 @@ hauptLauf(async () => {
         for (const [field, key] of DATEN_KANAELE) {
             const goldPath = path.join(DIR, key + ".json");
             if (!fs.existsSync(goldPath)) continue;
-            const gold = fs.readFileSync(goldPath, "utf8").trim();
+            const gold = ausDatei(goldPath).trim();
             const live = JSON.stringify(bookReply[field]);
             if (live === gold) continue;
             const a = live === undefined ? null : ersteAbweichung(bookReply[field], JSON.parse(gold));
@@ -456,7 +454,7 @@ hauptLauf(async () => {
         const buch = bookReply.book || {};
         // DER UMSCHLAG WIE DER WIRT IHN LIEST (W8): die Zweit-Kern-Blöcke (Stufen · Budget · Gestalten) fallen über
         // DIESELBE Funktion in die EINEN Karten wie in `_foundryIngestRenderConfig` (phyto-core kerneVereinen).
-        const vereint = (rc) => PC.kerneVereinen(JSON.parse(JSON.stringify(rc || {})));
+        const vereint = (rc) => PC.kerneVereinen(jsonKlon(rc || {}));
         const rcV = vereint(bookReply.renderConfig);
         const lodB = rcV.lod;
         const budget = lodB && lodB.budget;
@@ -708,7 +706,7 @@ hauptLauf(async () => {
         // Die Tafel schreiben (`--tafel`, auf dem Stand TAFEL_STAND): nur die Bild-Messung, kein Urteil.
         if (tafelSchreiben) return;
         // SELBST-TEST S3 (W8) vorbereitet: der Umschlag OHNE zusatzBudget — welche Kerne verlieren ihre Zeilen?
-        const ohneZB = JSON.parse(JSON.stringify(bookReply.renderConfig || {}));
+        const ohneZB = jsonKlon(bookReply.renderConfig || {});
         if (ohneZB.lod) delete ohneZB.lod.zusatzBudget;
         const budgetOhneZB = (vereint(ohneZB).lod || {}).budget || {};
         wand = { budgetOhneZB, kernVonArt };
@@ -852,7 +850,7 @@ hauptLauf(async () => {
                     ["tris", Math.floor(z.tris / 2)],
                     ["draws", z.draws - 1],
                 ]) {
-                    const B2 = JSON.parse(JSON.stringify(B));
+                    const B2 = jsonKlon(B);
                     B2[k][st][feld] = wert;
                     if (!kostenUrteil(messungen, B2).some((x) => x.startsWith(`${k}[${st}] `)))
                         halb.push(`${k}[${st}].${feld}`);

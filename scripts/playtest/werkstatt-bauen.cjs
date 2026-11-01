@@ -3,7 +3,7 @@
 // 11 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
 // die GEBRAUCHS-Flächen routen einen Bauplan nach Rolle/Form:
 // der Minecraft-Hotbar-Gate (Gerät → Hand, Struktur → Phantom) + die zwei Drawer-Bugs (gecraftete
@@ -16,7 +16,7 @@ async function checkBandV1774UseByRole({ page, check }) {
 
         // Snapshot — am Ende restauriert.
         const savedMode = r.getGameMode();
-        const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
+        const savedEquip = p && p.equipped ? jsonKlon(p.equipped) : { held: null, armor: null };
         const savedSoul = (p && p.soul) || "mensch";
         const savedHotbar = st.hotbar.slice(0, 9);
         r.setGameMode("schöpfer");
@@ -32,7 +32,7 @@ async function checkBandV1774UseByRole({ page, check }) {
         blu._t_v1774 = {
             name: "_t_v1774",
             label: "Spitzhacke (Substanz)",
-            parts: JSON.parse(JSON.stringify(KS74.geraet_spitzhacke.parts)),
+            parts: jsonKlon(KS74.geraet_spitzhacke.parts),
         };
         // koerper_human ist ALT_DOPPEL/donorOnly und fehlt in der primären Select-Sicht → der generische
         // „Bauplan-Avatar gelistet + verkörperbar“-Pfad misst an einem eigenen role:soul-Bauplan
@@ -44,7 +44,7 @@ async function checkBandV1774UseByRole({ page, check }) {
             label: "Avatar (Test)",
             role: "soul",
             roleManual: true,
-            parts: JSON.parse(JSON.stringify(blu.koerper_human.parts)),
+            parts: jsonKlon(blu.koerper_human.parts),
         };
 
         // (1) _blueprintUseKind — aus Rolle + Form AUSGELESEN
@@ -392,7 +392,7 @@ async function checkBandV1789WorkshopReadout({ page, check }) {
         // die emergente Rolle), Quelle räumen.
         const KS89 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
         if (blu._t_ab_src) delete blu._t_ab_src;
-        blu._t_ab_src = { name: "_t_ab_src", parts: JSON.parse(JSON.stringify(KS89.geraet_schwert.parts)) };
+        blu._t_ab_src = { name: "_t_ab_src", parts: jsonKlon(KS89.geraet_schwert.parts) };
         r.cloneBlueprint("_t_ab_src", "_ab_clone");
         delete blu._t_ab_src;
         r.selectBlueprintForEdit("_ab_clone");
@@ -659,7 +659,7 @@ async function checkBandWelle6Keybindings({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6a6Results && !wave6a6Results.error) {
+    if (erreichbar(check, "Welle 6.A6: Tests laufen", wave6a6Results)) {
         check(
             "Welle 6.A6: aktionAusdauer-Gesetz === 5 (koerper-core, Zwilling gefallen)",
             wave6a6Results.hasStaminaCost
@@ -745,7 +745,7 @@ async function checkBandWelle6Keybindings({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6a6V2Results && !wave6a6V2Results.error) {
+    if (erreichbar(check, "Welle 6.A6 V2: Tests laufen", wave6a6V2Results)) {
         check("Welle 6.A6 V2: WORLD_EFFECT_THRESHOLDS.resonance_mild lesbar", wave6a6V2Results.thresholdReadable);
         check("Welle 6.A6 V2: Symphony initialisierbar im Headless", wave6a6V2Results.symphonyReady);
         if (wave6a6V2Results.symphonyReady) {
@@ -796,7 +796,7 @@ async function checkBandWelle6Keybindings({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6c3V2Results && !wave6c3V2Results.error) {
+    if (erreichbar(check, "Welle 6.C3 V2: Tests laufen", wave6c3V2Results)) {
         check("Welle 6.C3 V2: HUD sichtbar im Bau-Modus", wave6c3V2Results.hudVisible);
         check("Welle 6.C3 V2: Default-HUD enthält 'F' (confirmBuild)", wave6c3V2Results.defaultMentionsConfirmBuild);
         check(
@@ -915,7 +915,7 @@ async function checkBandWelle6Keybindings({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6c3Results && !wave6c3Results.error) {
+    if (erreichbar(check, "Welle 6.C3: Tests laufen", wave6c3Results)) {
         check("Welle 6.C3: DEFAULT_KEYBINDINGS frozen", wave6c3Results.hasDefaults);
         check(
             "Welle 6.C3/V8.17+E8+L3: KEYBINDING_ACTIONS hat 13 Einträge (6 + 5 Drawer/Camera + swapHands + chat)",
@@ -1273,7 +1273,7 @@ async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6x1Results && !wave6x1Results.error) {
+    if (erreichbar(check, "Welle 6.X.1: Audit-Fix-Tests laufen", wave6x1Results)) {
         check("Welle 6.X.1 A2: pfad + Phantom-instabil → confirmBuild blockt", wave6x1Results.pfadBlocksUnstable);
         check("Welle 6.X.1 A2: pfad-Block → keine Architektur entsteht", wave6x1Results.pfadBlocksNoArch);
         check("Welle 6.X.1 A2: pfad-Block → kein Material-Verlust", wave6x1Results.pfadBlocksNoMaterialLoss);
@@ -1288,8 +1288,6 @@ async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
             wave6x1Results.statsShowsArmorRow,
             `created=${wave6x1Results._a3bCreated} marked=${wave6x1Results._a3bMarked} equipped=${wave6x1Results._a3bEquipped} text=${(wave6x1Results._a3bContainerText || "").slice(0, 80)}`
         );
-    } else {
-        check("Welle 6.X.1: Audit-Fix-Tests laufen", false, wave6x1Results ? wave6x1Results.error : "no result");
     }
 
     // ### UI-Politur ###
@@ -1348,7 +1346,7 @@ async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6x2Results && !wave6x2Results.error) {
+    if (erreichbar(check, "Welle 6.X.2: UI-Politur-Tests laufen", wave6x2Results)) {
         check("Welle 6.X.2 B1: #logbook-section im DOM", wave6x2Results.logbookSectionExists);
         check("Welle 6.X.2 B1: #logbook-toggle im DOM", wave6x2Results.logbookToggleExists);
         check(
@@ -1367,8 +1365,6 @@ async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
         check("Welle 6.X.2 B4: Hotbar zykelt vorwärts", wave6x2Results.hotbarCyclesForward);
         check("Welle 6.X.2 B4: Hotbar zykelt rückwärts", wave6x2Results.hotbarCyclesBackward);
         check("Welle 6.X.2 B4: Hotbar wrappt bei 0 → 8", wave6x2Results.hotbarWrapsAtZero);
-    } else {
-        check("Welle 6.X.2: UI-Politur-Tests laufen", false, wave6x2Results ? wave6x2Results.error : "no result");
     }
 
     // ### Vision-Quick-Wins ###
@@ -1499,7 +1495,7 @@ async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6x3Results && !wave6x3Results.error) {
+    if (erreichbar(check, "Welle 6.X.3: Vision-Quick-Win-Tests laufen", wave6x3Results)) {
         check(
             "Welle 6.X.3 C1: at_player_forward(8) liefert Position 8m vor Spieler (yaw=0)",
             wave6x3Results.atPlayerForwardOffset
@@ -1530,8 +1526,6 @@ async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
             wave6x3Results.dragonCannotJumpFromSlope,
             wave6x3Results._dragonTags
         );
-    } else {
-        check("Welle 6.X.3: Vision-Quick-Win-Tests laufen", false, wave6x3Results ? wave6x3Results.error : "no result");
     }
 
     // ### Identity ###
@@ -1579,7 +1573,7 @@ async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6x45Results && !wave6x45Results.error) {
+    if (erreichbar(check, "Welle 6.X.4: Identity-Tests laufen", wave6x45Results)) {
         check("Welle 6.X.4 F1: state.grok.companionName default 'Grok'", wave6x45Results.companionNameDefault);
         check("Welle 6.X.4 F1: state.player.name default 'Schöpfer'", wave6x45Results.playerNameDefault);
         check("Welle 6.X.4 F1: Companion-Input ändert state.grok.companionName", wave6x45Results.companionNameUpdated);
@@ -1588,8 +1582,6 @@ async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
         check("Welle 6.X.4 F1: Player-Name persistiert in localStorage", wave6x45Results.playerNamePersisted);
         check("Welle 6.X.4 F1: System-Prompt enthält Companion-Name", wave6x45Results.promptContainsCompanionName);
         check("Welle 6.X.4 F1: System-Prompt enthält Player-Name", wave6x45Results.promptContainsPlayerName);
-    } else {
-        check("Welle 6.X.4: Identity-Tests laufen", false, wave6x45Results ? wave6x45Results.error : "no result");
     }
 }
 
@@ -1783,7 +1775,7 @@ async function checkBandNutzerBlickNachbau({ page, check }) {
             const ohneSitz = {
                 name: "__nb_ohnesitz",
                 builtIn: false,
-                parts: JSON.parse(JSON.stringify(blu.__nb_wagen.parts)),
+                parts: jsonKlon(blu.__nb_wagen.parts),
                 connections: (blu.__nb_wagen.connections || []).filter((c) => c.type !== "sitz"),
             };
             out.ohneSitzKeinTrank = r.computeBlueprintRole(ohneSitz) === "architecture";
@@ -1855,8 +1847,8 @@ async function checkBandWGGelenke({ page, check }) {
         const wagen = KSwg.fahrzeug_wagen
             ? {
                   name: "_wg_wagen",
-                  parts: JSON.parse(JSON.stringify(KSwg.fahrzeug_wagen.parts)),
-                  connections: JSON.parse(JSON.stringify(KSwg.fahrzeug_wagen.connections || [])),
+                  parts: jsonKlon(KSwg.fahrzeug_wagen.parts),
+                  connections: jsonKlon(KSwg.fahrzeug_wagen.connections || []),
               }
             : null;
         out.ranked = false;

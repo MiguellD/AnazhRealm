@@ -44,11 +44,11 @@
 // „verlorenen" Key (in f.requested ohne cache/Szene/Räumungs-Buch) und beweist, dass
 // ALLE Fangpfade feuern — sonst wäre das Grün vakuös.
 //   node scripts/diag-asset-inventory.cjs [--selftest]
-const { statikServer, hauptLauf, nullSeite, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, wandEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
 const server = statikServer();
 hauptLauf(async () => {
-    const selftest = process.argv.includes("--selftest");
+    const selftest = SELBSTTEST;
     await server.lausche(0);
     const { browser, page } = await nullSeite({ frist: 240000 });
     await page.evaluateOnNewDocument(installWieseSicht);
@@ -71,15 +71,7 @@ hauptLauf(async () => {
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
         await window.__weltDa(() => !!!(f && !f.ready));
         o.foundryReady = !!f?.ready;
-        for (let it = 0; it < 350; it++) {
-            st._frameOverBudget = false;
-            try {
-                r._gameLoopTick && r._gameLoopTick(performance.now());
-                const pp = st.playerMesh && st.playerMesh.position;
-                if (pp && r._tickScatterStreaming) r._tickScatterStreaming(pp);
-            } catch {}
-            await sleep(8);
-        }
+        await __streuTakte(350, 8);
         try {
             r._drainPendingWaterIso && r._drainPendingWaterIso();
             r._drainPendingGrass && r._drainPendingGrass();

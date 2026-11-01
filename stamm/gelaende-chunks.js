@@ -80,6 +80,11 @@ class AnazhRealm_gelaende_chunks {
                                           zellen: new Int16Array(msg.zielZellen),
                                       }
                                     : null,
+                                // DER BODEN KOMMT FERTIG (w4-b-boden2): die Bau-Nummer, unter der der Faden das Netz hält
+                                // (sein Geomorph, `_bodenEin`), seine Naht und die Vorlage seines Bereichs im Satz
+                                bid: msg.bid,
+                                naht: msg.naht,
+                                satz: msg.satz,
                                 waterCells: new Uint8Array(msg.waterCells),
                                 zid: msg.zid || null, // die Zellen behält der Faden unter dieser Nummer (das Wasser-Sheet)
                                 vonPlatte: !!msg.vonPlatte, // ein Treffer der Platte des Fadens (der Warm-Start)
@@ -147,6 +152,9 @@ class AnazhRealm_gelaende_chunks {
                             });
                         pending.resolve(msg);
                     }
+                } else if (msg.type === "boden-morph") {
+                    // DER GEOMORPH AUS DEM FADEN (w4-b-boden2): je gemorphtem Netz die fertigen Puffer — der Takt legt sie an
+                    this._bodenAntwort(msg);
                 } else if (msg.type === "ack" && msg.requestId) {
                     const pending = this.state.voxelWorkerPending.get(msg.requestId);
                     if (pending) {
@@ -172,10 +180,16 @@ class AnazhRealm_gelaende_chunks {
                 this.state.voxelWorkerReady = false;
             };
             this.state.voxelWorker = worker;
+            // DER FADEN DES BODENS (w4-b-boden2): er hält jedes Netz und morpht die Nähte — derselbe Faden, auch wenn eine
+            // Test-Naht den Bau-Weg aushängt (`state.voxelWorker` null, die Wasser-Linse baut synchron): der Ring bleibt sein Spiegel
+            this._bodenFaden = worker;
             // DER INIT DER GEBURT (B-K2) trägt den Stand (Seed, Gesetz, voxelEdits); jeder Auftrag reist hinter ihm
             // (`_voxelFadenAuftrag`), nie mit einem neuen init. Kommt der Faden erst nach der Weltgen (der Blob-Weg), trägt dieser
             // init schon die Welt: der Strom darf ihn fragen. Verwirft der Faden ihn, bricht es laut beim Namen.
             this._voxelWorkerSyncState({ op: "init" }).catch((e) => this._stoffBruch("der Voxel-Faden (init)", e));
+            // die Eintritte und Austritte des Bodens, die auf einen Faden warteten (der Blob-Weg, `_bodenEin`), hinter seinem init
+            for (const [m, t] of this._bodenWarte || []) worker.postMessage(m, t);
+            this._bodenWarte = null;
             // DIE REGIONEN DIESER WELT (streaming.K5): der Stand trägt keine — ein Faden, der nach ihrer Bestellung geboren wird,
             // rechnet jede selbst direkt hinter seinem init (ohne Rückfrage: der Main hält sie). Bis dahin baute ein
             // nachgeborener Voxel-Faden jeden Chunk ohne Fluss und See (werk-im-wasser: 0 Häuser an 8 Uferorten, das Bild trocken)
@@ -255,6 +269,9 @@ class AnazhRealm_gelaende_chunks {
                 teilung: AnazhRealm.BODEN_KARTE_TEILUNG,
                 gruenSchwelle: AnazhRealm.TERRAIN_GEOLOGY.gruenSchwelle,
             },
+            // DIE FORMEN DES BODEN-SATZES reisen mit (w4-b-boden2): der Worker packt jede Vorlage in DENSELBEN Vertex-Formen wie
+            // der Satz (`BODEN_SATZ_ATTR`, `_satzForm`)
+            bodenSatz: { formen: this._bodenSatzFormen() },
             // DIE PLATTE DES BODENS (Karte hydro-faden): der Faden führt den Warm-Start — ob er gilt, sein Stempel, sein Deckel
             platte: this._chunkPlatte(),
             // DIE KONSTANTEN DER FERNE reisen mit (B2): der Fern-Faden färbt den Horizont mit DENSELBEN Zahlen (`fernAuftrag`), der
@@ -653,6 +670,7 @@ class AnazhRealm_gelaende_chunks {
                     this._pegelMarke(cx, cz) !== pegel
                 ) {
                     this.state.voxelMeshGenAtRequest.delete(cacheKey);
+                    this._bodenFrei(meshData); // der Faden gibt das Netz frei, das hier verfällt
                     return;
                 }
                 this.state.voxelMeshGenAtRequest.delete(cacheKey);
@@ -684,9 +702,9 @@ class AnazhRealm_gelaende_chunks {
         this._perfMark("workerMesh");
         // DIE BYTES DES FADENS SIND DIE ATTRIBUTE (Lehre 24, B-K2): der Faden überträgt jedes Array (Transfer) — der Bau
         // übernimmt sie, statt sie zu kopieren (`Float32BufferAttribute` kopiert jedes Array; bis B-K2 elf Kopien je Chunk).
-        // Eine eigene Kopie trägt das Morph-Ziel (der Geomorph beschreibt es, `_applyCrossLodGeomorph`, und setzt es aus
-        // `userData.stufeZiel` bzw. der Position zurück), in der gröbsten Stufe auch Normalen- und Farb-Ziel — der Faden
-        // macht sie (`chunkAntwort`, Karte hydro-faden), nie der Haupt-Faden.
+        // Eine eigene Kopie trägt das Morph-Ziel (der Naht-Morph des Fadens beschreibt seinen Rand, `_bodenTeilLegen`), in der
+        // gröbsten Stufe auch Normalen- und Farb-Ziel — der Faden macht sie (`chunkAntwort`, Karte hydro-faden), nie der
+        // Haupt-Faden.
         const attr = (a, n) => new THREE.BufferAttribute(a, n);
         const geom = new THREE.BufferGeometry();
         geom.setAttribute("position", attr(meshData.positions, 3));
@@ -764,8 +782,24 @@ class AnazhRealm_gelaende_chunks {
         // Fail-closed: ein Faden ohne Karte (eine alte Platte, ein fremder Faden) bricht laut.
         if (meshData.karte === undefined || ((lod | 0) < 3 && meshData.karte && !meshData.karteZiel))
             throw new Error(`_buildVoxelChunkDataFromWorkerMesh(${cx},${cz}): der Worker liefert keine Boden-Karte`);
+        // DIE NAHT UND DER SATZ KOMMEN FERTIG (w4-b-boden2): der Faden hält das Netz unter seiner Bau-Nummer (`bid`, sein Geomorph
+        // entsteht dort, `_bodenEin`), reicht seine Naht (gelaende-core `bodenNaht`: die Rand-Vertices und -Dreiecke, die der
+        // Teil-Morph und die Karte lesen), die Vorlage seines Bereichs im Satz (`satzVorlage`) und den Geomorph seiner eigenen
+        // Naht gegen den Ring, wie der Faden ihn kennt (`teil`, der Einbau legt ihn an). Fail-closed: ein Faden ohne sie (eine alte
+        // Platte, ein fremder Faden) bricht laut — der Haupt-Faden rechnet sie nie nach.
+        if (!(meshData.bid > 0) || !meshData.naht || !meshData.satz)
+            throw new Error(
+                `_buildVoxelChunkDataFromWorkerMesh(${cx},${cz}): der Worker liefert keine Naht (Bau-Nummer, Satz)`
+            );
         const karte = meshData.karte;
-        const naht = this._bodenNaht(geom, cx, cz, lod);
+        const naht = (geom.userData.naht = {
+            rand: meshData.naht.rand,
+            randTri: meshData.naht.randTri,
+            lage: null,
+            ziel: null,
+        });
+        geom.userData.bid = meshData.bid;
+        geom.userData.satzVorlage = Object.assign(meshData.satz, { nur: naht.rand });
         naht.lage = karte && Object.assign(karte, { ref: meshData.positions });
         // die Karte der Ziele (`_bodenStufeMisch`): ihre Lage ist das Morph-Ziel, das der Faden lieferte (der Satz trägt danach
         // eine eigene Kopie, dieses Feld ändert nichts mehr) — der erste Leser rastert nur, was der Naht-Morph am Saum zog
@@ -781,6 +815,9 @@ class AnazhRealm_gelaende_chunks {
             hasBVH,
             surfMap: karte && karte.hoehe,
             gruenMap: karte && karte.gruen,
+            // die Karte der Ziele kommt mit (w4-b-boden2): bis hierher rasterte `_bodenStufeMisch` sie beim ersten Leser nach
+            surfMapZiel: naht.ziel ? naht.ziel.hoehe : null,
+            teil: meshData.teil || null,
         };
     }
 
@@ -904,7 +941,10 @@ class AnazhRealm_gelaende_chunks {
             if (!cache || !cache.size) continue;
             for (let cx = cx0; cx <= cx1; cx++)
                 for (let cz = cz0; cz <= cz1; cz++)
-                    for (let lod = 0; lod <= 3; lod++) cache.delete(`${cx},${cz},${lod}`);
+                    for (let lod = 0; lod <= 3; lod++) {
+                        if (cache === this.state.voxelMeshCache) this._bodenFrei(cache.get(`${cx},${cz},${lod}`));
+                        cache.delete(`${cx},${cz},${lod}`);
+                    }
         }
         if (!anhang) return; // die ganze Liste reist danach (`_standRueckspielen`)
         try {
@@ -937,7 +977,10 @@ class AnazhRealm_gelaende_chunks {
             return;
         }
         if (this.state.voxelDensityCache) this.state.voxelDensityCache.clear();
-        if (this.state.voxelMeshCache) this.state.voxelMeshCache.clear();
+        if (this.state.voxelMeshCache) {
+            this._bodenFrei(...this.state.voxelMeshCache.values());
+            this.state.voxelMeshCache.clear();
+        }
         // stateGen bumpt in _voxelWorkerSyncState (send-time). worldgenSynced bleibt ab jetzt true — der
         // Streaming-Pump traut dem Worker; Edits filtern je Chunk (`_voxelStand`). Ein eben geborener Faden trägt diese Welt
         // schon in seinem init — ein state-set dahinter wäre derselbe volle Klon ein zweites Mal (Lehre 24, B-K2).
@@ -1284,10 +1327,13 @@ class AnazhRealm_gelaende_chunks {
             // lesen sie über den EINEN Leser `_bodenSichtAt` (am Chunk-Rand die Karte des Nachbarn).
             surfMap: fresh.surfMap || null,
             gruenMap: fresh.gruenMap || null,
+            surfMapZiel: fresh.surfMapZiel || null, // die Karte der Ziele (`_bodenStufeMisch`), aus dem Faden
             lod,
             hasBVH: typeof fresh.hasBVH === "boolean" ? fresh.hasBVH : true,
         };
         this.state.voxelChunks.set(key, entry);
+        // die eigene Naht aus dem Faden, im Takt des Einbaus (`bodenSelbst`: gegen den Ring, wie der Faden ihn beim Bau kannte)
+        if (fresh.teil) this._bodenTeilLegen(fresh.teil);
         this._streuFussNeu(cx, cz); // die Streu über ihm steht auf seiner Karte (Gelände H5)
         // DIE NEUEN ZELLEN TRAGEN DAS GESETZ (F3): Kappe und Quellen des Automaten leiten sich aus ihnen neu ab, und mit der
         // neuen Kappe legt `_ensureWaterCALevel` das Level auf das Gesetz. Bis F3 hielt der Automat die Kappe der alten Zellen,
@@ -1369,117 +1415,223 @@ class AnazhRealm_gelaende_chunks {
             if (!this.state.pendingFoliageChunks) this.state.pendingFoliageChunks = new Set();
             this.state.pendingFoliageChunks.add(`${cx},${cz}`);
         }
-        // Cross-LOD-Geomorph: diesen Chunk an GROBE Nachbarn schmiegen + die Nachbarn des 3×3-Rings neu morphen, die ihn LESEN
-        // (ein FEINER Nachbar, der auf diesen wartete, schließt jetzt seine Naht — auch an der Ecke). Main-only, render-only.
-        // DIE FOLGE DES WECHSELS (K51-4): ein Nachbar schmiegt sich nur an gröbere Nachbarn — er liest diesen Chunk, wenn dessen
-        // neue Stufe gröber ist als seine (die Naht folgt dem neuen Netz) oder dessen alte (`altLod`: die alte Naht fällt).
-        // Jeder andere behält seinen Morph; bis K51-3 morphte jeder Wechsel alle acht neu (OMEN 1410-boden gehend: die
-        // Folge-Neubauten des Stufen-Wechsels, Frame p95 28,7 → 41,6 ms; Radeon je Neubau ~9 Morphs à 1,2–1,5 ms).
-        // Der Chunk selbst morpht sofort (sein erstes Netz); die Folge seiner Nachbarn geht in die Folge-Schlange
-        // (`_tickMorphFolge`), die sein eigener Morph für ihn schließt.
-        if (this.state._morphFolge) this.state._morphFolge.delete(key);
-        this._applyCrossLodGeomorph(cx, cz);
-        for (let dx = -1; dx <= 1; dx++)
-            for (let dz = -1; dz <= 1; dz++) {
-                if (dx === 0 && dz === 0) continue;
-                const nb = this.state.voxelChunks.get(`${cx + dx},${cz + dz}`);
-                if (!nb || nb.empty || !nb.mesh) continue;
-                const nl = Number.isFinite(nb.lod) ? nb.lod : 0;
-                if (!(lod > nl || (altLod !== null && altLod > nl))) continue;
-                const F = this.state._morphFolge || (this.state._morphFolge = new Map());
-                const nk = `${cx + dx},${cz + dz}`;
-                if (!F.has(nk)) F.set(nk, this._schedFrameNo | 0);
-            }
+        // DER GEOMORPH DER STUFEN-GRENZE ENTSTEHT IM FADEN (w4-b-boden2, Lehre 14): der Eintritt reist an den Faden, der das Netz
+        // hält; er schmiegt diesen Chunk an GROBE Nachbarn, wenn sich der Ring seit dem Bau änderte (die eigene Naht kam mit dem
+        // Netz, `fresh.teil`), und morpht jeden Nachbarn des 3×3-Rings, der ihn LIEST (die Folge des
+        // Wechsels, K51-4: dessen neue Stufe gröber als seine — die Naht folgt dem neuen Netz — oder dessen alte, `altLod`: die
+        // alte Naht fällt) — gelaende-core `bodenMorph`, dieselbe Rechnung; der Takt legt die fertigen Puffer an
+        // (`_tickMorphFolge`). Bis hierher morphte der Haupt-Faden den Chunk beim Einbau und seine Nachbarn in der Folge-Schlange
+        // (headless kalt bis zum Bild 414 ms Morph, davon 338 in der Folge; Radeon Boden vor dem Bild ≈ 1,0 s).
+        this._bodenEin(cx, cz, entry, altLod);
         return entry;
     }
 
-    // DIE FOLGE DES WECHSELS IM TAKT (fahrt-takt, profiband.K1, Lehre 25): ein Nachbar, den ein Stufen-Wechsel neu morphen
-    // lässt, wartet in der EINEN Folge-Schlange (Chunk → Takt der ersten Bitte) und morpht EINMAL gegen den letzten Stand
-    // seiner Nachbarn — ein Ring-Wechsel baut seine Reihe Chunk für Chunk (je Takt einer), bis fahrt-takt morphte der Nachbar
-    // nach jedem neu (Radeon in Fahrt 20 m/s: 648 von 1 119 Folge-Morphs wiederholten sich binnen 10 Takten, 481 von 762 ms).
-    // Nah zuerst (Ring-Abstand, dann die ältere Bitte), im Takt ohne Chunk-Einbau bis `ms`, mindestens einer; nie verhungert:
-    // eine Bitte, älter als MORPH_FOLGE_FRIST Takte, morpht in jedem Takt. Der Morph liest die Nachbarn, wie sie dann stehen —
-    // byte-gleich mit dem Morph nach jedem Wechsel (der letzte gewinnt, `_applyCrossLodGeomorph` ist ein Zustand der Netze).
-    _tickMorphFolge(ms) {
-        const F = this.state._morphFolge;
-        if (!F || F.size === 0) return 0;
-        const takt = this._schedFrameNo | 0;
-        const p = this.state.lastPlayerVoxelChunk;
-        const reihe = [];
-        for (const [key, seit] of F) {
-            const k = key.indexOf(",");
-            const cx = Number(key.slice(0, k)),
-                cz = Number(key.slice(k + 1));
-            reihe.push({ key, cx, cz, seit, d: p ? Math.max(Math.abs(cx - p.cx), Math.abs(cz - p.cz)) : 0 });
+    // DER EINTRITT INS NETZ DES FADENS (w4-b-boden2): der Faden hält jedes Netz, das er baute (`bid`), und spiegelt den Ring in der
+    // Reihe seiner Wechsel — dieser Eintritt (`boden-ein`) und jeder Austritt (`boden-aus`, `_disposeVoxelChunk`). Ein Netz des
+    // Haupt-Fadens (Sync-Bau, laut: `_fadenUmgangen`) reist ganz mit (Kopien der Lage, Ziele, Stoffe und Karten). Der Regler des
+    // Geomorphs reist mit: die Karte des Chunks liest die gezeichnete Lage. Ohne Faden (der Blob-Weg kommt später) wartet der
+    // Eintritt auf ihn (`_getVoxelWorker` schickt ihn hinter dem init).
+    _bodenEin(cx, cz, entry, altLod) {
+        const g = entry.mesh.geometry;
+        const u = g.userData;
+        const U = this.state.atmoUniforms;
+        const At = this.state.atmosphere;
+        const msg = {
+            type: "boden-ein",
+            key: `${cx},${cz}`,
+            cx,
+            cz,
+            lod: Number.isFinite(entry.lod) ? entry.lod : 0,
+            alt: altLod,
+            gm: U && U.geomorph ? U.geomorph.value : At && Number.isFinite(At.geomorph) ? At.geomorph : 1,
+        };
+        const transfer = [];
+        if (!(u.bid > 0) && !u.netzImFaden) {
+            u.netzImFaden = true;
+            if (!u.bid) u.bid = -(this._bodenNetzNr = (this._bodenNetzNr | 0) + 1);
+            const A = g.attributes;
+            const naht = this._bodenNaht(g, cx, cz, msg.lod);
+            const k = (a) => (a ? (transfer.push((a = a.slice()).buffer), a) : null);
+            const karte = (K) => K && { hoehe: k(K.hoehe), gruen: k(K.gruen), zellen: k(K.zellen), ref: k(K.ref) };
+            msg.netz = {
+                P: k(A.position.array),
+                idx: k(Uint32Array.from(g.index.array)),
+                basis: k(u.stufeZiel || A.position.array),
+                t: k(A.aMorphTarget.array),
+                w: k(A.aMorphWeight.array),
+                nrm: k(A.normal.array),
+                col: k(A.color.array),
+                him: k(A.aHimmel.array),
+                sch: k(A.aSchutt.array),
+                nZ: k(A.aNormalZiel.array),
+                fZ: k(A.aFarbeZiel.array),
+                karte: karte(naht.lage),
+                ziel: karte(naht.ziel),
+            };
         }
-        reihe.sort((a, b) => a.d - b.d || a.seit - b.seit || (a.key < b.key ? -1 : 1));
-        const t0 = performance.now();
+        msg.bid = u.bid;
+        this._bodenImFlug = (this._bodenImFlug | 0) + 1;
+        const w = this._bodenFaden;
+        if (w) w.postMessage(msg, transfer);
+        else (this._bodenWarte || (this._bodenWarte = [])).push([msg, transfer]);
+    }
+
+    // DIE ANTWORT DES FADENS (`boden-morph`): je gemorphtem Netz ein Teil, in der Reihe des Fadens — der Takt legt sie an
+    // (`_tickMorphFolge`). Hält der Faden das Netz nicht mehr (`fehlt`: über `BODEN_OHNE_RING` gefallen, ehe der Main es
+    // einsetzte), baut der Chunk neu — laut, nie still.
+    _bodenAntwort(msg) {
+        this._bodenImFlug = Math.max(0, (this._bodenImFlug | 0) - 1);
+        if (msg.fehlt) {
+            const e = this.state.voxelChunks && this.state.voxelChunks.get(msg.key);
+            if (!e || !e.mesh || e.mesh.geometry.userData.bid !== msg.bid) return;
+            (this.state.dirtyVoxelChunks || (this.state.dirtyVoxelChunks = new Set())).add(msg.key);
+            this.log(`BODEN-NAHT: der Faden hält das Netz ${msg.key} (${msg.bid}) nicht mehr — es baut neu`, "WARNING");
+            return;
+        }
+        const Q = this._bodenTeile || (this._bodenTeile = []);
+        for (const t of msg.teile) Q.push(t);
+    }
+
+    // DER TAKT DER NAHT (w4-b-boden2): legt jeden Teil an, den der Faden schickte — alle, in seiner Reihe (ein späterer Teil
+    // trägt den Stand nach einem früheren; das Anlegen ist billig: Ziele und Codes des Rands, die Karten, das Naht-Band).
+    // Bis hierher morphte dieser Takt die Folge-Schlange im Haupt-Faden (fahrt-takt: nah zuerst, mit Frist).
+    // Jeder Teil trägt den GANZEN Stand dessen, was er nennt (Ziele und Codes des ganzen Rands, ganze Karten, das ganze Band):
+    // mehrere Teile desselben Netzes in einem Takt legt er als EINEN an — je Feld der jüngste —, byte-gleich mit allen nacheinander.
+    _tickMorphFolge() {
+        const Q = this._bodenTeile;
+        if (!Q || !Q.length) return 0;
+        const je = new Map();
+        for (const t of Q.splice(0)) {
+            const k = t.key + "|" + t.bid;
+            const a = je.get(k);
+            if (!a) je.set(k, t);
+            else
+                je.set(
+                    k,
+                    Object.assign(a, t, {
+                        tR: t.tR || a.tR,
+                        wR: t.tR ? t.wR : a.wR,
+                        ziel: t.ziel !== undefined ? t.ziel : a.ziel,
+                        karte: t.karte !== undefined ? t.karte : a.karte,
+                        nahtNeu: t.nahtNeu || a.nahtNeu,
+                        band: t.nahtNeu ? t.band : a.band,
+                    })
+                );
+        }
         let n = 0;
-        for (const e of reihe) {
-            const faellig = takt - e.seit >= AnazhRealm.MORPH_FOLGE_FRIST;
-            if (!faellig && (ms <= 0 || (n > 0 && performance.now() - t0 >= ms))) continue;
-            F.delete(e.key);
-            this._applyCrossLodGeomorph(e.cx, e.cz);
-            n++;
-        }
+        for (const t of je.values()) if (this._bodenTeilLegen(t)) n++;
         return n;
     }
 
-    // DIE NAHT DES CHUNKS (gehen-takt, Lehre 25): was ein Naht-Morph berühren KANN, steht mit dem Netz fest — die Rand-Vertices
-    // (bis zum Morph-Band, 2 Schritte, an einer Kante: nur sie zieht `_applyCrossLodGeomorph` an einen Nachbarn), die Rand-
-    // Dreiecke (≥ 1 Rand-Vertex: nur sie tragen Stitch-Kanten) und je Seite (x−, x+, z−, z+) die Dreiecke, die ein FEINERER
-    // Nachbar als grobe Fläche liest (eine Ecke ≤ 1,5 Schritte an der Kante), dazu je lesender Richtung ihre Kandidaten
-    // (`kand`, der Morph legt sie an). Einmal je Geometrie (ihre Lage ist unveränderlich, ein Edit baut neu); bis gehen-takt
-    // ging jeder Morph alle Vertices des Chunks und alle Dreiecke jedes gröberen Nachbarn (je Ecke ein Math.hypot) und
-    // rasterte die ganze Boden-Karte — Radeon gehend 4,9 ms in den Spitzen-Takten (`werkbank takt`), in der Mitte 0. Die
-    // Listen sind Obermengen (EPS): der Morph prüft jede Stelle exakt.
+    // EIN TEIL DES FADENS AN SEIN NETZ: nur an das Netz, unter dessen Bau-Nummer er entstand (ein neuer Bau, ein Austritt, eine
+    // vorläufige Gestalt eines Edits — `vorlaeufig`, der Neubau kommt — lassen ihn fallen). Der Rand bekommt Ziele und Codes
+    // (der Satz packt nur ihn neu, `_chunkSatzMarke` mit dem Rand), die Karten ihre fertigen Felder (die Karte der Ziele, die
+    // `_bodenStufeMisch` bis hierher nachrasterte, die der gezeichneten Lage samt ihrer Lage `ref`), das Naht-Band seine Puffer.
+    _bodenTeilLegen(t) {
+        const e = this.state.voxelChunks && this.state.voxelChunks.get(t.key);
+        if (!e || e.empty || !e.mesh || e.vorlaeufig || e.mesh.geometry.userData.bid !== t.bid) return false;
+        const g = e.mesh.geometry;
+        const c = t.key.indexOf(",");
+        const cx = Number(t.key.slice(0, c)),
+            cz = Number(t.key.slice(c + 1));
+        const naht = this._bodenNaht(g, cx, cz, e.lod || 0);
+        e.hasMorph = t.hasMorph;
+        e.nahtGekappt = t.gekappt;
+        if (t.tR) {
+            const R = naht.rand;
+            const T = g.attributes.aMorphTarget.array;
+            const W = g.attributes.aMorphWeight.array;
+            for (let q = 0; q < R.length; q++) {
+                const v = R[q];
+                T[v * 3] = t.tR[q * 3];
+                T[v * 3 + 1] = t.tR[q * 3 + 1];
+                T[v * 3 + 2] = t.tR[q * 3 + 2];
+                W[v] = t.wR[q];
+            }
+            e.surfMapZiel = null;
+            this._chunkSatzMarke("boden", t.key, ["aMorphTarget", "aMorphWeight"], R);
+        }
+        if (t.ziel !== undefined) {
+            naht.ziel = t.ziel;
+            e.surfMapZiel = t.ziel && t.ziel.hoehe;
+        }
+        if (t.karte !== undefined) {
+            naht.lage = t.karte;
+            e.surfMap = t.karte && t.karte.hoehe;
+            e.gruenMap = t.karte && t.karte.gruen;
+            this._streuFussNeu(cx, cz);
+        }
+        if (t.nahtNeu) this._bodenNahtBandLegen(e, t.key, t.band);
+        return true;
+    }
+
+    // DAS NAHT-BAND AUS DEM FADEN (A1, gelaende-core `bodenNahtBand`): das alte fällt, ein neues tritt als Bereich
+    // `stitch:<chunk>` in den Boden-Satz (dasselbe Material, derselbe Befehl) — seine Puffer und seine Satz-Vorlage kommen fertig;
+    // der Band-Mesh bleibt CPU-Körper (Naht-Sonden lesen seine Geometrie).
+    _bodenNahtBandLegen(e, key, band) {
+        this._chunkSatzAus("boden", "stitch:" + key);
+        if (e.lodStitchMesh) {
+            this._queueGeometryDispose(e.lodStitchMesh.geometry);
+            e.lodStitchMesh = null;
+        }
+        if (!band) return;
+        const bg = new THREE.BufferGeometry();
+        const at = (a, n) => new THREE.BufferAttribute(a, n);
+        bg.setAttribute("position", at(band.P, 3));
+        bg.setAttribute("normal", at(band.N, 3));
+        bg.setAttribute("color", at(band.C, 3));
+        bg.setAttribute("aMorphTarget", at(band.MT, 3));
+        bg.setAttribute("aMorphWeight", at(band.MW, 1));
+        bg.setAttribute("aNormalZiel", at(band.NZ, 3));
+        bg.setAttribute("aFarbeZiel", at(band.FZ, 3));
+        // die Naht trägt die Himmels-Sicht und den Schutt ihrer Quell-Vertices
+        bg.setAttribute("aHimmel", at(band.HS, 1));
+        bg.setAttribute("aSchutt", at(band.SC, 1));
+        bg.setIndex(at(band.I, 1));
+        bg.userData.satzVorlage = band.satz;
+        bg.userData.ausFaden = true; // sein Satz kommt fertig (`_chunkSatzEin` wacht darüber)
+        const mesh = new THREE.Mesh(bg, this._getVoxelChunkMaterial());
+        this._chunkSatzEin("boden", "stitch:" + key, bg, key);
+        e.lodStitchMesh = mesh;
+    }
+
+    // Die gepackten Attribute des Boden-Satzes in ihrer Vertex-Form (`_satzForm`): [Name, Breite, Form, Skalar der 4. Komponente]
+    // — der Faden packt jede Vorlage in genau diesen (`bodenSatz` im Stand)
+    _bodenSatzFormen() {
+        return AnazhRealm.BODEN_SATZ_ATTR.map(([name, is, form, w]) => [
+            name,
+            is,
+            this._satzForm(form) || (w ? "voll4" : null),
+            w || null,
+        ]).filter((f) => f[2]);
+    }
+
+    // Verworfene Antworten des Fadens (ein Stand überholte sie, ein Edit leerte den Cache): er gibt ihre Netze frei
+    _bodenFrei(...daten) {
+        const bids = daten.filter((d) => d && d.bid > 0).map((d) => d.bid);
+        if (bids.length && this._bodenFaden) this._bodenFaden.postMessage({ type: "boden-frei", bids });
+    }
+
+    // DIE NAHT DES CHUNKS (gehen-takt, Lehre 25; gelaende-core `bodenNaht`): was ein Naht-Morph berühren KANN, steht mit dem Netz
+    // fest — die Rand-Vertices (bis zum Morph-Band an einer Kante) und die Rand-Dreiecke; dazu die letzte Karte je Art samt
+    // ihrer Lage (`lage` · `ziel`, `_bodenKarteNaht`). Ein Netz des Fadens bringt sie mit (`_buildVoxelChunkDataFromWorkerMesh`,
+    // w4-b-boden2: der Faden hält das ganze Gedächtnis des Morphs); ein Netz des Haupt-Fadens (Sync-Bau) rechnet sie hier aus
+    // demselben Kern, einmal je Geometrie.
     _bodenNaht(geom, cx, cz, lod) {
         const u = geom.userData;
         if (u.naht) return u.naht;
-        const { span: S, step } = this._voxelChunkConfig(lod);
-        const P = geom.attributes.position.array;
-        const idx = geom.index.array;
-        const ox = cx * S,
-            oz = cz * S;
-        const EPS = 1e-3; // die Rundung zwischen `i · span − x` (der Morph) und `x − cx · span` (hier)
-        const mb = 2 * step + EPS,
-            bnd = 1.5 * step + EPS;
-        const n = P.length / 3;
-        const rand = [];
-        const randSeite = [[], [], [], []]; // die Rand-Vertices je Seite x−, x+, z−, z+ (≤ Morph-Band an der Kante)
-        const seiteV = new Uint8Array(n); // 16 = Rand-Vertex, dazu die Seiten-Bits 1 x− · 2 x+ · 4 z− · 8 z+ (≤ bnd)
-        for (let v = 0; v < n; v++) {
-            const lx = P[v * 3] - ox,
-                lz = P[v * 3 + 2] - oz;
-            const an = [lx <= mb, lx >= S - mb, lz <= mb, lz >= S - mb];
-            if (!an.includes(true)) continue;
-            rand.push(v);
-            for (let s = 0; s < 4; s++) if (an[s]) randSeite[s].push(v);
-            seiteV[v] =
-                16 | (lx <= bnd ? 1 : 0) | (lx >= S - bnd ? 2 : 0) | (lz <= bnd ? 4 : 0) | (lz >= S - bnd ? 8 : 0);
-        }
-        const nT = Math.floor(idx.length / 3);
-        const randTri = [];
-        const seite = [[], [], [], []];
-        for (let q = 0; q < nT; q++) {
-            const f = seiteV[idx[q * 3]] | seiteV[idx[q * 3 + 1]] | seiteV[idx[q * 3 + 2]];
-            if (!f) continue;
-            randTri.push(q * 3);
-            for (let s = 0; s < 4; s++) if (f & (1 << s)) seite[s].push(q * 3);
-        }
-        u.naht = {
-            rand: Int32Array.from(rand),
-            randSeite: randSeite.map((l) => Int32Array.from(l)),
-            randTri: Int32Array.from(randTri),
-            seite: seite.map((l) => Int32Array.from(l)),
-            seiteV, // je Vertex die Seiten-Bits (das Naht-Band liest seine Kanten-Kandidaten daraus, `_rebuildLodStitchBand`)
-            kanten: null,
-            kand: [], // je lesender Richtung (dx, dz) die Kandidaten eines feineren Nachbarn (`_applyCrossLodGeomorph`)
-            treffer: [], // je Richtung der Treffer dieses Netzes auf dem gröberen Nachbarn, mit dessen Geometrie
-            gesetzt: false, // der erste Morph setzt das ganze Netz auf das Ziel seiner Stufe, jeder weitere nur den Rand
-            lage: null, // die letzte Karte je Art samt ihrer Lage (`_bodenKarteNaht`)
-            ziel: null,
-        };
+        // die Naht eines Faden-Netzes rechnet der Faden (w4-b-boden2): hier wäre sie ein Bau neben ihm — laut beim Namen
+        if (u.ausFaden) this._fadenUmgangen("Boden-Naht eines Faden-Netzes");
+        const { span, step } = this._voxelChunkConfig(lod);
+        const N = globalThis.__gelaendeCore.bodenNaht(
+            geom.attributes.position.array,
+            geom.index.array,
+            cx,
+            cz,
+            span,
+            step
+        );
+        u.naht = { rand: N.rand, randTri: N.randTri, lage: null, ziel: null };
         return u.naht;
     }
 
@@ -1492,8 +1644,15 @@ class AnazhRealm_gelaende_chunks {
         if (!geom.index) return null;
         const naht = this._bodenNaht(geom, cx, cz, lod);
         // DIE KARTE EINES FADEN-NETZES RASTERT DER FADEN (w4-b-boden): ihre erste Lage im Haupt-Faden ist ein Bau neben ihm —
-        // er zählt an seiner Sync-Stelle oder bricht laut beim Namen (`_fadenUmgangen`, die Faden-Linse liest das Buch)
-        if (!naht[art] && geom.userData.ausFaden && geom.index.array.length >= 3 && (art === "lage" || (lod | 0) < 3))
+        // er zählt an seiner Sync-Stelle oder bricht laut beim Namen (`_fadenUmgangen`, die Faden-Linse liest das Buch). Seit
+        // w4-b-boden2 rastert der Faden auch jede weitere (der Naht-Morph, die Karte der Ziele): hier rastert nur die vorläufige
+        // Gestalt eines Edits (`ganz`) — jede andere Lage eines Faden-Netzes ist ein Bau neben ihm
+        if (
+            (!naht[art] || !ganz) &&
+            geom.userData.ausFaden &&
+            geom.index.array.length >= 3 &&
+            (art === "lage" || (lod | 0) < 3)
+        )
             this._fadenUmgangen(`Boden-Karte (${art}) eines Faden-Netzes`);
         const col = art === "lage" && geom.attributes.color ? geom.attributes.color.array : null;
         const ref = art === "lage" ? lage : new Float32Array(lage);
@@ -1509,690 +1668,6 @@ class AnazhRealm_gelaende_chunks {
         alt.zelleStand = alt.zelleStand || new Uint32Array(alt.hoehe.length);
         for (const z of k.geaendert) alt.zelleStand[z] = alt.stand;
         return Object.assign(alt, { ref, geaendert: k.geaendert });
-    }
-
-    // Zieht die Boundary-Vertices dieses Chunks auf die GROBE Oberfläche jedes gröberen Achsen-
-    // Nachbarn → die T-junction schließt. Render-only: setzt NUR aMorphTarget/aMorphWeight, Positionen
-    // (Physik, Determinismus, BVH) bleiben; der Shader morpht via `geomorph`. Main-only (liest Nachbar-
-    // MESHES). `entry.hasMorph` = Fast-Path: ohne Cross-LOD-Grenze + ohne alten Morph sofort zurück.
-    // Die Morph-Arrays sind Views auf den Boden-Satz: der Pass schreibt direkt hinein und markiert seinen
-    // Bereich (`_chunkSatzMarke`) — vergessen hieße: der Morph friert auf der GPU ein (T-Junction-Riss).
-    _applyCrossLodGeomorph(cx, cz) {
-        if (!this.state.voxelChunks) return;
-        const entry = this.state.voxelChunks.get(`${cx},${cz}`);
-        if (!entry || entry.empty || !entry.mesh || !entry.mesh.geometry) return;
-        const geom = entry.mesh.geometry;
-        const pos = geom.attributes.position;
-        const tgtAttr = geom.attributes.aMorphTarget;
-        const wAttr = geom.attributes.aMorphWeight;
-        if (!pos || !tgtAttr || !wAttr) return;
-        const myLod = Number.isFinite(entry.lod) ? entry.lod : 0;
-        const cfg = this._voxelChunkConfig(myLod);
-        const span = cfg.span;
-        const fineStep = cfg.step;
-        // die GROBEREN, gebauten Nachbarn des 3×3-Rings sammeln — Achse UND Ecke (K51): ein Vertex, den zwei Chunks derselben
-        // Stufe teilen, schmiegt sich in beiden an dieselbe grobe Fläche. Nur mit den Achsen-Nachbarn rechnete jeder Chunk die
-        // Naht-Ecke eines gröberen Nachbarn gegen ein anderes Netz — die geteilten Vertices klafften (Loch-Probe der Fern-Ring-
-        // Naht, L1 ↔ L2: 6 Löcher je 1,8 m hinter der Kante)
-        const coarseFaces = [];
-        for (let dx = -1; dx <= 1; dx++)
-            for (let dz = -1; dz <= 1; dz++) {
-                if (dx === 0 && dz === 0) continue;
-                const nb = this.state.voxelChunks.get(`${cx + dx},${cz + dz}`);
-                if (!nb || nb.empty || !nb.mesh || !nb.mesh.geometry) continue;
-                const nbLod = Number.isFinite(nb.lod) ? nb.lod : 0;
-                if (nbLod <= myLod) continue; // nur an einen GROBEREN Nachbarn anschmiegen
-                coarseFaces.push({ dx, dz, nbGeom: nb.mesh.geometry, nbLod });
-            }
-        // der XZ-Abstand eines Punkts zum Quadrat des Chunks (i, j) — für den Achsen-Nachbarn der Ebenen-Abstand, für die Ecke
-        // der Abstand zum Eck-Punkt; derselbe Wert in jedem Chunk, der den Punkt trägt
-        const quadratAbstand = (x, z, i, j) =>
-            Math.hypot(Math.max(i * span - x, 0, x - (i + 1) * span), Math.max(j * span - z, 0, z - (j + 1) * span));
-        // `quadratAbstand(x, z, i, j) > g`, ohne Wurzel, wo das Quadrat (mit Rundungs-Rand) schon entscheidet (gehen-takt)
-        const jenseits = (x, z, i, j, g) => {
-            const a = Math.max(i * span - x, 0, x - (i + 1) * span),
-                b = Math.max(j * span - z, 0, z - (j + 1) * span);
-            const q = a * a + b * b;
-            return q > g * g * (1 + 1e-9) ? true : q < g * g * (1 - 1e-9) ? false : Math.hypot(a, b) > g;
-        };
-        // Fast-Path: keine Cross-LOD-Grenze UND kein alter Morph/Band → nichts zu tun (Normalfall)
-        if (coarseFaces.length === 0 && !entry.hasMorph && !entry.lodStitchMesh) return;
-        const n = pos.count;
-        const P = pos.array;
-        const tArr = tgtAttr.array;
-        const wArr = wAttr.array;
-        // DIE NAHT (`_bodenNaht`): nur die Rand-Vertices kann ein Morph ziehen — das Innere steht nach dem ersten Morph für immer
-        // auf dem Ziel seiner Stufe (Naht 0, Beitrag 0 im Abdruck); der erste Morph je Geometrie geht das ganze Netz
-        const saum = this._bodenNaht(geom, cx, cz, myLod);
-        const R = saum.rand;
-        const alle = !saum.gesetzt;
-        // der Fingerabdruck des Morphs (die Karte zieht nur nach, wenn er sich ändert): je Vertex mit Naht ein Beitrag
-        const beitrag = (w, x, y, z, v) => {
-            const f = this._morphNaht(w);
-            return f > 0 ? f * (x * 1.31 + y * 1.73 + z * 1.13 + v) : 0;
-        };
-        const abdruck = (ganz) => {
-            let s = 0;
-            for (let q = 0, m = ganz ? n : R.length; q < m; q++) {
-                const v = ganz ? q : R[q];
-                s += beitrag(wArr[v], tArr[v * 3], tArr[v * 3 + 1], tArr[v * 3 + 2], v);
-            }
-            return s;
-        };
-        // Basis = das Ziel der Stufe (K51-2, `stufeZiel`; die gröbste Stufe: die Position), Naht 0
-        const basis = geom.userData.stufeZiel || P;
-        const code0 = this._morphCode(myLod, 0);
-        const cp = [0, 0, 0]; // Scratch für den nächsten Punkt auf einem Dreieck
-        // DER TREFFER EINER RICHTUNG: je Vertex im Band des Nachbarn (`randSeite`, im Morph-Band) der nächste Punkt der groben
-        // Fläche, sein Abstand und sein Ebenen-Abstand, in der Reihe der Rand-Liste.
-        const trefferVon = (face, nbGeom, coarseStep) => {
-            const nbPos = nbGeom.attributes.position,
-                nbIdx = nbGeom.index.array;
-            const ni = cx + face.dx,
-                nj = cz + face.dz;
-            const morphBand = fineStep * 2.0;
-            const fk = (face.dx + 1) * 3 + face.dz + 1;
-            const nbNaht = this._bodenNaht(nbGeom, ni, nj, face.nbLod);
-            const ab = face.dx === 0 ? 0 : 4; // die Hülle längs der Kante: x an einer z-Kante, sonst z
-            const quer = 4 - ab, // quer zur Kante (die Ecke: x)
-                vor = face.dx || face.dz; // der Nachbar liegt quer in + oder −
-            // Grobe Boundary-DREIECKE (≥1 Vertex nahe diesem Chunk) als flaches Array: gemorpht wird Punkt→Dreieck
-            // auf die grobe OBERFLÄCHE, nie auf den nächsten groben VERTEX (sparse; 3D-nearest greift die
-            // falsche Höhlen-Branche und lässt ~11 m Spalt). Kandidaten: die Seite des Nachbarn, die diesem Chunk zugewandt ist
-            // (`_bodenNaht`; die Ecke liest seine x-Seite), in der Reihe seines Netzes; `box` die Hülle je Dreieck. Sie hängen nur
-            // an der Nachbar-Geometrie und der Richtung: einmal angelegt (`kand`), liest sie jeder weitere Morph von hier.
-            if (!nbNaht.kand[fk]) {
-                const nbP = nbPos.array;
-                const tris = [];
-                const box = [];
-                const bnd = coarseStep * 1.5;
-                for (const t of nbNaht.seite[face.dx === 1 ? 0 : face.dx === -1 ? 1 : face.dz === 1 ? 2 : 3]) {
-                    const i0 = nbIdx[t] * 3,
-                        i1 = nbIdx[t + 1] * 3,
-                        i2 = nbIdx[t + 2] * 3;
-                    if (
-                        jenseits(nbP[i0], nbP[i0 + 2], cx, cz, bnd) &&
-                        jenseits(nbP[i1], nbP[i1 + 2], cx, cz, bnd) &&
-                        jenseits(nbP[i2], nbP[i2 + 2], cx, cz, bnd)
-                    )
-                        continue;
-                    tris.push(
-                        nbP[i0],
-                        nbP[i0 + 1],
-                        nbP[i0 + 2],
-                        nbP[i1],
-                        nbP[i1 + 1],
-                        nbP[i1 + 2],
-                        nbP[i2],
-                        nbP[i2 + 1],
-                        nbP[i2 + 2]
-                    );
-                    for (let k = 0; k < 3; k++)
-                        box.push(
-                            Math.min(nbP[i0 + k], nbP[i1 + k], nbP[i2 + k]),
-                            Math.max(nbP[i0 + k], nbP[i1 + k], nbP[i2 + k])
-                        );
-                }
-                const nT = tris.length / 9;
-                let u0 = Infinity,
-                    u1 = -Infinity;
-                for (let q = 0; q < nT; q++) {
-                    u0 = Math.min(u0, box[q * 6 + ab]);
-                    u1 = Math.max(u1, box[q * 6 + ab + 1]);
-                }
-                const W = coarseStep;
-                const eimer = Array.from({ length: nT ? Math.floor((u1 - u0) / W) + 1 : 0 }, () => []);
-                for (let q = 0; q < nT; q++)
-                    for (
-                        let e = Math.floor((box[q * 6 + ab] - u0) / W), e1 = Math.floor((box[q * 6 + ab + 1] - u0) / W);
-                        e <= Math.min(e1, eimer.length - 1);
-                        e++
-                    )
-                        eimer[e].push(q);
-                // der Abstand der Hülle von der Kante, quer: die nahe Seite (Minimum bei +, Maximum bei −)
-                const schl = Float64Array.from({ length: nT }, (_, q) =>
-                    vor > 0 ? box[q * 6 + quer] : -box[q * 6 + quer + 1]
-                );
-                nbNaht.kand[fk] = {
-                    tris: Float64Array.from(tris),
-                    box: Float64Array.from(box),
-                    schl,
-                    u0,
-                    eimer: eimer.map((l) => Int32Array.from(l.sort((x, y) => schl[x] - schl[y] || x - y))),
-                };
-            }
-            const { tris, box, schl, u0, eimer } = nbNaht.kand[fk];
-            const out = { nb: nbGeom, v: [], d3: [], ziel: [], eben: [] };
-            if (tris.length === 0) return out;
-            // DIE EIMER (gehen-takt): die Dreiecke nach ihrer Hülle längs der Kante (je ein grober Schritt). Ein Vertex fragt die
-            // Eimer von seinem aus nach außen, bis die Lücke längs der Kante weiter ist als sein bester Treffer; ein Dreieck,
-            // dessen Hülle weiter liegt, fällt ohne Rechnung (mit Rundungs-Rand: es könnte nie gleichziehen). Der Treffer ist das
-            // kleinste (Abstand, Dreieck) — wie in der Reihe des Netzes, bei gleichem Abstand das frühere: byte-gleich. Im Eimer
-            // stehen die Dreiecke nach ihrem Abstand von der Kante (`schl`): liegt die Hülle quer weiter als der Treffer, liegen
-            // es alle folgenden auch.
-            const nT = tris.length / 9;
-            const W = coarseStep;
-            const nE = eimer.length;
-            const besucht = new Int32Array(nT).fill(-1);
-            const nahe = saum.randSeite[face.dx === 1 ? 1 : face.dx === -1 ? 0 : face.dz === 1 ? 3 : 2];
-            // der Treffer des vorigen Vertex zuerst (die Reihe des Netzes ist räumlich): der beste Abstand ist früh klein.
-            // `best` = [Abstand², Dreieck, x, y, z] des laufenden Vertex `pv`
-            const best = new Float64Array(5);
-            const pv = new Float64Array(4);
-            const kandidat = (q) => {
-                if (besucht[q] === pv[3]) return;
-                besucht[q] = pv[3];
-                const px = pv[0],
-                    py = pv[1],
-                    pz = pv[2];
-                const b = q * 6;
-                const ax = box[b] - px,
-                    bx = px - box[b + 1],
-                    ay = box[b + 2] - py,
-                    by = py - box[b + 3],
-                    az = box[b + 4] - pz,
-                    bz = pz - box[b + 5];
-                const ex = ax > 0 ? ax : bx > 0 ? bx : 0,
-                    ey = ay > 0 ? ay : by > 0 ? by : 0,
-                    ez = az > 0 ? az : bz > 0 ? bz : 0;
-                if (ex * ex + ey * ey + ez * ez > best[0] * (1 + 1e-9) + 1e-9) return;
-                this._closestPtTri(px, py, pz, tris, q * 9, cp);
-                const ddx = px - cp[0],
-                    ddy = py - cp[1],
-                    ddz = pz - cp[2];
-                const d2 = ddx * ddx + ddy * ddy + ddz * ddz;
-                if (d2 < best[0] || (d2 === best[0] && q < best[1])) {
-                    best[0] = d2;
-                    best[1] = q;
-                    best[2] = cp[0];
-                    best[3] = cp[1];
-                    best[4] = cp[2];
-                }
-            };
-            let vorQ = -1;
-            for (const v of nahe) {
-                const px = P[v * 3],
-                    py = P[v * 3 + 1],
-                    pz = P[v * 3 + 2];
-                if (jenseits(px, pz, ni, nj, morphBand)) continue;
-                const dPlane = quadratAbstand(px, pz, ni, nj);
-                pv[0] = px;
-                pv[1] = py;
-                pv[2] = pz;
-                pv[3] = v;
-                best[0] = Infinity;
-                best[1] = -1;
-                best[2] = px;
-                best[3] = py;
-                best[4] = pz;
-                if (vorQ >= 0) kandidat(vorQ);
-                // dann der eigene Eimer und nach beiden Seiten, bis die Lücke zur Eimer-Kante weiter ist als der beste Treffer
-                const pu = ab === 0 ? px : pz;
-                const e0 = Math.max(0, Math.min(nE - 1, Math.floor((pu - u0) / W)));
-                const weit = (luecke) => luecke > 0 && luecke * luecke > best[0] * (1 + 1e-9) + 1e-9;
-                const sp = vor * (quer === 0 ? px : pz);
-                const gehe = (e) => {
-                    for (const q of eimer[e]) {
-                        if (weit(schl[q] - sp)) break;
-                        kandidat(q);
-                    }
-                };
-                gehe(e0);
-                for (let e = e0 - 1; e >= 0 && !weit(pu - (u0 + (e + 1) * W)); e--) gehe(e);
-                for (let e = e0 + 1; e < nE && !weit(u0 + e * W - pu); e++) gehe(e);
-                vorQ = best[1];
-                out.v.push(v);
-                out.d3.push(Math.sqrt(best[0]));
-                out.ziel.push(best[2], best[3], best[4]);
-                out.eben.push(dPlane);
-            }
-            return out;
-        };
-        // Grenz-ZEILE (dPlane < flat) morpht voll (w=1), danach Falloff bis morphBand (kein interner
-        // Sprung). flat = 0.7·fineStep deckt die Surface-Nets-Offset-Streuung (~fineStep/2) ab.
-        const flat = fineStep * 0.7;
-        const morphBand = fineStep * 2.0;
-        // DER TREFFER JE RICHTUNG (gehen-takt): je Vertex im Band der nächste Punkt der groben Fläche hängt nur an diesem Netz
-        // und dem des Nachbarn — liest der Morph dieselbe Nachbar-Geometrie wie zuletzt, liest er ihn von hier (`treffer`).
-        const richtungen = [];
-        const an = new Array(9).fill(null);
-        for (const face of coarseFaces) {
-            const nbGeom = face.nbGeom;
-            if (!nbGeom.attributes.position || !nbGeom.index) continue;
-            const coarseStep = this._voxelChunkConfig(face.nbLod).step;
-            const fk = (face.dx + 1) * 3 + face.dz + 1;
-            if (!saum.treffer[fk] || saum.treffer[fk].nb !== nbGeom)
-                saum.treffer[fk] = trefferVon(face, nbGeom, coarseStep);
-            an[fk] = saum.treffer[fk];
-            // Morph-Cap: an Cliffs divergieren feine + grobe Fläche vertikal (bis ~28 m); dorthin ziehen zerrt
-            // die Wand. Jenseits des Caps bleibt w=0 und das Stitch-Band überbrückt den Spalt.
-            richtungen.push({ tr: an[fk], achse: face.dx === 0 || face.dz === 0, snapCap: coarseStep * 2.5 });
-        }
-        // DER MORPH JE NACHBAR-SEITE (fahrt-takt, profiband.K1): ein Vertex des Rands hängt nur an den Treffern der Richtungen,
-        // die ihn tragen. Der Morph merkt je Richtung den Treffer, den er anlegte (`an`), und je Vertex Abstand, Grenz-Zeile und
-        // Naht-Ziel; der nächste rechnet nur die Vertices der Richtungen neu, deren Treffer wechselte (der Nachbar wechselte
-        // Stufe oder Netz) — jeder andere Vertex sähe dieselben Treffer in derselben Reihe: byte-gleich mit dem ganzen Morph.
-        // Wechselte keine, steht der Morph; was sich nicht ändert, zieht nicht nach (Hochladen, Karte, Naht-Band). Bis
-        // fahrt-takt rechnete jeder Wechsel jeden feineren Nachbarn ganz (Radeon in Fahrt 20 m/s: 1 231 Morphs in 30 s,
-        // `_applyCrossLodGeomorph` 2,9–4,4 ms je Takt ab p95, `werkbank takt --wandern fahrt`; je Seite 2,2–2,4, ABAB 22.10.).
-        let M = saum.morph;
-        let A = null;
-        let inA = null;
-        if (alle || !M || M.entry !== entry || M.netz !== entry.lodStitchMesh)
-            M = saum.morph = {
-                entry,
-                an,
-                abst: new Float32Array(n).fill(Infinity), // der Abstand des gewinnenden Treffers je Vertex
-                band: new Uint8Array(n), // 1 = in der Grenz-Zeile (das Naht-Band hängt an ihr)
-                ziel: new Float32Array(n * 3), // das Naht-Ziel (der gröbere Nachbar) — das Band brückt dorthin, auch hinter dem Cap
-                netz: null,
-            };
-        else {
-            inA = new Uint8Array(n);
-            A = [];
-            for (let fk = 0; fk < 9; fk++) {
-                if (M.an[fk] === an[fk]) continue;
-                for (const tr of [M.an[fk], an[fk]])
-                    if (tr)
-                        for (const v of tr.v)
-                            if (!inA[v]) {
-                                inA[v] = 1;
-                                A.push(v);
-                            }
-            }
-            M.an = an;
-            if (A.length === 0) return;
-        }
-        const { abst, band, ziel } = M;
-        // der Stand vor dem Teil-Morph (was er ändert, entscheidet, was nachzieht)
-        const alt = A && {
-            t: new Float32Array(A.length * 3),
-            w: new Float32Array(A.length),
-            b: new Uint8Array(A.length),
-            z: new Float32Array(A.length * 3),
-        };
-        if (A)
-            for (let q = 0; q < A.length; q++) {
-                const v = A[q];
-                for (let k = 0; k < 3; k++) {
-                    alt.t[q * 3 + k] = tArr[v * 3 + k];
-                    alt.z[q * 3 + k] = ziel[v * 3 + k];
-                    ziel[v * 3 + k] = 0;
-                }
-                alt.w[q] = wArr[v];
-                alt.b[q] = band[v];
-                abst[v] = Infinity;
-                band[v] = 0;
-            }
-        const abdruckAlt = A ? 0 : abdruck(alle);
-        if (alle) {
-            for (let v = 0; v < n * 3; v++) tArr[v] = basis[v];
-            wArr.fill(code0);
-            saum.gesetzt = true;
-        } else
-            for (const v of A || R) {
-                tArr[v * 3] = basis[v * 3];
-                tArr[v * 3 + 1] = basis[v * 3 + 1];
-                tArr[v * 3 + 2] = basis[v * 3 + 2];
-                wArr[v] = code0;
-            }
-        for (const { tr, achse, snapCap } of richtungen)
-            for (let m = 0; m < tr.v.length; m++) {
-                const v = tr.v[m],
-                    d3 = tr.d3[m],
-                    dPlane = tr.eben[m];
-                if (inA && !inA[v]) continue;
-                // A1 — die Band-Sammlung VOR dem Abstands-Skip (idempotente Maske):
-                // ein KORNER-Vertex zwischen zwei groben Faces gehört in die Border-Row,
-                // auch wenn das nähere Target von der ANDEREN Face kam. Das Band hängt an den ACHSEN-Kanten — der
-                // Eck-Nachbar trägt nur den Morph (sein Band liegt an der Kante der beiden Achsen-Nachbarn).
-                if (dPlane <= flat && achse) band[v] = 1;
-                if (d3 >= abst[v]) continue; // ein näheres Face gewann diesen Vertex schon
-                abst[v] = d3;
-                tArr[v * 3] = ziel[v * 3] = tr.ziel[m * 3];
-                tArr[v * 3 + 1] = ziel[v * 3 + 1] = tr.ziel[m * 3 + 1];
-                tArr[v * 3 + 2] = ziel[v * 3 + 2] = tr.ziel[m * 3 + 2];
-                // Gewicht: 1 in der Grenz-Zeile (dPlane ≤ flat) → linear auf 0 bei morphBand.
-                // A1 — jenseits des Caps KEIN Naht-Morph (Naht 0): das Ziel bleibt das der Stufe (das Naht-Ziel trägt das Band),
-                // sonst zöge das Stufen-Gewicht die Cliff-Wand an den Nachbarn.
-                const naht = d3 > snapCap ? 0 : Math.max(0, Math.min(1, (morphBand - dPlane) / (morphBand - flat)));
-                wArr[v] = this._morphCode(myLod, naht);
-                if (naht === 0) for (let k = 0; k < 3; k++) tArr[v * 3 + k] = basis[v * 3 + k];
-            }
-        // die gekappten Naht-Vertices (Cliff: das Naht-Ziel weiter als der Cap, der Vertex trägt das Ziel seiner Stufe) — das
-        // Naht-Band brückt sie (Leser: die Naht-Probe des Playtests)
-        let touched = false;
-        let gekappt = 0;
-        for (const v of R)
-            if (abst[v] < Infinity) {
-                touched = true;
-                if (this._morphNaht(wArr[v]) === 0) gekappt++;
-            }
-        entry.hasMorph = touched;
-        entry.nahtGekappt = gekappt;
-        // was der Teil-Morph änderte: die Lage (Hochladen), der Abdruck (Karte), die Grenz-Zeile (Naht-Band)
-        let lage = !A,
-            karte = false,
-            nahtNeu = !A;
-        if (A)
-            for (let q = 0; q < A.length; q++) {
-                const v = A[q],
-                    o = v * 3,
-                    p = q * 3;
-                const gleich =
-                    wArr[v] === alt.w[q] &&
-                    tArr[o] === alt.t[p] &&
-                    tArr[o + 1] === alt.t[p + 1] &&
-                    tArr[o + 2] === alt.t[p + 2];
-                if (!gleich) {
-                    lage = true;
-                    if (
-                        beitrag(wArr[v], tArr[o], tArr[o + 1], tArr[o + 2], v) !==
-                        beitrag(alt.w[q], alt.t[p], alt.t[p + 1], alt.t[p + 2], v)
-                    )
-                        karte = true;
-                }
-                if (
-                    band[v] !== alt.b[q] ||
-                    (band[v] &&
-                        (!gleich ||
-                            ziel[o] !== alt.z[p] ||
-                            ziel[o + 1] !== alt.z[p + 1] ||
-                            ziel[o + 2] !== alt.z[p + 2]))
-                )
-                    nahtNeu = true;
-            }
-        else karte = abdruck(false) !== abdruckAlt;
-        if (lage) {
-            entry.surfMapZiel = null; // die Karte der Ziele zieht nach (`_bodenStufeMisch`)
-            this._chunkSatzMarke("boden", `${cx},${cz}`, ["aMorphTarget", "aMorphWeight"], R);
-        }
-        // DER BODEN-LESER LIEST, WAS GEZEICHNET WIRD (K51, Lehre 22): an einer Stufen-Naht zeichnet der Stoff die Grenz-Zeile
-        // auf der groben Fläche — die Karte des Chunks (Stand, Nah-Wiese, Nah-Streu) kommt aus derselben gemorphten Lage. Mit der
-        // Nah-Zone 3×3 liegt die Naht 43–65 m vor dem Auge, wo Tiere stehen (gate:koerper-stand K6: 346 von 772 Punkten mehr
-        // als 25 cm neben dem gezeichneten Boden, die Karte las die rohe Lage).
-        // das Innere liegt auf seiner Lage (Naht 0): nur der Rand trägt einen Morph, die Karte rastert nur seine Dreiecke neu
-        if (karte) {
-            const U = this.state.atmoUniforms;
-            const At = this.state.atmosphere;
-            const gm = U && U.geomorph ? U.geomorph.value : At && Number.isFinite(At.geomorph) ? At.geomorph : 1;
-            const L = new Float32Array(P);
-            for (const v of R) {
-                const f = this._morphNaht(wArr[v]) * gm;
-                L[v * 3] = P[v * 3] + (tArr[v * 3] - P[v * 3]) * f;
-                L[v * 3 + 1] = P[v * 3 + 1] + (tArr[v * 3 + 1] - P[v * 3 + 1]) * f;
-                L[v * 3 + 2] = P[v * 3 + 2] + (tArr[v * 3 + 2] - P[v * 3 + 2]) * f;
-            }
-            const k = this._bodenKarteNaht(geom, cx, cz, myLod, L, "lage");
-            entry.surfMap = k && k.hoehe;
-            entry.gruenMap = k && k.gruen;
-            this._streuFussNeu(cx, cz);
-        }
-        if (nahtNeu) this._rebuildLodStitchBand(entry, band, `${cx},${cz}`, ziel, saum);
-        M.netz = entry.lodStitchMesh;
-    }
-
-    // STITCH-BAND (Arme-Leute-Transvoxel): wo der Morph-Cap greift (Cliffs), bliebe ein Spalt. Pro
-    // Mesh-KANTE der Grenz-Zeile (beide Endpunkte in der Border-Row — echte Topologie inkl. Höhlen-
-    // Loops, kein Polyline-Sortieren) der Skirt und, wo ein Ende gekappt ist (Gewicht < 1), ein Quad von der
-    // feinen Kante (position) zur groben Fläche (das Naht-Ziel). Render-only, keine BVH, main-only. Trägt ALLE Material-Attribute des Terrain-
-    // Toons (WebGPU-strikt): color vom Quell-Vertex, die feine Kante Morph-Ziel und -Code ihres Quell-Vertex, sonst fest.
-    // Dasselbe Material wie der Boden → ein Bereich `stitch:<chunk>` IM Boden-Satz (derselbe Befehl); der
-    // Band-Mesh bleibt CPU-Körper (Naht-Sonden lesen seine Geometrie).
-    _rebuildLodStitchBand(entry, bandVerts, key, nahtZiel, saum) {
-        // Der Band-Bereich gehört dem Chunk-Key (nicht dem Eintrag): auch ein Neubau räumt ein altes Band.
-        this._chunkSatzAus("boden", "stitch:" + key);
-        if (entry.lodStitchMesh) {
-            this._queueGeometryDispose(entry.lodStitchMesh.geometry);
-            entry.lodStitchMesh = null;
-        }
-        if (!bandVerts || !bandVerts.includes(1) || !entry.mesh || !entry.mesh.geometry) return;
-        const geom = entry.mesh.geometry;
-        const pos = geom.attributes.position;
-        const tgt = geom.attributes.aMorphTarget;
-        const wgt = geom.attributes.aMorphWeight;
-        if (!nahtZiel) throw new Error(`_rebuildLodStitchBand(${key}): kein Naht-Ziel`);
-        const nrm = geom.attributes.normal;
-        const col = geom.attributes.color;
-        const him = geom.attributes.aHimmel;
-        const idx = geom.index ? geom.index.array : null;
-        if (!pos || !tgt || !idx) return;
-        if (!wgt) throw new Error(`_rebuildLodStitchBand(${key}): die Quelle trägt kein Morph-Gewicht (aMorphWeight)`);
-        if (!him) throw new Error(`_rebuildLodStitchBand(${key}): die Quelle trägt keine Himmels-Sicht (aHimmel)`);
-        // Kürzere Spannen überspringen (Sliver). Nicht höher: dünne Risse (0.12–0.3 m) zeigen am
-        // Grazing-Winkel den Nachthimmel; der Z-Fight ist durch Skirt + DoubleSide entschärft.
-        const MIN_SPAN = 0.12;
-        // SKIRT: kurzer VERTIKALER Vorhang unter der groben Kante (ta/tb nach unten, Tiefe ~LOD-Schritt) —
-        // der Catch-all für Rest-Spalten (Streaming-Transienten, Ecken/Diagonalen, LOD2/3-Bänder). Liegt
-        // normal unterm Terrain, sichtbar nur, wo sonst ein Loch wäre. Render-only.
-        const SKIRT = 6.0;
-        // die feine Kante der Brücke folgt der gezeichneten Kante (K51-2): ihre Ecken tragen Morph-Ziel und -Code des Quell-
-        // Vertex (der Stoff zeichnet sie, wo er die Kante zeichnet — im Übergangs-Band wandert sie mit), die grobe Seite und der
-        // Skirt stehen fest (Code 0, Ziel = Lage)
-        const tA = tgt.array,
-            wA = wgt.array,
-            pA = pos.array;
-        // die Ecken der feinen Kante und ihre Quell-Vertices: Normale und Stoff-Farbe wandern mit wie die Lage
-        const nZiel = geom.attributes.aNormalZiel,
-            fZiel = geom.attributes.aFarbeZiel;
-        if (!nZiel || !fZiel)
-            throw new Error(
-                `_rebuildLodStitchBand(${key}): die Quelle trägt kein Stufen-Ziel (aNormalZiel · aFarbeZiel)`
-            );
-        const sch = geom.attributes.aSchutt;
-        if (!sch) throw new Error(`_rebuildLodStitchBand(${key}): die Quelle trägt keinen Schutt (aSchutt)`);
-        // DIE KANTEN-KANDIDATEN (fahrt-takt): jede Kante der Grenz-Zeile liegt in einem Rand-Dreieck (`_bodenNaht`: die Grenz-
-        // Zeile ist Rand) zwischen zwei Vertices an einer Seite (≤ 1,5 Schritte, die Grenz-Zeile liegt ≤ 0,7 an der Kante) — einmal
-        // je Geometrie, jede Kante einmal in der Reihe des Netzes; bis fahrt-takt ging jedes Band alle Rand-Dreiecke samt Menge
-        if (!saum.kanten) {
-            const seen = new Set();
-            const K = [];
-            for (const t of saum.randTri)
-                for (let e = 0; e < 3; e++) {
-                    const a = idx[t + e],
-                        b = idx[t + ((e + 1) % 3)];
-                    if (!(saum.seiteV[a] & 15) || !(saum.seiteV[b] & 15)) continue;
-                    const k = a < b ? a * 200000 + b : b * 200000 + a;
-                    if (seen.has(k)) continue;
-                    seen.add(k);
-                    K.push(a, b);
-                }
-            saum.kanten = Int32Array.from(K);
-        }
-        // erst die Kanten (a, b, Brücke), dann die Puffer in ihrer Größe (gehen-takt: kein Umweg über wachsende Listen)
-        const kanten = [];
-        {
-            const K = saum.kanten;
-            for (let q = 0; q < K.length; q += 2) {
-                const a = K[q],
-                    b = K[q + 1];
-                if (!bandVerts[a] || !bandVerts[b]) continue;
-                const spanA = Math.hypot(
-                    nahtZiel[a * 3] - pA[a * 3],
-                    nahtZiel[a * 3 + 1] - pA[a * 3 + 1],
-                    nahtZiel[a * 3 + 2] - pA[a * 3 + 2]
-                );
-                const spanB = Math.hypot(
-                    nahtZiel[b * 3] - pA[b * 3],
-                    nahtZiel[b * 3 + 1] - pA[b * 3 + 1],
-                    nahtZiel[b * 3 + 2] - pA[b * 3 + 2]
-                );
-                if (Math.max(spanA, spanB) < MIN_SPAN) continue;
-                // DIE BRÜCKE (rohe Kante → grobe Fläche) nur, wo der Morph die Naht NICHT schliesst (K51): trägt er beide
-                // Enden ganz (Gewicht 1), zeichnet die feine Kante schon auf der groben Fläche — die Brücke wäre eine Finne
-                // zur unsichtbaren rohen Lage (14.10., Mess-Wiese: zwei von drei Naht-Dreiecken, in jedem Pass gezeichnet).
-                kanten.push(a, b, this._morphNaht(wA[a]) >= 1 && this._morphNaht(wA[b]) >= 1 ? 0 : 1);
-            }
-        }
-        if (kanten.length === 0) return;
-        let nV = 0;
-        for (let k = 2; k < kanten.length; k += 3) nV += kanten[k] ? 8 : 4;
-        const [P, N, C, NZ, FZ, MT] = Array.from({ length: 6 }, () => new Float32Array(nV * 3));
-        const [MW, HS, SC] = Array.from({ length: 3 }, () => new Float32Array(nV));
-        // der Index in der Form, die `setIndex` aus einer Liste wählte (Uint16 bis 65 535 Ecken)
-        const I = nV - 1 >= 65535 ? new Uint32Array((nV / 4) * 6) : new Uint16Array((nV / 4) * 6);
-        let o = 0,
-            oi = 0;
-        const nA = nrm && nrm.array,
-            cA = col && col.array,
-            hA = him.array,
-            sA = sch.array;
-        // die Ecke o: Lage, Quell-Vertex v (Farbe, Himmel, Schutt, die Normale außer am Vorhang); \`morph\`: Ziel, Code, Ziel-
-        // Normale und -Farbe des Quell-Vertex (die feine Kante wandert mit), sonst fest (Ziel = Lage, Code 0)
-        const ecke = (x, y, z, v, morph, vorhang) => {
-            const o3 = o * 3;
-            P[o3] = x;
-            P[o3 + 1] = y;
-            P[o3 + 2] = z;
-            MT[o3] = morph ? tA[v * 3] : x;
-            MT[o3 + 1] = morph ? tA[v * 3 + 1] : y;
-            MT[o3 + 2] = morph ? tA[v * 3 + 2] : z;
-            MW[o] = morph ? wA[v] : 0;
-            N[o3] = vorhang || !nA ? 0 : nA[v * 3];
-            N[o3 + 1] = vorhang ? 0.2 : nA ? nA[v * 3 + 1] : 1;
-            N[o3 + 2] = vorhang || !nA ? 0 : nA[v * 3 + 2];
-            C[o3] = cA ? cA[v * 3] : 0.5;
-            C[o3 + 1] = cA ? cA[v * 3 + 1] : 0.5;
-            C[o3 + 2] = cA ? cA[v * 3 + 2] : 0.5;
-            for (let k = 0; k < 3; k++) {
-                NZ[o3 + k] = morph ? nZiel.array[v * 3 + k] : N[o3 + k];
-                FZ[o3 + k] = morph ? fZiel.array[v * 3 + k] : C[o3 + k];
-            }
-            HS[o] = hA[v];
-            SC[o] = sA[v];
-            o++;
-        };
-        const quad = () => {
-            I[oi++] = o - 4;
-            I[oi++] = o - 3;
-            I[oi++] = o - 2;
-            I[oi++] = o - 4;
-            I[oi++] = o - 2;
-            I[oi++] = o - 1;
-        };
-        for (let k = 0; k < kanten.length; k += 3) {
-            const a = kanten[k],
-                b = kanten[k + 1];
-            const tax = nahtZiel[a * 3],
-                tay = nahtZiel[a * 3 + 1],
-                taz = nahtZiel[a * 3 + 2],
-                tbx = nahtZiel[b * 3],
-                tby = nahtZiel[b * 3 + 1],
-                tbz = nahtZiel[b * 3 + 2];
-            if (kanten[k + 2]) {
-                ecke(pA[a * 3], pA[a * 3 + 1], pA[a * 3 + 2], a, true, false);
-                ecke(pA[b * 3], pA[b * 3 + 1], pA[b * 3 + 2], b, true, false);
-                ecke(tbx, tby, tbz, b, false, false);
-                ecke(tax, tay, taz, a, false, false);
-                quad();
-            }
-            // Skirt-Quad (ta, tb, tb↓, ta↓) nach −SKIRT: Farbe vom groben Ziel-Vertex (Fels-Ton läuft weiter),
-            // Normale ~horizontal-auswärts (der Vorhang ist meist verdeckt); DoubleSide → kein Backface-Loch.
-            ecke(tax, tay, taz, a, false, true);
-            ecke(tbx, tby, tbz, b, false, true);
-            ecke(tbx, tby - SKIRT, tbz, b, false, true);
-            ecke(tax, tay - SKIRT, taz, a, false, true);
-            quad();
-        }
-        const bg = new THREE.BufferGeometry();
-        bg.setAttribute("position", new THREE.Float32BufferAttribute(P, 3));
-        bg.setAttribute("normal", new THREE.Float32BufferAttribute(N, 3));
-        bg.setAttribute("color", new THREE.Float32BufferAttribute(C, 3));
-        bg.setAttribute("aMorphTarget", new THREE.Float32BufferAttribute(MT, 3));
-        bg.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(MW, 1));
-        bg.setAttribute("aNormalZiel", new THREE.Float32BufferAttribute(NZ, 3));
-        bg.setAttribute("aFarbeZiel", new THREE.Float32BufferAttribute(FZ, 3));
-        // die Naht trägt die Himmels-Sicht ihrer beiden Ränder (je Vertex aus der Quelle kopiert, `HS`)
-        bg.setAttribute("aHimmel", new THREE.Float32BufferAttribute(HS, 1));
-        bg.setAttribute("aSchutt", new THREE.Float32BufferAttribute(SC, 1));
-        bg.setIndex(new THREE.BufferAttribute(I, 1));
-        const mesh = new THREE.Mesh(bg, this._getVoxelChunkMaterial());
-        this._chunkSatzEin("boden", "stitch:" + key, bg, key);
-        entry.lodStitchMesh = mesh;
-    }
-
-    // Nächster Punkt auf dem Dreieck (T[t..t+8] = A,B,C) zu P → out[0..2] (Ericson, RTCD §5.1.5):
-    // Voronoi-Regionen Ecke/Kante/Innen. Für den Geomorph — robust auf der mehrwertigen Surface-Nets-
-    // Fläche (der nächste Vertex griffe die falsche Branche).
-    _closestPtTri(px, py, pz, T, t, out) {
-        const ax = T[t],
-            ay = T[t + 1],
-            az = T[t + 2];
-        const bx = T[t + 3],
-            by = T[t + 4],
-            bz = T[t + 5];
-        const cx = T[t + 6],
-            cy = T[t + 7],
-            cz = T[t + 8];
-        const abx = bx - ax,
-            aby = by - ay,
-            abz = bz - az;
-        const acx = cx - ax,
-            acy = cy - ay,
-            acz = cz - az;
-        const apx = px - ax,
-            apy = py - ay,
-            apz = pz - az;
-        const d1 = abx * apx + aby * apy + abz * apz;
-        const d2 = acx * apx + acy * apy + acz * apz;
-        if (d1 <= 0 && d2 <= 0) {
-            out[0] = ax;
-            out[1] = ay;
-            out[2] = az;
-            return;
-        }
-        const bpx = px - bx,
-            bpy = py - by,
-            bpz = pz - bz;
-        const d3 = abx * bpx + aby * bpy + abz * bpz;
-        const d4 = acx * bpx + acy * bpy + acz * bpz;
-        if (d3 >= 0 && d4 <= d3) {
-            out[0] = bx;
-            out[1] = by;
-            out[2] = bz;
-            return;
-        }
-        const vc = d1 * d4 - d3 * d2;
-        if (vc <= 0 && d1 >= 0 && d3 <= 0) {
-            const v = d1 / (d1 - d3);
-            out[0] = ax + abx * v;
-            out[1] = ay + aby * v;
-            out[2] = az + abz * v;
-            return;
-        }
-        const cpx = px - cx,
-            cpy = py - cy,
-            cpz = pz - cz;
-        const d5 = abx * cpx + aby * cpy + abz * cpz;
-        const d6 = acx * cpx + acy * cpy + acz * cpz;
-        if (d6 >= 0 && d5 <= d6) {
-            out[0] = cx;
-            out[1] = cy;
-            out[2] = cz;
-            return;
-        }
-        const vb = d5 * d2 - d1 * d6;
-        if (vb <= 0 && d2 >= 0 && d6 <= 0) {
-            const w = d2 / (d2 - d6);
-            out[0] = ax + acx * w;
-            out[1] = ay + acy * w;
-            out[2] = az + acz * w;
-            return;
-        }
-        const va = d3 * d6 - d5 * d4;
-        if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) {
-            const w = (d4 - d3) / (d4 - d3 + (d5 - d6));
-            out[0] = bx + (cx - bx) * w;
-            out[1] = by + (cy - by) * w;
-            out[2] = bz + (cz - bz) * w;
-            return;
-        }
-        const denom = 1 / (va + vb + vc);
-        const v = vb * denom,
-            w = vc * denom;
-        out[0] = ax + abx * v + acx * w;
-        out[1] = ay + aby * v + acy * w;
-        out[2] = az + abz * v + acz * w;
     }
 
     // V12.0-perf.a — Fail/Empty/Finalize-Abschluss des Rebuild-Pfads. Bei
@@ -2334,6 +1809,13 @@ class AnazhRealm_gelaende_chunks {
         // der Faden gibt die Zellen frei, die nur dieser Chunk trug (Karte hydro-faden)
         if (entry && entry.zellenId && this.state.voxelWorker)
             this.state.voxelWorker.postMessage({ type: "zellen-frei", keys: [key], zids: [entry.zellenId] });
+        // … und sein Netz: der Spiegel des Rings im Faden trägt es nicht mehr (w4-b-boden2, `boden-aus`)
+        const bid = entry && entry.mesh ? entry.mesh.geometry.userData.bid : 0;
+        if (bid) {
+            const msg = { type: "boden-aus", key, bid };
+            if (this._bodenFaden) this._bodenFaden.postMessage(msg);
+            else if (this._bodenWarte) this._bodenWarte.push([msg, []]);
+        }
         if (entry && entry.mesh) {
             // V10.0-j.d — geometry.dispose deferred (siehe _queueGeometryDispose).
             this._queueGeometryDispose(entry.mesh.geometry);
@@ -3315,6 +2797,9 @@ class AnazhRealm_gelaende_chunks {
                 const g = E.mesh.geometry;
                 const N = g.attributes.normal.array;
                 if (!saeule(g.attributes.position.array, N)) continue;
+                // das Netz trägt jetzt eine Gestalt, die der Faden nicht kennt: bis sein Neubau kommt, legt der Takt keinen
+                // Morph des Fadens an (`_bodenTeilLegen`) — der Neubau trägt eine neue Bau-Nummer und morpht ganz
+                E.vorlaeufig = true;
                 saeule(g.attributes.aMorphTarget.array, N);
                 this._chunkSatzMarke("boden", `${cx},${cz}`, ["position", "aMorphTarget"]);
                 // die Karte aus der gezeichneten Lage (samt Naht-Morph des Saums), die Säule darin wie im Netz
@@ -3515,8 +3000,9 @@ AnazhRealm.CHUNK_IDB_MAX = 600;
 // trägt die Antwort den Stoff (Himmels-Sicht, Schutt, die Feuchte des Mooses, der Fels in `colors`): ein alter Chunk trüge die
 // Säulen-Farbe ohne Stoff; seit K17-2 NB1 wellt EIN Gradienten-Rauschen die Bänke und das Geröll streut wie die Referenz:
 // ein alter Chunk trüge die Welle aus dem Wert-Rauschen; seit der Karte hydro-faden legt der Faden seinen rohen Reply ab (die
-// Puffer, das Morph-Ziel als eigene Kopie): ein alter Eintrag trüge die Typ-Arrays des Mains ohne Morph-Ziel.
-AnazhRealm.CHUNK_IDB_FORM = "faden-reply-karte";
+// Puffer, das Morph-Ziel als eigene Kopie): ein alter Eintrag trüge die Typ-Arrays des Mains ohne Morph-Ziel; seit w4-b-boden2
+// trägt der Reply Naht und Satz-Vorlage (`naht`, `satz`): ein alter Eintrag ließe den Einbau sie im Haupt-Faden nachrechnen.
+AnazhRealm.CHUNK_IDB_FORM = "faden-reply-satz";
 // FERN_FARBE (`fernFarbeTeile` im Fern-Faden, linear): das Kronendach des Waldes aus der Ferne = die Studio-Laubfarbe der Arten
 // am Ort × `kronenSchatten` (die Krone beschattet sich selbst: die Eiche, Blatt-Grün 0,195, trägt so 0,062 — die
 // Satelliten-Bänder geschlossener Laubwald-Kronen im Sommer, grün ~0,05–0,07); die Saison multipliziert der Leser
@@ -3534,10 +3020,6 @@ AnazhRealm.DIRTY_IM_FLUG = 3;
 // DIE VORLÄUFIGE SÄULE (`_saeuleVorlaeufig`): so viele Ecken trägt ihr Rand — die Kante des Vielecks liegt bei r = 3,5 m höchstens
 // r · (1 − cos(π / 16)) = 7 cm innerhalb des Kreises, dessen Krone der Boden-Leser liest. Wirts-Auflösung.
 AnazhRealm.SAEULE_ECKEN = 16;
-// DIE FOLGE-SCHLANGE der Nachbar-Morphs (`_tickMorphFolge`, fahrt-takt): je Takt ohne Chunk-Einbau so viele ms (mindestens
-// ein Morph), eine Bitte älter als die Frist (Takte) morpht in jedem Takt.
-AnazhRealm.MORPH_FOLGE_MS = 0.5;
-AnazhRealm.MORPH_FOLGE_FRIST = 6;
 // DAS WACHSTUM ÜBER BUDGET (`_tickFoliageGrowth`, Lehre 13): je WUCHS_DROSSEL_MS wächst EIN Chunk (der nächste) —
 // das Budget drosselt das Tempo, nie die Existenz (dieselbe Garantie wie der Bau über Budget, `_handBauErlaubt`).
 AnazhRealm.WUCHS_DROSSEL_MS = 250;

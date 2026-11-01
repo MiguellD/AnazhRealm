@@ -8,8 +8,8 @@
 //   S (statisch, Node, Absenzen): der Auto-Register-Chokepoint vergleicht keinen kind-String (M8) ·
 //     die Donor-Zeile geraet_schwert traegt kein portalMeta/roleManual (der Alt-Blueprint ist PHYSISCH
 //     gefallen) · die Hand waermt keine Pipeline vor. --selftest: das Faust-Verdikt (H-F).
-//   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die 22 Klingen-
-//     Rezepte (Waffen UND Werkzeuge) · kindStages.weapon == [0] gemerged (tree/
+//   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die Klingen-
+//     Rezepte seines Kerns (Waffen UND Werkzeuge, das Soll aus schmiede-core) · kindStages.weapon == die Deklaration des Kerns gemerged (tree/
 //     vehicle/gate unberuehrt) · Auto-Blueprint klinge_langschwert entsteht am
 //     EINEN Chokepoint (Donor-Klon, KEIN _grownSpecies) · die generische
 //     klinge_-Regel loest auf · die Place-Aufloesung liefert mode "hand", der
@@ -27,8 +27,7 @@
 //     Werkstatt-Vorschau; _liveRefs-Rueckgabe) · foundry-off (lokaler Hook,
 //     sichern/wiederherstellen) -> der Part-Pfad byte-alt.
 //   node scripts/diag-nervensystem-schmiede.cjs [--selftest]
-const { statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde, fehlerText, SELBSTTEST, stammLib } = require("./lib/welt-boot.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
 const PORT = Number(process.env.NERV_SCHMIEDE_PORT || 4433);
@@ -68,7 +67,7 @@ function staticLaws(q) {
 }
 
 hauptLauf(async () => {
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         console.log("=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===");
         // V6/V8: portalMeta in der Donor-Zeile, ein Vorwärmen in der Hand -> S6 und S8 feuern beim Namen
         const rot = staticLaws((t) =>
@@ -98,7 +97,7 @@ hauptLauf(async () => {
     console.log("=== ε-BEWEIS SCHMIEDE — TEIL S: die statischen Absenzen (Node) ===");
     for (const [name, ok, detail] of staticLaws()) check(name, ok, detail);
 
-    const W = { bp: "klinge_langschwert", donor: "geraet_schwert", preset: "langschwert", entry: "klinge_spitzhacke", praefix: "klinge_", wahl: 2, name: "eine Klinge", art: "weapon", anzahl: 22, teile: 4, label: "Langschwert", place: { mode: "hand", dispatch: null } };
+    const W = { bp: "klinge_langschwert", donor: "geraet_schwert", preset: "langschwert", entry: "klinge_spitzhacke", praefix: "klinge_", wahl: 2, name: "eine Klinge", art: "weapon", teile: 4, label: "Langschwert", place: { mode: "hand", dispatch: null } };
     const [eps, out] = await kernStufen.epsilonDraht(server, PORT, W, check, async () => {
         const res = { b: {}, d: {}, h: {} };
         const A = AnazhRealm;
@@ -117,7 +116,7 @@ hauptLauf(async () => {
             res.d.toolPartsMatch = !!tbp && !!KS.geraet_spitzhacke && JSON.stringify(tbp.parts) === JSON.stringify(KS.geraet_spitzhacke.parts);
             res.d.toolRole = tbp ? r.computeBlueprintRole(tbp) : null;
         } catch (e) {
-            res.d.err = (e && e.message) || String(e);
+            res.d.err = fehlerText(e);
         }
         // ===== H: DIE HAND (W-A4b) — die Studio-Gestalt am EINEN Equip-Chokepoint =====
         try {
@@ -227,7 +226,7 @@ hauptLauf(async () => {
                             winkel: (Math.acos(Math.max(-1, Math.min(1, achse.dot(unterarm)))) * 180) / Math.PI,
                         };
                     } catch (e) {
-                        res.h.faustErr = (e && e.message) || String(e);
+                        res.h.faustErr = fehlerText(e);
                     }
                     // (3) UNEQUIP zerstoert das GETEILTE Asset NICHT — _queueDispose instrumentiert.
                     const sharedGeos = [];
@@ -292,7 +291,7 @@ hauptLauf(async () => {
                 else delete window.__anazhGateNoFoundry;
             }
         } catch (e) {
-            res.h.err = (e && e.message) || String(e);
+            res.h.err = fehlerText(e);
         }
         return res;
     });
@@ -303,7 +302,7 @@ hauptLauf(async () => {
         String(out.b.toolCount)
     );
     check("B: die B4-Regler-Tabelle reist (paramsByKind.weapon == 18 Dials, W-A1-Generik)", out.b.paramsWeapon === 18, String(out.b.paramsWeapon));
-    check("B: kindStages.weapon == [0] (N7.5-Merge am Ingest)", JSON.stringify(eps.b.ks.weapon) === "[0]", JSON.stringify(eps.b.ks.weapon));
+    // kindStages.weapon == die Deklaration von schmiede-core urteilt der EINE Draht je Art gegen den Kern (keine Abschrift)
     check("D: builtIn == false (Policy-Zeile; User-Werk-Sicht wie Fahrzeug/Tor)", eps.d.builtIn === false);
     check(
         "D: auch der Werkzeug-Donor ist ABWESEND, seine Substanz trägt 2 Parts (KIND_SUBSTANCE.geraet_spitzhacke)",

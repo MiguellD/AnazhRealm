@@ -3,7 +3,7 @@
 // 11 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
 // Avatar: einen Körper FORMEN durch denselben WERK-Kern (der Avatar
 // ist KEINE Ausnahme — formen kostet, tragen frei); forgeAvatar (role:soul, pay+freeze+verkörpern) +
@@ -265,13 +265,7 @@ async function checkBandRing5Soul({ page, check, errors, finalState }) {
         // Save-Roundtrip: die getragene Wolf-Verkörperung reist als Custom-Seele
         r.applyPlayerSoul("wolf");
         r.saveState();
-        const raw = await window.__stand();
-        let parsed = null;
-        try {
-            parsed = JSON.parse(raw);
-        } catch (e) {
-            void e;
-        }
+        const parsed = await window.__standJson();
         out.savedPlayerSoul = !!parsed && parsed.playerSoul === "bp_koerper_wolf";
 
         // loadState wendet die gespeicherte Seele an (zurück auf den Menschen)
@@ -361,13 +355,7 @@ async function checkBandRing5Soul({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (!ring5Results || ring5Results.error) {
-        check(
-            "Ring 5: Seele-Snapshot erreichbar",
-            false,
-            ring5Results && ring5Results.error ? ring5Results.error : "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 5: Seele-Snapshot erreichbar", ring5Results)) {
         check("Ring 5: Dropdown im Spieler-Drawer", ring5Results.drawerSelectInDom);
         check("Ring 5: Status-Bar zeigt Seele-Item", ring5Results.statusBarSoulInDom);
         check(
@@ -520,13 +508,7 @@ async function checkBandRing5Soul({ page, check, errors, finalState }) {
         st.pitch = 0;
     });
 
-    if (!cameraResults || cameraResults.error) {
-        check(
-            "Ring 5 V2-Prep: Kamera-Snapshot erreichbar",
-            false,
-            cameraResults && cameraResults.error ? cameraResults.error : "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 5 V2-Prep: Kamera-Snapshot erreichbar", cameraResults)) {
         check("Ring 5 V2-Prep: #camera-mode-toggle im DOM", cameraResults.toggleInDom);
         check("Ring 5 V2-Prep: Initial-Modus ist 'first'", cameraResults.initialModeFirst);
         check("Ring 5 V2-Prep: Initial-Label trägt '1st'", cameraResults.initialLabelFirst);
@@ -587,8 +569,8 @@ async function checkBandM3RittVollendet({ page, check }) {
             if (st.blueprints._t_m3_wagen) delete st.blueprints._t_m3_wagen;
             st.blueprints._t_m3_wagen = {
                 name: "_t_m3_wagen",
-                parts: JSON.parse(JSON.stringify(KSm3.fahrzeug_wagen.parts)),
-                connections: JSON.parse(JSON.stringify(KSm3.fahrzeug_wagen.connections || [])),
+                parts: jsonKlon(KSm3.fahrzeug_wagen.parts),
+                connections: jsonKlon(KSm3.fahrzeug_wagen.connections || []),
             };
             entry = r.spawnArchitecture("_t_m3_wagen", { x: pm.x + 6, y: pm.y, z: pm.z }, { silent: true });
             out.spawned = !!entry;
@@ -769,9 +751,9 @@ async function checkBandV18195AvatarSizeHp({ page, check }) {
         // sind unangetastet. Wir vergleichen den heutigen Spieler-Stats-Wert
         // mit der STAT_FROM_TAGS-Direktrechnung (ohne Größen-Multiplikator).
         const savedSoul = st.player && st.player.soul;
-        const savedEquipped = st.player && JSON.parse(JSON.stringify(st.player.equipped || {}));
-        const savedBoosts = st.player && JSON.parse(JSON.stringify(st.player.boosts || []));
-        const savedCustomSouls = st.customSouls ? JSON.parse(JSON.stringify(st.customSouls)) : {};
+        const savedEquipped = st.player && jsonKlon(st.player.equipped || {});
+        const savedBoosts = st.player && jsonKlon(st.player.boosts || []);
+        const savedCustomSouls = st.customSouls ? jsonKlon(st.customSouls) : {};
         const savedDeathWound = st.player ? st.player.deathWoundIntensity : 0;
         try {
             // human: built-in, sollte sizeFactor 1 + mul 1 erhalten
@@ -1077,8 +1059,8 @@ async function checkBandV18206SpeedTrade({ page, check }) {
 
 
         const savedSoul = st.player && st.player.soul;
-        const savedEquipped = st.player && JSON.parse(JSON.stringify(st.player.equipped || {}));
-        const savedCustomSouls = st.customSouls ? JSON.parse(JSON.stringify(st.customSouls)) : {};
+        const savedEquipped = st.player && jsonKlon(st.player.equipped || {});
+        const savedCustomSouls = st.customSouls ? jsonKlon(st.customSouls) : {};
 
         try {
             // (S2) Built-in NEUTRAL: human-Soul → sizeFactor=1, kein Speed-Drift
@@ -1576,7 +1558,7 @@ async function checkBandTierFern({ page, check }) {
         s.maxCreatures = saveMax;
         return o;
     });
-    if (!out || out.error) return check("Tier-Fern: die Bühne steht (Wolf gespawnt, Schalter erreichbar)", false, out ? out.error : "keine Antwort der Seite");
+    if (!erreichbar(check, "Tier-Fern: die Bühne steht (Wolf gespawnt, Schalter erreichbar)", out)) return;
     const c = out.checks || {};
     const rot = (...k) => k.filter((x) => c[x] !== true).join(" · ");
     const n = rot("fernGebaut", "zeileGelesen", "nToggleNah", "nToggleFern", "nFernGelenkig", "nNahVoll", "nFernGrob", "nFernKleiner");
@@ -1879,7 +1861,7 @@ async function checkBandKoerperBewegung({ page, check }) {
     
         return o;
     });
-    if (!out || out.error) return check("Körper-Bewegung: die Bühne steht", false, out ? out.error : "keine Antwort der Seite");
+    if (!erreichbar(check, "Körper-Bewegung: die Bühne steht", out)) return;
     const c = out.checks || {};
     const rot = (...k) => k.filter((x) => c[x] !== true).join(" · ");
     const f = (v, n = 2) => (typeof v === "number" ? v.toFixed(n) : String(v));
@@ -1919,7 +1901,10 @@ async function checkBandGamepadVerben({ page, check }) {
         c.selbsttest = leser().includes("__zwillingLeser");
         delete proto.__zwillingLeser;
         c.absenz = o.leser.length === 0;
-        if (!P || !T || !B) return Object.assign(o, { error: "keine Verb-Tafel (state.verbTafel · PAD_GESETZ · PAD_BELEGUNG)" });
+        if (!P || !T || !B)
+            return Object.assign(o, {
+                error: `keine Verb-Tafel (state.verbTafel · PAD_GESETZ · PAD_BELEGUNG) · rohe Tasten-Leser [${o.leser}]`,
+            });
         const pad = { connected: true, axes: [0, 0, 0, 0], buttons: [...Array(17)].map(() => ({ pressed: false, value: 0 })) };
         pad.vibrationActuator = { type: "dual-rumble", playEffect: (art, e) => (fx.push(e), Promise.resolve()), reset() {} };
         Object.defineProperty(navigator, "getGamepads", { value: () => [pad], configurable: true });
@@ -1976,7 +1961,7 @@ async function checkBandGamepadVerben({ page, check }) {
             c.maus = o.maus[0] === -40 * s.mouseSensitivity && o.maus[1] === o.maus[0] && o.maus[2] === 0;
             // (C) FAHREN: X steigt auf (der Portal-Griff zuerst), Lenkwinkel und Gas stetig, B bremst das Heck, Rumble aus der Fahrt
             const KS = A.KIND_SUBSTANCE.fahrzeug_wagen;
-            s.blueprints._t_pad_wagen = JSON.parse(JSON.stringify({ name: "_t_pad_wagen", parts: KS.parts, connections: KS.connections || [] }));
+            s.blueprints._t_pad_wagen = jsonKlon({ name: "_t_pad_wagen", parts: KS.parts, connections: KS.connections || [] });
             stellen();
             const wagen = r.spawnArchitecture("_t_pad_wagen", { x: ort.x + 2.5, y: ort.y, z: ort.z }, { silent: true });
             r._tryEnterPortalAtPlayer = () => ((spione.tor = (spione.tor || 0) + 1), false);
@@ -2050,7 +2035,7 @@ async function checkBandGamepadVerben({ page, check }) {
         }
         return o;
     });
-    if (!out || out.error) return check("Gamepad-Verben (leib.K5): die Bühne steht", false, out ? `${out.error} · rohe Tasten-Leser [${out.leser}]` : "keine Antwort");
+    if (!erreichbar(check, "Gamepad-Verben (leib.K5): die Bühne steht", out)) return;
     const rot = (...k) => k.filter((x) => out.c[x] !== true).join(" · ");
     const f = (x) => (Array.isArray(x) ? x.map(f).join("/") : typeof x === "number" ? x.toFixed(3) : String(x));
     for (const [teil, text] of [

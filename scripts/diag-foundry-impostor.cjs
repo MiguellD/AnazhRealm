@@ -12,11 +12,11 @@
 //     in die Lücke). C5: der Atlas wächst in SEINEN Texturen über den EINEN Abschied (`_texturAbschied`), die Vorlage des
 //     Programms bindet die lebende (Selbsttest: das alte Wachsen). C6 (lod.K3): die Karte einer flachen Krone, gedreht und
 //     skaliert, aus jeder Blick-Hebung −20/0/40/80° gegen ihre Gestalt (Deckung, IoU; Selbsttest: jeder Ring waagrecht
-//     gebacken). C7 (w4-laub-karte): die Tiefe je Texel — vor einer Tafel steht die Karte in der Tiefe ihrer Gestalt
-//     (Pixel-Tiefen-Versatz; Selbsttest: ohne die Tiefe dahinter). Teil C beginnt erst, wenn die Welt steht (`weltRuht`, die EINE Ruhe); eine fremde Zelle im Probe-Atlas
+//     gebacken). C7 (w4-laub-karte, heil-laub-tiefe): die Tiefe je Texel an den Ecken ihres Gitters — vor einer Tafel steht
+//     die Karte in der Tiefe ihrer Gestalt (Selbsttest: ohne die Tiefe dahinter). Teil C beginnt erst, wenn die Welt steht (`weltRuht`, die EINE Ruhe); eine fremde Zelle im Probe-Atlas
 //     ist ROT beim Namen.
 //   node scripts/diag-foundry-impostor.cjs
-const { statikServer, starteBrowser, hauptLauf, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, wandEnde, fehlerText } = require("./lib/welt-boot.cjs");
 
 const server = statikServer();
 
@@ -230,20 +230,22 @@ async function driveImpostor(page) {
             const strich = (m) => {
                 const p = new Set();
                 // jeder Knoten EINMAL (der Graph teilt seine Zelle über die Ringe: `traverse` ginge jeden Pfad); die Tiefe je
-                // Texel (w4-laub-karte) liest BC aus ihrer Schicht, rgba8 aus der Normale — auch sie mit stetigen Gradienten
+                // Texel liest die ECKE (heil-laub-tiefe, `vertexNode`: BC aus ihrer Schicht, rgba8 aus der Normale, auf ihrer
+                // Mip-Stufe), nie das Fragment — ein depthNode schreibt frag_depth, und der frühe Tiefentest fällt für jedes
+                // Karten-Fragment (`frag`; z114, GTX, Mess-Wiese Ego steht: gpu-bank 15,41 → 20,52 ms)
                 const geh = (n, s) => n && !s.has(n) && (s.add(n), n.isTextureNode && n.referenceNode && [atS.mapNode, atS.nmapNode, atS.tmapNode].includes(n.getBase()) && p.add(n), [...n.getChildren()].forEach((c) => geh(c, s)));
-                for (const w of [m.colorNode, m.normalNode, m.depthNode, m.receivedShadowPositionNode]) geh(w, new Set());
+                for (const w of [m.colorNode, m.normalNode, m.receivedShadowPositionNode, m.vertexNode]) geh(w, new Set());
                 const g = (b) => [...p].filter((n) => n.gradNode && n.getBase() === b).length;
                 // springend: die Ableitung kommt aus der eigenen (springenden) Stichproben-Koordinate statt aus der stetigen
                 const quelle = (d) => (d.isVarNode ? d.node : d).aNode; // dFdx reist in r184 als VarNode um den MathNode
                 const springend = [...p].filter((n) => n.gradNode?.some((d) => quelle(d) && quelle(d).id === n.uvNode.id)).length;
-                return { gradMap: g(atS.mapNode), gradNmap: g(atS.nmapNode), gradTmap: g(atS.tmapNode), ohne: [...p].filter((n) => !n.gradNode && !n.levelNode).length, springend };
+                return { gradMap: g(atS.mapNode), gradNmap: g(atS.nmapNode), frag: !!m.depthNode, ohne: [...p].filter((n) => !n.gradNode && !n.levelNode).length, springend };
             };
             out.strich = strich(r._impostorAtlasMaterial());
             const uS = THREE.TSL.uv();
-            out.strichSelbst = strich({ colorNode: atS.mapNode.sample(uS).depth(0).add(atS.mapNode.sample(uS).grad(uS.dFdx(), uS.dFdy())) });
+            out.strichSelbst = strich({ colorNode: atS.mapNode.sample(uS).depth(0).add(atS.mapNode.sample(uS).grad(uS.dFdx(), uS.dFdy())), depthNode: uS.x });
         } catch (e) {
-            out.err = e?.message || String(e);
+            out.err = fehlerText(e);
         }
         return out;
     });
@@ -418,8 +420,9 @@ async function kleberProbe(page, fmtWunsch) {
             at.ringe = Object.assign({}, echt, { ringe: echt.ringe.map((x) => Object.assign({}, x, { hebung: 0 })) });
             const zS = await window.__fimpBacke(ren, at, "fimp:gateKarte|4", 94, gO).finally(() => (at.ringe = echt));
             const lage = new T.Matrix4().compose(new T.Vector3(30, 0, -10), new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), (-119 * Math.PI) / 180), new T.Vector3(1.5, 1.5, 1.5));
+            // die Leinwand 256²: die Karte 149 px hoch, über KARTE_GITTER px[1] — ihre Ecken tragen die Tiefe (C7)
             const camO = new T.PerspectiveCamera(6, 1, 1, 600),
-                rtO = new T.RenderTarget(128, 128);
+                rtO = new T.RenderTarget(256, 256);
             // gedeckt = gezeichnet und nicht rot (die Tafel der Tiefe)
             const deckt = async (phi, ...o) => {
                 camO.position.set(30, 6 + 180 * Math.sin((phi * Math.PI) / 180), 180 * Math.cos((phi * Math.PI) / 180) - 10);
@@ -438,7 +441,7 @@ async function kleberProbe(page, fmtWunsch) {
                 out.oben.je[phi] = { karte: iou(await deckt(phi, mO), g), selbst: iou(await deckt(phi, mS), g) };
             }
             // (C7) DIE TIEFE JE TEXEL (w4-laub-karte, phyto-core `karteTiefe`): aus 0° vor einer Tafel 1,5 m vor der Achse steht die
-            // Krone der Gestalt (5,4 m tief) davor, der Stamm dahinter — die Karte im Pixel-Tiefen-Versatz wie sie (depthNode).
+            // Krone der Gestalt (5,4 m tief) davor, der Stamm dahinter — die Karte wie sie (die Tiefe an den Ecken ihres Gitters).
             // SELBSTTEST: ihr Stoff ohne die Tiefe (`karteTiefeVersatz` = 0) steht auf ihrer Ebene, hinter der Tafel.
             const wand = new T.Mesh(new T.PlaneGeometry(40, 40), new T.MeshBasicMaterial({ color: 0xff0000 }));
             wand.position.set(30, 6, -8.5);
@@ -513,7 +516,7 @@ async function kleberProbe(page, fmtWunsch) {
             }
             ren.dispose();
         } catch (e) {
-            out.err = e?.message || String(e);
+            out.err = fehlerText(e);
         }
         return out;
     }, fmtWunsch);
@@ -583,7 +586,7 @@ async function vergroessertProbe(page, fmtWunsch) {
             out.selbst = await treppe(8, "stufen");
             ren.dispose();
         } catch (e) {
-            out.err = e?.message || String(e);
+            out.err = fehlerText(e);
         }
         return out;
     }, fmtWunsch);
@@ -694,7 +697,7 @@ async function windProbe(page) {
             }
             ren.dispose();
         } catch (e) {
-            out.err = e?.message || String(e);
+            out.err = fehlerText(e);
         }
         return out;
     }, WIND_FAELLE);
@@ -765,13 +768,11 @@ hauptLauf(async () => {
     if (A.strich) {
         const s = A.strich;
         console.log(`  Strich-Wand am Graphen: ${JSON.stringify(s)} · Selbsttest ${JSON.stringify(A.strichSelbst)}`);
-        // die Albedo je Ansicht (2), die Normale der nächsten (1) und die Tiefe je Ansicht (2, w4-laub-karte: der Pixel-Tiefen-Versatz;
-        // BC in ihrer Schicht, rgba8 in der Normale) mit Gradienten der stetigen Koordinate
-        if (!(s.gradMap === 2 && s.gradNmap + s.gradTmap === 3 && s.ohne === 0 && s.springend === 0))
-            errs.push(
-                `A: Strich-Wand — die Albedo je Ansicht, die Normale der nächsten und die Tiefe je Ansicht mit Gradienten der stetigen Koordinate (2/1+2), keine Stichprobe ohne (${JSON.stringify(s)})`
-            );
-        if (!(A.strichSelbst?.ohne === 1 && A.strichSelbst.springend === 1))
+        // die Albedo je Ansicht (2) und die Normale der nächsten (1) mit Gradienten der stetigen Koordinate, die Tiefe an der Ecke auf
+        // ihrer Stufe (heil-laub-tiefe), nie im Fragment (frag: depthNode → frag_depth)
+        if (!(s.gradMap === 2 && s.gradNmap === 1 && !s.frag && s.ohne === 0 && s.springend === 0))
+            errs.push(`A: Strich-Wand — Albedo 2 · Normale 1 stetig abgeleitet, keine Probe ohne, keine Tiefe im Fragment (${JSON.stringify(s)})`);
+        if (!(A.strichSelbst?.ohne === 1 && A.strichSelbst.springend === 1 && A.strichSelbst.frag))
             errs.push("A-SELBSTTEST: ein Atlas-Stoff ohne Gradienten oder mit springender Ableitung bleibt ungesehen");
     } else if (A.ready) errs.push("A: die Strich-Proben liefen nicht");
 
@@ -830,7 +831,7 @@ hauptLauf(async () => {
             teil = (n) => +(n / Math.max(1, Ti.gestalt)).toFixed(3);
         console.log(`  C7 TIEFE [${C.fmt}]: vor der Tafel Gestalt ${Ti.gestalt} px (Soll ≥ 80) · Karte ${teil(Ti.karte)} (Soll ≥ 0,6) · ohne Tiefe ${teil(Ti.selbst)} (MUSS < 0,2)`);
         if (!(Ti.gestalt >= 80 && teil(Ti.selbst) < 0.2)) errs.push(`${F} C7-SELBSTTEST: die Gestalt steht nicht vor der Tafel oder die Karte ohne Tiefe nicht dahinter — die Linse ist blind`);
-        else if (!(teil(Ti.karte) >= 0.6)) errs.push(`${F} C7: die Karte steht hinter der Tafel — sie liest die Tiefe ihrer Gestalt nicht (depthNode)`);
+        else if (!(teil(Ti.karte) >= 0.6)) errs.push(`${F} C7: die Karte steht hinter der Tafel — ihre Ecken lesen ihre Tiefe nicht (vertexNode)`);
     }
     {
         console.log("\n=== TEIL C4 — DER WIND WEHT IN DER WELT (eine Säule im Sturm, drei Drehungen, zwei Skalen) ===");

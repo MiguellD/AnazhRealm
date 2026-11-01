@@ -3,7 +3,7 @@
 // 8 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
 async function checkBandVoxelP3AndInventory({ page, check, errors, finalState }) {
     void errors;
@@ -34,7 +34,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         return out;
     });
 
-    if (voxelP3Results && !voxelP3Results.error) {
+    if (erreichbar(check, "Voxel P3: Tests laufen", voxelP3Results)) {
         check(
             "Voxel P3: der Schnitt nimmt die Säule r aus dem Fels (Kern und Rand Luft, außerhalb Fels)",
             voxelP3Results.carveSubtracts
@@ -310,7 +310,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         return out;
     });
 
-    if (voxelV940eResults && !voxelV940eResults.error) {
+    if (erreichbar(check, "Voxel V9.40-e: Tests laufen", voxelV940eResults)) {
         check(
             "_addVoxelEdit verwirft Edit weit über der Chunk-Decke (Schöpfer-Hinweis)",
             voxelV940eResults.farEditRejected && voxelV940eResults.farEditNotStored
@@ -367,7 +367,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         return out;
     });
 
-    if (voxelP3bResults && !voxelP3bResults.error) {
+    if (erreichbar(check, "Voxel P3b: Tests laufen", voxelP3bResults)) {
         check("Voxel P3b: ein mode-loser Alt-Edit gilt als carve (Backward-Compat)", voxelP3bResults.modelessIsCarve);
         check("Voxel P3b: der Chat-Befehl `voxel fill` schüttet auf", voxelP3bResults.chatFillAddsEdit);
     }
@@ -378,7 +378,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
     const voxelP3cResults = await safeEvaluate(page, () => {
         if (!r || !st || !st.player) return null;
         const out = {};
-        const invBackup = JSON.parse(JSON.stringify(st.player.inventory || []));
+        const invBackup = jsonKlon(st.player.inventory || []);
         const modeBackup = r.getGameMode();
         const wm = st.worldMeta;
         const matTotal = () => {
@@ -428,7 +428,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         return out;
     });
 
-    if (voxelP3cResults && !voxelP3cResults.error) {
+    if (erreichbar(check, "Voxel P3c: Tests laufen", voxelP3cResults)) {
         check("Voxel P3c: _consumeAnyMaterial zieht bei genug Material ab", voxelP3cResults.consumeEnough);
         check(
             "Voxel P3c: _consumeAnyMaterial lehnt bei zu wenig ab + lässt das Inventar unberührt",
@@ -563,7 +563,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         return out;
     });
 
-    if (wave6c2Results && !wave6c2Results.error) {
+    if (erreichbar(check, "Welle 6.C2: Tests laufen", wave6c2Results)) {
         check("Welle 6.C2: Neue Welten starten im frieden-Modus (init-time)", wave6c2Results.defaultModeFrieden);
         check(
             "Welle 6.C2: GAME_MODES[0] === 'frieden' (kanonischer Default)",
@@ -826,7 +826,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         return out;
     });
 
-    if (wave6c1Results && !wave6c1Results.error) {
+    if (erreichbar(check, "Welle 6.C1: Tests laufen", wave6c1Results)) {
         check("Welle 6.C1: state.player.inventory ist Array", wave6c1Results.hasInventoryArray);
         check("Welle 6.C1: Inventar hat exakt 27 Slots", wave6c1Results.inventoryHas27Slots);
         check("Welle 6.C1: Inventar initial leer (alle 27 null)", wave6c1Results.initiallyEmpty);
@@ -1110,7 +1110,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         return out;
     });
 
-    if (dragResults && !dragResults.error) {
+    if (erreichbar(check, "Welle 6.C1 Drag: Tests laufen", dragResults)) {
         check("Welle 6.C1 Drag: inv→inv tauscht Slot-Inhalte", dragResults.invToInvSwap);
         check("Welle 6.C1 Drag: inv→hot legt Bauplan in Hotbar", dragResults.invToHotPlaces);
         check(
@@ -1199,7 +1199,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         return out;
     });
 
-    if (lockResults && !lockResults.error) {
+    if (erreichbar(check, "Welle 6.C1 Lock: Tests laufen", lockResults)) {
         check("Welle 6.C1 Lock: exitPointerLock wird beim Inventar-Öffnen gerufen", lockResults.exitLockCalledOnOpen);
         check("Welle 6.C1 Lock: state.inventoryOpen wird true nach toggleOpen", lockResults.overlayOpenAfterToggle);
         check(
@@ -1472,8 +1472,8 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
         }
 
         // T2 Cross-LOD-Geomorph: feine Boundary-Vertices an LOD0↔LOD1-Grenzen auf die GROBE Nachbar-Fläche
-        // ziehen → die T-junction schließt (render-only, `geomorph`-Uniform). Probe: Material kompiliert,
-        // Morph-Attribute auf JEDER Terrain-Geometrie (WebGPU-strikt), Finalize ruft ihn, ≥1 hasMorph.
+        // ziehen → die T-junction schließt (render-only, `geomorph`-Uniform). Probe hier: das Material kompiliert; die
+        // Morph-Attribute und den Morph (≥ 1 Chunk hasMorph) zählt das Band PhaseAFundament, sobald die Nähte des Fadens liegen.
         {
             const zM = window.__stoffZeuge(r);
             let mM = null;
@@ -1485,19 +1485,6 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
             out.t2NoMorphError = zM.brueche.length === 0 && !!(mM && mM.positionNode); // der Geomorph baut (K22-Zeuge)
             if (mM && typeof mM.dispose === "function") mM.dispose();
         }
-        let t2HasAttrs = false,
-            t2ChunksWithMorph = 0;
-        if (st.voxelChunks) {
-            for (const [, e] of st.voxelChunks) {
-                if (!e || e.empty || !e.mesh || !e.mesh.geometry) continue;
-                const g = e.mesh.geometry;
-                if (g.attributes.aMorphTarget && g.attributes.aMorphWeight) t2HasAttrs = true;
-                if (e.hasMorph) t2ChunksWithMorph++;
-            }
-        }
-        out.t2HasMorphAttrs = t2HasAttrs;
-        out.t2ChunksWithMorph = t2ChunksWithMorph;
-
         out.t3DcConstants = Number.isFinite(AnazhRealm.DC_LAMBDA) && Number.isFinite(AnazhRealm.DC_SHARP_MOVE2);
 
         // T4 Wasser-Automat: `_tickWaterCA` ist die reine Fluss-Funktion (Level pro Zelle). Behavioral:
@@ -1578,15 +1565,6 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
         );
     // T2 (Terrain-Kohärenz-Plan §4): der Cross-LOD-Geomorph — die räumliche Naht.
     check("T2 (Cross-LOD-Geomorph): kein Material-Morph-Fehler (positionNode kompiliert)", res.t2NoMorphError);
-    check(
-        "T2 (Cross-LOD-Geomorph): jede Terrain-Geometrie trägt aMorphTarget+aMorphWeight (WebGPU-strikt)",
-        res.t2HasMorphAttrs
-    );
-    check(
-        "T2 (Cross-LOD-Geomorph): der Geomorph feuert an Cross-LOD-Grenzen (>=1 Chunk hasMorph)",
-        res.t2ChunksWithMorph >= 1,
-        `chunksWithMorph=${res.t2ChunksWithMorph}`
-    );
     check(
         "T3 (Dual Contouring): DC_LAMBDA + DC_SHARP_MOVE2 Konstanten existieren (Worker-gespiegelt)",
         res.t3DcConstants
@@ -1923,21 +1901,24 @@ async function checkBandV17118WorkerEngaged({ page, check }) {
 // A2 Edit-Lokalität (der „Reset" ist GEMESSEN unsichtbar) · A5 Luft↔Ring-Kante ·
 // A6 Körper-Kollision (Decken-Sprung-Klemme + Kamera-Clip; die Rettung aus dem Fill hebt den Turm, gate:fall-waechter B).
 async function checkBandPhaseAFundament({ page, check }) {
-    const res = await page.evaluate(() => {
+    const res = await page.evaluate(async () => {
         if (!r || !st || !st.voxelChunks) return { error: "no realm" };
         const out = {};
-        // ── A1 · Stitch-Band: deterministisch frisch morphen (Band-Reihenfolge egal),
-        // dann zählen + die WebGPU-Attribut-Vollständigkeit prüfen (V10.0-g.1-Wand).
-        for (const [key, entry] of st.voxelChunks) {
-            if (!entry || entry.empty || !entry.mesh) continue;
-            const [cx, cz] = key.split(",").map(Number);
-            r._applyCrossLodGeomorph(cx, cz);
-        }
+        // ── A1 · Stitch-Band: der Faden morpht jedes Netz bei jedem Wechsel seiner Nachbarn (w4-b-boden2) — sobald jede Naht
+        // angelegt ist, zählen + die WebGPU-Attribut-Vollständigkeit prüfen (V10.0-g.1-Wand).
+        await window.__gebautNach("die Nähte des Rings", { fertig: () => !r._weltOffen().chunks, max: 600 });
+        // T2 hier, hinter den Nähten (w4-b-boden3): der Morph eines Netzes ist der Teil des Fadens, den der Takt anlegt
+        // (`_tickMorphFolge`) — im Band C3 zählte T2 ohne Takt nach dem Neubau der Welt (VoxelTerrainCore leert sie), 29 bis
+        // 66 Teile lagen ungelegt in der Schlange, chunksWithMorph=0
         let bands = 0,
             bandAttrsOk = true,
             cappedTotal = 0;
+        out.t2ChunksWithMorph = 0;
         for (const [, entry] of st.voxelChunks) {
-            if (!entry || !entry.lodStitchMesh) continue;
+            if (entry.mesh && entry.mesh.geometry.attributes.aMorphWeight && entry.mesh.geometry.attributes.aMorphTarget)
+                out.t2HasMorphAttrs = true;
+            if (entry.hasMorph) out.t2ChunksWithMorph++;
+            if (!entry.lodStitchMesh) continue;
             bands++;
             const g = entry.lodStitchMesh.geometry;
             for (const a of ["position", "normal", "color", "aMorphTarget", "aMorphWeight"]) {
@@ -2003,6 +1984,15 @@ async function checkBandPhaseAFundament({ page, check }) {
         check("PHASE A: Fundament-Band (realm verfügbar)", false, res.error);
         return;
     }
+    check(
+        "T2 (Cross-LOD-Geomorph): jede Terrain-Geometrie trägt aMorphTarget+aMorphWeight (WebGPU-strikt)",
+        res.t2HasMorphAttrs
+    );
+    check(
+        "T2 (Cross-LOD-Geomorph): der Geomorph feuert an Cross-LOD-Grenzen (>=1 Chunk hasMorph)",
+        res.t2ChunksWithMorph >= 1,
+        `chunksWithMorph=${res.t2ChunksWithMorph}`
+    );
     check(
         "A1: Stitch-Bänder an Cross-LOD-Grenzen präsent (KONSUM, nicht Existenz)",
         res.bands >= 1,

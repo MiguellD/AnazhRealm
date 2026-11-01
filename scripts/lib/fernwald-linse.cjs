@@ -110,7 +110,6 @@ function fernwaldLinse(opts) {
             }
             return new Uint8Array(auf.u8);
         };
-        const lum = (u, i) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
         const aus = {};
         const masse = (a, o) => {
             const y0 = Math.floor(H * 0.3),
@@ -134,9 +133,9 @@ function fernwaldLinse(opts) {
                             const d =
                                 Math.abs(a[i] - o[i]) + Math.abs(a[i + 1] - o[i + 1]) + Math.abs(a[i + 2] - o[i + 2]);
                             if (d < 12) continue; // die Kronen-Fläche: nur, was der Fernwald ändert
-                            const l = lum(a, i);
+                            const l = luma709(a, i);
                             sl += Math.abs(
-                                4 * l - lum(a, i - 4) - lum(a, i + 4) - lum(a, i - W * 4) - lum(a, i + W * 4)
+                                4 * l - luma709(a, i - 4) - luma709(a, i + 4) - luma709(a, i - W * 4) - luma709(a, i + W * 4)
                             );
                             k++;
                             s += l;

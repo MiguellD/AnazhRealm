@@ -137,21 +137,17 @@ function selbsttest() {
     selbsttestEnde(fehler);
 }
 
-if (process.argv.includes("--selftest")) {
+const { statikServer, starteBrowser, laufUhr, path, fs, SELBSTTEST, argOpt, fehlerText, seiteZu, rotListe } = require("./lib/welt-boot.cjs");
+
+if (SELBSTTEST) {
     console.log("=== EGO-SCHATTEN — Selbsttest (ohne Browser) ===");
     selbsttest();
     process.exit(0);
 }
 
-const { statikServer, starteBrowser, laufUhr } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
-const fs = require("fs");
-const path = require("path");
 
-const BILDER = (() => {
-    const i = process.argv.indexOf("--bilder");
-    return i > 0 ? path.resolve(process.argv[i + 1]) : null;
-})();
+const BILDER = argOpt("--bilder") && path.resolve(argOpt("--bilder"));
 const server = statikServer();
 
 // DIE BÜHNE (Seiten-Kontext): der echte Renderer, der echte Leib, die echte Regel; eigene Szene, Zeit fest.
@@ -567,20 +563,11 @@ function buehne(arg) {
             }
         }
     } catch (e) {
-        out = { error: e?.message || String(e) };
+        out = { error: fehlerText(e) };
     }
-    await browser.close();
-    server.close();
-    if (!out || out.error) {
-        console.log("FEHLER:", out ? out.error : "?");
-        process.exit(1);
-    }
+    await seiteZu(browser, server, out);
     const v = urteilJeStufe(out);
-    if (v.length) {
-        console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
-        for (const s of v) console.log("   • " + s);
-        process.exit(1);
-    }
+    rotListe(v);
     const [g, f] = [out.grob, out.fein];
     console.log(
         `\n✅ GRÜN — in der Ego-Sicht wirft der Leib Schatten am Boden, grob ${g.kopf.ego.wurf} px (IoU ${g.kopf.iou}) und fein ` +
