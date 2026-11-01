@@ -16,7 +16,7 @@
 //      (spec/asset-contract/v7/golden/daten.json — gemintet NUR wenn es fehlt).
 //   --selftest: Schema-Verletzungen (klang, motion) und ein Kern, der beim Laden eine Transzendente ruft, werden erkannt.
 //   node scripts/diag-daten-contract.cjs [--selftest]
-const { pruefer, wandEnde, selbsttestEnde, ausDatei, SELBSTTEST, fs, vm, jsonLesen, jsonSchreiben, path, ROOT: root } = require("./lib/welt-boot.cjs");
+const { pruefer, wandEnde, selbsttestEnde, ausDatei, SELBSTTEST, fs, vm, jsonLesen, jsonSchreiben, jsonKlon, path, ROOT: root } = require("./lib/welt-boot.cjs");
 const { probeWand } = require("./lib/plattform-probe.cjs");
 
 const goldenDir = path.join(root, "spec/asset-contract/v7/golden");
@@ -114,7 +114,7 @@ function validateDaten(N, spec) {
         }
         // structured-clone-Sicherheit (die Taille: reine Daten).
         try {
-            JSON.parse(JSON.stringify(r));
+            jsonKlon(r);
         } catch {
             v.push(`§8: "${id}" nicht JSON-klonbar`);
         }
@@ -127,7 +127,7 @@ function validateDaten(N, spec) {
         console.log("=== SELBST-TEST: die Daten-Vertrags-Linse feuert ===");
         const N = loadCore(CORES[0].file, CORES[0].ns);
         // V1: Schema-Verletzung (bpm 0 + kaputte dna) wird erkannt.
-        const broken = JSON.parse(JSON.stringify({ PRESETS: N.PRESETS, PARAMS_BY_KIND: N.PARAMS_BY_KIND }));
+        const broken = jsonKlon({ PRESETS: N.PRESETS, PARAMS_BY_KIND: N.PARAMS_BY_KIND });
         broken.STUDIO_VERTRAG = 1;
         broken.MESHFREI = 1;
         broken.PRESETS.lofi.fx.klang.bpm = 0;
@@ -139,7 +139,7 @@ function validateDaten(N, spec) {
         );
         // V3: motion-Schema feuert (ein String im Profil).
         const T = loadCore(CORES[2].file, CORES[2].ns);
-        const brokenT = JSON.parse(JSON.stringify({ PRESETS: T.PRESETS, PARAMS_BY_KIND: T.PARAMS_BY_KIND }));
+        const brokenT = jsonKlon({ PRESETS: T.PRESETS, PARAMS_BY_KIND: T.PARAMS_BY_KIND });
         brokenT.STUDIO_VERTRAG = 1;
         brokenT.MESHFREI = 1;
         brokenT.PRESETS.wolf.fx.motion.presets.idle.freq = "kaputt";

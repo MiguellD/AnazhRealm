@@ -14,7 +14,7 @@
 // und diese Invarianten werden rot (D3c: der Tap drawCalls-first beweist der Fake-Vertrag
 // am Lauf, die Text-Proben am Tap und am Flugschreiber fielen). GPU-frei, hardware-unabhängig.
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, warteAufWelt, urteilEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, urteilEnde, fehlerText } = require("./lib/welt-boot.cjs");
 const server = statikServer();
 
 (async () => {
@@ -129,7 +129,7 @@ const server = statikServer();
             return o;
         });
     } catch (e) {
-        out = { __err: (e && e.message) || String(e) };
+        out = { __err: fehlerText(e) };
     }
     await browser.close();
     server.close();

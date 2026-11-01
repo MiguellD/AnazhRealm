@@ -165,7 +165,7 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
             if (cloneOk) {
                 r.selectBlueprintForEdit("test_wave6b");
                 r._workshopSetSelection(0);
-                const partBefore = JSON.parse(JSON.stringify(st.blueprints.test_wave6b.parts[0]));
+                const partBefore = jsonKlon(st.blueprints.test_wave6b.parts[0]);
                 out.posBefore = partBefore.position.x;
                 // Drag begin auf eigenem Bauplan
                 r._workshopEnsurePreview();
@@ -556,9 +556,7 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
             }
             // CRITICAL Cleanup: zurück zum Default-Blick (alle Drawer zu) + Yaw auf 0,
             // sonst stören die nachgelagerten Drawer- und Ring-5-V2-Prep-Tests.
-            r.closeAllDrawers();
-            st.yaw = 0;
-            if (st.playerMesh) st.playerMesh.rotation.y = 0;
+            window.__werkPutz();
         } catch (err) {
             out.error = err && err.message;
         }
@@ -816,9 +814,7 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
             r.deleteBlueprint("test_v803");
             r.selectBlueprintForEdit("stein_block");
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            r.closeAllDrawers();
-            st.yaw = 0;
-            if (st.playerMesh) st.playerMesh.rotation.y = 0;
+            window.__werkPutz();
         } catch (err) {
             out.error = err && err.message;
         }
@@ -924,13 +920,7 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
         st.player.emotions.joy = 0.42;
         st.player.emotions.chaos = 0.13;
         r.saveState();
-        const raw = await window.__stand();
-        let parsed = null;
-        try {
-            parsed = JSON.parse(raw);
-        } catch (e) {
-            void e;
-        }
+        const parsed = await window.__standJson();
         out.savedEmotions =
             !!parsed &&
             parsed.playerEmotions &&
@@ -2376,7 +2366,7 @@ async function checkBandRezeptKatalog({ page, check }) {
                 // der DEFAULT-Zug darf cachen (Welt-Pfad), der ov-Zug NIE: genau EIN blume-Key.
                 res.b.blumeCacheClean = bAdded.filter((k) => k.indexOf("blume|") === 0).length <= 1;
             } catch (e) {
-                res.b.err = (e && e.message) || String(e);
+                res.b.err = fehlerText(e);
             }
 
             // ===== (c) KATALOG: der Donor-Abschied im DOM (jedes Rezept als Knoten der Bibliothek: gate:nervensystem S) =====
@@ -2394,7 +2384,7 @@ async function checkBandRezeptKatalog({ page, check }) {
                 res.c.torSubstanzParts =
                     KS.tor_basis && Array.isArray(KS.tor_basis.parts) ? KS.tor_basis.parts.length : 0;
             } catch (e) {
-                res.c.err = (e && e.message) || String(e);
+                res.c.err = fehlerText(e);
             }
 
             // ===== (d) REGLER: tor_drachentor → Slider aus der PARAMS-Tabelle + ov treibt die Vorschau =====
@@ -2425,7 +2415,7 @@ async function checkBandRezeptKatalog({ page, check }) {
                 res.d.cacheStillClean = !Array.from(f.cache.keys()).some((k) => k.indexOf("{") >= 0);
                 delete ws.studioOv["drachentor"];
             } catch (e) {
-                res.d.err = (e && e.message) || String(e);
+                res.d.err = fehlerText(e);
             }
 
             // ===== (e) INTERIM: kalte Auswahl → pending, KEINE Donor-Part-Meshes =====
@@ -2467,7 +2457,7 @@ async function checkBandRezeptKatalog({ page, check }) {
                 r._wsStudioPending = false;
                 r._workshopStudioStatusSync();
             } catch (e) {
-                res.e.err = (e && e.message) || String(e);
+                res.e.err = fehlerText(e);
             }
             return res;
         },

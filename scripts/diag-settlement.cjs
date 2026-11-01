@@ -19,6 +19,8 @@ const {
     fs,
     jsonLesen,
     jsonSchreiben,
+    jsonKlon,
+    fehlerStapel,
 } = require("./lib/welt-boot.cjs");
 
 const goldenDir = path.join(root, "spec/asset-contract/v6/golden");
@@ -652,7 +654,7 @@ async function gtDorfweg(v2, anker, sek) {
         r.dismountArchitecture();
         r.removeArchitecture(e);
     } catch (err) {
-        res.err = err?.stack || String(err);
+        res.err = fehlerStapel(err);
     }
     return res;
 }
@@ -880,7 +882,7 @@ function feldWurfImOrt(anker, defekt) {
             }
         }
     } catch (err) {
-        res.err = err?.stack || String(err);
+        res.err = fehlerStapel(err);
     } finally {
         for (const e of neu) if (st.architectures.includes(e)) r.removeArchitecture(e);
         if (defekt) delete r._weichtDemBau; // die Wand des Prototyps gilt wieder
@@ -964,7 +966,7 @@ hauptLauf(async () => {
         console.log("=== SELBST-TEST: die Settlement-Linse feuert ===");
         const a = FC.exportSettlement(FIXTURES[0]);
         // V2: ein manipulierter Export (ein Slot verschoben) kippt den Fingerabdruck — die Byte-Wand ist nicht vakuös.
-        const b = JSON.parse(JSON.stringify(a));
+        const b = jsonKlon(a);
         b.slots[0].x += 0.001;
         check("Selbst-Test 2: ein 1-mm-Slot-Versatz kippt den Fingerabdruck", fingerprint(a) !== fingerprint(b));
         // V6 (K10, Teil O): das Urteil des Orts feuert am Täter — ein ebener Ort hält, ein Absatz vor der Tür, ein Haus über
@@ -1796,25 +1798,6 @@ hauptLauf(async () => {
         const eB = e1.find((e) => e.studioOv && ovA && e.studioOv.rolle !== ovA.rolle);
         const ovB = eB ? r._artifactStudioOv(eB) : null;
         res.ovKeysSplit = !!(ovA && ovB && r._studioOvHash(ovA) !== r._studioOvHash(ovB));
-        // der Spion am Ruf: lieferer[name] zählt (und delegiert), solange wer.methode(...args) läuft — die Zahl der Rufe
-        const ruft = (wer, methode, lieferer, name, args) => {
-            const eigen = Object.prototype.hasOwnProperty.call(lieferer, name);
-            const echt = lieferer[name];
-            let n = 0;
-            lieferer[name] = function (...x) {
-                n++;
-                return echt.apply(this, x);
-            };
-            try {
-                wer[methode](...args);
-            } catch {
-                /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
-            } finally {
-                if (eigen) lieferer[name] = echt;
-                else delete lieferer[name];
-            }
-            return n;
-        };
         // DER ERLEBNIS-HEBEL (Schicht-Vollendung): die Hof-Bäume und Marktstände des Plans stehen, die Zäune laufen über den
         // Zaun-Pool, die Äcker in die Wege-Karte; ohne die Schichten hebt er keins davon (die Zähne). Die Probe räumt ihre Bauten.
         const erlebnis = (p, key) => {
@@ -1822,7 +1805,7 @@ hauptLauf(async () => {
             const wk = r._wegeKarteEnsure();
             const b0 = wk.siedlungen.length;
             const m0 = (st.stlMauer || {}).top | 0;
-            const zaeune = ruft(r, "_spawnSettlementErlebnis", r, "_stlZaunAddStrip", [p, o1, { key }]);
+            const zaeune = __rufe(r, "_spawnSettlementErlebnis", r, "_stlZaunAddStrip", [p, o1, { key }]);
             const neu = st.architectures.slice(n0);
             neu.forEach((e) => r.removeArchitecture(e));
             const aecker = wk.siedlungen.slice(b0).some((b) => b.formen.some((fo) => fo.kanal === 1));
@@ -1860,7 +1843,7 @@ hauptLauf(async () => {
         // das Podest fiel mit dem Erdbau: keine Fundament-Box, kein Sockel-Pool.
         res.fundamentTravels = e1.length > 0 && e1.every((e) => e.fundament && Number.isFinite(e.fundament.ex));
         // 3) fail-closed: ein Slot mit unbekannter Kultur faellt (kein Spawn, kein Crash).
-        const fake = JSON.parse(JSON.stringify(plan));
+        const fake = jsonKlon(plan);
         fake.slots = [Object.assign({}, fake.slots[0], { kultur: "gibtsnicht" })];
         const o3 = { x: 900, z: 900 }; // BÜHNE: fail-closed gilt an jedem Ort
         const r3 = await r._spawnSettlementFromExport(await r._ortWahl(fake, o3), o3);
@@ -1870,9 +1853,9 @@ hauptLauf(async () => {
         // den Chat-Satz „baue dorf hier" (die Probe wandert mit dem Code).
         // derselbe Strom für den Chat-Satz „baue dorf hier" (kein Math.random im Satz hält gate:werkstatt-weg W1)
         const baueHier = (r.chatDslPatterns || []).find((p) => p.example === "baue dorf hier");
-        res.gammaHier = !!baueHier && ruft(baueHier, "build", r, "_bauSame", [["baue dorf hier", "dorf"]]) > 0;
+        res.gammaHier = !!baueHier && __rufe(baueHier, "build", r, "_bauSame", [["baue dorf hier", "dorf"]]) > 0;
         res.gammaStream =
-            ruft(r, "spawnSettlement", r, "_bauSame", [{ position: null }]) > 0 &&
+            __rufe(r, "spawnSettlement", r, "_bauSame", [{ position: null }]) > 0 &&
             window.__fehlt([r.spawnSettlement, r._bauSame], /Math\.random/);
         // DER DSL-AKT spawn_village liest die Größe aus dem Siedlungs-Gesetz NACH der Buch-Ankunft: das Dorf
         // des Akts trägt nH = SIEDLUNG.nHMin + (Same >>> 24) % SIEDLUNG.nHSpan, gemessen am Rebuild-Gedächtnis (settlementCells).
@@ -2920,7 +2903,7 @@ hauptLauf(async () => {
                     }
                     res.planJson = JSON.stringify({ roads: P.roads || [] });
                 } catch (e) {
-                    res.err = (e && e.stack) || String(e);
+                    res.err = fehlerStapel(e);
                 }
                 return res;
             },
