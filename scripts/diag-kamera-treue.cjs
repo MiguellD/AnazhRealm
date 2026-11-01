@@ -14,7 +14,9 @@
 //       volle Refresh; Kontrolle: ein Stempel nur aus der Render-Id < 0,98.
 //   (h) SENKE — zwei Senken EINES Stoffs zeichnen aus EINEM Knoten-Zustand, bild-gleich mit r184s InstancedMesh.
 //   (i) SCHLÜSSEL (B-K1) — jedes Hauptpass-Render-Objekt der Welt trägt nach der Erst-Zeichnung den Schlüssel seines Baus.
-//   (j) WURF (B-K1, Lehre 26) — Hauptpass und Wurf verwerfen gleich; ohne Ausschnitt wirft ein Werfer ohne Farb-Graph.
+//   (j) WURF (B-K1, Lehre 26) — Hauptpass und Wurf verwerfen gleich; ohne Ausschnitt wirft ein Werfer ohne Farb-Graph, in zwei
+//       Lichter aus EINEM Knoten-Zustand (w4-b-knoten, `_schattenGrund`); (h) zählt dazu Metall und Index (`_gestaltSchluessel`).
+//   (k) VORBAU (w4-b-knoten) — ein Bau ohne Draw merkt unter dem Ladeschirm vor, nach dem Bild baut er (`_vorbauWahl`).
 //   LAUF — kein Spiel-Bild und kein Kehraus-Puffer während der Bühne (der Loop ruht).
 //   node scripts/diag-kamera-treue.cjs [--selftest]   (--selftest: das Urteil über grün und je einen injizierten Täter)
 "use strict";
@@ -61,7 +63,7 @@ function urteil(z) {
     if (sk.kontrolle !== true)
         v.push("SENKE: zwei r184-InstancedMesh EINES Stoffs tragen nicht zwei Knoten-Zustände — die Lauf-Kontrolle ist blind");
     if (sk.geteilt !== true)
-        v.push("SENKE: zwei Senken EINES Stoffs und EINER Geometrie tragen zwei Knoten-Zustände — die uuid je InstancedMesh steht wieder im Schlüssel (Programm je Senke)");
+        v.push("SENKE: zwei Senken EINER Gestalt (Metall 0 und 0,5, mit und ohne Index) tragen zwei Knoten-Zustände — uuid, Zahl oder Index im Bau-Schlüssel");
     if (!(sk.bild >= BILD_SOLL))
         v.push(`SENKE: der Zeichner zeichnet ${sk.bild} gleich mit r184s InstancedMesh derselben Matrizen (Soll ≥ ${BILD_SOLL}) — Lage, Farbe oder Wurf je Instanz weichen ab`);
     if (!(sk.blind < BLIND_GRENZE))
@@ -73,6 +75,8 @@ function urteil(z) {
     if (Object.keys(ks.veraltet || {}).length) v.push(`SCHLÜSSEL: ${namen(ks.veraltet)} — nach der Erst-Zeichnung ein anderer Schlüssel als der des Baus`);
     if (ks.kontrolle !== true) v.push("SCHLÜSSEL: die Kontrolle ist blind");
     if (!wu.leer || wu.leer.verwirft) v.push("WURF: das Standard-Fragment fehlt oder verwirft — die Probe ist blind");
+    if (wu.formen !== "2/1") v.push(`WURF: Lichter/Zustände ${wu.formen} (Soll 2/1)`);
+    if (z.vorbau !== "merken,,bauen") v.push(`VORBAU: Ladeschirm, Bild des letzten, danach ${z.vorbau} (Soll merken,,bauen)`);
     if (!(wu.werfer || []).some((x) => x.aus && x.haupt)) v.push("WURF: kein Ausschnitt verwirft — die Probe ist blind");
     for (const x of wu.werfer || []) {
         if (x.haupt !== x.wurf) v.push(`WURF: ${x.name} — Hauptpass verwirft ${x.haupt}, Wurf verwirft ${x.wurf}`);
@@ -131,7 +135,8 @@ function selbsttest() {
         bild: { replay: 1, fremd: 1, ohneStapel: 0.62, schattenBundle: 0.91, xGegenY: 0.31 },
         senke: { geteilt: true, kontrolle: true, bild: 1, blind: 0.95 },
         schluessel: { geprueft: 69, veraltet: {}, kontrolle: true },
-        wurf: { leer: { verwirft: false }, werfer: [{ name: "wurf:voll", farbe: false }, { name: "wurf:schnitt", aus: true, haupt: true, wurf: true }] },
+        wurf: { leer: { verwirft: false }, formen: "2/1", werfer: [{ name: "wurf:voll", farbe: false }, { name: "wurf:schnitt", aus: true, haupt: true, wurf: true }] },
+        vorbau: "merken,,bauen",
         stand: {
             teilen: { programme: 8, gruppenJeProgramm: 1, gruppen: 1 },
             direkt: ruhig,
@@ -171,7 +176,9 @@ function selbsttest() {
         { name: "Änderungs-Probe blind", z: mit("stand.aenderung.direkt", { taeter: 1 }), muss: /die Änderungs-Probe ist blind/ },
         { name: "Gruppe je Programm", z: mit("stand.teilen", { gruppen: 8 }), muss: /tragen 8 geteilte Gruppen statt 1/ },
         { name: "Teilen blind", z: mit("stand.teilen", { programme: 0 }), muss: /TEILEN: 0 Karten-Programme/ },
-        { name: "Programm je Senke", z: mit("senke", { geteilt: false }), muss: /SENKE: zwei Senken EINES Stoffs/ },
+        { name: "Programm je Senke", z: mit("senke", { geteilt: false }), muss: /SENKE: zwei Senken EINER Gestalt/ },
+        { name: "Form je Kaskade", z: mit("wurf", { formen: "2/2" }), muss: /Lichter\/Zustände 2\/2/ },
+        { name: "Vorbau vor dem Bild", z: { ...gruen, vorbau: "bauen,bauen,bauen" }, muss: /danach bauen,bauen,bauen/ },
         { name: "Senken-Kontrolle blind", z: mit("senke", { kontrolle: false }), muss: /SENKE: zwei r184-InstancedMesh/ },
         { name: "Senke zeichnet anders", z: mit("senke", { bild: 0.97 }), muss: /SENKE: der Zeichner zeichnet 0.97/ },
         { name: "Senken-Bild blind", z: mit("senke", { blind: 0.999 }), muss: /SENKE: ohne die Senke/ },
@@ -399,13 +406,7 @@ function buehne() {
             rend.setRenderTarget(rt);
             rend.render(sc, kam);
             rend.setRenderTarget(null);
-            const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
-            const roh = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
-            const zeile = W * 4,
-                schritt = roh.length > zeile * H ? Math.ceil(zeile / 256) * 256 : zeile;
-            const u8 = new Uint8Array(zeile * H);
-            for (let y = 0; y < H; y++) u8.set(roh.subarray(y * schritt, y * schritt + zeile), y * zeile);
-            return u8;
+            return window.__zielLesen(rt, W, H);
         };
         const gleich = (a, b) => {
             let g = 0;
@@ -641,12 +642,14 @@ function buehne() {
                     m.frustumCulled = false;
                     return m;
                 };
+                // die zweite Senke EINER Gestalt: Metall 0,5 und ohne Index (beides liest der Bau nie, `_gestaltSchluessel`)
+                const [stoffB, geoB] = [diaet(new T.MeshStandardNodeMaterial({ color: 0x9a5a3a, metalness: 0.5 })), sGeo.toNonIndexed()];
                 const sA = lage(A._instanzMesh(sGeo, sStoff, 3), 0);
-                const sB = lage(A._instanzMesh(sGeo, sStoff, 3), 6);
+                const sB = lage(A._instanzMesh(geoB, stoffB, 3), 6);
                 A._instanzZahl(sA, 3);
                 A._instanzZahl(sB, 3);
                 const refA = lage(new T.InstancedMesh(sGeo, sStoff, 3), 0);
-                const refB = lage(new T.InstancedMesh(sGeo, sStoff, 3), 6);
+                const refB = lage(new T.InstancedMesh(geoB, stoffB, 3), 6);
                 const zustand = (o) => {
                     const ro = (o.__renderObjekte || []).find((x) => x.camera === kam);
                     return ro ? ro.getNodeBuilderState() : null;
@@ -676,9 +679,9 @@ function buehne() {
             const wurf = { werfer: [] };
             {
                 const wSzene = new T.Scene();
-                const wl = new T.DirectionalLight(0xffffff, 3);
-                wl.castShadow = true;
-                wSzene.add(wl, wl.target);
+                // zwei Lichter: jedes trägt seinen Schatten-Stoff — die Form eines Werfers baut EINMAL (`_schattenGrund`)
+                for (const wl of [new T.DirectionalLight(0xffffff, 3), new T.DirectionalLight(0xffffff, 1)])
+                    (wSzene.add(wl, wl.target), (wl.castShadow = true));
                 const karte = new T.DataTexture(new Uint8Array(16).fill(200), 2, 2);
                 const stoff = (name, o, colorNode) => Object.assign(new T.MeshStandardNodeMaterial(o), { name }, colorNode ? { colorNode } : {});
                 const probe = [
@@ -693,7 +696,7 @@ function buehne() {
                 rend._renderObjectDirect = function (object, material, sc, camera, lightsNode, group, clip, passId) {
                     const ro = this._objects.get(object, material, sc, camera, lightsNode, this._currentRenderContext, clip, passId);
                     const w = material.isShadowPassMaterial === true;
-                    fang.push([object.material.name, w, ro.getNodeBuilderState().fragmentShader]);
+                    fang.push([object.material.name, w, ro.getNodeBuilderState().fragmentShader, ro.getNodeBuilderState()]);
                     if (!w) this._nodes.updateBefore(ro); // der Hauptpass startet die Kaskade
                 };
                 try {
@@ -709,9 +712,15 @@ function buehne() {
                 wurf.leer = leer && { verwirft: verwirft(leer) };
                 for (const { name, alphaTest } of probe.slice(1))
                     wurf.werfer.push({ name, aus: alphaTest > 0, haupt: verwirft(frag(name, false)), wurf: verwirft(frag(name, true)), farbe: frag(name, true) !== leer });
+                const formen = fang.filter((f) => f[0] === "wurf:voll" && f[1]).map((f) => f[3]);
+                wurf.formen = [formen.length, new Set(formen).size].join("/");
                 for (const m of probe) m.dispose();
             }
+            // (k) DER VORBAU NACH DEM BILD (w4-b-knoten, `_vorbauWahl`): unter dem Ladeschirm merkt er vor, nach dem Bild baut er — je Bild einer
+            const E0 = { vorgemerkt: new WeakMap(), vorbauBild: 7 };
+            const vorbau = A._vorbauWahl ? [[1, 0, 7], [0, 1, 7], [0, 1, 8]].map(([l, b, f]) => A._vorbauWahl(E0, E0, 1, l, b, f)).join() : "fehlt";
             return {
+                vorbau,
                 wurf,
                 schluessel,
                 senke,
@@ -791,7 +800,7 @@ function buehne() {
             `kein Bundle unter dem Override-Stoff; der Replay zeichnet Blick Y wie der direkte Pfad (${out.bild.replay}, mit fremdem ` +
             `Schatten-Stoff ${out.bild.fremd}); ohne den Chokepoint ${out.bild.ohneStapel}, ein Schatten-Bundle ${out.bild.schattenBundle}. ` +
             `SCHLÜSSEL · WURF halten. ` +
-            `SENKE: zwei Senken EINES Stoffs zeichnen aus EINEM Knoten-Zustand (zwei r184-InstancedMesh: zwei), bild-gleich mit r184s InstancedMesh (${out.senke.bild}; ohne die Senke ${out.senke.blind}). ` +
+            `SENKE: zwei Senken EINER Gestalt zeichnen aus EINEM Knoten-Zustand (zwei r184-InstancedMesh: zwei), bild-gleich mit r184s InstancedMesh (${out.senke.bild}; ohne die Senke ${out.senke.blind}). ` +
             `STAND: ${out.stand.teilen.programme} Karten-Programme tragen ${out.stand.teilen.gruppen} geteilte Gruppe(n); je Render ${out.stand.direkt.zahl.pruef} Prüfungen, 0 Voll-Refreshs (auch der SATZ mit Ausschnitt je Pass), 0 Uploads, 0 wiederholte Gänge (direkt und Replay); eine Attribut-Änderung frischt ${out.stand.direkt.einmal.erst}× auf und im Frame danach 0×; nach einer Änderung im Stand zeichnet die Diät ${out.stand.aenderung.direkt.diaet}/${out.stand.aenderung.replay.diaet} wie der volle Refresh (gemuteter Melder ${out.stand.aenderung.direkt.taeter}/${out.stand.aenderung.replay.taeter}); ` +
             `VERSCHACHTELT (Werfer ohne Diät) ${out.stand.verschachtelt.direkt.diaet}/${out.stand.verschachtelt.replay.diaet} (Stempel nur aus der Render-Id ${out.stand.verschachtelt.direkt.taeter}/${out.stand.verschachtelt.replay.taeter}).`
     );

@@ -511,8 +511,7 @@ function saumProbe(ort) {
         const aufnahme = async () => {
             for (let i = 0; i < 3; i++) {
                 setzeKamera();
-                if (rend._nodes?.nodeFrame) rend._nodes.nodeFrame.update();
-                r._loopRender();
+                window.__loopBild();
             }
             setzeKamera();
             const { u8 } = await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" });
@@ -631,10 +630,7 @@ function buehne(nFrames, nachtLicht) {
             kopien++;
             return kopieRoh.apply(this, a);
         };
-        const frame = () => {
-            if (rend._nodes?.nodeFrame) rend._nodes.nodeFrame.update();
-            r._loopRender();
-        };
+        const frame = () => window.__loopBild();
         const canvasTiefe = () => {
             const t = rend.getCanvasTarget().depthTexture;
             return !!(t && rend.backend.has(t) && rend.backend.get(t).texture);
@@ -943,9 +939,7 @@ function buehne(nFrames, nachtLicht) {
         await page.setViewport({ width: 321, height: 241 });
         await page.evaluate(async () => {
             for (let i = 0; i < 6; i++) {
-                if (st.renderer._nodes?.nodeFrame)
-                    st.renderer._nodes.nodeFrame.update();
-                r._loopRender();
+                window.__loopBild();
                 await sleep(50);
             }
         });

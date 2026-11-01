@@ -157,8 +157,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
     // Animations-Schleife zeichnete ein Hand-Aufruf nur das Post-Quad neu (wie gate:post-kette)
     const bild = () => {
         try {
-            if (rend._nodes?.nodeFrame) rend._nodes.nodeFrame.update();
-            r._loopRender();
+            window.__loopBild();
         } catch {
             /* die Linse misst, nie stören */
         }

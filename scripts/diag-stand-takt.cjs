@@ -424,9 +424,9 @@ function selbsttest() {
                     aussen: 96,
                     ms: 131.2,
                     maxTakt: 41,
-                    taeter: "_forestDartSteht › _forestPlantChunk › _populateVoxelChunkVegetation › _finalizeVoxelChunkBuild",
+                    taeter: "_forestCellDarts › _forestPlantChunk › _populateVoxelChunkVegetation › _finalizeVoxelChunkBuild",
                 }),
-            /STROM: 96 frische Wald-Zellen plante nicht die Schlange des Walds, sondern `_forestDartSteht › _forestPlantChunk.*131\.2 ms, bis 41 in EINEM Takt/,
+            /STROM: 96 frische Wald-Zellen plante nicht die Schlange des Walds, sondern `_forestCellDarts › _forestPlantChunk.*131\.2 ms, bis 41 in EINEM Takt/,
         ],
         [
             "die Strom-Phase sieht keinen frischen Wald",

@@ -957,11 +957,14 @@ class AnazhRealm_stoff_material {
                                                 .div(_eR[i + 1] - _eR[i])
                                                 .clamp(0.0, 1.0)
                                         );
+                                    // der feste Name (Lehre 23, w4-b-knoten): ohne ihn trägt das WGSL `NodeBuffer_<Knoten-id>`
                                     if (!_at.ringTafel)
-                                        _at.ringTafel = _Ta.uniformArray(
-                                            _rg.map((r, i) => new THREE.Vector4(_eR[i], r.teiler, r.y, 0)),
-                                            "vec4"
-                                        );
+                                        _at.ringTafel = _Ta
+                                            .uniformArray(
+                                                _rg.map((r, i) => new THREE.Vector4(_eR[i], r.teiler, r.y, 0)),
+                                                "vec4"
+                                            )
+                                            .setName("karteRingTafel");
                                     const _ring = _at.ringTafel.element(
                                         _rF
                                             .add(this._ditherIGN(_Ta, 1))
