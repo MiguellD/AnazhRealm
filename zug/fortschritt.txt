@@ -1476,3 +1476,4 @@
 2026-11-01 20:25:28 z140-takt-abab stadt VERLÄNGERN 15.8 · 2/2 (2+2)
 2026-11-01 20:37:39 z140-takt-abab w-ego(4+4) LANGSAMER 12.1 · verlängert (4+4)
 2026-11-01 20:53:55 z140-takt-abab stadt(4+4) LANGSAMER 16.2 · verlängert (4+4)
+2026-11-01 21:23:59 takt-z143a-gtx START 26 Stationen in 1 Läufen
