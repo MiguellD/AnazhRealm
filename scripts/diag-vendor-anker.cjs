@@ -21,11 +21,7 @@
 // Selbst-Test: --selftest beweist, dass ein manipulierter Anker feuert.
 // ============================================================================
 "use strict";
-const { wandEnde, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
-const root = path.resolve(__dirname, "..");
+const { wandEnde, SELBSTTEST, path, fs, stammLib, jsonLesen, jsonSchreiben, ROOT: root } = require("./lib/welt-boot.cjs");
 
 // FNV-1a (dieselbe Hash-Familie wie der Warm-Start-Byte-Beweis).
 function fnv(buf) {
@@ -50,7 +46,7 @@ const PINS = [
 // (spec/vendor-anker.json, 223 Anker in 54 Gruppen; bis w3w-verkehr ein Literal dieses Skripts). DIE DATEI DER ANKER: ohne
 // `file` der WebGPU-Vendor (in ihm leben fast alle Organe), jede andere steht beim Anker.
 const ANKER_DATEI = PINS[0].file;
-const ANKER = jsonLesen(path.join(root, "spec", "vendor-anker.json")).flatMap((g) => g.anker);
+const ANKER = jsonLesen("spec/vendor-anker.json").flatMap((g) => g.anker);
 
 // DIE DIÄT-PRÜFUNG (wer voll frischt): die Diät-Funktionen aus dem Stamm laden (vom ersten
 // `AnazhRealm._diaet… = function` bis zum Ende von `_diaetRefresh`) und gegen Schein-Programme fahren — r184-
@@ -440,7 +436,7 @@ function diaetProbe(selftest) {
 }
 
 function main() {
-    const selftest = process.argv.includes("--selftest");
+    const selftest = SELBSTTEST;
     const errs = [];
     const srcCache = new Map();
     const les = (f) => {

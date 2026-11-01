@@ -38,9 +38,7 @@
 //   … [--s5=frames | --s5=halde]                  Selbsttest S5: nur Welt-Frames statt Zügen (GRÜN) · jedes Einzelstück bleibt (ROT)
 // Exit 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, selbsttest, hauptLauf, sleep, pruefer, argOpt } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, starteBrowser, selbsttest, hauptLauf, sleep, pruefer, argOpt, path, fs } = require("./lib/welt-boot.cjs");
 
 const ECHT = process.argv.includes("--echt");
 const S5_PROBE = (process.argv.find((a) => a.startsWith("--s5=")) || "").slice(5); // Selbsttest der S5-Basis: frames | halde
@@ -254,8 +252,7 @@ function pruefRaum(echt) {
         rend.setRenderTarget(ziel);
         rend.render(scene, cam);
         rend.setRenderTarget(null);
-        const px = await rend.readRenderTargetPixelsAsync(ziel, 0, 0, 256, 144);
-        return { d: new Uint8Array(px.buffer, px.byteOffset, 256 * 144 * 4), w: 256, h: 144 };
+        return { d: await window.__zielLesen(ziel, 256, 144), w: 256, h: 144 };
     };
     F.drehe = () => (pivot.rotation.y += 1.1);
     F.mittag = () => {};

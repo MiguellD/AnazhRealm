@@ -49,10 +49,7 @@
 //   node scripts/diag-werk-im-wasser.cjs [--selftest]
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, argOpt, weltTor, jsonLesen } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, argOpt, ausDatei, SELBSTTEST, path, stammLib, weltTor, jsonLesen } = require("./lib/welt-boot.cjs");
 const { messort } = require("./lib/welt-orte.cjs");
 
 const SCHWELLE = {
@@ -317,7 +314,7 @@ function leserUrteil(w) {
     const nicht = (glied, re, satz) => stammLib.fehlt(glied, re, w) || v.push(`${satz} (${stammLib.fehlt.wo})`);
     // `_waterLevelAt` nur als Bezug der Ufer-Bänder: jeder Aufruf trägt sein `aus` (drei Argumente)
     nicht(null, /\b_waterLevelAt\((?![^(),]*,[^(),]*,[^(),]*\))[^()]*\)/, "`_waterLevelAt` liest den Bezug der Ufer-Bänder als Wasser-Probe");
-    nicht("_forestCellDarts", /waterYAt:(?:(?!slopeAt:)[\s\S])*_waterLevelAt\(/, "der Wald (`_forestCellDarts` waterYAt) liest den Bezug `_waterLevelAt` als Wasser");
+    nicht("_forestGeborene", /waterYAt:(?:(?!slopeAt:)[\s\S])*_waterLevelAt\(/, "der Wald (`_forestGeborene` waterYAt) liest den Bezug `_waterLevelAt` als Wasser");
     // DER DAMM: der Automat wacht am Zell-Stempel, nie am Setz-Punkt; der Stempel läuft nur die Werke am Ort durch
     nicht("spawnArchitecture", /_invalidateWaterCapsAround\(/, "ein Bau weckt den Wasser-Automaten am Setz-Punkt (`spawnArchitecture`) statt am Zell-Stempel");
     nicht(
@@ -1644,8 +1641,9 @@ async function probe(A) {
                     for (let j = -1; j <= 1; j++) {
                         const cx = Math.floor(X / C) + i,
                             cz = Math.floor(Z / C) + j;
-                        if (r._forestDartMemo) r._forestDartMemo.delete(cx + "," + cz);
-                        wald = ruft(r, "_forestCellDarts", "_atlasWaterLevelAt", [cx, cz, r._forestSeedInt()]) || wald;
+                        // die geborenen Darts der Zelle (w4-b-pflanzen: der Bestand urteilt über sie, sein Gedächtnis
+                        // merkt sie) — gefragt ohne Gedächtnis, wie der Plan des Walds sie wirft
+                        wald = ruft(r, "_forestGeborene", "_atlasWaterLevelAt", [cx, cz, r._forestSeedInt(), true]) || wald;
                     }
                 const cfg = r._voxelChunkConfig(0);
                 const zellen = new Uint8Array(cfg.dim * cfg.dim * cfg.dimY);
@@ -1654,7 +1652,7 @@ async function probe(A) {
                 const oy = (st.terrainBaseHeight || 0) - cfg.floorDrop;
                 const K = {
                     "_feuchteAt → _waterLevelAt": ruft(r, "_feuchteAt", "_waterLevelAt", [X, Z, Y]),
-                    "_forestCellDarts → _atlasWaterLevelAt": wald,
+                    "_forestGeborene → _atlasWaterLevelAt": wald,
                     "_stampArchitectureSolidCellsInto → _blockerNahe": ruft(
                         r,
                         "_stampArchitectureSolidCellsInto",
@@ -2171,7 +2169,7 @@ function selbsttest() {
     taeterFaelle([{ name: "der echte Stamm" }, ...gifte.map(giftFall("Leser"))], leserUrteil, { fehler });
     // die Kern-Linse gegen eingeschmuggelte Täter im echten Kern (vm, ohne Browser)
     const vm = require("vm");
-    const kernSrc = fs.readFileSync(path.join(__dirname, "..", "vehicle-core.js"), "utf8");
+    const kernSrc = ausDatei("vehicle-core.js");
     const kernLaden = (s) => {
         const ctx = { console, Math, Object, Array, Number, JSON, Map, Set, isFinite, isNaN, Infinity, NaN };
         for (const T of [Float32Array, Float64Array, Uint8Array, Uint16Array, Uint32Array, Int32Array]) ctx[T.name] = T;
@@ -2421,8 +2419,8 @@ async function lauf() {
                 await p2.evaluateOnNewDocument(() => (window.__anazhChunkIdb = true));
                 await server.zeige(p2, 120000);
                 // die Bühne, geboren wie im Spiel durch die Tür (`weltTor`): ihre Klamm S6 trägt den Stau (s. Kopf D)
-                const buehne = jsonLesen(path.join(root, "spec", "pruefbuehne", "welt.json"));
-                const S6 = jsonLesen(path.join(root, "spec", "pruefbuehne", "stationen.json")).stationen.find((s) => s.id === "s6-klamm");
+                const buehne = jsonLesen("spec/pruefbuehne/welt.json");
+                const S6 = jsonLesen("spec/pruefbuehne/stationen.json").stationen.find((s) => s.id === "s6-klamm");
                 if (!S6) throw new Error("D: keine Station s6-klamm in spec/pruefbuehne/stationen.json");
                 await weltTor(p2, buehne);
                 const D = { takte: 1200, R: 40, fassen: 4 };
@@ -2459,5 +2457,5 @@ async function lauf() {
     process.exit(exit);
 }
 
-if (process.argv.includes("--selftest")) selbsttest();
+if (SELBSTTEST) selbsttest();
 else lauf();

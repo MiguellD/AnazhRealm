@@ -29,7 +29,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, warteAufWelt, taeterFaelle, selbsttestEnde, wandEnde, urteilEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, taeterFaelle, selbsttestEnde, wandEnde, urteilEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const STAND = require("./lib/stand-linse.cjs");
 
 // (N) DIE SONDE LIEST DEN BESTAND (satz-pass): nach dem Haupt-Pass nennt die Linie der Strahl-Sonde (scripts/lib/kamera-nah.cjs)
@@ -424,9 +424,9 @@ function selbsttest() {
                     aussen: 96,
                     ms: 131.2,
                     maxTakt: 41,
-                    taeter: "_forestDartSteht › _forestPlantChunk › _populateVoxelChunkVegetation › _finalizeVoxelChunkBuild",
+                    taeter: "_forestCellDarts › _forestPlantChunk › _populateVoxelChunkVegetation › _finalizeVoxelChunkBuild",
                 }),
-            /STROM: 96 frische Wald-Zellen plante nicht die Schlange des Walds, sondern `_forestDartSteht › _forestPlantChunk.*131\.2 ms, bis 41 in EINEM Takt/,
+            /STROM: 96 frische Wald-Zellen plante nicht die Schlange des Walds, sondern `_forestCellDarts › _forestPlantChunk.*131\.2 ms, bis 41 in EINEM Takt/,
         ],
         [
             "die Strom-Phase sieht keinen frischen Wald",
@@ -1066,7 +1066,7 @@ async function brandSeite(MESS) {
     }
 }
 
-if (process.argv.includes("--selftest")) {
+if (SELBSTTEST) {
     console.log("=== STAND-TAKT — Selbsttest (ohne Browser) ===");
     selbsttest();
     // die Tat-, Nachwuchs-, Brand- und Sukzessions-Linse: je Linse ihr grüner Befund und je Täter [Name, Pfad, Wert, …] — der Befund

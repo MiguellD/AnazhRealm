@@ -5,15 +5,12 @@
 //   node scripts/ci-zeiten.cjs                          misst und verteilt
 //   node scripts/ci-zeiten.cjs --tafel                  die Kennzahlen des Richters über 7 Tage (druckt, schreibt nichts)
 "use strict";
-const fs = require("fs");
-const path = require("path");
 const { execSync } = require("child_process");
 const yaml = require("js-yaml");
 const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cjs");
 const { alleLaeufe, apiMit } = require("./ci-kopf.cjs");
-const { hauptLauf, jsonLesen } = require("./lib/welt-boot.cjs");
+const { hauptLauf, ausDatei, path, fs, jsonLesen, ROOT: root } = require("./lib/welt-boot.cjs");
 
-const root = path.resolve(__dirname, "..");
 const API = "https://api.github.com/repos/MiguellD/AnazhRealm";
 const WORKFLOW = ".github/workflows/check.yml";
 const AUS = "spec/ci/ci-zeiten.json";
@@ -122,7 +119,7 @@ async function messe(api, jetzt, alt = {}, pause = 2000) {
 
 // die Lage in check.yml: im Job voll je Schritt seine Gruppe, die Matrix und ihre Klassen; im Job echt je Schritt seine Frist
 function verteile(jetzt, out) {
-    const skripte = jsonLesen(path.join(root, "package.json")).scripts || {};
+    const skripte = jsonLesen("package.json").scripts || {};
     const { schritte } = out;
     const alle = jetzt.jobs.voll.steps.filter((s) => s.name && s.run && schritte[s.name] && !VORBEREITUNG.test(s.name));
     const z = (s) => schritte[s.name].s;
@@ -195,7 +192,7 @@ function verteile(jetzt, out) {
     const neu = jetzt.jobs.voll.steps
         .filter((s) => /^\s*matrix\.gruppe\s*==\s*\d+\s*$/.test(String(s.if)))
         .map((s) => nr.get(s));
-    let yml = fs.readFileSync(path.join(root, WORKFLOW), "utf8");
+    let yml = ausDatei(path.join(root, WORKFLOW));
     const block = (job) => {
         const von = yml.indexOf(`\n    ${job}:\n`);
         return [von, von + 1 + yml.slice(von + 1).search(/\n {4}[\w-]+:\n|$/)];
@@ -274,7 +271,7 @@ if (require.main === module) {
             .match(/^password=(.*)$/m)[1];
     hauptLauf(async () => {
         if (args.includes("--tafel")) return tafel(apiMit(API, token));
-        const jetzt = yaml.load(fs.readFileSync(path.join(root, WORKFLOW), "utf8"));
+        const jetzt = yaml.load(ausDatei(path.join(root, WORKFLOW)));
         const alt = fs.existsSync(path.join(root, AUS))
             ? jsonLesen(path.join(root, AUS))
             : {};

@@ -23,9 +23,7 @@
 // Port: ALBEDO_PORT (Standard 4587). `--echt` fährt die echte GPU (scripts/lib/software-gpu.cjs echteWebGpuArgs), sonst
 // die Weiche des EINEN Start-Rezepts (linsenWebGpuArgs: lokal der Hardware-Adapter, in der CI swiftshader).
 "use strict";
-const fs = require("fs");
-const path = require("path");
-const { statikServer, starteBrowser, hauptLauf, sleep, argOpt: opt, pngDatei, selbsttestEnde, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, sleep, argOpt: opt, pngDatei, selbsttestEnde, ausDatei, path, fs, SELBSTTEST, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const AT = require("./lib/albedo-tafel.cjs");
 const { kartenEichung } = require("./lib/licht-linsen.cjs");
 // der Code-Abdruck einer Datei des Baums und der Stand einer Messung (abnahme-urteil `standLeser`, derselbe wie Werkzeug und
@@ -244,12 +242,12 @@ async function selbsttest() {
         const d0 = S0.zeilen.find((z) => z.id === "lack").quellen[0]; // eine Quelle ohne Stufen-Zeilen (sie tragen nur die Welt)
         // DER CODE-ABDRUCK: dieselbe Quelle mit Kommentarzeilen und neuem Leerraum → kein Befund; ein Token mehr
         // → `veraltet seit 01234567` beim Namen der Datei, in BEIDEN Seiten jeder Zeile, die sie trägt
-        const text0 = fs.readFileSync(path.join(__dirname, "..", d0), "utf8");
+        const text0 = ausDatei(path.join(__dirname, "..", d0));
         const mit = (neu) => (d) => (d === d0 ? AU.codeAbdruck(neu, d) : pruefsumme(d));
         const kommentar = AT.tafelStand(S0, mit(text0.replace("\n", "\n// eine Kommentarzeile\n\n\t \n") + "\n/* Block */\n"));
         const code = AT.tafelStand(S0, mit(text0 + "\n;0;\n"));
         const dk = "stamm/dirigent-kern.js";
-        const stufe = AU.codeAbdruck(fs.readFileSync(path.join(__dirname, "..", dk), "utf8").replace(/VERSION = "/, "$&0."), dk);
+        const stufe = AU.codeAbdruck(ausDatei(path.join(__dirname, "..", dk)).replace(/VERSION = "/, "$&0."), dk);
         const mitD0 = S0.zeilen.filter((z) => z.quellen.includes(d0)).length;
         S0.gemessen.welt.quellen[d0] = "0000000000000000";
         const altForm = AT.tafelStand(S0, pruefsumme);
@@ -528,7 +526,7 @@ async function neuMessen(t, ids) {
     const wd = path.join(ordner, "welt.json");
     console.log(`   Neumessung: Welt (werkbank :${WP}) und Labor — ${ordner}`);
     try {
-        while (!/WERKBANK bereit/.test(fs.readFileSync(wlog, "utf8"))) {
+        while (!/WERKBANK bereit/.test(ausDatei(wlog))) {
             if (w.exitCode != null) throw new Error(`die Werkbank startet nicht (${wlog})`);
             await sleep(2000);
         }
@@ -568,7 +566,7 @@ async function neuMessen(t, ids) {
 }
 
 async function main() {
-    if (argv.includes("--selftest")) return selbsttest();
+    if (SELBSTTEST) return selbsttest();
     if (argv.includes("--laub")) return laborLaub();
     const t = AT.ladeTafel();
     const schema = AT.tafelPruefen(t);

@@ -1103,7 +1103,7 @@ function sichtLauf(k) {
     return (async () => {
         const rend = st.renderer;
         window.__buehne();
-        if (window.__tiereHalten) window.__tiereHalten();
+        window.__halten?.();
         const decke = st.perfTargetMs;
         if (k.regler === "voll") st.perfTargetMs = 1000;
         const tagAlt = st.dayLengthMinutes;

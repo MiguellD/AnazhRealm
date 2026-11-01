@@ -255,6 +255,7 @@ class AnazhRealm_dirigent_ankunft {
                 }
                 // die Absage einer asynchronen Pipeline meldet sich laut (r184 verschluckt sie)
                 this._erstAbsageWache(renderer);
+                this._gestaltSchluessel(renderer); // der Bau-Schlüssel aus dem Stoff-Gesetz (r184s Nodes stehen erst jetzt)
                 // JEDES-HOLZ — DER DEVICE-LOSS-WÄCHTER: stirbt das GPU-Device
                 // (Software-Dawn, Treiber-Reset, TDR), wird es LAUT gemeldet +
                 // das Gate gezeigt, statt einer weißen Welt mit 60-fps-Lüge.
@@ -826,10 +827,7 @@ class AnazhRealm_dirigent_ankunft {
         const offen = (e.instSlots || [])
             .map((ref) => [ref.key, G && G.get(ref.key)])
             .filter(([, g]) => g && g.mesh.layers.mask & 1)
-            .filter(
-                ([, g]) =>
-                    !(g.mesh.__arena && E && (E.gezeichnet.has(g.mesh.__arena) || E.vorgebaut.has(g.mesh.__arena)))
-            )
+            .filter(([, g]) => !(g.mesh.__arena && E && this._arenaImBild(E, g.mesh.__arena)))
             .map(([k]) => k);
         return `${wer} im Stufen-Vorlauf, ${offen.length ? "Arena ohne Programm: " + offen.join(", ") : "wartet auf das Bild nach seinen Arenen"}`;
     }
@@ -870,8 +868,8 @@ class AnazhRealm_dirigent_ankunft {
     // die GTX (0,29–0,57) vor der Messung. Einmal gebaut, bleibt das Programm der Sitzung (`_renderObjekteLoesen`: der
     // Knoten-Bau gehört seinem Schlüssel, die Pipeline dem Cache). Die Wahl läuft je Lade-Bild mit den Lücken
     // (`_weltbildLuecken`), der Baum hält das Bild als wachsender („bauten"), bis seine Arenen zeichneten (`_vorlaufOffen`);
-    // die Kaskaden, deren Box er nicht trifft, baut der Vorbau der Erst-Zeichnung (`_renderObjectDirect`). Gewählt wird nur,
-    // wer die L1 als seine Ziel-Stufe trägt — das erste Bild zeigt jedes Ding in der Stufe, die es nach dem Bild behält
+    // die Kaskaden, deren Box er nicht trifft, baut der Vorbau der Erst-Zeichnung nach dem Bild (`_vorbauWahl`). Gewählt wird
+    // nur, wer die L1 als seine Ziel-Stufe trägt — das erste Bild zeigt jedes Ding in der Stufe, die es nach dem Bild behält
     // (ankunft.K2). Bis w4-ankunft-3 trug ein naher Baum unter der Ankunft aus der Ferne (B2, ×128 bis zum Bild) die L1 statt
     // seiner L0, und das erste Bild verfeinerte nach dem Ladeschirm. Der Null-Renderer baut keine Programme: dort wählt sie nie.
     _stufenVorlaufWahl(p, R, imBlick) {
@@ -914,9 +912,9 @@ class AnazhRealm_dirigent_ankunft {
         return !!this._vorlauf && !this.state._weltbildDa && this._vorlauf.eintraege.has(e);
     }
     // Steht das Programm des Vorlauf-Baums? Jede seiner L1-Gruppen, die das Hauptbild sieht, trat in ihre Arena, die Arena
-    // zeichnete (`gezeichnet` der Erst-Zeichnung) ODER baute ihr Programm ohne Draw (`vorgebaut`, der Vorbau des
-    // Lade-Takts: keine ihrer Instanzen fällt in den Kegel der Kamera), und danach lief ein weiteres Bild (die GPU-Leine
-    // zählt sie): in ihm fand jede Kaskade die Form der Arena stehen und baute vor — ein Wurf-Teil (Ebene 0 aus) lebt nur in
+    // zeichnete (`gezeichnet` der Erst-Zeichnung) ODER fand sich ohne Draw (`_arenaImBild`: keine ihrer Instanzen fällt in den
+    // Kegel der Kamera — ihr Vorbau ist vorgemerkt und baut nach dem Bild), und danach lief ein weiteres Bild (die GPU-Leine
+    // zählt sie): in ihm zeichnete jede Kaskade, in die er wirft — ein Wurf-Teil (Ebene 0 aus) lebt nur in
     // den Kaskaden. Befund b-ankunft (Radeon kalt, main 8f1802b1, 4 von 4 Läufen): die Rinde der Birke in 31 m am Rand des
     // Blicks zeichnete nie, ihr Programm stand vorgebaut — der Baum hielt das Bild, bis die Ruhe-Uhr nach 15 s laut wich (das
     // halbe Weltbild). Ohne Arena (WebGL2) zeichnet der Zeichner im Bild.
@@ -931,11 +929,16 @@ class AnazhRealm_dirigent_ankunft {
             const g = G && G.get(ref.key);
             if (!g || (g.mesh.layers.mask & 1) === 0) continue;
             const a = g.mesh.__arena;
-            if (!a || !E || !(E.gezeichnet.has(a) || E.vorgebaut.has(a))) return true;
+            if (!a || !E || !this._arenaImBild(E, a)) return true;
         }
         const B = this._vorlauf.bild;
         if (!B.has(e)) B.set(e, L.gerendert);
         return L.gerendert <= B.get(e);
+    }
+    // Hat die Arena ihr erstes Bild hinter sich? Sie zeichnete, ihr Vorbau baute, oder sie fand sich ohne Draw und merkte ihn
+    // für nach dem Bild vor (die Erst-Zeichnung, `_configureRenderer`)
+    _arenaImBild(E, a) {
+        return E.gezeichnet.has(a) || E.vorgebaut.has(a) || E.vorgemerkt.has(a);
     }
 
     // DER BLICK DES ERSTEN BILDS (B3d): das erste Weltbild ist, was der Spieler sieht — der waagrechte Kegel der Haupt-Kamera

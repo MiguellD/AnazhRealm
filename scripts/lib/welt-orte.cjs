@@ -25,7 +25,7 @@ function messort(id) {
 // gate:profiband H1). Gemessen am Ort (x, z) mit Blick-Punkt `blick` ([x, z]; null = die beste von 16 Richtungen) über den Ring `ring` m:
 //   hang     — die Neigung der Ausgleichs-Ebene des Gesetzes (`_terrainMacroSurfaceY`, Mitte + 5 Kreise × 12 Speichen), Grad
 //   nass     — der Anteil der Ring-Punkte, die das Land nicht trägt (`_landAt` mit `trockenMarge`)
-//   krone    — die Kronen-Fläche π·T² der STEHENDEN Bäume des Wald-Gesetzes (`_forestCellDarts` → `_forestDartSteht` →
+//   krone    — die Kronen-Fläche π·T² der STEHENDEN Bäume des Wald-Gesetzes (der Bestand `_forestCellDarts` →
 //              `_wildnisTraegt`, derselbe Gang wie `_forestPlantChunk`) mit Stamm im Ring, je Ring-Fläche
 //   kranz    — dieselbe Fläche im Kranz `rand` [r0, r1] m je Kranz-Fläche: der Waldrand
 //   imBlick  — stehende Bäume, deren KRONE (Scheibe T um den Stamm) binnen `blickFrei` m in den Sektor ±`blickWinkel`° um den
@@ -84,20 +84,15 @@ function wieseMessen(r, x, z, blick, S, nurBoden) {
     // der Wald: die stehenden Bäume bis zum Kranz-Ende
     const C = r.constructor.FOREST.cell;
     const seedInt = r._forestSeedInt();
-    const memo = new Map();
-    const zelle = (gx, gz) => {
-        const k = gx + "," + gz;
-        let d = memo.get(k);
-        if (!d) memo.set(k, (d = r._forestCellDarts(gx, gz, seedInt)));
-        return d;
-    };
+    // die geborenen Darts eines vorläufigen Bestands (der Wirt am Gesetz trägt keine Wahrheit) teilen die Zellen der Messung
+    const geboren = new Map();
     const [r0, r1] = S.rand;
     const baeume = [];
     for (let gz = Math.floor((z - r1) / C); gz <= Math.floor((z + r1) / C); gz++)
         for (let gx = Math.floor((x - r1) / C); gx <= Math.floor((x + r1) / C); gx++)
-            for (const d of zelle(gx, gz)) {
+            for (const d of r._forestCellDarts(gx, gz, seedInt, geboren)) {
                 const dd = Math.hypot(d.x - x, d.z - z);
-                if (dd > r1 || !r._forestDartSteht(d, gx, gz, zelle) || !r._wildnisTraegt(d.x, d.z)) continue;
+                if (dd > r1 || !r._wildnisTraegt(d.x, d.z)) continue;
                 baeume.push({ dx: d.x - x, dz: d.z - z, dd, T: d.T, a: Math.PI * d.T * d.T, sp: d.sp });
             }
     let krone = 0,
