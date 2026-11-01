@@ -24,12 +24,7 @@ async function runOnce(browser, noFoundry) {
     await server.zeige(page, 120000, "index.html", "networkidle0");
     await warteAufWelt(page, 120000);
     // kurzer Warm-Pump (Chunks + erster Fern-Wasser-Bau via Scheduler)
-    await page.evaluate(async () => {
-        for (let i = 0; i < 120; i++) {
-            __handTakt();
-            await sleep(4);
-        }
-    });
+    await page.evaluate(() => __takte(120, 4));
     const out = await page.evaluate(() => {
         const s = st;
         const o = {};

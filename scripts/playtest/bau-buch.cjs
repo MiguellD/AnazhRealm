@@ -25,7 +25,7 @@ async function checkBandV1769RoleResonance({ page, check }) {
         // der temple-Blueprint fiel; dieselbe Klasse (gespiegelte Stein-Säulen
         // + Sturz) lebt eingefroren als KIND_SUBSTANCE.tor_basis — der Test wandert auf die Substanz-Zeile.
         const KS169 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
-        const templeFix = { parts: JSON.parse(JSON.stringify(KS169.tor_basis.parts)) };
+        const templeFix = { parts: jsonKlon(KS169.tor_basis.parts) };
         const tv = r._blueprintProductVector(templeFix);
         out.vectorHasSpatial = "bodyShape" in tv && "portalShape" in tv && "dichte" in tv;
 
@@ -687,7 +687,7 @@ async function checkBandV1785RoleDisplayAndUndo({ page, check }) {
         if (st.blueprints._t_v1785_spitz) delete st.blueprints._t_v1785_spitz;
         st.blueprints._t_v1785_spitz = {
             name: "_t_v1785_spitz",
-            parts: JSON.parse(JSON.stringify(KS85.geraet_spitzhacke.parts)),
+            parts: jsonKlon(KS85.geraet_spitzhacke.parts),
         };
         const spit = st.blueprints["_t_v1785_spitz"];
         out.spitRoleField = spit ? spit.role || "(undefined)" : "(missing)";
@@ -2470,9 +2470,7 @@ async function checkBandWaves9And10a({ page, check }) {
             if (st.blueprints["test_9b"]) r.deleteBlueprint("test_9b");
             r.selectBlueprintForEdit("stein_block");
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            r.closeAllDrawers();
-            st.yaw = 0;
-            if (st.playerMesh) st.playerMesh.rotation.y = 0;
+            window.__werkPutz();
         } catch (err) {
             out.error = err && err.message;
         }
@@ -2685,9 +2683,7 @@ async function checkBandWaves9And10a({ page, check }) {
             if (st.customSouls) delete st.customSouls["bp_test_9d_soul"];
             r.selectBlueprintForEdit("stein_block");
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            r.closeAllDrawers();
-            st.yaw = 0;
-            if (st.playerMesh) st.playerMesh.rotation.y = 0;
+            window.__werkPutz();
         } catch (err) {
             out.error = err && err.message;
         }
@@ -2865,8 +2861,8 @@ async function checkBandM2RollenWahrheit({ page, check }) {
         if (blu._t_m2_wagen) delete blu._t_m2_wagen;
         blu._t_m2_wagen = {
             name: "_t_m2_wagen",
-            parts: JSON.parse(JSON.stringify(KSm2.fahrzeug_wagen.parts)),
-            connections: JSON.parse(JSON.stringify(KSm2.fahrzeug_wagen.connections || [])),
+            parts: jsonKlon(KSm2.fahrzeug_wagen.parts),
+            connections: jsonKlon(KSm2.fahrzeug_wagen.connections || []),
         };
         out.wagenVehicle = r.computeBlueprintRole(blu._t_m2_wagen) === "vehicle";
         out.rossVehicle = r.computeBlueprintRole(blu.reittier_holzross) === "vehicle";

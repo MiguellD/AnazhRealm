@@ -14,7 +14,7 @@
 //      MUSS die Linse die Abweichung nennen — sonst ist sie vakuös. Beide Stubs werden zurückgesetzt.
 //   node scripts/diag-sippen-wirt.cjs
 
-const { statikServer, hauptLauf, nullSeite, pruefer, urteilEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, urteilEnde, fehlerText } = require("./lib/welt-boot.cjs");
 const server = statikServer();
 
 const { errs, check } = pruefer();
@@ -71,7 +71,7 @@ hauptLauf(async () => {
                     const m = await flatMessen(preset, lod);
                     res.items.push(Object.assign({ weg: "F", kind, preset, lod }, m));
                 } catch (e) {
-                    res.items.push({ weg: "F", kind, preset, lod, fehler: (e && e.message) || String(e) });
+                    res.items.push({ weg: "F", kind, preset, lod, fehler: fehlerText(e) });
                 }
             }
         }

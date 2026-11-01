@@ -28,7 +28,7 @@
 //   die Klasse zahnfleisch) → rot an zahn|headGroup (fehlt) und zahnfleisch|headGroup · (S3) korruptes Golden → rot.
 //   node scripts/diag-ofen-contract.cjs [--selftest]
 "use strict";
-const { selbsttestEnde, wandEnde, fadenScope, pruefer, ausDatei, SELBSTTEST, path, fs, crypto, vm, stammLib, jsonLesen, jsonSchreiben, ROOT } = require("./lib/welt-boot.cjs");
+const { selbsttestEnde, wandEnde, fadenScope, pruefer, jsonLesen, jsonSchreiben, jsonKlon, ausDatei, SELBSTTEST, path, fs, crypto, vm, stammLib, ROOT } = require("./lib/welt-boot.cjs");
 const { probeWand, objektAbdruck } = require("./lib/plattform-probe.cjs");
 
 const GOLDEN_DIR = path.join(ROOT, "spec/asset-contract/ofen/golden");
@@ -286,7 +286,7 @@ function taeterRinde(sb) {
                 s2.length === 2,
             s2.join(" · ")
         );
-        const korrupt = structuredClone(ist);
+        const korrupt = jsonKlon(ist);
         const k0 = Object.keys(korrupt)[0];
         korrupt[k0].sha256 = (korrupt[k0].sha256[0] === "0" ? "1" : "0") + korrupt[k0].sha256.slice(1);
         const s3 = vergleiche(korrupt, ist);

@@ -165,13 +165,7 @@ async function checkBandRing6Workshop({ page, check }) {
         const out = {};
 
         // Cleanup: alle bestehenden Architekturen entfernen.
-        for (const a of st.architectures) {
-            if (a.mesh) {
-                st.scene.remove(a.mesh);
-                r._disposeSoulGroup(a.mesh);
-            }
-        }
-        st.architectures = [];
+        window.__bautenLeer();
 
         // (a) Direkter Spawn jeder Sorte. AUSLÖSCHUNGS-WELLE — village/temple fielen als
         // Blueprints; die eingefrorenen Substanz-Zeilen (KIND_SUBSTANCE haus_basis/tor_basis)
@@ -180,12 +174,12 @@ async function checkBandRing6Workshop({ page, check }) {
         if (st.blueprints._t_r6_haus) delete st.blueprints._t_r6_haus;
         st.blueprints._t_r6_haus = {
             name: "_t_r6_haus",
-            parts: JSON.parse(JSON.stringify(KSr6.haus_basis.parts)),
+            parts: jsonKlon(KSr6.haus_basis.parts),
         };
         if (st.blueprints._t_r6_tor) delete st.blueprints._t_r6_tor;
         st.blueprints._t_r6_tor = {
             name: "_t_r6_tor",
-            parts: JSON.parse(JSON.stringify(KSr6.tor_basis.parts)),
+            parts: jsonKlon(KSr6.tor_basis.parts),
         };
         const v = r.spawnArchitecture("_t_r6_haus", { x: 10, y: 5, z: 10 }, { seed: 42 });
         out.villageBuilt = !!v && v.type === "_t_r6_haus" && !!v.mesh;
@@ -279,13 +273,7 @@ async function checkBandRing6Workshop({ page, check }) {
 
         // (i) Save-Roundtrip
         r.saveState();
-        const raw = await __stand();
-        let parsed = null;
-        try {
-            parsed = JSON.parse(raw);
-        } catch (e) {
-            void e;
-        }
+        const parsed = await __standJson();
         out.saveContainsArchitectures =
             !!parsed && Array.isArray(parsed.architectures) && parsed.architectures.length > 0;
         // Gespeicherte Einträge haben nur {type, position, seed}, kein mesh
@@ -309,13 +297,7 @@ async function checkBandRing6Workshop({ page, check }) {
         out.loadRebuildsSeeds = st.architectures[0].seed === 12345 && st.architectures[1].seed === 67890;
 
         // Cleanup (inkl. Test-Blueprints — kein Katalog-Leck)
-        for (const a of st.architectures) {
-            if (a.mesh) {
-                st.scene.remove(a.mesh);
-                r._disposeSoulGroup(a.mesh);
-            }
-        }
-        st.architectures = [];
+        window.__bautenLeer();
         delete st.blueprints._t_r6_haus;
         delete st.blueprints._t_r6_tor;
         return out;
@@ -392,7 +374,7 @@ async function checkBandRing6Workshop({ page, check }) {
         if (st.blueprints._t_r63_haus) delete st.blueprints._t_r63_haus;
         st.blueprints._t_r63_haus = {
             name: "_t_r63_haus",
-            parts: JSON.parse(JSON.stringify(KSr63.haus_basis.parts)),
+            parts: jsonKlon(KSr63.haus_basis.parts),
         };
         const px = st.playerMesh.position.x;
         const pz = st.playerMesh.position.z;
@@ -493,7 +475,7 @@ async function checkBandRing6Workshop({ page, check }) {
         if (st.blueprints._t_live_haus) delete st.blueprints._t_live_haus;
         st.blueprints._t_live_haus = {
             name: "_t_live_haus",
-            parts: JSON.parse(JSON.stringify(KSlive.haus_basis.parts)),
+            parts: jsonKlon(KSlive.haus_basis.parts),
         };
         r.spawnArchitecture("_t_live_haus", { x: 1.925, y: 5, z: 5 }, { seed: 11 });
         // Player nach (0, 5, −2) — Haus liegt in +Z, Spieler läuft in +Z auf es zu.
@@ -606,13 +588,7 @@ async function checkBandRing6Workshop({ page, check }) {
 
         // Save-Roundtrip: User-Bauplan überlebt
         r.saveState();
-        const raw = await __stand();
-        let parsed = null;
-        try {
-            parsed = JSON.parse(raw);
-        } catch (e) {
-            void e;
-        }
+        const parsed = await __standJson();
         out.saveContainsUserBlueprint =
             !!parsed && Array.isArray(parsed.blueprints) && parsed.blueprints.some((bp) => bp.name === "test_hut");
         out.saveOmitsBuiltIn =
@@ -743,13 +719,7 @@ async function checkBandRing6Workshop({ page, check }) {
         // Save-Roundtrip
         r.setHotbarSlot(7, "damm");
         r.saveState();
-        const raw = await __stand();
-        let parsed = null;
-        try {
-            parsed = JSON.parse(raw);
-        } catch (e) {
-            void e;
-        }
+        const parsed = await __standJson();
         out.saveContainsHotbar =
             !!parsed && Array.isArray(parsed.hotbar) && parsed.hotbar.length === 9 && parsed.hotbar[7] === "damm";
 
@@ -940,13 +910,7 @@ async function checkBandRing6Workshop({ page, check }) {
         const out = {};
 
         // Cleanup
-        for (const a of st.architectures) {
-            if (a.mesh) {
-                st.scene.remove(a.mesh);
-                r._disposeSoulGroup(a.mesh);
-            }
-        }
-        st.architectures = [];
+        window.__bautenLeer();
         r._clearBuildMode();
         // Der Cull-Tick baut nur bei Kopfraum (`_frameOverBudget ? 0 : budget`); nach dem Warmup kann das
         // Flag stehen → nullen, gemessen wird die Rebuild-MECHANIK, nicht die Perf-Drossel.
@@ -959,7 +923,7 @@ async function checkBandRing6Workshop({ page, check }) {
         if (st.blueprints._t_r6v2_haus) delete st.blueprints._t_r6v2_haus;
         st.blueprints._t_r6v2_haus = {
             name: "_t_r6v2_haus",
-            parts: structuredClone(KSr6v2.haus_basis.parts),
+            parts: jsonKlon(KSr6v2.haus_basis.parts),
         };
         // Setze Spieler auf (0,0,0), spawne weit + nah.
         // BÜHNE: nah und fern zum gestellten Haus (Cull-Mechanik)
@@ -982,13 +946,7 @@ async function checkBandRing6Workshop({ page, check }) {
 
         // === B) spawn_fractal ===
         // Cleanup first
-        for (const a of st.architectures) {
-            if (a.mesh) {
-                st.scene.remove(a.mesh);
-                r._disposeSoulGroup(a.mesh);
-            }
-        }
-        st.architectures = [];
+        window.__bautenLeer();
         const before = st.architectures.length;
         const dslRes = r.dslRun(["spawn_fractal", ["at_origin"], "temple", 2, 0.5]);
         // depth=2 mit 6 Kindern: 1 + 6 + 36 = 43
@@ -1018,13 +976,7 @@ async function checkBandRing6Workshop({ page, check }) {
 
         // === C) Counter ===
         // Cleanup, baue 3 nah, 5 weit
-        for (const a of st.architectures) {
-            if (a.mesh) {
-                st.scene.remove(a.mesh);
-                r._disposeSoulGroup(a.mesh);
-            }
-        }
-        st.architectures = [];
+        window.__bautenLeer();
         // BÜHNE: nah und fern zum gestellten Haus (Cull-Mechanik)
         st.playerMesh.position.set(0, 20, 0);
         for (let i = 0; i < 3; i++) r.spawnArchitecture("_t_r6v2_haus", { x: i * 10, y: 5, z: 0 }, { seed: i });
@@ -1071,13 +1023,7 @@ async function checkBandRing6Workshop({ page, check }) {
         out.clearEndsMode = st.buildMode.active === false && st.buildMode.phantomMesh === null;
 
         // Cleanup (inkl. Test-Blueprint)
-        for (const a of st.architectures) {
-            if (a.mesh) {
-                st.scene.remove(a.mesh);
-                r._disposeSoulGroup(a.mesh);
-            }
-        }
-        st.architectures = [];
+        window.__bautenLeer();
         delete st.blueprints._t_r6v2_haus;
         r.setGameMode("frieden"); // S2 — Modus zurücksetzen (schöpfer war nur für den Spawn-Test)
         return out;

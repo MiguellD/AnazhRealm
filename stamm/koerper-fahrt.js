@@ -1447,8 +1447,8 @@ class AnazhRealm_koerper_fahrt {
     // DER FAHRER (fahrzeug.K2): wer am Steuer des gerittenen Gesetz-Wagens eine Route trägt (`fahrerSetzen`, die Punkte einer
     // Route über das Wegenetz, `_wegenetzRoute`), schreibt am Kopf jedes Sim-Schritts Gas, Bremse und Lenkung in die Verb-Tafel
     // (`_verbTafelSammeln`) — dieselben Felder wie Tastatur und Pad, gefahren vom EINEN Fahr-Schritt des Kerns, nie ein Teleport.
-    // Die Lenkung zielt auf den Punkt der Route `ld0 + ldV·v` voraus (die Bahn eines Bogens durch ihn, `atan(2·L·sin α / d)`,
-    // geteilt durch den Einschlag, den die Lenksäule bei diesem Tempo trägt); das Tempo ist vmax, gedeckelt von jeder Kurve
+    // Die Lenkung folgt der Linie am Vorderrad (ihre Krümmung, der Winkel zu ihr und der Abstand, Stanley — geteilt durch den
+    // Einschlag, den die Lenksäule bei diesem Tempo trägt); das Tempo ist vmax, gedeckelt von jeder Kurve
     // in Sicht (`sichtM`): so schnell, wie ihr Bogen den Anteil `quer` des Reibkreises (μ des Bodens unter dem Rad, `_fahrHaft`)
     // und des Einschlags trägt, und so früh gebremst, wie der Anteil `brems` reicht; am Ende hält er. `F.s` (Weg auf der Route),
     // `F.quer` (Abstand zu ihr) und die Zählung des Takts (`F.takte`, `F.tempo`, `F.fest`) lesen die Linse und wer der Fahrt folgt.
@@ -1458,8 +1458,10 @@ class AnazhRealm_koerper_fahrt {
         return (this._fahrer = this._fahrerLinie(pts));
     }
     // DIE LINIE EINES FAHRERS aus den Punkten seiner Route (Welt x/z), gemittelt über ±kurveM (die Route des Wegenetzes `FAHRER.kurveM`,
-    // der Verkehr der Stadt `VERKEHR.kurveM`) — null, wenn sie keine Strecke trägt.
-    _fahrerLinie(pts, kurveM = AnazhRealm.FAHRER.kurveM) {
+    // der Verkehr der Stadt `VERKEHR.kurveM`), und sein Fahrstil `stil` (quer · lenk · brems: so viel des Reibkreises und des
+    // Einschlags trägt seine Kurve, so fest bremst er vor ihr — der Ritt `FAHRER`, die Stadt `VERKEHR.stil`) — null, wenn sie
+    // keine Strecke trägt.
+    _fahrerLinie(pts, kurveM = AnazhRealm.FAHRER.kurveM, stil = AnazhRealm.FAHRER) {
         const P = [];
         for (const q of pts || [])
             if (!P.length || Math.hypot(q.x - P[P.length - 1].x, q.z - P[P.length - 1].z) > 0.5)
@@ -1502,11 +1504,15 @@ class AnazhRealm_koerper_fahrt {
             }
             return th[i];
         };
-        const k = s.map((u) => Math.abs(richtung(u + kurveM) - richtung(u - kurveM)) / (2 * kurveM));
+        // vorzeichenrichtig im Sinn der Gier (links +: die Richtung der Linie atan2(z, x) fällt) — die Lenkung des Fahrers
+        const ks = s.map((u) => -(richtung(u + kurveM) - richtung(u - kurveM)) / (2 * kurveM));
+        const k = ks.map(Math.abs);
         return {
             pts: P,
             bogen: s,
             k,
+            ks,
+            stil,
             i: 0,
             s: 0,
             quer: 0,
@@ -1531,6 +1537,7 @@ class AnazhRealm_koerper_fahrt {
         const G = z && this._fahrSatz(ent, this._vehicleProfile(ent));
         if (!G || !Number.isFinite(z.x)) return;
         const D = AnazhRealm.FAHRER;
+        const ST = F.stil || D; // der Fahrstil der Linie (`_fahrerLinie`): Anteil des Reibkreises, des Einschlags, der Bremse
         const [P, S] = [F.pts, F.bogen];
         let best = Infinity;
         for (let i = F.i; i < Math.min(P.length - 1, F.i + 40); i++) {
@@ -1553,7 +1560,33 @@ class AnazhRealm_koerper_fahrt {
             -dx * Math.sin(z.yaw) - dz * Math.cos(z.yaw),
             dx * Math.cos(z.yaw) - dz * Math.sin(z.yaw)
         );
-        const delta = Math.atan((2 * G.L * Math.sin(alpha)) / Math.max(1, Math.hypot(dx, dz)));
+        // DIE LENKUNG FOLGT DER LINIE (Stanley am Vorderrad): der Winkel zwischen Wagen (Gier) und Linie am Vorderrad und sein
+        // Abstand zu ihr (atan(querK·e / (querV + v))) — zur Linie um (L² − c²)·κ/2 nach außen versetzt (κ vorzeichenrichtig
+        // `F.ks`, `lenkVorS` der Fahrt voraus): im Bogen fährt das Vorderrad einen weiteren Kreis als der Schwerpunkt, so liegt der
+        // WAGEN auf der Linie (seine Bahn, wie Fahrbahn, Folge und Hülle sie rechnen). Der Winkel trägt den Bogen selbst (im
+        // Gleichgewicht ist er der Einschlag). Bis hier zielte der Fahrer auf den Punkt `ld0 + ldV·v` voraus (pure pursuit) und
+        // schnitt jeden Bogen innen — am Fahr-Schritt des Kerns (Abbieger R 5,5, Wende R 6,5, die drei Wagen der Stadt) 0,83–1,32 m,
+        // jetzt 0,10–0,14 m (die Limousine in der Wende 0,8 m am Anschlag ihrer Säule); in der Kreuzung der Metropole stand, wer
+        // vor ihm wartete, in seiner Bahn. Der Punkt voraus (`alpha`) misst weiter den Bogen zurück auf die Route im Tempo.
+        const [cy, sy] = [Math.cos(z.yaw), Math.sin(z.yaw)];
+        const [ax0, az0] = [p.x + cy * G.b, p.z - sy * G.b]; // das Vorderrad (der Fahr-Zustand trägt den Schwerpunkt)
+        let [fb, fi, ft] = [Infinity, F.i, 0];
+        for (let i = F.i; i < Math.min(P.length - 1, F.i + 40); i++) {
+            const [qx, qz] = [P[i + 1].x - P[i].x, P[i + 1].z - P[i].z];
+            const l2 = qx * qx + qz * qz || 1;
+            const t = Math.max(0, Math.min(1, ((ax0 - P[i].x) * qx + (az0 - P[i].z) * qz) / l2));
+            const d = (ax0 - P[i].x - qx * t) ** 2 + (az0 - P[i].z - qz * t) ** 2;
+            if (d < fb) [fb, fi, ft] = [d, i, t];
+        }
+        let kv = fi;
+        while (kv + 1 < P.length - 1 && S[kv + 1] < S[fi] + Math.abs(v) * D.lenkVorS) kv++;
+        const [tx, tz] = [P[fi + 1].x - P[fi].x, P[fi + 1].z - P[fi].z];
+        const ab = // die Linie links (+) des Vorderrads, abzüglich seines Wegs außen
+            (P[fi].x + tx * ft - ax0) * -sy +
+            (P[fi].z + tz * ft - az0) * -cy -
+            ((G.L * G.L - G.c * G.c) * F.ks[kv]) / 2;
+        const psi = Math.atan2(-tz, tx) - z.yaw;
+        const delta = Math.atan2(Math.sin(psi), Math.cos(psi)) + Math.atan2(D.querK * ab, D.querV + Math.abs(v));
         T.lenken = Math.max(-1, Math.min(1, (delta * (1 + Math.abs(z.speed || 0) * G.sfK)) / G.maxSteer));
         const mu = this._fahrHaft(z) * G.g;
         // die Kurve deckelt das Tempo zweimal: der Reibkreis (v² · κ ≤ quer · μ·g) und die Lenksäule, deren Einschlag mit dem
@@ -1561,8 +1594,8 @@ class AnazhRealm_koerper_fahrt {
         // im Stand dreht kein Rad den Wagen)
         const vKurve = (k) => {
             const kk = Math.max(k, 1e-4);
-            const lenk = ((D.lenk * G.maxSteer) / Math.atan(kk * G.L) - 1) / G.sfK;
-            return Math.max(D.kriechMs, Math.min(Math.sqrt((D.quer * mu) / kk), lenk));
+            const lenk = ((ST.lenk * G.maxSteer) / Math.atan(kk * G.L) - 1) / G.sfK;
+            return Math.max(ST.kriechMs, Math.min(Math.sqrt((ST.quer * mu) / kk), lenk));
         };
         F.ende = F.s >= F.lang - D.haltM;
         // auch der Bogen zurück auf die Route, gemessen auf mindestens `bogenM` (auf dem kurzen Blick des Kriechens hielte er
@@ -1575,9 +1608,9 @@ class AnazhRealm_koerper_fahrt {
         let kWo = -1;
         // (fern genug, dass schon der Bremsweg allein das Soll trägt, deckelt keine Kurve mehr: dort endet der Blick — Lehre 25)
         for (let i = F.i + 1; i < P.length && S[i] - F.s < D.sichtM; i++) {
-            if (2 * D.brems * mu * (S[i] - F.s) >= soll * soll) break;
+            if (2 * ST.brems * mu * (S[i] - F.s) >= soll * soll) break;
             const vk = i === P.length - 1 ? 0 : vKurve(F.k[i]);
-            const w = Math.sqrt(vk * vk + 2 * D.brems * mu * Math.max(0, S[i] - F.s));
+            const w = Math.sqrt(vk * vk + 2 * ST.brems * mu * Math.max(0, S[i] - F.s));
             if (w < soll) [soll, grund, kWo] = [w, vk === 0 ? "ende" : "kurve", i];
         }
         if (F.deckel < soll) [soll, grund, kWo] = [Math.max(0, F.deckel), "folge", -1];
@@ -2547,7 +2580,9 @@ class AnazhRealm_koerper_fahrt {
 _stammZonen(AnazhRealm, [AnazhRealm_koerper_fahrt]);
 
 // ===== ATLAS · Koerper/fahrt — Außen-Konstanten =====
-// DER FAHRER (fahrzeug.K2, `_fahrerSchritt`): ld0 + ldV·v (bis ldMax) m voraus zielt die Lenkung · quer / lenk / brems = die
+// DER FAHRER (fahrzeug.K2, `_fahrerSchritt`): die Lenkung folgt der Linie am Vorderrad — querK (1/s) / querV (m/s) = das Gewicht
+// seines Abstands zu ihr, atan(querK·e / (querV + v)), lenkVorS = so viele Sekunden der Fahrt voraus liest sie die Krümmung (die
+// Trägheit der Lenksäule) · ld0 + ldV·v (bis ldMax) m voraus misst er den Bogen zurück auf die Route · quer / lenk / brems = die
 // Anteile des Reibkreises (μ·g) und des Einschlags in der Kurve und des Reibkreises beim Bremsen davor · kriechMs = so langsam
 // fährt er höchstens um eine Kehre · bogenM = auf mindestens so viele Meter misst er den Bogen zurück auf die Route ·
 // kurveM = über ±so viele Meter misst er die Drehung der Route · sichtM = so weit voraus liest er Kurven · bandMs = über so viel Tempo-Fehler (m/s) geht Gas bzw. Bremse von 0 auf voll ·
@@ -2559,6 +2594,9 @@ _stammZonen(AnazhRealm, [AnazhRealm_koerper_fahrt]);
 // HAFT_MERK_M: so weit (je Achse) fährt ein Wagen auf dem gemerkten Reibkreis seines Bodens (`_fahrHaft`).
 AnazhRealm.HAFT_MERK_M = 1;
 AnazhRealm.FAHRER = Object.freeze({
+    querK: 3,
+    querV: 1,
+    lenkVorS: 0.1,
     ld0: 3,
     ldV: 0.35,
     ldMax: 12,

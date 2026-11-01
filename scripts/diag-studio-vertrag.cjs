@@ -1,4 +1,4 @@
-const { ausDatei, path, fs, stammLib, vm, jsonLesen, ROOT: root } = require("./lib/welt-boot.cjs");
+const { ausDatei, path, fs, stammLib, vm, jsonLesen, ROOT: root, jsonKlon } = require("./lib/welt-boot.cjs");
 // diag-studio-vertrag.cjs — DER MANIFEST-VALIDATOR (docs/studio-vertrag.md).
 // Die USD-/Schema-Lehre: ein Kern, der den Vertrag verletzt, wird ROT beim
 // Andocken — nicht stumm kaputt in der Welt. Statisch + vm (kein Browser, im
@@ -1415,7 +1415,7 @@ function validateManifest(m, kern) {
         const tEntry = CORES.find((c) => c.file === "tetrapoda-core.js");
         const tm = tEntry ? loadCore(tEntry) : null;
         const mitZwilling = (fn) => {
-            const V = structuredClone(tm.verhalten);
+            const V = jsonKlon(tm.verhalten);
             fn(V);
             return validateManifest(Object.assign({}, tm, { verhalten: V }));
         };

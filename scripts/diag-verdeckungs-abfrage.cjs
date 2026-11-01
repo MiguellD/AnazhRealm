@@ -201,7 +201,14 @@ function selbsttest() {
 
 if (process.argv.includes("--selftest")) selbsttest();
 
-const { statikServer, starteBrowser, selbsttest: selbstMarke, laufUhr } = require("./lib/welt-boot.cjs");
+const {
+    statikServer,
+    starteBrowser,
+    selbsttest: selbstMarke,
+    laufUhr,
+    fehlerText,
+    rotListe,
+} = require("./lib/welt-boot.cjs");
 const { linsenGpu } = require("./lib/software-gpu.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 
@@ -563,7 +570,7 @@ async function verdeckungPhase(opts) {
             });
         }
     } catch (e) {
-        aus.fehler = e?.message || String(e);
+        aus.fehler = fehlerText(e);
     } finally {
         for (const f of aufraeumen.reverse())
             try {
@@ -656,17 +663,13 @@ async function verdeckungPhase(opts) {
             );
         }
     } catch (e) {
-        out.abbruch = e?.message || String(e);
+        out.abbruch = fehlerText(e);
     }
     await browser.close();
     server.close();
     const v = urteil(out);
     log(v.length ? "ROT" : "GRÜN");
-    if (v.length) {
-        console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
-        for (const s of v) console.log("   • " + s);
-        process.exit(1);
-    }
+    rotListe(v);
     const A = out.phasen.ablauf;
     const Lz = out.phasen.letzter.z;
     console.log(

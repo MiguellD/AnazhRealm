@@ -32,7 +32,7 @@
 //              Sicht aus der Hülle einer Serie; `--neu` der Re-Mint, K26)
 //   Wand:      node scripts/diag-profiband.cjs              (Schema, Summe <= Band, Selbsttests gegen injizierte Fälle)
 "use strict";
-const { jsonLesen, path, fs } = require("./welt-boot.cjs");
+const { jsonLesen, path, fs, jsonKlon } = require("./welt-boot.cjs");
 const { vramFalte } = require("./draw-zaehler.cjs");
 
 const SPEC = path.join(__dirname, "..", "..", "spec", "profiband");
@@ -379,7 +379,7 @@ function zensusMax(proben) {
         for (const e of z.klassen || []) {
             const a = je.get(e.klasse);
             if (!a) {
-                je.set(e.klasse, structuredClone(e));
+                je.set(e.klasse, jsonKlon(e));
                 continue;
             }
             for (const [p, c] of Object.entries(e.je || {})) a.je[p] = Math.max(a.je[p] || 0, c);
@@ -960,7 +960,7 @@ function ortSoll(ort, zensus) {
 // `nur: "vram"` (W6): ein Schnitt, der nur den Speicher bewegt, zieht nur den VRAM nach — die Klassen-Zeilen bleiben die
 // Hülle ihrer eigenen Serie (`gemessen`), die VRAM-Serie steht in `gemessen.vram`.
 function ratscheNachziehen(ratsche, u, gemessen, nur) {
-    const neu = structuredClone(ratsche);
+    const neu = jsonKlon(ratsche);
     const aenderungen = [];
     const setze = (obj, key, ist, name) => {
         if (!(Number.isFinite(ist) && ist >= 0)) return;
@@ -1029,7 +1029,7 @@ function ratscheNachziehen(ratsche, u, gemessen, nur) {
 // trug: der Ego-Wurf seit V18.540, auf der GTX gerichtet, auf der Radeon gemessen). Ein begründeter Akt: die Zeilen, die
 // steigen, nennt die Ausgabe, der Commit trägt sie.
 function ratscheNeu(ratsche) {
-    const neu = structuredClone(ratsche);
+    const neu = jsonKlon(ratsche);
     for (const [id, rz] of Object.entries(neu.klassen || {}))
         if (!freiGrund(neu, id)) for (const p of Object.keys(rz)) rz[p] = { befehle: null, dreiecke: null };
     neu.gesamt = { befehle: null, dreiecke: null, vramMB: null };

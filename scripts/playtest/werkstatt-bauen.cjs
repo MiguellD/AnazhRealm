@@ -16,7 +16,7 @@ async function checkBandV1774UseByRole({ page, check }) {
 
         // Snapshot — am Ende restauriert.
         const savedMode = r.getGameMode();
-        const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
+        const savedEquip = p && p.equipped ? jsonKlon(p.equipped) : { held: null, armor: null };
         const savedSoul = (p && p.soul) || "mensch";
         const savedHotbar = st.hotbar.slice(0, 9);
         r.setGameMode("schöpfer");
@@ -32,7 +32,7 @@ async function checkBandV1774UseByRole({ page, check }) {
         blu._t_v1774 = {
             name: "_t_v1774",
             label: "Spitzhacke (Substanz)",
-            parts: JSON.parse(JSON.stringify(KS74.geraet_spitzhacke.parts)),
+            parts: jsonKlon(KS74.geraet_spitzhacke.parts),
         };
         // koerper_human ist ALT_DOPPEL/donorOnly und fehlt in der primären Select-Sicht → der generische
         // „Bauplan-Avatar gelistet + verkörperbar“-Pfad misst an einem eigenen role:soul-Bauplan
@@ -44,7 +44,7 @@ async function checkBandV1774UseByRole({ page, check }) {
             label: "Avatar (Test)",
             role: "soul",
             roleManual: true,
-            parts: JSON.parse(JSON.stringify(blu.koerper_human.parts)),
+            parts: jsonKlon(blu.koerper_human.parts),
         };
 
         // (1) _blueprintUseKind — aus Rolle + Form AUSGELESEN
@@ -392,7 +392,7 @@ async function checkBandV1789WorkshopReadout({ page, check }) {
         // die emergente Rolle), Quelle räumen.
         const KS89 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
         if (blu._t_ab_src) delete blu._t_ab_src;
-        blu._t_ab_src = { name: "_t_ab_src", parts: JSON.parse(JSON.stringify(KS89.geraet_schwert.parts)) };
+        blu._t_ab_src = { name: "_t_ab_src", parts: jsonKlon(KS89.geraet_schwert.parts) };
         r.cloneBlueprint("_t_ab_src", "_ab_clone");
         delete blu._t_ab_src;
         r.selectBlueprintForEdit("_ab_clone");
@@ -1771,7 +1771,7 @@ async function checkBandNutzerBlickNachbau({ page, check }) {
             const ohneSitz = {
                 name: "__nb_ohnesitz",
                 builtIn: false,
-                parts: JSON.parse(JSON.stringify(blu.__nb_wagen.parts)),
+                parts: jsonKlon(blu.__nb_wagen.parts),
                 connections: (blu.__nb_wagen.connections || []).filter((c) => c.type !== "sitz"),
             };
             out.ohneSitzKeinTrank = r.computeBlueprintRole(ohneSitz) === "architecture";
@@ -1843,8 +1843,8 @@ async function checkBandWGGelenke({ page, check }) {
         const wagen = KSwg.fahrzeug_wagen
             ? {
                   name: "_wg_wagen",
-                  parts: JSON.parse(JSON.stringify(KSwg.fahrzeug_wagen.parts)),
-                  connections: JSON.parse(JSON.stringify(KSwg.fahrzeug_wagen.connections || [])),
+                  parts: jsonKlon(KSwg.fahrzeug_wagen.parts),
+                  connections: jsonKlon(KSwg.fahrzeug_wagen.connections || []),
               }
             : null;
         out.ranked = false;

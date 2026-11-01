@@ -29,7 +29,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, warteAufWelt, taeterFaelle, selbsttestEnde, wandEnde, urteilEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, taeterFaelle, selbsttestEnde, wandEnde, urteilEnde, SELBSTTEST, jsonKlon, fehlerText } = require("./lib/welt-boot.cjs");
 const STAND = require("./lib/stand-linse.cjs");
 
 // (N) DIE SONDE LIEST DEN BESTAND (satz-pass): nach dem Haupt-Pass nennt die Linie der Strahl-Sonde (scripts/lib/kamera-nah.cjs)
@@ -183,7 +183,7 @@ function selbsttest() {
         ],
         pageErrors: [],
     };
-    const klon = () => JSON.parse(JSON.stringify(gruen));
+    const klon = () => jsonKlon(gruen);
     const fehler = [];
     const v0 = urteil(klon());
     if (v0.length) fehler.push("der grüne Befund fällt rot: " + v0.join(" · "));
@@ -1074,7 +1074,7 @@ if (SELBSTTEST) {
     // mit den Werten an den Pfaden nennt den Namen zuerst, ein leerer Befund LEER
     const falsch = (U, gruen, T) =>
         [["", gruen], ["LEER", {}], ...T.map(([n, ...pw]) => {
-            const b = structuredClone(gruen);
+            const b = jsonKlon(gruen);
             for (let i = 0; i < pw.length; i += 2) ((p) => (p.slice(0, -1).reduce((x, k) => x[k], b)[p.at(-1)] = pw[i + 1]))(pw[i].split("."));
             return [n, b];
         })]
@@ -2251,7 +2251,7 @@ const BRANDLAUF = process.argv.includes("--brand");
             STAND.TAKTE
         );
     } catch (e) {
-        befund = { fehler: e?.message || String(e) };
+        befund = { fehler: fehlerText(e) };
     }
     await browser.close();
     server.close();

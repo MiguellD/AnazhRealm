@@ -331,10 +331,7 @@ async function runPartB() {
         // ── ALLE drei Stufen VOR der Baseline wärmen (kein Rewarm-Störer im Sweep):
         //    flatten(0/1/2) bis truthy; der Loop-Pump treibt Worker-Replies + Impostor-Bake. ──
         const warm = { 0: false, 1: false, 2: false };
-        const loopTakt = async () => {
-            __handTakt();
-            await sleep(120);
-        };
+        const loopTakt = () => __takte(1, 120);
         const waerme = (name, e, preset, stufen, w) =>
             window
                 .__gebautNach(name, {

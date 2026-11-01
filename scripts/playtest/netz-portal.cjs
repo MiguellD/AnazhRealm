@@ -187,7 +187,7 @@ async function checkBandW17Multiplayer({ page, check }) {
             name: bpName,
             label: "W17 Test-Portal",
             builtIn: false,
-            parts: JSON.parse(JSON.stringify(wp.parts)),
+            parts: jsonKlon(wp.parts),
             connections: [],
             role: "portal",
             portalMeta: r._sanitizePortalMeta(
@@ -453,7 +453,7 @@ async function checkBandW17Multiplayer({ page, check }) {
             name: ebp,
             label: "JS-Enter",
             builtIn: false,
-            parts: JSON.parse(JSON.stringify(wp.parts)),
+            parts: jsonKlon(wp.parts),
             connections: [],
             role: "portal",
             roleManual: true,
@@ -911,7 +911,7 @@ async function checkBandW17Multiplayer({ page, check }) {
         });
         out.sanitizeDefaultsNoMp = !!sanNo && sanNo.multiplayer !== true;
         // localStorage-Rundlauf — re-sanitize bewahrt die Marke.
-        const rt = r._sanitizeImportedManifest(JSON.parse(JSON.stringify(sanMp)));
+        const rt = r._sanitizeImportedManifest(jsonKlon(sanMp));
         out.sanitizeSurvivesRoundtrip = !!rt && rt.multiplayer === true;
 
         // _vendorRegisterWorld setzt multiplayer am customWorlds-Eintrag.
@@ -1020,7 +1020,7 @@ async function checkBandW17Multiplayer({ page, check }) {
             dsl: [],
         });
         out.sanitizeDefaultsRelay = !!sanRelay && sanRelay.serverMode === "relay";
-        const rt = r._sanitizeImportedManifest(JSON.parse(JSON.stringify(sanJs)));
+        const rt = r._sanitizeImportedManifest(jsonKlon(sanJs));
         out.sanitizeSurvivesRoundtrip = !!rt && rt.serverMode === "js-compute";
 
         // _vendorRegisterWorld setzt serverMode am customWorlds-Eintrag.

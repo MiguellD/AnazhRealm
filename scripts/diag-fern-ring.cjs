@@ -38,7 +38,7 @@
 // (law + 0.5) MUSS rot fallen — die Linse ist nicht vakuös.
 //   node scripts/diag-fern-ring.cjs
 "use strict";
-const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, fehlerText } = require("./lib/welt-boot.cjs");
 
 
 const { errs, check } = pruefer();
@@ -535,7 +535,7 @@ hauptLauf(async () => {
             ren8.dispose();
             if (fp8 && alterParent) alterParent.add(fp8.mesh);
         } catch (e8) {
-            res.fpRenderErr = (e8 && e8.message) || String(e8);
+            res.fpRenderErr = fehlerText(e8);
         }
         // ===== (8b) DAS EINBLENDEN: die Geburt eines fern entstandenen Satzes dithert ein =====
         // Zwei Probe-Sätze (EIN Kasten) bei sichtbarem Feld-Pass: mit `einblenden` beginnt Texel 5.w bei 1 (ganz

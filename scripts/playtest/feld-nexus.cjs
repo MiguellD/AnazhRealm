@@ -107,13 +107,7 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
 
         // 9. Phase 4: Save-Roundtrip — dslAbilities überleben localStorage
         r.saveState();
-        const raw = await __stand();
-        let parsed = null;
-        try {
-            parsed = JSON.parse(raw);
-        } catch (e) {
-            void e;
-        }
+        const parsed = await __standJson();
         out.savedDslAbilitiesPresent =
             !!parsed &&
             Array.isArray(parsed.dslAbilities) &&
@@ -1153,9 +1147,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check }) {
             r.selectBlueprintForEdit("stein_block");
             r._renderWorkshopDOM();
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            r.closeAllDrawers();
-            st.yaw = 0;
-            if (pm) pm.rotation.y = 0;
+            __werkPutz();
         } catch (err) {
             out.error = err && err.message;
         }
@@ -1239,9 +1231,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check }) {
 
             // Cleanup
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            r.closeAllDrawers();
-            st.yaw = 0;
-            if (pm) pm.rotation.y = 0;
+            __werkPutz();
         } catch (err) {
             out.error = err && err.message;
         }
@@ -1327,9 +1317,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check }) {
             r.selectBlueprintForEdit("stein_block");
             r._renderWorkshopDOM();
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            r.closeAllDrawers();
-            st.yaw = 0;
-            if (pm) pm.rotation.y = 0;
+            __werkPutz();
         } catch (err) {
             out.error = err && err.message;
         }

@@ -14,7 +14,7 @@
 // mit `wenn` gilt nur, wenn die Messung den Teil trägt (das Ziel ist benannt). Der Satz „messung" (ein Mess-Frame, kein
 // Beweisbild: 32×18 Takt-Bilder, Luma-Proben der Post-Kette) prüft nur Stand, Bühne und Gerät — er steht in der Zeile.
 "use strict";
-const { ausDatei, jsonLesen } = require("./welt-boot.cjs");
+const { ausDatei, jsonLesen, jsonKlon } = require("./welt-boot.cjs");
 
 const zlib = require("zlib");
 
@@ -2036,7 +2036,7 @@ function sollTafelSelbsttest(tafel, q) {
     // die Tafel: die echte ohne Bruch, jeder eingeschmuggelte Bruch beim Namen
     const echt = sollTafelUrteil(tafel, q);
     for (const f of echt.fehler) v.push(`Tafel: ${f}`);
-    const klon = () => structuredClone(tafel);
+    const klon = () => jsonKlon(tafel);
     const finde = (t, f) => (t.klassen || []).find(f);
     const mitMessung = (t) => finde(t, (k) => k.mass && k.mass.messung && k.mass.messung.werkzeug === "bild");
     const mitVerweis = (t) => finde(t, (k) => ((k.soll && k.soll.eigenschaften) || []).some((e) => e.verweis && e.verweis.symbol));
@@ -2326,7 +2326,7 @@ function sollTafelSelbsttest(tafel, q) {
     // DER EINE SCHUSS (W1-n1): die Zeile, die den Schuss einer anderen NENNT, liest dasselbe Ist wie sein Träger
     const tn = klon(),
         kn = mitMessung(tn) || {};
-    (tn.klassen || []).push(Object.assign(structuredClone(kn), { id: "x-name", mass: Object.assign({}, kn.mass, { messung: kn.id }) }));
+    (tn.klassen || []).push(Object.assign(jsonKlon(kn), { id: "x-name", mass: Object.assign({}, kn.mass, { messung: kn.id }) }));
     const istN = sollTafelUrteil(tn, q).zeilen.filter((z) => z.id === kn.id || z.id === "x-name").map((z) => z.ist);
     if (!(istN.length === 2 && istN[0] != null && istN[0] === istN[1])) v.push(`der Name eines Schusses liest nicht dessen Ist (${istN})`);
     // das Ist kommt aus der Rohdatei: dieselbe Albedo-Zeile, ihr Verhältnis auf 1 — das Urteil folgt (Prüfer K63 R1: die Kopie

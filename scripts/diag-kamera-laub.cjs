@@ -16,7 +16,7 @@
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf, wandEnde, selbsttestEnde, jsonLesen, SELBSTTEST, path, stammLib, weltTor, argOpt } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf, wandEnde, selbsttestEnde, weltTor, jsonLesen, fehlerStapel, SELBSTTEST, path, stammLib, argOpt } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 
@@ -238,12 +238,7 @@ function leibInstall(cfg) {
     L.ruhig = (n) => {
         for (let i = 0; i < (n || 10); i++) r._loopCamera((T += 0.1));
     };
-    L.tick = async (n, ms) => {
-        for (let i = 0; i < n; i++) {
-            __handTakt();
-            await sleep(ms || 30);
-        }
-    };
+    L.tick = (n, ms) => __takte(n, ms);
     // reißt der Deckel, nennt sein Wurf die Lücken des Weltbilds (`__deckel`)
     L.steht = async (ms) => {
         let n = 0;
@@ -548,7 +543,7 @@ async function leibWiese(arg) {
         // DER VERFOLGER-RITT: dieselben Posen, der GT 3,2 m vor der Box, sein Heck zu ihr
         L.rittPosen(out, L.gtHolen(arg.x + 30, arg.z), posen, (p) => L.vor(p.b, p.seite, 3.2));
     } catch (e) {
-        out.err = e?.stack || String(e);
+        out.err = fehlerStapel(e);
     }
     out.proben = L.proben;
     return out;
@@ -573,7 +568,7 @@ async function leibHang(arg) {
         }
         L.rittPosen(out, L.gtHolen(S.x + 12, S.fusZ - 10), posen, (p) => p);
     } catch (e) {
-        out.err = e?.stack || String(e);
+        out.err = fehlerStapel(e);
     }
     out.proben = L.proben;
     return out;
@@ -604,7 +599,7 @@ async function leibGang(G) {
             return t && anlauf(e.type, P(0), [P(1).cx - P(0).cx, P(1).cz - P(0).cz], P(t.z));
         };
         const anker = { stamm: baum && { typ: baum.typ, b: stamm(baum) }, fels: L.je.fels[0], haus: L.je.haus[0], innen: tuer(L.je.haus.find(tuer)) };
-        const MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7];
+        const MUSTER = __MUSTER;
         let tMs = performance.now();
         let nr = 0;
         const gang = async (art, a, sprint, senk) => {
@@ -690,7 +685,7 @@ async function leibGang(G) {
             out.senk = (await gang("senk", a, false, true)).taeter.length;
         }
     } catch (e) {
-        out.err = e?.stack || String(e);
+        out.err = fehlerStapel(e);
     }
     return out;
 }
@@ -823,7 +818,7 @@ async function probe(arg) {
             window.__nahSpeicher = null; // der Fels liegt im Speicher: die nächste Stellung rechnet ihn neu
             s.ms = Math.round(performance.now() - tS);
         } catch (e) {
-            s.err = e?.stack || String(e);
+            s.err = fehlerStapel(e);
         }
         return s;
     };
@@ -972,7 +967,7 @@ async function probe(arg) {
                 r.dismountArchitecture();
             } else z.modi.ritt = { n: 0, grund: gt ? "Aufsitzen scheiterte" : "kein GT" };
         } catch (e) {
-            z.err = e?.stack || String(e);
+            z.err = fehlerStapel(e);
         }
         out.zeiten[ort.id] = Math.round(performance.now() - tO);
     }

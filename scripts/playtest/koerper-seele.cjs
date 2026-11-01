@@ -528,7 +528,7 @@ async function checkBandV1766FertigenFlow({ page, check }) {
         const savedArch = st.architectures.slice();
         // FERTIGEN rüstet das geschmiedete Werk aus (equipped.held/armor) — sauber zurücksetzen, sonst
         // zeigt eine spätere Band einen baumelnden Held (gelöschter Bauplan).
-        const savedEquipped = p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : null;
+        const savedEquipped = p.equipped ? jsonKlon(p.equipped) : null;
 
 
         // === ein DOMAIN-tragendes forging-Geraet vorbereiten (schoepfer = kein Stamina-Zug). EIN
@@ -729,7 +729,7 @@ async function checkBandV1772Library({ page, check }) {
         // aus der Substanz-Zeile (foundry-unabhängig) und räumt es am Ende wieder auf.
         const KS72 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
         if (blu._t_v1772) delete blu._t_v1772;
-        blu._t_v1772 = { name: "_t_v1772", parts: JSON.parse(JSON.stringify(KS72.geraet_spitzhacke.parts)) };
+        blu._t_v1772 = { name: "_t_v1772", parts: jsonKlon(KS72.geraet_spitzhacke.parts) };
         const G = blu._t_v1772;
         const A = blu.ruestung_brustpanzer;
         const T = blu.trank_lebenssaft;
@@ -758,7 +758,7 @@ async function checkBandV1772Library({ page, check }) {
         // (5) KONSUM — die vier Mach-Akte FEUERN rollen-gerecht (schöpfer = frei, kein Material/Station nötig).
         //     Snapshot des Player-States, danach restauriert.
         const savedMode = r.getGameMode();
-        const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
+        const savedEquip = p && p.equipped ? jsonKlon(p.equipped) : { held: null, armor: null };
         const savedBoosts = p && Array.isArray(p.boosts) ? p.boosts.slice() : [];
         const savedSoul = (p && p.soul) || "mensch";
         r.setGameMode("schöpfer");
@@ -829,7 +829,7 @@ async function checkBandV1773HeldMesh({ page, check }) {
         if (!pm) return out;
 
         // Snapshot — am Ende restauriert (kein dangling Held/Soul für die nächsten Bands).
-        const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
+        const savedEquip = p && p.equipped ? jsonKlon(p.equipped) : { held: null, armor: null };
         const savedSoul = (p && p.soul) || "mensch";
 
         // AUSLÖSCHUNGS-WELLE — geraet_spitzhacke fiel als Blueprint; Test-Blueprint aus der
@@ -838,7 +838,7 @@ async function checkBandV1773HeldMesh({ page, check }) {
         if (st.blueprints._t_v1773) delete st.blueprints._t_v1773;
         st.blueprints._t_v1773 = {
             name: "_t_v1773",
-            parts: JSON.parse(JSON.stringify(KS73.geraet_spitzhacke.parts)),
+            parts: jsonKlon(KS73.geraet_spitzhacke.parts),
         };
 
         // sauberer Start
@@ -952,7 +952,7 @@ async function checkBandV1784AvatarFormFit({ page, check }) {
         out.soulVals = `Körper=${round(fitBody)} Klumpen=${round(fitBlob)}`;
         // (3) KONSUM: ein körper-förmiger Custom-Avatar hat höhere Basis-Stats als ein Klumpen (gleiches Material)
         const savedSoul = p.soul;
-        const savedCustom = st.customSouls ? JSON.parse(JSON.stringify(st.customSouls)) : {};
+        const savedCustom = st.customSouls ? jsonKlon(st.customSouls) : {};
         st.customSouls = st.customSouls || {};
         st.customSouls["_av_body"] = { label: "body", bodyParts: bodyParts };
         st.customSouls["_av_blob"] = { label: "blob", bodyParts: blobParts };
@@ -1338,7 +1338,7 @@ async function checkBandWelle6DSoul({ page, check }) {
         // Setup: Custom-Bauplan für Armor + Werkzeug
         const savedSoul = st.player.soul;
         r.applyPlayerSoul("human");
-        const baselineStats = JSON.parse(JSON.stringify(st.player.stats));
+        const baselineStats = jsonKlon(st.player.stats);
 
         // Eisen-Rüstung-Bauplan
         st.blueprints.test_armor_eisen = {
@@ -1620,7 +1620,7 @@ async function checkBandWelle6DSoul({ page, check }) {
         // Setup: Save initial state für Vergleich
         st.player.boosts = [];
         r.recomputePlayerStats();
-        const baselineStats = JSON.parse(JSON.stringify(st.player.stats));
+        const baselineStats = jsonKlon(st.player.stats);
 
         // Test 1: addPlayerBoost fügt einen Boost hinzu + Stats ändern sich
         const added = r.addPlayerBoost({
@@ -2229,8 +2229,8 @@ async function checkBandPhasenBF({ page, check }) {
             const KSc7 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
             const w = KSc7.fahrzeug_wagen
                 ? {
-                      parts: JSON.parse(JSON.stringify(KSc7.fahrzeug_wagen.parts)),
-                      connections: JSON.parse(JSON.stringify(KSc7.fahrzeug_wagen.connections || [])),
+                      parts: jsonKlon(KSc7.fahrzeug_wagen.parts),
+                      connections: jsonKlon(KSc7.fahrzeug_wagen.connections || []),
                   }
                 : null;
             const h = st.blueprints.reittier_holzross;
@@ -2341,7 +2341,7 @@ async function checkBandPhasenBF({ page, check }) {
             const roles = r.computeMotionRoles(bp.parts, bp.connections) || [];
             const hasRad = roles.some((x) => x && x.role === "rad");
             // das Panel liest dieselben Gelenke: „rad" entsteht nur aus den Verbindungen
-            const wagen = JSON.parse(JSON.stringify({ name: "fahrzeug_wagen", parts: bp.parts, connections: bp.connections || [] }));
+            const wagen = jsonKlon({ name: "fahrzeug_wagen", parts: bp.parts, connections: bp.connections || [] });
             const panel = document.createElement("div");
             r._specRenderBody(panel, wagen);
             const line = panel.querySelector(".spec-motion-line");
@@ -2762,7 +2762,7 @@ async function checkBandW5Werkzeugabnutzung({ page, check }) {
         if (KSw5.geraet_spitzhacke) {
             st.blueprints._t_wear_spitz = {
                 name: "_t_wear_spitz",
-                parts: JSON.parse(JSON.stringify(KSw5.geraet_spitzhacke.parts)),
+                parts: jsonKlon(KSw5.geraet_spitzhacke.parts),
             };
         }
         let heldBp = st.blueprints && st.blueprints[heldName];

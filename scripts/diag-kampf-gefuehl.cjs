@@ -12,7 +12,7 @@
 // und Wiederkehr über einen Reload (allein: `--k5`, mit dem echten Renderer); die Selbst-Tests S3–S18 feuern je an ihrer
 // Naht, jede Naht restauriert; Q15 der Treffer je Kern-Mutation im Takt des Spiels, im Bild und am Labor (allein: `--k1`, mit dem
 // echten Renderer). Aufruf: node scripts/diag-kampf-gefuehl.cjs [--k5 | --k1]
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer, sleep, stammLib } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer, sleep, fehlerText, stammLib } = require("./lib/welt-boot.cjs");
 // Port über KAMPF_GEFUEHL_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4451.
 const PORT = Number(process.env.KAMPF_GEFUEHL_PORT || 4451);
 
@@ -1098,7 +1098,7 @@ async function k1Ende(browser, K) {
         );
         k5 = await k5Lauf(page).catch((e) => console.log("  (Q13) ABBRUCH " + e.message));
     } catch (e) {
-        out = { error: (e && e.message) || String(e) };
+        out = { error: fehlerText(e) };
         if (NUR_K1) return k1Ende(browser, { welt: { vor: { abbruch: out.error } }, labor: {} });
     }
     await browser.close();

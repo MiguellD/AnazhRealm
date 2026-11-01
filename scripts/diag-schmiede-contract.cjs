@@ -31,7 +31,7 @@
 //   node scripts/diag-schmiede-contract.cjs
 const { fingerabdruck: fingerprint, goldenSelbsttest, vertragIst, goldenWand, kernProbe } = require("./lib/plattform-probe.cjs");
 
-const { studioKern, pruefer, ROOT: root, path } = require("./lib/welt-boot.cjs");
+const { studioKern, pruefer, ROOT: root, path, jsonKlon } = require("./lib/welt-boot.cjs");
 const { errs, check, wandEnde } = pruefer();
 const SC = studioKern("schmiede-core.js", "__schmiedeCore");
 
@@ -200,7 +200,7 @@ function arenaFall(c) {
     // der Selbst-Test: je Wand ihre Eingabe verdorben — die Wand sieht den neuen Täter
     const verdirb = [(b) => b.zufall.push(0), (b) => b.fremd.push(0), (b) => b.formel++];
     const rot = verdirb.filter((f) => {
-        const b = structuredClone(B);
+        const b = jsonKlon(B);
         f(b);
         return arenaWaende(b).some(([, t], i) => t.length > W[i][1].length);
     }).length;

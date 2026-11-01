@@ -36,7 +36,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, warteAufWelt, taeterFaelle, selbsttestEnde, nullSeite, wandEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, taeterFaelle, selbsttestEnde, nullSeite, wandEnde, SELBSTTEST, jsonKlon, fehlerText } = require("./lib/welt-boot.cjs");
 const SICHT = require("./lib/sicht-linse.cjs");
 
 function urteil(b) {
@@ -188,7 +188,7 @@ function selbsttest() {
         },
         code: { wieseLiest: true },
     };
-    const klon = () => structuredClone(gruen);
+    const klon = () => jsonKlon(gruen);
     const fehler = [];
     const v0 = urteil(klon());
     if (v0.length) fehler.push("der grüne Befund fällt rot: " + v0.join(" · "));
@@ -1382,7 +1382,7 @@ const server = statikServer();
             return aus;
         }, MESS);
     } catch (e) {
-        befund = { fehler: e?.message || String(e) };
+        befund = { fehler: fehlerText(e) };
     }
     await browser.close();
     server.close();

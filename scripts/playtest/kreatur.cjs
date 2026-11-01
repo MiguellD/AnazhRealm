@@ -148,7 +148,7 @@ async function checkBandV1753CreatureCombat({ page, check }) {
         out.lootNonEmpty = !!loot && Object.keys(loot).length > 0;
 
         // (6) KONSUM — ein Spieler-Kill entfernt die Kreatur + der Loot fällt ins Inventar
-        const invBefore = JSON.parse(JSON.stringify(p.inventory));
+        const invBefore = jsonKlon(p.inventory);
         for (let i = 0; i < p.inventory.length; i++) p.inventory[i] = null; // Platz für Loot garantieren
         const countBefore = st.creatures.length;
         const killR = r.damageCreature(c1, 99999, { source: "player" });
@@ -222,7 +222,7 @@ async function checkBandV1754PlayerAttack({ page, check }) {
         const setEmo = (o) => __emo(p, o);
         const savedEmo = { ...e };
         const savedLastAtk = p.lastAttackAt;
-        const savedInv = JSON.parse(JSON.stringify(p.inventory));
+        const savedInv = jsonKlon(p.inventory);
         const savedLife = st.lifeField;
         const savedEmoField = st.emotionField;
         st.lifeField = new Map();

@@ -61,11 +61,10 @@ async function epsilonSeite(w) {
     const A = AnazhRealm;
     const f = r._ensureAssetFoundry();
     await __weltDa(() => f && f.ready && f.recipes && f.recipes[w.preset] && A._studioRenderConfig && A._studioRenderConfig.lod && A._studioRenderConfig.lod.kindStages);
-    const fehler = (x) => x?.message || String(x);
     const rez = f.recipes[w.preset];
     // die Rezepte der Art im Buch und in den Tafeln der Kerne (`w.raeume`: jeder Zweit-Kern `PRESETS`, der Haupt-Kern `PHYTO_PRESETS`)
     const ids = (P) => Object.keys(P || {}).filter((id) => P[id]?.kind === w.art);
-    const out = { b: { kind: rez.kind, s: rez.s, ids: ids(f.recipes), kern: [...new Set(w.raeume.flatMap((ns) => ids(globalThis[ns]?.PRESETS || globalThis[ns]?.PHYTO_PRESETS)))], ks: JSON.parse(JSON.stringify(A._studioRenderConfig.lod.kindStages)) }, d: {}, p: {}, e: { meshCount: {} }, f: {} };
+    const out = { b: { kind: rez.kind, s: rez.s, ids: ids(f.recipes), kern: [...new Set(w.raeume.flatMap((ns) => ids(globalThis[ns]?.PRESETS || globalThis[ns]?.PHYTO_PRESETS)))], ks: jsonKlon(A._studioRenderConfig.lod.kindStages) }, d: {}, p: {}, e: { meshCount: {} }, f: {} };
     const { d, p, e } = out;
     try {
         const B = st.blueprints || {};
@@ -87,7 +86,7 @@ async function epsilonSeite(w) {
             entryResolves: r._foundryPresetForEntry({ type: w.entry || w.bp }),
         });
     } catch (x) {
-        d.err = fehler(x);
+        d.err = fehlerText(x);
     }
     try {
         const pol = r._placePolicyFor(rez);
@@ -96,7 +95,7 @@ async function epsilonSeite(w) {
         p.inExtras = r._forestExtraSpecies().some((x) => String(x.species).indexOf(w.praefix) === 0);
         r._forestExtraCache = null;
     } catch (x) {
-        p.err = fehler(x);
+        p.err = fehlerText(x);
     }
     try {
         for (const L of w.stufen || [0]) {
@@ -111,7 +110,7 @@ async function epsilonSeite(w) {
             if (g) g.traverse((o) => o.isMesh && o.geometry && o.geometry.dispose()); // kein Leck in der Probe
         }
     } catch (x) {
-        e.err = fehler(x);
+        e.err = fehlerText(x);
     }
     if (w.wahl != null)
         try {
@@ -120,7 +119,7 @@ async function epsilonSeite(w) {
             r._foundryFlattenFor({ seed: 7 }, w.preset, w.wahl);
             out.f.key = [...f.requested].find((k) => !vor.has(k) && k.startsWith(w.preset + "|")) || null;
         } catch (x) {
-            out.f.err = fehler(x);
+            out.f.err = fehlerText(x);
         }
     return out;
 }

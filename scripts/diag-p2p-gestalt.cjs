@@ -20,7 +20,7 @@
 //
 //   node scripts/diag-p2p-gestalt.cjs
 "use strict";
-const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, seiteZu } = require("./lib/welt-boot.cjs");
 
 const server = statikServer();
 
@@ -198,14 +198,7 @@ hauptLauf(async () => {
         return res;
     });
 
-    await browser.close();
-    server.close();
-
-    console.log("\n===== P2P-GESTALT — die Übergabe reist zu den Peers =====\n");
-    if (!out || out.fatal) {
-        console.log("FEHLER:", out ? out.fatal : "?");
-        process.exit(1);
-    }
+    await seiteZu(browser, server, out, "\n===== P2P-GESTALT — die Übergabe reist zu den Peers =====\n", "fatal");
     check("(S) ein Peer OHNE Übergabe baut den Default-Avatar", out.s.defaultBuilt === true);
     check(
         "(S) der Default-Peer gleicht dem lokalen Default (die Linse KANN Gleichheit sehen)",

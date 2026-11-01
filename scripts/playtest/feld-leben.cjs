@@ -596,7 +596,7 @@ async function checkBandWelle6APolish({ page, check }) {
         if (st.blueprints._t_w6a_haus) delete st.blueprints._t_w6a_haus;
         st.blueprints._t_w6a_haus = {
             name: "_t_w6a_haus",
-            parts: JSON.parse(JSON.stringify(KS6a.haus_basis.parts)),
+            parts: jsonKlon(KS6a.haus_basis.parts),
         };
         const entry = r.spawnArchitecture("_t_w6a_haus", { x: archX, y: archY, z: archZ }, { seed: 4242 });
         out.archEntrySpawned = !!entry;
@@ -734,7 +734,7 @@ async function checkBandWelle6APolish({ page, check }) {
             if (st.blueprints._t_w6a3_haus) delete st.blueprints._t_w6a3_haus;
             st.blueprints._t_w6a3_haus = {
                 name: "_t_w6a3_haus",
-                parts: JSON.parse(JSON.stringify(KSa3.haus_basis.parts)),
+                parts: jsonKlon(KSa3.haus_basis.parts),
             };
             _entryA3 = r.spawnArchitecture("_t_w6a3_haus", { x: _savedX + 40, y: 0, z: _savedZ + 40 }, { seed: 9999 });
         } catch (e) {
@@ -834,7 +834,7 @@ async function checkBandWelle6APolish({ page, check }) {
         if (st.blueprints._t_w6a45_haus) delete st.blueprints._t_w6a45_haus;
         st.blueprints._t_w6a45_haus = {
             name: "_t_w6a45_haus",
-            parts: JSON.parse(JSON.stringify(KSa45.haus_basis.parts)),
+            parts: jsonKlon(KSa45.haus_basis.parts),
         };
         const _archEntry = r.spawnArchitecture(
             "_t_w6a45_haus",

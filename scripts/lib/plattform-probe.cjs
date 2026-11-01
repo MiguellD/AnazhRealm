@@ -385,7 +385,8 @@ function goldenVergleich(golden, actual) {
 // roten Stand, was er misst): ein gekipptes sha256 und eine objects-Drift am ersten Fall werden rot.
 function goldenSelbsttest(actual, check) {
     const k0 = Object.keys(actual)[0];
-    const [t1, t2] = [0, 1].map(() => structuredClone(actual));
+    const { jsonKlon } = require("./welt-boot.cjs");
+    const [t1, t2] = [0, 1].map(() => jsonKlon(actual));
     t1[k0].sha256 = (t1[k0].sha256[0] === "0" ? "1" : "0") + t1[k0].sha256.slice(1);
     t2[k0].objects += 1;
     const rot = (golden, ist, was) => goldenVergleich(golden, ist).some((s) => s.includes(was));

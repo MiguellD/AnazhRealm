@@ -10,14 +10,14 @@
 "use strict";
 const { kanalImVm, bauAbdruck } = require("./lib/asset-worker-harness.cjs");
 const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
-const { hauptLauf, nullSeite, ROOT, argOpt, ausDatei, path, fs, stammLib, vm } = require("./lib/welt-boot.cjs");
+const { hauptLauf, nullSeite, ROOT, argOpt, jsonKlon, ausDatei, path, fs, stammLib, vm } = require("./lib/welt-boot.cjs");
 
 const SAAT = Number(argOpt("--saat")) >>> 0 || Date.now() >>> 0;
 
 // ── die Studio-Seite: die Hülle in ihrem Fenster, der Eltern-Rahmen fängt, was sie postet ──
 function studioSeite() {
     const gepostet = [];
-    const f = { addEventListener() {}, parent: { postMessage: (m) => gepostet.push(JSON.parse(JSON.stringify(m))) } };
+    const f = { addEventListener() {}, parent: { postMessage: (m) => gepostet.push(jsonKlon(m)) } };
     vm.runInNewContext(ausDatei("worlds/huelle/huelle.js"), f);
     return { B: f.AnazhHuelle.bruecke({ welt: "probe" }), H: f.AnazhHuelle, gepostet };
 }
