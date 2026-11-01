@@ -599,15 +599,15 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
                 pmR.y = 0;
                 pmR.z = 82;
             }
-            // Cleanup natürlicher Strahler im Test-Bereich.
-            st.architectures = st.architectures.filter((e) => {
-                if (!e || !e.position || !e.affordances) return true;
-                if (!e.affordances.radiating && !e.affordances.broadcasting) return true;
-                const dx = e.position.x - 60;
-                const dz = e.position.z - 82;
-                // Sicherheits-Distanz > BROADCAST_RELAY_RANGE_M + RADIATING_RANGE_M.
-                return dx * dx + dz * dz > 100 * 100;
-            });
+            // Cleanup natürlicher Strahler im Test-Bereich um (60, z) — Sicherheits-Distanz > BROADCAST_RELAY_RANGE_M +
+            // RADIATING_RANGE_M (EIN Räumer für beide Proben, w4-z140-rueckfall)
+            const strahlerWeg = (z) =>
+                (st.architectures = st.architectures.filter((e) => {
+                    if (!e || !e.position || !e.affordances) return true;
+                    if (!e.affordances.radiating && !e.affordances.broadcasting) return true;
+                    return Math.hypot(e.position.x - 60, e.position.z - z) > 100;
+                }));
+            strahlerWeg(82);
             const radE = r.spawnArchitecture("test_10ext_radiator", { x: 60, y: 0, z: 60 }, { silent: true });
             emoR.awe = 0.1;
             emoR.peace = 0.1;
@@ -667,13 +667,7 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
                 pmR.y = 0;
                 pmR.z = 83;
             }
-            st.architectures = st.architectures.filter((e) => {
-                if (!e || !e.position || !e.affordances) return true;
-                if (!e.affordances.radiating && !e.affordances.broadcasting) return true;
-                const dx = e.position.x - 60;
-                const dz = e.position.z - 83;
-                return dx * dx + dz * dz > 100 * 100;
-            });
+            strahlerWeg(83);
             r.spawnArchitecture("test_10ext_radiator", { x: 60, y: 0, z: 60 }, { silent: true });
             r.spawnArchitecture("test_10ext_mastweak", { x: 66, y: 0, z: 60 }, { silent: true });
             emoR.awe = 0.1;
