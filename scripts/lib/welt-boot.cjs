@@ -56,6 +56,26 @@ const laufUhr =
 // fehlt im Code; was keine Funktion ist, wirft). Die Wand: gate:betriebsgesetz STRIPPER-WAND.
 // DAS EINE WARTEN DER LINSEN (K-WANDUHR, Lehre 26: in Bau-Ereignissen, nie in Wanduhr-Sekunden) — Seiten-Funktionen als Text
 // in jede Seite (`WARTEN_SEITE`): `window.__seitenTakt()` ist ein Bild des Loops, ruht er, ein Takt von Hand.
+// DAS EINE BILD WIE IM LOOP (`window.__loopBild()`): der Schritt des Node-Frames (r184 rendert den Szenen-Pass je Frame,
+// updateBefore FRAME), dann `_loopRender` — ohne den Schritt zeichnete ein Hand-Aufruf nur das Post-Quad neu; je Linse eine
+// eigene Zeile davon war ein Zwilling (neun bis w4-b-knoten)
+function loopBild() {
+    st.renderer._nodes?.nodeFrame?.update();
+    r._loopRender();
+}
+// DIE EINE ZIEL-LESUNG (`await window.__zielLesen(ziel, W, H)`): die Pixel eines Ziels als Uint8Array in Zeilen zu W·4 Byte —
+// WebGPU kopiert jede Zeile auf 256 Byte ausgerichtet (bytesPerRow), r184 reicht das Polster durch (bei W·4 ∤ 256 lag jede Zeile
+// versetzt); je Linse ein eigenes Entpolstern war ein Zwilling (sechs bis w4-b-knoten)
+async function zielLesen(ziel, W, H) {
+    const px = await st.renderer.readRenderTargetPixelsAsync(ziel, 0, 0, W, H);
+    const roh = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
+    const zeile = W * 4,
+        schritt = roh.length > zeile * H ? Math.ceil(zeile / 256) * 256 : zeile;
+    if (schritt === zeile) return roh;
+    const u8 = new Uint8Array(zeile * H);
+    for (let y = 0; y < H; y++) u8.set(roh.subarray(y * schritt, y * schritt + zeile), y * zeile);
+    return u8;
+}
 async function seitenTakt() {
     const vor = r._weltStand ? r._weltStand.takte : -1;
     await new Promise((ok) => requestAnimationFrame(ok));
@@ -197,7 +217,7 @@ function png(u8, W, H) {
 // Bild neu (eine Linse blendet Klassen aus und ein, die Bühne wechselt)
 const bundlesNeu = () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
 const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
-const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
+const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");

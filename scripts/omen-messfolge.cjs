@@ -1215,7 +1215,7 @@ async function selbsttest() {
             {
                 ortGestellt: [
                     "aufgestellt am Ort wiese, nicht genesis",
-                    "Ort-Takt [], der Ort will [_genesisPortalRing,_portalApproachPrefetch]",
+                    "Ort-Takt [], der Ort will [_genesisOrt]",
                 ],
                 geraet: { schluessel: "radeon", text: "amd rdna-3" },
                 sicht: "ego",

@@ -24,7 +24,9 @@
 //       dem EINEN Schritt des Verkehrs (`_verkehrSchritt`), der Spieler steht — er schreitet höchstens jeden 8. Sim-Schritt (die
 //       Leiter `VERKEHR.leiter`; nie: vakuös), ist nie Beweger (`_blockerBewegt`: er zieht seinen Platz selbst nach — sonst
 //       marschierte die Decken-Probe der Ego-Kamera `_ceilingHeadroom` je Bild, und `_blockerUmPlatz` gäbe ihn jeder Frage am
-//       Spieler), sein neuer Stempel rechnet die Stau-Werke nicht neu (`AnazhRealm._stauBox`, Leser `_stauFelder` je Bild).
+//       Spieler), sein neuer Stempel rechnet die Stau-Werke nicht neu (`AnazhRealm._stauBox`, Leser `_stauFelder` je Bild),
+//       so wenig wie seine Ankunft (`_stauWorkClusters` ist am Stand der stauenden Bauten gemerkt, nie an der Länge der
+//       Bau-Liste — bis w4-b-pflanzen warf jeder neue Eintrag die Werke, jeder gepflanzte Baum: am Damm bis 29 ms je Ruf).
 //       Messort stadt (Null-Renderer, je Takt im Stand): Decke 0,42 ms und Stau 0,42 ms, bis die Wand stand.
 // --selftest: der Wer-zuerst-fragt-Takt macht T3 rot, die Schwelle über das ganze Fenster
 // T4, die FIFO-Pumpe und die FIFO-Freigabe T5, die Nur-der-Nächste-Wahl (Pumpe UND Freigabe) T6, die löschende Frist T8, die Kappe
@@ -338,9 +340,10 @@ hauptLauf(async () => {
                 const W = { S, park, gen: r._rollGenome("t11", "verkehr"), typ: "suv", fahrer: [], zonen: [], T: {}, dtAcc: 0, takt: 0 }; // prettier-ignore
                 const zurueck = [leihe(r, { _bewohnerSiedlungen: new Map([[0, S]]), _wagenSchritt: (...a) => (o.schritt++, P._wagenSchritt.apply(r, a)), _blockerBewegt: selbst ? (e) => P._blockerBewegt.call(r, e) : P._blockerBewegt }), leihe(C, selbst ? { _stauBox: (a, z) => Math.min(a.maxX - a.minX, a.maxZ - a.minZ) >= z, VERKEHR: { ...C.VERKEHR, leiter: [[0, 1]] } } : {})]; // prettier-ignore
                 try {
+                    // die Werke des Staus vor der Ankunft des Wagens: weder sie noch ein Schritt rechnet sie neu
+                    const c = r._stauWorkClusters();
                     if (r._verkehrWagenStellen(W)) S.verkehr.wagen.push(Object.assign(W, { zustand: "faehrt", F: r._fahrerLinie([park, { x: park.x + 160, z: park.z }], 4) })), (W.entry._verkehrFaehrt = true); // prettier-ignore
-                    for (let i = 0, c; i < 240; i++) {
-                        c = r._stauWorkClusters();
+                    for (let i = 0; i < 240; i++) {
                         r._verkehrSchritt(1 / 60);
                         o.beweger += r._blockerNetz().beweger.has(W.entry);
                         o.stau += r._stauWorkClusters() !== c;
@@ -393,7 +396,7 @@ hauptLauf(async () => {
     // T11 je Leser beim Namen: die Leiter (vakuös ist ein ferner Wagen, der nie schreitet), der Beweger, der Stau — in der Wand
     // der Täter (rot), im Selbsttest der Vakuöse (grün unter der alten Klasse)
     const t11 = aus.t11;
-    const T11je = { _verkehrSchritt: t11.schritt > 0 && t11.schritt <= 31, _blockerBewegt: !t11.beweger, _stauBox: !t11.stau };
+    const T11je = { _verkehrSchritt: t11.schritt > 0 && t11.schritt <= 31, _blockerBewegt: !t11.beweger, _stauWorkClusters: !t11.stau };
     const n11 = Object.keys(T11je).filter((k) => T11je[k] === SELBST);
     const z11 = `${t11.schritt}/240 Schritte · Beweger ${t11.beweger} · Stau ${t11.stau}`;
     if (SELBST) {

@@ -573,9 +573,13 @@ class AnazhRealm_gelaende_kollision {
         this._blockerNetzSetzen(entry);
         // eine Box, die stauen kann (`AnazhRealm._stauBox`: geschlossen und dicht), lässt die Werke des Staus
         // (`_stauWorkClusters`) die Hülle neu lesen — nach dem Reload bekommt der Damm sie erst nach seinem Eintrag (die Liste
-        // und ihre Länge stehen da schon); der fahrende Wagen staut nie, sein neuer Stempel wirft nichts
+        // steht da schon) —, ebenso die Hülle eines Baus, der bis hierhin staute (seine Werke im Gedächtnis des Staus,
+        // `_stauBauWerke`); der fahrende Wagen und die Pflanze stauen nie, ihr neuer Stempel wirft nichts (w4-b-pflanzen: bis
+        // dahin warf jeder neue Eintrag die Werke über die Länge der Liste)
         const zelle = this._voxelChunkConfig(0).step;
-        if (entry.blockerAABBs.some((b) => AnazhRealm._stauBox(b, zelle))) this._stauClusterCache = null;
+        const war = this._stauBauWerke && this._stauBauWerke.get(entry);
+        if ((war && war.werke.length) || entry.blockerAABBs.some((b) => AnazhRealm._stauBox(b, zelle)))
+            this._stauClusterCache = null;
     }
 
     // DIE FUGE (K24-N1): die Oberkante einer Box, auf der eine Box DESSELBEN Werks sitzt — sie beginnt höchstens

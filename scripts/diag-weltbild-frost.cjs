@@ -252,8 +252,7 @@ function pruefRaum(echt) {
         rend.setRenderTarget(ziel);
         rend.render(scene, cam);
         rend.setRenderTarget(null);
-        const px = await rend.readRenderTargetPixelsAsync(ziel, 0, 0, 256, 144);
-        return { d: new Uint8Array(px.buffer, px.byteOffset, 256 * 144 * 4), w: 256, h: 144 };
+        return { d: await window.__zielLesen(ziel, 256, 144), w: 256, h: 144 };
     };
     F.drehe = () => (pivot.rotation.y += 1.1);
     F.mittag = () => {};

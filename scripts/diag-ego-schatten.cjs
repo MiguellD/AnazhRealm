@@ -265,9 +265,8 @@ function buehne(arg) {
             const schuss = async (name) => {
                 await window.__erstRuhe(frame, { erstFristMs: 60000 }, "die Ego-Schatten-Bühne");
                 frame();
-                const px = await rend.readRenderTargetPixelsAsync(ziel, 0, 0, W, H);
-                const u8 = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
-                const zeile = u8.length / H;
+                const u8 = await window.__zielLesen(ziel, W, H);
+                const zeile = W * 4;
                 const l = new Float32Array(W * H);
                 for (let y = 0; y < H; y++)
                     for (let x = 0; x < W; x++) {

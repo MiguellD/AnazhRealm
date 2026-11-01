@@ -53,9 +53,9 @@ hauptLauf(async () => {
                 const w = 640,
                     h = 360;
                 // die EINE Aufnahme (scripts/lib/ausgabe-aufnahme.cjs): der echte, getonte Frame
-                const px = (await window.__ausgabeAufnahme(w, h, 1)).u8;
-                if (!px || !px.length) return { ok: false, grund: "keine Pixel" };
-                const u8 = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
+                // die EINE Aufnahme liefert ein Uint8Array (die Ziel-Lesung, welt-boot)
+                const u8 = (await window.__ausgabeAufnahme(w, h, 1)).u8;
+                if (!u8 || !u8.length) return { ok: false, grund: "keine Pixel" };
                 // Substanz-Urteil: distinkte Farben + nicht alles eine Fläche.
                 const set = new Set();
                 let nonzero = 0;
