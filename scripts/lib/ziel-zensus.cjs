@@ -20,7 +20,7 @@
 // DER SELBSTTEST: Node (`selbsttest()`: je Klasse ein gebauter Täter, ein sauberer Lauf) und im echten Frame
 // (`__zielSchmuggel`: je Klasse ein eingeschmuggelter Täter nach jedem `_loopRender` — er muss beim Namen rot fallen und nach
 // dem Abbau verschwinden).
-//   Seite:     window.__zielZensus({ n }) · __zielLesen({ ids }) · __zielSchmuggel(an)
+//   Seite:     window.__zielZensus({ n }) · __zielZensusLesen({ ids }) · __zielSchmuggel(an)
 //   Werkbank:  node scripts/werkbank.cjs ziele [--n frames] [--json datei]  (den Schmuggel trägt nur die Wand)
 //   Wand:      npm run gate:ziel-zensus (scripts/diag-ziel-zensus.cjs)
 "use strict";
@@ -60,10 +60,7 @@ function zielZensus(k) {
         let erst;
         try {
             erst = await window.__erstRuhe(
-                () => {
-                    if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-                    r._loopRender();
-                },
+                () => window.__loopBild(),
                 k,
                 "der Zensus"
             );
@@ -578,7 +575,7 @@ function lebenszeit(x) {
     return m;
 }
 
-// DAS URTEIL (rein): z = Antwort von `__zielZensus`, lesen = Antwort von `__zielLesen`.
+// DAS URTEIL (rein): z = Antwort von `__zielZensus`, lesen = Antwort von `__zielZensusLesen`.
 function zielUrteil(z, lesen) {
     const rot = [],
         hinweis = [];
@@ -968,7 +965,7 @@ async function zensusDer(page, n) {
     const ids = z.ziele
         .filter((x) => !x.leinwand && !x.tiefe && x.kopierbar && /^(r|rg|rgba|bgra)(8|16|32)/.test(x.format))
         .map((x) => x.id);
-    const lesen = await page.evaluate((k) => window.__zielLesen(k), { ids });
+    const lesen = await page.evaluate((k) => window.__zielZensusLesen(k), { ids });
     return { z, lesen, u: zielUrteil(z, lesen) };
 }
 
@@ -985,6 +982,6 @@ module.exports = {
         `window.__zielZensus = (function(){ const haken = ${haken.toString()}; const VENDOR_ = ${JSON.stringify(
             VENDOR.map((v) => ({ muster: v.muster.source, quelle: v.quelle, such: v.such }))
         )}; const f = ${zielZensus.toString()}; return (k) => f(Object.assign({ vendor: VENDOR_ }, k || {})); })();` +
-        `window.__zielLesen = ${zielLesen.toString()};` +
+        `window.__zielZensusLesen = ${zielLesen.toString()};` +
         `window.__zielSchmuggel = (function(){ const haken = ${haken.toString()}; return ${zielSchmuggel.toString()}; })();`,
 };

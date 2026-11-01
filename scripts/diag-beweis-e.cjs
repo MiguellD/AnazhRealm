@@ -17,16 +17,10 @@
 // Lücke ist das Tier UNSICHTBAR. swiftshader-Zeiten sind keine GPU-Zeiten; die
 // Draw-Call-/Dreiecks-Zahlen sind hardware-unabhängig.
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf, pngDatei, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf, pngDatei, path, fs, argOpt: argOf, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
-const fs = require("fs");
-const path = require("path");
 
-const argOf = (k, d) => {
-    const i = process.argv.indexOf(k);
-    return i > 0 ? process.argv[i + 1] : d;
-};
 const TAG = argOf("--tag", "head");
 const OUT = path.resolve(argOf("--out", path.join(root, "artifacts", "beweis-e")));
 const KLASSEN = argOf("--klassen", "kreatur,baum,haus,wiese").split(",");
@@ -78,10 +72,10 @@ const SICHT_FN = async (a) => {
         rend.setRenderTarget(rt);
         if (typeof rend.renderAsync === "function") await rend.renderAsync(st.scene, cam);
         else rend.render(st.scene, cam);
-        const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, 160, 90);
+        const u8 = await window.__zielLesen(rt, 160, 90);
         rend.setRenderTarget(prev);
         if (rt.dispose) rt.dispose();
-        return px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
+        return u8;
     };
     let best = null;
     for (let k = 0; k < 12; k++) {

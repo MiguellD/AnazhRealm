@@ -39,11 +39,8 @@
 // die Platte trug, ist ROT beim Namen, ebenso ein Leser, der noch von der Platte kommt (`wechselUrteil`; --selftest füttert
 // es mit Bruch-Daten).
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, sleep, hauptLauf, nullSeite, urteilEnde, pngDatei, argOpt: OPT } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, sleep, hauptLauf, nullSeite, urteilEnde, pngDatei, path, fs, os, SELBSTTEST, argOpt: OPT, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const HL = require("./lib/haenger-linse.cjs");
-const fs = require("fs");
-const path = require("path");
-const os = require("os");
 
 const PORT = Number(process.env.BOOT_STAGE_PORT || 4406);
 const ARGV = process.argv.slice(2);
@@ -148,8 +145,12 @@ const halterZeilen = (a) =>
 // Methoden am Prototyp (zwei Uhr-Rufe je Ruf): die Gestalt des Orts läuft je Takt tausendfach, die Hülle allein trug headless
 // kalt 2,7–4,0 s Selbstzeit vor dem Bild (`P.<computed>`) — das Instrument maß sich selbst mit.
 const KALT_KLASSEN = {
+    // DIE KLASSE BODEN (B, w4-b-boden2): was der Boden im Haupt-Faden trägt — der Bau, der Einbau samt Anlegen im Satz und
+    // Eintritt in den Faden, die Nähte aus dem Faden (`_tickMorphFolge`)
     _buildVoxelChunkDataFromWorkerMesh: "Boden",
     _buildVoxelChunkData: "Boden",
+    _finalizeVoxelChunkBuild: "Boden",
+    _tickMorphFolge: "Boden",
     _scatterRegion: "Streu",
     _rebuildArchitectureMesh: "Bauten",
     _foundryBuildGroup: "Gruppen-Bau",
@@ -294,7 +295,7 @@ async function kaltLauf() {
         });
     });
     const liste = path.join(profil, "lieferung.json");
-    const wechsel = KERN && wechselUrteil(JSON.parse(fs.readFileSync(liste)), out.lieferung.liste, KERN.id);
+    const wechsel = KERN && wechselUrteil(jsonLesen(liste), out.lieferung.liste, KERN.id);
     if (profilBenannt && !KERN) fs.writeFileSync(liste, JSON.stringify(out.lieferung.liste));
     Object.assign(out, { tK, druecke, offen, bild, zweit });
     await browser.close();
@@ -333,7 +334,7 @@ async function kaltLauf() {
     [out.kosten, out.vorBild] = [out.halter.kosten, out.halter.vorBild];
     delete out.marken;
     const json = OPT("--json");
-    if (json) fs.writeFileSync(json, JSON.stringify(out, null, 1));
+    if (json) jsonSchreiben(json, out);
     // je Sekunde: der Stand am Ende der Sekunde (die letzte Probe) und die blockierten ms des Haupt-Threads
     const S = Math.ceil((tK || out.weltbildDa) / 1000);
     const blockiert = new Array(S + 1).fill(0);
@@ -402,13 +403,12 @@ async function kaltLauf() {
 hauptLauf(async () => {
     if (ARGV.includes("--kalt")) return kaltLauf();
     if (OPT("--spur-lesen")) {
-        const { spur, seite } = JSON.parse(fs.readFileSync(OPT("--spur-lesen")));
+        const { spur, seite } = jsonLesen(OPT("--spur-lesen"));
         return console.log(halterZeilen(HL.ankunftsHalter(spur, seite)));
     }
-    const SELFTEST = ARGV.includes("--selftest");
     await server.lausche(PORT);
     const { browser, page } = await nullSeite({ frist: 300000 });
-    if (SELFTEST) await page.evaluateOnNewDocument(SCHLUCK);
+    if (SELBSTTEST) await page.evaluateOnNewDocument(SCHLUCK);
     await server.zeige(page, 120000, "index.html", "networkidle0");
     // das erste Weltbild (der Null-Renderer setzt es beim Renderer-Bau; eine Zeit trägt nur die Kalt-Zeile, von außen)
     await page.evaluate(() => window.__weltDa((r) => r.state._weltbildDa));
@@ -473,8 +473,8 @@ hauptLauf(async () => {
             // (W4.3, der Wachhund eines hängenden Bakes, fiel mit S2: die Karte backt synchron im Takt)
         }
         return o;
-    }, SELFTEST);
-    if (SELFTEST) out.liefer = lieferUrteil(await page.evaluate(RUHE));
+    }, SELBSTTEST);
+    if (SELBSTTEST) out.liefer = lieferUrteil(await page.evaluate(RUHE));
     await browser.close();
     server.close();
     console.log(
@@ -494,7 +494,7 @@ hauptLauf(async () => {
         [T.biblio && T.impost, `BIBLIOTHEK warm (${T.biblio}) · IMPOSTOREN idle (${T.impost})`],
         [!!out.stage, "die BÜHNE wurde erreicht (das Prädikat schloss)"],
     ];
-    if (SELFTEST)
+    if (SELBSTTEST)
         checks.push(
             [
                 s.buehneOhneKarte === false && s.buehneMitKarte,
@@ -508,7 +508,7 @@ hauptLauf(async () => {
         );
     // das Urteil des Kern-Wechsels an Bruch-Daten: gesund GRÜN, ein fremder Neubau (e) und ein alter Leser (d) ROT
     const W = (e, d) => wechselUrteil([[0, "e", "platte", "phyto"], [0, "d", "platte", "fachwerk"]], [[0, "e", e, "phyto"], [0, "d", d, "fachwerk"]], "fachwerk").gruen; // prettier-ignore
-    if (SELFTEST) checks.push([W("platte", "werk") && !W("werk", "werk") && !W("platte", "platte"), "SELBST-TEST: der Kern-Wechsel urteilt (fremder Neubau, alter Leser ROT)"]); // prettier-ignore
+    if (SELBSTTEST) checks.push([W("platte", "werk") && !W("werk", "werk") && !W("platte", "platte"), "SELBST-TEST: der Kern-Wechsel urteilt (fremder Neubau, alter Leser ROT)"]); // prettier-ignore
     const fails = checks.filter(([pass, name]) => (console.log(`  ${pass ? "✅" : "❌"} ${name}`), !pass)).length;
     console.log(`\n${checks.length - fails}/${checks.length} Bühnen-Invarianten OK.`);
     urteilEnde(fails, "⛔ Die volle Bühne steht nicht (oder die Linse ist stumpf) — Kriterium 2 ist nicht abnehmbar.", `✅ „Volle Bühne" ist ein Prädikat — Kriterium 2 ist messbar.`);

@@ -91,6 +91,9 @@ hauptLauf(async () => {
         // Der Takt bestellt Scheiben (`FERN_RING.scheibe`) beim Fern-Faden und hängt die Antworten ein — die Linse pumpt den
         // Takt mit einer Pause je Takt (die Antworten brauchen die Ereignis-Schleife), bis der Cursor durch ist.
         // DER TAKT DES RINGS bis zur Bedingung (Deckel: `ms` / 16 Takte ohne Offenes): je Takt die Zahl der eingehängten Punkte
+        // und DER PUFFER (w4-b-boden3) — die Antworten, die nach dem Takt noch warten (`einhaengen`): der Ring hängt in Index-Folge
+        // ein, eine Antwort wartet nur, wenn eine frühere fehlt — der Fern-Faden antwortete nicht in der Reihe der Bestellung (am
+        // Stamm c389e0f1 legte er die Nachricht, die er bei seiner Geburt in eine zweite Liste nahm, hinter seine Reihe: Puffer 2)
         const pumpe = async (
             pos,
             fertig = (f) => f.cursor >= f.totalVerts,
@@ -99,15 +102,16 @@ hauptLauf(async () => {
         ) => {
             let takte = 0;
             let maxD = 0;
+            let puffer = 0;
             let vor = st.fernRing ? st.fernRing.cursor : 0;
             for (const weiter = window.__deckel("der Fern-Ring", ms / 16); weiter(); await sleep(16)) {
                 takt();
                 takte++;
                 const f = st.fernRing;
-                if (f) [maxD, vor] = [Math.max(maxD, f.cursor - vor), f.cursor];
+                if (f) [maxD, vor, puffer] = [Math.max(maxD, f.cursor - vor), f.cursor, Math.max(puffer, f.einhaengen.length)];
                 if (f && fertig(f)) break;
             }
-            return { takte, maxD };
+            return { takte, maxD, puffer };
         };
         let ticks = 0;
         let maxDelta = 0;
@@ -117,13 +121,18 @@ hauptLauf(async () => {
             const b = await pumpe(st.playerMesh.position);
             ticks = b.takte + 1;
             maxDelta = b.maxD;
+            res.buildPuffer = b.puffer;
         }
         const fr = st.fernRing;
         const frBau = fr;
         res.buildTicks = ticks;
         res.buildMaxDelta = maxDelta;
         res.buildBudgeted =
-            maxDelta > 0 && maxDelta <= F.scheibe * F.scheibenImFlug && ticks >= 2 && fr.cursor === fr.totalVerts;
+            maxDelta > 0 &&
+            maxDelta <= F.scheibe * F.scheibenImFlug &&
+            ticks >= 2 &&
+            fr.cursor === fr.totalVerts &&
+            !res.buildPuffer;
         res.ready = fr.ready === true;
 
         // ===== (1) STRUKTUR: 3 Schalen, deklarierte Vertex-Zahlen, EIN Material =====
@@ -1176,8 +1185,8 @@ hauptLauf(async () => {
         try {
             // ===== (11) DAS DACH IST DER BESTAND =====
             // Die Deckung des Kronendachs (Fern-Farbe out[6], fussM 0) gegen die Kronen-Deckung, die der Wald-Generator auf
-            // derselben Fläche wirklich stehen lässt: 192 × 192 m um den Spieler, jeder stehende Dart (_forestCellDarts +
-            // _forestDartSteht, die Perf-Kappung keep) mit seiner Krone (_kronenRadiusFuer) auf ein 1-m-Raster gemalt, je
+            // derselben Fläche wirklich stehen lässt: 192 × 192 m um den Spieler, jeder stehende Dart (der Bestand
+            // _forestCellDarts, die Perf-Kappung keep) mit seiner Krone (_kronenRadiusFuer) auf ein 1-m-Raster gemalt, je
             // 32-m-Land-Kachel gegen das Mittel der Dach-Deckung (4-m-Raster). SELBSTTEST: das alte Dach (die Geburt als Deckung,
             // phyto-core forestBestand.geburt) fällt rot.
             const H = 96;
@@ -1188,18 +1197,11 @@ hauptLauf(async () => {
             const F = AnazhRealm.FOREST;
             const seedInt = r._forestSeedInt();
             const fd = r._effectiveFoliageDensity();
-            const memo = new Map();
-            const cellDarts = (gx, gz) => {
-                const k = gx + "," + gz;
-                let d = memo.get(k);
-                if (!d) memo.set(k, (d = r._forestCellDarts(gx, gz, seedInt)));
-                return d;
-            };
             const deck = new Uint8Array(N * N);
             for (let gz = Math.floor(z0 / F.cell); gz <= Math.floor((z0 + N) / F.cell); gz++)
                 for (let gx = Math.floor(x0 / F.cell); gx <= Math.floor((x0 + N) / F.cell); gx++)
-                    for (const d of cellDarts(gx, gz)) {
-                        if (!r._forestDartSteht(d, gx, gz, cellDarts) || (fd < 1 && d.keep >= fd)) continue;
+                    for (const d of r._forestCellDarts(gx, gz, seedInt)) {
+                        if (fd < 1 && d.keep >= fd) continue;
                         const rad = r._kronenRadiusFuer(d.sp, d.s);
                         if (!(rad > 0)) continue;
                         for (
@@ -1460,9 +1462,9 @@ hauptLauf(async () => {
     check("1: sichtbar erst nach vollem Refresh + frustumCulled aus, wirft nicht, empfängt (die Horizont-Karte, D3)", out.ready && out.visible && out.flags);
     check("1: LOCH-DECKEL — Schale 1 beginnt am Spieler (0.5·span), deckZoneRad = Ziel-Zone", out.innerRandOk === true);
     check(
-        "Bau IN SCHEIBEN aus dem Fern-Faden über Takte (je Takt <= scheibe × scheibenImFlug, mehrere Takte, Cursor voll)",
+        "Bau IN SCHEIBEN aus dem Fern-Faden über Takte (je Takt <= scheibe × scheibenImFlug, Index-Folge ohne Puffer, mehrere Takte, Cursor voll)",
         out.buildBudgeted === true,
-        `ticks=${out.buildTicks} maxDelta=${out.buildMaxDelta}`
+        `ticks=${out.buildTicks} maxDelta=${out.buildMaxDelta} puffer=${out.buildPuffer}`
     );
     check(
         "2: HÖHEN == GESETZ — 60 Proben |mesh − _terrainMacroSurfaceY(snap,false)| < 0.01 (inkl. Wasser-Klemme/Saum)",

@@ -1998,31 +1998,27 @@ class AnazhRealm_vegetation_wiese {
     }
 
     // DER WALD FÄLLT AM ORT (K69, Lehre 25): legt ein Ort seinen Erdbau über die Flächen im Kasten x0…x1 · z0…z1, ändern sich
-    // die Darts nur in den Zellen, die der Kasten samt Böschung (`ERDBAU.reichweiteM`, dazu die Hang-Probe von 2 m) oder samt der
-    // größten Krone (`KRONE_MAX_M`: `ortFrei` fragt die Krone gegen die Fläche) berührt. Nur sie fallen aus dem Dart-Gedächtnis
-    // des Stands (der Stand bleibt), mit ihnen das Urteil jedes Darts, der sie als Nachbarn liest (±2 Zellen, `_forestDartSteht`),
-    // die Freistand-Antwort jedes Orts, der diese Urteile liest (±4 Zellen darum, `_forestStehtFrei`), und die Gestalt des Orts
-    // dort (`_ortSameFaellt`). Bis K69 fiel das Gedächtnis der ganzen Welt (`_forestDartMemo = null`, ein neuer Stand) — und mit
-    // ihm jede Gestalt jedes Orts. → die Zahl der gefallenen Zellen.
+    // die geborenen Darts nur in den Zellen, die der Kasten samt Böschung (`ERDBAU.reichweiteM`, dazu die Hang-Probe von 2 m)
+    // oder samt der größten Krone (`KRONE_MAX_M`: `ortFrei` fragt die Krone gegen die Fläche) berührt — und mit ihnen der Bestand
+    // jeder Zelle, die sie als Urteils-Nachbarn liest (±`WALD_PLAN.urteil`). Nur diese fallen aus dem Dart-Gedächtnis des Stands
+    // (der Stand bleibt; der Fall legt die geborenen Darts neu an, `_forestGeborenKarte`, und der Faden rechnet am neuen
+    // Stand-Schlüssel), mit ihnen die Freistand-Antwort jedes Orts, der diesen Bestand liest (±4 Zellen darum,
+    // `_forestStehtFrei`), und die Gestalt des Orts dort (`_ortSameFaellt`). Bis K69 fiel das Gedächtnis der ganzen Welt
+    // (`_forestDartMemo = null`, ein neuer Stand) — und mit ihm jede Gestalt jedes Orts. → die Zahl der gefallenen Zellen.
     _forestDartsFallen(x0, z0, x1, z1) {
         const memo = this._forestDartMemo;
         if (!memo || !memo.size) return 0;
         const C = AnazhRealm.FOREST.cell;
+        const U = AnazhRealm.WALD_PLAN.urteil;
         const R = Math.max(globalThis.__gelaendeCore.ERDBAU.reichweiteM + 2, AnazhRealm.KRONE_MAX_M);
         const ga = Math.floor((x0 - R) / C);
         const gb = Math.floor((x1 + R) / C);
         const ha = Math.floor((z0 - R) / C);
         const hb = Math.floor((z1 + R) / C);
         let n = 0;
-        for (let gx = ga; gx <= gb; gx++) for (let gz = ha; gz <= hb; gz++) if (memo.delete(gx + "," + gz)) n++;
+        for (let gx = ga - U; gx <= gb + U; gx++)
+            for (let gz = ha - U; gz <= hb + U; gz++) if (memo.delete(gx + "," + gz)) n++;
         if (n) this._forestDartFall = (this._forestDartFall | 0) + 1; // kein stehender Kasten gilt mehr (`_waldPlanSteht`)
-        const steht = this._forestStehtMemo;
-        if (steht)
-            for (let gx = ga - 2; gx <= gb + 2; gx++)
-                for (let gz = ha - 2; gz <= hb + 2; gz++) {
-                    const d = memo.get(gx + "," + gz);
-                    if (d) for (const o of d) steht.delete(o);
-                }
         const fm = this._freistandMemo;
         if (fm && fm.size && this._freistandMemoVon === memo)
             for (const k of fm.keys()) {
@@ -2035,26 +2031,65 @@ class AnazhRealm_vegetation_wiese {
         return n;
     }
 
-    // BORN-Darts einer Zelle, reine Funktion von (cx,cz,seed): standDensity-Wurf → Boden/Wasser → Slope →
-    // Arten-Nische → reverse-J-Größe → Mammut. Nur geborene Darts treten in die Kronen-Schüchternheit ein.
-    _forestCellDarts(cx, cz, seedInt) {
-        // Zell-Memo über Aufrufe: jeder Chunk liest ±2 Rand-Zellen (~4× Redundanz), und die Dart-Generierung
-        // (`_voxelSurfaceY`-Scan + Slope + Feuchte) dominiert die Plant-Zeit. Seed-gebunden (Welt-Wechsel
-        // leert), bounded (voll → clear); Instanz-Feld, kein state/Snapshot. Die Wahrheit zuerst (`_forestGesetzWahr`): wie
-        // der Chunk-Bau (`_acquireVoxelChunkBuild`) steht die Hydro-Kachel der Zelle vor der Frage; vor dem Worldgen ist die
-        // Antwort vorläufig (`vorlaeufig`) und kein Gedächtnis.
+    // DER BESTAND EINER ZELLE (w4-b-pflanzen): ihre STEHENDEN Darts — die geborenen (`_forestGeborene`), die das Urteil der
+    // Kronen-Schüchternheit trägt (phyto-core `forestStehende` über die geborenen Darts der Zellen ±2), in der Reihe ihrer
+    // Geburt. Zell-Memo über Aufrufe (das Dart-Gedächtnis des Stands, `_forestDartStand`): seed-gebunden, bounded (voll →
+    // clear); Instanz-Feld, kein state/Snapshot. Die Wahrheit zuerst (`_forestGesetzWahr`): wie der Chunk-Bau
+    // (`_acquireVoxelChunkBuild`) stehen die Hydro-Kacheln der Zelle und ihrer Urteils-Nachbarn (±2) vor der Frage; vor dem
+    // Worldgen ist die Antwort vorläufig (`vorlaeufig`) und kein Gedächtnis. Mit Voxel-Faden rechnet der Wald-Faden jeden
+    // Bestand (`_waldFadenSchicken`) und der Haupt-Faden urteilt keinen Dart; ohne Faden (und vorläufig) urteilt hier dasselbe
+    // Gesetz. `geborenMerk` (optional, der vorläufige Pflanz-Gang): die geborenen Darts je Zelle ohne Stand-Gedächtnis.
+    // Bis w4-b-pflanzen trug das Gedächtnis die GEBORENEN Darts und jeder Leser urteilte selbst (`_forestDartSteht`).
+    _forestCellDarts(cx, cz, seedInt, geborenMerk) {
         const memoKey = cx + "," + cz;
         let memo = null;
+        const C = AnazhRealm.FOREST.cell;
         if (this._forestGesetzWahr()) {
             this._forestDartStand(seedInt);
             memo = this._forestDartMemo;
             const hit = memo.get(memoKey);
             if (hit) return hit;
-            const C = AnazhRealm.FOREST.cell;
-            // fehlt die Kachel, ist sie im Faden bestellt (Karte hydro-faden) — die Antwort bis dahin ist vorläufig
-            if (this._ensureHydroTilesAround((cx + 0.5) * C, (cz + 0.5) * C, C)) memo = null;
+            // fehlt eine Kachel, ist sie im Faden bestellt (Karte hydro-faden) — die Antwort bis dahin ist vorläufig
+            if (this._ensureHydroTilesAround((cx + 0.5) * C, (cz + 0.5) * C, (AnazhRealm.WALD_PLAN.urteil + 1) * C))
+                memo = null;
         }
-        // Die Pflanz-Logik lebt EINMAL in phyto-core (planForestCell); hier nur Memo + Welt-Reads als ctx-
+        const G = memo ? this._forestGeborenKarte() : geborenMerk || new Map();
+        const geboren = (gx, gz) => {
+            const k = gx + "," + gz;
+            let a = G.get(k);
+            if (!a) G.set(k, (a = this._forestGeborene(gx, gz, seedInt, !memo)));
+            return a;
+        };
+        const out = globalThis.__phytoCore.forestStehende(cx, cz, geboren, AnazhRealm.FOREST.pack);
+        if (!memo) {
+            out.vorlaeufig = true;
+            return out;
+        }
+        if (memo.size > 8192) {
+            memo.clear(); // bounded — die Front ist lokal, ein Clear kostet nur Re-Compute
+            this._forestDartFall = (this._forestDartFall | 0) + 1;
+        }
+        memo.set(memoKey, out);
+        return out;
+    }
+
+    // Das Gedächtnis der GEBORENEN Darts am Stand des Dart-Gedächtnisses (`_forestDartMemo`, `_forestDartFall`, `_erdbauStand`
+    // — derselbe Schlüssel wie der des Fadens, `_waldStandSchluessel`): die Urteils-Nachbarn eines Bestands sind die Zellen des
+    // nächsten. Ein neuer Stand, ein Fall (die Schranke) oder ein Erdbau legt es neu an.
+    _forestGeborenKarte() {
+        const stand = this._waldStandSchluessel();
+        let K = this._forestGeboren;
+        if (!K || K.memo !== this._forestDartMemo || K.stand !== stand || K.karte.size > 16384)
+            K = this._forestGeboren = { memo: this._forestDartMemo, stand, karte: new Map() };
+        return K.karte;
+    }
+
+    // Die GEBORENEN Darts einer Zelle, reine Funktion von (cx, cz, seed): standDensity-Wurf → Boden/Wasser → Slope →
+    // Arten-Nische → reverse-J-Größe → Mammut (phyto-core `planForestCell`). Nur geborene Darts treten in die
+    // Kronen-Schüchternheit ein (`forestStehende`); ihr Leser ist der Bestand (`_forestCellDarts`). `vorlaeufig`: die Antwort
+    // steht vor der Wahrheit des Gesetzes (oder ohne die Kacheln ihrer Nachbarn) und wird nie gemerkt.
+    _forestGeborene(cx, cz, seedInt, vorlaeufig) {
+        // Die Pflanz-Logik lebt EINMAL in phyto-core (planForestCell); hier nur die Welt-Reads als ctx-
         // Funktionen (Oberfläche · Wasser · Slope · Feuchte · fbm). Ohne Kern → leerer Wald.
         const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
         // Das Wasser eines Darts ist das Gesetz über SEINEM Boden (`_atlasWaterLevelAt`, die Hälfte von `_landAt`, aus der
@@ -2093,21 +2128,13 @@ class AnazhRealm_vegetation_wiese {
                       ortFrei: (x, z, T) => this._ortFrei(x, z, T),
                   })
                 : [];
-        if (!memo) {
-            out.vorlaeufig = true;
-            return out;
-        }
-        if (memo.size > 8192) {
-            memo.clear(); // bounded — die Front ist lokal, ein Clear kostet nur Re-Compute
-            this._forestDartFall = (this._forestDartFall | 0) + 1;
-        }
-        memo.set(memoKey, out);
+        if (vorlaeufig) out.vorlaeufig = true;
         return out;
     }
 
     // DER WALD PLANT IM TAKT (K69, Lehre 14 + 25): eine frische Wald-Zelle zu planen kostet 1–3 ms (`planForestCell`, ~160
-    // Sichthöhen); die Gestalt EINES Baums in frischem Wald fragt bis zu 13 × 13 Zellen (der Freistand ±4, das Urteil jedes
-    // Nachbarn ±2: `WALD_PLAN.reich`). Bis K69 plante der erste Frager am Stück — beim Gang ins Dorf die Ausstattung des Dorfs
+    // Sichthöhen); die Gestalt EINES Baums in frischem Wald fragt bis zu 9 × 9 Zellen (den Bestand im Freistand ±4,
+    // `WALD_PLAN.reich`; das Urteil jedes Darts trägt sein Bestand). Bis K69 plante der erste Frager am Stück — beim Gang ins Dorf die Ausstattung des Dorfs
     // 366 Zellen in EINER Aufgabe neben dem Takt (551 ms, Null-Renderer), ein Takt 113 Zellen (245 ms). Jetzt fragt die
     // Gestalt des Orts (`_ortGestaltSame`) hier: steht der Plan um (x, z), gilt ihr Urteil sofort; fehlen Zellen, bestellt sie
     // sie in der Schlange des Walds (`_tickWaldPlan`) und wartet — wie auf ein kaltes Buch, so warten ihre Leser schon (die
@@ -2116,7 +2143,7 @@ class AnazhRealm_vegetation_wiese {
     // bestellt die Frage neu.
     // DER STEHENDE KASTEN BLEIBT STEHEN (w4-ankunft-2): stand der Kasten einer Zelle, steht er, bis eine Zelle aus dem Gedächtnis
     // fällt (`_forestDartFall`: ein Erdbau, die Schranke) oder ein neues Gedächtnis kommt — bis dahin fragte jede Gestalt seine
-    // 169 Zellen neu (swiftshader kalt bis zum Bild 0,6–0,9 s).
+    // Zellen neu (169, swiftshader kalt bis zum Bild 0,6–0,9 s).
     _waldPlanSteht(x, z) {
         const memo = this._forestDartMemo;
         if (!memo) return false;
@@ -2173,18 +2200,14 @@ class AnazhRealm_vegetation_wiese {
         return steht;
     }
 
-    // Der Zell-Kasten, den der Pflanz-Gang eines Chunks liest: seine Zellen samt ±2 (das Urteil jedes Darts).
+    // Der Zell-Kasten, den der Pflanz-Gang eines Chunks liest: seine Zellen — ihr Bestand trägt das Urteil schon (bis
+    // w4-b-pflanzen samt ±2, die Nachbarn des Urteils im Haupt-Faden).
     _waldPflanzKasten(cx, cz) {
         const { span } = this._voxelChunkConfig();
         const C = AnazhRealm.FOREST.cell;
         const ox = cx * span;
         const oz = cz * span;
-        return [
-            Math.floor(ox / C) - 2,
-            Math.floor(oz / C) - 2,
-            Math.floor((ox + span) / C) + 2,
-            Math.floor((oz + span) / C) + 2,
-        ];
+        return [Math.floor(ox / C), Math.floor(oz / C), Math.floor((ox + span) / C), Math.floor((oz + span) / C)];
     }
 
     // DIE SCHLANGE DES WALDS (K69): der Takt-Planer (Job `waldPlan`, Welt-Substanz) nimmt die bestellten Zellen
@@ -2297,6 +2320,13 @@ class AnazhRealm_vegetation_wiese {
         return !!(this.state.voxelWorker && this._voxelFadenQuelle);
     }
 
+    // Der Stand, an dem der Wald-Faden seine geborenen Darts merkt (die Urteils-Nachbarn des Bestands, voxel-worker
+    // `waldDarts`): das Dart-Gedächtnis des Main (Same, Buch, Hydrosphäre — `_forestDartGen`), sein Fall (Erdbau, Schranke)
+    // und der Erdbau — wechselt einer, rechnet der Faden jede Zelle neu, wie der Main sie neu fragt.
+    _waldStandSchluessel() {
+        return (this._forestDartGen | 0) + "|" + (this._forestDartFall | 0) + "|" + (this._erdbauStand | 0);
+    }
+
     // DER STOFF DES WALDS IM FADEN (K60-3, B-Wald): JEDE offene Zelle der Schlange reist, sobald sie bestellt ist — nah zuerst,
     // je Auftrag `WALD_PLAN.faden` Zellen, alle zugleich im Flug; der Faden rechnet je Takt den nächsten (`rang`, seine Schlange
     // `waldAuftraege`), jede Antwort landet für sich per Transfer (`_waldDartsAn`). Bis B-Wald hielt die Schlange 2 Aufträge im
@@ -2317,19 +2347,22 @@ class AnazhRealm_vegetation_wiese {
         const liste = this._waldPlanListe(flug);
         if (!liste.length) return;
         const C = AnazhRealm.FOREST.cell;
+        const R = (AnazhRealm.WALD_PLAN.urteil + 1) * C;
         const extras = this._forestExtraSpecies();
         const erd = this._erdbauStand | 0;
+        const stand = this._waldStandSchluessel();
         for (let a = 0; a < liste.length; a += N) {
             const zellen = [];
             for (let b = a; b < Math.min(liste.length, a + N); b++) {
                 const g = liste[b][2];
-                // fehlt ihre Kachel, ist sie im Faden bestellt (Karte hydro-faden): die Zelle wartet in der Schlange
-                if (this._ensureHydroTilesAround((g[0] + 0.5) * C, (g[1] + 0.5) * C, C)) continue;
+                // fehlt eine Kachel der Zelle oder ihrer Urteils-Nachbarn, ist sie im Faden bestellt (Karte hydro-faden): die
+                // Zelle wartet in der Schlange
+                if (this._ensureHydroTilesAround((g[0] + 0.5) * C, (g[1] + 0.5) * C, R)) continue;
                 flug.add(liste[b][1]);
                 zellen.push(g[0], g[1]);
             }
             if (!zellen.length) continue;
-            this._voxelWorkerWaldDarts(new Int32Array(zellen), seedInt, extras, liste[a][0]).then(
+            this._voxelWorkerWaldDarts(new Int32Array(zellen), seedInt, extras, liste[a][0], stand).then(
                 (r) => this._waldDartsAn(memo, zellen, r, erd),
                 (e) => {
                     this._waldDartsAn(memo, zellen, null, erd); // die Zellen bleiben in der Schlange, der Takt schickt neu
@@ -2339,9 +2372,9 @@ class AnazhRealm_vegetation_wiese {
         }
     }
 
-    // Die Darts des Fadens ins Gedächtnis ihres Stands: ein gewechselter Stand oder ein Erdbau seit dem Auftrag
-    // (`_erdbauStand`, K69: der Faden rechnete am alten Grund) verwirft sie — die Zellen bleiben in der Schlange, ein neuer
-    // Auftrag rechnet sie; eine inzwischen gerechnete Zelle behält ihre Darts (die Urteile der Nachbarn merken die Objekte).
+    // Der Bestand des Fadens ins Gedächtnis seines Stands: ein gewechselter Stand oder ein Erdbau seit dem Auftrag
+    // (`_erdbauStand`, K69: der Faden rechnete am alten Grund) verwirft ihn — die Zellen bleiben in der Schlange, ein neuer
+    // Auftrag rechnet sie; eine inzwischen gerechnete Zelle behält ihre Darts (die Gedächtnisse je Feld merken die Objekte).
     // Die Schranke des Gedächtnisses greift VOR der Lieferung, nie mitten in ihr (Prüfung K60-3-1).
     // Was seit dem letzten Takt bestellt wurde oder verworfen zurückblieb, reist mit dieser Ankunft, nie erst im nächsten Takt.
     _waldDartsAn(memo, zellen, r, erd) {
@@ -2536,7 +2569,14 @@ AnazhRealm.GRASS_SLOPE = Object.freeze({ lo: 0.7, hi: 1.3 });
 // mit 0,75 m Austritts-Rand. Der Cull urteilt erst ab der Mesh-Zone (Cull-Radius 100–150 m) und am Karten-Horizont
 // (Totband 16 m): ihm genügt ein Meter (`STAND_RAND_FERN_M`) — beim Gehen geht er viermal seltener.
 AnazhRealm.STAND_RAND_M = 0.25;
-// DER WALD PLANT IM TAKT (K69, `_waldPlanSteht` · `_tickWaldPlan`): die Gestalt eines Baums liest die Wald-Zellen bis ±`reich`
-// um seine Zelle (der Freistand ±4, das Urteil jedes Nachbarn ±2); ohne Wald-Faden plant der Takt frische Zellen höchstens
-// `ms` lang, mit ihm reist jede bestellte Zelle sofort, in Aufträgen von `faden` Zellen, alle im Flug (`_waldFadenSchicken`).
-AnazhRealm.WALD_PLAN = Object.freeze({ reich: 6, ms: 3, faden: 64 });
+// DER WALD PLANT IM TAKT (K69, `_waldPlanSteht` · `_tickWaldPlan`): die Gestalt eines Baums liest den Bestand der Wald-Zellen
+// bis ±`reich` um seine Zelle (der Freistand ±4); der Bestand jeder Zelle trägt sein Urteil (die geborenen Darts der Zellen
+// ±`urteil`, die Reihe des Kerns `FOREST_URTEIL_REIHE` — die Kacheln dieser Nachbarn stehen vor jeder Bestellung). Ohne
+// Wald-Faden plant der Takt frische Zellen höchstens `ms` lang, mit ihm reist jede bestellte Zelle sofort, in Aufträgen von
+// `faden` Zellen, alle im Flug (`_waldFadenSchicken`). Bis w4-b-pflanzen las die Gestalt ±6 (das Urteil im Haupt-Faden).
+AnazhRealm.WALD_PLAN = Object.freeze({
+    reich: 4,
+    urteil: Math.max(...globalThis.__phytoCore.FOREST_URTEIL_REIHE.map(Math.abs)),
+    ms: 3,
+    faden: 64,
+});

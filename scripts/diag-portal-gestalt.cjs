@@ -16,7 +16,8 @@
 //     KEIN sichtbares Part-Doppel-Bild: keine lebende welt_terrain-Gruppe ohne f:).
 //   D: FUNKTION intakt — portalMeta byte-unveraendert · affordances.isPortal · blockerAABBs
 //     vorhanden (Substanz-Wahrheit lebt). Das Betreten selbst misst gate:portal-konformanz K8 am Verhalten: der Spieler
-//     geht durch jedes Tor des Genesis-Rings (W durch die Apertur, am Teile-Tor E) — der Steh-Punkt-Ersatz und die nur
+//     geht durch jedes Tor des Genesis-Rings (W durch die Apertur seiner porta-Gestalt; der E-Weg fiel mit den Teile-Toren,
+//     w4-tore-teile) — der Steh-Punkt-Ersatz und die nur
 //     geloggte Durchgangs-Zone fielen 25.10. mit ihm.
 //   E: Groessen-Sanity — je Portal die Alt-BBox (Part-Bau) vs die porta-Asset-BBox in
 //     Welt-Skala (`_foundryWorldScaleMatrix`); Hoehen-Verhaeltnis in [0.5, 3], geloggt.

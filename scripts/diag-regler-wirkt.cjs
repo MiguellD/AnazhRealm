@@ -16,6 +16,9 @@
 // Ein neuer toter Regler ist rot (beim Namen); ein geheilter ist ebenfalls rot, bis seine Zeile im selben Commit
 // fällt (die Zahl sinkt, sie wächst nie still zurück). Das Soll steht daneben (Synthese W4: „Regler-wirkt-Probe grün"
 // = 0 tote Regler).
+// Die GESETZ-WERTE (B4 `uniform`, studios.K1): ihr Bau bzw. Guss bewegt sich nie — der Byte-Beweis jeder Zeile steht in
+// `reglerGesetz` (gate:studio-vertrag liest ihn), eine Zeile ohne ihn oder ein Eintrag, dessen Bau sich bewegt, ist rot —, sie
+// wirken an ihrem Leser der Welt (`leserMessen`: die Membran des Tors, der Ritt des Wagens, das Ohr des Klangs).
 //
 // DIE STUFEN (pipeline.K3, unten `stufenMessen`): jede Stufe jeder Budget-Art, jedes Rezept, jeder Regler-Rand über die
 // echte Brücke gegen die Budget-Zeile (Ratsche reglerBudget mit Staffel) und die Reduktion je Art (L1/L0, L2/L0).
@@ -41,10 +44,12 @@
 // Port über REGLER_WIRKT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4561; der Stamm des
 // Ofen-Kanals über REGLER_WIRKT_OFEN_PORT, Standard Port + 1.
 "use strict";
-const { statikServer, starteBrowser, ROOT, hauptLauf, jsonLesen } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
-const { runWithWorker } = require("./lib/asset-worker-harness.cjs");
+const { statikServer, starteBrowser, ROOT, hauptLauf, SELBSTTEST, path, stammLib, fadenScope, jsonLesen } = require("./lib/welt-boot.cjs");
+const { runWithWorker, bauBild, bauAbdruck, BAU_BILD_QUELLE } = require("./lib/asset-worker-harness.cjs");
+// DIE BILD-SCHWELLE (studios.K1, das Schlupfloch „0,1 mm am Hash"): ein Regler wirkt, wo sein Rand das Bild des Baus
+// (`bauBild`, die Vorschau-Pose) an mindestens 1 % der Gestalt-Pixel um mehr als 18 Luma bewegt — ein Hash allein zählt nie.
+const BILD_SCHWELLE = 0.01;
+const prozent = (x) => (100 * (x || 0)).toFixed(2) + " %";
 const PORT = Number(process.env.REGLER_WIRKT_PORT || 4561);
 const RATSCHE_PFAD = path.join(ROOT, "spec", "vertraege", "ratsche.json");
 const SEED = 1;
@@ -66,20 +71,20 @@ function vergleichTeil(jetzt, ratsche, ids, teil = TEIL) {
 }
 // Der Kern je Art, wie die Brücke die Tabellen sammelt (`__mergeParamsMap`: die Zweit-Kerne in Manifest-Reihenfolge,
 // first-wins, danach der Primär-Kern): jeder Zweit-Kern mit Namensraum wird THREE-frei im vm gelesen (nur seine
-// PARAMS_BY_KIND), was keiner trägt, gehört dem Primär-Kern (phyto).
+// PARAMS_BY_KIND), was keiner trägt, gehört dem Primär-Kern (phyto). Dazu `gesetz`: je Art die Zeilen, die der Kern zum
+// GESETZ-WERT erklärt (B4 `uniform: true`, die Brücke reicht das Feld nicht durch) — ihr Kanal ist der Leser der Welt;
+// `ids`: je Art jede Zeile (eine Art mit Leser misst sie alle dort: ein Wert kann Bau UND Leser speisen, porta realm).
 function kernVonArt() {
-    const vm = require("vm");
     const aus = {};
-    const manifest = jsonLesen(path.join(ROOT, "cores.manifest.json"));
+    const [gesetz, ids] = [{}, {}];
+    Object.defineProperty(aus, "gesetz", { value: gesetz });
+    Object.defineProperty(aus, "ids", { value: ids });
+    const manifest = jsonLesen("cores.manifest.json");
     for (const c of manifest) {
         if (!c || typeof c.ns !== "string" || !c.ns) continue;
-        const ctx = { console, Math, JSON, Date };
-        ctx.self = ctx;
-        ctx.globalThis = ctx;
-        vm.createContext(ctx);
-        for (const s of c.scripts) vm.runInContext(fs.readFileSync(path.join(ROOT, s), "utf8"), ctx, { filename: s });
-        const pbk = (ctx[c.ns] && ctx[c.ns].PARAMS_BY_KIND) || {};
-        for (const art of Object.keys(pbk)) if (!(art in aus)) aus[art] = c.id;
+        const pbk = fadenScope(c.scripts)[c.ns]?.PARAMS_BY_KIND || {};
+        for (const art of Object.keys(pbk)) if (!(art in aus)) [aus[art], ids[art]] = [c.id, pbk[art].map((d) => d.id)];
+        for (const art of Object.keys(pbk)) for (const d of pbk[art]) if (d.uniform === true) (gesetz[art] ||= []).push(d.id);
     }
     return aus;
     }
@@ -93,7 +98,7 @@ function kernVonArt() {
 // Vertex-Puffer, Index, Stoff-Farbe). Gebrochen ist ein Guss, der wirft, ERROR meldet, den Not-Körper
 // (`__kaltPlatzhalter`) statt der Gestalt liefert, leer bleibt oder NaN trägt; ein Grund-Guss, der zweimal verschieden
 // ausfällt, rauscht (beides rot). Eine Ofen-Art ohne Gestalt-Bäcker (`BAKERS_BY_KIND[art]` fehlt, Vertrag §8.4) gießt
-// nichts: ihre Regler sind tot mit diesem Grund (Ratsche).
+// nichts: ihre Zeilen hört der Leser der Welt (`leserMessen`, das Ohr).
 const OFEN_PORT = Number(process.env.REGLER_WIRKT_OFEN_PORT || PORT + 1);
 async function imStamm(cb) {
     const server = statikServer();
@@ -135,69 +140,30 @@ function ofenMessen(page, opts) {
             for (let i = 0; i < s.length; i++) n = (Math.imul(n, 131) + s.charCodeAt(i)) >>> 0;
             return n;
         };
-        const f64 = new Float64Array(1);
-        const u64 = new Uint8Array(f64.buffer);
-        const gussHash = (g) => {
-            const aus = { hash: "", teile: 0, bytes: 0, nichtEndlich: 0, platzhalter: 0, kein: null };
-            if (!g || typeof g !== "object" || typeof g.traverse !== "function") {
-                aus.kein = String(g);
-                return aus;
-            }
-            let a = 0x811c9dc5 | 0,
-                b = 0x2f0a1c3d | 0;
-            const ein = (x) => {
-                a = Math.imul(a ^ x, 16777619);
-                b = Math.imul(b ^ (x + 0x9e), 16777619);
-            };
-            const text = (s) => {
-                s = String(s);
-                for (let i = 0; i < s.length; i++) ein(s.charCodeAt(i) & 255);
-                ein(0);
-            };
-            const zahl = (x) => {
-                f64[0] = x;
-                for (let i = 0; i < 8; i++) ein(u64[i]);
-                if (!Number.isFinite(x)) aus.nichtEndlich++;
-            };
-            const puffer = (arr) => {
-                const u = new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
-                for (let i = 0; i < u.length; i++) ein(u[i]);
-                aus.bytes += u.length;
-                if (arr instanceof Float32Array || arr instanceof Float64Array)
-                    for (let i = 0; i < arr.length; i++) if (!Number.isFinite(arr[i])) aus.nichtEndlich++;
-            };
+        // Die Teile des Gusses für das Bild (`bauBild`, dieselbe Quelle wie an der Brücke): jedes sichtbare Mesh in der Welt-Lage
+        // seiner Matrix, die Haut in der Lage ihrer Knochen (`applyBoneTransform`: der Guss trägt Statur in den Knochen), Vertex-
+        // oder Stoff-Farbe (linear), Glut und Leucht-Gesetz.
+        const [bauBild, bauAbdruck] = [o.bildQuelle, o.abdruckQuelle].map((q) => (0, eval)("(" + q + ")"));
+        const gussTeile = (g) => {
+            const teile = [], v = new THREE.Vector3();
             g.updateMatrixWorld(true);
-            g.traverse((x) => {
-                text(x.type);
-                text(x.visible ? 1 : 0);
-                for (const e of x.matrixWorld.elements) zahl(e);
-                if (x.userData?.__kaltPlatzhalter) aus.platzhalter++;
-                if (!x.isMesh || !x.geometry) return;
-                aus.teile++;
-                const at = x.geometry.attributes;
-                for (const k of Object.keys(at).sort()) {
-                    const v = at[k];
-                    text(k);
-                    text(v.itemSize);
-                    if (v.isInterleavedBufferAttribute) {
-                        text(v.offset);
-                        puffer(v.data.array);
-                    } else puffer(v.array);
-                }
-                if (x.geometry.index) puffer(x.geometry.index.array);
-                for (const m of Array.isArray(x.material) ? x.material : [x.material]) {
-                    if (m?.color && typeof m.color.getHexString === "function") text(m.color.getHexString());
-                    if (m?.userData?.__klasse) text(m.userData.__klasse);
-                }
+            g.traverseVisible((x) => {
+                const at = x.isMesh && x.geometry.attributes, m = x.isMesh && [x.material].flat()[0];
+                if (!at || !at.position) return;
+                const pos = new Float32Array(at.position.count * 3), lies = (a) => Float32Array.from({ length: a.count * a.itemSize }, (_, i) => a.getComponent((i / a.itemSize) | 0, i % a.itemSize));
+                for (let i = 0; i < at.position.count; i++)
+                    (x.isSkinnedMesh ? x.applyBoneTransform(i, v.fromBufferAttribute(at.position, i)) : v.fromBufferAttribute(at.position, i)).applyMatrix4(x.matrixWorld).toArray(pos, i * 3);
+                const glut = m.emissive && [m.emissive.r, m.emissive.g, m.emissive.b].map((c) => c * (m.emissiveIntensity ?? 1));
+                teile.push({ pos, index: x.geometry.index && x.geometry.index.array, farbe: at.color && lies(at.color), fs: at.color ? at.color.itemSize : 3, grund: m.color ? [m.color.r, m.color.g, m.color.b] : [0.7, 0.7, 0.7], leucht: glut, glutK: (m.userData && m.userData.__leucht) || 0 });
             });
-            const hex = (x) => ("0000000" + (x >>> 0).toString(16)).slice(-8);
-            aus.hash = hex(a) + hex(b);
-            return aus;
+            return teile;
         };
         // EIN Guss über die echte Vorschau-Quelle, mit dem Wert im Speicher der Werkstatt (`ws.studioOv[preset]`,
         // gelesen von `_workshopStudioOvFor` — die Form, die der Regler-Panel schreibt). Das Vorschau-Memo fällt je Guss
-        // (jeder Hash ist ein frischer Guss); ERROR-Meldungen des Stamms während des Gusses werden mitgeschrieben.
-        const guss = (preset, lod, ov) => {
+        // (jeder Hash ist ein frischer Guss); ERROR-Meldungen des Stamms während des Gusses werden mitgeschrieben. Sein Hash ist
+        // der EINE Bau-Fingerabdruck (`bauAbdruck`, wie an der Brücke) über die Teile seines Bilds — bis studios.K1 trug der Ofen
+        // einen eigenen FNV-Hasher über jeden Knoten (zwei Wahrheiten über „derselbe Bau").
+        const guss = async (preset, lod, ov) => {
             const fehler = [];
             const budget = [];
             r.log = function (m, lvl) {
@@ -223,11 +189,13 @@ function ofenMessen(page, opts) {
                 else delete ws.studioOv[preset];
                 delete r.log;
             }
-            const h = gussHash(g);
-            h.fehler = fehler;
-            h.budget = budget;
-            h.wurf = wurf;
-            return h;
+            const teile = g && typeof g.traverseVisible === "function" ? gussTeile(g) : null;
+            const h = teile
+                ? await bauAbdruck(teile.map((t) => ({ position: { array: t.pos, itemSize: 3 }, index: t.index, color: t.farbe && { array: t.farbe, itemSize: t.fs }, grund: t.grund, leucht: t.leucht, glutK: t.glutK })))
+                : { teile: 0, kein: String(g) };
+            h.platzhalter = 0;
+            if (teile) g.traverse((x) => x.userData?.__kaltPlatzhalter && h.platzhalter++);
+            return Object.assign(h, { fehler, budget, wurf, bildTeile: teile || [] });
         };
         const bruch = (h) =>
             h.wurf
@@ -266,22 +234,23 @@ function ofenMessen(page, opts) {
                 r._wsOvenMemo = null;
                 // Die Werkstatt entscheidet den Kanal: undefined = keine Ofen-Domäne → der Foundry-Pfad (build-asset).
                 if (r._workshopOvenPreview(f.recipes[rezepte[0]], rezepte[0], null, lod) === undefined) continue;
-                const baecker = typeof B[art] === "function";
-                aus.arten[art] = { lod, baecker, rezepte: rezepte.length };
-                const zeilen = f.paramsByKind[art].map((d) => ({ art, id: d.id, min: d.min, max: d.max, rezepte, lod, wirkt: false, an: null, bricht: [], budget: [], keinGuss: false, gusse: 0 }));
+                aus.arten[art] = { lod, baecker: typeof B[art] === "function", rezepte: rezepte.length };
+                // eine Ofen-Art ohne Gestalt-Bäcker (Vertrag §8.4: der Klang) gießt nichts — ihre Zeilen urteilt ihr Leser (`leserMessen`)
+                if (!aus.arten[art].baecker) continue;
+                const zeilen = f.paramsByKind[art].map((d) => ({ art, id: d.id, min: d.min, max: d.max, rezepte, lod, wirkt: false, an: null, bricht: [], budget: [], gusse: 0, bild: 0, byte: false }));
                 for (const p of rezepte) {
                     const offen = zeilen.filter((z) => !z.wirkt);
                     if (!offen.length) break;
-                    const b0 = guss(p, lod, null);
+                    const b0 = await guss(p, lod, null);
                     const bB = bruch(b0);
                     if (bB) {
-                        if (!b0.teile && !b0.wurf && !b0.fehler.length && !baecker) offen.forEach((z) => (z.keinGuss = true));
-                        else offen.forEach((z) => z.bricht.push(`Grund-Guss ${p}: ${bB}`));
+                        offen.forEach((z) => z.bricht.push(`Grund-Guss ${p}: ${bB}`));
                         continue;
                     }
+                    const B0 = bauBild(b0.bildTeile);
                     for (const z of offen)
                         for (const wert of [z.min, z.max]) {
-                            const h = guss(p, lod, { [z.id]: wert });
+                            const h = await guss(p, lod, { [z.id]: wert });
                             z.gusse++;
                             const bb = bruch(h);
                             if (bb) {
@@ -289,12 +258,15 @@ function ofenMessen(page, opts) {
                                 continue;
                             }
                             for (const t of h.budget) z.budget.push(`${z.id}=${wert} an ${p}: ${t}`);
-                            if (h.hash !== b0.hash && !z.wirkt) {
+                            if (h.hash !== b0.hash) z.byte = true;
+                            const anteil = h.hash !== b0.hash && B0.rahmen ? B0.abstand(B0.bilder, bauBild(h.bildTeile, B0.rahmen).bilder) : 0;
+                            z.bild = Math.max(z.bild, anteil);
+                            if (anteil >= o.schwelle && !z.wirkt) {
                                 z.wirkt = true;
                                 z.an = p;
                             }
                         }
-                    const b1 = guss(p, lod, null);
+                    const b1 = await guss(p, lod, null);
                     if (b1.hash !== b0.hash) offen.forEach((z) => z.bricht.push(`Grund-Guss ${p} rauscht (${b0.hash} · ${b1.hash})`));
                 }
                 aus.zeilen.push(...zeilen);
@@ -304,8 +276,175 @@ function ofenMessen(page, opts) {
             B.koerper = altBaecker;
         }
         return aus;
-    }, opts || {});
+    }, { bildQuelle: BAU_BILD_QUELLE, abdruckQuelle: bauAbdruck.toString(), schwelle: BILD_SCHWELLE, ...opts });
     }
+// ── DIE LESER DER GESETZ-WERTE (studios.K1 „jeder Griff wirkt sichtbar oder hörbar"). Eine Zeile `uniform: true` bewegt kein
+// Bau-Byte (Vertrag B4): sie wirkt, wo die Welt sie liest — die Linse misst DORT, im echten Stamm, mit dem Stempel am Eintrag
+// bzw. der Prägung im Speicher der Werkstatt (`ws.studioOv`), wie ein Werk der Welt ihn trägt, was Bild und Ohr erreicht:
+//   Membran (gate)    der Stoff des Welt-Graphen (`_torGesetzFor` → `_membranMaterialFor` → `userData.tor`); gezählt nur die
+//                     Komponenten, die `_membranGraph` liest — der Graph wird von Farbe, Lage und Deckkraft aus abgeschritten,
+//                     jede Referenz auf `userData.tor.*` mit ihrem Swizzle. Ein Wert, den niemand liest, wirkt nie (bis
+//                     studios.K1 trugen tunnel, fractal, twist und reflect Zahlen in den Stoff, die kein Knoten las);
+//   Ritt (vehicle)    der Fahr-Satz des Werks (`_vehicleProfile` → `_fahrSatz`) im Fahr-Schritt des Kerns: 2 s Gas, dann 2 s
+//                     Gas und volle Lenkung auf ebenem Grund — Weg, Gier und Quer-Geschwindigkeit;
+//   Ohr (klang)       die Lofi-Kette der Welt (`_buildLofiLayer`; Akkord · Melodie · Bass · Groove · Raum aus
+//                     `_klangStudioPreset`) in einem OfflineAudioContext, OHR_SEK Sekunden, ihr Spektrogramm gegen den Grund-
+//                     Klang: hörbar ab KLANG_SCHWELLE relativer Abstand; der Grund zweimal muss gleich klingen (sonst rauscht er).
+// Je Art die Rezepte der Reihe nach, bis die Zeile wirkt. Täter (Selbsttest): `ohneStempel` — jeder Leser verliert den
+// Stempel bzw. die Prägung (`_artifactStudioOv`, `_studioPraegung`) → jede Zeile tot; `blind` — die Linse liest den Graphen
+// nicht (kein Wert gilt als gelesen) → jede Membran-Zeile tot.
+const KLANG_SCHWELLE = 0.02;
+const OHR_SEK = 6;
+function leserMessen(page, opts) {
+    return page.evaluate(
+        async (o) => {
+            const f = r._foundry;
+            const ws = r._ensureWorkshopState();
+            const KP = AnazhRealm.KIND_POLICY;
+            const vc = AnazhRealm._fahrSchrittGesetz().vc;
+            const strom = (s) => () => {
+                s = (s + 0x6d2b79f5) >>> 0;
+                let t = Math.imul(s ^ (s >>> 15), s | 1);
+                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+            const TRIG = [Math.cos, Math.sin].map((fn) => Float64Array.from({ length: 65536 }, (_, k) => fn((2 * Math.PI * (2 + 8 * (k >> 10)) * (k & 1023)) / 1024)));
+            const tor = (p, ov) => r._membranMaterialFor(r._torGesetzFor({ type: KP.gate.prefix + p, studioOv: ov }), 0, 0).mat.userData.tor;
+            // was der Graph liest: Pfad.Komponente je Referenz auf `material.userData.tor.*`
+            const liest = new Set();
+            const gesehen = new Set();
+            const gehe = (n) => {
+                if (!n || !n.isNode || gesehen.has(n)) return;
+                gesehen.add(n);
+                for (const k of n.getChildren()) {
+                    const pf = /^material\.userData\.tor\.(\w+)$/.exec(k.property || "");
+                    if (pf) for (const c of n.isSplitNode ? n.components : "xyzw") liest.add(pf[1] + "." + c);
+                    gehe(k);
+                }
+            };
+            const kanal = {
+                gate: (p, ov) => {
+                    const u = tor(p, ov);
+                    if (!gesehen.size && o.taeter !== "blind") {
+                        const G = r._membranGraph(r._torGesetzFor({ type: KP.gate.prefix + p }).gesetz);
+                        [G.colorNode, G.positionNode, G.opacityNode].forEach(gehe);
+                    }
+                    const flach = [];
+                    for (const k of Object.keys(u))
+                        for (const c of "xyzw") {
+                            const v = typeof u[k] === "number" ? (c === "x" ? u[k] : undefined) : u[k] && u[k][c];
+                            if (typeof v === "number" && liest.has(k + "." + c)) flach.push(k + "." + c + "=" + v);
+                        }
+                    return flach.join(",");
+                },
+                vehicle: (p, ov) => {
+                    const e = { type: KP.vehicle.prefix + p, studioOv: ov, position: { x: 0, y: 0, z: 0 }, scale: 1, id: "regler-ritt" };
+                    const G = r._fahrSatz(e, r._vehicleProfile(e));
+                    if (!G) return null;
+                    const z = vc.fahrZustand(0, 0, 0);
+                    for (let i = 0; i < 240; i++) vc.fahrSchritt(z, { throttle: 1, brake: 0, steer: i < 120 ? 0 : 1, hand: false }, G, () => 0, 1 / 60);
+                    return [z.x, z.z, z.yaw, z.vlat, z.vlong].map((v) => v.toFixed(4)).join(",");
+                },
+                klang: async (p, ov) => {
+                    const s = r.state.symphony;
+                    const alt = [s.ctx, s.lofi, s.enabled, Math.random, r.state.klangPreset, ws.studioOv[p]];
+                    const ctx = new OfflineAudioContext(1, 22050 * o.sek, 22050);
+                    Math.random = strom(7);
+                    r.state.klangPreset = p;
+                    if (ov) ws.studioOv[p] = ov;
+                    else delete ws.studioOv[p];
+                    try {
+                        Object.assign(s, { ctx, enabled: true, lofi: r._buildLofiLayer(ctx, ctx.destination) });
+                        const dur = r._lofiChordDurationMs() / 1000;
+                        for (let t = 0.05, g = s.lofi.degree; t < o.sek; t += dur, g = r._lofiNextDegree(g)) {
+                            r._lofiPlayChord(r._lofiChordFromDegree(g), t);
+                            r._lofiPlayMelody(g, dur, t);
+                            r._lofiPlayBass(g, dur, t);
+                            r._lofiPlayGroove(dur, t);
+                            r._lofiRaum(dur);
+                        }
+                        const x = (await ctx.startRendering()).getChannelData(0);
+                        // das Spektrogramm: je 1024er-Fenster der Betrag in 64 Bändern (eine DFT je Band-Mitte)
+                        const bild = [];
+                        for (let a = 0; a + 1024 <= x.length; a += 1024)
+                            for (let b = 0; b < 64; b++) {
+                                let re = 0,
+                                    im = 0;
+                                for (let i = 0, k = b * 1024; i < 1024; i++, k++) {
+                                    re += x[a + i] * TRIG[0][k];
+                                    im += x[a + i] * TRIG[1][k];
+                                }
+                                bild.push(Math.log1p(Math.hypot(re, im)));
+                            }
+                        return bild;
+                    } finally {
+                        [s.ctx, s.lofi, s.enabled, Math.random, r.state.klangPreset] = alt;
+                        if (alt[5]) ws.studioOv[p] = alt[5];
+                        else delete ws.studioOv[p];
+                    }
+                },
+            };
+            const abstand = (a, b) => {
+                if (typeof a === "string" || a == null) return a === b ? 0 : 1;
+                let d = 0,
+                    n = 0;
+                for (let i = 0; i < a.length; i++) [d, n] = [d + Math.abs(a[i] - b[i]), n + a[i] + b[i]];
+                return n ? (2 * d) / n : 0;
+            };
+            const halt = [r._artifactStudioOv, r._studioPraegung];
+            if (o.taeter === "ohneStempel") [r._artifactStudioOv, r._studioPraegung] = [() => null, () => null];
+            const aus = [];
+            try {
+                for (const art of Object.keys(o.gesetz)) {
+                    const rezepte = Object.keys(f.recipes).filter((id) => f.recipes[id].kind === art).sort();
+                    for (const id of o.gesetz[art]) {
+                        const d = f.paramsByKind[art].find((x) => x.id === id);
+                        const z = { art, id, min: d.min, max: d.max, rezepte: rezepte.length, wirkt: false, an: null, bricht: [], abstand: 0 };
+                        for (const p of rezepte) {
+                            const b0 = await kanal[art](p, null);
+                            if (b0 == null) {
+                                z.bricht.push("kein Leser an " + p);
+                                continue;
+                            }
+                            // das Ohr rechnet in Fließkomma (der Graph mischt in Quanten): der Grund rauscht über einem Zehntel der Schwelle
+                            const still = art === "klang" ? o.schwelle / 10 : 0;
+                            if (abstand(b0, await kanal[art](p, null)) > still) z.bricht.push("der Grund an " + p + " rauscht");
+                            for (const v of [d.min, d.max]) {
+                                const a = abstand(b0, await kanal[art](p, { [id]: v }));
+                                if (a > z.abstand) z.abstand = a;
+                                if (a > (art === "klang" ? o.schwelle : 0) && !z.wirkt) [z.wirkt, z.an] = [true, p];
+                            }
+                            if (z.wirkt) break;
+                        }
+                        aus.push(z);
+                    }
+                }
+            } finally {
+                [r._artifactStudioOv, r._studioPraegung] = halt;
+            }
+            return { zeilen: aus, liest: [...liest].sort() };
+        },
+        { sek: OHR_SEK, schwelle: KLANG_SCHWELLE, ...opts }
+    );
+}
+// Die Zeilen der Leser in die gemeinsame Form (der Kanal nach der Art, der Kern wie die Brücke ihn sammelt).
+const LESER = { gate: "Membran", vehicle: "Ritt", klang: "Ohr" };
+function leserZeilen(leser, kerne) {
+    return leser.zeilen.map((z) => ({
+        kern: kerne[z.art] || "phyto",
+        art: z.art,
+        id: z.id,
+        d: { min: z.min, max: z.max },
+        kanal: LESER[z.art],
+        wirkt: z.wirkt,
+        bricht: z.bricht,
+        grund: z.bricht.length
+            ? "BRICHT — " + z.bricht.slice(0, 2).join(" · ")
+            : z.wirkt
+              ? `wirkt an ${z.an} (${LESER[z.art]} der Welt, Abstand ${z.abstand.toFixed(3)})`
+              : `bewegt ${LESER[z.art]} der Welt an keinem der ${z.rezepte} Rezepte (min ${z.min} · max ${z.max}, Abstand ${z.abstand.toFixed(3)})`,
+    }));
+}
 // DER GEBROCHENE BAU: 0 Teile (der Bäcker wirft — die Brücke fängt und liefert [] — oder liefert nichts) oder
 // nicht-endliche Zahlen in einem Fließkomma-Puffer (der Bäcker rechnet mit einem Wert, den er nicht rechnen kann).
 // Ein gebrochener Bau hat einen anderen Hash als die Basis, aber er WIRKT nicht: er ist ein benannter Fehler (rot).
@@ -335,6 +474,8 @@ function wirkenAus(st) {
                 grund: "",
                 an: null,
                 bricht: [],
+                bild: 0,
+                byte: false,
             };
             for (const p of A.rezepte) {
                 const b = st.je.get(p + "|null|" + A.lod).bau;
@@ -346,22 +487,22 @@ function wirkenAus(st) {
                 for (const wert of [d.min, d.max]) {
                     const k = st.je.get(p + "|" + [d.id, wert] + "|" + A.lod);
                     if (k && bauBruch(k.bau)) z.bricht.push(`${d.id}=${wert} an ${p}: ${bauBruch(k.bau)}`);
-                    else if (k && k.bau.hash !== b.hash && !z.wirkt) [z.wirkt, z.an] = [true, p];
+                    else if (k && k.bau.hash !== b.hash) {
+                        z.byte = true;
+                        z.bild = Math.max(z.bild, k.bild || 0);
+                        if (!z.wirkt && k.bild >= BILD_SCHWELLE) [z.wirkt, z.an] = [true, p];
+                    }
                 }
             }
             z.grund = z.bricht.length
                 ? "BRICHT — " + z.bricht.slice(0, 2).join(" · ") + (z.bricht.length > 2 ? " …" : "")
                 : z.wirkt
-                  ? "wirkt an " + z.an
+                  ? "wirkt an " + z.an + " (Bild bis " + prozent(z.bild) + ")"
                   : !z.rezepte.length
                     ? "kein Rezept der Art im Buch"
-                    : "bewegt den Bau an keinem der " +
-                      z.rezepte.length +
-                      " Rezepte (min " +
-                      d.min +
-                      " · max " +
-                      d.max +
-                      ")";
+                    : z.bild > 0
+                      ? `bewegt Bytes, nicht das Bild (höchstens ${prozent(z.bild)} der Gestalt-Pixel, Schwelle ${prozent(BILD_SCHWELLE)})`
+                      : "bewegt das Bild an keinem der " + z.rezepte.length + " Rezepte (min " + d.min + " · max " + d.max + ")";
             zeilen.push(z);
         }
     return zeilen;
@@ -425,14 +566,17 @@ async function stufenMessen(h, opts) {
         if (o.leereStufe === pl.s) m.presetId = "__taeter_unbekannt__";
         return m;
     };
-    // der Bau-Abdruck (die Wirkung) an der ersten Stufe, die Teile (der Wurf) an jeder
-    const erste = new Set();
+    // der Bau-Abdruck und das Bild (die Wirkung) an der ersten Stufe, die Teile (der Wurf) an jeder; die Basis-Bilder zuerst
+    const erste = new Map();
     const liste = plan.map((pl) => {
         const m = msg(pl);
-        if (pl.s === arten[pl.art].lod) erste.add(m);
+        if (pl.s === arten[pl.art].lod) erste.set(m, pl.r ? { gegen: pl.p } : { basis: pl.p });
         return m;
     });
-    const res = await h.kostenListe(liste, (c) => erste.has(c), true);
+    const zuerst = liste.filter((m) => erste.get(m)?.basis);
+    const fahren = (l) => h.kostenListe(l, (c) => erste.has(c), true, (c) => erste.get(c));
+    const [r1, r2] = [await fahren(zuerst), await fahren(liste.filter((m) => !erste.get(m)?.basis))];
+    const res = liste.map((m) => (erste.get(m)?.basis ? r1 : r2).shift());
     const [bruch, leer] = [{}, []];
     const je = new Map();
     plan.forEach((pl, i) => {
@@ -476,22 +620,11 @@ const quoteUeber = (st) =>
 // das Paar aus den Bauten der Stufen-Probe (erste Stufe, NUR-WURF-Stufe; die volle Regler-Hülle jeder Art): die Regel wirft
 // nie von der teureren Stufe. Die Zeile der NUR-WURF-Stufe ist das Rezept-Maß (gate:asset-contract), am Regler-Rand
 // richtet die Regel — die Probe nennt jede Stelle, an der die Stufe selbst wirft, mit ihren Kosten.
-const stammLib = require("./lib/stamm.cjs");
-// Die Methode am NAMEN (gate:apparat Klinge 3), ihre Parameter liest die Probe aus dem Kopf — nie eine eigene Liste.
-function statischeMethode(src, name) {
-    const i = stammLib.kopf(src, name);
-    if (i < 0) throw new Error("im Stamm nicht gefunden: " + name);
-    const p = src.indexOf("(", i);
-    const args = src.slice(p + 1, src.indexOf(")", p));
-    const rumpf = stammLib.rumpf(src, name).slice(1, -1); // der EINE Rumpf-Schneider (scripts/lib/stamm.cjs)
-    return { rumpf, fn: new Function(args, rumpf) };
-}
+// Die Methode am NAMEN (gate:apparat Klinge 3): Parameter und Rumpf liest der EINE Leser `methodeAm` (scripts/lib/stamm.cjs).
 function stammRegel() {
     const s = stammLib.text(ROOT);
-    return {
-        teilWirft: statischeMethode(s, "_teilWirft").fn,
-        vonBilligerer: statischeMethode(s, "_wurfVonBilligerer").fn,
-    };
+    const fn = (name) => ((m) => new Function(m.args, m.rumpf))(stammLib.methodeAm(s, name));
+    return { teilWirft: fn("_teilWirft"), vonBilligerer: fn("_wurfVonBilligerer") };
 }
 function budgetVonArt(rc, art) {
     const L = rc?.lod || {};
@@ -566,30 +699,44 @@ function wurfBericht(w) {
 function ofenZeilen(ofen) {
     const kerne = kernVonArt();
     return ofen.zeilen.map((z) => {
-        const n = { kern: kerne[z.art] || "phyto", art: z.art, id: z.id, d: { min: z.min, max: z.max }, rezepte: z.rezepte, lod: z.lod, kanal: "Ofen", wirkt: z.wirkt, an: z.an, bricht: z.bricht, budget: z.budget, grund: "" };
+        const n = { kern: kerne[z.art] || "phyto", art: z.art, id: z.id, d: { min: z.min, max: z.max }, rezepte: z.rezepte, lod: z.lod, kanal: "Ofen", wirkt: z.wirkt, an: z.an, bricht: z.bricht, budget: z.budget, byte: z.byte, bild: z.bild, grund: "" };
         n.grund = z.bricht.length
             ? "BRICHT — " + z.bricht.slice(0, 2).join(" · ") + (z.bricht.length > 2 ? " …" : "")
             : z.wirkt
-              ? "wirkt an " + z.an + " (Ofen-Guss der Werkstatt)"
-              : z.keinGuss
-                ? "kein Guss: die Werkstatt fragt den Host-Ofen, die Art hat keinen Gestalt-Bäcker (MESHFREI ohne BAKERS_BY_KIND, Vertrag §8.4) — der Wert hat keinen Leser"
+              ? "wirkt an " + z.an + " (Ofen-Guss der Werkstatt, Bild bis " + prozent(z.bild) + ")"
+              : z.bild > 0
+                ? `bewegt den Ofen-Guss, nicht sein Bild (höchstens ${prozent(z.bild)} der Gestalt-Pixel, Schwelle ${prozent(BILD_SCHWELLE)})`
                 : "bewegt den Ofen-Guss an keinem der " + z.rezepte.length + " Rezepte (min " + z.min + " · max " + z.max + ")";
         return n;
     });
     }
 // Die ganze Messung: erst der Stamm (er entscheidet die Ofen-Arten und gießt sie), dann die Brücke für den Rest.
+// Die Gesetz-Werte (B4 `uniform`) urteilt ihr Leser der Welt (`leserMessen`): ihr Bau- bzw. Guss-Abdruck bewegt sich nie.
 async function messenAlle() {
-    const ofen = TEIL === 1 ? await imStamm((page) => ofenMessen(page, {})) : { zeilen: [], arten: {} };
+    const kerne = kernVonArt();
+    const lesen = Object.fromEntries(Object.keys(LESER).map((art) => [art, kerne.ids[art] || []]));
+    const [ofen, leser] =
+        TEIL === 1
+            ? await imStamm(async (page) => [await ofenMessen(page, {}), await leserMessen(page, { gesetz: lesen })])
+            : [{ zeilen: [], arten: {} }, { zeilen: [] }];
+    const lz = leserZeilen(leser, kerne);
+    const gesetzWert = (z) => (kerne.gesetz[z.art] || []).includes(z.id);
     let stufen = null;
     await runWithWorker(PORT, async (h) => {
         const imTeil = { regler: (art, id, ids) => teilDer(art, id, ids) === TEIL, grund: (art, ids) => teilDer(art, null, ids) === TEIL };
         stufen = await stufenMessen(h, TEIL === 1 ? { ohneArten: [...Object.keys(ofen.arten), HAUS] } : { nurArt: HAUS, ...imTeil });
     });
     const gusse = ofen.zeilen.reduce((s, z) => s + z.gusse, 0);
+    const roh = [...wirkenAus(stufen), ...ofenZeilen(ofen)];
+    // je Zeile EIN Urteil: der Gesetz-Wert an seinem Leser; jede andere am Bild des Werks, sonst an ihrem Leser, wo er sie sieht
+    const amLeser = (z, l) => l && (gesetzWert(z) || (!z.wirkt && !bricht(z) && (l.wirkt || bricht(l))));
+    const lies = (z) => lz.find((l) => name(l) === name(z));
     return {
-        zeilen: [...wirkenAus(stufen), ...ofenZeilen(ofen)],
+        zeilen: [...roh.map((z) => (amLeser(z, lies(z)) ? lies(z) : z)), ...lz.filter((l) => !roh.some((z) => name(z) === name(l)))],
+        ohneByte: lz.filter((l) => gesetzWert(l) && !roh.some((z) => name(z) === name(l) && (z.byte || bricht(z)))).map(name),
         builds: stufen.builds,
         gusse,
+        leser: lz.filter((l) => gesetzWert(l) || amLeser(roh.find((z) => name(z) === name(l)) || l, l)).length,
         ofenArten: ofen.arten,
         wurf: wurfAus(stufen, stammRegel()),
         stufen,
@@ -655,6 +802,18 @@ async function selbsttest() {
     console.log(
         `${rein && teile ? "✅" : "❌"} SELBST-TEST Urteil: gleich grün · neu tot rot (${v2.neu}) · geheilt rot bis die Zeile fällt (${v3.geheilt}) · je Teil nur seine Zeilen (${t.map((x) => (x ? "✓" : "✗")).join("")}: Teil 1 · 2 · 3 grün, der Zeuge fällt in Teil 3 rot, ungefiltert rot)`
     );
+    // (a2) DIE BILD-SCHWELLE (das Schlupfloch der Karte „0,1 mm am Hash"): ein Würfel um 0,1 mm verschoben bewegt jedes Byte,
+    // nicht das Bild → tot; um 3 cm verschoben → wirkt (dieselbe Rechnung `bauBild` wie an Brücke und Ofen).
+    const wuerfel = (dx) => {
+        const [P, F, index] = [[], [0, 1, 3, 2, 4, 5, 7, 6, 0, 1, 5, 4, 2, 3, 7, 6, 0, 2, 6, 4, 1, 3, 7, 5], []];
+        for (let i = 0; i < 8; i++) P.push((i & 1 ? 0.5 : -0.5) + dx, i & 2 ? 0.5 : -0.5, i & 4 ? 0.5 : -0.5);
+        for (let f = 0; f < 24; f += 4) index.push(F[f], F[f + 1], F[f + 2], F[f], F[f + 2], F[f + 3]);
+        return [{ pos: Float32Array.from(P), index: Uint32Array.from(index), farbe: null, fs: 3, grund: [0.5, 0.5, 0.5] }];
+    };
+    const W0 = bauBild(wuerfel(0));
+    const [fein, grob] = [0.0001, 0.03].map((dx) => W0.abstand(W0.bilder, bauBild(wuerfel(dx), W0.rahmen).bilder));
+    const bildOk = fein < BILD_SCHWELLE && grob >= BILD_SCHWELLE;
+    console.log(`${bildOk ? "✅" : "❌"} SELBST-TEST Bild-Schwelle: 0,1 mm ${prozent(fein)} → tot · 3 cm ${prozent(grob)} → wirkt (Schwelle ${prozent(BILD_SCHWELLE)} der Gestalt-Pixel, ΔLuma > 18)`);
     // (b) der Täter am echten Kanal: die Brücke bekommt den Regler-Wert nicht (der W-A1-Defekt) — jede Zeile der Art
     // vehicle wird tot und beim Namen genannt; ohne Täter wirkt dieselbe Art.
     let taeter = null,
@@ -689,10 +848,15 @@ async function selbsttest() {
     // (d) der Ofen-Kanal (MESHFREI koerper, Q0): heil wirken die Regler über den Host-Ofen der Werkstatt; der Täter
     // „der Ofen verliert den Wert" (`_studioPraegung` liefert nichts) macht jeden koerper-Regler tot → NEU TOT gegen die
     // Ratsche; der Täter „der Mensch-Bäcker wirft bei height = max" liefert den Not-Körper → BRICHT, nie „wirkt".
+    // (d2) DIE LESER der Gesetz-Werte, je Leser eine Zeile: heil wirkt jede; der Täter „der Leser verliert den Stempel" macht jede
+    // tot, der Täter „die Linse liest den Graphen nicht" die der Membran (die anderen wirken weiter).
     let oHeil = null,
         oOhne = null,
         oBruch = null;
+    const lp = { gate: ["twist"], vehicle: ["grip"], klang: ["space"] };
+    const lT = {};
     await imStamm(async (page) => {
+        for (const t of [null, "ohneStempel", "blind"]) lT[t] = (await leserMessen(page, { gesetz: lp, taeter: t })).zeilen;
         oHeil = await ofenMessen(page, { nurArt: "koerper" });
         oOhne = await ofenMessen(page, { nurArt: "koerper", taeter: "ohneOv" });
         const hMax = oHeil.zeilen.find((z) => z.id === "height");
@@ -703,14 +867,19 @@ async function selbsttest() {
     const zB2 = ofenZeilen(oBruch);
     const imOfen = !!oHeil.arten.koerper;
     const heilWirkt = zH.filter((z) => z.wirkt && !bricht(z)).length;
+    const amBildTot = zH.filter((z) => tot(z) && z.byte && name(z) in ratsche.tot).length;
     const vO = vergleich(zO.filter(tot).map(name), ratsche);
-    const ofenKanal = imOfen && zH.length > 0 && heilWirkt === zH.length && zO.filter(tot).length === zO.length && vO.neu.length === zO.length;
+    const neuO = zO.filter((z) => !(name(z) in ratsche.tot));
+    const ofenKanal = imOfen && zH.length > 0 && heilWirkt + amBildTot === zH.length && zO.filter(tot).length === zO.length && vO.neu.length === neuO.length && neuO.length > 0;
     console.log(
-        `${ofenKanal ? "✅" : "❌"} SELBST-TEST Ofen-Kanal (koerper ${imOfen ? "im Host-Ofen" : "NICHT im Ofen"}): heil ${heilWirkt}/${zH.length} wirken · Täter (der Ofen verliert den Wert) ${zO.filter(tot).length}/${zO.length} tot → rot (neu tot: ${vO.neu.slice(0, 3).join(", ")}${vO.neu.length > 3 ? " …" : ""})`
+        `${ofenKanal ? "✅" : "❌"} SELBST-TEST Ofen-Kanal (koerper ${imOfen ? "im Host-Ofen" : "NICHT im Ofen"}): heil ${heilWirkt}/${zH.length} wirken (${amBildTot} bewegen den Guss, nicht sein Bild — Ratsche) · Täter (der Ofen verliert den Wert) ${zO.filter(tot).length}/${zO.length} tot → rot (neu tot: ${vO.neu.slice(0, 3).join(", ")}${vO.neu.length > 3 ? " …" : ""})`
     );
     const hB = zB2.find((z) => z.id === "height");
     const ofenBruch = !!hB && bricht(hB) && zB2.filter(bricht).length === 1 && /Not-Körper|wirft|ERROR/.test(hB.bricht.join(" "));
     console.log(`${ofenBruch ? "✅" : "❌"} SELBST-TEST Ofen-Täter (der Mensch-Bäcker wirft): ${hB ? name(hB) + " — " + hB.grund : "height fehlt"}`);
+    const lw = (t) => lT[t].map((z) => (z.wirkt && !z.bricht.length ? 1 : 0)).join("");
+    const leserOk = lw(null) === "111" && lw("ohneStempel") === "000" && lw("blind") === "011";
+    console.log(`${leserOk ? "✅" : "❌"} SELBST-TEST Leser (Membran · Ritt · Ohr): heil ${lw(null)} · ohne Stempel ${lw("ohneStempel")} · blind ${lw("blind")} (Soll 111 · 000 · 011)`);
     // (e) DIE WURF-PROBE am Tor kathedrale (Grund-Bau und jeder Rand): die Regel des Stamms wirft nie von der teureren
     // Stufe; der Täter „der Zwilling wirft immer" (der Stand vor der Kosten-Regel, von Hand neben die Regel gesetzt) wirft am
     // Regler-Rand von der teureren Stufe (orders=9: 20 308 gegen 16 900) → rot beim Namen (dieselben Bauten, neu gerichtet).
@@ -741,11 +910,11 @@ async function selbsttest() {
     console.log(
         `${wurfOk ? "✅" : "❌"} SELBST-TEST WURF (Täter: der Zwilling wirft immer): heil ${wHeil.zeilen.length} Paare, ${rotHeil.length} rot · Täter ${rotTaeter.length} rot (${rotTaeter.slice(0, 2).join(" · ")})`
     );
-    return rein && teile && kanal && bruchOk && ofenKanal && ofenBruch && wurfOk && stufenOk;
+    return rein && teile && bildOk && kanal && bruchOk && ofenKanal && ofenBruch && leserOk && wurfOk && stufenOk;
     }
 hauptLauf(async () => {
     // Der Selbsttest läuft EINMAL: vor Teil 1 (alle Teile ein Befehl bis auf --teil) oder allein (--selftest).
-    if (process.argv.includes("--selftest") || TEIL === 1) {
+    if (SELBSTTEST || TEIL === 1) {
         const ok = await selbsttest();
         if (!ok || TEIL !== 1) process.exit(ok ? 0 : 1);
     }
@@ -755,7 +924,7 @@ hauptLauf(async () => {
     const brechend = m.zeilen.filter(bricht);
     const oa = Object.keys(m.ofenArten).sort();
     console.log(
-        `Regler-wirkt Teil ${TEIL} (${TEIL === 1 ? "ohne " + HAUS : HAUS + " Regler " + m.zeilen.map((z) => z.id).join(",")}): ${m.zeilen.length} PARAMS-Zeilen · ${m.builds} Bauten über die echte Brücke (Seed ${SEED}, jede Stufe — die Wirkung an der ersten) · ${m.gusse} Güsse im Host-Ofen der Werkstatt (${oa.map((a) => a + (m.ofenArten[a].baecker ? "" : " ohne Bäcker")).join(", ")})`
+        `Regler-wirkt Teil ${TEIL} (${TEIL === 1 ? "ohne " + HAUS : HAUS + " Regler " + m.zeilen.map((z) => z.id).join(",")}): ${m.zeilen.length} PARAMS-Zeilen · ${m.builds} Bauten über die echte Brücke (Seed ${SEED}, jede Stufe — die Wirkung an der ersten) · ${m.gusse} Güsse im Host-Ofen der Werkstatt (${oa.map((a) => a + (m.ofenArten[a].baecker ? "" : " ohne Bäcker")).join(", ")}) · ${m.leser} Zeilen an ihrem Leser der Welt (${Object.values(LESER).join(" · ")})`
     );
     bericht(m.zeilen);
     for (const z of toteZ) console.log(`  TOT ${name(z)} — ${z.grund}`);
@@ -793,6 +962,10 @@ hauptLauf(async () => {
     const v = vergleichTeil(toteZ.map(name), ratsche.tot, ids);
     for (const n of v.neu) console.log(`❌ NEU TOT: ${n} — ${toteZ.find((z) => name(z) === n).grund}`);
     for (const n of v.geheilt) console.log(`❌ GEHEILT: ${n} wirkt jetzt — die Zeile fällt im selben Commit aus spec/vertraege/ratsche.json (reglerTot.tot), die Ratsche sinkt`);
+    // der Byte-Beweis der Gesetz-Werte (Teil 1 trägt jede Art mit `uniform`-Zeilen)
+    const vG = TEIL === 1 ? vergleich(m.ohneByte, { tot: jsonLesen(RATSCHE_PFAD).reglerGesetz.zeilen }) : { neu: [], geheilt: [], ok: true };
+    for (const n of vG.neu) console.log(`❌ GESETZ-WERT OHNE BEWEIS: ${n} bewegt kein Bau-Byte — seine Zeile gehört in reglerGesetz.zeilen`);
+    for (const n of vG.geheilt) console.log(`❌ KEIN GESETZ-WERT: ${n} steht in reglerGesetz, ist aber kein uniform-Wert ohne Bau-Byte (die Zeile baut neu)`);
     const soll = ratsche.soll;
     // Die Budget-Ratsche: ein Regler, dessen Rand-Wert die Stufe über ihre Budget-Zeile treibt (der Guss steht, das
     // Gesetz bricht) — neu rot, geheilt rot bis die Zeile fällt.
@@ -819,7 +992,7 @@ hauptLauf(async () => {
             `❌ QUOTE GEHEILT: ${n} — die Zeile fällt im selben Commit aus spec/vertraege/ratsche.json (reglerBudget.quote)`
         );
     for (const l of m.stufen.leer) console.log(`❌ LEER: ${l} baut 0 Teile`);
-    if (!v.ok || !vB.ok || !vQ.ok || ueberStaffel || m.stufen.leer.length || brechend.length || wurfRot.length) process.exit(1);
+    if (!v.ok || !vG.ok || !vB.ok || !vQ.ok || ueberStaffel || m.stufen.leer.length || brechend.length || wurfRot.length) process.exit(1);
     const wirkend = m.zeilen.filter((z) => z.wirkt && !bricht(z)).length;
     console.log(
         `✅ gate:regler-wirkt Teil ${TEIL}: ${wirkend}/${m.zeilen.length} Regler wirken · 0 brechen · ${toteZ.length} tot = Ratsche ${Object.keys(ratsche.tot).filter(v.eigen).length} von ${Object.keys(ratsche.tot).length} (Soll ${soll}, ${ratsche.sollQuelle}) · über Budget ${Object.keys(budget).length} = Ratsche ${Object.keys(rb.bruch).length - anderer} von ${Object.keys(rb.bruch).length} (Staffel ${rb.staffel}, Soll ${rb.soll}) · über der Quote ${Object.keys(quote).length} · WURF ${m.wurf.zeilen.length} Paare, nie von der teureren Stufe`

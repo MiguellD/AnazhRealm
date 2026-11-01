@@ -38,17 +38,14 @@
 // Port: PRUEFBUEHNE_PORT (Default 4394). Exit 1 bei einem Wurf auf der Bühne, einem gehaltenen Akt, einer blinden
 // Kontrolle, einem Page-Error oder einem roten Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, hauptLauf, argOpt: opt, pngDatei, booteWelt, weltTor, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, starteBrowser, hauptLauf, argOpt: opt, pngDatei, booteWelt, path, fs, weltTor, SELBSTTEST, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 
 const argv = process.argv.slice(2);
-const SELBSTTEST = argv.includes("--selftest");
 const JSON_AUS = opt("--json", null);
 const EVOLUTIONEN = Math.max(1, Number(opt("--evolutionen", 60)) || 60);
 const PORT = Number(process.env.PRUEFBUEHNE_PORT) || 4394;
 const BUEHNE_DATEI = path.resolve(__dirname, "..", "spec", "pruefbuehne", "welt.json");
-const STATIONEN = jsonLesen(path.resolve(__dirname, "..", "spec", "pruefbuehne", "stationen.json")).stationen;
+const STATIONEN = jsonLesen("spec/pruefbuehne/stationen.json").stationen;
 const S4 = STATIONEN.find((st) => st.id === "s4-hindernisse");
 const S0 = STATIONEN.find((st) => st.id === "s0-atrium");
 const S4_SCHEIN = { bauplan: "pruef_mauer", dx: 0.5 }; // der Selbsttest: die Mauer rückt 0,5 m

@@ -25,16 +25,12 @@
 //                                                      „byte-gleich"
 // Port: WORKER_DICHTE_PORT (Default 4392). Exit 1 bei Drift, Längen-Mismatch, Page-Error oder rotem Selbsttest.
 "use strict";
-const { statikServer, nullRenderer, starteBrowser, hauptLauf, argOpt: opt, booteWelt, jsonSchreiben } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const liesText = (datei) => fs.readFileSync(datei, "utf8");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, nullRenderer, starteBrowser, hauptLauf, argOpt: opt, booteWelt, ausDatei, path, stammLib, SELBSTTEST, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const liesText = (datei) => ausDatei(datei);
 const { messort } = require("./lib/welt-orte.cjs");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 
 const argv = process.argv.slice(2);
-const SELBSTTEST = argv.includes("--selftest");
 const ECHT = argv.includes("--echt");
 const LADEN = { waitUntil: "domcontentloaded", timeout: 60000 };
 const ABDRUCK = opt("--abdruck", null);
@@ -420,10 +416,11 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                     }
                 }
             }
-            // TEIL W — DER STOFF DES WALDS: die Darts der Wald-Zellen um jeden Ort (9 × 9 Zellen) im Main
-            // (`_forestCellDarts`, frisches Gedächtnis) und im Voxel-Faden (`_voxelWorkerWaldDarts`, entpackt über
-            // `_waldDartsEntpacken`, wie die Schlange des Walds sie ins Gedächtnis legt) — jede Zelle Wort für Wort gleich (JSON ihrer Darts). Die Streu wartet auf die Darts des Fadens;
-            // drifteten sie, stünde die Gestalt der Ferne auf einer anderen Wahrheit als der Wald der Nähe.
+            // TEIL W — DER BESTAND DES WALDS: die stehenden Darts der Wald-Zellen um jeden Ort (9 × 9 Zellen; die geborenen
+            // und das Urteil der Kronen-Schüchternheit, phyto-core `forestStehende`) im Main (`_forestCellDarts`, frisches
+            // Gedächtnis) und im Wald-Faden (`_voxelWorkerWaldDarts`, entpackt über `_waldDartsEntpacken`, wie die Schlange
+            // des Walds sie ins Gedächtnis legt) — jede Zelle Wort für Wort gleich (JSON ihrer Darts). Die Streu wartet auf den
+            // Bestand des Fadens; drifteten sie, stünde die Gestalt der Ferne auf einer anderen Wahrheit als der Wald der Nähe.
             if (r._getVoxelWorker() && r._forestGesetzWahr()) {
                 const wa = (out.wald = { zellen: 0, darts: 0, abweichend: 0, erste: null });
                 const seedInt = r._forestSeedInt();
@@ -455,6 +452,18 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                             };
                     }
                 }
+            }
+            // TEIL B — DER WUCHS IM FADEN (w4-b-pflanzen): jedes Skelett im Vorrat (`_wuchsVorrat`: gepackt vom Wald-Faden im Boot,
+            // die Saat wartet auf ihn; Schlüssel `<Art>|<Same>|…`) gegen den Wuchs desselben Plans im Haupt-Faden (`_wuchsPlan` →
+            // phyto-core `growSkeleton` am Strom `_rollGenome(...).seq`) — Bit für Bit (die Wörter des Float64Array); `out.wuchs` =
+            // [Skelette, abweichend]. `zwilling` (Selbsttest): ein Wort jedes Skeletts im Vorrat ist verfälscht.
+            const wu = (out.wuchs = [0, 0]);
+            for (const [k, f] of r._wuchsVorrat || []) {
+                const plan = r._wuchsPlan(...k.split("|", 2));
+                if (zwilling) f[9]++;
+                const g = r._phytoGrowSkeleton(plan.P, r._rollGenome(plan.sKey, "tree-genome").seq("phyto-growth"));
+                wu[0]++;
+                wu[1] += String(new Uint32Array(globalThis.__phytoCore.wuchsPacken(g).buffer)) !== String(new Uint32Array(f.buffer));
             }
             return out;
         },
@@ -555,7 +564,7 @@ const KERN_MUTATIONEN = {
     "Höhen-Versatz": ["let h = hoeheGrund(L, x, z, mitDetail, aus);", "let h = hoeheGrund(L, x, z, mitDetail, aus) + 0.01;"],
 };
 const KERN_MODUS = { haupt: null, faden: null, probe: null }; // je Boot die Mutation im Haupt-Faden, im Voxel-Faden, in der Probe
-const kernQuelle = (wurzel = root) => fs.readFileSync(path.join(wurzel, "gelaende-core.js"), "utf8"); // der EINE Leser des Kerns
+const kernQuelle = (wurzel = root) => ausDatei(path.join(wurzel, "gelaende-core.js")); // der EINE Leser des Kerns
 const kernMutiert = (roh, name) => String(roh).replace(...(KERN_MUTATIONEN[name] || ["", ""]));
 function kernWandle(p, roh) {
     if (p === "/gelaende-core.js" && KERN_MODUS.haupt) return kernMutiert(roh, KERN_MODUS.haupt);
@@ -747,7 +756,7 @@ function gelaendeKern(wurzel) {
     ctx.self = ctx;
     ctx.window = ctx;
     vm.createContext(ctx);
-    vm.runInContext(fs.readFileSync(path.join(wurzel, "vendor", "simplex-noise.js"), "utf8"), ctx);
+    vm.runInContext(ausDatei(path.join(wurzel, "vendor", "simplex-noise.js")), ctx);
     vm.runInContext(kernQuelle(wurzel), ctx);
     return { G: ctx.__gelaendeCore, SimplexNoise: ctx.SimplexNoise };
 }
@@ -1641,7 +1650,8 @@ async function gebaut(page) {
 
 // ── DER FADEN TRÄGT DIE BYTES (`--faden`, Streaming H3) ──
 // K4: eine Hydrosphäre (Heimat, Kachel) oder ein Feld des Staus (`waterStau`, der Damm am Fluss), das nicht als Faden-Nachricht
-//     kam, ist ROT beim Namen des Rufers; jeden Bau im Haupt-Faden (Chunk-Stoff, Guss des Bäckers) zählt das Spiel selbst
+//     kam, ist ROT beim Namen des Rufers; jeden Bau im Haupt-Faden (Chunk-Stoff, Guss des Bäckers, Wuchs eines Spawn-Bauplans
+//     neben dem Wald-Faden — w4-b-pflanzen) zählt das Spiel selbst
 //     (`_fadenUmgangen`: je Sync-Stelle in `_syncBau`, sonst laut im Buch „FADEN-UMGANGEN") — die Linse liest den Zähler nach
 //     der Ankunft, 2 min Gang, einer Minute Fahrt mit sechs echten Bau-Klicks (bau-faden: bis dahin baute jeder seinen
 //     Fußabdruck synchron, 215 ms je Klick) und dem Damm; ein Takt des Staus (`_stauFelder`) je Damm-Edit über 8 ms ist ROT.
@@ -1649,8 +1659,9 @@ async function gebaut(page) {
 //     der Main summiert sie am Empfang je Faden und Art in beiden Richtungen, dazu jede Kopie empfangener Bytes (jeder
 //     Tiefe, `da`: auch ihr Klon) und die Platte — je Minute im Kalt-Boot und in einer Minute Fahrt, Soll ≤ 5 MB/min.
 //   --faden [--echt] [--selftest]   ein injizierter Hydro-Bau, ein Fußabdruck an einer unbenannten Sync-Stelle, ein Guss, ein
-//                          Stau-Feld im Haupt-Faden und Klon (3 MB tief in einer Nachricht, 3 MB in 300 Krumen, zwei Kopien) fallen
-//                          ROT beim Namen; `--echt` im Fenster an der echten GPU (`[linse-gpu]`), sonst am Null-Renderer.
+//                          Wuchs eines Spawn-Bauplans (w4-b-pflanzen), die Naht und der Satz eines Faden-Netzes im Haupt-Faden
+//                          (w4-b-boden2), ein Stau-Feld und Klon (3 MB tief in einer Nachricht, 3 MB in 300 Krumen, zwei Kopien)
+//                          fallen ROT beim Namen; `--echt` im Fenster an der echten GPU (`[linse-gpu]`), sonst am Null-Renderer.
 const FADEN_SOLL = 5e6; // Bytes je Minute
 function klonBytes(v, frei, seen, da) {
     if (v === null || typeof v !== "object") return da ? 0 : typeof v === "string" ? v.length : 8;
@@ -1944,8 +1955,18 @@ async function faden(page, url) {
                 const p = st.lastPlayerVoxelChunk;
                 r._rebuildVoxelChunk(p.cx, p.cz, null, { forceSync: "injiziert" });
             })();
-            (function injizierterGuss() {
+            // der Guss ohne Vorlage — und DER BODEN IM FADEN (w4-b-boden2): die Naht eines Faden-Netzes ohne ihr Gedächtnis, sein
+            // Satz ohne Vorlage
+            (function injizierterGussUndBoden() {
                 r._ofenMenschTemplate({ t: t0 }, 0, 0, 3, true);
+                const [k, { mesh }] = [...st.voxelChunks].find(([, x]) => x.mesh?.geometry.userData.ausFaden);
+                mesh.geometry.userData.naht = null;
+                r._bodenNaht(mesh.geometry);
+                r._chunkSatzEin("boden", k, mesh.geometry, k);
+            })();
+            (function injizierterWuchs() {
+                // der Bauplan eines Spawns wächst im Haupt-Faden, obwohl der Wald-Faden lebt (w4-b-pflanzen, `_wuchsSkelett`)
+                r._growTreeBlueprint("busch_hazel", "selbsttest", { spawn: true });
             })();
             const w = new Worker(
                 URL.createObjectURL(
@@ -2020,19 +2041,18 @@ async function faden(page, url) {
         console.log(`  ⛔ K5: ${mb(proMin.fahrt)} MB/min am Empfang in der Fahrt > ${mb(FADEN_SOLL)}`);
     if (SELBSTTEST) {
         const S = F.t.selbst || { empfang: {}, kopie: {} };
-        const nennt = (liste, n) => liste.some((x) => x.includes(n));
-        const klon = (S.empfang["selbsttest:klon"] || 0) + (S.empfang["selbsttest:krume"] || 0);
+        const nennt = (n) => F.hydro.rot.concat(F.bau.rot, F.stau.rot).some((x) => x.includes(n));
+        const krume = S.empfang["selbsttest:krume"] || 0;
+        const klon = (S.empfang["selbsttest:klon"] || 0) + krume;
         const sieht =
-            nennt(F.hydro.rot, "injizierteHydro") &&
-            nennt(F.bau.rot, "injizierterFussabdruck") &&
-            nennt(F.bau.rot, "injizierterGuss") &&
-            nennt(F.stau.rot, "injiziertesStauFeld") &&
+            ["injizierteHydro", "injizierterFussabdruck", "injizierterGuss", "injizierterWuchs", "Boden-Naht", "Satz-Vorlage"].every(nennt) &&
+            nennt("injiziertesStauFeld") &&
             klon >= 5.9e6 &&
-            (S.empfang["selbsttest:krume"] || 0) >= 2.9e6 &&
+            krume >= 2.9e6 &&
             summe(S.kopie) >= 5.9e6 &&
             proMin.selbst > FADEN_SOLL;
         console.log(
-            `  SELBSTTEST: injizierter Hydro-Bau, synchroner Fußabdruck, Guss, Stau-Feld und Klon (${mb(klon)} MB, Kopie ${mb(summe(S.kopie))} MB) ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR"}`
+            `  SELBSTTEST: injizierter Hydro-Bau, synchroner Fußabdruck, Guss, Wuchs, Boden, Stau-Feld und Klon (${mb(klon)} MB, Kopie ${mb(summe(S.kopie))} MB) ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR"}`
         );
         rot = rot || !sieht;
     }
@@ -2149,15 +2169,16 @@ hauptLauf(async () => {
         );
         if (!fe || fe.abweichend > 0) rot = true;
         const wa = rep.wald;
+        const wu = rep.wuchs || [];
         console.log(
             wa
-                ? `    Stoff des Walds (Main = Voxel-Faden, Teil W): ${wa.zellen} Zellen · ${wa.darts} Darts · abweichend ${wa.abweichend}` +
+                ? `    Stoff des Walds (Main = Voxel-Faden, Teil W): ${wa.zellen} Zellen · ${wa.darts} Darts · abweichend ${wa.abweichend} · Wuchs im Vorrat (Teil B) ${wu[0]} Skelette, abweichend ${wu[1]}` +
                       (wa.erste
                           ? ` — erste Zelle ${wa.erste.gx},${wa.erste.gz} am Ort ${wa.erste.ort}: Main ${JSON.stringify(wa.erste.main)} · Faden ${JSON.stringify(wa.erste.faden)}`
                           : "")
                 : "    Stoff des Walds: kein Voxel-Faden oder keine Wahrheit — keine Probe"
         );
-        if (welt === "standard" && (!wa || !(wa.darts > 0) || wa.abweichend > 0)) rot = true;
+        if (welt === "standard" && (!wa || !(wa.darts > 0) || wa.abweichend > 0 || !wu[0] || wu[1])) rot = true;
         if (rep.abweichend > 0 || rep.befunde.length) rot = true;
         if (SELBSTTEST && welt === "standard") {
             const v = await probeVerfaelscht(page, url);
@@ -2167,6 +2188,7 @@ hauptLauf(async () => {
                 gitter: v.gitter,
                 ferne: v.ferne ? v.ferne.abweichend : 0,
                 wald: v.wald ? v.wald.abweichend : 0,
+                wuchs: v.wuchs?.[1],
                 namen: ["FERN-RING"].filter((n) => v.befunde.some((b) => b.startsWith(n))).join(),
             };
             console.log(
@@ -2217,10 +2239,11 @@ hauptLauf(async () => {
             selbst.abweichend > 0 &&
             selbst.ferne > 0 &&
             selbst.wald > 0 &&
+            selbst.wuchs > 0 &&
             urform &&
             urform.endsWith("Reihe verzögert") &&
             selbst.namen === "FERN-RING";
-        console.log(`  SELBSTTEST Stoff des Walds: ${selbst ? selbst.wald : "?"} abweichende Zellen (Soll > 0)`);
+        console.log(`  SELBSTTEST Stoff des Walds: ${selbst ? selbst.wald : "?"} abweichende Zellen · Wuchs ${selbst?.wuchs} (Soll > 0)`);
         console.log(`  SELBSTTEST Höhen der Ferne: ${selbst ? selbst.ferne : "?"} abweichende Punkte (Soll > 0)`);
         console.log(
             `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: der saubere Spiegel ist byte-gleich, der verfälschte Worker-Term fällt rot" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : "die Verfälschung blieb unentdeckt (die Linse ist blind)")}\n`
