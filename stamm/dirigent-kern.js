@@ -1116,16 +1116,42 @@ class AnazhRealm {
     // den Knoten-Wert und entsorgte die alte — doch die Vorlage des Programms bindet die Textur seines Baus, und `Bindings._init`
     // lädt sie für jedes neue Render-Objekt hoch, bevor `update()` den Knoten liest: die entsorgte stieg wieder auf und blieb
     // (Mess-Wiese, Radeon: Karten-Atlas 16 neben 20 Schichten, +4,0 MB VRAM). Die Wand: gate:foundry-impostor C5.
+    // DER ZWEITE WEG DES ZIELS (w4-e-buendel): r184 `RenderTarget.setSize` ruft `dispose` — `_destroyRenderTarget` →
+    // `_destroyTexture` zerstört die GPU-Textur SOFORT und setzt die Bindegruppen ihrer Halter zurück; `_spiegelPassRechne` legt
+    // so den Spiegel-Strahl bei jedem Größen- und Pixel-Ratio-Schritt neu an. Ein loser Leser baut seine Gruppe beim nächsten
+    // Draw neu (der Wächter der Diät), ein aufgenommenes Bündel nie: der Lauf des Pass-Bündels, der das Wasser trägt, spielte
+    // die alte ab (gate:fenster-wechsel E4a/E4b: 1×/2× „Destroyed texture [spiegel:strahl] used in a submit"). Derselbe Weg wie
+    // oben für jedes gebundene Ziel: die GPU-Textur fällt nach den Submits dieser Aufgabe, jedes Bündel der Welt nimmt neu auf.
     _texturAbschied(renderer) {
         const inst = renderer && renderer._textures;
         const P = inst && Object.getPrototypeOf(inst);
-        if (!P || P.__anazhAbschied || typeof P.updateTexture !== "function") return;
+        if (!P || P.__anazhAbschied || typeof P.updateTexture !== "function" || typeof P._destroyTexture !== "function")
+            return;
         P.__anazhAbschied = true;
         const welt = this;
+        // die alten GPU-Texturen (Bild und MSAA) einer Textur fallen erst nach den Submits dieser Aufgabe
+        const spaeter = (g) => {
+            const alt = g ? [g.texture, g.msaaTexture].filter(Boolean) : [];
+            for (const x of alt) {
+                const weg = Object.getPrototypeOf(x).destroy;
+                x.destroy = () => Promise.resolve().then(() => weg.call(x));
+            }
+            return alt;
+        };
+        const istZiel = (t) => t.isRenderTargetTexture || t.isDepthTexture || t.isFramebufferTexture;
+        const rohWeg = P._destroyTexture;
+        P._destroyTexture = function (t) {
+            const d = this.has(t) ? this.get(t) : null;
+            const gebunden = !!(d && istZiel(t) && d.bindGroups && d.bindGroups.size > 0);
+            const alt = gebunden ? spaeter(this.backend.get(t)) : [];
+            const aus = rohWeg.call(this, t);
+            if (alt.length && welt.state.scene) welt._buendelNeu();
+            return aus;
+        };
         const roh = P.updateTexture;
         P.updateTexture = function (t, o) {
             const d = this.get(t);
-            const ziel = t.isRenderTargetTexture || t.isDepthTexture || t.isFramebufferTexture;
+            const ziel = istZiel(t);
             const anders = d.initialized === true && d.version !== t.version;
             // die Form der GPU-Textur einer gewöhnlichen Textur (nie die geteilte Vorgabe-Textur: die fällt nie)
             const formTraeger = !ziel && t.isStorageTexture !== true && t.isExternalTexture !== true;
@@ -1135,11 +1161,7 @@ class AnazhRealm {
                 anders && form !== null && d.isDefaultTexture === false && d.__form !== undefined && d.__form !== form;
             const neu = (ziel && anders && d.bindGroups && d.bindGroups.size > 0) || gewachsen;
             const g = neu ? this.backend.get(t) : null;
-            const alt = g ? [g.texture, g.msaaTexture].filter(Boolean) : [];
-            for (const x of alt) {
-                const weg = Object.getPrototypeOf(x).destroy;
-                x.destroy = () => Promise.resolve().then(() => weg.call(x));
-            }
+            const alt = spaeter(g);
             // Der Sampler lebt in den Backend-Daten der Textur (`updateSampler`) und die Sampler-Bindung steht VOR der Textur-
             // Bindung: er folgt der neuen Form, sonst fehlt er der nächsten Bindegruppe (die Post-Kette fiel am 16.10. so beim
             // Wachsen des Karten-Atlas, „Required member is undefined").
@@ -1157,14 +1179,13 @@ class AnazhRealm {
                 this.info.destroyTexture(t);
                 this.info.createTexture(t);
             }
-            // JEDES Bündel der Szene — die Region-Bündel und jede Leib-Hülle (`_leibHuelle`): ein Leib, der nach dem Abschied
-            // weiter abspielte, band die alte Horizont-Karte (E2, Radeon: 595 Meldungen „Destroyed texture … used in a submit",
-            // Himmel und Bündel fielen aus dem Bild). Der Gang ist selten (erstes Bild, Größen-Wechsel, Wachsen eines Atlas).
-            const sc = welt.state.scene;
-            if (alt.length && sc && this.backend.get(t).texture !== alt[0])
-                sc.traverse((o) => {
-                    if (o.isBundleGroup === true) o.needsUpdate = true;
-                });
+            // JEDES Bündel der Welt über das EINE Neu (`_buendelNeu`): die Region-Bündel, jede Leib-Hülle (`_leibHuelle`: ein Leib,
+            // der nach dem Abschied weiter abspielte, band die alte Horizont-Karte — E2, Radeon: 595 Meldungen „Destroyed texture
+            // … used in a submit", Himmel und Bündel fielen aus dem Bild) und jeder Lauf des Pass-Bündels — die hängen in keinem
+            // Szenen-Graphen: bis hier ging der Gang nur die Szene, die Läufe spielten die alte Bindegruppe weiter ab (w4-e-buendel,
+            // gate:fenster-wechsel E3 · E4a · E4b je 3× „Destroyed texture [spiegel:strahl] used in a submit", das Bild fiel aus).
+            // Der Gang ist selten (erstes Bild, Größen-Wechsel, Wachsen eines Atlas).
+            if (alt.length && welt.state.scene && this.backend.get(t).texture !== alt[0]) welt._buendelNeu();
             return aus;
         };
     }

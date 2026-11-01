@@ -1234,6 +1234,15 @@
             {
                 "sub": "getCacheKey(e,t){bS[0]=e,bS[1]=t;const r=this.renderer.info.calls,s=this.callHashCache.get(bS)||{};if(s.callId!==r){",
                 "organ": "_passBuendel (der Stand des Passes: Lichter und Umgebung, je Render-Aufruf gemerkt)"
+            },
+            {
+                "sub": "_destroyTexture(e){if(!0===this.has(e)){const t=this.get(e);e.removeEventListener(\"dispose\",t.onDispose);const r=t.isDefaultTexture;if(this.backend.destroyTexture(e,r),t.bindGroups)for(const e of t.bindGroups){const t=this.backend.get(e);t.groups=void 0,t.versions=void 0}",
+                "organ": "_texturAbschied (der zweite Weg des Ziels: sofort zerstört, die Bindegruppen der Halter zurückgesetzt — ein Lauf nimmt neu auf)"
+            },
+            {
+                "file": "vendor/three.core.min.js",
+                "sub": "this.textures[s].isArrayTexture=this.textures[s].image.depth>1);this.dispose()}",
+                "organ": "_texturAbschied (RenderTarget.setSize ruft dispose: das Ziel fällt über _destroyRenderTarget)"
             }
         ]
     }

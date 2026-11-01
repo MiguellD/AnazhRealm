@@ -279,8 +279,8 @@ class AnazhRealm_bild_diaet {
         je.stoffe.length = 0;
     }
 
-    // DAS NEU ALLER BÜNDEL (der Draw-Zähler der Linsen zählt am direkten Draw, `__bundlesNeu`): jedes Bündel der Szene und jeder
-    // Lauf jedes Passes nimmt im nächsten Render neu auf
+    // DAS NEU ALLER BÜNDEL — der EINE Gang (der Abschied einer gebundenen Textur, `_texturAbschied`; der Draw-Zähler der
+    // Linsen, `__bundlesNeu`): jedes Bündel der Szene und jeder Lauf jedes Passes nimmt im nächsten Render neu auf
     _buendelNeu() {
         this.state.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
         this._passBuendelGen = (this._passBuendelGen | 0) + 1;
