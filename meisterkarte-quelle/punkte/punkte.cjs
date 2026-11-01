@@ -974,16 +974,11 @@ const GRUND_NIMM =
     'if (typeof r._grundstellung !== "function") return { fehlt: true }; const t0 = performance.now(); const g = r._grundstellung(); ' +
     "return { grund: g.grund, n: Object.keys(g.abdruck).length, ms: +(performance.now() - t0).toFixed(1), welt: r.state.worldMeta.worldId, " +
     "seite: " + JSON.stringify(GRUND_SEITE) + ".filter((k) => k in window), wege: (" + wegeAbdruck + ")(r) };";
-// DIE NAHRUNG DES LEIBS (Radeon 25ac4c0c 01.11.: halten.K5 trank „consume:_k5“ für 600 s, die Grundstellung ließ ihn im Leib, und 21
-// Proben danach waren UNGEMESSEN an „playerLeben“): der Stand trägt, was der Leib gegessen hat (playerLeben.nahrung), die Lade-Kette
-// legt es über die EINE Boost-Tür DAZU (`_loadStateRestoreLeben`) — an Ort und Stelle blieb das Gegessene der Probe stehen. Vor dem
-// Rückspielen fällt darum jede Nahrung des Leibs (`consume:`), der Stand legt die seine zurück; die Prüfung danach bleibt scharf
-// (playerLeben weicht weiter ab, wenn der Stand sie nicht trägt). Die Boosts des Orts und der Gefühle legt der Takt je Sekunde neu
-const NAHRUNG_FAELLT =
-    "if (r.state.player && Array.isArray(r.state.player.boosts)) r.state.player.boosts = r.state.player.boosts.filter((b) => !(b && String(b.source).startsWith(\"consume:\"))); ";
-const grundSpielen = (g, o = {}) =>
+// DIE NAHRUNG DES LEIBS: die Grundstellung spielt den Stand durch die EINE Lade-Kette (`_standRueckspielen` → `loadState`), und der
+// Stand ERSETZT die Nahrung des Leibs (`_loadStateRestoreLeben`, w4-nahrung-laden, z143) — die Sitzung räumt sie nie selbst.
+const grundSpielen = (g) =>
     "for (const k of " + JSON.stringify(GRUND_SEITE) + ") if (!" + JSON.stringify(g.seite) + ".includes(k)) delete window[k]; " +
-    "const t0 = performance.now(); " + (o.ohneNahrung ? "" : NAHRUNG_FAELLT) + "const z = r._grundstellung(" + JSON.stringify(g.grund) + "); " +
+    "const t0 = performance.now(); const z = r._grundstellung(" + JSON.stringify(g.grund) + "); " +
     "const weg = " + (g.wege ? "(" + wegeAbweichung + ")(" + JSON.stringify(g.wege) + ", (" + wegeAbdruck + ")(r))" : "null") + "; return { ok: z.ok, grund: z.grund || null, " +
     "anders: (z.anders || []).concat(" + JSON.stringify(GRUND_SEITE) + ".filter((k) => k in window && !" + JSON.stringify(g.seite) + ".includes(k)).map((k) => \"seite.\" + k), weg ? [weg] : []), " +
     "neu: z.neu || null, ms: +(performance.now() - t0).toFixed(1), welt: r.state.worldMeta && r.state.worldMeta.worldId, wie: (" + grundWie + ")(r, " +
@@ -1322,8 +1317,7 @@ async function grundstellung(w, datei, o = {}) {
 // danach keine Größe vom Grund abweicht. `--mutante <zeile>`: das Wort dieser Zeile der GRUND_TAFEL schweigt (`uhr`: der EINE
 // Uhr-Schreiber des Spiels, eine Größe des Stands) — gefangen nur, wenn genau `augenblick.<zeile>` (`timeOfDay`) abweicht: die Mutante
 // ROT beim Namen. Exit 0 GRÜN bzw. gefangen, 1 sonst.
-// Der Leib isst (`activateConsumable`, NAHRUNG_FAELLT); `--mutante nahrung`: die Grundstellung lässt die Nahrung im Leib wie bis 01.11. —
-// gefangen nur, wenn genau `playerLeben` abweicht.
+// Der Leib isst (`activateConsumable`); das Rückspielen ersetzt die Nahrung durch die des Stands (`_loadStateRestoreLeben`) — sonst weicht `playerLeben` ab.
 // `--mutante weg` (w4-sitzung-reif): eine Probe legt ihren Weg wie tempo4 (`_stlWegeBuild` mit der Marke `probe:grundprobe`, die Natur
 // weicht ihm) und räumt ihn nie — gefangen nur, wenn das Rückspielen an Ort und Stelle genau ihn nennt (die Wege-Linse,
 // `wegeAbweichung`); mit `--tuer` spielt die Grundprobe danach wie die Sitzung den Grund durch die Tür zurück, und der Weg ist fort.
@@ -1400,8 +1394,8 @@ async function grundProbe(o) {
                 st.voxelWorker = null;
                 r._syncStelle = "naht";
             }
-            return { edit, bau, ritt, hand, essen, weg, wegFlaeche, uhr: st.timeOfDay, feuer: st.brandFeld ? st.brandFeld.size : 0, wetter: st.weather, tag: st.dayLengthMinutes, plan, erd, tiere, mutante: !!z || r._uhrSetzen.length === 0 || ["bauplaene", "werk", "erdbau", "wesen", "gefuehl", "weg", "zeichner", "nahrung"].includes(mut) };`);
-        const z = await ev(grundSpielen(g, { ohneNahrung: o.mutante === "nahrung" }));
+            return { edit, bau, ritt, hand, essen, weg, wegFlaeche, uhr: st.timeOfDay, feuer: st.brandFeld ? st.brandFeld.size : 0, wetter: st.weather, tag: st.dayLengthMinutes, plan, erd, tiere, mutante: !!z || r._uhrSetzen.length === 0 || ["bauplaene", "werk", "erdbau", "wesen", "gefuehl", "weg", "zeichner"].includes(mut) };`);
+        const z = await ev(grundSpielen(g));
         // die Zeichenkette zurück wie in der Sitzung (grundstellung): je abweichende Größe beim Namen, dann, was bleibt
         const zk = await ev(zeichnerCode(g.zeichner, true));
         // die Mutante bricht, was der Grund heil trug (der Null-Renderer zeichnet nie über die Post-Kette: seine Weiche steht schon im Grund)
@@ -3026,14 +3020,6 @@ async function selbsttest(o = {}) {
             jf[0][0] === "" && jf[0][1] === 40 && jf[0][2] === 10 && jf[0][3] === 40 && jf[0][4] === 10 && jf[0][5] !== abd0 && jf[0][6] === abd0 && jf[0][7] === abd0 && abdruck(jk(), "hilfe", "radeon") === abd0 &&
             /Deckel 60 s über 45 s ohne ausnahme/.test(jf[1][0]) && jf[1][1] === "" && /deckel.json: .* je Karte eine ganze Zahl ≥ 1/.test(jf[2]) && /deckel.json: {"gtx":20}/.test(jf[3]),
             JSON.stringify(jf));
-        // DIE NAHRUNG FÄLLT vor dem Rückspielen (NAHRUNG_FAELLT, Radeon 25ac4c0c: „consume:_k5“) — der Code der Grundstellung trägt sie vor
-        // `_grundstellung`, die Mutante (`ohneNahrung`, grundprobe --mutante nahrung) nie; in einem Leib mit Nahrung und Gefühl fällt nur die Nahrung
-        const gsN = grundSpielen({ grund: "{}", seite: [] }), gsM = grundSpielen({ grund: "{}", seite: [] }, { ohneNahrung: true });
-        const leibN = { state: { player: { boosts: [{ source: "consume:_k5" }, { source: "emotion:joy" }, null] } } };
-        new Function("r", NAHRUNG_FAELLT)(leibN);
-        pruef("NAHRUNG FÄLLT vor dem Rückspielen: die Grundstellung trägt sie vor _grundstellung, die Mutante nie; nur consume: fällt",
-            gsN.indexOf(NAHRUNG_FAELLT) >= 0 && gsN.indexOf(NAHRUNG_FAELLT) < gsN.indexOf("r._grundstellung(") && !gsM.includes(NAHRUNG_FAELLT) &&
-            JSON.stringify(leibN.state.player.boosts) === JSON.stringify([{ source: "emotion:joy" }, null]), JSON.stringify(leibN.state.player.boosts));
         const echtGross = ladeStationen().map((s) => (s.probe ?{ ...s, probe: { ...s.probe, sek: 90, ausnahme: "der Selbsttest bläht jeden Deckel" } } : s));
         const eg = pruefeStationen(echtGross, karte).fehler.filter((f) => /^(radeon|gtx): die Fahrt/.test(f));
         pruef("FAHRT-ROT an der echten Liste: jeder Deckel auf 90 s gebläht reißt die Fahrt beider Karten (liste, run und buchen fallen dort)",
