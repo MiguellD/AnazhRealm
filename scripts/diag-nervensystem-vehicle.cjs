@@ -21,7 +21,7 @@
 //     geklemmt (kindStages-Merge) UND fuer einen unbekannten kind ohne jeden Eintrag ebenso
 //     (N7.5 [0]) — gemessen an den requested-Keys.
 //   node scripts/diag-nervensystem-vehicle.cjs [--selftest]
-const { statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde, fehlerText, SELBSTTEST, stammLib } = require("./lib/welt-boot.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
 const PORT = Number(process.env.NERV_PORT || 4407);
@@ -99,7 +99,7 @@ hauptLauf(async () => {
             A._studioRenderConfig = orig;
             st.studioRenderConfig = origState;
         } catch (e) {
-            res.c.err = (e && e.message) || String(e);
+            res.c.err = fehlerText(e);
         }
         // ===== D (dazu): Idempotenz + Probe-Preset =====
         try {
@@ -119,7 +119,7 @@ hauptLauf(async () => {
                 delete st.blueprints.fahrzeug_probemobil;
             }
         } catch (e) {
-            res.d.err = (e && e.message) || String(e);
+            res.d.err = fehlerText(e);
         }
         // Unbekannter kind OHNE jeden kindStages-/Budget-Eintrag (N7.5-[0]): die Stufen-Klammer klemmt fail-closed
         // auf [0]; den Wurf trägt kein Wirts-Literal mehr (W8-Integration: `_WIRT_WURF` fiel) — der Flatten bricht
@@ -131,7 +131,7 @@ hauptLauf(async () => {
             try {
                 r._foundryFlattenFor({ seed: 1 }, "probetor", 2);
             } catch (e) {
-                res.f.torBruch = (e && e.message) || String(e);
+                res.f.torBruch = fehlerText(e);
             }
             const fresh = Array.from(f.requested).filter((k) => !before.has(k));
             res.f.torKeys = fresh.filter((k) => k.startsWith("probetor|")).length;
@@ -139,7 +139,7 @@ hauptLauf(async () => {
             delete f.recipes.probetor;
             for (const k of fresh) if (k.startsWith("probetor|")) f.requested.delete(k);
         } catch (e) {
-            res.f.err = (e && e.message) || String(e);
+            res.f.err = fehlerText(e);
         }
         return res;
     });

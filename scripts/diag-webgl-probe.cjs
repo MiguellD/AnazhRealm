@@ -22,7 +22,7 @@
 //   node scripts/diag-webgl-probe.cjs
 // ─────────────────────────────────────────────────────────────────────────
 
-const { statikServer, starteBrowser, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, sleep, fehlerText } = require("./lib/welt-boot.cjs");
 const server = statikServer();
 
 hauptLauf(async () => {
@@ -98,7 +98,7 @@ hauptLauf(async () => {
                     r._gameLoopTick(performance.now());
                     o.tickOk++;
                 } catch (_e) {
-                    o.tickErr = (_e && _e.message) || String(_e);
+                    o.tickErr = fehlerText(_e);
                 }
                 await sleep(50);
             }
@@ -141,7 +141,7 @@ hauptLauf(async () => {
             o.ohneLink = ohneLink.length;
             o.linktNicht = window.__linktNicht || ["W5: der Link-Hörer fehlt (kein WebGL-Backend beim Start)"];
         } catch (e) {
-            o.err = (e && e.message) || String(e);
+            o.err = fehlerText(e);
         }
         return o;
     });

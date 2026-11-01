@@ -23,7 +23,7 @@
 //   node scripts/diag-porta-contract.cjs
 const { fingerabdruck: fingerprint, goldenSelbsttest, vertragIst, goldenWand, kernProbe } = require("./lib/plattform-probe.cjs");
 
-const { studioKern, pruefer, ROOT: root, path } = require("./lib/welt-boot.cjs");
+const { studioKern, pruefer, ROOT: root, jsonKlon, path } = require("./lib/welt-boot.cjs");
 const { errs, check, wandEnde } = pruefer();
 const PC = studioKern("porta-core.js", "__portaCore");
 
@@ -108,7 +108,7 @@ function buildCase(c) {
     for (let i = 1; i < treue.length; i++) console.log(`      ↳ ${treue[i]}`);
     {
         // der eingeschmuggelte Täter: eine Pfosten-Kante 20 cm innerhalb des Bilds, eine fehlende Zeile
-        const schmal = JSON.parse(JSON.stringify(PC.TOR_HUELLE));
+        const schmal = jsonKlon(PC.TOR_HUELLE);
         schmal.ruine.seiten[1][0] -= 0.2;
         delete schmal.geisttor;
         const t = torHuelleTreue(schmal, gemessen);

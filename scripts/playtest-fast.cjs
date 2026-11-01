@@ -7,7 +7,7 @@
 //   node scripts/playtest-fast.cjs        |        npm run playtest:fast
 //   PLAYTEST_STRICT=0 → nur reporten (exit 0)
 
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, jsonKlon, fehlerText } = require("./lib/welt-boot.cjs");
 const STRICT = process.env.PLAYTEST_STRICT !== "0";
 const server = statikServer();
 
@@ -228,7 +228,7 @@ function check(name, ok) {
                 let menschDials = false;
                 const rec = r._foundry && r._foundry.recipes && r._foundry.recipes[AnazhRealm.KOERPER_HOST_RECIPE];
                 if (rec?.s) {
-                    const saved = JSON.parse(JSON.stringify(rec.s));
+                    const saved = jsonKlon(rec.s);
                     r.applyPlayerSoul("human");
                     r.recomputePlayerStats();
                     const base = { hp: st.player.stats.hpMax, sp: st.player.stats.speed };
@@ -262,7 +262,7 @@ function check(name, ok) {
                     ? !!r._buildFromBlueprint(
                           {
                               name: "_fast_schwert",
-                              parts: JSON.parse(JSON.stringify(KS.geraet_schwert.parts)),
+                              parts: jsonKlon(KS.geraet_schwert.parts),
                           },
                           0,
                           undefined,
@@ -386,7 +386,7 @@ function check(name, ok) {
                 const parsed = r.parseChatToDsl("pflanz mir einen eichenhain am wasser");
                 o.satz = !!parsed && parsed.program[0] === "spawn_studio" && parsed.program[1] === "eichen";
             } catch (e) {
-                o.err = e?.message || String(e);
+                o.err = fehlerText(e);
             }
             return o;
         });
@@ -474,7 +474,7 @@ function check(name, ok) {
                                         "stammM";
                         } catch (e) {
                             o.rot++;
-                            notiere("bruch:" + (e?.message || String(e)).slice(0, 60), fall);
+                            notiere("bruch:" + fehlerText(e).slice(0, 60), fall);
                         }
                     }
             return o;

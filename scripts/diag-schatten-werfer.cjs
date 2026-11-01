@@ -63,7 +63,7 @@
 //       wird rot
 //
 //   node scripts/diag-schatten-werfer.cjs [--selftest]
-const { statikServer, warteAufWelt, nullSeite, pruefer, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, nullSeite, pruefer, fehlerText, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 const server = statikServer();
 
@@ -1714,7 +1714,7 @@ function probe(selbsttest) {
             check("S7 Selbsttest: eine zweite Szenen-Tiefe macht Z2 rot", !bildZieleGut(zs), zs.tiefe);
         }
     } catch (e) {
-        check("Lauf", false, (e && e.message) || String(e));
+        check("Lauf", false, fehlerText(e));
     }
     await browser.close();
     server.close();
