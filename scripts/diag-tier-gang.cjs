@@ -128,7 +128,7 @@ const LAUF = (k) => {
         const P = (z, [e, v]) =>
             new T.Vector3(
                 ...[0, 1, 2].map((i) =>
-                    [v.x, v.y, v.z, 1].reduce((a, q, c) => a + q * S.tex.image.data[((z * S.J + e) * 3 + i) * 4 + c], 0)
+                    [v.x, v.y, v.z, 1].reduce((a, q, c) => a + q * S.tex.image.data[AnazhRealm._gangOrt(S, z, e) + i * 4 + c], 0)
                 )
             );
         if (satz) r._tierSatzEin(cr, satz);

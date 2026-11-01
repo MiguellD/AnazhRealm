@@ -643,6 +643,7 @@ class AnazhRealm_bild_kosten {
                 rateN: 0, // der Bau in Raten (`_knotenRate`): Schritte, ihre Zeit, die Frist der laufenden Aufgabe
                 rateMs: 0,
                 rateFrist: null,
+                imFlug: new Map(), // Bau-Schlüssel → der laufende Bau in Raten (`_knotenRate`): EINER je Schlüssel
                 pipeAsync: 0,
                 bereitN: 0,
                 absagenN: 0,
@@ -685,6 +686,9 @@ class AnazhRealm_bild_kosten {
     // Ziel und contextNode des Renderers, die nur dort gelten (darum nie buildAsync daneben) —, je Aufgabe des Event-Loops bis zur
     // Frist ERST_BAU_MS (der erste Schritt immer); der fertige Bau tritt wie im Vendor in den Bau-Cache, ein Zwilling gleichen
     // Schlüssels übernimmt ihn, ein werfender Schritt meldet sich laut und der Vendor baut am Stück. true = der Bau steht.
+    // EIN BAU JE SCHLÜSSEL IM FLUG (w4-knoten-wurzel): der laufende Bau eines Schlüssels steht in `E.imFlug`, jedes Render-Objekt
+    // desselben Schlüssels geht DENSELBEN Bau weiter — bis hier legte jedes, das im selben Bild kam, seinen eigenen an (die Teile
+    // eines Geists, die Kaskaden eines Satzes: Radeon kalt V18.546.159 im Vorbau 48 Zwillings-Bauten, bis neun je Schlüssel).
     _knotenRate(N, ro, E) {
         const d = N.get(ro);
         if (E.rateFrist === null) {
@@ -695,8 +699,20 @@ class AnazhRealm_bild_kosten {
         if (t0 >= E.rateFrist) return false;
         const key = N.getForRenderCacheKey(ro);
         let s = N.nodeBuilderCache.get(key);
+        // ein Bau, den ein Zwilling vollendete, dessen Eintrag mit seinem letzten Leser fiel (`usedTimes`), tritt wieder ein
+        if (s === undefined && d.rate && d.rate.s) N.nodeBuilderCache.set(key, (s = d.rate.s));
+        const bild = N.nodeFrame.frameId;
         try {
-            const R = s === undefined ? d.rate || (d.rate = { b: N._createNodeBuilder(ro, ro.material), i: -1 }) : null;
+            let R = null;
+            if (s !== undefined) E.imFlug.delete(key);
+            else if (!(R = d.rate || E.imFlug.get(key))) {
+                // ein Bau, den seit KNOTEN_FLUG_BILDER kein Leser weiterging (sein Objekt fiel im Bau), verlässt den Flug
+                if (E.imFlug.size >= 32)
+                    for (const [k, x] of E.imFlug)
+                        if (bild - x.bild > AnazhRealm.KNOTEN_FLUG_BILDER) E.imFlug.delete(k);
+                E.imFlug.set(key, (R = { b: N._createNodeBuilder(ro, ro.material), i: -1, bild, s: null }));
+            }
+            if (R) [d.rate, R.bild] = [R, bild];
             const b = R && R.b;
             let arbeit = !!R && R.i < 0 && (b.prebuild(), (R.i = 0), true);
             for (const [STUFE, SHADER] = AnazhRealm.KNOTEN_GANG; R && !arbeit && R.i < 9;) {
@@ -716,10 +732,12 @@ class AnazhRealm_bild_kosten {
                 b.setShaderStage(null);
                 b.buildCode();
                 b.buildUpdateNodes();
-                N.nodeBuilderCache.set(key, (s = N._createNodeBuilderState(b)));
+                N.nodeBuilderCache.set(key, (s = R.s = N._createNodeBuilderState(b)));
+                E.imFlug.delete(key);
             }
         } catch (e) {
             d.rate = undefined;
+            E.imFlug.delete(key);
             this._bruchMelden(`KNOTEN-RATE: ein Schritt warf (${(e && e.message) || e}) — der Vendor baut am Stück`);
             return (N.getForRender(ro), true);
         }
@@ -3139,6 +3157,9 @@ AnazhRealm.GPU_KEHRAUS_MS = 2000;
 // solange der Aufruf unter dieser Zeit (ms) baute — ein Frame trägt so höchstens einen schweren Knoten-Bau je Pass. Im laufenden
 // Spiel nach dem Weltbild ist sie die Frist der Raten je Aufgabe (`_knotenRate`, der Gang r184 `NodeBuilder.build`: KNOTEN_GANG).
 AnazhRealm.ERST_BAU_MS = 4;
+// EIN BAU JE SCHLÜSSEL IM FLUG (`_knotenRate`): so viele Bilder darf ein Bau in Raten ohne Leser stehen, bevor er den Flug
+// verlässt (sein Objekt fiel mitten im Bau; ein Leser desselben Schlüssels legt ihn dann neu an)
+AnazhRealm.KNOTEN_FLUG_BILDER = 600;
 AnazhRealm.KNOTEN_GANG = Object.freeze([
     Object.freeze(["setup", "analyze", "generate"]),
     Object.freeze(["fragment", "vertex", "compute"]),
