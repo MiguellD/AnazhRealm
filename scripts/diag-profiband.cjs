@@ -978,8 +978,9 @@ function selbsttest() {
             !BAND.messortePruefen(haushalt).length
     );
     // S28 — DAS EINSCHWINGEN WARTET AUF DEN DORF-ZUG (Messort dorf: der Zug läuft): ein Export unterwegs und eine wachsende
-    // Siedlung halten die Welt offen, eine ruhige Welt meldet nichts. Und auf den SATZ, DER NOCH SCHRUMPFT (1310-1): ein Satz
-    // über seinem Ziel (`ueberSeit` ≥ 0) hält offen, ein ruhender (-1) nicht.
+    // Siedlung halten die Welt offen, eine ruhige Welt meldet nichts; ein Plan, dessen Takt ruht (`_dorfTaktLebt` false: der
+    // Messort ohne Dorf-Zug), wächst nie und hält nicht offen — derselbe Plan mit lebendem und mit ruhendem Takt. Und auf den
+    // SATZ, DER NOCH SCHRUMPFT (1310-1): ein Satz über seinem Ziel (`ueberSeit` ≥ 0) hält offen, ein ruhender (-1) nicht.
     const welt28 = (z) =>
         Object.assign(
             {
@@ -992,10 +993,15 @@ function selbsttest() {
             },
             z
         );
-    const o28 = BAND.einschwingOffen(welt28({ _autoSettlementQueue: { plan: { slots: [1, 2, 3] }, idx: 1 } }));
+    const dorf28 = [true, false].map(
+        (lebt) =>
+            BAND.einschwingOffen(
+                welt28({ _autoSettlementQueue: { plan: { slots: [1, 2, 3] }, idx: 1 }, _dorfTaktLebt: () => lebt })
+            ).dorfWaechst
+    );
     t(
-        "Einschwingen: eine wachsende Siedlung (1/3), ein Export unterwegs und zwei Lieferungen vor dem Ingest-Takt halten offen, die ruhige Welt nicht",
-        o28.dorfWaechst === "1/3" &&
+        "Einschwingen: eine wachsende Siedlung (1/3), ein Export unterwegs und zwei Lieferungen vor dem Ingest-Takt halten offen, derselbe Plan ohne Takt und die ruhige Welt nicht",
+        dorf28.join() === "1/3," &&
             BAND.einschwingOffen(welt28({ _autoSettlementPendingKey: "-4,-4" })).dorfExport === "-4,-4" &&
             BAND.einschwingOffen(welt28({ _foundryIngestQueue: [1, 2] })).foundryIngest === 2 &&
             Object.keys(BAND.einschwingOffen(welt28({}))).length === 0 &&
