@@ -621,8 +621,14 @@ class AnazhRealm_koerper_leib {
         Object.assign(probe, best);
         [lock.x, lock.z] = [best.x, best.z];
     }
-    // Fuß-IK-Kontext, einmal vermessen: Segment-Längen aus Gelenk-Offsets × Welt-Skala, Knöchel→Sohle
-    // aus der Neutral-Pose. Fehlende Gelenke / ungebauter Chunk → null (kein IK diesen Frame).
+    // Fuß-IK-Kontext, einmal vermessen — aus der RUHE, nie aus der Pose des Bilds: die Kette liest die EINE Vermessung des
+    // Beins (`_gaitBeinMass`, am frischen Rig vor jeder Pose: Gelenk-Längen × die Skala der Hüfte lotrecht und längs), der
+    // Knöchel über der Sohle und die Sohle die EINE Messung des gebauten Fußes (koerper `leibSohle`, im Knöchel-Raum der
+    // Bind-Pose; ohne gebauten Fuß die Zeile des Gangs, dieselbe, die die Pose liest), beide mit der Skala des Knöchels in der
+    // Ruhe (Hüfte × Knie × Knöchel). Vorher maß der erste Stand den Knöchel der Pose des letzten Bilds über der Kapsel: nach
+    // dem Spawn-Fall stand er in der Luft-Pose (`leibLuftPose`, w4-koerper-park: die Knie gebeugt) 16,1 statt 8,8 cm hoch,
+    // die Sohlen schwebten 9 cm (gate:koerper-stand K8) und 17 cm (gate:fall-waechter B), in der Kontrapost-Ruhe 0,7 cm.
+    // Fehlende Gelenke / ungebauter Chunk → null (kein IK diesen Frame).
     _gaitIKPrep(mesh, soleY, yaw) {
         const r = mesh && mesh.userData && mesh.userData.rig;
         if (!r || !Number.isFinite(soleY)) return null;
@@ -631,19 +637,19 @@ class AnazhRealm_koerper_leib {
         if (!L || !R || !L.hip || !L.knee || !L.ankle || !R.hip || !R.knee || !R.ankle || !r.hips) return null;
         let ik = mesh.userData._gaitIK;
         if (!ik) {
-            const tv = this._gaitTmpV || (this._gaitTmpV = new THREE.Vector3());
-            L.hip.getWorldScale(tv);
-            const wpl = Math.abs(tv.y) || 0;
-            const wz = Math.abs(tv.z) || wpl;
-            const l1 = L.knee.position.length() * wpl;
-            const l2 = L.ankle.position.length() * wpl;
+            const M = this._gaitBeinMass(r);
+            const wpl = M.wpl;
+            const wz = M.wz;
+            const l1 = M.l1 * wpl;
+            const l2 = M.l2 * wpl;
             if (!(l1 > 0.02) || !(l2 > 0.02)) return null;
-            L.ankle.getWorldPosition(tv);
-            const soleH = Math.max(0, tv.y - soleY);
             r._sohle = AnazhRealm._leibTakt().leibSohle(mesh, L.ankle);
-            L.ankle.getWorldScale(tv);
+            const sy = wpl * L.knee.scale.y * L.ankle.scale.y;
+            const sz = wz * L.knee.scale.z * L.ankle.scale.z;
+            const tief = r._sohle ? r._sohle[1] : this._gangZeile(true).knoechel * AnazhRealm._gaitReich(M.l1 + M.l2);
+            const soleH = tief * sy;
             const sohle = r._sohle
-                ? [-1, -0.5, 0, 1 / 3, 2 / 3, 1].map((f) => tv.z * (f < 0 ? -f * r._sohle[2] : f * r._sohle[0]))
+                ? [-1, -0.5, 0, 1 / 3, 2 / 3, 1].map((f) => sz * (f < 0 ? -f * r._sohle[2] : f * r._sohle[0]))
                 : null;
             ik = mesh.userData._gaitIK = {
                 sohle,
