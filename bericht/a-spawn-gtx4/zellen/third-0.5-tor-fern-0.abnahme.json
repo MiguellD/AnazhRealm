@@ -1,0 +1,271 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.151",
+  "sha": "b895650c7dc2e303a3299ed17b04c6350d002437"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 73
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 3,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 6,
+  "gestalt": [
+   "start_plattform 1"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   6,
+   93.83,
+   -0.6
+  ],
+  "blick": [
+   -0.98639,
+   -0.1644,
+   0.00002
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 73.6,
+  "sigma": 34.7,
+  "schwarz": 0.0067,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 6 m · Luma 73.6 σ 34.7 schwarz 0.7 % weiß 0.0 % · Stand 18.546.151 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal",
+ "klasse": {
+  "ausdruck": "^portal-membran$|^(?:f|fimp):(?:drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L(\\d)$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 8409,
+  "toene": [
+   "f:drachentor:L0=255/80/80",
+   "f:drachentor:L2=80/255/80",
+   "f:geisttor:L0=80/120/255",
+   "f:kathedrale:L2=255/220/60",
+   "f:maschine:L2=255/80/255",
+   "f:maurentor:L2=60/230/230",
+   "f:ruine:L2=255/150/40",
+   "f:verkalkt:L2=180/120/255",
+   "portal-membran=255/80/80"
+  ],
+  "klassen": {
+   "f:drachentor:L2": {
+    "objekte": 5,
+    "spiegelTreue": null,
+    "spiegelEbene": 95.66,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 28.36,
+    "pixel": 2718,
+    "luma": 136.8,
+    "kante": 0.7006,
+    "kr": 784,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "nyquist": null,
+    "beta": null
+   },
+   "f:kathedrale:L2": {
+    "objekte": 3,
+    "spiegelTreue": -0.3068,
+    "spiegelEbene": 94.093,
+    "sp": [
+     123,
+     0,
+     0,
+     28990.16,
+     28990.16,
+     -8895.37
+    ],
+    "zweiton": 0.0006,
+    "weiss": 0.0067,
+    "wt": 712,
+    "wtZiel": null,
+    "bunt": 18.87,
+    "pixel": 105512,
+    "luma": 80.79,
+    "kante": 0.4786,
+    "kr": 5699,
+    "strich": 0.8637,
+    "si": 35618,
+    "bloecke": 1057,
+    "glatt": 0.4882,
+    "nyquist": 0.0325,
+    "beta": 2.6541
+   },
+   "f:maschine:L2": {
+    "objekte": 6,
+    "spiegelTreue": 0.1735,
+    "spiegelEbene": 93.969,
+    "sp": [
+     218,
+     0,
+     0,
+     2056.68,
+     2056.68,
+     356.73
+    ],
+    "zweiton": 0,
+    "weiss": 0.0019,
+    "wt": 174,
+    "wtZiel": null,
+    "bunt": 32.48,
+    "pixel": 91384,
+    "luma": 117.73,
+    "kante": 0.8781,
+    "kr": 2875,
+    "strich": 0.6968,
+    "si": 41044,
+    "bloecke": 1031,
+    "glatt": 0.4151,
+    "nyquist": 0.0624,
+    "beta": 2.7442
+   },
+   "f:maurentor:L2": {
+    "objekte": 5,
+    "spiegelTreue": 0.4277,
+    "spiegelEbene": 93.792,
+    "sp": [
+     44,
+     0,
+     0,
+     3707.68,
+     3707.68,
+     1585.66
+    ],
+    "zweiton": 0,
+    "weiss": 0.0005,
+    "wt": 20,
+    "wtZiel": null,
+    "bunt": 24.18,
+    "pixel": 41549,
+    "luma": 106.77,
+    "kante": 0.4985,
+    "kr": 4193,
+    "strich": 0.8665,
+    "si": 8221,
+    "bloecke": 318,
+    "glatt": 0.1258,
+    "nyquist": 0.0505,
+    "beta": 2.719
+   },
+   "f:ruine:L2": {
+    "objekte": 3,
+    "spiegelTreue": -0.0939,
+    "spiegelEbene": 93.787,
+    "sp": [
+     118,
+     0,
+     0,
+     2615.82,
+     2615.82,
+     -245.68
+    ],
+    "zweiton": 0,
+    "weiss": 0.0003,
+    "wt": 30,
+    "wtZiel": null,
+    "bunt": 13.92,
+    "pixel": 91493,
+    "luma": 71.82,
+    "kante": 0.4171,
+    "kr": 7176,
+    "strich": 0.4855,
+    "si": 36580,
+    "bloecke": 866,
+    "glatt": 0.291,
+    "nyquist": 0.1217,
+    "beta": 2.0987
+   },
+   "portal-membran": {
+    "objekte": 8,
+    "spiegelTreue": 0.254,
+    "spiegelEbene": 92.395,
+    "sp": [
+     107,
+     0,
+     0,
+     27143.63,
+     27143.63,
+     6894.99
+    ],
+    "zweiton": 0,
+    "weiss": 0.0124,
+    "wt": 1942,
+    "wtZiel": 2872,
+    "bunt": 15.52,
+    "pixel": 156754,
+    "luma": 57.8,
+    "kante": 0.391,
+    "kr": 3235,
+    "strich": 0.7068,
+    "si": 72733,
+    "bloecke": 1829,
+    "glatt": 0.4844,
+    "nyquist": 0.0796,
+    "beta": 2.8345,
+    "ziel": {
+     "r": 0.57,
+     "pixel": 155074,
+     "grund": null
+    }
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx4\\zellen\\third-0.5-tor-fern-0.maske.png"
+ }
+}
