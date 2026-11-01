@@ -1179,5 +1179,58 @@
                 "organ": "_wurfEbene (EIN Lichter-Knoten je Szene, auch im Schatten-Pass: jedes Licht liegt auf der Wurf-Ebene)"
             }
         ]
+    },
+    {
+        "warum": "DER BAU-SCHLÜSSEL UND DER SCHATTEN-GRUND (w4-b-knoten, `_gestaltSchluessel` · `_schattenGrund`): r184 schlüsselt den Knoten-Bau mit dem Schlüssel des Render-Objekts (Stoff-Teil + dynamischer Teil), jede Zahl des Stoffs als „0“/„1“ und den Index der Geometrie als letzten Term; der Bau liest Rauheit, Metall, Leucht- und Umgebungs-Stärke nur als Stoff-Referenz, die Pipeline schlüsselt die Geometrie selbst. Jeder Schatten-Stoff (je Licht) trägt einen eigenen Grund-Knoten, ein Werfer ohne Ausschnitt behält ihn.",
+        "anker": [
+            {
+                "sub": "getForRenderCacheKey(e){return e.initialCacheKey}",
+                "organ": "_gestaltSchluessel (der Bau-Cache liest den Schlüssel über diese Methode)"
+            },
+            {
+                "sub": "t.usedTimes--,0===t.usedTimes&&this.nodeBuilderCache.delete(this.getForRenderCacheKey(e))",
+                "organ": "_gestaltSchluessel (delete zählt unter demselben Schlüssel, gemerkt je Render-Objekt)"
+            },
+            {
+                "sub": "getCacheKey(){return this.getMaterialCacheKey()+this.getDynamicCacheKey()}",
+                "organ": "_gestaltSchluessel (der Schlüssel = Stoff-Teil + dynamischer Teil)"
+            },
+            {
+                "sub": "\"number\"===e?n=0!==i?\"1\":\"0\"",
+                "organ": "_gestaltSchluessel (jede Zahl des Stoffs als 0/1 im Stoff-Teil)"
+            },
+            {
+                "sub": "return e.index&&(t+=\"index,\"),t}getMaterialCacheKey(){",
+                "organ": "_gestaltSchluessel (der Index ist der letzte Term des Geometrie-Schlüssels)"
+            },
+            {
+                "sub": "s.getPrimitiveTopology(t,r),e.getGeometryCacheKey(),e.clippingContextCacheKey].join()",
+                "organ": "_gestaltSchluessel (die Pipeline schlüsselt die Geometrie samt Index selbst)"
+            },
+            {
+                "sub": "r===Bh.ROUGHNESS){const e=this.getFloat(r);",
+                "organ": "BAU_NEUTRAL (Rauheit nur als Stoff-Referenz)"
+            },
+            {
+                "sub": "r===Bh.METALNESS){const e=this.getFloat(r);",
+                "organ": "BAU_NEUTRAL (Metall nur als Stoff-Referenz)"
+            },
+            {
+                "sub": "const e=this.getFloat(\"emissiveIntensity\")",
+                "organ": "BAU_NEUTRAL (Leucht-Stärke nur als Stoff-Referenz)"
+            },
+            {
+                "sub": "return e.envMap?e.envMapIntensity:t.environmentIntensity",
+                "organ": "BAU_NEUTRAL (Umgebungs-Stärke nur im onObjectUpdate)"
+            },
+            {
+                "sub": "t.colorNode=Cn(0,0,0,1),t.isShadowPassMaterial=!0,t.name=\"ShadowMaterial\"",
+                "organ": "_schattenGrund (je Licht ein Schatten-Stoff mit eigenem Grund-Knoten)"
+            },
+            {
+                "sub": "null!==t&&(e.colorNode=t)",
+                "organ": "_schattenGrund (ein Werfer ohne Ausschnitt behält den Grund des Schatten-Stoffs)"
+            }
+        ]
     }
 ]

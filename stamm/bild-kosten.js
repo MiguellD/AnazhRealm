@@ -644,9 +644,11 @@ class AnazhRealm_bild_kosten {
     // Term „0"/„1" (`getMaterialCacheKey`). Die Zahlen in BAU_NEUTRAL liest der Bau nie als Wert — nur als Stoff-Referenz
     // (`materialMetalness`, `getFloat("emissiveIntensity")`, die Umgebung im `onObjectUpdate`; Vendor gelesen, gate:vendor-anker
     // pinnt die Stellen): Stoffe EINER Gestalt (EIN Graph je Signatur, `_graphTeilen`) mit Metall 0 und 0,1 bauten byte-gleich
-    // je ein Programm (headless kalt 01.11.: die Karten-Bühne dreimal dasselbe). Der Bau-Schlüssel ist der r184s, gelesen mit
-    // diesen Zahlen als 1 — Pipeline, Neuanlage des Render-Objekts und jeder andere Leser behalten den Vendor-Schlüssel; gemerkt
-    // je Render-Objekt (`delete` zählt `usedTimes` unter demselben). Der Rufer: der Anschluss des Renderers nach init().
+    // je ein Programm (headless kalt 01.11.: die Karten-Bühne dreimal dasselbe). Ebenso den Index der Geometrie (`index,` im
+    // Geometrie-Schlüssel): der Bau liest ihn nie, die Pipeline schlüsselt ihn selbst (`getRenderCacheKey`) — die Arena und der
+    // Zeichner EINES Stoffs bauten dasselbe Programm zweimal (52 + 56 ms). Der Bau-Schlüssel ist der r184s, gelesen mit diesen
+    // Zahlen als 1 und ohne den Index — Pipeline, Neuanlage des Render-Objekts und jeder andere Leser behalten den Vendor-
+    // Schlüssel; gemerkt je Render-Objekt (`delete` zählt `usedTimes` unter demselben). Der Rufer: der Anschluss nach init().
     _gestaltSchluessel(renderer) {
         const N = renderer && renderer._nodes;
         if (!N || typeof N.getForRenderCacheKey !== "function")
@@ -657,9 +659,14 @@ class AnazhRealm_bild_kosten {
         N.getForRenderCacheKey = function (ro) {
             if (ro._anazhBau !== undefined) return ro._anazhBau;
             const m = ro.material;
+            const null0 = !!m && NEUTRAL.some((p) => m[p] === 0);
             let k = ro.initialCacheKey;
-            if (m && NEUTRAL.some((p) => m[p] === 0)) {
-                const sicht = Object.create(ro, { material: { value: new Proxy(m, blick) } });
+            if (null0 || (ro.geometry && ro.geometry.index)) {
+                const geo = ro.getGeometryCacheKey().replace(/index,$/, "");
+                const sicht = Object.create(ro, {
+                    material: { value: null0 ? new Proxy(m, blick) : m },
+                    getGeometryCacheKey: { value: () => geo },
+                });
                 k = ro.getMaterialCacheKey.call(sicht) + ro.getDynamicCacheKey();
             }
             return (ro._anazhBau = k);
