@@ -1176,8 +1176,8 @@ hauptLauf(async () => {
         try {
             // ===== (11) DAS DACH IST DER BESTAND =====
             // Die Deckung des Kronendachs (Fern-Farbe out[6], fussM 0) gegen die Kronen-Deckung, die der Wald-Generator auf
-            // derselben Fläche wirklich stehen lässt: 192 × 192 m um den Spieler, jeder stehende Dart (_forestCellDarts +
-            // _forestDartSteht, die Perf-Kappung keep) mit seiner Krone (_kronenRadiusFuer) auf ein 1-m-Raster gemalt, je
+            // derselben Fläche wirklich stehen lässt: 192 × 192 m um den Spieler, jeder stehende Dart (der Bestand
+            // _forestCellDarts, die Perf-Kappung keep) mit seiner Krone (_kronenRadiusFuer) auf ein 1-m-Raster gemalt, je
             // 32-m-Land-Kachel gegen das Mittel der Dach-Deckung (4-m-Raster). SELBSTTEST: das alte Dach (die Geburt als Deckung,
             // phyto-core forestBestand.geburt) fällt rot.
             const H = 96;
@@ -1188,18 +1188,11 @@ hauptLauf(async () => {
             const F = AnazhRealm.FOREST;
             const seedInt = r._forestSeedInt();
             const fd = r._effectiveFoliageDensity();
-            const memo = new Map();
-            const cellDarts = (gx, gz) => {
-                const k = gx + "," + gz;
-                let d = memo.get(k);
-                if (!d) memo.set(k, (d = r._forestCellDarts(gx, gz, seedInt)));
-                return d;
-            };
             const deck = new Uint8Array(N * N);
             for (let gz = Math.floor(z0 / F.cell); gz <= Math.floor((z0 + N) / F.cell); gz++)
                 for (let gx = Math.floor(x0 / F.cell); gx <= Math.floor((x0 + N) / F.cell); gx++)
-                    for (const d of cellDarts(gx, gz)) {
-                        if (!r._forestDartSteht(d, gx, gz, cellDarts) || (fd < 1 && d.keep >= fd)) continue;
+                    for (const d of r._forestCellDarts(gx, gz, seedInt)) {
+                        if (fd < 1 && d.keep >= fd) continue;
                         const rad = r._kronenRadiusFuer(d.sp, d.s);
                         if (!(rad > 0)) continue;
                         for (

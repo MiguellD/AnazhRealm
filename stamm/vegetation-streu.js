@@ -1970,7 +1970,7 @@ class AnazhRealm_vegetation_streu {
         // Spawn-Affinitäts-Achsen verschieben sich nie. Geometrie aus dem gefrorenen variantSeed:
         // bit-identisch zwischen Erstwachstum und Re-Growth nach Restore (Promotion ohne Sprung).
         const variantSeed = seeds[variantIndex];
-        const parts = this._growTreeBlueprint(species, variantSeed);
+        const parts = this._growTreeBlueprint(species, variantSeed, { spawn: true });
         if (!Array.isArray(parts) || parts.length < 4) return null;
         // Variations-Wand: nur UNDEKLARIERTE Achsen strikt (Δ < 0.05); in SPECIES_TAG_VARIATION deklarierte
         // Achsen sind form-begründet erlaubt (z. B. Totholz ohne Laub-Krone). Die Disziplin ist die
@@ -2055,11 +2055,12 @@ class AnazhRealm_vegetation_streu {
         return false;
     }
 
-    _growTreeBlueprint(speciesKey, seed) {
+    _growTreeBlueprint(speciesKey, seed, opts) {
         // Welt-Routing: ab gen >= 5 wächst jede Art mit Rezept-Zeile im Gesetzbuch (_phytoArt) aus dem Kern,
-        // davor die Legacy-Form (alte Welten bit-identisch).
+        // davor die Legacy-Form (alte Welten bit-identisch). `opts.spawn`: der Bauplan eines Spawns (sein Wuchs kommt aus dem
+        // Wald-Faden, `_wuchsSkelett`).
         if (this._genVersion && this._genVersion() >= 5 && this._phytoArt(speciesKey)) {
-            return this._growTreeBlueprintRich(speciesKey, seed);
+            return this._growTreeBlueprintRich(speciesKey, seed, opts);
         }
         return this._growTreeBlueprintLegacy(speciesKey, seed);
     }
@@ -2102,32 +2103,22 @@ class AnazhRealm_vegetation_streu {
         return { api: s.api, slim: s.slim, trop: s.trop, delta: s.delta, leaf: s.leaf };
     }
 
-    _growTreeBlueprintRich(speciesKey, seed, opts) {
-        // LOD-Stufen aus EINEM Gesetz: `opts.lod` ist die Bau-Stufe von treeParams (Blatt-Stride, Blatt-Maß, Wurzeln) und
-        // beschneidet die Part-Tiefe, nie die Form — lod 0 = Hero · lod 1 = nur L1 · lod 2 = Stamm + 1 Kronen-Anker. Der
-        // seed ist über alle Stufen identisch; die Kronen-Mitte (Skeleton-Anchors) wandert nicht → kein LOD-Pop.
+    // DER PLAN EINES WUCHSES (w4-b-pflanzen): Stufe, Schlüssel, Saat-Hash, Art, Gestalt und Phänotyp eines gewachsenen Bauplans —
+    // die EINE Ableitung, aus der der Bauplan (`_growTreeBlueprintRich`) und die Bestellung beim Wald-Faden (`_wuchsBestellen`)
+    // lesen. LOD-Stufen aus EINEM Gesetz: `opts.lod` ist die Bau-Stufe von treeParams (Blatt-Stride, Blatt-Maß, Wurzeln) und
+    // beschneidet die Part-Tiefe, nie die Form — lod 0 = Hero · lod 1 = nur L1 · lod 2 = Stamm + 1 Kronen-Anker. Der seed ist
+    // über alle Stufen identisch; die Kronen-Mitte (Skeleton-Anchors) wandert nicht → kein LOD-Pop.
+    // ─── DIE ART UND IHR GESETZ (K24) ───
+    // Regler, Phänotyp und Bau-Stufe fließen durch die EINE Ableitung `__phytoCore.treeParams` — mit der Phänotyp-Zeile der Art
+    // (die Buche ihre glatte graue Rinde, der Karst-Baum seinen Wurzelanlauf), wie der gesehene Baum im Worker. Instanz-Varianz =
+    // der Saat-Wurf des Gesetzes (±16 % Höhe, ±0,1 Regler, der Farb-Wurf). opts.recipeDials überschreibt die Regler (Werkstatt →
+    // Live-Vorschau). Keine Genom-Krone, keine Neigung, kein Herbst-Ton: der gefühlte Baum trägt nur, was das Gesetz trägt.
+    // → { lodLevel, sKey, hash, art, gewachsen, P0, P } · null (keine Pflanze mit Regler-Zeile, eine Gestalt ohne Skelett).
+    _wuchsPlan(speciesKey, seed, opts) {
         const lodLevel = opts && Number.isFinite(opts.lod) ? Math.max(0, Math.min(2, opts.lod | 0)) : 0;
         const sKey = String(speciesKey || "baum_eiche") + "|" + String(seed || "g8-default") + "|v5";
         let hash = 2166136261;
         for (let i = 0; i < sKey.length; i++) hash = ((hash ^ sKey.charCodeAt(i)) * 16777619) >>> 0;
-        if (!this._growTreeNoise) {
-            const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-            this._growTreeNoise = new SimplexNoise(worldSeed + "-veg-grammatik");
-        }
-        const n = this._growTreeNoise;
-        let step = 0;
-        const r01 = () => {
-            step++;
-            const v = n.noise2D((hash >>> 0) * 0.0137 + step * 17.31, step * 7.79 - (hash >>> 8) * 0.0083);
-            return (v + 1) * 0.5;
-        };
-        const lerp = (a, b, t) => a + (b - a) * t;
-        // ─── DIE ART UND IHR GESETZ (K24) ───
-        // Regler, Phänotyp und Bau-Stufe fließen durch die EINE Ableitung `__phytoCore.treeParams` — mit der Phänotyp-Zeile
-        // der Art (die Buche ihre glatte graue Rinde, der Karst-Baum seinen Wurzelanlauf), wie der gesehene Baum im Worker.
-        // Instanz-Varianz = der Saat-Wurf des Gesetzes (±16 % Höhe, ±0,1 Regler, der Farb-Wurf). opts.recipeDials
-        // überschreibt die Regler (Werkstatt → Live-Vorschau). Keine Genom-Krone, keine Neigung, kein Herbst-Ton: der
-        // gefühlte Baum trägt nur, was das Gesetz trägt.
         const art = this._phytoArt(speciesKey);
         if (!art) return null;
         const pc = globalThis.__phytoCore;
@@ -2148,9 +2139,114 @@ class AnazhRealm_vegetation_streu {
         // DAS WELT-MASS (K20): der gefühlte Baum wächst mit der Welt-Skala seiner Art, wie der Wald den gesehenen pflanzt
         // (die EINE Template→Welt-Quelle `_foundryWorldScaleMatrix`, dieselbe Zahl wie der Kern `__weltSkalaArt`) — der
         // Stamm, den die Kollision liest, misst H/hd wie der gezeichnete (vorher der Stamm der Form: Eiche 0,88 statt 0,22 m).
-        const P0 = gewachsen
-            ? gewachsen.P
-            : pc.treeParams(dials, hash >>> 0, lodLevel, art.rec, this._foundryWorldScaleMatrix(art.id).elements[0]);
+        const welt = gewachsen ? null : this._foundryWorldScaleMatrix(art.id).elements[0];
+        const P0 = gewachsen ? gewachsen.P : pc.treeParams(dials, hash >>> 0, lodLevel, art.rec, welt);
+        // Hier reiten nur die Render-Budgets auf P (countCap/leafBudget schneiden DETAIL nach dem Wuchs, nie den
+        // Zufalls-Strom; trunkMul=1). leafBudget 480 bei L0 füllt die Krone wie die Vorlage.
+        const P = Object.assign({}, P0, {
+            trunkMul: 1,
+            countCap: lodLevel === 0 ? 3600 : lodLevel === 1 ? 600 : 90,
+            leafBudget: lodLevel === 0 ? 480 : lodLevel === 1 ? 90 : 8,
+        });
+        // `frei`: der Plan des Samens (keine Gestalt, keine Werkstatt-Regler) — nur er wächst im Wald-Faden; sein Schlüssel im
+        // Vorrat (`vorrat`) trägt Stufe und Welt-Maß (vor dem Buch liest das Maß die Tafel des Kerns)
+        const frei = !gestalt && !(opts && opts.recipeDials);
+        return { lodLevel, sKey, hash, art, gewachsen, P0, P, frei, vorrat: sKey + "|" + lodLevel + "|" + welt };
+    }
+
+    // DAS SKELETT EINES PLANS (w4-b-pflanzen, Lehre 14 + 24): der Wuchs aus dem Vorrat des Wald-Fadens (`_wuchsVorrat`, gepackt,
+    // phyto-core `wuchsEntpacken`), sonst wächst es hier (phyto-core `growSkeleton` am Strom seines Genoms). Ein Plan des Spawns
+    // (`spawn`, `_growTreeBlueprintForSpawn`), der hier wächst, während der Wald-Faden lebt, umging den Faden: die Saat wartet
+    // auf ihren Wuchs (`_wuchsFehlt`) — außer im synchronen Pfad (`_vegSpawnImmediate`, die Test-Naht) bricht er laut beim Namen
+    // (`_fadenUmgangen`, die Faden-Linse gate:worker-dichte --faden).
+    _wuchsSkelett(plan, spawn) {
+        const f = plan.frei && this._wuchsVorrat ? this._wuchsVorrat.get(plan.vorrat) : null;
+        if (f) return globalThis.__phytoCore.wuchsEntpacken(f);
+        if (spawn && plan.frei && this._waldFadenLebt() && !this._vegSpawnImmediate)
+            this._fadenUmgangen(`der Wuchs „${plan.sKey}“ (L${plan.lodLevel})`);
+        return this._phytoGrowSkeleton(plan.P, this._rollGenome(plan.sKey, "tree-genome").seq("phyto-growth"));
+    }
+
+    // DIE BESTELLUNG EINES WUCHSES beim Wald-Faden (w4-b-pflanzen): der Plan (L0 des Spawns) reist als Phänotyp und Zustand des
+    // Genom-Stroms (voxel-worker `wuchs`, nah zuerst in der Schlange des Walds), die Antwort landet gepackt per Transfer im Vorrat
+    // (`_wuchsVorrat`, Schlüssel = Plan-Schlüssel, Stufe und Welt-Maß) und regt die Welt. → true: der Wuchs steht (oder es gibt keinen —
+    // keine Art, eine Gestalt), false: er ist bestellt.
+    _wuchsBestellen(speciesKey, seed) {
+        const plan = this._wuchsPlan(speciesKey, seed, null);
+        if (!plan || !plan.frei) return true;
+        const k = plan.vorrat;
+        const V = this._wuchsVorrat || (this._wuchsVorrat = new Map());
+        if (V.has(k)) return true;
+        const flug = this._wuchsFlug || (this._wuchsFlug = new Set());
+        if (flug.has(k)) return false;
+        flug.add(k);
+        const h = this._rollGenome(plan.sKey, "tree-genome").zustand("phyto-growth");
+        this._nebenAuftrag("wald", { type: "wuchs", P: plan.P, h, rang: 0 }).then(
+            (m) => {
+                flug.delete(k);
+                V.set(k, new Float64Array(m.zahlen));
+                this._weltRegt();
+            },
+            (e) => {
+                flug.delete(k);
+                this._bruchMelden(`WUCHS: der Wald-Faden wuchs „${k}“ nicht — ${e && e.message ? e.message : e}`);
+            }
+        );
+        return false;
+    }
+
+    // FEHLT DER WUCHS DER SAAT? (w4-b-pflanzen): die Saat des Chunks (cx, cz) wächst Büsche (`SAAT_BUSCH`, je Region EINE Variante:
+    // `_treeVariantIndexFor` am Saat-Namen der Region — der Strauch-Teppich des Walds und die Proben, `_forestPlantChunk` ·
+    // `_vegetationSampleSpawn`); jeder Bauplan, der noch nicht steht und dessen Wuchs nicht im Vorrat liegt, ist beim Wald-Faden
+    // bestellt (`_wuchsBestellen`) — die Saat wartet auf ihn wie der Pflanz-Gang auf seinen Plan. Ohne Faden oder vor der
+    // Genese 5 (die Grammatik wächst ohne Kern) wartet nichts. Bis w4-b-pflanzen wuchs der erste Strauch-Teppich jedes Busches im
+    // Haupt-Faden (headless kalt bis zum Bild 3 Skelette, 0,14 s `growSkeleton`).
+    _wuchsFehlt(cx, cz) {
+        if (!this._waldFadenLebt() || !(this._genVersion && this._genVersion() >= 5)) return false;
+        const wm = this.state.worldMeta;
+        if (!wm) return false;
+        const worldSeed = wm.seed || "anazh-realm-seed";
+        const { span } = this._voxelChunkConfig();
+        const R = 256;
+        const [r0x, r1x] = [Math.floor((cx * span) / R), Math.floor(((cx + 1) * span) / R)];
+        const [r0z, r1z] = [Math.floor((cz * span) / R), Math.floor(((cz + 1) * span) / R)];
+        // was schon stand, steht am Stand der Wahrnehmung (das Welt-Maß des Plans, `_studioRenderConfig`) weiter: ohne neuen Plan
+        const rc = AnazhRealm._studioRenderConfig || null;
+        if (!this._wuchsSteht || this._wuchsStehtVon !== rc) [this._wuchsSteht, this._wuchsStehtVon] = [new Set(), rc];
+        let fehlt = false;
+        for (const art of Object.values(AnazhRealm.SAAT_BUSCH)) {
+            if (!this._phytoArt(art)) continue;
+            const seeds = this._variantSeedsFor(art, true);
+            if (!seeds) continue;
+            for (let rx = r0x; rx <= r1x; rx++)
+                for (let rz = r0z; rz <= r1z; rz++) {
+                    const idx = this._treeVariantIndexFor(art, `${worldSeed}|${art}|${rx},${rz}`);
+                    const k = art + "|" + seeds[idx];
+                    if (this._wuchsSteht.has(k) || this.state.blueprints[`grown_${art}_v${idx}`]) continue;
+                    if (this._wuchsBestellen(art, seeds[idx])) this._wuchsSteht.add(k);
+                    else fehlt = true;
+                }
+        }
+        return fehlt;
+    }
+
+    _growTreeBlueprintRich(speciesKey, seed, opts) {
+        if (!this._growTreeNoise) {
+            const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+            this._growTreeNoise = new SimplexNoise(worldSeed + "-veg-grammatik");
+        }
+        const n = this._growTreeNoise;
+        // der Plan (Stufe, Schlüssel, Hash, Art, Gestalt, Phänotyp) aus der EINEN Ableitung (`_wuchsPlan`)
+        const plan = this._wuchsPlan(speciesKey, seed, opts);
+        if (!plan) return null;
+        const { lodLevel, hash, art, gewachsen, P0 } = plan;
+        let step = 0;
+        const r01 = () => {
+            step++;
+            const v = n.noise2D((hash >>> 0) * 0.0137 + step * 17.31, step * 7.79 - (hash >>> 8) * 0.0083);
+            return (v + 1) * 0.5;
+        };
+        const lerp = (a, b, t) => a + (b - a) * t;
         // Die Größenklasse ist ein abgeleitetes Etikett der Ableitung (nur baum_*: Sträucher und Kräuter SIND klein).
         const isTreeSpecies = String(speciesKey || "").startsWith("baum_");
         let sizeClass;
@@ -2207,18 +2303,11 @@ class AnazhRealm_vegetation_streu {
             });
         };
         // Stamm + Äste wachsen aus den GESETZEN (McMahon H→D · da Vinci r^Δ · Apikaldominanz): der Phyto-Kern
-        // (_phytoGrowSkeleton) ist die EINE Wuchs-Quelle, P die EINE Ableitung. Eigener Sub-Strom `genome.seq`
+        // (_phytoGrowSkeleton) ist die EINE Wuchs-Quelle, P die EINE Ableitung (`_wuchsPlan`). Eigener Sub-Strom `genome.seq`
         // (unabhängig von r01). Ausgänge: parts[] (cylinder holz + sphere laub, Tags frozen) + `_lastTreeSkeleton`.
-        const phytoSeq = this._rollGenome(sKey, "tree-genome").seq("phyto-growth");
-        // Hier reiten nur die Render-Budgets auf P (countCap/leafBudget schneiden DETAIL nach dem Wuchs, nie den
-        // Zufalls-Strom; trunkMul=1). leafBudget 480 bei L0 füllt die Krone wie die Vorlage.
-        const P = Object.assign({}, P0, {
-            trunkMul: 1,
-            countCap: lodLevel === 0 ? 3600 : lodLevel === 1 ? 600 : 90,
-            leafBudget: lodLevel === 0 ? 480 : lodLevel === 1 ? 90 : 8,
-        });
-        // die Gestalt trägt ihr gewachsenes Skelett (der Strom des Workers), sonst wächst es hier aus dem Samen
-        const phyto = gewachsen ? gewachsen.nodes : this._phytoGrowSkeleton(P, phytoSeq);
+        // die Gestalt trägt ihr gewachsenes Skelett (der Strom des Workers), sonst kommt es aus dem Vorrat des Wald-Fadens oder
+        // wächst hier aus dem Samen (`_wuchsSkelett`)
+        const phyto = gewachsen ? gewachsen.nodes : this._wuchsSkelett(plan, !!(opts && opts.spawn));
         const trunkBaseR = phyto.trunkR;
         // Trunk-Kette = run 0 + die durchgehende Lead-Nachkommen-Kette. Der Wuchs ist tiefen-zuerst mit dem
         // Lead als children[0] → countCap beschneidet nur Seiten-Äste, NIE die Stammhöhe.

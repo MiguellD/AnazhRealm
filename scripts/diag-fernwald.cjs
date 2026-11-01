@@ -113,7 +113,6 @@ hauptLauf(async () => {
             const wahlF = async (proben) => {
                 await frischAlle(proben);
                 const seedInt = r._forestSeedInt();
-                const darts = (gx, gz) => r._forestCellDarts(gx, gz, seedInt);
                 for (const e of proben) {
                     if ((await frag(e)) === V) continue;
                     const gx = Math.floor(e.position.x / CELL);
@@ -121,10 +120,10 @@ hauptLauf(async () => {
                     const nah = [];
                     for (let ax = -4; ax <= 4; ax++)
                         for (let az = -4; az <= 4; az++)
-                            for (const o of darts(gx + ax, gz + az)) {
+                            for (const o of r._forestCellDarts(gx + ax, gz + az, seedInt)) {
                                 const d = Math.hypot(o.x - e.position.x, o.z - e.position.z);
                                 if (d < 1e-3 || d >= FS.abstand * (kr + o.T)) continue;
-                                if (r._forestDartSteht(o, gx + ax, gz + az, darts)) nah.push({ o, d });
+                                nah.push({ o, d }); // der Bestand: jeder Dart steht
                             }
                     if (nah.length === 1 && nah[0].d > 4) return { e, o: nah[0].o };
                 }
@@ -399,26 +398,17 @@ hauptLauf(async () => {
                     if (!r._archIsRendered(e)) luecke++;
                 }
             };
-            stelle(start.x + ux * weg, start.z + uz * weg);
-            await folge(40);
-            const draussen = {
+            // der Baum vom Ort (x, z) aus, nach 40 Takten
+            const lage = async (x, z) => (stelle(x, z), await folge(40), {
                 d: +dist(e).toFixed(1),
                 gleich: JSON.stringify(e.instSlots) === slots,
                 voll: stempel(e) < 0,
                 partner: partner(e),
                 stufe: e._lodLevel,
                 radius: Math.round(st.architectureCullingRadius),
-            };
-            stelle(start.x, start.z);
-            await folge(40);
-            const drinnen = {
-                d: +dist(e).toFixed(1),
-                gleich: JSON.stringify(e.instSlots) === slots,
-                voll: stempel(e) < 0,
-                partner: partner(e),
-                stufe: e._lodLevel,
-                radius: Math.round(st.architectureCullingRadius),
-            };
+            });
+            const draussen = await lage(start.x + ux * weg, start.z + uz * weg);
+            const drinnen = await lage(start.x, start.z);
             return { typ: e.type, d0: +d0.toFixed(1), radius: RMIN + "–" + RMAX, draussen, drinnen, luecke, takte };
         };
         res.D = await uebergang();
