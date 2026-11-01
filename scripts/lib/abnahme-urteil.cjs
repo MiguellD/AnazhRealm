@@ -2377,6 +2377,8 @@ function sollTafelSelbsttest(tafel, q) {
                 frisch(k, k.mass.messung);
                 return sollTafelUrteil(t5, q).zeilen.find((x) => x.id === id);
             };
+        // die Zeile fehlt beim Namen (seit haar.K2 trägt die Albedo-Tafel die Zeile haar — der Fall baut sein Fehlen selbst)
+        finde(t5, (x) => x.id === "haar").mass.rohdatei.zeile = "phantom";
         const [fg, fr, hr] = [z5("fell", 0.54), z5("fell", 0.2), z5("haar", 0.44)];
         if (!(fg.urteil === "GRÜN" && fr.urteil === "ROT" && hr.urteil === "ROT" && /albedo: /.test(hr.grund)))
             v.push(`Maß strich: fell 0,54 ${fg.urteil} (${fg.grund}), 0,2 ${fr.urteil}, haar ohne Albedo-Zeile ${hr.urteil} (${hr.grund})`);
