@@ -769,7 +769,7 @@ const ZUG_PROBE = {
 //              Deckung 0 zur selben Uhr (das Gras im Wind fällt heraus); Varianz von S und die beste Korrelation S(t) ↔ S(t + 5)
 //              über die Verschiebung — ein gemaltes Muster steht (Verschiebung 0), ein dunklerer Himmel trägt keine Varianz am Boden.
 //   ferne.K4   die Uhr der Sonne 5° (die Abend-Uhr der Bühne, halbiert), Orte 2,5–7 km aus dem Gelände-Gesetz: zur Sonne geneigt
-//              (N·L > 0,2), vom Auge (40 m über dem Boden) sichtbar; im Schatten, wo der Horizont zur Sonne > 6,5° steht und sein Grat
+//              (N·L > 0,2), vom Auge (80 m über dem Boden; aus 40 m sah es am Dorf 8 von 500) sichtbar; im Schatten, wo der Horizont zur Sonne > 6,5° steht und sein Grat
 //              ≥ 2 km vom Auge liegt, im Licht unter 3,5°. Luma je N·L im Schatten gegen im Licht (eine dunklere Fern-Farbe trifft beide).
 //   schatten.K5  Mitternacht, die nächste Leuchtquelle des LICHT_GESETZ (`_blockerMit("licht")`, im Pool der Probe), ein Pfosten
 //              0,3 × 2 m 2 m daneben: Boden 0,35–0,85 m hinter dem Pfosten gegen denselben Radius ±30° daneben; dazu ohne Pfosten (Kontrolle).
@@ -864,7 +864,12 @@ async function neunSeite(r, T, C) {
     };
     const boden = (x, z) => r._voxelSurfaceY(x, z);
     const gesetz = (x, z) => r._terrainMacroSurfaceY(x, z, false);
-    const sonne = () => dl.position.clone().sub(dl.target.position).normalize();
+    // die Sonne aus dem Himmel (`skyboxUniforms.sunDir`, derselbe Schreiber wie das Richtlicht): nach Sonnenuntergang trägt das Richtlicht
+    // den Mond (Uhr 0,8: Sonne −16,7°, Licht +18°) — die Abend-Uhr halbierte sonst gegen den Mond
+    const sonne = () => {
+        const U = st.skyboxUniforms;
+        return U && U.sunDir && U.sunDir.value ? U.sunDir.value.clone().normalize() : dl.position.clone().sub(dl.target.position).normalize();
+    };
     const koerperListe = [];
     const koerper = (geo, rgb, name) => {
         const m = new T.Mesh(geo, r._buildToonNodeMaterial({ color: new T.Color(rgb[0], rgb[1], rgb[2]) }));
@@ -883,28 +888,33 @@ async function neunSeite(r, T, C) {
         return !rc.intersectObject(sc, true).some((h) => !String(h.object.name || "").startsWith("probe:") && h.object !== st.playerMesh);
     };
     const OBEN = new T.Vector3(0, 1, 0);
-    // DER FREIE PLATZ: voraus im Blick der Sitzung die erste Stelle auf Land, ±R m eben, über der kein Werfer Sonne und Himmel nimmt
+    // DER FREIE PLATZ: die ebenste Stelle auf Land 8–120 m um den Spieler (16 Richtungen), ihr Hang über ±R m höchstens C.hangMax, über
+    // der kein Werfer Sonne und Himmel nimmt (am Dorf lag im Umkreis 40 m keine Stelle unter 20 % Hang). Fehlt sie: die Gründe gezählt
     const platz = (R, S, nicht) => {
-        for (const d of [10, 14, 18, 24, 30, 38, 46])
-            for (const s of [0, 6, -6, 12, -12, 18, -18]) {
-                const x = P0.x + fwd0.x * d + quer0.x * s, z = P0.z + fwd0.z * d + quer0.z * s;
-                if ((nicht || []).some((q) => Math.hypot(q.x - x, q.z - z) < 2 * R + 4)) continue;
-                if (typeof r._landAt === "function" && !r._landAt(x, z, 0.3)) continue;
-                const h = boden(x, z);
-                if (!Number.isFinite(h)) continue;
-                let eben = true;
-                for (const [a, b] of [[R, 0], [-R, 0], [0, R], [0, -R], [0.7 * R, 0.7 * R], [-0.7 * R, -0.7 * R], [0.7 * R, -0.7 * R], [-0.7 * R, 0.7 * R]])
-                    if (!(Math.abs(boden(x + a, z + b) - h) <= 0.25 + 0.04 * R)) {
-                        eben = false;
-                        break;
-                    }
-                if (!eben) continue;
-                const p = new T.Vector3(x, h + 0.3, z);
-                if (S && !frei(p, S, 120)) continue;
-                if (!frei(p, OBEN, 120)) continue;
-                return new T.Vector3(x, h, z);
+        const grund = { nah: 0, wasser: 0, hang: 0, werfer: 0 };
+        const kand = [];
+        for (const d of [8, 14, 22, 32, 45, 60, 80, 100, 120])
+            for (let k = 0; k < 16; k++) {
+                const w = (k * Math.PI) / 8, x = P0.x + d * Math.sin(w), z = P0.z + d * Math.cos(w);
+                if ((nicht || []).some((q) => Math.hypot(q.x - x, q.z - z) < 2 * R + 4)) (grund.nah++, 0);
+                else if (typeof r._landAt === "function" && !r._landAt(x, z, 0.3)) grund.wasser++;
+                else {
+                    const h = boden(x, z);
+                    if (!Number.isFinite(h)) continue;
+                    let hang = 0;
+                    for (const [a, b] of [[R, 0], [-R, 0], [0, R], [0, -R], [0.7 * R, 0.7 * R], [-0.7 * R, -0.7 * R], [0.7 * R, -0.7 * R], [-0.7 * R, 0.7 * R]])
+                        hang = Math.max(hang, Math.abs(boden(x + a, z + b) - h) / R);
+                    if (!(hang <= C.hangMax)) grund.hang++;
+                    else kand.push({ x, z, h, hang });
+                }
             }
-        return null;
+        kand.sort((a, b) => a.hang - b.hang);
+        for (const q of kand.slice(0, 12)) {
+            const p = new T.Vector3(q.x, q.h + 0.3, q.z);
+            if ((S && !frei(p, S, 120)) || !frei(p, OBEN, 120)) grund.werfer++;
+            else return Object.assign(new T.Vector3(q.x, q.h, q.z), { hang: +q.hang.toFixed(3) });
+        }
+        throw new Error("kein freier Platz (±" + R + " m, Hang ≤ " + C.hangMax + "): " + JSON.stringify(grund));
     };
     const plaetze = [];
     const teil = async (name, fn) => {
@@ -1019,8 +1029,7 @@ async function neunSeite(r, T, C) {
             window.__buehne({});
             const S = sonne();
             const a = new T.Vector3(S.x, 0, S.z).normalize();
-            const M = platz(8, S, plaetze);
-            if (!M) throw new Error("kein freier, ebener Platz für die Wand (±8 m)");
+            const M = platz(4, S, plaetze);
             plaetze.push(M);
             const n = a.clone().negate();
             const quer = new T.Vector3(-n.z, 0, n.x);
@@ -1047,14 +1056,13 @@ async function neunSeite(r, T, C) {
             return {
                 LA: r4(A0.L), LB: r4(B0.L), n: Math.min(A0.n, B0.n), boden: r4(Bo.L),
                 gewinn: A0.L > 0 && B0.L > 0 ? r4(A0.L / B0.L - 1) : null,
-                nl: r4(n.dot(S)), sonneGrad: +((Math.asin(S.y) * 180) / Math.PI).toFixed(1), hubM: r4(hub), platz: [+M.x.toFixed(1), +M.z.toFixed(1)],
+                nl: r4(n.dot(S)), sonneGrad: +((Math.asin(S.y) * 180) / Math.PI).toFixed(1), hubM: r4(hub), platz: [+M.x.toFixed(1), +M.z.toFixed(1)], hang: M.hang,
             };
         });
         // ───── schatten.K3 — Kontakt und Himmels-Sicht (die Sonne aus) ─────
         await teil("schatten.K3", async () => {
             window.__buehne({});
-            const M = platz(7, null, plaetze);
-            if (!M) throw new Error("kein freier, ebener Platz für Fuß und Sockel (±7 m)");
+            const M = platz(5, null, plaetze);
             plaetze.push(M);
             const c = fwd0.clone().negate(); // zur Kamera
             const b = new T.Vector3(-c.z, 0, c.x);
@@ -1088,7 +1096,7 @@ async function neunSeite(r, T, C) {
                         n: Math.min(bm.n, fm.n),
                     };
                 });
-                return { je, platz: [+M.x.toFixed(1), +M.z.toFixed(1)] };
+                return { je, platz: [+M.x.toFixed(1), +M.z.toFixed(1)], hang: M.hang };
             } finally {
                 dl.intensity = I0;
             }
@@ -1282,7 +1290,9 @@ async function neunSeite(r, T, C) {
             const PF = Q.clone().addScaledVector(dir, 2);
             pf.position.set(PF.x, gy + 0.98, PF.z);
             pf.rotation.y = Math.atan2(dir.x, dir.z);
-            stell(Q.clone().addScaledVector(dir, -0.8).setY(gy + 3.2), PF.clone().addScaledVector(dir, 0.6).setY(gy), 70);
+            // von der Seite (quer zum Strahl Feuer → Pfosten): vom Feuer her verdeckte der Pfosten den Boden hinter sich, die Probe las seine
+            // beleuchtete Fläche (swiftshader, Dorf: „Schatten“ 4,43 gegen Licht 0,37)
+            stell(PF.clone().addScaledVector(quer, 3).setY(gy + 2.6), PF.clone().addScaledVector(dir, 0.5).setY(gy), 70);
             if (r._leuchtPool) r._leuchtPool.t = r._leuchtPool.uhr = -Infinity;
             window.__buehne({ uhr: C.mitternacht });
             const P = r._leuchtPool;
@@ -1503,16 +1513,17 @@ const NEUN_C = {
     wolkeDeckung: 0.4,
     wolkeSek: 5,
     sonneGrad: 5,
-    fernHoch: 40,
-    fernOrte: 500,
+    fernHoch: 80,
+    fernOrte: 2000,
     fernAb: [2500, 7000],
-    fernFov: 60,
+    fernFov: 90,
     feuerM: 120,
     mitternacht: 0,
     gangMs: 4,
     gangBilder: 20,
     gangEin: 4,
     fleckUhr: 0.56,
+    hangMax: 0.12,
 };
 const NEUN_PROBE = {
     sek: 10,
@@ -1641,12 +1652,12 @@ const NEUN = [
     neunStation(
         "ferne.K4",
         "1 = bei Sonne 5° Luma Schatten-/Lichthang ≤ 0,4 hinter einem ≥ 2 km fernen Grat an einem Gerät",
-        (t) => [t.verhaeltnis != null && t.verhaeltnis <= 0.4 && t.imBild[0] >= 8 && t.imBild[1] >= 8 && Math.abs(t.sonneGrad - 5) <= 0.5 && t.gratKm >= 2, `Schatten-/Lichthang ${t.verhaeltnis} (je N·L; Soll ≤ 0,4) aus ${t.imBild[0]}/${t.imBild[1]} Orten, Grat ${t.gratKm} km, Sonne ${t.sonneGrad}° (Uhr ${t.uhr})`],
+        (t) => [t.verhaeltnis != null && t.verhaeltnis <= 0.4 && t.imBild[0] >= 5 && t.imBild[1] >= 5 && Math.abs(t.sonneGrad - 5) <= 0.5 && t.gratKm >= 2, `Schatten-/Lichthang ${t.verhaeltnis} (je N·L; Soll ≤ 0,4) aus ${t.imBild[0]}/${t.imBild[1]} Orten, Grat ${t.gratKm} km, Sonne ${t.sonneGrad}° (Uhr ${t.uhr})`],
         neunProben("ferne.K4", { sonneGrad: 5.02, uhr: 0.74, orte: 140, imBild: [14, 22], gratKm: 3.1, Ls: 0.02, Ll: 0.09, verhaeltnis: 0.22 }, [
             ["jenseits der Kaskaden nur N·L (Spike 94c079cb)", { sonneGrad: 5.02, uhr: 0.74, orte: 140, imBild: [14, 22], gratKm: 3.1, Ls: 0.088, Ll: 0.09, verhaeltnis: 0.98 }],
             ["eine dunklere Fern-Farbe am Abend (trifft beide)", { sonneGrad: 5.02, uhr: 0.74, orte: 140, imBild: [14, 22], gratKm: 3.1, Ls: 0.03, Ll: 0.031, verhaeltnis: 0.97 }],
             ["die Sonne steht nicht bei 5°", { sonneGrad: 12, uhr: 0.7, orte: 140, imBild: [14, 22], gratKm: 3.1, Ls: 0.02, Ll: 0.09, verhaeltnis: 0.22 }],
-            ["zu wenige Orte im Bild", { sonneGrad: 5.02, uhr: 0.74, orte: 20, imBild: [3, 5], gratKm: 3.1, Ls: 0.02, Ll: 0.09, verhaeltnis: 0.22 }],
+            ["zu wenige Orte im Bild (am Dorf aus 80 m: 3 im Schatten)", { sonneGrad: 5.02, uhr: 0.74, orte: 44, imBild: [3, 6], gratKm: 3.1, Ls: 0.02, Ll: 0.09, verhaeltnis: 0.22 }],
         ])
     ),
     neunStation(
