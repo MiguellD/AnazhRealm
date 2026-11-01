@@ -396,7 +396,7 @@ async function checkBandOmegaGrammatik({ page, check }) {
         // seine Judge-Substanz lebt eingefroren in KIND_SUBSTANCE.geraet_schwert (bladeProfile
         // mit Verjüngung + Hohlkehle) — der Test liest die Substanz-Zeile.
         const KSog = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
-        const sword = KSog.geraet_schwert ? { parts: JSON.parse(JSON.stringify(KSog.geraet_schwert.parts)) } : null;
+        const sword = KSog.geraet_schwert ? { parts: jsonKlon(KSog.geraet_schwert.parts) } : null;
         o.swordOk = !!(sword && Array.isArray(sword.parts));
         const blades = o.swordOk ? sword.parts.filter((p) => p.shape === "bladeProfile") : [];
         o.realBlade = blades.length === 1 && blades[0].tipWidth < 1 && typeof blades[0].fuller === "number"; // distale Verjüngung + Hohlkehle
@@ -835,9 +835,7 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
             r.selectBlueprintForEdit("stein_block");
             r._renderWorkshopDOM();
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            if (r) r.closeAllDrawers();
-            st.yaw = 0;
-            if (st.playerMesh) st.playerMesh.rotation.y = 0;
+            window.__werkPutz();
         } catch (err) {
             out.error = err && err.message;
         }

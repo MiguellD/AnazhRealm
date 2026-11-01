@@ -15,7 +15,7 @@
 // sonst rot („Selbst-Test vakuös").
 //   node scripts/diag-place-policy.cjs --selftest
 
-const { statikServer, hauptLauf, nullSeite, pruefer, urteilEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, urteilEnde, fehlerText } = require("./lib/welt-boot.cjs");
 const SELFTEST = process.argv.includes("--selftest");
 const server = statikServer();
 
@@ -135,7 +135,7 @@ hauptLauf(async () => {
                 }
             }
         } catch (e) {
-            res.err = (e && e.stack) || (e && e.message) || String(e);
+            res.err = (e && e.stack) || fehlerText(e);
         }
         return res;
     }, SELFTEST);

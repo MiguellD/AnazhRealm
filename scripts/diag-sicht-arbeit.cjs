@@ -36,7 +36,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, warteAufWelt, taeterFaelle, selbsttestEnde, nullSeite, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, taeterFaelle, selbsttestEnde, nullSeite, wandEnde, jsonKlon, fehlerText } = require("./lib/welt-boot.cjs");
 const SICHT = require("./lib/sicht-linse.cjs");
 
 function urteil(b) {
@@ -188,7 +188,7 @@ function selbsttest() {
         },
         code: { wieseLiest: true },
     };
-    const klon = () => JSON.parse(JSON.stringify(gruen));
+    const klon = () => jsonKlon(gruen);
     const fehler = [];
     // der echte Loop unter langsamem Takt: das Licht dreht in jedem Frame (die Sonne läuft schneller als eine Stufe je Frame),
     // die Kaskaden mit Box halten ihre Wahl über den Licht-Rand — grün
@@ -1382,7 +1382,7 @@ const server = statikServer();
             return aus;
         }, MESS);
     } catch (e) {
-        befund = { fehler: e?.message || String(e) };
+        befund = { fehler: fehlerText(e) };
     }
     await browser.close();
     server.close();

@@ -1104,7 +1104,7 @@ async function checkBandG8R4Immunity({ page, check }) {
         // Zustand sichern, den wir mutieren. revokedKeys ist eine Map → echte Map-Kopie; ein
         // Object.assign-Klon ergäbe {} und der Restore bräche das nächste .set().
         const savedRevoked = new Map(st.revokedKeys);
-        const savedSigned = JSON.parse(JSON.stringify(st.signedWorlds || {}));
+        const savedSigned = jsonKlon(st.signedWorlds || {});
         const KA = "aa".repeat(32);
         const KB = "bb".repeat(32);
         const KEVIL = "cc".repeat(32);

@@ -378,7 +378,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
     const voxelP3cResults = await safeEvaluate(page, () => {
         if (!r || !st || !st.player) return null;
         const out = {};
-        const invBackup = JSON.parse(JSON.stringify(st.player.inventory || []));
+        const invBackup = jsonKlon(st.player.inventory || []);
         const modeBackup = r.getGameMode();
         const wm = st.worldMeta;
         const matTotal = () => {

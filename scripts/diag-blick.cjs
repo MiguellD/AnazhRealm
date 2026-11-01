@@ -6,7 +6,7 @@
 //   Ergebnis: PNG(s) in DIR (Default scratch/blick-*.png) + Exit 0 wenn der Schuss
 //   SUBSTANZ trägt (nicht leer/uniform — sonst Exit 1 mit Diagnose).
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf, seiteZu } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -27,17 +27,6 @@ hauptLauf(async () => {
     // KEIN Null-Renderer — die Augen brauchen den echten (WebGPU via swiftshader-Vulkan).
     await server.zeige(page, 60000);
     await page.evaluate(AUSGABE_INSTALL); // die EINE Aufnahme: der echte Frame, getont wie beim Spieler
-
-    const gpu = await page.evaluate(async () => {
-        if (!navigator.gpu) return "kein navigator.gpu";
-        try {
-            const a = await navigator.gpu.requestAdapter();
-            return a ? "adapter ok" : "kein adapter";
-        } catch (e) {
-            return "adapter-wurf: " + (e && e.message);
-        }
-    });
-    console.log("WebGPU-Probe:", gpu);
 
     const out = await page.evaluate(
         async (zeitArg, blickArg) => {
@@ -90,12 +79,7 @@ hauptLauf(async () => {
                 if (zeitArg && st.world) st.world.timeOfDay = Number(zeitArg) / 24;
             } catch {}
             // Ein paar echte Loop-Ticks, damit Uniforms/Streaming den Blick tragen.
-            for (let i = 0; i < 20; i++) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {}
-                await sleep(30);
-            }
+            await __takte(20, 30);
             res.schuesse.haupt = await schuss("haupt");
             return res;
         },
@@ -103,14 +87,8 @@ hauptLauf(async () => {
         process.argv.includes("--blick") ? process.argv[process.argv.indexOf("--blick") + 1] : "wald"
     );
 
-    await browser.close();
-    server.close();
-
-    console.log("\n===== DIE AUGEN (T0) — RT-Readback-Schuss =====");
-    if (!out || out.fatal) {
-        console.log("FEHLER:", out ? out.fatal : "?"); // die Seiten-Fehler nennt der EINE Sammler (welt-boot)
-        process.exit(1);
-    }
+    // die Seiten-Fehler nennt der EINE Sammler (welt-boot)
+    await seiteZu(browser, server, out, "\n===== DIE AUGEN (T0) — RT-Readback-Schuss =====", "fatal");
     console.log(`Renderer: ${out.rendererArt} · headlessNull=${out.headlessNull}`);
     const s = out.schuesse.haupt;
     if (out.headlessNull || !s) {

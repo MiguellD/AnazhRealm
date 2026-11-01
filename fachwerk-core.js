@@ -3901,17 +3901,19 @@
     // `spurM`, an einer Kreuzung um ihren Radius gekürzt), jeder Punkt frei für den halben Wagen (`halbM`): wo ein Brunnen, eine
     // Laterne, ein Stand in die Spur ragt, weicht sie aus (nach außen bis `ausweichM`, nach innen bis `einweichM`), sonst trägt die Strecke
     // keinen Wagen (`frei`); wo die Spuren dabei näher rücken als zwei halbe Wagen, ist eine ENGE (einer zur Zeit). Durch die
-    // Kreuzung fährt er geradeaus gerade, sonst im Bogen seines Wendekreises (`kurveR`), wo das einen Grundriss streift (der
-    // Brunnen in ihrer Mitte), im Kreisel um sie; trägt keins, ist das Abbiegen verboten (`wege`, `verboten`). Ein Netz
-    // ohne Wende fährt nicht: DIE WENDE am Ende jeder Trasse — ein Kreis von `wendeM` (frei um
+    // Kreuzung fährt er geradeaus gerade, sonst im Bogen seines Wendekreises (`kurveR`); trägt keiner (ein Grundriss, ein Tritt
+    // im Bogen, der Bogen länger als die Kreuzung), ist das Abbiegen verboten (`wege`, `verboten`). Ein Netz
+    // ohne Wende fährt nicht: DIE WENDE am Ende jeder Trasse — ein Kreis von `wendeM` (den der größte Wagen der Stadt im Kriechen
+    // samt der Glättung seiner Linie umfährt: die Limousine, Radstand 3,05 m, 0,52 rad, bei 2,5 m/s 6,3 m um ihren Schwerpunkt; bis
+    // w4-verkehr-c2 6,5 m, die Linie zog ihn auf 6,1 m, und sie fuhr 0,8 m außen um jeden) (frei um
     // `halbM` + `wendeRandM`) `wendeAbM` vom Ende in jeder Richtung, die Spur hinein, der Kreis den langen Weg herum (von der
     // Spur heraus fort), die Spur heraus (`bahn`), je Ende bis `wendeN` — und um ihn DER PLATZ: die Stellen eines Wagens
     // (`parkL` × `parkB`) längs des Kreises, frei von Grundriss, Tritt, der Mitte jedes Wegs (die Gasse bleibt dem Fuß) und der
     // Spur zur Wende. Der Plan v2 (`ortPlan`) wählt je Ende die erste, deren Kreis und Plätze Land tragen und nicht steiler als
     // `hangMax` liegen und deren Bahn auf jeder Fläche, die sie kreuzt, binnen `flaecheM` deren Höhe trägt, und legt sie als
     // Boden (`verkehrsBoden`).
-    var VERKEHR_GESETZ = { hausJeWagen: 15, breiteM: 4.9, naheM: 2.5, spurM: 1.25, halbM: 1.2, ausweichM: 3, einweichM: 2.5, kreuzM: 6, kurveR: 5.5, abbiegRandM: 0.3, kreiselRandM: 1, wendeM: 6.5,
-      wendeRandM: 1.2, wendeAbM: [7, 40], wendeN: 8, parkL: 5.4, parkB: 2.3, parkRandM: 0.6, zelleM: 8, hangMax: 0.3, ringRandM: 1, flaecheM: 0.1, kreuzSpurM: 3 };
+    var VERKEHR_GESETZ = { hausJeWagen: 15, breiteM: 4.9, naheM: 2.5, spurM: 1.25, halbM: 1.2, ausweichM: 3, einweichM: 2.5, kreuzM: 6, kurveR: 5.5, abbiegRandM: 0.3, wendeM: 7,
+      wendeRandM: 1.2, wendeAbM: [7, 40], abzweigM: 2, abzweigFreiM: 8, wendeN: 8, parkL: 5.4, parkB: 2.3, parkRandM: 0.6, zelleM: 8, hangMax: 0.3, ringRandM: 1, flaecheM: 0.1, kreuzSpurM: 3 };
     function verkehrVon(plan){
       const sl=(plan&&plan.slots)||[], N=plan&&plan.staedtisch?Math.ceil(sl.length/VERKEHR_GESETZ.hausJeWagen):0, slots=[];
       for(let w=0;w<N;w++) slots.push(Math.min(sl.length-1,Math.floor((w+0.5)*sl.length/N)));
@@ -3928,7 +3930,7 @@
           for(const o of R.get(i*2097152+j)||[]){ const c=Math.cos(o.phi), s=Math.sin(o.phi), dx=x-o.cx, dz=z-o.cz;
             if(Math.hypot(Math.max(0,Math.abs(dx*c-dz*s)-o.ex),Math.max(0,Math.abs(dx*s+dz*c)-o.ez))<r) return true; }
         return false; }; }
-    function verkehrsNetz(plan, ox, oz){
+    function verkehrsNetz(plan, ox, oz, ohneWende){
       const V=VERKEHR_GESETZ, zu=sperrenRaster(planSperren(plan,ox,oz,0),V.zelleM);
       const zuP=sperrenRaster(planSperren(plan,ox,oz,0.2),V.zelleM);
       const frei=(x,z,r)=>!zu(x,z,r);
@@ -4032,8 +4034,10 @@
       // gerade Verbindung; jeder andere der BOGEN mit dem Wendekreis der Stadtwagen (`kurveR`), tangential an die Verlängerung
       // beider Spuren — die Spur endet an der Kreuzung um ihn gekürzt (ihr Radius mindestens kurveR samt Spur), er beginnt nie
       // vor ihrem Ende; frei, wo er keinen Grundriss und keinen Tritt näher als den halben Wagen samt `abbiegRandM` streift (der
-      // Wagen schert im Bogen nach innen aus); sonst DER KREISEL um die Mitte (sie zur Linken, in der Ordnung der rechten Spur) auf
-      // dem kleinsten freien Radius ab kurveR; sonst ist das Abbiegen verboten (`verboten`)
+      // Wagen schert im Bogen nach innen aus); sonst ist das Abbiegen verboten (`verboten`). Der Kreisel um die Mitte fiel
+      // (w4-verkehr-c2): er sprang vom Ende der Spur radial auf seinen Kreis und am Ausgang zurück — Knicke mit Radius 2,2–2,4 m, die
+      // kein Wagen mit `kurveR` fährt; an der Kreuzung von stadt-voll fuhr ein Wagen aus dem Knick 4,5 m neben seine Linie, in
+      // Laterne und Wagen
       const richtung=(Q,ende)=>{ const a=ende?Q[Math.max(0,Q.length-3)]:Q[0], b=ende?Q[Q.length-1]:Q[Math.min(Q.length-1,2)], l=Math.hypot(b.x-a.x,b.z-a.z)||1; return {x:(b.x-a.x)/l, z:(b.z-a.z)/l}; };
       const bogen=(p,u,q,w,R)=>{ const dt=u.x*w.x+u.z*w.z, cr=u.x*w.z-u.z*w.x;
         if(dt>0.995) return [];
@@ -4053,13 +4057,7 @@
           const p=rein[rein.length-1], q=raus[0], frei=(A,r)=>{ const P=[p,...A,q]; for(let i=1;i<P.length;i++) if(!gang(P[i-1],P[i],r)) return false; return true; };
           // durch einen Stoß (keine Kreuzung, Radius 0) laufen die Spuren ungekürzt: die gerade Verbindung
           const B=K.r>0?bogen(p,richtung(rein,true),q,richtung(raus,false),V.kurveR):[];
-          if(B&&frei(B,B.length?rB:r0)){ K.wege[wort]=B; continue; }
-          let weg=null;
-          if(K.r>0){ const ap=Math.atan2(p.z-K.z,p.x-K.x), aq=Math.atan2(q.z-K.z,q.x-K.x); let span=ap-aq; span-=Math.floor(span/(2*Math.PI))*2*Math.PI; if(span<0.3) span+=2*Math.PI;
-            for(let rho=V.kurveR;rho<=K.r+V.kreiselRandM&&!weg;rho+=0.5){ const A=[], m=Math.max(2,Math.ceil(span*rho));
-              for(let t=0;t<=m;t++){ const w=ap-span*t/m; A.push({x:K.x+Math.cos(w)*rho, z:K.z+Math.sin(w)*rho}); }
-              if(frei(A,r0)) weg=A; } }
-          if(weg) K.wege[wort]=weg; else K.verboten.push(wort); }
+          if(B&&frei(B,B.length?rB:r0)) K.wege[wort]=B; else K.verboten.push(wort); }
         // DIE VERTRÄGLICHKEIT (`konflikt`): zwei Wege durch die Kreuzung, die einander nirgends näher kommen als zwei halbe Wagen
         // (ein Bogen schert um (parkL/2)²/(2·kurveR) weiter aus) — samt `kreuzSpurM` ihrer Spuren davor und danach —, fahren
         // zugleich (geradeaus gegeneinander, rechts ab nebeneinander); jedes andere Paar einer nach dem anderen. Der Abstand gilt
@@ -4077,72 +4075,166 @@
             if(o(a,b,c)*o(a,b,d)<0&&o(c,d,a)*o(c,d,b)<0) return 0; m=Math.min(m,pq(a,c,d),pq(b,c,d),pq(c,a,b),pq(d,a,b)); } return m; };
         for(let i=0;i<woerter.length;i++) for(let j=i+1;j<woerter.length;j++){ const g=2*V.halbM+(Z[i].krumm?aus:0)+(Z[j].krumm?aus:0);
           if(abst(Z[i].P,Z[j].P)<g) K.konflikt.push(woerter[i]+"|"+woerter[j], woerter[j]+"|"+woerter[i]); } });
-      kreuzungen.forEach((K,ki)=>{ if(!K.ende||!K.strecken.length) return; const s=strecken[K.strecken[0]];
+      // DER ÜBERGANG (die Wende): aus der Lage P in Richtung u (Einheit) auf den Kreis (Mitte c, Radius rho) in seinem Umlauf `dir`
+      // (+1: der Winkel atan2(z, x) wächst) — ein Bogen vom Radius R (links oder rechts herum), dann die Gerade, die beide Kreise in der
+      // Richtung der Fahrt berührt (gleicher Umlauf: außen, sonst innen). Liefert JEDEN solchen Weg {L, pts (nach P je Meter, bis an
+      // den Kreis), a (der Winkel des Berührpunkts am Kreis)}, der kürzeste zuerst — die Wende nimmt den kürzesten FREIEN (bis hier
+      // nur den kürzesten: lief er durch ein Haus, fiel der Kreis, und das Ende am Hang von stadt-voll trug keine Wende)
+      const uebergang=(P,u,c,rho,dir,R)=>{ const alle=[];
+        for(const sF of [1,-1]){ const F={x:P.x-u.z*sF*R, z:P.z+u.x*sF*R}, dx=c.x-F.x, dz=c.z-F.z, D=Math.hypot(dx,dz), innen=sF!==dir, rr=innen?R+rho:R-rho;
+          if(!(D>Math.abs(rr)+1e-6)) continue;
+          for(const sg of [1,-1]){ const th=Math.atan2(dz,dx)+sg*Math.acos(rr/D), n={x:Math.cos(th), z:Math.sin(th)}, mm=innen?{x:-n.x,z:-n.z}:n;
+            const p1={x:F.x+n.x*R, z:F.z+n.z*R}, p2={x:c.x+mm.x*rho, z:c.z+mm.z*rho}, tx=p2.x-p1.x, tz=p2.z-p1.z, tl=Math.hypot(tx,tz);
+            if(!(tl>1e-6)||(tx*-n.z*sF+tz*n.x*sF)/tl<0.999||(tx*-mm.z*dir+tz*mm.x*dir)/tl<0.999) continue;
+            const aP=Math.atan2(P.z-F.z,P.x-F.x); let sp=(Math.atan2(p1.z-F.z,p1.x-F.x)-aP)*sF; sp-=Math.floor(sp/(2*Math.PI))*2*Math.PI;
+            alle.push({L:sp*R+tl, a:Math.atan2(p2.z-c.z,p2.x-c.x), get pts(){ const pts=[], n1=Math.ceil(sp*R), n2=Math.max(1,Math.ceil(tl));
+              for(let k=1;k<=n1;k++){ const w=aP+sF*sp*k/n1; pts.push({x:F.x+Math.cos(w)*R, z:F.z+Math.sin(w)*R}); }
+              for(let k=1;k<=n2;k++) pts.push({x:p1.x+tx*k/n2, z:p1.z+tz*k/n2});
+              return pts; }}); } }
+        return alle.sort((x,y)=>x.L-y.L); };
+      // DIE WENDE AM ENDE (`wenden`, je Ende bis `wendeN`, die kürzeste Bahn zuerst): ein freier Kreis (`wendeM`, frei um `halbM` +
+      // `wendeRandM`) `wendeAbM` vom Ende in jeder Richtung — und DER ABZWEIG: die Bahn hinein (`ein`) verlässt die Spur hinein dort,
+      // wo der Kreis am nächsten liegt (je `abzweigM` bis `wendeAbM`[1] vor dem Ende, `einAb` Punkte vor ihrem Ende; je 2 m — mit
+      // dem Ausscheren unten fanden je 4 m 233 von 586 Enden der Städte eine Wende, je 2 m 334, vorher 331), die Bahn
+      // heraus (`aus`) trifft die Spur heraus dort (`ausAb` Punkte nach ihrem Anfang) — je ein Bogen vom Radius des Kreises (ihn
+      // fährt der größte Wagen) und die Gerade, die ihn und den Kreis in der Richtung des Umlaufs (`dreh`) berührt
+      // (`uebergang`), der Kreis dazwischen. Gewählt ist die kürzeste Bahn (gemessen von Spur zu Spur samt dem Stück der Spuren,
+      // das sie abschneidet), die frei ist (kein Grundriss, kein Tritt näher als `halbM` samt dem Ausscheren des größten Wagens im
+      // Bogen der Wende, (parkL/2)²/(2·wendeM) — bis w4-verkehr-c2 nur `halbM`: die Bahn heraus der Wende im Norden von stadt-voll
+      // lief 1,40 m an der Laterne 907,6/301,2 vorbei, jeder Wagen streifte sie, 10 Uhr 309×) und KEINEN WAGEN KREUZT: `ein` und
+      // `aus` bleiben zwei halbe Wagen voneinander, `ein` quert die Spur heraus nur, wo noch keiner fährt (vor `ausAb`), `aus` die
+      // Spur hinein nur hinter `einAb`, keine fern ihres Abzweigs ihre eigene, und der Ring bleibt zwei halbe Wagen neben beiden
+      // Spuren — so fahren Wagen hintereinander durch die Wende (der Wirt teilt sie, `_verkehrZonen`). Bis w4-verkehr-c2 begann
+      // und endete die Bahn am Ende der Spur: lag der Kreis seitlich, wendete sie dort im Bogen von 14 m über beide Spuren, hinein
+      // und heraus kreuzten sich — einer zur Zeit (stadt-voll: 35 Ziele in 10 min, 8 Wagen ohne Ziel, die längste Fahrt 734 s).
+      // Die Plätze: tangential am Ring um den Kreis (er fährt vorwärts aus ihnen heraus), frei von Grundriss, Tritt, der Mitte jedes
+      // Wegs, der Bahn und zwei halben Wagen um jede Spur.
+      kreuzungen.forEach((K,ki)=>{ if(ohneWende||!K.ende||!K.strecken.length) return; const s=strecken[K.strecken[0]];
         const rein=s.b===ki?s.spur[0]:s.spur[1], raus=s.b===ki?s.spur[1]:s.spur[0], M=s.b===ki?s.mitte:s.mitte.slice().reverse();
         if(rein.length<2||raus.length<2) return;
-        const pin=rein[rein.length-1], pout=raus[0], e=M[M.length-1], d0=M[Math.max(0,M.length-4)], l=Math.hypot(e.x-d0.x,e.z-d0.z)||1, ux=(e.x-d0.x)/l, uz=(e.z-d0.z)/l;
+        const nR=rein.length, nA=raus.length, cR=new Float64Array(nR), cA=new Float64Array(nA), g2=2*V.halbM, R=V.wendeM;
+        for(let k=nR-2;k>=0;k--) cR[k]=cR[k+1]+Math.hypot(rein[k+1].x-rein[k].x,rein[k+1].z-rein[k].z);
+        for(let k=1;k<nA;k++) cA[k]=cA[k-1]+Math.hypot(raus[k].x-raus[k-1].x,raus[k].z-raus[k-1].z);
+        const tang=(Q,k)=>{ const a=Q[Math.max(0,k-2)], b=Q[Math.min(Q.length-1,k+2)], l=Math.hypot(b.x-a.x,b.z-a.z)||1; return {x:(b.x-a.x)/l, z:(b.z-a.z)/l}; };
+        const abMax=Math.min(V.wendeAbM[1],cR[0]/2,cA[nA-1]/2), kR=[], kA=[];
+        for(let k=nR-1, nx=0;k>=0&&cR[k]<=abMax;k--) if(cR[k]>=nx){ kR.push(k); nx=cR[k]+V.abzweigM; }
+        for(let k=0, nx=0;k<nA&&cA[k]<=abMax;k++) if(cA[k]>=nx){ kA.push(k); nx=cA[k]+V.abzweigM; }
+        // die Punkte beider Spuren im Raster (je Zelle die Indizes, die Spur heraus ab 2^20): `nahe` nennt je Spur den kleinsten und
+        // den größten Index, der näher als r an einem Punkt des Wegs P liegt
+        const Z3=2*V.halbM, sp=new Map();
+        for(const [o,Q] of [[0,rein],[1048576,raus]]) Q.forEach((q,i)=>{ const k=Math.floor(q.x/Z3)*2097152+Math.floor(q.z/Z3); (sp.get(k)||(sp.set(k,[]),sp.get(k))).push(o+i); });
+        const nahe=(P,r)=>{ const n=[Infinity,-Infinity,Infinity,-Infinity], c=Math.ceil(r/Z3);
+          for(let pi=0;pi<P.length;pi+=pi+2<P.length?2:1){ const p=P[pi], ix=Math.floor(p.x/Z3), iz=Math.floor(p.z/Z3);   /*je zweiter Punkt (1 m): r > 1 m fängt jede Querung*/
+            for(let a=ix-c;a<=ix+c;a++) for(let b=iz-c;b<=iz+c;b++) for(const j of sp.get(a*2097152+b)||[]){ const o=j>=1048576?2:0, i=o?j-1048576:j, q=o?raus[i]:rein[i];
+              if((q.x-p.x)**2+(q.z-p.z)**2<r*r){ if(i<n[o]) n[o]=i; if(i>n[o+1]) n[o+1]=i; } } }
+          return n; };
+        const rU=V.halbM+(V.parkL/2)**2/(2*R), geht=(B)=>B.every((q,i)=>!i||gang(B[i-1],q,rU));
+        const e=M[M.length-1], d0=M[Math.max(0,M.length-4)], l=Math.hypot(e.x-d0.x,e.z-d0.z)||1, ux=(e.x-d0.x)/l, uz=(e.z-d0.z)/l;
         for(let k=V.wendeAbM[0];k<=V.wendeAbM[1]&&K.wenden.length<V.wendeN;k++) for(const a of [0,0.5,-0.5,1,-1,1.5,-1.5,2,-2,2.5,-2.5]){ if(K.wenden.length>=V.wendeN) break;
           const cx=e.x+(ux*Math.cos(a)-uz*Math.sin(a))*k, cz=e.z+(uz*Math.cos(a)+ux*Math.sin(a))*k;
           if(K.wenden.some(w=>Math.hypot(w.x-cx,w.z-cz)<3)) continue;
           // der Kreis frei: keine Sperre näher als Rf an seiner Mitte (der Abstand zur gedrehten Box)
-          const Rf=V.wendeM+V.halbM+V.wendeRandM; if(zu(cx,cz,Rf)) continue;
-          // die Bahn hinein und heraus treffen den Ring mindestens zwei Spuren auseinander (die Sehne 2·spurM): bis hier liefen
-          // beide zum Ring-Punkt Richtung Ende, bei fernem Kreis fast derselbe — zwei Wagen gegeneinander standen dort Bug an Bug
-          const dreh=W(Math.atan2(pin.z-cz,pin.x-cx)-Math.atan2(pout.z-cz,pout.x-cx))>=0?1:-1;
-          // DIE BAHN BERÜHRT DEN KREIS: hinein und heraus tangential in der Richtung des Umlaufs (`tang`: der Berührpunkt von P aus,
-          // s = 1 hinein, −1 heraus) — bis hier lief sie radial auf den Ring-Punkt nächst dem Ende der Spur, ein Knick von 90°
-          // hinein und heraus: der Wagen schoss über ihn hinaus, bis 4 m neben die Spur
-          const tang=(P,s)=>{ const d=Math.hypot(P.x-cx,P.z-cz); if(d<=V.wendeM+0.1) return null; const a=Math.atan2(P.z-cz,P.x-cx), b=Math.acos(V.wendeM/d);
-            for(const t of [a+b,a-b]) if(((cx+Math.cos(t)*V.wendeM-P.x)*-Math.sin(t)*dreh+(cz+Math.sin(t)*V.wendeM-P.z)*Math.cos(t)*dreh)*s>0) return t;
-            return null; };
-          const ain=tang(pin,1), aout=tang(pout,-1); if(ain===null||aout===null) continue;
-          const e1={x:cx+Math.cos(ain)*V.wendeM, z:cz+Math.sin(ain)*V.wendeM}, e2={x:cx+Math.cos(aout)*V.wendeM, z:cz+Math.sin(aout)*V.wendeM};
-          if(!gang(pin,e1,V.halbM)||!gang(e2,pout,V.halbM)) continue;
-          let span=(aout-ain)*dreh; span-=Math.floor(span/(2*Math.PI))*2*Math.PI; if(span<Math.PI) span+=2*Math.PI;
-          const bahn=[pin], m=Math.ceil(span*V.wendeM);
-          for(let t=0;t<=m;t++){ const w=ain+dreh*span*t/m; bahn.push({x:cx+Math.cos(w)*V.wendeM, z:cz+Math.sin(w)*V.wendeM}); }
-          bahn.push(pout);
-          // die Plätze: tangential am Ring um den Kreis, in der Richtung des Bogens (er fährt vorwärts aus ihm heraus)
-          const rP=V.wendeM+V.halbM+V.parkRandM+V.parkB/2, plaetze=[], dA=(V.parkL+V.parkRandM)/rP;
+          const Rf=R+V.halbM+V.wendeRandM; if(zu(cx,cz,Rf)) continue;
+          const C={x:cx,z:cz}, nR0=nahe([C],R+g2), loRing=nR0[0], hiRing=nR0[3];
+          let best=null;
+          for(const dreh of [1,-1]){
+            // die Bahnen hinein je Abzweig (k1: der Punkt der Spur hinein) und heraus (k2), ihr Maß samt dem Stück der Spur
+            const eins=[], auss=[];
+            for(const k1 of kR){ if(k1>=loRing) continue; for(const o of uebergang(rein[k1],tang(rein,k1),C,R,dreh,R)) eins.push({k:k1, o, L:o.L-cR[k1], get B(){ return this._B||(this._B=[rein[this.k],...this.o.pts]); }}); }
+            for(const k2 of kA){ if(k2<=hiRing) continue; const u=tang(raus,k2); for(const o of uebergang(raus[k2],{x:-u.x,z:-u.z},C,R,-dreh,R)) auss.push({k:k2, o, L:o.L-cA[k2], get B(){ return this._B||(this._B=this.o.pts.reverse().concat([raus[this.k]])); }}); }
+            const nP=eins.length*auss.length, LP=new Float64Array(nP), IP=[];
+            for(let i=0;i<eins.length;i++) for(let j=0;j<auss.length;j++){ let span=(auss[j].o.a-eins[i].o.a)*dreh; span-=Math.floor(span/(2*Math.PI))*2*Math.PI; if(span<0.5) continue;
+              const L=eins[i].L+span*R+auss[j].L; if(best&&L>=best.L) continue; const q=i*auss.length+j; LP[q]=L; IP.push(q); }
+            IP.sort((p,q)=>LP[p]-LP[q]);
+            for(const q of IP){ const E=eins[(q/auss.length)|0], A=auss[q%auss.length], L=LP[q]; if(best&&best.L<=L) break;
+              let span=(A.o.a-E.o.a)*dreh; span-=Math.floor(span/(2*Math.PI))*2*Math.PI;
+              if(E.frei===undefined){ const n=nahe(E.B,g2); E.hiA=n[3]; E.frei=!(cR[n[0]]>cR[E.k]+V.abzweigFreiM)&&geht(E.B); }
+              if(!E.frei) continue;
+              if(A.frei===undefined){ const n=nahe(A.B,g2); A.loR=n[0]; A.frei=!(cA[n[3]]>cA[A.k]+V.abzweigFreiM)&&geht(A.B); }
+              if(!A.frei||A.k<=E.hiA||E.k>=A.loR) continue;
+              let nah=false; for(const p of E.B){ for(const q of A.B) if((p.x-q.x)**2+(p.z-q.z)**2<g2*g2){ nah=true; break; } if(nah) break; }
+              if(nah) continue;
+              best={L, dreh, span, E, A}; break; } }
+          if(!best) continue;
+          const {dreh, span, E, A}=best, ain=E.o.a, aout=A.o.a, einB=E.B, ausB=A.B, bahn=einB.slice(), m=Math.ceil(span*R);
+          for(let t=1;t<m;t++){ const w=ain+dreh*span*t/m; bahn.push({x:cx+Math.cos(w)*R, z:cz+Math.sin(w)*R}); }
+          bahn.push(...ausB);
+          const reinB=rein.slice(0,E.k+1), rausB=raus.slice(A.k);
+          const rP=R+V.halbM+V.parkRandM+V.parkB/2, plaetze=[], dA=(V.parkL+V.parkRandM)/rP;
           for(let w=0;w<2*Math.PI-dA/2;w+=dA){ const b=ain+dreh*w, x=cx+Math.cos(b)*rP, z=cz+Math.sin(b)*rP, tx=-Math.sin(b)*dreh, tz=Math.cos(b)*dreh;
             let frei2=true;
             for(const u of [-0.5,-0.25,0,0.25,0.5]) for(const v of [-0.5,0,0.5]){ const lx=u*V.parkL, lz=v*V.parkB, px=x+tx*lx-tz*lz, pz=z+tz*lx+tx*lz;
-              if(zuP(px,pz)||amWeg(px,pz,V.halbM)||nahStrecke(px,pz,[pin,e1],V.halbM)||nahStrecke(px,pz,[e2,pout],V.halbM)) frei2=false; }
+              if(zuP(px,pz)||amWeg(px,pz,V.halbM)||nahStrecke(px,pz,einB,V.halbM)||nahStrecke(px,pz,ausB,V.halbM)||nahStrecke(px,pz,reinB,g2)||nahStrecke(px,pz,rausB,g2)) frei2=false; }
             if(frei2) plaetze.push({x, z, beta:b, fahrt:Math.atan2(tx,tz)}); }
-          K.wenden.push({x:cx, z:cz, r:V.wendeM, frei:Rf, dreh, ain, aout, bahn, plaetze}); } });
+          K.wenden.push({x:cx, z:cz, r:R, frei:Rf, dreh, ain, aout, bahn, ein:einB, aus:ausB, einAb:nR-1-E.k, ausAb:A.k, L:best.L, plaetze}); }
+        K.wenden.sort((p,q)=>p.L-q.L); });
       let laenge=0; for(const s of strecken) if(s.frei) laenge+=s.laenge;
       return {kreuzungen, strecken, laenge}; }
-    // DIE WENDE IST BODEN DER STADT (PFLICHT-OFFEN C, der Plan v2 `ortPlan`): je Ende des Netzes (`verkehrsNetz`) die erste Wende,
-    // deren Kreis und Plätze Land tragen (ctx.wasserAt) und deren Grund (ctx.hoeheAt) nicht steiler als `hangMax` liegt (`wende`,
-    // sonst null); ihr Ring (der Wagen samt `ringRandM`), die Spur hinein und heraus und ihre Plätze liegen als Erdbau auf der
-    // Höhe der Fläche am Ende (`flaeche`: der Weg dort) — EINE Fläche mit dem Weg. Bis dahin lag die Wende auf dem Grund neben
-    // der Trasse (die Böschung 60 %): Stufen über 0,2 m je 0,5 m an jeder Bahn, kein Ende trug eine Wende, kein Wagen fuhr.
+    // DIE WENDE IST BODEN DER STADT (PFLICHT-OFFEN C, der Plan v2 `ortPlan`): je Ende des Netzes (`verkehrsNetz`) die erste Wende
+    // (die kürzeste Bahn zuerst), deren Kreis und Plätze Land tragen (ctx.wasserAt), deren Grund (ctx.hoeheAt) nicht steiler als
+    // `hangMax` liegt und deren Band jede Fläche der Stadt trägt (DIE HÖHE DER WENDE, unten; `wende`, sonst null); ihr Ring (der
+    // Wagen samt `ringRandM`), die Bahn hinein und heraus und ihre Plätze liegen als Erdbau — EINE Fläche mit dem Weg. Bis dahin
+    // lag die Wende auf dem Grund neben der Trasse (die Böschung 60 %): Stufen über 0,2 m je 0,5 m an jeder Bahn, kein Ende trug
+    // eine Wende, kein Wagen fuhr. `flaeche`: die Höhe jeder Fläche der Wege und des Platzes (Kern und Saum), `kern`: nur der Kerne.
     // Rückgabe {netz, erdbau}. Leser: der Wirt (`_verkehrAnlegen`: das Netz, die Wenden, ihr Bild über den Hebel der Dörfer).
-    function verkehrsBoden(plan, ox, oz, ctx, flaeche){
+    function verkehrsBoden(plan, ox, oz, ctx, flaeche, kern){
       const V=VERKEHR_GESETZ, N=verkehrsNetz(plan,ox,oz), erdbau=[], r6=(v)=>Math.round(v*1e6)/1e6;
       const land=(x,z)=>!(ctx.wasserAt&&ctx.wasserAt(x,z)), h=(x,z)=>ctx.hoeheAt(x,z);
       const trasse=(a,b,y,w)=>erdbau.push({art:"trasse", x0:r6(a.x), z0:r6(a.z), y0:y, x1:r6(b.x), z1:r6(b.z), y1:y, w:r6(w)});
+      // EIN WEG AUF DEN FLÄCHEN (`aufFlaechen`, der Abbieger und der Übergang der Wende): die Punkte Q je Meter (P, ihr Weg s), je
+      // Punkt die Höhe der Fläche, die er kreuzt (`f`: jede Fläche — Kern, Saum, Platz — oder nur die Kerne), dazwischen
+      // gleichmäßig nach dem Weg; `y0`/`y1` (nicht null) heften Anfang/Ende an eine Höhe. null, wo keine Fläche und kein Anker eine
+      // Höhe gibt. `lege` legt ihn als Erdbau (Breite w)
+      const aufFlaechen=(Q,y0,y1,f=flaeche)=>{ const P=[Q[0]], s=[0];
+        for(let i=1;i<Q.length;i++){ const L=Math.hypot(Q[i].x-Q[i-1].x,Q[i].z-Q[i-1].z), m=Math.max(1,Math.ceil(L));
+          for(let u=1;u<=m;u++){ P.push({x:Q[i-1].x+(Q[i].x-Q[i-1].x)*u/m, z:Q[i-1].z+(Q[i].z-Q[i-1].z)*u/m}); s.push(s[s.length-1]+L/m); } }
+        const ys=P.map(p=>{ const y=f(p.x,p.z); return y!==null&&isFinite(y)?y:null; });
+        if(y0!==null) ys[0]=y0; if(y1!==null) ys[ys.length-1]=y1;
+        if(ys.every(y=>y===null)) return null;
+        for(let i=0;i<ys.length;i++){ if(ys[i]!==null) continue; let i0=i-1, i1=i; while(i1<ys.length&&ys[i1]===null) i1++;
+          for(let j=i;j<i1;j++) ys[j]=i0<0?ys[i1]:i1>=ys.length?ys[i0]:ys[i0]+(ys[i1]-ys[i0])*(s[j]-s[i0])/(s[i1]-s[i0]); i=i1-1; }
+        return {P, s, ys}; };
+      const lege=(A,w)=>{ for(let i=1;i<A.P.length;i++) erdbau.push({art:"trasse", x0:r6(A.P[i-1].x), z0:r6(A.P[i-1].z), y0:r6(A.ys[i-1]), x1:r6(A.P[i].x), z1:r6(A.P[i].z), y1:r6(A.ys[i]), w:r6(w)}); };
+      // DIE HÖHE DER WENDE: Ring und Plätze liegen auf der Höhe des Wegs am Abzweig (y, im Mittel der Kerne unter dem Anfang der Bahn
+      // hinein und dem Ende der Bahn heraus), die Übergänge je Meter
+      // auf dem Kern, den sie kreuzen (die Spuren, die sie verlassen, treffen und queren), dazwischen gleichmäßig bis an den Ring
+      // (`aufFlaechen` über den Kernen), nie steiler als `hangMax`. Wo das Band (die Mitte und beide Ränder) einen Kern eines Wegs
+      // oder des Platzes berührt, liegt der auf seiner Höhe — am Ring und an den Plätzen binnen `flaecheM`, am Rand eines Übergangs
+      // binnen `flaecheM` samt dem Hang über den halben Wagen (`traegt`); der Saum eines Wegs liegt unter der Wende wie unter jedem
+      // Grundriss. Bis w4-verkehr-c2 lag alles auf der Höhe des Endes, die Probe galt jeder Fläche längs der Mitte der Bahn
+      const traegt=(x,z,y,tol)=>{ const f=kern(x,z); return f===null||!isFinite(f)||Math.abs(f-y)<=tol; };
+      const bandTraegt=(A,b)=>{ const Q=A.P; for(let i=0;i<Q.length;i++){ const a=Q[Math.max(0,i-1)], c=Q[Math.min(Q.length-1,i+1)], l=Math.hypot(c.x-a.x,c.z-a.z)||1, nx=-(c.z-a.z)/l, nz=(c.x-a.x)/l;
+          if(!land(Q[i].x,Q[i].z)) return false; for(const o of [-b,b]) if(!traegt(Q[i].x+nx*o,Q[i].z+nz*o,A.ys[i],V.flaecheM+V.hangMax*b)) return false;
+          if(i&&Math.abs(A.ys[i]-A.ys[i-1])>V.hangMax*(A.s[i]-A.s[i-1])) return false; } return true; };
       for(const K of N.kreuzungen){ K.wende=null; if(!K.ende) continue;
-        const y=flaeche(K.x,K.z); if(y===null||!isFinite(y)) continue;
-        for(const w of K.wenden){ const h0=h(w.x,w.z); let ok=land(w.x,w.z)&&isFinite(h0);
+        for(const w of K.wenden){ const pA=w.ein[0], pB=w.aus[w.aus.length-1], yA=kern(pA.x,pA.z), yB=kern(pB.x,pB.z);
+          if(yA===null||yB===null||!isFinite(yA)||!isFinite(yB)) continue;
+          const y=(yA+yB)/2, h0=h(w.x,w.z); let ok=land(w.x,w.z)&&isFinite(h0);
           for(let a=0;a<12&&ok;a++){ const x=w.x+Math.cos(a*Math.PI/6)*w.r, z=w.z+Math.sin(a*Math.PI/6)*w.r; ok=land(x,z)&&Math.abs(h(x,z)-h0)<=V.hangMax*w.r; }
-          if(!ok) continue;
-          // die Bahn liegt, wo sie eine Fläche der Stadt kreuzt (das Ende des Wegs, ein Nachbar), auf deren Höhe: sonst wählte
-          // der Plan einen Ring, der über den fallenden Weg läuft — eine Stufe in der Fläche
-          for(let i=1;i<w.bahn.length&&ok;i++){ const a=w.bahn[i-1], b=w.bahn[i], m=Math.max(1,Math.ceil(Math.hypot(b.x-a.x,b.z-a.z)/0.5));
-            for(let u=0;u<=m&&ok;u++){ const f=flaeche(a.x+(b.x-a.x)*u/m,a.z+(b.z-a.z)*u/m); if(f!==null&&Math.abs(f-y)>V.flaecheM) ok=false; } }
-          if(!ok) continue;
+          const bR=V.halbM+V.ringRandM/2;
+          for(let a=0;a<2*Math.PI&&ok;a+=0.5/w.r) for(const o of [-bR,0,bR]) if(!traegt(w.x+Math.cos(a)*(w.r+o),w.z+Math.sin(a)*(w.r+o),y,V.flaecheM)) ok=false;
+          const hEin=ok?aufFlaechen(w.ein,null,y,kern):null, hAus=ok?aufFlaechen(w.aus,y,null,kern):null;
+          if(!hEin||!hAus||!bandTraegt(hEin,V.halbM)||!bandTraegt(hAus,V.halbM)) continue;
           const plaetze=w.plaetze.filter(p=>{ const fx=Math.sin(p.fahrt), fz=Math.cos(p.fahrt), hs=[];
-            for(const u of [-1,1]) for(const v of [-1,1]){ const x=p.x+fx*u*V.parkL*0.5-fz*v*V.parkB*0.5, z=p.z+fz*u*V.parkL*0.5+fx*v*V.parkB*0.5;
-              if(!land(x,z)) return false; hs.push(h(x,z)); }
-            return land(p.x,p.z)&&Math.max(...hs)-Math.min(...hs)<=V.hangMax*V.parkL; });
-          K.wende=Object.assign({},w,{plaetze,y:r6(y)}); break; }
+            for(const u of [-1,0,1]) for(const v of [-1,0,1]){ const x=p.x+fx*u*V.parkL*0.5-fz*v*V.parkB*0.5, z=p.z+fz*u*V.parkL*0.5+fx*v*V.parkB*0.5;
+              if(!land(x,z)||!traegt(x,z,y,V.flaecheM)) return false; hs.push(h(x,z)); }
+            return Math.max(...hs)-Math.min(...hs)<=V.hangMax*V.parkL; });
+          K.wende=Object.assign({},w,{plaetze,y:r6(y),hEin,hAus}); break; }
         const w=K.wende; if(!w) continue;
         const ring=[]; for(let a=0;a<=2*Math.PI+1e-9;a+=1/w.r) ring.push({x:w.x+Math.cos(a)*w.r, z:w.z+Math.sin(a)*w.r});
         for(let i=1;i<ring.length;i++) trasse(ring[i-1],ring[i],w.y,2*V.halbM+V.ringRandM);
-        trasse(w.bahn[0],w.bahn[1],w.y,2*V.halbM); trasse(w.bahn[w.bahn.length-2],w.bahn[w.bahn.length-1],w.y,2*V.halbM);
+        lege(w.hEin,2*V.halbM); lege(w.hAus,2*V.halbM); delete w.hEin; delete w.hAus;
         for(const p of w.plaetze){ const fx=Math.sin(p.fahrt)*V.parkL*0.5, fz=Math.cos(p.fahrt)*V.parkL*0.5;
           trasse({x:p.x-fx,z:p.z-fz},{x:p.x+fx,z:p.z+fz},w.y,V.parkB); } }
+      // DER ABBIEGER IST BODEN DER STADT (PFLICHT-OFFEN C): die Bahn jedes Wegs durch eine Kreuzung (`wege`: vom Ende der Spur hinein
+      // gerade oder im Bogen bis an die Spur hinaus) liegt als Erdbau, breit wie die Bahn der Wende — je Meter auf der Höhe der
+      // Fläche, die sie kreuzt (Kern, Saum, Platz), über die Ecke dazwischen gleichmäßig von Fläche zu Fläche. Bis hier lagen nur
+      // die Wege: der Bogen schnitt die Ecke über den Hang — am Markt von stadt-voll stieg er dort 0,27 m je halben Meter, und der
+      // Wirt verbot zwei Abbieger (die Stufe, `_verkehrAnlegen`)
+      for(const [ki,K] of N.kreuzungen.entries()){ if(K.ende) continue;
+        for(const wort of Object.keys(K.wege||{})){ const [si,so]=wort.split(">").map(Number), a=N.strecken[si], b=N.strecken[so];
+          const rein=a.b===ki?a.spur[0]:a.spur[1], raus=b.a===ki?b.spur[0]:b.spur[1]; if(!rein.length||!raus.length) continue;
+          const A=aufFlaechen([rein[rein.length-1], ...K.wege[wort], raus[0]],null,null); if(A) lege(A,2*V.halbM); } }
       return {netz:N, erdbau}; }
     function strassengraph(rnd, plan, sW, lw, Rw, H){
   const staedt=plan.staedtisch, jahr=plan.jahr, DS=3;
@@ -4319,7 +4411,9 @@
   let platz=null;
   if(!staedt||plan.kernel==='markt'){ const PW=Math.max(7,5+Math.min(nG,40)*0.30), PD=Math.max(6,PW*0.55);
     platz={cx:0,cz:sW/2+PD/2, phi:0, ex:PW, ez:PD/2, typ:(plan.kernel==='anger'||(staedt&&plan.jahr>1840))?'gras':'weg'};   // PARK-GESETZ der Moderne brunnen.push({x:0,z:sW/2+PD/2});
-    if(platz.typ==='weg'){ staende.push({x:-PW*0.45,z:sW/2+PD*0.45}); staende.push({x:PW*0.45,z:sW/2+PD*0.55}); if(nG>18)staende.push({x:0,z:sW/2+PD*0.82}); } }
+    if(platz.typ==='weg'){ const MS=AUSSTATTUNG.marktstand.tritt, rS=Math.hypot(MS.ex,MS.ez), zt=plan.schnitt||plan;
+      const standFrei=(s)=>!zt.staedtisch||roads.every(rd=>{ if((rd.w||0)<VERKEHR_GESETZ.breiteM) return true; const P=rd.pts; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((s.x-A.x)*dx+(s.z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(s.x-A.x-dx*t, s.z-A.z-dz*t)<rd.w/2+rS) return false; } return true; });   /*DER STAND STEHT NIE IN DER TRASSE (PFLICHT-OFFEN C): in der Stadt haelt sein Tritt (der Umkreis seines Kastens) jede Strasse ab `breiteM` frei — bis hier stand der mittlere Stand jeder Metropole auf der Achse der Strasse, die vom Markt nach Norden geht (0/10,2), und der linke 1,9 m neben ihr: ihre Spuren wichen ihm aus, bis eine Laterne die andere Seite sperrte (die Strecke fiel), oder die Strecke trug eine Enge am Markt*/
+      for(const s of [{x:-PW*0.45,z:sW/2+PD*0.45},{x:PW*0.45,z:sW/2+PD*0.55}].concat(nG>18?[{x:0,z:sW/2+PD*0.82}]:[])) if(standFrei(s)) staende.push(s); } }
   else brunnen.push({x:sW/2+2.4,z:sW/2+2.4});
   const platzObb= platz? {cx:platz.cx,cz:platz.cz,phi:0,ex:platz.ex,ez:platz.ez} : null;
   const curs=[];
@@ -4467,7 +4561,9 @@
   const LG9=LICHT_GESETZ.laterne, LATERNE_WAND=Math.sqrt(Math.max(0,(LG9.hoeheM*LG9.hoeheM+LG9.kernM*LG9.kernM)/2-LG9.kernM*LG9.kernM));   /*DIE LATERNE VOR DER WAND (K66): ihr Licht trifft keine Wand mit mehr als dem Doppelten der Gasse unter ihr — (h²+k²)/(d²+k²) ≤ 2, d ≥ 2,55 m; bis K66 stand sie 0,45 m vor dem Grundriss, die Giebelwand trug nachts das Sechsfache*/
   const LATERNE_FUSS=AUSSTATTUNG.laterne.tritt.r, laterneWege=roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), h:rd.w/2})).concat(feldwege.map(fw=>({pts:fw.pts, h:fw.w/2}))); for(const wl of laterneWege) wl.K=wegKasten(wl.pts);   /*DER FUSS DER LATERNE (K66, Pruefung 2): ihr Tritt aus dem Rezept (AUSSTATTUNG laterne, der Blocker der Welt) und die Wege, wie der Export sie traegt — Strasse und Feldweg*/
   const laterneImWeg=(x,z)=>laterneWege.some(wl=>{ const P=wl.pts, h=wl.h+LATERNE_FUSS; if(fernKasten(x,z,wl.K,h)) return false; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((x-A.x)*dx+(z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(x-A.x-dx*t, z-A.z-dz*t)<h) return true; } return false; });
-  const laterneFrei=(x,z)=>obbs.every(q2=>fernOBB(x,z,q2.o,LATERNE_WAND)||distPunktOBB(x,z,q2.o)>=LATERNE_WAND)&&!laterneImWeg(x,z);   /*DER EINE STAND DER LATERNE: vor der Wand (LATERNE_WAND) UND mit dem Fuss neben jedem Weg — Stadt, Platz, Knoten und Gasse fragen hier*/
+  let kreuzT=null; const laterneInKreuzung=(x,z)=>{ const VG=VERKEHR_GESETZ; if(!kreuzT){ const zt=plan.schnitt||plan; kreuzT=zt.staedtisch?verkehrsNetz({roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w})), feldwege},0,0,true).kreuzungen.filter(K=>!K.ende&&K.r>0):[]; }
+    return kreuzT.some(K=>Math.hypot(x-K.x,z-K.z)<K.r+VG.halbM+VG.abbiegRandM+LATERNE_FUSS); };   /*DIE KREUZUNG DER TRASSEN TRAEGT KEINE LATERNE (PFLICHT-OFFEN C): in der Stadt (sie traegt Verkehr) ist jede Kreuzung des Netzes der Wagen (`verkehrsNetz` ueber den Wegen, wie der Export sie traegt, ohne Sperren) Fahrbahn bis zu ihrem Radius samt halbem Wagen und Abbiege-Rand — dort ziehen die Bogen der Abbieger, der Fuss bleibt draussen. Bis hier standen am Markt jeder Metropole Laternen 4,5–8,3 m von der Mitte der Kreuzung: an stadt-voll verbot das Gesetz 7 von 12 Abbiegern, in die Strecke einer Wende fuehrte keiner, 10 von 20 Wagen erreichten in 10 min kein Ziel*/
+  const laterneFrei=(x,z)=>obbs.every(q2=>fernOBB(x,z,q2.o,LATERNE_WAND)||distPunktOBB(x,z,q2.o)>=LATERNE_WAND)&&!laterneImWeg(x,z)&&!laterneInKreuzung(x,z);   /*DER EINE STAND DER LATERNE: vor der Wand (LATERNE_WAND) UND mit dem Fuss neben jedem Weg UND ausser der Kreuzung der Trassen — Stadt, Platz, Knoten und Gasse fragen hier*/
   const laterneQuer=(rd,q,fl)=>{ const lo=rd.w/2+LATERNE_FUSS; for(let o=rd.w/2+gw+0.35; ; o=Math.max(lo,o-0.25)){ const x=q.x+fl*q.nx*o, z=q.z+fl*q.nz*o; if(laterneFrei(x,z)) return {x,z}; if(o<=lo) return null; } };   /*DER STAND QUER ZUR GASSE (K66): vom alten Stand 0,35 m hinter dem Gehweg in 0,25-m-Schritten bis an den Bordstein (der Fuss am Wegrand), nie in die Fahrbahn — bis K66-n4 rueckte er bis rd.w/4 an die Achse, 123/292 Laternen standen im Weg (der Spieler lief gegen den Mast); wo die Wand keinen Stand traegt, sucht der Weg weiter*/
   let R9L=30; for(const rd9 of roads) for(const q9 of rd9.pts){ const d9=Math.hypot(q9.x,q9.z); if(d9>R9L)R9L=d9; }   /*ZEITREISE-Referenz: der ECHTE Stadtradius (Strassen-Max), nicht Mauer-Rw — GEMESSEN 0 Gas*/
   const zeit=plan.schnitt||plan;                                                               /*das Licht gehoert dem Jahr des Schnitts: 1320 brennt keine Gaslaterne*/
@@ -8360,7 +8456,7 @@
         if (festGetroffen.length) v2.fest = festGetroffen;
         // DER VERKEHR DER STADT (`verkehrsBoden`): das Netz der Wagen und seine Wenden als Boden des Plans — zuletzt im Erdbau
         if (verkehrVon(v2).n) {
-            var vb = verkehrsBoden(v2, ox, oz, ctx, auf);
+            var vb = verkehrsBoden(v2, ox, oz, ctx, auf, aufWeg);
             v2.verkehr = vb.netz;
             v2.erdbau = v2.erdbau.concat(vb.erdbau);
         }

@@ -621,7 +621,7 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const { statikServer, warteAufWelt, nullSeite, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, nullSeite, wandEnde, fehlerText } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const { installHoehlenStrahl } = require("./lib/hoehlen-strahl.cjs");
 
@@ -1636,7 +1636,7 @@ const server = statikServer();
             return aus;
         }, ORTE);
     } catch (e) {
-        befund = { fehler: e?.message || String(e) };
+        befund = { fehler: fehlerText(e) };
     }
     await browser.close();
     server.close();

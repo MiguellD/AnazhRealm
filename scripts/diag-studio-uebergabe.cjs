@@ -14,14 +14,14 @@ const vm = require("vm");
 const stammLib = require("./lib/stamm.cjs");
 const { kanalImVm, bauAbdruck } = require("./lib/asset-worker-harness.cjs");
 const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
-const { hauptLauf, nullSeite, ROOT, argOpt } = require("./lib/welt-boot.cjs");
+const { hauptLauf, nullSeite, ROOT, argOpt, jsonKlon } = require("./lib/welt-boot.cjs");
 
 const SAAT = Number(argOpt("--saat")) >>> 0 || Date.now() >>> 0;
 
 // ── die Studio-Seite: die Hülle in ihrem Fenster, der Eltern-Rahmen fängt, was sie postet ──
 function studioSeite() {
     const gepostet = [];
-    const f = { addEventListener() {}, parent: { postMessage: (m) => gepostet.push(JSON.parse(JSON.stringify(m))) } };
+    const f = { addEventListener() {}, parent: { postMessage: (m) => gepostet.push(jsonKlon(m)) } };
     vm.runInNewContext(fs.readFileSync(path.join(ROOT, "worlds/huelle/huelle.js"), "utf8"), f);
     return { B: f.AnazhHuelle.bruecke({ welt: "probe" }), H: f.AnazhHuelle, gepostet };
 }

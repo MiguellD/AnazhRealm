@@ -107,13 +107,7 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
 
         // 9. Phase 4: Save-Roundtrip — dslAbilities überleben localStorage
         r.saveState();
-        const raw = await window.__stand();
-        let parsed = null;
-        try {
-            parsed = JSON.parse(raw);
-        } catch (e) {
-            void e;
-        }
+        const parsed = await window.__standJson();
         out.savedDslAbilitiesPresent =
             !!parsed &&
             Array.isArray(parsed.dslAbilities) &&
@@ -1185,9 +1179,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
             r.selectBlueprintForEdit("stein_block");
             r._renderWorkshopDOM();
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            r.closeAllDrawers();
-            st.yaw = 0;
-            if (st.playerMesh) st.playerMesh.rotation.y = 0;
+            window.__werkPutz();
         } catch (err) {
             out.error = err && err.message;
         }
@@ -1271,9 +1263,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
 
             // Cleanup
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            r.closeAllDrawers();
-            st.yaw = 0;
-            if (st.playerMesh) st.playerMesh.rotation.y = 0;
+            window.__werkPutz();
         } catch (err) {
             out.error = err && err.message;
         }
@@ -1359,9 +1349,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
             r.selectBlueprintForEdit("stein_block");
             r._renderWorkshopDOM();
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            r.closeAllDrawers();
-            st.yaw = 0;
-            if (st.playerMesh) st.playerMesh.rotation.y = 0;
+            window.__werkPutz();
         } catch (err) {
             out.error = err && err.message;
         }
