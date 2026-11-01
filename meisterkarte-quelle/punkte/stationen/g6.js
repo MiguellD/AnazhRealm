@@ -976,12 +976,12 @@ const PB_KONST = {
 // nach 17,7 s, ihr Wechsel der Sicht schwingt nach), Sprint 3,2 · Sturm 6,3 · Fahrt 4,5 s; der Schritt genesis-ego trug ohne den
 // Schritt davor die Ankunft (18,6 s) — darum zählt jeder Schritt die Ankunft (`ankunft`), wenn der Spieler woanders steht (`hier`).
 const PB_SCHRITT_S = Object.freeze({
-    ankunft: 21,
+    ankunft: 19,
     wieseEgo: 21,
     sprint: 5,
     sturm: 8,
     fahrt: 11,
-    gehen: 6,
+    gehen: 5,
     stehen: 5,
     stadt: 80,
     band: 12,
