@@ -65,7 +65,7 @@ function urteil(z) {
     // (k) DAS PASS-BÜNDEL: im Stand direkt nur der Brecher, das Bild wie der direkte Pfad, jede Änderung erreicht das nächste Bild
     const p = z.pass || {};
     if (!(p.replays > 0)) v.push("PASS: kein Bündel abgespielt — blind");
-    if (p.direkt !== 1) v.push(`PASS: ${p.direkt} Glieder direkt im Stand (Soll 1: der Brecher)`);
+    if (p.direkt !== 1) v.push(`PASS: ${p.direkt} Glieder direkt im Stand (Soll 1: der Brecher) — ${JSON.stringify(p.gruende)}`);
     for (const [k, w] of Object.entries({ bild: p.bild, ...p.aenderung }))
         if (!(w >= BILD_SOLL)) v.push(`PASS ${k}: ${w} gleich mit dem direkten Pfad (Soll ≥ ${BILD_SOLL}) — still alt`);
     if (!(p.stumm < BLIND_GRENZE)) v.push(`PASS: ohne Ausschnitt im Stand ${p.stumm} (Soll < ${BLIND_GRENZE}) — blind`);
@@ -762,17 +762,21 @@ function buehne() {
                     marke(true);
                     return w;
                 };
-                const melder = () => [...r._bruchBuch.keys()].filter((k) => /PASS-BÜNDEL: ein Pass-Bruch/.test(k)).length;
+                // die Meldungen des Bruchs im Buch des EINEN Melders (es entsteht mit dem ersten Bruch der Seite) — je Meldung, nicht je Zeile
+                const melder = () => [...(r._bruchBuch || [])].filter(([k]) => /PASS-BÜNDEL: ein Pass-Bruch/.test(k)).reduce((a, [, e]) => a + e.n, 0);
                 const vor = [melder(), rend._callDepth];
                 marke(true);
                 blick(1);
-                for (let i = 0; i < 6; i++) await schuss();
+                // der Stand in Bau-Ereignissen: bis keine Pipeline der Erst-Zeichnung mehr im Bau steht (swiftshader baut minutenlang;
+                // ein Glied, dessen Programm noch nie zeichnete, zeichnet direkt — `neu`)
+                for (let i = 0; i < 6 || (r._erstZeichnung.offen.size > 0 && i < 600); i++) await schuss();
                 const Z2 = window.__diaetZaehler();
                 const c = Z2.an();
                 await schuss();
                 Z2.zurueck();
                 delete c.passGrund["#pass"];
                 pass.direkt = Object.values(c.passGrund).reduce((a, n) => a + n, 0);
+                pass.gruende = c.passGrund;
                 Object.assign(pass, { replays: c.n.replayBuerger || 0, bild: gleich(await schuss(), await wahr()) });
                 const standRoh = AnazhRealm._passStand;
                 AnazhRealm._passStand = (it, zf, i) => {

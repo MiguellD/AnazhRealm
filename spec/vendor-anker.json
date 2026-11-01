@@ -1243,6 +1243,10 @@
                 "file": "vendor/three.core.min.js",
                 "sub": "this.textures[s].isArrayTexture=this.textures[s].image.depth>1);this.dispose()}",
                 "organ": "_texturAbschied (RenderTarget.setSize ruft dispose: das Ziel fällt über _destroyRenderTarget)"
+            },
+            {
+                "sub": "(!0===i.castShadow||i.receiveShadow&&r===pt)&&(s&&(Ys(i).useVelocity=!0),i.onBeforeShadow(",
+                "organ": "_passGrund (die Kaskade zeichnet nur Werfer, unter VSM auch Empfänger: ein Nicht-Werfer trägt nichts in eine Aufnahme)"
             }
         ]
     }

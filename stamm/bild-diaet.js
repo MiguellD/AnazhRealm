@@ -121,11 +121,13 @@ class AnazhRealm_bild_diaet {
         const Z = this._passBuendelZensus || null;
         const PB = AnazhRealm.PASS_BUENDEL;
         const n = liste.length;
+        // im Schatten-Pass zeichnet r184 unter VSM auch die Empfänger (`_passGrund`)
+        const vsm = sm !== null && rend.shadowMap.type === THREE.VSMShadowMap;
         let i = 0,
             lauf = 0;
         while (i < n) {
             let j = i;
-            while (j < n && AnazhRealm._passGrund(liste[j], P.unruh, takt, sm) === 0) j++;
+            while (j < n && AnazhRealm._passGrund(liste[j], P.unruh, takt, sm, vsm) === 0) j++;
             if (j - i >= PB.minLauf) {
                 this._passLauf(rend, beginEcht, P, lauf++, liste, durch, i, j, kamera, szene, lichter, takt);
                 i = j;
@@ -138,7 +140,7 @@ class AnazhRealm_bild_diaet {
             for (let q = i; q < k; q++) {
                 seg.push(liste[q]);
                 if (Z !== null) {
-                    const g = AnazhRealm._passGrund(liste[q], P.unruh, takt, sm);
+                    const g = AnazhRealm._passGrund(liste[q], P.unruh, takt, sm, vsm);
                     const name = (g === 0 ? "einzeln" : PB.gruende[g]) + " " + this._taeterKlasse(liste[q].object);
                     Z[name] = (Z[name] || 0) + 1;
                 }
@@ -301,9 +303,14 @@ AnazhRealm.PASS_BUENDEL = Object.freeze({
 // Warum ein Glied direkt zeichnet: 0 bündelfähig · 1 Verdeckungs-Abfrage · 2 eigener Zug je Draw (`onBeforeRender`/`After`, im
 // Schatten-Pass `onBeforeShadow`/`After` — r184 ruft sie im Replay nie) · 3 unruhig (sein Stand wechselte in den letzten
 // `ruheTakte` Bildern seines Passes) · 4 sein Programm bricht den Pass (`_passBruch`) · 5 sein Programm ist noch nicht gesehen
-// (die erste Zeichnung ist direkt, sie fällt das Urteil).
-AnazhRealm._passGrund = function (it, unruh, takt, sm) {
+// (die erste Zeichnung ist direkt, sie fällt das Urteil). DER NICHT-WERFER IM SCHATTEN-PASS ist bündelfähig: die Zeichen-Funktion
+// der Kaskade (r184 `renderShadow`) zeichnet nur Werfer, unter VSM auch Empfänger — ein Glied, das sie auslässt, zeichnet nie und
+// trägt nichts in eine Aufnahme; sein Wurf steht im Zeichen-Stand (wird es Werfer, nimmt der Lauf neu auf). Bis hier fiel sein
+// Urteil nie (5 je Bild, direkt, der Lauf brach an ihm: gate:kamera-treue PASS „neu" an Boden und Brecher der Bühne; in der Welt
+// projiziert die Wurf-Ebene keinen Nicht-Werfer in die Kaskade, `_wurfEbene`).
+AnazhRealm._passGrund = function (it, unruh, takt, sm, vsm) {
     const o = it.object;
+    if (sm !== null && o.castShadow !== true && !(vsm === true && o.receiveShadow === true)) return 0;
     if (o.occlusionTest === true) return 1;
     const O = THREE.Object3D.prototype;
     // DIE FESTE ARENA trägt ihr Bündel-Gesetz selbst: in der Aufnahme legt ihr Zug Plätze (`_arenaZug`), ihr Takt füllt sie je
