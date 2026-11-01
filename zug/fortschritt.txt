@@ -1455,3 +1455,4 @@
 2026-11-01 12:24:08 wiese-takt-abab w-ego VERLÄNGERN 12.2 · 1/2 (2+2)
 2026-11-01 12:40:11 wiese-takt-abab stadt VERLÄNGERN 16.0 · 2/2 (2+2)
 2026-11-01 12:52:22 wiese-takt-abab w-ego(4+4) nicht-langsamer 12.1 · verlängert (4+4)
+2026-11-01 13:08:45 wiese-takt-abab stadt(4+4) nicht-langsamer 16.3 · verlängert (4+4)
