@@ -223,17 +223,10 @@ function seitenPruefer() {
             // Das Tor steht 3 m vor dem Auge in seiner Höhe (im Kegel und im Umkreis des Pools, wo die Kamera der Seite auch steht —
             // vor jeder Laterne des Genesis-Orts: seine Kern-Laternen hielten sonst die vier Plätze, ein Tor seitlich hinter dem
             // Spieler rangiert hinter jeder im Bild), der Pool wählt frisch wie nach dem Boot
-            const cam = st.camera;
-            const blick = cam.getWorldDirection(new window.THREE.Vector3()).setY(0).normalize();
-            const lx = cam.position.x + blick.x * 3;
-            const lz = cam.position.z + blick.z * 3;
-            if (r._leuchtPool) {
-                r._leuchtPool.t = -Infinity;
-                r._leuchtPool.halter.fill(null);
-                r._leuchtPool.blende.fill(0);
-            }
+            const cam = st.camera.position;
+            r._leuchtPool = null;
             r._tickPortalLicht({
-                entry: { position: { x: lx, y: cam.position.y, z: lz }, scale: 1 },
+                entry: { position: st.camera.getWorldDirection(cam.clone()).setY(0).normalize().multiplyScalar(3).add(cam), scale: 1 },
                 tor: { mu: { springY: 1 } },
                 _act: 1,
                 u: null,

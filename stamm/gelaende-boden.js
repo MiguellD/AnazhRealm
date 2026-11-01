@@ -455,10 +455,26 @@ class AnazhRealm_gelaende_boden {
     // (der Schlüssel nennt Saat, Ort und den Abdruck des Erdbaus: ein anderer Plan derselben Welt zieht EINMAL um, der Erdbau
     // des alten fällt, `_erdbauOrtFaellt`), sein Erdbau liegt (`_erdbauSetzen`, je Schlüssel einmal), die Natur-Wand liest seine
     // Flächen (`_grundrissStand`). Die Messung des Fadens bleibt am Wirt (`_genesisPlanMs`, die Kalt-Zeile liest t(Plan)).
+    // DIE PRÜFBÜHNE TRÄGT DEN KERN: wo die Wildnis nicht trägt (`_wildnisTraegt`, die Bühne der Stationen), stehen nur Tore
+    // und Kern-Werke (`_genesisWerkListeBauen`) — und nur ihr Grund: Erdbau und Flächen des Plans enden am Freiraum der Tore
+    // (fachwerk `GENESIS_ORT.freiraum`, die Mitte jedes Splats und jeder Fläche darin). Bis hierher legte die Bühne den vollen
+    // Erdbau: der Teich (z 105–175) lag über der 30°-Rampe der Station S2 (z 132–164), ihre Neigung 0° (gate:kreatur-takt querhang).
     _genesisPlanAn(r, welt) {
         if (welt !== (this._hydroWelt | 0) || !r || !r.plan) return null;
-        const v2 = r.plan;
         const FC = globalThis.__fachwerkCore;
+        let v2 = r.plan;
+        if (!this._wildnisTraegt(v2.ort.x, v2.ort.z)) {
+            const [ox, oz, R] = [v2.ort.x, v2.ort.z, FC.GENESIS_ORT.freiraum.r];
+            const innen = (x, z) => Math.hypot(x, z) <= R;
+            v2 = Object.assign({}, v2, {
+                erdbau: v2.erdbau.filter((p) =>
+                    p.art === "trasse"
+                        ? innen((p.x0 + p.x1) / 2 - ox, (p.z0 + p.z1) / 2 - oz)
+                        : innen(p.cx - ox, p.cz - oz)
+                ),
+                zonen: v2.zonen.filter((q) => innen((q.huelle[0] + q.huelle[2]) / 2, (q.huelle[1] + q.huelle[3]) / 2)),
+            });
+        }
         const key = `genesis:${v2.seed}:${Math.round(v2.ort.x)},${Math.round(v2.ort.z)}:${FC.ortHash(v2.erdbau)}`;
         const wm = this.state.worldMeta || (this.state.worldMeta = {});
         const alt = wm.genesisOrt && typeof wm.genesisOrt === "object" ? wm.genesisOrt : null;

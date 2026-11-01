@@ -1088,7 +1088,7 @@ function startBefunde(z, soll) {
 // nur die Höhe, die die Welt baut (`_terrainMacroSurfaceY` = gelaende-core `hoehe` an ihrer lebenden Lage), und die Seen, die
 // ihr Gesetz benennt (`benannteSeen`). DER PLAN IST DIE FUNKTION: die Lage der Welt ohne den Erdbau der Orte (`erdbau`, K10
 // Welt = Funktion + Abweichungen — die Splats legt das Ort-Gesetz, seit dem Genesis-Ort in jeder Welt an 0/0, nie der Plan
-// des Gelände-Studios); `erdbau` nennt, wie viele Splats die Welt dabei trägt.
+// des Gelände-Studios).
 async function weltMessen(page) {
     const Z = linse();
     const R = Z.MESSUNG.raster;
@@ -1104,7 +1104,6 @@ async function weltMessen(page) {
                 for (let i = 0; i < R.n; i++) H[i + j * R.n] = hoehe(R.x0 + i * R.schritt, R.x0 + j * R.schritt, true);
             return {
                 makroSha: await hex(Float64Array.from(punkte, ([x, z, mitDetail]) => hoehe(x, z, mitDetail))),
-                erdbau: L.erdbau ? L.erdbau.splats.length : 0,
                 H,
                 benannt: G.benannteSeen(L, R.x0, R.x0, R.schritt, R.n),
                 seed: L.seed,
@@ -1198,7 +1197,7 @@ async function studioProbe(page) {
         const aStat = JSON.stringify(zA.statistik) === JSON.stringify(weltA.statistik);
         out.a = { welt: weltA, studio: { makroSha: zA.makroSha, statistik: zA.statistik } };
         console.log(
-            `  A über der fremden Welt (Basis ${weltA.basis} m, Meer ${weltA.wasser} m, Terme ${weltA.terme.join("+")}): Makro ${String(zA.makroSha).slice(0, 16)} ${aGleich ? "=" : "≠"} Welt ${weltA.makroSha.slice(0, 16)} · Statistik ${aStat ? "=" : "≠"} · Erdbau der Orte ${weltA.erdbau} Splats (nie Plan)`
+            `  A über der fremden Welt (Basis ${weltA.basis} m, Meer ${weltA.wasser} m, Terme ${weltA.terme.join("+")}): Makro ${String(zA.makroSha).slice(0, 16)} ${aGleich ? "=" : "≠"} Welt ${weltA.makroSha.slice(0, 16)} · Statistik ${aStat ? "=" : "≠"}`
         );
         if (weltA.basis !== 7 || weltA.terme.length < 2)
             befunde.push(
