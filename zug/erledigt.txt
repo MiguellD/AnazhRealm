@@ -192,3 +192,4 @@ z140-rueck-gtx gemessen punkte 3242d6ad gtx: 1 grün / 2 rot
 z143-punkte-gtx gemessen punkte baf9d828 gtx: 0 grün / 2 rot
 z143-abab nicht-langsamer abab baf9d828 gegen 1e90e7cd: w-ego 4+4 nicht-langsamer · stadt 4+4 nicht-langsamer
 albedo-haar-gtx gemessen punkte 776946bb gtx: 1 grün / 0 rot
+takt-z145a-gtx gemessen punkte 28dd7a47 gtx: 0 grün / 0 rot
