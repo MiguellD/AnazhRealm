@@ -211,7 +211,10 @@ class AnazhRealm_koerper_bewegung {
         const sk = { joints, root: "mensch", handMitte: rig.handMitte };
         sk.sitz = KC.leibSitz(pm, sk, teile);
         sk.glieder = KC.leibGlieder(pm, sk, teile);
-        if (!sk.sitz || !sk.glieder) return AnazhRealm._kernPflichtBruch("leib:die Haut des Spielers trägt keine Höhe des Sitzes bzw. Dicke der Glieder (leibSitz · leibGlieder)");
+        if (!sk.sitz || !sk.glieder)
+            return AnazhRealm._kernPflichtBruch(
+                "leib:die Haut des Spielers trägt keine Höhe des Sitzes bzw. Dicke der Glieder (leibSitz · leibGlieder)"
+            );
         rig._leibKette = KC.leibKette(sk);
         return rig._leibKette;
     }
