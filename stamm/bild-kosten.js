@@ -661,6 +661,13 @@ class AnazhRealm_bild_kosten {
     // Zeichner EINES Stoffs bauten dasselbe Programm zweimal (52 + 56 ms). Der Bau-Schlüssel ist der r184s, gelesen mit diesen
     // Zahlen als 1 und ohne den Index — Pipeline, Neuanlage des Render-Objekts und jeder andere Leser behalten den Vendor-
     // Schlüssel; gemerkt je Render-Objekt (`delete` zählt `usedTimes` unter demselben). Der Rufer: der Anschluss nach init().
+    // DIE FORM DES RENDER-OBJEKTS (w4-knoten-takt): die Sicht ist eine flache KOPIE seiner Felder (ohne Prototyp: ruft r184s
+    // `getMaterialCacheKey` je eine andere Methode, bricht sie laut), der Schlüssel steht in einer WeakMap — nie ein Erbe des
+    // Render-Objekts, nie ein Feld an ihm. `Object.create(ro)` machte jedes Render-Objekt zum Prototyp, V8 gibt einem
+    // Prototyp eine EIGENE Form: jeder Zugriff des Takts auf ein Render-Objekt (Vendor-Draw, Bündel-Replay, Diät) ging den
+    // langsamen Weg (z119c GTX, Stadt im Stand: CPU-Takt p95 9,88 → 10,95 ms; Radeon: zwei Schreibe je Render-Objekt 5,5 →
+    // 30,5 ns, CPU je Bild der stehenden Stadt 4,50 → 5,20 ms, mit der Kopie 4,60). Die Wand: gate:altlasten (Zwillings-Wand,
+    // `Object.create` nur mit null).
     _gestaltSchluessel(renderer) {
         const N = renderer && renderer._nodes;
         if (!N || typeof N.getForRenderCacheKey !== "function")
@@ -668,20 +675,20 @@ class AnazhRealm_bild_kosten {
         if (N.__anazhBauSchluessel) return;
         const NEUTRAL = AnazhRealm.BAU_NEUTRAL;
         const blick = { get: (m, p) => (NEUTRAL.includes(p) && typeof m[p] === "number" ? 1 : Reflect.get(m, p, m)) };
+        const bau = new WeakMap(); // Render-Objekt → sein Bau-Schlüssel
         N.getForRenderCacheKey = function (ro) {
-            if (ro._anazhBau !== undefined) return ro._anazhBau;
+            let k = bau.get(ro);
+            if (k !== undefined) return k;
             const m = ro.material;
             const null0 = !!m && NEUTRAL.some((p) => m[p] === 0);
-            let k = ro.initialCacheKey;
+            k = ro.initialCacheKey;
             if (null0 || (ro.geometry && ro.geometry.index)) {
                 const geo = ro.getGeometryCacheKey().replace(/index,$/, "");
-                const sicht = Object.create(ro, {
-                    material: { value: null0 ? new Proxy(m, blick) : m },
-                    getGeometryCacheKey: { value: () => geo },
-                });
+                const sicht = { ...ro, material: null0 ? new Proxy(m, blick) : m, getGeometryCacheKey: () => geo };
                 k = ro.getMaterialCacheKey.call(sicht) + ro.getDynamicCacheKey();
             }
-            return (ro._anazhBau = k);
+            bau.set(ro, k);
+            return k;
         };
         N.__anazhBauSchluessel = true;
     }
