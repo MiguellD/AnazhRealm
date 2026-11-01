@@ -445,7 +445,7 @@ function sichtLinse(cfg) {
             ? {
                   ex: auge ? auge.x : null,
                   ez: auge ? auge.z : null,
-                  werte: [lu.uLodMaskOn, lu.uLodPerf, lu.uLodRef, lu.uLodD0, lu.uLodD1, lu.uLodFade, lu.uLodFade0].map(
+                  werte: [lu.uLodMaskOn, lu.uLodRef, lu.uLodD0, lu.uLodD1, lu.uLodFade, lu.uLodFade0].map(
                       n
                   ),
               }

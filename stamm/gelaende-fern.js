@@ -356,7 +356,12 @@ class AnazhRealm_gelaende_fern {
             mesh.castShadow = false;
             // er empfängt (D3): jenseits der Kaskaden trägt sein Boden-Stoff die Horizont-Karte (`_horizontSicht`)
             mesh.receiveShadow = true;
-            mesh.visible = false; // erst sichtbar, wenn der erste Höhen-Refresh durch ist
+            // DAS PROGRAMM VORAB (w4-ankunft-5): bis der erste Höhen-Refresh durch ist, zeichnet die Schale nichts (Zeichen-Bereich
+            // 0, `_fernRingHoch` öffnet ihn) — aber sie steht im Bild: die Erst-Zeichnung baut ihr Programm ab dem ersten Lade-Bild,
+            // und der GPU-Prozess übersetzt es neben der Ankunft. Bis w4-ankunft-5 war sie unsichtbar: ihr Programm (117–126 KB
+            // WGSL, die Übersetzung 1,2–1,4 s) entstand erst, als der Ring ganz stand — Radeon kalt 74 ms vor dem ersten Bild,
+            // das ohne den Ring stand.
+            geo.setDrawRange(0, 0);
             mesh.matrixAutoUpdate = false; // Vertex-XZ sind absolute Welt-Koordinaten
             mesh.userData.inventar = "fern-ring"; // Identitäts-Stempel (H3-Familie)
             st.scene.add(mesh);
@@ -1436,7 +1441,7 @@ class AnazhRealm_gelaende_fern {
         fr.refreshed += done;
         if (!fr.ready && fr.cursor >= fr.totalVerts) {
             fr.ready = true;
-            for (const m of fr.meshes) m.visible = true;
+            for (const m of fr.meshes) m.geometry.setDrawRange(0, Infinity);
         }
         return done;
     }

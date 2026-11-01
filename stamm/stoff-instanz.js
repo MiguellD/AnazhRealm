@@ -714,11 +714,14 @@ class AnazhRealm_stoff_instanz {
         return form;
     }
     // Der Stoff als Wert: jede Eigenschaft (Knoten als id, Texturen als uuid, Funktionen über den Programm-Schlüssel des
-    // Stoffs), die Stoff-Werte bis auf die Art-Größen des Winds — gemerkt je Stoff-Version.
+    // Stoffs), die Stoff-Werte bis auf die Art-Größen des Winds — gemerkt je Stoff-Version. Die Zahlen, die kein Programm
+    // schlüsseln (`STOFF_REFERENZ_ZAHLEN`, nicht aufzählbar), trägt die Arena beim Namen: EIN Render-Objekt zeichnet nur
+    // Stoffe gleicher Werte.
     static _arenaStoff(s) {
         if (s.__arenaStoff && s.__arenaStoffV === s.version) return s.__arenaStoff;
         const J = AnazhRealm._arenaWert;
         let t = s.type + ";a" + s.alphaTest + ";p" + s.customProgramCacheKey();
+        for (const k of AnazhRealm.STOFF_REFERENZ_ZAHLEN) t += ";" + k + "=" + J(s[k], 0);
         for (const k of Object.keys(s).sort()) {
             if (k.startsWith("__") || k === "_listeners" || k.startsWith("_anazh") || k === "uuid" || k === "id")
                 continue;
@@ -2324,20 +2327,10 @@ class AnazhRealm_stoff_instanz {
         // ihn erst Takte später auf L1 (5 Wechsel je Takt, 04.10. an der Mess-Wiese 191 Plätze im ersten Takt). Nennt die Art
         // ihre Grenzen (K43: Haus, Tor), fragt er sie wie der Takt — bis B2 las er dort die Baum-Distanzen 12/26 m: das
         // Ring-Tor in 11 m bestellte kalt seine L0 (Grenze 9,5 m), der Takt wechselte danach auf die L1 (Radeon kalt an
-        // Genesis: 7 Tor-L0 und 9 Tor-L1 vor dem ersten Bild). In der Ankunft aus der Ferne (B2) wählt er die Grobstufe.
-        const treeLike = !!entry._lodSpecies && Number.isFinite(entry._lodVariantIndex);
-        const G = treeLike ? null : this._archStufenGrenzen(entry);
-        if (G)
-            return AnazhRealm._stufeNachGrenzen(
-                d * this._ankunftsFerne(),
-                undefined,
-                G,
-                Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1
-            );
-        const visH = this._lodTreeVisHeight(entry);
-        // ein Baum ohne bekannte Höhe hat in der Ankunft kein Urteil der Nähe: er steht als Karte (sie bestellt die Höhe)
-        if (visH === null && this._ankunftsFerne() > 1) return 2;
-        return this._chooseLODForDistance(d, undefined, visH);
+        // Genesis: 7 Tor-L0 und 9 Tor-L1 vor dem ersten Bild). Unter dem Ladeschirm wählt er dieselbe Ziel-Stufe wie danach
+        // (ankunft.K2; bis w4-ankunft-3 die Grobstufe der Ankunft aus der Ferne, B2). Er fragt die Wahl am Abstand selbst
+        // (`_stufeAmAbstand`), ohne Zustand: was er setzt, bestätigt erst das Urteil des Takts (w4-genesis-tore).
+        return this._stufeAmAbstand(entry, d, undefined);
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_stoff_instanz]);

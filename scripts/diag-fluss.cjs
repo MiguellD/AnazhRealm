@@ -7,7 +7,8 @@
 // KLON-LINSE (Node, die geladene Klasse): `_foundryVariantFor` gegen das Studio-Budget auf 600 × 600 Streu-Zellen — 1/V je
 //       Gestalt, Nachbar-/Versatz-16-Gleichheit ≤ 1/V + 0,03 (das alte `h % 16` legte ein 54-m-Klon-Gitter)
 // VERHALTEN (Chromium, echter Worker + echte IndexedDB; die Schale aus dem Stamm + ein Studio-Double):
-//   V1  Konsum-Wand: aWind fällt, position/color reisen · V2 Uint16-Index ≤ 65 536 Vertices, Uint32 darüber
+//   V1  Konsum-Wand: aWind fällt, position/color reisen, uv nur am Teil, dessen Stoff es liest (`cfg.uv`, FOUNDRY_UV: die
+//       Rinde ohne, der Stein mit) · V2 Uint16-Index ≤ 65 536 Vertices, Uint32 darüber
 //   V3  Transfer: der Studio-Puffer ist nach dem Senden abgelöst (byteLength 0)
 //   V4  Platte: zweite Anfrage kommt von der Platte, das Studio baut nicht noch einmal
 //   V5  nurPlatte (Ship-Hook): Miss = leere Antwort, kein Bau · V6 ein Format-Wechsel baut neu · V9 ein Kern-Wechsel baut nur
@@ -145,7 +146,8 @@ function gestalten(teile) {
 
 // Das Studio-Double: antwortet auf build-asset wie die Brücke (frische Puffer, aWind + Uint32-Index), zählt Bauten
 // und meldet, ob sein letzter Puffer nach dem Senden abgelöst ist (= übertragen statt kopiert). Es merkt sich die
-// Saison, die es sah (der Saison-Nagel).
+// Saison, die es sah (der Saison-Nagel). Die Rinde und der Stein eines Rahmens liefern uv (V1: die Ecken des Stoffs; als
+// uv dient ihr Lage-Puffer — die Schale liest nur den Namen).
 const STUDIO = `
 let gebaut = 0, letzte = null;
 self.__aKern = { PRESETS: { ka: {} }, exportSettlement() {} };
@@ -167,8 +169,9 @@ self.onmessage = (e) => {
         self.postMessage({ type: "asset", world: "terrain", cv: 1, reqId: m.reqId, presetId: m.presetId, seed: m.seed, lod: m.lod | 0,
             meshes: [
                 { kind: "bark", mat: {}, position: { array: pos, itemSize: 3 }, color: { array: new Float32Array(9), itemSize: 3 },
-                  aWind: { array: new Float32Array(9), itemSize: 3 }, index: new Uint32Array([0, 1, 2]) },
-                { kind: "foliage", mat: {}, position: { array: gross, itemSize: 3 }, index: new Uint32Array([0, 1, 69999]) },
+                  aWind: { array: new Float32Array(9), itemSize: 3 }, uv: { array: pos, itemSize: 2 }, index: new Uint32Array([0, 1, 2]) },
+                { kind: "unknown", mat: { stein: "quader" }, position: { array: gross, itemSize: 3 }, uv: { array: gross, itemSize: 2 },
+                  index: new Uint32Array([0, 1, 69999]) },
             ] });
     } else if (m.type === "export-settlement") self.postMessage({ type: "settlement", reqId: m.reqId, plan: { n: ++gebaut } });
     else if (m.type === "frage")
@@ -197,6 +200,7 @@ async function verhalten(schaleSrc) {
                     const cfg = {
                         lesen: ["position", "normal", "color", "uv"],
                         jahr: [1, 3],
+                        uv: { kind: [], stoff: ["stein"] },
                         format,
                         platte,
                         kerne: [{ id: "basis", ns: null, basis: true, urls: [o + "/kern.js"] }].concat(
@@ -229,7 +233,7 @@ async function verhalten(schaleSrc) {
                 const A = neu(2, true);
                 const a1 = await bau(A, "a1", "x");
                 const [m0, m1] = a1 ? a1.meshes : [];
-                aus.wand = !!(m0 && !m0.aWind && m0.position && m0.color);
+                aus.wand = !!(m0 && !m0.aWind && !m0.uv && m1?.uv && m0.position && m0.color);
                 aus.u16 = m0?.index instanceof Uint16Array;
                 aus.u32 = m1?.index instanceof Uint32Array;
                 aus.transfer = (await frage(A))?.abgeloest === true;
@@ -627,7 +631,7 @@ async function welt() {
 }
 
 const VERHALTEN = [
-    ["V1 Konsum-Wand: aWind fällt, position/color reisen", "wand"],
+    ["V1 Konsum-Wand: aWind und uv der Rinde fallen, position/color und uv des Steins reisen", "wand"],
     ["V2a Index Uint16 bei ≤ 65 536 Vertices", "u16"],
     ["V2b Index bleibt Uint32 darüber", "u32"],
     ["V3 Transfer: der Studio-Puffer ist nach dem Senden abgelöst", "transfer"],
@@ -680,6 +684,9 @@ hauptLauf(async () => {
         check("Selbst-Test 3: Schale ohne Transfer → V3 rot", v1.transfer === false);
         const v2 = await verhalten(bruch(schale, "!LESEN.has(k)) delete m[k]", "false) delete m[k]"));
         check("Selbst-Test 4: Schale ohne Konsum-Wand → V1 rot", v2.wand === false);
+        // der Bruch von z116 (w4-ankunft-5): die Schale ließ uv an jedem Teil durch, nur der Leser wählte nach dem Stoff
+        const v2b = await verhalten(bruch(schale, "if (m.uv && !(", "if (false && !("));
+        check("Selbst-Test 4b: Schale lässt uv an der Rinde durch → V1 rot", v2b.wand === false);
         const ohneNagel = bruch(
             schale,
             'const weiter = Object.assign({}, m, { season: "summer" });',

@@ -1552,6 +1552,8 @@ class AnazhRealm_koerper_leib {
             }
             if (geo.index) out.index = geo.index.array;
         }
+        // die Ecken des Stoffs (FOUNDRY_UV): der Haupt-Faden hat keine Schale — uv trägt nur ein Teil, dessen Stoff es liest
+        if (out.uv && !AnazhRealm._foundryTraegtUv(out)) delete out.uv;
         return out;
     }
     // Anker-Farben des Default-Menschen (Boot-Avatar, Peers ohne Übergabe, Ofen-Prefetch) aus den

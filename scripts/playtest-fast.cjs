@@ -54,7 +54,7 @@ function check(name, ok) {
             // knapper Boot-Deckel → früher Fallback → leerer Warmup. 60 s ist ein reiner
             // Sicherheits-Deckel gegen einen echten Hänger — die Schleife exitet, sobald
             // `_gameLoopTick` da ist (normal ~Sekunden), also kostet er den Schnellfall nichts.
-            await window.__weltDa((r) => r.state && r.state.rendererReady && r.state.blueprints);
+            await window.__weltDa(() => st && st.rendererReady && st.blueprints);
         });
         // ── KURZER PLATEAU-WARMUP (render-gestubbt, chirurgisch wie playtest.cjs) ──
         await page.evaluate(async () => {
@@ -114,7 +114,6 @@ function check(name, ok) {
         // ── KERN-CHECKS (selbst-enthalten, defensiv) ──
         const R = await page.evaluate(() => {
             const out = {};
-            const st = r && r.state;
             const safe = (fn) => {
                 try {
                     return fn();
@@ -181,24 +180,24 @@ function check(name, ok) {
             // SYNERGIE-WELLE — „WERDE DAS TIER": die Tier-Körper sind TRAGBARE
             // soul-Baupläne (der generische embody-Pfad; Konsum = wirklich getragen).
             out.tierKoerper = safe(() => {
-                const bp = r.state.blueprints.koerper_wolf;
+                const bp = st.blueprints.koerper_wolf;
                 const okDef = !!(bp && bp.role === "soul" && Array.isArray(bp.parts) && bp.parts.length >= 10);
-                const prev = r.state.player?.soul || "human";
+                const prev = st.player?.soul || "human";
                 let getragen = false;
                 if (okDef) {
                     r.applyPlayerSoulFromBlueprint("koerper_wolf");
                     getragen =
-                        !!(r.state.player && /koerper_wolf/.test(String(r.state.player.soul))) &&
+                        !!(st.player && /koerper_wolf/.test(String(st.player.soul))) &&
                         // KONVERGENZ III: der getragene Tier-Leib ist der Studio-BAUM
                         // (ein Wrap-Kind + _tierBaum-Register) — nicht mehr der Compound.
                         !!(
-                            r.state.playerMesh &&
-                            (r.state.playerMesh.children.length >= 5 ||
-                                r.state.playerMesh.userData?._tierBaum)
+                            st.playerMesh &&
+                            (st.playerMesh.children.length >= 5 ||
+                                st.playerMesh.userData?._tierBaum)
                         );
                     r.applyPlayerSoul(prev);
                 }
-                return { okDef, getragen, hirsch: !!r.state.blueprints.koerper_wesen };
+                return { okDef, getragen, hirsch: !!st.blueprints.koerper_wesen };
             });
             // ALTLASTEN-NULL — KÖRPER→EIGENSCHAFTEN als ZAHL: die Skelett-Größen
             // differenzieren die getragenen Tier-Körper über die EINE Größen-Fold-
@@ -206,7 +205,7 @@ function check(name, ok) {
             // Tempo. Plus: der werde-Alias trägt (wolf→koerper_wolf) und ein
             // gefallener Alt-Name fällt fail-soft auf den Menschen.
             out.koerperStats = safe(() => {
-                const prev = r.state.player?.soul || "human";
+                const prev = st.player?.soul || "human";
                 const read = (k) => {
                     r.applyPlayerSoulFromBlueprint(k);
                     const st = r.state.player.stats || {};
@@ -215,14 +214,14 @@ function check(name, ok) {
                 const fu = read("koerper_fuchs");
                 const wo = read("koerper_wolf");
                 const ba = read("koerper_baer");
-                const aliasOk = !!r.applyPlayerSoul("wolf") && /koerper_wolf/.test(String(r.state.player.soul));
+                const aliasOk = !!r.applyPlayerSoul("wolf") && /koerper_wolf/.test(String(st.player.soul));
                 // HERZ/KONVERGENZ III: „werde wolf" IST der Wolf — derselbe
                 // Studio-Baum wie die Welt-Kreatur (der _creatureSkin-Wrap deckt
                 // den Leib für die 1st-Person-Regel).
-                const wolfSkin = (r.state.playerMesh.children || []).some(
+                const wolfSkin = (st.playerMesh.children || []).some(
                     (c) => c?.userData?._creatureSkin
                 );
-                const softOk = !!r.applyPlayerSoul("phoenix") && r.state.player.soul === "human";
+                const softOk = !!r.applyPlayerSoul("phoenix") && st.player.soul === "human";
                 // HERZ: der MENSCH hängt an derselben Größen-Achse — die
                 // koerperstudio-Dials (dieselbe Quelle wie das Rig) tragen
                 // Stats: mehr Masse/Höhe → mehr HP, weniger Tempo.
@@ -232,11 +231,11 @@ function check(name, ok) {
                     const saved = JSON.parse(JSON.stringify(rec.s));
                     r.applyPlayerSoul("human");
                     r.recomputePlayerStats();
-                    const base = { hp: r.state.player.stats.hpMax, sp: r.state.player.stats.speed };
+                    const base = { hp: st.player.stats.hpMax, sp: st.player.stats.speed };
                     rec.s.height = 1.15;
                     rec.s.mass = 1.0;
                     r.recomputePlayerStats();
-                    const big = { hp: r.state.player.stats.hpMax, sp: r.state.player.stats.speed };
+                    const big = { hp: st.player.stats.hpMax, sp: st.player.stats.speed };
                     Object.assign(rec.s, saved);
                     r.recomputePlayerStats();
                     menschDials = big.hp > base.hp && big.sp < base.sp;

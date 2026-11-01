@@ -618,17 +618,29 @@ class AnazhRealm_bild_himmel {
                 st._skyEnvLastRegenMs = nowMs;
                 return true;
             }
-            if (!A.tafelnFrisch) return false; // die Himmels-Sicht steht noch nicht (der erste Takt der Atmosphäre)
-            this._atmoZeichne(A.qEq, A.rtEq);
+            // Die Umgebung liest die Himmels-Sicht: sie malt erst über gezeichneten Tafeln (`himmelSchluessel`), und ihr Pass ist
+            // ein Einmal-Pass (`_atmoZeichne` → ganz) — bis er zeichnete, versucht es der nächste Takt.
+            const voll = A.tafelnFrisch && A.himmelSchluessel != null && this._atmoZeichne(A.qEq, A.rtEq);
+            // DAS ZIEL UND DER KNOTEN DER UMGEBUNG STEHEN VOR JEDEM STOFF: jedes Programm der Welt baut mit ihnen (r184 schlüsselt
+            // das Render-Objekt nach dem Umgebungs-Knoten der Szene) — kämen sie erst mit der gemalten Himmels-Sicht, baute jeder
+            // Stoff davor neu. Der erste Ruf legt sie darum über der noch leeren Tafel an; das erste Weltbild wartet auf die
+            // gemalte Umgebung (`_skyEnvLast`, Term „licht").
+            if (!voll && st._skyEnvRT) return false;
             // PMREM per `fromEquirectangular` (WebGPU-tauglich, anders als `fromScene`) in das BESTEHENDE Target (zweites
             // Argument): stabile Texture-Identität, scene.environment nur beim Erst-Aufruf gesetzt (kein Recompile-Kaskade).
+            // Auch er ist ein Einmal-Pass (`_einmalPass`): seine Pipelines bauen asynchron, er gilt erst, wenn er ganz zeichnete.
             if (!st._skyPmrem) st._skyPmrem = new THREE.PMREMGenerator(st.renderer);
-            const rt = st._skyPmrem.fromEquirectangular(A.rtEq.texture, st._skyEnvRT || null);
+            const [pmrem, rt] = this._einmalPass(() =>
+                st._skyPmrem.fromEquirectangular(A.rtEq.texture, st._skyEnvRT || null)
+            );
             st._skyEnvRT = rt;
             if (st.scene.environment !== rt.texture) st.scene.environment = rt.texture;
             // was jeder Stoff spiegelt, ist die EINE Umgebung (material.K4): der Spiegel-Pass vor diesem Himmel
             if (!st.scene.environmentNode) st.scene.environmentNode = this._spiegelUmgebung(rt.texture);
-            this._weltLichtHimmel(); // das Licht der Welt liest dieselbe PMREM-Stufe wie jeder Stoff
+            // das Licht der Welt liest dieselbe PMREM-Stufe wie jeder Stoff — auch seine Sonde ist ein Einmal-Pass (der erste
+            // Ruf stößt ihren Bau an)
+            const sonde = this._weltLichtHimmel();
+            if (!voll || !pmrem || !sonde) return false;
             st._skyEnvLast = neu;
             st._skyEnvLastRegenMs = nowMs;
             this._himmelUmgebungLesen();
@@ -685,14 +697,32 @@ class AnazhRealm_bild_himmel {
         return st._skyEnvLesung;
     }
 
-    // DER HIMMEL DER STUNDE AUF DER CPU (ein Versprechen): die Umgebung frisch aus den Quellen, die jetzt gelten, und ihre
-    // Lesung abgewartet — true, sobald `_himmelsIrradianz` sie trägt. Der Null-Renderer malt keinen Himmel (die Tafeln leben
-    // auf der GPU, Lehre 16): dort false, und wer den Himmel messen will, misst mit dem echten Renderer.
-    _himmelFrisch() {
+    // DER HIMMEL DER STUNDE AUF DER CPU (ein Versprechen): die Tafeln der Atmosphäre und die Umgebung frisch aus den Quellen,
+    // die jetzt gelten, und ihre Lesungen abgewartet — true, sobald `_himmelsBestrahlung` und `_himmelsIrradianz` sie tragen.
+    // Jeder Pass des Himmels ist ein Einmal-Pass (`_einmalPass`): steht seine Pipeline noch nicht, zeichnet er nicht — das
+    // Versprechen wartet auf ihre Wende und zeichnet neu (`_bisGanz`: die Anwendung des Tags zeichnet die Tafeln, dann die
+    // Umgebung über ihnen), es gibt nie eine leere Umgebung als frisch zurück. Bis hier gab es nach dem ersten Versuch false:
+    // die S0-Probe der Prüfbühne war blind (z104 echt, Radeon). Der Null-Renderer malt keinen Himmel (die Tafeln leben auf der
+    // GPU, Lehre 16): dort false, und wer den Himmel messen will, misst mit dem echten Renderer.
+    async _himmelFrisch() {
         const st = this.state;
-        if (!st.renderer || st.renderer._isHeadlessNull) return Promise.resolve(false);
-        if (!this._ensureSkyEnvironment(true) || !st._skyEnvLesung) return Promise.resolve(false);
-        return st._skyEnvLesung;
+        if (!st.renderer || st.renderer._isHeadlessNull) return false;
+        for (;;) {
+            let anker = false;
+            const ganz = await this._bisGanz(() => {
+                if (st._skyEnvFailed) return null; // die Umgebung scheiterte laut (`_ensureSkyEnvironment`)
+                this._applyDayNightToScene();
+                const A = st.atmoLut;
+                anker = !!A && A.anker == null;
+                return !!(A && A.ganz) && this._ensureSkyEnvironment(true);
+            }, "DER HIMMEL DER STUNDE");
+            if (ganz !== true) return false;
+            if ((await st.atmoLut.tafelLesung) === false || (await st._skyEnvLesung) !== true) return false;
+            // gezeichnet war die Tafel des Ankers (die klare Luft am Boden, `_atmoTakt`): erst ihre Lesung legt ihn, danach
+            // zeichnet die Anwendung des Tags die Luft, die jetzt gilt
+            if (!anker) return true;
+            if (st.atmoLut.anker == null) return false;
+        }
     }
 
     // Halb-Float (IEEE 754 binary16) → Zahl.
@@ -1772,6 +1802,7 @@ class AnazhRealm_bild_himmel {
             himmelSchluessel: null,
             himmelVersion: 0,
             tafelnFrisch: false,
+            bauAngestossen: false, // der erste Takt stieß den Bau jeder Tafel an (`_atmoTakt`)
         };
         return st.atmoLut;
     }
@@ -1786,7 +1817,9 @@ class AnazhRealm_bild_himmel {
 
     // EIN Pass in sein Ziel (der Zustand des Renderers bleibt, wie er war — dieselbe Hülle wie die zeitliche Auflösung); `leeren`
     // setzt das Ziel vorher auf 0 (die Horizont-Karte sammelt per Max-Blende). Gezeichnet wird über die EINE Bühne
-    // (`_buehneRender`, gate:v1-pfad W2): ein Bruch des Passes meldet sich laut beim Namen.
+    // (`_buehneRender`, gate:v1-pfad W2): ein Bruch des Passes meldet sich laut beim Namen. Er ist ein Einmal-Pass: seine
+    // Pipeline baut asynchron (`_einmalPass`) — → true, wenn er GANZ zeichnete; sonst gilt sein Ziel nicht, und sein
+    // Aufrufer zeichnet ihn im nächsten Takt neu (was die Tafel liest, wartet mit ihr).
     _atmoZeichne(quad, rt, leeren = false) {
         const r = this.state.renderer;
         const ziel = r.getRenderTarget();
@@ -1804,11 +1837,12 @@ class AnazhRealm_bild_himmel {
             r.clear(true, false, false);
             r.setClearColor(farbe, alpha);
         }
-        this._buehneRender(r, quad, quad.userData.kamera, "Atmosphäre");
+        const ganz = this._buehneRender(r, quad, quad.userData.kamera, "Atmosphäre");
         r.setRenderTarget(ziel);
         if (mrt) r.setMRT(mrt);
         if (rof) r.setRenderObjectFunction(rof);
         r.autoClear = auto;
+        return ganz;
     }
 
     // DER TAKT DER ATMOSPHÄRE (je Anwendung von Tag und Nacht): das Medium folgt dem Wetter in seinen Stufen (Transmittance und
@@ -1855,26 +1889,45 @@ class AnazhRealm_bild_himmel {
         const schluessel = `${s ? s.winkel : 0}:${h}:${A.mediumBeta}`;
         const rend = st.renderer;
         if (!rend || rend._isHeadlessNull || !st.rendererReady) return A;
+        // DIE TAFELN SIND EINMAL-PÄSSE (`_atmoZeichne` → ganz): eine Tafel gilt erst, wenn ihr Pass zeichnete, und was sie liest,
+        // zeichnet erst über ihr — Durchlass und Mehrfach-Streuung, dann die Himmels-Sicht und die Bestrahlung; die Umgebung
+        // liest die Himmels-Sicht (`_ensureSkyEnvironment`). Der erste Versuch stößt den Bau JEDER Tafel an (er zeichnet nie:
+        // ihre Pipeline entsteht eben), so übersetzt der GPU-Prozess alle zugleich in seinen Fäden statt nacheinander.
         if (!A.tafelnFrisch) {
-            this._atmoZeichne(A.qT, A.rtT);
-            this._atmoZeichne(A.qMS, A.rtMS);
-            A.tafelnFrisch = true;
-            A.himmelSchluessel = null;
-        }
-        if (A.himmelSchluessel !== schluessel) {
-            this._atmoZeichne(A.qSV, A.rtSV);
-            A.himmelSchluessel = schluessel;
-            A.himmelVersion++;
+            const t = this._atmoZeichne(A.qT, A.rtT);
+            const ms = this._atmoZeichne(A.qMS, A.rtMS);
+            if (!A.bauAngestossen) {
+                A.bauAngestossen = true;
+                for (const [q, rt] of [
+                    [A.qSV, A.rtSV],
+                    [A.qBS, A.rtBS],
+                    [A.qEq, A.rtEq],
+                ])
+                    this._atmoZeichne(q, rt);
+            }
+            if (t && ms) {
+                A.tafelnFrisch = true;
+                A.himmelSchluessel = null;
+            }
         }
         // die Bestrahlungs-Tafel je Medium und je 100 m Höhe des Auges (sie hängt nicht an der Sonne: jede Stunde liest sie)
         const tafel = `${A.mediumBeta}:${Math.round(h * 10)}`;
-        if (A.tafelSchluessel !== tafel) {
-            this._atmoZeichne(A.qBS, A.rtBS);
-            A.tafelSchluessel = tafel;
-            // bis die neue Tafel zurückkommt, liest kein Leser die Luft von vorher (die Belichtung schreibt dann nicht, sie hält)
-            A.tafel = null;
-            this._himmelsTafelLesen();
+        if (A.tafelnFrisch) {
+            if (A.himmelSchluessel !== schluessel && this._atmoZeichne(A.qSV, A.rtSV)) {
+                A.himmelSchluessel = schluessel;
+                A.himmelVersion++;
+            }
+            if (A.tafelSchluessel !== tafel && this._atmoZeichne(A.qBS, A.rtBS)) {
+                A.tafelSchluessel = tafel;
+                // bis die neue Tafel zurückkommt, liest kein Leser die Luft von vorher (die Belichtung schreibt dann nicht, sie
+                // hält)
+                A.tafel = null;
+                A.tafelLesung = this._himmelsTafelLesen();
+            }
         }
+        // GANZ ist die Atmosphäre, wenn jede Tafel der jetzigen Sonne, des Mediums und des Auges gezeichnet ist (ihre Lesung:
+        // `tafelLesung`) — wer den Himmel jetzt braucht, wartet darauf (`_himmelFrisch`)
+        A.ganz = A.tafelnFrisch && A.himmelSchluessel === schluessel && A.tafelSchluessel === tafel;
         this._horizontKarteTakt();
         return A;
     }

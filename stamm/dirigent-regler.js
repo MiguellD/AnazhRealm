@@ -351,7 +351,7 @@ class AnazhRealm_dirigent_regler {
             // DIE WAND der Laub-Dichte (die Ränder folgen dem Schirm, sie atmen nicht mehr): wo der Regler mitten in seiner
             // Spanne steht, pendelte sie je Takt um ihr Ziel (+Schritt, −2 Schritte; OMEN, V18.538, Regler frei: Wechsel in 0,52
             // der Frames). Jeder Wechsel weckte über den Stand-Stempel jeden Fege-Takt zu einer vollen Runde über den Bestand
-            // (Stufen-Wahl 299 Einheiten je Frame statt 34) und über `uLodPerf` die Lage jedes Passes (die Satz-Wahl und
+            // (Stufen-Wahl 299 Einheiten je Frame statt 34) und über den Streck der Masken die Lage jedes Passes (die Satz-Wahl und
             // die Höhlen-Sicht rechneten je Pass neu) — CPU-Takt p95 4,8 → 11,7 ms. Das Totband ist derselbe Anteil ihrer
             // Spanne wie SHRINK_TOTBAND über die Spanne des Laub-Radius.
             const wand = (cur, ziel, schritt, totband, darfWachsen) =>
