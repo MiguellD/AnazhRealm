@@ -343,3 +343,4 @@ b-kalt-eeb5 2 station sha=eeb5d2bfbcdae181388a990d13c434cd67b923a0 lauf=ankunft-
 stadt4-abab 3 abab A=eeb5d2bfbcdae181388a990d13c434cd67b923a0 B=d46f055f6615e5469cc236846dde0346ce0c27b7 zellen=stadt,w-ego
 p-oeko-gtx 1 punkte sha=eeb5d2bfbcdae181388a990d13c434cd67b923a0 geraet=gtx nur=oekologie.K4#2
 z125-abab 3 abab A=eeb5d2bfbcdae181388a990d13c434cd67b923a0 B=9e40c93c35c13e0c3ca6bf23542256a8b3aba94e zellen=w-ego,stadt
+takt-z125a-gtx 1 punkte sha=9e40c93c35c13e0c3ca6bf23542256a8b3aba94e geraet=gtx nur=tiere.K1#2,tiere.K3#2,mensch.K5#1,mensch.K4#1,haar.K2#1,vegetation.K1#1,licht.K2#2,material.K2#1,material.K1#1,lod.K1#1,lod.K5#1,licht.K3#1,studios.K2#2,studios.K3#2,bauen.K1#2,studios.K4#1,siedlung.K1#2,siedlung.K4#2,spielgang.K3#1,fahrzeug.K2#2,profiband.K4#1,profiband.K1#1,profiband.K2#1,profiband.K3#1,profiband.K5#1,speicher.K4#2
