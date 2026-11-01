@@ -229,10 +229,12 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
 
         // (3) SYNERGIE (der Kern der Schöpfer-Forderung „optimal nutzen"): bei
         // streaming-dominanter Last drosselt der EINE Regler das Stream-Budget
-        // STÄRKER (näher an min) als das Bau-Budget je Frame — das teuerste zuerst.
+        // STÄRKER (näher an min) als das Bau-Budget je Frame — das teuerste zuerst. Die zwei Lasten der Proben: Streaming-
+        // dominant und Bau-dominant (der Regler liest `phase` nur).
+        const [stromLast, bauLast] = [{ streaming: 20, render: 0, archCulling: 1, waterIso: 1, creatures: 0, physics: 0 }, { streaming: 1, render: 0, archCulling: 0.5, waterIso: 1, creatures: 0, physics: 0 }];
         r._nexusPerfActuate({
             loadScale: 0.5,
-            phase: { streaming: 20, render: 0, archCulling: 1, waterIso: 1, creatures: 0, physics: 0 },
+            phase: stromLast,
         });
         const streamPos = (st._voxelStreamBudgetMs - L.streamBudgetMs[0]) / (L.streamBudgetMs[1] - L.streamBudgetMs[0]);
         const budgetPos = (b) =>
@@ -273,7 +275,7 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
         r._nexusPerfActuate({
             loadScale: 0.5,
             renderCalls: 600,
-            phase: { streaming: 1, render: 0, archCulling: 0.5, waterIso: 1, creatures: 0, physics: 0 },
+            phase: bauLast,
         });
         const archPosR = budgetPos(st.architectureBuildBudgetPerFrame);
         const streamPosR =
@@ -289,7 +291,7 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
         r._nexusPerfActuate({
             loadScale: 0.5,
             renderCalls: 1100,
-            phase: { streaming: 1, render: 0, archCulling: 0.5, waterIso: 1, creatures: 0, physics: 0 },
+            phase: bauLast,
         });
         const streamPosBound =
             (st._voxelStreamBudgetMs - L.streamBudgetMs[0]) / (L.streamBudgetMs[1] - L.streamBudgetMs[0]);
@@ -301,7 +303,7 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
         r._nexusPerfActuate({
             loadScale: 0.5,
             renderCalls: 0,
-            phase: { streaming: 1, render: 0, archCulling: 0.5, waterIso: 1, creatures: 0, physics: 0 },
+            phase: bauLast,
         });
         out.renderLoadLengthensShadow = shadowLoaded > st._shadowMinInterval + 1e-6;
         out.renderArchPos = +archPosR.toFixed(2);
@@ -311,13 +313,13 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
         st.voxelMeshPending = new Set(["0,0,0", "1,0,0", "2,0,0", "3,0,0", "4,0,0"]); // Bau-Rückstau (lädt)
         r._nexusPerfActuate({
             loadScale: 0.2, // starke Drosselung
-            phase: { streaming: 20, render: 0, archCulling: 1, waterIso: 1, creatures: 0, physics: 0 },
+            phase: stromLast,
         });
         out.loadingPinsStreamMax = Math.abs(st._voxelStreamBudgetMs - L.streamBudgetMs[1]) < 0.01;
         st.voxelMeshPending = new Set(); // settled (kein Rückstau)
         r._nexusPerfActuate({
             loadScale: 0.2,
-            phase: { streaming: 20, render: 0, archCulling: 1, waterIso: 1, creatures: 0, physics: 0 },
+            phase: stromLast,
         });
         out.settledThrottlesStream = st._voxelStreamBudgetMs < L.streamBudgetMs[1] - 0.01;
         st.voxelMeshPending = pendingSnap;

@@ -61,6 +61,7 @@ function ladeschirmVerdict(m) {
         ["weltFehlt", "ohne die Welt (kein Spieler)", /Welt entsteht/],
         ["buchZu", "ohne das Buch der Studios", /Buch der Studios/],
         ["leibFehlt", "ohne den Leib des Spielers", /Leib/],
+        ["baumImFlug", "im Sinkflug mit einem Baum im Bild", /Bäume/],
         ["pflanzung", "mit einem gepflanzten Baum im Blick, der noch nicht steht", /gepflanzt/],
         ["saat", "mit einem Chunk im Laub-Radius, dessen Wald noch nicht gesät ist", /bepflanzt/],
         ["horizont", "ohne den Horizont (der Fern-Ring steht nicht ganz)", /Horizont/],
@@ -77,7 +78,7 @@ function ladeschirmVerdict(m) {
     // DAS WELTBILD IST DER BLICK (B3d): ein Loch hinter dem Spieler hält das erste Bild nie, der Rang der Foundry-Schlange
     // stellt vor dem Bild den Blick vor die Nähe und danach die Nähe rundum, und gleich nach der Kontrolle zeigt der Rundblick
     // kein Loch
-    for (const [k, name] of [["bodenHinten", "mit einem Stück Boden hinter dem Spieler"], ["baumHinten", "mit einem Baum hinter dem Spieler ohne Gestalt"], ["karteHinten", "mit der offenen Karte eines Baums hinter dem Spieler"], ["pflanzungHinten", "mit einem gepflanzten Baum hinter dem Spieler"]])
+    for (const [k, name] of [["baumUnterSchirm", "im Sinkflug mit einem Baum unter dem Schirm"], ["bodenHinten", "mit einem Stück Boden hinter dem Spieler"], ["baumHinten", "mit einem Baum hinter dem Spieler ohne Gestalt"], ["karteHinten", "mit der offenen Karte eines Baums hinter dem Spieler"], ["pflanzungHinten", "mit einem gepflanzten Baum hinter dem Spieler"]])
         if (!f[k]) out.push(`${name}: ${ohne(k)}`);
         else if (!f[k].weg) out.push(`${name} hält der Ladeschirm („${f[k].stand}") — das erste Bild wartet auf das, was der Spieler nicht sieht (\`_weltbildLuecken\`)`);
     const rg = m.rang;
@@ -91,18 +92,6 @@ function ladeschirmVerdict(m) {
         if (hinter.length) out.push(`${hinter.join(", ")} stellen sich hinter einen Kopf der Ankunft (${hinter.map((t) => B[t]).join(", ")}) — sie warten auf den Export (3,4–5,4 s) bzw. den Leib`);
     }
     if (rg && rg.nachBild && rg.vorBild === "blick" && rg.nachBild !== "hinten,blick,vorrat") out.push(`nach dem ersten Bild sendet die Pumpe „${rg.nachBild}" statt nah zuerst rundum mit dem Vorrat („hinten,blick,vorrat") — der Blick-Schlüssel überlebt das Bild (_rangImErstenBlick)`);
-    // DER SINKFLUG (b-himmel): aus der Höhe hält die Nähe unter dem Schirm das Bild nie, die Lücke im Bild des Flugs ist ROT beim
-    // Namen, und der Boden des Flugs hält den Leib über dem Fehlenden
-    const sf = m.sinkflug;
-    if (!sf) out.push("der Sinkflug: keine Probe (Vorbedingung)");
-    else if (sf.fehler) out.push(`der Sinkflug: ${sf.fehler} (Vorbedingung)`);
-    else {
-        if (sf.unter) out.push(`im Sinkflug hält ein Baum unter dem Schirm das Bild (${sf.unter} „Bäume und Bauten") — aus der Höhe liegt die Nähe unter dem Blick (_unterDemBlick)`);
-        if (!sf.imBild) out.push("im Sinkflug fehlt ein Baum im Bild der hinabblickenden Kamera, und das Urteil schweigt — das halbe Weltbild im Flug (_weltbildLuecken, _unterDemBlick)");
-        else if (!sf.taeter) out.push("die Lücke im Bild des Flugs nennt keinen Täter (_lueckeTaeter)");
-        if (!(sf.augeBoden > sf.baumY)) out.push(`der Boden des Flugs trägt den fehlenden Baum nicht (das Auge ab ${sf.augeBoden}, der Baum auf ${sf.baumY}) — der Leib sänke ins Fehlende (_weltbildLuecken rundum)`);
-        if (!(sf.steigt > 0)) out.push(`unter dem Boden des Flugs sinkt der Leib weiter (_sinkflugVy ${sf.steigt})`);
-    }
     const rb = m.rundblick;
     if (!rb || !(rb.N > 0)) out.push("der Rundblick nach der Kontrolle: keine Probe (`RUNDBLICK_BILDER` fehlt im Stamm)");
     else if (!rb.spaet) out.push("der Rundblick ohne späten Baum (Vorbedingung)");
@@ -556,52 +545,15 @@ async function probe(arg) {
                 m.baumD = +dP(baum).toFixed(1);
                 fall("baumUngebaut", baumWeg(false), baumHer);
                 fall("baumHinten", baumWeg(true), baumHer);
-                // (2b) DER SINKFLUG (b-himmel): derselbe Baum ohne Gestalt, der Leib SINKFLUG.hoeheM über seinem Stand, die Kamera am
-                // Auge — waagrecht blickend liegt der Baum unter dem Schirm und hält das Bild nie; blickt sie zu ihm hinab, ist er die
-                // Lücke beim Namen; nach dem Bild trägt er den Boden des Flugs (Rundblick), und unter ihm steigt der Leib
-                m.sinkflug = (() => {
-                    const S = AnazhRealm.SINKFLUG;
-                    if (!S || !r._unterDemBlick || !r._sinkflugTakt) return { fehler: "SINKFLUG, _unterDemBlick oder _sinkflugTakt fehlt im Stamm" };
-                    const [a, c] = [st.playerMesh.position, st.camera];
-                    const [y0, neig0, da0, kp, kq] = [a.y, st.pitch, st._weltbildDa, c.position.clone(), c.quaternion.clone()];
-                    const kamera = (neig) => {
-                        const v = r._blickVorn(st.yaw, neig);
-                        c.position.set(a.x, a.y + 1.6, a.z);
-                        c.lookAt(a.x + v.x, a.y + 1.6 + v.y, a.z + v.z);
-                        c.updateMatrixWorld(true);
-                    };
-                    const bauten = () => r._weltbildLuecken().filter((l) => l.term === "bauten");
-                    const o = { baumY: baum.position.y };
-                    try {
-                        baumWeg(false)();
-                        st._weltbildDa = 0;
-                        st._sinkflug = { grundY: y0, stand: { x: a.x, y: y0, z: a.z }, boden: -Infinity, augeBoden: -Infinity, grund: y0, bilder: 0, luecken: 0, lueckeSatz: null, gestartet: false }; // prettier-ignore
-                        a.y = y0 + S.hoeheM;
-                        kamera(0);
-                        o.unter = bauten().reduce((n, l) => n + l.n, 0);
-                        kamera(-Math.atan2(a.y + 1.6 - baum.position.y, dP(baum)));
-                        const L = bauten();
-                        [o.imBild, o.taeter] = [L.length, L.length ? r._lueckeTaeter(L[0]) : null];
-                        kamera(0);
-                        st._weltbildDa = da0 || 1;
-                        r._sinkflugTakt();
-                        [o.augeBoden, o.boden] = [st._sinkflug.augeBoden, st._sinkflug.boden];
-                        o.steigt = r._sinkflugVy(-25, st._sinkflug.boden - 10);
-                    } catch (e) {
-                        o.fehler = String((e && e.message) || e);
-                    } finally {
-                        st._sinkflug = null;
-                        [a.y, st.pitch, st._weltbildDa] = [y0, neig0, da0];
-                        c.position.copy(kp);
-                        c.quaternion.copy(kq);
-                        c.updateMatrixWorld(true);
-                        baumHer();
-                    }
-                    return o;
-                })();
+                // (2b) DER SINKFLUG (b-himmel): derselbe Baum ohne Gestalt im Blick, das Auge SINKFLUG.hoeheM über dem Stand — waagrecht
+                // liegt er unter dem Schirm (das Bild weicht), steil hinab (die Blick-Achse der Welt-Matrix) ist er die Lücke beim Namen
+                const flug = (m9) => () => ((st._sinkflug = { grundY: pm.y }), (st.camera.position.y += AnazhRealm.SINKFLUG.hoeheM), m9 && (st.camera.matrixWorld.elements[9] = m9));
+                const landen = () => ((st._sinkflug = null), baumHer(), st.camera.updateMatrixWorld());
+                fall("baumUnterSchirm", baumWeg(false), landen, flug());
+                fall("baumImFlug", baumWeg(false), landen, flug(9));
             } else {
                 const n = st.architectures.filter((a) => a && /^baum_/.test(a.type || "")).length;
-                m.ohneFall.baumUngebaut = m.ohneFall.baumHinten = m.ohneFall.lueckeRuht = m.ohneFall.lueckeFlackert = `kein gezeichneter Baum ab 30 m (${n} Baum-Einträge)`;
+                m.ohneFall.baumUngebaut = m.ohneFall.baumHinten = m.ohneFall.baumUnterSchirm = m.ohneFall.baumImFlug = m.ohneFall.lueckeRuht = m.ohneFall.lueckeFlackert = `kein gezeichneter Baum ab 30 m (${n} Baum-Einträge)`;
             }
             // (3b) der Streamer lief noch nie (keine Regionen-Karte) — der Fall des Befunds, in jedem Boot hergestellt
             const merkKarte = st.scatterRegions;
@@ -1780,14 +1732,18 @@ hauptLauf(async () => {
         // ein Fall, der das Bild hält (Stand und Term), und einer, vor dem der Ladeschirm weicht
         const halt = (stand, t) => ({ weg: false, stand, warn: 0, terme: [t] });
         const weicht = { weg: true, stand: "", warn: 0, terme: [] };
-        const sinkGut = { unter: 0, imBild: 1, taeter: "baum_birke L1 in 31 m ungebaut", augeBoden: 160, boden: 158, baumY: 91, steigt: 5 }; // der gesunde Sinkflug
+        // die ruhige Kamera eines Wegs, das Fadenkreuz und die Durchsicht der Kamera-Linse (LK), je Mutante ein Teil getauscht
+        const ruhig = { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 0 };
+        const kreuz = (x) => ({ stellungen: 96, hinten: {}, kreatur: true, zielAchse: 0, ...x });
+        const sicht = (f, t, z) => ({ formel: true, first: { anlaeufe: 8, faellt: 0, abstand: [0.3], wMin: 1, ...f }, third: { anlaeufe: 4, faellt: 0, abstand: [3.8], wMin: 1, ...t }, zwischen: { stellungen: 40, wirkt: 40, wMax: 0, ...z } }); // prettier-ignore
         const hilfeGut = { unbekannt: false, fehlt: [], tastenFehlen: [], v1: true }; // die Antwort auf „hilfe“, die alles nennt
         const l2aFaelle = {
             ohneBoden: halt("der Boden wächst (Ring 0 von 3)", "boden"),
             baumUngebaut: halt("1 Bäume und Bauten wachsen", "bauten"),
             streuNie: halt("6 Wald-Stücke warten auf ihre Gestalt", "streu"),
             karteOffen: halt("1 ferne Bäume werden gemalt", "karten"),
-            ...Object.fromEntries(["bodenHinten", "baumHinten", "karteHinten", "pflanzungHinten"].map((k) => [k, weicht])),
+            ...Object.fromEntries(["baumUnterSchirm", "bodenHinten", "baumHinten", "karteHinten", "pflanzungHinten"].map((k) => [k, weicht])),
+            baumImFlug: halt("1 Bäume und Bauten wachsen", "bauten"),
             weltFehlt: halt("die Welt entsteht", "welt"),
             buchZu: halt("das Buch der Studios öffnet sich", "buch"),
             leibFehlt: halt("der Spieler erhält seinen Leib", "leib"),
@@ -1819,7 +1775,6 @@ hauptLauf(async () => {
                     terme: l2aTerme,
                     rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", bahnen: { leib: "w1", "export-settlement": "w2", tor0: "w0", tor1: "w0", tor2: "w0", tor3: "w0" } },
                     rundblick: { N: 240, loecher: 0, erstes: null, spaet: true, griff: 40 },
-                    sinkflug: sinkGut,
                     ankunft: ank(),
                     koepfe,
                     wald: { ferne: 169, steht: false, zusage: true, kam: true, rest: 128 },
@@ -1829,14 +1784,11 @@ hauptLauf(async () => {
                 [
                     ["ein Loch hinter dem Spieler hält das erste Bild", { faelle: mitFall(l2aFaelle, { baumHinten: { weg: false, stand: "1 Bäume und Bauten wachsen" } }) }, "mit einem Baum hinter dem Spieler ohne Gestalt hält der Ladeschirm"],
                     ["ein Loch im Blick weicht (B3d)", { faelle: mitFall(l2aFaelle, { karteOffen: weicht }) }, "mit der offenen Karte eines Baums im Blick weicht der Ladeschirm"],
+                    ["ein Loch im Sinkflug", { faelle: mitFall(l2aFaelle, { baumImFlug: weicht }) }, "im Sinkflug mit einem Baum im Bild weicht"],
                     ["ein Loch im Rundblick nach N Takten (B3d)", { rundblick: { N: 240, loecher: 3, erstes: "Takt 120 (180°): 3 Bäume und Bauten wachsen", spaet: true, griff: 40 } }, "der Rundblick nach der Kontrolle zählt 3 Löcher in 240 Takten"],
                     ["der Rang ohne Blick", { rang: { vorBild: "hinten,blick,vorrat", nachBild: "hinten,blick,vorrat" } }, "vor dem ersten Bild sendet die Pumpe „hinten,blick,vorrat\""],
                     ["der Blick-Schlüssel überlebt das Bild", { rang: { vorBild: "blick", nachBild: "hinten,blick" } }, "nach dem ersten Bild sendet die Pumpe „hinten,blick\""],
                     ["ohne Rundblick", { rundblick: { N: undefined, loecher: 0 } }, "der Rundblick nach der Kontrolle: keine Probe"],
-                    ["der Sinkflug: ein fehlender Baum im Bild schweigt", { sinkflug: { ...sinkGut, imBild: 0, taeter: null } }, "im Sinkflug fehlt ein Baum im Bild der hinabblickenden Kamera"],
-                    ["der Sinkflug: die Nähe unter dem Schirm hält das Bild", { sinkflug: { ...sinkGut, unter: 1 } }, "im Sinkflug hält ein Baum unter dem Schirm das Bild"],
-                    ["der Sinkflug: der Boden des Flugs fehlt", { sinkflug: { ...sinkGut, augeBoden: null, boden: null, steigt: -25 } }, "der Boden des Flugs trägt den fehlenden Baum nicht"],
-                    ["ohne Sinkflug-Probe", { sinkflug: undefined }, "der Sinkflug: keine Probe"],
                     ["ohne späten Baum", { rundblick: { N: 240 } }, "der Rundblick ohne späten Baum"],
                     ["die Pflanz-Schlange als FIFO", { rundblick: { N: 240, spaet: 2, griff: -300 } }, "die Pflanz-Schlange setzt die ferne"],
                     ["der Vorrat stellt sich in der Ankunft vor die Leser (K30)", { vorrat: vr({ ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], vorBild: ["Wagen gt|1|lod0", "Siedlungs-Probe"], nachBild: 0, ende: true }) }, "vor dem ersten Weltbild bestellt der Vorrat 2 Aufträge ohne Leser des ersten Frames (Wagen gt|1|lod0, Siedlungs-Probe)"],
@@ -1845,7 +1797,7 @@ hauptLauf(async () => {
                     ["das Tor wartet auf den Vorrat", { vorrat: vr({ ohneLeser: ["Wagen gt|1|lod0", "Wagen gt|7|lod0", "Siedlungs-Probe"], fehltNeu: ["die Werkstatt backt vor"] }) }, "während der Vorrat läuft, wartet das erste Weltbild („die Werkstatt backt vor\") auf Aufträge ohne Leser des ersten Frames: Wagen gt|1|lod0"],
                     ["die Streu wartet auf den Vorrat statt auf ihr Asset", { vorrat: vr({ ohneLeser: ["Siedlungs-Probe"], streu: { aufgeschoben: true, zellen: 0 } }) }, "während der Vorrat läuft, wartet eine neue Streu-Region auf ihn"],
                     ["der Vorrat bestellt Karten nach der Buchgröße (K30)", { vorrat: vr({ karten: 14, kartenBsp: ["eiche|1"] }) }, "der Vorrat bestellt 14 Karten"],
-                    ["der Merker sagt „an“, während der Vorrat auf das Bild wartet", { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, fehltNeu: [], vorBild: [], nachBild: 1, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: true, phaseVorBild: true, phaseBestellung: ["Siedlungs-Probe: true"] } }, "solange der Vorrat auf das erste Bild wartet, sagt sein Merker `f._vorrat` true"],
+                    ["der Merker sagt „an“, während der Vorrat auf das Bild wartet", { vorrat: vr({ ohneLeser: ["Siedlungs-Probe"], vorBild: [], nachBild: 1, ende: true, phaseStart: true, phaseVorBild: true, phaseBestellung: ["Siedlungs-Probe: true"] }) }, "solange der Vorrat auf das erste Bild wartet, sagt sein Merker `f._vorrat` true"],
                     ["der Vorrat bestellt in der Warte-Phase (K30-N1)", { vorrat: vr({ ohneLeser: ["Siedlungs-Probe"], vorBild: [], nachBild: 1, ende: true, phaseBestellung: ['Siedlungs-Probe: "wartet auf das erste Bild"'] }) }, "der Vorrat bestellt, ohne dass sein Merker „bestellt\" sagt: Siedlungs-Probe"],
                     ["der Vorrat ohne Phase (K30-N1)", { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, fehltNeu: [], vorBild: [], nachBild: 1, ende: true, streu: { aufgeschoben: false, zellen: 0 } } }, "der Vorrat nennt keine Phase"],
                     ["der Vorrat ohne Probe", { vorrat: undefined }, "der Vorrat: keine Probe"],
@@ -1951,7 +1903,7 @@ hauptLauf(async () => {
                     zielFolgt: true,
                     kreuzAbstand: 0.6,
                     zielAbstand: 0.6,
-                    fadenkreuz: { stellungen: 96, hinten: {}, kreatur: true, zielAchse: 0 },
+                    fadenkreuz: kreuz(),
                     konsum: { _hasMagnifyingInSight: true, _pickScatterAtCrosshair: true, _kampfKlingenAchse: true, _kameraDurchsichtNode: true },
                     durchsicht: {
                         formel: true,
@@ -1962,20 +1914,20 @@ hauptLauf(async () => {
                 },
                 [
                     ["Vorlagen-Maß", { stammSkala: 1 }, "Stamm-Hülle im Vorlagen-Maß"],
-                    ["Wagendach", { wege: { fuss: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 0 }, ritt: { proben: 2400, pflanzeHaelt: 641, armIst: 2.0, armSoll: 9.6, taeter: ["Stamm (Natur-Blocker am Kamera-Strahl)"], spruenge: 137, spruengeSoll: 0, spruengePflanze: 137, hinausSprung: 60, sprungM: 2 } } }, "ritt: eine Pflanze hält die Kamera in 641 von 2400"],
-                    ["2-m-Minimum zu Fuß", { wege: { fuss: { proben: 400, pflanzeHaelt: 172, armIst: 2.0, armSoll: 4.1, taeter: ["Stamm (Natur-Blocker am Kamera-Strahl)"], spruenge: 5, spruengeSoll: 0, spruengePflanze: 5, hinausSprung: 2, sprungM: 1 }, ritt: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 0 } } }, "fuss: eine Pflanze hält die Kamera"],
-                    ["Sprung hinaus", { wege: { fuss: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 3, sprungM: 1 }, ritt: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 0 } } }, "fuss: die Kamera springt 3× hinaus"],
+                    ["Wagendach", { wege: { fuss: ruhig, ritt: { proben: 2400, pflanzeHaelt: 641, armIst: 2.0, armSoll: 9.6, taeter: ["Stamm (Natur-Blocker am Kamera-Strahl)"], spruenge: 137, spruengeSoll: 0, spruengePflanze: 137, hinausSprung: 60, sprungM: 2 } } }, "ritt: eine Pflanze hält die Kamera in 641 von 2400"],
+                    ["2-m-Minimum zu Fuß", { wege: { fuss: { proben: 400, pflanzeHaelt: 172, armIst: 2.0, armSoll: 4.1, taeter: ["Stamm (Natur-Blocker am Kamera-Strahl)"], spruenge: 5, spruengeSoll: 0, spruengePflanze: 5, hinausSprung: 2, sprungM: 1 }, ritt: ruhig } }, "fuss: eine Pflanze hält die Kamera"],
+                    ["Sprung hinaus", { wege: { fuss: { ...ruhig, hinausSprung: 3, sprungM: 1 }, ritt: ruhig } }, "fuss: die Kamera springt 3× hinaus"],
                     ["Nadelwand ohne Durchsicht", { stoffeOhne: 6, stoffeOhneArten: ["foliageTex", "bark"] }, "6 von 6 Pflanzen-Stoffen ohne Durchsicht"],
                     ["Durchsicht im Schatten", { schattenGeschnitten: 2 }, "2 Pflanzen-Stoff(e) schneiden die Durchsicht auch in den Schatten"],
                     ["Ziel ohne Brust", { zielFolgt: false, zielAbstand: 3.2 }, "das Ziel der Durchsicht folgt der Brust nicht"],
                     ["Fadenkreuz auf dem Kopf", { kreuzAbstand: 0.02 }, "das Fadenkreuz steht in 3rd auf der Figur"],
-                    ["das Ziel ist die Brust, nicht der Blickpunkt", { fadenkreuz: { stellungen: 96, hinten: {}, kreatur: true, zielAchse: 0.597 } }, "Fadenkreuz-Strahl: das Ziel der Kamera liegt 0.597 m neben ihrem Blick"],
-                    ["Fadenkreuz trifft hinten", { fadenkreuz: { stellungen: 96, hinten: { _pickArchitectureAtCrosshair: 76, _raycastWorldHit: 67 }, kreatur: true, zielAchse: 0 } }, "Fadenkreuz-Strahl: `_pickArchitectureAtCrosshair` trifft in 76 von 96 Stellungen HINTER dem Spieler"],
-                    ["Kreatur fehlt", { fadenkreuz: { stellungen: 96, hinten: {}, kreatur: false, zielAchse: 0 } }, "Fadenkreuz-Strahl: keine Kreatur"],
+                    ["das Ziel ist die Brust, nicht der Blickpunkt", { fadenkreuz: kreuz({ zielAchse: 0.597 }) }, "Fadenkreuz-Strahl: das Ziel der Kamera liegt 0.597 m neben ihrem Blick"],
+                    ["Fadenkreuz trifft hinten", { fadenkreuz: kreuz({ hinten: { _pickArchitectureAtCrosshair: 76, _raycastWorldHit: 67 } }) }, "Fadenkreuz-Strahl: `_pickArchitectureAtCrosshair` trifft in 76 von 96 Stellungen HINTER dem Spieler"],
+                    ["Kreatur fehlt", { fadenkreuz: kreuz({ kreatur: false }) }, "Fadenkreuz-Strahl: keine Kreatur"],
                     ["Lupe ohne den EINEN Strahl", { konsum: { _hasMagnifyingInSight: false } }, "Konsum: `_hasMagnifyingInSight`"],
-                    ["Loch im Stamm im 1st", { durchsicht: { formel: true, first: { anlaeufe: 8, faellt: 8, abstand: [0.12, 0.82], wMin: 0 }, third: { anlaeufe: 4, faellt: 0, abstand: [4], wMin: 1 }, zwischen: { stellungen: 40, wirkt: 40, wMax: 0 } } }, "Durchsicht 1st am Stamm: die Rinde fällt in 8 von 8 Anläufen"],
-                    ["Loch im Stamm vor dem Spieler", { durchsicht: { formel: true, first: { anlaeufe: 8, faellt: 0, abstand: [0.3], wMin: 1 }, third: { anlaeufe: 4, faellt: 4, abstand: [3.8], wMin: 0 }, zwischen: { stellungen: 40, wirkt: 40, wMax: 0 } } }, "Durchsicht 3rd, der Stamm VOR dem Spieler: die Rinde fällt"],
-                    ["Durchsicht wirkt nicht", { durchsicht: { formel: true, first: { anlaeufe: 8, faellt: 0, abstand: [0.3], wMin: 1 }, third: { anlaeufe: 4, faellt: 0, abstand: [3.8], wMin: 1 }, zwischen: { stellungen: 40, wirkt: 0, wMax: 1 } } }, "Durchsicht 3rd: der Stamm zwischen Kamera und Spieler steht in 40 von 40"],
+                    ["Loch im Stamm im 1st", { durchsicht: sicht({ faellt: 8, abstand: [0.12, 0.82], wMin: 0 }, { abstand: [4] }) }, "Durchsicht 1st am Stamm: die Rinde fällt in 8 von 8 Anläufen"],
+                    ["Loch im Stamm vor dem Spieler", { durchsicht: sicht({}, { faellt: 4, wMin: 0 }) }, "Durchsicht 3rd, der Stamm VOR dem Spieler: die Rinde fällt"],
+                    ["Durchsicht wirkt nicht", { durchsicht: sicht({}, {}, { wirkt: 0, wMax: 1 }) }, "Durchsicht 3rd: der Stamm zwischen Kamera und Spieler steht in 40 von 40"],
                     ["keine EINE Formel", { durchsicht: { formel: false } }, "Durchsicht: keine EINE Formel"],
                 ],
             ],

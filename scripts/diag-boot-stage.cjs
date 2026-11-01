@@ -48,8 +48,6 @@ const ARGV = process.argv.slice(2);
 // Die Kontrolle von außen (ankunft K1): die Taste trägt den Leib ≥ 0,1 m; nach 1500 Atemzügen ohne Weg hat er sie nie.
 // Das ganze Bild (ankunft K2 Staffel 1): ≤ 2 % der Pixel weichen gegen dieselbe Pose nach 60 s Ruhe um mehr als ein Achtel ab.
 const [ANKUNFT_SOLL_MS, KONTROLLE_M, KONTROLLE_DRUECKE, RUHE_MS, LUECKE_SOLL] = [5000, 0.1, 1500, 60000, 0.02];
-// Der Sinkflug (b-himmel): so lange wartet die Zeile ohne `--bild` nach der Kontrolle auf die Landung (ms)
-const FLUG_MS = 90000;
 const KERN = require("../cores.manifest.json").find((k) => k.id === OPT("--kern-wechsel"));
 const server = statikServer({ wandle: (p, roh) => (KERN?.scripts.includes(p.slice(1)) ? roh + "//" : roh) });
 // (Seite) trägt die gehaltene Taste den Leib um `m`? Der Weg in einem Atem von 200 ms, waagrecht — der Fall zählt nicht.
@@ -86,37 +84,6 @@ async function SCHUSS(W, H, mut, r = window.anazhRealm, cam = r.state.camera) {
     let n = 0;
     for (let i = 0; i < u.length; i += 4) n += [0, 1, 2].some((k) => Math.abs(u[i + k] - A[i + k]) > 32);
     return { dc: auf.info.drawCalls, dreiecke: auf.info.triangles, luecke: n / (W * H), png: window.__png(u, W, H) };
-}
-// DER SINKFLUG (b-himmel): ab der Kontrolle je 250 ms die Höhe des Leibs über seinem Stand und die Bilanz der gezeichneten
-// Bilder (`_sinkflugBilanz` nach der Landung: Bilder, Bilder mit Lücke im Blick, der letzte Satz). `bild`: die Schüsse der Mitte des
-// Flugs (die halbe Höhe) und der Landung aus dem Ausgabe-Pfad der Seite (der Schirm, wie der Spieler ihn sieht). Ohne `voll` endet
-// die Wache mit der Landung, sonst nach `ms` / 250 Proben. Liefert null, wenn kein Sinkflug lief.
-async function flugWache(page, ms, bild, voll) {
-    const fl = { start: null, mitte: null, landung: null, bilanz: null, verlauf: [], warn: [] };
-    const schirm = async (name) => {
-        const datei = bild.replace(/(.png)?$/, `-${name}.png`);
-        await page.screenshot({ path: datei });
-        return datei;
-    };
-    for (let n = 0; n < ms / 250; n++, await sleep(250)) {
-        const q = await page.evaluate((r = window.anazhRealm, st = r.state) => ({
-            t: performance.now(),
-            h: st._sinkflug && st.playerMesh ? st.playerMesh.position.y - st._sinkflug.grundY : null,
-            bilanz: st._sinkflugBilanz || null,
-            warn: (st.logBuffer || []).filter((z) => /Der Sinkflug zeigt/.test(z)),
-        }));
-        if (q.h != null && fl.start == null) fl.start = q.h;
-        fl.warn = q.warn;
-        if (q.h != null && (!fl.verlauf.length || q.t - fl.verlauf.at(-1)[0] >= 2000)) fl.verlauf.push([q.t, q.h]);
-        if (q.h != null && bild && !fl.mitte && q.h <= fl.start / 2) fl.mitte = await schirm("flug");
-        if (q.bilanz && !fl.bilanz) {
-            fl.bilanz = q.bilanz;
-            if (bild) fl.landung = await schirm("landung");
-            if (!voll) break;
-        }
-        if (fl.start == null && !q.bilanz) return null;
-    }
-    return fl;
 }
 // die Seite wartet Takt um Takt (`__gebautNach`), bis die Foundry nichts mehr offen hat (`_weltOffen`) und der Vorrat durch ist —
 // dann gilt ihre Liefer-Marke
@@ -290,7 +257,6 @@ async function kaltLauf() {
     const offen = tK ? await page.evaluate(() => r._weltbildFehlt()) : [];
     const bildDatei = OPT("--bild");
     let bild = null;
-    let flug = null;
     if (tK && bildDatei) {
         const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
         await page.evaluate(AUSGABE_INSTALL);
@@ -300,10 +266,9 @@ async function kaltLauf() {
             return Object.assign(s, { png: datei });
         };
         const a = await schuss(MUT === "bild", path.resolve(bildDatei));
-        flug = await flugWache(page, RUHE_MS, path.resolve(bildDatei), true);
+        await sleep(RUHE_MS);
         bild = Object.assign(await schuss(false, path.resolve(bildDatei).replace(/(\.png)?$/, "-ruhe.png")), { a });
     }
-    if (tK && !bildDatei) flug = await flugWache(page, FLUG_MS, null, false);
     if (tK && profilBenannt) await page.evaluate(RUHE);
     const out = await page.evaluate((r = window.anazhRealm, st = r.state) => {
         // der Adapter vom Gerät, das zeichnet: r184 hält den Adapter nicht (WebGPUBackend.init, lokal)
@@ -325,14 +290,14 @@ async function kaltLauf() {
             holz: st._holzProfil || null,
             version: r.constructor.VERSION,
             adapter,
-            ohne: (st.logBuffer || []).filter((z) => /Das erste Weltbild steht ohne/.test(z)),
+            ohne: (st.logBuffer || []).filter((z) => /Das erste Weltbild steht ohne|Der Sinkflug zeigt/.test(z)),
             lieferung: r._foundry.lieferung,
         });
     });
     const liste = path.join(profil, "lieferung.json");
     const wechsel = KERN && wechselUrteil(jsonLesen(liste), out.lieferung.liste, KERN.id);
     if (profilBenannt && !KERN) fs.writeFileSync(liste, JSON.stringify(out.lieferung.liste));
-    Object.assign(out, { tK, druecke, offen, bild, zweit, flug });
+    Object.assign(out, { tK, druecke, offen, bild, zweit });
     await browser.close();
     server.close();
     if (!profilBenannt) fs.rmSync(profil, { recursive: true, force: true });
@@ -427,29 +392,12 @@ async function kaltLauf() {
             `  ${ganz ? "✅" : "❌"} das Bild der Kontrolle: ${(100 * bild.luecke).toFixed(2)} % Lücke nach ${RUHE_MS / 1000} s ` +
                 `(Soll ≤ ${100 * LUECKE_SOLL} %, ${bild.a.png}) · offen im Bild: ${offen.join(" · ") || "nichts"}`
         );
-    // DER SINKFLUG (b-himmel): die Landung (Seiten-Uhr) und jedes gezeichnete Bild des Flugs ohne Lücke im Blick — ein Flug ohne
-    // Landung in der Wache oder mit einem Bild mit Lücke ist ROT beim Satz
-    const fb = out.flug && out.flug.bilanz;
-    const flugGanz = !out.flug || (!!fb && fb.luecken === 0);
-    if (out.flug)
-        console.log(
-            `  ${flugGanz ? "✅" : "❌"} DER SINKFLUG aus ${Math.round(out.flug.start)} m: ` +
-                (fb
-                    ? `Landung ${(fb.landung / 1000).toFixed(2)} s (${((fb.landung - out.weltbildDa) / 1000).toFixed(1)} s Flug) · ` +
-                      `${fb.luecken} von ${fb.bilder} Bildern mit Lücke im Blick${fb.satz ? ` (zuletzt: ${fb.satz})` : ""}`
-                    : "keine Landung in der Wache") +
-                [out.flug.mitte, out.flug.landung].filter(Boolean).map((d) => ` · ${d}`).join("")
-        );
-    if (out.flug) {
-        console.log(`     die Höhe über dem Stand (s · m): ${out.flug.verlauf.map(([t, h]) => `${(t / 1000).toFixed(0)} · ${Math.round(h)}`).join(" | ")}`);
-        for (const w of out.flug.warn.slice(0, 6)) console.log(`     ${w}`);
-    }
     // DIE LIEFER-ZEILE (pipeline.K4 Stufe 1): am Zweit-Boot urteilt sie (Exit bleibt die Ankunft)
     const k4 = lieferUrteil(out.lieferung, zweit);
     console.log(`  ${zweit ? (k4.gruen ? "✅ " : "❌ ") : ""}${k4.zeile}`);
     console.log(`  ${zweit ? (k4.artGruen ? "✅ " : "❌ ") : ""}${k4.artZeile}`);
     if (wechsel) console.log(`  ${wechsel.gruen ? "✅" : "❌"} ${wechsel.zeile}`);
-    process.exit(gut && ganz && flugGanz && !halter.length ? 0 : 1);
+    process.exit(gut && ganz && !halter.length ? 0 : 1);
 }
 
 hauptLauf(async () => {
