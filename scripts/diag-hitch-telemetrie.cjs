@@ -305,15 +305,9 @@ function erstWandInstall(BUNDLE_FRAMES) {
     const neubauAufDerBuehne = async (vergessen) => {
         await ruhe();
         serie++;
-        const cam = st.camera;
-        const dir = new window.THREE.Vector3();
-        cam.getWorldDirection(dir);
         const m = new window.THREE.MeshBasicNodeMaterial();
         m.colorNode = TSL.vec3(0.6, 0.2 + 0.0017 * serie, 0.3);
-        const mesh = new window.THREE.Mesh(new window.THREE.BoxGeometry(0.7, 0.7, 0.7), m);
-        mesh.position.copy(cam.position).addScaledVector(dir, 3.5);
-        mesh.frustumCulled = false;
-        mesh.layers.set(SCHICHT);
+        const mesh = probeMesh(m, 0, 3.5);
         welt.add(mesh);
         let bilder = 0;
         const drawRoh = rend.backend.draw;
@@ -366,7 +360,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
     // je Probe-Objekt die Pipeline, an der sein letzter Draw nicht zeichnen konnte
     const wartete = new Map();
     // der Zünder des Neubaus (A): { bg, erst, stumm } — gezündet in der Aufnahme von bg, sobald `erst` an einer offenen
-    // Pipeline wartet
+    // Pipeline wartet; bis dahin ist jede Marke an bg fremd
     let zuender = null;
     const mitAufnahme = async (fn) => {
         const eigenRb = Object.prototype.hasOwnProperty.call(rend, "_renderBundle");
@@ -375,10 +369,8 @@ function erstWandInstall(BUNDLE_FRAMES) {
             const Z = zuender;
             if (Z && bundle.bundleGroup === Z.bg && wartete.has(Z.erst)) {
                 zuender = null;
-                Z.bg.userData.probe.halt = false;
                 if (Z.stumm) stumm();
                 Z.bg.needsUpdate = true;
-                Z.gezuendet = true;
             }
             const aus = rbRoh.apply(this, arguments);
             const rb = this._bundles.get(bundle.bundleGroup, bundle.camera, this._currentRenderContext);
@@ -433,11 +425,11 @@ function erstWandInstall(BUNDLE_FRAMES) {
     let szeneGang = 0;
     const buendel = () => {
         const bg = new T3.BundleGroup();
-        const P = (bg.userData.probe = { n: 0, fremd: [], halt: false });
+        const P = (bg.userData.probe = { n: 0, fremd: [] });
         Object.defineProperty(bg, "needsUpdate", {
             set(v) {
                 if (v !== true) return;
-                if (szeneGang === 0 && !P.halt) return void this.version++;
+                if (szeneGang === 0 && zuender?.bg !== this) return void this.version++;
                 const f = String(new Error().stack).match(/\/(stamm\/[^/?:]+\.js)(?:\?[^:]*)?:(\d+)/);
                 P.fremd.push(f ? f[1] + ":" + f[2] : "?");
             },
@@ -531,11 +523,8 @@ function erstWandInstall(BUNDLE_FRAMES) {
             M.alphaTest = 0.5;
             M.needsUpdate = true;
             wartete.clear();
-            b2.userData.probe.halt = true;
-            const Z = (zuender = { bg: b2, erst: A, stumm: ohneAnmeldung, gezuendet: false });
-            const zuendBilder = await bisEreignis(() => Z.gezuendet, 20);
-            zuender = null;
-            b2.userData.probe.halt = false;
+            zuender = { bg: b2, erst: A, stumm: ohneAnmeldung };
+            const zuendBilder = await bisEreignis(() => !zuender, 20);
             const pipeA = wartete.get(A),
                 pipeB = wartete.get(B);
             // (3) bis die Aufnahme von b2 B wieder trägt
@@ -545,13 +534,12 @@ function erstWandInstall(BUNDLE_FRAMES) {
                 ruheOffen,
                 stand: stand.sichtbar,
                 standMs: stand.ms,
-                zuendBilder: Z.gezuendet ? zuendBilder : -1,
-                offeneTreffer: Z.gezuendet && !!pipeB && pipeB === pipeA,
+                zuendBilder,
+                offeneTreffer: !!pipeB && pipeB === pipeA,
                 ...nach,
             };
         } finally {
             zuender = null;
-            b2.userData.probe.halt = false;
             if (ohneAnmeldung) laut();
             welt.remove(b1);
             welt.remove(b2);
@@ -593,13 +581,14 @@ function erstWandInstall(BUNDLE_FRAMES) {
     // Attrappe in der Warteschlange), lässt die Aufnahme nach ihrer Frist werfen und nennt sie beim Namen; ohne sie liefert
     // dieselbe Aufnahme ihr Bild mit `erst.offen` 0.
     const aufnahme = () => buehne(() => aufnahmeAufDerBuehne());
+    const messBild = () => window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000, satz: "messung" });
     const aufnahmeAufDerBuehne = async () => {
         const ruheMs = await ruhe();
         const attrappe = { vertexProgram: { name: "wand-attrappe" }, cacheKey: "nie-bereit" };
         let wurf = null;
         ESt.offen.set(attrappe, new Set());
         try {
-            await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000, satz: "messung" });
+            await messBild();
         } catch (e) {
             wurf = String(e?.message || e);
         } finally {
@@ -607,7 +596,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
         }
         let bild = null;
         try {
-            const auf = await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000, satz: "messung" });
+            const auf = await messBild();
             bild = { pixel: auf.u8.length, erst: auf.info.erst };
         } catch (e) {
             bild = { wurf: String(e?.message || e) };
@@ -656,7 +645,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
             for (let i = 0; i < 3; i++) bild();
             offenDanach = ESt.offen.size;
             try {
-                await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000, satz: "messung" });
+                await messBild();
             } catch (e) {
                 wurf = String(e?.message || e);
             }
