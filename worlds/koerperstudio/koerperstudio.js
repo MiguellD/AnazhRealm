@@ -663,7 +663,7 @@ function _angName(a) { return a.werk + ' ' + a.verb + (a.teil && a.verb === 'sch
 var _REGION = { mensch: 'Rumpf', torso: 'Rumpf', head: 'Kopf', arm: 'Oberarm', elbow: 'Unterarm', hand: 'Hand', hip: 'Oberschenkel', knee: 'Unterschenkel', ankle: 'Fuß' };
 function _hautProben() {
   if (gestalt.__proben) return gestalt.__proben;
-  var vox = 0.02 / M_E, liste = [];
+  var vox = 0.02 / M_E, liste = [], _bv = new THREE.Vector3();
   gestalt.l0.forEach(function (n) {
     if (/eye|iris|pupil/.test(n.userData.__klasse || '')) return;
     var pa = n.geometry.attributes.position, si = n.geometry.attributes.skinIndex, sw = n.geometry.attributes.skinWeight, zellen = {};
@@ -674,7 +674,10 @@ function _hautProben() {
       if (n.isSkinnedMesh) { var bw = -1, ws = [sw.getX(i), sw.getY(i), sw.getZ(i), sw.getW(i)], is = [si.getX(i), si.getY(i), si.getZ(i), si.getW(i)]; for (var c = 0; c < 4; c++) if (ws[c] > bw) { bw = ws[c]; bone = n.skeleton.bones[is[c]].name; } }
       else { var o = n.parent; while (o && !_REGION[o.name.replace(/-?1$/, '')]) o = o.parent; bone = o ? o.name : 'mensch'; }
       var basis = bone.replace(/-?1$/, ''), seite = /-1$/.test(bone) ? '-1' : /1$/.test(bone) ? '1' : '';
-      liste.push({ n: n, i: i, region: _REGION[basis] + (seite ? ' ' + seite : ''), hand: basis === 'hand' ? 'hand' + seite : null });
+      // die Ecke im Bind-Raum (bindMatrix × Ecke) und ihre vier Gewichte — der Takt häutet sie wie der Shader (r128 boneTransform)
+      _bv.set(pa.getX(i), pa.getY(i), pa.getZ(i)); if (n.isSkinnedMesh) _bv.applyMatrix4(n.bindMatrix);
+      liste.push({ n: n, i: i, region: _REGION[basis] + (seite ? ' ' + seite : ''), hand: basis === 'hand' ? 'hand' + seite : null, bv: [_bv.x, _bv.y, _bv.z],
+        si: n.isSkinnedMesh ? [si.getX(i), si.getY(i), si.getZ(i), si.getW(i)] : null, sw: n.isSkinnedMesh ? [sw.getX(i), sw.getY(i), sw.getZ(i), sw.getW(i)] : null });
     }
   });
   gestalt.__proben = liste;
@@ -683,8 +686,10 @@ function _hautProben() {
 function _teilName(t) { return (t.werk ? 'Teil' : 'Teil am Leib') + ' ' + t.h.map(function (x) { return (2 * x).toFixed(2); }).join('×') + ' m'; }
 function _hautGegenGeraet(V, D) {
   var proben = _hautProben(), werk = V.ang.werk, teile = [];
-  parkTeile.forEach(function (b) { if (b.werk === werk) teile.push({ b: b, S: null }); });
-  parkAngebote.forEach(function (a) { if (a.werk !== werk || !a.teile) return; var S = KC.leibSchwenk(a), U = S ? { p: S.p, ax: S.ax, w: -S.w } : null; a.teile.forEach(function (b) { teile.push({ b: b, S: U }); }); });
+  // je Teil seine Mitte an der Lage dieses Takts und der Halbmesser seiner Kugel (die Vorprüfung: nur Punkte in ihr rechnen den Rahmen)
+  parkTeile.forEach(function (b) { if (b.werk === werk) teile.push({ b: b, S: null, m: b.c, r: Math.hypot(b.h[0], b.h[1], b.h[2]) }); });
+  parkAngebote.forEach(function (a) { if (a.werk !== werk || !a.teile) return; var S = KC.leibSchwenk(a), U = S ? { p: S.p, ax: S.ax, w: -S.w } : null;
+    a.teile.forEach(function (b) { teile.push({ b: b, S: U, m: S ? KC.leibSchwenkPunkt(S, b.c) : b.c, r: Math.hypot(b.h[0], b.h[1], b.h[2]) }); }); });
   // die Stangen, die eine Hand umschließt: ihre Mitte oder einer ihrer Anker (der Griff, den sie hält, den sie verlässt, den sie
   // erreicht — klettern `halt`/`von`/`ziel`, hangeln `griff`/`wechsel.griff`) liegt in ihr, um 3 cm
   var umgriff = {};
@@ -693,13 +698,19 @@ function _hautGegenGeraet(V, D) {
     if (V.verb === 'hangeln') { if (V.griff && V.griff[h]) anker.push(V.griff[h]); if (V.wechsel && V.wechsel.hand === h) anker.push(V.wechsel.griff); }
     umgriff[h] = teile.filter(function (T) { var b = T.b, hs = b.h.slice().sort(function (x, y) { return x - y; }); if (hs[1] > 0.03) return false;
       return anker.some(function (c) { var l = _boxLokal(b, T.S ? KC.leibSchwenkPunkt(T.S, c) : c); return Math.abs(l[0]) < b.h[0] + 0.03 && Math.abs(l[1]) < b.h[1] + 0.03 && Math.abs(l[2]) < b.h[2] + 0.03; }); }); });
-  var v = new THREE.Vector3();
+  // je Haut einmal im Takt: A_b = matrixWorld × bindMatrixInverse × Knochen-Welt × boneInverse (dieselbe Folge wie boneTransform)
+  var mats = new Map(), Mx = new THREE.Matrix4(), Mo = new THREE.Matrix4();
+  gestalt.l0.forEach(function (n) { if (!n.isSkinnedMesh) return; Mo.multiplyMatrices(n.matrixWorld, n.bindMatrixInverse);
+    mats.set(n, n.skeleton.bones.map(function (b, k) { return Mx.multiplyMatrices(b.matrixWorld, n.skeleton.boneInverses[k]).premultiply(Mo).elements.slice(); })); });
   for (var j = 0; j < proben.length; j++) {
-    var q = proben[j], pa = q.n.geometry.attributes.position;
-    v.set(pa.getX(q.i), pa.getY(q.i), pa.getZ(q.i)); if (q.n.isSkinnedMesh) q.n.boneTransform(q.i, v); v.applyMatrix4(q.n.matrixWorld);
-    var p = [v.x * M_E, v.y * M_E, v.z * M_E];
+    var q = proben[j], x = q.bv[0], y = q.bv[1], z = q.bv[2], p;
+    if (q.si) { var A = mats.get(q.n), X = 0, Y = 0, Z = 0;
+      for (var k = 0; k < 4; k++) { var wk = q.sw[k]; if (!wk) continue; var e = A[q.si[k]]; X += wk * (e[0] * x + e[4] * y + e[8] * z + e[12]); Y += wk * (e[1] * x + e[5] * y + e[9] * z + e[13]); Z += wk * (e[2] * x + e[6] * y + e[10] * z + e[14]); }
+      p = [X * M_E, Y * M_E, Z * M_E]; }
+    else { var e2 = q.n.matrixWorld.elements; p = [(e2[0] * x + e2[4] * y + e2[8] * z + e2[12]) * M_E, (e2[1] * x + e2[5] * y + e2[9] * z + e2[13]) * M_E, (e2[2] * x + e2[6] * y + e2[10] * z + e2[14]) * M_E]; }
     for (var t = 0; t < teile.length; t++) {
-      var T = teile[t], b = T.b;
+      var T = teile[t], b = T.b, dm0 = p[0] - T.m[0], dm1 = p[1] - T.m[1], dm2 = p[2] - T.m[2];
+      if (dm0 * dm0 + dm1 * dm1 + dm2 * dm2 > T.r * T.r) continue;
       if (q.hand && umgriff[q.hand].indexOf(T) >= 0) continue;
       var l = _boxLokal(b, T.S ? KC.leibSchwenkPunkt(T.S, p) : p), e = Math.min(b.h[0] - Math.abs(l[0]), b.h[1] - Math.abs(l[1]), b.h[2] - Math.abs(l[2]));
       if (e > D.durch) { D.durch = e; D.durchWo = q.region + ' in ' + _teilName(b) + ' auf ' + (p[1] - V.ang.boden).toFixed(2) + ' m, Phase ' + V.phase; }
