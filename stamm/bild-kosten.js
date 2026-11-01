@@ -517,25 +517,38 @@ class AnazhRealm_bild_kosten {
                 // steht, ihr Programm auch in dem Pass, in den gerade keine ihrer Instanzen fällt, ohne Draw. Jede Kaskade rendert
                 // in ihr eigenes Ziel (der Schlüssel trägt den Render-Kontext): der Vorlauf-Baum in 30 m fällt in keine nahe — kam
                 // er im Gang näher, kompilierte sie dort kalt. Seit w4-b-knoten baut er nach dem Bild (`_vorbauWahl`).
-                const vorbau = ro.getDrawParameters() === null;
+                // DER GAST DER BEDIENUNG (spielgang.K3, `_vorbauBedienung`): was die nächste Eingabe zeigen wird (der Geist eines
+                // Hotbar-Bauplans, der Leib einer Seele), baut hier vorab ohne Draw wie die Arena — nach dem Bild, unter der Frist
+                // des Render-Aufrufs und nur, wenn die Eingabe ruht (`_eingabeRuht`); der Klick findet Knoten und Pipeline vor.
+                const gast = object.__vorbauGast === true;
+                const vorbau = gast || ro.getDrawParameters() === null;
                 const ctx = this._currentRenderContext.id;
                 const k = passId == null ? ctx : ctx + "|" + passId;
                 let merk;
+                const aufnahme = this._currentRenderBundle;
                 if (vorbau) {
-                    const arena = object.isGeometrieArena === true && object.geometry.index !== null;
+                    const arena = gast || (object.isGeometrieArena === true && object.geometry.index !== null);
                     if (!arena || scene !== welt.state.scene) return;
-                    const wahl = AnazhRealm._vorbauWahl(
-                        E,
-                        object,
-                        k,
-                        welt._ladeTakt(),
-                        welt.state._weltbildDa,
-                        N.nodeFrame.frameId
-                    );
-                    if (wahl !== "bauen") return;
+                    const wahl =
+                        gast && !welt._eingabeRuht()
+                            ? null
+                            : AnazhRealm._vorbauWahl(
+                                  E,
+                                  object,
+                                  k,
+                                  welt._ladeTakt(),
+                                  welt.state._weltbildDa,
+                                  N.nodeFrame.frameId,
+                                  gast
+                              );
+                    if (wahl !== "bauen") {
+                        // ein Gast im Bündel (der Leib) wartet wie ein Bürger ohne Bau: sein Bündel nimmt neu auf, bis er
+                        // baute — versiegelt ohne ihn, spielte es ihn nie wieder vor
+                        if (gast && aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
+                        return;
+                    }
                     merk = E.vorgemerkt.get(object);
                 }
-                const aufnahme = this._currentRenderBundle;
                 if (aufnahme !== null) ro.bundle = aufnahme.bundleGroup;
                 // DIE BÜHNE DER KARTE (`_karteWeltBacken`) zeichnet wie die Welt: sie wiederholt ihren Bake, bis jeder Bürger
                 // zeichnete — ihre Hüllen wechseln den Stoff, darum zählt dort kein Pass, und ihre Bau-Frist gilt dem ganzen
@@ -572,7 +585,15 @@ class AnazhRealm_bild_kosten {
                     return;
                 }
                 let bau = -1;
-                if (ungebaut) {
+                // DER BAU IN RATEN (`_knotenRate`): im laufenden Spiel nach dem Weltbild baut kein Bild einen Knoten-Graphen am
+                // Stück — wer seinen noch nicht hat, wartet wie ein verschobener; ruhender Loop und Ladeschirm bauen wie bisher
+                if (ungebaut && welt.state._weltbildDa && !welt._loopRuht()) {
+                    if (!welt._knotenRate(N, ro, E)) {
+                        E.verschoben++;
+                        if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
+                        return;
+                    }
+                } else if (ungebaut) {
                     const aufruf = buehne ? B.versuch : this.info.calls;
                     if (E.aufruf !== aufruf) {
                         E.aufruf = aufruf;
@@ -598,7 +619,7 @@ class AnazhRealm_bild_kosten {
                     if (vor === undefined) E.vorgebaut.set(object, new Set([k]));
                     else vor.add(k);
                     merk.delete(k);
-                    E.vorbauBild = N.nodeFrame.frameId;
+                    if (bau >= 0) E.vorbauBild = N.nodeFrame.frameId; // nur ein Knoten-Bau nimmt den Platz des Bilds
                 } else if (gezeichnet && !buehne) {
                     if (pass === undefined) E.gezeichnet.set(object, (pass = new Set()));
                     pass.add(k);
@@ -619,6 +640,9 @@ class AnazhRealm_bild_kosten {
                 bauN: 0,
                 bauMs: 0,
                 verschoben: 0,
+                rateN: 0, // der Bau in Raten (`_knotenRate`): Schritte, ihre Zeit, die Frist der laufenden Aufgabe
+                rateMs: 0,
+                rateFrist: null,
                 pipeAsync: 0,
                 bereitN: 0,
                 absagenN: 0,
@@ -642,10 +666,66 @@ class AnazhRealm_bild_kosten {
     // nicht im ersten Bild — unter dem Ladeschirm merkt die Erst-Zeichnung seinen Pass vor („merken"), nach dem Bild baut der
     // vorgemerkte („bauen"), höchstens EINER je Bild (jeder Pass ist ein Render-Aufruf mit eigenem Deckel); sonst null. Headless
     // kalt 01.11.: der Vorbau einer Laub-Arena hielt 169 ms Haupt-Faden vor dem Bild. Der Rufer: `_renderObjectDirect` oben.
-    static _vorbauWahl(E, arena, pass, lade, bild, frame) {
-        const merk = E.vorgemerkt.get(arena);
+    static _vorbauWahl(E, arena, pass, lade, bild, frame, gast = false) {
+        let merk = E.vorgemerkt.get(arena);
         if (lade) return (merk ? merk.add(pass) : E.vorgemerkt.set(arena, new Set([pass])), "merken");
-        return bild && merk && merk.has(pass) && E.vorbauBild !== frame ? "bauen" : null;
+        // ein Gast der Bedienung merkt jeden Pass selbst vor, in dem er noch nicht baute (er kam nach dem Ladeschirm), und baut
+        // wie jede Erst-Zeichnung unter der Frist des Render-Aufrufs (`ERST_BAU_MS`) — sein Schutz ist die ruhende Eingabe
+        const vor = gast && bild ? E.vorgebaut.get(arena) : undefined;
+        if (gast && bild && !(vor && vor.has(pass))) {
+            if (!merk) E.vorgemerkt.set(arena, (merk = new Set()));
+            merk.add(pass);
+        }
+        return bild && merk && merk.has(pass) && (gast || E.vorbauBild !== frame) ? "bauen" : null;
+    }
+    // DER KNOTEN-BAU IN RATEN (profiband.K2): r184 baut den Knoten-Graphen eines Render-Objekts am Stück (`NodeBuilder.build`:
+    // prebuild, je Stufe setup · analyze · generate jede Shader-Stufe fragment · vertex · compute, buildCode) — 60–100 ms je
+    // Stoff (Radeon, Genesis Ego im Stand: das Vorwärmen der Leiber, 11 Bauten Σ 825 ms, je Bild einer, Belegung p95 113,6 ms).
+    // Hier geht derselbe Gang Schritt für Schritt (eine Shader-Stufe einer Stufe) im Pass des Render-Objekts — der Bau liest MRT,
+    // Ziel und contextNode des Renderers, die nur dort gelten (darum nie buildAsync daneben) —, je Aufgabe des Event-Loops bis zur
+    // Frist ERST_BAU_MS (der erste Schritt immer); der fertige Bau tritt wie im Vendor in den Bau-Cache, ein Zwilling gleichen
+    // Schlüssels übernimmt ihn, ein werfender Schritt meldet sich laut und der Vendor baut am Stück. true = der Bau steht.
+    _knotenRate(N, ro, E) {
+        const d = N.get(ro);
+        if (E.rateFrist === null) {
+            E.rateFrist = performance.now() + AnazhRealm.ERST_BAU_MS;
+            Promise.resolve().then(() => (E.rateFrist = null));
+        }
+        const t0 = performance.now();
+        if (t0 >= E.rateFrist) return false;
+        const key = N.getForRenderCacheKey(ro);
+        let s = N.nodeBuilderCache.get(key);
+        try {
+            const R = s === undefined ? d.rate || (d.rate = { b: N._createNodeBuilder(ro, ro.material), i: -1 }) : null;
+            const b = R && R.b;
+            let arbeit = !!R && R.i < 0 && (b.prebuild(), (R.i = 0), true);
+            for (const [STUFE, SHADER] = AnazhRealm.KNOTEN_GANG; R && !arbeit && R.i < 9;) {
+                const stufe = STUFE[(R.i / 3) | 0];
+                const shader = SHADER[R.i % 3];
+                b.setBuildStage(stufe);
+                if (R.i++ % 3 === 0 && b.context.position && b.context.position.isNode)
+                    b.flowNodeFromShaderStage("vertex", b.context.position);
+                b.setShaderStage(shader);
+                for (const k of b.flowNodes[shader]) stufe === "generate" ? b.flowNode(k) : k.build(b);
+                arbeit = b.flowNodes[shader].length > 0; // eine leere Shader-Stufe geht im selben Schritt mit
+            }
+            [E.rateN, E.rateMs] = [E.rateN + 1, E.rateMs + performance.now() - t0];
+            if (arbeit) return false;
+            if (R) {
+                b.setBuildStage(null);
+                b.setShaderStage(null);
+                b.buildCode();
+                b.buildUpdateNodes();
+                N.nodeBuilderCache.set(key, (s = N._createNodeBuilderState(b)));
+            }
+        } catch (e) {
+            d.rate = undefined;
+            this._bruchMelden(`KNOTEN-RATE: ein Schritt warf (${(e && e.message) || e}) — der Vendor baut am Stück`);
+            return (N.getForRender(ro), true);
+        }
+        [d.rate, d.nodeBuilderState] = [undefined, s];
+        s.usedTimes++;
+        return true;
     }
     // Der EINE Grund-Knoten jedes Schatten-Stoffs (r184 `vec4(0,0,0,1)`, je Licht neu gebaut) — `renderObject` oben
     static _schattenGrund() {
@@ -661,6 +741,13 @@ class AnazhRealm_bild_kosten {
     // Zeichner EINES Stoffs bauten dasselbe Programm zweimal (52 + 56 ms). Der Bau-Schlüssel ist der r184s, gelesen mit diesen
     // Zahlen als 1 und ohne den Index — Pipeline, Neuanlage des Render-Objekts und jeder andere Leser behalten den Vendor-
     // Schlüssel; gemerkt je Render-Objekt (`delete` zählt `usedTimes` unter demselben). Der Rufer: der Anschluss nach init().
+    // DIE FORM DES RENDER-OBJEKTS (w4-knoten-takt): die Sicht ist eine flache KOPIE seiner Felder (ohne Prototyp: ruft r184s
+    // `getMaterialCacheKey` je eine andere Methode, bricht sie laut), der Schlüssel steht in einer WeakMap — nie ein Erbe des
+    // Render-Objekts, nie ein Feld an ihm. `Object.create(ro)` machte jedes Render-Objekt zum Prototyp, V8 gibt einem
+    // Prototyp eine EIGENE Form: jeder Zugriff des Takts auf ein Render-Objekt (Vendor-Draw, Bündel-Replay, Diät) ging den
+    // langsamen Weg (z119c GTX, Stadt im Stand: CPU-Takt p95 9,88 → 10,95 ms; Radeon: zwei Schreibe je Render-Objekt 5,5 →
+    // 30,5 ns, CPU je Bild der stehenden Stadt 4,50 → 5,20 ms, mit der Kopie 4,60). Die Wand: gate:altlasten (Zwillings-Wand,
+    // `Object.create` nur mit null).
     _gestaltSchluessel(renderer) {
         const N = renderer && renderer._nodes;
         if (!N || typeof N.getForRenderCacheKey !== "function")
@@ -668,20 +755,20 @@ class AnazhRealm_bild_kosten {
         if (N.__anazhBauSchluessel) return;
         const NEUTRAL = AnazhRealm.BAU_NEUTRAL;
         const blick = { get: (m, p) => (NEUTRAL.includes(p) && typeof m[p] === "number" ? 1 : Reflect.get(m, p, m)) };
+        const bau = new WeakMap(); // Render-Objekt → sein Bau-Schlüssel
         N.getForRenderCacheKey = function (ro) {
-            if (ro._anazhBau !== undefined) return ro._anazhBau;
+            let k = bau.get(ro);
+            if (k !== undefined) return k;
             const m = ro.material;
             const null0 = !!m && NEUTRAL.some((p) => m[p] === 0);
-            let k = ro.initialCacheKey;
+            k = ro.initialCacheKey;
             if (null0 || (ro.geometry && ro.geometry.index)) {
                 const geo = ro.getGeometryCacheKey().replace(/index,$/, "");
-                const sicht = Object.create(ro, {
-                    material: { value: null0 ? new Proxy(m, blick) : m },
-                    getGeometryCacheKey: { value: () => geo },
-                });
+                const sicht = { ...ro, material: null0 ? new Proxy(m, blick) : m, getGeometryCacheKey: () => geo };
                 k = ro.getMaterialCacheKey.call(sicht) + ro.getDynamicCacheKey();
             }
-            return (ro._anazhBau = k);
+            bau.set(ro, k);
+            return k;
         };
         N.__anazhBauSchluessel = true;
     }
@@ -3049,8 +3136,13 @@ AnazhRealm.ZEIT_SPRUNG_M = 6;
 // zwei Gängen den Graphen verlässt, hält die GPU höchstens so lange.
 AnazhRealm.GPU_KEHRAUS_MS = 2000;
 // DIE ERST-ZEICHNUNG (`_configureRenderer`): je Render-Aufruf der Welt-Szene baut der erste Erst-Bau immer, jeder weitere nur,
-// solange der Aufruf unter dieser Zeit (ms) baute — ein Frame trägt so höchstens einen schweren Knoten-Bau je Pass.
+// solange der Aufruf unter dieser Zeit (ms) baute — ein Frame trägt so höchstens einen schweren Knoten-Bau je Pass. Im laufenden
+// Spiel nach dem Weltbild ist sie die Frist der Raten je Aufgabe (`_knotenRate`, der Gang r184 `NodeBuilder.build`: KNOTEN_GANG).
 AnazhRealm.ERST_BAU_MS = 4;
+AnazhRealm.KNOTEN_GANG = Object.freeze([
+    Object.freeze(["setup", "analyze", "generate"]),
+    Object.freeze(["fragment", "vertex", "compute"]),
+]);
 // DER BAU-SCHLÜSSEL (`_gestaltSchluessel`): die Zahlen eines Stoffs, die der Knoten-Bau nur als Stoff-Referenz liest — ihr
 // Wert (0 oder nicht) teilt kein Programm
 AnazhRealm.BAU_NEUTRAL = Object.freeze(["roughness", "metalness", "envMapIntensity", "emissiveIntensity"]);

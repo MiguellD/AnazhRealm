@@ -18,7 +18,8 @@
 //      Gerät): der Knoten-Bau einer Seele überlebt die Lösung des Leibs, der ihn eben noch teilte
 //   S3 die Feed-Vorschau (4 Wesen + eine Rezept-Karte) entsorgt keine Welt-Geometrie, keinen Welt-Stoff
 //   S5 der Werkstatt-Ofen, Regler-Zug 20 Werte: kein Einzelstück im Ofen-Memo, Grafikspeicher und Geometrie-Zahl der
-//      Werkstatt, die dispose-Hörer der geteilten Stoffe und der JS-Speicher bleiben beschränkt (kein Welt-Satz verdichtet darin)
+//      Werkstatt (ihr Konto, nie der Zähler der lebenden Welt), die dispose-Hörer der geteilten Stoffe und der JS-Speicher
+//      bleiben beschränkt (kein Welt-Satz verdichtet darin)
 //   S6 10 Mitspieler-Erscheinungen und ihr Abschied: das Ofen-Memo hält danach höchstens OFEN_MEMO_RUHEND Vorlagen ohne
 //      Leib, der JS-Speicher fällt zurück
 //   P2 kein writeBuffer der Seite schief, auch kein Uint16-Index ungerader Länge der Ich-Bühne
@@ -35,13 +36,13 @@
 //   node scripts/diag-weltbild-frost.cjs --echt   sichtbares Chrome auf der echten GPU: der SPIELPFAD (Ankunft · dritte
 //                                                 Person · Werkstatt · Tab · Hof) im laufenden Spiel, das Bild-Paar je Schritt
 //   … [--bilder <ordner>]                         legt je Bild-Paar beide Bilder ab
-//   … [--s5=frames | --s5=halde]                  Selbsttest S5: nur Welt-Frames statt Zügen (GRÜN) · jedes Einzelstück bleibt (ROT)
+//   … [--s5=leck]                                 Mutant S5: kein Einzelstück entsorgt seine Geometrie (ROT: das Konto wächst)
 // Exit 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
 const { statikServer, starteBrowser, selbsttest, hauptLauf, sleep, pruefer, argOpt, path, fs } = require("./lib/welt-boot.cjs");
 
 const ECHT = process.argv.includes("--echt");
-const S5_PROBE = (process.argv.find((a) => a.startsWith("--s5=")) || "").slice(5); // Selbsttest der S5-Basis: frames | halde
+const LECK = process.argv.includes("--s5=leck"); // der Mutant von S5
 const BILDER = argOpt("--bilder", null);
 // Anteil bewegter 16×16-Blöcke der Bildmitte, ab dem das Bild der Kamera folgt: eine Drehung bewegt 40–100 %, ein stehendes
 // Bild unter der zeitlichen Kantenglättung zittert bis 1,4 % — die Schwelle liegt dazwischen mit Abstand.
@@ -177,11 +178,16 @@ function pruefRaum(echt) {
                 );
             }
         };
+        // n GEZEICHNETE BILDER (z133, `nodeFrame.frameId`): `info.render.calls` setzt sich je Bild zurück (r184 `info.reset`
+        // im Animations-Takt) und zählte nichts — das Bild-Paar wartete die Wanduhr, 600 ms, und der ausgelastete Läufer
+        // zeichnete darin weniger Bilder (T2-Wache 67 und 109 gegen 172–353 am Stamm). Im gefrorenen Bild des Täters T2 bewegen
+        // sich nach der Drehung die Kanten des Leibs und das Innere der Portale (ohne Drehung 0,19 % der Blöcke, mit 2,6 %;
+        // Läufer 5,68 und 8,05 %); ohne die Bühnen-Proben davor steht es nach 30 Bildern ganz (0,00 %).
         F.zeichne = async (n) => {
-            const info = rend.info.render;
-            const a = info.calls;
+            const N = rend._nodes.nodeFrame,
+                a = N.frameId;
             await sleep(600); // ein Bild steht mindestens 600 ms
-            for (const weiter = __deckel("ein Bild", 2400); info.calls - a < n && weiter(); ) await sleep(50);
+            for (const weiter = __deckel("ein Bild", 2400); N.frameId - a < n && weiter(); ) await sleep(50);
         };
         F.drehe = () => (st.yaw += 1.1);
         F.mittag = () => {
@@ -407,10 +413,10 @@ hauptLauf(async () => {
             return r.anteil;
         }
         await page.evaluate(() => window.__frostWand.mittag());
-        await zeichne(8);
+        await zeichne(30); // 30 gezeichnete Bilder je Schuss (`F.zeichne`), nie die Wanduhr
         const a = await schuss(BILDER && path.join(BILDER, tag + "-a.png"));
         await page.evaluate(() => window.__frostWand.drehe());
-        await zeichne(8);
+        await zeichne(30);
         const b = await schuss(BILDER && path.join(BILDER, tag + "-b.png"));
         return page.evaluate(
             async (a, b) => {
@@ -820,7 +826,7 @@ hauptLauf(async () => {
     // S5 — der Werkstatt-Ofen, der Regler-Zug: 20 Werte eines Reglers am Wolf. Jeder Wert ist ein Einzelstück (es gehört dem
     // Ofen, nie dem Memo); der Ofen entsorgt das vorige beim Wechsel, mit den Render-Objekten des Werkstatt-Renderers.
     // Grafikspeicher, Geometrie-Zahl, Ofen-Memo, Stoff-Hörer und JS-Speicher bleiben beschränkt.
-    const ofenStart = await page.evaluate(async (probe) => {
+    const ofenStart = await page.evaluate(async (leck) => {
         const E = window.__frostEntsorgung;
         r.toggleDrawer("werkstatt");
         const f = r._foundry;
@@ -837,35 +843,43 @@ hauptLauf(async () => {
         const dial = Object.keys(basis).find((k) => typeof basis[k] === "number" && basis[k] > 0.2);
         const stoffe = new Set();
         const O = (window.__frostOfen = { id, dial, basis: basis[dial], stoffe });
+        // DAS KONTO DER WERKSTATT (z133): sie zeichnet auf der Welt-GPU, deren Zähler (`info.memory`) die lebende Welt
+        // mitzählt — im Fenster trat die Gras-Arena der Nah-Wiese (`nahWiese:Lf:1:0`) in ihren ersten Zug, S5 nannte die
+        // Werkstatt um eine Geometrie gewachsen (Radeon: Stamm 25ac4c0c 1 von 2 Läufen, Kandidat z133 3 von 4, sein Läufer
+        // zweimal). S5 führt ein Konto jeder Geometrie, die das Einzelstück trug, bis ihr dispose sie löst.
+        const K = new Set();
         O.mess = () => {
-            const m = st.renderer.info.memory; // die Werkstatt zeichnet auf der Welt-GPU (die Welt ruht in der Probe)
             let hoerer = 0;
             for (const s of stoffe) hoerer += s._listeners && s._listeners.dispose ? s._listeners.dispose.length : 0;
-            const MB = +(((m.attributesSize || 0) + (m.indexAttributesSize || 0)) / 1048576).toFixed(2);
+            let b = 0;
+            for (const g of K) for (const a of Object.values(g.attributes)) b += a.array.byteLength;
             return {
                 memo: AnazhRealm._tierOfenMemo ? AnazhRealm._tierOfenMemo.size : 0,
-                geometrien: m.geometries || 0,
-                MB,
+                geometrien: K.size,
+                MB: +(b / 1048576).toFixed(2),
                 stoffe: stoffe.size,
                 hoerer,
             };
         };
         O.zug = async (i) => {
-            if (probe === "frames") return E.leeren(); // Selbsttest Lauf F: nur Welt-Frames, kein Regler — GRÜN
-            if (probe === "halde") (O.halde || (O.halde = [])).push(ws.preview && ws.preview.currentMesh); // Mutant: jedes Einzelstück bleibt — ROT
             ws.studioOv = ws.studioOv || {};
             ws.studioOv[id] = { [dial]: +(O.basis * (1 + 0.01 * i)).toFixed(4) };
             E.im("ofen", () => r._workshopRebuildPreviewMesh());
             await E.warte(holen);
-            if (ws.preview && ws.preview.currentMesh)
-                ws.preview.currentMesh.traverse((o) => {
-                    if (o.material) [].concat(o.material).forEach((s) => stoffe.add(s));
-                });
+            ws.preview.currentMesh.traverse((o) => {
+                const g = o.geometry;
+                if (o.material) [].concat(o.material).forEach((s) => stoffe.add(s));
+                // der Mutant `--s5=leck`: kein Einzelstück entsorgt seine Geometrie — das Konto wächst, S5 ROT
+                if (!g || K.has(g)) return;
+                K.add(g);
+                g.addEventListener("dispose", () => K.delete(g));
+                if (leck) g.dispose = () => {};
+            });
             await E.leeren();
         };
         for (let i = 0; i <= 2; i++) await O.zug(i);
-        return { id, dial, probe, vor: O.mess() };
-    }, S5_PROBE);
+        return { id, dial, vor: O.mess() };
+    }, LECK);
     let ofen = ofenStart;
     if (!ofen.fehlt) {
         const ruhe = await fenster(true);
@@ -896,8 +910,8 @@ hauptLauf(async () => {
         );
         check(
             "S5 Grafikspeicher und Geometrie-Zahl der Werkstatt bleiben beschränkt",
-            nach.geometrien <= vor.geometrien && nach.MB <= vor.MB + 0.5,
-            `Geometrien ${vor.geometrien} → ${nach.geometrien}, Geometrie-Speicher ${vor.MB} → ${nach.MB} MB über 18 Werte`
+            vor.geometrien > 0 && nach.geometrien <= vor.geometrien && nach.MB <= vor.MB + 0.5,
+            `Geometrien ${vor.geometrien} → ${nach.geometrien}, Geometrie-Speicher ${vor.MB} → ${nach.MB} MB über 18 Werte (das Konto des Einzelstücks)`
         );
         check(
             "S5 die geteilten Stoffe sammeln keine Hörer (die Render-Objekte des Einzelstücks lösen sich)",
