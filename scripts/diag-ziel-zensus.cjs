@@ -286,9 +286,9 @@ function rundungProbe() {
         await page.evaluate(AUSGABE_INSTALL); // die Ruhe der Erst-Zeichnung (`__erstRuhe`), vor jedem Zensus
         await page.evaluate(ZZ.ZIEL_INSTALL);
         await page.evaluate(() => {
-            r.state.renderer.setAnimationLoop(null);
+            st.renderer.setAnimationLoop(null);
             window.__gpuFehlerZ = [];
-            r.state.renderer.backend.device.addEventListener("uncapturederror", (e) =>
+            st.renderer.backend.device.addEventListener("uncapturederror", (e) =>
                 window.__gpuFehlerZ.push(String(e.error?.message || e.message || e).slice(0, 240))
             );
         });

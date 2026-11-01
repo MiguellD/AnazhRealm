@@ -1,4 +1,4 @@
-const { ausDatei, path, fs, stammLib, vm } = require("./lib/welt-boot.cjs");
+const { ausDatei, path, fs, stammLib, vm, jsonLesen, ROOT: root } = require("./lib/welt-boot.cjs");
 // diag-studio-vertrag.cjs — DER MANIFEST-VALIDATOR (docs/studio-vertrag.md).
 // Die USD-/Schema-Lehre: ein Kern, der den Vertrag verletzt, wird ROT beim
 // Andocken — nicht stumm kaputt in der Welt. Statisch + vm (kein Browser, im
@@ -22,7 +22,6 @@ const { ausDatei, path, fs, stammLib, vm } = require("./lib/welt-boot.cjs");
 //   node scripts/diag-studio-vertrag.cjs
 const { kanalImVm, ersteAbweichung, DATEN_KANAELE, absorber } = require("./lib/asset-worker-harness.cjs");
 
-const root = path.resolve(__dirname, "..");
 
 // Die registrierten Studio-Kerne — N2 (Nervensystem-Plan, „Runtime = Validator"): die Liste
 // kommt aus cores.manifest.json, der EINEN Kern-Quelle (Worker-Boot `_ensureAssetFoundry` +
@@ -32,7 +31,7 @@ const root = path.resolve(__dirname, "..");
 // ZWEIT-Kern einer Laufzeit trägt seine Manifest-Blöcke namensgleich unter EINEM Objekt
 // statt top-level — löst die const-Kollision mit foundry-core
 // (STUDIO_VERTRAG/PORTAL_RENDER_CONFIG/PRESETS) ohne dessen Edit.
-const MANIFEST = ausDatei(path.join(root, "cores.manifest.json"), true);
+const MANIFEST = jsonLesen("cores.manifest.json");
 const CORES = MANIFEST.map((c) => ({
     id: c.id,
     file: c.vertrag,
@@ -289,7 +288,7 @@ function gesetzKernErklaert(doc) {
 // steht in der Ratsche — die Zeile bewegt an keinem Rezept ihrer Art ein Bau-Byte (spec/vertraege/ratsche.json reglerGesetz, gemessen
 // von gate:regler-wirkt, das dort auch ihren Leser der Welt misst). Eine Zeile, die Bytes bewegt, braucht den Neubau und trägt die Schranke von 1 s.
 const REGLER_OHNE_BYTE = new Set(
-    Object.keys(ausDatei(path.join(root, "spec/vertraege/ratsche.json"), true).reglerGesetz.zeilen)
+    Object.keys(jsonLesen("spec/vertraege/ratsche.json").reglerGesetz.zeilen)
 );
 function validateManifest(m, kern) {
     const v = [];

@@ -28,7 +28,7 @@
 //   node scripts/diag-look-golden.cjs --render   → rendert den Spot, vergleicht gegen Golden
 //   node scripts/diag-look-golden.cjs --mint      → mintet das Golden aus dem aktuellen Render
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, sleep, ausDatei, path, fs } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, sleep, path, fs, jsonLesen } = require("./lib/welt-boot.cjs");
 
 const GOLDEN_DIR = path.resolve(__dirname, "..", "spec", "golden", "render");
 const SPOT = "settled-eye"; // der eine kanonische, deterministische Augenhöhen-Spot
@@ -148,7 +148,7 @@ async function renderLuma() {
     try {
         await server.zeige(page, 120000, "index.html", "networkidle0");
         await page.waitForFunction(
-            () => r && r.state && r.state.rendererReady,
+            () => r && st && st.rendererReady,
             { timeout: 120000 }
         );
         // deterministisch settlen + auf einen Land-Augenhöhen-Spot stellen, ein paar Frames.
@@ -213,7 +213,7 @@ async function renderLuma() {
         process.exit(lensOk ? 0 : 1);
     }
 
-    const golden = ausDatei(GOLDEN_FILE, true);
+    const golden = jsonLesen(GOLDEN_FILE);
     const score = mssim(golden.luma, luma, N);
     console.log(`\n=== Look-Golden-Vergleich (Spot '${SPOT}') ===`);
     console.log(`  MSSIM gegen Golden: ${score.toFixed(4)}  (Schwelle ${THRESHOLD})`);

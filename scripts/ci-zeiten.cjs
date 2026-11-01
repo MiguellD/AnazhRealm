@@ -9,9 +9,8 @@ const { execSync } = require("child_process");
 const yaml = require("js-yaml");
 const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cjs");
 const { alleLaeufe, apiMit } = require("./ci-kopf.cjs");
-const { hauptLauf, ausDatei, path, fs } = require("./lib/welt-boot.cjs");
+const { hauptLauf, ausDatei, path, fs, jsonLesen, ROOT: root } = require("./lib/welt-boot.cjs");
 
-const root = path.resolve(__dirname, "..");
 const API = "https://api.github.com/repos/MiguellD/AnazhRealm";
 const WORKFLOW = ".github/workflows/check.yml";
 const AUS = "spec/ci/ci-zeiten.json";
@@ -120,7 +119,7 @@ async function messe(api, jetzt, alt = {}, pause = 2000) {
 
 // die Lage in check.yml: im Job voll je Schritt seine Gruppe, die Matrix und ihre Klassen; im Job echt je Schritt seine Frist
 function verteile(jetzt, out) {
-    const skripte = ausDatei(path.join(root, "package.json"), true).scripts || {};
+    const skripte = jsonLesen("package.json").scripts || {};
     const { schritte } = out;
     const alle = jetzt.jobs.voll.steps.filter((s) => s.name && s.run && schritte[s.name] && !VORBEREITUNG.test(s.name));
     const z = (s) => schritte[s.name].s;
@@ -274,7 +273,7 @@ if (require.main === module) {
         if (args.includes("--tafel")) return tafel(apiMit(API, token));
         const jetzt = yaml.load(ausDatei(path.join(root, WORKFLOW)));
         const alt = fs.existsSync(path.join(root, AUS))
-            ? ausDatei(path.join(root, AUS), true)
+            ? jsonLesen(path.join(root, AUS))
             : {};
         const { out, gelesen, ohne } = await messe(apiMit(API, token), jetzt, alt);
         const text = JSON.stringify(out, null, 2).replace(

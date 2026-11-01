@@ -32,7 +32,7 @@
 //              Sicht aus der Hülle einer Serie; `--neu` der Re-Mint, K26)
 //   Wand:      node scripts/diag-profiband.cjs              (Schema, Summe <= Band, Selbsttests gegen injizierte Fälle)
 "use strict";
-const { ausDatei, path, fs } = require("./welt-boot.cjs");
+const { jsonLesen, path, fs } = require("./welt-boot.cjs");
 const { vramFalte } = require("./draw-zaehler.cjs");
 
 const SPEC = path.join(__dirname, "..", "..", "spec", "profiband");
@@ -59,7 +59,7 @@ const ratscheDatei = (ortId, geraet, sicht) => `ratsche-${ortId}-${geraet}-${sic
 const istBandOrt = (o) => o.bank === undefined && o.anlauf === undefined;
 
 function ladeSpec(ortId, wahl) {
-    const haushalt = ausDatei(path.join(SPEC, "haushalt.json"), true);
+    const haushalt = jsonLesen(path.join(SPEC, "haushalt.json"));
     const ort = ortOf(haushalt, ortId);
     const spec = { haushalt, ort, ratsche: null, ratscheDatei: null };
     // Die Ratsche wählt nur, wer Gerät UND Sicht nennt; ein Toggle-Ort (`bank`) trägt keine (`ratscheVon` bricht laut).
@@ -72,7 +72,7 @@ function ladeSpec(ortId, wahl) {
         spec.ratscheDatei = ratscheDatei(ort.id, wahl.geraet, wahl.sicht);
         const f = path.join(SPEC, spec.ratscheDatei);
         // Eine fehlende Datei ist UNGEMESSEN (null): das Band-Urteil nennt sie rot (`ungemessen`), nie still ohne Ratsche.
-        spec.ratsche = fs.existsSync(f) ? ausDatei(f, true) : null;
+        spec.ratsche = fs.existsSync(f) ? jsonLesen(f) : null;
     }
     return spec;
 }
@@ -109,7 +109,7 @@ function ratschenAlle(haushalt) {
             for (const sicht of Object.keys(haushalt.sichten || {})) {
                 const datei = ratscheDatei(o.id, geraet, sicht);
                 const f = path.join(SPEC, datei);
-                out.push({ ort: o.id, geraet, sicht, datei, ratsche: fs.existsSync(f) ? ausDatei(f, true) : null });
+                out.push({ ort: o.id, geraet, sicht, datei, ratsche: fs.existsSync(f) ? jsonLesen(f) : null });
             }
     return out;
 }

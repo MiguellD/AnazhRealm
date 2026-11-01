@@ -16,10 +16,9 @@
 //      (spec/asset-contract/v7/golden/daten.json — gemintet NUR wenn es fehlt).
 //   --selftest: Schema-Verletzungen (klang, motion) und ein Kern, der beim Laden eine Transzendente ruft, werden erkannt.
 //   node scripts/diag-daten-contract.cjs [--selftest]
-const path = require("path");
+const { pruefer, wandEnde, selbsttestEnde, ausDatei, SELBSTTEST, fs, vm, jsonLesen, jsonSchreiben, path, ROOT: root } = require("./lib/welt-boot.cjs");
 const { probeWand } = require("./lib/plattform-probe.cjs");
 
-const root = path.resolve(__dirname, "..");
 const goldenDir = path.join(root, "spec/asset-contract/v7/golden");
 const goldenFile = path.join(goldenDir, "daten.json");
 
@@ -29,7 +28,6 @@ const CORES = [
     { file: "tetrapoda-core.js", ns: "__tetrapodaCore", kind: "kreatur", feld: "motion", minRezepte: 4 },
 ];
 
-const { pruefer, wandEnde, selbsttestEnde, ausDatei, SELBSTTEST, fs, vm } = require("./lib/welt-boot.cjs");
 const { errs, check } = pruefer();
 const { sha } = require("./lib/stamm.cjs");
 
@@ -188,10 +186,10 @@ function validateDaten(N, spec) {
 
     if (!fs.existsSync(goldenFile)) {
         fs.mkdirSync(goldenDir, { recursive: true });
-        fs.writeFileSync(goldenFile, JSON.stringify(prints, null, 4) + "\n");
+        jsonSchreiben(goldenFile, prints, 4, "\n");
         console.log(`\n  🧊 Golden GEMINTET (${goldenFile}) — ab jetzt EINGEFROREN.`);
     }
-    const golden = ausDatei(goldenFile, true);
+    const golden = jsonLesen(goldenFile);
     for (const spec of CORES) {
         check(
             `GOLDEN byte-treu: ${spec.file}`,

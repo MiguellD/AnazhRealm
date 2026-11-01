@@ -80,7 +80,7 @@ hauptLauf(async () => {
             o.feldPassRuht = !st.feldPass;
             o.bundlesRuhen = !st._regionBundles || st._regionBundles.size === 0;
             o.computeFaehig = r._gpuComputeFaehig(); // MUSS false sein (die Wand-Quelle selbst)
-            o.arenaRueckfall = r.constructor.__arenaOhne === "WebGL2" && !(r.constructor.__arenen || new Map()).size;
+            o.arenaRueckfall = AnazhRealm.__arenaOhne === "WebGL2" && !(AnazhRealm.__arenen || new Map()).size;
             // W4 — der Fern-Ring verfeinert auf CPU: der Takt des Rings bestellt beim Fern-Faden und hängt seine Antwort ein, bis die
             // erste Scheibe hängt — das Ereignis, nie die Wanduhr (Lehre 26; bis ci-wackler-zensus 60 Takte ohne Pause nach 6 s
             // Schlaf: unter Last war noch keine Antwort da, cursor 0). Ein Faden, der nie antwortet, steht in der Stall-Akte.

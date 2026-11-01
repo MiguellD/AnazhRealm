@@ -81,18 +81,60 @@ class AnazhRealm_studio_gestalt {
         return n;
     }
 
-    // Ein Wartender der Streu-Scheibe meldet seine Zusage (der Zug eines Körpers, das Buch, die Karte, der Wald-Plan) — nur,
-    // solange eine Region streut (`_streuSammler`); jeder andere Leser fragt wie bisher. Die Zusage trägt den Rang ihres
-    // nächsten wartenden Lesers in der Region (`_foundryRang`/`_foundryNaeher` — derselbe Datensatz wie in der Pumpe): der Ort
-    // der Zelle (`_streuZelleOrt`), ohne Zelle 0 (die Region selbst, im Bild). Der Wecker fragt mit ihm das Bild der Ankunft.
-    _streuWartetAuf(zusage) {
-        const s = this._streuSammler;
+    // Ein Wartender meldet seine Zusage (der Zug eines Körpers, das Buch, die Karte, der Wald-Plan) — nur, solange einer
+    // sammelt (`_zusagenSammler`: die streuende Region, `_zusagenVon`); jeder andere Leser fragt wie bisher. Die Zusage trägt den
+    // Rang ihres nächsten wartenden Lesers (`_foundryRang`/`_foundryNaeher` — derselbe Datensatz wie in der Pumpe): den Ort des
+    // Wartenden (`_wartendOrt`: die Zelle, der Eintrag), ohne Ort 0 (die Region selbst, im Bild). Der Wecker fragt mit ihm das
+    // Bild der Ankunft.
+    _wartetAuf(zusage) {
+        const s = this._zusagenSammler;
         if (!s || !zusage || typeof zusage.then !== "function") return;
-        const wo = this._streuZelleOrt || 0;
+        const wo = this._wartendOrt || 0;
         const rang = s.get(zusage);
         if (rang) this._foundryNaeher(rang, wo);
         else s.set(zusage, this._foundryRang(wo));
-        this._streuZusagen = (this._streuZusagen | 0) + 1;
+        this._zusagenN = (this._zusagenN | 0) + 1;
+    }
+    // DER WARTENDE SCHLÄFT AUF SEINER ZUSAGE (w4-b-streu, Lehre 25 — die EINE Regel für jeden, der auf die Welt wartet: die
+    // Region der Streu, ihre Zelle im Stufen-Takt, der Eintrag in Cull und Rewarm). `frage` läuft mit dem Sammler `zusagen`
+    // (eine Karte Zusage → Rang des Rufers, geleert) am Ort `wo`: jeder Haken, der eine Zusage nennt (`_wartetAuf`), legt sie
+    // hinein. → was `frage` gab. Bis w4-b-streu fragte jeder Takt jeden Wartenden neu, ob sein Asset da ist — headless kalt bis
+    // zum ersten Bild 57 540 Bereitschafts-Fragen der Bauten und 30 961 wartende Streu-Zellen, keine änderte etwas.
+    _zusagenVon(wo, frage, zusagen) {
+        const sammler = this._zusagenSammler;
+        const ort = this._wartendOrt;
+        zusagen.clear();
+        this._zusagenSammler = zusagen;
+        this._wartendOrt = wo || 0;
+        try {
+            return frage();
+        } finally {
+            this._zusagenSammler = sammler;
+            this._wartendOrt = ort;
+        }
+    }
+    // Der Schlaf auf den Zusagen `zusagen` (Karte oder Liste): `wer._schlaf` steht, bis JEDE kam — die letzte weckt (`wecke(wer)`)
+    // — oder bis der Stand seines Wunschs wechselt (`stand`, `_wunschStand`; `_schlaeft` fragt ihn). Ohne Zusage schläft keiner
+    // (er fragt wie bisher). → schläft er?
+    _schlafen(wer, zusagen, stand, wecke) {
+        const liste = zusagen instanceof Map ? [...zusagen.keys()] : zusagen || [];
+        if (!liste.length) return false;
+        const s = (wer._schlaf = { offen: liste.length, stand });
+        const kam = () => {
+            if (wer._schlaf !== s || --s.offen > 0) return;
+            wer._schlaf = null;
+            if (wecke) wecke(wer);
+        };
+        for (const z of liste) z.then(kam, kam);
+        return true;
+    }
+    // Schläft `wer` noch auf seinen Zusagen? Ein neuer Stand seines Wunschs (`stand`) weckt ihn: er fragt neu.
+    _schlaeft(wer, stand) {
+        const s = wer && wer._schlaf;
+        if (!s) return false;
+        if (s.stand === stand) return true;
+        wer._schlaf = null;
+        return false;
     }
     // DIE EINE PIPE: die EINE Reply-Mesh → THREE-Konversion (Pflanzen-Gruppen-Bau UND Kreatur-Ofen rufen
     // sie); null bei kaputtem Eintrag. `stage` (optional) = { lod, preset } trägt die Stufen-/SSE-Stempel
@@ -553,11 +595,17 @@ class AnazhRealm_studio_gestalt {
     // neu. Bis hierher ging jeder Takt jeden Wartenden ganz durch (Wunsch-Stufe, Sichthöhe, Gestalt des Orts, Stufen-Klammer,
     // Dock): headless kalt am Kopf 24a0f3ef hielt das 35–65 s lang 19,8 s Haupt-Faden, während die Karten auf ihre Programme
     // warteten — die Karte selbst ist die Arbeit der GPU, das Fragen war Leerlauf.
-    _bereitStand(auge) {
-        const B = this._bereitWert || (this._bereitWert = { v: [], id: 0, ax: NaN, az: NaN });
+    // DER STAND DES WUNSCHS (`wunsch`, w4-b-streu): wer auf seine Zusagen schläft (`_schlafen`), dem bringen sie die Lieferung —
+    // ihn weckt nur, was seine Wunsch-Stufe oder Gestalt verschiebt: der Stand-Stempel ohne Regung und Ankunft
+    // (`_standStempelWunsch`), die Gestalt seines Orts und das Auge. Eine Karte und der Vorlauf tragen ihre eigene Zusage bzw.
+    // wecken ihre Einträge selbst (`_stufenVorlaufWahl`).
+    _bereitStand(auge, wunsch) {
+        const B = wunsch
+            ? this._wunschWert || (this._wunschWert = { v: [], id: 0, ax: NaN, az: NaN })
+            : this._bereitWert || (this._bereitWert = { v: [], id: 0, ax: NaN, az: NaN });
         const v = [
-            this._standStempel(),
-            this._bauRegung | 0,
+            wunsch ? this._standStempelWunsch() : this._standStempel(),
+            wunsch ? 0 : this._bauRegung | 0,
             this._ortSameGen | 0,
             this._forestDartStand(this._forestSeedInt()),
         ];
@@ -640,6 +688,13 @@ class AnazhRealm_studio_gestalt {
         // Altbauten (Befund 30.09.: die Mesh-Zone konvergierte vom Listenanfang her, der Baum vor der Kamera wartete).
         const kand = this._rewarmKand || (this._rewarmKand = []);
         kand.length = 0;
+        // der Stand der Bereitschaft (`_bereitStand`): wer zu ihm nicht gedockt war (oder nicht platz-bereit, `_platzNein`) und
+        // bestellt hat, schläft bis zum nächsten Stand — er zählt weiter als Kandidat (die Stand-Wache des Culls hält ihn wach);
+        // wer seine Zusage nannte, schläft auf ihr (`_schlafen`, w4-b-streu), bis sie kam oder sein Wunsch sich verschob — er
+        // zählt, ohne dass der Scan sein Preset auflöst (`schlaeft`)
+        const stand = this._bereitStand(this._lodAuge());
+        const wunsch = this._bereitStand(this._lodAuge(), true);
+        let schlaeft = 0;
         // Die billigen Filter zuerst (Lehre 25: der Scan läuft je Frame über JEDEN Eintrag): schon foundry-platziert,
         // dann die Distanz, erst dann die Preset-Auflösung (sie baut je Ruf ihre Namens-Tafel) — eingeschwungen fragt
         // der Scan nur noch die Ungeplatzten der Mesh-Zone (gemessen 05.10., echte GPU, Mess-Wiese, 1563 Einträge:
@@ -654,6 +709,10 @@ class AnazhRealm_studio_gestalt {
                 d2 = dx * dx + dz * dz;
                 if (d2 > radiusSq) continue;
             }
+            if (this._schlaeft(entry, wunsch)) {
+                schlaeft++;
+                continue;
+            }
             // Die Eignung liest die BASIS-Art (`_foundryPresetForEntry` — `entry._lodSpecies`), NICHT
             // `entry.type` (das bei Wald-Varianten `grown_..._v` ist, im Preset-Map NICHT steht).
             if (!this._foundryPresetForEntry(entry)) continue;
@@ -661,9 +720,7 @@ class AnazhRealm_studio_gestalt {
             kand.push(entry);
         }
         kand.sort((a, b) => a._rewarmD2 - b._rewarmD2);
-        // der Stand der Bereitschaft (`_bereitStand`): wer zu ihm nicht gedockt war (oder nicht platz-bereit, `_platzNein`) und
-        // bestellt hat, schläft bis zum nächsten Stand — er zählt weiter als Kandidat (die Stand-Wache des Culls hält ihn wach)
-        const stand = this._bereitStand(this._lodAuge());
+        const Z = this._rewarmZusagen || (this._rewarmZusagen = new Map());
         for (const entry of kand) {
             if (placeBudget <= 0 && bakeBudget <= 0) break;
             if (entry._dockNein === stand || entry._platzNein === stand) continue;
@@ -685,12 +742,16 @@ class AnazhRealm_studio_gestalt {
                 // NICHT gedockt → EINE Studio-Bake-Anfrage anstoßen (der Eintrag bleibt kalt, bis das
                 // Asset andockt → dann platziert ihn der nächste Rewarm billig). Streng limitiert.
                 if (bakeBudget <= 0) continue;
-                this._rebuildArchitectureMesh(entry); // löst _foundryFlattenFor → _foundryRequest aus
+                // löst _foundryFlattenFor → _foundryRequest aus; die Zusagen seines Baus sind sein Schlaf
+                this._zusagenVon(entry.position, () => this._rebuildArchitectureMesh(entry), Z);
                 bakeBudget--;
-                if (!entry.instanced && !entry.mesh) entry._dockNein = stand; // bestellt: er schläft bis zum Stand
+                if (!entry.instanced && !entry.mesh) {
+                    entry._dockNein = stand; // bestellt: er schläft bis zum Stand
+                    this._schlafen(entry, Z, wunsch, (e) => this._cullWecken(e)); // seine Zusage holt ihn in die Wache
+                }
             } else entry._dockNein = stand; // classic + nicht ready: der klassische Look bleibt sichtbar, bis das Asset andockt (kein Pop)
         }
-        return kand.length;
+        return kand.length + schlaeft;
     }
     // `_foundryFlattenFor` (unten): Eintrag → Instancing-Leaves aus der echten Vorlagen-Geometrie, je
     // Art:Gestalt:LOD:Teil ein leafKey im BESTEHENDEN HISM; null solange das Asset lädt (Tick baut nach).
@@ -709,7 +770,7 @@ class AnazhRealm_studio_gestalt {
         if (!V) {
             // Buch kalt: die streuende Region wartet auf es (ein offenes Buch ohne Gestalten-Zeile ist keine Zusage)
             const f = this._foundry;
-            if (f && !(f.ready && f.recipes)) this._streuWartetAuf(f.buchDa);
+            if (f && !(f.ready && f.recipes)) this._wartetAuf(f.buchDa);
             return null;
         }
         const h = Math.imul(seed >>> 0 || 0, 2654435761) >>> 0; // Knuth-Mix
@@ -1319,9 +1380,26 @@ AnazhRealm._studioGestaltenKern = function (preset) {
     if (!(Number.isInteger(V) && V >= 1)) return AnazhRealm._kernPflichtBruch("terrain:lod.budget.gestalten['*']");
     return AnazhRealm._solitaerVon(preset, V) || V;
 };
+// WÄHLT DER ORT DIE GESTALT DIESER ART? (K20, w4-b-streu) — nur, wo die Art einen Solitär trägt (die Gestalt T = V+1 des
+// Kerns, `_foundryGestaltSame`); jede andere behält ihren Samen. Die EINE Frage vor dem Gedächtnis des Orts (`_ortGestaltSame`)
+// und vor dem Eimer: gemerkt je Art an der Gestalten-Tafel des Kerns. Bis w4-b-streu baute jede Frage nach Fels, Blume und
+// Strauch ihren Schlüssel aus fünf Zahlen und fragte das Gedächtnis, um den Samen zurückzubekommen.
+AnazhRealm._ortWaehlt = function (preset) {
+    const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
+    const L = tc && tc.PORTAL_RENDER_CONFIG ? tc.PORTAL_RENDER_CONFIG.lod : null;
+    const G = L && L.budget ? L.budget.gestalten : null;
+    let M = AnazhRealm._ortWaehltMerk;
+    if (!M || M.G !== G) M = AnazhRealm._ortWaehltMerk = { G, je: new Map() };
+    let ja = M.je.get(preset);
+    if (ja === undefined) {
+        const T = AnazhRealm._studioGestaltenKern(preset);
+        M.je.set(preset, (ja = T >= 2 && AnazhRealm._solitaerVon(preset, T - 1) === T));
+    }
+    return ja;
+};
 // Die Gestalt des Solitärs einer Art mit V Bestand-Gestalten (K20, phyto-core `solitaerGestalt`: V+1 für eine Baum-Art mit
 // V ≥ FREISTAND.ab), 0 = die Art trägt keinen. Leser: `_foundryGestalten`, `_studioGestaltenKern`, `_foundryGestaltOv`,
-// `_foundryGestaltSame`.
+// `_ortWaehlt`.
 AnazhRealm._solitaerVon = function (preset, V) {
     const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
     const rec = tc && tc.PHYTO_PRESETS ? tc.PHYTO_PRESETS[preset] : null;

@@ -33,7 +33,7 @@ hauptLauf(async () => {
             await window.__weltDa(() => !(f && !f.ready));
             res.behavior.foundryReady = !!(f && f.ready);
             // Einen Baum-Bauplan finden (die grammatik-gewachsenen Built-ins baum_*).
-            const bps = r.state.blueprints || {};
+            const bps = st.blueprints || {};
             let treeBp = Object.keys(bps).find((k) => /^baum_/.test(k) && r._foundryPresetForEntry({ type: k }));
             res.behavior.treeBp = treeBp || null;
             if (treeBp) {
@@ -84,7 +84,7 @@ hauptLauf(async () => {
                 });
                 res.probes.wsRoutesImpostor = ruft(r, "_foundryBuildImpostorFlat", treeBp, 2);
                 res.probes.wsTreeGated = ruft(r, "_foundryPresetIsTree", treeBp, 2) && !!felsBp && !ruft(r, "_foundryBuildImpostorFlat", felsBp, 2);
-                res.probes.wsInstanced = ruft(r.constructor, "_instanzMesh", treeBp, 2);
+                res.probes.wsInstanced = ruft(AnazhRealm, "_instanzMesh", treeBp, 2);
                 res.probes.wsLod2 = !ruft(r, "_foundryBuildImpostorFlat", treeBp, 1);
             }
         } catch (e) {

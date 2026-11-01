@@ -2477,11 +2477,13 @@ class AnazhRealm_kreatur_leben {
     // DER NAH-KREIS (das Feld des Stufen-Gesetzes, `_feldGrenzen`): steht der Leib dort, wo das Bild ihn als Körper zeichnet? Mit
     // Bild sagt es der Ziegel (`_kzNah`, mit seiner Hysterese), ohne Bild und für die Sicht-Kopie (kein Ziegel) dasselbe Gesetz
     // am Auge der Stufen, mit der Hysterese des Satzes — die EINE Frage des Tier-Satzes (`_tickTierSatz`) und des Risses.
-    _kreaturNah(cr) {
+    _kreaturNah(cr, auge) {
         const u = cr.userData;
         if (!(this.state.renderer && this.state.renderer._isHeadlessNull) && !u._kopie) return u._kzNah === true;
-        const a = this._lodAuge() || this.state.playerMesh.position;
-        return !this._feldTraegt(!!u._menge, Math.hypot(cr.position.x - a.x, cr.position.z - a.z), !!u._satz);
+        const a = auge || this._lodAuge() || this.state.playerMesh.position;
+        const dx = cr.position.x - a.x,
+            dz = cr.position.z - a.z;
+        return !this._feldTraegt(!!u._menge, Math.sqrt(dx * dx + dz * dz), !!u._satz);
     }
 
     // ═══ DER TIER-SATZ (profiband.K1 „Sturm mit 50 Tieren“: jedes Tier im Nah-Kreis war ein Leib — L0 8, L1 5 Draws je Tier
@@ -2512,17 +2514,15 @@ class AnazhRealm_kreatur_leben {
         for (const cr of menge) {
             const u = cr && cr.userData;
             if (!u || !u._gelenk) continue;
-            if (!this._kreaturNah(cr) || u._ruht === true) {
+            if (!this._kreaturNah(cr, auge) || u._ruht === true) {
                 if (u._satz) this._tierSatzAus(cr);
                 continue;
             }
             const h = u._gelenk.hyst;
             // die Hysterese der Nah-Wahl: wer lebt, zählt um 1 / (1 − h)² bedeutender — ein Paar an gleichem Abstand tauscht nicht je Takt
-            const b = this._bedeutung(
-                cr.scale.x || 1,
-                Math.hypot(cr.position.x - auge.x, cr.position.z - auge.z),
-                u._laufV
-            );
+            const dx = cr.position.x - auge.x,
+                dz = cr.position.z - auge.z;
+            const b = this._bedeutung(cr.scale.x || 1, Math.sqrt(dx * dx + dz * dz), u._laufV);
             u._satzB = u._satz ? b : b / ((1 - h) * (1 - h));
             kand.push(cr);
         }
@@ -2874,7 +2874,7 @@ class AnazhRealm_kreatur_leben {
     // Ein Gefallener (state.leichname, _kreaturFaellt) ohne KI, Gang und Stimme: TOD_LAGE.vorlaufSec nach dem Tod (Kreatur-Uhr;
     // die Tafel rechnete der Leerlauf oder `_todLageFrist`, halten.K5) kippt er (~83° smoothstep über kippDauerSec) auf ihre Flanke,
     // liegt bis zur Frist, sinkt, DANN removeCreature; je Takt seine Sicht (_leibSicht). Rein optisch, der Strom trägt die Lage (q).
-    _tickLeichname(delta) {
+    _tickLeichname(delta, auge, zeilen) {
         const L = this.state.leichname;
         for (let i = L.length - 1; i >= 0; i--) {
             const creature = L[i];
@@ -2913,7 +2913,7 @@ class AnazhRealm_kreatur_leben {
                 this.removeCreature(creature); // rückwärts: der Splice überspringt keinen
                 continue;
             }
-            this._leibSicht(creature, this.isInFrustum(creature));
+            this._leibSicht(creature, this.isInFrustum(creature), auge, zeilen);
         }
     }
     // DIE VÖGEL (Klang K1, tetrapoda VOGEL_GESETZ): jeder Vogel-Ruf hat einen Leib — gesehen = gehört. Je Takt die Reviere im

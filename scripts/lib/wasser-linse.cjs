@@ -142,7 +142,7 @@ function wasserFluss() {
 
 // ── Q6-Körper ──
 async function wasserKoerper(o = {}) {
-    const A = r.constructor;
+    const A = AnazhRealm;
     const DT = A.FIXED_DT;
     const ziel = o.see || (await window.__wasserOrte({})).see.mitte;
     const seeAm = window.__wasserSeeAm(r, ziel);
@@ -814,7 +814,7 @@ async function wasserStrom(ort, hoehe) {
 // Hiebs (die Säule r 3,5 und eine Zelle über ihre Wand, dort trägt die Ecke ihren Abstand, gelaende-core `editForm`; zwei
 // Zellen des Sheets, eine Zelle seines Netzes: r + 4 Zellen; Fälle, Büschel je Takt); der Takt berichtet, nie geurteilt.
 async function wasserGraben(o = {}) {
-    const K = r.constructor.NAH_WIESE.kachel;
+    const K = AnazhRealm.NAH_WIESE.kachel;
     const HIEB = 3.5; // das Maß des Grabe-Hiebs
     const AUSSEN = HIEB + 4 * r._voxelChunkConfig(0).step;
     const f2 = wasserRund(2);
@@ -1474,7 +1474,7 @@ async function wasserRegen(o = {}) {
 // Spieler schwimmt dort nicht (`_stepFixedSim`), die Kamera taucht nicht (`_applyDayNightToScene`), das Tier schwimmt nicht
 // (`updateCreatures`, sein Grund der Höhlen-Boden — wie ihn `_koerperBodenUnter` liefert).
 async function wasserHoehle(o = {}) {
-    const A = r.constructor;
+    const A = AnazhRealm;
     const cfg = r._voxelChunkConfig(0);
     const { dim, dimY, step, span, floorDrop } = cfg;
     const oy = (st.terrainBaseHeight || 0) - floorDrop;
@@ -2023,7 +2023,7 @@ function wasserSichtNetz() {
 // Unsichtbar/Phantom je PUNKT (`quer`: Breite des Bilds gegen Breite des Körpers), summiert über alle Quell-Läufe.
 async function wasserQuelle(o = {}) {
     if (!st.hydrosphere || !st.hydrosphere.ready) return { fehler: "keine Hydrosphäre" };
-    const HC = r.constructor.HYDROSPHERE;
+    const HC = AnazhRealm.HYDROSPHERE;
     const R = wasserRund(2);
     // die Hülle des Gesetzes (fehlt eine Größe im Stand, gilt die des Gesetzes von heute)
     const F = Number.isFinite(HC.spiegelFreibord) ? HC.spiegelFreibord : 0.25;
@@ -2565,7 +2565,7 @@ function wasserFlora(o = {}) {
 async function wasserBank(o = {}) {
     const h = st.hydrosphere;
     if (!h || !h.ready || !Array.isArray(h.rivers)) return { fehler: "keine Hydrosphäre" };
-    const G = r.constructor.TERRAIN_GEOLOGY;
+    const G = AnazhRealm.TERRAIN_GEOLOGY;
     const R = wasserRund(2);
     const grad = (steile) => (Math.acos(1 - steile) * 180) / Math.PI;
     const felsGrad = grad(G.rockLo),
@@ -2809,7 +2809,7 @@ function wasserLeib() {
 // neu gebaut) tragen in den Scheiben vorher Pflanzen, danach keine. Wer nicht folgt, liest eine eigene Fläche — die Kontrolle
 // (das Gesetz allein) nie, sonst ist die Probe blind.
 async function wasserMutation(o = {}) {
-    const A = r.constructor;
+    const A = AnazhRealm;
     const [RHO, TIEF] = [3, 3];
     const ort = o.ort || (await window.__wasserOrte({})).see.ufer;
     await window.__wasserStrom(ort, 3);
@@ -2974,7 +2974,7 @@ async function wasserLaeufe() {
         else aus.trocken.push([ende, Math.round(x), Math.round(z)]);
     }
     aus.senken = senken.size;
-    for (const h of [r.state.hydrosphere, ...r.state.hydroTiles.values()])
+    for (const h of [st.hydrosphere, ...st.hydroTiles.values()])
         for (const P of (h.rivers || []).map((rv) => rv.points)) for (let i = 1; i < P.length; i++, aus.schritte++) aus.steigt += P[i].S > P[i - 1].S || P[i].y >= P[i - 1].y;
     return aus;
 }

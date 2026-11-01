@@ -33,9 +33,9 @@ async function runOnce(browser, noFoundry) {
         }
     });
     const out = await page.evaluate(() => {
-        const s = r.state;
+        const s = st;
         const o = {};
-        const F = r.constructor.FAR_WATER;
+        const F = AnazhRealm.FAR_WATER;
         const span = r._voxelChunkConfig(0).span;
         const ringR = r._voxelChunkConfig().ringRadius;
         const step = span / 4;

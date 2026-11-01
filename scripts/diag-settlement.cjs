@@ -14,10 +14,11 @@ const {
     wandEnde,
     selbsttestEnde,
     studioKern,
-    ausDatei,
     SELBSTTEST,
     path,
     fs,
+    jsonLesen,
+    jsonSchreiben,
 } = require("./lib/welt-boot.cjs");
 
 const goldenDir = path.join(root, "spec/asset-contract/v6/golden");
@@ -1305,10 +1306,10 @@ hauptLauf(async () => {
                     groesse: plans[key].groesse,
                 };
             }
-            fs.writeFileSync(goldenFile, JSON.stringify(golden, null, 4) + "\n");
+            jsonSchreiben(goldenFile, golden, 4, "\n");
             console.log(`  🧊 Golden GEMINTET (${goldenFile}) — ab jetzt EINGEFROREN.`);
         }
-        const golden = ausDatei(goldenFile, true);
+        const golden = jsonLesen(goldenFile);
         for (const dp of FIXTURES) {
             const key = JSON.stringify(dp);
             check(
@@ -2994,9 +2995,7 @@ hauptLauf(async () => {
                 : { err: "kein Ort" };
         return { outO, gtO };
     };
-    const MESSORT_DORF = JSON.parse(
-        ausDatei("spec/profiband/haushalt.json")
-    ).messorte.find((o) => o.id === "dorf").spieler;
+    const MESSORT_DORF = jsonLesen("spec/profiband/haushalt.json").messorte.find((o) => o.id === "dorf").spieler;
     const O = await messeOrt("akt", null);
     const OA = await messeOrt("auto", MESSORT_DORF);
     const K5 = [];

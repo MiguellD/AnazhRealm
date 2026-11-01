@@ -795,6 +795,7 @@ class AnazhRealm_siedlung_bewohner {
         let frist = null; // die Frist der Listen dieses Takts (`listeMs`), gestellt mit dem ersten Schritt einer Liste
         const auge = this._lodAuge() || p; // das Auge der Stufen: Feld, Nah-Wahl, Stufe und Takt der Leiber messen von ihm
         const arm = Math.hypot(auge.x - p.x, auge.z - p.z);
+        const NF = this._feldGrenzen(true); // die Grenzen des Felds der Menge, EINMAL je Takt (die Epoche, `_feldGrenzen`)
         // DER SPIELER IST EIN LEIB (mensch.K5, „Ausweichen ohne Berührung"): sein Lauf dieses Takts (`_spielerLageAlt`, der
         // Kreatur-Takt rechnet ihn vor diesem) und sein Weg `ausweichS` voraus (`voraus`) — jeder Bewohner weicht ihm wie einem
         // Gehenden mit Vorrang (`_bewohnerAusweichen`), wer steht, macht ihm Platz (`_bewohnerPlatz`); steht er (unter 0,2 m/s,
@@ -951,6 +952,10 @@ class AnazhRealm_siedlung_bewohner {
                 }
                 const bd2 = (b.d2 = (g.position.x - p.x) ** 2 + (g.position.z - p.z) ** 2);
                 const ad2 = (b.dA2 = (g.position.x - auge.x) ** 2 + (g.position.z - auge.z) ** 2);
+                // die Lage, an der dieser Takt die Stufen des Leibs misst (vor seinem Schritt — `dA2`, `_gelenkStufe`)
+                const LA = b.lageAuge || (b.lageAuge = { x: 0, z: 0 });
+                LA.x = g.position.x;
+                LA.z = g.position.z;
                 // DIE TÜR (mensch.K3 Staffel 2): wer hinaus soll (`_bewohnerZiel`), tritt aus ihr, wenn keiner in ihr und vor
                 // ihr steht — bis dahin wartet er drinnen
                 if (
@@ -1031,7 +1036,7 @@ class AnazhRealm_siedlung_bewohner {
                 }
                 // der Glieder-Satz fragt nur, wer seine Seite wechseln kann oder noch keinen Satz trägt — die Knochen eines
                 // stehenden Leibs ruhen, seine Glieder stehen nach dem ersten Schreiben (Lehre 25: der Takt kostet, was ihn betrifft)
-                const N = this._feldGrenzen(true);
+                const N = NF;
                 if (
                     echt &&
                     !b.drinnen &&
@@ -1098,7 +1103,7 @@ class AnazhRealm_siedlung_bewohner {
                 let neu = b.lageNeu === true;
                 let gepost = false;
                 b.lageNeu = false;
-                if (!this._gelenkStufe(g, b.dA2)) {
+                if (!this._gelenkStufe(g, auge, b.lageAuge)) {
                     const geht = !!b.weg;
                     const om = b._gait ? b._gait.omega : 0;
                     const div = this._creatureAnimDiv(Math.sqrt(b.dA2), this._gelenkAb(g), om, delta, geht);
@@ -1120,7 +1125,7 @@ class AnazhRealm_siedlung_bewohner {
             const m = Math.max(spV, st.sprintSpeed || 0, st.speed || 0) * BW.fernS;
             const innen = Math.max(BW.nahM + BW.nahHystM, kDeckel + spV * BW.ausweichS) + m;
             S.aktiv = koepfe.filter(
-                (b) => b.leib !== false && !(b.ruht = this._bewohnerRuhig(b, innen, m + arm, echt))
+                (b) => b.leib !== false && !(b.ruht = this._bewohnerRuhig(b, innen, m + arm, echt, NF))
             );
             for (const b of koepfe) if (b.ruht) S.ruhend.push(b);
             [S.koepfe, S.taktUhr] = [null, S.taktUhr + delta];
@@ -1131,8 +1136,8 @@ class AnazhRealm_siedlung_bewohner {
     // Ankunft), ohne Wende und Gang, lebt nicht als Leib — und ist drinnen oder steht jenseits von `innen` (der Kreis des Lebens
     // und der Raum des Spielers, dazu sein Weg `m` bis zum nächsten Takt des Ruhenden), mit Bild diesseits der Grenze seiner Seite
     // am Auge der Stufen (`_feldGrenzen`: im Satz unter `aus`, im Feld über `ein`, je um `m` — darin der Arm der Kamera, das Auge
-    // kreist um den Spieler) — keine Grenze, die er bis dahin kreuzt.
-    _bewohnerRuhig(b, innen, m, echt) {
+    // kreist um den Spieler) — keine Grenze, die er bis dahin kreuzt. `N` die Grenzen des Felds dieses Takts.
+    _bewohnerRuhig(b, innen, m, echt, N) {
         if (!b.leib || !b.da || b.weg || b.platz || b.hinaus || b.ankunft || b.nah || b.drehen != null || b._gaitW > 0)
             return false;
         if (b.drinnen) return true;
@@ -1140,7 +1145,6 @@ class AnazhRealm_siedlung_bewohner {
         const u = b.leib.userData;
         if (!echt) return true;
         if (!u._kzVersuch) return false;
-        const N = this._feldGrenzen(true);
         const d = Math.sqrt(b.dA2);
         return u._kzNah === true ? d < N.aus - m : u._kzNah === false && d > N.ein + m;
     }

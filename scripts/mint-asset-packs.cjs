@@ -25,7 +25,7 @@
 "use strict";
 
 const PK = require("./lib/pack-kanon.cjs");
-const { hauptLauf, ausDatei, path, fs, stammLib } = require("./lib/welt-boot.cjs");
+const { hauptLauf, path, fs, stammLib, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.PACK_PORT || 4561);
 const OUT_DIR = path.resolve(PK.ROOT, "artifacts", "packs");
@@ -70,7 +70,7 @@ hauptLauf(async () => {
         }
         const idxFile = path.join(OUT_DIR, "index.json");
         if (fs.existsSync(idxFile)) {
-            const idx = ausDatei(idxFile, true);
+            const idx = jsonLesen(idxFile);
             if (idx.stamp && idx.stamp !== stamp) {
                 console.error("❌ --verify: Stempel-Mismatch — die Packs sind STALE (Generator-Quelle editiert).");
                 console.error(`   Pack-Index: ${String(idx.stamp).slice(0, 16)}… · live: ${stamp.slice(0, 16)}…`);
@@ -177,7 +177,7 @@ hauptLauf(async () => {
             }
         }
         if (!args.verify && packs > 0) {
-            fs.writeFileSync(path.join(OUT_DIR, "index.json"), JSON.stringify(index, null, 2) + "\n");
+            jsonSchreiben(path.join(OUT_DIR, "index.json"), index, 2, "\n");
         }
 
         console.log(

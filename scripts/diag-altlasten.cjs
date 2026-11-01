@@ -12,7 +12,7 @@
 // beweist, dass die Linse feuert (kein vakuöses Grün).
 // ============================================================================
 "use strict";
-const { scanWarteWand, ausDatei, SELBSTTEST, path, fs, stammLib } = require("./lib/welt-boot.cjs");
+const { scanWarteWand, ausDatei, SELBSTTEST, path, fs, stammLib, jsonLesen } = require("./lib/welt-boot.cjs");
 
 // Die gefallenen Namen: je Eintrag ein PRÄZISER Token (nie ein generisches Wort — "sprite" träfe THREE.Sprite) und was
 // ihn trägt (`fiel`); die Geschichte jedes Schnitts steht in git (Lehre 15).
@@ -1417,7 +1417,7 @@ function scanLabBuster() {
     // die Shell-Buster standen bei 18.446 während tetrapoda.js/koerperstudio.js
     // sich bewegten (Cache-Lüge-Klasse). EIN Gesetz: alle ?v= == package.json.
     const root = path.join(__dirname, "..");
-    const version = ausDatei(path.join(root, "package.json"), true).version;
+    const version = jsonLesen("package.json").version;
     const errs = [];
     const seiten = [path.join(root, "index.html")];
     for (const w of fs.readdirSync(path.join(root, "worlds"))) {
@@ -1447,7 +1447,7 @@ function scanLabBuster() {
     // von CLAUDE.md ist die Chronik-Spitze — trägt er eine andere Version als
     // package.json, LÜGT die Doku relativ zum Code (die 18.490/18.491-Drift-
     // Klasse). DIESELBE Wand, ein weiterer Träger.
-    const claude = ausDatei(path.join(root, "CLAUDE.md"));
+    const claude = ausDatei("CLAUDE.md");
     const cm = claude.match(/## Stand \(V([0-9.]+)/);
     if (!cm) errs.push("CLAUDE.md Stand-Kopf nicht gefunden (## Stand (V… — die Doku-Wand braucht den Anker)");
     else if (cm[1] !== version)
@@ -3058,7 +3058,7 @@ function ortsName(code, i) {
 // `const X = x, Z = z`, die Blick-Tabelle einer Linse.
 const MESSORT_GEFALLEN = [[-900, -850]]; // die Mess-Wiese bis K55
 function messortPaare() {
-    const h = ausDatei(path.join(__dirname, "..", "spec", "profiband", "haushalt.json"), true);
+    const h = jsonLesen("spec/profiband/haushalt.json");
     return h.messorte
         .filter((o) => !o.anker && !o.bank && Array.isArray(o.spieler))
         .map((o) => o.spieler)
@@ -3363,7 +3363,7 @@ function main() {
         }
         // Die Stufen-Wand muss feuern: buildInstance bildet die Stufe selbst ab, und emitTree
         // verliert die Abbildung (das Labor bekäme wieder ein anderes Rezept als die Welt).
-        const kern = ausDatei(path.join(root, "foundry-core.js"));
+        const kern = ausDatei("foundry-core.js");
         const zweite = scanStufenWand(kern.replace("__lod = lod;", "__lod = lod <= 1 ? 1 : lod;"));
         const ohne = scanStufenWand(
             kern
@@ -3914,7 +3914,7 @@ function main() {
         .concat(scanNormalWand(stammLib.text(root)))
         .concat(scanStoffWand(stammLib.text(root)))
         .concat(toteMarker(markerDateien(root)))
-        .concat(scanStufenWand(ausDatei(path.join(root, "foundry-core.js"))))
+        .concat(scanStufenWand(ausDatei("foundry-core.js")))
         .concat(scanPortWand(gateDateien(root)))
         .concat(scanWarteWand(gateDateien(root).concat(playtestDateien(root))))
         .concat(scanBootWand(gateDateien(root)))

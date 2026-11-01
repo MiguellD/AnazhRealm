@@ -31,11 +31,10 @@
 // Exit: 0 grün · 1 rot.
 // ============================================================================
 "use strict";
-const { ausDatei, SELBSTTEST, path, stammLib, vm } = require("./lib/welt-boot.cjs");
+const { ausDatei, SELBSTTEST, stammLib, vm } = require("./lib/welt-boot.cjs");
 
-const root = path.resolve(__dirname, "..");
-const PHYTO = ausDatei(path.join(root, "phyto-core.js"));
-const KERN = ausDatei(path.join(root, "foundry-core.js"));
+const PHYTO = ausDatei("phyto-core.js");
+const KERN = ausDatei("foundry-core.js");
 
 // Der Karten-Codec aus einer phyto-core-Quelle (echt oder injiziert), in einer eigenen Sandbox geladen.
 function codecAus(phytoSrc) {

@@ -23,11 +23,10 @@
 //              Karte und ein Karten-Name ohne Glied; der Weg: `node scripts/stamm-umzug.cjs --nach-karte`.
 //   Dazu SYNTAX je Datei (V8, wie `node --check`).
 "use strict";
-const { ausDatei, path, fs, stammLib, vm, SELBSTTEST } = require("./lib/welt-boot.cjs");
-/* global process, console, __dirname */
+const { ausDatei, path, fs, stammLib, vm, SELBSTTEST, jsonLesen, ROOT } = require("./lib/welt-boot.cjs");
+/* global process, console */
 const acorn = require("acorn");
 
-const ROOT = path.resolve(__dirname, "..");
 const RATSCHE = "spec/stamm/ratsche.json";
 const UMZUG = "node scripts/stamm-umzug.cjs --nach-karte";
 
@@ -105,7 +104,7 @@ function ladeLeser(knoten, aus) {
 // ── die Ratsche ──────────────────────────────────────────────────────────────────────────────────────────────────
 function pruefe(root, opt = {}) {
     const fehler = [];
-    const R = opt.ratsche || ausDatei(path.join(root, RATSCHE), true);
+    const R = opt.ratsche || jsonLesen(path.join(root, RATSCHE));
     const info = {};
     // R5 der Name ist tot
     if (fs.existsSync(path.join(root, stammLib.ALT)))
@@ -160,8 +159,8 @@ function pruefe(root, opt = {}) {
         }
     }
     // R6 Cache: jeder Stamm-Tag trägt ?v= = package.version
-    const version = ausDatei(path.join(root, "package.json"), true).version;
-    for (const tag of stammLib.tagsVon(ausDatei(path.join(root, "index.html"))))
+    const version = jsonLesen("package.json").version;
+    for (const tag of stammLib.tagsVon(ausDatei("index.html")))
         if (tag.v !== `?v=${version}`)
             fehler.push(`R6 CACHE: ${tag.pfad}${tag.v || " (ohne ?v=)"} statt ?v=${version}`);
     // R2 die Decke
@@ -289,7 +288,7 @@ function finde(root, rx) {
     // die Kerne: benannte Funktionen, Methoden und Funktions-Felder — in ein sofort gerufenes Gehäuse hinein, in keinen Rumpf; dazu
     // die Gesetzbücher neben dem Spiel-Manifest (`worlds/<buch>/*-core.js`, sie docken über die Kern-Zeile an) und je Buch
     // seine Arten (PARAMS_BY_KIND): eine Art in zwei Büchern hat zwei Quellen
-    const kerne = ausDatei(path.join(root, "cores.manifest.json"), true).flatMap((c) => c.scripts);
+    const kerne = jsonLesen("cores.manifest.json").flatMap((c) => c.scripts);
     const daneben = fs.readdirSync(path.join(root, "worlds"), { recursive: true }).map((f) => "worlds/" + f.replace(/\\/g, "/"))
         .filter((f) => /^worlds\/[^/]+\/[^/]+-core\.js$/.test(f));
     for (const k of [...new Set(kerne), ...daneben]) {
@@ -476,7 +475,7 @@ if (argv.includes("--check")) {
         if (fehler.length > 60) console.error(`  … und ${fehler.length - 60} weitere`);
         process.exit(1);
     }
-    const R = ausDatei(path.join(ROOT, RATSCHE), true);
+    const R = jsonLesen(path.join(ROOT, RATSCHE));
     const teile = lies(ROOT);
     console.log(
         `Atlas-Ratsche OK — ${teile.length} Dateien (größte ${Math.max(...teile.map((t) => t.zeilen))} ≤ ${R.decke_zeilen} Z.), ` +

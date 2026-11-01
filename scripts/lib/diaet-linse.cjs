@@ -6,7 +6,7 @@
 
 // DER ZÄHLER (die Werkbank-Linse und gate:kamera-treue STAND).
 function diaetZaehler() {
-    const A = r.constructor;
+    const A = AnazhRealm;
     const rend = st.renderer;
     const be = rend.backend;
     const nf = rend._nodes.nodeFrame;

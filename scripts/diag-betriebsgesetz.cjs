@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 "use strict";
-const { wandEnde, argOpt, ausDatei, path, fs } = require("./lib/welt-boot.cjs");
+const { wandEnde, argOpt, ausDatei, path, fs, jsonLesen, ROOT: root } = require("./lib/welt-boot.cjs");
 // gate:betriebsgesetz — die Maschine zum BETRIEBSGESETZ (CLAUDE.md).
 // Der Agenten-Betriebsmodus (früh „fertig" melden · Scope still verkleinern · OFFEN
 // umbenennen · nächste Welle erfinden) fällt nicht durch Vorsatz, sondern durch WÄNDE:
 //   1) SIEGEL-WORT-WAND: solange docs/PFLICHT-OFFEN.md Einträge trägt, ist ein
 //      HEAD-Commit mit fertig/RUND/vollendet/vollzogen/Schluss/SCOPE ZU rot.
-//   2) FROZEN-LISTEN-WAND: max 5 Einträge (A–E), wohlgeformt — Scope wächst nie still;
+//   2) FROZEN-LISTEN-WAND: max 5 Einträge (je ein Buchstabe; F seit 31.10., der freie Platz von D), wohlgeformt — Scope wächst nie still;
 //      dazu die LOGBUCH-WAND (kein „Stand-Stempel:", max 40 Zeilen).
 //   3) STAND-WAND: der CLAUDE.md-Stand bleibt ≤ 40 Zeilen (Chronik = git log, Lehre 15).
 //   4) ABSENZ-WAND: BETRIEBSGESETZ in CLAUDE.md + Pflicht-Output in champion.md — ein stilles Streichen ist rot.
@@ -14,14 +14,13 @@ const { wandEnde, argOpt, ausDatei, path, fs } = require("./lib/welt-boot.cjs");
 //   8) STRIPPER-WAND: EIN Kommentar-Stripper (scripts/lib/stamm.cjs), EIN __codeOf (scripts/lib/welt-boot.cjs).
 // Selbsttest feuert (Lehre 1: die Linse beweist sich selbst, nie Wachsamkeit).
 
-const root = path.join(__dirname, "..");
 
 // RUND bewusst case-sensitiv („rund 60 Assets" bleibt legal); die übrigen Siegel sind als ganze Wörter verboten.
 const SIEGEL_CI = /\b(fertig|vollendet|vollzogen|schluss)\b|scope\s+zu/i;
 const SIEGEL_CS = /\bRUND\b/;
 
 function eintraege(text) {
-    return text.split("\n").filter((z) => /^[A-E]\)\s+\S/.test(z));
+    return text.split("\n").filter((z) => /^[A-Z]\)\s+\S/.test(z));
 }
 
 // 2b) LOGBUCH-WAND: die Frozen-Liste ist eine LISTE, kein Logbuch (Chronik = git log, Lehre 15).
@@ -354,7 +353,7 @@ function main() {
     let dokuZeile = "nicht gelesen";
     try {
         const gates = new Set(
-            Object.keys(ausDatei(path.join(root, "package.json"), true).scripts)
+            Object.keys(jsonLesen("package.json").scripts)
         );
         // die Welt ist der Index (wie in der CI), nie der lokale Rest unverfolgter Dateien
         const dateien = [...new Set(git(["ls-files", "--cached"]).split("\n"))].filter(
@@ -434,7 +433,7 @@ function main() {
     }
 
     // 3) STAND-WAND + 4) ABSENZ-WAND
-    const claude = ausDatei(path.join(root, "CLAUDE.md"));
+    const claude = ausDatei("CLAUDE.md");
     const sz = standZeilen(claude);
     if (sz < 0) errs.push("CLAUDE.md Stand-Kopf nicht gefunden (## Stand (V…)");
     else if (sz > 40)
@@ -442,7 +441,7 @@ function main() {
     if (!claude.includes("## DAS BETRIEBSGESETZ"))
         errs.push("CLAUDE.md trägt kein BETRIEBSGESETZ mehr — stilles Streichen der Gesetze");
     if (!claude.includes("PFLICHT-OFFEN.md")) errs.push("CLAUDE.md referenziert docs/PFLICHT-OFFEN.md nicht mehr");
-    const champ = ausDatei(path.join(root, ".claude", "agents", "champion.md"));
+    const champ = ausDatei(".claude/agents/champion.md");
     if (!champ.includes("BETRIEBSGESETZ"))
         errs.push("champion.md trägt das BETRIEBSGESETZ nicht mehr — der Arbeiter läuft ungebunden");
     if (!champ.includes("Pflicht-OFFEN Rest"))

@@ -210,15 +210,24 @@ class AnazhRealm_siedlung_bauten {
         // „Karte" auf und blendete nach Distanz aus — ohne L1-Partner, der Baum stand halb ausgedithert.
         // DIE GRENZEN DES GESETZBUCHS (K43): nennt die Art ihre Stufen-Grenzen (B2c `ab`), wählt der Takt nach ihnen — in
         // der Ankunft aus der Ferne (`_ankunftsFerne`, B2) die Grobstufe
+        // DIE FERNE IST KEIN ZUSTAND (w4-genesis-tore): die Hysterese hält eine Stufe gegen das Zittern eines BEWEGTEN Auges —
+        // sie gilt nur für eine Stufe, die die Wahl am echten Abstand bestätigt hat (`_lodAmAbstand`). Was die Ankunft setzte
+        // (der Kalt-Schätzer `_foundryLodForEntry` und jede Wahl, solange die Ferne > 1 misst), wählt danach am Abstand ohne
+        // Zustand, bis die Stufe steht. Bis hier hielt das Band der Grobstufe (12 m ± 10 %) jedes Ring-Tor in 11 m auf der L2
+        // der Ankunft — für immer (Genesis Ego: 7 von 7 Studio-Toren L2, 20 px Umriss-Fehler; die Wahl am Abstand ist die L1).
+        // Dieselbe Klasse am Baum: was im Band seiner Schwelle stand, hielt die Karte der Ankunft.
+        const ferne = this._ankunftsFerne();
+        if (ferne > 1) entry._lodAmAbstand = false;
+        const zustand = entry._lodAmAbstand === true ? entry._lodLevel : undefined;
         const grenzen = treeLike ? null : this._archStufenGrenzen(entry);
         let newLOD = grenzen
             ? AnazhRealm._stufeNachGrenzen(
-                  dist * this._ankunftsFerne(),
-                  entry._lodLevel,
+                  dist * ferne,
+                  zustand,
                   grenzen,
                   Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1
               )
-            : this._chooseLODForDistance(dist, entry._bruecke ? undefined : entry._lodLevel, visH);
+            : this._chooseLODForDistance(dist, entry._bruecke ? undefined : zustand, visH);
         // Occlusion-Demotion: ein ferner 3D-Baum (LOD0/1) hinter dichter Kronen-Masse fällt auf LOD2.
         // `entry._occluded` trägt die Hysterese — transient, NICHT im Snapshot.
         if (occlOn && newLOD < 2 && dist > AnazhRealm.OCCLUSION.occDist) {
@@ -248,6 +257,8 @@ class AnazhRealm_siedlung_bauten {
         }
         // DER STUFEN-VORLAUF (`_stufenVorlaufWahl`): unter dem Ladeschirm trägt der Baum seiner Art die L1
         if (this._imStufenVorlauf(entry)) newLOD = 1;
+        // steht der Eintrag auf der Wahl am Abstand (ohne Ferne), ist seine Stufe ab jetzt ein Zustand der Hysterese
+        if (ferne <= 1 && newLOD === entry._lodLevel) entry._lodAmAbstand = true;
         if (newLOD === entry._lodLevel) {
             // Die Distanz-Wahl ist selbst die Karte: die Brücke ist keine mehr, die Karte blendet wie jede Fernstufe.
             if (entry._bruecke) {
@@ -1594,50 +1605,52 @@ class AnazhRealm_siedlung_bauten {
         return s;
     }
 
-    // Die Pool-Geometrie (neu oder gewachsen): die Vertex-Attribute bis zum Hochwasser, der Index bis zum Hochwasser der
-    // Abschnitte kopiert, die Views aller Bereiche neu gezeigt, die alte Geometrie geht in die verzögerte Entsorgung. Ein
-    // Wachsen mitten im Frame (ein Schatten-Pass, dessen Abschnitt keinen Platz findet) ist richtig: der Mesh trägt ab
-    // sofort die neue Geometrie, die den Abschnitt des Hauptbilds an seiner Stelle trägt (`_chunkSatzUmlegen` lässt ihn
-    // liegen); was der Haupt-Pass schon aufzeichnete, liest die alte, die bis zur Abgabe lebt.
+    // Die Pool-Geometrie (neu, gewachsen oder geschrumpft): EINE Geometrie je Satz für sein ganzes Leben — es wird nur neu
+    // angelegt, was seine Kapazität ändert (Gebot 7, Kosten an der Änderung): die Vertex-Attribute bis zum Hochwasser
+    // kopiert, wenn `vKap` wechselt (die Views aller Bereiche zeigen neu), der Index bis zum Hochwasser der Abschnitte, wenn
+    // `iKap` wechselt. Bis stadt-takt2 legte jedes Wachsen eine frische Geometrie mit ALLEN Puffern an: ein Index, der um
+    // ein Viertel wuchs (`_chunkSatzUmlegen`), kopierte und lud jede Vertex-Spalte des Satzes mit (der Boden 48 B je Vertex,
+    // 11 MiB bei Start-Kapazität), ein Vertex-Wachsen (`_chunkSatzVAlloc`) den ganzen Index (5 MiB) — headless an stadt-voll
+    // gehend 17,5 ms je Spitzen-Takt in `_chunkSatzGeometrie` und 15,7 ms im Hochladen der neuen Puffer. Das Tauschen am
+    // SELBEN Objekt sehen die Render-Objekte beim nächsten Zeichnen (r184 liest den Index je Draw, `needsGeometryUpdate`
+    // die Attribut-Ids; der Geometrie-Wächter der Diät beide). Ein Wachsen mitten im Frame (ein Schatten-Pass, dessen
+    // Abschnitt keinen Platz findet) ist richtig: der Index trägt den Abschnitt des Hauptbilds an seiner Stelle
+    // (`_chunkSatzUmlegen` lässt ihn liegen); was der Haupt-Pass schon aufzeichnete, liest den alten Puffer — er verlässt die
+    // GPU über den Kehraus (`_gpuKehraus`: kein Graph trägt ihn, kein Frame zeichnet ihn mehr), nie vor der Abgabe.
     _chunkSatzGeometrie(s, vKap, iKap) {
-        const alt = s.geom;
+        const g = s.geom || new THREE.BufferGeometry();
+        const neu = !s.geom;
         const waechst = vKap > s.vKap || iKap > s.iKap; // `wachse` zählt das Wachsen, nie das Schrumpfen (`_chunkSatzVerdichten`)
-        const g = new THREE.BufferGeometry();
-        for (const { name, form, gis } of s.attr) {
-            const arr =
-                form === "snorm8"
-                    ? new Int8Array(vKap * 4)
-                    : form === "half"
-                      ? new globalThis.Float16Array(vKap * 4)
-                      : new Float32Array(vKap * gis);
-            if (alt) arr.set(alt.attributes[name].array.subarray(0, s.vEnde * gis));
-            g.setAttribute(name, new THREE.BufferAttribute(arr, gis, form === "snorm8"));
+        if (neu || vKap !== s.vKap) {
+            for (const { name, form, gis } of s.attr) {
+                const arr =
+                    form === "snorm8"
+                        ? new Int8Array(vKap * 4)
+                        : form === "half"
+                          ? new globalThis.Float16Array(vKap * 4)
+                          : new Float32Array(vKap * gis);
+                const alt = g.attributes[name];
+                if (alt) arr.set(alt.array.subarray(0, Math.min(s.vEnde, vKap) * gis));
+                g.setAttribute(name, new THREE.BufferAttribute(arr, gis, form === "snorm8"));
+            }
+            s.vKap = vKap;
+            for (const b of s.bloecke.values()) this._chunkSatzViews(s, b);
         }
-        const idx = new Uint32Array(iKap);
-        const iN = alt ? Math.min(s.iEnde, alt.index.array.length, iKap) : 0;
-        if (iN > 0) idx.set(alt.index.array.subarray(0, iN));
-        g.setIndex(new THREE.BufferAttribute(idx, 1));
-        if (alt) g.setDrawRange(alt.drawRange.start, alt.drawRange.count);
-        else g.setDrawRange(0, 0);
-        // frustumCulled=false: eine ehrliche „überall"-Kugel statt eines Laufs über die ganze Kapazität. Ihre Mitte liest
-        // r184 nur als Sortier-Tiefe — die Reihe trägt `_zeichenRang` (T3; die Inhalts-Mitte gemessen: Genesis Ego +4,4 ms)
-        g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e9);
-        s.geom = g;
-        s.vKap = vKap;
-        s.iKap = iKap;
-        for (const b of s.bloecke.values()) this._chunkSatzViews(s, b);
-        // Ein Wachsen tauscht die Geometrie am SELBEN Mesh: seine Render-Objekte sehen den Tausch beim nächsten Zeichnen
-        // (r184 `needsGeometryUpdate` → `setGeometry`). Die Falle des Tauschs — r184 hängt den Entsorgungs-Hörer einer
-        // Geometrie an ihr ERSTES Render-Objekt und liest dessen Attribute erst beim Entsorgen, nach dem Tausch die der neuen
-        // (Welle 6, echte GPU: die Normale des werfenden Bau-Satzes ohne Puffer, „Vertex buffer slot 5 … was not set") —
-        // fällt an der Wurzel, für jede Geometrie: `_renderObjektRegister` nimmt den Hörer heraus, die alten Puffer verlassen
-        // die GPU über den Kehraus (`_gpuKehraus`). Ein frischer Mesh je Wachsen ließe seine alten Render-Objekte am geteilten
-        // Stoff hängen (sein dispose-Hörer hält sie).
-        if (s.mesh) s.mesh.geometry = g;
-        if (alt) {
-            if (waechst) s.wachse++;
-            this._queueGeometryDispose(alt);
+        if (neu || iKap !== s.iKap) {
+            const idx = new Uint32Array(iKap);
+            const alt = g.index;
+            const iN = alt ? Math.min(s.iEnde, alt.array.length, iKap) : 0;
+            if (iN > 0) idx.set(alt.array.subarray(0, iN));
+            g.setIndex(new THREE.BufferAttribute(idx, 1));
+            s.iKap = iKap;
         }
+        if (neu) {
+            g.setDrawRange(0, 0);
+            // frustumCulled=false: eine ehrliche „überall"-Kugel statt eines Laufs über die ganze Kapazität. Ihre Mitte liest
+            // r184 nur als Sortier-Tiefe — die Reihe trägt `_zeichenRang` (T3; die Inhalts-Mitte gemessen: Genesis Ego +4,4 ms)
+            g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e9);
+            s.geom = g;
+        } else if (waechst) s.wachse++;
     }
 
     // DER SATZ FOLGT SEINEM INHALT (W7): die Kapazität eines Satzes folgte seiner Geschichte — er wuchs (×1,5) und schrumpfte
@@ -1651,10 +1664,10 @@ class AnazhRealm_siedlung_bauten {
     // nie, solange er füllt: wächst sein Inhalt um mehr als `stetig` über den Stand zu Beginn der Frist (der Ring im Boot,
     // ein Dorf, das einströmt), beginnt die Frist neu. Dann ziehen die Bereiche dicht nach vorn (jeder Index-Lauf um die
     // Verschiebung seines Bereichs, Zellen und Hüllen bleiben), die Abschnitte fallen und jeder Pass legt seinen im nächsten
-    // Frame neu, die Geometrie tauscht am SELBEN Mesh, die Views der Chunks zeigen auf die neuen Arrays (jeder CPU-Leser
-    // bleibt byte-gleich). Ein leerer Satz ist der Fall „Inhalt 0". Die alten Puffer verlassen die GPU hier, vor dem Zeichnen
-    // des Frames (`_loopRender`): ein Render-Objekt, das die alte Geometrie las, tauscht beim nächsten Zeichnen, und der
-    // Kehraus hielte die Puffer eines unsichtbaren Satzes für gezeichnet (W6: Bau-Sätze 38,3 → 31,4 statt 45,2 MB).
+    // Frame neu, die Geometrie tauscht die Puffer, deren Kapazität schrumpft, die Views der Chunks zeigen auf die neuen Arrays
+    // (jeder CPU-Leser bleibt byte-gleich). Ein leerer Satz ist der Fall „Inhalt 0". Die getauschten Puffer verlassen die GPU
+    // hier, vor dem Zeichnen des Frames (`_loopRender`): ein Render-Objekt, das sie las, tauscht beim nächsten Zeichnen, und
+    // der Kehraus hielte die Puffer eines unsichtbaren Satzes für gezeichnet (W6: Bau-Sätze 38,3 → 31,4 statt 45,2 MB).
     _chunkSatzVerdichten(s) {
         if (s.reserviert > 0) return false; // ein Bereich in Raten (`_bauSatzRate`) hält seine Lage, bis er eintritt
         const V = AnazhRealm.CHUNK_SATZ_VERDICHTEN;
@@ -1701,16 +1714,18 @@ class AnazhRealm_siedlung_bauten {
         }
         s.abschnitte.clear();
         s.iEnde = 0;
-        const alt = s.geom;
+        // was die Geometrie trug, bevor sie schrumpfte — es verlassen nur die getauschten Puffer die GPU (`_chunkSatzGeometrie`
+        // tauscht nur, was seine Kapazität ändert)
+        const alt = Object.assign({ index: s.geom.index }, s.geom.attributes);
         this._chunkSatzGeometrie(s, vNeu, iNeu);
         s.geom.setDrawRange(0, 0); // der Index ist leer, bis jeder Pass seinen Abschnitt legt
         s.verdichtet = (s.verdichtet || 0) + 1;
-        for (const k in alt.attributes) this._gpuAbschied(alt.attributes[k]);
-        if (alt.index) this._gpuAbschied(alt.index);
+        for (const k in alt)
+            if (alt[k] !== (k === "index" ? s.geom.index : s.geom.attributes[k])) this._gpuAbschied(alt[k]);
         return true;
     }
 
-    // Der EINE Mesh eines Satzes über seiner Pool-Geometrie (ein Wachsen tauscht nur die Geometrie).
+    // Der EINE Mesh eines Satzes über seiner EINEN Pool-Geometrie (ein Wachsen tauscht nur deren wachsende Puffer).
     _chunkSatzMesh(s) {
         const spec = s.spec;
         const mesh = new THREE.Mesh(s.geom, spec.mat);
@@ -2665,6 +2680,57 @@ class AnazhRealm_siedlung_bauten {
             if (d > schwelle) st = g.stufe;
         }
         return st;
+    }
+    // DIE GEMERKTE WAHL (Lehre 25: der Takt kostet, was ihn betrifft) — die EINE Wahl (`_stufeNachGrenzen`) mit dem Gedächtnis
+    // `m` ihres Eintrags (`_wahlGedaechtnis`): sie rechnet nur neu, wenn die Grenzen eine neue Epoche tragen (ein anderes `G`:
+    // der Schirm, das Buch, ein Täter), die Größe `s` oder die getragene Stufe `cur` eine andere ist, oder wenn Eintrag und Auge
+    // zusammen weiter wanderten als ihr SPIELRAUM — der Abstand der letzten Wahl zur nächsten Schwelle, die die gewählte Stufe
+    // liest: jeder Abstand darin wählt dieselbe Stufe (die Hysterese hält sie als Fixpunkt), der Weg zählt je Achse
+    // (|Δx| + |Δy| + |Δz| ≥ seine Länge) — die Wahl hält nie, wo das Gesetz anders wählte. Steht das Auge und rührt sich kein
+    // Eintrag, rechnet sie nichts. `wo` der Eintrag, `auge` das Auge (je x, z; `raum`: der Abstand im Raum, mit y).
+    static _stufeGemerkt(m, cur, G, s, wo, auge, raum = false) {
+        const x = wo.x,
+            z = wo.z,
+            ax = auge.x,
+            az = auge.z,
+            y = raum ? wo.y : 0,
+            ay = raum ? auge.y : 0;
+        if (
+            m.G === G &&
+            m.s === s &&
+            m.st === cur &&
+            Math.abs(x - m.x) +
+                Math.abs(y - m.y) +
+                Math.abs(z - m.z) +
+                Math.abs(ax - m.ax) +
+                Math.abs(ay - m.ay) +
+                Math.abs(az - m.az) <
+                m.spiel
+        )
+            return cur;
+        const d = Math.sqrt((x - ax) * (x - ax) + (y - ay) * (y - ay) + (z - az) * (z - az));
+        const st = AnazhRealm._stufeNachGrenzen(d, cur, G, s);
+        let spiel = Infinity;
+        for (const g of G.grenzen) {
+            const ab = g.ab * s;
+            const h = g.h > 0 ? g.h : G.h;
+            spiel = Math.min(spiel, Math.abs(d - (st >= g.stufe ? ab * (1 - h) : ab * (1 + h))));
+        }
+        m.G = G;
+        m.s = s;
+        m.st = st;
+        m.x = x;
+        m.y = y;
+        m.z = z;
+        m.ax = ax;
+        m.ay = ay;
+        m.az = az;
+        m.spiel = spiel;
+        return st;
+    }
+    // Das Gedächtnis EINER gemerkten Wahl (`_stufeGemerkt`) — leer: die erste Frage wählt.
+    static _wahlGedaechtnis() {
+        return { G: null, s: 0, st: NaN, x: 0, y: 0, z: 0, ax: 0, ay: 0, az: 0, spiel: -1 };
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_siedlung_bauten]);

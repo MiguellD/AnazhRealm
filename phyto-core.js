@@ -2124,6 +2124,19 @@
         const s = A.sin(e);
         return A.add(A.mul(hH, A.sin(A.add(e, A.k(Math.PI / 2)))), A.mul(hW, A.max(s, A.mul(s, A.k(-1)))));
     }
+    // DIE TIEFE DER KARTE (w4-laub-karte): je Texel, wie weit die gezeichnete Fläche der Gestalt vor (+) oder hinter (−) der
+    // Ebene durch die Mitte des Rahmens quer zum Blick ihrer Ansicht liegt — w in Metern der Vorlage, gespeichert als
+    // t = ½ + w / (2·(hW + hH)) ∈ [0, 1] (kein Punkt des Rahmen-Zylinders liegt weiter als hW + hH von seiner Mitte). Die Bühne
+    // schreibt t aus ihrer Kamera (`_karteBuehne`), die Karte liest w daraus (`karteTiefeVersatz`): als Tiefe ihrer Fläche
+    // (Pixel-Tiefen-Versatz) und als Ort ihres empfangenen Schattens — eine Blick-Parallaxe trägt EINE Schicht nicht (die zwei
+    // Ansichten 45° auseinander suchten einander im Schatten). EINE Formel über einer Algebra (WIND_ZAHLEN: Linse und CPU, die
+    // TSL-Algebra: Bühne und Stoff).
+    function karteTiefe(A, w, hW, hH) {
+        return A.add(A.k(0.5), A.mul(w, A.pow(A.mul(A.k(2), A.add(hW, hH)), A.k(-1))));
+    }
+    function karteTiefeVersatz(A, t, hW, hH) {
+        return A.mul(A.add(A.mul(t, A.k(2)), A.k(-1)), A.add(hW, hH));
+    }
     // Der radiale Vertex-Scan dazu (max x²+z² über ein xyz-Positions-Array, akkumulierend) —
     // die rotations-invariante Kronen-Spanne; rein, THREE-frei (nimmt attr.array).
     function scanRadialXZ(positions, prevMaxSq) {
@@ -3538,8 +3551,10 @@
     }
 
     // Die Maße EINER Schicht je Format — Host (Array-Textur, Offsets) und Schale (Kodierung) rechnen damit:
-    //   "bc"    Albedo BC1 (8 B je 4×4) mit voller Mip-Kette · Normale BC5 (16 B je 4×4) auf 1/normalTeiler
-    //   "rgba8" Albedo rgba8 Stufe 0 · Normale rg8 Stufe 0 (die GPU zieht die Mips; ohne BC-Feature)
+    //   "bc"    Albedo BC1 (8 B je 4×4) mit voller Mip-Kette · Normale BC5 (16 B je 4×4) auf 1/normalTeiler · die Tiefe je
+    //           Texel (`karteTiefe`) BC4 (8 B je 4×4) im Maß und mit der Kette der Normale
+    //   "rgba8" Albedo rgba8 Stufe 0 · Normale rg8 Stufe 0 (die GPU zieht die Mips; ohne BC-Feature) — die Tiefe reist dort im
+    //           vierten Kanal der Normale (kein eigenes Ziel)
     // `R` (karteRinge): die Schicht trägt die Hebungs-Ringe — ihre Höhe ist die der Bänder, die Mip-Kette endet an der
     // kleinsten Ansicht; ohne R die eine waagrechte Reihe (V Ansichten in voller Zelle).
     function karteMasse(cw, ch, V, nt, fmt, R) {
@@ -3564,6 +3579,7 @@
         };
         const a = ebene(w, h, bc ? karteMipZahl(zb, zh) : 1, bc ? 8 : 4);
         const n = ebene(nw, nh, bc ? karteMipZahl((zb / nt) | 0, (zh / nt) | 0) : 1, bc ? 16 : 2);
+        const t = bc ? ebene(nw, nh, n.stufen.length, 8) : { stufen: [], bytes: 0 };
         // die Sonnen-Sicht (A7; F6 zweifach: der Zenit und der 45°-Kranz): rg8, eine Stufe, in jedem Format
         const lw = Math.max(1, (cw / KARTEN_GESETZ.lichtTeiler) | 0),
             lh = Math.max(1, (h / KARTEN_GESETZ.lichtTeiler) | 0);
@@ -3575,8 +3591,10 @@
             nh: nh,
             a: a.stufen,
             n: n.stufen,
+            t: t.stufen,
             aBytes: a.bytes,
             nBytes: n.bytes,
+            tBytes: t.bytes,
             lw: lw,
             lh: lh,
             lBytes: lw * lh * 2,
@@ -4385,6 +4403,9 @@
             cc: mp && typeof mp.clearcoat === "number" && mp.clearcoat > 0 ? mp.clearcoat : 0,
             ccr: mp && typeof mp.clearcoatRoughness === "number" ? mp.clearcoatRoughness : 0,
             op: mp && typeof mp.opacity === "number" && mp.opacity < 1 ? mp.opacity : 1,
+            // w4-genesis-tore: ein Stoff ohne Licht-Antwort im Labor (MeshBasic) — er leuchtet nur (`leucht`), die Albedo ist
+            // schwarz (die Brücke stempelt ihn, `unbeleuchtet`); jeder andere Stoff bleibt byte-alt
+            ub: !!(mp && mp.unbeleuchtet === true),
         };
     }
     // Der Stoff-Schlüssel — DIE EINE Material-Identität (der Wirt keyt seinen Material-Cache damit).
@@ -4407,6 +4428,10 @@
             // Klarlack und Durchsicht sind Teil der Identität (nur wo das Gesetzbuch sie trägt — sonst byte-alt)
             (R.cc > 0 ? "|cc:" + R.cc.toFixed(2) + "@" + R.ccr.toFixed(2) : "") +
             (R.op < 1 ? "|op:" + R.op.toFixed(2) : "") +
+            // w4-genesis-tore: das Unbeleuchtete und das Stein-Gesetz (Fuge, Kante, Ton aus dem uv) sind Teil der Identität (nur wo
+            // das Gesetzbuch sie trägt — sonst byte-alt)
+            (R.ub ? "|ub" : "") +
+            (mp && typeof mp.stein === "string" ? "|st:" + mp.stein : "") +
             // die Seh-Klasse gehört zur Identität: zwei Stoffe gleicher Regler und verschiedener Funktion (Klaue und
             // Pupille, beide 0,2 matt-schwarz) sind zwei Materialien — sonst trüge die Pupille die Klaue in den Stoff
             (budgetSeh(mp) ? "|v:" + mp.seh : "")
@@ -5318,6 +5343,8 @@
         STUFEN_BILD_PX: STUFEN_BILD_PX, // die Bild-Höhe eines Baums an der Nahkante seiner Stufe (S3; foundry-core: das Gerüst der L1 ohne Krone)
         impostorFrame: impostorFrame,
         karteRingHalbe: karteRingHalbe, // lod.K3 — die halbe Bild-Höhe eines Hebungs-Rings über einer Algebra
+        karteTiefe: karteTiefe, // w4-laub-karte — die Tiefe je Texel der Karte (vor/hinter der Mitte des Rahmens) über einer Algebra
+        karteTiefeVersatz: karteTiefeVersatz, // ihr Rückweg: der Versatz in Metern der Vorlage
         scanRadialXZ: scanRadialXZ,
         forestCellRng: forestCellRng,
         FOREST_STAND: FOREST_STAND,

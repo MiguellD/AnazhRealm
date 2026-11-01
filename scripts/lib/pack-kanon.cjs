@@ -14,9 +14,8 @@
 // verlustfrei, nicht nur „gleicher String rein/raus".
 "use strict";
 
-const { statikServer, nullSeite, ausDatei, path, fs, stammLib } = require("./welt-boot.cjs");
+const { statikServer, nullSeite, ausDatei, path, fs, stammLib, jsonLesen, ROOT } = require("./welt-boot.cjs");
 
-const ROOT = path.resolve(__dirname, "..", "..");
 
 
 
@@ -41,7 +40,7 @@ function computeStamp(root) {
 }
 
 function readManifest(root) {
-    return ausDatei(path.join(root || ROOT, "cores.manifest.json"), true);
+    return jsonLesen(path.join(root || ROOT, "cores.manifest.json"));
 }
 
 // `meta.coreId` — DATEN-getrieben (M8, kein kind-if): Zweit-Kern-Rezepte reisen im gemergten
@@ -140,7 +139,7 @@ function writePack(dir, pack) {
 }
 
 function readPack(file) {
-    return ausDatei(file, true);
+    return jsonLesen(file);
 }
 
 // ---------------------------------------------------------------------------

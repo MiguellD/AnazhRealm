@@ -245,8 +245,8 @@ function zielZensus(k) {
             const dsk = Object.getOwnPropertyDescriptor(P, key);
             if (dsk && typeof dsk.value === "function") quellen.push([key, Function.prototype.toString.call(dsk.value)]);
         }
-        for (const key of Object.getOwnPropertyNames(r.constructor)) {
-            const f = r.constructor[key];
+        for (const key of Object.getOwnPropertyNames(AnazhRealm)) {
+            const f = AnazhRealm[key];
             if (key !== "prototype" && typeof f === "function")
                 quellen.push(["AnazhRealm." + key, Function.prototype.toString.call(f)]);
         }
@@ -332,7 +332,7 @@ function zielZensus(k) {
 function zielLesen(k) {
     return (async () => {
         const liste = window.__zielListe || [];
-        const dev = r.state.renderer.backend.device;
+        const dev = st.renderer.backend.device;
         const FORM = {
             r8unorm: [1, 1, "u8"],
             rg8unorm: [2, 1, "u8"],
@@ -447,7 +447,7 @@ function zielLesen(k) {
 // die ein späterer Pass liest, während die Szenen-Tiefe ruht, und ein 32-bit-Float mit 16-bit-Inhalt. `an` = false baut alles
 // restlos ab.
 function zielSchmuggel(an) {
-    const rend = r.state.renderer;
+    const rend = st.renderer;
     const T = window.THREE;
     const TSL = T.TSL;
     const S = window.__zielSchmuggelStand;
@@ -461,7 +461,7 @@ function zielSchmuggel(an) {
     }
     if (S) return { fehler: "der Schmuggel steht schon" };
     const tiefe =
-        r.state.scenePass && r.state.scenePass.getTextureNode ? r.state.scenePass.getTextureNode("depth").value : null;
+        st.scenePass && st.scenePass.getTextureNode ? st.scenePass.getTextureNode("depth").value : null;
     if (!tiefe) return { fehler: "keine Szenen-Tiefe (Post-Kette fehlt)" };
     const db = rend.getDrawingBufferSize(new T.Vector2());
     const W = Math.max(1, Math.round(db.x)),

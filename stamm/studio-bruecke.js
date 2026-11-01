@@ -1056,7 +1056,7 @@ class AnazhRealm_studio_bruecke {
         const da = zuege.get(key);
         if (da) {
             if (wo != null && da.rang) this._foundryNaeher(da.rang, wo); // ohne Ort kein Rang (Lehre 17: null ist nie 0)
-            this._streuWartetAuf(da);
+            this._wartetAuf(da);
             this._foundryWaechterRuht(); // ruht der Loop, bekommt der Leser, was ein Takt am Wächter ließ
             return da;
         }
@@ -1077,7 +1077,7 @@ class AnazhRealm_studio_bruecke {
         zug.rang = auftrag.rang;
         zuege.set(key, zug);
         if (erst && erst.nach) zug.then(erst.nach);
-        this._streuWartetAuf(zug); // die streuende Region wartet auf diesen Zug (K60-2)
+        this._wartetAuf(zug); // die streuende Region wartet auf diesen Zug (K60-2)
         return zug;
     }
     // Der Takt-Wächter: hält ein Request-Ergebnis zurück, bis der Loop-Tick es
@@ -2164,10 +2164,10 @@ class AnazhRealm_studio_bruecke {
             this._scatterRefillPending = true;
             return this._impostorZelleNeu(at, key, preset, variant, ovK);
         }
-        // Der Null-Renderer bäckt nie: der Rahmen der Zelle kommt aus der L1-Geometrie (fehlt sie: EINMAL anfordern)
-        // bzw. der deklarierten Stufe der Art (Tor gate=[0] aus L0) — Höhe box.max.y (Anker Stammbasis), Breite der
-        // radiale Vertex-Scan, Formel in phyto-core (__phytoCore.scanRadialXZ / impostorFrame, wie der Studio-Bäcker).
-        const bakeLod = this._foundryDeclaredStage(preset, 1);
+        // Der Null-Renderer bäckt nie: der Rahmen der Zelle kommt aus der Gestalt, aus der die Karte backt (`_karteStufe`,
+        // die Höhen-Stufe; fehlt sie: EINMAL anfordern) — Höhe box.max.y (Anker Stammbasis), Breite der radiale Vertex-Scan,
+        // Formel in phyto-core (__phytoCore.scanRadialXZ / impostorFrame, wie der Studio-Bäcker).
+        const bakeLod = this._karteStufe(preset);
         const gkey = this._foundryKoerperKey(preset, variant, bakeLod, ovK);
         const group = this._foundryCacheGet(gkey);
         if (group === undefined) {
@@ -2228,11 +2228,11 @@ class AnazhRealm_studio_bruecke {
         }
         // Mit echtem Renderer trägt die Karte erst gebacken: bis dahin liefert der Flatten für die Baum-Fernstufe NICHTS
         // (false), nie Geometrie — nah trägt die Wunsch-Stufe, fern wartet der Baum (ein Karten-Ding hat keinen Satz).
-        // Headless/Null-Renderer trägt der Rahmen aus der L1-Geometrie (dort bäckt nie einer).
+        // Headless/Null-Renderer trägt der Rahmen aus der Gestalt der Karte (`_karteStufe`; dort bäckt nie einer).
         const rendB = this.state && this.state.renderer;
         if (!z.gebacken && rendB && !rendB._isHeadlessNull) {
             if (wer) wer.wecke(z.ende);
-            this._streuWartetAuf(z.ende); // die streuende Region wartet auf ihre Karte (K60-2)
+            this._wartetAuf(z.ende); // die streuende Region wartet auf ihre Karte (K60-2)
             return false;
         }
         if (z._flat) return z._flat;

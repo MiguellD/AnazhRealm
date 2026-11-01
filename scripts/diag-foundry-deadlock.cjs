@@ -37,11 +37,11 @@ hauptLauf(async () => {
                 await sleep(0);
             }
 
-            const archs = () => (Array.isArray(r.state.architectures) ? r.state.architectures : []);
+            const archs = () => (Array.isArray(st.architectures) ? st.architectures : []);
             // Die Nähe ist der Cull-Radius, den `_foundryRewarmColdTrees` liest; jenseits trägt die Fernform, dort
             // bleibt ein Baum kalt (kein Deadlock).
-            const pm = r.state.playerMesh.position;
-            const radSq = (r.state.architectureCullingRadius || 200) ** 2;
+            const pm = st.playerMesh.position;
+            const radSq = (st.architectureCullingRadius || 200) ** 2;
             const nah = (e) => (e.position.x - pm.x) ** 2 + (e.position.z - pm.z) ** 2 <= radSq;
             const kalt = (e) => isTree(e) && !e.instanced && !e.mesh;
             const cold = () => archs().filter((e) => kalt(e) && nah(e)).length;
@@ -98,10 +98,10 @@ hauptLauf(async () => {
             // was das Spiel dann trägt: die Schlange des Walds mit dem Boden der Welt-Substanz (`_dispatchFrameJobs`:
             // prio 1 bekommt über Budget `FRAME_SCHED_SUBSTANZ_FLOOR_MS`) und der Rewarm — seit K69 wartet die Gestalt
             // eines Baums auf den Plan seines Walds (`_ortGestaltSame`), ein Pumpen nur des Rewarms ließ 8 von 8 kalt.
-            const A = window.AnazhRealm || r.constructor;
+            const A = window.AnazhRealm || AnazhRealm;
             for (let i = 0; i < 400; i++) {
-                r.state._frameOverBudget = true; // Dauer-Last simulieren
-                r.state._frameChunksBuilt = false; // das terrain-first-Gate offen halten
+                st._frameOverBudget = true; // Dauer-Last simulieren
+                st._frameChunksBuilt = false; // das terrain-first-Gate offen halten
                 try {
                     r._tickWaldPlan(A.FRAME_SCHED_SUBSTANZ_FLOOR_MS);
                     r._foundryRewarmColdTrees();

@@ -308,7 +308,7 @@ async function weltPruefen() {
             return bb.max.y - bb.min.y;
         };
         const spawnNorm = () => {
-            const s = r.state;
+            const s = st;
             const pm = (s.playerMesh && s.playerMesh.position) || { x: 0, y: 5, z: 0 };
             const alt = s.maxCreatures;
             s.maxCreatures = Math.max(alt || 0, s.creatures.length + 2);
@@ -322,7 +322,7 @@ async function weltPruefen() {
         // (B) ohne Prägung liefern die Leser die BUCH-REFERENZ (kein Merge-Klon) — der Guss-Pfad bleibt byte-alt
         res.refVorher =
             r._koerperStudioDials() === f.recipes.mensch.s && r._tetrapodaStudioDials("wolf") === f.recipes.wolf.s;
-        const cVorher = farben(r.state.playerMesh);
+        const cVorher = farben(st.playerMesh);
         const normVorher = spawnNorm();
         const werk = (kind, preset, ov) =>
             r._studioUebergabeEmpfang({ type: "uebergabe", world: "probe", kind, preset, seed: 0, ov });
@@ -333,7 +333,7 @@ async function weltPruefen() {
             topColor: "red",
             shoes: "boot",
         });
-        const cAvatar = farben(r.state.playerMesh);
+        const cAvatar = farben(st.playerMesh);
         res.rot = cAvatar.has(lin(KC.CLOTH_COLORS.red.hex)) && !cVorher.has(lin(KC.CLOTH_COLORS.red.hex));
         res.haut = cAvatar.has(lin(KC.SKIN_TONES.ebenholz.hex));
         res.groesse = r._humanDialSizeFactor() !== 1;
@@ -353,7 +353,7 @@ async function weltPruefen() {
             studioOv: { mensch: { height: 99, topColor: "neonpink" }, wolf: snap.studioOv.wolf, drache: { size: 3 } },
         });
         delete r._studioWerkPruefen;
-        const ws = r.state.workshop.studioOv;
+        const ws = st.workshop.studioOv;
         const hoeheMax = KC.PARAMS_BY_KIND.koerper.find((z) => z.id === "height").max;
         res.restore =
             geprueft >= 3 &&
@@ -362,7 +362,7 @@ async function weltPruefen() {
             !ws.drache &&
             ws.wolf.size === 3.5;
         // aufräumen: die Welt verlässt die Linse ohne Prägung
-        r.state.workshop.studioOv = {};
+        st.workshop.studioOv = {};
         res.refNachher = r._koerperStudioDials() === f.recipes.mensch.s;
         return res;
     });

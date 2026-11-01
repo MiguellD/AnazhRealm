@@ -30,7 +30,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
     const { errs: failures, check } = pruefer();
     const browser = await starteBrowser({ art: "webgl", zusatz: ["--enable-webgl", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"] });
     const mesh = await zweiImMesh(browser, "COPRESENCE_PORT", "COPRESENCE_SIGNAL_PORT", "smoke-copresence-room", (p, i) =>
-        p.evaluate((n) => (r.state.player.name = n), ["Anna", "Bo"][i])
+        p.evaluate((n) => (st.player.name = n), ["Anna", "Bo"][i])
     );
     try {
         const [pageA, pageB, peerIdA, peerIdB] = [...mesh.seiten, ...mesh.peerIds];
@@ -41,7 +41,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
         const enteredA = await pageA.evaluate(() => {
             const got = r.obtainPortalForWorld("begegnung");
             if (!got.ok) return { ok: false, reason: got.reason };
-            const bp = r.state.blueprints[got.blueprint];
+            const bp = st.blueprints[got.blueprint];
             r._buildPortalOverlay(bp.portalMeta, { computeRole: "host" });
             const invited = r._p2pBroadcastPortalInvite();
             const po = r._portalOverlay;
@@ -60,7 +60,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
         // B bekommt die Einladung (mit Tier-Wahrheit im Banner) + folgt.
         await waitFor(
             pageB,
-            () => !!(r.state.p2p && r.state.p2p.pendingInvite),
+            () => !!(st.p2p && st.p2p.pendingInvite),
             "B sieht die Portal-Einladung"
         );
         const bannerB = await pageB.evaluate(() => {
@@ -107,13 +107,13 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
         await waitFor(
             pageB,
             () => {
-                const j = r.state.worldJournal;
+                const j = st.worldJournal;
                 return !!(j && j.entries && j.entries.some((e) => /erschien neben dir/.test(e.text)));
             },
             "B's Begegnungs-Welt meldete die Begegnung (Journal)"
         );
         const journalB = await pageB.evaluate(() => {
-            const j = r.state.worldJournal;
+            const j = st.worldJournal;
             const hit = j.entries.filter((e) => /erschien neben dir/.test(e.text));
             return hit.length ? hit[hit.length - 1].text : "";
         });
@@ -121,13 +121,13 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
         await waitFor(
             pageA,
             () => {
-                const j = r.state.worldJournal;
+                const j = st.worldJournal;
                 return !!(j && j.entries && j.entries.some((e) => /erschien neben dir/.test(e.text)));
             },
             "A's Begegnungs-Welt meldete die Begegnung (Journal)"
         );
         const journalA = await pageA.evaluate(() => {
-            const j = r.state.worldJournal;
+            const j = st.worldJournal;
             const hit = j.entries.filter((e) => /erschien neben dir/.test(e.text));
             return hit.length ? hit[hit.length - 1].text : "";
         });
@@ -210,7 +210,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
         // enter → die fremde Gestalt steht, wo sie stand (die bewegte Position
         // aus dem Input-Brücken-Lauf, nicht 0/0).
         await pageA.evaluate(() => {
-            const bp = r.state.blueprints["portal_begegnung"];
+            const bp = st.blueprints["portal_begegnung"];
             r._buildPortalOverlay(bp.portalMeta, { computeRole: "host" });
         });
         await waitFor(
@@ -249,7 +249,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
         await waitFor(
             pageA,
             (idB) => {
-                const entry = r.state.p2p.peers.get(idB);
+                const entry = st.p2p.peers.get(idB);
                 return !!(entry && /Begegnungs-Feld/.test(entry.dwellingIn || ""));
             },
             "A sieht B's Wohnsitz übers Mesh (soul-Kanal)",

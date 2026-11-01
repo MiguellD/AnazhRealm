@@ -3884,6 +3884,171 @@
         return V;
     }
 
+    // DIE BODEN-KARTE EINES BODEN-NETZES (V18.508; w4-b-boden aus dem Stamm `_bodenKarteAusMesh` in den Kern — der voxel-worker
+    // rastert sie, wo er das Netz baut, und reicht sie per Transfer; der Haupt-Faden rastert nur, was ein Naht-Morph oder ein
+    // Edit bewegt): die Höhe des GERENDERTEN Bodens je Chunk aus dem fertigen Netz (Surface-Nets nach Glättung und Crop) auf
+    // ein Gitter von `cfg.step / T` (LOD 0: 0,45 m, Ursprung Chunk − Schritt, über das Pad (dim + 3) · Schritt); je Punkt die
+    // OBERSTE nicht-steile Fläche (Wände tragen nichts), NaN ohne Boden, dazu der Grün-Kanal (Uint8, die Wiesen-Wache `gs`
+    // über der FERTIGEN Vertex-Farbe). `cfg` { step, dim, span } die Stufe des Netzes · `basis` die vorige Karte derselben
+    // Geometrie (`hoehe`, `gruen`, ihre Lage `ref`, je Dreieck sein Zellen-Rechteck `zellen`): neu gerastert werden nur die
+    // Zellen unter den Dreiecken, die gegen `ref` ihre Lage ändern — byte-gleich mit der ganzen Karte · `rand` (`rand` die
+    // Vertices, `randTri` ihre Dreiecke): bewegen kann nur der Saum. `anOrt` (mit `basis`): die Karte schreibt in die Felder
+    // der Basis statt in ihre Kopie, und `geaendert` nennt danach jede Zelle, deren Höhe wechselte (der Leser einer früheren
+    // Lage fragt sie statt einer alten Kopie). → { hoehe, gruen, zellen, geaendert } oder null.
+    function bodenKarte(pos, idx, col, cx, cz, cfg, T, gs, basis, rand, anOrt) {
+        if (!pos || !idx || idx.length < 3) return null;
+        const h = cfg.step / T;
+        const M = T * (cfg.dim + 3) + 1;
+        const ox = cx * cfg.span - cfg.step;
+        const oz = cz * cfg.span - cfg.step;
+        const nT = Math.floor(idx.length / 3);
+        const B = basis;
+        const ort = !!(B && anOrt);
+        const map = ort ? B.hoehe : B ? new Float32Array(B.hoehe) : new Float32Array(M * M).fill(NaN);
+        const gruen = ort ? B.gruen : B ? new Uint8Array(B.gruen) : new Uint8Array(M * M); // 0…255 = Wiesen-Gewicht 0…1
+        const zl = ort ? B.zellen : B ? new Int16Array(B.zellen) : new Int16Array(4 * nT);
+        // an Ort und Stelle: je markierter Zelle ihre Höhe davor (die Reihe der ersten Markierung)
+        const altZ = ort ? [] : null,
+            altH = ort ? [] : null;
+        // das Zellen-Rechteck [i0, i1, k0, k1] des Dreiecks q in `pos` (leer, wo es neben der Karte liegt)
+        const zellen = (q) => {
+            const a = idx[q * 3] * 3,
+                b = idx[q * 3 + 1] * 3,
+                c = idx[q * 3 + 2] * 3;
+            zl[4 * q] = Math.min(M, Math.max(0, Math.ceil((Math.min(pos[a], pos[b], pos[c]) - ox) / h)));
+            zl[4 * q + 1] = Math.max(-1, Math.min(M - 1, Math.floor((Math.max(pos[a], pos[b], pos[c]) - ox) / h)));
+            zl[4 * q + 2] = Math.min(
+                M,
+                Math.max(0, Math.ceil((Math.min(pos[a + 2], pos[b + 2], pos[c + 2]) - oz) / h))
+            );
+            zl[4 * q + 3] = Math.max(
+                -1,
+                Math.min(M - 1, Math.floor((Math.max(pos[a + 2], pos[b + 2], pos[c + 2]) - oz) / h))
+            );
+        };
+        // DIE MASKE: ein Dreieck mit bewegter Ecke markiert sein altes und sein neues Rechteck; die Summen-Tafel `S` sagt in vier
+        // Zugriffen, ob unter einem Rechteck eine markierte Zelle liegt — ein Dreieck ohne fällt vor jeder Rechnung
+        let maske = null,
+            S = null;
+        const M1 = M + 1;
+        if (B) {
+            const ref = B.ref;
+            const neu = new Uint8Array(Math.min(pos.length, ref.length) / 3);
+            const bewegt1 = (v) =>
+                (neu[v] =
+                    pos[v * 3] !== ref[v * 3] ||
+                    pos[v * 3 + 1] !== ref[v * 3 + 1] ||
+                    pos[v * 3 + 2] !== ref[v * 3 + 2]);
+            if (rand) for (const v of rand.rand) bewegt1(v);
+            else for (let v = 0; v < neu.length; v++) bewegt1(v);
+            maske = new Uint8Array(M * M);
+            const markiere = (o) => {
+                for (let k = zl[o + 2]; k <= zl[o + 3]; k++)
+                    for (let i = zl[o]; i <= zl[o + 1]; i++) {
+                        if (ort && !maske[k * M + i]) {
+                            altZ.push(k * M + i);
+                            altH.push(map[k * M + i]);
+                        }
+                        maske[k * M + i] = 1;
+                        map[k * M + i] = NaN;
+                        gruen[k * M + i] = 0;
+                    }
+            };
+            let bewegt = 0;
+            for (let j = 0, m = rand ? rand.randTri.length : nT; j < m; j++) {
+                const q = rand ? rand.randTri[j] / 3 : j;
+                if (!(neu[idx[q * 3]] || neu[idx[q * 3 + 1]] || neu[idx[q * 3 + 2]])) continue;
+                bewegt++;
+                markiere(4 * q);
+                zellen(q);
+                markiere(4 * q);
+            }
+            if (!bewegt) return { hoehe: map, gruen, zellen: zl, geaendert: ort ? new Int32Array(0) : undefined };
+            S = new Int32Array(M1 * M1);
+            for (let k = 0; k < M; k++)
+                for (let i = 0; i < M; i++)
+                    S[(k + 1) * M1 + i + 1] =
+                        maske[k * M + i] + S[k * M1 + i + 1] + S[(k + 1) * M1 + i] - S[k * M1 + i];
+        }
+        for (let q = 0; q < nT; q++) {
+            const o = 4 * q;
+            if (!S) zellen(q);
+            else if (
+                S[(zl[o + 3] + 1) * M1 + zl[o + 1] + 1] -
+                    S[zl[o + 2] * M1 + zl[o + 1] + 1] -
+                    S[(zl[o + 3] + 1) * M1 + zl[o]] +
+                    S[zl[o + 2] * M1 + zl[o]] <=
+                0
+            )
+                continue;
+            const i0 = zl[o],
+                i1 = zl[o + 1],
+                k0 = zl[o + 2],
+                k1 = zl[o + 3];
+            const t = q * 3;
+            const a = idx[t] * 3;
+            const b = idx[t + 1] * 3;
+            const c = idx[t + 2] * 3;
+            const ax = pos[a];
+            const az = pos[a + 2];
+            const bx = pos[b];
+            const bz = pos[b + 2];
+            const qx = pos[c];
+            const qz = pos[c + 2];
+            // Flächen-Neigung aus der GEOMETRIE (Betrag, wicklungs-frei): |n_y| ≥ 0,3·|n| trägt, Wände nicht.
+            // Die Gradienten-Normalen der Vertices kippen an dünnen Platten (gemessen: Spawn-Plattform 7 m
+            // unter dem sichtbaren Deckel), die Wicklung zeigt oben nach unten — beides taugt nicht als Wache.
+            const ux = bx - ax;
+            const uy = pos[b + 1] - pos[a + 1];
+            const uz = bz - az;
+            const vx = qx - ax;
+            const vy = pos[c + 1] - pos[a + 1];
+            const vz = qz - az;
+            const ny = uz * vx - ux * vz;
+            const nl = Math.hypot(uy * vz - uz * vy, ny, ux * vy - uy * vx);
+            if (!(Math.abs(ny) >= 0.3 * nl)) continue;
+            const d = (bz - qz) * (ax - qx) + (qx - bx) * (az - qz);
+            if (Math.abs(d) < 1e-9) continue;
+            for (let k = k0; k <= k1; k++) {
+                const pz = oz + k * h;
+                for (let i = i0; i <= i1; i++) {
+                    if (maske && !maske[k * M + i]) continue;
+                    const px = ox + i * h;
+                    const w1 = ((bz - qz) * (px - qx) + (qx - bx) * (pz - qz)) / d;
+                    const w2 = ((qz - az) * (px - qx) + (ax - qx) * (pz - qz)) / d;
+                    const w3 = 1 - w1 - w2;
+                    if (w1 < -1e-6 || w2 < -1e-6 || w3 < -1e-6) continue;
+                    const y = w1 * pos[a + 1] + w2 * pos[b + 1] + w3 * pos[c + 1];
+                    const m = k * M + i;
+                    if (map[m] >= y) continue;
+                    map[m] = y;
+                    // Grün-Kanal: dieselbe Wiesen-Wache wie das Boden-Fragment (`_green` in
+                    // `_terrainGeologyAlbedo`: smoothstep(0, gruenSchwelle, g − (r+b)/2)) aus der Vertex-Farbe.
+                    if (col) {
+                        let g = 0;
+                        g += w1 * (col[a + 1] - 0.5 * (col[a] + col[a + 2]));
+                        g += w2 * (col[b + 1] - 0.5 * (col[b] + col[b + 2]));
+                        g += w3 * (col[c + 1] - 0.5 * (col[c] + col[c + 2]));
+                        const t2 = Math.max(0, Math.min(1, g / gs));
+                        gruen[m] = Math.round(255 * t2 * t2 * (3 - 2 * t2));
+                    }
+                }
+            }
+        }
+        // die Zellen, deren Höhe wechselte (NaN = kein Boden, zweimal NaN ist gleich)
+        let geaendert;
+        if (ort) {
+            const G = [];
+            for (let j = 0; j < altZ.length; j++) {
+                const a = altH[j],
+                    b = map[altZ[j]];
+                if (a !== b && !(a !== a && b !== b)) G.push(altZ[j]);
+            }
+            geaendert = Int32Array.from(G);
+        }
+        return { hoehe: map, gruen, zellen: zl, geaendert };
+    }
+
     // DER FELS-STOFF EINES BODEN-NETZES (K17; K17-2 aus dem Stamm `_felsStoff` in den Kern — der voxel-worker rechnet ihn beim
     // Chunk-Bau und reicht ihn per Transfer, der Haupt-Thread rechnet ihn nur im Sync-Bau): die Säulen-Farbe C ist eine Funktion
     // von (x, z); wo das Netz Fels ist, trägt der Vertex den Fels-Stoff (`felsFarbe`: Pakete, Rinde an konvexen Kanten aus der
@@ -5828,6 +5993,7 @@
         FELS: FELS,
         HIMMELS_SICHT: HIMMELS_SICHT,
         himmelsSicht: himmelsSicht,
+        bodenKarte: bodenKarte,
         STUFE_ZIEL: STUFE_ZIEL,
         stufeZiel: stufeZiel,
         felsStoff: felsStoff,

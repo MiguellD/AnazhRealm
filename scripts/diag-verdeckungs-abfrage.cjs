@@ -419,7 +419,7 @@ async function verdeckungPhase(opts) {
                 uz = P.z + nz * (s + 10);
             aus.bach = { x: Math.round(P.x), z: Math.round(P.z), ufer: s, start: [Math.round(ux), Math.round(uz)] };
             // ein Region-Bündel jenseits des Bachs: der Berg-Cull baut seinen Stellvertreter (Probe jeden queryTakt-ten Frame)
-            const KL = r.constructor;
+            const KL = AnazhRealm;
             const R = KL.ARCH_REGION_M;
             const fx = P.x - nx * 700,
                 fz = P.z - nz * 700;
@@ -613,14 +613,14 @@ async function verdeckungPhase(opts) {
                     st.hydrosphere?.ready &&
                     (st._weltbildDa || !karte));
             });
-            return { ok: true, ms: Math.round(performance.now() - t0), webgpu: r.state.renderer.backend.isWebGPUBackend === true };
+            return { ok: true, ms: Math.round(performance.now() - t0), webgpu: st.renderer.backend.isWebGPUBackend === true };
         }, linsenGpu() === "hardware");
         if (!bereit.webgpu) throw new Error("kein WebGPU-Backend — die Linse liest WebGPU-Validierung, sie wäre blind");
         log(`Renderer und Welt bereit nach ${Math.round(bereit.ms / 1000)} s`);
         // der Loop gehört der Linse (der echte Spiel-Takt läuft durch `_gameLoopTick`); die Stoffe der Stationen bauen mit
         out.phasen.boot = await page.evaluate(stationenVorbau).then(() =>
             page.evaluate(() => {
-                r.state.renderer.setAnimationLoop(null);
+                st.renderer.setAnimationLoop(null);
                 const S = window.__verdeckung;
                 S.phase = "zwischen";
                 const W = r._gpuWache || { n: 0, meldungen: [] };

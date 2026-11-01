@@ -28,10 +28,9 @@
 //   die Klasse zahnfleisch) → rot an zahn|headGroup (fehlt) und zahnfleisch|headGroup · (S3) korruptes Golden → rot.
 //   node scripts/diag-ofen-contract.cjs [--selftest]
 "use strict";
-const { selbsttestEnde, wandEnde, fadenScope, pruefer, ausDatei, SELBSTTEST, path, fs, crypto, vm, stammLib } = require("./lib/welt-boot.cjs");
+const { selbsttestEnde, wandEnde, fadenScope, pruefer, ausDatei, SELBSTTEST, path, fs, crypto, vm, stammLib, jsonLesen, jsonSchreiben, ROOT } = require("./lib/welt-boot.cjs");
 const { probeWand, objektAbdruck } = require("./lib/plattform-probe.cjs");
 
-const ROOT = path.resolve(__dirname, "..");
 const GOLDEN_DIR = path.join(ROOT, "spec/asset-contract/ofen/golden");
 const GOLDEN = path.join(GOLDEN_DIR, "bake.json");
 const QUELLEN = [
@@ -177,7 +176,7 @@ function taeterStoff(sb, c, g) {
 // (Täter beim Namen) und hält die Bytes der Normale (sha256, die Prägung der Saat 99). B3a: jede Start-Leinwand ist eine
 // CPU-Leinwand (willReadFrequently) — ihr putImageData auf der GPU-Leinwand wartete im Faden auf den GPU-Prozess (Radeon kalt 2,27 s).
 const RINDE_SHA = "039367ab31640d7f";
-const BRUECKE = ausDatei(path.join(ROOT, "foundry-bruecke.js"));
+const BRUECKE = ausDatei("foundry-bruecke.js");
 function ofenStart(eingriff) {
     const sb = ladeOfen();
     let bild = null;
@@ -321,23 +320,16 @@ function taeterRinde(sb) {
     // 4) Das Golden: einfrieren beim ersten Lauf, danach byte-exakt.
     if (!fs.existsSync(GOLDEN) || process.env.MINT_FORCE === "1") {
         fs.mkdirSync(GOLDEN_DIR, { recursive: true });
-        fs.writeFileSync(
-            GOLDEN,
-            JSON.stringify(
-                {
+        jsonSchreiben(GOLDEN, {
                     vertrag: "ofen",
                     minted: "foundry-core BAKERS_BY_KIND.kreatur/.koerper(kern, art, 1, lod, null) — sha256 je Stoff-Klasse × Gelenk, je Gelenk, je Beipack",
                     klassen: ist,
-                },
-                null,
-                1
-            ) + "\n"
-        );
+                }, 1, "\n");
         console.log(
             `  🧊 GOLDEN GEMINTET (${Object.keys(ist).length} Klassen) → ${path.relative(ROOT, GOLDEN)} — ab jetzt EINGEFROREN`
         );
     }
-    const golden = ausDatei(GOLDEN, true).klassen;
+    const golden = jsonLesen(GOLDEN).klassen;
     const diffs = vergleiche(golden, ist);
     check(`Golden byte-exakt (${Object.keys(golden).length} Klassen)`, diffs.length === 0, diffs[0] || "");
     for (let i = 1; i < Math.min(diffs.length, 40); i++) console.log(`      ↳ ${diffs[i]}`);

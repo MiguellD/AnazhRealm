@@ -37,6 +37,13 @@ function leihe(o, tausch) {
 // `const r = window.anazhRealm` / `const st = r.state` ist ein Zwilling (872 Bindungen fielen in w3u-nachfolge); wer einen
 // der Namen schreibt (ein fremdes Skript), bekommt eine gewöhnliche Variable
 const weltR = `for (const [n, f] of [["r", () => window.anazhRealm], ["st", () => window.anazhRealm && window.anazhRealm.state]]) Object.defineProperty(window, n, { get: f, set: (v) => Object.defineProperty(window, n, { value: v, writable: true }), configurable: true });`;
+// DIE EINE JSON-LESUNG (`jsonLesen(pfad)`): je Linse ein eigenes `JSON.parse(fs.readFileSync(pfad, "utf8"))` war ein Zwilling
+// (w4-himmel-uhr: 57 Stellen in 26 Linsen); sie liest über den EINEN Datei-Leser `ausDatei` (`pfad` ab der Wurzel des Baums
+// oder absolut) — bis w4-studios-heim3 trug er ein eigenes JSON-Flag, zwei Lesungen derselben Sache
+// … und die EINE JSON-Schreibung (`jsonSchreiben(pfad, wert, einzug = 1, ende = "")`, dieselben Bytes wie `fs.writeFileSync(pfad,
+// JSON.stringify(wert, null, einzug) + ende)`)
+const jsonLesen = (p) => JSON.parse(ausDatei(p));
+const jsonSchreiben = (p, o, n = 1, ende = "") => fs.writeFileSync(p, JSON.stringify(o, null, n) + ende);
 // DIE UHR DES LAUFS (`const log = laufUhr()`): jede Zeile trägt die Sekunden seit dem Ruf — je Linse ein eigenes `T0` samt
 // eigenem log war ein Zwilling
 const laufUhr =
@@ -58,7 +65,6 @@ async function seitenTakt() {
 // einer), bis die Welt steht (`_weltSteht`) und das Buch da ist; der Regler hält, solange sie schwingt. Der Deckel `max` zählt
 // nur Takte ohne Offenes (`_weltOffen`); dann wirft er.
 async function weltStehtNach(takt, max) {
-    const st = r.state;
     const W = () => r._weltStand || {};
     const steht = () => r._weltSteht() && !r._bepflanzungWartet();
     const regler = st.perfRegulator;
@@ -174,7 +180,7 @@ function abdruck(x, alle) {
 // aus IndexedDB — der Leser jedes Save-Rundlaufs (der Platz im localStorage trägt nur abgelegte und verlassene Welten).
 async function stand() {
     await r._speicherStill();
-    return (await r._idbGetWorld(r.state.worldMeta.worldId)).json;
+    return (await r._idbGetWorld(st.worldMeta.worldId)).json;
 }
 // DAS BILD ALS PNG: in jeder Seite `window.__png(u8, W, H)` — RGBA-Bytes W×H (ein Schuss, eine Maske) deckend als Daten-URL,
 // in Node `pngDatei(datei, url)` schreibt sie; bis dahin baute jede Bild-Linse ihre Leinwand und ihren Puffer selbst
@@ -189,7 +195,7 @@ function png(u8, W, H) {
 }
 // ALLE BÜNDEL DER SZENE NEU (`window.__bundlesNeu()`): ein Bündel, das vor einer Sicht-Änderung aufnahm, zeichnet beim nächsten
 // Bild neu (eine Linse blendet Klassen aus und ein, die Bühne wechselt)
-const bundlesNeu = () => r.state.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
+const bundlesNeu = () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
 const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
 const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
@@ -429,7 +435,7 @@ function pulsSeite() {
         }
     // der Stoff-Name je Pipeline am Backend der Welt (r184 createRenderPipeline(renderObject)), sobald es steht
     const stoffHaken = () => {
-        const be = r?.state?.renderer?.backend;
+        const be = st?.renderer?.backend;
         if (!be || be.__weltPulsHaken || typeof be.createRenderPipeline !== "function") return;
         be.__weltPulsHaken = true;
         const crp = be.createRenderPipeline;
@@ -905,7 +911,6 @@ async function uferStellen(opts) {
             w.state.camera &&
             w.state.playerMesh
     );
-    const st = r.state;
     if (st.renderer.backend.isWebGPUBackend !== true) return { fehler: "kein WebGPU-Backend — die Wand wäre blind" };
     if (opts.kappe != null) st._holzPixelCap = opts.kappe;
     const [mx, mz] = opts.messort;
@@ -1077,12 +1082,9 @@ const hauptLauf = (rumpf, zuletzt) =>
         if (zuletzt) zuletzt();
         process.exit(2);
     });
-// DER EINE DATEI-LESER einer Linse: `ausDatei(p)` der Text, `ausDatei(p, true)` sein JSON — `p` ab der Wurzel des Baums oder
-// absolut (bis zur Decke w3w-studios las jede Linse in eigenen Zeilen: JSON.parse(fs.readFileSync(…, "utf8")), 86-mal)
-const ausDatei = (p, json) => {
-    const t = fs.readFileSync(path.resolve(ROOT, p), "utf8");
-    return json ? JSON.parse(t) : t;
-};
+// DER EINE DATEI-LESER einer Linse: `ausDatei(p)` der Text (utf8), sein JSON liest `jsonLesen` durch ihn — `p` ab der Wurzel des
+// Baums oder absolut (bis zur Decke w3w-studios las jede Linse in eigenen Zeilen: fs.readFileSync(…, "utf8"), 86-mal)
+const ausDatei = (p) => fs.readFileSync(path.resolve(ROOT, p), "utf8");
 // DER EINE SCHALTER des Selbsttests jeder Linse (`--selftest`; bis zur Decke w3w-studios las ihn jede Linse selbst, 76-mal)
 const SELBSTTEST = process.argv.includes("--selftest");
 // DER EINE ARGUMENT-LESER einer Linse: `argOpt("--port", 4490)` — der Wert hinter dem Schalter, fehlt er (oder folgt ein
@@ -1175,7 +1177,7 @@ function booteWelt(page, name = "der Boot der Welt") {
                 } catch {
                     /* der Boot reift */
                 }
-                const s = r.state;
+                const s = st;
                 if (s?.voxelChunks?.size > 4 && s.voxelWorkerReady && s.voxelWorkerWorldgenSynced)
                     return { ok: true, ms: Math.round(performance.now() - start), seed: s.worldMeta.seed };
             }
@@ -1236,7 +1238,7 @@ async function zweiImMesh(browser, portEnv, signalEnv, raum, vor = async () => {
             peerIds.push(await p.evaluate(beitritt, `ws://127.0.0.1:${signal}`, raum));
         }
         for (const [i, p] of seiten.entries())
-            await waitFor(p, () => r.state.p2p.meshActive === true, `Mesh auf ${"AB"[i]} aktiv`);
+            await waitFor(p, () => st.p2p.meshActive === true, `Mesh auf ${"AB"[i]} aktiv`);
         return { seiten, peerIds, ende };
     } catch (e) {
         await ende();
@@ -1371,6 +1373,8 @@ module.exports = {
     eigenePorte,
     sleep,
     laufUhr,
+    jsonLesen,
+    jsonSchreiben,
     hauptLauf,
     urteilEnde,
     argOpt,

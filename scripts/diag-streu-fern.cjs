@@ -56,7 +56,7 @@ hauptLauf(async () => {
     const out = await page.evaluate(async () => {
         const res = {};
         await window.__weltDa();
-        const AR = r.constructor;
+        const AR = AnazhRealm;
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && AR._studioRenderConfig && AR._studioRenderConfig.lod);
         const cfg = AR._studioRenderConfig;
@@ -75,7 +75,7 @@ hauptLauf(async () => {
         res.grenze = N;
 
         // Die Mess-Wiese (der Messort des Haushalts, dieselbe Stelle wie werkbank umstellen --ort wiese).
-        const pm = r.state.playerMesh.position;
+        const pm = st.playerMesh.position;
         const [MX, MZ] = window.__messWiese;
         pm.set(MX, r._voxelSurfaceY(MX, MZ) + 1.8, MZ);
         const map = r._ensureScatterRegionMap();
@@ -138,7 +138,7 @@ hauptLauf(async () => {
         const absenz = () => {
             const treffer = [];
             let n = 0;
-            const groups = r.state.archInstanceGroups;
+            const groups = st.archInstanceGroups;
             if (!groups) return { n, treffer };
             for (const [key, g] of groups) {
                 const m = /^fscatter:([^:#]+):(\d+):(\d)#/.exec(key);
@@ -214,7 +214,7 @@ hauptLauf(async () => {
         };
         res.c = formZensus();
         {
-            const wm = r.state.weltMarch;
+            const wm = st.weltMarch;
             res.d = {
                 voll: r._weltKapselnVollWarn === true || !!(wm && wm.kapselVoll),
                 cursor: wm ? wm.kapselCursor : -1,
@@ -403,7 +403,7 @@ hauptLauf(async () => {
         //    der echte Spawn läuft (kein Stub): die Warn-Flagge fällt im Allokator, die Zellen warten ohne Geometrie,
         //    und die Wiederholung im Tick rechnet keinen Fit und legt keine Instanz an ──
         const st2 = {};
-        const wm = r.state.weltMarch;
+        const wm = st.weltMarch;
         if (flipKey && wm) {
             const add0 = r._scatterInstanceAdd;
             const fit0 = r._streuGesetzFit;

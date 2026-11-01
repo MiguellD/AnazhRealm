@@ -1,6 +1,6 @@
 "use strict";
-const { ausDatei, path, fs, os, argOpt, SELBSTTEST } = require("./lib/welt-boot.cjs");
-/* global process, console, __dirname */
+const { ausDatei, path, fs, os, argOpt, SELBSTTEST, jsonLesen, ROOT } = require("./lib/welt-boot.cjs");
+/* global process, console */
 // scripts/stamm-rehome.cjs — trägt einen Zweig über den Stamm-Schnitt (Stamm-Zerlegung).
 //
 // Ein Zweig, der vor dem Schnitt abzweigte (oder über dessen Basis ein `--teile` lief), trägt den Stamm in einer anderen
@@ -22,7 +22,6 @@ const { ausDatei, path, fs, os, argOpt, SELBSTTEST } = require("./lib/welt-boot.
 const { execFileSync } = require("child_process");
 const stamm = require("./lib/stamm.cjs");
 
-const ROOT = path.resolve(__dirname, "..");
 const KONFLIKT = "stamm-rehome.konflikt.js";
 const ZUSTAND = "stamm-rehome.json"; // in .git
 const MB = { maxBuffer: 1 << 30 };
@@ -222,7 +221,7 @@ function rehome(root, aufName, opt = {}) {
 function weiter(root) {
     const zp = path.join(gitDir(root), ZUSTAND);
     if (!fs.existsSync(zp)) throw new Error("--weiter: kein Re-Home offen");
-    const z = ausDatei(zp, true);
+    const z = jsonLesen(zp);
     if (git(root, ["rev-parse", "HEAD"]).trim() !== z.zweigSha)
         throw new Error("--weiter: HEAD ist nicht mehr die Spitze, an der das Re-Home begann");
     const T = ausDatei(path.join(root, KONFLIKT));

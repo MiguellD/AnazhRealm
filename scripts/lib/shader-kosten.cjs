@@ -828,7 +828,7 @@ function rauschProbe() {
     return (async () => {
         const T = window.THREE;
         const TSL = T.TSL;
-        const A = r.constructor;
+        const A = AnazhRealm;
         const R = A.RAUSCH_GESETZ;
         const P = R.P;
         const [SA, SB] = R.schraeg;
@@ -929,7 +929,7 @@ function rauschProbe() {
                 (i, j) => raumCpu(cpuX(i), cpuY(j), cpuX(i) * 0.37 - cpuY(j) * 0.53),
             ],
         };
-        const rend = r.state.renderer;
+        const rend = st.renderer;
         const vorZiel = rend.getRenderTarget();
         const out = {};
         try {

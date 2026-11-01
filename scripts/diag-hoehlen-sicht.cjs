@@ -936,7 +936,7 @@ const server = statikServer();
                     r._tickChunkSatz();
                     r._passSicht(cam, false);
                     const offen = s.hoehle?.offen ? s.hoehle.offen.length : 0;
-                    if (offen <= r.constructor.HOEHLEN_HORIZONT_PROBEN) break;
+                    if (offen <= AnazhRealm.HOEHLEN_HORIZONT_PROBEN) break;
                     r._passSicht(cam, true);
                 }
                 return (s.abschnitte.get("haupt") || { liste: [] }).liste.slice();
@@ -1114,8 +1114,8 @@ const server = statikServer();
             // gerade Abstand darf durch Fels führen: die Grenze ist nur oben scharf); die Höhlen-Vertices in den Mündungs-Boxen des
             // Graphs (`tore`, Höhlen-Luft neben Himmels-Luft — die Wahrheit des Dichtefelds) tragen im Mittel mindestens 0,15.
             {
-                const A = r.constructor;
-                const bs = [...r.state.chunkSaetze.values()].find((q) => q.spec && q.spec.name === "bodenSatz");
+                const A = AnazhRealm;
+                const bs = [...st.chunkSaetze.values()].find((q) => q.spec && q.spec.name === "bodenSatz");
                 const geo = bs && bs.geom;
                 const PA = geo && geo.attributes.position;
                 // die Himmels-Sicht reist im Satz in der vierten Komponente des Normal-Ziels (snorm8, K51-2 `_chunkSatzArt` boden)
@@ -1305,8 +1305,8 @@ const server = statikServer();
             // sein Gesetz (AUGEN_LICHT, die Belichtung des Takts); (l) unter freiem Himmel jedes Licht der Szene, wie r184 es
             // sammelt (sichtbar, in den Ebenen der Kamera)
             {
-                const A = r.constructor.AUGEN_LICHT;
-                const B = r.constructor.BELICHTUNG;
+                const A = AnazhRealm.AUGEN_LICHT;
+                const B = AnazhRealm.BELICHTUNG;
                 const lichtAm = (p) => {
                     cam.position.set(p[0], p[1], p[2]);
                     cam.updateMatrixWorld(true);
@@ -1345,7 +1345,7 @@ const server = statikServer();
                     return {
                         auge: p.map((v) => +v.toFixed(1)),
                         h: Number.isFinite(h) ? +h.toFixed(3) : null,
-                        I: !imPool ? null : au ? +(au.L.staerke * r.constructor.LEGACY_LICHT).toFixed(3) : 0,
+                        I: !imPool ? null : au ? +(au.L.staerke * AnazhRealm.LEGACY_LICHT).toFixed(3) : 0,
                         soll: soll === null ? null : +(soll > 1e-4 ? soll : 0).toFixed(3),
                         abfall: A ? A.abfall : null,
                         kern: A ? A.kernM : null,
@@ -1486,7 +1486,7 @@ const server = statikServer();
                 if (
                     !GKc ||
                     typeof GKc.felsFein !== "function" ||
-                    typeof r.constructor._felsRechenwerkTSL !== "function"
+                    typeof AnazhRealm._felsRechenwerkTSL !== "function"
                 )
                     return null;
                 const V = (x) => (typeof x === "number" ? x : x.v);
@@ -1580,8 +1580,8 @@ const server = statikServer();
                 };
                 // `raum` des Rausch-Atlas, Schritt für Schritt aus den Atlas-Bytes (`_rauschAtlasDaten`, Texel = Byte / 127 − 1)
                 // wie `_rauschAtlas().raum` — die Welle der Bänke liest im Shader EINE Probe im Atlas (K17-2 NB1)
-                const RG = r.constructor.RAUSCH_GESETZ,
-                    AD = r.constructor._rauschAtlasDaten();
+                const RG = AnazhRealm.RAUSCH_GESETZ,
+                    AD = AnazhRealm._rauschAtlasDaten();
                 const raumMock = (p) => {
                     const P = RG.P,
                         m = P - 1,
@@ -1612,8 +1612,8 @@ const server = statikServer();
                     const d = [0, 1, 2, 3].map((e) => mix(s0[e], s1[e], u[2]));
                     return mk(mix(mix(d[0], d[1], u[0]), mix(d[2], d[3], u[0]), u[1]) * RG.skala, "f");
                 };
-                const O = r.constructor._felsRechenwerkTSL(Tm, raumMock);
-                const B = r.constructor.FELS_STOFF.basis;
+                const O = AnazhRealm._felsRechenwerkTSL(Tm, raumMock);
+                const B = AnazhRealm.FELS_STOFF.basis;
                 let maxDiff = 0,
                     n = 0;
                 for (let i = 0; i < 400; i++) {

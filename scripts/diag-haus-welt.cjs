@@ -41,7 +41,7 @@ const {
     teilAus,
     ROOT,
     hauptLauf,
-    pngDatei, SELBSTTEST, path, fs, stammLib } = require("./lib/welt-boot.cjs");
+    pngDatei, SELBSTTEST, path, fs, stammLib, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 
 const SELBST = SELBSTTEST;
@@ -131,7 +131,6 @@ const machServer = (platz) =>
     });
 
 async function proben(phasen) {
-    const r = window.anazhRealm;
     const s = r.state;
     const A = r.constructor;
     const FC = window.__fachwerkCore;
@@ -2296,7 +2295,7 @@ hauptLauf(async () => {
             await page.evaluate(() =>
                 window.__weltStehtNach(() => {
                     try {
-                        window.anazhRealm._gameLoopTick(performance.now());
+                        r._gameLoopTick(performance.now());
                     } catch {}
                 })
             );
@@ -2395,7 +2394,7 @@ hauptLauf(async () => {
             const f = urteil(o);
             for (const x of f) console.log("  ❌ " + x);
             rot += f.length;
-            if (process.env.HAUS_WELT_JSON) fs.writeFileSync(process.env.HAUS_WELT_JSON, JSON.stringify(o, null, 1));
+            if (process.env.HAUS_WELT_JSON) jsonSchreiben(process.env.HAUS_WELT_JSON, o);
         }
     } finally {
         await browser.close();

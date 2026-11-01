@@ -464,13 +464,13 @@ hauptLauf(async () => {
     const url = `ws://127.0.0.1:${SIGNAL}`;
     await page.evaluate((url) => r.initP2PSync(null, { url }), url);
     // der zweite Fluss: A öffnet den Raum seiner Welt (der Host beantwortet den world-request) und teilt sie in EINER Geste
-    await page.waitForFunction(() => anazhRealm.state.p2p.connected);
+    await page.waitForFunction(() => st.p2p.connected);
     uhr = Date.now();
     for (const s of ['[data-tab="bibliothek"]', 'button[data-teilen="welt"]']) await page.$eval(s, (k) => k.click()); // die Lade gleitet noch
     await page.waitForFunction(() => document.querySelector('code[data-teilen="welt"]').textContent);
     const msW = Date.now() - uhr;
     // die Welt reist größer als ein Rahmen (Chrome teilt ab ~128 KB): die Fragmente am signaling-server (27.10.: verworfen)
-    const [wCode, wId, wSame, raum, kb] = await page.evaluate(({ state: { worldMeta: m, p2p } } = anazhRealm) => [document.querySelector('code[data-teilen="welt"]').textContent, m.worldId, m.seed, p2p.room, JSON.stringify(anazhRealm.buildStateSnapshot()).length >> 10]);
+    const [wCode, wId, wSame, raum, kb] = await page.evaluate(({ state: { worldMeta: m, p2p } } = r) => [document.querySelector('code[data-teilen="welt"]').textContent, m.worldId, m.seed, p2p.room, JSON.stringify(r.buildStateSnapshot()).length >> 10]);
     const b = await pageB.evaluate(async (a, url, raum) => {
         await window.__weltDa(({ _foundry: f, state }) => f?.ready && f.recipes?.gt && !f._vorrat && state.vibePass?.ready);
         const res = { faelle: [] };

@@ -17,6 +17,7 @@
 // die JAHRESZEIT (Jahr 2400 s, der Saison-Flip baut jedes Foundry-Asset neu), jede SHADER-ZEIT des Bilds (A8: wasser
 // 0,17–0,69 am selben Code). Die Saison hält `saisonFest`, sobald die Welt existiert; die Bühne setzt Zeit und Wetter
 // über den EINEN Wetter-Schreiber (ohne 45-s-Cross-Fade, der Regen fällt im selben Zug), die EINE Bild-Uhr auf T (A9).
+// Die Tageszeit ist ein Wort der Bühne wie Wetter und Saison (`o.uhr`, die Uhr der Zelle; ohne Wort Mittag).
 const { KAMERA_NAH_INSTALL } = require("./kamera-nah.cjs");
 const { ABNAHME_INSTALL } = require("./abnahme-urteil.cjs");
 
@@ -344,11 +345,17 @@ function buehne(o) {
     const r = window.anazhRealm;
     const st = r.state;
     const w = o?.wetter || "sunny";
+    // DIE UHR DER BÜHNE (w4-himmel-uhr): das Wort der Zelle (`o.uhr` 0..1 — werkbank `bild --uhr`, `licht --uhr`, die Zellen am
+    // Spawn), ohne Wort Mittag. Bis dahin hielt die Bühne nur Mittag: die Licht-Bilanz (`__lichtBilanz`) maß um 0,3 und 0 den
+    // Mittag, der Schuss setzte seine Stunde erst danach. Die fehlende Uhr prüft `== null` zuerst (`Number(null) === 0`, Lehre
+    // 17), ein Wort außerhalb [0, 1] bricht laut, ehe die Bühne etwas setzt
+    const uhr = o?.uhr == null ? 0.5 : o.uhr;
+    if (!(typeof uhr === "number" && uhr >= 0 && uhr <= 1)) throw new Error(`DIE BÜHNE: die Uhr ${uhr} gilt nicht`);
     window.__weltaktSpion();
     st.autoSeason = false;
     const s = r.setSeason(o?.saison || "sommer");
-    if (st.world) st.world.timeOfDay = 0.5;
-    st.timeOfDay = 0.5;
+    if (st.world) st.world.timeOfDay = uhr;
+    st.timeOfDay = uhr;
     // Wetter und Saison: das Wort des Spielers (`o`, werkbank `bild --wetter --saison`), sonst Sonne und Sommer — über den
     // EINEN Schreiber, dann eingefroren (`__wetterSetzen`), der Regen zur Bild-Uhr; ein falsches Wort bricht laut
     if (!s || window.__wetterSetzen(w) !== w) throw new Error(`DIE BÜHNE: das Wort gilt nicht ${JSON.stringify(o)}`);
@@ -386,7 +393,9 @@ function buehne(o) {
 }
 
 // DIE TIERE DER BÜHNE im Selbsttest (ohne Welt, Attrappen; Land nur östlich des Spielers): 50 Tiere stehen im Ring 15–60 m auf
-// Land, ein zweiter Ruf stellt keines dazu, eine Welt ohne Platz bricht laut.
+// Land, ein zweiter Ruf stellt keines dazu, eine Welt ohne Platz bricht laut. DIE UHR DER BÜHNE: das Wort 0,3 steht in Welt und
+// Stand, ohne Wort (`null`) steht Mittag (`Number(null) === 0` wäre Mitternacht), ein falsches Wort bricht laut und lässt die Uhr,
+// wo sie stand.
 function buehneSelbsttest() {
     const v = [], tiere = [], w0 = global.window;
     const r = {
@@ -417,6 +426,16 @@ function buehneSelbsttest() {
             laut = e.message;
         }
         if (!/50 von 60/.test(laut)) v.push(`eine Welt ohne Platz bricht nicht laut (${laut})`);
+        r.state.world = {};
+        const uhr = (o) => {
+            try {
+                return buehne(o) && `${r.state.timeOfDay}/${r.state.world.timeOfDay}`;
+            } catch {
+                return `laut/${r.state.timeOfDay}`;
+            }
+        };
+        const ist = [0.3, null, "nacht"].map((u) => uhr({ uhr: u })).join(" ");
+        if (ist !== "0.3/0.3 0.5/0.5 laut/0.5") v.push(`die Uhr der Bühne: ${ist}`);
     } finally {
         global.window = w0;
     }

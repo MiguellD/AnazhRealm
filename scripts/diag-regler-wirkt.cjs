@@ -44,7 +44,7 @@
 // Port über REGLER_WIRKT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4561; der Stamm des
 // Ofen-Kanals über REGLER_WIRKT_OFEN_PORT, Standard Port + 1.
 "use strict";
-const { statikServer, starteBrowser, ROOT, hauptLauf, ausDatei, SELBSTTEST, path, stammLib, fadenScope } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT, hauptLauf, SELBSTTEST, path, stammLib, fadenScope, jsonLesen } = require("./lib/welt-boot.cjs");
 const { runWithWorker, bauBild, bauAbdruck, BAU_BILD_QUELLE } = require("./lib/asset-worker-harness.cjs");
 // DIE BILD-SCHWELLE (studios.K1, das Schlupfloch „0,1 mm am Hash"): ein Regler wirkt, wo sein Rand das Bild des Baus
 // (`bauBild`, die Vorschau-Pose) an mindestens 1 % der Gestalt-Pixel um mehr als 18 Luma bewegt — ein Hash allein zählt nie.
@@ -79,7 +79,7 @@ function kernVonArt() {
     const [gesetz, ids] = [{}, {}];
     Object.defineProperty(aus, "gesetz", { value: gesetz });
     Object.defineProperty(aus, "ids", { value: ids });
-    const manifest = ausDatei("cores.manifest.json", true);
+    const manifest = jsonLesen("cores.manifest.json");
     for (const c of manifest) {
         if (!c || typeof c.ns !== "string" || !c.ns) continue;
         const pbk = fadenScope(c.scripts)[c.ns]?.PARAMS_BY_KIND || {};
@@ -755,13 +755,13 @@ function vergleich(tot, ratsche) {
     return { neu, geheilt, ok: !neu.length && !geheilt.length };
     }
 function ratscheLesen() {
-    const r = ausDatei(RATSCHE_PFAD, true);
+    const r = jsonLesen(RATSCHE_PFAD);
     if (!r.reglerTot || typeof r.reglerTot.tot !== "object") throw new Error("ratsche.json ohne Block reglerTot.tot");
     if (!r.reglerBudget || typeof r.reglerBudget.bruch !== "object") throw new Error("ratsche.json ohne Block reglerBudget.bruch");
     return r.reglerTot;
 }
 function budgetRatscheLesen() {
-    return ausDatei(RATSCHE_PFAD, true).reglerBudget;
+    return jsonLesen(RATSCHE_PFAD).reglerBudget;
     }
 function bericht(zeilen) {
     const jeKern = {};
@@ -963,7 +963,7 @@ hauptLauf(async () => {
     for (const n of v.neu) console.log(`❌ NEU TOT: ${n} — ${toteZ.find((z) => name(z) === n).grund}`);
     for (const n of v.geheilt) console.log(`❌ GEHEILT: ${n} wirkt jetzt — die Zeile fällt im selben Commit aus spec/vertraege/ratsche.json (reglerTot.tot), die Ratsche sinkt`);
     // der Byte-Beweis der Gesetz-Werte (Teil 1 trägt jede Art mit `uniform`-Zeilen)
-    const vG = TEIL === 1 ? vergleich(m.ohneByte, { tot: ausDatei(RATSCHE_PFAD, true).reglerGesetz.zeilen }) : { neu: [], geheilt: [], ok: true };
+    const vG = TEIL === 1 ? vergleich(m.ohneByte, { tot: jsonLesen(RATSCHE_PFAD).reglerGesetz.zeilen }) : { neu: [], geheilt: [], ok: true };
     for (const n of vG.neu) console.log(`❌ GESETZ-WERT OHNE BEWEIS: ${n} bewegt kein Bau-Byte — seine Zeile gehört in reglerGesetz.zeilen`);
     for (const n of vG.geheilt) console.log(`❌ KEIN GESETZ-WERT: ${n} steht in reglerGesetz, ist aber kein uniform-Wert ohne Bau-Byte (die Zeile baut neu)`);
     const soll = ratsche.soll;

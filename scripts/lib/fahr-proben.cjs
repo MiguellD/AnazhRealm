@@ -924,7 +924,7 @@ async function probeLeben(expected) {
             bahnWache = null;
             m5.ende();
             weg(g5);
-            for (const o of [P, r.constructor])
+            for (const o of [P, AnazhRealm])
                 for (const k of Object.getOwnPropertyNames(o)) {
                     const f = Object.getOwnPropertyDescriptor(o, k).value;
                     if (typeof f === "function" && !window.__fehlt(f, /\.fov\s*=(?!=)/)) m5.schreiber.push(k);

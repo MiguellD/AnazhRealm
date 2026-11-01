@@ -18,7 +18,7 @@
 //   rot werden. Fehlt die geheilte Zeile in der Quelle, ist der Selbsttest rot (die Linse kann ihren Defekt nicht setzen).
 //   node scripts/diag-studio-begehen.cjs [--selftest]
 "use strict";
-const { statikServer, starteBrowser, ROOT, hauptLauf, SELBSTTEST, fs } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT, hauptLauf, SELBSTTEST, jsonSchreiben } = require("./lib/welt-boot.cjs");
 
 const SELBST = SELBSTTEST;
 
@@ -483,7 +483,7 @@ hauptLauf(async () => {
         for (const x of f) console.log("  ❌ " + x);
         rot += f.length;
         if (process.env.STUDIO_BEGEHEN_JSON)
-            fs.writeFileSync(process.env.STUDIO_BEGEHEN_JSON, JSON.stringify(o, null, 1));
+            jsonSchreiben(process.env.STUDIO_BEGEHEN_JSON, o);
     } finally {
         await browser.close();
         server.close();

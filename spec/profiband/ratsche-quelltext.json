@@ -109,7 +109,7 @@
         },
         "scripts/lib/abnahme-urteil.cjs": {
             "zweck": "Messung: die Version des Stamms im Stempel des Beweisbilds",
-            "datei": 3
+            "datei": 1
         },
         "scripts/lib/stamm.cjs": {
             "zweck": "die EINE Lese-Schnittstelle des Stamms: index.html nennt seine Dateien",

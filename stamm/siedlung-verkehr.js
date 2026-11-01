@@ -476,7 +476,6 @@ class AnazhRealm_siedlung_verkehr {
                 else if (b.amSteuer && W.zustand === "steht") this._verkehrAussteigen(S, b);
                 if (!b.amSteuer) continue;
                 const e = W.entry;
-                const d2 = (e.position.x - p.x) ** 2 + (e.position.z - p.z) ** 2;
                 const sicht = nah.includes(W);
                 if (sicht !== g.visible) g.visible = sicht;
                 if (!sicht) {
@@ -490,7 +489,7 @@ class AnazhRealm_siedlung_verkehr {
                 // ins Bild und nach jedem Wechsel der Gelenk-Stufe (`_gelenkStufe` stellt die Knochen fern in Ruhe); die Knochen zieht
                 // er nur nach, wenn sein Wagen sich seit dem letzten Bild bewegte (Kosten an Änderung). Bis hier rechnete `_sitzLage`
                 // je Bild dieselbe Lage samt eigenem Knochen-Gang neu (Messort stadt, Null-Renderer: 0,12 ms je Takt im Stand)
-                const fern = this._gelenkStufe(g, d2);
+                const fern = this._gelenkStufe(g, p, e.position); // die Stufe des Fahrers misst vom Wagen
                 const sitzH = Number.isFinite(e._sitzHeight) ? e._sitzHeight : AnazhRealm.MOUNT_FOLLOW_HEIGHT;
                 const [x, y, z] = [e.position.x, e.position.y - 0.5 + sitzH + (e._rideHeave || 0), e.position.z];
                 const gier = Number.isFinite(e._rideYaw) ? e._rideYaw : g.rotation.y;

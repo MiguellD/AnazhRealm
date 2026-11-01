@@ -39,7 +39,7 @@
 // die Platte trug, ist ROT beim Namen, ebenso ein Leser, der noch von der Platte kommt (`wechselUrteil`; --selftest füttert
 // es mit Bruch-Daten).
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, sleep, hauptLauf, nullSeite, urteilEnde, pngDatei, path, fs, os, SELBSTTEST, argOpt } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, sleep, hauptLauf, nullSeite, urteilEnde, pngDatei, path, fs, os, SELBSTTEST, argOpt: OPT } = require("./lib/welt-boot.cjs");
 const HL = require("./lib/haenger-linse.cjs");
 
 const PORT = Number(process.env.BOOT_STAGE_PORT || 4406);
@@ -48,7 +48,7 @@ const ARGV = process.argv.slice(2);
 // Die Kontrolle von außen (ankunft K1): die Taste trägt den Leib ≥ 0,1 m; nach 1500 Atemzügen ohne Weg hat er sie nie.
 // Das ganze Bild (ankunft K2 Staffel 1): ≤ 2 % der Pixel weichen gegen dieselbe Pose nach 60 s Ruhe um mehr als ein Achtel ab.
 const [ANKUNFT_SOLL_MS, KONTROLLE_M, KONTROLLE_DRUECKE, RUHE_MS, LUECKE_SOLL] = [5000, 0.1, 1500, 60000, 0.02];
-const KERN = require("../cores.manifest.json").find((k) => k.id === argOpt("--kern-wechsel"));
+const KERN = require("../cores.manifest.json").find((k) => k.id === OPT("--kern-wechsel"));
 const server = statikServer({ wandle: (p, roh) => (KERN?.scripts.includes(p.slice(1)) ? roh + "//" : roh) });
 // (Seite) trägt die gehaltene Taste den Leib um `m`? Der Weg in einem Atem von 200 ms, waagrecht — der Fall zählt nicht.
 async function LEIB_WEG(m) {
@@ -131,6 +131,13 @@ function wechselUrteil(vor, nach, kern) {
         zeile: `KERN-WECHSEL ${kern}: ${neu.size} Leser neu · fremd ${fremd.length} ${fremd.slice(0, 6)} · alt ${alt.length} ${alt.slice(0, 6)}`,
     };
 }
+// DIE HALTER-ZEILEN (der Kalt-Lauf und `--spur-lesen`): die Tafel, die Spur — wie viele Proben unter „(Knoten verloren)" zählen,
+// ein verlorener ProfileChunk steht laut (`profilLesen`, über 5 % sind die Halter ROT ohne Namen) — und DIE HALTER-LINSE
+// (Hänger-Familie, Selbsttest `werkbank takt --selbsttest`): ROT beim Namen jeder Funktion, die vor dem ersten Bild den
+// Haupt-Faden ≥ ANKUNFT_HALT_MS hält (blind ohne Marken ist sie ROT)
+const halterZeilen = (a) =>
+    `${HL.ankunftsHalterTafel(a)}\n  die Spur: ${a.verlust?.satz || "ohne Proben"}\n` +
+    `  ${a.befunde.length ? "❌" : "✅"} DIE HALTER vor dem ersten Bild: ${a.befunde.slice(0, 6).join(" · ") || "keiner"}`;
 
 // ── DIE KALT-ZEILE (`--kalt`): die Probe je 200 ms in der Seite, ab dem ersten Skript ──
 // Die Haupt-Thread-Zeit je Sekunde der schweren Ankunfts-Arbeiter liest die Spur (`ankunftsHalter`, Klassen über die Namen der
@@ -147,7 +154,7 @@ const KALT_KLASSEN = {
     _spawnSettlementSlot: "Dorf",
     // DIE KLASSE PFLANZEN (B): die Saat der Chunks, der Plan des Walds, die Gestalt des Orts — in der Familie zählt der
     // Äußere (die Gestalt in der Streu ist Streu), ihre Summe bis zum Bild steht in der Klassen-Zeile
-    _populateVoxelChunkVegetation: "Saat",
+    _tickSaat: "Saat",
     _forestPlantChunk: "Saat",
     _tickWaldPlan: "Wald-Plan",
     _ortGestaltSame: "Gestalt",
@@ -198,7 +205,7 @@ async function kaltLauf() {
     // DIE ZWEIT-ZEILE (1310-16): `--profil <ordner>` hält das Profil (die Foundry-Platte, der HTTP-Cache) über den Lauf hinaus —
     // der erste Lauf in einem neuen Ordner ist kalt, jeder weitere ein Zweit-Boot; ohne die Option ein leeres Wegwerf-Profil.
     // Mit ihr wartet die Zeile auf die Ruhe der Foundry: der Erst-Boot füllt die Platte ganz, der Zweit-Boot zählt jede Lieferung.
-    const profilBenannt = argOpt("--profil");
+    const profilBenannt = OPT("--profil");
     const zweit = !!(profilBenannt && fs.existsSync(profilBenannt));
     const profil = profilBenannt ? path.resolve(profilBenannt) : fs.mkdtempSync(path.join(os.tmpdir(), "kalt-zeile-"));
     fs.mkdirSync(profil, { recursive: true });
@@ -214,7 +221,7 @@ async function kaltLauf() {
     await page.evaluateOnNewDocument(KALT_PROBE);
     // DIE MUTANTE (`--mutante eigenmeldung`, das Schlupfloch von ankunft K1): die Eigenmeldung steht ab dem Erwachen — die
     // Kontrolle von außen folgt ihr nie; `--mutante bild`: der erste Schuss endet nach 20 m, die Welt dahinter fehlt (ROT)
-    const MUT = argOpt("--mutante");
+    const MUT = OPT("--mutante");
     if (MUT === "eigenmeldung")
         await page.evaluateOnNewDocument(() =>
             window.__weltDa().then((r) => (r.state._weltbildDa = performance.now()))
@@ -229,7 +236,7 @@ async function kaltLauf() {
     });
     const t0 = Date.now();
     // `--holz <profil>`: das Holz der Seite (`?holz=`), sonst wählt sie selbst (swiftshader → kienspan)
-    await server.zeige(page, 120000, argOpt("--holz") ? `index.html?holz=${argOpt("--holz")}` : "index.html");
+    await server.zeige(page, 120000, OPT("--holz") ? `index.html?holz=${OPT("--holz")}` : "index.html");
     // DIE KONTROLLE VON AUSSEN (ankunft K1–K3, nie die Eigenmeldung `_weltbildDa`): der Spieler hält W über das Protokoll des
     // Browsers; je Atem schickt er den Druck neu (Autorepeat — der Ladeschirm hält jede Taste, die erste nach ihm gilt), bis
     // die Taste den Leib um ≥ KONTROLLE_M trägt: t ist die Prozess-Uhr ab Navigation, als der Weg gesehen wurde.
@@ -244,7 +251,7 @@ async function kaltLauf() {
     // (scripts/lib/ausgabe-aufnahme.cjs) und derselbe nach RUHE_MS Ruhe (der Loop läuft), daneben `<datei>-ruhe.png`; dazu der
     // offene Bedarf im Bild in dem Moment (`_weltbildLuecken`, im Blick)
     const offen = tK ? await page.evaluate(() => r._weltbildFehlt()) : [];
-    const bildDatei = argOpt("--bild");
+    const bildDatei = OPT("--bild");
     let bild = null;
     if (tK && bildDatei) {
         const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
@@ -317,12 +324,12 @@ async function kaltLauf() {
         klassen: KALT_KLASSEN,
         familie: KALT_PFLANZEN,
     };
-    if (argOpt("--spur") && spur)
-        fs.writeFileSync(argOpt("--spur"), JSON.stringify({ spur: { profil: spur.profil, marken: spur.marken }, seite }));
+    if (OPT("--spur") && spur)
+        fs.writeFileSync(OPT("--spur"), JSON.stringify({ spur, seite }));
     out.halter = HL.ankunftsHalter(spur, seite);
     [out.kosten, out.vorBild] = [out.halter.kosten, out.halter.vorBild];
     delete out.marken;
-    const json = argOpt("--json");
+    const json = OPT("--json");
     if (json) fs.writeFileSync(json, JSON.stringify(out, null, 1));
     // je Sekunde: der Stand am Ende der Sekunde (die letzte Probe) und die blockierten ms des Haupt-Threads
     const S = Math.ceil((tK || out.weltbildDa) / 1000);
@@ -366,13 +373,8 @@ async function kaltLauf() {
                 kl.map(([k, ms]) => `${k} ${Math.round(ms)}`).join(" · ") +
                 ")"
         );
-    console.log(HL.ankunftsHalterTafel(out.halter));
-    // DIE HALTER-LINSE (Hänger-Familie, Selbsttest `werkbank takt --selbsttest`): ROT beim Namen jeder Funktion, die vor dem
-    // ersten Bild den Haupt-Faden ≥ ANKUNFT_HALT_MS hält (blind ohne Marken ist sie ROT)
+    console.log(halterZeilen(out.halter));
     const halter = out.halter.befunde;
-    console.log(
-        `  ${halter.length ? "❌" : "✅"} DIE HALTER vor dem ersten Bild: ${halter.slice(0, 6).join(" · ") || "keiner"}`
-    );
     const halb = out.ohne[0];
     const gut = tK > 0 && tK <= ANKUNFT_SOLL_MS && !halb;
     if (halb) console.log(`  ❌ das halbe Weltbild: ${halb}`);
@@ -396,9 +398,9 @@ async function kaltLauf() {
 
 hauptLauf(async () => {
     if (ARGV.includes("--kalt")) return kaltLauf();
-    if (argOpt("--spur-lesen")) {
-        const { spur, seite } = JSON.parse(fs.readFileSync(argOpt("--spur-lesen")));
-        return console.log(HL.ankunftsHalterTafel(HL.ankunftsHalter(spur, seite)));
+    if (OPT("--spur-lesen")) {
+        const { spur, seite } = JSON.parse(fs.readFileSync(OPT("--spur-lesen")));
+        return console.log(halterZeilen(HL.ankunftsHalter(spur, seite)));
     }
     await server.lausche(PORT);
     const { browser, page } = await nullSeite({ frist: 300000 });

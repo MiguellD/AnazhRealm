@@ -40,7 +40,9 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 - ORT: der Genesis-Platz (`GENESIS_PLATZ`), jedes Bauwerk und jeder Dorfweg sind Grundriss gegen Natur, das Dorf EIN Plan des
   Fachwerk-Studios auf dem Gelände-Kern (`_ortPlaene`), jeder Wurf des Felds weicht ihm (`FELD_WURF`, `_weichtDemBau`). Heute hält die
   Instanz-Wand (`_naturWand`) Bauten frei, die Schicht (Halm, Nah-Wiese) noch nicht.
-- GESTALT < 64 m Studio-Mesh + LOD-Kette, EIN Auge der Stufen (`_lodAuge`), jede Karte eine Schicht des EINEN Atlas, ihre Mips
+- GESTALT < 64 m Studio-Mesh + LOD-Kette, EIN Auge der Stufen (`_lodAuge`), jede Karte eine Schicht des EINEN Atlas, gebacken aus
+  ihrer Höhen-Stufe (`_karteStufe`), je Texel ihre Tiefe (phyto-core `karteTiefe`: die Karte steht in der Tiefe ihrer Gestalt —
+  Pixel-Tiefen-Versatz und Schatten-Ort; heute ohne Blick-Parallaxe, gate:foundry-impostor C7 misst sie), ihre Mips
   deckungstreu mit dem Saum der Art in JEDEM Hebungs-Ring (phyto-core `karteSaum`/`karteSaumRinge`: die Zelle aus der Blattgröße in
   `treeParams`, Laub-Lappen, Nadel-Grate, der Kronen-Fuß im Bild des Rings; die GPU-Ablage `KARTE_RECHNER_WGSL` rechnet dasselbe Gesetz,
   `_karteSaumVon`), fern Glieder-Kapseln · jede Senke zeichnet über ihren Zeichner (`_instanzZeichner`: count 1 über einer InstancedBufferGeometry-Fassade,
@@ -109,8 +111,8 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
     Bericht-Namen: der Name wandert in die Merge-Message, und die liest `gate:betriebsgesetz` am HEAD.
 16. **Der Null-Renderer ist blind** für Feld-Fit, Slots, March — Analog-Befunde nur mit echtem Renderer (`diag-arch-feld`, `diag-beweis-e`);
     ein Fit liest eine FERTIGE Quelle (Foundry-Flat), nie ein Async-Mesh (leer → ausgebrannt → für immer unsichtbar); Budgets: Lehre 25.
-17. **Sonden mit echtem Renderer:** je Schuss ruht der Loop, `__buehne` hält Mittag · Sonne · Sommer (Wetter-Zug 120 s, Saison-Drift
-    2400 s), die Schatten-Map wird neu markiert, die Blick-Wahl sucht freie Sicht; `Number(null) === 0` — Default-Helfer prüfen `v == null`
+17. **Sonden mit echtem Renderer:** je Schuss ruht der Loop, `__buehne` hält die Uhr der Zelle (`uhr`, ohne Wort Mittag) · Sonne · Sommer
+    (Wetter-Zug 120 s, Saison-Drift 2400 s), die Schatten-Map wird neu markiert, die Blick-Wahl sucht freie Sicht; `Number(null) === 0` — Default-Helfer prüfen `v == null`
     zuerst; swiftshader (CI) verbirgt Präzisionsfehler echter GPUs (Fern-Ring 3,5 m auf 8 km nur auf der Radeon) — Bild-Urteile auf
     echter Hardware.
 18. **Erst das Soll-Bild, dann die Welle:** Referenz + Budget (Tris/dc je LOD) + EIN Spike mit echtem Renderer an der Mess-Wiese, nah UND fern.

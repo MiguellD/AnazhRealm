@@ -1,6 +1,6 @@
 "use strict";
-const { ausDatei, path, fs, argOpt, SELBSTTEST } = require("./lib/welt-boot.cjs");
-/* global process, console, __dirname */
+const { ausDatei, path, fs, argOpt, SELBSTTEST, ROOT } = require("./lib/welt-boot.cjs");
+/* global process, console */
 // scripts/stamm-umzug.cjs — der Umzug des Stamms NACH DOMÄNE. Die Karte spec/stamm/modul-karte.json ordnet jedes Glied der
 // Klasse und jede Außen-Anweisung einem Modul[/teil] zu; `ordne` (scripts/lib/stamm.cjs) stellt den virtuellen Stamm danach,
 // S schreibt stamm/<modul>[-<teil>].js. DETERMINISTISCH: gleiche Karte und gleicher Stamm geben dieselben Dateien — der
@@ -19,7 +19,6 @@ const { ausDatei, path, fs, argOpt, SELBSTTEST } = require("./lib/welt-boot.cjs"
 //   --selftest
 const stamm = require("./lib/stamm.cjs");
 
-const ROOT = path.resolve(__dirname, "..");
 const argv = process.argv.slice(2);
 const TAFELN = ["spec/abnahme/soll-tafel.json", "spec/farbe/albedo-tafel.json"];
 const VERALTET = "c:0000000000000000"; // ein Abdruck, den kein Code trägt: die Messung bleibt „veraltet seit …"

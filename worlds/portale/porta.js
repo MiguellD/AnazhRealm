@@ -30,8 +30,37 @@ function buildGate(p){
   if(kostenLeiste)kostenLeiste.neu();
   if(gate)scene.remove(gate);
   var R=PC.buildGate(p,{front:doorAngle,back:doorAngleB});                       // die EINE Bau-Quelle (Kern) — Struktur + Türen + Fundament
-  gate=R.gate;D=R.D;leafL=R.leafL;leafR=R.leafR;leafLB=R.leafLB;leafRB=R.leafRB;rimMat=R.rimMat;
+  gate=R.gate;D=R.D;leafL=R.leafL;leafR=R.leafR;leafLB=R.leafLB;leafRB=R.leafRB;rimMat=R.rimMat;steinLabor(gate);
   scene.add(gate);buildMembrane();controls.target.set(0,D.springY*0.55,0);controls.update();updateLaw();
+}
+
+/* DAS STEIN-GESETZ IM LABOR (w4-genesis-tore, porta-core STEIN_GESETZ): derselbe Stein wie in der Welt (`_steinStoff`). Die Lage im
+   Verband reist im uv jedes Rahmen-Teils (u = Stein + Weg durch ihn, eine ganze Zahl ist eine Fuge; v = seine Länge in m): der
+   Bruchton je Stein, die Fuge als Box-Abdeckung des Pixels, die Kante als Normale (die Fase fällt 45° zur Fuge; der Gradient von u
+   in der Fläche aus den Ableitungen am Schirm, Mikkelsen 2010). Die Zahlen injiziert die Shell aus der EINEN Quelle (GN). */
+function steinLabor(g){
+  var SG=PC.STEIN_GESETZ;if(!SG)return;
+  g.traverse(function(o){var m=o.material;if(!o.isMesh||!m||!m.userData||!SG[m.userData.__stein]||m.userData.__steinLabor)return;
+    var G=SG[m.userData.__stein],F=GN(G.fuge),K=GN(G.fuge+G.fase);m.userData.__steinLabor=true;
+    m.customProgramCacheKey=function(){return 'stein:'+m.userData.__stein;};
+    m.onBeforeCompile=function(s){
+      s.vertexShader='varying vec2 vSteinUv;\n'+s.vertexShader.replace('#include <uv_vertex>','#include <uv_vertex>\n\tvSteinUv = uv;');
+      s.fragmentShader='varying vec2 vSteinUv;\n'+s.fragmentShader
+        .replace('#include <map_fragment>','#include <map_fragment>\n'+
+          '\tfloat sU = vSteinUv.x, sL = max(vSteinUv.y, 1e-3), sT = fract(sU);\n'+
+          '\tfloat sD = min(sT, 1.0 - sT) * sL, sAA = max(fwidth(sU) * sL, 1e-5), sH = 0.5 * sAA;\n'+
+          '\tfloat sF = clamp((min(sD + sH, '+F+') - max(sD - sH, -'+F+')) / sAA, 0.0, 1.0);\n'+
+          '\tfloat sZ = fract(sin(floor(sU) * 12.9898) * 43758.5453);\n'+
+          '\tdiffuseColor.rgb *= (1.0 + (2.0 * sZ - 1.0) * '+GN(G.ton)+') * mix(1.0, '+GN(G.fugeTon)+', sF);')
+        .replace('#include <normal_fragment_maps>','#include <normal_fragment_maps>\n'+
+          '\t{ vec3 sP = -vViewPosition, sX = dFdx(sP), sY = dFdy(sP), sR1 = cross(sY, normal);\n'+
+          '\t  float sDet = dot(sX, sR1); sDet = abs(sDet) > 1e-12 ? sDet : 1e-12;\n'+
+          '\t  vec3 sG = (sR1 * dFdx(sU) + cross(normal, sX) * dFdy(sU)) / sDet * (sT < 0.5 ? 1.0 : -1.0);\n'+
+          '\t  float sGl = length(sG);\n'+
+          '\t  float sK = smoothstep('+F+' - sH, '+F+' + sH, sD) * (1.0 - smoothstep('+K+' - sH, '+K+' + sH, sD)) * clamp('+GN(G.fase)+' / sAA, 0.0, 1.0) * step(1e-6, sGl);\n'+
+          '\t  normal = normalize(normal - sG / max(sGl, 1e-6) * sK); }');
+    };
+    m.needsUpdate=true;});
 }
 
 // ============================================================

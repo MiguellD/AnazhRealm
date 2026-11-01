@@ -7,12 +7,11 @@
 //
 // mint-asset-goldens.cjs (schreibt die eingefrorenen Goldens) UND diag-asset-contract.cjs (das
 // Dauer-Gate) LESEN diese eine Datei — kein zweiter Boot-Pfad, der driften kann.
-const { statikServer, starteBrowser, ausDatei, path, crypto, stammLib } = require("./welt-boot.cjs");
+const { statikServer, starteBrowser, ausDatei, path, crypto, stammLib, jsonLesen, ROOT } = require("./welt-boot.cjs");
 const { installiereDrift, FUNKTIONEN } = require("./plattform-probe.cjs");
 const { rasterDreieck } = require("./kronen-linse.cjs");
 const { luma709, linSrgb } = require("./abnahme-urteil.cjs");
 
-const ROOT = path.resolve(__dirname, "..", "..");
 
 // der Boot ist MANIFEST-GETRIEBEN wie die Produktion
 // (anazhRealm._ensureAssetFoundry liest cores.manifest.json + injiziert
@@ -21,7 +20,7 @@ const ROOT = path.resolve(__dirname, "..", "..");
 // aus dem Manifest. So trägt das Harness-Buch ALLE Gattungen (tor/klinge/haus/
 // kreatur …), nicht nur die Pflanzen — EINE Quelle, kein hartkodierter Zweitpfad.
 // (Die Pflanzen-Goldens bleiben byte-identisch — gate:asset-contract ist der stehende Beweis.)
-const CORES_MANIFEST = ausDatei(path.join(ROOT, "cores.manifest.json"), true);
+const CORES_MANIFEST = jsonLesen("cores.manifest.json");
 const WORKER_SCRIPTS = (() => {
     const rel = [];
     for (const core of CORES_MANIFEST) if (core && Array.isArray(core.lib)) for (const s of core.lib) rel.push("/" + s);

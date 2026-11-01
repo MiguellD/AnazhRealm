@@ -1,5 +1,5 @@
 "use strict";
-const { ausDatei, fs, path } = require("../lib/welt-boot.cjs");
+const { ausDatei, fs, path, jsonLesen } = require("../lib/welt-boot.cjs");
 // scripts/playtest/netz.cjs — der Richter von Netz (spec/stamm/modul-karte.json): Einladung · WebRTC-Mesh · Lockstep · Stimme · Welt-Bündel · Vibe-Pass · Signaturen · Regionen · Pins und Hallen · Bann · Portal-Eintritt · Ko-Präsenz · Dwelling · Portal-Server.
 // 10 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
@@ -1377,7 +1377,7 @@ async function checkBandTailleGolden({ page, check }) {
             `Leuchtturm §7: alle ${typen.size} Broker-Typen sind im Andock-Vertrag dokumentiert${fehltDe.length ? " (fehlt: " + fehltDe.join(",") + ")" : ""}`,
             fehltDe.length === 0
         );
-        const pkg = ausDatei(path.join(SKRIPTE, "..", "package.json"), true);
+        const pkg = jsonLesen(path.join(SKRIPTE, "..", "package.json"));
         check(
             "Leuchtturm: der Ein-Befehl-Self-Host steht (npm run leuchtturm + scripts/leuchtturm.cjs + README-Sektion)",
             !!(pkg.scripts && pkg.scripts.leuchtturm) &&
@@ -1391,10 +1391,10 @@ async function checkBandTailleGolden({ page, check }) {
     let golden = null;
     try {
         golden = {
-            blueprint: ausDatei(path.join(goldenDir, "blueprint-signed.json"), true),
-            manifest: ausDatei(path.join(goldenDir, "world-manifest.json"), true),
-            snapshotHead: ausDatei(path.join(goldenDir, "snapshot-head.json"), true),
-            envelopes: ausDatei(path.join(goldenDir, "p2p-envelopes.json"), true),
+            blueprint: jsonLesen(path.join(goldenDir, "blueprint-signed.json")),
+            manifest: jsonLesen(path.join(goldenDir, "world-manifest.json")),
+            snapshotHead: jsonLesen(path.join(goldenDir, "snapshot-head.json")),
+            envelopes: jsonLesen(path.join(goldenDir, "p2p-envelopes.json")),
         };
     } catch (e) {
         check("Ω4: die goldenen Dateien existieren (spec/golden/v1 — NIE regenerieren)", false, e.message);

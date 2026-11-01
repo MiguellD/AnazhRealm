@@ -1968,6 +1968,10 @@ async function checkBandScatterScheibe({ page, check }) {
         const clean = () => {
             if (st.scatterRegions && st.scatterRegions.has(key)) r._disposeScatterRegion(key);
         };
+        // die Region kommt zur Ruhe (kein Wurf wartet mehr auf Wald-Plan, Zug oder Karte): ein wartender Wurf hält seinen Platz
+        // (`_scatterPass`) — was zwischen zwei Bauten ankäme, verschöbe ihre Plätze, die Vergleiche unten messen dieselbe Welt
+        for (let i = 0; i < 400 && (clean(), r._scatterRegion(rx, rz, pos))._deferredFoundry; i++)
+            (r._tickWaldPlan(Infinity), await sleep(10));
         // ── SCHEIBEN-Bau: die Würfe rechnet der Streu-Faden (eine Ereignis-Runde nur, solange sie fehlen), die Zellen in Scheiben ──
         clean();
         let slices = 0;
@@ -2045,60 +2049,48 @@ async function checkBandScatterScheibe({ page, check }) {
             storno.threw = String((e && e.message) || e);
         }
         o.storno = storno;
-        // ── (5) DER WECKER: zwei offene Zusagen, eine fremde Lieferung, dann die eigenen ──
-        const wecker = { fremd: null, eine: null, beide: null, threw: false };
+        // ── (5) DER WECKER: jede Baum-Zelle wartet auf zwei Zusagen (ihr Wurf hält seinen Platz, `_scatterPass`), eine fremde
+        // Lieferung, dann die eigenen — die Region baut weiter (`_streuRegionWeiter`), nie neu, und steht danach wie der One-Shot.
+        // `runde`: wie oft sie nach ihrem Wecker weiterbaute (`_weiter`), -1 = sie wurde weggeworfen. Wartet ihre Gestalt noch auf
+        // den Plan des Walds (`_waldPlanZusage`, B-Wald), leert die Linse die Schlange zuerst — danach steht sie NUR auf den zweien ──
+        const wecker = { threw: false };
         try {
             clean();
             const loes = [];
             const zus = [0, 1].map(() => new Promise((res) => loes.push(res)));
-            const altPass = r._scatterPass;
-            r._scatterPass = function (region, ...a) {
-                region._deferredFoundry = true; // jede Zelle wartet (wie bei kaltem Asset)
-                if (typeof this._streuWartetAuf === "function") for (const z of zus) this._streuWartetAuf(z);
-                return altPass.call(this, region, ...a);
+            const P = Object.getPrototypeOf(r);
+            r._scatterSichtHoehe = function (layer, ...a) {
+                if (layer.kind !== "tree") return P._scatterSichtHoehe.call(this, layer, ...a);
+                return (zus.forEach((z) => this._wartetAuf(z)), null); // die Höhe lädt (wie bei kaltem Asset): die Zelle wartet
             };
-            // die Zusagen der Region beim Namen: ihre zwei, die Schlange des Walds und jede fremde (Karte, Zug, Buch)
-            const altWartet = r._streuWartetAuf;
-            const fremde = new Set();
-            r._streuWartetAuf = function (z) {
-                if (this._streuSammler && z && !zus.includes(z))
-                    fremde.add(
-                        [...(this._waldZusagen || new Map()).values()].some((e) => e.zusage === z) ? "wald" : "fremd"
-                    );
-                return altWartet.call(this, z);
-            };
-            wecker.schlange = r._waldPlanSchlange ? r._waldPlanSchlange.size : 0;
             let reg5;
             try {
                 reg5 = r._scatterRegion(rx, rz, pos);
             } finally {
-                r._scatterPass = altPass;
-                r._streuWartetAuf = altWartet;
+                delete r._scatterSichtHoehe;
             }
-            wecker.fremde = [...fremde];
-            // wartet ihre Gestalt noch auf den Plan des Walds, wartet die Region benannt auch auf die Zellen ihrer Kästen
-            // (`_waldPlanZusage`, B-Wald): die Linse leert die Schlange zuerst (der Takt schickt sie an den Faden) — danach steht
-            // die Region NUR noch auf ihren zwei Zusagen
-            for (let i = 0; i < 4000 && r._waldPlanSchlange && r._waldPlanSchlange.size; i++) {
-                r._tickWaldPlan(Infinity);
-                await sleep(10);
-            }
-            wecker.schlangeNach = r._waldPlanSchlange ? r._waldPlanSchlange.size : 0;
-            const steht = () => st.scatterRegions.get(key) === reg5;
-            const tick = async () => {
+            const wartend = () => reg5._schicht[0].plaetze.filter((p) => !p.cell).length;
+            const runde = async (z) => {
+                if (z) z();
                 await sleep(0);
                 r._tickScatterStreaming(pos);
+                return st.scatterRegions.get(key) === reg5 ? reg5._weiter : -1;
             };
+            wecker.plaetze = wartend();
+            for (let i = 0; i < 4000 && r._waldPlanSchlange && r._waldPlanSchlange.size; i++)
+                (r._tickWaldPlan(Infinity), await sleep(10));
             r._scatterRefillPending = true; // eine FREMDE Lieferung
-            await tick();
-            wecker.fremd = steht();
-            loes[0]();
+            wecker.fremd = await runde();
             r._scatterRefillPending = true;
-            await tick();
-            wecker.eine = steht();
-            loes[1]();
-            await tick();
-            wecker.beide = steht();
+            wecker.eine = await runde(loes[0]);
+            wecker.beide = await runde(loes[1]);
+            // die Runde nach dem Wecker trägt jeden Wartenden: sie steht, sobald ihre Zusagen (Wald-Plan, Karte, Zug) kamen
+            for (let i = 0; i < 400 && (reg5._cont || wartend()); i++)
+                (r._tickWaldPlan(Infinity), await runde(), await sleep(10));
+            wecker.warten = wartend();
+            const snap5 = snapshot(reg5);
+            clean();
+            wecker.gleich = snapshot(r._scatterRegion(rx, rz, pos)) === snap5;
             clean();
         } catch (e) {
             wecker.threw = String((e && e.message) || e);
@@ -2123,12 +2115,12 @@ async function checkBandScatterScheibe({ page, check }) {
             stoff.buch = !!(r._foundry && r._foundry.recipes);
             stoff.wahr = r._forestGesetzWahr();
             stoff.faden = !!st.voxelWorker;
-            // mit Faden, frisches Gedächtnis: wie viele Darts rechnet der Haupt-Faden UNTER der Streu-Scheibe (`_streuSammler`)?
+            // mit Faden, frisches Gedächtnis: wie viele Darts rechnet der Haupt-Faden UNTER der Streu-Scheibe (`_zusagenSammler`)?
             r._forestDartMemo = null;
             let zaehler = 0;
             const altCD = r._forestCellDarts;
             r._forestCellDarts = function (cx, cz, seedInt) {
-                if (this._streuSammler && !(this._forestDartMemo && this._forestDartMemo.has(cx + "," + cz))) zaehler++;
+                if (this._zusagenSammler && !(this._forestDartMemo && this._forestDartMemo.has(cx + "," + cz))) zaehler++;
                 return altCD.call(this, cx, cz, seedInt);
             };
             const vw = st.voxelWorker;
@@ -2201,13 +2193,11 @@ async function checkBandScatterScheibe({ page, check }) {
         JSON.stringify(out.storno)
     );
     const w = out.wecker;
+    // ihre Plätze halten, eine fremde Lieferung und die erste Zusage überleben, nach der zweiten weiterbauen, wie der One-Shot stehen
     check(
-        "Scatter-Scheibe DER WECKER: die aufgeschobene Region überlebt eine fremde Lieferung und die erste ihrer zwei Zusagen, nach der zweiten baut der Refill sie neu",
-        !!w && w.threw === false && w.fremd === true && w.eine === true && w.beide === false,
-        JSON.stringify(w) +
-            (w && w.fremd === false
-                ? " — TÄTER: der Refill in _tickScatterStreaming warf sie bei einer fremden Lieferung weg"
-                : "")
+        "Scatter-Scheibe DER WECKER: wartende Würfe halten ihre Plätze, geweckt baut die Region weiter, nie neu",
+        !!w && !w.threw && w.plaetze > 0 && w.fremd === 0 && w.eine === 0 && w.beide === 1 && !w.warten && w.gleich,
+        JSON.stringify(w) + (w && w.beide === -1 ? " — TÄTER: der Refill warf die geweckte Region weg" : "")
     );
     const s = out.stoff;
     check(

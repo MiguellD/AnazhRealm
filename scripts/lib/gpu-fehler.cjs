@@ -123,7 +123,7 @@ function gpuFehlerAbgriff() {
 // Nach dem Renderer-Init: der Name des three-Objekts, das der Backend-Draw gerade zeichnet (Bundles zeichnen beim
 // Aufnehmen über dieselbe Stelle).
 function gpuFehlerObjekt() {
-    const be = r && r.state && r.state.renderer && r.state.renderer.backend;
+    const be = r && st && st.renderer && st.renderer.backend;
     const F = window.__gpuFehler;
     if (!be || !F || be.__gpuFehlerDraw) return !!(be && be.__gpuFehlerDraw);
     const d = be.draw;

@@ -23,7 +23,7 @@
 // Port: ALBEDO_PORT (Standard 4587). `--echt` fährt die echte GPU (scripts/lib/software-gpu.cjs echteWebGpuArgs), sonst
 // die Weiche des EINEN Start-Rezepts (linsenWebGpuArgs: lokal der Hardware-Adapter, in der CI swiftshader).
 "use strict";
-const { statikServer, starteBrowser, hauptLauf, sleep, argOpt: opt, pngDatei, selbsttestEnde, ausDatei, path, fs, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, sleep, argOpt: opt, pngDatei, selbsttestEnde, ausDatei, path, fs, SELBSTTEST, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const AT = require("./lib/albedo-tafel.cjs");
 const { kartenEichung } = require("./lib/licht-linsen.cjs");
 // der Code-Abdruck einer Datei des Baums und der Stand einer Messung (abnahme-urteil `standLeser`, derselbe wie Werkzeug und
@@ -157,7 +157,7 @@ async function laborLaub() {
     await server.lausche(PORT);
     const b = await browser(argv.includes("--echt"));
     const labor = {};
-    const welt = opt("--welt") ? ausDatei(path.resolve(opt("--welt")), true).welt : null;
+    const welt = opt("--welt") ? jsonLesen(path.resolve(opt("--welt"))).welt : null;
     try {
         const page = await b.newPage();
         await server.zeige(page, 120000, S.pfad, "load");
@@ -541,11 +541,11 @@ async function neuMessen(t, ids) {
         wb(["stop"]);
         if (w.exitCode == null) w.kill();
     }
-    const welt = ausDatei(wd, true);
+    const welt = jsonLesen(wd);
     const labor = await messeLabor({ echt: false, nur: null, tafel: t });
     Object.assign(labor, { datum: new Date().toISOString(), echt: false, stand: SL.kernStand() });
     const ld = path.join(ordner, "labor.json");
-    fs.writeFileSync(ld, JSON.stringify(labor, null, 1));
+    jsonSchreiben(ld, labor);
     const u = AT.tafelUrteil(t, {
         labor: labor.labor,
         karten: labor.karten,
@@ -582,7 +582,7 @@ async function main() {
         m.echt = argv.includes("--echt");
         // DER STAND der Labor-Seite (K63-n3, abnahme-urteil `kernStand`): Version, Commit und Code-Abdruck jeder Quelle beim Messen
         m.stand = SL.kernStand();
-        if (opt("--datei")) fs.writeFileSync(path.resolve(opt("--datei")), JSON.stringify(m, null, 1));
+        if (opt("--datei")) jsonSchreiben(path.resolve(opt("--datei")), m);
         // Gegen das gespeicherte Welt-Ist: die Labor-Seite lebt, die Welt-Seite steht in der Tafel.
         const g = gespeichert(t);
         const mm = Object.assign({}, g, {
@@ -603,8 +603,8 @@ async function main() {
     }
     if (argv.includes("--nachziehen")) {
         const i = argv.indexOf("--nachziehen");
-        const welt = ausDatei(path.resolve(argv[i + 1]), true);
-        const labor = ausDatei(path.resolve(argv[i + 2]), true);
+        const welt = jsonLesen(path.resolve(argv[i + 1]));
+        const labor = jsonLesen(path.resolve(argv[i + 2]));
         const m = {
             labor: labor.labor,
             karten: labor.karten,

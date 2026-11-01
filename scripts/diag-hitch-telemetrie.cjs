@@ -91,7 +91,7 @@ function bauUhrInstall() {
 // Aufruf aus Node. Keine Probe trägt eine Sekunden-Frist: jede wartet auf ihr EREIGNIS (`bisEreignis`) und gibt nur auf,
 // wenn die Erst-Zeichnung still steht — dann kann nichts mehr kommen.
 function erstWandInstall(BUNDLE_FRAMES) {
-    const rend = r.state.renderer;
+    const rend = st.renderer;
     const U = window.__bauUhr || null;
     // (4b) DIE ERST-ZEICHNUNG: drei neue Stoffe vor die Kamera, einmal am EINEN Ort (die Nachbildung von
     // `_renderObjectDirect` am Renderer-Exemplar) und einmal auf dem Vendor-Weg (der Gegen-Lauf, MUSS rot sein). Gezählt
@@ -106,7 +106,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
             : null,
         bauUhr: U ? { angelegt: U.angelegt, gebaut: U.gebaut, imFlug: U.imFlug.size } : null,
     };
-    const welt = r.state.scene;
+    const welt = st.scene;
     const Z = { cur: null, sync: 0, async: 0, bau: new Map() };
     const GP = GPUDevice.prototype;
     const crp = GP.createRenderPipeline,
@@ -167,7 +167,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
     // Probe misst die Erst-Zeichnung, nie die Welt); die Proben-Objekte liegen in der Welt-Szene, ihr Weg ist der der Welt.
     const SCHICHT = 31;
     const buehne = async (fn) => {
-        const cam = r.state.camera;
+        const cam = st.camera;
         const maske = cam.layers.mask;
         cam.layers.set(SCHICHT);
         try {
@@ -306,7 +306,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
     const neubauAufDerBuehne = async (vergessen) => {
         await ruhe();
         serie++;
-        const cam = r.state.camera;
+        const cam = st.camera;
         const dir = new window.THREE.Vector3();
         cam.getWorldDirection(dir);
         const m = new window.THREE.MeshBasicNodeMaterial();
@@ -401,7 +401,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
         }
     };
     const probeMesh = (mat, dx, d) => {
-        const cam = r.state.camera;
+        const cam = st.camera;
         const dir = new T3.Vector3();
         cam.getWorldDirection(dir);
         const m = new T3.Mesh(new T3.BoxGeometry(0.6, 0.6, 0.6), mat);
@@ -696,12 +696,12 @@ hauptLauf(async () => {
 
     const out = await page.evaluate(async (laufzeitMs) => {
         const res = {};
-        await window.__weltDa(() => !(!r || !r.state));
+        await window.__weltDa(() => !!st);
         // Settle wie diag-blick: Chunks-Plateau (großzügig — swiftshader ist zäh).
         let stable = 0,
             last = -1;
         for (const weiter = window.__deckel("der Ring", 600); weiter(); ) {
-            const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
+            const sz = st.voxelChunks ? st.voxelChunks.size : 0;
             if (sz === last) stable++;
             else {
                 stable = 0;
@@ -710,7 +710,7 @@ hauptLauf(async () => {
             if (sz > 20 && stable > 10) break;
             await sleep(500);
         }
-        const rend = r.state.renderer;
+        const rend = st.renderer;
         if (!rend) return { fatal: "kein Renderer" };
         res.rendererArt = rend.isWebGPURenderer ? "webgpu" : rend.isWebGLRenderer ? "webgl" : "?";
         res.headlessNull = !!rend._isHeadlessNull;
@@ -719,7 +719,7 @@ hauptLauf(async () => {
         res.grenzenUnter = await navigator.gpu.requestAdapter({ featureLevel: "compatibility" }).then((a) => Object.keys(Object.getPrototypeOf(a.limits)).filter((k) => /PerShaderStage$/.test(k) && rend.backend.device.limits[k] < a.limits[k]).map((k) => `${k} ${rend.backend.device.limits[k]} < ${a.limits[k]}`)); // prettier-ignore
         // ~15 s echte Laufzeit: der rAF-Loop läuft; falls die Frames stocken
         // (headless-Drossel), treiben wir den Loop von Hand (wie diag-blick).
-        const frGet = () => r.state.flightRecorder || null;
+        const frGet = () => st.flightRecorder || null;
         const framesVor = frGet() ? frGet().frames : 0;
         const tEnde = performance.now() + laufzeitMs;
         while (performance.now() < tEnde) {
@@ -772,7 +772,7 @@ hauptLauf(async () => {
             memoryApi: !!performance?.memory,
         };
         // (3) Pipelines: der Boot-Warm-Compile ERZEUGT welche — Konsum-Beweis.
-        const sns = r.state.perfSense || {};
+        const sns = st.perfSense || {};
         res.pipes = {
             pipesN: fr.pipesN,
             total: sns.pipesTotal,

@@ -26,7 +26,7 @@
 //                                                    nur-idb und idb-frischer MÜSSEN rot werden, beim Namen
 // Port: BOOT_RETTUNG_PORT (Default 4402). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf, sleep, argOpt: opt, path, fs, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf, sleep, argOpt: opt, path, SELBSTTEST, jsonSchreiben } = require("./lib/welt-boot.cjs");
 
 const JSON_AUS = opt("--json", null);
 const PORT = Number(process.env.BOOT_RETTUNG_PORT) || 4402;
@@ -85,7 +85,7 @@ async function bereit(page) {
                 return {
                     ok: true,
                     ms: Math.round(performance.now() - t0),
-                    welt: r.state.worldMeta.worldId,
+                    welt: st.worldMeta.worldId,
                     zeiger: r.activeWorldGet(),
                     marken: (snap.match(/MARK-[A-Z0-9]+/g) || []).filter((x, i, a) => a.indexOf(x) === i),
                     index: r.worldsIndexLoad().map((e) => e.worldId),
@@ -290,7 +290,7 @@ hauptLauf(async () => {
             `\n  SELBSTTEST (die Kette liest zum Schein nur den Platz): ${namen.length} von 3 Formen rot — ${namen.join(" · ")}`
         );
     }
-    if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify({ root, berichte, selbst }, null, 1));
+    if (JSON_AUS) jsonSchreiben(JSON_AUS, { root, berichte, selbst });
     let pass;
     if (SELBSTTEST) {
         pass = !rot && selbst && selbst.benannt.length === 3;

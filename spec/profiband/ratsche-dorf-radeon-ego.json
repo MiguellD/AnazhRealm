@@ -123,6 +123,20 @@
                 "dreiecke": 0
             }
         },
+        "nahWieseFern": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
         "tier": {
             "haupt": {
                 "befehle": null,

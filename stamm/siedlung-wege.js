@@ -170,11 +170,7 @@ class AnazhRealm_siedlung_wege {
         if (!mitte) return;
         const U = AnazhRealm.UNDERGROWTH;
         const a = radius * Math.max(AnazhRealm.LAUB_STREU.rand, U.kronenSigma * Math.sqrt(U.kronenQMax));
-        const reich = (R) => R.radius + R.rand + R.kachel * 1.5;
-        if (
-            Math.hypot(x - mitte.x, z - mitte.z) - a <
-            Math.max(reich(AnazhRealm.NAH_WIESE), reich(AnazhRealm.NAH_STREU))
-        )
+        if (Math.hypot(x - mitte.x, z - mitte.z) - a < AnazhRealm._nahRingReich())
             this._nahWieseNeuIn(x - a, z - a, x + a, z + a);
     }
 
@@ -799,6 +795,10 @@ class AnazhRealm_siedlung_wege {
         if (nw)
             for (const key of [...nw.kacheln.keys()])
                 if (imRechteck(key, AnazhRealm.NAH_WIESE.kachel) && this._nahWieseKachelFaellt(key)) n++;
+        // die Kacheln der Ferne lesen dieselben Felder (`_nahWieseFernKachel`)
+        for (const key of nw && nw.fern ? [...nw.fern.kacheln.keys()] : [])
+            if (imRechteck(key, AnazhRealm.NAH_WIESE.fern.kachel) && nw.fern.kacheln.delete(key))
+                ((nw.neu = true), n++);
         const ns = this.state.nahStreu;
         if (ns)
             for (const [key, k] of [...ns.kacheln]) {
