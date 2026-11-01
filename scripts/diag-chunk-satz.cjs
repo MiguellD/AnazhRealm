@@ -418,12 +418,7 @@ const { errs, check } = pruefer();
                 if (ns && ns.senken.size > 0 && ns.offen === 0) break;
                 await sleep(100);
             }
-            for (let i = 0; i < 30; i++) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {}
-                if (i % 10 === 0) await sleep(0);
-            }
+            await window.__takte(30, 0);
             r._tickChunkSatz();
 
             // ── DER ZENSUS: Render-Bürger je Klasse im Szenen-Baum (Bundles eingeschlossen).

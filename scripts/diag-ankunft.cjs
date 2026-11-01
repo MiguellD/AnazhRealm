@@ -1348,17 +1348,14 @@ async function probe(arg) {
                 // EINEN Strahl, der Stoff-Knoten der Durchsicht rechnet die EINE Formel (sein Zwischenspeicher leer: er baut neu)
                 // die Vorbedingung des Streu-Strahls: die Nah-Streu am Baum (der Ring um das Auge, bis eine Senke steht) — an der
                 // Mitte des Genesis-Orts trägt sein Freiraum keine, der Baum steht im Gürtel
-                for (const weiter = window.__deckel("die Nah-Streu am Baum", 300); !(st.nahStreu && st.nahStreu.senken.size > 0) && weiter(); ) {
-                    r._tickNahStreu();
-                    await __takte(1, 40);
-                }
-                const nahStreu = st.nahStreu && st.nahStreu.senken && st.nahStreu.senken.size > 0;
+                const nahStreu = () => st.nahStreu?.senken.size > 0;
+                for (const weiter = window.__deckel("die Nah-Streu am Baum", 300); !nahStreu() && weiter(); ) await __takte(1, 40);
                 const rahmen = r._kampfSchwungRahmen({});
                 const knoten = r._kamDurchKnoten;
                 r._kamDurchKnoten = {};
                 m.konsum = {
                     _hasMagnifyingInSight: __rufe(r, "_hasMagnifyingInSight", r, "_fadenkreuzStrahl", []) > 0,
-                    _pickScatterAtCrosshair: nahStreu ? __rufe(r, "_pickScatterAtCrosshair", r, "_fadenkreuzStrahl", []) > 0 : null,
+                    _pickScatterAtCrosshair: nahStreu() ? __rufe(r, "_pickScatterAtCrosshair", r, "_fadenkreuzStrahl", []) > 0 : null,
                     _kampfKlingenAchse: __rufe(r, "_kampfKlingenAchse", r, "_fadenkreuzStrahl", [{ rahmen, reach: rahmen.reach, ziel: null }, {}]) > 0,
                     _kameraDurchsichtNode: __rufe(r, "_kameraDurchsichtNode", K, "_durchsichtGewicht", [THREE.TSL, "rinde"]) > 0,
                 };

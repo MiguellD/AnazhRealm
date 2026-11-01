@@ -730,14 +730,7 @@ hauptLauf(async () => {
             const fr1 = frGet();
             if (fr1 && fr1.frames === fBefore) {
                 // Loop steht — manuell ticken, damit die Sekunden-Grenzen fallen.
-                for (let i = 0; i < 30; i++) {
-                    try {
-                        r._gameLoopTick(performance.now());
-                    } catch {
-                        /* die Linse misst, nie stören */
-                    }
-                    await sleep(30);
-                }
+                await window.__takte(30);
             }
         }
         const fr = frGet();
