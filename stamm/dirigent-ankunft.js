@@ -884,7 +884,7 @@ class AnazhRealm_dirigent_ankunft {
     // die GTX (0,29–0,57) vor der Messung. Einmal gebaut, bleibt das Programm der Sitzung (`_renderObjekteLoesen`: der
     // Knoten-Bau gehört seinem Schlüssel, die Pipeline dem Cache). Die Wahl läuft je Lade-Bild mit den Lücken
     // (`_weltbildLuecken`), der Baum hält das Bild als wachsender („bauten"), bis seine Arenen zeichneten (`_vorlaufOffen`);
-    // die Kaskaden, deren Box er nicht trifft, baut der Vorbau der Erst-Zeichnung (`_renderObjectDirect`). Er trägt seine L1
+    // die Kaskaden, deren Box er nicht trifft, baut der Vorbau der Erst-Zeichnung nach dem Bild (`_vorbauWahl`). Er trägt seine L1
     // bis zum Bild — ihr Wechsel zur Karte fällt unter die Blende des Ladeschirms. Der Null-Renderer baut keine Programme:
     // dort wählt sie nie.
     _stufenVorlaufWahl(p, R, imBlick) {

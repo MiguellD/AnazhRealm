@@ -75,7 +75,7 @@ function urteil(z) {
     if (Object.keys(ks.veraltet || {}).length) v.push(`SCHLÜSSEL: ${namen(ks.veraltet)} — nach der Erst-Zeichnung ein anderer Schlüssel als der des Baus`);
     if (ks.kontrolle !== true) v.push("SCHLÜSSEL: die Kontrolle ist blind");
     if (!wu.leer || wu.leer.verwirft) v.push("WURF: das Standard-Fragment fehlt oder verwirft — die Probe ist blind");
-    if (!(wu.lichter >= 2) || wu.formen !== 1) v.push(`WURF: wurf:voll wirft in ${wu.lichter} Lichter aus ${wu.formen} Zuständen (Soll 2 aus 1)`);
+    if (wu.formen !== "2/1") v.push(`WURF: Lichter/Zustände ${wu.formen} (Soll 2/1)`);
     if (z.vorbau !== "merken,,bauen") v.push(`VORBAU: Ladeschirm, Bild des letzten, danach ${z.vorbau} (Soll merken,,bauen)`);
     if (!(wu.werfer || []).some((x) => x.aus && x.haupt)) v.push("WURF: kein Ausschnitt verwirft — die Probe ist blind");
     for (const x of wu.werfer || []) {
@@ -135,7 +135,7 @@ function selbsttest() {
         bild: { replay: 1, fremd: 1, ohneStapel: 0.62, schattenBundle: 0.91, xGegenY: 0.31 },
         senke: { geteilt: true, kontrolle: true, bild: 1, blind: 0.95 },
         schluessel: { geprueft: 69, veraltet: {}, kontrolle: true },
-        wurf: { leer: { verwirft: false }, lichter: 2, formen: 1, werfer: [{ name: "wurf:voll", farbe: false }, { name: "wurf:schnitt", aus: true, haupt: true, wurf: true }] },
+        wurf: { leer: { verwirft: false }, formen: "2/1", werfer: [{ name: "wurf:voll", farbe: false }, { name: "wurf:schnitt", aus: true, haupt: true, wurf: true }] },
         vorbau: "merken,,bauen",
         stand: {
             teilen: { programme: 8, gruppenJeProgramm: 1, gruppen: 1 },
@@ -177,7 +177,7 @@ function selbsttest() {
         { name: "Gruppe je Programm", z: mit("stand.teilen", { gruppen: 8 }), muss: /tragen 8 geteilte Gruppen statt 1/ },
         { name: "Teilen blind", z: mit("stand.teilen", { programme: 0 }), muss: /TEILEN: 0 Karten-Programme/ },
         { name: "Programm je Senke", z: mit("senke", { geteilt: false }), muss: /SENKE: zwei Senken EINER Gestalt/ },
-        { name: "Form je Kaskade", z: mit("wurf", { formen: 2 }), muss: /aus 2 Zuständen/ },
+        { name: "Form je Kaskade", z: mit("wurf", { formen: "2/2" }), muss: /Lichter\/Zustände 2\/2/ },
         { name: "Vorbau vor dem Bild", z: { ...gruen, vorbau: "bauen,bauen,bauen" }, muss: /danach bauen,bauen,bauen/ },
         { name: "Senken-Kontrolle blind", z: mit("senke", { kontrolle: false }), muss: /SENKE: zwei r184-InstancedMesh/ },
         { name: "Senke zeichnet anders", z: mit("senke", { bild: 0.97 }), muss: /SENKE: der Zeichner zeichnet 0.97/ },
@@ -713,12 +713,12 @@ function buehne() {
                 for (const { name, alphaTest } of probe.slice(1))
                     wurf.werfer.push({ name, aus: alphaTest > 0, haupt: verwirft(frag(name, false)), wurf: verwirft(frag(name, true)), farbe: frag(name, true) !== leer });
                 const formen = fang.filter((f) => f[0] === "wurf:voll" && f[1]).map((f) => f[3]);
-                [wurf.lichter, wurf.formen] = [formen.length, new Set(formen).size];
+                wurf.formen = [formen.length, new Set(formen).size].join("/");
                 for (const m of probe) m.dispose();
             }
             // (k) DER VORBAU NACH DEM BILD (w4-b-knoten, `_vorbauWahl`): unter dem Ladeschirm merkt er vor, nach dem Bild baut er — je Bild einer
             const E0 = { vorgemerkt: new WeakMap(), vorbauBild: 7 };
-            const vorbau = [[1, 0, 7], [0, 1, 7], [0, 1, 8]].map(([l, b, f]) => A._vorbauWahl(E0, E0, 1, l, b, f)).join();
+            const vorbau = A._vorbauWahl ? [[1, 0, 7], [0, 1, 7], [0, 1, 8]].map(([l, b, f]) => A._vorbauWahl(E0, E0, 1, l, b, f)).join() : "fehlt";
             return {
                 vorbau,
                 wurf,
@@ -805,7 +805,7 @@ function buehne() {
             `kein Bundle unter dem Override-Stoff; der Replay zeichnet Blick Y wie der direkte Pfad (${out.bild.replay}, mit fremdem ` +
             `Schatten-Stoff ${out.bild.fremd}); ohne den Chokepoint ${out.bild.ohneStapel}, ein Schatten-Bundle ${out.bild.schattenBundle}. ` +
             `SCHLÜSSEL · WURF halten. ` +
-            `SENKE: zwei Senken EINES Stoffs zeichnen aus EINEM Knoten-Zustand (zwei r184-InstancedMesh: zwei), bild-gleich mit r184s InstancedMesh (${out.senke.bild}; ohne die Senke ${out.senke.blind}). ` +
+            `SENKE: zwei Senken EINER Gestalt zeichnen aus EINEM Knoten-Zustand (zwei r184-InstancedMesh: zwei), bild-gleich mit r184s InstancedMesh (${out.senke.bild}; ohne die Senke ${out.senke.blind}). ` +
             `STAND: ${out.stand.teilen.programme} Karten-Programme tragen ${out.stand.teilen.gruppen} geteilte Gruppe(n); je Render ${out.stand.direkt.zahl.pruef} Prüfungen, 0 Voll-Refreshs (auch der SATZ mit Ausschnitt je Pass), 0 Uploads, 0 wiederholte Gänge (direkt und Replay); eine Attribut-Änderung frischt ${out.stand.direkt.einmal.erst}× auf und im Frame danach 0×; nach einer Änderung im Stand zeichnet die Diät ${out.stand.aenderung.direkt.diaet}/${out.stand.aenderung.replay.diaet} wie der volle Refresh (gemuteter Melder ${out.stand.aenderung.direkt.taeter}/${out.stand.aenderung.replay.taeter}); ` +
             `VERSCHACHTELT (Werfer ohne Diät) ${out.stand.verschachtelt.direkt.diaet}/${out.stand.verschachtelt.replay.diaet} (Stempel nur aus der Render-Id ${out.stand.verschachtelt.direkt.taeter}/${out.stand.verschachtelt.replay.taeter}).`
     );
