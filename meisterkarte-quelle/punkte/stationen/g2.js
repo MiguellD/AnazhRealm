@@ -4161,13 +4161,8 @@ const stationen = [
 // was hier steht, bucht weiter die Hand oder bleibt 0, bis das Werkzeug steht.
 const fehlt = [
     // vegetation.K3 (Zweig w3w-wald, 29.10.): das Band der REF real-mischwald (Stämme je Bildbreite, Unterholz-Deckung 0–2 m) steht
-    // nirgends — weder im Spiel-Baum (spec/abnahme) noch hier; aus der Cloud ist die Quelle nicht ladbar (Wikimedia: 403 am Proxy).
-    {
-        kriterium: "vegetation.K3",
-        staffel: 1,
-        befehl: null,
-        grund: "die REF real-mischwald fehlt (kein Band für Stämme je Bildbreite und Unterholz-Deckung 0–2 m im Repo, aus der Cloud nicht ladbar): ohne Band urteilt keine Station; die Licht-Flecken (Boden-Luma unter Kronen gegen offenen Boden, zwei Uhrzeiten) misst erst die Station Wald mit diesem Band",
-    },
+    // nirgends — weder im Spiel-Baum (spec/abnahme) noch hier. Staffel 1 misst seit p3-stationen-g3 die Probe DIE NEUN (stationen/g3.js):
+    // die Licht-Flecken und ihr Wandern, ROT beim Namen der fehlenden REF.
     {
         kriterium: "vegetation.K3",
         staffel: 2,
