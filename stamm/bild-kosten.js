@@ -1926,6 +1926,8 @@ class AnazhRealm_bild_kosten {
             S.m.multiply(kamera.matrixWorldInverse);
             S.frustum.setFromProjectionMatrix(S.m, kamera.coordinateSystem);
             if (kamera.isPerspectiveCamera === true) this._passMatrixWeit(S.m, kamera, AnazhRealm.PASS_WAHL.drehRand);
+            // geht das Auge? Der Haupt-Pass misst es je Bild, vor jedem Schatten-Pass (der Halt jedes neuen Ankers, `_passLageGen`)
+            if (kamera === this.state.camera) this._augeTakt(kamera);
             this._passWahlLage(S, kamera, k);
         }
         const L = S.lage;
@@ -2077,8 +2079,8 @@ class AnazhRealm_bild_kosten {
         L.ay = we[13];
         L.az = we[14];
         L.rand = PW.sichtRand;
-        // der Halt (`_passLageGen`): die Ebenen und das Auge wandern um höchstens haltM, der Rand je Meter mit dem Auge
-        L.halt = PW.haltM * (1 + PW.sichtRand);
+        // der Halt (`L.halt`) ist der des Ankers: `_passLageGen` legt ihn mit der Lage — die Ebenen und das Auge wandern um
+        // höchstens den halben Halt, der Rand je Meter mit dem Auge
         // der Dreh-Rand: eine Perspektive wählt mit `drehRand` (je Meter Abstand der Sinus) und hält bis zur Hälfte (`_wahlHaelt`)
         L.dreh = kamera.isPerspectiveCamera === true ? Math.sin(PW.drehRand) : 0;
         // Die Scheibe gilt nur dem Pass ihrer Kaskaden-Kamera (die Box beim letzten Rendern dieser Kaskade, `_kaskadeFit`).
@@ -2153,12 +2155,23 @@ class AnazhRealm_bild_kosten {
     // der Box (`_kaskadenWerferOben` — ein laufendes Tier hebt und senkt sie je Render um Meter, gemessen 06.10., k1 bis 30 m),
     // und kein Körper, den ein Leser wählt, liegt darüber; Auge und nahe Ebene zählen darum nur quer zur Achse. Solange die Lage
     // steht, urteilt jeder Leser vom Auge des Ankers (`L.ax`…) — der Rand je Meter ist der, mit dem die gehaltene Wahl fiel.
+    // DER HALT DES ANKERS (profiband.K1, w4-p2-profiband-k1): der Anker trägt seinen Halt (`a.halt`) — im Stand den des Atmens
+    // (`haltM`), solange das Auge geht (`_augeGeht`) den des Gangs (`gangM`). Mit 2 cm fiel die Lage gehend in JEDEM Frame
+    // (4 m/s: 6,7 cm je Frame), jeder Pass rechnete jede Wahl neu; mit dem Gang-Halt hält sie über ~7 Geh-Frames, das Gesetz
+    // trägt ihn als Rand (`L.halt`), die Höhlen-Sicht weitet sich um ihn (`_hoehlenSicht`). Steht das Auge wieder
+    // (`ruheBilder`), fällt ein Anker des Gangs, und der nächste wählt im Halt des Atmens — der Stand zeichnet, was er ohne den
+    // Gang zeichnete (stadt-k1 23.10. trug den Gang-Halt auch im Stand: Dorf Ego steht GTX GPU 11,9 → 12,8 ms, zurück aus dem Zug).
     _passLageGen(L, kamera, k) {
         const N = 89;
+        const PW = AnazhRealm.PASS_WAHL;
         const key = k >= 0 ? "k" + k : kamera === this.state.camera ? "haupt" : "anders";
         const M = this._passLagen || (this._passLagen = new Map());
         let a = M.get(key);
-        if (!a) M.set(key, (a = { sig: new Float64Array(N), gen: 0, kamera: -1, ax: 0, ay: 0, az: 0, wegMax: 0 }));
+        if (!a)
+            M.set(
+                key,
+                (a = { sig: new Float64Array(N), gen: 0, kamera: -1, ax: 0, ay: 0, az: 0, wegMax: 0, halt: PW.haltM })
+            );
         const s = this._passLageSig || (this._passLageSig = new Float64Array(N));
         const we = kamera.matrixWorld.elements;
         // die Achse einer orthogonalen Kamera (sie blickt entlang −z ihrer Welt-Matrix)
@@ -2230,12 +2243,15 @@ class AnazhRealm_bild_kosten {
         s[86] = f ? f.weg : 0;
         s[87] = f ? f.band0 : 0;
         s[88] = f ? f.band1 : 0;
-        if (a.gen > 0 && a.kamera === kamera.id && this._passLageHaelt(a.sig, s, a)) {
+        // der Halt, den das Auge jetzt trägt: ein Anker des Gangs hält im Stand nicht (der Stand wählt im Halt des Atmens)
+        const geht = this._augeGeht();
+        if (a.gen > 0 && a.kamera === kamera.id && (geht || a.halt <= PW.haltM) && this._passLageHaelt(a.sig, s, a)) {
             L.gen = a.gen;
             L.key = key;
             L.ax = a.ax;
             L.ay = a.ay;
             L.az = a.az;
+            L.halt = a.halt * (1 + PW.sichtRand);
             // das Auge der Blende hält wie das Auge der Kamera: jeder Leser urteilt vom Auge des Ankers
             L.ex = a.sig[67];
             L.ez = a.sig[68];
@@ -2249,10 +2265,31 @@ class AnazhRealm_bild_kosten {
         a.ay = L.ay;
         a.az = L.az;
         a.wegMax = s[86];
+        a.halt = geht ? PW.gangM : PW.haltM;
         a.gen = this._passLageZahl = (this._passLageZahl || 0) + 1;
         L.gen = a.gen;
         L.key = key;
+        L.halt = a.halt * (1 + PW.sichtRand);
         return true;
+    }
+
+    // GEHT DAS AUGE? Der Haupt-Pass misst je Bild, wie weit das Auge der Spiel-Kamera seit seinem letzten Bild wanderte
+    // (`_augeTakt`, vor jedem Schatten-Pass dieses Bilds): über dem halben Halt des Atmens geht es — und es geht, bis es
+    // `ruheBilder` Bilder am Stück darunter blieb. Das Atmen im Stand (±4 mm je Frame) ist kein Gang.
+    _augeTakt(kamera) {
+        const e = kamera.matrixWorld.elements;
+        const A = this._auge || (this._auge = { x: NaN, y: NaN, z: NaN, ruhe: Infinity });
+        const d = Math.hypot(e[12] - A.x, e[13] - A.y, e[14] - A.z);
+        // das erste Bild (kein Vorher) und ein Sprung sind kein Gang: der Halt des Gangs gilt dem Weg, den das Auge geht
+        if (d > AnazhRealm.PASS_WAHL.haltM / 2 && d <= AnazhRealm.ZEIT_SPRUNG_M) A.ruhe = 0;
+        else if (!(d > AnazhRealm.PASS_WAHL.haltM / 2)) A.ruhe++;
+        A.x = e[12];
+        A.y = e[13];
+        A.z = e[14];
+    }
+    _augeGeht() {
+        const A = this._auge;
+        return !!A && A.ruhe < AnazhRealm.PASS_WAHL.ruheBilder;
     }
 
     // DAS GESETZ DES HALTS (Welle C): eine Wahl, die mit einem Rand fiel, hält, solange ihre Drehung seit dem Anker — mal dem
@@ -2273,7 +2310,8 @@ class AnazhRealm_bild_kosten {
     // (unten), nach demselben Gesetz.
     _passLageHaelt(a, s, anker) {
         const PW = AnazhRealm.PASS_WAHL;
-        const H = PW.haltM;
+        // der Halt des Ankers (`_passLageGen`: im Stand der des Atmens, im Gang der des Gangs)
+        const H = anker.halt;
         // jeder Ort hält nach dem Gesetz des Halts: höchstens den halben Halt vom Anker (`_wahlHaelt`)
         const steht = (d) => this._wahlHaelt(d, 1, H);
         if (s[84] !== a[84] || s[27] !== a[27]) return false;
@@ -2290,7 +2328,7 @@ class AnazhRealm_bild_kosten {
                 for (let j = 0; j < 3; j++) if (!(Math.abs(s[o + j] - a[o + j]) <= 1e-9)) return false;
             }
             if (s[53] !== a[53] || !steht(Math.abs(s[87] - a[87])) || !steht(Math.abs(s[88] - a[88]))) return false;
-            if (!this._blendeHaelt(a, s)) return false;
+            if (!this._blendeHaelt(a, s, H)) return false;
             const cx = a[64] * s[65] - a[65] * s[64],
                 cy = a[65] * s[63] - a[63] * s[65],
                 cz = a[63] * s[64] - a[64] * s[63];
@@ -2322,19 +2360,19 @@ class AnazhRealm_bild_kosten {
             const dreh = Math.acos(Math.max(-1, Math.min(1, (spur - 1) / 2)));
             if (!this._wahlHaelt(dreh, 1, PW.drehRand)) return false;
         } else for (let i = 75; i < 84; i++) if (!(Math.abs(s[i] - a[i]) <= 1e-9)) return false;
-        return this._blendeHaelt(a, s);
+        return this._blendeHaelt(a, s, H);
     }
 
     // HÄLT DIE BLENDE (66…74) gegen ihren Anker? Ihr Auge (das Auge jeder Maske, `uLodAuge` in XZ — 67, 68) ist ein Ort der
     // Lage wie das Auge der Kamera: es hält nach dem Gesetz des Halts, höchstens den halben Halt vom Anker (`_wahlHaelt` gegen
-    // haltM); an, Perf-Streck, Bezug und die Kanten des Blend-Gesetzes gleich. Das Fenster jeder Wahl trägt den Halt als
+    // den Halt des Ankers `halt`); an, Perf-Streck, Bezug und die Kanten des Blend-Gesetzes gleich. Das Fenster jeder Wahl trägt den Halt als
     // Rand (`_instanzFenster`), und unter der gehaltenen Lage urteilt jeder Leser vom Auge des Ankers (`_passLageGen`).
     // Gegenprüfung 07.10.: der Vergleich war exakt — eine zweite Signatur neben dem Halt-Gesetz; atmete das Auge ±1 mm
     // quer (die Kamera hielt), wählte jeder Pass in jedem Frame jede Wahl neu (gate:sicht-arbeit, atmendes Auge: 14 999
     // Prüfungen je Frame).
-    _blendeHaelt(a, s) {
+    _blendeHaelt(a, s, halt) {
         if (s[66] !== a[66]) return false;
-        if (!this._wahlHaelt(Math.hypot(s[67] - a[67], s[68] - a[68]), 1, AnazhRealm.PASS_WAHL.haltM)) return false;
+        if (!this._wahlHaelt(Math.hypot(s[67] - a[67], s[68] - a[68]), 1, halt)) return false;
         for (let i = 69; i < 75; i++) if (s[i] !== a[i]) return false;
         return true;
     }
@@ -3064,6 +3102,10 @@ AnazhRealm.BAU_NEUTRAL = Object.freeze(["roughness", "metalness", "envMapIntensi
 // (`_passLageGen`) — das Auge der Spiel-Kamera atmet im Stand um Millimeter (gemessen 06.10., echte GPU, Mess-Wiese:
 // ±4 mm in y je Frame, keine Drehung), und jede neue Wahl darum rechnete jeden Frame dasselbe neu. Das Gesetz trägt den
 // Halt in jedem Urteil als Rand (`L.halt`), die gehaltene Wahl verliert darum nichts.
+// `gangM` (profiband.K1): der Halt eines Ankers, den das Auge GEHEND legt (`_augeGeht`, `_passLageGen`) — gehend wandert
+// es 10 cm je Frame (stadt-k1 23.10., Radeon, Bahn Hauptgasse: p10/p50/p90 6,6/10,0/16,6 cm), mit dem Halt des Atmens fiel die
+// Lage in jedem Geh-Frame (haupt 659/659, k0 659/659), mit 1 m hält sie über ~5–7 Geh-Frames; `ruheBilder`: so viele Bilder am
+// Stück unter dem halben Halt des Atmens, und das Auge steht — ein Anker des Gangs fällt, der Stand wählt wieder im Halt des Atmens.
 // `drehRand` (Welle C, OMEN-Urteil 06.10.: beim Drehen 360 × 1° war die Kette teurer als vorher): der Rand einer Perspektive
 // (Bogenmaß) — das Gesetz trägt den Sinus je Meter Abstand als Rand, die Höhlen-Sicht ihr Sichtfeld je Halbwinkel um das
 // 1,5-Fache geweitet; die Wahl hält über eine Drehung bis zur Hälfte (`_wahlHaelt`), dann wählt sie neu.
@@ -3075,6 +3117,8 @@ AnazhRealm.PASS_WAHL = Object.freeze({
     saumM: Object.freeze([2, 8, 24]),
     pflanzeRandM: 2,
     haltM: 0.02,
+    gangM: 1,
+    ruheBilder: 3,
     drehRand: (2 * Math.PI) / 180,
     lichtRandTexel: 32,
 });
