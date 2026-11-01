@@ -775,7 +775,7 @@ const wegenetzVerdict = (m) =>
 // stadt-voll um 10 und 23 Uhr je `sek` Bilder-Sekunden (10 min Spielzeit), ≥ `wagen` Wagen, jeder mit einem Bewohner am Steuer,
 // jeder erreicht sein Ziel (gezählte Ankünfte, keine Fahrt über `fristS`) — jedes Ende des Netzes trägt seine Wende, kein Boden
 // der Spuren springt (`stufen`), keiner steckt, keiner berührt einen Bewohner oder einen anderen Wagen, keiner ist ohne
-// Schlüssel in der Kreuzung, keiner stößt an einen Bau, keiner verlässt seine Spur, der Takt bleibt billig, und die Gehenden
+// Schlüssel im Ort (Kreuzung, Enge, fahrend in der Wende — der Täter beim Namen), keiner stößt an einen Bau, keiner verlässt seine Spur, der Takt bleibt billig, und die Gehenden
 // teilen die Straße nach dem EINEN Gesetz: höchstens `fahrbahn` ihrer Schritte auf der Fahrbahn (die Querungen). ════
 const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, fristS: 300, fahrbahn: 0.05 };
 const verkehrVerdict = (m) =>
@@ -810,7 +810,7 @@ const verkehrVerdict = (m) =>
         [!m.beruehrt.leib, `berührt Bewohner ${m.beruehrt.leib}× ${JSON.stringify(m.beruehrt.orte)}`],
         [!m.beruehrt.wagen, `Wagen in Wagen ${m.beruehrt.wagen}× ${JSON.stringify(m.beruehrt.wagenOrte)}`],
         [!m.beruehrt.bau, `Wagen im Bau ${m.beruehrt.bau}× ${JSON.stringify(m.beruehrt.bauOrte)}`],
-        [!m.ohneSchluessel, `ohne Schlüssel in der Kreuzung ${m.ohneSchluessel}×`],
+        [!m.ohneSchluessel, `ohne Schlüssel im Ort ${m.ohneSchluessel}× ${JSON.stringify(m.ohneOrte)}`],
         [!m.stoss.bau && !m.stoss.wagen && !m.stoss.leib, `Stoß ${JSON.stringify(m.stoss)}`],
         [
             m.querMax <= 1.5,
@@ -2350,7 +2350,7 @@ hauptLauf(async () => {
             // VK: ein gesunder Lauf ohne Täter, jeder Bruch beim Namen
             const g = {
                 ...{ soll: 20, wagen: 20, ohnePlatz: 0, ohneFahrer: 0, ohneNacht: 0, fahrend: 20, wenden: 4, enden: 4 },
-                ...{ stufen: [], fest: [], beruehrt: { leib: 0, wagen: 0, bau: 0 }, ohneSchluessel: 0 },
+                ...{ stufen: [], fest: [], beruehrt: { leib: 0, wagen: 0, bau: 0 }, ohneSchluessel: 0, ohneOrte: [] },
                 ...{ stoss: { wagen: 0, bau: 0, leib: 0 }, querMax: 0.35, msJeSchritt: 0.82, sek: 600, steuerlos: 0 },
                 ...{
                     ziele: { erreicht: 160, ohne: [], laengsteS: 120 },
@@ -2373,7 +2373,10 @@ hauptLauf(async () => {
                 [{ fest: [{ nr: 4 }] }, /steckt/],
                 [{ beruehrt: { leib: 3, wagen: 0 } }, /Bewohner 3/],
                 [{ beruehrt: { leib: 0, wagen: 2 } }, /Wagen in Wagen 2/],
-                [{ ohneSchluessel: 1 }, /Schlüssel/],
+                [
+                    { ohneSchluessel: 1, ohneOrte: [[14, 9, "enge", 735, 558]] },
+                    /ohne Schlüssel im Ort 1× \[\[14,9,"enge"/,
+                ],
                 [{ stoss: { wagen: 0, bau: 5 } }, /Stoß/],
                 [{ querMax: 2.3 }, /Spur/],
                 [{ msJeSchritt: 2.4 }, /Takt 2.4/],

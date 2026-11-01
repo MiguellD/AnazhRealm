@@ -726,6 +726,7 @@ async function probeLeben(expected) {
                 wagen: 0,
                 wagenOrte: [],
                 ohne: 0,
+                ohneOrte: [],
                 quer: 0,
                 querOrt: null,
                 takte: 0,
@@ -841,13 +842,16 @@ async function probeLeben(expected) {
                     const im = sv < 9 || Math.hypot(L[n].x - sp.x, L[n].z - sp.z) <= st.architectureCullingRadius;
                     if (im && soll < sv && r._foundryStufeBereit(e, r._foundryPresetForEntry(e), soll))
                         SK.veraltet++ < 4 && SK.veraltetOrte.push([W.nr, k, d | 0, sv, soll]);
+                    // OHNE SCHLÜSSEL IM ORT: in Kreuzung und Enge keiner, in der Wende keiner, der fährt (wer im Platz auf den
+                    // Schlüssel wartet, steht zu Recht in ihr) — bis w4-verkehr-c2 fragte die Probe nur die Kreuzung, und der Wagen,
+                    // der ohne Schlüssel in die Enge vor der Wende fuhr, stand dort Bug an Bug mit ihrem Halter
                     for (const Z of VK.zonen)
                         if (
-                            Z.art === "kreuzung" &&
                             Math.hypot(L[n].x - Z.x, L[n].z - Z.z) < Z.r - 1 &&
-                            !Z.halter.includes(W)
+                            !Z.halter.includes(W) &&
+                            (Z.art !== "wende" || e._fahr.speed > 0.3)
                         )
-                            m.ohne++;
+                            m.ohne++ < 6 && m.ohneOrte.push([W.nr, k, Z.art, ...ort2(L[n])]);
                     const allein = W.zonen.some((z) => !z.weg && z.Z.halter.includes(W) && z.ein <= W.F.s + W.hl);
                     if (!allein && W.F.quer > m.quer) [m.quer, m.querOrt] = [W.F.quer, [W.nr, k, ...ort2(L[n])]];
                     for (const b of S.liste)
@@ -919,6 +923,7 @@ async function probeLeben(expected) {
                 beruehrt: { leib: m.leib, wagen: m.wagen, bau: m.bau, orte: m.leibOrte, wagenOrte: m.wagenOrte, bauOrte: m.bauOrte }, // prettier-ignore
                 netz: { verboten, ausNetz: ausNetz.length, irrweg: VK.zahl.irrweg },
                 ohneSchluessel: m.ohne,
+                ohneOrte: m.ohneOrte,
                 querMax: +m.quer.toFixed(2),
                 querOrt: m.querOrt,
                 msJeSchritt: +(m.ms / Math.max(1, m.takte)).toFixed(3),
