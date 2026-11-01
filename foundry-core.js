@@ -5480,10 +5480,12 @@ function __streuGeo(row, seed, tonRGB, zone) {
     const faellt = row.faellt != null ? row.faellt : 0;
     const lk = Array.isArray(row.locke) && row.locke[0] >= 1 ? row.locke : null;
     const nor = [];
-    // die Schale der liegenden Strähne: Halbachsen, ein Punkt zurück auf sie (vom Zentrum) samt Normale, das Rückgrat
-    const ax = row.r * row.sc[0],
-        ay = row.r * row.sc[1],
-        az = row.r * row.sc[2];
+    // die Schale der liegenden Strähne: Halbachsen, ein Punkt zurück auf sie (vom Zentrum) samt Normale, das Rückgrat — nur die
+    // liegende Zeile trägt eine Schale (`r`, `sc`); die Quaste (Zopf) trägt ihre Box, ohne Schale brach ihr Guss (zopf L0: TypeError,
+    // der Bewohner mit Zopf fiel aus dem Dorf, und die Werkbank wartete am Dorf bis zur Frist: gate:licht-weg:echt, gate:naesse:echt)
+    const ax = liegt ? row.r * row.sc[0] : 0,
+        ay = liegt ? row.r * row.sc[1] : 0,
+        az = liegt ? row.r * row.sc[2] : 0;
     const auf = (p, nn) => {
         const x = (p.x - row.c[0]) / ax,
             y = (p.y - row.c[1]) / ay,
