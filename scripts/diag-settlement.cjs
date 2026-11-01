@@ -13,9 +13,13 @@ const {
     pruefer,
     wandEnde,
     selbsttestEnde,
+    studioKern,
+    SELBSTTEST,
+    path,
+    fs,
+    jsonLesen,
+    jsonSchreiben,
 } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
 
 const goldenDir = path.join(root, "spec/asset-contract/v6/golden");
 const goldenFile = path.join(goldenDir, "siedlung.json");
@@ -956,7 +960,7 @@ hauptLauf(async () => {
     const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
 
     // ===== SELBST-TEST =====
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         console.log("=== SELBST-TEST: die Settlement-Linse feuert ===");
         const a = FC.exportSettlement(FIXTURES[0]);
         // V2: ein manipulierter Export (ein Slot verschoben) kippt den Fingerabdruck — die Byte-Wand ist nicht vakuös.
@@ -2991,7 +2995,7 @@ hauptLauf(async () => {
                 : { err: "kein Ort" };
         return { outO, gtO };
     };
-    const MESSORT_DORF = jsonLesen(path.join(root, "spec", "profiband", "haushalt.json")).messorte.find((o) => o.id === "dorf").spieler;
+    const MESSORT_DORF = jsonLesen("spec/profiband/haushalt.json").messorte.find((o) => o.id === "dorf").spieler;
     const O = await messeOrt("akt", null);
     const OA = await messeOrt("auto", MESSORT_DORF);
     const K5 = [];

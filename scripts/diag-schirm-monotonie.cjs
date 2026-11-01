@@ -22,12 +22,10 @@
 // fester Schirm) → K rot.
 //   node scripts/diag-schirm-monotonie.cjs [--selftest]       (npm run gate:schirm-monotonie)
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, sleep, nullSeite } = require("./lib/welt-boot.cjs");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, ROOT: root, hauptLauf, sleep, nullSeite, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
-const SELBST = process.argv.includes("--selftest");
 // groß → klein; die Reihe läuft gespiegelt zurück (groß → klein → groß), jede kleinere Größe zwischen zwei Klammern
 const GROESSEN = [
     [1280, 720],
@@ -211,7 +209,7 @@ async function welt() {
         const offen = () => r._weltOffen().foundry; // die Foundry, wie sie das Wort „die Welt steht" zählt (A9)
         const takte = await __weltStehtNach(takt); // die Welt steht (das EINE Einschwingen, welt-boot)
         window.__buehne();
-        window.__tiereHalten();
+        window.__halten();
         // DIE VÖGEL HALTEN STILL: Lied und Bahn je Revier folgen der Welt-Uhr (`_vogelTakt` liest `spielZeit`, der Schwarm ebenso),
         // nie dem Schirm, und ihr Pool zählt jeden Sänger im Hör-Kreis, im Bild oder nicht — die Uhr lief durch die Reihe: am 30.10.
         // (tore-k5-tuer-neu, zwei Läufe) sang im kleinen Fenster einer mehr, Klasse vogel 688 > 608–648 Dreiecke, VERKEHRT ohne ein
@@ -342,7 +340,7 @@ async function welt() {
         return n > 0;
     });
     let selbst = null;
-    if (SELBST) {
+    if (SELBSTTEST) {
         selbst = {};
         // (a) ein VERKEHRTES Gesetz: die Probe-Gruppe liest `_schirm()` und zeichnet mehr Instanzen, je kleiner der Schirm
         await page.evaluate(() => {
@@ -439,7 +437,7 @@ hauptLauf(async () => {
     check("M Befehle und Dreiecke fallen oder halten von groß nach klein (Spannen, beide Klammern)", monotonieBefunde(w.messung));
     for (const d of driftBefunde(w.messung)) console.log(`      (Drift, ohne Schirm) ${d}`);
 
-    if (SELBST) {
+    if (SELBSTTEST) {
         console.log("=== SELBSTTEST ===");
         const sa = monotonieBefunde(w.selbst.verkehrt);
         check(

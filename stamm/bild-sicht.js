@@ -275,6 +275,8 @@ class AnazhRealm_bild_sicht {
             mitte: null,
             auftraege: [],
             imFlug: false,
+            // die Antwort des Workers bis zu ihrem Eintrag im Takt (`_spiegelFeldTakt`)
+            antwort: null,
             hMax: -30000,
             wasser: 0,
             baumZahl: -1,
@@ -288,15 +290,27 @@ class AnazhRealm_bild_sicht {
         return st.spiegelFeld;
     }
 
-    // DER TAKT DES SPIEGEL-FELDS (je Frame, vor dem Bild): driftet das Auge weiter als SPIEGEL.drift, wandert das Fenster;
-    // stehen neue Kronen darin, backt die Nachlese es neu. Ein Auftrag fliegt zur Zeit und nur, wenn der Worker keinen Chunk
-    // baut (das Streamen hat Vorrang, Lehre 13) und das erste Weltbild steht (die Ankunft trägt keinen Spiegel).
+    // DER TAKT DES SPIEGEL-FELDS (je Takt der Welt, vor dem Bild — nie im Bild selbst): driftet das Auge weiter als
+    // SPIEGEL.drift, wandert das Fenster; stehen neue Kronen darin, backt die Nachlese es neu. Ein Auftrag fliegt zur Zeit und
+    // nur, wenn der Worker keinen Chunk baut (das Streamen hat Vorrang, Lehre 13) und das erste Weltbild steht (die Ankunft
+    // trägt keinen Spiegel); seine Antwort trägt der nächste Takt ein (`_spiegelFeldEintrag`) — ein Bild der ruhenden Welt
+    // (die Bühne, eine Linse, die Werkbank zwischen Befehlen) bäckt nichts und sieht keine Antwort landen.
     _spiegelFeldTakt() {
         const st = this.state;
         const rend = st.renderer;
         if (!st._weltbildDa || !st.camera || !rend || rend._isHeadlessNull || !st.voxelWorkerReady) return;
         const K = AnazhRealm.SPIEGEL;
         const S = this._spiegelFeld();
+        const ant = S.antwort;
+        if (ant) {
+            S.antwort = null;
+            S.imFlug = false;
+            try {
+                this._spiegelFeldEintrag(S, ant.a, ant.r);
+            } catch (e) {
+                this._stoffBruch("das Spiegel-Feld (der Eintrag einer Antwort)", e);
+            }
+        }
         const auge = st.camera.getWorldPosition(this._spiegelAuge || (this._spiegelAuge = new THREE.Vector3()));
         const jetzt = performance.now();
         if (!S.mitte || Math.hypot(auge.x - S.mitte[0], auge.z - S.mitte[1]) > K.drift) this._spiegelFeldFenster(auge);
@@ -330,47 +344,52 @@ class AnazhRealm_bild_sicht {
             kronenSaum: AnazhRealm.SPIEGEL.kronenSaum,
         })
             .then((r) => {
-                S.imFlug = false;
-                const n = S.n;
-                const D = S.daten;
-                // nur Zellen im HEUTIGEN Fenster (ein Auftrag aus einem verlassenen Fenster schreibt seine Schnittmenge)
-                for (let j = 0; j < a.h; j++) {
-                    const J = a.j0 + j;
-                    if (J < S.J0 || J >= S.J0 + n) continue;
-                    const zeile = (((J % n) + n) % n) * n;
-                    for (let i = 0; i < a.w; i++) {
-                        const I = a.i0 + i;
-                        if (I < S.I0 || I >= S.I0 + n) continue;
-                        const o = (zeile + (((I % n) + n) % n)) * 4,
-                            q = (j * a.w + i) * 4;
-                        // die Wasser-Zellen des Fensters zählen genau: der Platz verliert seine alte Art, gewinnt die neue
-                        S.wasser += (r.stoff[q + 3] === 1 ? 1 : 0) - (S.stoff[o + 3] === 1 ? 1 : 0);
-                        for (let k = 0; k < 4; k++) {
-                            D[o + k] = r.hoehen[q + k];
-                            S.stoff[o + k] = r.stoff[q + k];
-                        }
-                    }
-                }
-                const b = AnazhRealm.SPIEGEL.block,
-                    nb = S.nb,
-                    bw = a.w / b;
-                for (let q = 0; q < r.hoechste.length; q++) {
-                    const I = a.i0 / b + (q % bw),
-                        J = a.j0 / b + Math.floor(q / bw);
-                    if (I < S.I0 / b || I >= (S.I0 + n) / b || J < S.J0 / b || J >= (S.J0 + n) / b) continue;
-                    S.hoechste[(((J % nb) + nb) % nb) * nb + (((I % nb) + nb) % nb)] = r.hoechste[q];
-                }
-                S.hTex.needsUpdate = true;
-                S.stoffTex.needsUpdate = true;
-                S.hMax = this._spiegelHoechsteAller(S);
-                S.tex.needsUpdate = true;
-                S.stand++;
+                // die Antwort wartet auf den Takt (im Flug bis zum Eintrag: `_weltOffen` zählt sie)
+                S.antwort = { a, r };
             })
             .catch((e) => {
                 S.imFlug = false;
                 S.gestaltenNeu.unshift(...gestalten);
                 this._stoffBruch("das Spiegel-Feld (Worker-Auftrag spiegel-feld)", e);
             });
+    }
+
+    // DER EINTRAG EINER ANTWORT (im Takt, `_spiegelFeldTakt`): Höhen, Stoff und die Höchste je Block des Auftrags `a` ins Feld.
+    _spiegelFeldEintrag(S, a, r) {
+        const n = S.n;
+        const D = S.daten;
+        // nur Zellen im HEUTIGEN Fenster (ein Auftrag aus einem verlassenen Fenster schreibt seine Schnittmenge)
+        for (let j = 0; j < a.h; j++) {
+            const J = a.j0 + j;
+            if (J < S.J0 || J >= S.J0 + n) continue;
+            const zeile = (((J % n) + n) % n) * n;
+            for (let i = 0; i < a.w; i++) {
+                const I = a.i0 + i;
+                if (I < S.I0 || I >= S.I0 + n) continue;
+                const o = (zeile + (((I % n) + n) % n)) * 4,
+                    q = (j * a.w + i) * 4;
+                // die Wasser-Zellen des Fensters zählen genau: der Platz verliert seine alte Art, gewinnt die neue
+                S.wasser += (r.stoff[q + 3] === 1 ? 1 : 0) - (S.stoff[o + 3] === 1 ? 1 : 0);
+                for (let k = 0; k < 4; k++) {
+                    D[o + k] = r.hoehen[q + k];
+                    S.stoff[o + k] = r.stoff[q + k];
+                }
+            }
+        }
+        const b = AnazhRealm.SPIEGEL.block,
+            nb = S.nb,
+            bw = a.w / b;
+        for (let q = 0; q < r.hoechste.length; q++) {
+            const I = a.i0 / b + (q % bw),
+                J = a.j0 / b + Math.floor(q / bw);
+            if (I < S.I0 / b || I >= (S.I0 + n) / b || J < S.J0 / b || J >= (S.J0 + n) / b) continue;
+            S.hoechste[(((J % nb) + nb) % nb) * nb + (((I % nb) + nb) % nb)] = r.hoechste[q];
+        }
+        S.hTex.needsUpdate = true;
+        S.stoffTex.needsUpdate = true;
+        S.hMax = this._spiegelHoechsteAller(S);
+        S.tex.needsUpdate = true;
+        S.stand++;
     }
 
     // DAS FENSTER WANDERT: n × n Zellen um das Auge. Backen nur die Streifen, die neu ins Fenster treten (ihre Plätze leer,

@@ -19,11 +19,8 @@
 //   Port: V1_PFAD_PORT (4421) · Mutanten: V1_MUTANTE=gedaechtnis-leer (--seele) · wertung-aus (--regeln)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, jsonLesen, jsonSchreiben, SELBSTTEST, path, fs, stammLib } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
-const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.V1_PFAD_PORT || 4421);
 
@@ -2363,7 +2360,7 @@ async function feindHaupt(quelle) {
     let m = { korpus };
     if (korpus) {
         const { srv, browser, page } = await kiWelt({ "/api/chat": gehorsam(korpus, log) });
-        const golden = jsonLesen(path.join(root, "spec/golden/v1/blueprint-signed.json"));
+        const golden = jsonLesen("spec/golden/v1/blueprint-signed.json");
         const arg = { inj: korpus.injektionen, tat: korpus.tat, golden, endpunkt: `http://127.0.0.1:${PORT}/` };
         m = { ...(await page.evaluate(feindLauf, arg)), korpus, erreicht: log };
         await browser.close();
@@ -2394,10 +2391,10 @@ async function feindHaupt(quelle) {
 }
 
 hauptLauf(async () => {
-    if (process.argv.includes("--korpus") && !process.argv.includes("--selftest")) return korpusHaupt();
+    if (process.argv.includes("--korpus") && !SELBSTTEST) return korpusHaupt();
     const quelle = stammLib.text(root);
     if (process.argv.includes("--feind")) return feindHaupt(quelle);
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         console.log("=== SELBST-TEST: die V1-Pfad-Linse nennt jeden Täter des Befunds ===");
         const gesundV = {
             gestartet: true,

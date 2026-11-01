@@ -8,13 +8,9 @@
 //       fallen, der Kern klemmt. SELBSTTEST: ein Empfänger mit Sonderweg und ein Studio, das selbst postet, sind ROT.
 //   --welt (Browser): der lebende Avatar gießt neu, ein Kreatur-Spawn trägt die Größe, der Snapshot trägt den Speicher.
 "use strict";
-const fs = require("fs");
-const path = require("path");
-const vm = require("vm");
-const stammLib = require("./lib/stamm.cjs");
 const { kanalImVm, bauAbdruck } = require("./lib/asset-worker-harness.cjs");
 const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
-const { hauptLauf, nullSeite, ROOT, argOpt } = require("./lib/welt-boot.cjs");
+const { hauptLauf, nullSeite, ROOT, argOpt, ausDatei, path, fs, stammLib, vm } = require("./lib/welt-boot.cjs");
 
 const SAAT = Number(argOpt("--saat")) >>> 0 || Date.now() >>> 0;
 
@@ -22,7 +18,7 @@ const SAAT = Number(argOpt("--saat")) >>> 0 || Date.now() >>> 0;
 function studioSeite() {
     const gepostet = [];
     const f = { addEventListener() {}, parent: { postMessage: (m) => gepostet.push(JSON.parse(JSON.stringify(m))) } };
-    vm.runInNewContext(fs.readFileSync(path.join(ROOT, "worlds/huelle/huelle.js"), "utf8"), f);
+    vm.runInNewContext(ausDatei("worlds/huelle/huelle.js"), f);
     return { B: f.AnazhHuelle.bruecke({ welt: "probe" }), H: f.AnazhHuelle, gepostet };
 }
 const zufall = studioSeite().H.zufall(SAAT);
@@ -190,7 +186,7 @@ function studioDateien() {
         if (welt === "huelle" || !fs.statSync(dir).isDirectory()) continue;
         for (const f of fs.readdirSync(dir))
             if (/\.(js|html)$/.test(f))
-                out.push({ pfad: `worlds/${welt}/${f}`, text: fs.readFileSync(path.join(dir, f), "utf8") });
+                out.push({ pfad: `worlds/${welt}/${f}`, text: ausDatei(path.join(dir, f)) });
     }
     return out;
 }

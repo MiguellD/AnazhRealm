@@ -26,8 +26,7 @@
 //
 //   node scripts/diag-reconnect.cjs
 "use strict";
-const stammLib = require("./lib/stamm.cjs");
-const { hauptLauf, ROOT: root, wandEnde } = require("./lib/welt-boot.cjs");
+const { hauptLauf, ROOT: root, wandEnde, stammLib } = require("./lib/welt-boot.cjs");
 
 const stammSrc = stammLib.text(root);
 

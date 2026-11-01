@@ -18,9 +18,9 @@
 //   rot werden. Fehlt die geheilte Zeile in der Quelle, ist der Selbsttest rot (die Linse kann ihren Defekt nicht setzen).
 //   node scripts/diag-studio-begehen.cjs [--selftest]
 "use strict";
-const { statikServer, starteBrowser, ROOT, hauptLauf, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT, hauptLauf, SELBSTTEST, jsonSchreiben } = require("./lib/welt-boot.cjs");
 
-const SELBST = process.argv.includes("--selftest");
+const SELBST = SELBSTTEST;
 
 // DIE BASIS-ZEILEN je Defekt: [Datei, geheilte Form, Basis-Form]. Der Selbsttest serviert die Basis-Form.
 const LAB = "/worlds/fachwerk/fachwerk.js";

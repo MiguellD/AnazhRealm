@@ -13,8 +13,7 @@
 //
 //   node scripts/diag-taille.cjs
 
-const { starteBrowser, startProc, eigenePorte, jsonLesen } = require("./lib/welt-boot.cjs");
-const path = require("path");
+const { starteBrowser, startProc, eigenePorte, path, jsonLesen } = require("./lib/welt-boot.cjs");
 
 // Der Port des eigenen save-servers: TAILLE_PORT, sonst ein freier des Systems (welt-boot `eigenePorte`) — auf 4312 fände die
 // Seite den Spiel-Server des Schöpfers und prüfte dessen Dateien.

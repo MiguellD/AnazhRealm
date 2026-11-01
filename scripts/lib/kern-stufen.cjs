@@ -2,15 +2,12 @@
 // Merge ist treu, wenn jede Art des Live-Buchs die Liste trägt, die ihr Kern deklariert: die Erwartung liest die Kerne in
 // der Seite (dieselben Dateien, die der Foundry-Worker lädt; die Namensräume aus cores.manifest.json), nie eine Abschrift.
 "use strict";
-const fs = require("fs");
-const path = require("path");
-
-const ROOT = path.resolve(__dirname, "..", "..");
+const { jsonLesen, path, ROOT } = require("./welt-boot.cjs");
 
 // Die Namensräume der Kerne in der Seite — der Baum-Kern (phyto, ohne eigenen Raum) trägt seine Karte an `__terrainCore`
 // (foundry-core `__terrainCore.PORTAL_RENDER_CONFIG`).
 function kernRaeume(root = ROOT) {
-    const m = JSON.parse(fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8"));
+    const m = jsonLesen(path.join(root, "cores.manifest.json"));
     return m.map((z) => z.ns || "__terrainCore");
 }
 

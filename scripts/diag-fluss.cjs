@@ -25,10 +25,7 @@
 //
 //   node scripts/diag-fluss.cjs [--selftest]          (npm run gate:fluss)
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf, pruefer, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf, pruefer, selbsttestEnde, wandEnde, jsonLesen, SELBSTTEST, stammLib } = require("./lib/welt-boot.cjs");
 
 // Port über FLUSS_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4561.
 const PORT = Number(process.env.FLUSS_PORT || 4561);
@@ -67,9 +64,7 @@ function schaleVon() {
 // Die Klon-Linse ruft die Methoden der GELADENEN Klasse (`stammLib.ladeKlasse`: Kerne wie index.html, dann der Stamm) —
 // `teile` trägt im Selbsttest einen gebrochenen Stamm; der Solitär und der Kern-Wert kommen aus den echten Statiken.
 function gestalten(teile) {
-    const rc = JSON.parse(
-        fs.readFileSync(path.join(root, "spec", "asset-contract", "v1", "golden", "render-config.json"), "utf8")
-    );
+    const rc = jsonLesen("spec/asset-contract/v1/golden/render-config.json");
     const G = rc && rc.lod && rc.lod.budget && rc.lod.budget.gestalten;
     const { AnazhRealm: A } = stammLib.ladeKlasse(root, teile ? { teile } : {});
     if (!G || typeof A.prototype._foundryVariantFor !== "function")
@@ -647,7 +642,7 @@ const VERHALTEN = [
 
 hauptLauf(async () => {
     const { errs, check } = pruefer();
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         console.log("=== FLUSS-WAND — SELBST-TEST: die Wand feuert auf injizierte Brüche ===");
         // Ein Bruch, dessen Anker im Quelltext fehlt, läuft ins Leere: er bricht den Selbsttest beim Namen.
         const bruch = (quelle, alt, neu, glied = null) => {

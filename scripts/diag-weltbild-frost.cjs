@@ -38,9 +38,7 @@
 //   … [--s5=frames | --s5=halde]                  Selbsttest S5: nur Welt-Frames statt Zügen (GRÜN) · jedes Einzelstück bleibt (ROT)
 // Exit 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, selbsttest, hauptLauf, sleep, pruefer, argOpt } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, starteBrowser, selbsttest, hauptLauf, sleep, pruefer, argOpt, path, fs } = require("./lib/welt-boot.cjs");
 
 const ECHT = process.argv.includes("--echt");
 const S5_PROBE = (process.argv.find((a) => a.startsWith("--s5=")) || "").slice(5); // Selbsttest der S5-Basis: frames | halde

@@ -16,9 +16,8 @@
 // Abbau der Trittfläche müssen beim Namen rot werden.
 //   node scripts/diag-weg-boden.cjs [--selftest]
 
-const { statikServer, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.WEG_PORT || 4596);
-const SELFTEST = process.argv.includes("--selftest");
 const server = statikServer();
 
 function probe(stoerung) {
@@ -331,7 +330,7 @@ hauptLauf(async () => {
         });
     const S = await messen(null);
     let selbst = null;
-    if (SELFTEST) {
+    if (SELBSTTEST) {
         const streifen = urteil(await messen("streifen"));
         const hart = urteil(await messen("hart"));
         const vergessen = urteil(await messen("vergessen"));

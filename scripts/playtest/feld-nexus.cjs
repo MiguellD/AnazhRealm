@@ -420,7 +420,7 @@ async function checkBandWelle6HCreatureLlm({ page, check }) {
     // Der Spieler spricht mit EINER Kreatur; der Persona-Prompt versammelt ihre volle Identität
     // (Body+Specs+Equipped+Boosts+Memory+bornAt+Welt). Kein echter LLM-Call: geprüft: Builder + Routing.
     const wave6hP2eV1Results = await safeEvaluate(page, () => {
-        if (!r || !st || !st.playerMesh) return null;
+        if (!st.playerMesh) return null;
         const out = {};
 
 
@@ -506,7 +506,7 @@ async function checkBandWelle6HCreatureLlm({ page, check }) {
             });
     });
 
-    if (wave6hP2eV1Results && !wave6hP2eV1Results.error) {
+    if (erreichbar(check, "Welle 6.H P2E V1", wave6hP2eV1Results)) {
         // Welle 6.H P2E V1: _findCreatureByName exact + case-insensitive + null bei unknown
         check(
             "_findCreatureByName exact + case-insensitive + null bei unknown",
@@ -563,20 +563,13 @@ async function checkBandWelle6HCreatureLlm({ page, check }) {
             "maybeAnswerCreature mit unbekanntem Namen → 'Niemand hört zu'",
             wave6hP2eV1Results.unknownPolite
         );
-    } else {
-        // STUMM-GRÜN-WAND: auch ein NULL-Ergebnis (geworfene evaluate) ist ROT —
-        // vorher übersprang der else-if-Guard die Checks still (die U1-Klasse).
-        check(
-            `Welle 6.H P2E V1: evaluate-Fehler — ${(wave6hP2eV1Results && wave6hP2eV1Results.error) || "evaluate lieferte null"}`,
-            false
-        );
     }
 
     // ### Welle 6.H Phase 2E V1.1 — @-Adressen-Pattern + Soul-Farben ###
     // @Name ist die primäre Kreatur-Adresse (ohne Trenner fiele "Bran wie gehts" an die Welt-KI);
     // Soul-Farben tragen Identität (Sprite=cyan / Wesen=brass / Geist=grün).
     const wave6hP2eV11Results = await safeEvaluate(page, () => {
-        if (!r || !st || !st.playerMesh) return null;
+        if (!st.playerMesh) return null;
         const out = {};
 
         // 1. @Name text → erkannt als explizite Adresse
@@ -649,7 +642,7 @@ async function checkBandWelle6HCreatureLlm({ page, check }) {
             });
     });
 
-    if (wave6hP2eV11Results && !wave6hP2eV11Results.error) {
+    if (erreichbar(check, "Welle 6.H P2E V1.1", wave6hP2eV11Results)) {
         // Welle 6.H P2E V1.1: @Name text → erkannt als explizite Adresse (explicit=true)
         check(
             "@Name text → erkannt als explizite Adresse",
@@ -686,13 +679,6 @@ async function checkBandWelle6HCreatureLlm({ page, check }) {
                 wave6hP2eV11Results.chatHasSoulSpan &&
                 wave6hP2eV11Results.chatLineHasName
         );
-    } else {
-        // STUMM-GRÜN-WAND: auch ein NULL-Ergebnis (geworfene evaluate) ist ROT —
-        // vorher übersprang der else-if-Guard die Checks still (die U1-Klasse).
-        check(
-            `Welle 6.H P2E V1.1: evaluate-Fehler — ${(wave6hP2eV11Results && wave6hP2eV11Results.error) || "evaluate lieferte null"}`,
-            false
-        );
     }
 
     // ### Welle 6.H Phase 2E V2 — Proaktive Kreatur-Sprache ###
@@ -700,7 +686,7 @@ async function checkBandWelle6HCreatureLlm({ page, check }) {
     // Phrasen-Pool. Hooks: _onCreatureLevelUp · applyCreatureBoost · no_material_found (gather-tick) ·
     // no_inventory_for_build (build-tick).
     const wave6hP2eV2Results = await safeEvaluate(page, () => {
-        if (!r || !st || !st.playerMesh) return null;
+        if (!st.playerMesh) return null;
         const out = {};
         const Class = AnazhRealm;
 
@@ -826,7 +812,7 @@ async function checkBandWelle6HCreatureLlm({ page, check }) {
         return out;
     });
 
-    if (wave6hP2eV2Results && !wave6hP2eV2Results.error) {
+    if (erreichbar(check, "Welle 6.H P2E V2", wave6hP2eV2Results)) {
         // Welle 6.H P2E V2 (NULL): wesen-Stimme + default-Fallback (sprite/geist-Stimmen gefallen)
         check(
             "wesen-Stimme + default-Fallback",
@@ -878,13 +864,6 @@ async function checkBandWelle6HCreatureLlm({ page, check }) {
             "applyCreatureBoost mit SELBER Quelle → KEINE erneute Sprache",
             wave6hP2eV2Results.boostRefreshSilent
         );
-    } else {
-        // STUMM-GRÜN-WAND: auch ein NULL-Ergebnis (geworfene evaluate) ist ROT —
-        // vorher übersprang der else-if-Guard die Checks still (die U1-Klasse).
-        check(
-            `Welle 6.H P2E V2: evaluate-Fehler — ${(wave6hP2eV2Results && wave6hP2eV2Results.error) || "evaluate lieferte null"}`,
-            false
-        );
     }
 
     // ### Welle 6.H Phase 2E V3 — Welt-Aktion-Vorschläge der Kreatur ###
@@ -892,7 +871,7 @@ async function checkBandWelle6HCreatureLlm({ page, check }) {
     // (schöpfer = auto-execute, pfad/frieden = Inline-Buttons); LLM-Augmentation bei seltenen Events mit
     // eigenem 10-Min-Throttle. Geprüft: Whitelist, Modus-Diskrimination, Memory-Einträge, Sandbox-Defense.
     const wave6hP2eV3Results = await safeEvaluate(page, () => {
-        if (!r || !st || !st.playerMesh) return null;
+        if (!st.playerMesh) return null;
         const out = {};
         const Class = AnazhRealm;
 
@@ -1025,7 +1004,7 @@ async function checkBandWelle6HCreatureLlm({ page, check }) {
         return out;
     });
 
-    if (wave6hP2eV3Results && !wave6hP2eV3Results.error) {
+    if (erreichbar(check, "Welle 6.H P2E V3", wave6hP2eV3Results)) {
         // Welle 6.H P2E V3 + V9.36: Whitelist erlaubt atmosphärische + Voxel-Mod-Ops (weather, voxel_carve, voxel_fill, spawn_blueprint, chain)
         check(
             "Welle 6.H P2E V3 + V9.36: Whitelist erlaubt atmosphärische + Voxel-Mod-Ops",
@@ -1098,13 +1077,6 @@ async function checkBandWelle6HCreatureLlm({ page, check }) {
         check(
             "Reject-Button-Click → rejected_action-Memory",
             wave6hP2eV3Results.rejectButtonExists && wave6hP2eV3Results.memoryHasRejected
-        );
-    } else {
-        // STUMM-GRÜN-WAND: auch ein NULL-Ergebnis (geworfene evaluate) ist ROT —
-        // vorher übersprang der else-if-Guard die Checks still (die U1-Klasse).
-        check(
-            `Welle 6.H P2E V3: evaluate-Fehler — ${(wave6hP2eV3Results && wave6hP2eV3Results.error) || "evaluate lieferte null"}`,
-            false
         );
     }
 }
@@ -1570,7 +1542,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check }) {
     // Den lokalen Weg (Modell im Fenster, Proxy an, localhost geht vorbei) fährt der KI-Korpus am Verhalten (diag-v1-pfad
     // --korpus); hier die Cloud-URL durch den Proxy und der 404-Hinweis.
     const v797AutoResults = await safeEvaluate(page, async () => {
-        if (!r || !st || !st.llm) return null;
+        if (!st.llm) return null;
         const out = {};
 
         // (wir stubben fetch um die URL abzufangen und reverten danach)
@@ -1602,7 +1574,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check }) {
 
     // 404-Hint-Test
     const v797ErrorResults = await safeEvaluate(page, async () => {
-        if (!r || !st || !st.llm) return null;
+        if (!st.llm) return null;
         const out = {};
         const origFetch = window.fetch;
         window.fetch = async () => ({

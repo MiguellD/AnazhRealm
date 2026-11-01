@@ -17,7 +17,8 @@ const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile, zeitZeile } = require("./software-gpu.cjs");
-const { ohneKommentare, ast, wandere, zeileVon } = require("./stamm.cjs");
+const stammLib = require("./stamm.cjs");
+const { ohneKommentare, ast, wandere, zeileVon } = stammLib;
 
 // DER STILLE HAND-TAKT (`__handTakt()`, in jeder Seite): ein Bild des Loops von Hand, sein Wurf still — je Linse ein eigenes
 // `try { r._gameLoopTick(performance.now()); } catch {}` war ein Zwilling (w4-arena-welt, 39 Stellen); die Stille lebt an
@@ -48,11 +49,12 @@ function leihe(o, tausch) {
 // `const r = window.anazhRealm` / `const st = r.state` ist ein Zwilling (872 Bindungen fielen in w3u-nachfolge); wer einen
 // der Namen schreibt (ein fremdes Skript), bekommt eine gewöhnliche Variable
 const weltR = `for (const [n, f] of [["r", () => window.anazhRealm], ["st", () => window.anazhRealm && window.anazhRealm.state], ["pm", () => st && st.playerMesh]]) Object.defineProperty(window, n, { get: f, set: (v) => Object.defineProperty(window, n, { value: v, writable: true }), configurable: true }); window.__handTakt = ${handTakt}; window.aufsteigend = ${aufsteigend}; window.addiere = ${addiere};`;
-// DIE EINE JSON-LESUNG (`jsonLesen(pfad)`, utf8): je Linse ein eigenes `JSON.parse(fs.readFileSync(pfad, "utf8"))` war ein Zwilling
-// (w4-himmel-uhr: 57 Stellen in 26 Linsen)
+// DIE EINE JSON-LESUNG (`jsonLesen(pfad)`): je Linse ein eigenes `JSON.parse(fs.readFileSync(pfad, "utf8"))` war ein Zwilling
+// (w4-himmel-uhr: 57 Stellen in 26 Linsen); sie liest über den EINEN Datei-Leser `ausDatei` (`pfad` ab der Wurzel des Baums
+// oder absolut) — bis w4-studios-heim3 trug er ein eigenes JSON-Flag, zwei Lesungen derselben Sache
 // … und die EINE JSON-Schreibung (`jsonSchreiben(pfad, wert, einzug = 1, ende = "")`, dieselben Bytes wie `fs.writeFileSync(pfad,
 // JSON.stringify(wert, null, einzug) + ende)`)
-const jsonLesen = (p) => JSON.parse(fs.readFileSync(p, "utf8"));
+const jsonLesen = (p) => JSON.parse(ausDatei(p));
 const jsonSchreiben = (p, o, n = 1, ende = "") => fs.writeFileSync(p, JSON.stringify(o, null, n) + ende);
 // DIE UHR DES LAUFS (`const log = laufUhr()`): jede Zeile trägt die Sekunden seit dem Ruf — je Linse ein eigenes `T0` samt
 // eigenem log war ein Zwilling
@@ -1112,6 +1114,11 @@ const hauptLauf = (rumpf, zuletzt) =>
         if (zuletzt) zuletzt();
         process.exit(2);
     });
+// DER EINE DATEI-LESER einer Linse: `ausDatei(p)` der Text (utf8), sein JSON liest `jsonLesen` durch ihn — `p` ab der Wurzel des
+// Baums oder absolut (bis zur Decke w3w-studios las jede Linse in eigenen Zeilen: fs.readFileSync(…, "utf8"), 86-mal)
+const ausDatei = (p) => fs.readFileSync(path.resolve(ROOT, p), "utf8");
+// DER EINE SCHALTER des Selbsttests jeder Linse (`--selftest`; bis zur Decke w3w-studios las ihn jede Linse selbst, 76-mal)
+const SELBSTTEST = process.argv.includes("--selftest");
 // DER EINE ARGUMENT-LESER einer Linse: `argOpt("--port", 4490)` — der Wert hinter dem Schalter, fehlt er (oder folgt ein
 // Schalter), die Vorgabe
 const argOpt = (k, d) => {
@@ -1365,6 +1372,12 @@ function scanWarteWand(dateien, rest = Object.assign({}, ...Object.values(requir
 }
 
 module.exports = {
+    fs,
+    path,
+    stammLib,
+    crypto: require("crypto"),
+    os: require("os"),
+    vm: require("vm"),
     studioKern,
     fadenScope,
     scanWarteWand,
@@ -1397,6 +1410,8 @@ module.exports = {
     hauptLauf,
     urteilEnde,
     argOpt,
+    ausDatei,
+    SELBSTTEST,
     waitFor,
     zweiImMesh,
     booteWelt,

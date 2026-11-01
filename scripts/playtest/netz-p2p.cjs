@@ -66,7 +66,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
         return out;
     });
 
-    if (voxelV936Results && !voxelV936Results.error) {
+    if (erreichbar(check, "Voxel V9.36: Tests laufen", voxelV936Results)) {
         check(
             "Voxel V9.36: Chat 'grabe loch' → voxel_carve (Heightfield-Pfad umgeroutet)",
             voxelV936Results.chatDigRoutesToVoxelCarve
@@ -2127,7 +2127,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
         return out;
     });
 
-    if (v834Results && !v834Results.error) {
+    if (erreichbar(check, "Soul-Sync Tests laufen", v834Results)) {
         check("frischer Peer ist Cone+Sphere-Platzhalter", v834Results.placeholderKind);
         check("Platzhalter-Mesh hat 2 Teile (Kegel+Kugel)", v834Results.placeholderMesh);
         check("Peer-Entry trägt die V3-Felder", v834Results.entryHasV3Fields);
@@ -2143,8 +2143,6 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
         check("_p2pBroadcastSoul sendet {type:soul, soulName, name}", v834Results.broadcastSoulPayload);
         check("player_soul bleibt NON_BROADCASTABLE (Soul-Sync ≠ DSL)", v834Results.playerSoulStillLocal);
         check("_p2pRemovePeer entfernt Peer + Avatar + Schild", v834Results.peersRemoved);
-    } else {
-        check("Soul-Sync Tests laufen", false, v834Results ? v834Results.error : "no result");
     }
 
     // ### Substanz-Rolle (Rolle aus der Substanz) ###
@@ -2262,7 +2260,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
         return out;
     });
 
-    if (v835Results && !v835Results.error) {
+    if (erreichbar(check, "Substanz-Rolle Tests laufen", v835Results)) {
         check("bilateral-symmetrisches Glieder-Compound ist body-shaped", v835Results.bodyIsShaped);
         check("Körper-Form emergiert als Rolle 'soul'", v835Results.bodyRoleSoul);
         check("gestapelter Turm (symmetrisch, keine Glieder) ist KEIN Körper", v835Results.towerNotBody);
@@ -2283,8 +2281,6 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
             "activateConsumable funktioniert ohne consumableMeta (emergente Nahrung essbar)",
             v835Results.metaLessConsumableWorks
         );
-    } else {
-        check("Substanz-Rolle Tests laufen", false, v835Results ? v835Results.error : "no result");
     }
 
     // ### Browser-Test-Bug-Fixes (Wurzel-Fixes) ###
@@ -2356,14 +2352,12 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
         return out;
     });
 
-    if (v836Results && !v836Results.error) {
+    if (erreichbar(check, "Browser-Test-Bug-Fix Tests laufen", v836Results)) {
         // P3 — die Player-Body-Sleep-Checks (DISABLE_DEACTIVATION / forceActivationState)
         // sind gestrichen: es gibt keinen Ammo-Body mehr (feld-nativer Controller).
         check("die Killplane fängt einen Durchfall und stellt den Körper auf die Oberfläche", v836Results.waterGate);
         check("das aufgeklappte Logbuch teilt die Konsole 50/50 (verdeckt den Chat nicht)", v836Results.logCssRule);
         check("neue Werkstatt-Parts landen im Ursprung (0,0,0)", v836Results.partAtOrigin);
-    } else {
-        check("Browser-Test-Bug-Fix Tests laufen", false, v836Results ? v836Results.error : "no result");
     }
 
     // ### Werkstatt-Lesbarkeit + Einstellungen-Faltung ###
@@ -2454,7 +2448,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
         return out;
     });
 
-    if (v837Results && !v837Results.error) {
+    if (erreichbar(check, "Werkstatt-Lesbarkeit Tests laufen", v837Results)) {
         check("Bau-Kosten-Sektion im Werkstatt-Panel sichtbar", v837Results.costPanelShown);
         check("Bau-Kosten zeigt den computeBuildCost-Wert pro Material", v837Results.costPanelValue);
         check("Werkstatt-Preview hat ein Maß-Raster (GridHelper)", v837Results.gridInScene);
@@ -2466,8 +2460,6 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
         check("FPS ist ein gleitender Durchschnitt (90 Frames @60 → fps=60)", v837Results.fpsRollingAvg);
         check("FPS-Rechnung nutzt nicht mehr Einzel-Frame 1/delta", v837Results.fpsNotSingleFrame);
         check("abnormaler Delta (Tab-Pause) verwirft das FPS-Fenster", v837Results.fpsResetsOnStall);
-    } else {
-        check("Werkstatt-Lesbarkeit Tests laufen", false, v837Results ? v837Results.error : "no result");
     }
 
     // ### Werkstatt-UX: Hover-Kosten + sichtbare Verbindungen + Preview-Höhe ###
@@ -2566,7 +2558,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
         return out;
     });
 
-    if (v838Results && !v838Results.error) {
+    if (erreichbar(check, "Werkstatt-UX Tests laufen", v838Results)) {
         check("Kosten-Tooltip nennt Bau-Kosten + Material + 'hast'", v838Results.costTooltipText);
         check("gefüllter Hotbar-Slot trägt den Kosten-Tooltip", v838Results.hotbarSlotTitle);
         check("Bauplan-Inventar-Slot trägt den Kosten-Tooltip", v838Results.invSlotTitle);
@@ -2575,8 +2567,6 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
         check("Verbindungs-Linie + Marker sind depthTest-frei (immer sichtbar)", v838Results.connDepthTestOff);
         check("Verbindungen werden NICHT als Part gezählt (partMeshes korrekt)", v838Results.connNotCountedAsPart);
         check("Preview-Canvas hat aspect-ratio 5/3 (Stats-Panel ohne Scrollen)", v838Results.previewAspect);
-    } else {
-        check("Werkstatt-UX Tests laufen", false, v838Results ? v838Results.error : "no result");
     }
 
     // ### Werkzeug-Klassen + Präzision→Qualität ###
@@ -2680,7 +2670,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
         return out;
     });
 
-    if (v839Results && !v839Results.error) {
+    if (erreichbar(check, "Werkzeug-Klassen Tests laufen", v839Results)) {
         check("BLUEPRINT_ROLE_COLORS-Konstante mit allen Rollen", v839Results.roleColorsExist);
         check("unbearbeiteter Bauplan hat Qualität 1.0 (geboren)", v839Results.qualityUnworked);
         check("bearbeiteter Bauplan trägt seine Werkzeug-Präzision als Qualität", v839Results.qualityWorked);
@@ -2692,8 +2682,6 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
             "W-C(f)/R-008: der Umwidmen-Rest im Ich ist ersatzlos gefallen (kein details/Verweis — die Intent-Akte leben in der Werkstatt)",
             v839Results.equipHint
         );
-    } else {
-        check("Werkzeug-Klassen Tests laufen", false, v839Results ? v839Results.error : "no result");
     }
 }
 

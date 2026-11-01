@@ -263,7 +263,7 @@ function diaetLauf(opts) {
         const N = Number(o.frames) || 90;
         const modus = o.modus || "ruhe";
         if (typeof window.__buehne === "function") window.__buehne();
-        if (o.tiere !== "frei" && typeof window.__tiereHalten === "function") window.__tiereHalten();
+        if (o.tiere !== "frei") window.__halten?.();
         const decke = st.perfTargetMs;
         st.perfTargetMs = 1000;
         const gier0 = st.yaw;

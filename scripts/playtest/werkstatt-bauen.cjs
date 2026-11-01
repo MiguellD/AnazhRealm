@@ -3,7 +3,7 @@
 // 11 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
 // die GEBRAUCHS-Flächen routen einen Bauplan nach Rolle/Form:
 // der Minecraft-Hotbar-Gate (Gerät → Hand, Struktur → Phantom) + die zwei Drawer-Bugs (gecraftete
@@ -657,7 +657,7 @@ async function checkBandWelle6Keybindings({ page, check }) {
         return out;
     });
 
-    if (wave6a6Results && !wave6a6Results.error) {
+    if (erreichbar(check, "Welle 6.A6: Tests laufen", wave6a6Results)) {
         check(
             "Welle 6.A6: aktionAusdauer-Gesetz === 5 (koerper-core, Zwilling gefallen)",
             wave6a6Results.hasStaminaCost
@@ -743,7 +743,7 @@ async function checkBandWelle6Keybindings({ page, check }) {
         return out;
     });
 
-    if (wave6a6V2Results && !wave6a6V2Results.error) {
+    if (erreichbar(check, "Welle 6.A6 V2: Tests laufen", wave6a6V2Results)) {
         check("Welle 6.A6 V2: WORLD_EFFECT_THRESHOLDS.resonance_mild lesbar", wave6a6V2Results.thresholdReadable);
         check("Welle 6.A6 V2: Symphony initialisierbar im Headless", wave6a6V2Results.symphonyReady);
         if (wave6a6V2Results.symphonyReady) {
@@ -794,7 +794,7 @@ async function checkBandWelle6Keybindings({ page, check }) {
         return out;
     });
 
-    if (wave6c3V2Results && !wave6c3V2Results.error) {
+    if (erreichbar(check, "Welle 6.C3 V2: Tests laufen", wave6c3V2Results)) {
         check("Welle 6.C3 V2: HUD sichtbar im Bau-Modus", wave6c3V2Results.hudVisible);
         check("Welle 6.C3 V2: Default-HUD enthält 'F' (confirmBuild)", wave6c3V2Results.defaultMentionsConfirmBuild);
         check(
@@ -913,7 +913,7 @@ async function checkBandWelle6Keybindings({ page, check }) {
         return out;
     });
 
-    if (wave6c3Results && !wave6c3Results.error) {
+    if (erreichbar(check, "Welle 6.C3: Tests laufen", wave6c3Results)) {
         check("Welle 6.C3: DEFAULT_KEYBINDINGS frozen", wave6c3Results.hasDefaults);
         check(
             "Welle 6.C3/V8.17+E8+L3: KEYBINDING_ACTIONS hat 13 Einträge (6 + 5 Drawer/Camera + swapHands + chat)",
@@ -1269,7 +1269,7 @@ async function checkBandWelle6XAudit({ page, check }) {
         return out;
     });
 
-    if (wave6x1Results && !wave6x1Results.error) {
+    if (erreichbar(check, "Welle 6.X.1: Audit-Fix-Tests laufen", wave6x1Results)) {
         check("Welle 6.X.1 A2: pfad + Phantom-instabil → confirmBuild blockt", wave6x1Results.pfadBlocksUnstable);
         check("Welle 6.X.1 A2: pfad-Block → keine Architektur entsteht", wave6x1Results.pfadBlocksNoArch);
         check("Welle 6.X.1 A2: pfad-Block → kein Material-Verlust", wave6x1Results.pfadBlocksNoMaterialLoss);
@@ -1284,8 +1284,6 @@ async function checkBandWelle6XAudit({ page, check }) {
             wave6x1Results.statsShowsArmorRow,
             `created=${wave6x1Results._a3bCreated} marked=${wave6x1Results._a3bMarked} equipped=${wave6x1Results._a3bEquipped} text=${(wave6x1Results._a3bContainerText || "").slice(0, 80)}`
         );
-    } else {
-        check("Welle 6.X.1: Audit-Fix-Tests laufen", false, wave6x1Results ? wave6x1Results.error : "no result");
     }
 
     // ### UI-Politur ###
@@ -1344,7 +1342,7 @@ async function checkBandWelle6XAudit({ page, check }) {
         return out;
     });
 
-    if (wave6x2Results && !wave6x2Results.error) {
+    if (erreichbar(check, "Welle 6.X.2: UI-Politur-Tests laufen", wave6x2Results)) {
         check("Welle 6.X.2 B1: #logbook-section im DOM", wave6x2Results.logbookSectionExists);
         check("Welle 6.X.2 B1: #logbook-toggle im DOM", wave6x2Results.logbookToggleExists);
         check(
@@ -1363,8 +1361,6 @@ async function checkBandWelle6XAudit({ page, check }) {
         check("Welle 6.X.2 B4: Hotbar zykelt vorwärts", wave6x2Results.hotbarCyclesForward);
         check("Welle 6.X.2 B4: Hotbar zykelt rückwärts", wave6x2Results.hotbarCyclesBackward);
         check("Welle 6.X.2 B4: Hotbar wrappt bei 0 → 8", wave6x2Results.hotbarWrapsAtZero);
-    } else {
-        check("Welle 6.X.2: UI-Politur-Tests laufen", false, wave6x2Results ? wave6x2Results.error : "no result");
     }
 
     // ### Vision-Quick-Wins ###
@@ -1495,7 +1491,7 @@ async function checkBandWelle6XAudit({ page, check }) {
         return out;
     });
 
-    if (wave6x3Results && !wave6x3Results.error) {
+    if (erreichbar(check, "Welle 6.X.3: Vision-Quick-Win-Tests laufen", wave6x3Results)) {
         check(
             "Welle 6.X.3 C1: at_player_forward(8) liefert Position 8m vor Spieler (yaw=0)",
             wave6x3Results.atPlayerForwardOffset
@@ -1526,8 +1522,6 @@ async function checkBandWelle6XAudit({ page, check }) {
             wave6x3Results.dragonCannotJumpFromSlope,
             wave6x3Results._dragonTags
         );
-    } else {
-        check("Welle 6.X.3: Vision-Quick-Win-Tests laufen", false, wave6x3Results ? wave6x3Results.error : "no result");
     }
 
     // ### Identity ###
@@ -1575,7 +1569,7 @@ async function checkBandWelle6XAudit({ page, check }) {
         return out;
     });
 
-    if (wave6x45Results && !wave6x45Results.error) {
+    if (erreichbar(check, "Welle 6.X.4: Identity-Tests laufen", wave6x45Results)) {
         check("Welle 6.X.4 F1: state.grok.companionName default 'Grok'", wave6x45Results.companionNameDefault);
         check("Welle 6.X.4 F1: state.player.name default 'Schöpfer'", wave6x45Results.playerNameDefault);
         check("Welle 6.X.4 F1: Companion-Input ändert state.grok.companionName", wave6x45Results.companionNameUpdated);
@@ -1584,8 +1578,6 @@ async function checkBandWelle6XAudit({ page, check }) {
         check("Welle 6.X.4 F1: Player-Name persistiert in localStorage", wave6x45Results.playerNamePersisted);
         check("Welle 6.X.4 F1: System-Prompt enthält Companion-Name", wave6x45Results.promptContainsCompanionName);
         check("Welle 6.X.4 F1: System-Prompt enthält Player-Name", wave6x45Results.promptContainsPlayerName);
-    } else {
-        check("Welle 6.X.4: Identity-Tests laufen", false, wave6x45Results ? wave6x45Results.error : "no result");
     }
 }
 

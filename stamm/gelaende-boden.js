@@ -555,11 +555,12 @@ class AnazhRealm_gelaende_boden {
     // (Spawn/Streu/Boden/Material), NICHT in worldFieldAt (Hot-Path). Vier `_voxelSurfaceY`-Calls pro
     // Slope: OK für Punkt-Probes, nicht für Massen-Aufrufe.
     // h_dx, h_dz: Δ über 2 m → slope dimensionslos (m/m): ~0 flach, ~1 = 45°, ~2 Klippe.
-    _slopeAt(x, z, surf, eps) {
+    _slopeAt(x, z, surf, eps, aus) {
         // Die EINE Platzierungs-Slope-Quelle: |∇h| (m/m); Sampler + eps sind Parameter — Gras reicht die
         // gecachte surfMap, der Scatter-Bäcker getTerrainHeightAt ±2 m, Default _voxelSurfaceY. So lesen Gras
         // und Fels DIESELBE Steilheit. Die Fragment-Slope `aSlope`/`_steep` (Fels-FARBE) bleibt bewusst
-        // getrennt (gerenderte Normale pro Pixel).
+        // getrennt (gerenderte Normale pro Pixel). `aus` (DARF) nimmt den Gradienten selbst (gx, gz: die Ebene des
+        // Hangs, auf der ein Büschel der Nah-Wiese steht, `_nahWieseKachelDaten`).
         const s = surf || ((px, pz) => this._voxelSurfaceY(px, pz));
         const e = eps || 1;
         const yE = s(x + e, z);
@@ -567,10 +568,12 @@ class AnazhRealm_gelaende_boden {
         const yN = s(x, z - e);
         const yS = s(x, z + e);
         if (!Number.isFinite(yE) || !Number.isFinite(yW) || !Number.isFinite(yN) || !Number.isFinite(yS)) {
+            if (aus) aus.gx = aus.gz = 0;
             return 0;
         }
         const dxh = (yE - yW) / (2 * e);
         const dzh = (yS - yN) / (2 * e);
+        if (aus) [aus.gx, aus.gz] = [dxh, dzh];
         return Math.hypot(dxh, dzh);
     }
 

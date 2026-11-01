@@ -113,7 +113,7 @@ async function checkBandHydrosphere({ page, check }) {
         return out;
     });
 
-    if (voxelV943bResults && !voxelV943bResults.error) {
+    if (erreichbar(check, "Voxel V9.43-b: Tests laufen", voxelV943bResults)) {
         const hb = voxelV943bResults;
         check("Voxel V9.43-b: das Netz ist deterministisch (zwei Läufe byte-identisch)", hb.deterministic);
         check("Voxel V9.43-b: Fluss-Breite wächst stromab (Einzugsgebiet des Netzes monoton)", hb.widthGrows);
@@ -183,7 +183,7 @@ async function checkBandHydrosphere({ page, check }) {
         return out;
     });
 
-    if (voxelV943c2 && !voxelV943c2.error) {
+    if (erreichbar(check, "Voxel V9.43-c.2: Tests laufen", voxelV943c2)) {
         const h2 = voxelV943c2;
         check("Voxel V9.43-c.2: _waterLevelAt liefert über einer See-Zelle den See-Füllstand", h2.lakeLevelOk);
         check(
@@ -307,7 +307,7 @@ async function checkBandHydrosphere({ page, check }) {
         return out;
     });
 
-    if (voxelV943d && !voxelV943d.error) {
+    if (erreichbar(check, "Voxel V9.43-d: Tests laufen", voxelV943d)) {
         const d = voxelV943d;
         check(
             "Voxel V9.43-d → Welle L: der Kanal formt einen Fluss-Mittelpunkt (Flachboden unter dem Spiegel)",

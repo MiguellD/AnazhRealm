@@ -19,18 +19,14 @@
 // `--selftest` setzt in der Kopie das direkte Schreiben wieder ein (`schreibeGanz` → fs.writeFile) und MUSS rot werden.
 // Ports: PERSISTENCE_PORT (Seite, Standard 4326), PERSISTENCE_SERVER_PORT (Sandbox-Server, Standard 4327).
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, nullRenderer, startProc, sleep, ROOT: root, nullSeite, urteilEnde, jsonLesen } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, startProc, sleep, ROOT: root, nullSeite, urteilEnde, ausDatei, path, fs, os, SELBSTTEST, jsonLesen } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const { spawnSync } = require("child_process");
 const zlib = require("zlib");
-const fs = require("fs");
-const os = require("os");
-const path = require("path");
 
 // Port über PERSISTENCE_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4326.
 const PORT = Number(process.env.PERSISTENCE_PORT || 4326);
 const SERVER_PORT = Number(process.env.PERSISTENCE_SERVER_PORT || 4327);
-const SELBSTTEST = process.argv.includes("--selftest");
 const NUR_STUFE = process.argv.includes("--stufe");
 const NUR_WEG = process.argv.includes("--weg");
 const [WEG_KM, WEG_MIN] = (process.env.PERSISTENCE_WEG || "1-6").split("-").map(Number);
@@ -695,7 +691,7 @@ function korpusUrteil(z, selbst) {
 
     // (S) Der save-server schreibt ganz, (C) sein Cache-Kopf — im Selbsttest je die alte Art in der Kopie, die rot werden MUSS:
     // das direkte Schreiben aufs Ziel, der Kopf ohne Validator. Fehlt der Anker einer Verfälschung, greift sie nicht (ROT).
-    const quelle = fs.readFileSync(path.join(root, "save-server.js"), "utf8");
+    const quelle = ausDatei("save-server.js");
     const verfaelscht = (anker, neu) => {
         if (quelle.includes(anker)) return quelle.replace(anker, neu);
         console.log(`⛔ SELBSTTEST: save-server.js trägt „${anker}" nicht — die Verfälschung greift nicht`);

@@ -1,3 +1,4 @@
+const { ausDatei, path, fs, stammLib, vm, jsonLesen, ROOT: root } = require("./lib/welt-boot.cjs");
 // diag-studio-vertrag.cjs — DER MANIFEST-VALIDATOR (docs/studio-vertrag.md).
 // Die USD-/Schema-Lehre: ein Kern, der den Vertrag verletzt, wird ROT beim
 // Andocken — nicht stumm kaputt in der Welt. Statisch + vm (kein Browser, im
@@ -19,13 +20,7 @@
 // Eine neue Domäne (vehicle-core/porta-core) trägt sich in CORES ein und wird
 // automatisch mitvalidiert (§5 Andock-Sequenz Schritt 5).
 //   node scripts/diag-studio-vertrag.cjs
-const vm = require("vm");
-const fs = require("fs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
-const { kanalImVm, ersteAbweichung, DATEN_KANAELE } = require("./lib/asset-worker-harness.cjs");
-
-const root = path.resolve(__dirname, "..");
+const { kanalImVm, ersteAbweichung, DATEN_KANAELE, absorber } = require("./lib/asset-worker-harness.cjs");
 
 // Die registrierten Studio-Kerne — N2 (Nervensystem-Plan, „Runtime = Validator"): die Liste
 // kommt aus cores.manifest.json, der EINEN Kern-Quelle (Worker-Boot `_ensureAssetFoundry` +
@@ -35,7 +30,7 @@ const root = path.resolve(__dirname, "..");
 // ZWEIT-Kern einer Laufzeit trägt seine Manifest-Blöcke namensgleich unter EINEM Objekt
 // statt top-level — löst die const-Kollision mit foundry-core
 // (STUDIO_VERTRAG/PORTAL_RENDER_CONFIG/PRESETS) ohne dessen Edit.
-const MANIFEST = JSON.parse(fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8"));
+const MANIFEST = jsonLesen("cores.manifest.json");
 const CORES = MANIFEST.map((c) => ({
     id: c.id,
     file: c.vertrag,
@@ -49,14 +44,6 @@ const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
 
 // Ein absorbierender Proxy: frisst jeden Konstruktor/jede Methode der
 // Top-Level-Ausführung (THREE etc.) — nur die DATEN-Blöcke interessieren.
-function absorber() {
-    const a = new Proxy(function () {}, {
-        get: () => a,
-        apply: () => a,
-        construct: () => a,
-    });
-    return a;
-}
 
 // Alle Kerne in EINEM Kontext wie im Main-Thread — die Seh-Klassen (BUDGET_GESETZ.seh, S3) und die Linse EIN WERT lesen sie.
 const KERNE = (() => {
@@ -68,7 +55,7 @@ const KERNE = (() => {
     ctx.self = ctx;
     ctx.globalThis = ctx;
     for (const f of new Set(MANIFEST.flatMap((c) => c.scripts || [])))
-        vm.runInContext(fs.readFileSync(path.join(root, f), "utf8"), ctx, { filename: f, timeout: 30000 });
+        vm.runInContext(ausDatei(path.join(root, f)), ctx, { filename: f, timeout: 30000 });
     return Object.fromEntries(
         Object.keys(ctx)
             .filter((k) => /^__\w+Core$/.test(k))
@@ -211,8 +198,8 @@ function loadCore(entry) {
     ctx.self = ctx;
     ctx.globalThis = ctx;
     let code = "";
-    for (const dep of entry.deps || []) code += fs.readFileSync(path.join(root, dep), "utf8") + "\n;";
-    code += entry.quelle != null ? entry.quelle : fs.readFileSync(path.join(root, entry.file), "utf8"); // quelle: der Selbsttest
+    for (const dep of entry.deps || []) code += ausDatei(path.join(root, dep)) + "\n;";
+    code += entry.quelle != null ? entry.quelle : ausDatei(path.join(root, entry.file)); // quelle: der Selbsttest
     if (entry.ns) {
         // v1.1-Namensraum-Kern: dieselben Block-Namen, gelesen unter entry.ns
         // (fehlt der Namensraum ganz, bleibt alles null → B1/B2/G4.3 werden rot).
@@ -297,10 +284,10 @@ function gesetzKernErklaert(doc) {
 
 // Reine Validierungs-Funktion (auch der Selbst-Test ruft sie) → Verletzungsliste.
 // B4 `uniform: true` — DER GESETZ-WERT (studios.K2: ein Griff zeigt ihn ≤ 200 ms, ohne Neubau): nur `true`, und der Byte-Beweis
-// steht in der Ratsche — die Zeile bewegt an keinem Rezept ihrer Art ein Bau-Byte (spec/vertraege/ratsche.json reglerTot, gemessen
-// von gate:regler-wirkt). Eine Zeile, die Bytes bewegt, braucht den Neubau und trägt die Schranke von 1 s.
+// steht in der Ratsche — die Zeile bewegt an keinem Rezept ihrer Art ein Bau-Byte (spec/vertraege/ratsche.json reglerGesetz, gemessen
+// von gate:regler-wirkt, das dort auch ihren Leser der Welt misst). Eine Zeile, die Bytes bewegt, braucht den Neubau und trägt die Schranke von 1 s.
 const REGLER_OHNE_BYTE = new Set(
-    Object.keys(JSON.parse(fs.readFileSync(path.join(root, "spec/vertraege/ratsche.json"), "utf8")).reglerTot.tot)
+    Object.keys(jsonLesen("spec/vertraege/ratsche.json").reglerGesetz.zeilen)
 );
 function validateManifest(m, kern) {
     const v = [];
@@ -717,7 +704,7 @@ function validateManifest(m, kern) {
                         v.push(`B4: PARAMS_BY_KIND.${kind} "${p.id}" uniform ist nur true`);
                     else if (p.uniform && !REGLER_OHNE_BYTE.has(`${kern}:${kind}:${p.id}`))
                         v.push(
-                            `B4: PARAMS_BY_KIND.${kind} "${p.id}" uniform ohne Byte-Beweis (${kern}:${kind}:${p.id} fehlt in reglerTot — die Zeile baut neu)`
+                            `B4: PARAMS_BY_KIND.${kind} "${p.id}" uniform ohne Byte-Beweis (${kern}:${kind}:${p.id} fehlt in reglerGesetz — die Zeile baut neu)`
                         );
                 }
             }
@@ -923,7 +910,7 @@ function validateManifest(m, kern) {
 
     // §0 — das Vertrags-Dokument selbst steht + trägt die sechs Blöcke.
     const docPath = path.join(root, "docs/studio-vertrag.md");
-    const doc = fs.existsSync(docPath) ? fs.readFileSync(docPath, "utf8") : "";
+    const doc = fs.existsSync(docPath) ? ausDatei(docPath) : "";
     check("Vertrag existiert (docs/studio-vertrag.md)", doc.length > 0);
     check(
         "Vertrag trägt die sechs Blöcke B1–B6 + die Empfänger-Gesetze",
@@ -1019,10 +1006,7 @@ function validateManifest(m, kern) {
         const u = kanalImVm(quellen)({ type: "get-book" });
         const out = [];
         for (const [feld, key] of DATEN_KANAELE) {
-            const gold = fs.readFileSync(
-                path.join(root, "spec", "asset-contract", "v1", "golden", key + ".json"),
-                "utf8"
-            );
+            const gold = ausDatei(path.join(root, "spec", "asset-contract", "v1", "golden", key + ".json"));
             if (JSON.stringify(u[feld]) === gold.trim()) continue;
             const a = ersteAbweichung(u[feld], JSON.parse(gold));
             out.push(`${key} ${a ? `${a.pfad}: Kern ${a.ist} ≠ eingefroren ${a.soll}` : "weicht ab"}`);
@@ -1040,7 +1024,7 @@ function validateManifest(m, kern) {
     // Selbsttest: eine Budget-Zeile eines Zweit-Kerns und ein Rezept-Regler des Haupt-Kerns, nach dem Laden verschoben —
     // die Wand nennt beide Schlüssel.
     {
-        const lese = (f) => fs.readFileSync(path.join(root, f), "utf8");
+        const lese = (f) => ausDatei(path.join(root, f));
         const st = umschlagBefunde({
             "porta-core.js":
                 lese("porta-core.js") + "\n;__portaCore.PORTAL_RENDER_CONFIG.lod.budget.gate[2].tris += 1;",
@@ -1203,7 +1187,7 @@ function validateManifest(m, kern) {
         lehren: null,
     };
     const bv = validateManifest(broken);
-    // B4 uniform — eine Zeile, die Bytes bewegt (porta:gate:k ist nicht in reglerTot), als Gesetz-Wert erklärt, und ein falscher Wert.
+    // B4 uniform — eine Zeile, die Bytes bewegt (porta:gate:k ist nicht in reglerGesetz), als Gesetz-Wert erklärt, und ein falscher Wert.
     const bvU = validateManifest(
         {
             vertrag: 1,
