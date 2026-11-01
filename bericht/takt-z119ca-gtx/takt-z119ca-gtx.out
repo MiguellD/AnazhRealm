@@ -1,0 +1,44 @@
+Punkte-Maschine: 27 Station(en) in 23 Läufen auf gtx am 4b13478b · Sitzung 23 Proben in EINER Welt (Deckel Σ 12 min) · Zeit 0 Läufe ~0 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~0 min (Soll-Minuten ohne Sitzung) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  SITZUNG gtx · die Welt steht nach 6.8 s (Schloss nach 0.01 min) · 23 Proben · Welt :27804
+  SITZUNG profiband.K4#1 ließ die Zeichenkette verändert: zeichner.renderer._renderObjectDirect zeichner.renderer._renderScene — kein Urteil (Werkzeug-Bruch), die Grundstellung folgt
+  OFFEN profiband.K4#1 · Deckel 29 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._renderObjectDirect getauscht: function (object, material, scene, camera) { const vor = H.c · zeichner.renderer._renderScene getauscht: function (scene, camera, ...rest) { const name = window.__pa) · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K4#2 · Deckel 29 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._renderObjectDirect getauscht: function (object, material, scene, camera) { const vor = H.c · zeichner.renderer._renderScene getauscht: function (scene, camera, ...rest) { const name = window.__pa) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG der Grund der Welt: 83 Größen in 0.2 s
+  SITZUNG Grundstellung vor mensch.K4#1: 0.1 s (im Spiel 31.2 ms)
+  SITZUNG Ort wiese vor mensch.K4#1: 19.4 s (612 Takte, 81 Chunks, nach der Grundstellung)
+  ROT  mensch.K4#1 · Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third ROT strich 0.333 Soll [1,1] — gesicht 0.333 < 1 · der Mangel „Augen, Mund, Haar-Fleck" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.061 [0.9, 1] · lippeL -3.02 [-14, -4] · lippeA -0.02 [4, 14] · hoehleL 0.2 [-12, 0] · hoehleA -1.24 [-2, 6] · haarDeckung 1 [0.9, 1] · Sitzung · Exit 0 · 0.33 min
+  ROT  haar.K2#1 · arm ROT strich 0.2896 Soll [0.3554,0.533] — strich 0.2896 < 0.3554 · albedo: Rohdatei spec/farbe/albedo-tafel.json: Zeile „haar" ohne Ist · albedo — [0.01; 0.3] · third ROT strich 0.389 Soll [0.3554,0.533] — strich 0.389 — albedo: Rohdatei spec/farbe/albedo-tafel.json: Zeile „haar" ohne Ist · albedo — [0.01; 0.3] · Sitzung · Exit 0 · 0.31 min
+  ROT  vegetation.K1#1 · wiese-third-0.5--wiese: LAI 2–5 2.40 · 5–10 1.51 · 10–14 1.22 · 14–30 0.36 · 30–80 0.02 · 80–200 0.00 (Saum springt > 15 %), Farbton 2–5 m 12.69°, nahWiese 4 Befehle / 66448 Dreiecke · Sitzung · Exit 0 · 0.62 min
+  OFFEN licht.K2#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor material.K2#1: 7.5 s (im Spiel 1627.6 ms, durch die Tür)
+  SITZUNG Ort wiese vor material.K2#1: 16.5 s (585 Takte, 81 Chunks, nach der Tür)
+  OFFEN material.K2#1 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: fels-weit · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor lod.K1#1: 9.1 s (im Spiel 1705.3 ms, durch die Tür)
+  SITZUNG Ort wiese vor lod.K1#1: 16.2 s (591 Takte, 81 Chunks, nach der Tür)
+  OFFEN lod.K1#1 · Deckel 30 s gerissen — beendet, UNGEMESSEN (zuletzt: fenster · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor lod.K5#1: 8.5 s (im Spiel 1949.3 ms, durch die Tür)
+  SITZUNG Ort wiese vor lod.K5#1: 16.9 s (574 Takte, 81 Chunks, nach der Tür)
+  SITZUNG lod.K5#1 ließ die Welt verändert und trägt kein mutiert: werke +1 (−0) — die Grundstellung folgt
+  OFFEN lod.K5#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG die Welt trägt nicht mehr vor spielgang.K3#1: abweichend vom Grund: zeichner.postKette · wie {"zeichner.postKette":"fort"}
+  OFFEN spielgang.K3#1 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {"zeichner.postKette":"fort"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN material.K1#1 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {"zeichner.postKette":"fort"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K5#1 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {"zeichner.postKette":"fort"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN oekologie.K4#2 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {"zeichner.postKette":"fort"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN mensch.K5#1 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {"zeichner.postKette":"fort"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN siedlung.K1#2 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {"zeichner.postKette":"fort"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN licht.K3#1 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {"zeichner.postKette":"fort"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN tiere.K1#2 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {"zeichner.postKette":"fort"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN tiere.K3#2 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {"zeichner.postKette":"fort"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN studios.K2#2 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {"zeichner.postKette":"fort"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN studios.K3#2 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {"zeichner.postKette":"fort"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN studios.K4#1 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {"zeichner.postKette":"fort"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN siedlung.K4#2 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {"zeichner.postKette":"fort"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN fahrzeug.K2#2 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {"zeichner.postKette":"fort"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K1#1 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {"zeichner.postKette":"fort"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K2#1 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {"zeichner.postKette":"fort"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K3#1 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {"zeichner.postKette":"fort"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN speicher.K4#2 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {"zeichner.postKette":"fort"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG DER ORT IM DECKEL (die Probe zog weiter als 250 m von dem Ort, an dem die Sitzung sie begann — ihr Deckel trug den Ring): material.K2#1 1083 m (Ring 4 → 1)
+  SITZUNG Fahrt 366.6 s (Soll ≤ 1800 s) · 8 Proben · Grundstellung 4×
+→ meisterkarte-quelle\punkte\messung\4b13478b-gtx.json

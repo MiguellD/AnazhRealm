@@ -156,3 +156,4 @@ a-spawn-gtx4 Exit0 station a-spawn.sh an b895650c
 z115-abab nicht-langsamer abab b895650c gegen 808464ca: w-ego 4+4 nicht-langsamer · stadt 4+4 nicht-langsamer
 takt-z118ca-gtx gemessen punkte c351b318 gtx: 0 grün / 9 rot
 takt-z118cb-gtx gemessen punkte c351b318 gtx: 0 grün / 10 rot
+takt-z119ca-gtx gemessen punkte 4b13478b gtx: 0 grün / 3 rot
