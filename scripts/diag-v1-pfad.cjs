@@ -1923,11 +1923,13 @@ async function korpusAufbau(a) {
         return p;
     };
     r.dslRun = function (p, o) {
-        const [na, nw] = [st.architectures.length, st.creatures.length];
+        // was der Lauf setzte, am Bestand vorher gemessen, nie am Index: ein Werk mit Grundriss räumt die Natur unter sich
+        // (`_naturRaeumen`), der Bestand behält seine Länge (Holzhütte 1 309 → 1 309, die Eiche fort), slice(Länge) sah nichts
+        const [va, vw] = [new Set(st.architectures), new Set(st.creatures)];
         const res = lauf.call(this, p, o);
         if ((o && o.source) !== "llm:grok") return res;
-        K.werke.push(...st.architectures.slice(na));
-        K.wesen.push(...st.creatures.slice(nw));
+        K.werke.push(...st.architectures.filter((x) => !va.has(x)));
+        K.wesen.push(...st.creatures.filter((c) => !vw.has(c)));
         K.lauf = res.ok && !res.log.some((x) => /^(sovereign|weltakt_gehalten)/.test(x.event));
         return res;
     };
@@ -2415,9 +2417,9 @@ hauptLauf(async () => {
             baeume: 9,
             kronen: 0,
             ringPortale: 10,
-            ringMitteAbstand: 0,
+            slotAbstand: 0,
             trocken: true,
-            plattformen: 1,
+            doppelt: 0,
         };
         // Die Einzelschnitte: je ein gesunder Zustand ohne Täter, je der Befund-Zustand mit Täter beim Namen.
         const gesundS = {
@@ -2531,10 +2533,11 @@ hauptLauf(async () => {
                 gesundA,
                 [
                     ["Tanne 2,0 m vom Mittelpunkt (V-D1)", { kronen: 2, naechsterStamm: 1.97, naechsteArt: "baum_tanne" }, "2 Krone"],
-                    ["Ring um den Ursprung, 36 m daneben", { ringMitteAbstand: 36 }, "ring-mitte"],
-                    ["kein Ring über dem Frame-Budget", { ringPortale: 0 }, "kein Genesis-Ring"],
-                    ["Plattform im See", { trocken: false }, "plattform im wasser"],
-                    ["der zweite Leger sucht nicht (Zwilling)", { plattformen: 2 }, "2 Plattformen"],
+                    ["ein Tor 36 m neben seinem Slot des Plans", { slotAbstand: 36 }, "ein Tor steht 36 m neben"],
+                    ["kein Tor über dem Frame-Budget", { ringPortale: 0 }, "0 Tore am Genesis-Ort"],
+                    ["9 von 10 Toren (eines fehlt)", { ringPortale: 9 }, "9 Tore am Genesis-Ort"],
+                    ["die Mitte im See", { trocken: false }, "die Mitte im wasser"],
+                    ["ein Tor doppelt nach weiteren Takten (Zwilling)", { doppelt: 1 }, "1 Tore doppelt"],
                     ["kein Wald gewachsen (vakuös)", { baeume: 0 }, "kein Wald"],
                 ],
             ],
