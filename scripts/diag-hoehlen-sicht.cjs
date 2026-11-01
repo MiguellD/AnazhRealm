@@ -340,7 +340,7 @@ function urteil(b) {
 }
 
 function selbsttest() {
-    const { taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+    const { taeterFaelle, selbsttestEnde, jsonKlon } = require("./lib/welt-boot.cjs");
     const gruen = {
         spiegel: [
             {
@@ -435,7 +435,7 @@ function selbsttest() {
     const fehler = [];
     const g = urteil(gruen);
     if (g.length) fehler.push("der grüne Befund fällt rot: " + g.join(" · "));
-    const klon = () => JSON.parse(JSON.stringify(gruen));
+    const klon = () => jsonKlon(gruen);
     const faelle = [
         ["Spiegel-Drift", (b) => (b.spiegel[0].felder.tri = false), /SPIEGEL: Chunk 0,0 .*tri weicht ab/],
         ["kein Spiegel", (b) => (b.spiegel = []), /SPIEGEL: kein Chunk/],
@@ -616,7 +616,7 @@ function selbsttest() {
     selbsttestEnde(fehler);
 }
 
-const { statikServer, warteAufWelt, nullSeite, wandEnde, path, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, nullSeite, wandEnde, path, SELBSTTEST, fehlerText } = require("./lib/welt-boot.cjs");
 
 if (SELBSTTEST) {
     console.log("=== HÖHLEN-SICHT — Selbsttest (ohne Browser) ===");
@@ -1637,7 +1637,7 @@ const server = statikServer();
             return aus;
         }, ORTE);
     } catch (e) {
-        befund = { fehler: e?.message || String(e) };
+        befund = { fehler: fehlerText(e) };
     }
     await browser.close();
     server.close();

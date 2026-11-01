@@ -44,6 +44,14 @@ const weltR = `for (const [n, f] of [["r", () => window.anazhRealm], ["st", () =
 // JSON.stringify(wert, null, einzug) + ende)`)
 const jsonLesen = (p) => JSON.parse(ausDatei(p));
 const jsonSchreiben = (p, o, n = 1, ende = "") => fs.writeFileSync(p, JSON.stringify(o, null, n) + ende);
+// … und die EINE JSON-KOPIE (`jsonKlon(x)`, in jeder Seite als `window.jsonKlon`, `WARTEN_SEITE`): dieselben Bytes wie
+// `JSON.parse(JSON.stringify(x))` — bis w4-verkehr-c2 derselbe Zwilling an 147 Stellen in 50 Skripten (diag-profiband allein 26)
+const jsonKlon = (x) => JSON.parse(JSON.stringify(x));
+// DAS EINE WORT EINES FEHLERS (in jeder Seite als `window.fehlerText` / `window.fehlerStapel`, `WARTEN_SEITE`): `fehlerText(e)`
+// die Meldung, sonst der Fehler als Text; `fehlerStapel(e)` der Stapel, sonst der Text — bis w4-verkehr-c2 je Linse ein eigenes
+// `(e && e.message) || String(e)` / `e?.message || String(e)` (61 Stellen in 41 Skripten) und dasselbe mit `stack` (33 in 8)
+const fehlerText = (e) => e?.message || String(e);
+const fehlerStapel = (e) => e?.stack || String(e);
 // DIE UHR DES LAUFS (`const log = laufUhr()`): jede Zeile trägt die Sekunden seit dem Ruf — je Linse ein eigenes `T0` samt
 // eigenem log war ein Zwilling
 const laufUhr =
@@ -80,6 +88,43 @@ async function seitenTakt() {
     const vor = r._weltStand ? r._weltStand.takte : -1;
     await new Promise((ok) => requestAnimationFrame(ok));
     if ((r._weltStand ? r._weltStand.takte : -1) === vor) r._gameLoopTick(performance.now());
+}
+// DIE TAKTE VON HAND (`await window.__takte(n, ms)`): n Takte des Loops, je `ms` (ohne: 30) Schlaf dazwischen, ein werfender
+// Takt bricht die Reihe nicht — bis w4-verkehr-c dreimal derselbe Zwilling (diag-ankunft, diag-v1-pfad, diag-werkstatt-weg),
+// bis w4-verkehr-c2 neunmal mehr (diag-foundry-deadlock, playtest, diag-blick, diag-fern-wasser, diag-foundry-crossfade,
+// playtest/studio zweimal, diag-kamera-laub, diag-pruefbuehne)
+async function takte(n, ms) {
+    for (let i = 0; i < n; i++) {
+        try {
+            r._gameLoopTick(performance.now());
+        } catch {}
+        await sleep(ms ?? 30);
+    }
+}
+// DIE STREU-PUMPE (`await window.__streuTakte(n, ms)`): n Takte ohne Budget-Bremse (`_frameOverBudget`), je Takt die Streu um
+// den Spieler (`_tickScatterStreaming`), `ms` Schlaf dazwischen — bis w4-verkehr-c2 viermal derselbe Zwilling (playtest/studio
+// zweimal, diag-fluss, diag-asset-inventory)
+async function streuTakte(n, ms) {
+    for (let i = 0; i < n; i++) {
+        st._frameOverBudget = false;
+        try {
+            r._gameLoopTick(performance.now());
+            const pp = st.playerMesh && st.playerMesh.position;
+            if (pp) r._tickScatterStreaming(pp);
+        } catch {}
+        await sleep(ms);
+    }
+}
+// DAS BILD-MUSTER DER LINSEN (`window.__MUSTER`, ms je Bild): Bilder ohne (8,3), mit einem (16,7 · 20 · 11,1) und mit zwei
+// Sim-Schritten (25 · 33,3) — bis w4-verkehr-c viermal dasselbe Literal (fahr-proben, diag-kamera-laub, diag-werk-im-wasser zweimal)
+// DER BILD-RENDERER RUHT (`window.__bildAus()`): render und renderAsync leer, die Nachbearbeitung aus — die Probe misst die Welt,
+// nie das Bild (bis w4-verkehr-c dreimal derselbe Zwilling: diag-werk-im-wasser zweimal, wasser-linse `wasserStrom`)
+function bildAus() {
+    if (st.renderer) {
+        st.renderer.render = function () {};
+        if (typeof st.renderer.renderAsync === "function") st.renderer.renderAsync = () => Promise.resolve();
+    }
+    st.postProcessingFailed = true;
 }
 // DAS EINE EINSCHWINGEN (`await window.__weltStehtNach(takt, max)`): Takt um Takt (`takt(n)` oder der Takt der Seite, mindestens
 // einer), bis die Welt steht (`_weltSteht`) und das Buch da ist; der Regler hält, solange sie schwingt. Der Deckel `max` zählt
@@ -202,6 +247,55 @@ async function stand() {
     await r._speicherStill();
     return (await r._idbGetWorld(st.worldMeta.worldId)).json;
 }
+// … und ALS OBJEKT (`await window.__standJson()`): der Stand geparst, unlesbar `null` — bis w4-verkehr-c2 sechsmal derselbe
+// Zwilling (playtest/feld-nexus, koerper, siedlung dreimal, werkstatt)
+async function standJson() {
+    const roh = await window.__stand();
+    try {
+        return JSON.parse(roh);
+    } catch {
+        return null;
+    }
+}
+// DER PUTZ DER WERKSTATT-PROBEN (`window.__werkPutz()`): alle Schubladen zu (der Welt-Blick), Gier und Leib auf 0 — bis
+// w4-verkehr-c2 achtmal derselbe Zwilling (playtest/bau-buch zweimal, bau, feld-nexus dreimal, werkstatt zweimal)
+function werkPutz() {
+    r.closeAllDrawers();
+    st.yaw = 0;
+    if (st.playerMesh) st.playerMesh.rotation.y = 0;
+}
+// DIE BAUTEN LEER (`window.__bautenLeer()`): jedes Mesh der Architekturen aus der Szene und entsorgt, die Liste leer — bis
+// w4-verkehr-c2 sechsmal derselbe Zwilling in playtest/siedlung
+function bautenLeer() {
+    for (const a of st.architectures) {
+        if (a.mesh) {
+            st.scene.remove(a.mesh);
+            r._disposeSoulGroup(a.mesh);
+        }
+    }
+    st.architectures = [];
+}
+// DER SPION AM RUF (`window.__rufe(wer, methode, lieferer, name, args)`): `lieferer[name]` zählt (und delegiert) über die EINE
+// Leihe, solange `wer[methode](...args)` läuft — die Zahl der Rufe; ein Wurf nach dem Ruf entwertet den Konsum nicht. Bis
+// w4-verkehr-c2 dreimal derselbe Zwilling (diag-ankunft, diag-settlement, diag-werkstatt-weg)
+function rufe(wer, methode, lieferer, name, args) {
+    const echt = lieferer[name];
+    let n = 0;
+    const zurueck = leihe(lieferer, {
+        [name]: function (...x) {
+            n++;
+            return echt.apply(this, x);
+        },
+    });
+    try {
+        wer[methode](...args);
+    } catch {
+        // der Konsum zählt bis zum Wurf
+    } finally {
+        zurueck();
+    }
+    return n;
+}
 // DAS BILD ALS PNG: in jeder Seite `window.__png(u8, W, H)` — RGBA-Bytes W×H (ein Schuss, eine Maske) deckend als Daten-URL,
 // in Node `pngDatei(datei, url)` schreibt sie; bis dahin baute jede Bild-Linse ihre Leinwand und ihren Puffer selbst
 // (w4-proben-tempo2: die Bytes kopiert, das Alpha deckend gesetzt — dieselben Bytes wie die Abbildung je Byte, ohne 8 Mio. Rückrufe
@@ -217,7 +311,7 @@ function png(u8, W, H) {
 // Bild neu (eine Linse blendet Klassen aus und ein, die Bühne wechselt)
 const bundlesNeu = () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
 const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
-const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
+const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__rufe = ${rufe};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -1018,6 +1112,27 @@ function pruefer() {
 function wandEnde(errs, satz) {
     urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`, "\n✅ GRÜN — " + satz);
 }
+// DIE ROTE LISTE (`rotListe(v)`): je Verletzung eine Zeile, dann Exit 1; leer geht der Lauf weiter — bis w4-verkehr-c2
+// viermal derselbe Zwilling (diag-post-kette, diag-takt-atem, diag-verdeckungs-abfrage, diag-ego-schatten)
+function rotListe(v) {
+    if (!v.length) return;
+    console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
+    for (const s of v) console.log("   • " + s);
+    process.exit(1);
+}
+// DAS ENDE DER SEITE einer Linse (`await seiteZu(browser, server, out, kopf, feld = "error")`): Browser und Server zu, die
+// Kopfzeile, dann ohne Befund oder mit Fehler am Feld „FEHLER:" und Exit 1 — bis w4-verkehr-c2 zehnmal derselbe Zwilling
+// (diag-post-kette, diag-takt-atem, diag-erstarren, diag-gpu-zeit, diag-ego-schatten, diag-kamera-treue, diag-chunk-satz; am
+// Feld `fatal` diag-reload-treue, diag-p2p-gestalt, diag-blick)
+async function seiteZu(browser, server, out, kopf, feld = "error") {
+    await browser.close();
+    server.close();
+    if (kopf) console.log(kopf);
+    if (!out || out[feld]) {
+        console.log("FEHLER:", out ? out[feld] : "?");
+        process.exit(1);
+    }
+}
 
 // DIE TÄTER-FÄLLE eines Selbsttests ohne Browser: je Fall `[name, tat, muss]` (die Tat an einem frischen `klon()`) oder
 // `{ name, z, muss }` das Urteil; jedes `muss` (ein Muster oder eine Liste) trifft einen Befund, `null` verlangt keinen — sonst steht
@@ -1040,7 +1155,7 @@ function taeterFaelle(faelle, urteil, { fehler = [], klon } = {}) {
 // DIE ABWANDLUNG eines grünen Befunds (der Täter eines Falls `{ name, z: mit(pfad, wert), muss }`): ein frischer Klon, `wert`
 // gemischt in den Knoten unter `pfad` („a.b", leer = die Wurzel) — EINMAL hier statt eines Klon-Helfers je Linse
 const abwandlung = (gruen) => (pfad, wert) => {
-    const z = JSON.parse(JSON.stringify(gruen));
+    const z = jsonKlon(gruen);
     Object.assign(pfad ? pfad.split(".").reduce((o, k) => o[k], z) : z, wert);
     return z;
 };
@@ -1389,12 +1504,17 @@ module.exports = {
     abwandlung,
     selbsttestEnde,
     wandEnde,
+    rotListe,
+    seiteZu,
     startProc,
     eigenePorte,
     sleep,
     laufUhr,
     jsonLesen,
     jsonSchreiben,
+    jsonKlon,
+    fehlerText,
+    fehlerStapel,
     hauptLauf,
     urteilEnde,
     argOpt,

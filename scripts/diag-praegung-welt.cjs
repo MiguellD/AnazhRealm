@@ -7,7 +7,7 @@
 // (Welt, Regel, Bauplan) ein signierter Eintrag ≤ 8 KB, über den Code wieder, Byte-, Code- und Mesh-Mutante ROT, Fork mit Kette
 // (`--bibliothek` endet nach (L), ohne Gerät B); jede Wand mit ihrer Täter-Probe.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE, hauptLauf, startProc, eigenePorte, pruefer, halteBis, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE, hauptLauf, startProc, eigenePorte, pruefer, halteBis, wandEnde, jsonKlon, fehlerStapel } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.PRAEGUNG_WELT_PORT || 4439);
 const server = statikServer();
@@ -220,10 +220,10 @@ hauptLauf(async () => {
             bp.studioOv = { __tradition: "Nihon" };
             const ser = r._serializeBlueprint(bp);
             res.r.bpSer = ser.studioOv?.__tradition === "Nihon";
-            res.r.bpDes = r._deserializeBlueprint(JSON.parse(JSON.stringify(ser)))?.studioOv?.__tradition === "Nihon";
+            res.r.bpDes = r._deserializeBlueprint(jsonKlon(ser))?.studioOv?.__tradition === "Nihon";
             // studioOv ist ein deklariertes Bauplan-Feld: ein kaputter Stempel fällt im eigenen Zweig, nie als Unbekanntes vorbei
             bp.studioOv = [1, 2];
-            const kaputt = JSON.parse(JSON.stringify({ ...ser, studioOv: [1, 2] }));
+            const kaputt = jsonKlon({ ...ser, studioOv: [1, 2] });
             res.r.bpKaputt = r._serializeBlueprint(bp).studioOv === undefined && r._deserializeBlueprint(kaputt).studioOv === undefined;
             delete bp.studioOv;
             const fat = { blob: "x".repeat(9000) };
@@ -374,7 +374,7 @@ hauptLauf(async () => {
                 return [satz, arten.length === 1];
             });
         } catch (e) {
-            k.err = e?.stack || String(e);
+            k.err = fehlerStapel(e);
         }
         r._ensureWorkshopState().studioOv.gt = { radstand: 3.1, grip: 1.2, ...KC.vehicle.ov("toro", VC.CULTURES) }; // die Prägung, die A teilt (T)
         return res;

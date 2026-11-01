@@ -70,7 +70,7 @@ async function lebenBuehnen(
                     throw new Error("keine Gabe");
                 pm.set(ort.x + 150, boden(ort.x + 150, ort.z), ort.z);
                 lauf(600);
-                const snap = JSON.parse(JSON.stringify(r._serializeCreature(c0)));
+                const snap = jsonKlon(r._serializeCreature(c0));
                 r.removeCreature(c0);
                 const c = r._restoreCreatureFromSnapshot(snap);
                 ruhig(c);
