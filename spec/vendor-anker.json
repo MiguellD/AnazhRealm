@@ -1204,5 +1204,34 @@
                 "organ": "_schattenGrund"
             }
         ]
+    },
+    {
+        "warum": "DER KNOTEN-BAU IN RATEN: der Gang von NodeBuilder.build, der Eintritt in den Bau-Cache",
+        "anker": [
+            {
+                "sub": "ai=[\"setup\",\"analyze\",\"generate\"]",
+                "organ": "KNOTEN_GANG"
+            },
+            {
+                "sub": "oi=[...ni,\"compute\"]",
+                "organ": "KNOTEN_GANG"
+            },
+            {
+                "sub": "this.flowNodeFromShaderStage(\"vertex\",this.context.position);for(const t of oi){this.setShaderStage(t)",
+                "organ": "_knotenRate"
+            },
+            {
+                "sub": "for(const t of r)\"generate\"===e?this.flowNode(t):t.build(this)",
+                "organ": "_knotenRate"
+            },
+            {
+                "sub": "this.setBuildStage(null),this.setShaderStage(null),this.buildCode(),this.buildUpdateNodes()",
+                "organ": "_knotenRate"
+            },
+            {
+                "sub": "s=this._createNodeBuilderState(t),i.set(n,s)}}s.usedTimes++,r.nodeBuilderState=s}",
+                "organ": "_knotenRate"
+            }
+        ]
     }
 ]

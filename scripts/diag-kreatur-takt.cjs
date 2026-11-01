@@ -13,7 +13,8 @@ const { KREATUR_PROBEN_SRC, PROBEN, TAETER, EIN_LAUF, urteil } = require("./lib/
 const PORT = Number(process.env.KREATUR_TAKT_PORT || 4478);
 const argv = process.argv.slice(2);
 const WERKBANK = opt("--werkbank", null);
-// DER ORT der Probe (`--ort stadt-voll`: die volle Stadt der Probe bewohner, am Schirm des Profi-Bands) und seine Täter
+// DER ORT der Probe (`--ort stadt-voll`: die volle Stadt der Probe bewohner, am Schirm des Profi-Bands; `--ort genesis`: ihr
+// Start-Dorf ohne die Stadt) und seine Täter
 const ORT = opt("--ort", null);
 const taeterVon = (p) => TAETER[ORT ? `${p}@${ORT}` : p];
 // DIE FESTE RAMPE der Prüfbühne (Station S2): jeder Lauf mit dem Querhang misst ihn dort ein zweites Mal, derselbe Täter
