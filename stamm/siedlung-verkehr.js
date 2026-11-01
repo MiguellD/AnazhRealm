@@ -265,9 +265,20 @@ class AnazhRealm_siedlung_verkehr {
         };
         for (const [ki, K] of VK.kp.entries())
             if (fahrbarAn(ki).length >= 3) VK.kpZone.set(ki, zone("kreuzung", K.x, K.z, K.r, K.konflikt || []));
-        // die Enge samt einer Wagenlänge davor (`engeRandM`): wer ihr entgegenkommt, wartet, wo der in ihr an ihm vorbeikommt
+        // die Enge samt einer Wagenlänge davor (`engeRandM`): wer ihr entgegenkommt, wartet, wo der in ihr an ihm vorbeikommt — nur
+        // wo eine gefahrene Spur sie trägt (`_verkehrSpur`): eine Enge hinter dem Abzweig der Wende fährt keiner, ihre Bahnen hinein
+        // und heraus trennt das Gesetz (bis hier stand sie dort als Ort, und wer auf der Bahn hinein durch ihren Kreis fuhr, fuhr
+        // „ohne Schlüssel“ — stadt-voll, die Enge 914/298 der Wende 908/289, 10 Uhr 157×)
         for (const s of VK.strecken)
-            s.engZonen = s.fahrbar ? s.engen.map((e) => zone("enge", e.x, e.z, e.r + V.engeRandM)) : [];
+            s.engZonen = s.fahrbar
+                ? s.engen
+                      .filter((e) =>
+                          [0, 1].some((d) =>
+                              this._verkehrSpur(VK, s, d).some((q) => Math.hypot(q.x - e.x, q.z - e.z) < e.r)
+                          )
+                      )
+                      .map((e) => zone("enge", e.x, e.z, e.r + V.engeRandM))
+                : [];
         for (const w of VK.wenden.values())
             w.zone = zone(
                 "wende",
@@ -849,13 +860,7 @@ class AnazhRealm_siedlung_verkehr {
     _verkehrZugPunkte(S, W, m) {
         const VK = S.verkehr;
         if (m.art === "strecke") {
-            // DER ABZWEIG DER WENDE (fachwerk `verkehrsNetz`: `einAb`, `ausAb`): die Spur in ein Ende endet, wo die Bahn hinein sie
-            // verlässt; die Spur aus ihm beginnt, wo die Bahn heraus sie trifft — das Stück dahinter fährt keiner
-            const s = VK.strecken[m.si];
-            const [wA, wB] =
-                m.dir === 0 ? [VK.wenden.get(s.a), VK.wenden.get(s.b)] : [VK.wenden.get(s.b), VK.wenden.get(s.a)];
-            const P = s.spur[m.dir];
-            return (m.vor || []).concat(P.slice(wA ? wA.ausAb : 0, P.length - (wB ? wB.einAb : 0)));
+            return (m.vor || []).concat(this._verkehrSpur(VK, VK.strecken[m.si], m.dir));
         }
         const w = VK.wenden.get(m.ki);
         if (m.art === "wende") return w.bahn;
@@ -905,6 +910,17 @@ class AnazhRealm_siedlung_verkehr {
         pts.push({ x: pk.x, z: pk.z });
         pts.push({ x: pk.x + tx * 0.6, z: pk.z + tz * 0.6 });
         return pts;
+    }
+
+    // DIE GEFAHRENE SPUR einer Strecke in der Richtung `dir` (0: von a nach b) — DER ABZWEIG DER WENDE (fachwerk `verkehrsNetz`:
+    // `einAb`, `ausAb`): die Spur in ein Ende endet, wo die Bahn hinein sie verlässt; die Spur aus ihm beginnt, wo die Bahn heraus
+    // sie trifft — das Stück dahinter fährt keiner. Leser: die Punkte eines Zugs (`_verkehrZugPunkte`) und die Engen
+    // (`_verkehrAnlegen`: ein Ort nur, wo eine gefahrene Spur ihn trägt).
+    _verkehrSpur(VK, s, dir) {
+        const [wA, wB] =
+            dir === 0 ? [VK.wenden.get(s.a), VK.wenden.get(s.b)] : [VK.wenden.get(s.b), VK.wenden.get(s.a)];
+        const P = s.spur[dir];
+        return P.slice(wA ? wA.ausAb : 0, P.length - (wB ? wB.einAb : 0));
     }
 
     // DIE ORTE EINES ZUGS, die einer zur Zeit befährt (in seiner Folge, je Ort {Z, dir}): die Kreuzung an seinem Anfang (durch sie
@@ -992,6 +1008,10 @@ class AnazhRealm_siedlung_verkehr {
             while (i < F.pts.length && F.bogen[i] < von) i++;
             while (i < F.pts.length && F.bogen[i] <= bis && Math.hypot(F.pts[i].x - z.x, F.pts[i].z - z.z) >= z.r) i++;
             if (i >= F.pts.length || F.bogen[i] > bis) continue;
+            // die Durchfahrt beginnt, wo die Linie in EINEM Zug in den Kreis tritt — auch vor dem Fenster ihres Zugs: die Bahn heraus
+            // der Wende läuft schon im Kreis der Enge, deren Spur sie trifft (stadt-voll, die Wende 741/579: 5 m vor der Mitte der
+            // Enge 736/556), und wer dort wartete, wartete in ihr (10 Uhr 521× „ohne Schlüssel im Ort")
+            while (i > 0 && Math.hypot(F.pts[i - 1].x - z.x, F.pts[i - 1].z - z.z) < z.r) i--;
             let j = i;
             while (j + 1 < F.pts.length && Math.hypot(F.pts[j + 1].x - z.x, F.pts[j + 1].z - z.z) < z.r) j++;
             // die Wende beginnt eine Wagenlänge vor ihrer Bahn: wer aus ihr in seine Spur einbiegt, hat den Bogen am Ende der

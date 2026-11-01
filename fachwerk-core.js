@@ -3913,7 +3913,7 @@
     // `hangMax` liegen und deren Bahn auf jeder Fläche, die sie kreuzt, binnen `flaecheM` deren Höhe trägt, und legt sie als
     // Boden (`verkehrsBoden`).
     var VERKEHR_GESETZ = { hausJeWagen: 15, breiteM: 4.9, naheM: 2.5, spurM: 1.25, halbM: 1.2, ausweichM: 3, einweichM: 2.5, kreuzM: 6, kurveR: 5.5, abbiegRandM: 0.3, wendeM: 7,
-      wendeRandM: 1.2, wendeAbM: [7, 40], abzweigM: 4, abzweigFreiM: 8, wendeN: 8, parkL: 5.4, parkB: 2.3, parkRandM: 0.6, zelleM: 8, hangMax: 0.3, ringRandM: 1, flaecheM: 0.1, kreuzSpurM: 3 };
+      wendeRandM: 1.2, wendeAbM: [7, 40], abzweigM: 2, abzweigFreiM: 8, wendeN: 8, parkL: 5.4, parkB: 2.3, parkRandM: 0.6, zelleM: 8, hangMax: 0.3, ringRandM: 1, flaecheM: 0.1, kreuzSpurM: 3 };
     function verkehrVon(plan){
       const sl=(plan&&plan.slots)||[], N=plan&&plan.staedtisch?Math.ceil(sl.length/VERKEHR_GESETZ.hausJeWagen):0, slots=[];
       for(let w=0;w<N;w++) slots.push(Math.min(sl.length-1,Math.floor((w+0.5)*sl.length/N)));
@@ -4094,11 +4094,14 @@
         return alle.sort((x,y)=>x.L-y.L); };
       // DIE WENDE AM ENDE (`wenden`, je Ende bis `wendeN`, die kürzeste Bahn zuerst): ein freier Kreis (`wendeM`, frei um `halbM` +
       // `wendeRandM`) `wendeAbM` vom Ende in jeder Richtung — und DER ABZWEIG: die Bahn hinein (`ein`) verlässt die Spur hinein dort,
-      // wo der Kreis am nächsten liegt (je `abzweigM` bis `wendeAbM`[1] vor dem Ende, `einAb` Punkte vor ihrem Ende), die Bahn
+      // wo der Kreis am nächsten liegt (je `abzweigM` bis `wendeAbM`[1] vor dem Ende, `einAb` Punkte vor ihrem Ende; je 2 m — mit
+      // dem Ausscheren unten fanden je 4 m 233 von 586 Enden der Städte eine Wende, je 2 m 334, vorher 331), die Bahn
       // heraus (`aus`) trifft die Spur heraus dort (`ausAb` Punkte nach ihrem Anfang) — je ein Bogen vom Radius des Kreises (ihn
       // fährt der größte Wagen) und die Gerade, die ihn und den Kreis in der Richtung des Umlaufs (`dreh`) berührt
       // (`uebergang`), der Kreis dazwischen. Gewählt ist die kürzeste Bahn (gemessen von Spur zu Spur samt dem Stück der Spuren,
-      // das sie abschneidet), die frei ist (kein Grundriss, kein Tritt näher als `halbM`) und KEINEN WAGEN KREUZT: `ein` und
+      // das sie abschneidet), die frei ist (kein Grundriss, kein Tritt näher als `halbM` samt dem Ausscheren des größten Wagens im
+      // Bogen der Wende, (parkL/2)²/(2·wendeM) — bis w4-verkehr-c2 nur `halbM`: die Bahn heraus der Wende im Norden von stadt-voll
+      // lief 1,40 m an der Laterne 907,6/301,2 vorbei, jeder Wagen streifte sie, 10 Uhr 309×) und KEINEN WAGEN KREUZT: `ein` und
       // `aus` bleiben zwei halbe Wagen voneinander, `ein` quert die Spur heraus nur, wo noch keiner fährt (vor `ausAb`), `aus` die
       // Spur hinein nur hinter `einAb`, keine fern ihres Abzweigs ihre eigene, und der Ring bleibt zwei halbe Wagen neben beiden
       // Spuren — so fahren Wagen hintereinander durch die Wende (der Wirt teilt sie, `_verkehrZonen`). Bis w4-verkehr-c2 begann
@@ -4125,7 +4128,7 @@
             for(let a=ix-c;a<=ix+c;a++) for(let b=iz-c;b<=iz+c;b++) for(const j of sp.get(a*2097152+b)||[]){ const o=j>=1048576?2:0, i=o?j-1048576:j, q=o?raus[i]:rein[i];
               if((q.x-p.x)**2+(q.z-p.z)**2<r*r){ if(i<n[o]) n[o]=i; if(i>n[o+1]) n[o+1]=i; } } }
           return n; };
-        const geht=(B)=>B.every((q,i)=>!i||gang(B[i-1],q,V.halbM));
+        const rU=V.halbM+(V.parkL/2)**2/(2*R), geht=(B)=>B.every((q,i)=>!i||gang(B[i-1],q,rU));
         const e=M[M.length-1], d0=M[Math.max(0,M.length-4)], l=Math.hypot(e.x-d0.x,e.z-d0.z)||1, ux=(e.x-d0.x)/l, uz=(e.z-d0.z)/l;
         for(let k=V.wendeAbM[0];k<=V.wendeAbM[1]&&K.wenden.length<V.wendeN;k++) for(const a of [0,0.5,-0.5,1,-1,1.5,-1.5,2,-2,2.5,-2.5]){ if(K.wenden.length>=V.wendeN) break;
           const cx=e.x+(ux*Math.cos(a)-uz*Math.sin(a))*k, cz=e.z+(uz*Math.cos(a)+ux*Math.sin(a))*k;
