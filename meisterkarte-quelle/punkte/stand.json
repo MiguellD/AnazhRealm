@@ -3579,12 +3579,8 @@
    ]
   }
  },
- "rueckfall": [
-  "haar.K1#1 radeon: arm ROT Bild: ABNAHME ROT [bild.mittel 0 < 6 · bild.sigma 0 < 4 · bild.schwarz 1 > 0.6 · Ziel Blickziel nicht im Bild (ndc [null,null])] · beweis · Sicht 0.0 % · Ziel Blickziel NICHT im Bild frei 0 m · Luma 0 σ 0 schwarz 100.0 % weiß 0.0 % · Stand 18.546.158 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 — d · third ROT Bild: ABNAHME ROT [bild.mittel 0 < 6 · bild.sigma 0 < 4 · bild.schwarz 1 > 0.6 · Ziel Blickziel nicht im Bild (ndc [null,null])] · beweis · Sicht 0.0 % · Ziel Blickziel NICHT im Bild frei 0 m · Luma 0 σ 0 schwarz 100.0 % weiß 0.0 % · Stand 18.546.158 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 — d an 25ac4c0c (grün gebucht an 715754fc)",
-  "leib.K1#1 radeon: schlechtester von 1 Läufen p95 ms ego/gehen 65.6 · third/gehen 49.2 · ego/wechsel 36.8 · third/wechsel 34.3 · Bild 20.8 ms an 25ac4c0c (grün gebucht an 715754fc)",
-  "tiere.K3#2 radeon: Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 1 Füße, fuchs schritt 2 Füße, baer schritt 2 Füße, wesen schritt 3 Füße · tier-Pixel 2614/993/5917/3628 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.31 m · Luma 65.4 σ 32.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.158 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 25ac4c0c (grün gebucht an 715754fc)"
- ],
+ "rueckfall": [],
  "kopfVoll": "25ac4c0c485570ed887cffb7f175d430264f86bf",
- "zeit": "2026-11-01T15:02:04.706Z",
+ "zeit": "2026-11-01T15:03:39.570Z",
  "vorher": "25ac4c0c"
 }
