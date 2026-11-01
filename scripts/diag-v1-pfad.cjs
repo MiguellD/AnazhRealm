@@ -19,11 +19,8 @@
 //   Port: V1_PFAD_PORT (4421) · Mutanten: V1_MUTANTE=gedaechtnis-leer (--seele) · wertung-aus (--regeln)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, jsonLesen, jsonSchreiben, SELBSTTEST, path, fs, stammLib } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
-const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.V1_PFAD_PORT || 4421);
 
@@ -2153,7 +2150,7 @@ async function korpusHaupt() {
     const [soll, form] = KORPUS_TEILE[teil] || [];
     const mutante = process.env.V1_MUTANTE;
     const ratschePfad = teil ? RATSCHE_PFAD.replace(".json", `-${teil}.json`) : RATSCHE_PFAD;
-    const lies = (p) => (fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : null);
+    const lies = (p) => (fs.existsSync(p) ? jsonLesen(p) : null);
     const [roh, ratsche] = [lies(KORPUS_PFAD), lies(ratschePfad) || {}];
     const saetze = roh && Object.entries((teil ? roh[teil] : roh).saetze);
     const korpus = roh && { saetze: form ? saetze.map(([s, x]) => [s, form(x)]) : saetze };
@@ -2209,7 +2206,7 @@ async function korpusHaupt() {
             const mit = Object.fromEntries(m.saetze.map((e) => [e.satz, prog(e.antwort)]));
             const kopf = { modell, anbieter: new URL(endpunkt).host, datum: new Date().toISOString().slice(0, 10) };
             if (!m.sinkt)
-                fs.writeFileSync(ratschePfad, JSON.stringify({ ...kopf, quote, mitschnitt: mit }, null, 1) + "\n");
+                jsonSchreiben(ratschePfad, { ...kopf, quote, mitschnitt: mit }, 1, "\n");
         }
     }
     const v = [...korpusVerdict(m), ...(teil === "regeln" ? regelVerdict(m.regeln) : [])];
@@ -2358,12 +2355,12 @@ const gehorsam = (korpus, log) => (req) =>
         });
     });
 async function feindHaupt(quelle) {
-    const korpus = fs.existsSync(FEIND_PFAD) ? JSON.parse(fs.readFileSync(FEIND_PFAD, "utf8")) : null;
+    const korpus = fs.existsSync(FEIND_PFAD) ? jsonLesen(FEIND_PFAD) : null;
     const log = [];
     let m = { korpus };
     if (korpus) {
         const { srv, browser, page } = await kiWelt({ "/api/chat": gehorsam(korpus, log) });
-        const golden = JSON.parse(fs.readFileSync(path.join(root, "spec/golden/v1/blueprint-signed.json"), "utf8"));
+        const golden = jsonLesen("spec/golden/v1/blueprint-signed.json");
         const arg = { inj: korpus.injektionen, tat: korpus.tat, golden, endpunkt: `http://127.0.0.1:${PORT}/` };
         m = { ...(await page.evaluate(feindLauf, arg)), korpus, erreicht: log };
         await browser.close();
@@ -2394,10 +2391,10 @@ async function feindHaupt(quelle) {
 }
 
 hauptLauf(async () => {
-    if (process.argv.includes("--korpus") && !process.argv.includes("--selftest")) return korpusHaupt();
+    if (process.argv.includes("--korpus") && !SELBSTTEST) return korpusHaupt();
     const quelle = stammLib.text(root);
     if (process.argv.includes("--feind")) return feindHaupt(quelle);
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         console.log("=== SELBST-TEST: die V1-Pfad-Linse nennt jeden Täter des Befunds ===");
         const gesundV = {
             gestartet: true,
@@ -3271,6 +3268,6 @@ hauptLauf(async () => {
             `${mm.gestartet ? zeile(mm) : "nicht gestartet"}${v.length ? " — Täter: " + v.join(", ") : ""}`
         );
     }
-    if (process.env.V1_PFAD_RAHMEN_JSON) fs.writeFileSync(process.env.V1_PFAD_RAHMEN_JSON, JSON.stringify(rm, null, 1));
+    if (process.env.V1_PFAD_RAHMEN_JSON) jsonSchreiben(process.env.V1_PFAD_RAHMEN_JSON, rm);
     wandEnde(errs, "der v1-Pfad trägt seine benannten Schnitte.");
 });

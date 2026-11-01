@@ -49,7 +49,7 @@
 //   node scripts/diag-chunk-satz.cjs [--selftest]   (npm run gate:chunk-satz)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, warteAufWelt, taeterFaelle, selbsttestEnde, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, taeterFaelle, selbsttestEnde, nullSeite, pruefer, wandEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 // (o) die Schwelle des Stufen-Sprungs: ein Wechsel darf die gezeichnete Fläche höchstens so weit versetzen (m)
 const STUFEN_SPRUNG_M = 0.1;
@@ -375,7 +375,7 @@ function selbsttest() {
     selbsttestEnde(fehler);
 }
 
-if (process.argv.includes("--selftest")) {
+if (SELBSTTEST) {
     console.log("=== CHUNK-SATZ — Selbsttest (ohne Browser) ===");
     selbsttest();
     process.exit(0);
@@ -910,6 +910,8 @@ const { errs, check } = pruefer();
                     r._tickChunkSatz();
                     const ab = stand();
                     r._rebuildVoxelChunk(cx, cz, opfer.lod, { forceSync: true });
+                    // der Sync-Bau trägt seine Naht mit der Antwort des Fadens (`boden-ein`, w4-b-boden2)
+                    await window.__gebautNach(opfer.key, { fertig: () => !r._weltOffen().chunks });
                     r._tickChunkSatz();
                     const auf = stand();
                     res.konsum = { opfer: opfer.key, vor, ab, auf };
@@ -1304,40 +1306,30 @@ const { errs, check } = pruefer();
                 const alle = [];
                 let offen = 0;
                 if (ohne) r._stufeGewicht = () => 0;
-                // (p) DIE FOLGE DES WECHSELS: je Neubau die Bitten seiner Nachbarn an die Folge-Schlange (`_morphFolge`,
-                // fahrt-takt) — ein Nachbar, der den Chunk nicht liest (weder seine neue noch seine alte Stufe ist gröber als die
-                // des Nachbarn), ist ein LEER-Morph. Der Selbsttest (`ohne`) fährt die Lawine bis K51-3 nach: jeder Neubau bittet
-                // alle acht.
+                // (p) DIE FOLGE DES WECHSELS: je Neubau morpht der Faden die Nachbarn, die ihn lesen (`boden-ein`, seine
+                // Antwort nennt sie: `folge`, w4-b-boden2) — ein Nachbar, der den Chunk nicht liest (weder seine neue noch seine
+                // alte Stufe ist gröber als die des Nachbarn), ist ein LEER-Morph. Die Stufen der Nachbarn zählen, wie der Eintritt
+                // sie sah (der Faden spiegelt den Ring in der Reihe seiner Wechsel). Der Selbsttest (`ohne`) fährt die Lawine bis
+                // K51-3 nach: jeder Neubau bittet alle acht.
                 const folge = { neubau: 0, morphs: 0, leer: 0 };
-                const F0 = r._finalizeVoxelChunkBuild,
-                    FS = (s._morphFolge ||= new Map());
-                const lodVon = new Map();
-                for (const [key, e] of s.voxelChunks) if (e && !e.empty && e.mesh) lodVon.set(key, e.lod || 0);
-                let ctx = null;
-                r._finalizeVoxelChunkBuild = function (cx, cz, lod, ...rest) {
-                    const key = cx + "," + cz;
-                    ctx = { cx, cz, lod, alt: lodVon.has(key) ? lodVon.get(key) : null };
+                const [E0, A0, ctx] = [r._bodenEin, r._bodenAntwort, new Map()];
+                r._bodenEin = function (cx, cz, entry, alt) {
+                    const nb = {}; // je Chunk des 3×3 seine Stufe, wie der Eintritt ihn sah (−1: keiner)
+                    for (let i = 0; i < 9; i++) {
+                        const k = cx + (i % 3) - 1 + "," + (cz + ((i / 3) | 0) - 1);
+                        nb[k] = s.voxelChunks.get(k)?.mesh ? s.voxelChunks.get(k).lod || 0 : -1;
+                    }
+                    ctx.set(cx + "," + cz, { lod: entry.lod || 0, alt, nb });
                     folge.neubau++;
-                    try {
-                        const e = F0.call(this, cx, cz, lod, ...rest);
-                        if (ohne)
-                            for (let dx = -1; dx <= 1; dx++)
-                                for (let dz = -1; dz <= 1; dz++)
-                                    if (dx || dz) FS.set(cx + dx + "," + (cz + dz), 0);
-                        return e;
-                    } finally {
-                        ctx = null;
-                        lodVon.set(key, lod);
-                    }
+                    return E0.call(this, cx, cz, entry, alt);
                 };
-                FS.set = function (k, v) {
-                    const nb = ctx && s.voxelChunks.get(k);
-                    if (nb && !nb.empty && nb.mesh) {
+                r._bodenAntwort = function (msg) {
+                    const c = ctx.get(msg.key);
+                    for (const k of !c ? [] : ohne ? Object.keys(c.nb).filter((k) => c.nb[k] >= 0) : msg.folge || []) {
                         folge.morphs++;
-                        const nl = nb.lod || 0;
-                        if (!(ctx.lod > nl || (ctx.alt !== null && ctx.alt > nl))) folge.leer++;
+                        if (!(c.lod > c.nb[k] || (c.alt !== null && c.alt > c.nb[k]))) folge.leer++;
                     }
-                    return Map.prototype.set.call(this, k, v);
+                    return A0.call(this, msg);
                 };
                 try {
                     const p = { x: s.stufeAuge.x, y: 0, z: s.stufeAuge.z };
@@ -1353,9 +1345,10 @@ const { errs, check } = pruefer();
                         }
                         for (const weiter = window.__deckel("die Soll-Stufen der Chunks", 1400); weiter(); ) {
                             r._tickVoxelChunkStreaming(p);
-                            r._tickMorphFolge(Infinity); // die Folge-Schlange wie im Takt
+                            r._tickMorphFolge(); // die Nähte des Fadens wie im Takt
                             await sleep(15);
-                            let fertig = true;
+                            // fertig: jede Stufe gewechselt und jede Naht des Fadens angelegt (`_weltOffen().chunks`)
+                            let fertig = !r._weltOffen().chunks;
                             for (const [key, v] of vor) {
                                 const e = s.voxelChunks.get(key);
                                 if (!e || (e.lod || 0) !== v.soll) fertig = false;
@@ -1389,8 +1382,8 @@ const { errs, check } = pruefer();
                     }
                 } finally {
                     delete r._stufeGewicht;
-                    delete r._finalizeVoxelChunkBuild;
-                    delete FS.set;
+                    delete r._bodenEin;
+                    delete r._bodenAntwort;
                 }
                 sprung.sort((a, b) => b.max - a.max);
                 const p95 = sprung.map((x) => x.p95).sort((a, b) => b - a);

@@ -28,10 +28,7 @@
 //   (der Bias der ganzen Probe: n/d in Texeln der Kaskade) · SB_AKNE_ZEITEN=0.28,0.32 · SB_DEBUG=1
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf, taeterFaelle, selbsttestEnde, pngDatei, wandEnde, argOpt } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf, taeterFaelle, selbsttestEnde, pngDatei, wandEnde, argOpt, path, fs, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 const ECHT = process.argv.includes("--echt");
 const TAG = argOpt("--tag", "echt");
@@ -138,7 +135,7 @@ function urteil(S, Q) {
     return rot;
 }
 
-if (process.argv.includes("--selftest")) {
+if (SELBSTTEST) {
     console.log("=== SCHATTEN-BIAS — Selbsttest (ohne Browser) ===");
     const v = [];
     const stammQ = stammLib.text(root);

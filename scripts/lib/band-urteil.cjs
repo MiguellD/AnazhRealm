@@ -32,8 +32,7 @@
 //              Sicht aus der Hülle einer Serie; `--neu` der Re-Mint, K26)
 //   Wand:      node scripts/diag-profiband.cjs              (Schema, Summe <= Band, Selbsttests gegen injizierte Fälle)
 "use strict";
-const fs = require("fs");
-const path = require("path");
+const { jsonLesen, path, fs } = require("./welt-boot.cjs");
 const { vramFalte } = require("./draw-zaehler.cjs");
 
 const SPEC = path.join(__dirname, "..", "..", "spec", "profiband");
@@ -60,7 +59,7 @@ const ratscheDatei = (ortId, geraet, sicht) => `ratsche-${ortId}-${geraet}-${sic
 const istBandOrt = (o) => o.bank === undefined && o.anlauf === undefined;
 
 function ladeSpec(ortId, wahl) {
-    const haushalt = JSON.parse(fs.readFileSync(path.join(SPEC, "haushalt.json"), "utf8"));
+    const haushalt = jsonLesen(path.join(SPEC, "haushalt.json"));
     const ort = ortOf(haushalt, ortId);
     const spec = { haushalt, ort, ratsche: null, ratscheDatei: null };
     // Die Ratsche wählt nur, wer Gerät UND Sicht nennt; ein Toggle-Ort (`bank`) trägt keine (`ratscheVon` bricht laut).
@@ -73,7 +72,7 @@ function ladeSpec(ortId, wahl) {
         spec.ratscheDatei = ratscheDatei(ort.id, wahl.geraet, wahl.sicht);
         const f = path.join(SPEC, spec.ratscheDatei);
         // Eine fehlende Datei ist UNGEMESSEN (null): das Band-Urteil nennt sie rot (`ungemessen`), nie still ohne Ratsche.
-        spec.ratsche = fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf8")) : null;
+        spec.ratsche = fs.existsSync(f) ? jsonLesen(f) : null;
     }
     return spec;
 }
@@ -110,7 +109,7 @@ function ratschenAlle(haushalt) {
             for (const sicht of Object.keys(haushalt.sichten || {})) {
                 const datei = ratscheDatei(o.id, geraet, sicht);
                 const f = path.join(SPEC, datei);
-                out.push({ ort: o.id, geraet, sicht, datei, ratsche: fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf8")) : null });
+                out.push({ ort: o.id, geraet, sicht, datei, ratsche: fs.existsSync(f) ? jsonLesen(f) : null });
             }
     return out;
 }
@@ -268,8 +267,11 @@ function einschwingOffen(r) {
     // Die EINE Antwort der Welt (`_streuWartet`).
     const streuListe = [];
     if (r._streuWartet(st.playerMesh ? st.playerMesh.position : null, streuListe)) o.streuWartet = streuListe.join(" · ");
+    // DAS DORF WÄCHST NUR, WO SEIN TAKT LEBT (`_dorfTaktLebt`, das EINE Urteil des Stamms, das auch `_dorfOffen` in `_weltOffen`
+    // liest): am Messort ohne Dorf-Zug (genesis, wiese) ruht ein Plan, der vorher losging — er wächst nie. Bis 31.10. hielt er hier
+    // offen, und das Band wartete bis zum Deckel (ferne.K2#2, Radeon a03b7b06: „dorfWaechst 0/18“, 4 007 Takte, 240 s)
     const q = r._autoSettlementQueue;
-    if (q != null) o.dorfWaechst = q.plan && q.plan.slots ? `${q.idx}/${q.plan.slots.length}` : 1;
+    if (q != null && r._dorfTaktLebt()) o.dorfWaechst = q.plan && q.plan.slots ? `${q.idx}/${q.plan.slots.length}` : 1;
     if (r._autoSettlementPendingKey) o.dorfExport = r._autoSettlementPendingKey;
     let schrumpft = 0;
     for (const [, s] of st.chunkSaetze || []) if (s && s.ueberSeit >= 0) schrumpft++;

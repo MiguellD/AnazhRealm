@@ -17,16 +17,10 @@
 // Lücke ist das Tier UNSICHTBAR. swiftshader-Zeiten sind keine GPU-Zeiten; die
 // Draw-Call-/Dreiecks-Zahlen sind hardware-unabhängig.
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf, pngDatei, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf, pngDatei, path, fs, argOpt: argOf, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
-const fs = require("fs");
-const path = require("path");
 
-const argOf = (k, d) => {
-    const i = process.argv.indexOf(k);
-    return i > 0 ? process.argv[i + 1] : d;
-};
 const TAG = argOf("--tag", "head");
 const OUT = path.resolve(argOf("--out", path.join(root, "artifacts", "beweis-e")));
 const KLASSEN = argOf("--klassen", "kreatur,baum,haus,wiese").split(",");
@@ -417,7 +411,7 @@ hauptLauf(async () => {
             }
         } else out.objekte.haus = { fehlt: "kein haus_-Bauplan im Buch" };
         // Ab hier halten die Tiere still (Blick-Wahl und Schuss sehen dieselbe Szene).
-        window.__tiereHalten();
+        window.__halten();
         // Einschwingen + DIE SICHTBARKEITS-LÜCKE messen (Tier ohne Mesh, Pass unsichtbar).
         const zeit = [];
         let lueckeTakte = 0,

@@ -77,7 +77,6 @@ let an, aus;
 // unter der alten Sonne)
 try { await schuss(1); an = await schuss(1); aus = await schuss(0); } finally { for (const l of lichter) l.shadow.intensity = 1; for (const m of meshes) m.visible = visAlt.get(m); bundles(); }
 cam.updateProjectionMatrix();
-const Y = (u, i) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
 const va = [], vb = [], v = new T.Vector3();
 for (let i = 0; i < 40; i++) for (let j = 0; j < 40; j++) {
   const x = -12 + (24 * (i + 0.5)) / 40, z = 136 + (24 * (j + 0.5)) / 40;
@@ -85,7 +84,7 @@ for (let i = 0; i < 40; i++) for (let j = 0; j < 40; j++) {
   const px = Math.round((v.x * 0.5 + 0.5) * (W - 1)), py = Math.round((-v.y * 0.5 + 0.5) * (H - 1));
   if (px < 0 || py < 0 || px >= W || py >= H) continue;
   const k = (py * W + px) * 4;
-  va.push(Y(an, k)); vb.push(Y(aus, k));
+  va.push(luma709(an, k)); vb.push(luma709(aus, k));
 }
 const med = (a) => { const b = a.slice().sort((p, q) => p - q); return b[b.length >> 1]; };
 const flecken = (a) => { const m = med(a); return a.filter((w) => Math.abs(w - m) > 0.25 * Math.max(m, 4)).length / a.length; };

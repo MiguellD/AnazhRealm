@@ -416,7 +416,7 @@ Die Regler-Definitionen als DATEN (die HDA-Lehre) — **als MAP je kind**:
   hartkodiertes Slider-Panel pro Domäne.
 - `law` ist der Ein-Satz-Lehrsatz am Regler (Anzeige, nicht Logik).
 - `uniform: true` (studios.K2) erklärt die Zeile zum GESETZ-WERT: sie bewegt kein Bau-Byte (Byte-Beweis: ihr Schlüssel
-  `kern:art:id` steht in `reglerTot`, `gate:studio-vertrag` prüft es), der Leser nimmt sie live (Membran-Uniform, Sequenzer,
+  `kern:art:id` steht in `reglerGesetz` mit ihrem Leser, `gate:studio-vertrag` prüft es), der Leser nimmt sie live (Membran-Uniform, Sequenzer,
   Fahr-Gesetz). Die Hülle wendet sie im nächsten Bild an (`nachRuhe(ids, false)` ohne Ruhe, die Ruhe schreibt nur den
   Rückgängig-Schritt); der Griff zeigt sie ≤ 200 ms, jede andere Zeile baut neu und zeigt sich ≤ 1 s
   (`diag-studio-huelle --engine`, die Gang-Probe). `dyn` bleibt die Fahr-Dynamik (kein Neubau in der Garage).
@@ -425,9 +425,11 @@ Die Regler-Definitionen als DATEN (die HDA-Lehre) — **als MAP je kind**:
   die Foundry (`ov {id: wert}` über build-asset); die MESHFREI-Arten (§8: koerper · kreatur · klang) gießt der
   Host-Ofen der Werkstatt (`_workshopOvenPreview`) — koerper reicht den Wert als `dials` in den Mensch-Bäcker,
   kreatur in die Gattungs-Dials, klang hat keinen Gestalt-Bäcker (kein Guss, der Leser wäre die Musik). Die Linse
-  misst je Art an dem Kanal, den die Vorschau nimmt; eine Zeile, die den Bau bzw. Guss an keinem Rezept ihrer Art
-  bewegt (Hash bei min und max), ist tot und steht beim Namen in `spec/vertraege/ratsche.json` (`reglerTot`, die
-  Liste schrumpft nur, Soll 0). Ein Bau, der mit dem Wert bricht (wirft, leer, NaN, Not-Körper), ist rot; ein
+  misst je Art an dem Kanal, den die Vorschau nimmt, und urteilt am BILD (studios.K1): das Bild des Baus (`bauBild`,
+  scripts/lib/asset-worker-harness.cjs — die Vorschau-Pose, das Belichtungs-Gesetz der Welt) muss sich an mindestens 1 %
+  der Gestalt-Pixel um mehr als 18 Luma bewegen, ein Hash allein zählt nie; eine Art mit Leser der Welt (Tor · Wagen ·
+  Klang) wirkt auch dort (Membran · Ritt · Ohr). Eine Zeile, die an keinem Rezept ihrer Art (min und max) Bild oder Leser
+  bewegt, ist tot und steht beim Namen in `spec/vertraege/ratsche.json` (`reglerTot`, die Liste schrumpft nur, Soll 0). Ein Bau, der mit dem Wert bricht (wirft, leer, NaN, Not-Körper), ist rot; ein
   Rand-Wert über der Budget-Zeile (B2c) steht in `reglerBudget` (Soll 0).
 - **Die EINE Klemme** (KI K2): ein Programm prägt sein Werk mit `ov` als fünftem Argument von `spawn_studio`; der EINE
   Stempel `_studioStampFor` klemmt jede Zahl am Vertrag ihrer Art (`_reglerKlemme`: [min, max], ganze Schritte gerundet,
@@ -1023,7 +1025,11 @@ des Felsens `FELS` mit seiner Saat `FELS_SAAT` — `felsStoff` (der Welt-Boden j
 Detail-Term des Shaders) mit seiner Welle `felsWelle` (K17-3: der Shader liest sie EINMAL im Rausch-Atlas und reicht sie
 in die Fels-Funktion), `felsZahl` (das Rechenwerk des Gesetzes, mit `falte` und `fest`), `felsBankung` (die Messung der Bänke), der Schutt
 `schuttKorn`/`schuttMittel`, die Himmels-Sicht der Höhle `HIMMELS_SICHT`/`himmelsSicht`, die Boden-Karte des gerenderten
-Bodens `bodenKarte` (w4-b-boden: der voxel-worker rastert sie je Chunk, Sync-Bau und Naht-Morph rufen dieselbe Funktion), das Ziel der gröberen Stufe
+Bodens `bodenKarte` (w4-b-boden: der voxel-worker rastert sie je Chunk, Sync-Bau und Naht-Morph rufen dieselbe Funktion), DER BODEN IM
+FADEN (w4-b-boden2: der voxel-worker hält jedes Netz und rechnet, was bis dahin der Haupt-Faden trug) — die Vertex-Form des Satzes
+`satzPacke` und die Vorlage eines Boden-Bereichs `satzVorlage` (gepackte Attribute, Viertel, Hüllen, die feste Kiste des Rands),
+der Morph-Code `morphCode`/`morphNaht`, die Naht des Netzes `bodenNaht`, der Geomorph der Stufen-Grenze `bodenMorph` und sein
+Naht-Band `bodenNahtBand` —, das Ziel der gröberen Stufe
 `STUFE_ZIEL`/`stufeZiel` (K51-2, der Geomorph der Boden-Stufen: je Vertex Lage, Normale und Stoff-Farbe auf dem Netz der nächst
 gröberen Stufe — Worker und Sync-Bau rufen dieselbe Funktion) und DAS RAUSCH-GESETZ `RAUSCH` mit
 `rauschGitter`/`rauschRaum` (das EINE Gradienten-Rauschen des Boden-Shaders).
