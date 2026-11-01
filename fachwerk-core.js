@@ -6211,19 +6211,21 @@
         { id: "verwitterung", lab: "Verwitterung", min: 0, max: 1, step: 0.05, def: 0.5, law: "das Alter des Holzes — Sonnenbleiche oben, Erdsaum an den Füßen", grp: "MATERIAL" },
     ];
     // B2/B2c — Stufen und Budget je Art (gemessen am Rand jedes Reglers; die Zeile ist die Ratsche, sie darf nur fallen): nah die
-    // gefasten Hölzer mit Holznägeln und das Eisen (Kette, Blech, Stange, Sprosse) als zweiter Stoff, fern die L1 ohne Fase mit
-    // einfacher Kette, die Stufe 3 wirft für die L1 (nurWurf); jede Zeile unter dem Spielplatz-Deckel (L0 ≤ 1 800, L1 ≤ 240,
-    // Wurf ≤ 30 Dreiecke). Die Befehle zählen je Seh-Klasse und Teil: was schwingt, ist ein eigenes Teil mit seinen Stoffen
-    // (die Schaukel: das Gestell und zwei Sitze mit Kette, die Wippe: der Bock und der Hebel).
+    // gefasten Hölzer mit Holznägeln (jedes Gerät, wie Bank und Leiter) und das Eisen (Kette, Blech, Stange, Sprosse) als zweiter
+    // Stoff, fern die L1 ohne Fase mit einfacher Kette, die Stufe 3 wirft für die L1 (nurWurf); jede Zeile unter dem
+    // Spielplatz-Deckel (L0 ≤ 1 800, L1 ≤ 240, Wurf ≤ 30 Dreiecke). Die Befehle zählt das EINE Gesetz des Ausgangs (phyto-core
+    // `budgetSippen`, derselbe Wirt: gate:sippen-wirt): je Stoff × Form einer, der Holznagel faltet ins Holz (dieselbe Seh-Klasse)
+    // — nah wie fern Holz und Eisen. Was schwingt (die Sitze der Schaukel, der Hebel der Wippe), bäckt als eigene Gruppe um seine
+    // Achse und zählt in der Sippe seines Stoffs (vorher 5 und 4 Befehle je Teil gezählt — die Welt zeichnete 3 und 2).
     var GERAET_BUDGET = {
-        schaukel: { 0: { tris: 1284, draws: 5, schatten: 0 }, 1: { tris: 156, draws: 5, schatten: 3 }, 3: { tris: 22, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
-        rutsche: { 0: { tris: 924, draws: 2, schatten: 0 }, 1: { tris: 228, draws: 2, schatten: 3 }, 3: { tris: 24, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
-        klettergeruest: { 0: { tris: 856, draws: 2, schatten: 0 }, 1: { tris: 240, draws: 2, schatten: 3 }, 3: { tris: 20, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
-        wippe: { 0: { tris: 448, draws: 4, schatten: 0 }, 1: { tris: 132, draws: 4, schatten: 3 }, 3: { tris: 14, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
+        schaukel: { 0: { tris: 1284, draws: 2, schatten: 0 }, 1: { tris: 156, draws: 2, schatten: 3 }, 3: { tris: 22, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
+        rutsche: { 0: { tris: 972, draws: 2, schatten: 0 }, 1: { tris: 228, draws: 2, schatten: 3 }, 3: { tris: 24, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
+        klettergeruest: { 0: { tris: 904, draws: 2, schatten: 0 }, 1: { tris: 240, draws: 2, schatten: 3 }, 3: { tris: 20, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
+        wippe: { 0: { tris: 472, draws: 2, schatten: 0 }, 1: { tris: 132, draws: 2, schatten: 3 }, 3: { tris: 14, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
         reck: { 0: { tris: 320, draws: 2, schatten: 0 }, 1: { tris: 84, draws: 2, schatten: 3 }, 3: { tris: 26, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
         balken: { 0: { tris: 344, draws: 1, schatten: 0 }, 1: { tris: 84, draws: 1, schatten: 3 }, 3: { tris: 14, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
         wand: { 0: { tris: 992, draws: 1, schatten: 0 }, 1: { tris: 164, draws: 1, schatten: 3 }, 3: { tris: 20, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
-        hangelleiter: { 0: { tris: 840, draws: 2, schatten: 0 }, 1: { tris: 240, draws: 2, schatten: 3 }, 3: { tris: 18, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
+        hangelleiter: { 0: { tris: 888, draws: 2, schatten: 0 }, 1: { tris: 240, draws: 2, schatten: 3 }, 3: { tris: 18, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
     };
     for (var _gw in GERAETE) {
         WERKE[_gw] = GERAETE[_gw];
@@ -6650,8 +6652,9 @@
             for (i = 0; i < 3; i++) _gKasten(g, "holz", 2 * b, 0.04, (2 * b - 0.02) / 3, 0, m.h - 0.02, -b + 0.003 + ((2 * b - 0.02) / 3) * (i + 0.5) + i * 0.007, fa * 0.6, ausTon(Z.z, 0.08, 0.03), W);
             for (s = -1; s <= 1; s += 2) holz([-b, m.h - 0.07, s * (b - 0.05)], [b, m.h - 0.07, s * (b - 0.05)], 0.06, 0.05);
         } else _gKasten(g, "holz", 2 * b, 0.04, 2 * b, 0, m.h - 0.02, 0, 0, ausTon(Z.z, 0.08, 0.03), W);
-        // das Geländer links und rechts
+        // das Geländer links und rechts; nah sichert je Pfosten ein Holznagel quer durch den Pfosten den Zapfen des unteren Handlaufs
         for (s = -1; s <= 1; s += 2) for (i = fein ? 0 : 1; i < m.geY.length; i++) holz([s * b, m.geY[i], -b], [s * b, m.geY[i], b], 0.05, 0.06);
+        if (fein) for (s = -1; s <= 1; s += 2) for (t = -1; t <= 1; t += 2) ausNagel(g, [s * b - m.bP / 2 - 0.003, m.geY[0], t * b], [s * b + m.bP / 2 + 0.003, m.geY[0], t * b], W, Z.zN);
         // die Sprossen hinten (Rundstahl; fern ohne die Haltesprossen über dem Podest)
         for (i = 0; i < m.sprossen.length; i++) if (fein || m.sprossen[i] < m.h) _gStahl(g, [-b, m.sprossen[i], m.zL], [b, m.sprossen[i], m.zL], 0.035, fein, ausTon(Z.zE, 0.04, 0.01));
         // die Bahn: je Abschnitt das Blech und die Wangen, die Stütze unter dem Ende des Gefälles
@@ -6685,8 +6688,10 @@
         else _gKasten(g, "holz", 2 * m.bx, 0.04, 2 * m.bz, 0, m.h - 0.02, 0, 0, ausTon(Z.z, 0.08, 0.03), W);
         for (i = 0; i < m.sprossen.length; i++) _gStahl(g, [-m.bx, m.sprossen[i], m.bz], [m.bx, m.sprossen[i], m.bz], m.d, fein, ausTon(Z.zE, 0.04, 0.01));
         for (s = -1; s <= 1; s += 2) for (i = 0; i < m.seite.length; i++) _gStahl(g, [s * m.bx, m.seite[i], -m.bz], [s * m.bx, m.seite[i], m.bz], m.d, fein, ausTon(Z.zE, 0.04, 0.01));
-        // die Rückwand des Podests als Geländer (zwei Riegel)
+        // die Rückwand des Podests als Geländer (zwei Riegel); nah sichert je Riegel und Pfosten ein Holznagel quer durch den
+        // Pfosten den Zapfen
         for (i = 0; i < 2; i++) holz([-m.bx, m.h + 0.2 + i * 0.2, -m.bz], [m.bx, m.h + 0.2 + i * 0.2, -m.bz], 0.05, 0.05);
+        if (fein) for (s = -1; s <= 1; s += 2) for (i = 0; i < 2; i++) ausNagel(g, [s * m.bx, m.h + 0.2 + i * 0.2, -m.bz - m.bP / 2 - 0.003], [s * m.bx, m.h + 0.2 + i * 0.2, -m.bz + m.bP / 2 + 0.003], W, Z.zN);
     }
     function ausBalkenwippe(g, p, seed, stufe) {
         var m = AUS_MASS.balkenwippe(),
@@ -6705,6 +6710,8 @@
             _gKasten(hb, "holz", m.sx, m.sH, m.bz + 0.06, s * m.xS, m.yA + m.d / 2 + m.sH / 2, 0, fa, ausTon(Z.z, 0.08, 0.03), W);
             _gKasten(hb, "holz", 0.05, m.yG - m.yA - m.d / 2, 0.05, s * m.xG, (m.yG + m.yA + m.d / 2) / 2, 0, fa, ausTon(Z.z, 0.05, 0.02), W);
             _gStahl(hb, [s * m.xG, m.yG, -0.16], [s * m.xG, m.yG, 0.16], 0.03, fein, ausTon(Z.zE, 0.04, 0.01));
+            // nah sichert ein Holznagel quer durch den Hebel den Zapfen des Griff-Pfostens
+            if (fein) ausNagel(hb, [s * m.xG, m.yA, -m.bz / 2 - 0.003], [s * m.xG, m.yA, m.bz / 2 + 0.003], W, Z.zN);
         }
     }
     function ausTurnreck(g, p, seed, stufe) {
@@ -6783,6 +6790,8 @@
         for (s = -1; s <= 1; s += 2) {
             for (t = -1; t <= 1; t += 2) holz([s * m.x, 0, t * m.z], [s * m.x, m.yP, t * m.z], m.bP, m.bP);
             holz([s * m.x, m.y, -m.z - 0.08], [s * m.x, m.y, m.z + 0.08], m.hB[0], m.hB[1]);
+            // nah sichert je Pfosten ein Holznagel quer durch Pfosten und Holm den Zapfen
+            if (fein) for (t = -1; t <= 1; t += 2) ausNagel(g, [s * m.x - m.bP / 2 - 0.003, m.y, t * m.z], [s * m.x + m.bP / 2 + 0.003, m.y, t * m.z], W, Z.zN);
         }
         for (t = -1; t <= 1; t += 2) for (i = 0; i < m.tritte.length; i++) if (fein || i % 2) _gStahl(g, [-m.x, m.tritte[i], t * m.z], [m.x, m.tritte[i], t * m.z], m.d, fein, ausTon(Z.zE, 0.04, 0.01));
         for (i = 0; i < m.sprossen.length; i++) _gStahl(g, [-m.x + 0.04, m.y, m.sprossen[i]], [m.x - 0.04, m.y, m.sprossen[i]], m.d, fein, ausTon(Z.zE, 0.04, 0.01));
