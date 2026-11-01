@@ -519,7 +519,8 @@ class AnazhRealm_bild_kosten {
                 // er im Gang näher, kompilierte sie dort kalt. Seit w4-b-knoten baut er nach dem Bild (`_vorbauWahl`).
                 // DER GAST DER BEDIENUNG (spielgang.K3, `_vorbauBedienung`): was die nächste Eingabe zeigen wird (der Geist eines
                 // Hotbar-Bauplans, der Leib einer Seele), baut hier vorab ohne Draw wie die Arena — nach dem Bild, unter der Frist
-                // des Render-Aufrufs und nur, wenn die Eingabe ruht (`_eingabeRuht`); der Klick findet Knoten und Pipeline vor.
+                // des Render-Aufrufs und nur im Bild, das der Takt des Vorbaus freigab (`_vorbauFrei`: die Eingabe ruht, höchstens
+                // jedes VORBAU_BILDER-te Bild); der Klick findet Knoten und Pipeline vor.
                 const gast = object.__vorbauGast === true;
                 const vorbau = gast || ro.getDrawParameters() === null;
                 const ctx = this._currentRenderContext.id;
@@ -529,22 +530,23 @@ class AnazhRealm_bild_kosten {
                 if (vorbau) {
                     const arena = gast || (object.isGeometrieArena === true && object.geometry.index !== null);
                     if (!arena || scene !== welt.state.scene) return;
-                    const wahl =
-                        gast && !welt._eingabeRuht()
-                            ? null
-                            : AnazhRealm._vorbauWahl(
-                                  E,
-                                  object,
-                                  k,
-                                  welt._ladeTakt(),
-                                  welt.state._weltbildDa,
-                                  N.nodeFrame.frameId,
-                                  gast
-                              );
+                    const frei = !gast || welt._vorbauFrei();
+                    const wahl = !frei
+                        ? null
+                        : AnazhRealm._vorbauWahl(
+                              E,
+                              object,
+                              k,
+                              welt._ladeTakt(),
+                              welt.state._weltbildDa,
+                              N.nodeFrame.frameId,
+                              gast
+                          );
                     if (wahl !== "bauen") {
-                        // ein Gast im Bündel (der Leib) wartet wie ein Bürger ohne Bau: sein Bündel nimmt neu auf, bis er
-                        // baute — versiegelt ohne ihn, spielte es ihn nie wieder vor
-                        if (gast && aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
+                        // ein Gast im Bündel (der Leib), der in SEINEM Bild nicht baute, wartet wie ein Bürger ohne Bau: sein
+                        // Bündel nimmt neu auf; in einem Bild ohne Vorbau ruht es (der Takt des Vorbaus weckt es)
+                        if (gast && frei && aufnahme !== null)
+                            welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
                         return;
                     }
                     merk = E.vorgemerkt.get(object);
