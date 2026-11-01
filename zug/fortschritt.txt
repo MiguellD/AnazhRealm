@@ -1463,3 +1463,4 @@
 2026-11-01 14:30:07 p2-spielgang.K31-gtx START 1 Stationen in 1 Läufen
 2026-11-01 14:35:16 p2-spielgang.K31-gtx spielgang.K3#1 GRÜN 5.0 · 1/1
 2026-11-01 16:47:23 z140-abab START 2 Zellen
+2026-11-01 16:59:30 z140-abab w-ego VERLÄNGERN 12.1 · 1/2 (2+2)
