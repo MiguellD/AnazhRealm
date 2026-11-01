@@ -377,6 +377,43 @@ async function selbsttest() {
             n7c.tafel.zeilen[0].ist !== null &&
             AT.tafelNachziehen(T0, m3, {}).tafel === null
     );
+    // S7n — DER NACHZUG EINER ZEILE (`--nur`, haar.K2): nur sie nimmt Ist, Ratsche und den Stand ihrer Messung; jede andere Zeile,
+    // die Karten und der Stand der Tafel bleiben; ihr Stand gilt vor dem der Tafel (frisch, wo die Tafel veraltet ist); eine
+    // genannte stumme Zeile zieht nichts; der volle Nachzug löst den Stand der Zeile wieder
+    {
+        const zN = T0.zeilen.find((z) => z.labor && z.quellen.length),
+            zA = T0.zeilen.find((z) => z.labor && z !== zN);
+        const heute = {};
+        for (const z of T0.zeilen) for (const d of z.quellen || []) heute[d] = pruefsumme(d);
+        const seite = (q) => ({ version: "18.0.0", sha: "0123456789abcdef0123456789abcdef01234567", echt: true, quellen: q });
+        const T7 = structuredClone(T0);
+        T7.gemessen = { welt: seite({}), labor: seite({}) };
+        const neuSt = { welt: seite(Object.assign({}, heute)), labor: seite(Object.assign({}, heute)) };
+        const nN = AT.tafelNachziehen(T7, messungZumTest(T7, { [zN.id]: 1.02 }), neuSt, [zN.id]);
+        const nz = nN.tafel && nN.tafel.zeilen.find((z) => z.id === zN.id),
+            na = nN.tafel && nN.tafel.zeilen.find((z) => z.id === zA.id);
+        const stand = nN.tafel ? AT.tafelStand(nN.tafel, pruefsumme) : [];
+        const m4n = messungZumTest(T7);
+        m4n.labor[zN.id] = { Y: null, fehler: "kein Pixel" };
+        const voll = nN.tafel && AT.tafelNachziehen(nN.tafel, messungZumTest(T7), neuSt);
+        t(
+            `Nachzug nur ${zN.id}: Ist 1,02 und Stand der Zeile, ${zA.id} und die Karten bleiben, der Stand der Zeile frisch vor dem der Tafel; genannt und stumm → kein Nachzug; voll → der Stand der Zeile fällt`,
+            !!nz &&
+                Math.abs(nz.ist.verhaeltnis - 1.02) < 1e-3 &&
+                nz.gemessen.welt === neuSt.welt &&
+                JSON.stringify(na.ist) === JSON.stringify(zA.ist) &&
+                na.ratsche === zA.ratsche &&
+                na.gemessen === undefined &&
+                JSON.stringify(nN.tafel.karten) === JSON.stringify(T7.karten) &&
+                JSON.stringify(nN.tafel.gemessen) === JSON.stringify(T7.gemessen) &&
+                !stand.some((r) => r.zeile === zN.id) &&
+                stand.some((r) => r.zeile === zA.id) &&
+                AT.tafelNachziehen(T7, m4n, neuSt, [zN.id]).tafel === null &&
+                !!voll.tafel &&
+                voll.tafel.zeilen.every((z) => z.gemessen === undefined) &&
+                AT.tafelPruefen(Object.assign(structuredClone(nN.tafel), { zeilen: nN.tafel.zeilen.map((z) => (z.id === zN.id ? Object.assign({}, z, { gemessen: { welt: neuSt.welt } }) : z)) })).some((f) => f.startsWith(`${zN.id}: gemessen`))
+        );
+    }
     // S8 — DER TÄTER IM ECHTEN LABOR (r128, Chrome, die Linse der Bibliothek): eine Szene mit drei Stoffen — die 18-%-Karte,
     // Granit 0x8e939a nach dem FARB-GESETZ (linear gesetzt, wie die Welt ihn backt) und DERSELBE Hex roh gelesen
     // (`new THREE.Color(hex)`, der alte Defekt des Labors). Gegen die Welt-Albedo des Hex (linear) steht der rohe über dem
@@ -603,6 +640,9 @@ async function main() {
     }
     if (argv.includes("--nachziehen")) {
         const i = argv.indexOf("--nachziehen");
+        // `--nur id,id` (haar.K2): nur diese Zeilen nehmen die Messung und tragen ihren Stand (albedo-tafel `tafelNachziehen`)
+        const nur = opt("--nur") ? opt("--nur").split(",") : null;
+        if (nur) for (const id of nur) if (!t.zeilen.some((z) => z.id === id)) throw new Error(`--nur ${id}: keine Zeile der Tafel`);
         const welt = jsonLesen(path.resolve(argv[i + 1]));
         const labor = jsonLesen(path.resolve(argv[i + 2]));
         const m = {
@@ -619,7 +659,7 @@ async function main() {
                 { datum: welt.datum, geraet: welt.geraet, ort: welt.ort, spieler: welt.spieler, echt: welt.echt },
                 st(welt)
             ),
-        });
+        }, nur);
         console.log(AT.tafelTabelle(r.u));
         if (!r.tafel) {
             console.log("\nTafel NICHT nachgezogen: " + r.grund);
@@ -627,7 +667,7 @@ async function main() {
         }
         // DER SCHREIBER PRÜFT DEN STAND: in die Tafel fällt nur eine Messung am Code von heute — eine ältere schriebe eine
         // veraltete Zeile
-        const sn = AT.standWand(AT.tafelStand(r.tafel, pruefsumme));
+        const sn = AT.standWand(AT.tafelStand(r.tafel, pruefsumme).filter((x) => !nur || nur.includes(x.zeile)));
         if (sn.brueche.length || sn.neu.length) {
             console.log("\nTafel NICHT nachgezogen — die Messung trägt nicht den Code von heute:");
             for (const x of [...sn.brueche, ...sn.neu.flatMap((id) => sn.veraltet[id])]) console.log("   ❌ " + x);
@@ -650,6 +690,9 @@ async function main() {
     const u = AT.tafelUrteil(t, gespeichert(t));
     for (const r of u.rot) if (!istNeu(r)) errs.push(`[${r.art}] ${r.text}`);
     for (const s of ["labor", "welt"]) if (t.gemessen && !t.gemessen[s].echt) errs.push(`[echt] ${s} nicht echt gemessen`);
+    for (const z of t.zeilen)
+        for (const s of z.gemessen ? Object.keys(z.gemessen) : [])
+            if (!z.gemessen[s].echt) errs.push(`[echt] ${z.id}: ${s} nicht echt gemessen (der Stand der Zeile)`);
     // DER STAND (K63-n8; wie H5): ungeprüft bricht, veraltet steht laut je Zeile
     const sw = AT.standWand(AT.tafelStand(t, pruefsumme));
     for (const b of sw.brueche) errs.push(`[stand] ${b}`);

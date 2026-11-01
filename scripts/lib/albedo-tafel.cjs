@@ -191,18 +191,24 @@ function tafelPruefen(t) {
         if (!(t.karten || {})[s]) f.push(`karten.${s} fehlt (jedes Studio misst seine Karte)`);
     if (t.gemessen != null && (!t.gemessen.labor || !t.gemessen.welt))
         f.push("gemessen braucht {labor, welt} (Gerät, Datum, Ort der beiden Seiten)");
+    for (const z of t.zeilen || [])
+        if (z.gemessen != null && (!z.gemessen.welt || (z.labor && !z.gemessen.labor)))
+            f.push(`${z.id}: gemessen (der Stand der Zeile) braucht ${z.labor ? "{labor, welt}" : "{welt}"}`);
     return f;
 }
 
 // DER STAND DES ISTS: je Zeile und Seite die EINE Regel der Soll-Tafel (`messStand`) gegen den `kernStand`
 // der Messung (`gemessen.welt|labor`): ohne Version, Commit oder Abdruck `ungeprüft`, ein fremder Abdruck `veraltet` — jeder
-// fremde beim Namen. `pruefsumme(d)` liest den Baum von heute.
+// fremde beim Namen. `pruefsumme(d)` liest den Baum von heute. DER STAND JE ZEILE (`zeile.gemessen`, haar.K2): eine Zeile, die
+// allein nachgezogen wurde (`tafelNachziehen` mit `nur`), trägt den Stand IHRER Messung — er gilt vor dem der Tafel; jede
+// andere Zeile steht unter dem Stand der Tafel, wie sie gemessen wurde.
+const zeilenStand = (t, z) => z.gemessen || t.gemessen || {};
 function tafelStand(t, pruefsumme) {
     const { messStand } = require("./abnahme-urteil.cjs");
     const rot = [];
-    const g = t.gemessen || {};
     for (const z of t.zeilen || [])
         for (const seite of z.labor ? ["welt", "labor"] : ["welt"]) {
+            const g = zeilenStand(t, z);
             const q = (g[seite] || {}).quellen || {};
             const s = messStand([g[seite] || {}], z.quellen || [], { pruefsumme });
             const art = /^veraltet/.test(s) ? "veraltet" : "ungeprüft";
@@ -310,14 +316,23 @@ function tafelUrteil(t, messung) {
 // EINE STUMME ZEILE hält den Nachzug nicht mehr auf: der Stand reist je Messung in die Tafel (`gemessen`, die Wand
 // prüft ihn je Zeile), und ein altes Ist unter dem neuen Stand wäre still veraltet — darum FÄLLT ihr Ist (die Wand: „ohne Ist",
 // ROT beim Namen), die Ratsche bleibt. Nur eine falsche Eichung zieht nichts.
-function tafelNachziehen(t, messung, gemessen) {
+// DER NACHZUG EINZELNER ZEILEN (`nur`: ihre Ids, haar.K2): nur sie nehmen Ist und Ratsche aus der Messung und tragen deren Stand
+// selbst (`zeile.gemessen`); jede andere Zeile, die Karten und der Stand der Tafel bleiben, wie sie gemessen wurden — eine
+// Zeile, deren Exemplar heute misst, wartet nicht auf die Heilung jeder anderen (bis haar.K2 stand die ganze Tafel seit
+// 23.10. veraltet: eine stumme oder gerissene Zeile hielt jeden Nachzug auf). Eine genannte Zeile, die stumm ist, zieht nichts.
+// Der volle Nachzug (ohne `nur`) stellt jede Zeile unter den Stand der Tafel und löst die Stände je Zeile.
+function tafelNachziehen(t, messung, gemessen, nur) {
     const u = tafelUrteil(t, messung);
     if (u.rot.some((r) => r.art === "eichung")) return { tafel: null, aenderungen: [], u, grund: "Eichung — kein Nachzug" };
     const neu = structuredClone(t);
     const aenderungen = [];
+    const genannt = (z) => !nur || nur.includes(z.id) || (z.welt.stufeVon && nur.includes(z.welt.stufeVon));
     for (const z of neu.zeilen) {
+        if (!genannt(z)) continue;
+        if (!nur) delete z.gemessen;
         const e = u.zeilen.find((x) => x.id === z.id);
         if (!(e && (zahl(e.verhaeltnis) || (!z.labor && e.welt && zahl(e.welt.Y))))) {
+            if (nur) return { tafel: null, aenderungen: [], u, grund: `${z.id} ist stumm — die genannte Zeile zieht nichts` };
             const r = u.rot.find((x) => x.art === "stumm" && x.text.startsWith(`${z.id}:`));
             z.ist = null;
             aenderungen.push(`${z.id}: das Ist fällt (${r ? r.text : "stumm"})`);
@@ -332,7 +347,12 @@ function tafelNachziehen(t, messung, gemessen) {
             aenderungen.push(`${z.id}: ${z.ratsche == null ? "–" : z.ratsche} → ${e.abweichung}`);
             z.ratsche = e.abweichung;
         }
+        if (nur) {
+            z.gemessen = z.labor ? { labor: gemessen.labor, welt: gemessen.welt } : { welt: gemessen.welt };
+            aenderungen.push(`${z.id}: Ist ${z.labor ? `${e.labor.Y} / ${e.welt.Y}` : e.welt.Y} unter dem Stand seiner Messung`);
+        }
     }
+    if (nur) return { tafel: neu, aenderungen, u };
     for (const k of u.karten) {
         const z = neu.karten[k.studio];
         z.ist = { kL: k.ist.kL, ausgabe: k.ist.ausgabe };

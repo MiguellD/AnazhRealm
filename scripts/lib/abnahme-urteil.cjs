@@ -1415,8 +1415,10 @@ function albedoZeile(ma, q) {
     }
     const z = (t.zeilen || []).find((x) => x.id === ro.zeile);
     if (!z || !z.ist) return { fehler: `Rohdatei ${ro.datei}: Zeile „${ro.zeile}" ohne Ist` };
-    const w = (t.gemessen && t.gemessen.welt) || {},
-        l = (t.gemessen && t.gemessen.labor) || {};
+    // der Stand der Zeile (`zeile.gemessen`, allein nachgezogen — albedo-tafel `tafelNachziehen` mit `nur`), sonst der der Tafel
+    const g = z.gemessen || t.gemessen || {};
+    const w = g.welt || {},
+        l = g.labor || {};
     // beide Seiten tragen ihren Stand (`kernStand`, geschrieben von werkbank `albedo --tafel` und `--labor --datei`)
     return { t, z, stand: `${String(w.datum || "?").slice(0, 10)} ${w.geraet || "?"}`, bloecke: [w, l], quellen: z.quellen || [] };
 }
