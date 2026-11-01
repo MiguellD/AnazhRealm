@@ -345,6 +345,11 @@ function erstWandInstall(BUNDLE_FRAMES) {
     // (A) DER NEUBAU BEI OFFENER PIPELINE — B zeichnet in Bundle b2; in EINEM Frame zeichnet A
     // (derselbe Stoff, ein eigenes Bundle b1 davor) zum ersten Mal und der Stoff wechselt die Variante: A legt die neue
     // Pipeline asynchron an, Bs Neubau trifft sie im Cache noch offen (r184 getForRender: Cache-Treffer → e.pipeline=d).
+    // DER ZÜNDER (z137): Bs Neubau fällt in das Bild, in dem As Pipeline offen steht — nie fest in das Bild des Wechsels. Baut A
+    // seinen Knoten-Graphen in Raten (`_knotenRate`, im laufenden Spiel), legt er die Pipeline erst Bilder später an; ein
+    // Neubau im Wechsel-Bild baute dann synchron vor ihr und träfe nie eine offene (die Vorbedingung hing am Bau-Weg). Bis
+    // zur Zündung spielt b2 seine alte Aufnahme, eine Marke an ihm ist fremd; die stumme Anmeldung des Gegen-Laufs gilt
+    // erst ab der Zündung (sonst nähme b1 nie neu auf, und As Raten gingen nie weiter).
     // (B) DER HÄNGENDE FEHLER-SCOPE — popErrorScope löst nie auf (auf der Spielseite > 5 s, auf Windows-swiftshader nie): ein
     // neuer Stoff in einem Bundle, das Vendor-Versprechen seiner Pipeline erfüllt sich nie. Gemessen: wie viele Frames nach
     // der fertigen Pipeline (r184-Zustand) trägt die Aufnahme des Bundles den Bürger wieder. Der Gegen-Lauf mit stummer
@@ -360,10 +365,21 @@ function erstWandInstall(BUNDLE_FRAMES) {
     };
     // je Probe-Objekt die Pipeline, an der sein letzter Draw nicht zeichnen konnte
     const wartete = new Map();
+    // der Zünder des Neubaus (A): { bg, erst, stumm } — gezündet in der Aufnahme von bg, sobald `erst` an einer offenen
+    // Pipeline wartet
+    let zuender = null;
     const mitAufnahme = async (fn) => {
         const eigenRb = Object.prototype.hasOwnProperty.call(rend, "_renderBundle");
         const rbRoh = rend._renderBundle;
         rend._renderBundle = function (bundle) {
+            const Z = zuender;
+            if (Z && bundle.bundleGroup === Z.bg && wartete.has(Z.erst)) {
+                zuender = null;
+                Z.bg.userData.probe.halt = false;
+                if (Z.stumm) stumm();
+                Z.bg.needsUpdate = true;
+                Z.gezuendet = true;
+            }
             const aus = rbRoh.apply(this, arguments);
             const rb = this._bundles.get(bundle.bundleGroup, bundle.camera, this._currentRenderContext);
             const d = this.backend.get(rb);
@@ -417,11 +433,11 @@ function erstWandInstall(BUNDLE_FRAMES) {
     let szeneGang = 0;
     const buendel = () => {
         const bg = new T3.BundleGroup();
-        const P = (bg.userData.probe = { n: 0, fremd: [] });
+        const P = (bg.userData.probe = { n: 0, fremd: [], halt: false });
         Object.defineProperty(bg, "needsUpdate", {
             set(v) {
                 if (v !== true) return;
-                if (szeneGang === 0) return void this.version++;
+                if (szeneGang === 0 && !P.halt) return void this.version++;
                 const f = String(new Error().stack).match(/\/(stamm\/[^/?:]+\.js)(?:\?[^:]*)?:(\d+)/);
                 P.fremd.push(f ? f[1] + ":" + f[2] : "?");
             },
@@ -507,16 +523,19 @@ function erstWandInstall(BUNDLE_FRAMES) {
         try {
             // (1) B steht im Bundle (seine erste Zeichnung, die Anmeldung trägt sie)
             const stand = await bisSichtbar(b2, B);
-            // (2) EIN Frame: A zeichnet zum ersten Mal (b1 vor b2), der Stoff wechselt die Variante, b2 nimmt neu auf
+            // (2) A zeichnet zum ersten Mal (b1 vor b2), der Stoff wechselt die Variante; b2 nimmt in dem Bild neu auf, in
+            // dem As Pipeline offen steht (der Zünder) — am Stück im Wechsel-Bild, in Raten Bilder später
             welt.remove(b2);
             welt.add(b1);
             welt.add(b2);
             M.alphaTest = 0.5;
             M.needsUpdate = true;
-            b2.needsUpdate = true;
             wartete.clear();
-            if (ohneAnmeldung) stumm();
-            bild();
+            b2.userData.probe.halt = true;
+            const Z = (zuender = { bg: b2, erst: A, stumm: ohneAnmeldung, gezuendet: false });
+            const zuendBilder = await bisEreignis(() => Z.gezuendet, 20);
+            zuender = null;
+            b2.userData.probe.halt = false;
             const pipeA = wartete.get(A),
                 pipeB = wartete.get(B);
             // (3) bis die Aufnahme von b2 B wieder trägt
@@ -526,10 +545,13 @@ function erstWandInstall(BUNDLE_FRAMES) {
                 ruheOffen,
                 stand: stand.sichtbar,
                 standMs: stand.ms,
-                offeneTreffer: !!pipeB && pipeB === pipeA,
+                zuendBilder: Z.gezuendet ? zuendBilder : -1,
+                offeneTreffer: Z.gezuendet && !!pipeB && pipeB === pipeA,
                 ...nach,
             };
         } finally {
+            zuender = null;
+            b2.userData.probe.halt = false;
             if (ohneAnmeldung) laut();
             welt.remove(b1);
             welt.remove(b2);
@@ -1049,7 +1071,7 @@ hauptLauf(async () => {
                 bn.framesNachBereit <= BUNDLE_FRAMES &&
                 bn.ruheOffen === 0,
             `ERST-ZEICHNUNG Bundle-Neubau bei offener Pipeline (der Bürger steht ≤ ${BUNDLE_FRAMES} Frames nach seiner Pipeline wieder in der Aufnahme)`,
-            `B im Bundle ${bn.stand} (${bn.standMs} ms) · Neubau traf die offene Pipeline der Erst-Zeichnung ${bn.offeneTreffer} · ` +
+            `B im Bundle ${bn.stand} (${bn.standMs} ms) · Neubau traf die offene Pipeline der Erst-Zeichnung ${bn.offeneTreffer} (gezündet nach ${bn.zuendBilder} Bildern) · ` +
                 `${bnWeg(bn)} · Ruhe offen ${bn.ruheOffen}`
         );
     if (IN(2))
