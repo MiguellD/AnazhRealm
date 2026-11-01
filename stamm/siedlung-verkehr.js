@@ -621,6 +621,7 @@ class AnazhRealm_siedlung_verkehr {
         this._bewohnerSatzSchreiben(S);
         this._blockerWacheMelden(e._blockerHuelle);
         e._verkehrFaehrt = true;
+        this._archFahrt(e, true); // seine Stufe folgt auch dem wandernden Auge (`_archBewegteUrteilen`)
         W.zustand = "faehrt";
         W.heim = false;
         W.letzter = null;
@@ -777,6 +778,7 @@ class AnazhRealm_siedlung_verkehr {
         W.letzter = null;
         W.F = null;
         e._verkehrFaehrt = false;
+        this._archFahrt(e, false);
         this._blockerBewegt(e, e.blockerAABBs ? 0 : undefined); // er steht: sein Platz ohne Rand, kein Beweger
         if (e.blockerAABBs) {
             this._populateBlockerAABBs(e);
