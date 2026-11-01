@@ -38,8 +38,9 @@
 //   node punkte.cjs grundprobe --baum <Spiel-Baum> [--mutante <zeile>] [--port P]   (Null-Renderer) die Grundstellung der Sitzung
 //        an einer Welt des Baums: Grund → graben, bauen, Ritt, Uhr, Brand, Regen, Ort-Takt → zurück, keine Größe weicht ab; die
 //        Mutante (ein Wort der GRUND_TAFEL schweigt) ist ROT beim Namen
-//   node punkte.cjs eichtafel --sha <sha> --geraet radeon|gtx   je Lauf der Sitzung: sein Deckel, die Zahl der Eich-Fahrt am SHA und der
-//        Deckel aus ihr (eichTafel), dazu Σ heute ↔ aus den Zahlen gegen die Fahrt
+//   node punkte.cjs eichtafel --sha <sha> --geraet radeon|gtx [--schreibe]   je Lauf der Sitzung: sein Deckel, die Zahl der Eich-Fahrt am SHA
+//        und der Deckel aus ihr (eichTafel), dazu Σ heute ↔ aus den Zahlen gegen die Fahrt; --schreibe legt jede Zahl im Gesetz als Deckel
+//        DIESER Karte in die Deckel-Tafel (deckel.json, probeSek) — nur, wenn die Fahrt der Karte danach hält
 //   node punkte.cjs selbsttest [--ohne 3c]   jeder Fall beim Namen (ohne (3c) DIE BAHNEN: sie zeugt Bash-Waisen)
 //
 // FORMAT (stationen/g1.js .. g6.js, module.exports = [ … ]), je Eintrag:
@@ -141,12 +142,29 @@ const PROBE_SEK = PROBE_DECKEL_S;
 const FAHRT_MAX_S = 1800;
 const PROBE_SCHLUESSEL = ["befehl", "sek", "mutiert", "ausnahme", "stellung"];
 const befehlVon = (st) => (st.probe ? st.probe.befehl : st.befehl);
-const probeSek = (st) => (st.probe && st.probe.sek) || PROBE_SEK;
+// DIE DECKEL-TAFEL (deckel.json, 01.11. mess-werkzeug; Radeon 25ac4c0c: ~35 von 72 offenen Proben rissen Deckel, die die Eich-Fahrt der
+// GTX gesetzt hatte — „die nie endenden auf 10 s“, e245f1813 — und die Radeon nie gefragt): je Karte und Probe der Deckel aus IHRER
+// Eich-Fahrt, geschrieben nur von `eichtafel --schreibe` (⌈1,5 × s⌉, mindestens 10 s, im Gesetz der Probe, die Fahrt der Karte hält),
+// gelesen von probeSek(st, geraet): Fahrt, Läufer und Eich-Tafel je Karte. Ohne Eintrag gilt `probe.sek` der Station. Der Abdruck trägt
+// die Einträge der Station (ein neuer Deckel misst neu); ohne Eintrag bleibt er Byte für Byte
+const DECKEL_DATEI = path.join(DIR, "deckel.json");
+const DECKEL_KARTEN = ["radeon", "gtx"];
+let deckelTafel = null;
+const deckelVon = () => deckelTafel || (deckelTafel = fs.existsSync(DECKEL_DATEI) ? JSON.parse(fs.readFileSync(DECKEL_DATEI, "utf8")) : {});
+const sekRoh = (st) => (st.probe && st.probe.sek) || PROBE_SEK;
+const deckelEintraege = (st) => Object.fromEntries(DECKEL_KARTEN.filter((g) => deckelVon()[g] && deckelVon()[g][schluessel(st)] != null).map((g) => [g, deckelVon()[g][schluessel(st)]]));
+const probeSek = (st, geraet) => {
+    const t = geraet && deckelVon()[geraet];
+    if (t && t[schluessel(st)] != null) return t[schluessel(st)];
+    const e = Object.values(deckelEintraege(st));
+    return geraet ? sekRoh(st) : Math.max(sekRoh(st), ...e);
+};
 function abdruck(st, hilfe = hilfeText()) {
     const roh = JSON.stringify({
         k: st.kriterium, s: st.staffel, g: geraeteVon(st), b: st.befehl, e: st.env || {}, gpu: !!st.gpu,
         u: String(st.urteil), p: st.pfad, q: st.quelle, h: hilfe,
-        ...(st.probe ? { pr: [st.probe.befehl, probeSek(st), ...(st.probe.mutiert ? ["mutiert"] : []), ...(st.probe.stellung ? [st.probe.stellung] : [])] } : {}),
+        ...(st.probe ? { pr: [st.probe.befehl, sekRoh(st), ...(st.probe.mutiert ? ["mutiert"] : []), ...(st.probe.stellung ? [st.probe.stellung] : []),
+            ...(Object.keys(deckelEintraege(st)).length ? [deckelEintraege(st)] : [])] } : {}),
     });
     return crypto.createHash("sha1").update(roh).digest("hex").slice(0, 12);
 }
@@ -197,8 +215,11 @@ function pruefeStationen(liste, karte) {
             if (!p || typeof p !== "object") f.push("probe ist kein { befehl, sek }");
             else {
                 // DER DECKEL (die Fahrt, b): bis PROBE_DECKEL_S frei, darüber nur mit ausnahme bis PROBE_AUSNAHME_S, darüber nie
-                const sek = probeSek(st);
+                // der größte Deckel der Station: probe.sek und jeder Eintrag der Deckel-Tafel (nur an ihren eigenen Karten)
+                const sek = probeSek(st), dk = deckelEintraege(st);
                 if (p.sek !== undefined && !(Number.isInteger(p.sek) && p.sek >= 1)) f.push("probe.sek keine ganze Zahl ≥ 1");
+                else if (Object.entries(dk).some(([g, x]) => !ge.includes(g) || !Number.isInteger(x) || x < 1))
+                    f.push("deckel.json: " + JSON.stringify(dk) + " — je Karte eine ganze Zahl ≥ 1, nur an den Geräten der Station");
                 else if (sek > PROBE_AUSNAHME_S) f.push("Deckel " + sek + " s über " + PROBE_AUSNAHME_S + " s — nie, auch mit ausnahme (die Fahrt ≤ " + FAHRT_MAX_S / 60 + " min)");
                 else if (sek > PROBE_DECKEL_S && p.ausnahme === undefined) f.push("Deckel " + sek + " s über " + PROBE_DECKEL_S + " s ohne ausnahme (der Grund beim Namen, bis " + PROBE_AUSNAHME_S + " s)");
                 else if (sek <= PROBE_DECKEL_S && p.ausnahme !== undefined) f.push("ausnahme an einem Deckel von " + sek + " s — sie trägt nur einen über " + PROBE_DECKEL_S + " s");
@@ -245,7 +266,7 @@ function pruefeStationen(liste, karte) {
 // Summe samt Boot (SITZUNG_BOOT_S) — die Wanduhr, die die Sitzung nie überschreiten kann, außer an der Grundstellung
 function fahrtSumme(stationen, geraet) {
     const je = gruppiere(stationen.filter((st) => st.probe && geraeteVon(st).includes(geraet)))
-        .map((g) => [g.map(schluessel).join("+"), probeSek(g[0])])
+        .map((g) => [g.map(schluessel).join("+"), probeSek(g[0], geraet)])
         .sort((a, b) => b[1] - a[1]);
     return { je, deckel: je.reduce((s, x) => s + x[1], 0), boot: SITZUNG_BOOT_S, summe: je.reduce((s, x) => s + x[1], 0) + SITZUNG_BOOT_S };
 }
@@ -341,11 +362,16 @@ function probenUrteil(stationen) {
         }
     return falsch;
 }
+// die Deckel-Tafel ohne Probe: eine fremde Karte, ein Eintrag ohne Probe-Station auf seiner Karte — beim Namen (kein toter Deckel)
+function deckelWaisen(stationen, t = deckelVon()) {
+    return Object.entries(t).flatMap(([g, je]) => !DECKEL_KARTEN.includes(g) ? ["deckel.json: die Karte " + g + " gibt es nicht (" + DECKEL_KARTEN.join(", ") + ")"]
+        : Object.keys(je || {}).filter((id) => !stationen.some((st) => st.probe && schluessel(st) === id && geraeteVon(st).includes(g))).map((id) => "deckel.json: " + g + " " + id + " ohne Probe auf " + g));
+}
 function ladeGeprueft() {
     const karte = kriterienDerKarte();
     const r = pruefeStationen(ladeStationen(), karte);
     const fehlt = ladeStationen(undefined, "fehlt");
-    return { ...r, fehlt, fehler: [...r.fehler, ...pruefeFehlt(fehlt, karte, r.stationen)] };
+    return { ...r, fehlt, fehler: [...r.fehler, ...pruefeFehlt(fehlt, karte, r.stationen), ...deckelWaisen(r.stationen)] };
 }
 
 // ───────────────────────────────── Glob (R6) ─────────────────────────────────
@@ -502,7 +528,7 @@ function fahreGruppe(sts, ctx) {
         if (!!sitz !== !!st.probe) return rot(st.probe ? "eine Probe misst nur in der Sitzung (fahreSitzung)" : "ein befehl fährt nie in der Sitzung");
         // in der Sitzung der Deckel der Probe — in der Eich-Fahrt die Ausnahme-Grenze PROBE_AUSNAHME_S (sitz.eich, eichEintrag) —, gekappt
         // am Rest der Fahrt (sitz.restS, fahreSitzung)
-        const sitzDeckelS = sitz && sitz.eich ? PROBE_AUSNAHME_S : probeSek(st);
+        const sitzDeckelS = sitz && sitz.eich ? PROBE_AUSNAHME_S : probeSek(st, ctx.geraet);
         const fahrtKappt = !!sitz && sitz.restS != null && sitz.restS < sitzDeckelS;
         const deckelS = sitz ? (fahrtKappt ? Math.max(1, Math.floor(sitz.restS)) : sitzDeckelS) : Math.max(ctx.deckelMinS != null ? ctx.deckelMinS : 120, Math.ceil(st.minuten * 60 * 2));
         let argv = befehlVon(st).map((a) => ersetze(a, { ...ctx, sek: deckelS }));
@@ -891,9 +917,16 @@ const GRUND_NIMM =
     'if (typeof r._grundstellung !== "function") return { fehlt: true }; const t0 = performance.now(); const g = r._grundstellung(); ' +
     "return { grund: g.grund, n: Object.keys(g.abdruck).length, ms: +(performance.now() - t0).toFixed(1), welt: r.state.worldMeta.worldId, " +
     "seite: " + JSON.stringify(GRUND_SEITE) + ".filter((k) => k in window), wege: (" + wegeAbdruck + ")(r) };";
-const grundSpielen = (g) =>
+// DIE NAHRUNG DES LEIBS (Radeon 25ac4c0c 01.11.: halten.K5 trank „consume:_k5“ für 600 s, die Grundstellung ließ ihn im Leib, und 21
+// Proben danach waren UNGEMESSEN an „playerLeben“): der Stand trägt, was der Leib gegessen hat (playerLeben.nahrung), die Lade-Kette
+// legt es über die EINE Boost-Tür DAZU (`_loadStateRestoreLeben`) — an Ort und Stelle blieb das Gegessene der Probe stehen. Vor dem
+// Rückspielen fällt darum jede Nahrung des Leibs (`consume:`), der Stand legt die seine zurück; die Prüfung danach bleibt scharf
+// (playerLeben weicht weiter ab, wenn der Stand sie nicht trägt). Die Boosts des Orts und der Gefühle legt der Takt je Sekunde neu
+const NAHRUNG_FAELLT =
+    "if (r.state.player && Array.isArray(r.state.player.boosts)) r.state.player.boosts = r.state.player.boosts.filter((b) => !(b && String(b.source).startsWith(\"consume:\"))); ";
+const grundSpielen = (g, o = {}) =>
     "for (const k of " + JSON.stringify(GRUND_SEITE) + ") if (!" + JSON.stringify(g.seite) + ".includes(k)) delete window[k]; " +
-    "const t0 = performance.now(); const z = r._grundstellung(" + JSON.stringify(g.grund) + "); " +
+    "const t0 = performance.now(); " + (o.ohneNahrung ? "" : NAHRUNG_FAELLT) + "const z = r._grundstellung(" + JSON.stringify(g.grund) + "); " +
     "const weg = " + (g.wege ? "(" + wegeAbweichung + ")(" + JSON.stringify(g.wege) + ", (" + wegeAbdruck + ")(r))" : "null") + "; return { ok: z.ok, grund: z.grund || null, " +
     "anders: (z.anders || []).concat(" + JSON.stringify(GRUND_SEITE) + ".filter((k) => k in window && !" + JSON.stringify(g.seite) + ".includes(k)).map((k) => \"seite.\" + k), weg ? [weg] : []), " +
     "neu: z.neu || null, ms: +(performance.now() - t0).toFixed(1), welt: r.state.worldMeta && r.state.worldMeta.worldId, wie: (" + grundWie + ")(r, " +
@@ -1232,6 +1265,8 @@ async function grundstellung(w, datei, o = {}) {
 // danach keine Größe vom Grund abweicht. `--mutante <zeile>`: das Wort dieser Zeile der GRUND_TAFEL schweigt (`uhr`: der EINE
 // Uhr-Schreiber des Spiels, eine Größe des Stands) — gefangen nur, wenn genau `augenblick.<zeile>` (`timeOfDay`) abweicht: die Mutante
 // ROT beim Namen. Exit 0 GRÜN bzw. gefangen, 1 sonst.
+// Der Leib isst (`activateConsumable`, NAHRUNG_FAELLT); `--mutante nahrung`: die Grundstellung lässt die Nahrung im Leib wie bis 01.11. —
+// gefangen nur, wenn genau `playerLeben` abweicht.
 // `--mutante weg` (w4-sitzung-reif): eine Probe legt ihren Weg wie tempo4 (`_stlWegeBuild` mit der Marke `probe:grundprobe`, die Natur
 // weicht ihm) und räumt ihn nie — gefangen nur, wenn das Rückspielen an Ort und Stelle genau ihn nennt (die Wege-Linse,
 // `wegeAbweichung`); mit `--tuer` spielt die Grundprobe danach wie die Sitzung den Grund durch die Tür zurück, und der Weg ist fort.
@@ -1270,6 +1305,9 @@ async function grundProbe(o) {
             // die Hand nimmt ein Schwert (eich8 GTX 379e5f56: halten.K1#2 ließ das Langschwert in der Hand, der Grund trug die leere —
             // die Lade-Kette setzte nur volle Slots, die Sitzung endete an „playerEquipped“)
             const hand = !st.player.equipped?.held && r.equipHeld("klinge_langschwert").ok && st.player.equipped.held === "klinge_langschwert";
+            // der Leib isst (Radeon 25ac4c0c 01.11.: halten.K5 trank „consume:_k5“ für 600 s, die Grundstellung ließ die Nahrung im Leib —
+            // die Lade-Kette legt nur die des Stands dazu —, und 21 Proben danach waren UNGEMESSEN an „playerLeben“)
+            const essen = r.activateConsumable("trank_lebenssaft").ok && st.player.boosts.some((b) => b.source === "consume:trank_lebenssaft");
             // der Weg der Probe (Mutante weg): 6 m breit, 60 m lang neben dem Spieler — wie tempo4 und die Straße von fahr-proben
             const weg = ${JSON.stringify(o.mutante || null)} === "weg" ? r._stlWegeBuild({ roads: [{ pts: [{ x: 0, z: 0 }, { x: 0, z: 60 }], w: 6 }] }, { x: q.x + 40, z: q.z - 30 }, "probe:grundprobe") : 0;
             const wegFlaeche = weg ? (${wegeAbdruck})(r).flaechen.find((f) => !${JSON.stringify((g.wege && g.wege.flaechen) || [])}.includes(f)) || null : null;
@@ -1305,8 +1343,8 @@ async function grundProbe(o) {
                 st.voxelWorker = null;
                 r._syncStelle = "naht";
             }
-            return { edit, bau, ritt, hand, weg, wegFlaeche, uhr: st.timeOfDay, feuer: st.brandFeld ? st.brandFeld.size : 0, wetter: st.weather, tag: st.dayLengthMinutes, plan, erd, tiere, mutante: !!z || r._uhrSetzen.length === 0 || ["bauplaene", "werk", "erdbau", "wesen", "gefuehl", "weg", "zeichner"].includes(mut) };`);
-        const z = await ev(grundSpielen(g));
+            return { edit, bau, ritt, hand, essen, weg, wegFlaeche, uhr: st.timeOfDay, feuer: st.brandFeld ? st.brandFeld.size : 0, wetter: st.weather, tag: st.dayLengthMinutes, plan, erd, tiere, mutante: !!z || r._uhrSetzen.length === 0 || ["bauplaene", "werk", "erdbau", "wesen", "gefuehl", "weg", "zeichner", "nahrung"].includes(mut) };`);
+        const z = await ev(grundSpielen(g, { ohneNahrung: o.mutante === "nahrung" }));
         // die Zeichenkette zurück wie in der Sitzung (grundstellung): je abweichende Größe beim Namen, dann, was bleibt
         const zk = await ev(zeichnerCode(g.zeichner, true));
         // die Mutante bricht, was der Grund heil trug (der Null-Renderer zeichnet nie über die Post-Kette: seine Weiche steht schon im Grund)
@@ -1314,8 +1352,8 @@ async function grundProbe(o) {
         const zSoll = o.mutante !== "zeichner" ? [] : ["zeichner.renderer.render", "zeichner.renderer.renderAsync"].concat(gz.postProcessingFailed ? [] : ["zeichner.postProcessingFailed"],
             gz.syncStelle === "naht" ? [] : ["zeichner.syncStelle"], gz.faden ? ["zeichner.faden"] : []);
         const zOk = !!zk && Array.isArray(zk.anders) && [...zk.anders].sort().join(" ") === [...zSoll].sort().join(" ") && zk.bleibt.length === 0;
-        const soll = !o.mutante ? [] : { uhr: ["timeOfDay"], bauplaene: ["blueprints"], werk: ["architectures"], erdbau: ["worldMeta.erdbau"], wesen: ["creatures", "creatureEmotions"], gefuehl: ["creatureEmotions"], weg: ["wege +1 [x0,z0,x1,z1/Formen]"], zeichner: [] }[o.mutante] || ["augenblick." + o.mutante];
-        const taten = tat.edit && tat.bau && tat.ritt && tat.hand && tat.feuer > 0 && tat.wetter === "rainy" && tat.tag === 1e9 && tat.plan && tat.erd && tat.tiere && (!o.mutante || tat.mutante) && (o.mutante !== "weg" || (tat.weg > 0 && !!tat.wegFlaeche));
+        const soll = !o.mutante ? [] : { uhr: ["timeOfDay"], bauplaene: ["blueprints"], werk: ["architectures"], erdbau: ["worldMeta.erdbau"], wesen: ["creatures", "creatureEmotions"], gefuehl: ["creatureEmotions"], weg: ["wege +1 [x0,z0,x1,z1/Formen]"], zeichner: [], nahrung: ["playerLeben"] }[o.mutante] || ["augenblick." + o.mutante];
+        const taten = tat.edit && tat.bau && tat.ritt && tat.hand && tat.essen &&tat.feuer > 0 && tat.wetter === "rainy" && tat.tag === 1e9 && tat.plan && tat.erd && tat.tiere && (!o.mutante || tat.mutante) && (o.mutante !== "weg" || (tat.weg > 0 && !!tat.wegFlaeche));
         // die Wege-Linse nennt den Weg beim Rechteck seiner Fläche (6 × 66 m, 40 m neben dem Spieler; die Tat nennt sie, wie die Karte sie
         // trägt) — seine Marke nur, solange das Gedächtnis der Seite steht (ein anderes worldMeta beim Rückspielen vergisst `_stlWegeKeys`,
         // WELT_GRENZE): gefangen ist er, wenn genau DIESE neue Fläche abweicht
@@ -1603,11 +1641,11 @@ const WELT_STEHT = "await __weltDa(); const takte = await __weltStehtNach(); ret
 // (die Welt endete, die Fahrt riss, kein Schloss), bleibt, wie es fiel. Die Fahrt bleibt ≤ FAHRT_MAX_S: den Rest misst die nächste
 // Eich-Fahrt (eichOffen: ohne frische Messung und ohne Zahl am SHA)
 const gesetzVon = (st) => (st.probe && st.probe.ausnahme !== undefined ? PROBE_AUSNAHME_S : PROBE_DECKEL_S);
-function eichEintrag(st, e) {
+function eichEintrag(st, e, geraet) {
     // am Eich-Deckel: der Deckel riss, oder die eigene Frist der Probe ({SEK} − 6 s) — die Zahl ist zensiert, „≥ 90 s“
     const am = !!e.ungemessen && /^(Deckel|Frist der Probe) \d+(\.\d+)? s gerissen/.test(e.grund || "");
     if (e.ungemessen && !am) return e;
-    const eich = { s: e.s, sek: probeSek(st), gesetzS: gesetzVon(st), ...(am ? { gerissen: true } : {}) };
+    const eich = { s: e.s, sek: probeSek(st, geraet), gesetzS: gesetzVon(st), ...(am ? { gerissen: true } : {}) };
     if (am) return { ...e, eich, grund: "EICH: ≥ " + PROBE_AUSNAHME_S + " s — " + e.grund, zahl: "EICH: ≥ " + PROBE_AUSNAHME_S + " s — " + e.zahl };
     if (e.s <= eich.gesetzS) return { ...e, eich };
     const grund = "EICH: " + e.s + " s über dem Gesetz " + eich.gesetzS + " s" + (eich.gesetzS === PROBE_DECKEL_S ? " (ohne ausnahme)" : "") +
@@ -1630,7 +1668,7 @@ function eichTafel(stationen, m, geraet, hilfe = hilfeText()) {
     // der Ort im Deckel der letzten Sitzung (stromKopf `ortImDeckel`): wie weit der Lauf im eigenen Deckel zog — der Täter beim Namen
     const ort = new Map(((m && m.sitzung && m.sitzung.strom && m.sitzung.strom.ortImDeckel) || []).map((e) => [e.probe, e.m]));
     const zeilen = reihe.map((g) => {
-        const e = zahl(g[0]), z = e ? e.eich : null, sek = probeSek(g[0]), gesetzS = gesetzVon(g[0]);
+        const e = zahl(g[0]), z = e ? e.eich : null, sek = probeSek(g[0], geraet), gesetzS = gesetzVon(g[0]);
         const aus = z && !z.gerissen ? Math.max(DECKEL_MIN_S, Math.ceil(EICH_FAKTOR * z.s)) : null;
         const neu = aus != null && aus <= gesetzS ? aus : null;
         const urteil = !z ? "ohne Zahl" : z.gerissen ? "≥ " + PROBE_AUSNAHME_S + " s — schneller machen" : neu == null ? "über dem Gesetz " + gesetzS + " s — schneller machen"
@@ -1651,6 +1689,22 @@ function eichtafelCli(o) {
             (z.ortM ? " · Ort im Deckel " + z.ortM + " m" : ""));
     console.log("EICHTAFEL " + o.geraet + " am " + sha.slice(0, 8) + ": " + t.geeicht + " von " + t.zeilen.length + " Läufen geeicht · Σ Deckel heute " + t.heute + " s → aus den Zahlen " +
         t.ausZahlen + " s (Budget " + t.budget + " s = Fahrt " + FAHRT_MAX_S + " − Boot " + SITZUNG_BOOT_S + ")");
+    // --schreibe (DIE DECKEL-TAFEL, deckel.json): jede Zahl der Fahrt im Gesetz wird der Deckel ihrer Karte — nur, wenn die Stationen danach
+    // halten (das Gesetz je Probe, die Fahrt der Karte ≤ FAHRT_MAX_S); über dem Gesetz bleibt der Deckel der Station (die Probe muss schneller werden)
+    if (o.schreibe) {
+        const alt = deckelVon(), neu = JSON.parse(JSON.stringify(alt));
+        const je = (neu[o.geraet] = neu[o.geraet] || {});
+        const n = t.zeilen.filter((z) => z.neu != null).reduce((a, z) => (z.ids.forEach((id) => (je[id] = z.neu)), a + z.ids.length), 0);
+        neu[o.geraet] = Object.fromEntries(Object.entries(je).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+        deckelTafel = neu;
+        const f = ladeGeprueft().fehler;
+        if (f.length) {
+            deckelTafel = alt;
+            throw new Error("die Deckel-Tafel aus der Eich-Fahrt bricht die Stationen — nichts geschrieben:\n - " + f.join("\n - "));
+        }
+        fs.writeFileSync(DECKEL_DATEI, JSON.stringify(neu, null, 1) + "\n");
+        console.log("DECKEL-TAFEL " + o.geraet + ": " + n + " Proben aus der Eich-Fahrt am " + sha.slice(0, 8) + " → deckel.json · die Fahrt " + fahrtSumme(ladeGeprueft().stationen, o.geraet).summe + " s");
+    }
 }
 
 // FÄHRT DIE SITZUNG: gruppen (je Gruppe die Stationen EINER Probe, Zwillinge zusammen) der Reihe nach in EINER Welt;
@@ -1900,7 +1954,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
                 zahl: bruch + " — kein Urteil, UNGEMESSEN (die Probe sah: " + String(e.zahl).slice(0, 240) + ")" });
         zuruecksetzen = mutiertVon(g) || abbruch || !!unerklaert || !!bruch;
         // die Eich-Fahrt urteilt erst nach Abbruch und Grundstellung (sie lesen den Grund der Probe, wie er fiel): je Probe ihre Zahl
-        await melde(g, es.map(unter).map(werkzeug).map((e, i) => (ctx.eich ? eichEintrag(g[i], e) : e)), aus, zeit);
+        await melde(g, es.map(unter).map(werkzeug).map((e, i) => (ctx.eich ? eichEintrag(g[i], e, ctx.geraet) : e)), aus, zeit);
     }
     clearInterval(takt);
     if (ci.laeuft && ci.laeuft.kind && ci.laeuft.kind.exitCode == null) baumTot(ci.laeuft.kind.pid); // kein Blick überlebt die Sitzung
@@ -2205,7 +2259,7 @@ async function run(opt) {
     if (opt.geraet === "headless" && !opt.farm && !opt.trocken) return farmRufen(opt, a);
     if (opt.trocken) {
         console.log("Punkte-Maschine (trocken): " + meine.length + " Station(en) auf " + opt.geraet + " am " + sha.slice(0, 8) + ", " +
-            planText(gruppiere(meine), bahnenSoll) + (opt.eich ? " · EICH-FAHRT: je Probe bis " + PROBE_AUSNAHME_S + " s, die Fahrt ≤ " + FAHRT_MAX_S + " s" : "") + ": " +
+            planText(gruppiere(meine), bahnenSoll, opt.geraet) + (opt.eich ? " · EICH-FAHRT: je Probe bis " + PROBE_AUSNAHME_S + " s, die Fahrt ≤ " + FAHRT_MAX_S + " s" : "") + ": " +
             meine.map((st) => schluessel(st) + (st.zeit ? "(Zeit)" : "")).join(" "));
         return null;
     }
@@ -2298,7 +2352,7 @@ function eintragen(m, id, e) {
 // Feld steht VOR „· Exit“ (26.10.: „· allein“ am Zeilenende machte den Fortschritt der Radeon blind); ein ungemessener Lauf heißt
 // OFFEN, weder GRÜN noch ROT
 const startZeile = (n, gruppen, geraet, sha, bahnen) =>
-    "Punkte-Maschine: " + n + " Station(en) in " + gruppen.length + " Läufen auf " + geraet + " am " + sha.slice(0, 8) + " · " + planText(gruppen, bahnen);
+    "Punkte-Maschine: " + n + " Station(en) in " + gruppen.length + " Läufen auf " + geraet + " am " + sha.slice(0, 8) + " · " + planText(gruppen, bahnen, geraet);
 const stationsZeile = (id, e) => {
     const bahn = e.bahn === "allein" ? "allein" : e.bahn === "sitzung" ? "Sitzung" : "Bahn " + e.bahn;
     if (e.ungemessen) return "  OFFEN " + id + " · " + e.grund + " · " + bahn + " · ungemessen, `run --offen` misst neu";
@@ -2334,10 +2388,10 @@ function zwillingsGruppen(stationen, geraet, nur) {
     return [...(sitz.length ? [sitz] : []), ...gs.filter((g) => !sitz.includes(g[0]))].map((g) => g.map(schluessel));
 }
 const sollMin = (gs) => gs.reduce((s, g) => s + g[0].minuten, 0);
-function planText(gruppen, bahnen) {
+function planText(gruppen, bahnen, geraet) {
     const sitz = gruppen.filter((g) => g[0].probe), rest = gruppen.filter((g) => !g[0].probe);
     const zeit = rest.filter(istZeit), bild = rest.filter((g) => !istZeit(g));
-    const deckel = Math.round(sitz.reduce((s, g) => s + probeSek(g[0]), 0) / 60);
+    const deckel = Math.round(sitz.reduce((s, g) => s + probeSek(g[0], geraet), 0) / 60);
     return (sitz.length ? "Sitzung " + sitz.length + " Proben in EINER Welt (Deckel Σ " + deckel + " min) · " : "") + "Zeit " + zeit.length + " Läufe ~" +
         sollMin(zeit) + " min allein · Bild " + bild.length + " Läufe ~" + sollMin(bild) + " min auf " + bahnen + " Bahn(en) · erwartet ~" +
         Math.round(sollMin(zeit) + sollMin(bild) / bahnen) + " min (Soll-Minuten" + (sitz.length ? " ohne Sitzung" : "") + ")";
@@ -2773,6 +2827,7 @@ async function selbsttest(o = {}) {
     const karte = kriterienDerKarte();
     // (1) die echten Stationen gegen die Karte
     const echt = ladeGeprueft();
+    deckelTafel = {}; // die echte Deckel-Tafel prüft FORMAT (ladeGeprueft); die erfundenen Stationen danach fahren ohne sie
     pruef("FORMAT echte Stationen gegen src/gN.js", echt.fehler.length === 0 && echt.stationen.length > 0,
         echt.stationen.length + " Stationen, " + echt.fehlt.length + " fehlt, " + echt.fehler.length + " Fehler" + (echt.fehler.length ? ": " + echt.fehler.join(" | ") : ""));
     // (1a) DIE PROBEN: jede Station urteilt ihre Roh-Ausgaben (die Mutanten der Soll-Tafel ROT), eine falsche Probe beim Namen
@@ -2863,7 +2918,28 @@ async function selbsttest(o = {}) {
             uf[0].length === 0 && uf[1].length === 2 && uf[1][0] === ueber &&
             /^gtx: die Fahrt 1801 s/.test(uf[1][1]) && uf[2].length === 0 && uf[3].length === 2 && uf[3][0].includes("die größten: f.K" + (nG - 1) + "#1 90 s, f.K" + nG + "#1 60 s, f.K1#1 45 s") &&
             uf[4].length === 1 && /^radeon: /.test(uf[4][0]), JSON.stringify(uf));
-        const echtGross = ladeStationen().map((s) => (s.probe ? { ...s, probe: { ...s.probe, sek: 90, ausnahme: "der Selbsttest bläht jeden Deckel" } } : s));
+        // DIE DECKEL-TAFEL (deckel.json, 01.11. mess-werkzeug): je Karte ihr Deckel in Fahrt und Läufer, ohne Eintrag probe.sek; über 45 s nur
+        // mit ausnahme, nur an den eigenen Karten, 0 s ROT beim Namen; der Abdruck ohne Eintrag Byte für Byte wie bisher, mit Eintrag ein anderer
+        const jk = (mut = {}) => ({ ...pb, beide: true, probe: { befehl: ["node", "-e", "0"], sek: 10, ...mut } });
+        const mitTafel = (t, f) => { deckelTafel = t; try { return f(); } finally { deckelTafel = {}; } };
+        const abd0 = abdruck(jk(), "hilfe");
+        const jf = [mitTafel({ radeon: { "profiband.K1#1": 40 } }, () => [fa({ probe: jk().probe }), fahrtSumme([jk()], "radeon").deckel, fahrtSumme([jk()], "gtx").deckel,
+            probeSek(jk(), "radeon"), probeSek(jk(), "gtx"), abdruck(jk(), "hilfe")]),
+            mitTafel({ radeon: { "profiband.K1#1": 60 } }, () => [fa({ probe: jk().probe }), fa({ probe: jk({ ausnahme: "der Boot der Radeon dauert" }).probe })]),
+            mitTafel({ gtx: { "profiband.K1#1": 0 } }, () => fa({ probe: jk().probe })), mitTafel({ gtx: { "profiband.K1#1": 20 } }, () => fa({ geraet: "radeon", beide: undefined, probe: jk().probe }))];
+        pruef("DECKEL-TAFEL je Karte ihr Deckel (Fahrt, Läufer), ohne Eintrag probe.sek; 60 s ohne ausnahme, 0 s, eine fremde Karte ROT beim Namen; der Abdruck ohne Eintrag unverändert",
+            jf[0][0] === "" && jf[0][1] === 40 && jf[0][2] === 10 && jf[0][3] === 40 && jf[0][4] === 10 && jf[0][5] !== abd0 && abdruck(jk(), "hilfe") === abd0 &&
+            /Deckel 60 s über 45 s ohne ausnahme/.test(jf[1][0]) && jf[1][1] === "" && /deckel.json: .* je Karte eine ganze Zahl ≥ 1/.test(jf[2]) && /deckel.json: {"gtx":20}/.test(jf[3]),
+            JSON.stringify(jf));
+        // DIE NAHRUNG FÄLLT vor dem Rückspielen (NAHRUNG_FAELLT, Radeon 25ac4c0c: „consume:_k5“) — der Code der Grundstellung trägt sie vor
+        // `_grundstellung`, die Mutante (`ohneNahrung`, grundprobe --mutante nahrung) nie; in einem Leib mit Nahrung und Gefühl fällt nur die Nahrung
+        const gsN = grundSpielen({ grund: "{}", seite: [] }), gsM = grundSpielen({ grund: "{}", seite: [] }, { ohneNahrung: true });
+        const leibN = { state: { player: { boosts: [{ source: "consume:_k5" }, { source: "emotion:joy" }, null] } } };
+        new Function("r", NAHRUNG_FAELLT)(leibN);
+        pruef("NAHRUNG FÄLLT vor dem Rückspielen: die Grundstellung trägt sie vor _grundstellung, die Mutante nie; nur consume: fällt",
+            gsN.indexOf(NAHRUNG_FAELLT) >= 0 && gsN.indexOf(NAHRUNG_FAELLT) < gsN.indexOf("r._grundstellung(") && !gsM.includes(NAHRUNG_FAELLT) &&
+            JSON.stringify(leibN.state.player.boosts) === JSON.stringify([{ source: "emotion:joy" }, null]), JSON.stringify(leibN.state.player.boosts));
+        const echtGross = ladeStationen().map((s) => (s.probe ?{ ...s, probe: { ...s.probe, sek: 90, ausnahme: "der Selbsttest bläht jeden Deckel" } } : s));
         const eg = pruefeStationen(echtGross, karte).fehler.filter((f) => /^(radeon|gtx): die Fahrt/.test(f));
         pruef("FAHRT-ROT an der echten Liste: jeder Deckel auf 90 s gebläht reißt die Fahrt beider Karten (liste, run und buchen fallen dort)",
             eg.length === 2 && eg.every((f) => /die größten: /.test(f)), eg.join(" | "));
@@ -3875,14 +3951,14 @@ if (require.main === module) {
                 const t = toteGlobs(st.pfad, dateien);
                 if (t.length) fehler.push(schluessel(st) + ": " + pfadGrund(t, "am Kopf " + kopf.slice(0, 8)));
             }
-            for (const st of stationen) console.log("  " + schluessel(st) + " · " + geraeteVon(st).join("+") + (st.gpu ? " · GPU" : "") + (st.zeit ? " · Zeit" : " · Bild") + (st.probe ? " · Sitzung ≤ " + probeSek(st) + " s" : "") + " · " + st.minuten + " min · " + befehlVon(st).join(" ") + " · " + abdruck(st));
+            for (const st of stationen) console.log("  " + schluessel(st) + " · " + geraeteVon(st).join("+") + (st.gpu ? " · GPU" : "") + (st.zeit ? " · Zeit" : " · Bild") + (st.probe ? " · Sitzung ≤ " + geraeteVon(st).filter((g) => g !== "headless").map((g) => g + " " + probeSek(st, g)).join("/") + " s" : "") + " · " + st.minuten + " min · " + befehlVon(st).join(" ") + " · " + abdruck(st));
             for (const e of fehlt) console.log("  FEHLT " + e.kriterium + "#" + e.staffel + " · " + String(e.grund).slice(0, 140));
             for (const f of fehler) console.log("  ROT " + f);
             console.log(stationen.length + " Stationen · " + new Set(stationen.map((s) => s.kriterium)).size + " Kriterien · fehlt " + fehlt.length + " · Fehler " + fehler.length);
             process.exitCode = fehler.length ? 1 : 0;
         } else if (verb === "selbsttest") process.exitCode = await selbsttest(o);
         else {
-            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--offen] [--eich] [--trocken] [--bahnen 3] [--port-basis 7700] [--farm <name>] · gruppen --geraet <g> [--nur id,id] · scheiben --sha <sha> --geraet headless [--jobs 12] [--offen|--nur …] · vereine --sha <voll> --geraet headless --farm <name> --teile <dir> [--scheiben <json>] [--beginn <s>] · buchen --kopf <sha> [--trocken] · liste [--kopf <sha>] · eichtafel --sha <sha> --geraet radeon|gtx · selbsttest [--ohne 3c]");
+            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--offen] [--eich] [--trocken] [--bahnen 3] [--port-basis 7700] [--farm <name>] · gruppen --geraet <g> [--nur id,id] · scheiben --sha <sha> --geraet headless [--jobs 12] [--offen|--nur …] · vereine --sha <voll> --geraet headless --farm <name> --teile <dir> [--scheiben <json>] [--beginn <s>] · buchen --kopf <sha> [--trocken] · liste [--kopf <sha>] · eichtafel --sha <sha> --geraet radeon|gtx [--schreibe] · selbsttest [--ohne 3c]");
             process.exitCode = 2;
         }
     })().catch((e) => {
