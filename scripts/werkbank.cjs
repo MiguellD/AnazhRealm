@@ -1473,11 +1473,22 @@ async function starte() {
                             maxY = -Infinity,
                             nm = 0;
                         const mitte = new T.Vector3();
+                        // DAS GEZEICHNETE GESICHT (mensch.K4#1): Proben trägt nur, was die Kamera zeichnet — die Ebene der Kamera und
+                        // jeder Vorfahr sichtbar. Diesseits ihrer Grenze steht die Grobstufe der Gelenk-Gestalt als Wurf-Zwilling auf
+                        // der Wurf-Ebene (`_gelenkStufe`: Ebene 0 aus), ihr Auge auf keiner Ebene; ihre Ecken trugen bis dahin
+                        // Proben mit, die das Bild an Stellen lasen, wo die feine Stufe anderes zeigt — am Spieler 126 der 208
+                        // Lippen-Proben und 2 594 der 6 281 Proben des Kopfs (Radeon, 6 m, dasselbe Bild: lippeA 1,09 → 3,90, lippeL
+                        // −4,42 → −6,85, hoehleL −0,32 → −2,28, hoehleA −0,69 → 1,73)
+                        const gezeichnet = (o) => {
+                            if (!o.layers.test(cam.layers)) return false;
+                            for (let c = o; c; c = c.parent) if (!c.visible) return false;
+                            return true;
+                        };
                         for (const [n, os] of teile) {
                             if (!/:kopf\/(auge|haut|skin)$/.test(n)) continue;
                             const kix = namen.indexOf(n) + 1;
                             for (const o of os) {
-                                if (r._leibWurzel(o) !== wahlLeib) continue;
+                                if (r._leibWurzel(o) !== wahlLeib || !gezeichnet(o)) continue;
                                 const pa = o.geometry.attributes.position;
                                 for (let i = 0; i < pa.count; i++) {
                                     const kn = knochen(o, i);
