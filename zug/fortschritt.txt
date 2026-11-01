@@ -1488,3 +1488,4 @@
 2026-11-01 22:12:42 z143-abab w-ego VERLÄNGERN 11.9 · 1/2 (2+2)
 2026-11-01 22:28:49 z143-abab stadt VERLÄNGERN 16.1 · 2/2 (2+2)
 2026-11-01 22:41:01 z143-abab w-ego(4+4) nicht-langsamer 12.1 · verlängert (4+4)
+2026-11-01 22:57:03 z143-abab stadt(4+4) nicht-langsamer 15.9 · verlängert (4+4)
