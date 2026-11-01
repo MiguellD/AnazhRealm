@@ -1,0 +1,59 @@
+{
+ "sha": "e78e0d28add8d33d21549677656d36797633d7e2",
+ "geraet": "gtx",
+ "zeit": "2026-11-01T13:30:45.490Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "spielgang.K3#1": {
+   "gruen": true,
+   "zahl": "HUD deckt 2.52 % (1920×1080, im Spiel) · INP HUD 48 ms (50) · Menü 96 ms (21)",
+   "exit": 0,
+   "minuten": 0.23,
+   "gpu": "nvidia/pascal",
+   "s": 13.6,
+   "zeit": "2026-11-01T13:30:45.490Z",
+   "abdruck": "61911f2e1283",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-01T13:30:14.917Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 6.3,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "spielgang.K3#1",
+    "s": 23.1,
+    "takte": 563,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 279,
+   "frameP95": 58.4,
+   "taktP95": 17.7,
+   "vramMax": 131.4,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 36,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 43.5,
+  "minuten": 0.78
+ }
+}
