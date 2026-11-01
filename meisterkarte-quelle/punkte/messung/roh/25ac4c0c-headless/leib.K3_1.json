@@ -1,0 +1,129 @@
+{
+ "laeufe": {
+  "ego": {
+   "bilder": 1117,
+   "phasen": {
+    "ufer": {
+     "n": 445,
+     "unter": 1,
+     "augen": 0,
+     "geerdet": 412
+    },
+    "schwimmen": {
+     "n": 282,
+     "unter": 282,
+     "augen": 0,
+     "geerdet": 0
+    },
+    "tauchen": {
+     "n": 240,
+     "unter": 240,
+     "augen": 189,
+     "geerdet": 88
+    },
+    "auftrieb": {
+     "n": 120,
+     "unter": 120,
+     "augen": 120,
+     "geerdet": 0
+    }
+   },
+   "tiefe": 2.21,
+   "ruckLeib": {
+    "max": 0.013,
+    "wo": "ufer 66",
+    "p95": 0.0029
+   },
+   "ruckKamera": {
+    "max": 0.009,
+    "wo": "ufer 65",
+    "p95": 0.0009
+   }
+  },
+  "third": {
+   "bilder": 1117,
+   "phasen": {
+    "ufer": {
+     "n": 445,
+     "unter": 1,
+     "augen": 0,
+     "geerdet": 411
+    },
+    "schwimmen": {
+     "n": 282,
+     "unter": 282,
+     "augen": 0,
+     "geerdet": 0
+    },
+    "tauchen": {
+     "n": 240,
+     "unter": 240,
+     "augen": 189,
+     "geerdet": 89
+    },
+    "auftrieb": {
+     "n": 120,
+     "unter": 120,
+     "augen": 120,
+     "geerdet": 0
+    }
+   },
+   "tiefe": 2.21,
+   "ruckLeib": {
+    "max": 0.012,
+    "wo": "ufer 66",
+    "p95": 0.0029
+   },
+   "ruckKamera": {
+    "max": 0.012,
+    "wo": "ufer 66",
+    "p95": 0.0029
+   }
+  },
+  "mutante": {
+   "bilder": 1117,
+   "phasen": {
+    "ufer": {
+     "n": 444,
+     "unter": 1,
+     "augen": 0,
+     "geerdet": 411
+    },
+    "schwimmen": {
+     "n": 283,
+     "unter": 283,
+     "augen": 0,
+     "geerdet": 0
+    },
+    "tauchen": {
+     "n": 240,
+     "unter": 240,
+     "augen": 205,
+     "geerdet": 100
+    },
+    "auftrieb": {
+     "n": 120,
+     "unter": 120,
+     "augen": 120,
+     "geerdet": 1
+    }
+   },
+   "tiefe": 2.21,
+   "ruckLeib": {
+    "max": 0.201,
+    "wo": "tauchen 787",
+    "p95": 0.0029
+   },
+   "ruckKamera": {
+    "max": 0.038,
+    "wo": "tauchen 787",
+    "p95": 0.0009
+   }
+  }
+ },
+ "see": [
+  1816,
+  -6168,
+  0.93
+ ]
+}
