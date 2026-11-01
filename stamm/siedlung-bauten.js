@@ -912,6 +912,10 @@ class AnazhRealm_siedlung_bauten {
     // Die Tönung wirkt, wo der Stoff seine Farbe liest (Gegenprüfung 08.10.): ein Studio-Stoff liest colorNode (die Vertex-
     // Farbe), nie `material.color` — sein Geist mischt den EINEN Tönungs-Uniform (`_phantomTint`) zu 30 % in colorNode.rgb,
     // die Alpha (Blatt-Kontur, LOD-Dither) bleibt. Befund: das Phantom über der Lichtung stand grau, nur die HUD-Zeile rot.
+    // EIN GEIST-GRAPH JE QUELL-GRAPH (w4-knoten-wurzel, `_graphTeilen`): die Tönung hängt EINMAL je Farb-Knoten der Quelle
+    // (`_ghostFarbe`), nie je Stoff — Stoffe einer Signatur teilen ihren colorNode, ihre Geister teilen so den Graphen. Bis hier
+    // baute jeder Geist-Stoff frische Knoten um denselben colorNode: r184 schlüsselt das Programm nach Knoten-Identität, der
+    // Vorbau der Bedienung baute byte-gleiches WGSL je Stoff neu (Radeon kalt, V18.546.159: 41 Geist-Bauten Σ 1 551 ms, 18 Programme).
     _ghostMaterialFor(mat) {
         if (!mat) return mat;
         if (!this._ghostMatCache) this._ghostMatCache = new WeakMap();
@@ -922,15 +926,21 @@ class AnazhRealm_siedlung_bauten {
             g.opacity = 0.4;
             g.alphaTest = (Number.isFinite(mat.alphaTest) ? mat.alphaTest : 0) * g.opacity;
             g.depthWrite = false;
-            const tint = mat.colorNode ? this._phantomTint() : null;
-            if (tint) {
-                const TSL = THREE.TSL;
-                const farbe = TSL.vec4(mat.colorNode);
-                g.colorNode = TSL.vec4(TSL.mix(farbe.rgb, tint, 0.3), farbe.a);
-            }
+            if (mat.colorNode) g.colorNode = this._ghostFarbe(mat.colorNode);
             this._ghostMatCache.set(mat, g);
         }
         return g;
+    }
+    // Der getönte Farb-Knoten des Geists zum Farb-Knoten `farbe` seiner Quelle — EINER je Quell-Knoten (der Leser: `_ghostMaterialFor`)
+    _ghostFarbe(farbe) {
+        const G = this._ghostFarbeCache || (this._ghostFarbeCache = new WeakMap());
+        let f = G.get(farbe);
+        if (!f) {
+            const TSL = THREE.TSL;
+            const c = TSL.vec4(farbe);
+            G.set(farbe, (f = TSL.vec4(TSL.mix(c.rgb, this._phantomTint(), 0.3), c.a)));
+        }
+        return f;
     }
 
     // DER EINE Tönungs-Uniform jedes Geist-Stoffs (linear, aus dem sRGB-Hex — das Farb-Gesetz): `_applyPhantomTint` setzt
