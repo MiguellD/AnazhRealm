@@ -1,11 +1,11 @@
 // Meisterkarte 2.0 — Kopf, Regeln, Messschuld, Feststecken, Bürgschaft, Befunde (Stand main 3528f2d0, 23.10.2026)
 module.exports = {
   stand: "2026-11-01",
-  kopf: "9e40c93c",
-  version: "V18.546.155",
-  integ: "9e40c93c",
+  kopf: "e0f42f9d",
+  version: "V18.546.156",
+  integ: "e0f42f9d",
 
-  titel: "MEISTERKARTE 2.0 des Ultiversums — Stand 01.11.2026, Kopf main 9e40c93c (V18.546.155)",
+  titel: "MEISTERKARTE 2.0 des Ultiversums — Stand 01.11.2026, Kopf main e0f42f9d (V18.546.156)",
 
   einleitung: [
     "Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.",
