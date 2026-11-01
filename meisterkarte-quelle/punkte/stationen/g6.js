@@ -939,9 +939,12 @@ const HW = (t) => {
 //     Regler des Spielers (R8): jedes Bild zählt, die Hänger-Linse nennt den Täter jedes Bilds über 33 ms.
 //   dauer (K5#1 K5#2, stellung ende, Ziel 14 s): nach jeder Probe, die die Welt lässt, zurück am Start — Bau, Tor, Nacht, das
 //     Anker-Fenster ein zweites Mal, der Stand des Endes; geurteilt aus dem Strom zwischen den Marken (≥ 20 min in EINER Seite).
-//   gang (K1 K2 K3 je #1 #2, mutiert — gründet die Stadt, stellt 50 Tiere —, Ziel 60 s, ausnahme): die Zellen und Bänder nach dem
-//     Rang der Pflicht (E zuerst: Genesis und Wiese × Ego und Third, dann bewegt, dann das Dorf, dann die Stadt) unter der Uhr
-//     PB_BUDGET_S; was die Uhr nicht mehr trägt, steht ungemessen beim Namen — eine Station wird nie grün ohne jede ihrer Zellen.
+//   gang (K1 K2 K3 je #1 #2, mutiert — gründet die Stadt, stellt 50 Tiere —, ausnahme): ERST JEDES FENSTER, DANN DIE BÄNDER, je Ort
+//     ohne zweite Ankunft (w4-p2-profiband-k1): die Wiese, an der die Sitzung steht (Third und Ego stehend, gehend, Sprint, Sturm,
+//     Fahrt), dann die Genesis (EINE Ankunft: Third gehend und stehend, Ego stehend), dann die Stadt, dann die Bänder je Ort und das
+//     Dorf — unter der Uhr PB_KONST.budget, je Schritt seine gemessene Dauer (PB_SCHRITT_S); was die Uhr nicht mehr trägt, steht
+//     ungemessen beim Namen — eine Station wird nie grün ohne jede ihrer Zellen. Die Probe druckt ihre Zeile vor ihrem Deckel, auch
+//     mitten in einem Schritt (die Wache, PUNKTE_PROBE_DECKEL_S): ein gerissener Deckel ließ bis hierher keine Zeile.
 // JE ZELLE zählen ihre Bilder im Strom: die des eigenen Fensters (ohne sein Einschwingen) und — an den Stand-Zellen von E — jedes
 // Bild jeder anderen Probe, das dort stand (≤ PB_ORT_M vom Spieler-Platz des Messorts, ≤ 0,5 m/s, die Sicht der Zelle, Regler voll,
 // Tiere frei, Sonne, ohne Sattel); die Belegung, der Weg und die Probe der Seite kommen aus dem eigenen Fenster.
@@ -951,7 +954,7 @@ const PB_BAND = ["wiese-ego", "wiese-third", "genesis-ego", "genesis-third", "do
 // die Uhr des Gangs, die Fenster (s), der Ort einer Stand-Zelle (m), die Bilder je s eines gültigen Fensters, die GPU-Stempel je Zelle,
 // das Mindestmaß einer Stand-Zelle nur aus fremden Bildern, die Dauer am Stück (min)
 const PB_KONST = {
-    budget: 58,
+    budget: 68,
     steht: { sek: 2, ein: 0.3 },
     geht: { sek: 2, ein: 0.5 },
     anker: { sek: 2, ein: 0.3 },
@@ -962,6 +965,25 @@ const PB_KONST = {
     fremdN: 60,
     dauerMin: 20,
 };
+// DIE DAUER JE SCHRITT (s, w4-p2-profiband-k1): gemessen an der Radeon am 20d09a04 in EINER Welt mit den Rufen dieser Probe (die
+// Antwort der Werkbank trägt `ms`), aufgerundet: Ankunft Genesis 18,7 · Dorf 20,4 · Stadt 72,0 s (Gründung nH 120, Anlauf und Ort:
+// zwei Ankünfte) · Umstellen am Ort 1,6–2,8 s (nach der Fahrt 40 m daneben 7,8) · Fenster 3,0–4,7 s · Fahrt 9,8 s (der GT entsteht im
+// Fenster) · Band 9,9–11,0 s (das Einschwingen reißt seinen Deckel 8 s: satzSchrumpft — der Satz schrumpft erst nach 600 Takten) —
+// Σ 257 s je Gang gegen die Uhr. Bis hierher schätzte die Probe 4–20 s je Schritt: GTX 20d09a04 drei von neun Schritten in 62,1 s
+// (genesis-ego 13,2 · genesis-third 17,5 · wiese-ego 31,4 s), die Radeon riss den Deckel 64 s mitten im dritten ohne Zeile.
+const PB_SCHRITT_S = Object.freeze({
+    wieseThird: 8,
+    wieseEgo: 12,
+    sprint: 6,
+    sturm: 9,
+    fahrt: 13,
+    genesisThird: 29,
+    genesisEgo: 7,
+    stadt: 80,
+    bandAmOrt: 14,
+    bandAnkunft: 34,
+    dorf: 46,
+});
 const PB_PFAD = [
     "stamm/*.js",
     "*-core.js",
@@ -1108,17 +1130,32 @@ async function pbProbe(art, aus) {
         return w;
     };
     // ein Schritt unter der Uhr: trägt die Uhr ihn nicht mehr, stehen seine Zellen ungemessen beim Namen
+    let laufend = null;
     const schritt = async (name, est, f, zellen) => {
         if (art === "gang" && uhr() + est > K.budget) return void (offen.push(...zellen), schritte.push([name, "Uhr"]));
         const a = uhr();
+        laufend = { name, zellen, a };
         try {
             await f();
             schritte.push([name, +(uhr() - a).toFixed(1)]);
         } catch (e) {
             for (const z of zellen) fehler[z] = String((e && e.message) || e).split("\n")[0].slice(0, 200);
             schritte.push([name, "Fehler"]);
+        } finally {
+            laufend = null;
         }
     };
+    // DIE WACHE DES DECKELS: 4 s vor dem Deckel des Laufs (PUNKTE_PROBE_DECKEL_S) druckt die Probe ihre Zeile aus dem Strom, auch
+    // mitten in einem Schritt — seine Zellen stehen beim Namen (`fehler`), sein Ruf an die Werkbank läuft in der Seite zu Ende
+    const deckelS = Number(process.env.PUNKTE_PROBE_DECKEL_S) || 0;
+    const wache = deckelS > 8 ? setTimeout(() => {
+        if (laufend) {
+            for (const z of laufend.zellen) fehler[z] = "die Frist der Probe kam im Schritt " + laufend.name + " (nach " + (uhr() - laufend.a).toFixed(1) + " s)";
+            schritte.push([laufend.name, "Frist"]);
+        }
+        abschluss();
+        process.exit(0);
+    }, (deckelS - 4) * 1000) : null;
     const S = K.steht, G = K.geht;
     const sonst = {};
     if (art === "glaette") {
@@ -1142,30 +1179,20 @@ async function pbProbe(art, aus) {
             await stand("dauer-ende");
         }, ["dauer-ende"]);
     } else {
-        await schritt("genesis-ego", 7, async () => {
-            await U("genesis", "ego");
-            await B("genesis", "ego");
-            await Z("genesis-ego-steht", S);
-        }, ["band:genesis-ego", "genesis-ego-steht"]);
-        await schritt("genesis-third", 11, async () => {
-            await U("genesis", "third");
-            await B("genesis", "third");
-            await Z("genesis-third-steht", S);
-            await Z("genesis-third-geht", { ...G, wandern: "bahn" });
-        }, ["band:genesis-third", "genesis-third-steht", "genesis-third-geht"]);
-        await schritt("wiese-ego", 15, async () => {
+        // ERST JEDES FENSTER (vier Stationen lesen sie — K1#1, K1#2, K2#1, K2#2 —, je Zelle 3–5 s), DANN DIE BÄNDER (je 10–11 s,
+        // K3): die Wiese, an der die Sitzung steht — der Sturm nach dem Sprint (die Bühne des nächsten Fensters springt zurück auf
+        // Sonne, trocken, ohne Regen), die Fahrt zuletzt (danach steht der Spieler 40 m daneben) —, dann die Genesis mit EINER Ankunft
+        const P = PB_SCHRITT_S;
+        await schritt("wiese-third", P.wieseThird, async () => {
+            await U("wiese", "third");
+            await Z("wiese-third-steht", S);
+        }, ["wiese-third-steht"]);
+        await schritt("wiese-ego", P.wieseEgo, async () => {
             await U("wiese", "ego");
-            await B("wiese", "ego");
             await Z("wiese-ego-steht", S);
             await Z("wiese-ego-geht", { ...G, wandern: "bahn" });
-        }, ["band:wiese-ego", "wiese-ego-steht", "wiese-ego-geht"]);
-        await schritt("wiese-third", 8, async () => {
-            await U("wiese", "third");
-            await B("wiese", "third");
-            await Z("wiese-third-steht", S);
-        }, ["band:wiese-third", "wiese-third-steht"]);
-        await schritt("wiese-sprint", 4, async () => {
-            await U("wiese", "ego");
+        }, ["wiese-ego-steht", "wiese-ego-geht"]);
+        await schritt("wiese-sprint", P.sprint, async () => {
             await ev(SEITE.sprint);
             try {
                 await Z("wiese-ego-sprint", G);
@@ -1173,11 +1200,7 @@ async function pbProbe(art, aus) {
                 await ev(SEITE.sprintAus);
             }
         }, ["wiese-ego-sprint"]);
-        await schritt("wiese-fahrt", 5, async () => {
-            await U("wiese", "ego");
-            await Z("wiese-fahrt", { ...G, wandern: "fahrt" });
-        }, ["wiese-fahrt"]);
-        await schritt("wiese-sturm", 6, async () => {
+        await schritt("wiese-sturm", P.sturm, async () => {
             await U("wiese", "ego");
             try {
                 await Z("wiese-ego-sturm", { ...G, tiere: "50", wetter: "stormy", wandern: "bahn" });
@@ -1185,19 +1208,49 @@ async function pbProbe(art, aus) {
                 sonst.geraeumt = await ev(SEITE.raeumen);
             }
         }, ["wiese-ego-sturm"]);
-        await schritt("dorf", 20, async () => {
+        await schritt("wiese-fahrt", P.fahrt, () => Z("wiese-fahrt", { ...G, wandern: "fahrt" }), ["wiese-fahrt"]);
+        await schritt("genesis-third", P.genesisThird, async () => {
+            await U("genesis", "third");
+            await Z("genesis-third-geht", { ...G, wandern: "bahn" });
+            await Z("genesis-third-steht", S);
+        }, ["genesis-third-geht", "genesis-third-steht"]);
+        await schritt("genesis-ego", P.genesisEgo, async () => {
+            await U("genesis", "ego");
+            await Z("genesis-ego-steht", S);
+        }, ["genesis-ego-steht"]);
+        await schritt("stadt", P.stadt, async () => {
+            await U("stadt", "ego");
+            await Z("stadt-ego-geht", { ...G, wandern: "bahn" });
+        }, ["stadt-ego-geht"]);
+        // DIE BÄNDER je Ort × Sicht, wo der Spieler steht zuerst (die Genesis), dann die Wiese (eine Ankunft), dann das Dorf
+        await schritt("band-genesis-ego", P.bandAmOrt, async () => {
+            await U("genesis", "ego");
+            await B("genesis", "ego");
+        }, ["band:genesis-ego"]);
+        await schritt("band-genesis-third", P.bandAmOrt, async () => {
+            await U("genesis", "third");
+            await B("genesis", "third");
+        }, ["band:genesis-third"]);
+        await schritt("band-wiese-third", P.bandAnkunft, async () => {
+            await U("wiese", "third");
+            await B("wiese", "third");
+        }, ["band:wiese-third"]);
+        await schritt("band-wiese-ego", P.bandAmOrt, async () => {
+            await U("wiese", "ego");
+            await B("wiese", "ego");
+        }, ["band:wiese-ego"]);
+        await schritt("dorf", P.dorf, async () => {
             await U("dorf", "ego");
             await B("dorf", "ego");
             await U("dorf", "third");
             await B("dorf", "third");
         }, ["band:dorf-ego", "band:dorf-third"]);
-        await schritt("stadt", 20, async () => {
-            await U("stadt", "ego");
-            await Z("stadt-ego-geht", { ...G, wandern: "bahn" });
-        }, ["stadt-ego-geht"]);
     }
-    // ── DER STROM: alle Bilder der Sitzung bis hierher ──
+    if (wache) clearTimeout(wache);
     await zelle(null);
+    abschluss();
+    function abschluss() {
+    // ── DER STROM: alle Bilder der Sitzung bis hierher ──
     const L = M.stromLesen(STROM);
     const B_ = L.bilder;
     const quant = (a, p = 0.95) => {
@@ -1292,6 +1345,7 @@ async function pbProbe(art, aus) {
     }
     fs.writeFileSync(aus, JSON.stringify(zus, null, 1));
     console.log("PROFIBAND " + JSON.stringify(zus));
+    }
 }
 const PB_ZELLEN = [...PB_STEHT, ...PB_BEWEGT];
 
@@ -1473,7 +1527,8 @@ const PB_MARKE = require("crypto")
 const pbBefehl = (art) => [
     "node",
     "-e",
-    "/* richter " + PB_MARKE + " */ const K = " + JSON.stringify(PB_KONST) + "; const SEITE = " + JSON.stringify(PB_SEITE) + "; const PB_ZELLEN = " +
+    "/* richter " + PB_MARKE + " */ const K = " + JSON.stringify(PB_KONST) + "; const SEITE = " + JSON.stringify(PB_SEITE) +
+        "; const PB_SCHRITT_S = " + JSON.stringify(PB_SCHRITT_S) + "; const PB_ZELLEN = " +
         JSON.stringify(PB_ZELLEN) + "; (" + pbProbe.toString().replace(/\r/g, "") + ")(process.argv[1], process.argv[2]).catch((e) => { console.log(\"PROBE ROT: \" + " +
         "String((e && e.stack) || e).split(\"\\n\").slice(0, 3).join(\" | \")); process.exitCode = 1; });",
     art,
@@ -1587,7 +1642,7 @@ const PB_PROBEN_DAUER = [
 // → 29 s, dauer 36,0 · 22,8 · 29,4 · 30,6 s → 37 s (die Messung trägt Minuten auf zwei Stellen: 36,0 heißt bis 36,3 s; vorher je
 // 45 s); gang ungemessen (die Fahrt kam nie zu ihm) — 64 s
 const PB_PROBE_GLAETTE = { sek: 29, stellung: "anfang", befehl: pbBefehl("glaette") };
-const PB_PROBE_GANG = { sek: 64, mutiert: true, ausnahme: PB_AUSNAHME_GANG, befehl: pbBefehl("gang") };
+const PB_PROBE_GANG = { sek: 74, mutiert: true, ausnahme: PB_AUSNAHME_GANG, befehl: pbBefehl("gang") };
 const PB_PROBE_DAUER = { sek: 23, stellung: "ende", befehl: pbBefehl("dauer") };
 
 module.exports = [
