@@ -2321,7 +2321,7 @@ async function fellHaushaltSzene(r, T, o) {
         r._gameLoopTick(performance.now());
         await sleep(25);
     }
-    window.__tiereHalten();
+    window.__halten();
     const fell = herde.map((c) => {
         const tB = c.userData._tierBaum;
         return [+Math.hypot(c.position.x - cam.position.x, c.position.z - cam.position.z).toFixed(1), tB ? tB._fellAn !== false : null, tB && tB.straehnen ? tB.straehnen.length : 0];
