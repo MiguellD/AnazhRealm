@@ -163,3 +163,4 @@ z119c-abab LANGSAMER abab 4b13478b gegen c351b318: w-ego 4+4 nicht-langsamer · 
 b-kalt-4b13 Exit0 station ankunft-kalt.sh an 4b13478b
 takt-z122a-gtx gemessen punkte eeb5d2bf gtx: 0 grün / 9 rot
 takt-z122b-gtx gemessen punkte eeb5d2bf gtx: 0 grün / 10 rot
+b-kalt-eeb5 Exit0 station ankunft-kalt.sh an eeb5d2bf
