@@ -490,10 +490,20 @@ class AnazhRealm_werkstatt_hof {
             el.removeAttribute("hidden");
             this.state.inventoryOpen = true;
             document.body.classList.add("inventory-open");
-            this.renderInventoryUI();
-            // das Rezeptbuch öffnet oben, wo das Griffbereite steht (bauen.K1)
+            // DAS ICH ÖFFNET AUS DEM STEHENDEN LAYOUT (spielgang.K3): verborgen behält es Baum und Layout (content-visibility),
+            // neu gebaut wird nur, was sich seit dem letzten Bau änderte (`_ichStempel`) — jeder Neubau warf die Habe und die
+            // Rüstung weg, und das Bild nach Tab legte sie neu aus
+            if (this._ichGebaut !== this._ichStempel()) this.renderInventoryUI();
+            // das Rezeptbuch öffnet oben, wo das Griffbereite steht (bauen.K1) — gerollt wird nur ein gerolltes: das Setzen
+            // von scrollTop legte jedes Tab das ganze Ich im Hörer aus (Radeon: Stil erzwungen 9–14 ms)
             const rezepte = document.getElementById("inventory-recipes");
-            if (rezepte) rezepte.scrollTop = 0;
+            if (rezepte && !rezepte._anazhRoll) {
+                rezepte._anazhRoll = true;
+                rezepte.addEventListener("scroll", () => (this._rezepteGerollt = rezepte.scrollTop > 0), {
+                    passive: true,
+                });
+            }
+            if (rezepte && this._rezepteGerollt) [rezepte.scrollTop, this._rezepteGerollt] = [0, false];
             // V18.57 Ich-Bogen — die Selbst-Bühne + das Spec-Sheet (das Werkstatt-/Hof-Muster auf das Selbst).
             if (typeof this._ichHandleOverlay === "function") this._ichHandleOverlay(true);
             // === UX-Konvention wie Minecraft / jedes Survival-Spiel ===
@@ -1274,8 +1284,24 @@ class AnazhRealm_werkstatt_hof {
         if (typeof document === "undefined") return;
         const specMount = document.getElementById("ich-stage-spec");
         if (!specMount) return;
+        // neu gebaut wird das Blatt nur, wenn sich eine seiner Größen änderte (spielgang.K3: Tab öffnet aus dem stehenden
+        // Layout)
+        const prof = this._selfProfile();
+        const stand = JSON.stringify([
+            prof.name,
+            prof.soul,
+            prof.soulLabel,
+            prof.mode,
+            prof.hp,
+            prof.hpMax,
+            prof.stats,
+            prof.tags,
+            prof.equipped,
+        ]);
+        if (specMount.firstChild && stand === this._ichBlattStand) return;
+        this._ichBlattStand = stand;
         specMount.innerHTML = "";
-        specMount.appendChild(this._ichBuildSpecSheet(this._selfProfile()));
+        specMount.appendChild(this._ichBuildSpecSheet(prof));
     }
 
     // Ich-C (ich-plan §D.1) — die SELBST-BÜHNE (der Avatar-3D-Star, Zwilling zur Hof-Bühne V18.54).

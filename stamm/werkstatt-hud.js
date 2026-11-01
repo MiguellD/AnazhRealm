@@ -620,8 +620,10 @@ class AnazhRealm_werkstatt_hud {
             tab.classList.toggle("active", isActive);
             tab.setAttribute("aria-selected", isActive ? "true" : "false");
         }
+        // verborgen wird über die EINE Naht (`_uiVerbergen`): die Schublade ruht mit ihrem Layout (spielgang.K3)
         for (const d of drawers) {
-            d.hidden = d.getAttribute("data-drawer") !== name;
+            if (d.getAttribute("data-drawer") === name) d.hidden = false;
+            else if (!d.hidden) this._uiVerbergen(d);
         }
         this.state.uiActiveDrawer = name;
         this._uiZeigerFrei(); // die Schublade gehört der Maus (Welle L, V-D2)
@@ -654,7 +656,7 @@ class AnazhRealm_werkstatt_hud {
             // Overlay (das vereinte Habe + Charakter + Rezeptbuch, wie Minecraft), keinen
             // Seiten-Drawer. Jeder andere Tab schließt das Overlay wieder.
             if (name === "spieler") {
-                for (const drawer of drawers) drawer.hidden = true;
+                for (const drawer of drawers) if (!drawer.hidden) this._uiVerbergen(drawer);
                 if (typeof this.toggleInventoryOverlay === "function") this.toggleInventoryOverlay(true);
                 return;
             }
@@ -663,7 +665,8 @@ class AnazhRealm_werkstatt_hud {
             }
             for (const drawer of drawers) {
                 const isThis = drawer.getAttribute("data-drawer") === name;
-                drawer.hidden = !isThis;
+                if (isThis) drawer.hidden = false;
+                else if (!drawer.hidden) this._uiVerbergen(drawer);
             }
             this._uiZeigerFrei(); // die Schublade gehört der Maus (Welle L, V-D2)
             // UI-Putz: die Bibliothek beim Öffnen sofort füllen — die migrierten Welt-
@@ -1100,7 +1103,7 @@ class AnazhRealm_werkstatt_hud {
             tab.setAttribute("aria-selected", "false");
         }
         for (const drawer of document.querySelectorAll(".drawer[data-drawer]")) {
-            drawer.hidden = true;
+            if (!drawer.hidden) this._uiVerbergen(drawer);
         }
         this.state.uiActiveDrawer = null;
         // Welle 6.B Phase 1: Werkstatt-Preview pausieren (Renderer bleibt
@@ -2656,44 +2659,44 @@ class AnazhRealm_werkstatt_hud {
     // DER VORBAU DER SCHUBLADEN (spielgang.K3, aus `_vorbauBedienung`): die erste Öffnung des Ich und jeder Schublade trug die
     // kalten Wege ihres Baums im Tasten-Hörer und im ersten Bild — das erste Rezeptbuch mit seinen Bauplan-Analysen, den ersten
     // Stil, das erste Layout (Radeon echt, werkbank bedienung: Tab 82 ms im Hörer, die Einstellungen 81 ms Layout; warm 20 und
-    // 4 ms). Der Vorbau zeichnet das Ich einmal vor und legt jede verborgene Schublade einmal aus — unsichtbar und im selben
-    // Takt wieder verborgen, kein Bild sieht sie —, je Takt EINE. true: alles vorgebaut.
+    // 4 ms). Der Vorbau zeichnet das Ich einmal vor und stellt jede Tafel ins Bild (`steht`, index.html): verborgen malt sie
+    // ab jetzt mit Deckkraft 0 auf ihrer eigenen Ebene, ihr Layout und ihr Raster entstehen hier, im Leerlauf — Tab, I und
+    // Esc schalten danach nur die Deckkraft im Compositor (Radeon, Spur der Bedienung: jedes Öffnen und Schließen malte die
+    // Tafel neu, GpuChannel · CommandBuffer::Flush 181–303 ms im GPU-Prozess). Je Takt EINE. true: alles vorgebaut.
     _uiVorbau() {
         if (typeof document === "undefined") return true;
-        const V = this._uiVorbauStand || (this._uiVorbauStand = { ich: false, aus: new WeakSet(), alle: false });
+        const V = this._uiVorbauStand || (this._uiVorbauStand = { ich: false, alle: false });
         if (V.alle) return true;
         if (!V.ich) {
             V.ich = true;
             this.renderInventoryUI();
             this.recomputePlayerStats();
             this._ichRenderSpecSheet();
+            // die Bühne des Ich steht mit ihrem Leib (`_ichStageShow` baut ihn in JS): Tab baute ihn im Hörer (Radeon kalt,
+            // Spur der Bedienung: onkeydown 52 ms); ihre Programme baut der Vorbau der Bühne, wenn die Welt steht
+            if (this._ichEnsureStage()) this._ichStageShow((this.state.player && this.state.player.soul) || "human");
             return false;
         }
         for (const el of [
             document.getElementById("inventory-overlay"),
             ...document.querySelectorAll(".drawer[data-drawer]"),
         ]) {
-            if (!el || V.aus.has(el)) continue;
-            V.aus.add(el);
-            if (!el.hidden) continue; // offen ist sie ausgelegt
-            const sicht = el.style.visibility;
-            el.style.visibility = "hidden";
-            el.hidden = false;
-            void el.offsetHeight; // Stil und Layout jetzt — die Eingabe ruht
-            this._uiVerbergen(el);
-            el.style.visibility = sicht;
+            if (!el || el.classList.contains("steht")) continue;
+            el.classList.add("steht");
+            void el.offsetHeight; // Stil und Layout jetzt — die Eingabe ruht; Malen und Raster im nächsten Bild
             return false;
         }
         return (V.alle = true);
     }
 
-    // DAS VERBERGEN EINER TAFEL (spielgang.K3) — die EINE Naht, an der das Ich [hidden] trägt (`toggleInventoryOverlay`, und im
-    // Vorbau jede Tafel). Verborgen ruht das Ich in content-visibility: hidden, und dort tickt Chrome keine Animation: eine
-    // laufende endliche wird nie zu Ende gespielt, ihr `finished` erfüllt sich nie (headless: nach 6 s weder erfüllt noch
-    // verworfen), und wer auf die Ruhe der Seite wartet, wartet ohne Ende (gate:werkstatt-weg, Zug z129: `ruht` 600 s bis zur
-    // Frist des Protokolls). display: none brach jede ab; darum bricht das Verbergen hier jede endliche Animation des Baums ab
-    // (die Breite eines Emotions-Balkens, der Rand eines Slots), bevor [hidden] ihn einfriert. Was verborgen neu entstünde,
-    // verbietet index.html (`#inventory-overlay[hidden] *`). Eine unendliche bleibt: auf sie wartet niemand, sie ruht mit.
+    // DAS VERBERGEN EINER TAFEL (spielgang.K3) — die EINE Naht, an der das Ich und jede Schublade [hidden] tragen
+    // (`toggleInventoryOverlay`, `toggleDrawer`, `closeAllDrawers`, die Reiter). Vor dem Vorbau ruht die verborgene Tafel in
+    // content-visibility: hidden, und dort tickt Chrome keine Animation: eine laufende endliche wird nie zu Ende gespielt, ihr
+    // `finished` erfüllt sich nie (headless: nach 6 s weder erfüllt noch verworfen), und wer auf die Ruhe der Seite wartet,
+    // wartet ohne Ende (gate:werkstatt-weg, Zug z129: `ruht` 600 s bis zur Frist des Protokolls). display: none brach jede ab;
+    // darum bricht das Verbergen hier jede endliche Animation des Baums ab (die Breite eines Emotions-Balkens, der Rand eines
+    // Slots), bevor [hidden] ihn einfriert. Was verborgen neu entstünde, verbietet index.html (`[hidden] *`: keine Transition,
+    // jede Animation pausiert — auch in der stehenden Tafel mit Deckkraft 0). Eine unendliche bleibt: auf sie wartet niemand.
     _uiVerbergen(el) {
         for (const a of el.getAnimations({ subtree: true }))
             if (a.effect && a.effect.getComputedTiming().endTime !== Infinity) a.cancel();

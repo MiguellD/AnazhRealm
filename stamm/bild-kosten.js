@@ -586,6 +586,17 @@ class AnazhRealm_bild_kosten {
                 }
                 let bau = -1;
                 if (ungebaut) {
+                    // DIE EINGABE HAT VORRANG (spielgang.K3, Lehre 14): solange Taste oder Zeiger sich rühren (`_eingabeRuht`),
+                    // baut kein Knoten-Bau — das Bild nach der Eingabe antwortet ihr, und was neu ist (der Geist des eben
+                    // gewählten Bauplans, die Ich-Bühne), zeichnet, sobald sie ruht. Ein Bau ist unteilbar und trug 25–150 ms
+                    // in das Bild der Antwort und in das Warten der nächsten Eingabe (Radeon kalt, werkbank bedienung am
+                    // e0f979a9: HUD 16 Bauten in 654 ms, Menü 9 in 231 ms, Menü-INP 232–312 ms). Was schon zeichnete (der
+                    // Neubau oben), blinkt nie aus; vor dem ersten Weltbild schützt die Ruhe nichts (kein Bild antwortet).
+                    if (welt.state._weltbildDa && !welt._eingabeRuht()) {
+                        E.eingabeVerschoben++;
+                        if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
+                        return;
+                    }
                     const aufruf = buehne ? B.versuch : this.info.calls;
                     if (E.aufruf !== aufruf) {
                         E.aufruf = aufruf;
@@ -638,6 +649,7 @@ class AnazhRealm_bild_kosten {
                 wartetN: 0, // Draws, die nicht zeichnen konnten (ihre Pipeline stand nicht) — der Zähler jedes Backends
                 wartetAuf: null, // die Pipeline des letzten wartenden Draws (die Beweis-Aufnahme nennt sie)
                 neubauN: 0,
+                eingabeVerschoben: 0, // Erst-Zeichnungen, die auf die ruhende Eingabe warteten (`_eingabeRuht`)
                 neu: [],
                 bau: null, // { p, label } — das Geräte-Versprechen des eben angelegten Baus
                 offen: new Map(),

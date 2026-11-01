@@ -848,6 +848,8 @@
                 display: flex;
                 flex-direction: column;
                 box-sizing: border-box;
+                /* DIE TAFEL STEHT IM BILD (spielgang.K3): das Ich malt auf seiner eigenen Ebene, Tab schaltet ihre Deckkraft */
+                will-change: opacity;
                 max-height: calc(100vh - 84px);
                 overflow: hidden;
             }
@@ -1142,13 +1144,19 @@
             }
             /* Modal-Fokus (UI-Putz Veredelung): beim offenen "Ich" dunkelt ein Backdrop die
                Welt + das HUD; Konsole + Statusbar weichen, das Overlay ist im Fokus. */
-            body.inventory-open::before {
+            body::before {
                 content: "";
                 position: fixed;
                 inset: 0;
                 background: rgba(10, 6, 14, 0.5);
                 z-index: 29;
                 pointer-events: none;
+                /* der Schleier steht immer (spielgang.K3): Tab schaltet nur seine Deckkraft, nie ein neues Element */
+                opacity: 0;
+                will-change: opacity;
+            }
+            body.inventory-open::before {
+                opacity: 1;
             }
             body.inventory-open #console,
             body.inventory-open #statusbar {
@@ -1281,6 +1289,16 @@
                 content-visibility: hidden;
                 pointer-events: none;
             }
+            /* DIE TAFEL STEHT IM BILD (spielgang.K3): nach dem Vorbau (`_uiVorbau`, Klasse `steht`) bleibt das verborgene Ich
+               gemalt — Deckkraft 0 auf seiner eigenen Ebene (will-change: opacity: der Compositor rastert sie, auch unsichtbar)
+               —, und Tab und Esc schalten nur die Deckkraft im Compositor: kein Layout, kein Malen, kein Raster im Bild nach der
+               Taste. Bis dahin malte jedes Öffnen und jedes Schließen das ganze Ich und die Fläche darunter neu (Radeon, Spur
+               der Bedienung: GpuChannel · CommandBuffer::Flush 181–303 ms im GPU-Prozess je Tab). */
+            #inventory-overlay[hidden].steht {
+                visibility: visible;
+                content-visibility: visible;
+                opacity: 0;
+            }
             /* DER GEFRORENE BAUM BEWEGT SICH NICHT (spielgang.K3): in content-visibility: hidden tickt Chrome keine Animation —
                eine Transition, die dort entsteht (ein Layout-Leser erzwingt den Stil des Baums, und die Breite eines
                Emotions-Balkens hat sich bewegt), wird nie zu Ende gespielt, ihr `finished` erfüllt sich nie (gate:werkstatt-weg,
@@ -1289,6 +1307,7 @@
             #inventory-overlay[hidden] *::before,
             #inventory-overlay[hidden] *::after {
                 transition: none !important;
+                animation-play-state: paused !important;
             }
             #inventory-overlay .inventory-header {
                 flex: 0 0 auto;
@@ -2414,9 +2433,32 @@
                einen eigenen Satz Graphite-Pipelines (Rund-Rechteck- und AnalyticClip-Varianten von Pergament, Feldern,
                Schrift und Pfeil, MSAA, dazu die Deckkraft-Ebene im Compositor) — der GPU-Prozess wartete auf ihre Übersetzung
                (Radeon: 136 + 27 + 23 ms, Esc danach 248–616 ms). Auf der Ebene der Welt-Oberfläche gemalt braucht sie
-               keine neue Pipeline. */
+               keine neue Pipeline.
+               DIE SCHUBLADE ÖFFNET AUS DEM STEHENDEN LAYOUT wie das Ich (spielgang.K3): geschlossen ruht ihr Baum in
+               content-visibility: hidden — kein Stil, kein Layout, kein Bild trägt ihn, auch nicht sein „⚡ feuert" — und behält
+               sein Layout (der Vorbau legt jede einmal aus, `_uiVorbau`); display: none warf es weg, und jedes Öffnen legte die
+               Schublade neu aus (Radeon kalt, I: Stil und Layout 57 ms im Bild nach der Taste). Verborgen entsteht keine
+               Transition (`_uiVerbergen` bricht die laufenden ab, wie im Ich). */
             .drawer[hidden] {
-                display: none;
+                visibility: hidden;
+                content-visibility: hidden;
+                pointer-events: none;
+            }
+            /* DIE SCHUBLADE STEHT IM BILD wie das Ich (`steht` nach dem Vorbau): verborgen gemalt mit Deckkraft 0 auf ihrer
+               eigenen Ebene, ihr „⚡ feuert" ruht (animation-play-state) — I und Esc schalten nur die Deckkraft. */
+            .drawer {
+                will-change: opacity;
+            }
+            .drawer[hidden].steht {
+                visibility: visible;
+                content-visibility: visible;
+                opacity: 0;
+            }
+            .drawer[hidden] *,
+            .drawer[hidden] *::before,
+            .drawer[hidden] *::after {
+                transition: none !important;
+                animation-play-state: paused !important;
             }
             .drawer > * {
                 position: relative;

@@ -1065,19 +1065,21 @@ class AnazhRealm_siedlung_bauten {
     }
 
     // DER VORBAU DER BEDIENUNG (Lehre 14: im Leerlauf vorgebacken, nie synchron auf dem Interaktions-Pfad) — der EINE Planer
-    // dessen, was die nächste Eingabe zeigt, das Nächste zuerst: der Geist jedes Hotbar-Bauplans (die Auswahl, `_geistVorbau`),
-    // die Ich-Bühne (Tab, `_ichVorbau`), das Ich mit jeder Schublade (`_uiVorbau`) und die Leiber jeder annehmbaren Seele (der
-    // Wechsel, `_leibVorwaermen`), je Takt ein Schritt. Ein Geist und ein Leib gehen als GAST in die Szene (`__vorbauGast`):
-    // die Erst-Zeichnung baut Knoten und Pipeline ohne Draw — nach dem Bild, unter der Frist des Render-Aufrufs —, bis jedes
-    // seiner Teile in jedem Pass steht (`_vorbauFehlt`). Gebaut wird nur, wenn die Welt steht (`_weltSteht`) und die Eingabe
-    // ruht (`_eingabeRuht`): der Leib-Vorbau baute bis dahin auch mitten in der Bedienung (Radeon headless: acht Knoten-Bauten
-    // „vorwaermen:human" zu 78–100 ms zwischen den Klicks). Kienspan (CPU-Raster) baut nie vor. Gerufen je Takt aus dem Loop.
+    // dessen, was die nächste Eingabe zeigt, das Billigste mit der größten Wirkung zuerst: das Ich mit jeder Schublade (ihr
+    // Layout und ihr Raster — `_uiVorbau`; kein Knoten-Bau, darum wartet er nicht auf die stehende Welt: er steht, bevor der
+    // Spieler am Ort die erste Taste drückt), die Ich-Bühne (Tab, `_ichVorbau`), der Geist jedes Hotbar-Bauplans (die Auswahl,
+    // `_geistVorbau`) und die Leiber jeder annehmbaren Seele (der Wechsel, `_leibVorwaermen`), je Takt ein Schritt. Ein Geist
+    // und ein Leib gehen als GAST in die Szene (`__vorbauGast`): die Erst-Zeichnung baut Knoten und Pipeline ohne Draw — nach
+    // dem Bild, unter der Frist des Render-Aufrufs —, bis jedes seiner Teile in jedem Pass steht (`_vorbauFehlt`). Gebaut wird
+    // nur, wenn die Welt steht (`_weltSteht`) und die Eingabe ruht (`_eingabeRuht`): der Leib-Vorbau baute bis dahin auch
+    // mitten in der Bedienung (Radeon headless: acht Knoten-Bauten „vorwaermen:human" zu 78–100 ms zwischen den Klicks).
+    // Kienspan (CPU-Raster) baut nie vor. Gerufen je Takt aus dem Loop.
     _vorbauBedienung() {
         const st = this.state;
         const R = st.renderer;
         if (!st._weltbildDa || st._holzProfil === "kienspan" || !R || !R.__anazhErstZeichnung) return;
-        if (!this._eingabeRuht() || !this._weltSteht()) return;
-        if (this._geistVorbau() && this._ichVorbau() && this._uiVorbau()) this._leibVorwaermen();
+        if (!this._eingabeRuht() || !this._uiVorbau() || !this._weltSteht()) return;
+        if (this._ichVorbau() && this._geistVorbau()) this._leibVorwaermen();
     }
 
     // DIE GEISTER IM VORBAU (ein Schritt von `_vorbauBedienung`): je Hotbar-Bauplan EIN Geist — seine Studio-Gestalt am Ort

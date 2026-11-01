@@ -1408,6 +1408,24 @@ class AnazhRealm_werkstatt_bauen {
         // Ich/Inventar (UI-Putz): was du trägst + das Rezeptbuch mit-aktualisieren.
         this._renderInventoryEquip();
         this.renderRecipeBook();
+        this._ichGebaut = this._ichStempel(); // der Stand, aus dem das Ich steht (Tab baut nur bei einem anderen)
+    }
+
+    // DER STAND DES ICH (spielgang.K3): was Habe, Auswahl und Rüstung zeichnen — die Fächer, ihre Zahlen, die Hände, die Werte
+    // der Rüstungs-Deltas, das Sortiment und der Modus; das Rezeptbuch prüft seine eigene Signatur (`renderRecipeBook`).
+    _ichStempel() {
+        const st = this.state;
+        const p = st.player || {};
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "";
+        return JSON.stringify([
+            p.inventory,
+            st.inventorySelected,
+            p.equipped,
+            p.stats,
+            p.boosts,
+            Object.keys(st.blueprints || {}).length,
+            mode,
+        ]);
     }
 
     // EIN Mach-Tor-Formatter: das Tor antwortet strukturiert ({reason, missing, cost, neededDomain}),

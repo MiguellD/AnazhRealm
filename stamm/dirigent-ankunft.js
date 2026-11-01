@@ -502,10 +502,15 @@ class AnazhRealm_dirigent_ankunft {
                 },
                 true
             );
-        // DIE EINGABE HAT VORRANG (spielgang.K3): jede Taste und jeder Zeiger-Druck stempelt ihre Zeit, vor jedem anderen Hörer —
-        // der Vorbau der Bedienung baut nur, wenn sie ruht (`_eingabeRuht`).
-        for (const art of ["keydown", "pointerdown"])
-            window.addEventListener(art, () => (this._eingabeT = performance.now()), true);
+        // DIE EINGABE HAT VORRANG (spielgang.K3): jeder Tasten- und Zeiger-Druck stempelt seine Zeit, vor jedem anderen Hörer —
+        // die Erst-Zeichnung baut nur, wenn sie ruht (`_eingabeRuht`). Die Wiederholung einer gehaltenen Taste ist kein neuer
+        // Druck: wer W hält, geht, und die Welt baut weiter, was ins Bild kommt.
+        const stempel = () => {
+            this._eingabeT = performance.now();
+            this._eingabeBild = this._bildNummer();
+        };
+        window.addEventListener("keydown", (event) => event.repeat || stempel(), true);
+        window.addEventListener("pointerdown", stempel, true);
         window.addEventListener("keydown", (event) => {
             // Ist ein Portal offen, ist die Heimat-Welt eingefroren: nur Esc verlässt das Portal, alle anderen
             // Tasten sind gesperrt. Mit Fokus im iframe meldet die Sub-Welt Esc selbst (skeleton.js →
@@ -1282,11 +1287,25 @@ class AnazhRealm_dirigent_ankunft {
         return !!el && !el.hidden && !el.classList.contains("weg");
     }
 
-    // RUHT DIE EINGABE? (spielgang.K3) — seit VORBAU_RUHE_MS keine Taste, kein Zeiger-Druck (der Stempel der Capture-Hörer):
-    // dann darf der Vorbau der Bedienung bauen; ein Bau mitten in der Eingabe hielte ihr nächstes Bild.
+    // RUHT DIE EINGABE? (spielgang.K3) — seit EINGABE_RUHE_MS UND seit EINGABE_RUHE_BILDER gezeichneten Bildern kein Tasten-,
+    // kein Zeiger-Druck (der Stempel der Capture-Hörer): dann darf die Erst-Zeichnung bauen (der Vorbau der Bedienung und jeder
+    // Knoten-Bau, `_configureRenderer`); ein Bau mitten in der Eingabe hielte ihr nächstes Bild. Die Bilder zählen mit, weil ein
+    // langsames Bild die Wanduhr allein über die Ruhe trug: zwischen zwei Tasten im Abstand von zwei Bildern lagen 300 ms, und
+    // der Bau, der darin begann, hielt die nächste Taste (Radeon, werkbank bedienung: Menü 3 Bauten in 211 ms mitten in Tab,
+    // I, Esc).
     _eingabeRuht() {
         const t = this._eingabeT;
-        return t === undefined || performance.now() - t >= AnazhRealm.VORBAU_RUHE_MS;
+        if (t === undefined) return true;
+        return (
+            performance.now() - t >= AnazhRealm.EINGABE_RUHE_MS &&
+            this._bildNummer() - this._eingabeBild >= AnazhRealm.EINGABE_RUHE_BILDER
+        );
+    }
+
+    // DIE NUMMER DES BILDS (r184 `info.frame`, je Bild der Animations-Schleife eins weiter); ohne Renderer zählt kein Bild (0).
+    _bildNummer() {
+        const R = this.state.renderer;
+        return (R && R.info && R.info.frame) || 0;
     }
 
     // Maus-Listener (Pointer-Lock-Click + Mousedown-Action) als Methode.
@@ -1458,9 +1477,10 @@ AnazhRealm.WELTBILD_STILL_MS = 15000;
 // Der Deckel des ersten Weltbilds (ms ab der ersten Frage): danach weicht der Ladeschirm laut, auch wenn die Lücke nie ruht
 // (ihre Zahl flackert). Auf der Radeon stand das ganze Weltbild nach 31,8 s.
 AnazhRealm.WELTBILD_DECKEL_MS = 60000;
-// Die Ruhe der Eingabe (ms, spielgang.K3): so lange nach der letzten Taste und dem letzten Zeiger-Druck baut kein Vorbau der
-// Bedienung (`_eingabeRuht`).
-AnazhRealm.VORBAU_RUHE_MS = 300;
+// Die Ruhe der Eingabe (spielgang.K3): so lange (ms) und so viele gezeichnete Bilder nach dem letzten Tasten- und Zeiger-Druck
+// baut die Erst-Zeichnung nichts (`_eingabeRuht`).
+AnazhRealm.EINGABE_RUHE_MS = 300;
+AnazhRealm.EINGABE_RUHE_BILDER = 8;
 // DIE ANKUNFT AUS DER FERNE (B2, `_ankunftsFerne`): bis das erste Weltbild steht, misst jede Stufen-Wahl so, als stünde der
 // Spieler ANKUNFT_FERNE-mal weiter weg — jedes Ding trägt seine billigste GANZE Stufe (der Baum seine Karte, der Bau seine
 // Grobstufe); danach gleitet der Faktor über ANKUNFT_GLEIT_BILDER gezeichnete Bilder auf 1.
