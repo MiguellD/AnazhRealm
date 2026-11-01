@@ -2713,7 +2713,7 @@
                 },
                 "werkzeug": "Station haar.K2#1 (werkbank bild --gesicht 0.7 und -4 --spieler --klasse '^spieler:kopf/hair$' --ist haar)"
             },
-            "quellen": ["koerper-core.js", "stamm/studio-bruecke.js", "stamm/studio-stoff.js", "stamm/koerper-leib.js"]
+            "quellen": ["koerper-core.js", "foundry-core.js", "stamm/studio-bruecke.js", "stamm/studio-stoff.js", "stamm/koerper-leib.js"]
         }
     ]
 }
