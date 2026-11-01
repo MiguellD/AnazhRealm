@@ -1274,8 +1274,8 @@
             }
             /* DAS ICH ÖFFNET OHNE NEUBAU (spielgang.K3): geschlossen ruht sein Baum (content-visibility: hidden — kein Stil,
                kein Layout, kein Bild trägt ihn, je Bild 0,02 ms) und behält sein Layout; display: none warf es weg, und jedes
-               Tab legte die 881 Knoten neu aus (headless, Runden 2–5: Tab 99–131 → 50–73 ms). Der Vorbau legt es einmal aus
-               (`_uiVorbau`). */
+               Tab legte die 881 Knoten neu aus (headless, Runden 2–5: Tab 99–131 → 50–73 ms). Der Vorbau legt und malt es
+               einmal (`_uiVorbauMalen`). */
             #inventory-overlay[hidden] {
                 visibility: hidden;
                 content-visibility: hidden;
