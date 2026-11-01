@@ -2698,8 +2698,11 @@ class AnazhRealm_werkstatt_hud {
     // Slots), bevor [hidden] ihn einfriert. Was verborgen neu entstünde, verbietet index.html (`[hidden] *`: keine Transition,
     // jede Animation pausiert — auch in der stehenden Tafel mit Deckkraft 0). Eine unendliche bleibt: auf sie wartet niemand.
     _uiVerbergen(el) {
-        for (const a of el.getAnimations({ subtree: true }))
-            if (a.effect && a.effect.getComputedTiming().endTime !== Infinity) a.cancel();
+        // die stehende Tafel (`steht`) bleibt gezeichnet: verborgen bricht `transition: none` jede laufende ab, nichts friert
+        // ein — kein Lesen der Animationen, das den Stil des ganzen Baums im Hörer erzwang (Radeon: Tab zu 30 ms im Hörer)
+        if (!el.classList.contains("steht"))
+            for (const a of el.getAnimations({ subtree: true }))
+                if (a.effect && a.effect.getComputedTiming().endTime !== Infinity) a.cancel();
         el.hidden = true;
     }
 

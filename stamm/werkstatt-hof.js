@@ -1380,11 +1380,13 @@ class AnazhRealm_werkstatt_hof {
                 if (s) s.rafId = null;
                 return;
             }
-            if (s.pivot) {
-                s.yaw += 0.008;
-                s.pivot.rotation.y = s.yaw;
-            }
-            if (s.rendererReady) {
+            // die Bühne dreht und zeichnet, wenn die Eingabe ruht (spielgang.K3): das Bild nach Tab trägt das Ich, nie einen
+            // Bühnen-Render — ihre Leinwand zeigt bis dahin ihr letztes Bild (der Vorbau zeichnete sie)
+            if (s.rendererReady && this._eingabeRuht()) {
+                if (s.pivot) {
+                    s.yaw += 0.008;
+                    s.pivot.rotation.y = s.yaw;
+                }
                 this._buehneRender(s.renderer, s.scene, s.camera, "Ich-Bühne");
             }
             s.rafId = requestAnimationFrame(tick);
