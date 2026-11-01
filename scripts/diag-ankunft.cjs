@@ -40,8 +40,10 @@ const PORT = Number(process.env.ANKUNFT_PORT || 4601);
 const { errs, check } = pruefer();
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
+// DER START-RIEGEL an EINEM Ort (Lehre 2): ein Probe-Teil, der nicht bis zu seinem Ende lief (`gestartet` setzt er als letzte
+// Tat), wird nicht geurteilt — ROT „start". Bis w4-fluss-webgl trug jedes der zehn Verdikte den Riegel selbst, kein Selbst-Test fragte ihn.
+const urteile = (urteil, m) => (m && m.gestartet === true ? urteil(m) : ["start"]);
 function ladeschirmVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
     const out = [];
     if (!m.imHtml) out.push("kein Ladeschirm im HTML (das erste Bild ist die schwarze Leinwand)");
     else {
@@ -230,7 +232,6 @@ function ladeschirmVerdict(m) {
     return out;
 }
 function kreuzVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
     const out = [];
     if (!m.da) return ["kein Fadenkreuz"];
     if (!m.sichtbar) out.push("das Fadenkreuz ist unsichtbar");
@@ -240,7 +241,6 @@ function kreuzVerdict(m) {
     return out;
 }
 function hilfeVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
     const out = [];
     for (const wort of ["hilfe", "help", "?"]) {
         const z = (m.antworten || {})[wort] || {};
@@ -253,7 +253,6 @@ function hilfeVerdict(m) {
     return out;
 }
 function gespraechVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
     const out = [];
     if (m.enterFokus !== "chat-input") out.push(`Enter öffnet das Gespräch nicht (Fokus ${m.enterFokus})`);
     if (m.wImFeld) out.push("W läuft beim Tippen im Feld");
@@ -266,7 +265,6 @@ function gespraechVerdict(m) {
     return out;
 }
 function gurtVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
     const out = [];
     if (!m.buch) return ["Buch kalt (Vorbedingung)"];
     const belegt = (m.hotbar || []).filter(Boolean);
@@ -284,7 +282,6 @@ function gurtVerdict(m) {
     return out;
 }
 function kameraVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
     const out = [];
     if (!m.baum) return ["kein Studio-Baum als Eintrag (Vorbedingung)"];
     if (!(m.stammSkala >= 0.95 * m.weltSkala)) out.push(`Stamm-Hülle im Vorlagen-Maß (× ${m.stammSkala} statt × ${m.weltSkala})`);
@@ -336,7 +333,6 @@ function kameraVerdict(m) {
 const ID_RE = /\b(?:baum|haus|fahrzeug|tor|klinge|welt|ruestung|trank|koerper|reittier)_[a-z0-9_]+/;
 const TELE_RE = /\b[a-zA-Z]+=\S|FOUNDRY|\bSeed\b|Slots? übersprungen|export-settlement|BLOCKIERT|\["[a-z_]+",|op_exception|budget_exceeded|unknown_op/;
 function kanalVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
     const out = [];
     for (const z of m.zeilen || []) {
         if (/^> /.test(z)) continue;
@@ -347,7 +343,6 @@ function kanalVerdict(m) {
     return out;
 }
 function kiVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
     const out = [];
     if (/^Aktiv/.test(m.status || "")) out.push(`der Status sagt „${m.status}" ohne Dienst`);
     else if (!/läuft nicht/.test(m.status || "")) out.push(`der Status nennt die Ursache nicht („${(m.status || "").slice(0, 70)}")`);
@@ -358,7 +353,6 @@ function kiVerdict(m) {
     return out;
 }
 function dorfVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
     const out = [];
     if (!m.buch) return ["Buch kalt (Vorbedingung)"];
     if (!(m.haeuser > 0)) return ["kein Haus gegründet"];
@@ -375,7 +369,6 @@ function dorfVerdict(m) {
 // m.h = [Skelette vor dem Bild, offen vor dem Bild, Hüllen-Boxen danach, offen danach] · m.r = [hinten ohne Leerlauf, vorn,
 // Leerlauf-Ruf, hinten mit Leerlauf]
 function huelleVerdict(m) {
-    if (!m || !m.h || !m.r) return ["start"];
     const [[wuchs, offen, boxen, rest], [ohne, vorn, ruf, mit]] = [m.h, m.r];
     return [
         wuchs && "die Hülle wuchs vor dem Bild (`_baumGestaltTeile`)",
@@ -1964,7 +1957,7 @@ hauptLauf(async () => {
                     ["keine EINE Formel", { durchsicht: { formel: false } }, "Durchsicht: keine EINE Formel"],
                 ],
             ],
-            ["LH", huelleVerdict, { h: [0, 1, 3, 0], r: [false, true, true, true] }, [["die Hülle wächst vor dem Bild", { h: [1, 0, 3, 0] }, "die Hülle wuchs vor dem Bild"], ["der Ring baut außer Bild ohne Leerlauf", { r: [true, true, false, true] }, "der Ring baut außer Bild ohne Leerlauf"]]], // prettier-ignore
+            ["LH", huelleVerdict, { gestartet: true, h: [0, 1, 3, 0], r: [false, true, true, true] }, [["die Hülle wächst vor dem Bild", { h: [1, 0, 3, 0] }, "die Hülle wuchs vor dem Bild"], ["der Ring baut außer Bild ohne Leerlauf", { r: [true, true, false, true] }, "der Ring baut außer Bild ohne Leerlauf"]]], // prettier-ignore
             ["D8", kanalVerdict, { gestartet: true, siedlungImLog: true, zeilen: ["> dorf 7 18", "„Villaalto\" steht vor dir: 20 Häuser.", "(Welt verändert: Grok lässt 1× „Birke\" aus dem Studio wachsen bei (96, 59, 60).)"] }, [["Siedlungs-Zahlen im Chat", { zeilen: ["Siedlung „Villaalto\" (markt, Seed 7): 13 Häuser platziert, 12 Slots übersprungen."] }, "Telemetrie im Chat"], ["rohes Programm", { zeilen: ['(Welt verändert: ["spawn_studio","birke",["at",1,2,3],1])'] }, "Telemetrie im Chat"], ["interne id", { zeilen: ["3× baum_birke aus dem Studio vor dir gewachsen"] }, "interne id im Chat"], ["Ereignis-Name", { zeilen: ["Befehl lief, aber mit Auffälligkeit: op_exception"] }, "Telemetrie im Chat"]]],
             [
                 "D6",
@@ -1990,9 +1983,10 @@ hauptLauf(async () => {
             ],
         ];
         for (const [kurz, urteil, gesund, brueche] of faelle) {
-            check(`Selbst-Test ${kurz}: gesund == 0 Täter`, urteil(gesund).length === 0, urteil(gesund).join(" · "));
-            for (const [name, bruch, soll] of brueche) {
-                const v = urteil(Object.assign({}, gesund, bruch));
+            check(`Selbst-Test ${kurz}: gesund == 0 Täter`, urteile(urteil, gesund).length === 0, urteile(urteil, gesund).join(" · "));
+            // je Verdikt der Riegel: ein Probe-Teil, der nicht bis zu seinem Ende lief, ist ROT „start"
+            for (const [name, bruch, soll] of brueche.concat([["nicht gestartet", { gestartet: false }, "start"]])) {
+                const v = urteile(urteil, Object.assign({}, gesund, bruch));
                 check(`Selbst-Test ${kurz}: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
             }
         }
@@ -2038,7 +2032,7 @@ hauptLauf(async () => {
     const zeige = (kurz, name, m, urteil, zeile) => {
         const mm = m || {};
         if (mm.err) check(`${kurz} Probe ohne Ausnahme`, false, mm.err.split("\n")[0]);
-        const v = urteil(mm);
+        const v = urteile(urteil, mm);
         check(`${kurz} ${name}`, v.length === 0, `${mm.gestartet ? zeile(mm) : "nicht gestartet"}${v.length ? " — Täter: " + v.join(", ") : ""}`);
     };
     console.log("=== L2a · L1 · L2b · L3 · L7 — ANKOMMEN ===");
