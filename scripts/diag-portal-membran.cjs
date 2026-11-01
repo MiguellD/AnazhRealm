@@ -38,7 +38,7 @@
 //
 //   node scripts/diag-portal-membran.cjs [--ohne-blick]
 "use strict";
-const { statikServer, starteBrowser, hauptLauf, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, nullSeite, pruefer, wandEnde, fehlerText } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 const server = statikServer();
@@ -433,7 +433,7 @@ async function blickStufe(check) {
             `${s.weg.membran} von ${s.membranen}: ${s.weg.taeter.slice(0, 4).join(" · ")}${s.weg.taeter.length > 4 ? " …" : ""}`
         );
     } catch (e) {
-        check("B Lauf", false, (e && e.message) || String(e));
+        check("B Lauf", false, fehlerText(e));
     }
     await browser.close();
 }

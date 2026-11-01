@@ -18,7 +18,7 @@
 //   LAUF — kein Spiel-Bild und kein Kehraus-Puffer während der Bühne (der Loop ruht).
 //   node scripts/diag-kamera-treue.cjs [--selftest]   (--selftest: das Urteil über grün und je einen injizierten Täter)
 "use strict";
-const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, wandEnde, abwandlung } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, wandEnde, abwandlung, fehlerText } = require("./lib/welt-boot.cjs");
 const { DIAET_INSTALL, diaetUrteil } = require("./lib/diaet-linse.cjs");
 
 const BILD_SOLL = 0.999; // der Replay zeichnet wie der direkte Pfad
@@ -780,7 +780,7 @@ function buehne() {
         log(`Stand: ${JSON.stringify(out.stand)}`);
         log(`B-K1 ${JSON.stringify([out.schluessel, out.wurf])}`);
     } catch (e) {
-        out = { error: e?.message || String(e) };
+        out = { error: fehlerText(e) };
     }
     await browser.close();
     server.close();

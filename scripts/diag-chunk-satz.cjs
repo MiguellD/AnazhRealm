@@ -49,7 +49,7 @@
 //   node scripts/diag-chunk-satz.cjs [--selftest]   (npm run gate:chunk-satz)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, warteAufWelt, taeterFaelle, selbsttestEnde, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, taeterFaelle, selbsttestEnde, nullSeite, pruefer, wandEnde, fehlerText } = require("./lib/welt-boot.cjs");
 
 // (o) die Schwelle des Stufen-Sprungs: ein Wechsel darf die gezeichnete Fläche höchstens so weit versetzen (m)
 const STUFEN_SPRUNG_M = 0.1;
@@ -1415,7 +1415,7 @@ const { errs, check } = pruefer();
             return { mit, ohne };
         });
     } catch (e) {
-        out = { error: e?.message || String(e) };
+        out = { error: fehlerText(e) };
     }
     await browser.close();
     server.close();

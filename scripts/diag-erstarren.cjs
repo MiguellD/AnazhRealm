@@ -26,7 +26,7 @@
 //   node scripts/diag-erstarren.cjs      (npm run gate:erstarren)
 // ─────────────────────────────────────────────────────────────────────────
 
-const { statikServer, warteAufWelt, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, nullSeite, pruefer, wandEnde, fehlerText } = require("./lib/welt-boot.cjs");
 const server = statikServer();
 
 const { errs, check } = pruefer();
@@ -202,7 +202,7 @@ const { errs, check } = pruefer();
             return res;
         });
     } catch (e) {
-        out = { error: (e && e.message) || String(e) };
+        out = { error: fehlerText(e) };
     }
     await browser.close();
     server.close();

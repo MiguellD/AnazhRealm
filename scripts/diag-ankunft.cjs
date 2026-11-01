@@ -33,7 +33,7 @@
 //   node scripts/diag-ankunft.cjs [--selftest]          Port: ANKUNFT_PORT (Standard 4601)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, jsonKlon, fehlerStapel } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.ANKUNFT_PORT || 4601);
@@ -915,7 +915,7 @@ async function probe(arg) {
         } else m.faelle = { fehler: ls ? "kein _ankunftsBild" : "kein Ladeschirm" };
         m.gestartet = true;
     } catch (e) {
-        out.lade = Object.assign(out.lade || {}, { err: (e && e.stack) || String(e) });
+        out.lade = Object.assign(out.lade || {}, { err: fehlerStapel(e) });
     }
     // ── LH (w4-ankunft-2): die Hülle eines Studio-Baums, ihr Skelett aus dem Gedächtnis genommen, wächst vor dem Bild nicht und
     // danach im Takt der Hüllen; der Lade-Takt gespielt, je ein Stück im Bild und dahinter fehlt: ohne Leerlauf baut er nur das im
@@ -948,7 +948,7 @@ async function probe(arg) {
         }
         m.gestartet = true;
     } catch (e) {
-        out.huelle = { err: (e && e.stack) || String(e) };
+        out.huelle = { err: fehlerStapel(e) };
     }
     // ── L1: das Fadenkreuz ──
     try {
@@ -975,7 +975,7 @@ async function probe(arg) {
         }
         m.gestartet = true;
     } catch (e) {
-        out.kreuz = Object.assign(out.kreuz || {}, { err: (e && e.stack) || String(e) });
+        out.kreuz = Object.assign(out.kreuz || {}, { err: fehlerStapel(e) });
     }
     // ── L2b: die Hilfe ──
     try {
@@ -1005,7 +1005,7 @@ async function probe(arg) {
         m.v1Saetze = v1.length;
         m.gestartet = true;
     } catch (e) {
-        out.hilfe = Object.assign(out.hilfe || {}, { err: (e && e.stack) || String(e) });
+        out.hilfe = Object.assign(out.hilfe || {}, { err: fehlerStapel(e) });
     }
     // ── L3: das Gespräch ──
     try {
@@ -1044,7 +1044,7 @@ async function probe(arg) {
         }
         m.gestartet = true;
     } catch (e) {
-        out.gespraech = Object.assign(out.gespraech || {}, { err: (e && e.stack) || String(e) });
+        out.gespraech = Object.assign(out.gespraech || {}, { err: fehlerStapel(e) });
     }
     // ── L7: der Start-Gurt ──
     try {
@@ -1078,7 +1078,7 @@ async function probe(arg) {
         m.katalogArten = Array.from(arten);
         m.gestartet = true;
     } catch (e) {
-        out.gurt = Object.assign(out.gurt || {}, { err: (e && e.stack) || String(e) });
+        out.gurt = Object.assign(out.gurt || {}, { err: fehlerStapel(e) });
     }
     // ── LK: die Kamera und die Pflanzen ──
     try {
@@ -1528,14 +1528,14 @@ async function probe(arg) {
         }
         m.gestartet = true;
     } catch (e) {
-        out.kamera = Object.assign(out.kamera || {}, { err: (e && e.stack) || String(e) });
+        out.kamera = Object.assign(out.kamera || {}, { err: fehlerStapel(e) });
     }
     // ── D6: die KI nennt die Ursache ──
     try {
         const m = { gestartet: false };
         out.ki = m;
         const llm = st.llm;
-        const alt = JSON.parse(JSON.stringify({ enabled: llm.enabled, provider: llm.provider, oll: llm.providerConfig.ollama }));
+        const alt = jsonKlon({ enabled: llm.enabled, provider: llm.provider, oll: llm.providerConfig.ollama });
         // (a) „Aktivieren" mit einem lokalen Endpunkt ohne Dienst
         llm.provider = "ollama";
         llm.enabled = false;
@@ -1572,7 +1572,7 @@ async function probe(arg) {
         llm.lastError = null;
         m.gestartet = true;
     } catch (e) {
-        out.ki = Object.assign(out.ki || {}, { err: (e && e.stack) || String(e) });
+        out.ki = Object.assign(out.ki || {}, { err: fehlerStapel(e) });
     }
     // ── D9 + D8: das Dorf vor dir, zwei Kanäle ──
     try {
@@ -1723,7 +1723,7 @@ async function probe(arg) {
         k.gestartet = true;
         m.gestartet = true;
     } catch (e) {
-        out.dorf = Object.assign(out.dorf || {}, { err: (e && e.stack) || String(e) });
+        out.dorf = Object.assign(out.dorf || {}, { err: fehlerStapel(e) });
     }
     return out;
 }

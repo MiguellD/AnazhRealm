@@ -19,7 +19,7 @@
 //   Port: V1_PFAD_PORT (4421) · Mutanten: V1_MUTANTE=gedaechtnis-leer (--seele) · wertung-aus (--regeln)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, jsonKlon, fehlerStapel } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
@@ -1142,7 +1142,7 @@ async function probe(arg) {
         }
         m.gestartet = true;
     } catch (e) {
-        out.ankunft = Object.assign(out.ankunft || {}, { err: (e && e.stack) || String(e) });
+        out.ankunft = Object.assign(out.ankunft || {}, { err: fehlerStapel(e) });
     }
     // ── V-k4: der Fensterwechsel löst die Tasten ──
     try {
@@ -1155,7 +1155,7 @@ async function probe(arg) {
         window.dispatchEvent(new KeyboardEvent("keyup", { key: "w", code: "KeyW", bubbles: true }));
         m.gestartet = true;
     } catch (e) {
-        out.taste = Object.assign(out.taste || {}, { err: (e && e.stack) || String(e) });
+        out.taste = Object.assign(out.taste || {}, { err: fehlerStapel(e) });
     }
     // ── V-D6: der KI-Fehler nennt die Ursache ──
     try {
@@ -1185,7 +1185,7 @@ async function probe(arg) {
         m.host = "127.0.0.1:" + kiPort;
         m.gestartet = true;
     } catch (e) {
-        out.ki = Object.assign(out.ki || {}, { err: (e && e.stack) || String(e) });
+        out.ki = Object.assign(out.ki || {}, { err: fehlerStapel(e) });
     }
     try {
         const m = { gestartet: false };
@@ -1289,7 +1289,7 @@ async function probe(arg) {
         m.telemetrieImChat = neuZeilen.some((t) => /Bauten n=/.test(t));
         m.gestartet = true;
     } catch (e) {
-        out.satz = Object.assign(out.satz || {}, { err: (e && e.stack) || String(e) });
+        out.satz = Object.assign(out.satz || {}, { err: fehlerStapel(e) });
     }
     // ── V-k5-KLASSE: jede Op, deren verlangter Ort fehlt, scheitert benannt — an dem trockenen Ort der Satz-Probe ──
     try {
@@ -1409,7 +1409,7 @@ async function probe(arg) {
                 k.gesund = { ok: g.ok, akte: g.akte.length, grund: g.grund };
                 k.gestartet = true;
             } catch (e) {
-                k.err = (e && e.stack) || String(e);
+                k.err = fehlerStapel(e);
             }
         } finally {
             for (const nm of Object.keys(alt)) r[nm] = alt[nm];
@@ -1431,7 +1431,7 @@ async function probe(arg) {
         m.radius = NW[1];
         m.gestartet = true;
     } catch (e) {
-        out.ort = Object.assign(out.ort || {}, { err: (e && e.stack) || String(e) });
+        out.ort = Object.assign(out.ort || {}, { err: fehlerStapel(e) });
     }
     // ── R2: DIE WASSER-SUCHE SCANNT NUR, WO WASSER SEIN KANN — gezählt werden Spalten-Scans (`_voxelSurfaceY`) ──
     try {
@@ -1568,7 +1568,7 @@ async function probe(arg) {
         }
         m.gestartet = true;
     } catch (e) {
-        out.suche = Object.assign(out.suche || {}, { err: (e && e.stack) || String(e) });
+        out.suche = Object.assign(out.suche || {}, { err: fehlerStapel(e) });
     }
     // ── V-D3: die Werkstatt-Vorschau ──
     try {
@@ -1671,7 +1671,7 @@ async function probe(arg) {
             m.augeAbstand = n ? +(dSum / n).toFixed(1) : null;
         }
     } catch (e) {
-        out.vorschau = Object.assign(out.vorschau || {}, { err: (e && e.stack) || String(e) });
+        out.vorschau = Object.assign(out.vorschau || {}, { err: fehlerStapel(e) });
     }
     // ── V-D3 FREMDER ZUG: der Wartende erwacht, wenn ein ANDERER seinen Körper zuerst zog ──
     try {
@@ -1817,7 +1817,7 @@ async function probe(arg) {
         }
         m.gestartet = true;
     } catch (e) {
-        out.zug = Object.assign(out.zug || {}, { err: (e && e.stack) || String(e) });
+        out.zug = Object.assign(out.zug || {}, { err: fehlerStapel(e) });
     }
     // ── V-D3 RAHMEN: jedes Rezept und jeder Bauplan füllt die Vorschau (projizierte Box3 je Bildkante) ──
     try {
@@ -1893,7 +1893,7 @@ async function probe(arg) {
         m.aspekt = +p.camera.aspect.toFixed(3);
         m.gestartet = true;
     } catch (e) {
-        out.rahmen = Object.assign(out.rahmen || {}, { err: (e && e.stack) || String(e) });
+        out.rahmen = Object.assign(out.rahmen || {}, { err: fehlerStapel(e) });
     }
     return out;
 }
@@ -2325,7 +2325,7 @@ async function feindLauf(a) {
         while (st.llm.inFlight) await sleep(20);
     }
     // DIE SIGNATUR: der echte Bauplan, seine Substanz verschoben, seine Signatur gefälscht
-    const g = [0, 1, 2].map(() => r._deserializeBlueprint(JSON.parse(JSON.stringify(a.golden))));
+    const g = [0, 1, 2].map(() => r._deserializeBlueprint(jsonKlon(a.golden)));
     g[1].parts[0].size.x += 1;
     g[2].signature = (g[2].signature[0] === "0" ? "1" : "0") + g[2].signature.slice(1);
     m.signatur = [];

@@ -201,7 +201,7 @@ function selbsttest() {
 
 if (process.argv.includes("--selftest")) selbsttest();
 
-const { statikServer, starteBrowser, selbsttest: selbstMarke, laufUhr } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, selbsttest: selbstMarke, laufUhr, fehlerText } = require("./lib/welt-boot.cjs");
 const { linsenGpu } = require("./lib/software-gpu.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 
@@ -563,7 +563,7 @@ async function verdeckungPhase(opts) {
             });
         }
     } catch (e) {
-        aus.fehler = e?.message || String(e);
+        aus.fehler = fehlerText(e);
     } finally {
         for (const f of aufraeumen.reverse())
             try {
@@ -656,7 +656,7 @@ async function verdeckungPhase(opts) {
             );
         }
     } catch (e) {
-        out.abbruch = e?.message || String(e);
+        out.abbruch = fehlerText(e);
     }
     await browser.close();
     server.close();

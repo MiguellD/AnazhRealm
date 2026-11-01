@@ -4,7 +4,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { starteBrowser, startProc, eigenePorte, hauptLauf } = require("./lib/welt-boot.cjs");
+const { starteBrowser, startProc, eigenePorte, hauptLauf, fehlerText } = require("./lib/welt-boot.cjs");
 
 // DURATION_MS ist nur der MINDEST-Warmup der zeit-getriebenen Systeme; robust gegen CI-Last macht
 // der count-basierte Pump unten (pumpt, bis die Ziel-Chunks WIRKLICH gebaut sind, statt Timer).
@@ -452,7 +452,7 @@ if (require.main === module) hauptLauf(async () => {
         try {
             return await fn(c);
         } catch (e) {
-            const msg = (e && e.message) || String(e);
+            const msg = fehlerText(e);
             check(fn.name, false, "Band-Fehler (geworfen): " + msg.slice(0, 200));
             // Tote-Seite-Signatur (protocolTimeout, detached frame, geschlossene Target/Session, toter Kontext):
             // der Renderer-Prozess ist gestorben → sauber abbrechen statt N-fach scheitern.

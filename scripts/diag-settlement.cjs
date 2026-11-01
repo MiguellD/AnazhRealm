@@ -13,7 +13,7 @@ const {
     pruefer,
     wandEnde,
     selbsttestEnde,
-    studioKern, jsonLesen, jsonSchreiben,
+    studioKern, jsonLesen, jsonSchreiben, jsonKlon, fehlerStapel,
 } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -649,7 +649,7 @@ async function gtDorfweg(v2, anker, sek) {
         r.dismountArchitecture();
         r.removeArchitecture(e);
     } catch (err) {
-        res.err = err?.stack || String(err);
+        res.err = fehlerStapel(err);
     }
     return res;
 }
@@ -877,7 +877,7 @@ function feldWurfImOrt(anker, defekt) {
             }
         }
     } catch (err) {
-        res.err = err?.stack || String(err);
+        res.err = fehlerStapel(err);
     } finally {
         for (const e of neu) if (st.architectures.includes(e)) r.removeArchitecture(e);
         if (defekt) delete r._weichtDemBau; // die Wand des Prototyps gilt wieder
@@ -961,7 +961,7 @@ hauptLauf(async () => {
         console.log("=== SELBST-TEST: die Settlement-Linse feuert ===");
         const a = FC.exportSettlement(FIXTURES[0]);
         // V2: ein manipulierter Export (ein Slot verschoben) kippt den Fingerabdruck — die Byte-Wand ist nicht vakuös.
-        const b = JSON.parse(JSON.stringify(a));
+        const b = jsonKlon(a);
         b.slots[0].x += 0.001;
         check("Selbst-Test 2: ein 1-mm-Slot-Versatz kippt den Fingerabdruck", fingerprint(a) !== fingerprint(b));
         // V6 (K10, Teil O): das Urteil des Orts feuert am Täter — ein ebener Ort hält, ein Absatz vor der Tür, ein Haus über
@@ -1857,7 +1857,7 @@ hauptLauf(async () => {
         // das Podest fiel mit dem Erdbau: keine Fundament-Box, kein Sockel-Pool.
         res.fundamentTravels = e1.length > 0 && e1.every((e) => e.fundament && Number.isFinite(e.fundament.ex));
         // 3) fail-closed: ein Slot mit unbekannter Kultur faellt (kein Spawn, kein Crash).
-        const fake = JSON.parse(JSON.stringify(plan));
+        const fake = jsonKlon(plan);
         fake.slots = [Object.assign({}, fake.slots[0], { kultur: "gibtsnicht" })];
         const o3 = { x: 900, z: 900 }; // BÜHNE: fail-closed gilt an jedem Ort
         const r3 = await r._spawnSettlementFromExport(await r._ortWahl(fake, o3), o3);
@@ -2917,7 +2917,7 @@ hauptLauf(async () => {
                     }
                     res.planJson = JSON.stringify({ roads: P.roads || [] });
                 } catch (e) {
-                    res.err = (e && e.stack) || String(e);
+                    res.err = fehlerStapel(e);
                 }
                 return res;
             },

@@ -15,7 +15,7 @@
 //     gebacken). Teil C beginnt erst, wenn die Welt steht (`weltRuht`, die EINE Ruhe); eine fremde Zelle im Probe-Atlas
 //     ist ROT beim Namen.
 //   node scripts/diag-foundry-impostor.cjs
-const { statikServer, starteBrowser, hauptLauf, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, wandEnde, fehlerText } = require("./lib/welt-boot.cjs");
 
 const server = statikServer();
 
@@ -206,7 +206,7 @@ async function driveImpostor(page) {
             const uS = THREE.TSL.uv();
             out.strichSelbst = strich({ colorNode: atS.mapNode.sample(uS).depth(0).add(atS.mapNode.sample(uS).grad(uS.dFdx(), uS.dFdy())) });
         } catch (e) {
-            out.err = e?.message || String(e);
+            out.err = fehlerText(e);
         }
         return out;
     });
@@ -469,7 +469,7 @@ async function kleberProbe(page, fmtWunsch) {
             }
             ren.dispose();
         } catch (e) {
-            out.err = e?.message || String(e);
+            out.err = fehlerText(e);
         }
         return out;
     }, fmtWunsch);
@@ -559,7 +559,7 @@ async function vergroessertProbe(page, fmtWunsch) {
             out.selbst = await treppe(8, "stufen");
             ren.dispose();
         } catch (e) {
-            out.err = e?.message || String(e);
+            out.err = fehlerText(e);
         }
         return out;
     }, fmtWunsch);
@@ -696,7 +696,7 @@ async function windProbe(page) {
             }
             ren.dispose();
         } catch (e) {
-            out.err = e?.message || String(e);
+            out.err = fehlerText(e);
         }
         return out;
     }, WIND_FAELLE);

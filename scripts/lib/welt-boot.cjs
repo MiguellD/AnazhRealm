@@ -42,6 +42,14 @@ const weltR = `for (const [n, f] of [["r", () => window.anazhRealm], ["st", () =
 // JSON.stringify(wert, null, einzug) + ende)`)
 const jsonLesen = (p) => JSON.parse(fs.readFileSync(p, "utf8"));
 const jsonSchreiben = (p, o, n = 1, ende = "") => fs.writeFileSync(p, JSON.stringify(o, null, n) + ende);
+// … und die EINE JSON-KOPIE (`jsonKlon(x)`, in jeder Seite als `window.jsonKlon`, `WARTEN_SEITE`): dieselben Bytes wie
+// `JSON.parse(JSON.stringify(x))` — bis w4-verkehr-c2 derselbe Zwilling an 147 Stellen in 50 Skripten (diag-profiband allein 26)
+const jsonKlon = (x) => JSON.parse(JSON.stringify(x));
+// DAS EINE WORT EINES FEHLERS (in jeder Seite als `window.fehlerText` / `window.fehlerStapel`, `WARTEN_SEITE`): `fehlerText(e)`
+// die Meldung, sonst der Fehler als Text; `fehlerStapel(e)` der Stapel, sonst der Text — bis w4-verkehr-c2 je Linse ein eigenes
+// `(e && e.message) || String(e)` / `e?.message || String(e)` (61 Stellen in 41 Skripten) und dasselbe mit `stack` (33 in 8)
+const fehlerText = (e) => e?.message || String(e);
+const fehlerStapel = (e) => e?.stack || String(e);
 // DIE UHR DES LAUFS (`const log = laufUhr()`): jede Zeile trägt die Sekunden seit dem Ruf — je Linse ein eigenes `T0` samt
 // eigenem log war ein Zwilling
 const laufUhr =
@@ -216,7 +224,7 @@ function png(u8, W, H) {
 // Bild neu (eine Linse blendet Klassen aus und ein, die Bühne wechselt)
 const bundlesNeu = () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
 const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
-const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__seitenTakt = ${seitenTakt}; window.__takte = ${takte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
+const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__takte = ${takte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -1039,7 +1047,7 @@ function taeterFaelle(faelle, urteil, { fehler = [], klon } = {}) {
 // DIE ABWANDLUNG eines grünen Befunds (der Täter eines Falls `{ name, z: mit(pfad, wert), muss }`): ein frischer Klon, `wert`
 // gemischt in den Knoten unter `pfad` („a.b", leer = die Wurzel) — EINMAL hier statt eines Klon-Helfers je Linse
 const abwandlung = (gruen) => (pfad, wert) => {
-    const z = JSON.parse(JSON.stringify(gruen));
+    const z = jsonKlon(gruen);
     Object.assign(pfad ? pfad.split(".").reduce((o, k) => o[k], z) : z, wert);
     return z;
 };
@@ -1383,6 +1391,9 @@ module.exports = {
     laufUhr,
     jsonLesen,
     jsonSchreiben,
+    jsonKlon,
+    fehlerText,
+    fehlerStapel,
     hauptLauf,
     urteilEnde,
     argOpt,

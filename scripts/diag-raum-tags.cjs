@@ -22,7 +22,7 @@
 //   node scripts/diag-raum-tags.cjs [--selftest]   (npm run gate:raum-tags)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde, wandEnde, jsonKlon } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 
@@ -273,8 +273,8 @@ async function probe() {
             if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) continue;
             let kopie, stoffe;
             try {
-                kopie = JSON.parse(JSON.stringify(bp));
-                stoffe = JSON.parse(JSON.stringify(echteStoffe));
+                kopie = jsonKlon(bp);
+                stoffe = jsonKlon(echteStoffe);
             } catch {
                 continue;
             }
@@ -377,7 +377,7 @@ async function probe() {
         st.materials.raum_stoff.tags.resoniert = 0.95;
         frage(NAME, "Stoff-Tag direkt (ohne API)", "rechnet");
         // ein Spielstand geladen: der Bauplan als neues Objekt, die Stoff-Tags im Bestand
-        const ser = JSON.parse(JSON.stringify(r._serializeBlueprint(bp0())));
+        const ser = jsonKlon(r._serializeBlueprint(bp0()));
         if (ser.parts && ser.parts[0] && ser.parts[0].position) ser.parts[0].position.x += 1;
         r._loadStateRestoreCraftingInventory({
             materials: [
@@ -388,7 +388,7 @@ async function probe() {
         frage(NAME, "Spielstand geladen", "rechnet");
         bp0().parts = bp0().parts.slice().reverse();
         frage(NAME, "neues Teile-Array", "rechnet");
-        st.blueprints[NAME] = JSON.parse(JSON.stringify(bp0()));
+        st.blueprints[NAME] = jsonKlon(bp0());
         frage(NAME, "neues Bauplan-Objekt", "rechnet");
         // (S) DIE ZÄHNE: ein Schlüssel ohne die Stoffe (er baut, als gäbe es keine) — ein direkt geänderter Stoff, der die
         // Tags sichtbar ändert (jedes Teil aus `raum_stoff`, alle Tags 0 → 1), muss als Abweichung fallen

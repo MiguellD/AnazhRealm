@@ -4,7 +4,7 @@
 // darf über Budget gebacken werden. Misst die Konvergenz mit einer Zahl.
 //   node scripts/diag-foundry-deadlock.cjs
 
-const { statikServer, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, fehlerText } = require("./lib/welt-boot.cjs");
 const server = statikServer();
 
 hauptLauf(async () => {
@@ -107,7 +107,7 @@ hauptLauf(async () => {
                     r._foundryRewarmColdTrees();
                 } catch (e) {
                     // ein Wurf im Takt ist ROT beim Namen, nie still verschluckt
-                    out.err = out.err || "Takt " + i + ": " + ((e && e.message) || String(e));
+                    out.err = out.err || "Takt " + i + ": " + fehlerText(e);
                 }
                 await sleep(0); // dem Worker die Message-Runde geben
                 out.ticks++;
@@ -115,7 +115,7 @@ hauptLauf(async () => {
             out.foundryAfter = foundry();
             out.coldAfter = cold();
         } catch (e) {
-            out.err = (e && e.message) || String(e);
+            out.err = fehlerText(e);
         }
         return out;
     });

@@ -182,12 +182,12 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         if (st.blueprints._t_r6_haus) delete st.blueprints._t_r6_haus;
         st.blueprints._t_r6_haus = {
             name: "_t_r6_haus",
-            parts: JSON.parse(JSON.stringify(KSr6.haus_basis.parts)),
+            parts: jsonKlon(KSr6.haus_basis.parts),
         };
         if (st.blueprints._t_r6_tor) delete st.blueprints._t_r6_tor;
         st.blueprints._t_r6_tor = {
             name: "_t_r6_tor",
-            parts: JSON.parse(JSON.stringify(KSr6.tor_basis.parts)),
+            parts: jsonKlon(KSr6.tor_basis.parts),
         };
         const v = r.spawnArchitecture("_t_r6_haus", { x: 10, y: 5, z: 10 }, { seed: 42 });
         out.villageBuilt = !!v && v.type === "_t_r6_haus" && !!v.mesh;
@@ -394,7 +394,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         if (st.blueprints._t_r63_haus) delete st.blueprints._t_r63_haus;
         st.blueprints._t_r63_haus = {
             name: "_t_r63_haus",
-            parts: JSON.parse(JSON.stringify(KSr63.haus_basis.parts)),
+            parts: jsonKlon(KSr63.haus_basis.parts),
         };
         const px = st.playerMesh.position.x;
         const pz = st.playerMesh.position.z;
@@ -495,7 +495,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         if (st.blueprints._t_live_haus) delete st.blueprints._t_live_haus;
         st.blueprints._t_live_haus = {
             name: "_t_live_haus",
-            parts: JSON.parse(JSON.stringify(KSlive.haus_basis.parts)),
+            parts: jsonKlon(KSlive.haus_basis.parts),
         };
         r.spawnArchitecture("_t_live_haus", { x: 1.925, y: 5, z: 5 }, { seed: 11 });
         // Player nach (0, 5, −2) — Haus liegt in +Z, Spieler läuft in +Z auf es zu.
@@ -961,7 +961,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         if (st.blueprints._t_r6v2_haus) delete st.blueprints._t_r6v2_haus;
         st.blueprints._t_r6v2_haus = {
             name: "_t_r6v2_haus",
-            parts: JSON.parse(JSON.stringify(KSr6v2.haus_basis.parts)),
+            parts: jsonKlon(KSr6v2.haus_basis.parts),
         };
         // Setze Spieler auf (0,0,0), spawne weit + nah.
         // BÜHNE: nah und fern zum gestellten Haus (Cull-Mechanik)

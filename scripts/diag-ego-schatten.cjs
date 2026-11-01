@@ -143,7 +143,7 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const { statikServer, starteBrowser, laufUhr } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, fehlerText } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -568,7 +568,7 @@ function buehne(arg) {
             }
         }
     } catch (e) {
-        out = { error: e?.message || String(e) };
+        out = { error: fehlerText(e) };
     }
     await browser.close();
     server.close();

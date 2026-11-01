@@ -204,7 +204,7 @@ async function checkBandV18493CoSchoepferStudio({ page, check }) {
                 !bHaiku.fallbacks &&
                 !hHaiku["anthropic-beta"];
         } catch (e) {
-            out.err = (e && e.message) || String(e);
+            out.err = fehlerText(e);
         }
         // Aufräumen: die Test-Pflanzung verlässt die Welt wieder (die Folge-Bänder sehen den alten Stand).
         for (const e of archs.slice(vorherAll).reverse()) {
@@ -698,7 +698,7 @@ async function checkBandLeistungsVertrag({ page, check }) {
             );
             o.deckungPct = ss && ss.bundleDeckung ? ss.bundleDeckung.deckungPct : null;
         } catch (e) {
-            o.err = (e && e.message) || String(e);
+            o.err = fehlerText(e);
         }
         return o;
     })) || { err: "keine Antwort der Seite" };

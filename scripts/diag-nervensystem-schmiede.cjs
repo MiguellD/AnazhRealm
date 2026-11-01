@@ -27,7 +27,7 @@
 //     Werkstatt-Vorschau; _liveRefs-Rueckgabe) · foundry-off (lokaler Hook,
 //     sichern/wiederherstellen) -> der Part-Pfad byte-alt.
 //   node scripts/diag-nervensystem-schmiede.cjs [--selftest]
-const { statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde, fehlerText } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
@@ -117,7 +117,7 @@ hauptLauf(async () => {
             res.d.toolPartsMatch = !!tbp && !!KS.geraet_spitzhacke && JSON.stringify(tbp.parts) === JSON.stringify(KS.geraet_spitzhacke.parts);
             res.d.toolRole = tbp ? r.computeBlueprintRole(tbp) : null;
         } catch (e) {
-            res.d.err = (e && e.message) || String(e);
+            res.d.err = fehlerText(e);
         }
         // ===== H: DIE HAND (W-A4b) — die Studio-Gestalt am EINEN Equip-Chokepoint =====
         try {
@@ -227,7 +227,7 @@ hauptLauf(async () => {
                             winkel: (Math.acos(Math.max(-1, Math.min(1, achse.dot(unterarm)))) * 180) / Math.PI,
                         };
                     } catch (e) {
-                        res.h.faustErr = (e && e.message) || String(e);
+                        res.h.faustErr = fehlerText(e);
                     }
                     // (3) UNEQUIP zerstoert das GETEILTE Asset NICHT — _queueDispose instrumentiert.
                     const sharedGeos = [];
@@ -292,7 +292,7 @@ hauptLauf(async () => {
                 else delete window.__anazhGateNoFoundry;
             }
         } catch (e) {
-            res.h.err = (e && e.message) || String(e);
+            res.h.err = fehlerText(e);
         }
         return res;
     });

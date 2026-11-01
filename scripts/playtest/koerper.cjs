@@ -587,8 +587,8 @@ async function checkBandM3RittVollendet({ page, check }) {
             if (st.blueprints._t_m3_wagen) delete st.blueprints._t_m3_wagen;
             st.blueprints._t_m3_wagen = {
                 name: "_t_m3_wagen",
-                parts: JSON.parse(JSON.stringify(KSm3.fahrzeug_wagen.parts)),
-                connections: JSON.parse(JSON.stringify(KSm3.fahrzeug_wagen.connections || [])),
+                parts: jsonKlon(KSm3.fahrzeug_wagen.parts),
+                connections: jsonKlon(KSm3.fahrzeug_wagen.connections || []),
             };
             entry = r.spawnArchitecture("_t_m3_wagen", { x: pm.x + 6, y: pm.y, z: pm.z }, { silent: true });
             out.spawned = !!entry;
@@ -769,9 +769,9 @@ async function checkBandV18195AvatarSizeHp({ page, check }) {
         // sind unangetastet. Wir vergleichen den heutigen Spieler-Stats-Wert
         // mit der STAT_FROM_TAGS-Direktrechnung (ohne Größen-Multiplikator).
         const savedSoul = st.player && st.player.soul;
-        const savedEquipped = st.player && JSON.parse(JSON.stringify(st.player.equipped || {}));
-        const savedBoosts = st.player && JSON.parse(JSON.stringify(st.player.boosts || []));
-        const savedCustomSouls = st.customSouls ? JSON.parse(JSON.stringify(st.customSouls)) : {};
+        const savedEquipped = st.player && jsonKlon(st.player.equipped || {});
+        const savedBoosts = st.player && jsonKlon(st.player.boosts || []);
+        const savedCustomSouls = st.customSouls ? jsonKlon(st.customSouls) : {};
         const savedDeathWound = st.player ? st.player.deathWoundIntensity : 0;
         try {
             // human: built-in, sollte sizeFactor 1 + mul 1 erhalten
@@ -1077,8 +1077,8 @@ async function checkBandV18206SpeedTrade({ page, check }) {
 
 
         const savedSoul = st.player && st.player.soul;
-        const savedEquipped = st.player && JSON.parse(JSON.stringify(st.player.equipped || {}));
-        const savedCustomSouls = st.customSouls ? JSON.parse(JSON.stringify(st.customSouls)) : {};
+        const savedEquipped = st.player && jsonKlon(st.player.equipped || {});
+        const savedCustomSouls = st.customSouls ? jsonKlon(st.customSouls) : {};
 
         try {
             // (S2) Built-in NEUTRAL: human-Soul → sizeFactor=1, kein Speed-Drift
@@ -1976,7 +1976,7 @@ async function checkBandGamepadVerben({ page, check }) {
             c.maus = o.maus[0] === -40 * s.mouseSensitivity && o.maus[1] === o.maus[0] && o.maus[2] === 0;
             // (C) FAHREN: X steigt auf (der Portal-Griff zuerst), Lenkwinkel und Gas stetig, B bremst das Heck, Rumble aus der Fahrt
             const KS = A.KIND_SUBSTANCE.fahrzeug_wagen;
-            s.blueprints._t_pad_wagen = JSON.parse(JSON.stringify({ name: "_t_pad_wagen", parts: KS.parts, connections: KS.connections || [] }));
+            s.blueprints._t_pad_wagen = jsonKlon({ name: "_t_pad_wagen", parts: KS.parts, connections: KS.connections || [] });
             stellen();
             const wagen = r.spawnArchitecture("_t_pad_wagen", { x: ort.x + 2.5, y: ort.y, z: ort.z }, { silent: true });
             r._tryEnterPortalAtPlayer = () => ((spione.tor = (spione.tor || 0) + 1), false);

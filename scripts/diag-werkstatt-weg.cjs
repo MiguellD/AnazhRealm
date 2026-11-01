@@ -20,7 +20,7 @@
 //   --bild fährt NUR L-BILD (Bauen K1 Staffel 2) auf swiftshader, --echt dasselbe auf der Karte.
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, halteBis, pruefer, hauptLauf, nullRenderer, starteBrowser, buehne, wandEnde, selbsttestEnde, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { statikServer, halteBis, pruefer, hauptLauf, nullRenderer, starteBrowser, buehne, wandEnde, selbsttestEnde, jsonSchreiben, jsonKlon, fehlerStapel } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -457,7 +457,7 @@ async function probe(argW) {
             await fn(m);
             m.gestartet = true;
         } catch (e) {
-            m.err = e?.stack || String(e);
+            m.err = fehlerStapel(e);
         }
     };
     // ── D10: der Same eines Satzes ──
@@ -477,7 +477,7 @@ async function probe(argW) {
         // Der Hain: Satz + Programm, zweimal an derselben Stelle der Welt-Geschichte (der Zähler des Welt-Stroms zurück).
         // je Wurf (Satz oder Programm): die Math.random-Züge, sein Same und seine Orte, danach zurück (Werke und Welt-Strom)
         const wurf = (fn) => {
-            const [vorher, z0] = [new Set(st.architectures), JSON.parse(JSON.stringify(st.worldMeta.bauSame || {}))];
+            const [vorher, z0] = [new Set(st.architectures), jsonKlon(st.worldMeta.bauSame || {})];
             const g = zaehle(fn);
             const liste = neue(vorher);
             for (const a of liste) r.removeArchitecture(a);
@@ -510,7 +510,7 @@ async function probe(argW) {
         m.kiOrtAbweichung = abweichung(k1.orte, k2.orte);
         // Der Programm-Strom ohne Seed ist der Welt-Strom, das Strom-Gesetz der Strom seines Samens; die Streuung eines
         // Samens ist sein eigener Strom, nie der des Programms (zwei Programm-Ströme, dieselben Orte — jeder Peer dieselbe).
-        const z0 = JSON.parse(JSON.stringify(st.worldMeta.bauSame || {}));
+        const z0 = jsonKlon(st.worldMeta.bauSame || {});
         m.konsum = { "dslCtx → _bauSame": ruft(r, "dslCtx", r, "_bauSame", [{ source: "human" }]), "_streamRng → _samenStrom": ruft(r, "_streamRng", r, "_samenStrom", ["zensur"]) };
         st.worldMeta.bauSame = z0;
         const streu = (k) => {
@@ -681,7 +681,7 @@ async function probe(argW) {
             }
             // Die Naht zum Mitspieler: das Programm, das der Sender schickt.
             st.p2p = { ...p2pAlt || {}, enabled: true };
-            r.p2pBroadcastDsl = (prog) => gesendet.push(JSON.parse(JSON.stringify(prog)));
+            r.p2pBroadcastDsl = (prog) => gesendet.push(jsonKlon(prog));
             const vorher = new Set(st.architectures);
             zaehle(() => r.tryMousePlace());
             m.zuege = n;
@@ -729,11 +729,11 @@ async function probe(argW) {
         // Der Welt-Strom über einen Reload: der Snapshot trägt das Welt-Gedächtnis (`worldMeta`), der Restore mischt es
         // über den frischen Stand (`_loadStateRestoreWorldMeta`); die Sitzung vergisst alles, was nicht dort reist.
         const wmAlt = st.worldMeta;
-        const zAlt = wmAlt.bauSame ? JSON.parse(JSON.stringify(wmAlt.bauSame)) : undefined;
+        const zAlt = wmAlt.bauSame ? jsonKlon(wmAlt.bauSame) : undefined;
         const rl = {};
         try {
             rl.erst = r._bauSame("pruef:reload");
-            const snapMeta = JSON.parse(JSON.stringify(r.buildStateSnapshot().worldMeta));
+            const snapMeta = jsonKlon(r.buildStateSnapshot().worldMeta);
             rl.weiter = r._bauSame("pruef:reload");
             st.worldMeta = Object.assign({}, wmAlt, { bauSame: undefined }, snapMeta);
             rl.nachReload = r._bauSame("pruef:reload");
@@ -1441,8 +1441,8 @@ hauptLauf(async () => {
         };
         for (const [lage, weg, ...rest] of raster(LAGEN, WEGE))
             lege(gesundG.wege, [lage, weg, ...rest], lage === "frieden ohne Material" ? { eingaben: 2, zeile: fehlt, steht: 0, bauModus: weg === "hotbar", farbe: "rot" } : { eingaben: 3, steht: 1, kosten: KOST, verbraucht: lage === "schöpfer" ? {} : KOST });
-        const mitG = (wo, e, rest, b = JSON.parse(JSON.stringify(gesundG))) => (Object.assign(zelle(b.wege, wo.split(" · ")), e), rest ? [b, wo + ": " + rest] : b);
-        const mitL = (e) => Object.assign(JSON.parse(JSON.stringify(gesundG)), e);
+        const mitG = (wo, e, rest, b = jsonKlon(gesundG)) => (Object.assign(zelle(b.wege, wo.split(" · ")), e), rest ? [b, wo + ": " + rest] : b);
+        const mitL = (e) => Object.assign(jsonKlon(gesundG), e);
         familie("L-Werkstatt", wegVerdict, gesundG, [
             // ein Weg mit einem zusätzlichen Bestätigungs-Klick
             mitG("frieden mit Material · werkstatt · Haus · Third", { eingaben: 4 }, "4 Eingaben bis zum stehenden Werk"),
@@ -1668,7 +1668,7 @@ hauptLauf(async () => {
     try {
         out.weg = await wegProbe(page, out.frei);
     } catch (e) {
-        out.weg = { err: e?.stack || String(e) };
+        out.weg = { err: fehlerStapel(e) };
     }
     await browser.close();
     server.close();

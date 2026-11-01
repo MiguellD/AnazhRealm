@@ -21,7 +21,7 @@
 //     Flatten-Chokepoint bedient die Distanz-Wahlen 1 und 2 mit den ECHTEN
 //     Stufen |1|/|2| (nicht [0]-Kollaps) und faltet die Wahl 5 auf Stufe 2.
 //   node scripts/diag-nervensystem-fachwerk.cjs [--selftest]
-const { statikServer, ROOT: root, hauptLauf, pruefer, wandEnde, selbsttestEnde, studioKern } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, pruefer, wandEnde, selbsttestEnde, studioKern, fehlerText } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -113,7 +113,7 @@ hauptLauf(async () => {
             // der Wurf- und Fern-Ruf (S3 haus): eine NUR-WURF-Stufe beim Namen baut genau sie, nie die Klammer
             res.f.k3 = probe("tudor", 3);
         } catch (e) {
-            res.f.err = (e && e.message) || String(e);
+            res.f.err = fehlerText(e);
         }
         return res;
     });

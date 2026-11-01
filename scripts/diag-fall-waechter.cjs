@@ -44,7 +44,7 @@
 //   node scripts/diag-fall-waechter.cjs [--selftest]   (npm run gate:fall-waechter; Port FALL_WAECHTER_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, warteAufWelt, ROOT: root, sleep, hauptLauf, pruefer, taeterFaelle, selbsttestEnde, nullSeite, urteilEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, ROOT: root, sleep, hauptLauf, pruefer, taeterFaelle, selbsttestEnde, nullSeite, urteilEnde, jsonKlon } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 const PRUEF_SATZ = require("../spec/pruefsatz/bauen-k3.json"); // die Brücke auf zwei Pfeilern (B2)
@@ -340,7 +340,7 @@ function selbsttest() {
         ),
     };
     const { errs, check } = pruefer();
-    const klon = () => JSON.parse(JSON.stringify(gruen));
+    const klon = () => jsonKlon(gruen);
     // je Fall der Täter, den die Wand beim Namen nennt (`muss`); ohne `muss` bleibt der Befund grün
     const faelle = [
         ["der grüne Befund", () => {}],
