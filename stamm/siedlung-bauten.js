@@ -298,7 +298,17 @@ class AnazhRealm_siedlung_bauten {
     // keinen Gang über den Bestand. Bis hier schliefen im Stand beide Bau-Takte jedes Bild (Blick-Sonde 31.10., Radeon,
     // stadt-voll Third: 808 von 808 Bildern): ein Wagen fuhr als Karte 16,7 s bis 11 m an den Spieler, ein anderer ohne Bild bis
     // 1,8 m, und sein Satz stand weiß, wo er gebacken wurde — 181 m hinter ihm. Rückgabe: die Wechsel dieses Takts.
+    // DAS AUGE WANDERT (w4-verkehr-c3): der Abstand eines Bewegten ist eine Lage BEIDER — wandert das Auge seit dem letzten Takt
+    // (der Spieler geht, fährt, springt), urteilt jeder Fahrende (`_archFahrt`: der Wagen des Verkehrs zwischen Einsteigen und
+    // Parken, auch wer an der Kreuzung wartet) in diesem Takt mit; steht das Auge, nur wer selbst wanderte. Bis hier urteilte der
+    // Wartende nur nach seinem eigenen Schritt: sprang der Spieler an den Markt, stand der wartende Wagen in 8 m auf Stufe 1, der
+    // in 20 m auf der Karte (VK stadt-voll 10 Uhr, das erste Bild danach, 3 von 3 Läufen), bis der Gang über den Bestand (256
+    // Einträge je Bild, 5 Wechsel) ihn erreichte.
     _archBewegteUrteilen(pm, occlOn) {
+        const F = this._archFahrende;
+        const A = this._archBewegtAuge || (this._archBewegtAuge = { x: NaN, z: NaN });
+        if (F && F.size && (A.x !== pm.x || A.z !== pm.z)) for (const e of F) this._archBewegt(e);
+        [A.x, A.z] = [pm.x, pm.z];
         const B = this._archBewegte;
         if (!B || !B.size) return 0;
         const z = this._archStufeZaehler();
@@ -323,6 +333,14 @@ class AnazhRealm_siedlung_bauten {
     // Stufen-Wahl (`_archBewegteUrteilen`).
     _archBewegt(entry) {
         (this._archBewegte || (this._archBewegte = new Set())).add(entry);
+    }
+
+    // Ein Eintrag fährt (`an`) oder steht wieder (der Wagen des Verkehrs: `_verkehrEinsteigen`, `_verkehrParken`; der Abbau
+    // nimmt ihn mit): solange er fährt, urteilt er auch, wenn nur das Auge wandert (`_archBewegteUrteilen`).
+    _archFahrt(entry, an) {
+        const F = this._archFahrende || (this._archFahrende = new Set());
+        if (an) F.add(entry);
+        else F.delete(entry);
     }
 
     // Instanced Architektur auf andere LOD-Stufe: _archInstanceRemove → entry.type auf den neuen
@@ -1441,11 +1459,15 @@ class AnazhRealm_siedlung_bauten {
     }
 
     // Die Naht der gezeichneten Stufe (Instanz und Mesh, hinein und heraus): trägt der Eintrag seine Passagiere nicht mehr,
-    // verbergen sie sich im selben Takt — zeigen tut sie wieder, wer sie setzt (der Takt des Verkehrs setzt den Leib in den
-    // Sitz). Bis hier zeigte sich der Fahrer im Kreis `leibM` neben jedem Wagen: über der Karte und über dem Wagen, der noch
-    // lud (der fliegende Fahrer, Schöpfer-Fund 30.10.).
+    // verbergen sie sich im selben Takt; trägt er sie wieder, setzt der Sitz des Verkehrs den Fahrer im selben Takt
+    // (`_verkehrSitz` — Culling und Stufen-Wahl laufen nach dem Takt des Verkehrs). Bis hier zeigte sich der Fahrer im Kreis
+    // `leibM` neben jedem Wagen: über der Karte und über dem Wagen, der noch lud (der fliegende Fahrer, Schöpfer-Fund 30.10.).
     _kompositErbt(entry) {
-        if (!entry._passagiere || !entry._passagiere.size || this._archTraegt(entry)) return;
+        if (!entry._passagiere || !entry._passagiere.size) return;
+        const W = entry._verkehrWagen;
+        if (W && W.b.amSteuer && W.b.leib && entry._passagiere.has(W.b.leib))
+            return this._verkehrSitz(W, this._lodAuge() || this.state.playerMesh.position);
+        if (this._archTraegt(entry)) return;
         for (const g of entry._passagiere) g.visible = false;
     }
 
