@@ -1346,6 +1346,12 @@ async function probe(arg) {
                 const ds = (m.durchsicht = { formel: typeof K._durchsichtGewicht === "function" && !!K.DURCHSICHT_ZAHLEN });
                 // DER KONSUM AM RUF (Spion am Ruf, kein Quelltext): die Proben durch die Bildmitte ohne eigenes Band nehmen den
                 // EINEN Strahl, der Stoff-Knoten der Durchsicht rechnet die EINE Formel (sein Zwischenspeicher leer: er baut neu)
+                // die Vorbedingung des Streu-Strahls: die Nah-Streu am Baum (der Ring um das Auge, bis eine Senke steht) — an der
+                // Mitte des Genesis-Orts trägt sein Freiraum keine, der Baum steht im Gürtel
+                for (const weiter = window.__deckel("die Nah-Streu am Baum", 300); !(st.nahStreu && st.nahStreu.senken.size > 0) && weiter(); ) {
+                    r._tickNahStreu();
+                    await __takte(1, 40);
+                }
                 const nahStreu = st.nahStreu && st.nahStreu.senken && st.nahStreu.senken.size > 0;
                 const rahmen = r._kampfSchwungRahmen({});
                 const knoten = r._kamDurchKnoten;
