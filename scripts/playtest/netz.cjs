@@ -1,11 +1,10 @@
 "use strict";
+const { ausDatei, fs, path, jsonLesen } = require("../lib/welt-boot.cjs");
 // scripts/playtest/netz.cjs — der Richter von Netz (spec/stamm/modul-karte.json): Einladung · WebRTC-Mesh · Lockstep · Stimme · Welt-Bündel · Vibe-Pass · Signaturen · Regionen · Pins und Hallen · Bann · Portal-Eintritt · Ko-Präsenz · Dwelling · Portal-Server.
 // 10 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const fs = require("fs");
-const path = require("path");
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
 
 async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState }) {
@@ -82,7 +81,7 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         return out;
     });
 
-    if (w13p1Results && !w13p1Results.error) {
+    if (erreichbar(check, "W13 P1: Vibe-Pass-Tests laufen", w13p1Results)) {
         check("W13 P1: Vibe-Pass ist nach init bereit", w13p1Results.ready);
         check("W13 P1: vibePassId liefert ed25519:<64hex>", w13p1Results.idFormat);
         check("W13 P1: privater Schlüssel als JWK in localStorage persistiert", w13p1Results.persisted);
@@ -101,8 +100,6 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         check("W13 P1: Vibe-Pass-Sektion im DOM", w13p1Results.uiSection);
         check("W13 P1: Vibe-Pass-Body zeigt den Fingerprint", w13p1Results.uiBody);
         check("W13 P1: Sichern/Wiederherstellen-Knöpfe + File-Input im DOM", w13p1Results.uiButtons);
-    } else {
-        check("W13 P1: Vibe-Pass-Tests laufen", false, w13p1Results ? w13p1Results.error : "no result");
     }
 
     // ### Bauplan-Signaturen ###
@@ -185,7 +182,7 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         return out;
     });
 
-    if (w13p2Results && !w13p2Results.error) {
+    if (erreichbar(check, "W13 P2: Bauplan-Signatur-Tests laufen", w13p2Results)) {
         check("W13 P2: _canonicalBlueprint ist deterministisch", w13p2Results.canonDeterministic);
         check(
             "W13 P2: _canonicalBlueprint ignoriert das Label (signiert die Substanz)",
@@ -207,8 +204,6 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         check("W13 P2: verifyBlueprintSignature ist defensiv (null → 'unsigned')", w13p2Results.verifyDefensive);
         check("W13 P2: Signatur-Sektion im Werkstatt-Panel", w13p2Results.uiSigRow);
         check("W13 P2: Signier-Knopf im Werkstatt-Panel", w13p2Results.uiSigBtn);
-    } else {
-        check("W13 P2: Bauplan-Signatur-Tests laufen", false, w13p2Results ? w13p2Results.error : "no result");
     }
 
     // ### Vibe-Pass-Identität im Multi-User ###
@@ -309,7 +304,7 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         return out;
     });
 
-    if (w13p3Results && !w13p3Results.error) {
+    if (erreichbar(check, "W13 P3: Vibe-Pass-Multi-User-Tests laufen", w13p3Results)) {
         check("W13 P3: Peer-Entry trägt vibePassId + vibeVerified", w13p3Results.peerFields);
         check("W13 P3: _p2pBroadcastVibe sendet {type:vibe, vibePassId, proof}", w13p3Results.broadcastShape);
         check(
@@ -332,8 +327,6 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         check("W13 P3: verifizierter Peer trägt ein Name-Schild mit Fingerprint", w13p3Results.verifiedPeerLabel);
         check("W13 P3: Name-Schild ohne Fingerprint bleibt einzeilig", w13p3Results.labelOneLine);
         check("W13 P3: Name-Schild mit Fingerprint wird zweizeilig", w13p3Results.labelTwoLine);
-    } else {
-        check("W13 P3: Vibe-Pass-Multi-User-Tests laufen", false, w13p3Results ? w13p3Results.error : "no result");
     }
 
     // den Relay des signaling-servers (vibe mit peerId-Stempel) urteilt gate:mp-sync am echten Broker.
@@ -587,7 +580,7 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         return out;
     });
 
-    if (w14Results && !w14Results.error) {
+    if (erreichbar(check, "W14 P1: Bibliothek-Tests laufen", w14Results)) {
         check("W14 P1: jeder WORLD_REGISTRY-Eintrag trägt eine Beschreibung", w14Results.registryHasDesc);
         check("W14 P1: Bibliothek-Tab im Topbar", w14Results.tabInDom);
         check("W14 P1: renderLibraryUI baut eine Karte pro Welt", w14Results.cardPerWorld);
@@ -668,8 +661,6 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         check("W14 P1: loadState stellt role:portal + portalMeta wieder her", w14Results.loadRestoresPortal);
         check("W14 P1: der wiederhergestellte Portal-Bauplan bleibt betretbar", w14Results.loadKeepsEnterable);
         check("W14 P1: obtainPortalForWorld richtet neu aus + heilt verlorenes portalMeta", w14Results.reaimHeals);
-    } else {
-        check("W14 P1: Bibliothek-Tests laufen", false, w14Results ? w14Results.error : "no result");
     }
 
     // ### Welt-Manifest-Signatur ###
@@ -758,7 +749,7 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         return out;
     });
 
-    if (w14p2Results && !w14p2Results.error) {
+    if (erreichbar(check, "W14 P2: Manifest-Signatur-Tests laufen", w14p2Results)) {
         check("W14 P2: _canonicalManifest ist deterministisch", w14p2Results.canonDeterministic);
         check(
             "W14 P2: _canonicalManifest ignoriert world-Pfad + desc (signiert die Substanz)",
@@ -783,8 +774,6 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
             w14p2Results.overlayHasSigEl && w14p2Results.overlaySigInDom
         );
         check("W14 P2: Betreten einer signierten Welt zeigt 'signiert von <Autor>'", w14p2Results.overlayShowsSigned);
-    } else {
-        check("W14 P2: Manifest-Signatur-Tests laufen", false, w14p2Results ? w14p2Results.error : "no result");
     }
 
     // ### das Schaffen reist mit ###
@@ -822,7 +811,7 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         return out;
     });
 
-    if (w13v2Results && !w13v2Results.error) {
+    if (erreichbar(check, "W13 V2: enter-Payload-Tests laufen", w13v2Results)) {
         check("W13 V2: der enter-Payload trägt den Avatar-Namen", w13v2Results.payloadName);
         check("W13 V2: der enter-Payload trägt die vibePassId (ed25519)", w13v2Results.payloadVibeId);
         check("W13 V2: der enter-Payload trägt den Vibe-Pass-Fingerprint", w13v2Results.payloadFingerprint);
@@ -830,8 +819,6 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         check("W13 V2: nur EIGENE Materialien reisen mit (Built-ins bleiben)", w13v2Results.payloadOwnMaterials);
         check("W13 V2: die Materialien-Liste ist auf 16 gedeckelt", w13v2Results.payloadMaterialCap);
         check("W13 V2: nur EIGENE Werkzeuge reisen mit (Built-ins bleiben)", w13v2Results.payloadOwnTools);
-    } else {
-        check("W13 V2: enter-Payload-Tests laufen", false, w13v2Results ? w13v2Results.error : "no result");
     }
 
     // ### fremde Welten empfangen ###
@@ -973,7 +960,7 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         return out;
     });
 
-    if (w14p3Results && !w14p3Results.error) {
+    if (erreichbar(check, "W14 P3: Welt-Import-Tests laufen", w14p3Results)) {
         check("W14 P3: _worldEntry löst eine Built-in-Welt auf", w14p3Results.worldEntryBuiltin);
         check(
             "W14 P3: _sanitizeImportedManifest lehnt eine Built-in-id ab (kein Override)",
@@ -1019,8 +1006,6 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
             "W14 P3: _runRaycast ist feld-nativ + crash-frei (liefert den Extractor-Wert, kein rayTest)",
             w14p3Results.raycastNullSafe
         );
-    } else {
-        check("W14 P3: Welt-Import-Tests laufen", false, w14p3Results ? w14p3Results.error : "no result");
     }
 }
 
@@ -1383,8 +1368,8 @@ async function checkBandTailleGolden({ page, check }) {
     // dokumentiert sein (ein Broker-Typ ohne Andock-Vertrag ist der Riss von morgen); plus der
     // Ein-Befehl-Self-Host existiert.
     try {
-        const brokerSrc = fs.readFileSync(path.join(SKRIPTE, "..", "signaling-server.js"), "utf8");
-        const specDe = fs.readFileSync(path.join(SKRIPTE, "..", "docs", "taille-spec.md"), "utf8");
+        const brokerSrc = ausDatei(path.join(SKRIPTE, "..", "signaling-server.js"));
+        const specDe = ausDatei(path.join(SKRIPTE, "..", "docs", "taille-spec.md"));
         const typen = new Set();
         for (const m of brokerSrc.matchAll(/msg\.type === "([a-z-]+)"/g)) typen.add(m[1]);
         const fehltDe = [...typen].filter((t) => !specDe.includes("`" + t));
@@ -1392,12 +1377,12 @@ async function checkBandTailleGolden({ page, check }) {
             `Leuchtturm §7: alle ${typen.size} Broker-Typen sind im Andock-Vertrag dokumentiert${fehltDe.length ? " (fehlt: " + fehltDe.join(",") + ")" : ""}`,
             fehltDe.length === 0
         );
-        const pkg = JSON.parse(fs.readFileSync(path.join(SKRIPTE, "..", "package.json"), "utf8"));
+        const pkg = jsonLesen(path.join(SKRIPTE, "..", "package.json"));
         check(
             "Leuchtturm: der Ein-Befehl-Self-Host steht (npm run leuchtturm + scripts/leuchtturm.cjs + README-Sektion)",
             !!(pkg.scripts && pkg.scripts.leuchtturm) &&
                 fs.existsSync(path.join(SKRIPTE, "..", "scripts", "leuchtturm.cjs")) &&
-                /Dein eigener Leuchtturm/.test(fs.readFileSync(path.join(SKRIPTE, "..", "README.md"), "utf8"))
+                /Dein eigener Leuchtturm/.test(ausDatei(path.join(SKRIPTE, "..", "README.md")))
         );
     } catch (e) {
         check("Leuchtturm §7: Drift-Wächter lesbar", false, e.message);
@@ -1406,10 +1391,10 @@ async function checkBandTailleGolden({ page, check }) {
     let golden = null;
     try {
         golden = {
-            blueprint: JSON.parse(fs.readFileSync(path.join(goldenDir, "blueprint-signed.json"), "utf8")),
-            manifest: JSON.parse(fs.readFileSync(path.join(goldenDir, "world-manifest.json"), "utf8")),
-            snapshotHead: JSON.parse(fs.readFileSync(path.join(goldenDir, "snapshot-head.json"), "utf8")),
-            envelopes: JSON.parse(fs.readFileSync(path.join(goldenDir, "p2p-envelopes.json"), "utf8")),
+            blueprint: jsonLesen(path.join(goldenDir, "blueprint-signed.json")),
+            manifest: jsonLesen(path.join(goldenDir, "world-manifest.json")),
+            snapshotHead: jsonLesen(path.join(goldenDir, "snapshot-head.json")),
+            envelopes: jsonLesen(path.join(goldenDir, "p2p-envelopes.json")),
         };
     } catch (e) {
         check("Ω4: die goldenen Dateien existieren (spec/golden/v1 — NIE regenerieren)", false, e.message);

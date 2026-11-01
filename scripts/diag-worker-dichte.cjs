@@ -25,16 +25,12 @@
 //                                                      „byte-gleich"
 // Port: WORKER_DICHTE_PORT (Default 4392). Exit 1 bei Drift, Längen-Mismatch, Page-Error oder rotem Selbsttest.
 "use strict";
-const { statikServer, nullRenderer, starteBrowser, hauptLauf, argOpt: opt, booteWelt, jsonSchreiben } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const liesText = (datei) => fs.readFileSync(datei, "utf8");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, nullRenderer, starteBrowser, hauptLauf, argOpt: opt, booteWelt, ausDatei, path, stammLib, SELBSTTEST, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const liesText = (datei) => ausDatei(datei);
 const { messort } = require("./lib/welt-orte.cjs");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 
 const argv = process.argv.slice(2);
-const SELBSTTEST = argv.includes("--selftest");
 const ECHT = argv.includes("--echt");
 const LADEN = { waitUntil: "domcontentloaded", timeout: 60000 };
 const ABDRUCK = opt("--abdruck", null);
@@ -568,7 +564,7 @@ const KERN_MUTATIONEN = {
     "Höhen-Versatz": ["let h = hoeheGrund(L, x, z, mitDetail, aus);", "let h = hoeheGrund(L, x, z, mitDetail, aus) + 0.01;"],
 };
 const KERN_MODUS = { haupt: null, faden: null, probe: null }; // je Boot die Mutation im Haupt-Faden, im Voxel-Faden, in der Probe
-const kernQuelle = (wurzel = root) => fs.readFileSync(path.join(wurzel, "gelaende-core.js"), "utf8"); // der EINE Leser des Kerns
+const kernQuelle = (wurzel = root) => ausDatei(path.join(wurzel, "gelaende-core.js")); // der EINE Leser des Kerns
 const kernMutiert = (roh, name) => String(roh).replace(...(KERN_MUTATIONEN[name] || ["", ""]));
 function kernWandle(p, roh) {
     if (p === "/gelaende-core.js" && KERN_MODUS.haupt) return kernMutiert(roh, KERN_MODUS.haupt);
@@ -760,7 +756,7 @@ function gelaendeKern(wurzel) {
     ctx.self = ctx;
     ctx.window = ctx;
     vm.createContext(ctx);
-    vm.runInContext(fs.readFileSync(path.join(wurzel, "vendor", "simplex-noise.js"), "utf8"), ctx);
+    vm.runInContext(ausDatei(path.join(wurzel, "vendor", "simplex-noise.js")), ctx);
     vm.runInContext(kernQuelle(wurzel), ctx);
     return { G: ctx.__gelaendeCore, SimplexNoise: ctx.SimplexNoise };
 }
@@ -1663,9 +1659,9 @@ async function gebaut(page) {
 //     der Main summiert sie am Empfang je Faden und Art in beiden Richtungen, dazu jede Kopie empfangener Bytes (jeder
 //     Tiefe, `da`: auch ihr Klon) und die Platte — je Minute im Kalt-Boot und in einer Minute Fahrt, Soll ≤ 5 MB/min.
 //   --faden [--echt] [--selftest]   ein injizierter Hydro-Bau, ein Fußabdruck an einer unbenannten Sync-Stelle, ein Guss, ein
-//                          Wuchs eines Spawn-Bauplans (w4-b-pflanzen), ein Stau-Feld im Haupt-Faden und Klon (3 MB tief in einer
-//                          Nachricht, 3 MB in 300 Krumen, zwei Kopien) fallen ROT beim Namen; `--echt` im Fenster an der echten GPU
-//                          (`[linse-gpu]`), sonst am Null-Renderer.
+//                          Wuchs eines Spawn-Bauplans (w4-b-pflanzen), die Naht und der Satz eines Faden-Netzes im Haupt-Faden
+//                          (w4-b-boden2), ein Stau-Feld und Klon (3 MB tief in einer Nachricht, 3 MB in 300 Krumen, zwei Kopien)
+//                          fallen ROT beim Namen; `--echt` im Fenster an der echten GPU (`[linse-gpu]`), sonst am Null-Renderer.
 const FADEN_SOLL = 5e6; // Bytes je Minute
 function klonBytes(v, frei, seen, da) {
     if (v === null || typeof v !== "object") return da ? 0 : typeof v === "string" ? v.length : 8;
@@ -1959,8 +1955,14 @@ async function faden(page, url) {
                 const p = st.lastPlayerVoxelChunk;
                 r._rebuildVoxelChunk(p.cx, p.cz, null, { forceSync: "injiziert" });
             })();
-            (function injizierterGuss() {
+            // der Guss ohne Vorlage — und DER BODEN IM FADEN (w4-b-boden2): die Naht eines Faden-Netzes ohne ihr Gedächtnis, sein
+            // Satz ohne Vorlage
+            (function injizierterGussUndBoden() {
                 r._ofenMenschTemplate({ t: t0 }, 0, 0, 3, true);
+                const [k, { mesh }] = [...st.voxelChunks].find(([, x]) => x.mesh?.geometry.userData.ausFaden);
+                mesh.geometry.userData.naht = null;
+                r._bodenNaht(mesh.geometry);
+                r._chunkSatzEin("boden", k, mesh.geometry, k);
             })();
             (function injizierterWuchs() {
                 // der Bauplan eines Spawns wächst im Haupt-Faden, obwohl der Wald-Faden lebt (w4-b-pflanzen, `_wuchsSkelett`)
@@ -2039,20 +2041,18 @@ async function faden(page, url) {
         console.log(`  ⛔ K5: ${mb(proMin.fahrt)} MB/min am Empfang in der Fahrt > ${mb(FADEN_SOLL)}`);
     if (SELBSTTEST) {
         const S = F.t.selbst || { empfang: {}, kopie: {} };
-        const nennt = (liste, n) => liste.some((x) => x.includes(n));
-        const klon = (S.empfang["selbsttest:klon"] || 0) + (S.empfang["selbsttest:krume"] || 0);
+        const nennt = (n) => F.hydro.rot.concat(F.bau.rot, F.stau.rot).some((x) => x.includes(n));
+        const krume = S.empfang["selbsttest:krume"] || 0;
+        const klon = (S.empfang["selbsttest:klon"] || 0) + krume;
         const sieht =
-            nennt(F.hydro.rot, "injizierteHydro") &&
-            nennt(F.bau.rot, "injizierterFussabdruck") &&
-            nennt(F.bau.rot, "injizierterGuss") &&
-            nennt(F.bau.rot, "injizierterWuchs") &&
-            nennt(F.stau.rot, "injiziertesStauFeld") &&
+            ["injizierteHydro", "injizierterFussabdruck", "injizierterGuss", "injizierterWuchs", "Boden-Naht", "Satz-Vorlage"].every(nennt) &&
+            nennt("injiziertesStauFeld") &&
             klon >= 5.9e6 &&
-            (S.empfang["selbsttest:krume"] || 0) >= 2.9e6 &&
+            krume >= 2.9e6 &&
             summe(S.kopie) >= 5.9e6 &&
             proMin.selbst > FADEN_SOLL;
         console.log(
-            `  SELBSTTEST: injizierter Hydro-Bau, synchroner Fußabdruck, Guss, Wuchs, Stau-Feld und Klon (${mb(klon)} MB, Kopie ${mb(summe(S.kopie))} MB) ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR"}`
+            `  SELBSTTEST: injizierter Hydro-Bau, synchroner Fußabdruck, Guss, Wuchs, Boden, Stau-Feld und Klon (${mb(klon)} MB, Kopie ${mb(summe(S.kopie))} MB) ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR"}`
         );
         rot = rot || !sieht;
     }

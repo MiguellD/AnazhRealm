@@ -4,11 +4,8 @@
 // (`art: X ? "linse" : "null"`) entscheidet der Befehl, ob er X setzt (Schalter oder Umgebung) — sonst `bedingt`. Der Richter
 // ist die Laufzeit: die Weiche nennt ein Echt-Rezept in einer CPU-Gruppe ROT und eines, das nie zeichnet.
 "use strict";
-const fs = require("fs");
-const path = require("path");
-const { GPU_REZEPTE } = require("./welt-boot.cjs");
+const { GPU_REZEPTE, ausDatei, path, fs, ROOT } = require("./welt-boot.cjs");
 
-const ROOT = path.resolve(__dirname, "..", "..");
 const ART = /\bart:\s*([^\n,}]+)/g;
 const REZEPT_RE = new RegExp(`["'](${GPU_REZEPTE.join("|")})["']`);
 
@@ -28,12 +25,14 @@ function befehle(text, skripte, tiefe = 0) {
 
 // das Rezept einer Datei und ihrer lokalen requires: { klasse: "gpu" | "bedingt" | null, wo }
 // trägt der Befehl die Bedingung X des Zweigs? true · false · null (nicht zu lesen)
+// (der Schalter der Weiche `SELBSTTEST` aus welt-boot IST `--selftest`, direkt im Zweig oder über einen Namen)
 function bedingungIm(t, ausdruck, befehl) {
     const m = /^\s*\(?\s*([A-Za-z_$][\w$]*)\s*\?/.exec(ausdruck);
-    const def = m && new RegExp(`(?:const|let|var)\\s+${m[1]}\\s*=\\s*([^;\\n]+)`).exec(t);
+    const def = m && (m[1] === "SELBSTTEST" ? [, m[1]] : new RegExp(`(?:const|let|var)\\s+${m[1]}\\s*=\\s*([^;\\n]+)`).exec(t));
     if (!def) return null;
-    const schalter = [...def[1].matchAll(/["'](--[\w-]+)["']/g)].map((x) => x[1]);
-    const env = [...def[1].matchAll(/process\.env\.(\w+)/g)].map((x) => x[1]);
+    const text = def[1].replace(/\bSELBSTTEST\b/g, '"--selftest"');
+    const schalter = [...text.matchAll(/["'](--[\w-]+)["']/g)].map((x) => x[1]);
+    const env = [...text.matchAll(/process\.env\.(\w+)/g)].map((x) => x[1]);
     if (!schalter.length && !env.length) return null;
     const worte = String(befehl || "").split(/\s+/);
     return schalter.some((x) => worte.includes(x)) || env.some((x) => worte.some((w) => w.startsWith(x + "=")));
@@ -68,7 +67,7 @@ function klasseDerDatei(datei, lies, gesehen = new Set(), befehl = "") {
     return bedingt || { klasse: null };
 }
 
-const liesPlatte = (f) => (fs.existsSync(f) ? fs.readFileSync(f, "utf8") : null);
+const liesPlatte = (f) => (fs.existsSync(f) ? ausDatei(f) : null);
 
 // die Klasse eines Schritts (run-Text): "gpu" schlägt "bedingt" schlägt "cpu"
 function klasseDesLaufs(run, skripte, lies = liesPlatte, root = ROOT) {
