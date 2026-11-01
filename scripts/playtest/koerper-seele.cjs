@@ -2683,33 +2683,33 @@ async function checkBandPhasenBF({ page, check }) {
         "Wasser-Sheet-Queue verhungert nicht (FIFO-Slot zieht ferne Keys trotz Dauer-Nachschub)",
         res.waterIsoNoStarve !== false
     );
-    check("E3/V18.119: Mana-HUD — pfad zeigt die Währung (Wert folgt), frieden blendet aus", res.e3ManaHud);
+    check("E3: Mana-HUD — pfad zeigt die Währung (Wert folgt), frieden blendet aus", res.e3ManaHud);
     check(
-        "C1/V18.119: das Werkstatt-Panel liest die GELENKE (connections → Rad an Achse, eine Wahrheit mit der Animation)",
+        "C1: das Werkstatt-Panel liest die GELENKE (connections → Rad an Achse, eine Wahrheit mit der Animation)",
         res.c1JointReadout
     );
     check(
-        "B5/V18.120: der Taucher sieht die Wasserdecke (eyesUnderwater → DoubleSide, auftauchen → BackSide)",
+        "B5: der Taucher sieht die Wasserdecke (eyesUnderwater → DoubleSide, auftauchen → BackSide)",
         res.b5Underwater
     );
     check(
-        "B6/V18.121: das Wasser-Re-Mesh folgt der SICHTBAREN Dach-Änderung (Fingerprint-Gate, kein Durchfluss-Churn)",
+        "B6: das Wasser-Re-Mesh folgt der SICHTBAREN Dach-Änderung (Fingerprint-Gate, kein Durchfluss-Churn)",
         res.b6RoofGate
     );
     check("E4+E5: die bewährte Geste kristallisiert zum Gesetz, die Emotion gebiert die Bedingung", res.e45Crystal);
     check("E4+E5: eine frozen-Welt-Geste kristallisiert NIE (die EINE Effekt-Whitelist)", res.e45Guard);
     check(
-        "A4/V18.125: der KÜSTEN-AQUIFER — offene Senke unterm Wassertisch trägt Wasser, Land + gedeckelte Höhle bleiben trocken",
+        "A4: der KÜSTEN-AQUIFER — offene Senke unterm Wassertisch trägt Wasser, Land + gedeckelte Höhle bleiben trocken",
         res.a4ShelfAquifer === true,
         typeof res.a4ShelfAquifer === "string" ? res.a4ShelfAquifer : undefined
     );
     check(
-        "E1/V18.127: das EINE Dispatch-Tor — System-Befehle laufen über die Tabelle, chatSuggest liest beide",
+        "E1: das EINE Dispatch-Tor — System-Befehle laufen über die Tabelle, chatSuggest liest beide",
         res.e1OneGate === true,
         typeof res.e1OneGate === "string" ? res.e1OneGate : undefined
     );
     check(
-        "D5a/V18.128: die Wetter-ACHSE — der Übergang lerpt, stormy extrapoliert, das Vokabular gated, der Sturm fühlt chaos",
+        "D5a: die Wetter-ACHSE — der Übergang lerpt, stormy extrapoliert, das Vokabular gated, der Sturm fühlt chaos",
         res.d5aWeather === true,
         typeof res.d5aWeather === "string" ? res.d5aWeather : undefined
     );
