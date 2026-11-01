@@ -775,7 +775,8 @@ class AnazhRealm_dirigent_ankunft {
     _ankunftsBild() {
         const st = this.state;
         if (st._weltbildDa) {
-            if (st._nachlauf != null) this._nachlaufTakt();
+            if (st._sinkflug) this._sinkflugTakt();
+            else if (st._nachlauf != null) this._nachlaufTakt();
             return true;
         }
         const luecken = this._weltbildLuecken();
@@ -836,7 +837,9 @@ class AnazhRealm_dirigent_ankunft {
     _weltbildSteht() {
         const st = this.state;
         st._weltbildDa = performance.now();
-        st._nachlauf = 0;
+        // der Nachlauf ohne Frame-Budget gilt dem Rundblick am Boden; im Sinkflug ist jedes Bild gespielt — die Nähe wächst im
+        // Budget des Spiels, der Flug ist ihre Zeit, der Rundblick beginnt mit der Landung (`_sinkflugLandung`)
+        st._nachlauf = st._sinkflug ? null : 0;
         st._rundumDa = null;
         // die Ankunft aus der Ferne gleitet ab jetzt über die gezeichneten Bilder (`_ankunftsFerne`); der Null-Renderer
         // zeichnet keins — dort gilt die Distanz-Stufe ab dem Bild
@@ -971,6 +974,10 @@ class AnazhRealm_dirigent_ankunft {
         const yaw = Number.isFinite(st.yaw) ? st.yaw : 0;
         const fov = cam && cam.fov > 0 ? cam.fov : 75;
         const asp = cam && cam.aspect > 0 ? cam.aspect : 1;
+        // die Neigung der Kamera (der untere Rand des Schirms, `_unterDemBlick`): ihre Welt-Richtung, ohne Kamera waagrecht
+        const dy = cam
+            ? cam.getWorldDirection(this._ersterBlickRichtung || (this._ersterBlickRichtung = new THREE.Vector3())).y
+            : 0;
         const B = this._ersterBlickWert;
         if (
             B &&
@@ -978,7 +985,9 @@ class AnazhRealm_dirigent_ankunft {
             B.fov === fov &&
             B.asp === asp &&
             B.cx === c.x &&
+            B.cy === c.y &&
             B.cz === c.z &&
+            B.dy === dy &&
             B.px === p.x &&
             B.pz === p.z
         )
@@ -991,7 +1000,11 @@ class AnazhRealm_dirigent_ankunft {
             fov,
             asp,
             cx: c.x,
+            cy: c.y,
             cz: c.z,
+            dy,
+            // wie tief der untere Rand des Schirms unter die Waagrechte reicht (rad): die Neigung plus der halbe Bildwinkel
+            unten: -Math.asin(Math.max(-1, Math.min(1, dy))) + (fov * Math.PI) / 360,
             px: p.x,
             pz: p.z,
             ex: auge.x,
@@ -1004,9 +1017,11 @@ class AnazhRealm_dirigent_ankunft {
     }
     // Liegt ein Ding (Mitte x/z, Radius r in m) im Blick des ersten Bilds? Ohne Spieler liegt alles darin. `schirm`: nur der
     // Bildwinkel selbst, ohne den Rand ERSTER_BLICK.randGrad — was der Schirm JETZT zeigt (der Rang des Dorf-Zugs, `_dorfZug`).
-    _imErstenBlick(x, z, r, schirm) {
+    // `y`: die Höhe seiner Mitte (ohne: der Grund des Sinkflugs) — im Sinkflug liegt ein Ding unter dem Schirm nie im Blick.
+    _imErstenBlick(x, z, r, schirm, y) {
         const B = this._ersterBlick();
         if (!B) return true;
+        if (this._unterDemBlick(B, x, y, z, r)) return false;
         const dx = x - B.ex;
         const dz = z - B.ez;
         const d = Math.hypot(dx, dz);
@@ -1015,6 +1030,17 @@ class AnazhRealm_dirigent_ankunft {
         if (d <= B.nah + rr || halb >= Math.PI) return true;
         const w = Math.acos(Math.max(-1, Math.min(1, (dx * B.fx + dz * B.fz) / d)));
         return w - Math.asin(Math.min(1, rr / d)) <= halb;
+    }
+    // DER BLICK IM SINKFLUG (b-himmel): wer aus der Höhe ankommt, sieht nicht, was unter dem unteren Rand seines Schirms liegt —
+    // eine Kugel (Mitte x/y/z, Radius r) liegt darunter, wenn ihr Scheitel tiefer unter dem Auge liegt, als der Rand an ihrem
+    // waagrechten Abstand hinabreicht (`B.unten`, die Neigung der Kamera plus der halbe Bildwinkel). Nur im Sinkflug
+    // (`state._sinkflug`) — am Boden trägt der waagrechte Kegel allein, wie bisher. Ohne `y` steht das Ding auf dem Grund des Flugs.
+    _unterDemBlick(B, x, y, z, r) {
+        const F = this.state._sinkflug;
+        if (!F || !B || !(B.unten < Math.PI / 2)) return false;
+        const rr = r > 0 ? r : 0;
+        const scheitel = (Number.isFinite(y) ? y : F.grundY) + rr;
+        return B.cy - scheitel >= Math.tan(B.unten) * Math.max(Math.hypot(x - B.cx, z - B.cz) - rr, 0.01);
     }
     // Der Schlüssel des Blicks im Rang der Foundry-Schlange (`_foundryAuftragD2`): bis das erste Weltbild steht, trägt ein Ding
     // außer Blick ERSTER_BLICK.ausserD2 obenauf — nah zuerst gilt in beiden Hälften; `_weltbildSteht` nimmt ihn wieder ab.
@@ -1076,22 +1102,56 @@ class AnazhRealm_dirigent_ankunft {
             luecke("welt", "die Welt entsteht");
             return out;
         }
-        // im Blick (B3d): ein Ding mit seinem Radius (ERSTER_BLICK.dingM), ein Boden-Stück mit seiner halben Diagonale
+        // im Blick (B3d): ein Ding mit seinem Radius (ERSTER_BLICK.dingM), ein Boden-Stück mit seiner halben Diagonale; im
+        // Sinkflug nie, was unter dem Schirm liegt (`_unterDemBlick`), auch rundum nicht — die Gier dreht frei, die Neigung nicht
         const ding = AnazhRealm.ERSTER_BLICK.dingM;
-        const imBlick = (x, z, r) => !!rundum || this._imErstenBlick(x, z, r > 0 ? r : ding);
+        const B = this._ersterBlick();
+        const imBlick = (x, z, r, y) => {
+            const rr = r > 0 ? r : ding;
+            return !this._unterDemBlick(B, x, y, z, rr) && (!!rundum || this._imErstenBlick(x, z, rr, false, y));
+        };
         const { span } = this._voxelChunkConfig();
         const chunkImBlick = (cx, cz) => imBlick((cx + 0.5) * span, (cz + 0.5) * span, span * Math.SQRT1_2);
+        // DER BODEN DES SINKFLUGS (b-himmel): nach dem ersten Bild trägt jedes fehlende Stück die Mindesthöhe des Auges, in der es
+        // unter dem tiefsten Rand liegt, den der Schirm im Flug zeigen darf (`SINKFLUG`: die Neigung höchstens `neigungGrad`, der
+        // halbe Bildwinkel, `randGrad`) — in JEDER Richtung, die Gier dreht frei. Dieselben Stücke wie das Urteil im Bild, mit
+        // dem Rand des Flugs statt der Neigung des Augenblicks: der Leib sinkt nie tiefer, als das Fehlende erlaubt
+        // (`_sinkflugVy`), und landet, wenn nichts mehr fehlt. Nur der Rundblick des Flugs (`_sinkflugTakt`) misst ihn.
+        const F = rundum && st._sinkflug && st._weltbildDa ? st._sinkflug : null;
+        const S = AnazhRealm.SINKFLUG;
+        const tanFlug = Math.tan(
+            ((S.neigungGrad + S.randGrad) * Math.PI) / 180 + (((B && B.fov) || 75) * Math.PI) / 360
+        );
+        let augeBoden = -Infinity;
+        const fehlt = (x, y, z, r) => {
+            if (!F || !B) return;
+            const rr = r > 0 ? r : ding;
+            const scheitel = (Number.isFinite(y) ? y : F.grundY) + rr;
+            augeBoden = Math.max(augeBoden, scheitel + tanFlug * Math.max(Math.hypot(x - B.cx, z - B.cz) - rr, 0));
+        };
+        const R = Number.isFinite(st.architectureCullingRadius) ? st.architectureCullingRadius : 150;
+        // was fehlt und noch keinen Ort trägt (das Buch, ein Dorf im Plan): es kann überall in der Mesh-Zone stehen — im Bild ist
+        // es, sobald ihr Rand nicht unter dem Schirm liegt (am Boden immer), und es trägt den Boden des Flugs an ihrem Rand
+        const ohneOrt = () => fehlt(pm.position.x + R, undefined, pm.position.z, ding);
+        const zoneImBild = () => !this._unterDemBlick(B, B.cx + R, undefined, B.cz, ding);
+        const schluss = () => {
+            if (F) F.augeBoden = augeBoden;
+            return out;
+        };
         // DER BODEN IM BILD (B-Blick): der Ring bis zum Existenz-Boden, soweit die Ankunft ihn sieht — der Chunk des Spielers
-        // immer, rundum (der Nachlauf) jeder; was dahinter liegt, baut der Ring in jedem Takt mit seiner eigenen Kappe (`_tickVoxelChunkStreaming`).
+        // immer (im Sinkflug nur im Bild: er liegt unter ihm), rundum (der Nachlauf) jeder; was dahinter liegt, baut der Ring in
+        // jedem Takt mit seiner eigenen Kappe (`_tickVoxelChunkStreaming`).
         // Bis B-Blick wartete das Bild auf den Boden hinter dem Spieler (GTX kalt: 40 von 122 Ring-Rufen und 10 von 44 Einbauten
         // außer Blick, 0,8 s Haupt-Faden; p3/n2010/blick/f5.txt).
         const pc = st.lastPlayerVoxelChunk;
-        const F = AnazhRealm.RING_EXIST_FLOOR;
+        const RF = AnazhRealm.RING_EXIST_FLOOR;
         let boden = pc ? 0 : 1;
-        for (let dz = -F; pc && dz <= F; dz++)
-            for (let dx = -F; dx <= F; dx++) {
+        for (let dz = -RF; pc && dz <= RF; dz++)
+            for (let dx = -RF; dx <= RF; dx++) {
                 const e = st.voxelChunks && st.voxelChunks.get(`${pc.cx + dx},${pc.cz + dz}`);
-                if (!(e && (e.mesh || e.empty)) && (!(dx || dz) || chunkImBlick(pc.cx + dx, pc.cz + dz))) boden++;
+                if (e && (e.mesh || e.empty)) continue;
+                fehlt((pc.cx + dx + 0.5) * span, undefined, (pc.cz + dz + 0.5) * span, span * Math.SQRT1_2);
+                if ((!(dx || dz) && !st._sinkflug) || chunkImBlick(pc.cx + dx, pc.cz + dz)) boden++;
             }
         if (boden)
             luecke(
@@ -1123,14 +1183,14 @@ class AnazhRealm_dirigent_ankunft {
         // DER LEIB DES SPIELERS (K60-2): sein Guss kommt aus dem Faden (`_leibBereit`, die zwei Vorlagen nach dem Buch) — bis
         // er steht, ist der Spieler der leere Anker, und kein Bild zeigt die Welt ohne ihn.
         if (st._deferredAvatarSoul) luecke("leib", "der Spieler erhält seinen Leib", !!this._foundry);
-        if (!this._foundryEnabled()) return out;
+        if (!this._foundryEnabled()) return schluss();
         const f = this._foundry;
         if (!f || !f.ready || !f.recipes) {
             luecke("buch", "das Buch der Studios öffnet sich", !!(f && f.worker));
-            return out;
+            ohneOrt();
+            return schluss();
         }
         const p = pm.position;
-        const R = Number.isFinite(st.architectureCullingRadius) ? st.architectureCullingRadius : 150;
         this._stufenVorlaufWahl(p, R, imBlick);
         let ungebaut = 0;
         let zeuge = null;
@@ -1138,12 +1198,9 @@ class AnazhRealm_dirigent_ankunft {
             if (!e || !e.position) continue;
             const dx = e.position.x - p.x;
             const dz = e.position.z - p.z;
-            if (
-                dx * dx + dz * dz <= R * R &&
-                (!this._archIsRendered(e) || this._vorlaufOffen(e)) &&
-                imBlick(e.position.x, e.position.z)
-            )
-                zeuge = ungebaut++ ? zeuge : e;
+            if (dx * dx + dz * dz > R * R || (this._archIsRendered(e) && !this._vorlaufOffen(e))) continue;
+            fehlt(e.position.x, e.position.y, e.position.z, ding);
+            if (imBlick(e.position.x, e.position.z, ding, e.position.y)) zeuge = ungebaut++ ? zeuge : e;
         }
         if (ungebaut) luecke("bauten", `${ungebaut} Bäume und Bauten wachsen`, false, ungebaut, zeuge);
         // DAS DORF DER ANKUNFT (K60-4): ein Haus, das noch kein Eintrag ist, zählt „bauten" nicht — das Start-Dorf ist fällig
@@ -1158,33 +1215,46 @@ class AnazhRealm_dirigent_ankunft {
                     const s = q.plan.slots[q.reihe[i]];
                     const hx = s && q.origin.x + s.x;
                     const hz = s && q.origin.z + s.z;
-                    if (s && (hx - p.x) ** 2 + (hz - p.z) ** 2 <= R * R && imBlick(hx, hz)) haeuser++;
+                    if (!s || (hx - p.x) ** 2 + (hz - p.z) ** 2 > R * R) continue;
+                    fehlt(hx, q.origin.y, hz, ding);
+                    if (imBlick(hx, hz, ding, q.origin.y)) haeuser++;
                 }
             if (haeuser) luecke("dorf", `${haeuser} Häuser des Dorfs wachsen`, false, haeuser);
-            else if (this._autoSettlementPendingKey) luecke("dorf", "das Dorf wird geplant", true);
+            else if (this._autoSettlementPendingKey) {
+                if (zoneImBild()) luecke("dorf", "das Dorf wird geplant", true);
+                ohneOrt();
+            }
             // der Ort aus dem Gedächtnis (speicher.K3): sein Export ist unterwegs, oder er ist fällig
-            else if (this._stlWegePending || (this._autoSettlementChannelLive() && this._dorfWiederkehrZelle(p)))
-                luecke("dorf", "das Dorf kehrt wieder", !!this._stlWegePending);
-            else if (!q && this._autoSettlementChannelLive() && this._startDorfFaellig(p))
-                luecke("dorf", "das Dorf wird gegründet");
+            else if (this._stlWegePending || (this._autoSettlementChannelLive() && this._dorfWiederkehrZelle(p))) {
+                if (zoneImBild()) luecke("dorf", "das Dorf kehrt wieder", !!this._stlWegePending);
+                ohneOrt();
+            } else if (!q && this._autoSettlementChannelLive() && this._startDorfFaellig(p)) {
+                if (zoneImBild()) luecke("dorf", "das Dorf wird gegründet");
+                ohneOrt();
+            }
         }
         // Die Pflanz-Schlange (`pendingVegSpawns`, K60): ein gepflanzter Baum der Mesh-Zone, der noch nicht gesetzt ist, ist
         // noch kein Eintrag — ohne diesen Term stand das Bild vor ihm, und er wuchs im Bild nach.
         let gesetzt = 0;
         for (const t of st.pendingVegSpawns || []) {
             const q = t && t.position;
-            if (q && (q.x - p.x) ** 2 + (q.z - p.z) ** 2 <= R * R && imBlick(q.x, q.z)) gesetzt++;
+            if (!q || (q.x - p.x) ** 2 + (q.z - p.z) ** 2 > R * R) continue;
+            fehlt(q.x, q.y, q.z, ding);
+            if (imBlick(q.x, q.z, ding, q.y)) gesetzt++;
         }
         // Die Saat (K60-3): ein gebauter Chunk im Laub-Radius, dessen Pflanzung aussteht (`pendingFoliageChunks` — er wartete auf
         // den Radius, `_tickFoliageGrowth` sät zwei je Takt), hat noch keinen Baum in der Schlange: ohne ihn stand das Bild im
         // Takt, in dem der Radius wuchs, bevor sein Wald gesät war.
         let saat = 0;
+        const saatStueck = (cx, cz) => {
+            fehlt((cx + 0.5) * span, undefined, (cz + 0.5) * span, span * Math.SQRT1_2);
+            if (chunkImBlick(cx, cz)) saat++;
+        };
         for (const key of st.pendingFoliageChunks || []) {
             const ci = key.indexOf(",");
             const cx = Number(key.slice(0, ci));
             const cz = Number(key.slice(ci + 1));
-            if (st.voxelChunks && st.voxelChunks.has(key) && this._foliageChunkInRadius(cx, cz) && chunkImBlick(cx, cz))
-                saat++;
+            if (st.voxelChunks && st.voxelChunks.has(key) && this._foliageChunkInRadius(cx, cz)) saatStueck(cx, cz);
         }
         // Der Pflanz-Gang, der auf den Plan seines Walds wartet (`_waldPflanzWarten`, K69 — die Stufe nach der Saat): sein Chunk
         // trägt noch keinen Baum — ohne diesen Term wich der Ladeschirm, und der Wald der Mesh-Zone wuchs im Bild nach (K69-2).
@@ -1195,8 +1265,7 @@ class AnazhRealm_dirigent_ankunft {
                 const i = key.indexOf(",");
                 const cx = Number(key.slice(0, i));
                 const cz = Number(key.slice(i + 1));
-                if (((cx + 0.5) * span - p.x) ** 2 + ((cz + 0.5) * span - p.z) ** 2 <= R * R && chunkImBlick(cx, cz))
-                    saat++;
+                if (((cx + 0.5) * span - p.x) ** 2 + ((cz + 0.5) * span - p.z) ** 2 <= R * R) saatStueck(cx, cz);
             }
         }
         if (gesetzt || saat)
@@ -1209,21 +1278,33 @@ class AnazhRealm_dirigent_ankunft {
                 gesetzt + saat
             );
         const SC = AnazhRealm.SCATTER;
-        const warten = this._streuWartet(p, null, (rx, rz) =>
-            imBlick((rx + 0.5) * SC.regionM, (rz + 0.5) * SC.regionM, SC.regionM * Math.SQRT1_2)
+        const regionR = SC.regionM * Math.SQRT1_2;
+        const warten = this._streuWartet(
+            p,
+            null,
+            (rx, rz) => imBlick((rx + 0.5) * SC.regionM, (rz + 0.5) * SC.regionM, regionR),
+            F ? (rx, rz) => fehlt((rx + 0.5) * SC.regionM, undefined, (rz + 0.5) * SC.regionM, regionR) : null
         );
         if (warten) luecke("streu", `${warten} Wald-Stücke warten auf ihre Gestalt`, false, warten);
         // die Karte zählt, deren Leser im Blick steht (ihr Bedarf ist sein Rang, `_foundryBuildImpostorFlat`); ein Schlüssel
-        // ohne Zelle zählt immer
+        // ohne Zelle zählt immer. Im Sinkflug trägt der Rang den waagrechten Abstand ihres Lesers: unter dem Schirm zählt sie nie.
         const zellen = this._impostorAtlas().zellen;
+        const A = AnazhRealm.ERSTER_BLICK.ausserD2;
         const imBild = (k) => {
             const z = zellen.get(k);
-            return !z || !!rundum || this._rangImErstenBlick(z._bedarfD2);
+            if (!z) return true;
+            const d2 = z._bedarfD2;
+            if (st._sinkflug && B && Number.isFinite(d2)) {
+                const d = Math.sqrt(d2 >= A ? d2 - A : d2);
+                fehlt(B.cx + d, undefined, B.cz, ding);
+                if (this._unterDemBlick(B, B.cx + d, undefined, B.cz, ding)) return false;
+            }
+            return !!rundum || this._rangImErstenBlick(d2);
         };
         let karten = 0;
         for (const k of this._impostorBakeQueue || []) if (imBild(k)) karten++;
         if (karten) luecke("karten", `${karten} ferne Bäume werden gemalt`, false, karten);
-        return out;
+        return schluss();
     }
 
     // DER NACHLAUF (B3d): ab dem ersten Bild baut die Welt hinter dem Spieler weiter wie unter dem Ladeschirm — kein
@@ -1244,6 +1325,89 @@ class AnazhRealm_dirigent_ankunft {
                 "WARN"
             );
         }
+    }
+
+    // DER ABSPRUNG (b-himmel, Pflicht-OFFEN B): die Ankunft auf einer neuen Welt ist ein Sinkflug. Der Leib beginnt
+    // SINKFLUG.hoeheM über seinem Stand (`_ensureGenesisPlatform`) und hat die Kontrolle ab dem ersten Bild — vor ihm muss nur
+    // stehen, was aus der Höhe im Bild ist (Himmel, Licht, Horizont, Leib; die Nähe liegt unter dem Schirm, `_unterDemBlick`).
+    // Die Nähe wächst im Flug, nah zuerst rundum; der Leib sinkt nie tiefer, als ihr Fehlendes erlaubt (`_sinkflugVy`), und
+    // landet, wenn sie steht. Liefert die Höhe, in der er beginnt. Der Null-Renderer zeichnet kein Bild: dort steht er.
+    _sinkflugAb(x, y, z) {
+        if (this._nullRendererGewaehlt()) return y;
+        this.state._sinkflug = {
+            grundY: y,
+            stand: { x, y, z },
+            boden: -Infinity,
+            augeBoden: -Infinity,
+            grund: y,
+            bilder: 0,
+            luecken: 0,
+            lueckeSatz: null,
+            gestartet: false,
+        };
+        return y + AnazhRealm.SINKFLUG.hoeheM;
+    }
+
+    // Die Vertikale des Leibs im Sinkflug (`_stepCharacter`, nach der Schwerkraft): bis zum ersten Bild schwebt er (der Absprung
+    // wartet auf die Kontrolle); danach fällt er höchstens so schnell, dass er über dem Boden des Flugs (`boden`, aus dem
+    // Fehlenden) und dem Grund unter ihm mit `kS` je Meter Rest bremst, nie langsamer als `landMs` (unter der Schwelle der
+    // Beine, koerper LEIB.sturz); liegt der Boden des Flugs über ihm, steigt er mit höchstens `steigMs` (der Aufwind).
+    _sinkflugVy(vy, y) {
+        const st = this.state;
+        const F = st._sinkflug;
+        F.gestartet = true;
+        if (!st._weltbildDa) return 0;
+        const S = AnazhRealm.SINKFLUG;
+        const rest = y - Math.max(F.boden, F.grund);
+        if (rest < 0) return Math.min(S.steigMs, -rest * S.kS);
+        return Math.max(vy, -Math.max(S.landMs, S.kS * rest));
+    }
+
+    // DER TAKT DES SINKFLUGS (je gezeichnetes Bild ab der Kontrolle, `_ankunftsBild`): das Urteil DIESES Bilds (`_weltbildLuecken`,
+    // im Blick der Kamera, wie sie jetzt steht) — ein Bild mit Lücke zählt und nennt sie laut beim Satz —, dann der Rundblick, der
+    // den Boden des Flugs setzt (das Auge → der Leib), und der Grund unter dem Leib (`_koerperBodenUnter`, der Boden jedes Körpers;
+    // ohne Boden der Stand).
+    _sinkflugTakt() {
+        const st = this.state;
+        const F = st._sinkflug;
+        const imBild = this._weltbildLuecken();
+        F.bilder++;
+        if (imBild.length) {
+            F.luecken++;
+            // der Satz mit dem Täter beim Namen (`_lueckeTaeter`) und der Höhe des Auges über dem Stand
+            const taeter = imBild.map((l) => this._lueckeTaeter(l)).filter(Boolean);
+            const satz =
+                imBild.map((l) => l.satz).join(" · ") + (taeter.length ? ` (Täter: ${taeter.join(" · ")})` : "");
+            const pm = st.playerMesh;
+            if (satz !== F.lueckeSatz)
+                this.log(
+                    `Der Sinkflug zeigt im Bild ${F.bilder} in ${pm ? Math.round(pm.position.y - F.grundY) : "?"} m eine Lücke: ${satz}`,
+                    "WARN"
+                );
+            F.lueckeSatz = satz;
+        }
+        this._weltbildLuecken(true);
+        const pm = st.playerMesh;
+        const cam = st.camera;
+        F.boden =
+            Number.isFinite(F.augeBoden) && cam && pm ? F.augeBoden - (cam.position.y - pm.position.y) : -Infinity;
+        const h = pm ? this._koerperBodenUnter(pm.position.x, pm.position.y, pm.position.z) : null;
+        F.grund = Number.isFinite(h) ? h + AnazhRealm.PLAYER_FOOT_OFFSET : F.grundY;
+    }
+
+    // DIE LANDUNG (`_loopPhysicsSync`: der Leib fasst Grund nach dem ersten Bild): der Sinkflug endet, seine Bilanz bleibt
+    // (`_sinkflugBilanz`: Bilder, Bilder mit Lücke, ihr letzter Satz, die Zeit ab Navigation), der Rundblick der Ankunft beginnt.
+    _sinkflugLandung() {
+        const st = this.state;
+        const F = st._sinkflug;
+        st._sinkflug = null;
+        const t = performance.now();
+        st._sinkflugBilanz = { bilder: F.bilder, luecken: F.luecken, satz: F.lueckeSatz, landung: t };
+        st._nachlauf = 0;
+        this.log(
+            `Die Landung nach ${((t - st._weltbildDa) / 1000).toFixed(1)} s Sinkflug: ${F.luecken} von ${F.bilder} Bildern mit Lücke`,
+            F.luecken ? "WARN" : "INFO"
+        );
     }
 
     // Die Wahl des Renderers, bevor er steht: der Null-Renderer (GPU-frei, opt-in der Linsen) oder der echte. EINE Frage für
@@ -1458,6 +1622,10 @@ AnazhRealm.ANKUNFT_GLEIT_BILDER = 90;
 // dreht die Kamera in RUNDBLICK_BILDER Takten einmal ganz herum, und kein Takt zeigt ein Loch in seinem Blick.
 AnazhRealm.ERSTER_BLICK = Object.freeze({ randGrad: 15, nahM: 6, dingM: 12, ausserD2: 1e12 });
 AnazhRealm.RUNDBLICK_BILDER = 120;
+// DER SINKFLUG (b-himmel, `_sinkflugAb`): die Höhe über dem Stand, in der die Ankunft beginnt (m); die tiefste Neigung des
+// Blicks im Flug und der Rand darüber, der den Boden des Flugs trägt (Grad); die Bremse je Meter Rest über dem Boden (1/s), das
+// Tempo der Landung (m/s, unter koerper LEIB.sturz.schadlosMs 7,7) und des Aufwinds (m/s).
+AnazhRealm.SINKFLUG = Object.freeze({ hoeheM: 400, neigungGrad: 20, randGrad: 5, kS: 0.5, landMs: 3, steigMs: 8 });
 // Der Takt der Stufen-Wahl in der Ankunft (`_tickArchitectureLOD`, `_tickScatterLod`): Wechsel der Bauten, Wechsel und
 // Scan der Streu je Bild — die Wahl hält mit der gleitenden Maske Schritt (sonst 5 · 4 · 160).
 AnazhRealm.ANKUNFT_TAKT = Object.freeze({ bau: 32, streu: 16, streuScan: 640 });

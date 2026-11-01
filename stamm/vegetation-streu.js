@@ -1481,8 +1481,9 @@ class AnazhRealm_vegetation_streu {
     // Existenz-Boden, bevor der Streamer einen Frame bekam — die fehlende Karte galt als „nichts wartet", der Ladeschirm wich
     // ohne ein einziges Wald-Stück. Ohne Spieler-Ort steht keine.
     // `liste` (optional) nimmt je wartende Region ihren Schlüssel und Grund auf (`_streuRegionWartet`); `zaehlt` (optional,
-    // (rx, rz) → bool) nimmt nur diese Regionen (das erste Weltbild: die im Blick, B3d).
-    _streuWartet(p, liste, zaehlt) {
+    // (rx, rz) → bool) nimmt nur diese Regionen (das erste Weltbild: die im Blick, B3d); `jede` (optional, (rx, rz)) hört jede
+    // wartende Region in Reichweite, gezählt oder nicht (der Boden des Sinkflugs, `_weltbildLuecken`).
+    _streuWartet(p, liste, zaehlt, jede) {
         const SC = AnazhRealm.SCATTER;
         if (!p) {
             if (liste) liste.push("kein Spieler-Ort");
@@ -1495,9 +1496,13 @@ class AnazhRealm_vegetation_streu {
             for (let dx = -SC.ringRegions; dx <= SC.ringRegions; dx++) {
                 const rx = rx0 + dx;
                 const rz = rz0 + dz;
-                if (!this._streuRegionInReichweite(rx, rz, p) || (zaehlt && !zaehlt(rx, rz))) continue;
+                if (!this._streuRegionInReichweite(rx, rz, p)) continue;
+                const zaehltHier = !zaehlt || zaehlt(rx, rz);
+                if (!zaehltHier && !jede) continue;
                 const grund = this._streuRegionWartet(`${rx},${rz}`);
                 if (!grund) continue;
+                if (jede) jede(rx, rz);
+                if (!zaehltHier) continue;
                 warten++;
                 if (liste) liste.push(`${rx},${rz} ${grund}`);
             }

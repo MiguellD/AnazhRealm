@@ -891,6 +891,7 @@ class AnazhRealm_dirigent_takt {
         // Luft → Boden mit dem Fang-Tempo des Lösers, Luft → Wasser mit dem Tempo, mit dem der Leib eintrat
         if (luft && s.isInAir !== true)
             s._aufprall = { tempo: s._sturzTempo || Math.max(0, -vy), n: (s._aufprall ? s._aufprall.n : 0) + 1 };
+        if (luft && s.isInAir !== true && s._sinkflug && s._weltbildDa) this._sinkflugLandung();
     }
 
     // ===== FIXED-TIMESTEP SIM/RENDER-SPLIT (Fiedler „Fix Your Timestep!") =====
@@ -943,6 +944,8 @@ class AnazhRealm_dirigent_takt {
             } else {
                 st._fixedSimPos.copy(mesh.position);
                 st._fixedPrevPos = null; // Teleport → kein Interpolations-Schweif über den Sprung
+                // ein Teleport nach dem Absprung beendet den Sinkflug: der Leib steht, wo er gesetzt wurde (Linse, Portal, Rettung)
+                if (st._sinkflug && st._sinkflug.gestartet) st._sinkflug = null;
             }
         }
         // prev = die Sim-Position VOR DEM LETZTEN SCHRITT (Fiedler: das Bild liegt zwischen den zwei jüngsten Zuständen, um den
@@ -1776,7 +1779,7 @@ class AnazhRealm_dirigent_takt {
         // DER SPIEGEL DES GESETZES (D10): nach dem Bild der Post-Kette, aus ihrer Tiefe — das Wasser des nächsten liest ihn
         if (!direkt) this._spiegelPassZeichne();
         // Das erste fertige Weltbild nimmt den Ladeschirm weg (L2: nie die schwarze Leinwand).
-        if (!this.state._weltbildDa || this.state._nachlauf != null) this._ankunftsBild();
+        if (!this.state._weltbildDa || this.state._nachlauf != null || this.state._sinkflug) this._ankunftsBild();
         // GPU-Last in den perfSense-Frame-Akku (Draw-Calls + Dreiecke, alle Pässe). Im r184-WebGPU-Info ist
         // `render.calls` ein LEBENSZEIT-Zähler der render()-Aufrufe (reset() löscht ihn nicht) → er
         // vergiftete HUD/Flugschreiber/Regler mit wachsender Phantom-Last. Pro Frame zählt

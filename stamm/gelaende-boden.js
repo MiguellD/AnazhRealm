@@ -483,7 +483,8 @@ class AnazhRealm_gelaende_boden {
         // Spieler oben auf die Plattform setzen: die Oberseite liegt bei Sohle + Dicke, +1,2 Puffer.
         const spawnY = sohle + S.dick + 1.2;
         if (this.state.playerMesh) {
-            this.state.playerMesh.position.set(spot.x, spawnY, spot.z);
+            // die Ankunft auf der neuen Welt ist ein Sinkflug über dem Stand (`_sinkflugAb`, b-himmel)
+            this.state.playerMesh.position.set(spot.x, this._sinkflugAb(spot.x, spawnY, spot.z), spot.z);
             // Feld-nativ: Velocity nullen + vertikalen Feld-Zustand zurück (kein Ammo-Body).
             if (this.state.playerVel) this.state.playerVel.setValue(0, 0, 0);
             this.state._fieldVy = 0;

@@ -842,13 +842,16 @@ class AnazhRealm_speicher_welten {
             [
                 "playerPosition",
                 () =>
-                    st().playerMesh
-                        ? {
-                              x: st().playerMesh.position.x,
-                              y: st().playerMesh.position.y,
-                              z: st().playerMesh.position.z,
-                          }
-                        : { x: 0, y: 5, z: 0 },
+                    // im Sinkflug sichert der Stand den Ort der Landung (`_sinkflugAb`), nie die Höhe des Flugs
+                    st()._sinkflug
+                        ? Object.assign({}, st()._sinkflug.stand)
+                        : st().playerMesh
+                          ? {
+                                x: st().playerMesh.position.x,
+                                y: st().playerMesh.position.y,
+                                z: st().playerMesh.position.z,
+                            }
+                          : { x: 0, y: 5, z: 0 },
                 // der Augenblick: jeder Stand des Takts fragt die Lage selbst (der Besen nie)
                 { augenblick: true },
             ],
@@ -858,7 +861,12 @@ class AnazhRealm_speicher_welten {
             ["herkunft", () => 1],
             [
                 "spielerUeberGrund",
-                () => (st().playerMesh ? this._ueberGrund(st().playerMesh.position) : undefined),
+                () =>
+                    st()._sinkflug
+                        ? this._ueberGrund(st()._sinkflug.stand)
+                        : st().playerMesh
+                          ? this._ueberGrund(st().playerMesh.position)
+                          : undefined,
                 // die Quelle: seine Lage und der Boden seiner Nachbarschaft (`_voxelStand`, die Regel je Bau) — eine Grube fern
                 // von ihm misst nicht neu (bis speicher-k2-anhang jeder neue Boden der Welt, ~0,2 ms je Sicherung)
                 {
@@ -2774,6 +2782,8 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "_weltbildWarten",
         "_nachlauf",
         "_rundumDa",
+        "_sinkflug",
+        "_sinkflugBilanz",
     ]),
     seite: Object.freeze([
         "renderer",

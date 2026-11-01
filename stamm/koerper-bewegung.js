@@ -747,6 +747,7 @@ class AnazhRealm_koerper_bewegung {
         } else {
             vy += s.gravity * dt;
             if (vy < -25) vy = -25;
+            if (s._sinkflug) vy = this._sinkflugVy(vy, mesh.position.y); // DER SINKFLUG der Ankunft (b-himmel)
         }
         // IM SATTEL führt das Gefährt die Vertikale (Welle L, Q1 F-D10): der Reiter sitzt — kein Fall, kein Boden-Snap
         // (Schritt 8); den Sitz setzt `_rittSchritt` im selben Sim-Schritt aus der Ebene der Räder. Vorher fiel die
@@ -2286,7 +2287,9 @@ class AnazhRealm_koerper_bewegung {
         }
         if (T.blickGier !== 0 || T.blickNeig !== 0) {
             st.yaw += T.blickGier;
-            st.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, st.pitch + T.blickNeig));
+            // im Sinkflug blickt der Leib nie tiefer als SINKFLUG.neigungGrad (der Boden des Flugs hält das Fehlende darunter)
+            const tief = st._sinkflug ? (-AnazhRealm.SINKFLUG.neigungGrad * Math.PI) / 180 : -Math.PI / 2;
+            st.pitch = Math.max(tief, Math.min(Math.PI / 2, st.pitch + T.blickNeig));
             T.blickGier = T.blickNeig = 0;
         }
     }
