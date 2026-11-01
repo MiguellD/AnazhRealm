@@ -853,9 +853,11 @@ class AnazhRealm_dirigent_ankunft {
     // DIE SPÄTEN MODULE (Pflicht-OFFEN B, w4-b-code): was das erste Bild nicht liest, lädt nach ihm. Die EINE Liste ist die
     // Modul-Karte (`spät` in ihrer Ordnung, spec/stamm/modul-karte.json); index.html trägt ihre Stamm-Tags träge am Ende des
     // Blocks (`type="spaet"`, jeder mit ?v=). Nach dem Boot und dem ersten Weltbild weckt sie DIESER Lader in Lade-Ordnung, dann
-    // verkabelt der Wirt ihre Oberflächen (`_spaetAngekommen`); `_spaetDa` ist ihre Zeit ab Navigation, erst danach ist das
-    // Erwachen ganz (`erwacht`). Ein Glied eines späten Moduls, das vorher gerufen wird, fehlt am Wirt: ROT beim Namen (die
-    // SPÄT-WAND jeder Null-Linse in scripts/lib/welt-boot.cjs, gate:ankunft LS hält 40 Takte vor dem Laden).
+    // verkabelt der Wirt ihre Oberflächen (`_spaetAngekommen`); `_spaetDa` ist ihre Zeit ab Navigation, ihr Versprechen `spaet`
+    // (`_bootAnazhRealm`) — nie das Erwachen (`erwacht`): das erste Bild zeichnet erst der Takt, und ein Erwachen, das auf es
+    // wartete, wartete auf eine Bühne, die ihr Bild hält (z117). Ein Glied eines späten Moduls, das vorher gerufen wird, fehlt am
+    // Wirt: ROT beim Namen (die SPÄT-WAND jeder Null-Linse in scripts/lib/welt-boot.cjs, gate:ankunft LS hält 40 Takte vor dem
+    // Laden, LE: das Erwachen steht, während der Server sie hält).
     async _spaetLaden() {
         await this._weltbildKommt();
         const tags = [...document.querySelectorAll('script[type="spaet"]')];
@@ -1519,15 +1521,24 @@ function _bootAnazhRealm() {
         window.anazhRealm = anazhRealm;
     }
     // DAS ERWACHEN: das Versprechen des Boots samt der Heimat aus dem Faden (true: die Welt steht, false: der Boot brach) —
-    // die Welt-Warte jeder Linse (`__weltDa`) taktet erst danach; bis dahin taktet sie nur die Schleife des Boots.
-    const erwachen = Promise.resolve(anazhRealm.init()).then(() => anazhRealm._spaetLaden());
+    // die Welt-Warte jeder Linse (`__weltDa`) taktet erst danach; bis dahin taktet sie nur die Schleife des Boots. Es wartet auf
+    // kein Bild: DIE SPÄTEN MODULE folgen dem ersten Weltbild mit ihrem EIGENEN Versprechen (`spaet`, `_spaetLaden`; true:
+    // verkabelt, false: der Boot brach). Bis z117 hing das Erwachen an ihnen — die S0-Bühne, die ihr Bild bis zum Schuss hält,
+    // stand 170 s in „Laden", die Ego-Bühne fand die Grobstufe des Leibs vor dem Bild nie.
+    const erwachen = Promise.resolve(anazhRealm.init());
     anazhRealm.erwacht = erwachen.then(
         () => true,
         () => false
     );
-    // Ein Boot, der scheitert, sagt es auf dem Ladeschirm (nie ein stummes Warten).
+    const spaet = anazhRealm.erwacht.then((wach) => wach && anazhRealm._spaetLaden().then(() => true));
+    anazhRealm.spaet = spaet;
+    // Ein Boot, der scheitert, sagt es auf dem Ladeschirm (nie ein stummes Warten); ein spätes Modul, das nicht lädt, der EINE Melder.
     erwachen.catch((e) => {
         anazhRealm._ladeschirmStand(`die Welt konnte nicht erwachen: ${(e && e.message) || e}`);
+        throw e;
+    });
+    spaet.catch((e) => {
+        anazhRealm._bruchMelden(`SPÄTE MODULE: ${(e && e.message) || e}`);
         throw e;
     });
 }

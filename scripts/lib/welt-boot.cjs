@@ -148,6 +148,9 @@ async function weltDa(bed) {
     // eine halbe Welt (der Spieler fällt, ehe die Tiere geboren sind)
     while (!r?.erwacht) await sleep(50);
     await r.erwacht;
+    // die späten Module folgen dem ersten Weltbild (`spaet`, `_spaetLaden`): steht es, ist die Welt erst mit ihnen da; vor ihm
+    // wartet keine Linse auf sie (die S0-Bühne hält ihr Bild bis zum Schuss, die Ego-Bühne misst den Leib vor dem Bild)
+    if (r.state?._weltbildDa) await r.spaet;
     for (let r; !((r = window.anazhRealm) && typeof r._gameLoopTick === "function" && (!bed || bed(r)));)
         await sleep(50);
     window.__weltDaWartet = null;
@@ -197,10 +200,10 @@ const bundlesNeu = () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpd
 const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
 const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
 // DIE WAND DER SPÄTEN MODULE (Pflicht-OFFEN B): in jeder Seite des Null-Renderers steht ein Zeuge am Ende der Prototyp-Kette des
-// Wirts und seiner Klasse — bis zum Erwachen (`erwacht`, samt der späten Module, `_spaetLaden`) merkt er jede Frage nach einem
-// Namen, den der Wirt nicht trägt (`__vorSpaet`); ein Name eines Moduls, das die Karte `spät` nennt, ist ROT beim Namen (der
-// EINE Sammler). Dann fällt er. Eine Zeit-Linse fährt ihn nie (ihr Boot ist die Messung); gate:ankunft hält die späten Dateien
-// der Karte für 40 Takte vor ihrem Laden.
+// Wirts und seiner Klasse — bis die späten Module verkabelt sind (ihr Versprechen `spaet`, `_spaetLaden`; nie das Erwachen, das
+// auf kein Bild wartet) merkt er jede Frage nach einem Namen, den der Wirt nicht trägt (`__vorSpaet`); ein Name eines Moduls, das
+// die Karte `spät` nennt, ist ROT beim Namen (der EINE Sammler). Dann fällt er. Eine Zeit-Linse fährt ihn nie (ihr Boot ist die
+// Messung); gate:ankunft hält die späten Dateien der Karte für 40 Takte vor ihrem Laden.
 const KARTE = karteVon(path.resolve(__dirname, "..", ".."));
 const SPAET = Object.fromEntries(Object.entries(KARTE.mod).filter(([, s]) => spaeteVon(KARTE).has(pfadVon(s))).map(([n, s]) => [n.replace("AnazhRealm.", ""), s]));
 function spaetZeuge(spaet) {
@@ -213,12 +216,11 @@ function spaetZeuge(spaet) {
             if (!wirt && window.__anazhHeadlessNullRenderer && v.constructor.name === "AnazhRealm") {
                 const ketten = [[Object.getPrototypeOf(v), Object.prototype], [v.constructor, Function.prototype]];
                 for (const [z, b] of ketten) Object.setPrototypeOf(z, new Proxy(b, { get: (t, k, e) => (typeof k === "string" && gefragt.add(k), Reflect.get(t, k, e)) }));
-                queueMicrotask(() =>
-                    Promise.resolve(v.erwacht).then(() => {
-                        for (const [z, b] of ketten) Object.setPrototypeOf(z, b);
-                        for (const n of gefragt) if (spaet[n]) console.error(`SPÄT-WAND: ${n} (${spaet[n]}) vor dem Laden seines Moduls gefragt`);
-                    })
-                );
+                const faellt = () => {
+                    for (const [z, b] of ketten) Object.setPrototypeOf(z, b);
+                    for (const n of gefragt) if (spaet[n]) console.error(`SPÄT-WAND: ${n} (${spaet[n]}) vor dem Laden seines Moduls gefragt`);
+                };
+                queueMicrotask(() => Promise.resolve(v.spaet).then(faellt, faellt));
             }
             wirt = v;
         },
@@ -906,7 +908,7 @@ async function warteAufWelt(page, frist = 120000) {
     await page.waitForFunction(() => r && typeof r._gameLoopTick === "function", {
         timeout: frist,
     });
-    await page.evaluate(() => r.erwacht); // samt der späten Module (`_spaetLaden`, Pflicht-OFFEN B)
+    await page.evaluate(async () => void (await window.__weltDa())); // das EINE Warten: das Erwachen, nach dem Bild die späten Module
 }
 
 // Eine Taste HALTEN, bis `ziel` auf `seite` (Page oder Frame) wahr wird — nie nach der Wanduhr (gate:apparat Klinge 5); `taste`
@@ -1415,7 +1417,7 @@ async function selbsttest() {
             "<!doctype html><script>function __stallSchleife(){var e=performance.now()+9000;while(performance.now()<e){}}setTimeout(__stallSchleife,300)</script>",
         "/haenger.html": "<!doctype html><script>window.__nie=function(){return new Promise(function(){})}</script>",
         "/wirft.html": "<!doctype html><script>setTimeout(function(){throw new Error('__seitenWurf')},50)</script>",
-        "/spaet.html": `<!doctype html><script>__anazhHeadlessNullRenderer = 1; class AnazhRealm {} const a = (anazhRealm = new AnazhRealm()); a.erwacht = sleep(50); void a.${Object.keys(SPAET)[0]};</script>`,
+        "/spaet.html": `<!doctype html><script>__anazhHeadlessNullRenderer = 1; class AnazhRealm {} const a = (anazhRealm = new AnazhRealm()); a.spaet = sleep(50); void a.${Object.keys(SPAET)[0]};</script>`,
     };
     const server = statikServer({ seiten });
     await server.lausche(0);

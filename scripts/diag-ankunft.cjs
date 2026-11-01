@@ -2023,6 +2023,19 @@ hauptLauf(async () => {
         void r.__zeuge;
         return window.__vorSpaet.has("__zeuge");
     });
+    // LE: das Erwachen (`erwacht`, die Welt-Warte jeder Linse) steht, während der Server die späten Module hält — hinge es an
+    // ihnen (z117: init → `_spaetLaden` → das erste Bild), stünde jede Bühne, die ihr Bild hält, in „Laden"; gewartet wird mit
+    // dem EINEN Deckel (Bau-Ereignisse, nie die Wanduhr), sein Riss ist der Befund
+    const erwacht = await page.evaluate(async () => {
+        let da = null;
+        r.erwacht.then((ok) => (da = ok));
+        try {
+            for (const weiter = window.__deckel("das Erwachen vor den späten Modulen", 600); da === null && weiter(); ) await sleep(50);
+        } catch (e) {
+            return String(e.message || e).split("\n")[0];
+        }
+        return da;
+    });
     frei();
     // Der KI-Endpunkt der D6-Probe: ein Port, auf dem nichts lauscht.
     const out = await page.evaluate(probe, { kiPort: PORT + 3 });
@@ -2060,6 +2073,7 @@ hauptLauf(async () => {
     zeige("L3", "Enter öffnet das Gespräch, Enter sendet und gibt die Welt zurück, Enter auf einem Knopf gehört dem Knopf", out.gespraech, gespraechVerdict, (m) => `Enter → ${m.enterFokus} · gesendet ${m.gesendet} · danach ${m.nachSenden} · W ${m.wNachSenden} · Esc → ${m.nachEsc} · Enter auf dem Knopf → ${m.enterAufKnopf}`);
     zeige("L7", "der Start-Gurt liest den Katalog (je Studio-Art ein Werk)", out.gurt, gurtVerdict, (m) => `${(m.hotbar || []).filter(Boolean).join(" · ")} (Arten im Katalog: ${(m.katalogArten || []).join(", ")})`);
     check("LS der Zeuge sieht vor dem Laden der späten Module", sieht, [...SPAET_DATEIEN].join(", "));
+    check("LE das Erwachen wartet auf kein spätes Modul (sein Versprechen ist `spaet`)", erwacht === true, erwacht === true ? `erwacht, während der Server ${[...SPAET_DATEIEN].join(", ")} hält` : `das Erwachen hängt an ihnen: ${erwacht}`); // prettier-ignore
     console.log("=== LK — DIE KAMERA UND DER BAUM ===");
     zeige(
         "LK",
