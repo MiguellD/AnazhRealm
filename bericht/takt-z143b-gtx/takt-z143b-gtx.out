@@ -1,0 +1,12 @@
+Punkte-Maschine: 2 Station(en) in 2 Läufen auf gtx am baf9d828 · Sitzung 2 Proben in EINER Welt (Deckel Σ 0 min) · Zeit 0 Läufe ~0 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~0 min (Soll-Minuten ohne Sitzung) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  SITZUNG gtx · die Welt steht nach 6.2 s (Schloss nach 0.01 min) · 2 Proben · Welt :27804
+  SITZUNG der Grund der Welt: 77 Größen in 0 s
+  SITZUNG die Welt vor ankunft.K1#1: 18.5 s (805 Takte, 81 Chunks)
+  SITZUNG ankunft.K1#1 ließ die Zeichenkette verändert: zeichner.postKette — kein Urteil (Werkzeug-Bruch), die Grundstellung folgt
+  OFFEN ankunft.K1#1 · Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) 0, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {"stand":"gemessen","kontrolleMs":1284,"belegtMs":755,"laengsteMs":362,"langeN":2,"langeMs":431,"halter":["(program) hält den Haupt-Faden vor dem ersten Bild 69 ms (bei 0.3 s; 1× ≥ 50 ms, Σ 69 ms)","renderRecipeBook (stamm/werkstatt-hof.js:226) hält den Haupt-Faden vor dem ersten Bild 61 m · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.postKette fort) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor klang.K4#1: 2.3 s (im Spiel 51.7 ms, durch die Tür)
+  SITZUNG die Welt vor klang.K4#1: 16.9 s (768 Takte, 81 Chunks, nach der Tür)
+  OFFEN klang.K4#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG DER ORT IM DECKEL (die Probe zog weiter als 250 m von dem Ort, an dem die Sitzung sie begann — ihr Deckel trug den Ring): klang.K4#1 1087 m (Ring 4 → 0)
+  SITZUNG Fahrt 57.5 s (Soll ≤ 1800 s) · 2 Proben · Grundstellung 1×
+→ meisterkarte-quelle\punkte\messung\baf9d828-gtx.json
