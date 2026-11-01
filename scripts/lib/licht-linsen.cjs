@@ -188,7 +188,7 @@ function albedoSicht(opts) {
                     }
                     if (c) {
                         await ticke(gesetzt ? 120 : 0, () => false);
-                        if (window.__tiereHalten) window.__tiereHalten();
+                        window.__halten?.();
                         pos = new T.Vector3(c.position.x, c.position.y, c.position.z);
                         kreatur = c;
                     }
@@ -659,17 +659,30 @@ function albedoSicht(opts) {
 
 // DAS ZIEL DER FAMILIE (Halb-Float W × H; Albedo-Sicht, Licht-Bilanz, Nah-Fern und Laub lesen es): `zeichne(cam)` die Szene
 // hinein, `lies()` dicht als Float32 (die Zeilen liegen auf 256 Byte, 8 Byte je Pixel), `bundles()` frischt jede Bündel-Gruppe
-// (`window.__bundlesNeu`, welt-boot)
+// (`window.__bundlesNeu`, welt-boot) und hält die WAHL der Linse fest (jede Linse ruft es nach ihrer Wahl): was sichtbar ist.
+// DIE WAHL HÄLT IM RENDER (heil-nahfern): der Haken jedes Passes (`scene.onBeforeRender` → `_passSicht`) legt seine Sätze für das
+// Auge DIESES Passes — der Sicht-Satz der Nah-Wiese schreibt je Senke `_instanzZahl` (visible = n > 0) und legt wachsend neue
+// Senken an. So zeichneten die Büschel der Wiesen-Ferne im Schuss jeder Linse mit eigenem Auge: seit w4-gras-l2 deckt die
+// gestreckte Ferne aus 420 m den Grund, Boden-Satz und Fern-Ring lasen dieselbe Wiese (Y −11 … −19 % gegen das Gesetz, z116), und
+// das Urteil nannte den Boden-Satz. Nach dem Haken fällt darum jedes Mesh ohne die Wahl, auch in den Kaskaden desselben Renders;
+// was der Pass verbirgt, zeigt der Halter nie.
 function linsenZiel(W, H) {
     const T = window.THREE,
         { renderer: rend, scene: sc } = st,
         rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
+    let wahl;
     const zeichne = (cam) => {
         if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
         rend.setRenderTarget(rt);
         rend.setClearColor(0x000000, 0);
         rend.clear();
-        rend.render(sc, cam);
+        const haken = sc.onBeforeRender;
+        sc.onBeforeRender = (...a) => (haken.apply(sc, a), wahl && sc.traverse((o) => o.isMesh && !wahl.has(o) && (o.visible = false)));
+        try {
+            rend.render(sc, cam);
+        } finally {
+            sc.onBeforeRender = haken;
+        }
         rend.setRenderTarget(null);
     };
     return {
@@ -685,7 +698,7 @@ function linsenZiel(W, H) {
                 aus[i] = T.DataUtils.fromHalfFloat(px[((i / (W * 4)) | 0) * s + (i % (W * 4))]);
             return aus;
         },
-        bundles: window.__bundlesNeu, // das EINE Bündel-Neu der Seite (welt-boot)
+        bundles: () => (window.__bundlesNeu(), (wahl = new Set()), sc.traverse((o) => o.visible && wahl.add(o))),
         // DIE RUHE DER LINSE: ihre Karten, Kugeln und Licht-Varianten sind neue Stoffe und Programme — der erste Render baut die
         // Pipeline asynchron und zeichnet nichts, und Renders am Stück lassen kein Versprechen reifen. Die Linse schaltet ihren
         // Frame, bis nichts mehr baut — dieselbe Ruhe wie die Aufnahme (`__erstRuhe`, scripts/lib/ausgabe-aufnahme.cjs). Die
@@ -1030,20 +1043,10 @@ function nahFernSicht(opts) {
             throw new Error("__nahFernSicht: kein Boden-Satz (chunkSaetze.boden) — nichts Nahes zu messen");
         // Ein Ort zählt nur, wo der Boden-Satz den GANZEN Fußabdruck des Schusses trägt (der Ring der Chunks endet nach
         // `_builtRingRadius`, der Fern-Ring nie): Mitte und vier Ecken liegen in der Box eines Blocks.
-        const boxen = [...satz.bloecke.values()].map((b) => {
-            if (!b.geom.boundingBox) b.geom.computeBoundingBox();
-            return b.geom.boundingBox;
-        });
+        const boxen = [...satz.bloecke.values()].map((b) => b.geom.boundingBox || (b.geom.computeBoundingBox(), b.geom.boundingBox));
         const drin = (x, z) => boxen.some((bb) => x >= bb.min.x && x <= bb.max.x && z >= bb.min.z && z <= bb.max.z);
         const fuss = halb + 1;
-        const gedeckt = (x, z) =>
-            [
-                [0, 0],
-                [fuss, fuss],
-                [fuss, -fuss],
-                [-fuss, fuss],
-                [-fuss, -fuss],
-            ].every(([a, b]) => drin(x + a, z + b));
+        const gedeckt = (x, z) => drin(x, z) && [fuss, -fuss].every((a) => drin(x + a, z + fuss) && drin(x + a, z - fuss));
         // die Deckung an der Stelle aus dem Fern-Faden (B2: die Fern-Farbe rechnet nur er) — EIN Auftrag für alle Kandidaten
         const kand = [];
         for (let dx = -220; dx <= 220; dx += 11)
@@ -1072,23 +1075,13 @@ function nahFernSicht(opts) {
         // `forestKronenDeckung`).
         const dichte = kand.slice().sort((a, b) => b.deckung - a.deckung || a.x - b.x || a.z - b.z);
         const wald = waehle(dichte);
-        const orte = wald
-            .map((k) => Object.assign(k, { klasse: "wald" }))
-            .concat(
-                waehle(dichte.filter((k) => !wald.includes(k)).reverse()).map((k) =>
-                    Object.assign(k, { klasse: "wiese" })
-                )
-            );
+        const orte = wald.concat(waehle(dichte.filter((k) => !wald.includes(k)).reverse()));
+        orte.forEach((k) => (k.klasse = wald.includes(k) ? "wald" : "wiese"));
         const { rt, lies, bundles, zeichne, ruhe, ohneLuft } = window.__linsenZiel(W, HH);
-        const meshes = [];
-        sc.traverse((o) => {
-            if (o.isMesh || o.isSprite || o.isPoints || o.isLine) meshes.push(o);
-        });
+        const meshes = [],
+            lichter = [];
+        sc.traverse((o) => (o.isLight ? lichter.push([o, o.intensity]) : (o.isMesh || o.isSprite || o.isPoints || o.isLine) && meshes.push(o)));
         const visAlt = new Map(meshes.map((m) => [m, m.visible]));
-        const lichter = [];
-        sc.traverse((o) => {
-            if (o.isLight) lichter.push([o, o.intensity]);
-        });
         const A = new T.AmbientLight(0xffffff, Math.PI);
         sc.add(A);
         const envAlt = sc.environment,
@@ -1106,32 +1099,22 @@ function nahFernSicht(opts) {
         // DAS GESETZ AN DER STELLE (die dritte Zahl, der Richter des Täters): beide Leser lesen `_fernRingTeile` — der
         // Fern-Ring an seinen Schnapp-Punkten (Schale 0: 24 m), die Karte des Boden-Stoffs im Raster N — hier das Mittel
         // derselben Formel (Boden unter dem Kronendach × Saison zur Deckung) fein über den Fußabdruck (32 × 32 Punkte).
-        const saison = r._fernSaison();
+        const saison = r._fernSaison(),
+            sm = [saison.r, saison.g, saison.b];
         const gesetz = async (x0, z0) => {
             const c = [0, 0, 0];
             let d = 0;
-            // die Teile am Gesetz aus dem Fern-Faden (B2), unter dem Meeresspiegel das Wasser des Rings
-            const pts = new Float64Array(2048);
-            for (let i = 0; i < 32; i++)
-                for (let j = 0; j < 32; j++) {
-                    pts[(i * 32 + j) * 2] = Math.round(x0 - halb + ((i + 0.5) * 2 * halb) / 32);
-                    pts[(i * 32 + j) * 2 + 1] = Math.round(z0 - halb + ((j + 0.5) * 2 * halb) / 32);
-                }
-            const a = await r._fernAuftrag("teile", { punkte: pts });
-            for (let i = 0; i < 32; i++)
-                for (let j = 0; j < 32; j++) {
-                    const k = i * 32 + j;
-                    const t = a.law[k] < wl ? r._fernRingWasserTeile() : a.teile.subarray(k * 8, k * 8 + 8);
-                    const sm = [saison.r, saison.g, saison.b];
-                    for (let k = 0; k < 3; k++) c[k] += t[k] + (t[3 + k] * sm[k] - t[k]) * t[6];
-                    d += t[6];
-                }
+            // die Teile am Gesetz aus dem Fern-Faden (B2), unter dem Meeresspiegel das Wasser des Rings — der Punkt k = 32 i + j
+            // (x aus i, z aus j) liegt bei 2 k und 2 k + 1
+            const punkte = Float64Array.from({ length: 2048 }, (_, q) => Math.round((q & 1 ? z0 : x0) - halb + ((((q & 1 ? q >> 1 : q >> 6) & 31) + 0.5) * 2 * halb) / 32));
+            const a = await r._fernAuftrag("teile", { punkte });
+            for (let k = 0; k < 1024; k++) {
+                const t = a.law[k] < wl ? r._fernRingWasserTeile() : a.teile.subarray(k * 8, k * 8 + 8);
+                for (let q = 0; q < 3; q++) c[q] += t[q] + (t[3 + q] * sm[q] - t[q]) * t[6];
+                d += t[6];
+            }
             const rgb = c.map((v) => v / 1024);
-            return {
-                rgb: rgb.map((v) => +v.toFixed(4)),
-                Y: +luma709(rgb).toFixed(4),
-                deckung: +(d / 1024).toFixed(2),
-            };
+            return { rgb: rgb.map((v) => +v.toFixed(4)), Y: +luma709(rgb).toFixed(4), deckung: +(d / 1024).toFixed(2) };
         };
         const lu = st.lodUniforms;
         const maskeAlt = lu && lu.uLodMaskOn ? lu.uLodMaskOn.value : null;
@@ -1198,26 +1181,16 @@ function nahFernSicht(opts) {
             const still = sh.still && sd.still;
             // die Spur reist nur mit, wenn ein Schuss mehr als die zwei Mindest-Läufe brauchte oder nicht stillstand
             const spur = !still || sh.laeufe > 2 || sd.laeufe > 2 ? { hell: sh.spur, dunkel: sd.spur } : undefined;
-            let n = 0,
-                R = 0,
-                G = 0,
-                B = 0;
-            for (let i = 0; i < W * HH; i++) {
-                if (!(hell[i * 4 + 3] > 0.5)) continue;
-                n++;
-                R += hell[i * 4] - dunkel[i * 4];
-                G += hell[i * 4 + 1] - dunkel[i * 4 + 1];
-                B += hell[i * 4 + 2] - dunkel[i * 4 + 2];
-            }
+            let n = 0;
+            const s = [0, 0, 0];
+            for (let i = 0; i < W * HH * 4; i += 4)
+                if (hell[i + 3] > 0.5) {
+                    n++;
+                    for (let c = 0; c < 3; c++) s[c] += hell[i + c] - dunkel[i + c];
+                }
             if (!n) return { n: 0, still, spur };
-            const rgb = [R / n, G / n, B / n];
-            return {
-                n,
-                rgb: rgb.map((v) => +v.toFixed(4)),
-                Y: +luma709(rgb).toFixed(4),
-                still,
-                spur,
-            };
+            const rgb = s.map((v) => v / n);
+            return { n, rgb: rgb.map((v) => +v.toFixed(4)), Y: +luma709(rgb).toFixed(4), still, spur };
         };
         const aus = [];
         try {

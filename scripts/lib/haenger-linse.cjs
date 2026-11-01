@@ -1180,7 +1180,7 @@ function ankunftsSelbsttest() {
 function latenzAn(k) {
     const rend = st.renderer, raf = () => new Promise((f) => requestAnimationFrame(f));
     window.__buehne();
-    if (window.__tiereHalten) window.__tiereHalten();
+    window.__halten?.();
     const pm = st.playerMesh, hand = () => pm.userData.rig.armR.wrist.getWorldPosition(pm.position.clone()).sub(pm.position);
     const lage = () =>
         L.verb === "hieb" ? [hand().toArray()] : [st.camera.matrixWorld.elements.slice(12, 15), pm.position.toArray()];
