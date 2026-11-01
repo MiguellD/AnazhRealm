@@ -738,7 +738,7 @@ async function probe(argW) {
         try {
             st.weather = "sunny";
             // (1) Die Eiche 2,4 m vor der Plattform-Mitte (direkt gesetzt: der Bau-Modus hält die Lichtung frei): ein sonniger Tag.
-            const P = { x: M.x, y: r._voxelSurfaceY(M.x, M.z), z: M.z }; // die Mitte des Genesis-Orts auf seinem Boden
+            const P = { ...M, y: r._voxelSurfaceY(M.x, M.z) }; // die Mitte des Genesis-Orts auf seinem Boden
             const vorn = r._blickVorn ? r._blickVorn(0, 0) : { x: 0, z: 1 };
             const eiche = r.spawnArchitecture(
                 "baum_eiche",
@@ -779,8 +779,7 @@ async function probe(argW) {
                 // Kühlung: im Brennpunkt (Mittag), bis die Eiche glimmt (die halbe Zünd-Wärme), höchstens 10 s, dann 30 s Nacht —
                 // feste 10 s entzündeten sie am Ort des Genesis-Plans (brennt nach 7 s), und die Wärme der Gefallenen kühlt nie
                 st.timeOfDay = 0.5;
-                const g0 = zeilen().length;
-                for (let s = 0; s < 10 && !zeilen().slice(g0).some((z) => /glimmt/.test(z)); s++) takt();
+                for (let s = 0; s < 10 && !/glimmt/.test(r._spielerSagtLetzte?.t); s++) takt();
                 const nachFokus = +(b0.heatBuildup || 0).toFixed(3);
                 st.timeOfDay = 0.0;
                 takt(30);
@@ -893,8 +892,8 @@ async function probe(argW) {
 // Schleife nicht von selbst: hier tickt `_gameLoopTick` (die Schleife des Spiels). ──
 function wegHelfer(arg) {
     const inv = st.player.inventory;
-    const M = r._genesisMitte();
-    const P = { x: M.x, y: r._voxelSurfaceY(M.x, M.z), z: M.z }; // die Mitte des Genesis-Orts auf seinem Boden (die Plattform trug ihr y)
+    const P = r._genesisMitte(); // die Mitte des Genesis-Orts auf seinem Boden (die Plattform trug ihr y)
+    P.y = r._voxelSurfaceY(P.x, P.z);
     const yaw = Math.atan2(arg.frei.x - P.x, arg.frei.z - P.z);
     const zeilen = () => document.querySelectorAll("#chat-output > div");
     const habe = () => {
