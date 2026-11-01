@@ -1664,15 +1664,21 @@ const eichOffen = (meine, m, sha, ab) =>
 // REGEL wie beim Boot (SITZUNG_BOOT_S, das Anderthalbfache des größten gemessenen): ⌈1,5 × s⌉, mindestens 10 s; liegt das über dem
 // Gesetz der Probe oder riss sie den Eich-Deckel, trägt sie kein Deckel — sie muss schneller werden. Σ heute ↔ aus den Zahlen (ohne
 // Zahl oder über dem Gesetz zählt der Deckel heute) gegen das Budget der Fahrt
-const EICH_FAKTOR = 1.5, EICH_FAKTOR_MIN = 1.25, DECKEL_MIN_S = 10;
+// FRIST_VORLAUF_S: die Probe hat Deckel − 6 s (FRIST_S in stationen/sitzung-seite.js, frist in stationen/seite.cjs) — der Deckel trägt ihre
+// Zahl erst mit diesem Vorlauf (Radeon 25ac4c0c mit ⌈1,45 × s⌉: siedlung.K5 13,3 s an der Frist 14 s, halten.K1#2 15 s an 16 s gerissen)
+const EICH_FAKTOR = 1.5, EICH_FAKTOR_MIN = 1.1, DECKEL_MIN_S = 10, FRIST_VORLAUF_S = 6;
 function eichTafel(stationen, m, geraet, hilfe = hilfeText(), faktor = EICH_FAKTOR) {
     const reihe = sitzungsReihe(gruppiere(stationen.filter((st) => st.probe && geraeteVon(st).includes(geraet))));
-    // die Zahl: die der Eich-Fahrt — sonst die Sekunden eines Laufs der Sitzung, der sein Urteil SPRACH (m.je, nie am Deckel: er endete
-    // unter ihm, seine Sekunden sind die der Probe); beides nur zum heutigen Abdruck
+    // die Zahl: die der Eich-Fahrt (bis 90 s) und die Sekunden eines Laufs der Sitzung, der sein Urteil SPRACH (m.je, nie am Deckel: er
+    // endete unter ihm) — zum heutigen Abdruck der Karte ODER zu dem ohne ihren Deckel (die Sekunden einer Probe hängen nie am Deckel, unter
+    // dem sie lief; eine neue Deckel-Tafel verlöre sonst ihre eigenen Zahlen); von beiden die größere, am Eich-Deckel „gerissen“
     const zahl = (st) => {
-        const ab = abdruck(st, hilfe, geraet), es = [m && m.je, m && m.ungemessen].map((x) => x && x[schluessel(st)]).filter((e) => e && e.abdruck === ab);
-        const e = es.find((x) => x.eich) || (m && m.je && es.includes(m.je[schluessel(st)]) && m.je[schluessel(st)].modus === "session" && m.je[schluessel(st)].s > 0 ? m.je[schluessel(st)] : null);
-        return e && (e.eich ? e : { ...e, eich: { s: e.s, sek: probeSek(st, geraet), gesetzS: gesetzVon(st), lauf: true } });
+        const abs = [abdruck(st, hilfe, geraet), abdruck(st, hilfe)], id = schluessel(st);
+        const es = [m && m.je && m.je[id], m && m.ungemessen && m.ungemessen[id]].filter((e) => e && abs.includes(e.abdruck));
+        const z = es.map((e) => (e.eich ? e.eich : !e.ungemessen && e.modus === "session" && e.s > 0 ? { s: e.s, sek: probeSek(st, geraet), gesetzS: gesetzVon(st), lauf: true } : null)).filter(Boolean);
+        if (!z.length) return null;
+        const g = z.find((x) => x.gerissen);
+        return { eich: g || z.reduce((x, y) => (y.s > x.s ? y : x)) };
     };
     // der Ort im Deckel der letzten Sitzung (stromKopf `ortImDeckel`): wie weit der Lauf im eigenen Deckel zog — der Täter beim Namen
     const ort = new Map(((m && m.sitzung && m.sitzung.strom && m.sitzung.strom.ortImDeckel) || []).map((e) => [e.probe, e.m]));
@@ -1680,7 +1686,7 @@ function eichTafel(stationen, m, geraet, hilfe = hilfeText(), faktor = EICH_FAKT
         const e = zahl(g[0]), z = e ? e.eich : null, sek = probeSek(g[0], geraet), gesetzS = gesetzVon(g[0]);
         // im Gesetz gemessen (s ≤ Gesetz), trägt der Deckel ⌈1,5 × s⌉ höchstens bis zum Gesetz (Radeon 25ac4c0c: siedlung.K2 33,9 s,
         // oekologie.K4#2 38,4 s, lod.K1#1 44,2 s urteilten im Gesetz, ⌈1,5 × s⌉ lag darüber — „schneller machen“ hieß ein Deckel, den sie rissen)
-        const aus = z && !z.gerissen ? Math.max(DECKEL_MIN_S, Math.ceil(faktor * z.s)) : null;
+        const aus = z && !z.gerissen ? Math.max(DECKEL_MIN_S, Math.ceil(faktor * z.s) + FRIST_VORLAUF_S) : null;
         // ÜBER DEM GESETZ (oder am Eich-Deckel) zählt das Urteil dieser Karte nie (eichEintrag) — die Fahrt zahlt dafür nur DECKEL_MIN_S, die
         // Zeit gehört den Proben im Gesetz (Radeon 25ac4c0c: 20 Läufe über dem Gesetz trugen 548 s Deckel, Σ aus den Zahlen 2 066 s > 1 740 s);
         // die nächste Eich-Fahrt (bis 90 s) misst sie neu, sobald die Probe schneller ist
@@ -3744,16 +3750,16 @@ async function selbsttest(o = {}) {
         // DIE TAFEL (eichTafel, der Leser der Zahlen): ⌈1,5 × s⌉ ≥ 10 s je Lauf, im Gesetz höchstens das Gesetz, Zwillinge EINE Zeile; über dem
         // Gesetz und am Eich-Deckel DECKEL_MIN_S (schneller machen — ihr Urteil zählt nie), ohne Zahl der Deckel heute; Σ heute ↔ aus den Zahlen
         const tp = (n, sek, extra = {}) => S(n + ".K1", 1, { befehl: ["node", "t" + n], sek, ...extra }, lies);
-        const tz = { a: [10, { s: 30 }], b: [33, { s: 50 }], c: [15, { s: 90.4, gerissen: true }], d: [20, null], e: [30, { s: 20 }], f: [40, { s: 6 }], g: [60, { s: 50 }], h: [20, { s: 40 }] };
+        const tz = { a: [10, { s: 30 }], b: [33, { s: 50 }], c: [15, { s: 90.4, gerissen: true }], d: [20, null], e: [36, { s: 20 }], f: [40, { s: 6 }], g: [60, { s: 50 }], h: [20, { s: 40 }] };
         const ts = Object.entries(tz).map(([n, [sek]]) => tp(n, sek, n === "g" ? { ausnahme: "der Grund beim Namen" } : {}));
         const tw = { ...tp("a", 10), staffel: 2 }; // der Zwilling von a.K1#1: derselbe Befehl, EIN Lauf
         const tm = { sha: "s1", je: {}, ungemessen: {} };
         for (const st of ts) { const z = tz[st.kriterium[0]][1]; if (z) tm[z.gerissen || z.s > 45 ? "ungemessen" : "je"][schluessel(st)] = { abdruck: abdruck(st, h), eich: z }; }
         const tt = eichTafel([...ts, tw], tm, "radeon", h);
         const tzl = tt.zeilen.map((z) => z.ids.join("+") + " " + z.sek + (z.neu != null ? "→" + z.neu : "") + " " + z.urteil).join(" | ");
-        pruef("EICH-TAFEL der Deckel aus der Zahl ⌈1,5 × s⌉ ≥ 10 s, im Gesetz gemessen höchstens das Gesetz (h: 40 s → 45): zu knapp · über dem Gesetz · ≥ 90 s · ohne Zahl · trägt · zu weit · mit ausnahme bis 90 s; Zwillinge EINE Zeile; Σ heute ↔ aus den Zahlen",
+        pruef("EICH-TAFEL der Deckel aus der Zahl ⌈1,5 × s⌉ + 6 s Vorlauf der Frist ≥ 10 s, im Gesetz gemessen höchstens das Gesetz (h: 40 s → 45): zu knapp · über dem Gesetz · ≥ 90 s · ohne Zahl · trägt · zu weit · mit ausnahme bis 90 s; Zwillinge EINE Zeile; Σ heute ↔ aus den Zahlen",
             tzl === "a.K1#1+a.K1#2 10→45 Deckel zu knapp | b.K1#1 33→10 über dem Gesetz 45 s — schneller machen | c.K1#1 15→10 ≥ 90 s — schneller machen | d.K1#1 20 ohne Zahl | " +
-                "e.K1#1 30→30 trägt | f.K1#1 40→10 Deckel zu weit | g.K1#1 60→75 Deckel zu knapp | h.K1#1 20→45 Deckel zu knapp" && tt.heute === 228 && tt.ausZahlen === 45 + 10 + 10 + 20 + 30 + 10 + 75 + 45 && tt.geeicht === 7 &&
+                "e.K1#1 36→36 trägt | f.K1#1 40→15 Deckel zu weit | g.K1#1 60→81 Deckel zu knapp | h.K1#1 20→45 Deckel zu knapp" && tt.heute === 234 && tt.ausZahlen === 45 + 10 + 10 + 20 + 36 + 15 + 81 + 45 && tt.geeicht === 7 &&
                 tt.budget === FAHRT_MAX_S - SITZUNG_BOOT_S, tzl + " · Σ " + tt.heute + " → " + tt.ausZahlen);
         // der Ort eines Vegetations-Laufs (w4-sitzung-reif): der erste Stand seines Plans — die Sitzung stellt ihn vor dem Deckel
         const plan = (...p) => ({ probe: { befehl: ["node", "-e", "(async function vegetationLauf() {})()", "{AUS}", "{PORT}", JSON.stringify(p)] } });
