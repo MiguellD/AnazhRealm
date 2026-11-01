@@ -3187,7 +3187,7 @@ async function kreaturProben(r, T, opts) {
         const puffer = saetze()
             .filter((m) => m.userData.teil === "fell")
             .map((m) => ({
-                puffer: m.userData.gang.puffer.byteLength,
+                puffer: m.userData.gang.bytes, // der Teil des Satzes auf seiner Seite (`_gangSeite`)
                 ecken: [
                     ...new Set(
                         Object.values(m.geometry.attributes)
