@@ -1527,7 +1527,7 @@ class AnazhRealm_siedlung_bewohner {
     // neben der Mitte (`spurM`) geht nur, wo jedes ihrer Beine frei ist (`_bewohnerWand`) — sonst geht er die Mitte der
     // Gasse, deren Kanten frei sind — auf der Trasse den Gehweg seiner Seite (`seite`), erst wo auch der nicht trägt, ihre Mitte.
     // Kein Weg: laut, und null (er bleibt, `_bewohnerWeg`).
-    _bewohnerStrecke(S, von, ziel, spur, seite = Math.sign(spur)) {
+    _bewohnerStrecke(S, von, ziel, spur, seite = Math.sign(spur), beide = true) {
         const stand = S.wache.stand;
         if (von._wegeStand !== stand) {
             von._wegeStand = stand;
@@ -1593,8 +1593,12 @@ class AnazhRealm_siedlung_bewohner {
             // die Normalen beider Beine (ein Ende: die des einen), ihre Summe n: der Rand um die Ecke liegt um 2·geh / |n|² · n —
             // steht er dort in einer Wand (die Laterne am Bordstein, auf seiner Linie) oder in der Bahn eines Wagens (die Ecke in
             // der Kreuzung, wo die Abbieger fahren; die Spur, die einem Stand auswich), gilt der nächste Ort längs n je Viertelmeter
-            // (hinaus zuerst, höchstens `gehwegM`), der beides nicht ist — sonst der nächste ohne Wand. Bis hier stand der Rand der
-            // Kreuzung am Markt in der Laterne #410: kein Bein trug ihn, die Menge ging auf ihrer Spur 0,7 m neben der Mitte.
+            // (hinaus zuerst, höchstens `gehwegM`; neben der Bahn eines Wagens bis zum Doppelten — die Ecke hinter dem Bogen des
+            // Abbiegers), der beides nicht ist — sonst der nächste ohne Wand. Bis hier stand der Rand der
+            // Kreuzung am Markt in der Laterne #410: kein Bein trug ihn, die Menge ging auf ihrer Spur 0,7 m neben der Mitte. Bis
+            // w4-verkehr-c2 suchte er neben der Fahrbahn nur bis `gehwegM`: die Ecken der Kreuzung am Markt liegen im Bogen der
+            // Abbieger, kein Ort trug, und der Weg vom Markt zur Tür des Gasthauses ging drei Punkte über ihre Mitte (stadt-voll
+            // nach dem Sprung auf 23 Uhr: 522 von 682 Schritten auf der Fahrbahn, der Anteil 6,1 %).
             const [l0, l1] = [Math.hypot(q.x - q0.x, q.z - q0.z), Math.hypot(q1.x - q.x, q1.z - q.z)];
             const n0 = l0 > 1e-6 ? [(q0.z - q.z) / l0, (q.x - q0.x) / l0] : null;
             const n1 = l1 > 1e-6 ? [(q.z - q1.z) / l1, (q1.x - q.x) / l1] : n0;
@@ -1608,7 +1612,7 @@ class AnazhRealm_siedlung_bewohner {
                 return { x: q.x + n[0] * (f + s * df), z: q.z + n[1] * (f + s * df) };
             };
             // die billige Probe zuerst (Lehre 25): die Fahrbahn, dann die Wand
-            for (let k = 0; k <= 8 * BW.gehwegM; k++) {
+            for (let k = 0; k <= 16 * BW.gehwegM; k++) {
                 const c = ort(k);
                 if (fuss(c) && !this._bewohnerWand(c, c)) return c;
             }
@@ -1660,6 +1664,13 @@ class AnazhRealm_siedlung_bewohner {
                 if (this._verkehrQuert(S, a, pts[j]) && !this._bewohnerWand(a, pts[j])) pts.splice(i, j - i);
                 else i = j;
             }
+        // DIE SEITE DES GEHWEGS (PFLICHT-OFFEN C): wo Wagen fahren, geht er die Seite, die ihn weniger über die Fahrbahn führt
+        // (`_verkehrFahrbahnM`; gleich viel: seine) — bis w4-verkehr-c2 ging jeder die Seite seines Samens: vom Markt zur Tür des
+        // Gasthauses querte der Weg vier Arme der Kreuzung (stadt-voll 23 Uhr, 7:1:1: 22,5 m von 94,6 m auf der Fahrbahn)
+        if (beide && seite && breit < Infinity) {
+            const anders = this._bewohnerStrecke(S, von, ziel, spur, -seite, false);
+            if (anders && this._verkehrFahrbahnM(S, von, anders) < this._verkehrFahrbahnM(S, von, pts)) return anders;
+        }
         return pts;
     }
 

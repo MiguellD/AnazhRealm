@@ -426,6 +426,20 @@ class AnazhRealm_siedlung_verkehr {
         return true;
     }
 
+    // DIE METER EINES WEGS AUF DER FAHRBAHN (von `von` über die Punkte `pts`, je halben Meter `_verkehrAufSpur` ohne Rand). Leser:
+    // die Seite des Gehwegs (`_bewohnerStrecke`: die Seite, die weniger über die Fahrbahn führt).
+    _verkehrFahrbahnM(S, von, pts) {
+        let m = 0;
+        for (let i = 0, a = von; i < pts.length; a = pts[i++]) {
+            const b = pts[i];
+            const L = Math.hypot(b.x - a.x, b.z - a.z);
+            const n = Math.max(1, Math.ceil(L / 0.5));
+            for (let k = 1; k <= n; k++)
+                if (this._verkehrAufSpur(S, a.x + ((b.x - a.x) * k) / n, a.z + ((b.z - a.z) * k) / n, 0)) m += L / n;
+        }
+        return m;
+    }
+
     // DER VORRANG DER FAHRBAHN: beansprucht ein Wagen der Stadt (er fährt) den Punkt (x, z) gegen den Bewohner b? Er liegt vor
     // seinem Bug, näher als der Wagen in der Zeitlücke `lueckeS` fährt (höchstens `vorrangM`: wer dort hinüber will, wäre noch in
     // seiner Bahn, wenn er ankommt), und quer in seiner Bahn (der halbe Wagen, Kapsel, `seitM` und ein Meter für die Kurve) —
@@ -651,7 +665,7 @@ class AnazhRealm_siedlung_verkehr {
             if (S.liste.some(unter)) continue;
             if (W.zonen.some((z) => s + W.hl >= z.ein - 2 && s - W.hl <= z.aus + 2)) continue;
             const fahrt = Math.atan2(r.x - q.x, r.z - q.z);
-            Object.assign(fz, { x: q.x, z: q.z, yaw: fahrt - Math.PI / 2, vlong: 0, vlat: 0, yawRate: 0, y: NaN });
+            Object.assign(fz, { x: q.x, z: q.z, yaw: fahrt - Math.PI / 2, ...AnazhRealm.VERKEHR_STEHT, y: NaN });
             e._rideYaw = fahrt;
             e.position.x = q.x;
             e.position.z = q.z;
@@ -711,7 +725,7 @@ class AnazhRealm_siedlung_verkehr {
             const e = W.entry;
             const fz = e._fahr;
             const p = W.park;
-            Object.assign(fz, { x: p.x, z: p.z, yaw: p.fahrt - Math.PI / 2, vlong: 0, vlat: 0, yawRate: 0, y: NaN });
+            Object.assign(fz, { x: p.x, z: p.z, yaw: p.fahrt - Math.PI / 2, ...AnazhRealm.VERKEHR_STEHT, y: NaN });
             e._rideYaw = p.fahrt;
             e.position.x = p.x;
             e.position.z = p.z;
@@ -744,8 +758,15 @@ class AnazhRealm_siedlung_verkehr {
     _verkehrParken(S, W) {
         const e = W.entry;
         const fz = e._fahr;
-        fz.vlong = fz.vlat = fz.yawRate = fz.vy = 0;
-        fz.fNick = fz.fNickV = fz.fWank = fz.fWankV = fz.fHub = fz.fHubV = 0;
+        Object.assign(fz, AnazhRealm.VERKEHR_STEHT, {
+            vy: 0,
+            fNick: 0,
+            fNickV: 0,
+            fWank: 0,
+            fWankV: 0,
+            fHub: 0,
+            fHubV: 0,
+        });
         for (const Z of S.verkehr.zonen) {
             AnazhRealm._verkehrLos(Z, W);
             const k = Z.warte.indexOf(W);
@@ -1677,6 +1698,11 @@ AnazhRealm.VERKEHR = Object.freeze({
     genauM: 12,
     huelleM: 12,
 });
+
+// DER WAGEN STEHT (gestellt: in den Platz, an den Ort der Ankunft, nach dem Sprung der Uhr): jedes Tempo des Fahr-Zustands null,
+// auch das abgeleitete `speed` (vehicle-core: hypot(vlong, vlat) je Unter-Schritt) — bis w4-verkehr-c2 trug der gestellte Wagen
+// das Tempo seiner letzten Fahrt (5,55 m/s im Platz nach dem Sprung auf 23 Uhr: er hieß fahrend, ruhte nie)
+AnazhRealm.VERKEHR_STEHT = Object.freeze({ vlong: 0, vlat: 0, yawRate: 0, speed: 0 });
 
 // DER SCHLÜSSEL GEHT ZURÜCK: W hält den Ort Z nicht mehr (hält ihn keiner, hat er keine Richtung).
 AnazhRealm._verkehrLos = function (Z, W) {
