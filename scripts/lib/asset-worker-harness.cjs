@@ -7,13 +7,10 @@
 //
 // mint-asset-goldens.cjs (schreibt die eingefrorenen Goldens) UND diag-asset-contract.cjs (das
 // Dauer-Gate) LESEN diese eine Datei — kein zweiter Boot-Pfad, der driften kann.
-const { statikServer, starteBrowser, jsonLesen } = require("./welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
+const { statikServer, starteBrowser, ausDatei, path, crypto, stammLib, jsonLesen, ROOT } = require("./welt-boot.cjs");
 const { installiereDrift, FUNKTIONEN } = require("./plattform-probe.cjs");
-
-const ROOT = path.resolve(__dirname, "..", "..");
+const { rasterDreieck } = require("./kronen-linse.cjs");
+const { luma709, linSrgb } = require("./abnahme-urteil.cjs");
 
 // der Boot ist MANIFEST-GETRIEBEN wie die Produktion
 // (anazhRealm._ensureAssetFoundry liest cores.manifest.json + injiziert
@@ -22,7 +19,7 @@ const ROOT = path.resolve(__dirname, "..", "..");
 // aus dem Manifest. So trägt das Harness-Buch ALLE Gattungen (tor/klinge/haus/
 // kreatur …), nicht nur die Pflanzen — EINE Quelle, kein hartkodierter Zweitpfad.
 // (Die Pflanzen-Goldens bleiben byte-identisch — gate:asset-contract ist der stehende Beweis.)
-const CORES_MANIFEST = jsonLesen(path.join(ROOT, "cores.manifest.json"));
+const CORES_MANIFEST = jsonLesen("cores.manifest.json");
 const WORKER_SCRIPTS = (() => {
     const rel = [];
     for (const core of CORES_MANIFEST) if (core && Array.isArray(core.lib)) for (const s of core.lib) rel.push("/" + s);
@@ -78,6 +75,71 @@ async function bauAbdruck(meshes) {
   for (const t of stuecke) { alles.set(t, o); o += t.length; }
   const h = new Uint8Array(await crypto.subtle.digest("SHA-256", alles));
   return { hash: Array.from(h, (b) => b.toString(16).padStart(2, "0")).join(""), teile, bytes, nichtEndlich };
+}
+// DAS BILD DES BAUS (studios.K1, das Schlupfloch der Karte: „ein Regler verschiebt Bytes, aber nicht das Bild (0,1 mm), und
+// zählte am Hash") — die EINE Quelle für Brücke und Ofen (die Seite per toString). Ein Raster des gebauten Werks aus der
+// Vorschau-Pose der Bühne (Gier 0,6 und ihr Gegenblick, Neigung 0,32), ortho im Rahmen des GRUND-Baus (`rahmen` des Grunds an
+// jeden Rand: eine Größe wirkt), je Dreieck die Albedo (Vertex-Farbe linear, sonst Stoff-Farbe) unter EINEM festen Licht plus
+// Glut (emissive) und Leucht-Gesetz (Farbe × leucht), belichtet nach dem Gesetz der Welt (BELICHTUNG: die 18-%-Karte im vollen
+// Licht trifft die Tonkurve mit zielKarte 0,44) durch ihre Kurve (Khronos PBR Neutral), sRGB-Luma in 8 Bit (0 = leer). `abstand(a, b)`: je Ansicht der Anteil der Gestalt-Pixel (Vereinigung beider
+// Bilder), deren Luma um mehr als 18 springt oder die nur in einem stehen; das Maximum der Ansichten.
+function bauBild(teile, rahmen) {
+  const N = 160, K = 0.44 / 0.18, L = [0.42, 0.8, 0.43].map((x, _, l) => x / Math.hypot(...l));
+  const neutral = (c) => {
+    const x = Math.min(...c), v = c.map((y) => y - (x < 0.08 ? x - 6.25 * x * x : 0.04)), pk = Math.max(...v);
+    if (pk < 0.76) return v;
+    const np = 1 - 0.0576 / (pk - 0.52), g = 1 - 1 / (0.15 * (pk - np) + 1);
+    return v.map((y) => ((y * np) / pk) * (1 - g) + np * g);
+  };
+  if (!rahmen) {
+    const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const t of teile) t.pos.forEach((v, i) => ((lo[i % 3] = Math.min(lo[i % 3], v)), (hi[i % 3] = Math.max(hi[i % 3], v))));
+    if (!(hi[0] >= lo[0])) return { rahmen: null, bilder: [] };
+    rahmen = { c: lo.map((v, k) => (v + hi[k]) / 2), r: Math.max(1e-3, Math.hypot(...hi.map((v, k) => v - lo[k])) / 2) };
+  }
+  const bilder = [0.6, 0.6 + Math.PI].map((gier) => {
+    // die Achsen der Ansicht (rechts, oben, zum Auge), das Licht in ihnen
+    const [cp, sp, cg, sg] = [Math.cos(0.32), Math.sin(0.32), Math.cos(gier), Math.sin(gier)];
+    const A = [[cg, 0, -sg], [-sp * sg, cp, -sp * cg], [sg * cp, sp, cg * cp]], Lv = A.map((a) => a[0] * L[0] + a[1] * L[1] + a[2] * L[2]);
+    const bild = new Uint8Array(N * N), tiefe = new Float32Array(N * N).fill(-Infinity);
+    for (const t of teile) {
+      const n = t.pos.length / 3, q = new Float32Array(n * 3), I = t.index || Uint32Array.from({ length: n }, (_, i) => i);
+      for (let v = 0; v < n; v++)
+        for (let a = 0; a < 3; a++) q[v * 3 + a] = (((t.pos[v * 3] - rahmen.c[0]) * A[a][0] + (t.pos[v * 3 + 1] - rahmen.c[1]) * A[a][1] + (t.pos[v * 3 + 2] - rahmen.c[2]) * A[a][2]) * 0.475 * N) / rahmen.r + (a < 2 ? N / 2 : 0);
+      for (let f = 0; f + 2 < I.length; f += 3) {
+        const [X, Y, Z] = [0, 1, 2].map((k) => [I[f], I[f + 1], I[f + 2]].map((v) => q[v * 3 + k]));
+        const nv = [(Y[1] - Y[0]) * (Z[2] - Z[0]) - (Z[1] - Z[0]) * (Y[2] - Y[0]), (Z[1] - Z[0]) * (X[2] - X[0]) - (X[1] - X[0]) * (Z[2] - Z[0]), (X[1] - X[0]) * (Y[2] - Y[0]) - (Y[1] - Y[0]) * (X[2] - X[0])];
+        const licht = 0.25 + 0.75 * Math.abs((nv[0] * Lv[0] + nv[1] * Lv[1] + nv[2] * Lv[2]) / Math.hypot(...nv));
+        const alb = [0, 1, 2].map((k) => (t.farbe ? [I[f], I[f + 1], I[f + 2]].reduce((s, v) => s + t.farbe[v * t.fs + k], 0) / 3 : t.grund[k]));
+        const lin = neutral(alb.map((x, k) => K * (x * (licht + (t.glutK || 0)) + (t.leucht ? t.leucht[k] : 0))));
+        const wert = 1 + Math.round(254 * linSrgb(Math.min(1, Math.max(0, luma709(lin)))));
+        rasterDreieck(X[0], Y[0], X[1], Y[1], X[2], Y[2], { nu: N, nv: N }, (i, l0, l1, l2) => {
+          const z = l0 * Z[0] + l1 * Z[1] + l2 * Z[2];
+          if (z > tiefe[i]) [tiefe[i], bild[i]] = [z, wert];
+        });
+      }
+    }
+    return bild;
+  });
+  const abstand = (A, B) =>
+    Math.max(0, ...A.map((a, k) => {
+      let [u, s] = [0, 0];
+      a.forEach((x, i) => (x || B[k][i]) && (u++, (s += !x || !B[k][i] || Math.abs(x - B[k][i]) > 18)));
+      return u ? s / u : 0;
+    }));
+  return { rahmen, bilder, abstand };
+}
+// das Bild in der Seite samt seinem Raster (die Brücken-Seite hier, der Ofen der Werkstatt in gate:regler-wirkt)
+const BAU_BILD_QUELLE = `(() => { const rasterDreieck = ${rasterDreieck}, luma709 = ${luma709}, linSrgb = ${linSrgb}; return ${bauBild}; })()`;
+// Die Teile eines Brücken-Baus für das Bild: was das Auge sieht (der Wurf-Teil „schatten" und der Beipack nicht).
+function bauTeile(meshes) {
+  return (meshes || [])
+    .filter((m) => m && m.position && m.position.array && m.teil !== "schatten")
+    .map((m) => {
+      const mat = m.mat || {}, grund = mat.color || [0.7, 0.7, 0.7];
+      const glut = mat.emissive ? mat.emissive.map((x) => x * (mat.emissiveIntensity || 1)) : null;
+      return { pos: m.position.array, index: m.index || null, farbe: m.color ? m.color.array : null, fs: m.color ? m.color.itemSize : 3, grund, leucht: glut, glutK: mat.leucht || 0 };
+    });
 }
 
 function pageHtml() {
@@ -195,6 +257,8 @@ function pageHtml() {
     return fertigP.then(() => a);
   };
   const bauAbdruck = ${bauAbdruck.toString()};
+  const bauBild = ${BAU_BILD_QUELLE};
+  const bauTeile = ${bauTeile.toString()};
   window.__probeLauf = async (liste, d, welche, bis, fangen) => {
     if (!probeAsk) probeAsk = probeBoot();
     const a = await probeAsk;
@@ -223,48 +287,51 @@ function pageHtml() {
   // (\`bauAbdruck\`) — die Gestalten-Wand liest so jede Gestalt der Zweit-Kerne aus dem Bau, den der Kosten-Zug ohnehin
   // fährt (kein Zweitbau). \`mitTeilen\` (DARF): je Stufe die Teile, wie der Wurf des Wirts sie liest — Art, Seh-Klasse,
   // Deckkraft (das Wurf-Recht \`_teilWirft\` des Stamms) und Dreiecke (budgetSippen je Teil); gate:regler-wirkt WURF.
-  window.__kostenListe = async (liste, mitAbdruck, mitTeilen) => {
+  // \`bild\` (DARF, je Eintrag null | { basis: Schlüssel } | { gegen: Schlüssel }): das Bild des Baus (\`bauBild\`) — die Basis
+  // legt Rahmen und Bild unter ihrem Schlüssel ab (eine eigene, frühere Liste), der Rand misst seinen Abstand im Rahmen der Basis.
+  const bilder = new Map();
+  // DER POOL JEDER LISTE: die Brücke baut Stufe um Stufe der Liste (mit ov, dem Regler-Kanal der Werkstatt), \`lies(r, i)\`
+  // macht aus dem Bau den Eintrag (bis studios.K1 trugen Kosten- und Hash-Liste je ein eigenes Gerüst)
+  const jeBau = async (liste, lies) => {
     poolMehr(POOL_N);
     const out = new Array(liste.length);
     let next = 0;
     await Promise.all(pool.map(async (frag) => {
       while (next < liste.length) {
         const i = next++;
-        const r = await frag(Object.assign({ type: "build-asset" }, liste[i]));
-        const k = window.__phytoCore.budgetSippen(r.meshes || []);
-        // der Beipack der Fernform (S3 haus, N5): die NUR-WURF-Stufe trägt ihre Hülle als __fern (die Fern-Wand prüft sie)
-        const fern = (r.meshes || []).find((m) => m && m.kind === "__fern");
-        out[i] = { tris: k.tris, draws: k.draws, budget: r.budget || null, budgetBruch: r.budgetBruch || null, fern: fern ? fern.huelle : null };
-        if (mitTeilen)
-          out[i].teile = (r.meshes || [])
-            .filter((m) => m && m.position && m.position.array)
-            .map((m) => ({ kind: m.kind, mat: m.mat ? { seh: m.mat.seh, opacity: m.mat.opacity } : null, tris: window.__phytoCore.budgetSippen([m]).tris }));
-        if (mitAbdruck && mitAbdruck[i]) {
-          const a = await bauAbdruck(r.meshes || []);
-          out[i].abdruck = a.teile > 0 ? a.hash : null;
-          out[i].bau = a;
-        }
+        out[i] = await lies(await frag(Object.assign({ type: "build-asset" }, liste[i])), i);
       }
     }));
     return out;
   };
+  window.__kostenListe = (liste, mitAbdruck, mitTeilen, bild) =>
+    jeBau(liste, async (r, i) => {
+      const k = window.__phytoCore.budgetSippen(r.meshes || []);
+      // der Beipack der Fernform (S3 haus, N5): die NUR-WURF-Stufe trägt ihre Hülle als __fern (die Fern-Wand prüft sie)
+      const fern = (r.meshes || []).find((m) => m && m.kind === "__fern");
+      const o = { tris: k.tris, draws: k.draws, budget: r.budget || null, budgetBruch: r.budgetBruch || null, fern: fern ? fern.huelle : null };
+      if (mitTeilen)
+        o.teile = (r.meshes || [])
+          .filter((m) => m && m.position && m.position.array)
+          .map((m) => ({ kind: m.kind, mat: m.mat ? { seh: m.mat.seh, opacity: m.mat.opacity } : null, tris: window.__phytoCore.budgetSippen([m]).tris }));
+      if (mitAbdruck && mitAbdruck[i]) {
+        const a = await bauAbdruck(r.meshes || []);
+        o.abdruck = a.teile > 0 ? a.hash : null;
+        o.bau = a;
+      }
+      const bi = bild && bild[i];
+      if (bi && bi.basis) bilder.set(bi.basis, bauBild(bauTeile(r.meshes)));
+      else if (bi && bilder.get(bi.gegen) && bilder.get(bi.gegen).rahmen) {
+        const B = bilder.get(bi.gegen);
+        o.bild = B.abstand(B.bilder, bauBild(bauTeile(r.meshes), B.rahmen).bilder);
+      }
+      return o;
+    });
   // DER BAU-HASH VIELER STUFEN (W1 d, gate:regler-wirkt): jede Stufe über die echte Brücke gebaut (mit ov, dem
   // Regler-Kanal der Werkstatt), je Stufe der EINE Bau-Fingerabdruck (\`bauAbdruck\`) — kein Puffer-Transport.
-  window.__bauHashListe = async (liste) => {
-    poolMehr(POOL_N);
-    const out = new Array(liste.length);
-    let next = 0;
-    await Promise.all(pool.map(async (frag) => {
-      while (next < liste.length) {
-        const i = next++;
-        const r = await frag(Object.assign({ type: "build-asset" }, liste[i]));
-        out[i] = await bauAbdruck(r.meshes || []);
-        // Der Budget-Bruch der Antwort (Studio-Vertrag B2c) reist mit: ein Regler-Wert, der die Stufe über ihre Zeile treibt.
-        out[i].budgetBruch = r.budgetBruch ? JSON.stringify(r.budgetBruch).slice(0, 200) : null;
-      }
-    }));
-    return out;
-  };
+  // Der Budget-Bruch der Antwort (Studio-Vertrag B2c) reist mit: ein Regler-Wert, der die Stufe über ihre Zeile treibt.
+  window.__bauHashListe = (liste) =>
+    jeBau(liste, async (r) => Object.assign(await bauAbdruck(r.meshes || []), { budgetBruch: r.budgetBruch ? JSON.stringify(r.budgetBruch).slice(0, 200) : null }));
 })();
 </script></body>`;
 }
@@ -290,16 +357,19 @@ async function runWithWorker(port, cb) {
         // Zweit-Kern-Stufen in EINEM Ruf rissen ihn unter Last).
         // `abdruck` (DARF): (Eintrag) => true, wenn die Stufe auch ihren Bau-Fingerabdruck tragen soll.
         // `mitTeilen` (DARF): je Stufe die Teile für den Wurf (Art, Seh-Klasse, Deckkraft, Dreiecke).
-        const kostenListe = async (liste, abdruck, mitTeilen) => {
+        // `bild` (DARF): (Eintrag) => null | { basis } | { gegen } — das Bild des Baus (eine Basis vor ihren Rändern bauen).
+        const kostenListe = async (liste, abdruck, mitTeilen, bild) => {
             const out = [];
             const flags = abdruck ? liste.map((c) => !!abdruck(c)) : null;
+            const bi = bild ? liste.map((c) => bild(c) || null) : null;
             for (let i = 0; i < liste.length; i += 120)
                 out.push(
                     ...(await page.evaluate(
-                        (l, f, t) => window.__kostenListe(l, f, t),
+                        (l, f, t, b) => window.__kostenListe(l, f, t, b),
                         liste.slice(i, i + 120),
                         flags ? flags.slice(i, i + 120) : null,
-                        !!mitTeilen
+                        !!mitTeilen,
+                        bi ? bi.slice(i, i + 120) : null
                     ))
                 );
             return out;
@@ -348,7 +418,7 @@ function istBeipack(m) {
 function fingerprintMeshes(meshes) {
     const sha = (b64) => {
         const buf = Buffer.from(b64, "base64");
-        return { bytes: buf.length, sha256: crypto.createHash("sha256").update(buf).digest("hex") };
+        return { bytes: buf.length, sha256: stammLib.sha(buf) };
     };
     return (meshes || []).filter((m) => !istBeipack(m)).map((m) => {
         const out = { kind: m.kind, mat: m.mat, attrs: {} };
@@ -372,16 +442,18 @@ const DATEN_KANAELE = [
 // Brücke zuletzt) laufen in EINEM Node-vm, und DERSELBE Kanal (`foundryKanal`) antwortet je Frage — der Umschlag (get-book,
 // gate:studio-vertrag U) und jeder Bau (build-asset, gate:studio-uebergabe), ~0,6 s statt eines Browser-Boots. Die Leinwand
 // des Blatt-Atlas (OffscreenCanvas) schluckt ein Absorber. `quellen`: { "<datei>": "<quelltext>" } ersetzt eine Datei.
+// DER ABSORBER: ein Wert, der jeden Zugriff, Ruf und Bau schluckt (als Zahl 0) — THREE und die Leinwand eines Kerns, der im vm
+// ohne Grafik lädt (die Brücke hier, die Kerne der Vertrags- und der Streu-Linse; bis studios.K1 trug jede ihren eigenen)
+function absorber() {
+    const a = new Proxy(function () {}, {
+        get: (_t, k) => (k === Symbol.toPrimitive ? () => 0 : a),
+        apply: () => a,
+        construct: () => a,
+    });
+    return a;
+}
 function kanalImVm(quellen = {}) {
     const vm = require("vm");
-    const absorber = () => {
-        const a = new Proxy(function () {}, {
-            get: (_t, k) => (k === Symbol.toPrimitive ? () => 0 : a),
-            apply: () => a,
-            construct: () => a,
-        });
-        return a;
-    };
     const posts = [];
     const ctx = vm.createContext({
         console: { log() {}, warn() {}, error() {} },
@@ -396,7 +468,7 @@ function kanalImVm(quellen = {}) {
         const f = p.replace(/^\//, "");
         const src = Object.prototype.hasOwnProperty.call(quellen, f)
             ? quellen[f]
-            : fs.readFileSync(path.join(ROOT, f), "utf8");
+            : ausDatei(path.join(ROOT, f));
         vm.runInContext(src, ctx, { filename: f, timeout: 60000 });
     }
     return (msg) => {
@@ -434,6 +506,9 @@ module.exports = {
     fingerprintMeshes,
     DATEN_KANAELE,
     kanalImVm,
+    absorber,
     bauAbdruck,
+    bauBild,
+    BAU_BILD_QUELLE,
     ersteAbweichung,
 };

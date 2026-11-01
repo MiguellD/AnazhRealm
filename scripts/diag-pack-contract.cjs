@@ -14,12 +14,8 @@
 //   node scripts/diag-pack-contract.cjs --selftest && node scripts/diag-pack-contract.cjs
 "use strict";
 
-const fs = require("fs");
-const os = require("os");
-const path = require("path");
 const PK = require("./lib/pack-kanon.cjs");
-const { hauptLauf, urteilEnde } = require("./lib/welt-boot.cjs");
-const stammLib = require("./lib/stamm.cjs");
+const { hauptLauf, urteilEnde, ausDatei, SELBSTTEST, path, fs, stammLib, os } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.PACK_GATE_PORT || 4562);
 const CONTRACT = path.join(PK.ROOT, "spec", "pack", "v0", "CONTRACT.md");
@@ -54,14 +50,14 @@ async function selftest() {
                             type: "Float32Array",
                             bytes: pos.length,
                             b64: pos.toString("base64"),
-                            sha256: PK.sha256Hex(pos),
+                            sha256: stammLib.sha(pos),
                         },
                     },
                     index: {
                         type: "Uint32Array",
                         bytes: idx.length,
                         b64: idx.toString("base64"),
-                        sha256: PK.sha256Hex(idx),
+                        sha256: stammLib.sha(idx),
                     },
                 },
             ],
@@ -144,7 +140,7 @@ async function main() {
     const hasContract = fs.existsSync(CONTRACT);
     check(hasContract, "spec/pack/v0/CONTRACT.md existiert");
     if (hasContract) {
-        const md = fs.readFileSync(CONTRACT, "utf8");
+        const md = ausDatei(CONTRACT);
         const sections = [
             "## v0 — Schlüssel",
             "## v0 — Wert",
@@ -169,7 +165,7 @@ async function main() {
 
     // (b) DER BOOT ALS LAUF (B3a, `bootLauf`): Geburt, Laden, Konsum-Wand und Stempel am Lauf der echten Klasse, nie am
     // Text ihres Rumpfs — keine Labor-Datei im Faden und im Stempel; den Ship-Hook beweist (d).
-    const lauf = await bootLauf(fs.readFileSync(path.join(PK.ROOT, "cores.manifest.json"), "utf8"));
+    const lauf = await bootLauf(ausDatei(path.join(PK.ROOT, "cores.manifest.json")));
     check(lauf.geburt === "buch", `Boot: der Faden kommt synchron mit der Geburt und heißt „buch" (${lauf.geburt || lauf.fehler})`);
     const labor = /\/worlds\/[^/?]+\/(?!lib\/)[^?]*\.js|\/(OrbitControls|PointerLockControls|EffectComposer|UnrealBloomPass|FXAAShader)\.js/; // prettier-ignore
     check(lauf.laden === lauf.sollLaden && !labor.test(lauf.laden), "Boot: die Schale steht vor dem Studio, der Faden lädt lib · scripts · bruecke allein aus dem Manifest, keine Labor-Datei (K42)"); // prettier-ignore
@@ -242,6 +238,6 @@ async function main() {
     urteilEnde(fails, `\n❌ ROT — ${fails} Prüfung(en) verletzt (Pack-Kanon N3 nicht bestätigt).`, "\n✅ GRÜN — Vertrag dokumentiert · Stempel-Drift-Wand steht · Ship-Hook lebt · Roundtrip byte-gleich.");
 }
 
-if (process.argv.includes("--selftest")) selftest();
+if (SELBSTTEST) selftest();
 else
     hauptLauf(main);

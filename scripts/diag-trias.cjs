@@ -25,9 +25,7 @@
 //     Klon-Erbe (studioGestalt reist, donorOnly nicht).
 //   --selftest: injizierte Verletzungen machen die Gesetze rot (Linse nicht vakuoes).
 //   node scripts/diag-trias.cjs [--selftest]
-const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, studioKern } = require("./lib/welt-boot.cjs");
-const crypto = require("crypto");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, studioKern, SELBSTTEST, stammLib } = require("./lib/welt-boot.cjs");
 
 const { errs, check } = pruefer();
 
@@ -61,7 +59,7 @@ const n4 = (rows) =>
         return [`N4: KIND_SUBSTANCE.${name} steht (parts > 0) + sha256 == Muenze`, okParts && hash === mint, hash === mint ? `parts=${row.parts.length}` : hash];
     });
 function kindSubstanceHash(row) {
-    return crypto.createHash("sha256").update(JSON.stringify(row)).digest("hex");
+    return stammLib.sha(JSON.stringify(row));
 }
 
 // ── Teil S: die Absenz über den EINEN Helfer (stammLib.fehlt) — die Präsenzen beweist Teil B am Verhalten ──
@@ -71,7 +69,7 @@ const triasStaticLaws = () => [
 
 hauptLauf(async () => {
     // ===== SELBST-TEST =====
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         console.log("=== SELBST-TEST: die Trias-Linse feuert ===");
         // Die ZAHLEN-Linse ist nicht vakuoes: die Nahstufe L0 (gemessen ~93k) liegt allein
         // ueber dem Fern-Deckel — klebte sie fern, risse der Deckel (L1 ist seit V18.500 die

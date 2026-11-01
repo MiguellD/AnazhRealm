@@ -7,13 +7,11 @@
 //   --selftest  je Probe jeder alte Defekt als Täter (TAETER): er muss sie ROT machen, beim Namen genannt
 //   --teil=k/n  Teil k: die längste Probe (DAUER_S) zuerst in den leichtesten Teil, jede in GENAU einem
 "use strict";
-const { statikServer, CODE_OF_SEITE, werkbankRuf, teilAus, ROOT: root, hauptLauf, nullSeite, urteilEnde, argOpt: opt, weltTor, jsonLesen } = require("./lib/welt-boot.cjs"); // prettier-ignore
-const path = require("path");
+const { statikServer, CODE_OF_SEITE, werkbankRuf, teilAus, ROOT: root, hauptLauf, nullSeite, urteilEnde, argOpt: opt, weltTor, path, SELBSTTEST, jsonLesen } = require("./lib/welt-boot.cjs"); // prettier-ignore
 const { KREATUR_PROBEN_SRC, PROBEN, TAETER, EIN_LAUF, urteil } = require("./lib/kreatur-proben.cjs");
 
 const PORT = Number(process.env.KREATUR_TAKT_PORT || 4478);
 const argv = process.argv.slice(2);
-const SELBST = argv.includes("--selftest");
 const WERKBANK = opt("--werkbank", null);
 // DER ORT der Probe (`--ort stadt-voll`: die volle Stadt der Probe bewohner, am Schirm des Profi-Bands; `--ort genesis`: ihr
 // Start-Dorf ohne die Stadt) und seine Täter
@@ -21,7 +19,7 @@ const ORT = opt("--ort", null);
 const taeterVon = (p) => TAETER[ORT ? `${p}@${ORT}` : p];
 // DIE FESTE RAMPE der Prüfbühne (Station S2): jeder Lauf mit dem Querhang misst ihn dort ein zweites Mal, derselbe Täter
 const BUEHNE_DATEI = path.join(root, "spec", "pruefbuehne", "welt.json");
-const RAMPE = jsonLesen(path.join(root, "spec", "pruefbuehne", "stationen.json")).stationen.find((s) => s.id === "s2-hang30");
+const RAMPE = jsonLesen("spec/pruefbuehne/stationen.json").stationen.find((s) => s.id === "s2-hang30");
 if (!RAMPE || !Number.isFinite(RAMPE.winkel))
     throw new Error("die Rampe s2-hang30 fehlt in spec/pruefbuehne/stationen.json");
 // Sekunden je Probe samt Täter und fremder Welt, die Zeilen „Sekunden je Probe" ohne --teil (056330d8), unter 1 s zählt 1
@@ -41,6 +39,8 @@ const DAUER_S = {
     temperament: 1,
     abstand: 1,
     jagdkreis: 281,
+    // (w4-stationen-schnell-a: an derselben Maschine jagdkreis 50 + 79 s, mahl 11 + 30 s — mahl im Maß von jagdkreis)
+    mahl: 89,
     rudel: 7,
     querhang: 13,
     ferngang: 1,
@@ -168,7 +168,7 @@ hauptLauf(async () => {
     // je Probe ein Lauf, mit --selftest je Täter ein eigener — die Probe mit EINEM Lauf (`EIN_LAUF`) spielt alle ihre Täter
     // in ihm und gibt je Täter seine Sicht (`sicht`); das Wort, das ihn nennt, bleibt in Node
     const [laeufe, faelle] = [[], []];
-    if (SELBST) {
+    if (SELBSTTEST) {
         const ohne = gewaehlt.filter((p) => !(taeterVon(p) && taeterVon(p).length));
         if (ohne.length) {
             console.log(`❌ SELBST-TEST: Proben ohne Täter: ${ohne.join(", ")} — die Linse wäre ungeprüft`);
@@ -176,14 +176,14 @@ hauptLauf(async () => {
         }
     }
     for (const p of gewaehlt) {
-        const [T, ein] = [SELBST ? taeterVon(p) : [[null]], SELBST && EIN_LAUF.includes(p)];
+        const [T, ein] = [SELBSTTEST ? taeterVon(p) : [[null]], SELBSTTEST && EIN_LAUF.includes(p)];
         if (ein) laeufe.push({ proben: [p], taeter: T.map(([t]) => t), ort: ORT });
         for (const [t, re] of T) faelle.push({ li: ein ? laeufe.length - 1 : laeufe.push({ proben: [p], taeter: t, ort: ORT }) - 1, t, re }); // prettier-ignore
     }
     const t0 = Date.now();
     const { aus, dauer } = WERKBANK ? await imFenster(laeufe) : await headless(laeufe);
     console.log(
-        `\n===== DIE KREATUR-LINSE (gate:kreatur-takt) — ${WERKBANK ? "sichtbares Fenster, echte GPU (Werkbank :" + WERKBANK + ")" : "headless, Null-Renderer"}${SELBST ? " — SELBST-TEST (Täter eingespielt)" : ""} =====\n`
+        `\n===== DIE KREATUR-LINSE (gate:kreatur-takt) — ${WERKBANK ? "sichtbares Fenster, echte GPU (Werkbank :" + WERKBANK + ")" : "headless, Null-Renderer"}${SELBSTTEST ? " — SELBST-TEST (Täter eingespielt)" : ""} =====\n`
     );
     let rot = 0;
     for (const { li, t, re } of faelle) {
@@ -212,10 +212,10 @@ hauptLauf(async () => {
     );
     urteilEnde(
         rot,
-        SELBST
+        SELBSTTEST
             ? `\n❌ SELBST-TEST ROT — ${rot} Täter unsichtbar oder nicht beim Namen genannt.`
             : `\n❌ ROT — ${rot} Probe(n) verletzt: die Kreaturen tragen ihren Defekt.`,
-        SELBST
+        SELBSTTEST
             ? `\n✅ SELBST-TEST GRÜN — jeder Täter macht seine Probe rot und wird beim Namen genannt (${faelle.length} Täter).`
             : `\n✅ GRÜN — ${gewaehlt.join(" · ")}`
     );

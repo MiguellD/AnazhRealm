@@ -431,6 +431,15 @@ function rumpf(t, k, { zitate = false } = {}) {
     }
     return null;
 }
+// DIE METHODE AM NAMEN (gate:apparat Klinge 3): ihre Parameter aus dem Kopf und ihr Rumpf ohne die Klammern — eine Linse, die
+// ein Gesetz des Stamms ausführt (`new Function(args, rumpf)`), liest beides hier, nie aus einer eigenen Liste (bis studios.K1
+// schnitten Regler- und Tor-Linse je selbst); fehlt die Methode, wirft es
+function methodeAm(t, name) {
+    const i = kopf(t, name);
+    if (i < 0) throw new Error("im Stamm nicht gefunden: " + name);
+    const p = t.indexOf("(", i);
+    return { args: t.slice(p + 1, t.indexOf(")", p)), rumpf: rumpf(t, name).slice(1, -1) };
+}
 
 // DIE GLIEDER AM AST (K38-N2, Prüfer Runde 3) — eine Linse, die Code einer Methode zuordnet, liest die Glieder der Klassen
 // am AST (acorn), nie an einem Kopf-Muster: ein Kopf mit Default-Parametern (`_x(a = f()) {`), ein umbrochener Kopf, ein
@@ -990,6 +999,7 @@ module.exports = {
     ort,
     dateiVon,
     kopf,
+    methodeAm,
     rumpf,
     treffer,
     ersetze,
