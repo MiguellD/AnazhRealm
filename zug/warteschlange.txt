@@ -352,3 +352,4 @@ z128-abab 3 abab A=e0f42f9ded85356026b589e9e434144f933a98f1 B=20d09a043dcfba9257
 takt-z126a-gtx 0 storno
 takt-z126b-gtx 0 storno
 takt-z128a-gtx 1 punkte sha=20d09a043dcfba9257879da204d5aa73570a764b geraet=gtx nur=tiere.K1#2,tiere.K3#2,mensch.K1#1,mensch.K5#1,mensch.K4#1,haar.K2#1,vegetation.K1#1,licht.K2#2,material.K2#1,material.K1#1,lod.K1#1,lod.K5#1,licht.K3#1,studios.K2#2,studios.K3#2,studios.K4#1,siedlung.K1#2,siedlung.K4#2,spielgang.K3#1,fahrzeug.K2#2,profiband.K4#1,profiband.K1#1,profiband.K2#1,profiband.K3#1,profiband.K5#1,speicher.K4#2
+takt-z128b-gtx 1 punkte sha=20d09a043dcfba9257879da204d5aa73570a764b geraet=gtx nur=bauen.K1#2,fahrzeug.K2#1,ankunft.K2#1,ankunft.K3#1,klang.K4#1
