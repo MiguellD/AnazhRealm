@@ -1659,13 +1659,14 @@ async function probe(arg) {
             st.playerMesh.position.set(P.x, P.y + 2.2, P.z);
             st.yaw = best.yaw;
         }
-        // DER GESPERRTE SLOT: ein Slot am Rand des Genesis-Platzes (sein Grundriss reicht 2 m in die Lichtung; die Rückseite
-        // des Hauses, lokal +z, zeigt von ihr weg) trägt seinen Boden y wie jeder Slot des Plans v2 — die Bau-Wand
-        // (`_bauFrei`) wirft ihn an seinem Ort, kein Haus steht (K10: der Plan ist das Dorf, die Ersatz-Orte fielen). Die
-        // Lichtung ist seit K52 der Platz der Scheibe UND des Rings der Tore (`_grundrissVon` der Plattform).
+        // DER GESPERRTE SLOT: ein Slot am Rand des Genesis-Orts (sein Grundriss reicht 2 m in den Freiraum der Tore; die
+        // Rückseite des Hauses, lokal +z, zeigt von ihm weg) trägt seinen Boden y wie jeder Slot des Plans v2 — die Bau-Wand
+        // (`_bauFrei` → `_genesisFlaeche`) wirft ihn an seinem Ort, kein Haus steht (K10: der Plan ist das Dorf, die Ersatz-Orte
+        // fielen). Der Freiraum ist seit dem Genesis-Ort das Rund um Kern und Ring (fachwerk `GENESIS_ORT.freiraum`); bis dahin
+        // die Lichtung der Stein-Scheibe (`_grundrissVon` der Plattform, die mit dem Plan fiel).
         const f = r._foundry;
         const kultur = Object.keys(f.recipes).find((id) => f.recipes[id] && f.recipes[id].kind === "haus" && st.blueprints["haus_" + id]);
-        const R = r._grundrissVon(pl).lichtung;
+        const R = window.__fachwerkCore.GENESIS_ORT.freiraum.r;
         const HALB = 3;
         const rand = R + HALB - 2;
         const slot = { kultur, x: fx * rand, z: fz * rand, y: r.getTerrainHeightAt(P.x + fx * rand, P.z + fz * rand), phi: best.yaw, seed: 7, obb: { cx: fx * rand, cz: fz * rand, ex: HALB, ez: HALB } };
