@@ -1327,8 +1327,11 @@ function sollKlasseStation(o) {
 }
 
 // DER DORFPLATZ UM 8 UHR (mensch.K1#1; bis w4-stationen-schnell-a `platz-8.js` aus bericht/2210-messschuld-6cfce, M32): der Spieler am
-// Rand des Dorfplatzes des Start-Dorfs (derselbe Stand wie die Linse `bewohner`), Third, die Uhr als Spieler-Wort
-// (`processChatCommand` „setze uhrzeit 0.3333“). DIE WELT IM TAKT, nie an der Wanduhr: der Loop ruht, Takt um Takt der Seite, bis
+// Rand des Dorfplatzes des Start-Dorfs (derselbe Stand wie die Linse `bewohner`), Third, die Uhr am Regler des Spielers
+// (`setTimeOfDay(0.3333, "regler")`, ein Schreiber des Spielers wie in der Probe bewohner — bis w4-p-mensch-k1 sein Satz „setze
+// uhrzeit 0.3333“: unter dem Halt der Mess-Bühne (`_messHalt`) hält `dslEval` den Welt-Akt set_time_of_day, der Chat sagte
+// „Uhrzeit gesetzt“, die Uhr blieb auf 0,5, das Bild „8 Uhr“ stand um 12:30 — aff7d187 Radeon tod 0,5205). DIE WELT IM TAKT, nie
+// an der Wanduhr: der Loop ruht, Takt um Takt der Seite, bis
 // jeder Bewohner angekommen ist und jeder Leib draußen sein Feld trägt (`__gebautNach`, das EINE Warten: `_weltOffen` leute · leiber),
 // dann 8 Spiel-Sekunden zu je TAKT_DECKEL_S im Takt des Spiels — bis dahin der Loop an der Wanduhr: bis 20 s Warten auf `_weltSteht`,
 // 4 s Schlaf, 8 s Bilder (GTX 3ed95dcf: 31 s, die Welt stand mit gehenden Bewohnern nie). Gezählt: Leiber (rig, heim) im Frustum der
@@ -1343,35 +1346,45 @@ async function platzAcht(r, T) {
     if (!plan) return { fehler: "kein Plan" };
     const pz = plan.platz, pc = { x: plan.ort.x + pz.cx, z: plan.ort.z + pz.cz };
     const lang = pz.ex >= pz.ez ? 0 : Math.PI / 2;
-    let stand = null;
+    const staende = [];
     for (const k of [0, 4, 2, -2, 1, 3, -1, -3]) for (const plus of [2, 5, 9]) {
-        if (stand) break;
         const da = (k * Math.PI) / 4, a = (pz.phi || 0) + lang + da;
         const ex = Math.abs(Math.cos(da)) * pz.ex + Math.abs(Math.sin(da)) * pz.ez + plus;
         const x = pc.x - Math.cos(a) * ex, z = pc.z + Math.sin(a) * ex;
         const g = r._imGrundriss(x, z, 0.5);
-        if (g !== "haus" && g !== "bau" && r._landAt(x, z)) stand = { x, z };
+        if (g !== "haus" && g !== "bau" && r._landAt(x, z)) staende.push({ x, z });
     }
-    if (!stand) return { fehler: "kein Stand" };
+    if (!staende.length) return { fehler: "kein Stand" };
     s.renderer.setAnimationLoop(null);
-    r.processChatCommand("setze uhrzeit " + UHR_T);
-    const hS = r.getTerrainHeightAt(stand.x, stand.z);
-    pm.set(stand.x, hS + A.PLAYER_FOOT_OFFSET, stand.z);
-    if (s._fixedSimPos) s._fixedSimPos.copy(pm);
+    r.setTimeOfDay(UHR_T, "regler");
     if (s.cameraMode !== "third") r.setCameraMode("third");
     const cam = s.camera;
     const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
     // der Blick auf die Platzmitte (wie zielen.js: Vorzeichen der Gier/Neigung an der echten Kamera geprüft), je Messung zwei Takte der Seite
     const mess = async () => { await window.__seitenTakt(); await window.__seitenTakt(); const p = cam.getWorldPosition(pm.clone()); const d = cam.getWorldDirection(pm.clone()); return { p, d, h: Math.atan2(d.x, d.z), v: Math.asin(Math.max(-1, Math.min(1, d.y))) }; };
-    for (let it = 0; it < 4; it++) {
-        const m0 = await mess();
-        const dx = pc.x - m0.p.x, dy = pm.y + 0.6 - m0.p.y, dz = pc.z - m0.p.z;
-        const hz = Math.atan2(dx, dz), vz = Math.atan2(dy, Math.hypot(dx, dz));
-        const y0 = s.yaw, p0 = s.pitch;
-        s.yaw = y0 + 0.1; const m1 = await mess(); const sy = Math.sign(wrap(m1.h - m0.h)) || 1;
-        s.yaw = y0; s.pitch = p0 + 0.05; const m2 = await mess(); const sp = Math.sign(m2.v - m0.v) || 1;
-        s.yaw = y0 + sy * wrap(hz - m0.h); s.pitch = p0 + sp * (vz - m0.v);
-    }
+    const stelle = async (q) => {
+        pm.set(q.x, r.getTerrainHeightAt(q.x, q.z) + A.PLAYER_FOOT_OFFSET, q.z);
+        if (s._fixedSimPos) s._fixedSimPos.copy(pm);
+        for (let it = 0; it < 4; it++) {
+            const m0 = await mess();
+            const dx = pc.x - m0.p.x, dy = pm.y + 0.6 - m0.p.y, dz = pc.z - m0.p.z;
+            const hz = Math.atan2(dx, dz), vz = Math.atan2(dy, Math.hypot(dx, dz));
+            const y0 = s.yaw, p0 = s.pitch;
+            s.yaw = y0 + 0.1; const m1 = await mess(); const sy = Math.sign(wrap(m1.h - m0.h)) || 1;
+            s.yaw = y0; s.pitch = p0 + 0.05; const m2 = await mess(); const sp = Math.sign(m2.v - m0.v) || 1;
+            s.yaw = y0 + sy * wrap(hz - m0.h); s.pitch = p0 + sp * (vz - m0.v);
+        }
+        await mess();
+        // die Abnahme des Blicks ohne Pixel (ausgabe-aufnahme `__abnahmeMessen`, die Schwellen der Aufnahme): frei, wenn nur Bild-Maße fehlen
+        return !window.__abnahmeUrteil(window.__abnahmeMessen({})).rot.some((f) => !f.feld.startsWith("bild."));
+    };
+    // DER FREIE STAND (Lehre 17, die Blick-Wahl sucht freie Sicht): der erste Stand, an dem die Kamera des Spiels frei auf die
+    // Platzmitte sieht; findet keiner, steht der erste, und die Aufnahme nennt den Grund. Bis w4-p-mensch-k1 stand der erste
+    // Stand ohne Grundriss — am Genesis-Ort (aff7d187 Radeon) lag dort die Third-Kamera an der Böschung: „Sicht verdeckt 18,4 %
+    // (Gelände)“, die Aufnahme speicherte nichts, die Station las „kein Platz-Bild um 8 Uhr“
+    let stand = null;
+    for (const q of staende) if (await stelle(q)) { stand = q; break; }
+    if (!stand) await stelle((stand = staende[0]));
     const takte = await window.__gebautNach("der Dorfplatz um 8 Uhr", { fertig: () => { const o = r._weltOffen(); return !o.leute && !o.leiber; } });
     const leiber = () => s.scene.children.filter((o) => o && o.userData && o.userData.rig && o.userData.heim != null);
     const gez = (b) => b.visible || b.userData._satz === true || (r._kzBesitztFeld && r._kzBesitztFeld(b));
@@ -2438,6 +2451,9 @@ const stationen = [
             if (!p) return { gruen: false, zahl: "kein Platz-Bild um 8 Uhr (platzAcht / b64png, Exit " + lauf.exit + ")" };
             if (p.fehler) return { gruen: false, zahl: "Platz-Bild: " + p.fehler };
             const ib = z.imBlick || {};
+            // die Stunde des Bilds (`tod`) gegen ihr Soll (`uhr`, 8 Uhr) auf ±0,02 (29 min): die gemessenen Bilder trugen
+            // 0,3377–0,3425 — ein Bild, dessen Uhr nicht griff, heißt beim Namen ROT (aff7d187: 12:30 unter „8 Uhr“)
+            const hm = (t) => { const m = Math.round((((t % 1) + 1) % 1) * 1440); return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); };
             const gruen =
                 z.leiber > 0 &&
                 typeof z.quote === "number" &&
@@ -2446,13 +2462,14 @@ const stationen = [
                 ib.ego >= 10 &&
                 ib.third >= 10 &&
                 p.imBild >= 10 &&
-                p.sicht === "third";
+                p.sicht === "third" &&
+                Math.abs(p.tod - p.uhr) <= 0.02;
             return {
                 gruen,
                 zahl:
                     "Quote " + z.leiber + "/" + z.sollSumme + " = " + z.quote + ", Häuser ohne Bewohner " + z.leerN +
-                    ", gegangene im Blick " + ib.ego + " Ego / " + ib.third + " Third; Third-Bild 8 Uhr am Dorfplatz " +
-                    p.imBild + " Menschen im Bild, " + p.gehendImBild + " gehend, " + p.fps + " fps",
+                    ", gegangene im Blick " + ib.ego + " Ego / " + ib.third + " Third; Third-Bild am Dorfplatz um " + hm(p.tod) +
+                    " (Soll " + hm(p.uhr) + ") " + p.imBild + " Menschen im Bild, " + p.gehendImBild + " gehend, " + p.fps + " fps",
             };
         },
         pfad: [
