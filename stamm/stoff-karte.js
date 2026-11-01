@@ -645,18 +645,37 @@ class AnazhRealm_stoff_karte {
         const nOkt = S.select(nV.z.lessThan(0.0), S.vec2(1.0).sub(nO.yx.abs()).mul(nS), nO);
         // DIE TIEFE JE TEXEL (w4-laub-karte, phyto-core `karteTiefe`): wie weit die Fläche vor der Mitte des Rahmens liegt, im
         // Blick der Ansicht — die Kamera blickt aus `abst` auf die Mitte, ihre Sicht-Tiefe dort ist −abst (`uTiefe`: abst, hW,
-        // hH je Karte, `_karteWeltBacken`). Sie reist im vierten Kanal der Normale: r184 leert ihn auf 1 — ein leerer Texel
-        // trägt 1, ein deckender t (die rgba8-Mips mitteln 1 − Deckung · (1 − t), der Stoff teilt durch die Deckung in z).
+        // hH je Karte, `_karteWeltBacken`). Sie reist im vierten Kanal der Normale: die Leere (unten) schreibt ihn auf 1 — ein
+        // leerer Texel trägt 1, ein deckender t (die rgba8-Mips mitteln 1 − Deckung · (1 − t), der Stoff teilt durch die
+        // Deckung in z).
         B.uTiefe = S.uniform(new T.Vector3(1, 1, 1));
         const tiefe = globalThis.__phytoCore
             .karteTiefe(AnazhRealm._windTsl(S), S.positionView.z.add(B.uTiefe.x), B.uTiefe.y, B.uTiefe.z)
             .clamp(0.0, 1.0);
-        // r184 leert jedes Ziel außer dem ersten auf (0, 0, 0, 1): die Deckung reist in z (Normale) bzw. g (Sonnen-Sicht)
+        // die Leere trägt jedes Ziel außer dem ersten als (0, 0, 0, 1): die Deckung reist in z (Normale) bzw. g (Sonnen-Sicht)
         B.mrt = S.mrt({
             [namen[0]]: S.vec4(S.diffuseColor.rgb, 1.0),
             [namen[1]]: S.vec4(nOkt.mul(0.5).add(0.5), 1.0, tiefe),
             [namen[2]]: S.vec4(sicht.x, 1.0, sicht.y, 1.0),
         });
+        // DIE LEERE DES ZIELS (z120): vor der ersten Ansicht einer Karte ZEICHNET die Bühne ihr Ziel leer — ein Viereck über das
+        // ganze Ziel, Albedo (0, 0, 0, 0), Normale und Sonnen-Sicht (0, 0, 0, 1) —, ihr Pass leert nur die Tiefe. Bis z120 trug
+        // das Leeren des Passes die Leere: das WebGL2-Rückend von r184 erreicht mit keinem Leeren (autoClear wie clear()) eine
+        // Schicht ≥ 1 des Array-Ziels, eine Zeichnung erreicht sie (gemessen, Radeon WebGL2). Ihre Normale trug w = 0, die Mips
+        // der Tiefe (1 − (1 − w)/z) liefen an der Silhouette bis −90 m — jede Karte ab der zweiten Schicht stand hinter allem,
+        // was hinter ihr steht (gate:foundry-impostor C7 [rgba8] auf swiftshader: Karte vor der Tafel 0).
+        const leer = new T.MeshBasicNodeMaterial({ depthTest: false, depthWrite: false });
+        leer.vertexNode = S.vec4(S.positionGeometry.xy, 0.5, 1.0);
+        B.leere = {
+            szene: new T.Scene().add(
+                Object.assign(new T.Mesh(new T.PlaneGeometry(2, 2), leer), { frustumCulled: false })
+            ),
+            mrt: S.mrt({
+                [namen[0]]: S.vec4(0, 0, 0, 0),
+                [namen[1]]: S.vec4(0, 0, 0, 1),
+                [namen[2]]: S.vec4(0, 0, 0, 1),
+            }),
+        };
         this._karteBuehneSatz = B;
         return B;
     }
@@ -761,6 +780,7 @@ class AnazhRealm_stoff_karte {
             mip: rend.getActiveMipmapLevel(),
             mrt: rend.getMRT(),
             ac: rend.autoClear,
+            acf: rend.autoClearColor,
             farbe: rend.getClearColor(B.farbe),
             alpha: rend.getClearAlpha(),
         };
@@ -850,24 +870,33 @@ class AnazhRealm_stoff_karte {
                 this._buehneRender(rend, B.szene, L, "Karten-Sonne");
             }
             B.tiefe.value = B.schatten.depthTexture;
+            // das Ziel der Karte: BC die Bühne (die Ablage legt sie in ihre Schicht), rgba8 ihre Schicht im Array-Ziel
+            const schicht = bc ? 0 : z.idx;
+            if (iR === 0) {
+                // DIE LEERE (`B.leere`): gezeichnet über das ganze Ziel, der Pass leert nur die Tiefe
+                for (const t of B.ziel.textures) t.generateMipmaps = false;
+                B.ziel.viewport.set(0, 0, B.ziel.width, B.ziel.height);
+                rend.setMRT(B.leere.mrt);
+                rend.autoClear = true;
+                rend.autoClearColor = false;
+                rend.setRenderTarget(B.ziel, schicht);
+                this._buehneRender(rend, B.leere.szene, cam, "Karten-Leere");
+                rend.autoClearColor = vor.acf;
+                rend.setMRT(B.mrt);
+            }
             for (let v = 0; v < V; v++) {
                 // Ansicht v des Rings = die Gestalt aus Peilung v·360/V unter seiner Hebung (Kamera fest, Gestalt
                 // gegengedreht) in ihrer Zelle; WebGPU zeichnet von oben — der Stoff liest gespiegelt
                 B.wurzel.rotation.y = -v * dreh;
                 B.wurzel.updateMatrixWorld(true);
                 B.uBaum.value.makeRotationY(v * dreh); // Welt → Baum
-                rend.autoClear = iR === 0 && v === 0; // die erste Ansicht leert die Schicht (Farbe 0 = leer, Tiefe)
+                rend.autoClear = false; // die Schicht steht leer (die Leere des ersten Rings)
                 const zx = (v % tR) * bw,
                     zy = ring.y + Math.floor(v / tR) * bh;
-                if (bc) {
-                    B.ziel.viewport.set(zx, zy, bw, bh);
-                    rend.setRenderTarget(B.ziel);
-                } else {
-                    at.rt.viewport.set(zx, zy, bw, bh);
-                    // die Mips nach der letzten Ansicht des letzten Rings
-                    for (const t of at.rt.textures) t.generateMipmaps = letzter && v === V - 1;
-                    rend.setRenderTarget(at.rt, z.idx);
-                }
+                B.ziel.viewport.set(zx, zy, bw, bh);
+                // rgba8: die Mips nach der letzten Ansicht des letzten Rings (BC: die Ablage)
+                if (!bc) for (const t of B.ziel.textures) t.generateMipmaps = letzter && v === V - 1;
+                rend.setRenderTarget(B.ziel, schicht);
                 this._buehneRender(rend, B.szene, cam, "Karten-Bühne");
             }
             ganz = E.wartetN + E.verschoben === offen;
@@ -877,6 +906,7 @@ class AnazhRealm_stoff_karte {
             rend.setRenderTarget(vor.rt, vor.face, vor.mip);
             rend.setMRT(vor.mrt);
             rend.autoClear = vor.ac;
+            rend.autoClearColor = vor.acf;
             rend.setClearColor(vor.farbe, vor.alpha);
             for (const [u, w] of halt) {
                 if (u.value && u.value.copy && typeof w === "object") u.value.copy(w);

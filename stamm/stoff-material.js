@@ -1395,19 +1395,19 @@ class AnazhRealm_stoff_material {
                                         .mul(_morph);
                                     const _pVv = _Ta.positionView;
                                     const _clip = _Ta.modelViewProjection;
-                                    // die Tiefe im Bereich des Tiefen-Puffers wie frag_depth (eine Ecke, die ihre Tiefe hinter das
-                                    // Auge rückte, fiele sonst samt Dreieck aus dem Clip-Raum)
+                                    // die gerückte Tiefe der Ecke im Sicht-Raum, in der Spanne der Kamera (eine Ecke, die ihre Tiefe
+                                    // hinter die Nah-Ebene rückte, fiele sonst samt Dreieck aus dem Clip-Raum), durch DIESELBE
+                                    // Projektion wie jede Ecke der Welt: sie trägt den Tiefen-Raum des Rückends (WebGPU [0, 1], der
+                                    // WebGL2-Rückfall [−1, 1]). Eine Tiefe aus [0, 1] stellte unter WebGL2 jede Karte hinter das, was
+                                    // hinter ihr steht (z120: gate:foundry-impostor C7 auf swiftshader, Karte vor der Tafel 0).
+                                    const _zV = _pVv.z
+                                        .mul(_Ta.float(1.0).sub(_wAugeV.div(_pVv.length().max(1e-3))))
+                                        .clamp(_Ta.cameraFar.negate(), _Ta.cameraNear.negate());
+                                    const _zClip = _Ta.cameraProjectionMatrix.mul(_Ta.vec4(0.0, 0.0, _zV, 1.0));
                                     mat.vertexNode = _Ta.vec4(
                                         _clip.x,
                                         _clip.y,
-                                        _Ta
-                                            .viewZToPerspectiveDepth(
-                                                _pVv.z.mul(_Ta.float(1.0).sub(_wAugeV.div(_pVv.length().max(1e-3)))),
-                                                _Ta.cameraNear,
-                                                _Ta.cameraFar
-                                            )
-                                            .clamp(0.0, 1.0)
-                                            .mul(_clip.w),
+                                        _zClip.z.div(_zClip.w).mul(_clip.w),
                                         _clip.w
                                     );
                                     const _wAuge = _Ta.varying(_wAugeV, "vKarteTiefe");
