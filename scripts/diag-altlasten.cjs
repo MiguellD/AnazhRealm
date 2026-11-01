@@ -1334,6 +1334,14 @@ const ZWILLINGE = [
         verboten: baender().concat(["scripts/playtest.cjs"]),
         fiel: "Decke w3w-studios — der stille Existenz-Wächter einer Probe",
     },
+    // w4-knoten-takt — KEIN LEBENDES OBJEKT ALS PROTOTYP: V8 gibt einem Prototyp eine EIGENE Form, jeder Zugriff auf ihn geht
+    // den langsamen Weg (die Sicht des Bau-Schlüssels erbte vom Render-Objekt: z119c GTX, Stadt im Stand CPU-Takt p95 +1,07 ms)
+    {
+        muster: /Object\.create\((?!null)|setPrototypeOf\(/,
+        gefallen: true,
+        verboten: STAMM,
+        fiel: "eine Sicht kopiert, sie erbt nie",
+    },
 ];
 
 // Die Leser des Gelände-Gesetzes, die es nie nachrechnen: jede JS-Datei der Wurzel außer dem Gesetzbuch und dem Seh-
@@ -3868,10 +3876,11 @@ function main() {
             feuert("scripts/playtest/gelaende.cjs", "if (o && !o.error) f();", "Fehler-Zweig") &&
             feuert("scripts/playtest/netz.cjs", "if (!r) return;", "Wächter") &&
             feuert(STAMM[0], '"return vec4<f32>(pT.rgb * ((l0c * max(l0d.y, 0.0) + ambientFarbe) * (1.0 / PI)), pT.a);"', "weltLicht") &&
+            feuert(STAMM[0], "Object.create(ro);", "erbt nie") &&
             still(STAMM[0], '"return vec4<f32>(pT.rgb * ((l0c * max(l0d.y, 0.0) + ambientFarbe) * (1.0 / PI)), pT.a);"');
         console.log(
             zwillingFeuert
-                ? "✅ SELBST-TEST: die Zwillings-Wand feuert (Kontinentalität im Worker, die gefallene Massiv-Maske in Stamm und Gesetzbuch, die gefallene Tarn-Mulde in Linse und Gesetzbuch, der Wiesen-Tint im Labor, die Bodenschicht im Stamm, die zweite Wort-Schrift, der Lambert-Zwilling im Panorama — je mit Zeile; der Kommentar nicht)"
+                ? "✅ SELBST-TEST: die Zwillings-Wand feuert — jeder Abdruck mit Zeile, der Kommentar nicht"
                 : "❌ SELBST-TEST: die Zwillings-Wand feuert nicht"
         );
         if (!zwillingFeuert) process.exit(1);
@@ -3931,7 +3940,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, kein Stoff fängt still (Stoff-Wand: kein schluckender catch im Render-Bau (am Versuch gemessen, die Hülle ohne Tiefe samt Studio-Faden, jeder Pfad bricht, jeder Studio-Faden trägt einen lauten Hörer), keine Fehler-Variable und kein toter Fehler-Marker, kein Wenn um ein TSL-Glied, kein Null-Knoten; ${STOFF_ZWEIGE.length} benannte Zweige mit ihrem Bild (ohne Seite · der Sandbox-Weg des Voxel-Fadens), der EINE Melder meldet jede Meldung ERROR und dieselbe wieder mit Zähler, keine Kette steigt still aus, kein Bau wartet in einer Schleife auf die Uhr), die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, keine Probe setzt Spieler, Kamera oder Tier an ein Zahlen-Literal ohne BÜHNE, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup), der Name der Stamm-Datei steht als Lese-Ziel nur in scripts/lib/stamm.cjs (${stammLeserDateien(root).length} Dateien gesehen).`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, kein Stoff fängt still (Stoff-Wand: kein schluckender catch im Render-Bau, keine Fehler-Variable und kein toter Fehler-Marker, kein Wenn um ein TSL-Glied, kein Null-Knoten; ${STOFF_ZWEIGE.length} benannte Zweige mit ihrem Bild (ohne Seite · der Sandbox-Weg des Voxel-Fadens), der EINE Melder meldet jede Meldung ERROR und dieselbe wieder mit Zähler, keine Kette steigt still aus, kein Bau wartet in einer Schleife auf die Uhr), die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, keine Probe setzt Spieler, Kamera oder Tier an ein Zahlen-Literal ohne BÜHNE, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup), der Name der Stamm-Datei steht als Lese-Ziel nur in scripts/lib/stamm.cjs (${stammLeserDateien(root).length} Dateien gesehen).`
     );
 }
 
