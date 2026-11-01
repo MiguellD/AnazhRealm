@@ -179,12 +179,7 @@ function spalt(px, py, pz, tris) {
         }
         // SETTLE: Streaming-Dirties + Wasser-Iso abklingen lassen, damit das C-Experiment
         // mit einem RUHIGEN Dirty-Set startet (sonst zählt es Streaming-Rebuilds mit).
-        for (let i = 0; i < 200; i++) {
-            if (r && typeof r._gameLoopTick === "function") {
-                __handTakt();
-            }
-            await sleep(2);
-        }
+        await window.__takte(200, 2);
         if (r) r._drainDirtyVoxelChunks();
     });
 

@@ -219,9 +219,14 @@ function seitenPruefer() {
             const x = pm ? pm.position.x + 6 : 6;
             const z = pm ? pm.position.z + 6 : 6;
             // DIE LICHT-GEDÄCHTNISSE über ihre echten Schreiber: das wache Tor (`_tickPortalLicht`) und der Licht-Pool,
-            // der es hält (`_leuchtTakt`) — die Laterne eines Plans ist ein Eintrag der Welt (`laterne_dorf`), kein Gedächtnis
+            // der es hält (`_leuchtTakt`) — die Laterne eines Plans ist ein Eintrag der Welt (`laterne_dorf`), kein Gedächtnis.
+            // Das Tor steht 3 m vor dem Auge in seiner Höhe (im Kegel und im Umkreis des Pools, wo die Kamera der Seite auch steht —
+            // vor jeder Laterne des Genesis-Orts: seine Kern-Laternen hielten sonst die vier Plätze, ein Tor seitlich hinter dem
+            // Spieler rangiert hinter jeder im Bild), der Pool wählt frisch wie nach dem Boot
+            const cam = st.camera.position;
+            r._leuchtPool = null;
             r._tickPortalLicht({
-                entry: { position: { x, y: r.getTerrainHeightAt(x, z) + 1, z }, scale: 1 },
+                entry: { position: st.camera.getWorldDirection(cam.clone()).setY(0).normalize().multiplyScalar(3).add(cam), scale: 1 },
                 tor: { mu: { springY: 1 } },
                 _act: 1,
                 u: null,

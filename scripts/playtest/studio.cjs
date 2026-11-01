@@ -423,10 +423,7 @@ async function checkBandLeistungsVertrag({ page, check }) {
             // misst darum im GELÜFTETEN Regler-Regime (das regler-sim-Muster:
             // _isHeadlessNull ab, GPU-Anwender gestubbt, Über-Budget-Folds fahren
             // den Radius auf den Boden 70 m → die kleine Welt wird schnell FERTIG).
-            for (let i = 0; i < 200; i++) {
-                __handTakt();
-                if (i % 15 === 0) await sleep(15);
-            }
+            await window.__takte(200, 1);
             // DIE WARTENDEN REGIONEN: eine Streu-Region mit einem Baum-Platz, dessen Karte fehlt, bleibt
             // `_deferredFoundry`, und JEDE Foundry-Lieferung baut sie ganz neu (`_tickScatterStreaming` Refill) — im Spiel
             // nur im Boot (echte GPU, Mess-Wiese, Erst-Boot: 14 Lieferungs-Anstöße, 11 Region-Neubauten in 149 s, danach 0

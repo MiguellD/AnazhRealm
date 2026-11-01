@@ -104,7 +104,7 @@ function probe(stoerung) {
         const S = nah.S;
         const i = Math.floor((x - (nah.mitteX - S.fensterM / 2)) / S.texelM);
         const j = Math.floor((z - (nah.mitteZ - S.fensterM / 2)) / S.texelM);
-        return nah.daten[(j * nah.N + i) * 2 + c] / A.WEGE_KARTE.voll;
+        return (nah.daten[(j * nah.N + i) * 2 + c] - A.WEGE_KARTE.null) / A.WEGE_KARTE.voll;
     };
     out.platz = +kanal(o.x + 10, o.z + 14, 0).toFixed(3);
     out.acker = +kanal(o.x - 18, o.z - 18, 1).toFixed(3);
@@ -197,7 +197,7 @@ function trittProbe(stoerung) {
         const S = nah.S;
         const i = Math.floor((x - (nah.mitteX - S.fensterM / 2)) / S.texelM);
         const j = Math.floor((z - (nah.mitteZ - S.fensterM / 2)) / S.texelM);
-        return i < 0 || j < 0 || i >= nah.N || j >= nah.N ? -1 : nah.daten[(j * nah.N + i) * 2] / A.WEGE_KARTE.voll;
+        return i < 0 || j < 0 || i >= nah.N || j >= nah.N ? -1 : (nah.daten[(j * nah.N + i) * 2] - A.WEGE_KARTE.null) / A.WEGE_KARTE.voll; // prettier-ignore
     };
     // Je Ring EINE Kachel über der Feuerstelle: steht dort keine (der Null-Renderer baut die Wiese nicht), sät die
     // Probe einen leeren Platzhalter — die Probe zählt, ob der Abbau sie fallen lässt (der Takt baut Fehlendes neu).

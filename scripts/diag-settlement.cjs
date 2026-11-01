@@ -2828,12 +2828,14 @@ hauptLauf(async () => {
                     res.vorplatzN = vpN;
                     res.vorplatzFehl = vpFehl;
                     // die Altwelten: Bauten, die kein Ort trägt (kein Haus mit Grundriss, keine Ausstattung des Dorfs: brunnen_dorf,
-                    // marktstand_dorf, keine Brücke seiner Gassen: bruecke_jochfeld), auf dem Erdbau eines Orts — nie das gesetzte
+                    // marktstand_dorf, keine Brücke seiner Gassen: bruecke_jochfeld, kein Werk des Genesis-Orts: die ids seines Plans
+                    // `genesis:<art>:<n>`, `_genesisWerkListeBauen` — Tore, Bänke, Laternen), auf dem Erdbau eines Orts — nie das gesetzte
                     // Haus auf seinem EIGENEN Grund (`haus:`, S4)
                     let fremd = 0;
                     for (const e of st.architectures)
                         if (
                             !e.fundament &&
+                            !/^genesis:/.test(e.id) &&
                             !/_dorf$|^bruecke_/.test(e.type) &&
                             !st.worldMeta.erdbau[
                                 `haus:${Math.round(e.position.x * 100)},${Math.round(e.position.z * 100)}`

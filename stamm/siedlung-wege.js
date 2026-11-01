@@ -30,16 +30,18 @@ class AnazhRealm_siedlung_wege {
                 throw new Error(`Wege-Karte: die Stufen tragen verschiedene Raster (${n.join(" ≠ ")}) — EINE Array-Textur trägt eines`); // prettier-ignore
             return n[0];
         };
-        // `signiert`: die Bytes tragen ein Vorzeichen (rg8snorm, -1 … 1) — die Wege-Karte trägt je Kanal zwei Belage (`WEGE_KARTE.belag`)
-        const karte = (n, kanaele, format, name, signiert) => {
+        // `nul`: das Byte der leeren Karte — die Wege-Karte trägt je Kanal zwei Belage mit Vorzeichen um `WEGE_KARTE.null`
+        // (`WEGE_KARTE.belag`, nie snorm wie im Rausch-Atlas: r184 legt jede Daten-Textur auch als Render-Ziel an, rg8snorm ist
+        // das nur mit texture-formats-tier1 — swiftshader fehlt es, die Textur wäre ungültig und der Boden-Stoff bände nichts)
+        const karte = (n, kanaele, format, name, nul = 0) => {
             const tex = new THREE.DataArrayTexture(
-                new (signiert ? Int8Array : Uint8Array)(n * n * kanaele * W.stufen.length),
+                new Uint8Array(n * n * kanaele * W.stufen.length).fill(nul),
                 n,
                 n,
                 W.stufen.length
             );
             tex.format = format;
-            tex.type = signiert ? THREE.ByteType : THREE.UnsignedByteType;
+            tex.type = THREE.UnsignedByteType;
             tex.name = name;
             tex.minFilter = THREE.LinearFilter;
             tex.magFilter = THREE.LinearFilter;
@@ -51,7 +53,7 @@ class AnazhRealm_siedlung_wege {
         };
         const N = raster(W.stufen.map((S) => S.texelM));
         const kN = raster(AnazhRealm.LAUB_STREU.texelM);
-        const wege = karte(N, 2, THREE.RGFormat, "wege-karte", true);
+        const wege = karte(N, 2, THREE.RGFormat, "wege-karte", W.null);
         // DIE DECKE DES BODENS (stoffe.K2#2): die Kronen-Karte trägt zwei Kanäle derselben Fläche — R die Laubstreu unter den Kronen,
         // G die Asche des Brands (`_ascheMalen`); EIN Sampler, EIN Abgriff je Stufe im Boden-Stoff.
         const streu = karte(kN, 2, THREE.RGFormat, "kronen-streu");
@@ -437,7 +439,7 @@ class AnazhRealm_siedlung_wege {
         // nicht-leer, der nächste Umzug lädt sie leer hoch — kein Maler kann die Marke vergessen.
         stufe.wegeLeer = false;
         const daten = stufe.daten;
-        const voll = AnazhRealm.WEGE_KARTE.voll;
+        const { voll, null: nul } = AnazhRealm.WEGE_KARTE;
         const wert = f.wert || 1;
         for (let j = j0; j <= j1; j++) {
             const pz = z0w + (j + 0.5) * t;
@@ -447,8 +449,8 @@ class AnazhRealm_siedlung_wege {
                 if (!(q > 0)) continue;
                 const k = (j * N + i) * 2 + f.kanal;
                 const v = Math.round(q * voll) * wert;
-                const alt = daten[k];
-                if (wert > 0 ? v > alt : alt <= 0 && v < alt) daten[k] = v;
+                const alt = daten[k] - nul;
+                if (wert > 0 ? v > alt : alt <= 0 && v < alt) daten[k] = v + nul;
             }
         }
     }
@@ -589,7 +591,7 @@ class AnazhRealm_siedlung_wege {
     _wegeStufeMalen(stufe) {
         const S = stufe.S;
         const warLeer = stufe.wegeLeer === true;
-        stufe.daten.fill(0);
+        stufe.daten.fill(AnazhRealm.WEGE_KARTE.null);
         stufe.wegeLeer = true;
         const h = S.fensterM / 2 + S.randMinM + AnazhRealm.WEGE_KARTE.randM;
         for (const sd of this.state.wegeKarte.siedlungen) {
@@ -664,8 +666,8 @@ class AnazhRealm_siedlung_wege {
         const tz = fz - j;
         const d = stufe.daten;
         const N = stufe.N;
-        const voll = AnazhRealm.WEGE_KARTE.voll;
-        const k = (a, b, c) => d[(b * N + a) * 2 + c] / voll;
+        const { voll, null: nul } = AnazhRealm.WEGE_KARTE;
+        const k = (a, b, c) => (d[(b * N + a) * 2 + c] - nul) / voll;
         const bi = (c) =>
             (k(i, j, c) * (1 - tx) + k(i + 1, j, c) * tx) * (1 - tz) +
             (k(i, j + 1, c) * (1 - tx) + k(i + 1, j + 1, c) * tx) * tz;
@@ -702,9 +704,15 @@ class AnazhRealm_siedlung_wege {
         // Jenseits des Fern-Fensters liegt weder Weg noch Streu (K16: der Fern-Ring trägt denselben Stoff bis 8 km — die Karte
         // klemmte ihren Rand-Texel sonst radial über die Ferne). Im Fenster, wo jeder Chunk steht, dieselbe Zahl.
         const imFenster = _T.step(_T.max(relFern.x.abs(), relFern.y.abs()), _T.float(0.5));
-        const _wm = _T.mix(wFern, wNah, innen).mul(imFenster);
+        // die Bytes um `null` (`WEGE_KARTE`): der Sampler liest u / 255, der Belag ist (u − null) / voll — affin, darum nach der Mischung
+        const WK = AnazhRealm.WEGE_KARTE;
+        const _wm = _T
+            .mix(wFern, wNah, innen)
+            .mul(255 / WK.voll)
+            .sub(WK.null / WK.voll)
+            .mul(imFenster);
         const _begehbar = _T.smoothstep(_T.float(0.6), _T.float(0.85), _T.normalWorldGeometry.y); // der Hang selbst, nie die Licht-Normale
-        // DER BELAG (rg8snorm, je Kanal mit Vorzeichen gefiltert, dann geteilt — `_wegeBelagAt` rechnet dieselbe Teilung)
+        // DER BELAG (rg8 um `null`, je Kanal mit Vorzeichen gefiltert, dann geteilt — `_wegeBelagAt` rechnet dieselbe Teilung)
         const _erde = _wm.r.max(0.0).mul(_begehbar);
         const _rasen = _wm.r.negate().max(0.0).mul(_begehbar);
         const _acker = _wm.g.max(0.0).mul(_begehbar);
@@ -1351,7 +1359,7 @@ class AnazhRealm_siedlung_wege {
             wk.kronenZellen.clear();
             wk.kronenRandMax = 0;
             for (const stufe of wk.stufen) {
-                stufe.daten.fill(0);
+                stufe.daten.fill(AnazhRealm.WEGE_KARTE.null);
                 stufe.zentriert = false;
                 this._wegeSchichtHoch(stufe.tex, stufe.schicht);
                 stufe.kronen.summe.fill(0);
@@ -1372,7 +1380,8 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_wege]);
 // umzugM: NAH 512 m zu 0,5 m (ein 2,5-m-Weg = 5 Texel, die Kante bilinear weich), gesichert 208 m ≥ die Ring-Kante
 // 194 m des Standard-Rings; FERN 2048 m zu 2 m, gesichert 768 m ≥ der größte Chunk-Ring (12,5 × 43,2 = 540 m).
 // Der Rand fällt über ±max(randM, randMinM) weich (getretene Erde läuft in die Wiese aus; fern ≥ 1 Texel).
-// DER BELAG (rg8snorm, `voll` = 127 der volle Anteil): je Kanal zwei Arten mit Vorzeichen — R: + getretene Erde, − Rasen;
+// DER BELAG (rg8unorm um `null` = 127, `voll` = 127 der volle Anteil; nie rg8snorm — r184 legt jede Daten-Textur auch als
+// Render-Ziel an, ohne texture-formats-tier1 ist sie ungültig): je Kanal zwei Arten mit Vorzeichen — R: + getretene Erde, − Rasen;
 // G: + Acker, − Pflaster. Ein Belag der Flächen eines Plans (fachwerk `belag`) trägt seinen Kanal und sein Vorzeichen (`belag`);
 // eine Art, die die Karte nicht kennt, wirft laut (`_stlWegeBuild`). Das Pflaster liegt in G über dem Rasen in R: Kopfstein und
 // Rasen-Keil grenzen ohne Naht aneinander; nur Erde und Rasen teilen den Kanal (der Rand des Wegs läuft über den Grund aus).
@@ -1383,6 +1392,7 @@ AnazhRealm.WEGE_KARTE = Object.freeze({
     ]),
     randM: 0.6,
     voll: 127,
+    null: 127,
     belag: Object.freeze({
         weg: Object.freeze({ kanal: 0, wert: 1 }),
         gras: Object.freeze({ kanal: 0, wert: -1 }),

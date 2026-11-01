@@ -1085,7 +1085,10 @@ function startBefunde(z, soll) {
 }
 // Die Welt in der Seite gemessen, unabhängig vom Studio — mit der Linse dieses Baums: der Makro-Abdruck an den Punkten des
 // Kerns (`abdruckFeld`) und die Statistik auf dem Mess-Raster des Kerns (`MESSUNG.raster`, `messStatistik`); die Seite liest
-// nur die Höhe, die die Welt baut (`_terrainMacroSurfaceY`), und die Seen, die ihr Gesetz benennt (`benannteSeen`).
+// nur die Höhe, die die Welt baut (`_terrainMacroSurfaceY` = gelaende-core `hoehe` an ihrer lebenden Lage), und die Seen, die
+// ihr Gesetz benennt (`benannteSeen`). DER PLAN IST DIE FUNKTION: die Lage der Welt ohne den Erdbau der Orte (`erdbau`, K10
+// Welt = Funktion + Abweichungen — die Splats legt das Ort-Gesetz, seit dem Genesis-Ort in jeder Welt an 0/0, nie der Plan
+// des Gelände-Studios).
 async function weltMessen(page) {
     const Z = linse();
     const R = Z.MESSUNG.raster;
@@ -1093,15 +1096,14 @@ async function weltMessen(page) {
         async (punkte, R) => {
             const G = window.__gelaendeCore;
             const hex = window.__sha;
+            const L = r._gelaende();
+            const F = Object.create(L, { erdbau: { value: null } });
+            const hoehe = (x, z, mitDetail) => G.hoehe(F, x, z, mitDetail);
             const H = new Array(R.n * R.n);
             for (let j = 0; j < R.n; j++)
-                for (let i = 0; i < R.n; i++)
-                    H[i + j * R.n] = r._terrainMacroSurfaceY(R.x0 + i * R.schritt, R.x0 + j * R.schritt, true);
-            const L = r._gelaende();
+                for (let i = 0; i < R.n; i++) H[i + j * R.n] = hoehe(R.x0 + i * R.schritt, R.x0 + j * R.schritt, true);
             return {
-                makroSha: await hex(
-                    Float64Array.from(punkte, ([x, z, mitDetail]) => r._terrainMacroSurfaceY(x, z, mitDetail))
-                ),
+                makroSha: await hex(Float64Array.from(punkte, ([x, z, mitDetail]) => hoehe(x, z, mitDetail))),
                 H,
                 benannt: G.benannteSeen(L, R.x0, R.x0, R.schritt, R.n),
                 seed: L.seed,

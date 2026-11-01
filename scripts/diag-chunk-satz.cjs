@@ -397,6 +397,12 @@ const { errs, check } = pruefer();
         out = await page.evaluate(async () => {
             const s = r.state;
             const res = {};
+            // DER ORT DES ZENSUS: der Gürtel des Genesis-Orts südlich seiner Mitte (fachwerk `GENESIS_ORT.guertel`, der Wald des
+            // Felds) — an der Ankunft trägt sein Freiraum keine Krone, keinen Busch, keinen Fels, der Ring der Nah-Streu (24 m)
+            // bliebe leer und (c) urteilte über nichts
+            const [M, G] = [r._genesisMitte(), window.__fachwerkCore.GENESIS_ORT.guertel];
+            const z = M.z - (G.r0 + G.r1) / 2;
+            s.playerMesh.position.set(M.x, r.getTerrainHeightAt(M.x, z) + 1.2, z);
             // Einschwingen: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`), dann Streu, Wasser und Fern-Deko
             // austreiben.
             await __weltStehtNach(() => {
@@ -410,10 +416,7 @@ const { errs, check } = pruefer();
                 if (ns && ns.senken.size > 0 && ns.offen === 0) break;
                 await sleep(100);
             }
-            for (let i = 0; i < 30; i++) {
-                __handTakt();
-                if (i % 10 === 0) await sleep(0);
-            }
+            await window.__takte(30, 0);
             r._tickChunkSatz();
 
             // ── DER ZENSUS: Render-Bürger je Klasse im Szenen-Baum (Bundles eingeschlossen).

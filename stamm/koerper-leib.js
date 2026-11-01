@@ -515,7 +515,7 @@ class AnazhRealm_koerper_leib {
             vRef,
             this._gaitBeinMass(rig).L
         );
-        g.ik = opts && opts.ik ? this._gaitIKPrep(mesh, opts.soleY, opts.yaw) : null;
+        g.ik = opts && opts.ik ? this._gaitIKPrep(mesh, opts.soleY, opts.yaw, d) : null;
         // ohne Boden-IK (Luft, Peer) löst jeder Fuß-Lock — die Landung friert die Stand-Füße frisch ein
         const ikC = !g.ik && mesh.userData && mesh.userData._gaitIK;
         if (ikC) ikC.lockL.on = ikC.lockR.on = false;
@@ -624,8 +624,9 @@ class AnazhRealm_koerper_leib {
     // Ruhe (Hüfte × Knie × Knöchel). Vorher maß der erste Stand den Knöchel der Pose des letzten Bilds über der Kapsel: nach
     // dem Spawn-Fall stand er in der Luft-Pose (`leibLuftPose`, w4-koerper-park: die Knie gebeugt) 16,1 statt 8,8 cm hoch,
     // die Sohlen schwebten 9 cm (gate:koerper-stand K8) und 17 cm (gate:fall-waechter B), in der Kontrapost-Ruhe 0,7 cm.
-    // Fehlende Gelenke / ungebauter Chunk → null (kein IK diesen Frame).
-    _gaitIKPrep(mesh, soleY, yaw) {
+    // Fehlende Gelenke / ungebauter Chunk → null (kein IK diesen Frame). `dt` die Zeit der Anzeige-Uhr seit dem letzten Takt
+    // (die Glättung der Hang-Lehne geht mit ihr, nie mit dem Bild).
+    _gaitIKPrep(mesh, soleY, yaw, dt = 0) {
         const r = mesh && mesh.userData && mesh.userData.rig;
         if (!r || !Number.isFinite(soleY)) return null;
         const L = r.legL;
@@ -677,7 +678,9 @@ class AnazhRealm_koerper_leib {
                 this._gaitProbe(p, l.on ? l.x : f.x, l.on ? l.z : f.z, ik);
         if (!Number.isFinite(ik.probeL.g) || !Number.isFinite(ik.probeR.g)) return null;
         // leichte RUMPF-Neigung am Hang: die Fuß-Proben entlang der Blick-
-        // Achse tragen die Steigung (exp-geglättet; Füße beisammen → 0).
+        // Achse tragen die Steigung (exp-geglättet; Füße beisammen → 0). Die Glättung ist eine Funktion der Anzeige-Uhr
+        // (0,12 je 60-Hz-Takt, Lehre 13): bis hierher rückte jeder Ruf 12 % — die Lehne hing an der Bildrate, und bei stehender
+        // Uhr (dt 0, Hit-Stop) rückte sie weiter; nach dem Ausfall eines Schwungs trug die Pose so ihren Rest (gate:kampf-gefuehl E).
         const sep = (ik.footL.x - ik.footR.x) * Math.sin(ik.yaw) + (ik.footL.z - ik.footR.z) * Math.cos(ik.yaw);
         let ziel = 0;
         if (Math.abs(sep) > 0.15) {
@@ -686,7 +689,7 @@ class AnazhRealm_koerper_leib {
                     ? this._slopePitch(ik.probeL.g, ik.probeR.g, Math.abs(sep))
                     : this._slopePitch(ik.probeR.g, ik.probeL.g, Math.abs(sep));
         }
-        ik.hang += (ziel - ik.hang) * 0.12;
+        ik.hang += (ziel - ik.hang) * (1 - Math.pow(0.88, Math.max(0, dt) * 60));
         if (!Number.isFinite(ik.hang)) ik.hang = 0;
         return ik;
     }

@@ -457,16 +457,7 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
         async (welt, wuerfe, evolutionen, schein) => {
             const s = st;
             const out = { welt, wuerfe: [], akt: null, nexus: null, zensus: null, befunde: [] };
-            const takt = async (ms) => {
-                for (let i = 0; i * 16 < ms; i++) {
-                    try {
-                        r._gameLoopTick(performance.now());
-                    } catch {
-                        /* ein Takt-Fehler zählt der Page-Error */
-                    }
-                    await sleep(16);
-                }
-            };
+            const takt = (ms) => window.__takte(Math.ceil(ms / 16), 16); // ein Takt-Fehler zählt der Page-Error
             // Die Welt reift aus (Genesis-Ring, Vorschauen, Start-Dorf der Wildnis): erst wenn ihr Bestand 4 s steht, misst
             // die Linse — was danach wächst, ist ein Wurf.
             {
