@@ -1334,35 +1334,45 @@ async function platzAcht(r, T) {
     if (!plan) return { fehler: "kein Plan" };
     const pz = plan.platz, pc = { x: plan.ort.x + pz.cx, z: plan.ort.z + pz.cz };
     const lang = pz.ex >= pz.ez ? 0 : Math.PI / 2;
-    let stand = null;
+    const staende = [];
     for (const k of [0, 4, 2, -2, 1, 3, -1, -3]) for (const plus of [2, 5, 9]) {
-        if (stand) break;
         const da = (k * Math.PI) / 4, a = (pz.phi || 0) + lang + da;
         const ex = Math.abs(Math.cos(da)) * pz.ex + Math.abs(Math.sin(da)) * pz.ez + plus;
         const x = pc.x - Math.cos(a) * ex, z = pc.z + Math.sin(a) * ex;
         const g = r._imGrundriss(x, z, 0.5);
-        if (g !== "haus" && g !== "bau" && r._landAt(x, z)) stand = { x, z };
+        if (g !== "haus" && g !== "bau" && r._landAt(x, z)) staende.push({ x, z });
     }
-    if (!stand) return { fehler: "kein Stand" };
+    if (!staende.length) return { fehler: "kein Stand" };
     s.renderer.setAnimationLoop(null);
     r.processChatCommand("setze uhrzeit " + UHR_T);
-    const hS = r.getTerrainHeightAt(stand.x, stand.z);
-    pm.set(stand.x, hS + A.PLAYER_FOOT_OFFSET, stand.z);
-    if (s._fixedSimPos) s._fixedSimPos.copy(pm);
     if (s.cameraMode !== "third") r.setCameraMode("third");
     const cam = s.camera;
     const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
     // der Blick auf die Platzmitte (wie zielen.js: Vorzeichen der Gier/Neigung an der echten Kamera geprüft), je Messung zwei Takte der Seite
     const mess = async () => { await window.__seitenTakt(); await window.__seitenTakt(); const p = cam.getWorldPosition(pm.clone()); const d = cam.getWorldDirection(pm.clone()); return { p, d, h: Math.atan2(d.x, d.z), v: Math.asin(Math.max(-1, Math.min(1, d.y))) }; };
-    for (let it = 0; it < 4; it++) {
-        const m0 = await mess();
-        const dx = pc.x - m0.p.x, dy = pm.y + 0.6 - m0.p.y, dz = pc.z - m0.p.z;
-        const hz = Math.atan2(dx, dz), vz = Math.atan2(dy, Math.hypot(dx, dz));
-        const y0 = s.yaw, p0 = s.pitch;
-        s.yaw = y0 + 0.1; const m1 = await mess(); const sy = Math.sign(wrap(m1.h - m0.h)) || 1;
-        s.yaw = y0; s.pitch = p0 + 0.05; const m2 = await mess(); const sp = Math.sign(m2.v - m0.v) || 1;
-        s.yaw = y0 + sy * wrap(hz - m0.h); s.pitch = p0 + sp * (vz - m0.v);
-    }
+    const stelle = async (q) => {
+        pm.set(q.x, r.getTerrainHeightAt(q.x, q.z) + A.PLAYER_FOOT_OFFSET, q.z);
+        if (s._fixedSimPos) s._fixedSimPos.copy(pm);
+        for (let it = 0; it < 4; it++) {
+            const m0 = await mess();
+            const dx = pc.x - m0.p.x, dy = pm.y + 0.6 - m0.p.y, dz = pc.z - m0.p.z;
+            const hz = Math.atan2(dx, dz), vz = Math.atan2(dy, Math.hypot(dx, dz));
+            const y0 = s.yaw, p0 = s.pitch;
+            s.yaw = y0 + 0.1; const m1 = await mess(); const sy = Math.sign(wrap(m1.h - m0.h)) || 1;
+            s.yaw = y0; s.pitch = p0 + 0.05; const m2 = await mess(); const sp = Math.sign(m2.v - m0.v) || 1;
+            s.yaw = y0 + sy * wrap(hz - m0.h); s.pitch = p0 + sp * (vz - m0.v);
+        }
+        await mess();
+        // die Abnahme des Blicks ohne Pixel (ausgabe-aufnahme `__abnahmeMessen`, die Schwellen der Aufnahme): frei, wenn nur Bild-Maße fehlen
+        return !window.__abnahmeUrteil(window.__abnahmeMessen({})).rot.some((f) => !f.feld.startsWith("bild."));
+    };
+    // DER FREIE STAND (Lehre 17, die Blick-Wahl sucht freie Sicht): der erste Stand, an dem die Kamera des Spiels frei auf die
+    // Platzmitte sieht; findet keiner, steht der erste, und die Aufnahme nennt den Grund. Bis w4-p-mensch-k1 stand der erste
+    // Stand ohne Grundriss — am Genesis-Ort (aff7d187 Radeon) lag dort die Third-Kamera an der Böschung: „Sicht verdeckt 18,4 %
+    // (Gelände)“, die Aufnahme speicherte nichts, die Station las „kein Platz-Bild um 8 Uhr“
+    let stand = null;
+    for (const q of staende) if (await stelle(q)) { stand = q; break; }
+    if (!stand) await stelle((stand = staende[0]));
     const takte = await window.__gebautNach("der Dorfplatz um 8 Uhr", { fertig: () => { const o = r._weltOffen(); return !o.leute && !o.leiber; } });
     const leiber = () => s.scene.children.filter((o) => o && o.userData && o.userData.rig && o.userData.heim != null);
     const gez = (b) => b.visible || b.userData._satz === true || (r._kzBesitztFeld && r._kzBesitztFeld(b));
