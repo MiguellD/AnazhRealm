@@ -901,9 +901,9 @@ async function starte() {
         const steht = () => page.evaluate((s) => st.worldMeta?.slug === s, slug);
         if (await steht()) return { slug, neu: false };
         // DIE ANKUNFT WIE IM SPIEL: die Ziel-Welt kommt mit laufendem Takt an (der Neuladen bootete die Seite mit ihm bis
-        // `loopAus`), bis ihr Genesis-Ort steht — erst ihr Takt am Ankunfts-Ort baut ihn (`_tickGenesisOrt`: das Tor-Rund nur
-        // am Genesis-Ort); mit ruhendem Takt stand die Prüfbühne ohne ihn (7 statt 21 Werke, die Nah-Deckung der Aufnahme fand
-        // keine Instanz-Gruppe)
+        // `loopAus`), bis ihr Genesis-Ort steht — erst ihr Takt am Ankunfts-Ort setzt ihn (`_tickGenesisOrt`: jedes Tor des Plans
+        // auf seinem Slot, `worldMeta.genesisOrt.steht`); mit ruhendem Takt stand die Prüfbühne ohne ihn (nur ihre 7 Prüfkörper,
+        // die Nah-Deckung der Aufnahme fand keine Instanz-Gruppe)
         const res = await page.evaluate((j) => {
             const x = r.importWorldBeside(j, { reload: true });
             return x && x.ok ? (__loop(1), { id: x.worldId }) : { fehler: JSON.stringify(x).slice(0, 200) };
@@ -918,7 +918,7 @@ async function starte() {
         await lade(
             page.evaluate(() => {
                 delete window.__anazhAutoSettlement;
-                return __weltDa(() => st.worldMeta.genesisPortalRing);
+                return __weltDa(() => st.worldMeta.genesisOrt && st.worldMeta.genesisOrt.steht);
             })
         );
         await loopAus();

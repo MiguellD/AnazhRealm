@@ -61,7 +61,7 @@ const neunTaeter = (m) => NEUN_SOLL.filter(([, ok]) => !ok({ kosten: [], lod: []
 // S — DIE RATSCHEN (30.10., beim Namen): die Werke des Wirts ohne Gesetzbuch und die Teile ohne Ziel (der Waldboden: sein Buch
 // bringt keine Wirts-Zeile B7, die Streu trägt ihn). Sie fallen nur — ein neuer Name taucht auf (ROT), ein geheilter fällt hier.
 const WAISEN =
-    "brennkolben damm drehbank esse esse_meister fass kiste ruestung_brustpanzer seelenstein_altar stamm_gefallen start_plattform trank_lebenssaft waterfall webstuhl";
+    "brennkolben damm drehbank esse esse_meister fass kiste ruestung_brustpanzer seelenstein_altar stamm_gefallen trank_lebenssaft waterfall webstuhl";
 const OHNE_GRIFF = "farn gestruepp schilf strauch stumpf totstamm";
 // je Soll sein Schlüssel im Befund (der Selbsttest verdirbt ihn), sein Name und sein Urteil; die Ratschen stehen als Gleichheit
 const STAMM_SOLL = [
@@ -204,7 +204,7 @@ hauptLauf(async () => {
         sk.eiche /= 2;
         const pl = r._placePolicyFor(f.recipes.meilenstein);
         const bp = (i) => (st.blueprints["stele_" + i] || {}).studioGestalt === i;
-        const P = (r._genesisPlattform() || pm).position;
+        const P = r._genesisMitte() || pm.position;
         for (let x = P.x + 40; !st.frei; x++)
             if (r._landAt(x, P.z, 1) && !r._imGrundriss(x, P.z, 0.8, 12))
                 st.frei = { x, y: r._voxelSurfaceY(x, P.z), z: P.z, r: 12 };

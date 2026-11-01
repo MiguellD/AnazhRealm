@@ -1042,7 +1042,8 @@ class AnazhRealm_gelaende_kollision {
     // DER STOFF UNTER DEM KÖRPER (stoffe.K1): die Zeile der Stoff-Tafel, die einen Fuß, eine Pfote oder einen gleitenden Leib bei
     // (x, z) in der Höhe y trägt. Die Auflage eines Baus (`_auflageAt`) trägt den Stoff ihres Teils (`stoff`, aus
     // `_blockerComputePartAABB`; eine Box ohne Teil, die Hülle des Hauses und des Tors, den Stoff ihres Werks, `_werkStoff`);
-    // sonst das Eis des gefrorenen Spiegels (`_eisAt`), das Laub des Waldbodens unter dem Kronendach (die EINE Wald-Lese-Stelle
+    // sonst das Eis des gefrorenen Spiegels (`_eisAt`), das Pflaster eines Plans (der Belag der Wege-Karte `_wegeBelagAt` ≥ ½:
+    // Stein), das Laub des Waldbodens unter dem Kronendach (die EINE Wald-Lese-Stelle
     // `_kronenStreuAt` ≥ ½), die Wiese, wo die Boden-Karte Gras zeichnet (der Grün-Kanal des EINEN Lesers `_bodenSichtAt` ≥ ½),
     // darunter der Stoff des Felds (`_terrainMaterialAt`). Leser: der Schritt-Klang (`_schrittMaterialAt`) und die Reibung des
     // gestoßenen Leibs (`_kreaturStossSchritt`).
@@ -1052,6 +1053,9 @@ class AnazhRealm_gelaende_kollision {
         if (this._eisAt(x, z, y + 0.02, 0.05) !== null) return "eis";
         const lava = this._lavaAt(x, z); // die Decke der Lava (stoffe.K3-2): glühend Glut, erstarrt Stein
         if (lava) return lava.erstarrt ? "stein" : "glut";
+        const belag = this._kontaktBelag || (this._kontaktBelag = {});
+        this._wegeBelagAt(x, z, belag);
+        if (belag.pflaster >= 0.5) return "stein";
         if (this._kronenStreuAt(x, z) >= 0.5) return "laub";
         const grund = {};
         if (this._bodenSichtAt(x, z, grund) !== null && grund.gruen >= 0.5) return "gras";

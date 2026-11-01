@@ -1061,8 +1061,8 @@ async function probe(arg) {
     try {
         const m = { gestartet: false, wege: {} };
         out.kamera = m;
-        const pl = st.architectures.find((a) => a && a.type === "start_plattform");
-        const P = pl ? pl.position : st.playerMesh.position;
+        const M = r._genesisMitte();
+        const P = M ? { x: M.x, y: r.getTerrainHeightAt(M.x, M.z), z: M.z } : st.playerMesh.position;
         const natur = (a) => r._istNatur(a);
         const naheBaeume = () =>
             st.architectures
@@ -1556,8 +1556,9 @@ async function probe(arg) {
         const k = { gestartet: false };
         out.kanal = k;
         m.buch = !!(buch && buch.ok);
-        const pl = st.architectures.find((a) => a && a.type === "start_plattform");
-        const P = pl.position;
+        const M = r._genesisMitte();
+        if (!M) throw new Error("kein Genesis-Ort (der Plan der Welt)");
+        const P = { x: M.x, y: r.getTerrainHeightAt(M.x, M.z), z: M.z };
         // die Gier der leeren Richtung (wenig Bäume, flach) — dieselbe Wahl wie die sichtbare Schau
         const baeume = st.architectures.filter((a) => /^baum_/.test(a.type || ""));
         let best = null;

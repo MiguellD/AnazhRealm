@@ -13,7 +13,7 @@ class AnazhRealm_gelaende_boden {
     // Karte (fern, ungebaut) oder ohne Boden an einer Ecke. DER EINE LESER DES GEZEICHNETEN BODENS (K21): Stand-Leser, Nah-Wiese
     // (Fuß, Hang, Grün) und Nah-Streu (Fuß, Hang) lesen nur ihn — bis K21 lasen Wiese und Streu nur die Karte des Eigners, im
     // Rand-Streifen fiel kaum ein Büschel (Dichte 0,11 gegen 1,31 je m², gate:koerper-stand K7). `aus` (optional) trägt den
-    // Grün-Kanal (0…1) der Karte, die an jeder Ecke gewinnt; welche Karten ein Rechteck liest, nennt `_bodenSichtChunks`.
+    // Grün-Kanal (0…1) der Karte, die an jeder Ecke gewinnt, mit dem Belag der Wege-Karte (der Rasen grünt, das Pflaster deckt); welche Karten ein Rechteck liest, nennt `_bodenSichtChunks`.
     // `stufe` (optional, 0…1) legt das Stufen-Gewicht fest, statt es am Auge zu messen: die Enden des Geomorphs, Lage (0) und
     // Ziel (1), zwischen denen der Fuß der Streu dem Auge folgt (`_streuFuss`).
     _bodenSichtAt(x, z, aus, stufe) {
@@ -106,7 +106,13 @@ class AnazhRealm_gelaende_boden {
                     gruen = 0;
                 }
         if (!(y > -Infinity)) return null;
-        if (aus) aus.gruen = gruen;
+        if (aus) {
+            // DER BELAG (`_wegeBelagAt`, die Flächen eines Plans): der Rasen grünt den Grund, das Pflaster deckt ihn — der Boden-Stoff
+            // zeichnet beide (`_wegeBodenFarbe`), Wiese und Schritt lesen sie hier
+            const B = this._bodenBelagAus || (this._bodenBelagAus = {});
+            this._wegeBelagAt(x, z, B);
+            aus.gruen = (gruen > B.rasen ? gruen : B.rasen) * (1 - B.pflaster);
+        }
         return y;
     }
     // Die Karte EINES Chunks (ax, az) bilinear am Punkt in ihrem eigenen Raster (Schritt ihrer Stufe / Teilung): { y, gruen }
@@ -317,8 +323,9 @@ class AnazhRealm_gelaende_boden {
         this.state.voxelWorkerWorldgenSynced = false;
         this._computeHydroBand();
         this._voxelWorkerSyncWorldgenState();
-        return this._hydroBestellen("heim", null).then((hydro) => {
-            if (!hydro) return null;
+        // die Heimat und der Genesis-Ort (sein Plan ist der Auftrag hinter ihr): erst mit beiden fragt der Strom den Faden
+        return Promise.all([this._hydroBestellen("heim", null), this._genesisPlanBestellen()]).then(([hydro, ort]) => {
+            if (!hydro || !ort) return null;
             this.log(
                 `V9.43-b: Hydrosphäre aus dem Faden — ${hydro.fluesse} Flüsse, ${hydro.seen} Seen, ${hydro.waterfalls.length} Wasserfälle`,
                 "INFO"
@@ -409,88 +416,162 @@ class AnazhRealm_gelaende_boden {
     // Mutationen propagieren via `_remeshVoxelChunksAround`, keine zweite Reaktiv-Schicht; der Atlas
     // (`state.hydrosphere`) bleibt worldgen-frozen.
 
-    // Deterministischer (alle Peers gleich) offener, flacher, trockener Spawn-Punkt: Ring-Spirale um
-    // (0,0), der ERSTE Punkt, der (a) kein Kavernenboden ist (surf ≥ macro − 6; `getTerrainHeightAt` ist
-    // die echte Voxel-Oberfläche), (b) trocken liegt — über JEDEM Wasser (`_nassAt`, Marge 1,5 m: See,
-    // Fluss, Tarn; bis 06.10. nur über dem Meeresspiegel), (c) die Scheibe der Genesis-Plattform trägt: der Grund unter ihr
-    // (`_genesisGrund`) streut höchstens ihre Dicke — sie liegt auf und keine Kante steckt im Hang (K52; bis dahin ±6-m-Proben
-    // mit Δ ≤ 3,5 m, die Scheibe schwebte darum 5 m darüber). Die Lichtung um die Plattform hält die EINE Natur-Wand frei
-    // (ihr Bauplan trägt sie, Befund V-D1). Nichts gefunden bis 240 m → (0,0).
-    _findOpenSpawnSpot() {
-        const candidates = [[0, 0]];
-        for (let r = 12; r <= 240; r += 12) {
-            for (let a = 0; a < 8; a++) {
-                const ang = (a / 8) * Math.PI * 2;
-                candidates.push([Math.round(Math.cos(ang) * r), Math.round(Math.sin(ang) * r)]);
+    // DER GENESIS-ORT ENTSTEHT IM FADEN (Pflicht F, der Prüfplatz · B): der Plan des Ort-Gesetzes (fachwerk `genesisLayout` →
+    // `ortPlan` art genesis) ist der erste Auftrag des Voxel-Fadens nach der Heimat-Hydrosphäre (voxel-worker `genesisPlan`,
+    // `fest` an 0/0, ohne Ring-Suche und ohne Ort-Faden) — die Weltgen wartet auf beide, bevor der Strom einen Chunk fragt
+    // (`_worldgenComputeAndBuildHydrosphere`): der Erdbau des Orts steht im Stand jedes Fadens vor dem ersten Chunk des
+    // Spawn-Rings. Die Saat des Orts kommt aus der Saat der Welt (fachwerk `genesisSaat`), die Welten der Tore aus den
+    // eingebauten Bauplänen (`_genesisWelten`). Ohne Faden bricht es laut wie die Hydrosphäre (`_bruchMelden`). Bis zum Plan
+    // suchte der Haupt-Faden eine Spirale nach dem Ort einer Stein-Scheibe und legte sie nach der Heimat in einem `try/catch`,
+    // der einen Fehlschlag nur protokollierte. → Promise des Plans v2 (null, wenn eine neuere Welt ihm zuvorkam).
+    _genesisPlanBestellen() {
+        const welt = this._hydroWelt | 0;
+        const wm = this.state.worldMeta || {};
+        const msg = {
+            type: "genesis-plan",
+            saat: globalThis.__fachwerkCore.genesisSaat(wm.seed || "anazh-realm-seed"),
+            welten: this._genesisWelten(),
+            W: AnazhRealm.ORT_WAHL,
+            M: AnazhRealm.WERK_LAND_M,
+        };
+        const post = () => this._voxelFadenAuftrag(this.state.voxelWorker, msg);
+        let zusage;
+        if (this.state.voxelWorker) zusage = post();
+        else if (this._voxelWeltWartet)
+            zusage = new Promise((ok, ab) =>
+                (this._hydroWarte || (this._hydroWarte = [])).push(() => post().then(ok, ab))
+            );
+        else zusage = Promise.reject(new Error("kein Voxel-Faden für den Genesis-Ort (Lehre 14)"));
+        return zusage.then(
+            (r) => this._genesisPlanAn(r, welt),
+            (e) => {
+                this._bruchMelden(`GENESIS-ORT: der Plan kam nicht aus dem Faden — ${(e && e.message) || e}`);
+                throw e;
             }
+        );
+    }
+
+    // DER EMPFANG DES PLANS (Pflicht F): der Plan der eigenen Welt wird ihr Ort — `worldMeta.genesisOrt` {key, x, z, steht}
+    // (der Schlüssel nennt Saat, Ort und den Abdruck des Erdbaus: ein anderer Plan derselben Welt zieht EINMAL um, der Erdbau
+    // des alten fällt, `_erdbauOrtFaellt`), sein Erdbau liegt (`_erdbauSetzen`, je Schlüssel einmal), die Natur-Wand liest seine
+    // Flächen (`_grundrissStand`). Die Messung des Fadens bleibt am Wirt (`_genesisPlanMs`, die Kalt-Zeile liest t(Plan)).
+    _genesisPlanAn(r, welt) {
+        if (welt !== (this._hydroWelt | 0) || !r || !r.plan) return null;
+        const v2 = r.plan;
+        const FC = globalThis.__fachwerkCore;
+        const key = `genesis:${v2.seed}:${Math.round(v2.ort.x)},${Math.round(v2.ort.z)}:${FC.ortHash(v2.erdbau)}`;
+        const wm = this.state.worldMeta || (this.state.worldMeta = {});
+        const alt = wm.genesisOrt && typeof wm.genesisOrt === "object" ? wm.genesisOrt : null;
+        const altSplats =
+            alt && alt.key !== key && wm.erdbau && Array.isArray(wm.erdbau[alt.key]) ? wm.erdbau[alt.key] : [];
+        const folgen = wm.erdbau && wm.erdbau[key] ? null : this._bautenAmGrund(altSplats.concat(v2.erdbau));
+        if (alt && alt.key !== key) this._erdbauOrtFaellt(alt.key);
+        wm.genesisOrt = { key, x: v2.ort.x, z: v2.ort.z, steht: !!(alt && alt.key === key && alt.steht) };
+        this._genesisPlan = v2;
+        this._genesisPlanMs = r.ms;
+        this._genesisWerkeFertig = null;
+        this._genesisAbsagen = null;
+        this._erdbauSetzen(key, v2.erdbau);
+        const gefolgt = this._bautenFolgenDemGrund(folgen);
+        if (gefolgt) this.log(`GENESIS-ORT: ${gefolgt} Bauten des Stands folgen dem Grund des Plans.`, "INFO");
+        this._grundrissGitter = null; // die Flächen des Plans sind Grundriss der EINEN Natur-Wand
+        this.log(
+            `GENESIS-ORT: der Plan ${FC.ortHash(v2)} an ${v2.ort.x}/${v2.ort.z} aus dem Faden (${r.ms.toFixed(1)} ms)` +
+                (r.gerueckt ? " — gerückt, das Gesetz trug den Kern an 0/0 nicht" : ""),
+            "INFO"
+        );
+        return v2;
+    }
+
+    // DER ERDBAU EINES ORTS FÄLLT GANZ (der Umzug eines Plans): die Splats des Schlüssels `key` verlassen `worldMeta.erdbau`, die
+    // Gedächtnisse am Ort fallen wie beim Legen (`_erdbauWirkt` mit ihren Stellen in der Reihe des Erdbaus). → ob er lag
+    _erdbauOrtFaellt(key) {
+        const E = this.state.worldMeta && this.state.worldMeta.erdbau;
+        if (!E || !Array.isArray(E[key])) return false;
+        const ohne = [];
+        let i = 0;
+        for (const k of Object.keys(E)) {
+            if (!Array.isArray(E[k])) continue;
+            if (k === key) for (let j = 0; j < E[k].length; j++) ohne.push(i + j);
+            i += E[k].length;
         }
-        const S = this._genesisScheibe();
-        for (const [x, z] of candidates) {
-            const surf = this.getTerrainHeightAt(x, z);
-            if (!Number.isFinite(surf)) continue;
-            const macro = this._terrainMacroSurfaceY(x, z);
-            if (Number.isFinite(macro) && surf < macro - 6) continue; // Kavernen-/Kraterboden
-            if (!this._landAt(x, z, 1.5)) continue; // nass (jedes Wasser)
-            const g = this._genesisGrund(x, z, S.r);
-            if (!(g.max - g.min <= S.dick)) continue;
-            return { x, z, y: surf };
+        const weg = E[key];
+        delete E[key];
+        this._erdbauWirkt(weg, this._erdbauAmWasser(globalThis.__gelaendeCore.erdbauNormal(weg)), { erdbauOhne: ohne });
+        return true;
+    }
+
+    // DIE BAUTEN FOLGEN DEM GRUND DES PLANS (der Umzug des Genesis-Orts, speicher.K5): ein Stand, dessen Grund ein anderer Plan
+    // (oder keiner) trug, lädt seine Bauten VOR dem Plan (der Plan kommt aus dem Faden) — der Erdbau des neuen hob den Grund
+    // unter ihnen, sie steckten darin (der Korpus 18.546.158: der Stein-Block an 0/15 14 cm im neuen Platz). Gemerkt wird je Bau
+    // des Stands im Kasten der Splats (samt `ERDBAU.reichweiteM`) seine Höhe über Grund (`_ueberGrund`, das Maß des Saves), VOR
+    // dem Wechsel; danach steht jeder, dessen Höhe über Grund sich änderte, in ihr neu auf (`removeArchitecture` und
+    // `_bauAusStand`, der Weg des Rückspielens). → die Merkliste [{ e, u }] oder null (kein Bau im Kasten)
+    _bautenAmGrund(splats) {
+        const L = this._standBauten();
+        if (!L.length || !splats.length) return null;
+        const R = globalThis.__gelaendeCore.ERDBAU.reichweiteM;
+        let [x0, x1, z0, z1] = [Infinity, -Infinity, Infinity, -Infinity];
+        for (const p of splats) {
+            const q =
+                p.art === "trasse"
+                    ? [p.x0, p.x1, p.z0, p.z1, p.w / 2]
+                    : [p.cx, p.cx, p.cz, p.cz, Math.hypot(p.ex, p.ez)];
+            x0 = Math.min(x0, q[0] - q[4]);
+            x1 = Math.max(x1, q[1] + q[4]);
+            z0 = Math.min(z0, q[2] - q[4]);
+            z1 = Math.max(z1, q[3] + q[4]);
         }
-        const h0 = this.getTerrainHeightAt(0, 0);
-        return { x: 0, z: 0, y: Number.isFinite(h0) ? h0 : 0 };
+        const merk = [];
+        for (const e of L) {
+            const p = e && e.position;
+            if (!p || p.x < x0 - R || p.x > x1 + R || p.z < z0 - R || p.z > z1 + R) continue;
+            const u = this._ueberGrund(p);
+            if (Number.isFinite(u)) merk.push({ e, u });
+        }
+        return merk.length ? merk : null;
+    }
+    // → die Zahl der Bauten, die neu aufstanden
+    _bautenFolgenDemGrund(merk) {
+        if (!merk) return 0;
+        const art = this._standTafel().find(([k]) => k === "architectures")[2];
+        let n = 0;
+        for (const { e, u } of merk) {
+            const jetzt = this._ueberGrund(e.position);
+            if (!Number.isFinite(jetzt) || Math.abs(jetzt - u) < 0.005 || !this.state.architectures.includes(e))
+                continue;
+            const g = art.glied(e);
+            g.position.y += u - jetzt;
+            this.removeArchitecture(e, { still: true });
+            if (this._bauAusStand(g, { herkunft: 1 }, null)) n++;
+            else this._bruchMelden(`GENESIS-ORT: ${g.type} ${g.id} stand auf dem Grund des Plans nicht wieder auf`);
+        }
+        return n;
     }
 
-    // Die Scheibe der Genesis-Plattform aus ihrem Bauplan (die erste Scheibe: cylinder, size.x = Durchmesser, size.y = Dicke) —
-    // dieselbe Zeile, aus der `_grundrissVon` ihre Lichtung misst. Der Bauplan ist eingebaut; fehlt er, bricht es laut.
-    _genesisScheibe() {
-        const bp = this.state.blueprints && this.state.blueprints.start_plattform;
-        const p0 = bp && Array.isArray(bp.parts) && bp.parts[0] && bp.parts[0].size;
-        if (!p0 || !(p0.x > 0) || !(p0.y > 0)) throw new Error("start_plattform: der Bauplan trägt keine Scheibe");
-        return { r: p0.x / 2, dick: p0.y };
-    }
-
-    // Der Grund unter einer Scheibe mit Radius r um (x, z): der tiefste und der höchste Punkt des EINEN Boden-Gesetzes
-    // (`getTerrainHeightAt` → `_voxelSurfaceY`) in der Mitte und auf zwei Ringen (r/2, r; je 12 Proben). { min, max }.
-    _genesisGrund(x, z, r) {
-        let min = this.getTerrainHeightAt(x, z);
-        let max = min;
-        for (const f of [0.5, 1])
-            for (let k = 0; k < 12; k++) {
-                const a = (k / 12) * Math.PI * 2;
-                const h = this.getTerrainHeightAt(x + Math.cos(a) * r * f, z + Math.sin(a) * r * f);
-                if (!(h >= min)) min = h;
-                if (!(h <= max)) max = h;
-            }
-        return { min, max };
-    }
-
-    // Genesis-Plattform, idempotent (nur wenn keine start_plattform existiert, z. B. nach Reload — die EINE Quelle
-    // `_genesisPlattform` sagt es); der Spieler steht oben drauf. Der Punkt kommt aus `_findOpenSpawnSpot`.
-    // DIE SOHLE LIEGT AUF DEM GRUND (K52): die Scheibe steht mit ihrer Sohle auf dem tiefsten Punkt des Bodens unter ihr
-    // (`_genesisGrund`) — sie schwebt an keiner Stelle, die höhere Kante sinkt höchstens ihre Dicke ein (die Wahl des Orts).
-    // Bis K52 stand sie 5 m über dem Grund („erhöhte Warte", V8.29): seit der Ring der Tore um sie auf dem Boden steht
-    // (V18.486), schwebte eine graue Scheibe über den Toren (Genesis 0/0: Sohle 95,31 m über Grund 90,01–90,57 m).
-    _ensureGenesisPlatform() {
-        if (!this.state.architectures) return;
-        if (this._genesisPlattform()) return;
-        const spot = this._findOpenSpawnSpot();
-        const S = this._genesisScheibe();
-        const g = this._genesisGrund(spot.x, spot.z, S.r);
-        const sohle = Number.isFinite(g.min) ? g.min : spot.y;
-        // spawnArchitecture setzt den Bau 0.5 unter den gereichten Ort (at_player-Kalibrierung): sein Ursprung ist die Sohle.
-        this.spawnArchitecture("start_plattform", { x: spot.x, y: sohle + 0.5, z: spot.z }, { silent: true });
-        // die Lichtung (ihr Bauplan, `_grundrissVon`): was die Natur schon um die Scheibe geworfen hat, fällt wie im Haus —
-        // geräumt an der Wurzel (`spawnArchitecture`)
-        // Spieler oben auf die Plattform setzen: die Oberseite liegt bei Sohle + Dicke, +1,2 Puffer.
-        const spawnY = sohle + S.dick + 1.2;
-        if (this.state.playerMesh) {
-            this.state.playerMesh.position.set(spot.x, spawnY, spot.z);
+    // DIE ANKUNFT AM GENESIS-ORT (Pflicht F): der Spieler steht an der Mitte des Plans auf dem Grund (das EINE Boden-Gesetz samt
+    // dem Erdbau des Kerns, `getTerrainHeightAt`) + 1,2 m, ruhend — die erste Ankunft einer Welt (die Weltgen) und jede Rückkehr
+    // nach dem Tod (`_playerDeathRespawn`). Ohne Plan oder Grund bricht sie laut (`_bruchMelden`): der Plan entsteht mit der Welt
+    // im Faden, nie ein Ersatz-Ort. → {x, y, z}
+    _genesisAnkunft() {
+        const M = this._genesisMitte();
+        const g = M ? this.getTerrainHeightAt(M.x, M.z) : NaN;
+        if (!Number.isFinite(g)) {
+            const text = M
+                ? `GENESIS-ORT: kein Grund an der Mitte ${M.x}/${M.z}`
+                : "GENESIS-ORT: die Ankunft ohne Plan — der Plan entsteht mit der Welt im Faden";
+            this._bruchMelden(text);
+            throw new Error(text);
+        }
+        const a = { x: M.x, y: g + 1.2, z: M.z };
+        const pm = this.state.playerMesh;
+        if (pm) {
+            pm.position.set(a.x, a.y, a.z);
             // Feld-nativ: Velocity nullen + vertikalen Feld-Zustand zurück (kein Ammo-Body).
             if (this.state.playerVel) this.state.playerVel.setValue(0, 0, 0);
             this.state._fieldVy = 0;
         }
-        this.log(
-            `Genesis-Plattform erstellt bei (${spot.x}, ${spot.z}), Sohle y=${sohle.toFixed(1)}, Spieler auf y=${spawnY.toFixed(1)}`
-        );
+        return a;
     }
 
     // ### Terrain-Erweiterung ###

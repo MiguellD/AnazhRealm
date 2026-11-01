@@ -286,9 +286,13 @@ async function checkBandNahStreu({ page, check }) {
             zweit.items.length === kachel.satz.items.length &&
             zweit.items.every((it, i) => it.id === kachel.satz.items[i].id && it.x === kachel.satz.items[i].x);
         out.idsEindeutig = new Set(kachel.satz.items.map((it) => it.id)).size === kachel.satz.items.length;
-        // (5) Der Takt baut den Ring: bis eine Senke Instanzen trägt (die Studio-Teile reisen asynchron).
+        // (5) Der Takt baut den Ring: bis eine Senke Instanzen trägt (die Studio-Teile reisen asynchron) — um den Spieler an der
+        // Kachel, die Pflanzen trägt (die Flächen des Genesis-Orts um seine Mitte tragen keine Streu, `_genesisFlaeche`); danach
+        // steht er, wo er stand
         const cam = st.camera;
         const camVor = cam.position.clone();
+        const pmVor = pp.clone();
+        pp.set((kachel.tx + 0.5) * NS.kachel, pp.y, (kachel.tz + 0.5) * NS.kachel);
         cam.position.set(pp.x, pp.y + 1.6, pp.z);
         let senken = null;
         for (let i = 0; i < 900; i++) {
@@ -304,6 +308,7 @@ async function checkBandNahStreu({ page, check }) {
         out.offen = st.nahStreu ? st.nahStreu.offen : null;
         if (!senken) {
             cam.position.copy(camVor);
+            pp.copy(pmVor);
             return out;
         }
         // (5b) DER WIND (W7): jede Senke einer Art mit weichem Gewebe (Laub · Blatt-Karte · Stiel)
@@ -424,6 +429,7 @@ async function checkBandNahStreu({ page, check }) {
             out.neuGleich = [...ns.senken].every(([k, a]) => a.anzahl === vor.get(k));
         }
         cam.position.copy(camVor);
+        pp.copy(pmVor);
         return out;
     });
 

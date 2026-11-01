@@ -251,12 +251,12 @@ async function s0Probe(page, station, schein) {
             const uhr = (t) => {
                 if (r.setTimeOfDay(t, "human") !== true) throw new Error("S0: die Uhr nimmt den Spieler nicht (" + t + ")");
             };
-            // der Mensch steht im Atrium am Rand des Genesis-Platzes (K52: die Scheibe liegt auf dem Grund der Station, der Ring
-            // der Tore um sie): 2 m jenseits der Lichtung, zwischen zwei Toren (18°), der Blick des Schusses weg vom Ring
-            const A0 = AnazhRealm.GENESIS_PLATZ;
+            // der Mensch steht am Rand des Genesis-Orts: 2 m jenseits seines Freiraums (fachwerk GENESIS_ORT.freiraum), zwischen
+            // zwei Toren (18°, neben jedem Weg), der Blick des Schusses weg von der Mitte
+            const R0 = window.__fachwerkCore.GENESIS_ORT.freiraum.r + 2;
             const w0 = Math.PI / 10;
-            const sx = st.x + (A0.ringR + A0.rand + 2) * Math.cos(w0);
-            const sz = st.z + (A0.ringR + A0.rand + 2) * Math.sin(w0);
+            const sx = st.x + R0 * Math.cos(w0);
+            const sz = st.z + R0 * Math.sin(w0);
             const y0 = r.getTerrainHeightAt(sx, sz);
             s.playerMesh.position.set(sx, y0 + 1, sz);
             const vor = new Set(s.architectures || []);
@@ -564,10 +564,10 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
                 const z = zuwachs(vor, substanz());
                 out.nexus = { evolutionen: laeufe, wuerfeImPool: zaehl, zuwachs: z.summe, was: z.d };
             }
-            // (4) DER ABSENZ-ZENSUS in 300 m um den Ursprung der Welt (die Genesis-Plattform)
+            // (4) DER ABSENZ-ZENSUS in 300 m um den Genesis-Ort der Welt (die Mitte ihres Plans)
             {
-                const pl = r._genesisPlattform();
-                const M = pl?.position ? { x: pl.position.x, z: pl.position.z } : { x: 0, z: 0 };
+                const M = r._genesisMitte();
+                if (!M) throw new Error("der Absenz-Zensus ohne Genesis-Ort (der Plan der Welt kam nicht)");
                 const R = 300;
                 const d = (p) => Math.hypot(p.x - M.x, p.z - M.z);
                 const fremd = {};
@@ -1066,11 +1066,11 @@ async function lichtLauf() {
                         };
                         if (!gestalt) {
                             window.__buehne();
-                            // am Rand des Genesis-Platzes, zwischen zwei Toren (K52: die Scheibe liegt auf dem Grund der Station)
-                            const A0 = AnazhRealm.GENESIS_PLATZ;
+                            // am Rand des Genesis-Orts, 2 m jenseits seines Freiraums, zwischen zwei Toren
+                            const R0 = window.__fachwerkCore.GENESIS_ORT.freiraum.r + 2;
                             const w0 = Math.PI / 10;
-                            const sx = st.x + (A0.ringR + A0.rand + 2) * Math.cos(w0);
-                            const sz = st.z + (A0.ringR + A0.rand + 2) * Math.sin(w0);
+                            const sx = st.x + R0 * Math.cos(w0);
+                            const sz = st.z + R0 * Math.sin(w0);
                             const y0 = r.getTerrainHeightAt(sx, sz);
                             s.playerMesh.position.set(sx, y0 + 1, sz);
                             const vor = new Set(s.architectures);

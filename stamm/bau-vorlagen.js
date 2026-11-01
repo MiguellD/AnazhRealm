@@ -126,27 +126,6 @@ class AnazhRealm_bau_vorlagen {
                 size: { x: 8.0, y: 3.0, z: 1.2 },
             },
         ];
-        // Genesis-Plattform: beim Erschaffen einer Welt am Zentrum gespawnt, der Spieler startet darauf
-        // (erhöhte Warte statt Fall ins Tal). Stein-Scheibe + quarz-Kern — beide TRITTFLÄCHE (`tritt`, material.K4): Rad, Pfote und
-        // Fuß stehen auf ihnen wie die Kapsel des Spielers (`_trittUeber`). Bis dahin trug die Scheibe nur ihn: der Wagen am Grund
-        // der Mess-Sitzung (4,4 m neben dem Spieler) stand auf dem Gelände, 0,85 m in der Scheibe — im Bild nur Dach und Scheiben-Saum.
-        const startPlattformParts = [
-            {
-                shape: "cylinder",
-                material: "stein",
-                position: { x: 0, y: 0.5, z: 0 },
-                size: { x: 13, y: 1, z: 13 },
-                tritt: true,
-            },
-            {
-                shape: "cylinder",
-                material: "quarz",
-                position: { x: 0, y: 1.15, z: 0 },
-                size: { x: 2.2, y: 0.35, z: 2.2 },
-                opacity: 0.9,
-                tritt: true,
-            },
-        ];
         // kristall_geode: kleiner quarz-Matrix-Nub (Tags + Fuß) + facettierte Prisma-Spitzen (`crystalPoint` →
         // `phyto-core.buildCrystalPointGeometry`) — dieselbe Quelle wie der Worldgen-Pool `_crystalVariant`.
         // TAG-NEUTRAL: `crystalPoint` aktiviert BIT-IDENTISCH zu `octahedron` (FORM_TAG_ACTIVATION) → Tags
@@ -1020,16 +999,6 @@ class AnazhRealm_bau_vorlagen {
             },
             // V9.64 (Welle A.1) — Damm-Bauplan, Vision-Pfeiler Wasser↔Wille
             damm: { name: "damm", label: "Damm", builtIn: true, parts: dammParts },
-            // Der Genesis-Ort ist eine LICHTUNG (Befund V-D1): seine Stein-Scheibe und der Ring der Tore um sie (der Genesis-
-            // Platz, `GENESIS_PLATZ`, K52) sind ein Grundriss der EINEN Natur-Wand (`_grundrissVon` → `_naturSetzen`), über dem
-            // keine Krone steht — der erste Blick jedes neuen Spielers.
-            start_plattform: {
-                name: "start_plattform",
-                label: "Genesis-Plattform",
-                builtIn: true,
-                lichtung: true,
-                parts: startPlattformParts,
-            },
             kristall_geode: {
                 name: "kristall_geode",
                 label: "Kristall-Geode",

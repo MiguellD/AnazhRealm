@@ -1784,12 +1784,15 @@ async function checkBandKoerperBewegung({ page, check }) {
                 Number.isFinite(rig.hips.position.y) &&
                 [rig.legL, rig.legR].every((leg) => ["hip", "knee", "ankle"].every((kk) => !leg[kk] || Number.isFinite(leg[kk].rotation.x)));
             // (E2) LUFT-SPERRE (Leben-Prüfung N-D1): in der Luft erdet die Fuß-IK nie — derselbe gesenkte Boden senkt
-            // das Becken NICHT
+            // das Becken NICHT: es steht wie über dem Boden auf der Sohlen-Ebene in der Luft (die Referenz in der Luft: seit
+            // dem Plan des Genesis-Orts liegt unter dem Spieler keine Bau-Fläche auf der Sohle, der gezeichnete Boden trägt
+            // seine Füße ±0,2 m neben ihr — Lehre 22)
             const hLuft = becken(-0.25, 530, true);
+            const hLuft0 = becken(0, 540, true);
             [s._kapselTraegerY, s._kapselStruktur, s.isInAir, pmesh.position.y] = saved; // restaurieren
             frisch();
             o.beckenLuft = hLuft;
-            o.checks.eLuftSperre = Number.isFinite(hLuft) && Number.isFinite(h0) && Math.abs(hLuft - h0) < 0.02;
+            o.checks.eLuftSperre = Number.isFinite(hLuft) && Number.isFinite(hLuft0) && Math.abs(hLuft - hLuft0) < 0.02;
             o.beckenFlach = h0;
             o.beckenGesenkt = h1;
             o.checks.eBeckenSenkt = Number.isFinite(h0) && Number.isFinite(h1) && h1 < h0 - 0.1;

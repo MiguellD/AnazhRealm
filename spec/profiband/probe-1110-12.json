@@ -1274,8 +1274,7 @@
         "ort": "genesis",
         "dorfZug": false,
         "ortTakt": [
-         "_genesisPortalRing",
-         "_portalApproachPrefetch"
+         "_genesisOrt"
         ],
         "gier": -1.5707963267948966
        },

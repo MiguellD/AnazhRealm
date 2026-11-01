@@ -180,89 +180,55 @@ async function run() {
     console.log("\n=== B received ===");
     for (const e of events.b) console.log(JSON.stringify(e));
 
+    // die Ereignisse einer Liste vom Typ `typ`, die `und` tragen (der EINE Leser der Ereignis-Listen) — `hat`: gibt es eins
+    const von = (liste, typ, und = () => true) => liste.filter((e) => e.type === typ && und(e));
+    const hat = (...a) => von(...a).length > 0;
     // Assertions Ring 11 V1
-    const aSawWelcome = events.a.some((e) => e.type === "welcome");
-    const aSawBjoin = events.a.some((e) => e.type === "peer-join" && e.peerId === "peerB");
-    const aSawBpos = events.a.some((e) => e.type === "pos" && e.peerId === "peerB" && e.x === 10);
-    const bSawWelcomeWithA = events.b.some(
-        (e) => e.type === "welcome" && Array.isArray(e.peers) && e.peers.includes("peerA")
-    );
-    const bSawApos = events.b.some((e) => e.type === "pos" && e.peerId === "peerA" && e.x === 1.5);
+    const aSawWelcome = hat(events.a, "welcome");
+    const aSawBjoin = hat(events.a, "peer-join", (e) => e.peerId === "peerB");
+    const aSawBpos = hat(events.a, "pos", (e) => e.peerId === "peerB" && e.x === 10);
+    const bSawWelcomeWithA = hat(events.b, "welcome", (e) => Array.isArray(e.peers) && e.peers.includes("peerA"));
+    const bSawApos = hat(events.b, "pos", (e) => e.peerId === "peerA" && e.x === 1.5);
 
     // Assertions Ring 11 V2
-    const bGotDslFromA = events.b.find(
-        (e) =>
-            e.type === "dsl" &&
-            e.peerId === "peerA" &&
-            Array.isArray(e.program) &&
-            e.program[0] === "voxel_carve" &&
-            e.program[1] === 4.2 &&
-            e.program[4] === 2.5
-    );
-    const aNotEchoedOwnDsl = !events.a.some((e) => e.type === "dsl");
-    const bRejectedBadDsl = events.b.filter((e) => e.type === "dsl").length === 1; // genau das eine gute, keine kaputten
+    const bGotDslFromA = von(events.b, "dsl", (e) => e.peerId === "peerA" && Array.isArray(e.program) && e.program[0] === "voxel_carve" && e.program[1] === 4.2 && e.program[4] === 2.5)[0];
+    const aNotEchoedOwnDsl = !hat(events.a, "dsl");
+    const bRejectedBadDsl = von(events.b, "dsl").length === 1; // genau das eine gute, keine kaputten
 
-    const aGotWorldRequest = events.a.some((e) => e.type === "world-request" && e.peerId === "peerB");
-    const bGotWorldSnapshot = events.b.some(
-        (e) => e.type === "world-snapshot" && e.peerId === "peerA" && e.state && e.state.hello === "world"
-    );
-    const aNotEchoedOwnRequest = !events.a.some((e) => e.type === "world-request" && e.peerId === "peerA");
+    const aGotWorldRequest = hat(events.a, "world-request", (e) => e.peerId === "peerB");
+    const bGotWorldSnapshot = hat(events.b, "world-snapshot", (e) => e.peerId === "peerA" && e.state && e.state.hello === "world");
+    const aNotEchoedOwnRequest = !hat(events.a, "world-request", (e) => e.peerId === "peerA");
     // Targeted-delivery: A sollte sein EIGENES world-snapshot NICHT zurückbekommen
-    const aNotEchoedOwnSnapshot = !events.a.some((e) => e.type === "world-snapshot");
+    const aNotEchoedOwnSnapshot = !hat(events.a, "world-snapshot");
     // lanAddresses im welcome-Message
-    const welcomeHasLanAddresses = events.a.some((e) => e.type === "welcome" && Array.isArray(e.lanAddresses));
+    const welcomeHasLanAddresses = hat(events.a, "welcome", (e) => Array.isArray(e.lanAddresses));
 
     // M8 Assertions — die Knoten-Gesamtzahl (2 Peers in 1 Raum), nur an den Anfrager.
-    const aGotStats = events.a.some((e) => e.type === "stats" && e.rooms === 1 && e.peers === 2);
-    const bNotStats = !events.b.some((e) => e.type === "stats");
+    const aGotStats = hat(events.a, "stats", (e) => e.rooms === 1 && e.peers === 2);
+    const bNotStats = !hat(events.b, "stats");
 
-    const bGotSoulFromA = events.b.some(
-        (e) =>
-            e.type === "soul" &&
-            e.peerId === "peerA" &&
-            e.soulName === "phoenix" &&
-            e.name === "Aria" &&
-            e.worldRole === "host"
-    );
+    const bGotSoulFromA = hat(events.b, "soul", (e) => e.peerId === "peerA" && e.soulName === "phoenix" && e.name === "Aria" && e.worldRole === "host");
     // der Welt-Katalog überlebt den WS-Relay.
-    const bGotCatalogFromA = events.b.some(
-        (e) =>
-            e.type === "soul" &&
-            e.peerId === "peerA" &&
-            Array.isArray(e.catalog) &&
-            e.catalog.some((c) => c.id === "smoke-cat-w16" && c.hash === "abc123" && c.multiplayer === true)
-    );
+    const bGotCatalogFromA = hat(events.b, "soul", (e) => e.peerId === "peerA" && Array.isArray(e.catalog) && e.catalog.some((c) => c.id === "smoke-cat-w16" && c.hash === "abc123" && c.multiplayer === true));
     // ALTLASTEN-NULL: der Broker kennt aura nicht mehr — NICHTS kommt an.
-    const bAuraIgnored = !events.b.some((e) => e.type === "aura");
-    const aNotEchoedOwnSoul = !events.a.some((e) => e.type === "soul");
+    const bAuraIgnored = !hat(events.b, "aura");
+    const aNotEchoedOwnSoul = !hat(events.a, "soul");
     // Genau die EINE gute soul-Nachricht (kaputte wurden verworfen).
-    const bRejectedBadSoul = events.b.filter((e) => e.type === "soul").length === 1;
+    const bRejectedBadSoul = von(events.b, "soul").length === 1;
 
-    const bGotVibeFromA = events.b.some(
-        (e) =>
-            e.type === "vibe" &&
-            e.peerId === "peerA" &&
-            /^ed25519:[0-9a-f]+$/i.test(e.vibePassId || "") &&
-            typeof e.proof === "string"
-    );
-    const aNotEchoedOwnVibe = !events.a.some((e) => e.type === "vibe");
-    const bRejectedBadVibe = events.b.filter((e) => e.type === "vibe").length === 1;
+    const bGotVibeFromA = hat(events.b, "vibe", (e) => e.peerId === "peerA" && /^ed25519:[0-9a-f]+$/i.test(e.vibePassId || "") && typeof e.proof === "string");
+    const aNotEchoedOwnVibe = !hat(events.a, "vibe");
+    const bRejectedBadVibe = von(events.b, "vibe").length === 1;
 
     // WebRTC-Signaling, zielgerichtet.
-    const bGotRtcOfferFromA = events.b.some(
-        (e) => e.type === "rtc-offer" && e.peerId === "peerA" && e.sdp && e.sdp.type === "offer"
-    );
-    const aGotRtcAnswerFromB = events.a.some(
-        (e) => e.type === "rtc-answer" && e.peerId === "peerB" && e.sdp && e.sdp.type === "answer"
-    );
-    const bGotRtcIceFromA = events.b.some(
-        (e) => e.type === "rtc-ice" && e.peerId === "peerA" && e.candidate && e.candidate.sdpMid === "0"
-    );
+    const bGotRtcOfferFromA = hat(events.b, "rtc-offer", (e) => e.peerId === "peerA" && e.sdp && e.sdp.type === "offer");
+    const aGotRtcAnswerFromB = hat(events.a, "rtc-answer", (e) => e.peerId === "peerB" && e.sdp && e.sdp.type === "answer");
+    const bGotRtcIceFromA = hat(events.b, "rtc-ice", (e) => e.peerId === "peerA" && e.candidate && e.candidate.sdpMid === "0");
     // Targeted: A bekommt seinen eigenen rtc-offer NICHT zurück.
-    const aNotEchoedOwnRtcOffer = !events.a.some((e) => e.type === "rtc-offer");
+    const aNotEchoedOwnRtcOffer = !hat(events.a, "rtc-offer");
     // Defensive: rtc-offer ohne `to`/`sdp` wird verworfen — B sieht genau
     // den EINEN guten Offer.
-    const bRejectedBadRtcOffer = events.b.filter((e) => e.type === "rtc-offer").length === 1;
+    const bRejectedBadRtcOffer = von(events.b, "rtc-offer").length === 1;
 
     console.log("\n=== Verdict ===");
     console.log("V1 A welcome:", aSawWelcome);
@@ -293,42 +259,19 @@ async function run() {
     console.log("W7P1 Server verwirft rtc-offer ohne to/sdp:", bRejectedBadRtcOffer);
     console.log("M8 A bekommt Broker-stats (1 Raum, 2 Peers, nur Anfrager):", aGotStats && bNotStats);
 
-    const bGotLobbyRooms = events.b.some(
-        (e) =>
-            e.type === "lobby-rooms" &&
-            Array.isArray(e.rooms) &&
-            e.rooms.some((r) => r.room === "test-room" && r.label === "Anazhs Probe-Raum" && r.peers >= 1)
-    );
-    const bGotCreaturePos = events.b.some(
-        (e) =>
-            e.type === "creature-pos" &&
-            e.peerId === "peerA" &&
-            Array.isArray(e.list) &&
-            e.list.some((c) => c.id === "c1")
-    );
-    const aNotEchoedOwnCreaturePos = !events.a.some((e) => e.type === "creature-pos");
+    const bGotLobbyRooms = hat(events.b, "lobby-rooms", (e) => Array.isArray(e.rooms) && e.rooms.some((r) => r.room === "test-room" && r.label === "Anazhs Probe-Raum" && r.peers >= 1));
+    const bGotCreaturePos = hat(events.b, "creature-pos", (e) => e.peerId === "peerA" && Array.isArray(e.list) && e.list.some((c) => c.id === "c1"));
+    const aNotEchoedOwnCreaturePos = !hat(events.a, "creature-pos");
     // Voice-Sync.
-    const bGotCompanionSay = events.b.some(
-        (e) =>
-            e.type === "companion-say" && e.peerId === "peerA" && e.text === "Ich träume mit dir." && e.voice === "Aria"
-    );
-    const aNotEchoedOwnCompanionSay = !events.a.some((e) => e.type === "companion-say");
-    const bRejectedBadCompanionSay = events.b.filter((e) => e.type === "companion-say").length === 1;
-    const bGotSubworldNet = events.b.some(
-        (e) =>
-            e.type === "subworld-net" &&
-            e.peerId === "peerA" &&
-            e.worldId === "worlds/_test/index.html" &&
-            e.data === "subnet-payload"
-    );
-    const aNotEchoedOwnSubworldNet = !events.a.some((e) => e.type === "subworld-net");
-    const bRejectedBadSubworldNet = events.b.filter((e) => e.type === "subworld-net").length === 1;
-    const bGotPortalInvite = events.b.some(
-        (e) =>
-            e.type === "portal-invite" && e.peerId === "peerA" && e.worldId === "skeleton" && e.label === "Skelett-Welt"
-    );
-    const aNotEchoedOwnPortalInvite = !events.a.some((e) => e.type === "portal-invite");
-    const bRejectedBadPortalInvite = events.b.filter((e) => e.type === "portal-invite").length === 1;
+    const bGotCompanionSay = hat(events.b, "companion-say", (e) => e.peerId === "peerA" && e.text === "Ich träume mit dir." && e.voice === "Aria");
+    const aNotEchoedOwnCompanionSay = !hat(events.a, "companion-say");
+    const bRejectedBadCompanionSay = von(events.b, "companion-say").length === 1;
+    const bGotSubworldNet = hat(events.b, "subworld-net", (e) => e.peerId === "peerA" && e.worldId === "worlds/_test/index.html" && e.data === "subnet-payload");
+    const aNotEchoedOwnSubworldNet = !hat(events.a, "subworld-net");
+    const bRejectedBadSubworldNet = von(events.b, "subworld-net").length === 1;
+    const bGotPortalInvite = hat(events.b, "portal-invite", (e) => e.peerId === "peerA" && e.worldId === "skeleton" && e.label === "Skelett-Welt");
+    const aNotEchoedOwnPortalInvite = !hat(events.a, "portal-invite");
+    const bRejectedBadPortalInvite = von(events.b, "portal-invite").length === 1;
     console.log("W7P4 B bekommt lobby-rooms mit A's veröffentlichtem Raum:", bGotLobbyRooms);
     console.log("KreaturSync B bekommt A's creature-pos (peerId-Stempel):", bGotCreaturePos);
     console.log("KreaturSync A bekommt eigene creature-pos NICHT zurück:", aNotEchoedOwnCreaturePos);
@@ -344,14 +287,14 @@ async function run() {
 
     // Φ4 — Anwesenheits-Schicht: A's world-presence-Antwort enthält BEIDE
     // Räume der Welt „test-room" (Basis + Bubble r0_0) mit korrekten peers.
-    const presenceMsg = events.a.find((e) => e.type === "world-presence" && e.worldId === "test-room");
+    const presenceMsg = von(events.a, "world-presence", (e) => e.worldId === "test-room")[0];
     const regionsByName = {};
     if (presenceMsg && Array.isArray(presenceMsg.regions)) {
         for (const r of presenceMsg.regions) regionsByName[r.region] = r.peers;
     }
     const phi4PresenceBase = regionsByName[""] === 2; // peerA + peerB in test-room
     const phi4PresenceBubble = regionsByName["r0_0"] === 1; // peerC in test-room:r0_0
-    const phi4OnlyAGotIt = !events.b.some((e) => e.type === "world-presence");
+    const phi4OnlyAGotIt = !hat(events.b, "world-presence");
     console.log("Φ4 world-presence: A bekommt {region:'',peers:2}:", phi4PresenceBase);
     console.log("Φ4 world-presence: A bekommt {region:'r0_0',peers:1}:", phi4PresenceBubble);
     console.log("Φ4 world-presence: NUR A bekommt die Antwort (kein Broadcast):", phi4OnlyAGotIt);
@@ -367,7 +310,7 @@ async function run() {
     );
     wsB.close();
     await Promise.race([abschied, new Promise((ok) => wsA.addEventListener("close", ok))]);
-    const aSawBLeave = events.a.some((e) => e.type === "peer-leave" && e.peerId === "peerB");
+    const aSawBLeave = hat(events.a, "peer-leave", (e) => e.peerId === "peerB");
     console.log("V1 A sees B-leave on disconnect:", aSawBLeave);
 
     wsA.close();

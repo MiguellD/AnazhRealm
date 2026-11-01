@@ -30,15 +30,16 @@ class AnazhRealm_siedlung_wege {
                 throw new Error(`Wege-Karte: die Stufen tragen verschiedene Raster (${n.join(" ≠ ")}) — EINE Array-Textur trägt eines`); // prettier-ignore
             return n[0];
         };
-        const karte = (n, kanaele, format, name) => {
+        // `signiert`: die Bytes tragen ein Vorzeichen (rg8snorm, -1 … 1) — die Wege-Karte trägt je Kanal zwei Belage (`WEGE_KARTE.belag`)
+        const karte = (n, kanaele, format, name, signiert) => {
             const tex = new THREE.DataArrayTexture(
-                new Uint8Array(n * n * kanaele * W.stufen.length),
+                new (signiert ? Int8Array : Uint8Array)(n * n * kanaele * W.stufen.length),
                 n,
                 n,
                 W.stufen.length
             );
             tex.format = format;
-            tex.type = THREE.UnsignedByteType;
+            tex.type = signiert ? THREE.ByteType : THREE.UnsignedByteType;
             tex.name = name;
             tex.minFilter = THREE.LinearFilter;
             tex.magFilter = THREE.LinearFilter;
@@ -50,7 +51,7 @@ class AnazhRealm_siedlung_wege {
         };
         const N = raster(W.stufen.map((S) => S.texelM));
         const kN = raster(AnazhRealm.LAUB_STREU.texelM);
-        const wege = karte(N, 2, THREE.RGFormat, "wege-karte");
+        const wege = karte(N, 2, THREE.RGFormat, "wege-karte", true);
         // DIE DECKE DES BODENS (stoffe.K2#2): die Kronen-Karte trägt zwei Kanäle derselben Fläche — R die Laubstreu unter den Kronen,
         // G die Asche des Brands (`_ascheMalen`); EIN Sampler, EIN Abgriff je Stufe im Boden-Stoff.
         const streu = karte(kN, 2, THREE.RGFormat, "kronen-streu");
@@ -347,16 +348,25 @@ class AnazhRealm_siedlung_wege {
     }
 
     // Die EINE Ausdehnung einer Form um ihre Achse (Malen und Siedlungs-Hülle): ein gedrehter Kasten reicht bis zur
-    // Diagonale — max(ex, ez) beschnitt die Ecken (ein um 45° gedrehtes Quadrat wurde zum Achteck).
+    // Diagonale — max(ex, ez) beschnitt die Ecken (ein um 45° gedrehtes Quadrat wurde zum Achteck); die Fläche eines Plans
+    // (`zone`) bis zur Ecke ihrer Hülle.
     static _wegeFormRadius(f) {
+        if (f.typ === "zone") return Math.hypot(f.q.huelle[2] - f.q.huelle[0], f.q.huelle[3] - f.q.huelle[1]) / 2;
         return f.halb + (f.typ === "kasten" ? Math.hypot(f.ex, f.ez) : 0);
     }
 
     // Der EINE Abstand eines Punkts zu einer Form (m, innen negativ): der gedrehte Kasten um (ax, az) mit den Halbachsen ex/ez
-    // und der Drehung phi (yaw wie der alte Pool), das Segment als Kapsel um seine Mittellinie (`halb`). Leser: der Maler
-    // (`_wegeKarteMale`) und die Natur-Wand (`_aufWeg`) — der Boden zeigt den Weg, wo die Natur ihm weicht. Drehung und
-    // Länge merkt die Form beim ersten Ruf.
+    // und der Drehung phi (yaw wie der alte Pool), das Segment als Kapsel um seine Mittellinie (`halb`), die Fläche eines Plans
+    // (`zone`: ihre Zone `q` um den Ort ox/oz) mit dem Rand ihres Gesetzbuchs (fachwerk `genesisZoneRand`, dieselbe Geometrie wie
+    // die Natur-Wand des Orts). Leser: der Maler (`_wegeKarteMale`) und die Natur-Wand (`_aufWeg`) — der Boden zeigt den Weg, wo
+    // die Natur ihm weicht. Drehung und Länge merkt die Form beim ersten Ruf.
     static _wegeFormAbstand(f, px, pz) {
+        if (f.typ === "zone") {
+            const rand = globalThis.__fachwerkCore.genesisZoneRand;
+            let d = rand(f.q, px - f.ox, pz - f.oz);
+            for (const w of f.ohne) d = Math.max(d, -rand(w, px - f.ox, pz - f.oz));
+            return d;
+        }
         if (f.typ === "kasten") {
             if (f._co === undefined) {
                 f._co = Math.cos(f.phi || 0);
@@ -393,8 +403,9 @@ class AnazhRealm_siedlung_wege {
     // Eine Form in EINE Stufe malen (nur innerhalb des Fensters, der Rand-Texel bleibt 0 — Clamp-to-Edge liest
     // außerhalb nichts). Segment: Kapsel-Abstand zur Mittellinie; Rechteck: gedrehter Kasten-Abstand. Der Rand
     // fällt über ±rand weich (smoothstep; rand = max(randM, randMinM der Stufe) — die ferne Stufe trägt 2-m-Texel,
-    // ein schmaler Feldweg zerfiele dort sonst in Punkte), Kanal 0 = Erde, 1 = Acker; überlappende Formen nehmen
-    // das Maximum. DIE DECKENDE FORM (`deckt`, der Grund der Häuser): in ihr liest jede bilineare Probe (Shader und
+    // ein schmaler Feldweg zerfiele dort sonst in Punkte), Kanal und Vorzeichen nach dem Belag der Form (`wert`, ohne ihn +,
+    // `WEGE_KARTE.belag`); überlappende Formen: die positive Art schlägt die negative (der Weg über den Rasen), je Art das
+    // Maximum. DIE DECKENDE FORM (`deckt`, der Grund der Häuser): in ihr liest jede bilineare Probe (Shader und
     // `_wegeFeldAt`) volle Erde — der Kasten wächst um die Spanne der Probe (je Welt-Achse ein Texel, in seinen Rahmen
     // gedreht t · (|cos φ| + |sin φ|)) und seinen weichen Rand (½ Texel der Stufe, nie der Feldweg-Boden `randMinM`): der
     // Übergang liegt ganz vor der Wand, wo die Büschel ohnehin ihre Reichweite halten (`erdbauGrund`).
@@ -426,6 +437,8 @@ class AnazhRealm_siedlung_wege {
         // nicht-leer, der nächste Umzug lädt sie leer hoch — kein Maler kann die Marke vergessen.
         stufe.wegeLeer = false;
         const daten = stufe.daten;
+        const voll = AnazhRealm.WEGE_KARTE.voll;
+        const wert = f.wert || 1;
         for (let j = j0; j <= j1; j++) {
             const pz = z0w + (j + 0.5) * t;
             for (let i = i0; i <= i1; i++) {
@@ -433,8 +446,9 @@ class AnazhRealm_siedlung_wege {
                 const q = AnazhRealm._wegeFormGewicht(f, px, pz, rand);
                 if (!(q > 0)) continue;
                 const k = (j * N + i) * 2 + f.kanal;
-                const v = Math.round(q * 255);
-                if (v > daten[k]) daten[k] = v;
+                const v = Math.round(q * voll) * wert;
+                const alt = daten[k];
+                if (wert > 0 ? v > alt : alt <= 0 && v < alt) daten[k] = v;
             }
         }
     }
@@ -619,9 +633,19 @@ class AnazhRealm_siedlung_wege {
         if (!warLeer || !stufe.wegeLeer) this._wegeSchichtHoch(stufe.tex, stufe.schicht);
     }
 
-    // Die getretene Erde an (x, z) ∈ [0, 1] — bilinear aus DENSELBEN Bytes, die der Boden-Shader liest: die
-    // NAH-Stufe innerhalb ihrer Grenze (`_wegeStufeNah`), sonst die FERN-Stufe.
+    // Der getretene Grund an (x, z) ∈ [0, 1]: die getretene Erde und das Pflaster (`_wegeBelagAt`) — dort wächst kein Halm und
+    // keine Streu.
     _wegeFeldAt(x, z) {
+        return this._wegeBelagAt(x, z, null);
+    }
+
+    // DER BELAG an (x, z) — bilinear aus DENSELBEN Bytes, die der Boden-Shader liest: die NAH-Stufe innerhalb ihrer Grenze
+    // (`_wegeStufeNah`), sonst die FERN-Stufe; je Kanal das Vorzeichen gefiltert, dann geteilt wie im Shader (`_wegeBodenFarbe`,
+    // `WEGE_KARTE.belag`). `aus` (optional) trägt erde · rasen · acker · pflaster (0 … 1). → der getretene Grund (Erde + Pflaster,
+    // höchstens 1). Leser: das Pfad-Feld der Wiese und der Streu (`_wegeFeldAt`) und der gezeichnete Boden (`_bodenSichtAt`: der
+    // Rasen grünt, das Pflaster deckt).
+    _wegeBelagAt(x, z, aus) {
+        if (aus) aus.erde = aus.rasen = aus.acker = aus.pflaster = 0;
         const wk = this.state.wegeKarte;
         if (!wk) return 0;
         const [nah, fern] = wk.stufen;
@@ -640,17 +664,28 @@ class AnazhRealm_siedlung_wege {
         const tz = fz - j;
         const d = stufe.daten;
         const N = stufe.N;
-        const at = (a, b) => d[(b * N + a) * 2] / 255;
-        return (
-            (at(i, j) * (1 - tx) + at(i + 1, j) * tx) * (1 - tz) +
-            (at(i, j + 1) * (1 - tx) + at(i + 1, j + 1) * tx) * tz
-        );
+        const voll = AnazhRealm.WEGE_KARTE.voll;
+        const k = (a, b, c) => d[(b * N + a) * 2 + c] / voll;
+        const bi = (c) =>
+            (k(i, j, c) * (1 - tx) + k(i + 1, j, c) * tx) * (1 - tz) +
+            (k(i, j + 1, c) * (1 - tx) + k(i + 1, j + 1, c) * tx) * tz;
+        const r = bi(0);
+        const gk = bi(1);
+        const erde = r > 0 ? r : 0;
+        const pflaster = gk < 0 ? -gk : 0;
+        if (aus) {
+            aus.erde = erde;
+            aus.rasen = r < 0 ? -r : 0;
+            aus.acker = gk > 0 ? gk : 0;
+            aus.pflaster = pflaster;
+        }
+        return Math.min(1, erde + pflaster);
     }
 
-    // Die Boden-Farbe unter Kronen und Wegen (TSL): die Vertex-Farbe mischt zur Laubstreu der Kronen-Karte, zur
-    // getretenen Erde (R) und zum Acker (G) der
-    // Wege-Karte, in den Farben der Boden-Palette (dieselbe Pfad-Erde wie der gebackene Ufer-Pfad), nur auf
-    // Begehbarem — ein Hang unter dem Weg bleibt Hang. Die Stufe wählt dieselbe Grenze wie `_wegeFeldAt`. Ohne die
+    // Die Boden-Farbe unter Kronen und Wegen (TSL): die Vertex-Farbe mischt zum Rasen (R −), zur Laubstreu der Kronen-Karte,
+    // zur getretenen Erde (R +), zum Acker (G +) und zuletzt zum Kopfstein (G −) der Wege-Karte (`WEGE_KARTE.belag`), in den
+    // Farben der Boden-Palette (dieselbe Pfad-Erde wie der gebackene Ufer-Pfad), dem Mittel des Halms (`WIESEN_GRUND`) und
+    // dem Stein-Gesetz (`_kopfsteinFarbe`), nur auf Begehbarem — ein Hang unter dem Weg bleibt Hang. Die Stufe wählt dieselbe Grenze wie `_wegeFeldAt`. Ohne die
     // Karte bricht der Boden-Stoff laut (der Chunk-Boden liest sie immer, kein stiller Boden ohne Weg).
     _wegeBodenFarbe(_T, vc) {
         const wk = this._wegeKarteEnsure();
@@ -669,6 +704,15 @@ class AnazhRealm_siedlung_wege {
         const imFenster = _T.step(_T.max(relFern.x.abs(), relFern.y.abs()), _T.float(0.5));
         const _wm = _T.mix(wFern, wNah, innen).mul(imFenster);
         const _begehbar = _T.smoothstep(_T.float(0.6), _T.float(0.85), _T.normalWorldGeometry.y); // der Hang selbst, nie die Licht-Normale
+        // DER BELAG (rg8snorm, je Kanal mit Vorzeichen gefiltert, dann geteilt — `_wegeBelagAt` rechnet dieselbe Teilung)
+        const _erde = _wm.r.max(0.0).mul(_begehbar);
+        const _rasen = _wm.r.negate().max(0.0).mul(_begehbar);
+        const _acker = _wm.g.max(0.0).mul(_begehbar);
+        const _pflaster = _wm.g.negate().max(0.0).mul(_begehbar);
+        // DER RASEN (das Gras-Gesetz): wo der Plan Rasen erklärt, ist der Grund das Mittel des Halms (`WIESEN_GRUND`) — die
+        // Geologie legt das Relief der Halme darauf (Grün × Flachheit), die Nah-Wiese ihre Büschel (`_bodenSichtAt`: er grünt)
+        const _wg = AnazhRealm.WIESEN_GRUND.farbe;
+        const mitRasen = _T.mix(vc, _T.vec3(_wg[0], _wg[1], _wg[2]), _rasen);
         // DIE KRONEN-STREU (`_kronenStreuNeu`): unter den echten Kronen die Laubstreu der Palette (`lit`) — zuerst, die
         // Wege liegen darüber. Dieselbe Stufen-Wahl, dasselbe UV (dasselbe Fenster). Derselbe Abgriff trägt in G die Asche.
         const dNah = _T.texture(nah.kronen.tex, relNah.add(0.5)).depth(_T.int(nah.schicht));
@@ -688,7 +732,7 @@ class AnazhRealm_siedlung_wege {
         // Unter der Krone liegt die Streu — ihre Albedo, nie ein Schatten: das Labor dunkelt seinen Bestandeskern
         // (`c.multiplyScalar(0.58 + 0.46 · Licht)` in worlds/terrain), die Welt hat die echte Schattenkarte der Kronen
         // (Lehre 21: nie doppelt; bis 06.10. lag die Streu so bei Y 0,065 unter dem Soll 0,08–0,15).
-        const mitStreu = _T.mix(vc, _T.vec3(l[0], l[1], l[2]), _k);
+        const mitStreu = _T.mix(mitRasen, _T.vec3(l[0], l[1], l[2]), _k);
         // DIE ASCHE DES BRANDS (stoffe.K2#2, `_ascheMalen`): wo die Front ein Bett verzehrte, liegt die Asche der Palette über
         // Wiese und Streu, bis sie nachgrünt (`_sukzession`) — nur auf Begehbarem (die Wand des Hangs trug kein Bett). Dieselben
         // Bytes liest die Nah-Wiese (`_ascheAt`): auf der Asche steht kein Halm.
@@ -697,8 +741,53 @@ class AnazhRealm_siedlung_wege {
         const mitAsche = _T.mix(mitStreu, _T.vec3(s[0], s[1], s[2]), _a);
         const e = P.dirt;
         const a = P.wet;
-        const mitErde = _T.mix(mitAsche, _T.vec3(e[0], e[1], e[2]), _wm.r.mul(_begehbar));
-        return _T.mix(mitErde, _T.vec3(a[0], a[1], a[2]), _wm.g.mul(_begehbar));
+        const mitErde = _T.mix(mitAsche, _T.vec3(e[0], e[1], e[2]), _erde);
+        const mitAcker = _T.mix(mitErde, _T.vec3(a[0], a[1], a[2]), _acker);
+        // DAS PFLASTER deckt jeden Grund (porta STEIN_GESETZ.kopfstein)
+        return _T.mix(mitAcker, this._kopfsteinFarbe(_T, xz), _pflaster);
+    }
+
+    // DAS KOPFSTEIN (porta STEIN_GESETZ.kopfstein, der Belag `pflaster` der Wege-Karte): Granit-Kleinpflaster im Segmentbogen als
+    // Term des Boden-Stoffs, kein Befehl und keine Textur — je Bogen der Sehne hebt sich der Lauf der Reihen um den Stich, die
+    // Steine einer Reihe im Läufer-Verband (jede zweite um einen halben Stein versetzt). Je Pixel: der Bruchton je Stein (± `ton`),
+    // der Kopf (zur Fuge hin dunkler, `kuppe`) und die Fuge als Box-Abdeckung des Pixels (die halbe Fuge in Metern, die Spanne aus
+    // den Ableitungen der Welt-Lage — fern mittelt sie zu ihrem Anteil, nie zu einer Linie; dieselbe Rechnung wie `_steinStoff`);
+    // trägt der Pixel den Stein nicht mehr (unter 1,5 … 4 Pixeln je Stein), das Mittel des Musters. Die Farbe ist der Stein des
+    // Farb-Gesetzes (`STEIN_GESETZ.farbe`, linear: `_srgbHexLinear`). Leser: `_wegeBodenFarbe`. → vec3 (die Albedo)
+    _kopfsteinFarbe(_T, xz) {
+        const K = AnazhRealm.Gesetz("porta:STEIN_GESETZ.kopfstein");
+        const c = AnazhRealm._srgbHexLinear(AnazhRealm.Gesetz("porta:STEIN_GESETZ.farbe")[K.stein]);
+        const s = K.steinM;
+        const f = (v) => _T.float(v);
+        // der Bogen: t ∈ [−1, 1] über die Sehne, die Reihe hebt sich zur Mitte des Bogens um den Stich
+        const t = _T.fract(xz.x.div(K.sehneM)).mul(2).sub(1);
+        const w = xz.y.add(f(1).sub(t.mul(t)).mul(K.stichM)).div(s);
+        const reihe = _T.floor(w);
+        const fr = _T.fract(w);
+        const u = xz.x.div(s).add(_T.fract(reihe.mul(0.5)));
+        const nr = _T.floor(u);
+        const fu = _T.fract(u);
+        const d = _T.min(_T.min(fr, f(1).sub(fr)), _T.min(fu, f(1).sub(fu))).mul(s); // Meter zur nächsten Fuge
+        const aa = _T.fwidth(xz.x).add(_T.fwidth(xz.y)).mul(0.5).max(1e-5); // die Spanne des Pixels in Metern
+        const halb = aa.mul(0.5);
+        const fuge = _T
+            .min(d.add(halb), f(K.fuge))
+            .sub(_T.max(d.sub(halb), f(-K.fuge)))
+            .div(aa)
+            .clamp(0.0, 1.0);
+        // der Bruchton je Stein (die Nummern gefaltet, die Ziehung bleibt in jeder Entfernung zur Mitte der Welt genau)
+        const zi = nr.sub(_T.floor(nr.div(289)).mul(289));
+        const zj = reihe.sub(_T.floor(reihe.div(289)).mul(289));
+        const zufall = _T.fract(_T.sin(zi.mul(12.9898).add(zj.mul(78.233))).mul(43758.5453));
+        const ton = f(1).add(zufall.mul(2).sub(1).mul(K.ton));
+        const ke = f(1).sub(d.div(s * 0.5).clamp(0.0, 1.0));
+        const kopf = f(1).sub(ke.mul(ke).mul(K.kuppe));
+        const muster = ton.mul(kopf).mul(_T.mix(f(1), f(K.fugeTon), fuge));
+        // das Mittel des Musters (fern): der Ton 1, der Kopf 1 − kuppe/2 (über die Fläche des Steins), die Fuge ihr Anteil
+        const anteil = 1 - (1 - (2 * K.fuge) / s) ** 2;
+        const mittel = (1 - K.kuppe / 2) * (1 - (1 - K.fugeTon) * anteil);
+        const sicht = _T.smoothstep(f(1.5), f(4), f(s).div(aa));
+        return _T.vec3(c[0], c[1], c[2]).mul(_T.mix(f(mittel), muster, sicht));
     }
 
     // DAS EINE PFAD-FELD der Wiese: der getrampelte Ufer-Pfad (Drainage, im Boden gebacken) ODER der Siedlungs-Weg
@@ -939,6 +1028,48 @@ class AnazhRealm_siedlung_wege {
         };
         for (const rd of plan.roads || []) strasse(rd.pts, rd.w);
         for (const fw of plan.feldwege || []) strasse(fw.pts, fw.w);
+        // DIE FLÄCHEN EINES PLANS (fachwerk `zonen`, der Genesis-Ort): jede Fläche mit Belag in ihrem Kanal und Vorzeichen
+        // (`WEGE_KARTE.belag`), gemalt mit dem Rand ihres Gesetzbuchs (`zone`, `genesisZoneRand`) — eine Art, die die Karte nicht
+        // kennt, wirft laut (kein stiller Rückfall auf Erde). Das Wasser des Plans, das nach einer Fläche kommt, nimmt sie aus
+        // (`ohne`: der Rasen des Ufers malt nicht in den Teich); der Rasen ist kein Weg der Natur-Wand (`sperr` −∞ — die Flächen des
+        // Orts urteilt `_genesisFlaeche`).
+        const zonen = plan.zonen || [];
+        zonen.forEach((q, i) => {
+            if (q.art !== "flaeche" || !q.belag || n >= MAX) return;
+            const B = AnazhRealm.WEGE_KARTE.belag[q.belag];
+            if (!B)
+                throw new Error(
+                    `Wege-Karte: die Fläche ${q.name} trägt den Belag „${q.belag}", den der Boden nicht kennt`
+                );
+            const h = q.huelle;
+            const ohne = zonen
+                .slice(i + 1)
+                .filter(
+                    (w) =>
+                        w.art === "wasser" &&
+                        w.huelle[0] < h[2] &&
+                        w.huelle[2] > h[0] &&
+                        w.huelle[1] < h[3] &&
+                        w.huelle[3] > h[1]
+                );
+            const ax = origin.x + (h[0] + h[2]) / 2;
+            const az = origin.z + (h[1] + h[3]) / 2;
+            form({
+                typ: "zone",
+                q,
+                ohne,
+                ox: origin.x,
+                oz: origin.z,
+                kanal: B.kanal,
+                wert: B.wert,
+                ax,
+                az,
+                bx: ax,
+                bz: az,
+                halb: 0,
+                ...(B.kanal === 0 && B.wert < 0 ? { sperr: -Infinity } : {}),
+            });
+        });
         // Der PLATZ (Anger/Markt) — ein gedrehtes Erd-Rechteck; ein Gras-Anger bleibt Wiese: er malt keinen Boden-Kanal
         // (`kanal` −1), und die Natur-Wand hält sein Inneres frei wie das Gesetzbuch des Dorfs (fachwerk-core: kein Baum
         // tiefer als 1 m im Anger, `sperr` −1 statt des Stamm-Rands).
@@ -1241,12 +1372,22 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_wege]);
 // umzugM: NAH 512 m zu 0,5 m (ein 2,5-m-Weg = 5 Texel, die Kante bilinear weich), gesichert 208 m ≥ die Ring-Kante
 // 194 m des Standard-Rings; FERN 2048 m zu 2 m, gesichert 768 m ≥ der größte Chunk-Ring (12,5 × 43,2 = 540 m).
 // Der Rand fällt über ±max(randM, randMinM) weich (getretene Erde läuft in die Wiese aus; fern ≥ 1 Texel).
+// DER BELAG (rg8snorm, `voll` = 127 der volle Anteil): je Kanal zwei Arten mit Vorzeichen — R: + getretene Erde, − Rasen;
+// G: + Acker, − Pflaster. Ein Belag der Flächen eines Plans (fachwerk `belag`) trägt seinen Kanal und sein Vorzeichen (`belag`);
+// eine Art, die die Karte nicht kennt, wirft laut (`_stlWegeBuild`). Das Pflaster liegt in G über dem Rasen in R: Kopfstein und
+// Rasen-Keil grenzen ohne Naht aneinander; nur Erde und Rasen teilen den Kanal (der Rand des Wegs läuft über den Grund aus).
 AnazhRealm.WEGE_KARTE = Object.freeze({
     stufen: Object.freeze([
         Object.freeze({ name: "nah", fensterM: 512, texelM: 0.5, umzugM: 48, randMinM: 0 }),
         Object.freeze({ name: "fern", fensterM: 2048, texelM: 2, umzugM: 256, randMinM: 2 }),
     ]),
     randM: 0.6,
+    voll: 127,
+    belag: Object.freeze({
+        weg: Object.freeze({ kanal: 0, wert: 1 }),
+        gras: Object.freeze({ kanal: 0, wert: -1 }),
+        pflaster: Object.freeze({ kanal: 1, wert: -1 }),
+    }),
 });
 // DIE LAUB-STREU UNTER DEN KRONEN (`_kronenStreuNeu`, Welle 5 Boden): je Wege-Stufe eine R8-Karte im selben Fenster — `texelM` je Stufe
 // (nah 1 m, fern 4 m: 512² = 256 KB je Stufe); eine Krone legt `dichte` Laubstreu bis `kern` × Kronen-Radius, weich

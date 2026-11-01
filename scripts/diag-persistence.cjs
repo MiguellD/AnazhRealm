@@ -530,6 +530,9 @@ function korpusSoll(k) {
 // Am Kopf: liegt die Grube je Edit am Boden (die Oberfläche unter dem Gesetz)? Dann der Save des Kopfs (Material dazu, fehlt es).
 async function korpusIst(s) {
     await window.__weltDa((x) => x.state.worldMeta.worldId === s.welt);
+    // DER ORT IM TAKT DES SPIELS (sein Takt ruht headless): die Flächen des Plans räumen die Natur des Stands (`_wegeRaeumen`)
+    r._genesisOrt(pm.position);
+    r._wegeRaeumen();
     if (!st.player.inventory.some((x) => x && x.kind === "material")) r.addMaterialToInventory("stein", 5);
     r.saveState();
     const ls = { ...localStorage, [r.worldStorageKey(s.welt)]: await __stand() };

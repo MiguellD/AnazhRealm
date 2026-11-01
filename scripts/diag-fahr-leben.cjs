@@ -1274,13 +1274,13 @@ async function probeBahn(B) {
     const M = r._genesisMitte();
     const vorschau = async () => {
         let e = null;
-        // der Ort-Takt des Spiels: je Takt Ring und Vorschau (die Platz-Suche läuft im Takt, FAHR_PLATZ_JE_TAKT Orte); das EINE
+        // der Ort-Takt des Spiels: je Takt das Glied des Genesis-Orts, Tore und Vorschau (die Platz-Suche läuft im Takt,
+        // FAHR_PLATZ_JE_TAKT Orte; die Vorschau steht, wenn der Spieler vor ihrem Tor steht); das EINE
         // Warten (welt-boot `__gebautNach`) zählt Takte ohne Offenes, nie Sekunden
         await __gebautNach("die Vorschau der Garage", {
             fertig: () => !!(e = st.architectures.find((a) => a && a.id === "portal-preview-garage")),
             takt: async (t) => {
-                r._genesisPortalRing(st.playerMesh.position);
-                r._portalApproachPrefetch(st.playerMesh.position);
+                r._genesisOrt(st.playerMesh.position);
                 if (t % 20 === 19) await sleep(20); // das Buch und der Bau dürfen ankommen
             },
             max: 3000,

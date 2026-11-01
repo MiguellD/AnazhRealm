@@ -180,7 +180,7 @@ function wegVerdict(m) {
     const ohne = zelle(m.wege, ["frieden ohne Material", "hotbar", "Eiche", "Ego"])?.farbe;
     if (ohne !== "rot") out.push(`das Phantom ohne Material steht ${ohne} (Soll rot)`);
     if (l.steht > 0) out.push(`auf der Lichtung steht ${l.steht} Eiche (die Natur-Wand gilt dem Satz, nicht dem Bau-Modus)`);
-    if (!/Lichtung/.test(l.zeile || "")) out.push(`die Lichtung verweigert stumm („${kurz(l.zeile)}")`);
+    if (!/Genesis-Orts/.test(l.zeile || "")) out.push(`die Lichtung verweigert stumm („${kurz(l.zeile)}")`);
     return out;
 }
 
@@ -338,19 +338,19 @@ async function probe(argW) {
             st.playerMesh &&
             r._foundry?.recipes &&
             st.blueprints?.baum_eiche &&
-            r._genesisPlattform()
+            r._genesisMitte()
         );
 
     )
         await __takte(1, 100);
     await __takte(10, 30);
-    // Ein trockener, freier Ort abseits der Genesis-Lichtung (die Natur-Wand hält die Scheibe frei): der Spieler steht dort. Die Suche
-    // geht um die Lichtung, wo der Spieler steht — steht er ferner als ihr Ring (160 m: die warme Welt der Sitzung, Mess-Wiese 1 082 m
-    // von der Lichtung), um ihn: bis w4-stationen-schnell sprang der erste Lauf über 1 km in eine kalte Gegend, und sein Werk wartete
+    // Ein trockener, freier Ort abseits der Flächen des Genesis-Orts (die Natur-Wand hält sie frei): der Spieler steht dort. Die Suche
+    // geht um den Genesis-Ort, wo der Spieler steht — steht er ferner als ihr Ring (160 m: die warme Welt der Sitzung, Mess-Wiese 1 082 m
+    // vom Genesis-Ort), um ihn: bis w4-stationen-schnell sprang der erste Lauf über 1 km in eine kalte Gegend, und sein Werk wartete
     // hinter ihrem Ring (GTX b4bcf19c: der erste Fall stand nach 80 s nicht im Bild)
-    const plat = r._genesisPlattform();
+    const M = r._genesisMitte();
     const SP = st.playerMesh.position;
-    const P0 = plat && Math.hypot(plat.position.x - SP.x, plat.position.z - SP.z) <= 160 ? plat.position : SP;
+    const P0 = M && Math.hypot(M.x - SP.x, M.z - SP.z) <= 160 ? M : SP;
     let frei = null;
     for (let ring = 40; ring <= 160 && !frei; ring += 12)
         for (let k = 0; k < 16 && !frei; k++) {
@@ -435,7 +435,7 @@ async function probe(argW) {
     const abschnitt = async (k, m, fn) => {
         out[k] = m = { gestartet: false, ...m };
         try {
-            if (!frei || !plat) throw new Error("kein freier Ort oder keine Genesis-Plattform");
+            if (!frei || !M) throw new Error("kein freier Ort oder kein Genesis-Ort");
             await fn(m);
             m.gestartet = true;
         } catch (e) {
@@ -580,7 +580,7 @@ async function probe(argW) {
             r.setGameMode("schöpfer");
             // ein schräger Blick weg von der Plattform: die Drehung des Phantoms ist nicht 0
             stelle();
-            st.yaw = Math.atan2(frei.x - plat.position.x, frei.z - plat.position.z) + 0.7;
+            st.yaw = Math.atan2(frei.x - M.x, frei.z - M.z) + 0.7;
             st.pitch = -0.45;
             await __takte(4, 30);
             r.setHotbarSlot(4, NAME);
@@ -738,7 +738,7 @@ async function probe(argW) {
         try {
             st.weather = "sunny";
             // (1) Die Eiche 2,4 m vor der Plattform-Mitte (direkt gesetzt: der Bau-Modus hält die Lichtung frei): ein sonniger Tag.
-            const P = plat.position;
+            const P = { ...M, y: r._voxelSurfaceY(M.x, M.z) }; // die Mitte des Genesis-Orts auf seinem Boden
             const vorn = r._blickVorn ? r._blickVorn(0, 0) : { x: 0, z: 1 };
             const eiche = r.spawnArchitecture(
                 "baum_eiche",
@@ -776,9 +776,10 @@ async function probe(argW) {
                 st.timeOfDay = 0.0;
                 takt(30);
                 m.nacht = { waerme: +(b0.heatBuildup || 0).toFixed(3), steht: st.architectures.includes(b0) };
-                // Kühlung: 10 s im Brennpunkt (Mittag), dann 30 s Nacht.
+                // Kühlung: im Brennpunkt (Mittag), bis die Eiche glimmt (die halbe Zünd-Wärme), höchstens 10 s, dann 30 s Nacht —
+                // feste 10 s entzündeten sie am Ort des Genesis-Plans (brennt nach 7 s), und die Wärme der Gefallenen kühlt nie
                 st.timeOfDay = 0.5;
-                takt(10);
+                for (let s = 0; s < 10 && !/glimmt/.test(r._spielerSagtLetzte?.t); s++) takt();
                 const nachFokus = +(b0.heatBuildup || 0).toFixed(3);
                 st.timeOfDay = 0.0;
                 takt(30);
@@ -891,7 +892,8 @@ async function probe(argW) {
 // Schleife nicht von selbst: hier tickt `_gameLoopTick` (die Schleife des Spiels). ──
 function wegHelfer(arg) {
     const inv = st.player.inventory;
-    const P = r._genesisPlattform().position;
+    const P = r._genesisMitte(); // die Mitte des Genesis-Orts auf seinem Boden (die Plattform trug ihr y)
+    P.y = r._voxelSurfaceY(P.x, P.z);
     const yaw = Math.atan2(arg.frei.x - P.x, arg.frei.z - P.z);
     const zeilen = () => document.querySelectorAll("#chat-output > div");
     const habe = () => {
@@ -1426,7 +1428,7 @@ hauptLauf(async () => {
             geraet: { name: "klinge_spitzhacke", zeile: "Spitzhacke: fehlt 12× eisen — sammeln" },
             phantom: { studio: true, meshes: 2, verworfen: 0, farbe: "grün" },
             sucheHaus: 32,
-            lichtung: { wand: "lichtung", steht: 0, zeile: "Eiche: die Lichtung bleibt frei", toenung: { stoffe: 2, lesen: 2, farbe: "rot" } },
+            lichtung: { wand: "lichtung", steht: 0, zeile: "Eiche: die Flächen des Genesis-Orts bleiben frei", toenung: { stoffe: 2, lesen: 2, farbe: "rot" } },
         };
         for (const [lage, weg, ...rest] of raster(LAGEN, WEGE))
             lege(gesundG.wege, [lage, weg, ...rest], lage === "frieden ohne Material" ? { eingaben: 2, zeile: fehlt, steht: 0, bauModus: weg === "hotbar", farbe: "rot" } : { eingaben: 3, steht: 1, kosten: KOST, verbraucht: lage === "schöpfer" ? {} : KOST });

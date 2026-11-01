@@ -282,8 +282,17 @@
     //   fugeTon  die Albedo der Fuge relativ zum Stein (der Mörtel im Schatten seiner Fasen)
     //   ton      der Bruchton je Stein: ±12 % um die Farbe des Stoffs (texStein 0,88–1,12)
     //   platteM  die Länge der Platten der Stufen (m), jede zweite Stufe um eine halbe Platte versetzt (der Läufer-Verband)
+    // DIE FARBE des Steins (das FARB-GESETZ, sRGB-Absicht): Granit und Sandstein — das Tor mischt linear zwischen beiden (`hue`).
+    // DAS KOPFSTEIN (der Platz des Genesis-Orts, fachwerk `belag` pflaster): Granit-Kleinpflaster im Segmentbogen — der Boden-Stoff
+    // der Welt legt es als Term über die Fläche (`_kopfsteinFarbe`), dieselbe Fuge, derselbe Bruchton je Stein wie der Quader.
+    //   steinM   die Kante des Steins (m): Kleinpflaster 8–11 cm (DIN EN 1342)
+    //   fuge     die halbe Fuge (m): 8 mm Fuge, die obere Grenze des Kleinpflasters (DIN 18318)
+    //   kuppe    der Kopf des Steins: zur Fuge hin sieht er weniger Himmel (Albedo × 1 − kuppe · (1 − e)², e = 0 an der Fuge, 1 mittig)
+    //   sehneM · stichM  der Segmentbogen: die Reihen heben sich je Bogen der Sehne um den Stich (ein Fünftel der Sehne)
     var STEIN_GESETZ = {
         quader: { fase: 0.015, fuge: 0.008, fugeTon: 0.45, ton: 0.12, platteM: 0.9 },
+        farbe: { granit: 0x8e939a, sandstein: 0xb59a74 },
+        kopfstein: { steinM: 0.1, fuge: 0.004, fugeTon: 0.45, ton: 0.12, kuppe: 0.25, sehneM: 1.6, stichM: 0.32, stein: "granit" },
     };
     var _stein = STEIN_GESETZ.quader;
     // Die Nummern der Steine im Verband eines Tors: je Kette (Ordnung × Tiefe × Seite) 64, darüber die Stufen, der Schlussstein, die
@@ -1296,7 +1305,7 @@
       // Y 0,29) und Sandstein (0xb59a74, Y 0,34) — die Welt liest den linearen Wert. Bis 05.10. las sie den HSL-Ton roh
       // (Hellwert 0,40 → Albedo 0,37–0,44, das Tor stand kalkweiß), und der Ton wanderte über Grün (hue 0,3–0,6: türkiser
       // Stein, sobald man ihn linear liest). Ein Metall-Rahmen (metal ≥ 0,5) trägt seine Spiegelfarbe F0 wie bisher.
-      var stone=p.metal<0.5?new THREE.Color(0x8e939a).convertSRGBToLinear().lerp(new THREE.Color(0xb59a74).convertSRGBToLinear(),p.hue):new THREE.Color().setHSL(0.62-(0.62-0.07)*p.hue,0.16+0.14*p.hue,0.40);
+      var stone=p.metal<0.5?new THREE.Color(STEIN_GESETZ.farbe.granit).convertSRGBToLinear().lerp(new THREE.Color(STEIN_GESETZ.farbe.sandstein).convertSRGBToLinear(),p.hue):new THREE.Color().setHSL(0.62-(0.62-0.07)*p.hue,0.16+0.14*p.hue,0.40);
       var fmat=new THREE.MeshStandardMaterial({color:stone,roughness:lerp(0.88,0.16,p.metal),metalness:lerp(0.05,0.97,p.metal),emissive:new THREE.Color().setHSL(0.09,0.7,0.5),emissiveIntensity:lerp(0.04,0.55,p.glow)});
       var amat=new THREE.MeshStandardMaterial({color:new THREE.Color().setHSL(0.11,0.6,0.55),roughness:0.28,metalness:1.0,emissive:0x2a1c06,emissiveIntensity:0.3+0.6*p.glow});
       var bmatG=new THREE.MeshStandardMaterial({color:new THREE.Color().setHSL(0.11,0.7,0.55),roughness:0.2,metalness:1.0,emissive:new THREE.Color().setHSL(0.09,0.8,0.4),emissiveIntensity:0.4+0.6*p.glow});

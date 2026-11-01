@@ -152,6 +152,13 @@ class AnazhRealm_gelaende_chunks {
                             });
                         pending.resolve(msg);
                     }
+                } else if (msg.type === "genesis-plan-result" && msg.requestId) {
+                    // DER GENESIS-ORT AUS DEM FADEN (Pflicht F): der Plan v2 und die Zeit seines Auftrags (`_genesisPlanBestellen`)
+                    const pending = this.state.voxelWorkerPending.get(msg.requestId);
+                    if (pending) {
+                        this.state.voxelWorkerPending.delete(msg.requestId);
+                        pending.resolve(msg);
+                    }
                 } else if (msg.type === "boden-morph") {
                     // DER GEOMORPH AUS DEM FADEN (w4-b-boden2): je gemorphtem Netz die fertigen Puffer — der Takt legt sie an
                     this._bodenAntwort(msg);
@@ -1042,16 +1049,9 @@ class AnazhRealm_gelaende_chunks {
             // auf den kritischen Pfad — `_bootDeferCreatures` spawnt progressiv NACH der Kontrolle
             // (`_tickBootPhase3`), headless sofort (gate-treu).
             this._bootDeferCreatures(10);
-            // V8.29 — Genesis-Plattform: beim ERSTEN Spawn einer Welt eine
-            // erhöhte Stein-Scheibe am Zentrum, der Spieler startet darauf
-            // (sieht von erhöhter Warte die Welt, fällt nicht blind in ein Tal).
-            if (wasFirstSpawn) {
-                try {
-                    this._ensureGenesisPlatform();
-                } catch (e) {
-                    this.log(`Genesis-Plattform fehlgeschlagen: ${e.message}`, "ERROR");
-                }
-            }
+            // DIE ERSTE ANKUNFT (Pflicht F): beim ersten Spawn einer Welt steht der Spieler an der Mitte des Genesis-Orts, dessen
+            // Plan mit der Heimat aus dem Faden kam (`_genesisAnkunft`; ohne Plan oder Grund bricht sie laut)
+            if (wasFirstSpawn) this._genesisAnkunft();
             return true;
         });
     }
