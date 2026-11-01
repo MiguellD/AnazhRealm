@@ -1679,7 +1679,8 @@ class AnazhRealm_studio_bruecke {
     //   (1) Bauplan-Namen, die Rezept-ids mit ihrem Träger, der Name hinter einem Art-Präfix (`baum_eiche` → „eiche", auch
     //       bei kaltem Buch);
     //   (2) die Namen der Werke: das Kopf-Wort des Rezept-`lab` und des Träger-Labels (vor „·"/„—": „Feuerstelle",
-    //       „Ziehbrunnen", „Alemannisch", „Kristall-Geode");
+    //       „Ziehbrunnen", „Alemannisch", „Kristall-Geode") — nie ein Art-Wort aus (3) („Lyra-Tor" → „lyra", „tor"
+    //       benennt die Art);
     //   (3) die Art-Wörter des Art-Gesetzes: der Präfix-Stamm („baum", „haus", „fahrzeug") und der Stamm des Spenders,
     //       der kein eigener Bauplan ist („fahrzeug_wagen" → „wagen") → das erste Werk der Art;
     //   (4) die Studio-Namen, deren Kompositum-Kopf ein Art-Wort ist („Fachwerkhaus" → das erste Haus).
@@ -1741,12 +1742,8 @@ class AnazhRealm_studio_bruecke {
                     if (!artVon[n]) artVon[n] = k;
                 }
         }
-        // (2)
-        for (const id of ids) {
-            const t = traeger[id];
-            if (t) for (const w of [...kopf(recipes[id].lab), ...kopf(label(t))]) setze(1, w, t);
-        }
-        // (3) und (4): ein Wort, das zwei Arten benennt, fällt (Spender „tor_basis"/„haus_basis" → „basis").
+        // (3) und (4): ein Wort, das zwei Arten benennt, fällt (Spender „tor_basis"/„haus_basis" → „basis"). Die Art-Wörter
+        // stehen VOR den Namen der Werke fest: (2) nimmt keines davon (unten).
         const eindeutig = (s, paare) => {
             const arten = new Map();
             for (const [w, t] of paare) {
@@ -1771,6 +1768,13 @@ class AnazhRealm_studio_bruecke {
             if (typeof sp === "string" && !bps[sp]) artPaare.push([sp.split("_").pop(), ziel]);
         }
         eindeutig(2, artPaare);
+        // (2) Ein Art-Wort benennt seine Art, nie das Werk, dessen Label es als Grundwort trägt: „Lyra-Tor" ist ein Tor —
+        // „lyra" führt zu ihm, „tor" bleibt das erste Werk der Art (w4-tore-teile2: das Label nahm „tor" dem Drachentor,
+        // der Satz „stell ein drachentor auf" verlor seine Absicht; gate:nervensystem S „Wort am Knoten vorbei").
+        for (const id of ids) {
+            const t = traeger[id];
+            if (t) for (const w of [...kopf(recipes[id].lab), ...kopf(label(t))]) if (!stufen[2].has(w)) setze(1, w, t);
+        }
         // (4) Ein Studio-Name, dessen Kopf (der letzte Teil des Kompositums) ein Art-Wort ist, ist ein Werk dieser Art:
         // „Fachwerkhaus" ist ein Haus. „Anatomie", „Porta", „Phytogenesis" benennen keine Art und bleiben stumm.
         const studioPaare = [];

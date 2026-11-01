@@ -21,15 +21,16 @@
 //   K6 fehlerfrei die GPU verwirft keinen ihrer Befehle (WebGPU-Prüfung); den Seiten-Fehler urteilt der EINE Sammler (welt-boot)
 //   K7 mitgebracht die Welt zeigt, was der Reisende mitbringt (der enter-Payload der Heimat, `MITGEBRACHT`)
 //   K8 getragen   was der Spieler trägt, reist mit (tore.K3): die Welten des Genesis-Rings betritt der Spieler über ihr Tor —
-//                 mit W durch die Apertur, wo das Tor ein Gesetz trägt (`_tickPortalMembranes` → enterPortal, die Probe taktet
-//                 die Heimat), sonst bis vor das Tor und E —, heim kommt er mit Esc (K5); er reitet dabei das Pferd. Der ABDRUCK
+//                 mit W durch die Apertur seiner porta-Gestalt (`_tickPortalMembranes` → enterPortal, die Probe taktet die
+//                 Heimat; ein Ring-Tor ohne Gesetz ist rot, der E-Weg fiel mit den Teile-Toren) —, heim kommt er mit Esc (K5);
+//                 er reitet dabei das Pferd. Der ABDRUCK
 //                 je Teil (Leib = Seele · Teile einer eigenen Seele · Prägung des Mensch-Rezepts; Inventar = Slots · Hotbar;
 //                 wield = Haupt-, Neben-Hand, Rüstung; Reittier = das gerittene Werk: Art · Gestalt · Glut · Bindung; Werk =
 //                 der Prägungs-Speicher, in den die Garage über ihren Knopf „In der Welt ansehen" das Werk des Spielers reichte
 //                 (`werkHolen`, Studio → Welt → jedes Studio) —
 //                 kanonisches JSON + FNV-1a, `abdruck`; ein leerer Teil 0, ein fehlender keiner) steht vor dem Tor aus dem Zustand der Heimat, drüben aus dem,
 //                 was die Hülle der Welt hält (`AnazhHuelle.reisender`), und nach der Heimkehr; ein Teil, dessen Bytes unterwegs
-//                 anders werden, ist rot beim Namen — nie ein ok-Flag der Übergabe. Die Zeile `K8 [[welt, weg, vor, drüben, nach, esc], …]` ist die Tafel (Station).
+//                 anders werden, ist rot beim Namen — nie ein ok-Flag der Übergabe. Die Zeile `K8 [[welt, Gestalt, vor, drüben, nach, esc], …]` ist die Tafel (Station).
 // Dazu zwei RATSCHEN (spec/vertraege/ratsche.json — Ist darf nur fallen, Soll daneben):
 //   dslEinzelwort  der Spieler tippt EIN Wort in die Konsole (`processChatCommand`, die Heimat schickt die flache Form
 //                  ["w"]): wirkt es sichtbar oder bleibt die Welt stumm?
@@ -338,9 +339,7 @@ async function betreten(page, welt) {
                 id = acc.id;
             }
             // K8: eine Welt des Genesis-Rings betritt der Spieler über ihr Tor, jede andere über die Bibliothek
-            const tor = (window.__tor = st.architectures.find(
-                (e) => /^welt_/.test(e.type) && st.blueprints[e.type].portalMeta.world === `worlds/${id}/index.html`
-            ));
+            const tor = st.architectures.find((e) => /^welt_/.test(e.type) && st.blueprints[e.type].portalMeta.world === `worlds/${id}/index.html`);
             const ob = tor ? { ok: true, blueprint: tor.type } : r.obtainPortalForWorld(id);
             if (!ob.ok) return { fehler: "obtainPortalForWorld: " + ob.reason };
             const meta = st.blueprints[ob.blueprint].portalMeta;
@@ -375,21 +374,21 @@ async function betreten(page, welt) {
             const [x, z] = [tor.position.x + 4 * Math.sin(ry), tor.position.z + 4 * Math.cos(ry)];
             st.playerMesh.position.set(x, r.getTerrainHeightAt(x, z) + 1, z);
             st.yaw = ry + Math.PI;
-            return { ok: true, weg: r._torGesetzFor(tor) ? "Apertur" : "E" };
+            const g = r._torGesetzFor(tor)?.gestalt;
+            return g ? { ok: true, weg: g } : { fehler: `das Ring-Tor ${tor.type} trägt kein Gesetz des Gesetzbuchs (keine porta-Gestalt)` };
         },
         welt,
         UEBERSETZT
     );
     if (!b.weg) return b;
-    // W gehalten, die Probe taktet die Heimat (headless taktet sie nicht selbst), bis das Tor aufgeht: durch die Apertur, am
-    // Teile-Tor, bis es in der Reichweite der Taste steht (`_tryEnterPortalAtPlayer`), dort E
+    // W gehalten, die Probe taktet die Heimat (headless taktet sie nicht selbst), bis das Tor aufgeht: jedes Tor des Rings ist
+    // eine porta-Gestalt (`weg` = die Gestalt, die der Wirt aus dem Gesetzbuch liest, `_torGesetzFor`), der Weg führt durch
+    // ihre Apertur — der E-Weg der Teile-Tore fiel mit ihnen (w4-tore-teile); ein Tor ohne Gesetz ist rot beim Namen (oben)
     await halteBis(page, {
         druck: () => page.evaluate('dispatchEvent(new KeyboardEvent("keydown", { key: "w" })); window.__takt = setInterval(() => anazhRealm._gameLoopTick(performance.now()), 20)'),
         los: () => page.evaluate('clearInterval(__takt); dispatchEvent(new KeyboardEvent("keyup", { key: "w" }))'),
-        ziel: (e) => !!r._portalOverlay || (e && r._findNearestAffordanceEntry("isPortal", AnazhRealm.PORTAL_REACH_M) === __tor),
-        args: [b.weg === "E"],
+        ziel: () => !!r._portalOverlay,
     });
-    if (b.weg === "E") await page.evaluate('dispatchEvent(new KeyboardEvent("keydown", { code: "KeyE" }))');
     return (await page.evaluate(() => !!r._portalOverlay)) ? b : { fehler: `das Tor geht nicht auf (${b.weg})` };
 }
 
