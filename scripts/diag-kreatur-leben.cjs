@@ -10,6 +10,7 @@
 async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil, kamera) {
     const dt = 1 / 60;
     const boden = (x, z) => r.getTerrainHeightAt(x, z) + 0.5;
+    const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z); // der Abstand in der Ebene
     await buehne("furcht", async (restore) => {
         if (taeter === "furcht-gedaechtnis") decke("_kreaturFurchtErinnert", () => () => 0);
         if (taeter === "furcht-ort") decke("_kreaturFurchtOrt", () => (c, NAT, von, w) => w);
@@ -60,16 +61,16 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                 R.erinnerungen.push((c.userData.memory || []).length);
                 pm.set(c.position.x + 30, boden(c.position.x + 30, c.position.z), c.position.z);
                 for (let k = 0, d = 30; k < 2400 && d > 8; k++) {
-                    d = Math.hypot(c.position.x - pm.x, c.position.z - pm.z);
+                    d = ab(c.position, pm);
                     pm.x += ((c.position.x - pm.x) / d) * s.speed * dt;
                     pm.z += ((c.position.z - pm.z) / d) * s.speed * dt;
                     pm.y = boden(pm.x, pm.z);
                     lauf(1, e);
                 }
-                const d0 = Math.hypot(c.position.x - pm.x, c.position.z - pm.z);
+                const d0 = ab(c.position, pm);
                 for (let k = 0; k < 900; k++) {
                     lauf(1, e);
-                    R.abstand.push(Math.hypot(c.position.x - pm.x, c.position.z - pm.z));
+                    R.abstand.push(ab(c.position, pm));
                 }
                 R.naeher.push(d0 - Math.min(...R.abstand.slice(-900)));
                 for (const k of [...s.creatures, ...s.leichname]) r.removeCreature(k);
@@ -239,32 +240,15 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                     frassAus || alt.apply(r, a)
         );
         if (taeter === "bestand-kappe") decke("_creatureNaturalBirth", (alt) => (...a) => (s.creatures.length < s.maxCreatures ? alt.apply(r, a) : [])); // prettier-ignore
-        // DAS TAL DER WILDNIS: die Kaskade misst, wo das Feld wirft — keine nahe Region trägt eine Fläche des Genesis-Orts (Kern,
-        // Ring, Mall, Wiese, Ufer, die Bühnen: dort fällt jede Geburt und jeder Leib, `_kreaturGrundFrei`). Der Spieler steht für
-        // den Zeitraffer ganze Regionen westlich der Ankunft, bis keine mehr eine trägt. Bis Pflicht F begann die Wildnis an der
-        // Ankunft; seit dem Plan schnitten Flächen die vier nahen Regionen 99-mal, und ohne die Wölfe wuchs das Rotwild um
-        // 0,222 statt 0,391 (dieselben Saaten, die Flächen still); zwei Regionen westlich (709 m) schneidet keine. Täter
-        // (Selbsttest): der Zeitraffer an der Ankunft
-        const S = r._bestandSeite();
-        const park = () => {
-            const P = r._genesisPlan;
-            if (!P) return 0;
-            const Z = P.zonen.filter((q) => q.art !== "feld" && q.art !== "ort");
-            return r._bestandNah().reduce((n, key) => {
-                const [a, b] = key.split(",").map((v) => Number(v) * S);
-                const trifft = (h) => h[2] + P.ort.x > a && h[0] + P.ort.x < a + S && h[3] + P.ort.z > b && h[1] + P.ort.z < b + S; // prettier-ignore
-                return n + Z.filter((q) => trifft(q.huelle)).length;
-            }, 0);
-        };
-        const x0 = pm.x;
-        for (let n = 1; taeter !== "kaskade-park" && park() && n <= 4; n++) {
-            const x = x0 - n * S;
-            pm.set(x, r.getTerrainHeightAt(x, pm.z) + 0.5, pm.z);
-            if (!Number.isFinite(pm.y)) throw new Error(`kein Grund für das Tal an ${Math.round(x)}/${Math.round(pm.z)}`);
-            kamera(0, -1);
-        }
-        const parkFlaechen = park();
-        if (parkFlaechen) return { parkFlaechen, ort: [Math.round(pm.x), Math.round(pm.z)] };
+        // DAS TAL DER WILDNIS: die Kaskade misst, wo das Feld wirft — keine Zelle des Bestands der nahen Regionen liegt auf einer
+        // Fläche des Genesis-Orts (Kern, Ring, Mall, Wiese, Ufer, die Bühnen: dort fällt jede Geburt und jeder Leib,
+        // `_kreaturGrundFrei`). Der Zeitraffer steht ganze Regionen westlich der Ankunft, bis keine mehr dort liegt (709 m). Bis
+        // Pflicht F begann die Wildnis an der Ankunft; seit dem Plan lagen 7 Zellen auf ihm, und ohne die Wölfe wuchs das Rotwild
+        // um 0,222 statt 0,391 (dieselben Saaten, die Flächen still). Täter (Selbsttest): der Zeitraffer an der Ankunft
+        const park = () => r._bestandNah().flatMap((k) => r._bestandFeld(k).zellen).filter((c) => r._genesisFlaeche(c.x, c.z)).length; // prettier-ignore
+        for (let x = pm.x; taeter !== "kaskade-park" && park(); kamera(0, -1))
+            (x -= r._bestandSeite()), pm.set(x, boden(x, pm.z), pm.z);
+        if (park()) throw new Error(`das Tal liegt im Genesis-Ort: ${park()} Zellen`);
         // die vier Regionen schräg an den Ecken des Tals (nicht nah, ihr Bestand nur als Zahl)
         const [ix, iz] = [pm.x, pm.z].map((v) => Math.round(v / r._bestandSeite()));
         const fern = [[-2, -2], [1, -2], [-2, 1], [1, 1]].map(([a, b]) => ix + a + "," + (iz + b)); // prettier-ignore
@@ -321,8 +305,6 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
             if (L[b]) richtungen[k] = richtung(b, g, soll);
         const [G, H, ms] = [L.grund, L.kappeHalb, L.grund.flatMap((l) => l.ms).sort(aufsteigend)];
         return {
-            parkFlaechen,
-            ort: [Math.round(pm.x), Math.round(pm.z)],
             saaten: G.map((l) => Object.fromEntries(Object.keys(A._lebensraumGesetz().L.gattung).map((g) => [g, [l.mittel(360, 720, g), l.mittel(2520, 2880, g)]]))), // prettier-ignore
             kappe: Object.values(L)
                 .flat()
@@ -573,7 +555,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
             }
             if (k % 60 !== 59) return;
             z.proben++;
-            abstand.push(Math.hypot(p.x - pm.x, p.z - pm.z));
+            abstand.push(ab(p, pm));
             if ((c.userData.task || {}).name === "follow_player") z.aufgabe++;
             if (r._nassAt(p.x, p.z)) z.nassS++;
             if (hang(p.x, p.z) > 15) z.steilS++;
@@ -597,7 +579,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
         r.removeCreature(c);
         const u = hirsch(false);
         gehen(120, () => {});
-        z.gegenlauf = { abstandM: +Math.hypot(u.position.x - pm.x, u.position.z - pm.z).toFixed(1) };
+        z.gegenlauf = { abstandM: +ab(u.position, pm).toFixed(1) };
         return z;
     });
     // ── tagesbudget (Tiere K4, ETHOGRAMM_GESETZ · DURST_GESETZ): je Gattung drei Tiere ohne Verband am Ufer (15–30 m vom Fluss), im
@@ -664,7 +646,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                 [0, 1, 2].map((i) => {
                     const x = U.x + Math.cos(i * 2.1 + seele.length) * 6,
                         zz = U.z + Math.sin(i * 2.1 + seele.length) * 6;
-                    const c = tier({ x, y: r.getTerrainHeightAt(x, zz) + 0.5, z: zz }, seele, 1);
+                    const c = tier({ x, y: boden(x, zz), z: zz }, seele, 1);
                     ruhig(c);
                     return { c, g: A.TETRAPODA_SOUL_MAP[seele], x, z: zz, ruhK: 0, trunk: 0, nass: 0 };
                 })
@@ -687,7 +669,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                             const B = z.budget[t.g] || (z.budget[t.g] = { ruhen: 0, nahrung: 0, ziehen: 0 });
                             B[kat]++;
                             if (t.ruhK > 20)
-                                (z.ruhe[0]++, (z.ruhe[1] += Math.hypot(p.x - t.x, p.z - t.z) > 0.01 ? 1 : 0));
+                                (z.ruhe[0]++, (z.ruhe[1] += ab(p, t) > 0.01 ? 1 : 0));
                         }
                         [t.x, t.z] = [p.x, p.z];
                     }
@@ -755,12 +737,12 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                     if (LG.lebensraum(g, kl, LG.L) > 0) z.drin++;
                     z.gattung[g] = (z.gattung[g] || 0) + 1;
                     z.klasse[kl] = (z.klasse[kl] || 0) + 1;
-                    z.minM = Math.min(z.minM, +Math.hypot(c.position.x - pm.x, c.position.z - pm.z).toFixed(1));
+                    z.minM = Math.min(z.minM, +ab(c.position, pm).toFixed(1));
                     if (imBlick(c.position.x, c.position.y + 0.5, c.position.z)) z.imBlick++;
                     const nn = Math.min(
                         ...neu
                             .filter((o) => o !== c)
-                            .map((o) => Math.hypot(c.position.x - o.position.x, c.position.z - o.position.z) / paar)
+                            .map((o) => ab(c.position, o.position) / paar)
                     );
                     if (nn < Infinity) z.fensterMax = +Math.max(z.fensterMax, nn).toFixed(2);
                 }
@@ -777,10 +759,6 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
 // das Soll der Lebens-Proben (`soll(bedingung, grund)` aus dem Urteil der Kreatur-Proben)
 function lebenUrteil(name, z, soll) {
     if (name === "kaskade") {
-        if (z.parkFlaechen) {
-            soll(false, `das Tal liegt im Genesis-Ort: ${z.parkFlaechen} Schnitte von Flächen des Plans mit den nahen Regionen um ${z.ort} (Soll 0 — dort wirft das Feld nicht)`); // prettier-ignore
-            return;
-        }
         soll(
             z.kappe === 0,
             `der Bestand bricht über seine Nahrung aus: ${z.kappe} Takte über 3 × K (Soll 0 — die Nahrung begrenzt, die Kappe zeichnet nur)`
@@ -942,7 +920,7 @@ module.exports = {
         ],
         kaskade: [
             ["kaskade-riss", /die Kaskade hirsche/],
-            ["kaskade-park", /das Tal liegt im Genesis-Ort: [1-9]/],
+            ["kaskade-park", /Tal liegt im Genesis-Ort: [1-9]/],
             ["bestand-nahrung", /die Kaskade nahrung/],
             ["bestand-deckel", /über seine Nahrung aus/],
             ["bestand-kappe", /die Kappe am Schirm ändert den Bestand/],

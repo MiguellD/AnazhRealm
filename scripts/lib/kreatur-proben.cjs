@@ -196,6 +196,7 @@ async function kreaturProben(r, T, opts) {
         const h = r.getTerrainHeightAt(x, z);
         return { x, y: (Number.isFinite(h) ? h : pm.y) + 0.5, z };
     };
+    const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z); // der Abstand in der Ebene
     const tier = (p, seele, bodySize) => {
         const c = r.spawnCreatureAt(p.x, p.y, p.z, "happy", seele, { precise: true, bodySize: bodySize || 1 });
         if (!c) throw new Error("Spawn " + seele);
@@ -363,8 +364,8 @@ async function kreaturProben(r, T, opts) {
                         for (let q = 1; q < a1.fuss[j].length; q++) if (a1.fuss[j][q].y < a1.fuss[j][k].y - 1e-4) k = q;
                         const [p, q] = [a0.fuss[j][k], a1.fuss[j][k]];
                         if (Math.max(p.y, q.y) > ymin + 0.05 * sp.bein) continue;
-                        wegFuss += Math.hypot(q.x - p.x, q.z - p.z);
-                        wegLeib += Math.hypot(a1.x - a0.x, a1.z - a0.z);
+                        wegFuss += ab(q, p);
+                        wegLeib += ab(a1, a0);
                     }
                 }
             }
@@ -756,7 +757,7 @@ async function kreaturProben(r, T, opts) {
                     const g = pf.leib[n].gier;
                     wegQ += Math.abs(dx * Math.cos(g) - dz * Math.sin(g));
                     wegH += Math.abs(dx * Math.sin(g) + dz * Math.cos(g));
-                    wegL += Math.hypot(pf.leib[n].x - pf.leib[n - 1].x, pf.leib[n].z - pf.leib[n - 1].z);
+                    wegL += ab(pf.leib[n], pf.leib[n - 1]);
                 }
             }
             return wegL > 0 ? { q: +(wegQ / wegL).toFixed(3), l: +(wegH / wegL).toFixed(3) } : null;
@@ -797,7 +798,7 @@ async function kreaturProben(r, T, opts) {
                 for (const c of s.creatures.slice())
                     if (c.userData._faelltNach) r._creatureNaturalDeath(c, c.userData._faelltNach, false);
             });
-        const nah = (c) => Math.hypot(c.position.x - pm.x, c.position.z - pm.z) < A.ANALOG_NAH_M;
+        const nah = (c) => ab(c.position, pm) < A.ANALOG_NAH_M;
         const R = { nah: 0, mitJaeger: 0, risse: 0, gefallen: 0 };
         // ein Riss: der Lebenszyklus nennt ein Opfer, das noch kein Riss nannte (die offenen Risse fragt er mit ihrem Opfer)
         const genannt = new Set();
@@ -1053,7 +1054,7 @@ async function kreaturProben(r, T, opts) {
         const k = L.map((x) => x[0]);
         return {
             fremdN: X.fremdN,
-            blickDiffM: +Math.max(...W.lage.map((p, i) => Math.hypot(p.x - B.lage[i].x, p.z - B.lage[i].z))).toFixed(4),
+            blickDiffM: +Math.max(...W.lage.map((p, i) => ab(p, B.lage[i]))).toFixed(4),
             verband: { fensterRaum: VH.fensterRaum, wander: zahl(W), flucht: zahl(F) },
             ausrichtung: { mittel: +(F.phi[0] / F.phi[1]).toFixed(3), takte: F.phi[1] },
             alarm: {
@@ -1421,7 +1422,7 @@ async function kreaturProben(r, T, opts) {
             minD = Infinity;
         for (const c of geboren) {
             if (imBlick(c.position.x, c.position.y + 0.5, c.position.z)) imBlickN++;
-            minD = Math.min(minD, Math.hypot(c.position.x - pm.x, c.position.z - pm.z));
+            minD = Math.min(minD, ab(c.position, pm));
         }
         return {
             wuerfe,
@@ -1657,7 +1658,7 @@ async function kreaturProben(r, T, opts) {
             const S = tiere.map(seg);
             tiere.forEach((c, i) => {
                 schritt[i] =
-                    Math.hypot(c.position.x - vorher[i].x, c.position.z - vorher[i].z) +
+                    ab(c.position, vorher[i]) +
                     Math.abs(wrap(c.rotation.y - vorher[i].g)) * S[i].halb;
             });
             if (k >= N / 2)
@@ -1667,10 +1668,7 @@ async function kreaturProben(r, T, opts) {
                         if (j !== i)
                             m = Math.min(
                                 m,
-                                Math.hypot(
-                                    tiere[i].position.x - tiere[j].position.x,
-                                    tiere[i].position.z - tiere[j].position.z
-                                ) /
+                                ab(tiere[i].position, tiere[j].position) /
                                     (S[i].kugel + S[j].kugel)
                             );
                     nnRaum.push(m);
@@ -1916,7 +1914,7 @@ async function kreaturProben(r, T, opts) {
             takt(1 / 60);
             const [R, t] = [jaeger(), +(s.creatureAnimationTime - t0).toFixed(1)];
             if (ev.pirschS === null && R.length) ev.pirschS = t;
-            const nah = R.length >= 3 && R.every((c) => Math.hypot(c.position.x - pm.x, c.position.z - pm.z) < 2 * H);
+            const nah = R.length >= 3 && R.every((c) => ab(c.position, pm) < 2 * H);
             if (ev.umstelltS === null && nah && luecke(R) <= 540 / R.length) ev.umstelltS = t;
         }
         return { ...ev, lueckeBeimBiss: ersterBiss === null ? null : +ersterBiss.toFixed(0) };
@@ -2083,10 +2081,10 @@ async function kreaturProben(r, T, opts) {
                     const la = leib[i][n - 1],
                         lb = leib[i][n];
                     if (la.hop || lb.hop) continue;
-                    const lw = Math.hypot(lb.x - la.x, lb.z - la.z);
+                    const lw = ab(lb, la);
                     if (lw < 0.004) continue;
                     if (a.y < 0.03 && b.y < 0.03) {
-                        fuss += Math.hypot(b.x - a.x, b.z - a.z);
+                        fuss += ab(b, a);
                         weg += lw;
                     }
                 }
@@ -2203,7 +2201,7 @@ async function kreaturProben(r, T, opts) {
                 t.warFern = sb.fern;
                 t.spur.push(b);
                 if (t.spur.length > 24) t.spur.shift();
-                const v = t.lage ? Math.hypot(p.x - t.lage.x, p.z - t.lage.z) / dt : 0;
+                const v = t.lage ? ab(p, t.lage) / dt : 0;
                 t.lage = p;
                 if (k < 60 || v < 0.3) continue;
                 const Z = z[t.zone];
@@ -2236,7 +2234,7 @@ async function kreaturProben(r, T, opts) {
                 gleitAnteil: Z.lauf ? +(Z.gleit / Z.lauf).toFixed(3) : null,
                 fernBild: Z.fernBild,
             };
-        aus2.abstandM = tiere.map((t) => +Math.hypot(t.c.position.x - P0.x, t.c.position.z - P0.z).toFixed(1));
+        aus2.abstandM = tiere.map((t) => +ab(t.c.position, P0).toFixed(1));
         return aus2;
     });
 
@@ -2367,7 +2365,6 @@ async function kreaturProben(r, T, opts) {
 
     // ═══ DAS START-DORF der Bewohner-Proben (bewohner · begegnung): der Takt des Spiels, das Warten unter Deckel, die Uhr auf
     // ihrer Stunde, die stehende Welt — und das Dorf am Genesis-Ort, das der Wirt baut (`__anazhAutoSettlement`) ═══
-    const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z); // der Abstand in der Ebene
     const wer = (b) => `${b.rolle}/${b.beruf} #${b.heim}`; // der Bewohner beim Namen
     const angekommen = (S) => () => !!S.liste && S.liste.every((b) => b.leib && !b.ankunft); // jeder trägt seinen Leib, kam an
     // der Takt des Spiels — bis die Siedlung steht (`offen` nicht mehr)
@@ -3099,8 +3096,11 @@ async function kreaturProben(r, T, opts) {
                 satzW = 0;
             for (const c of s.creatures) {
                 let n = 0;
+                // die Strähnen und Schalen des Fells schaltet das Fell-Gesetz am Schirm (`_fellBildschirmGesetz`) je Tier, nie die
+                // Kopfzahl: sie zählen nicht (an der Ankunft des Plans trug ein Wolf 26 m fern keine Strähne: 10 Tiere 31 Leib-Befehle,
+                // 50 Tiere 32 — dieselbe Gestalt)
                 c.traverse((o) => {
-                    if (!o.isMesh || !sichtbar(o)) return;
+                    if (!o.isMesh || !sichtbar(o) || /^straehne|^fellSchale$/.test(o.userData.__klasse)) return;
                     if (o.layers.mask & 1) (haupt++, n++);
                     if (o.castShadow) wurf++;
                 });
@@ -3152,9 +3152,8 @@ async function kreaturProben(r, T, opts) {
         const laufen = (n) => {
             for (let i = 0; i < n; i++) bildTakt(1 / 60);
         };
-        // die 40 dazu hinter den ersten 10 (30–55 m): die Leiber der 50 sind DIESELBEN wie die der 10 — mischten sie sich unter
-        // sie, trügen andere Tiere in anderem Abstand den Leib, und deren Fell (`_fellBildschirmGesetz`, die Strähnen am Schirm)
-        // zählte als Kopfzahl (an der Ankunft des Plans: 10 Tiere 31 Leib-Befehle, ein Wolf 26 m fern ohne Strähnen; 50 Tiere 32)
+        // die 40 dazu hinter den ersten 10 (30–55 m): die Leiber der 50 sind die Tiere der 10 — mischten sie sich unter sie,
+        // trügen andere Gattungen den Leib (Fuchs 6, Wolf 7 Befehle ohne Fell), und ihre Gestalt zählte als Kopfzahl
         ring(10, 15, 30, 1);
         laufen(240);
         const B10 = befehle();
