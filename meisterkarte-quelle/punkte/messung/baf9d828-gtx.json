@@ -1,18 +1,18 @@
 {
  "sha": "baf9d8280b0aa08441b436e9f93f6e17b221a7cc",
  "geraet": "gtx",
- "zeit": "2026-11-01T20:39:11.313Z",
+ "zeit": "2026-11-01T20:55:51.726Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "haar.K2#1": {
    "gruen": false,
-   "zahl": "arm ROT strich 0.4935 Soll [0.3554,0.533] — strich 0.4935 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3] · third ROT strich 0.444 Soll [0.3554,0.533] — strich 0.444 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3]",
+   "zahl": "arm ROT strich 0.4783 Soll [0.3554,0.533] — strich 0.4783 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3] · third ROT strich 0.5015 Soll [0.3554,0.533] — strich 0.5015 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3]",
    "exit": 0,
-   "minuten": 0.34,
-   "grund": "ROT: arm ROT strich 0.4935 Soll [0.3554,0.533] — strich 0.4935 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3] · third ROT strich 0.444 Soll [0.3554,0.533] — strich 0.444 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3]",
+   "minuten": 0.36,
+   "grund": "ROT: arm ROT strich 0.4783 Soll [0.3554,0.533] — strich 0.4783 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3] · third ROT strich 0.5015 Soll [0.3554,0.533] — strich 0.5015 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3]",
    "gpu": "nvidia/pascal",
-   "s": 20.6,
-   "zeit": "2026-11-01T20:25:08.667Z",
+   "s": 21.5,
+   "zeit": "2026-11-01T20:55:51.726Z",
    "abdruck": "b612c52e703b",
    "port": 7804,
    "bahn": "sitzung",
@@ -382,294 +382,73 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) 0, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleMs\":1284,\"belegtMs\":755,\"laengsteMs\":362,\"langeN\":2,\"langeMs\":431,\"halter\":[\"(program) hält den Haupt-Faden vor dem ersten Bild 69 ms (bei 0.3 s; 1× ≥ 50 ms, Σ 69 ms)\",\"renderRecipeBook (stamm/werkstatt-hof.js:226) hält den Haupt-Faden vor dem ersten Bild 61 m · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.postKette fort)",
+   "exit": 0,
+   "minuten": 0.04,
+   "grund": "Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) 0, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleMs\":1284,\"belegtMs\":755,\"laengsteMs\":362,\"langeN\":2,\"langeMs\":431,\"halter\":[\"(program) hält den Haupt-Faden vor dem ersten Bild 69 ms (bei 0.3 s; 1× ≥ 50 ms, Σ 69 ms)\",\"renderRecipeBook (stamm/werkstatt-hof.js:226) hält den Haupt-Faden vor dem ersten Bild 61 m · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.postKette fort)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 2.5,
+   "zeit": "2026-11-01T20:44:59.892Z",
+   "abdruck": "12b8772960eb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.17,
+   "grund": "Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 10.2,
+   "zeit": "2026-11-01T20:45:21.727Z",
+   "abdruck": "cac836c98bb9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-01T20:24:06.564Z",
+  "start": "2026-11-01T20:55:22.933Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.8,
-  "grundstellungS": [
-   0.1,
-   7.8,
-   7,
-   7.4,
-   7.2,
-   8,
-   9.2,
-   5.9,
-   7,
-   6.2,
-   6,
-   6.4,
-   0.1,
-   7.3,
-   7.2,
-   8.9,
-   8.3,
-   12.4
-  ],
-  "proben": 21,
+  "bootS": 5.3,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
     "vor": "haar.K2#1",
-    "s": 19.4,
-    "takte": 646,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": "wiese",
-    "vor": "material.K2#1",
-    "s": 16,
-    "takte": 634,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "lod.K1#1",
-    "s": 18.9,
-    "takte": 650,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "lod.K5#1",
-    "s": 17.8,
-    "takte": 616,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "spielgang.K3#1",
-    "s": 16.6,
-    "takte": 633,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "genesis",
-    "vor": "material.K1#1",
-    "s": 11.4,
-    "takte": 603,
+    "s": 22.5,
+    "takte": 718,
     "chunks": 81,
     "nach": null
-   },
-   {
-    "ort": "genesis",
-    "vor": "mensch.K1#1",
-    "s": 15.9,
-    "takte": 628,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "genesis",
-    "vor": "siedlung.K1#2",
-    "s": 16,
-    "takte": 631,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "tiere.K1#2",
-    "s": 16.8,
-    "takte": 691,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "tiere.K3#2",
-    "s": 16.5,
-    "takte": 693,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "studios.K2#2",
-    "s": 14.5,
-    "takte": 693,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "bauen.K1#2",
-    "s": 14.7,
-    "takte": 690,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "studios.K4#1",
-    "s": 14.6,
-    "takte": 695,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "siedlung.K4#2",
-    "s": 1.3,
-    "takte": 129,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "fahrzeug.K2#1",
-    "s": 14.7,
-    "takte": 690,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "fahrzeug.K2#2",
-    "s": 14.8,
-    "takte": 684,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "ankunft.K2#1",
-    "s": 14.3,
-    "takte": 689,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "profiband.K1#1",
-    "s": 18.3,
-    "takte": 667,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "speicher.K4#2",
-    "s": 17.2,
-    "takte": 686,
-    "chunks": 81,
-    "nach": "der Tür"
    }
   ],
   "wegeTueren": [],
-  "zeichner": [
-   {
-    "probe": "profiband.K4#1",
-    "anders": [
-     "zeichner.renderer._renderObjectDirect",
-     "zeichner.renderer._renderScene"
-    ],
-    "wie": {
-     "zeichner.renderer._renderObjectDirect": "getauscht: function (object, material, scene, camera) { const vor = H.c",
-     "zeichner.renderer._renderScene": "getauscht: function (scene, camera, ...rest) { const name = window.__pa"
-    }
-   },
-   {
-    "probe": "lod.K1#1",
-    "anders": [
-     "zeichner.renderer._renderScene"
-    ],
-    "wie": {
-     "zeichner.renderer._renderScene": "getauscht: function (scene, camera, ...rest) { const name = window.__pa"
-    }
-   },
-   {
-    "probe": "ankunft.K2#1",
-    "anders": [
-     "zeichner.postKette"
-    ],
-    "wie": {
-     "zeichner.postKette": "fort"
-    }
-   },
-   {
-    "probe": "profiband.K1#1",
-    "anders": [
-     "zeichner.renderer._renderScene"
-    ],
-    "wie": {
-     "zeichner.renderer._renderScene": "getauscht: function (scene, camera, ...rest) { const name = window.__pa"
-    }
-   }
-  ],
-  "unerklaert": [
-   {
-    "probe": "lod.K5#1",
-    "wie": "werke +2 (−0)"
-   },
-   {
-    "probe": "material.K1#1",
-    "wie": "werke +1 (−0)"
-   }
-  ],
-  "ciBlicke": 22,
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 1338,
-   "frameP95": 41.7,
-   "taktP95": 37.7,
-   "vramMax": 139.1,
-   "seiten": 19,
-   "marken": 1,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "fahrzeug.K2#1",
-     "m": 1460,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "material.K2#1",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": 1
-    },
-    {
-     "probe": "profiband.K1#1",
-     "m": 1077,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "speicher.K4#2",
-     "m": 963,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "fahrzeug.K2#2",
-     "m": 954,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "siedlung.K4#2",
-     "m": 646,
-     "ringVor": 4,
-     "ringMin": 0
-    }
-   ],
-   "zapfen": 792,
-   "luecken": 6,
-   "letzteLuecke": "THREE is not defined"
+   "ortImDeckel": [],
+   "zapfen": 42,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 919.4,
-  "minuten": 15.37
+  "fahrtS": 49.6,
+  "minuten": 0.89
  }
 }
