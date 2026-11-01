@@ -739,6 +739,947 @@ const ZUG_PROBE = {
     sek: 33,
     befehl: PW.torBefehl(PW.werkbankLinse, JSON.stringify({ vorher: ["umstellen", "--ort", "genesis", "--sicht", "ego"], args: ["licht", "--luft", "--wetter", "rainy", "--zug"], fenster: [640, 360] })),
 };
+// ───────── DIE NEUN (p3-stationen-g3, 01.11.): schatten.K2 · K3 · K4 · K5 · licht.K4 · ferne.K3 · K4 · lod.K4 · vegetation.K3 ─────────
+// Bis hierher standen sie in `fehlt` (Spike w4-stationen-a am main 94c079cb: was dem Spiel fehlt, beim Namen) und zählten 0 ungemessen.
+// Jetzt misst EINE Probe der Sitzung alle neun im Ausgabe-Pfad (`__ausgabeAufnahme`, satz „messung“) der warmen Welt am Ort dorf (die
+// Sitzung stellt ihn VOR dem Deckel, punkte.cjs `probeOrt`: Häuser, Feuerstelle, Wald und Fern-Ring an EINEM Ort) — neun Zwillinge, EIN
+// Lauf. DER DECKEL ist das Gesetz der Fahrt, nie die Arbeit: Radeon 1 790 + 10 = 1 800 s, GTX 1 795 von 1 800 s. Die Arbeit (geschätzt,
+// ungemessen an der Karte): ~18 Aufnahmen, ein Gang von 2 × 20 Bildern, zwei Märsche des Gelände-Gesetzes (≈ 50 000 Rufe
+// `_terrainMacroSurfaceY`) — mehr als 10 s. Darum misst die Probe gegen ihr Budget (`budgetS`, ab dem Start des Prozesses) in der Reihe
+// unten; wer nicht mehr drankommt, schreibt KEINE Zeile — sein Urteil gleicht dem über den leeren Lauf, die Maschine nennt ihn
+// UNGEMESSEN beim Namen (punkte.cjs keinUrteil a), nie ein ROT, das kein Urteil über das Spiel ist. Die Zeit je Teil steht in `s`.
+// Jeder Teil misst, was der Spieler sieht: Körper der Probe (`probe:neun:*`, der EINE Stoff der Welt `_buildToonNodeMaterial`, castShadow
+// = die Wurf-Ebene), die Uhr der Bühne (`__buehne`), das Gelände-Gesetz für Orte jenseits des Rings; nach jedem Teil fallen seine Körper,
+// am Ende stehen Kamera, Uhr, Wetter, Bild-Uhr, Schatten und Fenster, wie die Probe sie fand. Linear heißt: sRGB zurück, PBR Neutral
+// zurück, durch die Belichtung (wie `licht --kontakt`).
+// DIE REIHE (Teil A im Fenster der Sitzung 1920 × 1080, Teil B im Fenster der Licht-Linsen 640 × 360):
+//   ferne.K3   Kamm-Saum: Höhe über dem Spieler 25 · 60 · 120 m und Azimut mit den meisten Kamm-Spalten im Band (Gesetz-Marsch
+//              je Spalte bis 8 km; Spalten, in denen ein naher Körper den Kamm deckt, fallen unten); der Himmel ist, was ein Schuss nur mit dem Himmel gleich zeigt; Kohärenz des
+//              Struktur-Tensors am Umriss gegen den Himmel (`__klassenMasse` kante — dieselbe Funktion wie die REF 0,160) über den
+//              Spalten mit Kamm in 0,4–4 km, die Umriss-Schwankung (RMS gegen den Median über 7 Spalten, in m am Kamm) über 1,5–2,5 km.
+//              Spalten, deren Umriss > 12 px über dem Gesetz steht, trägt ein naher Körper (fallen).
+//   schatten.K4  eine weiße Wand 4 × 3 m (Albedo 0,8) auf freiem, ebenem Boden, die Fläche von der Sonne weg (Eigenschatten, N·L < 0),
+//              Uhr 0,5: Luma der Fläche mit dem besonnten Boden davor gegen den Gegenschuss mit einer Platte Albedo 0 (16 × 16 m) davor.
+//   schatten.K3  ohne Sonne (nur Himmel und Umgebung — die Himmels-Sicht allein): ein Körper wie ein stehender Mensch (0,45 × 1,75 × 0,3,
+//              der Fuß) und ein Haus-Block 4 × 3 × 4 m (der Sockel); das Kontaktband 2–18 cm vor der Fläche zur Kamera gegen den freien
+//              Boden 1–2 m davor, je mit/ohne Körper (die Textur des Bodens fällt heraus).
+//   lod.K4     derselbe Blick der Sitzung, das Auge der Stufen (`_lodAuge`, die EINE Naht von Maske und Wahl) um ±4 m längs des Blicks
+//              versetzt: die Pixel, die der Wechsel ändert, ihre Luma vorher/nachher und das Zweiton-Raster (`__klassenMasse`).
+//   licht.K4   Deckung 0,4 gegen 0, die Bild-Uhr t und t + 5 s, das Auge 90 m über dem Boden schräg auf die Fläche: S = Bild/Bild der
+//              Deckung 0 zur selben Uhr (das Gras im Wind fällt heraus); Varianz von S und die beste Korrelation S(t) ↔ S(t + 5)
+//              über die Verschiebung — ein gemaltes Muster steht (Verschiebung 0), ein dunklerer Himmel trägt keine Varianz am Boden.
+//   ferne.K4   die Uhr der Sonne 5° (die Abend-Uhr der Bühne, halbiert), Orte 2,5–7 km aus dem Gelände-Gesetz: zur Sonne geneigt
+//              (N·L > 0,2), vom Auge (80 m über dem Boden; aus 40 m sah es am Dorf 8 von 500) sichtbar; im Schatten, wo der Horizont zur Sonne > 6,5° steht und sein Grat
+//              ≥ 2 km vom Auge liegt, im Licht unter 3,5°. Luma je N·L im Schatten gegen im Licht (eine dunklere Fern-Farbe trifft beide).
+//   schatten.K5  Mitternacht, die nächste Leuchtquelle des LICHT_GESETZ (`_blockerMit("licht")`, im Pool der Probe), ein Pfosten
+//              0,3 × 2 m 2 m daneben: Boden 0,35–0,85 m hinter dem Pfosten gegen denselben Radius ±30° daneben; dazu ohne Pfosten (Kontrolle).
+//   schatten.K2  Gehen 4 m/s im Takt des Spiels (`_loopShadowUpdate` + Bild, 20 Bilder, 4 eingeschwungen): derselbe Gang mit und ohne
+//              Schatten (Intensität 0 je Kaskade, kein Programm-Wechsel); ein Pixel ist unerklärt, wenn es mit Schatten von Bild zu Bild
+//              um > 18 Luma springt, ohne Schatten nicht — Kamera, Stufen und Gras erklären sich in beiden Gängen.
+//   vegetation.K3  der Boden unter Kronen (ein Strahl nach oben trifft einen Werfer) gegen offenen Boden, Uhr 0,5 und 0,56: die Flecken
+//              (Variationskoeffizient der Block-Luma) und ihr Wandern mit der Sonne (Korrelation der zwei Uhren). Das Band der REF
+//              real-mischwald für Stämme und Unterholz steht nirgends (nicht im Spiel-Baum, nicht in der Soll-Tafel): ROT beim Namen.
+async function neunSeite(r, T, C) {
+    const st = r.state, rend = st.renderer, cam = st.camera, sc = st.scene, dl = st.directionalLight, A = r.constructor;
+    const t0 = performance.now();
+    const sek = () => (performance.now() - t0) / 1000;
+    const aus = { teile: {}, ausgelassen: [], leinwand: null };
+    rend.setAnimationLoop(null);
+    const merk = { pos: cam.position.clone(), quat: cam.quaternion.clone(), fov: cam.fov, uhr: st.timeOfDay, wetter: st.weather, spieler: st.playerMesh.visible };
+    const P0 = st.playerMesh.position.clone();
+    aus.ort = [+P0.x.toFixed(1), +P0.z.toFixed(1)];
+    const fwd0 = new T.Vector3(0, 0, -1).applyQuaternion(merk.quat).setY(0).normalize();
+    const quer0 = new T.Vector3(-fwd0.z, 0, fwd0.x);
+    let W = 0, H = 0;
+    const leinwand = () => {
+        const d = rend.getDrawingBufferSize(new T.Vector2());
+        [W, H] = [Math.round(d.x), Math.round(d.y)];
+    };
+    leinwand();
+    aus.leinwand = [W, H];
+    const LUT = Float32Array.from({ length: 256 }, (_, i) => (i / 255 <= 0.04045 ? i / 255 / 12.92 : Math.pow((i / 255 + 0.055) / 1.055, 2.4)));
+    const zurueck = (c) => {
+        const hi = Math.min(Math.max(...c), 0.9995);
+        const k = hi >= 0.76 ? (0.0576 / (1 - hi) + 0.52) / hi : 1;
+        const m = Math.min(...c) * k;
+        const x = Math.sqrt(m / 6.25);
+        return c.map((v) => v * k + (m < 0.04 ? x - 6.25 * x * x : 0.04));
+    };
+    const Yp = (u8, p) => {
+        const c = zurueck([LUT[u8[p]], LUT[u8[p + 1]], LUT[u8[p + 2]]]);
+        return (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / rend.toneMappingExposure;
+    };
+    const Yb = (u8, x, y) => {
+        let s = 0, n = 0;
+        for (let j = -1; j <= 1; j++)
+            for (let i = -1; i <= 1; i++) {
+                const xx = Math.round(x) + i, yy = Math.round(y) + j;
+                if (xx >= 0 && yy >= 0 && xx < W && yy < H) (s += Yp(u8, (yy * W + xx) * 4)), n++;
+            }
+        return n ? s / n : NaN;
+    };
+    const l8 = (u8, p) => 0.2126 * u8[p] + 0.7152 * u8[p + 1] + 0.0722 * u8[p + 2];
+    const med = (a) => {
+        const b = a.filter(Number.isFinite).sort((p, q) => p - q);
+        return b.length ? b[b.length >> 1] : null;
+    };
+    const r4 = (x) => (x == null || !Number.isFinite(x) ? null : +x.toFixed(4));
+    // jede Aufnahme prüft, dass die Kamera danach noch am Auge der Probe steht (sonst misst der Teil ein anderes Bild): Bruch beim Namen
+    const schuss = async () => {
+        r._schattenAlleNeu();
+        leinwand();
+        const u = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+        const weg = cam.position.distanceTo(fuehr.pos);
+        if (weg > 0.5) throw new Error("die Kamera stand nach der Aufnahme nicht am Auge (" + weg.toFixed(1) + " m daneben)");
+        return u;
+    };
+    // DIE KAMERA DER PROBE führt die EINE Naht des Spiels (`kameraFuehren`, `_loopCamera` liest sie): läuft ein Takt des Spiels in einer
+    // Pause der Aufnahme, setzt er die Kamera der Probe, nie die des Spielers. Jede Aufnahme prüft danach den Ort (unten, `schuss`) —
+    // im Mechanik-Lauf (swiftshader, Dorf) holte ein zweites `/eval` derselben Seite die Kamera zum Spieler zurück, und der Teil maß ein
+    // anderes Bild, bis der Wächter es beim Namen nannte
+    const fuehrAlt = r._kameraFuehrung || null;
+    const fuehr = { pos: cam.position.clone(), quat: cam.quaternion.clone(), fov: cam.fov };
+    const setze = (c) => {
+        c.position.copy(fuehr.pos);
+        c.quaternion.copy(fuehr.quat);
+        if (c.fov !== fuehr.fov) (c.fov = fuehr.fov), c.updateProjectionMatrix();
+        c.updateMatrixWorld(true);
+    };
+    r.kameraFuehren(setze);
+    const stell = (pos, ziel, fov) => {
+        cam.fov = fov;
+        cam.updateProjectionMatrix();
+        cam.position.copy(pos);
+        cam.lookAt(ziel);
+        cam.updateMatrixWorld(true);
+        [fuehr.pos, fuehr.quat, fuehr.fov] = [cam.position.clone(), cam.quaternion.clone(), cam.fov];
+    };
+    const bp = (v) => {
+        const p = v.clone().project(cam);
+        return p.z > -1 && p.z < 1 && Math.abs(p.x) < 0.97 && Math.abs(p.y) < 0.97 ? [((p.x + 1) / 2) * W - 0.5, ((1 - p.y) / 2) * H - 0.5] : null;
+    };
+    const probeL = (u8, pts) => {
+        const q = pts.map(bp).filter(Boolean);
+        return { L: med(q.map(([x, y]) => Yb(u8, x, y))), n: q.length };
+    };
+    const boden = (x, z) => r._voxelSurfaceY(x, z);
+    const gesetz = (x, z) => r._terrainMacroSurfaceY(x, z, false);
+    // die Sonne aus dem Himmel (`skyboxUniforms.sunDir`, derselbe Schreiber wie das Richtlicht): nach Sonnenuntergang trägt das Richtlicht
+    // den Mond (Uhr 0,8: Sonne −16,7°, Licht +18°) — die Abend-Uhr halbierte sonst gegen den Mond
+    const sonne = () => {
+        const U = st.skyboxUniforms;
+        return U && U.sunDir && U.sunDir.value ? U.sunDir.value.clone().normalize() : dl.position.clone().sub(dl.target.position).normalize();
+    };
+    const koerperListe = [];
+    const koerper = (geo, rgb, name) => {
+        const m = new T.Mesh(geo, r._buildToonNodeMaterial({ color: new T.Color(rgb[0], rgb[1], rgb[2]) }));
+        m.castShadow = m.receiveShadow = true;
+        m.frustumCulled = false;
+        m.name = "probe:neun:" + name;
+        sc.add(m);
+        koerperListe.push(m);
+        return m;
+    };
+    const rc = new T.Raycaster();
+    rc.layers.set(A.SHADOW_TWIN_LAYER);
+    const frei = (p, d, far) => {
+        rc.set(p, d.clone().normalize());
+        rc.far = far;
+        return !rc.intersectObject(sc, true).some((h) => !String(h.object.name || "").startsWith("probe:") && h.object !== st.playerMesh);
+    };
+    const OBEN = new T.Vector3(0, 1, 0);
+    // DER FREIE PLATZ: die ebenste Stelle auf Land 8–120 m um den Spieler (16 Richtungen), ihr Hang über ±R m höchstens C.hangMax, über
+    // der kein Werfer Sonne und Himmel nimmt (am Dorf lag im Umkreis 40 m keine Stelle unter 20 % Hang). Fehlt sie: die Gründe gezählt
+    const platz = (R, S, nicht) => {
+        const grund = { nah: 0, wasser: 0, hang: 0, werfer: 0 };
+        const kand = [];
+        for (const d of [8, 14, 22, 32, 45, 60, 80, 100, 120])
+            for (let k = 0; k < 16; k++) {
+                const w = (k * Math.PI) / 8, x = P0.x + d * Math.sin(w), z = P0.z + d * Math.cos(w);
+                if ((nicht || []).some((q) => Math.hypot(q.x - x, q.z - z) < 2 * R + 4)) (grund.nah++, 0);
+                else if (typeof r._landAt === "function" && !r._landAt(x, z, 0.3)) grund.wasser++;
+                else {
+                    const h = boden(x, z);
+                    if (!Number.isFinite(h)) continue;
+                    let hang = 0;
+                    for (const [a, b] of [[R, 0], [-R, 0], [0, R], [0, -R], [0.7 * R, 0.7 * R], [-0.7 * R, -0.7 * R], [0.7 * R, -0.7 * R], [-0.7 * R, 0.7 * R]])
+                        hang = Math.max(hang, Math.abs(boden(x + a, z + b) - h) / R);
+                    if (!(hang <= C.hangMax)) grund.hang++;
+                    else kand.push({ x, z, h, hang });
+                }
+            }
+        kand.sort((a, b) => a.hang - b.hang);
+        for (const q of kand.slice(0, 12)) {
+            const p = new T.Vector3(q.x, q.h + 0.3, q.z);
+            if ((S && !frei(p, S, 120)) || !frei(p, OBEN, 120)) grund.werfer++;
+            else return Object.assign(new T.Vector3(q.x, q.h, q.z), { hang: +q.hang.toFixed(3) });
+        }
+        throw new Error("kein freier Platz (±" + R + " m, Hang ≤ " + C.hangMax + "): " + JSON.stringify(grund));
+    };
+    const plaetze = [];
+    const teil = async (name, fn) => {
+        if (sek() >= C.rest) return void aus.ausgelassen.push(name);
+        const ts = sek();
+        try {
+            aus.teile[name] = Object.assign(await fn(), { s: +(sek() - ts).toFixed(2) });
+        } catch (e) {
+            aus.teile[name] = { fehler: String((e && e.message) || e).slice(0, 300), s: +(sek() - ts).toFixed(2) };
+        } finally {
+            for (const m of koerperListe.splice(0)) (sc.remove(m), m.material.dispose(), m.geometry.dispose());
+        }
+    };
+    st.playerMesh.visible = false;
+    try {
+        // ───── ferne.K3 — der Saum am Kamm (Teil A, 1920 × 1080) ─────
+        if (C.teile.includes("ferne.K3"))
+            await teil("ferne.K3", async () => {
+                window.__buehne({});
+                const E = new T.Vector3(P0.x, 0, P0.z);
+                // der Boden eines Stands abseits des Spielers: das Netz trägt ihn nur im gebauten Ring, das Gesetz überall
+                const grund = (x, z) => Math.max(...[boden(x, z), gesetz(x, z)].filter(Number.isFinite));
+                // der Kamm je Azimut: der höchste Winkel des Gesetzes bis 8 km und sein Abstand
+                const kamm = (az, f = 1.045) => {
+                    const dx = Math.sin(az), dz = Math.cos(az);
+                    let best = -Infinity, bd = 0;
+                    for (let d = 40; d <= 8000; d *= f) {
+                        const w = (gesetz(E.x + dx * d, E.z + dz * d) - E.y) / d;
+                        if (w > best) (best = w), (bd = d);
+                    }
+                    return { w: Math.atan(best), d: bd };
+                };
+                // die Höhe des Auges und den Azimut wählt die Zahl der Kamm-Spalten im Band (aus 60 m lag der Kamm am Dorf 4,4–7,9 km fern)
+                let wahl = null;
+                for (const [ox, oz] of C.kammStand)
+                for (const hoch of C.kammHoch)
+                for (let k = 0; k < 8; k++) {
+                    E.set(P0.x + ox, grund(P0.x + ox, P0.z + oz) + hoch, P0.z + oz);
+                    if (!Number.isFinite(E.y)) continue;
+                    const az0 = (k * Math.PI) / 4;
+                    let n = 0, m = 0, ws = 0;
+                    for (let i = 0; i < 8; i++) {
+                        const q = kamm(az0 + (((i - 3.5) / 8) * C.kammFov * Math.PI) / 180, 1.06);
+                        if (q.d >= 400 && q.d <= 4000) (n++, (ws += q.w));
+                        if (q.d >= 1500 && q.d <= 2500) m++;
+                    }
+                    if (!wahl || m * 3 + n > wahl.m * 3 + wahl.n) wahl = { az: az0, n, m, w: n ? ws / n : 0, hoch, stand: [ox, oz] };
+                }
+                E.set(P0.x + wahl.stand[0], grund(P0.x + wahl.stand[0], P0.z + wahl.stand[1]) + wahl.hoch, P0.z + wahl.stand[1]);
+                const fov = C.kammFov / (W / H); // C.kammFov ist die waagrechte Öffnung
+                const ziel = E.clone().add(new T.Vector3(Math.sin(wahl.az), Math.tan(wahl.w), Math.cos(wahl.az)).multiplyScalar(1000));
+                stell(E, ziel, fov);
+                const u8 = await schuss();
+                // DER HIMMEL ALLEIN (derselbe Blick, jedes Kind der Szene außer Himmel und Licht verborgen): ein Pixel, das ihm gleicht
+                // (±6 je Kanal), ist Himmel — die Farb-Regel der Soll-Tafel brach am Dunst (swiftshader, Dorf: Luma 149 unter 150)
+                const verborgen = sc.children.filter((o) => o !== st.skybox && !o.isLight && o.visible);
+                verborgen.forEach((o) => (o.visible = false));
+                window.__bundlesNeu();
+                let leer;
+                try {
+                    leer = await schuss();
+                } finally {
+                    verborgen.forEach((o) => (o.visible = true));
+                    window.__bundlesNeu();
+                }
+                const himmel = (p) => Math.abs(u8[p] - leer[p]) <= 6 && Math.abs(u8[p + 1] - leer[p + 1]) <= 6 && Math.abs(u8[p + 2] - leer[p + 2]) <= 6;
+                const camI = cam.projectionMatrixInverse.clone(), camM = cam.matrixWorld.clone();
+                const mpp = (d) => (d * 2 * Math.tan((fov * Math.PI) / 360)) / H;
+                const spalten = [];
+                for (let x = 2; x < W - 2; x += C.kammSchritt) {
+                    const v = new T.Vector3(((x + 0.5) / W) * 2 - 1, 0, 0.5).applyMatrix4(camI).applyMatrix4(camM).sub(E);
+                    const q = kamm(Math.atan2(v.x, v.z));
+                    let y = 0;
+                    for (; y < H - 3; y++) if (!himmel((y * W + x) * 4) && !himmel(((y + 1) * W + x) * 4) && !himmel(((y + 2) * W + x) * 4)) break;
+                    const g = bp(E.clone().add(new T.Vector3(Math.sin(Math.atan2(v.x, v.z)), Math.tan(q.w), Math.cos(Math.atan2(v.x, v.z))).multiplyScalar(q.d)));
+                    spalten.push({ x, y, d: q.d, gy: g ? g[1] : null });
+                }
+                const kammS = spalten.filter((s) => s.d >= 400 && s.d <= 4000 && s.y > 0 && s.y < H - 3 && s.gy != null && s.gy - s.y <= 12);
+                const m = new Uint8Array(W * H), aussen = new Uint8Array(W * H);
+                for (const s of kammS)
+                    for (let dx = 0; dx < C.kammSchritt && s.x + dx < W; dx++)
+                        for (let y = Math.max(0, s.y - 40); y < Math.min(H, s.y + 40); y++) {
+                            const p = y * W + s.x + dx;
+                            if (himmel(p * 4)) aussen[p] = 1;
+                            else if (y >= s.y) m[p] = 1;
+                        }
+                const km = kammS.length >= 20 ? window.__klassenMasse(u8, m, W, H, aussen) : null;
+                const zwei = kammS.filter((s) => s.d >= 1500 && s.d <= 2500);
+                const res = zwei.map((s, i) => {
+                    const nb = zwei.slice(Math.max(0, i - 3), i + 4).map((q) => q.y);
+                    return (s.y - med(nb)) * mpp(s.d);
+                });
+                const rms = res.length ? Math.sqrt(res.reduce((a, b) => a + b * b, 0) / res.length) : null;
+                return {
+                    azimutGrad: Math.round((wahl.az * 180) / Math.PI),
+                    hochM: wahl.hoch,
+                    standM: wahl.stand,
+                    spalten: spalten.length,
+                    kamm: kammS.length,
+                    zweiKm: zwei.length,
+                    kohaerenz: km ? r4(km.kante) : null,
+                    kantePixel: km ? km.kr : 0,
+                    schwankungM: r4(rms),
+                    reliefM: r4(med(kammS.map((s) => (s.gy - s.y) * mpp(s.d)))),
+                    stich: spalten.filter((_s, i) => i % 40 === 0).map((s) => [s.x, s.y, Math.round(s.d), s.gy == null ? null : Math.round(s.gy)]),
+                    leinwand: [W, H],
+                };
+            });
+        if (C.teil === "A") return aus;
+        // ───── schatten.K4 — Licht springt einmal ─────
+        await teil("schatten.K4", async () => {
+            window.__buehne({});
+            const S = sonne();
+            const a = new T.Vector3(S.x, 0, S.z).normalize();
+            const M = platz(4, S, plaetze);
+            plaetze.push(M);
+            const n = a.clone().negate();
+            const quer = new T.Vector3(-n.z, 0, n.x);
+            const wand = koerper(new T.BoxGeometry(4, 3, 0.2), [0.8, 0.8, 0.8], "wand");
+            wand.position.set(M.x, M.y + 1.5, M.z);
+            wand.rotation.y = Math.atan2(n.x, n.z);
+            const F = M.clone().addScaledVector(n, 0.12);
+            const pts = [];
+            for (const u of [-1.4, -0.7, 0, 0.7, 1.4]) for (const v of [0.7, 1.3, 1.9, 2.5]) pts.push(F.clone().addScaledVector(quer, u).setY(M.y + v));
+            stell(M.clone().addScaledVector(n, 7).setY(M.y + 1.7), new T.Vector3(M.x, M.y + 1.5, M.z), 60);
+            const wurfM = 3 / Math.tan(Math.max(0.05, Math.asin(S.y)));
+            const bodenPts = [];
+            for (const u of [-1.5, 0, 1.5]) for (const e of [wurfM + 0.6, wurfM + 1.2]) bodenPts.push(M.clone().addScaledVector(n, e).addScaledVector(quer, u).setY(boden(M.x + n.x * e + quer.x * u, M.z + n.z * e + quer.z * u) + 0.02));
+            const mit = await schuss();
+            const A0 = probeL(mit, pts), Bo = probeL(mit, bodenPts);
+            let hub = 0;
+            for (const e of [2, 8, 15]) for (const u of [-7, 0, 7]) hub = Math.max(hub, boden(M.x + n.x * e + quer.x * u, M.z + n.z * e + quer.z * u) - M.y);
+            const platte = koerper(new T.PlaneGeometry(16, 16), [0, 0, 0], "platte");
+            platte.castShadow = false;
+            platte.rotation.x = -Math.PI / 2;
+            platte.position.copy(M).addScaledVector(n, 8.2).setY(M.y + Math.max(0, hub) + 0.04);
+            const ohne = await schuss();
+            const B0 = probeL(ohne, pts);
+            return {
+                LA: r4(A0.L), LB: r4(B0.L), n: Math.min(A0.n, B0.n), boden: r4(Bo.L),
+                gewinn: A0.L > 0 && B0.L > 0 ? r4(A0.L / B0.L - 1) : null,
+                nl: r4(n.dot(S)), sonneGrad: +((Math.asin(S.y) * 180) / Math.PI).toFixed(1), hubM: r4(hub), platz: [+M.x.toFixed(1), +M.z.toFixed(1)], hang: M.hang,
+            };
+        });
+        // ───── schatten.K3 — Kontakt und Himmels-Sicht (die Sonne aus) ─────
+        await teil("schatten.K3", async () => {
+            window.__buehne({});
+            const M = platz(5, null, plaetze);
+            plaetze.push(M);
+            const c = fwd0.clone().negate(); // zur Kamera
+            const b = new T.Vector3(-c.z, 0, c.x);
+            const I0 = dl.intensity;
+            dl.intensity = 0;
+            try {
+                const ding = (name, w, h, t, s) => {
+                    const q = M.clone().addScaledVector(b, s);
+                    q.y = boden(q.x, q.z);
+                    const k = koerper(new T.BoxGeometry(w, h, t), [0.45, 0.43, 0.4], name);
+                    k.position.set(q.x, q.y + h / 2 - 0.02, q.z);
+                    k.rotation.y = Math.atan2(c.x, c.z);
+                    const pt = (e, u) => {
+                        const p = q.clone().addScaledVector(c, t / 2 + e).addScaledVector(b, u);
+                        return p.setY(boden(p.x, p.z) + 0.01);
+                    };
+                    const us = [-0.4, -0.2, 0, 0.2, 0.4].map((f) => f * (w - 0.1));
+                    return { k, band: [0.03, 0.07, 0.11, 0.15].flatMap((e) => us.map((u) => pt(e, u))), frei: [1.0, 1.3, 1.6, 2.0].flatMap((e) => us.map((u) => pt(e, u))) };
+                };
+                const D = [ding("fuss", 0.45, 1.75, 0.3, -2.8), ding("sockel", 4, 3, 4, 2.2)];
+                stell(M.clone().addScaledVector(c, 4.5).setY(M.y + 2.6), M.clone().addScaledVector(c, 1.2), 70);
+                const mit = await schuss();
+                D.forEach((d) => (d.k.visible = false));
+                const ohne = await schuss();
+                const je = D.map((d, i) => {
+                    const [bm, bo, fm, fo] = [probeL(mit, d.band), probeL(ohne, d.band), probeL(mit, d.frei), probeL(ohne, d.frei)];
+                    return {
+                        was: ["fuss", "sockel"][i],
+                        band: bm.L > 0 && bo.L > 0 && fm.L > 0 && fo.L > 0 ? r4(bm.L / bo.L / (fm.L / fo.L)) : null,
+                        frei: fm.L > 0 && fo.L > 0 ? r4(fm.L / fo.L) : null,
+                        n: Math.min(bm.n, fm.n),
+                    };
+                });
+                return { je, platz: [+M.x.toFixed(1), +M.z.toFixed(1)], hang: M.hang };
+            } finally {
+                dl.intensity = I0;
+            }
+        });
+        // ───── lod.K4 — der Wechsel in Ruhe (das Auge der Stufen versetzt) ─────
+        await teil("lod.K4", async () => {
+            window.__buehne({});
+            stell(merk.pos, merk.pos.clone().add(new T.Vector3(0, 0, -1).applyQuaternion(merk.quat)), merk.fov);
+            const vor = await schuss();
+            const auge = r._lodAuge().clone();
+            const eigen = Object.prototype.hasOwnProperty.call(r, "_lodAuge") ? r._lodAuge : undefined;
+            const blick = new T.Vector3(0, 0, -1).applyQuaternion(merk.quat).setY(0).normalize();
+            let best = null;
+            for (const dm of C.lodVersatz) {
+                const V = auge.clone().addScaledVector(blick, dm);
+                r._lodAuge = function () {
+                    return V;
+                };
+                let nach;
+                try {
+                    nach = await schuss();
+                } finally {
+                    if (eigen) r._lodAuge = eigen;
+                    else delete r._lodAuge;
+                }
+                const m = new Uint8Array(W * H), aussen = new Uint8Array(W * H);
+                let px = 0;
+                for (let p = 0, i = 0; p < W * H; p++, i += 4) {
+                    const d = Math.max(Math.abs(vor[i] - nach[i]), Math.abs(vor[i + 1] - nach[i + 1]), Math.abs(vor[i + 2] - nach[i + 2]));
+                    if (d > 2) (m[p] = 1), px++;
+                    else aussen[p] = 1;
+                }
+                if (!best || px > best.px) best = { dm, px, m, aussen, nach };
+                if (px >= C.lodPixelMin) break;
+            }
+            const a = window.__klassenMasse(vor, best.m, W, H, best.aussen);
+            const z = window.__klassenMasse(best.nach, best.m, W, H, best.aussen);
+            return {
+                versatzM: best.dm, pixel: best.px, anteil: r4(best.px / (W * H)),
+                lumaVor: a.luma, lumaNach: z.luma,
+                sprung: a.luma > 0 && z.luma != null ? r4(Math.abs(z.luma - a.luma) / a.luma) : null,
+                zweitonVor: a.zweiton, zweitonNach: z.zweiton, uhr: +st.timeOfDay.toFixed(3),
+            };
+        });
+        // ───── licht.K4 — der Wolken-Schatten wandert mit dem Feld ─────
+        await teil("licht.K4", async () => {
+            window.__buehne({});
+            const U = st.skyboxUniforms;
+            if (!U || !U.cloudCover) throw new Error("keine Wolken-Uniforms (skyboxUniforms.cloudCover)");
+            const hb = boden(P0.x, P0.z);
+            stell(new T.Vector3(P0.x, hb + 90, P0.z), new T.Vector3(P0.x + fwd0.x * 110, hb, P0.z + fwd0.z * 110), 70);
+            // die Bild-Uhr hält die Bühne (`__uhrHalten`: `_bildZeit` liest `__buehneUhr.T`, ein Schreiben verweigert sie und zählt es)
+            const BU = window.__buehneUhr;
+            if (!BU) throw new Error("die Bühne hält keine Bild-Uhr (__buehneUhr)");
+            const t = BU.T, cov0 = U.cloudCover.value;
+            const auf = async (cov, dt) => {
+                BU.T = t + dt;
+                U.cloudCover.value = cov;
+                const u = await schuss();
+                return { u, cov: U.cloudCover.value };
+            };
+            let c0, c5, a, b;
+            try {
+                [c0, a, c5, b] = [await auf(0, 0), await auf(C.wolkeDeckung, 0), await auf(0, C.wolkeSek), await auf(C.wolkeDeckung, C.wolkeSek)];
+            } finally {
+                BU.T = t;
+                U.cloudCover.value = cov0;
+            }
+            const B = 8, gx = Math.floor(W / B), y0 = Math.floor((0.35 * H) / B), gy = Math.floor(H / B) - y0;
+            const feld = (x, z) => {
+                const f = new Float32Array(gx * gy);
+                for (let j = 0; j < gy; j++)
+                    for (let i = 0; i < gx; i++) {
+                        let s = 0, s0 = 0;
+                        for (let yy = 0; yy < B; yy += 2)
+                            for (let xx = 0; xx < B; xx += 2) {
+                                const p = (((y0 + j) * B + yy) * W + i * B + xx) * 4;
+                                (s += Yp(x.u, p)), (s0 += Yp(z.u, p));
+                            }
+                        f[j * gx + i] = s0 > 0 ? s / s0 : 1;
+                    }
+                return f;
+            };
+            const SA = feld(a, c0), SB = feld(b, c5);
+            const mw = SA.reduce((p, q) => p + q, 0) / SA.length;
+            const sigma = Math.sqrt(SA.reduce((p, q) => p + (q - mw) * (q - mw), 0) / SA.length);
+            const korr = (dx, dy) => {
+                let n = 0, sa = 0, sb = 0, saa = 0, sbb = 0, sab = 0;
+                for (let j = Math.max(0, -dy); j < gy - Math.max(0, dy); j++)
+                    for (let i = Math.max(0, -dx); i < gx - Math.max(0, dx); i++) {
+                        const p = SA[j * gx + i], q = SB[(j + dy) * gx + i + dx];
+                        (n++, (sa += p), (sb += q), (saa += p * p), (sbb += q * q), (sab += p * q));
+                    }
+                if (n < 0.4 * gx * gy) return null;
+                const va = saa - (sa * sa) / n, vb = sbb - (sb * sb) / n;
+                return va > 1e-9 && vb > 1e-9 ? (sab - (sa * sb) / n) / Math.sqrt(va * vb) : null;
+            };
+            let best = { r: -2, dx: 0, dy: 0 };
+            const R = Math.floor(gx / 4);
+            for (let dy = -R; dy <= R; dy++)
+                for (let dx = -R; dx <= R; dx++) {
+                    const k = korr(dx, dy);
+                    if (k != null && k > best.r) best = { r: k, dx, dy };
+                }
+            return { sigma: r4(sigma), r0: r4(korr(0, 0)), r: r4(best.r), verschiebung: [best.dx, best.dy], deckung: [r4(c0.cov), r4(a.cov)], sek: C.wolkeSek, block: [gx, gy] };
+        });
+        // ───── ferne.K4 — Grate werfen Abendschatten ─────
+        await teil("ferne.K4", async () => {
+            let lo = 0.5, hi = 0.97, e = null;
+            for (let i = 0; i < 16; i++) {
+                const u = (lo + hi) / 2;
+                window.__buehne({ uhr: u });
+                e = (Math.asin(sonne().y) * 180) / Math.PI;
+                if (e > C.sonneGrad) lo = u;
+                else hi = u;
+            }
+            const S = sonne(), el = Math.asin(S.y);
+            const a = new T.Vector3(S.x, 0, S.z).normalize();
+            const E = new T.Vector3(P0.x, boden(P0.x, P0.z) + C.fernHoch, P0.z);
+            let saat = 7;
+            const zufall = () => (saat = (saat * 1664525 + 1013904223) >>> 0) / 4294967296;
+            const orte = [];
+            for (let i = 0; i < C.fernOrte; i++) {
+                const w = zufall() * 2 * Math.PI, d = C.fernAb[0] + (C.fernAb[1] - C.fernAb[0]) * Math.sqrt(zufall());
+                const x = E.x + d * Math.sin(w), z = E.z + d * Math.cos(w), h = gesetz(x, z);
+                const N = new T.Vector3(gesetz(x - 25, z) - gesetz(x + 25, z), 50, gesetz(x, z - 25) - gesetz(x, z + 25)).normalize();
+                const nl = N.dot(S);
+                if (!(nl > 0.2)) continue;
+                let hor = -Infinity, hd = 0;
+                for (let s = 60; s <= 3000; s += 60) {
+                    const q = Math.atan((gesetz(x + a.x * s, z + a.z * s) - h) / s);
+                    if (q > hor) (hor = q), (hd = s);
+                }
+                const gratAb = Math.hypot(x + a.x * hd - E.x, z + a.z * hd - E.z);
+                const schatten = hor > el + (1.5 * Math.PI) / 180 && gratAb >= 2000;
+                const licht = hor < el - (1.5 * Math.PI) / 180;
+                if (!schatten && !licht) continue;
+                let sicht = true;
+                for (let k = 1; k < 40 && sicht; k++) {
+                    const f = k / 40, px = E.x + (x - E.x) * f, pz = E.z + (z - E.z) * f;
+                    if (gesetz(px, pz) > E.y + (h + 1 - E.y) * f - 2) sicht = false;
+                }
+                if (sicht) orte.push({ p: new T.Vector3(x, h + 1, z), nl, schatten, w: Math.atan2(x - E.x, z - E.z), gratAb });
+            }
+            let wahl = null;
+            for (let k = 0; k < 24; k++) {
+                const az = (k * Math.PI) / 12;
+                const im = orte.filter((o) => Math.abs(Math.atan2(Math.sin(o.w - az), Math.cos(o.w - az))) < (C.fernFov * Math.PI) / 360);
+                const ns = im.filter((o) => o.schatten).length, nli = im.length - ns;
+                if (!wahl || Math.min(ns, nli) > Math.min(wahl.ns, wahl.nl)) wahl = { az, ns, nl: nli };
+            }
+            const im = orte.filter((o) => Math.abs(Math.atan2(Math.sin(o.w - wahl.az), Math.cos(o.w - wahl.az))) < (C.fernFov * Math.PI) / 360);
+            const zielY = med(im.map((o) => o.p.y));
+            stell(E, new T.Vector3(E.x + Math.sin(wahl.az) * 4000, zielY == null ? E.y : zielY, E.z + Math.cos(wahl.az) * 4000), C.fernFov / (W / H));
+            const u8 = await schuss();
+            const je = (s) => med(im.filter((o) => o.schatten === s).map((o) => {
+                const q = bp(o.p);
+                return q ? Yb(u8, q[0], q[1]) / o.nl : NaN;
+            }));
+            const [Ls, Ll] = [je(true), je(false)];
+            return {
+                sonneGrad: r4((el * 180) / Math.PI), uhr: r4(st.timeOfDay), orte: orte.length, imBild: [wahl.ns, wahl.nl],
+                gratKm: r4(med(im.filter((o) => o.schatten).map((o) => o.gratAb)) / 1000), Ls: r4(Ls), Ll: r4(Ll),
+                verhaeltnis: Ls != null && Ll > 0 ? r4(Ls / Ll) : null,
+            };
+        });
+        // ───── schatten.K5 — nachts wirft das Feuer ─────
+        await teil("schatten.K5", async () => {
+            const qs = (r._blockerMit("licht") || [])
+                .filter((e) => e && e.position && r._lichtDatum(e))
+                .map((e) => ({ e, d: Math.hypot(e.position.x - P0.x, e.position.z - P0.z) }))
+                .filter((q) => q.d <= C.feuerM)
+                .sort((p, q) => p.d - q.d);
+            if (!qs.length) throw new Error("keine Leuchtquelle des LICHT_GESETZ im Umkreis " + C.feuerM + " m");
+            const q = qs[0].e, L = r._lichtDatum(q), sk = Number.isFinite(q.scale) && q.scale > 0 ? q.scale : 1;
+            const Q = new T.Vector3(q.position.x, q.position.y - 0.5 + (L.hoeheM || 0) * sk, q.position.z);
+            const zuP = new T.Vector3(P0.x - Q.x, 0, P0.z - Q.z).normalize();
+            let dir = null, gy = null;
+            for (const w of [0, 90, -90, 180, 45, -45, 135, -135]) {
+                const d = zuP.clone().applyAxisAngle(OBEN, (w * Math.PI) / 180);
+                const p = Q.clone().addScaledVector(d, 2);
+                const h = boden(p.x, p.z);
+                if ([0.6, 1.2, -0.6].every((e) => Math.abs(boden(p.x + d.x * e, p.z + d.z * e) - h) < 0.3)) {
+                    (dir = d), (gy = h);
+                    break;
+                }
+            }
+            if (!dir) throw new Error("kein ebener Boden 2 m neben der Leuchtquelle " + (q.type || "?"));
+            const quer = new T.Vector3(-dir.z, 0, dir.x);
+            const pf = koerper(new T.BoxGeometry(0.3, 2, 0.3), [0.4, 0.4, 0.4], "pfosten");
+            const PF = Q.clone().addScaledVector(dir, 2);
+            pf.position.set(PF.x, gy + 0.98, PF.z);
+            pf.rotation.y = Math.atan2(dir.x, dir.z);
+            // von der Seite (quer zum Strahl Feuer → Pfosten): vom Feuer her verdeckte der Pfosten den Boden hinter sich, die Probe las seine
+            // beleuchtete Fläche (swiftshader, Dorf: „Schatten“ 4,43 gegen Licht 0,37)
+            stell(PF.clone().addScaledVector(quer, 3).setY(gy + 2.6), PF.clone().addScaledVector(dir, 0.5).setY(gy), 70);
+            if (r._leuchtPool) r._leuchtPool.t = r._leuchtPool.uhr = -Infinity;
+            window.__buehne({ uhr: C.mitternacht });
+            const P = r._leuchtPool;
+            const imPool = !!P && P.halter.some((h, j) => h && h.id === q && P.blende[j] > 0);
+            const pt = (d, e, u) => {
+                const p = Q.clone().addScaledVector(d, e).addScaledVector(new T.Vector3(-d.z, 0, d.x), u);
+                return p.setY(boden(p.x, p.z) + 0.01);
+            };
+            const rs = [2.35, 2.5, 2.65, 2.85];
+            const dS = rs.flatMap((e) => [-0.05, 0, 0.05].map((u) => pt(dir, e, u)));
+            const dL = [30, -30].flatMap((w) => rs.flatMap((e) => [-0.05, 0, 0.05].map((u) => pt(dir.clone().applyAxisAngle(OBEN, (w * Math.PI) / 180), e, u))));
+            const mit = await schuss();
+            pf.visible = false;
+            const ohne = await schuss();
+            const [s1, l1, s0, l0] = [probeL(mit, dS), probeL(mit, dL), probeL(ohne, dS), probeL(ohne, dL)];
+            return {
+                quelle: String(q.type || "?"), abM: r4(qs[0].d), imPool, uhr: r4(st.timeOfDay), quer: !!quer,
+                Llicht: r4(l1.L), Lschatten: r4(s1.L), kontrast: s1.L > 0 ? r4(l1.L / s1.L) : null,
+                kontrolle: s0.L > 0 && l0.L > 0 ? r4(l0.L / s0.L) : null, n: Math.min(s1.n, l1.n),
+            };
+        });
+        // ───── schatten.K2 — ruhige Schatten beim Gehen ─────
+        await teil("schatten.K2", async () => {
+            window.__buehne({});
+            const csm = st.csmNode;
+            const lichter = (csm && csm.lights && csm.lights.length ? csm.lights : [dl]).filter((l) => l.shadow);
+            const I0 = lichter.map((l) => l.shadow.intensity);
+            leinwand();
+            const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0 });
+            const [prevOut, prevZiel] = [rend.getOutputRenderTarget(), rend.getRenderTarget()];
+            const pose = (k) => {
+                const x = P0.x + fwd0.x * C.gangMs * (k / 60), z = P0.z + fwd0.z * C.gangMs * (k / 60);
+                const p = new T.Vector3(x, boden(x, z) + 1.7, z);
+                stell(p, p.clone().addScaledVector(fwd0, 20).setY(p.y - 4), merk.fov);
+            };
+            const gang = async (an) => {
+                lichter.forEach((l, i) => (l.shadow.intensity = an ? I0[i] : 0));
+                const tn = st.traaNode;
+                if (tn) {
+                    tn._jitterIndex = 0;
+                    if (tn._historyRenderTarget) tn._historyRenderTarget.setSize(1, 1);
+                }
+                if (st._traaR) st._traaR.neu = true;
+                pose(0);
+                r._schattenAlleNeu();
+                const bilder = [];
+                rend.setOutputRenderTarget(rt);
+                try {
+                    for (let k = 0; k < C.gangBilder; k++) {
+                        pose(k);
+                        r._loopShadowUpdate();
+                        window.__loopBild();
+                        if (k >= C.gangEin) bilder.push((await window.__zielLesen(rt, W, H)).slice());
+                    }
+                } finally {
+                    rend.setOutputRenderTarget(prevOut);
+                    rend.setRenderTarget(prevZiel);
+                }
+                return bilder;
+            };
+            let S, N;
+            try {
+                S = await gang(true);
+                N = await gang(false);
+            } finally {
+                lichter.forEach((l, i) => (l.shadow.intensity = I0[i]));
+                rt.dispose();
+            }
+            const je = [];
+            let schatten = 0;
+            for (let k = 1; k < S.length; k++) {
+                let u = 0;
+                for (let p = 0; p < W * H * 4; p += 4) {
+                    const dS = Math.abs(l8(S[k], p) - l8(S[k - 1], p)), dN = Math.abs(l8(N[k], p) - l8(N[k - 1], p));
+                    if (dS > 18 && dN <= 18) u++;
+                    if (k === 1 && l8(N[k], p) - l8(S[k], p) > 18) schatten++;
+                }
+                je.push(u / (W * H));
+            }
+            return {
+                bilder: je.length, unerklaertMax: r4(Math.max(...je)), unerklaertMittel: r4(je.reduce((a, b) => a + b, 0) / je.length),
+                schattenAnteil: r4(schatten / (W * H)), ms: C.gangMs,
+            };
+        });
+        // ───── vegetation.K3 — der Wald von innen ─────
+        await teil("vegetation.K3", async () => {
+            window.__buehne({});
+            const kandidat = [];
+            for (let i = 0; i < 48 && kandidat.length < 2; i++) {
+                const w = (i * 2.399963) % (2 * Math.PI), d = 6 + 1.0 * i;
+                const x = P0.x + d * Math.sin(w), z = P0.z + d * Math.cos(w);
+                if (typeof r._landAt === "function" && !r._landAt(x, z, 0.3)) continue;
+                const p = new T.Vector3(x, boden(x, z) + 0.3, z);
+                const unter = !frei(p, OBEN, 30);
+                if (unter && !kandidat.some((k) => k.unter)) kandidat.push({ p, unter: true });
+                else if (!unter && !kandidat.some((k) => !k.unter) && frei(p, sonne(), 120)) kandidat.push({ p, unter: false });
+            }
+            const k = kandidat.find((q) => q.unter), o = kandidat.find((q) => !q.unter);
+            if (!k || !o) throw new Error("kein Boden " + (k ? "im Offenen" : "unter Kronen") + " im Umkreis 54 m");
+            const blockFeld = (u8) => {
+                const B = 8, f = [];
+                for (let y = Math.floor(0.4 * H); y + B <= H; y += B)
+                    for (let x = 0; x + B <= W; x += B) {
+                        let s = 0;
+                        for (let j = 0; j < B; j += 2) for (let i = 0; i < B; i += 2) s += Yp(u8, ((y + j) * W + x + i) * 4);
+                        f.push(s / 16);
+                    }
+                return f;
+            };
+            const cv = (f) => {
+                const m = f.reduce((a, b) => a + b, 0) / f.length;
+                return m > 0 ? Math.sqrt(f.reduce((a, b) => a + (b - m) * (b - m), 0) / f.length) / m : null;
+            };
+            const blick = (q) => stell(q.p.clone().addScaledVector(fwd0, -2).setY(q.p.y + 1.4), q.p, 70);
+            blick(k);
+            const f1 = blockFeld(await schuss());
+            window.__buehne({ uhr: C.fleckUhr });
+            const f2 = blockFeld(await schuss());
+            window.__buehne({});
+            blick(o);
+            const fo = blockFeld(await schuss());
+            let n = f1.length, sa = 0, sb = 0, saa = 0, sbb = 0, sab = 0;
+            for (let i = 0; i < n; i++) (sa += f1[i]), (sb += f2[i]), (saa += f1[i] * f1[i]), (sbb += f2[i] * f2[i]), (sab += f1[i] * f2[i]);
+            const va = saa - (sa * sa) / n, vb = sbb - (sb * sb) / n;
+            return {
+                fleckenCv: r4(cv(f1)), offenCv: r4(cv(fo)), wandern: va > 1e-12 && vb > 1e-12 ? r4((sab - (sa * sb) / n) / Math.sqrt(va * vb)) : null,
+                uhren: [0.5, C.fleckUhr], ref: null,
+            };
+        });
+        return aus;
+    } finally {
+        r.kameraFuehren(fuehrAlt);
+        st.playerMesh.visible = merk.spieler;
+        try {
+            window.__buehne({ uhr: merk.uhr, wetter: merk.wetter });
+        } catch (_e) {
+            window.__buehne({ uhr: merk.uhr });
+        }
+        cam.fov = merk.fov;
+        cam.updateProjectionMatrix();
+        cam.position.copy(merk.pos);
+        cam.quaternion.copy(merk.quat);
+        cam.updateMatrixWorld(true);
+        r._schattenAlleNeu();
+    }
+}
+// DIE PROBE (im Prozess, cwd = der Spiel-Baum): Teil A im Fenster der Sitzung, Teil B im Fenster der Licht-Linsen, das Fenster zurück; je
+// gemessenem Teil EINE Zeile „NEUN <kriterium> {…}“ (das Urteil liest sie), dazu {AUS}. Das Budget zählt ab dem Start des Prozesses.
+// DIE LÄNGE DES BEFEHLS: Windows startet node mit höchstens 32 767 Zeichen Kommandozeile (gpu-lauf.sh auf Radeon und GTX) — mit dem Tor
+// der Sitzung (`PW.torBefehl`, sein Text samt Kommentaren) und der Seite wörtlich trug der Befehl 40 923. Darum ein eigenes Tor (der Ruf
+// an die Werkbank, die Karte aus dem Log der Sitzung) und die Seite ohne Einrückung und Kommentarzeilen (`kompakt`): ~28 000.
+async function neunProbe() {
+    const fs = require("fs");
+    const http = require("http");
+    const t0 = Date.now();
+    const [aus, cfg, seite] = process.argv.slice(1);
+    const C = JSON.parse(cfg);
+    const rest = () => C.budgetS - (Date.now() - t0) / 1000;
+    const ruf = (weg, nutz, ms) =>
+        new Promise((ok, nein) => {
+            const q = http.request({ host: "127.0.0.1", port: Number(process.env.WERKBANK_PORT), path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (a) => {
+                let d = "";
+                a.on("data", (c) => (d += c));
+                a.on("end", () => {
+                    let x = null;
+                    try {
+                        x = JSON.parse(d);
+                    } catch (_e) {
+                        return nein(new Error(weg + ": keine JSON-Antwort: " + d.slice(0, 200)));
+                    }
+                    if (x && typeof x.fehler === "string") return nein(new Error(weg + ": " + x.fehler.slice(0, 300)));
+                    ok(x);
+                });
+            });
+            q.on("error", nein);
+            q.setTimeout(ms, () => q.destroy(new Error(weg + ": Frist " + ms + " ms")));
+            q.end(JSON.stringify(nutz || {}));
+        });
+    const log = process.env.PUNKTE_SITZUNG_LOG;
+    console.log((/^\[linse-gpu\] .*$/m.exec(log && fs.existsSync(log) ? fs.readFileSync(log, "utf8") : "") || ["KEINE KARTE: das Log der Sitzung nennt keinen [linse-gpu]"])[0]);
+    const j = { teile: {}, ausgelassen: [], ort: null, leinwand: {}, fehler: [] };
+    const lauf = async (teil, extra) => {
+        try {
+            const C2 = Object.assign({}, C, extra, { teil, rest: rest() });
+            const a = (await ruf("/eval", { code: "return await (" + seite + ")(r, T, " + JSON.stringify(C2) + ");" }, Math.max(30, rest() + 60) * 1000)).ergebnis;
+            Object.assign(j.teile, a.teile);
+            j.ausgelassen.push(...a.ausgelassen);
+            j.ort = a.ort;
+            j.leinwand[teil] = a.leinwand;
+        } catch (e) {
+            j.fehler.push(teil + ": " + String((e && e.message) || e).slice(0, 300));
+        }
+    };
+    try {
+        await ruf("/fenster", { w: 1920, h: 1080 }, 30000);
+        await lauf("A", { teile: ["ferne.K3"] });
+        await ruf("/fenster", { w: C.fenster[0], h: C.fenster[1] }, 30000);
+        await lauf("B", { teile: [] });
+    } finally {
+        await ruf("/fenster", { w: 1920, h: 1080 }, 30000).catch(() => {});
+        fs.writeFileSync(aus, JSON.stringify(j));
+    }
+    for (const [k, v] of Object.entries(j.teile)) console.log("NEUN " + k + " " + JSON.stringify(Object.assign({ ort: j.ort }, v)));
+    for (const f of j.fehler) console.log("NEUN-BRUCH " + f);
+    console.log("NEUN-ENDE " + Object.keys(j.teile).length + " gemessen, ausgelassen am Budget " + C.budgetS + " s: " + (j.ausgelassen.join(", ") || "keiner") + " · " + ((Date.now() - t0) / 1000).toFixed(1) + " s");
+}
+const kompakt = (t) => t.split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("//")).join("\n");
+const NEUN_C = {
+    ort: ["umstellen", "--ort", "dorf", "--sicht", "ego"],
+    budgetS: 8.5,
+    fenster: [640, 360],
+    kammHoch: [25, 60, 120],
+    kammStand: [[0, 0]],
+    kammFov: 60,
+    kammSchritt: 3,
+    lodVersatz: [4, -4],
+    lodPixelMin: 1500,
+    wolkeDeckung: 0.4,
+    wolkeSek: 5,
+    sonneGrad: 5,
+    fernHoch: 80,
+    fernOrte: 2000,
+    fernAb: [2500, 7000],
+    fernFov: 90,
+    feuerM: 120,
+    mitternacht: 0,
+    gangMs: 4,
+    gangBilder: 20,
+    gangEin: 4,
+    fleckUhr: 0.56,
+    hangMax: 0.12,
+};
+const NEUN_PROBE = {
+    sek: 10,
+    befehl: [
+        "node",
+        "-e",
+        "(" + kompakt(neunProbe.toString()) + ")().then(() => process.exit(0), (e) => { console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\\n').slice(0, 4).join(' | ')); process.exit(1); });",
+        "{AUS}",
+        JSON.stringify(NEUN_C),
+        kompakt(neunSeite.toString()),
+    ],
+};
+// DAS URTEIL liest die Zeile seines Teils und die Karte der Sitzung (stdout); fehlt die Zeile, gleicht die Zahl der des leeren Laufs:
+// UNGEMESSEN beim Namen (keinUrteil a), nie ROT
+const NEUN_HW = /^\[linse-gpu\][^\r\n]*/m;
+const neunZeile = (s, k) => {
+    const m = new RegExp("^NEUN " + k.replace(".", "\\.") + " (\\{.*\\})$", "m").exec(String(s || ""));
+    try {
+        return m ? JSON.parse(m[1]) : null;
+    } catch (_e) {
+        return null;
+    }
+};
+const neunUrteil = (k, fn) => (j, lauf) => {
+    const s = String((lauf && lauf.stdout) || "");
+    const t = neunZeile(s, k);
+    if (!t) return { gruen: false, zahl: "keine Zeile NEUN " + k };
+    const ad = (NEUN_HW.exec(s) || [null])[0];
+    const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
+    if (t.fehler) return { gruen: false, zahl: "Bruch: " + t.fehler + " · " + (ad || "Adapter ungenannt") };
+    const [ok, zahl] = fn(t);
+    return { gruen: hw && ok, zahl: zahl + " · Ort " + JSON.stringify(t.ort) + " · " + t.s + " s · " + (ad || "Adapter ungenannt") };
+};
+const NEUN_RADEON = "[linse-gpu] webgl2/ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)";
+const neunProben = (k, gruen, rot) => [
+    ...(gruen ? [{ name: "das Soll an der Karte", stdout: NEUN_RADEON + "\nNEUN " + k + " " + JSON.stringify(Object.assign({ ort: [-841, -861], s: 1.2 }, gruen)), gruen: true }] : []),
+    ...rot.map(([name, t]) => ({ name, stdout: NEUN_RADEON + "\nNEUN " + k + " " + JSON.stringify(Object.assign({ ort: [-841, -861], s: 1.2 }, t)), gruen: false })),
+    ...(gruen ? [{ name: "swiftshader", stdout: "[linse-gpu] google/swiftshader\nNEUN " + k + " " + JSON.stringify(Object.assign({ ort: [-841, -861], s: 1.2 }, gruen)), gruen: false }] : []),
+    { name: "der Teil kam nicht dran (keine Zeile)", stdout: NEUN_RADEON + "\nNEUN-ENDE 3 gemessen, ausgelassen am Budget 8.5 s: " + k, gruen: false },
+    { name: "der Teil brach", stdout: NEUN_RADEON + "\nNEUN " + k + ' {"ort":[0,0],"fehler":"kein freier Platz","s":0.4}', gruen: false },
+];
+const NEUN_PFAD = [...BILD, "stamm/gelaende-*.js", "stamm/vegetation-*.js", "stamm/siedlung-*.js", "gelaende-core.js", "fachwerk-core.js", "phyto-core.js", "scripts/lib/abnahme-urteil.cjs"];
+const neunStation = (kriterium, quelle, urteil, proben) => ({
+    kriterium,
+    staffel: 1,
+    geraet: "radeon",
+    probe: NEUN_PROBE,
+    gpu: true,
+    zeit: false,
+    minuten: 1,
+    urteil: neunUrteil(kriterium, urteil),
+    proben,
+    pfad: NEUN_PFAD,
+    quelle,
+});
+const NEUN = [
+    neunStation(
+        "schatten.K2",
+        "1 = ≤ 0,5 % unerklärte Randpixel beim Gehen an einem Gerät",
+        (t) => [t.bilder >= 10 && t.schattenAnteil >= 0.01 && t.unerklaertMax <= 0.005, `unerklärt je Bild max ${(100 * t.unerklaertMax).toFixed(2)} %, Mittel ${(100 * t.unerklaertMittel).toFixed(2)} % (Soll ≤ 0,5 %) über ${t.bilder} Bilder Gang ${t.ms} m/s, Schatten im Bild ${(100 * t.schattenAnteil).toFixed(1)} % (≥ 1 %)`],
+        neunProben("schatten.K2", { bilder: 15, unerklaertMax: 0.003, unerklaertMittel: 0.001, schattenAnteil: 0.2, ms: 4 }, [
+            ["der Schatten flimmert (Anhalt GTX e0139769 1,6 %)", { bilder: 15, unerklaertMax: 0.016, unerklaertMittel: 0.008, schattenAnteil: 0.2, ms: 4 }],
+            ["kein Schatten im Bild (ein Standbild ist immer ruhig)", { bilder: 15, unerklaertMax: 0, unerklaertMittel: 0, schattenAnteil: 0.002, ms: 4 }],
+            ["zu kurzer Gang", { bilder: 3, unerklaertMax: 0, unerklaertMittel: 0, schattenAnteil: 0.2, ms: 4 }],
+        ])
+    ),
+    neunStation(
+        "schatten.K3",
+        "1 = Kontaktband (0–20 cm) 30–60 % des freien Bodens an Fuß und Sockel an einem Gerät",
+        (t) => {
+            const je = t.je || [];
+            const ok = je.length === 2 && je.every((x) => x.band != null && x.band >= 0.3 && x.band <= 0.6 && x.frei != null && Math.abs(x.frei - 1) <= 0.1 && x.n >= 10);
+            return [ok, je.map((x) => `${x.was} Band ${x.band == null ? "—" : (100 * x.band).toFixed(1) + " %"} des freien Bodens (frei mit/ohne ${x.frei}, ${x.n} Punkte)`).join(" · ") + " (Soll 30–60 %, Himmel allein)"];
+        },
+        neunProben("schatten.K3", { je: [{ was: "fuss", band: 0.52, frei: 0.99, n: 20 }, { was: "sockel", band: 0.45, frei: 1.0, n: 20 }] }, [
+            ["keine Verdeckung (Spike 94c079cb: 1,000)", { je: [{ was: "fuss", band: 1.0, frei: 1.0, n: 20 }, { was: "sockel", band: 0.998, frei: 1.0, n: 20 }] }],
+            ["nur der Sockel trägt", { je: [{ was: "fuss", band: 0.97, frei: 1.0, n: 20 }, { was: "sockel", band: 0.45, frei: 1.0, n: 20 }] }],
+            ["ein gemalter Ring dunkelt auch den freien Boden", { je: [{ was: "fuss", band: 0.5, frei: 0.7, n: 20 }, { was: "sockel", band: 0.45, frei: 0.7, n: 20 }] }],
+            ["schwarz statt Kontakt", { je: [{ was: "fuss", band: 0.1, frei: 1.0, n: 20 }, { was: "sockel", band: 0.12, frei: 1.0, n: 20 }] }],
+        ])
+    ),
+    neunStation(
+        "schatten.K4",
+        "1 = weiße Hauswand im Schatten neben besonnter Wiese: Gewinn ≥ 10 % gegen den Gegenschuss mit Boden-Albedo 0, an einem Gerät",
+        (t) => [t.gewinn != null && t.gewinn >= 0.1 && t.nl < 0 && t.n >= 10, `Gewinn ${t.gewinn == null ? "—" : (100 * t.gewinn).toFixed(1) + " %"} (Wand ${t.LA} gegen ${t.LB} mit Boden-Albedo 0; Soll ≥ 10 %), N·L ${t.nl}, Sonne ${t.sonneGrad}°, Boden ${t.boden}`],
+        neunProben("schatten.K4", { LA: 0.07, LB: 0.0634, gewinn: 0.104, nl: -0.4, n: 20, boden: 0.2, sonneGrad: 60 }, [
+            ["keine Rückstrahlung (Spike 94c079cb: 0 %)", { LA: 0.0634, LB: 0.0634, gewinn: 0, nl: -0.27, n: 20, boden: 0.2, sonneGrad: 60 }],
+            ["die Wand steht in der Sonne", { LA: 0.3, LB: 0.25, gewinn: 0.2, nl: 0.3, n: 20, boden: 0.2, sonneGrad: 60 }],
+            ["die Wand nicht im Bild", { LA: null, LB: null, gewinn: null, nl: -0.4, n: 0, boden: 0.2, sonneGrad: 60 }],
+        ])
+    ),
+    neunStation(
+        "schatten.K5",
+        "1 = Schatten-Kontrast ≥ 3:1 an einem Pfosten 2 m vom Feuer an einem Gerät",
+        (t) => [t.imPool && t.kontrast != null && t.kontrast >= 3 && t.kontrolle != null && t.kontrolle >= 0.67 && t.kontrolle <= 1.5 && t.n >= 6, `Kontrast ${t.kontrast}:1 (Soll ≥ 3:1) am Pfosten 2 m von ${t.quelle} (${t.abM} m vom Spieler, im Pool ${t.imPool}), ohne Pfosten ${t.kontrolle}, Uhr ${t.uhr}`],
+        neunProben("schatten.K5", { quelle: "feuerstelle", abM: 20, imPool: true, uhr: 0, Llicht: 0.06, Lschatten: 0.015, kontrast: 4, kontrolle: 1.05, n: 12 }, [
+            ["das Feuer wirft nicht (Spike 94c079cb)", { quelle: "feuerstelle", abM: 20, imPool: true, uhr: 0, Llicht: 0.06, Lschatten: 0.058, kontrast: 1.03, kontrolle: 1.02, n: 12 }],
+            ["eine gemalte Schatten-Textur (dunkel auch ohne Pfosten)", { quelle: "feuerstelle", abM: 20, imPool: true, uhr: 0, Llicht: 0.06, Lschatten: 0.015, kontrast: 4, kontrolle: 4, n: 12 }],
+            ["die Quelle leuchtet nicht im Pool", { quelle: "feuerstelle", abM: 20, imPool: false, uhr: 0, Llicht: 0.06, Lschatten: 0.015, kontrast: 4, kontrolle: 1, n: 12 }],
+        ])
+    ),
+    neunStation(
+        "licht.K4",
+        "1 = der Wolken-Schatten wandert mit dem Wolkenfeld über die Wiese (r ≥ 0,6) an einem Gerät",
+        (t) => {
+            const zieht = t.verschiebung && (t.verschiebung[0] !== 0 || t.verschiebung[1] !== 0);
+            const ok = t.sigma >= 0.03 && t.r >= 0.6 && zieht && t.r - (t.r0 == null ? -1 : t.r0) >= 0.05 && t.deckung && Math.abs(t.deckung[1] - 0.4) <= 0.01;
+            return [ok, `r ${t.r} bei Verschiebung ${JSON.stringify(t.verschiebung)} Blöcke in ${t.sek} s (ohne Verschiebung ${t.r0}; Soll r ≥ 0,6, das Muster zieht), Schatten-σ ${t.sigma} (≥ 0,03), Deckung ${JSON.stringify(t.deckung)}`];
+        },
+        neunProben("licht.K4", { sigma: 0.12, r0: 0.3, r: 0.82, verschiebung: [6, -1], deckung: [0, 0.4], sek: 5 }, [
+            ["kein Wurf (Spike 94c079cb: der Boden bleibt)", { sigma: 0.002, r0: 0.1, r: 0.2, verschiebung: [3, 2], deckung: [0, 0.4], sek: 5 }],
+            ["ein gemaltes Muster steht", { sigma: 0.12, r0: 0.95, r: 0.95, verschiebung: [0, 0], deckung: [0, 0.4], sek: 5 }],
+            ["die Deckung hielt nicht", { sigma: 0.12, r0: 0.3, r: 0.82, verschiebung: [6, -1], deckung: [0, 0.12], sek: 5 }],
+        ])
+    ),
+    neunStation(
+        "ferne.K3",
+        "1 = am Kamm in 0,4–4 km Kohärenz des Struktur-Tensors < 0,3 gegen REF real-mischwald und Umriss-Schwankung ≥ 3 m bei 2 km, an einem Gerät",
+        (t) => [t.kamm >= 100 && t.zweiKm >= 30 && t.kohaerenz != null && t.kohaerenz < 0.3 && t.schwankungM != null && t.schwankungM >= 3, `Kohärenz ${t.kohaerenz} über ${t.kamm} Kamm-Spalten 0,4–4 km (Soll < 0,3; REF real-mischwald 0,160), Umriss-Schwankung ${t.schwankungM} m über ${t.zweiKm} Spalten 1,5–2,5 km (Soll ≥ 3 m), Relief über dem Gesetz ${t.reliefM} m, Azimut ${t.azimutGrad}°`],
+        neunProben("ferne.K3", { azimutGrad: 90, spalten: 958, kamm: 640, zweiKm: 120, kohaerenz: 0.18, kantePixel: 900, schwankungM: 4.2, reliefM: 11 }, [
+            ["der Kamm ist Farbe (glatte Gelände-Linie)", { azimutGrad: 90, spalten: 958, kamm: 640, zweiKm: 120, kohaerenz: 0.86, kantePixel: 900, schwankungM: 0.4, reliefM: 0 }],
+            ["ein Sägezahn-Band (gezackt, aber gerade)", { azimutGrad: 90, spalten: 958, kamm: 640, zweiKm: 120, kohaerenz: 0.62, kantePixel: 900, schwankungM: 3.4, reliefM: 6 }],
+            ["kein Kamm bei 2 km im Bild", { azimutGrad: 90, spalten: 958, kamm: 640, zweiKm: 4, kohaerenz: 0.18, kantePixel: 900, schwankungM: 4.2, reliefM: 11 }],
+        ])
+    ),
+    neunStation(
+        "ferne.K4",
+        "1 = bei Sonne 5° Luma Schatten-/Lichthang ≤ 0,4 hinter einem ≥ 2 km fernen Grat an einem Gerät",
+        (t) => [t.verhaeltnis != null && t.verhaeltnis <= 0.4 && t.imBild[0] >= 5 && t.imBild[1] >= 5 && Math.abs(t.sonneGrad - 5) <= 0.5 && t.gratKm >= 2, `Schatten-/Lichthang ${t.verhaeltnis} (je N·L; Soll ≤ 0,4) aus ${t.imBild[0]}/${t.imBild[1]} Orten, Grat ${t.gratKm} km, Sonne ${t.sonneGrad}° (Uhr ${t.uhr})`],
+        neunProben("ferne.K4", { sonneGrad: 5.02, uhr: 0.74, orte: 140, imBild: [14, 22], gratKm: 3.1, Ls: 0.02, Ll: 0.09, verhaeltnis: 0.22 }, [
+            ["jenseits der Kaskaden nur N·L (Spike 94c079cb)", { sonneGrad: 5.02, uhr: 0.74, orte: 140, imBild: [14, 22], gratKm: 3.1, Ls: 0.088, Ll: 0.09, verhaeltnis: 0.98 }],
+            ["eine dunklere Fern-Farbe am Abend (trifft beide)", { sonneGrad: 5.02, uhr: 0.74, orte: 140, imBild: [14, 22], gratKm: 3.1, Ls: 0.03, Ll: 0.031, verhaeltnis: 0.97 }],
+            ["die Sonne steht nicht bei 5°", { sonneGrad: 12, uhr: 0.7, orte: 140, imBild: [14, 22], gratKm: 3.1, Ls: 0.02, Ll: 0.09, verhaeltnis: 0.22 }],
+            ["zu wenige Orte im Bild (am Dorf aus 80 m: 3 im Schatten)", { sonneGrad: 5.02, uhr: 0.74, orte: 44, imBild: [3, 6], gratKm: 3.1, Ls: 0.02, Ll: 0.09, verhaeltnis: 0.22 }],
+        ])
+    ),
+    neunStation(
+        "lod.K4",
+        "1 = Luma-Sprung je Klasse < 2 % und zweiton 0 bei Uhr 0,5 an einem Gerät",
+        (t) => [t.pixel >= 1500 && t.sprung != null && t.sprung < 0.02 && t.zweitonVor === 0 && t.zweitonNach === 0 && Math.abs(t.uhr - 0.5) <= 0.01, `Luma-Sprung ${t.sprung == null ? "—" : (100 * t.sprung).toFixed(2) + " %"} (Soll < 2 %) über ${t.pixel} px, die der Wechsel ändert (Auge ${t.versatzM} m; die Klassen zusammen), zweiton ${t.zweitonVor}/${t.zweitonNach}, Uhr ${t.uhr}`],
+        neunProben("lod.K4", { versatzM: 4, pixel: 9000, anteil: 0.04, lumaVor: 81, lumaNach: 80.4, sprung: 0.0074, zweitonVor: 0, zweitonNach: 0, uhr: 0.5 }, [
+            ["die Stufe trägt den Ton nicht (Spike 94c079cb: Weide L1 −6,0 %)", { versatzM: 4, pixel: 9000, anteil: 0.04, lumaVor: 81, lumaNach: 76.1, sprung: 0.06, zweitonVor: 0, zweitonNach: 0, uhr: 0.5 }],
+            ["ein langer Dither versteckt den Sprung", { versatzM: 4, pixel: 9000, anteil: 0.04, lumaVor: 81, lumaNach: 80.4, sprung: 0.0074, zweitonVor: 0, zweitonNach: 0.31, uhr: 0.5 }],
+            ["kein Wechsel im Bild", { versatzM: -4, pixel: 40, anteil: 0, lumaVor: 81, lumaNach: 81, sprung: 0, zweitonVor: 0, zweitonNach: 0, uhr: 0.5 }],
+        ])
+    ),
+    neunStation(
+        "vegetation.K3",
+        "1 = im Mischwald (Ego, Mittag) Stamm-Dichte und Unterholz-Deckung im Band der REF und Licht-Flecken am Boden aus der Kaskade, an einem Gerät",
+        (t) => [false, `REF real-mischwald fehlt (kein Band für Stämme je Bildbreite und Unterholz-Deckung 0–2 m im Spiel-Baum): ROT · Licht-Flecken unter Kronen CV ${t.fleckenCv} gegen offen ${t.offenCv}, Wandern Uhr ${JSON.stringify(t.uhren)} r ${t.wandern}`],
+        neunProben("vegetation.K3", null, [
+            ["Flecken, die wandern — ohne REF ROT", { fleckenCv: 0.45, offenCv: 0.08, wandern: 0.3, uhren: [0.5, 0.56], ref: null }],
+            ["kein Fleck", { fleckenCv: 0.05, offenCv: 0.08, wandern: 0.99, uhren: [0.5, 0.56], ref: null }],
+        ])
+    ),
+];
 const stationen = [
     {
         kriterium: "licht.K2",
@@ -1892,6 +2833,8 @@ const stationen = [
         pfad: [...BILD, "phyto-core.js", "foundry-bruecke.js", "stamm/siedlung-satz.js", "stamm/vegetation-baum.js", "scripts/diag-foundry-impostor.cjs", "stamm/studio-*.js", "scripts/lib/vram-abgriff.cjs"],
         quelle: "1 = Karten-Deckung ≥ 0,75 und IoU ≥ 0,65 bei −20/0/40/80° für Bäume an einem Gerät",
     },
+    // die Neun der Sitzung (DIE NEUN, oben): EIN Lauf, neun Urteile
+    ...NEUN,
 ];
 
 // Was sich nicht als Station fassen lässt. Steht neben der Liste; der Läufer liest es nicht.
@@ -1924,89 +2867,6 @@ stationen.fehlt = [
             "`bild --arm` (material-mikro) hat Ziele nur für Boden und Fels; für Rinde, Putz, Holz und Haut auf Armlänge fehlt das Ziel. " +
             "β misst klassenMasse zwar, aber eine Linse gegen Kachel-Muster gibt es nicht.",
         quelle: "2 = Boden, Fels, Rinde, Putz, Holz, Haut, kein Kachel-Muster (1/f^β, β 0–2,4), beide Geräte",
-    },
-    // ───────── DER SPIKE w4-stationen-a (31.10., am main 94c079cb): Kriterien ohne jede Station — was dem Spiel fehlt, beim Namen ─────────
-    {
-        kriterium: "licht.K4",
-        staffel: 1,
-        befehl: null,
-        grund:
-            "unmessbar ohne neues Spiel (Spike w4-stationen-a am main 94c079cb): die Wolke wirft nichts — der Himmel ist EINE 2D-FBM-Projektion " +
-            "mit Deckungs-Schwelle (stamm/bild-himmel.js), keine Größe des Wolkenfelds hat einen Leser am Boden (0 Treffer Wolken-Schatten), die " +
-            "Kaskaden kennen nur das Richtlicht. Ohne Wurf gibt es keine Verschiebung am Boden, die mit dem Wolkenfeld korrelieren könnte.",
-    },
-    {
-        kriterium: "ferne.K3",
-        staffel: 1,
-        befehl: null,
-        grund:
-            "unmessbar ohne neues Spiel (Spike w4-stationen-a am main 94c079cb): jenseits der Baum-Karte (`FERN_KRONE_NAH` sichtM 384 m, " +
-            "stamm/gelaende-fern.js) ist der Wald Farbe — das Kronendach reist als Attribut `aKrone` (Kronendach, Deckung) im Fern-Ring, der Ring " +
-            "trägt kein Relief; die Hebungs-Ringe (stamm/stoff-karte.js) sind Blickwinkel der Karte, kein Saum. Der Kamm in 0,4–4 km ist die " +
-            "Gelände-Linie: ohne Kronen-Relief kein Saum, dessen Kohärenz und Umriss-Schwankung eine Station messen könnte.",
-    },
-    {
-        kriterium: "ferne.K4",
-        staffel: 1,
-        befehl: null,
-        grund:
-            "unmessbar ohne neues Spiel (Spike w4-stationen-a am main 94c079cb): jenseits der zwei Kaskaden (maxFar 180–306 m) trägt kein Pfad " +
-            "einen Schatten — Fern-Ring und Panorama rechnen N·L ohne Schatten-Term, ein Horizont-Winkel des Gelände-Kerns hat keinen Leser " +
-            "(0 Treffer). Hinter einem Grat in ≥ 2 km liegt bei Sonne 5° kein Abendschatten, nur die Neigung des Hangs.",
-    },
-    {
-        kriterium: "schatten.K2",
-        staffel: 1,
-        befehl: null,
-        grund:
-            "ungemessen, die Linse fehlt (Spike w4-stationen-a am main 94c079cb): `werkbank sicht` zählt die Arbeit der Sicht-Kette, " +
-            "bericht/2910-lod-k5/pop.js (lod.K2#1) jeden Pop bei stehender Kamera ohne Schatten-Maske — keine Linse trennt den Schattenrand. " +
-            "Anhalt GTX e0139769 lod.K2#1: je 0,5-m-Schritt ändern sich bei stehender Kamera 15 817–33 715 px = 0,8–1,6 % des Bilds (alle " +
-            "Ursachen, Stufen-Wechsel eingeschlossen; Soll ≤ 0,5 % unerklärte Randpixel). swiftshader (kienspan) zeichnet keine Schatten: die " +
-            "Probe gehört an die Karte, die Fahrt (Radeon 1 775 / GTX 1 770 von 1 800 s) trägt sie heute nicht.",
-    },
-    {
-        kriterium: "schatten.K3",
-        staffel: 1,
-        befehl: null,
-        grund:
-            "nicht gebaut, der Spike ist ROT (w4-stationen-a am main 94c079cb): keine Verdeckung zwischen den Dingen — `aoNode` trägt die " +
-            "Himmels-Sicht des Geländes (nur der Boden, aus dem Faden) und die Kavität je Stoff (stamm/stoff-material.js), ssao/gtao 0 Treffer; " +
-            "Fuß, Sockel, Stamm- und Tor-Fuß verdecken dem Boden keinen Himmel. Gemessen an der Prüfbühne (swiftshader, kienspan ohne Kaskaden: " +
-            "das Licht ohne Wurf), ein Pfosten 0,5 × 0,5 × 3 m wie licht --kontakt, das Band 2–18 cm auf der Kamera-Seite (110 Punkte): mit " +
-            "Pfosten 0,1099, ohne 0,1099 (1,000), gegen den freien Boden 1–2 m daneben 0,978 — Soll 30–60 %. Am Fuß trägt nur der " +
-            "Schlagschatten der Sonne (ein Wurf, kein Kontakt).",
-    },
-    {
-        kriterium: "schatten.K4",
-        staffel: 1,
-        befehl: null,
-        grund:
-            "nicht gebaut, der Spike ist ROT (w4-stationen-a am main 94c079cb): die Rückstrahlung ist die untere Hälfte der EINEN Umgebung mit " +
-            "der festen Welt-Albedo `ATMO_BODEN` (0,1003/0,1385/0,0449, stamm/bild-himmel.js) — die besonnte Wiese neben der Wand strahlt " +
-            "nichts zurück. Gemessen an der Prüfbühne (swiftshader): eine weiße Wand 4 × 3 m, ihre Fläche im Eigenschatten (N·L −0,27), Luma " +
-            "0,0634 neben dem besonnten Boden und 0,0634 mit einer schwarzen Platte 30 × 30 m davor (Boden-Albedo 0) — Gewinn 0 %, Soll ≥ 10 %. " +
-            "Das Hemi-Licht trägt nur die Nacht (`hl.intensity = 0,1 · nacht`).",
-    },
-    {
-        kriterium: "schatten.K5",
-        staffel: 1,
-        befehl: null,
-        grund:
-            "unmessbar ohne neues Spiel (Spike w4-stationen-a am main 94c079cb): das Feuer wirft nichts — das Leuchtquellen-Gesetz (fachwerk-core " +
-            "LICHT_GESETZ → `_leuchtTakt`) wirkt als Uniform-Pool im Stoff, ohne Licht-Objekt (bis K11 ein PointLight, stamm/siedlung-ort.js); die " +
-            "Kaskaden zeichnen nur für das Richtlicht (`_wurfEbene`). Ohne Wurf des Feuers kein Schatten-Kontrast am Pfosten.",
-    },
-    {
-        kriterium: "lod.K4",
-        staffel: 1,
-        befehl: null,
-        grund:
-            "nicht gebaut, der Spike ist ROT (w4-stationen-a am main 94c079cb, Prüfbühne swiftshader, Mittag der Bühne): bericht/2910-lod-k5/kanten.js " +
-            "mit dem Mittel der Luma (linear, Rec. 709) über der Maske je Schuss — L0 gegen die gezeigte Stufe am Wechsel-Abstand des Gesetzes, " +
-            "Treue 0 Bytes: Baum (Weide) L1 bei 12 m −6,0 % (0,0738 → 0,0694), L2 bei 26 m −7,2 %, Haus (modern) L1 bei 8,4 m −2,4 % — Soll " +
-            "< 2 % je Klasse; Haus L2, Tor und Wagen standen an der Bühne ohne gültige Maske (68 / 0 px). zweiton misst kanten.js nicht (es " +
-            "schießt ohne Blende und Band); die Station lohnt erst, wenn die Stufe den Ton von L0 trägt (die Stoff-Albedo je Stufe hält: material.K3).",
     },
 ];
 
