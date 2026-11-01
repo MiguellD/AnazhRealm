@@ -1232,6 +1232,10 @@
                 background: linear-gradient(180deg, rgba(255, 235, 190, 0.08), rgba(60, 40, 18, 0.22));
                 border: 1px solid var(--brass-3);
                 border-radius: 3px;
+                /* DAS ICH ÖFFNET OHNE NEUBAU (spielgang.K3): von 109 Rezept-Zeilen stehen 14 im Bild — die übrigen legt und
+                   malt Tab erst, wenn das Buch sie zeigt (28 px Inhalt + Rand = die gemessene Zeile, 38 px) */
+                content-visibility: auto;
+                contain-intrinsic-size: auto 28px;
             }
             .inventory-recipes .recipe-row .recipe-info {
                 display: flex;
@@ -1268,8 +1272,23 @@
                 background: var(--wood-1);
                 color: var(--parch-ink-faded);
             }
+            /* DAS ICH ÖFFNET OHNE NEUBAU (spielgang.K3): geschlossen ruht sein Baum (content-visibility: hidden — kein Stil,
+               kein Layout, kein Bild trägt ihn, je Bild 0,02 ms) und behält sein Layout; display: none warf es weg, und jedes
+               Tab legte die 881 Knoten neu aus (headless, Runden 2–5: Tab 99–131 → 50–73 ms). Der Vorbau legt es einmal aus
+               (`_uiVorbau`). */
             #inventory-overlay[hidden] {
-                display: none;
+                visibility: hidden;
+                content-visibility: hidden;
+                pointer-events: none;
+            }
+            /* DER GEFRORENE BAUM BEWEGT SICH NICHT (spielgang.K3): in content-visibility: hidden tickt Chrome keine Animation —
+               eine Transition, die dort entsteht (ein Layout-Leser erzwingt den Stil des Baums, und die Breite eines
+               Emotions-Balkens hat sich bewegt), wird nie zu Ende gespielt, ihr `finished` erfüllt sich nie (gate:werkstatt-weg,
+               Zug z129: `ruht` wartete 600 s). Verborgen entsteht keine; die beim Verbergen laufenden bricht `_uiVerbergen` ab. */
+            #inventory-overlay[hidden] *,
+            #inventory-overlay[hidden] *::before,
+            #inventory-overlay[hidden] *::after {
+                transition: none !important;
             }
             #inventory-overlay .inventory-header {
                 flex: 0 0 auto;
@@ -1594,6 +1613,17 @@
                 gap: 8px;
                 flex: 1;
                 justify-content: center;
+            }
+            /* DIE FLÄCHE NACH GESETZ (spielgang.K3): eine Zeile mit [hidden] fällt — `display: flex` oben schlug das [hidden]
+               des Browsers, Mana stand in frieden und der Bogen ohne Spannen (0 %) immer im Bild —, und die Leiste weicht,
+               wenn jede ihrer Größen ruht (`ruht`, `tickStatsHud`): sie kommt im selben Takt, sie geht in 0,6 s. */
+            #stats-hud .stats-hud-row[hidden] {
+                display: none;
+            }
+            #stats-hud.ruht {
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.6s ease;
             }
             #stats-hud .stats-hud-glyph {
                 font-size: 14px;

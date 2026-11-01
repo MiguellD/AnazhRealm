@@ -1406,6 +1406,7 @@ class AnazhRealm {
         // Mana-Row: Welt-Gesten kosten in pfad Mana (derselbe Kosten-Walker wie das Nexus-Wirk-Budget);
         // dritte Row derselben Familie (eine Quelle, eine Throttle), NUR in pfad sichtbar.
         const manaRow = document.getElementById("stats-hud-mana-row");
+        let manaMangel = false;
         if (manaRow) {
             const isPfad = typeof this.getGameMode === "function" && this.getGameMode() === "pfad";
             if (manaRow.hidden !== !isPfad) manaRow.hidden = !isPfad;
@@ -1413,6 +1414,7 @@ class AnazhRealm {
                 const manaMax = Math.max(1, Math.round(typeof p.manaMax === "number" ? p.manaMax : 40));
                 const mana = Math.max(0, Math.round(typeof p.mana === "number" ? p.mana : manaMax));
                 const manaRatio = Math.max(0, Math.min(1, mana / manaMax));
+                manaMangel = mana < manaMax;
                 this._hudSchreib(document.getElementById("stats-hud-mana-fill"), 166 * manaRatio, "width");
                 this._hudSchreib(document.getElementById("stats-hud-mana-glow"), 166 * manaRatio, "width");
                 this._hudSchreib(document.getElementById("stats-hud-mana-text"), `${mana}/${manaMax}`);
@@ -1424,6 +1426,13 @@ class AnazhRealm {
         if (hud) {
             if (hpRatio < 0.3) hud.classList.add("stats-hud-low");
             else hud.classList.remove("stats-hud-low");
+            // DIE FLÄCHE NACH GESETZ (spielgang.K3): die Leiste zeigt, was der Spieler braucht. Ruht jede ihrer Größen —
+            // Leben und Ausdauer voll, Mana voll (oder außerhalb von pfad), kein Bogen gespannt — seit STATS_RUHE_S, weicht
+            // sie (`ruht`); jede Abweichung holt sie im selben Takt zurück, der Bogen frame-genau (`_bogenHudZeige`).
+            const regt = hp < hpMax || stam < stamMax || manaMangel || !!p._bogenDraw;
+            if (regt) this.state._statsHudRegtT = currentTime;
+            const seit = this.state._statsHudRegtT;
+            this._statsHudRuht(!regt && (seit === undefined || currentTime - seit >= AnazhRealm.STATS_RUHE_S));
         }
         // Tooltip alle 1 s aktualisieren (slow stats ändern sich selten —
         // nur bei Soul/Equipped/Boost-Wechsel). Throttle damit Hover keine
@@ -1870,3 +1879,5 @@ AnazhRealm.SYNC_KETTE = [
 // Das Ego-Auge über dem Leib-Zentrum (m): das Rig setzt die Ego-Kamera hier, das Auge der Stufen steht hier, bevor eine
 // Kamera gesetzt ist (`_lodAuge`).
 AnazhRealm.EGO_AUGE_M = 1.6;
+// Die Ruhe der Lebens-Leiste (s, spielgang.K3): so lange ruht jede ihrer Größen, bevor sie weicht (`tickStatsHud`).
+AnazhRealm.STATS_RUHE_S = 2;
