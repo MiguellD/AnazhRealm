@@ -1,0 +1,87 @@
+{
+ "sha": "3242d6ad6611d0f5ecc07cbb1f540b0fd38b42e4",
+ "geraet": "gtx",
+ "zeit": "2026-11-01T20:50:59.490Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "leib.K1#1": {
+   "gruen": true,
+   "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 43.3 · third/gehen 43 · ego/wechsel 29.4 · third/wechsel 48.9 · Bild 16.7 ms",
+   "exit": 0,
+   "minuten": 0.39,
+   "gpu": "nvidia/pascal",
+   "s": 23.4,
+   "zeit": "2026-11-01T20:50:30.296Z",
+   "abdruck": "ff47a267e9b6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K4#1": {
+   "gruen": false,
+   "zahl": "lack spiegelTreue 0.2513 (73970 px in der Ebene, 38 Blöcke, Einfall 54.2°, Normale [0.074,0.989,0.128]) · glas spiegelTreue 0.2331 (5640 px in der Ebene, 12 Blöcke, Einfall 64.8°, Normale [0.08,0.991,0.105]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5003448888888892 sunny · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.1,
+   "grund": "ROT: lack spiegelTreue 0.2513 (73970 px in der Ebene, 38 Blöcke, Einfall 54.2°, Normale [0.074,0.989,0.128]) · glas spiegelTreue 0.2331 (5640 px in der Ebene, 12 Blöcke, Einfall 64.8°, Normale [0.08,0.991,0.105]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5003448888888892 sunny · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 5.8,
+   "zeit": "2026-11-01T20:50:53.693Z",
+   "abdruck": "bcf6bf200130",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K1#1": {
+   "gruen": false,
+   "zahl": "arm ROT strich 0.3493 Soll [0.4358,0.6538] — strich 0.3493 < 0.4358 · third ROT strich 0.174 Soll [0.4358,0.6538] — strich 0.174 < 0.4358",
+   "exit": 0,
+   "minuten": 0.4,
+   "grund": "ROT: arm ROT strich 0.3493 Soll [0.4358,0.6538] — strich 0.3493 < 0.4358 · third ROT strich 0.174 Soll [0.4358,0.6538] — strich 0.174 < 0.4358",
+   "gpu": "nvidia/pascal",
+   "s": 24.1,
+   "zeit": "2026-11-01T20:50:59.490Z",
+   "abdruck": "dcc11ad7f401",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-01T20:50:00.051Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 6.3,
+  "grundstellungS": [],
+  "proben": 3,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "leib.K1#1",
+    "s": 22.9,
+    "takte": 768,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 4,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 1240,
+   "frameP95": 25.3,
+   "taktP95": 20.8,
+   "vramMax": 122.4,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 76,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 82.9,
+  "minuten": 1.44
+ }
+}
