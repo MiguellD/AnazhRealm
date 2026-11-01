@@ -476,7 +476,9 @@ class AnazhRealm_siedlung_verkehr {
                 else if (b.amSteuer && W.zustand === "steht") this._verkehrAussteigen(S, b);
                 if (!b.amSteuer) continue;
                 const e = W.entry;
-                const sicht = nah.includes(W);
+                // DIE GESTALT AM STEUER (die Simulations-Stufen, `_bewohnerGestalt`): nur der gewählte Fahrer trägt sie — gegossen,
+                // wenn er ins Bild kommt (sonst zeigt er sich nicht), abgegeben, wenn er geht; ungezeichnet ist sein Leib die Zahl
+                const sicht = this._bewohnerGestalt(S, b, nah.includes(W));
                 if (sicht !== g.visible) g.visible = sicht;
                 if (!sicht) {
                     // ungezeichnet folgt der Leib seinem Wagen nur mit der Lage (kein Knochen): wer ihn liest (die Linse, die
@@ -515,6 +517,7 @@ class AnazhRealm_siedlung_verkehr {
         const b = W.b;
         const g = b.leib;
         const e = W.entry;
+        this._bewohnerWecken(S, b); // ruhte er (die stehende Zahl schläft nach dem Weg des Auges), nimmt ihn der Takt auf
         b.amSteuer = true;
         [b.kreis, b.nah, b.weg, b.drehen, b.vx, b.vz, b.platz] = [false, false, null, null, 0, 0, false];
         this._bewohnerRasterLage(S, b);
