@@ -350,3 +350,4 @@ takt-z126a-gtx 1 punkte sha=e0f42f9ded85356026b589e9e434144f933a98f1 geraet=gtx 
 takt-z126b-gtx 1 punkte sha=e0f42f9ded85356026b589e9e434144f933a98f1 geraet=gtx nur=bauen.K1#2,fahrzeug.K2#1,ankunft.K2#1,ankunft.K3#1,klang.K4#1
 z128-abab 3 abab A=e0f42f9ded85356026b589e9e434144f933a98f1 B=20d09a043dcfba9257879da204d5aa73570a764b zellen=w-ego,stadt
 takt-z126a-gtx 0 storno
+takt-z126b-gtx 0 storno
