@@ -34,16 +34,12 @@ class AnazhRealm_stoff_gang {
         const J = knochen.length;
         const N = spec.n;
         const B = spec.baender || 1;
-        const tex = new T.DataTexture(
-            new Float32Array(3 * J * (B * N + 1) * 4),
-            3 * J,
-            B * N + 1,
-            T.RGBAFormat,
-            T.FloatType
-        );
-        tex.name = spec.name + "-gang";
-        tex.minFilter = tex.magFilter = T.NearestFilter;
-        tex.generateMipmaps = false;
+        // DER TON JE ECKE (mensch.K4): tragen die Quellen ihn (der Mensch, koerper `menschTon`), färbt jede Instanz ihre Ecken nach
+        // ihrer Palette — die Zeilen der Ton-Tafel [Leib, Gestalt] reisen je Instanz in `aGang.zw` (`_gangSatzInstanz`), gelesen am
+        // Index des Gangs (`_senkenKnoten().gang`: in der Wahl der GPU der Eintrag ihrer Liste, nie der Index des Zugs)
+        const ton = spec.quellen.every((q) => !!q.m.geometry.attributes.aTon);
+        const seite = this._gangSeite(spec.name, N, B, ton, J);
+        const tex = seite.tex;
         const satz = {
             quellen: spec.quellen,
             n: N,
@@ -55,28 +51,17 @@ class AnazhRealm_stoff_gang {
             stoffe: [],
             senken: [],
             cap: spec.cap,
+            seite,
+            J0: seite.nimm(J), // der erste Platz des Satzes auf seiner Seite
         };
+        seite.saetze.add(satz);
         stand(satz);
         tex.needsUpdate = true;
-        const knoten = AnazhRealm._gangSatzKnoten(tex, N, B);
-        // DER TON JE ECKE (mensch.K4): tragen die Quellen ihn (der Mensch, koerper `menschTon`), färbt jede Instanz ihre Ecken nach
-        // ihrer Palette — die Zeilen der Ton-Tafel [Leib, Gestalt] reisen je Instanz in `aGang.zw` (`_gangSatzInstanz`), gelesen am
-        // Index des Gangs (`_senkenKnoten().gang`: in der Wahl der GPU der Eintrag ihrer Liste, nie der Index des Zugs)
-        const ton = spec.quellen.every((q) => !!q.m.geometry.attributes.aTon);
+        const knoten = seite.knoten;
         satz.ton = ton;
-        const TSL = T.TSL;
-        const tonFarbe = ton
-            ? TSL.vec4(
-                  TSL.varying(
-                      TSL.attribute("color", "vec3").mul(this._tonFaktor(TSL, AnazhRealm._senkenKnoten().gang.zw)),
-                      "vTonFarbe"
-                  ),
-                  1
-              )
-            : null;
+        const tonFarbe = seite.tonFarbe;
         const S = ton ? 15 : 14; // die Ecke im EINEN Puffer: Vorlage, Normale, Knochen, Gewichte (und ihr Ton)
         const klone = new Map();
-        const D = tex.image.data;
         const e = new Float32Array(6);
         for (const sk of spec.senken) {
             let stoff = klone.get(sk.stoff);
@@ -102,7 +87,7 @@ class AnazhRealm_stoff_gang {
                 const ix = q.m.geometry.index.array;
                 const basis = P.length / 3;
                 for (let i = 0; i < a.position.count; i++) {
-                    AnazhRealm._gangSatzEcke(D, J, B * N, q, i, e);
+                    AnazhRealm._gangSatzEcke(satz, B * N, q, i, e);
                     P.push(e[0], e[1], e[2]);
                     Nn.push(e[3], e[4], e[5]);
                     C.push(a.color.getX(i), a.color.getY(i), a.color.getZ(i));
@@ -110,7 +95,7 @@ class AnazhRealm_stoff_gang {
                     RN.push(a.normal.getX(i), a.normal.getY(i), a.normal.getZ(i));
                     if (ton) TN.push(a.aTon.getX(i));
                     for (let c = 0; c < 4; c++) {
-                        KI.push(q.platz[a.skinIndex.getComponent(i, c)]);
+                        KI.push(satz.J0 + q.platz[a.skinIndex.getComponent(i, c)]); // der Platz auf der Seite
                         KW.push(a.skinWeight.getComponent(i, c));
                     }
                 }
@@ -171,7 +156,15 @@ class AnazhRealm_stoff_gang {
             m.name = spec.name;
             m.userData.inventar = spec.inventar;
             m.userData.teil = sk.teil;
-            m.userData.gang = { n: N, baender: B, J, puffer: D };
+            // `J` die Breite einer Zeile in Plätzen, `puffer` die Seite (`_gangSeite` stellt beides beim Wachsen nach), `bytes` der
+            // Teil des Satzes
+            m.userData.gang = {
+                n: N,
+                baender: B,
+                J: seite.breite,
+                puffer: tex.image.data,
+                bytes: 3 * J * (B * N + 1) * 16,
+            };
             m.receiveShadow = !sk.wurf;
             m.layers.mask = sk.wurf ? 0 : 1; // der Wurf nur auf der Wurf-Ebene (`_wurfEbene`), das Auge nur auf Ebene 0
             m.castShadow = !!sk.wurf;
@@ -197,7 +190,7 @@ class AnazhRealm_stoff_gang {
                 .multiplyMatrices(inv, teile[nm].matrixWorld)
                 .multiply(q.m.skeleton.boneInverses[j])
                 .multiply(q.m.bindMatrix).elements;
-            const o = (zeile * satz.J + p) * 12;
+            const o = AnazhRealm._gangOrt(satz, zeile, p);
             for (let r = 0; r < 3; r++) {
                 D[o + r * 4] = e[r];
                 D[o + r * 4 + 1] = e[4 + r];
@@ -208,7 +201,8 @@ class AnazhRealm_stoff_gang {
         if (satz.kugeln) AnazhRealm._gangSatzHuelle(satz, zeile);
     }
     // DIE ECKE i DER QUELLE q in der Zeile `zeile` auf der CPU, wie der Knoten sie zeichnet: Lage und Normale nach `aus`
-    static _gangSatzEcke(D, J, zeile, q, i, aus) {
+    static _gangSatzEcke(satz, zeile, q, i, aus) {
+        const D = satz.tex.image.data;
         const a = q.m.geometry.attributes;
         const v = [a.position.getX(i), a.position.getY(i), a.position.getZ(i)];
         const nv = [a.normal.getX(i), a.normal.getY(i), a.normal.getZ(i)];
@@ -216,7 +210,7 @@ class AnazhRealm_stoff_gang {
         for (let c = 0; c < 4; c++) {
             const w = a.skinWeight.getComponent(i, c);
             if (w === 0) continue;
-            const o = (zeile * J + q.platz[a.skinIndex.getComponent(i, c)]) * 12;
+            const o = AnazhRealm._gangOrt(satz, zeile, q.platz[a.skinIndex.getComponent(i, c)]);
             for (let r = 0; r < 3; r++) {
                 const b = o + r * 4;
                 aus[r] += w * (D[b] * v[0] + D[b + 1] * v[1] + D[b + 2] * v[2] + D[b + 3]);
@@ -255,7 +249,96 @@ class AnazhRealm_stoff_gang {
         }
         for (const geo of satz.geos) geo.dispose();
         for (const st of satz.stoffe) st.dispose();
-        satz.tex.dispose();
+        satz.seite.gib(satz.J0, satz.J);
+        satz.seite.saetze.delete(satz);
+    }
+
+    // DIE SEITE DES GANGS (w4-knoten-wurzel): je Familie (Name · Phasen · Bänder · Ton) EIN Knochen-Puffer und EIN Knoten — jeder
+    // Satz der Familie nimmt dort seine Plätze (`nimm`: der erste freie Bereich, `J0`), seine Ecken tragen die Plätze der Seite
+    // (`aKnochen`), sein Abschied gibt sie zurück (`gib`). Bis hier trug jeder Satz seine eigene Textur und darum seinen eigenen
+    // Knoten: r184 schlüsselt das Programm nach Knoten-Identität, jede Gestalt der Menge baute byte-gleiches WGSL neu (Radeon kalt,
+    // V18.546.159: 8 Bauten des bewohner-satz und 10 seines Wurfs, EIN Programm je Pass). Die Seite wächst in der Breite (doppelt,
+    // bis GANG_SEITE.max Plätze: drei Texel je Platz unter der Textur-Grenze 8192), jede Zeile zieht dabei um; erst eine volle
+    // Seite öffnet die nächste (ein Knoten mehr).
+    _gangSeite(name, n, baender, ton, J) {
+        const S = this._gangSeiten || (this._gangSeiten = new Map());
+        const G = AnazhRealm.GANG_SEITE;
+        if (!(J <= G.max)) throw this._stoffBruch(`die Seite des Gangs (${name})`, new Error(`${J} Plätze > ${G.max}`));
+        const key = `${name}|${n}|${baender}|${ton ? "ton" : ""}`;
+        const liste = S.get(key) || S.set(key, []).get(key);
+        let seite = liste.find((x) => x.passt(J));
+        if (seite) return seite;
+        const T = THREE;
+        const TSL = T.TSL;
+        const zeilen = baender * n + 1;
+        const tex = new T.DataTexture(
+            new Float32Array(3 * G.start * zeilen * 4),
+            3 * G.start,
+            zeilen,
+            T.RGBAFormat,
+            T.FloatType
+        );
+        tex.name = name + "-gang";
+        tex.minFilter = tex.magFilter = T.NearestFilter;
+        tex.generateMipmaps = false;
+        seite = {
+            tex,
+            breite: G.start,
+            frei: [[0, G.start]], // [erster Platz, Zahl] je freiem Bereich
+            saetze: new Set(),
+            knoten: AnazhRealm._gangSatzKnoten(tex, n, baender),
+            tonFarbe: ton
+                ? TSL.vec4(
+                      TSL.varying(
+                          TSL.attribute("color", "vec3").mul(this._tonFaktor(TSL, AnazhRealm._senkenKnoten().gang.zw)),
+                          "vTonFarbe"
+                      ),
+                      1
+                  )
+                : null,
+            passt: (j) => seite.frei.some(([, z]) => z >= j) || seite.breite < G.max,
+            nimm: (j) => {
+                let f = seite.frei.find(([, z]) => z >= j);
+                while (!f) {
+                    const alt = seite.breite;
+                    const neu = Math.min(G.max, alt * 2);
+                    const D0 = tex.image.data;
+                    const D = new Float32Array(3 * neu * zeilen * 4);
+                    for (let z = 0; z < zeilen; z++) D.set(D0.subarray(z * alt * 12, (z + 1) * alt * 12), z * neu * 12);
+                    tex.image = { data: D, width: 3 * neu, height: zeilen };
+                    tex.needsUpdate = true;
+                    seite.breite = neu;
+                    const letzter = seite.frei.find(([a, z]) => a + z === alt);
+                    if (letzter) letzter[1] += neu - alt;
+                    else seite.frei.push([alt, neu - alt]);
+                    for (const s of seite.saetze)
+                        for (const m of s.senken) Object.assign(m.userData.gang, { J: neu, puffer: D });
+                    f = seite.frei.find(([, z]) => z >= j);
+                }
+                const a = f[0];
+                [f[0], f[1]] = [a + j, f[1] - j];
+                if (f[1] === 0) seite.frei.splice(seite.frei.indexOf(f), 1);
+                return a;
+            },
+            gib: (a, j) => {
+                seite.frei.push([a, j]);
+                seite.frei.sort((x, y) => x[0] - y[0]);
+                for (let i = seite.frei.length - 1; i > 0; i--) {
+                    const [v, w] = [seite.frei[i - 1], seite.frei[i]];
+                    if (v[0] + v[1] === w[0]) {
+                        v[1] += w[1];
+                        seite.frei.splice(i, 1);
+                    }
+                }
+            },
+        };
+        liste.push(seite);
+        return seite;
+    }
+    // DER ORT des Platzes p eines Satzes in der Zeile `zeile` seiner Seite (Float-Index, drei Texel je Platz) — der EINE Rechner der
+    // Lage im Puffer (Pose, Ecke, Hülle)
+    static _gangOrt(satz, zeile, p) {
+        return (zeile * satz.seite.breite + satz.J0 + p) * 12;
     }
 
     // DER KNOTEN DES GANGS (Lehre 22: r184 rechnet den positionNode VOR der Instanz-Matrix — die Vorlage ist der Raum des
@@ -330,7 +413,7 @@ class AnazhRealm_stoff_gang {
             const s = geo.boundingSphere,
                 c = [s.center.x, s.center.y, s.center.z];
             for (let p = 0; p < satz.J; p++) {
-                const o = (zeile * satz.J + p) * 12;
+                const o = AnazhRealm._gangOrt(satz, zeile, p);
                 let d2 = 0,
                     st = 0;
                 for (let r = 0; r < 3; r++) {
@@ -345,3 +428,8 @@ class AnazhRealm_stoff_gang {
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_stoff_gang]);
+
+// ===== ATLAS · Stoff/gang — Außen-Konstanten =====
+// DIE SEITE DES GANGS (`_gangSeite`): Plätze (je drei Texel) zu Beginn und höchstens je Seite — 3 · max ≤ 8192, die Breiten-Grenze
+// einer WebGPU-Textur
+AnazhRealm.GANG_SEITE = Object.freeze({ start: 128, max: 2730 });
