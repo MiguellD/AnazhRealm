@@ -1164,32 +1164,24 @@ async function proben(phasen) {
             );
             w8.tore = tore.length;
             // DIE ABSAGEN DER WURZEL (der Zähler des Wirts, `_genesisAbsagen`: id → Grund) — kein Element des Plans fällt still
-            w8.absagen = [...(r._genesisAbsagen || new Map())].map(([id, g]) => `${id} (${g})`);
+            w8.absagen = [...(r._genesisAbsagen || [])];
             // DIE KACHEL-PFLANZEN AM RAND DES FREIRAUMS (der Freiraum des Plans bestimmt beide Radien): der Spieler steht auf seinem
-            // Rand zwischen zwei Toren, die Nah-Streu (`NAH_STREU.radius` um die Kamera) reicht hinein und hinaus — innen (d < r)
-            // ist jede Pflanze ein Bruch, außen bis r + Reichweite beweist sie, dass die Probe sieht. Bis hierher stand die Kamera in
-            // der Mitte und zählte im 30-m-Kreis: im Freiraum r 32 trug er keine Pflanze, die Linse konnte nie GRÜN werden.
-            const NSR = A.NAH_STREU.radius;
-            const GO = FC.GENESIS_ORT;
-            const randOrt = Array.from({ length: GO.slots }, (_, k) => {
-                const a = ((GO.achseGrad + ((k + 0.5) * 360) / GO.slots) * Math.PI) / 180;
-                return [L.x + Math.cos(a) * L.r, L.z + Math.sin(a) * L.r];
-            }).find(([qx, qz]) => r._landAt(qx, qz, 0.5) && Number.isFinite(hh(qx, qz)));
-            w8.pflanzen = 0;
-            w8.aufScheibe = 0;
-            w8.band = [L.r, L.r + NSR];
-            if (!randOrt) w8.fehler = "kein trockener Ort auf dem Rand des Freiraums";
+            // Rand, die Nah-Streu (`NAH_STREU.radius` um die Kamera) reicht hinein und hinaus — innen (d < r) ist jede Pflanze ein
+            // Bruch, außen bis r + Reichweite beweist sie, dass die Probe sieht. Bis hierher stand die Kamera in der Mitte und zählte im
+            // 30-m-Kreis: im Freiraum r 32 trug er keine Pflanze, die Linse konnte nie GRÜN werden.
+            w8.band = L.r + A.NAH_STREU.radius;
+            w8.pflanzen = w8.aufScheibe = 0;
+            const rand = ring(L, [L.r]).find(([qx, qz]) => r._landAt(qx, qz, 0.5) && Number.isFinite(hh(qx, qz)));
+            if (!rand) w8.fehler = "kein Land am Rand des Freiraums";
             else {
-                stell(randOrt[0], hh(randOrt[0], randOrt[1]) + 2.2, randOrt[1]);
-                w8.randRuhe = await ruheAn(randOrt[0], randOrt[1]);
+                stell(rand[0], hh(...rand) + 2.2, rand[1]);
+                w8.ruhe = w8.ruhe && (await ruheAn(...rand));
                 for (const kk of (s.nahStreu && s.nahStreu.kacheln.values()) || [])
                     for (const it of kk.items || []) {
                         const d = abstand(it.x, it.z);
-                        if (d >= L.r && d <= L.r + NSR) w8.pflanzen++;
                         if (d < L.r) w8.aufScheibe++;
+                        else if (d <= w8.band) w8.pflanzen++;
                     }
-                stell(L.x, yM + 2.2, L.z);
-                await ruheAn(L.x, L.z, 20);
             }
             // DIE STREU der Lichtung: innerhalb 64 m um den Spieler baut keine Region Streu (`SCATTER.innerM`) — der Spieler
             // steht 120 m daneben, die Regionen über der Plattform bauen neu (durch die Wand). Der Aufbau zählt die lebenden
@@ -1384,32 +1376,18 @@ async function proben(phasen) {
         o.w4.wurf = H.length * A.FELD_WURF.length;
         for (const e of wurf) if (s.architectures.includes(e)) r.removeArchitecture(e);
         // W4 WEG: keine Natur (Eintrag, lebende Streu-Zelle, Kachel-Pflanze) auf Straße, Feldweg, Platz, Anger oder Acker
-        // des Drehbuch-Dorfs — die Formen der Wege-Karte, ihr Abstand hier eigens gerechnet (Kapsel um das Segment, gedrehter
-        // Kasten); auf dem Gras-Anger gilt seine Grenze (`sperr`, das Gesetzbuch: kein Baum tiefer als 1 m im Anger)
+        // eines Dorfs und auf Weg und Pflaster des Genesis-Orts — die Formen der Wege-Karte mit ihrem EINEN Abstand
+        // (`_wegeFormAbstand`, derselbe, mit dem der Boden sie malt; bis hierher rechnete die Linse ihn eigens, ein Zwilling ohne
+        // die Flächen eines Plans); auf dem Gras-Anger gilt seine Grenze (`sperr`, das Gesetzbuch: kein Baum tiefer als 1 m im
+        // Anger), der Rasen eines Plans ist kein Weg (`sperr` −∞)
         {
             const formen = [];
-            // die Flächen eines Plans (`zone`, der Genesis-Ort) urteilt W8 an der Natur-Wand des Orts
-            for (const b of (s.wegeKarte && s.wegeKarte.siedlungen) || [])
-                for (const f of b.formen) if (f.typ !== "zone") formen.push(f);
-            const abstand = (f, px, pz) => {
-                if (f.typ === "kasten") {
-                    const co = Math.cos(f.phi || 0);
-                    const si = Math.sin(f.phi || 0);
-                    const lx = Math.abs(co * (px - f.ax) - si * (pz - f.az)) - f.ex;
-                    const lz = Math.abs(si * (px - f.ax) + co * (pz - f.az)) - f.ez;
-                    return Math.hypot(Math.max(lx, 0), Math.max(lz, 0)) + Math.min(Math.max(lx, lz), 0);
-                }
-                const dx = f.bx - f.ax;
-                const dz = f.bz - f.az;
-                const ll = dx * dx + dz * dz;
-                const h = ll > 1e-6 ? Math.min(1, Math.max(0, ((px - f.ax) * dx + (pz - f.az) * dz) / ll)) : 0;
-                return Math.hypot(px - (f.ax + dx * h), pz - (f.az + dz * h)) - f.halb;
-            };
+            for (const b of (s.wegeKarte && s.wegeKarte.siedlungen) || []) formen.push(...b.formen);
             const w = { formen: formen.length, natur: 0, aufWeg: 0, taeter: [] };
             const pruef = (art, x, z, quelle) => {
                 w.natur++;
                 for (const f of formen)
-                    if (abstand(f, x, z) < (f.sperr !== undefined ? f.sperr : 0)) {
+                    if (A._wegeFormAbstand(f, x, z) < (f.sperr !== undefined ? f.sperr : 0)) {
                         w.aufWeg++;
                         if (w.taeter.length < 6)
                             w.taeter.push(
@@ -2006,13 +1984,9 @@ function urteil(o) {
                 f.push(
                     `W8 Aufbau: ${w.zellenNeu} lebende Streu-Zellen in den neu gebauten Regionen um den Genesis-Ort (im 40-m-Kreis ${w.zellen})${w.streuSteht ? "" : " (die Regionen kamen nicht zur Ruhe)"} (Soll ≥ 20)`
                 );
-            if (!w.randRuhe) f.push("W8 Aufbau: die Nah-Streu kam am Rand des Freiraums nicht zur Ruhe");
             if (!(w.pflanzen >= 20))
-                f.push(`W8 Aufbau: ${w.pflanzen} Kachel-Pflanzen im Band r ${w.band.join("–")} m vor dem Freiraum (Soll ≥ 20)`);
-            if (w.absagen.length)
-                f.push(
-                    `W8 Ort: ${w.absagen.length} Elemente des Genesis-Orts stehen nicht — die Wurzel sagte ab: ${w.absagen.slice(0, 6).join(" · ")}`
-                );
+                f.push(`W8 Aufbau: ${w.pflanzen} Kachel-Pflanzen vor dem Freiraum bis r ${w.band} m (Soll ≥ 20)`);
+            if (w.absagen.length) f.push(`W8 Ort: die Wurzel sagte ab: ${w.absagen.join(" · ")}`);
             if (!(w.tore >= 1))
                 f.push(`W8 Aufbau: ${w.tore} Tore um die Mitte (der Ort-Takt setzte keins)`);
             if (!(w.gegenprobe >= 1))
