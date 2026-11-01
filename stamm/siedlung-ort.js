@@ -2845,47 +2845,13 @@ class AnazhRealm_siedlung_ort {
         });
         plan.haeuser.forEach((h, i) => w("haus", "S2", "haus_" + h.kultur, Object.assign({}, h, { gier: h.phi }), i));
         plan.formationen.forEach((f, i) => w("fels", "S2", "felsbogen", f, i, { dy: 0 }));
-        // DIE BÜHNEN DER BREITE: der Spielplatz mit den Werken des Zimmermanns (fachwerk WERKE, Bauplan `<kind>_<art>`) und den
-        // Bänken der Eltern; die Arena mit dem Hof ihres Gesetzbuchs (die Zeilen der Tafel `satz` um den Ursprung `hof`, je Zeile
-        // der Bauplan, dessen Gestalt sie trägt). Trägt das Gesetzbuch eine Zeile nicht, bleibt der Haken offen und wird gezählt
-        // (`_genesisHaken`, laut einmal je Plan) — die Fläche bleibt Fläche, nie eine Ersatz-Box.
-        const haken = {};
-        const offen = (k, was) => (haken[k] || (haken[k] = [])).push(was);
+        // DIE BÜHNEN DER BREITE: der Spielplatz mit den Werken, die sein Gesetzbuch für ihn trägt (fachwerk WERKE `siteTag`
+        // spielplatz, der Plan nennt sie: `spielplatzGeraete`; Bauplan `<kind>_<art>`), und den Bänken der Eltern. Die Arena bleibt
+        // Fläche, bis ein Gesetzbuch ihren Hof trägt — nie eine Ersatz-Box.
         const SP = plan.spielplatz;
-        SP.geraete.forEach((g, i) => {
-            const W = FC.WERKE && FC.WERKE[g.art];
-            if (W) w("geraet", "spielplatz", W.kind + "_" + g.art, g, i);
-            else offen("spielplatz", "fachwerk:WERKE." + g.art);
-        });
+        SP.geraete.forEach((g, i) => w("geraet", "spielplatz", FC.WERKE[g.art].kind + "_" + g.art, g, i));
         SP.baenke.forEach((b, i) => w("spielbank", "spielplatz", "bank_sitzbank", b, i));
         const A = plan.arena;
-        const sc = globalThis["__" + A.geraete.studio + "Core"];
-        const hof = sc && Array.isArray(sc[A.geraete.satz]) ? sc[A.geraete.satz] : null;
-        if (hof) {
-            const c = Math.cos(A.hof.phi);
-            const s = Math.sin(A.hof.phi);
-            const bps = this.state.blueprints || {};
-            const typVon = (art) => Object.keys(bps).find((n) => bps[n] && bps[n].studioGestalt === art) || null;
-            hof.forEach((r, i) => {
-                const typ = typVon(r[0]);
-                if (!typ) return void offen("arena", A.geraete.studio + ":" + r[0]);
-                const q = {
-                    x: A.hof.x + r[1] * c + r[2] * s,
-                    z: A.hof.z - r[1] * s + r[2] * c,
-                    gier: (r[3] || 0) + A.hof.phi,
-                    seed: (A.seed + i * 7919) >>> 0,
-                };
-                w("arena", "arena", typ, q, i, r[4] ? { ov: r[4] } : null);
-            });
-        } else offen("arena", A.geraete.studio + ":" + A.geraete.satz);
-        this._genesisHaken = haken;
-        const namen = Object.keys(haken);
-        if (namen.length)
-            this.log(
-                `GENESIS-ORT: ${namen.length} Haken offen — ` +
-                    namen.map((k) => `${k} (${haken[k].length}: ${haken[k].slice(0, 3).join(", ")})`).join(" · "),
-                "WARN"
-            );
         const Z = FC.GENESIS_ORT.zoo;
         const zr = plan.gehege[0].rand;
         const buehnen = {

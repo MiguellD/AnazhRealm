@@ -8554,19 +8554,18 @@
         },
         viertel: { r: 190, k: 5, hausR: 60 }, // der Wunsch des Start-Dorfs (die Häuser eines Start-Dorfs stehen ≤ 61 m um den Anker)
         // DIE BÜHNEN DER BREITE (F): je eine Fläche ≥ 210 m von M auf dem Strahl hinter ihrem Tor, EINE Platte auf dem Median
-        // ihres Grunds (Besucher und Geräte auf einer Höhe, wie der Zoo). Die Geräte-Zeilen nennen das Gesetzbuch, dessen Gestalten
-        // dort stehen; der Wirt setzt sie über seinen EINEN Bau, sobald das Gesetzbuch sie trägt (der Haken, gezählt). Die Arena:
-        // der Hof der Schmiede (ihre Tafel `satz`, Eingang −x, Schießbahn +x), sein Ursprung `hof` in der Fläche, deren +x radial
-        // hinaus zeigt (der Eingang zum Platz). Der Spielplatz: die Geräte des Zimmermanns im Rund um die Mitte, je zur Mitte
-        // gedreht, die Bänke der Eltern am Rand.
-        arena: { r: 260, k: 9, ex: 24.5, ez: 21, hof: [-15.5, 0], belag: "weg", geraete: { studio: "schmiede", satz: "ARENA_HOF" } },
+        // ihres Grunds (Besucher und Geräte auf einer Höhe, wie der Zoo). Die Geräte stehen, was ein Gesetzbuch für den Ort trägt —
+        // nie eine Namensliste hier: der Spielplatz trägt jedes Werk des Zimmermanns, dessen Zeile den Ort `spielplatz` nennt
+        // (WERKE `siteTag`, `spielplatzGeraete`), im Rund um die Mitte, je zur Mitte gedreht, die Bänke der Eltern am Rand. Die
+        // Arena bleibt Fläche, bis ein Gesetzbuch ihren Hof trägt (bis hierher nannte die Zeile eine Tafel ARENA_HOF der Schmiede und
+        // acht Geräte, die kein Gesetzbuch kennt — der Wirt zählte sie als offene Haken).
+        arena: { r: 260, k: 9, ex: 24.5, ez: 21, belag: "weg" },
         spielplatz: {
             r: 260,
             k: 6,
             flaecheR: 18,
             belag: "gras",
             rundM: 9.5,
-            geraete: ["doppelschaukel", "turmrutsche", "sprossengeruest", "balkenwippe", "turnreck", "schwebebalken", "kletterwand", "hangelbahn"],
             baenke: { r: 16, grad: [45, 135, 225, 315] },
         },
         // DIE WEGE durch den Gürtel: je Tor einer (hinter ihm, ab dem Ring hinaus); `pts` danach, `r` radial bis dort, `feldweg`
@@ -8744,6 +8743,13 @@
         for (var i = 0; i < 64; i++) m = Math.min(m, Math.hypot(dx - q.a * Math.cos((i * Math.PI) / 32), dz - q.b * Math.sin((i * Math.PI) / 32)));
         return m;
     }
+    // DIE GERÄTE DES SPIELPLATZES: jedes Werk des Zimmermanns, dessen Zeile den Ort `spielplatz` nennt (WERKE `siteTag`, die Folge
+    // der Tafel) — das Gesetzbuch trägt sie, der Plan nennt keinen Namen
+    function spielplatzGeraete() {
+        return Object.keys(WERKE).filter(function (k) {
+            return WERKE[k].siteTag === "spielplatz";
+        });
+    }
     // DER PLAN v1 DES GENESIS-ORTS: die Saat des Orts (`genesisSaat`) und die Welten, deren Tor die Welt trägt (ihre Schlüssel der
     // Welt-Tafel, genau die der Slot-Tafel). Fail-closed, nie ein Ersatz: ist die Slot-Tafel unvollständig, hat eine Welt keinen
     // Slot oder fehlt die Welt eines Slots, wirft er laut.
@@ -8903,30 +8909,21 @@
         var wp = pol(G.wache.r, wacheW);
         var wache = { x: wp.x, z: wp.z, gier: zurMitte(wp), rollen: G.wache.rollen.slice() };
         var vp = pol(G.viertel.r, a(G.viertel.k));
-        // DIE BÜHNEN DER BREITE: die Fläche der Arena (ihr +x radial hinaus: phi = −a, die Regel der Kästen in `zoneTraegt`) mit dem
-        // Ursprung des Hofs, der Spielplatz mit seinen Geräte-Zeilen im Rund und den Bänken am Rand
+        // DIE BÜHNEN DER BREITE: die Fläche der Arena (ihr +x radial hinaus: phi = −a, die Regel der Kästen in `zoneTraegt`), der
+        // Spielplatz mit den Geräten seines Gesetzbuchs im Rund (`spielplatzGeraete`) und den Bänken am Rand
         var AR = G.arena;
         var ap = pol(AR.r, a(AR.k));
         var aPhi = gr6(-a(AR.k));
-        var arena = {
-            x: ap.x,
-            z: ap.z,
-            phi: aPhi,
-            ex: AR.ex,
-            ez: AR.ez,
-            hof: xz(ap.x + AR.hof[0] * Math.cos(aPhi) + AR.hof[1] * Math.sin(aPhi), ap.z - AR.hof[0] * Math.sin(aPhi) + AR.hof[1] * Math.cos(aPhi)),
-            geraete: Object.assign({}, AR.geraete),
-            seed: genesisSame(sd, 10, 0),
-        };
-        arena.hof.phi = aPhi;
+        var arena = { x: ap.x, z: ap.z, phi: aPhi, ex: AR.ex, ez: AR.ez };
         var SP = G.spielplatz;
         var spp = pol(SP.r, a(SP.k));
+        var spArten = spielplatzGeraete();
         var spielplatz = {
             x: spp.x,
             z: spp.z,
             r: SP.flaecheR,
-            geraete: SP.geraete.map(function (art, i) {
-                var w = (2 * Math.PI * i) / SP.geraete.length;
+            geraete: spArten.map(function (art, i) {
+                var w = (2 * Math.PI * i) / spArten.length;
                 var q = xz(spp.x + SP.rundM * Math.cos(w), spp.z + SP.rundM * Math.sin(w));
                 return { art: art, x: q.x, z: q.z, gier: gr6(Math.atan2(spp.x - q.x, spp.z - q.z)), seed: genesisSame(sd, 11, i) };
             }),
@@ -9426,7 +9423,7 @@
             becken: Object.assign({}, plan.becken, { spiegel: spiegel, bett: yB }),
             gehege: gehege,
             wache: mitY(plan.wache),
-            arena: Object.assign({}, AR, { y: yA, hof: Object.assign({}, AR.hof, { y: yA }) }),
+            arena: Object.assign({}, AR, { y: yA }),
             spielplatz: Object.assign({}, SPL, { y: ySp, geraete: SPL.geraete.map(mitY), baenke: SPL.baenke.map(mitY) }),
             hoehen: { kern: v.platz.y, terrasse: yT, ufer: yU, spiegel: spiegel, bett: yB, arena: yA, spielplatz: ySp },
             erdbau: erdbau,
