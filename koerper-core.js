@@ -2222,6 +2222,25 @@
         L.isJumping = false;
         return true;
     }
+    // DIE LAGE DES SCHWINGENDEN TEILS (w4-koerper-park — dasselbe Gesetz wie `_schaukelLage` und `_wippePunkt`): die Drehung um die
+    // Achse des Angebots {p: Punkt der Achse, ax: Richtung a→b, w: Winkel (rechte Hand um ax)}, die jeden Punkt des Teils aus seiner
+    // Ruhe an seine Lage im Zustand trägt — die Schaukel um −θ (θ > 0 schwingt längs der Ebene), die Wippe um −φ (φ > 0 senkt Sitz 0);
+    // null: das Angebot schwingt nicht. Leser: die Linse des Durchgreifens (das Instrument des Labors), der Selbst-Beweis Sitz → sitzP.
+    function leibSchwenk(a) {
+        var z = a.zustand || {},
+            ax = _norm(_sub(a.achse ? a.achse.b : [0, 0, 1], a.achse ? a.achse.a : [0, 0, 0]));
+        if (a.verb === "schaukeln") return { p: _schaukelGeo(a).mitte, ax: ax, w: -(z.theta || 0) };
+        if (a.verb === "wippen") return { p: _wippeGeo(a).mitte, ax: ax, w: -(z.phi || 0) };
+        return null;
+    }
+    // ein Punkt q (Ruhe-Lage) des schwingenden Teils an seiner Lage (Rodrigues um die Achse des Schwenks)
+    function leibSchwenkPunkt(S, q) {
+        if (!S) return _v3(q);
+        var v = _sub(q, S.p),
+            c = Math.cos(S.w),
+            s = Math.sin(S.w);
+        return _add(S.p, _add(_add(_mul(v, c), _mul(_cross(S.ax, v), s)), _mul(S.ax, _dot(S.ax, v) * (1 - c))));
+    }
     // DAS GERÄT SCHWINGT AUS, wenn kein Leib es führt (der Wirt ruft es je Schritt für jedes wache Gerät; es schläft, sobald es ruht)
     function leibGeraetAusschwingen(a, g, dt) {
         var z = a.zustand;
@@ -3210,6 +3229,10 @@
         }),
         hand: 0.03,
         fuss: 0,
+        // die Haut des Leibs gegen die Teile des Geräts (m, w4-koerper-park „kein Durchgreifen“): kein Punkt der gegossenen Haut tiefer
+        // als `haut` in einem Teil (das Polster der Haut über dem Knochen und das Raster der Probe, 2 cm) — die greifende Hand umschließt
+        // ihre Stange (Kette, Sprosse, Holm, Griff), jedes andere Teil auch für sie
+        haut: 0.01,
         // die Kapsel des Leibs gegen die Teile eines Geräts (m): der Rest des Kontakt-Lösers zwischen zwei Teilen
         kapsel: 0.02,
         tempo: Object.freeze({ klettern: [0.3, 0.6], hangeln: [0.2, 0.6], hangelnQuer: [0.05, 0.4], balancieren: [0.1, 0.5], gehen: [1.0, 1.6], laufen: [3.0, 8.0], rutscheAusgang: [1.5, 4.0], rutscheMax: [2.0, 4.0], sprungHoehe: [0.25, 0.6] }),
@@ -3245,9 +3268,11 @@
         });
         return o;
     }
-    // DAS URTEIL GEGEN DAS SOLL (die EINE Prüfung der Bewegung): die Messung m — zeilen {"verb:phase": {w: {knieL: [min, max], …}}},
-    // geraete {name: {posen, hand, handWo, fuss, fussWo}}, tempo {…}, doppel, wand — gegen VERB_SOLL; je Verstoß ein Satz beim
-    // Namen (leer: die Bewegung hält ihr Soll). Jede gemessene Phase trägt ihr Soll, jedes Soll seine Messung (beide Seiten).
+    // DAS URTEIL GEGEN DAS SOLL (die EINE Prüfung der Bewegung): die Messung m — zeilen {"verb:phase": {w: {knieL: [min, max], …}}} der
+    // freien Verben, angebote [{id, name}] (jedes Angebot jedes Geräts im Park), geraete {id: {name, verb, posen, zeilen, hand, handWo,
+    // fuss, fussWo, durch, durchWo}} je Angebot, tempo {…}, doppel, wand — gegen VERB_SOLL; je Verstoß ein Satz beim Namen (leer: die
+    // Bewegung hält ihr Soll). Jede gemessene Phase trägt ihr Soll, jedes Soll seine Messung (beide Seiten) — die Verben der Geräte
+    // (VERB_GESETZ) an JEDEM Gerät, das sie anbietet.
     function leibSollUrteil(m) {
         var S = VERB_SOLL,
             out = [],
@@ -3257,30 +3282,39 @@
             if (!Number.isFinite(x)) return out.push(name + " nicht messbar");
             if (x < b[0] - tol || x > b[1] + tol) out.push(name + " " + +x.toFixed(3) + " außerhalb [" + b[0] + ", " + b[1] + "]");
         };
-        for (key in m.zeilen) if (!S.winkel[key]) out.push(key + ": gemessen, aber ohne Soll (VERB_SOLL.winkel)");
-        for (key in S.winkel) {
-            var z = m.zeilen[key];
-            if (!z) {
-                out.push(key + ": nicht gemessen (Vorbedingung)");
-                continue;
-            }
-            for (k in S.winkel[key]) {
-                var art = /Max$/.test(k) ? 1 : /Min$/.test(k) ? 0 : -1,
-                    basis = k.replace(/(Max|Min)$/, ""),
-                    b = S.winkel[key][k];
+        var amGeraet = function (key) {
+            return !!VERB_GESETZ[key.split(":")[0]];
+        };
+        // eine Zeile gegen ihr Soll (wo: das Gerät davor, leer bei den freien Verben)
+        var zeile = function (wo, key, z) {
+            if (!z) return out.push(wo + key + ": nicht gemessen (Vorbedingung)");
+            for (var k2 in S.winkel[key]) {
+                var art = /Max$/.test(k2) ? 1 : /Min$/.test(k2) ? 0 : -1,
+                    basis = k2.replace(/(Max|Min)$/, ""),
+                    b = S.winkel[key][k2];
                 ["L", "R"].forEach(function (seite) {
                     var x = z.w[basis + seite];
-                    if (!x) return out.push(key + " " + basis + seite + ": nicht messbar");
-                    if (art >= 0) band(key + " " + basis + seite + (art ? " Spitze" : " Tiefpunkt"), x[art], b, 0.5);
-                    else if (x[0] < b[0] - 0.5 || x[1] > b[1] + 0.5) out.push(key + " " + basis + seite + " " + x[0].toFixed(0) + "…" + x[1].toFixed(0) + "° außerhalb [" + b[0] + ", " + b[1] + "]");
+                    if (!x) return out.push(wo + key + " " + basis + seite + ": nicht messbar");
+                    if (art >= 0) band(wo + key + " " + basis + seite + (art ? " Spitze" : " Tiefpunkt"), x[art], b, 0.5);
+                    else if (x[0] < b[0] - 0.5 || x[1] > b[1] + 0.5) out.push(wo + key + " " + basis + seite + " " + x[0].toFixed(0) + "…" + x[1].toFixed(0) + "° außerhalb [" + b[0] + ", " + b[1] + "]");
                 });
             }
-        }
+        };
+        for (key in m.zeilen) if (!S.winkel[key] || amGeraet(key)) out.push(key + ": gemessen, aber ohne Soll (VERB_SOLL.winkel)");
+        for (key in S.winkel) if (!amGeraet(key)) zeile("", key, m.zeilen[key]);
+        var ang = m.angebote || [];
+        if (!ang.length) out.push("Geräte: der Park nennt kein Angebot (Vorbedingung)");
+        for (var a = 0; a < ang.length; a++) if (!m.geraete[ang[a].id]) out.push(ang[a].name + ": nicht gemessen (jedes Angebot jedes Geräts)");
         for (var n in m.geraete) {
-            var G = m.geraete[n];
-            if (!G.posen) out.push(n + ": das Verb begann nicht (Vorbedingung)");
-            if (G.hand > S.hand) out.push(n + ": die Hand " + (G.hand * 100).toFixed(1) + " cm vom Anker (" + G.handWo + ", Soll ≤ " + S.hand * 100 + " cm)");
-            if (G.fuss > S.fuss + 1e-9) out.push(n + ": der Fuß " + (G.fuss * 100).toFixed(1) + " cm im Gerät (" + G.fussWo + ")");
+            var G = m.geraete[n],
+                wo = G.name + " ";
+            if (!G.posen) out.push(G.name + ": das Verb begann nicht (Vorbedingung)");
+            for (key in G.zeilen) if (!S.winkel[key] || key.split(":")[0] !== G.verb) out.push(wo + key + ": gemessen, aber ohne Soll (VERB_SOLL.winkel)");
+            for (key in S.winkel) if (key.split(":")[0] === G.verb) zeile(wo, key, G.zeilen[key]);
+            if (G.hand > S.hand) out.push(G.name + ": die Hand " + (G.hand * 100).toFixed(1) + " cm vom Anker (" + G.handWo + ", Soll ≤ " + S.hand * 100 + " cm)");
+            if (G.fuss > S.fuss + 1e-9) out.push(G.name + ": der Fuß " + (G.fuss * 100).toFixed(1) + " cm im Gerät (" + G.fussWo + ")");
+            if (!Number.isFinite(G.durch)) out.push(G.name + ": die Haut nicht gemessen (Vorbedingung)");
+            else if (G.durch > S.haut) out.push(G.name + ": die Haut greift " + (G.durch * 100).toFixed(1) + " cm in " + G.durchWo + " (Soll ≤ " + S.haut * 100 + " cm; Täter: leibVerbPose)");
         }
         var T = m.tempo || {};
         for (k in S.tempo) for (var j = 0; j < (T[k] || [NaN]).length; j++) band("Tempo " + k + (T[k] && T[k].length > 1 ? " " + j : ""), (T[k] || [NaN])[j], S.tempo[k], 1e-9);
@@ -3566,6 +3600,8 @@
         leibWippeSchritt: leibWippeSchritt,
         leibRutschSchritt: leibRutschSchritt,
         leibGeraetAusschwingen: leibGeraetAusschwingen,
+        leibSchwenk: leibSchwenk,
+        leibSchwenkPunkt: leibSchwenkPunkt,
         leibGangBlend: leibGangBlend,
         leibZweiKnochen: leibZweiKnochen,
         leibGangTakt: leibGangTakt,

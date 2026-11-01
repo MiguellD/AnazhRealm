@@ -651,17 +651,69 @@ function _ankerAbstand(a, p) { var best = Infinity, d3 = function (q) { return M
   (a.griff || []).forEach(function (q) { best = Math.min(best, d3(q)); });
   (a.holme || []).forEach(function (h) { var A = h[0], ab = [h[1][0] - A[0], h[1][1] - A[1], h[1][2] - A[2]], u = Math.max(0, Math.min(1, ((p[0] - A[0]) * ab[0] + (p[1] - A[1]) * ab[1] + (p[2] - A[2]) * ab[2]) / (ab[0] * ab[0] + ab[1] * ab[1] + ab[2] * ab[2]))); best = Math.min(best, d3([A[0] + ab[0] * u, A[1] + ab[1] * u, A[2] + ab[2] * u])); });
   return best; }
+// der Name eines Angebots im Urteil: Werk, Verb, schwingendes Teil
+function _angName(a) { return a.werk + ' ' + a.verb + (a.teil && a.verb === 'schaukeln' ? ' ' + a.teil : ''); }
+// DIE HAUT GEGEN DAS GERÄT (w4-koerper-park, „kein Durchgreifen“): die Proben der gegossenen Haut (L0 ohne Augen, ein Punkt je 2-cm-Zelle
+// der Bind-Lage, je Punkt sein tragender Knochen) — im Takt gehäutet (r128 `boneTransform`, dieselbe Rechnung wie der Shader) und gegen
+// jedes Teil des Werks geprüft: die Substanz (Pfosten, Wand, Sprossen, Bahn) und die Teile am Leib aus dem Angebot (Sitz, Kette, Hebel,
+// Hangel-Sprossen; was schwingt, steht an der Lage seines Zustands, koerper `leibSchwenk`). Die greifende Hand umschließt ihre Stange:
+// ein Teil, dessen zwei kleine Maße ≤ 6 cm sind und das die Mitte der Hand (um 3 cm) trägt, zählt für die Punkte dieser Hand nicht.
+var _REGION = { mensch: 'Rumpf', torso: 'Rumpf', head: 'Kopf', arm: 'Oberarm', elbow: 'Unterarm', hand: 'Hand', hip: 'Oberschenkel', knee: 'Unterschenkel', ankle: 'Fuß' };
+function _hautProben() {
+  if (gestalt.__proben) return gestalt.__proben;
+  var vox = 0.02 / M_E, liste = [];
+  gestalt.l0.forEach(function (n) {
+    if (/eye|iris|pupil/.test(n.userData.__klasse || '')) return;
+    var pa = n.geometry.attributes.position, si = n.geometry.attributes.skinIndex, sw = n.geometry.attributes.skinWeight, zellen = {};
+    for (var i = 0; i < pa.count; i++) {
+      var key = Math.round(pa.getX(i) / vox) + ',' + Math.round(pa.getY(i) / vox) + ',' + Math.round(pa.getZ(i) / vox);
+      if (zellen[key]) continue; zellen[key] = 1;
+      var bone = null;
+      if (n.isSkinnedMesh) { var bw = -1, ws = [sw.getX(i), sw.getY(i), sw.getZ(i), sw.getW(i)], is = [si.getX(i), si.getY(i), si.getZ(i), si.getW(i)]; for (var c = 0; c < 4; c++) if (ws[c] > bw) { bw = ws[c]; bone = n.skeleton.bones[is[c]].name; } }
+      else { var o = n.parent; while (o && !_REGION[o.name.replace(/-?1$/, '')]) o = o.parent; bone = o ? o.name : 'mensch'; }
+      var basis = bone.replace(/-?1$/, ''), seite = /-1$/.test(bone) ? '-1' : /1$/.test(bone) ? '1' : '';
+      liste.push({ n: n, i: i, region: _REGION[basis] + (seite ? ' ' + seite : ''), hand: basis === 'hand' ? 'hand' + seite : null });
+    }
+  });
+  gestalt.__proben = liste;
+  return liste;
+}
+function _teilName(t) { return (t.werk ? 'Teil' : 'Teil am Leib') + ' ' + t.h.map(function (x) { return (2 * x).toFixed(2); }).join('×') + ' m'; }
+function _hautGegenGeraet(V, D) {
+  var proben = _hautProben(), werk = V.ang.werk, teile = [];
+  parkTeile.forEach(function (b) { if (b.werk === werk) teile.push({ b: b, S: null }); });
+  parkAngebote.forEach(function (a) { if (a.werk !== werk || !a.teile) return; var S = KC.leibSchwenk(a), U = S ? { p: S.p, ax: S.ax, w: -S.w } : null; a.teile.forEach(function (b) { teile.push({ b: b, S: U }); }); });
+  // die Stangen, die eine Hand umschließt (die Mitte der Hand in ihnen, um 3 cm)
+  var umgriff = {};
+  ['hand1', 'hand-1'].forEach(function (h) { var c = _wl(h, gestalt.sk.handMitte[h]);
+    umgriff[h] = teile.filter(function (T) { var b = T.b, hs = b.h.slice().sort(function (x, y) { return x - y; }); if (hs[1] > 0.03) return false;
+      var l = _boxLokal(b, T.S ? KC.leibSchwenkPunkt(T.S, c) : c); return Math.abs(l[0]) < b.h[0] + 0.03 && Math.abs(l[1]) < b.h[1] + 0.03 && Math.abs(l[2]) < b.h[2] + 0.03; }); });
+  var v = new THREE.Vector3();
+  for (var j = 0; j < proben.length; j++) {
+    var q = proben[j], pa = q.n.geometry.attributes.position;
+    v.set(pa.getX(q.i), pa.getY(q.i), pa.getZ(q.i)); if (q.n.isSkinnedMesh) q.n.boneTransform(q.i, v); v.applyMatrix4(q.n.matrixWorld);
+    var p = [v.x * M_E, v.y * M_E, v.z * M_E];
+    for (var t = 0; t < teile.length; t++) {
+      var T = teile[t], b = T.b;
+      if (q.hand && umgriff[q.hand].indexOf(T) >= 0) continue;
+      var l = _boxLokal(b, T.S ? KC.leibSchwenkPunkt(T.S, p) : p), e = Math.min(b.h[0] - Math.abs(l[0]), b.h[1] - Math.abs(l[1]), b.h[2] - Math.abs(l[2]));
+      if (e > D.durch) { D.durch = e; D.durchWo = q.region + ' in ' + _teilName(b) + ', Phase ' + V.phase; }
+    }
+  }
+}
 function playMessen(P) {
   var L = play.L, V = L.leibVerb, M = messung, S = vorf && vorf.szene, G = {}, w;
   _GELENKE.forEach(function (n) { G[n] = _wl(n); });
   var q = parts.mensch.getWorldQuaternion(new THREE.Quaternion()), f = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
   // die Zeile: am Gerät Verb und Phase, frei die Art der Szene (die Luft nach dem Sprung, die Hocke, der Abstoß)
   var t = play.t, zeile = V ? V.verb + ':' + V.phase : S && S.frei && (!S.ab || vorf.n >= S.ab) ? (L.isInAir ? (t - (L._wandSprungAt || -Infinity) < KC.VERB_POSE.kickSec ? 'wandsprung:0' : t - (L._doppelSprungAt || -Infinity) < KC.VERB_POSE.tuckSec ? 'doppelsprung:0' : 'springen:' + (L.playerVel.y() > 0 ? 1 : 2)) : S.frei === 'springen' ? null : S.frei + ':0') : null;
-  if (zeile) { w = KC.leibPoseWinkel(G, [f.x, f.y, f.z]); var Z = M.zeilen[zeile] || (M.zeilen[zeile] = { n: 0, w: {} }); Z.n++;
+  // am Gerät trägt jedes Angebot seine Zeilen (die Verben an JEDEM Gerät), frei die Messung
+  var D = V && S ? M.geraete[V.ang.id] || (M.geraete[V.ang.id] = { name: _angName(V.ang), verb: V.verb, posen: 0, zeilen: {}, hand: 0, handWo: null, fuss: -Infinity, fussWo: null, durch: -Infinity, durchWo: null }) : null;
+  if (zeile) { w = KC.leibPoseWinkel(G, [f.x, f.y, f.z]); var ZZ = D ? D.zeilen : M.zeilen, Z = ZZ[zeile] || (ZZ[zeile] = { n: 0, w: {} }); Z.n++;
     for (var k in w) { var b = Z.w[k] || (Z.w[k] = [Infinity, -Infinity]); b[0] = Math.min(b[0], w[k]); b[1] = Math.max(b[1], w[k]); } play.winkel = w; }
-  if (V && S && S.geraet) {
-    var D = M.geraete[S.geraet] || (M.geraete[S.geraet] = { posen: 0, hand: 0, handWo: null, fuss: -Infinity, fussWo: null });
+  if (D) {
     D.posen++;
+    if (D.posen % 3 === 1) _hautGegenGeraet(V, D);
     ['hand1', 'hand-1'].forEach(function (h) {
       // die Stand-Hände: im Kreuzgang greift eine um, am Holm die wechselnde
       if (!P || (V.verb === 'klettern' && _seitePaar(V, h)) || (V.verb === 'hangeln' && V.wechsel && V.wechsel.hand === h)) return;
@@ -691,8 +743,9 @@ function _seitePaar(V, h) { return (V.paar === 0 && h === 'hand1') || (V.paar ==
 // ^ Leertaste, C), die Hooks des Anfangs, des Takts und des Endes; das Ende trägt die Tempi in die Messung
 function _ang(werk, verb, teil) { return parkAngebote.find(function (a) { return a.werk === werk && a.verb === verb && (!teil || a.teil === teil); }); }
 function _vor(a, d) { var n = a.normale; return [a.flaeche[0] + n[0] * d, 0, a.flaeche[2] + n[1] * d]; }
-function _klettert(werk) { return { name: 'klettern ' + werk, geraet: 'klettern ' + werk, ort: function () { var a = _ang(werk, 'klettern'); return { p: _vor(a, 0.4), gier: Math.atan2(-a.normale[0], -a.normale[1]) }; }, skript: [[600, 'W']],
-  takt: function (st) { if (play.L.leibVerb) (st.v = st.v || []).push(play.L.leibVerb.tempo); }, ende: function (st) { (messung.tempo.klettern = messung.tempo.klettern || []).push(st.v ? st.v.reduce(function (x, y) { return x + y; }, 0) / st.v.length : NaN); } }; }
+// das Klettern: hinauf, auf halber Höhe hält der Leib (die Phase des Haltens an jedem Gerät), dann weiter — das Tempo misst den Stieg
+function _klettert(werk) { return { name: 'klettern ' + werk, geraet: 'klettern ' + werk, ort: function () { var a = _ang(werk, 'klettern'); return { p: _vor(a, 0.4), gier: Math.atan2(-a.normale[0], -a.normale[1]) }; }, skript: [[100, 'W'], [40, ''], [500, 'W']],
+  takt: function (st) { if (play.L.leibVerb && vorf.tasten === 'W') (st.v = st.v || []).push(play.L.leibVerb.tempo); }, ende: function (st) { (messung.tempo.klettern = messung.tempo.klettern || []).push(st.v ? st.v.reduce(function (x, y) { return x + y; }, 0) / st.v.length : NaN); } }; }
 function _sprint(name, x, z, gier) { return { name: name, kapsel: true, ort: function () { return { p: [x, 0, z], gier: gier }; }, skript: [[150, 'W+']], ende: function () { messung.kapsel[name] = Object.assign(messung.kapsel[name] || { tief: 0 }, { weg: Math.hypot(play.p[0] - x, play.p[2] - z) }); } }; }
 var VORFUEHRUNG = [
   { name: 'schaukeln', geraet: 'schaukeln', ort: function () { var a = _ang('doppelschaukel', 'schaukeln', 'sitz0'); return { p: [a.sitz[0], 0, a.sitz[2] + 0.3], gier: 0 }; }, skript: [[1, 'C'], [2, ''], [720, 'W'], [1, ''], [720, '']],
@@ -705,6 +758,8 @@ var VORFUEHRUNG = [
     ende: function (st) { messung.tempo.rutscheMax = [st.vmax]; messung.tempo.rutscheAusgang = [st.aus]; } },
   { name: 'wippen', geraet: 'wippen', ort: function () { var a = _ang('balkenwippe', 'wippen'); return { p: [a.sitz[0][0], 0, a.sitz[0][2] + 0.3], gier: 0 }; }, skript: [[1, 'C'], [60, ''], [1, '^'], [90, '']],
     takt: function (st) { var V = play.L.leibVerb; if (V) { st.phi = Math.max(st.phi || 0, Math.abs(V.ang.zustand.phi)); st.max = V.ang.phiMax; } }, ende: function (st) { messung.tempo.wippe = [st.phi, st.max]; } },
+  // der zweite Sitz der Doppelschaukel (jedes Angebot jedes Geräts): aufsitzen, anschwingen, ausschwingen
+  { name: 'schaukeln sitz1', geraet: 'schaukeln', ort: function () { var a = _ang('doppelschaukel', 'schaukeln', 'sitz1'); return { p: [a.sitz[0], 0, a.sitz[2] + 0.3], gier: 0 }; }, skript: [[1, 'C'], [2, ''], [360, 'W'], [1, ''], [240, '']] },
   _klettert('sprossengeruest'), _klettert('kletterwand'), _klettert('turmrutsche'),
   { name: 'hangeln', geraet: 'hangeln hangelbahn', ort: function () { var h = _ang('hangelbahn', 'hangeln').holme[0]; return { p: [(h[0][0] + h[1][0]) / 2, 0, h[0][2]], gier: 0 }; }, skript: [[1, '^'], [60, '^'], [360, 'W']],
     takt: function (st) { if (play.L.leibVerb && !st.p0) { st.p0 = play.p.slice(); st.t0 = play.t; } }, ende: function (st) { messung.tempo.hangeln = [st.p0 ? Math.hypot(play.p[0] - st.p0[0], play.p[2] - st.p0[2]) / (play.t - st.t0) : NaN]; } },
@@ -733,7 +788,7 @@ function playVorfuehrung(sofort, liste) { if (!play.on) enterPlay(); messungNeu(
 // Lab-Maß: der Rand um jedes Teil, in dem die Kamera nie steht — der Leib der Kamera (armRadiusM) bis auf die Bisektion des Lösers
 // (10 Schritte, ≤ 1 % des Rands)
 var KAMERA_RAND = _KAM.armRadiusM * 0.97;
-function messungNeu() { messung = { zeilen: {}, geraete: {}, tempo: {}, kapsel: {}, kamera: { takte: 0, fehl: 0, erste: null }, doppel: false, wand: false }; return messung; }
+function messungNeu() { messung = { zeilen: {}, geraete: {}, angebote: parkAngebote.map(function (a) { return { id: a.id, name: _angName(a) }; }), tempo: {}, kapsel: {}, kamera: { takte: 0, fehl: 0, erste: null }, doppel: false, wand: false }; return messung; }
 document.getElementById('btnVorfuehrung').addEventListener('click', function () { playVorfuehrung(false); });
 function _clamp(x, a, b) { return x < a ? a : (x > b ? b : x); }
 function _mix(a, b, t) { return a + (b - a) * t; }

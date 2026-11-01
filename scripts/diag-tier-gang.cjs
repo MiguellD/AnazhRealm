@@ -509,10 +509,12 @@ function taktVergleich(welt, labor) {
 }
 
 // DIE BEWEGUNG JE VERB UND PHASE (w4-koerper-park): die Vorführung des Labors fährt jedes Verb an seinem Gerät, sein Instrument misst
-// die Pose (koerper `leibPoseWinkel`, die Sohle `leibSohle`), der Kern urteilt (`leibSollUrteil` gegen VERB_SOLL: Winkel je Verb und
-// Phase, die Hand ≤ 3 cm am Anker, der Fuß nie im Gerät, die Tempi im realen Band). Der Selbsttest bricht je einen Täter: die
+// die Pose (koerper `leibPoseWinkel`, die Sohle `leibSohle`, die gehäutete Haut gegen jedes Teil des Werks), der Kern urteilt
+// (`leibSollUrteil` gegen VERB_SOLL: Winkel je Verb und Phase an JEDEM Angebot jedes Geräts, die Hand ≤ 3 cm am Anker, der Fuß nie im
+// Gerät, die Haut ≤ 1 cm in keinem Teil — kein Durchgreifen —, die Tempi im realen Band). Der Selbsttest bricht je einen Täter: die
 // Arcade-Kletter-Zahl der alten Bühne (3,2 m/s), die Hand ohne Löser, das gestreckte Knie auf dem Sitz, der Fuß in der Wand, die
-// Kamera ohne Leib (NP-03: der Löser der Kamera blind für den Park).
+// Kamera ohne Leib (NP-03: der Löser der Kamera blind für den Park), das Becken durch die Bahn der Rutsche, der zweite Sitz der
+// Schaukel ungefahren.
 const BEWEGUNG = (bruch) => {
     /* eslint-disable no-undef */
     const P0 = KC.PRESETS.mensch.fx.bewegung.parkour,
@@ -528,11 +530,18 @@ const BEWEGUNG = (bruch) => {
             if (P && bruch === "knie" && V.verb === "schaukeln") P.q.knee1 = P.q["knee-1"] = [0, 0, 0, 1];
             if (P && bruch === "hand" && V.verb === "klettern") P.q.arm1 = P.q.elbow1 = [0, 0, 0, 1];
             if (P && bruch === "fuss" && V.verb === "klettern") P.wurzel.p = [P.wurzel.p[0] - V.ang.normale[0] * 0.3, P.wurzel.p[1], P.wurzel.p[2] - V.ang.normale[1] * 0.3];
+            if (P && bruch === "durch" && V.verb === "rutschen") P.wurzel.p = [P.wurzel.p[0], P.wurzel.p[1] - 0.12, P.wurzel.p[2]];
             return P;
         };
     try {
-        const m = playVorfuehrung(true);
-        return { zeilen: Object.keys(m.zeilen).length, geraete: Object.keys(m.geraete).map((n) => [n, +m.geraete[n].hand.toFixed(3), +m.geraete[n].fuss.toFixed(3)]), tempo: m.tempo, urteil: KC.leibSollUrteil(m) };
+        const m = playVorfuehrung(true, bruch === "angebot" ? VORFUEHRUNG.filter((S) => S.name !== "schaukeln sitz1") : null);
+        const zahl = (x) => (Number.isFinite(x) ? +x.toFixed(3) : null);
+        return {
+            zeilen: Object.keys(m.zeilen).length + Object.values(m.geraete).reduce((n, G) => n + Object.keys(G.zeilen).length, 0),
+            geraete: Object.values(m.geraete).map((G) => [G.name, zahl(G.hand), zahl(G.fuss), zahl(G.durch)]),
+            tempo: m.tempo,
+            urteil: KC.leibSollUrteil(m),
+        };
     } finally {
         P0.kletterV = v0;
         KC.leibVerbPose = pose;
@@ -541,7 +550,7 @@ const BEWEGUNG = (bruch) => {
     }
     /* eslint-enable no-undef */
 };
-const BEWEGUNG_BRUCH = { arcade: /^Tempo klettern/, hand: /die Hand .* vom Anker/, knie: /^schaukeln:[02] knie/, fuss: /der Fuß .* im Gerät/, kamera: /^Kamera: \d+ von/ };
+const BEWEGUNG_BRUCH = { arcade: /^Tempo klettern/, hand: /die Hand .* vom Anker/, knie: /schaukeln sitz0 schaukeln:[02] knie/, fuss: /der Fuß .* im Gerät/, kamera: /^Kamera: \d+ von/, durch: /^turmrutsche rutschen: die Haut greift/, angebot: /^doppelschaukel schaukeln sitz1: nicht gemessen/ };
 
 // DIE GANGART UND IHR TASTGRAD AUS DEM TEMPO (Meisterkarte Tiere H3, K3): Welt (LAUF als Leib, SATZ im Satz) und Labor
 // (worlds/tetrapoda, EIN Tier über dieselben v̂) bei v̂ 0,3 · 0,74 (Fr 0,55 im Band der Hysterese) · 1,2 · 3,5 → Schritt
@@ -803,7 +812,7 @@ hauptLauf(async () => {
             [tastRot, "der halbe Stand (Tastgrad 0,5) blieb grün: die Tastgrad-Wand"],
             [gefeuert.has("satz"), "der Satz ohne das Gedächtnis des Leibs blieb grün: die Satz-Wand"],
             [taktRot, "die Takt-Wand (Labor = Welt)"],
-            [bewegtFeuert === 5, "die Bewegungs-Wand (VERB_SOLL)"],
+            [bewegtFeuert === Object.keys(BEWEGUNG_BRUCH).length, "die Bewegungs-Wand (VERB_SOLL)"],
         ].find(([ok]) => !ok);
         urteilEnde(vakuoes, () => `\n❌ SELBST-TEST ROT — ${vakuoes[1]} ist vakuös.`, `\n✅ SELBST-TEST GRÜN — der Vor-Welle-Gang gleitet (${rot} Läufe über ${SCHWELLE}).`);
     }

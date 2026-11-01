@@ -6985,9 +6985,23 @@
         var holm = function (x0, x1, y, z) {
             return [[x0, y, z], [x1, y, z]];
         };
+        // DIE TEILE AM LEIB (w4-koerper-park, die Linse „kein Durchgreifen“): was der Leib im Verb berührt und die Substanz nicht trägt
+        // — der Sitz und die Ketten der Schaukel, Hebel, Sitze und Griffe der Wippe (beide schwingen um die Achse des Angebots), die
+        // Sprossen der Hangel-Leiter; je Teil eine Kiste {c, h} im Rahmen des Werks, aus denselben Maßen wie der Bau (Optik == Angebot)
+        var kiste = function (x, y, z, sx, sy, sz) {
+            return { c: [x, y, z], h: [sx / 2, sy / 2, sz / 2] };
+        };
         if (id === "doppelschaukel") {
             for (i = 0; i < m.xS.length; i++)
-                A.push({ verb: "schaukeln", teil: "sitz" + i, achse: { a: [m.xS[i] - m.kx, m.yG, 0], b: [m.xS[i] + m.kx, m.yG, 0] }, sitz: [m.xS[i], m.yS, 0], griff: [[m.xS[i] - m.kx, m.yS + m.griffH, 0], [m.xS[i] + m.kx, m.yS + m.griffH, 0]], boden: 0 });
+                A.push({
+                    verb: "schaukeln",
+                    teil: "sitz" + i,
+                    achse: { a: [m.xS[i] - m.kx, m.yG, 0], b: [m.xS[i] + m.kx, m.yG, 0] },
+                    sitz: [m.xS[i], m.yS, 0],
+                    griff: [[m.xS[i] - m.kx, m.yS + m.griffH, 0], [m.xS[i] + m.kx, m.yS + m.griffH, 0]],
+                    boden: 0,
+                    teile: [kiste(m.xS[i], m.yS - m.sd / 2, 0, m.sx, m.sd, m.sz), kiste(m.xS[i] - m.kx, (m.yG + m.yS) / 2, 0, 0.026, m.yG - m.yS, 0.026), kiste(m.xS[i] + m.kx, (m.yG + m.yS) / 2, 0, 0.026, m.yG - m.yS, 0.026)],
+                });
         } else if (id === "turmrutsche") {
             var lh = [],
                 lt = [];
@@ -7011,7 +7025,9 @@
                 h = -m.d / 2,
                 phi = 0;
             for (var it = 0; it < 40; it++) phi = Math.asin(Math.max(-1, Math.min(1, (m.yA + h * Math.cos(phi) - m.yPuffer) / r)));
-            A.push({ verb: "wippen", teil: "hebel", achse: { a: [0, m.yA, -0.2], b: [0, m.yA, 0.2] }, sitz: [[m.xS, m.yA + m.d / 2 + m.sH, 0], [-m.xS, m.yA + m.d / 2 + m.sH, 0]], griff: [[m.xG, m.yG, 0], [-m.xG, m.yG, 0]], phiMax: phi, boden: 0 });
+            var wt = [kiste(0, m.yA, 0, m.L, m.d, m.bz)];
+            for (s = -1; s <= 1; s += 2) wt.push(kiste(s * m.xS, m.yA + m.d / 2 + m.sH / 2, 0, m.sx, m.sH, m.bz + 0.06), kiste(s * m.xG, (m.yG + m.yA + m.d / 2) / 2, 0, 0.05, m.yG - m.yA - m.d / 2, 0.05), kiste(s * m.xG, m.yG, 0, 0.03, 0.03, 0.32));
+            A.push({ verb: "wippen", teil: "hebel", achse: { a: [0, m.yA, -0.2], b: [0, m.yA, 0.2] }, sitz: [[m.xS, m.yA + m.d / 2 + m.sH, 0], [-m.xS, m.yA + m.d / 2 + m.sH, 0]], griff: [[m.xG, m.yG, 0], [-m.xG, m.yG, 0]], phiMax: phi, boden: 0, teile: wt });
         } else if (id === "turnreck") {
             A.push({ verb: "hangeln", achse: { a: [-m.x, m.y, 0], b: [m.x, m.y, 0] }, holme: [holm(-m.x + 0.08, m.x - 0.08, m.y, 0)], boden: 0 });
         } else if (id === "schwebebalken") {
@@ -7022,8 +7038,12 @@
             A.push({ verb: "klettern", griff: gr, tritt: gr, flaeche: [0, 0, m.d / 2], normale: [0, 1], quer: m.bx, boden: 0, oben: [0, m.h, -m.tP / 2] });
         } else if (id === "hangelbahn") {
             var hs = [];
-            for (i = 0; i < m.sprossen.length; i++) hs.push([[-m.x + 0.05, m.y, m.sprossen[i]], [m.x - 0.05, m.y, m.sprossen[i]]]);
-            A.push({ verb: "hangeln", holme: hs, richtung: [0, 0, 1], boden: 0 });
+            var ht = [];
+            for (i = 0; i < m.sprossen.length; i++) {
+                hs.push([[-m.x + 0.05, m.y, m.sprossen[i]], [m.x - 0.05, m.y, m.sprossen[i]]]);
+                ht.push(kiste(0, m.y, m.sprossen[i], 2 * m.x - 0.08, m.d, m.d));
+            }
+            A.push({ verb: "hangeln", holme: hs, richtung: [0, 0, 1], boden: 0, teile: ht });
         }
         for (s = 0; s < A.length; s++) A[s].id = id + ":" + s;
         _geraetAngebotMemo[id] = A;
@@ -7053,6 +7073,11 @@
             if (b.oben) b.oben = P(b.oben);
             if (b.bahn) b.bahn = b.bahn.map(P);
             if (b.achse) b.achse = { a: P(b.achse.a), b: P(b.achse.b) };
+            // die Teile am Leib als Kisten der Welt (dieselbe Form wie die Substanz am Ort: Mitte, halbe Maße, Gier)
+            if (b.teile)
+                b.teile = b.teile.map(function (t) {
+                    return { c: P(t.c), h: [t.h[0] * k, t.h[1] * k, t.h[2] * k], gier: lage.gier || 0, rx: 0 };
+                });
             if (b.sitz) b.sitz = Array.isArray(b.sitz[0]) ? b.sitz.map(P) : P(b.sitz);
             if (b.normale) b.normale = R(b.normale);
             if (b.richtung) {
