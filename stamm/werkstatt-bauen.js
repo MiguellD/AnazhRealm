@@ -824,6 +824,10 @@ class AnazhRealm_werkstatt_bauen {
         // immer ein Chunk mit ihm entstand — derselbe Ort und dieselben Zellen, die der Automat rechnet; stand nie ein Chunk
         // unter ihm, gibt es kein gestautes Wasser zu wecken) — der Abbau eines Baums oder Hauses am Ufer weckt ihn nicht.
         const damm = wasBlocker && entry._stempelNass === true;
+        // Ein Bau, der staute (seine Werke im Gedächtnis des Staus, `_stauBauWerke`), nimmt sie mit: die Werke des Staus lesen
+        // die Bauten neu (`_stauWorkClusters`) — der Abbau eines Baums oder Wagens wirft nichts (w4-b-pflanzen).
+        const staute = this._stauBauWerke && this._stauBauWerke.get(entry);
+        if (staute && staute.werke.length) this._stauClusterCache = null;
         // Ohne Hydro-Recompute: betroffene Voxel-Chunks remeshen (der Eintrag ist schon aus
         // state.architectures raus), Wasser-Cells nehmen den Platz zurück.
         entry.blockerAABBs = null;
