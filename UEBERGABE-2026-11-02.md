@@ -1,6 +1,6 @@
 # ÜBERGABE 02.11.2026 ~12:40 (Konto 6, Woche 94 %) — HIER WEITERMACHEN
 
-**main 10770eb5** (V18.546.165). **GEBUCHT 168/330** (buche-schleife am 10770eb5 mit 168; buche.sh verweigert Fälle unter Fremdlast zu Recht).
+**main 10770eb5** (V18.546.165). **GEBUCHT 170/330** (+4 Cloud-Kriterien stoffe.K4 wetter.K4 luftwasser.K3/K4, −2 Rückfall affekt.K2#1 Deckel, ki.K4#1); buche-schleife am 10770eb5 mit 170.
 
 ## Heute gelandet
 - z148 ab884210: Samen-Fix ohne Vorbau-Drossel + Albedo-Zeile haar.K2 (→ 168)
@@ -28,3 +28,9 @@ PFADFINDER-Regel in /tmp/claude/w3/brief-regeln.md; offene Funde als Zeile in **
 ## Ehrlich offen
 Pflicht-OFFEN A, B (Ankunft ≤ 5 s ungelöst), C, E. Metropole platzVoll 87. Orte stellen keine Wagen ihrer Epoche. Meisterkarte-Artifact
 Y6nuChFfb1dJTf7Btch4J5 steht auf 123 (27.10.) — aus meisterkarte.html neu veröffentlichen.
+
+## Nachtrag 13:10
+- z161 ROT an voll 13 kamera-leib: „THREE.Destroyed texture (1280×720 RGBA8) used in a submit“ → Täter vermutlich w4-leck-knoten (`_samplerLoesen`);
+  champion heilt als **w4-leck-knoten2**. w4-proben-6a57 ist unschuldig vermutet — notfalls allein fahren.
+- z162 = w4-sprache2 fährt; z163 = w4-stadt-gehen + w4-ci-alle-schritte (Kette wartet auf „z162 ende“).
+- Nach z163: das CI-Urteil nennt ALLE roten Schritte je Job (neu) — die Fahrt-Urteile werden länger, aber eine Runde reicht.
