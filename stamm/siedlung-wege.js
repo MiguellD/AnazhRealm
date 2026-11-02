@@ -1060,23 +1060,41 @@ class AnazhRealm_siedlung_wege {
                         w.huelle[1] < h[3] &&
                         w.huelle[3] > h[1]
                 );
-            const ax = origin.x + (h[0] + h[2]) / 2;
-            const az = origin.z + (h[1] + h[3]) / 2;
-            form({
-                typ: "zone",
-                q,
-                ohne,
-                ox: origin.x,
-                oz: origin.z,
-                kanal: B.kanal,
-                wert: B.wert,
-                ax,
-                az,
-                bx: ax,
-                bz: az,
-                halb: 0,
-                ...(B.kanal === 0 && B.wert < 0 ? { sperr: -Infinity } : {}),
-            });
+            const zoneForm = (zq, zh) => {
+                const ax = origin.x + (zh[0] + zh[2]) / 2;
+                const az = origin.z + (zh[1] + zh[3]) / 2;
+                form({
+                    typ: "zone",
+                    q: zq,
+                    ohne,
+                    ox: origin.x,
+                    oz: origin.z,
+                    kanal: B.kanal,
+                    wert: B.wert,
+                    ax,
+                    az,
+                    bx: ax,
+                    bz: az,
+                    halb: 0,
+                    ...(B.kanal === 0 && B.wert < 0 ? { sperr: -Infinity } : {}),
+                });
+            };
+            if (q.form !== "band" || q.pts.length < 3) return zoneForm(q, h);
+            // DAS BAND JE STÜCK (die Kosten am Weg, nie an seiner Hülle): sein Rand ist das Minimum der Ränder seiner Stücke
+            // (fachwerk `laufAbstand` − w/2, je Stück dieselbe Rechnung), das Gewicht fällt mit dem Rand, und der Maler nimmt je
+            // Texel das stärkste — je Stück eine Form mit seiner eigenen Hülle malt dieselben Bytes. Bis hier malte das Band
+            // jedes Texel seiner GANZEN Hülle gegen jedes Stück (feldweg_6: 31 Stücke über 56 × 182 m): der Genesis-Ort hielt
+            // den Haupt-Faden beim ersten Zentrieren der Karte 539 ms (gate:fahr-leben, die Fahr-Bahn, Bild 20).
+            for (let j = 1; j < q.pts.length && n < MAX; j++) {
+                const [a, b] = [q.pts[j - 1], q.pts[j]];
+                const zh = [
+                    Math.min(a.x, b.x) - q.w / 2,
+                    Math.min(a.z, b.z) - q.w / 2,
+                    Math.max(a.x, b.x) + q.w / 2,
+                    Math.max(a.z, b.z) + q.w / 2,
+                ];
+                zoneForm({ ...q, pts: [a, b], huelle: zh }, zh);
+            }
         });
         // Der PLATZ (Anger/Markt) — ein gedrehtes Erd-Rechteck; ein Gras-Anger bleibt Wiese: er malt keinen Boden-Kanal
         // (`kanal` −1), und die Natur-Wand hält sein Inneres frei wie das Gesetzbuch des Dorfs (fachwerk-core: kein Baum
