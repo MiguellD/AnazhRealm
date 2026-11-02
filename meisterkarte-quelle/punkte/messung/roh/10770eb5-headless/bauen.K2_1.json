@@ -1,0 +1,674 @@
+{
+ "haeuser": [],
+ "phasen": [
+  "grund"
+ ],
+ "dorfOrt": {
+  "x": -129,
+  "z": -94,
+  "hang": 0.598
+ },
+ "startOrt": {
+  "x": 0,
+  "z": 0
+ },
+ "gesamt": 24,
+ "w9": {
+  "bild": false,
+  "haeuser": [
+   {
+    "typ": "haus_italienisch",
+    "id": 1154,
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 315,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-0-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 362
+   },
+   {
+    "typ": "haus_italienisch",
+    "id": 1155,
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1333,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-1-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 322
+   },
+   {
+    "typ": "haus_italienisch",
+    "id": 1157,
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1395,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-2-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 59
+   },
+   {
+    "typ": "haus_italienisch",
+    "id": 1158,
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 437,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-3-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 14
+   },
+   {
+    "typ": "haus_provenzalisch",
+    "id": 1159,
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1421,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-4-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 229
+   },
+   {
+    "typ": "haus_provenzalisch",
+    "id": 1160,
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 285,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-5-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 384
+   },
+   {
+    "typ": "haus_italienisch",
+    "id": 1161,
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1519,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-6-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 89
+   },
+   {
+    "typ": "haus_provenzalisch",
+    "id": 1163,
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1323,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-7-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 340
+   },
+   {
+    "typ": "haus_italienisch",
+    "id": 1165,
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1617,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-8-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 302
+   },
+   {
+    "typ": "haus_italienisch",
+    "id": 1167,
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 437,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-9-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 52
+   },
+   {
+    "typ": "haus_provenzalisch",
+    "id": 1168,
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 399,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-10-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 325
+   },
+   {
+    "typ": "haus_barock",
+    "id": 1170,
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "anbau",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 276,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-11-0-anbau"
+     },
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 2365,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-11-1-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 530
+   },
+   {
+    "typ": "haus_provenzalisch",
+    "id": 1175,
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "anbau",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 276,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-12-0-anbau"
+     },
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1855,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-12-1-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 480
+   },
+   {
+    "typ": "haus_italienisch",
+    "id": 1177,
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1581,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-13-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 67
+   },
+   {
+    "typ": "haus_provenzalisch",
+    "id": 1178,
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1505,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-14-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 223
+   },
+   {
+    "typ": "haus_gotisch",
+    "id": 1182,
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "turm",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 8,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-15-0-turm"
+     },
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 2365,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-15-1-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 464
+   },
+   {
+    "typ": "haus_italienisch",
+    "id": 1183,
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1215,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-16-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 132
+   },
+   {
+    "typ": "haus_italienisch",
+    "id": 1185,
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1767,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-17-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 96
+   },
+   {
+    "typ": "haus_provenzalisch",
+    "id": 1186,
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1551,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-18-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 33
+   },
+   {
+    "typ": "haus_provenzalisch",
+    "id": 1188,
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1271,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-19-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 78
+   },
+   {
+    "typ": "haus_italienisch",
+    "id": 1189,
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1377,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-20-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 32
+   },
+   {
+    "typ": "haus_provenzalisch",
+    "id": 1190,
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1189,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-21-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 142
+   },
+   {
+    "typ": "haus_italienisch",
+    "id": 1192,
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1643,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-22-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 273
+   },
+   {
+    "typ": "haus_provenzalisch",
+    "id": 1193,
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 285,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-23-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 129
+   },
+   {
+    "typ": "haus_italienisch",
+    "id": "w9-slot",
+    "start": false,
+    "spieler": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 315,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-24-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 431
+   }
+  ],
+  "slot": {
+   "hang": 0.4082742711555311,
+   "typ": "haus_italienisch",
+   "splats": 3,
+   "byte": true,
+   "boden": 1
+  },
+  "weite": 0.7398752927088365,
+  "wasser": [],
+  "abbau": [
+   {
+    "art": "dorf",
+    "vorher": {
+     "gruende": 1,
+     "offen": 1,
+     "kellerErde": 0
+    },
+    "boxen": 1,
+    "weg": true,
+    "nachher": {
+     "gruende": 0,
+     "offen": 0,
+     "kellerErde": 1
+    }
+   },
+   {
+    "art": "gesetzt",
+    "plan": 1,
+    "vorher": {
+     "gruende": 1,
+     "offen": 1,
+     "kellerErde": null
+    },
+    "boxen": 1,
+    "weg": true,
+    "nachher": {
+     "gruende": 0,
+     "offen": 0,
+     "kellerErde": null
+    }
+   }
+  ],
+  "waise": {
+   "start": true,
+   "gruende": 39,
+   "gesperrt": true,
+   "ohne": [],
+   "slots": 18,
+   "haeuser": 17,
+   "reload": 3,
+   "zugOffen": false,
+   "ausstattung": {
+    "brunnen": [
+     1,
+     1
+    ],
+    "laternen": [
+     28,
+     28
+    ],
+    "staende": [
+     1,
+     1
+    ]
+   },
+   "verblasst": true,
+   "ms": 17861
+  }
+ },
+ "werkstatt": true,
+ "fernOrt": {
+  "x": 212,
+  "z": 212
+ }
+}
