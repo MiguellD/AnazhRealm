@@ -1539,3 +1539,4 @@
 2026-11-02 12:14:55 z159-abab START 2 Zellen
 2026-11-02 12:27:05 z159-abab w-ego VERLÄNGERN 12.1 · 1/2 (2+2)
 2026-11-02 12:44:52 z159-abab stadt VERLÄNGERN 17.7 · 2/2 (2+2)
+2026-11-02 12:56:53 z159-abab w-ego(4+4) nicht-langsamer 11.9 · verlängert (4+4)
