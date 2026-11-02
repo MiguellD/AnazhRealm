@@ -1,7 +1,7 @@
 {
  "sha": "c5a9a2f565f517a92cbf8ada22cebe9c4df5023d",
  "geraet": "gtx",
- "zeit": "2026-11-02T13:41:19.003Z",
+ "zeit": "2026-11-02T13:47:01.497Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "spielgang.K3#1": {
@@ -397,287 +397,58 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "physik.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.17,
+   "grund": "Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 10.2,
+   "zeit": "2026-11-02T13:47:01.497Z",
+   "abdruck": "5e9028ce8cbc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-02T13:26:02.861Z",
+  "start": "2026-11-02T13:46:32.436Z",
   "port": 7804,
   "warten": 0.01,
   "bootS": 6.3,
-  "grundstellungS": [
-   4,
-   4.8,
-   3.7,
-   4.1,
-   4.7,
-   4,
-   3.7,
-   4.4,
-   3.3,
-   3.3,
-   3,
-   2.8,
-   2.8,
-   3.8,
-   3.6,
-   6,
-   2.9,
-   7.6,
-   4.2
-  ],
-  "proben": 21,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "vegetation.K5#2",
+    "vor": "physik.K2#2",
     "s": 21.8,
-    "takte": 761,
+    "takte": 730,
     "chunks": 81,
     "nach": null
-   },
-   {
-    "ort": "wiese",
-    "vor": "material.K2#1",
-    "s": 16.8,
-    "takte": 744,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "lod.K1#1",
-    "s": 16.8,
-    "takte": 748,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "lod.K5#1",
-    "s": 17,
-    "takte": 742,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "spielgang.K3#1",
-    "s": 17.2,
-    "takte": 719,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "genesis",
-    "vor": "material.K1#1",
-    "s": 10.9,
-    "takte": 611,
-    "chunks": 81,
-    "nach": null
-   },
-   {
-    "ort": "genesis",
-    "vor": "mensch.K1#1",
-    "s": 15.9,
-    "takte": 675,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "genesis",
-    "vor": "siedlung.K1#2",
-    "s": 15.5,
-    "takte": 682,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "leib.K1#2",
-    "s": 17,
-    "takte": 763,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "tiere.K1#2",
-    "s": 14.9,
-    "takte": 886,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "tiere.K3#2",
-    "s": 14.7,
-    "takte": 853,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "studios.K2#2",
-    "s": 14.3,
-    "takte": 841,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "bauen.K1#2",
-    "s": 14.4,
-    "takte": 825,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "studios.K4#1",
-    "s": 14.1,
-    "takte": 844,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "siedlung.K4#2",
-    "s": 14.2,
-    "takte": 830,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "fahrzeug.K2#1",
-    "s": 14.7,
-    "takte": 878,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "fahrzeug.K2#2",
-    "s": 14.6,
-    "takte": 871,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "ankunft.K2#1",
-    "s": 13.8,
-    "takte": 815,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "profiband.K1#1",
-    "s": 18.6,
-    "takte": 950,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "klang.K4#1",
-    "s": 15.3,
-    "takte": 795,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "speicher.K4#2",
-    "s": 15.6,
-    "takte": 844,
-    "chunks": 81,
-    "nach": "der Tür"
    }
   ],
-  "wegeTueren": [
-   {
-    "vor": "klang.K4#1",
-    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
-    "s": 7.6
-   }
-  ],
-  "unerklaert": [
-   {
-    "probe": "material.K2#1",
-    "wie": "wege +1 [-119.1,-274.9,279.2,201/272] (genesis)"
-   },
-   {
-    "probe": "lod.K5#1",
-    "wie": "werke +1 (−0)"
-   },
-   {
-    "probe": "material.K1#1",
-    "wie": "werke +1 (−0)"
-   }
-  ],
-  "ciBlicke": 22,
+  "wegeTueren": [],
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 3338,
-   "frameP95": 41.6,
-   "taktP95": 34.4,
-   "vramMax": 132.1,
-   "seiten": 21,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "fahrzeug.K2#1",
-     "m": 1142,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "profiband.K1#1",
-     "m": 1090,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "klang.K4#1",
-     "m": 1087,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "material.K2#1",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": 1
-    },
-    {
-     "probe": "speicher.K4#2",
-     "m": 970,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "fahrzeug.K2#2",
-     "m": 950,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "siedlung.K4#2",
-     "m": 639,
-     "ringVor": 4,
-     "ringMin": 0
-    }
-   ],
-   "zapfen": 848,
-   "luecken": 5,
-   "letzteLuecke": "kein Renderer"
+   "ortImDeckel": [],
+   "zapfen": 30,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 930.7,
-  "minuten": 15.59
+  "fahrtS": 46,
+  "minuten": 1.02
  }
 }
