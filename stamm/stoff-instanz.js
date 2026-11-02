@@ -1882,12 +1882,17 @@ class AnazhRealm_stoff_instanz {
     // `addEventListener("dispose", e._onTextureDispose)`), den nur ein Wechsel der Textur abnimmt — weder `deleteForRender`
     // noch der Collector. Eine geteilte Textur (Umgebung, Karten-Atlas, Spiegel) hielt so jede Bindung jedes je gezeichneten
     // Render-Objekts (headless 6a571e3b nach zwei Reisen: 9 569 Hörer an 18 Texturen, je Reise +6 459 Textur- und +6 439
-    // Sampler-Bindungen). Die Textur null nimmt ihn ab; geteilte Gruppen gehören allen. Die Rufer: das Lösen eines Objekts
-    // (`_renderObjekteLoesen`) und das Register, wenn r184 ein Render-Objekt selbst löst (`_renderObjektRegister`).
+    // Sampler-Bindungen). Abgenommen wird GENAU der Hörer — die Bindung behält Textur, Version und Generation: `texture = null`
+    // (w4-leck-knoten) schrieb in den Zustand der Bindung selbst, und der wird nach dem Lösen noch gelesen (z161, CI-swiftshader,
+    // gate:kamera-leib beim Aus- und Einsteigen in drei von drei Läufen: „Destroyed texture [1280x720 RGBA8Unorm] used in a
+    // submit“ im Leinwand-Pass `renderContext_3`; ohne das Lösen und mit dem Hörer allein grün, Proben diag-leinwand2/3). Geteilte Gruppen
+    // gehören allen. Die Rufer: das Lösen eines Objekts (`_renderObjekteLoesen`) und das Register, wenn r184 ein Render-Objekt
+    // selbst löst (`_renderObjektRegister`).
     static _samplerLoesen(bg) {
         const b0 = bg && bg.bindings && bg.bindings[0];
         if (!b0 || (b0.groupNode && b0.groupNode.shared === true)) return;
-        for (const b of bg.bindings) if (b.isSampler && b.texture) b.texture = null;
+        for (const b of bg.bindings)
+            if (b.isSampler && b.texture) b.texture.removeEventListener("dispose", b._onTextureDispose);
     }
     // DAS RENDER-OBJEKT-REGISTER: r184 baut je (Objekt × Stoff × Pass-Kontext) ein Render-Objekt mit eigenen Uniform-Puffern
     // (`bindingBuffer…_object` · `_render`) und hängt es an das `dispose`-Ereignis seines STOFFS und seiner GEOMETRIE — ein
