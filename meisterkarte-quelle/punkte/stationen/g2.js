@@ -124,6 +124,16 @@ function herdeSzene(r, T, o) {
             takte: Z.takte,
         };
     };
+    // "ende" gibt der Welt der Sitzung zurück, was die Szene lieh (Radeon 6a571e3b 02.11.: die Kappe der Wesen blieb bei den 5 Gliedern
+    // der Herde, der Kreatur-Takt am Prototyp vorbei auf der Instanz — die Grundstellung danach brachte 5 von 9 Wesen zurück): die Kappe
+    // `maxCreatures` von vor der Szene, `updateCreatures` wieder aus dem Prototyp, die Herde aus dem Fenster
+    if (o.phase === "ende") {
+        if (Z && Number.isFinite(Z.max)) s.maxCreatures = Z.max;
+        const eigen = Object.prototype.hasOwnProperty.call(r, "updateCreatures");
+        if (eigen) delete r.updateCreatures;
+        delete window.__herdeHang;
+        return { ende: true, max: s.maxCreatures, takt: eigen };
+    }
     if (o.phase !== "start") {
         for (let k = 0; k < o.takte; k++) takt();
         return pose();
@@ -159,6 +169,7 @@ function herdeSzene(r, T, o) {
     s.camera.lookAt(pm.x + 1, pm.y + 1.6, pm.z);
     s.camera.updateMatrixWorld(true);
     r._loopFrustumCulling();
+    Z.max = s.maxCreatures;
     Object.assign(s, { maxCreatures: 64, creatureAnimationTime: 100 });
     r._faunaStroeme = null;
     Z.glieder = r._kreaturWurf({ x: hang.x, z: hang.z }, "wesen", "happy", r._faunaRng("verband"), 7);
@@ -332,6 +343,8 @@ async function herdeHang() {
     } catch (e) {
         erg.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 400);
     } finally {
+        // die Szene gibt zurück, was sie lieh (herdeSzene "ende") — auch nach einem Fehler; ihr Wort steht in der Ausgabe
+        erg.ende = await ruf(szene, { phase: "ende" }).catch((e) => ({ fehler: String((e && e.message) || e).split("\n")[0] }));
         tor.stop();
     }
     fs.writeFileSync(aus, JSON.stringify(erg, null, 1));

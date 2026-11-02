@@ -804,6 +804,12 @@ const SITZUNG_MAX_S = FAHRT_MAX_S + 600;
 const GRUNDSTELLUNG_S = 180;
 const STAND_DATEIEN = ["anazhRealmState.json", "anazhRealmState.json.bak", "anazhRealmPerf.json"];
 const GRUND_SEITE = ["__ortTakt", "__ortStell", "__ortSchritt", "__ortBahn", "__anazhAutoSettlement"];
+// GRUND_ZUSTAND (Radeon 6a571e3b 02.11.: nach tiere.K1#2 kehrten vor tiere.K3#2 nur 5 von 9 Wesen des Grunds wieder — „creatures 9 → 5“,
+// die Welt trug nicht mehr, 27 Proben ungemessen): die Größen des Zustands, die weder der Stand noch die GRUND_TAFEL des Spiels trägt,
+// die eine Probe aber stellt — die Kosten-Kappe der Wesen `maxCreatures` (die Herde am Hang setzte sie auf ihre 5 Glieder, und die
+// Wiederkehr der Wesen `spawnCreatures` sagte jedem weiteren ab: „obergrenze“). Der Grund trägt ihr Wort, die Grundstellung setzt es
+// VOR dem Stand zurück (die Wesen kehren unter der Kappe des Grunds wieder) und nennt, was sie zurücksetzte (`zustand`)
+const GRUND_ZUSTAND = ["maxCreatures"];
 // DIE WEGE-LINSE DER GRUNDSTELLUNG (w4-sitzung-reif; der Weg von tempo4 lag nach der Grundstellung weiter über der Mess-Wiese):
 // `_stlWegeBuild` malt die Flächen eines Wegs in die Wege-Karte (`state.wegeKarte.siedlungen`), merkt seine Marke (`_stlWegeKeys`) und
 // räumt die Natur auf ihm (`_wegeRaeumen`); `_standRueckspielen` lässt Karte und Natur als Caches warm — der Weg einer Probe (tempo4,
@@ -1027,15 +1033,17 @@ const zeichnerBruch =(z) => "Werkzeug-Bruch: die Probe ließ die Zeichenkette ve
 const GRUND_NIMM =
     'if (typeof r._grundstellung !== "function") return { fehlt: true }; const t0 = performance.now(); const g = r._grundstellung(); ' +
     "return { grund: g.grund, n: Object.keys(g.abdruck).length, ms: +(performance.now() - t0).toFixed(1), welt: r.state.worldMeta.worldId, " +
-    "seite: " + JSON.stringify(GRUND_SEITE) + ".filter((k) => k in window), wege: (" + wegeAbdruck + ")(r) };";
+    "seite: " + JSON.stringify(GRUND_SEITE) + ".filter((k) => k in window), wege: (" + wegeAbdruck + ")(r), " +
+    "zustand: Object.fromEntries(" + JSON.stringify(GRUND_ZUSTAND) + ".map((k) => [k, r.state[k]])) };";
 // DIE NAHRUNG DES LEIBS: die Grundstellung spielt den Stand durch die EINE Lade-Kette (`_standRueckspielen` → `loadState`), und der
 // Stand ERSETZT die Nahrung des Leibs (`_loadStateRestoreLeben`, w4-nahrung-laden, z143) — die Sitzung räumt sie nie selbst.
 const grundSpielen = (g) =>
     "for (const k of " + JSON.stringify(GRUND_SEITE) + ") if (!" + JSON.stringify(g.seite) + ".includes(k)) delete window[k]; " +
+    "const zs = " + JSON.stringify(g.zustand || {}) + ", zustand = Object.keys(zs).filter((k) => r.state[k] !== zs[k]); for (const k of zustand) r.state[k] = zs[k]; " +
     "const t0 = performance.now(); const z = r._grundstellung(" + JSON.stringify(g.grund) + "); " +
     "const weg = " + (g.wege ? "(" + wegeAbweichung + ")(" + JSON.stringify(g.wege) + ", (" + wegeAbdruck + ")(r))" : "null") + "; return { ok: z.ok, grund: z.grund || null, " +
     "anders: (z.anders || []).concat(" + JSON.stringify(GRUND_SEITE) + ".filter((k) => k in window && !" + JSON.stringify(g.seite) + ".includes(k)).map((k) => \"seite.\" + k), weg ? [weg] : []), " +
-    "neu: z.neu || null, ms: +(performance.now() - t0).toFixed(1), welt: r.state.worldMeta && r.state.worldMeta.worldId, wie: (" + grundWie + ")(r, " +
+    "neu: z.neu || null, zustand, ms: +(performance.now() - t0).toFixed(1), welt: r.state.worldMeta && r.state.worldMeta.worldId, wie: (" + grundWie + ")(r, " +
     JSON.stringify(g.grund) + ", z.anders || []) };";
 // WIE eine Größe vom Grund abweicht (Heilung 30.10.: „abweichend vom Grund: blueprints“ nannte nie den Täter): je Liste des Stands
 // (Baupläne, Werke, Stoffe, Werkzeuge) die Glieder, die fehlen, neu sind oder anders stehen — je anderes Glied seine Felder; je
@@ -1359,7 +1367,8 @@ async function grundstellung(w, datei, o = {}) {
         const f = await rufFrist(w, "/fenster", {}, 30000);
         if (!f || !Array.isArray(f.fenster)) throw new Error("/fenster: " + JSON.stringify(f).slice(0, 300));
         return { ok: true, s: +((Date.now() - t0) / 1000).toFixed(1), ms: z.ms, neu: z.neu, ...(tuer ? { tuer } : {}), ...(wege ? { wege } : {}),
-            ...(k1 && k1.anders.length && !ketteTuer ? { kette: k1.anders } : {}), ...(ketteTuer ? { ketteTuer } : {}) };
+            ...(k1 && k1.anders.length && !ketteTuer ? { kette: k1.anders } : {}), ...(ketteTuer ? { ketteTuer } : {}),
+            ...(Array.isArray(z.zustand) && z.zustand.length ? { zustand: z.zustand } : {}) };
     } catch (e) {
         return { ok: false, s: +((Date.now() - t0) / 1000).toFixed(1), grund: String((e && e.message) || e).split("\n")[0] };
     }
@@ -1977,7 +1986,8 @@ async function fahreSitzung(gruppen0, ctx, melde) {
                 (aktOrt = null), (ortNach = gs.tuer ? "der Tür" : "der Grundstellung"); // der Grund stellt den Spieler an seinen Ort zurück
                 console.log("  SITZUNG Grundstellung vor " + schluessel(g[0]) + ": " + gs.s + " s (im Spiel " + gs.ms + " ms" +
                     (gs.tuer ? ", durch die Tür" + (gs.wege ? " — " + gs.wege : "") + (gs.ketteTuer ? " — " + gs.ketteTuer.join(" ") : "") : "") + ")" +
-                    (gs.kette ? " · die Zeichenkette zurück: " + gs.kette.join(" ") : ""));
+                    (gs.kette ? " · die Zeichenkette zurück: " + gs.kette.join(" ") : "") + (gs.zustand ? " · der Zustand zurück: " + gs.zustand.join(" ") : ""));
+                if (gs.zustand) (kopf.grundZustand = kopf.grundZustand || []).push({ vor: schluessel(g[0]), zurueck: gs.zustand });
             } else {
                 tot = "Grundstellung: " + gs.grund;
                 kopf.grund = "die Welt trägt nicht mehr vor " + schluessel(g[0]) + ": " + gs.grund;
@@ -4036,6 +4046,27 @@ async function selbsttest(o = {}) {
                 wegeAbweichung(grund, tuer) === null && wegeAbweichung(grund, verloren) === "wege −1 [-119.1,-274.9,279.2,201/272]" &&
                 bauAbweichung(bauLeer, bauGelegt, grund) === null && /^wege \+1 \[-119\.1,-274\.9,279\.2,201\/272\] \(genesis\)$/.test(String(bauAbweichung(bauLeer, bauGelegt))),
                 JSON.stringify([wegeAbweichung(grund, tuer), wegeAbweichung(grund, verloren), bauAbweichung(bauLeer, bauGelegt, grund), bauAbweichung(bauLeer, bauGelegt)]));
+        }
+        // GRUND_ZUSTAND (Radeon 6a571e3b 02.11.: die Herde am Hang ließ `maxCreatures` bei ihren 5 Gliedern, die Grundstellung brachte 5 von
+        // 9 Wesen zurück, die Welt trug nicht mehr): der Grund trägt die Kappe, das Rückspielen setzt sie VOR dem Stand zurück und nennt sie;
+        // ohne ihr Wort im Grund (die Mutante: ein Grund von vor GRUND_ZUSTAND) kehren die Wesen unter der Kappe der Probe wieder — 5 von 9
+        {
+            const welt = (max) => {
+                const st = { maxCreatures: max, creatures: [], worldMeta: { worldId: "w1" } };
+                return { state: st, _grundstellung() {
+                    st.creatures = Array.from({ length: Math.min(9, st.maxCreatures) }, (_, i) => i);
+                    return { ok: true, anders: st.creatures.length === 9 ? [] : ["creatures"], neu: { wesen: st.creatures.length } };
+                }, buildStateSnapshot: () => ({ creatures: st.creatures }) };
+            };
+            const spiel = (g, w) => new Function("r", "window", "performance", grundSpielen(g))(w, {}, { now: () => 0 });
+            const g = { grund: JSON.stringify({ stand: { creatures: Array(9).fill(0) } }), seite: [], wege: null, zustand: { maxCreatures: 20 } };
+            const w1 = welt(5), heil = spiel(g, w1);
+            const w2 = welt(5), alt = spiel({ ...g, zustand: undefined }, w2);
+            const w3 = welt(20), still = spiel(g, w3);
+            pruef("SITZUNG GRUND_ZUSTAND: die Kappe der Wesen kehrt vor dem Stand zurück (9 von 9 Wesen, genannt: maxCreatures); ohne ihr Wort im Grund kehren 5 von 9 wieder (vorher ROT: creatures); stand sie, nennt die Grundstellung nichts",
+                heil.ok && heil.anders.length === 0 && heil.zustand.join() === "maxCreatures" && w1.state.maxCreatures === 20 && w1.state.creatures.length === 9 &&
+                alt.anders.join() === "creatures" && w2.state.creatures.length === 5 && still.anders.length === 0 && still.zustand.length === 0,
+                JSON.stringify([heil, alt, still]));
         }
         // DAS SCHLOSS ZWISCHEN DEN PROBEN: wartet ein CI-Job (die letzte Zeile von hook.log), geht das Schloss an der Proben-Grenze an ihn und kommt
         // danach wieder — die Welt startet nie neu, das Warten zählt nie in die Fahrt
