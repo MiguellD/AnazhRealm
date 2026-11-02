@@ -76,6 +76,8 @@ $ C:\Program Files\nodejs\node.exe -e (async function folge(plan) {
   boden-1 · Exit 0
   boden-2 · Exit 0
   genesis · Exit 0
+  ein-genesis · Exit 0
+  fels-weit · Exit 0
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
