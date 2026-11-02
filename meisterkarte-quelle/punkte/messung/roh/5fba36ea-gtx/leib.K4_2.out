@@ -115,8 +115,8 @@ check(name, v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
 return errs.length ? 1 : 0;
 }
 [linse-gpu] nvidia/pascal
-@@PUNKTE@@ ZEIT gang 27.3 s
-=== K4 DER GANG DER KAMERA (Third zu Fuß im echten Takt, Kugel 0.25 m): Mess-Wiese -280.4/-1045.6 · Anker {"haus":0,"fels":8,"baum":43}
+@@PUNKTE@@ ZEIT gang 27.2 s
+=== K4 DER GANG DER KAMERA (Third zu Fuß im echten Takt, Kugel 0.25 m): Mess-Wiese -280.4/-1045.6 · Anker {"haus":2,"fels":8,"baum":43}
   der Arm ohne Flügel-Leib: undefined Proben mit Bau
   ❌ K4 der Gang in Third: die Kugel der Linse nie in Fels oder Bau, 0 Nah-Pixel von Fels, Gelände, Rinde und Bau, Ruck p95 ≤ 0,02 m, die Linse nennt den Arm ohne Flügel-Leib — Täter: Gang: Error: die Frist der Probe
   ❌ K4 Staffel 2: der Gang auch im Haus, am Steilhang, beim Sprint — Täter: Gang: Error: die Frist der Probe

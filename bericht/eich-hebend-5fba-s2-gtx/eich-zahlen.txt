@@ -1,0 +1,34 @@
+  SITZUNG gtx · die Welt steht nach 7.8 s (Schloss nach 0.01 min) · 10 Proben · Welt :27804
+  SITZUNG EICH-FAHRT: jede Probe bis 90 s — das Gesetz: je Probe ≤ 45 s, mit ausnahme ≤ 90 s, die Fahrt ≤ 1800 s; ein Urteil zählt nur im Gesetz, je Probe ihre Sekunden (eich)
+  SITZUNG die Hänger-Linse der Werkbank kehrt nach profiband.K4#1 zurück: 10 Glieder
+  EICH 38 s · profiband.K4#1 · Deckel 29 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG der Grund der Welt: 81 Größen in 0 s
+  SITZUNG Ort wiese vor vegetation.K5#2: 13.4 s (680 Takte, 81 Chunks)
+  EICH 29.3 s · vegetation.K5#2 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Ort genesis vor ferne.K1#2: 8.1 s (659 Takte, 81 Chunks)
+  EICH ≥ 90 s · ferne.K1#2 · Deckel 10 s · Gesetz 45 s · am Eich-Deckel
+  SITZUNG Grundstellung vor gelaende.K2#2: 14 s (im Spiel 2054.8 ms, durch die Tür)
+  SITZUNG Ort wiese vor gelaende.K2#2: 22.1 s (933 Takte, 81 Chunks, nach der Tür)
+  EICH ≥ 90 s · gelaende.K2#2 · Deckel 10 s · Gesetz 45 s · am Eich-Deckel
+  SITZUNG Grundstellung vor siedlung.K1#2: 11.8 s (im Spiel 1845.8 ms, durch die Tür)
+  SITZUNG Ort genesis vor siedlung.K1#2: 16.6 s (571 Takte, 81 Chunks, nach der Tür)
+  EICH ≥ 90 s · siedlung.K1#2 · Deckel 33 s · Gesetz 45 s · am Eich-Deckel
+  SITZUNG Grundstellung vor bauen.K1#2: 9.5 s (im Spiel 2014.4 ms, durch die Tür)
+  SITZUNG die Welt vor bauen.K1#2: 16.4 s (665 Takte, 81 Chunks, nach der Tür)
+  EICH ≥ 90 s · bauen.K1#2 · Deckel 10 s · Gesetz 45 s · am Eich-Deckel
+  SITZUNG Grundstellung vor siedlung.K4#2: 8.9 s (im Spiel 2245.8 ms, durch die Tür)
+  SITZUNG die Welt vor siedlung.K4#2: 14.8 s (607 Takte, 81 Chunks, nach der Tür)
+  EICH 89.5 s · siedlung.K4#2 · Deckel 33 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie
+  SITZUNG Grundstellung vor profiband.K1#1: 8.3 s (im Spiel 1928.7 ms, durch die Tür — wege +6 [152.6,505.5,647.4,926.8/331] [234.5,504.5,580.5,843.3/329] [239.3,559.1,507,832.5/12] …)
+  SITZUNG die Welt vor profiband.K1#1: 14.9 s (630 Takte, 81 Chunks, nach der Tür)
+  EICH 62.9 s · profiband.K1#1 · Deckel 64 s · Gesetz 90 s · im Gesetz, das Urteil zählt
+  EICH 62.9 s · profiband.K2#1 · Deckel 64 s · Gesetz 90 s · im Gesetz, das Urteil zählt (Zwilling von profiband.K1#1)
+  EICH 62.9 s · profiband.K3#1 · Deckel 64 s · Gesetz 90 s · im Gesetz, das Urteil zählt (Zwilling von profiband.K1#1)
+  SITZUNG Grundstellung vor klang.K5#2: 0.2 s (im Spiel 67.5 ms)
+  SITZUNG die Welt vor klang.K5#2: 8.6 s (594 Takte, 81 Chunks, nach der Grundstellung)
+  EICH 24.8 s · klang.K5#2 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Grundstellung vor speicher.K2#2: 0.2 s (im Spiel 67.3 ms)
+  SITZUNG die Welt vor speicher.K2#2: 8.8 s (633 Takte, 81 Chunks, nach der Grundstellung)
+  EICH 38.5 s · speicher.K2#2 · Deckel 33 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG DER ORT IM DECKEL (die Probe zog weiter als 250 m von dem Ort, an dem die Sitzung sie begann — ihr Deckel trug den Ring): ferne.K1#2 3592 m (Ring 4 → -1), gelaende.K2#2 1718 m (Ring 4 → 0), profiband.K1#1 1110 m (Ring 4 → 0), klang.K5#2 1106 m (Ring 4 → 0), siedlung.K4#2 591 m (Ring 4 → 0)
+  SITZUNG Fahrt 814.5 s (Soll ≤ 1800 s) · 10 Proben · Grundstellung 7×

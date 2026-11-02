@@ -82,7 +82,7 @@ code = code || 3;
 }
 console.log("@@PUNKTE@@ PROBE " + uhr() + " s · Exit " + code);
 process.exit(code);
-})() C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\5fba36ea-gtx\vegetation.K4_2.json 7804 33 async function vegetationK4Seite(H) {
+})() C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\5fba36ea-gtx\vegetation.K4_2.json 7804 90 async function vegetationK4Seite(H) {
 const D = H.quelle("scripts/diag-haus-welt.cjs", ["proben"]);
 const WA = require(path.resolve("scripts/lib/wasser-linse.cjs")).WASSER_INSTALL;
 await H.ruf("/fenster", { w: 640, h: 360 });

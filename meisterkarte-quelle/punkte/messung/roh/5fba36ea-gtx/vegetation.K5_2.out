@@ -58,10 +58,16 @@ console.log("VEGETATION " + JSON.stringify(erg));
 })() C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\5fba36ea-gtx\vegetation.K5_2.json 7804 [["wiese","ego",0.5,"sommer","krone"],["wiese","ego",0.5,"winter","krone"],["wiese","ego",0.5,"fruehling","krone"],["wiese","ego",0.5,"sommer","wiese"],["wiese","ego",0.5,"winter","wiese"],["wiese","ego",0.5,"fruehling","wiese"]] ohne-budget
 [linse-gpu] nvidia/pascal
 SCHRITT /fenster 0.0 s
-SCHRITT /umstellen 0.8 s
+SCHRITT /umstellen 3.2 s
 SCHRITT /eval 0.0 s
-SCHRITT /bild 7.0 s
+SCHRITT /bild 6.1 s
 SCHRITT /eval 0.0 s
+SCHRITT /bild 7.5 s
+SCHRITT /eval 0.0 s
+SCHRITT /bild 8.2 s
+SCHRITT /eval 0.0 s
+SCHRITT /bild 4.3 s
+VEGETATION {"schuesse":[{"n":"wiese-ego-0.5-sommer-krone","was":"krone","kamera":[-278.624,28.97,-1054.505,-275.885,33.348,-1068.234],"pose":{"kamera":[-278.624,28.97,-1054.505],"blick":[0.18673,0.29847,-0.93597]},"leinwand":[1920,1080],"ok":true,"zeile":"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.67 m · Luma 70.8 σ 43.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.168 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal","pixel":192601},{"n":"wiese-ego-0.5-winter-krone","was":"krone","kamera":[-278.624,28.97,-1054.505,-275.885,33.348,-1068.234],"pose":{"kamera":[-278.624,28.97,-1054.505],"blick":[0.18673,0.29847,-0.93597]},"leinwand":[1920,1080],"ok":true,"zeile":"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.67 m · Luma 99.9 σ 47.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.168 · Bühne winter sunny 0.50 · Gerät WebGPU nvidia pascal","pixel":20454},{"n":"wiese-ego-0.5-fruehling-krone","was":"krone","kamera":[-278.624,28.97,-1054.505,-275.885,33.348,-1068.234],"pose":{"kamera":[-278.624,28.97,-1054.505],"blick":[0.18673,0.29847,-0.93597]},"leinwand":[1920,1080],"ok":true,"zeile":"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.67 m · Luma 86.3 σ 47.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.168 · Bühne spring sunny 0.50 · Gerät WebGPU nvidia pascal","pixel":148899}],"fehler":"/bild: {\"ms\":4263,\"fehler\":\"ABNAHME ROT [Sicht verdeckt 19.4 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Mesh 19.4 %] · beweis · Sicht 19.4 % (Mesh 19.4 %) · Ziel Blickziel im Bild frei 61.46 m · Luma 57.9 σ 31.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.168 · Bühne summer sunny 0.50 · Ger"}
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

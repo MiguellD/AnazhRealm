@@ -231,14 +231,11 @@ H.fahre(async function probeStudios(H) {
     });
     await L.gang();
     return { griffe: L.GRIFFE, adapter };
-}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\5fba36ea-gtx\studios.K2_2.json 25
-=== H7 DIE SITZUNG — Saat 395057, die Zeit geurteilt (Karte)
-@@ 0.8 s · neue Seite der Linse
-@@ 11.9 s · neue Seite der Linse
-  ⏱ garage         Griff → Bild p95 Gesetz-Wert – ms · Neubau 804 ms · 5 Griffe mit Bild · Neuladen 15/15
-  garage          15 Anfragen · r184 WebGPU · Schieber 2.9 → 3.4, Strg+Z → 2.9, Strg+Umschalt+Z → 3.4, Strg+Z → 2.9, Strg+Y → 3.4, A → 2.9, B → 3.4 · Kosten [{"stufe":"0","leiste":"28992","deckel":"32000","befehle":"328","vram":"1222304","gezeichnet":"28992","befehleGezeichnet":"328","vramGpu":"1222304","vramDeckel":"5822681","msDeckel":"0.9635","ms":"0.0236","bank":"7.7667","bankCpu":"4.0333","fertig":"1"},{"stufe":"1","leiste":"9924","deckel":"10600","befehle":"328","vram":"539792","gezeichnet":"9924","befehleGezeichnet":"328","vramGpu":"539792","vramDeckel":"1928763","msDeckel":"0.8029","ms":"0.0236","bank":"4.125","bankCpu":"3.95","fertig":"1"}]
-@@ 13 s · neue Seite der Linse
-@@PUNKTE@@ FRIST 19 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\5fba36ea-gtx\studios.K2_2.json 10
+=== H7 DIE SITZUNG — Saat 63740, die Zeit geurteilt (Karte)
+@@ 0.6 s · neue Seite der Linse
+@@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier
+@@ PROBE-FEHLER TargetCloseError: Protocol error (Runtime.callFunctionOn): Target closed |     at CallbackRegistry.clear (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\common\CallbackRegistry.js:82:36) |     at CdpCDPSession.onClosed (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\CdpSession.js:115:25) |     at Connection.onMessage (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\Connection.js:149:25) |     at WebSocket.<anonymous> (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\node\NodeWebSocketTransport.js:43:32)
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

@@ -1301,3 +1301,13 @@
 2026-11-02 22:19:29 hebend-5fba-s3-gtx START 14 Stationen in 1 Läufen
 2026-11-02 22:29:57 hebend-5fba-s3-gtx studios.K4#1,material.K2#1,vegetation.K4#2,material.K3#2,material.K1#1,lod.K1#1,licht.K1#1,tiere.K3#2,tiere.K1#2,lod.K5#1,physik.K2#2,ankunft.K2#1,ankunft.K3#1,ankunft.K1#1 OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN 10.4 · 14/14
 2026-11-02 22:30:22 eich-hebend-5fba-s1-gtx START 1 Stationen
+2026-11-02 22:45:55 eich-hebend-5fba-s1-gtx eich-nur-gtx.sh Exit0 15.6 · 1/1
+2026-11-02 22:46:08 eich-hebend-5fba-s2-gtx START 1 Stationen
+2026-11-02 23:02:01 eich-hebend-5fba-s2-gtx eich-nur-gtx.sh Exit0 15.9 · 1/1
+2026-11-02 23:02:14 eich-hebend-5fba-s3-gtx START 1 Stationen
+2026-11-02 23:17:44 eich-hebend-5fba-s3-gtx eich-nur-gtx.sh Exit0 15.5 · 1/1
+2026-11-02 23:17:56 eichtafel-5fba-gtx START 1 Stationen
+2026-11-02 23:18:05 eichtafel-5fba-gtx eichtafel-gtx.sh Exit0 0.1 · 1/1
+2026-11-02 23:18:18 hebend2-5fba-s1-gtx START 8 Stationen in 1 Läufen
+2026-11-02 23:24:22 hebend2-5fba-s1-gtx leib.K1#2,studios.K2#2,studios.K3#2,fahrzeug.K2#1,licht.K3#1,speicher.K4#2,licht.K2#2,leib.K4#2 OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/ROT/OFFEN 6.0 · 8/8
+2026-11-02 23:24:44 hebend2-5fba-s2-gtx START 13 Stationen in 1 Läufen
