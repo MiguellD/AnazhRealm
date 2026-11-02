@@ -82,10 +82,14 @@ function ausdruck(code, i, ruf) {
         else if (")]}".includes(c)) {
             if (tiefe === 0) return code.slice(i, k);
             tiefe--;
-        } else if (!ruf && tiefe === 0 && (c === ";" || c === "\n")) return code.slice(i, k);
+        } else if (!ruf && tiefe === 0 && c === ";") return code.slice(i, k);
+        // eine Zuweisung endet an der Zeile — außer die nächste setzt sie fort (mehrzeiliges `? :`, `+`, `.`, `||`, `&&`)
+        else if (!ruf && tiefe === 0 && c === "\n" && !/^\s*(?:[?:+.]|\|\||&&)/.test(code.slice(k + 1, k + 200)))
+            return code.slice(i, k);
     }
     return code.slice(i);
 }
+const DATEN_ATTR = /\b(?:value|class|className|id|type|name|href|src|for|role|key|style)\s*:\s*$/;
 const zeileVon = (code, i) => code.slice(0, i).split("\n").length;
 function pruefeCode(dateien, Z, rot) {
     const gesehen = new Set();
@@ -97,9 +101,11 @@ function pruefeCode(dateien, Z, rot) {
             const ruf = !!m[2] || !!m[3];
             const start = m.index + m[0].length;
             const arg = ausdruck(code, start, ruf);
-            for (const l of arg.match(LIT) || []) {
+            for (const t of arg.matchAll(LIT)) {
+                const l = t[0];
                 if (!wort(l)) continue;
-                // `_t("…")`-Schlüssel sind nie Wort-Text; ein Literal hinter `_t(` ist ein Schlüssel, kein Text
+                // im DOM-Bauer sind Werte der Daten-Attribute kein Text (`value:` einer <option>, `class:`, `id:` …)
+                if (m[2] === "_el" && DATEN_ATTR.test(arg.slice(Math.max(0, t.index - 40), t.index))) continue;
                 const key = `${pfad}:${zeileVon(code, start)}|${l}`;
                 if (gesehen.has(key)) continue;
                 gesehen.add(key);
@@ -201,6 +207,7 @@ if (SELBSTTEST) {
     fall("hartes textContent", stammMit('el.textContent = "Hallo Welt";'), "C");
     fall("harter Chat", stammMit("this._chatEcho(`Die Welt hört dich, ${name}!`);"), "C");
     fall("hartes _el", stammMit('this._el("button", { text: "Speichern" });'), "C");
+    fall("mehrzeiliges ? :", stammMit('el.textContent = an\n        ? "Ein"\n        : "Aus";'), "C");
     fall("harter title", stammMit('el.setAttribute("title", "Schließen");'), "C");
     fall("fremder Schlüssel", stammMit('el.textContent = this._t("gibt.es.nicht");'), "K");
     fall("harter DOM-Text", (e) => ((e.html = e.html.replace("<body", "<body><p>Hallo Welt</p")), e), "H");

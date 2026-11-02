@@ -17,7 +17,7 @@ class AnazhRealm_werkstatt_hud {
             toggle.addEventListener("click", () => {
                 grok.speechEnabled = !grok.speechEnabled;
                 toggle.setAttribute("aria-pressed", grok.speechEnabled ? "true" : "false");
-                toggle.textContent = grok.speechEnabled ? "Stimme: an" : "Stimme: aus";
+                toggle.textContent = grok.speechEnabled ? this._t("hud.stimme-an") : this._t("hud.stimme-aus");
             });
         }
     }
@@ -540,7 +540,10 @@ class AnazhRealm_werkstatt_hud {
             panel.classList.toggle("collapsed", collapsed);
             toggle.setAttribute("aria-pressed", collapsed ? "true" : "false");
             toggle.textContent = collapsed ? "+" : "−";
-            toggle.setAttribute("aria-label", collapsed ? "Konsole entfalten" : "Konsole einklappen");
+            toggle.setAttribute(
+                "aria-label",
+                collapsed ? this._t("hud.konsole-entfalten") : this._t("hud.konsole-einklappen")
+            );
         };
         const stored = (() => {
             try {
@@ -849,7 +852,7 @@ class AnazhRealm_werkstatt_hud {
             list.appendChild(
                 this._el("div", {
                     class: "omnibox-empty",
-                    text: "Kein Treffer — tippe weiter oder sprich frei zum Nexus.",
+                    text: this._t("hud.omnibox-leer"),
                 })
             );
             return;
@@ -944,7 +947,7 @@ class AnazhRealm_werkstatt_hud {
                     if (out.length >= LIMIT) return;
                     if (!t || cmd.toLowerCase().includes(t))
                         out.push({
-                            kindLabel: "Befehl",
+                            kindLabel: this._t("hud.befehl"),
                             label: cmd,
                             sub: g.title,
                             run: () => this.processChatCommand(cmd),
@@ -967,7 +970,7 @@ class AnazhRealm_werkstatt_hud {
                     out.push({
                         kindLabel: rl,
                         label: bp.label || bp.name,
-                        sub: "Bauplan",
+                        sub: this._t("hof.bauplan"),
                         run: () => {
                             const tab = document.querySelector('[data-tab="werkstatt"]');
                             if (tab) tab.click();
@@ -986,9 +989,9 @@ class AnazhRealm_werkstatt_hud {
                 const p = this._worldProfile(w);
                 if (!this._matchQuery(p.searchText, t)) continue; // M4 — der EINE Kern
                 out.push({
-                    kindLabel: p.trust === "sandboxed" ? "Sandbox-Welt" : "Welt",
+                    kindLabel: p.trust === "sandboxed" ? this._t("hud.sandbox-welt") : this._t("hud.welt"),
                     label: p.label,
-                    sub: p.hasDsl ? p.dsl.slice(0, 3).join(" ") : "Welt",
+                    sub: p.hasDsl ? p.dsl.slice(0, 3).join(" ") : this._t("hud.welt"),
                     run: () => {
                         const tab = document.querySelector('[data-tab="bibliothek"]');
                         if (tab) tab.click();
@@ -1002,13 +1005,13 @@ class AnazhRealm_werkstatt_hud {
             }
         };
         const ROOMS = [
-            ["werkstatt", "werkstatt", "Werkstatt"],
-            ["hof", "kreaturen", "Hof"],
-            ["kreaturen", "kreaturen", "Hof"],
-            ["ich", "spieler", "Ich"],
-            ["spieler", "spieler", "Ich"],
-            ["bibliothek", "bibliothek", "Bibliothek"],
-            ["einstellungen", "einstellungen", "Einstellungen"],
+            ["werkstatt", "werkstatt", this._t("hud.raum-werkstatt")],
+            ["hof", "kreaturen", this._t("hud.raum-hof")],
+            ["kreaturen", "kreaturen", this._t("hud.raum-hof")],
+            ["ich", "spieler", this._t("hud.raum-ich")],
+            ["spieler", "spieler", this._t("hud.raum-ich")],
+            ["bibliothek", "bibliothek", this._t("hud.raum-bibliothek")],
+            ["einstellungen", "einstellungen", this._t("hud.raum-einstellungen")],
         ];
         const addRooms = (t) => {
             const seen = new Set();
@@ -1017,9 +1020,9 @@ class AnazhRealm_werkstatt_hud {
                 if (seen.has(tabName)) continue;
                 seen.add(tabName);
                 out.push({
-                    kindLabel: "Raum",
+                    kindLabel: this._t("hud.raum"),
                     label,
-                    sub: "öffnen",
+                    sub: this._t("hud.oeffnen"),
                     run: () => {
                         const el = document.querySelector(`[data-tab="${tabName}"]`);
                         if (el) el.click();
@@ -1038,9 +1041,9 @@ class AnazhRealm_werkstatt_hud {
                 if (out.length >= LIMIT) return;
                 if (!t || word.includes(t))
                     out.push({
-                        kindLabel: "Kreatur",
-                        label: `Alle Wesen: ${word}`,
-                        sub: "Auftrag",
+                        kindLabel: this._t("hud.kreatur"),
+                        label: this._t("hud.alle-wesen", { wort: word }),
+                        sub: this._t("hud.auftrag"),
                         run: () => this.processChatCommand(cmd),
                     });
             }
@@ -1048,9 +1051,9 @@ class AnazhRealm_werkstatt_hud {
         const nexusFallback = () => {
             if (q)
                 out.push({
-                    kindLabel: "Nexus",
-                    label: `Sprich: „${q}"`,
-                    sub: "zum Nexus",
+                    kindLabel: this._t("hud.nexus"),
+                    label: this._t("hud.sprich", { satz: q }),
+                    sub: this._t("hud.zum-nexus"),
                     run: () => this.processChatCommand(q),
                 });
         };
@@ -1164,13 +1167,8 @@ class AnazhRealm_werkstatt_hud {
         handle.className = `resize-handle resize-${corner}`;
         // W-A (V18.165, Korpus R-001): die Konsole wächst nach OBEN (bottom-Anker) —
         // der Griff sagt es jetzt (Titel + sichtbare Ecken-Affordanz im CSS).
-        handle.setAttribute(
-            "title",
-            corner === "tr"
-                ? "Größe ziehen (wächst nach oben) · Doppelklick: Standard"
-                : "Größe ändern · Doppelklick: Default"
-        );
-        handle.setAttribute("aria-label", "Größe ändern");
+        handle.setAttribute("title", corner === "tr" ? this._t("hud.groesse-ziehen") : this._t("hud.groesse-default"));
+        handle.setAttribute("aria-label", this._t("hud.groesse-aendern"));
         container.appendChild(handle);
 
         // Container-ID für Persistence (entweder #id oder data-drawer)
@@ -1316,7 +1314,7 @@ class AnazhRealm_werkstatt_hud {
                 const dc = Math.round(s.renderCalls || 0);
                 const trisK = Math.round((s.renderTris || 0) / 1000);
                 const szenePct = Math.round(this._szeneSkalaWirk() * 100);
-                extra = ` · ${dc}dc · ${trisK}k▲ · Szene ${szenePct}%`;
+                extra = this._t("hud.perf-extra", { dc, tris: trisK, szene: szenePct });
             }
             this._hudSchreib(r.fps, String(this.state.fps || 0) + extra);
         }
@@ -1329,7 +1327,7 @@ class AnazhRealm_werkstatt_hud {
         }
         if (r.architectures) {
             const counts = this.countArchitecturesNearPlayer(60);
-            this._hudSchreib(r.architectures, `${counts.near} nah / ${counts.total}`);
+            this._hudSchreib(r.architectures, this._t("hud.bauten-nah", { nah: counts.near, gesamt: counts.total }));
         }
         // Welle 6.G3 — Tageszeit-Anzeige (zusätzlich zum 10-Hz-Refresh in
         // tickDayNight; diese Schleife läuft 0.4 s und ist Backup für die
@@ -1407,7 +1405,7 @@ class AnazhRealm_werkstatt_hud {
         if (list.length === 0) {
             const empty = document.createElement("div");
             empty.className = "ability-empty";
-            empty.textContent = "Noch keine Gesten — der Nexus hat noch nichts komponiert.";
+            empty.textContent = this._t("hud.gesten-leer");
             container.appendChild(empty);
             return;
         }
@@ -1416,29 +1414,31 @@ class AnazhRealm_werkstatt_hud {
         headRow.className = "worldrule-group-head nexus";
         const lbl = document.createElement("span");
         lbl.textContent =
-            `✦ Gesten · ${list.length}` + (expanded || hidden === 0 ? "" : ` (die jüngsten ${shown.length})`);
+            expanded || hidden === 0
+                ? this._t("hud.gesten-kopf", { n: list.length })
+                : this._t("hud.gesten-kopf-juengste", { n: list.length, gezeigt: shown.length });
         headRow.appendChild(lbl);
         const headBtns = document.createElement("span");
         if (ordered.length > GESTEN_SHOWN) {
             const toggle = document.createElement("button");
             toggle.type = "button";
             toggle.className = "worldrule-toggle";
-            toggle.textContent = expanded ? "▾ weniger" : `▸ alle ${ordered.length}`;
+            toggle.textContent = expanded ? this._t("hud.weniger") : this._t("hud.alle-n", { n: ordered.length });
             toggle.setAttribute("data-toggle-abilities", "1");
             headBtns.appendChild(toggle);
         }
         const clear = document.createElement("button");
         clear.type = "button";
         clear.className = "worldrule-toggle";
-        clear.textContent = "leeren";
+        clear.textContent = this._t("hud.leeren");
         clear.setAttribute("data-clear-abilities", "1");
-        clear.setAttribute("aria-label", "Alle Nexus-Gesten verwerfen");
+        clear.setAttribute("aria-label", this._t("hud.gesten-verwerfen"));
         headBtns.appendChild(clear);
         headRow.appendChild(headBtns);
         container.appendChild(headRow);
         const fmtAgo = (sec) => {
             const d = Math.max(0, Math.round(now - sec));
-            return d < 60 ? `vor ${d}s` : `vor ${Math.round(d / 60)}m`;
+            return d < 60 ? this._t("hof.vor-s", { n: d }) : this._t("hof.vor-m", { n: Math.round(d / 60) });
         };
         for (const ability of shown) {
             const row = document.createElement("div");
@@ -1448,8 +1448,8 @@ class AnazhRealm_werkstatt_hud {
             head.className = "ability-head";
             const kind = document.createElement("span");
             kind.className = "ability-kind";
-            kind.textContent = "✦ Geste";
-            kind.title = "Eine einmalige Tat (kein stehendes Gesetz) — ▶ wirkt sie erneut.";
+            kind.textContent = this._t("hud.geste");
+            kind.title = this._t("hud.geste-titel");
             const name = document.createElement("span");
             name.className = "name";
             name.textContent = ability.name;
@@ -1466,13 +1466,13 @@ class AnazhRealm_werkstatt_hud {
             run.type = "button";
             run.textContent = "▶";
             run.setAttribute("data-run-ability", ability.name);
-            run.setAttribute("aria-label", `Geste ${ability.name} erneut wirken`);
+            run.setAttribute("aria-label", this._t("hud.geste-wirken", { name: ability.name }));
             head.appendChild(run);
             const forget = document.createElement("button");
             forget.type = "button";
             forget.textContent = "✕";
             forget.setAttribute("data-forget-ability", ability.name);
-            forget.setAttribute("aria-label", `Geste ${ability.name} vergessen`);
+            forget.setAttribute("aria-label", this._t("hud.geste-vergessen", { name: ability.name }));
             head.appendChild(forget);
             row.appendChild(head);
             // Beschreibung (Lazy-Compute für Legacy-Saves, dann persistiert).
@@ -1494,7 +1494,7 @@ class AnazhRealm_werkstatt_hud {
         if (hidden > 0) {
             const more = document.createElement("div");
             more.className = "worldrule-more";
-            more.textContent = `+ ${hidden} ältere Gesten`;
+            more.textContent = this._t("hud.aeltere-gesten", { n: hidden });
             container.appendChild(more);
         }
     }
@@ -1505,10 +1505,10 @@ class AnazhRealm_werkstatt_hud {
     // Persistenz-Status: „pausiert" / „permanent" (ttlSec==null) / „verfällt in ~Ns" (10-s-granular);
     // eigene Methode, damit Signatur + Label sie teilen.
     _worldRuleStatusLabel(rule, now) {
-        if (rule.disabled) return "pausiert";
-        if (rule.ttlSec == null) return "permanent";
+        if (rule.disabled) return this._t("hud.pausiert");
+        if (rule.ttlSec == null) return this._t("hud.permanent");
         const rem = Math.max(0, Math.ceil((rule.ttlSec - (now - rule.born)) / 10) * 10);
-        return `verfällt in ~${rem}s`;
+        return this._t("hud.verfaellt", { n: rem });
     }
 
     // Live-Aktivitäts-Faden eines Gesetzes: „⚡ feuert" (innerhalb threadRecentSec), sonst
@@ -1516,11 +1516,11 @@ class AnazhRealm_werkstatt_hud {
     // bounded: „feuert" bleibt stabil während des Feuerns (Frist > everySec), ein Re-Render beim
     // Verstummen.
     _worldRuleActivityLabel(rule, now) {
-        if (rule.disabled) return "pausiert";
+        if (rule.disabled) return this._t("hud.pausiert");
         const fires = rule.fires || 0;
-        if (fires === 0) return "ruht";
-        if (now - rule.lastFired <= AnazhRealm.WORLD_RULES.threadRecentSec) return "⚡ feuert";
-        return `⚡ aktiv · ${fires}×`;
+        if (fires === 0) return this._t("hud.ruht");
+        if (now - rule.lastFired <= AnazhRealm.WORLD_RULES.threadRecentSec) return this._t("hud.feuert");
+        return this._t("hud.aktiv", { n: fires });
     }
 
     // V18.52 Hof-Partitur — EINE Regel-Karte (wiederverwendet in beiden Gruppen). Der gelernte WERT
@@ -1550,12 +1550,13 @@ class AnazhRealm_werkstatt_hud {
         head.className = "ability-head";
         const name = document.createElement("span");
         const activity = this._worldRuleActivityLabel(rule, now);
-        name.className = "name" + (activity === "⚡ feuert" ? " rule-firing" : "");
+        name.className = "name" + (activity === this._t("hud.feuert") ? " rule-firing" : "");
         name.textContent = activity;
         const source = document.createElement("span");
         source.className = "source";
         source.textContent =
-            (geber || (src === "nexus" ? "Nexus" : src === "llm" ? "Grok" : rule.source)) + (rule.pinned ? " ★" : "");
+            (geber || (src === "nexus" ? this._t("hud.nexus") : src === "llm" ? this._t("hud.grok") : rule.source)) +
+            (rule.pinned ? " ★" : "");
         const status = document.createElement("span");
         status.className = "rule-status" + (permanent ? " perma" : "");
         status.textContent = this._worldRuleStatusLabel(rule, now);
@@ -1568,33 +1569,32 @@ class AnazhRealm_werkstatt_hud {
             const chip = document.createElement("span");
             chip.className = "rule-value-chip " + (v > 0.05 ? "val-pos" : v < -0.05 ? "val-neg" : "val-neu");
             chip.textContent = (v >= 0 ? "+" : "") + v.toFixed(2);
-            chip.title =
-                "Gelernter Wert (struktureller δ am Ort der Regel) — die wertvollsten überleben + werden adoptierbar.";
+            chip.title = this._t("hud.wert-titel");
             head.appendChild(chip);
         }
         if (permanent) {
-            head.appendChild(mkBtn(rule.pinned ? "★" : "☆", "data-pin-rule", "Favorit"));
+            head.appendChild(mkBtn(rule.pinned ? "★" : "☆", "data-pin-rule", this._t("hud.favorit")));
             head.appendChild(
                 mkBtn(
                     rule.disabled ? "▶" : "⏸",
                     "data-toggle-rule",
-                    rule.disabled ? "Gesetz aktivieren" : "Gesetz pausieren"
+                    rule.disabled ? this._t("hud.gesetz-aktivieren") : this._t("hud.gesetz-pausieren")
                 )
             );
-            head.appendChild(mkBtn("✕", "data-forget-rule", "Gesetz vergessen"));
+            head.appendChild(mkBtn("✕", "data-forget-rule", this._t("hud.gesetz-vergessen")));
         } else {
             // V18.53 — ein ephemeres Nexus-Experiment ist DIREKT steuerbar, ohne erst zu pinnen (Schöpfer-Befund
             // „muss zuerst pinnen, um Stopp/Löschen zu nutzen"): 📌 behalten · ⏸ verstummen (das Experiment bleibt,
             // stört aber nicht — respektiert die Welt-Autonomie) · ✕ verwerfen (dein Recht, in JEDEM Modus).
-            head.appendChild(mkBtn("📌", "data-pin-rule", "Experiment behalten (wird permanent)"));
+            head.appendChild(mkBtn("📌", "data-pin-rule", this._t("hud.experiment-behalten")));
             head.appendChild(
                 mkBtn(
                     rule.disabled ? "▶" : "⏸",
                     "data-toggle-rule",
-                    rule.disabled ? "Experiment aktivieren" : "Experiment verstummen"
+                    rule.disabled ? this._t("hud.experiment-aktivieren") : this._t("hud.experiment-verstummen")
                 )
             );
-            head.appendChild(mkBtn("✕", "data-forget-rule", "Experiment verwerfen"));
+            head.appendChild(mkBtn("✕", "data-forget-rule", this._t("hud.experiment-verwerfen")));
         }
         row.appendChild(head);
         const desc = document.createElement("div");
@@ -1602,7 +1602,7 @@ class AnazhRealm_werkstatt_hud {
         try {
             desc.textContent = this.describeProgram(["rule", rule.cond, rule.effect]);
         } catch {
-            desc.textContent = "eine Welt-Regel";
+            desc.textContent = this._t("hud.welt-regel");
         }
         row.appendChild(desc);
         return row;
@@ -1638,19 +1638,19 @@ class AnazhRealm_werkstatt_hud {
         if (all.length === 0) {
             const empty = document.createElement("div");
             empty.className = "ability-empty";
-            empty.textContent = `Noch keine Gesetze. Sag z. B. „${AnazhRealm.GESETZ_VORLAGEN[0]}".`;
+            empty.textContent = this._t("hud.gesetze-leer", { vorlage: AnazhRealm.GESETZ_VORLAGEN[0] });
             container.appendChild(empty);
             return;
         }
         // Gruppe 1 — DEINE GESETZE (stabil, manipulierbar, oben).
         const yourHead = document.createElement("div");
         yourHead.className = "worldrule-group-head";
-        yourHead.textContent = `Deine Gesetze · ${yours.length}`;
+        yourHead.textContent = this._t("hud.deine-gesetze", { n: yours.length });
         container.appendChild(yourHead);
         if (yours.length === 0) {
             const hint = document.createElement("div");
             hint.className = "ability-empty";
-            hint.textContent = "Noch keine eigenen — sprich eine Regel, oder 📌 adoptiere ein Nexus-Experiment.";
+            hint.textContent = this._t("hud.gesetze-eigene-leer");
             container.appendChild(hint);
         } else {
             for (const rule of yours) container.appendChild(this._buildWorldRuleRow(rule, now));
@@ -1661,14 +1661,15 @@ class AnazhRealm_werkstatt_hud {
             nexHead.className = "worldrule-group-head nexus";
             const lbl = document.createElement("span");
             lbl.textContent =
-                `Der Nexus erprobt · ${nexus.length}` +
-                (expanded || nexusHidden === 0 ? "" : ` (die wertvollsten ${nexusShown.length})`);
+                expanded || nexusHidden === 0
+                    ? this._t("hud.nexus-erprobt", { n: nexus.length })
+                    : this._t("hud.nexus-erprobt-wertvollste", { n: nexus.length, gezeigt: nexusShown.length });
             nexHead.appendChild(lbl);
             if (nexus.length > NEXUS_SHOWN) {
                 const toggle = document.createElement("button");
                 toggle.type = "button";
                 toggle.className = "worldrule-toggle";
-                toggle.textContent = expanded ? "▾ weniger" : `▸ alle ${nexus.length}`;
+                toggle.textContent = expanded ? this._t("hud.weniger") : this._t("hud.alle-n", { n: nexus.length });
                 toggle.addEventListener("click", () => {
                     this.state.hofNexusExpanded = !expanded;
                     this.renderWorldRulesList();
@@ -1680,7 +1681,7 @@ class AnazhRealm_werkstatt_hud {
             if (nexusHidden > 0) {
                 const more = document.createElement("div");
                 more.className = "worldrule-more";
-                more.textContent = `+ ${nexusHidden} weitere mit geringerem Wert`;
+                more.textContent = this._t("hud.weitere-geringer", { n: nexusHidden });
                 container.appendChild(more);
             }
         }
@@ -1898,8 +1899,8 @@ class AnazhRealm_werkstatt_hud {
                 const st2 = document.getElementById("perf-export-status");
                 if (st2)
                     st2.textContent = r2
-                        ? `${r2.name} (${Math.round(r2.bytes / 1024)} kB)`
-                        : "noch keine Daten — erst ein paar Sekunden spielen";
+                        ? this._t("hud.perf-datei", { name: r2.name, kb: Math.round(r2.bytes / 1024) })
+                        : this._t("hud.perf-keine-daten");
             });
         }
 
@@ -1928,11 +1929,11 @@ class AnazhRealm_werkstatt_hud {
                 void e;
             }
             dl.value = String(this.state.dayLengthMinutes || this.constructor.DAY_LENGTH_DEFAULT_MINUTES);
-            if (dlVal) dlVal.textContent = `${dl.value} Min`;
+            if (dlVal) dlVal.textContent = this._t("hud.minuten", { n: dl.value });
             dl.addEventListener("input", () => {
                 const v = parseInt(dl.value, 10);
                 this.setDayLength(v);
-                if (dlVal) dlVal.textContent = `${v} Min`;
+                if (dlVal) dlVal.textContent = this._t("hud.minuten", { n: v });
             });
         }
 
@@ -2135,7 +2136,7 @@ class AnazhRealm_werkstatt_hud {
         sel.textContent = "";
         const def = document.createElement("option");
         def.value = "";
-        def.textContent = "Standard (Browser)";
+        def.textContent = this._t("hud.stimme-standard");
         sel.appendChild(def);
         for (const v of voices) {
             const opt = document.createElement("option");
@@ -2315,10 +2316,10 @@ class AnazhRealm_werkstatt_hud {
     // „Mouse0" → „Linke Maustaste", „Space" → „Leertaste", etc.
     _formatBindingCode(code) {
         if (!code) return "—";
-        if (code === "Mouse0") return "Linke Maustaste";
-        if (code === "Mouse1") return "Mittlere Maustaste";
-        if (code === "Mouse2") return "Rechte Maustaste";
-        if (code === "Space") return "Leertaste";
+        if (code === "Mouse0") return this._t("hud.maus-links");
+        if (code === "Mouse1") return this._t("hud.maus-mitte");
+        if (code === "Mouse2") return this._t("hud.maus-rechts");
+        if (code === "Space") return this._t("hud.leertaste");
         if (code === "Tab") return "Tab";
         if (code === "Escape") return "Esc";
         if (code.startsWith("Key")) return code.slice(3);
@@ -2337,7 +2338,7 @@ class AnazhRealm_werkstatt_hud {
         for (const btn of section.querySelectorAll("button.keybind-rebind")) {
             const action = btn.dataset.action || btn.dataset.pad;
             if (rb && rb.action === action) {
-                btn.textContent = btn.dataset.pad ? "Drücke Knopf…" : "Drücke Taste…";
+                btn.textContent = btn.dataset.pad ? this._t("hud.druecke-knopf") : this._t("hud.druecke-taste");
                 btn.classList.add("rebinding");
             } else {
                 btn.textContent = this._formatBindingCode(
@@ -2451,7 +2452,7 @@ class AnazhRealm_werkstatt_hud {
         if (tableConsumables.length === 0) return;
         const consumableHeader = document.createElement("div");
         consumableHeader.className = "equip-mark-header";
-        consumableHeader.textContent = "Schnell-Trünke (Tabelle):";
+        consumableHeader.textContent = this._t("hud.schnell-truenke");
         container.appendChild(consumableHeader);
         for (const name of tableConsumables) {
             const c = this.state.consumables[name];
@@ -2459,11 +2460,11 @@ class AnazhRealm_werkstatt_hud {
             row.className = "equip-mark-row";
             const label = document.createElement("span");
             label.className = "equip-mark-label";
-            label.textContent = `${c.label || name} (${c.durationSeconds} s, Tabelle)`;
+            label.textContent = this._t("hud.trunk-zeile", { name: c.label || name, sekunden: c.durationSeconds });
             row.appendChild(label);
             const drinkBtn = document.createElement("button");
             drinkBtn.type = "button";
-            drinkBtn.textContent = "Trinken";
+            drinkBtn.textContent = this._t("hud.trinken");
             drinkBtn.addEventListener("click", () => {
                 const result = this.activateConsumable(name);
                 if (!result.ok) this.log(`activateConsumable: ${result.reason}`, "ERROR");
@@ -2496,15 +2497,15 @@ class AnazhRealm_werkstatt_hud {
             return opt;
         };
         const gStudio = document.createElement("optgroup");
-        gStudio.label = "Studio-Wesen";
+        gStudio.label = this._t("hud.studio-wesen");
         // (1) mensch — die gegebene Identität (koerperstudio); die Prägung des Mensch-Rezepts (der Übergabe-Kanal, ws.studioOv)
         // ist SICHTBAR am Eintrag (✦ Studio-Gestalt).
         const ueK = this._studioPraegung(AnazhRealm.KOERPER_HOST_RECIPE);
         addOpt(
             gStudio,
             "human",
-            ueK ? "mensch ✦ Studio-Gestalt" : "mensch",
-            "koerperstudio — dein Menschen-Körper" + (ueK ? " (trägt die Live-Übergabe aus dem Studio)" : "")
+            ueK ? this._t("hud.mensch-gestalt") : this._t("hud.mensch"),
+            ueK ? this._t("hud.mensch-titel-uebergabe") : this._t("hud.mensch-titel")
         );
         // (2) die vier Gattungen des tetrapoda-Buchs, mit ihren Studio-Namen. Verkörpert
         // (bp_koerper_<tier> als customSoul) → freier Wechsel; sonst der embody-Wert
@@ -2518,7 +2519,7 @@ class AnazhRealm_werkstatt_hud {
                     gStudio,
                     `bp_${bpName}`,
                     `${studioName} ✦`,
-                    `tetrapoda — ${studioName} (verkörpert, freier Wechsel)`
+                    this._t("hud.tetrapoda-titel", { name: studioName })
                 );
             } else if (this.state.blueprints && this.state.blueprints[bpName]) {
                 const opt = addOpt(gStudio, bpName, studioName + " ⚒" + this._makeActCostSuffix(bpName));
@@ -2577,23 +2578,17 @@ class AnazhRealm_werkstatt_hud {
                 "max-width:560px;width:100%;background:#1d120b;border:1px solid #6b4326;border-radius:14px;" +
                 "padding:34px 36px;box-shadow:0 18px 60px rgba(0,0,0,.6);line-height:1.55;";
             const title = document.createElement("h1");
-            title.textContent = "AnazhRealm erwacht in WebGPU";
+            title.textContent = this._t("hud.gate-titel");
             title.style.cssText = "margin:0 0 6px;font-size:24px;color:#ffd9a8;font-weight:600;letter-spacing:.3px;";
             const lead = document.createElement("p");
-            lead.textContent =
-                "Diese Welt rendert mit WebGPU — der modernen Grafik-Schnittstelle des Webs. " +
-                "Dein Browser meldet sie noch nicht. Das ist kein Fehler in der Welt, nur eine Schwelle.";
+            lead.textContent = this._t("hud.gate-lead");
             lead.style.cssText = "margin:0 0 16px;font-size:16px;color:#e8d2b4;";
             const how = document.createElement("p");
-            how.textContent = "So trittst du ein:";
+            how.textContent = this._t("hud.gate-wie");
             how.style.cssText = "margin:0 0 8px;font-size:15px;color:#ffce96;font-weight:600;";
             const list = document.createElement("ul");
             list.style.cssText = "margin:0 0 18px;padding-left:20px;font-size:15px;color:#e2cba8;";
-            const rows = [
-                "Chrome oder Edge ab Version 113 (oder neuer) öffnen.",
-                "Safari 18+ auf macOS/iOS — WebGPU ist standardmäßig dabei.",
-                "Firefox: about:config → dom.webgpu.enabled auf true setzen.",
-            ];
+            const rows = [this._t("hud.gate-chrome"), this._t("hud.gate-safari"), this._t("hud.gate-firefox")];
             for (const t of rows) {
                 const li = document.createElement("li");
                 li.textContent = t;
@@ -2604,12 +2599,11 @@ class AnazhRealm_werkstatt_hud {
             link.href = "https://caniuse.com/webgpu";
             link.target = "_blank";
             link.rel = "noopener noreferrer";
-            link.textContent = "WebGPU-Browser-Unterstützung ansehen →";
+            link.textContent = this._t("hud.gate-link");
             link.style.cssText =
                 "display:inline-block;color:#ff9a52;text-decoration:none;font-size:14px;border-bottom:1px solid #ff9a52;";
             const foot = document.createElement("p");
-            foot.textContent =
-                "Sobald dein Browser WebGPU spricht, lädst du diese Seite einfach neu — die Welt ist dann da.";
+            foot.textContent = this._t("hud.gate-fuss");
             foot.style.cssText = "margin:18px 0 0;font-size:13px;color:#b89a78;font-style:italic;";
             card.appendChild(title);
             card.appendChild(lead);
