@@ -1553,3 +1553,7 @@
 2026-11-02 15:32:55 z163-abab w-ego(4+4) nicht-langsamer 11.9 · verlängert (4+4)
 2026-11-02 15:49:57 z163-abab stadt(4+4) nicht-langsamer 17.0 · verlängert (4+4)
 2026-11-02 15:50:13 takt-z164a-gtx START 27 Stationen in 1 Läufen
+2026-11-02 16:10:25 takt-z164a-gtx tiere.K1#2,tiere.K3#2,mensch.K1#1,vegetation.K5#2,material.K2#1,material.K1#1,lod.K1#1,lod.K5#1,studios.K2#2,studios.K3#2,bauen.K1#2,studios.K4#1,siedlung.K1#2,siedlung.K4#2,leib.K1#2,spielgang.K3#1,fahrzeug.K2#1,fahrzeug.K2#2,ankunft.K2#1,ankunft.K3#1,ankunft.K1#1,profiband.K1#1,profiband.K2#1,profiband.K2#2,profiband.K3#1,klang.K4#1,speicher.K4#2 OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/ROT/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN 20.1 · 27/27
+2026-11-02 16:10:48 takt-z165a-gtx START 27 Stationen in 1 Läufen
+2026-11-02 16:30:58 takt-z165a-gtx physik.K2#2,tiere.K1#2,tiere.K3#2,mensch.K1#1,vegetation.K5#2,material.K2#1,material.K1#1,lod.K1#1,lod.K5#1,studios.K2#2,studios.K3#2,bauen.K1#2,studios.K4#1,siedlung.K1#2,siedlung.K4#2,leib.K1#2,fahrzeug.K2#1,fahrzeug.K2#2,ankunft.K2#1,ankunft.K3#1,ankunft.K1#1,profiband.K1#1,profiband.K2#1,profiband.K2#2,profiband.K3#1,klang.K4#1,speicher.K4#2 OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN 20.1 · 27/27
+2026-11-02 16:31:25 z164-abab START 2 Zellen
