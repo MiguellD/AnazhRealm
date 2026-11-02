@@ -391,10 +391,10 @@ H.fahre(async function probeAnkunftKalt(H) {
     await schliesse();
     j.spur = spur;
     return j;
-}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\6d6a8336-gtx\ankunft.K2_1.json 10
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\6d6a8336-gtx\pipeline.K4_1.json 10
 @@PUNKTE@@ FRIST 4 s der Probe gerissen — die Kontrolle des Kalt-Boots an der Frist
-@@ 2 s · kalt: t(Kontrolle) —
-SPUR kalt {"stand":"gemessen","kontrolleMs":1009,"belegtMs":905,"laengsteMs":402,"langeN":2,"langeMs":497,"halter":["(program) hält den Haupt-Faden vor dem ersten Bild 95 ms (bei 0.1 s; 1× ≥ 50 ms, Σ 95 ms)","renderRecipeBook (stamm/werkstatt-hof.js:226) hält den Haupt-Faden vor dem ersten Bild 71 ms (bei 0.5 s; 1× ≥ 50 ms, Σ 71 ms)","grow [phyto-core.js] (phyto-core.js:104) hält den Haupt-Faden vor dem ersten Bild 59 ms (bei 0.5 s; 1× ≥ 50 ms, Σ 59 ms)"]}
+@@ 2.7 s · kalt: t(Kontrolle) —
+SPUR kalt {"stand":"gemessen","kontrolleMs":1446,"belegtMs":1098,"laengsteMs":505,"langeN":3,"langeMs":665,"halter":["(program) hält den Haupt-Faden vor dem ersten Bild 106 ms (bei 0.4 s; 2× ≥ 50 ms, Σ 160 ms)","_workshopRenderStatsPanel (stamm/werkstatt-vorschau.js:2319) hält den Haupt-Faden vor dem ersten Bild 65 ms (bei 0.8 s; 1× ≥ 50 ms, Σ 65 ms)","grow [phyto-core.js] (phyto-core.js:104) hält den Haupt-Faden vor dem ersten Bild 63 ms (bei 0.8 s; 1× ≥ 50 ms, Σ 63 ms)"]}
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

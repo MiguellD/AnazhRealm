@@ -10,8 +10,8 @@ echo "BILD $(grep -o '"abnahme": "[^"]*"' "$B-bild.txt")"
 cp "$B-gang.abnahme.json" "$A"
 wait
 cat "$B-tiergang.out" "$B-querhang.out"
-BUEHNE {"tiere":[{"seele":"wolf","x":-5,"art":"schritt","amBoden":3},{"seele":"fuchs","x":-1.5,"art":"schritt","amBoden":2},{"seele":"baer","x":2.1,"art":"schritt","amBoden":3},{"seele":"wesen","x":5.7,"art":"schritt","amBoden":2}],"kamera":[0.32,91.62,14,0.32,89.59,24]}
-BILD "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 52 σ 24.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.163 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen"
+BUEHNE {"tiere":[{"seele":"wolf","x":-5,"art":"schritt","amBoden":3},{"seele":"fuchs","x":-1.5,"art":"schritt","amBoden":2},{"seele":"baer","x":2.1,"art":"schritt","amBoden":3},{"seele":"wesen","x":5.7,"art":"schritt","amBoden":2}],"kamera":[0.32,92.06,5.37,0.32,90.05,15.37]}
+BILD "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 77.3 σ 48.7 schwarz 3.0 % weiß 0.0 % · Stand 18.546.163 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen"
 
 --- stderr ---
 tr: warning: an unescaped backslash at end of string is not portable
