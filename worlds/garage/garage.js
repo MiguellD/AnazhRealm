@@ -300,7 +300,7 @@ ergB.onclick=()=>{ergOn=!ergOn;ergB.classList.toggle('on',ergOn);
 const regler=AnazhHuelle.regler(document.getElementById('sliders'),PARAMS,{werte:P,ruheMs:0,sitzung:sitz,
   basis:()=>Object.assign({},VC.DEFAULT_P,VC.presetPatch(presetId),kulturId?CULTURES[kulturId].fx:{}),
   bei:(id,v,pp)=>{if(!pp.dyn)[...pdiv.children].forEach(c=>c.classList.remove('on'));},
-  format:(z,v)=>z.id==='epoche'?(+v).toFixed(2)+' · '+VC.EPOCHE_GESETZ[Math.round(+v)].lab:null,
+  format:(z,v)=>{const E=z.id==='epoche'&&VC.EPOCHE_GESETZ[Math.round(+v)];return E?(+v).toFixed(2)+' · '+E.lab:null;},   // ohne Stufe die blanke Zahl (NaN bleibt sichtbar)
   nachRuhe:(ids,bau)=>{if(bau)rebuild();}});
 // DIE ZEIT IN DER ANSICHT: die Zeile `epoche` des EINEN Generators (dieselbe Sitzung, derselbe Rückgängig-Weg) steht über
 // den Regeln der Ansicht — Isometrie, Seite und Explosion zeigen jede Stufe des EPOCHE_GESETZ am selben Bau.

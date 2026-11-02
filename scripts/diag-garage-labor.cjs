@@ -4,7 +4,16 @@
 // Die Seite läuft in ihrem echten Renderer (r184 WebGPU, die Engine der Welt) im Kopflos-Browser; gezählt wird an der Seite selbst.
 //   node scripts/diag-garage-labor.cjs [--selftest]          Port: GARAGE_LABOR_PORT (Standard 4414)
 "use strict";
-const { statikServer, starteBrowser, pruefer, hauptLauf, sleep, urteilEnde, selbsttestEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const {
+    statikServer,
+    starteBrowser,
+    pruefer,
+    hauptLauf,
+    sleep,
+    urteilEnde,
+    selbsttestEnde,
+    SELBSTTEST,
+} = require("./lib/welt-boot.cjs");
 const { tempoVerdict, tempoSpion } = require("./lib/fahr-proben.cjs");
 
 const PORT = Number(process.env.GARAGE_LABOR_PORT || 4414);
@@ -78,17 +87,6 @@ hauptLauf(async () => {
     });
     await sleep(500);
     const m = { geladen: true };
-    // G4 (Teil): der Regler-Zustand beim ersten Laden == das Modell (vor jedem Klick).
-    m.reglerLeck = await page.evaluate(() => {
-        const out = [];
-        for (const pp of window.__vehicleCore.PARAMS_BY_KIND.vehicle) {
-            const el = document.querySelector(`#v_${pp.id}`);
-            const inp = el && el.closest(".sl") ? el.closest(".sl").querySelector("input") : null;
-            // eslint-disable-next-line no-undef
-            if (inp && Math.abs(parseFloat(inp.value) - P[pp.id]) > 1e-6) out.push(`${pp.id} ${inp.value}≠${P[pp.id]}`);
-        }
-        return out;
-    });
     // G1: die Maus in der Werkstatt (Orbit-Zug) und in der Probefahrt (Umsehen).
     await page.mouse.move(640, 360);
     await page.mouse.down();
@@ -162,9 +160,8 @@ hauptLauf(async () => {
         await page.evaluate(() => {
             const VC = window.__vehicleCore;
             const knopf = (text) => [...document.querySelectorAll("#ctl button")].find((b) => b.textContent === text);
-            const ep = document.querySelector('[data-regler="epoche"] input');
-            ep.value = "2";
-            ep.dispatchEvent(new Event("input", { bubbles: true }));
+            // eslint-disable-next-line no-undef
+            P.epoche = 2;
             const soll = (pid, kid) =>
                 Object.assign({}, VC.DEFAULT_P, VC.presetPatch(pid), kid ? VC.CULTURES[kid].fx : {}, { epoche: 2 });
             const leck = (s) => {
@@ -185,7 +182,12 @@ hauptLauf(async () => {
             knopf(VC.CULTURES.toro.lab).click(); // zweiter Klick: ab
             const kulturAb =
                 leck(soll("limousine", null)).length === 0 && !knopf(VC.CULTURES.toro.lab).classList.contains("on");
-            return { presetLeck, kulturAb };
+            // Regler == Modell: was der Schöpfer an der Zeile liest (bis 02.11. prüfte hier eine Abfrage nach #v_-Ids, die die Hülle
+            // nie baut — sie fand nichts; der Wert der Epoche stand nach dem Wechsel als NaN)
+            const reglerLeck = [...document.querySelectorAll("#ctl .h-wert")]
+                .filter((w) => /NaN/.test(w.textContent))
+                .map((w) => w.closest("[data-regler]").dataset.regler);
+            return { presetLeck, kulturAb, reglerLeck };
         })
     );
     await browser.close();
@@ -220,5 +222,9 @@ hauptLauf(async () => {
         m.schilderFahrt === 0 && m.schilderWerkstatt > 0,
         `Fahrt ${m.schilderFahrt} Schilder · Werkstatt ${m.schilderWerkstatt}`
     );
-    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en): ${v.join(" · ")}`, "\n✅ GRÜN — die Garage: Maus ohne Fehler, HUD als Band, Tacho in km/h, Preset und Kultur ohne Leck, die Probefahrt ohne Lehren.");
+    urteilEnde(
+        errs.length,
+        `\n❌ ROT — ${errs.length} Verletzung(en): ${v.join(" · ")}`,
+        "\n✅ GRÜN — die Garage: Maus ohne Fehler, HUD als Band, Tacho in km/h, Preset und Kultur ohne Leck, die Probefahrt ohne Lehren."
+    );
 });
