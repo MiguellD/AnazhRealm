@@ -155,14 +155,18 @@ hauptLauf(async () => {
     await page.keyboard.press("Escape");
     await sleep(200);
     m.schilderWerkstatt = (await schilder()).length;
-    // G4/G5: Gattung und Kultur wechseln — P ist DEFAULT_P + Preset (+ die gewählte Kultur), ohne Rest.
+    // G4/G5: Gattung und Kultur wechseln — P ist DEFAULT_P + Preset (+ die gewählte Kultur) + die Epoche des Reglers, ohne Rest
+    // (die Gattung wählt die Form, nie die Zeit: bis 02.11. fiel die Epoche beim Wechsel, der Regler zeigte NaN).
     Object.assign(
         m,
         await page.evaluate(() => {
             const VC = window.__vehicleCore;
             const knopf = (text) => [...document.querySelectorAll("#ctl button")].find((b) => b.textContent === text);
+            const ep = document.querySelector('[data-regler="epoche"] input');
+            ep.value = "2";
+            ep.dispatchEvent(new Event("input", { bubbles: true }));
             const soll = (pid, kid) =>
-                Object.assign({}, VC.DEFAULT_P, VC.presetPatch(pid), kid ? VC.CULTURES[kid].fx : {});
+                Object.assign({}, VC.DEFAULT_P, VC.presetPatch(pid), kid ? VC.CULTURES[kid].fx : {}, { epoche: 2 });
             const leck = (s) => {
                 const out = [];
                 // eslint-disable-next-line no-undef
