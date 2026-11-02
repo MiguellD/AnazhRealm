@@ -1106,7 +1106,7 @@ async function checkBandW12WorldPortal({ page, check }) {
         const C = AnazhRealm;
 
         // Rolle "portal" in Label- + Farb-Konstanten.
-        out.roleLabel = !!C && !!C.BLUEPRINT_ROLE_LABELS && C.BLUEPRINT_ROLE_LABELS.portal === "Portal";
+        out.roleLabel = !!C && !!C.BLUEPRINT_ROLE_LABELS && C._t(C.BLUEPRINT_ROLE_LABELS.portal) === "Portal";
         out.roleColor = !!C && !!C.BLUEPRINT_ROLE_COLORS && typeof C.BLUEPRINT_ROLE_COLORS.portal === "string";
 
         // PORTAL_SKELETON_WORLD-Konstante zeigt auf einen worlds/-Pfad.

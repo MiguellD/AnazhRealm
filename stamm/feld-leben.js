@@ -243,7 +243,7 @@ class AnazhRealm_feld_leben {
     // erklärt nichts (kein WASD/Hotbar-Dump), sie öffnet die Tür: die Welt wächst
     // aus dem ersten Wort. Das ist der WOW — die Welt antwortet auf deine Stimme.
     _firstWelcomeMessage() {
-        return "Ich bin Eins. Diese Welt ist still — bis du sprichst. Sag, was werden soll.";
+        return this._t("rede.eins-gruss");
     }
 
     // DSL-Programm → deutsche Beschreibung: bekannte Ops per Vorlage, sonst generischer Fallback;
@@ -1575,8 +1575,11 @@ class AnazhRealm_feld_leben {
         const probier = [];
         for (const p of dsl.concat(this.chatSystemPatterns))
             if (Array.isArray(p.hilfe)) for (const b of p.hilfe) if (!probier.includes(b)) probier.push(b);
+        // der Name einer Aktion: die eingebaute liest ihre Zeile der Tafel; eine DSL-Fähigkeit, die der Spieler aufs Pad band,
+        // trägt den Namen, den er ihr gab (Spieler-Inhalt bleibt, wie er geschrieben wurde)
+        const name = (a) => (AnazhRealm.KEYBINDING_LABELS[a] ? this._t(AnazhRealm.KEYBINDING_LABELS[a]) : a);
         const tasten = AnazhRealm.KEYBINDING_ACTIONS.map(
-            (a) => `${fmt(kb[a] || AnazhRealm.DEFAULT_KEYBINDINGS[a])} ${AnazhRealm.KEYBINDING_LABELS[a] || a}`
+            (a) => `${fmt(kb[a] || AnazhRealm.DEFAULT_KEYBINDINGS[a])} ${name(a)}`
         );
         return [
             `Sprich mit der Welt: ${fmt(kb.chat || AnazhRealm.DEFAULT_KEYBINDINGS.chat)} öffnet das Gespräch, Enter sendet, Esc gibt die Welt zurück.`,
@@ -1588,7 +1591,7 @@ class AnazhRealm_feld_leben {
             `Gamepad: linker Stick laufen · rechter Stick blicken · RT/LT Gas/Bremse · ${Object.entries(
                 this.state.padBelegung || AnazhRealm.PAD_BELEGUNG
             )
-                .map(([a, c]) => `${fmt(c)} ${AnazhRealm.KEYBINDING_LABELS[a] || a}`)
+                .map(([a, c]) => `${fmt(c)} ${name(a)}`)
                 .join(" · ")}`,
         ];
     }
@@ -2761,7 +2764,7 @@ class AnazhRealm_feld_leben {
     _werkLabel(name) {
         const bp = this.state.blueprints && this.state.blueprints[name];
         const rec = !bp && this._foundry && this._foundry.recipes ? this._foundry.recipes[name] : null;
-        return String((bp && bp.label) || (rec && rec.lab) || name).split(/\s[·—(]/)[0];
+        return AnazhRealm._namensKopf((bp && bp.label) || (rec && rec.lab) || name);
     }
 
     // Das Grundriss-Gesetz einer Art: { preset, pre (die Zeile des Gesetzbuchs der Architektur), rec (die des Buchs) } für ein
@@ -2812,29 +2815,31 @@ AnazhRealm.FIELD_CHARACTER = Object.freeze({
     warpAmp: 40,
     warpScale: 1 / 600,
 });
+// Die Namen der Aktionen: je Aktion ihr Schlüssel der Sprach-Tafel (`taste.*`, der Leser ruft `_t`) — die Tasten-Liste, die
+// Hilfe und die Ankunfts-Linse lesen dieselbe Zeile.
 AnazhRealm.KEYBINDING_LABELS = Object.freeze({
-    break: "Abbauen (Architektur / Terrain)",
-    place: "Platzieren (Bau-Modus)",
-    confirmBuild: "Bauen bestätigen",
-    inventory: "Inventar öffnen",
-    cancelBuild: "Bau-Modus verlassen",
-    jump: "Springen",
-    drawerKreaturen: "Hof öffnen (Kreaturen · Nexus · Befehle)",
-    drawerSpieler: "Spieler-Drawer öffnen",
-    drawerWerkstatt: "Werkstatt-Drawer öffnen",
-    drawerEinstellungen: "Einstellungen-Drawer öffnen",
-    cameraToggle: "Kamera: 1st/3rd-Person",
-    swapHands: "Hand tauschen (Off-Hand)",
-    chat: "Gespräch öffnen (sprich mit der Welt)",
+    break: "taste.abbauen",
+    place: "taste.platzieren",
+    confirmBuild: "taste.bauen-bestaetigen",
+    inventory: "taste.inventar",
+    cancelBuild: "taste.bau-verlassen",
+    jump: "taste.springen",
+    drawerKreaturen: "taste.hof",
+    drawerSpieler: "taste.spieler-drawer",
+    drawerWerkstatt: "taste.werkstatt-drawer",
+    drawerEinstellungen: "taste.einstellungen-drawer",
+    cameraToggle: "taste.kamera",
+    swapHands: "taste.hand-tauschen",
+    chat: "taste.gespraech",
     // die Aktionen, die die Tastatur fest trägt und das Gamepad frei bindet (PAD_BELEGUNG, leib.K5)
-    einsteigen: "Aufsitzen/Absitzen · Sitzen · Portal betreten",
-    handbremse: "Handbremse (Fahrt)",
-    sprint: "Sprinten (unter Wasser: tauchen)",
-    rutschen: "Rutschen",
-    zoom: "Fernglas (halten)",
-    hud: "HUD aus/ein",
-    slotVor: "Nächster Hotbar-Slot",
-    slotZurueck: "Voriger Hotbar-Slot",
+    einsteigen: "taste.aufsitzen",
+    handbremse: "taste.handbremse",
+    sprint: "taste.sprinten",
+    rutschen: "taste.rutschen",
+    zoom: "taste.fernglas",
+    hud: "taste.hud",
+    slotVor: "taste.slot-vor",
+    slotZurueck: "taste.slot-zurueck",
 });
 // Der Grund der Natur-Wand im Satz des Spielers (Leser: `SETZ_GRUND` des Ergebnis-Satzes, `confirmBuild` und das Bau-HUD).
 AnazhRealm.NATUR_WAND_GRUND = Object.freeze({

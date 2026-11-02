@@ -341,17 +341,27 @@ class AnazhRealm_werkstatt_sozial {
             row.className = "journal-entry";
             const type = document.createElement("span");
             type.className = "journal-type";
-            type.textContent = e.type || "note";
+            type.textContent = this._journalTypName(e.type);
             const age = document.createElement("span");
             age.className = "journal-age";
             age.textContent = this._formatJournalAge(now - (e.at || now));
             const text = document.createElement("span");
             text.textContent = e.text || "";
+            // der Eintrag ist gespeicherte Geschichte der Welt — er bleibt in der Sprache, in der er geschah
+            text.setAttribute("translate", "no");
             row.appendChild(type);
             row.appendChild(age);
             row.appendChild(text);
             list.appendChild(row);
         }
+    }
+
+    // Der Name-Leser der Erinnerungs-Arten (spielgang.K5): jede Art, die der Stamm schreibt (`journalAppend`), trägt ihre
+    // Zeile in `AnazhRealm.JOURNAL_ARTEN`; eine fremde Art (ein alter Stand, ein gereistes Zeugnis) bleibt, wie sie kam.
+    // Der Eintrag selbst ist Gespeichertes — er bleibt in der Sprache, in der er entstand.
+    _journalTypName(typ) {
+        const art = typ || "note";
+        return Object.hasOwn(AnazhRealm.JOURNAL_ARTEN, art) ? this._t(AnazhRealm.JOURNAL_ARTEN[art]) : String(art);
     }
 
     _formatJournalAge(deltaMs) {
@@ -518,7 +528,12 @@ class AnazhRealm_werkstatt_sozial {
                     this._el(
                         "div",
                         { class: "spec-id" },
-                        this._el("span", { class: "spec-name lib-card-name", text: name }),
+                        // der Name der Welt ist das Wort des Spielers (oder die Tafel-Zeile „noch namenlos“)
+                        this._el("span", {
+                            class: "spec-name lib-card-name",
+                            text: name,
+                            translate: m.slug ? false : null,
+                        }),
                         this._el("span", { class: "feed-self-badge", text: this._t("sozial.diese-welt") })
                     ),
                     this._el("span", {
@@ -1273,7 +1288,11 @@ class AnazhRealm_werkstatt_sozial {
 
     _feedRecipeCard(item) {
         const p = item.prof;
-        const roleChip = this._el("span", { class: "feed-role-chip", text: p.role || this._t("sozial.art.rezept") });
+        // Rolle und Stoff-Achsen sind ids — ihr Name kommt aus den Namens-Tafeln (`_rolleName`, `_tafelName`, spielgang.K5)
+        const roleChip = this._el("span", {
+            class: "feed-role-chip",
+            text: p.role ? AnazhRealm._rolleName(p.role) : this._t("sozial.art.rezept"),
+        });
         if (p.roleColor) {
             roleChip.style.borderColor = p.roleColor;
             roleChip.style.color = p.roleColor;
@@ -1284,7 +1303,7 @@ class AnazhRealm_werkstatt_sozial {
             const why = p.bp && this._blueprintRoleWhy(p.bp);
             if (why && why.text)
                 roleChip.title = this._t("sozial.rolle-weil", {
-                    rolle: String(AnazhRealm.ROLE_LABELS[why.role] || why.role),
+                    rolle: AnazhRealm._tafelName(AnazhRealm.ROLE_LABELS, why.role),
                     grund: String(why.text),
                 });
         }
@@ -1301,7 +1320,12 @@ class AnazhRealm_werkstatt_sozial {
                 "div",
                 { class: "spec-stat-strip" },
                 ...(p.topTags.length
-                    ? p.topTags.map((k) => this._el("span", { class: "spec-stat-chip", text: k }))
+                    ? p.topTags.map((k) =>
+                          this._el("span", {
+                              class: "spec-stat-chip",
+                              text: AnazhRealm._tafelName(AnazhRealm.AXIS_LABELS, k),
+                          })
+                      )
                     : [this._el("span", { class: "spec-empty", text: this._t("sozial.schlichte-materie") })])
             )
         );
@@ -1726,8 +1750,10 @@ class AnazhRealm_werkstatt_sozial {
         // „VOKABULAR"/„NETZ & VERTRAUEN"-Form-Labels machten die Karte zum Datenblatt; ein Feed-Card
         // zeigt nur die Signale, die zählen (DSL-Vokabular · nur Multiplayer-Abweichung · Signatur subtil).
         const meta = this._el("div", { class: "lib-card-meta" });
+        // die DSL-Wörter sind Befehle der Eingabe-Grammatik (der Spieler tippt sie so) — keine Sprache: translate="no"
         if (prof.hasDsl)
-            for (const op of prof.dsl) meta.appendChild(this._el("span", { class: "library-dsl-word", text: op }));
+            for (const op of prof.dsl)
+                meta.appendChild(this._el("span", { class: "library-dsl-word", text: op, translate: false }));
         else meta.appendChild(this._el("span", { class: "spec-empty", text: this._t("sozial.kein-dsl") }));
         // Einzelwelt ist der Default → nicht zeigen (Profi: nur die Abweichung signalisieren).
         if (prof.multiplayer)
@@ -1784,7 +1810,7 @@ class AnazhRealm_werkstatt_sozial {
             getBtn.addEventListener("click", () => {
                 const res = this.obtainPortalForWorld(worldId);
                 if (res.ok) {
-                    status.textContent = this._t("sozial.im-inventar", { welt: String(res.label) });
+                    status.textContent = this._t("sozial.im-inventar", { welt: prof.label });
                     this.log(`Bibliothek: Portal zur ${res.label} ins Inventar gelegt.`, "INFO");
                 } else {
                     status.textContent = this._t(
@@ -2450,4 +2476,25 @@ AnazhRealm.BLUEPRINT_ROLE_COLORS = Object.freeze({
     portal: "#43c98a",
     vehicle: "#c98a43", // M2 — Wagen-Ocker (Reise/Leder)
     "workshop-station": "#cc6b35", // M2 — Essen-Glut (die Designation sichtbar)
+});
+
+// Die Arten der Erinnerung (das Tagebuch, `journalAppend(type, …)`): je Art, die der Stamm schreibt, der Schlüssel ihres
+// Namens in der Tafel (spielgang.K5) — gelesen von `_journalTypName`. Die Art selbst bleibt Daten (Speicher, KI-Erinnerung).
+AnazhRealm.JOURNAL_ARTEN = Object.freeze({
+    architecture: "bib.journal.architecture",
+    creatures: "bib.journal.creatures",
+    emotion: "bib.journal.emotion",
+    genesis: "bib.journal.genesis",
+    growth: "bib.journal.growth",
+    loss: "bib.journal.loss",
+    note: "bib.journal.note",
+    portal: "bib.journal.portal",
+    reach: "bib.journal.reach",
+    relationship: "bib.journal.relationship",
+    ritual: "bib.journal.ritual",
+    rule: "bib.journal.rule",
+    share: "bib.journal.share",
+    weakness: "bib.journal.weakness",
+    weather: "bib.journal.weather",
+    witness: "bib.journal.witness",
 });

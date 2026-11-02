@@ -450,14 +450,17 @@ class AnazhRealm_netz_identitaet {
             body.appendChild(wait);
             return;
         }
+        // Fingerabdruck und Schlüssel sind Hex — Daten, keine Sprache: translate="no" (kein Übersetzer, keine Sprach-Linse)
         const fp = document.createElement("div");
         fp.className = "vibe-pass-fingerprint";
+        fp.setAttribute("translate", "no");
         fp.textContent = vp.fingerprint;
         fp.title = this._t("pass.schluessel-id", { hex: vp.publicKeyHex });
         body.appendChild(fp);
 
         const idEl = document.createElement("div");
         idEl.className = "vibe-pass-id";
+        idEl.setAttribute("translate", "no");
         idEl.textContent = this._t("pass.schluessel-id", { hex: vp.publicKeyHex });
         body.appendChild(idEl);
 
@@ -2314,7 +2317,7 @@ class AnazhRealm_netz_identitaet {
             !(await this._sovereignGesture(
                 "sign_manifest",
                 {
-                    what: this._t("pass.geste.welt.was", { name: String(entry.label || key) }),
+                    what: this._t("pass.geste.welt.was", { name: this._weltName(entry) }),
                     value: this._t("pass.geste.buergt"),
                     whom: this._t("pass.geste.welt.wem"),
                 },

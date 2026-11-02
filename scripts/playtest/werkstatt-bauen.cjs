@@ -91,7 +91,9 @@ async function checkBandV1774UseByRole({ page, check }) {
             [...soulSel.options].every((o) => o.value !== "koerper_human") &&
             [...soulSel.options].some(
                 (o) =>
-                    (o.value === "koerper_wolf" || o.value === "bp_koerper_wolf") && /^wolf\b/.test(o.textContent || "")
+                    (o.value === "koerper_wolf" || o.value === "bp_koerper_wolf") &&
+                    // der Name der Seele aus der Sprach-Tafel (CREATURE_SOULS.wolf.label ist ihr Schlüssel)
+                    (o.textContent || "").startsWith(r._t(AnazhRealm.CREATURE_SOULS.wolf.label) + " ")
             );
         const emb = r.embodyBlueprint("_t_avatar74");
         out.avatarEmbodied =

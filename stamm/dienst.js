@@ -74,7 +74,7 @@ class AnazhRealm_dienst {
         const cfg = llm.providerConfig[llm.provider];
         if (def.requiresKey && (!cfg || !cfg.apiKey))
             return {
-                error: `für ${def.label} fehlt der Schlüssel — trage ihn unter Einstellungen → Begleiter-Stimme ein`,
+                error: `für ${this._t(def.label)} fehlt der Schlüssel — trage ihn unter Einstellungen → Begleiter-Stimme ein`,
             };
         while (llm.inFlight) {
             if (hintergrund || !this._llmHintergrund) return { error: "Anfrage läuft bereits" };

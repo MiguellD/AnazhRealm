@@ -58,7 +58,7 @@ class AnazhRealm_werkstatt_bauen {
                     // eingeklappten Log) — derselbe Formatter wie Werkstatt-Knopf und Setzen (`_machTorHint`).
                     this._spielerSagt(
                         this._t("bauen.label-grund", {
-                            label: String(label).split(/\s[·—(]/)[0],
+                            label: AnazhRealm._namensKopf(label),
                             grund: this._machTorHint(result),
                         })
                     );
@@ -151,7 +151,7 @@ class AnazhRealm_werkstatt_bauen {
         const station = this._workshopStationGate(name, ziel);
         if (!station.ok) {
             const d = station.neededDomain;
-            const domaene = (AnazhRealm.TOOL_DOMAIN_LABELS && AnazhRealm.TOOL_DOMAIN_LABELS[d]) || d;
+            const domaene = AnazhRealm._tafelName(AnazhRealm.TOOL_DOMAIN_LABELS, d);
             return { ok: false, grund: "werkstatt", domaene };
         }
         const wand = this._istNatur({ type: name }) ? this._naturWand(name, ziel, {}) : false;
@@ -250,13 +250,17 @@ class AnazhRealm_werkstatt_bauen {
         const label = (bp && (bp.label || bp.name)) || blueprintName;
         const check = this.checkBuildCost(blueprintName);
         const mats = Object.keys(check.cost);
-        if (mats.length === 0) return `${label} — Bau-Kosten: keine`;
+        if (mats.length === 0) return this._t("werk.kosten-keine", { name: label });
         const parts = mats.map((m) => {
             const need = check.cost[m];
             const have = check.have[m] || 0;
-            return `${need}× ${m}: hast ${have} ${have >= need ? "✓" : "✗"}`;
+            return this._t("werk.kosten-hast", {
+                menge: this._t("stoff.menge", { n: need, stoff: this._stoffName(m) }),
+                hast: have,
+                zeichen: have >= need ? "✓" : "✗",
+            });
         });
-        return `${label} — Bau-Kosten: ${parts.join(" · ")}`;
+        return this._t("werk.kosten-titel", { name: label, liste: parts.join(" · ") });
     }
 
     // Atomar: erst prüfen, dann ALLE Materialien abziehen — fehlt eines, wird nichts abgezogen.
@@ -374,7 +378,7 @@ class AnazhRealm_werkstatt_bauen {
         const spawnPos = { x: p.x, y: p.y + 0.5, z: p.z };
         const name = bm.blueprintName;
         const bpL = this.state.blueprints[name];
-        const label = String((bpL && bpL.label) || name).split(/\s[·—(]/)[0];
+        const label = AnazhRealm._namensKopf((bpL && bpL.label) || name);
         // Jede Absage des Setzens spricht der Spieler-Kanal (`_spielerSagt`, Welle L Folge — Befund: „nicht genug
         // Material" stand nur im eingeklappten Log, der Rechtsklick blieb stumm). Das Urteil ist das des Phantoms
         // (`_setzUrteil`): Standort und Werkstatt sagt es hier, Natur-Wand und Material sagen die Akte unten.
@@ -1119,7 +1123,11 @@ class AnazhRealm_werkstatt_bauen {
                     const have = check.have[m] || 0;
                     const ok = have >= n;
                     const color = ok ? "#d4a373" : "#e57b6c";
-                    return `<span style="color:${color}">${n}× ${m} (${have})</span>`;
+                    const menge = this._t("stoff.menge", { n, stoff: this._stoffName(m) }).replace(
+                        /[<>&"]/g,
+                        (c) => `&#${c.charCodeAt(0)};`
+                    );
+                    return `<span style="color:${color}">${menge} (${have})</span>`;
                 });
                 if (parts.length > 0) {
                     costLine = ` · ${parts.join(", ")}`;
@@ -1437,21 +1445,18 @@ class AnazhRealm_werkstatt_bauen {
     _machTorHint(result) {
         if (!result || result.ok) return "";
         if (result.reason === "not_enough_material") {
-            const miss = Object.entries(result.missing || {})
-                .map(([m, n]) => `${n}× ${m}`)
-                .join(" · ");
+            const miss = this._kostenText(result.missing);
             // das Gesetz des Modus beim Namen (S2): frieden und pfad zahlen Material, frei ist nur schöpfer
-            return `fehlt ${miss || "Material"} — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)`;
+            return this._t("werk.tor.fehlt", { liste: miss || this._t("werk.tor.material") });
         }
-        if (result.reason === "hotbar_voll") return "die Hotbar ist voll — leere einen Platz, dann bauen";
-        if (result.reason === "no_workshop_station") {
-            const label =
-                typeof this._stationLabelForDomain === "function"
-                    ? this._stationLabelForDomain(result.neededDomain)
-                    : result.neededDomain || "Werkstatt";
-            return `braucht ⚒ ${label} in der Nähe (pfad-Modus)`;
-        }
-        return result.reason ? `fehlgeschlagen: ${result.reason}` : "fehlgeschlagen";
+        if (result.reason === "hotbar_voll") return this._t("werk.tor.hotbar-voll");
+        if (result.reason === "no_workshop_station")
+            return this._t("werk.tor.braucht-werkstatt", {
+                werkstatt: this._stationLabelForDomain(result.neededDomain),
+            });
+        return result.reason
+            ? this._t("werk.tor.fehlgeschlagen-grund", { grund: result.reason })
+            : this._t("werk.tor.fehlgeschlagen");
     }
 
     // Hint INLINE am Ort der Geste: .mach-tor-hint-Zeile im host (ersetzt die alte — idempotent),
@@ -1476,7 +1481,7 @@ class AnazhRealm_werkstatt_bauen {
     // rechts die Qualität als Stern-Rating. „Was ist es + wie gut".
     _specRenderHeader(panel, bp) {
         const role = this._displayRole(bp);
-        const roleLabel = AnazhRealm.ROLE_LABELS[role] || AnazhRealm.BLUEPRINT_ROLE_LABELS[role] || role;
+        const roleLabel = AnazhRealm._rolleName(role);
         const roleColor = AnazhRealm.BLUEPRINT_ROLE_COLORS[role];
         const roleChip = this._el("span", { class: "role-chip spec-role-chip", text: roleLabel });
         if (roleColor) {
@@ -1492,10 +1497,7 @@ class AnazhRealm_werkstatt_bauen {
         // emergierten Rolle; der lokale Intent-Override bleibt die Geste.
         let claimChip = null;
         if (bp.roleClaimed && bp.roleClaimed !== role) {
-            const claimLabel =
-                AnazhRealm.ROLE_LABELS[bp.roleClaimed] ||
-                AnazhRealm.BLUEPRINT_ROLE_LABELS[bp.roleClaimed] ||
-                bp.roleClaimed;
+            const claimLabel = AnazhRealm._rolleName(bp.roleClaimed);
             claimChip = this._el("span", {
                 class: "role-chip spec-role-claimed",
                 text: this._t("bauen.behauptet", { rolle: claimLabel }),
@@ -1505,7 +1507,7 @@ class AnazhRealm_werkstatt_bauen {
         }
         const caps = this._blueprintCapabilityHints(bp) || [];
         const aff = this.computeBlueprintAffordances(bp) || {};
-        const affLabels = Object.keys(aff).map((k) => AnazhRealm.AFFORDANCE_LABELS[k] || k);
+        const affLabels = Object.keys(aff).map((k) => AnazhRealm._tafelName(AnazhRealm.AFFORDANCE_LABELS, k));
         const capChips = [...caps, ...affLabels].map((c) =>
             this._el("span", { class: "affordance-chip spec-cap-chip", text: "✦ " + c })
         );
@@ -1544,15 +1546,16 @@ class AnazhRealm_werkstatt_bauen {
             .filter((e) => e.v > 0.1)
             .sort((a, b) => b.v - a.v)
             .slice(0, 6);
-        const tagBars = tagEntries.map((e) =>
-            this._specBar(
-                e.k,
+        const tagBars = tagEntries.map((e) => {
+            const tag = AnazhRealm._tafelName(AnazhRealm.AXIS_LABELS, e.k);
+            return this._specBar(
+                tag,
                 e.v / 3,
                 e.v.toFixed(2),
                 lvlFor(e.v),
-                this._t("bauen.bar-material", { tag: e.k, wert: e.v.toFixed(2) })
-            )
-        );
+                this._t("bauen.bar-material", { tag, wert: e.v.toFixed(2) })
+            );
+        });
         const leftCol = this._el(
             "div",
             { class: "spec-col" },
@@ -1567,24 +1570,18 @@ class AnazhRealm_werkstatt_bauen {
         // Tooltip den Weg DAHIN (Achsen-Differenz zur Wunsch-Rolle); die erste
         // Verfolger-Zeile zeigt ihn sichtbar (die Lehrer-Geste, eine Zeile).
         const gapHints = spectrum.map((s, i) => (i === 0 ? null : this._blueprintRoleGapHint(bp, s.role)));
-        const resBars = spectrum.map((s, i) =>
-            this._specBar(
-                AnazhRealm.ROLE_LABELS[s.role] || s.role,
+        const resBars = spectrum.map((s, i) => {
+            const rolle = AnazhRealm._tafelName(AnazhRealm.ROLE_LABELS, s.role);
+            return this._specBar(
+                rolle,
                 s.score,
                 s.score.toFixed(2),
                 i === 0 ? "res-top" : "res",
                 gapHints[i] && gapHints[i].text
-                    ? this._t("bauen.bar-resonanz-weg", {
-                          rolle: AnazhRealm.ROLE_LABELS[s.role] || s.role,
-                          wert: s.score.toFixed(2),
-                          weg: gapHints[i].text,
-                      })
-                    : this._t("bauen.bar-resonanz", {
-                          rolle: AnazhRealm.ROLE_LABELS[s.role] || s.role,
-                          wert: s.score.toFixed(2),
-                      })
-            )
-        );
+                    ? this._t("bauen.bar-resonanz-weg", { rolle, wert: s.score.toFixed(2), weg: gapHints[i].text })
+                    : this._t("bauen.bar-resonanz", { rolle, wert: s.score.toFixed(2) })
+            );
+        });
         const rightChildren = [
             this._el("div", { class: "spec-col-head", text: this._t("bauen.rollen-resonanz") }),
             ...resBars,
@@ -1597,7 +1594,7 @@ class AnazhRealm_werkstatt_bauen {
                 this._el("div", {
                     class: "spec-gap-hint spec-why-line",
                     text: this._t("bauen.warum", {
-                        rolle: AnazhRealm.ROLE_LABELS[why.role] || why.role,
+                        rolle: AnazhRealm._tafelName(AnazhRealm.ROLE_LABELS, why.role),
                         grund: why.text,
                     }),
                     title: this._t("bauen.warum-titel"),
@@ -1714,7 +1711,9 @@ class AnazhRealm_werkstatt_bauen {
                         },
                         this._el("span", {
                             class: "spec-stat-val workshop-precision-text",
-                            text: prec.toFixed(2) + (dom ? ` · ${dom}` : ""),
+                            text:
+                                prec.toFixed(2) +
+                                (dom ? ` · ${AnazhRealm._tafelName(AnazhRealm.TOOL_DOMAIN_LABELS, dom)}` : ""),
                         })
                     )
                 )
@@ -1740,7 +1739,7 @@ class AnazhRealm_werkstatt_bauen {
                     this._el("span", { class: "spec-cost-label", text: this._t("bauen.bau-kosten") }),
                     this._el("span", {
                         class: "spec-cost-val",
-                        text: costMats.map((m) => `${cost[m]}× ${m}`).join("  ·  "),
+                        text: this._kostenText(cost, "  ·  "),
                     })
                 )
             );
@@ -1768,21 +1767,19 @@ class AnazhRealm_werkstatt_bauen {
         const totalOps = Object.values(domCounts).reduce((a, b) => a + b, 0);
         const dominantDomain = this.computeBlueprintDomain(bp);
         const emergentRole = this.computeBlueprintRole(bp);
-        const emergentLabel = AnazhRealm.BLUEPRINT_ROLE_LABELS[emergentRole] || emergentRole;
+        const emergentLabel = AnazhRealm._tafelName(AnazhRealm.BLUEPRINT_ROLE_LABELS, emergentRole);
+        const domName = (d) => AnazhRealm._tafelName(AnazhRealm.TOOL_DOMAIN_LABELS, d);
         if (totalOps === 0) {
             if (emergentRole !== AnazhRealm.DEFAULT_BLUEPRINT_ROLE)
-                return {
-                    text: `Rolle „${emergentLabel}" emergiert direkt aus der Substanz (Form/Material).`,
-                    manual: false,
-                };
-            return {
-                text: "Default: Bauwerk. Wende ein Werkzeug an, forme einen symmetrischen Körper, oder nutze lebendige Substanz — die Rolle emergiert.",
-                manual: false,
-            };
+                return { text: this._t("werk.wachstum.substanz", { rolle: emergentLabel }), manual: false };
+            return { text: this._t("werk.wachstum.default"), manual: false };
         }
         if (bp.roleManual)
             return {
-                text: `Manuell gesetzt. Emergent wäre „${emergentLabel}" aus Domain „${dominantDomain || "—"}".`,
+                text: this._t("werk.wachstum.manuell", {
+                    rolle: emergentLabel,
+                    domaene: dominantDomain ? domName(dominantDomain) : "—",
+                }),
                 manual: true,
             };
         const nextDom = AnazhRealm.TOOL_DOMAINS.filter(
@@ -1790,13 +1787,13 @@ class AnazhRealm_werkstatt_bauen {
         )[0];
         if (nextDom)
             return {
-                text: `Rolle aus „${dominantDomain}" (Mehrheit). Eine weitere „${nextDom}"-Anwendung könnte das verschieben.`,
+                text: this._t("werk.wachstum.naechste", {
+                    domaene: domName(dominantDomain),
+                    naechste: domName(nextDom),
+                }),
                 manual: false,
             };
-        return {
-            text: `Rolle aus „${dominantDomain}" (Mehrheit, stabil). Weitere Anwendungen vertiefen.`,
-            manual: false,
-        };
+        return { text: this._t("werk.wachstum.stabil", { domaene: domName(dominantDomain) }), manual: false };
     }
 
     // LIVE Fähigkeits-Werte aus Material × Form × Handwerk — dieselbe Formel wie der Ausrüstungs-Beitrag:
@@ -1835,24 +1832,24 @@ class AnazhRealm_werkstatt_bauen {
         let stats = null;
         if (role === "armor") {
             stats = [
-                ["Verteidigung", val("defense", 1)],
-                ["Magie-Resist", val("magicResist")],
-                ["Hitze-Resist", val("heatResist")],
+                [this._t("werk.wert.verteidigung"), val("defense", 1)],
+                [this._t("werk.wert.magie-resist"), val("magicResist")],
+                [this._t("werk.wert.hitze-resist"), val("heatResist")],
             ];
         } else if (role === "soul") {
             stats = [
-                ["HP", val("hpMax")],
-                ["Bewegung", val("speed")],
-                ["Schaden", val("damage")],
+                [this._t("werk.wert.hp"), val("hpMax")],
+                [this._t("werk.wert.bewegung"), val("speed")],
+                [this._t("werk.wert.schaden"), val("damage")],
             ];
         } else if (role === "tool" || role === "weapon" || role === "held" || role === "brecher") {
             stats = [
-                ["Schaden", val("damage", 1)],
-                ["Rückschlag", val("knockback", 1)],
+                [this._t("werk.wert.schaden"), val("damage", 1)],
+                [this._t("werk.wert.rueckschlag"), val("knockback", 1)],
                 // KAMPF-GEFÜHL — Tempo = Schwünge/s aus der EINEN Schwung-Dauer-Quelle
                 // (∝ 1/√I, _swingDynamics): die Zahl, die der Kampf wirklich lebt (die
                 // attackSpeed-Tag-Ablesung war eine Parallel-Wahrheit — gefallen).
-                ["Tempo", 1 / this._swingDauerFuerBlueprint(bp)],
+                [this._t("werk.wert.tempo"), 1 / this._swingDauerFuerBlueprint(bp)],
             ];
         } else {
             return null; // architecture/station/portal/vehicle/consumable → keine Ausrüstungs-Werte
@@ -2146,16 +2143,15 @@ class AnazhRealm_werkstatt_bauen {
             card.className = "workshop-tool-card";
             card.setAttribute("draggable", "true");
             card.setAttribute("data-tool", name);
-            const domLabel =
-                t.domain && AnazhRealm.TOOL_DOMAIN_LABELS
-                    ? AnazhRealm.TOOL_DOMAIN_LABELS[t.domain] || t.domain
-                    : this._t("bauen.generisch");
+            const domLabel = t.domain
+                ? AnazhRealm._tafelName(AnazhRealm.TOOL_DOMAIN_LABELS, t.domain)
+                : this._t("bauen.generisch");
             card.setAttribute(
                 "title",
                 this._t("bauen.werkzeug-titel", {
                     name: t.label || name,
-                    op: String(t.opName),
-                    klasse: String(t.opClass),
+                    op: AnazhRealm._tafelName(AnazhRealm.OP_VERB_LABELS, t.opName),
+                    klasse: AnazhRealm._tafelName(AnazhRealm.OP_CLASS_LABELS, t.opClass),
                     domaene: domLabel,
                 })
             );
@@ -2181,13 +2177,12 @@ class AnazhRealm_werkstatt_bauen {
         // Werkstatt-PROZESSE als ziehbare Karten: auf einen Part gezogen fixt der Prozess die Rolle.
         // data-tool="station:<name>" → applyWorkshopProcessToPart. schöpfer: alle besessenen Werkstätten,
         // sonst die platzierten + nahen.
-        const verbs = AnazhRealm.OP_VERB_LABELS;
         for (const proc of this._workshopProcessesForMenu()) {
             const card = document.createElement("div");
             card.className = "workshop-tool-card workshop-station-card";
             card.setAttribute("draggable", "true");
             card.setAttribute("data-tool", `station:${proc.stationName}`);
-            const verb = verbs[proc.opName] || proc.opName;
+            const verb = AnazhRealm._tafelName(AnazhRealm.OP_VERB_LABELS, proc.opName);
             card.setAttribute(
                 "title",
                 this._t("bauen.prozess-titel", {
@@ -2202,9 +2197,7 @@ class AnazhRealm_werkstatt_bauen {
                 dot.className = "workshop-tool-domain-dot";
                 dot.style.background = color;
                 dot.title = this._t("bauen.domaene", {
-                    domaene: String(
-                        (AnazhRealm.TOOL_DOMAIN_LABELS && AnazhRealm.TOOL_DOMAIN_LABELS[proc.domain]) || proc.domain
-                    ),
+                    domaene: AnazhRealm._tafelName(AnazhRealm.TOOL_DOMAIN_LABELS, proc.domain),
                 });
                 card.appendChild(dot);
             }
@@ -3630,40 +3623,48 @@ AnazhRealm.CONNECTION_TYPES = Object.freeze({
     }),
 });
 
-// V17.89 — die deutschen Verben der Op-Namen (für das Prozess-Menü + die Werkzeuge-Box). Eine Quelle.
+// V17.89 — die Verben der Op-Namen (für das Prozess-Menü + die Werkzeuge-Box). Eine Quelle. Die Namens-Tafeln unten tragen
+// je id den Schlüssel ihrer Zeile der Sprach-Tafel (spielgang.K5); jeder Leser spricht sie über `AnazhRealm._tafelName`.
 AnazhRealm.OP_VERB_LABELS = Object.freeze({
-    hand_knap: "behauen",
-    forge_shape: "schmieden",
-    brew: "brauen",
-    weave: "weben",
-    imbue: "beseelen",
-    turn: "drehen",
+    hand_knap: "werk.verb.behauen",
+    forge_shape: "werk.verb.schmieden",
+    brew: "werk.verb.brauen",
+    weave: "werk.verb.weben",
+    imbue: "werk.verb.beseelen",
+    turn: "werk.verb.drehen",
+});
+// die Klassen der Bearbeitung (opClass) — die Werkzeug-Karte nennt sie
+AnazhRealm.OP_CLASS_LABELS = Object.freeze({
+    subtractive: "werk.op-klasse.subtractive",
+    plastic: "werk.op-klasse.plastic",
+    additive: "werk.op-klasse.additive",
+    phaseChange: "werk.op-klasse.phase-change",
 });
 
-// Deutsche Labels für die Welt-Anzeige. Werkstatt-Status zeigt diese
+// Labels für die Welt-Anzeige. Werkstatt-Status zeigt diese
 // statt der englischen Rolle-IDs.
 AnazhRealm.BLUEPRINT_ROLE_LABELS = Object.freeze({
-    architecture: "Bauwerk",
-    tool: "Werkzeug",
-    armor: "Rüstung",
-    weapon: "Waffe",
-    consumable: "Konsumable",
-    soul: "Seele",
-    machine: "Maschine",
-    portal: "Portal",
-    vehicle: "Fahrzeug", // M2
-    "workshop-station": "Werkstatt",
+    architecture: "werk.rolle.architecture",
+    tool: "werk.rolle.tool",
+    armor: "werk.rolle.armor",
+    weapon: "werk.rolle.weapon",
+    consumable: "werk.rolle.konsumable",
+    soul: "werk.rolle.soul",
+    machine: "werk.rolle.machine",
+    portal: "werk.rolle.portal",
+    vehicle: "werk.rolle.vehicle", // M2
+    "workshop-station": "werk.rolle.workshop-station",
 });
 
-// Werkzeug-Domain-Labels (deutsch) für UI-Anzeige. null = generic
+// Werkzeug-Domain-Labels für UI-Anzeige. null = generic
 // (zeigt keinen Domain-Indikator).
 AnazhRealm.TOOL_DOMAIN_LABELS = Object.freeze({
-    construction: "Konstruktion",
-    forging: "Schmiede",
-    alchemy: "Alchemie",
-    textile: "Weberei",
-    soulwork: "Seelenkunst",
-    mechanism: "Mechanik",
+    construction: "werk.domaene.construction",
+    forging: "werk.domaene.forging",
+    alchemy: "werk.domaene.alchemy",
+    textile: "werk.domaene.textile",
+    soulwork: "werk.domaene.soulwork",
+    mechanism: "werk.domaene.mechanism",
 });
 
 // Domain-Farben für visuelle Wiedererkennung der Werkstatt-Zugehörigkeit.
@@ -3695,32 +3696,32 @@ AnazhRealm.WORKSHOP_PRECISION = Object.freeze({
     max: 0.98,
 });
 // U3 (resonanz-system §5) — die Labels für den Katalysator-Readout (das Rollen-Spektrum + die Achse zum
-// perfekten Katalysator). Deutsch, browser-justierbar.
+// perfekten Katalysator). Schlüssel der Sprach-Tafel, browser-justierbar.
 AnazhRealm.ROLE_LABELS = Object.freeze({
-    held: "Gerät",
-    weapon: "Waffe",
-    tool: "Werkzeug",
-    brecher: "Brecher",
-    armor: "Rüstung",
-    consumable: "Trank",
-    soul: "Seele",
-    portal: "Tor",
-    vehicle: "Fahrzeug",
-    machine: "Maschine",
-    "workshop-station": "Werkstatt",
-    architecture: "Bauwerk",
+    held: "werk.rolle.held",
+    weapon: "werk.rolle.weapon",
+    tool: "werk.rolle.tool",
+    brecher: "werk.rolle.brecher",
+    armor: "werk.rolle.armor",
+    consumable: "werk.rolle.trank",
+    soul: "werk.rolle.soul",
+    portal: "werk.rolle.tor",
+    vehicle: "werk.rolle.vehicle",
+    machine: "werk.rolle.machine",
+    "workshop-station": "werk.rolle.workshop-station",
+    architecture: "werk.rolle.architecture",
 });
 
-// Deutsche Affordance-Labels für UI-Anzeige.
+// Affordance-Labels für UI-Anzeige (Schlüssel der Sprach-Tafel).
 AnazhRealm.AFFORDANCE_LABELS = Object.freeze({
-    moveable: "fahrbar",
-    magnifying: "vergrößernd",
-    focusing: "bündelnd",
-    radiating: "strahlend",
-    broadcasting: "sendend",
-    balancing: "gründend",
-    lifting: "hebend",
-    sitzbar: "sitzbar",
+    moveable: "werk.affordanz.moveable",
+    magnifying: "werk.affordanz.magnifying",
+    focusing: "werk.affordanz.focusing",
+    radiating: "werk.affordanz.radiating",
+    broadcasting: "werk.affordanz.broadcasting",
+    balancing: "werk.affordanz.balancing",
+    lifting: "werk.affordanz.lifting",
+    sitzbar: "werk.affordanz.sitzbar",
 });
 
 AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({

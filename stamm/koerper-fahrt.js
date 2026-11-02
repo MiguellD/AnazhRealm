@@ -1863,7 +1863,7 @@ class AnazhRealm_koerper_fahrt {
         if (licht) for (const fa of focusing) for (const p of this._brennpunkte(fa, licht)) punkte.push({ fa, p });
         const name = (e) => {
             const b = e && this.state.blueprints ? this.state.blueprints[e.type] : null;
-            return String((b && b.label) || (e && e.type) || "?").split(/\s[·—(]/)[0];
+            return AnazhRealm._namensKopf((b && b.label) || (e && e.type) || "?");
         };
         const ignitions = [];
         // Das GERITTENE Gefährt brennt nie unter dem Reiter weg (sonst Auto-Dismount aus dem Nichts) —
@@ -2232,7 +2232,7 @@ class AnazhRealm_koerper_fahrt {
         let name = base;
         let n = 2;
         while (this.state.blueprints[name]) name = `${base}_${n++}`;
-        if (!this.createBlueprint(name, def.label ? `${def.label} (Körper)` : name))
+        if (!this.createBlueprint(name, def.label ? this._t("wesen.koerper", { name: def.label }) : name))
             return { ok: false, reason: "create_failed" };
         for (const part of def.bodyParts) {
             this.addPartToBlueprint(name, {

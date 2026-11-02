@@ -235,7 +235,7 @@ class AnazhRealm_speicher_welten {
     _preloadActiveWorldMeta() {
         this._bootLeer = null;
         if (!this.activeWorldGet() && !this._migrateLegacySingleWorld()) {
-            this._bootLeer = { id: null, befund: ["kein Aktiv-Zeiger", "kein Legacy-Save"] };
+            this._bootLeer = { id: null, befund: [{ art: "kein-zeiger" }, { art: "kein-legacy" }] };
             return false;
         }
         const id = this.activeWorldGet();
@@ -255,20 +255,22 @@ class AnazhRealm_speicher_welten {
     // localStorage (eine Tür legte die Welt ab, oder IndexedDB fehlt); (3) sonst der .bak der Transaktion (ein Stand zurück).
     // Der localStorage schreibt verzögert (Chromium ≥ 5 s) — nach einem harten Tod ist er oft leer oder älter, IndexedDB nie halb. `idb` = {state, at, bak} des Boot-Vorlaufs oder null.
     // Liefert {state, quelle, befund} — state null nur, wenn alle leer oder unlesbar sind, der Befund nennt jedes Glied; jeder Stand
-    // in der Form des Objekts (`_standNormal` beim Lesen: ein Bruch der kompakten Edits ist ein korruptes Glied).
+    // in der Form des Objekts (`_standNormal` beim Lesen: ein Bruch der kompakten Edits ist ein korruptes Glied). Der Befund ist
+    // STRUKTUR ({ art, glied, fehler }, spielgang.K5): sein Satz entsteht erst beim Zeigen aus der Tafel (`_befundText`), das
+    // Urteil liest `art` — nie den Text.
     _weltRettungsKette(id, idb) {
         const befund = [];
-        const lies = (roh, name) => {
+        const lies = (roh, glied) => {
             if (roh == null) {
-                befund.push(`${name} leer`);
+                befund.push({ art: "leer", glied });
                 return null;
             }
             try {
                 const s = JSON.parse(roh);
                 if (s && typeof s === "object") return this._standNormal(s);
-                befund.push(`${name} unlesbar`);
+                befund.push({ art: "unlesbar", glied });
             } catch (e) {
-                befund.push(`${name} korrupt (${e.message})`);
+                befund.push({ art: "korrupt", glied, fehler: e.message });
             }
             return null;
         };
@@ -276,19 +278,36 @@ class AnazhRealm_speicher_welten {
         try {
             ls = localStorage.getItem(this.worldStorageKey(id));
         } catch (e) {
-            befund.push(`localStorage nicht lesbar (${e.message})`);
+            befund.push({ art: "nicht-lesbar", glied: "localStorage", fehler: e.message });
         }
         const eintrag = this.worldsIndexLoad().find((w) => w && w.worldId === id);
         const lsAt = eintrag && Number.isFinite(eintrag.lastPlayed) ? eintrag.lastPlayed : 0;
         if (idb && idb.state && (ls == null || idb.at >= lsAt))
             return { state: idb.state, quelle: "IndexedDB", befund };
-        if (idb && !idb.state && idb.kaputt !== "leer") befund.push(`IndexedDB korrupt (${idb.kaputt})`);
-        const platz = lies(ls, "Platz");
+        if (idb && !idb.state && idb.kaputt !== "leer")
+            befund.push({ art: "korrupt", glied: "IndexedDB", fehler: String(idb.kaputt) });
+        const platz = lies(ls, "platz");
         if (platz) return { state: platz, quelle: "Platz", befund };
         if (idb && idb.state) return { state: idb.state, quelle: "IndexedDB", befund };
         if (idb && idb.bak && idb.bak.state) return { state: idb.bak.state, quelle: ".bak (ein Stand zurück)", befund };
-        befund.push(idb ? `.bak ${idb.bak ? idb.bak.kaputt : "leer"}` : "IndexedDB leer");
+        befund.push(
+            !idb
+                ? { art: "leer", glied: "IndexedDB" }
+                : idb.bak && idb.bak.kaputt !== "leer"
+                  ? { art: "bak", fehler: String(idb.bak.kaputt) }
+                  : { art: "leer", glied: ".bak" }
+        );
         return { state: null, quelle: null, befund };
+    }
+
+    // DER SATZ EINES BEFUNDS (spielgang.K5): die Glieder der Rettungs-Kette aus der Tafel; `fehler` ist die Meldung des Browsers
+    _befundText(befund) {
+        const glied = (g) => (g === "platz" ? this._t("speicher.befund.platz") : g);
+        return befund
+            .map((b) =>
+                this._t(`speicher.befund.${b.art}`, { glied: glied(b.glied || ""), fehler: String(b.fehler || "") })
+            )
+            .join(", ");
     }
 
     // Der IndexedDB-Stand des Boot-Vorlaufs für die Welt `id` (nur lesen; loadState verbraucht ihn).
@@ -1971,6 +1990,19 @@ class AnazhRealm_speicher_welten {
         return AnazhRealm.WORLD_REGISTRY[key] || (this.state.customWorlds && this.state.customWorlds[key]) || null;
     }
 
+    // Der EINE Name-Leser der Welten (spielgang.K5): eine eingebaute Welt (WORLD_REGISTRY) zeigt die Zeile ihres Schlüssels
+    // (`name` / `desc`) in der Sprache des Spielers; eine empfangene, KI-übersetzte oder angedockte Welt trägt den Inhalt
+    // ihres Autors — er bleibt, wie er geschrieben wurde. `label` bleibt die Identität (s. WORLD_REGISTRY).
+    _weltName(w) {
+        const eingebaut = w && AnazhRealm.WORLD_REGISTRY[w.id] === w;
+        return eingebaut ? this._t(w.name) : (w && (w.label || w.id)) || "?";
+    }
+
+    _weltText(w) {
+        const eingebaut = w && AnazhRealm.WORLD_REGISTRY[w.id] === w;
+        return eingebaut ? this._t(w.desc) : w && typeof w.desc === "string" ? w.desc : "";
+    }
+
     // Die ganze Bibliothek als Array — Built-ins zuerst, dann Importierte.
     _libraryWorlds() {
         const out = Object.values(AnazhRealm.WORLD_REGISTRY);
@@ -1990,8 +2022,8 @@ class AnazhRealm_speicher_welten {
         const prof = {
             world: w,
             id,
-            label: w.label || id || "?",
-            desc: typeof w.desc === "string" ? w.desc : "",
+            label: this._weltName(w),
+            desc: this._weltText(w),
             worldPath: w.world || "",
             dsl,
             hasDsl: dsl.length > 0,
@@ -2018,25 +2050,21 @@ class AnazhRealm_speicher_welten {
         prof.tainted = prof.provenance.tainted;
         // Stufe — wie heute (hasDsl → „übersetzt", sonst „ausgestellt"); die Marke „nativ"
         // emergiert erst beim Betreten (W12 P3).
-        prof.stage = prof.hasDsl ? "übersetzt" : "ausgestellt";
-        prof.stageTitle = prof.hasDsl
-            ? "Diese Welt versteht ein DSL-Vokabular (Stufe übersetzt). Beim Betreten kann sie es nativ bestätigen."
-            : "Diese Welt ist spielbar, aber stumm gegenüber der DSL.";
+        prof.stage = this._t(prof.hasDsl ? "bib.stufe.uebersetzt" : "bib.stufe.ausgestellt");
+        prof.stageTitle = this._t(prof.hasDsl ? "bib.stufe.uebersetzt-titel" : "bib.stufe.ausgestellt-titel");
         // Herkunfts-Marke — die Klassen-Hooks bleiben (.library-vendored-/translated-/imported-mark, Tests).
         if (prof.vendored) {
-            prof.origin = "angedockt";
+            prof.origin = this._t("bib.herkunft.angedockt");
             prof.originClass = "library-vendored-mark";
-            prof.originTitle =
-                "Diese Welt dockte über den Auto-Vendor an — ihr Bündel liegt in worlds/, sie läuft sandgesichert (W15 Phase 1).";
+            prof.originTitle = this._t("bib.herkunft.angedockt-titel");
         } else if (prof.translated) {
-            prof.origin = "KI-übersetzt";
+            prof.origin = this._t("bib.herkunft.ki-uebersetzt");
             prof.originClass = "library-translated-mark";
-            prof.originTitle =
-                "Diese Welt übersetzte der KI-Übersetzer aus einer Beschreibung in ein Portal-Manifest (Phase 1).";
+            prof.originTitle = this._t("bib.herkunft.ki-uebersetzt-titel");
         } else if (prof.imported) {
-            prof.origin = "empfangen";
+            prof.origin = this._t("bib.herkunft.empfangen");
             prof.originClass = "library-imported-mark";
-            prof.originTitle = "Diese Welt kam als signiertes Manifest in deine Bibliothek (W14 Phase 3).";
+            prof.originTitle = this._t("bib.herkunft.empfangen-titel");
         } else {
             prof.origin = "";
             prof.originClass = "";
@@ -2193,7 +2221,8 @@ class AnazhRealm_speicher_welten {
             schemaVersion: "1.0",
             id: entry.id,
             label: entry.label,
-            desc: entry.desc || "",
+            // die Beschreibung reist als Text (Browse-Text, keine Substanz): eine eingebaute in der Sprache des Teilenden
+            desc: this._weltText(entry),
             world: entry.world,
             dsl: Array.isArray(entry.dsl) ? entry.dsl.slice() : [],
             // W17 — die Multiplayer-Marke reist mit dem geteilten Manifest
@@ -3018,24 +3047,32 @@ AnazhRealm.PORTAL_TRANSLATED_WORLD = "worlds/translated/index.html";
 // Die Welt-Registry: die EINE Quelle, welche Sub-Welten es gibt, je mit Pfad + DSL-Manifest (welche
 // Wörter die Welt versteht) + Kurzbeschreibung (Bibliothek-Tab). Built-in-Portale beziehen ihr
 // portalMeta hieraus; aimBlueprintAtWorld richtet eigene Magie-Ringe auf einen Eintrag.
+// DIE NAMEN (spielgang.K5): `label` ist die IDENTITÄT der Welt, kein Anzeige-Text — signierte Substanz
+// (`_canonicalManifest`, spec/golden/v1/world-manifest.json), Ziel-Wort von `aimBlueprintAtWorld`, portalMeta in jedem
+// Speicher, Mesh-Einladung, Wort-Katalog der Studio-Brücke; sie bleibt deutsch und byte-gleich der de-Zeile ihres
+// `name`. Angezeigt wird nur `name` (der Schlüssel der Tafel) und `desc` (der Schlüssel der Beschreibung) — über den EINEN
+// Name-Leser `_weltName` / `_weltText`.
 AnazhRealm.WORLD_REGISTRY = Object.freeze({
     skeleton: Object.freeze({
         id: "skeleton",
         label: "Skelett-Welt",
+        name: "welt.katalog.skeleton.name",
         world: AnazhRealm.PORTAL_SKELETON_WORLD,
         dsl: Object.freeze(["skybox_color"]),
-        desc: "Die ätherische Leere, an der das Portal-Protokoll geboren wurde — ein pulsierender Tor-Ring im Void.",
+        desc: "welt.katalog.skeleton.text",
     }),
     fluid: Object.freeze({
         id: "fluid",
         label: "Strom-Welt",
+        name: "welt.katalog.fluid.name",
         world: "worlds/fluid/index.html",
         dsl: Object.freeze(["weather", "skybox_color", "sturm", "ruhe", "set_turbulence"]),
-        desc: "Ein Stable-Fluids-Solver: Tinte strömt, Stürme wirbeln. Eine fremde Engine mit eigener Three.js.",
+        desc: "welt.katalog.fluid.text",
     }),
     terrain: Object.freeze({
         id: "terrain",
         label: "Phytogenesis & Lithos",
+        name: "welt.katalog.terrain.name",
         world: "worlds/terrain/index.html",
         // Das Morphologie-Labor (phytogenesis). Die id "terrain" bleibt — load-bearing für
         // Saves/Bauplan/Tests (stabile Identität, variable Gestalt). DSL: Presets + wald/neu +
@@ -3069,7 +3106,7 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
             "tag",
             "nacht",
         ]),
-        desc: "Das Morphologie-Labor: Bäume, Blumen und Felsen wachsen aus Gesetzen — mit begehbarem Wald, Tag/Nacht, Wetter und Jahreszeiten.",
+        desc: "welt.katalog.terrain.text",
     }),
     // Das FAHRZEUG-Labor (Rahmen · Gelenke · Lehren · Baukörper · Haut + Probefahrt), dasselbe
     // Vorlagen-Organ wie phytogenesis. DSL = die echten UI-Pfade: Gattungs-Presets + Kultur-Vektoren +
@@ -3077,6 +3114,7 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     garage: Object.freeze({
         id: "garage",
         label: "Anatomie · Fahrzeug",
+        name: "welt.katalog.garage.name",
         world: "worlds/garage/index.html",
         dsl: Object.freeze([
             "gt",
@@ -3092,13 +3130,14 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
             "probefahrt",
             "werkstatt",
         ]),
-        desc: "Das Fahrzeug-Labor: Skelett, Soll-Maße und Lehren urteilen die Karosserie — fünf Gattungen, fünf Kulturen, fahrbare Probefahrt mit Reifenspuren.",
+        desc: "welt.katalog.garage.text",
     }),
     // Das TOR-Labor: sieben Ordnungen (Drachentor bis Maurentor), Stich→Schub→Dicke-Lehre, fraktale
     // Tiefe, begehbare Türen (E/R).
     portale: Object.freeze({
         id: "portale",
         label: "Porta — Ordnungen & fraktale Tiefe",
+        name: "welt.katalog.portale.name",
         world: "worlds/portale/index.html",
         dsl: Object.freeze([
             "drachentor",
@@ -3110,7 +3149,7 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
             "maurentor",
             "zufall",
         ]),
-        desc: "Das Tor-Labor: sieben Portal-Ordnungen aus der Stich-Schub-Dicke-Lehre, fraktal vertieft, mit öffnenden Türen.",
+        desc: "welt.katalog.portale.text",
     }),
     // Das KLINGEN-Labor: 22 Gattungen (Waffen + Werkzeuge), 4 Traditionen, Anschlag-Probe + Prüfstand.
     // schmiede-core.js (__schmiedeCore) ist die EINE generative Quelle für Shell UND Foundry. DSL = echte
@@ -3119,6 +3158,7 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     schmiede: Object.freeze({
         id: "schmiede",
         label: "Anatomie · Klinge",
+        name: "welt.katalog.schmiede.name",
         world: "worlds/schmiede/index.html",
         dsl: Object.freeze([
             "langschwert",
@@ -3149,7 +3189,7 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
             "anschlagen",
             "stahl",
         ]),
-        desc: "Das Klingen-Labor: Rückgrat, Schnittprofil und Lehren urteilen die Waffe — 22 Gattungen, 4 Traditionen, Anschlag-Probe und Prüfstand.",
+        desc: "welt.katalog.schmiede.text",
     }),
     // Das HAUS-Labor: Fachwerkhaus, parametrisch + begehbar — 32 Kultur-Archetypen, Dorf-Modus
     // (Straßengraph, Mauer, Jahresringe). fachwerk-core.js (__fachwerkCore) ist die EINE generative
@@ -3158,6 +3198,7 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     fachwerk: Object.freeze({
         id: "fachwerk",
         label: "Fachwerkhaus — parametrisch, begehbar",
+        name: "welt.katalog.fachwerk.name",
         world: "worlds/fachwerk/index.html",
         dsl: Object.freeze([
             "alemannisch",
@@ -3195,7 +3236,7 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
             "dorf",
             "haus",
         ]),
-        desc: "Das Haus-Labor: parametrisches Fachwerk, tragwerk-ehrlich und begehbar — 32 Kulturen, Dorf-Modus mit gewachsenen Siedlungen.",
+        desc: "welt.katalog.fachwerk.text",
     }),
     // Das MUSIK-Labor: 22 Genre-Presets aus Kompositions-Gesetzen + sechs DNA-Dials. klang-core.js
     // (__klangCore, meshfrei) ist die EINE Musik-Daten-Quelle (das Host-Lofi liest Tempo + Skala,
@@ -3204,6 +3245,7 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     klang: Object.freeze({
         id: "klang",
         label: "Genesis — Generatives Musiksystem",
+        name: "welt.katalog.klang.name",
         world: "worlds/klang/index.html",
         dsl: Object.freeze([
             "blues",
@@ -3229,7 +3271,7 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
             "cinematic",
             "rock",
         ]),
-        desc: "Das Klang-Labor: 22 Genres aus Kompositions-Gesetzen und DNA-Dials — dieselbe Quelle, aus der das Host-Lofi Tempo und Skala liest.",
+        desc: "welt.katalog.klang.text",
     }),
     // Das MENSCHEN-Labor: Morph-Dials · Haar/Kleidung · acht Bewegungs-/Emotionsprofile · Ninja-Park.
     // koerper-core.js (__koerperCore, meshfrei) ist die EINE Gestalt-/Motion-Daten-Quelle.
@@ -3237,6 +3279,7 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     koerperstudio: Object.freeze({
         id: "koerperstudio",
         label: "Da Vinci Studio — Lebendiger Mensch",
+        name: "welt.katalog.koerperstudio.name",
         world: "worlds/koerperstudio/index.html",
         dsl: Object.freeze([
             "entspannt",
@@ -3250,7 +3293,7 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
             "zufall",
             "zuruecksetzen",
         ]),
-        desc: "Das Menschen-Labor: der lebendige Körper aus Morph-Dials, Bewegungsprofilen und Ninja-Park — die Quelle der Avatar-Gestalt-Daten.",
+        desc: "welt.katalog.koerperstudio.text",
     }),
     // Das KREATUREN-Labor: Wolf/Fuchs/Bär/Hirsch aus fünf allometrischen Dials, CPG-Gangnetz + sechs
     // Bewegungsprofile. tetrapoda-core.js (__tetrapodaCore, meshfrei) ist die EINE Gestalt-/Motion-
@@ -3259,6 +3302,7 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     tetrapoda: Object.freeze({
         id: "tetrapoda",
         label: "Tetrapoda — Evolution Lab",
+        name: "welt.katalog.tetrapoda.name",
         world: "worlds/tetrapoda/index.html",
         dsl: Object.freeze([
             "wolf",
@@ -3272,16 +3316,17 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
             "wachsam",
             "showcase",
         ]),
-        desc: "Das Kreaturen-Labor: Vierbeiner aus allometrischen Gesetzen — Gattungs-Dials, CPG-Gang und Bewegungsprofile als Daten-Quelle.",
+        desc: "welt.katalog.tetrapoda.text",
     }),
     // Die erste UNTRUSTED Welt: fremde 2D-Boids-Engine im null-origin-iframe. trust:"sandboxed" → das
     // Portal entzieht allow-same-origin: voller Lauf drinnen, null Reichweite raus.
     schwarm: Object.freeze({
         id: "schwarm",
         label: "Schwarm-Welt",
+        name: "welt.katalog.schwarm.name",
         world: "worlds/schwarm/index.html",
         dsl: Object.freeze(["sturm", "ruhe", "schwaermen", "skybox_color"]),
-        desc: "Ein 2D-Schwarm aus hunderten Wesen — eine fremde Engine, die null-origin sandgesichert läuft, ohne AnazhRealm je zu berühren.",
+        desc: "welt.katalog.schwarm.text",
         trust: "sandboxed",
     }),
     // Ko-Präsenz-Welt: eine fremde single-player-Engine, die das Ko-Präsenz-Protokoll deklariert
@@ -3290,9 +3335,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     begegnung: Object.freeze({
         id: "begegnung",
         label: "Begegnungs-Feld",
+        name: "welt.katalog.begegnung.name",
         world: "worlds/begegnung/index.html",
         dsl: Object.freeze([]),
-        desc: "Ein stilles Lichter-Feld — eine fremde single-player Engine, in der ihr euch trotzdem seht: AnazhRealm injiziert die Ko-Präsenz übers Mesh.",
+        desc: "welt.katalog.begegnung.text",
         trust: "sandboxed",
         coPresence: true,
     }),

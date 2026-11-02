@@ -222,16 +222,16 @@ class AnazhRealm_speicher_laden {
         if (!fund.state) {
             // Eine frische Welt hat noch keinen Stand (die Vorlade sagte es schon laut); ERROR nur, wenn etwas da war, das
             // sich nicht lesen ließ.
-            const kaputt = fund.befund.some((b) => /korrupt|unlesbar|nicht lesbar/.test(b));
+            const kaputt = fund.befund.some((b) => ["korrupt", "unlesbar", "nicht-lesbar"].includes(b.art));
             this.log(
-                `Die Welt ${activeId} ließ sich nicht laden: ${fund.befund.join(", ")}.`,
+                `Die Welt ${activeId} ließ sich nicht laden: ${this._befundText(fund.befund)}.`,
                 kaputt ? "ERROR" : "DEBUG"
             );
             return null;
         }
         // laut nur die Rettung: ein korruptes Glied oder der .bak (ein atomarer Schreiber hinterlässt keins von beiden)
-        if (fund.quelle.startsWith(".bak") || fund.befund.some((b) => /korrupt|unlesbar/.test(b)))
-            this.log(`Welt aus ${fund.quelle} geladen (${fund.befund.join(", ")}).`, "WARN");
+        if (fund.quelle.startsWith(".bak") || fund.befund.some((b) => ["korrupt", "unlesbar"].includes(b.art)))
+            this.log(`Welt aus ${fund.quelle} geladen (${this._befundText(fund.befund)}).`, "WARN");
         return fund.state;
     }
 

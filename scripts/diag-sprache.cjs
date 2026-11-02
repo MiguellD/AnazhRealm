@@ -123,6 +123,8 @@ function pruefeCode(dateien, Z, rot) {
         // Ternären und Tafeln (`_t(an ? "a.x" : "a.y")`, `_t(label)`); U zählt, welche Zeilen ein Leser trägt
         for (const m of code.matchAll(/\b_t\(\s*(["'])([^"']+)\1/g))
             if (!(m[2] in Z)) rot(`K: ${pfad}:${zeileVon(code, m.index)} der Schlüssel „${m[2]}“ fehlt in der Tafel`);
+        // eine Familie (`_t(\`speicher.befund.${b.art}\`)`) liest jede Zeile ihres Präfixes
+        for (const m of code.matchAll(/`([a-z0-9]+(?:\.[a-z0-9-]+)*\.)\$\{/g)) familien.add(m[1]);
         for (const m of code.matchAll(SCHLUESSEL_LIT(Z))) {
             genutzt.add(m[2]);
             if (!(m[2] in Z) && !/\b_t\(\s*$/.test(code.slice(Math.max(0, m.index - 12), m.index)))
@@ -136,6 +138,7 @@ const SCHLUESSEL_LIT = (Z) => {
     return new RegExp(`(["'])((?:${praefix})\\.[a-z0-9][a-z0-9.-]*)\\1`, "g");
 };
 const genutzt = new Set();
+const familien = new Set();
 
 // ── H: index.html ──
 function pruefeHtml(html, Z, rot) {
@@ -175,6 +178,7 @@ function pruefeHtml(html, Z, rot) {
 
 function pruefe({ dateien, html, daten }) {
     genutzt.clear();
+    familien.clear();
     const befund = [];
     const rot = (s) => befund.push(s);
     let Z = {};
@@ -187,8 +191,9 @@ function pruefe({ dateien, html, daten }) {
     const senken = pruefeCode(dateien, Z, rot);
     const tags = pruefeHtml(html, Z, rot);
     // U: eine Zeile, die kein Leser trägt, ist toter Text (ein Abschied nimmt seine Zeilen mit)
+    const inFamilie = (k) => [...familien].some((f) => k.startsWith(f) && k.split(".").length === f.split(".").length);
     for (const k of Object.keys(Z))
-        if (!genutzt.has(k)) rot(`U: die Zeile „${k}“ trägt keinen Leser (Stamm, index.html)`);
+        if (!genutzt.has(k) && !inFamilie(k)) rot(`U: die Zeile „${k}“ trägt keinen Leser (Stamm, index.html)`);
     return { befund, zeilen: Object.keys(Z).length, senken, tags };
 }
 

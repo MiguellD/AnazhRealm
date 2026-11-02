@@ -70,9 +70,10 @@ class AnazhRealm_werkstatt_vorschau {
             return h;
         };
         if (griff.length) {
-            list.appendChild(kopf("studio", "griffbereit", "Griffbereit", griff.length, ""));
+            const griffLab = this._t("hof.griffbereit");
+            list.appendChild(kopf("studio", "griffbereit", griffLab, griff.length, ""));
             for (const n of griff)
-                list.appendChild(this._stammbaumZeile(baum.zielVon.get(n), ws, "griffbereit", false, ["Griffbereit"]));
+                list.appendChild(this._stammbaumZeile(baum.zielVon.get(n), ws, "griffbereit", false, [griffLab]));
         }
         for (const w of baum.wurzeln) {
             const zahl = w.kinder.reduce((s, b) => s + b.kinder.length, 0);
@@ -115,7 +116,7 @@ class AnazhRealm_werkstatt_vorschau {
         const nameSpan = document.createElement("span");
         nameSpan.className = "name";
         const nameSchnitt = t.rezept ? /\s[·—(]/ : /\s[—(]/;
-        nameSpan.textContent = String(t.lab).split(nameSchnitt)[0];
+        nameSpan.textContent = AnazhRealm._namensKopf(t.lab, nameSchnitt);
         const badge = document.createElement("span");
         badge.className = "badge";
         badge.textContent = t.waise
@@ -139,7 +140,11 @@ class AnazhRealm_werkstatt_vorschau {
             : t.eigen
               ? this._t("vorschau.gesetz.dein-werk")
               : this._t("vorschau.gesetz.der-wirt");
-        const knoten = { lab: String(t.lab), gesetz, leser: t.konsum || this._t("vorschau.leser.keiner") };
+        const knoten = {
+            lab: String(t.lab),
+            gesetz,
+            leser: t.konsum ? this._t(AnazhRealm.KONSUM_LESER[t.konsum]) : this._t("vorschau.leser.keiner"),
+        };
         row.title = t.ziel
             ? this._t("vorschau.knoten-titel", knoten)
             : this._t("vorschau.knoten-titel.ohne-griff", knoten);
@@ -197,7 +202,7 @@ class AnazhRealm_werkstatt_vorschau {
             return { ok, werk: t.werk, log: ctx.log };
         }
         const res = this.fertigeBlueprint(t.ziel);
-        if (!res.ok) this._spielerSagt(`${String(t.lab).split(/\s[·—(]/)[0]}: ${this._machTorHint(res)}`);
+        if (!res.ok) this._spielerSagt(`${AnazhRealm._namensKopf(t.lab)}: ${this._machTorHint(res)}`);
         return res;
     }
 
@@ -665,7 +670,7 @@ class AnazhRealm_werkstatt_vorschau {
             const fail = this._failsUnderLoad(bp);
             if (fail.buckles) {
                 out.buckles = true;
-                out.lines.push({ sev: "warn", text: "zu schlank — ein tragendes Glied knickt unter der Last" });
+                out.lines.push({ sev: "warn", text: this._t("werk.physik.knickt") });
             }
         }
         // Ω-Φ4 Schwung — für GEHALTENE Werke (kopflastig → träge).
@@ -2398,7 +2403,7 @@ class AnazhRealm_werkstatt_vorschau {
         for (const wid of Object.keys(AnazhRealm.WORLD_REGISTRY)) {
             const wOpt = document.createElement("option");
             wOpt.value = wid;
-            wOpt.textContent = AnazhRealm.WORLD_REGISTRY[wid].label;
+            wOpt.textContent = this._weltName(AnazhRealm.WORLD_REGISTRY[wid]);
             portalSel.appendChild(wOpt);
         }
         mkBtn(this._t("vorschau.intent.portal"), this._t("vorschau.intent.portal.titel"), () =>
@@ -2473,7 +2478,7 @@ class AnazhRealm_werkstatt_vorschau {
                 // W-C(a)/R-005 — das Mach-Tor spricht AN DER FERTIGEN-Zeile (derselbe EINE Formatter wie Rüstungs-Slot
                 // + Rezeptbuch) und im Spieler-Kanal (Welle L Folge: das Log ist eingeklappt).
                 this._showMachTorHint(row, res);
-                this._spielerSagt(`${String(bp.label || bp.name).split(/\s[·—(]/)[0]}: ${this._machTorHint(res)}`);
+                this._spielerSagt(`${AnazhRealm._namensKopf(bp.label || bp.name)}: ${this._machTorHint(res)}`);
             }
         });
         row.appendChild(btn);
@@ -2505,7 +2510,7 @@ class AnazhRealm_werkstatt_vorschau {
             if (b && b.role === "workshop-station" && this._computeWorkshopDomain(b) === domain)
                 return b.label || b.name;
         }
-        return (AnazhRealm.TOOL_DOMAIN_LABELS && AnazhRealm.TOOL_DOMAIN_LABELS[domain]) || domain;
+        return AnazhRealm._tafelName(AnazhRealm.TOOL_DOMAIN_LABELS, domain);
     }
 
     // V18.44 — DAS PROFI-SPEC-SHEET (Header/Body/Footer + ein Balken-Primitiv). Liest das BESTEHENDE

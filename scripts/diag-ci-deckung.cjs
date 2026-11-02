@@ -126,10 +126,10 @@ const AUSNAHMEN = {
     "gate:sprache:welt": {
         klasse: KLASSEN.ROT,
         grund:
-            "spielgang.K5, das lebende DOM in der Linsen-Sprache pseudo: rot an w4-cloud-sprache mit 511 Daten-Namen, die als " +
-            "Wert fließen (Bibliothek 176 · Rezepte 118 · Werkstatt-Liste 79 · Tastenbelegung 39 · Werte 26 · Hotbar 16 · " +
-            "Emotionen 12 · Seelen-Wahl 8 · Studio-Regler aus den Kernen) — die statische Wand gate:sprache (Code · " +
-            "index.html · Tafel) steht in check und ist GRÜN",
+            "spielgang.K5, das lebende DOM in der Linsen-Sprache pseudo: rot an w4-cloud-sprache mit 29 Wörtern aus den " +
+            "Kernen, die als Wert fließen (15 Studio-Regler der Werkstatt aus phyto-core, 14 Hotbar-Titel aus dem Feld lab " +
+            "von fachwerk-, porta- und vehicle-core) — ein Kern ändert sich nur unter Byte-Beweis; die statische Wand " +
+            "gate:sprache (Code · index.html · Tafel) steht in check und ist GRÜN",
     },
     "gate:arch-feld": {
         klasse: KLASSEN.FRIST,

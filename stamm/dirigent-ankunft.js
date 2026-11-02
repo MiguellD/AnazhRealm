@@ -677,9 +677,12 @@ class AnazhRealm_dirigent_ankunft {
         // EINE NEUE WELT NUR, WENN DIE KETTE LEER IST — UND DANN LAUT: was gefunden wurde, warum frisch.
         if (this._bootLeer) {
             const b = this._bootLeer;
+            // der Satz an den Spieler aus der Tafel; der Befund ist die Diagnose der Speicher-Kette (ihre Glieder, die Meldung
+            // des Browsers) und steht, wie sie das Log trägt
+            const befund = this._befundText(b.befund);
             const satz = b.id
-                ? `Die Welt ${b.id} ließ sich nicht finden (${b.befund.join(", ")}) — eine neue Welt erwacht.`
-                : `Kein gespeicherter Stand (${b.befund.join(", ")}) — eine neue Welt erwacht.`;
+                ? this._t("rede.welt-fehlt", { welt: b.id, befund })
+                : this._t("rede.kein-stand", { befund });
             this.log(satz, b.id ? "ERROR" : "INFO");
             this._chatEcho(satz);
         }

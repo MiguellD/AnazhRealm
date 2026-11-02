@@ -2384,7 +2384,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
             const txt = panel ? panel.textContent : "";
             const cost = r.computeBuildCost("_t837a");
             out.costPanelShown = /Bau-Kosten/.test(txt);
-            out.costPanelValue = (cost.stein || 0) > 0 && txt.includes(`${cost.stein}× stein`);
+            out.costPanelValue = (cost.stein || 0) > 0 && txt.includes(`${cost.stein}× ${r._stoffName("stein")}`);
             delete st.blueprints["_t837a"];
         }
 
@@ -2481,7 +2481,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
                 },
             ];
             const tip = r._blueprintCostTooltip("_t838c");
-            out.costTooltipText = /Bau-Kosten/.test(tip) && /stein/.test(tip) && /hast/.test(tip);
+            out.costTooltipText = /Bau-Kosten/.test(tip) && tip.includes(r._stoffName("stein")) && /hast/.test(tip);
             const origHotbar0 = st.hotbar[0];
             st.hotbar[0] = "_t838c";
             r._renderHotbarDOM();

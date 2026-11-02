@@ -167,7 +167,7 @@ class AnazhRealm_werkstatt_hof {
             }
         }
         if (!bestK || !bestV) return "";
-        const label = (AnazhRealm.AXIS_LABELS && AnazhRealm.AXIS_LABELS[bestK]) || bestK;
+        const label = AnazhRealm._tafelName(AnazhRealm.AXIS_LABELS, bestK);
         return `${bestV > 0 ? "+" : ""}${Math.round(bestV * 100) / 100} ${label}`;
     }
 
@@ -348,7 +348,7 @@ class AnazhRealm_werkstatt_hof {
             const why = this._blueprintRoleWhy(bp);
             if (why && why.text)
                 row.title = this._t("hof.rolle-weil", {
-                    rolle: AnazhRealm.ROLE_LABELS[why.role] || why.role,
+                    rolle: AnazhRealm._tafelName(AnazhRealm.ROLE_LABELS, why.role),
                     grund: why.text,
                 });
         }
@@ -362,10 +362,7 @@ class AnazhRealm_werkstatt_hof {
         const check = this.checkBuildCost(name);
         const cost = document.createElement("span");
         cost.className = "recipe-cost";
-        cost.textContent =
-            Object.entries(check.cost || {})
-                .map(([m, n]) => `${n}× ${m}`)
-                .join(" · ") || this._t("hof.frei");
+        cost.textContent = this._kostenText(check.cost) || this._t("hof.frei");
         info.appendChild(cost);
         // Status: erst BAUPLAN (Information — Fertigen kostet Materie) oder schon WERK (forgedPrecision
         // eingefroren) — die Zeile sagt, warum ein Bauplan noch nicht wirkt.
@@ -404,11 +401,7 @@ class AnazhRealm_werkstatt_hof {
         const free = mode === "schöpfer" || isWerk;
         btn.disabled = !free && !check.ok;
         if (btn.disabled) {
-            btn.title = this._t("hof.es-fehlt", {
-                liste: Object.entries(check.missing || {})
-                    .map(([m, n]) => `${n}× ${m}`)
-                    .join(", "),
-            });
+            btn.title = this._t("hof.es-fehlt", { liste: this._kostenText(check.missing, ", ") });
         }
         btn.addEventListener("click", () => {
             const res = this.craftFromRecipe(name);
@@ -558,7 +551,7 @@ class AnazhRealm_werkstatt_hof {
             name: ud.name || "?",
             soul: typeof ud.soul === "string" ? ud.soul : "",
             soulLabel:
-                (ud.soul && AnazhRealm.CREATURE_SOULS[ud.soul] && AnazhRealm.CREATURE_SOULS[ud.soul].label) || "—",
+                ud.soul && AnazhRealm.CREATURE_SOULS[ud.soul] ? this._t(AnazhRealm.CREATURE_SOULS[ud.soul].label) : "—",
             bond: Number.isFinite(ud.bond) ? ud.bond : 0,
             equipped: ud.equipped || {},
             boosts: Array.isArray(ud.boosts) ? ud.boosts : [],
@@ -1052,13 +1045,13 @@ class AnazhRealm_werkstatt_hof {
                 {
                     class: `emotion hof-emotion-bar ${es.dominant}`,
                     title: this._t("hof.emotion-titel", {
-                        emotion: (AnazhRealm.EMOTION_LABEL && AnazhRealm.EMOTION_LABEL[es.dominant]) || es.dominant,
+                        emotion: this._t(AnazhRealm.EMOTION_LABEL[es.dominant]),
                         prozent: (es.intensity * 100) | 0,
                     }),
                 },
                 this._el("span", {
                     class: "name",
-                    text: (AnazhRealm.EMOTION_LABEL && AnazhRealm.EMOTION_LABEL[es.dominant]) || es.dominant,
+                    text: this._t(AnazhRealm.EMOTION_LABEL[es.dominant]),
                 }),
                 bar,
                 this._el("span", { class: "value", text: `${(es.intensity * 100) | 0}%` })
@@ -2028,11 +2021,13 @@ _stammZonen(AnazhRealm, [AnazhRealm_werkstatt_hof]);
 // ===== ATLAS · Werkstatt/hof — Außen-Konstanten =====
 // Menschen-lesbare Namen der Achsen — der fusionierte Readout (`_emotionState`)
 // gibt sie an die KI/das Journal/die UI als REICHEN Zustand statt sechs Zahlen.
+// Je Achse ihr Schlüssel der Sprach-Tafel (`gefuehl.*`); jeder Leser ruft `_t` — die KI hört das Gefühl in der Sprache
+// des Spielers wie die Leiste.
 AnazhRealm.EMOTION_LABEL = Object.freeze({
-    joy: "Freude",
-    awe: "Ehrfurcht",
-    sorrow: "Trauer",
-    hope: "Hoffnung",
-    peace: "Frieden",
-    chaos: "Aufruhr",
+    joy: "gefuehl.freude",
+    awe: "gefuehl.ehrfurcht",
+    sorrow: "gefuehl.trauer",
+    hope: "gefuehl.hoffnung",
+    peace: "gefuehl.frieden",
+    chaos: "gefuehl.aufruhr",
 });

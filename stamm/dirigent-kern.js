@@ -1218,6 +1218,13 @@ class AnazhRealm {
     static get GAME_MODES() {
         return this._einmal("GAME_MODES", Object.freeze(["frieden", "pfad", "schöpfer"]));
     }
+    // je Modus der Schlüssel seines Namens in der Sprach-Tafel (die Status-Leiste `#status-mode` spricht ihn)
+    static get SPIELMODUS_NAMEN() {
+        return this._einmal(
+            "SPIELMODUS_NAMEN",
+            Object.freeze({ frieden: "modus.frieden", pfad: "modus.pfad", schöpfer: "modus.schoepfer" })
+        );
+    }
 
     setGameMode(mode) {
         const canonical = AnazhRealm.GAME_MODES.includes(mode) ? mode : "frieden";
@@ -1257,8 +1264,7 @@ class AnazhRealm {
         // Status-Bar-Item
         const statusItem = document.getElementById("status-mode");
         if (statusItem) {
-            const labels = { frieden: "frieden", pfad: "pfad", schöpfer: "schöpfer" };
-            statusItem.textContent = labels[mode] || mode;
+            statusItem.textContent = AnazhRealm._tafelName(AnazhRealm.SPIELMODUS_NAMEN, mode);
         }
     }
 

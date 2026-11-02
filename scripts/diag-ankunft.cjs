@@ -965,7 +965,7 @@ async function probe(arg) {
         const beispiele = r.chatDslPatterns.map((p) => p.example).concat(r.chatSystemPatterns.map((p) => p.example));
         const v1 = [];
         for (const p of r.chatDslPatterns.concat(r.chatSystemPatterns)) if (Array.isArray(p.hilfe)) v1.push(...p.hilfe);
-        const tasten = Object.values(AnazhRealm.KEYBINDING_LABELS || {});
+        const tasten = Object.values(AnazhRealm.KEYBINDING_LABELS || {}).map((k) => r._t(k));
         for (const wort of ["hilfe", "help", "?"]) {
             const n0 = zeilen().length;
             r.processChatCommand(wort);

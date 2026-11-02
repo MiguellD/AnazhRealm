@@ -262,10 +262,15 @@ class AnazhRealm_werkstatt_hud {
             // Legende: deutscher Name + was die Emotion in der Welt bewirkt (Hover) —
             // löst das "welche Farbe = welche Emotion"-Rätsel. Die Balkenfarbe (CSS
             // .emotion.<axis>) zeigt die Farbe direkt neben dem Namen.
-            row.title = `${AnazhRealm.EMOTION_LABEL[axis] || axis} — ${AnazhRealm.EMOTION_WIRKT[axis] || ""}`;
+            // eine Achse der sechs liest ihre Zeilen der Tafel (`gefuehl.*`); eine fremde Achse aus einem alten Stand trägt
+            // ihren rohen Namen (sie ist Inhalt des Stands, keine Zeile der Welt)
+            const wort = AnazhRealm.EMOTION_LABEL[axis] ? this._t(AnazhRealm.EMOTION_LABEL[axis]) : axis;
+            row.title = AnazhRealm.EMOTION_WIRKT[axis]
+                ? `${wort} — ${this._t(AnazhRealm.EMOTION_WIRKT[axis])}`
+                : `${wort} — `;
             const name = document.createElement("span");
             name.className = "name";
-            name.textContent = AnazhRealm.EMOTION_LABEL[axis] || axis;
+            name.textContent = wort;
             const bar = document.createElement("span");
             bar.className = "bar";
             const fill = document.createElement("div");
@@ -912,13 +917,14 @@ class AnazhRealm_werkstatt_hud {
         if (!bp) return "";
         const parts = Array.isArray(bp.parts) ? bp.parts : [];
         const role = this._displayRole(bp);
-        const roleLabel = AnazhRealm.ROLE_LABELS[role] || AnazhRealm.BLUEPRINT_ROLE_LABELS[role] || "";
+        const bekannt = !!(AnazhRealm.ROLE_LABELS[role] || AnazhRealm.BLUEPRINT_ROLE_LABELS[role]);
+        const roleLabel = bekannt ? AnazhRealm._rolleName(role) : "";
         const mats = [...new Set(parts.map((p) => p && p.material).filter(Boolean))];
         const tags = this.computeCompoundTags(bp) || {};
         const topTags = Object.entries(tags)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 2)
-            .map(([k]) => (AnazhRealm.AXIS_LABELS && AnazhRealm.AXIS_LABELS[k]) || k);
+            .map(([k]) => AnazhRealm._tafelName(AnazhRealm.AXIS_LABELS, k));
         return [bp.label || "", bp.name || "", role, roleLabel, mats.join(" "), topTags.join(" ")]
             .join(" ")
             .toLowerCase();
@@ -966,7 +972,7 @@ class AnazhRealm_werkstatt_hud {
                 if (roles && !roles.includes(role)) continue;
                 // M4 (V18.158) — der EINE Heuhaufen + Kern: Name/Rolle(label)/Material/Tags.
                 if (this._matchQuery(this._blueprintSearchText(bp), t)) {
-                    const rl = AnazhRealm.ROLE_LABELS[role] || AnazhRealm.BLUEPRINT_ROLE_LABELS[role] || role;
+                    const rl = AnazhRealm._rolleName(role);
                     out.push({
                         kindLabel: rl,
                         label: bp.label || bp.name,
@@ -1830,11 +1836,11 @@ class AnazhRealm_werkstatt_hud {
             const pt0 = Number.isFinite(this.state.perfTargetMs) ? this.state.perfTargetMs : AnazhRealm.PERF_TARGET_MS;
             const fps0 = Math.max(30, Math.min(60, Math.round(1000 / pt0 / 5) * 5));
             fpsS.value = String(fps0);
-            if (fpsSv) fpsSv.textContent = `${fps0} fps`;
+            if (fpsSv) fpsSv.textContent = this._t("rede.fps-wert", { fps: fps0 });
             fpsS.addEventListener("input", () => {
                 const fps = Math.max(30, Math.min(60, parseInt(fpsS.value, 10) || 60));
                 this.state.perfTargetMs = Math.round(1000 / fps);
-                if (fpsSv) fpsSv.textContent = `${fps} fps`;
+                if (fpsSv) fpsSv.textContent = this._t("rede.fps-wert", { fps });
             });
         }
         // (2) DIE SZENEN-SKALA (K50): die interne Auflösung der Szene (50..100 %), die zeitliche Auflösung löst auf die
@@ -2284,7 +2290,7 @@ class AnazhRealm_werkstatt_hud {
             row.dataset.action = action;
             const label = document.createElement("span");
             label.className = "keybind-label";
-            label.textContent = AnazhRealm.KEYBINDING_LABELS[action] || action;
+            label.textContent = this._t(AnazhRealm.KEYBINDING_LABELS[action]);
             row.appendChild(label);
             for (const art of ["keybind-rebind", "keybind-rebind keybind-pad"]) {
                 const pad = art !== "keybind-rebind";
@@ -2312,21 +2318,73 @@ class AnazhRealm_werkstatt_hud {
         this._renderKeybindingsUI();
     }
 
-    // Pretty-Format eines Codes für Anzeige im Button. „KeyF" → „F",
-    // „Mouse0" → „Linke Maustaste", „Space" → „Leertaste", etc.
+    // DER NAME EINER TASTE für die Anzeige (Knopf, Hilfe, Bau-HUD, Off-Hand-Slot): „KeyF" → „F", „Mouse0" → „Linke Maustaste",
+    // „Pad5" → „Pad RB". Jede Taste der Standard-Tastatur, deren Name ein Wort trägt, und jeder Pad-Knopf lesen ihre Zeile der
+    // Sprach-Tafel (`taste.*`, `hud.*`); Buchstaben, Ziffern, Pfeile und F-Tasten zeigen ihr Zeichen. Ein Code außerhalb der
+    // Standard-Tastatur (Medien-, Eingabe-Methoden-Tasten), auf den der Spieler selbst umband, zeigt den Namen, den sein Gerät
+    // ihm gibt — wie der Name, den ein Spieler vergibt.
     _formatBindingCode(code) {
         if (!code) return "—";
-        if (code === "Mouse0") return this._t("hud.maus-links");
-        if (code === "Mouse1") return this._t("hud.maus-mitte");
-        if (code === "Mouse2") return this._t("hud.maus-rechts");
-        if (code === "Space") return this._t("hud.leertaste");
-        if (code === "Tab") return "Tab";
-        if (code === "Escape") return "Esc";
+        const name = {
+            Mouse0: "hud.maus-links",
+            Mouse1: "hud.maus-mitte",
+            Mouse2: "hud.maus-rechts",
+            Space: "hud.leertaste",
+            Tab: "taste.tab",
+            Escape: "taste.esc",
+            Enter: "taste.enter",
+            Backspace: "taste.backspace",
+            ShiftLeft: "taste.shift-links",
+            ShiftRight: "taste.shift-rechts",
+            ControlLeft: "taste.strg-links",
+            ControlRight: "taste.strg-rechts",
+            AltLeft: "taste.alt-links",
+            AltRight: "taste.alt-rechts",
+            MetaLeft: "taste.meta-links",
+            MetaRight: "taste.meta-rechts",
+            CapsLock: "taste.capslock",
+            ContextMenu: "taste.kontextmenue",
+            Insert: "taste.einfuegen",
+            Delete: "taste.entfernen",
+            Home: "taste.pos1",
+            End: "taste.ende",
+            PageUp: "taste.bild-auf",
+            PageDown: "taste.bild-ab",
+            NumLock: "taste.numlock",
+            ScrollLock: "taste.scrolllock",
+            Pause: "taste.pause",
+            PrintScreen: "taste.druck",
+            Backquote: "taste.backquote",
+            Minus: "taste.minus",
+            Equal: "taste.gleich",
+            BracketLeft: "taste.klammer-auf",
+            BracketRight: "taste.klammer-zu",
+            Backslash: "taste.backslash",
+            IntlBackslash: "taste.intl-backslash",
+            Semicolon: "taste.semikolon",
+            Quote: "taste.quote",
+            Comma: "taste.komma",
+            Period: "taste.punkt",
+            Slash: "taste.slash",
+            NumpadAdd: "taste.num-plus",
+            NumpadSubtract: "taste.num-minus",
+            NumpadMultiply: "taste.num-mal",
+            NumpadDivide: "taste.num-durch",
+            NumpadDecimal: "taste.num-komma",
+            NumpadComma: "taste.num-trenner",
+            NumpadEqual: "taste.num-gleich",
+            NumpadEnter: "taste.num-enter",
+        }[code];
+        if (name) return this._t(name);
         if (code.startsWith("Key")) return code.slice(3);
         if (code.startsWith("Digit")) return code.slice(5);
+        if (/^Numpad\d$/.test(code)) return this._t("taste.num-ziffer", { ziffer: code.slice(6) });
         if (code.startsWith("Arrow"))
             return "↑↓←→".charAt(["Up", "Down", "Left", "Right"].indexOf(code.slice(5))) || code;
-        if (/^Pad\d+$/.test(code)) return "Pad " + (AnazhRealm.PAD_KNOPF_NAMEN[+code.slice(3)] || code.slice(3));
+        if (/^Pad\d+$/.test(code)) {
+            const knopf = AnazhRealm.PAD_KNOPF_NAMEN[+code.slice(3)];
+            return knopf ? this._t(knopf) : this._t("taste.pad-nummer", { nummer: code.slice(3) });
+        }
         return code;
     }
 
@@ -2507,12 +2565,12 @@ class AnazhRealm_werkstatt_hud {
             ueK ? this._t("hud.mensch-gestalt") : this._t("hud.mensch"),
             ueK ? this._t("hud.mensch-titel-uebergabe") : this._t("hud.mensch-titel")
         );
-        // (2) die vier Gattungen des tetrapoda-Buchs, mit ihren Studio-Namen. Verkörpert
-        // (bp_koerper_<tier> als customSoul) → freier Wechsel; sonst der embody-Wert
+        // (2) die vier Gattungen des tetrapoda-Buchs (deer · wolf · fox · bear), beim Namen ihrer Seele (`CREATURE_SOULS`, die
+        // Zeile der Sprach-Tafel). Verkörpert (bp_koerper_<tier> als customSoul) → freier Wechsel; sonst der embody-Wert
         // (koerper_<tier>) mit Kosten-Marker — derselbe change-Handler wie immer.
         const SM = AnazhRealm.TETRAPODA_SOUL_MAP;
         for (const soulKey of Object.keys(SM)) {
-            const studioName = SM[soulKey]; // deer · wolf · fox · bear
+            const studioName = this._t(AnazhRealm.CREATURE_SOULS[soulKey].label);
             const bpName = `koerper_${soulKey}`;
             if (this.state.customSouls && this.state.customSouls[`bp_${bpName}`]) {
                 addOpt(
@@ -2847,13 +2905,14 @@ AnazhRealm.GERAET_GRENZEN = Object.freeze([
 // Was jede Emotion in der WELT bewirkt — die Legende, die das Aura-Rätsel löst (der
 // Schöpfer: "verstehe nicht, welche Farbe welche Emotion"). Aus den echten Welt-Effekten
 // (_applyEmotionWorldEffects): der Spieler liest, was sein Gefühl tut, statt Farben zu raten.
+// Je Achse ihr Schlüssel der Sprach-Tafel (`gefuehl.*-wirkt`).
 AnazhRealm.EMOTION_WIRKT = Object.freeze({
-    joy: "wärmt den Himmel golden",
-    awe: "zieht magisches Licht heran",
-    sorrow: "lässt Regen fallen",
-    hope: "klärt den Himmel, erhellt die Wesen",
-    peace: "besänftigt + verlangsamt die Wesen",
-    chaos: "entfesselt die Wesen, treibt alles an",
+    joy: "gefuehl.freude-wirkt",
+    awe: "gefuehl.ehrfurcht-wirkt",
+    sorrow: "gefuehl.trauer-wirkt",
+    hope: "gefuehl.hoffnung-wirkt",
+    peace: "gefuehl.frieden-wirkt",
+    chaos: "gefuehl.aufruhr-wirkt",
 });
 
 // DIE UNTERTITEL-TAFEL (spielgang.K4): je Ereignis-Art des Klang-Gesetzes ein Satz je Name — die Stimmen

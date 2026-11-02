@@ -530,7 +530,8 @@ class AnazhRealm_kreatur_leben {
             if (souls.includes(requested)) return requested;
             const norm = (t) => String(t).toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue");
             const w = norm(requested);
-            const hit = souls.find((n) => norm(n) === w || norm(AnazhRealm.CREATURE_SOULS[n].label || "") === w);
+            // das Wort des Spielers: die id oder der Name der Seele in seiner Sprache (die Zeile der Sprach-Tafel)
+            const hit = souls.find((n) => norm(n) === w || norm(this._t(AnazhRealm.CREATURE_SOULS[n].label)) === w);
             if (hit) return hit;
             this.log(`Kreatur-Seele „${requested}" unbekannt (${souls.join(", ")}) — kein Ersatz.`, "WARN");
             return null;
@@ -3441,6 +3442,7 @@ AnazhRealm.CREATURE_SKELETON_G = Object.freeze({
         limbColor: 0x3e2c1e,
     }),
 });
+// je Seele `label` der Schlüssel ihres Namens in der Sprach-Tafel (`wesen.…`); jeder Leser spricht ihn über `_t`.
 AnazhRealm.CREATURE_SOULS = Object.freeze({
     // `wesen` ist ein Vierbeiner aus dem Skelett-Gesetz: Rumpf (box stein) + Kopf (sphere holz) +
     // Hals/Beine/Schwanz (holz `limb`-Kapseln). limb aktiviert wie cylinder → Compound-Tags
@@ -3449,7 +3451,7 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
         // ERFINDER-WELLE — der ehrliche NAME der Gestalt: das wesen IST der Hirsch
         // (deer-Gattung/Archetyp seit F1). Der Schlüssel `wesen` bleibt load-bearing
         // (Saves · Tests · TETRAPODA_SOUL_MAP), nur das Schild modernisiert.
-        label: "Hirsch",
+        label: "wesen.hirsch",
         // Das g lebt als Daten in CREATURE_SKELETON_G (byte-identischer Guss): `size` 0.6 = sizeFactor-
         // Tarierung ins Tie-Band (stats-tragend, darum kein Studio-Dial), deer-Archetyp = sanfter
         // Pflanzenfresser. Zur BAU-Zeit dockt `_tetrapodaSoulParts` die tetrapoda-Dials auf denselben Guss;
@@ -3466,7 +3468,7 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
     // statt sie zu verdrängen; jede ist ambient (G4a: der predator-Stempel des Wolfs fiel mit dem Filter der Picker —
     // wild macht ihn die Gattung, `_creatureTemperament`).
     wolf: Object.freeze({
-        label: "Wolf",
+        label: "wesen.wolf",
         bodyParts: Object.freeze(
             AnazhRealm._creatureSkeleton(
                 Object.assign({ archetype: AnazhRealm.CREATURE_ARCHETYPES.wolf }, AnazhRealm.CREATURE_SKELETON_G.wolf)
@@ -3475,7 +3477,7 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
         auraY: 0.75,
     }),
     fuchs: Object.freeze({
-        label: "Fuchs",
+        label: "wesen.fuchs",
         bodyParts: Object.freeze(
             AnazhRealm._creatureSkeleton(
                 Object.assign(
@@ -3487,7 +3489,7 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
         auraY: 0.6,
     }),
     baer: Object.freeze({
-        label: "Bär",
+        label: "wesen.baer",
         bodyParts: Object.freeze(
             AnazhRealm._creatureSkeleton(
                 Object.assign({ archetype: AnazhRealm.CREATURE_ARCHETYPES.bear }, AnazhRealm.CREATURE_SKELETON_G.baer)
