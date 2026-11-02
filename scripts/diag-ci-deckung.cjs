@@ -123,14 +123,6 @@ const KLASSEN = {
 };
 // Die EINE Ausnahme-Liste: Wand → { klasse, grund }. Wer hier steht, hält in keinem Workflow den Merge — mit Grund.
 const AUSNAHMEN = {
-    "gate:sprache:welt": {
-        klasse: KLASSEN.ROT,
-        grund:
-            "spielgang.K5, das lebende DOM in der Linsen-Sprache pseudo: rot an w4-cloud-sprache mit 29 Wörtern aus den " +
-            "Kernen, die als Wert fließen (15 Studio-Regler der Werkstatt aus phyto-core, 14 Hotbar-Titel aus dem Feld lab " +
-            "von fachwerk-, porta- und vehicle-core) — ein Kern ändert sich nur unter Byte-Beweis; die statische Wand " +
-            "gate:sprache (Code · index.html · Tafel) steht in check und ist GRÜN",
-    },
     "gate:arch-feld": {
         klasse: KLASSEN.FRIST,
         grund:

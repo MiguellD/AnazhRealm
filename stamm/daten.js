@@ -2275,10 +2275,16 @@ class AnazhRealm_daten {
         };
         // SPRACH-ZEILEN ZU
         const tafel = Object.fromEntries(S.map((sp) => [sp, {}]));
+        // die Zeile hält ihr Gesetz beim Bau (laut): ein Schlüssel nur aus [a-z0-9.-], jede Sprache ein Text, dieselben Werte
+        const werte = (t) => (t.match(/\{\w+\}/g) || []).sort().join(" ");
         for (const k in Z) {
-            if (!Array.isArray(Z[k]) || Z[k].length !== S.length || !Z[k].every((t) => typeof t === "string"))
+            const z = Z[k];
+            if (!/^[a-z0-9][a-z0-9.-]*$/.test(k)) throw new Error(`SPRACHE: der Schlüssel „${k}“ ist kein Schlüssel`);
+            if (!Array.isArray(z) || z.length !== S.length || !z.every((t) => typeof t === "string" && t))
                 throw new Error(`SPRACHE: die Zeile „${k}“ trägt nicht jede Sprache`);
-            S.forEach((sp, i) => (tafel[sp][k] = Z[k][i]));
+            if (z.some((t) => werte(t) !== werte(z[0])))
+                throw new Error(`SPRACHE: die Zeile „${k}“ trägt ihre Werte nicht in jeder Sprache`);
+            S.forEach((sp, i) => (tafel[sp][k] = z[i]));
         }
         return this._einmal("TEXTE", Object.freeze(Object.fromEntries(S.map((sp) => [sp, Object.freeze(tafel[sp])]))));
     }
