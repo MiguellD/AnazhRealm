@@ -2567,22 +2567,30 @@ class AnazhRealm_siedlung_bewohner {
                 if (weg(o)) gerueckt.push(o);
                 continue;
             }
-            const raum = [...staende]
-                .filter((p) => p !== o)
-                .map((p) => p.ur || p)
-                .concat(gerueckt);
+            const raumUr = [...staende].filter((p) => p !== o).map((p) => p.ur || p);
+            const raum = raumUr.concat(gerueckt);
             // das Gesetz seiner Art gilt auch dem gerückten (`gilt`, `_bewohnerListe`: der Stand am Platz bleibt am Platz)
             const mit = (f) => (o.gilt ? (p) => o.gilt(p.x, p.z) && (!f || f(p)) : f);
-            const neu = (rand, frei, weit) =>
-                this._bewohnerAusweg(N, { x: ur.x, z: ur.z }, true, raum, rand, mit(frei), weit);
+            const neu = (rand, frei, weit, art = true, rm = raum) =>
+                this._bewohnerAusweg(N, { x: ur.x, z: ur.z }, true, rm, rand, art ? mit(frei) : frei, weit);
             // DER STAND WEICHT DER SPUR (PFLICHT-OFFEN C): wer stundenlang steht, steht nie in der Spur eines Wagens
             // (`_verkehrAufSpur`) — sein Ausweg reicht dafür bis `spurAuswegM` (die Gasse daneben, die Lücke zwischen zwei Häusern);
-            // trägt keiner, steht er, wo er stand (der Wagen hält vor ihm, und er macht Platz, `_verkehrFolge`)
+            // trägt keiner, steht er, wo er stand (der Wagen hält vor ihm, und er macht Platz, `_verkehrFolge`). Die Spur geht vor dem
+            // Gesetz seiner Art und vor dem Raum zu den gerückten: trägt kein Ausweg am Platz (`gilt`), rückt er ohne es aus der Spur,
+            // trägt auch dann keiner, mit dem Raum nur zu den Ursprüngen (wie vor w4-genesis-ort-wirt5) — bis hier blieb der Stand am
+            // Platz dann in ihr stehen, und um 10 Uhr standen zwei Leiber der Metropole auf der Trasse am Markt (#7:55:1, #7:57:1):
+            // 20 Wagen warteten in zwei Ketten 600 s auf sie, kein Wagen erreichte ein Ziel (gate:fahr-leben --verkehr)
             const frei = S.verkehr ? (p) => !this._verkehrAufSpur(S, p.x, p.z) : null;
             const q =
                 !this._bewohnerWand(ur, ur, true, BW.standRandM) && (!frei || frei(ur))
                     ? ur
-                    : (frei && (neu(BW.standRandM, frei, BW.spurAuswegM) || neu(0, frei, BW.spurAuswegM))) ||
+                    : (frei &&
+                          (neu(BW.standRandM, frei, BW.spurAuswegM) ||
+                              neu(0, frei, BW.spurAuswegM) ||
+                              (o.gilt &&
+                                  (neu(BW.standRandM, frei, BW.spurAuswegM, false) ||
+                                      neu(0, frei, BW.spurAuswegM, false))) ||
+                              neu(0, frei, BW.spurAuswegM, false, raumUr))) ||
                       (!this._bewohnerWand(ur, ur, true, BW.standRandM)
                           ? ur
                           : neu(BW.standRandM) || (!this._bewohnerWand(ur, ur, true) ? ur : neu(0)));
