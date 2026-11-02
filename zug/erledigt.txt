@@ -187,3 +187,4 @@ z165-abab LANGSAMER abab 5fba36ea gegen 95d7bba1: w-ego 4+4 nicht-langsamer · s
 voll-5fba-gtx gemessen punkte 5fba36ea gtx: 11 grün / 10 rot
 hebend-5fba-s1-gtx gemessen punkte 5fba36ea gtx: 11 grün / 10 rot
 hebend-5fba-s2-gtx gemessen punkte 5fba36ea gtx: 12 grün / 10 rot
+hebend-5fba-s3-gtx gemessen punkte 5fba36ea gtx: 12 grün / 10 rot
