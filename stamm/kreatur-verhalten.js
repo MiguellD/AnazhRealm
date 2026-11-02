@@ -83,7 +83,7 @@ class AnazhRealm_kreatur_verhalten {
                 const chatOutput = document.getElementById("chat-output");
                 if (chatOutput) {
                     const line = document.createElement("div");
-                    line.textContent = "(Keine Kreatur in der Nähe.)";
+                    line.textContent = this._t("welt.keine-kreatur");
                     line.style.opacity = "0.65";
                     chatOutput.appendChild(line);
                     chatOutput.scrollTop = chatOutput.scrollHeight;

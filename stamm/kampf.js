@@ -2327,11 +2327,9 @@ class AnazhRealm_kampf {
             }
             if (zuWeit && !gehalten) {
                 const bpW = this._heldImplementBlueprint();
-                const was = bpW ? String(bpW.label || bpW.name).split(/\s[·—(]/)[0] : "Deine Faust";
+                const was = bpW ? String(bpW.label || bpW.name).split(/\s[·—(]/)[0] : this._t("welt.deine-faust");
                 const m = (x) => x.toFixed(1).replace(".", ",");
-                this._spielerSagt(
-                    `Zu weit: ${was} reicht ${m(zuWeit.klinge)} m — das Ziel steht ${m(zuWeit.d)} m vor deiner Schulter.`
-                );
+                this._spielerSagt(this._t("welt.zu-weit", { was, reichweite: m(zuWeit.klinge), abstand: m(zuWeit.d) }));
             }
             // der Schwung löst das Ziel in der Strike-Phase auf (Kreatur → Treffer, Gerät → Stoß, Leere → Luftschlag)
             return this._playerAttackCreature(creaturePick || geraetPick);
@@ -2538,7 +2536,10 @@ class AnazhRealm_kampf {
         if (!bauModusAn && heldP && this._isPlaceableBlueprint(heldP)) {
             this.equipHeld(null);
             const bauRes = this._bauModusFuer(heldP.name);
-            if (!bauRes.ok) this._spielerSagt(`${heldP.label || heldP.name}: ${this._machTorHint(bauRes)}`);
+            if (!bauRes.ok)
+                this._spielerSagt(
+                    this._t("bauen.label-grund", { label: heldP.label || heldP.name, grund: this._machTorHint(bauRes) })
+                );
             return bauRes.ok;
         }
         // Phase 3b — ist das Voxel-Terrain aktiv und KEIN Bau-Modus aktiv,
@@ -2572,7 +2573,7 @@ class AnazhRealm_kampf {
         if (!this.state.buildMode || !this.state.buildMode.active) return false;
         const gate = this._mouseActionStaminaGate();
         if (!gate.ok) {
-            this._spielerSagt(`Setzen: zu wenig Ausdauer (${gate.have}/${gate.cost}) — kurz verschnaufen.`);
+            this._spielerSagt(this._t("welt.setzen-ausdauer", { hat: gate.have, kostet: gate.cost }));
             return false;
         }
         // role:"consumable" + RMB-Raycast trifft eine Kreatur → Trank-Übergabe statt Bau. Phantom +

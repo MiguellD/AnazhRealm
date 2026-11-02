@@ -56,7 +56,12 @@ class AnazhRealm_werkstatt_bauen {
                 if (!result.ok) {
                     // Die Absage des Griffs spricht der Spieler-Kanal (Gegenprüfung 08.10.: sie stand nur im
                     // eingeklappten Log) — derselbe Formatter wie Werkstatt-Knopf und Setzen (`_machTorHint`).
-                    this._spielerSagt(`${String(label).split(/\s[·—(]/)[0]}: ${this._machTorHint(result)}`);
+                    this._spielerSagt(
+                        this._t("bauen.label-grund", {
+                            label: String(label).split(/\s[·—(]/)[0],
+                            grund: this._machTorHint(result),
+                        })
+                    );
                 } else {
                     this.log(`In der Hand: ${label} (Slot ${idx + 1})`, "INFO");
                 }
@@ -375,11 +380,11 @@ class AnazhRealm_werkstatt_bauen {
         // (`_setzUrteil`): Standort und Werkstatt sagt es hier, Natur-Wand und Material sagen die Akte unten.
         const urteil = this._setzUrteil(name, spawnPos, bm.phantomOnGround);
         if (urteil.grund === "standort") {
-            this._spielerSagt(`${label}: der Standort trägt nicht (rote Markierung) — ziel auf ebenen Boden.`);
+            this._spielerSagt(this._t("bauen.sagt-standort", { label }));
             return false;
         }
         if (urteil.grund === "werkstatt") {
-            this._spielerSagt(`${label}: du brauchst eine Werkstatt der Domäne „${urteil.domaene}" in der Nähe.`);
+            this._spielerSagt(this._t("bauen.sagt-werkstatt", { label, domaene: String(urteil.domaene) }));
             this._renderBuildModeHud && this._renderBuildModeHud();
             return false;
         }
@@ -419,18 +424,25 @@ class AnazhRealm_werkstatt_bauen {
             ? this._naturSetzen(name, spawnPos, {}, setzen, (wo) => (wand = wo))
             : setzen();
         if (wand) {
-            this._spielerSagt(`${label}: ${AnazhRealm.NATUR_WAND_GRUND[wand]} — setz es ein paar Schritte weiter.`);
+            this._spielerSagt(
+                this._t("bauen.sagt-natur-wand", { label, grund: String(AnazhRealm.NATUR_WAND_GRUND[wand]) })
+            );
             return false;
         }
         if (gate && !gate.ok) {
-            this._spielerSagt(`${label}: ${this._machTorHint(Object.assign({ reason: "not_enough_material" }, gate))}`);
+            this._spielerSagt(
+                this._t("bauen.label-grund", {
+                    label,
+                    grund: this._machTorHint(Object.assign({ reason: "not_enough_material" }, gate)),
+                })
+            );
             this._renderBuildModeHud && this._renderBuildModeHud();
             return false;
         }
         if (!steht) {
             if (gate && gate.ok && !gate.free)
                 for (const [m, n] of Object.entries(gate.cost || {})) this.addMaterialToInventory(m, n);
-            this._spielerSagt(`${label}: hier steht es nicht — der Ort trägt das Werk nicht.`);
+            this._spielerSagt(this._t("bauen.sagt-ort-traegt-nicht", { label }));
             return false;
         }
         if (this.state.p2p && this.state.p2p.enabled && typeof this.p2pBroadcastDsl === "function") {
@@ -1113,22 +1125,31 @@ class AnazhRealm_werkstatt_bauen {
                     costLine = ` · ${parts.join(", ")}`;
                 }
             } else if (mode === "schöpfer") {
-                costLine = ` · <span style="color:#a8c8ff">Schöpfer: frei</span>`;
+                costLine = ` · <span style="color:#a8c8ff">${this._t("bauen.hud-schoepfer-frei")}</span>`;
             }
             // Das Urteil am Phantom (`tickBuildMode` → `_setzUrteil`): der Grund, warum das Setzen hier ablehnt (die Natur-
             // Wand, die fehlende Werkstatt, der Standort; fehlendes Material steht rot in der Kosten-Zeile).
             const rotLine = (t) => ` · <span style="color:#e57b6c">${t}</span>`;
             const grund = bm.phantomGrund || "";
             const wandLine = bm.phantomWand
-                ? rotLine(`${AnazhRealm.NATUR_WAND_GRUND[bm.phantomWand]} — weiter weg setzen`)
+                ? rotLine(
+                      this._t("bauen.hud-natur-wand", { grund: String(AnazhRealm.NATUR_WAND_GRUND[bm.phantomWand]) })
+                  )
                 : grund.startsWith("werkstatt:")
-                  ? rotLine(`du brauchst eine Werkstatt der Domäne „${grund.slice(10)}" in der Nähe`)
+                  ? rotLine(this._t("bauen.hud-werkstatt", { domaene: grund.slice(10) }))
                   : grund === "standort"
-                    ? rotLine("der Standort trägt nicht — ziel auf ebenen Boden")
+                    ? rotLine(this._t("bauen.hud-standort"))
                     : "";
             hud.innerHTML =
-                `Bau: ${label} — ${fmt(kb.confirmBuild)}/${fmt(kb.place)} bauen, ` +
-                `${fmt(kb.cancelBuild)} verlassen, 1-9 Slot, ${fmt(kb.break)} abbauen${costLine}${wandLine}`;
+                this._t("bauen.hud", {
+                    label,
+                    bestaetigen: fmt(kb.confirmBuild),
+                    setzen: fmt(kb.place),
+                    verlassen: fmt(kb.cancelBuild),
+                    abbauen: fmt(kb.break),
+                }) +
+                costLine +
+                wandLine;
             hud.hidden = false;
         } else {
             hud.hidden = true;
@@ -1171,7 +1192,7 @@ class AnazhRealm_werkstatt_bauen {
             num.className = "num";
             num.textContent = this._formatBindingCode
                 ? this._formatBindingCode(
-                      (this.state.keybindings || AnazhRealm.DEFAULT_KEYBINDINGS).swapHands || "KeyG"
+                      (this.state.keybindings || {}).swapHands || AnazhRealm.DEFAULT_KEYBINDINGS.swapHands
                   )
                 : "G";
             const label = document.createElement("span");
@@ -1179,10 +1200,10 @@ class AnazhRealm_werkstatt_bauen {
             if (offName && this.state.blueprints[offName]) {
                 label.textContent = this.state.blueprints[offName].label || offName;
                 slot.classList.add("filled");
-                slot.title = "Off-Hand — tauschen (G)";
+                slot.title = this._t("bauen.offhand-tauschen");
             } else {
                 label.textContent = "—";
-                slot.title = "Off-Hand leer — G tauscht die Hände";
+                slot.title = this._t("bauen.offhand-leer");
             }
             slot.appendChild(num);
             slot.appendChild(label);
@@ -1245,7 +1266,7 @@ class AnazhRealm_werkstatt_bauen {
             el.setAttribute("data-inv-slot", String(i));
             if (!slot) {
                 el.classList.add("empty");
-                el.setAttribute("aria-label", `Slot ${i + 1} leer`);
+                el.setAttribute("aria-label", this._t("bauen.slot-leer", { nr: i + 1 }));
                 // Leerer Inventar-Slot: nicht draggable, aber Drop-Target
                 // (anderer Bauplan kann hier abgelegt werden).
                 el.addEventListener("dragover", (ev) => this._onSlotDragOver(ev));
@@ -1315,6 +1336,7 @@ class AnazhRealm_werkstatt_bauen {
                 count.textContent = String(slot.count);
                 el.appendChild(count);
             }
+            const anzahl = slot.count > 1 ? ` ×${slot.count}` : "";
             // Tag-Magic: dominante Achsen als CSS-Klasse + ARIA-Label.
             // Material-Slot nutzt material.tags direkt; Bauplan-Slot rechnet
             // computeCompoundTags aus den Parts.
@@ -1325,10 +1347,7 @@ class AnazhRealm_werkstatt_bauen {
                 if ((t.magieleitung || 0) >= 0.5) el.classList.add("tag-magieleitung");
                 if ((t.lebendig || 0) >= 0.5) el.classList.add("tag-lebendig");
                 if ((t.dichte || 0) >= 0.7) el.classList.add("tag-dichte");
-                el.setAttribute(
-                    "aria-label",
-                    `${label.textContent}${slot.count > 1 ? ` ×${slot.count}` : ""} (Rohmaterial)`
-                );
+                el.setAttribute("aria-label", this._t("bauen.aria-rohmaterial", { name: label.textContent + anzahl }));
                 el.addEventListener("mouseenter", () => {
                     this.playInventoryHoverPing(t);
                 });
@@ -1357,14 +1376,16 @@ class AnazhRealm_werkstatt_bauen {
                 }
                 el.setAttribute(
                     "aria-label",
-                    `${label.textContent}${slot.count > 1 ? ` ×${slot.count}` : ""}${activeTags.length ? ` (Tags: ${activeTags.join(", ")})` : ""}`
+                    activeTags.length
+                        ? this._t("bauen.aria-tags", { name: label.textContent + anzahl, tags: activeTags.join(", ") })
+                        : label.textContent + anzahl
                 );
                 // Audio-Ping bei Hover wenn signifikante Tag-Resonanz.
                 el.addEventListener("mouseenter", () => {
                     this.playInventoryHoverPing(tags);
                 });
             } else {
-                el.setAttribute("aria-label", `${label.textContent}${slot.count > 1 ? ` ×${slot.count}` : ""}`);
+                el.setAttribute("aria-label", label.textContent + anzahl);
             }
             // V8.38 — Bauplan-Slot: Material-Bedarf als Hover-Tooltip, damit
             // der Schöpfer direkt sieht, ob er die Materialien im Inventar hat.
@@ -1465,9 +1486,7 @@ class AnazhRealm_werkstatt_bauen {
         // Der emergent-vs-manuell-Indikator (Glow/✋) — die Rolle ist Welt-Antwort (emergent) oder
         // Schöpfer-Geste (manuell). Wertvolle Info, am Chip erhalten (V8.16/V8.17-Saat).
         roleChip.classList.add(bp.roleManual ? "role-manual" : "role-emergent");
-        roleChip.title = bp.roleManual
-            ? "Manuell gesetzt — überschreibt die emergente Rolle (zurücksetzen via Markier-Sektion)."
-            : "✨ Emergent aus der ganzen Substanz: Form × Material × Handwerk → die Rolle.";
+        roleChip.title = bp.roleManual ? this._t("bauen.rolle-manuell") : this._t("bauen.rolle-emergent");
         // Ω3(a) (taille-spec §3) — eine ABWEICHENDE fremde Behauptung wird
         // SICHTBAR (Echtheit ≠ Gutartigkeit): „behauptet: X" neben der lokal
         // emergierten Rolle; der lokale Intent-Override bleibt die Geste.
@@ -1477,10 +1496,12 @@ class AnazhRealm_werkstatt_bauen {
                 AnazhRealm.ROLE_LABELS[bp.roleClaimed] ||
                 AnazhRealm.BLUEPRINT_ROLE_LABELS[bp.roleClaimed] ||
                 bp.roleClaimed;
-            claimChip = this._el("span", { class: "role-chip spec-role-claimed", text: `behauptet: ${claimLabel}` });
+            claimChip = this._el("span", {
+                class: "role-chip spec-role-claimed",
+                text: this._t("bauen.behauptet", { rolle: claimLabel }),
+            });
             claimChip.style.opacity = "0.65";
-            claimChip.title =
-                "Die Autor-Behauptung des importierten Plans — hier zählt, was die Substanz trägt (Empfänger-Gesetz). Übernehmen: die Markier-Geste.";
+            claimChip.title = this._t("bauen.behauptet-titel");
         }
         const caps = this._blueprintCapabilityHints(bp) || [];
         const aff = this.computeBlueprintAffordances(bp) || {};
@@ -1499,9 +1520,9 @@ class AnazhRealm_werkstatt_bauen {
                 "div",
                 {
                     class: "spec-quality",
-                    title: "Qualität = mittlere Part-Präzision · skaliert die Wirkung des Werks (feiner → stärker).",
+                    title: this._t("bauen.qualitaet-titel"),
                 },
-                this._el("span", { class: "spec-q-label", text: "Qualität" }),
+                this._el("span", { class: "spec-q-label", text: this._t("bauen.qualitaet") }),
                 this._el("span", { class: "spec-q-stars", text: "★".repeat(q5) + "☆".repeat(5 - q5) }),
                 this._el("span", { class: "spec-q-val", text: q.toFixed(2) })
             );
@@ -1529,14 +1550,16 @@ class AnazhRealm_werkstatt_bauen {
                 e.v / 3,
                 e.v.toFixed(2),
                 lvlFor(e.v),
-                `${e.k}: ${e.v.toFixed(2)} (Material-Resonanz, 0–3)`
+                this._t("bauen.bar-material", { tag: e.k, wert: e.v.toFixed(2) })
             )
         );
         const leftCol = this._el(
             "div",
             { class: "spec-col" },
-            this._el("div", { class: "spec-col-head", text: "Material-Profil" }),
-            tagBars.length ? tagBars : this._el("span", { class: "spec-empty", text: "noch keine Substanz" })
+            this._el("div", { class: "spec-col-head", text: this._t("bauen.material-profil") }),
+            tagBars.length
+                ? tagBars
+                : this._el("span", { class: "spec-empty", text: this._t("bauen.noch-keine-substanz") })
         );
 
         const spectrum = (this._blueprintRoleSpectrum(bp) || []).slice(0, 4);
@@ -1550,11 +1573,22 @@ class AnazhRealm_werkstatt_bauen {
                 s.score,
                 s.score.toFixed(2),
                 i === 0 ? "res-top" : "res",
-                `Resonanz als ${AnazhRealm.ROLE_LABELS[s.role] || s.role}: ${s.score.toFixed(2)} (0–1)` +
-                    (gapHints[i] && gapHints[i].text ? `\nWeg dahin: ${gapHints[i].text}` : "")
+                gapHints[i] && gapHints[i].text
+                    ? this._t("bauen.bar-resonanz-weg", {
+                          rolle: AnazhRealm.ROLE_LABELS[s.role] || s.role,
+                          wert: s.score.toFixed(2),
+                          weg: gapHints[i].text,
+                      })
+                    : this._t("bauen.bar-resonanz", {
+                          rolle: AnazhRealm.ROLE_LABELS[s.role] || s.role,
+                          wert: s.score.toFixed(2),
+                      })
             )
         );
-        const rightChildren = [this._el("div", { class: "spec-col-head", text: "Rollen-Resonanz" }), ...resBars];
+        const rightChildren = [
+            this._el("div", { class: "spec-col-head", text: this._t("bauen.rollen-resonanz") }),
+            ...resBars,
+        ];
         // W-C(h)/R-036 — der WARUM-CHIP: WARUM die Rolle GEWANN (top-3 Beiträge),
         // direkt über dem GapHint (WIE DAHIN) — zusammen die volle Lehrer-Geste.
         const why = this._blueprintRoleWhy(bp);
@@ -1562,8 +1596,11 @@ class AnazhRealm_werkstatt_bauen {
             rightChildren.push(
                 this._el("div", {
                     class: "spec-gap-hint spec-why-line",
-                    text: `✓ ${AnazhRealm.ROLE_LABELS[why.role] || why.role}, weil: ${why.text}`,
-                    title: "Lesbare Emergenz: die drei stärksten Achsen-Beiträge (Produkt-Vektor × Signatur-Gewicht) der gewonnenen Rolle.",
+                    text: this._t("bauen.warum", {
+                        rolle: AnazhRealm.ROLE_LABELS[why.role] || why.role,
+                        grund: why.text,
+                    }),
+                    title: this._t("bauen.warum-titel"),
                 })
             );
         }
@@ -1576,7 +1613,7 @@ class AnazhRealm_werkstatt_bauen {
                 this._el("div", {
                     class: "spec-gap-hint",
                     text: `↗ ${firstHint.text}`,
-                    title: "Die Lehrer-Geste: welche Achsen-Drehung (oder Tat) diese Rolle zum Sieg führt — aus den Signaturen abgeleitet, dieselbe Skala wie die Balken.",
+                    title: this._t("bauen.lehrer-titel"),
                 })
             );
         }
@@ -1593,11 +1630,13 @@ class AnazhRealm_werkstatt_bauen {
             statChips.push(
                 this._el("span", {
                     class: "spec-stat-chip spec-stat-fit",
-                    text: `Eignung ${ab.fit.toFixed(2)}×`,
-                    title: "Form-Passung zur Rolle: Material × Form × Handwerk → die Werte steigen/sinken mit Form + Material.",
+                    text: this._t("bauen.eignung", { fit: ab.fit.toFixed(2) }),
+                    title: this._t("bauen.eignung-titel"),
                 })
             );
-            rightChildren.push(this._el("div", { class: "spec-col-head spec-col-head-sub", text: "Fähigkeits-Werte" }));
+            rightChildren.push(
+                this._el("div", { class: "spec-col-head spec-col-head-sub", text: this._t("bauen.faehigkeits-werte") })
+            );
             rightChildren.push(this._el("div", { class: "spec-stat-strip" }, ...statChips));
         }
         // Die BEWEGUNGS-Rollen des Werks (computeMotionRoles) — dieselbe Resonanz, die Kreaturen + Avatare
@@ -1608,29 +1647,29 @@ class AnazhRealm_werkstatt_bauen {
             const counts = {};
             for (const r of motionRoles) if (r) counts[r.role] = (counts[r.role] || 0) + 1;
             const mlbl = {
-                bein: "Bein (Gang)",
-                arm: "Arm (Schwung)",
-                fluegel: "Flügel (Schlag)",
-                schwanz: "Schwanz (Welle)",
-                kopf: "Kopf (Nicken)",
-                rad: "Rad an Achse (rollt)",
-                tuer: "Tür/Schwenk (Scharnier-Achse)",
-                wirbel: "Wirbel-Kette (Welle)",
-                scharnier: "Scharnier (schwingt am Anker)",
-                segel: "Segel/Tuch (flattert)",
+                bein: this._t("bauen.bewegung-bein"),
+                arm: this._t("bauen.bewegung-arm"),
+                fluegel: this._t("bauen.bewegung-fluegel"),
+                schwanz: this._t("bauen.bewegung-schwanz"),
+                kopf: this._t("bauen.bewegung-kopf"),
+                rad: this._t("bauen.bewegung-rad"),
+                tuer: this._t("bauen.bewegung-tuer"),
+                wirbel: this._t("bauen.bewegung-wirbel"),
+                scharnier: this._t("bauen.bewegung-scharnier"),
+                segel: this._t("bauen.bewegung-segel"),
             };
             const mtxt = Object.keys(counts)
                 .map((k) => `${counts[k]}× ${mlbl[k] || k}`)
                 .join(" · ");
             if (mtxt) {
                 rightChildren.push(
-                    this._el("div", { class: "spec-col-head spec-col-head-sub", text: "Bewegung (Motion-Resonanz)" })
+                    this._el("div", { class: "spec-col-head spec-col-head-sub", text: this._t("bauen.bewegung") })
                 );
                 rightChildren.push(
                     this._el("div", {
                         class: "spec-motion-line",
                         text: mtxt,
-                        title: "Die Bewegungs-Rollen emergieren aus Form × Lage × Spiegelung — und aus den VERBINDUNGEN: ein Gelenk (Rad/Tür/Wirbel/Scharnier) entsteht am Anker zwischen zwei verbundenen Teilen. Als Seele getragen oder als Bau erwacht bewegt sich das Werk genau so.",
+                        title: this._t("bauen.bewegung-titel"),
                     })
                 );
             }
@@ -1641,14 +1680,14 @@ class AnazhRealm_werkstatt_bauen {
         const verdict = this._workshopPhysicsVerdict(bp);
         if (verdict && verdict.lines && verdict.lines.length) {
             rightChildren.push(
-                this._el("div", { class: "spec-col-head spec-col-head-sub", text: "Physik-Spiegel (gerechnet)" })
+                this._el("div", { class: "spec-col-head spec-col-head-sub", text: this._t("bauen.physik-spiegel") })
             );
             for (const ln of verdict.lines) {
                 rightChildren.push(
                     this._el("div", {
                         class: `spec-physis-line spec-physis-${ln.sev}`,
                         text: `${ln.sev === "warn" ? "⚠" : "✓"} ${ln.text}`,
-                        title: "Der Wahrheits-Spiegel: die in Säule I gerechnete Physik (Schwerpunkt · Stützpolygon · Lastpfad · Knicken · Schwung) — ein Richter außerhalb des Systems, kein erfundener Wert. Ein instabiles Werk wankt zudem sichtbar in der 3D-Vorschau.",
+                        title: this._t("bauen.physik-titel"),
                     })
                 );
             }
@@ -1658,7 +1697,10 @@ class AnazhRealm_werkstatt_bauen {
             const prec = this._workshopStationPrecision(bp);
             const dom = this._computeWorkshopDomain(bp);
             rightChildren.push(
-                this._el("div", { class: "spec-col-head spec-col-head-sub", text: "Werkstatt-Präzision" })
+                this._el("div", {
+                    class: "spec-col-head spec-col-head-sub",
+                    text: this._t("bauen.werkstatt-praezision"),
+                })
             );
             rightChildren.push(
                 this._el(
@@ -1668,7 +1710,7 @@ class AnazhRealm_werkstatt_bauen {
                         "span",
                         {
                             class: "spec-stat-chip",
-                            title: "Wie fein diese Werkstatt fertigt — dichteres, härteres Material → feinere Toleranzen. Eine bessere Werkstatt hebt den Präzisions-Cap deiner Werke.",
+                            title: this._t("bauen.werkstatt-praezision-titel"),
                         },
                         this._el("span", {
                             class: "spec-stat-val workshop-precision-text",
@@ -1693,9 +1735,9 @@ class AnazhRealm_werkstatt_bauen {
                     "div",
                     {
                         class: "spec-cost",
-                        title: "Material, das der Bau verbraucht (pfad/frieden; schöpfer baut frei).",
+                        title: this._t("bauen.bau-kosten-titel"),
                     },
-                    this._el("span", { class: "spec-cost-label", text: "Bau-Kosten" }),
+                    this._el("span", { class: "spec-cost-label", text: this._t("bauen.bau-kosten") }),
                     this._el("span", {
                         class: "spec-cost-val",
                         text: costMats.map((m) => `${cost[m]}× ${m}`).join("  ·  "),
@@ -1710,7 +1752,7 @@ class AnazhRealm_werkstatt_bauen {
                     this._el(
                         "div",
                         { class: `spec-growth${g.manual ? " manual-override" : ""}` },
-                        this._el("span", { class: "spec-growth-label", text: "Wachstum" }),
+                        this._el("span", { class: "spec-growth-label", text: this._t("bauen.wachstum") }),
                         this._el("span", { class: "spec-growth-text", text: g.text })
                     )
                 );
@@ -1825,16 +1867,16 @@ class AnazhRealm_werkstatt_bauen {
         sigRow.className = "stat-row workshop-sig-row";
         const sigLab = document.createElement("span");
         sigLab.className = "stat-label";
-        sigLab.textContent = "Signatur";
+        sigLab.textContent = this._t("bauen.signatur");
         sigRow.appendChild(sigLab);
         const sigStatus = document.createElement("span");
         sigStatus.className = "workshop-sig-status";
-        sigStatus.textContent = "prüfe …";
+        sigStatus.textContent = this._t("bauen.signatur-pruefe");
         sigRow.appendChild(sigStatus);
         const sigBtn = document.createElement("button");
         sigBtn.type = "button";
         sigBtn.className = "workshop-sig-btn";
-        sigBtn.textContent = "Signieren";
+        sigBtn.textContent = this._t("bauen.signieren");
         sigBtn.disabled = true;
         sigBtn.addEventListener("click", async () => {
             sigBtn.disabled = true;
@@ -1850,27 +1892,32 @@ class AnazhRealm_werkstatt_bauen {
             if (ws.selectedBlueprint !== bpName) return;
             const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
             if (status === "valid") {
-                const who = bp.authorPubKey === myKey ? "dein Vibe-Pass" : this._vibeFingerprint(bp.authorPubKey);
-                sigStatus.textContent = `✓ signiert · ${who}`;
+                const who =
+                    bp.authorPubKey === myKey
+                        ? this._t("bauen.dein-vibe-pass")
+                        : this._vibeFingerprint(bp.authorPubKey);
+                sigStatus.textContent = this._t("bauen.signiert", { wer: String(who) });
                 sigStatus.className = "workshop-sig-status sig-valid";
-                sigStatus.title = "ed25519:" + bp.authorPubKey;
-                sigBtn.textContent = "Neu signieren";
+                sigStatus.title = this._t("bauen.signatur-schluessel", { schluessel: String(bp.authorPubKey) });
+                sigBtn.textContent = this._t("bauen.neu-signieren");
             } else if (status === "modified") {
-                sigStatus.textContent = "geändert seit der Signatur — neu signieren";
+                sigStatus.textContent = this._t("bauen.signatur-geaendert");
                 sigStatus.className = "workshop-sig-status sig-modified";
-                sigBtn.textContent = "Neu signieren";
+                sigBtn.textContent = this._t("bauen.neu-signieren");
             } else if (status === "forged") {
-                sigStatus.textContent = `⚠ ungültig — passt nicht zu ${this._vibeFingerprint(bp.authorPubKey)}`;
+                sigStatus.textContent = this._t("bauen.signatur-ungueltig", {
+                    wer: String(this._vibeFingerprint(bp.authorPubKey)),
+                });
                 sigStatus.className = "workshop-sig-status sig-forged";
-                sigStatus.title = "ed25519:" + bp.authorPubKey;
-                sigBtn.textContent = "Neu signieren";
+                sigStatus.title = this._t("bauen.signatur-schluessel", { schluessel: String(bp.authorPubKey) });
+                sigBtn.textContent = this._t("bauen.neu-signieren");
             } else {
-                sigStatus.textContent = "nicht signiert";
+                sigStatus.textContent = this._t("bauen.nicht-signiert");
                 sigStatus.className = "workshop-sig-status sig-unsigned";
-                sigBtn.textContent = "Signieren";
+                sigBtn.textContent = this._t("bauen.signieren");
             }
             sigBtn.disabled = !vpReady;
-            if (!vpReady) sigBtn.title = "Vibe-Pass nicht bereit — siehe Spieler-Drawer.";
+            if (!vpReady) sigBtn.title = this._t("bauen.vibe-pass-nicht-bereit");
         });
     }
 
@@ -1883,7 +1930,7 @@ class AnazhRealm_werkstatt_bauen {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.dataset.teilen = art;
-        btn.textContent = "Teilen";
+        btn.textContent = this._t("bauen.teilen");
         const out = document.createElement("code");
         out.dataset.teilen = art;
         out.style.wordBreak = "break-all";
@@ -1891,7 +1938,7 @@ class AnazhRealm_werkstatt_bauen {
             btn.disabled = true;
             const res = await teile();
             btn.disabled = false;
-            out.textContent = res.ok ? res.code : `Teilen fehlgeschlagen: ${res.grund}`;
+            out.textContent = res.ok ? res.code : this._t("bauen.teilen-fehl", { grund: String(res.grund) });
             if (res.ok && navigator.clipboard) navigator.clipboard.writeText(res.code).catch(() => {});
         });
         row.append(btn, out);
@@ -1911,7 +1958,7 @@ class AnazhRealm_werkstatt_bauen {
                 const wsLocal = this._ensureWorkshopState();
                 const selected = this.state.blueprints[wsLocal.selectedBlueprint];
                 if (!selected) return;
-                const newName = window.prompt("Name für die Kopie?", `${selected.name}-kopie`);
+                const newName = window.prompt(this._t("bauen.prompt-kopie"), `${selected.name}-kopie`);
                 if (!newName) return;
                 if (this.cloneBlueprint(selected.name, newName)) {
                     this.selectBlueprintForEdit(newName);
@@ -1920,7 +1967,7 @@ class AnazhRealm_werkstatt_bauen {
         }
         if (newBtn) {
             newBtn.addEventListener("click", () => {
-                const name = window.prompt("Name des neuen Bauplans?");
+                const name = window.prompt(this._t("bauen.prompt-neu"));
                 if (!name) return;
                 if (this.createBlueprint(name, name)) this.selectBlueprintForEdit(name);
             });
@@ -1949,7 +1996,7 @@ class AnazhRealm_werkstatt_bauen {
             delBlueprintBtn.addEventListener("click", () => {
                 const selected = this.state.blueprints[this._ensureWorkshopState().selectedBlueprint];
                 if (!selected || selected.builtIn) return;
-                if (!window.confirm(`Bauplan '${selected.name}' wirklich löschen?`)) return;
+                if (!window.confirm(this._t("bauen.confirm-loeschen", { name: selected.name }))) return;
                 this.deleteBlueprint(selected.name);
                 const remaining = Object.keys(this.state.blueprints);
                 if (remaining.length > 0) this.selectBlueprintForEdit(remaining[0]);
@@ -2099,10 +2146,15 @@ class AnazhRealm_werkstatt_bauen {
             const domLabel =
                 t.domain && AnazhRealm.TOOL_DOMAIN_LABELS
                     ? AnazhRealm.TOOL_DOMAIN_LABELS[t.domain] || t.domain
-                    : "generisch";
+                    : this._t("bauen.generisch");
             card.setAttribute(
                 "title",
-                `${t.label || name} · ${t.opName} (${t.opClass}) · ${domLabel} · auf Part ziehen wendet Op an`
+                this._t("bauen.werkzeug-titel", {
+                    name: t.label || name,
+                    op: String(t.opName),
+                    klasse: String(t.opClass),
+                    domaene: domLabel,
+                })
             );
             // Domain-Dot (V9b-Style). V8.37 — eigener Tooltip (Schöpfer-
             // Browser-Test fragte „was sind die farbigen Punkte?"): der Punkt
@@ -2111,7 +2163,7 @@ class AnazhRealm_werkstatt_bauen {
                 const dot = document.createElement("span");
                 dot.className = "workshop-tool-domain-dot";
                 dot.style.background = AnazhRealm.TOOL_DOMAIN_COLORS[t.domain];
-                dot.title = `Domäne: ${domLabel} — Werkzeuge derselben Domäne teilen die Punkt-Farbe.`;
+                dot.title = this._t("bauen.domaene-punkt", { domaene: domLabel });
                 card.appendChild(dot);
             }
             const nameEl = document.createElement("span");
@@ -2135,14 +2187,22 @@ class AnazhRealm_werkstatt_bauen {
             const verb = verbs[proc.opName] || proc.opName;
             card.setAttribute(
                 "title",
-                `${proc.label} · ${verb} (${proc.cap.toFixed(2)}) · Werkstatt-Prozess — auf einen Part im 3D ziehen fixt die Rolle`
+                this._t("bauen.prozess-titel", {
+                    name: String(proc.label),
+                    verb: String(verb),
+                    cap: proc.cap.toFixed(2),
+                })
             );
             const color = AnazhRealm.TOOL_DOMAIN_COLORS && AnazhRealm.TOOL_DOMAIN_COLORS[proc.domain];
             if (color) {
                 const dot = document.createElement("span");
                 dot.className = "workshop-tool-domain-dot";
                 dot.style.background = color;
-                dot.title = `Domäne: ${(AnazhRealm.TOOL_DOMAIN_LABELS && AnazhRealm.TOOL_DOMAIN_LABELS[proc.domain]) || proc.domain}`;
+                dot.title = this._t("bauen.domaene", {
+                    domaene: String(
+                        (AnazhRealm.TOOL_DOMAIN_LABELS && AnazhRealm.TOOL_DOMAIN_LABELS[proc.domain]) || proc.domain
+                    ),
+                });
                 card.appendChild(dot);
             }
             const nameEl = document.createElement("span");
@@ -2283,7 +2343,7 @@ class AnazhRealm_werkstatt_bauen {
             card.className = "workshop-material-card";
             card.setAttribute("draggable", "true");
             card.setAttribute("data-material", name);
-            card.setAttribute("title", `${mat.label || name} → auf Part ziehen wechselt Material`);
+            card.setAttribute("title", this._t("bauen.material-karte-titel", { name: mat.label || name }));
             const c = typeof mat.color === "number" ? mat.color : 0x888888;
             const colorHex = `#${c.toString(16).padStart(6, "0")}`;
             // V8.19 — Glyph in der Material-Farbe VOR dem Label (statt
@@ -2338,7 +2398,7 @@ class AnazhRealm_werkstatt_bauen {
             swatch.className = "workshop-color-swatch";
             swatch.setAttribute("draggable", "true");
             swatch.setAttribute("data-color", hex.slice(1));
-            swatch.setAttribute("title", `${hex} → auf Part ziehen wechselt Farbe`);
+            swatch.setAttribute("title", this._t("bauen.farbe-titel", { farbe: hex }));
             swatch.style.background = hex;
             palette.appendChild(swatch);
         }
@@ -2380,8 +2440,14 @@ class AnazhRealm_werkstatt_bauen {
         panel.innerHTML = "";
         const head = document.createElement("h4");
         head.className = "workshop-recipe-head";
-        head.textContent =
-            "Rezept (Studio-Regler · " + (kind === "tree" ? "Baum" : kind === "rock" ? "Fels" : "Kristall") + ")";
+        head.textContent = this._t("bauen.rezept-kopf", {
+            art:
+                kind === "tree"
+                    ? this._t("bauen.art-baum")
+                    : kind === "rock"
+                      ? this._t("bauen.art-fels")
+                      : this._t("bauen.art-kristall"),
+        });
         panel.appendChild(head);
         const spec = this._workshopRecipeSpec(bp, kind);
         // DIE HÜLLE (K41, worlds/huelle/huelle.js): DERSELBE Regler-Generator wie in den Studio-Shells — die Dials des
@@ -2418,21 +2484,21 @@ class AnazhRealm_werkstatt_bauen {
         if (spec.hasLod) {
             const lodHead = document.createElement("div");
             lodHead.className = "workshop-recipe-sub";
-            lodHead.textContent = "LOD (gröbere Regeneration)";
+            lodHead.textContent = this._t("bauen.lod-regeneration");
             panel.appendChild(lodHead);
             const lodRow = document.createElement("div");
             lodRow.className = "workshop-recipe-btns workshop-recipe-lod";
             const curLod = Number.isFinite(bp._recipeLod) ? bp._recipeLod : 0;
             [
-                ["L0 fein", 0],
-                ["L1 mittel", 1],
-                ["L2 grob", 2],
+                [this._t("bauen.lod-fein"), 0],
+                [this._t("bauen.lod-mittel"), 1],
+                [this._t("bauen.lod-grob"), 2],
             ].forEach(([lab, lv]) => {
                 const b = document.createElement("button");
                 b.type = "button";
                 b.className = "workshop-recipe-lod-btn" + (lv === curLod ? " active" : "");
                 b.textContent = lab;
-                b.title = "Regeneriere auf LOD-Stufe " + lv + " durch die Pipeline";
+                b.title = this._t("bauen.lod-regeneriere", { stufe: lv });
                 b.addEventListener("click", () => {
                     bp._recipeLod = lv;
                     spec.apply(spec.cur);
@@ -2447,15 +2513,15 @@ class AnazhRealm_werkstatt_bauen {
         const dice = document.createElement("button");
         dice.type = "button";
         dice.className = "workshop-recipe-dice";
-        dice.textContent = "🎲 Neue Saat";
-        dice.title = "Wirf eine andere Variante (gleiches Rezept, anderer Same) — wie im Studio";
+        dice.textContent = this._t("bauen.neue-saat");
+        dice.title = this._t("bauen.neue-saat-titel");
         dice.addEventListener("click", () => spec.dice());
         btnRow.appendChild(dice);
         const reset = document.createElement("button");
         reset.type = "button";
         reset.className = "workshop-recipe-reset";
-        reset.textContent = "↺ Vorlage";
-        reset.title = "Regler + Same auf das Vorlagen-Rezept zurücksetzen";
+        reset.textContent = this._t("bauen.vorlage");
+        reset.title = this._t("bauen.vorlage-titel");
         reset.addEventListener("click", () => {
             spec.reset();
             this._workshopRenderRecipePanel(bp); // Regler-Positionen zurückstellen
@@ -2497,7 +2563,7 @@ class AnazhRealm_werkstatt_bauen {
         panel.innerHTML = "";
         const head = document.createElement("h4");
         head.className = "workshop-recipe-head";
-        head.textContent = "Studio-Regler · " + (rec.lab || preset);
+        head.textContent = this._t("bauen.studio-regler-kopf", { rezept: String(rec.lab || preset) });
         panel.appendChild(head);
         // DIE HÜLLE (K41, worlds/huelle/huelle.js): DERSELBE Regler-Generator wie in den Studio-Shells (kein Zwilling).
         // Startwert-Kette: ov-Override → Rezept-Dial (rec.s) → def → min; jeder Zug schreibt seine Achse sofort in
@@ -2533,7 +2599,7 @@ class AnazhRealm_werkstatt_bauen {
         if (hasStages) {
             const lodHead = document.createElement("div");
             lodHead.className = "workshop-recipe-sub";
-            lodHead.textContent = "LOD-Stufe (aus den Vertrags-Daten)";
+            lodHead.textContent = this._t("bauen.lod-stufe-vertrag");
             panel.appendChild(lodHead);
             const lodRow = document.createElement("div");
             lodRow.className = "workshop-recipe-btns workshop-recipe-lod";
@@ -2544,13 +2610,17 @@ class AnazhRealm_werkstatt_bauen {
                 : Number.isFinite(ws.recipeLod)
                   ? ws.recipeLod
                   : 0;
-            const lodLabels = { 0: "L0 fein", 1: "L1 mittel", 2: "L2 fern" };
+            const lodLabels = {
+                0: this._t("bauen.lod-fein"),
+                1: this._t("bauen.lod-mittel"),
+                2: this._t("bauen.lod-fern"),
+            };
             for (const lv of stages) {
                 const b = document.createElement("button");
                 b.type = "button";
                 b.className = "workshop-recipe-lod-btn" + (lv === curLod ? " active" : "");
                 b.textContent = lodLabels[lv] || "L" + lv;
-                b.title = "Vorschau auf der ehrlichen Vertrags-Stufe " + lv;
+                b.title = this._t("bauen.lod-vorschau", { stufe: lv });
                 b.addEventListener("click", () => {
                     if (bp) bp._recipeLod = lv;
                     else ws.recipeLod = lv;
@@ -2570,8 +2640,8 @@ class AnazhRealm_werkstatt_bauen {
             const reset = document.createElement("button");
             reset.type = "button";
             reset.className = "workshop-recipe-reset";
-            reset.textContent = "↺ Zurücksetzen";
-            reset.title = "Alle Regler auf das Rezept zuruecksetzen (ov leeren)";
+            reset.textContent = this._t("bauen.zuruecksetzen");
+            reset.title = this._t("bauen.zuruecksetzen-titel");
             reset.addEventListener("click", () => {
                 delete ws.studioOv[preset];
                 this._workshopRenderStudioParams(panel);
@@ -3133,12 +3203,15 @@ class AnazhRealm_werkstatt_bauen {
         title.className = "conn-title";
         const existing = existingIdx >= 0 && bp && bp.connections ? bp.connections[existingIdx] : null;
         const existingDef = existing && AnazhRealm.CONNECTION_TYPES[existing.type];
+        // §7.1 — auto-geboren sichtbar: eine Kachel-Wahl macht sie BEWUSST
+        // (bleibt dann auch bei Trennung + darf Tür/Wirbel-Gelenke gebären).
         title.textContent = existing
-            ? `Part ${partA} ↔ ${partB} — verbunden: ${existingDef ? existingDef.label.split(" (")[0] : existing.type}` +
-              // §7.1 — auto-geboren sichtbar: eine Kachel-Wahl macht sie BEWUSST
-              // (bleibt dann auch bei Trennung + darf Tür/Wirbel-Gelenke gebären).
-              (existing.auto ? " (auto — aus Berührung)" : "")
-            : `Verbindung: Part ${partA} → Part ${partB}`;
+            ? this._t(existing.auto ? "bauen.verbunden-auto" : "bauen.verbunden", {
+                  a: partA,
+                  b: partB,
+                  art: String(existingDef ? existingDef.label.split(" (")[0] : existing.type),
+              })
+            : this._t("bauen.verbindung", { a: partA, b: partB });
         overlay.appendChild(title);
         const types = AnazhRealm.CONNECTION_TYPES;
         const suggestion = bp ? this._suggestConnectionType(bp, partA, partB) : null;
@@ -3155,7 +3228,7 @@ class AnazhRealm_werkstatt_bauen {
         };
         // Gruppe 1 — VERBINDEN: Kacheln nach Substanz-Stärke geordnet, die `prim` stärksten prominent,
         // der Rest hinter „weitere…“.
-        const connectGrid = mkGroup("Verbinden — wie die Teile halten");
+        const connectGrid = mkGroup(this._t("bauen.gruppe-verbinden"));
         const ranked = bp
             ? this._connectionTypesByStrength(bp, partA, partB)
             : { primary: [], more: [], strengths: {} };
@@ -3186,10 +3259,13 @@ class AnazhRealm_werkstatt_bauen {
             btn.appendChild(name);
             btn.appendChild(bar);
             btn.title =
-                `${def.label} — ${def.description}\n` +
-                `Substanz-Stärke dieses Paars: ${s.toFixed(2)} / 3` +
-                (def.strongTags.length ? ` · stark in: ${def.strongTags.join(", ")}` : "") +
-                (suggestion && typeName === suggestion.type ? "\n✓ passt zur Substanz (Vorschlag)" : "");
+                this._t("bauen.kachel-titel", {
+                    name: String(def.label),
+                    beschreibung: String(def.description),
+                    staerke: s.toFixed(2),
+                }) +
+                (def.strongTags.length ? this._t("bauen.kachel-stark-in", { tags: def.strongTags.join(", ") }) : "") +
+                (suggestion && typeName === suggestion.type ? this._t("bauen.kachel-vorschlag") : "");
             btn.addEventListener("click", () => {
                 this._workshopApplyConnection(partA, partB, typeName);
             });
@@ -3206,12 +3282,14 @@ class AnazhRealm_werkstatt_bauen {
             const moreBtn = document.createElement("button");
             moreBtn.type = "button";
             moreBtn.className = "conn-more-toggle";
-            moreBtn.textContent = `weitere… (${ranked.more.length})`;
+            moreBtn.textContent = this._t("bauen.weitere", { n: ranked.more.length });
             moreBtn.setAttribute("aria-expanded", "false");
             moreBtn.addEventListener("click", () => {
                 moreGrid.hidden = !moreGrid.hidden;
                 moreBtn.setAttribute("aria-expanded", moreGrid.hidden ? "false" : "true");
-                moreBtn.textContent = moreGrid.hidden ? `weitere… (${ranked.more.length})` : "weniger…";
+                moreBtn.textContent = moreGrid.hidden
+                    ? this._t("bauen.weitere", { n: ranked.more.length })
+                    : this._t("bauen.weniger");
             });
             for (const typeName of ranked.more) moreGrid.appendChild(mkTile(typeName));
             connectGrid.appendChild(moreBtn);
@@ -3239,7 +3317,7 @@ class AnazhRealm_werkstatt_bauen {
             }
         }
         // Gruppe 2 — ANKER (Punkte für die Außenwelt): Klick startet den Face-Snap.
-        const anchorGrid = mkGroup("Anker — Punkt für die Außenwelt (Fläche wählen)");
+        const anchorGrid = mkGroup(this._t("bauen.gruppe-anker"));
         for (const typeName of Object.keys(types)) {
             const def = types[typeName];
             if (!def.attachment) continue;
@@ -3255,7 +3333,11 @@ class AnazhRealm_werkstatt_bauen {
             name.textContent = shortLabel(def);
             btn.appendChild(glyph);
             btn.appendChild(name);
-            btn.title = `${def.label} — ${def.description}\nKlick, dann die STELLE auf Part ${partA} wählen — der Punkt rastet auf Mitte/Kante/Ecke.`;
+            btn.title = this._t("bauen.anker-titel", {
+                name: String(def.label),
+                beschreibung: String(def.description),
+                part: partA,
+            });
             btn.addEventListener("click", () => {
                 this._workshopBeginAnchorPick(typeName, partA);
             });
@@ -3273,10 +3355,10 @@ class AnazhRealm_werkstatt_bauen {
             lg.textContent = "✂";
             const ln = document.createElement("span");
             ln.className = "conn-name";
-            ln.textContent = "Lösen";
+            ln.textContent = this._t("bauen.loesen");
             loese.appendChild(lg);
             loese.appendChild(ln);
-            loese.title = "Die bestehende Verbindung zwischen diesen Parts trennen.";
+            loese.title = this._t("bauen.loesen-titel");
             loese.addEventListener("click", () => {
                 this.removeConnectionFromBlueprint(bp.name, existingIdx);
                 ws.connectFirstPartIdx = null;
@@ -3290,7 +3372,7 @@ class AnazhRealm_werkstatt_bauen {
         const cancelBtn = document.createElement("button");
         cancelBtn.type = "button";
         cancelBtn.className = "cancel";
-        cancelBtn.textContent = "Abbrechen (ESC)";
+        cancelBtn.textContent = this._t("bauen.abbrechen-esc");
         cancelBtn.addEventListener("click", () => {
             ws.connectFirstPartIdx = null;
             this._workshopCloseConnectPopover();

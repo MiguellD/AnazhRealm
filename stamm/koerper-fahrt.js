@@ -1901,16 +1901,16 @@ class AnazhRealm_koerper_fahrt {
             else N.warm.delete(target);
             if (!w.quelle) continue;
             if (vorher < w.zuend / 2 && w.dT >= w.zuend / 2 && w.dT < w.zuend)
-                this._spielerSagt(
-                    `„${name(target)}" glimmt im Brennpunkt von „${name(w.quelle)}" — rück es aus dem Licht, sonst fängt es Feuer.`
-                );
+                this._spielerSagt(this._t("welt.brennpunkt-glimmt", { ding: name(target), linse: name(w.quelle) }));
             if (w.dT >= w.zuend) ignitions.push({ t: target, quelle: w.quelle });
         }
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         for (const { t, quelle } of ignitions) {
             const d = pm ? Math.hypot(t.position.x - pm.x, t.position.z - pm.z) : null;
             this._spielerSagt(
-                `Die Sonne entzündete durch „${name(quelle)}" „${name(t)}"${d != null ? ` (${Math.round(d)} m von dir)` : ""}.`
+                d != null
+                    ? this._t("welt.sonne-entzuendete-weit", { linse: name(quelle), ding: name(t), m: Math.round(d) })
+                    : this._t("welt.sonne-entzuendete", { linse: name(quelle), ding: name(t) })
             );
             if (this.journalAppend) {
                 this.journalAppend(

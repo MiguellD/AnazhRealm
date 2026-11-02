@@ -12,7 +12,7 @@ class AnazhRealm_dirigent_ankunft {
         const versionLabel = `v${AnazhRealm.VERSION}`;
         if (typeof document !== "undefined") {
             try {
-                document.title = `Anazh Realm ${versionLabel} – Das Ultiversum`;
+                document.title = this._t("kern.seitentitel", { version: versionLabel });
                 const versionSpan = document.querySelector(".version");
                 if (versionSpan) versionSpan.textContent = versionLabel;
             } catch (e) {
@@ -186,7 +186,7 @@ class AnazhRealm_dirigent_ankunft {
                         "Versuche ?holz=kienspan (kleiner Ring, kein AA) oder einen anderen Browser.",
                     "ERROR"
                 );
-                this._ladeschirmStand("die Grafikkarte antwortet seit 25 s nicht — versuche ?holz=kienspan");
+                this._ladeschirmStand(this._t("kern.lade-gpu-stumm"));
             }
         }, 25000);
         renderer
@@ -280,7 +280,7 @@ class AnazhRealm_dirigent_ankunft {
                 }
             })
             .catch((err) => {
-                this._ladeschirmStand(`die Grafikkarte verweigert die Welt: ${err && err.message}`);
+                this._ladeschirmStand(this._t("kern.lade-gpu-verweigert", { grund: String(err && err.message) }));
                 this.log(
                     `WebGPU-Renderer init() scheiterte (${err.message}). ` +
                         "navigator.gpu existiert aber requestAdapter/requestDevice scheitert — " +
@@ -1514,7 +1514,7 @@ function _bootAnazhRealm() {
     );
     // Ein Boot, der scheitert, sagt es auf dem Ladeschirm (nie ein stummes Warten).
     erwachen.catch((e) => {
-        anazhRealm._ladeschirmStand(`die Welt konnte nicht erwachen: ${(e && e.message) || e}`);
+        anazhRealm._ladeschirmStand(anazhRealm._t("kern.lade-erwachen-fehl", { grund: String((e && e.message) || e) }));
         throw e;
     });
 }
