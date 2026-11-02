@@ -810,6 +810,8 @@ class AnazhRealm_speicher_laden {
             // (der Korpus, speicher.K5: der Stein-Block von V18.546.53 fiel). Dort ist Werk, was weder das Feld warf noch
             // nach Art Natur ist.
             werk: a.werk === true || (state.herkunft !== 1 && a.feldWurf !== true && !this._naturArt({ type: typ })),
+            // die Geburt des Werks reist durch den Reload mit (stoffe.K4: sein Alter ist Spielzeit seit ihr)
+            geburt: a.geburt,
             // PRÄGUNG-WELT — der Guss-Stempel reist durch den Reload mit
             // (spawnArchitecture ist der EINE Sanitize-Chokepoint).
             studioOv: a.studioOv,

@@ -1022,6 +1022,9 @@ class AnazhRealm_koerper_bewegung {
                 nz,
                 footDrop + AnazhRealm.PLAYER_STEP_UP + AnazhRealm.PLAYER_GROUND_SNAP + 4
             );
+            // DIE SCHNEE-DECKE (wetter.K4): der Leib steht um ihren Tritt in ihr, wie jeder Körper (`_koerperGrund`)
+            const terrFels = terrSurf; // die Fels-Grenze trägt die Normale des Hangs
+            if (terrSurf !== null) terrSurf -= this._schneeTrittAt(nx, terrSurf, nz);
             // 8b. Kein Forward-Block: das Gleiten an Wänden übernimmt Schritt 5b (PM_ClipVelocity).
             // 8c. BODEN-SNAP — die effektive Oberfläche = die HÖHERE aus Terrain UND Struktur.
             const effSurf = Math.max(terrSurf === null ? -Infinity : terrSurf, supTop);
@@ -1053,7 +1056,7 @@ class AnazhRealm_koerper_bewegung {
                             traegerStruktur = true;
                         } else {
                             const gN = this._kopplungSlideN || (this._kopplungSlideN = {});
-                            this._fieldGradient(nx, terrSurf, nz, gN);
+                            this._fieldGradient(nx, terrFels, nz, gN);
                             groundNormalY = gN.y;
                             // STEILHANG: Gravitation entlang der Ebene. Auf zu steilem Grund (ny < hang.maxSlopeY — dieselbe
                             // Schwelle wie onSteepSlope, aus dem fail-closed Steilhang-Gesetz) rutscht der Körper:
