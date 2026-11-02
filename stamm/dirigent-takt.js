@@ -616,8 +616,8 @@ class AnazhRealm_dirigent_takt {
         L.ladeAus = (L.ladeAus || 0) + 1;
         return false;
     }
-    // Gespannt: GPU_FRAMES_IM_FLUG Arbeiten unterwegs. Jede GPU-Arbeit des Takts fragt dieselbe Zahl — das Bild und die
-    // Karte, diese bei ihrem Beginn (`_tickKarteWelt`: ihre Hebungs-Ringe folgen ohne neue Frage) (S2b: die Karte backte neben
+    // Gespannt: GPU_FRAMES_IM_FLUG Arbeiten unterwegs. Jede GPU-Arbeit des Takts fragt dieselbe Zahl — das Bild, die Tafeln
+    // des Himmels samt Horizont-Karte (`_atmoTakt`), die Umgebung (`_ensureSkyEnvironment`) und die Karte, diese bei ihrem Beginn (`_tickKarteWelt`: ihre Hebungs-Ringe folgen ohne neue Frage) (S2b: die Karte backte neben
     // der Leine; swiftshader, Mess-Wiese, 20 Karten: in 15 s 3 Bilder, 17 Bakes bei gespannter Leine — die Probe des
     // Hauptbilds sah in der CI kein Bild).
     _gpuLeineStraff() {
