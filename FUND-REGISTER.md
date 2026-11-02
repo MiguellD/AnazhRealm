@@ -24,3 +24,4 @@ Eine Zeile je Fund: Datei:Zeile · Wurzel · was es bewegt · Größe. Wer eine 
 - studios.K4 Probe liest `gruen` von undefined · studios.K4 (0!) · in Arbeit (heil:proben)
 - physik.K2#2 „DER BAU STEHT NICHT: haus_alemannisch#429“, siedlung.K4#2 ROT · in Arbeit (heil:urteile)
 - B Ankunft ≤ 5 s: 55 strukturelle Programm-Varianten vor Kontrolle (bauSatz, arena, streuSatz, fern-ring) → Stoff-Foundry (Messen zuerst) · B · L
+- stamm/stoff-instanz.js `_renderObjekteLoesen`/`_renderObjektRegister` · eine gelöste Sampler-Bindung wird danach noch gelesen (Bündel-Wiedergabe oder lebendes Objekt nach dem Lösen; `texture = null` traf so die Leinwand, z161 3/3 ROT) — den Leser benennen, dann das Lösen erst nach seinem letzten Zug · gate:kamera-leib (CI-swiftshader) · S
