@@ -1559,3 +1559,4 @@
 2026-11-02 16:31:25 z164-abab START 2 Zellen
 2026-11-02 16:43:35 z164-abab w-ego VERLÄNGERN 12.1 · 1/2 (2+2)
 2026-11-02 16:59:46 z164-abab stadt VERLÄNGERN 16.1 · 2/2 (2+2)
+2026-11-02 17:12:12 z164-abab w-ego(4+4) nicht-langsamer 12.3 · verlängert (4+4)
