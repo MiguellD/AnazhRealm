@@ -125,10 +125,6 @@ $ C:\Program Files\nodejs\node.exe -e const speicherTaktSeite = async function s
     return { ...j, grundstellung: !frisch };
 }); C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\5fba36ea-gtx\speicher.K2_2.json C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte
 [linse-gpu] nvidia/pascal
-(Z) frisch: Speicher-Bild {"staende":20,"bilder":258,"p50":0.1,"p95":0.2,"max":0.5,"ueber":2,"wegen":0} — Soll p95 ≤ 0,1 ms (Staffel 1: ≤ 0,3), kein Bild > 16,7 ms durch Speichern
-(Z) edits: Speicher-Bild {"staende":20,"bilder":268,"p50":0.1,"p95":0.3,"max":0.6,"ueber":61,"wegen":0,"n":10000} — Soll p95 ≤ 0,1 ms (Staffel 1: ≤ 0,3), kein Bild > 16,7 ms durch Speichern
-Gruben 27.6 s · Uhr der Seite NICHT isoliert (100 µs)
-PROBE 38.3 s
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
