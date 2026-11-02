@@ -1533,7 +1533,8 @@ class AnazhRealm_kreatur_leben {
         }
         const oben = this._voxelSurfaceY(x, z);
         const eis = this._eisAt(x, z, NaN, Infinity, oben);
-        return eis !== null && !(oben >= eis) ? eis : oben;
+        if (eis !== null && !(oben >= eis)) return eis;
+        return Number.isFinite(oben) ? oben - this._schneeTrittAt(x, oben, z) : oben;
     }
 
     // DIE TRITTFLÄCHE ÜBER DEM GRUND (fahrzeug.K2): die höchste Oberkante einer Box mit `tritt` (die Bahn eines Jochfelds,
@@ -1567,10 +1568,13 @@ class AnazhRealm_kreatur_leben {
     // DER GRUND EINES KÖRPERS unter y0 binnen `maxDist`: die Fels-Grenze (`_fieldSurfaceBelow`) oder das Eis über ihr
     // (`_eisAt`) — das Höhere trägt, null ohne beides. Leser: der Kapsel-Schritt (`_stepCharacter`), `_koerperBodenUnter`,
     // `_koerperSchritt`, der Ausstieg vom Wagen (`_aussteigOrt`).
+    // DIE SCHNEE-DECKE (wetter.K4) trägt nicht an ihrer Fläche: der Körper steht um ihren Tritt in ihr (`_schneeTrittAt`), das Eis
+    // trägt an seiner.
     _koerperGrund(x, y0, z, maxDist) {
         const g = this._fieldSurfaceBelow(x, y0, z, maxDist);
         const e = this._eisAt(x, z, y0, maxDist, g);
-        return e !== null && !(g >= e) ? e : g;
+        if (e !== null && !(g >= e)) return e;
+        return g === null ? g : g - this._schneeTrittAt(x, g, z);
     }
 
     // DIE KANTE GENAU: die Fels-Grenze um den gefundenen Grund `g` (`_fieldSurfaceBelow` liegt bis 7,8 mm darunter, je nach

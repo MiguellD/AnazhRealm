@@ -1143,13 +1143,22 @@
             tag: welle(T.tagAmp, T.tagGipfel, 1),
         };
     }
-    function temperaturAus(F, saison, uhr) {
+    // DAS WETTER (wetter.K4, `wetter` = das Feld der Welt {sun, rain}, optional): die Wolke dämpft den Tagesgang — am Tag hält sie
+    // die Sonne, in der Nacht die Ausstrahlung zurück (bedeckt schrumpft die Tagesspanne um 25–50 %, Dai 1999): die Welle des Tags
+    // trägt 1 − `daempft`·(1 − sun); der Regen kühlt (Verdunstung, die kalte Luft der Front) um `regen` K je Regen 1. Ohne Wetter
+    // und unter klarem Himmel (sun 1, rain 0) bit-gleich zur Formel davor.
+    const WOLKE = Object.freeze({ daempft: 0.5, regen: 3 });
+    function temperaturAus(F, saison, uhr, wetter) {
         if (!Number.isFinite(saison) || !Number.isFinite(uhr)) throw new Error("gelaende-core temperaturAus: Saison oder Uhr fehlt");
         const welle = (W, phase) => W.amp * Math.cos(2 * Math.PI * (phase - W.gipfel) - W.spaet);
-        return F.mittel + welle(F.jahr, saison) + welle(F.tag, uhr) - F.kuehlung;
+        if (!wetter) return F.mittel + welle(F.jahr, saison) + welle(F.tag, uhr) - F.kuehlung;
+        if (!Number.isFinite(wetter.sun) || !Number.isFinite(wetter.rain))
+            throw new Error("gelaende-core temperaturAus: das Wetter trägt sun oder rain nicht");
+        const tag = welle(F.tag, uhr) * (1 - WOLKE.daempft * (1 - wetter.sun));
+        return F.mittel + welle(F.jahr, saison) + tag - F.kuehlung - WOLKE.regen * wetter.rain;
     }
-    function temperatur(L, y, saison, uhr, traegTage) {
-        return temperaturAus(temperaturFeld(L, y, traegTage), saison, uhr);
+    function temperatur(L, y, saison, uhr, traegTage, wetter) {
+        return temperaturAus(temperaturFeld(L, y, traegTage), saison, uhr, wetter);
     }
 
     // DAS EIS (stoffe.K3): die feste Phase des Wassers als DICKE in Metern — eine Funktion des Wasserkörpers, des Felds und
@@ -1260,7 +1269,9 @@
         firn: 2,
         stufe: 2,
     });
-    function schneePegel(L, y, saison, feld) {
+    // `aus` (optional, wetter.K4) bekommt `aus.alt`: das Wasser des Alten im Pegel — der Firn und der Rest des Vorjahrs, den der
+    // Sommer nicht zehrte (gepresst, er trägt); der Pegel ohne ihn ist der Schnee DIESES Winters (`schneeTiefe`).
+    function schneePegel(L, y, saison, feld, aus) {
         if (!Number.isFinite(y) || !Number.isFinite(saison))
             throw new Error("gelaende-core schneePegel: Höhe oder Saison fehlt");
         const S = SCHMELZE;
@@ -1268,6 +1279,7 @@
         const A = F.jahr.amp;
         const basis = F.mittel - F.kuehlung;
         const c = -basis / A;
+        if (aus) aus.alt = 0;
         if (c <= -1) return 0;
         const tage = TEMPERATUR.jahrTage / (2 * Math.PI);
         const psi = 2 * Math.PI * (saison - F.jahr.gipfel) - F.jahr.spaet;
@@ -1279,6 +1291,7 @@
         // fließt als Eis ab — der Gang springt um ihn, wo die Schmelze beginnt)
         const rest = Math.max(0, voll - zehrt(a));
         const firn = rest > 0 ? S.firn : 0;
+        if (aus) aus.alt = firn + rest;
         if (u >= a) return firn + rest + S.fall * tage * (u - a);
         return firn + Math.max(0, voll - zehrt(u));
     }
@@ -1299,6 +1312,54 @@
     function schneeVersatz(L, saison, feldAt) {
         const weg = schneeLinie(L, saison, feldAt) - schneeLinie(L, TEMPERATUR.sommerPhase, feldAt);
         return Math.round(weg / SCHMELZE.stufe) * SCHMELZE.stufe;
+    }
+
+    // DIE SCHNEE-DECKE MIT TIEFE (wetter.K4): der Pegel als Schicht — die Höhe der weichen Decke über ihrem Grund in Metern, eine
+    // Funktion der Höhe und der Saison auf dem Temperatur-Feld (`feld(traegTage)`, die Naht des Wirts) wie der Pegel selbst: sie
+    // wächst, solange das Tagesmittel unter 0 °C liegt, und schmilzt nach Grad-Tagen darüber (der Gang von `schneePegel`).
+    // WEICH ist der Schnee dieses Winters (der Pegel ohne das Alte, `aus.alt`: Firn trägt); seine Tiefe ist sein Wasser über die
+    // Dichte der gesetzten Decke (`dichte` kg/m³; die saisonale Decke 220–350, Sturm 2010) — ρ des Wassers aus der Zeile der
+    // Stoff-Tafel des Wirts (`stoff.wasser`, ohne sie bricht der Kern laut). An der Mess-Wiese im Winter (Tag 40, 0,12 m Wasser)
+    // liegt sie ~0,5 m hoch.
+    // DER TRITT (`schneeTritt`): ein Fuß, ein Huf, ein Rad presst die Decke unter sich auf `tritt` (kg/m³, getretener Schnee) und
+    // sinkt um die Tiefe × (1 − dichte/tritt) — höchstens bis `knie`: die gepresste Säule unter ihm trägt (die Kapsel des Leibs
+    // steigt 0,6 m, darunter bleibt jeder Tritt ein Stand). DIE TAFEL (`schneeTafel`): der Tritt je `dy` m von `unter` unter dem
+    // Meer bis `ueber` darüber zur Saison; null, wo nirgends weicher Schnee liegt (der Sommer unter dem Firn). DER TRITT AM ORT
+    // (`schneeTrittAm`): die Tafel an der Höhe y, gedeckt nach dem Weiß der Schneegrenze (`schnee` mit dem Versatz, den die Welt
+    // trägt) — wo das Bild Schnee zeigt, sinkt der Körper, wo es Grund zeigt, nie. Leser: der Grund jedes Körpers und der Stand
+    // der Sicht (Stamm `_schneeTrittAt`).
+    const DECKE = Object.freeze({ dichte: 250, tritt: 500, knie: 0.45, unter: 40, ueber: 300, dy: 1 });
+    function schneeTiefe(L, y, saison, feld, stoff) {
+        const W = stoff && stoff.wasser;
+        if (!(W && W.rho > 0)) throw new Error("gelaende-core schneeTiefe: der Stoff fehlt (die Zeile wasser der Stoff-Tafel)");
+        const aus = { alt: 0 };
+        const p = schneePegel(L, y, saison, feld, aus);
+        return (Math.max(0, p - aus.alt) * W.rho) / DECKE.dichte;
+    }
+    function schneeTritt(tiefe) {
+        return tiefe > 0 ? Math.min(DECKE.knie, tiefe * (1 - DECKE.dichte / DECKE.tritt)) : 0;
+    }
+    function schneeTafel(L, saison, feldAt, stoff) {
+        const D = DECKE;
+        const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - GRUND.meerUnterBasis;
+        const F = feldAt || ((y, tr) => temperaturFeld(L, y, tr));
+        const y0 = Math.floor(wl - D.unter);
+        const tritt = new Float32Array(Math.round((D.unter + D.ueber) / D.dy) + 1);
+        let liegt = false;
+        for (let i = 0; i < tritt.length; i++) {
+            const y = y0 + i * D.dy;
+            tritt[i] = schneeTritt(schneeTiefe(L, y, saison, (tr) => F(y, tr), stoff));
+            if (tritt[i] > 0) liegt = true;
+        }
+        return liegt ? { y0, dy: D.dy, tritt } : null;
+    }
+    function schneeTrittAm(L, T, x, y, z, versatz) {
+        if (!T || !Number.isFinite(y)) return 0;
+        const n = T.tritt.length;
+        const u = Math.min(n - 1, Math.max(0, (y - T.y0) / T.dy));
+        const i = Math.min(n - 2, Math.floor(u));
+        const t = T.tritt[i] + (T.tritt[i + 1] - T.tritt[i]) * (u - i);
+        return t > 0 ? t * schnee(L, y, x, z, versatz) : 0;
     }
 
     // DER PEGEL (stoffe.K3-2 — die Schmelze speist ihn; wetter.K3: der Regen an DERSELBEN Stelle, `abfluss`): der Hub des Spiegels
@@ -6916,6 +6977,12 @@
         schneePegel: schneePegel,
         schneeLinie: schneeLinie,
         schneeVersatz: schneeVersatz,
+        DECKE: DECKE,
+        schneeTiefe: schneeTiefe,
+        schneeTritt: schneeTritt,
+        schneeTafel: schneeTafel,
+        schneeTrittAm: schneeTrittAm,
+        WOLKE: WOLKE,
         PEGEL: PEGEL,
         abfluss: abfluss,
         pegelRegen: pegelRegen,

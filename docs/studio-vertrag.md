@@ -1005,11 +1005,15 @@ je Lage über `landformRegler` —, das Flussnetz mit den Kanten `NETZ_KANTE`, s
 den benannten Seen `benannteSeen`, die Breite des Flusses `FLUSS_BREITE`/`flussBreite`, der Mäander `MAEANDER`, das
 Schicht-Gesetz `schichtOrt`, der Höhlen-Mund `HOEHLEN_MUND`/`hoehlenMund`), die Schneegrenze `SCHNEE`/`schnee`, die
 Temperatur `TEMPERATUR`/`temperatur` (stoffe.K3: Höhe × Saison × Uhr; das Feld in Wellen `temperaturFeld`, mit der Trägheit
-eines Körpers, ausgewertet von `temperaturAus` — die Grillen lesen sie), das Eis `EIS`/`eisDicke` (stoffe.K3-2: die Dicke nach
+eines Körpers, ausgewertet von `temperaturAus` unter dem Wetter `WOLKE`, wetter.K4: die Wolke dämpft den Tagesgang, der Regen
+kühlt — die Grillen lesen sie), das Eis `EIS`/`eisDicke` (stoffe.K3-2: die Dicke nach
 Stefan aus dem Wasserkörper `wasserKoerper` — Salz, Säule, Trägheit — und der Jahres-Welle des Felds; die Zahlen der Stoffe,
 ρ·c und T_schmelz des Wassers, ρ, Schmelzwärme L und Wärmeleitung k des Eises, reicht der Wirt aus seiner Stoff-Tafel als `stoff`, stoffe.K1 — ohne ihn bricht der Kern laut), der
 Schnee-Pegel `SCHMELZE`/`schneePegel` (stoffe.K3-2: Grad-Tag auf der Jahres-Welle des Felds) mit seiner Linie `schneeLinie` und
-dem Versatz der Schneegrenze `schneeVersatz` (den `schnee` liest), die Lava `LAVA`/`lava` (stoffe.K3-2: Newton-Abkühlung der
+dem Versatz der Schneegrenze `schneeVersatz` (den `schnee` liest) und seiner Decke mit Tiefe `DECKE`/`schneeTiefe` (wetter.K4:
+der weiche Schnee dieses Winters über die Dichte der gesetzten Decke, ρ des Wassers aus der Stoff-Tafel des Wirts) samt dem Tritt
+`schneeTritt`, seiner Tafel des Tags `schneeTafel` und dem Tritt am Ort `schneeTrittAm` (gedeckt nach dem Weiß von `schnee` —
+der Grund jedes Körpers und der Stand der Sicht lesen ihn), die Lava `LAVA`/`lava` (stoffe.K3-2: Newton-Abkühlung der
 Zeile `stein` des Wirts, an der Luft und unter Dampf am Wasser, die Glut über dem Draper-Punkt) — ihr Gang und ihre Glut als EIN
 Gesetz jedes heißen Körpers `waermeGang`/`glutAus` (die Lava, der Stahl der Esse) —, der Pegel `PEGEL`/`abfluss`/`pegelTafel`/
 `pegelHub` (stoffe.K3-2: der Abfluss der Schmelze hebt den Spiegel jedes Sees und Flusses nach Manning bis zur Krone des Betts;
