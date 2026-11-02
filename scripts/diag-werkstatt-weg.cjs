@@ -578,6 +578,13 @@ async function probe(argW) {
             if (st.buildMode.active) r._clearBuildMode();
             if (st.uiActiveDrawer) r.closeAllDrawers();
             r.setGameMode("schöpfer");
+            // DER VORBAU ZIEHT KEINEN SAMEN (w4-z140-rueckfall, im Konsum unten): ein Schritt des Geist-Vorbaus (`_geistVorbau`, der
+            // Planer der Bedienung) fragt jeden Hotbar-Bauplan nach seinem Studio-Geist — er ändert das Welt-Gedächtnis
+            // (`worldMeta.bauSame`) nicht. Befund 1e90e7cd: er zog je Hotbar-Art den nächsten Samen, der nächste Wagen der Welt stand
+            // in einer anderen Gestalt (Lack Metall 0,7 → 0, material.K4).
+            r._geistVorbauStand = undefined;
+            const vorbauRein = JSON.stringify(st.worldMeta.bauSame) === (r._geistVorbau(), JSON.stringify(st.worldMeta.bauSame));
+            r._geistVorbauStand.gast?.gruppe.removeFromParent();
             // ein schräger Blick weg von der Plattform: die Drehung des Phantoms ist nicht 0
             stelle();
             st.yaw = Math.atan2(frei.x - M.x, frei.z - M.z) + 0.7;
@@ -609,6 +616,7 @@ async function probe(argW) {
                 "_workshopFoundryPreviewGroup → _werkSame": __rufe(r, "_workshopFoundryPreviewGroup", r, "_werkSame", [NAME]) > 0,
                 "_heldFoundryGroup → _werkSame": __rufe(r, "_heldFoundryGroup", r, "_werkSame", [NAME]) > 0,
                 "_buildStudioPlacementGhost → _phantomWerk am Ort": !!woG && woG.x === Q.x && woG.z === Q.z,
+                "_geistVorbau rein": vorbauRein,
             };
             // Jede Absage des Setzens spricht im Spieler-Kanal (Material und Lichtung fährt L-Werkstatt): je ein Instanz-Feld.
             m.stumm = [
@@ -1504,7 +1512,7 @@ hauptLauf(async () => {
             mindest: 7.4,
             naechsterSame: 2034871155,
             huelleReicht: 1.1,
-            konsum: { "_workshopFoundryPreviewGroup → _werkSame": true, "_heldFoundryGroup → _werkSame": true, "_buildStudioPlacementGhost → _phantomWerk am Ort": true },
+            konsum: { "_workshopFoundryPreviewGroup → _werkSame": true, "_heldFoundryGroup → _werkSame": true, "_buildStudioPlacementGhost → _phantomWerk am Ort": true, "_geistVorbau rein": true },
             stumm: [],
         };
         const mitK = (o) => Object.assign({}, gesundK, o);
@@ -1537,6 +1545,8 @@ hauptLauf(async () => {
             [mitK({ naechsterSame: 1785671328 }), "das nächste Setzen zeigt dasselbe Werk"],
             // die Hülle reicht über die Klemme (Integration V18.536)
             [mitK({ huelleReicht: 10.3 }), "die Hülle des Werks reicht 10.3 m, die Klemme misst 3.9 m"],
+            // der Vorbau zieht den Samen des Wagens (Befund 1e90e7cd, material.K4)
+            [mitK({ konsum: { ...gesundK.konsum, "_geistVorbau rein": false } }), "Konsum: _geistVorbau rein"],
         ]);
         // Brennglas: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
         const gesundB = {

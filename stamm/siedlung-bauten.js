@@ -964,8 +964,8 @@ class AnazhRealm_siedlung_bauten {
     // (`_werkSame` mit dem Bau-Modus), der Stempel (`_studioStampFor`) und der Ort (`wo`, der Spawn-Ort des Setzens: x, z
     // des Phantoms): ein Baum fragt die Gestalt seines Orts (`_foundryGestaltFor`) wie das gesetzte Werk. Befund: das
     // Phantom fragte ohne Ort den rohen Samen und zeigte den Solitär (eiche|3), an seinem Ort im Bestand stand eiche|2.
-    _phantomWerk(bp, wo) {
-        const werk = { seed: this._werkSame(bp, bp.name, this.state.buildMode), type: bp.name };
+    _phantomWerk(bp, wo, blick = false) {
+        const werk = { seed: this._werkSame(bp, bp.name, this.state.buildMode, blick), type: bp.name };
         const stempel = this._studioStampFor(bp.name);
         if (stempel) werk.studioOv = stempel;
         if (wo && Number.isFinite(wo.x) && Number.isFinite(wo.z)) werk.position = { x: wo.x, y: wo.y + 0.5, z: wo.z };
@@ -989,12 +989,13 @@ class AnazhRealm_siedlung_bauten {
     }
     // DER STUDIO-GEIST eines Bauplans am Ort `wo` — rein, ohne den Zustand des Bau-Modus (das Phantom und sein Vorbau,
     // `_vorbauBedienung`, bauen ihn gleich): die Gruppe, null (das Studio lädt noch, die Anfrage ist unterwegs) oder false.
-    _studioGeist(bp, wo) {
+    // `blick` (der Vorbau): der Same des Phantoms, ohne ihn zu ziehen (`_werkSame`) — der Vorbau ändert kein Welt-Gedächtnis.
+    _studioGeist(bp, wo, blick = false) {
         if (!bp || typeof bp.name !== "string") return false;
         if (typeof this._foundryEnabled !== "function" || !this._foundryEnabled()) return false;
         const preset = this._foundryPresetForEntry({ type: bp.name });
         if (!preset) return false;
-        const werk = this._phantomWerk(bp, wo);
+        const werk = this._phantomWerk(bp, wo, blick);
         const flat = this._foundryFlattenFor(werk, preset, 0);
         if (!flat || !flat.instanceable || !Array.isArray(flat.leaves) || !flat.leaves.length)
             return flat === null ? null : false;
@@ -1142,7 +1143,7 @@ class AnazhRealm_siedlung_bauten {
             const jetzt = performance.now();
             offen = true;
             if (jetzt < (V.frage.get(name) || 0)) continue;
-            let gruppe = this._studioGeist(bp, pm);
+            let gruppe = this._studioGeist(bp, pm, true);
             if (gruppe === null) {
                 V.frage.set(name, jetzt + AnazhRealm.VORBAU_FRAGE_MS);
                 continue;

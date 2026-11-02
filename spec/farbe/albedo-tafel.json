@@ -964,8 +964,8 @@
             "ist": {
                 "labor": {
                     "Y": 0.0117,
-                    "rgb": "0.0214/0.0095/0.0048",
-                    "pixel": 251213
+                    "rgb": "0.0213/0.0095/0.0048",
+                    "pixel": 231238
                 },
                 "welt": {
                     "Y": 0.0117,
@@ -978,22 +978,22 @@
             "ratsche": 0,
             "gemessen": {
                 "labor": {
-                    "datum": "2026-11-01T15:48:57.129Z",
+                    "datum": "2026-11-01T21:09:40.665Z",
                     "geraet": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
                     "echt": true,
-                    "version": "18.546.158",
-                    "sha": "1f7541123b54d6717d1d7ec1f544dd3242720738",
+                    "version": "18.546.160",
+                    "sha": "baf9d8280b0aa08441b436e9f93f6e17b221a7cc",
                     "quellen": {
                         "koerper-core.js": "c:1346c56d163ceac6",
                         "foundry-core.js": "c:efe0f4ee6c1dc556",
                         "stamm/stoff-material.js": "c:ff1c814663d6da3f",
                         "stamm/studio-bruecke.js": "c:a9dd5ee7a6df4ffe",
                         "stamm/studio-stoff.js": "c:1917c9c7412d0e0f",
-                        "stamm/koerper-leib.js": "c:2e31cf902538b279"
+                        "stamm/koerper-leib.js": "c:ada89d21c1b7c8a8"
                     }
                 },
                 "welt": {
-                    "datum": "2026-11-01T15:48:37.151Z",
+                    "datum": "2026-11-01T21:11:59.307Z",
                     "geraet": "amd rdna-3",
                     "ort": "genesis",
                     "spieler": [
@@ -1001,15 +1001,15 @@
                         0
                     ],
                     "echt": true,
-                    "version": "18.546.158",
-                    "sha": "1f7541123b54d6717d1d7ec1f544dd3242720738",
+                    "version": "18.546.160",
+                    "sha": "baf9d8280b0aa08441b436e9f93f6e17b221a7cc",
                     "quellen": {
                         "koerper-core.js": "c:1346c56d163ceac6",
                         "foundry-core.js": "c:efe0f4ee6c1dc556",
                         "stamm/stoff-material.js": "c:ff1c814663d6da3f",
                         "stamm/studio-bruecke.js": "c:a9dd5ee7a6df4ffe",
                         "stamm/studio-stoff.js": "c:1917c9c7412d0e0f",
-                        "stamm/koerper-leib.js": "c:2e31cf902538b279"
+                        "stamm/koerper-leib.js": "c:ada89d21c1b7c8a8"
                     }
                 }
             }

@@ -1681,15 +1681,16 @@ const BRANDLAUF = process.argv.includes("--brand");
                     } finally {
                         core.planForestCell = pfcRoh;
                     }
+                    // die Kultur eines Hauses im Buch (Solo-Haus und Haus im Satz, w4-z140-rueckfall: EINE Suche)
+                    const recs = r._foundry?.recipes || {};
+                    const kultur = Object.keys(recs).find((k) => {
+                        const pol = AnazhRealm.KIND_POLICY[recs[k] && recs[k].kind];
+                        return pol && pol.prefix === "haus_" && st.blueprints["haus_" + k];
+                    });
                     // DAS SOLO-HAUS (K69, B3c: Vorschau, KI) über die Wurzel — gezählt, wie oft der Wirt das ganze Haus im Kern baut,
                     // um die Kamin-Spitze zu finden (`chimneyTipFromParams` → `massBau`); sie reist mit der Hülle (`__huelle.kamin`)
                     {
                         const fc = globalThis.__fachwerkCore;
-                        const recs = r._foundry?.recipes || {};
-                        const kultur = Object.keys(recs).find((k) => {
-                            const pol = AnazhRealm.KIND_POLICY[recs[k] && recs[k].kind];
-                            return pol && pol.prefix === "haus_" && st.blueprints["haus_" + k];
-                        });
                         const [kx, kz] = [ox - 40, oz + 40];
                         const ky = r._voxelSurfaceY(kx, kz);
                         const tipRoh = fc.chimneyTipFromParams;
@@ -1794,11 +1795,6 @@ const BRANDLAUF = process.argv.includes("--brand");
                     // _satzBlock`), verlässt ihn und tritt ein zweites Mal ein (ein stehender Bereich legt nur geänderte Slots) —
                     // gezählt die Bytes, die der Block dabei FRISCH anlegt
                     {
-                        const recs = r._foundry?.recipes || {};
-                        const kultur = Object.keys(recs).find((k) => {
-                            const pol = AnazhRealm.KIND_POLICY[recs[k] && recs[k].kind];
-                            return pol && pol.prefix === "haus_" && st.blueprints["haus_" + k];
-                        });
                         const hx = ox + 40;
                         const hz = oz - 40;
                         const hy = r._voxelSurfaceY(hx, hz);
