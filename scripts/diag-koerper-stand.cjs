@@ -39,16 +39,7 @@
 //   die Probe dieses Defekts muss rot werden; keine Probe liest Quelltext.
 //   node scripts/diag-koerper-stand.cjs [--selftest]
 "use strict";
-const {
-    statikServer,
-    starteBrowser,
-    warteAufWelt,
-    nullRenderer,
-    ROOT,
-    hauptLauf,
-    SELBSTTEST,
-    jsonSchreiben,
-} = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT, hauptLauf, SELBSTTEST, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const { WELT_ORTE_INSTALL, messort } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.KOERPER_STAND_PORT || 4479);
@@ -297,20 +288,15 @@ async function proben(mitWiese, umfang) {
     };
     const wpl = () => (pm.userData._gaitIK && pm.userData._gaitIK.wpl) || 1;
     // ── K1 MENSCH AUF DEM TRÄGER ── der Träger ist ein Bauwerk, das die Probe selbst unter den Spieler setzt (ein Felsblock,
-    // `stein_block`, 2,4 m Fels über dem Grund): der Genesis-Ort lässt seinen Ankunftskegel frei, die Start-Plattform fiel ganz
-    // (w4-genesis-ort-wirt) — bis hierher stand K1 auf ihr und urteilte nach ihrem Fall am Gelände (Träger 90,30 = der Grund).
-    // Nach K1 fällt der Block, der Spieler steht wieder am Start: K2–K7 messen die Welt ohne ihn.
+    // `stein_block`): der Genesis-Ort lässt seinen Ankunftskegel frei, die Start-Plattform fiel ganz (w4-genesis-ort-wirt) —
+    // bis hierher stand K1 auf ihr und urteilte nach ihrem Fall am Gelände (Träger 90,30 = der Grund). Nach K1 fällt der
+    // Block, der Spieler steht wieder am Start: K2–K7 messen die Welt ohne ihn.
     {
-        const start = { x: pm.position.x, z: pm.position.z };
-        const block = r.spawnArchitecture(
-            "stein_block",
-            { x: start.x, y: r._voxelSurfaceY(start.x, start.z) + 0.5, z: start.z },
-            { silent: true, precise: true }
-        );
-        if (block) await __gebautNach(block, { takt, max: 200 });
-        const boxen = (block && block.blockerAABBs) || [];
-        const oben = boxen.reduce((h, b) => Math.max(h, b.topY), -Infinity);
-        if (Number.isFinite(oben)) pm.position.set(start.x, oben + A.PLAYER_FOOT_OFFSET + 0.05, start.z);
+        const { x, z } = pm.position;
+        const stell = (y) => pm.position.set(x, y + A.PLAYER_FOOT_OFFSET + 0.05, z);
+        const block = r.spawnArchitecture("stein_block", { x, y: r._voxelSurfaceY(x, z) + 0.5, z }, { silent: true });
+        await __gebautNach(block, { takt, max: 200 });
+        stell(Math.max(...block.blockerAABBs.map((b) => b.topY)));
         kapsel(30);
         o.k1 = { struktur: s._kapselStruktur === true, traeger: s._kapselTraegerY };
         // Bezug: die Becken-Höhe der Pose selbst (im Stand ohne Gang-Wippen `_baseHipY` — der Rig-Bezug, den
@@ -334,8 +320,8 @@ async function proben(mitWiese, umfang) {
         vy = 0;
         s._fieldVy = 0;
         kapsel(90);
-        if (block) r.removeArchitecture(block, { still: true });
-        pm.position.set(start.x, r._voxelSurfaceY(start.x, start.z) + A.PLAYER_FOOT_OFFSET + 0.05, start.z);
+        r.removeArchitecture(block, { still: true });
+        stell(r._voxelSurfaceY(x, z));
         kapsel(30);
         s.isInAir = air;
     }
@@ -1303,7 +1289,8 @@ hauptLauf(async () => {
         console.log("  " + zeile({ ...o, k8: k8.o }));
         for (const x of f) console.log("  ❌ " + x);
         rot += f.length;
-        if (process.env.KOERPER_STAND_JSON) jsonSchreiben(process.env.KOERPER_STAND_JSON, { ...o, k8: k8.o });
+        if (process.env.KOERPER_STAND_JSON)
+            jsonSchreiben(process.env.KOERPER_STAND_JSON, { ...o, k8: k8.o });
     } finally {
         await browser.close();
         server.close();
