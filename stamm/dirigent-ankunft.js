@@ -1508,6 +1508,8 @@ function _bootAnazhRealm() {
     if (typeof window !== "undefined") {
         window.anazhRealm = anazhRealm;
     }
+    // die Wahl der Sprache in den Einstellungen (spielgang.K5) hört ab dem ersten Bild
+    anazhRealm._sprachWahlInit();
     // DAS ERWACHEN: das Versprechen des Boots samt der Heimat aus dem Faden (true: die Welt steht, false: der Boot brach) —
     // die Welt-Warte jeder Linse (`__weltDa`) taktet erst danach; bis dahin taktet sie nur die Schleife des Boots.
     const erwachen = Promise.resolve(anazhRealm.init());

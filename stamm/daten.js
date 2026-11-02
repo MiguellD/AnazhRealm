@@ -1314,7 +1314,7 @@ class AnazhRealm_daten {
             "p2p.stimme.sagt": ["Geteilte Stimme: {text}", "Shared voice: {text}"],
             "p2p.stimme.schweigt": ["(Geteilte Stimme schweigt — Zeitüberschreitung.)", "(Shared voice is silent — timed out.)"],
             "p2p.stimme.unerreichbar": ["(Geteilte Stimme nicht erreichbar.)", "(Shared voice unreachable.)"],
-            "p2p.stimme.welt-veraendert": ["(Welt verändert: {programm})", "(World changed: {programm})"],
+            "p2p.stimme.welt-veraendert": ["(Welt verändert: {tat}.)", "(World changed: {tat}.)"],
             "p2p.welt.frage": ["Frage „{welt}\" beim Mitspieler an …", "Asking the player for “{welt}” …"],
             "p2p.welt.geholt": ["✓ „{welt}\" über das Mesh geholt — siehe „Welten\" unten.", "✓ Fetched “{welt}” over the mesh — see “Worlds” below."],
             "p2p.welt.grund.hash": ["Das empfangene Bündel stimmt nicht mit dem Katalog überein — verworfen.", "The received bundle doesn't match the catalog — discarded."],

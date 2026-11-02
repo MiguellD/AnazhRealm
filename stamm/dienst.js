@@ -1476,14 +1476,15 @@ class AnazhRealm_dienst {
         return sp;
     }
 
-    // der Wechsel: das Wort auf dem Gerät, der Stand gesichert, die Seite neu — jede Zeile (auch die einmal geschriebenen)
-    // liest danach die neue Spalte
-    async _spracheSetzen(sp) {
+    // der Wechsel am Ort: das Wort auf dem Gerät, die Spalte neu gelesen, das DOM aus index.html neu gefüllt (`_sprachDom`) —
+    // jede Zeile, die danach entsteht, liest die neue Spalte; die Seite lädt nie neu (gate:weltgrenze: `location.reload`
+    // steht nur im lauten Rückfall des Welt-Wechsels)
+    _spracheSetzen(sp) {
         if (!(sp in AnazhRealm.TEXTE)) throw new Error(`SPRACHE: die Tafel trägt keine Sprache „${sp}“`);
         if (sp === AnazhRealm._sprache()) return;
         localStorage.setItem("anazh.sprache", sp);
-        if (typeof this.saveState === "function") await this.saveState(true);
-        window.location.reload();
+        AnazhRealm._spracheJetzt = sp;
+        AnazhRealm._sprachDom(document);
     }
 
     // die Wahl in den Einstellungen (#sprache-wahl): sie zeigt die Sprache des Geräts, ein Wechsel ruft `_spracheSetzen`
@@ -1492,9 +1493,11 @@ class AnazhRealm_dienst {
         if (!wahl) return;
         wahl.value = AnazhRealm._sprache() === "pseudo" ? "de" : AnazhRealm._sprache();
         wahl.addEventListener("change", () => {
-            this._spracheSetzen(wahl.value).catch((e) =>
-                this._bruchMelden(`SPRACHE: der Wechsel brach (${e.message})`)
-            );
+            try {
+                this._spracheSetzen(wahl.value);
+            } catch (e) {
+                this._bruchMelden(`SPRACHE: der Wechsel brach (${e.message})`);
+            }
         });
     }
 

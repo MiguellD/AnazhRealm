@@ -67,7 +67,7 @@ function scheinNurPlatz() {
             const roh = v._weltRettungsKette.bind(v);
             v._weltRettungsKette = (id) => {
                 const f = roh(id, null);
-                return f.quelle === "Platz" ? f : { state: null, quelle: null, befund: ["Schein: nur der Platz"] };
+                return f.quelle === "Platz" ? f : { state: null, quelle: null, befund: [{ art: "leer", glied: "IndexedDB" }, { art: "leer", glied: ".bak" }] };
             };
         },
     });

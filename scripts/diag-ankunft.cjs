@@ -396,7 +396,7 @@ function wand(quelle) {
     );
     return [
         ["W1 der Satz für Unbekanntes trägt keine Befehlsliste von Hand", fehlt("_chatHandleConversationalFallback", /'Setze Wetter rainy'/)],
-        ["W6 kein rohes Programm im Spieler-Chat (kein `JSON.stringify(reply.program)`)", fehlt(null, /JSON\.stringify\(reply\.program\)/)],
+        ["W6 kein rohes Programm im Spieler-Chat (kein `JSON.stringify(reply|msg.program)`: die eigene KI und die Stimme eines Mitspielers)", fehlt(null, /JSON\.stringify\((reply|msg)\.program\)/)],
         ["W8 das Buch fragt die Köpfe der Ankunft (`_buchKoepfe` in `_foundryIngestBook`, B5)", !fehlt("_foundryIngestBook", /this\._buchKoepfe\(\)/)],
         [`W7 Streu-Pick, Lupe und Klingen-Achse rechnen keine eigene Richtung ab der Kamera (\`getWorldDirection\`)${kreuzEigen.length ? " — mit: " + kreuzEigen.join(", ") : ""}`, kreuzEigen.length === 0],
     ];
@@ -1955,7 +1955,7 @@ hauptLauf(async () => {
         const kopfMit = (n, rein) => [null, new RegExp(`(\\n {4}${n}\\([^)]*\\) \\{)`), `$1 ${rein};`];
         const vorStand = (t) => stammLib.ersetze(t, [
             kopfMit("_chatHandleConversationalFallback", `"'Setze Wetter rainy'"`),
-            ["maybeAnswerWithLlm", "(Welt verändert: ${compName} ${this.describeProgram(reply.program)}.)", "(Welt verändert: ${JSON.stringify(reply.program)})"],
+            ["maybeAnswerWithLlm", "tat: this.describeProgram(reply.program)", "tat: JSON.stringify(reply.program)"],
             kopfMit("_hasMagnifyingInSight", "this.camera.getWorldDirection(this._v)"),
             ["_foundryIngestBook", "this._buchKoepfe();", ""],
         ]);

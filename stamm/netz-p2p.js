@@ -1418,9 +1418,8 @@ class AnazhRealm_netz_p2p {
                     if (weicht) cb(this._t("p2p.stimme.klammer", { text: weicht.satz }));
                     else if (result.ok)
                         cb(
-                            this._t("p2p.stimme.welt-veraendert", {
-                                programm: JSON.stringify(msg.program).slice(0, 140),
-                            })
+                            // die Tat in Worten (`describeProgram`), nie das rohe Programm (W6, wie die eigene KI)
+                            this._t("p2p.stimme.welt-veraendert", { tat: this.describeProgram(msg.program) })
                         );
                 }
             } catch {
