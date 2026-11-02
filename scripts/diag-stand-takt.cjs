@@ -305,15 +305,11 @@ function selbsttest() {
             /TREUE-LÜCKE: archLod \(_tickArchitectureLOD\) änderte nach der Ruhe seine Runde \(1638 → 1702 Einheiten\)/,
         ],
         [
-            // z154: der Schritt der Schneegrenze bestellte den Ring in der Täter-Phase neu, der Saum ruhte 165 Frames
-            "der Ring wird während der Täter-Phase neu bestellt (der Saum-Täter überschrieben, nicht gefunden)",
-            (b) => {
-                Object.assign(b.taeter.phase.takte.deckWache, { wirkt: 0, ortVon: 1048576, ort: 2097152 });
-            },
-            [
-                /TREUE-TÄTER: .* von deckWache .* an Stelle 1727 von 1728 nicht/,
-                /TREUE-EINGABE: deckWache \(_fernRingDeckWache\) wechselte mit den Tätern seinen Ort \(1048576 → 2097152\)/,
-            ],
+            // z154: der Schritt der Schneegrenze bestellte den Ring in der Täter-Phase neu, der Saum ruhte 165 Frames, der neue
+            // Ring überschrieb den Saum-Täter
+            "der Ring wird in der Täter-Phase neu bestellt",
+            (b) => Object.assign(b.taeter.phase.takte.deckWache, { wirkt: 0, ortWechsel: "0 → 1048576" }),
+            [/TREUE-TÄTER: .* von deckWache .* nicht/, /TREUE-EINGABE: deckWache .* seinen Ort \(0 → 1048576\)/],
         ],
         [
             "ein Wahrnehmungs-Schritt weckt die Streu nicht (der Stempel liest die LOD-Distanzen nicht)",
@@ -1279,17 +1275,17 @@ const BRANDLAUF = process.argv.includes("--brand");
                     const runden = {};
                     const rundeVon = {}; // die erste Runde, wenn sie sich während der Phase änderte
                     const orte = {};
-                    const ortVon = {}; // der erste Ort (ein Wert: Zelle, Anker-Generation), wenn er sich während der Phase änderte
+                    const wechsel = {}; // der erste Wechsel des Orts (ein Wert: Zelle, Anker-Generation) während der Phase
                     const gang = () => Object.fromEntries(namen.map((n) => [n, arbeit(n) - a0[n]]));
                     P._standRuht = function (...a) {
                         const r = a[1] | 0;
                         if (runden[a[0]] !== undefined && runden[a[0]] !== r && !(a[0] in rundeVon))
                             rundeVon[a[0]] = runden[a[0]];
                         runden[a[0]] = r;
-                        const o = a[2];
-                        if (o === null || typeof o !== "object") {
-                            if (a[0] in orte && !Object.is(orte[a[0]], o) && !(a[0] in ortVon)) ortVon[a[0]] = orte[a[0]];
-                            orte[a[0]] = o;
+                        if (typeof a[2] !== "object") {
+                            if (orte[a[0]] !== undefined && orte[a[0]] !== a[2])
+                                wechsel[a[0]] = wechsel[a[0]] || `${orte[a[0]]} → ${a[2]}`;
+                            orte[a[0]] = a[2];
                         }
                         ruheRuf.apply(this, a);
                         return false;
@@ -1316,9 +1312,8 @@ const BRANDLAUF = process.argv.includes("--brand");
                         if (ph.takte[n])
                             Object.assign(
                                 ph.takte[n],
-                                { runde: runden[n], gang: g[n] },
-                                n in rundeVon ? { rundeVon: rundeVon[n] } : {},
-                                n in ortVon ? { ortVon: ortVon[n], ort: orte[n] } : {}
+                                { runde: runden[n], gang: g[n], ortWechsel: wechsel[n] },
+                                n in rundeVon ? { rundeVon: rundeVon[n] } : {}
                             );
                     return ph;
                 };

@@ -544,11 +544,7 @@ function standUrteil(b) {
             // der Ort muss während der Phase stehen: wechselt er (eine Eingabe — die Anker-Generation des Saums nach einem
             // Neu-Bestellen des Rings, die Zelle des Stroms), ging die Runde über zwei Welten, und was die Probe verstellte,
             // überschrieb die neue, statt dass die Treue es fand
-            if (t && t.ortVon !== undefined)
-                v.push(
-                    `TREUE-EINGABE: ${n} (${TAKTE[n]}) wechselte ${wo} seinen Ort (${t.ortVon} → ${t.ort}) — eine Eingabe ` +
-                        `kam in die Probe, die Runde ging über zwei Welten`
-                );
+            if (t && t.ortWechsel) v.push(`TREUE-EINGABE: ${n} (${TAKTE[n]}) wechselte ${wo} seinen Ort (${t.ortWechsel})`);
         }
     };
     const S = b.bruch;
