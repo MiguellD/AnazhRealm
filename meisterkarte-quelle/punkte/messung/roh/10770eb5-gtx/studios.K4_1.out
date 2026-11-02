@@ -1,0 +1,11 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u; K=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte'); A=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\10770eb5-gtx\studios.K4_1.json'); export WERKBANK_PORT=$((7804+20000)); node "$K/bericht/2910-w3w-studios/skripte/k4-bild.cjs" "$A" 7804 33
+K4 garage: Differenz 0.8318 ·  (11.9 s: buehne 1.5 · welt 0.8 · bild 8.9 · schuss 0.7)
+K4 portale: Differenz 0.9465 ·  (12.4 s: buehne 1.3 · welt 0.4 · bild 10.1 · schuss 0.6)
+@@PUNKTE@@ FRIST 27 s der Probe gerissen — Studio schmiede und die folgenden ausgelassen
+K4 garage: ROT · Differenz 0.8318 · Albedo null · Differenz 0.8318 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll) (11.9 s)
+K4 portale: ROT · Differenz 0.9465 · Albedo null · Differenz 0.9465 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll) (12.4 s)
+K4 Gerät der Bühne: WebGPU pascal
+K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (24.4 s)
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
