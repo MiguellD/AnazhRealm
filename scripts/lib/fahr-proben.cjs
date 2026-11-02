@@ -952,6 +952,10 @@ async function probeLeben(expected) {
                 beruehrt: { leib: m.leib, wagen: m.wagen, bau: m.bau, orte: m.leibOrte, wagenOrte: m.wagenOrte, bauOrte: m.bauOrte }, // prettier-ignore
                 ankunft,
                 netz: { verboten, ausNetz: ausNetz.length, irrweg: VK.zahl.irrweg },
+                // der Plan der Stadt trägt diese Stände neben der Trasse nicht (`standOhneOrt`): wer an ihnen stand, geht ohne sie
+                platzVoll: ((v) => ({ n: v.length, wo: v.slice(0, 6).map((o) => ort2(o.ur).join("/")) }))([
+                    ...(S.standOhneOrt || []),
+                ]),
                 ohneSchluessel: m.ohne,
                 ohneOrte: m.ohneOrte,
                 querMax: +m.quer.toFixed(2),

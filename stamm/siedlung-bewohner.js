@@ -2599,8 +2599,9 @@ class AnazhRealm_siedlung_bewohner {
             // daneben (`spurAuswegM`, die Lücke zwischen zwei Häusern), dann so weit sein Gesetz reicht (`gesetzAuswegM`, der
             // Platz endet am Ring ohne einen Punkt seines Gesetzes), dann wie bei seiner Geburt auch in der Gasse (`art`: am
             // Genesis-Ort trug der Platz neben der Trasse am Rand der Gassen keinen freien Punkt mehr — 771 Punkte mit Raum, alle
-            // im Grundriss eines Hauses, markt #431794). Trägt keiner, bietet der Plan zu wenig Platz: laut und beim
-            // Namen (`standOhneOrt`), er steht, wo er stand (der Wagen hält vor ihm, und er macht Platz, `_verkehrFolge`). Bis hier
+            // im Grundriss eines Hauses, markt #431794). Trägt keiner, bietet der Plan zu wenig Platz: laut und beim Namen
+            // (`standOhneOrt`), und wer an ihm stand, geht seinen Tag ohne ihn (`_bewohnerOhneStand`) — nur ein Stand vor der
+            // eigenen Tür steht dann, wo er stand (der Wagen hält vor ihm, und er macht Platz, `_verkehrFolge`). Bis hier
             // gab er nach den 15 m erst das Gesetz, dann den Raum zu den gerückten auf (w4-genesis-ort-wirt9): am Genesis-Ort stand
             // der Platz-Stand fahrer #45665 jenseits des Platzes und drei Stände bei −47/−173 näher als `raumM`, zwei auf einem Punkt
             const frei = S.verkehr ? (p) => !this._verkehrAufSpur(S, p.x, p.z) : null;
@@ -2614,11 +2615,16 @@ class AnazhRealm_siedlung_bewohner {
                           neu(0, frei, BW.gesetzAuswegM) ||
                           (o.gilt !== o.art && neu(0, frei, BW.gesetzAuswegM, o.art)));
             if (!frei || q) ohneOrt.delete(o);
-            else if (!ohneOrt.has(o)) {
+            else {
+                if (!ohneOrt.has(o))
+                    this._bruchMelden(
+                        `BEWOHNER: der Stand ${ur.x.toFixed(1)}/${ur.z.toFixed(1)} findet neben der Spur keinen Ort seines Gesetzes — der Plan bietet zu wenig Platz`
+                    );
                 ohneOrt.add(o);
-                this._bruchMelden(
-                    `BEWOHNER: der Stand ${ur.x.toFixed(1)}/${ur.z.toFixed(1)} findet neben der Spur keinen Ort seines Gesetzes — der Plan bietet zu wenig Platz`
-                );
+                if (this._bewohnerOhneStand(S, o)) {
+                    yield;
+                    continue;
+                }
             }
             q = q || (!wand ? ur : neu(BW.standRandM) || (!this._bewohnerWand(ur, ur, true) ? ur : neu(0)));
             if (!q)
@@ -2650,6 +2656,25 @@ class AnazhRealm_siedlung_bewohner {
             yield;
         }
         S.listeRest = 0;
+    }
+
+    // DER TAG OHNE DEN STAND, DEN DER PLAN NICHT TRÄGT (`_bewohnerStandPruefen`): wer am Platz, am Werk oder zu Besuch an ihm
+    // stand, geht nach dem Gesetz des Tags ohne ihn — koerper-core `tagesPlan` liest `platz || heim` (er bleibt zu den Stunden
+    // des Platzes vor seiner Tür), das Werk wird der Stand vor der eigenen Tür (wie wo keine Station steht, `_bewohnerListe`),
+    // der Besuch fällt; wer dort stand oder hinging, geht neu. Ein Stand vor der eigenen Tür trägt den Tag: er bleibt (false).
+    // Bis hier rückte der Stand ohne sein Gesetz und ohne den Raum (w4-genesis-ort-wirt9): an der Metropole (stadt-voll) trägt
+    // der Platz neben der Trasse 87 seiner Stände nicht (je ~810 Punkte mit Raum, alle im Grundriss eines Hauses)
+    _bewohnerOhneStand(S, o) {
+        if (S.liste.some((b) => b.orte.heim === o)) return false;
+        for (const b of S.liste) {
+            for (const k of ["platz", "werk", "besuch"])
+                if (b.orte[k] === o) b.orte[k] = k === "werk" ? b.orte.heim : null;
+            if (b.leib && !b.drinnen && (b.ziel === o || b.stand === o)) {
+                if (b.ziel === o) b.da = false;
+                Object.assign(b, { weg: null, stand: null, wegRest: null });
+            }
+        }
+        return true;
     }
 
     // DER BAUM der kürzesten Wege ab einem Knoten (Dijkstra, binärer Haufen) — je Start-Knoten einmal gerechnet, gemerkt.
