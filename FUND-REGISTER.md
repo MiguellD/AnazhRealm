@@ -3,6 +3,8 @@
 Eine Zeile je Fund: Datei:Zeile · Wurzel · was es bewegt · Größe. Wer eine Zeile heilt, löscht sie im selben Commit. Stand 02.11. (main 10770eb5).
 
 ## Werkzeug (macht jede Welle billiger)
+- Farm headless: die langsamste Station bestimmt den Lauf (Scheibe 1 ~41 min, vermutlich affekt.K2#1 mit Deckel 2400 s, riss ihn am 02.11.) — elf Scheiben 9–25 min · die Station selbst schneller machen (Welt-Simulation im Zeitraffer statt Wanduhr) · alle Farm-Läufe −30 min · M
+- Nach einer Landung gezielt messen (`punkte.cjs run --nur <kriterium#n>`) statt `--offen` über 129 Stationen, wenn nur ein Kriterium auf der Kippe steht · Koordinator-Disziplin · S
 - `punkte.cjs` / deckel.json · ~20 Proben fallen an der 10-s-Grenze (u. a. tiere.K5#1), studios.K2#2/K3#2 reißen 4 s trotz Tafel 10 s · Messung blind · S
 - volle Radeon-Fahrt ≤ 30 min unbewiesen (Lauf 2: 63 Proben in 1462 s) · alle Radeon-Punkte · M
 - `_standRueckspielen` räumt tools/materials nach `name` statt Schlüssel; `haengerAn` gibt seine Haken nicht je Lauf zurück · Grundstellung · S
