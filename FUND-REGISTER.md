@@ -3,6 +3,7 @@
 Eine Zeile je Fund: Datei:Zeile · Wurzel · was es bewegt · Größe. Wer eine Zeile heilt, löscht sie im selben Commit. Stand 02.11. (main 10770eb5).
 
 ## Werkzeug (macht jede Welle billiger)
+- GTX-Messung der OMEN urteilt kaum: general-1077 13 grün / 14 rot von 101 Stationen, takt-z165a 0/0 von 26 — die Sitzung auf der GTX bricht oder reißt Fristen (die Radeon-Sitzung wurde am 02.11. geheilt, die GTX nie mit vollem Lauf geprüft) · alle GTX-Punkte (R2: beide Geräte) · ZUERST, M
 - Farm headless: die langsamste Station (affekt.K2#1/K3#1) · Wurzel war GPU-Arbeit neben der Leine (stamm/bild-himmel.js `_atmoTakt`/`_ensureSkyEnvironment`), Zweig w4-affekt 7105403d: swiftshader K2 940 → 87 s, K3 Farm > 3600 → 296 s lokal, beide GRÜN · landen + Farm-Lauf zeigt die Zahl · S
 - Linse fehlt: GPU-Arbeit neben der Leine (Takt ohne Bild, `_gpuLeineStraff` wahr) — ein Zähler an `device.queue.submit` über N Takte in der Werkbank, ROT beim Namen des Schreibers (Mutante: `_atmoTakt` ohne Leinen-Frage) · Familie diaet-linse · hält K2/K3-Dauer und jede Zeitraffer-Station · S
 - Nach einer Landung gezielt messen (`punkte.cjs run --nur <kriterium#n>`) statt `--offen` über 129 Stationen, wenn nur ein Kriterium auf der Kippe steht · Koordinator-Disziplin · S
