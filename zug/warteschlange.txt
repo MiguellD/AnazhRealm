@@ -383,3 +383,4 @@ takt-z148a-gtx 1 punkte sha=ab884210027d810411fe8e16f57192bb336d2af8 geraet=gtx 
 takt-z148b-gtx 1 punkte sha=ab884210027d810411fe8e16f57192bb336d2af8 geraet=gtx nur=ankunft.K3#1,ankunft.K1#1,klang.K4#1
 z156-abab 3 abab A=ab884210027d810411fe8e16f57192bb336d2af8 B=6d6a8336a11149456ca4edcab3c9c550a6b11f01 zellen=w-ego,stadt
 takt-z156a-gtx 1 punkte sha=6d6a8336a11149456ca4edcab3c9c550a6b11f01 geraet=gtx nur=tiere.K1#2,tiere.K3#2,mensch.K1#1,vegetation.K5#2,material.K2#1,material.K1#1,lod.K1#1,lod.K5#1,studios.K2#2,studios.K3#2,bauen.K1#2,studios.K4#1,siedlung.K1#2,siedlung.K4#2,leib.K1#2,fahrzeug.K2#1,fahrzeug.K2#2,ankunft.K2#1,ankunft.K3#1,ankunft.K1#1,profiband.K4#1,profiband.K1#1,profiband.K2#1,profiband.K2#2,profiband.K3#1,speicher.K4#2
+takt-z156b-gtx 1 punkte sha=6d6a8336a11149456ca4edcab3c9c550a6b11f01 geraet=gtx nur=klang.K4#1
