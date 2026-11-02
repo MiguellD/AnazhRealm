@@ -598,10 +598,13 @@ const { probeBefehl } = require("./sitzung-seite.js");
 // (379e5f56, die Probe allein in ihrer Sitzung) 55,5 s — die Garage 27,6 s, der Ritt 33,4 s, dazu git und die Kommandozeile der
 // Werkbank. DIE WELT fährt tempo4.js über die Werkbank bis zum Plateau (`__tempoNur = "vmax"`); Orbit, Drift und die Schüsse misst
 // fahrzeug.K3#2 (FAHR_SITZUNG). Beide nebeneinander, ihre Zeilen danach in der Reihe, die das Urteil liest (WELT, dann GARAGE).
+// DIE RUHE steht an der Zeile, die G2 und G6 in der Probefahrt vor dem Gas abschließt (seit w4-fahrzeug2-leicht b6aef7f5 lesen
+// G2–G6 + G8 das EINE Verdikt; bis dahin `m.schilderNamen` an derselben Stelle — die alte Zeile fehlte, fahrzeug.K3#1 UNGEMESSEN)
 const MK_ANKER = [
     [
-        '    m.schilderNamen = sf.slice(0, 4).join(", ");\n',
-        '    m.schilderNamen = sf.slice(0, 4).join(", ");\n    m.mkRuhe = await page.evaluate(() => ({ fov: cam.fov, arm: cam.position.distanceTo(vehicle.position), v: Math.abs(car.speed) }));\n',
+        "    Object.assign(m, b, { schilderFahrt: b.namen.length });\n",
+        "    Object.assign(m, b, { schilderFahrt: b.namen.length });\n" +
+            '    m.mkRuhe = await page.evaluate(() => ({ fov: cam.fov, arm: cam.position.distanceTo(vehicle.position), v: Math.abs(car.speed) }));\n',
     ],
     [
         '    await page.keyboard.up("KeyW");\n    m.tempo = await page.evaluate(',

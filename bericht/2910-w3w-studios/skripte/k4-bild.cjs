@@ -41,9 +41,11 @@ const ROOT = process.cwd();
 const WB = require(path.join(ROOT, "scripts", "lib", "welt-boot.cjs"));
 const AT = require(path.join(ROOT, "scripts", "lib", "albedo-tafel.cjs"));
 const { sitzungWerkzeug } = require(path.join(__dirname, "..", "..", "..", "meisterkarte-quelle", "punkte", "stationen", "sitzung-seite.js"));
-// die Werkzeuge lesen ihren argv wie im `node -e` der Proben: der Port, die Ausgabe, der Deckel
+// die Werkzeuge lesen ihren argv wie im `node -e` der Proben: der Port, die Ausgabe, der Deckel — und sie laufen wie dort im Spiel-Baum
+// (probeBefehl: der Text der Funktion im `node -e`, cwd = Spiel-Baum): ihr `require` löst puppeteer aus dem Spiel-Baum, nie aus dem
+// Koordinations-Baum, der kein node_modules trägt (GTX c351b318 … 6a571e3b: „Cannot find module 'puppeteer'“ aus stationen/, Exit 2)
 process.argv = [process.argv[0], PORT_ARG, AUS, SEK_ARG];
-const H = sitzungWerkzeug();
+const H = new Function("require", "module", "return (" + sitzungWerkzeug + ")();")(require("module").createRequire(path.join(ROOT, "k4-bild.cjs")), module);
 const DIR = AUS.replace(/\.json$/, "") + "-k4";
 fs.mkdirSync(DIR, { recursive: true });
 const STUDIOS = ["garage", "portale", "schmiede", "fachwerk", "terrain", "koerperstudio", "tetrapoda"];
@@ -164,7 +166,17 @@ const WERK = () =>
 const SCHUSS = (o) => {
     const g = (n) => (n ? new Function(`return typeof ${n} !== "undefined" ? ${n} : undefined;`)() : undefined);
     const T = window.THREE, R = g(o.S.renderer), sc = g(o.S.szene), wz = g(o.S.wurzel), comp = g(o.S.ausgabe);
-    const bb = new T.Box3().setFromObject(wz), c = bb.getCenter(new T.Vector3()), rad = bb.getSize(new T.Vector3()).length() / 2;
+    // DIE BOX DES WERKS wie in der Welt (RAHMEN: die Geometrie der Instanzen): nur die sichtbaren Meshes der Wurzel — ihre Lehren
+    // (Maß-Schilder als Sprite, Maß-Linien) hängen IN ihr (garage.js: Schilder und Linien am `vehicle`) und blähten die Box
+    // (Radeon 25ac4c0c: garage R 3,902 gegen die Welt 2,854 — die Kamera 37 % weiter, der Wagen 113 847 gegen 211 221 Pixel)
+    wz.updateMatrixWorld(true);
+    const bb = new T.Box3(), mb = new T.Box3();
+    wz.traverseVisible((x) => {
+        if (!x.isMesh || !x.geometry) return;
+        if (!x.geometry.boundingBox) x.geometry.computeBoundingBox();
+        bb.union(mb.copy(x.geometry.boundingBox).applyMatrix4(x.matrixWorld));
+    });
+    const c = bb.getCenter(new T.Vector3()), rad = bb.getSize(new T.Vector3()).length() / 2;
     const cam = new T.PerspectiveCamera(o.fov, o.W / o.H, Math.min(0.1, rad / 10), Math.max(200, 32 * rad));
     cam.position.copy(c).addScaledVector(new T.Vector3(...o.blick), o.abstandR * rad);
     cam.lookAt(c);
@@ -182,9 +194,10 @@ const SCHUSS = (o) => {
         for (let p = x; p; p = p.parent) if (p === wz) return true;
         return false;
     };
-    // das Bild: die Bühne, wie sie steht, ohne ihre Lehren (Schilder, Maß-Linien, Raster: Sprite · Line · Points außerhalb der Wurzel)
+    // das Bild: die Bühne, wie sie steht, ohne ihre Lehren (Schilder, Maß-Linien, Raster: Sprite · Line · Points — auch IN der Wurzel,
+    // die Welt trägt keine)
     const kams = [];
-    for (const [x] of alle) if (!x.isMesh && !unter(x)) x.visible = false;
+    for (const [x] of alle) if (!x.isMesh) x.visible = false;
     if (comp && comp.passes) for (const p of comp.passes) if (p && p.camera) kams.push([p, p.camera]), (p.camera = cam);
     if (comp && comp.passes) comp.render();
     else R.render(sc, cam);
@@ -194,7 +207,7 @@ const SCHUSS = (o) => {
     const alt = { bg: sc.background, fog: sc.fog, ov: sc.overrideMaterial, tm: R.toneMapping };
     let maske;
     try {
-        for (const [x] of alle) x.visible = x.visible && unter(x);
+        for (const [x] of alle) x.visible = x.visible && x.isMesh && unter(x);
         [sc.background, sc.fog, sc.overrideMaterial, R.toneMapping] = [new T.Color(0, 0, 0), null, new T.MeshBasicMaterial({ color: 0xffffff }), T.NoToneMapping];
         R.render(sc, cam);
         maske = lies();
@@ -431,7 +444,8 @@ H.fahre(async function k4Bild(H) {
         console.log(`K4 ${sid}: ${z.gruen ? "GRÜN" : "ROT"} · Differenz ${z.differenz.anteil} · Albedo ${z.albedo.max} · ${z.grund || ""} (${z.sek} s)`);
     }
     aus.sek = sek(t0);
-    aus.gruen = STUDIOS.filter((s) => aus.studios[s].gruen);
+    // ein Studio hinter der Frist trägt keinen Eintrag (oben): es ist nie GRÜN — kein Wurf an ihm (Radeon 6a571e3b: „gruen“ von undefined)
+    aus.gruen = STUDIOS.filter((s) => aus.studios[s] && aus.studios[s].gruen);
     console.log(`K4 Gerät der Bühne: ${aus.geraet || "ungenannt"}`);
     console.log(`K4 ${aus.gruen.length}/${STUDIOS.length} Mesh-Studios mit Bild-Differenz ≤ ${SOLL.differenz} und Albedo im Rand ${SOLL.albedo} (${aus.sek} s)`);
     return aus;

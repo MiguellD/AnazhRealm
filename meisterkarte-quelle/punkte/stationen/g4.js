@@ -492,8 +492,11 @@ async function probeStudios(H) {
             seite.goto("http://localhost:" + H.S + "/" + rest, { waitUntil: warte, timeout: frist }),
         close: () => {},
     };
-    // jede Seite im Fenster der Linse (starteBrowser ohne viewport: puppeteer 800 × 600) — die Zeit je Griff hängt an der Fläche
+    // jede Seite im Fenster der Linse (starteBrowser ohne viewport: puppeteer 800 × 600) — die Zeit je Griff hängt an der Fläche.
+    // Je Studio zwei Seiten (der Besuch, das Neuladen), jede mit der Uhr der Probe: die Sekunden je Studio stehen zwischen den
+    // ⏱-Zeilen (swiftshader 6a571e3b: fachwerk 45,5 s, koerperstudio 54,9 s von 161 s — ihr Neubau 2,9–4,1 s je Griff)
     const neueSeite = async () => {
+        H.zeile("neue Seite der Linse");
         const p = await browser.newPage();
         await p.setViewport({ width: 800, height: 600 });
         return p;
