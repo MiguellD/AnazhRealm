@@ -90,6 +90,9 @@ if (SELBSTTEST) {
     const [heil, fu, halb] = [form([["say", "ok"], ["fall", "ok"]], { X_OPS: ["say"] }), form([["say", "x_oob"], ["fall", "ok", 1]], { X_OPS: ["modify_terrain"] }), form([["say", "ok"]], {})];
     if (heil || !/say .*x_oob · .*fall .*Bau steht.*X_OPS nennt tote Ops: modify_terrain/.test(fu) || !/ungeprüft: fall/.test(halb))
         v.push(`(K) formUrteil blind: heil „${heil}" · gebrochen „${fu}" · halb „${halb}"`);
+    // der Täter von z149: der Wurf auf einer Fläche des Genesis-Orts (die Natur-Wand sagt ab) — der Op scheitert an seinem Ort, ROT beim Namen
+    const lichtung = form([["say", 'ergebnis_failed {"lichtung":1}'], ["fall", "ok"]], {});
+    if (!/say scheitert an seiner Form — ergebnis_failed \{"lichtung":1\}/.test(lichtung)) v.push(`(K) formUrteil blind am Wurf auf der Lichtung: „${lichtung}"`);
     selbsttestEnde(v, "Akt durch, Spion blind/fehlend, KI-Verb fehlend/umgruppiert/formbrüchig, toter Listen-Name, Tat ohne Wertung/Gewöhnung/Antwort/Zeile/Treue: jedes fällt rot.");
     process.exit(0);
 }
@@ -271,14 +274,32 @@ async function probe(GESCHICKT) {
     st.maxCreatures = Math.max(st.maxCreatures, st.creatures.length + 10);
     aus.frei.nexus = await fenster(wege.nexus);
     // (K) jeder Op als KI an seiner Form: je Name der Form ein Wert aus der Welt; ein Id-Name probt jede Form, die die Welt
-    // vergibt (der Bau: Zahl + String, die Kreatur: Platz + Id); der Ort liegt außerhalb der Genesis-Lichtung (keine Krone)
+    // vergibt (der Bau: Zahl + String, die Kreatur: Platz + Id)
     const K = AnazhRealm;
     await __weltDa(() => st.blueprints.haus_griechisch); // das Studio-Buch (spawn_temple liest es)
     const rolle = (x) => Object.keys(st.blueprints).find((k) => st.blueprints[k].role === x);
     const [sag, ich, teil, opClass] = [["say", "Probe"], st.playerMesh.position, { size: [1, 1, 1], material: "stein" }, [...K.TOOL_OP_CLASSES][0]];
+    // DER ORT DER FORM liegt in der Wildnis: der erste Ort einer Spirale ab `r0` m um den Spieler, an dem die Natur-Wand keinen
+    // Wurf der Kiefer absagt (`_naturWand`: die Flächen des Genesis-Orts samt Krone, Haus, Bau, Weg, Wasser) und 8 m rund um ihn
+    // kein Grundriss liegt (der Bau der Probe). Bis zum Plan des Genesis-Orts (Pflicht F) lag die Wildnis 40–60 m hinter dem
+    // Spieler (`far_player`); seither fällt dort eine Fläche des Plans, die Wand sagte der Kiefer „lichtung" — zu Recht.
+    const wildnis = (r0) => {
+        for (let rr = r0; rr < r0 + 400; rr += 6)
+            for (let q = 0; q < 16; q++) {
+                const a = (q / 16) * Math.PI * 2;
+                const [x, z] = [ich.x + Math.cos(a) * rr, ich.z + Math.sin(a) * rr];
+                const y = r.getTerrainHeightAt(x, z);
+                if (r._naturWand("baum_kiefer", { x, y, z }, {})) continue;
+                if ([0, 1, 2, 3, 4, 5, 6, 7].some((k) => r._imGrundriss(x + 8 * Math.cos((k * Math.PI) / 4), z + 8 * Math.sin((k * Math.PI) / 4)))) continue;
+                return ["at", +x.toFixed(1), +y.toFixed(1), +z.toFixed(1)];
+            }
+        throw new Error(`(K) kein Ort der Wildnis ${r0}–${r0 + 400} m um den Spieler`);
+    };
+    const [ortForm, ortBau] = [wildnis(40), wildnis(30)];
+    aus.ortForm = ortForm;
     // die Zahl-Id trägt jeder Bau aus Programm, Feld und Worldgen, die String-Id das Werk des Spielers (`_newArchId`)
     const bau = (art, id = r._newArchId()) => art === "number" ? st.architectures.filter((a) => a && typeof a.id === art).pop().id
-        : (r.dslRun(["spawn_blueprint", "stein_block", ["far_player", 30, 40], 8, id], { source: "human" }), id);
+        : (r.dslRun(["spawn_blueprint", "stein_block", ortBau, 8, id], { source: "human" }), id);
     const JE = { weather: "rainy", set_season: "herbst", gravity: -9.8, terrain_steepness: 1, player_soul: "wesen", spawn_blueprint: "stein_block" };
     // der Leib wiegt nur im Band seines Gesetzes (`AnazhRealm.DSL_WERTE`): die Probe nimmt den Rand des Bands
     for (const [op, stat] of [["player_jump_power", "jumpPower"], ["player_speed", "speed"]]) JE[op] = r._koerperGesetzBand(stat).min;
@@ -286,7 +307,7 @@ async function probe(GESCHICKT) {
         name: JE[op] || (/^define_/.test(op) ? "wache_" + op.slice(7) : rolle(/^equip_/.test(op) ? op.slice(6) : "consumable")),
         value: JE[op] ?? (op === "terrain_base_height" ? st.terrainBaseHeight : 8), blueprintName: /boost/.test(op) ? rolle("consumable") : "wache_blueprint",
         archId: op === "remove_architecture" ? ["number", "string"].map((a) => bau(a)) : undefined, indexOrId: [0, st.creatures[0].userData.netId],
-        positionNode: ["far_player", 40, 60], x: ich.x, y: ich.y - 1, z: ich.z + 3, count: 1, seed: 4711, radius: 1.5, t: 0.4, gier: 0,
+        positionNode: ortForm, x: ich.x, y: ich.y - 1, z: ich.z + 3, count: 1, seed: 4711, radius: 1.5, t: 0.4, gier: 0,
         color: "#88aaff", emotion: "happy", kind: "kiefer", what: "baum", height: 30, size: 8, durationSeconds: 30, scale: 1.2, label: "Probe",
         worldId: Object.keys(K.WORLD_REGISTRY)[0], slot: "tool", mode: "pfad", taskName: "wait", amount: 1, armorName: rolle("armor"), toolName: Object.keys(st.tools)[0],
         tagBonus: { lebendig: 0.2 }, tags: ["lebendig"], opClass, opName: K.OP_NAME_BY_CLASS[opClass], type: op === "apply_connection" ? "nail" : "tree",
@@ -488,8 +509,11 @@ hauptLauf(async () => {
     await page.evaluate(AUSGABE_INSTALL);
     const S = await page.evaluate(probe, GESCHICKT);
     await page.close();
-    // (T) DIE TAT auf einer frischen Seite (die Welt der Wand oben trägt ihre Bauten, Seelen und Gesetze)
-    const tatSeite = await browser.newPage();
+    // (T) DIE TAT in einer frischen Welt: eine Seite in einem EIGENEN Kontext (eigener Speicher). Die Welt der Wand oben trägt
+    // ihre Bauten, Seelen und Gesetze — und ihren Modus: die Form-Probe setzt `set_mode pfad`, der Stand sichert ihn
+    // (`worldMeta.gameMode`); eine Seite im selben Kontext lud diese Welt, sobald ihr Stand vor dem Schließen lag, und im Pfad
+    // wiegt die Gesundheit 0,4 der Situation (`_playerSituationWohl`): K1 δ 0,1607 → 0,0964, Antwort 6,35 → 2,03 dB (z149)
+    const tatSeite = await (await browser.createBrowserContext()).newPage();
     await nullRenderer(tatSeite);
     await server.zeige(tatSeite, 60000);
     await tatSeite.evaluate(() => __weltDa((r) => r.state && r.state.rendererReady && r.state.blueprints && r.nexus));
@@ -517,7 +541,7 @@ hauptLauf(async () => {
     console.log(
         `  KI: Prompt ${S.ki.prompt.length} Zeichen · Quelle: ${S.ops.length} Ops, ${S.ki.gruppen.Orte.length} Orte, ${S.ki.gruppen.Bedingungen.length} Bedingungen, ${S.liste ? S.liste.length : "keine"} Welt-Akte, ${FREI.length} frei; der Nexus komponiert ${Object.keys(S.nexusOps).length} Ops (${Object.keys(S.nexusOps).sort().join(" · ")})`
     );
-    console.log(`  KI-Form: ${S.form.length} Läufe über ${S.ops.length} Ops, ${formUrteil(S.form, {}, []).length} Läufe scheitern an ihrer Form; Listen ${Object.entries(S.listen).map(([n, l]) => `${n} ${l.filter((x) => !S.ops.includes(x)).length}/${l.length} tot`).join(" · ")}`);
+    console.log(`  KI-Form: ${S.form.length} Läufe über ${S.ops.length} Ops am Ort der Wildnis ${JSON.stringify(S.ortForm)},${formUrteil(S.form, {}, []).length} Läufe scheitern an ihrer Form; Listen ${Object.entries(S.listen).map(([n, l]) => `${n} ${l.filter((x) => !S.ops.includes(x)).length}/${l.length} tot`).join(" · ")}`);
     const rot = urteil(S);
     // (T) die Zahlen je Kriterium (`tat-k1 {…}`, `tat-k4 {…}` — die Punkte-Maschine liest sie), die Befunde im Urteil
     const [tu, t, Z] = [tatUrteil(T), T.taten, T.stimme.zeilen];
