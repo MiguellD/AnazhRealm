@@ -1,0 +1,319 @@
+$ C:\Program Files\nodejs\node.exe -e const H = (function sitzungWerkzeug() {
+    const fs = require("fs");
+    const path = require("path");
+    const os = require("os");
+    const http = require("http");
+    const S = Number(process.argv[1]);
+    const W = S + 20000;
+    const H = { S, W, AUS: process.argv[2], FRIST_S: Number(process.argv[3]) - 6, t0: Date.now(), fs, path, teil: undefined };
+    if (!(H.FRIST_S > 0)) {
+        console.log("@@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „" + process.argv[3] + "“: der Läufer ersetzt den Platzhalter SEK)");
+        process.exit(2);
+    }
+    // DIE MARKE der gerissenen Frist (punkte.cjs FRIST_MARKE), EINMAL je Probe: am Deckel der Frist (H.fahre) oder wo die Probe selbst
+    // Fälle an ihr auslässt
+    H.fristRiss = (was) => {
+        if (H.gerissen) return;
+        H.gerissen = was;
+        console.log("@@PUNKTE@@ FRIST " + H.FRIST_S + " s der Probe gerissen — " + was);
+    };
+    const abbau = [];
+    H.url = "http://localhost:" + S + "/index.html";
+    H.sek = () => +((Date.now() - H.t0) / 1000).toFixed(1);
+    H.rest = () => H.FRIST_S - (Date.now() - H.t0) / 1000;
+    H.schlaf = (ms) => new Promise((r) => setTimeout(r, ms));
+    H.zeile = (t) => console.log("@@ " + H.sek() + " s · " + t);
+    H.beimAbbau = (f) => abbau.push(f);
+    // höchstens ms warten: der Wert oder `ersatz` — ein Wurf des Wartenden (auch nach der Frist, etwa die Seite, die neu lädt) steht
+    // beim Namen in der Ausgabe, nie als unbehandelte Ablehnung, die die Probe risse
+    H.binnen = (p, ms, ersatz = null) =>
+        Promise.race([
+            Promise.resolve(p).catch((e) => (console.log("@@ " + H.sek() + " s · gewartet, geworfen: " + String((e && e.message) || e).split("\n")[0]), ersatz)),
+            H.schlaf(Math.max(0, ms)).then(() => ersatz),
+        ]);
+    // DIE WERKBANK der Sitzung (POST mit Frist)
+    H.wb = (weg, nutz, ms = 120000) =>
+        new Promise((ja, nein) => {
+            const q = http.request({ host: "127.0.0.1", port: W, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (r) => {
+                let d = "";
+                r.on("data", (c) => (d += c));
+                r.on("end", () => {
+                    try {
+                        ja(JSON.parse(d));
+                    } catch (_e) {
+                        nein(new Error(weg + ": " + d.slice(0, 200)));
+                    }
+                });
+            });
+            q.setTimeout(Math.max(1000, ms), () => q.destroy(new Error(weg + " ohne Antwort binnen " + Math.round(ms / 1000) + " s")));
+            q.on("error", nein);
+            q.end(JSON.stringify(nutz || {}));
+        });
+    // ein Funktionsrumpf in der Seite der Welt (r = Welt, T = THREE), wie `werkbank eval`
+    H.evalWelt = async (code, ms) => {
+        const a = await H.wb("/eval", { code }, ms);
+        if (!a || a.fehler) throw new Error("werkbank eval: " + (a && a.fehler) + " " + JSON.stringify((a && a.stapel) || []));
+        return a.ergebnis;
+    };
+    // eine frische Welt in der Sitzung (die Grundstellung der Maschine: Spielstand weg, die Seite neu)
+    H.grundstellung = () => {
+        const p = require("child_process").spawnSync(process.execPath, [process.env.PUNKTE_MASCHINE, "grundstellung"], {
+            encoding: "utf8",
+            env: process.env,
+            timeout: 240000,
+        });
+        if (p.status !== 0) throw new Error("grundstellung: " + String((p.stdout || "") + (p.stderr || "")).trim().split(/\r?\n/).slice(-2).join(" | "));
+    };
+    // DER BROWSER DER SITZUNG
+    H.verbinde = async () => {
+        const pp = require("puppeteer");
+        const tmp = os.tmpdir();
+        const kand = fs
+            .readdirSync(tmp)
+            .filter((n) => n.startsWith("werkbank-profil-" + W + "-"))
+            .map((n) => path.join(tmp, n, "DevToolsActivePort"))
+            .filter((f) => fs.existsSync(f))
+            .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+        const fehl = [];
+        for (const f of kand) {
+            const [port, weg] = fs.readFileSync(f, "utf8").split(/\r?\n/);
+            let b = null;
+            try {
+                b = await pp.connect({ browserWSEndpoint: "ws://127.0.0.1:" + port + weg, defaultViewport: null, protocolTimeout: 600000 });
+                const seiten = await b.pages();
+                const page = seiten.find((p) => p.url().startsWith("http://localhost:" + S + "/"));
+                if (!page) throw new Error("keine Seite der Welt (" + seiten.map((p) => p.url()).join(" ") + ")");
+                const vorher = new Set(seiten);
+                // die souveräne Geste (window.confirm des Teilens, ein Dialog beim Verlassen) nimmt die Probe an — die Werkbank hört keinen
+                const ja = (d) => d.accept().catch(() => {});
+                page.on("dialog", ja);
+                H.beimAbbau(async () => {
+                    page.off("dialog", ja);
+                    await page.keyboard.up("KeyW").catch(() => {});
+                    for (const p of await b.pages().catch(() => [])) if (!vorher.has(p)) await p.close().catch(() => {});
+                    await page.bringToFront().catch(() => {});
+                    await b.disconnect();
+                });
+                Object.assign(H, { browser: b, page });
+                return { browser: b, page };
+            } catch (e) {
+                fehl.push(path.basename(path.dirname(f)) + ": " + e.message);
+                if (b) await b.disconnect().catch(() => {});
+            }
+        }
+        throw new Error("kein Browser der Sitzung an :" + W + " (" + (fehl.join(" · ") || "kein DevToolsActivePort unter " + tmp + "/werkbank-profil-" + W + "-*") + ")");
+    };
+    // DIE LINSE ALS BIBLIOTHEK
+    H.linse = (datei, namen, { argv = [], ersetze = [], stumm = {} } = {}) => {
+        const Module = require("module");
+        const f = path.resolve(datei);
+        let text = fs.readFileSync(f, "utf8").replace(/\r\n/g, "\n"); // die Anker in LF, wie auch immer der Baum auscheckt
+        for (const [alt, neu] of ersetze) {
+            const n = text.split(alt).length - 1;
+            if (n !== 1) throw new Error(datei + ": der Anker „" + alt.slice(0, 70) + "“ steht " + n + "× im Text (Soll 1) — die Linse änderte sich");
+            text = text.replace(alt, () => neu);
+        }
+        const wbt = require(path.resolve("scripts/lib/welt-boot.cjs"));
+        const ersatz = Object.assign({ hauptLauf: () => {} }, stumm);
+        const alt = Object.fromEntries(Object.keys(ersatz).map((k) => [k, wbt[k]]));
+        const av = process.argv;
+        Object.assign(wbt, ersatz);
+        process.argv = [av[0], f, ...argv];
+        try {
+            const m = new Module(f, module);
+            m.filename = f;
+            m.paths = Module._nodeModulePaths(path.dirname(f));
+            m._compile(text + "\n;module.exports = { " + namen.join(", ") + " };\n", f);
+            return m.exports;
+        } finally {
+            Object.assign(wbt, alt);
+            process.argv = av;
+        }
+    };
+    // DER EREIGNIS-STROM jeder Eingabe des Spielers (pointerdown · keydown · wheel, vor jedem Hörer der Seite) — wie die Linse
+    // diag-werkstatt-weg ihn je Seite anlegt; in einer schon geladenen Seite einmal
+    H.ereignisStrom = (page) =>
+        page.evaluate(() => {
+            if (window.__eingabeStrom) return;
+            const strom = (window.__eingabeStrom = []);
+            for (const typ of ["pointerdown", "keydown", "wheel"])
+                window.addEventListener(typ, (e) => strom.push({ was: typ === "keydown" ? e.code : typ === "wheel" ? "Rad" : "Klick", echt: e.isTrusted, t: performance.now() }), {
+                    capture: true,
+                    passive: true,
+                });
+        });
+    // DIE SEITE NEU im warmen Browser: warm der Zweit-Boot (nur die Seite neu: Platte, HTTP- und Shader-Cache bleiben), kalt vorher
+    // die Herkunft leer — IndexedDB (Welten, Platte, Chunk-Netze), localStorage, Cache- und Shader-Speicher — samt HTTP-Cache des
+    // Browsers und der Stand-Dateien des save-servers (Pflicht-OFFEN B: „IDB geleert, wie nach jedem Versions-Update"). Rückgabe
+    // die Uhr ab der Navigation (die Kontrolle von außen zählt ab ihr).
+    H.lade = async (page, { kalt = false } = {}) => {
+        if (kalt) {
+            const herkunft = "http://localhost:" + S;
+            await page.goto("about:blank", { waitUntil: "load", timeout: 60000 });
+            const c = await page.target().createCDPSession();
+            try {
+                await c.send("Storage.clearDataForOrigin", { origin: herkunft, storageTypes: "all" });
+                await c.send("Network.clearBrowserCache");
+            } finally {
+                await c.detach().catch(() => {});
+            }
+            for (const d of ["anazhRealmState.json", "anazhRealmState.json.bak", "anazhRealmPerf.json"]) fs.rmSync(d, { force: true });
+        }
+        const t0 = Date.now();
+        await page.goto(H.url, { waitUntil: "domcontentloaded", timeout: 120000 });
+        return t0;
+    };
+    // DER LAUF der Probe: ihr Ergebnis ist das JSON der Ausgabe; die Frist (H.FRIST_S) baut ab und schreibt den Stand `H.teil`
+    H.fahre = (fn) => {
+        let fertig = false;
+        const ende = async (code, j) => {
+            if (fertig) return;
+            fertig = true;
+            clearTimeout(uhr);
+            if (j !== undefined)
+                try {
+                    fs.writeFileSync(H.AUS, JSON.stringify(j));
+                } catch (e) {
+                    console.log("@@ Ausgabe: " + e.message);
+                }
+            for (const f of abbau.reverse()) await H.binnen(Promise.resolve().then(f).catch((e) => console.log("@@ Abbau: " + e.message)), 15000);
+            process.exit(code);
+        };
+        const uhr = setTimeout(() => {
+            H.fristRiss("Abbau, die Ausgabe trägt den Stand bis hier");
+            ende(3, H.teil);
+        }, H.FRIST_S * 1000);
+        Promise.resolve()
+            .then(() => fn(H))
+            .then(
+                (j) => ende(0, j),
+                (e) => {
+                    console.log("@@ PROBE-FEHLER " + String((e && e.stack) || e).split("\n").slice(0, 5).join(" | "));
+                    ende(2, H.teil);
+                }
+            );
+    };
+    return H;
+})();
+H.seite = {
+BAENDER: {"rinde":[0.07,0.12,"Karte material (aaaa): Rinde 0,07–0,12"],"laub":[0.15,0.26,"Karte material (aaaa): Laub/Gras 0,15–0,26"],"fels":[0.1,0.3,"Karte material (aaaa): Fels 0,10–0,30 (PSU EARTH 103, spec/abnahme/soll-tafel.json)"],"boden":[0.0123,0.871,"Frostbite (Lagarde & de Rousiers 2014, §3.2.1): Dielektrika sRGB 30–240 = linear 0,0123–0,871"],"haus":[0.0123,0.871,"Frostbite (Lagarde & de Rousiers 2014, §3.2.1): Dielektrika sRGB 30–240 = linear 0,0123–0,871"],"haus-l1":[0.0123,0.871,"Frostbite (Lagarde & de Rousiers 2014, §3.2.1): Dielektrika sRGB 30–240 = linear 0,0123–0,871"],"haus-l2":[0.0123,0.871,"Frostbite (Lagarde & de Rousiers 2014, §3.2.1): Dielektrika sRGB 30–240 = linear 0,0123–0,871"],"lack":[0.0123,0.871,"Frostbite (Lagarde & de Rousiers 2014, §3.2.1): Dielektrika sRGB 30–240 = linear 0,0123–0,871"],"haut":[0.0123,0.871,"Frostbite (Lagarde & de Rousiers 2014, §3.2.1): Dielektrika sRGB 30–240 = linear 0,0123–0,871"],"fell":[0.0123,0.871,"Frostbite (Lagarde & de Rousiers 2014, §3.2.1): Dielektrika sRGB 30–240 = linear 0,0123–0,871"],"tor":[0.25,0.95,"Buntmetall (gegenstand-stoff BAND buntmetall; PBR-Tafeln: Messing/Bronze F0 ~0,8)"],"klinge":[0.3,0.95,"blankes Metall (gegenstand-stoff BAND blank; PBR-Tafeln: Eisen F0 0,56)"]},
+FELS: "const f = r._foundry, o = {}; for (const [k, v] of Object.entries((f && f.recipes) || {})) if (v && v.kind === \"rock\") o[k] = r._foundryKindStages(k); return o;"
+};
+H.fahre(async function probeAlbedo(H) {
+    const { fs, path } = H;
+    const t0 = Date.now();
+    const DIR = H.AUS + ".d";
+    fs.mkdirSync(DIR, { recursive: true });
+    const duenn = (o) => (o == null ? null : JSON.parse(JSON.stringify(o, (_k, v) => (typeof v === "string" && v.length > 4096 ? undefined : v))));
+    const log = process.env.PUNKTE_SITZUNG_LOG;
+    const j = (H.teil = {
+        plan: "material.K1+K3",
+        adapter: (/\[linse-gpu\][^\r\n]*/.exec(log && fs.existsSync(log) ? fs.readFileSync(log, "utf8") : "") || [null])[0],
+        schritte: {},
+        dateien: {},
+        welt: null,
+        labor: null,
+        zeilen: [],
+        eichung: null,
+        fehler: null,
+    });
+    const t = JSON.parse(fs.readFileSync(path.join("spec", "farbe", "albedo-tafel.json"), "utf8"));
+    // DAS LABOR NEBEN DER WELT: das Fenster des Labors im Browser der Sitzung, die Seiten der Studios vom save-server der Sitzung
+    const labor = (async () => {
+        const { browser } = await H.verbinde();
+        const kontext = await browser.createBrowserContext();
+        H.beimAbbau(() => kontext.close().catch(() => null));
+        const { CODE_OF_SEITE } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+        const derSitzung = {
+            newPage: async () => {
+                const p = await kontext.newPage();
+                await p.setViewport({ width: 1280, height: 800, deviceScaleFactor: 1 });
+                await p.evaluateOnNewDocument(CODE_OF_SEITE);
+                return p;
+            },
+            close: async () => {},
+        };
+        const server = {
+            lausche: async () => server,
+            zeige: (seite, frist, rest = "index.html", warte = "domcontentloaded") =>
+                seite.goto("http://localhost:" + H.S + "/" + rest, { waitUntil: warte, timeout: frist }),
+            close: () => {},
+        };
+        const L = H.linse("scripts/diag-albedo-tafel.cjs", ["messeLabor"], { stumm: { statikServer: () => server, starteBrowser: async () => derSitzung } });
+        const AT = require(path.resolve("scripts/lib/albedo-tafel.cjs"));
+        try {
+            const m = await L.messeLabor({ echt: true, nur: null, tafel: AT.ladeTafel() });
+            H.zeile("Labor " + Object.keys(m.labor).length + " Zeilen · " + m.geraet);
+            return Object.assign(m, { datum: new Date().toISOString(), echt: true });
+        } finally {
+            await kontext.close().catch(() => null);
+        }
+    })().catch((e) => {
+        j.laborFehler = "Labor: " + String((e && e.message) || e).split("\n")[0].slice(0, 300);
+        H.zeile(j.laborFehler);
+        return null;
+    });
+    // DIE WELT: an den Ort der Tafel, die Tafel, die Stufen der Art rock
+    let Wm = null;
+    const schritt = (name, o, exit) => (j.schritte[name] = { exit, json: duenn(o), rest: String((o && (o.tabelle || o.fehler)) || "").slice(-1500) });
+    try {
+        const gw = (t.gemessen && t.gemessen.welt) || {};
+        if (gw.ort !== "genesis") throw new Error("die Tafel misst ihre Welt-Seite an " + JSON.stringify(gw.ort || gw.spieler) + ", die Probe steht an genesis");
+        const um = await H.wb("/umstellen", { ort: "genesis", sicht: "ego" }, 300000);
+        schritt("ort", um, um && !um.fehler ? 0 : 1);
+        if (!um || um.fehler) throw new Error("umstellen: " + String((um && um.fehler) || "keine Antwort").slice(0, 300));
+        H.zeile("ort · " + um.takte + " Takte");
+        const wd = path.join(DIR, "welt.json");
+        const al = await H.wb("/albedo", { datei: wd, ordner: path.join(DIR, "albw") }, 900000);
+        schritt("welt", al, al && al.urteil === "GRUEN" ? 0 : 1);
+        if (fs.existsSync(wd)) Wm = JSON.parse(fs.readFileSync(wd, "utf8"));
+        j.dateien.welt = duenn(Wm);
+        H.zeile("welt · " + (Wm ? Object.keys(Wm.welt || {}).length + " Zeilen, Karte " + Wm.eichung : "ohne Messung"));
+        const fe = await H.wb("/eval", { code: H.seite.FELS }, 60000);
+        schritt("fels", fe, fe && !fe.fehler ? 0 : 1);
+        if (!Wm) throw new Error("albedo --tafel ohne Messung: " + j.schritte.welt.rest.slice(-300));
+    } catch (e) {
+        j.fehler = "Welt: " + String((e && e.message) || e).split("\n")[0].slice(0, 400);
+    }
+    const Lm = await labor;
+    if (Wm && Lm) {
+        const W = Wm.welt || {}, Lz = Lm.labor || {};
+        j.welt = { echt: Wm.echt === true, geraet: Wm.geraet || null, eichung: Wm.eichung };
+        j.labor = { echt: Lm.echt === true, geraet: Lm.geraet || null, eichung: (Lm.eichung && Lm.eichung.labor) || {}, fehler: Lm.fehler || [] };
+        const k = t.karte || {};
+        const ok = (y) => typeof y === "number" && Math.abs(y - k.albedo) <= k.eichRand;
+        j.eichung = {
+            soll: k.albedo,
+            rand: k.eichRand,
+            welt: Wm.eichung,
+            labor: j.labor.eichung,
+            gruen: ok(Wm.eichung) && Object.keys(j.labor.eichung).length > 0 && Object.values(j.labor.eichung).every(ok),
+        };
+        for (const z of t.zeilen) {
+            const l = Lz[z.id] && Lz[z.id].Y, y = W[z.id] && W[z.id].Y;
+            const e = H.seite.BAENDER[z.id] || null;
+            const b = e && e.slice(0, 2);
+            const bandOk = !!e;
+            j.zeilen.push({
+                id: z.id,
+                L: l > 0 ? l : null,
+                W: y > 0 ? y : null,
+                v: l > 0 && y > 0 ? +(y / l).toFixed(4) : null,
+                band: b,
+                quelle: e && e[2],
+                bandOk,
+                inBand: bandOk && l > 0 && y > 0 && [l, y].every((x) => x >= b[0] && x <= b[1]),
+            });
+        }
+    }
+    j.sek = +((Date.now() - t0) / 1000).toFixed(1);
+    console.log(j.adapter || "[linse-gpu] ungenannt");
+    console.log(j.fehler ? "ALBEDO-TAFEL ROT: " + j.fehler : "ALBEDO-TAFEL " + j.zeilen.length + " Zeilen beider Seiten" + (j.laborFehler ? " — " + j.laborFehler : ""));
+    return j;
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\5fba36ea-gtx\material.K1_1.json 10
+@@ 1.1 s · ort · 59 Takte
+@@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier
+@@ 4.1 s · Labor: Protocol error (Runtime.evaluate): Target closed
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
