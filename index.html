@@ -30,7 +30,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'sha256-0Uxx8GfPSERurkq9sL6uAmur5cQSOlBXJPyZmEpXMVA='; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: stun: turn: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v18.271.0 – Das Ultiversum</title>
+        <title data-t="ui.anazh-realm-v18-271-0"></title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -532,7 +532,7 @@
                 transition: opacity 0.25s ease;
             }
             body.hud-hidden::after {
-                content: "H — HUD zeigen";
+                content: attr(data-hud-zeigen);
                 position: fixed;
                 bottom: 10px;
                 right: 14px;
@@ -1907,7 +1907,8 @@
             /* Ring 10 — Welt-Fusion-Dialog. Erbt die Pergament/Brass-Optik vom
            Welt-Tor, fügt eine 2-Spalten-Eltern-Zeile, Strategie-Radio-Gruppe
            und ein optionales Slug-Feld hinzu. */
-            #world-fusion-dialog {
+            #world-fusion-dialog,
+            #frage-dialog {
                 background:
                     radial-gradient(circle at top left, rgba(255, 245, 220, 0.95) 0%, rgba(240, 220, 180, 0.95) 100%),
                     var(--parch-1);
@@ -1921,7 +1922,8 @@
                 max-width: 560px;
                 font-family: Georgia, serif;
             }
-            #world-fusion-dialog::backdrop {
+            #world-fusion-dialog::backdrop,
+            #frage-dialog::backdrop {
                 background: rgba(20, 14, 6, 0.55);
                 backdrop-filter: blur(2px);
             }
@@ -1993,6 +1995,11 @@
                 opacity: 0.78;
                 line-height: 1.4;
                 grid-column: 2;
+            }
+            #frage-dialog .frage-text {
+                margin: 0 0 0.9em;
+                line-height: 1.5;
+                white-space: pre-line;
             }
             .world-fusion-footer {
                 display: flex;
@@ -8156,10 +8163,10 @@
             }
         </style>
     </head>
-    <body>
+    <body data-t-data-hud-zeigen="ui.h-hud-zeigen">
         <div id="ladeschirm" role="status" aria-live="polite">
-            <div class="ladeschirm-titel">Anazh Realm</div>
-            <div class="ladeschirm-satz">Die Welt erwacht …</div>
+            <div data-t="ui.anazh-realm" class="ladeschirm-titel"></div>
+            <div data-t="ui.die-welt-erwacht" class="ladeschirm-satz"></div>
             <div class="ladeschirm-glut" aria-hidden="true"></div>
             <div class="ladeschirm-stand" id="ladeschirm-stand"></div>
         </div>
@@ -8174,7 +8181,7 @@
              Labels (Funke=HP, Spirale=Stamina), warme Brass-Endkappen, SVG-
              Bars mit inner Glow. Antik-modernes Gefühl: Eisen-Plattform mit
              leuchtenden Werten. Tooltip auf Hover. -->
-        <div id="stats-hud" role="status" aria-label="Lebenskraft + Ausdauer" title="Hover zeigt alle Stats">
+        <div id="stats-hud" role="status" data-t-aria-label="ui.lebenskraft-ausdauer" data-t-title="ui.hover-zeigt-alle-stats">
             <div class="stats-hud-row" id="stats-hud-hp-row">
                 <span class="stats-hud-glyph glyph-hp" aria-hidden="true">❖</span>
                 <svg width="170" height="12" viewBox="0 0 170 12" aria-hidden="true">
@@ -8347,40 +8354,40 @@
                 </svg>
                 <span class="stats-hud-value" id="stats-hud-bogen-text">0 %</span>
             </div>
-            <div id="stats-hud-tooltip" aria-hidden="true">Stats laden …</div>
+            <div data-t="ui.stats-laden" id="stats-hud-tooltip" aria-hidden="true"></div>
         </div>
-        <div id="hotbar" role="toolbar" aria-label="Bauplan-Hotbar"></div>
-        <div id="untertitel" role="log" aria-live="polite" aria-label="Untertitel" hidden></div>
+        <div id="hotbar" role="toolbar" data-t-aria-label="ui.bauplan-hotbar"></div>
+        <div id="untertitel" role="log" aria-live="polite" data-t-aria-label="ui.untertitel" hidden></div>
         <!-- DER TACHO (Leben-Schau 2, fahr-bahn): im Sattel eines Gesetz-Wagens die km/h seines Fahr-Zustands
              (|vlong| × vehicle:FAHR.kmh, dieselbe Zahl wie die Probefahrt) und die Fahr-Tasten (AnazhRealm.FAHR_TASTEN).
              Schreiber: `_fahrAnzeige` (Stamm); ohne Ritt verborgen. -->
-        <div id="fahr-tacho" role="status" aria-label="Tacho" hidden>
+        <div id="fahr-tacho" role="status" data-t-aria-label="ui.tacho" hidden>
             <div class="fahr-tacho-anzeige">
-                <span class="fahr-tacho-zahl" data-kmh>0</span><span class="fahr-tacho-einheit">km/h</span>
+                <span class="fahr-tacho-zahl" data-kmh>0</span><span data-t="ui.km-h" class="fahr-tacho-einheit"></span>
             </div>
             <div class="fahr-tacho-tasten"></div>
         </div>
         <!-- Welle 6.C1 — Hylomorphismus-Inventar (Tab-Toggle). 27 Slots in
              3×9-Grid. Jeder Slot trägt Tag-Profile bei Hover als Glow + Audio. -->
-        <div id="inventory-overlay" role="dialog" aria-label="Dein Ich" aria-modal="false" hidden>
+        <div id="inventory-overlay" role="dialog" data-t-aria-label="ui.dein-ich" aria-modal="false" hidden>
             <!-- V18.68 Ich-J6 (Schöpfer-Korrektur²): „unten durch all die Statistiken" = eine vollbreite
                  STATSBAR unten (wie V18.66), NICHT in die linke Spalte gequetscht. Das WAHRE Modell:
                  OBEN-LINKS WER ICH BIN (Körper-Wahl · kleiner Viewer · „Was du trägst" darunter) · MITTE
                  WAS ICH HABE (Inventar/Hotbar, zentral) · RECHTS Rezepte · UNTEN die STATSBAR vollbreit
                  (Verfassung · WERTE | NATUR · EMOTION). -->
             <div class="inventory-header">
-                <h2>Dein Ich</h2>
+                <h2 data-t="ui.dein-ich"></h2>
             </div>
             <div class="inventory-body">
                 <div class="ich-cols">
                     <div class="inventory-col-character">
-                        <h3 class="inventory-col-title">Wer ich bin</h3>
+                        <h3 data-t="ui.wer-ich-bin" class="inventory-col-title"></h3>
                         <div class="ich-soul-bar">
-                            <label for="player-soul-select">Körper</label>
+                            <label data-t="ui.koerper" for="player-soul-select"></label>
                             <select
                                 id="player-soul-select"
-                                aria-label="Spieler-Seele wählen"
-                                title="Wähle deinen Körper. Einen neuen formst du in der Werkstatt („Körper holen")."
+                                data-t-aria-label="ui.spieler-seele-waehlen"
+                                data-t-title="ui.waehle-deinen-koerper-einen-neuen")."
                             ></select>
                         </div>
                         <div class="ich-self">
@@ -8388,7 +8395,7 @@
                                 <canvas
                                     id="ich-stage-canvas"
                                     class="hof-stage-canvas"
-                                    aria-label="Bühne — dein Avatar"
+                                    data-t-aria-label="ui.buehne-dein-avatar"
                                 ></canvas>
                             </div>
                             <!-- „Was du trägst" — KEINE Überschrift, direkt unter dem Viewer (Schöpfer):
@@ -8402,24 +8409,24 @@
                         <div id="player-equip"></div>
                     </div>
                     <div class="inventory-col-items">
-                        <h3 class="inventory-col-title">Was ich habe</h3>
+                        <h3 data-t="ui.was-ich-habe" class="inventory-col-title"></h3>
                         <div id="inventory-grid" class="inventory-grid"></div>
                         <div id="inventory-selected" class="inventory-selected" aria-live="polite">
-                            <span class="label">gewählt:</span> <span class="name">—</span>
+                            <span data-t="ui.gewaehlt" class="label"></span> <span class="name">—</span>
                         </div>
                         <section class="section">
-                            <h4>Hotbar</h4>
+                            <h4 data-t="ui.hotbar"></h4>
                             <div id="hotbar-config"></div>
                         </section>
                     </div>
                     <div class="inventory-col-recipes">
-                        <h3 class="inventory-col-title">Was ich machen kann</h3>
+                        <h3 data-t="ui.was-ich-machen-kann" class="inventory-col-title"></h3>
                         <input
                             type="text"
                             id="ich-search"
                             class="ich-search"
-                            placeholder="Durchsuche … (Item, Material, Rezept)"
-                            aria-label="Dein Ich durchsuchen"
+                            data-t-placeholder="ui.durchsuche-item-material-rezept"
+                            data-t-aria-label="ui.dein-ich-durchsuchen"
                             autocomplete="off"
                         />
                         <div id="inventory-recipes" class="inventory-recipes" aria-live="polite"></div>
@@ -8431,7 +8438,7 @@
                     <div id="ich-stage-spec" class="hof-stage-spec"></div>
                     <div class="ich-readout-side">
                         <div class="ich-emotion-block">
-                            <h4 title="Wie du die Welt WERTEST — färbt den Bildschirmrand.">Emotion</h4>
+                            <h4 data-t="ui.emotion" data-t-title="ui.wie-du-die-welt-wertest"></h4>
                             <div id="status-emotions"></div>
                             <!-- W-C(b)/R-003 — das EINE Boost-Band (was JETZT wirkt) lebt hier
                                  im Freiraum der Emotions-Spalte (Schöpfer-Wort „rechts unten"). -->
@@ -8444,46 +8451,38 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="sub">— Das Ultiversum</span><span class="version"></span>
+                    <span data-t="ui.anazh-realm"></span> <span data-t="ui.das-ultiversum" class="sub"></span><span class="version"></span>
                 </div>
                 <!-- UI-Putz: kein "Welt"-Tab mehr — die Welt IST die 3D-Szene (der Default-
                      Blick, kein Seiten-Panel nötig). Welt-Info + Aktionen leben in den
                      Einstellungen bei der Welt-Beziehung. Default: kein Tab aktiv = die Welt. -->
-                <nav class="tabs" role="tablist" aria-label="Hauptansichten">
-                    <button class="tab" type="button" data-tab="kreaturen" role="tab">Hof</button>
-                    <button class="tab" type="button" data-tab="spieler" role="tab">Ich</button>
-                    <button class="tab" type="button" data-tab="werkstatt" role="tab">Werkstatt</button>
-                    <button class="tab" type="button" data-tab="bibliothek" role="tab">Bibliothek</button>
-                    <button class="tab" type="button" data-tab="einstellungen" role="tab">Einstellungen</button>
+                <nav class="tabs" role="tablist" data-t-aria-label="ui.hauptansichten">
+                    <button data-t="ui.hof" class="tab" type="button" data-tab="kreaturen" role="tab"></button>
+                    <button data-t="ui.ich" class="tab" type="button" data-tab="spieler" role="tab"></button>
+                    <button data-t="ui.werkstatt" class="tab" type="button" data-tab="werkstatt" role="tab"></button>
+                    <button data-t="ui.bibliothek" class="tab" type="button" data-tab="bibliothek" role="tab"></button>
+                    <button data-t="ui.einstellungen" class="tab" type="button" data-tab="einstellungen" role="tab"></button>
                 </nav>
                 <div class="topbar-toggles">
                     <!-- V18.47 — der Omnibox-Maus-Trigger (Ctrl+K war nur Tastatur): EIN sichtbarer Knopf
                          öffnet die Alles-Suche → Maus-Parität für den Schlüsselstein + Vorbedingung, die
                          Befehls-Listen zu retiren, ohne Maus-Spieler abzuschneiden. -->
-                    <button
+                    <button data-t="ui.suche"
                         id="omnibox-trigger"
                         class="latch omnibox-trigger"
                         type="button"
-                        aria-label="Suche öffnen (Strg+K)"
-                        title="Alles-Suche · Befehle · Baupläne · Räume (Strg/Cmd+K)"
-                    >
-                        ⌕ Suche
-                    </button>
-                    <button id="grok-voice-toggle" class="latch" type="button" aria-pressed="false" hidden>
-                        Stimme: aus
-                    </button>
-                    <button id="anazh-symphony-toggle" class="latch" type="button" aria-pressed="false">
-                        Klang: aus
-                    </button>
-                    <button
+                        data-t-aria-label="ui.suche-oeffnen-strg-k"
+                        data-t-title="ui.alles-suche-befehle-bauplaene-raeume"
+                    ></button>
+                    <button data-t="ui.stimme-aus" id="grok-voice-toggle" class="latch" type="button" aria-pressed="false" hidden></button>
+                    <button data-t="ui.klang-aus" id="anazh-symphony-toggle" class="latch" type="button" aria-pressed="false"></button>
+                    <button data-t="ui.sicht-1st"
                         id="camera-mode-toggle"
                         class="latch"
                         type="button"
                         aria-pressed="false"
-                        aria-label="Kamera-Modus"
-                    >
-                        Sicht: 1st
-                    </button>
+                        data-t-aria-label="ui.kamera-modus"
+                    ></button>
                 </div>
             </div>
         </header>
@@ -8495,10 +8494,10 @@
              Verlust (P17), ein Klick entfernt. -->
         <div id="statusbar" class="hud-frame dev-hidden">
             <span class="status-item"
-                ><span class="label">Welt</span><span class="value" id="status-slug">—</span></span
+                ><span data-t="ui.welt" class="label"></span><span class="value" id="status-slug">—</span></span
             >
             <span class="status-item"
-                ><span class="label">Wetter</span><span class="value" id="status-weather">—</span></span
+                ><span data-t="ui.wetter" class="label"></span><span class="value" id="status-weather">—</span></span
             >
             <!-- W-C(g)/R-009 (V18.169) — das EMOTIONS-WORT lebt IN der Leiste (Schöpfer:
                  „in die Leiste oder gar nicht"): dieselbe _emotionState-Quelle + Farbe +
@@ -8509,30 +8508,30 @@
                 ><span class="value" id="status-emotion" style="opacity: 0"></span></span
             >
             <span class="status-item"
-                ><span class="label">Modus</span><span class="value" id="status-mode">frieden</span></span
+                ><span data-t="ui.modus" class="label"></span><span data-t="ui.frieden" class="value" id="status-mode"></span></span
             >
             <span class="status-item"
-                ><span class="label">Zeit</span><span class="value" id="status-time">—</span></span
+                ><span data-t="ui.zeit" class="label"></span><span class="value" id="status-time">—</span></span
             >
             <span class="status-item status-dev"
-                ><span class="label">FPS</span><span class="value" id="status-fps">—</span></span
+                ><span data-t="ui.fps" class="label"></span><span class="value" id="status-fps">—</span></span
             >
             <span class="status-item status-dev"
-                ><span class="label">Kreaturen</span><span class="value" id="status-creatures">—</span></span
+                ><span data-t="ui.kreaturen" class="label"></span><span class="value" id="status-creatures">—</span></span
             >
             <span class="status-item status-dev"
-                ><span class="label">Aufträge</span><span class="value" id="status-tasks">—</span></span
+                ><span data-t="ui.auftraege" class="label"></span><span class="value" id="status-tasks">—</span></span
             >
             <span class="status-item status-dev"
-                ><span class="label">Seele</span><span class="value" id="status-soul">—</span></span
+                ><span data-t="ui.seele" class="label"></span><span class="value" id="status-soul">—</span></span
             >
             <span class="status-item status-dev"
-                ><span class="label">Bauten</span><span class="value" id="status-architectures">—</span></span
+                ><span data-t="ui.bauten" class="label"></span><span class="value" id="status-architectures">—</span></span
             >
             <span class="status-item status-dev pos"
-                ><span class="label">Position</span><span class="value" id="status-position">—</span></span
+                ><span data-t="ui.position" class="label"></span><span class="value" id="status-position">—</span></span
             >
-            <button id="status-dev-toggle" type="button" title="Werkstatt-Zahlen ein-/ausblenden (FPS · Kreaturen · Aufträge · Seele · Bauten · Position)">
+            <button id="status-dev-toggle" type="button" data-t-title="ui.werkstatt-zahlen-ein-ausblenden-fps">
                 ···
             </button>
         </div>
@@ -8540,100 +8539,89 @@
              Linear-Muster). Tag-Grammatik c: Befehl · b: Bauplan · w/s/t/a/g/p: Bauplan nach Rolle · geh: Raum ·
              welt: Bibliothek · k: Kreatur · sonst Freitext → Nexus. Verdichtet Chat + Befehle-Liste + Such-Felder
              zu EINEM Pfad (Heilige Lektion); ruft processChatCommand/selectBlueprintForEdit (additiv). -->
-        <div id="omnibox-overlay" hidden role="dialog" aria-modal="true" aria-label="Omnibox — Alles-Suche">
+        <div id="omnibox-overlay" hidden role="dialog" aria-modal="true" data-t-aria-label="ui.omnibox-alles-suche">
             <div id="omnibox-panel" class="parchment">
                 <input
                     type="text"
                     id="omnibox-input"
                     autocomplete="off"
                     spellcheck="false"
-                    placeholder="Tippe eine Absicht …  c: Befehl · b: Bauplan · w: Waffe · geh: Raum · sonst sprich zum Nexus"
-                    aria-label="Absicht eingeben"
+                    data-t-placeholder="ui.tippe-eine-absicht-c-befehl"
+                    data-t-aria-label="ui.absicht-eingeben"
                 />
                 <div id="omnibox-results" role="listbox"></div>
-                <div id="omnibox-hint">↑↓ wählen · ⏎ ausführen · Esc schließen</div>
+                <div data-t="ui.waehlen-ausfuehren-esc-schliessen" id="omnibox-hint"></div>
             </div>
         </div>
-        <aside class="drawer" data-drawer="kreaturen" aria-label="Kreaturen-Panel" hidden>
-            <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
-            <h2>Der Hof</h2>
+        <aside class="drawer" data-drawer="kreaturen" data-t-aria-label="ui.kreaturen-panel" hidden>
+            <button class="drawer-close" type="button" data-drawer-close data-t-aria-label="ui.schliessen">×</button>
+            <h2 data-t="ui.der-hof"></h2>
             <!-- V18.51 Hof-E (UI-Putz §2, hof-plan §D/§G.7) — ZWEI ZONEN nach dem mentalen Modell des Dirigenten:
                  DAS ORCHESTER (Star, content-first: die Wesen + ihr Spawn + das Gruppen-Dirigat) | DIE PARTITUR
                  (die stehenden Gesetze + der Nexus als Ko-Dirigent). Ersetzt den gleichrangigen 3-Spalten-Stapel. -->
             <section class="section hof-orchester">
-                <h3>Das Orchester</h3>
-                <p class="drawer-hint">
-                    Wähle ein Wesen aus der Liste — es tritt auf die Bühne, seine volle Natur/Werte/Wachstum lesen
-                    darunter. Befiehl ihm inline; wähle eine Sektion, um zur ganzen Gruppe zu sprechen.
-                </p>
+                <h3 data-t="ui.das-orchester"></h3>
+                <p data-t="ui.waehle-ein-wesen-aus-der" class="drawer-hint"></p>
                 <!-- V18.54 Hof-Bühne — der STAR (das Werkstatt-Viewer-Pendant): das fokussierte Wesen groß +
                      rotierend in 3D, darunter seine Spec-Card (Werkstatt-DNA: dunkle Bühne + Spec-Sheet). -->
                 <div class="hof-stage">
                     <canvas
                         id="hof-stage-canvas"
                         class="hof-stage-canvas"
-                        aria-label="Bühne — das fokussierte Wesen"
+                        data-t-aria-label="ui.buehne-das-fokussierte-wesen"
                     ></canvas>
                     <div id="hof-stage-spec" class="hof-stage-spec"></div>
                 </div>
                 <!-- V18.51 Hof-F — die Sektions-Leiste (Gruppen-Dirigat): wähle [Alle]/[Geister]/[Sammler]/…
                      → die Liste filtert + die Befehle gelten der GANZEN Sektion (assignTaskToAllCreatures gefiltert). -->
-                <div id="hof-sections" class="hof-sections" aria-label="Sektionen"></div>
+                <div id="hof-sections" class="hof-sections" data-t-aria-label="ui.sektionen"></div>
                 <div id="hof-section-cmd" class="hof-section-cmd" hidden></div>
                 <div id="creature-list" class="creature-list" aria-live="polite">—</div>
                 <!-- Hof-E §D.3 — das Spawnen integriert (ein neues Mitglied gehört zum Orchester). -->
                 <div class="hof-spawn">
-                    <span class="hof-spawn-title">✦ Ein neues Wesen rufen</span>
+                    <span data-t="ui.ein-neues-wesen-rufen" class="hof-spawn-title"></span>
                     <div class="hof-spawn-row">
-                        <select id="creature-soul-select" aria-label="Kreatur-Seele wählen">
-                            <option value="">Zufällig</option>
-                            <option value="wesen">Hirsch (sanft · Wiese)</option>
-                            <option value="wolf">Wolf (Jäger · wach)</option>
-                            <option value="fuchs">Fuchs (flink · listig)</option>
-                            <option value="baer">Bär (schwer · ruhig)</option>
+                        <select id="creature-soul-select" data-t-aria-label="ui.kreatur-seele-waehlen">
+                            <option data-t="ui.zufaellig" value=""></option>
+                            <option data-t="ui.hirsch-sanft-wiese" value="wesen"></option>
+                            <option data-t="ui.wolf-jaeger-wach" value="wolf"></option>
+                            <option data-t="ui.fuchs-flink-listig" value="fuchs"></option>
+                            <option data-t="ui.baer-schwer-ruhig" value="baer"></option>
                         </select>
                         <button type="button" data-creature-spawn="1">+1</button>
                         <button type="button" data-creature-spawn="5">+5</button>
                         <button type="button" data-creature-spawn="10">+10</button>
                     </div>
                     <div class="hof-spawn-world">
-                        <span class="hof-spawn-world-label">Alle Wesen in der Welt:</span>
-                        <button type="button" data-cmd="Kreaturen aktivieren">Sichtbar</button>
-                        <button type="button" data-cmd="Kreaturen deaktivieren">Verbergen</button>
+                        <span data-t="ui.alle-wesen-in-der-welt" class="hof-spawn-world-label"></span>
+                        <button data-t="ui.sichtbar" type="button" data-cmd="Kreaturen aktivieren"></button>
+                        <button data-t="ui.verbergen" type="button" data-cmd="Kreaturen deaktivieren"></button>
                     </div>
                 </div>
             </section>
             <section class="section hof-partitur">
-                <h3>Die Partitur</h3>
-                <p class="drawer-hint">
-                    Die stehenden Gesetze, die das ganze Feld formen — „wann immer X, dann Y". Sie feuern von selbst. Im
-                    Chat/der Omnibox: „wann immer es regnet, dann setze wetter sunny".
-                </p>
+                <h3 data-t="ui.die-partitur"></h3>
+                <p data-t="ui.die-stehenden-gesetze-die-das" class="drawer-hint"></p>
                 <div id="status-worldrules"></div>
-                <h4 class="hof-subhead">Der Nexus komponiert</h4>
-                <p class="drawer-hint">
-                    Benannte Gesten — ▶ wirkt sie einmal. Mensch + KI an EINEM Pult (Ko-Dirigent).
-                </p>
+                <h4 data-t="ui.der-nexus-komponiert" class="hof-subhead"></h4>
+                <p data-t="ui.benannte-gesten-wirkt-sie-einmal" class="drawer-hint"></p>
                 <div id="status-abilities"></div>
                 <!-- V18.61 Ich-F (H.1) — die CHRONIK DER WELT: das worldJournal ist die Welt-Stimme (sie
                      erzählt genesis/creatures/weather/growth/soul/rule — auch über mich), nicht das Selbst;
                      sie gehört in den Hof (neben den Nexus), nicht ins Ich. _renderHofChronik füllt sie. -->
-                <h4 class="hof-subhead">Chronik der Welt</h4>
-                <p class="drawer-hint">
-                    Die Reise des Reichs — was geschah + erschaffen wurde. Die Welt erinnert.
-                </p>
+                <h4 data-t="ui.chronik-der-welt" class="hof-subhead"></h4>
+                <p data-t="ui.die-reise-des-reichs-was" class="drawer-hint"></p>
                 <div id="hof-chronik"></div>
             </section>
             <!-- V18.47 Hof-B (UI-Putz §2) — die „Befehle · die Sprache des Hofes"-Liste (~60 Knöpfe) ist
                  AUFGELÖST: die Omnibox (⌕ Suche / Ctrl+K, `c:`) trägt ALLE Befehle durchsuchbar an EINEM Ort. -->
         </aside>
-        <aside class="drawer" data-drawer="werkstatt" aria-label="Werkstatt-Panel" hidden>
-            <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
+        <aside class="drawer" data-drawer="werkstatt" data-t-aria-label="ui.werkstatt-panel" hidden>
+            <button class="drawer-close" type="button" data-drawer-close data-t-aria-label="ui.schliessen">×</button>
             <h2>
-                Werkstatt<span class="help-dot" tabindex="0" role="note" aria-label="Steuerung der 3D-Vorschau"
-                    >?<span class="help-pop"
-                        >Klick: Part wählen · Drag auf Achse: bewegen · Drag ins Leere: orbit · Shift+Drag oder
-                        Mittelmaus: pan · Rad: zoom zum Cursor · W/E/R/C: Modus · G: einrasten</span
+                <span data-t="ui.werkstatt"></span><span class="help-dot" tabindex="0" role="note" data-t-aria-label="ui.steuerung-der-3d-vorschau"
+                    >?<span data-t="ui.klick-part-waehlen-drag-auf" class="help-pop"
+                        ></span
                     ></span
                 >
             </h2>
@@ -8643,211 +8631,183 @@
                  alles rutscht hoch, der Viewer wächst (Schöpfer-Methodik). -->
             <section class="section">
                 <div id="workshop-preview-row">
-                    <aside id="workshop-side-palette" aria-label="Form-Palette">
+                    <aside id="workshop-side-palette" data-t-aria-label="ui.form-palette">
                         <section class="section workshop-picker">
                             <input
                                 type="text"
                                 id="workshop-search"
                                 class="help-search"
-                                placeholder="Bibliothek: Teil · Studio · Bereich …"
-                                aria-label="Die Bibliothek der Teile (Studio → Bereich → Teil) wählen oder durchsuchen"
+                                data-t-placeholder="ui.bibliothek-teil-studio-bereich"
+                                data-t-aria-label="ui.die-bibliothek-der-teile-studio"
                                 autocomplete="off"
                             />
                             <div id="workshop-list"></div>
                         </section>
-                        <h4>Formen</h4>
-                        <div id="workshop-shape-palette" role="group" aria-label="Form-Palette">
-                            <div class="workshop-shape-card" draggable="true" data-shape="box" title="Würfel">
+                        <h4 data-t="ui.formen"></h4>
+                        <div id="workshop-shape-palette" role="group" data-t-aria-label="ui.form-palette">
+                            <div class="workshop-shape-card" draggable="true" data-shape="box" data-t-title="ui.wuerfel">
                                 <div class="workshop-shape-icon" data-icon="box"></div>
-                                <span>Würfel</span>
+                                <span data-t="ui.wuerfel"></span>
                             </div>
-                            <div class="workshop-shape-card" draggable="true" data-shape="sphere" title="Kugel">
+                            <div class="workshop-shape-card" draggable="true" data-shape="sphere" data-t-title="ui.kugel">
                                 <div class="workshop-shape-icon" data-icon="sphere"></div>
-                                <span>Kugel</span>
+                                <span data-t="ui.kugel"></span>
                             </div>
-                            <div class="workshop-shape-card" draggable="true" data-shape="cylinder" title="Zylinder">
+                            <div class="workshop-shape-card" draggable="true" data-shape="cylinder" data-t-title="ui.zylinder">
                                 <div class="workshop-shape-icon" data-icon="cylinder"></div>
-                                <span>Zylinder</span>
+                                <span data-t="ui.zylinder"></span>
                             </div>
-                            <div class="workshop-shape-card" draggable="true" data-shape="cone" title="Kegel">
+                            <div class="workshop-shape-card" draggable="true" data-shape="cone" data-t-title="ui.kegel">
                                 <div class="workshop-shape-icon" data-icon="cone"></div>
-                                <span>Kegel</span>
+                                <span data-t="ui.kegel"></span>
                             </div>
-                            <div class="workshop-shape-card" draggable="true" data-shape="pyramid" title="Pyramide">
+                            <div class="workshop-shape-card" draggable="true" data-shape="pyramid" data-t-title="ui.pyramide">
                                 <div class="workshop-shape-icon" data-icon="pyramid"></div>
-                                <span>Pyramide</span>
+                                <span data-t="ui.pyramide"></span>
                             </div>
-                            <div class="workshop-shape-card" draggable="true" data-shape="octahedron" title="Oktaeder">
+                            <div class="workshop-shape-card" draggable="true" data-shape="octahedron" data-t-title="ui.oktaeder">
                                 <div class="workshop-shape-icon" data-icon="octahedron"></div>
-                                <span>Oktaeder</span>
+                                <span data-t="ui.oktaeder"></span>
                             </div>
-                            <div class="workshop-shape-card" draggable="true" data-shape="plane" title="Plane">
+                            <div class="workshop-shape-card" draggable="true" data-shape="plane" data-t-title="ui.plane">
                                 <div class="workshop-shape-icon" data-icon="plane"></div>
-                                <span>Plane</span>
+                                <span data-t="ui.plane"></span>
                             </div>
-                            <div class="workshop-shape-card" draggable="true" data-shape="torus" title="Torus">
+                            <div class="workshop-shape-card" draggable="true" data-shape="torus" data-t-title="ui.torus">
                                 <div class="workshop-shape-icon" data-icon="torus"></div>
-                                <span>Torus</span>
+                                <span data-t="ui.torus"></span>
                             </div>
-                            <div class="workshop-shape-card" draggable="true" data-shape="helix" title="Helix">
+                            <div class="workshop-shape-card" draggable="true" data-shape="helix" data-t-title="ui.helix">
                                 <div class="workshop-shape-icon" data-icon="helix"></div>
-                                <span>Helix</span>
+                                <span data-t="ui.helix"></span>
                             </div>
                         </div>
-                        <button
+                        <button data-t="ui.part-entfernen"
                             type="button"
                             id="workshop-delete-selected-part"
                             class="workshop-delete-btn"
-                            title="Selektierten Part entfernen (Entf)"
+                            data-t-title="ui.selektierten-part-entfernen-entf"
                             disabled
-                        >
-                            ✖ Part entfernen
-                        </button>
+                        ></button>
                         <!-- V18.40 — Farben nach LINKS (Schöpfer): Formen + Farben sind beide
                              „was ich hinzufüge / wie es aussieht" → eine mentale Zone. -->
-                        <h4>Farben</h4>
-                        <div id="workshop-color-palette" role="group" aria-label="Farb-Palette"></div>
+                        <h4 data-t="ui.farben"></h4>
+                        <div id="workshop-color-palette" role="group" data-t-aria-label="ui.farb-palette"></div>
                         <!-- DAS NEUE KLEID — DER REZEPT-REGLER: bei einem gewachsenen Bauplan (Baum/
                              Fels/Kristall) erscheinen hier die STUDIO-Regler + der Saat-Würfel. Sie
                              füttern die EINE geteilte Pipeline (phyto-core) live → beweist, dass die
                              Pipeline läuft + AnazhRealm die Baupläne anpassen kann. Sonst leer/versteckt. -->
-                        <div id="workshop-recipe-panel" role="group" aria-label="Rezept-Regler" hidden></div>
+                        <div id="workshop-recipe-panel" role="group" data-t-aria-label="ui.rezept-regler" hidden></div>
                     </aside>
                     <div id="workshop-preview-wrapper">
-                        <div id="workshop-mode-bar" role="group" aria-label="Manipulator-Modus">
-                            <button
+                        <div id="workshop-mode-bar" role="group" data-t-aria-label="ui.manipulator-modus">
+                            <button data-t="ui.move"
                                 type="button"
                                 class="workshop-mode-btn active"
                                 data-workshop-mode="translate"
-                                title="Verschieben (W)"
-                            >
-                                Move
-                            </button>
-                            <button
+                                data-t-title="ui.verschieben-w"
+                            ></button>
+                            <button data-t="ui.rotate"
                                 type="button"
                                 class="workshop-mode-btn"
                                 data-workshop-mode="rotate"
-                                title="Drehen (E)"
-                            >
-                                Rotate
-                            </button>
-                            <button
+                                data-t-title="ui.drehen-e"
+                            ></button>
+                            <button data-t="ui.scale"
                                 type="button"
                                 class="workshop-mode-btn"
                                 data-workshop-mode="scale"
-                                title="Skalieren (R)"
-                            >
-                                Scale
-                            </button>
-                            <button
+                                data-t-title="ui.skalieren-r"
+                            ></button>
+                            <button data-t="ui.connect"
                                 type="button"
                                 class="workshop-mode-btn"
                                 data-workshop-mode="connect"
-                                title="Verbinden (C)"
-                            >
-                                Connect
-                            </button>
-                            <button
+                                data-t-title="ui.verbinden-c"
+                            ></button>
+                            <button data-t="ui.snap"
                                 type="button"
                                 id="workshop-snap-toggle"
                                 class="workshop-snap-btn active"
-                                title="Grid-Snap (G)"
-                            >
-                                Snap
-                            </button>
-                            <button
+                                data-t-title="ui.grid-snap-g"
+                            ></button>
+                            <button data-t="ui.zentrieren"
                                 type="button"
                                 id="workshop-camera-reset"
                                 class="workshop-action-btn"
-                                title="Kamera auf Bauplan zentrieren (H)"
-                            >
-                                Zentrieren
-                            </button>
+                                data-t-title="ui.kamera-auf-bauplan-zentrieren-h"
+                            ></button>
                             <span class="workshop-mode-divider" aria-hidden="true"></span>
-                            <button
+                            <button data-t="ui.rueckgaengig"
                                 type="button"
                                 id="workshop-undo-btn"
                                 class="workshop-action-btn"
-                                title="Rückgängig (Strg+Z) — den letzten Editor-Schritt zurücknehmen"
+                                data-t-title="ui.rueckgaengig-strg-z-den-letzten"
                                 disabled
-                            >
-                                ↶ Rückgängig
-                            </button>
-                            <button
+                            ></button>
+                            <button data-t="ui.wiederholen"
                                 type="button"
                                 id="workshop-redo-btn"
                                 class="workshop-action-btn"
-                                title="Wiederholen (Strg+Y) — den zurückgenommenen Schritt wiederherstellen"
+                                data-t-title="ui.wiederholen-strg-y-den-zurueckgenommenen"
                                 disabled
-                            >
-                                ↷ Wiederholen
-                            </button>
+                            ></button>
                             <span class="workshop-mode-divider" aria-hidden="true"></span>
-                            <button
+                            <button data-t="ui.gelenk-probe"
                                 type="button"
                                 id="workshop-probe-btn"
                                 class="workshop-action-btn"
-                                title="Gelenk-Probe — wackelt die erkannten Gelenke 2 s in der Vorschau (bauen → SEHEN, was sich bewegt)"
-                            >
-                                ▶ Gelenk-Probe
-                            </button>
+                                data-t-title="ui.gelenk-probe-wackelt-die-erkannten"
+                            ></button>
                             <span class="workshop-mode-divider" aria-hidden="true"></span>
-                            <button
+                            <button data-t="ui.klonen"
                                 type="button"
                                 id="workshop-clone-btn"
                                 class="workshop-action-btn"
-                                title="Aktuellen Bauplan klonen"
-                            >
-                                Klonen
-                            </button>
-                            <button
+                                data-t-title="ui.aktuellen-bauplan-klonen"
+                            ></button>
+                            <button data-t="ui.neu"
                                 type="button"
                                 id="workshop-new-btn"
                                 class="workshop-action-btn"
-                                title="Neuer leerer Bauplan"
-                            >
-                                Neu
-                            </button>
+                                data-t-title="ui.neuer-leerer-bauplan"
+                            ></button>
                             <!-- (V18.110 - C7: "Körper holen" gefallen - Built-in-Körper liegen
                                  automatisch als koerper_*-Blueprints in der Bibliothek.) -->
-                            <button
+                            <button data-t="ui.loeschen"
                                 type="button"
                                 id="workshop-delete-blueprint-btn"
                                 class="workshop-action-btn workshop-danger"
-                                title="Aktuellen Bauplan löschen (nur eigene)"
+                                data-t-title="ui.aktuellen-bauplan-loeschen-nur-eigene"
                                 disabled
-                            >
-                                Löschen
-                            </button>
+                            ></button>
                         </div>
                         <canvas id="workshop-preview-canvas"></canvas>
-                        <div id="workshop-readonly-banner" hidden>Eingebaut — zum Bearbeiten klonen</div>
+                        <div data-t="ui.eingebaut-zum-bearbeiten-klonen" id="workshop-readonly-banner" hidden></div>
                     </div>
-                    <aside id="workshop-side-palette-right" aria-label="Material-/Werkzeug-/Farb-Palette">
+                    <aside id="workshop-side-palette-right" data-t-aria-label="ui.material-werkzeug-farb-palette">
                         <!-- V18.42 — MATERIALIEN · WERKZEUGE · WERK sind DREI gleichwertige Sektionen in
                              EINEM Fluss, auf EINER Ebene (Schöpfer „WERK muss auf derselben Ebene sein,
                              keine zwei Schichten"). Kein innerer Scroll, der WERK abtrennt — die ganze
                              Spalte fliesst; bei sehr vielen Werkzeugen trägt der Drawer-Scroll alles
                              gemeinsam (eine Ebene). -->
-                        <h4>Materialien</h4>
-                        <div id="workshop-material-palette" role="group" aria-label="Material-Palette"></div>
+                        <h4 data-t="ui.materialien"></h4>
+                        <div id="workshop-material-palette" role="group" data-t-aria-label="ui.material-palette"></div>
                         <h4>
-                            Werkzeuge<span
+                            <span data-t="ui.werkzeuge"></span><span
                                 class="help-dot dot-right"
                                 tabindex="0"
                                 role="note"
-                                aria-label="Werkzeuge erklärt"
-                                >?<span class="help-pop"
-                                    >Auf einen Part im 3D ziehen → wendet die Op an. Bearbeitet Material, hebt
-                                    Präzision, schärft die Rolle (forging→Werkzeug, alchemy→Trank). Hand = 0.40,
-                                    Polierscheibe = 0.97 — die schwächste Op deckelt die Compound-Präzision.</span
+                                data-t-aria-label="ui.werkzeuge-erklaert"
+                                >?<span data-t="ui.auf-einen-part-im-3d" class="help-pop"
+                                    ></span
                                 ></span
                             >
                         </h4>
-                        <div id="workshop-tool-palette" role="group" aria-label="Werkzeug-Palette"></div>
+                        <div id="workshop-tool-palette" role="group" data-t-aria-label="ui.werkzeug-palette"></div>
                         <!-- Die WERK-Sektion (Mach-Akt): dritte Sektion, gleiche Ebene wie Material/Werkzeug —
                              „womit ich mache". _workshopAppendFertigenRow + Werk-Heading + Signatur füllen sie. -->
-                        <div id="workshop-action-zone" aria-label="Mach-Aktion"></div>
+                        <div id="workshop-action-zone" data-t-aria-label="ui.mach-aktion"></div>
                     </aside>
                 </div>
                 <!-- V18.37 — die Ausgabe-Tabelle auf GANZE Breite (Schöpfer): aus dem
@@ -8859,13 +8819,10 @@
         <!-- W14 Phase 1 — Bibliothek: die WORLD_REGISTRY browsbar. Pro Welt
              eine Karte; „Portal holen" legt einen Tor-Bauplan ins Inventar.
              #library-list wird von renderLibraryUI() gefüllt. -->
-        <aside class="drawer" data-drawer="bibliothek" aria-label="Bibliothek-Panel" hidden>
-            <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
-            <h2>Bibliothek von Alexandria</h2>
-            <p class="library-intro">
-                Entdecke + betritt die Welten des Ultiversums, schöpfe + teile die eigenen — souverän über deinen
-                Vibe-Pass, peer-to-peer durchs Mesh. Kein Konzern dazwischen.
-            </p>
+        <aside class="drawer" data-drawer="bibliothek" data-t-aria-label="ui.bibliothek-panel" hidden>
+            <button class="drawer-close" type="button" data-drawer-close data-t-aria-label="ui.schliessen">×</button>
+            <h2 data-t="ui.bibliothek-von-alexandria"></h2>
+            <p data-t="ui.entdecke-betritt-die-welten-des" class="library-intro"></p>
             <!-- Bib-B (bibliothek-plan §D/§D.3) — content-first: das Welt-Karten-Raster ist der STAR
                  (der Zweck = Welten ENTDECKEN + BETRETEN, J6); die Formulare (übersetzen/andocken/
                  verwalten/Provenienz) recedieren in die eingeklappte „Schöpfen & Andocken"-Zone. -->
@@ -8875,16 +8832,16 @@
             <div class="feed-layout">
                 <main class="feed-center">
                     <div class="feed-tabs" role="tablist">
-                        <button type="button" class="feed-tab active" data-feed-tab="foryou" role="tab">Für dich</button>
-                        <button type="button" class="feed-tab" data-feed-tab="mesh" role="tab">Aus dem Mesh</button>
+                        <button data-t="ui.fuer-dich" type="button" class="feed-tab active" data-feed-tab="foryou" role="tab"></button>
+                        <button data-t="ui.aus-dem-mesh" type="button" class="feed-tab" data-feed-tab="mesh" role="tab"></button>
                     </div>
                     <div class="library-head">
                         <input
                             type="text"
                             id="library-search"
                             class="library-search"
-                            placeholder="⌕ Suchen — Welten · Rezepte · Wesen · Vokabular"
-                            aria-label="Den Feed durchsuchen"
+                            data-t-placeholder="ui.suchen-welten-rezepte-wesen-vokabular"
+                            data-t-aria-label="ui.den-feed-durchsuchen"
                             autocomplete="off"
                         />
                     </div>
@@ -8894,10 +8851,7 @@
                     <!-- W16 — der Welt-Katalog (Peer-Welten) lebt jetzt im HAUPTTHREAD als zweite Feed-Quelle
                          (X-Muster: Für dich | Aus dem Mesh). _renderMeshWorldCatalog rendert hierhin. -->
                     <div id="feed-mesh-panel" class="feed-panel" hidden>
-                        <p class="feed-panel-hint">
-                            Welten deiner Mitspieler im selben Mesh-Raum — peer-to-peer holen, kein GitHub nötig.
-                            „✓ vorhanden" heißt: du hast sie schon. Braucht eine stehende Mesh-Verbindung (Multi-User).
-                        </p>
+                        <p data-t="ui.welten-deiner-mitspieler-im-selben" class="feed-panel-hint"></p>
                         <div id="mesh-world-catalog" class="mesh-catalog" aria-live="polite"></div>
                         <div id="mesh-world-status" class="vendor-status" aria-live="polite"></div>
                     </div>
@@ -8907,44 +8861,37 @@
                          Empfangen), die fremde-Welt-Power-Werkzeuge (Übersetzen · Andocken) als Akkordeon darunter
                          (progressive disclosure). Vom linken Seiten-Klumpen hierher gezogen (mit Empfangen vereint). -->
                     <div class="feed-curate feed-schoepfen">
-                        <h4 class="feed-curate-head">✦ Schöpfen &amp; Andocken</h4>
+                        <h4 data-t="ui.schoepfen-andocken" class="feed-curate-head"></h4>
                         <div class="feed-3block">
-                            <button type="button" id="world-new" class="feed-3btn">Neue Welt</button>
-                            <button type="button" id="world-fuse-open" class="feed-3btn">Verschmelzen</button>
-                            <button
+                            <button data-t="ui.neue-welt" type="button" id="world-new" class="feed-3btn"></button>
+                            <button data-t="ui.verschmelzen" type="button" id="world-fuse-open" class="feed-3btn"></button>
+                            <button data-t="ui.empfangen"
                                 type="button"
                                 id="library-import"
                                 class="feed-3btn"
-                                title="Eine Welt-Datei einlesen — ein AnazhRealm-Snapshot (öffnet das Welt-Tor: ersetzen · daneben · verschmelzen) ODER ein fremdes Welt-Manifest (andocken). Der Typ wird automatisch erkannt."
-                            >
-                                Empfangen
-                            </button>
+                                data-t-title="ui.eine-welt-datei-einlesen-ein"
+                            ></button>
                         </div>
                         <div id="world-teilen"></div>
-                        <div id="world-picker-list" class="feed-picker-list drawer-hint" aria-live="polite">
-                            Nur diese eine Welt im Speicher.
-                        </div>
+                        <div data-t="ui.nur-diese-eine-welt-im" id="world-picker-list" class="feed-picker-list drawer-hint" aria-live="polite"></div>
                         <input type="file" id="library-import-input" accept="application/json,.json" hidden />
-                        <div class="feed-tool-group-label">Fremde Welt einbinden</div>
+                        <div data-t="ui.fremde-welt-einbinden" class="feed-tool-group-label"></div>
                         <details class="feed-tool">
                             <summary class="feed-tool-head">
                                 <span class="feed-tool-glyph">✶</span>
-                                <span class="feed-tool-name">Welt übersetzen</span>
-                                <span class="feed-tool-sub">fremde Welt → Manifest</span>
+                                <span data-t="ui.welt-uebersetzen" class="feed-tool-name"></span>
+                                <span data-t="ui.fremde-welt-manifest" class="feed-tool-sub"></span>
                             </summary>
                             <div class="feed-tool-body">
-                                <p class="feed-tool-hint">
-                                    Beschreibe eine fremde Vibecode-Welt — die KI macht ein Portal-Manifest. Browsbar,
-                                    noch nicht betretbar (Engine-Dateien folgen). Braucht eine aktive KI (Einstellungen).
-                                </p>
+                                <p data-t="ui.beschreibe-eine-fremde-vibecode-welt" class="feed-tool-hint"></p>
                                 <textarea
                                     id="translator-input"
                                     class="translator-input"
                                     rows="4"
-                                    placeholder="z. B.: Eine Voxel-Sandbox mit Tag-Nacht-Zyklus, Wetter und Block-Bauen…"
+                                    data-t-placeholder="ui.z-b-eine-voxel-sandbox"
                                 ></textarea>
                                 <div class="actions">
-                                    <button type="button" id="translator-run">Übersetzen</button>
+                                    <button data-t="ui.uebersetzen" type="button" id="translator-run"></button>
                                 </div>
                                 <div id="translator-status" class="translator-status" aria-live="polite"></div>
                                 <div id="translator-review" class="translator-review" hidden></div>
@@ -8953,56 +8900,53 @@
                         <details class="feed-tool">
                             <summary class="feed-tool-head">
                                 <span class="feed-tool-glyph">⚓</span>
-                                <span class="feed-tool-name">Welt andocken</span>
-                                <span class="feed-tool-sub">fremdes Bündel → Bibliothek</span>
+                                <span data-t="ui.welt-andocken" class="feed-tool-name"></span>
+                                <span data-t="ui.fremdes-buendel-bibliothek" class="feed-tool-sub"></span>
                             </summary>
                             <div class="feed-tool-body">
-                                <p class="feed-tool-hint">
-                                    Eine fremde, geschlossene Welt aus einem Ordner ODER GitHub-Repo. Läuft sandgesichert
-                                    (null-origin) — die fremde Engine kann AnazhRealm nicht berühren. Braucht npm start.
-                                </p>
+                                <p data-t="ui.eine-fremde-geschlossene-welt-aus" class="feed-tool-hint"></p>
                                 <div class="vendor-form">
                                     <input
                                         type="text"
                                         id="vendor-id"
                                         class="translator-edit"
                                         maxlength="40"
-                                        placeholder="welt-id (a-z 0-9 - _)"
+                                        data-t-placeholder="ui.welt-id-a-z-0"
                                     />
                                     <input
                                         type="text"
                                         id="vendor-label"
                                         class="translator-edit"
                                         maxlength="60"
-                                        placeholder="Name der Welt"
+                                        data-t-placeholder="ui.name-der-welt"
                                     />
                                     <input
                                         type="text"
                                         id="vendor-desc"
                                         class="translator-edit"
                                         maxlength="200"
-                                        placeholder="kurze Beschreibung (optional)"
+                                        data-t-placeholder="ui.kurze-beschreibung-optional"
                                     />
                                     <input
                                         type="text"
                                         id="vendor-dsl"
                                         class="translator-edit"
                                         maxlength="200"
-                                        placeholder="DSL-Vokabular, kommagetrennt (optional)"
+                                        data-t-placeholder="ui.dsl-vokabular-kommagetrennt-optional"
                                     />
                                     <label class="vendor-mp-row">
                                         <input type="checkbox" id="vendor-multiplayer" />
-                                        Multiplayer-Welt (eine Gruppe tritt gemeinsam durch ein Tor)
+                                        <span data-t="ui.multiplayer-welt-eine-gruppe-tritt"></span>
                                     </label>
                                     <label class="vendor-mp-row">
                                         <input type="checkbox" id="vendor-js-compute" />
-                                        JS-Compute-Welt (ein Peer wird Compute-Host — impliziert Multiplayer)
+                                        <span data-t="ui.js-compute-welt-ein-peer"></span>
                                     </label>
                                 </div>
                                 <input type="file" id="vendor-files" webkitdirectory multiple hidden />
                                 <div class="actions">
-                                    <button type="button" id="vendor-pick">Ordner wählen…</button>
-                                    <button type="button" id="vendor-dock">Andocken</button>
+                                    <button data-t="ui.ordner-waehlen" type="button" id="vendor-pick"></button>
+                                    <button data-t="ui.andocken" type="button" id="vendor-dock"></button>
                                 </div>
                                 <div class="vendor-form vendor-repo-row">
                                     <input
@@ -9010,26 +8954,26 @@
                                         id="vendor-repo"
                                         class="translator-edit"
                                         maxlength="200"
-                                        placeholder="oder GitHub-URL: https://github.com/owner/repo"
+                                        data-t-placeholder="ui.oder-github-url-https-github"
                                     />
                                 </div>
                                 <div class="actions">
-                                    <button type="button" id="vendor-repo-dock">Aus GitHub holen</button>
+                                    <button data-t="ui.aus-github-holen" type="button" id="vendor-repo-dock"></button>
                                 </div>
                                 <div id="vendor-status" class="vendor-status" aria-live="polite"></div>
                             </div>
                         </details>
                     </div>
                     <div class="feed-curate">
-                        <h4 class="feed-curate-head">Filter</h4>
-                        <div id="feed-kinds" class="feed-kinds" aria-label="Nach Art filtern"></div>
+                        <h4 data-t="ui.filter" class="feed-curate-head"></h4>
+                        <div id="feed-kinds" class="feed-kinds" data-t-aria-label="ui.nach-art-filtern"></div>
                         <div class="feed-sort-row">
-                            <span class="feed-sort-label">Sortieren</span>
-                            <div id="feed-sort" class="feed-sort" aria-label="Sortierung"></div>
+                            <span data-t="ui.sortieren" class="feed-sort-label"></span>
+                            <div id="feed-sort" class="feed-sort" data-t-aria-label="ui.sortierung"></div>
                         </div>
                     </div>
                     <div class="feed-curate">
-                        <h4 class="feed-curate-head">Bestbewertet</h4>
+                        <h4 data-t="ui.bestbewertet" class="feed-curate-head"></h4>
                         <div id="feed-trends" class="feed-trends" aria-live="polite"></div>
                     </div>
                 </aside>
@@ -9046,20 +8990,16 @@
                                  Die aktive Welt als Datei sichern; das Empfangen (oben) nimmt Snapshot UND
                                  Manifest. Das Speichern selbst läuft automatisch (Autosave alle 10 s). -->
                             <div class="feed-self-actions">
-                                <button type="button" id="action-export-state" class="feed-self-act">
-                                    ⬇ Welt-Datei exportieren
-                                </button>
+                                <button data-t="ui.welt-datei-exportieren" type="button" id="action-export-state" class="feed-self-act"></button>
                             </div>
                             <div class="feed-self-prov">
                                 <div class="feed-prov-block">
-                                    <div class="spec-col-head">Stammbaum</div>
-                                    <div id="world-lineage" class="feed-prov-list" aria-live="polite">
-                                        Diese Welt ist eigenständig — keine Eltern-Welten.
-                                    </div>
+                                    <div data-t="ui.stammbaum" class="spec-col-head"></div>
+                                    <div data-t="ui.diese-welt-ist-eigenstaendig-keine" id="world-lineage" class="feed-prov-list" aria-live="polite"></div>
                                 </div>
                                 <details class="feed-tagebuch feed-prov-block">
                                     <summary class="feed-tagebuch-head">
-                                        <span class="spec-col-head">Tagebuch</span>
+                                        <span data-t="ui.tagebuch" class="spec-col-head"></span>
                                         <span id="world-journal-count" class="journal-count">—</span>
                                     </summary>
                                     <div id="world-journal-list" class="journal-list feed-journal" aria-live="polite"></div>
@@ -9070,20 +9010,18 @@
                     <!-- V18.75 — der geteilte 3D-VORSCHAU-Bereich (das Hof-Bühnen-Muster): EIN WebGPU-Renderer,
                          klick eine Rezept-/Wesen-Karte → ihr echtes Modell dreht sich hier (kein Renderer pro Karte). -->
                     <section class="feed-preview-panel">
-                        <h4 class="feed-curate-head">Vorschau</h4>
+                        <h4 data-t="ui.vorschau" class="feed-curate-head"></h4>
                         <div class="feed-preview-stage">
-                            <canvas id="feed-preview-canvas" class="feed-preview-canvas" aria-label="3D-Vorschau"></canvas>
-                            <div id="feed-preview-hint" class="feed-preview-hint">
-                                Klick eine Rezept- oder Wesen-Karte für die 3D-Vorschau.
-                            </div>
+                            <canvas id="feed-preview-canvas" class="feed-preview-canvas" data-t-aria-label="ui.3d-vorschau"></canvas>
+                            <div data-t="ui.klick-eine-rezept-oder-wesen" id="feed-preview-hint" class="feed-preview-hint"></div>
                         </div>
                     </section>
                 </aside>
             </div>
         </aside>
-        <aside class="drawer" data-drawer="einstellungen" aria-label="Einstellungen-Panel" hidden>
-            <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
-            <h2>Einstellungen</h2>
+        <aside class="drawer" data-drawer="einstellungen" data-t-aria-label="ui.einstellungen-panel" hidden>
+            <button class="drawer-close" type="button" data-drawer-close data-t-aria-label="ui.schliessen">×</button>
+            <h2 data-t="ui.einstellungen"></h2>
             <!-- UI-Putz V18.80 (Schöpfer: „bei einstellungen rutschen dinge hoch und runter; die
                  Einzelkomponenten nicht aus Spielersicht überdacht") — der Aus-Spielersicht-Schnitt:
                  (1) STABILE SPALTEN statt `column-count`-Masonry (die rebalancierte beim Auf-/Zuklappen
@@ -9097,30 +9035,30 @@
             <!-- SPALTE A — die häufigen Welt-Akte (Modus + Steuerung) -->
             <div class="settings-col">
                 <div class="settings-group">
-                    <div class="settings-grouplabel">1 · Spielmodus</div>
+                    <div data-t="ui.1-spielmodus" class="settings-grouplabel"></div>
                     <section class="section" id="game-mode-section">
-                        <h3>Welt-Beziehung</h3>
+                        <h3 data-t="ui.welt-beziehung"></h3>
                         <!-- die Wahl SELBST trägt ihre Bedeutung (Essenz inline) — kein Textwand-Hinweis nötig. -->
                         <div class="actions mode-cards" id="game-mode-radios">
                             <label class="radio-label mode-card">
                                 <input type="radio" name="game-mode-radio" value="frieden" checked />
                                 <span class="mode-card-body">
-                                    <span class="mode-card-name">frieden</span>
-                                    <span class="mode-card-essence">umarmt — kein HP, kein Tod, keine Stamina</span>
+                                    <span data-t="ui.frieden" class="mode-card-name"></span>
+                                    <span data-t="ui.umarmt-kein-hp-kein-tod" class="mode-card-essence"></span>
                                 </span>
                             </label>
                             <label class="radio-label mode-card">
                                 <input type="radio" name="game-mode-radio" value="pfad" />
                                 <span class="mode-card-body">
-                                    <span class="mode-card-name">pfad</span>
-                                    <span class="mode-card-essence">verhandelt — HP, Stamina, Tod-Wandlung</span>
+                                    <span data-t="ui.pfad" class="mode-card-name"></span>
+                                    <span data-t="ui.verhandelt-hp-stamina-tod-wandlung" class="mode-card-essence"></span>
                                 </span>
                             </label>
                             <label class="radio-label mode-card">
                                 <input type="radio" name="game-mode-radio" value="schöpfer" />
                                 <span class="mode-card-body">
-                                    <span class="mode-card-name">schöpfer</span>
-                                    <span class="mode-card-essence">gehorcht — voller Zugang, kein Schaden</span>
+                                    <span data-t="ui.schoepfer" class="mode-card-name"></span>
+                                    <span data-t="ui.gehorcht-voller-zugang-kein-schaden" class="mode-card-essence"></span>
                                 </span>
                             </label>
                         </div>
@@ -9128,39 +9066,46 @@
                 </div>
 
                 <div class="settings-group">
-                    <div class="settings-grouplabel">2 · Steuerung</div>
+                    <div data-t="ui.2-steuerung" class="settings-grouplabel"></div>
+                    <!-- spielgang.K5 — die Sprache des Spielers: jede UI-Zeile aus der EINEN Tafel (AnazhRealm.TEXTE); der Wechsel
+                         sichert den Stand und lädt die Seite in der neuen Spalte (`_spracheSetzen`). -->
+                    <section class="section" id="sprache-section">
+                        <h3 data-t="ui.sprache"></h3>
+                        <div class="actions">
+                            <select id="sprache-wahl" data-t-aria-label="ui.sprache">
+                                <option value="de" data-t="ui.sprache-de"></option>
+                                <option value="en" data-t="ui.sprache-en"></option>
+                            </select>
+                        </div>
+                    </section>
                     <!-- Welle 6.C3 — Tastenbelegung. Sechs Aktionen rebindable; 1-9 + WASD bleiben fest. -->
                     <section class="section default-collapsed" id="keybindings-section">
                         <h3>
-                            Tastenbelegung
-                            <span class="help-dot" tabindex="0" aria-label="Hilfe"
-                                >?<span class="help-pop"
-                                    >Klick „Ändern" und drücke dann die gewünschte Taste oder Maustaste. Esc bricht
-                                    ab. WASD und 1-9 sind Konvention und bleiben fest. „Abbauen" entfernt
-                                    Architekturen am Fadenkreuz — trifft keine, wird ein Loch ins Terrain
-                                    gegraben.</span
+                            <span data-t="ui.tastenbelegung"></span>
+                            <span class="help-dot" tabindex="0" data-t-aria-label="ui.hilfe"
+                                >?<span data-t="ui.klick-aendern-und-druecke-dann" class="help-pop"
+                                    ></span
                                 ></span
                             >
                         </h3>
                         <div id="keybindings-list"></div>
                         <div class="actions">
-                            <button type="button" id="keybindings-reset">Standard wiederherstellen</button>
+                            <button data-t="ui.standard-wiederherstellen" type="button" id="keybindings-reset"></button>
                         </div>
                     </section>
                     <!-- Welle 6.X.2 B1 — Logbuch-Sichtbarkeit. Default versteckt, damit die Konsole ruhig bleibt. -->
                     <section class="section default-collapsed" id="logbook-section">
                         <h3>
-                            Logbuch
-                            <span class="help-dot" tabindex="0" aria-label="Hilfe"
-                                >?<span class="help-pop"
-                                    >Diagnose-Logs sind standardmäßig versteckt, damit der Chat im Vordergrund
-                                    bleibt. Für Entwickler-Sicht aktivieren.</span
+                            <span data-t="ui.logbuch"></span>
+                            <span class="help-dot" tabindex="0" data-t-aria-label="ui.hilfe"
+                                >?<span data-t="ui.diagnose-logs-sind-standardmaessig-verst" class="help-pop"
+                                    ></span
                                 ></span
                             >
                         </h3>
                         <label class="radio-label">
                             <input type="checkbox" id="logbook-toggle" />
-                            <span>Logbuch sichtbar</span>
+                            <span data-t="ui.logbuch-sichtbar"></span>
                         </label>
                     </section>
                 </div>
@@ -9169,40 +9114,38 @@
             <!-- SPALTE B — die spürbare Welt-Darstellung (Ton & Sicht) -->
             <div class="settings-col">
                 <div class="settings-group">
-                    <div class="settings-grouplabel">3 · Ton &amp; Sicht</div>
+                    <div data-t="ui.3-ton-sicht" class="settings-grouplabel"></div>
                     <!-- Welle 6.X.4 D2 — Lautstärke (Master/Pings/Stimme) + Sicht-Ring. -->
                     <section class="section" id="sliders-section">
                         <h3>
-                            Lautstärke + Sicht-Weite
-                            <span class="help-dot" tabindex="0" aria-label="Hilfe"
-                                >?<span class="help-pop"
-                                    >Master gilt für die ganze Welt-Klangschicht. Umgebungsgeräusche (die Klang-Welt:
-                                    Wind, Laub, Wasser, Glut, Regen, Vögel, Grillen, Tier-Rufe) haben einen eigenen
-                                    Anteil (mute mit 0). Render-Ring 1 = 3×3 Chunks, 12 = volle Weite.</span
+                            <span data-t="ui.lautstaerke-sicht-weite"></span>
+                            <span class="help-dot" tabindex="0" data-t-aria-label="ui.hilfe"
+                                >?<span data-t="ui.master-gilt-fuer-die-ganze" class="help-pop"
+                                    ></span
                                 ></span
                             >
                         </h3>
                         <div class="slider-row">
-                            <label for="slider-master">Master</label>
+                            <label data-t="ui.master" for="slider-master"></label>
                             <input type="range" id="slider-master" min="0" max="100" value="100" />
                             <span class="slider-value" id="slider-master-val">100%</span>
                         </div>
                         <div class="slider-row">
-                            <label for="slider-pings">Umgebungsgeräusche</label>
+                            <label data-t="ui.umgebungsgeraeusche" for="slider-pings"></label>
                             <input type="range" id="slider-pings" min="0" max="100" value="100" />
                             <span class="slider-value" id="slider-pings-val">100%</span>
                         </div>
                         <div class="slider-row">
-                            <label for="slider-voice">Stimme</label>
+                            <label data-t="ui.stimme" for="slider-voice"></label>
                             <input type="range" id="slider-voice" min="0" max="100" value="100" />
                             <span class="slider-value" id="slider-voice-val">100%</span>
                         </div>
                         <label class="radio-label">
                             <input type="checkbox" id="untertitel-toggle" />
-                            <span>Untertitel (jede Stimme und jeder Ruf der Klang-Welt als Zeile, mit Richtung)</span>
+                            <span data-t="ui.untertitel-jede-stimme-und-jeder"></span>
                         </label>
                         <div class="slider-row">
-                            <label for="slider-ring">Sicht-Ring</label>
+                            <label data-t="ui.sicht-ring" for="slider-ring"></label>
                             <input type="range" id="slider-ring" min="1" max="12" value="4" />
                             <span class="slider-value" id="slider-ring-val">5×5</span>
                         </div>
@@ -9214,41 +9157,36 @@
                          Bezugshöhe. Der Sicht-Ring oben ist die Sichtweite (Dunst wandert mit). -->
                     <section class="section" id="performance-section">
                         <h3>
-                            Leistung (Wald)
-                            <span class="help-dot" tabindex="0" aria-label="Hilfe"
+                            <span data-t="ui.leistung-wald"></span>
+                            <span class="help-dot" tabindex="0" data-t-aria-label="ui.hilfe"
                                 >?<span class="help-pop"
-                                    ><b>Ziel-FPS</b> wählt scharf (60, mehr Bild) ↔ flüssig (30, das System
-                                    darf schwerer laden); der Perf-Regler pendelt darauf ein, indem er die
-                                    Render-Auflösung + das Laub nachgeben lässt. <b>Laub-Auflösung</b> ist die
-                                    Obergrenze, unter der der Regler das Laub reduziert rendert.
-                                    <b>LOD-Referenz</b> = ab welcher Baumhöhe der Detail-Wechsel greift (grösser
-                                    = Bäume behalten Detail länger). Die <b>Sichtweite</b> ist der Sicht-Ring
-                                    oben.</span
+                                    ><b data-t="ui.ziel-fps"></b> <span data-t="ui.waehlt-scharf-60-mehr-bild"></span> <b data-t="ui.laub-aufloesung"></b> <span data-t="ui.ist-die-obergrenze-unter-der"></span>
+                                    <b data-t="ui.lod-referenz"></b> <span data-t="ui.ab-welcher-baumhoehe-der-detail"></span> <b data-t="ui.sichtweite"></b> <span data-t="ui.ist-der-sicht-ring-oben"></span></span
                                 ></span
                             >
                         </h3>
                         <div class="slider-row">
-                            <label for="slider-fpstarget">Ziel-FPS (scharf ↔ flüssig)</label>
+                            <label data-t="ui.ziel-fps-scharf-fluessig" for="slider-fpstarget"></label>
                             <input type="range" id="slider-fpstarget" min="30" max="60" step="5" value="59" />
-                            <span class="slider-value" id="slider-fpstarget-val">59 fps</span>
+                            <span data-t="ui.59-fps" class="slider-value" id="slider-fpstarget-val"></span>
                         </div>
                         <div class="slider-row">
-                            <label for="slider-szeneskala">Szene-Auflösung</label>
+                            <label data-t="ui.szene-aufloesung" for="slider-szeneskala"></label>
                             <input type="range" id="slider-szeneskala" min="50" max="100" step="5" value="75" />
                             <span class="slider-value" id="slider-szeneskala-val">75 %</span>
                         </div>
                         <div class="slider-row">
-                            <label for="slider-lodref">LOD-Referenz</label>
+                            <label data-t="ui.lod-referenz" for="slider-lodref"></label>
                             <input type="range" id="slider-lodref" min="4" max="30" step="1" value="14" />
                             <span class="slider-value" id="slider-lodref-val">14 m</span>
                         </div>
                         <label class="radio-label">
                             <input type="checkbox" id="perf-panel-toggle" checked />
-                            <span>Perf-Panel sichtbar (fps · Verlauf · Draw-Calls · Stocker)</span>
+                            <span data-t="ui.perf-panel-sichtbar-fps-verlauf"></span>
                         </label>
                         <!-- V18.472 — der Perf-Export: derselbe Flugschreiber-Trace als Download,
                              damit der Schöpfer die Datei direkt in den Chat legen kann. -->
-                        <button
+                        <button data-t="ui.perf-daten-exportieren-json"
                             type="button"
                             id="perf-export-btn"
                             style="
@@ -9261,30 +9199,26 @@
                                 border-radius: 6px;
                                 cursor: pointer;
                             "
-                        >
-                            Perf-Daten exportieren (.json)
-                        </button>
+                        ></button>
                         <span id="perf-export-status" style="margin-left:8px; opacity: 0.75"></span>
                     </section>
                     <!-- Welle 6.G3 — Tag-Nacht-Zyklus. Die Welt atmet. -->
                     <section class="section" id="day-night-section">
                         <h3>
-                            Tag-Nacht-Zyklus
-                            <span class="help-dot" tabindex="0" aria-label="Hilfe"
-                                >?<span class="help-pop"
-                                    >Wie schnell atmet die Welt? Ein voller Zyklus von Mitternacht über Mittag
-                                    zurück. 8 Min schnell-spürbar, 60 Min für ein realistisches Welt-Gefühl. Die
-                                    Tageszeit steht in der Status-Bar.</span
+                            <span data-t="ui.tag-nacht-zyklus"></span>
+                            <span class="help-dot" tabindex="0" data-t-aria-label="ui.hilfe"
+                                >?<span data-t="ui.wie-schnell-atmet-die-welt" class="help-pop"
+                                    ></span
                                 ></span
                             >
                         </h3>
                         <div class="slider-row">
-                            <label for="slider-daylength">Tag-Länge</label>
+                            <label data-t="ui.tag-laenge" for="slider-daylength"></label>
                             <input type="range" id="slider-daylength" min="1" max="60" value="8" />
-                            <span class="slider-value" id="slider-daylength-val">8 Min</span>
+                            <span data-t="ui.8-min" class="slider-value" id="slider-daylength-val"></span>
                         </div>
                         <div class="slider-row">
-                            <label for="slider-timeofday">Tageszeit</label>
+                            <label data-t="ui.tageszeit" for="slider-timeofday"></label>
                             <input type="range" id="slider-timeofday" min="0" max="1000" value="500" />
                             <span class="slider-value" id="slider-timeofday-val">12:00</span>
                         </div>
@@ -9292,18 +9226,16 @@
                     <!-- Welle 6.H Phase 2E V2 — proaktive Kreatur-Sprache. -->
                     <section class="section" id="creature-speech-section">
                         <h3>
-                            Kreaturen-Stimmen
-                            <span class="help-dot" tabindex="0" aria-label="Hilfe"
-                                >?<span class="help-pop"
-                                    >Kreaturen sprechen von selbst bei wichtigen Ereignissen — Level-Up,
-                                    Trank-Wirkung, fehlendes Material. Sanft gedrosselt (60 s/Wesen, 8 s gesamt),
-                                    damit der Chat ruhig bleibt.</span
+                            <span data-t="ui.kreaturen-stimmen"></span>
+                            <span class="help-dot" tabindex="0" data-t-aria-label="ui.hilfe"
+                                >?<span data-t="ui.kreaturen-sprechen-von-selbst-bei" class="help-pop"
+                                    ></span
                                 ></span
                             >
                         </h3>
                         <label class="radio-label">
                             <input type="checkbox" id="creature-speech-toggle" checked />
-                            <span>Proaktive Sprache aktiv</span>
+                            <span data-t="ui.proaktive-sprache-aktiv"></span>
                         </label>
                     </section>
                 </div>
@@ -9312,88 +9244,83 @@
             <!-- SPALTE C — die einmalige Einrichtung + das Dev-Tuning -->
             <div class="settings-col">
                 <div class="settings-group">
-                    <div class="settings-grouplabel">4 · Identität &amp; Begleiter</div>
+                    <div data-t="ui.4-identitaet-begleiter" class="settings-grouplabel"></div>
                     <!-- Welle 6.X.4 F1 — Begleiter + Spieler-Name. -->
                     <section class="section" id="identity-section">
                         <h3>
-                            Begleiter + Avatar
-                            <span class="help-dot" tabindex="0" aria-label="Hilfe"
-                                >?<span class="help-pop"
-                                    >Wie heißt deine Welt-Stimme, wie heißt du? Werden im LLM-System-Prompt
-                                    referenziert. Default „Grok" (aus den vier Testamenten) und „Schöpfer"
-                                    (Mensch=Null=Schöpfer).</span
+                            <span data-t="ui.begleiter-avatar"></span>
+                            <span class="help-dot" tabindex="0" data-t-aria-label="ui.hilfe"
+                                >?<span data-t="ui.wie-heisst-deine-welt-stimme" class="help-pop"
+                                    ></span
                                 ></span
                             >
                         </h3>
                         <div class="identity-row">
-                            <label for="companion-name-input">Begleiter</label>
-                            <input type="text" id="companion-name-input" maxlength="32" placeholder="Grok" />
+                            <label data-t="ui.begleiter" for="companion-name-input"></label>
+                            <input type="text" id="companion-name-input" maxlength="32" data-t-placeholder="ui.grok" />
                         </div>
                         <!-- W11 Phase 4 (Voice-Sync) — die SpeechSynthesis-Stimme des Begleiters. -->
                         <div class="identity-row">
-                            <label for="companion-voice">Stimme</label>
+                            <label data-t="ui.stimme" for="companion-voice"></label>
                             <select id="companion-voice">
-                                <option value="">Standard (Browser)</option>
+                                <option data-t="ui.standard-browser" value=""></option>
                             </select>
                         </div>
                         <div class="identity-row">
-                            <label for="player-name-input">Du</label>
-                            <input type="text" id="player-name-input" maxlength="32" placeholder="Schöpfer" />
+                            <label data-t="ui.du" for="player-name-input"></label>
+                            <input type="text" id="player-name-input" maxlength="32" data-t-placeholder="ui.schoepfer-2" />
                         </div>
                     </section>
                     <!-- V7.96/V7.97 — der LLM-Begleiter. Default eingeklappt. -->
                     <section class="section default-collapsed" id="llm-section">
                         <h3>
-                            Begleiter-Stimme (LLM)
-                            <span class="help-dot" tabindex="0" aria-label="Hilfe"
-                                >?<span class="help-pop"
-                                    >Optional: gib dem Begleiter eine echte Stimme. Vier Provider — drei mit
-                                    Gratis-Tiers, Ollama lokal (kein Key) oder gehostet (eigene URL + optional
-                                    Bearer-Token). Schlüssel liegen nur im localStorage dieses Browsers; jeder
-                                    Vorschlag geht durch die DSL-Sandbox.</span
+                            <span data-t="ui.begleiter-stimme-llm"></span>
+                            <span class="help-dot" tabindex="0" data-t-aria-label="ui.hilfe"
+                                >?<span data-t="ui.optional-gib-dem-begleiter-eine" class="help-pop"
+                                    ></span
                                 ></span
                             >
                         </h3>
                         <div class="tuning-row">
-                            <label for="llm-provider"><span>Provider</span></label>
+                            <label for="llm-provider"><span data-t="ui.provider"></span></label>
                             <select id="llm-provider">
                                 <!-- gefüllt aus llmProviderDefs() -->
                             </select>
                         </div>
                         <div id="llm-provider-hint" class="drawer-hint" aria-live="polite"></div>
                         <div class="tuning-row" id="llm-key-row">
-                            <label for="llm-key"><span>API-Key</span></label>
+                            <label for="llm-key"><span data-t="ui.api-key"></span></label>
                             <input
                                 type="password"
                                 id="llm-key"
-                                placeholder="API-Key"
+                                data-t-placeholder="ui.api-key"
                                 autocomplete="off"
                                 spellcheck="false"
                             />
                         </div>
                         <div class="tuning-row" id="llm-endpoint-row" hidden>
-                            <label for="llm-endpoint"><span>Endpoint</span></label>
+                            <label for="llm-endpoint"><span data-t="ui.endpoint"></span></label>
                             <input
                                 type="text"
                                 id="llm-endpoint"
-                                placeholder="http://localhost:11434  oder  https://ollama.com/api/chat"
+                                data-t-placeholder="ui.http-localhost-11434-oder-https"
                                 autocomplete="off"
                                 spellcheck="false"
                             />
                         </div>
                         <div class="drawer-hint" style="font-size: 11px; opacity: 0.75; margin-top: -6px">
-                            Endpoint kann eine Basis-URL sein (z.B. <code>http://localhost:11434</code> →
-                            <code>/api/chat</code> wird angehängt) oder eine vollständige URL inklusive Pfad (<code
-                                >https://ollama.com/api/chat</code
+                            <span data-t="ui.endpoint-kann-eine-basis-url"></span> <code data-t="ui.http-localhost-11434"></code> →
+                            <code data-t="ui.api-chat"></code> <span data-t="ui.wird-angehaengt-oder-eine-vollstaendige"></span><code data-t="ui.https-ollama-com-api-chat"
+                                ></code
                             >
-                            oder <code>https://provider/v1/chat/completions</code>
-                            für OpenAI-kompatible Cloud-Hoster).
+                            <span data-t="ui.oder"></span> <code data-t="ui.https-provider-v1-chat-completions"></code>
+                            <span data-t="ui.fuer-openai-kompatible-cloud-hoster"></span>
                         </div>
                         <!-- V7.96 — Proxy-Toggle: Ollama Cloud sendet keine CORS-Header. -->
                         <div class="tuning-row" id="llm-proxy-row" hidden>
                             <label class="radio-label" style="margin: 0">
                                 <input type="checkbox" id="llm-use-proxy" />
-                                <span>Cloud über save-server-Proxy (löst CORS)</span>
+                                <span data-t="ui.cloud-ueber-save-server-proxy"></span>
                             </label>
                         </div>
                         <div
@@ -9402,80 +9329,67 @@
                             hidden
                             style="font-size: 11px; opacity: 0.75; margin-top: -6px"
                         >
-                            Aktiviere wenn Cloud-Setup mit CORS-Fehler scheitert (typisch bei
-                            <code>ollama.com</code>). Request läuft über <code>localhost:4312/api/proxy/llm</code> —
-                            braucht laufenden <code>npm run dev</code>. CORS-freundliche Provider die ohne Proxy
-                            laufen: <strong>Groq</strong> (<code>https://api.groq.com/openai/v1/chat/completions</code>),
-                            <strong>Together AI</strong>, <strong>Cerebras</strong>, <strong>Gemini</strong>,
-                            <strong>OpenRouter</strong>.
+                            <span data-t="ui.aktiviere-wenn-cloud-setup-mit"></span>
+                            <code data-t="ui.ollama-com"></code><span data-t="ui.request-laeuft-ueber"></span> <code data-t="ui.localhost-4312-api-proxy-llm"></code> <span data-t="ui.braucht-laufenden"></span> <code data-t="ui.npm-run-dev"></code><span data-t="ui.cors-freundliche-provider-die-ohne"></span> <strong data-t="ui.groq"></strong> (<code data-t="ui.https-api-groq-com-openai"></code>),
+                            <strong data-t="ui.together-ai"></strong>, <strong data-t="ui.cerebras"></strong>, <strong data-t="ui.gemini"></strong>,
+                            <strong data-t="ui.openrouter"></strong>.
                         </div>
                         <!-- V7.97 — Modell als Free-Text-Input mit datalist-Vorschlägen. -->
                         <div class="tuning-row">
-                            <label for="llm-model"><span>Modell</span></label>
+                            <label for="llm-model"><span data-t="ui.modell"></span></label>
                             <input
                                 type="text"
                                 id="llm-model"
                                 list="llm-model-suggestions"
                                 autocomplete="off"
                                 spellcheck="false"
-                                placeholder="z.B. llama3.2, qwen3, gpt-oss:20b"
+                                data-t-placeholder="ui.z-b-llama3-2-qwen3"
                             />
                             <datalist id="llm-model-suggestions">
                                 <!-- gefüllt aus llmProviderDefs()[provider].models -->
                             </datalist>
                         </div>
                         <div class="drawer-hint" style="font-size: 11px; opacity: 0.75; margin-top: -6px">
-                            Trag den Modell-Namen ein wie er bei dir verfügbar ist. Lokal: <code>ollama list</code>
-                            zeigt deine Modelle. Cloud-Hoster: prüfe deren Modell-Liste.
+                            <span data-t="ui.trag-den-modell-namen-ein"></span> <code data-t="ui.ollama-list"></code>
+                            <span data-t="ui.zeigt-deine-modelle-cloud-hoster"></span>
                         </div>
                         <div class="actions">
-                            <button type="button" id="llm-save">Speichern</button>
-                            <button type="button" id="llm-clear">Vergessen</button>
-                            <button type="button" id="llm-toggle" aria-pressed="false">Aktivieren</button>
+                            <button data-t="ui.speichern" type="button" id="llm-save"></button>
+                            <button data-t="ui.vergessen" type="button" id="llm-clear"></button>
+                            <button data-t="ui.aktivieren" type="button" id="llm-toggle" aria-pressed="false"></button>
                         </div>
-                        <div id="llm-status" class="drawer-hint" aria-live="polite">Inaktiv.</div>
+                        <div data-t="ui.inaktiv" id="llm-status" class="drawer-hint" aria-live="polite"></div>
                     </section>
                     <!-- Welle 6.X.4 F1 — Vibe-Pass (souveräne ed25519-Identität). Default eingeklappt. -->
                     <section class="section default-collapsed" id="vibe-pass-section">
                         <h3>
-                            Vibe-Pass <span class="section-hint">(souveräne Identität)</span>
-                            <span class="help-dot" tabindex="0" aria-label="Hilfe"
-                                >?<span class="help-pop"
-                                    >Ein ed25519-Schlüsselpaar, lokal erzeugt — deine unverfälschbare Identität.
-                                    Damit signierst du deine Werke; andere prüfen, dass sie wirklich von dir
-                                    stammen. Kein Coin, keine Kette — nur Echtheit. Sichere ihn: ohne Schlüssel ist
-                                    die Identität verloren.</span
+                            <span data-t="ui.vibe-pass"></span> <span data-t="ui.souveraene-identitaet" class="section-hint"></span>
+                            <span class="help-dot" tabindex="0" data-t-aria-label="ui.hilfe"
+                                >?<span data-t="ui.ein-ed25519-schluesselpaar-lokal-erzeugt" class="help-pop"
+                                    ></span
                                 ></span
                             >
                         </h3>
                         <div id="vibe-pass-body"></div>
                         <div class="vibe-pass-actions">
-                            <button type="button" id="vibe-pass-export">Vibe-Pass sichern…</button>
-                            <button type="button" id="vibe-pass-import">Wiederherstellen…</button>
+                            <button data-t="ui.vibe-pass-sichern" type="button" id="vibe-pass-export"></button>
+                            <button data-t="ui.wiederherstellen" type="button" id="vibe-pass-import"></button>
                         </div>
                         <!-- M8 (V18.161) - der Backup-Pfad SICHTBAR dokumentiert (Audit-Frage 28). -->
-                        <div class="drawer-hint" id="vibe-pass-backup-hint">
-                            Sichern = die Pass-Datei exportieren; am neuen PC importieren. Der Pass IST der
-                            Schlüssel: wer die Datei hat, ist du (wie ein Bitcoin-Key) — sicher verwahren.
-                            Das System verhindert Fälschung (signieren ohne Key unmöglich), nicht die Kopie
-                            der eigenen Datei.
-                        </div>
+                        <div data-t="ui.sichern-die-pass-datei-exportieren" class="drawer-hint" id="vibe-pass-backup-hint"></div>
                     </section>
                     <!-- Ring 11 V1+V2 — Multi-User Sync. Default eingeklappt. -->
                     <section class="section default-collapsed" id="multiuser-section">
                         <h3>
-                            Multi-User Sync
-                            <span class="help-dot" tabindex="0" aria-label="Hilfe"
+                            <span data-t="ui.multi-user-sync"></span>
+                            <span class="help-dot" tabindex="0" data-t-aria-label="ui.hilfe"
                                 >?<span class="help-pop"
-                                    >Position + Welt-Aktionen mit anderen Spielern teilen. Braucht den
-                                    signaling-server (<code>npm run signaling</code>). Beide nutzen die SELBE
-                                    Adresse + Raum-ID. Welt gemeinsam: einer teilt sie (Bibliothek), der andere
-                                    empfängt sie — dann sind beide in derselben worldId.</span
+                                    ><span data-t="ui.position-welt-aktionen-mit-anderen"></span><code data-t="ui.npm-run-signaling"></code><span data-t="ui.beide-nutzen-die-selbe-adresse"></span></span
                                 ></span
                             >
                         </h3>
                         <div class="tuning-row">
-                            <label for="p2p-url"><span>Signaling-URL</span></label>
+                            <label for="p2p-url"><span data-t="ui.signaling-url"></span></label>
                             <input
                                 type="text"
                                 id="p2p-url"
@@ -9485,38 +9399,32 @@
                             />
                         </div>
                         <div class="tuning-row">
-                            <label for="p2p-room"><span>Raum-ID</span></label>
+                            <label for="p2p-room"><span data-t="ui.raum-id"></span></label>
                             <input
                                 type="text"
                                 id="p2p-room"
-                                placeholder="(leer = aktive Welt)"
+                                data-t-placeholder="ui.leer-aktive-welt"
                                 autocomplete="off"
                                 spellcheck="false"
                             />
-                            <button type="button" id="p2p-room-copy" title="Aktive Raum-ID in die Zwischenablage kopieren">
-                                kopieren
-                            </button>
+                            <button data-t="ui.kopieren" type="button" id="p2p-room-copy" data-t-title="ui.aktive-raum-id-in-die"></button>
                         </div>
                         <!-- M8 (V18.161) - das Makro-Fenster: die Knoten-Gesamtzahl (Broker-stats). -->
-                        <div class="drawer-hint" id="p2p-broker-stats">Knoten: — (verbinden für die Online-Zahl)</div>
+                        <div data-t="ui.knoten-verbinden-fuer-die-online" class="drawer-hint" id="p2p-broker-stats"></div>
                         <div class="actions">
-                            <button type="button" id="p2p-toggle" aria-pressed="false">Aktivieren</button>
+                            <button data-t="ui.aktivieren" type="button" id="p2p-toggle" aria-pressed="false"></button>
                             <!-- W7 Phase 2 — ein Guest holt die Welt des Hosts frisch über das Mesh. -->
-                            <button type="button" id="p2p-resync" title="Welt des Hosts über das Mesh neu holen" hidden>
-                                Welt vom Host neu holen
-                            </button>
+                            <button data-t="ui.welt-vom-host-neu-holen" type="button" id="p2p-resync" data-t-title="ui.welt-des-hosts-ueber-das" hidden></button>
                             <!-- W7 Phase 3 — LLM-Pool: die eigene Stimme für schlüssellose Mitspieler. -->
-                            <button
+                            <button data-t="ui.stimme-teilen"
                                 type="button"
                                 id="p2p-voice-share"
                                 aria-pressed="false"
-                                title="Deine LLM-Stimme für Mitspieler ohne eigenen Schlüssel freigeben"
+                                data-t-title="ui.deine-llm-stimme-fuer-mitspieler"
                                 hidden
-                            >
-                                Stimme teilen
-                            </button>
+                            ></button>
                         </div>
-                        <div id="p2p-status" class="drawer-hint" aria-live="polite">Inaktiv.</div>
+                        <div data-t="ui.inaktiv" id="p2p-status" class="drawer-hint" aria-live="polite"></div>
                         <!-- Ring 11.5: Host-/Guest-Banner (V18.79 — zur Multiplayer-Rolle; der Host sieht hier
                              seinen Einladungs-Code, sobald er aktiviert). _renderHostBanner/_renderGuestBanner
                              finden sie per id, egal wo. Sichtbar nur in einer Multiplayer-Rolle. -->
@@ -9524,21 +9432,21 @@
                         <div id="world-guest-banner" class="drawer-hint" hidden></div>
                         <!-- W7 Phase 4 — Public-Lobby: Raum veröffentlichen + andere browsen. -->
                         <div id="p2p-lobby" class="p2p-lobby">
-                            <h4>Öffentliche Lobby <span class="section-hint">(W7 Phase 4)</span></h4>
+                            <h4><span data-t="ui.oeffentliche-lobby"></span> <span data-t="ui.w7-phase-4" class="section-hint"></span></h4>
                             <label class="p2p-lobby-pub">
                                 <input type="checkbox" id="p2p-lobby-publish-toggle" />
-                                <span>Diesen Raum in der Lobby zeigen</span>
+                                <span data-t="ui.diesen-raum-in-der-lobby"></span>
                             </label>
                             <input
                                 type="text"
                                 id="p2p-lobby-label"
-                                placeholder="Raum-Name für die Lobby"
+                                data-t-placeholder="ui.raum-name-fuer-die-lobby"
                                 maxlength="48"
                                 autocomplete="off"
                                 spellcheck="false"
                             />
                             <div class="actions">
-                                <button type="button" id="p2p-lobby-refresh">Lobby durchsuchen</button>
+                                <button data-t="ui.lobby-durchsuchen" type="button" id="p2p-lobby-refresh"></button>
                             </div>
                             <div id="p2p-lobby-list" class="p2p-lobby-list" aria-live="polite"></div>
                         </div>
@@ -9548,65 +9456,59 @@
                 <!-- GRUPPE 5 — RENDER-FEINSCHLIFF (Dev): EINE eingeklappte Karte mit ALLEN ~20 pixel-
                      blinden Reglern, in Sub-Bänder gruppiert (Cel/Wasser/Schatten/Emotion). -->
                 <div class="settings-group">
-                    <div class="settings-grouplabel">5 · Erweitert · Render-Feinschliff</div>
+                    <div data-t="ui.5-erweitert-render-feinschliff" class="settings-grouplabel"></div>
                     <section class="section default-collapsed" id="atmosphere-section">
                         <h3>
-                            Render-Feinschliff <span class="section-hint">(für Entwickler)</span>
-                            <span class="help-dot" tabindex="0" aria-label="Hilfe"
-                                >?<span class="help-pop"
-                                    >Pixel-blinde Tuning-Regler — gemeinsam justiert mit dem Schöpfer-Auge im
-                                    Browser. Vier Bänder: Cel &amp; Licht · Wasser · Schatten · Emotion-Tuning.
-                                    Jedes Band trägt sein eigenes „?".</span
+                            <span data-t="ui.render-feinschliff"></span> <span data-t="ui.fuer-entwickler" class="section-hint"></span>
+                            <span class="help-dot" tabindex="0" data-t-aria-label="ui.hilfe"
+                                >?<span data-t="ui.pixel-blinde-tuning-regler-gemeinsam" class="help-pop"
+                                    ></span
                                 ></span
                             >
                         </h3>
                         <!-- BAND: Cel & Licht -->
                         <div class="settings-band">
                             <h4>
-                                Cel &amp; Licht
-                                <span class="help-dot" tabindex="0" aria-label="Hilfe"
+                                <span data-t="ui.cel-licht"></span>
+                                <span class="help-dot" tabindex="0" data-t-aria-label="ui.hilfe"
                                     >?<span class="help-pop"
-                                        ><b>Cel-Stufen</b> formen die Licht-Abstufung (wenig = harte gemalte Linien
-                                        wie Studio-Ghibli, viele = weicher Verlauf). <b>2.5D-Lichtung</b> ist der
-                                        Haupt-Hebel gegen die Facetten-Rauten (blendet die Beleuchtungs-Normale nach
-                                        oben; 100 % = flach wie 2.5D). <b>Kavitäts-AO</b> zeichnet Facetten-Kanten
-                                        als Kontakt-Schatten. <b>Kanten-Schärfe</b> = Post-FX-Unsharp.
-                                        <b>Oberflächen-Textur</b> = Fels-/Boden-Maserung. <b>Farb-Variation</b>
-                                        streut die Biom-Farbe. <b>Fog-Distanz</b> = wo der Welt-Dunst beginnt.</span
+                                        ><b data-t="ui.cel-stufen"></b> <span data-t="ui.formen-die-licht-abstufung-wenig"></span> <b data-t="ui.2-5d-lichtung"></b> <span data-t="ui.ist-der-haupt-hebel-gegen"></span> <b data-t="ui.kavitaets-ao"></b> <span data-t="ui.zeichnet-facetten-kanten-als-kontakt"></span> <b data-t="ui.kanten-schaerfe"></b> <span data-t="ui.post-fx-unsharp"></span>
+                                        <b data-t="ui.oberflaechen-textur"></b> <span data-t="ui.fels-boden-maserung"></span> <b data-t="ui.farb-variation"></b>
+                                        <span data-t="ui.streut-die-biom-farbe"></span> <b data-t="ui.fog-distanz"></b> <span data-t="ui.wo-der-welt-dunst-beginnt"></span></span
                                     ></span
                                 >
                             </h4>
                             <!-- (V18.106 - B3: "2.5D-Lichtung"-Slider gefallen, in die Geometrie gebacken) -->
                             <div class="slider-row">
-                                <label for="slider-cavityao">Kavitäts-AO</label>
+                                <label data-t="ui.kavitaets-ao" for="slider-cavityao"></label>
                                 <input type="range" id="slider-cavityao" min="0" max="200" value="35" />
                                 <span class="slider-value" id="slider-cavityao-val">35 %</span>
                             </div>
                             <!-- M7 (V18.160, Befund 21) - die Mikro-Struktur als lebendiger Regler. -->
                             <div class="slider-row">
-                                <label for="slider-microtex">Mikro-Struktur</label>
+                                <label data-t="ui.mikro-struktur" for="slider-microtex"></label>
                                 <input type="range" id="slider-microtex" min="0" max="40" value="10" />
                                 <span class="slider-value" id="slider-microtex-val">0.10</span>
                             </div>
                             <!-- V18.210 (§1-A2) - der R5-Struktur-Boost: Strukturen tragen
                                  mehr Mikro-Tiefe als das Terrain (Default 1.3 = 30% tiefer). -->
                             <div class="slider-row">
-                                <label for="slider-structureboost">Struktur-Tiefe</label>
+                                <label data-t="ui.struktur-tiefe" for="slider-structureboost"></label>
                                 <input type="range" id="slider-structureboost" min="50" max="250" value="130" />
                                 <span class="slider-value" id="slider-structureboost-val">1.30</span>
                             </div>
                             <div class="slider-row">
-                                <label for="slider-edgesharp">Kanten-Schärfe</label>
+                                <label data-t="ui.kanten-schaerfe" for="slider-edgesharp"></label>
                                 <input type="range" id="slider-edgesharp" min="0" max="100" value="0" />
                                 <span class="slider-value" id="slider-edgesharp-val">0.00</span>
                             </div>
                             <div class="slider-row">
-                                <label for="slider-surftex">Oberflächen-Textur</label>
+                                <label data-t="ui.oberflaechen-textur" for="slider-surftex"></label>
                                 <input type="range" id="slider-surftex" min="0" max="400" value="200" />
                                 <span class="slider-value" id="slider-surftex-val">200 %</span>
                             </div>
                             <div class="slider-row">
-                                <label for="slider-colorvar">Farb-Variation</label>
+                                <label data-t="ui.farb-variation" for="slider-colorvar"></label>
                                 <input type="range" id="slider-colorvar" min="0" max="200" value="150" />
                                 <span class="slider-value" id="slider-colorvar-val">150 %</span>
                             </div>
@@ -9614,30 +9516,26 @@
                         <!-- BAND: Wasser -->
                         <div class="settings-band">
                             <h4>
-                                Wasser
-                                <span class="help-dot" tabindex="0" aria-label="Hilfe"
+                                <span data-t="ui.wasser"></span>
+                                <span class="help-dot" tabindex="0" data-t-aria-label="ui.hilfe"
                                     >?<span class="help-pop"
-                                        ><b>Wasser-Cull</b> blendet dünnes Ufer-/Wandwasser pro Pixel aus (tiefes
-                                        bleibt). <b>Ufer-Schärfe</b> = wie schmal die
-                                        Uferlinie einblendet, <b>Wasser-Tiefe</b> = wie schnell es ins Dunkle kippt.
-                                        See-Wellen, Fluss-Schaum, Wasserfall-Steilheit und Auslauf-Übergang feilen
-                                        die Form.</span
+                                        ><b data-t="ui.wasser-cull"></b> <span data-t="ui.blendet-duennes-ufer-wandwasser-pro"></span> <b data-t="ui.ufer-schaerfe"></b> <span data-t="ui.wie-schmal-die-uferlinie-einblendet"></span> <b data-t="ui.wasser-tiefe"></b> <span data-t="ui.wie-schnell-es-ins-dunkle"></span></span
                                     ></span
                                 >
                             </h4>
                             <div class="slider-row">
-                                <label for="slider-watercull">Wasser-Cull</label>
+                                <label data-t="ui.wasser-cull" for="slider-watercull"></label>
                                 <input type="range" id="slider-watercull" min="0" max="200" value="25" />
                                 <span class="slider-value" id="slider-watercull-val">0.0025</span>
                             </div>
                             <!-- (Ufer-Schärfe und Wasser-Tiefe gefallen: das Wasser deckt nach dem Durchlass-Gesetz, optischer Weg in Metern) -->
                             <div class="slider-row">
-                                <label for="slider-lakeripple">See-Wellen</label>
+                                <label data-t="ui.see-wellen" for="slider-lakeripple"></label>
                                 <input type="range" id="slider-lakeripple" min="0" max="100" step="1" value="20" />
                                 <span class="slider-value" id="slider-lakeripple-val">0.20</span>
                             </div>
                             <div class="slider-row">
-                                <label for="slider-waterdepthfoam">Fluss-Schaum (Tiefe)</label>
+                                <label data-t="ui.fluss-schaum-tiefe" for="slider-waterdepthfoam"></label>
                                 <input type="range" id="slider-waterdepthfoam" min="1" max="60" step="1" value="12" />
                                 <span class="slider-value" id="slider-waterdepthfoam-val">1.2 m</span>
                             </div>
@@ -9646,23 +9544,20 @@
                         <!-- BAND: Schatten -->
                         <div class="settings-band">
                             <h4>
-                                Schatten
-                                <span class="help-dot" tabindex="0" aria-label="Hilfe"
+                                <span data-t="ui.schatten"></span>
+                                <span class="help-dot" tabindex="0" data-t-aria-label="ui.hilfe"
                                     >?<span class="help-pop"
-                                        ><b>Schatten-Reichweite</b> ist die Halbbreite des Schatten-Frustums in
-                                        Metern (kleiner = schärfere Texel an steilen Wänden, aber kleinere Fläche um
-                                        dich). <b>Schatten-Bias</b> verschiebt den Schatten entlang der Normale (zu
-                                        klein → Acne-Streifen, zu gross → der Schatten löst sich vom Fuss).</span
+                                        ><b data-t="ui.schatten-reichweite"></b> <span data-t="ui.ist-die-halbbreite-des-schatten"></span> <b data-t="ui.schatten-bias"></b> <span data-t="ui.verschiebt-den-schatten-entlang-der"></span></span
                                     ></span
                                 >
                             </h4>
                             <div class="slider-row">
-                                <label for="slider-shadowrange">Schatten-Reichweite</label>
+                                <label data-t="ui.schatten-reichweite" for="slider-shadowrange"></label>
                                 <input type="range" id="slider-shadowrange" min="80" max="400" step="10" value="300" />
                                 <span class="slider-value" id="slider-shadowrange-val">300 m</span>
                             </div>
                             <div class="slider-row">
-                                <label for="slider-shadowbias" title="Hebel auf das Gesetz des Schatten-Bias (je Kaskade aus ihrer Texel-Kante; 1 = das Gesetz)">Schatten-Bias ×</label>
+                                <label data-t="ui.schatten-bias-2" for="slider-shadowbias" data-t-title="ui.hebel-auf-das-gesetz-des"></label>
                                 <input type="range" id="slider-shadowbias" min="0" max="300" step="5" value="100" />
                                 <span class="slider-value" id="slider-shadowbias-val">1.00</span>
                             </div>
@@ -9670,30 +9565,29 @@
                         <!-- BAND: Emotion-Tuning -->
                         <div class="settings-band">
                             <h4>
-                                Emotion-Tuning
-                                <span class="help-dot" tabindex="0" aria-label="Hilfe"
+                                <span data-t="ui.emotion-tuning"></span>
+                                <span class="help-dot" tabindex="0" data-t-aria-label="ui.hilfe"
                                     >?<span class="help-pop"
-                                        ><b>Schwelle</b> = ab welcher Intensität eine Emotion kippt.
-                                        <b>Decay/s</b> = wie schnell sie verblasst. <b>Cooldown</b> = Pause zwischen
-                                        zwei Auslösern derselben Emotion.</span
+                                        ><b data-t="ui.schwelle"></b> <span data-t="ui.ab-welcher-intensitaet-eine-emotion"></span>
+                                        <b data-t="ui.decay-s"></b> <span data-t="ui.wie-schnell-sie-verblasst"></span> <b data-t="ui.cooldown"></b> <span data-t="ui.pause-zwischen-zwei-ausloesern-derselben"></span></span
                                     ></span
                                 >
                             </h4>
                             <div class="tuning-row">
                                 <label for="tune-threshold">
-                                    <span>Schwelle</span><span class="v" id="tune-threshold-v">0.70</span>
+                                    <span data-t="ui.schwelle"></span><span class="v" id="tune-threshold-v">0.70</span>
                                 </label>
                                 <input type="range" id="tune-threshold" min="0.3" max="1.0" step="0.05" value="0.7" />
                             </div>
                             <div class="tuning-row">
                                 <label for="tune-decay">
-                                    <span>Decay/s</span><span class="v" id="tune-decay-v">0.005</span>
+                                    <span data-t="ui.decay-s"></span><span class="v" id="tune-decay-v">0.005</span>
                                 </label>
                                 <input type="range" id="tune-decay" min="0.001" max="0.05" step="0.001" value="0.005" />
                             </div>
                             <div class="tuning-row">
                                 <label for="tune-cooldown">
-                                    <span>Cooldown (s)</span><span class="v" id="tune-cooldown-v">30</span>
+                                    <span data-t="ui.cooldown-s"></span><span class="v" id="tune-cooldown-v">30</span>
                                 </label>
                                 <input type="range" id="tune-cooldown" min="5" max="120" step="5" value="30" />
                             </div>
@@ -9702,16 +9596,16 @@
                 </div>
             </div>
         </aside>
-        <aside id="console" aria-label="Konsole">
+        <aside id="console" data-t-aria-label="ui.konsole">
             <header id="console-header">
-                <h3>Konsole</h3>
-                <button id="console-collapse" type="button" aria-pressed="false" aria-label="Konsole einklappen">
+                <h3 data-t="ui.konsole"></h3>
+                <button id="console-collapse" type="button" aria-pressed="false" data-t-aria-label="ui.konsole-einklappen">
                     −
                 </button>
             </header>
             <div id="console-body">
                 <div id="console-chat-section">
-                    <div class="console-section-label">Chat</div>
+                    <div data-t="ui.chat" class="console-section-label"></div>
                     <div id="chat-output"></div>
                 </div>
                 <!-- Welle 6.X.2 V8.14 — Logbuch direkt in der Konsole
@@ -9724,11 +9618,13 @@
                         id="console-log-toggle"
                         class="console-section-label console-log-toggle"
                         aria-expanded="false"
-                        title="Logbuch ein-/ausklappen"
+                        data-t-title="ui.logbuch-ein-ausklappen"
                     >
-                        <span class="caret" aria-hidden="true">▸</span> Logbuch
+                        <span class="caret" aria-hidden="true">▸</span> <span data-t="ui.logbuch"></span>
                     </button>
-                    <div id="log" hidden></div>
+                    <!-- spielgang.K5 — das Logbuch ist die Entwickler-Sicht (standardmäßig verborgen): seine Zeilen sind die
+                         Diagnose der Maschine mit Version und Stufe, keine Sprache des Spielers (translate="no"). -->
+                    <div id="log" translate="no" hidden></div>
                 </div>
             </div>
             <!-- V18.82 — der FADING-FEED (der freie Bildschirm, BotW/Minecraft-Modell): die Konsole
@@ -9738,7 +9634,7 @@
                  Historie (#console-body) → der Feed weicht. -->
             <div id="chat-feed" aria-live="polite"></div>
             <div id="console-footer">
-                <input type="text" id="chat-input" placeholder="sprich, und die Welt antwortet …" />
+                <input type="text" id="chat-input" data-t-placeholder="ui.sprich-und-die-welt-antwortet" />
             </div>
         </aside>
         <!-- Versteckter File-Picker für 'Lade Datei'-Chat-Befehl. -->
@@ -9751,80 +9647,85 @@
                                im Index, aktuelle Welt bleibt aktiv
                Fusionieren   → deferred zu Ring 10, Button ist disabled
                Abbrechen     → Dialog schließen, kein Effekt -->
+        <!-- spielgang.K5 — DIE FRAGE DER WELT (`_frage`, Dienst): Bestätigen · Eingabe · Hinweis über die eigene Oberfläche
+             statt window.confirm/prompt/alert; der Text kommt aus der Tafel. -->
+        <dialog id="frage-dialog">
+            <p id="frage-text" class="frage-text"></p>
+            <div class="world-fusion-row" id="frage-eingabe-zeile" hidden>
+                <input type="text" id="frage-eingabe" autocomplete="off" spellcheck="false" />
+            </div>
+            <div class="world-fusion-footer">
+                <button data-t="ui.abbrechen" type="button" id="frage-nein" class="world-tor-cancel"></button>
+                <button data-t="ui.ok" type="button" id="frage-ja" class="world-fusion-confirm"></button>
+            </div>
+        </dialog>
         <dialog id="world-tor-dialog">
-            <h2>Welt-Tor</h2>
+            <h2 data-t="ui.welt-tor"></h2>
             <p id="world-tor-summary" class="drawer-hint">…</p>
             <div class="world-tor-actions">
                 <button type="button" id="world-tor-replace" class="world-tor-btn">
-                    <strong>Ersetzen</strong>
-                    <span>Die Datei wird deine aktive Welt. Deine jetzige Welt bleibt gesichert im Welt-Index — nur eine Datei mit derselben Welt-Id ersetzt sie.</span>
+                    <strong data-t="ui.ersetzen"></strong>
+                    <span data-t="ui.die-datei-wird-deine-aktive"></span>
                 </button>
                 <button type="button" id="world-tor-beside" class="world-tor-btn">
-                    <strong>Daneben legen</strong>
-                    <span>Importierte Welt bekommt eine neue Identität neben deiner aktuellen.</span>
+                    <strong data-t="ui.daneben-legen"></strong>
+                    <span data-t="ui.importierte-welt-bekommt-eine-neue"></span>
                 </button>
                 <button type="button" id="world-tor-fuse" class="world-tor-btn">
-                    <strong>Fusionieren</strong>
-                    <span
-                        >Importierte Welt wird zuerst daneben gelegt, dann öffnet sich der Fusions-Dialog mit ihr als
-                        Eltern-B.</span
+                    <strong data-t="ui.fusionieren"></strong>
+                    <span data-t="ui.importierte-welt-wird-zuerst-daneben"
+                        ></span
                     >
                 </button>
             </div>
             <div class="world-tor-footer">
-                <button type="button" id="world-tor-cancel" class="world-tor-cancel">Abbrechen</button>
+                <button data-t="ui.abbrechen" type="button" id="world-tor-cancel" class="world-tor-cancel"></button>
             </div>
         </dialog>
         <!-- Ring 10 — Welt-Fusion-Dialog. Zwei Eltern + drei Strategien +
              optionaler Slug. „Verschmelzen" ruft fuseWorlds mit reload:true. -->
         <dialog id="world-fusion-dialog">
-            <h2>Welt-Fusion</h2>
-            <p id="world-fusion-summary" class="drawer-hint">
-                Diese Welt verschmilzt mit einer anderen zu einer dritten — beide werden Eltern, eine neue Identität
-                entsteht.
-            </p>
+            <h2 data-t="ui.welt-fusion"></h2>
+            <p data-t="ui.diese-welt-verschmilzt-mit-einer" id="world-fusion-summary" class="drawer-hint"></p>
             <div class="world-fusion-row">
-                <label for="world-fusion-parent-a">Diese Welt:</label>
+                <label data-t="ui.diese-welt" for="world-fusion-parent-a"></label>
                 <span id="world-fusion-parent-a-label">—</span>
             </div>
             <div class="world-fusion-row">
-                <label for="world-fusion-parent-b">⊕ Andere Welt:</label>
+                <label data-t="ui.andere-welt" for="world-fusion-parent-b"></label>
                 <select id="world-fusion-parent-b"></select>
             </div>
             <fieldset class="world-fusion-strategy">
-                <legend>Strategie</legend>
+                <legend data-t="ui.strategie"></legend>
                 <label>
                     <input type="radio" name="fusion-strategy" value="sequence" checked />
-                    <strong>Sequenz</strong>
-                    <span
-                        >DSL-Geschichten hintereinander, Emotionen aus dieser Welt. Die Fusion bewahrt diese Welt
-                        überlagert.</span
+                    <strong data-t="ui.sequenz"></strong>
+                    <span data-t="ui.dsl-geschichten-hintereinander-emotionen"
+                        ></span
                     >
                 </label>
                 <label>
                     <input type="radio" name="fusion-strategy" value="random-mix" />
-                    <strong>Zufalls-Mix</strong>
-                    <span
-                        >DSL-Geschichten gemischt, Emotionen gemittelt. Die Fusion ist ein vermischtes Echo
-                        beider.</span
+                    <strong data-t="ui.zufalls-mix"></strong>
+                    <span data-t="ui.dsl-geschichten-gemischt-emotionen-gemit"
+                        ></span
                     >
                 </label>
                 <label>
                     <input type="radio" name="fusion-strategy" value="tag-merge" />
-                    <strong>Tag-Verschmelzung</strong>
-                    <span
-                        >Emotionen max-aggregiert (Vereinigung statt Mittelung) — die neue Welt ist von beider
-                        Intensität geprägt.</span
+                    <strong data-t="ui.tag-verschmelzung"></strong>
+                    <span data-t="ui.emotionen-max-aggregiert-vereinigung-sta"
+                        ></span
                     >
                 </label>
             </fieldset>
             <div class="world-fusion-row">
-                <label for="world-fusion-slug">Neuer Slug (optional):</label>
-                <input type="text" id="world-fusion-slug" placeholder="automatisch aus Eltern" maxlength="48" />
+                <label data-t="ui.neuer-slug-optional" for="world-fusion-slug"></label>
+                <input type="text" id="world-fusion-slug" data-t-placeholder="ui.automatisch-aus-eltern" maxlength="48" />
             </div>
             <div class="world-fusion-footer">
-                <button type="button" id="world-fusion-cancel" class="world-tor-cancel">Abbrechen</button>
-                <button type="button" id="world-fusion-confirm" class="world-fusion-confirm">Verschmelzen</button>
+                <button data-t="ui.abbrechen" type="button" id="world-fusion-cancel" class="world-tor-cancel"></button>
+                <button data-t="ui.verschmelzen" type="button" id="world-fusion-confirm" class="world-fusion-confirm"></button>
             </div>
         </dialog>
         <!-- Ring 11.5 — Neue-Welt-Dialog mit Modus-Wahl. Ersetzt die alte
@@ -9833,46 +9734,46 @@
                2) Host: Multi-User, ich starte + teile Einladungs-Code
                3) Joinen: Multi-User, ich gebe Einladungs-Code ein -->
         <dialog id="new-world-dialog">
-            <h2>Neue Welt</h2>
-            <p id="new-world-summary" class="drawer-hint">Eine neue Welt erwacht — wähle ihre Beziehungs-Form.</p>
+            <h2 data-t="ui.neue-welt"></h2>
+            <p data-t="ui.eine-neue-welt-erwacht-waehle" id="new-world-summary" class="drawer-hint"></p>
             <div class="new-world-row">
-                <label for="new-world-slug">Name:</label>
+                <label data-t="ui.name" for="new-world-slug"></label>
                 <input
                     type="text"
                     id="new-world-slug"
-                    placeholder="(leer = automatisch)"
+                    data-t-placeholder="ui.leer-automatisch"
                     autocomplete="off"
                     spellcheck="false"
                 />
             </div>
             <fieldset class="new-world-mode">
-                <legend>Modus</legend>
+                <legend data-t="ui.modus"></legend>
                 <label>
                     <input type="radio" name="new-world-mode" value="solo" checked />
-                    <strong>Allein</strong> — eine private Welt nur für dich
+                    <strong data-t="ui.allein"></strong> <span data-t="ui.eine-private-welt-nur-fuer"></span>
                 </label>
                 <label>
                     <input type="radio" name="new-world-mode" value="multi" />
-                    <strong>Mit anderen</strong> — Symbiose zu mehrt
+                    <strong data-t="ui.mit-anderen"></strong> <span data-t="ui.symbiose-zu-mehrt"></span>
                 </label>
             </fieldset>
             <fieldset class="new-world-role" hidden>
-                <legend>Rolle</legend>
+                <legend data-t="ui.rolle"></legend>
                 <label>
                     <input type="radio" name="new-world-role" value="host" checked />
-                    <strong>Host</strong> — ich erschaffe die Welt + lade andere ein
+                    <strong data-t="ui.host"></strong> <span data-t="ui.ich-erschaffe-die-welt-lade"></span>
                 </label>
                 <label>
                     <input type="radio" name="new-world-role" value="join" />
-                    <strong>Joinen</strong> — ich komme zu einem Host
+                    <strong data-t="ui.joinen"></strong> <span data-t="ui.ich-komme-zu-einem-host"></span>
                 </label>
             </fieldset>
             <div id="new-world-join-row" class="new-world-row" hidden>
-                <label for="new-world-invite">Einladungs-Code:</label>
+                <label data-t="ui.einladungs-code" for="new-world-invite"></label>
                 <input
                     type="text"
                     id="new-world-invite"
-                    placeholder="anazh-werk:…"
+                    data-t-placeholder="ui.anazh-werk"
                     autocomplete="off"
                     spellcheck="false"
                 />
@@ -9880,14 +9781,14 @@
             <div class="new-world-row">
                 <label>
                     <input type="checkbox" id="new-world-inherit" />
-                    Bisherige Person übernehmen (Seele + Werkzeuge + eigene Materialien/Baupläne)
+                    <span data-t="ui.bisherige-person-uebernehmen-seele-werkz"></span>
                 </label>
             </div>
             <div id="new-world-status" class="drawer-hint" aria-live="polite"></div>
             <div class="new-world-footer">
-                <a class="new-world-studio" href="?studio=gelaende" title="das Gelände der neuen Welt gestalten">Gelände-Studio …</a>
-                <button type="button" id="new-world-cancel">Abbrechen</button>
-                <button type="button" id="new-world-confirm">Erschaffen</button>
+                <a data-t="ui.gelaende-studio" class="new-world-studio" href="?studio=gelaende" data-t-title="ui.das-gelaende-der-neuen-welt"></a>
+                <button data-t="ui.abbrechen" type="button" id="new-world-cancel"></button>
+                <button data-t="ui.erschaffen" type="button" id="new-world-confirm"></button>
             </div>
         </dialog>
         <!-- Vendored libs (vendor/README.md erklärt Versionen + Update-Befehl) -->

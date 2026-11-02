@@ -1518,4 +1518,6 @@ function _bootAnazhRealm() {
         throw e;
     });
 }
+// DIE SPRACHE ZUERST (spielgang.K5): index.html trägt nur Schlüssel — die Tafel füllt jede Zeile, bevor der Boot wartet.
+AnazhRealm._sprachDom(document);
 _bootAnazhRealm();
