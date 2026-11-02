@@ -212,3 +212,4 @@ takt-z159a-gtx gemessen punkte 10770eb5 gtx: 0 grün / 5 rot
 z159-abab LANGSAMER abab 10770eb5 gegen 6a571e3b: w-ego 4+4 nicht-langsamer · stadt 4+4 LANGSAMER
 general-1077-gtx gemessen punkte 10770eb5 gtx: 13 grün / 14 rot
 takt-z163a-gtx gemessen punkte c5a9a2f5 gtx: 1 grün / 4 rot
+takt-z163b-gtx gemessen punkte c5a9a2f5 gtx: 1 grün / 4 rot
