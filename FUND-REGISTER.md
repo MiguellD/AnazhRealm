@@ -11,6 +11,9 @@ Eine Zeile je Fund: Datei:Zeile · Wurzel · was es bewegt · Größe. Wer eine 
 - `package.json:20` check:statik (Puls 1, lokal `npm run check`) · eine `&&`-Kette aus 74 Befehlen: die erste rote Linse verbirgt jede dahinter — dieselbe Klasse wie die voll-Kette (w4-ci-alle-schritte), dort nicht geheilt, weil npm unter Windows cmd fährt und gate:ci-deckung die Kette befehlsweise liest ((S)-Logik) · ein Läufer, der jede Linse fährt und alle Roten nennt · S–M
 
 ## Spiel
+- spielgang.K5#1 nach z165: Code-Senken 0 (vorher 243), aber DOM 700 harte Zeilen (z. B. „Anazh Realm“, „Die Welt erwacht …“, „Hallo. Die Welt steht …“) — die Station zählt lebendes DOM anders als gate:sprache (dort 18 in pseudo); Linse der Station und gate:sprache auf EINE Zählung bringen, dann die Rest-Senken · spielgang.K5 (0) · M
+- profiband.K4 Radeon frisch ROT am 5fba36ea ohne Fremdlast: Gehen 22,9 % > 33 ms, Fahrt 82 % > 33 ms, max 403 ms · E, profiband.K4 (gebucht 1, Ratsche hält bis BUCHE_FALL) · M
+- ki.K3 headless 8/12 statt ≥ 70 % (vorher 9/12) — LLM-Streuung, Korpus/Zahl der Fragen erhöhen statt Wackler · ki.K3 · S
 - Heap-Leck `nodeBuilderCache` +30,6 MB/min · profiband.K5, E · in Arbeit (funde-6a57 heil:leck)
 - Wege-Karte: erstes Zentrieren am Genesis-Ort 112 ms Haupt-Faden, Flächen ohne Band je 48-m-Umzug neu · B, E · M
 - Metropole `platzVoll: 87` — 87 Marktstände ohne Platz neben der Trasse (alle Punkte in Hausgrundrissen) · siedlung, C · Plan der Stadt · M
