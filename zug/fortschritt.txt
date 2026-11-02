@@ -1531,3 +1531,4 @@
 2026-11-02 09:21:02 z158-abab w-ego VERLÄNGERN 12.3 · 1/2 (2+2)
 2026-11-02 09:38:01 z158-abab stadt VERLÄNGERN 16.9 · 2/2 (2+2)
 2026-11-02 09:50:15 z158-abab w-ego(4+4) nicht-langsamer 12.2 · verlängert (4+4)
+2026-11-02 10:07:08 z158-abab stadt(4+4) LANGSAMER 16.8 · verlängert (4+4)
