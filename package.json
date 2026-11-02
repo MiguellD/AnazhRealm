@@ -57,7 +57,6 @@
         "gate:wasser-leben:bild": "node scripts/diag-wasser-leben.cjs --bild",
         "gate:source-probes": "node scripts/diag-source-probes.cjs",
         "cut-method": "node scripts/cut-method.cjs",
-        "audit:strict": "node scripts/audit-strict.cjs",
         "mint:asset-goldens": "node scripts/mint-asset-goldens.cjs",
         "gate:asset-contract": "node scripts/diag-asset-contract.cjs",
         "gate:pflanzen-nah": "node scripts/diag-pflanzen-nah.cjs",

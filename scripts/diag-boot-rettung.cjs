@@ -100,7 +100,6 @@ async function fahreForm(browser, form, schein) {
     const ctx = await browser.createBrowserContext();
     const page = await ctx.newPage();
     const rep = { form, schein: !!schein, befunde: [], boots: [] };
-    page.on("dialog", (d) => d.accept().catch(() => {}));
     await page.evaluateOnNewDocument(frageJa); // die Fragen der Welt (#frage-dialog, spielgang.K5)
     await nullRenderer(page);
     if (schein) await page.evaluateOnNewDocument(scheinNurPlatz);

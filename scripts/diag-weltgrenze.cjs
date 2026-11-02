@@ -338,7 +338,6 @@ async function fahreWeg(browser, weg, schein) {
     const form = weg.endsWith("-ohne-id") ? "ohne-id" : weg.endsWith("-ohne-meta") ? "ohne-meta" : "voll";
     const tuer = TUEREN.has(basis);
     let gemeldet = null;
-    page.on("dialog", (d) => d.accept().catch(() => {}));
     await page.evaluateOnNewDocument(frageJa); // die Fragen der Welt (#frage-dialog, spielgang.K5)
     await page.exposeFunction("__grenzeMelde", (x) => {
         gemeldet = x;
