@@ -374,15 +374,11 @@ async function gang() {
             const pfade = (netz[id] = []); // jeden Seitenfehler nennt der EINE Sammler der Weiche (welt-boot), der Lauf wird rot
             let netzZaehlt = true; // H6 zählt den ersten Besuch, nie das Neuladen der Sitzung
             page.on("request", (q) => netzZaehlt && pfade.push(new URL(q.url()).pathname));
-            const t0 = Date.now(),
-                sek = (t) => ((Date.now() - t) / 1000).toFixed(1);
             await s.zeige(page, 90000, seite(id) + (zeit ? "?bank=12" : ""), "load"); // auf der Karte die Bank der Leiste (H8)
             // ein Studio steht, wenn seine Hülle die Sitzung von zuletzt geladen hat (`laden`: die Regler stehen, A trägt die Öffnung) —
-            // das EINE Warten, nie eine Uhr (bis 02.11. 1,5 s je Seite: 12 s des Gangs, der in der Sitzung seine Frist riss); eine
-            // Nebenwelt trägt keine Sitzung, ihre späten Anfragen (H6) zählt die halbe Ruhe wie bisher
-            if (STUDIOS.includes(id)) await waitFor(page, () => window.AnazhHuelle && AnazhHuelle.gang().geladen, `${id}: die Hülle lädt die Sitzung`);
-            else await sleep(1500);
-            const tSeite = sek(t0);
+            // das EINE Warten, nie eine Uhr (bis 02.11. 1,5 s je Seite, 12 s des Gangs, der in der Sitzung der Punkte seine Frist riss);
+            // eine Nebenwelt trägt keine Sitzung, ihre späten Anfragen (H6) zählt die Ruhe wie bisher
+            await (STUDIOS.includes(id) ? waitFor(page, "AnazhHuelle.gang().geladen", id) : sleep(1500));
             // H3: der Spieler zieht und greift im selben Atemzug die Tasten des VERLAUFs (kein Bild, keine Ruhe dazwischen), je
             // Taste am LEBENDEN Schieber seiner Zeile (die schmiede baut ihre Leiste im Rückweg neu — ein abgehängter trüge nie ans Fenster)
             const z = (seiten[id] = await page.evaluate((verlauf) => {
@@ -406,26 +402,19 @@ async function gang() {
             // `waitFor`): ein Hänger endet an der Frist des Browsers, die Stall-Akte nennt die Seite
             const zeilen = () => [...document.querySelectorAll(".h-kosten-zeile")].map((e) => ({ ...e.dataset }));
             if (STUDIOS.includes(id)) {
-                const tL = Date.now();
                 await waitFor(page, `(${zeilen})().every((k) => k.fertig)`, `${id}: jede Zeile der Kosten-Leiste mit Gegenzahl, Zeit und Deckel`);
                 z.kosten = await page.evaluate(zeilen);
-                const tLeiste = sek(tL);
                 netzZaehlt = false;
                 // das Neuladen: die Seite geht, dieselbe Seite öffnet neu (derselbe Speicher der Herkunft)
-                let tN = null;
-                const neu = async () => ((tN = Date.now()), await page.close(), (page = await browser.newPage()), await s.zeige(page, 90000, seite(id), "load"), page);
-                const tG = Date.now();
+                const neu = async () => (await page.close(), (page = await browser.newPage()), await s.zeige(page, 90000, seite(id), "load"), page);
                 Object.assign(z, await sitzungsGang(page, saat + STUDIOS.indexOf(id), neu, zeit ? GRIFFE : 4));
-                // die Sekunden je Schritt (die Dauer des Gangs beim Namen des Studios): Seite bis zur Sitzung · Leiste fertig · Griffe · Neuladen
-                const schritte = `Seite ${tSeite} · Leiste ${tLeiste} · Griffe ${((tN - tG) / 1000).toFixed(1)} · Neuladen ${sek(tN)}`;
-                console.log(`  ⏱ ${id.padEnd(14)} ${sitzungText(sitzungZahl(z))} · ${sek(t0)} s (${schritte})`);
+                console.log(`  ⏱ ${id.padEnd(14)} ${sitzungText(sitzungZahl(z))}`);
             }
             await page.close();
             const fremd = [...new Set(pfade.filter((p) => ENGINE_FREMD.test(p)))];
             sauber += !fremd.length;
-            const engine = fremd.length ? "fremd " + fremd.join(" ") : pfade.includes(ENGINE_EINE) ? "r184 WebGPU" : "ohne three";
-            const sitzung = z.folge ? folgeText(z.folge) : "ohne Sitzung"; // den Spruch fällt pruefeGang
-            console.log(`  ${id.padEnd(14)} ${String(pfade.length).padStart(3)} Anfragen · ${engine} · ${sitzung}${z.kosten ? " · Kosten " + JSON.stringify(z.kosten) : ""}`);
+            // Engine (H6) und Sitzung (H3): den Spruch fällt pruefeGang
+            console.log(`  ${id.padEnd(14)} ${String(pfade.length).padStart(3)} Anfragen · ${fremd.length ? "fremd " + fremd.join(" ") : pfade.includes(ENGINE_EINE) ? "r184 WebGPU" : "ohne three"} · ${z.folge ? folgeText(z.folge) : "ohne Sitzung"}${z.kosten ? " · Kosten " + JSON.stringify(z.kosten) : ""}`);
         }
     } finally {
         await browser.close();
@@ -510,8 +499,7 @@ async function panoramaBacken(nur) {
                                 clearTimeout(uhr);
                                 removeEventListener("message", hoer);
                                 f.remove();
-                                if (e) nein(e);
-                                else ja(x);
+                                e ? nein(e) : ja(x);
                             };
                             const hoer = (ev) => {
                                 if (ev.source !== f.contentWindow) return;
@@ -564,8 +552,7 @@ hauptLauf(async () => {
     const a = process.argv;
     if (a.includes("--panorama")) {
         const n = a[a.indexOf("--panorama") + 1];
-        await panoramaBacken(n && !n.startsWith("--") ? n.split(",") : null);
-        return;
+        return panoramaBacken(n && !n.startsWith("--") ? n.split(",") : null);
     }
     if (a.includes("--engine")) return gang();
     if (a.includes("--selftest")) process.exit(selbsttest() ? 0 : 1);
