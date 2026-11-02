@@ -1301,3 +1301,4 @@
 2026-11-02 22:19:29 hebend-5fba-s3-gtx START 14 Stationen in 1 Läufen
 2026-11-02 22:29:57 hebend-5fba-s3-gtx studios.K4#1,material.K2#1,vegetation.K4#2,material.K3#2,material.K1#1,lod.K1#1,licht.K1#1,tiere.K3#2,tiere.K1#2,lod.K5#1,physik.K2#2,ankunft.K2#1,ankunft.K3#1,ankunft.K1#1 OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN 10.4 · 14/14
 2026-11-02 22:30:22 eich-hebend-5fba-s1-gtx START 1 Stationen
+2026-11-02 22:45:55 eich-hebend-5fba-s1-gtx eich-nur-gtx.sh Exit0 15.6 · 1/1
