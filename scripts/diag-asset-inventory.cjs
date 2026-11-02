@@ -191,13 +191,11 @@ hauptLauf(async () => {
             "wetter-regen": { b: "substanz", why: "wetter-regen (Niederschlags-Punkte)" },
             "dorf-rauch": { b: "substanz", why: "dorf-rauch (Rauch der Siedlungs-Kamine, ein Satz)" },
             funken: { b: "substanz", why: "funken (Späne eines Treffers, ein Satz)" },
-            // die Bau-Pools (`AnazhRealm._poolKennung`, gestempelt bei jeder Erzeugung, auch beim Verdoppeln)
-            "siedlung-zaun": { b: "substanz", why: "siedlung-zaun (Zaun-Streifen der Siedlungen, ein Pool)" },
-            "siedlung-mauer": { b: "substanz", why: "siedlung-mauer (die Stadtmauern, ein Pool)" },
-            vogel: { b: "substanz", why: "vogel (ein Pool)" },
-            "tier:fisch": { b: "substanz", why: "tier:fisch (die Fische der Welt-Funktion, ein Pool)" },
-            "tier:bestaeuber": { b: "substanz", why: "tier:bestaeuber (die Bestäuber an den Blüten, ein Pool)" },
         };
+        // die Pools (`AnazhRealm._poolKennung`, gestempelt bei jeder Erzeugung, auch beim Verdoppeln): Zaun und Mauer der
+        // Siedlungen, die Fauna (Vogel, Fisch, Bestäuber) — Substanz, ihr Grund ist ihr Name
+        for (const k of ["siedlung-zaun", "siedlung-mauer", "vogel", "tier:fisch", "tier:bestaeuber"])
+            INVENTAR[k] = { b: "substanz", why: k + " (ein Pool)" };
         const chainOf = (node) => {
             const c = [];
             let p = node;
