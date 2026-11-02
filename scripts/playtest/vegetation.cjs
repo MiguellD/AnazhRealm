@@ -286,9 +286,13 @@ async function checkBandNahStreu({ page, check }) {
             zweit.items.length === kachel.satz.items.length &&
             zweit.items.every((it, i) => it.id === kachel.satz.items[i].id && it.x === kachel.satz.items[i].x);
         out.idsEindeutig = new Set(kachel.satz.items.map((it) => it.id)).size === kachel.satz.items.length;
-        // (5) Der Takt baut den Ring: bis eine Senke Instanzen trägt (die Studio-Teile reisen asynchron).
+        // (5) Der Takt baut den Ring: bis eine Senke Instanzen trägt (die Studio-Teile reisen asynchron) — um den Spieler an der
+        // Kachel, die Pflanzen trägt (die Flächen des Genesis-Orts um seine Mitte tragen keine Streu, `_genesisFlaeche`); danach
+        // steht er, wo er stand
         const cam = st.camera;
         const camVor = cam.position.clone();
+        const pmVor = pp.clone();
+        pp.set((kachel.tx + 0.5) * NS.kachel, pp.y, (kachel.tz + 0.5) * NS.kachel);
         cam.position.set(pp.x, pp.y + 1.6, pp.z);
         let senken = null;
         for (let i = 0; i < 900; i++) {
@@ -304,6 +308,7 @@ async function checkBandNahStreu({ page, check }) {
         out.offen = st.nahStreu ? st.nahStreu.offen : null;
         if (!senken) {
             cam.position.copy(camVor);
+            pp.copy(pmVor);
             return out;
         }
         // (5b) DER WIND (W7): jede Senke einer Art mit weichem Gewebe (Laub · Blatt-Karte · Stiel)
@@ -424,6 +429,7 @@ async function checkBandNahStreu({ page, check }) {
             out.neuGleich = [...ns.senken].every(([k, a]) => a.anzahl === vor.get(k));
         }
         cam.position.copy(camVor);
+        pp.copy(pmVor);
         return out;
     });
 
@@ -2111,7 +2117,7 @@ async function checkBandScatterScheibe({ page, check }) {
         try {
             clean();
             const bereit = () => !!(r._foundry && r._foundry.ready && r._foundry.recipes && r._forestGesetzWahr());
-            await window.__weltDa(bereit);
+            await __weltDa(bereit);
             stoff.buch = !!(r._foundry && r._foundry.recipes);
             stoff.wahr = r._forestGesetzWahr();
             stoff.faden = !!st.voxelWorker;
@@ -2128,7 +2134,7 @@ async function checkBandScatterScheibe({ page, check }) {
                 const reg6 = r._scatterRegion(rx, rz, pos);
                 stoff.haupt = zaehler;
                 // der Takt schickt die Schlange an den Faden (`_tickWaldPlan`, Job `waldPlan`) — die Linse ist sein Takt
-                await window.__gebautNach("die Lieferung an die wartende Region", {
+                await __gebautNach("die Lieferung an die wartende Region", {
                     fertig: () => !(reg6._deferredFoundry && !reg6._geweckt),
                     takt: async () => (r._tickWaldPlan(Infinity), await sleep(50)),
                     max: 1200,

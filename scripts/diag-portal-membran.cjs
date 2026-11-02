@@ -82,7 +82,7 @@ async function blickProbe(opts) {
     // der Ring steht (das EINE Warten, welt-boot `__weltDa` und `__gebautNach`): erst die Welt mit Renderer und Membranen, dann je
     // Takt die Ziele (`kommt`) und der Stand der Fenster — der Deckel zählt Takte, in denen die Welt nichts offen hat (bis K-WANDUHR
     // 300 s Wanduhr)
-    r = await window.__weltDa((w) => w.state.rendererReady && w.state.renderer && w.state.renderer.backend && w.state.camera && w._portalMembranes && w._torZielAtlas);
+    r = await __weltDa((w) => w.state.rendererReady && w.state.renderer && w.state.renderer.backend && w.state.camera && w._portalMembranes && w._torZielAtlas);
     st = r.state;
     await window
         .__gebautNach("die Fenster am Ring", {
@@ -335,7 +335,7 @@ async function hellProbe() {
         rend.setRenderObjectFunction(rofWelt);
         window.__erstRuhe = ruheWelt;
         // ein Bündel, das unter dem Filter neu aufnahm, trug nur die gemessenen Bürger: jedes nimmt beim nächsten Zeichnen neu auf
-        window.__bundlesNeu();
+        __bundlesNeu();
     }
 }
 // Das Soll (K64-n1, D8): die Öffnung zeigt das Ziel durch den Film — sie brennt nicht aus (Y > 240 ≤ 5 % der Membran-Pixel,
@@ -453,9 +453,9 @@ hauptLauf(async () => {
 
     const out = await page.evaluate(async () => {
         const res = {};
-        await window.__weltDa();
+        await __weltDa();
         const f = r._ensureAssetFoundry();
-        await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.geisttor);
+        await __weltDa(() => f && f.ready && f.recipes && f.recipes.geisttor);
 
         // ── Bühne: ein Welt-Portal (geisttor-Gestalt) direkt vor dem Spieler ──
         const p = st.playerMesh.position;
@@ -559,7 +559,7 @@ hauptLauf(async () => {
         p.x = ex;
         p.z = ez + 2.0;
         p.y = ey + 1.0;
-        await window.__gebautNach(entry, {
+        await __gebautNach(entry, {
             fertig: () => entry.instanced && entry._lodLevel === 0,
             bau: () => (entry.instanced ? r._tickArchitectureLOD(99, r._lodAuge()) : r._rebuildArchitectureMesh(entry)),
         });

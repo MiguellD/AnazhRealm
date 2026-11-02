@@ -155,7 +155,7 @@ hauptLauf(async () => {
         const res = { errors: [] };
         const r = await window.__weltDa();
         const f = r._ensureAssetFoundry();
-        await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.alemannisch);
+        await __weltDa(() => f && f.ready && f.recipes && f.recipes.alemannisch);
 
         const pm = r.state.playerMesh;
         // Das Auge reist mit: jede Stufen-Frage misst vom Auge der Maske (`_lodAuge`, die Kamera) — wie die Ego-
@@ -242,7 +242,7 @@ hauptLauf(async () => {
             .slice(0, 3);
         for (const h of near3) {
             tp(h.position.x + 6, h.position.z);
-            await window.__gebautNach(h, { fertig: () => h.instanced, bau: () => {}, takt: () => pumpRender(8) });
+            await __gebautNach(h, { fertig: () => h.instanced, bau: () => {}, takt: () => pumpRender(8) });
         }
         res.nearBuilt = hausStats();
         res.nearHeavy = near3.every((h) => h.instanced); // die 3 stehen (Voraussetzung)
@@ -280,7 +280,7 @@ hauptLauf(async () => {
         res.l1RingDist = dRing;
         if (dRing > 0) {
             tp(h0b.position.x + dRing, h0b.position.z);
-            for (const weiter = window.__deckel("die Stufe L1 am Haus", 3000); weiter(); ) {
+            for (const weiter = __deckel("die Stufe L1 am Haus", 3000); weiter(); ) {
                 await pumpRender(24);
                 if (h0b._lodLevel === 1 && h0b._servedLod === 1) break;
             }
@@ -296,7 +296,7 @@ hauptLauf(async () => {
         // Switch UND die Ziel-Stufe muss ggf. erst im Worker backen (L1 einer frischen
         // Kultur|Variante = Sekunden) -> pumpen bis konvergiert, Deadline 150 s.
         tp(anchor.x + 120, anchor.z);
-        for (const weiter = window.__deckel("die Häuser in L2", 5000); weiter(); ) {
+        for (const weiter = __deckel("die Häuser in L2", 5000); weiter(); ) {
             await pumpRender(24);
             const s = hausStats();
             if (s.instanced >= 3 && Object.keys(s.lods).every((k) => k === "2")) break;

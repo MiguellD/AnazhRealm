@@ -87,7 +87,7 @@ function bandSamples(cfg) {
     for (let d = lo; d <= hi; d += 0.5) out.push(d);
     for (const e of [cfg.d0 - cfg.fade0, cfg.d0 - cfg.fade0 / 2, cfg.d0, cfg.d1 - cfg.fade, cfg.d1 - cfg.fade / 2, cfg.d1])
         if (!out.includes(e)) out.push(e);
-    out.sort((a, b) => a - b);
+    out.sort(aufsteigend);
     return out;
 }
 
@@ -311,7 +311,7 @@ async function runPartB() {
         const lodRef0 = st.lodRef > 0 ? st.lodRef : D.lodRef;
         res.lodGesetz = [r._wechselAbstand("tree", 1, lodRef0), r._wechselAbstand("tree", 2, lodRef0)];
         const f = r._ensureAssetFoundry();
-        await window.__weltDa(() => f && f.ready);
+        await __weltDa(() => f && f.ready);
         // ── der Proben-Baum (gewachsener Bauplan, ferner Fix-Spot) ──
         const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "w54-band-sweep");
         const px = 12345,
@@ -357,7 +357,7 @@ async function runPartB() {
         const [srx, srz] = [Math.floor(px / SC.regionM), Math.floor(pz / SC.regionM)];
         const streuOrte = Array.from({ length: 12 }, (_, i) => srz * SC.regionM + 64 + 2 * i);
         const streuGeburt = (z, ohneHalt) => {
-            st.playerMesh.position.set(px, py, z);
+            pm.position.set(px, py, z);
             st.camera.position.set(px, py + 3, z - 24);
             st.camera.updateMatrixWorld(true);
             r._lodAuge = function () {
@@ -371,18 +371,18 @@ async function runPartB() {
                 };
             try {
                 r._disposeScatterRegion(`${srx},${srz}`);
-                return r._scatterRegion(srx, srz, st.playerMesh.position);
+                return r._scatterRegion(srx, srz, pm.position);
             } finally {
                 delete r._lodAuge;
                 delete r._scatterInstanceAdd;
             }
         };
-        const [streuCam, streuPm] = [st.camera.position.clone(), st.playerMesh.position.clone()];
+        const [streuCam, streuPm] = [st.camera.position.clone(), pm.position.clone()];
         const streuZurueck = () => {
             r._disposeScatterRegion(`${srx},${srz}`);
             st.camera.position.copy(streuCam);
             st.camera.updateMatrixWorld(true);
-            st.playerMesh.position.copy(streuPm);
+            pm.position.copy(streuPm);
         };
         await window
             .__gebautNach("die Streu-Zellen in L1 und L2", {
@@ -459,7 +459,7 @@ async function runPartB() {
             if (oE) r.removeArchitecture(oE);
         }
         // Quieszenz: keine offenen Worker-Anfragen mehr → keine async-Placements im Sweep.
-        await window.__weltDa(() => !(f.pending && f.pending.size > 0));
+        await __weltDa(() => !(f.pending && f.pending.size > 0));
         res.pendingAtSweep = f.pending ? f.pending.size : -1;
 
         // ════ AB HIER SYNCHRON (ein Block, kein await → keine Interleaves) ════
@@ -512,7 +512,7 @@ async function runPartB() {
         const dnTargets = [6, 14, 18, 22, 26, 31, 36, 42, 55, 36, 26, 18, 6];
         const place = (dn) => {
             const raw = dn / factor;
-            st.playerMesh.position.set(px - raw, py, pz);
+            pm.position.set(px - raw, py, pz);
             return raw;
         };
         place(dnTargets[0]);
@@ -526,7 +526,7 @@ async function runPartB() {
             for (const target of dnTargets) {
                 const raw = place(target);
                 r._archLODCursor = 0;
-                for (let k = 0; k < 4; k++) r._tickArchitectureLOD(99, st.playerMesh.position); // Switch + Band-Pflege (idempotent), das Auge = der Proben-Ort
+                for (let k = 0; k < 4; k++) r._tickArchitectureLOD(99, pm.position); // Switch + Band-Pflege (idempotent), das Auge = der Proben-Ort
                 const dn = r._lodPerceptionDistance(raw, visH);
                 const dnL = r._lodPerceptionDistance(raw, Math.min(visH, capL));
                 const inB01 = dnL > cfg.thresh01 - cfg.fade0 - M && dn < cfg.thresh01 + M;
@@ -601,9 +601,9 @@ async function runPartB() {
                 const k = r._ankunftsFerne(); // der Streck der Wahrnehmung (kein Regler, lod.K5)
                 const o = { proben: 0, loecher: 0, stempelUngleich: 0, modi: {}, beispiel: null };
                 for (const raw of [4, 7, 10, 13, 16, 19, 22, 25, 28, 32, 36, 42, 48, 55, 48, 42, 36, 32, 28, 25, 22, 19, 16, 13, 10, 7, 4]) {
-                    st.playerMesh.position.set(e0.px - raw, e0.py, e0.pz);
+                    pm.position.set(e0.px - raw, e0.py, e0.pz);
                     r._archLODCursor = 0;
-                    for (let i = 0; i < 4; i++) r._tickArchitectureLOD(99, st.playerMesh.position);
+                    for (let i = 0; i < 4; i++) r._tickArchitectureLOD(99, pm.position);
                     const stufen = new Map();
                     for (const list of [e0.entry.instSlots, e0.entry.instSlotsBand])
                         if (Array.isArray(list))
@@ -716,9 +716,9 @@ async function runPartB() {
                         M.set(sp.modus, e);
                     };
                     for (const raw of [1.5, 4, 7, 10, 13, 16, 19, 22, 25, 28, 32, 36, 42, 48, 55, 48, 42, 36, 32, 28, 25, 22, 19, 16, 13, 10, 7, 4, 1.5]) {
-                        st.playerMesh.position.set(E.px - raw, E.py, E.pz);
+                        pm.position.set(E.px - raw, E.py, E.pz);
                         r._archLODCursor = 0;
-                        for (let i = 0; i < 4; i++) r._tickArchitectureLOD(99, st.playerMesh.position);
+                        for (let i = 0; i < 4; i++) r._tickArchitectureLOD(99, pm.position);
                         r._tickBauSatz(Infinity); // der Render legt die Bereiche vor dem Zeichnen (`_tickChunkSatz`), ohne Raten
                         const neu = new Map(),
                             alt = new Map();
@@ -904,10 +904,10 @@ async function runPartB() {
                         for (const dnZiel of [6, 10, 14, 19, 22, 24, 27, 31, 40, 27, 24, 22, 14, 6]) {
                             const rawAuge = dnZiel / factor;
                             const auge = new window.THREE.Vector3(px - rawAuge, py + 1.6, pz);
-                            st.playerMesh.position.set(px - Math.max(0, rawAuge - art.armM), py, pz);
+                            pm.position.set(px - Math.max(0, rawAuge - art.armM), py, pz);
                             r._archLODCursor = 0;
                             for (let i = 0; i < 4; i++)
-                                r._tickArchitectureLOD(99, art.wahlVomSpieler ? st.playerMesh.position : auge);
+                                r._tickArchitectureLOD(99, art.wahlVomSpieler ? pm.position : auge);
                             const z = deckungAm(entry, auge);
                             o.proben++;
                             if (z.geist) o.geister++;
@@ -953,7 +953,7 @@ async function runPartB() {
                     const o = { proben: 0, falsch: 0, geburten: 0, geburtFalsch: 0, beispiel: [] };
                     const cam = st.camera;
                     const camVor = cam.position.clone();
-                    const pmVor = st.playerMesh.position.clone();
+                    const pmVor = pm.position.clone();
                     const rVor = r._lodAugeR;
                     const setzeKam = (x, y, z) => {
                         cam.position.set(x, y, z);
@@ -980,21 +980,21 @@ async function runPartB() {
                         // (i) ungesetzt: die Kamera, wie geboren, 200 m neben dem Spieler; der Spieler am Baum → L0
                         r._lodAugeR = null;
                         setzeKam(px - 200, py, pz);
-                        st.playerMesh.position.set(px + 1, py, pz);
+                        pm.position.set(px + 1, py, pz);
                         fall("ungesetzt", r._foundryLodForEntry(entry), 0);
                         // (ii) der Sprung: das Rig setzte das Auge 500 m vom Baum, der Spieler springt an den Baum → L0
-                        st.playerMesh.position.set(px - 500, py, pz);
+                        pm.position.set(px - 500, py, pz);
                         setzeKam(px - 509.6, py + 3, pz);
                         r._lodAugeGesetzt();
-                        st.playerMesh.position.set(px + 1, py, pz);
+                        pm.position.set(px + 1, py, pz);
                         fall("Sprung", r._foundryLodForEntry(entry), 0);
                         // (iii) die Sonde setzt die Kamera an den Baum, der Spieler steht 500 m fern → das Auge ist die Kamera: L0
-                        st.playerMesh.position.set(px - 500, py, pz);
+                        pm.position.set(px - 500, py, pz);
                         setzeKam(px + 1, py + 1.6, pz);
                         fall("Sonde", r._foundryLodForEntry(entry), 0);
                         // (iv) die Geburt der Streu: die Sonde setzt die Kamera 9,6 m hinter den Spieler (der Arm der Verfolger-
                         // Kamera); jede geborene Zelle trägt die Distanz vom Auge
-                        st.playerMesh.position.set(px, py, pz);
+                        pm.position.set(px, py, pz);
                         setzeKam(px - 9.6, py + 3, pz);
                         const augeSoll = cam.getWorldPosition(new T3.Vector3());
                         r._disposeScatterRegion(key);
@@ -1016,7 +1016,7 @@ async function runPartB() {
                         r._disposeScatterRegion(key);
                         r._lodAugeR = rVor;
                         setzeKam(camVor.x, camVor.y, camVor.z);
-                        st.playerMesh.position.copy(pmVor);
+                        pm.position.copy(pmVor);
                     }
                     return o;
                 };

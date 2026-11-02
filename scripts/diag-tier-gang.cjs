@@ -11,7 +11,9 @@
 //   das BECKEN (Hub und Tiefe unter der Ruhe, in Beinlängen: Gehen ≤ 0,07 / 0,15, Laufen ≤ 0,12 / 0,25 — Gard 2004,
 //   Cavagna 1976, Lee & Farley 1998) und die LOCK-LÖSER im Stand-Fenster (Soll 0: der stehende Fuß löst nie an der
 //   Reichweite, die das Gesetz ihm selbst gibt).
-//   DAS KÖRPER-STUDIO: derselbe Schlupf am Menschen des Labors im Spiel-Modus (STUDIO, unten) — geduckt, gehen, Sprint.
+//   DAS KÖRPER-STUDIO (w4-koerper-park): das Labor geht den EINEN Bewegungs-Takt der Welt (TAKT, byte-gleich je Schritt) und
+//   bewegt sich je Verb und Phase nach dem Soll des Kerns (BEWEGUNG: die Vorführung, das Instrument, `leibSollUrteil`); die
+//   Gang-Probe des Labors fiel mit dem Schnitt — sein Gang IST der Gang der Welt (leibGangTakt · leibRigPose).
 //   DIE SCHWERE: Mensch und Tier gehen nach der Schwere der Welt, Schritt und Becken aus EINER Zeile (SCHWERE, unten).
 //   DER SATZ: jenseits der nahen Leiber geht das Tier im Satz seiner Gestalt (SATZ, unten) — Schlupf, Gangart, Tastgrad
 //   und die Phasen der Folge, wie der Knoten sie zeichnet; die KREUZ-PROBE Stimmung × Tempo (KREUZ, unten).
@@ -402,84 +404,153 @@ const SCHWERE = (k) => {
     }
     // die Zwillinge als Literal (kommentar-gestrippt: der EINE Absenz-Helfer des Welt-Boots)
     o.zwillinge = [];
-    if (!window.__fehlt([r._animateHumanoidRig, r._gaitGesetz], /\b9\.81\b/))
+    if (!__fehlt([r._animateHumanoidRig, r._gaitGesetz], /\b9\.81\b/))
         o.zwillinge.push("_animateHumanoidRig/_gaitGesetz: die Schwere als Zahl 9,81");
     return o;
 };
 
-// DAS KÖRPER-STUDIO: derselbe Mensch im Labor (worlds/koerperstudio, Spiel-Modus) — die Taste geht, playInput
-// und playPhysics ziehen den Leib mit festem Takt 1/60 s über ebenen Boden (die Park-Boxen ruhen), je Takt das Fuß-
-// gelenk beider Beine in der Welt. Derselbe Schlupf (Weg des Stand-Fußes / Weg des Leibs, Stand = unterste 5 % der
-// Beinlänge), dazu die Kadenz aus der Phase.
-const STUDIO = (k) => {
+// LABOR = WELT IM BEWEGUNGS-TAKT (w4-koerper-park): derselbe Eingabe-Lauf je fester Schritt (1/60 s) in der Welt (`_stepFixedSim`,
+// die Verb-Tafel gesetzt, der Spieler auf der ebenen Start-Plattform bei 0/0) und im Körper-Studio (`playSchritt` auf einem Boden in
+// der Höhe der Plattform, mit den Werten der Seele der Welt: Tempo, Sprint, Sprungkraft, Masse, Schwere) — Gehen, Laufen, Rutsch,
+// Sprung, Doppelsprung, quer, rückwärts; dazu die Schaukel als Gerät (in der Welt gesetzt, im Labor dasselbe Angebot am selben Ort:
+// fachwerk `geraetAngebotIn`): setzen, pumpen, abspringen. Je Schritt Geschwindigkeit, Vertikale, Luft, Sprung, Luft-Sprünge,
+// Klettern, Rutsch, Verb, Phase, Winkel und Fahrt der Schaukel und die Hüfte: byte-gleich (Object.is); die Lage x/z byte-gleich, die
+// Höhe über dem Boden auf 1e-9 m (die Welt rechnet um ihre Plattform-Höhe, die Kapsel steht ½ m über der Sohle).
+const TAKT_SKRIPT = [
+    [60, { vor: 1 }],
+    [40, { vor: 1, sprint: true }],
+    [1, { vor: 1, sprint: true, rutsch: true }],
+    [50, {}],
+    [1, { sprung: true }],
+    [12, {}],
+    [1, { sprung: true }],
+    [70, {}],
+    [30, { vor: 1, quer: 1 }],
+    [1, { sprung: true, vor: 1 }],
+    [80, { vor: -1 }],
+];
+const TAKT_SCHAUKEL = [[1, { rutsch: true }], [2, {}], [240, { vor: 1 }], [90, {}], [1, { sprung: true }], [70, {}]];
+// DIE ORTE (Meter, die Stein-Scheibe der Start-Plattform: Ø 13 m, eben — der Quarz-Kern Ø 2,2 m in ihrer Mitte ist eine Stufe):
+// der freie Lauf beginnt bei −3,5/−4,5 (sein Weg bleibt auf der Scheibe und neben dem Kern), die Schaukel steht bei −3/−3, der
+// Leib 0,3 m neben ihrem Sitz 0
+const TAKT_ORT = { frei: [-3.5, -4.5], schaukel: [-3, -3], sitz: [-2.4, -2.7] };
+// die Welt: die EINE Wiedergabe (`replayRun`, der Spieler-Schritt des Sim-Schritts, ihre Spur die Zeile des Kerns `leibTaktZeile`)
+const TAKT_WELT = (arg) => {
     /* eslint-disable no-undef */
-    const core = window.__tetrapodaCore;
-    if (k.stub) {
-        window.__gangEcht = core.gangSchritt;
-        core.gangSchritt = () => ({ omega: 3.2, S: 0.06, schritt: 0.12, tast: 0.5, hub: 0.1 });
-    }
-    if (!play.on) enterPlay();
-    const boxen = parkBoxes.splice(0, parkBoxes.length);
-    // ein ebener Boden ohne Hindernis (der Boden des Labors ist selbst eine Park-Box)
-    parkBoxes.push({ cx: 0, cy: -0.45, cz: 0, sx: 4000, sy: 1, sz: 4000, maxY: 0.05, minY: -0.95, wall: false });
-    const dt = 1 / 60,
-        N = 300,
-        EIN = 90;
-    for (const c of Object.keys(keys)) delete keys[c];
-    Object.assign(keys, k.tasten);
-    play.yaw = 0;
-    play.vx = play.vz = play.vy = 0;
-    play.posY = play.smY = 0.05;
-    play.onGround = true;
-    play.slide = 0;
-    // BÜHNE: die Gang-Bühne der Probe (eigene Ebene, kein Weltboden)
-    character.position.set(0, 0.05, 0);
-    const cs = character.scale.x || 1;
-    const bein = (L1 + L2) * cs;
-    const T = window.THREE;
-    const w = new T.Vector3();
-    const spur = [[], []],
-        leib = [];
-    let phase = 0,
-        phPrev = play.gaitPhase;
-    for (let i = 0; i < N; i++) {
-        playInput(dt);
-        playPhysics(dt);
-        character.updateMatrixWorld(true);
-        ["ankle1", "ankle-1"].forEach((n, j) => {
-            // Ferse und Ballen (K07, wie in der Welt): die Sohle footBelowAnkle unter dem Knöchel, der Ballen ballen × R davor
-            const ballenE = _GZ && _GZ.ballen > 0 ? _GZ.ballen * core.gangReich(L1 + L2) : 0;
-            const f = parts[n].localToWorld(w.set(0, -footBelowAnkle, 0)).clone();
-            const b = parts[n].localToWorld(w.set(0, -footBelowAnkle, ballenE)).clone();
-            spur[j].push([f, b]);
-        });
-        leib.push({ x: character.position.x, z: character.position.z, y: character.position.y });
-        if (i >= EIN) phase += (play.gaitPhase - phPrev + 1) % 1;
-        phPrev = play.gaitPhase;
-    }
-    for (const c of Object.keys(keys)) delete keys[c];
-    parkBoxes.splice(0, parkBoxes.length, ...boxen);
-    if (k.stub) core.gangSchritt = window.__gangEcht;
-    const sl = window.__schlupf(spur, leib, EIN, bein);
-    let yMin = Infinity,
-        yMax = -Infinity;
-    for (let i = EIN; i < N; i++) {
-        yMin = Math.min(yMin, leib[i].y);
-        yMax = Math.max(yMax, leib[i].y);
-    }
-    const zeit = (N - EIN) * dt;
-    const v = Math.hypot(leib[N - 1].x - leib[EIN].x, leib[N - 1].z - leib[EIN].z) / zeit;
-    return {
-        name: k.name,
-        v: +v.toFixed(2),
-        beinE: +bein.toFixed(3),
-        ...sl,
-        kadenz: +((2 * phase) / zeit).toFixed(2),
-        beckenHub: +((yMax - yMin) / bein).toFixed(3),
-        taeter: "gangGesetz (tetrapoda gangSchritt/gangFuss)",
+    const st = r.state,
+        pm = st.playerMesh,
+        F = AnazhRealm.PLAYER_FOOT_OFFSET,
+        O = arg.ort;
+    r._loopRunning = false;
+    const frames = (sk) => sk.flatMap(([n, T]) => Array.from({ length: n }, () => Object.assign({ dt: 1 / 60, yaw: 0, vor: 0, quer: 0 }, T)));
+    const lauf = (sk, p, y, geraet) => {
+        const rec = { start: { x: p[0], y, z: p[1], vx: 0, vy: 0, vz: 0, fieldVy: 0, yaw: 0 }, frames: frames(sk), spur: [], boden: y - F, geraet };
+        if (st.player) st.player.stamina = 100;
+        r.replayRun(rec);
+        return rec.spur;
     };
+    // der Boden der Start-Plattform am Ort des freien Laufs: der Leib setzt sich (2 s), seine Sohle ist y0
+    const setzen = lauf([[120, {}]], O.frei, pm.position.y);
+    const y0 = pm.position.y - F;
+    const frei = lauf(arg.skript, O.frei, y0 + F);
+    const e = r.spawnArchitecture("schaukel_doppelschaukel", { x: O.schaukel[0], y: y0 + 0.5, z: O.schaukel[1] }, { rotationY: 0, silent: true, precise: true, seed: 1 });
+    const schaukel = lauf(arg.schaukel, O.sitz, y0 + F, "doppelschaukel:0");
+    return { frei, schaukel, y0, steht: setzen[setzen.length - 1][7] === 0, werk: !!e, werte: { speed: st.speed, sprintSpeed: st.sprintSpeed, jumpPower: st.jumpPower, masse: r._leibMasse(pm), g: -st.gravity } };
     /* eslint-enable no-undef */
 };
+// das Labor: dieselben Läufe als Szenen seiner Vorführung (die Uhr wie die Wiedergabe: der erste Schritt bei dt), der Boden in
+// der Höhe der Plattform, die Schaukel am selben Ort — mit den Werten der Seele der Welt
+const TAKT_LABOR = (arg) => {
+    /* eslint-disable no-undef */
+    if (!play.on) enterPlay();
+    const O = arg.ort,
+        teile = parkTeile.splice(0),
+        ang = parkAngebote.splice(0),
+        eigen = { speed: play.werte.speed, sprintSpeed: play.werte.sprintSpeed, jumpPower: play.werte.jumpPower, masse: play.masse, g: G_WELT };
+    if (arg.stub) G_WELT = 44 * M_E; // der Täter des Selbsttests: die Arcade-Schwere der alten Bühne (44 E/s²)
+    parkTeile.push({ c: [0, arg.y0 - 0.5, 0], h: [2000, 0.5, 2000], gier: 0, rx: 0, tritt: true });
+    const lauf = (skript, p, geraet) => {
+        const spur = [];
+        const ort = () => {
+            Object.assign(play, { t: 1 / 60, masse: arg.werte.masse, werte: { speed: arg.werte.speed, sprintSpeed: arg.werte.sprintSpeed, jumpPower: arg.werte.jumpPower } });
+            return { p: [p[0], arg.y0, p[1]], gier: 0 };
+        };
+        playVorfuehrung(true, [{ name: "takt", ort, skript, takt: () => spur.push(KC.leibTaktZeile(play.L, play.p, arg.y0, geraet && parkAngebote.find((a) => a.id === geraet))) }]);
+        return spur;
+    };
+    const frei = lauf(arg.skript, O.frei);
+    parkSubstanz({ id: "doppelschaukel", x: O.schaukel[0], y: arg.y0, z: O.schaukel[1], gier: 0 });
+    const schaukel = lauf(arg.schaukel, O.sitz, "doppelschaukel:0");
+    parkTeile.splice(0, parkTeile.length, ...teile);
+    parkAngebote.splice(0, parkAngebote.length, ...ang);
+    G_WELT = KC.LEIB.sprung.refG;
+    exitPlay();
+    return { frei, schaukel, eigen };
+    /* eslint-enable no-undef */
+};
+// das Urteil: je Schritt jede Größe byte-gleich (die Höhe auf 1e-9 m) — die erste Abweichung beim Namen
+// die Vorbedingung: wo die Welt den Leib erdet (frei, nicht in der Luft, kein Verb), liegt ihr Boden eben auf der Höhe der
+// Plattform — sonst misst der Vergleich die Bühne, nicht den Takt
+function taktUneben(welt) {
+    for (let i = 0; i < welt.length; i++)
+        if (!welt[i][7] && !welt[i][12] && Math.abs(welt[i][1]) > 1e-9) return `Vorbedingung: Boden uneben (Schritt ${i}, ${welt[i][1].toFixed(4)} m)`;
+    return null;
+}
+const NAMEN = require("../koerper-core.js") && globalThis.__koerperCore.LEIB_TAKT_NAMEN;
+function taktVergleich(welt, labor) {
+    if (welt.length !== labor.length) return `Länge ${welt.length} ≠ ${labor.length}`;
+    for (let i = 0; i < welt.length; i++)
+        for (let k = 0; k < NAMEN.length; k++) {
+            const a = welt[i][k],
+                b = labor[i][k];
+            if (k === 1 || k === 17 ? Math.abs(a - b) > 1e-9 : !Object.is(a, b)) return `Schritt ${i}: ${NAMEN[k]} ${a} ≠ ${b}`;
+        }
+    return null;
+}
+
+// DIE BEWEGUNG JE VERB UND PHASE (w4-koerper-park): die Vorführung des Labors fährt jedes Verb an seinem Gerät, sein Instrument misst
+// die Pose (koerper `leibPoseWinkel`, die Sohle `leibSohle`, die gehäutete Haut gegen jedes Teil des Werks), der Kern urteilt
+// (`leibSollUrteil` gegen VERB_SOLL: Winkel je Verb und Phase an JEDEM Angebot jedes Geräts, die Hand ≤ 3 cm am Anker, der Fuß nie im
+// Gerät, die Haut ≤ 1 cm in keinem Teil — kein Durchgreifen —, die Tempi im realen Band). Der Selbsttest bricht je einen Täter: die
+// Arcade-Kletter-Zahl der alten Bühne (3,2 m/s), die Hand ohne Löser, das gestreckte Knie auf dem Sitz, der Fuß in der Wand, die
+// Kamera ohne Leib (NP-03: der Löser der Kamera blind für den Park), das Becken durch die Bahn der Rutsche, der zweite Sitz der
+// Schaukel ungefahren.
+const BEWEGUNG = (bruch) => {
+    /* eslint-disable no-undef */
+    const P0 = KC.PRESETS.mensch.fx.bewegung.parkour,
+        v0 = P0.kletterV,
+        pose = KC.leibVerbPose,
+        kam = [_kamSeg, _kamFrei];
+    if (bruch === "arcade") P0.kletterV = 3.2;
+    else if (bruch === "kamera") [window._kamSeg, window._kamFrei] = [() => Infinity, () => true]; // die Kamera ohne Leib
+    else if (bruch)
+        KC.leibVerbPose = (...a) => {
+            const P = pose(...a),
+                V = a[1].leibVerb;
+            if (P && bruch === "knie" && V.verb === "schaukeln") P.q.knee1 = P.q["knee-1"] = [0, 0, 0, 1];
+            if (P && bruch === "hand" && V.verb === "klettern") P.q.arm1 = P.q.elbow1 = [0, 0, 0, 1];
+            if (P && bruch === "fuss" && V.verb === "klettern") P.wurzel.p = [P.wurzel.p[0] - V.ang.normale[0] * 0.3, P.wurzel.p[1], P.wurzel.p[2] - V.ang.normale[1] * 0.3];
+            if (P && bruch === "durch" && V.verb === "rutschen") P.wurzel.p = [P.wurzel.p[0], P.wurzel.p[1] - 0.12, P.wurzel.p[2]];
+            return P;
+        };
+    try {
+        const m = playVorfuehrung(true, bruch === "angebot" ? VORFUEHRUNG.filter((S) => S.name !== "schaukeln sitz1") : null);
+        const zahl = (x) => (Number.isFinite(x) ? +x.toFixed(3) : null);
+        return {
+            zeilen: Object.keys(m.zeilen).length + Object.values(m.geraete).reduce((n, G) => n + Object.keys(G.zeilen).length, 0),
+            geraete: Object.values(m.geraete).map((G) => [G.name, zahl(G.hand), zahl(G.fuss), zahl(G.durch)]),
+            tempo: m.tempo,
+            urteil: KC.leibSollUrteil(m),
+        };
+    } finally {
+        P0.kletterV = v0;
+        KC.leibVerbPose = pose;
+        [window._kamSeg, window._kamFrei] = kam;
+        exitPlay();
+    }
+    /* eslint-enable no-undef */
+};
+const BEWEGUNG_BRUCH = { arcade: /^Tempo klettern/, hand: /die Hand .* vom Anker/, knie: /schaukeln sitz0 schaukeln:[02] knie/, fuss: /der Fuß .* im Gerät/, kamera: /^Kamera: \d+ von/, durch: /^turmrutsche rutschen: die Haut greift/, angebot: /^doppelschaukel schaukeln sitz1: nicht gemessen/ };
 
 // DIE GANGART UND IHR TASTGRAD AUS DEM TEMPO (Meisterkarte Tiere H3, K3): Welt (LAUF als Leib, SATZ im Satz) und Labor
 // (worlds/tetrapoda, EIN Tier über dieselben v̂) bei v̂ 0,3 · 0,74 (Fr 0,55 im Band der Hysterese) · 1,2 · 3,5 → Schritt
@@ -564,6 +635,8 @@ hauptLauf(async () => {
     await nullRenderer(page);
     let rot = 0;
     let schwereRot = false;
+    let taktRot = false;
+    let bewegtFeuert = 0;
     let gangRot = false,
         tastRot = false;
     const [weltGang, satzGang, gefeuert] = [{}, {}, new Set()];
@@ -594,7 +667,7 @@ hauptLauf(async () => {
         await server.zeige(page, 120000, "index.html", "networkidle0");
         // die Welt und ihr Gang-Gesetz sind da: das EINE Warten ohne Frist (ein hängender Boot steht in der Stall-Akte)
         await page.evaluate(() =>
-            window.__weltDa(() => window.__tetrapodaCore && typeof window.__tetrapodaCore.gangSchritt === "function")
+            __weltDa(() => window.__tetrapodaCore && typeof window.__tetrapodaCore.gangSchritt === "function")
         );
         // je Gattung der Leib bei jedem v̂ (die KREUZ-PROBE im lateinischen Quadrat: jede Stimmung einmal je v̂, je Gattung eine
         // andere), unter Last und im Satz; dazu der Wolf unter der Mond-Schwere — im Selbsttest je Lauf sein Täter
@@ -653,6 +726,8 @@ hauptLauf(async () => {
                 if (!ok) rot++;
             }
         }
+        // LABOR = WELT IM BEWEGUNGS-TAKT: die Spur der Welt (frei und an der Schaukel) und die Werte ihrer Seele
+        const taktWelt = await page.evaluate(TAKT_WELT, { skript: TAKT_SKRIPT, schaukel: TAKT_SCHAUKEL, ort: TAKT_ORT });
         const sw = await page.evaluate(SCHWERE, { stub: SELBST });
         const taeter = [
             Math.abs(sw.mensch - 1) <= 1e-6
@@ -681,22 +756,35 @@ hauptLauf(async () => {
             await sp.waitForFunction(
                 () =>
                     typeof enterPlay === "function" &&
-                    typeof playPhysics === "function" &&
-                    typeof parkBoxes !== "undefined",
+                    typeof playTakt === "function" &&
+                    typeof parkTeile !== "undefined",
                 { timeout: 0 }
             );
-            for (const [name, tasten] of [
-                ["geduckt", { KeyW: true, ControlLeft: true }],
-                ["gehen", { KeyW: true }],
-                ["sprint", { KeyW: true, ShiftLeft: true }],
-            ]) {
-                const z = await sp.evaluate(STUDIO, { name, tasten, stub: SELBST });
-                // dasselbe Becken-Soll wie in der Welt (geduckt geht, gehen und Sprint laufen im Labor)
-                const B = name === "geduckt" ? BECKEN.gehen : BECKEN.laufen;
-                const ok = z.schlupf !== null && z.schlupf <= SCHWELLE && z.beckenHub <= B.hub;
-                log(
-                    `  ${ok ? "✅" : "❌"} studio ${z.name} ${z.v} E/s · Bein ${z.beinE} E · Stand ${z.standAnteil} · Schlupf ${z.schlupf} · Kadenz ${z.kadenz} Schritte/s · Becken Hub ${z.beckenHub} L (Soll ≤ ${B.hub}) · Täter ${z.taeter}`
-                );
+            // LABOR = WELT IM BEWEGUNGS-TAKT (w4-koerper-park): dieselbe Spur im Körper-Studio, die erste Abweichung beim Namen
+            const taktLabor = await sp.evaluate(TAKT_LABOR, { skript: TAKT_SKRIPT, schaukel: TAKT_SCHAUKEL, ort: TAKT_ORT, y0: taktWelt.y0, werte: taktWelt.werte, stub: SELBST });
+            {
+                const dF = taktWelt.steht ? taktUneben(taktWelt.frei) || taktVergleich(taktWelt.frei, taktLabor.frei) : "Vorbedingung: kein Stand",
+                    dS = taktWelt.werk ? taktUneben(taktWelt.schaukel) || taktVergleich(taktWelt.schaukel, taktLabor.schaukel) : "kein Werk";
+                const verbe = new Set(taktWelt.schaukel.map((z) => z[12]).filter(Boolean));
+                const W = taktWelt.werte,
+                    E = taktLabor.eigen;
+                const seele = ["speed", "sprintSpeed", "jumpPower"].filter((k) => !Object.is(W[k], E[k])).map((k) => `${k} ${W[k]} ≠ ${E[k]}`);
+                if (Math.abs(W.masse - E.masse) > 1e-9 * W.masse) seele.push(`masse ${W.masse} ≠ ${E.masse}`);
+                if (Math.abs(W.g - E.g) > 1e-12) seele.push(`g ${W.g} ≠ ${E.g}`);
+                const ok = !dF && !dS && verbe.has("schaukeln") && !seele.length;
+                log(`  ${ok ? "✅" : "❌"} Labor = Welt im Takt: frei ${taktWelt.frei.length} ${dF || "byte-gleich"} · Schaukel ${taktWelt.schaukel.length} ${dS || "byte-gleich"} · Seele ${seele.join(" · ") || "gleich"}${ok ? "" : " — Täter: playSchritt"}`);
+                if (!ok) {
+                    rot++;
+                    taktRot = true;
+                }
+            }
+            // DIE BEWEGUNG JE VERB UND PHASE: gesund das Urteil leer, im Selbsttest je Täter seine Zeile
+            for (const bruch of SELBST ? Object.keys(BEWEGUNG_BRUCH) : [null]) {
+                const b = await sp.evaluate(BEWEGUNG, bruch);
+                const tr = b.urteil.find((z) => bruch && BEWEGUNG_BRUCH[bruch].test(z));
+                if (tr) bewegtFeuert++;
+                const ok = !b.urteil.length;
+                log(`  ${ok ? "✅" : "❌"} Bewegung${bruch ? " " + bruch : ""}: ${b.zeilen} Phasen · ${JSON.stringify(b.geraete)} · ${JSON.stringify(b.tempo)}${ok ? "" : " — " + (tr || b.urteil.slice(0, 4).join(" · "))}`);
                 if (!ok) rot++;
             }
             // dieselbe Gangart im Labor der Tiere (Labor = Welt)
@@ -723,6 +811,8 @@ hauptLauf(async () => {
             [gangRot, "das Muster der Stimmung blieb grün: die Gangart-Wand"],
             [tastRot, "der halbe Stand (Tastgrad 0,5) blieb grün: die Tastgrad-Wand"],
             [gefeuert.has("satz"), "der Satz ohne das Gedächtnis des Leibs blieb grün: die Satz-Wand"],
+            [taktRot, "die Takt-Wand (Labor = Welt)"],
+            [bewegtFeuert === Object.keys(BEWEGUNG_BRUCH).length, "die Bewegungs-Wand (VERB_SOLL)"],
         ].find(([ok]) => !ok);
         urteilEnde(vakuoes, () => `\n❌ SELBST-TEST ROT — ${vakuoes[1]} ist vakuös.`, `\n✅ SELBST-TEST GRÜN — der Vor-Welle-Gang gleitet (${rot} Läufe über ${SCHWELLE}).`);
     }

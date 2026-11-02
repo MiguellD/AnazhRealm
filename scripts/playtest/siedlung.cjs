@@ -157,9 +157,7 @@ async function checkBandWellePerfDBudget({ page, check }) {
     );
 }
 
-async function checkBandRing6Workshop({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandRing6Workshop({ page, check }) {
     // ### Ring 6 — architectureTemplates V1 ###
     // Bau-Primitive als DSL-Ops mit Save-Roundtrip + FIFO-Cap + Atomic-Pool-Eintrag (niedrige
     // Gewichtung); Wasserfälle haben einen Animations-Hook im Tick.
@@ -275,7 +273,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
 
         // (i) Save-Roundtrip
         r.saveState();
-        const parsed = await window.__standJson();
+        const parsed = await __standJson();
         out.saveContainsArchitectures =
             !!parsed && Array.isArray(parsed.architectures) && parsed.architectures.length > 0;
         // Gespeicherte Einträge haben nur {type, position, seed}, kein mesh
@@ -590,7 +588,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
 
         // Save-Roundtrip: User-Bauplan überlebt
         r.saveState();
-        const parsed = await window.__standJson();
+        const parsed = await __standJson();
         out.saveContainsUserBlueprint =
             !!parsed && Array.isArray(parsed.blueprints) && parsed.blueprints.some((bp) => bp.name === "test_hut");
         out.saveOmitsBuiltIn =
@@ -721,7 +719,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         // Save-Roundtrip
         r.setHotbarSlot(7, "damm");
         r.saveState();
-        const parsed = await window.__standJson();
+        const parsed = await __standJson();
         out.saveContainsHotbar =
             !!parsed && Array.isArray(parsed.hotbar) && parsed.hotbar.length === 9 && parsed.hotbar[7] === "damm";
 
@@ -864,7 +862,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
             size: { x: 3, y: 3, z: 3 },
         });
         r.saveState();
-        const raw = await window.__stand();
+        const raw = await __stand();
         const parsed = JSON.parse(raw);
         const savedBp = parsed.blueprints.find((bp) => bp.name === "ed_test");
         out.saveContainsCustom = !!savedBp && savedBp.parts.length === 1 && savedBp.parts[0].shape === "sphere";
@@ -1667,39 +1665,39 @@ async function checkBandV18213MeshMerge({ page, check }) {
         return out;
     });
 
-    check("V18.213 (M3a) gen=6 grown Bauplan trägt _isMerged: true", res.bpHasIsMerged === true);
-    check("V18.213 (M3b) bp.parts bleibt erhalten (≥50 Parts, V17.16-Wand)", res.bpStillHasParts === true);
-    check("V18.213 (M4a) archFlattenBlueprint markiert merged: true (Diagnose-Marker)", res.flatHasMergedFlag === true);
-    check("V18.213 (M4b) archFlattenBlueprint ist instanceable", res.flatIsInstanceable === true);
+    check("(M3a) gen=6 grown Bauplan trägt _isMerged: true", res.bpHasIsMerged === true);
+    check("(M3b) bp.parts bleibt erhalten (≥50 Parts, V17.16-Wand)", res.bpStillHasParts === true);
+    check("(M4a) archFlattenBlueprint markiert merged: true (Diagnose-Marker)", res.flatHasMergedFlag === true);
+    check("(M4b) archFlattenBlueprint ist instanceable", res.flatIsInstanceable === true);
     check(
-        `V18.213 (M5) leaves ≤4 (1-2 Materials × 2 Toleranz, gemessen ${res.flatLeafCount}; vs V18.211 75-80)`,
+        `(M5) leaves ≤4 (1-2 Materials × 2 Toleranz, gemessen ${res.flatLeafCount})`,
         res.flatLeavesFew === true
     );
     check(
-        `V18.213 (M6a) Erstes merged leaf hat ≥100 Vertices (gemessen ${res.firstLeafVertCount})`,
+        `(M6a) Erstes merged leaf hat ≥100 Vertices (gemessen ${res.firstLeafVertCount})`,
         res.mergedHasManyVerts === true
     );
     check(
-        "V18.213 (M6b) localMatrix ist Identity (Per-Part-Transform in Vertices gebacken)",
+        "(M6b) localMatrix ist Identity (Per-Part-Transform in Vertices gebacken)",
         res.mergedHasIdentityMatrix === true
     );
-    check("V18.213 (M6c) Merged geom trägt vertexColors-Attribut", res.mergedHasColors === true);
+    check("(M6c) Merged geom trägt vertexColors-Attribut", res.mergedHasColors === true);
     check(
-        "V18.213 (M6d) Merged Material liest die Vertex-Farbe einmal (colorNode XOR vertexColors)",
+        "(M6d) Merged Material liest die Vertex-Farbe einmal (colorNode XOR vertexColors)",
         res.mergedMatVertexColors === true
     );
     check(
-        "V18.213 (M7) Tag-Neutralität: computeCompoundTags(merged) == (non-merged) (V17.16-Wand)",
+        "(M7) Tag-Neutralität: computeCompoundTags(merged) == (non-merged) (V17.16-Wand)",
         res.tagsNeutral === true
     );
-    check("V18.213 (M8) Cache-Hit-Performance: 50 archFlattenBlueprint-Lookups < 50ms", res.cacheHitFast === true);
-    check("V18.213 (M9a) Snapshot trägt grown-Eintrag (Restore-Pfad funktional)", res.snapshotHasEntry === true);
+    check("(M8) Cache-Hit-Performance: 50 archFlattenBlueprint-Lookups < 50ms", res.cacheHitFast === true);
+    check("(M9a) Snapshot trägt grown-Eintrag (Restore-Pfad funktional)", res.snapshotHasEntry === true);
     check(
-        "V18.213 (M9b) Snapshot persistiert _isMerged NICHT (aus genVersion ableitbar)",
+        "(M9b) Snapshot persistiert _isMerged NICHT (aus genVersion ableitbar)",
         res.snapshotHasNoMergedFlag === true
     );
-    check("V18.213 (M10a) archMergedGeomCache war nicht-leer nach Merge", res.cacheExists === true);
-    check("V18.213 (M10b) archMergedGeomCache wird beim Reset geleert", res.cacheClearedAfterReset === true);
+    check("(M10a) archMergedGeomCache war nicht-leer nach Merge", res.cacheExists === true);
+    check("(M10b) archMergedGeomCache wird beim Reset geleert", res.cacheClearedAfterReset === true);
 }
 
 async function checkBandV18265ShadowDistance({ page, check }) {
@@ -1732,10 +1730,10 @@ async function checkBandV18265ShadowDistance({ page, check }) {
         }
         return out;
     });
-    check("V18.265: _archGroupCastsShadow — LOD0 + Bauten werfen Schatten", res.lod0Casts && res.structureCasts);
-    check("V18.464: L1 wirft (Schatten bis zur Fernstufe), NUR L2 wirft keinen", res.lod1NoCast && res.lod2NoCast);
+    check("_archGroupCastsShadow — LOD0 + Bauten werfen Schatten", res.lod0Casts && res.structureCasts);
+    check("L1 wirft (Schatten bis zur Fernstufe), NUR L2 wirft keinen", res.lod1NoCast && res.lod2NoCast);
     check(
-        "V18.265: echte Fern-Gruppe castShadow=false, Nah-Gruppe castShadow=true (auch nach Grow)",
+        "echte Fern-Gruppe castShadow=false, Nah-Gruppe castShadow=true (auch nach Grow)",
         res.farMeshNoShadow && res.nearMeshShadow && res.farGrowNoShadow
     );
 }

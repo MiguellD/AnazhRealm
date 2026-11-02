@@ -205,9 +205,9 @@ async function checkBandSchrittKlang({ page, check }) {
 
         // ── die Absenz-Wachen (der Konsum der EINEN Quelle beweist sich unten am Verhalten: (A) zählt Schritte nur über den
         // Tick aus animatePlayerSoul, S1 steht mit ω ≡ 0; Boden und Wasser am Fuß trägt die Stoff-Linse) ──
-        o.checks.keineEigeneUhr = window.__fehlt(r._schrittKlangTick, /performance\.now|Date\.now/);
-        o.checks.klangEineMaschine = window.__fehlt(r._playSchrittOneShot, /new\s+AudioContext/);
-        o.checks.simUnberuehrt = window.__fehlt([r._stepFixedSim, r._loopFixedStep, r._stepCharacter], /_schrittKlang/);
+        o.checks.keineEigeneUhr = __fehlt(r._schrittKlangTick, /performance\.now|Date\.now/);
+        o.checks.klangEineMaschine = __fehlt(r._playSchrittOneShot, /new\s+AudioContext/);
+        o.checks.simUnberuehrt = __fehlt([r._stepFixedSim, r._loopFixedStep, r._stepCharacter], /_schrittKlang/);
         // Stimme-aus fail-closed an der Stimme selbst (headless: nie aktiviert)
         o.checks.stimmeFailClosed = r._playSchrittOneShot({ gain: 0.05 }) === false && !s.symphony.enabled;
 

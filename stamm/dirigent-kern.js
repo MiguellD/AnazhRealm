@@ -95,6 +95,8 @@ class AnazhRealm {
             _mountVorKamera: null,
             _parkourSlide: null,
             _parkourKletter: 0,
+            leibVerb: null, // das Verb an einem Gerät (koerper-core leibVerbTakt, w4-koerper-park)
+            _verbLage: null,
             _wandKontaktNx: 0,
             _wandKontaktNz: 0,
             _wandKontaktAt: null,
@@ -1541,8 +1543,8 @@ class AnazhRealm {
     // DER LICHT-TAKT (K11) — der EINE Schreiber des Licht-Pools und der Fenster-Glut, je Bild vor dem Render (`_gameLoopTick`).
     // Die Plätze gehen an die Leuchtquellen, deren Reichweite dem Auge am nächsten kommt (`_leuchtQuellen`: das Licht des
     // Auges, jede Glut und jede Quelle mit Datum im Verzeichnis (die Laternen der Pläne), das wache Tor; neu gewählt je `wahlS`
-    // oder nach `wahlM` Weg). Ein Platz hält seine Quelle, solange sie gewählt ist; eine abgewählte blendet in `blendeS` aus,
-    // erst der freie Platz nimmt die nächste auf, und sie blendet ein — kein Licht springt. Die Stärke je Bild: das Emitter-
+    // oder nach `wahlM` Weg und nach jedem Sprung der Uhr, `_uhrSetzen`). Ein Platz hält seine Quelle, solange sie gewählt
+    // ist; eine abgewählte blendet in `blendeS` aus, erst der freie Platz nimmt die nächste auf, und sie blendet ein — kein Licht springt. Die Stärke je Bild: das Emitter-
     // Datum über die EINE Übersetzung Labor → Welt (`_laborLichtStaerke`) × Masse (die Fläche der Glut) × Flackern auf der
     // Bild-Uhr (fachwerk `lichtFlackern`) × Zeitplan (`_lichtZeitplan`) × Blende. Der Ort steht in der Welt (der Stoff rechnet
     // ihn mit der Kamera seines Renderers). Unabhängig vom Klang. Lesbar für Linsen: `_leuchtPool.plaetze` (Quelle, Welt-Ort,

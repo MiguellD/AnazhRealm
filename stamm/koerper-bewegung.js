@@ -44,108 +44,179 @@ class AnazhRealm_koerper_bewegung {
         return h;
     }
 
-    // DIE EINE DECKEN-KLEMME (für handleJump + _parkourLuftsprung): unter niedriger Decke (< 3.4 m
-    // Kopfraum) steigt der Sprung nur so hoch wie Kopffreiheit da ist — v = √(2·g·Steighöhe), Marge
-    // 0.35 m; sonst schiebt die Penetrations-Recovery den Body durch dünne Decken.
-    // Liefert den geklemmten Impuls oder null (< 1.2 m/s = kein Sprung).
-    _sprungDeckenKlemme(jumpV) {
-        const headroom = this._ceilingHeadroom();
-        if (headroom >= 3.4) return jumpV;
-        const g = Math.abs(this.state.gravity);
-        const v = Math.min(jumpV, Math.sqrt(2 * g * Math.max(0, headroom - 0.35)));
-        return v < 1.2 ? null : v;
-    }
-
     // DIE KRAFT DER BEINE (N, leib.K2): die Sprungkraft der Seele (`state.jumpPower`, das Abdruck-Tempo, das sie dem
-    // Bezugs-Leib gibt) als Kraft nach koerper LEIB.sprung — F = refKg · (refG + v² / 2d); Leser: `_sprungAbdruck`.
+    // Bezugs-Leib gibt) als Kraft nach koerper LEIB.sprung (`leibSprungKraft`); Leser: `_sprungAbdruck`.
     _sprungKraft() {
-        const G = AnazhRealm.Gesetz("koerper:LEIB.sprung", null) || AnazhRealm._kernPflichtBruch("koerper:LEIB.sprung");
-        return G.refKg * (G.refG + this.state.jumpPower ** 2 / (2 * G.abdruckM));
+        return AnazhRealm._leibTakt().leibSprungKraft(this.state.jumpPower);
     }
 
-    // DER ABDRUCK (m/s, leib.K2): die Beine strecken den Leib über den Abdruck-Weg d mit der Kraft F gegen sein Gewicht —
-    // ½ m v² = (F − m g) d, v = √(2 d (F/m − g)) mit der EINEN Masse des Leibs (`_leibMasse`; im Schritt des Mitspieler-Geists
-    // die Masse seines Leibs aus dem Anker, `_geistKg`) und der Schwere der Welt.
-    // Ein schwererer Leib springt niedriger und kürzer, stärkere Beine höher und weiter; vorher sprang jeder Leib mit
-    // dem festen Tempo der Seele (Mensch 2,6 m/s, 0,32 m, ob 89 oder 111 kg).
+    // DER ABDRUCK (m/s, leib.K2): die Beine strecken den Leib über den Abdruck-Weg mit der Kraft F gegen sein Gewicht
+    // (`leibAbdruck`) — mit der EINEN Masse des Leibs (`_leibMasse`; im Schritt des Mitspieler-Geists die Masse seines Leibs aus
+    // dem Anker, `_geistKg`) und der Schwere der Welt. Ein schwererer Leib springt niedriger und kürzer, stärkere Beine höher.
     _sprungAbdruck() {
         const m = this.state._geistKg || this._leibMasse(this.state.playerMesh);
-        const a = this._sprungKraft() / m - Math.abs(this.state.gravity);
-        return Math.sqrt(2 * AnazhRealm.Gesetz("koerper:LEIB.sprung", null).abdruckM * Math.max(0, a));
+        return AnazhRealm._leibTakt().leibAbdruck(this._sprungKraft(), m, Math.abs(this.state.gravity));
     }
 
+    // DER BODEN-SPRUNG: der EINE Bewegungs-Takt (koerper-core `leibSprung`, dasselbe Gesetz wie im Körper-Studio) — geerdet oder
+    // im Coyote-Fenster, am Steilhang die Seele (`_canSoulJumpFromSlope`), der Abdruck, die Decke (`_ceilingHeadroom`).
     handleJump(currentTime) {
-        // ### Sprunglogik ###
-        // Zweck: Abstrahiert Sprungmechanik für bessere Wartbarkeit
-        if (this.state.playerVel) {
-            const isGrounded = this.isPlayerGrounded();
-            // ZENSUS 17.07. — die Coyote-Toleranz wohnt im koerperstudio-
-            // Gesetzbuch (fx.bewegung.sprung, _bewegungsBlock fail-soft byte-gleich).
-            const withinCoyoteTime =
-                currentTime - this.state.lastGroundedTime <=
-                AnazhRealm._bewegungsBlock("sprung", ["coyoteSec", "bufferSec"]).coyoteSec;
-            if ((isGrounded || withinCoyoteTime) && !this.state.isJumping) {
-                // Welle 6.X.3 C3 — Soul-bound: Drache rutscht, Phönix klettert.
-                if (!this._canSoulJumpFromSlope()) return;
-                const jumpV = this._sprungDeckenKlemme(this._sprungAbdruck());
-                if (jumpV === null) return; // keine Kopffreiheit — kein Sprung
-                // Feld-nativ: der Sprung-Impuls schreibt die vertikale Velocity in
-                // `state.playerVel.y` — `_stepCharacter` übernimmt sie als frischen Sprung
-                // (`bvy > _fieldVy`). Die Horizontale bleibt unberührt.
-                const velocity = this.state.playerVel;
-                this.state.playerVel.setValue(velocity.x(), jumpV, velocity.z());
-                this.state.isJumping = true;
-                this.state.isInAir = true;
-                // Ring 5 V2: keine Material-Tint mehr beim Sprung — der
-                // Soul-Group hat kein einzelnes Material, und die Sprung-
-                // Animation der Glieder ist die ehrlichere Anzeige.
-                if (currentTime - this.state.lastJumpLog >= this.state.jumpLogInterval) {
-                    this.log("Spieler springt!", "INFO");
-                    this.state.lastJumpLog = currentTime;
-                }
-            }
-        }
+        AnazhRealm._leibTakt().leibSprung(this.state, this._leibOrt(), currentTime);
     }
 
-    // ═══ PARKOUR — DER LUFT-SPRUNG ═══
-    // Auf frischen Space-Druck in der Luft (der Boden-Sprung läuft über handleJump): WANDSPRUNG zuerst
-    // (Kapsel-Kontakt jünger als parkour.kontaktFrischeSec → Abdruck·wandsprungMul + Abstoß entlang der
-    // Kontakt-Normale; der Kontakt wird VERBRAUCHT), sonst DOPPELSPRUNG (doppelspruenge je Luftphase,
-    // die Landung füllt auf). Decken-Klemme via _sprungDeckenKlemme; Gesetze aus _parkourGesetz.
-    _parkourLuftsprung() {
-        const P = AnazhRealm._parkourGesetz();
-        if (!P) return false;
-        const s = this.state;
-        if (s.playerUnderwater || !s.playerVel) return false;
-        if (s.player && s.player.mountedArch !== null && s.player.mountedArch !== undefined) return false;
-        const nowS = s._simZeit;
-        // Das Frische-Fenster wohnt im parkour-Gesetz (gilt auch fürs Klettern); das Feld steht in der
-        // Gültigkeits-Wand von _parkourGesetz — kein lokaler Fallback.
-        const frisch = P.kontaktFrischeSec;
-        const wandFrisch =
-            Number.isFinite(s._wandKontaktAt) && nowS - s._wandKontaktAt < frisch && Number.isFinite(s._wandKontaktNx);
-        let mul = 0;
-        let abX = 0;
-        let abZ = 0;
-        if (wandFrisch) {
-            mul = P.wandsprungMul; // ZWILLINGS-ABSCHIED (19.07.): Wand-gedeckt, kein Ternary-Zwilling
-            const ab = Number.isFinite(P.wandAbstoss) ? P.wandAbstoss : 6;
-            abX = s._wandKontaktNx * ab;
-            abZ = s._wandKontaktNz * ab;
-            s._wandKontaktAt = -Infinity; // verbraucht — neue Wand, neuer Sprung
-        } else if ((s._airJumps | 0) < (P.doppelspruenge | 0)) {
-            mul = P.doppelsprungMul; // ZWILLINGS-ABSCHIED (19.07.): Wand-gedeckt, kein Ternary-Zwilling
-            s._airJumps = (s._airJumps | 0) + 1;
-        } else {
-            return false;
+    // DER WIRT DES BEWEGUNGS-TAKTS (die Rückrufe von leibPlan / leibSprung): die Erdung (`isPlayerGrounded`), die Seele am
+    // Steilhang, der Abdruck, der Kopfraum, die Schwere, die Sprung-Zeile des Logs; die Felder des Schritts setzt
+    // `_loopPlayerMovement` (Tempo, Hang, Ritt, Fahrt, Wasser, Leben, Geräte, Lage). Einmal je Avatar gebaut.
+    _leibOrt() {
+        if (this._leibOrtMemo) {
+            this._leibOrtMemo.g = Math.abs(this.state.gravity);
+            return this._leibOrtMemo;
         }
-        const jumpV = this._sprungDeckenKlemme(this._sprungAbdruck() * mul);
-        if (jumpV === null) return false;
-        const v = s.playerVel;
-        s.playerVel.setValue(v.x() + abX, jumpV, v.z() + abZ);
-        s.isJumping = true;
-        s.isInAir = true;
-        return true;
+        const K = (this._leibOrtMemo = {
+            tempo: 0,
+            gehTempo: 0,
+            hang: 1,
+            ritt: null,
+            rittKAcc: null,
+            rittKBrake: null,
+            reitet: false,
+            fahr: null,
+            wasser: false,
+            wasserKBrake: 0,
+            leben: null,
+            angebote: null,
+            lage: [0, 0, 0],
+            mass: null,
+            masse: 0,
+            g: 9.81,
+            amBoden: () => this.isPlayerGrounded(),
+            hangSprung: () => this._canSoulJumpFromSlope(),
+            abdruck: () => this._sprungAbdruck(),
+            kopfraum: () => this._ceilingHeadroom(),
+            gesprungen: (t) => {
+                if (t - this.state.lastJumpLog >= this.state.jumpLogInterval) {
+                    this.log("Spieler springt!", "INFO");
+                    this.state.lastJumpLog = t;
+                }
+            },
+        });
+        return K;
+    }
+
+    // DIE GERÄTE IN REICHWEITE (w4-koerper-park): die Angebote der gesetzten Werke des Fachwerks (fachwerk `geraetAngebot`: Verb,
+    // Griff- und Tritt-Anker, Achse, Bahn), mit der Lage des Werks in die Welt gedreht wie seine Teile (`_blockerComputePartAABB`:
+    // Ursprung position − 0,5 m, Gier rotationY, Skala) — je Werk einmal gebaut, der Zustand des Geräts (der Winkel der Schaukel,
+    // der Wippe) lebt an ihm. Nur Werke in GERAET_REICH_M um den Leib; ohne Gerät die leere Liste (kein Gerät, kein Verb).
+    _leibAngebote() {
+        const out = this._leibAngeboteListe || (this._leibAngeboteListe = []);
+        out.length = 0;
+        const arches = this.state.architectures;
+        const pm = this.state.playerMesh;
+        if (!arches || !arches.length || !pm) return out;
+        const FC = globalThis.__fachwerkCore;
+        const memo = this._leibAngebotMemo || (this._leibAngebotMemo = new WeakMap()); // das Werk trägt sein Angebot, solange es lebt
+        const R2 = AnazhRealm.GERAET_REICH_M * AnazhRealm.GERAET_REICH_M;
+        for (const e of arches) {
+            const typ = e && e.type;
+            const k = typeof typ === "string" ? typ.indexOf("_") : -1;
+            if (k < 0) continue;
+            const rez = typ.slice(k + 1);
+            if (!FC || !FC.GERAETE || !FC.GERAETE[rez] || FC.GERAETE[rez].kind !== typ.slice(0, k)) continue;
+            if ((e.position.x - pm.position.x) ** 2 + (e.position.z - pm.position.z) ** 2 > R2) continue;
+            let liste = memo.get(e);
+            if (!liste) {
+                liste = this._geraetAngebotWelt(e, rez);
+                memo.set(e, liste);
+            }
+            for (const a of liste) out.push(a);
+        }
+        return out;
+    }
+    // das Angebot eines gesetzten Geräts im Welt-Rahmen: die EINE Platzierung des Gesetzbuchs (fachwerk `geraetAngebotIn`) am
+    // Ursprung des Werks (position − 0,5 m wie seine Teile), mit seiner Gier und Skala
+    _geraetAngebotWelt(e, rez) {
+        const sc = (Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1) * this._studioWeltSkala(e);
+        const lage = {
+            x: e.position.x,
+            y: e.position.y - 0.5,
+            z: e.position.z,
+            gier: Number.isFinite(e.rotationY) ? e.rotationY : 0,
+            skala: sc,
+        };
+        return globalThis.__fachwerkCore.geraetAngebotIn(rez, lage).map((b) => Object.assign(b, { werk: e }));
+    }
+    _geraeteSchwingen(dt) {
+        const L = this._leibAngeboteListe;
+        if (!L || !L.length) return;
+        const KC = AnazhRealm._leibTakt();
+        const g = Math.abs(this.state.gravity);
+        const v = this.state.leibVerb;
+        for (const a of L) if (!v || v.ang !== a) KC.leibGeraetAusschwingen(a, g, dt);
+    }
+    // DIE KETTE DES LEIBS (koerper-core `leibKette`) aus dem Rig des Spielers: die Ruhe-Lage seiner Gelenke (die Glieder drehen,
+    // sie wandern nie), die Skala der Wurzel, die Hand-Mitte des Gusses — je Rig einmal
+    _leibKette() {
+        const pm = this.state.playerMesh;
+        const rig = pm && pm.userData && pm.userData.rig;
+        if (!rig) return AnazhRealm._kernPflichtBruch("leib:der Spieler trägt kein Rig (leibKette)");
+        if (rig._leibKette) return rig._leibKette;
+        const namen = [
+            "mensch",
+            "torso",
+            "head",
+            "arm1",
+            "arm-1",
+            "elbow1",
+            "elbow-1",
+            "hand1",
+            "hand-1",
+            "hip1",
+            "hip-1",
+            "knee1",
+            "knee-1",
+            "ankle1",
+            "ankle-1",
+        ];
+        const teile = {
+            mensch: rig.hips,
+            torso: rig.chest,
+            head: rig.head,
+            arm1: rig.armL.shoulder,
+            "arm-1": rig.armR.shoulder,
+            elbow1: rig.armL.elbow,
+            "elbow-1": rig.armR.elbow,
+            hand1: rig.armL.wrist,
+            "hand-1": rig.armR.wrist,
+            hip1: rig.legL.hip,
+            "hip-1": rig.legR.hip,
+            knee1: rig.legL.knee,
+            "knee-1": rig.legR.knee,
+            ankle1: rig.legL.ankle,
+            "ankle-1": rig.legR.ankle,
+        };
+        const joints = namen.map((n) => {
+            const o = teile[n];
+            if (!o) return AnazhRealm._kernPflichtBruch("leib:dem Rig fehlt das Gelenk " + n);
+            return {
+                name: n,
+                parent: o.parent ? o.parent.name : null,
+                pos: [o.position.x, n === "mensch" ? 0 : o.position.y, o.position.z],
+                quat: [0, 0, 0, 1],
+                scale: o.scale.toArray(),
+            };
+        });
+        // die Höhe des Sitzes und die Dicke der Glieder misst der Kern an der gegossenen Haut des Spielers (koerper `leibSitz` ·
+        // `leibGlieder`, dieselbe Messung wie das Labor)
+        const KC = AnazhRealm._leibTakt();
+        const sk = { joints, root: "mensch", handMitte: rig.handMitte };
+        sk.sitz = KC.leibSitz(pm, sk, teile);
+        sk.glieder = KC.leibGlieder(pm, sk, teile);
+        if (!sk.sitz || !sk.glieder)
+            return AnazhRealm._kernPflichtBruch(
+                "leib:die Haut des Spielers trägt keine Höhe des Sitzes bzw. Dicke der Glieder (leibSitz · leibGlieder)"
+            );
+        rig._leibKette = KC.leibKette(sk);
+        return rig._leibKette;
     }
 
     // Vertikale Schwimm-Geschwindigkeit, reine Funktion (testbar): Shift taucht ab, Space hebt, ohne
@@ -686,11 +757,27 @@ class AnazhRealm_koerper_bewegung {
         //    (feld-eigen in `state.playerVel`). vy = feld-eigen (`_fieldVy`); ein frischer
         //    Sprung (handleJump schrieb playerVel.y = jumpPower) wird übernommen.
         const vBody = s.playerVel;
+        // DAS GERÄT FÜHRT (w4-koerper-park): solange ein Verb seine Lage trägt (der Sitz der Schaukel, die Sprosse, der Holm),
+        // steht der Leib dort, wo das Gesetz ihn hält — kein Kontakt-Löser (wie im Sattel). Endet es, beginnt der freie Leib an
+        // seiner letzten Lage (`_verbLage`).
+        const verb = s.leibVerb;
+        if (verb && verb.lage) {
+            mesh.position.set(verb.lage[0], verb.lage[1] + footDrop, verb.lage[2]);
+            s._groundedCache = false;
+            s._groundedCachedAt = s._simZeit;
+            s._fieldWasGrounded = false;
+            s._kapselTraegerY = NaN;
+            s._kapselStruktur = false;
+            return;
+        }
+        if (s._verbLage) {
+            mesh.position.set(s._verbLage[0], s._verbLage[1] + footDrop, s._verbLage[2]);
+            s._verbLage = null;
+        }
         let vx = vBody.x();
         let vz = vBody.z();
-        const bvy = vBody.y();
-        if (bvy > s._fieldVy + 0.5) s._fieldVy = bvy; // frischer Sprung-Impuls
-        let vy = s._fieldVy;
+        // der frische Sprung-Impuls (koerper-core `leibImpuls`): schrieb der Plan einen Sprung, übernimmt ihn die Vertikale
+        let vy = AnazhRealm._leibTakt().leibImpuls(s);
 
         // 3. WASSER — die EINE Wasser-Wahrheit am Körper (`_koerperWasser`: der Spiegel, den das Auge sieht, über dem
         //    Grund unter dem Körper). Der Körper liegt nach seiner GESTALT im Wasser: er SCHWIMMT, sobald die Säule über
@@ -739,14 +826,10 @@ class AnazhRealm_koerper_bewegung {
             // Horizontale nur ohne Zug (`_loopPlayerMovement`, schwimmen.drag) — bis V18.531 bremste es JEDEN Schritt
             // auch den Zug (Kraulen 0,141 m/s = 14 % des Gesetzes).
             vy = this._swimVerticalVelocity(vy, waterY - brustM - feet0, dive, rise);
-        } else if (s._parkourKletter > 0) {
-            // PARKOUR — der Griff hält: KLETTERN ersetzt die Schwerkraft (Input-
-            // seitig gegated: W + frische Wand + Ausdauer; der Steig-Wert reist
-            // im koerperstudio-Gesetzbuch). Wand weg → nächster Frame fällt.
-            vy = s._parkourKletter;
         } else {
-            vy += s.gravity * dt;
-            if (vy < -25) vy = -25;
+            // AN LAND der EINE Takt (koerper-core `leibFall`): der Griff des Kletterns ersetzt die Schwere (W + frische Wand +
+            // Ausdauer, der Steig-Wert reist im koerperstudio-Gesetzbuch), sonst fällt der Leib, gedeckelt gegen das Tunneln
+            vy = AnazhRealm._leibTakt().leibFall(s, vy, s.gravity, dt);
         }
         // IM SATTEL führt das Gefährt die Vertikale (Welle L, Q1 F-D10): der Reiter sitzt — kein Fall, kein Boden-Snap
         // (Schritt 8); den Sitz setzt `_rittSchritt` im selben Sim-Schritt aus der Ebene der Räder. Vorher fiel die
@@ -1017,18 +1100,9 @@ class AnazhRealm_koerper_bewegung {
         // Füßen (Gelände, in der Höhle ihr Boden) bzw. das Bauwerk; in der Luft keiner (die Fuß-IK ruht).
         s._kapselTraegerY = grounded ? ny - footDrop : NaN;
         s._kapselStruktur = grounded && traegerStruktur;
-        if (grounded) {
-            s.lastGroundedTime = currentTime;
-            s.isInAir = false;
-            // PARKOUR — die Landung füllt die Luft-Sprünge auf (EIN Erdungs-Ort).
-            if (s._airJumps) s._airJumps = 0;
-            s.isJumping = false;
-        } else {
-            // Der Schwimmer ist nicht in der Luft: er beschleunigt wie zu Fuß (bis V18.531 mit dem Luft-Wert 4,5 statt
-            // 14), und der Übergang Luft → Wasser ist eine Landung (der Eintauch-Klang „wasser", der Schritt-Takt liest
-            // isInAir).
-            s.isInAir = !schwimmt;
-        }
+        // DIE ERDUNG (koerper-core `leibLandung`): geerdet füllt die Landung die Luft-Sprünge auf und beendet den Sprung; der
+        // Schwimmer ist nicht in der Luft (er beschleunigt wie zu Fuß, der Übergang Luft → Wasser ist eine Landung)
+        AnazhRealm._leibTakt().leibLandung(s, grounded, schwimmt, currentTime);
     }
 
     // DETERMINISMUS-BOGEN P3 — Ammo ist RAUS, die Feld-Physik ist die EINZIGE Physik
@@ -1324,12 +1398,10 @@ class AnazhRealm_koerper_bewegung {
         // fail-closed — das Literal 0,55 neben dem Gesetz 0,85 fiel, W-K3).
         if (this.state.playerUnderwater) currentSpeed *= AnazhRealm._schwimmGesetz().speedMul;
 
-        this.state.forward.set(Math.sin(this.state.yaw), 0, Math.cos(this.state.yaw));
-        this.state.right.set(Math.cos(this.state.yaw), 0, -Math.sin(this.state.yaw));
-        // Bewusst NICHT „intuitiv" invertieren: `state.right` ist die arithmetische Richtung
-        // (cos yaw, 0, −sin yaw) = player-anatomisch LINKS — die Tafel trägt quer + = links (A, der Stick nach links).
-        this.state.moveDirection.set(0, 0, 0);
-        this.state.moveDirection.addScaledVector(this.state.forward, T.vor).addScaledVector(this.state.right, T.quer);
+        // Die Richtung des Schritts (koerper-core `leibRichtung`): vorwärts, rechts — bewusst NICHT „intuitiv" invertiert:
+        // `state.right` ist die arithmetische Richtung (cos yaw, 0, −sin yaw) = player-anatomisch LINKS, die Tafel trägt quer + =
+        // links (A, der Stick nach links) — und die Absicht vorwärts·vor + rechts·quer.
+        AnazhRealm._leibTakt().leibRichtung(this.state, this.state.yaw, T.vor, T.quer);
 
         if (this.state.playerVel) {
             // Auf zu steilem Hang (onSteepSlope via isPlayerGrounded) wird der Bewegungs-Input gedrosselt
@@ -1368,168 +1440,84 @@ class AnazhRealm_koerper_bewegung {
             // Fahr-Schritt des Kerns (`_fahrSatz`, Welle L Q13): W/S = Gas/Bremse, A/D = Lenkung, Shift = Handbremse — dasselbe
             // Gesetz wie die Probefahrt. Ohne Fahr-Gesetz der richtungs-folgende Ritt (Kreatur, Bein-Werk).
             const fahrG = ride && this._mountedEntry ? this._fahrSatz(this._mountedEntry, ride) : null;
-            // ═══ PARKOUR — RUTSCH + KLETTERN ═══
-            // Nur mit dem koerperstudio-Gesetz (_parkourGesetz null → nichts) und nie im Sattel/Wasser.
-            // RUTSCH: Taste C am Boden über Mindest-Fahrt → slideDauerSec Gleiten in Start-Richtung
-            // (slideTempoMul, linear auf Geh-Tempo; Kamera duckt über den EINEN Dip-Kanal); Luft/Ende löst.
-            const parkG = !ride && !this.state.playerUnderwater ? AnazhRealm._parkourGesetz() : null;
-            let slide = this.state._parkourSlide || null;
-            if (slide && (currentTime >= slide.bis || this.state.isInAir || !parkG)) {
-                slide = this.state._parkourSlide = null;
+            // DER EINE BEWEGUNGS-TAKT (koerper-core `leibPlan`, w4-koerper-park — dasselbe Gesetz wie im Körper-Studio): Rutsch,
+            // Antrieb und Bremse, Sprung-Fenster und Boden-Sprung, Wand- und Doppelsprung, Klettern an der Wand und die Verben an
+            // den Geräten (das Angebot der gesetzten Werke, `_leibAngebote`). Im Sattel führt das Gefährt: mit Fahr-Gesetz der EINE
+            // Fahr-Schritt (`fahr`), sonst seine Kurven (rittKAcc · rittKBrake); im Wasser bremst der Zug (schwimmen.drag).
+            const K = this._leibOrt();
+            K.tempo = currentSpeed;
+            K.gehTempo = this.state.speed;
+            K.hang = slopePenalty;
+            K.ritt = ride;
+            K.rittKAcc = rideKAcc;
+            K.rittKBrake = rideKBrake;
+            K.reitet = !!(
+                this.state.player &&
+                this.state.player.mountedArch !== null &&
+                this.state.player.mountedArch !== undefined
+            );
+            K.wasser = !!this.state.playerUnderwater;
+            K.wasserKBrake = K.wasser ? -Math.log(AnazhRealm._schwimmGesetz().drag) / AnazhRealm.FIXED_DT : 0;
+            K.leben = this.state.player;
+            K.fahr = fahrG ? () => this._fahrPlan(fahrG, ride, T, nowDt) : null;
+            const pmL = this.state.playerMesh;
+            K.lage[0] = pmL ? pmL.position.x : 0;
+            K.lage[1] = pmL ? pmL.position.y - AnazhRealm.PLAYER_FOOT_OFFSET : 0;
+            K.lage[2] = pmL ? pmL.position.z : 0;
+            K.angebote = this._leibAngebote();
+            if (K.angebote.length) {
+                const kt = this._leibKette();
+                K.mass = kt.mass;
+                K.masse = this.state._geistKg || this._leibMasse(this.state.playerMesh);
             }
-            if (parkG) {
-                const cFresh = T.rutsch && !this.state._cWasDown;
-                this.state._cWasDown = T.rutsch;
-                if (!slide && cFresh && !this.state.isInAir) {
-                    const v0 = this.state.playerVel;
-                    const sp0 = Math.hypot(v0.x(), v0.z());
-                    // ZWILLINGS-ABSCHIED (18.07.): die Rutsch-Zeile ist Wand-geprüft
-                    // (_parkourGesetz ganz-oder-gar-nicht) — die Ternary-Literale sind tot.
-                    if (sp0 > parkG.slideMinTempo) {
-                        const dauer = parkG.slideDauerSec;
-                        slide = this.state._parkourSlide = {
-                            bis: currentTime + dauer,
-                            dauer,
-                            dx: v0.x() / sp0,
-                            dz: v0.z() / sp0,
-                            v0: sp0 * parkG.slideTempoMul,
-                        };
-                        this.state._landImpactPending = Math.max(this.state._landImpactPending || 0, 1.2);
-                    }
-                }
-            } else if (this.state._cWasDown) {
-                this.state._cWasDown = false;
-            }
-            if (fahrG) {
-                // DER EINE FAHR-SCHRITT (Welle L, Q13 — Befund 06.10.: der Stamm integrierte eine zweite Kopie des
-                // Zweispur-Modells, Längs-Antrieb als exp-Lerp, ohne Vertikale, ohne Quer-Hangabtrieb, ohne Reibkreis
-                // längs). Die Lage setzte der EINE Kontakt-Löser (`_stepCharacter`) zu Beginn des Sim-Schritts; was er der
-                // Fahrt nahm (eine Wand, das Wasser), kehrt in den Körperrahmen zurück. Dann: Stand (Ebene der Räder,
-                // ballistische Vertikale, Federn) an DIESER Lage, Kräfte → die Geschwindigkeit, die der Kontakt-Löser im
-                // nächsten Schritt fährt — dieselbe Folge wie die Probefahrt (Kräfte, Lage, Stand).
-                const { vc } = AnazhRealm._fahrSchrittGesetz();
-                const ent = this._mountedEntry;
-                const pmF = this.state.playerMesh.position;
-                const v = this.state.playerVel;
-                const z =
-                    ent._fahr ||
-                    (ent._fahr = vc.fahrZustand(
-                        pmF.x,
-                        pmF.z,
-                        (Number.isFinite(ent._rideYaw) ? ent._rideYaw : this.state.yaw) - Math.PI / 2
-                    ));
-                z.x = pmF.x;
-                z.z = pmF.z;
-                const cyF = Math.cos(z.yaw);
-                const syF = Math.sin(z.yaw);
-                z.vlong = v.x() * cyF - v.z() * syF;
-                z.vlat = -v.x() * syF - v.z() * cyF;
-                vc.fahrStand(z, fahrG, this._fahrBoden(ent), nowDt);
-                // Gas, Bremse und Lenkung analog aus der Verb-Tafel (W/S/A/D/Shift oder RT/LT/Stick/B — dieselben Felder)
-                vc.fahrKraefte(
-                    z,
-                    {
-                        throttle: T.gas,
-                        brake: T.bremse,
-                        steer: T.lenken,
-                        hand: T.handbremse,
-                        tiefe: this._fahrTiefe(z), // das Wasser am Wagen (Schau-2: Widerstand, Ansaugung)
-                        haft: this._fahrHaft(z), // μ des Bodens × die Nässe am Reibkreis (fahrzeug.K1, feld.K1)
-                        wind: this._fahrWind(z), // der EINE Wind auf der Flanke (wetter.K5)
-                    },
-                    fahrG,
-                    nowDt
-                );
-                const cy2 = Math.cos(z.yaw);
-                const sy2 = Math.sin(z.yaw);
-                this.state.playerVel.setValue(z.vlong * cy2 - z.vlat * sy2, v.y(), -z.vlong * sy2 - z.vlat * cy2);
-                // Die Gier ans Gefährt (Fahrt-Richtung (sin, cos) = Bug); der Lenk-Einschlag fürs Bild.
-                ent._rideYaw = z.yaw + Math.PI / 2;
-                ent._rideSteerYaw = z.steer;
-            } else if (slide) {
-                // PARKOUR — der RUTSCH führt: Richtung eingefroren, Tempo klingt
-                // linear vom Boost auf das Geh-Tempo aus (WASD ruht — wer rutscht,
-                // lenkt mit dem Körper, nicht mit den Füßen).
-                const rest = Math.max(0, (slide.bis - currentTime) / Math.max(0.001, slide.dauer));
-                const spZiel = this.state.speed + Math.max(0, slide.v0 - this.state.speed) * rest;
-                const vSl = this.state.playerVel;
-                this.state.playerVel.setValue(slide.dx * spZiel, vSl.y(), slide.dz * spZiel);
-            } else if (this.state.moveDirection.length() > 0) {
-                // der ZUG der Auslenkung (0..1): der Stick hinter der Totzone stufenlos, jede Taste und jede Diagonale voll
-                const zug = Math.min(1, this.state.moveDirection.length());
-                this.state.moveDirection.normalize();
-                const v = this.state.playerVel;
-                // ZENSUS 17.07. — die vier C5-Gefühls-Hebel wohnen im koerper-
-                // studio-Gesetzbuch (fx.bewegung.luft, _bewegungsBlock fail-closed:
-                // Boden kAcc / Luft kAccLuft).
-                const LG = AnazhRealm._bewegungsBlock("luft", ["kAcc", "kAccLuft", "kBrake", "kBrakeLuft"]);
-                const kAcc = rideKAcc !== null ? rideKAcc : this.state.isInAir ? LG.kAccLuft : LG.kAcc;
-                const f = 1 - Math.exp(-kAcc * nowDt);
-                const tx = this.state.moveDirection.x * currentSpeed * slopePenalty * zug;
-                const tz = this.state.moveDirection.z * currentSpeed * slopePenalty * zug;
-                this.state.playerVel.setValue(v.x() + (tx - v.x()) * f, v.y(), v.z() + (tz - v.z()) * f);
-            } else if (!this.state.onSteepSlope) {
-                // Brems-Kurve statt Hard-Stop: in der Luft bleibt das Momentum (ballistischer Bogen), am Boden ein
-                // kurzer, spürbarer Schlitter (Masse statt masselosem Stopp); im Sattel rollt das Gefährt aus (sein
-                // kBrake). kBrake/kBrakeLuft wohnen im Gesetzbuch (fx.bewegung.luft).
-                const v = this.state.playerVel;
-                const LG = AnazhRealm._bewegungsBlock("luft", ["kAcc", "kAccLuft", "kBrake", "kBrakeLuft"]);
-                // Ohne Zug bremst das WASSER (schwimmen.drag: was je Sim-Schritt bleibt) — der Zug selbst läuft frei.
-                const kBrake =
-                    rideKBrake !== null
-                        ? rideKBrake
-                        : this.state.playerUnderwater
-                          ? -Math.log(AnazhRealm._schwimmGesetz().drag) / AnazhRealm.FIXED_DT
-                          : this.state.isInAir
-                            ? LG.kBrakeLuft
-                            : LG.kBrake;
-                const fb = 1 - Math.exp(-kBrake * nowDt);
-                this.state.playerVel.setValue(v.x() * (1 - fb), v.y(), v.z() * (1 - fb));
-            }
-
-            // JUMP-BUFFER: ein Space-Tipp kurz VOR der Landung wird gemerkt (sprung.bufferSec, Gesetzbuch
-            // fx.bewegung.sprung) und feuert beim Aufsetzen. Der Sprung läuft durch handleJump — EINE Quelle
-            // (Coyote + Slope-Gate + Decken-Klemme); ein Inline-Sprung umginge die Klemme.
-            const spaceFresh = T.sprung && !this.state._spaceWasDown;
-            if (spaceFresh) this.state._jumpPressedAt = currentTime;
-            this.state._spaceWasDown = T.sprung;
-            const buffered =
-                currentTime - (this.state._jumpPressedAt || -Infinity) <=
-                AnazhRealm._bewegungsBlock("sprung", ["coyoteSec", "bufferSec"]).bufferSec;
-            if ((T.sprung || buffered) && !this.state.isJumping) {
-                this.handleJump(currentTime);
-                if (this.state.isJumping) this.state._jumpPressedAt = -Infinity;
-            } else if (spaceFresh && this.state.isJumping) {
-                // PARKOUR — der FRISCHE Druck in der Luft: Wand-/Doppelsprung
-                // (No-op ohne Studio-Gesetz/Kontakt/Kontingent — byte-alt).
-                if (this._parkourLuftsprung()) this.state._jumpPressedAt = -Infinity;
-            }
-            // PARKOUR — KLETTERN: W gegen die frische Wand (der Kontakt bleibt frisch, solange man hineindrückt)
-            // zehrt Ausdauer und trägt den Körper — der Step liest _parkourKletter als Steig-vy statt
-            // Schwerkraft. Erschöpft/W los/Wand weg → Fall. Frische-Fenster = kontaktFrischeSec (parkour-Gesetz).
-            // GEGEN heißt hinein: der Blick höchstens 45° neben der Wand-Normalen — wer an einer Wand entlang geht (die
-            // Türzarge, der Flur), klettert nicht (siedlung.K1: vorher stieg der Spieler an jeder gestreiften Wand auf).
-            let kletterV = 0;
-            if (
-                parkG &&
-                T.vor > 0 &&
-                !slide &&
-                this.state.forward.x * this.state._wandKontaktNx + this.state.forward.z * this.state._wandKontaktNz <
-                    -Math.SQRT1_2 &&
-                Number.isFinite(this.state._wandKontaktAt) &&
-                currentTime - this.state._wandKontaktAt < parkG.kontaktFrischeSec
-            ) {
-                const plK = this.state.player;
-                if (plK && plK.stamina > 0) {
-                    kletterV = Number.isFinite(parkG.kletterV) ? parkG.kletterV : 3.2;
-                    // ZWILLINGS-ABSCHIED (19.07.): der 12er-Ternary-Zwilling fiel —
-                    // kletterAusdauerProS steht in der Gültigkeits-Wand von _parkourGesetz.
-                    plK.stamina = Math.max(0, plK.stamina - parkG.kletterAusdauerProS * nowDt);
-                    this.state.isInAir = true;
-                }
-            }
-            this.state._parkourKletter = kletterV;
+            AnazhRealm._leibTakt().leibPlan(this.state, T, K, currentTime, nowDt);
         }
+    }
+
+    // DER FAHR-SCHRITT IM PLAN (Welle L, Q13 — Befund 06.10.: der Stamm integrierte eine zweite Kopie des Zweispur-Modells): die
+    // Lage setzte der EINE Kontakt-Löser (`_stepCharacter`) zu Beginn des Sim-Schritts; was er der Fahrt nahm (eine Wand, das
+    // Wasser), kehrt in den Körperrahmen zurück. Dann: Stand (Ebene der Räder, ballistische Vertikale, Federn) an DIESER Lage,
+    // Kräfte → die Geschwindigkeit, die der Kontakt-Löser im nächsten Schritt fährt — dieselbe Folge wie die Probefahrt.
+    _fahrPlan(fahrG, ride, T, nowDt) {
+        const { vc } = AnazhRealm._fahrSchrittGesetz();
+        const ent = this._mountedEntry;
+        const pmF = this.state.playerMesh.position;
+        const v = this.state.playerVel;
+        const z =
+            ent._fahr ||
+            (ent._fahr = vc.fahrZustand(
+                pmF.x,
+                pmF.z,
+                (Number.isFinite(ent._rideYaw) ? ent._rideYaw : this.state.yaw) - Math.PI / 2
+            ));
+        z.x = pmF.x;
+        z.z = pmF.z;
+        const cyF = Math.cos(z.yaw);
+        const syF = Math.sin(z.yaw);
+        z.vlong = v.x() * cyF - v.z() * syF;
+        z.vlat = -v.x() * syF - v.z() * cyF;
+        vc.fahrStand(z, fahrG, this._fahrBoden(ent), nowDt);
+        // Gas, Bremse und Lenkung analog aus der Verb-Tafel (W/S/A/D/Shift oder RT/LT/Stick/B — dieselben Felder)
+        vc.fahrKraefte(
+            z,
+            {
+                throttle: T.gas,
+                brake: T.bremse,
+                steer: T.lenken,
+                hand: T.handbremse,
+                tiefe: this._fahrTiefe(z), // das Wasser am Wagen (Schau-2: Widerstand, Ansaugung)
+                haft: this._fahrHaft(z), // μ des Bodens × die Nässe am Reibkreis (fahrzeug.K1, feld.K1)
+                wind: this._fahrWind(z), // der EINE Wind auf der Flanke (wetter.K5)
+            },
+            fahrG,
+            nowDt
+        );
+        const cy2 = Math.cos(z.yaw);
+        const sy2 = Math.sin(z.yaw);
+        this.state.playerVel.setValue(z.vlong * cy2 - z.vlat * sy2, v.y(), -z.vlong * sy2 - z.vlat * cy2);
+        // Die Gier ans Gefährt (Fahrt-Richtung (sin, cos) = Bug); der Lenk-Einschlag fürs Bild.
+        ent._rideYaw = z.yaw + Math.PI / 2;
+        ent._rideSteerYaw = z.steer;
     }
 
     // DIE EGO-SICHT AM CHOKEPOINT: der EINE Schreiber der 1st/3rd-Person-Avatar-Sicht (Kopf-Part + _creatureSkin-Wrap;
@@ -3286,33 +3274,17 @@ AnazhRealm._schwimmBrustM = function () {
     }
     return AnazhRealm._kernPflichtBruch("koerper:labProportionen");
 };
-// Der EINE Parkour-Leser (Doppel-/Wandsprung · Klettern · Rutsch aus fx.bewegung.parkour). Bewusst
-// ohne Zahlen-Fallback: Kern kalt → null → KEIN Parkour — die Verben existieren nur als
-// Studio-Gesetz. Memo nur im Erfolgs-Fall.
-AnazhRealm._parkourGesetz = function () {
-    if (AnazhRealm._parkourGesetzMemo) return AnazhRealm._parkourGesetzMemo;
-    try {
-        const p = AnazhRealm.Gesetz("koerper:bewegung.parkour", null);
-        // Gültigkeits-Wand: auch die Rutsch-Zeile (slideMinTempo/slideDauerSec/slideTempoMul) und
-        // kontaktFrischeSec/wandsprungMul/doppelsprungMul/kletterAusdauerProS sind Pflicht-Felder — ganz
-        // oder gar nicht, nie ein Misch-Gesetz aus Kern + Literal.
-        if (
-            p &&
-            Number.isFinite(p.kletterV) &&
-            Number.isFinite(p.wandAbstoss) &&
-            Number.isFinite(p.kontaktFrischeSec) &&
-            Number.isFinite(p.wandsprungMul) &&
-            Number.isFinite(p.doppelsprungMul) &&
-            Number.isFinite(p.kletterAusdauerProS) &&
-            Number.isFinite(p.slideMinTempo) &&
-            Number.isFinite(p.slideDauerSec) &&
-            Number.isFinite(p.slideTempoMul)
-        ) {
-            AnazhRealm._parkourGesetzMemo = p;
-            return p;
-        }
-    } catch (_e) {}
-    return null;
+// DER EINE BEWEGUNGS-TAKT DES LEIBS (w4-koerper-park): koerper-core trägt den Plan, die Vertikale, die Erdung, die Verben an den
+// Geräten und die Pose (LEIB_TAKT) — Welt und Körper-Studio rufen dieselben Funktionen. Fail-closed: fehlt der Kern oder ein
+// Feld seines Gesetzes (`leibGesetz` prüft jedes), bricht der Takt laut (der stille Rückfall „Kern kalt → KEIN Parkour" fiel).
+AnazhRealm._leibTakt = function () {
+    if (AnazhRealm._leibTaktMemo) return AnazhRealm._leibTaktMemo;
+    const KC = globalThis.__koerperCore;
+    if (!KC || typeof KC.leibPlan !== "function" || typeof KC.leibGesetz !== "function")
+        return AnazhRealm._kernPflichtBruch("koerper:leibPlan (der EINE Bewegungs-Takt)");
+    KC.leibGesetz();
+    AnazhRealm._leibTaktMemo = KC;
+    return KC;
 };
 // Der EINE Bewegungs-Block-Leser: luft (Beschleunigungs-/Brems-Kurven), sprung (Coyote-/Buffer-
 // Fenster), schritt (Compound-Takt, Klang-Schwelle), gang (die Zweibeiner-Zeile des Gang-Gesetzes) aus fx.bewegung.<block>. Fail-closed: Block fehlt oder
@@ -3389,17 +3361,22 @@ AnazhRealm.KAMERA_UEBERGANG = Object.freeze({ ruheS: 0.15, vMax: 6, maxM: 20, fo
 
 // Kapsel-Maße des Spielers, am 1-m-Box-Collider geeicht: footDrop = halbe Box-Höhe (Füße =
 // position.y − 0.5 = die Grounded-Annahme); STEP_UP = wie hoch der Spieler ohne Sprung aufsteigt.
-AnazhRealm.PLAYER_FOOT_OFFSET = 0.5;
-AnazhRealm.PLAYER_STEP_UP = 0.6;
+// Die Zahlen sind die Kapsel des Leibs im Gesetzbuch (koerper-core LEIB.kapsel, w4-koerper-park) — das Körper-Studio trägt
+// dieselbe Kapsel gegen seine Park-Boxen.
+AnazhRealm.PLAYER_FOOT_OFFSET = globalThis.__koerperCore.LEIB.kapsel.fussM;
+AnazhRealm.PLAYER_STEP_UP = globalThis.__koerperCore.LEIB.kapsel.stufeM;
 // Boden-Haftung: bis zu dieser Distanz UNTER den Füßen klebt der Läufer am Boden — nur wenn er
 // vorher geerdet war, NIE im Fall (sonst Magnet-Sog). Kleiner als STEP_UP: am Kamm löst die
 // Haftung → natürlicher Sprung-Bogen.
-AnazhRealm.PLAYER_GROUND_SNAP = 0.25;
+AnazhRealm.PLAYER_GROUND_SNAP = globalThis.__koerperCore.LEIB.kapsel.haftM;
 // Wand-Kollisions-Radius — schlanker als die Boden-Kapsel, und die Wand-Kugeln beginnen ERST
 // über der Stufe-hoch-Linie (feetY + STEP_UP): so trifft keine Kugel einen Stufen-Riser ≤
 // STEP_UP (sonst blockt die Wand-Kollision den Aufstieg, bevor der Boden-Snap heben kann —
 // der gemessene Stufe-hoch-Konflikt). Nur echte Wände (höher als STEP_UP) blocken.
-AnazhRealm.PLAYER_WALL_RADIUS = 0.35;
+AnazhRealm.PLAYER_WALL_RADIUS = globalThis.__koerperCore.LEIB.kapsel.radiusM;
+// Die Reichweite der Geräte (m, w4-koerper-park): so weit um den Leib reicht der Takt nach den Angeboten gesetzter Werke —
+// jenseits ruht jedes Gerät als Zahl (sein Zustand schwingt nur, solange es wach ist).
+AnazhRealm.GERAET_REICH_M = 8;
 // Der Stab: eine Blocker-Box, deren Grundfläche schmaler ist als ein Fuß, trägt keinen Leib (`_blockerFugen`).
 AnazhRealm.PLAYER_STAB = 0.15;
 // ═══ KOPPLUNG — Strömung (gate:wasser-leben K4 STRÖMUNG) · Gleiten · Wind · Gras (gate:kopplung) ═══

@@ -293,7 +293,7 @@ function buehne(arg) {
                 for (let i = 0; i < m.length; i++) m[i] = Math.abs(a[i] - b[i]) > SCHWELLE ? 1 : 0;
                 return m;
             };
-            const summe = (m) => m.reduce((s, x) => s + x, 0);
+            const summe = (m) => m.reduce(addiere, 0);
             // X: ohne Leib (der Boden allein)
             pm.visible = false;
             const X = await schuss("x-ohne-leib");
@@ -517,7 +517,7 @@ function buehne(arg) {
                     pm.userData._gelenk.nahStufe === stufe &&
                     (stufe === 1 || !!st._weltbildDa) &&
                     pm.children.some((c) => c.userData?._creatureSkin);
-                let r = await window.__weltDa((w) => w.state.rendererReady && w.state.renderer.backend);
+                let r = await __weltDa((w) => w.state.rendererReady && w.state.renderer.backend);
                 const st = r.state;
                 const ok = await new Promise((res) => {
                     const frist = setTimeout(() => res(false), 240000);

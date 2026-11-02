@@ -782,13 +782,11 @@ const server = statikServer();
                 T = window.THREE;
             const P = Object.getPrototypeOf(r);
             const takt = () => {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {}
+                __handTakt();
             };
             st.playerMesh.position.set(MESS.x, r._voxelSurfaceY(MESS.x, MESS.z) + 1.8, MESS.z);
             // einschwingen: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`)
-            const takte = await window.__weltStehtNach(takt);
+            const takte = await __weltStehtNach(takt);
             const ring = st.voxelChunks.size;
             r._tickChunkSatz();
             const aus = { ring, takte, code: {} };
@@ -838,7 +836,7 @@ const server = statikServer();
                     if (bunde?.size) {
                         r._werferWahlPass(bunde, S);
                         // die Wahl der Werfer: die ruhenden Werfer und die werfenden Bündel (die Treue vergleicht sie)
-                        const ruhen = S.ab.map((o) => o.id).sort((x, y) => x - y);
+                        const ruhen = S.ab.map((o) => o.id).sort(aufsteigend);
                         const werfen = [...bunde.values()].filter((bg) => bg.visible).map((bg) => bg.id);
                         wahl.push(["k" + i, "werfer", ruhen.join(",") + "|" + werfen.join(",")]);
                     }

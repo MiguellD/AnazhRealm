@@ -690,7 +690,7 @@ async function tempo(K) {
             pm.visible = false;
             st.camera.position.set(q.x - 6, hh(q.x - 6, q.z + 4) + 2.5, q.z + 4);
             const schuss = async (opt) => {
-                window.__bundlesNeu();
+                __bundlesNeu();
                 r._schattenAlleNeu();
                 return __ausgabeAufnahme(W, HO, 1, opt);
             };
@@ -703,7 +703,7 @@ async function tempo(K) {
                 const { teil } = __klassenTeilung(G.u8, [(await schuss(M)).u8, Ob], W, HO, 18);
                 const px = { wagen: 0, gestossen: 0 };
                 for (const t of teil) if (t) px[t > 1 ? "gestossen" : "wagen"]++;
-                return { px, zeile: G.abnahme.zeile, png: window.__png(G.u8, W, HO) };
+                return { px, zeile: G.abnahme.zeile, png: __png(G.u8, W, HO) };
             } catch (f) {
                 return { fehler: String(f.message).slice(0, 400) };
             }

@@ -16,7 +16,8 @@
 //       ihre `hilfe`-Sätze) und jede Taste (`KEYBINDING_LABELS`); der Satz für Unbekanntes trägt keine zweite Liste.
 //   L3  DAS GESPRÄCH — Enter öffnet das Feld, Enter im Feld sendet und gibt die Welt zurück (W läuft wieder), Esc ohne
 //       Senden; Enter auf einem fokussierten Knopf gehört dem Knopf.
-//   L7  DER START-GURT — die Hotbar eines neuen Spielers liest den Katalog (`_katalogSichtbar`): je Studio-Art EIN Werk.
+//   L7  DER START-GURT — die Hotbar eines neuen Spielers liest den Katalog (`_katalogSichtbar`): je Studio-Art EIN Werk (die
+//       Art: `_gurtArt`, der kind des Rezepts, am Ort sein Ort — der Spielplatz zählt einmal).
 //   LK  DIE KAMERA UND DIE PFLANZEN — die Stamm-Blocker eines Studio-Baums tragen seine Welt-Skala; die 3rd-Kamera (zu Fuß
 //       und im Ritt) rückt nur vor Boden und Bau ein, nie vor einer Pflanze, und fährt gleitend hinaus; jeder Pflanzen-Stoff
 //       trägt die DURCHSICHT (maskNode, nie im Schatten-Pass): sie nimmt nur, was zwischen Auge und Spieler liegt (die EINE
@@ -867,7 +868,7 @@ async function probe(arg) {
                 const neu = () => (r._disposeScatterRegion(key), r._scatterRegion(rx, rz, pm));
                 // DIE REGION STEHT VOR DER PROBE: jeder echte Wurf (Asset, Karte, Höhe) ist geliefert — sonst hielt ein echtes Asset im
                 // Blick den zweiten Bau, und die Linse nannte die Zusage außer Blick (main 90878cc6 headless 2 von 3: „wartet auf ihr Asset")
-                for (const weiter = (neu(), window.__deckel("die Streu-Region vor der Probe", 300)); r._streuRegionWartet(key) && weiter(); ) await tick(1, 30); // prettier-ignore
+                for (const weiter = (neu(), __deckel("die Streu-Region vor der Probe", 300)); r._streuRegionWartet(key) && weiter(); ) await tick(1, 30); // prettier-ignore
                 const stumm = "_ladeTakt _tickVoxelChunkStreaming _tickScatterStreaming _tickPendingGrass _tickScatterRegrow _tickNahWiese _tickNahStreu".split(" ");
                 r._scatterSichtHoehe = function (layer, ...a) {
                     const [v, E] = [r._imErstenBlick(a[4].x, a[4].z, 12), r._ersterBlick()];
@@ -877,7 +878,7 @@ async function probe(arg) {
                 try {
                     let g = ((st._weltbildDa = 0), neu());
                     if (!(b.n[0] && b.n[1])) {
-                        [st.yaw, b.n] = [w.sort((p, q) => p - q)[w.length >> 1] + r._ersterBlick().halb, [0, 0]];
+                        [st.yaw, b.n] = [w.sort(aufsteigend)[w.length >> 1] + r._ersterBlick().halb, [0, 0]];
                         g = neu();
                     }
                     [b.vor1] = [r._streuRegionWartet(key), ok[0](), await sleep(0)];
@@ -1032,12 +1033,8 @@ async function probe(arg) {
         out.gurt = m;
         m.buch = !!(buch && buch.ok);
         m.hotbar = st.hotbar.slice();
-        const f = r._foundry;
-        const artVon = (name) => {
-            const pr = r._foundryPresetFor(name);
-            const rec = pr && f && f.recipes ? f.recipes[pr] : null;
-            return rec && typeof rec.kind === "string" ? rec.kind : null;
-        };
+        // die Art liest die EINE Zuordnung des Gurts (`_gurtArt`: der kind des Studio-Rezepts, am Ort sein Ort) — bis
+        // w4-koerper-park las die Linse ihren eigenen kind-Zwilling und nannte jedes Gerät des Spielplatzes eine fehlende Art
         const AD = AnazhRealm.ALT_DOPPEL || {};
         m.eintraege = m.hotbar.filter(Boolean).map((name) => {
             const bp = st.blueprints[name];
@@ -1045,14 +1042,14 @@ async function probe(arg) {
                 name,
                 sichtbar: !!bp && r._katalogSichtbar(name, bp),
                 altDoppel: AD[name] || null,
-                art: bp ? artVon(name) : null,
+                art: bp ? r._gurtArt(name) : null,
                 platzierbar: !!bp && r._isPlaceableBlueprint(bp),
             };
         });
         const arten = new Set();
         for (const name of Object.keys(st.blueprints))
             if (r._katalogSichtbar(name) && r._isPlaceableBlueprint(st.blueprints[name])) {
-                const a = artVon(name);
+                const a = r._gurtArt(name);
                 if (a) arten.add(a);
             }
         m.katalogArten = Array.from(arten);
@@ -1064,8 +1061,8 @@ async function probe(arg) {
     try {
         const m = { gestartet: false, wege: {} };
         out.kamera = m;
-        const pl = st.architectures.find((a) => a && a.type === "start_plattform");
-        const P = pl ? pl.position : st.playerMesh.position;
+        const M = r._genesisMitte();
+        const P = M ? { x: M.x, y: r.getTerrainHeightAt(M.x, M.z), z: M.z } : st.playerMesh.position;
         const natur = (a) => r._istNatur(a);
         const naheBaeume = () =>
             st.architectures
@@ -1132,7 +1129,7 @@ async function probe(arg) {
                 for (let i = 0; i < 10; i++) r._loopCamera((T += 0.1));
                 return arm();
             };
-            const med = (a) => (a.length ? +a.slice().sort((x, y) => x - y)[Math.floor(a.length / 2)].toFixed(2) : null);
+            const med = (a) => (a.length ? +a.slice().sort(aufsteigend)[Math.floor(a.length / 2)].toFixed(2) : null);
             // EIN WEG zu Fuß (3rd, Neigung 0) oder im Ritt (die Verfolger-Kamera des GT): `stelle(x, z, gier)` setzt Spieler/Wagen.
             const weg = (name, stelle, schritt, sprungM, bildM) => {
                 const z = { proben: 0, pflanzeHaelt: 0, taeter: [], sprungM };
@@ -1216,7 +1213,7 @@ async function probe(arg) {
             // DER RITT: ein GT, aufgesessen; der Wagen fährt die Linien (die Verfolger-Kamera hinter ihm, Kern-Gesetz kamera)
             const gt = r.spawnArchitecture("fahrzeug_gt", { x: P.x + 30, y: hh(P.x + 30, P.z) + 0.5, z: P.z }, { silent: true, precise: true });
             if (gt) {
-                await window.__gebautNach(gt);
+                await __gebautNach(gt);
                 const mr = r.mountArchitecture(gt);
                 if (mr && mr.ok) {
                     weg(
@@ -1346,13 +1343,16 @@ async function probe(arg) {
                 const ds = (m.durchsicht = { formel: typeof K._durchsichtGewicht === "function" && !!K.DURCHSICHT_ZAHLEN });
                 // DER KONSUM AM RUF (Spion am Ruf, kein Quelltext): die Proben durch die Bildmitte ohne eigenes Band nehmen den
                 // EINEN Strahl, der Stoff-Knoten der Durchsicht rechnet die EINE Formel (sein Zwischenspeicher leer: er baut neu)
-                const nahStreu = st.nahStreu && st.nahStreu.senken && st.nahStreu.senken.size > 0;
+                // die Vorbedingung des Streu-Strahls: die Nah-Streu am Baum (der Ring um das Auge, bis eine Senke steht) — an der
+                // Mitte des Genesis-Orts trägt sein Freiraum keine, der Baum steht im Gürtel
+                const nahStreu = () => st.nahStreu?.senken.size > 0;
+                for (const weiter = window.__deckel("die Nah-Streu am Baum", 300); !nahStreu() && weiter(); ) await __takte(1, 40);
                 const rahmen = r._kampfSchwungRahmen({});
                 const knoten = r._kamDurchKnoten;
                 r._kamDurchKnoten = {};
                 m.konsum = {
                     _hasMagnifyingInSight: __rufe(r, "_hasMagnifyingInSight", r, "_fadenkreuzStrahl", []) > 0,
-                    _pickScatterAtCrosshair: nahStreu ? __rufe(r, "_pickScatterAtCrosshair", r, "_fadenkreuzStrahl", []) > 0 : null,
+                    _pickScatterAtCrosshair: nahStreu() ? __rufe(r, "_pickScatterAtCrosshair", r, "_fadenkreuzStrahl", []) > 0 : null,
                     _kampfKlingenAchse: __rufe(r, "_kampfKlingenAchse", r, "_fadenkreuzStrahl", [{ rahmen, reach: rahmen.reach, ziel: null }, {}]) > 0,
                     _kameraDurchsichtNode: __rufe(r, "_kameraDurchsichtNode", K, "_durchsichtGewicht", [THREE.TSL, "rinde"]) > 0,
                 };
@@ -1420,9 +1420,7 @@ async function probe(arg) {
                     st.keys.w = true;
                     for (let i = 0; i < 120; i++) {
                         st.yaw = gier;
-                        try {
-                            r._gameLoopTick(performance.now());
-                        } catch {}
+                        __handTakt();
                         await sleep(16);
                     }
                     st.keys.w = false;
@@ -1561,8 +1559,9 @@ async function probe(arg) {
         const k = { gestartet: false };
         out.kanal = k;
         m.buch = !!(buch && buch.ok);
-        const pl = st.architectures.find((a) => a && a.type === "start_plattform");
-        const P = pl.position;
+        const M = r._genesisMitte();
+        if (!M) throw new Error("kein Genesis-Ort (der Plan der Welt)");
+        const P = { x: M.x, y: r.getTerrainHeightAt(M.x, M.z), z: M.z };
         // die Gier der leeren Richtung (wenig Bäume, flach) — dieselbe Wahl wie die sichtbare Schau
         const baeume = st.architectures.filter((a) => /^baum_/.test(a.type || ""));
         let best = null;
@@ -1590,7 +1589,7 @@ async function probe(arg) {
         const vor = new Set(st.architectures);
         const z0 = zeilen().length;
         r.processChatCommand("dorf 7 18");
-        for (const weiter = window.__deckel("die Antwort auf das Dorf", 300); weiter() && !zeilen().slice(z0).some((z) => /steht vor dir|Häuser platziert|kein Haus|Werkstatt der Welt|FOUNDRY/.test(z)); ) await sleep(200);
+        for (const weiter = __deckel("die Antwort auf das Dorf", 300); weiter() && !zeilen().slice(z0).some((z) => /steht vor dir|Häuser platziert|kein Haus|Werkstatt der Welt|FOUNDRY/.test(z)); ) await sleep(200);
         const neu = st.architectures.filter((a) => !vor.has(a) && /^haus_/.test(a.type || ""));
         const fx = Math.sin(best.yaw);
         const fz = Math.cos(best.yaw);
@@ -1628,7 +1627,7 @@ async function probe(arg) {
                 r.dslRun(satz.program, { source: quelle });
                 let n = -1;
                 let ruhig = 0;
-                for (const weiter = window.__deckel("die Häuser des Dorfs", 240); ruhig < 6 && weiter(); ) {
+                for (const weiter = __deckel("die Häuser des Dorfs", 240); ruhig < 6 && weiter(); ) {
                     await sleep(250);
                     const k = st.architectures.filter((a) => !vorM.has(a) && /^haus_/.test(a.type || "")).length;
                     ruhig = k > 0 && k === n ? ruhig + 1 : 0;
@@ -1658,13 +1657,14 @@ async function probe(arg) {
             st.playerMesh.position.set(P.x, P.y + 2.2, P.z);
             st.yaw = best.yaw;
         }
-        // DER GESPERRTE SLOT: ein Slot am Rand des Genesis-Platzes (sein Grundriss reicht 2 m in die Lichtung; die Rückseite
-        // des Hauses, lokal +z, zeigt von ihr weg) trägt seinen Boden y wie jeder Slot des Plans v2 — die Bau-Wand
-        // (`_bauFrei`) wirft ihn an seinem Ort, kein Haus steht (K10: der Plan ist das Dorf, die Ersatz-Orte fielen). Die
-        // Lichtung ist seit K52 der Platz der Scheibe UND des Rings der Tore (`_grundrissVon` der Plattform).
+        // DER GESPERRTE SLOT: ein Slot am Rand des Genesis-Orts (sein Grundriss reicht 2 m in den Freiraum der Tore; die
+        // Rückseite des Hauses, lokal +z, zeigt von ihm weg) trägt seinen Boden y wie jeder Slot des Plans v2 — die Bau-Wand
+        // (`_bauFrei` → `_genesisFlaeche`) wirft ihn an seinem Ort, kein Haus steht (K10: der Plan ist das Dorf, die Ersatz-Orte
+        // fielen). Der Freiraum ist seit dem Genesis-Ort das Rund um Kern und Ring (fachwerk `GENESIS_ORT.freiraum`); bis dahin
+        // die Lichtung der Stein-Scheibe (`_grundrissVon` der Plattform, die mit dem Plan fiel).
         const f = r._foundry;
         const kultur = Object.keys(f.recipes).find((id) => f.recipes[id] && f.recipes[id].kind === "haus" && st.blueprints["haus_" + id]);
-        const R = r._grundrissVon(pl).lichtung;
+        const R = window.__fachwerkCore.GENESIS_ORT.freiraum.r;
         const HALB = 3;
         const rand = R + HALB - 2;
         const slot = { kultur, x: fx * rand, z: fz * rand, y: r.getTerrainHeightAt(P.x + fx * rand, P.z + fz * rand), phi: best.yaw, seed: 7, obb: { cx: fx * rand, cz: fz * rand, ex: HALB, ez: HALB } };

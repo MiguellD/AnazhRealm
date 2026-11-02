@@ -105,9 +105,7 @@ async function checkBandV1749Adventure({ page, check }) {
 }
 
 // Der Voxel-Boden (P1 + P2b) und die Abwesenheit des Heightfields.
-async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandVoxelTerrainCore({ page, check }) {
     // ### Voxel-Terrain — Dichte-Feld + Surface Nets ###
     // Beweist echte Höhlen/Überhänge aus 3D-Dichte-Feld + Surface-Nets-Mesher. Vorab alle
     // Voxel-Chunks abräumen; die folgenden Tests bauen ihren Ring per _tickVoxelChunkStreaming neu
@@ -649,7 +647,7 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
         );
         check("Voxel V9.22: jeder Voxel-Chunk bekommt einen Gras-Eintrag", voxelP2bResults.voxelGrassBuilt);
         check(
-            "Voxel V9.22 (V18.492): die Wiese ist Boden-Funktion — Gras-Zellen verbucht, 0 Halme, Parallax-Halme im Terrain-Albedo",
+            "Voxel V9.22: die Wiese ist Boden-Funktion — Gras-Zellen verbucht, 0 Halme, Parallax-Halme im Terrain-Albedo",
             voxelP2bResults.voxelGrassIsSurface
         );
         check(
@@ -695,7 +693,7 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
         out.snapshotHasFlag = !!(snap && snap.worldMeta && snap.worldMeta.voxelTerrain === true);
         // Der Chat-Toggle ist tot: der Source-Scan prüft das String-Literal `=== "voxel terrain on"`
         // (Code-Logik, nicht einen Kommentar, der den toten Befehl erwähnt).
-        out.noChatToggle = window.__fehlt(r.processChatCommand, /===\s*["']voxel terrain on["']/);
+        out.noChatToggle = __fehlt(r.processChatCommand, /===\s*["']voxel terrain on["']/);
         return out;
     });
 
@@ -1100,7 +1098,7 @@ async function checkBandV18132FerneSeen({ page, check }) {
             return JSON.stringify(v);
         };
         const before = fp();
-        await window.__weltDa(() => !r._ensureHydroTilesAround(-2048, 0, 10)); // Kachel WEST (-1,0) aus dem Faden
+        await __weltDa(() => !r._ensureHydroTilesAround(-2048, 0, 10)); // Kachel WEST (-1,0) aus dem Faden
         const tile = st.hydroTiles ? st.hydroTiles.get("-1,0") : null;
         out.tileBuilt = !!(tile && tile.ready);
         out.tileSubstanz = tile ? tile.fluesse + tile.seen : 0;
@@ -1397,7 +1395,7 @@ async function checkBandGammaGenese({ page, check }) {
             out.randHits = fns.filter((fn) => {
                 const f = r[fn];
                 if (typeof f !== "function") return true;
-                return !window.__fehlt(f, /Math\.random/);
+                return !__fehlt(f, /Math\.random/);
             });
             // (7) genVersion REIST im Snapshot (Klasse: was der Save
             // verliert, verliert die Welt beim Reload).
@@ -1673,7 +1671,7 @@ async function checkBandWahrerAnblickPfade({ page, check }) {
     check("Ω-OPSIS S2-Pfad (A2) Pfad-Feld ist 0 fern jeden Flusses", res.farIsZero === true);
     check("Ω-OPSIS S2-Pfad (A3) Pfad-Feld ∈ [0,1] (gebunden)", res.pathBounded === true);
     check(
-        `Ω-OPSIS S2-Pfad (B2, V18.492) das Pfad-Feld zieht die Boden-Farbe zur gepackten Erde (${res.pfadErde})`,
+        `Ω-OPSIS S2-Pfad (B2) das Pfad-Feld zieht die Boden-Farbe zur gepackten Erde (${res.pfadErde})`,
         res.attachReadsPath === true
     );
     check(
@@ -1712,7 +1710,7 @@ async function checkBandSeamNormal({ page, check }) {
                 if (!nb) continue;
                 angs.push((Math.acos(Math.max(-1, Math.min(1, na[0] * nb[0] + na[1] * nb[1] + na[2] * nb[2]))) * 180) / Math.PI);
             }
-            angs.sort((x, y) => x - y);
+            angs.sort((a, b) => a - b);
             return { matched: angs.length, max: angs.length ? +angs[angs.length - 1].toFixed(3) : null };
         };
         const gA = build(5, 5);
@@ -2085,7 +2083,7 @@ async function checkBandTodZensus({ page, check }) {
                         return false;
                     }
                     if (typeof f !== "function") return false;
-                    return !(window.__fehlt(f, /_queueDispose\(/) || window.__fehlt(f, /taskAura|carryingSprite/));
+                    return !(__fehlt(f, /_queueDispose\(/) || __fehlt(f, /taskAura|carryingSprite/));
                 })
                 .sort();
             o.tot = { A: istTot(tA), B: istTot(tB) && !!(kill && kill.killed), C: istTot(tC) };

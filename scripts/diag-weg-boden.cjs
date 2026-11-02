@@ -104,7 +104,7 @@ function probe(stoerung) {
         const S = nah.S;
         const i = Math.floor((x - (nah.mitteX - S.fensterM / 2)) / S.texelM);
         const j = Math.floor((z - (nah.mitteZ - S.fensterM / 2)) / S.texelM);
-        return nah.daten[(j * nah.N + i) * 2 + c] / 255;
+        return (nah.daten[(j * nah.N + i) * 2 + c] - A.WEGE_KARTE.null) / A.WEGE_KARTE.voll;
     };
     out.platz = +kanal(o.x + 10, o.z + 14, 0).toFixed(3);
     out.acker = +kanal(o.x - 18, o.z - 18, 1).toFixed(3);
@@ -197,7 +197,7 @@ function trittProbe(stoerung) {
         const S = nah.S;
         const i = Math.floor((x - (nah.mitteX - S.fensterM / 2)) / S.texelM);
         const j = Math.floor((z - (nah.mitteZ - S.fensterM / 2)) / S.texelM);
-        return i < 0 || j < 0 || i >= nah.N || j >= nah.N ? -1 : nah.daten[(j * nah.N + i) * 2] / 255;
+        return i < 0 || j < 0 || i >= nah.N || j >= nah.N ? -1 : (nah.daten[(j * nah.N + i) * 2] - A.WEGE_KARTE.null) / A.WEGE_KARTE.voll; // prettier-ignore
     };
     // Je Ring EINE Kachel über der Feuerstelle: steht dort keine (der Null-Renderer baut die Wiese nicht), sät die
     // Probe einen leeren Platzhalter — die Probe zählt, ob der Abbau sie fallen lässt (der Takt baut Fehlendes neu).
@@ -315,10 +315,10 @@ hauptLauf(async () => {
     // Die Büschel einer Kachel stehen erst mit der Weite der gezeichneten Vorlagen (`nahWiese.reich`, ihr EINER Schreiber ist
     // `_tickNahWiese`): der Takt läuft mit verstrichener Frist — er misst die Weite und baut keine Kachel.
     await page.evaluate(async () => {
-        await window.__weltDa((r) => r.state && r.state.scene);
+        await __weltDa((r) => r.state && r.state.scene);
         const warm = () =>
             r._foundry?.recipes?.feuerstelle && st.voxelChunks?.size > 20 && st.nahWiese?.reich > 0;
-        for (const weiter = window.__deckel("Buch, Ring und Wiesen-Weite", 4500); !warm() && weiter(); ) {
+        for (const weiter = __deckel("Buch, Ring und Wiesen-Weite", 4500); !warm() && weiter(); ) {
             r._tickVoxelChunkStreaming(st.playerMesh.position);
             r._tickNahWiese(performance.now() - 1);
             await sleep(20);
@@ -351,7 +351,7 @@ hauptLauf(async () => {
     await browser.close();
     server.close();
 
-    console.log("=== DIE WEG-KANTEN-PROBE (V18.530) — der Weg ist Boden ===");
+    console.log("=== DIE WEG-KANTEN-PROBE — der Weg ist Boden ===");
     if (S.fehler) console.log("  " + S.fehler);
     else {
         console.log(`  Pool: ${S.flacheStreifen} flache Boden-Streifen · ${S.zaeune} Zaun-Streifen`);

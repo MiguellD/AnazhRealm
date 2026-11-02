@@ -16,7 +16,8 @@
 //                Avatar · nicht-vegetative platzierte Architektur · die per userData.inventar
 //                GESTEMPELTEN Bau-Quellen: boden-satz · wetter-regen — die einst 222 „unbekannten"
 //                Emitter, an der QUELLE geklärt; die Klein-Streu ist Studio, das Fernfeld fiel).
-//   ENTSCHEID  — dokumentierte Schöpfer-Entscheide (start_plattform + fliegende Inseln [E-F]); im Parity-Shot seit
+//   ENTSCHEID  — dokumentierte Schöpfer-Entscheide (die fliegenden Inseln [E-F]; die Stein-Scheibe des Genesis-Orts hob das
+//                Schöpfer-Wort vom 31.10. auf: „der platz aus alten klopfsteinen, statt diese komische plattform"); im Parity-Shot seit
 //                W2 versteckt, in der Welt daheim. Die Feuerstelle trägt die Gestalt des Gesetzbuchs — ein Bauplan
 //                mit studioGestalt-Zeile, dessen Wirts-Teile zeichnen, ist eine VERLETZUNG.
 //   VERLETZUNG — alles andere: eine Vegetations-/Deko-Silhouette OHNE Studio-Herkunft
@@ -56,7 +57,7 @@ hauptLauf(async () => {
     const out = await page.evaluate(async (doSelftest) => {
         // ── Warmup: Welt bauen (Chunk-Plateau) + Foundry ready + Scatter konvergieren lassen
         // (das bewährte diag-no-second-treebuilder-Rezept — dieselbe Bühne, breiterer Blick).
-        for (const weiter = window.__deckel("der Ring der Inventur", 9000); weiter();) {
+        for (const weiter = __deckel("der Ring der Inventur", 9000); weiter();) {
             const r0 = r;
             if (r0 && typeof r0._gameLoopTick === "function") {
                 try {
@@ -69,7 +70,7 @@ hauptLauf(async () => {
         }
         const o = { foundryEnabled: r._foundryEnabled ? r._foundryEnabled() : false };
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
-        await window.__weltDa(() => !!!(f && !f.ready));
+        await __weltDa(() => !!!(f && !f.ready));
         o.foundryReady = !!f?.ready;
         await __streuTakte(350, 8);
         try {
@@ -79,7 +80,7 @@ hauptLauf(async () => {
         // ── Inventur-Settle: die in-flight-Anfragen ausklingen lassen (ein Key, der nach
         // dem Deckel noch in f.pending hängt, IST das Verhungern-Symptom → zählt unten rot).
         if (f) {
-            await window.__gebautNach("noch: f.pending && f.pending.size > 0", {
+            await __gebautNach("noch: f.pending && f.pending.size > 0", {
                 fertig: () => !!!(f.pending && f.pending.size > 0),
                 takt: async () => {
                     try {
@@ -165,14 +166,12 @@ hauptLauf(async () => {
             const base = k.split("#")[0];
             const gw = studioGestaltWirt(base);
             if (gw) return gw;
-            if (/start_plattform/i.test(base)) return { b: "entscheid", why: "start_plattform (E-F)" };
             if (VEG.test(base)) return { b: "verletzung", why: "Grammatik-Vegetation: " + base };
             return { b: "substanz", why: "arch: " + base };
         };
         const classifyName = (nm) => {
             const gw = studioGestaltWirt(nm);
             if (gw) return gw;
-            if (/start_plattform/i.test(nm)) return { b: "entscheid", why: "start_plattform (E-F)" };
             if (VEG.test(nm)) return { b: "verletzung", why: "Grammatik-Vegetation (merged): " + nm };
             return { b: "substanz", why: "arch-merged: " + nm };
         };
@@ -281,7 +280,7 @@ hauptLauf(async () => {
                     return tally("substanz", "himmel/gestirn");
                 if (chain.some((p) => p.userData && p.userData.kind === "creature"))
                     return tally("substanz", "kreatur");
-                if (st.playerMesh && chain.includes(st.playerMesh)) return tally("substanz", "avatar");
+                if (pm && chain.includes(pm)) return tally("substanz", "avatar");
                 if (chain.some((p) => islandSet.has(p))) return tally("entscheid", "fliegende Insel (E-F)");
                 for (const p of chain) {
                     const nm = archMeshName.get(p);

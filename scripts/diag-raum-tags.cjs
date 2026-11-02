@@ -501,7 +501,7 @@ hauptLauf(async () => {
     const { browser, page } = await nullSeite({ frist: 300000 });
     await server.zeige(page, 60000);
     await page.evaluate(async () => {
-        await window.__weltDa((r) => r.state && r.state.player);
+        await __weltDa((r) => r.state && r.state.player);
     });
     const S = await page.evaluate(probe);
     await browser.close();

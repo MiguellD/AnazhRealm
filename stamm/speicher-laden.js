@@ -753,22 +753,28 @@ class AnazhRealm_speicher_laden {
         this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
         // Das neue Array ist ein neuer Bestand: die Nachbarschaft der Blocker (`_blockerNetz`) baut sich bei der nächsten Frage
         // aus ihm. `spawnArchitecture` setzt `entry.blockerAABBs` direkt (V9.65-Pro-Part-Logik bleibt).
+        // EIN EINTRAG OHNE BAUPLAN FÄLLT LAUT (der Umzug eines gefallenen Bauplans, Pflicht F): die Wurzel sagt je Eintrag ab
+        // („unbekannter Typ"), das Laden zählt sie — der nächste Stand trägt sie nicht mehr
+        const bauer = this._architectureBuilders();
+        let ohneBauplan = 0;
         for (let i = 0; i < state.architectures.length; i++) {
             const a = state.architectures[i];
             // DER BODEN-UMZUG: auf einem neuen Boden steht der Bau in seiner Höhe über Grund (`_bodenUmzug`)
-            if (a && a.position) this._bauAusStand(a, state, umzug && umzug.has(i) ? umzug.get(i) : null);
+            if (!a || !a.position) continue;
+            const e = this._bauAusStand(a, state, umzug && umzug.has(i) ? umzug.get(i) : null);
+            if (!e && !bauer[AnazhRealm.BAUPLAN_UMZUG[a.type] || a.type]) ohneBauplan++;
         }
+        if (ohneBauplan)
+            this.log(`Laden: ${ohneBauplan} Einträge ohne Bauplan fielen (ihr Bauplan ist gefallen).`, "WARN");
         // DIE ALTEN ORTE ZIEHEN UM (K10 × Entscheid §5.4): jedes Haus eines Orts steht auf seinem Erdbau
         const geerdet = this._erdbauAltOrte(this.state.architectures, (e) => e.position.y);
         if (geerdet) this.log(`Erdbau: ${geerdet} Häuser eines älteren Stands auf ihren Grund geerdet.`, "INFO");
         // DER GRUNDRISS RÄUMT AUCH IM SAVE (Welle L): ein älterer Stand trägt Natur, die vor dem Dorf in seine Häuser
-        // wuchs (der Wurf kam vor dem Haus), und Bäume über der Genesis-Scheibe — jeder Bau mit Grundriss (Haus, Lichtung)
-        // räumt nach dem Laden, wie beim Gründen.
+        // wuchs (der Wurf kam vor dem Haus) — jeder Bau mit Grundriss räumt nach dem Laden, wie beim Gründen.
         let geraeumt = 0;
         for (const e of this.state.architectures.slice())
             if (this._grundrissVon(e)) geraeumt += this._grundrissRaeumen(e);
-        if (geraeumt)
-            this.log(`Grundriss: ${geraeumt} Natur-Stücke aus Häusern und Lichtung geräumt (älterer Stand).`, "INFO");
+        if (geraeumt) this.log(`Grundriss: ${geraeumt} Natur-Stücke aus Häusern geräumt (älterer Stand).`, "INFO");
         this._worldgenBuildVoxelChunkCache(); // das Gesetz wirft neu, was der Stand nicht trägt (speicher.K3)
         this.log(`Architekturen geladen: ${state.architectures.length}`);
     }

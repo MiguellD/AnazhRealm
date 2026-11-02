@@ -382,7 +382,7 @@ async function verdeckungPhase(opts) {
             // der Bach der Mess-Wiese: der nächste Fluss-Punkt zum Messort, der Wasser trägt — quer zum Lauf mindestens 2 m
             // nass (K16: der nächste Punkt des Flussnetzes ist oft eine trockene Rinne der Ebene 2; dort zeichnet kein Wasser)
             const [mx, mz] = opts.messort;
-            await window.__weltDa(() => !r._ensureHydroTilesAround(mx, mz, 200));
+            await __weltDa(() => !r._ensureHydroTilesAround(mx, mz, 200));
             const h = r._hydroFor(mx, mz);
             let P = null,
                 fl = null,
@@ -474,7 +474,7 @@ async function verdeckungPhase(opts) {
             const bereit = () =>
                 f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt;
             const tOrt = performance.now();
-            for (const weiter = window.__deckel("das Wasser am Ort", (opts.ortMs || 180000) / 20); weiter() && !(sichtbaresWasser() > 0 && z.wasser > 0 && bereit()); ) {
+            for (const weiter = __deckel("das Wasser am Ort", (opts.ortMs || 180000) / 20); weiter() && !(sichtbaresWasser() > 0 && z.wasser > 0 && bereit()); ) {
                 for (let i = 0; i < 5; i++) takt();
                 await sleep(20);
             }
@@ -497,7 +497,7 @@ async function verdeckungPhase(opts) {
                 if (st.player && st.player.mountedArch != null) r.dismountArchitecture();
                 r.removeArchitecture(e);
             });
-            await window.__gebautNach(e, { takt });
+            await __gebautNach(e, { takt });
             const tasten = (w, sb) => {
                 for (const k of ["w", "a", "s", "d", "shift", " "]) st.keys[k] = false;
                 st.keys.w = !!w;
@@ -611,7 +611,7 @@ async function verdeckungPhase(opts) {
         await server.zeige(page, 60000, "index.html?holz=kienspan");
         const bereit = await page.evaluate(async (karte) => {
             const t0 = performance.now();
-            await window.__weltDa((r) => {
+            await __weltDa((r) => {
                 const st = r.state;
                 return !!(st?.rendererReady &&
                     st.renderer?.backend &&

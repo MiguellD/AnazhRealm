@@ -1320,6 +1320,10 @@ class AnazhRealm_siedlung_ort {
         if (tuer && Number.isFinite(tuer.x) && Number.isFinite(tuer.z) && Number.isFinite(tuer.w))
             flaechen.push(flaeche(tuer.x, tuer.z - 0.6, tuer.w / 2, 0.6 - T));
         const R = Math.hypot(fp.ex, fp.ez) + Math.hypot(fp.ox, fp.oz) + 2;
+        // DIE FLÄCHEN DES GENESIS-ORTS sperren jedes Haus (der Plan der Welt, `_genesisFlaeche`): kein Haus steht auf Kern, Ring,
+        // Allee, Wiese, Ufer oder einer Bühne, keins reicht in den Freiraum der Tore — bis zum Plan sperrte die Lichtung einer
+        // Stein-Scheibe samt dem Ring der Tore (seit K52 stand kein Haus zwischen den Toren)
+        if (this._genesisFlaeche(x, z, R)) return false;
         const STEP = AnazhRealm.PLAYER_STEP_UP;
         const b2 = this._bauFreiBox || (this._bauFreiBox = { cx: 0, cz: 0, hx: 0, hz: 0, c: 1, s: 0 });
         const trifft = () => {
@@ -1335,21 +1339,6 @@ class AnazhRealm_siedlung_ort {
             const r = R + (e._blockerReach || 0) + 8;
             if (Math.abs(e.position.x - x) > r || Math.abs(e.position.z - z) > r) continue;
             if (this._weichtDemBau(e)) continue; // Natur und die Würfe des Felds weichen dem Haus (`_naturRaeumen`)
-            // Die Lichtung eines Baus (der Genesis-Platz: Scheibe und Ring der Tore, `_grundrissVon`) sperrt in jeder Höhe: ihr
-            // Stein ist im Feld gestempelt, ein Haus fand dort „ebenen Boden" auf Höhe der Scheibe und stand auf ihr (der
-            // Ersatz-Ort eines Slots an der Plattform: 6,0 m von ihrer Mitte, die Scheibe trägt 6,5 m); seit K52 steht kein Haus
-            // zwischen den Toren.
-            const gL = this._grundrissVon(e);
-            if (gL && gL.lichtung) {
-                b2.cx = e.position.x;
-                b2.cz = e.position.z;
-                b2.hx = gL.ex;
-                b2.hz = gL.ez;
-                b2.c = 1;
-                b2.s = 0;
-                if (trifft()) return false;
-                continue;
-            }
             const boxen = e.blockerAABBs;
             if (boxen && boxen.length) {
                 for (const b of boxen) {
@@ -2132,18 +2121,14 @@ class AnazhRealm_siedlung_ort {
     // lenkt seine Gassen (fachwerk `trasseLenk`), der Erdbau seiner Platten trägt jedes Haus (`ortPlan`; Node, 55 Zellen um den
     // Ursprung: zwischen 0,35 und 0,46 hielten alle 13 Gassen ≤ 12 % und jede Tür). Bis siedlung-k3-hang wies eine eigene Zahl
     // (`SIEDLUNG.slopeMax` 0,35) jeden Ort steiler als 0,35 ab.
-    // DER GENESIS-ORT (EINE Quelle): die Mitte der Start-Plattform — dort kommt der Spieler an, um sie stehen die
-    // Kern-Portale (Schöpfer V18.486: „die kernportale um die genesis-plattform anordnen"), um sie bleibt die
-    // Warmup-Welt dorffrei und wächst das Start-Dorf. Ohne Plattform der Welt-Ursprung. Bis 06.10. lasen diese vier
-    // den Ursprung, während die Plattform dort stand, wo `_findOpenSpawnSpot` Platz fand (36 m daneben, seit der
-    // Kronen-Wand V-D1 dort, wo kein Baum durch die Scheibe wächst).
+    // DER GENESIS-ORT (EINE Quelle, Pflicht F): die Mitte des Plans der Welt (`worldMeta.genesisOrt`, gesetzt, wenn der Plan aus
+    // dem Faden kommt, `_genesisPlanAn`; er reist mit der Welt) — dort kommt der Spieler an, um sie stehen die Tore, um sie bleibt
+    // die Warmup-Welt dorffrei, von ihr aus liegt der Wunsch des Start-Viertels. null, bevor der Plan einer neuen Welt steht:
+    // wer sie dann fragt, wartet (kein Dorf vor dem Ort). Bis zum Plan war sie die Mitte einer Stein-Scheibe, ohne sie der
+    // Ursprung der Welt.
     _genesisMitte() {
-        const p = this._genesisPlattform();
-        return p ? { x: p.position.x, z: p.position.z } : { x: 0, z: 0 };
-    }
-    _genesisPlattform() {
-        const p = (this.state.architectures || []).find((a) => a && a.type === "start_plattform");
-        return p && p.position ? p : null;
+        const g = this.state.worldMeta && this.state.worldMeta.genesisOrt;
+        return g && Number.isFinite(g.x) && Number.isFinite(g.z) ? { x: g.x, z: g.z } : null;
     }
 
     // `mehrM` (siedlung.K2): so viel weiter als ein Dorf reicht der Ort — die Spawn-Klar-Wand zählt ab seinem Rand.
@@ -2153,7 +2138,7 @@ class AnazhRealm_siedlung_ort {
         const A = AnazhRealm.AUTO_SETTLEMENT; // Wirt-Streaming (spawnClearM)
         if (!noSpawnClear) {
             const g = this._genesisMitte();
-            if (Math.hypot(x - g.x, z - g.z) < A.spawnClearM + mehrM) return false; // die Warmup-Welt bleibt dorffrei
+            if (!g || Math.hypot(x - g.x, z - g.z) < A.spawnClearM + mehrM) return false; // die Warmup-Welt bleibt dorffrei
         }
         if (!this._landAt(x, z, 0.2)) return false; // die Wasser-Wand (EINE Quelle)
         return !!AnazhRealm._siedlungGesetz() && !(this._slopeAt(x, z) > globalThis.__gelaendeCore.ERDBAU.boeschung);
@@ -2180,77 +2165,45 @@ class AnazhRealm_siedlung_ort {
         }
         return null;
     }
-    // `_autoSettlementStartInfo` (unten): EINMAL je Welt ein Start-Dorf ~110–170 m vom Spawn (Γ5
-    // ":startdorf"), Radien × 8 Winkel durch `_autoSettlementSiteOk` mit offener Spawn-Klar-Wand.
-    // GENESIS-PORTAL-RING: EINMAL je Welt stehen alle Built-in-Portale (WORLD_REGISTRY) im Kreis um den
-    // Genesis-Ort (`_genesisMitte`), deterministisch. Doppelt idempotent: worldMeta-Stempel UND Existenz-Probe (ein
-    // restauriertes Ring-Portal setzt den Stempel nach). Terrain/Bauplan nicht bereit → nächster Tick.
-    _genesisPortalRing(playerPos) {
-        const st = this.state;
-        const wm = st.worldMeta;
-        if (!wm || wm.genesisPortalRing || this._genesisRingFertig) return;
-        const M = this._genesisMitte();
-        if ((playerPos.x - M.x) ** 2 + (playerPos.z - M.z) ** 2 > 60 * 60) return; // nur am Genesis-Ort
-        const bps = st.blueprints || {};
-        const namen = Object.keys(bps).filter((n) => {
+    // DIE WELTEN DER TORE (Pflicht F): die Ziel-Welten der eingebauten Portal-Baupläne (ihre id der Welt-Tafel) und je Welt ihr
+    // Bauplan, gemerkt je Bauplan-Tafel — die Welten, deren Tor der Genesis-Ort trägt (fachwerk `genesisLayout` wirft laut, fehlt
+    // eine oder hat eine keinen Slot). Leser: die Bestellung des Plans (`_genesisPlanBestellen`), der Wirt (`_genesisWerke`).
+    _genesisTorTypen() {
+        const bps = this.state.blueprints || {};
+        if (this._genesisTorTafel && this._genesisTorTafel.bps === bps) return this._genesisTorTafel.typen;
+        // die Welt eines Portals ist die Zeile der Welt-Tafel, deren Ziel sein `portalMeta.world` nennt (die id der Slot-Tafel)
+        const idVon = new Map(Object.values(AnazhRealm.WORLD_REGISTRY).map((w) => [w.world, w.id]));
+        const typen = new Map();
+        for (const n of Object.keys(bps)) {
             const b = bps[n];
-            return b && b.builtIn && b.role === "portal" && b.portalMeta && b.portalMeta.world;
-        });
-        if (!namen.length) return;
-        // Existenz-Probe: trägt die Welt schon ein Ring-Portal nahe des Genesis-Orts
-        // (Restore eines Saves ohne Stempel), gilt der Ring als gebaut.
-        for (const e of st.architectures || []) {
-            if (!e || !e.position) continue;
-            const d2 = (e.position.x - M.x) ** 2 + (e.position.z - M.z) ** 2;
-            if (d2 <= 20 * 20 && namen.includes(e.type)) {
-                this._genesisRingFertig = true;
-                wm.genesisPortalRing = true;
-                return;
-            }
+            const id = b && b.builtIn && b.role === "portal" && b.portalMeta ? idVon.get(b.portalMeta.world) : null;
+            if (id) typen.set(id, n);
         }
-        const R = AnazhRealm.GENESIS_PLATZ.ringR; // der Kreis der Tore auf dem Genesis-Platz (seine Lichtung trägt ihn)
-        let gebaut = 0;
-        for (let i = 0; i < namen.length; i++) {
-            const a = (i / namen.length) * 2 * Math.PI;
-            const x = M.x + Math.cos(a) * R;
-            const z = M.z + Math.sin(a) * R;
-            const y = this.getTerrainHeightAt(x, z);
-            if (!Number.isFinite(y)) return; // Terrain reift noch — nächster Tick
-            // DER RING BLICKT ZUR MITTE (w4-genesis-tore): die Öffnung jedes Tors (seine Vorlagen-+z, die Membran) steht zum
-            // Genesis-Ort — wer ankommt, sieht jedes Tor von vorn und geht radial hindurch, zur Vorschau dahinter
-            // (`_portalVorschauOrt`). Bis hier standen alle zehn mit Gier 0: das Tor im Ankunftsblick (−x) zeigte nur die
-            // Tiefe seiner Pfeiler, die Nachbarn standen 54° schräg.
-            const gier = Math.atan2(-Math.cos(a), -Math.sin(a));
-            const entry = this.spawnArchitecture(
-                namen[i],
-                { x, y, z },
-                { seed: ((i + 1) * 7919) >>> 0, rotationY: gier }
-            );
-            if (entry) gebaut++;
-        }
-        if (gebaut > 0) {
-            wm.genesisPortalRing = true;
-            this._genesisRingFertig = true;
-            this.log(`Genesis-Ring: ${gebaut} Kern-Portale im Kreis um die Plattform.`, "INFO");
-        }
+        this._genesisTorTafel = { bps, typen };
+        return typen;
     }
-    // DER WUNSCH-ORT DER VORSCHAU vor einem Tor des Genesis-Rings: ~8 m radial nach außen, vom Genesis-Ort aus gesehen (der
-    // Ring steht um ihn); `blick` ist die Richtung vom Ring hinaus (sin, cos). Wo ein Wagen dann steht, entscheidet das
-    // Platz-Gesetz (`_fahrPlatzSuche`). Leser: `_ensurePortalPreview` und die Fahr-Linse (gate:fahr-leben P: an jedem Tor).
-    // → { x, y, z, blick } oder null (kein Boden).
+    _genesisWelten() {
+        return [...this._genesisTorTypen().keys()];
+    }
+    // DER ORT DER VORSCHAU hinter einem Tor des Genesis-Orts: die Zeile `vorschau` seines Tors im Plan (auf dem Weg hinter ihm),
+    // `blick` von der Mitte hinaus — wo ein Wagen dann steht, entscheidet das Platz-Gesetz (`_fahrPlatzSuche`). Leser:
+    // `_ensurePortalPreview` und die Fahr-Linse (gate:fahr-leben P: an jedem Tor). → { x, y, z, blick } oder null (kein Plan,
+    // kein Tor mit Vorschau, kein Boden). Bis zum Plan stand die Vorschau 8 m radial hinter einem Tor des Rings.
     _portalVorschauOrt(portal) {
-        const M = this._genesisMitte();
-        const px = portal.position.x || 0;
-        const pz = portal.position.z || 0;
-        const len = Math.hypot(px - M.x, pz - M.z) || 1;
-        const ox = px + ((px - M.x) / len) * 8;
-        const oz = pz + ((pz - M.z) / len) * 8;
-        const y = this.getTerrainHeightAt(ox, oz);
+        const P = this._genesisPlan;
+        if (!P || !portal) return null;
+        let welt = null;
+        for (const [w, n] of this._genesisTorTypen()) if (n === portal.type) welt = w;
+        const t = welt ? P.tore.find((q) => q.welt === welt && q.vorschau) : null;
+        if (!t) return null;
+        const x = P.ort.x + t.vorschau.x;
+        const z = P.ort.z + t.vorschau.z;
+        const y = this.getTerrainHeightAt(x, z);
         if (!Number.isFinite(y)) return null;
-        return { x: ox, y: y + 0.5, z: oz, blick: Math.atan2(px - M.x, pz - M.z) };
+        return { x, y: y + 0.5, z, blick: t.vorschau.blick };
     }
 
-    // PORTAL-PREVIEW: EIN Preview je Studio-Tor (~8 m radial vor welt_<worldKey>), sichtbar vorm iframe.
+    // PORTAL-PREVIEW: EIN Preview je Studio-Tor (am Ort seiner Zeile im Plan, `_portalVorschauOrt`), sichtbar vorm iframe.
     // Doppelt idempotent (worldMeta.portalPreview<Key> + Existenz-Probe auf id); Foundry kalt → Skip + EIN
     // Await-Book je worldKey, nächster Tick retry. Typen: fachwerk→haus_alemannisch, garage→fahrzeug_gt,
     // schmiede→esse, portale→tor_drachentor (spawnArchitecture silent/autonomous).
@@ -2357,48 +2310,27 @@ class AnazhRealm_siedlung_ort {
         if (entry) {
             wm[metaKey] = true;
             fertig[worldKey] = true;
-            this.log(`Portal-Preview ${worldKey}: ${type} ~8 m vor ${portalType}.`, "INFO");
+            this.log(`Portal-Preview ${worldKey}: ${type} hinter ${portalType}.`, "INFO");
         } else if (absage === "platz") fertig[worldKey] = true;
     }
 
-    // Approach-Prefetch: nähert sich der Spieler einem Genesis-Tor (~22 m), Previews über
-    // `_ensurePortalPreview` schärfen und bei kalter Foundry EIN Await-Book feuern.
-    // koerperstudio/terrain/klang/tetrapoda haben keinen Preview-Typ.
-    _portalApproachPrefetch(playerPos) {
-        if (!playerPos) return;
-        const rows = [
-            ["fachwerk", "haus_alemannisch", "portal-preview-fachwerk"],
-            ["garage", "fahrzeug_gt", "portal-preview-garage"],
-            ["schmiede", "esse", "portal-preview-schmiede"],
-            ["portale", "tor_drachentor", "portal-preview-portale"],
-        ];
-        const arches = (this.state && this.state.architectures) || [];
-        const R2 = 22 * 22;
-        let nearAny = false;
-        for (let i = 0; i < rows.length; i++) {
-            const worldKey = rows[i][0];
-            const type = rows[i][1];
-            const id = rows[i][2];
-            const portalType = "welt_" + worldKey;
-            let portal = null;
-            for (let j = 0; j < arches.length; j++) {
-                const e = arches[j];
-                if (e && e.type === portalType && e.position) {
-                    portal = e;
-                    break;
-                }
-            }
-            if (!portal) continue;
-            const dx = (portal.position.x || 0) - playerPos.x;
-            const dz = (portal.position.z || 0) - playerPos.z;
-            if (dx * dx + dz * dz > R2) continue;
-            nearAny = true;
-            this._ensurePortalPreview(worldKey, type, id);
+    // DIE VORSCHAUEN DES GENESIS-ORTS (Pflicht F): je Tor mit der Zeile `vorschau` im Plan steht sein Bauplan hinter ihm, erst
+    // wenn der Spieler ≤ `nahM` vor dem Tor steht (`_ensurePortalPreview`); bei kalter Foundry EIN Await-Book. Bis zum Plan trug
+    // der Wirt die vier als eigene Tafel und stellte sie ab 22 m.
+    _genesisVorschau(plan, playerPos) {
+        let nah = false;
+        for (const t of plan.tore) {
+            const v = t.vorschau;
+            if (!v) continue;
+            const dx = plan.ort.x + t.x - playerPos.x;
+            const dz = plan.ort.z + t.z - playerPos.z;
+            if (dx * dx + dz * dz > v.nahM * v.nahM) continue;
+            nah = true;
+            this._ensurePortalPreview(t.welt, v.typ, "portal-preview-" + t.welt);
         }
-        if (!nearAny) return;
+        if (!nah) return;
         const f = this._foundry;
-        if (f && f.ready) return;
-        if (this._portalApproachAwaiting) return;
+        if ((f && f.ready) || this._portalApproachAwaiting) return;
         this._portalApproachAwaiting = true;
         Promise.resolve(this._foundryAwaitBook(8000))
             .then(() => {
@@ -2410,11 +2342,16 @@ class AnazhRealm_siedlung_ort {
             });
     }
 
+    // DAS START-VIERTEL (Pflicht F): EINMAL je Welt ein Start-Dorf am Wunsch des Plans (`viertel`: hinter dem Lyra-Tor, außerhalb
+    // des Ankunftskegels) — der Wunsch selbst, sonst der erste Ort der Ringe um ihn (`startRingeM`, 8 Richtungen, die Phase aus
+    // der Saat „:startdorf"), den `_autoSettlementSiteOk` trägt (die Spawn-Klar-Wand offen); die Ort-Wahl rückt den Plan des Dorfs
+    // danach an den Ort, der jedes Haus trägt. Ohne Plan kein Start-Dorf (es wartet auf den Ort). Bis zum Plan suchte sie Radien
+    // 110–170 m um die Mitte, das Dorf fiel in jeden Blick der Ankunft.
     _autoSettlementStartInfo() {
-        const A = AnazhRealm.AUTO_SETTLEMENT; // Wirt-Streaming (startRadiusM)
         // ZENSUS 17.07. — die Dorf-Größe ist fachwerk-Gesetz (SIEDLUNG.nHMin/nHSpan); kaltes Buch → kein Start-Dorf.
         const S = AnazhRealm._siedlungGesetz();
-        if (!S) return null;
+        const P = this._genesisPlan;
+        if (!S || !P) return null;
         const wm = this.state.worldMeta || {};
         const s = `${wm.seed || "anazh-realm-seed"}:startdorf`;
         let h = 2166136261 >>> 0;
@@ -2423,22 +2360,22 @@ class AnazhRealm_siedlung_ort {
             h = Math.imul(h, 16777619) >>> 0;
         }
         const phase = (((h >>> 8) & 0xff) / 255) * 2 * Math.PI;
-        const M = this._genesisMitte(); // um den Genesis-Ort, wo der Spieler ankommt
-        for (let ri = 0; ri < A.startRadiusM.length; ri++) {
+        const W = { x: P.ort.x + P.viertel.x, z: P.ort.z + P.viertel.z };
+        const orte = [W];
+        for (const r of AnazhRealm.AUTO_SETTLEMENT.startRingeM)
             for (let i = 0; i < 8; i++) {
                 const a = phase + (i / 8) * 2 * Math.PI;
-                const x = M.x + Math.cos(a) * A.startRadiusM[ri];
-                const z = M.z + Math.sin(a) * A.startRadiusM[ri];
-                if (!this._autoSettlementSiteOk(x, z, true)) continue;
+                orte.push({ x: W.x + Math.cos(a) * r, z: W.z + Math.sin(a) * r });
+            }
+        for (const o of orte)
+            if (this._autoSettlementSiteOk(o.x, o.z, true))
                 return {
                     key: "start",
                     seed: h >>> 0 || 1,
                     nH: AnazhRealm.Gesetz("fachwerk:siedlungsGroesse")(S, h, 0),
-                    x,
-                    z,
+                    x: o.x,
+                    z: o.z,
                 };
-            }
-        }
         return null;
     }
     // Auto-Dörfer laufen NUR, wenn das LIVE-Buch ein Rezept trägt, dessen Place-Auflösung über
@@ -2801,13 +2738,231 @@ class AnazhRealm_siedlung_ort {
         this._genesisOrtT = currentTime; // Instanz-Feld (die _editSaveTimer-Klasse: nicht serialisiert)
         this._genesisOrt(pm.position);
     }
-    // DER GENESIS-ORT, EIN Glied: was der Ort je Takt setzt — der Spiel-Takt (`_tickGenesisOrt`) und das Instrument
-    // (haushalt.json genesis `ortTakt`, werkbank `__ortSchritt`) rufen dasselbe Glied, beide Seiten eines Platz-ABAB tragen
-    // denselben Namen. Heute der Ring der Kern-Portale, dann die Vorschauen bei Tor-Nähe (die Reihenfolge trägt: die Vorschau
-    // sucht das Tor, das der Ring stellt).
+    // DER GENESIS-ORT, EIN Glied (Pflicht F, der Prüfplatz): was der Ort je Takt setzt — der Spiel-Takt (`_tickGenesisOrt`) und
+    // das Instrument (haushalt.json genesis `ortTakt`, werkbank `__ortSchritt`) rufen dasselbe Glied. Der Wirt LIEST nur den Plan
+    // der Welt (`_genesisPlan`, aus dem Faden): je Element EIN Eintrag mit eigener id, idempotent über die Existenz-Probe, in der
+    // Folge der Ankunft (`_genesisWerke`), höchstens `GENESIS_JE_TAKT` neue Einträge je Takt (Lehre 25); die Vorschauen erst vor
+    // ihrem Tor (`_genesisVorschau`). Stehen alle Tore, trägt `worldMeta.genesisOrt.steht` es (die Prüfbühne der Werkbank wartet
+    // darauf). DIE ABSAGE DER WURZEL ist laut und gezählt: ein Element, dessen Bau die Wurzel absagt (ihr Grund, `SETZ_GRUND`: die
+    // Tat des Spielers, das Wasser, ein unbekannter Bauplan), steht nicht, zählt nie als Tor und meldet sich beim Namen über den
+    // EINEN Melder; `_genesisAbsagen` (id → Grund) ist der Zähler. Bis hierher buchte der Wirt eine Absage still als fertig und
+    // als stehendes Tor und meldete danach „die 10 Tore stehen". Bis zum Plan stellte der Wirt einen Ring der Kern-Portale aus der
+    // Reihenfolge der Baupläne (R 11, Sehne 6,9 m) um eine Stein-Scheibe und die Vorschauen aus einer eigenen Tafel.
     _genesisOrt(playerPos) {
-        this._genesisPortalRing(playerPos);
-        this._portalApproachPrefetch(playerPos);
+        const plan = this._genesisPlan;
+        if (!plan || !playerPos) return;
+        // DER BELAG: jede Fläche des Plans mit ihrem Belag (fachwerk `zonen` · `belag`: das Kopfstein des Stein-Gesetzes, der Rasen
+        // des Gras-Gesetzes, die getretene Erde) geht EINMAL in die EINE Wege-Karte (`_stlWegeBuild`, Schlüssel „genesis") — der
+        // Boden zeichnet sie, die Wiese, die Streu und die Natur-Wand lesen dieselben Bytes. Bis hierher baute der Wirt den Kern als
+        // 2-cm-Straße und die Terrasse aus Gesetz-Konstanten, jede Fläche als Erde, die Rasen-Keile ohne Leser: der Platz lag braun.
+        this._stlWegeBuild({ zonen: plan.zonen }, plan.ort, "genesis");
+        this._genesisVorschau(plan, playerPos);
+        const fertig = this._genesisWerkeFertig || (this._genesisWerkeFertig = new Set());
+        const abgesagt = this._genesisAbsagen || (this._genesisAbsagen = new Map());
+        let budget = AnazhRealm.GENESIS_JE_TAKT;
+        let tore = 0;
+        let toreDa = 0;
+        for (const w of this._genesisWerke(plan, playerPos)) {
+            if (w.art === "tor") tore++;
+            if (abgesagt.has(w.id)) continue;
+            if (fertig.has(w.id)) {
+                if (w.art === "tor") toreDa++;
+                continue;
+            }
+            if (budget <= 0) break;
+            const z = this._genesisWerkSetzen(w, plan);
+            if (z === "warte") continue;
+            if (z !== "steht" && z !== "gesetzt") {
+                abgesagt.set(w.id, z);
+                this._bruchMelden(
+                    `GENESIS-ORT: ${w.id} (${w.typ}) steht nicht — die Wurzel sagte ab: ${z} (${AnazhRealm.SETZ_GRUND[z] || AnazhRealm.SETZ_GRUND.unbenannt}); ${abgesagt.size} Elemente des Plans abgesagt`
+                );
+                continue;
+            }
+            fertig.add(w.id);
+            if (w.art === "tor") toreDa++;
+            if (z === "gesetzt") budget--;
+        }
+        const g = this.state.worldMeta && this.state.worldMeta.genesisOrt;
+        if (g && !g.steht && tore === plan.tore.length && toreDa === tore) {
+            g.steht = true;
+            this.log(`GENESIS-ORT: die ${tore} Tore stehen auf ihren Slots.`, "INFO");
+        }
+    }
+    // DIE ELEMENTE DES PLANS, die jetzt fällig sind, in der Folge der Ankunft (die Lade-Reihenfolge des Prüfplatzes): S1 (vor
+    // der Kontrolle, ≤ `residentM` um die Mitte) die Tore, die Kern-Werke (die Laternen von Kern und Wache, die Bänke — alle
+    // außerhalb des Ankunftskegels) und die Allee; S2 nach der Kontrolle (`_weltbildDa`) der Brunnen, die Laternen von Terrasse
+    // und Wiese, der Fels, der Arten-Saum und das Bootshaus; die Bühnen fern (Zoo, Arena, Spielplatz) erst, wenn der Spieler ≤
+    // `residentM` vor ihrem Rand steht. Wo die Wildnis nicht trägt (die Prüfbühne, `_wildnisTraegt`), stehen nur Tore und
+    // Kern-Werke. Je Element { id, art, phase, typ, x, z, gier, seed, dy (über dem Grund: spawnArchitecture setzt den Bau 0,5 m
+    // unter den gereichten Ort) }; die Liste je Plan gemerkt (`_genesisWerkListe`).
+    _genesisWerke(plan, p) {
+        const L =
+            this._genesisWerkListe && this._genesisWerkListe.plan === plan
+                ? this._genesisWerkListe
+                : this._genesisWerkListeBauen(plan);
+        const R = globalThis.__fachwerkCore.GENESIS_ORT.regel.residentM;
+        const o = plan.ort;
+        const nah = (p.x - o.x) ** 2 + (p.z - o.z) ** 2 <= R * R;
+        const kontrolle = !!this.state._weltbildDa;
+        return L.werke.filter((w) => {
+            if (w.phase === "S1") return nah;
+            if (w.phase === "S2") return nah && kontrolle;
+            const q = L.buehnen[w.phase];
+            return Math.hypot(p.x - q.x, p.z - q.z) - q.r <= R;
+        });
+    }
+    _genesisWerkListeBauen(plan) {
+        const FC = globalThis.__fachwerkCore;
+        const o = plan.ort;
+        const typen = this._genesisTorTypen();
+        const werke = [];
+        const w = (art, phase, typ, q, n, mehr) =>
+            werke.push(
+                Object.assign(
+                    {
+                        id: `genesis:${art}:${n}`,
+                        art,
+                        phase,
+                        typ,
+                        x: o.x + q.x,
+                        z: o.z + q.z,
+                        gier: q.gier || 0,
+                        seed: q.seed,
+                        dy: 0.5,
+                    },
+                    mehr || null
+                )
+            );
+        for (const t of plan.tore) {
+            const typ = typen.get(t.welt);
+            if (!typ) throw new Error(`GENESIS-ORT: die Welt ${t.welt} des Slots ${t.k} trägt keinen Portal-Bauplan`);
+            w("tor", "S1", typ, t, t.k, { dy: 0 });
+        }
+        const PHASE = { kern: "S1", wache: "S1", terrasse: "S2", wiese: "S2", zoo: "zoo" };
+        plan.ausstattung.forEach((q, i) => {
+            if (q.art === "laterne") w("laterne", PHASE[q.rolle], "laterne_dorf", q, i);
+            else if (q.art === "bank") w("bank", "S1", "bank_sitzbank", q, i);
+            else if (q.art === "brunnen") w("brunnen", "S2", "brunnen_dorf", q, i);
+        });
+        // die Bäume je Zeile in der Art ihres Gesetzbuchs (phyto `forestLabToHost`): die Allee steht im ersten Bild (S0, als Karte)
+        plan.baeume.forEach((b, i) => {
+            const gier = ((b.seed >>> 3) % 628) / 100;
+            const typ = globalThis.__phytoCore.forestLabToHost(b.art);
+            w("baum", b.zeile === "allee" ? "S1" : "S2", typ, Object.assign({}, b, { gier }), i, { dy: 0 });
+        });
+        plan.haeuser.forEach((h, i) => w("haus", "S2", "haus_" + h.kultur, Object.assign({}, h, { gier: h.phi }), i));
+        plan.formationen.forEach((f, i) => w("fels", "S2", "felsbogen", f, i, { dy: 0 }));
+        // DIE BÜHNEN DER BREITE: der Spielplatz mit den Werken, die sein Gesetzbuch für ihn trägt (fachwerk WERKE `siteTag`
+        // spielplatz, der Plan nennt sie: `spielplatzGeraete`; Bauplan `<kind>_<art>`), und den Bänken der Eltern. Die Arena bleibt
+        // Fläche, bis ein Gesetzbuch ihren Hof trägt — nie eine Ersatz-Box.
+        const SP = plan.spielplatz;
+        SP.geraete.forEach((g, i) => w("geraet", "spielplatz", FC.WERKE[g.art].kind + "_" + g.art, g, i));
+        SP.baenke.forEach((b, i) => w("spielbank", "spielplatz", "bank_sitzbank", b, i));
+        const A = plan.arena;
+        const Z = FC.GENESIS_ORT.zoo;
+        const zr = plan.gehege[0].rand;
+        const buehnen = {
+            zoo: { x: o.x + zr.cx, z: o.z + zr.cz - zr.ez - Z.gehege.z0, r: Z.flaecheR },
+            arena: { x: o.x + A.x, z: o.z + A.z, r: Math.hypot(A.ex, A.ez) },
+            spielplatz: { x: o.x + SP.x, z: o.z + SP.z, r: SP.r },
+        };
+        // auf der Prüfbühne (die Wildnis trägt nicht) nur Tore und Kern-Werke
+        const wildnis = this._wildnisTraegt(o.x, o.z);
+        const liste = wildnis
+            ? werke
+            : werke.filter((x) => x.art === "tor" || ((x.art === "laterne" || x.art === "bank") && x.phase === "S1"));
+        return (this._genesisWerkListe = { plan, werke: liste, buehnen, wildnis });
+    }
+    // EIN ELEMENT DES PLANS STEHT (der EINE Bau `spawnArchitecture`, mit seiner id und als Werk: es weicht keinem Bau und keiner
+    // Fläche des Plans, `_weichtDemBau`; eine Tat, die seinen Ort nahm, hält, `ausGesetz`): "steht" (die id ist da), "gesetzt",
+    // "warte" (der Bauplan kommt erst mit dem Buch, der Grund reift) oder der Grund, mit dem die Wurzel absagte (`SETZ_GRUND`). DER UMZUG EINER ÄLTEREN FORM
+    // (`_genesisUmzug`): vor dem ersten Tor fällt, was die ältere Form innerhalb des Ring-Wegs trug — ein Tor desselben Bauplans
+    // neben seinem Slot (das Tor des Plans steht auf dem Slot) und eine Vorschau samt ihrem Stempel (sie steht neu, wenn der
+    // Spieler vor ihr Tor tritt).
+    _genesisWerkSetzen(w, plan) {
+        const st = this.state;
+        if ((st.architectures || []).some((e) => e && e.id === w.id)) return "steht";
+        if (!st.blueprints || !st.blueprints[w.typ]) return "warte";
+        const y = this.getTerrainHeightAt(w.x, w.z);
+        if (!Number.isFinite(y)) return "warte";
+        if (w.art === "tor") this._genesisUmzug(w, plan);
+        let absage = null;
+        const e = this.spawnArchitecture(
+            w.typ,
+            { x: w.x, y: y + w.dy, z: w.z },
+            {
+                id: w.id,
+                seed: w.seed,
+                rotationY: w.gier,
+                silent: true,
+                werk: true,
+                ausGesetz: true,
+                studioOv: w.ov,
+                absage: (g) => (absage = g),
+            }
+        );
+        if (e) return "gesetzt";
+        return absage === "buch" ? "warte" : absage || "unbenannt";
+    }
+    _genesisUmzug(w, plan) {
+        const o = plan.ort;
+        const R2 = globalThis.__fachwerkCore.GENESIS_ORT.ring.r1 ** 2;
+        const wm = this.state.worldMeta || {};
+        for (const e of (this.state.architectures || []).slice()) {
+            if (!e || !e.position || e.id === w.id) continue;
+            if ((e.position.x - o.x) ** 2 + (e.position.z - o.z) ** 2 > R2) continue;
+            const vorschau = typeof e.id === "string" && e.id.startsWith("portal-preview-");
+            if (e.type !== w.typ && !vorschau) continue;
+            this.removeArchitecture(e, { still: true });
+            if (vorschau) {
+                const welt = e.id.slice("portal-preview-".length);
+                delete wm["portalPreview" + welt.charAt(0).toUpperCase() + welt.slice(1)];
+                if (this._portalPreviewFertig) delete this._portalPreviewFertig[welt];
+            }
+            this._genesisUmgezogen = (this._genesisUmgezogen | 0) + 1;
+            this.log(
+                `GENESIS-ORT: ${e.type} der älteren Form fällt am Ring (Umzug ${this._genesisUmgezogen}).`,
+                "INFO"
+            );
+        }
+    }
+    // DIE FLÄCHE DES GENESIS-ORTS an (x, z) (Pflicht F): der Name der erklärten Fläche des Plans, die dort gilt (fachwerk
+    // `genesisZoneTraegt` in der Folge der Zonen — nie der Gürtel, nie ein anderer Ort: dort wirft das Feld), mit `reich` > 0 auch
+    // der Freiraum samt Reichweite (über dem Rund der Tore steht keine Krone, in ihn reicht kein Haus) — oder null. Je Zelle des
+    // Zonen-Gitters fragt sie nur die Zonen, deren Hülle dort liegt (Lehre 25: die Streu fragt je Zelle). Leser: die Natur-Wand
+    // (`_imGrundriss`) und die Bau-Wand (`_bauFrei`). Bis zum Plan war es die Lichtung einer Stein-Scheibe samt Ring.
+    _genesisFlaeche(x, z, reich = 0) {
+        const P = this._genesisPlan;
+        if (!P) return null;
+        const FC = globalThis.__fachwerkCore;
+        const lx = x - P.ort.x;
+        const lz = z - P.ort.z;
+        if (reich > 0 && lx * lx + lz * lz < (FC.GENESIS_ORT.freiraum.r + reich) ** 2) return "freiraum";
+        const gi = this._genesisZonenGitter(P);
+        const l = gi.zellen.get(AnazhRealm._grundrissSchluessel(Math.floor(lx / gi.m), Math.floor(lz / gi.m)));
+        if (!l) return null;
+        for (let i = l.length - 1; i >= 0; i--) {
+            const q = P.zonen[l[i]];
+            if (FC.genesisZoneTraegt(q, lx, lz)) return q.art === "feld" || q.art === "ort" ? null : q.name;
+        }
+        return null;
+    }
+    _genesisZonenGitter(P) {
+        if (this._genesisGitter && this._genesisGitter.plan === P) return this._genesisGitter;
+        const m = AnazhRealm.GRUNDRISS_ZELLE;
+        const zellen = new Map();
+        P.zonen.forEach((q, i) => {
+            const h = q.huelle;
+            for (let gx = Math.floor(h[0] / m); gx <= Math.floor(h[2] / m); gx++)
+                for (let gz = Math.floor(h[1] / m); gz <= Math.floor(h[3] / m); gz++) {
+                    const k = AnazhRealm._grundrissSchluessel(gx, gz);
+                    const l = zellen.get(k);
+                    if (l) l.push(i);
+                    else zellen.set(k, [i]);
+                }
+        });
+        return (this._genesisGitter = { plan: P, m, zellen });
     }
 
     // DER DORF-TAKT LEBT (Gate-Treue): headless ruht der Auto-Zug, der Hook `__anazhAutoSettlement` führt — EIN Urteil für
@@ -2827,7 +2982,7 @@ class AnazhRealm_siedlung_ort {
         if ((cells && cells.start) || this._autoSettlementStartHopeless) return false;
         const gM = this._genesisMitte();
         const n = AnazhRealm.AUTO_SETTLEMENT.nearM;
-        return (playerPos.x - gM.x) ** 2 + (playerPos.z - gM.z) ** 2 <= n * n;
+        return !!gM && (playerPos.x - gM.x) ** 2 + (playerPos.z - gM.z) ** 2 <= n * n;
     }
 
     // DAS START-DORF BESTELLEN (EIN Weg für das Buch und den Takt, B5): ist es fällig, geht sein Export hinaus — nur nahe des
@@ -3585,7 +3740,7 @@ AnazhRealm.AUTO_SETTLEMENT = Object.freeze({
     vorlaufM: 160,
     spawnClearM: 320,
     siteProbeR: Object.freeze([0.15, 0.3]),
-    startRadiusM: Object.freeze([110, 130, 150, 170]),
+    startRingeM: Object.freeze([24, 48, 72]),
     perTick: 2,
     // so viele Häuser des Vorrats bestellen ihre Studio-Stufen vor dem Erwachen (`_dorfVorbacken`)
     vorbackHaeuser: 4,
@@ -3633,11 +3788,9 @@ AnazhRealm._fahrPlatzGesetz = function () {
     }
     return AnazhRealm._kernPflichtBruch("vehicle:FAHR.platz/fahrPlatz");
 };
-// DER GENESIS-PLATZ (K52): die Lichtung der Start-Plattform trägt den Ring der Kern-Portale — `ringR` ist der Kreis der Tore
-// (`_genesisPortalRing`), `rand` die Tiefe eines Tors über ihn hinaus; über dem Platz steht keine Krone, auf ihm kein Busch und
-// kein Fels (`_grundrissVon` → `_imGrundriss`). Bis K52 trug die Lichtung nur die Scheibe (6,5 m), der Ring stand 11 m weit
-// außerhalb: ein Kristall stand 1,2 m vor dem Tor des Terrain-Studios, der Wald wuchs bis an die Tore.
-AnazhRealm.GENESIS_PLATZ = Object.freeze({ ringR: 11, rand: 4 });
+// DER GENESIS-ORT IM TAKT (Pflicht F, `_genesisOrt`): so viele neue Elemente des Plans je Takt (1×/s) — die zehn Tore und
+// zwei Kern-Werke stehen im ersten (Lehre 25: kein Takt baut den ganzen Platz).
+AnazhRealm.GENESIS_JE_TAKT = 12;
 // DAS GEDÄCHTNIS DER GESTALT DES ORTS (K51-5, `_ortGestaltSame`): Eimer in Metern und die Reichweite eines Grundrisses — ein
 // Baum fragt die Natur-Wand für Nachbarn bis ±4 Wald-Zellen (5 × 12 m bis zur fernsten Ecke) samt deren Krone (≤ 36 m,
 // `KRONE_MAX_M`: die größte Krone eines Darts; auch die Reichweite, in der ein Erdbau Darts fällt, `_forestDartsFallen`)

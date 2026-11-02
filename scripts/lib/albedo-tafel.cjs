@@ -854,7 +854,7 @@ function laborLaubGegenlicht(o) {
                     img.data[q + 1] = da ? enc(px[i + 1]) : 0;
                     img.data[q + 2] = da ? enc(px[i + 2]) : 255; // das Alpha setzt `__png` deckend (welt-boot)
                 }
-            return window.__png(img.data, W, H);
+            return __png(img.data, W, H);
         };
         return {
             bilder: o.bilder ? { gegen: png(ge), auf: png(au) } : undefined,

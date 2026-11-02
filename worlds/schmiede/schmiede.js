@@ -113,54 +113,10 @@ function caliper(a,b,hex,text){const g=new THREE.Group();
 // GESCHMIEDETES BLATT (bitField/forgeBit/leafFlange) + BOGEN (buildBogen) — leben im Kern (__schmiedeCore).
 
 // ════════════════════════════════════════════════════════════════════
-// PRÜFSTAND — Geometrie: Fechtpuppe (Pell), Zielscheibe, Pfeil
+// PRÜFSTAND — die Gestalten der Arena (Pell, Ziele, Geräte, Hof) leben im Kern (__schmiedeCore, w4-arena-welt: ARENA_ARTEN ·
+// buildInstance), der Pfeil ebenso; die Shell trägt nur die Stoffe ihrer Lehr-Ebenen und Treffer-Male (matCol).
 // ════════════════════════════════════════════════════════════════════
 function matCol(hex,rough,metal){const m=new THREE.MeshStandardMaterial({color:hex,roughness:rough!=null?rough:0.8,metalness:metal||0});if(m.color)m.color._metal=metal||0;return m;}
-// — Fechtpuppe: Pfosten + strohgestopfter Rumpf + Lederkopf + Stummelarme. Trefferzonen in userData. —
-function buildDummy(){const G=new THREE.Group();
-  const stroh=matCol(0xb89a52,0.95,0), leder=matCol(0x6e4a2c,0.7,0), holz=matCol(0x4a3520,0.85,0), seil=matCol(0x8a7240,0.95,0);
-  const postH=1.65, baseY=0;
-  // Pfosten (Rückgrat) + Kreuzfuß
-  const postV=new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.05,postH,12),holz); postV.position.set(0,baseY+postH/2,0); postV.castShadow=true; G.add(postV);
-  for(let i=0;i<4;i++){const a=i/4*Math.PI*2;const foot=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.025,0.5,8),holz);foot.position.set(Math.cos(a)*0.16,baseY+0.04,Math.sin(a)*0.16);foot.rotation.z=Math.cos(a)*0.5;foot.rotation.x=-Math.sin(a)*0.5;foot.castShadow=true;G.add(foot);}
-  // Rumpf (Stroh-Tonne) — Brust oben, Bauch unten
-  const torsoY=baseY+1.12, torsoH=0.62, torsoR=0.17;
-  const torso=new THREE.Mesh(new THREE.CylinderGeometry(torsoR*0.92,torsoR,torsoH,16),stroh); torso.position.set(0,torsoY,0); torso.castShadow=torso.receiveShadow=true; G.add(torso);
-  // Seil-Bindungen
-  for(const yy of [torsoY+0.22,torsoY+0.02,torsoY-0.20]){const ring=new THREE.Mesh(new THREE.TorusGeometry(torsoR*1.01,0.012,7,18),seil);ring.rotation.x=Math.PI/2;ring.position.set(0,yy,0);G.add(ring);}
-  // Schultern + Stummelarme (nach −Z und +Z, dem Fechter zugewandt seitlich)
-  const shoulderY=torsoY+0.26;
-  for(const dz of [1,-1]){const arm=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.06,0.34,10),stroh);arm.position.set(0,shoulderY-0.05,dz*0.22);arm.rotation.x=dz*0.5;arm.castShadow=true;G.add(arm);
-    const aring=new THREE.Mesh(new THREE.TorusGeometry(0.052,0.01,6,12),seil);aring.rotation.y=Math.PI/2;aring.position.set(0,shoulderY-0.12,dz*0.30);G.add(aring);}
-  // Hals + Kopf (Lederball)
-  const neck=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.07,0.10,10),leder);neck.position.set(0,torsoY+torsoH/2+0.05,0);G.add(neck);
-  const headY=torsoY+torsoH/2+0.20;
-  const head=new THREE.Mesh(new THREE.SphereGeometry(0.135,16,14),leder);head.position.set(0,headY,0);head.scale.set(1,1.12,1);head.castShadow=true;G.add(head);
-  // Naht über den Kopf
-  const seam=new THREE.Mesh(new THREE.TorusGeometry(0.135,0.006,6,20),matCol(0x4a3018,0.8,0));seam.position.set(0,headY,0);seam.rotation.y=Math.PI/2;head.add(new THREE.Mesh(new THREE.TorusGeometry(0.118,0.005,6,18),matCol(0x4a3018,0.8,0)));
-  // Trefferzonen (lokale Koordinaten; x=0 Vorderseite, Treffer kommt aus −X)
-  G.userData.zones=[
-    {name:'Kopf',   y:headY,            r:0.15, dmgMul:2.4, kind:'head'},
-    {name:'Brust',  y:torsoY+0.20,      r:torsoR+0.02, dmgMul:1.5, kind:'torso'},
-    {name:'Bauch',  y:torsoY-0.18,      r:torsoR+0.02, dmgMul:1.2, kind:'torso'},
-    {name:'Arm',    y:shoulderY-0.08,   r:0.09, dmgMul:0.7, kind:'limb', zOff:0.26},
-    {name:'Bein',   y:baseY+0.6,        r:0.06, dmgMul:0.8, kind:'limb'},
-  ];
-  G.userData.reachX=-(torsoR+0.05);   // wo die Vorderfläche steht (−X Seite)
-  return G;}
-// — Zielscheibe: Strohballen + Papierscheibe mit Wettkampf-Ringen (Gold/Rot/Blau/Schwarz/Weiß) auf einem Bock —
-function buildZielscheibe(){const G=new THREE.Group();
-  const R=0.40, rings=[[1.0,0xfff15a],[0.8,0xfff15a],[0.6,0xf24b4b],[0.45,0xf24b4b],[0.32,0x3aa0e0],[0.20,0x3aa0e0],[0.10,0x222222]]; // 10er Gold innen
-  // Strohballen hinter der Scheibe
-  const butt=new THREE.Mesh(new THREE.CylinderGeometry(R*1.06,R*1.06,0.18,28),matCol(0xc6a85a,0.98,0));butt.rotation.z=Math.PI/2;butt.position.set(0.10,0,0);butt.castShadow=butt.receiveShadow=true;G.add(butt);
-  // Ringe als dünne Zylinder-Scheiben, gestapelt nach −X (zum Schützen)
-  const face=new THREE.Mesh(new THREE.CylinderGeometry(R,R,0.004,40),matCol(0xf4f0e8,0.9,0));face.rotation.z=Math.PI/2;face.position.set(0.0,0,0);G.add(face);
-  rings.forEach((rg,i)=>{const disc=new THREE.Mesh(new THREE.CylinderGeometry(R*rg[0],R*rg[0],0.004,40),matCol(rg[1],0.85,0));disc.rotation.z=Math.PI/2;disc.position.set(-0.003-i*0.0006,0,0);G.add(disc);});
-  // Beine (Dreibock)
-  for(const dz of [-0.30,0.30]){const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.022,1.05,8),matCol(0x4a3520,0.85,0));leg.position.set(0.12,-0.38,dz);leg.rotation.x=dz>0?-0.26:0.26;leg.castShadow=true;G.add(leg);}
-  const backleg=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.022,1.10,8),matCol(0x4a3520,0.85,0));backleg.position.set(0.40,-0.40,0);backleg.rotation.z=-0.40;backleg.castShadow=true;G.add(backleg);
-  G.userData.R=R; G.userData.faceX=-0.006;
-  return G;}
 // — Pfeil: lebt im Kern (__schmiedeCore.buildPfeil, Welle LF 09.10.) — DIESELBE Gestalt fliegt in der Welt; die Albedo
 //   trägt der Vertex (FARB-GESETZ), der eigene Bau der Shell (matCol-Farben) fiel. —
 const buildPfeil=()=>SC.buildPfeil();
@@ -450,8 +406,8 @@ function triggerRing(){if(P.modus!=='klinge'||!gBladeMesh)return;const m=measure
 //             rechte Maus = Stich (Arm stößt vor). BOGEN: linke Maus = ans Auge heben, rechte = spannen, loslassen = Schuss.
 //   H = Hand. Pfeile stecken & sammeln sich. Klinge zieht Spuren.
 // ════════════════════════════════════════════════════════════════════
-const ARENA={ dummyPos:new THREE.Vector3(2.4,0,0), targetPos:new THREE.Vector3(17,1.42,0),
-  mArrow:0.050, g:9.81, eHuman:78, sens:0.0022, eyeY:1.62, walk:2.8, swGain:0.011 };
+// die Bogen-Physik (Masse des Pfeils) und die Schwere lesen den Kern (SC.ARENA.bogen · SC.GERAET_GESETZ) — ein Wert, eine Stelle
+const ARENA={ mArrow:SC.ARENA.bogen.mArrow, g:SC.GERAET_GESETZ.schwere, sens:0.0022, eyeY:1.62, walk:2.8 };
 // Anthropometrie im Kamera-Raum (Auge=0, vorne=−Z, rechts=+X, hoch=+Y) — durchschnittlicher Erwachsener
 const ANTHRO={ shoulder:[0.19,-0.16,-0.02], elbow:[0.21,-0.42,-0.18], grip:[0.10,-0.40,-0.48] };
 const arena={ active:false, kind:null, group:null, vm:null, arm:null, vmWeapon:null, dummy:null, target:null,
@@ -464,26 +420,17 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), lerp=(a,b,t)=>a+(b-a)*t;
 const _AX=new THREE.Vector3(1,0,0), _Y=new THREE.Vector3(0,1,0), _X=new THREE.Vector3(1,0,0), _RC=new THREE.Raycaster();
 const V=(a)=>new THREE.Vector3(a[0],a[1],a[2]);
 
+// DER BODEN DES HOFS: Sand (der Belag der Welt, `belagO` sand) als Bühne des Labors — die Tönung aus dem Rausch des Kerns
+// (hnoise), nie gewürfelt; die Streu-Kosmetik (Steine und Büschel aus dem Würfel des Browsers) und die Hof-Ringe fielen.
 function buildGround(){const g=new THREE.Group();
-  // Erd-Scheibe mit Vertex-Variation (Nebel verdeckt die Ränder)
   const geo=new THREE.PlaneGeometry(72,72,64,64),pa=geo.attributes.position,col=[];
-  const cD=new THREE.Color(0x17130e),cM=new THREE.Color(0x2a241b),cL=new THREE.Color(0x3c3327);
+  const cD=new THREE.Color(0x30281a),cM=new THREE.Color(0x3e3424),cL=new THREE.Color(0x4c412e);   // der Stoff der Bühne liest das Hex linear (r128)
   for(let i=0;i<pa.count;i++){const x=pa.getX(i),y=pa.getY(i);
     const n=hnoise(x*0.21,0,y*0.21)*0.45+hnoise(x*0.055,0,y*0.055)*0.55,t=clamp(n*0.5+0.5,0,1);
     const c=t<0.5?cD.clone().lerp(cM,t*2):cM.clone().lerp(cL,(t-0.5)*2);col.push(c.r,c.g,c.b);}
   geo.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
   const disk=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.98,metalness:0}));
   disk.rotation.x=-Math.PI/2;disk.receiveShadow=true;g.add(disk);
-  // Übungshof-Ringe
-  for(let i=1;i<=6;i++){const r=new THREE.Mesh(new THREE.RingGeometry(i*2.5-0.025,i*2.5+0.025,56),matCol(0x393530,0.9,0));r.rotation.x=-Math.PI/2;r.position.y=0.006;g.add(r);}
-  // Streu-Kosmetik: Feldsteine + Grasbüschel
-  const sMat=[matCol(0x4a453d,0.95,0),matCol(0x3a352d,0.95,0),matCol(0x504a40,0.92,0)],gMat=matCol(0x36412a,0.95,0);
-  for(let i=0;i<82;i++){const a=Math.random()*6.283,rad=3+Math.random()*26,x=Math.cos(a)*rad,z=Math.sin(a)*rad;
-    if(Math.random()<0.5){const sR=0.04+Math.random()*0.11,st=new THREE.Mesh(new THREE.IcosahedronGeometry(sR,0),sMat[i%3]);
-      st.position.set(x,sR*0.5,z);st.scale.set(1,0.55+Math.random()*0.35,1);st.rotation.set(Math.random(),Math.random()*6.28,Math.random());st.castShadow=true;st.receiveShadow=true;g.add(st);}
-    else{const tuft=new THREE.Group(),nb=3+(Math.random()*3|0);
-      for(let k=0;k<nb;k++){const h=0.06+Math.random()*0.11,bl=new THREE.Mesh(new THREE.ConeGeometry(0.012,h,4),gMat);bl.position.set((Math.random()-0.5)*0.07,h*0.5,(Math.random()-0.5)*0.07);bl.rotation.z=(Math.random()-0.5)*0.55;tuft.add(bl);}
-      tuft.position.set(x,0,z);g.add(tuft);}}
   return g;}
 function buildArenaWeapon(){const g=new THREE.Group();const S=stations(P);
   if(!S.impact){g.add(loftBlade(P,S));g.add(buildGuard(P,S,currentTrad));g.add(buildGrip(P,S,currentTrad));g.add(buildPommel(P,S,currentTrad));}
@@ -574,386 +521,58 @@ function placeViewModel(dt){if(!arena.vm)return;const s=arena.right?1:-1;cam.upd
   }
 }
 
-// ═══════════ TRAININGSPLATZ — Tisch, Bambus, Range ═══════════
-// buildWeaponModel lebt im Kern (__schmiedeCore) — oben als SC-Alias verdrahtet (eine Quelle).
-function buildTable(pos){const g=new THREE.Group();g.position.copy(pos);const names=Object.keys(GATTUNGEN);
-  const W=names.length*0.55+0.6;
-  const body=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.82,W),matCol(0x4a3522,0.92,0));body.position.set(0,0.41,0);
-  const ttop=new THREE.Mesh(new THREE.BoxGeometry(0.62,0.06,W),matCol(0x5a4530,0.85,0));ttop.position.set(0,0.85,0);
-  const rail=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.55,W),matCol(0x33251a,0.9,0));rail.position.set(-0.27,1.13,0);g.add(body,ttop,rail);
-  arena.rack=[];
+// ═══════════ DIE ARENA AUS DEM KERN (w4-arena-welt) ═══════════
+// Jede Art des Hofs ist eine Gestalt des Schmiede-Kerns (SC.ARENA_HOF · SC.ARENA_SATZ · SC.buildInstance): das Labor zeigt den
+// Körper, den der Ofen der Welt baut. Jedes bewegte Glied antwortet dem EINEN Stoß nach dem Gesetz des Kerns (SC.stossImpuls ·
+// SC.geraetMasse · SC.geraetStoss · SC.geraetSchritt · SC.geraetPose) — wie in der Welt (stamm/kampf.js). Die Spiele des
+// Prüfstands (Wertung, Folge, Ritter, Streitpuppe, Wurfscheibe) bleiben Labor; ihre Würfe ziehen aus dem Strom des Kerns.
+const ZU={};                                                                                    // die Ströme des Prüfstands, je Zweck einer
+function zufall(k){return ZU[k]();}
+const _SV1=new THREE.Vector3(),_SV2=new THREE.Vector3(),_SV3=new THREE.Vector3(),_KA=new THREE.Vector3(),_KB=new THREE.Vector3(),_PQ=new THREE.Quaternion(),_PV=new THREE.Vector3();
+// Ein Teil der Arena: die Gestalt des Kerns (Stufe 0, ihr Same) in einer Hülle an ihrer Lage; ihr Zustand nach dem Gesetz, ihre Kapseln.
+function arenaTeil(id,x,y,z,yaw,ov,seed,eltern){
+  const g=SC.buildInstance(id,seed||1,0,ov||undefined),h=new THREE.Group();h.position.set(x,y,z);h.rotation.y=yaw||0;h.add(g);(eltern||arena.group).add(h);
+  const T={id,h,g,ov:ov||null,basis:h.position.clone(),yaw:yaw||0,z:SC.geraetZustand(id,ov,seed),kaps:SC.geraetTreffer(id,ov,seed),ton:null,eigen:false,pfeilEigen:false,halt:false};
+  arena.teile.push(T);return T;}
+function arenaWeg(T){if(T.h.parent)T.h.parent.remove(T.h);clear(T.h);const i=arena.teile.indexOf(T);if(i>=0)arena.teile.splice(i,1);}
+// Der Satz einer Art an ihrem Ort (x, z, Gier): je Gestalt ein Teil — die Glieder stehen an ihrem Gelenk.
+function arenaArt(art,x,z,yaw,ov){const out=[],c=Math.cos(yaw||0),s=Math.sin(yaw||0);
+  for(const [id,lx,ly,lz,ly2,o2,sd] of SC.ARENA_SATZ[art])out.push(arenaTeil(id,x+lx*c+lz*s,ly,z-lx*s+lz*c,(yaw||0)+(ly2||0),id===art?ov:o2,sd));
+  return out;}
+// Die Pose des Gesetzes an die Hülle: die Gier der Lage · die Drehung um das Gelenk (der Ursprung) · der Gang des Leibs.
+function arenaPose(T){const P=SC.geraetPose(T.z);_PQ.set(P.q[0],P.q[1],P.q[2],P.q[3]);T.h.quaternion.setFromAxisAngle(_Y,T.yaw).multiply(_PQ);
+  _PV.set(P.versatz[0],0,P.versatz[2]).applyAxisAngle(_Y,T.yaw);T.h.position.copy(T.basis).add(_PV);T.h.updateMatrixWorld(true);}
+// Der Takt des Gesetzes: nur was nachschwingt, rechnet (wie die Welt — ein ruhendes Gerät kostet nichts).
+function arenaTakt(dt){for(const T of arena.teile){if(!T.z||T.z.ruht||T.halt)continue;SC.geraetSchritt(T.z,dt,SC.GERAET_GESETZ.schwere);arenaPose(T);}}
+function _segDist(p,a,b){const ab=_SV1.subVectors(b,a),ap=_SV2.subVectors(p,a),l=ab.lengthSq(),t=l>1e-12?clamp(ap.dot(ab)/l,0,1):0;return _SV3.copy(a).addScaledVector(ab,t).distanceTo(p);}
+function kapselNah(T,p,spiel){T.h.updateMatrixWorld(true);
+  for(const k of T.kaps){const A=T.h.localToWorld(_KA.set(k.a[0],k.a[1],k.a[2])),B=T.h.localToWorld(_KB.set(k.b[0],k.b[1],k.b[2]));if(_segDist(p,A,B)<k.r+spiel)return true;}return false;}
+// DER KONTAKT der Klinge mit einem Teil: die Schneide (gekrümmt, e0 → e1 vor der Hand) gegen seine Kapseln — der erste Punkt.
+function arenaKontakt(T,handW,bladeDir){const e0=arena._edge0,e1=arena._edge1,eLen=Math.max(0.02,e1-e0),N=Math.max(6,Math.ceil(eLen/0.09));
+  for(let i=0;i<=N;i++){const s=i/N,pt=handW.clone().addScaledVector(bladeDir,e0+s*eLen).add(bladeCurve(s));if(kapselNah(T,pt,0.04))return pt;}return null;}
+// DER STOSS am Teil (die Welt: stamm/kampf.js `_geraetStoss`, dasselbe Gesetz): die wirksame Masse am Kontakt, das EINE Impuls-Gesetz
+// mit dem Impuls des Urteils (verstärkt um ARENA.gefuehl.wucht), der Drall ins Glied. ort und dir in der Welt. Rückgabe J (N·s).
+function arenaStoss(T,ort,dir,u){if(!T.z||!u||!(u.mEff>0)||!(dir.lengthSq()>1e-9))return 0;T.h.updateMatrixWorld(true);
+  const pL=T.h.worldToLocal(ort.clone()),nL=dir.clone().normalize().applyQuaternion(T.h.getWorldQuaternion(new THREE.Quaternion()).invert());
+  const p=[pL.x,pL.y,pL.z],n=[nL.x,nL.y,nL.z],J=SC.stossImpuls(u.mEff,SC.geraetMasse(T.z,p,n),SC.ARENA.gefuehl.wucht*u.p/u.mEff,T.z.e);
+  SC.geraetStoss(T.z,J,p,n);return J;}
+// Der Hieb gegen ein Teil: Kontakt, das Urteil des Kerns (Schnitt · Stich · Schlag), der Stoß längs des Schlags. null: kein Kontakt.
+function arenaHieb(T,handW,bladeDir,vel,zone){const ort=arenaKontakt(T,handW,bladeDir);if(!ort)return null;
+  const vAx=Math.abs(vel.dot(bladeDir)),vLat=vel.clone().addScaledVector(bladeDir,-vel.dot(bladeDir)).length();
+  const u=SC.trefferUrteil(arena._m||measure(P),{vLat,vAx,edgeQ:arena._edgeAlign,zone:zone||null,P});
+  return {ort,u,J:arenaStoss(T,ort,vel,u)};}
+// Der Pfeil im Gesetz der Welt: die Masse des Pfeils, sein Tempo längs (trefferUrteil wie `_pfeilSehne`).
+function pfeilUrteil(a){return SC.trefferUrteil({M:SC.ARENA.bogen.mArrow,mEffFrac:1},{vLat:0,vAx:a.vel.length()});}
+function pfeilStoss(T,a){return arenaStoss(T,a.pos,a.vel,pfeilUrteil(a));}
+// DIE TÖNUNG des Labors (Blitz, Funke, das leuchtende Ziel): die Stoffe des Teils als eigene Kopie, ihre Farbe als Faktor auf die
+// Vertex-Albedo — Rückmeldung im Labor, die Gestalt bleibt die der Welt.
+function arenaTon(T,r,g,b){if(!T.ton){T.ton=[];T.g.traverse(o=>{if(o.isMesh){o.material=o.material.clone();T.ton.push(o.material);arena.tonStoffe.push(o.material);}});}for(const m of T.ton)m.color.setRGB(r,g,b);}
+
+// — der Waffentisch: die Gattungen des Kerns an der Schiene (buildWeaponModel, der Waffenständer des Labors) —
+function buildTable(T){arena.rack=[];const names=Object.keys(GATTUNGEN);
   names.forEach((name,i)=>{const z=(i-(names.length-1)/2)*0.55;
-    const wm=buildWeaponModel(name);wm.position.set(0,0.9,z);wm.rotation.z=Math.PI/2;wm.rotation.x=-0.12;          // stehend an der Schiene, Klinge hoch
-    g.add(wm);arena.rack.push({name,pos:pos.clone().add(new THREE.Vector3(0,0,z)),mesh:wm});});
-  return g;}
-function makeBamboo(h){const g=new THREE.Group();const seg=Math.max(2,Math.round(h/0.32));
-  const cyl=new THREE.Mesh(new THREE.CylinderGeometry(0.042,0.048,h,10),matCol(0x86a544,0.72,0));cyl.position.y=h/2;g.add(cyl);
-  for(let s=1;s<seg;s++){const r=new THREE.Mesh(new THREE.TorusGeometry(0.047,0.011,6,12),matCol(0x5f7e2c,0.8,0));r.rotation.x=Math.PI/2;r.position.y=s*h/seg;g.add(r);}
-  return g;}
-function buildBamboo(pos){const g=new THREE.Group();g.position.copy(pos);
-  const base=new THREE.Mesh(new THREE.BoxGeometry(2.7,0.16,0.45),matCol(0x3a2a1a,0.9,0));base.position.y=0.08;g.add(base);
-  arena.bamboo=[];const N=4;
-  for(let i=0;i<N;i++){const px=(i-(N-1)/2)*0.65, h=1.1+(i%2)*0.3;
-    const holder=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.07,0.18,8),matCol(0x2a2018,0.9,0));holder.position.set(px,0.13,0);g.add(holder);
-    const pole=makeBamboo(h);pole.position.set(px,0.16,0);g.add(pole);
-    arena.bamboo.push({mesh:pole,wx:pos.x+px,wz:pos.z,baseY:pos.y+0.16,h,cut:false,wobble:0});}
-  return g;}
-function buildWand(pos){const g=new THREE.Group();g.position.copy(pos);const wil=matCol(0x9a8a4a,0.85,0),red=matCol(0xc23b2b,0.72,0),white=matCol(0xe8e2d4,0.72,0),dark=matCol(0x3a2a18,0.9,0);
-  const H=2.35;
-  const rod=new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.055,H,8),wil);rod.position.set(0,H/2,0);rod.castShadow=true;g.add(rod);
-  const bandYs=[1.00,1.20,1.40,1.60,1.80];                                                            // rot-weiss gestreiftes Trefferband (klar sichtbar)
-  for(let i=0;i<bandYs.length;i++){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.065,0.065,0.20,12),i%2?white:red);b.position.set(0,bandYs[i],0);g.add(b);}
-  const cone=new THREE.Mesh(new THREE.ConeGeometry(0.055,0.16,8),dark);cone.position.set(0,H+0.06,0);g.add(cone);
-  const flag=new THREE.Mesh(new THREE.PlaneGeometry(0.44,0.28),red);flag.position.set(0.24,H-0.12,0);flag.material.side=2;g.add(flag);   // Wimpel zum Auffinden
-  const base=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.22,0.18,12),dark);base.position.set(0,0.09,0);g.add(base);
-  arena.wand={x:pos.x,z:pos.z,R:0.22,y0:0.90,y1:1.92,rod,grp:g,struck:false,respawnAt:0};
-  return g;}
-function updateWand(){const W=arena.wand;if(W&&W.struck&&W.respawnAt&&clock.getElapsedTime()>W.respawnAt){W.struck=false;W.rod.visible=true;W.respawnAt=0;}}
-function buildClout(pos){const g=new THREE.Group();g.position.copy(pos);const cols=[0xe0d088,0xc85a3a,0xcab876];
-  for(let i=3;i>=1;i--){const ring=new THREE.Mesh(new THREE.CylinderGeometry(i*0.5,i*0.5,0.03,28),matCol(cols[3-i],0.7,0));ring.position.set(0,0.015+(3-i)*0.004,0);g.add(ring);}
-  const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,1.7,8),matCol(0x4a3520,0.9,0));pole.position.set(0,0.85,0);g.add(pole);
-  const flag=new THREE.Mesh(new THREE.PlaneGeometry(0.5,0.3),matCol(0xd8c050,0.7,0));flag.position.set(0.27,1.45,0);flag.material.side=2;g.add(flag);
-  arena.clout={x:pos.x,z:pos.z,R:1.5,grp:g};return g;}
-const FEEL={massRef:1.4,massMin:0.42,massMax:2.30};                                   // Waffenmasse→Wucht (kg) · Median≈1.4 · Messer 0.25 / Vorschlaghammer 5.4
-function wMass(){return clamp((arena._mass||FEEL.massRef)/FEEL.massRef,FEEL.massMin,FEEL.massMax);}   // 1.0 = mittlere Waffe, <1 leicht, >1 schwer
-function dentArmor(worldPt,depth){const A=arena.armored;if(!A||!A.torso)return;
-  const geo=A.torso.geometry,pos=geo.attributes.position;
-  const lp=A.torso.worldToLocal(worldPt.clone());const iA=Math.atan2(lp.z,lp.x),iY=lp.y;
-  for(let i=0;i<pos.count;i++){const x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i);
-    let dA=Math.atan2(z,x)-iA;while(dA>Math.PI)dA-=2*Math.PI;while(dA<-Math.PI)dA+=2*Math.PI;
-    const d=Math.hypot(dA*0.22,y-iY),fall=1-d/0.27;
-    if(fall>0){const push=depth*fall*fall,r=Math.hypot(x,z)||1e-4,nr=Math.max(r*0.45,r-push);pos.setX(i,x*nr/r);pos.setZ(i,z*nr/r);}}
-  pos.needsUpdate=true;geo.computeVertexNormals();}
-function buildArmoredDummy(pos){const g=new THREE.Group();g.position.copy(pos);g.scale.setScalar(0.82);
-  const steel=matCol(0x9298a0,0.40,0.80),dark=matCol(0x26262c,0.6,0.3),wood=matCol(0x4a3520,0.9,0),tabard=matCol(0x6a2a28,0.6,0);
-  const base=new THREE.Mesh(new THREE.CylinderGeometry(0.40,0.50,0.18,16),dark);base.position.y=0.09;g.add(base);
-  const post=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.07,0.85,8),wood);post.position.y=0.52;g.add(post);
-  for(const sx of [-0.13,0.13]){const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.07,0.7,10),steel);leg.position.set(sx,0.95,0);g.add(leg);}
-  const torso=new THREE.Mesh(new THREE.CylinderGeometry(0.27,0.22,0.78,22,9),steel);torso.position.y=1.56;torso.scale.z=0.72;torso.castShadow=true;g.add(torso);
-  const ridge=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.7,0.16),dark);ridge.position.set(0,1.56,0.20);g.add(ridge);                 // Mittelgrat des Harnischs
-  const surcoat=new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.25,0.46,18),tabard);surcoat.position.y=1.42;surcoat.scale.z=0.74;g.add(surcoat);
-  for(const sx of [-0.29,0.29]){const pa=new THREE.Mesh(new THREE.SphereGeometry(0.15,12,10),steel);pa.position.set(sx,1.95,0);pa.scale.set(1,0.82,0.92);g.add(pa);}
-  const neck=new THREE.Mesh(new THREE.CylinderGeometry(0.10,0.12,0.12,10),dark);neck.position.y=2.06;g.add(neck);
-  const helm=new THREE.Mesh(new THREE.SphereGeometry(0.17,14,12),steel);helm.position.y=2.23;helm.scale.set(1,1.12,1.05);g.add(helm);
-  const visor=new THREE.Mesh(new THREE.BoxGeometry(0.30,0.035,0.06),dark);visor.position.set(0,2.22,0.16);g.add(visor);
-  const crest=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.12,0.22),tabard);crest.position.set(0,2.40,0);g.add(crest);
-  arena.armored={grp:g,torso,mat:steel,flash:0,spark:0,hitCD:0,dent:0,breach:0,deflect:0};
-  return g;}
-function updateArmored(dt){const A=arena.armored;if(!A)return;
-  if(A.hitCD>0)A.hitCD-=dt;
-  if(A.flash>0)A.flash=Math.max(0,A.flash-dt*3.2);
-  if(A.spark>0)A.spark=Math.max(0,A.spark-dt*4.5);
-  const c=A.mat&&A.mat.color;if(c&&c.setRGB){const f=A.flash,sp=A.spark;c.setRGB(0.57+0.45*f+0.5*sp,0.60+0.40*f-0.20*sp,0.63+0.18*f-0.22*sp);}   // Blitz gold (Treffer), Funke rot (abgeglitten)
-}
-function tryHitArmored(handW,bladeDir,vel){const A=arena.armored;if(!A||A.hitCD>0.28)return false;
-  A.grp.updateMatrixWorld(true);const bw=A.torso.getWorldPosition(new THREE.Vector3());let hit=false,hitPt=null;
-  hitPt=bladeHitsColumn(handW,bladeDir,bw,0.42,0.7,2.18);hit=!!hitPt;
-  if(!hit)return false;
-  A.hitCD=0.28;const mm=arena._m||measure(P),M=mm.M;
-  const vAx=Math.abs(vel.dot(bladeDir)),vLat=vel.clone().addScaledVector(bladeDir,-vel.dot(bladeDir)).length();
-  const thrust=vAx>vLat*0.9,sharp=(mm.edgeWinkel!=null&&mm.edgeWinkel<32),pointy=(mm.betaDeg!=null&&mm.betaDeg<30);
-  const mEff=Math.max(0.02,(mm.mEffFrac||0.2)*M);
-  if(thrust){
-    if(pointy){const KE=0.5*mEff*vAx*vAx;A.breach++;A.flash=1;if(hitPt)dentArmor(hitPt,0.022);popText('➤ in die Harnisch-Fuge gestochen — '+KE.toFixed(0)+' J','#8fe39a',0,-0.04);fx.shake=Math.max(fx.shake,0.10);fx.freeze=Math.max(fx.freeze,0.06);arena.cooldown=0.30;}
-    else{A.spark=1;A.deflect++;popText('✗ am Plattenrand abgewiesen — kein spitzer Ort','#d96a4a',0,0);bladeRecoil(0.70);}
-  }else if(sharp){
-    A.spark=1;A.deflect++;popText('✗ vom Harnisch abgeglitten — Schnitt prallt von der Platte','#d96a4a',0,0);bladeRecoil(0.85);
-  }else{
-    const KE=0.5*mEff*vLat*vLat,mom=M*vLat;A.dent++;   // Energie: mEff · Impuls/Beule: volle MasseA.flash=1;if(hitPt)dentArmor(hitPt,clamp(mom*0.006,0.025,0.07));popText('✹ Wucht durch den Harnisch — '+KE.toFixed(0)+' J Erschütterung','#ffd24a',0,-0.04);
-    fx.shake=Math.max(fx.shake,0.16+clamp(mom*0.02,0,0.20));fx.freeze=Math.max(fx.freeze,0.08);const B=camBasis();fx.kickV.addScaledVector(B.fwd,-1.1);arena.cooldown=0.32;
-  }
-  return true;}
-
-function buildSpringPell(pos){const g=new THREE.Group();g.position.copy(pos);const wood=matCol(0x6b4f2f,0.85,0),dark=matCol(0x2a1d12,0.9,0),iron=matCol(0x3a3832,0.4,0),pad=matCol(0x8a5a3a,0.7,0);
-  const base=new THREE.Mesh(new THREE.CylinderGeometry(0.30,0.40,0.22,14),dark);base.position.y=0.11;g.add(base);
-  for(let i=0;i<3;i++){const coil=new THREE.Mesh(new THREE.TorusGeometry(0.18-i*0.01,0.03,6,16),iron);coil.position.y=0.22+i*0.07;coil.rotation.x=Math.PI/2;g.add(coil);}
-  const piv=new THREE.Group();piv.position.set(0,0.35,0);g.add(piv);const H=1.15;
-  const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.08,H,10),wood);pole.position.y=H/2;piv.add(pole);
-  for(const yy of [0.45,0.75,1.05]){const r=new THREE.Mesh(new THREE.TorusGeometry(0.075,0.016,6,14),dark);r.position.y=yy;r.rotation.x=Math.PI/2;piv.add(r);}
-  const head=new THREE.Mesh(new THREE.SphereGeometry(0.16,14,11),pad);head.position.y=H;piv.add(head);
-  arena.springPell={grp:g,piv,head,H,ax:0,az:0,vx:0,vz:0,hitCD:0,combo:0,lastHitT:-9};return g;}
-function updateSpringPell(dt){const P=arena.springPell;if(!P)return;
-  if(dt>0){const k=26,damp=2.6;P.vx+=(-k*P.ax-damp*P.vx)*dt;P.vz+=(-k*P.az-damp*P.vz)*dt;P.ax+=P.vx*dt;P.az+=P.vz*dt;
-    const mag=Math.hypot(P.ax,P.az);if(mag>0.95){const sc=0.95/mag;P.ax*=sc;P.az*=sc;P.vx*=0.4;P.vz*=0.4;}}
-  P.piv.rotation.z=-P.ax;P.piv.rotation.x=P.az;
-  if(P.hitCD>0)P.hitCD-=dt;
-  if(P.combo>0&&clock.getElapsedTime()-P.lastHitT>2.2)P.combo=0;}
-function tryHitSpringPell(handW,bladeDir,vel){const P=arena.springPell;if(!P||P.hitCD>0.16)return false;
-  P.grp.updateMatrixWorld(true);const chk=[P.piv.localToWorld(new THREE.Vector3(0,0.72,0)),P.piv.localToWorld(new THREE.Vector3(0,0.95,0)),P.piv.localToWorld(new THREE.Vector3(0,P.H,0))];
-  const e0=arena._edge0,e1=arena._edge1,eLen=Math.max(0.02,e1-e0);let hit=false;
-  outer:for(let i=0;i<=6;i++){const p=e0+(i/6)*eLen,pt=handW.clone().addScaledVector(bladeDir,p);for(const hp of chk){if(pt.distanceTo(hp)<0.27){hit=true;break outer;}}}
-  if(!hit)return false;
-  const ms=wMass();P.vx+=clamp(vel.x,-9,9)*0.32*ms;P.vz+=clamp(vel.z,-9,9)*0.32*ms;P.hitCD=0.14;
-  const sp=Math.hypot(vel.x,vel.z)*ms;
-  if(sp>2.5){P.combo++;P.lastHitT=clock.getElapsedTime();popText('Treffer'+(P.combo>1?' x'+P.combo:'')+' — Pfahl federt zurueck','#6fcf73',0,-0.04);fx.shake=Math.max(fx.shake,0.07);fx.freeze=Math.max(fx.freeze,0.035);arena.cooldown=0.12;}
-  else{popText('zu zaghaft','#d4a843',0,0);bladeRecoil(0.4);}
-  return true;}
-
-function buildSequence(pos){const g=new THREE.Group();g.position.copy(pos);const wood=matCol(0x4a3520,0.9,0),dark=matCol(0x2a1d12,0.9,0);
-  arena.sequence={grp:g,pads:[],active:0,hitCD:0,combo:0,best:0,lastT:-9};
-  const N=5,spread=Math.PI*0.66,r=2.5;
-  for(let i=0;i<N;i++){const a=-spread/2+spread*(i/(N-1)),px=Math.sin(a)*r,pz=Math.cos(a)*r;
-    const post=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.07,1.45,8),wood);post.position.set(px,0.72,pz);g.add(post);
-    const pad=new THREE.Mesh(new THREE.BoxGeometry(0.42,0.42,0.07),matCol(0x556070,0.55,0));pad.position.set(px,1.5,pz);pad.lookAt(new THREE.Vector3(pos.x,pos.y+1.5,pos.z));g.add(pad);
-    const rim=new THREE.Mesh(new THREE.TorusGeometry(0.24,0.025,6,18),dark);rim.position.copy(pad.position);rim.quaternion.copy(pad.quaternion);g.add(rim);
-    arena.sequence.pads.push({mesh:pad,wx:pos.x+px,wy:pos.y+1.5,wz:pos.z+pz,lit:false});}
-  const mid=Math.floor(N/2);arena.sequence.pads[mid].lit=true;arena.sequence.active=mid;return g;}
-function updateSequence(dt){const S=arena.sequence;if(!S)return;
-  for(const p of S.pads){const c=p.mesh.material.color;if(c&&c.setRGB){if(p.lit)c.setRGB(0.92,0.74,0.18);else c.setRGB(0.33,0.38,0.44);}}
-  if(S.hitCD>0)S.hitCD-=dt;
-  if(S.combo>0&&clock.getElapsedTime()-S.lastT>3.5){if(S.combo>S.best)S.best=S.combo;S.combo=0;}}
-function tryHitSequence(handW,bladeDir,vel){const S=arena.sequence;if(!S||S.hitCD>0.18)return false;
-  const e0=arena._edge0,e1=arena._edge1,eLen=Math.max(0.02,e1-e0);
-  for(let pi=0;pi<S.pads.length;pi++){const p=S.pads[pi];let hit=false;
-    for(let i=0;i<=5;i++){const pp=e0+(i/5)*eLen,pt=handW.clone().addScaledVector(bladeDir,pp);if(Math.hypot(pt.x-p.wx,pt.z-p.wz)<0.30&&Math.abs(pt.y-p.wy)<0.32){hit=true;break;}}
-    if(!hit)continue;
-    if(p.lit){p.lit=false;let nx;do{nx=Math.floor(Math.random()*S.pads.length);}while(nx===pi);S.pads[nx].lit=true;S.active=nx;S.combo++;S.lastT=clock.getElapsedTime();popText('Folge '+S.combo+(S.combo>S.best&&S.combo>2?' — Bestwert!':''),'#6fcf73',0,-0.04);fx.shake=Math.max(fx.shake,0.05);fx.freeze=Math.max(fx.freeze,0.03);arena.cooldown=0.18;}
-    else{popText('falsches Ziel — Folge bricht','#d96a4a',0,0);if(S.combo>S.best)S.best=S.combo;S.combo=0;arena.cooldown=0.2;}
-    S.hitCD=0.2;return true;}
-  return false;}
-
-// ═══ RITTER-ARENA: zwei Felder (gepanzert / ungepanzert), echter Schwertkampf ═══
-function buildKnightBody(armored,tabardHex,crestHex,maxHp){const g=new THREE.Group();
-  const dark=matCol(0x26262c,0.6,0.3),wood=matCol(0x4a3520,0.9,0);
-  const body=armored?matCol(0x9298a0,0.40,0.80):matCol(0x6a5840,0.85,0);   // Stahl vs. Gambeson
-  const base=new THREE.Mesh(new THREE.CylinderGeometry(0.17,0.21,0.10,12),dark);base.position.y=0.05;g.add(base);
-  for(const sx of [-0.13,0.13]){const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.085,0.07,0.92,10),body);leg.position.set(sx,0.54,0);leg.castShadow=true;g.add(leg);}
-  const torso=new THREE.Mesh(new THREE.CylinderGeometry(armored?0.27:0.29,0.22,0.78,22,9),body);torso.position.y=1.28;torso.scale.z=0.72;torso.castShadow=true;g.add(torso);
-  if(armored){const ridge=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.7,0.16),dark);ridge.position.set(0,1.28,0.20);g.add(ridge);}
-  const surcoat=new THREE.Mesh(new THREE.CylinderGeometry(0.30,0.26,armored?0.46:0.70,18),matCol(tabardHex,0.7,0));surcoat.position.y=armored?1.42:1.30;surcoat.scale.z=0.74;g.add(surcoat);
-  if(armored)for(const sx of [-0.29,0.29]){const pa=new THREE.Mesh(new THREE.SphereGeometry(0.15,12,10),body);pa.position.set(sx,1.67,0);pa.scale.set(1,0.82,0.92);g.add(pa);}
-  const neck=new THREE.Mesh(new THREE.CylinderGeometry(0.10,0.12,0.12,10),dark);neck.position.y=1.78;g.add(neck);
-  if(armored){const helm=new THREE.Mesh(new THREE.SphereGeometry(0.17,14,12),body);helm.position.y=1.95;helm.scale.set(1,1.12,1.05);helm.castShadow=true;g.add(helm);
-    const visor=new THREE.Mesh(new THREE.BoxGeometry(0.30,0.035,0.06),dark);visor.position.set(0,1.94,0.16);g.add(visor);
-    const crest=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.13,0.24),matCol(crestHex,0.6,0));crest.position.set(0,2.13,0);g.add(crest);}
-  else{const head=new THREE.Mesh(new THREE.SphereGeometry(0.155,14,12),matCol(0x8a6a4a,0.7,0));head.position.y=1.93;head.castShadow=true;g.add(head);
-    const hood=new THREE.Mesh(new THREE.SphereGeometry(0.17,12,10),matCol(0x4a3e30,0.85,0));hood.position.y=1.99;hood.scale.set(1,0.7,1);hood.rotation.x=-0.3;g.add(hood);}
-  const arm=new THREE.Group();arm.position.set(0.30,1.60,0.08);g.add(arm);
-  const upper=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.055,0.40,8),body);upper.position.set(0.05,-0.17,0);upper.rotation.z=-0.3;arm.add(upper);
-  const sw=new THREE.Group();sw.position.set(0.12,-0.34,0.04);arm.add(sw);
-  const grip=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.16,6),wood);grip.rotation.x=Math.PI/2;sw.add(grip);
-  const sg=new THREE.Mesh(new THREE.BoxGeometry(0.20,0.03,0.03),matCol(0x6a6258,0.5,0.4));sg.position.z=0.10;sw.add(sg);
-  const blade=new THREE.Mesh(new THREE.BoxGeometry(0.045,0.012,0.82),matCol(0xb8c0c8,0.35,0.85));blade.position.z=0.54;blade.castShadow=true;sw.add(blade);
-  // Lebenspunkt-Pips über dem Kopf (zur Kamera gerichtet, da der Ritter den Spieler ansieht)
-  const pips=[];for(let i=0;i<maxHp;i++){const pip=new THREE.Mesh(new THREE.PlaneGeometry(0.11,0.11),matCol(0x40e060,0.6,0));
-    pip.position.set((i-(maxHp-1)/2)*0.17,2.40,0.05);pip.material.side=2;pip.visible=false;g.add(pip);pips.push(pip);}
-  return {grp:g,torso,bodyMat:body,arm,pips};}
-
-function buildKnightArena(pos,count,armored){const g=new THREE.Group();g.position.copy(pos);
-  const ring=new THREE.Mesh(new THREE.RingGeometry(4.4,4.62,48),matCol(armored?0x5a4a38:0x4a5a40,0.9,0));ring.rotation.x=-Math.PI/2;ring.position.y=0.012;g.add(ring);
-  const bCol=armored?[0x6a2a28,0x2a3a5a,0x3a5a2a,0x5a4a1a]:[0x3a5040,0x504a30,0x405040,0x4a4030];
-  for(let i=0;i<4;i++){const a=i*Math.PI/2+Math.PI/4,bx=Math.cos(a)*4.75,bz=Math.sin(a)*4.75;
-    const post=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.07,3.0,8),matCol(0x3a2c1c,0.9,0));post.position.set(bx,1.5,bz);post.castShadow=true;g.add(post);
-    const ban=new THREE.Mesh(new THREE.PlaneGeometry(0.6,1.2),matCol(bCol[i],0.7,0));ban.position.set(bx,2.25,bz);ban.material.side=2;g.add(ban);}
-  const maxHp=armored?3:2;
-  const cfgA=[[-2.4,-3.0,0x6a2a28,0xc0b020],[0,-3.6,0x2a3a5a,0xc8c8d0],[2.4,-3.0,0x3a5a2a,0xb05030]];
-  const cfgU=[[-1.6,-3.2,0x7a4030,0x000000],[1.6,-3.2,0x40607a,0x000000]];
-  const cfg=(count>=3)?cfgA:cfgU;
-  const F={center:pos.clone(),active:false,won:false,deckung:3,armored:armored,knights:[],_nearShown:false};
-  for(const c of cfg.slice(0,count)){const K=buildKnightBody(armored,c[2],c[3],maxHp);K.grp.position.set(c[0],0,c[1]);g.add(K.grp);
-    F.knights.push({grp:K.grp,arm:K.arm,torso:K.torso,bodyMat:K.bodyMat,pips:K.pips,armored:armored,field:F,
-      home:new THREE.Vector3(pos.x+c[0],0,pos.z+c[1]),maxHp:maxHp,hp:maxHp,state:'dormant',windT:0,actCD:0,stagT:0,downT:0,flash:0,spark:0,knockSpeed:1.5,_lunge:0,_dealt:false,_hitHead:false});}
-  if(!arena.knightArenas)arena.knightArenas=[];arena.knightArenas.push(F);
-  return g;}
-
-function knightFieldReset(F){const ctr=F.center;
-  for(const K of F.knights){K.grp.position.set(K.home.x-ctr.x,0,K.home.z-ctr.z);K.grp.rotation.set(0,0,0);K.state='dormant';K.hp=K.maxHp;K.windT=0;K.actCD=0;K.stagT=0;K._lunge=0;K._dealt=false;if(K.arm)K.arm.rotation.x=0;}
-  F.active=false;F.won=false;F.deckung=3;}
-
-function updateKnights(dt){if(!arena.knightArenas)return;arena._nearKnightField=null;
-  for(const F of arena.knightArenas){
-    const pdx=arena.player.x-F.center.x,pdz=arena.player.z-F.center.z,pDist=Math.hypot(pdx,pdz);
-    if(!F.active){if(pDist<5.5){arena._nearKnightField=F;if(!F._nearShown){F._nearShown=true;popText('drücke [E] — '+(F.armored?'die Ritter herausfordern':'die Kämpfer herausfordern'),'#cfe0a0',0,-0.16);}}else F._nearShown=false;}
-    if(F.won&&pDist>10){knightFieldReset(F);continue;}
-    for(const K of F.knights){
-      const showPips=F.active&&K.state!=='down';
-      for(let i=0;i<K.pips.length;i++){K.pips[i].visible=showPips;if(showPips){const lost=i>=K.hp;K.pips[i].material.color.setHex(lost?0x3a1a1a:(K.hp===1?0xff4040:K.hp===2&&K.maxHp>2?0xe0a040:0x40e060));}}
-      if(K.state==='down'){if(K.downT>0)K.downT-=dt;continue;}
-      if(K.actCD>0)K.actCD-=dt; if(K.flash>0)K.flash=Math.max(0,K.flash-dt*3.2); if(K.spark>0)K.spark=Math.max(0,K.spark-dt*4.5);
-      const c=K.bodyMat.color,tel=(K.state==='wind')?(0.5*Math.sin(clock.getElapsedTime()*16)+0.5):0;
-      if(c&&c.setRGB){if(K.armored)c.setRGB(0.57+0.45*K.flash+0.5*K.spark+0.40*tel,0.60+0.40*K.flash-0.20*K.spark+0.10*tel,0.63+0.18*K.flash-0.22*K.spark-0.18*tel);
-        else c.setRGB(0.42+0.50*K.flash+0.28*tel,0.345-0.10*K.flash+0.10*tel,0.25-0.10*K.flash);}
-      if(!F.active)continue;
-      const kw=K.grp.position,dx=arena.player.x-(F.center.x+kw.x),dz=arena.player.z-(F.center.z+kw.z),dist=Math.hypot(dx,dz)||1e-4;
-      K.grp.rotation.y=Math.atan2(dx,dz);
-      if(K.state==='stagger'){K.stagT-=dt;K.grp.rotation.z=Math.sin(clock.getElapsedTime()*24)*0.14*Math.max(0,K.stagT*2);kw.x-=(dx/dist)*K.knockSpeed*dt;kw.z-=(dz/dist)*K.knockSpeed*dt;
-        if(K.stagT<=0){K.state='approach';K.grp.rotation.z=0;}continue;}
-      K.grp.rotation.z=0;
-      if(K.state==='approach'){
-        if(dist>2.05){const sp=1.4*dt;kw.x+=(dx/dist)*sp;kw.z+=(dz/dist)*sp;kw.y=Math.abs(Math.sin(clock.getElapsedTime()*5+kw.x))*0.025;}
-        else{kw.y=0;if(K.actCD<=0){K.state='wind';K.windT=0.95;}}
-      } else if(K.state==='wind'){
-        K.windT-=dt;const u=clamp(1-K.windT/0.95,0,1);if(K.arm)K.arm.rotation.x=-2.1*u;
-        if(K.windT<=0){K.state='strike';K._lunge=0;K._dealt=false;}
-      } else if(K.state==='strike'){
-        K._lunge+=dt;const u=clamp(K._lunge/0.18,0,1);if(K.arm)K.arm.rotation.x=-2.1*(1-u)+0.55*u;
-        if(u>=0.5&&!K._dealt){K._dealt=true;
-          if(dist<2.45){F.deckung=Math.max(0,F.deckung-1);
-            fx.shake=Math.max(fx.shake,0.40);fx.freeze=Math.max(fx.freeze,0.10);const B=camBasis();fx.kickV.addScaledVector(B.fwd,-2.4);fx.kickV.y-=1.0;
-            if(F.deckung>0){popText('✖ HIEB DURCH DEINE DECKUNG','#ff6a4a',0,0);popText('Deckung '+F.deckung+'/3','#ffae6a',0.12,0.07);}
-            else{popText('✖ DEINE DECKUNG ZERBRICHT','#ff5a4a',0,0);knightFieldReset(F);}}
-          else popText('— Hieb verfehlt, ausgewichen','#9fb3c8',0,-0.04);}
-        if(K._lunge>=0.28){K.state='approach';K.actCD=0.60;K._dealt=false;if(K.arm)K.arm.rotation.x=0;}
-      }
-    }
-    if(F.active&&!F.won){let down=0;for(const K of F.knights)if(K.state==='down')down++;
-      if(down>=F.knights.length){F.won=true;popText('⚔ '+(F.armored?'ALLE RITTER GEFALLEN':'DAS FELD IST GERÄUMT')+' — verlasse den Ring','#7fe0a0',0,-0.06);}}
-  }
-}
-
-function dentArmorKnight(K,worldPt,depth){const torso=K.torso;if(!torso.geometry)return;const gm=torso.geometry,pa=gm.attributes.position;
-  const local=torso.worldToLocal(worldPt.clone());
-  for(let i=0;i<pa.count;i++){const vx=pa.getX(i),vy=pa.getY(i),vz=pa.getZ(i),d=Math.hypot(vx-local.x,vy-local.y,vz-local.z);
-    if(d<0.18){const f=(1-d/0.18)*depth,r=Math.hypot(vx,vz)||1e-4;pa.setX(i,vx-(vx/r)*f);pa.setZ(i,vz-(vz/r)*f);}}
-  pa.needsUpdate=true;gm.computeVertexNormals();}
-
-function tryHitKnight(handW,bladeDir,vel){if(!arena.knightArenas)return false;
-  let best=null,bestPt=null,bestD=1e9,bestF=null,bestHead=false;
-  for(const F of arena.knightArenas){if(!F.active)continue;for(const K of F.knights){if(K.state==='down')continue;K.grp.updateMatrixWorld(true);
-    const ow=K.grp.getWorldPosition(new THREE.Vector3());                                  // Fuß-Ursprung am Boden
-    const headC=new THREE.Vector3(ow.x,ow.y+1.95,ow.z),torsoC=new THREE.Vector3(ow.x,ow.y+1.28,ow.z);
-    const hpt=bladeHitsColumn(handW,bladeDir,headC,0.22,1.78,2.18);                          // Kopf: eng, hoch (Visier)
-    const tpt=hpt?null:bladeHitsColumn(handW,bladeDir,torsoC,0.40,0.55,1.74);                // Rumpf: breit (Fugen)
-    const pt=hpt||tpt;if(pt){const d=pt.distanceTo(handW);if(d<bestD){bestD=d;best=K;bestPt=pt;bestF=F;bestHead=!!hpt;}}}}
-  if(!best)return false;const K=best,F=bestF;
-  const mm=arena._m||measure(P),M=mm.M;
-  const vAx=Math.abs(vel.dot(bladeDir)),vLat=vel.clone().addScaledVector(bladeDir,-vel.dot(bladeDir)).length();
-  const thrust=vAx>vLat*0.9,sharp=(mm.edgeWinkel!=null&&mm.edgeWinkel<32),pointy=(mm.betaDeg!=null&&mm.betaDeg<42),mEff=Math.max(0.02,(mm.mEffFrac||0.2)*M);
-  const mom=M*Math.max(vAx,vLat);                                                            // Stoß-Impuls → Rückstoß
-  let dmg=0,msg='',col='#d96a4a';
-  if(F.armored){
-    if(thrust&&bestHead&&mm.betaDeg!=null){const KE=0.5*mEff*vAx*vAx;dmg=2;msg='➤ Stich in den Augenschlitz! — '+KE.toFixed(0)+' J';col='#9fe0a0';}   // GEMESSEN: Streitkolben/Kriegshammer betaDeg=null — ein Wuchtkopf passt in keinen Schlitz
-    else if(thrust&&pointy){const KE=0.5*mEff*vAx*vAx;dmg=1;msg='➤ Stich in die Fuge (Achsel/Leiste) — '+KE.toFixed(0)+' J';col='#8fe39a';}
-    else if(!thrust&&!sharp){const KE=0.5*mEff*vLat*vLat;dmg=1;msg='✹ Wucht durch den Harnisch — '+KE.toFixed(0)+' J';col='#ffd24a';}   // Energie am Kopf: mEff; Impuls (mom) trägt weiter die volle Masse
-    else if(thrust){K.spark=1;msg='✗ am Plattenrand abgewiesen — kein spitzer Ort';bladeRecoil(0.70);}
-    else{K.spark=1;msg='✗ Schnitt prallt von der Platte ab';bladeRecoil(0.85);}
-  } else {
-    if(thrust){const KE=0.5*mEff*vAx*vAx;dmg=bestHead?2:1;msg=bestHead?'➤ Stich in die Kehle! — '+KE.toFixed(0)+' J':'➤ Stich trifft — '+KE.toFixed(0)+' J';col='#9fe0a0';}
-    else if(sharp){const edgeQ=clamp(arena._edgeAlign!=null?arena._edgeAlign:1,0.15,1),KE=0.5*mEff*vLat*vLat*(0.25+0.75*edgeQ);dmg=bestHead?2:1;msg=(bestHead?'⚔ Schnitt zum Kopf — ':'⚔ Schnitt trifft tief — ')+KE.toFixed(0)+' J'+(edgeQ<=0.75?' · Schneide quer':'');col='#9fe0a0';}
-    else{const KE=0.5*mEff*vLat*vLat;dmg=1;msg='✹ Schlag trifft — '+KE.toFixed(0)+' J';col='#ffd24a';}
-  }
-  if(dmg>0){K.flash=1;if(bestPt&&F.armored)dentArmorKnight(K,bestPt,bestHead?0.018:clamp(M*vLat*0.006,0.022,0.07));
-    K.knockSpeed=clamp(mom*0.16,0.9,4.5);K.stagT=clamp(0.40+mom*0.018,0.45,0.9);                  // variabler Rückstoß
-    if(K.state==='wind'||K.state==='strike'){if(K.arm)K.arm.rotation.x=0;}K.state='stagger';K._dealt=false;
-    K.hp-=dmg;fx.shake=Math.max(fx.shake,0.10);fx.freeze=Math.max(fx.freeze,0.05);arena.cooldown=0.28;
-    if(K.hp<=0){K.state='down';K.downT=600;K.grp.rotation.x=Math.PI*0.42;K.grp.position.y=0.10;msg+=(F.armored?' — RITTER FÄLLT':' — GESTRECKT');col='#7fe0a0';}
-    popText(msg,col,0,-0.04);}
-  else popText(msg,col,0,0);
-  return true;}
-
-function buildCharger(pos){const g=new THREE.Group();g.position.copy(pos);const wood=matCol(0x5a4530,0.9,0),dark=matCol(0x2a1d12,0.9,0),cloth=matCol(0x6a5a4a,0.7,0),metal=matCol(0x4a4842,0.4,0);
-  const sled=new THREE.Group();g.add(sled);
-  const base=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.16,1.15),dark);base.position.y=0.18;sled.add(base);
-  for(const wx of [-0.33,0.33])for(const wz of [-0.42,0.42]){const wheel=new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.14,0.08,12),metal);wheel.rotation.z=Math.PI/2;wheel.position.set(wx,0.14,wz);sled.add(wheel);}
-  const body=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.16,1.6,10),cloth);body.position.y=1.08;sled.add(body);
-  const arms=new THREE.Mesh(new THREE.BoxGeometry(1.15,0.13,0.13),wood);arms.position.y=1.52;sled.add(arms);
-  const head=new THREE.Mesh(new THREE.SphereGeometry(0.18,12,10),matCol(0x7a6a5a,0.6,0));head.position.y=1.99;sled.add(head);
-  const shield=new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.28,0.05,18),matCol(0x8a3a28,0.6,0));shield.rotation.x=Math.PI/2;shield.position.set(0,1.32,0.24);sled.add(shield);
-  const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.5,6),wood);pole.position.set(0.18,2.25,0);sled.add(pole);
-  const flag=new THREE.Mesh(new THREE.ConeGeometry(0.12,0.32,4),matCol(0x6fcf73,0.6,0));flag.position.set(0.18,2.5,0);flag.rotation.x=Math.PI;sled.add(flag);   // Ruhe-Wimpel: schläft, mit E wecken
-  arena.charger={grp:g,sled,head,flag,home:pos.clone(),speed:3.0,state:'dormant',hitCD:0,wob:0,_wasNear:false};return g;}
-function updateCharger(dt){const C=arena.charger;if(!C)return;
-  C.grp.updateMatrixWorld(true);const dummyW=C.sled.getWorldPosition(new THREE.Vector3());
-  const dx=arena.player.x-dummyW.x,dz=arena.player.z-dummyW.z,dist=Math.hypot(dx,dz)||1e-4;
-  if(C.hitCD>0)C.hitCD-=dt;
-  const near=(C.state==='dormant'&&dist<6.5);arena._nearCharger=near;
-  if(near&&!C._wasNear)popText('drücke [E] — Streitpuppe wecken','#cfe0a0',0,-0.16);C._wasNear=(dist<8);
-  if(C.flag)C.flag.visible=(C.state==='dormant');
-  if(C.state==='dormant'){C.sled.rotation.y=Math.atan2(dx,dz);}                                  // wartet, schaut dich an
-  else if(C.state==='charge'){const step=C.speed*dt;C.sled.position.x+=(dx/dist)*step;C.sled.position.z+=(dz/dist)*step;C.sled.rotation.y=Math.atan2(dx,dz);
-    if(dist<1.7&&C.hitCD<=0){fx.shake=Math.max(fx.shake,0.42);fx.freeze=Math.max(fx.freeze,0.12);const B=camBasis();fx.kickV.addScaledVector(B.fwd,-3.2);fx.kickV.y-=1.5;popText('✖ DIE STREITPUPPE RAMMT DICH','#ff6a4a',0,0);popText('rechtzeitig treffen!','#d96a4a',0.12,0.07);C.state='retreat';C.hitCD=1.0;}}
-  else if(C.state==='retreat'){const hx=-C.sled.position.x,hz=-C.sled.position.z,hd=Math.hypot(hx,hz);
-    if(hd<0.25){C.sled.position.set(0,0,0);C.sled.rotation.y=0;C.state='dormant';C._wasNear=true;}else{const step=C.speed*1.5*dt;C.sled.position.x+=(hx/hd)*step;C.sled.position.z+=(hz/hd)*step;}}
-  if(C.wob>0.001){C.wob*=Math.pow(0.015,dt);C.sled.rotation.z=Math.sin(clock.getElapsedTime()*26)*C.wob;}else C.sled.rotation.z=0;}
-function tryArrowCharger(a){const C=arena.charger;if(!C||C.state==='retreat')return false;
-  C.grp.updateMatrixWorld(true);const dummyW=C.sled.getWorldPosition(new THREE.Vector3());
-  if(Math.hypot(a.pos.x-dummyW.x,a.pos.z-dummyW.z)<0.5&&a.pos.y>0.6&&a.pos.y<2.1){
-    C.wob=0.55;C.state='retreat';C.hitCD=0.8;fx.shake=Math.max(fx.shake,0.1);popText('Pfeil stoppt die Streitpuppe!','#6fcf73',0,0);popText('+15','#6fcf73',0.12,0.06);
-    arena.score.shots++;arena.score.sum+=15;arena.score.last={ring:15,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};updateHUD();return true;}
-  return false;}
-function tryHitCharger(handW,bladeDir,vel){const C=arena.charger;if(!C||C.state!=='charge'||C.hitCD>0.4)return false;
-  C.grp.updateMatrixWorld(true);const dummyW=C.sled.getWorldPosition(new THREE.Vector3());
-  const e1=arena._edge1;let hit=false;
-  hit=!!bladeHitsColumn(handW,bladeDir,dummyW,0.45,0.5,2.1);
-  if(!hit)return false;
-  const ms=wMass(),sp=vel.length()*ms;C.wob=0.45*Math.min(1.5,ms);C.hitCD=0.5;
-  const _dist=Math.hypot(dummyW.x-arena.player.x,dummyW.z-arena.player.z),_reach=Math.max(0.3,e1),_jam=clamp((_dist-_reach*0.15)/(_reach*0.45),0.15,1),spEff=sp*_jam;
-  if(spEff>3.5){C.state='retreat';C.hitCD=0.8;popText('Streitpuppe zurueckgeschlagen!','#6fcf73',0,-0.04);fx.shake=Math.max(fx.shake,0.13);fx.freeze=Math.max(fx.freeze,0.06);arena.cooldown=0.25;}
-  else if(sp>3.5&&_jam<0.6){C.wob=0.30;popText('zu nah — '+currentGattung+' kommt nicht zur Geltung!','#d4a843',0,0);bladeRecoil(0.5);}
-  else{popText('zu schwach — sie draengt weiter','#d4a843',0,0);bladeRecoil(0.6);}
-  return true;}
-
-function buildGauntlet(pos){const g=new THREE.Group();g.position.copy(pos);const wood=matCol(0x4a3520,0.9,0),dark=matCol(0x2a1d12,0.9,0);
-  const N=4,gap=1.8,len=N*gap,H=3.0;arena.gauntlet={grp:g,ropes:[]};
-  for(let i=0;i<N;i++){const cz=-len/2+gap*0.5+i*gap;const pivot=new THREE.Vector3(pos.x,pos.y+H-0.12,pos.z+cz);
-    const L=1.35,ballR=0.20,NS=7,segLen=L/NS;const pts=[],ptsPrev=[];
-    for(let k=0;k<=NS;k++){const p=new THREE.Vector3(pivot.x,pivot.y-segLen*k,pivot.z);pts.push(p.clone());ptsPrev.push(p.clone());}
-    const sign=i%2?1:-1;for(let k=1;k<=NS;k++)ptsPrev[k].x-=sign*0.05*(k/NS);
-    const ropeSegs=[];for(let k=0;k<NS;k++){const seg=new THREE.Mesh(new THREE.CylinderGeometry(0.014,0.014,segLen,5),matCol(0x6e5a3a,0.8,0));g.add(seg);ropeSegs.push(seg);}
-    const ball=new THREE.Mesh(new THREE.SphereGeometry(ballR,14,11),matCol(0x484440,0.5,0));ball.castShadow=true;g.add(ball);
-    arena.gauntlet.ropes.push({ball,ropeSegs,pivot,N:NS,segLen,L,ballR,pts,ptsPrev,hitCD:0});}
-  for(const cz of [-len/2-0.1,len/2+0.1]){for(const cx of [-0.55,0.55]){const post=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.1,H,8),wood);post.position.set(cx,H/2,cz);post.castShadow=true;g.add(post);}}
-  for(const cx of [-0.55,0.55]){const beam=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.14,len+0.4),dark);beam.position.set(cx,H-0.06,0);g.add(beam);}
-  updateGauntlet(0);return g;}
-function updateGauntlet(dt){const G=arena.gauntlet;if(!G)return;
-  for(const P of G.ropes){const N=P.N;
-    stepRope(P,dt);
-    drawRope(P,G.grp.position.x,G.grp.position.y,G.grp.position.z);
-    const bw=P.pts[N];
-    if(P.hitCD>0)P.hitCD-=dt;
-    if(dt>0&&P.hitCD<=0){const spd=Math.hypot(bw.x-P.ptsPrev[N].x,bw.z-P.ptsPrev[N].z)/Math.max(1e-4,dt);if(spd>1.5){const dh=Math.hypot(bw.x-arena.player.x,bw.z-arena.player.z);if(dh<P.ballR+0.42&&bw.y<1.85){fx.shake=Math.max(fx.shake,0.35);fx.freeze=Math.max(fx.freeze,0.09);popText('✖ Pendel erwischt dich','#ff6a6a',0,0);P.hitCD=1.0;}}}}}
-function tryHitGauntlet(handW,bladeDir,vel){const G=arena.gauntlet;if(!G)return false;
-  for(const P of G.ropes){if(P.hitCD>0.55)continue;const N=P.N,bw=P.pts[N];let hit=false;
-    hit=!!bladeHitsPoint(handW,bladeDir,bw,P.ballR+0.07);
-    if(!hit)continue;
-    P.ptsPrev[N].x-=clamp(vel.x,-7,7)*0.014*wMass();P.ptsPrev[N].z-=clamp(vel.z,-7,7)*0.014*wMass();P.ptsPrev[N].y-=clamp(vel.y,-5,5)*0.007*wMass();
-    fx.shake=Math.max(fx.shake,0.07);fx.freeze=Math.max(fx.freeze,0.04);popText('Pendel getroffen','#cdbf9a',0,-0.04);arena.cooldown=0.16;return true;}
-  return false;}
-
-function buildClayThrower(pos){const g=new THREE.Group();g.position.copy(pos);const dark=matCol(0x33312c,0.45,0),wood=matCol(0x4a3520,0.9,0),metal=matCol(0x4a4842,0.4,0);
-  const base=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.3,0.6),dark);base.position.y=0.15;g.add(base);
-  const arm=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.8,0.14),wood);arm.position.set(0,0.55,0);arm.rotation.x=-0.55;g.add(arm);
-  const cup=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.14,0.1,12),metal);cup.position.set(0,0.95,0.22);g.add(cup);
-  const disc=new THREE.Mesh(new THREE.CylinderGeometry(0.17,0.17,0.04,16),matCol(0xc85a3a,0.6,0));disc.visible=false;g.add(disc);
-  arena.clay={grp:g,thrower:pos.clone(),disc,active:false,nextT:1.5,vel:new THREE.Vector3(),pos:new THREE.Vector3(),broke:0};return g;}
-function updateClay(dt){const C=arena.clay;if(!C)return;const t=clock.getElapsedTime();
-  if(!C.active){if(t>C.nextT&&Math.hypot(arena.player.x-C.thrower.x,arena.player.z-C.thrower.z)<30){C.pos.copy(C.thrower);C.pos.y+=0.95;C.vel.set((Math.random()-0.5)*3,7.5+Math.random()*2.5,(Math.random()<0.5?1:-1)*(4+Math.random()*4));C.active=true;C.disc.visible=true;popText('PULL! — Wurfscheibe steigt','#d8c050',0,-0.22);}return;}
-  C.vel.y-=9.81*dt;C.pos.addScaledVector(C.vel,dt);
-  C.disc.position.set(C.pos.x-C.grp.position.x,C.pos.y-C.grp.position.y,C.pos.z-C.grp.position.z);C.disc.rotation.x+=dt*7;C.disc.rotation.z+=dt*4;
-  if(C.pos.y<0.12){C.active=false;C.disc.visible=false;C.nextT=t+2.0+Math.random()*2.2;}}
-function tryArrowClay(a){const C=arena.clay;if(!C||!C.active)return false;
-  if(a.pos.distanceTo(C.pos)<0.45){C.active=false;C.disc.visible=false;C.nextT=clock.getElapsedTime()+1.6+Math.random()*1.5;C.broke++;
-    fx.shake=Math.max(fx.shake,0.1);popText('SCHEIBE ZERSPLITTERT — in der Luft getroffen!','#ffe07a',0,0);popText('+25','#6fcf73',0.12,0.06);arena.score.shots++;arena.score.sum+=25;arena.score.last={ring:25,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};updateHUD();return true;}
-  return false;}
-
-function buildSwingTarget(pos){const g=new THREE.Group();g.position.copy(pos);const wood=matCol(0x4a3520,0.9,0),dark=matCol(0x2a1d12,0.9,0);
-  for(const sz of [-1.1,1.1]){const post=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.1,3.3,10),wood);post.position.set(0,1.65,sz);post.castShadow=true;g.add(post);}
-  const beam=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.14,2.6),dark);beam.position.set(0,3.3,0);g.add(beam);
-  const rope=new THREE.Mesh(new THREE.CylinderGeometry(0.012,0.012,1.5,5),dark);g.add(rope);
-  const tgt=new THREE.Group();g.add(tgt);const cols=[0xd8cab0,0x2f4858,0xc85a3a,0xd8cab0];
-  for(let i=4;i>=1;i--){const ring=new THREE.Mesh(new THREE.CylinderGeometry(i*0.09,i*0.09,0.045+(4-i)*0.004,20),matCol(cols[4-i]||0x888888,0.6,0));ring.rotation.z=Math.PI/2;tgt.add(ring);}
-  arena.swingTgt={grp:g,tgt,rope,pivot:new THREE.Vector3(pos.x,pos.y+3.3,pos.z),L:1.55,R:0.36,ang:0.6,vel:0,struck:false,respawnAt:0,_wz:pos.z,_wy:pos.y+1.75};
-  updateSwingTarget(0);return g;}
-function updateSwingTarget(dt){const S=arena.swingTgt;if(!S)return;
-  if(dt>0&&!S.struck){S.vel+=(-(9.81/S.L)*Math.sin(S.ang))*dt;S.vel*=0.9985;S.ang+=S.vel*dt;}
-  const tz=Math.sin(S.ang)*S.L,ty=-Math.cos(S.ang)*S.L,wz=S.pivot.z+tz,wy=S.pivot.y+ty;
-  S.tgt.position.set(0,wy-S.grp.position.y,wz-S.grp.position.z);
-  S.rope.position.set(0,(S.pivot.y+wy)/2-S.grp.position.y,(S.pivot.z+wz)/2-S.grp.position.z);
-  const rdir=new THREE.Vector3(0,ty,tz),rl=rdir.length()||1e-4;S.rope.scale.y=rl/1.5;S.rope.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),rdir.normalize());
-  if(S.struck&&clock.getElapsedTime()>S.respawnAt){S.struck=false;S.tgt.visible=true;}
-  S._wz=wz;S._wy=wy;}
-function tryArrowSwing(a){const S=arena.swingTgt;if(!S||S.struck)return false;
-  const dx=a.pos.x-S.pivot.x,dz=a.pos.z-S._wz,dy=a.pos.y-S._wy;
-  if(Math.abs(dx)<0.22&&Math.hypot(dz,dy)<S.R){const r=Math.hypot(dz,dy),ring=clamp(Math.ceil(4*(1-r/S.R)),1,4);
-    S.struck=true;S.respawnAt=clock.getElapsedTime()+2.5;S.tgt.visible=false;S.vel+=(a.vel&&a.vel.z>0?2:-2);
-    fx.shake=Math.max(fx.shake,0.08);popText('PENDELZIEL getroffen — vorgehalten! · '+ring,'#ffe07a',0,0);popText('+'+(ring*5),'#6fcf73',0.12,0.06);arena.score.shots++;arena.score.sum+=ring*5;arena.score.last={ring:ring*5,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};updateHUD();return true;}
-  return false;}
-
-function buildRange(){arena.targets=[];const specs=[[17,1.42,-0.5,0.40],[23,1.42,0.4,0.40],[31,1.42,1.0,0.40],[20,1.2,-3.2,0.20]];
-  for(const sp of specs){const x=sp[0],y=sp[1],z=sp[2],R=sp[3];
-    const t=buildZielscheibe();t.position.set(x,y,z);t.traverse(o=>{if(o.material)o.material.side=THREE.DoubleSide;});arena.group.add(t);
-    const post=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.05,y,8),matCol(0x3a2a1a,0.9,0));post.position.set(x,y/2,z);arena.group.add(post);
-    arena.targets.push({mesh:t,pos:new THREE.Vector3(x,y,z),R});}}
+    const wm=buildWeaponModel(name);wm.position.set(0,0.9,z);wm.rotation.z=Math.PI/2;wm.rotation.x=-0.12;T.h.add(wm);
+    arena.rack.push({name,pos:T.basis.clone().add(new THREE.Vector3(0,0,z)),mesh:wm});});}
 function equipWeapon(name){if(!GATTUNGEN[name])return;
   gattungWaehlen(name);
   arena.kind=(P.modus==='bogen')?'bow':'melee';
@@ -964,11 +583,262 @@ function pickupCheck(){if(!arena.rack)return;let best=null,bd=1.7;
   for(const r of arena.rack){const d=Math.hypot(arena.player.x-r.pos.x,arena.player.z-r.pos.z);if(d<bd){bd=d;best=r;}}
   arena._near=best;const pe=document.getElementById('pickup');if(!pe)return;
   if(best&&best.name!==currentGattung){pe.style.display='block';pe.innerHTML='<b>E</b> — '+best.name+' nehmen';}else pe.style.display='none';}
+const FEEL={massRef:1.4,massMin:0.42,massMax:2.30};                                   // Waffenmasse→Wucht (kg) · Median≈1.4 · Messer 0.25 / Vorschlaghammer 5.4
+function wMass(){return clamp((arena._mass||FEEL.massRef)/FEEL.massRef,FEEL.massMin,FEEL.massMax);}   // 1.0 = mittlere Waffe, <1 leicht, >1 schwer
+
+// ── DIE HARNISCH-PUPPE: der Schnitt gleitet ab — Stich in die Fuge oder stumpfe Wucht ──
+function updateArmored(dt){const A=arena.armored;if(!A)return;
+  if(A.hitCD>0)A.hitCD-=dt;const f0=A.flash+A.spark;
+  if(A.flash>0)A.flash=Math.max(0,A.flash-dt*3.2);
+  if(A.spark>0)A.spark=Math.max(0,A.spark-dt*4.5);
+  if(f0>0)arenaTon(A.T,1+0.8*A.flash+0.9*A.spark,1+0.67*A.flash-0.33*A.spark,1+0.29*A.flash-0.35*A.spark);}   // Blitz gold (Treffer), Funke rot (abgeglitten)
+function tryHitArmored(handW,bladeDir,vel){const A=arena.armored;if(!A||A.hitCD>0.28)return false;
+  A.T.h.updateMatrixWorld(true);const hitPt=bladeHitsColumn(handW,bladeDir,A.T.h.position,0.42,0.7,2.18);if(!hitPt)return false;
+  A.hitCD=0.28;const mm=arena._m||measure(P),M=mm.M;
+  const vAx=Math.abs(vel.dot(bladeDir)),vLat=vel.clone().addScaledVector(bladeDir,-vel.dot(bladeDir)).length();
+  const thrust=vAx>vLat*0.9,sharp=(mm.edgeWinkel!=null&&mm.edgeWinkel<32),pointy=(mm.betaDeg!=null&&mm.betaDeg<30);
+  const u=SC.trefferUrteil(mm,{vLat,vAx,edgeQ:arena._edgeAlign,P});arenaStoss(A.T,hitPt,vel,u);
+  if(thrust){
+    if(pointy){A.breach++;A.flash=1;popText('➤ in die Harnisch-Fuge gestochen — '+u.KE.toFixed(0)+' J','#8fe39a',0,-0.04);fx.shake=Math.max(fx.shake,0.10);fx.freeze=Math.max(fx.freeze,0.06);arena.cooldown=0.30;}
+    else{A.spark=1;A.deflect++;popText('✗ am Plattenrand abgewiesen — kein spitzer Ort','#d96a4a',0,0);bladeRecoil(0.70);}
+  }else if(sharp){A.spark=1;A.deflect++;popText('✗ vom Harnisch abgeglitten — Schnitt prallt von der Platte','#d96a4a',0,0);bladeRecoil(0.85);
+  }else{const mom=M*vLat;A.dent++;A.flash=1;popText('✹ Wucht durch den Harnisch — '+u.KE.toFixed(0)+' J Erschütterung','#ffd24a',0,-0.04);
+    fx.shake=Math.max(fx.shake,0.16+clamp(mom*0.02,0,0.20));fx.freeze=Math.max(fx.freeze,0.08);const B=camBasis();fx.kickV.addScaledVector(B.fwd,-1.1);arena.cooldown=0.32;}
+  return true;}
+
+// ── DER FEDERPFAHL: die Stange federt nach dem Gesetz zurück ──
+function updateSpringPell(dt){const S=arena.springPell;if(!S)return;if(S.hitCD>0)S.hitCD-=dt;if(S.combo>0&&clock.getElapsedTime()-S.lastHitT>2.2)S.combo=0;}
+function tryHitSpringPell(handW,bladeDir,vel){const S=arena.springPell;if(!S||S.hitCD>0.16)return false;
+  const h=arenaHieb(S.T,handW,bladeDir,vel);if(!h)return false;S.hitCD=0.14;const sp=Math.hypot(vel.x,vel.z)*wMass();
+  if(sp>2.5){S.combo++;S.lastHitT=clock.getElapsedTime();popText('Treffer'+(S.combo>1?' x'+S.combo:'')+' — Pfahl federt zurück','#6fcf73',0,-0.04);fx.shake=Math.max(fx.shake,0.07);fx.freeze=Math.max(fx.freeze,0.035);arena.cooldown=0.12;}
+  else{popText('zu zaghaft','#d4a843',0,0);bladeRecoil(0.4);}
+  return true;}
+
+// ── DIE TREFFERFOLGE: das leuchtende Brett zählt, das nächste wählt der Strom ──
+function updateSequence(dt){const S=arena.sequence;if(!S)return;
+  for(const p of S.pads)if(p.ton!==p.lit){p.ton=p.lit;if(p.lit)arenaTon(p.T,1.9,1.6,0.55);else arenaTon(p.T,1,1,1);}
+  if(S.hitCD>0)S.hitCD-=dt;
+  if(S.combo>0&&clock.getElapsedTime()-S.lastT>3.5){if(S.combo>S.best)S.best=S.combo;S.combo=0;}}
+function tryHitSequence(handW,bladeDir,vel){const S=arena.sequence;if(!S||S.hitCD>0.18)return false;
+  for(let pi=0;pi<S.pads.length;pi++){const p=S.pads[pi],ort=arenaKontakt(p.T,handW,bladeDir);
+    if(!ort||p.T.h.worldToLocal(ort.clone()).y<1.15)continue;                                  // das Brett, nicht der Pfosten
+    arenaHieb(p.T,handW,bladeDir,vel);
+    if(p.lit){p.lit=false;let nx;do{nx=Math.floor(zufall('folge')*S.pads.length);}while(nx===pi);S.pads[nx].lit=true;S.active=nx;S.combo++;S.lastT=clock.getElapsedTime();popText('Folge '+S.combo+(S.combo>S.best&&S.combo>2?' — Bestwert!':''),'#6fcf73',0,-0.04);fx.shake=Math.max(fx.shake,0.05);fx.freeze=Math.max(fx.freeze,0.03);arena.cooldown=0.18;}
+    else{popText('falsches Ziel — Folge bricht','#d96a4a',0,0);if(S.combo>S.best)S.best=S.combo;S.combo=0;arena.cooldown=0.2;}
+    S.hitCD=0.2;return true;}
+  return false;}
+
+// ═══ RITTER-ARENA: zwei Felder (gepanzert / ungepanzert), echter Schwertkampf — die Leiber, Arme und Banner aus dem Kern ═══
+function buildKnightField(art,x,z){const armored=art==='ritter',maxHp=armored?3:2;
+  const F={center:new THREE.Vector3(x,0,z),active:false,won:false,deckung:3,armored,knights:[],_nearShown:false};
+  for(const [id,lx,ly,lz,,,sd] of SC.ARENA_SATZ[art]){
+    if(id==='kampfbanner'){arenaTeil(id,x+lx,ly,z+lz,0,null,sd);continue;}
+    if(id!==art)continue;                                                                        // der Arm hängt an seinem Leib (unten)
+    const T=arenaTeil(id,x+lx,0,z+lz,0,null,sd),A=arenaTeil(armored?'ritterarm':'kaempferarm',0.30,1.60,0.08,0,null,1,T.h);
+    A.halt=true;const pips=[];
+    for(let i=0;i<maxHp;i++){const pip=new THREE.Sprite(new THREE.SpriteMaterial({color:0x40e060}));pip.scale.set(0.11,0.11,1);pip.position.set((i-(maxHp-1)/2)*0.17,2.40,0.05);pip.visible=false;T.h.add(pip);pips.push(pip);}
+    F.knights.push({T,A,pips,armored,field:F,home:T.basis.clone(),maxHp,hp:maxHp,state:'dormant',windT:0,actCD:0,stagT:0,downT:0,flash:0,spark:0,knockSpeed:1.5,_lunge:0,_dealt:false,_ton:0});}
+  if(!arena.knightArenas)arena.knightArenas=[];arena.knightArenas.push(F);}
+function knightPose(K){const T=K.T;if(K.state==='down'){T.halt=true;T.h.quaternion.setFromAxisAngle(_Y,T.yaw).multiply(_PQ.setFromAxisAngle(_X,Math.PI*0.42));T.h.position.copy(T.basis).setY(0.10);}else{T.halt=false;arenaPose(T);}}
+function knightFieldReset(F){
+  for(const K of F.knights){K.T.basis.copy(K.home);K.T.yaw=0;K.T.z.a[0]=K.T.z.a[1]=K.T.z.w[0]=K.T.z.w[1]=0;K.T.z.ruht=true;K.state='dormant';K.hp=K.maxHp;K.windT=0;K.actCD=0;K.stagT=0;K._lunge=0;K._dealt=false;K.A.h.rotation.x=0;knightPose(K);}
+  F.active=false;F.won=false;F.deckung=3;}
+function updateKnights(dt){if(!arena.knightArenas)return;arena._nearKnightField=null;
+  for(const F of arena.knightArenas){
+    const pdx=arena.player.x-F.center.x,pdz=arena.player.z-F.center.z,pDist=Math.hypot(pdx,pdz);
+    if(!F.active){if(pDist<5.5){arena._nearKnightField=F;if(!F._nearShown){F._nearShown=true;popText('drücke [E] — '+(F.armored?'die Ritter herausfordern':'die Kämpfer herausfordern'),'#cfe0a0',0,-0.16);}}else F._nearShown=false;}
+    if(F.won&&pDist>10){knightFieldReset(F);continue;}
+    for(const K of F.knights){const T=K.T;
+      const showPips=F.active&&K.state!=='down';
+      for(let i=0;i<K.pips.length;i++){K.pips[i].visible=showPips;if(showPips){const lost=i>=K.hp;K.pips[i].material.color.setHex(lost?0x3a1a1a:(K.hp===1?0xff4040:K.hp===2&&K.maxHp>2?0xe0a040:0x40e060));}}
+      if(K.state==='down'){if(K.downT>0)K.downT-=dt;continue;}
+      if(K.actCD>0)K.actCD-=dt; if(K.flash>0)K.flash=Math.max(0,K.flash-dt*3.2); if(K.spark>0)K.spark=Math.max(0,K.spark-dt*4.5);
+      const tel=(K.state==='wind')?(0.5*Math.sin(clock.getElapsedTime()*16)+0.5):0,ton=K.flash+K.spark+tel;
+      if(ton>0||K._ton>0){K._ton=ton;arenaTon(T,1+0.8*K.flash+0.9*K.spark+0.7*tel,1+0.67*K.flash-0.33*K.spark+0.17*tel,1+0.29*K.flash-0.35*K.spark-0.29*tel);}
+      if(!F.active){knightPose(K);continue;}
+      const kw=T.basis,dx=arena.player.x-kw.x,dz=arena.player.z-kw.z,dist=Math.hypot(dx,dz)||1e-4;
+      T.yaw=Math.atan2(dx,dz);
+      if(K.state==='stagger'){K.stagT-=dt;kw.x-=(dx/dist)*K.knockSpeed*dt;kw.z-=(dz/dist)*K.knockSpeed*dt;if(K.stagT<=0)K.state='approach';knightPose(K);continue;}
+      if(K.state==='approach'){
+        if(dist>2.05){const sp=1.4*dt;kw.x+=(dx/dist)*sp;kw.z+=(dz/dist)*sp;kw.y=Math.abs(Math.sin(clock.getElapsedTime()*5+kw.x))*0.025;}
+        else{kw.y=0;if(K.actCD<=0){K.state='wind';K.windT=0.95;}}
+      } else if(K.state==='wind'){
+        K.windT-=dt;const u=clamp(1-K.windT/0.95,0,1);K.A.h.rotation.x=-2.1*u;
+        if(K.windT<=0){K.state='strike';K._lunge=0;K._dealt=false;}
+      } else if(K.state==='strike'){
+        K._lunge+=dt;const u=clamp(K._lunge/0.18,0,1);K.A.h.rotation.x=-2.1*(1-u)+0.55*u;
+        if(u>=0.5&&!K._dealt){K._dealt=true;
+          if(dist<2.45){F.deckung=Math.max(0,F.deckung-1);
+            fx.shake=Math.max(fx.shake,0.40);fx.freeze=Math.max(fx.freeze,0.10);const B=camBasis();fx.kickV.addScaledVector(B.fwd,-2.4);fx.kickV.y-=1.0;
+            if(F.deckung>0){popText('✖ HIEB DURCH DEINE DECKUNG','#ff6a4a',0,0);popText('Deckung '+F.deckung+'/3','#ffae6a',0.12,0.07);}
+            else{popText('✖ DEINE DECKUNG ZERBRICHT','#ff5a4a',0,0);knightFieldReset(F);}}
+          else popText('— Hieb verfehlt, ausgewichen','#9fb3c8',0,-0.04);}
+        if(K._lunge>=0.28){K.state='approach';K.actCD=0.60;K._dealt=false;K.A.h.rotation.x=0;}
+      }
+      knightPose(K);
+    }
+    if(F.active&&!F.won){let down=0;for(const K of F.knights)if(K.state==='down')down++;
+      if(down>=F.knights.length){F.won=true;popText('⚔ '+(F.armored?'ALLE RITTER GEFALLEN':'DAS FELD IST GERÄUMT')+' — verlasse den Ring','#7fe0a0',0,-0.06);}}
+  }
+}
+function tryHitKnight(handW,bladeDir,vel){if(!arena.knightArenas)return false;
+  let best=null,bestPt=null,bestD=1e9,bestF=null,bestHead=false;
+  for(const F of arena.knightArenas){if(!F.active)continue;for(const K of F.knights){if(K.state==='down')continue;
+    const ow=K.T.h.position;                                                                       // Fuß-Ursprung am Boden
+    const headC=new THREE.Vector3(ow.x,ow.y+1.95,ow.z),torsoC=new THREE.Vector3(ow.x,ow.y+1.28,ow.z);
+    const hpt=bladeHitsColumn(handW,bladeDir,headC,0.22,1.78,2.18);                          // Kopf: eng, hoch (Visier)
+    const tpt=hpt?null:bladeHitsColumn(handW,bladeDir,torsoC,0.40,0.55,1.74);                // Rumpf: breit (Fugen)
+    const pt=hpt||tpt;if(pt){const d=pt.distanceTo(handW);if(d<bestD){bestD=d;best=K;bestPt=pt;bestF=F;bestHead=!!hpt;}}}}
+  if(!best)return false;const K=best,F=bestF;
+  const mm=arena._m||measure(P);
+  const vAx=Math.abs(vel.dot(bladeDir)),vLat=vel.clone().addScaledVector(bladeDir,-vel.dot(bladeDir)).length();
+  const thrust=vAx>vLat*0.9,sharp=(mm.edgeWinkel!=null&&mm.edgeWinkel<32),pointy=(mm.betaDeg!=null&&mm.betaDeg<42);
+  const u=SC.trefferUrteil(mm,{vLat,vAx,edgeQ:arena._edgeAlign,zone:bestHead?'kopf':'brust',P}),KE=u.KE;
+  const J=arenaStoss(K.T,bestPt,vel,u);                                                         // der EINE Stoß: der Leib wankt
+  let dmg=0,msg='',col='#d96a4a';
+  if(F.armored){
+    if(thrust&&bestHead&&mm.betaDeg!=null){dmg=2;msg='➤ Stich in den Augenschlitz! — '+KE.toFixed(0)+' J';col='#9fe0a0';}   // GEMESSEN: Streitkolben/Kriegshammer betaDeg=null — ein Wuchtkopf passt in keinen Schlitz
+    else if(thrust&&pointy){dmg=1;msg='➤ Stich in die Fuge (Achsel/Leiste) — '+KE.toFixed(0)+' J';col='#8fe39a';}
+    else if(!thrust&&!sharp){dmg=1;msg='✹ Wucht durch den Harnisch — '+KE.toFixed(0)+' J';col='#ffd24a';}
+    else if(thrust){K.spark=1;msg='✗ am Plattenrand abgewiesen — kein spitzer Ort';bladeRecoil(0.70);}
+    else{K.spark=1;msg='✗ Schnitt prallt von der Platte ab';bladeRecoil(0.85);}
+  } else {
+    if(thrust){dmg=bestHead?2:1;msg=bestHead?'➤ Stich in die Kehle! — '+KE.toFixed(0)+' J':'➤ Stich trifft — '+KE.toFixed(0)+' J';col='#9fe0a0';}
+    else if(sharp){dmg=bestHead?2:1;msg=(bestHead?'⚔ Schnitt zum Kopf — ':'⚔ Schnitt trifft tief — ')+KE.toFixed(0)+' J'+((u.edgeQ||1)<=0.75?' · Schneide quer':'');col='#9fe0a0';}
+    else{dmg=1;msg='✹ Schlag trifft — '+KE.toFixed(0)+' J';col='#ffd24a';}
+  }
+  if(dmg>0){K.flash=1;
+    K.knockSpeed=clamp(J*0.12,0.9,4.5);K.stagT=clamp(0.40+J*0.012,0.45,0.9);                    // der Rückstoß folgt dem Impuls des Stoßes
+    if(K.state==='wind'||K.state==='strike')K.A.h.rotation.x=0;K.state='stagger';K._dealt=false;
+    K.hp-=dmg;fx.shake=Math.max(fx.shake,0.10);fx.freeze=Math.max(fx.freeze,0.05);arena.cooldown=0.28;
+    if(K.hp<=0){K.state='down';K.downT=600;knightPose(K);msg+=(F.armored?' — RITTER FÄLLT':' — GESTRECKT');col='#7fe0a0';}
+    popText(msg,col,0,-0.04);}
+  else popText(msg,col,0,0);
+  return true;}
+
+// ── DIE STREITPUPPE: ein Leib auf Kufen — sie schläft, mit [E] geweckt greift sie an; der Stoß lässt sie wanken und gleiten ──
+function updateCharger(dt){const C=arena.charger;if(!C)return;const T=C.T,dummyW=T.h.position;
+  const dx=arena.player.x-dummyW.x,dz=arena.player.z-dummyW.z,dist=Math.hypot(dx,dz)||1e-4;
+  if(C.hitCD>0)C.hitCD-=dt;
+  const near=(C.state==='dormant'&&dist<6.5);arena._nearCharger=near;
+  if(near&&!C._wasNear)popText('drücke [E] — Streitpuppe wecken','#cfe0a0',0,-0.16);C._wasNear=(dist<8);
+  if(C.state==='dormant'){T.yaw=Math.atan2(dx,dz);}                                             // wartet, schaut dich an
+  else if(C.state==='charge'){const step=C.speed*dt;T.basis.x+=(dx/dist)*step;T.basis.z+=(dz/dist)*step;T.yaw=Math.atan2(dx,dz);
+    if(dist<1.7&&C.hitCD<=0){fx.shake=Math.max(fx.shake,0.42);fx.freeze=Math.max(fx.freeze,0.12);const B=camBasis();fx.kickV.addScaledVector(B.fwd,-3.2);fx.kickV.y-=1.5;popText('✖ DIE STREITPUPPE RAMMT DICH','#ff6a4a',0,0);popText('rechtzeitig treffen!','#d96a4a',0.12,0.07);C.state='retreat';C.hitCD=1.0;}}
+  else if(C.state==='retreat'){const hx=C.home.x-dummyW.x,hz=C.home.z-dummyW.z,hd=Math.hypot(hx,hz);
+    if(hd<0.25){T.basis.copy(C.home);T.z.x[0]=T.z.x[1]=0;T.yaw=0;C.state='dormant';C._wasNear=true;}else{const step=C.speed*1.5*dt;T.basis.x+=(hx/hd)*step;T.basis.z+=(hz/hd)*step;}}
+  arenaPose(T);}
+function tryArrowCharger(a){const C=arena.charger;if(!C||C.state==='retreat')return false;
+  if(!kapselNah(C.T,a.pos,0.05))return false;pfeilStoss(C.T,a);
+  C.state='retreat';C.hitCD=0.8;fx.shake=Math.max(fx.shake,0.1);popText('Pfeil stoppt die Streitpuppe!','#6fcf73',0,0);popText('+15','#6fcf73',0.12,0.06);
+  arena.score.shots++;arena.score.sum+=15;arena.score.last={ring:15,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};updateHUD();return true;}
+function tryHitCharger(handW,bladeDir,vel){const C=arena.charger;if(!C||C.hitCD>0.4)return false;
+  if(C.state!=='charge'){if(!arenaHieb(C.T,handW,bladeDir,vel))return false;C.hitCD=0.3;popText('Streitpuppe getroffen — sie wankt','#cdbf9a',0,-0.04);arena.cooldown=0.18;return true;}
+  const h=arenaHieb(C.T,handW,bladeDir,vel);if(!h)return false;
+  const dummyW=C.T.h.position,ms=wMass(),sp=vel.length()*ms;C.hitCD=0.5;
+  const _dist=Math.hypot(dummyW.x-arena.player.x,dummyW.z-arena.player.z),_reach=Math.max(0.3,arena._edge1),_jam=clamp((_dist-_reach*0.15)/(_reach*0.45),0.15,1),spEff=sp*_jam;
+  if(spEff>3.5){C.state='retreat';C.hitCD=0.8;popText('Streitpuppe zurückgeschlagen!','#6fcf73',0,-0.04);fx.shake=Math.max(fx.shake,0.13);fx.freeze=Math.max(fx.freeze,0.06);arena.cooldown=0.25;}
+  else if(sp>3.5&&_jam<0.6){popText('zu nah — '+currentGattung+' kommt nicht zur Geltung!','#d4a843',0,0);bladeRecoil(0.5);}
+  else{popText('zu schwach — sie drängt weiter','#d4a843',0,0);bladeRecoil(0.6);}
+  return true;}
+
+// ── DIE PENDEL: Kugel, Gasse, Pendelziel — der Kern schwingt sie; die schnelle Kugel trifft den, der im Weg steht ──
+function pendelTrifftSpieler(T,L,msg,stark){if(T.z.ruht||T.hitCD>0)return;const bw=T.h.localToWorld(_KA.set(0,-L,0));
+  const spd=L*Math.hypot(T.z.w[0],T.z.w[1]),dh=Math.hypot(bw.x-arena.player.x,bw.z-arena.player.z);
+  if(spd>1.6&&dh<0.62&&bw.y<1.85){fx.shake=Math.max(fx.shake,stark);fx.freeze=Math.max(fx.freeze,0.1);popText(msg,'#ff6a6a',0,0);T.hitCD=1.0;}}
+function updatePendulum(dt){const T=arena.pendulum;if(!T)return;if(T.hitCD>0)T.hitCD-=dt;pendelTrifftSpieler(T,1.26,'✖ DIE KUGEL TRIFFT DICH',0.4);}
+function tryHitPendulum(handW,bladeDir,vel){const T=arena.pendulum;if(!T||T.hitCD>0.55)return false;
+  if(!arenaHieb(T,handW,bladeDir,vel))return false;fx.shake=Math.max(fx.shake,0.08);fx.freeze=Math.max(fx.freeze,0.05);popText('Kugel getroffen — sie schwingt!','#cdbf9a',0,-0.04);arena.cooldown=0.18;return true;}
+function updateGauntlet(dt){if(!arena.gauntlet)return;for(const T of arena.gauntlet){if(T.hitCD>0)T.hitCD-=dt;pendelTrifftSpieler(T,1.35,'✖ Pendel erwischt dich',0.35);}}
+function tryHitGauntlet(handW,bladeDir,vel){if(!arena.gauntlet)return false;
+  for(const T of arena.gauntlet){if(T.hitCD>0.55)continue;if(!arenaHieb(T,handW,bladeDir,vel))continue;
+    fx.shake=Math.max(fx.shake,0.07);fx.freeze=Math.max(fx.freeze,0.04);popText('Pendel getroffen','#cdbf9a',0,-0.04);arena.cooldown=0.16;return true;}
+  return false;}
+// das Pendelziel ruht nie lange: der Ziel-Wart stößt es an, wenn es steht (ein Stoß nach dem Gesetz, quer zur Bahn)
+function updateSwingTarget(dt){const S=arena.swingTgt;if(!S)return;
+  if(S.T.z.ruht&&clock.getElapsedTime()>S.anstossAb){S.seite=-S.seite;SC.geraetStoss(S.T.z,S.T.z.m*2.0,[0,-1.55,0],[0,0,S.seite]);S.anstossAb=clock.getElapsedTime()+1.0;}
+  if(S.struck&&clock.getElapsedTime()>S.respawnAt)S.struck=false;}
+function tryArrowSwing(a){const S=arena.swingTgt;if(!S||S.struck)return false;
+  const T=S.T;T.h.updateMatrixWorld(true);const c=T.h.localToWorld(_KA.set(0,-1.55,0)),nx=_KB.set(1,0,0).transformDirection(T.h.matrixWorld);
+  const d=a.pos.clone().sub(c),dn=d.dot(nx),r=d.addScaledVector(nx,-dn).length();
+  if(Math.abs(dn)<0.22&&r<S.R){const ring=clamp(Math.ceil(4*(1-r/S.R)),1,4);
+    S.struck=true;S.respawnAt=clock.getElapsedTime()+2.5;pfeilStoss(T,a);T.h.attach(a.mesh);
+    fx.shake=Math.max(fx.shake,0.08);popText('PENDELZIEL getroffen — vorgehalten! · '+ring,'#ffe07a',0,0);popText('+'+(ring*5),'#6fcf73',0.12,0.06);arena.score.shots++;arena.score.sum+=ring*5;arena.score.last={ring:ring*5,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};updateHUD();return true;}
+  return false;}
+
+// ── DIE WURFSCHEIBE: die Tontaube (eine Gestalt des Kerns) steigt — triff sie in der Luft; der Wurf stößt den Arm zurück ──
+function updateClay(dt){const C=arena.clay;if(!C)return;const t=clock.getElapsedTime();
+  if(!C.active){if(t>C.nextT&&Math.hypot(arena.player.x-C.thrower.x,arena.player.z-C.thrower.z)<30){C.pos.copy(C.thrower);C.pos.y+=0.95;C.vel.set((zufall('ton')-0.5)*3,7.5+zufall('ton')*2.5,(zufall('ton')<0.5?1:-1)*(4+zufall('ton')*4));C.active=true;C.disc.visible=true;
+      SC.geraetStoss(C.arm.z,C.mTon*C.vel.length(),[0,0.65,0.22],[0,0,-1]);popText('PULL! — Wurfscheibe steigt','#d8c050',0,-0.22);}return;}
+  C.vel.y-=SC.GERAET_GESETZ.schwere*dt;C.pos.addScaledVector(C.vel,dt);
+  C.disc.position.copy(C.pos);C.disc.rotation.x+=dt*7;C.disc.rotation.z+=dt*4;
+  if(C.pos.y<0.12){C.active=false;C.disc.visible=false;C.nextT=t+2.0+zufall('ton')*2.2;}}
+function tryArrowClay(a){const C=arena.clay;if(!C||!C.active)return false;
+  if(a.pos.distanceTo(C.pos)<0.45){C.active=false;C.disc.visible=false;C.nextT=clock.getElapsedTime()+1.6+zufall('ton')*1.5;C.broke++;
+    fx.shake=Math.max(fx.shake,0.1);popText('SCHEIBE ZERSPLITTERT — in der Luft getroffen!','#ffe07a',0,0);popText('+25','#6fcf73',0.12,0.06);arena.score.shots++;arena.score.sum+=25;arena.score.last={ring:25,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};updateHUD();return true;}
+  return false;}
+
+// ── DER DREHBAUM und DIE QUINTANE: das Kreuz und der Arm drehen nach dem Gesetz; der schnelle Arm erwischt den, der steht ──
+function updateSpinTree(dt){const T=arena.spintree;if(!T)return;if(T.hitCD>0)T.hitCD-=dt;
+  if(Math.abs(T.z.om)>2.6&&T.hitCD<=0){for(let i=0;i<4;i++){const a=i/4*Math.PI*2,pw=T.h.localToWorld(_KA.set(Math.cos(a)*0.92,0,Math.sin(a)*0.92));
+    if(Math.hypot(pw.x-arena.player.x,pw.z-arena.player.z)<0.6&&pw.y<1.85){fx.shake=Math.max(fx.shake,0.34);fx.freeze=Math.max(fx.freeze,0.09);popText('✖ der Drehbaum erwischt dich','#ff8a6a',0,0);T.hitCD=0.9;break;}}}}
+function tryHitSpinTree(handW,bladeDir,vel){const T=arena.spintree;if(!T)return false;
+  if(!arenaHieb(T,handW,bladeDir,vel))return false;fx.shake=Math.max(fx.shake,0.07);fx.freeze=Math.max(fx.freeze,0.05);popText('Drehbaum getroffen!','#cd9a6a',0,-0.04);arena.cooldown=0.18;return true;}
+function tryHitQuintain(handW,bladeDir,vel){const T=arena.quintain;if(!T)return false;
+  const h=arenaHieb(T,handW,bladeDir,vel);if(!h)return false;const bag=T.h.worldToLocal(h.ort.clone()).x<0;
+  fx.shake=Math.max(fx.shake,0.06);fx.freeze=Math.max(fx.freeze,0.05);
+  popText(bag?'Sandsack getroffen — er schwingt herum!':'Schild getroffen — weiche dem Sandsack!',bag?'#d8c089':'#ffd479',0,-0.04);arena.cooldown=0.2;return true;}
+function updateQuintain(dt){const T=arena.quintain;if(!T)return;if(T.hitCD>0)T.hitCD-=dt;
+  const bp=T.h.localToWorld(_KA.set(-1.0,-0.2,0)),dh=Math.hypot(bp.x-arena.player.x,bp.z-arena.player.z);   // erwischt der Sack den Spieler?
+  if(dh<0.75&&Math.abs(T.z.om)>0.6&&T.hitCD<=0){T.hitCD=1.3;fx.shake=Math.max(fx.shake,0.42);fx.freeze=Math.max(fx.freeze,0.12);const B=camBasis();fx.kickV.addScaledVector(B.fwd,-3.2);fx.kickV.y-=1.5;popText('✖ DER SANDSACK ERWISCHT DICH','#ff6a4a',0,0);popText('schneller ausweichen!','#d96a4a',0.12,0.08);}}
+
+// ── DIE STECHRINGE: durchstechen — ein Treffer am Rand stößt den Ring an seinem Faden fort ──
+function tryThrustRing(tip,prev,dt){if(!arena.thrustRings||!prev)return;
+  for(const r of arena.thrustRings){if(r.scored)continue;r.T.h.updateMatrixWorld(true);
+    const c=r.T.h.localToWorld(_KA.set(0,-0.94,0)).clone(),ax=_KB.set(0,0,1).transformDirection(r.T.h.matrixWorld).clone();
+    const d0=prev.clone().sub(c).dot(ax),d1=tip.clone().sub(c).dot(ax);
+    if(d0*d1<=0&&Math.abs(d1-d0)>1e-5){const t=d0/(d0-d1),cr=prev.clone().lerp(tip,t);const rad=cr.clone().sub(c).addScaledVector(ax,-cr.clone().sub(c).dot(ax)).length();
+      if(rad<r.R-0.035){r.scored=true;r.scoreUntil=clock.getElapsedTime()+1.4;r.flash=1;popText('◎ RING DURCHSTOCHEN — sauber durch die Mitte!','#6fcf73',0,-0.04);fx.freeze=Math.max(fx.freeze,0.06);}
+      else if(rad<r.R*1.7){const v=tip.clone().sub(prev).divideScalar(Math.max(1e-3,dt));
+        arenaStoss(r.T,cr,v,SC.trefferUrteil(arena._m||measure(P),{vLat:0,vAx:v.length(),P}));
+        popText('Rand erwischt — der Ring schwingt fort!','#d4a843',0,-0.04);fx.shake=Math.max(fx.shake,0.16);fx.freeze=Math.max(fx.freeze,0.05);}
+      else if(rad<r.R*2.8){popText('knapp — '+(rad*100).toFixed(0)+' cm daneben','#d4a843',0,-0.04);}}}}
+function updateRings(dt){if(!arena.thrustRings)return;for(const r of arena.thrustRings){
+  if(r.scored&&r.scoreUntil&&clock.getElapsedTime()>r.scoreUntil){r.scored=false;r.scoreUntil=0;}
+  if(r.flash>0||r._ton){r.flash=Math.max(0,r.flash-dt*0.8);r._ton=r.flash>0;arenaTon(r.T,1-0.5*r.flash,1+0.4*r.flash,1);}}}
+
+// ── DAS PAPAGEIEN-FELD, DIE WEIDENRUTE: das Ziel wankt nach dem Gesetz, die Wertung ruht kurz ──
+function updatePopinjay(dt){if(!arena.popinjays)return;for(const P2 of arena.popinjays)if(P2.struck&&clock.getElapsedTime()>P2.respawnAt)P2.struck=false;}
+function updateWand(){const W=arena.wand;if(W&&W.struck&&clock.getElapsedTime()>W.respawnAt)W.struck=false;}
+
+// ── JEDES ÜBRIGE TEIL (Ziel, Ente, Fahne, Wurf-Arm, Gestell …): der EINE Stoß am getroffenen Teil ──
+function tryHitTeil(handW,bladeDir,vel){for(const T of arena.teile){if(T.eigen||!T.z||T.z.art==='fest')continue;
+  if(arenaHieb(T,handW,bladeDir,vel)){fx.shake=Math.max(fx.shake,0.05);fx.freeze=Math.max(fx.freeze,0.04);popText(SC.ARENA_ARTEN[T.id].lab+' getroffen','#cdbf9a',0,-0.04);arena.cooldown=0.18;return true;}}
+  return false;}
+function tryArrowTeil(a){for(const T of arena.teile){if(T.eigen||T.pfeilEigen||!T.z||T.z.art==='fest'||!kapselNah(T,a.pos,0.05))continue;
+  pfeilStoss(T,a);popText(SC.ARENA_ARTEN[T.id].lab+' getroffen','#cdbf9a',0,0);stickArrow(a);T.h.attach(a.mesh);return true;}
+  return false;}
+
+// — die Kirmes-Enten: sie fahren auf ihrer Leiste (das Spiel des Labors), der Treffer klappt sie nach dem Gesetz zurück —
+function carnivalUpdate(t){if(!arena.movers)return;
+  for(const mv of arena.movers){if(mv.hit&&t-mv.hitAt>2.8)mv.hit=false;
+    mv.T.basis.z=mv.z0+mv.amp*Math.sin(mv.w*t+mv.phase);mv.worldZ=mv.T.basis.z;arenaPose(mv.T);}}
+function hitMover(a){if(!arena.movers)return false;const t=clock.getElapsedTime();
+  for(const mv of arena.movers){if(mv.hit)continue;
+    if(a.pos.x>=mv.baseX-0.22&&a.pos.x<mv.baseX+0.3&&Math.abs(a.pos.z-mv.worldZ)<0.28&&Math.abs(a.pos.y-mv.baseY)<0.26){
+      mv.hit=true;mv.hitAt=t;pfeilStoss(mv.T,a);fx.shake+=0.06;arena.score.shots++;arena.score.sum+=10;arena.score.last={ring:10,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};
+      popText('ENTE GETROFFEN!','#ffe07a',0,0);popText('+10','#6fcf73',0.12,0.06);stickArrow(a);mv.T.h.attach(a.mesh);updateHUD();return true;}}
+  return false;}
+
+// — der Bambus: das Rohr ist eine Gestalt des Kerns (Höhe als Regler); der saubere Schnitt teilt es, der Rest federt —
+function bambusRohr(b,h){if(b.T)arenaWeg(b.T);b.T=arenaTeil('bambusrohr',b.wx,b.baseY,b.wz,0,{hoeheM:h});b.T.eigen=true;}
 function updateFalling(dt){if(!arena.fallingBamboo)return;
-  for(let i=arena.fallingBamboo.length-1;i>=0;i--){const f=arena.fallingBamboo[i];f.vel.y-=9.81*dt;
+  for(let i=arena.fallingBamboo.length-1;i>=0;i--){const f=arena.fallingBamboo[i];f.vel.y-=SC.GERAET_GESETZ.schwere*dt;
     f.mesh.position.addScaledVector(f.vel,dt);f.mesh.rotation.x+=f.ang.x*dt;f.mesh.rotation.z+=f.ang.z*dt;f.life+=dt;
     if(f.mesh.position.y<0.06){f.mesh.position.y=0.06;f.vel.x*=0.4;f.vel.z*=0.4;f.vel.y=Math.abs(f.vel.y)*0.25;f.ang.multiplyScalar(0.5);}
-    if(f.life>6){if(f.mesh.parent)f.mesh.parent.remove(f.mesh);arena.fallingBamboo.splice(i,1);}}}
+    if(f.life>6){clear(f.mesh);arena.fallingBamboo.splice(i,1);}}}
+function fallendesStueck(id,ov,pos,quat,vel,spin){const g=SC.buildInstance(id,1,0,ov);g.position.copy(pos);if(quat)g.quaternion.copy(quat);arena.group.add(g);
+  arena.fallingBamboo.push({mesh:g,vel,ang:new THREE.Vector3((zufall('fall')-0.5)*spin,0,(zufall('fall')-0.5)*spin),life:0});}
 function bladeRecoil(strength){const s=clamp(strength,0,1.2),B=camBasis(),ms=wMass();
   fx.shake=Math.max(fx.shake,0.18+0.24*s*ms);
   fx.freeze=Math.max(fx.freeze,0.08+0.07*s);                                                   // Hitstop — der Schlag „steht" kurz
@@ -982,7 +852,7 @@ function tryCutBamboo(handW,bladeDir,vel){if(!arena.bamboo)return;const m=measur
   const e0=arena._edge0,e1=arena._edge1,gXd=arena._gripXdom||0,eLen=Math.max(0.02,e1-e0),xcop=(m.xcop!=null?m.xcop:S.xBlade0+0.65*(S.xPoint-S.xBlade0));
   const vAxT=Math.abs(vel.dot(bladeDir)),vLatT=vel.clone().addScaledVector(bladeDir,-vel.dot(bladeDir)).length();
   for(const b of arena.bamboo){if(b.cut)continue;
-    let best=null;const NS=8;                                                                 // ganze Schneide gegen den Pfahl prüfen
+    let best=null;const NS=8;                                                                 // ganze Schneide gegen das Rohr prüfen
     for(let i=0;i<=NS;i++){const p=e0+(i/NS)*eLen,pt=handW.clone().addScaledVector(bladeDir,p).add(bladeCurve(i/NS)),dH=Math.hypot(pt.x-b.wx,pt.z-b.wz);
       if(dH<0.14&&pt.y>b.baseY+0.06&&pt.y<b.baseY+b.h-0.03&&(!best||dH<best.dH))best={p:p,pt:pt,dH:dH};}
     if(!best)continue;
@@ -990,97 +860,67 @@ function tryCutBamboo(handW,bladeDir,vel){if(!arena.bamboo)return;const m=measur
     const vAx=vAxT*velFac, vLat=vLatT*velFac, mEff=Math.max(0.02,(m.mEffFrac||0.2)*m.M);
     const edgeQ=clamp(arena._edgeAlign!=null?arena._edgeAlign:1,0.15,1), KE=0.5*mEff*vLat*vLat*eff*(0.25+0.75*edgeQ);   // wahre Schneide: EIN Faktor überall
     const where=Math.abs(xLoc-xcop)/S.L<0.12?'Sweetspot':best.p>e1*0.85?'Spitze':best.p<e1*0.4?'gehilznah':'Mitte';
-    if(!sharp){b.wobble=0.35;popText('stumpf — keine Schneide','#d96a4a',0,0);bladeRecoil(0.7);b.cut='miss';setTimeout(()=>{if(b.cut==='miss')b.cut=false;},350);return;}
-    if(vLat<vAx*0.8){b.wobble=0.32;popText('Stich — Bambus splittert nicht, kein Schnitt','#d96a4a',0,0);bladeRecoil(0.95);return;}
-    if(edgeQ<0.45){b.wobble=0.30;popText('flach — die Schneide liegt quer','#d96a4a',0,0);bladeRecoil(0.8);return;}
-    if(KE<10){b.wobble=0.45;popText('zu schwach — die Klinge prallt ab ('+KE.toFixed(0)+' J · '+where+')','#d4a843',0,0);bladeRecoil(0.85);b.cut='miss';setTimeout(()=>{if(b.cut==='miss')b.cut=false;},350);return;}
+    const federt=()=>arenaStoss(b.T,best.pt,vel,SC.trefferUrteil(m,{vLat,vAx,edgeQ,P}));        // was nicht schneidet, stößt: das Rohr federt
+    if(!sharp){federt();popText('stumpf — keine Schneide','#d96a4a',0,0);bladeRecoil(0.7);b.cut='miss';setTimeout(()=>{if(b.cut==='miss')b.cut=false;},350);return;}
+    if(vLat<vAx*0.8){federt();popText('Stich — Bambus splittert nicht, kein Schnitt','#d96a4a',0,0);bladeRecoil(0.95);return;}
+    if(edgeQ<0.45){federt();popText('flach — die Schneide liegt quer','#d96a4a',0,0);bladeRecoil(0.8);return;}
+    if(KE<10){federt();popText('zu schwach — die Klinge prallt ab ('+KE.toFixed(0)+' J · '+where+')','#d4a843',0,0);bladeRecoil(0.85);b.cut='miss';setTimeout(()=>{if(b.cut==='miss')b.cut=false;},350);return;}
     const cutDir=vel.clone().setY(0);if(cutDir.lengthSq()<1e-4)cutDir.set(0,0,1);cutDir.normalize();
     cutBambooPole(b,best.pt.y,cutDir,KE);if(where==='Sweetspot')popText('Schwingungsknoten — voll','#6fcf73',0.14,-0.12);arena.cooldown=0.25;return;}}
 function cutBambooPole(b,yCut,cutDir,KE){b.cut=true;if(!arena.fallingBamboo)arena.fallingBamboo=[];
   const bottomH=Math.max(0.05,yCut-b.baseY),topH=Math.max(0.05,(b.baseY+b.h)-yCut);
-  if(b.mesh.parent)b.mesh.parent.remove(b.mesh);
-  const stump=makeBamboo(bottomH);stump.position.set(b.wx,b.baseY,b.wz);arena.group.add(stump);b.mesh=stump;
-  const top=makeBamboo(topH);top.position.set(b.wx,yCut,b.wz);arena.group.add(top);
-  arena.fallingBamboo.push({mesh:top,vel:cutDir.clone().multiplyScalar(0.6+Math.min(2.5,KE*0.006)).add(new THREE.Vector3(0,0.4,0)),ang:new THREE.Vector3((Math.random()-0.5)*5,0,(Math.random()-0.5)*5),life:0});
+  bambusRohr(b,bottomH);                                                                        // der Stumpf bleibt (er federt weiter)
+  fallendesStueck('bambusrohr',{hoeheM:topH},new THREE.Vector3(b.wx,yCut,b.wz),null,cutDir.clone().multiplyScalar(0.6+Math.min(2.5,KE*0.006)).add(new THREE.Vector3(0,0.4,0)),5);
   b.respawnAt=clock.getElapsedTime()+(b.lane?0.9:1.6);
   fx.shake=Math.max(fx.shake,0.05);fx.freeze=Math.max(fx.freeze,0.05);
   popText('✁ SAUBERER SCHNITT — '+KE.toFixed(0)+' J','#ffe07a',0,-0.04);popText('die Spitze fällt','#9fb3c8',0.12,0.05);}
-function buildSwingTatami(pos){const g=new THREE.Group();g.position.copy(pos);
-  for(const sx of [-0.75,0.75]){const post=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.07,2.4,8),matCol(0x3a2a1a,0.9,0));post.position.set(sx,1.2,0);g.add(post);}
-  const bar=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,1.7,8),matCol(0x33251a,0.9,0));bar.rotation.z=Math.PI/2;bar.position.set(0,2.4,0);g.add(bar);
-  arena.tatami={grp:g,pivot:new THREE.Vector3(pos.x,pos.y+2.4,pos.z),len:0.55,rollLen:1.0,amp:0.7,w:1.4,phase:0,cut:false,respawnAt:0,roll:null,rope:null};
-  spawnTatamiRoll();return g;}
-function spawnTatamiRoll(){const T=arena.tatami;
-  const roll=new THREE.Mesh(new THREE.CylinderGeometry(0.085,0.085,T.rollLen,12),matCol(0xcab793,0.85,0));
-  for(const yy of [-0.34,0,0.34]){const ring=new THREE.Mesh(new THREE.TorusGeometry(0.09,0.014,6,14),matCol(0x6a5535,0.8,0));ring.rotation.x=Math.PI/2;ring.position.y=yy;roll.add(ring);}
-  roll.position.set(T.pivot.x,T.pivot.y-T.len-T.rollLen*0.5,T.pivot.z);arena.group.add(roll);T.roll=roll;
-  const rope=new THREE.Mesh(new THREE.CylinderGeometry(0.012,0.012,T.len,5),matCol(0x5a4525,0.9,0));arena.group.add(rope);T.rope=rope;T.cut=false;}
-function swingTatamiUpdate(t){const T=arena.tatami;if(!T||!T.roll)return;const ang=T.amp*Math.sin(T.w*t+T.phase);
-  const rx=T.pivot.x+Math.sin(ang)*T.len, ry=T.pivot.y-Math.cos(ang)*T.len;
-  T.rope.position.set((T.pivot.x+rx)/2,(T.pivot.y+ry)/2,T.pivot.z);T.rope.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(rx-T.pivot.x,ry-T.pivot.y,0).normalize());
-  const cx=rx+Math.sin(ang)*T.rollLen*0.5, cy=ry-Math.cos(ang)*T.rollLen*0.5;
-  T.roll.position.set(cx,cy,T.pivot.z);T.roll.rotation.z=ang;T.rollCenter=new THREE.Vector3(cx,cy,T.pivot.z);}
-function tryCutTatami(handW,bladeDir,vel){const T=arena.tatami;if(!T||!T.roll||T.cut)return;const m=measure(P),S=m.S;
-  const sharp=(m.edgeWinkel!=null&&m.edgeWinkel<32),c=T.rollCenter;if(!c)return;   // harmonisiert (war 30)
+function regrowBamboo(){if(!arena.bamboo)return;const t=clock.getElapsedTime();
+  for(const b of arena.bamboo){if(b.cut===true&&b.respawnAt&&t>b.respawnAt){bambusRohr(b,b.h);b.cut=false;b.respawnAt=0;}}}
+function tryThrustBamboo(tip,prev,dt){if(!arena.bamboo)return false;
+  for(const b of arena.bamboo){if(b.cut)continue;
+    const dH=Math.hypot(tip.x-b.wx,tip.z-b.wz);
+    if(dH<0.13&&tip.y>b.baseY+0.06&&tip.y<b.baseY+b.h-0.03){const v=prev?tip.clone().sub(prev).divideScalar(Math.max(1e-3,dt)):new THREE.Vector3();
+      arenaStoss(b.T,tip,v,SC.trefferUrteil(arena._m||measure(P),{vLat:0,vAx:v.length(),P}));
+      popText('Bambus — die Spitze dringt nicht durch','#d96a4a',0,0);bladeRecoil(1.0);arena.thrusting=false;return true;}}
+  return false;}
+
+// — die Tatami: die Rolle hängt am Seil (eine Gestalt des Kerns, Länge als Regler); der Schnitt teilt sie, der Rest schwingt weiter —
+function tatamiRolle(R){const T=arena.tatami,alt=T.T;T.T=arenaTeil('tatamirolle',T.pivot.x,T.pivot.y,T.pivot.z,0,{rolleM:R});T.T.eigen=true;T.rollLen=R;
+  if(alt){T.T.z.a=alt.z.a.slice();T.T.z.w=alt.z.w.slice();T.T.z.ruht=alt.z.ruht;arenaPose(T.T);arenaWeg(alt);}T.cut=false;}
+function tryCutTatami(handW,bladeDir,vel){const T=arena.tatami;if(!T||!T.T||T.cut)return;const m=measure(P),S=m.S;
+  const sharp=(m.edgeWinkel!=null&&m.edgeWinkel<32);   // harmonisiert (war 30)
+  const R=T.rollLen;T.T.h.updateMatrixWorld(true);
+  const c=T.T.h.localToWorld(new THREE.Vector3(0,-0.55-R/2,0)),ax=new THREE.Vector3(0,1,0).transformDirection(T.T.h.matrixWorld);
   const e0=arena._edge0,e1=arena._edge1,gXd=arena._gripXdom||0,eLen=Math.max(0.02,e1-e0),xcop=(m.xcop!=null?m.xcop:S.xBlade0+0.65*(S.xPoint-S.xBlade0));
   const vAxT=Math.abs(vel.dot(bladeDir)),vLatT=vel.clone().addScaledVector(bladeDir,-vel.dot(bladeDir)).length();
   let best=null;const NS=8;
-  for(let i=0;i<=NS;i++){const p=e0+(i/NS)*eLen,pt=handW.clone().addScaledVector(bladeDir,p).add(bladeCurve(i/NS)),dH=Math.hypot(pt.x-c.x,pt.z-c.z),dV=Math.abs(pt.y-c.y);
-    if(dH<0.17&&dV<T.rollLen*0.5+0.06&&(!best||dH<best.dH))best={p:p,pt:pt,dH:dH};}
+  for(let i=0;i<=NS;i++){const p=e0+(i/NS)*eLen,pt=handW.clone().addScaledVector(bladeDir,p).add(bladeCurve(i/NS)),dv=pt.clone().sub(c),along=dv.dot(ax),dH=dv.addScaledVector(ax,-along).length();
+    if(dH<0.17&&Math.abs(along)<R*0.5+0.06&&(!best||dH<best.dH))best={p,pt,dH,along};}
   if(!best)return;
   const xLoc=gXd+best.p, velFac=clamp(best.p/Math.max(0.05,e1),0.12,1.0), eff=clamp(1-1.4*Math.abs(xLoc-xcop)/S.L,0.25,1.0);
   const vAx=vAxT*velFac, vLat=vLatT*velFac, mEff=Math.max(0.02,(m.mEffFrac||0.2)*m.M);
   const edgeQ=clamp(arena._edgeAlign!=null?arena._edgeAlign:1,0.15,1), KE=0.5*mEff*vLat*vLat*eff*(0.25+0.75*edgeQ);   // wahre Schneide: EIN Faktor überall
-  if(!sharp){popText('stumpf — Matte schwingt nur','#d96a4a',0,0);arena.cooldown=0.3;return;}
-  if(vLat<vAx*0.8){popText('zu flach — kein Schnitt','#d96a4a',0,0);arena.cooldown=0.3;return;}
-  if(edgeQ<0.45){popText('flach — die Schneide liegt quer','#d96a4a',0,0);bladeRecoil(0.6);return;}
-  if(KE<12){popText('zu schwach — Klinge prallt ab ('+KE.toFixed(0)+' J)','#d4a843',0,0);bladeRecoil(0.55);return;}
+  const schwingt=()=>arenaStoss(T.T,best.pt,vel,SC.trefferUrteil(m,{vLat,vAx,edgeQ,P}));      // was nicht schneidet, stößt: die Rolle schwingt
+  if(!sharp){schwingt();popText('stumpf — Matte schwingt nur','#d96a4a',0,0);arena.cooldown=0.3;return;}
+  if(vLat<vAx*0.8){schwingt();popText('zu flach — kein Schnitt','#d96a4a',0,0);arena.cooldown=0.3;return;}
+  if(edgeQ<0.45){schwingt();popText('flach — die Schneide liegt quer','#d96a4a',0,0);bladeRecoil(0.6);return;}
+  if(KE<12){schwingt();popText('zu schwach — Klinge prallt ab ('+KE.toFixed(0)+' J)','#d4a843',0,0);bladeRecoil(0.55);return;}
   const cutDir=vel.clone().setY(0);if(cutDir.lengthSq()<1e-4)cutDir.set(0,0,1);cutDir.normalize();
-  const ang=T.roll.rotation.z||0, ca=Math.max(0.25,Math.cos(ang));                                     // Rolle am KONTAKTPUNKT teilen
-  const rTop=T.rollCenter.y+(T.rollLen*0.5)*ca, rBot=T.rollCenter.y-(T.rollLen*0.5)*ca;
-  const cutY=clamp(best.pt.y,rBot+0.04,rTop-0.04), topLen=(rTop-cutY)/ca, botLen=T.rollLen-topLen;
+  const topLen=clamp(R*0.5-best.along,0.04,R-0.04),botLen=R-topLen;                             // die Rolle am KONTAKTPUNKT teilen
   if(!arena.fallingBamboo)arena.fallingBamboo=[];
-  if(T.roll&&T.roll.parent)T.roll.parent.remove(T.roll);T.roll=null;
-  if(T.rope&&T.rope.parent)T.rope.parent.remove(T.rope);T.rope=null;
-  if(botLen>0.04){const bx=T.rollCenter.x+Math.sin(ang)*(T.rollLen*0.5-botLen*0.5), by=cutY-(botLen*0.5)*ca;
-    const bot=new THREE.Mesh(new THREE.CylinderGeometry(0.085,0.085,botLen,12),matCol(0xcab793,0.85,0));bot.position.set(bx,by,T.rollCenter.z);bot.rotation.z=ang;arena.group.add(bot);
-    arena.fallingBamboo.push({mesh:bot,vel:cutDir.clone().multiplyScalar(0.6+Math.min(2,KE*0.005)).add(new THREE.Vector3(0,0.15,0)),ang:new THREE.Vector3((Math.random()-0.5)*4,0,(Math.random()-0.5)*4),life:0});}
-  if(topLen>0.30){T.rollLen=topLen;T.cut=false;spawnTatamiRoll();}                                      // oberes Stück bleibt am Seil → weiter schneidbar
-  else{T.cut=true;T.respawnAt=clock.getElapsedTime()+2.2;T.rollLen=1.0;}
+  if(botLen>0.04){const q=T.T.h.getWorldQuaternion(new THREE.Quaternion()),pos=T.T.h.localToWorld(new THREE.Vector3(0,-0.55-topLen,0));
+    fallendesStueck('tatamirolle',{rolleM:botLen,seilM:0},pos,q,cutDir.clone().multiplyScalar(0.6+Math.min(2,KE*0.005)).add(new THREE.Vector3(0,0.15,0)),4);}
+  if(topLen>0.30)tatamiRolle(topLen);                                                            // das obere Stück bleibt am Seil → weiter schneidbar
+  else{arenaWeg(T.T);T.T=null;T.cut=true;T.respawnAt=clock.getElapsedTime()+2.2;}
   fx.shake=Math.max(fx.shake,0.05);fx.freeze=Math.max(fx.freeze,0.05);
   popText('✁ DURCHTRENNT — '+KE.toFixed(0)+' J'+(topLen>0.30?' · weiter!':''),eff>0.7?'#ffe07a':'#d4a843',0,-0.04);arena.cooldown=0.22;return;}
-function regrowTatami(){const T=arena.tatami;if(T&&T.cut&&T.respawnAt&&clock.getElapsedTime()>T.respawnAt&&!T.roll)spawnTatamiRoll();}
-function buildDuck(){const g=new THREE.Group();
-  const body=new THREE.Mesh(new THREE.SphereGeometry(0.18,12,10),matCol(0xd8553a,0.7,0));body.scale.set(1.3,1.0,0.6);g.add(body);
-  const head=new THREE.Mesh(new THREE.SphereGeometry(0.1,10,8),matCol(0xd8553a,0.7,0));head.position.set(0.17,0.15,0);g.add(head);
-  const beak=new THREE.Mesh(new THREE.ConeGeometry(0.04,0.1,6),matCol(0xe0a020,0.6,0));beak.rotation.z=-Math.PI/2;beak.position.set(0.27,0.15,0);g.add(beak);
-  for(let i=0;i<3;i++){const ring=new THREE.Mesh(new THREE.TorusGeometry(0.05+i*0.045,0.014,6,16),matCol(i===0?0xffe07a:i===1?0xffffff:0xd8553a,0.5,0));ring.position.set(-0.04,0,0.33);g.add(ring);}
-  return g;}
-function buildCarnival(pos){const g=new THREE.Group();g.position.copy(pos);
-  const wall=new THREE.Mesh(new THREE.BoxGeometry(0.3,2.4,7.2),matCol(0x2c2438,0.92,0));wall.position.set(0.25,1.2,0);g.add(wall);
-  for(const yy of [0.8,1.5,2.2]){const rail=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.06,7.2),matCol(0x4a4458,0.6,0));rail.position.set(0,yy,0);g.add(rail);}
-  const top=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.25,7.4),matCol(0x8a3050,0.7,0));top.position.set(0.1,2.5,0);g.add(top);
-  arena.movers=[];const yrows=[0.85,1.5,2.15];
-  for(let i=0;i<3;i++){const duck=buildDuck();const yy=yrows[i];duck.position.set(-0.1,yy,0);g.add(duck);
-    arena.movers.push({mesh:duck,grp:g,baseX:pos.x-0.1,baseY:pos.y+yy,z0:pos.z,amp:2.7,w:0.55+i*0.18,phase:i*2.0,worldZ:pos.z,hit:false,hitAt:0});}
-  return g;}
-function carnivalUpdate(t){if(!arena.movers)return;
-  for(const mv of arena.movers){if(mv.hit){const dt2=t-mv.hitAt;if(dt2>2.8){mv.hit=false;mv.mesh.rotation.set(0,0,0);}else{mv.mesh.rotation.x=Math.min(1.5,dt2*6);}continue;}
-    const wz=mv.z0+mv.amp*Math.sin(mv.w*t+mv.phase);mv.mesh.position.z=wz-mv.grp.position.z;mv.worldZ=wz;}}
-function hitMover(a){if(!arena.movers)return false;const t=clock.getElapsedTime();
-  for(const mv of arena.movers){if(mv.hit)continue;
-    if(a.pos.x>=mv.baseX-0.22&&a.pos.x<mv.baseX+0.3&&Math.abs(a.pos.z-mv.worldZ)<0.28&&Math.abs(a.pos.y-mv.baseY)<0.26){
-      mv.hit=true;mv.hitAt=t;fx.shake+=0.06;arena.score.shots++;arena.score.sum+=10;arena.score.last={ring:10,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};
-      popText('ENTE GETROFFEN!','#ffe07a',0,0);popText('+10','#6fcf73',0.12,0.06);stickArrow(a);updateHUD();return true;}}
-  return false;}
-function regrowBamboo(){if(!arena.bamboo)return;const t=clock.getElapsedTime();
-  for(const b of arena.bamboo){if(b.cut===true&&b.respawnAt&&t>b.respawnAt){
-    if(b.mesh&&b.mesh.parent)b.mesh.parent.remove(b.mesh);
-    const pole=makeBamboo(b.h);pole.position.set(b.wx,b.baseY,b.wz);arena.group.add(pole);b.mesh=pole;b.cut=false;b.respawnAt=0;}}}
+function regrowTatami(){const T=arena.tatami;if(T&&T.cut&&T.respawnAt&&clock.getElapsedTime()>T.respawnAt&&!T.T)tatamiRolle(1.0);}
+
 function scoreArrowOn(a,T,r){const R=T.R;let ring=0;if(r<=R)ring=clamp(Math.ceil(10*(1-r/R)),1,10);const pen=a.KE*0.18;
   const dist=Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z);arena.score.shots++;arena.score.sum+=ring;arena.score.last={ring,pen,v0:a.v0,KE:a.KE,dist};
+  pfeilStoss(T.T,a);                                                                             // die Scheibe wankt im Gesetz
   if(ring>0){fx.shake+=0.04;popText(ring+'! · '+dist.toFixed(0)+' m',ring>=9?'#ffe07a':ring>=6?'#9fb3c8':'#d96a4a',0,0);if(ring>=10)popText('GOLD!','#ffe07a',0.14,0.06);}else popText('Scheibe verfehlt','#7a7f8c',0,0);
-  stickArrow(a);updateHUD();}
+  stickArrow(a);T.T.h.attach(a.mesh);updateHUD();}
 
 function orientToNormal(z,x){z=z.clone().normalize();let xx=x.clone().sub(z.clone().multiplyScalar(x.dot(z)));
   if(xx.lengthSq()<1e-6){xx=new THREE.Vector3(0,1,0).sub(z.clone().multiplyScalar(z.y));if(xx.lengthSq()<1e-6)xx=new THREE.Vector3(1,0,0);}
@@ -1095,249 +935,47 @@ function addDummyScar(point,normal,cutDir,hit){if(!arena.dummy||!point)return;ar
   mesh.quaternion.copy(orientToNormal(ln,ld));mesh.position.copy(lp).addScaledVector(ln,0.006);
   arena.dummy.add(mesh);arena.scars.push(mesh);
   if(arena.scars.length>30){const o=arena.scars.shift();if(o.parent)o.parent.remove(o);}}
-function buildCuttingLane(pos){const g=new THREE.Group();const PX=pos.x,PZ=pos.z;
-  const base=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.16,4.6),matCol(0x3a2a1a,0.9,0));base.position.set(PX,0.08,PZ);g.add(base);
-  const N=7;for(let i=0;i<N;i++){const z=PZ-2.2+i*(4.4/(N-1)), h=1.25+(i%2)*0.55;                                    // Zickzack-Höhen
-    const holder=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.07,0.18,8),matCol(0x2a2018,0.9,0));holder.position.set(PX,0.13,z);g.add(holder);
-    const pole=makeBamboo(h);pole.position.set(PX,0.16,z);g.add(pole);
-    arena.bamboo.push({mesh:pole,wx:PX,wz:z,baseY:0.16,h,cut:false,wobble:0,lane:true});}
-  return g;}
-function buildTorii(x,z){const g=new THREE.Group();const red=matCol(0x8a3a28,0.82,0),dark=matCol(0x241410,0.9,0);const H=3.6,W=3.0;
-  for(const sz of [-W/2,W/2]){const post=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.17,H,12),red);post.position.set(x,H/2,z+sz);g.add(post);
-    const foot=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.26,0.18,12),dark);foot.position.set(x,0.09,z+sz);g.add(foot);}
-  const kasagi=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.2,W+1.3,1,1,1),dark);kasagi.position.set(x,H+0.16,z);kasagi.rotation.x=0.03;g.add(kasagi);
-  const shimagi=new THREE.Mesh(new THREE.BoxGeometry(0.32,0.14,W+0.9),red);shimagi.position.set(x,H-0.02,z);g.add(shimagi);
-  const nuki=new THREE.Mesh(new THREE.BoxGeometry(0.24,0.18,W+0.2),red);nuki.position.set(x,H-0.7,z);g.add(nuki);
-  const gaku=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.5,0.34),dark);gaku.position.set(x,H-0.38,z);g.add(gaku);
-  return g;}
-function buildPergola(cx,cz,hw,hd){const g=new THREE.Group();const wood=matCol(0x4a3522,0.9,0),dark=matCol(0x33251a,0.92,0),paper=matCol(0xd6c596,0.5,0);const H=3.3;
-  for(const [px,pz] of [[cx-hw,cz-hd],[cx+hw,cz-hd],[cx-hw,cz+hd],[cx+hw,cz+hd]]){
-    const post=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.12,H,10),wood);post.position.set(px,H/2,pz);post.castShadow=true;g.add(post);
-    const brace=new THREE.Mesh(new THREE.BoxGeometry(0.45,0.45,0.08),dark);brace.position.set(px+(px<cx?0.3:-0.3),H-0.45,pz);g.add(brace);}
-  for(const pz of [cz-hd,cz+hd]){const b=new THREE.Mesh(new THREE.BoxGeometry(hw*2+0.4,0.15,0.16),dark);b.position.set(cx,H,pz);g.add(b);}
-  for(const px of [cx-hw,cx+hw]){const b=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.15,hd*2+0.4),dark);b.position.set(px,H,cz);g.add(b);}
-  const n=Math.max(4,Math.round(hd*2/0.75));for(let i=0;i<=n;i++){const pz=cz-hd+i*hd*2/n;const r=new THREE.Mesh(new THREE.BoxGeometry(hw*2+0.2,0.05,0.06),wood);r.position.set(cx,H+0.1,pz);g.add(r);}
-  for(const [lx,lz] of [[cx-hw+0.35,cz-hd+0.35],[cx+hw-0.35,cz+hd-0.35]]){const lan=new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.11,0.24,12),paper);lan.position.set(lx,H-0.5,lz);g.add(lan);const cap=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.12,0.05,12),dark);cap.position.set(lx,H-0.36,lz);g.add(cap);}
-  return g;}
-function buildBannerPole(x,z,col){const g=new THREE.Group();const dark=matCol(0x2a1d12,0.9,0);const H=4.4;
-  const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.07,H,8),dark);pole.position.set(x,H/2,z);pole.castShadow=true;g.add(pole);
-  const fin=new THREE.Mesh(new THREE.SphereGeometry(0.08,8,6),matCol(0xc8a44a,1,0));fin.position.set(x,H,z);g.add(fin);
-  const arm=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.04,0.72),dark);arm.position.set(x,H-0.25,z+0.36);g.add(arm);
-  const ban=new THREE.Mesh(new THREE.PlaneGeometry(0.62,1.5),matCol(col,0.5,0));ban.position.set(x,H-1.0,z+0.68);ban.rotation.y=Math.PI/2;ban.material.side=2;g.add(ban);
-  const tip=new THREE.Mesh(new THREE.ConeGeometry(0.31,0.22,3),matCol(col,0.5,0));tip.position.set(x,H-1.86,z+0.68);tip.rotation.x=Math.PI;tip.rotation.y=Math.PI/2;tip.material.side=2;g.add(tip);
-  return g;}
-function buildHayBale(x,z,rot){const g=new THREE.Group();const hay=matCol(0xb89a52,0.95,0);
-  const bale=new THREE.Mesh(new THREE.CylinderGeometry(0.42,0.42,0.78,12),hay);bale.rotation.x=Math.PI/2;bale.rotation.z=rot||0;bale.position.set(x,0.42,z);bale.castShadow=true;g.add(bale);
-  for(const o of [-0.2,0.2]){const band=new THREE.Mesh(new THREE.TorusGeometry(0.43,0.018,6,16),matCol(0x6e5a38,0.9,0));band.position.set(x,0.42,z+o);g.add(band);}
-  return g;}
-function buildStoneLantern(x,z){const g=new THREE.Group();const stone=matCol(0x7a756c,0.97,0),dark=matCol(0x55504a,0.97,0);
-  const base=new THREE.Mesh(new THREE.CylinderGeometry(0.19,0.23,0.2,8),dark);base.position.set(x,0.1,z);g.add(base);
-  const post=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.08,0.66,8),stone);post.position.set(x,0.53,z);g.add(post);
-  const box=new THREE.Mesh(new THREE.BoxGeometry(0.29,0.27,0.29),matCol(0xd8c089,0.45,0));box.position.set(x,0.99,z);g.add(box);
-  const cap=new THREE.Mesh(new THREE.ConeGeometry(0.27,0.2,4),stone);cap.position.set(x,1.22,z);cap.rotation.y=Math.PI/4;g.add(cap);
-  const top=new THREE.Mesh(new THREE.SphereGeometry(0.05,6,5),stone);top.position.set(x,1.35,z);g.add(top);return g;}
-function buildBrazier(x,z){const g=new THREE.Group();const iron=matCol(0x2a2620,0.35,0);
-  for(let i=0;i<3;i++){const a=i/3*Math.PI*2;const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.025,0.82,6),iron);leg.position.set(x+Math.cos(a)*0.17,0.4,z+Math.sin(a)*0.17);leg.rotation.z=Math.cos(a)*0.32;leg.rotation.x=-Math.sin(a)*0.32;g.add(leg);}
-  const bowl=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.17,0.22,12),iron);bowl.position.set(x,0.84,z);g.add(bowl);
-  const coals=new THREE.Mesh(new THREE.CylinderGeometry(0.26,0.26,0.07,12),matCol(0xd8662a,0.25,0));coals.position.set(x,0.95,z);g.add(coals);return g;}
-function buildStonePath(){const g=new THREE.Group();const stone=matCol(0x453f37,0.97,0),edge=matCol(0x35302a,0.97,0);
-  for(let x=-3;x<40;x+=1.45){const slab=new THREE.Mesh(new THREE.BoxGeometry(1.25,0.06,2.4),stone);slab.position.set(x,0.03,0);g.add(slab);}
-  for(const sz of [-1.35,1.35]){const curb=new THREE.Mesh(new THREE.BoxGeometry(43,0.1,0.14),edge);curb.position.set(18.5,0.05,sz);g.add(curb);}
-  return g;}
 
-function buildPendulumBall(pos){const g=new THREE.Group();g.position.copy(pos);const wood=matCol(0x4a3520,0.9,0),dark=matCol(0x2a1d12,0.92,0),iron=matCol(0x33312c,0.4,0);
-  const H=2.7, span=1.7;
-  for(const px of [-span/2,span/2]){const post=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.10,H,10),wood);post.position.set(px,H/2,0);post.castShadow=true;g.add(post);
-    const foot=new THREE.Mesh(new THREE.BoxGeometry(0.42,0.12,0.55),dark);foot.position.set(px,0.06,0);g.add(foot);
-    const brace=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.5,0.08),dark);brace.position.set(px+(px<0?0.3:-0.3),H-0.45,0);g.add(brace);}
-  const beam=new THREE.Mesh(new THREE.BoxGeometry(span+0.4,0.17,0.18),dark);beam.position.set(0,H,0);g.add(beam);
-  const eye=new THREE.Mesh(new THREE.TorusGeometry(0.05,0.014,6,14),iron);eye.position.set(0,H-0.05,0);eye.rotation.x=Math.PI/2;g.add(eye);
-  const L=1.26, ballR=0.22, N=8, segLen=L/N;                                                          // echtes Seil: 8 Verlet-Segmente
-  const pivot=new THREE.Vector3(pos.x,pos.y+H-0.05,pos.z);
-  const pts=[],ptsPrev=[];for(let i=0;i<=N;i++){const p=new THREE.Vector3(pivot.x,pivot.y-segLen*i,pivot.z);pts.push(p.clone());ptsPrev.push(p.clone());}
-  const ropeSegs=[];for(let i=0;i<N;i++){const seg=new THREE.Mesh(new THREE.CylinderGeometry(0.016,0.016,segLen,6),matCol(0x6e5a3a,0.8,0));g.add(seg);ropeSegs.push(seg);}
-  const ball=new THREE.Mesh(new THREE.SphereGeometry(ballR,18,14),matCol(0x484440,0.5,0));ball.castShadow=true;g.add(ball);
-  const band=new THREE.Mesh(new THREE.TorusGeometry(ballR*0.86,0.02,6,18),matCol(0x2c2824,0.45,0));ball.add(band);
-  arena.pendulum={grp:g,ball,ropeSegs,pivot,N,segLen,L,ballR,pts,ptsPrev,hitCD:0};
-  updatePendulum(0);return g;}
-const ROPE_ITERS=18;                                                                                 // eine Wahrheit für alle Seile (vorher 18 Pendel / 16 Gasse — Drift)
-function stepRope(R,dt){if(dt<=0)return;const grav=9.81*dt*dt,N=R.N;                                   // Verlet-Integration + Distanz-Constraints, Pivot fest
-  for(let i=1;i<=N;i++){const p=R.pts[i],pp=R.ptsPrev[i];const vx=(p.x-pp.x)*0.994,vy=(p.y-pp.y)*0.994,vz=(p.z-pp.z)*0.994;pp.set(p.x,p.y,p.z);p.x+=vx;p.y+=vy-grav;p.z+=vz;}
-  for(let it=0;it<ROPE_ITERS;it++){R.pts[0].copy(R.pivot);for(let i=1;i<=N;i++){const a=R.pts[i-1],b=R.pts[i];const dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z,dist=Math.sqrt(dx*dx+dy*dy+dz*dz)||1e-6,diff=(dist-R.segLen)/dist;const wA=(i-1===0)?0:0.5,wB=(i-1===0)?1:0.5;a.x+=dx*diff*wA;a.y+=dy*diff*wA;a.z+=dz*diff*wA;b.x-=dx*diff*wB;b.y-=dy*diff*wB;b.z-=dz*diff*wB;}}}
-function drawRope(R,ox,oy,oz){const N=R.N;                                                            // Segmente + Kugel zeichnen (Gruppen-Offset)
-  for(let i=0;i<N;i++){const a=R.pts[i],b=R.pts[i+1],seg=R.ropeSegs[i];seg.position.set((a.x+b.x)/2-ox,(a.y+b.y)/2-oy,(a.z+b.z)/2-oz);const dir=new THREE.Vector3(b.x-a.x,b.y-a.y,b.z-a.z),ln=dir.length();seg.scale.y=ln/R.segLen;seg.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.normalize());}
-  const bw=R.pts[N];R.ball.position.set(bw.x-ox,bw.y-oy,bw.z-oz);}
 const _ZEROV=new THREE.Vector3();
 function bladeCurve(s){if(arena._impact||!arena._curveDir)return _ZEROV;return arena._curveDir.clone().multiplyScalar(curveY(s,P));}   // seitlicher Klingen-Versatz im Weltraum
-function bladeHitsPoint(handW,bladeDir,c,R){const e0=arena._edge0,e1=arena._edge1,eLen=Math.max(0.02,e1-e0),N=Math.max(6,Math.ceil(eLen/0.09));   // Schneide (gekrümmt) gegen Kugelziel
-  for(let i=0;i<=N;i++){const s=i/N,pt=handW.clone().addScaledVector(bladeDir,e0+s*eLen).add(bladeCurve(s));if(pt.distanceTo(c)<R)return pt;}return null;}
 function bladeHitsColumn(handW,bladeDir,c,R,yLo,yHi){const e0=arena._edge0,e1=arena._edge1,eLen=Math.max(0.02,e1-e0),N=Math.max(6,Math.ceil(eLen/0.09));  // Schneide (gekrümmt) gegen Säulenziel
   for(let i=0;i<=N;i++){const s=i/N,pt=handW.clone().addScaledVector(bladeDir,e0+s*eLen).add(bladeCurve(s));if(Math.hypot(pt.x-c.x,pt.z-c.z)<R&&pt.y>yLo&&pt.y<yHi)return pt;}return null;}
-function updatePendulum(dt){const P=arena.pendulum;if(!P)return;const N=P.N;
-  stepRope(P,dt);
-  drawRope(P,P.grp.position.x,P.grp.position.y,P.grp.position.z);
-  const bw=P.pts[N];
-  if(P.hitCD>0)P.hitCD-=dt;
-  if(dt>0&&P.hitCD<=0){const spd=Math.hypot(bw.x-P.ptsPrev[N].x,bw.z-P.ptsPrev[N].z)/Math.max(1e-4,dt);
-    if(spd>1.6){const dh=Math.hypot(bw.x-arena.player.x,bw.z-arena.player.z);if(dh<P.ballR+0.42&&bw.y<1.85){fx.shake=Math.max(fx.shake,0.4);fx.freeze=Math.max(fx.freeze,0.1);popText('✖ DIE KUGEL TRIFFT DICH','#ff6a6a',0,0);P.hitCD=1.0;}}}}
-function tryHitPendulum(handW,bladeDir,vel){const P=arena.pendulum;if(!P||P.hitCD>0.55)return false;const N=P.N,bw=P.pts[N];let hit=false;
-  hit=!!bladeHitsPoint(handW,bladeDir,bw,P.ballR+0.07);
-  if(!hit)return false;
-  P.ptsPrev[N].x-=clamp(vel.x,-7,7)*0.014*wMass();P.ptsPrev[N].z-=clamp(vel.z,-7,7)*0.014*wMass();P.ptsPrev[N].y-=clamp(vel.y,-5,5)*0.007*wMass();   // Impuls auf den Ball-Punkt (Seil schwingt + biegt)
-  fx.shake=Math.max(fx.shake,0.08);fx.freeze=Math.max(fx.freeze,0.05);popText('Kugel getroffen — sie schwingt!','#cdbf9a',0,-0.04);arena.cooldown=0.18;return true;}
-function buildSpinTree(pos){const g=new THREE.Group();g.position.copy(pos);const wood=matCol(0x4a3520,0.9,0),dark=matCol(0x2a1d12,0.92,0),pad=matCol(0x6e4a32,0.85,0),lin=matCol(0xb6a06a,0.7,0);
-  const H=1.5;
-  const post=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.13,H,12),wood);post.position.set(0,H/2,0);post.castShadow=true;g.add(post);
-  const base=new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.44,0.18,12),dark);base.position.set(0,0.09,0);g.add(base);
-  const cap=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.11,0.1,12),dark);cap.position.set(0,H+0.05,0);g.add(cap);
-  const hub=new THREE.Group();hub.position.set(0,H+0.05,0);g.add(hub);
-  const armLen=0.92;
-  for(let i=0;i<4;i++){const a=i/4*Math.PI*2;const arm=new THREE.Mesh(new THREE.BoxGeometry(armLen,0.075,0.075),wood);arm.position.set(Math.cos(a)*armLen/2,0,Math.sin(a)*armLen/2);arm.rotation.y=-a;hub.add(arm);
-    const p=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.13,0.18,12),pad);p.position.set(Math.cos(a)*armLen,0,Math.sin(a)*armLen);p.rotation.x=Math.PI/2;hub.add(p);
-    const stripe=new THREE.Mesh(new THREE.TorusGeometry(0.13,0.016,6,16),lin);stripe.position.copy(p.position);hub.add(stripe);}
-  arena.spintree={grp:g,hub,armLen,pivot:new THREE.Vector3(pos.x,pos.y+H+0.05,pos.z),padR:0.18,ang:0,angVel:0,hitCD:0};return g;}
-function updateSpinTree(dt){const T=arena.spintree;if(!T)return;
-  if(Math.abs(T.angVel)>0.02){T.ang+=T.angVel*dt;T.angVel*=Math.max(0,1-0.62*dt);T.hub.rotation.y=T.ang;}else T.angVel=0;
-  if(T.hitCD>0)T.hitCD-=dt;
-  if(Math.abs(T.angVel)>2.6&&T.hitCD<=0){for(let i=0;i<4;i++){const a=T.ang+i/4*Math.PI*2,px=T.pivot.x+Math.cos(a)*T.armLen,pz=T.pivot.z+Math.sin(a)*T.armLen;if(Math.hypot(px-arena.player.x,pz-arena.player.z)<T.padR+0.42&&T.pivot.y<1.85){fx.shake=Math.max(fx.shake,0.34);fx.freeze=Math.max(fx.freeze,0.09);popText('✖ der Drehbaum erwischt dich','#ff8a6a',0,0);T.hitCD=0.9;break;}}}}
-function tryHitSpinTree(handW,bladeDir,vel){const T=arena.spintree;if(!T)return false;
-  const e0=arena._edge0,e1=arena._edge1,eLen=Math.max(0.02,e1-e0);let hp=null;
-  for(let j=0;j<4&&!hp;j++){const a=T.ang+j/4*Math.PI*2,pw=new THREE.Vector3(T.pivot.x+Math.cos(a)*T.armLen,T.pivot.y,T.pivot.z+Math.sin(a)*T.armLen);
-    if(bladeHitsPoint(handW,bladeDir,pw,T.padR+0.07))hp=pw;}
-  if(!hp)return false;
-  const r=hp.clone().sub(T.pivot);r.y=0;const radius=Math.max(0.3,r.length());
-  const tang=new THREE.Vector3(r.z,0,-r.x).normalize();const vt=vel.dot(tang);
-  T.angVel+=clamp(vt/radius,-10,10)*0.8;
-  fx.shake=Math.max(fx.shake,0.07);fx.freeze=Math.max(fx.freeze,0.05);popText('Drehbaum getroffen!','#cd9a6a',0,-0.04);arena.cooldown=0.18;return true;}
-function buildQuintain(pos){const g=new THREE.Group();g.position.copy(pos);
-  const wood=matCol(0x4a3520,0.9,0),dark=matCol(0x2a1d12,0.92,0);const postH=1.32;
-  const base=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.38,0.2,12),dark);base.position.y=0.1;g.add(base);
-  const post=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.13,postH,12),wood);post.position.y=postH/2;post.castShadow=true;g.add(post);
-  const hub=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,0.14,10),dark);hub.position.y=postH;g.add(hub);
-  const arm=new THREE.Group();arm.position.set(0,postH+0.07,0);g.add(arm);const armLen=1.0;
-  const beam=new THREE.Mesh(new THREE.BoxGeometry(armLen*2,0.08,0.08),wood);arm.add(beam);
-  const shield=new THREE.Group();shield.position.set(armLen,0,0);arm.add(shield);                          // Schild
-  const sh=new THREE.Mesh(new THREE.CylinderGeometry(0.33,0.33,0.04,16),matCol(0x9a3528,0.55,0));sh.rotation.z=Math.PI/2;sh.castShadow=true;shield.add(sh);
-  const boss=new THREE.Mesh(new THREE.SphereGeometry(0.07,10,8),matCol(0xc8a44a,1,0));boss.position.x=0.04;shield.add(boss);
-  const cross=new THREE.Mesh(new THREE.BoxGeometry(0.02,0.52,0.05),matCol(0xe8dcc0,0.45,0));cross.position.x=0.028;shield.add(cross);
-  const bag=new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.17,0.52,10),matCol(0x6e5a38,0.8,0));bag.position.set(-armLen,-0.12,0);bag.rotation.z=0.12;bag.castShadow=true;arm.add(bag);   // Sandsack-Gegengewicht
-  const bcap=new THREE.Mesh(new THREE.SphereGeometry(0.15,10,8),matCol(0x5a4a2e,0.8,0));bcap.position.set(-armLen+0.06,-0.35,0);arm.add(bcap);
-  const initAng=Math.PI/2;arm.rotation.y=initAng;                                                          // Schild zeigt anfangs nach -z
-  arena.quintain={grp:g,arm,ang:initAng,angVel:0,armLen,pivot:new THREE.Vector3(pos.x,postH+0.07,pos.z),shieldR:0.36,hitCD:0};return g;}
-function tryHitQuintain(handW,bladeDir,vel){const Q=arena.quintain;if(!Q)return false;
-  Q.arm.updateMatrixWorld(true);
-  const sp=new THREE.Vector3(Q.armLen,0,0).applyMatrix4(Q.arm.matrixWorld);     // Schild (+Arm)
-  const bg=new THREE.Vector3(-Q.armLen,0,0).applyMatrix4(Q.arm.matrixWorld);    // Sandsack (−Arm)
-  const e0=arena._edge0,e1=arena._edge1,eLen=Math.max(0.02,e1-e0);let hp=null,bag=false;
-  for(let i=0;i<=6;i++){const p=e0+(i/6)*eLen,pt=handW.clone().addScaledVector(bladeDir,p);
-    if(!hp&&pt.distanceTo(sp)<Q.shieldR+0.06){hp=sp;}
-    else if(!hp&&pt.distanceTo(bg)<0.36){hp=bg;bag=true;}}
-  if(!hp)return false;
-  const r=hp.clone().sub(Q.pivot);r.y=0;const radius=Math.max(0.3,r.length());
-  const tang=new THREE.Vector3(r.z,0,-r.x).normalize();const vt=vel.dot(tang);                             // richtige Drehrichtung: Treffer stösst den Arm in Schlagrichtung weg
-  Q.angVel+=clamp(vt/radius,-9,9)*0.75*wMass();
-  fx.shake=Math.max(fx.shake,0.06);fx.freeze=Math.max(fx.freeze,0.05);
-  popText(bag?'Sandsack getroffen — er schwingt herum!':'Schild getroffen — weiche dem Sandsack!',bag?'#d8c089':'#ffd479',0,-0.04);arena.cooldown=0.2;return true;}
-function updateQuintain(dt){const Q=arena.quintain;if(!Q)return;
-  if(Math.abs(Q.angVel)>0.02){Q.ang+=Q.angVel*dt;Q.angVel*=Math.max(0,1-1.05*dt);Q.arm.rotation.y=Q.ang;}else Q.angVel=0;
-  if(Q.hitCD>0)Q.hitCD-=dt;
-  Q.arm.updateMatrixWorld(true);const bp=new THREE.Vector3(-Q.armLen,-0.2,0).applyMatrix4(Q.arm.matrixWorld);
-  const dh=Math.hypot(bp.x-arena.player.x,bp.z-arena.player.z);                                            // erwischt der Sack den Spieler?
-  if(dh<0.75&&Math.abs(Q.angVel)>0.6&&Q.hitCD<=0){Q.hitCD=1.3;fx.shake=Math.max(fx.shake,0.42);fx.freeze=Math.max(fx.freeze,0.12);const B=camBasis();fx.kickV.addScaledVector(B.fwd,-3.2);fx.kickV.y-=1.5;popText('✖ DER SANDSACK ERWISCHT DICH','#ff6a4a',0,0);popText('schneller ausweichen!','#d96a4a',0.12,0.08);}}
-function buildThrustRings(pos){const g=new THREE.Group();g.position.copy(pos);const wood=matCol(0x4a3520,0.9,0),dark=matCol(0x2a1d12,0.9,0);
-  for(const sx of [-1.35,1.35]){const post=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.09,2.5,10),wood);post.position.set(sx,1.25,0);post.castShadow=true;g.add(post);}
-  const bar=new THREE.Mesh(new THREE.BoxGeometry(3.0,0.1,0.1),dark);bar.position.set(0,2.5,0);g.add(bar);
-  arena.thrustRings=[];const spots=[[-0.85,1.50],[0,1.42],[0.85,1.55]];                                     // x, Höhe (Stichlinie) — durchstechen entlang z
-  for(const [rx,ry] of spots){const ring=new THREE.Mesh(new THREE.TorusGeometry(0.16,0.026,8,22),matCol(0xc8a44a,1,0));ring.position.set(rx,ry,0);g.add(ring);
-    const str=new THREE.Mesh(new THREE.CylinderGeometry(0.006,0.006,2.5-ry,4),dark);str.position.set(rx,(2.5+ry)/2,0);g.add(str);
-    arena.thrustRings.push({center:new THREE.Vector3(pos.x+rx,pos.y+ry,pos.z),R:0.16,axis:new THREE.Vector3(0,0,1),mesh:ring,scored:false,flash:0});}
-  return g;}
-function tryThrustBamboo(tip,prev){if(!arena.bamboo)return false;
-  for(const b of arena.bamboo){if(b.cut)continue;
-    const dH=Math.hypot(tip.x-b.wx,tip.z-b.wz);
-    if(dH<0.13&&tip.y>b.baseY+0.06&&tip.y<b.baseY+b.h-0.03){
-      b.wobble=0.5;popText('Bambus — die Spitze dringt nicht durch','#d96a4a',0,0);bladeRecoil(1.0);arena.thrusting=false;return true;}}
-  return false;}
-function tryThrustRing(tip,prev){if(!arena.thrustRings||!prev)return;
-  for(const r of arena.thrustRings){if(r.scored)continue;const c=r.center,ax=r.axis;
-    const d0=prev.clone().sub(c).dot(ax),d1=tip.clone().sub(c).dot(ax);
-    if(d0*d1<=0&&Math.abs(d1-d0)>1e-5){const t=d0/(d0-d1),cr=prev.clone().lerp(tip,t);const rad=cr.clone().sub(c).addScaledVector(ax,-cr.clone().sub(c).dot(ax)).length();
-      if(rad<r.R-0.035){r.scored=true;r.scoreUntil=clock.getElapsedTime()+1.4;r.flash=1;popText('◎ RING DURCHSTOCHEN — sauber durch die Mitte!','#6fcf73',0,-0.04);fx.freeze=Math.max(fx.freeze,0.06);}
-      else if(rad<r.R*1.7&&!r.falling){r.falling=true;r.homePos=r.mesh.position.clone();r.fallVel=new THREE.Vector3((Math.random()-0.5)*0.5+(d1-d0>0?0.3:-0.3),0.3,0.6);r.fallSpin=new THREE.Vector3((Math.random()-0.5)*6,(Math.random()-0.5)*6,(Math.random()-0.5)*7);r.respawnAt=clock.getElapsedTime()+5;popText('Rand erwischt — Ring kippt vom Posten!','#d4a843',0,-0.04);fx.shake=Math.max(fx.shake,0.16);fx.freeze=Math.max(fx.freeze,0.05);}
-      else if(rad<r.R*2.8){popText('knapp — '+(rad*100).toFixed(0)+' cm daneben','#d4a843',0,-0.04);}}}}
-function updateRings(dt){if(!arena.thrustRings)return;for(const r of arena.thrustRings){
-  if(r.scored&&r.scoreUntil&&clock.getElapsedTime()>r.scoreUntil){r.scored=false;r.scoreUntil=0;}
-  if(r.falling){r.fallVel.y-=9.81*dt;r.mesh.position.addScaledVector(r.fallVel,dt);
-    r.mesh.rotation.x+=r.fallSpin.x*dt;r.mesh.rotation.y+=r.fallSpin.y*dt;r.mesh.rotation.z+=r.fallSpin.z*dt;
-    if(r.mesh.position.y<0.16){r.mesh.position.y=0.16;r.fallVel.set(0,0,0);r.fallSpin.multiplyScalar(0.86);}    // am Boden liegen, austrudeln
-    if(clock.getElapsedTime()>r.respawnAt){r.falling=false;r.mesh.position.copy(r.homePos);r.mesh.rotation.set(0,0,0);}   // nach 5 s zurück an den Posten
-    continue;}
-  if(r.flash>0)r.flash=Math.max(0,r.flash-dt*0.8);
-  if(r.mesh&&r.mesh.material&&r.mesh.material.color&&r.mesh.material.color.setRGB)r.mesh.material.color.setRGB(0.78-0.4*r.flash,0.64+0.25*r.flash,0.29);}}
-function buildPopinjay(pos){const g=new THREE.Group();g.position.copy(pos);const wood=matCol(0x4a3520,0.9,0);const poleH=4.6;
-  const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.1,poleH,10),wood);pole.position.y=poleH/2;pole.castShadow=true;g.add(pole);
-  const perch=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.05,0.05),wood);perch.position.y=poleH;g.add(perch);
-  const bird=new THREE.Group();const restY=poleH+0.13;bird.position.set(0,restY,0);g.add(bird);
-  const body=new THREE.Mesh(new THREE.SphereGeometry(0.12,12,10),matCol(0x2f7a45,0.55,0));body.scale.set(1.5,1,0.9);bird.add(body);
-  const head=new THREE.Mesh(new THREE.SphereGeometry(0.075,10,8),matCol(0xc83828,0.55,0));head.position.set(0.18,0.08,0);bird.add(head);
-  const beak=new THREE.Mesh(new THREE.ConeGeometry(0.03,0.1,6),matCol(0xe0a830,0.5,0));beak.rotation.z=-Math.PI/2;beak.position.set(0.27,0.08,0);bird.add(beak);
-  const tail=new THREE.Mesh(new THREE.ConeGeometry(0.07,0.34,6),matCol(0x245a35,0.55,0));tail.rotation.z=Math.PI/2;tail.position.set(-0.24,0,0);bird.add(tail);
-  for(const dz of [0.12,-0.12]){const wing=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.025,0.2),matCol(0x3f8a55,0.55,0));wing.position.set(0,0.03,dz);bird.add(wing);}
-  arena.popinjays=arena.popinjays||[];arena.popinjays.push({grp:g,bird,base:new THREE.Vector3(pos.x,pos.y+restY,pos.z),restY,struck:false,fallV:0,respawnAt:0});return g;}
-function updatePopinjay(dt){if(!arena.popinjays)return;for(const P2 of arena.popinjays){if(!P2.bird)continue;
-  if(P2.struck){P2.fallV-=9.8*dt;P2.bird.position.y+=P2.fallV*dt;P2.bird.rotation.z+=dt*5;P2.bird.position.x+=dt*0.4;
-    if(P2.bird.position.y<0.3&&clock.getElapsedTime()>P2.respawnAt){P2.struck=false;P2.fallV=0;P2.bird.position.set(0,P2.restY,0);P2.bird.rotation.set(0,0,0);}}}}
-function buildDojo(){const g=new THREE.Group();
-  const wood=matCol(0x4a3522,0.9,0), darkwood=matCol(0x33251a,0.92,0), paper=matCol(0xd6c596,0.55,0);
-  const cs=[[0.2,-0.4],[6.9,-0.4],[0.2,6.5],[6.9,6.5]];                                                  // Pergola-Eckpfosten um den Übungshof
-  for(const [cx,cz] of cs){const post=new THREE.Mesh(new THREE.CylinderGeometry(0.085,0.11,3.3,10),wood);post.position.set(cx,1.65,cz);post.castShadow=true;g.add(post);
-    const brace=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.5,0.08),darkwood);brace.position.set(cx+(cx<3.5?0.32:-0.32),2.95,cz);g.add(brace);}
-  for(const cz of [-0.4,6.5]){const beam=new THREE.Mesh(new THREE.BoxGeometry(7.1,0.15,0.16),darkwood);beam.position.set(3.55,3.25,cz);g.add(beam);}
-  for(const cx of [0.2,6.9]){const beam=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.15,7.3),darkwood);beam.position.set(cx,3.25,3.05);g.add(beam);}
-  for(let i=0;i<=9;i++){const z=-0.4+i*6.9/9;const r=new THREE.Mesh(new THREE.BoxGeometry(7.1,0.05,0.06),wood);r.position.set(3.55,3.36,z);g.add(r);}   // Dachsparren → Tiefe/Schattenmuster
-  for(const [lx,lz] of [[1.1,0.1],[6.0,0.1],[1.1,6.0],[6.0,6.0]]){                                       // Papierlaternen
-    const lan=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,0.26,12),paper);lan.position.set(lx,2.78,lz);g.add(lan);
-    const cap=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.13,0.05,12),darkwood);cap.position.set(lx,2.93,lz);g.add(cap);
-    const str=new THREE.Mesh(new THREE.CylinderGeometry(0.005,0.005,0.34,4),darkwood);str.position.set(lx,3.12,lz);g.add(str);}
-  const wall=new THREE.Mesh(new THREE.BoxGeometry(0.18,2.7,9.4),matCol(0x281d12,0.95,0));wall.position.set(-3.4,1.35,2.6);g.add(wall);   // Rückwand hinter Spawn
-  for(let i=0;i<6;i++){const beam=new THREE.Mesh(new THREE.BoxGeometry(0.22,2.7,0.1),wood);beam.position.set(-3.32,1.35,2.6-4.5+i*1.8);g.add(beam);}
-  const sill=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.12,9.4),darkwood);sill.position.set(-3.35,2.78,2.6);g.add(sill);
-  return g;}
-function arenaEnter(){if(arena.active)return;arena.active=true;
+
+function arenaEnter(){if(arena.active)return;arena.active=true;arena.besuch=(arena.besuch||0)+1;
   weapon.visible=false;controls.enabled=false;scene.fog=new THREE.FogExp2(0x0a0807,0.006);
-  arena.group=new THREE.Group();scene.add(arena.group);arena.group.add(buildGround());
+  arena.group=new THREE.Group();scene.add(arena.group);arena.group.add(buildGround());arena.teile=[];arena.tonStoffe=[];
+  for(const k of ['folge','ton','fall','bogen','kamera'])ZU[k]=SC.arenaStrom(arena.besuch,k.charCodeAt(0)*131+k.length);   // je Besuch eigene, feste Würfe
   arena.camSaved={pos:cam.position.clone(),tgt:controls.target.clone(),fov:cam.fov};
   arena.player.set(0,0,0);arena.yaw=0;arena.pitch=0;fx.fov=fx.fovT=75;cam.fov=75;arena.arrows.length=0;arena.stuck.length=0;arena.fallingBamboo=[];
   arena.swinging=arena.thrusting=false;arena.holdView=false;arena.ready=0;arena.sw={yaw:0,pitch:0,reach:0};arena.swRoll=0;arena._rollRend=0;arena._aimF=0;arena._edgeAlign=1;arena.drawFrac=0;arena.drawing=false;arena._wantAim=false;arena.raise=0;arena.prevTip=null;arena.swP=0;arena.swY=0;arena.swLay=0;arena._prevSwY=0;arena._pressing=false;arena._dragMag=0;arena.lungeT=0;arena.mStats={hits:0,dmg:0};arena.scars=[];arena.stam=1;arena._prevSwP=0;arena._restT=0;
   arena.trail.mesh=null;arena.trail.pts=[];
-  arena.popinjays=[];
-  arena.group.add(buildDojo());                                                     // Struktur: Pergolen, Rückwand, Banner, Laternen, Steinweg
-  arena.group.add(buildTable(new THREE.Vector3(-3.0,0,0)));                          // Waffentisch (am Spawn)
-  // — Waffenhof (+z): aktiver Kampf —
-  arena.dummy=buildDummy();arena.dummy.position.set(4.0,0,5.0);arena.group.add(arena.dummy);    // Pell
-  arena.group.add(buildThrustRings(new THREE.Vector3(8.5,0,5.0)));                    // Stechringe (running at the ring)
-  arena.group.add(buildQuintain(new THREE.Vector3(4.0,0,10.5)));                      // Quintane — frei, Raum zum Ausweichen
-  arena.pendulum=null;arena.group.add(buildPendulumBall(new THREE.Vector3(9.0,0,10.0)));   // Pendel-Kugel: triff sie, weich der Rückkehr aus
-  arena.spintree=null;arena.group.add(buildSpinTree(new THREE.Vector3(1.0,0,8.5)));         // Drehbaum: vier Arme im Rhythmus schlagen
-  arena.springPell=null;arena.group.add(buildSpringPell(new THREE.Vector3(2.0,0,2.5)));          // Federpfahl: im Pell-Hof, Kopf auf Hiebhöhe
-  arena.sequence=null;arena.group.add(buildSequence(new THREE.Vector3(-6.0,0,13.0)));            // Trefferfolge: freier Bogen im Nordwesten
-  arena.charger=null;arena.group.add(buildCharger(new THREE.Vector3(5.0,0,19.0)));               // Streitpuppe: schläft, mit [E] wecken — dann greift sie an
-  arena.gauntlet=null;arena.group.add(buildGauntlet(new THREE.Vector3(10.0,0,18.0)));            // Pendel-Gasse: Korridor im Norden
-  // — Schnitthof (−z): Schnittproben —
-  arena.group.add(buildBamboo(new THREE.Vector3(4.0,0,-5.0)));                        // Bambus-Stand
-  arena.group.add(buildCuttingLane(new THREE.Vector3(8.5,0,-5.0)));                   // Schnittgasse (Zickzack)
-  arena.group.add(buildSwingTatami(new THREE.Vector3(4.0,0,-10.0)));                  // schwingende Tatami
-  arena.armored=null;arena.group.add(buildArmoredDummy(new THREE.Vector3(10.0,0,-9.0)));
-  arena.knightArenas=null;arena.group.add(buildKnightArena(new THREE.Vector3(6,0,-18.5),3,true));arena.group.add(buildKnightArena(new THREE.Vector3(-7,0,-18.5),2,false));               // Harnisch-Puppe: Schnitt gleitet ab — Stich in die Fuge oder stumpfe Wucht
-  // — Schießbahn (+x) —
-  buildRange();
-  arena.group.add(buildTorii(13.0,0.0));                                              // Torii am Bahneingang
-  arena.group.add(buildCarnival(new THREE.Vector3(36,0,0)));                          // Kirmes-Enten (Bahnende)
-  for(const pp of [[16,8],[22,-8],[28,7],[33,-6]]) arena.group.add(buildPopinjay(new THREE.Vector3(pp[0],0,pp[1])));   // Papagei-Feld
-  arena.wand=null;arena.group.add(buildWand(new THREE.Vector3(20,0,3.0)));                            // Wand-Schiessen: gestreifte Rute mit Wimpel, Präzision
-  arena.clout=null;arena.group.add(buildClout(new THREE.Vector3(38,0,7)));                           // Clout: fernes Bodenziel, triff die Wurfparabel
-  arena.clay=null;arena.group.add(buildClayThrower(new THREE.Vector3(23,0,-8)));                     // Wurfscheibe: Tontaube steigt — triff sie in der Luft
-  arena.swingTgt=null;arena.group.add(buildSwingTarget(new THREE.Vector3(30,0,4)));                  // Pendelziel: schwingt quer — vorhalten
+  arena.popinjays=[];arena.targets=[];arena.bamboo=[];arena.movers=[];arena.thrustRings=[];arena.gauntlet=[];arena.knightArenas=null;
+  // DER HOF DES KERNS: jede Art an ihrem Ort, ihr Satz aus Gestalten — Waffenhof (+z), Schnitthof (−z), Schießbahn (+x)
+  for(const [art,x,z,yaw,ov] of SC.ARENA_HOF){
+    if(art==='ritter'||art==='kaempfer'){buildKnightField(art,x,z);continue;}
+    const S=arenaArt(art,x,z,yaw,ov),T0=S[0];
+    if(art==='waffentisch')buildTable(T0);
+    else if(art==='pell'){arena.pell=T0;arena.dummy=T0.h;T0.eigen=true;}
+    else if(art==='stechringe')for(const T of S.slice(1)){T.eigen=true;arena.thrustRings.push({T,R:0.16,scored:false,flash:0});}
+    else if(art==='quintane'){arena.quintain=S[1];S[1].eigen=true;S[1].hitCD=0;}
+    else if(art==='pendelkugel'){arena.pendulum=S[1];S[1].eigen=true;S[1].hitCD=0;}
+    else if(art==='drehbaum'){arena.spintree=S[1];S[1].eigen=true;S[1].hitCD=0;}
+    else if(art==='federpfahl'){arena.springPell={T:S[1],hitCD:0,combo:0,lastHitT:-9};S[1].eigen=true;}
+    else if(art==='trefferfolge'){arena.sequence={pads:S.map(T=>(T.eigen=true,{T,lit:false,ton:null})),active:2,hitCD:0,combo:0,best:0,lastT:-9};arena.sequence.pads[2].lit=true;}
+    else if(art==='streitpuppe'){arena.charger={T:T0,home:T0.basis.clone(),speed:3.0,state:'dormant',hitCD:0,_wasNear:false};T0.eigen=T0.pfeilEigen=true;}
+    else if(art==='pendelgasse')S.slice(1).forEach((T,i)=>{T.eigen=true;T.hitCD=0;arena.gauntlet.push(T);SC.geraetStoss(T.z,T.z.m*0.7,[0,-1.35,0],[i%2?1:-1,0,0]);});   // der Anstoß der Gasse: wechselnd
+    else if(art==='bambus'||art==='schnittgasse')S.slice(1).forEach(T=>{T.eigen=true;arena.bamboo.push({T,wx:T.basis.x,wz:T.basis.z,baseY:T.basis.y,h:T.ov.hoeheM,cut:false,lane:art==='schnittgasse'});});
+    else if(art==='tatami'){S[1].eigen=true;arena.tatami={T:S[1],pivot:S[1].basis.clone(),rollLen:1.0,cut:false,respawnAt:0};}
+    else if(art==='harnisch'){arena.armored={T:T0,flash:0,spark:0,hitCD:0,dent:0,breach:0,deflect:0};T0.eigen=true;}
+    else if(art==='zielscheibe'){const R=(ov&&ov.radiusM)||0.4,H=(ov&&ov.hoeheM)||1.42;T0.pfeilEigen=true;arena.targets.push({T:T0,pos:new THREE.Vector3(x,H,z),R});}
+    else if(art==='kirmes')S.slice(1).forEach((T,i)=>{T.pfeilEigen=true;arena.movers.push({T,baseX:T.basis.x,baseY:T.basis.y+0.18,z0:T.basis.z,amp:2.7,w:0.55+i*0.18,phase:i*2.0,worldZ:T.basis.z,hit:false,hitAt:0});});
+    else if(art==='papagei'){S[1].pfeilEigen=true;arena.popinjays.push({T:S[1],base:S[1].basis.clone().add(new THREE.Vector3(0,0.13,0)),struck:false,respawnAt:0});}
+    else if(art==='weidenrute'){T0.pfeilEigen=true;arena.wand={T:T0,x,z,R:0.22,y0:0.90,y1:1.92,struck:false,respawnAt:0};}
+    else if(art==='clout'){arena.clout={x,z,R:1.5,fahne:S[1]};}
+    else if(art==='wurfscheibe'){const disc=SC.buildInstance('tontaube',1,0);disc.visible=false;arena.group.add(disc);
+      arena.clay={thrower:new THREE.Vector3(x,0,z),disc,arm:S[1],mTon:SC.geraetZustand('tontaube').m,active:false,nextT:1.5,vel:new THREE.Vector3(),pos:new THREE.Vector3(),broke:0};}
+    else if(art==='pendelziel'){S[1].pfeilEigen=true;arena.swingTgt={T:S[1],R:0.36,struck:false,respawnAt:0,anstossAb:0,seite:1};}
+  }
   // ── Geräte-Register: eine Wahrheit für Update + Nahkampf + Pfeil. Neues Gerät = eine Zeile. ──
   arena.devices=[
     {update:updateQuintain, melee:tryHitQuintain},
@@ -1354,6 +992,7 @@ function arenaEnter(){if(arena.active)return;arena.active=true;
     {update:updateWand},
     {update:updateClay,     arrow:tryArrowClay},
     {update:updateSwingTarget,arrow:tryArrowSwing},
+    {melee:tryHitTeil,      arrow:tryArrowTeil},
   ];
   equipWeapon(currentGattung);ensureTrailMesh();placeViewModel(0);
   document.getElementById('arena-ui').style.display='block';
@@ -1362,7 +1001,8 @@ function arenaEnter(){if(arena.active)return;arena.active=true;
 function arenaExit(){if(!arena.active)return;arena.active=false;controls.enabled=true;weapon.visible=true;
   if(document.pointerLockElement)document.exitPointerLock();scene.fog=new THREE.FogExp2(0x0a0807,0.045);
   if(arena.group){clear(arena.group);arena.group=null;}arena.arrows.length=0;arena.stuck.length=0;arena.trail.mesh=null;arena.trail.pts=[];
-  arena.vm=arena.dummy=arena.target=arena.vmWeapon=arena.arm=null;arena.swinging=arena.thrusting=false;arena.drawing=false;
+  for(const m of arena.tonStoffe||[])m.dispose();arena.tonStoffe=[];arena.teile=[];
+  arena.vm=arena.dummy=arena.pell=arena.target=arena.vmWeapon=arena.arm=null;arena.swinging=arena.thrusting=false;arena.drawing=false;
   if(arena.camSaved){cam.position.copy(arena.camSaved.pos);controls.target.copy(arena.camSaved.tgt);cam.fov=arena.camSaved.fov;cam.updateProjectionMatrix();}
   ['lehren','ctl','leg','hint'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='';});
   document.getElementById('arena-ui').style.display='none';document.getElementById('arena-toggle').textContent='Prüfstand ⚔';}
@@ -1393,7 +1033,7 @@ function kegelZiel(obj){const K=SC.ARENA.schwung,bb=new THREE.Box3().setFromObje
 function aimDummy(){if(!arena.dummy)return null;_RC.setFromCamera({x:0,y:0},cam);let hits=_RC.intersectObject(arena.dummy,true);
   if(!hits.length){const P=kegelZiel(arena.dummy);if(P){_RC.set(cam.position,P.sub(cam.position).normalize());hits=_RC.intersectObject(arena.dummy,true);}}
   if(!hits.length)return null;const d=hits[0].distance;if(d>1.9)return null;const y=hits[0].point.y;
-  const ZN=SC.ARENA.zonen,zk=y>1.52?'kopf':y>1.16?'brust':y>0.82?'bauch':y>0.40?'bein':'fuss',z={n:ZN[zk].n,m:ZN[zk].mul,k:zk};   // die Zonen-Tafel lebt im Kern (Welle L: Puppe UND Welt-Tier)
+  const ZN=SC.ARENA.zonen,zk=SC.geraetZone('pell',arena.dummy.worldToLocal(hits[0].point.clone()).y),z={n:ZN[zk].n,m:ZN[zk].mul,k:zk};   // Zonen-Tafel und Zone des Leibs leben im Kern (Puppe, Welt-Tier, die Leiber der Arena)
   const nrm=hits[0].face?hits[0].face.normal.clone().transformDirection(hits[0].object.matrixWorld).normalize():new THREE.Vector3(1,0,0);
   return {zone:z,dist:d,y,point:hits[0].point.clone(),normal:nrm};}
 function startThrust(){arena.thrusting=true;arena.lungeT=0;arena.swP=0;arena.swY=0;arena.swLay=0;arena.prevTip=null;arena.ready=Math.max(arena.ready,0.6);}  // Stich aus dem Klick-Impuls (Arm engagiert)
@@ -1430,17 +1070,18 @@ function meleeSwingUpdate(realDt,dt){const m=measure(P),S=m.S;arena._m=m;
   if(arena.cooldown>0)arena.cooldown-=realDt;
   const aim=aimDummy();                                                                  // Blick → Zone (wohin du schaust)
   if(arena.prevTip&&(arena.swinging||arena.thrusting)){const vel=tip.clone().sub(arena.prevTip).divideScalar(Math.max(1e-4,realDt));   // reale Uhr: im Hit-Freeze läuft dt auf 5%, die Klinge aber real -> sonst ×20 Tempo / ×400 KE
-    if(arena.thrusting){tryThrustRing(tip,arena.prevTip);tryThrustBamboo(tip,arena.prevTip);}
+    if(arena.thrusting){tryThrustRing(tip,arena.prevTip,realDt);tryThrustBamboo(tip,arena.prevTip,realDt);}
     if(arena.cooldown<=0&&vel.length()>1.8/Math.max(1,Math.pow(drag,0.7))){const _vlv=vel.clone().addScaledVector(bladeDir,-vel.dot(bladeDir));const vAx=Math.abs(vel.dot(bladeDir)),vLat=_vlv.length();
       arena._edgeAlign=(!arena._impact&&vLat>1e-3)?Math.abs(_vlv.multiplyScalar(1/vLat).dot(arena._curveDir)):1;   // GEMESSEN am Treffer: |v̂_lat · Schneidenrichtung_Welt| — beide Vektoren real
-      if(aim){landMelee(aim.zone,vLat,vAx);addDummyScar(aim.point,aim.normal,bladeDir,arena.lastHit);arena.cooldown=0.30;}else{let _mh=false;for(const d of (arena.devices||[])){if(d.melee&&d.melee(gripW,bladeDir,vel)){_mh=true;break;}}if(!_mh){tryCutBamboo(gripW,bladeDir,vel);tryCutTatami(gripW,bladeDir,vel);}}}}
+      if(aim){landMelee(aim.zone,vLat,vAx,aim.point,vel);addDummyScar(aim.point,aim.normal,bladeDir,arena.lastHit);arena.cooldown=0.30;}else{let _mh=false;for(const d of (arena.devices||[])){if(d.melee&&d.melee(gripW,bladeDir,vel)){_mh=true;break;}}if(!_mh){tryCutBamboo(gripW,bladeDir,vel);tryCutTatami(gripW,bladeDir,vel);}}}}
   arena.prevTip=tip.clone();
   if(arena.swinging)pushTrail(tip);else if(arena.trail.pts.length)arena.trail.pts.shift();
   buildTrailGeom();}
-function landMelee(z,vLat,vAx){const u=SC.trefferUrteil(measure(P),{vLat,vAx,edgeQ:arena._edgeAlign,zone:z.k,P});   // DAS TREFFER-URTEIL lebt im Kern (schmiede trefferUrteil, Welle L) — die Shell zeigt es, die Welt richtet damit
+function landMelee(z,vLat,vAx,ort,vel){const u=SC.trefferUrteil(measure(P),{vLat,vAx,edgeQ:arena._edgeAlign,zone:z.k,P});   // DAS TREFFER-URTEIL lebt im Kern (schmiede trefferUrteil, Welle L) — die Shell zeigt es, die Welt richtet damit
   const KE=u.KE,art=u.art,clean=u.clean,verdict=u.verdict;arena.lastHit=art==='STICH'?{art,KE,v:u.v,pen:u.pen,clean,zone:z,verdict}:{art,KE,v:u.v,clean,zone:z,edgeQ:u.edgeQ,verdict};
   const e=KE*z.m;arena.mStats=arena.mStats||{hits:0,dmg:0};arena.mStats.hits++;arena.mStats.dmg+=e;fx.freeze=clamp(e*0.0011+(clean?0.05:0),0.04,0.20)*(art==='SCHLAG'?1.25:1);
-  fx.shake=clamp(e*0.004*(art==='SCHLAG'?1.5:0.9),0.02,0.42);const B=camBasis();fx.kickV.copy(B.fwd).multiplyScalar(-e*0.012);fx.kickV.y-=e*0.005;arena.recoil=clamp(e*0.008,0.10,0.7);
+  fx.shake=clamp(e*0.004*(art==='SCHLAG'?1.5:0.9),0.02,0.42);const B=camBasis();fx.kickV.copy(B.fwd).multiplyScalar(-e*0.012);fx.kickV.y-=e*0.005;
+  if(arena.pell&&ort&&vel)arenaStoss(arena.pell,ort,vel,u);                                      // der EINE Stoß: das Pell wankt nach dem Gesetz des Kerns
   popText((art==='STICH'?'➤ ':art==='SCHNITT'?'✂ ':'✹ ')+KE.toFixed(0)+' J',clean?'#ffe07a':'#d96a4a',0,-0.04);
   popText(z.n+(clean?'':' · '+verdict),clean?'#9fb3c8':'#d96a4a',0.1,0.05);updateHUD();}
 
@@ -1458,7 +1099,7 @@ function buildTrailGeom(){ensureTrailMesh();if(!arena.trail.mesh)return;const pt
 // — BOGEN: links = ans Auge, rechts = spannen & halten, rechts loslassen = Schuss —
 function doRelease(){if(arena.kind!=='bow')return;if(arena.drawFrac<0.25){arena.drawing=false;arena.drawFrac=0;arena._builtFrac=-1;return;}
   arena.drawing=false;fx.fovT=75;const E=Math.max(1,P.energie||40),v0=Math.sqrt(2*E/ARENA.mArrow)*arena.drawFrac,B=camBasis();
-  const fwd=B.fwd.clone();fwd.x+=(Math.random()-0.5)*arena.sway*0.04;fwd.y+=(Math.random()-0.5)*arena.sway*0.04;fwd.normalize();
+  const fwd=B.fwd.clone();fwd.x+=(zufall('bogen')-0.5)*arena.sway*0.04;fwd.y+=(zufall('bogen')-0.5)*arena.sway*0.04;fwd.normalize();
   cam.updateMatrixWorld(true);const start=arena.vm.localToWorld(arena._gripR.clone().addScaledVector(new THREE.Vector3(1,0,0).applyQuaternion(arena.baseQuat),0.2));
   const arr=buildPfeil();arena.group.add(arr);arr.position.copy(start);const KE=0.5*ARENA.mArrow*v0*v0;
   arena.arrows.push({mesh:arr,pos:start.clone(),vel:fwd.clone().multiplyScalar(v0),v0,KE,scored:false,life:0,trail:[start.clone()],line:null});
@@ -1467,7 +1108,7 @@ function stickArrow(a){a.stuck=true;a.vel.set(0,0,0);arena.stuck.push(a.mesh);if
 
 
 function arenaUpdate(realDt){if(!arena.active)return;const now=clock.getElapsedTime();
-  if(fx.freeze>0)fx.freeze-=realDt;const dt=fx.freeze>0?realDt*0.05:realDt;updateMovement(realDt);pickupCheck();updateFalling(realDt);regrowBamboo();regrowTatami();swingTatamiUpdate(now);carnivalUpdate(now);for(const d of (arena.devices||[])){if(d.update)d.update(realDt);}
+  if(fx.freeze>0)fx.freeze-=realDt;const dt=fx.freeze>0?realDt*0.05:realDt;updateMovement(realDt);pickupCheck();updateFalling(realDt);regrowBamboo();regrowTatami();carnivalUpdate(now);for(const d of (arena.devices||[])){if(d.update)d.update(realDt);}arenaTakt(realDt);
   if(arena.kind==='bow'){arena.raise=lerp(arena.raise,(arena.drawing||arena._wantAim)?1:0,clamp(realDt*8,0,1));
     if(arena.drawing){arena.drawFrac=Math.min(1,arena.drawFrac+dt/0.9);fx.fovT=lerp(75,54,arena.drawFrac);if(arena.drawFrac>=1){arena.holdT+=dt;arena.sway=clamp((arena.holdT-0.7)*0.5,0,1);}}
     else if(arena.drawFrac>0){arena.drawFrac=Math.max(0,arena.drawFrac-realDt*2);}
@@ -1475,23 +1116,25 @@ function arenaUpdate(realDt){if(!arena.active)return;const now=clock.getElapsedT
     for(const a of arena.arrows){if(a.stuck)continue;a.vel.y-=ARENA.g*dt;const sp=a.vel.length();a.vel.multiplyScalar(Math.max(0,1-0.0016*sp*dt));
       a.pos.addScaledVector(a.vel,dt);a.mesh.position.copy(a.pos);if(sp>0.01)a.mesh.quaternion.setFromUnitVectors(_AX,a.vel.clone().normalize());a.life+=dt;
       if(!a.scored)hitMover(a);
-      if(!a.scored&&arena.popinjays){for(const P2 of arena.popinjays){if(P2.struck)continue;const bp=P2.base;if(Math.hypot(a.pos.x-bp.x,a.pos.y-bp.y,a.pos.z-bp.z)<0.36){P2.struck=true;P2.fallV=0.6;P2.respawnAt=clock.getElapsedTime()+3.5;popText('Papagei getroffen!','#ffe07a',0,0);popText('+15','#6fcf73',0.12,0.06);a.scored=true;stickArrow(a);break;}}}
-      if(!a.scored&&arena.dummy){const dp=arena.dummy.position;if(Math.hypot(a.pos.x-dp.x,a.pos.z-dp.z)<0.36&&a.pos.y>0.55&&a.pos.y<1.9){fx.shake+=0.05;popText('Pell getroffen','#d8b46a',0,0);popText('+8','#6fcf73',0.12,0.06);arena.score.shots++;arena.score.sum+=8;arena.score.last={ring:8,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};a.scored=true;stickArrow(a);updateHUD();}}
-      if(!a.scored&&arena.wand&&!arena.wand.struck){const W=arena.wand;if(Math.hypot(a.pos.x-W.x,a.pos.z-W.z)<W.R&&a.pos.y>W.y0&&a.pos.y<W.y1){W.struck=true;W.respawnAt=clock.getElapsedTime()+3.0;W.rod.visible=false;fx.shake+=0.05;popText('WAND GESPALTEN — reine Präzision','#ffe07a',0,0);popText('+20','#6fcf73',0.12,0.06);arena.score.shots++;arena.score.sum+=20;arena.score.last={ring:20,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};a.scored=true;stickArrow(a);updateHUD();}}
+      if(!a.scored&&arena.popinjays){for(const P2 of arena.popinjays){if(P2.struck)continue;const bp=P2.base;if(Math.hypot(a.pos.x-bp.x,a.pos.y-bp.y,a.pos.z-bp.z)<0.36){P2.struck=true;P2.respawnAt=clock.getElapsedTime()+3.5;pfeilStoss(P2.T,a);popText('Papagei getroffen!','#ffe07a',0,0);popText('+15','#6fcf73',0.12,0.06);a.scored=true;stickArrow(a);P2.T.h.attach(a.mesh);break;}}}
+      if(!a.scored&&arena.dummy){const dp=arena.dummy.position;if(Math.hypot(a.pos.x-dp.x,a.pos.z-dp.z)<0.36&&a.pos.y>0.55&&a.pos.y<1.9){fx.shake+=0.05;pfeilStoss(arena.pell,a);popText('Pell getroffen','#d8b46a',0,0);popText('+8','#6fcf73',0.12,0.06);arena.score.shots++;arena.score.sum+=8;arena.score.last={ring:8,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};a.scored=true;stickArrow(a);arena.dummy.attach(a.mesh);updateHUD();}}
+      if(!a.scored&&arena.wand&&!arena.wand.struck){const W=arena.wand;if(Math.hypot(a.pos.x-W.x,a.pos.z-W.z)<W.R&&a.pos.y>W.y0&&a.pos.y<W.y1){W.struck=true;W.respawnAt=clock.getElapsedTime()+3.0;pfeilStoss(W.T,a);fx.shake+=0.05;popText('WEIDENRUTE GETROFFEN — reine Präzision','#ffe07a',0,0);popText('+20','#6fcf73',0.12,0.06);arena.score.shots++;arena.score.sum+=20;arena.score.last={ring:20,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};a.scored=true;stickArrow(a);W.T.h.attach(a.mesh);updateHUD();}}
       if(!a.scored&&arena.clout){const C=arena.clout,hd=Math.hypot(a.pos.x-C.x,a.pos.z-C.z);if(a.pos.y<0.35&&a.vel.y<0&&hd<C.R){const ring=clamp(Math.ceil(6*(1-hd/C.R)),1,6);fx.shake+=0.05;popText('CLOUT — die Parabel sitzt · '+ring,'#ffe07a',0,0);popText('+'+(ring*3),'#6fcf73',0.12,0.06);arena.score.shots++;arena.score.sum+=ring*3;arena.score.last={ring:ring*3,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};a.scored=true;stickArrow(a);updateHUD();}}
       for(const d of (arena.devices||[])){if(!a.scored&&d.arrow&&d.arrow(a))a.scored=true;}
       if(!a.scored){for(const T of arena.targets){if(a.pos.x>=T.pos.x-0.05&&a.pos.x<T.pos.x+0.35){const rr=Math.hypot(a.pos.y-T.pos.y,a.pos.z-T.pos.z);if(rr<=T.R+0.12){scoreArrowOn(a,T,rr);break;}}}}
-      else if(a.pos.y<=0.02){a.pos.y=0.02;a.mesh.position.copy(a.pos);stickArrow(a);popText('im Boden','#7a7f8c',0,0);}
-      else if(a.life>9||a.pos.x>30){stickArrow(a);}}
+      // was nichts traf, steckt im Boden oder endet hinter der Bahn (bis hier hing der Zweig am Ziel: kein Fehlschuss steckte, x > 30 hielt jeden vor dem Clout)
+      if(a.stuck)continue;
+      if(a.pos.y<=0.02){a.pos.y=0.02;a.mesh.position.copy(a.pos);stickArrow(a);popText('im Boden','#7a7f8c',0,0);}
+      else if(a.life>9||a.pos.x>45){stickArrow(a);}}
   }else{arena.ready=lerp(arena.ready,(arena.swinging||arena.thrusting||arena._pressing)?1:0,clamp(realDt*16,0,1));meleeSwingUpdate(realDt,dt);
-    if(arena.recoil>0.001&&arena.dummy){arena.recoil*=Math.pow(0.0008,dt);arena.dummy.rotation.z=-arena.recoil*Math.sin(now*26)*0.85;arena.dummy.rotation.x=arena.recoil*Math.cos(now*26)*0.3;if(arena.recoil<0.004){arena.recoil=0;arena.dummy.rotation.z=0;arena.dummy.rotation.x=0;}}}
+}
   applyCamera(realDt);placeViewModel(realDt);updateReticle();}
 
 function applyCamera(dt){fx.fov=lerp(fx.fov,fx.fovT,clamp(dt*9,0,1));cam.fov=fx.fov;
   fx.kick.addScaledVector(fx.kickV,dt);fx.kickV.multiplyScalar(Math.pow(0.0003,dt));fx.kick.multiplyScalar(Math.pow(0.015,dt));
   const sh=fx.shake;fx.shake*=Math.pow(0.0006,dt);if(fx.shake<0.0008)fx.shake=0;
   const bob=Math.sin(clock.getElapsedTime()*9)*arena.bob*0.012,B=camBasis();
-  cam.position.set(arena.player.x+(Math.random()-0.5)*sh,ARENA.eyeY-(arena._crouchY||0)+bob+(Math.random()-0.5)*sh+fx.kick.y,arena.player.z+(Math.random()-0.5)*sh);
+  cam.position.set(arena.player.x+(zufall('kamera')-0.5)*sh,ARENA.eyeY-(arena._crouchY||0)+bob+(zufall('kamera')-0.5)*sh+fx.kick.y,arena.player.z+(zufall('kamera')-0.5)*sh);
   cam.lookAt(cam.position.clone().add(B.fwd));cam.updateProjectionMatrix();}
 
 function appendArenaUI(){

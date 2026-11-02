@@ -55,7 +55,7 @@ hauptLauf(async () => {
         const res = {};
         const r = await window.__weltDa();
         const f = r._ensureAssetFoundry();
-        await window.__weltDa(() => f && f.ready);
+        await __weltDa(() => f && f.ready);
         // Scatter-Regionen um den Spieler bauen lassen (der Streaming-Tick baut 1/Frame), bis die Streu STEHT (die EINE
         // Antwort `_streuWartet`): die Fern-Baum-Karte bestellt ihr Leser — eine Region wartet auf sie und baut nach
         // der Lieferung neu; erst dann trägt sie ihre Fern-Zellen.
@@ -155,7 +155,7 @@ hauptLauf(async () => {
             await sleep(150);
         };
         const gewandelt = () => probe.lod !== lodVorher;
-        await window.__gebautNach("der Stufen-Wandel der Probe", { fertig: gewandelt, takt: lodTakt(400, gewandelt), max: 300 });
+        await __gebautNach("der Stufen-Wandel der Probe", { fertig: gewandelt, takt: lodTakt(400, gewandelt), max: 300 });
         const wandel = gewandelt() ? 1 : 0;
         res.l = {
             lodVorher,
@@ -263,7 +263,7 @@ hauptLauf(async () => {
                         return !g || (g.liveCount | 0) === 0;
                     });
                 const fern2 = () => dz2.lod === 2 && huelleLeer();
-                await window.__gebautNach("die Zelle in der Fern-Stufe", { fertig: fern2, takt: lodTakt(800, fern2), max: 300 });
+                await __gebautNach("die Zelle in der Fern-Stufe", { fertig: fern2, takt: lodTakt(800, fern2), max: 300 });
                 dblk.demotet = dz2.lod === 2;
                 // Fern-Slots: die Super-Region (Boden-Fernstufen) ODER — die Karte (W6) — die EINE globale Atlas-Gruppe.
                 dblk.slotsFern =

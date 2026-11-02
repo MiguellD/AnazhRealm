@@ -5,9 +5,7 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandW17Multiplayer({ page, check }) {
     // ### das Mesh-als-Server ###
     // Ein `ws-send` der fremden Welt wird ein subworld-net-Broadcast, jeder Peer im selben Sub-Welt-Raum
     // stellt ihn in sein iframe zu. Geprüft: Broadcast, Kanal-Verfolgung, Sub-Raum-Eingrenzung,
@@ -1101,9 +1099,7 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
     }
 }
 
-async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandW12WorldPortal({ page, check }) {
     // ### Welt-Portal: Rolle + Built-in welt_portal ###
     const w12c1Results = await safeEvaluate(page, () => {
         const out = {};
@@ -2291,7 +2287,7 @@ async function checkBandW18Dwell({ page, check }) {
         out.chatGestures = examples.includes("wohne hier") && examples.includes("ziehe heim");
         // (8) der Zeiger + der Slot leben GLOBAL (nie im Welt-Snapshot) —
         // buildStateSnapshot kennt sie nicht.
-        out.notInSnapshot = window.__fehlt(r.buildStateSnapshot, /portalDwelling|portalState/);
+        out.notInSnapshot = __fehlt(r.buildStateSnapshot, /portalDwelling|portalState/);
         return out;
     });
     check("W18-D Wohnen: außerhalb eines Portals ehrlich unmöglich", res.dwellOutside);

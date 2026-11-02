@@ -22,7 +22,7 @@ hauptLauf(async () => {
     const { browser, page } = await nullSeite({ frist: 180000 });
     await server.zeige(page, 30000);
     await page.evaluate(async () => {
-        await window.__weltDa((r) => r.state);
+        await __weltDa((r) => r.state);
     });
 
     const out = await page.evaluate(async () => {
@@ -30,7 +30,7 @@ hauptLauf(async () => {
         // ===== BEHAVIORAL — der Aufruf mit einem Baum @lod2 wirft nicht + liefert die Impostor-Geometrie =====
         try {
             const f = r._ensureAssetFoundry();
-            await window.__weltDa(() => !(f && !f.ready));
+            await __weltDa(() => !(f && !f.ready));
             res.behavior.foundryReady = !!(f && f.ready);
             // Einen Baum-Bauplan finden (die grammatik-gewachsenen Built-ins baum_*).
             const bps = st.blueprints || {};
@@ -39,10 +39,8 @@ hauptLauf(async () => {
             if (treeBp) {
                 bps[treeBp]._recipeLod = 2; // die Werkstatt-L2-Stufe
                 let grp = null;
-                for (const weiter = window.__deckel("die Vorschau der Werkstatt", 1000); weiter(); ) {
-                    try {
-                        r._gameLoopTick(performance.now());
-                    } catch {}
+                for (const weiter = __deckel("die Vorschau der Werkstatt", 1000); weiter(); ) {
+                    __handTakt();
                     grp = r._workshopFoundryPreviewGroup(treeBp); // wirft nicht
                     if (grp && grp.children && grp.children.length) break;
                     await sleep(40);

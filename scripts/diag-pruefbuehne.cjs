@@ -226,9 +226,9 @@ async function s0Probe(page, station, schein) {
                 // Speicher `_dslPositionsCache` auf den Prototyp), und nach dem Tausch am Ort las die neue Welt ihn
                 const f = Object.getOwnPropertyDescriptor(P, n).value;
                 if (n === "constructor" || typeof f !== "function") continue;
-                if (!window.__fehlt(f, /new THREE\.PointLight\(/)) out.bauer.push(n);
-                if (!window.__fehlt(f, LIT)) out.ohnePool.push(n);
-                if (!window.__fehlt(f, /this\._punktLichtBrdf\(/)) out.brdf.push(n);
+                if (!__fehlt(f, /new THREE\.PointLight\(/)) out.bauer.push(n);
+                if (!__fehlt(f, LIT)) out.ohnePool.push(n);
+                if (!__fehlt(f, /this\._punktLichtBrdf\(/)) out.brdf.push(n);
             }
             if (schein) delete P._scheinRueckfall;
             // das EINE Punktlicht-Gesetz am Ruf: der Pool-Term rechnet jeden Platz über _punktLichtBrdf (Spion am Ruf)
@@ -251,12 +251,12 @@ async function s0Probe(page, station, schein) {
             const uhr = (t) => {
                 if (r.setTimeOfDay(t, "human") !== true) throw new Error("S0: die Uhr nimmt den Spieler nicht (" + t + ")");
             };
-            // der Mensch steht im Atrium am Rand des Genesis-Platzes (K52: die Scheibe liegt auf dem Grund der Station, der Ring
-            // der Tore um sie): 2 m jenseits der Lichtung, zwischen zwei Toren (18°), der Blick des Schusses weg vom Ring
-            const A0 = AnazhRealm.GENESIS_PLATZ;
+            // der Mensch steht am Rand des Genesis-Orts: 2 m jenseits seines Freiraums (fachwerk GENESIS_ORT.freiraum), zwischen
+            // zwei Toren (18°, neben jedem Weg), der Blick des Schusses weg von der Mitte
+            const R0 = window.__fachwerkCore.GENESIS_ORT.freiraum.r + 2;
             const w0 = Math.PI / 10;
-            const sx = st.x + (A0.ringR + A0.rand + 2) * Math.cos(w0);
-            const sz = st.z + (A0.ringR + A0.rand + 2) * Math.sin(w0);
+            const sx = st.x + R0 * Math.cos(w0);
+            const sz = st.z + R0 * Math.sin(w0);
             const y0 = r.getTerrainHeightAt(sx, sz);
             s.playerMesh.position.set(sx, y0 + 1, sz);
             const vor = new Set(s.architectures || []);
@@ -457,16 +457,7 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
         async (welt, wuerfe, evolutionen, schein) => {
             const s = st;
             const out = { welt, wuerfe: [], akt: null, nexus: null, zensus: null, befunde: [] };
-            const takt = async (ms) => {
-                for (let i = 0; i * 16 < ms; i++) {
-                    try {
-                        r._gameLoopTick(performance.now());
-                    } catch {
-                        /* ein Takt-Fehler zählt der Page-Error */
-                    }
-                    await sleep(16);
-                }
-            };
+            const takt = (ms) => window.__takte(Math.ceil(ms / 16), 16); // ein Takt-Fehler zählt der Page-Error
             // Die Welt reift aus (Genesis-Ring, Vorschauen, Start-Dorf der Wildnis): erst wenn ihr Bestand 4 s steht, misst
             // die Linse — was danach wächst, ist ein Wurf.
             {
@@ -564,10 +555,10 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
                 const z = zuwachs(vor, substanz());
                 out.nexus = { evolutionen: laeufe, wuerfeImPool: zaehl, zuwachs: z.summe, was: z.d };
             }
-            // (4) DER ABSENZ-ZENSUS in 300 m um den Ursprung der Welt (die Genesis-Plattform)
+            // (4) DER ABSENZ-ZENSUS in 300 m um den Genesis-Ort der Welt (die Mitte ihres Plans)
             {
-                const pl = r._genesisPlattform();
-                const M = pl?.position ? { x: pl.position.x, z: pl.position.z } : { x: 0, z: 0 };
+                const M = r._genesisMitte();
+                if (!M) throw new Error("der Absenz-Zensus ohne Genesis-Ort (der Plan der Welt kam nicht)");
                 const R = 300;
                 const d = (p) => Math.hypot(p.x - M.x, p.z - M.z);
                 const fremd = {};
@@ -1066,17 +1057,17 @@ async function lichtLauf() {
                         };
                         if (!gestalt) {
                             window.__buehne();
-                            // am Rand des Genesis-Platzes, zwischen zwei Toren (K52: die Scheibe liegt auf dem Grund der Station)
-                            const A0 = AnazhRealm.GENESIS_PLATZ;
+                            // am Rand des Genesis-Orts, 2 m jenseits seines Freiraums, zwischen zwei Toren
+                            const R0 = window.__fachwerkCore.GENESIS_ORT.freiraum.r + 2;
                             const w0 = Math.PI / 10;
-                            const sx = st.x + (A0.ringR + A0.rand + 2) * Math.cos(w0);
-                            const sz = st.z + (A0.ringR + A0.rand + 2) * Math.sin(w0);
+                            const sx = st.x + R0 * Math.cos(w0);
+                            const sz = st.z + R0 * Math.sin(w0);
                             const y0 = r.getTerrainHeightAt(sx, sz);
                             s.playerMesh.position.set(sx, y0 + 1, sz);
                             const vor = new Set(s.architectures);
                             const pm = s.playerMesh.position;
                             let feuer = null;
-                            for (const weiter = window.__deckel("die Feuerstelle", 3000); !feuer && weiter(); ) {
+                            for (const weiter = __deckel("die Feuerstelle", 3000); !feuer && weiter(); ) {
                                 const halt = s.weatherEffectTime;
                                 s.weatherEffectTime = 0; // der Satz geht durch den Mess-Halt (der Akt ist die Probe)
                                 try {
@@ -1103,7 +1094,7 @@ async function lichtLauf() {
                         // Das Urteil (`__s0Gestalt`) nennt den Täter: fiel sie aus der Welt, bricht die Linse sofort ab.
                         const feuer = window.__s0Feuer;
                         let fehlt = [];
-                        for (const weiter = window.__deckel("die Feuerstelle und ihr Boden", 3000); weiter(); ) {
+                        for (const weiter = __deckel("die Feuerstelle und ihr Boden", 3000); weiter(); ) {
                             const u = window.__s0Gestalt(feuer);
                             if (u.fiel) return `die Feuerstelle fiel aus der Welt (${u.fiel}) — sie wächst nie mehr`;
                             fehlt = u.fehlt;
@@ -1350,7 +1341,7 @@ async function lichtLauf() {
                         nah: nahZahl,
                         zaehl,
                         boden: [...bodenWgsl.keys()],
-                        png: window.__png(u8, w, h),
+                        png: __png(u8, w, h),
                     };
                 }, schein, ECHT ? 0 : S0_NAH_M, S0_TON.palette)
             );
@@ -1393,7 +1384,7 @@ async function lichtLauf() {
             } finally {
                 if (nahLos) nahLos();
             }
-            const bild = (a) => window.__png(a.u8, 960, 540);
+            const bild = (a) => __png(a.u8, 960, 540);
             const figur = bild(auf);
             if (wolf) r.removeCreature(wolf);
             cam.position.set(f.x - 6, g(f.x - 6, f.z) + 1.7, f.z);

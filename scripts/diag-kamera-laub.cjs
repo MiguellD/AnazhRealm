@@ -12,7 +12,7 @@
 // Linse — die Linse muss beide beim Namen nennen, sonst ist sie vakuös. `--selftest` (ohne Welt): das Urteil über
 // synthetische Messungen nennt jeden Täter, die statische Wand fällt am Vor-Stand.
 //
-//   node scripts/diag-kamera-laub.cjs [--selftest] [--teile laub,leib,gang,gang2,ninja]   Port: KAMERA_LAUB_PORT (Standard 4611)
+//   node scripts/diag-kamera-laub.cjs [--selftest] [--teile laub,leib,gang,gang2]   Port: KAMERA_LAUB_PORT (Standard 4611)
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
@@ -23,12 +23,13 @@ const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 const PORT = Number(process.env.KAMERA_LAUB_PORT || 4611);
 const STAMM = process.env.KAMERA_LAUB_STAMM ? path.resolve(process.env.KAMERA_LAUB_STAMM) : null;
 // die Teile des Laufs (Standard alle): laub (die Nah-Deckung, K1) · leib (Mess-Wiese + Prüfbühnen-Hang, K2) · gang (der Gang, K4) · gang2
-// (der Gang der Staffel 2: im Haus, am Steilhang, im Sprint — mit gang) · ninja (NP-03, K3) — die CI fährt sie in zwei Schritten
+// (der Gang der Staffel 2: im Haus, am Steilhang, im Sprint — mit gang); NP-03 (die Kamera des Körper-Studios) misst das Instrument
+// des Labors durch die ganze Vorführung, der Kern urteilt (gate:tier-gang, w4-koerper-park) — die CI fährt sie in zwei Schritten
 // (gate:kamera-laub · gate:kamera-leib), je unter 3 min; gang2 fährt die Station leib.K4#2, die Wand trägt ihn, sobald die Welt
 // ihn trägt (26.10.: ROT am Ruck des Haus-Sprints, s. GANG)
 // `--bild`: die Welt zeichnet über die Weiche (Rezept `linse`), ohne den Null-Renderer — die Station eines Geräts (leib.K4)
 const BILD = process.argv.includes("--bild");
-const TEILE = argOpt("--teile", "laub,leib,gang,gang2,ninja").split(",");
+const TEILE = argOpt("--teile", "laub,leib,gang,gang2").split(",");
 // Die Nah-Radien der Messung (m) — fest in der Linse, damit Vorher und Nachher unter derselben Bedingung stehen.
 const RADIUS = Object.freeze({ third: 2.0, ritt: 3.0, first: 0.8 });
 const SAUM = 0.6; // der Saum der Durchsicht (KAMERA_DURCHSICHT.saumM): in 3rd endet die Nah-Kugel samt Saum vor dem Ziel
@@ -103,8 +104,9 @@ function urteil(m) {
 // ihr, jede zweite Pose mit gesenkter Kamera) und 10 am 30°-Hang der Prüfbühne (spec/pruefbuehne/stationen.json s2-hang30,
 // der Blick hangab: die Kamera hangauf hinter ihm) — zu Fuß und im Verfolger-Ritt (der GT 3,2 m vor der Box). Dazu der
 // Rundgang (240 Bilder um das erste Haus: Kamera-Sprünge > 2 m) und die KOSTEN: die Feld-Proben je 3rd-Bild (jedes gemessene
-// Bild einmal unter dem Zähler auf `_fieldDensityAt`) gegen den Vor-Stand V18.541 (PROBEN_VORSTAND). NP-03: das Körper-Studio (worlds/koerperstudio), 12 Parcours-Punkte × 4 Blicke, die Strecke
-// Blickziel → Kamera gegen die Park-Boxen (Rand 0,3 Lab-Maß, der Boden eingeschlossen); NP-02: der Tunnel bei x > 3 bleibt zu.
+// Bild einmal unter dem Zähler auf `_fieldDensityAt`) gegen den Vor-Stand V18.541 (PROBEN_VORSTAND). Das Körper-Studio (NP-03 die
+// Kamera, NP-02 die Kapsel; der Tunnel fiel mit der Hocke) misst das Instrument des Labors durch seine Vorführung, der Kern urteilt
+// (`leibSollUrteil`, gate:tier-gang — w4-koerper-park).
 const LEIB_R = 0.25; // die Kugel der Linse (m): 5 cm unter dem Leib der Kamera — die Spiel-Zahl liest sie nie
 const LEIB_WIESE = { haus: 12, fels: 14, baum: 14 }; // 40 Posen
 const LEIB_HANG_N = 10;
@@ -116,7 +118,7 @@ const LEIB_N = LEIB_WIESE.haus + LEIB_WIESE.fels + LEIB_WIESE.baum + LEIB_HANG_N
 const PROBEN_VORSTAND = Object.freeze({ mittel: 35.4, median: 34, hoechstens: 50 });
 const PROBEN_RING = 4;
 const quantil = (a, q) => {
-    const s = [...a].sort((x, y) => x - y);
+    const s = [...a].sort(aufsteigend);
     return s[Math.min(s.length - 1, Math.floor(q * s.length))];
 };
 // Kamera-Sprünge > 2 m im Rundgang: nie häufiger als am Vor-Stand
@@ -134,21 +136,6 @@ const SPRUENGE_MAX = 4;
 // (`senk`), muss die Linse beim Namen nennen.
 const GANG = Object.freeze({ R: 0.25, nahJe: 6, gw: 32, gh: 18, stammDickM: 0.15, startM: 8, orbitMs: 6000, heranM: 6, ruckM: 0.02, nahRadien: { Fels: 0.25, Bau: 0.25, Rinde: 0.25, Gelände: 0.25 }, hang: { ...ORTE.find((o) => o.id === "hang").such, bergab: [8, 20], rMax: 600 } });
 const GANG_ARTEN = { 1: ["stamm", "fels", "haus"], 2: ["innen", "steil", "innen-sprint", "steil-sprint"] };
-const NINJA_WP = [
-    [0, 7, 0.8],
-    [0, 12.5, 1.8],
-    [0, 18, 2.9],
-    [0, 23.5, 1.8],
-    [0, 26.3, 0.05],
-    [0, 29, 1.0],
-    [0, 32, 2.1],
-    [0, 34.5, 3.3],
-    [0, 39, 3.56],
-    [0, 47.5, 5.26],
-    [7.5, 47.5, 5.2],
-    [12.5, 49.5, 6.2],
-];
-const NINJA_RAND = 0.3; // Lab-Maß (der Runner R10)
 const WIESE = require("./lib/welt-orte.cjs").messort("wiese"); // der EINE Leser des Haushalts
 const HANG = jsonLesen("spec/pruefbuehne/stationen.json").stationen.find(
     (o) => o.id === "s2-hang30"
@@ -185,7 +172,7 @@ function urteilLeib(L) {
     if (!Array.isArray(pr) || pr.length < LEIB_N)
         out.push(`Leib: ${Array.isArray(pr) ? pr.length : 0} Bilder gezählt (Vorbedingung der Feld-Proben je 3rd-Bild)`);
     else {
-        const mittel = +(pr.reduce((a, b) => a + b, 0) / pr.length).toFixed(1);
+        const mittel = +(pr.reduce(addiere, 0) / pr.length).toFixed(1);
         const med = quantil(pr, 0.5);
         const hoechstens = Math.max(...pr);
         if (mittel > PROBEN_VORSTAND.mittel || med > PROBEN_VORSTAND.median + PROBEN_RING || hoechstens > 2 * PROBEN_VORSTAND.hoechstens)
@@ -215,27 +202,6 @@ function urteilGang(G, stufe = 1) {
         }
     }
     if (!((stufe === 1 ? G.schmuggel : G.senk) > 0)) out.push(stufe === 1 ? "Schmuggel: ein Arm ohne Flügel-Leib bleibt ungenannt" : "Schmuggel: die Kamera im Hang bleibt ungenannt");
-    return out;
-}
-function urteilNinja(N) {
-    if (!N) return ["NP-03: nicht gemessen (Vorbedingung)"];
-    if (N.err) return [`NP-03: Ausnahme (${String(N.err).split("\n")[0]})`];
-    const out = [];
-    const posen = N.posen || [];
-    if (N.kernBlock !== true) out.push("NP-03: die Studio-Kamera liest nicht den Kern-Block fx.bewegung.kamera");
-    if (posen.length < NINJA_WP.length * 4) out.push(`NP-03: ${posen.length} von ${NINJA_WP.length * 4} Posen gemessen (Vorbedingung)`);
-    const fehl = posen.filter((p) => p.taeter.length);
-    if (fehl.length)
-        out.push(
-            `NP-03: ${fehl.length} von ${posen.length} Posen — ` +
-                fehl
-                    .slice(0, 5)
-                    .map((p) => `${p.id}: ${p.taeter.join(", ")}`)
-                    .join(" · ")
-        );
-    const t = N.tunnel;
-    if (!t || !t.gueltig) out.push(`NP-02: die Figur bewegt sich keine 3 m (${JSON.stringify(t || null)})`);
-    else if (t.umgangen) out.push(`NP-02: der Tunnel wird bei x > 3 umgangen (Ende ${t.ende.join("/")})`);
     return out;
 }
 
@@ -276,7 +242,7 @@ function leibInstall(cfg) {
     // reißt der Deckel, nennt sein Wurf die Lücken des Weltbilds (`__deckel`)
     L.steht = async (ms) => {
         let n = 0;
-        for (const weiter = window.__deckel("das Weltbild", ms / 45); weiter(); ) {
+        for (const weiter = __deckel("das Weltbild", ms / 45); weiter(); ) {
             await L.tick(5, 40);
             n++;
             if (n >= 4 && !r._weltbildFehlt(true).length) break;
@@ -285,7 +251,7 @@ function leibInstall(cfg) {
     };
     // der Spieler an (x, z), bis das Weltbild dort steht; zurück, was noch fehlt
     L.hin = (x, z, ms) => {
-        st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
+        pm.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
         return L.steht(ms);
     };
     // der sichtbare Boden: die Boden-Karte des gezeichneten Mesh, null ohne Karte
@@ -383,7 +349,7 @@ function leibInstall(cfg) {
         st._kamChase = undefined; // das nächste Bild springt hinter den Wagen in seiner Gier (`chaseKamera`)
         st.yaw = gier;
         st.pitch = 0;
-        st.playerMesh.position.set(x, y + 1.0, z);
+        pm.position.set(x, y + 1.0, z);
         if (gt.instanced) r._archInstanceUpdate(gt);
         if (gt.mesh) {
             gt.mesh.position.set(x, y + 0.5, z);
@@ -642,7 +608,7 @@ async function leibGang(G) {
             const m = a.m || { cx: (a.b.minX + a.b.maxX) / 2, cz: (a.b.minZ + a.b.maxZ) / 2 };
             L.fuss(v.x, v.z, v.gier, 0.15);
             st.yaw = v.gier; // nach dem Rig-Wechsel
-            const mitte = () => Math.hypot(st.playerMesh.position.x - m.cx, st.playerMesh.position.z - m.cz);
+            const mitte = () => Math.hypot(pm.position.x - m.cx, pm.position.z - m.cz);
             g.heran = { d0: +mitte().toFixed(2) };
             const q = [];
             const bild = async (phase) => {
@@ -651,7 +617,7 @@ async function leibGang(G) {
                 if (phase.startsWith("orbit")) st.yaw += (2 * Math.PI * dt) / G.orbitMs; // die Maus dreht je Zeit
                 r._gameLoopTick(tMs);
                 const c = st.camera.position;
-                const p = st.playerMesh.position;
+                const p = pm.position;
                 const kb = L.sichtbar(c.x, c.z);
                 if (senk && kb !== null) c.y = kb - 0.1; // DER SCHMUGGEL AM HANG: nach dem Takt 10 cm unter den sichtbaren Boden
                 const n = ++g.bilder;
@@ -689,7 +655,7 @@ async function leibGang(G) {
             }
             g.heran.d1 = +mitte().toFixed(2);
             // im Haus: der Spieler steht über einen Meter hinter der Schwelle (n zeigt hinaus)
-            const p = st.playerMesh.position;
+            const p = pm.position;
             if (art.startsWith("innen")) g.drinnen = (p.x - a.d.cx) * a.n[0] + (p.z - a.d.cz) * a.n[1] < -1;
             tasten({});
             for (const t1 = tMs + G.orbitMs; tMs < t1; ) await bild("orbit");
@@ -724,94 +690,6 @@ async function leibGang(G) {
     return out;
 }
 
-// NP-03 + NP-02 im Körper-Studio (Seiten-Funktion über die Lab-Globalen play · parkBoxes · playInput · playPhysics · camera)
-/* global play, parkBoxes, playInput, playPhysics, camera, character, keys, enterPlay, resetRun, _KAM */
-function ninja(arg) {
-    const out = { posen: [] };
-    try {
-        // die Studio-Kamera liest DEN Block des Kerns (fx.bewegung.kamera), kein Lab-Literal
-        out.kernBlock = typeof _KAM !== "undefined" && _KAM === window.__koerperCore.bewegung.kamera;
-        enterPlay();
-        resetRun();
-        play.cam = "third";
-        const schritt = (n) => {
-            for (let i = 0; i < n; i++) {
-                playInput(1 / 60);
-                playPhysics(1 / 60);
-            }
-        };
-        for (let i = 0; i < arg.wp.length; i++)
-            for (const [w, yw] of [0, Math.PI / 2, Math.PI, -Math.PI / 2].entries()) {
-                const [x, z, y] = arg.wp[i];
-                for (const k in keys) keys[k] = false;
-                character.position.x = x;
-                character.position.z = z;
-                play.posY = y;
-                play.vx = play.vy = play.vz = 0;
-                play.yaw = yw;
-                play.faceYaw = yw;
-                play.pitch = 0.22;
-                schritt(90);
-                const c = camera.position;
-                const Lk = [play.lookX, play.lookY, play.lookZ];
-                const D = [c.x - Lk[0], c.y - Lk[1], c.z - Lk[2]];
-                const taeter = [];
-                for (let bi = 0; bi < parkBoxes.length; bi++) {
-                    const b = parkBoxes[bi];
-                    const lo = [b.cx - b.sx / 2, b.cy - b.sy / 2, b.cz - b.sz / 2];
-                    const hi = [b.cx + b.sx / 2, b.cy + b.sy / 2, b.cz + b.sz / 2];
-                    const m = arg.rand;
-                    const name = bi === 0 ? "Boden" : `Box ${bi}`;
-                    if (c.x > lo[0] - m && c.x < hi[0] + m && c.y > lo[1] - m && c.y < hi[1] + m && c.z > lo[2] - m && c.z < hi[2] + m) {
-                        taeter.push(`Kamera in ${name}`);
-                        continue;
-                    }
-                    let t0 = 0;
-                    let t1 = 1;
-                    let ok = true;
-                    for (let a = 0; a < 3 && ok; a++) {
-                        if (Math.abs(D[a]) < 1e-9) {
-                            if (Lk[a] < lo[a] || Lk[a] > hi[a]) ok = false;
-                            continue;
-                        }
-                        let u = (lo[a] - Lk[a]) / D[a];
-                        let v = (hi[a] - Lk[a]) / D[a];
-                        if (u > v) [u, v] = [v, u];
-                        t0 = Math.max(t0, u);
-                        t1 = Math.min(t1, v);
-                        if (t0 > t1) ok = false;
-                    }
-                    if (ok) taeter.push(`${name} zwischen Ziel und Kamera`);
-                }
-                out.posen.push({
-                    id: `pose-${String(i * 4 + w).padStart(2, "0")} P${i} ${Math.round((yw * 180) / Math.PI)}°`,
-                    cam: [+c.x.toFixed(2), +c.y.toFixed(2), +c.z.toFixed(2)],
-                    ziel: Lk.map((q) => +q.toFixed(2)),
-                    figur: [+character.position.x.toFixed(2), +play.posY.toFixed(2), +character.position.z.toFixed(2)],
-                    taeter,
-                });
-            }
-        for (const k in keys) keys[k] = false;
-        character.position.x = 3.6;
-        character.position.z = 21;
-        play.posY = 0.05;
-        play.vx = play.vy = play.vz = 0;
-        play.yaw = play.faceYaw = 0;
-        schritt(30);
-        keys.KeyW = true;
-        keys.ShiftLeft = true;
-        schritt(240);
-        for (const k in keys) keys[k] = false;
-        const e = [+character.position.x.toFixed(2), +play.posY.toFixed(2), +character.position.z.toFixed(2)];
-        const weg = Math.hypot(e[0] - 3.6, e[2] - 21);
-        const umgangen = e[2] > 28 && Math.abs(e[0]) > 3;
-        out.tunnel = { ende: e, weg: +weg.toFixed(2), umgangen, gueltig: weg >= 3 || umgangen };
-    } catch (e) {
-        out.err = fehlerStapel(e);
-    }
-    return out;
-}
-
 // KAMERA_LAUB_STAMM: der Stamm-Text des Vorher (eine Stamm-Datei oder ein Baum, scripts/lib/stamm.cjs), ausgeliefert in
 // der Form dieses Baums (`liefere`: die Datei, die die Zeile trägt)
 const STAMM_TEXT = STAMM ? stammLib.text(STAMM) : null;
@@ -824,7 +702,7 @@ const server = statikServer({
 
 // ── DIE PROBE IN DER SEITE (r = die Welt) ──
 async function probe(arg) {
-    await window.__weltDa();
+    await __weltDa();
     const nahDeckung = window.__nahDeckung;
     // der Takt, das Warten auf das Weltbild, die ruhige Kamera und der Ritt: die EINEN Helfer des Leibs (`leibInstall`)
     const { tick, steht, ruhig, ritt, hin, gtHolen } = window.__kamLeib;
@@ -894,7 +772,7 @@ async function probe(arg) {
             // deckt; an DERSELBEN Stellung muss die Durchsicht es wieder öffnen (≤ NAH_DECKUNG_MAX).
             let hub = 0;
             const stelle = () => {
-                st.playerMesh.position.set(sl.x, hh(sl.x, sl.z) + 1.0 + hub, sl.z);
+                pm.position.set(sl.x, hh(sl.x, sl.z) + 1.0 + hub, sl.z);
                 st.yaw = sl.gier;
                 st.pitch = sl.pitch;
                 ruhig();
@@ -969,7 +847,7 @@ async function probe(arg) {
                 z.fehlt = await hin(O.x, O.z, 45000);
             }
             z.ms = { boden: Math.round(performance.now() - tO) };
-            const P = st.playerMesh.position.clone();
+            const P = pm.position.clone();
             // der Orts-Speicher der Linse (scripts/lib/kamera-nah.cjs): die Region um den Ort, neu je Ort
             speicherOrt = { id: ort.id, x: P.x, z: P.z, r: 60 };
             window.__nahSpeicher = null;
@@ -977,7 +855,7 @@ async function probe(arg) {
             {
                 let vorN = -1;
                 let ruhe = 0;
-                for (const weiter = window.__deckel("die Stämme am Ort", 750); ruhe < 4 && weiter(); ) {
+                for (const weiter = __deckel("die Stämme am Ort", 750); ruhe < 4 && weiter(); ) {
                     await tick(5, 40);
                     const n = staemme().filter((s2) => Math.hypot(s2.x - P.x, s2.z - P.z) < 25).length;
                     ruhe = n === vorN ? ruhe + 1 : 0;
@@ -1056,7 +934,7 @@ async function probe(arg) {
                 return m;
             };
             const fuss = (x, y, zz, gier) => {
-                st.playerMesh.position.set(x, y + 1.0, zz);
+                pm.position.set(x, y + 1.0, zz);
                 st.yaw = gier;
             };
             // ZU FUSS (3rd): der Spieler 1,5 m vor dem Stamm, der Blick von ihm weg (die Kamera in der Krone) und quer;
@@ -1081,7 +959,7 @@ async function probe(arg) {
                 // Nah-Gestalt: an drei Orten trug er keine, am Hang die Karte aus 30 m.
                 rittStelle(P.x, hh(P.x, P.z), P.z, 0);
                 const stufe = () => r._foundryLodForEntry(gt);
-                await window.__gebautNach(gt, {
+                await __gebautNach(gt, {
                     fertig: () => r._archIsRendered(gt) && gt._lodLevel === stufe(),
                     bau: () => (r._archIsRendered(gt) ? r._switchArchitectureLOD(gt, stufe()) : r._rebuildArchitectureMesh(gt)),
                 });
@@ -1110,7 +988,7 @@ hauptLauf(async () => {
         const ort = (max, taeter) => ({
             modi: Object.fromEntries(MODI.map((k) => [k, { n: 64, max, mittel: max / 4, schlimmste: { taeter } }])),
         });
-        // DER LEIB (K2) und NP-03 (K3): gesund und je ein Bruch beim Namen
+        // DER LEIB (K2): gesund und je ein Bruch beim Namen
         const pose = (id, taeter) => ({ id, anker: "haus_basis", x: 0, z: 0, c: [0, 0, 0], arm: 4, taeter });
         const posenN = (n, kaputt) => Array.from({ length: n }, (_, i) => pose(`pose-${i}`, i === 0 && kaputt ? kaputt : []));
         const leibGesund = (kaputtFuss, kaputtRitt) => ({
@@ -1130,18 +1008,6 @@ hauptLauf(async () => {
             ["die Eckstrahlen marschieren ohne Treffer (Prüfung 1: 35 → 156)", Object.assign(leibGesund(), { proben: Array(LEIB_N + 241).fill(156) }), "Leib: Feld-Proben je 3rd-Bild Mittel 156"],
             ["ein Bild sucht ohne Ende (höchstens über 2 × Vor-Stand)", Object.assign(leibGesund(), { proben: Array.from({ length: LEIB_N + 241 }, (_, i) => (i === 7 ? 101 : 30)) }), "Leib: Feld-Proben je 3rd-Bild Mittel 30.2 · Median 30 · höchstens 101"],
             ["mehr Sprünge als vorher", Object.assign(leibGesund(), { spruenge: SPRUENGE_MAX + 1 }), "Leib: " + (SPRUENGE_MAX + 1) + " Kamera-Sprünge"],
-        ]);
-        const ninjaGesund = (kaputt, tunnel) => ({
-            posen: Array.from({ length: NINJA_WP.length * 4 }, (_, i) => ({ id: `pose-${i}`, cam: [0, 0, 0], taeter: i === 14 && kaputt ? kaputt : [] })),
-            tunnel: tunnel || { ende: [3.6, 0, 24.15], weg: 3.15, umgangen: false, gueltig: true },
-            kernBlock: true,
-        });
-        faelle("K3", urteilNinja, [
-            ["gesund", ninjaGesund(), null],
-            ["Box 7 zwischen Ziel und Kamera (NP-03 pose-14)", ninjaGesund(["Box 7 zwischen Ziel und Kamera"]), "NP-03: 1 von 48 Posen — pose-14: Box 7"],
-            ["der Tunnel wird umgangen (NP-02)", ninjaGesund(null, { ende: [3.6, 0, 30], weg: 9, umgangen: true, gueltig: true }), "NP-02: der Tunnel wird bei x > 3 umgangen"],
-            ["die Studio-Kamera mit eigenem Block", Object.assign(ninjaGesund(), { kernBlock: false }), "NP-03: die Studio-Kamera liest nicht den Kern-Block"],
-            ["die Figur steht (NP-02 ohne Urteil)", ninjaGesund(null, { ende: [3.6, 0, 21], weg: 0, umgangen: false, gueltig: false }), "NP-02: die Figur bewegt sich keine 3 m"],
         ]);
         // DER GANG (K4): gesund (die Kugel im Stamm urteilt nicht) und je Staffel ein Bruch beim Namen — der Arm ohne Flügel-Leib
         // und die Kamera, die am Hang in den Boden taucht, sind ROT; `je` ändert einen Gang (null: er fehlt)
@@ -1228,7 +1094,7 @@ hauptLauf(async () => {
         await page.evaluate(() => window.__erstRuhe?.(() => {}, { erstFristMs: 6e5 }, "der Abschied der Welt"));
         await (welt ? weltTor(page, welt) : server.zeige(page, 0, rest));
         if (rest !== adresse) return;
-        await page.evaluate(async () => (await window.__weltDa((r) => r.state.rendererReady)).state.renderer.setAnimationLoop(null));
+        await page.evaluate(async () => (await __weltDa((r) => r.state.rendererReady)).state.renderer.setAnimationLoop(null));
         await buehne(page);
     };
     await bereit();
@@ -1262,18 +1128,6 @@ hauptLauf(async () => {
         zeiten.hang = Date.now() - tH;
         leib.proben = [...(leib.wiese.proben || []), ...(leib.hang.proben || [])];
         leib.spruenge = leib.wiese.spruenge;
-    }
-    let nin = null;
-    if (TEILE.includes("ninja")) {
-        const tN = Date.now();
-        await bereit("worlds/koerperstudio/index.html");
-        await page.waitForFunction(
-            // eslint-disable-next-line no-undef
-            () => typeof enterPlay === "function" && typeof playPhysics === "function" && typeof parkBoxes !== "undefined" && parkBoxes.length > 0,
-            { timeout: 90000 }
-        );
-        nin = await page.evaluate(ninja, { wp: NINJA_WP, rand: NINJA_RAND });
-        zeiten.ninja = Date.now() - tN;
     }
     await browser.close();
     server.close();
@@ -1320,7 +1174,7 @@ hauptLauf(async () => {
             }
         }
         const pr = (leib && leib.proben) || [];
-        console.log(`  Feld-Proben je 3rd-Bild (${pr.length} Bilder): Mittel ${pr.length ? (pr.reduce((a, b) => a + b, 0) / pr.length).toFixed(1) : "-"} · Median ${pr.length ? quantil(pr, 0.5) : "-"} · p95 ${pr.length ? quantil(pr, 0.95) : "-"} · höchstens ${pr.length ? Math.max(...pr) : "-"} (Vor-Stand Mittel ${PROBEN_VORSTAND.mittel} · Median ${PROBEN_VORSTAND.median} · höchstens ${PROBEN_VORSTAND.hoechstens}) · Kamera-Sprünge > 2 m im Rundgang ${leib && leib.spruenge} (${leib && leib.wiese && leib.wiese.rundgang})`);
+        console.log(`  Feld-Proben je 3rd-Bild (${pr.length} Bilder): Mittel ${pr.length ? (pr.reduce(addiere, 0) / pr.length).toFixed(1) : "-"} · Median ${pr.length ? quantil(pr, 0.5) : "-"} · p95 ${pr.length ? quantil(pr, 0.95) : "-"} · höchstens ${pr.length ? Math.max(...pr) : "-"} (Vor-Stand Mittel ${PROBEN_VORSTAND.mittel} · Median ${PROBEN_VORSTAND.median} · höchstens ${PROBEN_VORSTAND.hoechstens}) · Kamera-Sprünge > 2 m im Rundgang ${leib && leib.spruenge} (${leib && leib.wiese && leib.wiese.rundgang})`);
         const v = urteilLeib(leib);
         check(`K2 die Linse steht nie im Fels, nie unter dem sichtbaren Boden, nie in einer Box, nichts zwischen Ziel und Linse — 0 von ${LEIB_N} zu Fuß und im Verfolger-Ritt, Feld-Proben je 3rd-Bild und Sprünge ≤ Vor-Stand`, v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
     }
@@ -1339,14 +1193,6 @@ hauptLauf(async () => {
             const v = urteilGang(gang, stufe);
             check(name, v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
         }
-    }
-    if (TEILE.includes("ninja")) {
-        const posen = (nin && nin.posen) || [];
-        console.log(`=== K3 NP-03 DIE KAMERA DES KÖRPER-STUDIOS (Rand ${NINJA_RAND} Lab-Maß) · NP-02 der Tunnel ===`);
-        console.log(`  ${posen.filter((q) => q.taeter.length).length}/${posen.length} Posen mit Täter · Tunnel ${JSON.stringify(nin && nin.tunnel)}`);
-        for (const q of posen.filter((q2) => q2.taeter.length).slice(0, 4)) console.log(`      ${q.id}: ${q.taeter.join(", ")} · Kamera ${q.cam.join("/")} · Ziel ${q.ziel.join("/")} · Figur ${q.figur.join("/")}`);
-        const v = urteilNinja(nin);
-        check(`K3 NP-03 0 von ${NINJA_WP.length * 4} Posen mit Park-Geometrie zwischen Blickziel und Kamera oder um die Kamera, NP-02 der Tunnel bleibt zu`, v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
     }
     console.log(`  Zeiten (ms): ${JSON.stringify(zeiten)} · Lauf ${((Date.now() - t0) / 1000).toFixed(1)} s`);
     wandEnde(errs, "die Kamera steckt nie in Laub, Strauch, Fels oder Boden.");

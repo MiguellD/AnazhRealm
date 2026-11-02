@@ -434,14 +434,14 @@ async function probe(A) {
         }
     };
     const neueWerke = (vor, art = /./) => st.architectures.filter((e) => e && !vor.has(e) && art.test(e.type)); // seit `vor`
-    const stelle = (x, z) => st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z); // der Spieler steht am Ort
+    const stelle = (x, z) => pm.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z); // der Spieler steht am Ort
     const fehlerZeile = (e) => String(e?.stack || e).split("\n")[0]; // der Wurf einer Probe, seine erste Zeile
     const chatSeit = (t0, ab = 0) => // was der Chat seit dem Zeichen `t0` sagte, ab `ab`, gestaucht
         ((el) => (el ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(ab, ab + 300) : ""))(document.getElementById("chat-output"));
     // DER WAGEN AM ANLAUF: der Spieler ruht an (sx, sz), der GT steht dort längs der Fahrt (`fahrt`, Gier), alle Tasten los
     const gtAn = (sx, sz, fahrt) => {
         const h = r.getTerrainHeightAt(sx, sz);
-        st.playerMesh.position.set(sx, h + 1.2, sz);
+        pm.position.set(sx, h + 1.2, sz);
         if (st.playerVel) st.playerVel.setValue(0, 0, 0);
         st._fieldVy = 0;
         const gt = r.spawnArchitecture(
@@ -600,7 +600,7 @@ async function probe(A) {
                   : !!(w.e.blockerAABBs && w.e.blockerAABBs.length));
         // das EINE Warten auf den Bau (welt-boot `__gebautNach`): steht ein Werk nicht, nennt es der Zensus
         for (const w of werke)
-            await window.__gebautNach(w.e, { fertig: () => fertig(w), takt: takte30 }).catch(() => null);
+            await __gebautNach(w.e, { fertig: () => fertig(w), takt: takte30 }).catch(() => null);
         for (const w of werke) {
             const e = w.e;
             if (w.done || !st.architectures.includes(e)) continue;
@@ -712,12 +712,12 @@ async function probe(A) {
         // die Kacheln des Orts aus dem Faden (der Haupt-Faden rechnet sie nie): für die Bestellung hängt er ein
         const aus = st.voxelWorker;
         st.voxelWorker = faden;
-        await window.__weltDa(() => !r._ensureHydroTilesAround(X, Z, 2048));
+        await __weltDa(() => !r._ensureHydroTilesAround(X, Z, 2048));
         st.voxelWorker = aus;
         stelle(X, Z);
         let last = -1;
         let still = 0;
-        for (const weiter = window.__deckel("der Ring am Ort", 9000); weiter(); ) {
+        for (const weiter = __deckel("der Ring am Ort", 9000); weiter(); ) {
             stelle(X, Z);
             try {
                 frame();
@@ -912,12 +912,12 @@ async function probe(A) {
                 aufsitzen(gt);
                 r.dismountArchitecture();
                 for (let i = 0; i < 60; i++) frame();
-                const pL = st.playerMesh.position;
+                const pL = pm.position;
                 const land = {
                     fussUeberBoden: +(pL.y - 0.5 - hh(pL.x, pL.z)).toFixed(2),
                     abstand: +Math.hypot(pL.x - gt.position.x, pL.z - gt.position.z).toFixed(2),
                 };
-                st.playerMesh.position.set(gt.position.x, hh(gt.position.x, gt.position.z) + 1.2, gt.position.z);
+                pm.position.set(gt.position.x, hh(gt.position.x, gt.position.z) + 1.2, gt.position.z);
                 aufsitzen(gt);
                 const W = gt._fahrSatz && gt._fahrSatz.wasser;
                 if (!W) throw new Error("der Fahr-Satz des GT trägt kein Wasser-Maß");
@@ -1235,7 +1235,7 @@ async function probe(A) {
                     throw new Error(
                         `kein Ort mit ${A.aussteigTief} m Wasser um den Wagen im See (am tiefsten ${maxT.toFixed(2)} m)`
                     );
-                st.playerMesh.position.set(gt.position.x, gt.position.y + 1.2, gt.position.z);
+                pm.position.set(gt.position.x, gt.position.y + 1.2, gt.position.z);
                 aufsitzen(gt, 3); // der Ritt stellt den Fahr-Zustand auf
                 // der Reiter führt horizontal (`_rittSchritt`: die Architektur folgt ihm), der Fahr-Zustand mit
                 const fz = gt._fahr;
@@ -1244,14 +1244,14 @@ async function probe(A) {
                 fz.z = ax.z;
                 fz.vlong = 0;
                 fz.vlat = 0;
-                st.playerMesh.position.x = ax.x;
-                st.playerMesh.position.z = ax.z;
+                pm.position.x = ax.x;
+                pm.position.z = ax.z;
                 gt.position.x = ax.x;
                 gt.position.z = ax.z;
                 for (let i = 0; i < 90; i++) frame(); // er sinkt auf den Grund
                 const tW = r._fahrTiefe(gt._fahr);
                 r.dismountArchitecture();
-                const p0 = st.playerMesh.position;
+                const p0 = pm.position;
                 const tAus = sichtbar(p0.x, p0.z); // das Wasser am Ausstieg
                 const abAus = Math.hypot(p0.x - gt.position.x, p0.z - gt.position.z);
                 let schwimm = 0;
@@ -1260,7 +1260,7 @@ async function probe(A) {
                     if (st.playerUnderwater) schwimm++;
                     if (i % 30 === 0) await sleep(0);
                 }
-                const p = st.playerMesh.position;
+                const p = pm.position;
                 const g = r._voxelSurfaceY(p.x, p.z);
                 out.ansaug.aussteigen = {
                     x: ax.x,
@@ -1363,7 +1363,7 @@ async function probe(A) {
                     const sofortGesetzt = neueWerke(vorA, /^haus_/).length;
                     // das Dorf meldet sich, wenn es steht (der Plan kommt aus dem Studio-Worker)
                     let echo = "";
-                    for (const weiter = window.__deckel("die Meldung des Dorfs", A.dorfMs / 50); weiter(); ) {
+                    for (const weiter = __deckel("die Meldung des Dorfs", A.dorfMs / 50); weiter(); ) {
                         for (let i = 0; i < 10; i++)
                             try {
                                 frame();
@@ -1530,7 +1530,7 @@ async function probe(A) {
                     // die Häuser bekommen ihre Hülle (das Gesetzbuch), wie im Zensus
                     const haeuser = neueWerke(v0, /^haus_/);
                     for (const e of haeuser)
-                        await window.__gebautNach(e, {
+                        await __gebautNach(e, {
                             fertig: () => !!e._hausHuelle || !st.architectures.includes(e),
                             takt: takte30,
                         }).catch(() => null);
@@ -1721,8 +1721,8 @@ async function dammProbe(A) {
     const stroemen = async (X, Z) => {
         let last = -1;
         let still = 0;
-        for (const weiter = window.__deckel("der Ring am Strom", 9000); weiter(); ) {
-            st.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
+        for (const weiter = __deckel("der Ring am Strom", 9000); weiter(); ) {
+            pm.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
             frame();
             const n = st.voxelChunks ? st.voxelChunks.size : 0;
             still = n === last ? still + 1 : 0;
@@ -1736,7 +1736,7 @@ async function dammProbe(A) {
     // (`_weltOffen` stau), kein Chunk schmutzig oder im Bau, kein Wasser-Blatt in der Schlange; eine hängende Welt nennt der
     // Deckel beim Namen. Bis hierhin zählte D nach 1200 Takten, ein Stau nach ihnen blieb ungezählt (CI 40441173506).
     const offen = () => ((o) => o.stau + o.chunks + (st.pendingWaterIso ? st.pendingWaterIso.size : 0))(r._weltOffen());
-    const stehen = (name) => window.__gebautNach(name, { fertig: () => !offen(), takt: frame }).then(offen);
+    const stehen = (name) => __gebautNach(name, { fertig: () => !offen(), takt: frame }).then(offen);
     const nass = (X, Z) => {
         let n = 0;
         for (let i = -A.R; i <= A.R; i++) for (let j = -A.R; j <= A.R; j++) if (r._nassAt(X + i, Z + j)) n++;
@@ -1796,7 +1796,7 @@ async function dammProbe(A) {
         await takte(A.takte);
         const offen1 = await stehen("der Stausee des Damms");
         const w1 = nass(ort.x, ort.z);
-        st.playerMesh.position.set(ort.x, r._voxelSurfaceY(ort.x, ort.z) + 1.8, ort.z);
+        pm.position.set(ort.x, r._voxelSurfaceY(ort.x, ort.z) + 1.8, ort.z);
         r.saveState();
         return {
             x: ort.x,
@@ -2226,7 +2226,7 @@ async function weltOrte(A) {
     out.uferKandidaten = [];
     let R1 = null;
     for (let R = 0; R <= A.R && out.uferKandidaten.length < 4 && !(R1 !== null && R > R1 + 480); R += 6) {
-        if (R % 192 === 0) await window.__weltDa(() => !r._ensureHydroTilesAround(MX, MZ, R));
+        if (R % 192 === 0) await __weltDa(() => !r._ensureHydroTilesAround(MX, MZ, R));
         const n = R ? Math.ceil((2 * Math.PI * R) / 6) : 1;
         for (let k = 0; k < n && out.uferKandidaten.length < 4; k++) {
             const x = Math.round(MX + R * Math.cos((k / n) * 2 * Math.PI));
@@ -2269,7 +2269,7 @@ async function weltOrte(A) {
         .map((k) => ({ x: -12000 + (k % n) * step, z: -12000 + ((k / n) | 0) * step }))
         .sort((a, b) => Math.hypot(a.x - MX, a.z - MZ) - Math.hypot(b.x - MX, b.z - MZ));
     for (const k of kand) {
-        await window.__weltDa(() => !r._ensureHydroTilesAround(k.x, k.z, 0));
+        await __weltDa(() => !r._ensureHydroTilesAround(k.x, k.z, 0));
         const h = r._hydroFor(k.x, k.z);
         const lake = h && h.lakes.find((l) => l.level > wl + 2 && l.cells && l.cells.length >= 16);
         if (!lake) continue;

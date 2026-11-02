@@ -58,17 +58,17 @@ async function runJob(page, fn, arg) {
 // als Strings; bis hierher stand es als kopierte Präambel in jedem Job).
 async function vokabular() {
     /* eslint-disable no-undef */
-    const r = await window.__weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
+    const r = await __weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
     const st = r.state;
     const bereit = () => st.voxelWorkerReady && st.voxelWorkerWorldgenSynced;
-    await window.__weltDa(bereit);
+    await __weltDa(bereit);
     const chunk = (cx, cz) => (st.voxelChunks && st.voxelChunks.get(cx + "," + cz)) || null;
     const posHashOf = (cx, cz) => {
         const e = chunk(cx, cz);
-        return e && e.mesh ? window.__abdruck(e.mesh.geometry) : null;
+        return e && e.mesh ? __abdruck(e.mesh.geometry) : null;
     };
     const pumpChunk = async (cx, cz, ms) => {
-        for (const weiter = window.__deckel(`der Chunk ${cx},${cz}`, ms / 25); weiter(); ) {
+        for (const weiter = __deckel(`der Chunk ${cx},${cz}`, ms / 25); weiter(); ) {
             const e = chunk(cx, cz);
             if (e && (e.mesh || e.empty)) return e;
             r._ensureVoxelChunkAt(cx, cz, 0);
@@ -76,26 +76,49 @@ async function vokabular() {
         }
         return chunk(cx, cz);
     };
-    return bereit() ? { r, st, posHashOf, pumpChunk } : null;
+    // DIE PLATTE BEFRAGEN (die EINE IDB-Lesung der Jobs): `frage(os)` stellt die Anfragen und gibt die Lesung ihrer Ergebnisse,
+    // die nach dem Ende der Transaktion gilt; null, wenn die Platte nicht lesbar ist
+    const platte = (modus, frage) =>
+        new Promise((ok) => {
+            const req = indexedDB.open("anazhChunkMesh", 1);
+            req.onupgradeneeded = () => req.result.createObjectStore("chunks");
+            req.onerror = () => ok(null);
+            req.onsuccess = () => {
+                const db = req.result;
+                const zu = (x) => (db.close(), ok(x));
+                try {
+                    const tx = db.transaction("chunks", modus);
+                    const lies = frage(tx.objectStore("chunks"));
+                    tx.oncomplete = () => zu(lies());
+                    tx.onerror = () => zu(null);
+                } catch {
+                    zu(null);
+                }
+            };
+        });
+    return bereit() ? { r, st, posHashOf, pumpChunk, platte } : null;
 }
 
 async function jobKalt(_, V) {
     /* eslint-disable no-undef */
     const W = await V();
     if (!W) return { err: "Voxel-Worker wurde nicht ready/worldgen-synced" };
-    const { r, st, posHashOf, pumpChunk } = W;
+    const { r, st, posHashOf, pumpChunk, platte } = W;
     const { span } = r._voxelChunkConfig(0);
     const pm = st.playerMesh;
     const pcx = pm ? Math.floor(pm.position.x / span) : 0;
     const pcz = pm ? Math.floor(pm.position.z / span) : 0;
-    const cands = [
-        [pcx + 3, pcz],
-        [pcx - 3, pcz],
-        [pcx, pcz + 3],
-        [pcx, pcz - 3],
-        [pcx + 3, pcz + 3],
-        [pcx - 3, pcz - 3],
-    ].filter(([cx, cz]) => !st.voxelChunks || !st.voxelChunks.has(cx + "," + cz));
+    // DIE PROBE LIEGT, WO DAS GESETZ DIE PLATTE ÖFFNET: der Warm-Start gilt nur edit-freien Footprints (`_chunkFootprintEditFrei`
+    // — kein Edit, kein Erdbau eines Orts, kein Stau in der 3 × 3-Box); die Kandidaten sind die Chunks der Ringe 3–8 um den
+    // Spieler (je Ring acht Richtungen), deren Footprint das Gesetz frei nennt. Bis hierher standen sie fest bei ±3 — seit der
+    // Genesis-Ort seinen Erdbau bis zu den Toren legt (w4-genesis-ort-wirt6), lag dort Erdbau: der Faden las und stiftete zu
+    // Recht nichts (Hits 0/0), und die Linse urteilte am gefallenen Wildnis-Ring statt am Gesetz.
+    const cands = [];
+    for (let k = 24; k < 72; k++) {
+        const w = (k * Math.PI) / 4;
+        const [cx, cz] = [pcx + (k >> 3) * Math.round(Math.cos(w)), pcz + (k >> 3) * Math.round(Math.sin(w))];
+        if (!(st.voxelChunks && st.voxelChunks.has(cx + "," + cz)) && r._chunkFootprintEditFrei(cx, cz)) cands.push([cx, cz]);
+    }
     const t0 = performance.now();
     const probes = [];
     for (const [cx, cz] of cands) {
@@ -110,31 +133,10 @@ async function jobKalt(_, V) {
     await sleep(500);
     const seed = st.worldMeta.seed;
     const keyA = seed + "|" + probes[0][0] + "," + probes[0][1] + "|0";
-    const store = await new Promise((resolve) => {
-        const req = indexedDB.open("anazhChunkMesh", 1);
-        req.onupgradeneeded = () => req.result.createObjectStore("chunks");
-        req.onerror = () => resolve({ count: -1, hasKey: null });
-        req.onsuccess = () => {
-            const db = req.result;
-            try {
-                const os = db.transaction("chunks", "readonly").objectStore("chunks");
-                const c = os.count();
-                const g = os.get(keyA);
-                c.onsuccess = () =>
-                    (g.onsuccess = () => {
-                        db.close();
-                        resolve({ count: c.result, hasKey: g.result != null });
-                    });
-                c.onerror = () => {
-                    db.close();
-                    resolve({ count: -1, hasKey: null });
-                };
-            } catch {
-                db.close();
-                resolve({ count: -1, hasKey: null });
-            }
-        };
-    });
+    const store = (await platte("readonly", (os) => {
+        const [c, g] = [os.count(), os.get(keyA)];
+        return () => ({ count: c.result, hasKey: g.result != null });
+    })) || { count: -1, hasKey: null };
     // Welt persistieren, damit der Reload DIESELBE Welt lädt (Seed/Erbgut).
     r.saveState();
     return {
@@ -186,7 +188,7 @@ async function jobWarm(kaltIn, V) {
     if (!added) return Object.assign(out, { err: "Voxel-Edit wurde nicht angenommen (_addVoxelEdit false)" });
     const hitABefore = byKey.get(keyA) | 0;
     let rebuilt = false;
-    for (const weiter = window.__deckel("der Neubau des Chunks", 2400); !rebuilt && weiter(); ) {
+    for (const weiter = __deckel("der Neubau des Chunks", 2400); !rebuilt && weiter(); ) {
         rebuilt = r._rebuildVoxelChunk(A[0], A[1], 0);
         if (!rebuilt) await sleep(25);
     }
@@ -196,71 +198,29 @@ async function jobWarm(kaltIn, V) {
     out.hashAEdit = posHashOf(A[0], A[1]);
     // BAND 4 (Vorbereitung) — den Stempel VERFÄLSCHEN; der nächste Boot muss
     // den Store leeren (Selbsttest der Drift-Wand).
-    out.countBefore = await new Promise((resolve) => {
-        const req = indexedDB.open("anazhChunkMesh", 1);
-        req.onerror = () => resolve(-1);
-        req.onsuccess = () => {
-            const db = req.result;
-            try {
-                const tx = db.transaction("chunks", "readwrite");
-                const os = tx.objectStore("chunks");
-                os.put("kaputt", "__stamp");
-                const c = os.count();
-                let n = -1;
-                c.onsuccess = () => (n = c.result);
-                tx.oncomplete = () => {
-                    db.close();
-                    resolve(n);
-                };
-                tx.onerror = () => {
-                    db.close();
-                    resolve(-1);
-                };
-            } catch {
-                db.close();
-                resolve(-1);
-            }
-        };
+    out.countBefore = await W.platte("readwrite", (os) => {
+        os.put("kaputt", "__stamp");
+        const c = os.count();
+        return () => c.result;
     });
     return out;
 }
 
-async function jobSelbsttest(kaltIn) {
+async function jobSelbsttest(kaltIn, V) {
     /* eslint-disable no-undef */
-    const r = await window.__weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
     // die Platte lebt im Faden (Karte hydro-faden): sein erster Auftrag mit Schlüssel (der unberührte Probe-Chunk B) öffnet sie,
     // rechnet den EHRLICHEN Stempel, sieht "kaputt" → clear
-    await window.__weltDa(() => r.state.voxelWorkerWorldgenSynced);
+    const { r, platte } = (await V()) || {};
+    if (!r) return { err: "Voxel-Worker wurde nicht ready/worldgen-synced (Selbsttest)" };
     const [bx, bz] = kaltIn.probes[1];
-    for (const weiter = window.__deckel("der Chunk B", 2400); weiter() && !r._ensureVoxelChunkAt(bx, bz, 0); )
+    for (const weiter = __deckel("der Chunk B", 2400); weiter() && !r._ensureVoxelChunkAt(bx, bz, 0); )
         await sleep(25);
     const keyA = kaltIn.seed + "|" + kaltIn.probes[0][0] + "," + kaltIn.probes[0][1] + "|0";
-    return await new Promise((resolve) => {
-        const req = indexedDB.open("anazhChunkMesh", 1);
-        req.onerror = () => resolve({ err: "IDB nicht lesbar" });
-        req.onsuccess = () => {
-            const db = req.result;
-            try {
-                const os = db.transaction("chunks", "readonly").objectStore("chunks");
-                const c = os.count();
-                const s = os.get("__stamp");
-                const g = os.get(keyA);
-                c.onsuccess = () =>
-                    (s.onsuccess = () =>
-                        (g.onsuccess = () => {
-                            db.close();
-                            resolve({ count: c.result, keyAWeg: g.result == null, stampNeu: s.result !== "kaputt" });
-                        }));
-                c.onerror = () => {
-                    db.close();
-                    resolve({ err: "count scheiterte" });
-                };
-            } catch {
-                db.close();
-                resolve({ err: "Transaktion scheiterte" });
-            }
-        };
+    const aus = await platte("readonly", (os) => {
+        const [c, st, g] = [os.count(), os.get("__stamp"), os.get(keyA)];
+        return () => ({ count: c.result, keyAWeg: g.result == null, stampNeu: st.result !== "kaputt" });
     });
+    return aus || { err: "IDB nicht lesbar" };
 }
 
 hauptLauf(async () => {

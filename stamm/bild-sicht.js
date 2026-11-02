@@ -2969,8 +2969,57 @@ class AnazhRealm_bild_sicht {
                     if (x.intersectsBox(y)) verbinde(a, c, x.clone().intersect(y));
                 }
             }
+            this._hoehlenRiss(b, n, seite, saum, span, oy, verbinde);
         }
         this._hoehlenRandUm(s, b);
+    }
+
+    // DER RISS DER LOD-NAHT: das gröbere Gitter verliert eine Höhle, die schmaler ist als sein Schritt — wo ein Höhlen-Punkt des
+    // feinen Rands (`rand` des Graphs) keinen Höhlen-Punkt des groben Rands binnen dessen Schritt hat, endet die feine Luft an
+    // der Naht ohne Wand: ein Strahl aus ihr läuft in den ungezeichneten Fels des Nachbarn und trifft dort jede seiner
+    // Höhlen-Flächen von hinten. Der Riss ist ein Portal der feinen Zelle zu jeder Zelle des groben Bereichs außer der
+    // versiegelten (Zelle 0 zeichnet nie, `_voxelHoehlenGraph`), seine Box die Riss-Punkte um den Saum geweitet. Bis hierher
+    // endete die Sicht an der Naht: der Blick hinaus am Genesis-Ort (2,−4 Stufe 0 neben 3,−4 Stufe 1, das Höhlen-Feld folgt
+    // dem Erdbau) sah die Höhle 3,−4#41 durch den Riss als Loch (gate:hoehlen-sicht).
+    _hoehlenRiss(b, n, seite, saum, span, oy, verbinde) {
+        const [F, C, sF] = b.hoehle.step < n.hoehle.step ? [b, n, seite] : [n, b, seite ^ 1];
+        const sC = sF ^ 1;
+        const fS = F.hoehle.step,
+            cS = C.hoehle.step;
+        // der Ursprung längs der Kante (Pad: ein Schritt vor der Chunk-Kante) — beide Gitter teilen die Kante und `oy`
+        const lF = (sF < 2 ? F.cz * span : F.cx * span) - fS,
+            lC = (sC < 2 ? C.cz * span : C.cx * span) - cS;
+        const grob = new Set();
+        const rc = C.hoehle.rand;
+        for (let o = 0; o < rc.length; o += 4) if (rc[o] === sC) grob.add(rc[o + 1] * 65536 + rc[o + 2]);
+        const kante =
+            sF === 0 ? F.cx * span : sF === 1 ? (F.cx + 1) * span : sF === 2 ? F.cz * span : (F.cz + 1) * span;
+        const risse = new Map(); // feine Zelle → Box ihrer Riss-Punkte
+        const v = new THREE.Vector3();
+        const rf = F.hoehle.rand;
+        for (let o = 0; o < rf.length; o += 4) {
+            if (rf[o] !== sF) continue;
+            const wy = oy + rf[o + 1] * fS,
+                wl = lF + rf[o + 2] * fS;
+            // gedeckt: ein grober Höhlen-Punkt binnen eines groben Schritts (je Achse)
+            const jg = (wy - oy) / cS,
+                ug = (wl - lC) / cS;
+            let gedeckt = false;
+            for (let j = Math.ceil(jg - 1); j <= Math.floor(jg + 1) && !gedeckt; j++)
+                for (let u = Math.ceil(ug - 1); u <= Math.floor(ug + 1) && !gedeckt; u++)
+                    gedeckt = grob.has(j * 65536 + u);
+            if (gedeckt) continue;
+            let bx = risse.get(rf[o + 3]);
+            if (!bx) risse.set(rf[o + 3], (bx = new THREE.Box3()));
+            bx.expandByPoint(sF < 2 ? v.set(kante, wy, wl) : v.set(wl, wy, kante));
+        }
+        const knF = F.hoehle.knoten;
+        for (const [zf, bx] of risse) {
+            const a = knF[zf];
+            if (!a) continue;
+            bx.expandByScalar(saum);
+            for (const c of C.hoehle.knoten) if (c.id !== 0) verbinde(a, c, bx.clone());
+        }
     }
 
     // Der Nachbar-Bereich eines Boden-Bereichs an einer Seite (0 −x · 1 +x · 2 −z · 3 +z), sofern er einen Höhlen-Graph trägt.

@@ -21,7 +21,7 @@ async function kreaturProben(r, T, opts) {
     const grad = (a) => (a * 180) / Math.PI;
     const quantil = (arr, q) => {
         if (!arr.length) return null;
-        const b = arr.slice().sort((x, y) => x - y);
+        const b = arr.slice().sort((a, b) => a - b);
         return b[Math.min(b.length - 1, Math.floor(q * (b.length - 1) + 0.5))];
     };
     const pm = s.playerMesh.position;
@@ -69,6 +69,11 @@ async function kreaturProben(r, T, opts) {
         s.creatureAnimationTime = 100;
         r._creatureAiFrame = 0;
         r._faunaStroeme = null;
+        // DIE NAMEN DER BÜHNE: ihre Tiere zählen ihre netId ab derselben Marke, jenseits jedes Tiers der Welt — gleich, wie viele
+        // die Welt vor der Bühne gebar. Die Identität trägt die Phase ihres Tages (der erste Ruhe-Pegel aus dem Hash der netId,
+        // `_kreaturTaetigkeit`): bis hierher erbte sie den Zähler des Boots, die Ankunft des Plans gebar 10 Tiere statt 8, und
+        // das Rotwild des Tages-Budgets zog 0,079 statt 0,081 (an den Marken 1000 · 3000 · 5000: 0,111 · 0,102 · 0,093)
+        s._creatureNetSeq = 1e6;
         pm.copy(P0);
         kamera(0, -1);
         try {
@@ -93,7 +98,7 @@ async function kreaturProben(r, T, opts) {
             pm.copy(P0);
             const [{ span }, pc] = [r._voxelChunkConfig(), s.lastPlayerVoxelChunk];
             if (pc && (pc.cx !== Math.floor(P0.x / span) || pc.cz !== Math.floor(P0.z / span)))
-                await window.__weltStehtNach();
+                await __weltStehtNach();
             s.creatures = altK;
             s.creatureEmotions = altE;
             s.maxCreatures = altMax;
@@ -135,11 +140,18 @@ async function kreaturProben(r, T, opts) {
             }
         return false;
     };
+    // DAS LAND DER WILDNIS im Umkreis R: Land und kein Grundriss (`_imGrundriss`: Haus, Bau, Weg eines Dorfs und die Flächen des
+    // Genesis-Orts — Kern, Ring, Mall, Allee, Wiese, Ufer, die Bühnen), an der Mitte und auf zwei Kreisen je acht Orte — dort wirft
+    // das Feld (`_kreaturGrundFrei`: kein Wurf eines Verbands auf einer Fläche des Plans). Bis Pflicht F trug die Ankunft eine
+    // Scheibe von 6,5 m, die Wildnis begann am Spieler; seit dem Plan liegt 0/70 auf der Mall (herde: 1 Glied von 5) und der
+    // Jagd-Kreis über Wiese, Allee und Ufer (rudel 28/60 Risse auf dem Rasen).
     const imUmkreisLand = (x, z, R) => {
+        if (r._imGrundriss(x, z)) return false;
         for (const f of [0.5, 1])
             for (let q = 0; q < 8; q++) {
                 const a = (q / 8) * TAU;
-                if (!r._landAt(x + Math.cos(a) * R * f, z + Math.sin(a) * R * f)) return false;
+                const [px, pz] = [x + Math.cos(a) * R * f, z + Math.sin(a) * R * f];
+                if (!r._landAt(px, pz) || r._imGrundriss(px, pz)) return false;
             }
         return true;
     };
@@ -156,8 +168,8 @@ async function kreaturProben(r, T, opts) {
         }
         return null;
     };
-    // Ein Ort auf Land ohne Hülle und ohne Wasser im Umkreis R (an einer Wand gleitet ein Leib längs der Box-Kante, im
-    // Wasser schwimmt er ans Ufer — das misst die Hindernis- bzw. Wasser-Probe, nicht die Richtung der Jagd)
+    // Ein Ort auf dem Land der Wildnis ohne Hülle und ohne Wasser im Umkreis R (an einer Wand gleitet ein Leib längs der
+    // Box-Kante, im Wasser schwimmt er ans Ufer — das misst die Hindernis- bzw. Wasser-Probe, nicht die Richtung der Jagd)
     const frei = (dx, dz, R) =>
         spirale(dx, dz, 40, 8, (x, z) => {
             const o = r._landAt(x, z) && imUmkreisLand(x, z, R) && neben(x, z);
@@ -184,6 +196,7 @@ async function kreaturProben(r, T, opts) {
         const h = r.getTerrainHeightAt(x, z);
         return { x, y: (Number.isFinite(h) ? h : pm.y) + 0.5, z };
     };
+    const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z); // der Abstand in der Ebene
     const tier = (p, seele, bodySize) => {
         const c = r.spawnCreatureAt(p.x, p.y, p.z, "happy", seele, { precise: true, bodySize: bodySize || 1 });
         if (!c) throw new Error("Spawn " + seele);
@@ -351,8 +364,8 @@ async function kreaturProben(r, T, opts) {
                         for (let q = 1; q < a1.fuss[j].length; q++) if (a1.fuss[j][q].y < a1.fuss[j][k].y - 1e-4) k = q;
                         const [p, q] = [a0.fuss[j][k], a1.fuss[j][k]];
                         if (Math.max(p.y, q.y) > ymin + 0.05 * sp.bein) continue;
-                        wegFuss += Math.hypot(q.x - p.x, q.z - p.z);
-                        wegLeib += Math.hypot(a1.x - a0.x, a1.z - a0.z);
+                        wegFuss += ab(q, p);
+                        wegLeib += ab(a1, a0);
                     }
                 }
             }
@@ -744,7 +757,7 @@ async function kreaturProben(r, T, opts) {
                     const g = pf.leib[n].gier;
                     wegQ += Math.abs(dx * Math.cos(g) - dz * Math.sin(g));
                     wegH += Math.abs(dx * Math.sin(g) + dz * Math.cos(g));
-                    wegL += Math.hypot(pf.leib[n].x - pf.leib[n - 1].x, pf.leib[n].z - pf.leib[n - 1].z);
+                    wegL += ab(pf.leib[n], pf.leib[n - 1]);
                 }
             }
             return wegL > 0 ? { q: +(wegQ / wegL).toFixed(3), l: +(wegH / wegL).toFixed(3) } : null;
@@ -785,7 +798,7 @@ async function kreaturProben(r, T, opts) {
                 for (const c of s.creatures.slice())
                     if (c.userData._faelltNach) r._creatureNaturalDeath(c, c.userData._faelltNach, false);
             });
-        const nah = (c) => Math.hypot(c.position.x - pm.x, c.position.z - pm.z) < A.ANALOG_NAH_M;
+        const nah = (c) => ab(c.position, pm) < A.ANALOG_NAH_M;
         const R = { nah: 0, mitJaeger: 0, risse: 0, gefallen: 0 };
         // ein Riss: der Lebenszyklus nennt ein Opfer, das noch kein Riss nannte (die offenen Risse fragt er mit ihrem Opfer)
         const genannt = new Set();
@@ -954,7 +967,9 @@ async function kreaturProben(r, T, opts) {
             restore.push(() => (A._furchtGesetzMemo = FG));
         }
         const VH = A._verhaltenGesetz().herde;
-        const heim = frei(0, 70, 40);
+        // Täter (Selbsttest): die Herde am alten Ort ohne die Wildnis-Prüfung — 0/70 liegt auf der Mall des Genesis-Orts, der
+        // Wurf trägt dort nur seinen Erstgeborenen
+        const heim = taeter === "herde-park" ? neben(P0.x, P0.z + 70) : frei(0, 70, 40);
         if (!heim) throw new Error("kein freies Land für die Herde (frei(0, 70, 40))");
         const seq0 = s._creatureNetSeq || 0;
         const lauf = (art) => {
@@ -1039,7 +1054,7 @@ async function kreaturProben(r, T, opts) {
         const k = L.map((x) => x[0]);
         return {
             fremdN: X.fremdN,
-            blickDiffM: +Math.max(...W.lage.map((p, i) => Math.hypot(p.x - B.lage[i].x, p.z - B.lage[i].z))).toFixed(4),
+            blickDiffM: +Math.max(...W.lage.map((p, i) => ab(p, B.lage[i]))).toFixed(4),
             verband: { fensterRaum: VH.fensterRaum, wander: zahl(W), flucht: zahl(F) },
             ausrichtung: { mittel: +(F.phi[0] / F.phi[1]).toFixed(3), takte: F.phi[1] },
             alarm: {
@@ -1138,7 +1153,7 @@ async function kreaturProben(r, T, opts) {
         pm.set(c.x, H(c.x, c.z) + 0.5, c.z);
         const baum = r.spawnArchitecture("baum_eiche", { x: c.x, y: pm.y, z: c.z }, { silent: true });
         restore.push(() => r.removeArchitecture(baum, { still: true }));
-        await window.__gebautNach(baum, { fertig: () => r._archIsRendered(baum) && r._lodTreeVisHeight(baum) > 0 });
+        await __gebautNach(baum, { fertig: () => r._archIsRendered(baum) && r._lodTreeVisHeight(baum) > 0 });
         VG.schwarmZentrum(c.wurf, s.spielZeit + 8, sonne, regen, VG.V, zt);
         pm.set(c.x + zt.dx, 0, c.z + zt.dz);
         const [F, Ld, kf] = [(aus.flucht = {}), (aus.landung = {}), []];
@@ -1248,7 +1263,7 @@ async function kreaturProben(r, T, opts) {
         for (const n of namen) {
             const f = r[n];
             if (typeof f !== "function") fehlt.push(n);
-            else if (!window.__fehlt(f, /Math\.random\s*\(/)) treffer.push(n);
+            else if (!__fehlt(f, /Math\.random\s*\(/)) treffer.push(n);
         }
         return { methoden: namen.size, benannt: BENANNT.length, fehlt, treffer };
     });
@@ -1407,7 +1422,7 @@ async function kreaturProben(r, T, opts) {
             minD = Infinity;
         for (const c of geboren) {
             if (imBlick(c.position.x, c.position.y + 0.5, c.position.z)) imBlickN++;
-            minD = Math.min(minD, Math.hypot(c.position.x - pm.x, c.position.z - pm.z));
+            minD = Math.min(minD, ab(c.position, pm));
         }
         return {
             wuerfe,
@@ -1643,7 +1658,7 @@ async function kreaturProben(r, T, opts) {
             const S = tiere.map(seg);
             tiere.forEach((c, i) => {
                 schritt[i] =
-                    Math.hypot(c.position.x - vorher[i].x, c.position.z - vorher[i].z) +
+                    ab(c.position, vorher[i]) +
                     Math.abs(wrap(c.rotation.y - vorher[i].g)) * S[i].halb;
             });
             if (k >= N / 2)
@@ -1653,10 +1668,7 @@ async function kreaturProben(r, T, opts) {
                         if (j !== i)
                             m = Math.min(
                                 m,
-                                Math.hypot(
-                                    tiere[i].position.x - tiere[j].position.x,
-                                    tiere[i].position.z - tiere[j].position.z
-                                ) /
+                                ab(tiere[i].position, tiere[j].position) /
                                     (S[i].kugel + S[j].kugel)
                             );
                     nnRaum.push(m);
@@ -1902,7 +1914,7 @@ async function kreaturProben(r, T, opts) {
             takt(1 / 60);
             const [R, t] = [jaeger(), +(s.creatureAnimationTime - t0).toFixed(1)];
             if (ev.pirschS === null && R.length) ev.pirschS = t;
-            const nah = R.length >= 3 && R.every((c) => Math.hypot(c.position.x - pm.x, c.position.z - pm.z) < 2 * H);
+            const nah = R.length >= 3 && R.every((c) => ab(c.position, pm) < 2 * H);
             if (ev.umstelltS === null && nah && luecke(R) <= 540 / R.length) ev.umstelltS = t;
         }
         return { ...ev, lueckeBeimBiss: ersterBiss === null ? null : +ersterBiss.toFixed(0) };
@@ -2069,10 +2081,10 @@ async function kreaturProben(r, T, opts) {
                     const la = leib[i][n - 1],
                         lb = leib[i][n];
                     if (la.hop || lb.hop) continue;
-                    const lw = Math.hypot(lb.x - la.x, lb.z - la.z);
+                    const lw = ab(lb, la);
                     if (lw < 0.004) continue;
                     if (a.y < 0.03 && b.y < 0.03) {
-                        fuss += Math.hypot(b.x - a.x, b.z - a.z);
+                        fuss += ab(b, a);
                         weg += lw;
                     }
                 }
@@ -2189,7 +2201,7 @@ async function kreaturProben(r, T, opts) {
                 t.warFern = sb.fern;
                 t.spur.push(b);
                 if (t.spur.length > 24) t.spur.shift();
-                const v = t.lage ? Math.hypot(p.x - t.lage.x, p.z - t.lage.z) / dt : 0;
+                const v = t.lage ? ab(p, t.lage) / dt : 0;
                 t.lage = p;
                 if (k < 60 || v < 0.3) continue;
                 const Z = z[t.zone];
@@ -2222,7 +2234,7 @@ async function kreaturProben(r, T, opts) {
                 gleitAnteil: Z.lauf ? +(Z.gleit / Z.lauf).toFixed(3) : null,
                 fernBild: Z.fernBild,
             };
-        aus2.abstandM = tiere.map((t) => +Math.hypot(t.c.position.x - P0.x, t.c.position.z - P0.z).toFixed(1));
+        aus2.abstandM = tiere.map((t) => +ab(t.c.position, P0).toFixed(1));
         return aus2;
     });
 
@@ -2353,7 +2365,6 @@ async function kreaturProben(r, T, opts) {
 
     // ═══ DAS START-DORF der Bewohner-Proben (bewohner · begegnung): der Takt des Spiels, das Warten unter Deckel, die Uhr auf
     // ihrer Stunde, die stehende Welt — und das Dorf am Genesis-Ort, das der Wirt baut (`__anazhAutoSettlement`) ═══
-    const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z); // der Abstand in der Ebene
     const wer = (b) => `${b.rolle}/${b.beruf} #${b.heim}`; // der Bewohner beim Namen
     const angekommen = (S) => () => !!S.liste && S.liste.every((b) => b.leib && !b.ankunft); // jeder trägt seinen Leib, kam an
     // der Takt des Spiels — bis die Siedlung steht (`offen` nicht mehr)
@@ -2376,7 +2387,7 @@ async function kreaturProben(r, T, opts) {
     // Takt um Takt des Spiels, bis die Siedlung steht: je Takt das Bild, dann das Werk der Leute; der Schlaf gibt dem Faden das
     // Wort (das Warten zählt der Deckel in Takten ohne Offenes, nie in Sekunden)
     const bisDa = async (name, offen, max) => {
-        for (const weiter = window.__deckel(name, max); weiter() && offen(); await sleep()) (tick(), leuteTakt());
+        for (const weiter = __deckel(name, max); weiter() && offen(); await sleep()) (tick(), leuteTakt());
     };
     // DIE UHR AUF DER STUNDE h, nie an der Uhr des Boots: ihr Sprung stellt jeden dorthin, wo sein Tag ihn um h sieht
     // (`_bewohnerAnkunft`, je Takt `ankunftJeTakt`) — gewiss über die Gegen-Stunde h + 12 (stünde die Uhr näher als `sprungH` an
@@ -2389,7 +2400,7 @@ async function kreaturProben(r, T, opts) {
     const uhrAuf = async (h, wo, da, max) => {
         for (const backen of [true, false]) {
             for (const t of [h + 12, h]) r._uhrSetzen((t % 24) / 24, "regler"), r._tickBewohner(0);
-            for (const weiter = window.__deckel(wo, max, false); weiter() && !da(); ) r._tickBewohner(0);
+            for (const weiter = __deckel(wo, max, false); weiter() && !da(); ) r._tickBewohner(0);
             if (backen) await bisDa(wo, () => r._weltOffen().leiber > 0, max);
         }
     };
@@ -2397,7 +2408,7 @@ async function kreaturProben(r, T, opts) {
     // Loop — seine Welt ist, was bis zu seinem Anfang um den Ort wuchs; wüchsen Wald oder Streu noch (die Streu im Faden
     // landet Takte später), mäße jeder Lauf einen anderen Tag. Der Deckel zählt Takte ohne Offenes und wirft beim Ort.
     const stehtUm = (wo) =>
-        window.__weltStehtNach(tick, 600).catch((f) => {
+        __weltStehtNach(tick, 600).catch((f) => {
             throw new Error(`${wo}: ${f.message}`);
         });
     // die Siedlung des Start-Dorfs (`_bewohnerMelden`: sein Plan v2 und sein Ursprung) — ohne sie bricht die Probe beim Namen
@@ -2548,7 +2559,7 @@ async function kreaturProben(r, T, opts) {
                 const je = liste.map((b) => ({ wer: wer(b), ...wSpur.get(b) }));
                 const vier = (n, l) => ({ [n + "N"]: l.length, [n]: l.slice(0, 4) });
                 return {
-                    wandN: [...WG.wand.values()].reduce((a, n) => a + n, 0),
+                    wandN: [...WG.wand.values()].reduce((a, b) => a + b, 0),
                     wand: [...WG.wand]
                         .sort((a, b) => b[1] - a[1])
                         .slice(0, 4)
@@ -2615,7 +2626,7 @@ async function kreaturProben(r, T, opts) {
                     })),
                     pxM: r._schirm().pxJeM / A.BEWOHNER.nahM,
                     kaskaden: A.SCHATTEN_KASKADE.texelM.length,
-                    takt: [q3(ms.reduce((x, y) => x + y, 0) / ms.length), q3(ms[Math.floor(ms.length * 0.95)])],
+                    takt: [q3(ms.reduce((a, b) => a + b, 0) / ms.length), q3(ms[Math.floor(ms.length * 0.95)])],
                 };
             },
         });
@@ -2823,7 +2834,9 @@ async function kreaturProben(r, T, opts) {
                 if (Math.abs(wrap(d)) <= 1.3) blicke.treffer++;
             }
         };
-        // DER PLATZ (mensch.K2): jeder hat einen Stand am Platz, seinem Rand oder seinen Gassen (bis 12 m über ihn hinaus)
+        // DER PLATZ (mensch.K2): jeder hat einen Stand am Platz, seinem Rand oder seinen Gassen (bis 12 m über ihn hinaus) — auch
+        // wo die Spur der Wagen ihn trifft: trägt der Platz neben ihr keinen Ort seines Gesetzes, fällt der Stand
+        // (`_bewohnerOhneStand`), und die Linse nennt den Plan, der zu wenig Platz bietet, an seinen Leuten
         // Täter (Selbsttest), gezählt und zurück: sechs ohne Platz
         const platz6 = liste.slice(0, 6).map((b) => b.orte.platz);
         if (hat("bewohner-daheim")) for (const b of liste.slice(0, 6)) b.orte.platz = null;
@@ -2882,6 +2895,16 @@ async function kreaturProben(r, T, opts) {
         }
         // gezählt: ein Leib mit Rig, der im Tag ging
         const gegangen = (g) => liste.some((b) => b.leib === g && SD.wSpur.get(b).gesamt > 0.5);
+        // DIE STÄNDE (mensch.K3 Staffel 2, `_bewohnerStandPruefen`): nach dem Tag liegen je zwei Stände der Liste ≥ `raumM`
+        // auseinander, auch die aus der Hülle oder der Spur gerückten — sonst findet, wer Platz machte, seinen Stand nie frei.
+        // Täter (Selbsttest), gezählt und zurück: der zweite Stand 0,3 m neben dem ersten (Stand: wer einen Ursprung trägt)
+        const staende = [...new Set(liste.flatMap((b) => Object.values(b.orte)))].filter((o) => o && o.ur);
+        const [s0, s1, alt] = [...staende.slice(0, 2), [staende[1].x, staende[1].z]];
+        if (hat("bewohner-stapel")) [s1.x, s1.z] = [s0.x + 0.3, s0.z];
+        const stapel = staende.flatMap((p, i) =>
+            staende.slice(i + 1).flatMap((q) => (ab(p, q) < A.BEWOHNER.raumM - 1e-6 ? [`${q3(p.x)}/${q3(p.z)}`] : []))
+        );
+        [s1.x, s1.z] = alt;
         const unter = liste.filter((b) => !(treffer.get(b) >= 0.9));
         // der Heimkehrer geht 1 h vor jeder Prüf-Stunde fort und findet die neu Geborenen (Takt 0). Täter: geboren am Ziel
         const wiederkehr = async () => {
@@ -2950,12 +2973,13 @@ async function kreaturProben(r, T, opts) {
                     Math.max(...blicke.sektor) /
                         Math.max(
                             1,
-                            blicke.sektor.reduce((a, x) => a + x, 0)
+                            blicke.sektor.reduce((a, b) => a + b, 0)
                         )
                 ),
             },
             ohnePlatz: ohnePlatz.length,
             ohnePlatzWer: ohnePlatz.slice(0, 4).map(wer),
+            stapel,
             huellen: hausE.filter((e) => e._hausHuelle).length,
             wege: SD.zahl(),
             wiederkehr: await wiederkehr(),
@@ -3074,8 +3098,11 @@ async function kreaturProben(r, T, opts) {
                 satzW = 0;
             for (const c of s.creatures) {
                 let n = 0;
+                // die Strähnen und Schalen des Fells schaltet das Fell-Gesetz am Schirm (`_fellBildschirmGesetz`) je Tier, nie die
+                // Kopfzahl: sie zählen nicht (an der Ankunft des Plans trug ein Wolf 26 m fern keine Strähne: 10 Tiere 31 Leib-Befehle,
+                // 50 Tiere 32 — dieselbe Gestalt)
                 c.traverse((o) => {
-                    if (!o.isMesh || !sichtbar(o)) return;
+                    if (!o.isMesh || !sichtbar(o) || /^straehne|^fellSchale$/.test(o.userData.__klasse)) return;
                     if (o.layers.mask & 1) (haupt++, n++);
                     if (o.castShadow) wurf++;
                 });
@@ -3127,10 +3154,12 @@ async function kreaturProben(r, T, opts) {
         const laufen = (n) => {
             for (let i = 0; i < n; i++) bildTakt(1 / 60);
         };
+        // die 40 dazu hinter den ersten 10 (30–55 m): die Leiber der 50 sind die Tiere der 10 — mischten sie sich unter sie,
+        // trügen andere Gattungen den Leib (Fuchs 6, Wolf 7 Befehle ohne Fell), und ihre Gestalt zählte als Kopfzahl
         ring(10, 15, 30, 1);
         laufen(240);
         const B10 = befehle();
-        ring(40, 15, 55, 101);
+        ring(40, 30, 55, 101);
         laufen(240);
         const B50 = befehle();
         // DIE KOSTEN AN SCHIRM UND ÄNDERUNG (Gebot 7): ein Takt ohne Zeit schreibt nur die Plätze der Satz-Tiere, die sich
@@ -3370,6 +3399,7 @@ function urteil(name, z) {
             `der Blick der Stehenden: ${b.quote} von ${b.n} auf ihr Ziel, ${b.sektorMax} in einer Richtung`
         );
         soll(!z.ohnePlatz, `ohne Platz: ${z.ohnePlatz} (${z.ohnePlatzWer.join(" · ")})`);
+        soll(!z.stapel.length, `Stände gestapelt: ${z.stapel.length} näher als raumM (${z.stapel.slice(0, 4)})`);
         // jedes Haus trägt die Hülle seines Studios (die Wand der Wege)
         soll(z.huellen === z.haeuser, `${z.haeuser - z.huellen} Häuser ohne Hülle`);
     }
@@ -3762,6 +3792,7 @@ const TAETER = {
         ["herde-alarm", /Alarm-Kette reißt: der letzte von 5 Flüchtern läuft [1-9]/],
         ["herde-fluchtweg", /Fluchtweg \d\.\d m/],
         ["herde-punkt", /Verband klumpt: das engste Paar 0 \/ 0 .+ und .+ auf 0 nach/],
+        ["herde-park", /Probe vakuös: Glieder 1 \/ 1 /],
     ],
     schwarm: [
         ["schwarm-verband", /Schwarm zerfällt/],
@@ -3832,6 +3863,7 @@ const TAETER = {
         ["bewohner-gleiten", /der Satz gleitet/],
         ["bewohner-nord", /der Blick der Stehenden/],
         ["bewohner-daheim", /ohne Platz/],
+        ["bewohner-stapel", /Stände gestapelt: [1-9]/],
         ["bewohner-wiederkehr", /Wiederkehr nach 1 h Abwesenheit: [1-9]/],
         ["bewohner-stadt-blind", /Stadt: Durchdringung: [1-9]/],
         ["bewohner-stadt-rempeln", /Berührung: [1-9]/],

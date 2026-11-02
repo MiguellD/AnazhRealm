@@ -326,7 +326,7 @@ async function tabTodProbe({ von, bis, selbst = false }) {
         const tGoto = Date.now();
         await server.zeige(page, 120000);
         const g = (zeile.geladen = await page.evaluate(async () => {
-            await window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId);
+            await __weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId);
             const loch = (o) => r._terrainDensityAt(o.x, o.y, o.z) + o.r; // das Zentrum liegt r m in der Luft (die Säule)
             const g0 = window.__ttRec({
                 ...st,
@@ -424,7 +424,7 @@ const server = statikServer();
 // Takt die Lage, eine Zeile der Tafel) ist ROT an seinem Namen.
 const LEBEN = ["worldJournal", "dslHistory", "dslAbilities", "knowledgeBase", "dslPatternMemory", "creatures"];
 async function wegSeite(km, min, edits) {
-    await window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId);
+    await __weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId);
     const [st, spur, S] = [r.state, [], []];
     let t = performance.now();
     const takt = async (n, f) => {
@@ -440,14 +440,14 @@ async function wegSeite(km, min, edits) {
     const stand = async () => {
         r.saveState();
         r.saveState(); // der .bak trägt denselben Stand
-        const json = await window.__stand();
+        const json = await __stand();
         const [voll, s] = [r.buildStateSnapshot(), r._standNormal(JSON.parse(json))];
         abw.push(Object.keys({ ...voll, ...s }).filter((k) => sortiert(voll[k]) !== sortiert(s[k])));
         S.push([json, (await r._idbGetWorld(st.worldMeta.worldId + ".bak")).json]);
     };
     await takt(200);
     await stand();
-    const [p, n] = [st.playerMesh.position.clone(), min * 600];
+    const [p, n] = [pm.position.clone(), min * 600];
     await takt(n, (i) => {
         const x = p.x + (i * km * 1000) / n;
         const z = p.z + 0.15 * (x - p.x);
@@ -455,7 +455,7 @@ async function wegSeite(km, min, edits) {
         spur.push({ x, z, t });
     });
     await stand();
-    p.copy(st.playerMesh.position);
+    p.copy(pm.position);
     for (let i = 0; i < edits; i++) {
         const [x, z] = [p.x + (i % 40) * 2 - 40, p.z + Math.floor(i / 40) * 2 - 25];
         r.carveVoxel(x, r._terrainMacroSurfaceY(x, z) - 1, z, 1.5);
@@ -530,9 +530,12 @@ function korpusSoll(k) {
 // Am Kopf: liegt die Grube je Edit am Boden (die Oberfläche unter dem Gesetz)? Dann der Save des Kopfs (Material dazu, fehlt es).
 async function korpusIst(s) {
     await window.__weltDa((x) => x.state.worldMeta.worldId === s.welt);
+    // DER ORT IM TAKT DES SPIELS (sein Takt ruht headless): die Flächen des Plans räumen die Natur des Stands (`_wegeRaeumen`)
+    r._genesisOrt(pm.position);
+    r._wegeRaeumen();
     if (!st.player.inventory.some((x) => x && x.kind === "material")) r.addMaterialToInventory("stein", 5);
     r.saveState();
-    const ls = { ...localStorage, [r.worldStorageKey(s.welt)]: await window.__stand() };
+    const ls = { ...localStorage, [r.worldStorageKey(s.welt)]: await __stand() };
     return {
         alt: s.boden !== globalThis.__gelaendeCore.BODEN_GENERATION,
         umzug: !!st.bodenUmzug,

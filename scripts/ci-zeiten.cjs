@@ -21,7 +21,7 @@ const VORBEREITUNG =
 const GRUPPE = /^(puls|voll|kopf|echt)(?: (\d+)\/\d+)?/;
 
 const sek = (a, b) => (a && b ? (new Date(b) - new Date(a)) / 1000 : null);
-const sortiert = (a) => [...a].sort((x, y) => x - y);
+const sortiert = (a) => [...a].sort(aufsteigend);
 const median = (a) =>
     sortiert(a).reduce((m, x, i, s) => (i === s.length >> 1 ? (s.length % 2 ? x : (s[i - 1] + x) / 2) : m), 0);
 const p90 = (a) => sortiert(a)[Math.ceil(0.9 * a.length) - 1];
@@ -255,7 +255,7 @@ async function tafel(api) {
   echt-Median der grünen Läufe: ${min(median(echt))} min (${echt.length} Läufe, p90 ${min(p90(echt) || 0)})
   integ-probe-Push bis main-Push: Median ${min(median(weg))} min (${weg.length} main-Köpfe)
   integ-probe-Köpfe je main-FF: ${integ.size} / ${main.size}
-  volle Batterien je Kopf: ${(bat.reduce((a, x) => a + x, 0) / bat.length).toFixed(2)} (${bat.length} Köpfe, ${bat.filter((x) => x > 1).length} mit ≥ 2)
+  volle Batterien je Kopf: ${(bat.reduce(addiere, 0) / bat.length).toFixed(2)} (${bat.length} Köpfe, ${bat.filter((x) => x > 1).length} mit ≥ 2)
   Wackler je Schritt (≥ 2 Läufe = Karte): ${karten.map(([n, l]) => `„${n}" ×${l.size}`).join(" · ") || "keiner"}
   Nacht-Batterien auf grünem Kopf: ${nacht.length} (${nacht.map((r) => `${r.head_sha.slice(0, 8)} ${min(sek(r.run_started_at, r.updated_at))} min`).join(" · ")})`);
 }

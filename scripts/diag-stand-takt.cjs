@@ -554,13 +554,13 @@ function tatUrteil(T) {
 }
 
 async function tatSeite(MESS, vorher) {
-    await window.__weltDa((x) => x.state.playerMesh && x._foundry && x._foundry.ready);
+    await __weltDa((x) => x.state.playerMesh && x._foundry && x._foundry.ready);
     const [pm, cam, P] = [st.playerMesh.position, st.camera, Math.hypot];
     let t = performance.now();
     const takt = () => r._gameLoopTick((t += 1000 / 60));
     st.perfRegulator = false;
     const y = (x, z) => r._voxelSurfaceY(x, z);
-    const stehen = (p) => (pm.set(p.x, y(p.x, p.z) + 1.8, p.z), window.__weltStehtNach(takt));
+    const stehen = (p) => (pm.set(p.x, y(p.x, p.z) + 1.8, p.z), __weltStehtNach(takt));
     const baum = (a) => /baum/.test(a._lodSpecies || a.type) && r._istNatur(a);
     const ab = (a, p) => P(a.position.x - p.x, a.position.z - p.z);
     const zeichnet = (wahl, s = new Set()) => {
@@ -615,7 +615,7 @@ async function tatSeite(MESS, vorher) {
             baeume: st.architectures.filter((a) => baum(a) && ab(a, T.mitte) <= T.R).length,
             pflanzen: zeichnet((a, id) => T.ernte.includes(id)),
             stuempfe: zeichnet((a, id) => a.preset === "stumpf" && id.includes("#tat|")),
-            narbe: +(d.reduce((s, x) => s + x, 0) / Math.max(1, d.length)).toFixed(3),
+            narbe: +(d.reduce(addiere, 0) / Math.max(1, d.length)).toFixed(3),
             taten: (st.worldMeta.taten || []).length,
         };
     };
@@ -781,14 +781,14 @@ function sukzessionUrteil(s) {
 }
 
 async function brandSeite(MESS) {
-    await window.__weltDa((x) => x.state.playerMesh && x._foundry && x._foundry.ready);
+    await __weltDa((x) => x.state.playerMesh && x._foundry && x._foundry.ready);
     const [C, P, pm, L] = [AnazhRealm, Object.getPrototypeOf(r), st.playerMesh.position, (st.worldMeta.taten ||= [])];
     const [B, cs, n0] = [C.BRAND, C.LIFE_FIELD.cell, L.length];
     let t = performance.now();
     const takt = () => r._gameLoopTick((t += 1000 / 60));
     st.perfRegulator = false;
     const y = (x, z) => r._voxelSurfaceY(x, z);
-    const stehen = (p) => (pm.set(p.x, y(p.x, p.z) + 1.8, p.z), window.__weltStehtNach(takt));
+    const stehen = (p) => (pm.set(p.x, y(p.x, p.z) + 1.8, p.z), __weltStehtNach(takt));
     const r3 = (v) => Math.round(v * 1e3) / 1e3;
     // die Mitte einer Zelle [x, z], die Zelle eines Orts als Schlüssel
     const xz = (cx, cz) => [(cx + 0.5) * cs, (cz + 0.5) * cs];
@@ -1062,7 +1062,7 @@ async function brandSeite(MESS) {
             ms.push(performance.now() - t0);
             lms.push(performance.now() - t1);
         }
-        const p95 = (v) => r3(v.sort((p, q) => p - q)[Math.floor(v.length * 0.95)]);
+        const p95 = (v) => r3(v.sort(aufsteigend)[Math.floor(v.length * 0.95)]);
         aus.zeit = { brennend: zn, echt: echt.length, bildMs: p95(ms), leserMs: p95(lms), verzugS: r3(verzug) };
         leer();
         aus.saemling = null; // der Jungwuchs ist nicht gebaut (treeParams(alter))
@@ -1176,7 +1176,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                 st.playerMesh.position.set(MESS.x, r._voxelSurfaceY(MESS.x, MESS.z) + 1.8, MESS.z);
                 // einschwingen: die Welt steht (A9, das EINE Einschwingen, welt-boot `__weltStehtNach`: Chunks, die Foundry, der Wald
                 // samt seinen Pflanz-Gängen — K69: solange er plant, weckt seine Regung die Fege-Takte)
-                await window.__weltStehtNach(takt);
+                await __weltStehtNach(takt);
                 const ring = st.voxelChunks.size;
                 const aus = { ring, architekturen: (st.architectures || []).length };
                 // (W) WACH: ein kalter Bau, den der Cull meldet (Offenes), hält die Welt wach — beim Namen des Fege-Takts. Den atmenden
@@ -1184,7 +1184,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                 const R0 = st.architectureCullingRadius;
                 r._foundryRewarmColdTrees = () => 1;
                 st.architectureCullingRadius = R0 + 2e-3;
-                aus.wach = await window.__weltStehtNach(takt, 60).then((n) => `steht nach ${n} Takten`, (x) => String(x.message).slice(0, 200));
+                aus.wach = await __weltStehtNach(takt, 60).then((n) => `steht nach ${n} Takten`, (x) => String(x.message).slice(0, 200));
                 delete r._foundryRewarmColdTrees;
                 st.architectureCullingRadius = R0;
                 const L = window.__standLinseAn();
@@ -1195,7 +1195,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                 // Fenster jeden Takt: unter Last (2 Kerne, 3 Läufe) kamen die Antworten der Fäden und die Arbeit der ms-Budgets nach dem
                 // Fenster (ORT, STROM, NACHSCHUB, Satz-Haus), und die Phase nach `bisRuhe` begann in einer wachen Welt (GEHEN, TREUE)
                 const bisDa = (name, fertig, max, jeTakt = takt) =>
-                    window.__gebautNach(name, { fertig, max, takt: jeTakt }).catch((f) => {
+                    __gebautNach(name, { fertig, max, takt: jeTakt }).catch((f) => {
                         if (!/^DER BAU STEHT NICHT/.test(f.message)) throw f;
                         return max;
                     });
@@ -1248,7 +1248,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                 const fixpunkt = async (d) => {
                     const wach = [];
                     LD.thresh12 = d;
-                    const f = { takte: await window.__weltStehtNach(() => (takt(), wach.push(L.frame()))) };
+                    const f = { takte: await __weltStehtNach(() => (takt(), wach.push(L.frame()))) };
                     f.wirkte = Object.values(window.__standPhase(wach).takte).reduce((a, t) => a + t.wirkt, 0);
                     f.nach = await phase(150);
                     return f;
@@ -1258,7 +1258,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                 } catch (e) {
                     aus.fix = [{ fehler: String(e.message).slice(0, 200) }];
                     LD.thresh12 = d12;
-                    await window.__weltStehtNach(takt);
+                    await __weltStehtNach(takt);
                 }
                 // Die TREUE-PHASE: die Wache gebrochen (`_standRuht` schläft nie), so lange,
                 // bis JEDER Takt eine volle Runde ging — die Runde nennt der Takt selbst (`_standRuht(name, runde, …)`), gegangen
@@ -1465,7 +1465,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                             grenzen.push(t % span, span - (t % span));
                         }
                     }
-                    grenzen.sort((u, v) => u - v);
+                    grenzen.sort(aufsteigend);
                     let fach = [0, 0];
                     for (let i = 1; i < grenzen.length; i++)
                         if (grenzen[i] - grenzen[i - 1] > fach[1] - fach[0]) fach = [grenzen[i - 1], grenzen[i]];
@@ -2042,7 +2042,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                     aus.nachschub = { takte: i, schlange: o().wald, foundry: o().foundry, warten };
                 }
                 // (B) BAKE-SCHULD: 24 Fits fragen je Takt — solange die Bake-Uhr abweist, steht die Welt nicht
-                await window.__weltStehtNach(takt);
+                await __weltStehtNach(takt);
                 const schuld = new Set(Array.from({ length: 24 }, (_, i) => i));
                 const B = (aus.schuld = { abgewiesen: 0 });
                 B.takte = await window
@@ -2055,13 +2055,13 @@ const BRANDLAUF = process.argv.includes("--brand");
                 B.rest = schuld.size;
                 const D = (aus.dorf = {});
                 r.spawnSettlement({ seed: 7, nH: 12, autonomous: true, verlangt: "nexus" }).then((x) => (D.placed = x && x.placed));
-                D.steht = await window.__weltStehtNach(takt).catch((x) => x.message);
+                D.steht = await __weltStehtNach(takt).catch((x) => x.message);
                 // (RS) DIE SIMS IN RUHE (feld.K3): an der Mess-Wiese 60 s Spielzeit nach einer Tat (eine Ernte der Nah-Streu über
                 // den echten Schreiber, ein Leben am Spieler), Wetter und Saison ruhen; danach (WS) je Sim ihr Ereignis
                 {
                     const pm = st.playerMesh.position;
                     pm.set(MESS.x, r._voxelSurfaceY(MESS.x, MESS.z) + 1.8, MESS.z);
-                    await window.__weltStehtNach(takt);
+                    await __weltStehtNach(takt);
                     const [uhr, jahr] = [st.weatherEffectTime, st.autoSeason];
                     st.weatherEffectTime = -1e9;
                     st.autoSeason = false;
@@ -2105,7 +2105,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                         wort("sunny");
                         r._naesseTakt(1e6);
                         await simPhase(60); // jede Sim geht ihren Gang bis an ihren Fixpunkt
-                        await window.__weltStehtNach(takt);
+                        await __weltStehtNach(takt);
                         aus.simRuhe = Object.assign(await simPhase(3600), { vorher });
                         const weck = async (n, ereignis) => {
                             ereignis();
@@ -2118,7 +2118,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                         wort("sunny");
                         r._naesseTakt(1e6);
                         await simPhase(5);
-                        await window.__weltStehtNach(takt); // die Neubauten am Wasser (wetter.K3) vor der nächsten Weck-Probe
+                        await __weltStehtNach(takt); // die Neubauten am Wasser (wetter.K3) vor der nächsten Weck-Probe
                         W.regen.nachher = await simPhase(60);
                         const fr = st.foliageRadius;
                         W.wuchs = { offen: st.pendingFoliageChunks ? st.pendingFoliageChunks.size : 0 };
@@ -2177,7 +2177,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                             }
                             const [kopf, alle] = [new Map(), [...H.values()]];
                             for (const h of alle) if (!(kopf.get(h.q)?.v >= h.v)) kopf.set(h.q, h);
-                            const f = (a, i) => +(a.map((h) => h.v).sort((p, q) => p - q)[i(a.length)] || 0).toFixed(3);
+                            const f = (a, i) => +(a.map((h) => h.v).sort(aufsteigend)[i(a.length)] || 0).toFixed(3);
                             const mit = [...kopf.values()].filter((h) => h.c >= 0.94 && h.gras);
                             return Object.assign(Z, { mit: f(mit, (k) => k >> 1), koepfe: mit.length, gegen: f(alle.filter((h) => h.c <= -0.87), (k) => k - 1), alle: f(alle, (k) => k - 1) });
                         };
@@ -2213,7 +2213,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                     const aktiv = () => (st.waterCAActive ? st.waterCAActive.size : 0);
                     if (p) {
                         pm.set(p.x, r._voxelSurfaceY(p.x, p.z) + 1.8, p.z);
-                        await window.__weltStehtNach(takt);
+                        await __weltStehtNach(takt);
                         for (let i = 0; i < 900 && aktiv(); i++) takt();
                         const roh = r._tickWorldWaterCA;
                         let bewegt = 0;
@@ -2244,14 +2244,14 @@ const BRANDLAUF = process.argv.includes("--brand");
                     const p = st.playerMesh.position;
                     const [fx, fz] = [p.x + 1000, p.z + 300];
                     const fy = r._voxelSurfaceY(fx, fz) + 1.7;
-                    await window.__weltStehtNach(takt);
+                    await __weltStehtNach(takt);
                     const F = (aus.fuehrung = { x: Math.round(fx), z: Math.round(fz), abstand: Math.round(Math.hypot(1000, 300)) });
                     r.kameraFuehren((cam) => {
                         cam.position.set(fx, fy, fz);
                         cam.lookAt(fx + 15, fy + 6, fz + 6);
                     });
                     try {
-                        F.takte = await window.__weltStehtNach(takt, 400);
+                        F.takte = await __weltStehtNach(takt, 400);
                         F.steht = true;
                     } catch (e) {
                         F.steht = false;

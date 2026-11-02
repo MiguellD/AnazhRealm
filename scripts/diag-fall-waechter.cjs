@@ -89,7 +89,10 @@ const DACH_LESER = new Set(["getTerrainHeightAt", "_voxelSurfaceY", "findSurface
 // verboten) oder hier BENANNT — mit ihren erlaubten Dach-Lesern und dem Grund. Eine unbenannte ist ROT beim Namen, eine
 // benannte, die nicht mehr liest, ist VERALTET (die Liste wandert mit dem Stamm).
 const OBERKANTE_BENANNT = {
-    _playerDeathRespawn: [["getTerrainHeightAt"], "Platzierung: der Spieler ersteht auf der Oberfläche"],
+    _genesisAnkunft: [
+        ["getTerrainHeightAt"],
+        "Platzierung: der Spieler kommt an der Mitte des Genesis-Orts auf der Oberfläche an (die erste Ankunft und jede Rückkehr nach dem Tod)",
+    ],
     _rescuePlayerFromVoid: [["getTerrainHeightAt"], "Platzierung: die Rettung aus der Leere auf die Oberfläche"],
     _stepCharacter: [
         ["findSurfaceAbove"],
@@ -500,7 +503,7 @@ async function probe(K) {
         if (++tN % 10 === 0) await sleep();
     };
     const f = r._ensureAssetFoundry();
-    await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints.fahrzeug_gt);
+    await __weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints.fahrzeug_gt);
     // DIE SOHLE (B): je Bein der Knöchel nach der Fuß-IK minus `soleH` — der größere Abstand zum gebauten Mesh
     const sohle = () => {
         const [u, v] = [st.playerMesh.userData, new window.THREE.Vector3()];
@@ -509,7 +512,7 @@ async function probe(K) {
     };
     if (K.nach) {
         // B nach dem Reload: die Füll-Edits des Turms, ihre Hülle (0,5 m innen Fels, 0,6 m außen Luft), Sohle und Stand
-        await window.__weltStehtNach(takt);
+        await __weltStehtNach(takt);
         for (let i = 0; i < 120; i++) await takt();
         const huelle = (t) => {
             const edits = st.worldMeta.voxelEdits.filter(
@@ -556,7 +559,7 @@ async function probe(K) {
     const setze = (x, y, z) => (st.playerMesh.position.set(x, y, z), st.playerVel.setValue(0, 0, 0), (st._fieldVy = 0));
     const einschwingen = async (x, z, y) => {
         setze(x, Number.isFinite(y) ? y : r._voxelSurfaceY(x, z) + 1.8, z);
-        await window.__weltStehtNach(takt); // die Welt steht (das EINE Einschwingen, welt-boot)
+        await __weltStehtNach(takt); // die Welt steht (das EINE Einschwingen, welt-boot)
     };
     const tasten = (w) => {
         for (const k of ["w", "a", "s", "d", "shift", " "]) st.keys[k] = false;
@@ -610,7 +613,7 @@ async function probe(K) {
             { x, y: y + 0.5, z },
             { silent: true, precise: true, rotationY: gier - Math.PI / 2 }
         );
-        if (e) await window.__gebautNach(e, { takt });
+        if (e) await __gebautNach(e, { takt });
         if (!e || !(r.mountArchitecture(e) || {}).ok) {
             if (e) r.removeArchitecture(e);
             return { fehler: "der GT ließ sich nicht setzen/aufsitzen" };
@@ -971,7 +974,7 @@ async function probe(K) {
                     t.fehler = `${bau} ließ sich nicht setzen`;
                     continue;
                 }
-                await window.__gebautNach(e, { takt });
+                await __gebautNach(e, { takt });
                 oben = Math.max(...e.blockerAABBs.map((b) => b.topY)) + 3;
             }
             await einschwingen(o.x, o.z, oben);
@@ -981,7 +984,7 @@ async function probe(K) {
             await einschwingen(t.x + (t.x / l) * K.fernM, t.z + (t.z / l) * K.fernM);
             const fr = () => st.fernRing || {};
             const fertig = () => fr().ready && fr().cursor >= fr().totalVerts && !fr().flug && !fr().einhaengen.length;
-            await window.__gebautNach("der Fern-Ring", { takt, fertig, max: 900, offen: false });
+            await __gebautNach("der Fern-Ring", { takt, fertig, max: 900, offen: false });
             // die Ecken um die Mitte des Turms (zwei Maschen), die Lage-Bytes aller Schalen
             const F = fr();
             const ecken = Array.from({ length: F.totalVerts }, (_, g) => r._fernRingPunkt(F, g)).filter(

@@ -286,9 +286,9 @@ async function weltPruefen() {
     await server.zeige(page, 30000);
     const out = await page.evaluate(async () => {
         const res = {};
-        await window.__weltDa();
+        await __weltDa();
         const f = r._ensureAssetFoundry();
-        await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.mensch && f.recipes.wolf && !f._vorrat);
+        await __weltDa(() => f && f.ready && f.recipes && f.recipes.mensch && f.recipes.wolf && !f._vorrat);
         const KC = window.__koerperCore;
         const lin = (hx) =>
             [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255]

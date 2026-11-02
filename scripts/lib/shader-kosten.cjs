@@ -781,7 +781,7 @@ function shaderKostenSeite(o) {
         };
         const q = rend.backend && rend.backend.device ? rend.backend.device.queue : null;
         try {
-            window.__bundlesNeu();
+            __bundlesNeu();
             for (let i = 0; i < Math.max(1, opt.frames || 1); i++) {
                 window.__loopBild();
             }

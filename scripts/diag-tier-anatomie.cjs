@@ -128,7 +128,7 @@ function kopfUrteil(sb, art, g) {
             continue;
         }
         roh[h] = e.n;
-        const hoehen = [...e.t].sort((a, b) => a - b);
+        const hoehen = [...e.t].sort(aufsteigend);
         if (hoehen.join() !== Array.from({ length: NK - 1 }, (_, k) => k + 1).join())
             v.push(`${art} Kopf-Fell: ${h} trägt die Höhen ${hoehen.map((x) => x + "/" + NK).join(" ")} statt 1…${NK - 1}/${NK}`);
         if (leibZellen.size !== 1 || e.zellen.size !== 1 || [...e.zellen][0] !== [...leibZellen][0])

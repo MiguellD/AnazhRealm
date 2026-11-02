@@ -5,9 +5,7 @@
 
 const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
-async function checkBandVoxelP3AndInventory({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandVoxelP3AndInventory({ page, check }) {
     // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
     // `carveVoxel` nimmt eine Säule aus dem Dichte-Feld (gelaende-core `editForm`: Radius r, halbe Höhe r).
     const voxelP3Results = await safeEvaluate(page, () => {
@@ -1570,7 +1568,7 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
         res.t3DcConstants
     );
     // T4: der Wasser-Automat-Kern — Wasser fliesst (Option A).
-    check("T4 (Wasser-CA): keine Schöpfung + begrenzter Decay-Schwund (V18.93)", res.t4Conserves);
+    check("T4 (Wasser-CA): keine Schöpfung + begrenzter Decay-Schwund", res.t4Conserves);
     check("T4 (Wasser-CA): das Wasser FLIESST — ein Blob fällt (Schwerpunkt sinkt)", res.t4Flows);
     // T4a-2 — in die Welt verdrahtet (reaktive Schicht + Welt-Tick + cross-chunk-wake + Carve-Wake).
 }

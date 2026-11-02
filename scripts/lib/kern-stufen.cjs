@@ -57,10 +57,10 @@ function geklemmteStufe(listeJson, wahl) {
 // Entry-Typ, sonst bp), praefix, stufen ([0]), wahl (die Distanz-Wahl der Klemme, null = keine) } — B das Buch nach dem
 // ready-Handshake, D der Auto-Blueprint am EINEN Chokepoint, P die Place-Auflösung, E das Asset je Stufe, F der Schlüssel der Wahl.
 async function epsilonSeite(w) {
-    await window.__weltDa();
+    await __weltDa();
     const A = AnazhRealm;
     const f = r._ensureAssetFoundry();
-    await window.__weltDa(() => f && f.ready && f.recipes && f.recipes[w.preset] && A._studioRenderConfig && A._studioRenderConfig.lod && A._studioRenderConfig.lod.kindStages);
+    await __weltDa(() => f && f.ready && f.recipes && f.recipes[w.preset] && A._studioRenderConfig && A._studioRenderConfig.lod && A._studioRenderConfig.lod.kindStages);
     const rez = f.recipes[w.preset];
     // die Rezepte der Art im Buch und in den Tafeln der Kerne (`w.raeume`: jeder Zweit-Kern `PRESETS`, der Haupt-Kern `PHYTO_PRESETS`)
     const ids = (P) => Object.keys(P || {}).filter((id) => P[id]?.kind === w.art);

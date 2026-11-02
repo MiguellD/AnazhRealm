@@ -43,7 +43,7 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
     try {
         await page.goto(SERVER_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
         await page.evaluate(async () => {
-            await window.__weltDa(() => !(!st || !st.blueprints));
+            await __weltDa(() => !(!st || !st.blueprints));
         });
 
         const result = await page.evaluate(

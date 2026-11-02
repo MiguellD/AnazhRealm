@@ -341,9 +341,7 @@ async function checkBandV1754PlayerAttack({ page, check }) {
     );
 }
 
-async function checkBandWelle6HBuildAndPersist({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandWelle6HBuildAndPersist({ page, check }) {
     // ### Welle 6.H Phase 2B.2 — Kreatur baut Bauplan für Spieler ###
     // Umkehrung von gather: Phasen take (zum Spieler) → walk (weg) → spawn (Architektur am Kreatur-Ort);
     // _buildMaterialGate ist EINE Funktion für Spieler-confirmBuild und die Kreatur-take-Phase.
@@ -1119,9 +1117,7 @@ async function checkBandWelle6HBuildAndPersist({ page, check, errors, finalState
     }
 }
 
-async function checkBandWelle6HCreatureStats({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandWelle6HCreatureStats({ page, check }) {
     // ### Welle 6.H Phase 2F.1 — Kreatur-Stats wie Spieler ###
     // Kreatur, Spieler und Architektur sind Compound aus parts × Material × Form; Stats kommen aus
     // derselben STAT_FROM_TAGS-Pipeline; Body-Speed-Mul (stats.speed/7) wirkt im Tick neben Spec-Mul.

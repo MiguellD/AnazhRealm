@@ -7,9 +7,10 @@
 // zur Kontrolle, der Bär vor ruhiger, zorniger, friedlicher Aura — über den Speicherstand, dann geht der Spieler bis 8 m
 // heran und steht 15 s: der Median des Abstands. (B) ein Rudel um einen Riss: sein Aufenthalt in dessen Zelle über 90 s,
 // gegen den Gegenlauf ohne Feld-Furcht ──
-async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil) {
+async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil, kamera) {
     const dt = 1 / 60;
     const boden = (x, z) => r.getTerrainHeightAt(x, z) + 0.5;
+    const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z); // der Abstand in der Ebene
     await buehne("furcht", async (restore) => {
         if (taeter === "furcht-gedaechtnis") decke("_kreaturFurchtErinnert", () => () => 0);
         if (taeter === "furcht-ort") decke("_kreaturFurchtOrt", () => (c, NAT, von, w) => w);
@@ -60,16 +61,16 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                 R.erinnerungen.push((c.userData.memory || []).length);
                 pm.set(c.position.x + 30, boden(c.position.x + 30, c.position.z), c.position.z);
                 for (let k = 0, d = 30; k < 2400 && d > 8; k++) {
-                    d = Math.hypot(c.position.x - pm.x, c.position.z - pm.z);
+                    d = ab(c.position, pm);
                     pm.x += ((c.position.x - pm.x) / d) * s.speed * dt;
                     pm.z += ((c.position.z - pm.z) / d) * s.speed * dt;
                     pm.y = boden(pm.x, pm.z);
                     lauf(1, e);
                 }
-                const d0 = Math.hypot(c.position.x - pm.x, c.position.z - pm.z);
+                const d0 = ab(c.position, pm);
                 for (let k = 0; k < 900; k++) {
                     lauf(1, e);
-                    R.abstand.push(Math.hypot(c.position.x - pm.x, c.position.z - pm.z));
+                    R.abstand.push(ab(c.position, pm));
                 }
                 R.naeher.push(d0 - Math.min(...R.abstand.slice(-900)));
                 for (const k of [...s.creatures, ...s.leichname]) r.removeCreature(k);
@@ -118,7 +119,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                 ort[gegen ? "gegenlauf" : "riss"].push(+(drin / 5400 / herde.length).toFixed(3));
                 for (const k of [...s.creatures, ...s.leichname]) r.removeCreature(k);
             }
-        const mittel = (a) => +(a.reduce((p, q) => p + q, 0) / a.length).toFixed(3);
+        const mittel = (a) => +(a.reduce(addiere, 0) / a.length).toFixed(3);
         return { erinnert, ort: { aufenthalt: mittel(ort.riss), gegenlauf: mittel(ort.gegenlauf) } };
     });
     // ── DER ZEITRAFFER (Ökologie K1/K2): `tickFaunaLifecycle` je 10 s Spiel-Zeit, der Spieler an P0 — der Ecke von vier nahen
@@ -210,7 +211,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
     // Ordnungs-Statistik [kleinste, größte Differenz] (über 8 Saaten deckt sie den Median mit 1 − 2 · 0,5⁸ = 99,2 %), mit `t`
     // das 95-%-Intervall des Mittels (t × Standardfehler; bei ~8 Tieren je Region streut eine Saat um einen Wurf)
     const effekt = (G, H, wert, t) => {
-        const m = (v) => v.reduce((p, q) => p + q, 0) / v.length;
+        const m = (v) => v.reduce(addiere, 0) / v.length;
         const g0 = m(G.map(wert));
         const d = G.map((g, i) => +((wert(H[i]) - wert(g)) / Math.max(1e-9, g0)).toFixed(3));
         const se = t * Math.sqrt((m(d.map((q) => (q - m(d)) ** 2)) * (d.length / (d.length - 1))) / d.length);
@@ -239,6 +240,15 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                     frassAus || alt.apply(r, a)
         );
         if (taeter === "bestand-kappe") decke("_creatureNaturalBirth", (alt) => (...a) => (s.creatures.length < s.maxCreatures ? alt.apply(r, a) : [])); // prettier-ignore
+        // DAS TAL DER WILDNIS: die Kaskade misst, wo das Feld wirft — keine Zelle des Bestands der nahen Regionen liegt auf einer
+        // Fläche des Genesis-Orts (Kern, Ring, Mall, Wiese, Ufer, die Bühnen: dort fällt jede Geburt und jeder Leib,
+        // `_kreaturGrundFrei`). Der Zeitraffer steht ganze Regionen westlich der Ankunft, bis keine mehr dort liegt (709 m). Bis
+        // Pflicht F begann die Wildnis an der Ankunft; seit dem Plan lagen 7 Zellen auf ihm, und ohne die Wölfe wuchs das Rotwild
+        // um 0,222 statt 0,391 (dieselben Saaten, die Flächen still). Täter (Selbsttest): der Zeitraffer an der Ankunft
+        const park = () => r._bestandNah().flatMap((k) => r._bestandFeld(k).zellen).filter((c) => r._genesisFlaeche(c.x, c.z)).length; // prettier-ignore
+        for (let x = pm.x; taeter !== "kaskade-park" && park(); kamera(0, -1))
+            (x -= r._bestandSeite()), pm.set(x, boden(x, pm.z), pm.z);
+        if (park()) throw new Error(`das Tal liegt im Genesis-Ort: ${park()} Zellen`);
         // die vier Regionen schräg an den Ecken des Tals (nicht nah, ihr Bestand nur als Zahl)
         const [ix, iz] = [pm.x, pm.z].map((v) => Math.round(v / r._bestandSeite()));
         const fern = [[-2, -2], [1, -2], [-2, 1], [1, 1]].map(([a, b]) => ix + a + "," + (iz + b)); // prettier-ignore
@@ -293,7 +303,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
             ["mutante", "mutante", "jung", -0.2],
         ])
             if (L[b]) richtungen[k] = richtung(b, g, soll);
-        const [G, H, ms] = [L.grund, L.kappeHalb, L.grund.flatMap((l) => l.ms).sort((a, b) => a - b)];
+        const [G, H, ms] = [L.grund, L.kappeHalb, L.grund.flatMap((l) => l.ms).sort(aufsteigend)];
         return {
             saaten: G.map((l) => Object.fromEntries(Object.keys(A._lebensraumGesetz().L.gattung).map((g) => [g, [l.mittel(360, 720, g), l.mittel(2520, 2880, g)]]))), // prettier-ignore
             kappe: Object.values(L)
@@ -309,7 +319,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                 ),
                 takte: (H || []).reduce((p, h) => p + h.spur.length, 0),
                 leiber: [G, H || []].map((X) => Math.max(...X.map((l) => l.leiber))),
-                zahl: +(G.reduce((p, l) => p + l.orte.slice(0, 4).reduce((a, b) => a + b, 0), 0) / G.length).toFixed(1),
+                zahl: +(G.reduce((p, l) => p + l.orte.slice(0, 4).reduce(addiere, 0), 0) / G.length).toFixed(1),
                 fremd: [...G, ...(H || [])].reduce((p, l) => p + l.fremd, 0),
                 nahrung: G[0].orte.map((x, j) => effekt(G, L.halb || G, (l) => l.orte[j], 2.365)),
                 ms: +ms[Math.floor(ms.length * 0.95)].toFixed(2),
@@ -545,7 +555,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
             }
             if (k % 60 !== 59) return;
             z.proben++;
-            abstand.push(Math.hypot(p.x - pm.x, p.z - pm.z));
+            abstand.push(ab(p, pm));
             if ((c.userData.task || {}).name === "follow_player") z.aufgabe++;
             if (r._nassAt(p.x, p.z)) z.nassS++;
             if (hang(p.x, p.z) > 15) z.steilS++;
@@ -569,7 +579,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
         r.removeCreature(c);
         const u = hirsch(false);
         gehen(120, () => {});
-        z.gegenlauf = { abstandM: +Math.hypot(u.position.x - pm.x, u.position.z - pm.z).toFixed(1) };
+        z.gegenlauf = { abstandM: +ab(u.position, pm).toFixed(1) };
         return z;
     });
     // ── tagesbudget (Tiere K4, ETHOGRAMM_GESETZ · DURST_GESETZ): je Gattung drei Tiere ohne Verband am Ufer (15–30 m vom Fluss), im
@@ -636,7 +646,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                 [0, 1, 2].map((i) => {
                     const x = U.x + Math.cos(i * 2.1 + seele.length) * 6,
                         zz = U.z + Math.sin(i * 2.1 + seele.length) * 6;
-                    const c = tier({ x, y: r.getTerrainHeightAt(x, zz) + 0.5, z: zz }, seele, 1);
+                    const c = tier({ x, y: boden(x, zz), z: zz }, seele, 1);
                     ruhig(c);
                     return { c, g: A.TETRAPODA_SOUL_MAP[seele], x, z: zz, ruhK: 0, trunk: 0, nass: 0 };
                 })
@@ -659,7 +669,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                             const B = z.budget[t.g] || (z.budget[t.g] = { ruhen: 0, nahrung: 0, ziehen: 0 });
                             B[kat]++;
                             if (t.ruhK > 20)
-                                (z.ruhe[0]++, (z.ruhe[1] += Math.hypot(p.x - t.x, p.z - t.z) > 0.01 ? 1 : 0));
+                                (z.ruhe[0]++, (z.ruhe[1] += ab(p, t) > 0.01 ? 1 : 0));
                         }
                         [t.x, t.z] = [p.x, p.z];
                     }
@@ -727,12 +737,12 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                     if (LG.lebensraum(g, kl, LG.L) > 0) z.drin++;
                     z.gattung[g] = (z.gattung[g] || 0) + 1;
                     z.klasse[kl] = (z.klasse[kl] || 0) + 1;
-                    z.minM = Math.min(z.minM, +Math.hypot(c.position.x - pm.x, c.position.z - pm.z).toFixed(1));
+                    z.minM = Math.min(z.minM, +ab(c.position, pm).toFixed(1));
                     if (imBlick(c.position.x, c.position.y + 0.5, c.position.z)) z.imBlick++;
                     const nn = Math.min(
                         ...neu
                             .filter((o) => o !== c)
-                            .map((o) => Math.hypot(c.position.x - o.position.x, c.position.z - o.position.z) / paar)
+                            .map((o) => ab(c.position, o.position) / paar)
                     );
                     if (nn < Infinity) z.fensterMax = +Math.max(z.fensterMax, nn).toFixed(2);
                 }
@@ -832,7 +842,7 @@ function lebenUrteil(name, z, soll) {
         soll(
             z.truenke.length >= 12 &&
                 z.truenke.every((n) => n >= 1) &&
-                z.amWasser === z.truenke.reduce((a, b) => a + b, 0),
+                z.amWasser === z.truenke.reduce(addiere, 0),
             `kein Tier trinkt aus Durst: Trünke ${z.truenke}, ${z.amWasser} am Wasser`
         );
         soll(z.durstAus === 0, `das Trinken folgt dem Durst nicht: ohne Durst ${z.durstAus} Trünke`);
@@ -899,7 +909,7 @@ function lebenUrteil(name, z, soll) {
 }
 const lebenQuelle = lebenBuehnen.toString();
 module.exports = {
-    BUEHNEN: `await (${lebenQuelle})(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil);`,
+    BUEHNEN: `await (${lebenQuelle})(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil, kamera);`,
     PROBEN: ["furcht", "lebensraum", "tagesbudget", "kaskade", "folgen"],
     TAETER: {
         tagesbudget: [
@@ -910,6 +920,7 @@ module.exports = {
         ],
         kaskade: [
             ["kaskade-riss", /die Kaskade hirsche/],
+            ["kaskade-park", /Tal liegt im Genesis-Ort: [1-9]/],
             ["bestand-nahrung", /die Kaskade nahrung/],
             ["bestand-deckel", /über seine Nahrung aus/],
             ["bestand-kappe", /die Kappe am Schirm ändert den Bestand/],

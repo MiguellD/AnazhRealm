@@ -160,7 +160,7 @@ function pruefRaum(echt) {
             !s || !s.rendererReady
                 ? !!s
                 : fragt || ((fragt = true), rend.backend.device.queue.onSubmittedWorkDone().then(() => (fragt = false)), false);
-        for (const weiter = window.__deckel(name, 400, offen); !bis(F.gezeichnet(holen())) && weiter(); )
+        for (const weiter = __deckel(name, 400, offen); !bis(F.gezeichnet(holen())) && weiter(); )
             await sleep(50);
     };
     r.setCameraMode("third");
@@ -170,7 +170,7 @@ function pruefRaum(echt) {
         F.wurzel = st.scene;
         // der Leib steht GANZ im Bild, bevor die Probe weiterwechselt (das Ereignis, nie die Uhr)
         F.leibWechsel = async () => {
-            for (let fehlt = 1, weiter = window.__deckel("der Leib im Bild", 100); fehlt && weiter(); ) {
+            for (let fehlt = 1, weiter = __deckel("der Leib im Bild", 100); fehlt && weiter(); ) {
                 await F.zeichne(1);
                 fehlt = 0;
                 st.playerMesh.traverseVisible(
@@ -187,7 +187,7 @@ function pruefRaum(echt) {
             const N = rend._nodes.nodeFrame,
                 a = N.frameId;
             await sleep(600); // ein Bild steht mindestens 600 ms
-            for (const weiter = window.__deckel("ein Bild", 2400); N.frameId - a < n && weiter(); ) await sleep(50);
+            for (const weiter = __deckel("ein Bild", 2400); N.frameId - a < n && weiter(); ) await sleep(50);
         };
         F.drehe = () => (st.yaw += 1.1);
         F.mittag = () => {
@@ -293,7 +293,7 @@ hauptLauf(async () => {
     await server.zeige(page, 120000, `index.html${ECHT ? "" : "?holz=kienspan"}`);
     const boot = await page.evaluate(
         async ({ minChunks, echt }) => {
-            for (const weiter = window.__deckel("das erste Weltbild", 1200); weiter(); ) {
+            for (const weiter = __deckel("das erste Weltbild", 1200); weiter(); ) {
                 const st = r && r.state;
                 // echt urteilt B den Canvas: erst mit dem ersten Weltbild (`_weltbildDa`) weicht der Ladeschirm; headless
                 // urteilt das Rücklese-Bild der Welt-GPU, kein DOM — dort kostete das Warten 56 s und Gruppe 18 ihren 7-min-Deckel

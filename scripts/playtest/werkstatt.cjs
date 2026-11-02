@@ -55,9 +55,7 @@ async function checkBandOmegaWerkstattSpiegel({ page, check }) {
     check("Ω-W3 ROLLEN-bewusst: kopflastige Waffe → traeger Schwung, nicht kippt", res.weaponTraege === true);
 }
 
-async function checkBandCadWorkshop({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandCadWorkshop({ page, check }) {
     // ### CAD-Werkstatt (3D-Preview + Manipulator-Gizmo) ###
     const wave6bResults = await safeEvaluate(page, () => {
         const out = {};
@@ -843,9 +841,7 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
     }
 }
 
-async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandEarlyRingsAndUi({ page, check }) {
     // ### Player-Emotionen → Welt ###
     const ring3Results = await safeEvaluate(page, async () => {
         if (!r || !st || !st.player) return null;
@@ -920,7 +916,7 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
         st.player.emotions.joy = 0.42;
         st.player.emotions.chaos = 0.13;
         r.saveState();
-        const parsed = await window.__standJson();
+        const parsed = await __standJson();
         out.savedEmotions =
             !!parsed &&
             parsed.playerEmotions &&
@@ -2168,7 +2164,7 @@ async function checkBandWCIchWahrheit({ page, check }) {
         const orte = document.querySelectorAll(".ich-boosts");
         const hostBand = document.querySelector("#ich-boosts-host .ich-boosts");
         out.einBandOrt = orte.length === 1 && !!hostBand;
-        out.fusszeileOhneBoosts = window.__fehlt(r._ichBuildSpecSheet, /✺/);
+        out.fusszeileOhneBoosts = __fehlt(r._ichBuildSpecSheet, /✺/);
         const chip = document.querySelector("#ich-boosts-host .ich-boost-chip");
         if (chip) {
             chip.setAttribute("data-expires", String(nowSec - 1));
@@ -2279,9 +2275,9 @@ async function checkBandRezeptKatalog({ page, check }) {
         async (portaLen) => {
             const res = { a: {}, b: {}, c: {}, d: {}, e: {} };
             // ===== WARM-ANKER: Boot → f.ready → Buch+paramsByKind → !_vorrat (120-s-Cap) =====
-            await window.__weltDa();
+            await __weltDa();
             const f = r._ensureAssetFoundry();
-            await window.__weltDa(
+            await __weltDa(
                 () =>
                     !!(
                         f &&
@@ -2404,7 +2400,7 @@ async function checkBandRezeptKatalog({ page, check }) {
                     return orig();
                 };
                 let g = r._workshopFoundryPreviewGroup("tor_drachentor");
-                await window.__gebautNach("die Vorschau des Drachentors", {
+                await __gebautNach("die Vorschau des Drachentors", {
                     fertig: () => !!(g = r._workshopFoundryPreviewGroup("tor_drachentor")) && g !== "pending",
                     takt: () => sleep(200),
                     max: 225,

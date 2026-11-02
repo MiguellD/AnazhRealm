@@ -122,9 +122,7 @@ async function checkBandV1738RulePersistence({ page, check }) {
     );
 }
 
-async function checkBandRing8({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandRing8({ page, check }) {
     // ### Multi-Welt-Verwaltung ###
     // Daten-Plane: Index, Per-Welt-Key, createNewWorld, switchToWorld, deleteWorld, Migration,
     // Player-Übernahme — mit reload:false, damit alle Pfade in einer Session laufen (Reload = UI).
@@ -145,7 +143,7 @@ async function checkBandRing8({ page, check, errors, finalState }) {
                 macro: { massivC: { x: 1, z: 2 } },
                 voxelEdits: [{ x: 1, y: 2, z: 3, r: 2, mode: "carve" }],
                 settlementCells: { start: { x: 0, z: 0 } },
-                genesisPortalRing: true,
+                genesisOrt: { key: "genesis:1:0,0:0", x: 0, z: 0, steht: true },
                 portalPreviewFachwerk: true,
                 erbgut: { terme: [{ art: "wildnis" }] },
                 saat: [{ dsl: "x" }],
@@ -510,16 +508,16 @@ async function checkBandRing8({ page, check, errors, finalState }) {
             false
         );
         out.emptySnapHasNoPosition = emptySnap.playerPosition === null;
-        const savedPos = st.playerMesh ? st.playerMesh.position.clone() : null;
+        const savedPos = pm ? pm.position.clone() : null;
         st.terrainEverGenerated = false;
         // BÜHNE: der Reset-Wert vor dem Restore (Speicher-Mechanik)
-        if (st.playerMesh) st.playerMesh.position.set(7, 8, 9);
+        if (pm) pm.position.set(7, 8, 9);
         r._loadStateRestorePlayerPosition(emptySnap);
         out.emptySnapKeepsFirstSpawn = st.terrainEverGenerated === false;
-        out.emptySnapKeepsPosition = st.playerMesh && Math.abs(st.playerMesh.position.x - 7) < 0.01;
+        out.emptySnapKeepsPosition = pm && Math.abs(pm.position.x - 7) < 0.01;
         // Lauf-Zustand zurück: die Welt IST generiert + Position restauriert.
         st.terrainEverGenerated = true;
-        if (savedPos && st.playerMesh) st.playerMesh.position.copy(savedPos);
+        if (savedPos && pm) pm.position.copy(savedPos);
 
         // Status-Bar zeigt aktuelle Welt
         const slugEl = document.getElementById("status-slug");
@@ -546,9 +544,7 @@ async function checkBandRing8({ page, check, errors, finalState }) {
     }
 }
 
-async function checkBandRing9to10({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandRing9to10({ page, check }) {
     // ### Welt-Tor (Drei-Wahl-Import-Dialog) ###
     // Reload-UI indirekt über Daten-Methoden: importWorldBeside (Index-Eintrag + Per-Welt-Save mit
     // parentWorlds-Spur), Dialog-Markup im DOM, _openWeltTorDialog setzt pendingImport, Esc/cancel räumt.
@@ -1059,9 +1055,7 @@ async function checkBandRing9to10({ page, check, errors, finalState }) {
     }
 }
 
-async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandTranslatorAndUntrusted({ page, check }) {
     // ### KI-Übersetzer Phase 1 — fremde Welt → Portal-Manifest ###
     const translatorResults = await safeEvaluate(page, async () => {
         const out = {};

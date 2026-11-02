@@ -213,10 +213,10 @@ hauptLauf(async () => {
     const nodeExpected = { gt: gtExp, supersport: ssExp, messort };
     const out = await page.evaluate(async (expected) => {
         const res = { book: {}, prof: {}, emerg: {} };
-        await window.__weltDa();
+        await __weltDa();
         const f = r._ensureAssetFoundry();
         // Buch + Auto-Blueprint abwarten (das fahrprofil reist im selben get-recipes-Reply).
-        await window.__weltDa(
+        await __weltDa(
             () =>
                 f &&
                 f.ready &&
@@ -292,7 +292,7 @@ hauptLauf(async () => {
             res.drive = { spawned: !!entry };
             if (entry) {
                 // Studio-Gestalt andocken lassen (der Bau ist async: Flat-Miss → Anfrage → Bau).
-                await window.__gebautNach(entry);
+                await __gebautNach(entry);
                 res.drive.visualKind = entry.instanced ? "instanced" : entry.mesh ? "mesh" : "kalt";
                 // KONSUM: die Instanz zieht über die EINE Flat-Quelle mit — die Foundry-Gestalt, ohne Foundry der Bauplan
                 const ruft = (k) => {
@@ -432,7 +432,7 @@ hauptLauf(async () => {
             );
             res.gefuehl.spawned = !!e2;
             if (e2) {
-                await window.__gebautNach(e2);
+                await __gebautNach(e2);
                 r.mountArchitecture(e2);
                 const fzg = r._fahrzeugGesetzFor(e2);
                 const h = fzg.drive.huelle;
@@ -506,7 +506,7 @@ hauptLauf(async () => {
                 // Der Kontakt ist das 75-%-Quantil des größten Rad-Spalts je Tick — ein starrer Wagen auf einer
                 // 2-m-Stufe des Hügels hebt kurz ein Rad (das Maximum reist als Befund mit), das Versinken der alten
                 // Basis (0,48 m) und das Schweben aus max() + Nick lagen auf JEDEM Tick.
-                spalte.sort((a, b) => a - b);
+                spalte.sort(aufsteigend);
                 res.gefuehl.kontaktM = spalte.length ? spalte[Math.floor(spalte.length * 0.75)] : Infinity;
                 res.gefuehl.kontaktMax = kontakt;
                 res.gefuehl.lenkSpitzeG = lenkSpitze;

@@ -59,7 +59,7 @@ async function welt() {
         const r = await window.__weltDa();
         const st = r.state;
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
-        await window.__weltDa(() => !!(!(f && !f.ready)));
+        await __weltDa(() => !!(!(f && !f.ready)));
         o.foundry = !!(f && f.ready);
         // Der Spieler LIVE: nach dem Boot tauscht die Welt das Spieler-Mesh (die Seele) — eine gemerkte Position zöge nur
         // die Streu mit, Kamera und Nah-Wiese blieben am Start.
@@ -207,7 +207,7 @@ async function welt() {
         // ── W: das Urteil über den Sicht-Satz der Nah-Wiese (die Linse legte ihn selbst, scripts/lib/wiese-sicht.cjs) ──
         const wieseUrteil = (w, befunde) => {
             const nenne = (senke, art) => befunde.push({ senke, art, pass: "haupt", dreiecke: 0 });
-            const summe = Object.values(w.je).reduce((s, n) => s + n, 0);
+            const summe = Object.values(w.je).reduce(addiere, 0);
             if (!(w.senken > 0))
                 nenne("nahWiese", "keine Senke — die Studio-Gras-Vorlagen fehlen (die Linse misst nichts)");
             else if (!(w.bueschel > 0)) {
@@ -229,10 +229,10 @@ async function welt() {
             return {
                 senken: w.senken,
                 bueschel: w.bueschel,
-                summe: n.reduce((s, x) => s + x, 0),
+                summe: n.reduce(addiere, 0),
                 min: n.length ? Math.min(...n) : 0,
                 // das Soll im Blick der Linse (`__wieseErwartet`): Summe und Zahl der Senken mit Soll > 0
-                soll: Object.values(w.erwartet || {}).reduce((s, x) => s + x, 0),
+                soll: Object.values(w.erwartet || {}).reduce(addiere, 0),
                 mitSoll: Object.values(w.erwartet || {}).filter((x) => x > 0).length,
                 auge: w.auge ? [Math.round(w.auge.x), Math.round(w.auge.z)] : null,
             };

@@ -111,9 +111,9 @@ function wasserFluss() {
             }
         }
     }
-    quer.sort((x, y) => x - y);
-    buckel.sort((x, y) => x - y);
-    stufen.sort((x, y) => x - y);
+    quer.sort((a, b) => a - b);
+    buckel.sort((a, b) => a - b);
+    stufen.sort((a, b) => a - b);
     const q = (p, A = quer) => (A.length ? A[Math.min(A.length - 1, Math.floor(p * A.length))] : 0);
     const R = wasserRund(3);
     // Wasserfall-Doppel: ein Sturz je Ort (der geteilte Unterlauf zieht ihn sonst je Quelle).
@@ -790,12 +790,10 @@ async function wasserStrom(ort, hoehe) {
         if (st._fixedSimPos) st._fixedSimPos.copy(st.playerMesh.position);
         // die Kacheln des Rings kommen aus dem Faden, ehe er aushängt (der Haupt-Faden rechnet sie nie); dann hängt der Faden
         // aus: der Ring baut an der Test-Naht (`SYNC_STELLEN`, streaming.K4)
-        await window.__weltDa(() => !r._ensureHydroTilesAround(ort[0], ort[1], 2048));
+        await __weltDa(() => !r._ensureHydroTilesAround(ort[0], ort[1], 2048));
         zurueck.push(leihe(st, { voxelWorker: null }), leihe(r, { _syncStelle: "naht" }));
-        for (let last = -1, still = 0, weiter = window.__deckel("der Ring am Wasser", 9000); weiter(); await sleep(0)) {
-            try {
-                r._gameLoopTick(performance.now());
-            } catch {}
+        for (let last = -1, still = 0, weiter = __deckel("der Ring am Wasser", 9000); weiter(); await sleep(0)) {
+            __handTakt();
             const n = st.voxelChunks ? st.voxelChunks.size : 0;
             still = n === last ? still + 1 : 0;
             last = n;
@@ -852,7 +850,7 @@ async function wasserGraben(o = {}) {
         const px = a.x + nx * sg * (krone + abstand),
             pz = a.z + nz * sg * (krone + abstand);
         await window.__wasserStrom([px + nx * sg * 6, pz + nz * sg * 6], 0.6); // der Spieler 6 m landeinwärts
-        await window.__weltStehtNach(() => r._gameLoopTick(performance.now()), 600); // die Welt steht, die Wiese mit
+        await __weltStehtNach(() => r._gameLoopTick(performance.now()), 600); // die Welt steht, die Wiese mit
         const aussen = (key) => {
             const [tx, tz] = key.split(",").map(Number);
             return Math.hypot(Math.max(tx * K - px, 0, px - (tx + 1) * K), Math.max(tz * K - pz, 0, pz - (tz + 1) * K)) > AUSSEN;
@@ -904,7 +902,7 @@ function wasserFlaechen(r, x, z) {
             const y = n ? r.constructor._wasserNetzHoehe(n, x, z) : null;
             if (y !== null) ys.push(y);
         }
-    return ys.sort((p, q) => p - q).filter((y, j, l) => !j || y - l[j - 1] > 0.1);
+    return ys.sort((a, b) => a - b).filter((y, j, l) => !j || y - l[j - 1] > 0.1);
 }
 
 // ── gelaende.K2 (b) · (d): DER DAMM AM FLUSS ── 60 m stromab des Graben-Orts (längs des Laufs) quer über den Fluss aus dem
@@ -942,7 +940,7 @@ async function wasserDamm(o = {}) {
     const y = (q) => fr().geos[q.s].attributes.position.getY(q.li);
     await window.__wasserStrom([a.x + nx * (o.ferne ? 150 : 40), a.z + nz * (o.ferne ? 150 : 40)], 3);
     if (o.ferne) {
-        await window.__gebautNach("der Fern-Ring", { fertig: () => fr() && fr().cursor >= fr().totalVerts, takt, max: 3000 });
+        await __gebautNach("der Fern-Ring", { fertig: () => fr() && fr().cursor >= fr().totalVerts, takt, max: 3000 });
         for (let n = 0; n < fr().totalVerts; n++) if (unter(n)) ring.set(n, y(unter(n)));
     }
     for (const [x, z] of saeulen) r.dslRun(["voxel_fill", x, krone - 3.5, z, 3.5], { source: "human" });
@@ -950,7 +948,7 @@ async function wasserDamm(o = {}) {
         // der Edit reist durch die EINE Bestellung des Rings (`_fernRingUmEdits`): die Probe wartet auf ihre Antwort, eingehängt
         // (die Laufzeit-Marke `editFlug`, der Edit-Stand `feldEditsN` des Rings), nie auf eine Frist
         const ed = st.worldMeta.voxelEdits;
-        await window.__gebautNach("der Edit im Fern-Ring", {
+        await __gebautNach("der Edit im Fern-Ring", {
             fertig: () => fr().feldEditsN === ed.length && !fr().editFlug && !fr().nachEdit.length,
             takt,
             max: 600,
@@ -965,7 +963,7 @@ async function wasserDamm(o = {}) {
         return aus;
     }
     const ruht = () => !((st.waterCAActive ? st.waterCAActive.size : 0) + r._weltOffen().chunks + (st.pendingWaterIso ? st.pendingWaterIso.size : 0));
-    await window.__gebautNach("der Stausee", { fertig: ruht, takt, max: 900 });
+    await __gebautNach("der Stausee", { fertig: ruht, takt, max: 900 });
     // die Überlaufhöhe: der niedrigste Pfad über den Boden des Feldes (0,9 m, ±50 m) zum Fluss 12 m stromab, halbiert auf 1 cm
     const N = 112;
     const zelle = (q) => Math.round((q.x - a.x + 50) / 0.9) + Math.round((q.z - a.z + 50) / 0.9) * N;
@@ -1326,7 +1324,7 @@ async function wasserBild(o = {}) {
             };
         };
         // das Bild selbst (für den Bericht): das Render-Ziel als PNG (linear, ungetont — ein Vergleichs-Bild, kein Look)
-        return { ruhig: zone(1), schnelle: zone(2), png: o.png ? window.__png(px, W, H) : null };
+        return { ruhig: zone(1), schnelle: zone(2), png: o.png ? __png(px, W, H) : null };
     };
     let a, b, sturm;
     // B7: das Fragment-WGSL, das r184 dem Bogen baut (sein Render-Objekt mit dem Wasser-Stoff) — die Leck-Linse liest es
@@ -1623,7 +1621,7 @@ async function wasserWagen(o = {}) {
     if (!see) return { fehler: "kein See" };
     const S = see.level;
     const R = wasserRund(3);
-    await window.__weltDa(() => st.blueprints && st.blueprints.fahrzeug_gt);
+    await __weltDa(() => st.blueprints && st.blueprints.fahrzeug_gt);
     if (!(st.blueprints && st.blueprints.fahrzeug_gt)) return { fehler: "kein Studio-Wagen im Buch (fahrzeug_gt)" };
     const BOOT = wasserBoot(st);
     const [pm, leib] = [st.playerMesh.position, window.__wasserLeib()];
@@ -2047,7 +2045,7 @@ async function wasserQuelle(o = {}) {
     const regionen = [];
     for (const key of o.kacheln) {
         const [rx, rz] = String(key).split(",").map(Number);
-        await window.__weltDa(() => !r._ensureHydroTilesAround(rx * size, rz * size, size / 2 + 256)); // samt den Rändern der Nachbarn
+        await __weltDa(() => !r._ensureHydroTilesAround(rx * size, rz * size, size / 2 + 256)); // samt den Rändern der Nachbarn
         const h = rx === 0 && rz === 0 ? st.hydrosphere : st.hydroTiles && st.hydroTiles.get(rx + "," + rz);
         if (!h || !h.ready || !Array.isArray(h.rivers))
             return { fehler: `die Kachel ${key} der Quell-Probe steht nicht` };
@@ -2286,7 +2284,7 @@ async function wasserQuelle(o = {}) {
                 beispiele.push(zeile);
         }
     }
-    const p50 = (A) => (A.length ? A.slice().sort((x, y) => x - y)[A.length >> 1] : 0);
+    const p50 = (A) => (A.length ? A.slice().sort((a, b) => a - b)[A.length >> 1] : 0);
     const h0 = huelleVon(st.hydrosphere)(0);
     return {
         quellen,
@@ -2351,7 +2349,7 @@ function quellTeileVereinen(teile) {
             fehler: `die Teile der Quell-Probe sehen verschiedene Kacheln (${abdruck(teile[0])} gegen ${abdruck(fremd)})`,
         };
     const R = wasserRund(2);
-    const p50 = (A) => (A.length ? A.slice().sort((x, y) => x - y)[A.length >> 1] : 0);
+    const p50 = (A) => (A.length ? A.slice().sort((a, b) => a - b)[A.length >> 1] : 0);
     const summe = (k) => teile.reduce((s, t) => s + (t[k] || 0), 0);
     const breiten0 = [].concat(...teile.map((t) => t.breiten0 || []));
     const tiefen0 = [].concat(...teile.map((t) => t.tiefen0 || []));
@@ -2399,7 +2397,7 @@ async function wasserBach(o = {}) {
     const bachOrt = Number.isFinite(o.x) && Number.isFinite(o.z) ? null : (await window.__wasserOrte({})).bach;
     const ZX = bachOrt ? bachOrt.x : o.x,
         ZZ = bachOrt ? bachOrt.z : o.z;
-    await window.__weltDa(() => !r._ensureHydroTilesAround(ZX, ZZ, BACH_PROBE_M + 256));
+    await __weltDa(() => !r._ensureHydroTilesAround(ZX, ZZ, BACH_PROBE_M + 256));
     const h = r._hydroFor(ZX, ZZ);
     if (!h || !h.ready || !Array.isArray(h.rivers)) return { fehler: "keine Hydrosphäre am Bach" };
     let rv = null,
@@ -2467,7 +2465,7 @@ async function wasserBach(o = {}) {
 // Pflanzen im Fenster (`__wasserFlora`).
 async function wasserSee(o = {}) {
     const f = o.fenster || (await window.__wasserOrte({})).see.fenster;
-    await window.__weltDa((r) => !r._ensureHydroTilesAround((f[0] + f[2]) / 2, (f[1] + f[3]) / 2, 256));
+    await __weltDa((r) => !r._ensureHydroTilesAround((f[0] + f[2]) / 2, (f[1] + f[3]) / 2, 256));
     const sicht = window.__wasserSichtNetz();
     const aus = sicht.fenster(f[0], f[1], f[2], f[3], o.d || 0.5);
     aus.fenster = f;
@@ -2573,7 +2571,7 @@ async function wasserBank(o = {}) {
     const ort = o.ort || (({ fluss }) => fluss && [fluss.x, fluss.z])(await window.__wasserOrte({}));
     if (!ort) return { fehler: "kein Fluss an der Mess-Wiese" };
     const rad = o.r || 240;
-    await window.__weltDa(() => !r._ensureHydroTilesAround(ort[0], ort[1], rad + 64));
+    await __weltDa(() => !r._ensureHydroTilesAround(ort[0], ort[1], rad + 64));
     const punkte = [];
     // Heimat-Region und Kacheln (der Fluss der Mess-Wiese liegt jenseits ±1024 m)
     const regionen = [h].concat(st.hydroTiles ? [...st.hydroTiles.values()].filter((t) => t && t.ready) : []);
@@ -2689,7 +2687,7 @@ async function wasserBank(o = {}) {
             else if (sw > 0.5) geroellV++;
         }
     }
-    const s = winkel.slice().sort((x, y) => x - y);
+    const s = winkel.slice().sort((a, b) => a - b);
     const q = (p) => (s.length ? s[Math.min(s.length - 1, Math.floor(p * s.length))] : 0);
     return {
         ort,
@@ -2928,7 +2926,7 @@ async function wasserKarte(o) {
     for (let v = 0; v < 400 && orte.length < o.n; v++) {
         const [x, z] = [zufall() * 12000 - 6000, zufall() * 12000 - 6000];
         if (orte.some(([a, b]) => Math.hypot(a - x, b - z) < 1500)) continue;
-        await window.__weltDa(() => !r._ensureHydroTilesAround(x, z, 300));
+        await __weltDa(() => !r._ensureHydroTilesAround(x, z, 300));
         const tief = (q, b = r._voxelSurfaceY(q.x, q.z)) => r._waterFlowAt(q.x, q.z) && r._atlasWaterLevelAt(q.x, q.z, b) - b >= 1.2;
         const P = o.fluss ? (r._hydroFor(x, z).rivers || []).flatMap((rv) => rv.points.slice(4, -4)).filter((q) => !q.inLake) : [];
         const p = o.fluss ? P.sort((a, b) => Math.hypot(a.x - x, a.z - z) - Math.hypot(b.x - x, b.z - z)).slice(0, 400).find((q) => tief(q)) : { x, z };
@@ -2969,7 +2967,7 @@ async function wasserLaeufe() {
     }
     for (const k of G.benannteSeen(L, -3072, -3072, 16, 385)) senken.set(k, ["see", -3072 + (k % 385) * 16, -3072 + ((k / 385) | 0) * 16]);
     for (const [ende, x, z] of senken.values()) {
-        await window.__weltDa(() => !r._ensureHydroTilesAround(x, z, 32));
+        await __weltDa(() => !r._ensureHydroTilesAround(x, z, 32));
         if ([[0, 0], [16, 0], [-16, 0], [0, 16], [0, -16]].some(([dx, dz]) => r._nassAt(x + dx, z + dz))) aus.nass++;
         else aus.trocken.push([ende, Math.round(x), Math.round(z)]);
     }
@@ -3051,14 +3049,14 @@ async function wasserOrte(o = {}) {
         return w > g ? w - g : -Infinity;
     };
     const aus = { mess: [MX, MZ], see: null, fluss: null, bach: null, kueste: null };
-    await window.__weltDa(() => !r._ensureHydroTilesAround(MX, MZ, 1024));
+    await __weltDa(() => !r._ensureHydroTilesAround(MX, MZ, 1024));
     // 1) der See
     const L = r._gelaende();
     const kand = G.benannteSeen(L, -12000, -12000, 64, 375)
         .map((k) => ({ x: -12000 + (k % 375) * 64, z: -12000 + ((k / 375) | 0) * 64 }))
         .sort((a, b) => Math.hypot(a.x - MX, a.z - MZ) - Math.hypot(b.x - MX, b.z - MZ));
     for (const k of kand) {
-        await window.__weltDa(() => !r._ensureHydroTilesAround(k.x, k.z, 0));
+        await __weltDa(() => !r._ensureHydroTilesAround(k.x, k.z, 0));
         const h = r._hydroFor(k.x, k.z);
         const lake = h && (h.lakes || []).find((l) => l.level > wl + 2 && l.cells && l.cells.length >= 16);
         if (!lake) continue;
@@ -3126,13 +3124,13 @@ async function wasserOrte(o = {}) {
                 const x = MX + R * Math.cos((k / n) * 2 * Math.PI);
                 const z = MZ + R * Math.sin((k / n) * 2 * Math.PI);
                 if (!(r._terrainMacroSurfaceY(x, z, false) < wl - 2)) continue;
-                await window.__weltDa(() => !r._ensureHydroTilesAround(x, z, 0));
+                await __weltDa(() => !r._ensureHydroTilesAround(x, z, 0));
                 const h = r._hydroFor(x, z);
                 if (h && h.ready && regionen.indexOf(h) < 0) regionen.push(h);
                 da = !!(h && h.water && h.water.waterKind && h.water.waterKind.indexOf(1) >= 0);
                 // die Küste ist breiter als eine Kachel: ihre Nachbarn gehören zur Suche nach der Tasche (unten)
                 if (da) {
-                    await window.__weltDa(() => !r._ensureHydroTilesAround(x, z, 1024));
+                    await __weltDa(() => !r._ensureHydroTilesAround(x, z, 1024));
                     for (const t of st.hydroTiles ? st.hydroTiles.values() : [])
                         if (t && t.ready && regionen.indexOf(t) < 0) regionen.push(t);
                 }

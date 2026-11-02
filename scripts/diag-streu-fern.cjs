@@ -55,10 +55,10 @@ hauptLauf(async () => {
 
     const out = await page.evaluate(async () => {
         const res = {};
-        await window.__weltDa();
+        await __weltDa();
         const AR = AnazhRealm;
         const f = r._ensureAssetFoundry();
-        await window.__weltDa(() => f && f.ready && f.recipes && AR._studioRenderConfig && AR._studioRenderConfig.lod);
+        await __weltDa(() => f && f.ready && f.recipes && AR._studioRenderConfig && AR._studioRenderConfig.lod);
         const cfg = AR._studioRenderConfig;
         const B = cfg && cfg.lod && cfg.lod.budget;
         res.buch = !!B;
@@ -88,7 +88,7 @@ hauptLauf(async () => {
         // der Takt der Streu wie im Spiel (`waldPlan` vor `scatterDeco`; ohne den Wald kommt die Zusage ihrer Bäume nie)
         const liste = [];
         try {
-            for (let ruhig = 0, letzt = -1, weiter = window.__deckel("die Streu-Zellen", 3000, false); ruhig < 20 && weiter(); ) {
+            for (let ruhig = 0, letzt = -1, weiter = __deckel("die Streu-Zellen", 3000, false); ruhig < 20 && weiter(); ) {
                 r._tickWaldPlan(Infinity);
                 r._tickScatterStreaming(pm);
                 const n = zellen();
@@ -121,7 +121,7 @@ hauptLauf(async () => {
         {
             let vor = -1,
                 gleich = 0;
-            for (const weiter = window.__deckel("die wartende Streu", 1200, false); weiter(); ) {
+            for (const weiter = __deckel("die wartende Streu", 1200, false); weiter(); ) {
                 r._tickScatterLod(pm, 64, 4000);
                 const w = wartend();
                 if (w === 0) break;
@@ -253,7 +253,7 @@ hauptLauf(async () => {
                     return o;
                 };
                 pm.set(ziel.x + 3, r._voxelSurfaceY(ziel.x + 3, ziel.z) + 1.8, ziel.z);
-                for (const weiter = window.__deckel("die Streu am Ziel", 900, false); weiter(); ) {
+                for (const weiter = __deckel("die Streu am Ziel", 900, false); weiter(); ) {
                     r._tickScatterLod(pm, 64, 4000);
                     const n = nahe();
                     if (n.fern === 0 && n.mesh > 0 && n.ohneSlots === 0) break;
@@ -277,7 +277,7 @@ hauptLauf(async () => {
                 // Totbands (an der Mess-Wiese −278/−1038 lag eine Mesh-Zelle 30–64 m vom Ziel, die Probe brach nach der
                 // Scheibe ab und zählte sie in B)
                 pm.set(heim.x, heim.y, heim.z);
-                for (const weiter = window.__deckel("die Absenz nach der Rückkehr", 900, false); weiter(); ) {
+                for (const weiter = __deckel("die Absenz nach der Rückkehr", 900, false); weiter(); ) {
                     r._tickScatterLod(pm, 64, 4000);
                     if (umZiel().mesh === 0 && absenz().n === 0) break;
                     await sleep(100);
@@ -340,7 +340,7 @@ hauptLauf(async () => {
         const fit = {};
         try {
             let satz = null;
-            for (const weiter = window.__deckel("der Gesetz-Fit des Gerölls", 600, false); weiter(); ) {
+            for (const weiter = __deckel("der Gesetz-Fit des Gerölls", 600, false); weiter(); ) {
                 satz = r._streuGesetzFit("geroell", 7);
                 if (satz && satz.length) break;
                 await sleep(100);
@@ -370,7 +370,7 @@ hauptLauf(async () => {
         const st1 = {};
         try {
             let flat = null;
-            for (const weiter = window.__deckel("das Flat des Gerölls", 600, false); weiter(); ) {
+            for (const weiter = __deckel("das Flat des Gerölls", 600, false); weiter(); ) {
                 flat = r._foundryFlattenFor({ seed: 7 }, "geroell", 0);
                 if (flat && flat.instanceable && flat.leaves && flat.leaves.length) break;
                 await sleep(100);
@@ -636,7 +636,7 @@ hauptLauf(async () => {
     await server.zeige(hPage, 60000);
     const h = await hPage.evaluate(async (KALT) => {
         const H = window.__buchHalt;
-        await window.__weltDa(() => H.zuSpaet || H.los);
+        await __weltDa(() => H.zuSpaet || H.los);
         const res = { zuSpaet: H.zuSpaet, halt: !!H.los };
         if (!H.los) return res;
         r._ensureAssetFoundry();
@@ -664,7 +664,7 @@ hauptLauf(async () => {
             for (let i = 0; i < 4; i++) r._gameLoopTick((tMs += 1000 / 60));
             await sleep(10);
         };
-        for (const weiter = window.__deckel("der kalte Takt ohne Buch", 12000); kalt < KALT && weiter(); ) await takt();
+        for (const weiter = __deckel("der kalte Takt ohne Buch", 12000); kalt < KALT && weiter(); ) await takt();
         res.kalt = kalt;
         res.buchKalt = !(r._foundry && r._foundry.recipes);
         res.fehlerKalt = fehler.splice(0);
@@ -674,12 +674,12 @@ hauptLauf(async () => {
             return Object.getPrototypeOf(r)._tickNahStreu.call(this, dl);
         };
         const k0 = kalt;
-        for (const weiter = window.__deckel("drei Takte der Selbstprobe", 6000); kalt < k0 + 3 && weiter(); ) await takt();
+        for (const weiter = __deckel("drei Takte der Selbstprobe", 6000); kalt < k0 + 3 && weiter(); ) await takt();
         delete r._tickNahStreu;
         res.selbst = fehler.splice(0);
         // Das Buch dockt: die Nah-Wiese liest jetzt ihr Budget und legt die vier Studio-Vorlagen (2 Gestalten × L1/L2).
         H.los();
-        for (const weiter = window.__deckel("die vier Vorlagen der Nah-Wiese", 12000); weiter(); ) {
+        for (const weiter = __deckel("die vier Vorlagen der Nah-Wiese", 12000); weiter(); ) {
             await takt();
             if (warm > 0 && st.nahWiese && st.nahWiese.vorlagen.size >= 4) break;
         }

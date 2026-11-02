@@ -1,7 +1,7 @@
 // diag-koerper-stand.cjs — DER KÖRPER STEHT, WO DAS AUGE IHN SIEHT (gate:koerper-stand, Klasse Q4): die Sim steht auf dem
 // Gesetz, die Sicht auf dem, was das Auge sieht.
 // Die Linse ruft die ECHTEN Pfade der Welt (headless, Null-Renderer — die Boden-Karte ist das Mesh des Workers):
-//   K1  MENSCH AUF DEM TRÄGER: der Spieler auf der Start-Plattform (der Kapsel-Schritt trägt ihn auf dem Bauwerk), Fuß-IK
+//   K1  MENSCH AUF DEM TRÄGER: der Spieler auf einem Bauwerk (der Kapsel-Schritt trägt ihn auf seiner Box), Fuß-IK
 //       im Stand → das Becken sinkt nicht (≤ 1 cm); im Sprung (Kapsel in der Luft) senkt kein Boden das Becken
 //   K2  MENSCH IN DER HÖHLE: der Spieler auf einem Höhlen-Boden (die Kapsel steht dort) → die Fuß-Probe liest diesen
 //       Boden (± 10 cm), nie die Oberkante der Säule darüber
@@ -251,9 +251,7 @@ async function proben(mitWiese, umfang) {
     const pm = s.playerMesh;
     const p = s.player;
     const takt = () => {
-        try {
-            r._gameLoopTick(performance.now());
-        } catch {}
+        __handTakt();
     };
     const rig = pm && pm.userData && pm.userData.rig;
     if (!rig || !rig.hips) return { fehler: "Spieler-Rig fehlt" };
@@ -289,8 +287,16 @@ async function proben(mitWiese, umfang) {
         }
     };
     const wpl = () => (pm.userData._gaitIK && pm.userData._gaitIK.wpl) || 1;
-    // ── K1 MENSCH AUF DEM TRÄGER (Start-Plattform) ──
+    // ── K1 MENSCH AUF DEM TRÄGER ── der Träger ist ein Bauwerk, das die Probe selbst unter den Spieler setzt (ein Felsblock,
+    // `stein_block`): der Genesis-Ort lässt seinen Ankunftskegel frei, die Start-Plattform fiel ganz (w4-genesis-ort-wirt) —
+    // bis hierher stand K1 auf ihr und urteilte nach ihrem Fall am Gelände (Träger 90,30 = der Grund). Nach K1 fällt der
+    // Block, der Spieler steht wieder am Start: K2–K7 messen die Welt ohne ihn.
     {
+        const { x, z } = pm.position;
+        const stell = (y) => pm.position.set(x, y + A.PLAYER_FOOT_OFFSET + 0.05, z);
+        const block = r.spawnArchitecture("stein_block", { x, y: r._voxelSurfaceY(x, z) + 0.5, z }, { silent: true });
+        await __gebautNach(block, { takt, max: 200 });
+        stell(Math.max(...block.blockerAABBs.map((b) => b.topY)));
         kapsel(30);
         o.k1 = { struktur: s._kapselStruktur === true, traeger: s._kapselTraegerY };
         // Bezug: die Becken-Höhe der Pose selbst (im Stand ohne Gang-Wippen `_baseHipY` — der Rig-Bezug, den
@@ -314,6 +320,9 @@ async function proben(mitWiese, umfang) {
         vy = 0;
         s._fieldVy = 0;
         kapsel(90);
+        r.removeArchitecture(block, { still: true });
+        stell(r._voxelSurfaceY(x, z));
+        kapsel(30);
         s.isInAir = air;
     }
     // ── K2 MENSCH IN DER HÖHLE ── (die Spalte unter ≥ 3 m Fels mit ≥ 3 m Luft, die nächste um den Spieler, in die der Leib
@@ -362,7 +371,7 @@ async function proben(mitWiese, umfang) {
                 hs.push(w.position.y - (w.userData._hopH || 0));
             }
             const bodenW = r._fieldSurfaceBelow(hoehle.x + 1.5, hoehle.boden + 1.0, hoehle.z, 3);
-            hs.sort((a, b) => a - b);
+            hs.sort(aufsteigend);
             o.k3 = { tierY: hs[hs.length >> 1], boden: bodenW };
             o.k3.abstandM = Number.isFinite(bodenW) ? Math.round(Math.abs(o.k3.tierY - bodenW) * 100) / 100 : null;
             r.removeCreature(w);
@@ -401,7 +410,7 @@ async function proben(mitWiese, umfang) {
             pm.position.set(start.x + ox, r._voxelSurfaceY(start.x + ox, start.z + oz) + 2, start.z + oz);
             mitte = { x: start.x + ox, z: start.z + oz };
             savedVel.setValue(0, 0, 0);
-            await window.__weltStehtNach(takt); // die Welt steht (das EINE Einschwingen, welt-boot)
+            await __weltStehtNach(takt); // die Welt steht (das EINE Einschwingen, welt-boot)
             s.playerVel = vel;
         }
         for (let dx = -60; dx <= 60; dx += 2)
@@ -457,7 +466,7 @@ async function proben(mitWiese, umfang) {
                 const mL = karte(c.position.x, c.position.z);
                 if (mL !== null) leib.push(Math.abs(c.position.y - mL));
             }
-            leib.sort((a, b) => a - b);
+            leib.sort(aufsteigend);
             o.k4 = { leibMedianCm: leib.length ? Math.round(leib[leib.length >> 1] * 1000) / 10 : null };
             // der Weg über den Hang: je Takt 0,12 m, der Sprung über die Neigung hinaus
             const kx = karte(hang.x + 1, hang.z) - hang.karte;
@@ -730,7 +739,7 @@ async function proben(mitWiese, umfang) {
         // Antwort des Weltbilds (`_weltbildLuecken`, Terme `pflanzung` und `streu`). Seit K69 pflanzt die Schlange des Walds im
         // Takt; die Ruhe der Chunks allein maß die Streu vor ihren Kronen (K69-2 N2: 209 Pflanzen neben dem Streifen, σ 0,155).
         const waldOffen = () => r._weltbildLuecken(true).some((l) => l.term === "pflanzung" || l.term === "streu");
-        await window.__weltStehtNach(() => (setz(), takt()));
+        await __weltStehtNach(() => (setz(), takt()));
         o.k7wald = !waldOffen();
         const C = r._voxelChunkConfig(0);
         // der Rand-Streifen in der Breite der Stufe (ein halber Schritt, K51: die Nah-Zone ist 3 × 3 — die Kacheln jeder Stufe
@@ -823,7 +832,7 @@ async function rollen(n) {
         } catch {}
     };
     const cm = (a, f) => {
-        const b = a.slice().sort((x, y) => x - y);
+        const b = a.slice().sort(aufsteigend);
         return b.length ? Math.round(b[Math.min(b.length - 1, Math.floor(f * b.length))] * 1000) / 10 : null;
     };
     const mass = (a) => ({ n: a.length, p95: cm(a.map(Math.abs), 0.95), median: cm(a, 0.5) });
@@ -888,7 +897,7 @@ async function rollen(n) {
             s._fixedSimPos = null;
             if (s.playerVel) s.playerVel.setValue(0, 0, 0);
         };
-        await window.__weltStehtNach(() => (setz(), takt()));
+        await __weltStehtNach(() => (setz(), takt()));
         const R = (o[ort] = {
             x: X,
             z: Z,
@@ -991,7 +1000,7 @@ async function rollen(n) {
             { x: P.x + 6, y: r._voxelSurfaceY(P.x + 6, P.z) + 0.5, z: P.z },
             { silent: true, precise: true, rotationY: auf - Math.PI }
         );
-        if (e) await window.__gebautNach(e, { takt, max: 200 });
+        if (e) await __gebautNach(e, { takt, max: 200 });
         if (e && e.instSlots && (r.mountArchitecture(e) || {}).ok) {
             for (let k = 0; k < 15; k++) takt();
             // je Takt die Blätter des Rads (`lf.rad` des Flats seiner Stufe, Slot i ↔ Blatt i): je Nabe der tiefste Vertex;
@@ -1237,10 +1246,8 @@ hauptLauf(async () => {
             if (inj) await page.evaluate(taeter, inj);
             // die Welt einschwingen: sie steht (das EINE Einschwingen, welt-boot `__weltStehtNach`)
             await page.evaluate(() =>
-                window.__weltStehtNach(() => {
-                    try {
-                        r._gameLoopTick(performance.now());
-                    } catch {}
+                __weltStehtNach(() => {
+                    __handTakt();
                 })
             );
             const o = k8

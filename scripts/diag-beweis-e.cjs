@@ -187,7 +187,7 @@ const SCHUSS_FN = async (kam) => {
         zahlen.zeile = String(r._analogEMetrologieZeile());
     } catch {}
     // WebGPU-Readback ist TOP-DOWN (diag-blick-Messwert)
-    return { ok: true, farben: set.size, nonzero, png: window.__png(u8, 640, 360), zahlen };
+    return { ok: true, farben: set.size, nonzero, png: __png(u8, 640, 360), zahlen };
 };
 
 hauptLauf(async () => {
@@ -202,10 +202,10 @@ hauptLauf(async () => {
 
     // ── 1: Boot + Settle + Mittag + Buch warm ──
     const boot = await page.evaluate(async () => {
-        await window.__weltDa(() => !(!r || !st));
+        await __weltDa(() => !(!r || !st));
         let stable = 0,
             last = -1;
-        for (const weiter = window.__deckel("der Ring der Ankunft", 600); weiter(); ) {
+        for (const weiter = __deckel("der Ring der Ankunft", 600); weiter(); ) {
             const sz = st.voxelChunks ? st.voxelChunks.size : 0;
             if (sz === last) stable++;
             else {
@@ -218,7 +218,7 @@ hauptLauf(async () => {
         const rend = st.renderer;
         if (!rend || rend._isHeadlessNull) return { fatal: "kein echter Renderer (WebGPU fiel aus)" };
         // Das Studio-Buch (Häuser/Bäume der Foundry) warm abwarten — begrenzt.
-        await window.__weltDa(() => !(r._foundry && !(r._foundry.ready && r._foundry.recipes)));
+        await __weltDa(() => !(r._foundry && !(r._foundry.ready && r._foundry.recipes)));
         // UPLOAD-LINSE: ein Upload, der mehr liest, als das Array trägt (in-place gewachsen über den GPU-Puffer, oder eine
         // offene updateRange über ein genulltes/kürzeres Array), sprengt queue.writeBuffer — die Linse nennt es beim Namen
         // (Objekt · Attribut · Bytes), statt dass der Schuss namenlos stirbt.
@@ -283,7 +283,7 @@ hauptLauf(async () => {
         let stable = 0,
             last = -1,
             takte = 0;
-        for (const weiter = window.__deckel("die Mess-Wiese", 4000); weiter(); ) {
+        for (const weiter = __deckel("die Mess-Wiese", 4000); weiter(); ) {
             try {
                 if (st.world) st.world.timeOfDay = 0.5;
                 r._gameLoopTick(performance.now());
@@ -417,11 +417,9 @@ hauptLauf(async () => {
         let lueckeTakte = 0,
             takte = 0;
         let fpSichtbarBei = null;
-        for (const weiter = window.__deckel("das Einschwingen des Wolfs", 3000); weiter(); ) {
+        for (const weiter = __deckel("das Einschwingen des Wolfs", 3000); weiter(); ) {
             setzeMittag();
-            try {
-                r._gameLoopTick(performance.now());
-            } catch {}
+            __handTakt();
             takte++;
             const fp = st.feldPass;
             const fpVis = !!(fp && fp.mesh && fp.mesh.visible);
@@ -547,7 +545,7 @@ hauptLauf(async () => {
                     Number.isFinite(ziel._lodLevel) &&
                     ziel._lodLevel > 0 &&
                     Math.hypot(ziel.position.x - kam.px, ziel.position.z - kam.pz) < 0.85 * L01;
-                for (const weiter = window.__deckel("die Stufen am Ziel", voll ? 18000 : 4800); weiter(); ) {
+                for (const weiter = __deckel("die Stufen am Ziel", voll ? 18000 : 4800); weiter(); ) {
                     try {
                         if (st.world) st.world.timeOfDay = 0.5;
                         r._gameLoopTick(performance.now());

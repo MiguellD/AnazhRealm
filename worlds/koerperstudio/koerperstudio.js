@@ -5,18 +5,19 @@ PD.prototype.update=function(dt){var f=(this.target-this.current)*this.kp-this.v
 var physBase={headY:{kp:28,kd:4.5},headX:{kp:28,kd:4.5},headZ:{kp:12,kd:2.5},spineY:{kp:30,kd:4.5},spineX:{kp:28,kd:4.5},spineZ:{kp:15,kd:3},chestY:{kp:45,kd:6},breath:{kp:38,kd:5},armLY:{kp:42,kd:6},armRY:{kp:42,kd:6},armLZ:{kp:48,kd:7},armRZ:{kp:48,kd:7},armLX:{kp:36,kd:5},armRX:{kp:36,kd:5},elbowL:{kp:65,kd:9},elbowR:{kp:65,kd:9},hipLY:{kp:40,kd:5.5},hipRY:{kp:40,kd:5.5},hipLX:{kp:45,kd:6},hipRX:{kp:45,kd:6},hipLZ:{kp:28,kd:4},hipRZ:{kp:28,kd:4},kneeL:{kp:70,kd:9},kneeR:{kp:70,kd:9},ankleL:{kp:55,kd:7},ankleR:{kp:55,kd:7},bicepR:{kp:55,kd:8},bicepL:{kp:55,kd:8},quadR:{kp:48,kd:6},quadL:{kp:48,kd:6},bodyX:{kp:32,kd:5},bodyZ:{kp:22,kd:4}};
 const phys={};for(var pk in physBase)phys[pk]=new PD(physBase[pk].kp,physBase[pk].kd);
 var bodyPhys={y:0,vy:0};var fistState={l:0,r:0};var palmState={l:0,r:0};var groundSmooth=0;
-// V18.491.162 — Lab IK L1/L2/standYBase ← labProportionen (EINE Quelle; cold-core byte-alt fallback = Loomis 6-KH)
-// V18.491.163 — Lab IK stand offsets footBelowAnkle/standYWalkMul/standYRunMul ← labProportionen
-// V18.491.164 — Lab coyote cold fail-soft 0.12→0.3 (was buffer twin; now = fx.bewegung.sprung.coyoteSec)
-const _LP=(window.__koerperCore&&typeof window.__koerperCore.labProportionen==='function'&&window.__koerperCore.labProportionen())||{};
-const _H=_LP.H||6,L1=_LP.thighLen||0.245*_H,L2=_LP.calfLen||0.246*_H,footBelowAnkle=isFinite(_LP.footBelowAnkle)?_LP.footBelowAnkle:0.30,standYBase=-((_LP.trochanterY!=null?_LP.trochanterY:0.530*_H)-footBelowAnkle),standYWalk=standYBase*(isFinite(_LP.standYWalkMul)?_LP.standYWalkMul:0.997),standYRun=standYBase*(isFinite(_LP.standYRunMul)?_LP.standYRunMul:0.83);
+// DIE PROPORTIONEN DES STUDIO-RIGS (die Beine des PD-Rigs, der Stand): labProportionen ist Kern-Pflicht — ein fehlendes Feld
+// bricht laut (die Loomis-Literale des kalten Kerns fielen mit w4-koerper-park)
+const _LP=window.__koerperCore.labProportionen();
+['H','thighLen','calfLen','footBelowAnkle','trochanterY','standYWalkMul','standYRunMul'].forEach(function(k){if(!isFinite(_LP[k]))throw new Error('Kern-Pflicht: koerper labProportionen.'+k);});
+const _H=_LP.H,L1=_LP.thighLen,L2=_LP.calfLen,footBelowAnkle=_LP.footBelowAnkle,standYBase=-(_LP.trochanterY-footBelowAnkle),standYWalk=standYBase*_LP.standYWalkMul,standYRun=standYBase*_LP.standYRunMul;
 function solveIK(ty,tz,l1,l2){var d=Math.sqrt(ty*ty+tz*tz);d=Math.max(Math.abs(l1-l2)+0.001,Math.min(d,l1+l2-0.001));var c=(d*d-l1*l1-l2*l2)/(2*l1*l2);c=Math.max(-1,Math.min(1,c));var kr=Math.acos(c);var hb=-Math.atan2(tz,-ty);var g=Math.atan2(l2*Math.sin(kr),l1+l2*Math.cos(kr));return{hip:hb-g,knee:kr};}
 function ankleYFromAngles(hx,kr){return -(L1+L2*Math.cos(kr))*Math.cos(hx)+L2*Math.sin(kr)*Math.sin(hx);}
 // DAS EINE GANG-GESETZ (K07): Takt, Fussweg, Tastgrad und Hub aus tetrapoda gangSchritt/gangFuss mit der Zweibeiner-Zeile
 // koerper-core fx.bewegung.gang -- dieselbe Formel, nach der Spieler, Peer, Bewohner und die Tiere gehen. Die Buehne traegt
-// ihre eigene Schwere (G_BUEHNE, Einheiten/s^2): die Froude-Zahl misst v gegen sie und die gebaute Beinlaenge; vMax faellt
-// (die Buehne kennt keine Lage-Spruenge). Fail-closed: ohne Kern kein Gang (kein Lab-Literal).
-var G_BUEHNE=44;
+// die Schwere der Welt im Mass des Gusses (G_BUEHNE, Einheiten/s^2: die Erd-Schwere LEIB.sprung.refG durch den Massstab der
+// Gelenk-Einheit): die Froude-Zahl misst v gegen sie und die gebaute Beinlaenge wie in der Welt; vMax faellt (die Buehne kennt
+// keine Lage-Spruenge). Fail-closed: ohne Kern kein Gang (kein Lab-Literal). Die Arcade-Schwere 44 fiel mit w4-koerper-park.
+var G_BUEHNE=window.__koerperCore.LEIB.sprung.refG/window.__koerperCore.leibMassstab();
 var _TC=window.__tetrapodaCore,_GZ0=window.__koerperCore.bewegung&&window.__koerperCore.bewegung.gang;
 // jedes Feld der Zeile ist Pflicht (fehlt eines, faehrt kein stiller Tier-Gang); das Becken traegt tetrapoda gangBecken
 if(!_TC||typeof _TC.gangSchritt!=='function'||typeof _TC.gangFuss!=='function'||typeof _TC.gangBecken!=='function'||typeof _TC.gangReich!=='function'||typeof _TC.gangPhaseHaelt!=='function'||!_GZ0||!['schrittBasis','schrittFroude','tastgrad','tastgradLauf','laufFroude','maxWinkel','hub','hubLauf','hubForm','beckenHub','rollWinkel','fersenAb','ballen','knoechel'].every(function(k){return isFinite(_GZ0[k]);}))throw new Error('Kern-Pflicht: tetrapoda gangSchritt/gangFuss/gangBecken/gangReich/gangPhaseHaelt + koerper fx.bewegung.gang');
@@ -27,15 +28,19 @@ function gangGesetz(v,Lg){var gs=_TC.gangSchritt(v,Lg,_GZ);return{cad:gs.omega/(
 // im spaeten Stand ueber den Ballen (tetrapoda gangRolle wie in der Welt): heb hebt den Knoechel, roll kippt die Sohle --
 // vorher drehte ein zweites Modell (anklePhase) den Knoechel nach eigener Kurve, ohne dass das Becken davon wusste.
 function gangFussStudio(ph,gs,sY,cs,Rk){var f=_TC.gangFuss(2*Math.PI*((ph+1-gs.tast)%1),gs.S,gs.tast,_GZ,Rk*cs,_TC.gangReich(L1+L2)*cs);return{y:sY+f.hub*gs.hubE/cs+f.heb/cs,z:f.dz/cs,heb:f.heb/cs,roll:f.roll};}
-// V18.491.157 — Lab emo.cur idle seed ← MOTION.idle (EINE Quelle; cold-core byte-alt fallback = core idle numbers)
-var emo={cur:Object.assign({},(window.__koerperCore&&window.__koerperCore.MOTION&&window.__koerperCore.MOTION.idle)||{headY:0,headX:0,headZ:0,spineY:0,spineX:0,spineZ:0,bodyX:0,bodyZ:0,armL:0,armR:0,armLX:0,armRX:0,elbowL:0.14,elbowR:0.14,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.042,sway:0.022,freq:1.25,kpMul:1.0,irisSpeed:0.3,blinkRate:0.5}),tgt:null,name:'idle',behTimer:0,behType:null,behStart:0,
+// der Ruhe-Stand des Studios aus MOTION.idle (Kern-Pflicht: das Literal des kalten Kerns fiel mit w4-koerper-park)
+if(!window.__koerperCore.MOTION||!window.__koerperCore.MOTION.idle)throw new Error('Kern-Pflicht: koerper MOTION.idle');
+// DAS TEMPO DES GANGS im Studio (Einheiten/s): das Gesetz der Welt — Gehen und Sprint der Seele (leibWerte der Dials) durch den
+// Massstab; die Arcade-Tempi (NINJA_FEEL 6 / 10,5 / 18) fielen mit w4-koerper-park
+function _tempoStudio(lauf){var W=window.__koerperCore.leibWerte(params);return (lauf?W.sprintSpeed:W.speed)/window.__koerperCore.leibMassstab();}
+var emo={cur:Object.assign({},window.__koerperCore.MOTION.idle),tgt:null,name:'idle',behTimer:0,behType:null,behStart:0,
 presets:window.__koerperCore.MOTION,   // BEWEGUNGS-PROFILE — das motion-Feld lebt im Kern (W-A6, EINE Quelle; emo.set kopiert je Wahl)
 set:function(name){this.tgt=Object.assign({},this.presets[name]);this.name=name;this.behTimer=0;this.behType=null;var sY=standYBase;if(name==='run')sY=standYRun;if(name==='fear')sY=standYBase*0.96;if(name==='sad')sY=standYBase*0.99;if(name!=='run'&&name!=='fight'&&name!=='pwalk'&&name!=='slide'){var zL=0,zR=0;var ikL=solveIK(sY,zL,L1,L2),ikR=solveIK(sY,zR,L1,L2);this.tgt.hipLX=ikL.hip;this.tgt.hipRX=ikR.hip;this.tgt.kneeL=ikL.knee;this.tgt.kneeR=ikR.knee;}},
 update:function(dt,t){if(!this.tgt)return;var c=this.cur,g=this.tgt,l=1-Math.exp(-3.1*dt);var keys=['headY','headX','headZ','spineY','spineX','spineZ','bodyX','bodyZ','armL','armR','armLX','armRX','elbowL','elbowR','hipLX','hipRX','hipLZ','hipRZ','kneeL','kneeR','breath','sway','freq','kpMul','irisSpeed','blinkRate'];for(var i=0;i<keys.length;i++)c[keys[i]]+=(g[keys[i]]-c[keys[i]])*l;this.behTimer+=dt;if(this.name==='idle'){var ib=['walk','walk','walk','lookaround','shift','breathe','glance','headtilt'];if(this.behTimer>2.5+Math.random()*3){this.behTimer=0;this.behType=ib[Math.floor(Math.random()*ib.length)];this.behStart=t;}}else if(this.name==='joy'){var jb=['dance','dance','jump','wave','spin','bounce','clap'];if(this.behTimer>2+Math.random()*2.5){this.behTimer=0;this.behType=jb[Math.floor(Math.random()*jb.length)];this.behStart=t;}}else if(this.name==='sad'){var sb=['wipetear','sigh','lookdown','droop','wilt'];if(this.behTimer>4+Math.random()*3){this.behTimer=0;this.behType=sb[Math.floor(Math.random()*sb.length)];this.behStart=t;}}else if(this.name==='angry'){var ab=['shout','clench','lunge','stomp','pound','glare'];if(this.behTimer>1.5+Math.random()*2){this.behTimer=0;this.behType=ab[Math.floor(Math.random()*ab.length)];this.behStart=t;}}else if(this.name==='fear'){var fb=['shrink','tremble','cower','flinch','cringe'];if(this.behTimer>1.2+Math.random()*1.5){this.behTimer=0;this.behType=fb[Math.floor(Math.random()*fb.length)];this.behStart=t;}}else if(this.name==='run'){this.behType='running';}else if(this.name==='pwalk'){this.behType='pwalking';}else if(this.name==='slide'){this.behType='sliding';}else if(this.name==='fight'){var fb2=['jab','cross','hook','guard','dodge','kick','combo'];if(this.behTimer>0.5+Math.random()*1.0){this.behTimer=0;this.behType=fb2[Math.floor(Math.random()*fb2.length)];this.behStart=t;}}else if(this.name==='showcase'){this.behType='showcase';}},
 getBeh:function(t){var m={headY:0,headX:0,headZ:0,spineY:0,spineX:0,spineZ:0,bodyX:0,bodyZ:0,armL:0,armR:0,armLX:0,armRX:0,elbowL:0,elbowR:0,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,ankleL:0,ankleR:0,breathBoost:1,jumpY:0,tensionBoost:0,mouthBoost:0,browBoost:0};var pt;function guardBase(m){var ikL=solveIK(standYBase,0.2,L1,L2),ikR=solveIK(standYBase,-0.2,L1,L2);m.armRZ=0.1;m.armLZ=0.1;m.armRX=-0.45;m.armLX=-0.45;m.elbowR=1.35;m.elbowL=1.35;m.hipLX=ikL.hip;m.hipRX=ikR.hip;m.hipLZ=-0.12;m.hipRZ=0.12;m.kneeR=ikR.knee;m.kneeL=ikL.knee;m.ankleR=0.05;m.ankleL=0.05;}
-if(this.behType==='walk'){var gs=gangGesetz(NINJA_FEEL.ctrlWalk,L1+L2),ph=(t*gs.cad)%1.0,pL=ph,pR=(ph+0.5)%1.0;var fL=gangFussStudio(pL,gs,standYWalk,1,_TC.gangReich(L1+L2)),fR=gangFussStudio(pR,gs,standYWalk,1,_TC.gangReich(L1+L2));var ikL=solveIK(fL.y,fL.z,L1,L2),ikR=solveIK(fR.y,fR.z,L1,L2);m.hipLX=ikL.hip;m.kneeL=ikL.knee;m.ankleL=fL.roll;m.hipRX=ikR.hip;m.kneeR=ikR.knee;m.ankleR=fR.roll;m.armLX=Math.cos(ph*2*Math.PI)*0.3;m.armRX=-Math.cos(ph*2*Math.PI)*0.3;m.elbowL=0.15+Math.abs(Math.cos(ph*2*Math.PI))*0.1;m.elbowR=0.15+Math.abs(Math.cos(ph*2*Math.PI+Math.PI))*0.1;m.spineY=Math.cos(ph*2*Math.PI)*0.05;m.bodyZ=Math.cos(ph*2*Math.PI+Math.PI/2)*0.02;m.jumpY=Math.abs(Math.sin(ph*2*Math.PI))*0.02;m.breathBoost=1.3;m.headY=Math.sin(ph*Math.PI)*0.04;m.tensionBoost=0.15;return m;}
-if(this.behType==='running'){var gs=gangGesetz(NINJA_FEEL.sprintSpd,L1+L2),ph=(t*gs.cad)%1.0,pL=ph,pR=(ph+0.5)%1.0;var fL=gangFussStudio(pL,gs,standYRun,1,_TC.gangReich(L1+L2)),fR=gangFussStudio(pR,gs,standYRun,1,_TC.gangReich(L1+L2));var ikL=solveIK(fL.y,fL.z,L1,L2),ikR=solveIK(fR.y,fR.z,L1,L2);m.hipLX=ikL.hip;m.kneeL=ikL.knee;m.ankleL=fL.roll;m.hipRX=ikR.hip;m.kneeR=ikR.knee;m.ankleR=fR.roll;var aS=Math.cos(ph*2*Math.PI);m.armLX=aS*1.25;m.armRX=-aS*1.25;m.armR=0.12;m.armL=0.12;m.elbowL=1.4+Math.max(0,aS)*0.55;m.elbowR=1.4+Math.max(0,-aS)*0.55;m.spineY=aS*0.26;m.headY=-aS*0.14;m.spineX=0.30;m.spineZ=aS*0.05;m.bodyX=0.18;m.bodyZ=-aS*0.06;m.jumpY=Math.pow(Math.abs(Math.sin(ph*2*Math.PI)),0.65)*0.30;m.breathBoost=2.0;m.headX=-0.08;m.tensionBoost=0.55;return m;}
-if(this.behType==='pwalking'){var gs=gangGesetz(NINJA_FEEL.walkSpd,L1+L2),ph=(t*gs.cad)%1.0,pL=ph,pR=(ph+0.5)%1.0;var fL=gangFussStudio(pL,gs,standYBase,1,_TC.gangReich(L1+L2)),fR=gangFussStudio(pR,gs,standYBase,1,_TC.gangReich(L1+L2));var ikL=solveIK(fL.y,fL.z,L1,L2),ikR=solveIK(fR.y,fR.z,L1,L2);m.hipLX=ikL.hip;m.kneeL=ikL.knee;m.ankleL=fL.roll;m.hipRX=ikR.hip;m.kneeR=ikR.knee;m.ankleR=fR.roll;var aS=Math.cos(ph*2*Math.PI);m.armLX=aS*0.42;m.armRX=-aS*0.42;m.armR=0.04;m.armL=0.04;m.elbowL=0.32+Math.max(0,aS)*0.15;m.elbowR=0.32+Math.max(0,-aS)*0.15;m.spineY=aS*0.09;m.headY=-aS*0.05;m.spineZ=aS*0.035;m.spineX=0.05;m.bodyX=0.04;m.bodyZ=-aS*0.035;m.jumpY=Math.pow(Math.abs(Math.sin(ph*2*Math.PI)),0.8)*0.055;m.breathBoost=1.3;m.headX=-0.03;m.tensionBoost=0.12;return m;}
+if(this.behType==='walk'){var gs=gangGesetz(_tempoStudio(false),L1+L2),ph=(t*gs.cad)%1.0,pL=ph,pR=(ph+0.5)%1.0;var fL=gangFussStudio(pL,gs,standYWalk,1,_TC.gangReich(L1+L2)),fR=gangFussStudio(pR,gs,standYWalk,1,_TC.gangReich(L1+L2));var ikL=solveIK(fL.y,fL.z,L1,L2),ikR=solveIK(fR.y,fR.z,L1,L2);m.hipLX=ikL.hip;m.kneeL=ikL.knee;m.ankleL=fL.roll;m.hipRX=ikR.hip;m.kneeR=ikR.knee;m.ankleR=fR.roll;m.armLX=Math.cos(ph*2*Math.PI)*0.3;m.armRX=-Math.cos(ph*2*Math.PI)*0.3;m.elbowL=0.15+Math.abs(Math.cos(ph*2*Math.PI))*0.1;m.elbowR=0.15+Math.abs(Math.cos(ph*2*Math.PI+Math.PI))*0.1;m.spineY=Math.cos(ph*2*Math.PI)*0.05;m.bodyZ=Math.cos(ph*2*Math.PI+Math.PI/2)*0.02;m.jumpY=Math.abs(Math.sin(ph*2*Math.PI))*0.02;m.breathBoost=1.3;m.headY=Math.sin(ph*Math.PI)*0.04;m.tensionBoost=0.15;return m;}
+if(this.behType==='running'){var gs=gangGesetz(_tempoStudio(true),L1+L2),ph=(t*gs.cad)%1.0,pL=ph,pR=(ph+0.5)%1.0;var fL=gangFussStudio(pL,gs,standYRun,1,_TC.gangReich(L1+L2)),fR=gangFussStudio(pR,gs,standYRun,1,_TC.gangReich(L1+L2));var ikL=solveIK(fL.y,fL.z,L1,L2),ikR=solveIK(fR.y,fR.z,L1,L2);m.hipLX=ikL.hip;m.kneeL=ikL.knee;m.ankleL=fL.roll;m.hipRX=ikR.hip;m.kneeR=ikR.knee;m.ankleR=fR.roll;var aS=Math.cos(ph*2*Math.PI);m.armLX=aS*1.25;m.armRX=-aS*1.25;m.armR=0.12;m.armL=0.12;m.elbowL=1.4+Math.max(0,aS)*0.55;m.elbowR=1.4+Math.max(0,-aS)*0.55;m.spineY=aS*0.26;m.headY=-aS*0.14;m.spineX=0.30;m.spineZ=aS*0.05;m.bodyX=0.18;m.bodyZ=-aS*0.06;m.jumpY=Math.pow(Math.abs(Math.sin(ph*2*Math.PI)),0.65)*0.30;m.breathBoost=2.0;m.headX=-0.08;m.tensionBoost=0.55;return m;}
+if(this.behType==='pwalking'){var gs=gangGesetz(_tempoStudio(false),L1+L2),ph=(t*gs.cad)%1.0,pL=ph,pR=(ph+0.5)%1.0;var fL=gangFussStudio(pL,gs,standYBase,1,_TC.gangReich(L1+L2)),fR=gangFussStudio(pR,gs,standYBase,1,_TC.gangReich(L1+L2));var ikL=solveIK(fL.y,fL.z,L1,L2),ikR=solveIK(fR.y,fR.z,L1,L2);m.hipLX=ikL.hip;m.kneeL=ikL.knee;m.ankleL=fL.roll;m.hipRX=ikR.hip;m.kneeR=ikR.knee;m.ankleR=fR.roll;var aS=Math.cos(ph*2*Math.PI);m.armLX=aS*0.42;m.armRX=-aS*0.42;m.armR=0.04;m.armL=0.04;m.elbowL=0.32+Math.max(0,aS)*0.15;m.elbowR=0.32+Math.max(0,-aS)*0.15;m.spineY=aS*0.09;m.headY=-aS*0.05;m.spineZ=aS*0.035;m.spineX=0.05;m.bodyX=0.04;m.bodyZ=-aS*0.035;m.jumpY=Math.pow(Math.abs(Math.sin(ph*2*Math.PI)),0.8)*0.055;m.breathBoost=1.3;m.headX=-0.03;m.tensionBoost=0.12;return m;}
 if(this.behType==='sliding'){m.hipRX=-0.55;m.kneeR=0.35;m.ankleR=0.18;m.hipLX=0.15;m.kneeL=1.75;m.ankleL=0.1;m.spineX=0.34;m.bodyX=0.20;m.spineY=0.12;m.spineZ=0.06;m.armRX=0.55;m.armLX=-0.30;m.armR=0.22;m.armL=0.16;m.elbowR=0.85;m.elbowL=0.55;m.headX=-0.30;m.headY=-0.06;m.breathBoost=1.5;m.tensionBoost=0.6;return m;}
 if(this.behType==='dance'){pt=t-this.behStart;if(pt>5){this.behType=null;return m;}var dT=pt*2.8;m.hipLZ=Math.sin(dT)*0.1;m.hipRZ=-Math.sin(dT)*0.1;m.bodyZ=Math.sin(dT)*0.08;m.spineY=Math.sin(dT*0.5)*0.1;m.spineZ=Math.sin(dT)*0.04;m.armL=0.3+Math.sin(dT)*0.2;m.armR=0.3-Math.sin(dT)*0.2;m.armLX=-0.2+Math.sin(dT*0.7)*0.15;m.armRX=-0.2+Math.sin(dT*0.7+Math.PI)*0.15;m.elbowL=0.4+Math.sin(dT*1.3)*0.2;m.elbowR=0.4+Math.sin(dT*1.3+Math.PI)*0.2;m.kneeL=0.1+Math.abs(Math.sin(dT))*0.1;m.kneeR=0.1+Math.abs(Math.sin(dT+Math.PI))*0.1;m.jumpY=Math.abs(Math.sin(dT*2))*0.03;m.mouthBoost=0.1;m.headY=Math.sin(dT*0.7)*0.1;m.headZ=Math.sin(dT)*0.04;return m;}
 if(this.behType==='wipetear'){pt=(t-this.behStart)/4;if(pt>=1){this.behType=null;return m;}if(pt<0.2){var i=pt/0.2;m.armR=0.35*i;m.armRX=-0.45*i;m.elbowR=1.0*i;m.headX=0.15+0.02*i;m.headY=0.02*i;}else if(pt<0.45){var i=(pt-0.2)/0.25;m.armR=0.35;m.armRX=-0.45;m.elbowR=1.0;m.headY=0.02+0.08*i;m.headX=0.17+0.03*i;}else if(pt<0.7){var i=(pt-0.45)/0.25;m.armR=0.35*(1-i);m.armRX=-0.45*(1-i);m.elbowR=1.0*(1-i);m.headY=0.1-0.1*i;m.headX=0.2-0.05*i;}return m;}
@@ -186,7 +191,12 @@ function gestaltNeu(){
   var z1=BZ[STUFEN[1]],seh=z1.wurf&&Array.isArray(z1.wurf.seh)?z1.wurf.seh:null;
   s0.liste.forEach(function(n){n.castShadow=BZ[STUFEN[0]].schatten===STUFEN[0];});
   s1.liste.forEach(function(n){n.castShadow=z1.schatten===STUFEN[1]&&(!seh||seh.indexOf(n.userData.__seh)>=0);});
-  gestalt={root:s0.baum.root,l0:s0.liste,l1:s1.liste,m1:s1.liste.map(function(n){return n.material;}).filter(function(mt,i,a){return a.indexOf(mt)===i;}),ab:z1.ab,hyst:BZ.hyst,istFern:null};
+  // DIE SOHLE DER RUHE-POSE (wie `sohleY` der Welt): die tiefste Fläche der L0 im Rahmen der Wurzel — der Spiel-Modus stellt sie
+  // auf den Fuß-Punkt des Leibs; das Skelett trägt die Kette des Lösers und das Volumen der Masse
+  var sohle=Infinity,bb=new THREE.Box3(),pAlt=character.position.clone(),rAlt=character.rotation.clone();character.position.set(0,0,0);character.rotation.set(0,0,0);s0.baum.root.updateMatrixWorld(true);
+  s0.liste.forEach(function(n){if(!n.geometry.boundingBox)n.geometry.computeBoundingBox();bb.copy(n.geometry.boundingBox).applyMatrix4(n.matrixWorld);if(bb.min.y<sohle)sohle=bb.min.y;});
+  character.position.copy(pAlt);character.rotation.copy(rAlt);s0.baum.root.updateMatrixWorld(true);
+  gestalt={root:s0.baum.root,l0:s0.liste,l1:s1.liste,m1:s1.liste.map(function(n){return n.material;}).filter(function(mt,i,a){return a.indexOf(mt)===i;}),ab:z1.ab,hyst:BZ.hyst,istFern:null,sk:s0.sk,sohleY:sohle};
   if(kosten){kosten.messen({traverse:function(f){s0.liste.forEach(f);}},STUFEN[0]);kosten.messen({traverse:function(f){s1.liste.forEach(f);}},STUFEN[1]);
     /* die Fern-Stufen zeigt das Labor nicht — die Leiste misst sie am Welt-Guss derselben Dials (eine Wegwerf-Gestalt) */
     STUFEN.slice(2).forEach(function(s){var g=BAKERS_BY_KIND.koerper(KC,'mensch',0,s,ov);g.traverse(function(n){if(n.isMesh)n.castShadow=BZ[s].schatten===s;});kosten.messen(g,s,true);});}
@@ -249,7 +259,10 @@ const clock=new THREE.Clock(); var blinkTimer=0;
 // DER TAKT DES LABORS: Emotion, Verhalten und PD-Federn treiben die GELENKE des Gusses (dieselben Namen liest der Stamm-Rig:
 // mensch · torso · head · arm/elbow/hand · hip/knee/ankle · Lider · Iris) — was die Welt nicht als Gelenk trägt (Atem-Skalen
 // der Brust, Muskel-Spannung, Finger-Faust, Brauen, Lippen), bewegt auch das Labor nicht mehr.
-function animate(){requestAnimationFrame(animate);var dt=1/60,t=clock.getElapsedTime();uZeit.value=t;cinePass.uniforms.time.value=t;controls.autoRotate=(emoMode==='showcase');if(!character){composer.render();return;}if(play.on)playInput(dt);emo.update(dt,t);var bm=emo.getBeh(t);var e=emo.cur;
+function animate(){requestAnimationFrame(animate);var dt=1/60,t=clock.getElapsedTime();uZeit.value=t;cinePass.uniforms.time.value=t;controls.autoRotate=(emoMode==='showcase');if(!character){composer.render();return;}
+// DAS SPIEL FÜHRT ALLEIN (Labor = Welt): der Schritt des EINEN Gesetzes, die Pose der Welt, die Kamera — das PD-Rig des Studios ruht
+if(play.on){playTakt(dt);stufeSchalten();composer.render();return;}
+emo.update(dt,t);var bm=emo.getBeh(t);var e=emo.cur;
 var targetY=bm.jumpY||0;var dy=targetY-bodyPhys.y;bodyPhys.vy+=dy*300*dt;bodyPhys.vy-=25*dt;bodyPhys.vy*=0.88;bodyPhys.y+=bodyPhys.vy*dt;if(bodyPhys.y<0){bodyPhys.y=0;if(bodyPhys.vy<0)bodyPhys.vy*=-0.15;}
 // V18.491.141 KPMUL_VIS.lab=pd-gain
 for(var k in phys){phys[k].kp=physBase[k].kp*e.kpMul;phys[k].kd=physBase[k].kd*e.kpMul;}
@@ -299,109 +312,8 @@ if(_blkPh<0.09){_blkPh+=dt;var _bf=Math.min(1,_blkPh/0.09);blink=_bf<0.45?1.0-(_
 if(lidTL)lidTL.scale.y=0.35*blink;if(lidTR)lidTR.scale.y=0.35*blink;
 var irisX=_gz.x*0.016+_pn(t,2.0+e.irisSpeed*2.0,22)*0.003;var irisY=_gz.y*0.010+_pn(t,1.6+e.irisSpeed*1.6,23)*0.002;if(irisL)irisL.position.set(irisX,irisY,0.08);if(irisR)irisR.position.set(irisX,irisY,0.08);
 if(contactShadow){var bh=bodyPhys.y+groundSmooth;contactShadow.material.opacity=0.35*Math.max(0.1,1-bh*2);contactShadow.scale.setScalar(3.0*Math.max(0.3,1+bh*0.5));}
-fxaa.uniforms['resolution'].value.set(1/innerWidth,1/innerHeight);if(play.on)playPhysics(dt);else controls.update();_poseGuard();stufeSchalten();composer.render();}
+fxaa.uniforms['resolution'].value.set(1/innerWidth,1/innerHeight);controls.update();_poseGuard();stufeSchalten();composer.render();}
 
-// ===================== PLAYABLE CHARACTER + NINJA-WARRIOR PARK =====================
-var FOOT=0.0;                                    // origin -> sole offset
-var parkBoxes=[],parkGroup=new THREE.Group();parkGroup.visible=false;scene.add(parkGroup);
-function pbox(cx,cy,cz,sx,sy,sz,col,wall){
-  var mesh=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),new THREE.MeshStandardMaterial({color:col,roughness:0.92,metalness:0.0}));
-  mesh.position.set(cx,cy,cz);mesh.castShadow=true;mesh.receiveShadow=true;parkGroup.add(mesh);
-  parkBoxes.push({cx:cx,cy:cy,cz:cz,sx:sx,sy:sy,sz:sz,maxY:cy+sy/2,minY:cy-sy/2,wall:!!wall});return mesh;}
-function buildPark(){
-  pbox(0,-0.5,20,80,1,96,0x363b47);                                    // floor (top y=0)
-  pbox(0,0.4,7,4.2,0.8,4.2,0x6f7d92); pbox(0,1.1,12.5,3.6,1.4,3.6,0x6f7d92);   // hop platforms
-  pbox(0,1.9,18,3.2,2.0,3.2,0x6f7d92); pbox(0,1.1,23.5,3.6,1.4,3.6,0x6f7d92);
-  pbox(0,0.5,29,5.5,1,4,0x7a86a0); pbox(0,1.3,32,5.5,1.6,3,0x7a86a0); pbox(0,2.1,34.5,5.5,2.4,3,0x7a86a0); // stairs
-  pbox(0,3.0,39,7,1,6,0x8a7d6b);                                       // high pad
-  pbox(0,5.2,43.6,7,3.4,1.1,0x596273,true);                            // CLIMB WALL
-  pbox(0,4.7,47.5,7,1,5,0x8a7d6b);                                     // ledge beyond wall
-  pbox(7.5,4.7,47.5,3.6,1,3.6,0x6b8f7d); pbox(12.5,5.7,49.5,3.2,1,3.2,0x6b8f7d); pbox(16.5,6.7,46.5,3.2,1,3.2,0x6b8f7d); // floating islands
-  pbox(-9,1.0,18,1.1,1,22,0x9a6b6b); pbox(-9,0.4,5,5,0.8,5,0x6f7d92);  // balance beam + pad
-  pbox(2.65,1.8,26.3,0.8,3.6,2.8,0x596273);pbox(-2.65,1.8,26.3,0.8,3.6,2.8,0x596273);pbox(0,4.15,26.3,6.1,1.1,2.8,0x596273); // CROUCH-TUNNEL (durchgang 3.6 hoch)
-  pbox(0,0.06,0.5,3.2,0.12,3.2,0x4f86c6);                              // startpad (blau)
-  pbox(0,3.56,39,2.4,0.12,2.4,0x37b98c); pbox(0,5.26,47.5,2.4,0.12,2.4,0x37b98c); // CHECKPOINTS (gruen)
-  pbox(16.5,7.26,46.5,2.8,0.12,2.8,0xd9a441);                          // FINISH (gold)
-}
-buildPark();
-var play={on:false,cam:'third',yaw:0,pitch:0.22,posY:0.05,vy:0,vx:0,vz:0,onGround:true,sprint:false,slide:0,touchWall:false,anim:'idle',faceYaw:0,gaitPhase:0,gaitAmt:0,prevSp:0,prevFace:0,camX:0,camY:5,camZ:-9,lookX:0,lookY:3,lookZ:0,coyote:0,jbuf:0,airJumps:1,djT:0,wjT:0,wallNX:0,wallNZ:1,wallT:0,landK:0,crouch:false,crB:0,fOffL:0,fOffR:0,fov:35,fovBase:35,run:'ready',t:0,best:0,cp:0,deaths:0,cpX:0,cpY:0.05,cpZ:0,cpFlash:0,smY:0.05,smV:0,susp:0};
-// V18.491.179 — NINJA_FEEL ← __koerperCore.NINJA_FEEL fail-soft (byte-alt local if core cold).
-// NINJA_VIS.lab=arcade-ninja / host=parkour-real — Do NOT Fake-merge arcade into Host parkour.
-// Lab-Didaktik (Arcade Ninja Park). Kern-Parkour bleibt realitätsgeeicht (jumpPower~2.6, wandAbstoss 3, kletterV 0.6 …).
-var _NF0={sprungVy:15.5,wandVy:14.5,wandKick:11,doppelVy:13.8,kletterVy:8.5,sprintSpd:18,walkSpd:10.5,crouchSpd:4.6,ctrlWalk:6.0};
-var _NFc=(window.__koerperCore&&window.__koerperCore.NINJA_FEEL)||null;
-var NINJA_FEEL={sprungVy:(_NFc&&Number.isFinite(_NFc.sprungVy))?_NFc.sprungVy:_NF0.sprungVy,wandVy:(_NFc&&Number.isFinite(_NFc.wandVy))?_NFc.wandVy:_NF0.wandVy,wandKick:(_NFc&&Number.isFinite(_NFc.wandKick))?_NFc.wandKick:_NF0.wandKick,doppelVy:(_NFc&&Number.isFinite(_NFc.doppelVy))?_NFc.doppelVy:_NF0.doppelVy,kletterVy:(_NFc&&Number.isFinite(_NFc.kletterVy))?_NFc.kletterVy:_NF0.kletterVy,sprintSpd:(_NFc&&Number.isFinite(_NFc.sprintSpd))?_NFc.sprintSpd:_NF0.sprintSpd,walkSpd:(_NFc&&Number.isFinite(_NFc.walkSpd))?_NFc.walkSpd:_NF0.walkSpd,crouchSpd:(_NFc&&Number.isFinite(_NFc.crouchSpd))?_NFc.crouchSpd:_NF0.crouchSpd,ctrlWalk:(_NFc&&Number.isFinite(_NFc.ctrlWalk))?_NFc.ctrlWalk:_NF0.ctrlWalk};
-var _bew=(window.__koerperCore&&window.__koerperCore.bewegung)||null;
-var _KAM=window.__koerperCore.bewegung.kamera;   // K06 — DER LEIB DER KAMERA: armRadiusM (die Kugel) + armRuhe (die Glaettung) aus fx.bewegung.kamera, fail-closed (kein Lab-Literal)
-// die Strecke p + d*t (t 0..1) gegen die Park-Box b, um r aufgeblasen: der Eintritt t, Infinity ohne Schnitt (Slab)
-function _kamSeg(px,py,pz,dx,dy,dz,b,r){var P=[px,py,pz],D=[dx,dy,dz],lo=[b.cx-b.sx/2-r,b.minY-r,b.cz-b.sz/2-r],hi=[b.cx+b.sx/2+r,b.maxY+r,b.cz+b.sz/2+r],t0=0,t1=1;for(var a=0;a<3;a++){if(Math.abs(D[a])<1e-9){if(P[a]<lo[a]||P[a]>hi[a])return Infinity;continue;}var u=(lo[a]-P[a])/D[a],v=(hi[a]-P[a])/D[a];if(u>v){var q=u;u=v;v=q;}if(u>t0)t0=u;if(v<t1)t1=v;if(t0>t1)return Infinity;}return t0;}
-// der Punkt steht frei: in keiner Park-Box, um r aufgeblasen
-function _kamFrei(x,y,z,r){for(var i=0;i<parkBoxes.length;i++){var b=parkBoxes[i];if(x>b.cx-b.sx/2-r&&x<b.cx+b.sx/2+r&&y>b.minY-r&&y<b.maxY+r&&z>b.cz-b.sz/2-r&&z<b.cz+b.sz/2+r)return false;}return true;}
-var _coy=(_bew&&_bew.sprung&&Number.isFinite(_bew.sprung.coyoteSec))?_bew.sprung.coyoteSec:0.3;  // V18.491.164 — coyote cold was buffer twin; now matches fx.bewegung.sprung.coyoteSec
-var _jbuf0=(_bew&&_bew.sprung&&Number.isFinite(_bew.sprung.bufferSec))?_bew.sprung.bufferSec:0.12;
-var keys={};
-function setAnim(n){if(play.anim!==n){play.anim=n;emoMode=n;emo.set(n);}}
-addEventListener('keydown',function(ev){if(!play.on)return;keys[ev.code]=true;
-  if(ev.code==='KeyC')play.cam=(play.cam==='third')?'fps':'third';
-  if(ev.code==='Escape')exitPlay();
-  if(ev.code==='Space'&&!ev.repeat)play.jbuf=_jbuf0;                                  // JUMP BUFFER — Kern fx.bewegung.sprung.bufferSec (fail-soft 0.12)
-  if(ev.code==='KeyR'&&play.on)resetRun();
-  if(ev.code==='ControlLeft'&&play.onGround&&play.slide<=0){var sp=Math.hypot(play.vx,play.vz);if(sp>7.0){play.vx=play.vx/sp*21;play.vz=play.vz/sp*21;play.slide=0.68;play.crouch=false;}}
-  if(['KeyW','KeyA','KeyS','KeyD','Space','ShiftLeft','ControlLeft'].indexOf(ev.code)>=0)ev.preventDefault();});
-addEventListener('keyup',function(ev){keys[ev.code]=false;if(ev.code==='Space'&&play.on&&play.vy>7.5)play.vy=7.5+(play.vy-7.5)*0.42;});  // VARIABLE SPRUNGHOEHE: frueh loslassen = kuerzer
-document.addEventListener('mousemove',function(ev){if(!play.on||document.pointerLockElement!==renderer.domElement)return;
-  play.yaw-=ev.movementX*0.0024;play.pitch=Math.max(-0.85,Math.min(0.85,play.pitch-ev.movementY*0.0022));});
-function enterPlay(){play.on=true;controls.enabled=false;parkGroup.visible=true;emoMode='play';
-  character.position.set(0,0.05,0);character.rotation.set(0,0,0);play.posY=0.05;play.vy=0;play.vx=0;play.vz=0;play.yaw=0;play.faceYaw=0;play.onGround=true;
-  document.getElementById('ui').style.display='none';document.getElementById('playHint').style.display='block';document.getElementById('hud').style.display='block';
-  play.fovBase=camera.fov;play.fov=camera.fov;resetRun();play.airJumps=1;play.landK=0;play.crB=0;play.crouch=false;play.jbuf=0;
-  setAnim('idle');renderer.domElement.requestPointerLock();}
-function exitPlay(){play.on=false;controls.enabled=true;parkGroup.visible=false;
-  if(headGroup)headGroup.visible=true;if(typeof hairGroup!=='undefined'&&hairGroup)hairGroup.visible=true;
-  character.position.set(0,0,0);character.rotation.set(0,0,0);
-  document.getElementById('ui').style.display='';document.getElementById('playHint').style.display='none';document.getElementById('hud').style.display='none';camera.fov=play.fovBase;camera.updateProjectionMatrix();
-  if(document.pointerLockElement)document.exitPointerLock();emoMode='idle';emo.set('idle');controls.target.set(0,trochanterY,0);controls.update();}
-renderer.domElement.addEventListener('click',function(){if(play.on&&document.pointerLockElement!==renderer.domElement)renderer.domElement.requestPointerLock();});
-document.getElementById('btnPlay').addEventListener('click',enterPlay);
-function inXZ(x,z,b,r){return x>b.cx-b.sx/2-r&&x<b.cx+b.sx/2+r&&z>b.cz-b.sz/2-r&&z<b.cz+b.sz/2+r;}
-function footSupOff(x,z,ref){var s=-1e9;for(var i=0;i<parkBoxes.length;i++){var b=parkBoxes[i];if(inXZ(x,z,b,0.10)&&b.maxY<=ref+1.15&&b.maxY>s)s=b.maxY;}
-  return s<-1e8?-0.55:_clamp(s-ref,-0.85,0.85);}                                       // fuss ueber leere -> baumelt; sonst delta zum center-support
-var CPS=[{x:0,y:3.62,z:39,r:2.6},{x:0,y:5.32,z:47.5,r:2.6}],FIN={x:16.5,y:7.32,z:46.5,r:2.2};
-function resetRun(){play.run='ready';play.t=0;play.cp=0;play.deaths=0;play.cpX=0;play.cpY=0.05;play.cpZ=0;play.posY=0.05;play.vx=0;play.vy=0;play.vz=0;play.landK=0;play.fOffL=0;play.fOffR=0;play.smY=0.05;play.smV=0;play.susp=0;character.position.set(0,0.05,0);play.faceYaw=play.yaw;}
-function runUpdate(dt){if(play.run==='running')play.t+=dt;
-  if(play.run==='ready'&&character.position.z>2.5){play.run='running';play.t=0;}
-  if(play.onGround&&play.run==='running'){var fy=play.posY-FOOT;
-    if(play.cp<CPS.length){var c=CPS[play.cp];if(Math.hypot(character.position.x-c.x,character.position.z-c.z)<c.r&&Math.abs(fy-c.y)<1.2){play.cpX=c.x;play.cpY=c.y+FOOT+0.05;play.cpZ=c.z;play.cp++;play.cpFlash=1.2;}}
-    if(Math.hypot(character.position.x-FIN.x,character.position.z-FIN.z)<FIN.r&&Math.abs(fy-FIN.y)<1.2){play.run='done';if(!play.best||play.t<play.best)play.best=play.t;}}
-  play.cpFlash=Math.max(0,play.cpFlash-dt);
-  var h=document.getElementById('hud');if(h&&play.on){var s=play.run==='done'?('ZIEL! '+play.t.toFixed(2)+'s'+(play.best?'  \u00b7  best '+play.best.toFixed(2)+'s':'')+'  \u00b7  R = neuer run'):((play.run==='running'?play.t.toFixed(2)+'s':'bereit')+'  \u00b7  cp '+play.cp+'/'+CPS.length+(play.deaths?'  \u00b7  \u2620 '+play.deaths:'')+(play.best?'  \u00b7  best '+play.best.toFixed(2)+'s':''));
-    if(h.textContent!==s)h.textContent=s;h.style.background=play.cpFlash>0?'rgba(40,160,110,0.88)':(play.run==='done'?'rgba(190,150,30,0.88)':'rgba(10,12,18,0.82)');}}
-function playInput(dt){
-  play.coyote=play.onGround?_coy:Math.max(0,play.coyote-dt);                            // COYOTE — Kern fx.bewegung.sprung.coyoteSec (fail-soft 0.3)
-  play.jbuf=Math.max(0,play.jbuf-dt);play.wallT=Math.max(0,play.wallT-dt);
-  if(play.slide>0){ play.slide-=dt; var sk=Math.pow(0.43,dt); play.vx*=sk; play.vz*=sk; if(play.slide<=0){play.vx*=0.72;play.vz*=0.72;} return; }
-  var fx=Math.sin(play.yaw),fz=Math.cos(play.yaw),rx=-Math.cos(play.yaw),rz=Math.sin(play.yaw);   // right = cross(forward,up): A/D korrekt
-  var mf=(keys['KeyW']?1:0)-(keys['KeyS']?1:0),ms=(keys['KeyD']?1:0)-(keys['KeyA']?1:0);
-  play.sprint=!!keys['ShiftLeft']; var moving=(mf||ms),sp0=Math.hypot(play.vx,play.vz);
-  play.crouch=!!keys['ControlLeft']&&play.onGround&&play.slide<=0&&sp0<=7.0;          // HOLD-CROUCH (Apex: slide chained in crouch)
-  // Ninja arcade speeds (NINJA_FEEL 15.5/18/…) bleiben Lab-Didaktik; Kern-Parkour realitätsgeeicht — Feel-Entscheid = eigene Welle.
-  var spd=play.crouch?NINJA_FEEL.crouchSpd:(keys['ControlLeft']?NINJA_FEEL.ctrlWalk:(play.sprint?NINJA_FEEL.sprintSpd:NINJA_FEEL.walkSpd));
-  var tx=fx*mf+rx*ms,tz=fz*mf+rz*ms,L=Math.hypot(tx,tz);if(L>0){tx/=L;tz/=L;}
-  var ka=play.onGround?((L>0)?(1-Math.pow(0.002,dt)):(1-Math.pow(0.00008,dt))):(1-Math.pow(0.18,dt));  // MOMENTUM zwei-raten: sanft ran (flow), knackig stoppen, luft traege
-  play.vx+=(tx*spd-play.vx)*ka; play.vz+=(tz*spd-play.vz)*ka;
-  if(moving)play.faceYaw=Math.atan2(play.vx,play.vz);
-  if(play.jbuf>0){
-    if(play.coyote>0){play.vy=NINJA_FEEL.sprungVy;play.onGround=false;play.coyote=0;play.jbuf=0;play.crouch=false;} // gepufferter bodensprung (Lab-Didaktik)
-    else if(play.wallT>0&&mf<=0){play.vy=NINJA_FEEL.wandVy;play.vx=play.wallNX*NINJA_FEEL.wandKick+play.vx*0.25;play.vz=play.wallNZ*NINJA_FEEL.wandKick+play.vz*0.25; // WANDSPRUNG
-      play.faceYaw=Math.atan2(play.vx,play.vz);play.wjT=0.34;play.jbuf=0;play.wallT=0;}
-    else if(play.airJumps>0){play.airJumps--;play.vy=Math.max(play.vy+2.5,NINJA_FEEL.doppelVy);play.djT=0.42;play.jbuf=0;} // DOPPELSPRUNG (tuck)
-  }
-  if(play.touchWall&&keys['Space']&&mf>0&&!play.onGround)play.vy=Math.max(play.vy,NINJA_FEEL.kletterVy);
-}
-// ---- PROCEDURAL BIOMECHANICAL LOCOMOTION: gait emerges from speed; IK feet; accel-lean; turn-bank ----
-function _clamp(x,a,b){return x<a?a:(x>b?b:x);}
-function _mix(a,b,t){return a+(b-a)*t;}
-function _setArm(sd,rx,rz,elb){var a=parts['arm'+sd],e=parts['elbow'+sd];if(a){a.rotation.x=a.userData.baseRotX+rx;a.rotation.z=a.userData.baseRotZ+(sd==='1'?rz:-rz);}if(e)e.rotation.x=-elb;}
 // GELENK-LIMITS (profi-rigging: "careful rigging"/joint limits): laeuft NACH jeder posen-quelle
 // (emotion, kampf-combo, ninja-modus) und erzwingt anatomische envelopes -> der arm kann nicht
 // mehr durch den eigenen torso, das knie nicht in den gegenschenkel. selbstkollision wird an der
@@ -446,139 +358,503 @@ function _poseGuard(){
       if(pen<=0.005)break;
       a.rotation.z+=s*pen*0.9;                            // abduktion oeffnet den kuerzesten weg nach draussen
       a.updateMatrixWorld(true);}});}                     // nur den arm-teilbaum nachziehen (parent-matrizen sind frisch)
-function playGait(dt,t){
-  var sp=Math.hypot(play.vx,play.vz),P=parts;
-  if(play.slide>0){                                   // POWER-SLIDE pose
-    P['hip1'].rotation.set(-0.55,0,0.04);P['knee1'].rotation.x=0.35;P['ankle1'].rotation.x=0.18;
-    P['hip-1'].rotation.set(0.15,0,-0.04);P['knee-1'].rotation.x=1.75;P['ankle-1'].rotation.x=0.1;
-    parts.torso.rotation.set(0.34,0.12,0.06);character.rotation.x=0.20;character.rotation.z*=0.85;
-    _setArm('1',0.55,0.22,0.85);_setArm('-1',-0.30,0.16,0.55);headGroup.rotation.set(-0.30,-0.06,0);
-    character.position.y=play.posY+(footBelowAnkle-trochanterY-Math.min(ankleYFromAngles(-0.55,0.35),ankleYFromAngles(0.15,1.75)));
-    play.prevSp=sp;play.prevFace=play.faceYaw;return;
-  }
-  if(!play.onGround){                                 // AIRBORNE (leap/jump) — legs read vertical velocity
-    var fl=_clamp(play.vy*0.035,-0.5,0.5);
-    P['hip1'].rotation.set(-0.42+fl,0,0.05);P['knee1'].rotation.x=0.75-fl*0.5;P['ankle1'].rotation.x=0.1;
-    P['hip-1'].rotation.set(0.22-fl,0,-0.05);P['knee-1'].rotation.x=0.5+fl*0.5;P['ankle-1'].rotation.x=0.0;
-    parts.torso.rotation.set(0.10+fl*0.1,0,0);character.rotation.x=0.06;character.rotation.z*=0.9;
-    _setArm('1',-0.55,0.15,0.9);_setArm('-1',-0.75,0.15,0.9);headGroup.rotation.set(-0.05,0,0);
-    if(play.djT>0){var tk=Math.sin(_clamp(play.djT/0.42,0,1)*Math.PI);play.djT-=dt;   // DOPPELSPRUNG-TUCK
-      P['hip1'].rotation.x-=1.05*tk;P['hip-1'].rotation.x-=1.05*tk;P['knee1'].rotation.x+=1.35*tk;P['knee-1'].rotation.x+=1.35*tk;
-      parts.torso.rotation.x+=0.38*tk;_setArm('1',-0.9*tk-0.4,0.5*tk+0.15,1.6*tk+0.6);_setArm('-1',-0.9*tk-0.4,0.5*tk+0.15,1.6*tk+0.6);headGroup.rotation.x+=0.25*tk;}
-    if(play.wjT>0){var wk=_clamp(play.wjT/0.34,0,1);play.wjT-=dt;                      // WANDSPRUNG-KICK
-      parts.torso.rotation.y+=0.35*wk;parts.torso.rotation.x+=0.12*wk;P['knee-1'].rotation.x+=0.8*wk;P['hip1'].rotation.x-=0.4*wk;_setArm('1',-1.3*wk-0.3,0.35*wk+0.15,0.7);}
-    character.position.y=play.posY+(footBelowAnkle-trochanterY-ankleYFromAngles(0.22,0.5));
-    play.prevSp=sp;play.prevFace=play.faceYaw;return;
-  }
-  // CONTINUOUS GAIT — one system, walk<->run by speed (no discrete states)
-  var ga=_clamp(sp/16,0,1);play.gaitAmt+=(ga-play.gaitAmt)*(1-Math.pow(0.0018,dt));var g=play.gaitAmt;
-  var moveB=_clamp(sp/2.2,0,1);                        // 0 idle -> 1 striding
-  var cb=play.crB=play.crB+((play.crouch?1:0)-play.crB)*(1-Math.pow(0.0008,dt));      // crouch-blend
-  var lk=play.landK,cs=character.scale.x||1;
-  // DAS GANG-GESETZ (K07): Takt, Fussweg, Tastgrad und Hub aus der gebauten Beinlaenge (geduckt die gebeugte: der Schritt
-  // wird kuerzer und schneller, statt zu gleiten); die Huefte sinkt, wo der Fussweg sonst die Reichweite des Beins sprengt
-  var gs=gangGesetz(sp,(L1+L2)*cs*_mix(1,0.66,cb)),duty=gs.tast;
-  gs.hubE=gs.hubE/_mix(1,0.66,cb);                     // der Hub misst am gestreckten Bein: die Bodenfreiheit hockt nicht mit
-  // DER STEHENDE FUSS HAELT (K07, tetrapoda gangPhaseHaelt wie in der Welt): aendert sich die Zeile, behaelt das stehende
-  // Bein sein Fuss-Ziel; aus dem Stand setzt das naehere Bein in der Mitte seines Stands ein (die Phase zaehlt ab dem Aufsetzen)
-  var g0=play._gs,S0=g0&&g0.S>0?g0.S:0,t0=g0?g0.tast:gs.tast;
-  if(gs.omega>0&&(!S0||Math.abs(S0-gs.S)>1e-9||t0!==gs.tast)){var u1=_TC.gangPhaseHaelt(2*Math.PI*(play.gaitPhase+1-t0),S0,t0,gs.S,gs.tast);play.gaitPhase=((u1/(2*Math.PI)-1+gs.tast)%1+1)%1;}
-  play._gs=gs.omega>0?gs:null;
-  play.gaitPhase=(play.gaitPhase+gs.cad*dt)%1;var ph=play.gaitPhase,T=Math.PI*2,aS=Math.cos(ph*T);
-  var standY=standYBase*(1-g*0.16);
-  standY=_mix(standY,standYBase*0.66,cb);                                               // crouch-tiefe
-  // DAS BECKEN DES GESETZES (K07): tetrapoda gangBecken wie in der Welt -- nur die stehenden Fuesse senken es, an der
-  // Reichweite R der (geduckt gebeugten) Kette; im Lauf federt das Bein, in der Flugphase steigt der Leib ballistisch
-  var Rk=_TC.gangReich((L1+L2)*_mix(1,0.66,cb)),phG=2*Math.PI*((ph+1-gs.tast)%1);
-  standY=_mix(standY,-(Rk-_TC.gangBecken(phG,gs.S/cs,gs.tast,Rk,gs.omega,_GZ,cs,_TC.gangReich(L1+L2))),moveB)+lk*0.95;   // + LANDE-KOMPRESSION
-  var pL=ph,pR=(ph+0.5)%1;
-  var fL=gangFussStudio(pL,gs,standY,cs,Rk),fR=gangFussStudio(pR,gs,standY,cs,Rk);
-  // PER-FOOT GROUND-ADAPTIVE IK (Uncharted-stil): jeder fuss sampelt seinen support an seiner geplanten XZ
-  var yw=character.rotation.y,sYw=Math.sin(yw),cYw=Math.cos(yw),ppx=character.position.x,ppz=character.position.z,cSup=play.posY-FOOT;
-  var dfL=footSupOff(ppx+(-0.52)*cYw+fL.z*sYw,ppz-(-0.52)*sYw+fL.z*cYw,cSup),dfR=footSupOff(ppx+(0.52)*cYw+fR.z*sYw,ppz-(0.52)*sYw+fR.z*cYw,cSup);
-  play.fOffL+=_clamp(dfL-play.fOffL,-6*dt,6*dt);play.fOffR+=_clamp(dfR-play.fOffR,-6*dt,6*dt);  // slew-limit gegen pops
-  fL.y+=play.fOffL+play.susp;fR.y+=play.fOffR+play.susp;                              // feder von den BEINEN geschluckt: koerper=smY, sohlen=support
-  var ikL=solveIK(fL.y,fL.z,L1,L2),ikR=solveIK(fR.y,fR.z,L1,L2);
-  var stL=solveIK(standY+play.fOffL+play.susp,0,L1,L2),stR=solveIK(standY+play.fOffR+play.susp,0,L1,L2);   // auch im STAND per-fuss (idle auf treppe)
-  var hipR=_mix(stR.hip,ikR.hip,moveB),knR=_mix(stR.knee,ikR.knee,moveB),ankR=-(hipR+knR)+_mix(0,fR.roll,moveB);  // ankle WELT-referenziert: sohle flach + Abrollen des Gesetzes
-  var hipL=_mix(stL.hip,ikL.hip,moveB),knL=_mix(stL.knee,ikL.knee,moveB),ankL=-(hipL+knL)+_mix(0,fL.roll,moveB);
-  // die Beine haengen lotrecht unter dem geneigten Leib (die Neigung nick dreht sonst den Fussweg: der Stand-Fuss stieg 0,24 E)
-  var accel=_clamp((sp-play.prevSp)/Math.max(dt,1e-3)*0.010,-0.10,0.16),nick=g*0.16+accel;
-  P['hip1'].rotation.set(hipR-nick,0,0.05);P['knee1'].rotation.x=knR;P['ankle1'].rotation.x=ankR;
-  P['hip-1'].rotation.set(hipL-nick,0,-0.05);P['knee-1'].rotation.x=knL;P['ankle-1'].rotation.x=ankL;
-  var armAmp=(0.12+g*1.15)*moveB;
-  _setArm('1',-aS*armAmp,(0.05+g*0.10)*moveB,0.15+moveB*(g*0.9+Math.max(0,-aS)*0.45*g));
-  _setArm('-1', aS*armAmp,(0.05+g*0.10)*moveB,0.15+moveB*(g*0.9+Math.max(0, aS)*0.45*g));
-  var turn=_clamp(((((play.faceYaw-play.prevFace+Math.PI)%T)+T)%T-Math.PI)/Math.max(dt,1e-3)*0.05,-0.22,0.22);
-  if(lk>0.25){_setArm('1',-0.7*lk,0.3*lk+0.05,0.9*lk+0.2);_setArm('-1',-0.7*lk,0.3*lk+0.05,0.9*lk+0.2);}   // arme fangen den aufprall
-  parts.torso.rotation.set(g*0.30+cb*0.24+lk*0.35+play.susp*0.30, aS*g*0.22*moveB, aS*(0.03+g*0.04)*moveB + Math.sin(t*0.8)*0.01*(1-moveB));
-  character.rotation.x=nick; character.rotation.z=-turn*moveB;
-  headGroup.rotation.set(-0.03-g*0.07-cb*0.10-lk*0.18-play.susp*0.12, -aS*g*0.13*moveB, 0);
-  if(play.cam==='third'){var dh=((play.yaw-yw+Math.PI)%T+T)%T-Math.PI;headGroup.rotation.y+=_clamp(dh,-0.6,0.6)*0.38*(1-g*0.4);}      // HEAD-LOOK zur kamera (TLOU)
-  var wS=1-moveB,wR=(pR<duty?1:wS),wL=(pL<duty?1:wS);                                 // stance-gewichteter pelvis-plant: der Schwung-Fuss traegt nie
-  var cR=play.fOffR+footBelowAnkle+fR.heb*moveB-trochanterY-ankleYFromAngles(hipR,knR),cL=play.fOffL+footBelowAnkle+fL.heb*moveB-trochanterY-ankleYFromAngles(hipL,knL);   // der rollende Knoechel steht um heb ueber der Sohle
-  // Flugphase (beide Fuesse im Schwung): das Becken des Gesetzes ueber dem gedachten Stand-Fuss (gangBecken steigt dort)
-  var gY=wR+wL>1e-6?(cR*wR+cL*wL)/(wR+wL):footBelowAnkle-trochanterY-(standY+play.susp);
-  character.position.y=play.posY+gY;
-  play.prevSp=sp;play.prevFace=play.faceYaw;
+// ===================== DER SPIEL-MODUS: DER NINJA-PARK IST DER SPIELPLATZ DER WELT (w4-koerper-park) =====================
+// LABOR = WELT: der Leib bewegt sich nach DEMSELBEN Gesetz wie der Spieler der Welt — je fester Schritt (1/60 s) der EINE Plan
+// (koerper-core `leibPlan`: Antrieb, Sprung, Wand- und Doppelsprung, Klettern, Rutsch, die Verben an den Geräten), die Vertikale
+// (`leibImpuls` · `leibFall`) und die Erdung (`leibLandung`) in Metern unter der Erd-Schwere; der Kontakt des Labors (die Park-
+// Boxen: die Substanz der Werke, KIND_POLICY) trägt die Kapsel des Leibs (LEIB.kapsel). Die Pose: der Gang-Takt und die Rig-Pose
+// der Welt (`leibGangTakt` · `leibRigPose`, das Rig auf denselben Gelenken wie `_buildHumanoidRig`), die Luft (`leibLuftPose`)
+// und je Verb und Phase der EINE Löser (`leibVerbPose`). Der Park: die acht Geräte des Fachwerks (fachwerk GERAETE, gebaut von
+// `buildInstance`, ihr Angebot `geraetAngebot`) auf einem Spielplatz-Boden. Die Arcade-Zeile (NINJA_FEEL), die Hocke, der
+// Hocke-Tunnel, der kurze Sprung beim Loslassen und die Feel-Schichten (Anlauf-Neigung, Kurven-Lage) fielen: die Welt kennt sie nicht.
+var FC = window.__fachwerkCore;
+if (!FC || !FC.GERAETE || typeof FC.geraetAngebotIn !== 'function' || typeof FC.buildInstance !== 'function') throw new Error('Kern-Pflicht: fachwerk GERAETE/geraetAngebotIn/buildInstance (das Labor stellt die Werke der Welt auf)');
+['leibPlan','leibSitz','leibGlieder','leibSchwenk','leibSchwenkPunkt','leibImpuls','leibFall','leibLandung','leibRichtung','leibZustand','leibKette','leibMasse','leibWerte','leibAbdruck','leibSprungKraft','leibGangTakt','leibRigPose','leibLuftPose','leibVerbPose','leibGeraetAusschwingen','leibMassstab','leibSohle','leibPoseWinkel','leibSollUrteil'].forEach(function(f){if(typeof KC[f]!=='function')throw new Error('Kern-Pflicht: koerper '+f);});
+var M_E = KC.leibMassstab();                 // Meter je Gelenk-Einheit: die Bühne in Metern, der Leib im Maß des Gusses
+var G_WELT = KC.LEIB.sprung.refG;            // die Erd-Schwere (m/s²), dieselbe wie die Welt bei Spiel-Beginn
+var KAPSEL = KC.LEIB.kapsel;                 // die Kapsel des Leibs (Sohle, Stufe, Haftung, Wand-Radius) — die der Welt
+var _KAM = window.__koerperCore.bewegung.kamera;   // K06 — DER LEIB DER KAMERA: armRadiusM (die Kugel) + armRuhe (die Glättung) aus fx.bewegung.kamera
+if (!_KAM || !isFinite(_KAM.armRadiusM) || !isFinite(_KAM.armRuhe)) throw new Error('Kern-Pflicht: koerper fx.bewegung.kamera');
+// DER PLATZ (Meter, Gier): der Start bei 0/0 blickt nach +z; die Kletterwand und das Gerüst wenden ihre Front zum Start
+var PARK_PLAN = [
+  { id: 'schwebebalken', x: -3.5, z: 5.5, gier: 0 },
+  { id: 'kletterwand', x: 0.5, z: 9.0, gier: Math.PI },
+  { id: 'hangelbahn', x: 4.5, z: 6.5, gier: 0 },
+  { id: 'turnreck', x: 8.5, z: 3.0, gier: 0 },
+  { id: 'sprossengeruest', x: -8.0, z: 9.5, gier: Math.PI },
+  { id: 'turmrutsche', x: -4.0, z: 14.5, gier: 0 },
+  { id: 'doppelschaukel', x: 6.5, z: 13.5, gier: 0 },
+  { id: 'balkenwippe', x: 0.5, z: 18.0, gier: 0 },
+];
+var parkTeile = [], parkAngebote = [], parkSchwenk = [], parkGroup = new THREE.Group();
+parkGroup.visible = false; parkGroup.scale.setScalar(1 / M_E); scene.add(parkGroup);
+// ein Punkt bzw. eine Richtung des Werks in den Welt-Rahmen (die Lage des Plans: Gier um y wie THREE rotation.y, die Höhe y)
+function _parkPunkt(P, q) { var c = Math.cos(P.gier), s = Math.sin(P.gier); return [P.x + q[0] * c + q[2] * s, (P.y || 0) + q[1], P.z - q[0] * s + q[2] * c]; }
+// DAS WERK ALS GESETZ (Daten, ohne Bild): seine Substanz (KIND_POLICY, die Teile der Kollision) und sein Angebot (`geraetAngebotIn`,
+// dieselbe Platzierung wie die Welt) an der Lage des Plans {id, x, y, z, gier}
+function parkSubstanz(P) {
+  var art = FC.GERAETE[P.id].kind, sub = FC.KIND_POLICY[art].substanz;
+  sub.parts.forEach(function (t) {
+    var rx = (t.rotation && t.rotation.x) || 0;
+    parkTeile.push({ c: _parkPunkt(P, [t.position.x, t.position.y, t.position.z]), h: [t.size.x / 2, t.size.y / 2, t.size.z / 2], gier: P.gier, rx: rx, tritt: !!t.tritt, werk: P.id });
+  });
+  FC.geraetAngebotIn(P.id, { x: P.x, y: P.y || 0, z: P.z, gier: P.gier, skala: 1 }).forEach(function (b) { b.werk = P.id; parkAngebote.push(b); });
 }
-function playPhysics(dt){
-  var pr=0.75,charH=play.slide>0?2.7:(play.crouch?3.4:5.2),wasAir=!play.onGround;      // slide/crouch senken kollisionshoehe (tunnel!)
-  var nx=character.position.x+play.vx*dt,nz=character.position.z+play.vz*dt;
-  var footY=play.posY-FOOT,headY=footY+charH;play.touchWall=false;
-  for(var i=0;i<parkBoxes.length;i++){var b=parkBoxes[i];
-    if(b.maxY>footY+1.05&&b.minY<headY&&inXZ(nx,nz,b,pr)){
-      var dxl=(b.cx-b.sx/2-pr)-nx,dxr=(b.cx+b.sx/2+pr)-nx,dzl=(b.cz-b.sz/2-pr)-nz,dzr=(b.cz+b.sz/2+pr)-nz;
-      var ax=Math.abs(dxl)<Math.abs(dxr)?dxl:dxr,az=Math.abs(dzl)<Math.abs(dzr)?dzl:dzr;
-      if(Math.abs(ax)<Math.abs(az)){nx+=ax;play.vx=0;play.wallNX=ax>0?1:-1;play.wallNZ=0;}else{nz+=az;play.vz=0;play.wallNZ=az>0?1:-1;play.wallNX=0;}play.touchWall=true;play.wallT=0.15;}}  // wand-normale + wand-coyote
-  character.position.x=nx;character.position.z=nz;
-  play.vy-=G_BUEHNE*dt;if(play.vy<-40)play.vy=-40;play.posY+=play.vy*dt;footY=play.posY-FOOT;
-  var sup=-1e9;
-  for(var i=0;i<parkBoxes.length;i++){var b=parkBoxes[i];
-    if(inXZ(character.position.x,character.position.z,b,pr*0.55)&&b.maxY<=footY+1.05&&b.maxY>sup)sup=b.maxY;}
-  if(footY<=sup+0.06&&play.vy<=0){if(wasAir){var iv=-play.vy;if(iv>9)play.landK=Math.min(1,play.landK+(iv-9)/26);play.airJumps=1;play.djT=0;play.wjT=0;}play.posY=sup+FOOT;play.vy=0;play.onGround=true;}else play.onGround=false;
-  play.landK*=Math.pow(0.010,dt);                                                     // LANDE-FEDER klingt in ~0.3s ab (TLOU impact)
-  if(play.onGround){var eS=play.posY-play.smY;play.smV+=eS*170*dt-play.smV*24*dt;play.smY+=play.smV*dt;}
-  else{play.smY+=(play.posY-play.smY)*Math.min(1,20*dt);play.smV=play.vy;}
-  play.susp=_clamp(play.posY-play.smY,-0.7,0.7);                                      // KOERPER-FEDER: physik snappt (auto-step), pelvis federt nach, beine schlucken
-  if(play.posY<-25){play.posY=play.cpY;play.vy=0;play.vx=0;play.vz=0;character.position.set(play.cpX,play.cpY,play.cpZ);if(play.run==='running')play.deaths++;play.landK=0;play.fOffL=0;play.fOffR=0;play.smY=play.cpY;play.smV=0;}  // respawn am CHECKPOINT
-  runUpdate(dt);
-  var tf=(play.vx*play.vx+play.vz*play.vz>1.2)?play.faceYaw:play.yaw;
-  var d=((tf-character.rotation.y+Math.PI)%(2*Math.PI))-Math.PI;if(d<-Math.PI)d+=2*Math.PI;character.rotation.y+=d*(1-Math.pow(0.00016,dt));
-  playGait(dt,clock.getElapsedTime());            // procedural body pose + sets character.position.y
-  character.updateMatrixWorld(true);
-  var sp=Math.hypot(play.vx,play.vz);
-  var fT=play.fovBase+_clamp(sp/18,0,1)*7+(play.slide>0?7:0);play.fov+=(fT-play.fov)*(1-Math.pow(0.02,dt));  // SPEED-FOV-KICK (Mirror's Edge)
-  if(Math.abs(camera.fov-play.fov)>0.02){camera.fov=play.fov;camera.updateProjectionMatrix();}
-  if(play.cam==='third'){
-    if(headGroup)headGroup.visible=true;if(typeof hairGroup!=='undefined'&&hairGroup)hairGroup.visible=true;
-    // look target leads slightly in the movement direction (look-ahead) + sits at chest height
-    var lead=Math.min(sp*0.10,2.2);
-    var ltx=character.position.x+Math.sin(play.faceYaw)*lead-Math.cos(play.yaw)*0.65, lty=character.position.y+3.15, ltz=character.position.z+Math.cos(play.faceYaw)*lead+Math.sin(play.yaw)*0.65;
-    // ideal cam: behind the LOOK yaw, raised; pulls back & up a touch with speed
-    var dist=11.6+sp*0.14, ldx=Math.sin(play.yaw)*Math.cos(play.pitch),ldy=Math.sin(play.pitch),ldz=Math.cos(play.yaw)*Math.cos(play.pitch);
-    var shX=-Math.cos(play.yaw)*1.75,shZ=Math.sin(play.yaw)*1.75;                     // OVER-SHOULDER: kamera bildschirm-rechts, figur links im frame
-    var icx=character.position.x-ldx*dist+shX, icy=character.position.y+3.85-ldy*dist, icz=character.position.z-ldz*dist+shZ;
-    // critically-damped smoothing of camera + look target
-    var ks=1-Math.pow(_KAM.armRuhe,dt);
-    play.camX=_mix(play.camX,icx,ks);play.camY=_mix(play.camY,icy,ks);play.camZ=_mix(play.camZ,icz,ks);
-    play.lookX=_mix(play.lookX,ltx,ks*1.4);play.lookY=_mix(play.lookY,lty,ks*1.4);play.lookZ=_mix(play.lookZ,ltz,ks*1.4);
-    // K06 DIE KAMERA HAT EINEN LEIB (NP-03): die Strecke Blickziel -> Kamera gegen JEDE Park-Box (der Boden zuerst), um armRadiusM aufgeblasen (in Lab-Massen: die Kugel deckt die Nah-Ebene 0,1); die Kamera haelt vor dem ersten Eintritt. Beginnt die Strecke in der aufgeblasenen Box, haelt die Kamera armRadiusM vor der Box selbst (entlang der Strecke); beginnt sie in ihr, sagt die Box nichts. camG fiel: der Hoehen-Deckel hob die Kamera nur ueber Boxen unter ihr -- Wand, Tunnel und Kante standen zwischen Blickziel und Linse (9 von 48 Posen).
-    // das Blickziel haelt die Kugel selbst frei (wie die Schulter des Wirts): seine Versetzung von der Brust (Schulter + Vorlauf) rueckt vor jeder aufgeblasenen Box ein -- die Figur am Tunnel-Dach trug das Ziel 0,1 vor die Kante
-    var kbx=character.position.x,kbz=character.position.z,klx=play.lookX-kbx,klz=play.lookZ-kbz,ks2=1;
-    for(var i=0;i<parkBoxes.length;i++){var h0=_kamSeg(kbx,play.lookY,kbz,klx,0,klz,parkBoxes[i],_KAM.armRadiusM+0.01);if(h0>0&&h0<ks2)ks2=h0;}
-    var LX=kbx+klx*ks2,LY=play.lookY,LZ=kbz+klz*ks2;
-    var kdx=play.camX-LX,kdy=play.camY-LY,kdz=play.camZ-LZ,kt=1;
-    for(var i=0;i<parkBoxes.length;i++){var b=parkBoxes[i],h=_kamSeg(LX,LY,LZ,kdx,kdy,kdz,b,_KAM.armRadiusM);if(h===0){h=_kamSeg(LX,LY,LZ,kdx,kdy,kdz,b,0);h=h===0?Infinity:Math.max(0,h-_KAM.armRadiusM/Math.hypot(kdx,kdy,kdz));}if(h<kt)kt=h;}
-    // streift die Strecke eine Box, an der sie beginnt (das Ziel an ihrer Kante), endet die Kamera nie in deren Kugel-Hülle: zurück zum Ziel, bis sie frei steht (Bisektion)
-    if(!_kamFrei(LX+kdx*kt,LY+kdy*kt,LZ+kdz*kt,_KAM.armRadiusM)){var klo=0,khi=kt;for(var j=0;j<10;j++){var km=(klo+khi)/2;if(_kamFrei(LX+kdx*km,LY+kdy*km,LZ+kdz*km,_KAM.armRadiusM))klo=km;else khi=km;}kt=klo;}
-    camera.position.set(LX+kdx*kt,LY+kdy*kt,LZ+kdz*kt);camera.lookAt(LX,LY,LZ);
-  }else{
-    if(headGroup)headGroup.visible=false;if(typeof hairGroup!=='undefined'&&hairGroup)hairGroup.visible=false;
-    var hp=new THREE.Vector3();if(headGroup)headGroup.getWorldPosition(hp);else hp.set(character.position.x,character.position.y+5,character.position.z);
-    camera.position.set(hp.x,hp.y+0.15,hp.z);
-    var lx=Math.sin(play.yaw)*Math.cos(play.pitch),ly=Math.sin(play.pitch),lz=Math.cos(play.yaw)*Math.cos(play.pitch);
-    camera.lookAt(hp.x+lx,hp.y+0.15+ly,hp.z+lz);}
+function buildPark() {
+  // der Boden des Spielplatzes (Fallschutz: Rindenmulch) — Oberkante y = 0
+  var boden = new THREE.Mesh(new THREE.BoxGeometry(44, 1, 44), new THREE.MeshStandardMaterial({ color: 0x5b4a3a, roughness: 0.97, metalness: 0 }));
+  boden.position.set(0, -0.5, 8); boden.receiveShadow = true; parkGroup.add(boden);
+  parkTeile.push({ c: [0, -0.5, 8], h: [22, 0.5, 22], gier: 0, rx: 0, tritt: true });
+  PARK_PLAN.forEach(function (P) {
+    var g = FC.buildInstance(P.id, 1, 0);
+    g.position.set(P.x, 0, P.z); g.rotation.y = P.gier;
+    g.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } if (o.userData && o.userData.__schwenk) parkSchwenk.push({ obj: o, plan: P, info: o.userData.__schwenk }); });
+    parkGroup.add(g);
+    parkSubstanz(P);
+  });
+  parkSchwenk.forEach(function (S) { S.ang = parkAngebote.find(function (a) { return a.werk === S.plan.id && a.teil === S.info.teil; }) || null; if (!S.ang) throw new Error('Labor: das schwingende Teil ' + S.info.teil + ' von ' + S.plan.id + ' hat kein Angebot'); });
+}
+// ein Welt-Punkt in den Rahmen der Box (Gier um y, dann Neigung rx um x)
+function _boxLokal(b, p) { var dx = p[0] - b.c[0], dy = p[1] - b.c[1], dz = p[2] - b.c[2], cg = Math.cos(b.gier), sg = Math.sin(b.gier); var x = dx * cg - dz * sg, z = dx * sg + dz * cg, c = Math.cos(b.rx), s = Math.sin(b.rx); return [x, dy * c + z * s, -dy * s + z * c]; }
+buildPark();
+// DER LEIB DES SPIELS: der Zustand des EINEN Gesetzes (dieselben Felder wie der Wirt), die Lage (m, der Fuß-Punkt: die Sohle steht
+// dort), Blick und Kamera, das Leben (Ausdauer), der Gang-Halter; die Werte der Seele (Tempo, Sprung, Masse) aus dem Gesetz des Leibs
+var play = { on: false, cam: 'third', yaw: 0, pitch: 0.22, p: [0, 0, 0], t: 0, L: null, leben: { stamina: 100 }, halter: { walkPhase: 0 }, camX: 0, camY: 5, camZ: -9, lookX: 0, lookY: 3, lookZ: 0, fov: 35, fovBase: 35, posY: 0, vx: 0, vy: 0, vz: 0, onGround: true, faceYaw: 0, werte: null, masse: 0, kette: null, rig: null, M: null, Z: null, sohleY: 0 };
+var keys = {};
+var leibGruppe = new THREE.Group(); scene.add(leibGruppe); leibGruppe.rotation.order = 'YXZ';
+// DIE VERB-TAFEL des Schritts aus den Tasten (dieselben Felder und Tasten wie die Welt: W/S vor, A/D quer — quer + = links, A —,
+// Shift Sprint, Leertaste Sprung, C Rutsch und Sitz)
+function playTafel() { if (vorf) return vorfTafel(); return { vor: (keys['KeyW'] ? 1 : 0) - (keys['KeyS'] ? 1 : 0), quer: (keys['KeyA'] ? 1 : 0) - (keys['KeyD'] ? 1 : 0), sprint: !!keys['ShiftLeft'], sprung: !!keys['Space'], rutsch: !!keys['KeyC'] }; }
+addEventListener('keydown', function (ev) { if (!play.on) return; keys[ev.code] = true;
+  if (ev.code === 'KeyV' && !ev.repeat) play.cam = (play.cam === 'third') ? 'fps' : 'third';
+  if (ev.code === 'Escape') exitPlay();
+  if (ev.code === 'KeyR' && !ev.repeat) resetRun();
+  if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'KeyC'].indexOf(ev.code) >= 0) ev.preventDefault(); });
+addEventListener('keyup', function (ev) { keys[ev.code] = false; });
+document.addEventListener('mousemove', function (ev) { if (!play.on || document.pointerLockElement !== renderer.domElement) return;
+  play.yaw -= ev.movementX * 0.0024; play.pitch = Math.max(-0.85, Math.min(0.85, play.pitch - ev.movementY * 0.0022)); });
+// DIE GESTALT IM SPIEL: das Rig der Welt auf den Gelenken des Gusses (dieselbe Zuordnung wie `_buildHumanoidRig`), die Kette des
+// Lösers, die Bein-Maße in Metern (wie `_gaitBeinMass`: Gelenk-Länge × Skala × Maßstab), die Gang-Zeile der Erd-Schwere, die
+// Sohle der Ruhe-Pose (die tiefste Fläche der L0 wie `sohleY` der Welt), die Werte und die Masse der Seele
+function playLeib() {
+  var t = parts, need = ['mensch', 'torso', 'head', 'arm1', 'arm-1', 'elbow1', 'elbow-1', 'hand1', 'hand-1', 'hip1', 'hip-1', 'knee1', 'knee-1', 'ankle1', 'ankle-1'];
+  need.forEach(function (n) { if (!t[n]) throw new Error('Labor: dem Guss fehlt das Gelenk ' + n + ' (das Rig der Welt)'); });
+  play.rig = { hips: t.mensch, spine: t.torso, chest: t.torso, neck: t.head, head: t.head,
+    armL: { shoulder: t.arm1, elbow: t.elbow1, wrist: t.hand1 }, armR: { shoulder: t['arm-1'], elbow: t['elbow-1'], wrist: t['hand-1'] },
+    legL: { hip: t.hip1, knee: t.knee1, ankle: t.ankle1 }, legR: { hip: t['hip-1'], knee: t['knee-1'], ankle: t['ankle-1'] } };
+  var sk = gestalt.sk, s = t.mensch.scale;
+  // die Höhe des Sitzes und die Dicke der Glieder aus der gegossenen Haut (koerper `leibSitz` · `leibGlieder`, dieselbe Messung wie die Welt)
+  play.kette = KC.leibKette(Object.assign({}, sk, { sitz: KC.leibSitz(gestalt.root, sk, t), glieder: KC.leibGlieder(gestalt.root, sk, t) })); play.masse = KC.leibMasse(sk); play.werte = KC.leibWerte(params);
+  var l1 = t.knee1.position.length(), l2 = t.ankle1.position.length();
+  play.M = { l1: l1, l2: l2, wpl: Math.abs(s.y) * M_E, wz: Math.abs(s.z) * M_E, L: (l1 + l2) * Math.abs(s.y) * M_E };
+  play.Z = Object.assign({}, KC.bewegung.gang, { g: G_WELT });
+  play.sohleY = gestalt.sohleY;
+  // die Sohle des gebauten Fußes (koerper `leibSohle`, dieselbe Messung wie die Welt): [Spitze, Sohle, Ferse] im Knöchel-Raum
+  play.sohle = { 1: KC.leibSohle(gestalt.root, t.ankle1), '-1': KC.leibSohle(gestalt.root, t['ankle-1']) };
+  if (!play.sohle[1] || !play.sohle['-1']) throw new Error('Labor: der Guss trägt keine Haut am Knöchel (leibSohle)');
+}
+function enterPlay() {
+  play.on = true; controls.enabled = false; parkGroup.visible = true; emoMode = 'play';
+  playLeib();
+  // der Leib zieht in die Gruppe des Spiels (die Lage in Metern über ihr), der Baum der Gestalt hängt unter ihr
+  leibGruppe.add(gestalt.root); gestalt.root.position.set(0, -play.sohleY, 0);
+  document.getElementById('ui').style.display = 'none'; document.getElementById('playHint').style.display = 'block'; document.getElementById('hud').style.display = 'block';
+  play.fovBase = camera.fov; play.fov = camera.fov; resetRun();
+  renderer.domElement.requestPointerLock();
+}
+function exitPlay() {
+  play.on = false; controls.enabled = true; parkGroup.visible = false;
+  scene.add(gestalt.root); gestalt.root.position.set(0, 0, 0); leibGruppe.position.set(0, 0, 0); leibGruppe.rotation.set(0, 0, 0);
+  if (headGroup) headGroup.visible = true; if (typeof hairGroup !== 'undefined' && hairGroup) hairGroup.visible = true;
+  character.position.set(0, 0, 0); character.rotation.set(0, 0, 0);
+  document.getElementById('ui').style.display = ''; document.getElementById('playHint').style.display = 'none'; document.getElementById('hud').style.display = 'none'; camera.fov = play.fovBase; camera.updateProjectionMatrix();
+  if (document.pointerLockElement) document.exitPointerLock(); emoMode = 'idle'; emo.set('idle'); controls.target.set(0, trochanterY, 0); controls.update();
+}
+function resetRun() {
+  play.L = KC.leibZustand(); play.p = [0, 0, 0]; play.t = 0; play.yaw = 0; play.leben = { stamina: 100 }; play.halter = { walkPhase: 0 };
+  play.L.lastGroundedTime = 0; play.amBoden = true;
+  parkAngebote.forEach(function (a) { a.zustand = {}; });
+  play.camX = 0; play.camY = 5; play.camZ = -9;
+}
+renderer.domElement.addEventListener('click', function () { if (play.on && document.pointerLockElement !== renderer.domElement) renderer.domElement.requestPointerLock(); });
+document.getElementById('btnPlay').addEventListener('click', enterPlay);
+// DER WIRT DES GESETZES im Labor (die Rückrufe des Plans): geerdet nach dem letzten Kontakt, am Steilhang kein Sprung (das Labor
+// trägt keinen), der Abdruck aus Kraft und Masse unter der Erd-Schwere, der Kopfraum unter den Park-Boxen
+function _playOrt(T) {
+  var W = play.werte, L = play.L;
+  return { tempo: T.sprint ? W.sprintSpeed : W.speed, gehTempo: W.speed, hang: 1, ritt: null, rittKAcc: null, rittKBrake: null, reitet: false, fahr: null, wasser: false, wasserKBrake: 0,
+    leben: play.leben, angebote: parkAngebote, lage: play.p, mass: play.kette.mass, masse: play.masse, g: G_WELT,
+    amBoden: function () { return play.amBoden; }, hangSprung: function () { return false; },
+    abdruck: function () { return KC.leibAbdruck(KC.leibSprungKraft(W.jumpPower), play.masse, G_WELT); }, kopfraum: function () { return _kopfraum(); } };
+}
+function _kopfraum() {
+  var top = play.p[1] + 2 * KAPSEL.fussM, best = Infinity;
+  parkTeile.forEach(function (b) { if (b.rx) return; var l = _boxLokal(b, [play.p[0], top, play.p[2]]); if (Math.abs(l[0]) < b.h[0] && Math.abs(l[2]) < b.h[2] && l[1] < -b.h[1]) best = Math.min(best, -b.h[1] - l[1]); });
+  return best;
+}
+// DER KONTAKT DES LABORS (die Kapsel des Leibs gegen die Park-Boxen, Meter): waagrecht schiebt jede Box, die das Band über der
+// Stufe trifft, den Leib hinaus (die Normale ist die Wand-Wahrheit des Wandsprungs und des Kletterns, gestempelt mit der Uhr des
+// Schritts), lotrecht trägt die höchste Oberkante im Band [Sohle − Haftung, Sohle + Stufe] — die Haftung nur, wer geerdet war
+// die tiefste Stelle des Bands (Sohle + Stufe … Kopf, lotrecht bei x/z) in der Box: im Rahmen der Box ist das Band eine Strecke
+// (lotrecht nur ohne Neigung), geschnitten mit ihrer Höhe; quer bleibt x, längs wandert z mit der Neigung — am tiefsten liegt die
+// Strecke an einem ihrer Enden oder dort, wo sie die Mitte der Box kreuzt (z = 0). null: das Band trifft die Box nicht
+function _bandTief(b, x, y0, y1, z) {
+  var a = _boxLokal(b, [x, y0, z]), e = _boxLokal(b, [x, y1, z]), dy = e[1] - a[1], u0 = 0, u1 = 1;
+  if (Math.abs(dy) < 1e-12) { if (Math.abs(a[1]) > b.h[1]) return null; }
+  else { var ua = (-b.h[1] - a[1]) / dy, ub = (b.h[1] - a[1]) / dy; u0 = Math.max(0, Math.min(ua, ub)); u1 = Math.min(1, Math.max(ua, ub)); if (u0 > u1) return null; }
+  var dz = e[2] - a[2], us = [u0, u1];
+  if (Math.abs(dz) > 1e-12) { var uz = -a[2] / dz; if (uz > u0 && uz < u1) us.push(uz); }
+  var best = null, bd = Infinity;
+  for (var k = 0; k < us.length; k++) {
+    var lz = a[2] + us[k] * dz, ex = Math.abs(a[0]) - b.h[0], ez = Math.abs(lz) - b.h[2];
+    var d = ex > 0 && ez > 0 ? Math.hypot(ex, ez) : Math.max(ex, ez);
+    if (d < bd) { bd = d; best = [a[0], lz]; }
+  }
+  return best;
+}
+// die Oberkante der Box lotrecht über x/z (ihre Deckfläche, am geneigten Teil eine Ebene), null außerhalb ihres Grundrisses (+ m)
+function _boxOben(b, x, z, m) {
+  var dx = x - b.c[0], dz = z - b.c[2], cg = Math.cos(b.gier), sg = Math.sin(b.gier), xg = dx * cg - dz * sg, zg = dx * sg + dz * cg;
+  var c = Math.cos(b.rx), s = Math.sin(b.rx), dy = (b.h[1] - zg * s) / c, lz = (zg - b.h[1] * s) / c;
+  if (Math.abs(xg) > b.h[0] + m || Math.abs(lz) > b.h[2] + m) return null;
+  return b.c[1] + dy;
+}
+// das Band eines Teils: ein geneigtes Teil ohne Tritt (die Böcke der Schaukel, die Streben des Recks) trägt keine Stufe — es ist
+// Wand für die ganze Kapsel; jedes andere ist Wand über der Stufe (darunter steigt der Leib auf es)
+function _bandUnten(b) { return b.rx && !b.tritt ? 0.05 : KAPSEL.stufeM + 0.05; }
+function playKontakt(dt) {
+  var L = play.L, v = L.playerVel, R = KAPSEL.radiusM, p = play.p;
+  var vy = KC.leibImpuls(L); vy = KC.leibFall(L, vy, -G_WELT, dt);
+  var nx = p[0] + v.x() * dt, ny = p[1] + vy * dt, nz = p[2] + v.z() * dt, vx = v.x(), vz = v.z();
+  for (var i = 0; i < parkTeile.length; i++) {
+    var b = parkTeile[i], unten = _bandUnten(b);
+    // das Band der Kapsel gegen die Box: ihre tiefste Stelle trägt die Normale (auch am geneigten Holz)
+    var l = _bandTief(b, nx, ny + unten, ny + 2 * KAPSEL.fussM, nz);
+    if (!l) continue;
+    var ex = Math.abs(l[0]) - b.h[0], ez = Math.abs(l[1]) - b.h[2];
+    if (ex >= R || ez >= R) continue;
+    // kreuzt das Band die Mitte des Teils, schiebt es zur Seite, von der der Leib kam
+    var sz = Math.sign(l[1]) || Math.sign(_boxLokal(b, [p[0], ny + unten, p[2]])[2]) || 1;
+    var dxl, dzl;
+    if (ex > 0 && ez > 0) { var d = Math.hypot(ex, ez); if (d >= R) continue; dxl = Math.sign(l[0]) * ex * (R - d) / d; dzl = sz * ez * (R - d) / d; }
+    else if (ex > ez) { dxl = (Math.sign(l[0]) || 1) * (R - ex); dzl = 0; } else { dxl = 0; dzl = sz * (R - ez); }
+    // längs des geneigten Teils verschiebt ein Meter waagrecht die Lage im Rahmen der Box um cos(Neigung)
+    dzl /= Math.max(0.2, Math.cos(b.rx));
+    var cg = Math.cos(b.gier), sg = Math.sin(b.gier), wx = dxl * cg + dzl * sg, wz = -dxl * sg + dzl * cg;
+    nx += wx; nz += wz;
+    var n = Math.hypot(wx, wz);
+    if (n > 1e-9) { var ux = wx / n, uz = wz / n, vn = vx * ux + vz * uz; if (vn < 0) { vx -= vn * ux; vz -= vn * uz; } L._wandKontaktNx = ux; L._wandKontaktNz = uz; L._wandKontaktAt = L._simZeit; }
+  }
+  // die Decke: wer steigt (Sprung, Klettern an der Wand), stößt mit dem Kopf an die Unterkante einer Box über ihm
+  if (vy > 0) {
+    var kopf = ny + 2 * KAPSEL.fussM;
+    for (var c2 = 0; c2 < parkTeile.length; c2++) {
+      var D = parkTeile[c2]; if (D.rx) continue;
+      var dl = _boxLokal(D, [nx, kopf, nz]), unterK = D.c[1] - D.h[1];
+      if (Math.abs(dl[0]) < D.h[0] + R * 0.5 && Math.abs(dl[2]) < D.h[2] + R * 0.5 && kopf > unterK && p[1] + 2 * KAPSEL.fussM <= unterK + 1e-6) { ny = unterK - 2 * KAPSEL.fussM; vy = 0; }
+    }
+  }
+  // die Auflage: die höchste Deckfläche im Band [Sohle − Haftung, Sohle + Stufe] — das gerade Teil eben, das geneigte Tritt-Teil
+  // (die Bahn der Rutsche) über seine Ebene; ein geneigtes Teil ohne Tritt trägt nie
+  var sup = -Infinity;
+  for (var j = 0; j < parkTeile.length; j++) {
+    var B = parkTeile[j]; if (B.rx && !B.tritt) continue;
+    var yTop = _boxOben(B, nx, nz, R * 0.55);
+    if (yTop !== null && yTop <= ny + KAPSEL.stufeM && yTop > sup) sup = yTop;
+  }
+  var am = false;
+  if (vy <= 0.5 && sup > -Infinity) {
+    var gap = ny - sup;
+    if ((gap <= 0 && gap >= -KAPSEL.stufeM) || (gap > 0 && gap <= KAPSEL.haftM && play.amBoden)) { ny = sup; vy = 0; am = true; }
+  }
+  play.p = [nx, ny, nz]; L._fieldVy = vy; L.playerVel.setValue(vx, vy, vz); play.amBoden = am;
+  KC.leibLandung(L, am, false, L._simZeit);
+  if (ny < -25) resetRun();
+}
+// DER SCHRITT (1/60 s, wie FIXED_DT der Welt): Tafel → Richtung → Plan → (das Gerät führt die Lage | der Kontakt des Labors) →
+// die wachen Geräte schwingen aus
+function playSchritt(T, dt) {
+  var L = play.L;
+  L._simZeit = play.t;
+  KC.leibRichtung(L, play.yaw, T.vor, T.quer);
+  KC.leibPlan(L, T, _playOrt(T), play.t, dt);
+  if (L.leibVerb && L.leibVerb.lage) { play.p = L.leibVerb.lage.slice(); play.amBoden = false; }
+  else { if (L._verbLage) { play.p = L._verbLage; L._verbLage = null; } playKontakt(dt); }
+  parkAngebote.forEach(function (a) { if (!L.leibVerb || L.leibVerb.ang !== a) KC.leibGeraetAusschwingen(a, G_WELT, dt); });
+  play.t += dt;
+}
+// DIE POSE DES SCHRITTS: der Gang (die Phase des Gesetzes am Halter, das Tempo des Leibs), die Rig-Pose der Welt über der neutralen
+// (absolut, wie `_animateHumanoidRig`), die Luft und je Verb der Löser; die Gruppe steht im Fuß-Punkt und blickt längs der Fahrt
+function playPose(dt) {
+  var L = play.L, r = play.rig, v = L.playerVel, sp = Math.hypot(v.x(), v.z()), V = L.leibVerb;
+  [r.hips, r.spine, r.head].forEach(function (b) { b.rotation.set(0, 0, 0); });
+  [r.armL, r.armR, r.legL, r.legR].forEach(function (side) { for (var k in side) side[k].rotation.set(0, 0, 0); });
+  r.hips.position.set(0, r._baseHipY == null ? r.hips.position.y : r._baseHipY, 0); r.hips.quaternion.identity();
+  var amGang = !V || V.verb === 'balancieren', tempo = amGang && !L.isInAir ? sp : 0;
+  var gs = _TC.gangSchritt(tempo, play.M.L, play.Z);
+  var gait = KC.leibGangTakt(_TC, play.halter, gs, tempo, dt, 1, Math.max(1, play.werte.speed), play.M.L);
+  KC.leibRigPose(r, play.t, play.halter.walkPhase, tempo > 0.05, gait, KC.MOTION.idle, KC.MOTION.idle, play.M, play.Z, _TC);
+  var lehne = KC.leibLuftPose(r, L, play.t);
+  // die Gier des Leibs: im Verb die des Geräts, frei längs der Fahrt (gleitend), im Stand der Blick
+  var ziel = V && V.gier != null ? V.gier : (sp > 0.3 ? Math.atan2(v.x(), v.z()) : null);
+  if (ziel != null) { var d = ((ziel - play.faceYaw + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI; play.faceYaw += V ? d : d * (1 - Math.pow(0.00016, dt)); }
+  leibGruppe.position.set(play.p[0] / M_E, play.p[1] / M_E, play.p[2] / M_E);
+  leibGruppe.rotation.set(lehne || 0, play.faceYaw, 0);
+  var P = V ? KC.leibVerbPose(play.kette, L, play.t) : null;
+  if (P) {
+    // die Wurzel aus der Welt-Lage des Lösers (Meter) in den Rahmen ihres Eltern-Gelenks, die Glieder lokal
+    leibGruppe.rotation.set(0, 0, 0); leibGruppe.updateMatrixWorld(true);
+    var eltern = r.hips.parent, w = new THREE.Vector3(P.wurzel.p[0] / M_E, P.wurzel.p[1] / M_E, P.wurzel.p[2] / M_E);
+    eltern.worldToLocal(w); r.hips.position.copy(w);
+    var qe = new THREE.Quaternion(); eltern.getWorldQuaternion(qe);
+    r.hips.quaternion.copy(qe.invert().multiply(new THREE.Quaternion().fromArray(P.wurzel.q)));
+    for (var n in P.q) if (parts[n]) parts[n].quaternion.fromArray(P.q[n]);
+  }
+  // die schwingenden Teile der Geräte folgen ihrem Zustand (die Schaukel θ, die Wippe φ)
+  parkSchwenk.forEach(function (S) { var z = S.ang.zustand, w2 = S.ang.verb === 'schaukeln' ? z.theta || 0 : z.phi || 0; S.obj.quaternion.setFromAxisAngle(new THREE.Vector3().fromArray(S.info.achse), w2); });
+  // der alte Schnittstellen-Spiegel für Kamera und HUD (Labor-Einheiten)
+  play.posY = play.p[1] / M_E; play.vx = v.x(); play.vy = v.y(); play.vz = v.z(); play.onGround = play.amBoden;
+  return P;
+}
+function playHud() {
+  var h = document.getElementById('hud'); if (!h || !play.on) return;
+  var L = play.L, V = L.leibVerb, v = L.playerVel, sp = Math.hypot(v.x(), v.z());
+  var verb = V ? V.verb : L._parkourSlide ? 'rutschen (Boden)' : L._parkourKletter > 0 ? 'klettern (Wand)' : L.isInAir ? (L._airJumps ? 'Doppelsprung' : 'Sprung') : sp > play.werte.speed * 1.5 ? 'laufen' : sp > 0.1 ? 'gehen' : 'stehen';
+  var tempo = V && isFinite(V.tempo) ? V.tempo : sp;
+  var s = verb + (V ? ' · Phase ' + V.phase : '') + ' · ' + tempo.toFixed(2) + ' m/s · Ausdauer ' + Math.round(play.leben.stamina);
+  // das Instrument: die Winkel der Pose (links), nach der Vorführung das Urteil des Kerns gegen VERB_SOLL
+  var w = messung && play.winkel; if (w) s += ' · Knie ' + w.knieL.toFixed(0) + '° Hüfte ' + w.huefteL.toFixed(0) + '° Ellbogen ' + w.ellbogenL.toFixed(0) + '° Schulter ' + w.schulterL.toFixed(0) + '°';
+  if (play.urteil && !vorf) s += play.urteil.length ? ' · Vorführung: ' + play.urteil.length + ' Verstöße — ' + play.urteil[0] : ' · Vorführung: jedes Verb im Soll';
+  if (h.textContent !== s) h.textContent = s;
+}
+function playTakt(dt) {
+  var T = playTafel();
+  playSchritt(T, dt);
+  play.leben.stamina = Math.min(100, play.leben.stamina + (play.L.leibVerb || play.L._parkourKletter > 0 ? 0 : 8 * dt));
+  var P = playPose(dt);
+  leibGruppe.updateMatrixWorld(true);
+  if (messung) playMessen(P);
+  playKamera(dt);
+  playHud();
+  if (vorf) vorfWeiter();
+}
+// ===================== DAS INSTRUMENT DER BEWEGUNG (w4-koerper-park: das Labor misst den Leib) =====================
+// Je Takt die Winkel der gezeigten Pose (koerper `leibPoseWinkel`) je Verb und Phase, am Gerät die Hand am Anker und die Sohle
+// des gebauten Fußes (koerper `leibSohle`) gegen seine Teile, die Tempi, beim Sprint die Kapsel gegen jedes Teil (das Band des
+// Kontakts); das Urteil spricht der Kern (`leibSollUrteil` gegen VERB_SOLL) — das HUD zeigt die Winkel der Phase, die
+// Vorführung fährt jedes Verb an seinem Gerät (der Knopf; headless `playVorfuehrung(true)`).
+var messung = null, vorf = null, _V3 = new THREE.Vector3(), _GELENKE = ['mensch', 'head', 'hip1', 'hip-1', 'knee1', 'knee-1', 'ankle1', 'ankle-1', 'arm1', 'arm-1', 'elbow1', 'elbow-1', 'hand1', 'hand-1'];
+function _wm(v) { return [v.x * M_E, v.y * M_E, v.z * M_E]; }
+function _wl(n, l) { return _wm(l ? parts[n].localToWorld(_V3.set(l[0], l[1], l[2])) : parts[n].getWorldPosition(_V3)); }
+// die Tiefe eines Punkts (m) in einem Teil des Parks (> 0: im Teil; auf der Tritt-Fläche steht er)
+function _teilTiefe(b, p) { var l = _boxLokal(b, p); return b.tritt && l[1] >= b.h[1] - 0.01 ? -1 : Math.min(b.h[0] - Math.abs(l[0]), b.h[1] - Math.abs(l[1]), b.h[2] - Math.abs(l[2])); }
+function _ankerAbstand(a, p) { var best = Infinity, d3 = function (q) { return Math.hypot(q[0] - p[0], q[1] - p[1], q[2] - p[2]); };
+  (a.griff || []).forEach(function (q) { best = Math.min(best, d3(q)); });
+  (a.holme || []).forEach(function (h) { var A = h[0], ab = [h[1][0] - A[0], h[1][1] - A[1], h[1][2] - A[2]], u = Math.max(0, Math.min(1, ((p[0] - A[0]) * ab[0] + (p[1] - A[1]) * ab[1] + (p[2] - A[2]) * ab[2]) / (ab[0] * ab[0] + ab[1] * ab[1] + ab[2] * ab[2]))); best = Math.min(best, d3([A[0] + ab[0] * u, A[1] + ab[1] * u, A[2] + ab[2] * u])); });
+  return best; }
+// der Name eines Angebots im Urteil: Werk, Verb, schwingendes Teil
+function _angName(a) { return a.werk + ' ' + a.verb + (a.teil && a.verb === 'schaukeln' ? ' ' + a.teil : ''); }
+// DIE HAUT GEGEN DAS GERÄT (w4-koerper-park, „kein Durchgreifen“): die Proben der gegossenen Haut (L0 ohne Augen, ein Punkt je 2-cm-Zelle
+// der Bind-Lage, je Punkt sein tragender Knochen) — im Takt gehäutet (r128 `boneTransform`, dieselbe Rechnung wie der Shader) und gegen
+// jedes Teil des Werks geprüft: die Substanz (Pfosten, Wand, Sprossen, Bahn) und die Teile am Leib aus dem Angebot (Sitz, Kette, Hebel,
+// Hangel-Sprossen; was schwingt, steht an der Lage seines Zustands, koerper `leibSchwenk`). Die greifende Hand umschließt ihre Stange:
+// ein Teil, dessen zwei kleine Maße ≤ 6 cm sind und das die Mitte der Hand oder einen ihrer Anker (um 3 cm) trägt, zählt für die
+// Punkte dieser Hand nicht.
+var _REGION = { mensch: 'Rumpf', torso: 'Rumpf', head: 'Kopf', arm: 'Oberarm', elbow: 'Unterarm', hand: 'Hand', hip: 'Oberschenkel', knee: 'Unterschenkel', ankle: 'Fuß' };
+function _hautProben() {
+  if (gestalt.__proben) return gestalt.__proben;
+  var vox = 0.02 / M_E, liste = [], _bv = new THREE.Vector3();
+  gestalt.l0.forEach(function (n) {
+    if (/eye|iris|pupil/.test(n.userData.__klasse || '')) return;
+    var pa = n.geometry.attributes.position, si = n.geometry.attributes.skinIndex, sw = n.geometry.attributes.skinWeight, zellen = {};
+    for (var i = 0; i < pa.count; i++) {
+      var key = Math.round(pa.getX(i) / vox) + ',' + Math.round(pa.getY(i) / vox) + ',' + Math.round(pa.getZ(i) / vox);
+      if (zellen[key]) continue; zellen[key] = 1;
+      var bone = null;
+      if (n.isSkinnedMesh) { var bw = -1, ws = [sw.getX(i), sw.getY(i), sw.getZ(i), sw.getW(i)], is = [si.getX(i), si.getY(i), si.getZ(i), si.getW(i)]; for (var c = 0; c < 4; c++) if (ws[c] > bw) { bw = ws[c]; bone = n.skeleton.bones[is[c]].name; } }
+      else { var o = n.parent; while (o && !_REGION[o.name.replace(/-?1$/, '')]) o = o.parent; bone = o ? o.name : 'mensch'; }
+      var basis = bone.replace(/-?1$/, ''), seite = /-1$/.test(bone) ? '-1' : /1$/.test(bone) ? '1' : '';
+      // die Ecke im Bind-Raum (bindMatrix × Ecke) und ihre vier Gewichte — der Takt häutet sie wie der Shader (r128 boneTransform)
+      _bv.set(pa.getX(i), pa.getY(i), pa.getZ(i)); if (n.isSkinnedMesh) _bv.applyMatrix4(n.bindMatrix);
+      liste.push({ n: n, i: i, region: _REGION[basis] + (seite ? ' ' + seite : ''), hand: basis === 'hand' ? 'hand' + seite : null, bv: [_bv.x, _bv.y, _bv.z],
+        si: n.isSkinnedMesh ? [si.getX(i), si.getY(i), si.getZ(i), si.getW(i)] : null, sw: n.isSkinnedMesh ? [sw.getX(i), sw.getY(i), sw.getZ(i), sw.getW(i)] : null });
+    }
+  });
+  gestalt.__proben = liste;
+  return liste;
+}
+function _teilName(t) { return (t.werk ? 'Teil' : 'Teil am Leib') + ' ' + t.h.map(function (x) { return (2 * x).toFixed(2); }).join('×') + ' m'; }
+function _hautGegenGeraet(V, D) {
+  var proben = _hautProben(), werk = V.ang.werk, teile = [];
+  // je Teil seine Mitte an der Lage dieses Takts und der Halbmesser seiner Kugel (die Vorprüfung: nur Punkte in ihr rechnen den Rahmen)
+  parkTeile.forEach(function (b) { if (b.werk === werk) teile.push({ b: b, S: null, m: b.c, r: Math.hypot(b.h[0], b.h[1], b.h[2]) }); });
+  parkAngebote.forEach(function (a) { if (a.werk !== werk || !a.teile) return; var S = KC.leibSchwenk(a), U = S ? { p: S.p, ax: S.ax, w: -S.w } : null;
+    a.teile.forEach(function (b) { teile.push({ b: b, S: U, m: S ? KC.leibSchwenkPunkt(S, b.c) : b.c, r: Math.hypot(b.h[0], b.h[1], b.h[2]) }); }); });
+  // die Stangen, die eine Hand umschließt: ihre Mitte oder einer ihrer Anker (der Griff, den sie hält, den sie verlässt, den sie
+  // erreicht — klettern `halt`/`von`/`ziel`, hangeln `griff`/`wechsel.griff`) liegt in ihr, um 3 cm
+  var umgriff = {};
+  ['hand1', 'hand-1'].forEach(function (h) { var anker = [_wl(h, gestalt.sk.handMitte[h])];
+    if (V.verb === 'klettern') [V.halt, V.von, V.ziel].forEach(function (A) { if (A && A[h]) anker.push(A[h]); });
+    if (V.verb === 'hangeln') { if (V.griff && V.griff[h]) anker.push(V.griff[h]); if (V.wechsel && V.wechsel.hand === h) anker.push(V.wechsel.griff); }
+    umgriff[h] = teile.filter(function (T) { var b = T.b, hs = b.h.slice().sort(function (x, y) { return x - y; }); if (hs[1] > 0.03) return false;
+      return anker.some(function (c) { var l = _boxLokal(b, T.S ? KC.leibSchwenkPunkt(T.S, c) : c); return Math.abs(l[0]) < b.h[0] + 0.03 && Math.abs(l[1]) < b.h[1] + 0.03 && Math.abs(l[2]) < b.h[2] + 0.03; }); }); });
+  // je Haut einmal im Takt: A_b = matrixWorld × bindMatrixInverse × Knochen-Welt × boneInverse (dieselbe Folge wie boneTransform)
+  var mats = new Map(), Mx = new THREE.Matrix4(), Mo = new THREE.Matrix4();
+  gestalt.l0.forEach(function (n) { if (!n.isSkinnedMesh) return; Mo.multiplyMatrices(n.matrixWorld, n.bindMatrixInverse);
+    mats.set(n, n.skeleton.bones.map(function (b, k) { return Mx.multiplyMatrices(b.matrixWorld, n.skeleton.boneInverses[k]).premultiply(Mo).elements.slice(); })); });
+  for (var j = 0; j < proben.length; j++) {
+    var q = proben[j], x = q.bv[0], y = q.bv[1], z = q.bv[2], p;
+    if (q.si) { var A = mats.get(q.n), X = 0, Y = 0, Z = 0;
+      for (var k = 0; k < 4; k++) { var wk = q.sw[k]; if (!wk) continue; var e = A[q.si[k]]; X += wk * (e[0] * x + e[4] * y + e[8] * z + e[12]); Y += wk * (e[1] * x + e[5] * y + e[9] * z + e[13]); Z += wk * (e[2] * x + e[6] * y + e[10] * z + e[14]); }
+      p = [X * M_E, Y * M_E, Z * M_E]; }
+    else { var e2 = q.n.matrixWorld.elements; p = [(e2[0] * x + e2[4] * y + e2[8] * z + e2[12]) * M_E, (e2[1] * x + e2[5] * y + e2[9] * z + e2[13]) * M_E, (e2[2] * x + e2[6] * y + e2[10] * z + e2[14]) * M_E]; }
+    for (var t = 0; t < teile.length; t++) {
+      var T = teile[t], b = T.b, dm0 = p[0] - T.m[0], dm1 = p[1] - T.m[1], dm2 = p[2] - T.m[2];
+      if (dm0 * dm0 + dm1 * dm1 + dm2 * dm2 > T.r * T.r) continue;
+      if (q.hand && umgriff[q.hand].indexOf(T) >= 0) continue;
+      var l = _boxLokal(b, T.S ? KC.leibSchwenkPunkt(T.S, p) : p), e = Math.min(b.h[0] - Math.abs(l[0]), b.h[1] - Math.abs(l[1]), b.h[2] - Math.abs(l[2]));
+      if (e > D.durch) { D.durch = e; D.durchWo = q.region + ' in ' + _teilName(b) + ' auf ' + (p[1] - V.ang.boden).toFixed(2) + ' m, Phase ' + V.phase; }
+    }
+  }
+}
+function playMessen(P) {
+  var L = play.L, V = L.leibVerb, M = messung, S = vorf && vorf.szene, G = {}, w;
+  _GELENKE.forEach(function (n) { G[n] = _wl(n); });
+  var q = parts.mensch.getWorldQuaternion(new THREE.Quaternion()), f = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
+  // die Zeile: am Gerät Verb und Phase, frei die Art der Szene (die Luft nach dem Sprung, die Hocke, der Abstoß)
+  var t = play.t, zeile = V ? V.verb + ':' + V.phase : S && S.frei && (!S.ab || vorf.n >= S.ab) ? (L.isInAir ? (t - (L._wandSprungAt || -Infinity) < KC.VERB_POSE.kickSec ? 'wandsprung:0' : t - (L._doppelSprungAt || -Infinity) < KC.VERB_POSE.tuckSec ? 'doppelsprung:0' : 'springen:' + (L.playerVel.y() > 0 ? 1 : 2)) : S.frei === 'springen' ? null : S.frei + ':0') : null;
+  // am Gerät trägt jedes Angebot seine Zeilen (die Verben an JEDEM Gerät), frei die Messung
+  var D = V && S ? M.geraete[V.ang.id] || (M.geraete[V.ang.id] = { name: _angName(V.ang), verb: V.verb, posen: 0, zeilen: {}, hand: 0, handWo: null, fuss: -Infinity, fussWo: null, durch: -Infinity, durchWo: null, griffe: {} }) : null;
+  if (zeile) { w = KC.leibPoseWinkel(G, [f.x, f.y, f.z]); var ZZ = D ? D.zeilen : M.zeilen, Z = ZZ[zeile] || (ZZ[zeile] = { n: 0, w: {} }); Z.n++;
+    for (var k in w) { var b = Z.w[k] || (Z.w[k] = [Infinity, -Infinity]); b[0] = Math.min(b[0], w[k]); b[1] = Math.max(b[1], w[k]); } play.winkel = w;
+    // der Griff: die Hand des Paars, die an einen neuen Anker greift — ihr Ellbogen an seinem Tiefpunkt im Schwung
+    if (D && V.verb === 'klettern' && V.paar >= 0) { var gh = V.paar === 0 ? 'hand1' : 'hand-1';
+      if (_umgreift(V, gh)) { var gk = V.seitGlied.toFixed(4) + gh, ge = w[gh === 'hand1' ? 'ellbogenL' : 'ellbogenR'], GR = D.griffe[gk];
+        if (!GR || ge < GR.w) D.griffe[gk] = { w: ge, wo: gh + ' Phase ' + V.phase + ' bei ' + play.t.toFixed(2) + ' s' }; } } }
+  if (D) {
+    D.posen++;
+    if (D.posen % 3 === 1) _hautGegenGeraet(V, D);
+    ['hand1', 'hand-1'].forEach(function (h) {
+      // die Stand-Hände: im Kreuzgang greift eine um, am Holm die wechselnde
+      if (!P || (V.verb === 'klettern' && _seitePaar(V, h) && _umgreift(V, h)) || (V.verb === 'hangeln' && V.wechsel && V.wechsel.hand === h)) return;
+      var d = V.verb === 'klettern' || V.verb === 'hangeln' ? _ankerAbstand(V.ang, _wl(h, gestalt.sk.handMitte[h])) : P.fehler[h];
+      if (d > D.hand) { D.hand = d; D.handWo = h + ' Phase ' + V.phase; } });
+    ['1', '-1'].forEach(function (s) { var so = play.sohle[s];
+      [[so[2], 'Ferse'], [play.kette.ballenZ, 'Ballen'], [so[0], 'Spitze']].forEach(function (z) { var p = _wl('ankle' + s, [0, -so[1], z[0]]);
+        parkTeile.forEach(function (b) { if (b.werk !== V.ang.werk) return; var e = _teilTiefe(b, p); if (e > D.fuss) { D.fuss = e; D.fussWo = z[1] + ' ankle' + s + ' Phase ' + V.phase; } }); }); });
+  }
+  // NP-03 DIE KAMERA HAT EINEN LEIB (K06): nach dem Einschwingen jeder Szene steht sie in keinem Teil des Parks (um KAMERA_RAND
+  // Lab-Maß), und zwischen Blickziel und Kamera liegt keins (die eigene Strecken-Probe, nie die des Lösers)
+  if (S && vorf.n >= 60 && play.cam === 'third') { var K = M.kamera, wer = null, c = _wm(camera.position), Lk = _wm({ x: play.blick[0], y: play.blick[1], z: play.blick[2] }); K.takte++;
+    parkTeile.forEach(function (b) { if (wer) return; var P = _boxLokal(b, c), A = _boxLokal(b, Lk), r = KAMERA_RAND * M_E, t0 = 0, t1 = 1, a;
+      for (a = 0; a < 3 && Math.abs(P[a]) < b.h[a] + r; a++);
+      if (a === 3) return (wer = 'Kamera in ' + (b.werk || 'Boden'));
+      for (a = 0; a < 3; a++) { var D = P[a] - A[a]; if (Math.abs(D) < 1e-12) { if (Math.abs(A[a]) > b.h[a]) return; continue; } var u = (-b.h[a] - A[a]) / D, v = (b.h[a] - A[a]) / D; t0 = Math.max(t0, Math.min(u, v)); t1 = Math.min(t1, Math.max(u, v)); if (t0 > t1) return; }
+      wer = (b.werk || 'Boden') + ' zwischen Ziel und Kamera'; });
+    if (wer) { K.fehl++; if (!K.erste) K.erste = S.name + ' Takt ' + vorf.n + ': ' + wer; } }
+  if (S && S.kapsel && !V) { var C = M.kapsel[S.name] || (M.kapsel[S.name] = { tief: 0, wo: null }), u = KAPSEL.stufeM + 0.05;
+    parkTeile.forEach(function (b) { var un = b.rx && !b.tritt ? 0.05 : u; for (var i = 0; i <= 5; i++) { var h = un + i / 5 * (2 * KAPSEL.fussM - un), l = _boxLokal(b, [play.p[0], play.p[1] + h, play.p[2]]);
+      if (Math.abs(l[1]) > b.h[1]) continue; var pen = KAPSEL.radiusM - Math.hypot(Math.max(0, Math.abs(l[0]) - b.h[0]), Math.max(0, Math.abs(l[2]) - b.h[2]));
+      if (pen > C.tief) { C.tief = pen; C.wo = (b.werk || 'Boden') + ' ' + h.toFixed(2) + ' m'; } } }); }
+}
+// die Hand des Paars greift wirklich um (ihr Ziel ist nicht ihr Griff — sonst hält sie, während der Fuß des Paars umsetzt)
+function _umgreift(V, h) { var a = V.von && V.von[h], b = V.ziel && V.ziel[h]; return !!(a && b && Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) > 1e-6); }
+// die Hand der schwingenden Seite (der Kreuzgang: Paar 0 = Hand 1 + Fuß −1, Paar 1 = Hand −1 + Fuß 1)
+function _seitePaar(V, h) { return (V.paar === 0 && h === 'hand1') || (V.paar === 1 && h === 'hand-1'); }
+// DIE VORFÜHRUNG: je Szene der Ort (aus dem Angebot des Werks im Park), die Gier, die Tasten je Takt-Strecke (W A S D, + Umschalt,
+// ^ Leertaste, C), die Hooks des Anfangs, des Takts und des Endes; das Ende trägt die Tempi in die Messung
+function _ang(werk, verb, teil) { return parkAngebote.find(function (a) { return a.werk === werk && a.verb === verb && (!teil || a.teil === teil); }); }
+function _vor(a, d) { var n = a.normale; return [a.flaeche[0] + n[0] * d, 0, a.flaeche[2] + n[1] * d]; }
+// das Klettern: hinauf, auf halber Höhe hält der Leib (die Phase des Haltens an jedem Gerät), dann weiter — das Tempo misst den Stieg
+function _klettert(werk) { return { name: 'klettern ' + werk, geraet: 'klettern ' + werk, ort: function () { var a = _ang(werk, 'klettern'); return { p: _vor(a, 0.4), gier: Math.atan2(-a.normale[0], -a.normale[1]) }; }, skript: [[40, 'W'], [40, ''], [560, 'W']],
+  takt: function (st) { if (play.L.leibVerb && vorf.tasten === 'W') (st.v = st.v || []).push(play.L.leibVerb.tempo); }, ende: function (st) { (messung.tempo.klettern = messung.tempo.klettern || []).push(st.v ? st.v.reduce(function (x, y) { return x + y; }, 0) / st.v.length : NaN); } }; }
+function _sprint(name, x, z, gier) { return { name: name, kapsel: true, ort: function () { return { p: [x, 0, z], gier: gier }; }, skript: [[150, 'W+']], ende: function () { messung.kapsel[name] = Object.assign(messung.kapsel[name] || { tief: 0 }, { weg: Math.hypot(play.p[0] - x, play.p[2] - z) }); } }; }
+var VORFUEHRUNG = [
+  { name: 'schaukeln', geraet: 'schaukeln', ort: function () { var a = _ang('doppelschaukel', 'schaukeln', 'sitz0'); return { p: [a.sitz[0], 0, a.sitz[2] + 0.3], gier: 0 }; }, skript: [[1, 'C'], [2, ''], [720, 'W'], [1, ''], [720, '']],
+    takt: function (st) { var V = play.L.leibVerb; if (!V) return; var z = V.ang.zustand; if (vorf.n === 724) { z.theta = 0.25; z.omega = 0; st.nd = []; st.prev = 0.25; }
+      if (st.nd) { if (st.prev < 0 && z.theta >= 0) st.nd.push(play.t); st.prev = z.theta; } },
+    ende: function (st) { var a = _ang('doppelschaukel', 'schaukeln', 'sitz0'), Lp = a.achse.a[1] - a.sitz[1] - KC.VERB_GESETZ.schaukeln.sitzSchwerpunktM;
+      messung.tempo.periode = [st.nd && st.nd.length > 1 ? (st.nd[st.nd.length - 1] - st.nd[0]) / (st.nd.length - 1) : NaN, 2 * Math.PI * Math.sqrt(Lp / G_WELT)]; } },
+  { name: 'rutschen', geraet: 'rutschen', ort: function () { var a = _ang('turmrutsche', 'rutschen'); return { p: [a.bahn[0][0], a.podest, a.bahn[0][2] - 0.15], gier: 0 }; }, skript: [[1, 'C'], [600, '']],
+    takt: function (st) { var V = play.L.leibVerb; if (V) st.vmax = Math.max(st.vmax || 0, V.tempo); else if (st.vmax && st.aus == null) st.aus = Math.hypot(play.L.playerVel.x(), play.L.playerVel.z()); },
+    ende: function (st) { messung.tempo.rutscheMax = [st.vmax]; messung.tempo.rutscheAusgang = [st.aus]; } },
+  { name: 'wippen', geraet: 'wippen', ort: function () { var a = _ang('balkenwippe', 'wippen'); return { p: [a.sitz[0][0], 0, a.sitz[0][2] + 0.3], gier: 0 }; }, skript: [[1, 'C'], [60, ''], [1, '^'], [90, '']],
+    takt: function (st) { var V = play.L.leibVerb; if (V) { st.phi = Math.max(st.phi || 0, Math.abs(V.ang.zustand.phi)); st.max = V.ang.phiMax; } }, ende: function (st) { messung.tempo.wippe = [st.phi, st.max]; } },
+  // der zweite Sitz der Doppelschaukel (jedes Angebot jedes Geräts): aufsitzen, anschwingen, ausschwingen
+  { name: 'schaukeln sitz1', geraet: 'schaukeln', ort: function () { var a = _ang('doppelschaukel', 'schaukeln', 'sitz1'); return { p: [a.sitz[0], 0, a.sitz[2] + 0.3], gier: 0 }; }, skript: [[1, 'C'], [2, ''], [360, 'W'], [1, ''], [240, '']] },
+  _klettert('sprossengeruest'), _klettert('kletterwand'), _klettert('turmrutsche'),
+  { name: 'hangeln', geraet: 'hangeln hangelbahn', ort: function () { var h = _ang('hangelbahn', 'hangeln').holme[0]; return { p: [(h[0][0] + h[1][0]) / 2, 0, h[0][2]], gier: 0 }; }, skript: [[1, '^'], [60, '^'], [360, 'W']],
+    takt: function (st) { if (play.L.leibVerb && !st.p0) { st.p0 = play.p.slice(); st.t0 = play.t; } }, ende: function (st) { messung.tempo.hangeln = [st.p0 ? Math.hypot(play.p[0] - st.p0[0], play.p[2] - st.p0[2]) / (play.t - st.t0) : NaN]; } },
+  { name: 'reck', geraet: 'hangeln turnreck', ort: function () { var h = _ang('turnreck', 'hangeln').holme[0]; return { p: [(h[0][0] + h[1][0]) / 2, 0, h[0][2]], gier: 0 }; }, skript: [[1, '^'], [60, '^'], [240, 'A']],
+    takt: function (st) { if (play.L.leibVerb && !st.p0) { st.p0 = play.p.slice(); st.t0 = play.t; } }, ende: function (st) { messung.tempo.hangelnQuer = [st.p0 ? Math.hypot(play.p[0] - st.p0[0], play.p[2] - st.p0[2]) / (play.t - st.t0) : NaN]; } },
+  { name: 'balancieren', geraet: 'balancieren', ort: function () { var b = _ang('schwebebalken', 'balancieren').bahn[0]; return { p: [b[0], b[1], b[2] + 0.3], gier: 0 }; }, skript: [[2, 'W'], [180, 'W+']],
+    takt: function (st) { if (play.L.leibVerb) st.v = Math.max(st.v || 0, play.L.leibVerb.tempo); }, ende: function (st) { messung.tempo.balancieren = [st.v]; } },
+  { name: 'gehen', frei: 'gehen', ab: 60, ort: function () { return { p: [14, 0, -12], gier: 0 }; }, skript: [[300, 'W']], ende: function () { messung.tempo.gehen = [Math.hypot(play.L.playerVel.x(), play.L.playerVel.z())]; } },
+  { name: 'laufen', frei: 'laufen', ab: 60, ort: function () { return { p: [14, 0, -12], gier: 0 }; }, skript: [[300, 'W+']], ende: function () { messung.tempo.laufen = [Math.hypot(play.L.playerVel.x(), play.L.playerVel.z())]; } },
+  { name: 'springen', frei: 'springen', ort: function () { return { p: [16, 0, 0], gier: 0 }; }, skript: [[10, ''], [1, '^'], [120, '']], takt: function (st) { st.h = Math.max(st.h || 0, play.p[1]); }, ende: function (st) { messung.tempo.sprungHoehe = [st.h]; } },
+  { name: 'doppelsprung', frei: 'springen', ort: function () { return { p: [16, 0, 4], gier: 0 }; }, skript: [[10, ''], [1, '^'], [12, ''], [1, '^'], [60, '']], takt: function () { if (play.L._doppelSprungAt != null) messung.doppel = true; } },
+  { name: 'wandsprung', frei: 'springen', ort: function () { return { p: [16, 0, 8], gier: 0 }; }, skript: [[10, ''], [1, '^'], [8, ''], [1, '^'], [40, '']],
+    takt: function () { if (vorf.n === 18) Object.assign(play.L, { _wandKontaktNx: 0, _wandKontaktNz: -1, _wandKontaktAt: play.t }); if (play.L._wandSprungAt != null) messung.wand = true; } },
+  // NP-02 DIE GERÄTE HALTEN: der Sprint gegen Wand, Turm, Bock und Pfosten (die Kapsel des Kontakts, gate:kamera-laub)
+  _sprint('Rücken der Kletterwand', 0.5, 13, Math.PI), _sprint('Turm der Rutsche', -7.5, 14.5, Math.PI / 2), _sprint('Bock der Schaukel', 2.5, 12.8, Math.PI / 2), _sprint('Pfosten der Hangel-Leiter', 2.4, 1.5, 0),
+];
+function vorfTafel() { var t = vorf.tasten || ''; if (typeof t === 'object') return Object.assign({ vor: 0, quer: 0, sprint: false, sprung: false, rutsch: false }, t); return { vor: (t.indexOf('W') >= 0 ? 1 : 0) - (t.indexOf('S') >= 0 ? 1 : 0), quer: (t.indexOf('A') >= 0 ? 1 : 0) - (t.indexOf('D') >= 0 ? 1 : 0), sprint: t.indexOf('+') >= 0, sprung: t.indexOf('^') >= 0, rutsch: t.indexOf('C') >= 0 }; }
+// die nächste Szene: der Leib frisch an ihrem Ort (resetRun), die Strecken ihres Skripts der Reihe nach
+function vorfSzene(i) { var S = (vorf.liste || VORFUEHRUNG)[i]; vorf.i = i; vorf.szene = S; vorf.n = 0; vorf.st = {}; vorf.k = 0; vorf.rest = S ? S.skript[0][0] : 0; if (!S) return;
+  resetRun(); var o = S.ort(); play.p = o.p.slice(); play.yaw = play.faceYaw = o.gier; vorf.tasten = S.skript[0][1]; }
+function vorfWeiter() { var S = vorf.szene; if (!S) return; if (S.takt) S.takt(vorf.st); vorf.n++;
+  if (--vorf.rest > 0) return; if (++vorf.k < S.skript.length) { vorf.rest = S.skript[vorf.k][0]; vorf.tasten = S.skript[vorf.k][1]; return; }
+  if (S.ende) S.ende(vorf.st); vorfSzene(vorf.i + 1); if (!vorf.szene) { vorf = null; resetRun(); play.urteil = KC.leibSollUrteil(messung); } }
+// headless (sofort): die ganze Vorführung in einem Zug, die Messung zurück; der Knopf zeigt sie Takt für Takt
+function playVorfuehrung(sofort, liste) { if (!play.on) enterPlay(); messungNeu(); vorf = { liste: liste || null }; vorfSzene(0); if (sofort) { while (vorf) playTakt(1 / 60); return messung; } return null; }
+// Lab-Maß: der Rand um jedes Teil, in dem die Kamera nie steht — der Leib der Kamera (armRadiusM) bis auf die Bisektion des Lösers
+// (10 Schritte, ≤ 1 % des Rands)
+var KAMERA_RAND = _KAM.armRadiusM * 0.97;
+function messungNeu() { messung = { zeilen: {}, geraete: {}, angebote: parkAngebote.map(function (a) { return { id: a.id, name: _angName(a) }; }), tempo: {}, kapsel: {}, kamera: { takte: 0, fehl: 0, erste: null }, doppel: false, wand: false }; return messung; }
+document.getElementById('btnVorfuehrung').addEventListener('click', function () { playVorfuehrung(false); });
+function _clamp(x, a, b) { return x < a ? a : (x > b ? b : x); }
+function _mix(a, b, t) { return a + (b - a) * t; }
+// DIE KAMERA GEGEN DIE WAHRE GESTALT (K06): die Strecke p + d·t (t 0..1, Labor-Maß) gegen das Teil b — im Rahmen des Teils (Gier
+// und Neigung, wie der Kontakt), um r aufgeblasen: der Eintritt t, Infinity ohne Schnitt (Slab); eine geneigte Planke ist eine
+// Planke, nie ihre Achsen-Box (der Blick des Rutschenden lag in der Box der ganzen Bahn)
+function _kamSeg(px, py, pz, dx, dy, dz, b, r) { var P = _boxLokal(b, [px * M_E, py * M_E, pz * M_E]), Q = _boxLokal(b, [(px + dx) * M_E, (py + dy) * M_E, (pz + dz) * M_E]), t0 = 0, t1 = 1;
+  for (var a = 0; a < 3; a++) { var D = Q[a] - P[a], lo = -b.h[a] - r * M_E, hi = b.h[a] + r * M_E; if (Math.abs(D) < 1e-12) { if (P[a] < lo || P[a] > hi) return Infinity; continue; } var u = (lo - P[a]) / D, v = (hi - P[a]) / D; if (u > v) { var q = u; u = v; v = q; } if (u > t0) t0 = u; if (v < t1) t1 = v; if (t0 > t1) return Infinity; }
+  return t0; }
+// der Punkt steht frei: in keinem Teil, um r aufgeblasen (Labor-Maß)
+function _kamFrei(x, y, z, r) { for (var i = 0; i < parkTeile.length; i++) { var b = parkTeile[i], l = _boxLokal(b, [x * M_E, y * M_E, z * M_E]); if (Math.abs(l[0]) < b.h[0] + r * M_E && Math.abs(l[1]) < b.h[1] + r * M_E && Math.abs(l[2]) < b.h[2] + r * M_E) return false; } return true; }
+// DIE KAMERA DES SPIELS (Labor-Einheiten; K06 DIE KAMERA HAT EINEN LEIB, NP-03): hinter dem Blick, über der Schulter, die Strecke
+// Blickziel → Kamera gegen jede Park-Box um armRadiusM (in Labor-Maß) aufgeblasen; die Kamera hält vor dem ersten Eintritt
+function playKamera(dt) {
+  var c = leibGruppe.position, sp = Math.hypot(play.vx, play.vz) / M_E, R = _KAM.armRadiusM;
+  var fT = play.fovBase + _clamp(sp / 18, 0, 1) * 7; play.fov += (fT - play.fov) * (1 - Math.pow(0.02, dt));
+  if (Math.abs(camera.fov - play.fov) > 0.02) { camera.fov = play.fov; camera.updateProjectionMatrix(); }
+  if (play.cam === 'third') {
+    if (headGroup) headGroup.visible = true;
+    var lead = Math.min(sp * 0.10, 2.2);
+    var ltx = c.x + Math.sin(play.faceYaw) * lead - Math.cos(play.yaw) * 0.65, lty = c.y + 3.15, ltz = c.z + Math.cos(play.faceYaw) * lead + Math.sin(play.yaw) * 0.65;
+    var dist = 11.6 + sp * 0.14, ldx = Math.sin(play.yaw) * Math.cos(play.pitch), ldy = Math.sin(play.pitch), ldz = Math.cos(play.yaw) * Math.cos(play.pitch);
+    var shX = -Math.cos(play.yaw) * 1.75, shZ = Math.sin(play.yaw) * 1.75;
+    var icx = c.x - ldx * dist + shX, icy = c.y + 3.85 - ldy * dist, icz = c.z - ldz * dist + shZ;
+    var ks = 1 - Math.pow(_KAM.armRuhe, dt);
+    play.camX = _mix(play.camX, icx, ks); play.camY = _mix(play.camY, icy, ks); play.camZ = _mix(play.camZ, icz, ks);
+    play.lookX = _mix(play.lookX, ltx, ks * 1.4); play.lookY = _mix(play.lookY, lty, ks * 1.4); play.lookZ = _mix(play.lookZ, ltz, ks * 1.4);
+    var kbx = c.x, kbz = c.z, klx = play.lookX - kbx, klz = play.lookZ - kbz, ks2 = 1;
+    for (var i = 0; i < parkTeile.length; i++) { var h0 = _kamSeg(kbx, play.lookY, kbz, klx, 0, klz, parkTeile[i], R + 0.01); if (h0 > 0 && h0 < ks2) ks2 = h0; }
+    var LX = kbx + klx * ks2, LY = play.lookY, LZ = kbz + klz * ks2;
+    // der Blickpunkt liegt nie in einem Teil: hinkt die Glättung durch eins (der Ausstieg oben aufs Podest versetzt den Leib), springt
+    // er auf sein Soll über dem Leib
+    if (!_kamFrei(LX, LY, LZ, 0)) { LX = play.lookX = ltx; LY = play.lookY = lty; LZ = play.lookZ = ltz; }
+    var kdx = play.camX - LX, kdy = play.camY - LY, kdz = play.camZ - LZ, kt = 1;
+    for (var j = 0; j < parkTeile.length; j++) { var b = parkTeile[j], h = _kamSeg(LX, LY, LZ, kdx, kdy, kdz, b, R); if (h === 0) { h = _kamSeg(LX, LY, LZ, kdx, kdy, kdz, b, 0); h = h === 0 ? Infinity : Math.max(0, h - R / Math.hypot(kdx, kdy, kdz)); } if (h < kt) kt = h; }
+    if (!_kamFrei(LX + kdx * kt, LY + kdy * kt, LZ + kdz * kt, R)) { var klo = 0, khi = kt; for (var k = 0; k < 10; k++) { var km = (klo + khi) / 2; if (_kamFrei(LX + kdx * km, LY + kdy * km, LZ + kdz * km, R)) klo = km; else khi = km; } kt = klo; }
+    camera.position.set(LX + kdx * kt, LY + kdy * kt, LZ + kdz * kt); camera.lookAt(LX, LY, LZ); play.blick = [LX, LY, LZ];
+  } else {
+    if (headGroup) headGroup.visible = false;
+    var hp = new THREE.Vector3(); headGroup.getWorldPosition(hp);
+    camera.position.set(hp.x, hp.y + 0.15, hp.z);
+    var lx = Math.sin(play.yaw) * Math.cos(play.pitch), ly = Math.sin(play.pitch), lz = Math.cos(play.yaw) * Math.cos(play.pitch);
+    camera.lookAt(hp.x + lx, hp.y + 0.15 + ly, hp.z + lz);
+  }
 }
 // ===================== END PLAY SYSTEM =====================
 var BUILD='B64·benchmark';console.log('%cDA VINCI BUILD '+BUILD,'color:#7fd;font-weight:bold');

@@ -185,7 +185,7 @@ function seitenPruefer() {
                 // BÜHNE: die fremde Kachel einer Welt-Grenz-Probe: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
                 voxelEdits: [{ x: 12345, y: 10, z: 12345, r: 2, mode: "carve", herkunft: T }],
                 settlementCells: { [T]: { seed: 7, nH: 3, x: 12345, z: 12345 }, start: { herkunft: T } },
-                genesisPortalRing: T,
+                genesisOrt: T,
                 portalPreviewFachwerk: T,
                 portalPreviewGarage: T,
                 saat: [{ dsl: T }],
@@ -219,9 +219,14 @@ function seitenPruefer() {
             const x = pm ? pm.position.x + 6 : 6;
             const z = pm ? pm.position.z + 6 : 6;
             // DIE LICHT-GEDÄCHTNISSE über ihre echten Schreiber: das wache Tor (`_tickPortalLicht`) und der Licht-Pool,
-            // der es hält (`_leuchtTakt`) — die Laterne eines Plans ist ein Eintrag der Welt (`laterne_dorf`), kein Gedächtnis
+            // der es hält (`_leuchtTakt`) — die Laterne eines Plans ist ein Eintrag der Welt (`laterne_dorf`), kein Gedächtnis.
+            // Das Tor steht 3 m vor dem Auge in seiner Höhe (im Kegel und im Umkreis des Pools, wo die Kamera der Seite auch steht —
+            // vor jeder Laterne des Genesis-Orts: seine Kern-Laternen hielten sonst die vier Plätze, ein Tor seitlich hinter dem
+            // Spieler rangiert hinter jeder im Bild), der Pool wählt frisch wie nach dem Boot
+            const cam = st.camera.position;
+            r._leuchtPool = null;
             r._tickPortalLicht({
-                entry: { position: { x, y: r.getTerrainHeightAt(x, z) + 1, z }, scale: 1 },
+                entry: { position: st.camera.getWorldDirection(cam.clone()).setY(0).normalize().multiplyScalar(3).add(cam), scale: 1 },
                 tor: { mu: { springY: 1 } },
                 _act: 1,
                 u: null,
@@ -298,7 +303,7 @@ function seitenPruefer() {
 async function bereit(page, weltId) {
     return page.evaluate(async (weltId) => {
         const t0 = performance.now();
-        await window.__weltDa((w) => w.state?.worldMeta);
+        await __weltDa((w) => w.state?.worldMeta);
         const welt = st.worldMeta.worldId;
         return { ok: !weltId || welt === weltId, ms: Math.round(performance.now() - t0), welt };
     }, weltId || null);

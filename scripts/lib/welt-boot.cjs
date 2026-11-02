@@ -20,6 +20,18 @@ const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile, zeitZe
 const stammLib = require("./stamm.cjs");
 const { ohneKommentare, ast, wandere, zeileVon } = stammLib;
 
+// DER STILLE HAND-TAKT (`__handTakt()`, in jeder Seite): ein Bild des Loops von Hand, sein Wurf still — je Linse ein eigenes
+// `try { r._gameLoopTick(performance.now()); } catch {}` war ein Zwilling (w4-arena-welt, 39 Stellen); die Stille lebt an
+// DIESEM Chokepoint und fällt hier mit einem Schnitt.
+function handTakt() {
+    try {
+        r._gameLoopTick(performance.now());
+    } catch {}
+}
+// DER EINE VERGLEICH und DIE EINE ADDITION (`xs.sort(aufsteigend)`, `xs.reduce(addiere, 0)`): in Node global, sobald welt-boot
+// lädt (wie THREE mit studioKern), in jeder Seite derselbe Text — je Linse ein eigenes `(a, b) => a - b` und `(a, b) => a + b` war ein Zwilling (w4-arena-welt).
+const aufsteigend = (globalThis.aufsteigend = (a, b) => a - b);
+const addiere = (globalThis.addiere = (a, b) => a + b);
 // DER EINE SCHLAF (`await sleep(ms)`): in Node der Export, in jeder Seite derselbe Text als `window.sleep` (`WARTEN_SEITE`) —
 // eine Probe schläft in beiden Welten mit demselben Ruf, ein eigenes `new Promise((r) => setTimeout(r, ms))` ist ein Zwilling
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -36,7 +48,7 @@ function leihe(o, tausch) {
 // setzt) als Getter (`WARTEN_SEITE`, vor jedem Skript) — eine Seiten-Funktion liest Welt und Zustand bei diesen Namen, ein eigenes
 // `const r = window.anazhRealm` / `const st = r.state` ist ein Zwilling (872 Bindungen fielen in w3u-nachfolge); wer einen
 // der Namen schreibt (ein fremdes Skript), bekommt eine gewöhnliche Variable
-const weltR = `for (const [n, f] of [["r", () => window.anazhRealm], ["st", () => window.anazhRealm && window.anazhRealm.state]]) Object.defineProperty(window, n, { get: f, set: (v) => Object.defineProperty(window, n, { value: v, writable: true }), configurable: true });`;
+const weltR = `for (const [n, f] of [["r", () => window.anazhRealm], ["st", () => window.anazhRealm && window.anazhRealm.state], ["pm", () => st && st.playerMesh]]) Object.defineProperty(window, n, { get: f, set: (v) => Object.defineProperty(window, n, { value: v, writable: true }), configurable: true }); window.__handTakt = ${handTakt}; window.aufsteigend = ${aufsteigend}; window.addiere = ${addiere};`;
 // DIE EINE JSON-LESUNG (`jsonLesen(pfad)`): je Linse ein eigenes `JSON.parse(fs.readFileSync(pfad, "utf8"))` war ein Zwilling
 // (w4-himmel-uhr: 57 Stellen in 26 Linsen); sie liest über den EINEN Datei-Leser `ausDatei` (`pfad` ab der Wurzel des Baums
 // oder absolut) — bis w4-studios-heim3 trug er ein eigenes JSON-Flag, zwei Lesungen derselben Sache
@@ -93,12 +105,10 @@ async function seitenTakt() {
 // DIE TAKTE VON HAND (`await window.__takte(n, ms)`): n Takte des Loops, je `ms` (ohne: 30) Schlaf dazwischen, ein werfender
 // Takt bricht die Reihe nicht — bis w4-verkehr-c dreimal derselbe Zwilling (diag-ankunft, diag-v1-pfad, diag-werkstatt-weg),
 // bis w4-verkehr-c2 neunmal mehr (diag-foundry-deadlock, playtest, diag-blick, diag-fern-wasser, diag-foundry-crossfade,
-// playtest/studio zweimal, diag-kamera-laub, diag-pruefbuehne)
+// playtest/studio zweimal, diag-kamera-laub, diag-pruefbuehne); je Takt der EINE stille Hand-Takt (`__handTakt`)
 async function takte(n, ms) {
     for (let i = 0; i < n; i++) {
-        try {
-            r._gameLoopTick(performance.now());
-        } catch {}
+        __handTakt();
         await sleep(ms ?? 30);
     }
 }
@@ -1447,7 +1457,7 @@ function scanWarteWand(dateien, rest = Object.assign({}, ...Object.values(requir
                 )
                     fristen.add(n);
                 else if (
-                    hat(w, (c) => c.property?.name === "__gebautNach") &&
+                    hat(w, (c) => (c.property || c).name === "__gebautNach") &&
                     f &&
                     f.body &&
                     f.body.type === "BlockStatement" &&

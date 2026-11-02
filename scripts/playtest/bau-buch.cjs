@@ -45,7 +45,6 @@ async function checkBandV1769RoleResonance({ page, check }) {
             "waterfall",
             "stein_block",
             "damm",
-            "start_plattform",
             "kristall_geode",
             "glutbrunnen",
             "felsturm",
@@ -925,9 +924,7 @@ async function checkBandV1788WorkshopAsProcess({ page, check }) {
     );
 }
 
-async function checkBandWave4({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandWave4({ page, check }) {
     // ### Materialien als Tag-Profile ###
     const wave4p1Results = await safeEvaluate(page, () => {
         const out = {};
@@ -1404,9 +1401,7 @@ async function checkBandWave4({ page, check, errors, finalState }) {
     }
 }
 
-async function checkBandWave5({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandWave5({ page, check }) {
     // ### räumliche Emergenz (Spitze richtet + Kontakt überträgt) ###
     const wave5bResults = await safeEvaluate(page, () => {
         const out = {};
@@ -2186,9 +2181,7 @@ async function checkBandWave5({ page, check, errors, finalState }) {
     }
 }
 
-async function checkBandWaves9And10a({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandWaves9And10a({ page, check }) {
     // ### Werkzeug-Domains + emergente Bauplan-Rolle ###
     const wave9aResults = await safeEvaluate(page, () => {
         const AR = AnazhRealm;

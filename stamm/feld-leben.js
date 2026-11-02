@@ -2790,7 +2790,7 @@ AnazhRealm.KEYBINDING_LABELS = Object.freeze({
 });
 // Der Grund der Natur-Wand im Satz des Spielers (Leser: `SETZ_GRUND` des Ergebnis-Satzes, `confirmBuild` und das Bau-HUD).
 AnazhRealm.NATUR_WAND_GRUND = Object.freeze({
-    lichtung: "die Lichtung des Genesis-Platzes bleibt frei, keine Krone steht über der Scheibe und dem Ring der Tore",
+    lichtung: "die Flächen des Genesis-Orts bleiben frei, keine Krone steht über dem Rund der Tore",
     haus: "im Grundriss eines Hauses wächst nichts",
     bau: "im Grundriss eines Baus wächst nichts",
     weg: "auf Weg, Platz und Acker eines Dorfs wächst nichts",

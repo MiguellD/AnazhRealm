@@ -267,7 +267,7 @@ function atem() {
         // die Welt steht: Renderer, Foundry-Buch, Sätze und Bäume der Stufen-Wahl; danach ruht der Spiel-Loop
         const bereit = await page.evaluate(async () => {
             const t0 = performance.now();
-            for (const weiter = window.__deckel("Renderer, Buch, Sätze und Bäume", 1200); weiter(); ) {
+            for (const weiter = __deckel("Renderer, Buch, Sätze und Bäume", 1200); weiter(); ) {
                 const st = r && r.state;
                 const n =
                     st && Array.isArray(st.architectures)
@@ -291,7 +291,7 @@ function atem() {
             if (!st || !st.rendererReady) return { ok: false };
             let n0 = -1,
                 seit = 0;
-            for (let k = 0, weiter = window.__deckel("der ruhende Bestand", 960); weiter(); k++) {
+            for (let k = 0, weiter = __deckel("der ruhende Bestand", 960); weiter(); k++) {
                 const n = st.architectures.length;
                 const offen = st.voxelMeshPending ? st.voxelMeshPending.size : 0;
                 if (n !== n0 || offen > 0) {

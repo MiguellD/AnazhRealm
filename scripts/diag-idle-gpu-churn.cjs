@@ -90,14 +90,12 @@ hauptLauf(async () => {
                 if (r?.state?.rendererReady && typeof r._gameLoopTick === "function") {
                     r.state.autoSeason = false; // die Saison hält (Bühne)
                     window.__wetterHalten(); // das Wetter hält (die EINE Wetter-Wache)
-                    try { r._gameLoopTick(performance.now()); } catch {}
+                    __handTakt();
                     // die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`) — je Scheibe höchstens 120 ruhige Takte
                     S.sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
                     try {
-                        await window.__weltStehtNach(() => {
-                            try {
-                                r._gameLoopTick(performance.now());
-                            } catch {}
+                        await __weltStehtNach(() => {
+                            __handTakt();
                         }, 120);
                         S.done = true;
                     } catch (e) {
@@ -526,7 +524,7 @@ hauptLauf(async () => {
         process.exit(0);
     }
     console.log("⛔ GPU-PIPELINE-CHURN IM STEADY-STATE — eine Operation kompiliert pro Frame/Regen neu.");
-    console.log("   Das ist die V18.322-Fehlerklasse (ein per-Drift wechselndes scene.environment ODER eine andere");
+    console.log("   Das ist die Fehlerklasse (ein per-Drift wechselndes scene.environment ODER eine andere");
     console.log("   pro-Frame neu allokierte Render-Ressource). Heile sie identitäts-stabil + rate-gedeckelt,");
     console.log("   NICHT durch Wegdrosseln des Symptoms. (CLAUDE.md: Rendering · scene.environment IDENTITÄTS-STABIL.)");
     process.exit(2);

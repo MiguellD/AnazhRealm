@@ -5,12 +5,10 @@
 // ── DIE PROBE IN DER SEITE (Funktionsrumpf; r = die Welt). Fährt den echten Frame. ──
 async function probeLeben(expected) {
     const res = {};
-    await window.__weltDa();
+    await __weltDa();
     const VC = window.__vehicleCore;
     const f = r._ensureAssetFoundry();
-    await window.__weltDa(
-        () => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt
-    );
+    await __weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt);
     const P = Object.getPrototypeOf(r);
     const A = P.constructor; // die Klasse der Welt (Gesetze und Konstanten)
     const DT = 1 / 60;
@@ -246,7 +244,7 @@ async function probeLeben(expected) {
     // DIE ANKUNFT: eine Station an einem neuen Ort misst erst, wenn die Welt um den Spieler steht (welt-boot `__weltStehtNach`).
     const ankommen = async (x, zz) => {
         stelle(x, zz, 2);
-        await window.__weltStehtNach(frame);
+        await __weltStehtNach(frame);
     };
     // Ein Werk setzen, aufsitzen, einschwingen. `fahrt` = Fahrt-Richtung (sin, cos); ein Studio-Fahrzeug liegt längs x.
     const setzen = async (typ, x, zz, fahrt, vorAufsitzen) => {
@@ -260,7 +258,7 @@ async function probeLeben(expected) {
         if (!e) return null;
         // der Bau wartet im Takt der Probe (`frame`: Muster-Zeiten, die Bahn-Wache je Bild), nie im Takt der Seite — dessen
         // Wanduhr-Takt (`performance.now()`) trug je Lauf andere Schritte in die Welt, ehe der Wagen fuhr (Lehre 13)
-        await window.__gebautNach(e);
+        await __gebautNach(e);
         if (vorAufsitzen) vorAufsitzen(e);
         const mr = r.mountArchitecture(e);
         if (!mr || !mr.ok) return null;
@@ -590,13 +588,13 @@ async function probeLeben(expected) {
     // Zählung des Sim-Takts trägt der Fahrer (`F.takte`, `F.tempo`, `F.fest`). Je 10 m der Route der Boden am Wagen: dorf (ein
     // Haus in 25 m), wald (≥ 3 Bäume der Natur in 15 m), sonst wiese. `mutante` (die Weg-Erkennung aus): die Luftlinie.
     const wegenetz = async (o) => {
-        await window.__weltDa(() => A._siedlungGesetz());
+        await __weltDa(() => A._siedlungGesetz());
         let i = 0;
         const bild = () => (o.gleich ? r._gameLoopTick((tMs += 1000 / 60)) : frame(i++));
         const orte = o.orte.map((k) => r._wegenetzNachbarn(k) && r._wegenetzMemo.orte.get(k));
         for (const ort of orte) {
             stelle(ort.x + 30, ort.z + 30, 2);
-            await window.__gebautNach("der Ort " + ort.key, {
+            await __gebautNach("der Ort " + ort.key, {
                 takt: bild,
                 fertig: () => (r._bewohnerSiedlungen || new Map()).has(ort.key),
             });
@@ -660,7 +658,7 @@ async function probeLeben(expected) {
             (m) => m.id === "stadt-voll"
         );
         const [seed, [ax, az]] = [Number(ort.gruendung.wort.split(" ")[1]), ort.gruendung.anker];
-        await window.__weltDa(() => A._siedlungGesetz());
+        await __weltDa(() => A._siedlungGesetz());
         let i = 0;
         const S0 = () =>
             [...(r._bewohnerSiedlungen || new Map()).values()].find(
@@ -728,7 +726,7 @@ async function probeLeben(expected) {
                     }
                 if (platz) stelle(platz.x, platz.z, 0.2);
             };
-            for (const weiter = window.__deckel("verkehr: die Stadt steht", 8000); weiter() && !bereit(); i++) {
+            for (const weiter = __deckel("verkehr: die Stadt steht", 8000); weiter() && !bereit(); i++) {
                 if (!gesucht && S.verkehr) neben(S.verkehr);
                 frame(i);
                 if (i % 8 === 7) await window.sleep();
@@ -954,6 +952,8 @@ async function probeLeben(expected) {
                 beruehrt: { leib: m.leib, wagen: m.wagen, bau: m.bau, orte: m.leibOrte, wagenOrte: m.wagenOrte, bauOrte: m.bauOrte }, // prettier-ignore
                 ankunft,
                 netz: { verboten, ausNetz: ausNetz.length, irrweg: VK.zahl.irrweg },
+                // der Plan der Stadt trägt diese Stände neben der Trasse nicht (`standOhneOrt`): wer an ihnen stand, geht ohne sie
+                platzVoll: (S.standOhneOrt || []).size,
                 ohneSchluessel: m.ohne,
                 ohneOrte: m.ohneOrte,
                 querMax: +m.quer.toFixed(2),
@@ -1054,7 +1054,7 @@ async function probeLeben(expected) {
             for (const o of [P, AnazhRealm])
                 for (const k of Object.getOwnPropertyNames(o)) {
                     const f = Object.getOwnPropertyDescriptor(o, k).value;
-                    if (typeof f === "function" && !window.__fehlt(f, /\.fov\s*=(?!=)/)) m5.schreiber.push(k);
+                    if (typeof f === "function" && !__fehlt(f, /\.fov\s*=(?!=)/)) m5.schreiber.push(k);
                 }
             // R2: Z wiederholt ohne Ziel im Blick, ein Rezept-Satz ohne Tempo-Felder
             const [fo, mel, ziel] = [r._foundry, [], [true, false]];
@@ -1107,6 +1107,17 @@ async function probeLeben(expected) {
             const kurs = () => e.rotationY + Math.PI / 2; // Studio-Wagen: Bug +x
             const wink = (a) => Math.round((Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) * 1800) / Math.PI) / 10;
             const pr = e && r._foundryPresetForEntry(e);
+            // DER GERITTENE WAGEN TRÄGT SEINE STUFE, BEVOR DER RITT BEGINNT (das EINE Warten, welt-boot `__gebautNach`): die Welt
+            // urteilt die Stufe des Gerittenen beim Aufstieg (`mountArchitecture` → `_archBewegt`) und serviert seine L0, sobald
+            // sie gebacken ist (`_servedLod`), dazu liegt ihr Band-Partner L1 bereit (`_foundryStufeBereit`). Der Ritt ist ein
+            // Takt ohne Warten (`frame`): was zu seinem Beginn nicht gebacken ist, kommt in ihm nie an. Bis hier wartete die Probe
+            // nur auf die L1 — sie stand schon, der Wagen trug die Stufe seines Setzens (L1, das Auge der Third-Sicht) und die L0
+            // war erst als Band-Partner bestellt; im CI (ein Werk-Faden, Genesis-Ort) kam sie vor dem Ritt nicht: band 0, Stufe L1
+            if (e)
+                await __gebautNach(e, {
+                    fertig: () => e._servedLod === 0 && r._foundryStufeBereit(e, pr, 1),
+                    bau: () => r._foundryFlattenFor(e, pr, 1),
+                });
             let [i, n, q, ausEgo, fv, wf] = [0, 0, [], false, 0, 0];
             const bild = () => {
                 const v = spielerTempo();
@@ -2014,7 +2025,7 @@ async function probeLeben(expected) {
                     { silent: true, precise: true, rotationY: gasse.fahrt - Math.PI / 2 }
                 );
                 if (!e) return null;
-                await window.__gebautNach(e);
+                await __gebautNach(e);
                 return e.blockerAABBs && e.blockerAABBs.length ? e : null;
             },
             lage: (e) => ({ x: e.position.x, z: e.position.z }),
@@ -2116,7 +2127,7 @@ async function probeLeben(expected) {
                     { x, y: hh(x, zz) + 0.5, z: zz },
                     { silent: true, precise: true, rotationY: rotY }
                 );
-                if (e) await window.__gebautNach(e);
+                if (e) await __gebautNach(e);
                 return e && e.blockerAABBs && e.blockerAABBs.length ? e : null;
             };
             // der Abstand der Spieler-Kapsel (r 0,35) zur Hülle des Wagens (< 0: sie steckt in ihm), längs der Gasse im Rahmen
@@ -2863,12 +2874,10 @@ function kernTempo(VC) {
 
 // ── K1 (physik K1, `--koerper`): Masse und Eintauchtiefe am Spieler-Weg (Takt, `_fahrBoden`), dann jede Zeile ρ ×2.
 async function probeKoerper(opt) {
-    await window.__weltDa();
+    await __weltDa();
     const A = Object.getPrototypeOf(r).constructor;
     const f = r._ensureAssetFoundry();
-    await window.__weltDa(
-        () => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt
-    );
+    await __weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt);
     const res = { err: null };
     const hh = (a, b) => r.getTerrainHeightAt(a, b);
     let tMs = performance.now();

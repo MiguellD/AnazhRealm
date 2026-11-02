@@ -933,6 +933,8 @@ jobs:
               # Selbst-Tests S1–S7, S9–S18.
               # K13 T26: die Klick-Pfad-Matrix (8 Waffen × 3 Abstände × Rumpf/Horizont × 3rd/1st über tryMouseBreak) macht
               # 96 von 96 Schaden, der Wolf im Rücken bleibt heil, jenseits der Klinge ein Luftschlag mit Hinweis.
+              # Q16 die Arena der Welt (w4-arena-welt): der Hieb am Pendel des Schmiede-Kerns schlägt über den EINEN Stoß aus,
+              # die Instanz folgt, Ruhe ≤ 6 s, der Pfeil stößt nach, der Stoß rechnet im Kern (Selbst-Test 8/8).
               run: npm run gate:kampf-gefuehl
 
             - name: Die Stoff-Linse der Gegenstaende (W5 — Fahrzeuge und Klingen im Band ihrer Natur)

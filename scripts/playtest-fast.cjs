@@ -54,7 +54,7 @@ function check(name, ok) {
             // knapper Boot-Deckel → früher Fallback → leerer Warmup. 60 s ist ein reiner
             // Sicherheits-Deckel gegen einen echten Hänger — die Schleife exitet, sobald
             // `_gameLoopTick` da ist (normal ~Sekunden), also kostet er den Schnellfall nichts.
-            await window.__weltDa((r) => r.state && r.state.rendererReady && r.state.blueprints);
+            await __weltDa((r) => r.state && r.state.rendererReady && r.state.blueprints);
         });
         // ── KURZER PLATEAU-WARMUP (render-gestubbt, chirurgisch wie playtest.cjs) ──
         await page.evaluate(async () => {
@@ -81,9 +81,7 @@ function check(name, ok) {
             let lastBuilt = -1,
                 lastGrowth = start;
             for (;;) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {}
+                __handTakt();
                 const elapsed = performance.now() - start;
                 const built = st.voxelChunks ? st.voxelChunks.size : 0;
                 if (built !== lastBuilt) {

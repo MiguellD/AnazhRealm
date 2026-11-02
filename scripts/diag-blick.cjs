@@ -54,7 +54,7 @@ hauptLauf(async () => {
                 }
                 // das PNG (`__png`). GEMESSEN: der WebGPU-Readback liefert die Zeilen bereits TOP-DOWN — kein Y-Flip
                 // (der WebGL-Erfahrungswert „bottom-up" gilt hier nicht).
-                return { ok: true, farben: set.size, nonzero, png: window.__png(u8, w, h) };
+                return { ok: true, farben: set.size, nonzero, png: __png(u8, w, h) };
             };
 
             // Blick einrichten: Augenhöhe in den Wald ODER auf den Boden.

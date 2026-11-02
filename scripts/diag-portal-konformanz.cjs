@@ -743,14 +743,14 @@ async function lauf(welten, taeter) {
             { timeout: 120000, polling: 200 }
         );
         // Der Vibe-Pass steht (ed25519, asynchron im Boot); dann das Mitgebrachte in den Zustand der Heimat.
-        await page.evaluate(() => window.__weltDa((r) => !!r.state.vibePass?.ready));
+        await page.evaluate(() => __weltDa((r) => !!r.state.vibePass?.ready));
         await page.evaluate((M) => {
             st.materials[M.material] = { builtIn: false, color: M.farbe, label: M.material, tags: {} };
             st.tools.konformanz_feile = { builtIn: false, label: M.werkzeug, opName: "konformanz_op", opClass: "subtractive" };
-            // K8: der Ring des Genesis-Orts (headless ruht sein Takt) und was der Spieler trägt — ein Kiesel in der Hand, eine
+            // K8: die Tore des Genesis-Orts (headless ruht sein Takt, die Probe ruft sein Glied) und was der Spieler trägt — ein Kiesel in der Hand, eine
             // Laterne in der Neben-Hand, der Brustpanzer, drei Dinge im Inventar, ein Platz der Hotbar, die Gestalt des Körpers,
             // und er sitzt auf dem Pferd (der Spieler-Weg: aufsitzen, reiten, durchs Tor)
-            r._genesisPortalRing(r._genesisMitte());
+            r._genesisOrt(r._genesisMitte());
             r.mountArchitecture(r.spawnArchitecture("reittier_holzross", st.playerMesh.position));
             r.equipHeld("kiesel");
             r.equipArmor("ruestung_brustpanzer");

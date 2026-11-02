@@ -29,7 +29,7 @@ hauptLauf(async () => {
         const res = { r: {}, s: {}, d: {}, w: {} };
         const r = await window.__weltDa();
         const f = r._ensureAssetFoundry();
-        await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.wolf && !f._vorrat);
+        await __weltDa(() => f && f.ready && f.recipes && f.recipes.wolf && !f._vorrat);
         if (!(f && f.ready && f.recipes && f.recipes.wolf)) return { fatal: "wolf-Rezept kam nie" };
 
         // Leere Bühne + genug Kapazität.

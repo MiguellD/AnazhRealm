@@ -109,20 +109,8 @@
    ],
    [
     [
-     "                lichtung: true,\n",
+     "        if (this._genesisFlaeche(x, z, reich)) return \"lichtung\";\n",
      ""
-    ]
-   ]
-  ],
-  "schwebe": [
-   [
-    "sohle",
-    "W8 Sohle"
-   ],
-   [
-    [
-     "this.spawnArchitecture(\"start_plattform\", { x: spot.x, y: sohle + 0.5, z: spot.z }, { silent: true });",
-     "this.spawnArchitecture(\"start_plattform\", { x: spot.x, y: sohle + 5.5, z: spot.z }, { silent: true });"
     ]
    ]
   ],
@@ -133,8 +121,20 @@
    ],
    [
     [
-     "const r = Math.max(p0 && Number.isFinite(p0.x) ? (p0.x / 2) * g : 0, P.ringR + P.rand);",
-     "const r = p0 && Number.isFinite(p0.x) ? (p0.x / 2) * g : 0;"
+     "if (reich > 0 && lx * lx + lz * lz < (FC.GENESIS_ORT.freiraum.r + reich) ** 2) return \"freiraum\";",
+     "if (reich > 0 && lx * lx + lz * lz < (FC.GENESIS_ORT.freiraum.r * 0.3 + reich) ** 2) return \"freiraum\";"
+    ]
+   ]
+  ],
+  "ortabsage": [
+   [
+    "lichtung",
+    "W8 Ort"
+   ],
+   [
+    [
+     "if (opts.ausGesetz === true && position && this._tatSperrt(position.x, position.z)) return nein(\"tat\");",
+     "if (opts.ausGesetz === true && position && (this._tatSperrt(position.x, position.z) || opts.id === \"genesis:tor:3\")) return nein(\"tat\");"
     ]
    ]
   ],
@@ -164,8 +164,8 @@
   ],
   "dach": [
    [
-    "sohle",
-    "W8 Sohle"
+    "bau",
+    "W8 Dach"
    ],
    [
     [
@@ -275,8 +275,9 @@
    ],
    [
     [
-     "-Math.SQRT1_2 &&",
-     "Infinity &&"
+     "/koerper-core.js",
+     "L._wandKontaktNz < -Math.SQRT1_2 &&",
+     "L._wandKontaktNz < Infinity &&"
     ]
    ]
   ],
@@ -315,8 +316,9 @@
    ],
    [
     [
-     "-Math.SQRT1_2 &&",
-     "-2 &&"
+     "/koerper-core.js",
+     "L._wandKontaktNz < -Math.SQRT1_2 &&",
+     "L._wandKontaktNz < -2 &&"
     ]
    ]
   ],

@@ -274,6 +274,14 @@ class AnazhRealm_kampf {
     // dem Bauch); ohne Tier oder ohne Gestalt null — dann geht die Klinge
     // durch den Austritt des Fadenkreuz-Strahls aus ihrer Reichweite (_kampfKlingenAchse).
     _kampfZielMerken(ziel) {
+        // DAS GERÄT DER ARENA (w4-arena-welt): der Punkt im Rahmen seiner Gestalt (die Pose des Werks trägt ihn mit)
+        if (ziel && ziel.geraet && ziel.point && Number.isFinite(ziel.point.x)) {
+            const M = this._archEntryWorldMatrix(ziel.geraet, new THREE.Matrix4()).invert();
+            return {
+                e: ziel.geraet,
+                lokal: new THREE.Vector3(ziel.point.x, ziel.point.y, ziel.point.z).applyMatrix4(M),
+            };
+        }
         const c =
             ziel && ziel.isObject3D ? ziel : ziel && ziel.creature && ziel.creature.isObject3D ? ziel.creature : null;
         if (!c) return null;
@@ -301,6 +309,10 @@ class AnazhRealm_kampf {
                 this._leibMatrix(z.c);
                 return z.c.localToWorld(P.copy(z.lokal));
             }
+            if (z && z.e)
+                return P.copy(z.lokal).applyMatrix4(
+                    this._archEntryWorldMatrix(z.e, this._achseM || (this._achseM = new THREE.Matrix4()))
+                );
             const F = this._fadenkreuzStrahl();
             if (!F) return null;
             const d = F.d;
@@ -324,7 +336,7 @@ class AnazhRealm_kampf {
         // DER AUSFALL nach Maß: ein Ziel tritt der Schwertkämpfer nur so weit an, dass sein Schlagpunkt (_kampfSchlagpunkt) es
         // erreicht — höchstens KAMPF_AUSFALL_M, nie zurück; ins Leere tritt er voll aus. Dann die Beuge aus der Neigung zur
         // ungebeugten Schulter und die Achse ab der gebeugten.
-        if (sw.ziel && sw.ziel.c) {
+        if (sw.ziel && (sw.ziel.c || sw.ziel.e)) {
             this._kampfSchulter(R, yaw0, 0, 0, 0, S);
             const dist = Math.hypot(P.x - S.x, P.y - S.y, P.z - S.z);
             aus = Math.max(0, Math.min(AnazhRealm.KAMPF_AUSFALL_M, dist - this._kampfSchlagpunkt(R)));
@@ -433,8 +445,9 @@ class AnazhRealm_kampf {
     // den Leib aus den Wesen (_kreaturAusListe), ohne das nächste Tier zu überspringen.
     _kampfSweepTick(sw, nowSec, tVon, tBis) {
         const pm = this.state.playerMesh;
-        const creatures = this.state.creatures;
-        if (!pm || !sw.rahmen || !Array.isArray(creatures) || !creatures.length) return;
+        const creatures = Array.isArray(this.state.creatures) ? this.state.creatures : [];
+        const geraet = sw.ziel && sw.ziel.e && !sw.hits.has(sw.ziel.e) ? sw.ziel.e : null;
+        if (!pm || !sw.rahmen || (!creatures.length && !geraet)) return;
         const K = AnazhRealm._arenaGesetz().schwung;
         // das Winkel-Tempo der Strike-Phase (der Bogen 2·arcHalf in strikeSec): die Klinge am Hebel r läuft ω·r
         const omega = (2 * K.arcHalfRad) / Math.max(0.05, sw.strikeSec);
@@ -503,6 +516,9 @@ class AnazhRealm_kampf {
                     this._kampfHitJuice(c, nowSec, urteil, ke, this._geraetStoff(bp), ort);
                 }
             }
+            // DAS GERÄT DER ARENA (w4-arena-welt): die Klinge gegen seine Gestalt, der Treffer über den EINEN Stoß
+            if (geraet && !sw.hits.has(geraet) && this._geraetHieb(sw, geraet, lage, achse, t, nowSec))
+                getroffen = true;
             if (getroffen) {
                 // die Schwung-Uhr steht auf dem Teil-Schritt des Treffers: der Hit-Stop hält die Klinge am Ziel
                 sw.t = t;
@@ -602,7 +618,7 @@ class AnazhRealm_kampf {
     // DAS TEMPO EINES PUNKTS DER KLINGE (Hebel r ab der Schulter) zur Schwung-Zeit t: die Bahn des Punkts selbst — Bogen,
     // Rumpf-Drehung, Beuge und Ausfall zusammen (zwei Lagen im Abstand KAMPF_TEMPO_DT), quer zur Klinge (das vLat des
     // Urteils). Vorher ω·r um einen festen Punkt: die Drehung der Hüfte, die die Klinge mitnimmt, fehlte.
-    _kampfSchlagTempo(sw, achse, t, r) {
+    _kampfSchlagTempo(sw, achse, t, r, aus) {
         const dt = AnazhRealm.KAMPF_TEMPO_DT;
         const L1 = this._kampfSchwungLage(sw, t, achse, this._tempoL1 || (this._tempoL1 = {}));
         const L0 = this._kampfSchwungLage(sw, Math.max(0, t - dt), achse, this._tempoL0 || (this._tempoL0 = {}));
@@ -614,6 +630,8 @@ class AnazhRealm_kampf {
         vx -= d.x * va;
         vy -= d.y * va;
         vz -= d.z * va;
+        // die Richtung des Schlags (quer zur Klinge) für den Stoß am Gerät (`_geraetHieb`)
+        if (aus) [aus.x, aus.y, aus.z] = [vx, vy, vz];
         return Math.hypot(vx, vy, vz);
     }
 
@@ -820,7 +838,7 @@ class AnazhRealm_kampf {
     // Schlags (mit ihr lag jeder Brust-Treffer der schweren Klingen auf der Kappe keRefJ). Eigenwerke reichen ihre
     // Ω-Φ4-Energie (keEigen), die Faust 0. Klang und Funken sind das Stoff-Paar (`_trefferPaar`): `waffe` der Stoff des
     // treffenden Werks, das Ziel der Stoff des Leibs (`_leibStoff`), `ort` der Kontakt.
-    _kampfHitJuice(creature, nowSec, urteil, keEigen, waffe, ort) {
+    _kampfHitJuice(creature, nowSec, urteil, keEigen, waffe, ort, zielStoff) {
         const G = AnazhRealm._arenaGesetz().gefuehl;
         const ke = urteil ? urteil.KE : Number.isFinite(keEigen) ? keEigen : 0;
         const e = Math.max(0, Math.min(1, ke / Math.max(1, G.keRefJ)));
@@ -834,7 +852,12 @@ class AnazhRealm_kampf {
             this.state._landImpactPending || 0,
             G.dipMin + (G.dipMax - G.dipMin) * e
         );
-        this._trefferPaar(waffe, this._leibStoff(!(creature.userData && creature.userData._tierBaum)), ort, e);
+        this._trefferPaar(
+            waffe,
+            zielStoff || this._leibStoff(!(creature && creature.userData && creature.userData._tierBaum)),
+            ort,
+            e
+        );
     }
 
     // ═══ DIE FUNKEN DES TREFFERS (halten.K2 Staffel 2) — aus dem Stoff-Gesetz, nie je Waffe ═══
@@ -1316,6 +1339,14 @@ class AnazhRealm_kampf {
             return true;
         }
         if (!wand.hit) return false;
+        // DER PFEIL IM GERÄT DER ARENA (w4-arena-welt): der Impuls des Pfeils (das Urteil des Kerns, Masse × Tempo) über den
+        // EINEN Stoß in die Gestalt — die Scheibe wankt, das Pendel schwingt
+        const ge = this._geraetAm(wand.x, wand.y, wand.z);
+        if (ge) {
+            const vv = Math.hypot(b.vx, b.vy, b.vz);
+            const u = globalThis.__schmiedeCore.trefferUrteil({ M: B.mArrow, mEffFrac: 1 }, { vLat: 0, vAx: vv });
+            this._geraetStoss(ge, wand, { x: b.vx, y: b.vy, z: b.vz }, { p: u.p, m: u.mEff });
+        }
         this._pfeilStecken(pf, wand.x, wand.y, wand.z, b, null, null);
         return true;
     }
@@ -2011,6 +2042,162 @@ class AnazhRealm_kampf {
         return true;
     }
 
+    // ═══ DIE ARENA DER SCHMIEDE IN DER WELT (w4-arena-welt) — die Geräte antworten dem EINEN Stoß ═══
+    // Ein Gerät der Arena ist ein Werk, dessen Gestalt ein Rezept der Arena des Schmiede-Kerns trägt (`ARENA_ARTEN`): der Hieb
+    // (`tryMouseBreak` → Schwung → `_kampfSweepTick`) und der Pfeil (`_pfeilSehne`) stoßen es über das EINE Impuls-Gesetz
+    // (`AnazhRealm._stossImpuls`, der Impuls des Urteils verstärkt um ARENA.gefuehl.wucht gegen die wirksame Masse des Geräts am
+    // Kontakt), das Gesetz des Geräts im Kern (Pendel · Drehung · Feder · Leib, `geraetSchritt`) trägt die Antwort im Takt der
+    // Werk-Gesetze (`_tickWerkGesetz`), seine Pose die Instanz-Matrix des Werks (`_werkPoseMal`). Das Labor (worlds/schmiede)
+    // stößt mit denselben Funktionen. Gerechnet wird nur, solange ein Treffer nachschwingt: in Ruhe fällt das Gerät aus dem Takt.
+    // Das Rezept der Arena eines Werks (die id seiner Gestalt) oder null.
+    _geraetVon(e) {
+        const bp = e && this.state.blueprints ? this.state.blueprints[e.type] : null;
+        const id = bp && typeof bp.studioGestalt === "string" ? bp.studioGestalt : null;
+        const sc = globalThis.__schmiedeCore;
+        return id && sc && sc.ARENA_ARTEN && sc.ARENA_ARTEN[id] ? id : null;
+    }
+    // Das Gesetz am Werk: die Pose (Drehung um das Gelenk, den Ursprung der Gestalt) und der Zustand des Geräts — beim ersten
+    // Stoß angelegt; die Kapseln seiner Gestalt (Rahmen der Gestalt) gemerkt.
+    _geraetGesetz(e) {
+        if (e._gesetz && e._gesetz.geraet) return e._gesetz;
+        const id = this._geraetVon(e);
+        if (!id || e._gesetz) return null;
+        const sc = globalThis.__schmiedeCore;
+        const z = sc.geraetZustand(id, e.studioOv || null, e.seed || 1);
+        e._gesetz = { pose: { q: new THREE.Quaternion(), um: { x: 0, y: 0, z: 0 }, sinken: 0 }, geraet: z };
+        e._geraetKaps = sc.geraetTreffer(id, e.studioOv || null, e.seed || 1);
+        return e._gesetz;
+    }
+    // DER KONTAKT der Klinge (B → T, Radius r) mit dem Gerät: je Kapsel seiner Gestalt (in der Pose des Werks) die kürzeste Strecke
+    // zur Klinge — der nächste Kontakt { s (Ort auf der Klinge 0..1), ort (Welt) } oder null.
+    _geraetKontakt(e, B, T, r) {
+        const id = this._geraetVon(e);
+        if (!id) return null;
+        const kaps =
+            e._geraetKaps ||
+            (e._geraetKaps = globalThis.__schmiedeCore.geraetTreffer(id, e.studioOv || null, e.seed || 1));
+        const M = this._archEntryWorldMatrix(e, this._geraetM || (this._geraetM = new THREE.Matrix4()));
+        const V = this._geraetV || (this._geraetV = [new THREE.Vector3(), new THREE.Vector3()]);
+        let best = null;
+        for (const k of kaps) {
+            const a = V[0].set(k.a[0], k.a[1], k.a[2]).applyMatrix4(M);
+            const b = V[1].set(k.b[0], k.b[1], k.b[2]).applyMatrix4(M);
+            const d2 = this._segSegDistSq(B.x, B.y, B.z, T.x, T.y, T.z, a.x, a.y, a.z, b.x, b.y, b.z);
+            const R = k.r * M.getMaxScaleOnAxis() + r;
+            if (d2 > R * R || (best && d2 >= best.d2)) continue;
+            const st = this._segSegST;
+            best = {
+                d2,
+                s: st.s,
+                ort: { x: B.x + (T.x - B.x) * st.s, y: B.y + (T.y - B.y) * st.s, z: B.z + (T.z - B.z) * st.s },
+            };
+        }
+        return best;
+    }
+    // DER HIEB AUF DAS GERÄT im Teil-Schritt t des Sweeps: Kontakt, das Urteil des Kerns (das Tempo und die Richtung des
+    // Schlagpunkts, der Ort auf der Klinge, die Zone eines Leibs der Arena, die Schneide), der Stoß, Verschleiß und Gefühl.
+    _geraetHieb(sw, e, lage, achse, t, nowSec) {
+        const K = AnazhRealm._arenaGesetz().schwung;
+        const tr = this._geraetKontakt(e, lage.B, lage.T, K.bladeRadiusM);
+        if (!tr) return false;
+        sw.t = t;
+        this.animatePlayerSoul(nowSec);
+        sw.hits.add(e);
+        const sc = globalThis.__schmiedeCore;
+        const id = this._geraetVon(e);
+        const hebel = lage.hb + tr.s * (lage.ht - lage.hb);
+        const dir = this._geraetDir || (this._geraetDir = { x: 0, y: 0, z: 0 });
+        const v = this._kampfSchlagTempo(sw, achse, t, hebel, dir);
+        const lokal = new THREE.Vector3(tr.ort.x, tr.ort.y, tr.ort.z).applyMatrix4(
+            this._archEntryWorldMatrix(e, new THREE.Matrix4()).invert()
+        );
+        const zone = sc.geraetZone(id, lokal.y, e.studioOv || null, e.seed || 1);
+        const urteil = this._kampfUrteil(v, 0, zone, [hebel - lage.hb, hebel - lage.hb], this._kampfSchneide(lage));
+        const bp = this._heldImplementBlueprint();
+        this._kampfVerschleiss(bp);
+        this._geraetStoss(e, tr.ort, dir, urteil ? { p: urteil.p, m: urteil.mEff } : this._kampfStossOhneMessung(v));
+        const ke = urteil ? null : this._eigenwerkSchwungKE(bp);
+        this._kampfHitJuice(null, nowSec, urteil, ke, this._geraetStoff(bp), tr.ort, this._werkStoff(e));
+        return true;
+    }
+    // DER STOSS AM GERÄT: Kontakt `ort` und Richtung `dir` (Welt) in den Rahmen der Gestalt, die wirksame Masse dort, das EINE
+    // Impuls-Gesetz mit dem Schlag `stoss` {p, m}, der Drall ins Gesetz des Geräts — und das Werk tritt in den Takt. Rückgabe J.
+    _geraetStoss(e, ort, dir, stoss) {
+        const g = this._geraetGesetz(e);
+        if (!g || !stoss || !(stoss.m > 0) || !(stoss.p > 0)) return 0;
+        const sc = globalThis.__schmiedeCore;
+        const inv = (this._geraetInv || (this._geraetInv = new THREE.Matrix4()))
+            .copy(this._archEntryWorldMatrix(e, new THREE.Matrix4()))
+            .invert();
+        const p = new THREE.Vector3(ort.x, ort.y, ort.z).applyMatrix4(inv);
+        const n = new THREE.Vector3(dir.x, dir.y, dir.z).transformDirection(inv);
+        if (!(n.lengthSq() > 0.5)) return 0;
+        const pL = [p.x, p.y, p.z],
+            nL = [n.x, n.y, n.z];
+        const z = g.geraet;
+        const vRel = (AnazhRealm._arenaGesetz().gefuehl.wucht * stoss.p) / stoss.m;
+        const J = AnazhRealm._stossImpuls(stoss.m, sc.geraetMasse(z, pL, nL), vRel, z.e);
+        if (!(J > 0)) return 0;
+        sc.geraetStoss(z, J, pL, nL);
+        if (!z.ruht) (this._werkGesetzImTakt || (this._werkGesetzImTakt = new Set())).add(e);
+        return J;
+    }
+    // DER SCHRITT DES GERÄTS im Takt der Werk-Gesetze (`_tickWerkGesetz`: die Schwere der Welt, Ereignis-Zeit dt): das Gesetz
+    // des Kerns, die Pose um das Gelenk an die Instanz-Matrix, der Gang des Leibs auf dem Boden unter ihm (am Wasser oder
+    // ohne Boden steht er); in Ruhe fällt das Werk aus dem Takt (die Pose bleibt — das Kreuz behält seinen Winkel).
+    _geraetSchritt(e, g, schwere, dt) {
+        const sc = globalThis.__schmiedeCore;
+        const z = g.geraet;
+        const lauf = sc.geraetSchritt(z, dt, schwere);
+        const P = sc.geraetPose(z);
+        g.pose.q.set(P.q[0], P.q[1], P.q[2], P.q[3]);
+        if (z.art === "leib" && (z.x[0] || z.x[1])) {
+            const ry = Number.isFinite(e.rotationY) ? e.rotationY : 0;
+            const s = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
+            const [c, sn] = [Math.cos(ry), Math.sin(ry)];
+            const nx = e.position.x + (z.x[0] * c + z.x[1] * sn) * s;
+            const nz = e.position.z + (-z.x[0] * sn + z.x[1] * c) * s;
+            z.x[0] = z.x[1] = 0;
+            const ny = this._werkBoden(e)(nx, nz);
+            if (!Number.isFinite(ny) || this._nassAt(nx, nz)) z.v[0] = z.v[1] = 0;
+            else {
+                Object.assign(e.position, { x: nx, y: ny + 0.5, z: nz });
+                this._blockerBewegt(e);
+                if (e.blockerAABBs && !(g.stempel && Math.hypot(g.stempel.x - nx, g.stempel.z - nz) < 0.5)) {
+                    this._populateBlockerAABBs(e);
+                    g.stempel = { x: nx, z: nz };
+                }
+            }
+        }
+        this._werkPoseZeigen(e);
+        if (!lauf && this._werkGesetzImTakt) this._werkGesetzImTakt.delete(e);
+    }
+    // DAS GERÄT AM PUNKT (x, y, z) — der Treffer eines Strahls in einer Box: die Einträge der Blocker-Zelle (und der Riesen-Zelle),
+    // deren Box den Punkt fasst (5 cm Spiel) und die ein Gerät der Arena sind; sonst null.
+    _geraetAm(x, y, z) {
+        const N = this._blockerNetz();
+        const Z = AnazhRealm.BLOCKER_ZELLE;
+        const sp = 0.05;
+        for (const key of [Math.floor(x / Z) * 2097152 + Math.floor(z / Z), AnazhRealm.BLOCKER_RIESE]) {
+            const zelle = N.zellen.get(key);
+            if (!zelle) continue;
+            for (const e of zelle) {
+                if (!e.blockerAABBs || !this._geraetVon(e)) continue;
+                for (const bx of e.blockerAABBs)
+                    if (
+                        x >= bx.minX - sp &&
+                        x <= bx.maxX + sp &&
+                        y >= bx.botY - sp &&
+                        y <= bx.topY + sp &&
+                        z >= bx.minZ - sp &&
+                        z <= bx.maxZ + sp
+                    )
+                        return e;
+            }
+        }
+        return null;
+    }
+
     // V17.55 W1 — HALTEN-zum-Abbauen: solange die Abbau-Taste gehalten wird (+ Pointer-Lock,
     // Inventar und Schubladen zu), wird in der strikeInterval-Kadenz nachgesetzt — mit DEMSELBEN Verb wie beim Drücken
     // (die Maus-Absicht, p._mausVerb): der Hieb schlägt weiter, auch wenn der Stoß das Tier aus dem Fadenkreuz schob.
@@ -2077,6 +2264,7 @@ class AnazhRealm_kampf {
         let verb = null;
         let zuWeit = null;
         let creaturePick = null;
+        let geraetPick = null; // ein Gerät der Arena unter dem Fadenkreuz (w4-arena-welt): es antwortet dem Hieb, nie dem Abbau
         let ort = null; // der Punkt des Ziels auf dem Strahl (Bauwerk · Blüte · Boden)
         let flora = null;
         let boden = null;
@@ -2095,7 +2283,15 @@ class AnazhRealm_kampf {
             }
         }
         if (!verb) {
-            if (pick && pick.entry) {
+            if (pick && pick.entry && this._geraetVon(pick.entry)) {
+                // DAS GERÄT DER ARENA (w4-arena-welt): der Klick ist ein Hieb auf es — in Klingen-Reichweite sein Ziel, sonst ein
+                // Luftschlag mit dem Hinweis (wie beim Tier); es fällt nie dem Abbau
+                verb = "hieb";
+                ort = pick.point;
+                const dG = this._kampfZielAbstand(R, pick.point);
+                if (dG <= klinge) geraetPick = { geraet: pick.entry, point: pick.point };
+                else zuWeit = { d: dG, klinge };
+            } else if (pick && pick.entry) {
                 verb = "abbau";
                 ort = pick.point;
             } else if ((flora = this._ernteZiel())) {
@@ -2110,7 +2306,7 @@ class AnazhRealm_kampf {
             }
             const F = ort ? this._fadenkreuzStrahl() : null;
             const inArm = !!F && Math.hypot(ort.x - F.o.x, ort.y - F.o.y, ort.z - F.o.z) <= AnazhRealm.FORAGE.reach;
-            const tier = pmB && !inArm ? this._kampfKegelZiel(R, klinge) : null;
+            const tier = pmB && !inArm && !geraetPick ? this._kampfKegelZiel(R, klinge) : null;
             if (tier) {
                 verb = "hieb";
                 creaturePick = tier;
@@ -2137,8 +2333,8 @@ class AnazhRealm_kampf {
                     `Zu weit: ${was} reicht ${m(zuWeit.klinge)} m — das Ziel steht ${m(zuWeit.d)} m vor deiner Schulter.`
                 );
             }
-            // der Schwung löst das Ziel in der Strike-Phase auf (Kreatur → Treffer, Leere → Luftschlag)
-            return this._playerAttackCreature(creaturePick);
+            // der Schwung löst das Ziel in der Strike-Phase auf (Kreatur → Treffer, Gerät → Stoß, Leere → Luftschlag)
+            return this._playerAttackCreature(creaturePick || geraetPick);
         }
         // V17.55 W1 — Abbauen kostet jetzt MÜHE: ein Bauwerk wird per Hieb-Fortschritt
         // abgetragen (Tempo/Stamina/Ertrag ∝ Werkzeug-vs-Material), kein Instant mehr. Der

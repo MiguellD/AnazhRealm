@@ -428,7 +428,7 @@ function entsorge(g) {
     if (g) g.traverse((o) => o.geometry && o.geometry.dispose());
 }
 const median = (a) => {
-    const s = a.filter((x) => x != null).sort((x, y) => x - y);
+    const s = a.filter((x) => x != null).sort(aufsteigend);
     return s.length ? s[s.length >> 1] : null;
 };
 const f3 = (x) => (x == null ? "—" : (+x).toFixed(3));

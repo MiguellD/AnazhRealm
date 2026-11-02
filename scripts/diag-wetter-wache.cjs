@@ -505,7 +505,7 @@ async function boot(browser) {
     await nullRenderer(page);
     await server.zeige(page, 60000);
     await page.evaluate(async () => {
-        await window.__weltDa((r) => r.state && r.state.player && r.nexus);
+        await __weltDa((r) => r.state && r.state.player && r.nexus);
     });
     await page.evaluate(AUSGABE_INSTALL);
     return page;

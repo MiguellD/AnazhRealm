@@ -41,7 +41,7 @@ function fingerprint(plan) {
 // Punkt, keine erfundene Reihe) —, sein Mittel und das Intervall [kleinste, größte] über die Saaten: über 8 deckt es den
 // Median mit 1 − 2 · 0,5⁸ = 99,2 % (die Ordnungs-Statistik der Kaskade); GRÜN nur ganz in 0,8–1,2, und jede Stadt aus Z1
 // exportiert Mauer und Graph.
-const mittel = (a) => a.reduce((s, v) => s + v, 0) / a.length;
+const mittel = (a) => a.reduce(addiere, 0) / a.length;
 function rangZensus(FC, o = {}) {
     const [S, N, Z] = [o.S || FC.SIEDLUNG, o.saaten || 8, { saaten: [], mitStadt: 0, graph: 0, je: [], n: [] }];
     const W = Math.round(32000 / S.cellM);
@@ -243,7 +243,7 @@ async function weltWachstum() {
         .haeuser()
         .filter((e) => !E1.includes(e))
         .map((e) => [e.position.x, e.position.z]);
-    const med = (q) => ring.map(([x, z]) => Math.hypot(x - q[0], z - q[1])).sort((a, b) => a - b)[ring.length >> 1];
+    const med = (q) => ring.map(([x, z]) => Math.hypot(x - q[0], z - q[1])).sort(aufsteigend)[ring.length >> 1];
     res.ring = { neu: ring.length, zumHaus: med(res.haus), zumOrt: med([p.x, p.z]) };
     return res;
 }
@@ -258,7 +258,7 @@ function gassenGefaelle(v2, grund) {
             const d = Math.hypot(P[k].x - P[k - 1].x, P[k].z - P[k - 1].z);
             if (d >= 0.5) gs.push(Math.abs(h(P[k]) - h(P[k - 1])) / d);
         }
-    gs.sort((a, b) => a - b);
+    gs.sort(aufsteigend);
     return +(100 * gs[Math.round(0.95 * (gs.length - 1))]).toFixed(1);
 }
 // DER ERDBAU JE HAUS (siedlung.K3 Staffel 2, die Kosten neben dem Gefälle): der Median über die Häuser des Plans v2 von
@@ -275,7 +275,7 @@ function erdbauMedian(v2, grund) {
                 }
             return v;
         });
-    return Math.round(vs.sort((a, q) => a - q)[vs.length >> 1]);
+    return Math.round(vs.sort(aufsteigend)[vs.length >> 1]);
 }
 
 // ===== DAS URTEIL DES ORTS (Teil O, K10 — rein, mit Selbsttest) =====
@@ -424,7 +424,7 @@ function ortUrteil(v2, hoehe, o) {
             vorStufe: Math.round(vorStufe * 1000) / 1000,
         });
     });
-    sockel.sort((a, b) => a - b);
+    sockel.sort(aufsteigend);
     return {
         sockelMedian: sockel.length ? Math.round(1000 * sockel[sockel.length >> 1]) / 1000 : null,
         sockelMax: sockel.length ? Math.round(1000 * sockel[sockel.length - 1]) / 1000 : null,
@@ -602,7 +602,7 @@ async function gtDorfweg(v2, anker, sek) {
             { silent: true, precise: true, rotationY: fahrt - Math.PI / 2, id: "k10-gt-dorfweg" }
         );
         if (!e) return Object.assign(res, { err: "kein GT" });
-        await window.__gebautNach(e, { takt: frame });
+        await __gebautNach(e, { takt: frame });
         const auf = r.mountArchitecture(e);
         if (!auf || !auf.ok || st.player.mountedArch !== e.id)
             return Object.assign(res, { err: "der Fahrer sitzt nicht im GT" });
@@ -1505,7 +1505,7 @@ hauptLauf(async () => {
                     `${seed}/${nH}/${epoche}: die nächste Laterne ${d.weg} m neben dem Wegrand (Soll ≥ ${trittR} m)`
                 );
         }
-        alleDs.sort((a, b) => a - b);
+        alleDs.sort(aufsteigend);
         const mq = (q) =>
             alleDs.length ? alleDs[Math.min(alleDs.length - 1, Math.floor(alleDs.length * q))] : Infinity;
         if (!Number.isFinite(FC.LICHT_MARKE_M)) lichtFehl.push("der Kern trägt kein LICHT_MARKE_M (das Soll je Meter)");
@@ -1671,8 +1671,8 @@ hauptLauf(async () => {
     // die Welt samt den Rezepten der Foundry — vor Teil B und, brach eine Probe, frisch geladen für Teil O
     const bereit = () =>
         page.evaluate(async () => {
-            const f = (await window.__weltDa())._ensureAssetFoundry();
-            await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.alemannisch);
+            const f = (await __weltDa())._ensureAssetFoundry();
+            await __weltDa(() => f && f.ready && f.recipes && f.recipes.alemannisch);
         });
     await bereit();
     if (ww) {
@@ -1856,7 +1856,7 @@ hauptLauf(async () => {
         res.gammaHier = !!baueHier && __rufe(baueHier, "build", r, "_bauSame", [["baue dorf hier", "dorf"]]) > 0;
         res.gammaStream =
             __rufe(r, "spawnSettlement", r, "_bauSame", [{ position: null }]) > 0 &&
-            window.__fehlt([r.spawnSettlement, r._bauSame], /Math\.random/);
+            __fehlt([r.spawnSettlement, r._bauSame], /Math\.random/);
         // DER DSL-AKT spawn_village liest die Größe aus dem Siedlungs-Gesetz NACH der Buch-Ankunft: das Dorf
         // des Akts trägt nH = SIEDLUNG.nHMin + (Same >>> 24) % SIEDLUNG.nHSpan, gemessen am Rebuild-Gedächtnis (settlementCells).
         {
@@ -1867,7 +1867,7 @@ hauptLauf(async () => {
             const ctxV = { budget: { spawnsLeft: 4 }, log: [], rng: () => 0.5, source: "human" };
             r.dslEffects.spawn_village([["at", pv.x, pv.y, pv.z], same], ctxV);
             let cell = null;
-            for (const weiter = window.__deckel("B: das Dorf des DSL-Akts", 600); !cell && weiter();) {
+            for (const weiter = __deckel("B: das Dorf des DSL-Akts", 600); !cell && weiter();) {
                 await sleep(100);
                 const sc = st.worldMeta?.settlementCells || {};
                 // der Wege-Schlüssel des Dorfs: d:<Same>@<Ort> (der EINE Schreiber `spawn_village`, stamm/siedlung-ort.js;
@@ -2000,42 +2000,34 @@ hauptLauf(async () => {
             res.c.idempotent = again === null && st.architectures.length === archAfter;
             // C5 — DER GENESIS-PORTAL-RING (Schöpfer: „beim ersten spawn
             // die kernportale um die genesis-plattform anordnen"): am Genesis-Ort
-            // (`_genesisMitte`, die Mitte der Start-Plattform — Welle L, V-D1) heben alle builtIn-Welt-Portale im
-            // Kreis R 11 m; doppelt idempotent
-            // (worldMeta-Stempel + Existenz-Probe).
+            // (`_genesisMitte`, die Mitte des Plans der Welt) setzt der Ort-Takt jedes Tor des Plans auf seinen Slot (Ring-Weg
+            // R 22, Pflicht F); idempotent über die id jedes Elements (die Existenz-Probe), der Stempel `genesisOrt.steht`.
             res.c.ring = {};
             window.__marke("C5");
             {
                 const wm5 = st.worldMeta;
                 const M5 = r._genesisMitte();
                 const d2M = (e) => (e.position.x - M5.x) ** 2 + (e.position.z - M5.z) ** 2;
-                delete wm5.genesisPortalRing;
-                r._genesisRingFertig = false;
-                const portalArten = Object.keys(st.blueprints || {}).filter((n) => {
-                    const b = st.blueprints[n];
-                    return b && b.builtIn && b.role === "portal" && b.portalMeta && b.portalMeta.world;
-                });
+                const portalArten = [...r._genesisTorTypen().values()];
                 res.c.ring.arten = portalArten.length;
                 const imRing = () =>
-                    st.architectures.filter(
-                        (e) => e && e.position && portalArten.includes(e.type) && d2M(e) <= 400
-                    ).length;
+                    st.architectures.filter((e) => e && e.position && portalArten.includes(e.type) && d2M(e) <= 30 * 30)
+                        .length;
                 const ringVorher = imRing();
-                for (let t5 = 0; t5 < 30 && !wm5.genesisPortalRing; t5++)
-                    r._genesisPortalRing({ x: M5.x, y: 1, z: M5.z });
-                res.c.ring.stempel = wm5.genesisPortalRing === true;
+                for (let t5 = 0; t5 < 30 && !(wm5.genesisOrt && wm5.genesisOrt.steht); t5++)
+                    r._genesisOrt({ x: M5.x, y: 1, z: M5.z });
+                res.c.ring.stempel = !!(wm5.genesisOrt && wm5.genesisOrt.steht);
                 res.c.ring.gebaut = imRing() - ringVorher;
-                const archRing = st.architectures.length;
-                r._genesisPortalRing({ x: M5.x, y: 1, z: M5.z }); // Idempotenz: der Stempel traegt
-                res.c.ring.idempotent = st.architectures.length === archRing;
-                // Radius-Probe: jedes neue Ring-Portal sitzt auf ~R 11 (±2 m)
-                res.c.ring.radiusOk = st.architectures
-                    .filter((e) => e && e.position && portalArten.includes(e.type))
-                    .slice(-res.c.ring.gebaut)
-                    .every((e) => {
-                        const d = Math.sqrt(d2M(e));
-                        return d > 9 && d < 13;
-                    });
+                res.c.ring.stehen = imRing();
+                const archRing = st.architectures.filter((e) => portalArten.includes(e.type)).length;
+                r._genesisOrt({ x: M5.x, y: 1, z: M5.z }); // Idempotenz: die id jedes Tors trägt
+                res.c.ring.idempotent = st.architectures.filter((e) => portalArten.includes(e.type)).length === archRing;
+                // Slot-Probe: jedes Tor des Plans sitzt auf seinem Slot (± 0,5 m), dem Ring-Weg R 22
+                const P5 = r._genesisPlan;
+                res.c.ring.radiusOk = P5.tore.every((t) => {
+                    const e = st.architectures.find((a) => a && a.id === "genesis:tor:" + t.k);
+                    return !!e && Math.hypot(e.position.x - P5.ort.x - t.x, e.position.z - P5.ort.z - t.z) <= 0.5;
+                });
             }
             // C6 — DER WEGE-SCHLÜSSEL TRÄGT DEN ORT: zwei Siedlungen mit DEMSELBEN Samen an
             // zwei Orten bauen je ihre Wege (die Wege-Formen werden am echten Bau gezählt, `_stlWegeBuild` läuft durch; die Nähte
@@ -2200,7 +2192,7 @@ hauptLauf(async () => {
                 let [bild, erstes] = [-1, null];
                 wach = true;
                 for (
-                    const weiter = window.__deckel("C-K5: das erste Haus", 400, () => !!r._autoSettlementPendingKey);
+                    const weiter = __deckel("C-K5: das erste Haus", 400, () => !!r._autoSettlementPendingKey);
                     (!erst || (!erstes && bild < 400)) && weiter();
                 ) {
                     haus += !erst;
@@ -2325,7 +2317,7 @@ hauptLauf(async () => {
                     r._wegeRaeumen(); // die Flächen der Läufe davor
                     try {
                         for (
-                            let t = 0, weiter = window.__deckel("C-K5d", 400, false);
+                            let t = 0, weiter = __deckel("C-K5d", 400, false);
                             t === 0 || r._autoSettlementQueue;
                             t++
                         ) {
@@ -2836,12 +2828,14 @@ hauptLauf(async () => {
                     res.vorplatzN = vpN;
                     res.vorplatzFehl = vpFehl;
                     // die Altwelten: Bauten, die kein Ort trägt (kein Haus mit Grundriss, keine Ausstattung des Dorfs: brunnen_dorf,
-                    // marktstand_dorf, keine Brücke seiner Gassen: bruecke_jochfeld), auf dem Erdbau eines Orts — nie das gesetzte
+                    // marktstand_dorf, keine Brücke seiner Gassen: bruecke_jochfeld, kein Werk des Genesis-Orts: die ids seines Plans
+                    // `genesis:<art>:<n>`, `_genesisWerkListeBauen` — Tore, Bänke, Laternen), auf dem Erdbau eines Orts — nie das gesetzte
                     // Haus auf seinem EIGENEN Grund (`haus:`, S4)
                     let fremd = 0;
                     for (const e of st.architectures)
                         if (
                             !e.fundament &&
+                            !/^genesis:/.test(e.id) &&
                             !/_dorf$|^bruecke_/.test(e.type) &&
                             !st.worldMeta.erdbau[
                                 `haus:${Math.round(e.position.x * 100)},${Math.round(e.position.z * 100)}`
@@ -3259,13 +3253,13 @@ hauptLauf(async () => {
     const ring = c.ring || {};
     check(
         // alle builtIn-Welt-Portale, Stempel gesetzt
-        "C5: DER GENESIS-PORTAL-RING hebt am Ursprung",
-        ring.stempel === true && ring.arten >= 1 && ring.gebaut >= 1,
-        `arten=${ring.arten} gebaut=${ring.gebaut}`
+        "C5: DER GENESIS-ORT setzt jedes Tor seines Plans",
+        ring.stempel === true && ring.arten === 10 && ring.stehen === 10,
+        `arten=${ring.arten} stehen=${ring.stehen} gebaut=${ring.gebaut}`
     );
     check(
         // der Stempel trägt, 0 Doppel
-        "C5: Ring-Radius ~11 m, doppelt idempotent",
+        "C5: jedes Tor auf seinem Slot (R 22), idempotent",
         ring.radiusOk === true && ring.idempotent === true,
         `radiusOk=${ring.radiusOk} idem=${ring.idempotent}`
     );

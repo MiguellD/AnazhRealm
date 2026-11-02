@@ -567,9 +567,7 @@ async function checkBandV1750Klammer({ page, check }) {
     );
 }
 
-async function checkBandWelle6APolish({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandWelle6APolish({ page, check }) {
     // ### Welle 6.A — Interaktion-Polish (Erdung auf Bauwerken) ###
     // Der Feld-Controller (`_stepCharacter`) löst die Wand-Kollision nativ; `isPlayerGrounded` liest den
     // `_groundedCache` und trifft Bauwerke über `entry.blockerAABBs`. groundDistance 0.6 (nicht 0.5),
@@ -666,7 +664,7 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
 
         // Kein per-Frame-Pfad ruft optimizePhysics/processOptimization (leckte WASM, flutete die Konsole).
         // __fehlt liest ohne Kommentare — sonst träfe der Absenz-Grep den Kommentar, der den Code zitiert.
-        out.noDoomLoopInSelfAnalysis = window.__fehlt(r._loopSelfAnalysis, /processOptimization|optimizePhysics/);
+        out.noDoomLoopInSelfAnalysis = __fehlt(r._loopSelfAnalysis, /processOptimization|optimizePhysics/);
         out.nexusProcessOptGone = !(r.nexus && typeof r.nexus.processOptimization === "function");
 
         return out;
@@ -1194,9 +1192,7 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
     }
 }
 
-async function checkBandWelle6GHylomorphism({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandWelle6GHylomorphism({ page, check }) {
     // ### Hylomorphismus-Unification ###
     // Bäume laufen durchs Architektur-System (spawn_tree-DSL-Op → spawnArchitecture): EINE Sprache,
     // EIN Renderpfad. Inseln + UFOs bleiben Sonderpfad (Inseln = floating-chunk-Disziplin).

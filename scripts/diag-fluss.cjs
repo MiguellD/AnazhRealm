@@ -363,27 +363,25 @@ const WELT_HAKEN = () => {
     };
 };
 const WELT_MESSEN = async () => {
-    await window.__weltDa(); // der Ring wächst nach dem Erwachen des Boots (die Tiere stehen, ehe der Takt läuft)
-    for (const weiter = window.__deckel("der Ring am Fluss", 6000); weiter(); ) {
+    await __weltDa(); // der Ring wächst nach dem Erwachen des Boots (die Tiere stehen, ehe der Takt läuft)
+    for (const weiter = __deckel("der Ring am Fluss", 6000); weiter(); ) {
         if (r && typeof r._gameLoopTick === "function") {
-            try {
-                r._gameLoopTick(performance.now());
-            } catch {}
+            __handTakt();
             if (st.voxelChunks && st.voxelChunks.size >= 25) break;
         }
         await sleep(6);
     }
     const f = r._ensureAssetFoundry();
-    await window.__weltDa(() => !!(!(f && !f.ready)));
+    await __weltDa(() => !!(!(f && !f.ready)));
     const pump = (n) => __streuTakte(n, 8);
     await pump(300);
-    for (const weiter = window.__deckel("die Foundry-Schlange", 600); weiter(); ) {
+    for (const weiter = __deckel("die Foundry-Schlange", 600); weiter(); ) {
         await pump(20);
         if (!f._vorrat && !(f.warte && f.warte.length) && f.pending.size === 0) break;
     }
     // der Ofen-Vorrat ist Boot-Arbeit (`_ofenPrefetchKreaturen`, nach dem ersten Bild): jeder Boot misst, bis er steht —
     // sonst trägt der schnellere Zweit-Boot ihn ins Fenster, und der erste legte ihn nie auf die Platte
-    for (const weiter = window.__deckel("der Ofen-Vorrat", 600); !r._ofenVorratSteht && weiter(); ) await pump(20);
+    for (const weiter = __deckel("der Ofen-Vorrat", 600); !r._ofenVorratSteht && weiter(); ) await pump(20);
     await pump(60);
     const fl = window.__fl;
     const cfg = AnazhRealm._studioRenderConfig;

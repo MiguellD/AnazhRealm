@@ -2759,8 +2759,14 @@ class AnazhRealm_bild_himmel {
             );
             return false;
         }
-        // ein Schreiber außer dem Gang springt: der Himmel malt sich beim nächsten Anwenden des Tags neu (`_ensureSkyEnvironment`)
-        if (quelle !== "uhr" && v !== this.state.timeOfDay) this._himmelSprung = true;
+        // ein Schreiber außer dem Gang springt: der Himmel malt sich beim nächsten Anwenden des Tags neu (`_ensureSkyEnvironment`),
+        // und der Licht-Pool wählt im nächsten Takt neu (`_leuchtTakt`: seine Wahl liest den Zeitplan der Quellen zur Uhr — mit
+        // der Wahl der alten Stunde blendeten die Laternen des Genesis-Orts erst bis zu `wahlS` nach dem Sprung ein, mitten im
+        // Schuss: gate:tag-achse:echt SPRUNG 0,2–0,6 EV an Dämmerung und Morgen)
+        if (quelle !== "uhr" && v !== this.state.timeOfDay) {
+            this._himmelSprung = true;
+            if (this._leuchtPool) this._leuchtPool.t = -Infinity;
+        }
         // DER TAG DER WELT (feld.K4, `_weltStunde`): kreuzt die Uhr Mitternacht (der kürzere Bogen), zählt der Tag vor oder
         // zurück; das Laden setzt nur die Uhr — der Tag reist im worldMeta
         const d = v - this.state.timeOfDay;

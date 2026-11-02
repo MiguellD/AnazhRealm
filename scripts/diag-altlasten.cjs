@@ -32,6 +32,17 @@ const FORBIDDEN = [
     { token: "_p2pEnsurePeerAura", fiel: "V18.448 — die Avatar-Aura" },
     { token: "_p2pBroadcastAura", fiel: "V18.448" },
     ...[
+        "start_plattform",
+        "GENESIS_PLATZ",
+        "_genesisPlattform",
+        "_genesisScheibe",
+        "_genesisGrund",
+        "_findOpenSpawnSpot",
+        "_ensureGenesisPlatform",
+        "_genesisPortalRing",
+        "genesisPortalRing",
+    ].map((token) => ({ token, fiel: "ort-wirt (Pflicht F) — der Genesis-Ort ist EIN Plan des Ort-Gesetzes, der Wirt liest ihn (_genesisOrt)" })),
+    ...[
         "_nachtAnteil",
         "_celestialHorizonFade",
         "_daemmerung",
@@ -1032,6 +1043,10 @@ const FORBIDDEN = [
     // sich selbst, am streifenden Blick der Ferne am stärksten (Karte der Fichte in der Dämmerung 8,3 ×, nachts 4,8 × ihre
     // Gestalt); das Licht ist die EINE Licht-Kette (Lehre 21)
     ...["rimStrength", "NightFloor", "nightFloor", "MoonRim", "moonRim", "responseProfile.detail"].map((token) => ({ token, fiel: "F6 — kein Stoff leuchtet ohne Licht", auch: ["scripts/playtest.cjs"] })),
+    // w4-koerper-park — der Ninja-Park IST der Spielplatz der Welt: das Labor geht den EINEN Bewegungs-Takt (koerper `leibPlan`),
+    // die Arcade-Zeile und der Zwilling der Sicht fielen mit ihren Lesern, die Welt-Glieder des Takts zogen in den Kern
+    ...["NINJA_FEEL", "NINJA_VIS", "playPhysics", "playInput"].map((token) => ({ token, fiel: "w4-koerper-park", auch: ["koerper-core.js", "worlds/koerperstudio/koerperstudio.js"] })),
+    ...["_parkourGesetz", "_parkourLuftsprung", "_sprungDeckenKlemme", "_gaitSohle("].map((token) => ({ token, fiel: "w4-koerper-park" })),
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
@@ -3416,6 +3431,7 @@ function main() {
             warte("async () => { while (Date.now() - t0 < FRIST) await sleep(150); };") === 1 &&
             warte("async () => { for (;;) { if (Date.now() - t0 > 9000) break; await tick(); } };") === 1 &&
             warte('async () => { await window.__gebautNach("x").catch(() => {}); };') === 1 &&
+            warte('async () => { await __gebautNach("x").catch(() => {}); };') === 1 &&
             ["8000 }).catch(() => {})", "0 }).catch(() => {})", "9 }).catch((e) => { throw e; })"].map((f) => warte(`page.waitForFunction(() => 1, { timeout: ${f};`)).join() === "1,0,0" &&
             warte(frist, { "scripts/diag-w.cjs": 1 }) === 0 &&
             warte(frist, { "scripts/diag-w.cjs": 2 }) === 1 &&

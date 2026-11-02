@@ -991,7 +991,7 @@ async function probe() {
     if (!haus && haeuser.length) {
         const ziel = haeuser[0];
         stelle(ziel.position.x + 5, ziel.position.z);
-        await window.__gebautNach(ziel, { fertig: () => !!ziel.instSlots, bau: () => r.tickArchitectureCulling() });
+        await __gebautNach(ziel, { fertig: () => !!ziel.instSlots, bau: () => r.tickArchitectureCulling() });
         haus = ziel;
     }
     aus.tuer = { haeuser: haeuser.length, mitInstanz: haeuser.filter((e) => e.instSlots).length };
@@ -1361,7 +1361,7 @@ hauptLauf(async () => {
     const { browser, page } = await nullSeite({ frist: 300000 });
     await server.zeige(page, 60000);
     await page.evaluate(async () => {
-        await window.__weltDa((r) => r.state && r.state.player);
+        await __weltDa((r) => r.state && r.state.player);
     });
     await page.evaluate(`window.__naeheProbe = ${naeheProbe.toString()};`);
     const S = await page.evaluate(probe);

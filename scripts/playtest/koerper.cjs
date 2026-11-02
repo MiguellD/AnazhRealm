@@ -109,9 +109,7 @@ async function checkBandV1764ForgeAvatar({ page, check }) {
     );
 }
 
-async function checkBandRing5Soul({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandRing5Soul({ page, check }) {
     // ### Ring 5 — createPlayerSoul V1 ###
     // Mensch + verkörperbare Tier-Körper: Default human, Wechsel ändert geometry+color, Chat-Pattern
     // routet, Save/Load-Roundtrip, unbekannte Namen abgelehnt, Position überlebt, Drawer + Status-Bar-UI.
@@ -265,7 +263,7 @@ async function checkBandRing5Soul({ page, check, errors, finalState }) {
         // Save-Roundtrip: die getragene Wolf-Verkörperung reist als Custom-Seele
         r.applyPlayerSoul("wolf");
         r.saveState();
-        const parsed = await window.__standJson();
+        const parsed = await __standJson();
         out.savedPlayerSoul = !!parsed && parsed.playerSoul === "bp_koerper_wolf";
 
         // loadState wendet die gespeicherte Seele an (zurück auf den Menschen)
@@ -1746,12 +1744,15 @@ async function checkBandKoerperBewegung({ page, check }) {
         o.checks.cBlendNaNWand = Number.isFinite(r._gaitBlendStep(NaN, NaN, NaN));
     
         // ── (S1) SELBST-TEST: hartes Blend gestubbt → die Messung sieht den Sprung ──
-        const savedBlend = r._gaitBlendStep;
-        r._gaitBlendStep = function (_w, speed) {
+        // der Blend wohnt im EINEN Gang-Takt des Kerns (koerper-core `leibGangBlend`, w4-koerper-park): der Stub sitzt dort, wo Welt
+        // und Körper-Studio ihn lesen
+        const KCb = window.__koerperCore;
+        const savedBlend = KCb.leibGangBlend;
+        KCb.leibGangBlend = function (_w, speed) {
             return Number.isFinite(speed) && speed > 0.4 ? 1 : 0;
         };
         const blStub = blendLauf();
-        r._gaitBlendStep = savedBlend; // restaurieren (Gate-Hook-Lehre)
+        KCb.leibGangBlend = savedBlend; // restaurieren (Gate-Hook-Lehre)
         o.s1MaxJump = blStub.maxJump;
         o.checks.s1LensFires = blStub.maxJump > 0.2;
     
@@ -1783,12 +1784,15 @@ async function checkBandKoerperBewegung({ page, check }) {
                 Number.isFinite(rig.hips.position.y) &&
                 [rig.legL, rig.legR].every((leg) => ["hip", "knee", "ankle"].every((kk) => !leg[kk] || Number.isFinite(leg[kk].rotation.x)));
             // (E2) LUFT-SPERRE (Leben-Prüfung N-D1): in der Luft erdet die Fuß-IK nie — derselbe gesenkte Boden senkt
-            // das Becken NICHT
+            // das Becken NICHT: es steht wie über dem Boden auf der Sohlen-Ebene in der Luft (die Referenz in der Luft: seit
+            // dem Plan des Genesis-Orts liegt unter dem Spieler keine Bau-Fläche auf der Sohle, der gezeichnete Boden trägt
+            // seine Füße ±0,2 m neben ihr — Lehre 22)
             const hLuft = becken(-0.25, 530, true);
+            const hLuft0 = becken(0, 540, true);
             [s._kapselTraegerY, s._kapselStruktur, s.isInAir, pmesh.position.y] = saved; // restaurieren
             frisch();
             o.beckenLuft = hLuft;
-            o.checks.eLuftSperre = Number.isFinite(hLuft) && Number.isFinite(h0) && Math.abs(hLuft - h0) < 0.02;
+            o.checks.eLuftSperre = Number.isFinite(hLuft) && Number.isFinite(hLuft0) && Math.abs(hLuft - hLuft0) < 0.02;
             o.beckenFlach = h0;
             o.beckenGesenkt = h1;
             o.checks.eBeckenSenkt = Number.isFinite(h0) && Number.isFinite(h1) && h1 < h0 - 0.1;
@@ -1892,7 +1896,7 @@ async function checkBandGamepadVerben({ page, check }) {
             Object.getOwnPropertyNames(proto).filter((n) => {
                 const f = Object.getOwnPropertyDescriptor(proto, n).value;
                 const frei = ["constructor", "init", "_verbTafelSammeln", "_alleTastenLos"].includes(n);
-                return !frei && typeof f === "function" && !window.__fehlt(f, /\b(?:state|st|s)\.keys\b/);
+                return !frei && typeof f === "function" && !__fehlt(f, /\b(?:state|st|s)\.keys\b/);
             });
         o.leser = leser();
         proto.__zwillingLeser = function () {
