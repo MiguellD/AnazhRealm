@@ -3,16 +3,15 @@
  "je": {
   "affekt.K1": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 6.37 dB, Nachbar 0 dB, Stempel 0/0 an 25ac4c0c headless · gehalten: Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an 25ac4c0c radeon · gehalten: Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an b4bcf19c gtx",
+   "beleg": "Maschine: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 6.38 dB, Nachbar 0 dB, Stempel 0/0 an 10770eb5 headless · gehalten: Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an 25ac4c0c radeon · gehalten: Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an b4bcf19c gtx",
    "stationen": [
     {
      "id": "affekt.K1#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 6.37 dB, Nachbar 0 dB, Stempel 0/0",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-weltakt-wache.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8)",
-     "gehalten": true
+     "zahl": "δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 6.38 dB, Nachbar 0 dB, Stempel 0/0",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "affekt.K1#2",
@@ -35,62 +34,58 @@
    ]
   },
   "affekt.K2": {
-   "punkte": 1,
-   "beleg": "Maschine: gehalten: Sonne echt 12/15 (10 Züge aus rule:emotion:hope, das Gesetz feuert 34×, Hoffnung 908.5 s über der Schwelle) · starr 3 (Front 3) · Gesetz pausiert 3 · Bauten 49/49/49 an 25ac4c0c headless",
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: affekt.K2#1 headless: Deckel 2400 s überschritten — beendet (zuletzt: AFFEKT-gemuet {\"mutante\":\"starr\",\"bauten\":49,\"zuege\":15,\"sonne\":3,\"frontSonne\":3,\"ausGesetz\":0,\"gesetz\":{\"id\":4,\"feuer\":0},\"hoffnungS\":0,\"folge\":\"rcssssrffrrrff) an 10770eb5",
    "stationen": [
     {
      "id": "affekt.K2#1",
      "geraet": "headless",
-     "gruen": true,
-     "zahl": "Sonne echt 12/15 (10 Züge aus rule:emotion:hope, das Gesetz feuert 34×, Hoffnung 908.5 s über der Schwelle) · starr 3 (Front 3) · Gesetz pausiert 3 · Bauten 49/49/49",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +22)",
-     "gehalten": true
+     "gruen": false,
+     "zahl": "Deckel 2400 s überschritten — beendet (zuletzt: AFFEKT-gemuet {\"mutante\":\"starr\",\"bauten\":49,\"zuege\":15,\"sonne\":3,\"frontSonne\":3,\"ausGesetz\":0,\"gesetz\":{\"id\":4,\"feuer\":0},\"hoffnungS\":0,\"folge\":\"rcssssrffrrrff)",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": "Deckel 2400 s überschritten — beendet (zuletzt: AFFEKT-gemuet {\"mutante\":\"starr\",\"bauten\":49,\"zuege\":15,\"sonne\":3,\"frontSonne\":3,\"ausGesetz\":0,\"gesetz\":{\"id\":4,\"feuer\":0},\"hoffnungS\":0,\"folge\":\"rcssssrffrrrff)"
     }
    ]
   },
   "affekt.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: affekt.K3#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +22)",
+   "beleg": "Maschine: 0 — offen: affekt.K3#1 headless: Deckel 3600 s überschritten — beendet (zuletzt: AFFEKT-nexus {\"mutante\":null,\"saat\":1,\"erstes\":[0,17],\"letztes\":[8,10],\"verlauf\":\"0/1 0/1 0/1 0/1 0/1 0/2 0/1 0/1 0/2 0/2 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/1 0/) an 10770eb5",
    "stationen": [
     {
      "id": "affekt.K3#1",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +22)",
-     "ungemessen": true
+     "zahl": "Deckel 3600 s überschritten — beendet (zuletzt: AFFEKT-nexus {\"mutante\":null,\"saat\":1,\"erstes\":[0,17],\"letztes\":[8,10],\"verlauf\":\"0/1 0/1 0/1 0/1 0/1 0/2 0/1 0/1 0/2 0/2 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/1 0/)",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": "Deckel 3600 s überschritten — beendet (zuletzt: AFFEKT-nexus {\"mutante\":null,\"saat\":1,\"erstes\":[0,17],\"letztes\":[8,10],\"verlauf\":\"0/1 0/1 0/1 0/1 0/1 0/2 0/1 0/1 0/2 0/2 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/1 0/)"
     }
    ]
   },
   "affekt.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 30 Spielminuten, 57 Zeilen, 0 falsch, Abstand 30 s, offen -20.8 s, ohne Tat 0, Klassen {\"nexus\":59,\"rule:nexus\":537,\"llm\":3,\"rule:llm\":11,\"wunsch\":16,\"human\":2,\"fern\":179} an 25ac4c0c headless",
+   "beleg": "Maschine: 30 Spielminuten, 57 Zeilen, 0 falsch, Abstand 30 s, offen -20.8 s, ohne Tat 0, Klassen {\"nexus\":64,\"rule:nexus\":506,\"llm\":2,\"rule:llm\":11,\"wunsch\":20,\"human\":2,\"fern\":325} an 10770eb5 headless",
    "stationen": [
     {
      "id": "affekt.K4#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "30 Spielminuten, 57 Zeilen, 0 falsch, Abstand 30 s, offen -20.8 s, ohne Tat 0, Klassen {\"nexus\":59,\"rule:nexus\":537,\"llm\":3,\"rule:llm\":11,\"wunsch\":16,\"human\":2,\"fern\":179}",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +5)",
-     "gehalten": true
+     "zahl": "30 Spielminuten, 57 Zeilen, 0 falsch, Abstand 30 s, offen -20.8 s, ohne Tat 0, Klassen {\"nexus\":64,\"rule:nexus\":506,\"llm\":2,\"rule:llm\":11,\"wunsch\":20,\"human\":2,\"fern\":325}",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "affekt.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: feld Valenz 2.2 ↔ -1.6 → Chroma-Abstand 0.486 (Rauschen 0) · global Valenz 2.2 ↔ -1.6 → Chroma-Abstand 0.486 (Rauschen 0) · Exit 0 an 25ac4c0c headless",
+   "beleg": "Maschine: feld Valenz 2.2 ↔ -1.6 → Chroma-Abstand 0.4894 (Rauschen 0) · global Valenz 2.2 ↔ -1.6 → Chroma-Abstand 0.4894 (Rauschen 0) · Exit 0 an 10770eb5 headless",
    "stationen": [
     {
      "id": "affekt.K5#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "feld Valenz 2.2 ↔ -1.6 → Chroma-Abstand 0.486 (Rauschen 0) · global Valenz 2.2 ↔ -1.6 → Chroma-Abstand 0.486 (Rauschen 0) · Exit 0",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +1)",
-     "gehalten": true
+     "zahl": "feld Valenz 2.2 ↔ -1.6 → Chroma-Abstand 0.4894 (Rauschen 0) · global Valenz 2.2 ↔ -1.6 → Chroma-Abstand 0.4894 (Rauschen 0) · Exit 0",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
@@ -203,16 +198,15 @@
   },
   "bauen.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–2) · hotbar 24/24 (Eingaben 2–2) an 25ac4c0c headless — offen: bauen.K1#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · bauen.K1#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 3)) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt d",
+   "beleg": "Maschine: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–2) · hotbar 24/24 (Eingaben 2–2) an 10770eb5 headless — offen: bauen.K1#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · bauen.K1#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 3)) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt d",
    "stationen": [
     {
      "id": "bauen.K1#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–2) · hotbar 24/24 (Eingaben 2–2)",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-werkstatt-weg.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "bauen.K1#2",
@@ -236,88 +230,81 @@
   },
   "bauen.K2": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: haus_italienisch am Hang 0.408 (Soll ≥ 0,15) · Erdbau 3 Splats (Platte, Grund, Vorplatz) · byte-gleich dem Dorf-Slot true · Vorplatz-Boden 1 (Erde 0,3 m unter, keine 0,3 m über der Platte) · Erde über der Diele 0/315 an 25ac4c0c headless · gehalten: haus_italienisch auf der Gasse: Grundriss-Punkte auf der Gasse 15 → 0 (von 25) · Erdbau byte-gleich dem Ein-Slot-Plan true · Fremd-Slots im Plan 1 · Gang in den Keller erreicht, Hub 0.20 m je Schritt (Soll ≤ 0,3) an 25ac4c0c headless",
+   "beleg": "Maschine: haus_italienisch am Hang 0.408 (Soll ≥ 0,15) · Erdbau 3 Splats (Platte, Grund, Vorplatz) · byte-gleich dem Dorf-Slot true · Vorplatz-Boden 1 (Erde 0,3 m unter, keine 0,3 m über der Platte) · Erde über der Diele 0/315 an 10770eb5 headless · haus_italienisch auf der Gasse: Grundriss-Punkte auf der Gasse 15 → 0 (von 25) · Erdbau byte-gleich dem Ein-Slot-Plan true · Fremd-Slots im Plan 1 · Gang in den Keller erreicht, Hub 0.20 m je Schritt (Soll ≤ 0,3) an 10770eb5 headless",
    "stationen": [
     {
      "id": "bauen.K2#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "haus_italienisch am Hang 0.408 (Soll ≥ 0,15) · Erdbau 3 Splats (Platte, Grund, Vorplatz) · byte-gleich dem Dorf-Slot true · Vorplatz-Boden 1 (Erde 0,3 m unter, keine 0,3 m über der Platte) · Erde über der Diele 0/315",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-haus-welt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "bauen.K2#2",
      "geraet": "headless",
      "gruen": true,
      "zahl": "haus_italienisch auf der Gasse: Grundriss-Punkte auf der Gasse 15 → 0 (von 25) · Erdbau byte-gleich dem Ein-Slot-Plan true · Fremd-Slots im Plan 1 · Gang in den Keller erreicht, Hub 0.20 m je Schritt (Soll ≤ 0,3)",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-haus-welt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "bauen.K3": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Wirkung aus der Form: Plattform: steht nach 480 s (max. Wärme 0) · Linse: glimmt 9 s, brennt 21 s („Die Sonne entzündete durch „Brennglas\" „Eiche\" (30 m von dir\") · Regen: die Eiche  an 25ac4c0c headless · gehalten: Statik 10/10 richtig, Wirkung 5/5 an 25ac4c0c headless",
+   "beleg": "Maschine: Wirkung aus der Form: Plattform: steht nach 480 s (max. Wärme 0) · Linse: glimmt 3 s, brennt 7 s („Die Sonne entzündete durch „Brennglas\" „Eiche\" (30 m von dir\") · Regen: die Eiche s an 10770eb5 headless · Statik 10/10 richtig, Wirkung 5/5 an 10770eb5 headless",
    "stationen": [
     {
      "id": "bauen.K3#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "Wirkung aus der Form: Plattform: steht nach 480 s (max. Wärme 0) · Linse: glimmt 9 s, brennt 21 s („Die Sonne entzündete durch „Brennglas\" „Eiche\" (30 m von dir\") · Regen: die Eiche ",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-werkstatt-weg.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
-     "gehalten": true
+     "zahl": "Wirkung aus der Form: Plattform: steht nach 480 s (max. Wärme 0) · Linse: glimmt 3 s, brennt 7 s („Die Sonne entzündete durch „Brennglas\" „Eiche\" (30 m von dir\") · Regen: die Eiche s",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "bauen.K3#2",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Statik 10/10 richtig, Wirkung 5/5",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-werkstatt-weg.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +5)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "bauen.K4": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Turm aus 20/20 Blöcken über die Maus 70.00 m über dem Gelände · Hub 3.49–3.52 m je Block · Sohle ≤ 0.02 m neben dem Mesh · nach dem Reload 20 Edits, 0 Löcher, Sohle 0.02 m an 25ac4c0c headless · gehalten: Dach Ego 69.98 m, Sohle ≤ 0.03 m, Ring 166.52/166.52 m, Edit nach 2 Takten (3 Bytes) · Dach Third 69.98 m, Sohle ≤ 0.02 m, Ring 165.68/165.67 m, Edit nach 2 Takten (3 Bytes) · Fels Ego 69.98 m, Sohle ≤ 0.02 m, Ring 162.41/162.41 m, Edit nach 2 Takten (3 Bytes) · Fels Third 69.99 m, Sohle ≤ 0.02 m, Ring 162.38/162.38 m, Edit nach 2 Takten (3 Bytes) · Brücke Ego 69.99 m, Sohle ≤ 0.04 m, Ring 158.75/158.75 m, Edit nach 2 Takten (3 Bytes) · Brücke Third 69.98 m, Sohle ≤ 0.02 m, Ring 166.23/166.23 m, Edit nach 2 Takten (3 Bytes) an 25ac4c0c headless",
+   "beleg": "Maschine: Turm aus 20/20 Blöcken über die Maus 70.00 m über dem Gelände · Hub 3.49–3.52 m je Block · Sohle ≤ 0.03 m neben dem Mesh · nach dem Reload 20 Edits, 0 Löcher, Sohle 0.01 m an 10770eb5 headless · Dach Ego 69.97 m, Sohle ≤ 0.05 m, Ring 165.26/165.26 m, Edit nach 2 Takten (6 Bytes) · Dach Third 69.95 m, Sohle ≤ 0.05 m, Ring 167.34/167.34 m, Edit nach 2 Takten (3 Bytes) · Fels Ego 69.98 m, Sohle ≤ 0.02 m, Ring 162.41/162.41 m, Edit nach 2 Takten (3 Bytes) · Fels Third 70.00 m, Sohle ≤ 0.03 m, Ring 162.41/162.41 m, Edit nach 2 Takten (3 Bytes) · Brücke Ego 69.99 m, Sohle ≤ 0.03 m, Ring 160.34/160.34 m, Edit nach 2 Takten (3 Bytes) · Brücke Third 69.92 m, Sohle ≤ 0.07 m, Ring 165.95/165.94 m, Edit nach 2 Takten (3 Bytes) an 10770eb5 headless",
    "stationen": [
     {
      "id": "bauen.K4#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "Turm aus 20/20 Blöcken über die Maus 70.00 m über dem Gelände · Hub 3.49–3.52 m je Block · Sohle ≤ 0.02 m neben dem Mesh · nach dem Reload 20 Edits, 0 Löcher, Sohle 0.02 m",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fall-waechter.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8)",
-     "gehalten": true
+     "zahl": "Turm aus 20/20 Blöcken über die Maus 70.00 m über dem Gelände · Hub 3.49–3.52 m je Block · Sohle ≤ 0.03 m neben dem Mesh · nach dem Reload 20 Edits, 0 Löcher, Sohle 0.01 m",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "bauen.K4#2",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "Dach Ego 69.98 m, Sohle ≤ 0.03 m, Ring 166.52/166.52 m, Edit nach 2 Takten (3 Bytes) · Dach Third 69.98 m, Sohle ≤ 0.02 m, Ring 165.68/165.67 m, Edit nach 2 Takten (3 Bytes) · Fels Ego 69.98 m, Sohle ≤ 0.02 m, Ring 162.41/162.41 m, Edit nach 2 Takten (3 Bytes) · Fels Third 69.99 m, Sohle ≤ 0.02 m, Ring 162.38/162.38 m, Edit nach 2 Takten (3 Bytes) · Brücke Ego 69.99 m, Sohle ≤ 0.04 m, Ring 158.75/158.75 m, Edit nach 2 Takten (3 Bytes) · Brücke Third 69.98 m, Sohle ≤ 0.02 m, Ring 166.23/166.23 m, Edit nach 2 Takten (3 Bytes)",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fall-waechter.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
-     "gehalten": true
+     "zahl": "Dach Ego 69.97 m, Sohle ≤ 0.05 m, Ring 165.26/165.26 m, Edit nach 2 Takten (6 Bytes) · Dach Third 69.95 m, Sohle ≤ 0.05 m, Ring 167.34/167.34 m, Edit nach 2 Takten (3 Bytes) · Fels Ego 69.98 m, Sohle ≤ 0.02 m, Ring 162.41/162.41 m, Edit nach 2 Takten (3 Bytes) · Fels Third 70.00 m, Sohle ≤ 0.03 m, Ring 162.41/162.41 m, Edit nach 2 Takten (3 Bytes) · Brücke Ego 69.99 m, Sohle ≤ 0.03 m, Ring 160.34/160.34 m, Edit nach 2 Takten (3 Bytes) · Brücke Third 69.92 m, Sohle ≤ 0.07 m, Ring 165.95/165.94 m, Edit nach 2 Takten (3 Bytes)",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "bauen.K5": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: 6/6 Werke tragen ihr Verb über die Taste an 25ac4c0c headless · gehalten: 6/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal) an 25ac4c0c radeon · gehalten: 6/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal) an b4bcf19c gtx",
+   "beleg": "Maschine: 6/6 Werke tragen ihr Verb über die Taste an 10770eb5 headless · gehalten: 6/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal) an 25ac4c0c radeon · gehalten: 6/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal) an b4bcf19c gtx",
    "stationen": [
     {
      "id": "bauen.K5#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "6/6 Werke tragen ihr Verb über die Taste",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-werkstatt-weg.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +5)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "bauen.K5#2",
@@ -341,25 +328,23 @@
   },
   "fahrzeug.K1": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: 10 Achsen (5 Rezepte): Spitze 6.5–8.5°, Abfall bis 30° 20–24 % an 25ac4c0c headless · gehalten: (a) Spitze 6.5–8.5°, Abfall ab 20 % · (b) Bremsweg 50 → 0 km/h Gras 20.60 / Weg 12.62 m = 1.63× · nass Gras 1.72×, Weg 1.48× · μ(kraut) halb 1.72× · Takt 240 Hz · S1 2.220446049250313e-16 m (198 Schritte) · Exit 0 an 25ac4c0c headless",
+   "beleg": "Maschine: 10 Achsen (5 Rezepte): Spitze 6.5–8.5°, Abfall bis 30° 20–24 % an 10770eb5 headless · (a) Spitze 6.5–8.5°, Abfall ab 20 % · (b) Bremsweg 50 → 0 km/h Gras 20.60 / Weg 12.62 m = 1.63× · nass Gras 1.72×, Weg 1.48× · μ(kraut) halb 1.72× · Takt 240 Hz · S1 3.3306690738754696e-16 m (198 Schritte) · Exit 0 an 10770eb5 headless",
    "stationen": [
     {
      "id": "fahrzeug.K1#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "10 Achsen (5 Rezepte): Spitze 6.5–8.5°, Abfall bis 30° 20–24 %",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "fahrzeug.K1#2",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "(a) Spitze 6.5–8.5°, Abfall ab 20 % · (b) Bremsweg 50 → 0 km/h Gras 20.60 / Weg 12.62 m = 1.63× · nass Gras 1.72×, Weg 1.48× · μ(kraut) halb 1.72× · Takt 240 Hz · S1 2.220446049250313e-16 m (198 Schritte) · Exit 0",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +10)",
-     "gehalten": true
+     "zahl": "(a) Spitze 6.5–8.5°, Abfall ab 20 % · (b) Bremsweg 50 → 0 km/h Gras 20.60 / Weg 12.62 m = 1.63× · nass Gras 1.72×, Weg 1.48× · μ(kraut) halb 1.72× · Takt 240 Hz · S1 3.3306690738754696e-16 m (198 Schritte) · Exit 0",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
@@ -515,112 +500,103 @@
   },
   "feld.K1": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Tiefe 4 mit Festhalte-Probe · Bremsweg trocken 20.6 → Sturm 35.5 m (Regen gehalten 20.6, Nässe gehalten 20.6) · Exit 0 an 25ac4c0c headless · gehalten: Tiefe 4 mit Festhalte-Probe (Glieder regen → naesse → stoff → brand → licht), Soll ≥ 4 · Exit 0 an 25ac4c0c headless",
+   "beleg": "Maschine: Tiefe 4 mit Festhalte-Probe · Bremsweg trocken 20.6 → Sturm 35.5 m (Regen gehalten 20.6, Nässe gehalten 20.6) · Exit 0 an 10770eb5 headless · Tiefe 4 mit Festhalte-Probe (Glieder regen → naesse → stoff → brand → licht), Soll ≥ 4 · Exit 0 an 10770eb5 headless",
    "stationen": [
     {
      "id": "feld.K1#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Tiefe 4 mit Festhalte-Probe · Bremsweg trocken 20.6 → Sturm 35.5 m (Regen gehalten 20.6, Nässe gehalten 20.6) · Exit 0",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +10)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "feld.K1#2",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Tiefe 4 mit Festhalte-Probe (Glieder regen → naesse → stoff → brand → licht), Soll ≥ 4 · Exit 0",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +10)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "feld.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 6 (e)-Proben GRÜN: (e) Leib: B's Ghost rechnet A's Schritte aus seinen Eingaben bit-gleich (je seq) — 208 geteilte Schritte, maxΔ 0 | (e) Peers: der Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden) byte-gleich auf A und B — edits gleich · bauten gleich · boden gl | (e) Reload: B trägt nach dem Neuladen denselben Abdruck — edits gleich · bauten gleich · boden gleich · zug gleich an 25ac4c0c headless — offen: feld.K2#2 headless: Linse seit der Messung geändert (R6: scripts/diag-mp-sync.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3)",
+   "beleg": "Maschine: 6 (e)-Proben GRÜN: (e) Leib: B's Ghost rechnet A's Schritte aus seinen Eingaben bit-gleich (je seq) — 206 geteilte Schritte, maxΔ 0 | (e) Peers: der Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden) byte-gleich auf A und B — edits gleich · bauten gleich · boden gl | (e) Reload: B trägt nach dem Neuladen denselben Abdruck — edits gleich · bauten gleich · boden gleich · zug gleich an 10770eb5 headless — offen: feld.K2#2 headless: ROT: Zug der Welt-Uhr gleich in 2 von 2 (e)-Zeilen (Exit 0) · OFFEN (f) Peers: Teil-Simulationen gleich — Wetter gleich · Leben 0/9 gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uhr, Fraß, Entfachen rei | OFFEN (f) Reload mitten im Sturm: Teil-Simulationen gleich — Wetter gleich · Leben 0/9 gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uhr, Fr an 10770eb5",
    "stationen": [
     {
      "id": "feld.K2#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "6 (e)-Proben GRÜN: (e) Leib: B's Ghost rechnet A's Schritte aus seinen Eingaben bit-gleich (je seq) — 208 geteilte Schritte, maxΔ 0 | (e) Peers: der Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden) byte-gleich auf A und B — edits gleich · bauten gleich · boden gl | (e) Reload: B trägt nach dem Neuladen denselben Abdruck — edits gleich · bauten gleich · boden gleich · zug gleich",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-mp-sync.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +5)",
-     "gehalten": true
+     "zahl": "6 (e)-Proben GRÜN: (e) Leib: B's Ghost rechnet A's Schritte aus seinen Eingaben bit-gleich (je seq) — 206 geteilte Schritte, maxΔ 0 | (e) Peers: der Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden) byte-gleich auf A und B — edits gleich · bauten gleich · boden gl | (e) Reload: B trägt nach dem Neuladen denselben Abdruck — edits gleich · bauten gleich · boden gleich · zug gleich",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "feld.K2#2",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-mp-sync.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3)",
-     "ungemessen": true
+     "zahl": "Zug der Welt-Uhr gleich in 2 von 2 (e)-Zeilen (Exit 0) · OFFEN (f) Peers: Teil-Simulationen gleich — Wetter gleich · Leben 0/9 gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uhr, Fraß, Entfachen rei | OFFEN (f) Reload mitten im Sturm: Teil-Simulationen gleich — Wetter gleich · Leben 0/9 gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uhr, Fr",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": "ROT: Zug der Welt-Uhr gleich in 2 von 2 (e)-Zeilen (Exit 0) · OFFEN (f) Peers: Teil-Simulationen gleich — Wetter gleich · Leben 0/9 gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uhr, Fraß, Entfachen rei | OFFEN (f) Reload mitten im Sturm: Teil-Simulationen gleich — Wetter gleich · Leben 0/9 gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uhr, Fr"
     }
    ]
   },
   "feld.K3": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Wasser-Automat 0 Einheiten in 60 s Ruhe (Akte 6833); alle Sims: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 an 25ac4c0c headless · gehalten: Ruhe 60 s: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 6833 · Feld: 2160 Zellen geschrieben, tote/Zellen nach den Wellen 0/540 · 0/540 · 0/540 · 0/540 · Brand: {\"zellen\":57,\"einheiten\":31.8,\"start\":true,\"mit\":0.904,\"koepfe\":18,\"gegen\":0.026,\"alle\":1.057,\"ohneWind\":0.041,\"lebVor\":0.839,\"glut\":0.68,\"licht\":true,\"regenS\":20,\"brennt\":0,\"lebNach\":0.539,\"asche\":42} an 25ac4c0c headless",
+   "beleg": "Maschine: Wasser-Automat 0 Einheiten in 60 s Ruhe (Akte 4637); alle Sims: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 an 10770eb5 headless · Ruhe 60 s: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 4637 · Feld: 2160 Zellen geschrieben, tote/Zellen nach den Wellen 0/540 · 0/540 · 0/540 · 0/540 · Brand: {\"zellen\":60,\"einheiten\":31.8,\"start\":true,\"mit\":0.779,\"koepfe\":19,\"gegen\":0.027,\"alle\":1.05,\"ohneWind\":0.041,\"lebVor\":0.839,\"glut\":0.68,\"licht\":true,\"regenS\":20,\"brennt\":0,\"lebNach\":0.539,\"asche\":47} an 10770eb5 headless",
    "stationen": [
     {
      "id": "feld.K3#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "Wasser-Automat 0 Einheiten in 60 s Ruhe (Akte 6833); alle Sims: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-stand-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +9)",
-     "gehalten": true
+     "zahl": "Wasser-Automat 0 Einheiten in 60 s Ruhe (Akte 4637); alle Sims: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "feld.K3#2",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "Ruhe 60 s: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 6833 · Feld: 2160 Zellen geschrieben, tote/Zellen nach den Wellen 0/540 · 0/540 · 0/540 · 0/540 · Brand: {\"zellen\":57,\"einheiten\":31.8,\"start\":true,\"mit\":0.904,\"koepfe\":18,\"gegen\":0.026,\"alle\":1.057,\"ohneWind\":0.041,\"lebVor\":0.839,\"glut\":0.68,\"licht\":true,\"regenS\":20,\"brennt\":0,\"lebNach\":0.539,\"asche\":42}",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-stand-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +7)",
-     "gehalten": true
+     "zahl": "Ruhe 60 s: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 4637 · Feld: 2160 Zellen geschrieben, tote/Zellen nach den Wellen 0/540 · 0/540 · 0/540 · 0/540 · Brand: {\"zellen\":60,\"einheiten\":31.8,\"start\":true,\"mit\":0.779,\"koepfe\":19,\"gegen\":0.027,\"alle\":1.05,\"ohneWind\":0.041,\"lebVor\":0.839,\"glut\":0.68,\"licht\":true,\"regenS\":20,\"brennt\":0,\"lebNach\":0.539,\"asche\":47}",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "feld.K4": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: nach der Stunde vor dem Reload: 3 von 13 Bäumen, 0 von 30 Pflanzen zurück, 10 Stümpfe für 10, Feld -0.167 unter frozen an 25ac4c0c headless · gehalten: nach dem Reload 3/13 Bäume, 0 Pflanzen, 10 Stümpfe, Feld -0.167 · nach Reload und Stunde 3/13 Bäume, 0 Pflanzen, 10 Stümpfe, Feld -0.157 · nach 36 Stunden 30 von 30 Pflanzen zurück, Feld -0.157 → -0.06, Taten 40 → 10 an 25ac4c0c headless",
+   "beleg": "Maschine: nach der Stunde vor dem Reload: 3 von 13 Bäumen, 0 von 30 Pflanzen zurück, 10 Stümpfe für 10, Feld -0.167 unter frozen an 10770eb5 headless · nach dem Reload 3/13 Bäume, 0 Pflanzen, 10 Stümpfe, Feld -0.167 · nach Reload und Stunde 3/13 Bäume, 0 Pflanzen, 10 Stümpfe, Feld -0.157 · nach 36 Stunden 30 von 30 Pflanzen zurück, Feld -0.157 → -0.06, Taten 40 → 10 an 10770eb5 headless",
    "stationen": [
     {
      "id": "feld.K4#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "nach der Stunde vor dem Reload: 3 von 13 Bäumen, 0 von 30 Pflanzen zurück, 10 Stümpfe für 10, Feld -0.167 unter frozen",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-stand-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +9)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "feld.K4#2",
      "geraet": "headless",
      "gruen": true,
      "zahl": "nach dem Reload 3/13 Bäume, 0 Pflanzen, 10 Stümpfe, Feld -0.167 · nach Reload und Stunde 3/13 Bäume, 0 Pflanzen, 10 Stümpfe, Feld -0.157 · nach 36 Stunden 30 von 30 Pflanzen zurück, Feld -0.157 → -0.06, Taten 40 → 10",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-stand-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +9)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "feld.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: feld.K5#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
+   "beleg": "Maschine: 0 — offen: feld.K5#1 headless: ROT: Feld der Mitte 0.855 → 1 · Streu der Mitte 29 → 29 (Blumen 26 → 26), Nachbarzelle 30 → 30 (Blumen 24 → 24), Rauschen ±0 · ROT am Ort nichts gesehen (Soll: Blumen +≥ 3 oder alle +≥ 10 % am Ort, Nachbar im Rauschen) an 10770eb5",
    "stationen": [
     {
      "id": "feld.K5#1",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
-     "ungemessen": true
+     "zahl": "Feld der Mitte 0.855 → 1 · Streu der Mitte 29 → 29 (Blumen 26 → 26), Nachbarzelle 30 → 30 (Blumen 24 → 24), Rauschen ±0 · ROT am Ort nichts gesehen (Soll: Blumen +≥ 3 oder alle +≥ 10 % am Ort, Nachbar im Rauschen)",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": "ROT: Feld der Mitte 0.855 → 1 · Streu der Mitte 29 → 29 (Blumen 26 → 26), Nachbarzelle 30 → 30 (Blumen 24 → 24), Rauschen ±0 · ROT am Ort nichts gesehen (Soll: Blumen +≥ 3 oder alle +≥ 10 % am Ort, Nachbar im Rauschen)"
     }
    ]
   },
@@ -764,25 +740,23 @@
   },
   "gelaende.K1": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Welt = Studio byte-gleich (Makro b91513103dff4c9c), Statistik gleich, 18 Regler, tot 0, Selbsttest sieht an 25ac4c0c headless · gehalten: 100000 Punkte, 300 Edits, ≠ Kern 0 (maxDiff 0), 4/4 Mutationen ziehen Stamm-Leser und Worker-Feld, Selbsttest sieht an 25ac4c0c headless",
+   "beleg": "Maschine: Welt = Studio byte-gleich (Makro b91513103dff4c9c), Statistik gleich, 18 Regler, tot 0, Selbsttest sieht an 10770eb5 headless · 100000 Punkte, 300 Edits, ≠ Kern 0 (maxDiff 0), 4/4 Mutationen ziehen Stamm-Leser und Worker-Feld, Selbsttest sieht an 10770eb5 headless",
    "stationen": [
     {
      "id": "gelaende.K1#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Welt = Studio byte-gleich (Makro b91513103dff4c9c), Statistik gleich, 18 Regler, tot 0, Selbsttest sieht",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-worker-dichte.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +9)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "gelaende.K1#2",
      "geraet": "headless",
      "gruen": true,
      "zahl": "100000 Punkte, 300 Edits, ≠ Kern 0 (maxDiff 0), 4/4 Mutationen ziehen Stamm-Leser und Worker-Feld, Selbsttest sieht",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-worker-dichte.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +9)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
@@ -854,40 +828,37 @@
   },
   "gelaende.K4": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an 25ac4c0c headless · gehalten: 6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m) an 25ac4c0c headless",
+   "beleg": "Maschine: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an 10770eb5 headless · 6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m) an 10770eb5 headless",
    "stationen": [
     {
      "id": "gelaende.K4#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-wasser-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) — zuletzt an 455e5be8: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten — beendet, ungemessen",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "gelaende.K4#2",
      "geraet": "headless",
      "gruen": true,
      "zahl": "6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m)",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-wasser-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) — zuletzt an 455e5be8: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von Vorrang: 'punkte-radeon-1' pid=39584 wartet auf alle Plätze nach 2827 s Warten (ohne Nachtruhe; Wanduhr 2827 s)) — ungemessen",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "gelaende.K5": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 0.8 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) an 25ac4c0c headless · gehalten: alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) an b3f9ae95 radeon · gehalten: alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) an 715754fc gtx",
+   "beleg": "Maschine: im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 0.8 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) an 10770eb5 headless · gehalten: alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) an b3f9ae95 radeon · gehalten: alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) an 715754fc gtx",
    "stationen": [
     {
      "id": "gelaende.K5#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 0.8 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht)",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-koerper-stand.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +9)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "gelaende.K5#2",
@@ -959,31 +930,29 @@
   },
   "haar.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: haar.K3#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +13)",
+   "beleg": "Maschine: 0 — offen: haar.K3#1 headless: ROT: Haar 3870 px, 20 Bilder: Bewegung im Wind 6.863 gegen ohne Wind 0.025 Luma-Stufen je Bild (Rauschen 0), r(Wind, Bewegung) 0.294 (Soll r ≥ 0,6, ≥ 0,5 Stufen und ≥ 2 × ohne Wind) an 10770eb5",
    "stationen": [
     {
      "id": "haar.K3#1",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +13)",
-     "ungemessen": true
+     "zahl": "Haar 3870 px, 20 Bilder: Bewegung im Wind 6.863 gegen ohne Wind 0.025 Luma-Stufen je Bild (Rauschen 0), r(Wind, Bewegung) 0.294 (Soll r ≥ 0,6, ≥ 0,5 Stufen und ≥ 2 × ohne Wind)",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": "ROT: Haar 3870 px, 20 Bilder: Bewegung im Wind 6.863 gegen ohne Wind 0.025 Luma-Stufen je Bild (Rauschen 0), r(Wind, Bewegung) 0.294 (Soll r ≥ 0,6, ≥ 0,5 Stufen und ≥ 2 × ohne Wind)"
     }
    ]
   },
   "haar.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 1320 mittelalter poncho/pants/boot · 1935 moderne tshirt/pants/sneaker: im Bild 63.1 % der Leib-Pixel anders (Soll ≥ 25 %), der Schnitt allein 15.9 % (≥ 5 %), Umriss-Deckung 0.9595, die Mutante 0.0 % (≤ 0,2 %) · Leib 7690/7412/7690/7406 px (≥ 2 000), Treue 0 Bytes an 25ac4c0c headless — offen: haar.K4#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: 1320 mittelalter poncho/pants/boot · 1935 moderne tshirt/pants/sneaker: im Bild 63.0 % der Leib-Pixel anders (Soll ≥ 25 %), der Schnitt allein 16.2 % (≥ 5 %), Umriss-Deckung 0.9602, die Mutante 0.0 % (≤ 0,2 %) · Leib 7696/7419/7696/7409 px (≥ 2 000), Treue 0 Bytes an 10770eb5 headless — offen: haar.K4#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "haar.K4#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "1320 mittelalter poncho/pants/boot · 1935 moderne tshirt/pants/sneaker: im Bild 63.1 % der Leib-Pixel anders (Soll ≥ 25 %), der Schnitt allein 15.9 % (≥ 5 %), Umriss-Deckung 0.9595, die Mutante 0.0 % (≤ 0,2 %) · Leib 7690/7412/7690/7406 px (≥ 2 000), Treue 0 Bytes",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18)",
-     "gehalten": true
+     "zahl": "1320 mittelalter poncho/pants/boot · 1935 moderne tshirt/pants/sneaker: im Bild 63.0 % der Leib-Pixel anders (Soll ≥ 25 %), der Schnitt allein 16.2 % (≥ 5 %), Umriss-Deckung 0.9602, die Mutante 0.0 % (≤ 0,2 %) · Leib 7696/7419/7696/7409 px (≥ 2 000), Treue 0 Bytes",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
@@ -1004,16 +973,15 @@
   },
   "halten.K1": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: (A) I1=[{\"I1\":349.92,\"I2\":699.84,\"D1\":0.763,\"D2\":1.08},1.414,1.414] · 0 von 5 Proben ROT an 25ac4c0c headless · gehalten: vor: Treffer KE 73.5 J · p 5.92 · v 23.1 · Schaden 15.6 · edgeQ 1.000/Bild 0.979 · Werk 1.383 kg β 26.3° · Labor 1.383 kg β 26.3° | masse: Treffer KE 79.1 J · p 6.78 · v 21.3 · Schaden 17.1 · edgeQ 0.998/Bild 0.998 · Werk 1.646 kg β 26.3° · Labor 1.646 kg β 26.3° | schneide: Treffer KE 81.5 J · p 5.98 · v 23.3 · Schaden 17.6 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 22.7° · Labor 1.383 kg β 22.7° an 25ac4c0c radeon · gehalten: vor: Treffer KE 74.6 J · p 5.96 · v 23.3 · Schaden 15.8 · edgeQ 1.000/Bild 0.998 · Werk 1.383 kg β 26.3° · Labor 1.383 kg β 26.3° | masse: Treffer KE 79.9 J · p 6.80 · v 22.1 · Schaden 17.2 · edgeQ 1.000/Bild 1.000 · Werk 1.646 kg β 26.3° · Labor 1.646 kg β 26.3° | schneide: Treffer KE 72.3 J · p 5.63 · v 23.5 · Schaden 15.6 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 22.7° · Labor 1.383 kg β 22.7° an 715754fc gtx",
+   "beleg": "Maschine: (A) I1=[{\"I1\":349.92,\"I2\":699.84,\"D1\":0.763,\"D2\":1.08},1.414,1.414] · 0 von 5 Proben ROT an 10770eb5 headless · gehalten: vor: Treffer KE 73.5 J · p 5.92 · v 23.1 · Schaden 15.6 · edgeQ 1.000/Bild 0.979 · Werk 1.383 kg β 26.3° · Labor 1.383 kg β 26.3° | masse: Treffer KE 79.1 J · p 6.78 · v 21.3 · Schaden 17.1 · edgeQ 0.998/Bild 0.998 · Werk 1.646 kg β 26.3° · Labor 1.646 kg β 26.3° | schneide: Treffer KE 81.5 J · p 5.98 · v 23.3 · Schaden 17.6 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 22.7° · Labor 1.383 kg β 22.7° an 25ac4c0c radeon · gehalten: vor: Treffer KE 74.6 J · p 5.96 · v 23.3 · Schaden 15.8 · edgeQ 1.000/Bild 0.998 · Werk 1.383 kg β 26.3° · Labor 1.383 kg β 26.3° | masse: Treffer KE 79.9 J · p 6.80 · v 22.1 · Schaden 17.2 · edgeQ 1.000/Bild 1.000 · Werk 1.646 kg β 26.3° · Labor 1.646 kg β 26.3° | schneide: Treffer KE 72.3 J · p 5.63 · v 23.5 · Schaden 15.6 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 22.7° · Labor 1.383 kg β 22.7° an 715754fc gtx",
    "stationen": [
     {
      "id": "halten.K1#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "(A) I1=[{\"I1\":349.92,\"I2\":699.84,\"D1\":0.763,\"D2\":1.08},1.414,1.414] · 0 von 5 Proben ROT",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kampf-gefuehl.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +7)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "halten.K1#2",
@@ -1037,7 +1005,7 @@
   },
   "halten.K2": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: schlechtester von 3 Läufen p95 ms third/hieb 36.7 · ego/hieb 35.6 · Bild 17.3/17.4/17.1 ms · Hit-Stop im schlechtesten Lauf 8 Bilder · im Spiel Halt gesetzt 58-mal (152–176 ms, gleitet bis 0 mm je Takt) / 58-mal (146–175 ms, gleitet bis 0 mm je Takt) / 60-mal (129–180 ms, gleitet bis 0 mm je Takt) an b3f9ae95 radeon · gehalten: schlechtester von 3 Läufen p95 ms third/hieb 41 · ego/hieb 28.1 · Bild 15.5/15.5/15.3 ms · Hit-Stop im schlechtesten Lauf 12 Bilder · im Spiel Halt gesetzt 59-mal (124–179 ms, gleitet bis 0 mm je Takt) / 60-mal (153–168 ms, gleitet bis 0 mm je Takt) / 60-mal (120–175 ms, gleitet bis 0 mm je Takt) an b3f9ae95 gtx · gehalten: stahl/holz 954 Hz -37 dB Funken 0 Latenz 0 ms · stahl/stein 2179 Hz -34 dB Funken 24 Latenz 0 ms · holz/fleisch 192 Hz -49 dB Funken 0 Latenz 0 ms · S19 feuert an 25ac4c0c headless",
+   "beleg": "Maschine: gehalten: schlechtester von 3 Läufen p95 ms third/hieb 36.7 · ego/hieb 35.6 · Bild 17.3/17.4/17.1 ms · Hit-Stop im schlechtesten Lauf 8 Bilder · im Spiel Halt gesetzt 58-mal (152–176 ms, gleitet bis 0 mm je Takt) / 58-mal (146–175 ms, gleitet bis 0 mm je Takt) / 60-mal (129–180 ms, gleitet bis 0 mm je Takt) an b3f9ae95 radeon · gehalten: schlechtester von 3 Läufen p95 ms third/hieb 41 · ego/hieb 28.1 · Bild 15.5/15.5/15.3 ms · Hit-Stop im schlechtesten Lauf 12 Bilder · im Spiel Halt gesetzt 59-mal (124–179 ms, gleitet bis 0 mm je Takt) / 60-mal (153–168 ms, gleitet bis 0 mm je Takt) / 60-mal (120–175 ms, gleitet bis 0 mm je Takt) an b3f9ae95 gtx · stahl/holz 954 Hz -37 dB Funken 0 Latenz 0 ms · stahl/stein 2179 Hz -34 dB Funken 24 Latenz 0 ms · holz/fleisch 192 Hz -49 dB Funken 0 Latenz 0 ms · S19 feuert an 10770eb5 headless",
    "stationen": [
     {
      "id": "halten.K2#1",
@@ -1062,57 +1030,52 @@
      "geraet": "headless",
      "gruen": true,
      "zahl": "stahl/holz 954 Hz -37 dB Funken 0 Latenz 0 ms · stahl/stein 2179 Hz -34 dB Funken 24 Latenz 0 ms · holz/fleisch 192 Hz -49 dB Funken 0 Latenz 0 ms · S19 feuert",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kampf-gefuehl.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +5)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "halten.K3": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Q11 grün (form {\"axtBlatt\":{\"baum_eiche\":{\"verb\":\"abbau\",\"wirk\":0.2027139558584031,\"zehrt\":0.008470588235294119},\"boden\":{\"verb\":\"graben\",\"wirk\":0.39857308211092424,\"zehrt\":0.008470588235294119}},\"spatenAxt\":{\"baum_eiche\":{\"verb\":\"abbau\",\"wirk\":0.462) · Sichel grün an 25ac4c0c headless · gehalten: 22 von 22 Gestalten · zehrt bronze 0.0131 > eisen 0.0096 > stahl 0.0085 je Hieb, die halbe Härte 0.0169 an 25ac4c0c headless",
+   "beleg": "Maschine: Q11 grün (form {\"axtBlatt\":{\"baum_eiche\":{\"verb\":\"abbau\",\"wirk\":0.2027476679404159,\"zehrt\":0.008470588235294119},\"boden\":{\"verb\":\"graben\",\"wirk\":0.3986981211595566,\"zehrt\":0.008470588235294119}},\"spatenAxt\":{\"baum_eiche\":{\"verb\":\"abbau\",\"wirk\":0.4630) · Sichel grün an 10770eb5 headless · 22 von 22 Gestalten · zehrt bronze 0.0131 > eisen 0.0096 > stahl 0.0085 je Hieb, die halbe Härte 0.0169 an 10770eb5 headless",
    "stationen": [
     {
      "id": "halten.K3#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "Q11 grün (form {\"axtBlatt\":{\"baum_eiche\":{\"verb\":\"abbau\",\"wirk\":0.2027139558584031,\"zehrt\":0.008470588235294119},\"boden\":{\"verb\":\"graben\",\"wirk\":0.39857308211092424,\"zehrt\":0.008470588235294119}},\"spatenAxt\":{\"baum_eiche\":{\"verb\":\"abbau\",\"wirk\":0.462) · Sichel grün",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kampf-gefuehl.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +7)",
-     "gehalten": true
+     "zahl": "Q11 grün (form {\"axtBlatt\":{\"baum_eiche\":{\"verb\":\"abbau\",\"wirk\":0.2027476679404159,\"zehrt\":0.008470588235294119},\"boden\":{\"verb\":\"graben\",\"wirk\":0.3986981211595566,\"zehrt\":0.008470588235294119}},\"spatenAxt\":{\"baum_eiche\":{\"verb\":\"abbau\",\"wirk\":0.4630) · Sichel grün",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "halten.K3#2",
      "geraet": "headless",
      "gruen": true,
      "zahl": "22 von 22 Gestalten · zehrt bronze 0.0131 > eisen 0.0096 > stahl 0.0085 je Hieb, die halbe Härte 0.0169",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kampf-gefuehl.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +7)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "halten.K4": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: (Q12) Bahn {\"bahn\":[[25,30,0],[25,60,0],[25,144,0],[0,30,0],[0,60,0],[0,144,0],[-8,30,0],[-8,60,0],[-8,144,0]],\"Wd\":{\"zF\":17.178,\"p0\":[-0.083,92.963,0.577],\"v0\":[0,-0.37,56.373],\"treffer\":{\"hit\":true,\"x\":-0.083,\"y\":92.428,\"z\":17.178,\"nx\":0,\"ny\":0,\"nz\":-1,\"t\":0.835},\"steckt\":1,\"bild\":true,\"anteil\":0.002},\"boden\":3,\"Td\":{\"n\":1,\"folgt\":[2,0,0],\"amTier\":true,\"imSnapshot\":1,\"wieder\":1,\"lageGleich\":true,\"bildWieder\":true},\"Sd\":{\"steckend\":5,\"imSnapshot\":5,\"wieder\":5,\"lageGleich\":true,\"bild\":true},\"Zd\":{\"v1\":56.374,\"vS1\":56.374,\"v2\":59.735,\"vS2\":59.735},\"f\":[]} an 25ac4c0c headless · gehalten: (Q12) Bahn {\"bahn\":[[25,30,0],[25,60,0],[25,144,0],[0,30,0],[0,60,0],[0,144,0],[-8,30,0],[-8,60,0],[-8,144,0]],\"Wd\":{\"zF\":17.178,\"p0\":[-0.083,92.963,0.577],\"v0\":[0,-0.37,56.373],\"treffer\":{\"hit\":true,\"x\":-0.083,\"y\":92.428,\"z\":17.178,\"nx\":0,\"ny\":0,\"nz\":-1,\"t\":0.835},\"steckt\":1,\"bild\":true,\"anteil\":0.002},\"boden\":3,\"Td\":{\"n\":1,\"folgt\":[2,0,0],\"amTier\":true,\"imSnapshot\":1,\"wieder\":1,\"lageGleich\":true,\"bildWieder\":true},\"Sd\":{\"steckend\":5,\"imSnapshot\":5,\"wieder\":5,\"lageGleich\":true,\"bild\":true},\"Zd\":{\"v1\":56.374,\"vS1\":56.374,\"v2\":59.735,\"vS2\":59.735},\"f\":[]} an 25ac4c0c headless",
+   "beleg": "Maschine: (Q12) Bahn {\"bahn\":[[25,30,0],[25,60,0],[25,144,0],[0,30,0],[0,60,0],[0,144,0],[-8,30,0],[-8,60,0],[-8,144,0]],\"Wd\":{\"zF\":17,\"p0\":[-0.103,91.937,0.398],\"v0\":[0,-0.37,56.373],\"treffer\":{\"hit\":true,\"x\":-0.103,\"y\":91.402,\"z\":17,\"nx\":0,\"ny\":0,\"nz\":-1,\"t\":0.835},\"steckt\":1,\"bild\":true,\"anteil\":0.002},\"boden\":3,\"Td\":{\"n\":1,\"folgt\":[2,0,0],\"amTier\":true,\"imSnapshot\":1,\"wieder\":1,\"lageGleich\":true,\"bildWieder\":true},\"Sd\":{\"steckend\":5,\"imSnapshot\":5,\"wieder\":5,\"lageGleich\":true,\"bild\":true},\"Zd\":{\"v1\":56.374,\"vS1\":56.374,\"v2\":59.735,\"vS2\":59.735},\"f\":[]} an 10770eb5 headless · (Q12) Bahn {\"bahn\":[[25,30,0],[25,60,0],[25,144,0],[0,30,0],[0,60,0],[0,144,0],[-8,30,0],[-8,60,0],[-8,144,0]],\"Wd\":{\"zF\":17,\"p0\":[-0.103,91.937,0.398],\"v0\":[0,-0.37,56.373],\"treffer\":{\"hit\":true,\"x\":-0.103,\"y\":91.402,\"z\":17,\"nx\":0,\"ny\":0,\"nz\":-1,\"t\":0.835},\"steckt\":1,\"bild\":true,\"anteil\":0.002},\"boden\":3,\"Td\":{\"n\":1,\"folgt\":[2,0,0],\"amTier\":true,\"imSnapshot\":1,\"wieder\":1,\"lageGleich\":true,\"bildWieder\":true},\"Sd\":{\"steckend\":5,\"imSnapshot\":5,\"wieder\":5,\"lageGleich\":true,\"bild\":true},\"Zd\":{\"v1\":56.374,\"vS1\":56.374,\"v2\":59.735,\"vS2\":59.735},\"f\":[]} an 10770eb5 headless",
    "stationen": [
     {
      "id": "halten.K4#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "(Q12) Bahn {\"bahn\":[[25,30,0],[25,60,0],[25,144,0],[0,30,0],[0,60,0],[0,144,0],[-8,30,0],[-8,60,0],[-8,144,0]],\"Wd\":{\"zF\":17.178,\"p0\":[-0.083,92.963,0.577],\"v0\":[0,-0.37,56.373],\"treffer\":{\"hit\":true,\"x\":-0.083,\"y\":92.428,\"z\":17.178,\"nx\":0,\"ny\":0,\"nz\":-1,\"t\":0.835},\"steckt\":1,\"bild\":true,\"anteil\":0.002},\"boden\":3,\"Td\":{\"n\":1,\"folgt\":[2,0,0],\"amTier\":true,\"imSnapshot\":1,\"wieder\":1,\"lageGleich\":true,\"bildWieder\":true},\"Sd\":{\"steckend\":5,\"imSnapshot\":5,\"wieder\":5,\"lageGleich\":true,\"bild\":true},\"Zd\":{\"v1\":56.374,\"vS1\":56.374,\"v2\":59.735,\"vS2\":59.735},\"f\":[]}",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kampf-gefuehl.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +7)",
-     "gehalten": true
+     "zahl": "(Q12) Bahn {\"bahn\":[[25,30,0],[25,60,0],[25,144,0],[0,30,0],[0,60,0],[0,144,0],[-8,30,0],[-8,60,0],[-8,144,0]],\"Wd\":{\"zF\":17,\"p0\":[-0.103,91.937,0.398],\"v0\":[0,-0.37,56.373],\"treffer\":{\"hit\":true,\"x\":-0.103,\"y\":91.402,\"z\":17,\"nx\":0,\"ny\":0,\"nz\":-1,\"t\":0.835},\"steckt\":1,\"bild\":true,\"anteil\":0.002},\"boden\":3,\"Td\":{\"n\":1,\"folgt\":[2,0,0],\"amTier\":true,\"imSnapshot\":1,\"wieder\":1,\"lageGleich\":true,\"bildWieder\":true},\"Sd\":{\"steckend\":5,\"imSnapshot\":5,\"wieder\":5,\"lageGleich\":true,\"bild\":true},\"Zd\":{\"v1\":56.374,\"vS1\":56.374,\"v2\":59.735,\"vS2\":59.735},\"f\":[]}",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "halten.K4#2",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "(Q12) Bahn {\"bahn\":[[25,30,0],[25,60,0],[25,144,0],[0,30,0],[0,60,0],[0,144,0],[-8,30,0],[-8,60,0],[-8,144,0]],\"Wd\":{\"zF\":17.178,\"p0\":[-0.083,92.963,0.577],\"v0\":[0,-0.37,56.373],\"treffer\":{\"hit\":true,\"x\":-0.083,\"y\":92.428,\"z\":17.178,\"nx\":0,\"ny\":0,\"nz\":-1,\"t\":0.835},\"steckt\":1,\"bild\":true,\"anteil\":0.002},\"boden\":3,\"Td\":{\"n\":1,\"folgt\":[2,0,0],\"amTier\":true,\"imSnapshot\":1,\"wieder\":1,\"lageGleich\":true,\"bildWieder\":true},\"Sd\":{\"steckend\":5,\"imSnapshot\":5,\"wieder\":5,\"lageGleich\":true,\"bild\":true},\"Zd\":{\"v1\":56.374,\"vS1\":56.374,\"v2\":59.735,\"vS2\":59.735},\"f\":[]}",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kampf-gefuehl.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +7)",
-     "gehalten": true
+     "zahl": "(Q12) Bahn {\"bahn\":[[25,30,0],[25,60,0],[25,144,0],[0,30,0],[0,60,0],[0,144,0],[-8,30,0],[-8,60,0],[-8,144,0]],\"Wd\":{\"zF\":17,\"p0\":[-0.103,91.937,0.398],\"v0\":[0,-0.37,56.373],\"treffer\":{\"hit\":true,\"x\":-0.103,\"y\":91.402,\"z\":17,\"nx\":0,\"ny\":0,\"nz\":-1,\"t\":0.835},\"steckt\":1,\"bild\":true,\"anteil\":0.002},\"boden\":3,\"Td\":{\"n\":1,\"folgt\":[2,0,0],\"amTier\":true,\"imSnapshot\":1,\"wieder\":1,\"lageGleich\":true,\"bildWieder\":true},\"Sd\":{\"steckend\":5,\"imSnapshot\":5,\"wieder\":5,\"lageGleich\":true,\"bild\":true},\"Zd\":{\"v1\":56.374,\"vS1\":56.374,\"v2\":59.735,\"vS2\":59.735},\"f\":[]}",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
@@ -1160,124 +1123,115 @@
   },
   "ki.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 28 von 32 Positiv-Sätzen mit Welt-Prädikat, Negativ 8/8 ohne Tat, Brüche 0, Ratsche hält (Mitschnitt qwen3:4b-instruct @ 127.0.0.1:11434 2026-10-26) an 25ac4c0c headless — offen: ki.K1#2 headless: Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6) — zuletzt an 455e5be8: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von Vorrang: 'punkte-radeon-1' pid=39584 wartet auf alle Plätze nach 2747 s Warten (ohne Nachtruhe; Wanduhr 2747 s)) — ungemessen",
+   "beleg": "Maschine: 29 von 32 Positiv-Sätzen mit Welt-Prädikat, Negativ 8/8 ohne Tat, Brüche 0, Ratsche hält (Mitschnitt qwen3:4b-instruct @ 127.0.0.1:11434 2026-10-26) an 10770eb5 headless — offen: ki.K1#2 headless: ROT: 40/40 Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434: gültig 90.0 % (Soll 95), Absicht 87.5 % (Soll 85), Brüche 0, Negativ 8/8 ohne Tat benannt, p95 29704 ms (genannt) an 10770eb5",
    "stationen": [
     {
      "id": "ki.K1#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "28 von 32 Positiv-Sätzen mit Welt-Prädikat, Negativ 8/8 ohne Tat, Brüche 0, Ratsche hält (Mitschnitt qwen3:4b-instruct @ 127.0.0.1:11434 2026-10-26)",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +7)",
-     "gehalten": true
+     "zahl": "29 von 32 Positiv-Sätzen mit Welt-Prädikat, Negativ 8/8 ohne Tat, Brüche 0, Ratsche hält (Mitschnitt qwen3:4b-instruct @ 127.0.0.1:11434 2026-10-26)",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "ki.K1#2",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6) — zuletzt an 455e5be8: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von Vorrang: 'punkte-radeon-1' pid=39584 wartet auf alle Plätze nach 2747 s Warten (ohne Nachtruhe; Wanduhr 2747 s)) — ungemessen",
-     "ungemessen": true
+     "zahl": "40/40 Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434: gültig 90.0 % (Soll 95), Absicht 87.5 % (Soll 85), Brüche 0, Negativ 8/8 ohne Tat benannt, p95 29704 ms (genannt)",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": "ROT: 40/40 Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434: gültig 90.0 % (Soll 95), Absicht 87.5 % (Soll 85), Brüche 0, Negativ 8/8 ohne Tat benannt, p95 29704 ms (genannt)"
     }
    ]
   },
   "ki.K2": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: 123 von 123 Zeilen (100.0 %) aus einem KI-Programm, Bau-Hash folgt an 25ac4c0c headless · gehalten: 123 von 123 Zeilen (100.0 %), Korpus-Teil 20 von 24 Sätzen mit Welt-Prädikat (Mitschnitt qwen3:4b-instruct @ 127.0.0.1:11434 2026-10-26) an 25ac4c0c headless",
+   "beleg": "Maschine: 144 von 144 Zeilen (100.0 %) aus einem KI-Programm, Bau-Hash folgt an 10770eb5 headless · 144 von 144 Zeilen (100.0 %), Korpus-Teil 20 von 24 Sätzen mit Welt-Prädikat (Mitschnitt qwen3:4b-instruct @ 127.0.0.1:11434 2026-10-26) an 10770eb5 headless",
    "stationen": [
     {
      "id": "ki.K2#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "123 von 123 Zeilen (100.0 %) aus einem KI-Programm, Bau-Hash folgt",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-praegung-welt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +7)",
-     "gehalten": true
+     "zahl": "144 von 144 Zeilen (100.0 %) aus einem KI-Programm, Bau-Hash folgt",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "ki.K2#2",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "123 von 123 Zeilen (100.0 %), Korpus-Teil 20 von 24 Sätzen mit Welt-Prädikat (Mitschnitt qwen3:4b-instruct @ 127.0.0.1:11434 2026-10-26)",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-praegung-welt.cjs, scripts/diag-v1-pfad.cjs, scripts/lib/abnahme-urteil.cjs +8)",
-     "gehalten": true
+     "zahl": "144 von 144 Zeilen (100.0 %), Korpus-Teil 20 von 24 Sätzen mit Welt-Prädikat (Mitschnitt qwen3:4b-instruct @ 127.0.0.1:11434 2026-10-26)",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "ki.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 9 von 12/12 Antworten nennen eine erlebte Tat (Soll 70 %) gegen qwen3:4b-instruct @ 127.0.0.1:11434, z. B. „erinnerst du dich an mich?“ → Ja, ich erinnere mich an dich – du warst der erste, der mich nach dem Schlag des Schöpfers an 25ac4c0c headless",
+   "beleg": "Maschine: 9 von 12/12 Antworten nennen eine erlebte Tat (Soll 70 %) gegen qwen3:4b-instruct @ 127.0.0.1:11434, z. B. „erinnerst du dich an mich?“ → Ja, ich erinnere mich an dich – du warst der erste, der mich nach dem Schlag des Schöpfers an 10770eb5 headless",
    "stationen": [
     {
      "id": "ki.K3#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "9 von 12/12 Antworten nennen eine erlebte Tat (Soll 70 %) gegen qwen3:4b-instruct @ 127.0.0.1:11434, z. B. „erinnerst du dich an mich?“ → Ja, ich erinnere mich an dich – du warst der erste, der mich nach dem Schlag des Schöpfers",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +4)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "ki.K4": {
-   "punkte": 1,
-   "beleg": "Maschine: gehalten: LLM-Regeln neu je Drittel 2/2/2, erneuert 11 · verfallen 5 · verdrängt 0 (Nexus 175 · 43 · 1); Gegenlauf: erneuert LLM δ+ 0.91 · δ− 0.00, verdrängt 1 an 25ac4c0c headless",
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: ki.K4#1 headless: ROT: LLM-Regeln neu je Drittel 1/2/2, erneuert 9 · verfallen 5 · verdrängt 0 (Nexus 94 · 63 · 3); Gegenlauf: erneuert LLM δ+ 0.78 · δ− 0.00, verdrängt 0, Täter keine llm-Regel verdrängt an 10770eb5",
    "stationen": [
     {
      "id": "ki.K4#1",
      "geraet": "headless",
-     "gruen": true,
-     "zahl": "LLM-Regeln neu je Drittel 2/2/2, erneuert 11 · verfallen 5 · verdrängt 0 (Nexus 175 · 43 · 1); Gegenlauf: erneuert LLM δ+ 0.91 · δ− 0.00, verdrängt 1",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +4)",
-     "gehalten": true
+     "gruen": false,
+     "zahl": "LLM-Regeln neu je Drittel 1/2/2, erneuert 9 · verfallen 5 · verdrängt 0 (Nexus 94 · 63 · 3); Gegenlauf: erneuert LLM δ+ 0.78 · δ− 0.00, verdrängt 0, Täter keine llm-Regel verdrängt",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": "ROT: LLM-Regeln neu je Drittel 1/2/2, erneuert 9 · verfallen 5 · verdrängt 0 (Nexus 94 · 63 · 3); Gegenlauf: erneuert LLM δ+ 0.78 · δ− 0.00, verdrängt 0, Täter keine llm-Regel verdrängt"
     }
    ]
   },
   "ki.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ki.K5#1 headless: Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +2)",
+   "beleg": "Maschine: 0 — offen: ki.K5#1 headless: ROT: p95 Satz → Welt ∞ über 32 Positiv-Sätze (Soll lokal ≤ 6 s; ohne Wirkung 5) · 40/40 Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434 an 10770eb5",
    "stationen": [
     {
      "id": "ki.K5#1",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +2)",
-     "ungemessen": true
+     "zahl": "p95 Satz → Welt ∞ über 32 Positiv-Sätze (Soll lokal ≤ 6 s; ohne Wirkung 5) · 40/40 Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": "ROT: p95 Satz → Welt ∞ über 32 Positiv-Sätze (Soll lokal ≤ 6 s; ohne Wirkung 5) · 40/40 Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434"
     }
    ]
   },
   "klang.K1": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Wiese wind -36.3 · vogel -37.3 dB aus 16 Leibern (16 gezeichnet), ohne Leib still · Ufer -25.8 (wind -36.3) · Wald laub -31.1 · Dorf glut -27.2 an 25ac4c0c headless · gehalten: Nacht grille -40.1 · vogel −∞ dB (0 Leiber) · Regen regen -30.4 (wind -23.2, vogel −∞ aus 0 Leibern) · gehend 10 m wind -36.3 vogel -41.2 (14/14) · fahrend 30 m im Sattel wind -36.3 vogel -42.7 (14/14) an 25ac4c0c headless",
+   "beleg": "Maschine: Wiese wind -36.3 · vogel -37.5 dB aus 17 Leibern (17 gezeichnet), ohne Leib still · Ufer -25.8 (wind -36.3) · Wald laub -31.1 · Dorf glut -27.2 an 10770eb5 headless · Nacht grille -40.1 · vogel −∞ dB (0 Leiber) · Regen regen -30.4 (wind -23.2, vogel −∞ aus 0 Leibern) · gehend 10 m wind -36.3 vogel -41.4 (16/16) · fahrend 30 m im Sattel wind -36.4 vogel -42.0 (16/16) an 10770eb5 headless",
    "stationen": [
     {
      "id": "klang.K1#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "Wiese wind -36.3 · vogel -37.3 dB aus 16 Leibern (16 gezeichnet), ohne Leib still · Ufer -25.8 (wind -36.3) · Wald laub -31.1 · Dorf glut -27.2",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +9)",
-     "gehalten": true
+     "zahl": "Wiese wind -36.3 · vogel -37.5 dB aus 17 Leibern (17 gezeichnet), ohne Leib still · Ufer -25.8 (wind -36.3) · Wald laub -31.1 · Dorf glut -27.2",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "klang.K1#2",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "Nacht grille -40.1 · vogel −∞ dB (0 Leiber) · Regen regen -30.4 (wind -23.2, vogel −∞ aus 0 Leibern) · gehend 10 m wind -36.3 vogel -41.2 (14/14) · fahrend 30 m im Sattel wind -36.3 vogel -42.7 (14/14)",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +7)",
-     "gehalten": true
+     "zahl": "Nacht grille -40.1 · vogel −∞ dB (0 Leiber) · Regen regen -30.4 (wind -23.2, vogel −∞ aus 0 Leibern) · gehend 10 m wind -36.3 vogel -41.4 (16/16) · fahrend 30 m im Sattel wind -36.4 vogel -42.0 (16/16)",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "klang.K2": {
    "punkte": 2,
-   "beleg": "Maschine: r 0.63 bei Lag 0 (n 102), Spitze 0.63 bei -0.2 s, CV Bild 0.23 / Ohr 0.51, 56.2 fps, Klang an an 6a571e3b radeon · r 0.75 bei Lag 0 (n 104), Spitze 0.77 bei -0.8 s, CV Bild 0.22 / Ohr 0.62, 68.1 fps, Klang an an 6a571e3b gtx · gehalten: Ufer r 0.92 bei Lag 0 (n 269, Spitze 0.92 bei 1 s, CV Bild 0.32 / Ohr 0.41, stumm 0/266) · Regen r 1.00 bei Lag 0 (n 269, Spitze 1.00 bei -0.5 s, CV Bild 0.62 / Ohr 0.63, stumm 0/261) · Selbsttest (eingefroren) ROT an 25ac4c0c headless",
+   "beleg": "Maschine: r 0.63 bei Lag 0 (n 102), Spitze 0.63 bei -0.2 s, CV Bild 0.23 / Ohr 0.51, 56.2 fps, Klang an an 6a571e3b radeon · r 0.75 bei Lag 0 (n 104), Spitze 0.77 bei -0.8 s, CV Bild 0.22 / Ohr 0.62, 68.1 fps, Klang an an 6a571e3b gtx · Ufer r 0.93 bei Lag 0 (n 270, Spitze 0.93 bei 0 s, CV Bild 0.32 / Ohr 0.40, stumm 0/266) · Regen r 1.00 bei Lag 0 (n 270, Spitze 1.00 bei -0.5 s, CV Bild 0.63 / Ohr 0.63, stumm 0/261) · Selbsttest (eingefroren) ROT an 10770eb5 headless",
    "stationen": [
     {
      "id": "klang.K2#1",
@@ -1299,25 +1253,23 @@
      "id": "klang.K2#2",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "Ufer r 0.92 bei Lag 0 (n 269, Spitze 0.92 bei 1 s, CV Bild 0.32 / Ohr 0.41, stumm 0/266) · Regen r 1.00 bei Lag 0 (n 269, Spitze 1.00 bei -0.5 s, CV Bild 0.62 / Ohr 0.63, stumm 0/261) · Selbsttest (eingefroren) ROT",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +7)",
-     "gehalten": true
+     "zahl": "Ufer r 0.93 bei Lag 0 (n 270, Spitze 0.93 bei 0 s, CV Bild 0.32 / Ohr 0.40, stumm 0/266) · Regen r 1.00 bei Lag 0 (n 270, Spitze 1.00 bei -0.5 s, CV Bild 0.63 / Ohr 0.63, stumm 0/261) · Selbsttest (eingefroren) ROT",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "klang.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 24/24 Vorzeichen richtig (tier 12, glut 12) · |ILD| ≥ 80.6 dB bei 90°, ≥ 7.7 dB bei 30° · Pegel fällt: tier 3 m -23.0 › 8 m -31.5 › 20 m -39.4 · glut 1.5 m -17.7 › 3 m -23.7 › 6 m -29.7 dB an 25ac4c0c headless",
+   "beleg": "Maschine: 24/24 Vorzeichen richtig (tier 12, glut 12) · |ILD| ≥ 80.6 dB bei 90°, ≥ 7.7 dB bei 30° · Pegel fällt: tier 3 m -22.9 › 8 m -31.4 › 20 m -39.4 · glut 1.5 m -17.7 › 3 m -23.7 › 6 m -29.7 dB an 10770eb5 headless",
    "stationen": [
     {
      "id": "klang.K3#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "24/24 Vorzeichen richtig (tier 12, glut 12) · |ILD| ≥ 80.6 dB bei 90°, ≥ 7.7 dB bei 30° · Pegel fällt: tier 3 m -23.0 › 8 m -31.5 › 20 m -39.4 · glut 1.5 m -17.7 › 3 m -23.7 › 6 m -29.7 dB",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
-     "gehalten": true
+     "zahl": "24/24 Vorzeichen richtig (tier 12, glut 12) · |ILD| ≥ 80.6 dB bei 90°, ≥ 7.7 dB bei 30° · Pegel fällt: tier 3 m -22.9 › 8 m -31.4 › 20 m -39.4 · glut 1.5 m -17.7 › 3 m -23.7 › 6 m -29.7 dB",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
@@ -1365,16 +1317,15 @@
   },
   "klang.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":173.4} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 25ac4c0c headless · gehalten: Klang-Takt p95 gehen 0.13 · fahrt 0.14 · nacht 0.14 ms · Aussetzer 0 in 602 s Wiedergabe (0 s still) (Exit 0) an b3f9ae95 gtx — offen: klang.K5#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
+   "beleg": "Maschine: Welt-Abfragen je Takt vor {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":173.38} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 10770eb5 headless · gehalten: Klang-Takt p95 gehen 0.13 · fahrt 0.14 · nacht 0.14 ms · Aussetzer 0 in 602 s Wiedergabe (0 s still) (Exit 0) an b3f9ae95 gtx — offen: klang.K5#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "klang.K5#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "Welt-Abfragen je Takt vor {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":173.4} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8)",
-     "gehalten": true
+     "zahl": "Welt-Abfragen je Takt vor {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":173.38} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "klang.K5#2",
@@ -1482,16 +1433,15 @@
   },
   "leib.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.009 m (p95 0.0029 / 0.0009) · third: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.012 / Kamera 0.012 m (p95 0.0029 / 0.0029) · Mutante Ruck 0.201 m erkannt · Exit 0 an 25ac4c0c headless",
+   "beleg": "Maschine: ego: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.01 m (p95 0.0029 / 0.001) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.0028 / 0.0028) · Mutante Ruck 0.205 m erkannt · Exit 0 an 10770eb5 headless",
    "stationen": [
     {
      "id": "leib.K3#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.009 m (p95 0.0029 / 0.0009) · third: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.012 / Kamera 0.012 m (p95 0.0029 / 0.0029) · Mutante Ruck 0.201 m erkannt · Exit 0",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
-     "gehalten": true
+     "zahl": "ego: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.01 m (p95 0.0029 / 0.001) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.0028 / 0.0028) · Mutante Ruck 0.205 m erkannt · Exit 0",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
@@ -1539,25 +1489,23 @@
   },
   "leib.K5": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: ✅ Gehen ∝ Auslenkung 0.000/0.279/0.628/1.187 m/s (W 1.187/1.000, Sprint 5.342), Blick ∝ Stick -0.265/-0.500/-0.333 rad, die Maus in derselben Tafel | ✅ Fahren: Lenkwinkel -0.122/-0.275/-0.519, Gas 0.331/0.794/1.415 m/s, Auslauf 0.807/1.235 m/s ohne/mit Handbremse, Rumble 1.000 an 25ac4c0c headless · gehalten: ✅ jedes Verb liest NUR die Tafel — rohe Tasten-Leser []; SELBSTTEST Zwilling-Leser ROT | ✅ Gehen ∝ Auslenkung 0.000/0.279/0.628/1.187 m/s (W 1.187/1.000, Sprint 5.342), Blick ∝ Stick -0.265/-0.500/-0.333 rad, die Maus in derselben Tafel | ✅ Fahren: Lenkwinkel -0.122/-0.275/-0.519, Gas 0.331/0.794/1.415 m/s, Auslauf 0.807/1.235 m/s ohne/mit Handbremse, Rumble 1.000 | ✅ jeder Knopf über _verbTaste (ohne [], {\"tor\":3,\"toggleMountAtPlayer\":1,\"swapHands\":1,\"tryMousePlace\":1,\"tryMouseBreak\":1,\"setZoomActive\":2,\"setCameraMode\":1,\"toggleInventoryOverlay\":1,\"confirmBuild\":1,\"selectHotbarSlot\":2}), Belegung Pad3/Pad0/Pad11 frei, Rumble 0.000/0.084 ruhig → Treffer an 25ac4c0c headless",
+   "beleg": "Maschine: ✅ Gehen ∝ Auslenkung 0.000/0.279/0.628/1.187 m/s (W 1.187/1.000, Sprint 5.342), Blick ∝ Stick -0.265/-0.500/-0.333 rad, die Maus in derselben Tafel | ✅ Fahren: Lenkwinkel -0.122/-0.275/-0.519, Gas 0.331/0.793/1.417 m/s, Auslauf 0.806/1.247 m/s ohne/mit Handbremse, Rumble 1.000 an 10770eb5 headless · ✅ jedes Verb liest NUR die Tafel — rohe Tasten-Leser []; SELBSTTEST Zwilling-Leser ROT | ✅ Gehen ∝ Auslenkung 0.000/0.279/0.628/1.187 m/s (W 1.187/1.000, Sprint 5.342), Blick ∝ Stick -0.265/-0.500/-0.333 rad, die Maus in derselben Tafel | ✅ Fahren: Lenkwinkel -0.122/-0.275/-0.519, Gas 0.331/0.793/1.417 m/s, Auslauf 0.806/1.247 m/s ohne/mit Handbremse, Rumble 1.000 | ✅ jeder Knopf über _verbTaste (ohne [], {\"tor\":3,\"toggleMountAtPlayer\":1,\"swapHands\":1,\"tryMousePlace\":1,\"tryMouseBreak\":1,\"setZoomActive\":2,\"setCameraMode\":1,\"toggleInventoryOverlay\":1,\"confirmBuild\":1,\"selectHotbarSlot\":2}), Belegung Pad3/Pad0/Pad11 frei, Rumble 0.000/0.084 ruhig → Treffer an 10770eb5 headless",
    "stationen": [
     {
      "id": "leib.K5#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "✅ Gehen ∝ Auslenkung 0.000/0.279/0.628/1.187 m/s (W 1.187/1.000, Sprint 5.342), Blick ∝ Stick -0.265/-0.500/-0.333 rad, die Maus in derselben Tafel | ✅ Fahren: Lenkwinkel -0.122/-0.275/-0.519, Gas 0.331/0.794/1.415 m/s, Auslauf 0.807/1.235 m/s ohne/mit Handbremse, Rumble 1.000",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +6)",
-     "gehalten": true
+     "zahl": "✅ Gehen ∝ Auslenkung 0.000/0.279/0.628/1.187 m/s (W 1.187/1.000, Sprint 5.342), Blick ∝ Stick -0.265/-0.500/-0.333 rad, die Maus in derselben Tafel | ✅ Fahren: Lenkwinkel -0.122/-0.275/-0.519, Gas 0.331/0.793/1.417 m/s, Auslauf 0.806/1.247 m/s ohne/mit Handbremse, Rumble 1.000",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "leib.K5#2",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "✅ jedes Verb liest NUR die Tafel — rohe Tasten-Leser []; SELBSTTEST Zwilling-Leser ROT | ✅ Gehen ∝ Auslenkung 0.000/0.279/0.628/1.187 m/s (W 1.187/1.000, Sprint 5.342), Blick ∝ Stick -0.265/-0.500/-0.333 rad, die Maus in derselben Tafel | ✅ Fahren: Lenkwinkel -0.122/-0.275/-0.519, Gas 0.331/0.794/1.415 m/s, Auslauf 0.807/1.235 m/s ohne/mit Handbremse, Rumble 1.000 | ✅ jeder Knopf über _verbTaste (ohne [], {\"tor\":3,\"toggleMountAtPlayer\":1,\"swapHands\":1,\"tryMousePlace\":1,\"tryMouseBreak\":1,\"setZoomActive\":2,\"setCameraMode\":1,\"toggleInventoryOverlay\":1,\"confirmBuild\":1,\"selectHotbarSlot\":2}), Belegung Pad3/Pad0/Pad11 frei, Rumble 0.000/0.084 ruhig → Treffer",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +6)",
-     "gehalten": true
+     "zahl": "✅ jedes Verb liest NUR die Tafel — rohe Tasten-Leser []; SELBSTTEST Zwilling-Leser ROT | ✅ Gehen ∝ Auslenkung 0.000/0.279/0.628/1.187 m/s (W 1.187/1.000, Sprint 5.342), Blick ∝ Stick -0.265/-0.500/-0.333 rad, die Maus in derselben Tafel | ✅ Fahren: Lenkwinkel -0.122/-0.275/-0.519, Gas 0.331/0.793/1.417 m/s, Auslauf 0.806/1.247 m/s ohne/mit Handbremse, Rumble 1.000 | ✅ jeder Knopf über _verbTaste (ohne [], {\"tor\":3,\"toggleMountAtPlayer\":1,\"swapHands\":1,\"tryMousePlace\":1,\"tryMouseBreak\":1,\"setZoomActive\":2,\"setCameraMode\":1,\"toggleInventoryOverlay\":1,\"confirmBuild\":1,\"selectHotbarSlot\":2}), Belegung Pad3/Pad0/Pad11 frei, Rumble 0.000/0.084 ruhig → Treffer",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
@@ -1779,7 +1727,7 @@
   },
   "lod.K5": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 25ac4c0c headless — offen: lod.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) · lod.K5#1 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+   "beleg": "Maschine: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 10770eb5 headless — offen: lod.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) · lod.K5#1 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
    "stationen": [
     {
      "id": "lod.K5#1",
@@ -1804,87 +1752,80 @@
      "geraet": "headless",
      "gruen": true,
      "zahl": "17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +5)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "luftwasser.K1": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Wiese 16 Vogel-Leiber gezeichnet (16 gehört), Flug 5.57 m/s 11.53 m über Grund, Ruf -37.3 dB (Soll: > 0 Leiber rufen, ≥ 1 m/s, ≥ 2 m) an 25ac4c0c headless · gehalten: wiese 16/16 5.57 m/s · nacht 0/0 0 m/s · regen 0/0 0 m/s · gehend 14/14 5.54 m/s · fahrend 14/14 5.5 m/s · wald 21/21 5.76 m/s · dorf 13/13 5.34 m/s · glutArm 18/18 5.24 m/s · seeufer 19/19 5.27 m/s · fallArm 16/16 5.48 m/s (gehört/gezeichnet) · ohne Leib 0 Leiber, Chor still an 25ac4c0c headless",
+   "beleg": "Maschine: Wiese 17 Vogel-Leiber gezeichnet (17 gehört), Flug 5.55 m/s 11.79 m über Grund, Ruf -37.5 dB (Soll: > 0 Leiber rufen, ≥ 1 m/s, ≥ 2 m) an 10770eb5 headless · wiese 17/17 5.55 m/s · nacht 0/0 0 m/s · regen 0/0 0 m/s · gehend 16/16 5.46 m/s · fahrend 16/16 5.69 m/s · wald 21/21 5.12 m/s · dorf 15/15 5.82 m/s · glutArm 15/15 5.14 m/s · seeufer 16/16 5.41 m/s · fallArm 18/18 5.44 m/s (gehört/gezeichnet) · ohne Leib 0 Leiber, Chor still an 10770eb5 headless",
    "stationen": [
     {
      "id": "luftwasser.K1#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "Wiese 16 Vogel-Leiber gezeichnet (16 gehört), Flug 5.57 m/s 11.53 m über Grund, Ruf -37.3 dB (Soll: > 0 Leiber rufen, ≥ 1 m/s, ≥ 2 m)",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
-     "gehalten": true
+     "zahl": "Wiese 17 Vogel-Leiber gezeichnet (17 gehört), Flug 5.55 m/s 11.79 m über Grund, Ruf -37.5 dB (Soll: > 0 Leiber rufen, ≥ 1 m/s, ≥ 2 m)",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "luftwasser.K1#2",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "wiese 16/16 5.57 m/s · nacht 0/0 0 m/s · regen 0/0 0 m/s · gehend 14/14 5.54 m/s · fahrend 14/14 5.5 m/s · wald 21/21 5.76 m/s · dorf 13/13 5.34 m/s · glutArm 18/18 5.24 m/s · seeufer 19/19 5.27 m/s · fallArm 16/16 5.48 m/s (gehört/gezeichnet) · ohne Leib 0 Leiber, Chor still",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
-     "gehalten": true
+     "zahl": "wiese 17/17 5.55 m/s · nacht 0/0 0 m/s · regen 0/0 0 m/s · gehend 16/16 5.46 m/s · fahrend 16/16 5.69 m/s · wald 21/21 5.12 m/s · dorf 15/15 5.82 m/s · glutArm 15/15 5.14 m/s · seeufer 16/16 5.41 m/s · fallArm 18/18 5.44 m/s (gehört/gezeichnet) · ohne Leib 0 Leiber, Chor still",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "luftwasser.K2": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Φ 0.969, Kohäsion 1 (min 1, Glied zu Glied ≤ 2.5 m) bei 100 Gliedern, 1 Züge je Glied und Takt durch verbandZug (Soll Φ ≥ 0,8, Kohäsion ≥ 0,9, 1 Zug) an 25ac4c0c headless · gehalten: Flucht nach 5.2 s, Abstand 30.5 → 95.9 m, 1 der Glieder mit, Verbund 1; Landung nach 24.6 s auf a:1298, Δ 0 m zum Scheitel 78.998 m, 1 auf der Krone (Soll + 40 m, 0,95, 0,9; ± 0,25 m, 0,99) an 25ac4c0c headless",
+   "beleg": "Maschine: Φ 0.966, Kohäsion 1 (min 1, Glied zu Glied ≤ 2.5 m) bei 100 Gliedern, 1 Züge je Glied und Takt durch verbandZug (Soll Φ ≥ 0,8, Kohäsion ≥ 0,9, 1 Zug) an 10770eb5 headless · Flucht nach 5.4 s, Abstand 29.9 → 95.8 m, 1 der Glieder mit, Verbund 1; Landung nach 30.1 s auf a:1153, Δ 0 m zum Scheitel 84.564 m, 1 auf der Krone (Soll + 40 m, 0,95, 0,9; ± 0,25 m, 0,99) an 10770eb5 headless",
    "stationen": [
     {
      "id": "luftwasser.K2#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "Φ 0.969, Kohäsion 1 (min 1, Glied zu Glied ≤ 2.5 m) bei 100 Gliedern, 1 Züge je Glied und Takt durch verbandZug (Soll Φ ≥ 0,8, Kohäsion ≥ 0,9, 1 Zug)",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +5)",
-     "gehalten": true
+     "zahl": "Φ 0.966, Kohäsion 1 (min 1, Glied zu Glied ≤ 2.5 m) bei 100 Gliedern, 1 Züge je Glied und Takt durch verbandZug (Soll Φ ≥ 0,8, Kohäsion ≥ 0,9, 1 Zug)",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "luftwasser.K2#2",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "Flucht nach 5.2 s, Abstand 30.5 → 95.9 m, 1 der Glieder mit, Verbund 1; Landung nach 24.6 s auf a:1298, Δ 0 m zum Scheitel 78.998 m, 1 auf der Krone (Soll + 40 m, 0,95, 0,9; ± 0,25 m, 0,99)",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +5)",
-     "gehalten": true
+     "zahl": "Flucht nach 5.4 s, Abstand 29.9 → 95.8 m, 1 der Glieder mit, Verbund 1; Landung nach 30.1 s auf a:1153, Δ 0 m zum Scheitel 84.564 m, 1 auf der Krone (Soll + 40 m, 0,95, 0,9; ± 0,25 m, 0,99)",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "luftwasser.K3": {
-   "punkte": 0,
-   "beleg": "Maschine: 0 — offen: luftwasser.K3#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
+   "punkte": 1,
+   "beleg": "Maschine: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.995 · umgekehrt 29 Fische, 0.989 (tier:fisch) · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an 10770eb5 headless",
    "stationen": [
     {
      "id": "luftwasser.K3#1",
      "geraet": "headless",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.995 · umgekehrt 29 Fische, 0.989 (tier:fisch) · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden)",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "luftwasser.K4": {
-   "punkte": 0,
-   "beleg": "Maschine: 0 — offen: luftwasser.K4#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
+   "punkte": 1,
+   "beleg": "Maschine: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 98 Bestäuber, r 0.912 · der Leser sieht 28 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an 10770eb5 headless",
    "stationen": [
     {
      "id": "luftwasser.K4#1",
      "geraet": "headless",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 98 Bestäuber, r 0.912 · der Leser sieht 28 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5)",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
@@ -2103,16 +2044,15 @@
   },
   "mensch.K2": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an 25ac4c0c headless · gehalten: Soll-Orte alle 108/108 ≥ 0,9 (min 0.983), Wege je Tag 5–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.261 m), Sprünge 0, Plan bit-gleich true an 715754fc radeon · gehalten: Soll-Orte alle 81/81 ≥ 0,9 (min 0.983), Wege je Tag 5–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.204 m), Sprünge 0, Plan bit-gleich true an b3f9ae95 gtx",
+   "beleg": "Maschine: Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an 10770eb5 headless · gehalten: Soll-Orte alle 108/108 ≥ 0,9 (min 0.983), Wege je Tag 5–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.261 m), Sprünge 0, Plan bit-gleich true an 715754fc radeon · gehalten: Soll-Orte alle 81/81 ≥ 0,9 (min 0.983), Wege je Tag 5–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.204 m), Sprünge 0, Plan bit-gleich true an b3f9ae95 gtx",
    "stationen": [
     {
      "id": "mensch.K2#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +7)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "mensch.K2#2",
@@ -2136,31 +2076,29 @@
   },
   "mensch.K3": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Durchdringung 0, Tür 269/269, Hüllen 18/18, Gangzeit auf Wegen 0.927 an 25ac4c0c headless · gehalten: Stadt 33 Häuser: Steckenbleiber 0, Gangzeit auf Wegen 0.967, Strecke min 165 m, Berührung 0, Durchdringung 0, Tür 390/390 an 25ac4c0c headless",
+   "beleg": "Maschine: Durchdringung 0, Tür 266/266, Hüllen 18/18, Gangzeit auf Wegen 0.899 an 10770eb5 headless · Stadt 33 Häuser: Steckenbleiber 0, Gangzeit auf Wegen 0.967, Strecke min 165 m, Berührung 0, Durchdringung 0, Tür 390/390 an 10770eb5 headless",
    "stationen": [
     {
      "id": "mensch.K3#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "Durchdringung 0, Tür 269/269, Hüllen 18/18, Gangzeit auf Wegen 0.927",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +7)",
-     "gehalten": true
+     "zahl": "Durchdringung 0, Tür 266/266, Hüllen 18/18, Gangzeit auf Wegen 0.899",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "mensch.K3#2",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Stadt 33 Häuser: Steckenbleiber 0, Gangzeit auf Wegen 0.967, Strecke min 165 m, Berührung 0, Durchdringung 0, Tür 390/390",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +8)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "mensch.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: mensch.K4#1 radeon: Linse seit der Messung geändert (R6: spec/abnahme/soll-tafel.json) · mensch.K4#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) · mensch.K4#2 headless: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/diag-mensch-anatomie.cjs +7) — zuletzt an 6d6a8336: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: ohne Menge oder Gesicht (Exit 1)) · Täter: Node.js v22.23.4",
+   "beleg": "Maschine: 0 — offen: mensch.K4#1 radeon: Linse seit der Messung geändert (R6: spec/abnahme/soll-tafel.json) · mensch.K4#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) · mensch.K4#2 headless: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/diag-mensch-anatomie.cjs +7) — zuletzt an 10770eb5: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: ohne Menge oder Gesicht (Exit 1)) · Täter: Node.js v22.23.4",
    "stationen": [
     {
      "id": "mensch.K4#1",
@@ -2186,7 +2124,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/diag-mensch-anatomie.cjs +7) — zuletzt an 6d6a8336: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: ohne Menge oder Gesicht (Exit 1)) · Täter: Node.js v22.23.4",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/diag-mensch-anatomie.cjs +7) — zuletzt an 10770eb5: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: ohne Menge oder Gesicht (Exit 1)) · Täter: Node.js v22.23.4",
      "ungemessen": true
     }
    ]
@@ -2217,88 +2155,81 @@
   },
   "oekologie.K1": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: 8 Saaten · 27 ansässige Bestände · Stunde 8 gegen 2: 0.52–1.44× · außer Band 0 · Takte an der Kappe 0 an 25ac4c0c headless · gehalten: 8 Saaten · hirsche 0.35 [0.188, 0.503] · jungwuchs -0.246 [-0.353, -0.15] · woelfe -0.47 [-0.85, -0.194] · mutante 0.684 [0.599, 0.746] · Mutante ROT an 25ac4c0c headless",
+   "beleg": "Maschine: 8 Saaten · 29 ansässige Bestände · Stunde 8 gegen 2: 0.34–2.00× · außer Band 0 · Takte an der Kappe 0 an 10770eb5 headless · 8 Saaten · hirsche 0.515 [0.343, 0.746] · jungwuchs -0.295 [-0.432, -0.193] · woelfe -0.486 [-0.652, -0.25] · mutante 0.562 [0.441, 0.634] · Mutante ROT an 10770eb5 headless",
    "stationen": [
     {
      "id": "oekologie.K1#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "8 Saaten · 27 ansässige Bestände · Stunde 8 gegen 2: 0.52–1.44× · außer Band 0 · Takte an der Kappe 0",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +7)",
-     "gehalten": true
+     "zahl": "8 Saaten · 29 ansässige Bestände · Stunde 8 gegen 2: 0.34–2.00× · außer Band 0 · Takte an der Kappe 0",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "oekologie.K1#2",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "8 Saaten · hirsche 0.35 [0.188, 0.503] · jungwuchs -0.246 [-0.353, -0.15] · woelfe -0.47 [-0.85, -0.194] · mutante 0.684 [0.599, 0.746] · Mutante ROT",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +7)",
-     "gehalten": true
+     "zahl": "8 Saaten · hirsche 0.515 [0.343, 0.746] · jungwuchs -0.295 [-0.432, -0.193] · woelfe -0.486 [-0.652, -0.25] · mutante 0.562 [0.441, 0.634] · Mutante ROT",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "oekologie.K2": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: 8 Saaten · Grundbestand min 7.76 · halbe Nahrung -0.393 [-0.516, -0.212] · 18600 Hungertode, 18600 die Ältesten · Takte an der Kappe 0 an 25ac4c0c headless · gehalten: 8 Saaten · Kappe halbiert: 0 von 17280 Takten andere Tiere in 4 nahen Regionen, Leiber 20/10 bei Bestand 34.5 · halbe Nahrung senkt 8 von 8 Regionen (4 fern, Effekt -0.345 … -0.416) · Takt p95 2.8 ms an 25ac4c0c headless",
+   "beleg": "Maschine: 8 Saaten · Grundbestand min 7.79 · halbe Nahrung -0.327 [-0.464, -0.19] · 18292 Hungertode, 18292 die Ältesten · Takte an der Kappe 0 an 10770eb5 headless · 8 Saaten · Kappe halbiert: 0 von 17280 Takten andere Tiere in 4 nahen Regionen, Leiber 20/10 bei Bestand 34.4 · halbe Nahrung senkt 8 von 8 Regionen (4 fern, Effekt -0.307 … -0.406) · Takt p95 2.8 ms an 10770eb5 headless",
    "stationen": [
     {
      "id": "oekologie.K2#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "8 Saaten · Grundbestand min 7.76 · halbe Nahrung -0.393 [-0.516, -0.212] · 18600 Hungertode, 18600 die Ältesten · Takte an der Kappe 0",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +7)",
-     "gehalten": true
+     "zahl": "8 Saaten · Grundbestand min 7.79 · halbe Nahrung -0.327 [-0.464, -0.19] · 18292 Hungertode, 18292 die Ältesten · Takte an der Kappe 0",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "oekologie.K2#2",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "8 Saaten · Kappe halbiert: 0 von 17280 Takten andere Tiere in 4 nahen Regionen, Leiber 20/10 bei Bestand 34.5 · halbe Nahrung senkt 8 von 8 Regionen (4 fern, Effekt -0.345 … -0.416) · Takt p95 2.8 ms",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +5)",
-     "gehalten": true
+     "zahl": "8 Saaten · Kappe halbiert: 0 von 17280 Takten andere Tiere in 4 nahen Regionen, Leiber 20/10 bei Bestand 34.4 · halbe Nahrung senkt 8 von 8 Regionen (4 fern, Effekt -0.307 … -0.406) · Takt p95 2.8 ms",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "oekologie.K3": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: geschlagen 102.25 m gegen Kontrolle 36.35 m · gefüttert 1.77 m, selbst 6.23 m näher · Gedächtnis nach dem Laden 1,1,1,1 / 2,1,1,1 · Riss-Zelle Aufenthalt 0.027 gegen Gegenlauf 1 an 25ac4c0c headless · gehalten: geschlagen 102.25 m gegen Kontrolle 36.35 m · gefüttert 1.77 m, selbst 6.23 m näher · Gedächtnis nach dem Laden 1,1,1,1 / 2,1,1,1 · Riss-Zelle Aufenthalt 0.027 gegen Gegenlauf 1 an 25ac4c0c headless",
+   "beleg": "Maschine: geschlagen 96.95 m gegen Kontrolle 36.22 m · gefüttert 1.77 m, selbst 6.21 m näher · Gedächtnis nach dem Laden 1,1,1,1 / 2,1,1,1 · Riss-Zelle Aufenthalt 0.025 gegen Gegenlauf 1 an 10770eb5 headless · geschlagen 96.95 m gegen Kontrolle 36.22 m · gefüttert 1.77 m, selbst 6.21 m näher · Gedächtnis nach dem Laden 1,1,1,1 / 2,1,1,1 · Riss-Zelle Aufenthalt 0.025 gegen Gegenlauf 1 an 10770eb5 headless",
    "stationen": [
     {
      "id": "oekologie.K3#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "geschlagen 102.25 m gegen Kontrolle 36.35 m · gefüttert 1.77 m, selbst 6.23 m näher · Gedächtnis nach dem Laden 1,1,1,1 / 2,1,1,1 · Riss-Zelle Aufenthalt 0.027 gegen Gegenlauf 1",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +7)",
-     "gehalten": true
+     "zahl": "geschlagen 96.95 m gegen Kontrolle 36.22 m · gefüttert 1.77 m, selbst 6.21 m näher · Gedächtnis nach dem Laden 1,1,1,1 / 2,1,1,1 · Riss-Zelle Aufenthalt 0.025 gegen Gegenlauf 1",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "oekologie.K3#2",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "geschlagen 102.25 m gegen Kontrolle 36.35 m · gefüttert 1.77 m, selbst 6.23 m näher · Gedächtnis nach dem Laden 1,1,1,1 / 2,1,1,1 · Riss-Zelle Aufenthalt 0.027 gegen Gegenlauf 1",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +7)",
-     "gehalten": true
+     "zahl": "geschlagen 96.95 m gegen Kontrolle 36.22 m · gefüttert 1.77 m, selbst 6.21 m näher · Gedächtnis nach dem Laden 1,1,1,1 / 2,1,1,1 · Riss-Zelle Aufenthalt 0.025 gegen Gegenlauf 1",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "oekologie.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 6 Wölfe aus dem Wurf, der Spieler 45 m im Revier: Pirsch 0 s · umstellt 17.4 s · Lücke beim ersten Biss 125° · Pirsch im Frieden / am leeren Anker 0 / 0 Takte (Soll ≤ 600 s Kreatur-Uhr, 0 / 0) an 25ac4c0c headless · gehalten: first GRÜN: Wurf 6 Wölfe, umstellt 16.85 s, Furcht chaos 0.908 (Gegenlauf 0), 4 Jäger fallen, Triumph joy+hope 0.42 (Gegenlauf 0) an eeb5d2bf gtx — offen: oekologie.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +17)",
+   "beleg": "Maschine: 6 Wölfe aus dem Wurf, der Spieler 45 m im Revier: Pirsch 0 s · umstellt 17.9 s · Lücke beim ersten Biss 86° · Pirsch im Frieden / am leeren Anker 0 / 0 Takte (Soll ≤ 600 s Kreatur-Uhr, 0 / 0) an 10770eb5 headless · gehalten: first GRÜN: Wurf 6 Wölfe, umstellt 16.85 s, Furcht chaos 0.908 (Gegenlauf 0), 4 Jäger fallen, Triumph joy+hope 0.42 (Gegenlauf 0) an eeb5d2bf gtx — offen: oekologie.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +17)",
    "stationen": [
     {
      "id": "oekologie.K4#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "6 Wölfe aus dem Wurf, der Spieler 45 m im Revier: Pirsch 0 s · umstellt 17.4 s · Lücke beim ersten Biss 125° · Pirsch im Frieden / am leeren Anker 0 / 0 Takte (Soll ≤ 600 s Kreatur-Uhr, 0 / 0)",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +5)",
-     "gehalten": true
+     "zahl": "6 Wölfe aus dem Wurf, der Spieler 45 m im Revier: Pirsch 0 s · umstellt 17.9 s · Lücke beim ersten Biss 86° · Pirsch im Frieden / am leeren Anker 0 / 0 Takte (Soll ≤ 600 s Kreatur-Uhr, 0 / 0)",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "oekologie.K4#2",
@@ -2322,64 +2253,59 @@
   },
   "oekologie.K5": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: 600 s gebunden (bond 0.12 → 1): Abstand p50 3.57 · p95 4.94 · max 8.8 m · 3 Wände ohne Durchdringung, Sockel 134 Takte darüber · Hang > 15° 302 s, nass 45 s · ungebunden 139.8 m an 25ac4c0c headless · gehalten: Stimmung nach 120 s gebunden 0.1426/0.1426 gegen bond = 0 0.1099/0.1099 (Δ 0.0327, Rauschen 0.0000) · bond A 0.12 → 1, 0.12 → 1 · Abstand p50 3/3/3/3 m, Spieler verschoben 0/0/0/0 m · Reload [1,\"follow_player\"] → [1,\"follow_player\"] an 25ac4c0c headless",
+   "beleg": "Maschine: 600 s gebunden (bond 0.12 → 1): Abstand p50 3.57 · p95 4.91 · max 5.7 m · 3 Wände ohne Durchdringung, Sockel 208 Takte darüber · Hang > 15° 300 s, nass 43 s · ungebunden 144.7 m an 10770eb5 headless · Stimmung nach 120 s gebunden 0.1164/0.1164 gegen bond = 0 0.0818/0.0818 (Δ 0.0346, Rauschen 0.0000) · bond A 0.12 → 1, 0.12 → 1 · Abstand p50 3/3/3/3 m, Spieler verschoben 0/0/0/0 m · Reload [1,\"follow_player\"] → [1,\"follow_player\"] an 10770eb5 headless",
    "stationen": [
     {
      "id": "oekologie.K5#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "600 s gebunden (bond 0.12 → 1): Abstand p50 3.57 · p95 4.94 · max 8.8 m · 3 Wände ohne Durchdringung, Sockel 134 Takte darüber · Hang > 15° 302 s, nass 45 s · ungebunden 139.8 m",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +7)",
-     "gehalten": true
+     "zahl": "600 s gebunden (bond 0.12 → 1): Abstand p50 3.57 · p95 4.91 · max 5.7 m · 3 Wände ohne Durchdringung, Sockel 208 Takte darüber · Hang > 15° 300 s, nass 43 s · ungebunden 144.7 m",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "oekologie.K5#2",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "Stimmung nach 120 s gebunden 0.1426/0.1426 gegen bond = 0 0.1099/0.1099 (Δ 0.0327, Rauschen 0.0000) · bond A 0.12 → 1, 0.12 → 1 · Abstand p50 3/3/3/3 m, Spieler verschoben 0/0/0/0 m · Reload [1,\"follow_player\"] → [1,\"follow_player\"]",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +7)",
-     "gehalten": true
+     "zahl": "Stimmung nach 120 s gebunden 0.1164/0.1164 gegen bond = 0 0.0818/0.0818 (Δ 0.0346, Rauschen 0.0000) · bond A 0.12 → 1, 0.12 → 1 · Abstand p50 3/3/3/3 m, Spieler verschoben 0/0/0/0 m · Reload [1,\"follow_player\"] → [1,\"follow_player\"]",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "physik.K1": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: DIE LEIBER: die Messung der Meisterkarte und ρ ×2 — spieler 89.0 → 178.0 kg, tief 1.107 → 3.638 m · wolf 64.0 → 128.0 kg, tief 0.599 → 3.607 m · wagen 1341.4 → 2682.7 kg, tief 3.638 → 3.638 m · Labor Mensch 89.0, Wolf 64, Wagen 1341 kg · Brustkorb 1.22 m · Δv 0.719 an 25ac4c0c headless · gehalten: DIE DINGE: die Messung der Meisterkarte und ρ ×2 — holz 1814.4 → 3628.8 kg, tief 0.432 → 3.638 m · stein 6678.0 → 13356.0 kg, tief 3.638 → 3.638 m · geschmiedet 2.2 → 4.4 kg · lose 2.6 → 5.2 kg · Holz 0.720 der Höhe (ρ/ρw 0.72) · Labor Keule 2.177 kg an 25ac4c0c headless",
+   "beleg": "Maschine: DIE LEIBER: die Messung der Meisterkarte und ρ ×2 — spieler 89.0 → 178.0 kg, tief 1.108 → 3.638 m · wolf 64.0 → 128.0 kg, tief 0.599 → 3.607 m · wagen 1341.4 → 2682.7 kg, tief 3.638 → 3.638 m · Labor Mensch 89.0, Wolf 64, Wagen 1341 kg · Brustkorb 1.22 m · Δv 0.719 an 10770eb5 headless · DIE DINGE: die Messung der Meisterkarte und ρ ×2 — holz 1814.4 → 3628.8 kg, tief 0.432 → 3.638 m · stein 6678.0 → 13356.0 kg, tief 3.638 → 3.638 m · geschmiedet 2.2 → 4.4 kg · lose 2.6 → 5.2 kg · Holz 0.720 der Höhe (ρ/ρw 0.72) · Labor Keule 2.177 kg an 10770eb5 headless",
    "stationen": [
     {
      "id": "physik.K1#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "DIE LEIBER: die Messung der Meisterkarte und ρ ×2 — spieler 89.0 → 178.0 kg, tief 1.107 → 3.638 m · wolf 64.0 → 128.0 kg, tief 0.599 → 3.607 m · wagen 1341.4 → 2682.7 kg, tief 3.638 → 3.638 m · Labor Mensch 89.0, Wolf 64, Wagen 1341 kg · Brustkorb 1.22 m · Δv 0.719",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +10)",
-     "gehalten": true
+     "zahl": "DIE LEIBER: die Messung der Meisterkarte und ρ ×2 — spieler 89.0 → 178.0 kg, tief 1.108 → 3.638 m · wolf 64.0 → 128.0 kg, tief 0.599 → 3.607 m · wagen 1341.4 → 2682.7 kg, tief 3.638 → 3.638 m · Labor Mensch 89.0, Wolf 64, Wagen 1341 kg · Brustkorb 1.22 m · Δv 0.719",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "physik.K1#2",
      "geraet": "headless",
      "gruen": true,
      "zahl": "DIE DINGE: die Messung der Meisterkarte und ρ ×2 — holz 1814.4 → 3628.8 kg, tief 0.432 → 3.638 m · stein 6678.0 → 13356.0 kg, tief 3.638 → 3.638 m · geschmiedet 2.2 → 4.4 kg · lose 2.6 → 5.2 kg · Holz 0.720 der Höhe (ρ/ρw 0.72) · Labor Keule 2.177 kg",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +10)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "physik.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: (V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 16.37 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m an 25ac4c0c headless — offen: physik.K2#2 radeon: Station seit der Messung geändert · physik.K2#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: (V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 16.37 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m an 10770eb5 headless — offen: physik.K2#2 radeon: Station seit der Messung geändert · physik.K2#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "physik.K2#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "(V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 16.37 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/diag-kollision-bild.cjs, scripts/lib/abnahme-urteil.cjs +11) — zuletzt an 455e5be8: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von heil-ci-portal-konformanz nach 2981 s Warten (ohne Nachtruhe; Wanduhr 2981 s)) — ungemessen",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "physik.K2#2",
@@ -2403,109 +2329,101 @@
   },
   "physik.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 5 Kisten ruhen nach 0.87 s, Zittern 0.00 cm (wach 0.00), Boden 0.002 m, Fugen -0.001/-0.000/0.001/0.001 m · GT 8.77 → 8.56 m/s, Fass 161.0° · Mutanten: Schwere 0 Boden 0.107 m, ohne Stoß 3.0° an 25ac4c0c headless — offen: physik.K3#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: 5 Kisten ruhen nach 0.87 s, Zittern 0.00 cm (wach 0.00), Boden 0.002 m, Fugen -0.001/-0.000/0.001/0.001 m · GT 8.77 → 8.56 m/s, Fass 161.0° · Mutanten: Schwere 0 Boden 0.107 m, ohne Stoß 3.0° an 10770eb5 headless — offen: physik.K3#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "physik.K3#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "5 Kisten ruhen nach 0.87 s, Zittern 0.00 cm (wach 0.00), Boden 0.002 m, Fugen -0.001/-0.000/0.001/0.001 m · GT 8.77 → 8.56 m/s, Fass 161.0° · Mutanten: Schwere 0 Boden 0.107 m, ohne Stoß 3.0°",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/diag-kollision-bild.cjs, scripts/lib/abnahme-urteil.cjs +9)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "physik.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: physik.K4#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
+   "beleg": "Maschine: 0 — offen: physik.K4#1 headless: ROT: kein Seil am Leib: 0 von 22 Gattungen der Schmiede tragen ein Seil (langschwert, saebel, degen, grossschwert, dolch, messer, langbogen, kriegsbogen, reiterbogen, recurvebogen, streitkolben, kriegsaxt, kriegshammer, keule, faellaxt, spaltmaul, vorschlaghammer, beil, spitzhacke, spaten, schaufel, sichel) an 10770eb5",
    "stationen": [
     {
      "id": "physik.K4#1",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
-     "ungemessen": true
+     "zahl": "kein Seil am Leib: 0 von 22 Gattungen der Schmiede tragen ein Seil (langschwert, saebel, degen, grossschwert, dolch, messer, langbogen, kriegsbogen, reiterbogen, recurvebogen, streitkolben, kriegsaxt, kriegshammer, keule, faellaxt, spaltmaul, vorschlaghammer, beil, spitzhacke, spaten, schaufel, sichel)",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": "ROT: kein Seil am Leib: 0 von 22 Gattungen der Schmiede tragen ein Seil (langschwert, saebel, degen, grossschwert, dolch, messer, langbogen, kriegsbogen, reiterbogen, recurvebogen, streitkolben, kriegsaxt, kriegshammer, keule, faellaxt, spaltmaul, vorschlaghammer, beil, spitzhacke, spaten, schaufel, sichel)"
     }
    ]
   },
   "physik.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: physik.K5#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
+   "beleg": "Maschine: 0 — offen: physik.K5#1 headless: ROT: 200 N × 0,2 s quer im Gang (89.022 kg): Ausfall 0.008 m, Wurzel quer 0.008 m, erholt 0.2 s · Gegen-Richtung Ausfall 0.008 m, Wurzel quer 0.008 m, erholt 0.2 s · Masse ×2 Ausfall 0.004 m, Wurzel quer 0.004 m, erholt 0.2 s · ROT kein Ausfallschritt, die Gegen-Richtung zieht nicht (Soll Ausfall ≥ 0,1 m, ≤ 1,5 s, kein Sturz) an 10770eb5",
    "stationen": [
     {
      "id": "physik.K5#1",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
-     "ungemessen": true
+     "zahl": "200 N × 0,2 s quer im Gang (89.022 kg): Ausfall 0.008 m, Wurzel quer 0.008 m, erholt 0.2 s · Gegen-Richtung Ausfall 0.008 m, Wurzel quer 0.008 m, erholt 0.2 s · Masse ×2 Ausfall 0.004 m, Wurzel quer 0.004 m, erholt 0.2 s · ROT kein Ausfallschritt, die Gegen-Richtung zieht nicht (Soll Ausfall ≥ 0,1 m, ≤ 1,5 s, kein Sturz)",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": "ROT: 200 N × 0,2 s quer im Gang (89.022 kg): Ausfall 0.008 m, Wurzel quer 0.008 m, erholt 0.2 s · Gegen-Richtung Ausfall 0.008 m, Wurzel quer 0.008 m, erholt 0.2 s · Masse ×2 Ausfall 0.004 m, Wurzel quer 0.004 m, erholt 0.2 s · ROT kein Ausfallschritt, die Gegen-Richtung zieht nicht (Soll Ausfall ≥ 0,1 m, ≤ 1,5 s, kein Sturz)"
     }
    ]
   },
   "pipeline.K1": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: 8/8 Studio-Seiten mit gleichem Bau-Hash in der Welt (Arten 13/13, Saat 2539693590), Konsum im Spiel grün an 25ac4c0c headless · gehalten: 8/8 Studio-Seiten mit gleichem Bau-Hash in der Welt (Arten 13/13, Saat 2539693590), Konsum im Spiel grün an 25ac4c0c headless",
+   "beleg": "Maschine: 8/8 Studio-Seiten mit gleichem Bau-Hash in der Welt (Arten 22/22, Saat 2616519800), Konsum im Spiel grün an 10770eb5 headless · 8/8 Studio-Seiten mit gleichem Bau-Hash in der Welt (Arten 22/22, Saat 2616519800), Konsum im Spiel grün an 10770eb5 headless",
    "stationen": [
     {
      "id": "pipeline.K1#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "8/8 Studio-Seiten mit gleichem Bau-Hash in der Welt (Arten 13/13, Saat 2539693590), Konsum im Spiel grün",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-studio-uebergabe.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +8)",
-     "gehalten": true
+     "zahl": "8/8 Studio-Seiten mit gleichem Bau-Hash in der Welt (Arten 22/22, Saat 2616519800), Konsum im Spiel grün",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "pipeline.K1#2",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "8/8 Studio-Seiten mit gleichem Bau-Hash in der Welt (Arten 13/13, Saat 2539693590), Konsum im Spiel grün",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-studio-uebergabe.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +8)",
-     "gehalten": true
+     "zahl": "8/8 Studio-Seiten mit gleichem Bau-Hash in der Welt (Arten 22/22, Saat 2616519800), Konsum im Spiel grün",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "pipeline.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: pipeline.K2#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +1)",
+   "beleg": "Maschine: 0 — offen: pipeline.K2#1 headless: ROT: zwei Bäcker: Studio bakeImpostorAtlas (three r128) eiche/471452 rgba8 128×256 131072 B sha 2d680fabe8 ⇄ Welt _karteWeltBacken (three r184) eiche/Gestalt 0 bc 128×3584 1835008 B sha 49c0560dfe an 10770eb5",
    "stationen": [
     {
      "id": "pipeline.K2#1",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +1)",
-     "ungemessen": true
+     "zahl": "zwei Bäcker: Studio bakeImpostorAtlas (three r128) eiche/471452 rgba8 128×256 131072 B sha 2d680fabe8 ⇄ Welt _karteWeltBacken (three r184) eiche/Gestalt 0 bc 128×3584 1835008 B sha 49c0560dfe",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": "ROT: zwei Bäcker: Studio bakeImpostorAtlas (three r128) eiche/471452 rgba8 128×256 131072 B sha 2d680fabe8 ⇄ Welt _karteWeltBacken (three r184) eiche/Gestalt 0 bc 128×3584 1835008 B sha 49c0560dfe"
     }
    ]
   },
   "pipeline.K3": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: über Budget 0 (Staffel 1 ≤ 3) in 7397 Bauten, leer 0, Exits 0/0/0 an 25ac4c0c headless · gehalten: über Budget 0, Quote max L1/L0 0.50 · L2/L0 0.15 an 25ac4c0c headless",
+   "beleg": "Maschine: über Budget 0 (Staffel 1 ≤ 3) in 8665 Bauten, leer 0, Exits 0/0/0 an 10770eb5 headless · über Budget 0, Quote max L1/L0 0.50 · L2/L0 0.15 an 10770eb5 headless",
    "stationen": [
     {
      "id": "pipeline.K3#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "über Budget 0 (Staffel 1 ≤ 3) in 7397 Bauten, leer 0, Exits 0/0/0",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-regler-wirkt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9)",
-     "gehalten": true
+     "zahl": "über Budget 0 (Staffel 1 ≤ 3) in 8665 Bauten, leer 0, Exits 0/0/0",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "pipeline.K3#2",
      "geraet": "headless",
      "gruen": true,
      "zahl": "über Budget 0, Quote max L1/L0 0.50 · L2/L0 0.15",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-regler-wirkt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
@@ -2553,16 +2471,15 @@
   },
   "pipeline.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: pipeline.K5#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +1)",
+   "beleg": "Maschine: 0 — offen: pipeline.K5#1 headless: ROT: 1 Foundry-Fäden (buch): worlds/*/lib/three* 603610 B über das Netz, geparst worlds/terrain/lib/three-r128.min.js · synchrones XHR 1 (cores.manifest.json) · THREE im Faden r128 gegen die Welt r184 an 10770eb5",
    "stationen": [
     {
      "id": "pipeline.K5#1",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +1)",
-     "ungemessen": true
+     "zahl": "1 Foundry-Fäden (buch): worlds/*/lib/three* 603610 B über das Netz, geparst worlds/terrain/lib/three-r128.min.js · synchrones XHR 1 (cores.manifest.json) · THREE im Faden r128 gegen die Welt r184",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": "ROT: 1 Foundry-Fäden (buch): worlds/*/lib/three* 603610 B über das Netz, geparst worlds/terrain/lib/three-r128.min.js · synchrones XHR 1 (cores.manifest.json) · THREE im Faden r128 gegen die Welt r184"
     }
    ]
   },
@@ -2862,16 +2779,15 @@
   },
   "siedlung.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 25ac4c0c headless — offen: siedlung.K1#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Start-Dorfs (Gang und Innen-Bild)) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt  · siedlung.K1#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.00 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ A",
+   "beleg": "Maschine: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 10770eb5 headless — offen: siedlung.K1#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Start-Dorfs (Gang und Innen-Bild)) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt  · siedlung.K1#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.00 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ A",
    "stationen": [
     {
      "id": "siedlung.K1#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-haus-welt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +10)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "siedlung.K1#2",
@@ -2937,40 +2853,37 @@
   },
   "siedlung.K3": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: 5 Dörfer, Gassen-Gefälle p95 -3,-5 8.5 % · -5,-3 9 % · -3,-3 9.1 % · -4,-4 8.6 % · Akt 10 %, Versatz 0/0/0/0/0 m, Selbsttest ✅, Exit 0 an 25ac4c0c headless · gehalten: 4 Hangdörfer -3,-14 0.38/9.1 %/451 m³ · -1,-14 0.49/8.5 %/526 m³ · -3,-12 0.51/10.7 %/541 m³ · -1,-12 0.57/11.2 %/801 m³, 1 Grundriss-Leser, Selbsttests ✅✅, Exit 0 an 25ac4c0c headless",
+   "beleg": "Maschine: 5 Dörfer, Gassen-Gefälle p95 -3,-5 8.5 % · -5,-3 9 % · -3,-3 9.1 % · -4,-4 8.6 % · Akt 10 %, Versatz 0/0/0/0/0 m, Selbsttest ✅, Exit 0 an 10770eb5 headless · 4 Hangdörfer -3,-14 0.38/9.1 %/451 m³ · -1,-14 0.49/8.5 %/526 m³ · -3,-12 0.51/10.7 %/541 m³ · -1,-12 0.57/11.2 %/801 m³, 1 Grundriss-Leser, Selbsttests ✅✅, Exit 0 an 10770eb5 headless",
    "stationen": [
     {
      "id": "siedlung.K3#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "5 Dörfer, Gassen-Gefälle p95 -3,-5 8.5 % · -5,-3 9 % · -3,-3 9.1 % · -4,-4 8.6 % · Akt 10 %, Versatz 0/0/0/0/0 m, Selbsttest ✅, Exit 0",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-settlement.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "siedlung.K3#2",
      "geraet": "headless",
      "gruen": true,
      "zahl": "4 Hangdörfer -3,-14 0.38/9.1 %/451 m³ · -1,-14 0.49/8.5 %/526 m³ · -3,-12 0.51/10.7 %/541 m³ · -1,-12 0.57/11.2 %/801 m³, 1 Grundriss-Leser, Selbsttests ✅✅, Exit 0",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-settlement.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "siedlung.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0 an 25ac4c0c headless — offen: siedlung.K4#2 radeon: Station seit der Messung geändert · siedlung.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0 an 10770eb5 headless — offen: siedlung.K4#2 radeon: Station seit der Messung geändert · siedlung.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "siedlung.K4#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-settlement.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "siedlung.K4#2",
@@ -3120,40 +3033,37 @@
   },
   "speicher.K3": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: ✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 0.0 kB, Platte 0.0 kB, am stärksten creatureEmotions 0.0 kB · gesamt roh 1.0 kB, Platte 2.0 kB · Leben worldJournal 0.5 kB, creatures 0.4 kB, dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1009.1 kB, Platte 2018.2 kB, am stärksten wegSpur 1009.1 kB · gesamt roh 1009.1 kB, Platte 2018.2 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worl an 25ac4c0c headless · gehalten: ✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 0.0 kB, Platte 0.0 kB, am stärksten creatureEmotions 0.0 kB · gesamt roh 1.0 kB, Platte 2.0 kB · Leben worldJournal 0.5 kB, creatures 0.4 kB, dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB | ✅ (D) 1000 Edits, Soll ≤ 100 kB: ohne Leben Δ roh 42.8 kB, Platte 85.7 kB, am stärksten voxelEdits 42.8 kB · gesamt roh 42.8 kB, Platte 85.7 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worldJournal 0.0 kB | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1009.1 kB, Platte 2018.2 kB, am stärksten wegSpur 1009.1 kB · gesamt roh 1009.1 kB, Platte 2018.2 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worl an 25ac4c0c headless",
+   "beleg": "Maschine: ✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 4.2 kB, Platte 8.5 kB, am stärksten worldMeta.settlementCells 1.9 kB · gesamt roh 68.3 kB, Platte 136.7 kB · Leben worldJournal 46.5 kB, dslHistory 12.3 kB, dslAbilities 3.1 kB, knowledgeBase 2.8 kB, dslPatternMemory 0.0 kB, creatures -0 | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1008.1 kB, Platte 2016.2 kB, am stärksten wegSpur 1008.1 kB · gesamt roh 1008.1 kB, Platte 2016.2 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worl an 10770eb5 headless · ✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 4.2 kB, Platte 8.5 kB, am stärksten worldMeta.settlementCells 1.9 kB · gesamt roh 68.3 kB, Platte 136.7 kB · Leben worldJournal 46.5 kB, dslHistory 12.3 kB, dslAbilities 3.1 kB, knowledgeBase 2.8 kB, dslPatternMemory 0.0 kB, creatures -0 | ✅ (D) 1000 Edits, Soll ≤ 100 kB: ohne Leben Δ roh 42.9 kB, Platte 85.8 kB, am stärksten voxelEdits 42.8 kB · gesamt roh 46.9 kB, Platte 93.7 kB · Leben creatures 2.3 kB, dslHistory 1.0 kB, dslAbilities 0.2 kB, worldJournal 0.2 kB, knowledgeBase 0.2 kB, dslPatternMemory 0.0 kB | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1008.1 kB, Platte 2016.2 kB, am stärksten wegSpur 1008.1 kB · gesamt roh 1008.1 kB, Platte 2016.2 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worl an 10770eb5 headless",
    "stationen": [
     {
      "id": "speicher.K3#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 0.0 kB, Platte 0.0 kB, am stärksten creatureEmotions 0.0 kB · gesamt roh 1.0 kB, Platte 2.0 kB · Leben worldJournal 0.5 kB, creatures 0.4 kB, dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1009.1 kB, Platte 2018.2 kB, am stärksten wegSpur 1009.1 kB · gesamt roh 1009.1 kB, Platte 2018.2 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worl",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +4)",
-     "gehalten": true
+     "zahl": "✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 4.2 kB, Platte 8.5 kB, am stärksten worldMeta.settlementCells 1.9 kB · gesamt roh 68.3 kB, Platte 136.7 kB · Leben worldJournal 46.5 kB, dslHistory 12.3 kB, dslAbilities 3.1 kB, knowledgeBase 2.8 kB, dslPatternMemory 0.0 kB, creatures -0 | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1008.1 kB, Platte 2016.2 kB, am stärksten wegSpur 1008.1 kB · gesamt roh 1008.1 kB, Platte 2016.2 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worl",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "speicher.K3#2",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 0.0 kB, Platte 0.0 kB, am stärksten creatureEmotions 0.0 kB · gesamt roh 1.0 kB, Platte 2.0 kB · Leben worldJournal 0.5 kB, creatures 0.4 kB, dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB | ✅ (D) 1000 Edits, Soll ≤ 100 kB: ohne Leben Δ roh 42.8 kB, Platte 85.7 kB, am stärksten voxelEdits 42.8 kB · gesamt roh 42.8 kB, Platte 85.7 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worldJournal 0.0 kB | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1009.1 kB, Platte 2018.2 kB, am stärksten wegSpur 1009.1 kB · gesamt roh 1009.1 kB, Platte 2018.2 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worl",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +6)",
-     "gehalten": true
+     "zahl": "✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 4.2 kB, Platte 8.5 kB, am stärksten worldMeta.settlementCells 1.9 kB · gesamt roh 68.3 kB, Platte 136.7 kB · Leben worldJournal 46.5 kB, dslHistory 12.3 kB, dslAbilities 3.1 kB, knowledgeBase 2.8 kB, dslPatternMemory 0.0 kB, creatures -0 | ✅ (D) 1000 Edits, Soll ≤ 100 kB: ohne Leben Δ roh 42.9 kB, Platte 85.8 kB, am stärksten voxelEdits 42.8 kB · gesamt roh 46.9 kB, Platte 93.7 kB · Leben creatures 2.3 kB, dslHistory 1.0 kB, dslAbilities 0.2 kB, worldJournal 0.2 kB, knowledgeBase 0.2 kB, dslPatternMemory 0.0 kB | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1008.1 kB, Platte 2016.2 kB, am stärksten wegSpur 1008.1 kB · gesamt roh 1008.1 kB, Platte 2016.2 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worl",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "speicher.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 95/95 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 95/95 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 95/95 | ✅ Dichte über den Reload: Linie 571 Löcher, 0 korrupt an 25ac4c0c headless — offen: speicher.K4#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · speicher.K4#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an 10770eb5: Deckel 15 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "beleg": "Maschine: ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 102/102 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 102/102 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 102/102 | ✅ Dichte über den Reload: Linie 364 Löcher, 0 korrupt an 10770eb5 headless — offen: speicher.K4#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · speicher.K4#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an 10770eb5: Deckel 15 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
    "stationen": [
     {
      "id": "speicher.K4#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 95/95 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 95/95 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 95/95 | ✅ Dichte über den Reload: Linie 571 Löcher, 0 korrupt",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +55)",
-     "gehalten": true
+     "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 102/102 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 102/102 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 102/102 | ✅ Dichte über den Reload: Linie 364 Löcher, 0 korrupt",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "speicher.K4#2",
@@ -3177,25 +3087,23 @@
   },
   "speicher.K5": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: ✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 88/88 an 25ac4c0c headless · gehalten: ✅ (V) Korpus: 94 Stände 18.530.0 … 18.546.158 und 1 Kopf laden am Kopf — Bauten 475/475 · Gruben 285/285 · Inventar 270/270 · ganz 95/95 | ✅ (V) Versions-Stufe 18.546.158: ihr Stand steht im Korpus (bump-version.cjs) an 25ac4c0c headless",
+   "beleg": "Maschine: ✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 95/95 an 10770eb5 headless · ✅ (V) Korpus: 101 Stände 18.530.0 … 18.546.165 und 1 Kopf laden am Kopf — Bauten 510/510 · Gruben 306/306 · Inventar 291/291 · ganz 102/102 | ✅ (V) Versions-Stufe 18.546.165: ihr Stand steht im Korpus (bump-version.cjs) an 10770eb5 headless",
    "stationen": [
     {
      "id": "speicher.K5#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 88/88",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +55)",
-     "gehalten": true
+     "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 95/95",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "speicher.K5#2",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "✅ (V) Korpus: 94 Stände 18.530.0 … 18.546.158 und 1 Kopf laden am Kopf — Bauten 475/475 · Gruben 285/285 · Inventar 270/270 · ganz 95/95 | ✅ (V) Versions-Stufe 18.546.158: ihr Stand steht im Korpus (bump-version.cjs)",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +55)",
-     "gehalten": true
+     "zahl": "✅ (V) Korpus: 101 Stände 18.530.0 … 18.546.165 und 1 Kopf laden am Kopf — Bauten 510/510 · Gruben 306/306 · Inventar 291/291 · ganz 102/102 | ✅ (V) Versions-Stufe 18.546.165: ihr Stand steht im Korpus (bump-version.cjs)",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
@@ -3224,133 +3132,123 @@
   },
   "spielgang.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 39 von 39 Klang-Ereignissen und Stimmen tragen ihre Zeile an 25ac4c0c headless",
+   "beleg": "Maschine: 39 von 39 Klang-Ereignissen und Stimmen tragen ihre Zeile an 10770eb5 headless",
    "stationen": [
     {
      "id": "spielgang.K4#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "39 von 39 Klang-Ereignissen und Stimmen tragen ihre Zeile",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "spielgang.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: spielgang.K5#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +1)",
+   "beleg": "Maschine: 0 — offen: spielgang.K5#1 headless: ROT: 951 harte UI-Zeilen (Code 243 in 84 von 3571 Gliedern · DOM 708) · je Senke textContent 184 · _hudSchreib 1 · title 40 · confirm 7 · placeholder 2 · innerHTML 4 · prompt 3 · alert 1 · innerText 1 · Text-Quelle DE/EN: keine · z. B. setCameraMode textContent: \"Sicht: 3rd\" | setCameraMode textContent: \"Sicht: 1st\" | tickStatsHud _hudSchreib: \"Stats nicht initialisiert\" an 10770eb5",
    "stationen": [
     {
      "id": "spielgang.K5#1",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +1)",
-     "ungemessen": true
+     "zahl": "951 harte UI-Zeilen (Code 243 in 84 von 3571 Gliedern · DOM 708) · je Senke textContent 184 · _hudSchreib 1 · title 40 · confirm 7 · placeholder 2 · innerHTML 4 · prompt 3 · alert 1 · innerText 1 · Text-Quelle DE/EN: keine · z. B. setCameraMode textContent: \"Sicht: 3rd\" | setCameraMode textContent: \"Sicht: 1st\" | tickStatsHud _hudSchreib: \"Stats nicht initialisiert\"",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": "ROT: 951 harte UI-Zeilen (Code 243 in 84 von 3571 Gliedern · DOM 708) · je Senke textContent 184 · _hudSchreib 1 · title 40 · confirm 7 · placeholder 2 · innerHTML 4 · prompt 3 · alert 1 · innerText 1 · Text-Quelle DE/EN: keine · z. B. setCameraMode textContent: \"Sicht: 3rd\" | setCameraMode textContent: \"Sicht: 1st\" | tickStatsHud _hudSchreib: \"Stats nicht initialisiert\""
     }
    ]
   },
   "stoffe.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: holz 5/7 · stein 4/7 · eisen 4/7 · gras 5/7 · erde 4/7 · laub 5/7 · wasser 4/7 · Sabotage ROT an jeder Wirkung an 25ac4c0c headless — offen: stoffe.K1#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: holz 5/7 · stein 4/7 · eisen 4/7 · gras 5/7 · erde 4/7 · laub 5/7 · wasser 4/7 · Sabotage ROT an jeder Wirkung an 10770eb5 headless — offen: stoffe.K1#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "stoffe.K1#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "holz 5/7 · stein 4/7 · eisen 4/7 · gras 5/7 · erde 4/7 · laub 5/7 · wasser 4/7 · Sabotage ROT an jeder Wirkung",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-gegenstand-stoff.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +9)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "stoffe.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: mit dem Wind 0.904 m/s (18 Köpfe) · gegen 0.026 m/s · Mutante ohne Wind bis 0.041 m/s · bis 31.8 Einheiten je Zelle an 25ac4c0c headless — offen: stoffe.K2#2 headless: Linse seit der Messung geändert (R6: scripts/diag-stand-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +7)",
+   "beleg": "Maschine: mit dem Wind 0.779 m/s (19 Köpfe) · gegen 0.027 m/s · Mutante ohne Wind bis 0.041 m/s · bis 31.8 Einheiten je Zelle an 10770eb5 headless — offen: stoffe.K2#2 headless: ROT: Halt: 0 Zellen brannten, die Front hielt 0× am nassen Gras (ohne die Feuchte des Orts brannten 0 nasse, sie hielt 0× am Wasser) · Fels 0× gehalten · Regen löscht nach 20 s (Mutante 300 s) · Asche 1 (voll undefined) → nach der Stufe Gras 0 · Kante Achse undefined, Linie undefined m (Mutante undefined, undefined) · Licht 1, Flammen undefined bis undefined m, Fahne 1 Ballen, Deckung undefined, Glut am Ohr 256 m² · 2000 brennende Zellen (450 der Welt): je Bild p95 0.2 ms (Leser 0.2), Schirm undefined ms, der Schritt bis 1 s hinter der Uhr an 10770eb5",
    "stationen": [
     {
      "id": "stoffe.K2#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "mit dem Wind 0.904 m/s (18 Köpfe) · gegen 0.026 m/s · Mutante ohne Wind bis 0.041 m/s · bis 31.8 Einheiten je Zelle",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-stand-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8)",
-     "gehalten": true
+     "zahl": "mit dem Wind 0.779 m/s (19 Köpfe) · gegen 0.027 m/s · Mutante ohne Wind bis 0.041 m/s · bis 31.8 Einheiten je Zelle",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "stoffe.K2#2",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-stand-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +7)",
-     "ungemessen": true
+     "zahl": "Halt: 0 Zellen brannten, die Front hielt 0× am nassen Gras (ohne die Feuchte des Orts brannten 0 nasse, sie hielt 0× am Wasser) · Fels 0× gehalten · Regen löscht nach 20 s (Mutante 300 s) · Asche 1 (voll undefined) → nach der Stufe Gras 0 · Kante Achse undefined, Linie undefined m (Mutante undefined, undefined) · Licht 1, Flammen undefined bis undefined m, Fahne 1 Ballen, Deckung undefined, Glut am Ohr 256 m² · 2000 brennende Zellen (450 der Welt): je Bild p95 0.2 ms (Leser 0.2), Schirm undefined ms, der Schritt bis 1 s hinter der Uhr",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": "ROT: Halt: 0 Zellen brannten, die Front hielt 0× am nassen Gras (ohne die Feuchte des Orts brannten 0 nasse, sie hielt 0× am Wasser) · Fels 0× gehalten · Regen löscht nach 20 s (Mutante 300 s) · Asche 1 (voll undefined) → nach der Stufe Gras 0 · Kante Achse undefined, Linie undefined m (Mutante undefined, undefined) · Licht 1, Flammen undefined bis undefined m, Fahne 1 Ballen, Deckung undefined, Glut am Ohr 256 m² · 2000 brennende Zellen (450 der Welt): je Bild p95 0.2 ms (Leser 0.2), Schirm undefined ms, der Schritt bis 1 s hinter der Uhr"
     }
    ]
   },
   "stoffe.K3": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Winter -4.375 °C am Spiegel: 1151 Schritte auf dem See, die Füße bis 0 m vom Spiegel, 0 schwimmend · 3 von 3 Tieren am Spiegel · Feld +10 °C (5.625 °C): 1003 Schritte schwimmend an 25ac4c0c headless · gehalten: 5 von 5 Gliedern · Eis ✓ (-4.375 °C) · Schnee ✓ (Pegel 0.163 m, Grenze 178 m übers Jahr, 81 Chunks neu) · Wasser-Pegel ✓ (See +0.2 m in 3 Wochen, Fluss +0.2 m, Körper +0.2 m, 344 Chunks neu) · Lava ✓ (erstarrt Land Takt 2, See Takt 1 unter Dampf) · Stahl ✓ (stahl glüht ab 17 s, 1376 K, erlischt nach 123 s, Feld +10 °C → +9.8 K) an 25ac4c0c headless",
+   "beleg": "Maschine: Winter -4.375 °C am Spiegel: 1151 Schritte auf dem See, die Füße bis 0 m vom Spiegel, 0 schwimmend · 3 von 3 Tieren am Spiegel · Feld +10 °C (5.625 °C): 1003 Schritte schwimmend an 10770eb5 headless · 5 von 5 Gliedern · Eis ✓ (-4.375 °C) · Schnee ✓ (Pegel 0.163 m, Grenze 178 m übers Jahr, 81 Chunks neu) · Wasser-Pegel ✓ (See +0.2 m in 3 Wochen, Fluss +0.2 m, Körper +0.2 m, 344 Chunks neu) · Lava ✓ (erstarrt Land Takt 2, See Takt 1 unter Dampf) · Stahl ✓ (stahl glüht ab 17 s, 1376 K, erlischt nach 123 s, Feld +10 °C → +9.8 K) an 10770eb5 headless",
    "stationen": [
     {
      "id": "stoffe.K3#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Winter -4.375 °C am Spiegel: 1151 Schritte auf dem See, die Füße bis 0 m vom Spiegel, 0 schwimmend · 3 von 3 Tieren am Spiegel · Feld +10 °C (5.625 °C): 1003 Schritte schwimmend",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-wasser-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +10)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "stoffe.K3#2",
      "geraet": "headless",
      "gruen": true,
      "zahl": "5 von 5 Gliedern · Eis ✓ (-4.375 °C) · Schnee ✓ (Pegel 0.163 m, Grenze 178 m übers Jahr, 81 Chunks neu) · Wasser-Pegel ✓ (See +0.2 m in 3 Wochen, Fluss +0.2 m, Körper +0.2 m, 344 Chunks neu) · Lava ✓ (erstarrt Land Takt 2, See Takt 1 unter Dampf) · Stahl ✓ (stahl glüht ab 17 s, 1376 K, erlischt nach 123 s, Feld +10 °C → +9.8 K)",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-wasser-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "stoffe.K4": {
-   "punkte": 0,
-   "beleg": "Maschine: 0 — offen: stoffe.K4#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
+   "punkte": 1,
+   "beleg": "Maschine: Tag 30, 14 Klassen im Umkreis 60 m des Dorfs · größte Δ der Albedo nach 30 Tagen: bauSatz nord 0.028/sued 0.007/oben 0.015 · formationenSatz nord 0.001/sued 0.003/oben 0.001 · bodenSatz nord 0/sued 0/oben 0 · 1 altern (≥ 0,02), 1 nach Lage (Soll ≥ 1) an 10770eb5 headless",
    "stationen": [
     {
      "id": "stoffe.K4#1",
      "geraet": "headless",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Tag 30, 14 Klassen im Umkreis 60 m des Dorfs · größte Δ der Albedo nach 30 Tagen: bauSatz nord 0.028/sued 0.007/oben 0.015 · formationenSatz nord 0.001/sued 0.003/oben 0.001 · bodenSatz nord 0/sued 0/oben 0 · 1 altern (≥ 0,02), 1 nach Lage (Soll ≥ 1)",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "stoffe.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Ufer -348/-662: nach 8766 h 138 von 138 Pflanzen wieder gezeichnet · r(Tempo, Feuchte × Licht) 0.836, im Offenen (16 Kacheln) 0.939, nass 1.257 × trocken · Mutante Feuchte gleich: offen r -0.535, nass 0.971 × trocken an 25ac4c0c headless — offen: stoffe.K5#2 headless: Linse seit der Messung geändert (R6: scripts/diag-stand-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +7)",
+   "beleg": "Maschine: Ufer -348/-662: nach 8767 h 138 von 138 Pflanzen wieder gezeichnet · r(Tempo, Feuchte × Licht) 0.826, im Offenen (16 Kacheln) 0.936, nass 1.258 × trocken · Mutante Feuchte gleich: offen r -0.517, nass 0.973 × trocken an 10770eb5 headless — offen: stoffe.K5#2 headless: ROT: Halme 477 → Asche 12 → Gras 476 · Kräuter 23 → Asche 0 → Gras 0 → Busch 23 · Ernte (15): Nährstoff 1 → 0.7, Wuchs 0.748 → 0.698 · Asche 1.4, Leichnam 1.2 · Sämling fehlt an 10770eb5",
    "stationen": [
     {
      "id": "stoffe.K5#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "Ufer -348/-662: nach 8766 h 138 von 138 Pflanzen wieder gezeichnet · r(Tempo, Feuchte × Licht) 0.836, im Offenen (16 Kacheln) 0.939, nass 1.257 × trocken · Mutante Feuchte gleich: offen r -0.535, nass 0.971 × trocken",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-stand-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +7)",
-     "gehalten": true
+     "zahl": "Ufer -348/-662: nach 8767 h 138 von 138 Pflanzen wieder gezeichnet · r(Tempo, Feuchte × Licht) 0.826, im Offenen (16 Kacheln) 0.936, nass 1.258 × trocken · Mutante Feuchte gleich: offen r -0.517, nass 0.973 × trocken",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "stoffe.K5#2",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-stand-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +7)",
-     "ungemessen": true
+     "zahl": "Halme 477 → Asche 12 → Gras 476 · Kräuter 23 → Asche 0 → Gras 0 → Busch 23 · Ernte (15): Nährstoff 1 → 0.7, Wuchs 0.748 → 0.698 · Asche 1.4, Leichnam 1.2 · Sämling fehlt",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": "ROT: Halme 477 → Asche 12 → Gras 476 · Kräuter 23 → Asche 0 → Gras 0 → Busch 23 · Ernte (15): Nährstoff 1 → 0.7, Wuchs 0.748 → 0.698 · Asche 1.4, Leichnam 1.2 · Sämling fehlt"
     }
    ]
   },
@@ -3380,16 +3278,15 @@
   },
   "streaming.K4": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Hydrosphären 14 aus dem Faden · 0 im Haupt-Faden · Bauten 31 an Sync-Stellen · 0 sonst an 25ac4c0c headless · gehalten: Bauten 0 außerhalb der Sync-Stellen · 3 an ihnen {\"naht\":3} · Hydrosphären 14 aus dem Faden · 0 im Haupt-Faden · Gang 120.0 s · 6 Bau-Klicks · [linse-gpu] amd/rdna-3 an b3f9ae95 radeon · gehalten: Bauten 0 außerhalb der Sync-Stellen · 5 an ihnen {\"naht\":5} · Hydrosphären 14 aus dem Faden · 0 im Haupt-Faden · Gang 120.0 s · 6 Bau-Klicks · [linse-gpu] nvidia/pascal an 715754fc gtx",
+   "beleg": "Maschine: Hydrosphären 14 aus dem Faden · 0 im Haupt-Faden · Bauten 31 an Sync-Stellen · 0 sonst an 10770eb5 headless · gehalten: Bauten 0 außerhalb der Sync-Stellen · 3 an ihnen {\"naht\":3} · Hydrosphären 14 aus dem Faden · 0 im Haupt-Faden · Gang 120.0 s · 6 Bau-Klicks · [linse-gpu] amd/rdna-3 an b3f9ae95 radeon · gehalten: Bauten 0 außerhalb der Sync-Stellen · 5 an ihnen {\"naht\":5} · Hydrosphären 14 aus dem Faden · 0 im Haupt-Faden · Gang 120.0 s · 6 Bau-Klicks · [linse-gpu] nvidia/pascal an 715754fc gtx",
    "stationen": [
     {
      "id": "streaming.K4#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Hydrosphären 14 aus dem Faden · 0 im Haupt-Faden · Bauten 31 an Sync-Stellen · 0 sonst",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-worker-dichte.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +9)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "streaming.K4#2",
@@ -3413,64 +3310,59 @@
   },
   "streaming.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 0.95 MB/min am Empfang in 60.0 s Fahrt an 25ac4c0c headless — offen: streaming.K5#2 headless: Linse seit der Messung geändert (R6: scripts/diag-worker-dichte.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +9)",
+   "beleg": "Maschine: 1.26 MB/min am Empfang in 60.0 s Fahrt an 10770eb5 headless — offen: streaming.K5#2 headless: ROT: 1.26 MB/min in 60.0 s Fahrt · Kopie 0.26 MB · Speicher-Faden ja (Fäden: buch · voxel · streu · speicher · wald) an 10770eb5",
    "stationen": [
     {
      "id": "streaming.K5#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "0.95 MB/min am Empfang in 60.0 s Fahrt",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-worker-dichte.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +9)",
-     "gehalten": true
+     "zahl": "1.26 MB/min am Empfang in 60.0 s Fahrt",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "streaming.K5#2",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-worker-dichte.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +9)",
-     "ungemessen": true
+     "zahl": "1.26 MB/min in 60.0 s Fahrt · Kopie 0.26 MB · Speicher-Faden ja (Fäden: buch · voxel · streu · speicher · wald)",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": "ROT: 1.26 MB/min in 60.0 s Fahrt · Kopie 0.26 MB · Speicher-Faden ja (Fäden: buch · voxel · streu · speicher · wald)"
     }
    ]
   },
   "studios.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 118/123 Zeilen von PARAMS_BY_KIND wirken am Bild bzw. Ohr (95.9 %, davon 17 an ihrem Leser der Welt) · Bild-Schwelle 0,1 mm 0.01 % → tot · 3 cm 4.30 % → wirkt · tot fachwerk:ausstattung:verwitterung (0.90 %), fachwerk:bank:verwitterung (0 %), fachwerk:leiter:verwitterung (0 %), koerper:koerper:mass (0.65 %), koerper:koerper:hairVol (0.61 %) · Baum-Zeilen keine in PARAMS_BY_KIND · Exits 0/0/0 an 25ac4c0c headless — offen: studios.K1#2 headless: Linse seit der Messung geändert (R6: scripts/diag-regler-wirkt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +7)",
+   "beleg": "Maschine: 142/144 Zeilen von PARAMS_BY_KIND wirken am Bild bzw. Ohr (98.6 %, davon 17 an ihrem Leser der Welt) · Bild-Schwelle 0,1 mm 0.01 % → tot · 3 cm 4.30 % → wirkt · tot koerper:koerper:mass (0.68 %), koerper:koerper:hairVol (0.45 %) · Baum-Zeilen keine in PARAMS_BY_KIND · Exits 0/0/0 an 10770eb5 headless — offen: studios.K1#2 headless: ROT: 142/144 Zeilen von PARAMS_BY_KIND wirken am Bild bzw. Ohr (98.6 %, davon 17 an ihrem Leser der Welt) · Bild-Schwelle 0,1 mm 0.01 % → tot · 3 cm 4.30 % → wirkt · tot koerper:koerper:mass (0.68 %), koerper:koerper:hairVol (0.45 %) · Baum-Zeilen keine in PARAMS_BY_KIND · Exits 0/0/0 an 10770eb5",
    "stationen": [
     {
      "id": "studios.K1#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "118/123 Zeilen von PARAMS_BY_KIND wirken am Bild bzw. Ohr (95.9 %, davon 17 an ihrem Leser der Welt) · Bild-Schwelle 0,1 mm 0.01 % → tot · 3 cm 4.30 % → wirkt · tot fachwerk:ausstattung:verwitterung (0.90 %), fachwerk:bank:verwitterung (0 %), fachwerk:leiter:verwitterung (0 %), koerper:koerper:mass (0.65 %), koerper:koerper:hairVol (0.61 %) · Baum-Zeilen keine in PARAMS_BY_KIND · Exits 0/0/0",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-regler-wirkt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +7)",
-     "gehalten": true
+     "zahl": "142/144 Zeilen von PARAMS_BY_KIND wirken am Bild bzw. Ohr (98.6 %, davon 17 an ihrem Leser der Welt) · Bild-Schwelle 0,1 mm 0.01 % → tot · 3 cm 4.30 % → wirkt · tot koerper:koerper:mass (0.68 %), koerper:koerper:hairVol (0.45 %) · Baum-Zeilen keine in PARAMS_BY_KIND · Exits 0/0/0",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "studios.K1#2",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-regler-wirkt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +7)",
-     "ungemessen": true
+     "zahl": "142/144 Zeilen von PARAMS_BY_KIND wirken am Bild bzw. Ohr (98.6 %, davon 17 an ihrem Leser der Welt) · Bild-Schwelle 0,1 mm 0.01 % → tot · 3 cm 4.30 % → wirkt · tot koerper:koerper:mass (0.68 %), koerper:koerper:hairVol (0.45 %) · Baum-Zeilen keine in PARAMS_BY_KIND · Exits 0/0/0",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": "ROT: 142/144 Zeilen von PARAMS_BY_KIND wirken am Bild bzw. Ohr (98.6 %, davon 17 an ihrem Leser der Welt) · Bild-Schwelle 0,1 mm 0.01 % → tot · 3 cm 4.30 % → wirkt · tot koerper:koerper:mass (0.68 %), koerper:koerper:hairVol (0.45 %) · Baum-Zeilen keine in PARAMS_BY_KIND · Exits 0/0/0"
     }
    ]
   },
   "studios.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 25ac4c0c headless — offen: studios.K2#2 radeon: Station seit der Messung geändert · studios.K2#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 0 ms –, Neubau höchstens 577 ms garage, je Studio null Griffe)",
+   "beleg": "Maschine: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 10770eb5 headless — offen: studios.K2#2 radeon: Station seit der Messung geändert · studios.K2#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 0 ms –, Neubau höchstens 577 ms garage, je Studio null Griffe)",
    "stationen": [
     {
      "id": "studios.K2#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z)",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-studio-huelle.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "studios.K2#2",
@@ -3494,16 +3386,15 @@
   },
   "studios.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %) an 25ac4c0c headless — offen: studios.K3#2 radeon: Station seit der Messung geändert · studios.K3#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 0/0 Orte im Quantum, ohne garage L0 GPU 0.0236 ms↔",
+   "beleg": "Maschine: Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %) an 10770eb5 headless — offen: studios.K3#2 radeon: Station seit der Messung geändert · studios.K3#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 0/0 Orte im Quantum, ohne garage L0 GPU 0.0236 ms↔",
    "stationen": [
     {
      "id": "studios.K3#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %)",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-studio-huelle.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +4)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "studios.K3#2",
@@ -3569,40 +3460,37 @@
   },
   "studios.K5": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: 3/3 Baupläne · Stufen L0 160 · L1 32 · L2 14 △ · Kosten pass/pass/pass · Neuladen steht · der Wirt nennt die Art 0× an 25ac4c0c headless · gehalten: 4/4 Wege (✓ Werkstatt 6f1c8c0a/1 · ✓ KI-Satz a996fd2b/1 · ✓ Foundry 6f1c8c0a/1 · af97477e/1 · dbd19cd4/1 · ✓ P2P 6f1c8c0a/1) · Atlas worlds/neuntes-buch/stele-core.js · der Wirt nennt die Art 0× an 25ac4c0c headless",
+   "beleg": "Maschine: 3/3 Baupläne · Stufen L0 160 · L1 32 · L2 14 △ · Kosten pass/pass/pass · Neuladen steht · der Wirt nennt die Art 0× an 10770eb5 headless · 4/4 Wege (✓ Werkstatt 6f1c8c0a/1 · ✓ KI-Satz a996fd2b/1 · ✓ Foundry 6f1c8c0a/1 · af97477e/1 · dbd19cd4/1 · ✓ P2P 6f1c8c0a/1) · Atlas worlds/neuntes-buch/stele-core.js · der Wirt nennt die Art 0× an 10770eb5 headless",
    "stationen": [
     {
      "id": "studios.K5#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "3/3 Baupläne · Stufen L0 160 · L1 32 · L2 14 △ · Kosten pass/pass/pass · Neuladen steht · der Wirt nennt die Art 0×",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-atlas.cjs, scripts/diag-nervensystem.cjs, scripts/lib/abnahme-urteil.cjs +6)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "studios.K5#2",
      "geraet": "headless",
      "gruen": true,
      "zahl": "4/4 Wege (✓ Werkstatt 6f1c8c0a/1 · ✓ KI-Satz a996fd2b/1 · ✓ Foundry 6f1c8c0a/1 · af97477e/1 · dbd19cd4/1 · ✓ P2P 6f1c8c0a/1) · Atlas worlds/neuntes-buch/stele-core.js · der Wirt nennt die Art 0×",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-atlas.cjs, scripts/diag-nervensystem.cjs, scripts/lib/abnahme-urteil.cjs +6)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "tiere.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.257) an 25ac4c0c headless — offen: tiere.K1#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · tiere.K1#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde)",
+   "beleg": "Maschine: Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.323) an 10770eb5 headless — offen: tiere.K1#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · tiere.K1#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde)",
    "stationen": [
     {
      "id": "tiere.K1#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.257)",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +7)",
-     "gehalten": true
+     "zahl": "Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.323)",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "tiere.K1#2",
@@ -3626,16 +3514,15 @@
   },
   "tiere.K2": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Riss je Jagd einWolf 0/20 (HP 168) · rudel 21/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 49 s an 25ac4c0c headless · gehalten: Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 11.8 s, 3 fressen: tier:wolf 8845 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.31 m · Luma 75.5 σ 33.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 715754fc radeon · gehalten: Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 13.6 s, 3 fressen: tier:wolf 12459 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.18 m · Luma 89.2 σ 39.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an 715754fc gtx",
+   "beleg": "Maschine: Riss je Jagd einWolf 0/20 (HP 168) · rudel 17/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 42.3 s an 10770eb5 headless · gehalten: Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 11.8 s, 3 fressen: tier:wolf 8845 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.31 m · Luma 75.5 σ 33.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 715754fc radeon · gehalten: Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 13.6 s, 3 fressen: tier:wolf 12459 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.18 m · Luma 89.2 σ 39.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an 715754fc gtx",
    "stationen": [
     {
      "id": "tiere.K2#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "Riss je Jagd einWolf 0/20 (HP 168) · rudel 21/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 49 s",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +7)",
-     "gehalten": true
+     "zahl": "Riss je Jagd einWolf 0/20 (HP 168) · rudel 17/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 42.3 s",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "tiere.K2#2",
@@ -3659,16 +3546,15 @@
   },
   "tiere.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Schlupf des Stand-Fußes max 0.017 in 25 Läufen als Leib (4 Gattungen), max 0.048 in 16 im Satz (4 Gattungen) an 25ac4c0c headless — offen: tiere.K3#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · tiere.K3#2 gtx: Linse seit der Messung geändert (R6: koerper-core.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +23) — zuletzt an 10770eb5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 72.1 σ 31.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.16",
+   "beleg": "Maschine: Schlupf des Stand-Fußes max 0.017 in 25 Läufen als Leib (4 Gattungen), max 0.048 in 16 im Satz (4 Gattungen) an 10770eb5 headless — offen: tiere.K3#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · tiere.K3#2 gtx: Linse seit der Messung geändert (R6: koerper-core.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +23) — zuletzt an 10770eb5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 72.1 σ 31.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.16",
    "stationen": [
     {
      "id": "tiere.K3#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Schlupf des Stand-Fußes max 0.017 in 25 Läufen als Leib (4 Gattungen), max 0.048 in 16 im Satz (4 Gattungen)",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: koerper-core.js, scripts/diag-tier-gang.cjs, scripts/lib/abnahme-urteil.cjs +6)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "tiere.K3#2",
@@ -3692,25 +3578,23 @@
   },
   "tiere.K4": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: im Lebensraum 488/488 = 1 (Saat anazh-realm-seed, {\"fox\":39,\"deer\":307,\"wolf\":111,\"bear\":31}) · Gegenprobe 428/428 = 1 (Saat lebensraum-gegen) an 25ac4c0c headless · gehalten: Budget deer ruhen 0.42/0.4 · deer nahrung 0.498/0.5 · deer ziehen 0.081/0.1 · bear ruhen 0.45/0.45 · bear nahrung 0.412/0.4 · bear ziehen 0.138/0.15 · fox ruhen 0.598/0.6 · fox nahrung 0/0 · fox ziehen 0.402/0.4 · wolf ruhen 0.613/0.6 · wolf nahrung 0/0 · wolf ziehen 0.387/0.4 · Trünke 4,4,4,4,4,4,4,4,4,4,4,4 (am Wasser 48, Durst aus 0) · Ruhe bewegt 2314/222163 · Bär am Fluss 32/32 Würfe, abseits 45/377 an 25ac4c0c headless",
+   "beleg": "Maschine: im Lebensraum 486/486 = 1 (Saat anazh-realm-seed, {\"fox\":36,\"deer\":275,\"wolf\":144,\"bear\":31}) · Gegenprobe 464/464 = 1 (Saat lebensraum-gegen) an 10770eb5 headless · Budget deer ruhen 0.409/0.4 · deer nahrung 0.485/0.5 · deer ziehen 0.106/0.1 · bear ruhen 0.446/0.45 · bear nahrung 0.409/0.4 · bear ziehen 0.144/0.15 · fox ruhen 0.602/0.6 · fox nahrung 0/0 · fox ziehen 0.398/0.4 · wolf ruhen 0.601/0.6 · wolf nahrung 0/0 · wolf ziehen 0.399/0.4 · Trünke 4,4,4,4,4,4,4,4,4,4,4,4 (am Wasser 48, Durst aus 0) · Ruhe bewegt 2693/219886 · Bär am Fluss 26/26 Würfe, abseits 42/388 an 10770eb5 headless",
    "stationen": [
     {
      "id": "tiere.K4#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "im Lebensraum 488/488 = 1 (Saat anazh-realm-seed, {\"fox\":39,\"deer\":307,\"wolf\":111,\"bear\":31}) · Gegenprobe 428/428 = 1 (Saat lebensraum-gegen)",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +8)",
-     "gehalten": true
+     "zahl": "im Lebensraum 486/486 = 1 (Saat anazh-realm-seed, {\"fox\":36,\"deer\":275,\"wolf\":144,\"bear\":31}) · Gegenprobe 464/464 = 1 (Saat lebensraum-gegen)",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "tiere.K4#2",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "Budget deer ruhen 0.42/0.4 · deer nahrung 0.498/0.5 · deer ziehen 0.081/0.1 · bear ruhen 0.45/0.45 · bear nahrung 0.412/0.4 · bear ziehen 0.138/0.15 · fox ruhen 0.598/0.6 · fox nahrung 0/0 · fox ziehen 0.402/0.4 · wolf ruhen 0.613/0.6 · wolf nahrung 0/0 · wolf ziehen 0.387/0.4 · Trünke 4,4,4,4,4,4,4,4,4,4,4,4 (am Wasser 48, Durst aus 0) · Ruhe bewegt 2314/222163 · Bär am Fluss 32/32 Würfe, abseits 45/377",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +8)",
-     "gehalten": true
+     "zahl": "Budget deer ruhen 0.409/0.4 · deer nahrung 0.485/0.5 · deer ziehen 0.106/0.1 · bear ruhen 0.446/0.45 · bear nahrung 0.409/0.4 · bear ziehen 0.144/0.15 · fox ruhen 0.602/0.6 · fox nahrung 0/0 · fox ziehen 0.398/0.4 · wolf ruhen 0.601/0.6 · wolf nahrung 0/0 · wolf ziehen 0.399/0.4 · Trünke 4,4,4,4,4,4,4,4,4,4,4,4 (am Wasser 48, Durst aus 0) · Ruhe bewegt 2693/219886 · Bär am Fluss 26/26 Würfe, abseits 42/388",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
@@ -3773,94 +3657,87 @@
   },
   "tore.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Zeit -21 ms (A 321) · A=9c183437/12 B=9c183437/12 ohne=515787a7/12 · Profil A, B, Kontext-Probe: profile-HDmXM8 · profile-MLh4Sj · profile-HDmXM8 an 25ac4c0c headless — offen: tore.K5#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: Zeit 109 ms (A 472) · A=9c183437/12 B=9c183437/12 ohne=515787a7/12 · Profil A, B, Kontext-Probe: profile-dkBQbh · profile-SYxVTm · profile-dkBQbh an 10770eb5 headless — offen: tore.K5#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "tore.K5#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "Zeit -21 ms (A 321) · A=9c183437/12 B=9c183437/12 ohne=515787a7/12 · Profil A, B, Kontext-Probe: profile-HDmXM8 · profile-MLh4Sj · profile-HDmXM8",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-praegung-welt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3) — zuletzt an 455e5be8: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von punkte-radeon-1 nach 2708 s Warten (ohne Nachtruhe; Wanduhr 2708 s)) — ungemessen",
-     "gehalten": true
+     "zahl": "Zeit 109 ms (A 472) · A=9c183437/12 B=9c183437/12 ohne=515787a7/12 · Profil A, B, Kontext-Probe: profile-dkBQbh · profile-SYxVTm · profile-dkBQbh",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "ultiversum.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: ✅ FUSION A+B byte-gleich — 1149 Bytes | ✅ GERICHTET: B+A ≠ A+B | ✅ TÄTER-PROBE: Date.now in der Geburt ist ROT an 25ac4c0c headless",
+   "beleg": "Maschine: ✅ FUSION A+B byte-gleich — 1149 Bytes | ✅ GERICHTET: B+A ≠ A+B | ✅ TÄTER-PROBE: Date.now in der Geburt ist ROT an 10770eb5 headless",
    "stationen": [
     {
      "id": "ultiversum.K2#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "✅ FUSION A+B byte-gleich — 1149 Bytes | ✅ GERICHTET: B+A ≠ A+B | ✅ TÄTER-PROBE: Date.now in der Geburt ist ROT",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-praegung-welt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "ultiversum.K3": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Welt 1041 B · Regel 335 B · Bauplan 428 B · signatur · code · gross 17850 B an 25ac4c0c headless · gehalten: ✅ FORK: Herkunfts-Kette (Autor und Code je Vorgänger), eigene Signatur, das Gesetz verände | ✅ BIBLIOTHEK offen lesbar: das Gesetz im Eintrag = das Gesetz der Welt an 25ac4c0c headless",
+   "beleg": "Maschine: Welt 1041 B · Regel 335 B · Bauplan 428 B · signatur · code · gross 17850 B an 10770eb5 headless · ✅ FORK: Herkunfts-Kette (Autor und Code je Vorgänger), eigene Signatur, das Gesetz verände | ✅ BIBLIOTHEK offen lesbar: das Gesetz im Eintrag = das Gesetz der Welt an 10770eb5 headless",
    "stationen": [
     {
      "id": "ultiversum.K3#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Welt 1041 B · Regel 335 B · Bauplan 428 B · signatur · code · gross 17850 B",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-praegung-welt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "ultiversum.K3#2",
      "geraet": "headless",
      "gruen": true,
      "zahl": "✅ FORK: Herkunfts-Kette (Autor und Code je Vorgänger), eigene Signatur, das Gesetz verände | ✅ BIBLIOTHEK offen lesbar: das Gesetz im Eintrag = das Gesetz der Welt",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-praegung-welt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "ultiversum.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: OK   (h) A schreibt ein neues Gesetz im Gespräch, B trägt es, beide würfeln gleich, es wirkt bei beiden — Hash d7ff724d neu true · bei B true · Wurf in 40 Scheiben gleich true · wirkt bei A true, bei B true · B erinnert  | OK   (h) Selbsttest: die Vorlage ist nicht neu, B mit taubem dsl-Kanal trägt das Gesetz nicht — Vorlage neu false · taub bei B false an 25ac4c0c headless — offen: ultiversum.K4#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: OK   (h) A schreibt ein neues Gesetz im Gespräch, B trägt es, beide würfeln gleich, es wirkt bei beiden — Hash d7ff724d neu true · bei B true · Wurf in 40 Scheiben gleich true · wirkt bei A true, bei B true · B erinnert  | OK   (h) Selbsttest: die Vorlage ist nicht neu, B mit taubem dsl-Kanal trägt das Gesetz nicht — Vorlage neu false · taub bei B false an 10770eb5 headless — offen: ultiversum.K4#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "ultiversum.K4#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "OK   (h) A schreibt ein neues Gesetz im Gespräch, B trägt es, beide würfeln gleich, es wirkt bei beiden — Hash d7ff724d neu true · bei B true · Wurf in 40 Scheiben gleich true · wirkt bei A true, bei B true · B erinnert  | OK   (h) Selbsttest: die Vorlage ist nicht neu, B mit taubem dsl-Kanal trägt das Gesetz nicht — Vorlage neu false · taub bei B false",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-mp-sync.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "ultiversum.K5": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: ✅ op:rule — op:rule · Geteiltes Werk abgewiesen: der Code trägt ein Verb, das ein geteiltes Werk nie trägt (op:rule). | ✅ P2P: eine Regel mit verbotenem Effekt fällt benannt (rule_effect_forbidden) | ✅ 0 Schreibe: Baupläne, Bauten, Regeln, Edits, Same, Erinnerung unverändert — true an 25ac4c0c headless · gehalten: ✅ FEIND Wand: jede Erinnerung trägt ihre Namen als Datum — 0 ungetarnt | ✅ FEIND erreicht: keine Injektion erreicht das Modell — 0 von 7 (Rufe {\"stimme\":1,\"wesen\":1,\"journal\":8}) | ✅ FEIND ausgeführt: 0 fremde Anweisungen — 0 Taten | ✅ FEIND Signatur: die Manipulation schlägt an — valid,modified,forged | ✅ FEIND Anzeige: der Spieler liest den Namen — „Ich kenne ⁨Kanarie5Gewitter⁩.“ an 25ac4c0c headless",
+   "beleg": "Maschine: ✅ op:rule — op:rule · Geteiltes Werk abgewiesen: der Code trägt ein Verb, das ein geteiltes Werk nie trägt (op:rule). | ✅ P2P: eine Regel mit verbotenem Effekt fällt benannt (rule_effect_forbidden) | ✅ 0 Schreibe: Baupläne, Bauten, Regeln, Edits, Same, Erinnerung unverändert — true an 10770eb5 headless · ✅ FEIND Wand: jede Erinnerung trägt ihre Namen als Datum — 0 ungetarnt | ✅ FEIND erreicht: keine Injektion erreicht das Modell — 0 von 7 (Rufe {\"stimme\":1,\"wesen\":1,\"journal\":8}) | ✅ FEIND ausgeführt: 0 fremde Anweisungen — 0 Taten | ✅ FEIND Signatur: die Manipulation schlägt an — valid,modified,forged | ✅ FEIND Anzeige: der Spieler liest den Namen — „Ich kenne ⁨Kanarie5Gewitter⁩.“ an 10770eb5 headless",
    "stationen": [
     {
      "id": "ultiversum.K5#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "✅ op:rule — op:rule · Geteiltes Werk abgewiesen: der Code trägt ein Verb, das ein geteiltes Werk nie trägt (op:rule). | ✅ P2P: eine Regel mit verbotenem Effekt fällt benannt (rule_effect_forbidden) | ✅ 0 Schreibe: Baupläne, Bauten, Regeln, Edits, Same, Erinnerung unverändert — true",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-praegung-welt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +5) — zuletzt an 455e5be8: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von punkte-radeon-1 nach 2708 s Warten (ohne Nachtruhe; Wanduhr 2708 s)) — ungemessen",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "ultiversum.K5#2",
      "geraet": "headless",
      "gruen": true,
      "zahl": "✅ FEIND Wand: jede Erinnerung trägt ihre Namen als Datum — 0 ungetarnt | ✅ FEIND erreicht: keine Injektion erreicht das Modell — 0 von 7 (Rufe {\"stimme\":1,\"wesen\":1,\"journal\":8}) | ✅ FEIND ausgeführt: 0 fremde Anweisungen — 0 Taten | ✅ FEIND Signatur: die Manipulation schlägt an — valid,modified,forged | ✅ FEIND Anzeige: der Spieler liest den Namen — „Ich kenne ⁨Kanarie5Gewitter⁩.“",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +5)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
@@ -4013,25 +3890,23 @@
   },
   "wetter.K1": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: saat-a je Ort (2) über 2 Wanduhren gleich (10 Takte: sunny rainy rainy rainy foggy foggy foggy stormy cloudy foggy), saat-b anders an 25ac4c0c headless · gehalten: Regen an A bei trockenem B 40 % · Lag 240 s (Soll 273 s ±20 %) · Worte 5/5 (cloudy rainy foggy stormy sunny) · Mutation des Kerns: Welt stormy, Labor sturm an 25ac4c0c headless",
+   "beleg": "Maschine: saat-a je Ort (2) über 2 Wanduhren gleich (10 Takte: sunny rainy rainy rainy foggy foggy foggy stormy cloudy foggy), saat-b anders an 10770eb5 headless · Regen an A bei trockenem B 40 % · Lag 240 s (Soll 273 s ±20 %) · Worte 5/5 (cloudy rainy foggy stormy sunny) · Mutation des Kerns: Welt stormy, Labor sturm an 10770eb5 headless",
    "stationen": [
     {
      "id": "wetter.K1#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "saat-a je Ort (2) über 2 Wanduhren gleich (10 Takte: sunny rainy rainy rainy foggy foggy foggy stormy cloudy foggy), saat-b anders",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-wetter-wache.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +5)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "wetter.K1#2",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Regen an A bei trockenem B 40 % · Lag 240 s (Soll 273 s ±20 %) · Worte 5/5 (cloudy rainy foggy stormy sunny) · Mutation des Kerns: Welt stormy, Labor sturm",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-wetter-wache.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +5)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
@@ -4061,61 +3936,60 @@
   },
   "wetter.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Bach +0.2 m nach 20 min Sturm (Spieler-Wort, Welt-Uhr im Takt), 1 Tafeln an den Faden · Regen-Feld gehalten +0 m · Exit 0 an 25ac4c0c headless",
+   "beleg": "Maschine: Bach +0.2 m nach 20 min Sturm (Spieler-Wort, Welt-Uhr im Takt), 1 Tafeln an den Faden · Regen-Feld gehalten +0 m · Exit 0 an 10770eb5 headless",
    "stationen": [
     {
      "id": "wetter.K3#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Bach +0.2 m nach 20 min Sturm (Spieler-Wort, Welt-Uhr im Takt), 1 Tafeln an den Faden · Regen-Feld gehalten +0 m · Exit 0",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-wasser-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "wetter.K4": {
-   "punkte": 0,
-   "beleg": "Maschine: 0 — offen: wetter.K4#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
+   "punkte": 1,
+   "beleg": "Maschine: Winter Tag 40 an -280.4/-1045.6 (27.612 m, Versatz -160): Deckung 1 aus 317 Proben, der Fuß 0.204 m unter dem Boden (Schnee 1) · Sommer an der Wiese -0.01 m (Schnee 0, Versatz 0) (Soll Deckung ≥ 0,6, Fuß ≥ 0,05 m, ohne Schnee ≤ 0,01 m) an 10770eb5 headless",
    "stationen": [
     {
      "id": "wetter.K4#1",
      "geraet": "headless",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Winter Tag 40 an -280.4/-1045.6 (27.612 m, Versatz -160): Deckung 1 aus 317 Proben, der Fuß 0.204 m unter dem Boden (Schnee 1) · Sommer an der Wiese -0.01 m (Schnee 0, Versatz 0) (Soll Deckung ≥ 0,6, Fuß ≥ 0,05 m, ohne Schnee ≤ 0,01 m)",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
   "wetter.K5": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: F3 quer-invariant + richtungs-getrieben · Drift seeded/langsam an 25ac4c0c headless · gehalten: Lee -40 % · Tal-Düse +20 % · Welt 0.6–1.2 · 6/6 Leser folgen ×0, 5/5 benannt (gras 0.573 → 0.000 · wasser 1.000 → 0.000 · regen 7.297 → 0.700 · tuch 0.107 → 0.000 · rauch 8.757 → 0.000 · wagen 0.681 → 0.000) an 25ac4c0c headless",
+   "beleg": "Maschine: F3 quer-invariant + richtungs-getrieben · Drift seeded/langsam an 10770eb5 headless · Lee -40 % · Tal-Düse +20 % · Welt 0.6–1.2 · 6/6 Leser folgen ×0, 5/5 benannt (gras 0.573 → 0.000 · wasser 1.000 → 0.000 · regen 7.297 → 0.700 · tuch 0.107 → 0.000 · rauch 8.757 → 0.000 · wagen 0.681 → 0.000) an 10770eb5 headless",
    "stationen": [
     {
      "id": "wetter.K5#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "F3 quer-invariant + richtungs-getrieben · Drift seeded/langsam",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kopplung.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +5)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "wetter.K5#2",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Lee -40 % · Tal-Düse +20 % · Welt 0.6–1.2 · 6/6 Leser folgen ×0, 5/5 benannt (gras 0.573 → 0.000 · wasser 1.000 → 0.000 · regen 7.297 → 0.700 · tuch 0.107 → 0.000 · rauch 8.757 → 0.000 · wagen 0.681 → 0.000)",
-     "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kopplung.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +5)",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   }
  },
- "rueckfall": [],
+ "rueckfall": [
+  "affekt.K2#1 headless: Deckel 2400 s überschritten — beendet (zuletzt: AFFEKT-gemuet {\"mutante\":\"starr\",\"bauten\":49,\"zuege\":15,\"sonne\":3,\"frontSonne\":3,\"ausGesetz\":0,\"gesetz\":{\"id\":4,\"feuer\":0},\"hoffnungS\":0,\"folge\":\"rcssssrffrrrff) an 10770eb5 (grün gebucht an 25ac4c0c)",
+  "ki.K4#1 headless: LLM-Regeln neu je Drittel 1/2/2, erneuert 9 · verfallen 5 · verdrängt 0 (Nexus 94 · 63 · 3); Gegenlauf: erneuert LLM δ+ 0.78 · δ− 0.00, verdrängt 0, Täter keine llm-Regel verdrängt an 10770eb5 (grün gebucht an 25ac4c0c)"
+ ],
  "kopfVoll": "10770eb5698e05aef55914ee1b08907fb4b285a6",
- "zeit": "2026-11-02T11:42:47.758Z",
+ "zeit": "2026-11-02T12:06:50.770Z",
  "vorher": "10770eb5"
 }
