@@ -391,15 +391,10 @@ H.fahre(async function probeAnkunftKalt(H) {
     await schliesse();
     j.spur = spur;
     return j;
-}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\5fba36ea-gtx\ankunft.K2_1.json 90
-@@ 14.7 s · kalt: t(Kontrolle) 13.48 s
-@@ 19.8 s · kalt: Lücke 2.96 % nach 2.5 s bis zur Ruhe der Foundry
-SPUR kalt {"stand":"gemessen","kontrolleMs":13660,"belegtMs":13152,"laengsteMs":1332,"langeN":39,"langeMs":8401.099999999627,"halter":["build [three.webgpu.min.js] (vendor/three.webgpu.min.js:6) hält den Haupt-Faden vor dem ersten Bild 113 ms (bei 7.0 s; 23× ≥ 50 ms, Σ 1381 ms)","_runFrameScheduler (stamm/dirigent-takt.js:1548) hält den Haupt-Faden vor dem ersten Bild 96 ms (bei 12.7 s; 10× ≥ 50 ms, Σ 744 ms)","_runFrameScheduler (verteilt) (stamm/dirigent-takt.js:1548) hält den Haupt-Faden vor dem ersten Bild 143 ms (bei 2.3 s; 5× ≥ 50 ms, Σ 408 ms)"]}
-  ❌ t(Kontrolle) warm 9.60 s von außen (Soll ≤ 5 s; W trug den Leib im Atem 26)
-  ✅ LIEFERUNG zweit: 129 von 129 von der Platte (100.0 %) · Werk 0 · Haupt-Faden 0 · leer 0 · verschluckt 0
-  ✅ LIEFERUNG je Art: blatt-atlas 1/1 0 ms · dorf-export 1/1 0 ms · karte 18/18 9 ms
-  ❌ t(Kontrolle) warm 9.58 s von außen (Soll ≤ 5 s; W trug den Leib im Atem 27)
-  ✅ KERN-WECHSEL fachwerk: 5 Leser neu · fremd 0  · alt 0 
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\5fba36ea-gtx\ankunft.K2_1.json 10
+@@PUNKTE@@ FRIST 4 s der Probe gerissen — die Kontrolle des Kalt-Boots an der Frist
+@@ 2.6 s · kalt: t(Kontrolle) —
+SPUR kalt {"stand":"gemessen","kontrolleMs":1411,"belegtMs":1054,"laengsteMs":506,"langeN":2,"langeMs":577,"halter":["(program) hält den Haupt-Faden vor dem ersten Bild 71 ms (bei 0.4 s; 1× ≥ 50 ms, Σ 71 ms)","grow [phyto-core.js] (phyto-core.js:104) hält den Haupt-Faden vor dem ersten Bild 61 ms (bei 0.8 s; 1× ≥ 50 ms, Σ 61 ms)","_workshopRenderStatsPanel (stamm/werkstatt-vorschau.js:2334) hält den Haupt-Faden vor dem ersten Bild 58 ms (bei 0.8 s; 1× ≥ 50 ms, Σ 58 ms)"]}
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

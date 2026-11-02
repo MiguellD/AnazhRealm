@@ -231,15 +231,6 @@ leibPx: +(2 * (rs[rs.length >> 1] || 0)).toFixed(1),
 }
 [linse-gpu] nvidia/pascal
 
-===== DIE KREATUR-LINSE (gate:kreatur-takt) — sichtbares Fenster, echte GPU (Werkbank :27804) =====
-
-  ✅ herde     {"fremdN":5,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":5,"wurfAnteil":0.8,"mittel":1,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null,"enge":1.05,"engst":[0.93,"Joro","Una",52]},"flucht":{"n":5,"wurfAnteil":0.8,"mittel":1,"fluchtAnteil":0.323,"fluchtMittel":1,"fluchtMin":1,"enge":0.83,"engst":[0.54,"Joro","Yto",41]}},"ausrichtung":{"mittel":0.992,"takte":1182},"alarm":{"laufen":5,"zweiteHand":4,"letzterS":0.58},"fluchtWegM":33.9,"id":{"bruch":null,"fluchtS":[5,7]}}
-
-  (18 s)
-
-✅ GRÜN — herde
-HERDE AM HANG {"szene":{"kamera":[-36.01,71.66,183.61,6.82,80.43,179.78],"abstand":43.9,"punkte":[[6.1,80.61,180.25],[7.43,81.66,177.2],[6.56,79.63,182.83],[4.55,80.93,178.9],[9.47,80.61,179.71]],"glieder":5,"fliehen":5,"takte":1891,"hang":{"x":6.3,"z":179.9,"neigung":27.3},"wurf":5,"fluchtBei":16.6},"fehler":null,"serie":[[43.9,"5/5",null,"ABNAHME ROT [Ziel Herde verdeckt von Laub baum_erle in 27.26 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 43.23 m · Luma 50.4 σ 28.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.168 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal — die Aufnahme speichert nichts"],[43.4,"5/5",{"glieder":5,"sichtbar":5,"je":[162,254,114,158,254],"flecken":1,"kruemel":7,"pixel":442,"leibPx":40.8},null],[39.9,"5/5",{"glieder":5,"sichtbar":3,"je":[86,6,86,76,7],"flecken":1,"kruemel":8,"pixel":123,"leibPx":45.2},null]]}
-
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
 [linse-gpu] nvidia/pascal
