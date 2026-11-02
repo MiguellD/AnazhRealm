@@ -63,3 +63,4 @@ Y6nuChFfb1dJTf7Btch4J5 steht auf 123 (27.10.) — aus meisterkarte.html neu ver�
   im Stand mit — er muss bis zum nächsten Stufen-Sprung wirklich schlafen (Ereignis statt Takt) bzw. in die Ruhe-Liste der Stand-Linse. voll 16
   Verdeckungs-Abfrage war Wackler (Versuch 2 grün). Danach feld.K5 headless messen (`punkte.cjs run --nur feld.K5#1`) → +1.
 - Ende 20:30: nichts läuft mehr (kein Zug, kein Agent, keine Buchungs-Schleife). OMEN: general-1077-gtx steht noch in der Warteschlange.
+- **Abschluss 02.11. ~21:00:** OMEN fährt die volle GTX-Messung `voll-5fba-gtx` (107 Stationen am 5fba36ea) — ihr Ergebnis zeigt, wo die GTX-Sitzung bricht (Fund-Register Zeile 1). Radeon frei (kein Schloss, keine Prozesse). Worktrees 206 → 143 (gelandet+sauber entfernt).
