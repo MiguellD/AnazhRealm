@@ -1,0 +1,13 @@
+Punkte-Maschine: 3 Station(en) in 2 Läufen auf gtx am ab884210 · Sitzung 2 Proben in EINER Welt (Deckel Σ 0 min) · Zeit 0 Läufe ~0 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~0 min (Soll-Minuten ohne Sitzung) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  SITZUNG gtx · die Welt steht nach 6.8 s (Schloss nach 0.01 min) · 2 Proben · Welt :27804
+  SITZUNG der Grund der Welt: 77 Größen in 0.1 s
+  SITZUNG die Welt vor ankunft.K3#1: 17.9 s (737 Takte, 81 Chunks)
+  SITZUNG ankunft.K3#1 ließ die Zeichenkette verändert: zeichner.postKette — kein Urteil (Werkzeug-Bruch), die Grundstellung folgt
+  OFFEN ankunft.K3#1 · Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 2 Zweit-Boots mit Kontrolle von außen (Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {"stand":"gemessen","kontrolleMs":1274,"belegtMs":806,"laengsteMs":375,"langeN":2,"langeMs":454,"halter":["(program) hält den Haupt-Faden vor dem ersten Bild 79 ms (bei 0.3 s; 1× ≥ 50 ms, Σ 79 ms)","grow [phyto-core.js] (phyto-core.js:104) hält den Haupt-Faden vor dem ersten Bild 65 ms (be · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.postKette fort) · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN ankunft.K1#1 · Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) 0, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {"stand":"gemessen","kontrolleMs":1274,"belegtMs":806,"laengsteMs":375,"langeN":2,"langeMs":454,"halter":["(program) hält den Haupt-Faden vor dem ersten Bild 79 ms (bei 0.3 s; 1× ≥ 50 ms, Σ 79 ms)","grow [phyto-core.js] (phyto-core.js:104) hält den Haupt-Faden vor dem ersten Bild 65 ms (be · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.postKette fort) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor klang.K4#1: 2.5 s (im Spiel 50.4 ms, durch die Tür)
+  SITZUNG die Welt vor klang.K4#1: 17.3 s (820 Takte, 81 Chunks, nach der Tür)
+  OFFEN klang.K4#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG DER ORT IM DECKEL (die Probe zog weiter als 250 m von dem Ort, an dem die Sitzung sie begann — ihr Deckel trug den Ring): klang.K4#1 1088 m (Ring 4 → -1)
+  SITZUNG Fahrt 58.1 s (Soll ≤ 1800 s) · 2 Proben · Grundstellung 1×
+→ meisterkarte-quelle\punkte\messung\ab884210-gtx.json
