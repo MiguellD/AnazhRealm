@@ -454,6 +454,7 @@ class AnazhRealm_dirigent_takt {
                 stau: 0,
                 horizont: 0,
                 huellen: 0,
+                alter: 0,
             }); // je Takt, ohne Müll
         o.foundry = f
             ? (f.pending ? f.pending.size : 0) +
@@ -516,6 +517,7 @@ class AnazhRealm_dirigent_takt {
         const gleit = st._ankunftGleit;
         o.ankunft = gleit >= 0 && gleit < AnazhRealm.ANKUNFT_GLEIT_BILDER ? AnazhRealm.ANKUNFT_GLEIT_BILDER - gleit : 0;
         o.bau = st.bauSatzRaten ? st.bauSatzRaten.size : 0; // ein Bau-Bereich, der in Raten eintritt, steht noch nicht
+        o.alter = this._werkAltertOffen ? this._werkAltertOffen.size : 0; // ein alterndes Werk, dessen Körper noch kommt
         // (der Fahrer am Steuer ist nicht offen: sein Leib gehört dem Wagen, kein Feld trägt ihn (`_verkehrEinsteigen`) — bis hier
         // zählte er für immer, die Welt einer Stadt mit Verkehr stand nie: z78, GTX, Messort stadt „offen leiber 4–6")
         o.leiber = 0;
@@ -1555,6 +1557,7 @@ class AnazhRealm_dirigent_takt {
         this._tickHuellenNach(); // nach dem ersten Bild: die Hüllen der Bäume, die vor ihm warteten (nah zuerst)
         const auge = this._lodAuge(); // das EINE Auge der Stufen (Maske und Wahl messen vom selben Ort)
         this._tickArchitectureLOD(5, auge);
+        this._tickWerkAlter(); // DAS ALTER DER WERKE (stoffe.K4): EIN Vergleich je Takt, Arbeit nur am Tag-Wechsel
         // DER KARTEN-TAKT (S2: die Karte backt im Welt-Renderer, `_tickKarteWelt`; lazy beim ersten L2-Bedarf
         // enqueued; headless No-op) läuft hier, ungegatet wie sein eigenes
         // Gesetz („EAGER, netto last-senkend"). Bis 04.10. hing er im Deko-Job (prio 2: nur ohne Chunk-Bau im Frame,

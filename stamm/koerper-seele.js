@@ -945,11 +945,12 @@ class AnazhRealm_koerper_seele {
 
     // Der EINE Lese-Punkt des Artefakt-Stempels (Bauplan ODER Welt-Eintrag): liefert
     // ein non-leeres plain object oder null (fail-closed gegen Müll-Formen — ein
-    // manipulierter Save/Peer kann hier keinen Nicht-Objekt-Stempel einschleusen).
+    // manipulierter Save/Peer kann hier keinen Nicht-Objekt-Stempel einschleusen). Ein Welt-Eintrag trägt dazu sein
+    // Alter (`_werkAlterOv`, stoffe.K4): der Stempel ist die Geburt, die Spielzeit seither verwittert ihn.
     _artifactStudioOv(obj) {
         const ov = obj ? obj.studioOv : null;
-        if (!ov || typeof ov !== "object" || Array.isArray(ov)) return null;
-        return Object.keys(ov).length ? ov : null;
+        const eigen = !ov || typeof ov !== "object" || Array.isArray(ov) || !Object.keys(ov).length ? null : ov;
+        return obj && obj.position && typeof obj.type === "string" ? this._werkAlterOv(obj, eigen) : eigen;
     }
 
     // STEMPEL-Chokepoint des Gusses: friert die Werkstatt-Prägung (_workshopStudioOvFor) als
