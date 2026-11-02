@@ -804,6 +804,12 @@ const SITZUNG_MAX_S = FAHRT_MAX_S + 600;
 const GRUNDSTELLUNG_S = 180;
 const STAND_DATEIEN = ["anazhRealmState.json", "anazhRealmState.json.bak", "anazhRealmPerf.json"];
 const GRUND_SEITE = ["__ortTakt", "__ortStell", "__ortSchritt", "__ortBahn", "__anazhAutoSettlement"];
+// GRUND_ZUSTAND (Radeon 6a571e3b 02.11.: nach tiere.K1#2 kehrten vor tiere.K3#2 nur 5 von 9 Wesen des Grunds wieder — „creatures 9 → 5“,
+// die Welt trug nicht mehr, 27 Proben ungemessen): die Größen des Zustands, die weder der Stand noch die GRUND_TAFEL des Spiels trägt,
+// die eine Probe aber stellt — die Kosten-Kappe der Wesen `maxCreatures` (die Herde am Hang setzte sie auf ihre 5 Glieder, und die
+// Wiederkehr der Wesen `spawnCreatures` sagte jedem weiteren ab: „obergrenze“). Der Grund trägt ihr Wort, die Grundstellung setzt es
+// VOR dem Stand zurück (die Wesen kehren unter der Kappe des Grunds wieder) und nennt, was sie zurücksetzte (`zustand`)
+const GRUND_ZUSTAND = ["maxCreatures"];
 // DIE WEGE-LINSE DER GRUNDSTELLUNG (w4-sitzung-reif; der Weg von tempo4 lag nach der Grundstellung weiter über der Mess-Wiese):
 // `_stlWegeBuild` malt die Flächen eines Wegs in die Wege-Karte (`state.wegeKarte.siedlungen`), merkt seine Marke (`_stlWegeKeys`) und
 // räumt die Natur auf ihm (`_wegeRaeumen`); `_standRueckspielen` lässt Karte und Natur als Caches warm — der Weg einer Probe (tempo4,
@@ -823,12 +829,23 @@ function wegeAbdruck(r) {
 }
 // die Abweichung vom Abdruck des Grunds beim Namen — „wege +n [Fläche] (neue Marken) −m [Fläche]“ — oder null; eine Marke, die fiel, ist
 // keine (die Weltgrenze vergisst das Gedächtnis der Seite, `WELT_GRENZE.gedaechtnis`), eine neue auch ohne Fläche schon (die Natur,
-// die ihr Weg räumte, kehrt an Ort und Stelle nicht zurück)
-function wegeAbweichung(soll, ist) {
+// die ihr Weg räumte, kehrt an Ort und Stelle nicht zurück).
+// DIE FLÄCHE EINER GEFALLENEN MARKE IST KEINE (Radeon 6a571e3b 02.11.: nach der Tür hinter tiere.K5#1 fand die Grundstellung „wege −1
+// [-119.1,-274.9,279.2,201/272]“ — der Belag des Genesis-Orts, Marke „genesis“ —, die Sitzung endete nach 3 von 72 Proben): den Weg eines
+// Plans legt das Gesetz am Ort (`_genesisOrt` aus dem Ort-Takt `__ortSchritt` oder dem Dorf-Takt, `_stlWegeBuild` je Marke einmal), die
+// neue Seite der Tür trägt ihn erst, wenn sie dort taktet — unter dem Haken des Start-Orts (`__anazhAutoSettlement = false`, werkbank
+// START_ORT) nie von selbst. Fehlt eine Fläche, während jede Marke des Grunds steht, ging ein Weg wirklich verloren (die Marke hält
+// das Gesetz davon ab, ihn neu zu legen): ROT wie bisher. Fiel eine Marke, fallen ihre Flächen mit ihr — der Wurf folgt dem Ort (speicher.K3).
+// `traegt` (ein Abdruck, der Grund der Sitzung): was er trägt, ist nie neu — eine Probe, an deren Ort das Gesetz den Weg des Grunds
+// wieder legte, ließ nichts liegen (bauAbweichung)
+function wegeAbweichung(soll, ist, traegt) {
     const zahl = (L) => L.reduce((m, x) => m.set(x, (m.get(x) || 0) + 1), new Map());
     const mehr = (A, B) => [...A.keys()].flatMap((x) => Array(Math.max(0, A.get(x) - (B.get(x) || 0))).fill(x));
-    const [S, I] = [zahl(soll.flaechen || []), zahl(ist.flaechen || [])];
-    const neu = mehr(I, S), fort = mehr(S, I), marken = (ist.keys || []).filter((x) => !(soll.keys || []).includes(x));
+    const [S, I, G] = [zahl(soll.flaechen || []), zahl(ist.flaechen || []), zahl((traegt && traegt.flaechen) || [])];
+    const basis = new Map([...S, ...[...G].filter(([x, n]) => n > (S.get(x) || 0))]);
+    const kennt = (x) => (soll.keys || []).includes(x) || ((traegt && traegt.keys) || []).includes(x);
+    const fiel = (soll.keys || []).some((x) => !(ist.keys || []).includes(x));
+    const neu = mehr(I, basis), fort = fiel ? [] : mehr(S, I), marken = (ist.keys || []).filter((x) => !kennt(x));
     if (!neu.length && !fort.length && !marken.length) return null;
     const liste = (L) => L.slice(0, 3).map((x) => "[" + x + "]").join(" ") + (L.length > 3 ? " …" : "");
     return "wege" + (neu.length ? " +" + neu.length + " " + liste(neu) : "") + (marken.length ? " (" + marken.slice(0, 4).join(", ") + ")" : "") +
@@ -968,20 +985,65 @@ async function zeichnerRuf(w, soll, heilen) {
         return { fehler: String((e && e.message) || e).split("\n")[0] };
     }
 }
+// DIE LEIHE DER HÄNGER-LINSE (Radeon 6a571e3b 02.11.: profiband.K4#1 „ließ die Zeichenkette verändert: zeichner.renderer._renderObjectDirect
+// getauscht: function (object, material, scene, camera) { const vor = H.c…“ — kein Urteil; ebenso streaming.K3#1 an 25ac4c0c, beide über
+// `/haenger` der Werkbank): das Instrument der Werkbank (`__haengerAn`, scripts/lib/haenger-linse.cjs des Spiel-Baums) hängt sich beim ersten
+// Lauf für immer in die Seite — der Auftraggeber `_renderObjectDirect` und der Knoten-Bau `_nodes.getForRender` am Renderer, die Pipelines,
+// Shader und Uploads an `GPUDevice.prototype` und `GPUQueue.prototype` — und merkt sich in `window.__haengerH` (idempotent). Die Proben, die
+// es rufen, messen damit richtig; nur gibt es niemand zurück. DIE SITZUNG leiht es der Probe: vor jeder Probe (`nimm`, ohne Instrument in der
+// Seite) der Stand jedes seiner Glieder, nach ihr (`gib`, nur wenn das Instrument in ihr entstand) jedes Glied zurück und das Gedächtnis
+// fort — die nächste Probe, die es ruft, hängt es frisch an (nie doppelt: ein Haken über einem Haken zählte jede Pipeline zweimal). Was danach
+// an den Prototypen des Geräts nicht nativ ist, nennt `bleibt` (ein Glied, das die Linse neu bekam und diese Liste nicht kennt) — die Sitzung
+// macht es zum Werkzeug-Bruch beim Namen. Läuft in der Seite (r = die Welt): nimm → { leiht | da }, gib → { zurueck, bleibt } oder { ohne }
+function haengerLeihe(r, gib) {
+    const R = r && r.state && r.state.renderer;
+    const P = window.GPUDevice && window.GPUDevice.prototype, Q = window.GPUQueue && window.GPUQueue.prototype;
+    const glieder = [[R, "renderer", ["_renderObjectDirect"]], [R && R._nodes, "renderer._nodes", ["getForRender"]],
+        [P, "GPUDevice", ["createRenderPipeline", "createRenderPipelineAsync", "createComputePipeline", "createComputePipelineAsync", "createShaderModule"]],
+        [Q, "GPUQueue", ["writeBuffer", "writeTexture", "copyExternalImageToTexture"]]].filter(([o]) => o && (typeof o === "object" || typeof o === "function"));
+    // je Prototyp des Geräts JEDE eigene Funktion (auch die Haken der Werkbank selbst, der VRAM-Abgriff): was nach `gib` anders steht, bleibt
+    const alle = (o) => Object.getOwnPropertyNames(o).map((k) => [k, Object.getOwnPropertyDescriptor(o, k)]).filter(([, d]) => d && typeof d.value === "function");
+    if (!gib) {
+        delete window.__punkteHaengerLeihe;
+        if (window.__haengerH) return { da: true };
+        window.__punkteHaengerLeihe = {
+            glieder: glieder.flatMap(([o, n, ks]) => ks.map((k) => [o, n + "." + k, k, Object.getOwnPropertyDescriptor(o, k)])),
+            geraet: glieder.filter(([o]) => o === P || o === Q).map(([o, n]) => [o, n, new Map(alle(o).map(([k, d]) => [k, d.value]))]),
+        };
+        return { leiht: window.__punkteHaengerLeihe.glieder.length };
+    }
+    const L = window.__punkteHaengerLeihe;
+    delete window.__punkteHaengerLeihe;
+    if (!L || !window.__haengerH) return { ohne: true };
+    const zurueck = [];
+    for (const [o, name, k, d] of L.glieder) {
+        const jetzt = Object.getOwnPropertyDescriptor(o, k);
+        if (d ? jetzt && jetzt.value === d.value : !jetzt) continue;
+        if (d) Object.defineProperty(o, k, d);
+        else delete o[k];
+        zurueck.push(name);
+    }
+    delete window.__haengerH;
+    const bleibt = L.geraet.flatMap(([o, n, vor]) => alle(o).filter(([k, d]) => vor.get(k) !== d.value).map(([k]) => n + "." + k));
+    return { zurueck, bleibt };
+}
+const HAENGER_LEIHE = (gib) => "/* __punkteHaengerLeihe */ return (" + haengerLeihe + ")(r, " + !!gib + ");";
 // der Werkzeug-Bruch einer Probe beim Namen jeder Größe, die sie an der Zeichenkette verändert ließ
-const zeichnerBruch = (z) => "Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (" + z.anders.map((k) => k + " " + z.wie[k]).join(" · ") + ")";
+const zeichnerBruch =(z) => "Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (" + z.anders.map((k) => k + " " + z.wie[k]).join(" · ") + ")";
 const GRUND_NIMM =
     'if (typeof r._grundstellung !== "function") return { fehlt: true }; const t0 = performance.now(); const g = r._grundstellung(); ' +
     "return { grund: g.grund, n: Object.keys(g.abdruck).length, ms: +(performance.now() - t0).toFixed(1), welt: r.state.worldMeta.worldId, " +
-    "seite: " + JSON.stringify(GRUND_SEITE) + ".filter((k) => k in window), wege: (" + wegeAbdruck + ")(r) };";
+    "seite: " + JSON.stringify(GRUND_SEITE) + ".filter((k) => k in window), wege: (" + wegeAbdruck + ")(r), " +
+    "zustand: Object.fromEntries(" + JSON.stringify(GRUND_ZUSTAND) + ".map((k) => [k, r.state[k]])) };";
 // DIE NAHRUNG DES LEIBS: die Grundstellung spielt den Stand durch die EINE Lade-Kette (`_standRueckspielen` → `loadState`), und der
 // Stand ERSETZT die Nahrung des Leibs (`_loadStateRestoreLeben`, w4-nahrung-laden, z143) — die Sitzung räumt sie nie selbst.
 const grundSpielen = (g) =>
     "for (const k of " + JSON.stringify(GRUND_SEITE) + ") if (!" + JSON.stringify(g.seite) + ".includes(k)) delete window[k]; " +
+    "const zs = " + JSON.stringify(g.zustand || {}) + ", zustand = Object.keys(zs).filter((k) => r.state[k] !== zs[k]); for (const k of zustand) r.state[k] = zs[k]; " +
     "const t0 = performance.now(); const z = r._grundstellung(" + JSON.stringify(g.grund) + "); " +
     "const weg = " + (g.wege ? "(" + wegeAbweichung + ")(" + JSON.stringify(g.wege) + ", (" + wegeAbdruck + ")(r))" : "null") + "; return { ok: z.ok, grund: z.grund || null, " +
     "anders: (z.anders || []).concat(" + JSON.stringify(GRUND_SEITE) + ".filter((k) => k in window && !" + JSON.stringify(g.seite) + ".includes(k)).map((k) => \"seite.\" + k), weg ? [weg] : []), " +
-    "neu: z.neu || null, ms: +(performance.now() - t0).toFixed(1), welt: r.state.worldMeta && r.state.worldMeta.worldId, wie: (" + grundWie + ")(r, " +
+    "neu: z.neu || null, zustand, ms: +(performance.now() - t0).toFixed(1), welt: r.state.worldMeta && r.state.worldMeta.worldId, wie: (" + grundWie + ")(r, " +
     JSON.stringify(g.grund) + ", z.anders || []) };";
 // WIE eine Größe vom Grund abweicht (Heilung 30.10.: „abweichend vom Grund: blueprints“ nannte nie den Täter): je Liste des Stands
 // (Baupläne, Werke, Stoffe, Werkzeuge) die Glieder, die fehlen, neu sind oder anders stehen — je anderes Glied seine Felder; je
@@ -1020,8 +1082,9 @@ function bauAbdruck(r) {
     const werke = (st.architectures || []).filter((e) => e && !e._ausGesetz && !e._lodSpecies).map((e) => String(e.id)).sort();
     return { werke, edits: Array.isArray(wm.voxelEdits) ? wm.voxelEdits.length : 0, orte: Object.keys(wm.settlementCells || {}).sort(), wege: wegeAbdruck(r) };
 }
-// die Abweichung beim Namen — „werke +37 (−0) · orte +k3_-2 · wege +4 […]“ — oder null (ohne Abdruck auf einer Seite: null)
-function bauAbweichung(vor, nach) {
+// die Abweichung beim Namen — „werke +37 (−0) · orte +k3_-2 · wege +4 […]“ — oder null (ohne Abdruck auf einer Seite: null); `grundWege`
+// (der Wege-Abdruck des Grunds): ein Weg, den der Grund trägt, ist nie, was eine Probe liegen ließ (wegeAbweichung `traegt`)
+function bauAbweichung(vor, nach, grundWege) {
     if (!vor || !nach) return null;
     const plusMinus = (a, b) => [b.filter((x) => !a.includes(x)), a.filter((x) => !b.includes(x))];
     const [wNeu, wFort] = plusMinus(vor.werke, nach.werke), [oNeu, oFort] = plusMinus(vor.orte, nach.orte);
@@ -1029,7 +1092,7 @@ function bauAbweichung(vor, nach) {
     if (wNeu.length || wFort.length) teile.push("werke +" + wNeu.length + " (−" + wFort.length + ")");
     if (vor.edits !== nach.edits) teile.push("edits " + vor.edits + " → " + nach.edits);
     if (oNeu.length || oFort.length) teile.push("orte " + [...oNeu.map((x) => "+" + x), ...oFort.map((x) => "−" + x)].slice(0, 4).join(" "));
-    const w = wegeAbweichung(vor.wege, nach.wege);
+    const w = wegeAbweichung(vor.wege, nach.wege, grundWege);
     if (w) teile.push(w);
     return teile.length ? teile.join(" · ") : null;
 }
@@ -1285,9 +1348,16 @@ async function grundstellung(w, datei, o = {}) {
         };
         let z = o.abbruch ? { ok: false, welt: null } : await spiel(), tuer = false;
         const wege = z.ok ? (z.anders || []).find((a) => /^wege\b/.test(a)) || null : null;
-        const k1 = z.ok && !wege ? await kette() : null;
+        // DAS RÜCKSPIELEN, DAS AN ORT UND STELLE NICHT TRÄGT (Radeon 6a571e3b 02.11., Lauf 2: tore.K3 fiel mitten in der Konformanz
+        // des Portals, ihr mitgebrachtes Werkzeug und Material — ohne `name`, `_standRueckspielen` räumt die Säcke je `name` — blieben,
+        // „tools materials“ abweichend, die Welt endete vor fahrzeug.K2#1, 9 Proben ungemessen): JEDE Größe, die an Ort und Stelle vom
+        // Grund abweicht, geht durch die Tür wie Weg und Kette — die Lade-Kette baut den Stand aus dem Grund neu; im Kopf beim Namen
+        // (`anOrt`: die Größen und WIE), nie still. Erst was auch die Tür nicht zurückbringt, beendet die Welt
+        const anOrt = z.ok ? (z.anders || []).filter((a) => !/^wege\b/.test(a)) : [];
+        const k1 = z.ok && !wege && !anOrt.length ? await kette() : null;
         const ketteTuer = k1 && k1.bleibt.length ? k1.bleibt : null;
-        if (wege || ketteTuer) z = { ok: false, welt: null };
+        const anOrtWie = anOrt.length ? z.wie || null : null, zustand0 = z.zustand || [];
+        if (wege || ketteTuer || anOrt.length) z = { ok: false, welt: null };
         if (!z.ok && z.welt !== g.welt) {
             const t = await rufFrist(w, "/eval", { code: GRUND_TUER(g) }, 60000);
             if (!t || !t.ergebnis || !t.ergebnis.ok) throw new Error("die Tür zurück in die Welt " + g.welt + ": " + JSON.stringify(t).slice(0, 300));
@@ -1304,7 +1374,9 @@ async function grundstellung(w, datei, o = {}) {
         const f = await rufFrist(w, "/fenster", {}, 30000);
         if (!f || !Array.isArray(f.fenster)) throw new Error("/fenster: " + JSON.stringify(f).slice(0, 300));
         return { ok: true, s: +((Date.now() - t0) / 1000).toFixed(1), ms: z.ms, neu: z.neu, ...(tuer ? { tuer } : {}), ...(wege ? { wege } : {}),
-            ...(k1 && k1.anders.length && !ketteTuer ? { kette: k1.anders } : {}), ...(ketteTuer ? { ketteTuer } : {}) };
+            ...(k1 && k1.anders.length && !ketteTuer ? { kette: k1.anders } : {}), ...(ketteTuer ? { ketteTuer } : {}),
+            ...(anOrt.length ? { anOrt, anOrtWie } : {}),
+            ...((() => { const zs = [...new Set([...zustand0, ...(z.zustand || [])])]; return zs.length ? { zustand: zs } : {}; })()) };
     } catch (e) {
         return { ok: false, s: +((Date.now() - t0) / 1000).toFixed(1), grund: String((e && e.message) || e).split("\n")[0] };
     }
@@ -1866,7 +1938,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         ciLos();
         return ja;
     };
-    let zuruecksetzen = false, abbruch = false, gerissen = null, grundDa = null;
+    let zuruecksetzen = false, abbruch = false, gerissen = null, grundDa = null, grundWege = null;
     for (const g of gruppen) {
         // DAS SCHLOSS AN DER PROBEN-GRENZE: fiel es (gpu-lauf.sh endete), trägt die Sitzung nicht mehr; wartet ein CI-Job darauf, geht es
         // an ihn und kommt danach wieder — die Welt bleibt warm, das Warten zählt nie in die Fahrt
@@ -1899,6 +1971,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         if (!tot && grundDa === null && stellungVon(g) !== "anfang") {
             const gn = await grundNehmen(W, grund);
             grundDa = gn.ok ? true : gn.grund;
+            if (gn.ok) grundWege = JSON.parse(fs.readFileSync(grund, "utf8")).wege || null; // was der Grund an Wegen trägt (bauAbweichung)
             console.log("  SITZUNG " + (gn.ok ? "der Grund der Welt: " + gn.n + " Größen in " + gn.s + " s" : gn.grund));
         }
         if (!gerissen && restS() <= 0) gerissen = "vor " + schluessel(g[0]);
@@ -1920,8 +1993,11 @@ async function fahreSitzung(gruppen0, ctx, melde) {
                 if (taeter && (gs.kette || gs.ketteTuer)) taeter.zurueck = { vor: schluessel(g[0]), wie: gs.ketteTuer ? "durch die Tür" : "an Ort und Stelle", s: gs.s };
                 (aktOrt = null), (ortNach = gs.tuer ? "der Tür" : "der Grundstellung"); // der Grund stellt den Spieler an seinen Ort zurück
                 console.log("  SITZUNG Grundstellung vor " + schluessel(g[0]) + ": " + gs.s + " s (im Spiel " + gs.ms + " ms" +
-                    (gs.tuer ? ", durch die Tür" + (gs.wege ? " — " + gs.wege : "") + (gs.ketteTuer ? " — " + gs.ketteTuer.join(" ") : "") : "") + ")" +
-                    (gs.kette ? " · die Zeichenkette zurück: " + gs.kette.join(" ") : ""));
+                    (gs.tuer ? ", durch die Tür" + (gs.wege ? " — " + gs.wege : "") + (gs.ketteTuer ? " — " + gs.ketteTuer.join(" ") : "") +
+                        (gs.anOrt ? " — an Ort und Stelle abweichend: " + gs.anOrt.join(" ") + (gs.anOrtWie ? " · wie " + JSON.stringify(gs.anOrtWie).slice(0, 300) : "") : "") : "") + ")" +
+                    (gs.kette ? " · die Zeichenkette zurück: " + gs.kette.join(" ") : "") + (gs.zustand ? " · der Zustand zurück: " + gs.zustand.join(" ") : ""));
+                if (gs.anOrt) (kopf.anOrt = kopf.anOrt || []).push({ vor: schluessel(g[0]), anders: gs.anOrt, wie: gs.anOrtWie });
+                if (gs.zustand) (kopf.grundZustand = kopf.grundZustand || []).push({ vor: schluessel(g[0]), zurueck: gs.zustand });
             } else {
                 tot = "Grundstellung: " + gs.grund;
                 kopf.grund = "die Welt trägt nicht mehr vor " + schluessel(g[0]) + ": " + gs.grund;
@@ -1997,6 +2073,12 @@ async function fahreSitzung(gruppen0, ctx, melde) {
             console.log("  SITZUNG die Zeichenkette " + wann + " " + schluessel(g[0]) + " nicht lesbar: " + z.fehler);
         };
         if (zVor.fehler) blind("vor", zVor);
+        // DIE LEIHE DER HÄNGER-LINSE (haengerLeihe): der Stand ihrer Glieder vor der Probe
+        const leiheRuf = (gib) => rufFrist(W, "/eval", { code: HAENGER_LEIHE(gib) }, 30000)
+            .then((a) => (a && a.ergebnis && typeof a.ergebnis === "object" ? a.ergebnis : { fehler: String((a && a.fehler) || JSON.stringify(a)).slice(0, 200) }))
+            .catch((e) => ({ fehler: String((e && e.message) || e).split("\n")[0] }));
+        const leihe = await leiheRuf(false);
+        if (leihe.fehler) console.log("  SITZUNG die Leihe der Hänger-Linse vor " + schluessel(g[0]) + " nicht lesbar: " + leihe.fehler);
         const zeit = new Date().toISOString();
         aktuell = schluessel(g[0]);
         const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), fahrtMaxS, eich: !!ctx.eich } });
@@ -2021,7 +2103,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         abbruch = brachAb(es);
         // DIE PROBE LEGTE ETWAS IN DIE WELT UND SAGTE ES NICHT (bauAbweichung): die Sitzung setzt zurück wie nach einer mutierenden und
         // nennt sie beim Namen (kopf.unerklaert) — die nächste Probe misst nie die Welt einer fremden
-        const unerklaert = bauVor && !weg ? bauAbweichung(bauVor, await lies()) : null;
+        const unerklaert = bauVor && !weg ? bauAbweichung(bauVor, await lies(), grundWege) : null;
         if (unerklaert) {
             (kopf.unerklaert = kopf.unerklaert || []).push({ probe: schluessel(g[0]), wie: unerklaert });
             console.log("  SITZUNG " + schluessel(g[0]) + " ließ die Welt verändert und trägt kein mutiert: " + unerklaert + " — die Grundstellung folgt");
@@ -2030,12 +2112,30 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         // tiere.K3#2 zahlte): DIESE Probe beim Namen — ihr Urteil ist keines (ein Werkzeug-Bruch beim Namen der Größe, nie ein stilles GRÜN,
         // nie ein ROT des Kriteriums), im Kopf `zeichner`; die Grundstellung folgt und gibt der Seite zurück, was die Probe ihr lieh —
         // nie wandert der Schaden in die nächste Probe
-        const zNach = !weg && zVor.abdruck ? await zeichnerRuf(W, zVor.abdruck) : null;
+        // DIE HÄNGER-LINSE ZURÜCK (haengerLeihe), ehe die Zeichenkette urteilt: entstand das Instrument in der Probe, kehrt jedes Glied
+        // zurück (im Kopf `haenger`); ein Glied am Gerät, das danach anders steht, ist ein Werkzeug-Bruch beim Namen
+        const gab = !weg && !abbruch && leihe.leiht ? await leiheRuf(true) : null;
+        if (gab && gab.fehler) console.log("  SITZUNG die Hänger-Linse nach " + schluessel(g[0]) + " nicht zurück: " + gab.fehler);
+        if (gab && Array.isArray(gab.zurueck) && gab.zurueck.length) {
+            (kopf.haenger = kopf.haenger || []).push({ probe: schluessel(g[0]), zurueck: gab.zurueck.length, ...(gab.bleibt.length ? { bleibt: gab.bleibt } : {}) });
+            console.log("  SITZUNG die Hänger-Linse der Werkbank kehrt nach " + schluessel(g[0]) + " zurück: " + gab.zurueck.length + " Glieder" +
+                (gab.bleibt.length ? " — es bleibt " + gab.bleibt.join(" ") : ""));
+        }
+        // DIE ZEICHENKETTE einer gefallenen Probe (Deckel, Absturz: `abbruch`) urteilt nie — ihre Seiten-Funktion läuft weiter (tiere.K5#1
+        // am Deckel 10 s, Radeon 25ac4c0c · 6a571e3b: der Raffer und die Pass-Uhr des Laufs hingen noch), die Grundstellung danach geht
+        // durch die Tür und prüft die Kette dort (`ketteTuer`); die Probe steht schon UNGEMESSEN beim Grund ihres Falls
+        const zNach = !weg && !abbruch && zVor.abdruck ? await zeichnerRuf(W, zVor.abdruck) : null;
         if (zNach && (zNach.fehler || !Array.isArray(zNach.anders))) blind("nach", { fehler: zNach.fehler || JSON.stringify(zNach).slice(0, 200) });
-        const bruch = zNach && Array.isArray(zNach.anders) && zNach.anders.length ? zeichnerBruch(zNach) : null;
+        const kette = zNach && Array.isArray(zNach.anders) && zNach.anders.length ? zNach : null;
+        const geraetBleibt = gab && Array.isArray(gab.bleibt) && gab.bleibt.length ? gab.bleibt.map((k) => "haenger." + k) : [];
+        const bruch = kette || geraetBleibt.length
+            ? zeichnerBruch({ anders: [...(kette ? kette.anders : []), ...geraetBleibt],
+                wie: { ...(kette ? kette.wie : {}), ...Object.fromEntries(geraetBleibt.map((k) => [k, "nicht zurück (die Leihe kennt das Glied nicht)"])) } })
+            : null;
         if (bruch) {
-            (kopf.zeichner = kopf.zeichner || []).push({ probe: schluessel(g[0]), anders: zNach.anders, wie: zNach.wie });
-            console.log("  SITZUNG " + schluessel(g[0]) + " ließ die Zeichenkette verändert: " + zNach.anders.join(" ") + " — kein Urteil (Werkzeug-Bruch), die Grundstellung folgt");
+            const anders = [...(kette ? kette.anders : []), ...geraetBleibt];
+            (kopf.zeichner = kopf.zeichner || []).push({ probe: schluessel(g[0]), anders, wie: kette ? kette.wie : {} });
+            console.log("  SITZUNG " + schluessel(g[0]) + " ließ die Zeichenkette verändert: " + anders.join(" ") + " — kein Urteil (Werkzeug-Bruch), die Grundstellung folgt");
         }
         const werkzeug = (e) => (!bruch ? e : e.ungemessen ? { ...e, grund: e.grund + " · " + bruch, zahl: e.zahl + " · " + bruch }
             : { ...e, gruen: false, ungemessen: true, grund: bruch + " — kein Urteil, UNGEMESSEN (die Probe sah: " + String(e.zahl).slice(0, 240) + ")",
@@ -3589,11 +3689,12 @@ async function selbsttest(o = {}) {
             // DIE SEITE wie die des Spiels: der Renderer und die Post-Kette tragen ihre Zeichen-Methoden am Prototyp, die Welt zeichnet über
             // `_loopRender` (ohne Gerät nie; die Post-Kette, mit `postProcessingFailed` der Renderer direkt) in das Ziel des Renderers
             'let seite = null; class Rd { constructor() { this.info = { render: { drawCalls: 7, triangles: 900 } }; this._animation = { _animationLoop: null }; this.domElement = { isConnected: true }; this.ziel = 0; }',
-            '  setAnimationLoop(cb) { this._animation._animationLoop = cb || null; } render() { this.ziel++; } renderAsync() { return Promise.resolve(this.render()); } }',
+            '  setAnimationLoop(cb) { this._animation._animationLoop = cb || null; } render() { this.ziel++; } renderAsync() { return Promise.resolve(this.render()); } _renderObjectDirect() { return 1; } }',
+            'function GPUDevice() {} GPUDevice.prototype.createRenderPipeline = function () { return 1; }; GPUDevice.prototype.createBuffer = function () { return 1; };',
             'class Pk { constructor(R) { this.R = R; } render() { this.R.ziel++; } }',
             'class Welt { _loopRender() { const st = this.state; if (st._deviceLost) return; if (st.postProcessing && !st.postProcessingFailed) st.postProcessing.render(); else st.renderer.render(); } }',
             'const neu = () => { const R = new Rd();',
-            '  seite = { win: { __vram: { puffer: 1048576, texturen: 1048576 } }, R, welt: Object.assign(new Welt(), { state: { renderer: R, postProcessing: new Pk(R), postProcessingFailed: false, voxelWorker: {},',
+            '  seite = { win: { __vram: { puffer: 1048576, texturen: 1048576 }, GPUDevice }, R, welt: Object.assign(new Welt(), { state: { renderer: R, postProcessing: new Pk(R), postProcessingFailed: false, voxelWorker: {},',
             '  _deviceLost: false, perfRegulator: true, playerMesh: { position: { x: 1, z: 2 } }, cameraMode: "first",',
             '  player: { mountedArch: null }, perfTargetMs: 1000, perfSense: { loadScale: 1 }, weather: "sunny", creatures: [], timeOfDay: 0.5 }, _gpuLeine: { gerendert: 0 } }) }; }; neu();',
             'setInterval(() => { const cb = seite.R._animation._animationLoop; if (cb) cb(performance.now()); }, 16);',
@@ -3603,9 +3704,9 @@ async function selbsttest(o = {}) {
             'http.createServer((q, r) => { let d = ""; q.on("data", (c) => (d += c)); q.on("end", () => { const b = d ? JSON.parse(d) : {}; const s = (o) => r.end(JSON.stringify(o));',
             // eine Probe greift in die Seite („seite: <code>“, r = die Welt), die Zeichenkette der Sitzung läuft in ihr — beide wie /eval der Werkbank
             '  const inSeite = (c) => { try { return s({ ergebnis: new Function("r", "window", c)(seite.welt, seite.win) }); } catch (e) { return s({ fehler: String(e && e.message) }); } };',
-            '  if (q.url === "/eval") { if (/^seite: /.test(b.code)) return inSeite(b.code.slice(7)); if (/__punkteZeichner/.test(b.code)) return inSeite(b.code);',
+            '  if (q.url === "/eval") { if (/^seite: /.test(b.code)) return inSeite(b.code.slice(7)); if (/__punkteZeichner|__punkteHaengerLeihe/.test(b.code)) return inSeite(b.code);',
             '    if (/_grundstellung\\(\\)/.test(b.code)) { n("nimm"); return s({ ergebnis: { grund: "{}", n: 3, ms: 1, welt: "w1", seite: [], wege: { flaechen: [], keys: [] } } }); }',
-            '    if (/_grundstellung\\("/.test(b.code)) { n("grund"); return s({ ergebnis: { ok: true, anders: (art === "anders" ? ["augenblick.brand"] : []).concat(weg()), neu: {}, ms: 1, welt: "w1" } }); }',
+            '    if (/_grundstellung\\("/.test(b.code)) { n("grund"); return s({ ergebnis: { ok: true, anders: (art === "anders" || (art === "anders-ort" && !geladen) ? ["augenblick.brand"] : []).concat(weg()), neu: {}, ms: 1, welt: "w1" } }); }',
             '    if (/__punkteStrom/.test(b.code)) return s({ ergebnis: new Function("r", "window", "performance", b.code)(seite.welt, seite.win, performance) });',
             '    if (/_weltBetreten\\(/.test(b.code)) { n("tuer"); return s({ ergebnis: { ok: true, worldId: "w1" } }); }',
             // DER WARME START: das Einschwingen der Sitzung vor einer Probe ohne Ort (WELT_STEHT)
@@ -3814,12 +3915,19 @@ async function selbsttest(o = {}) {
         const vo = [plan(["wiese", "third", 0.5, null, "wiese"]), plan(["genesis", "ego", 0.5, null, "wiese"], ["wiese", "ego", 0.3, null, "wiese"]), plan()].map(probeOrt);
         pruef("SITZUNG DER ORT eines Vegetations-Laufs: der erste Stand seines Plans (wiese, genesis), ohne Plan keiner",
             vo.join(",") === "wiese,genesis," && vo[2] === null, JSON.stringify(vo));
-        // DIE GRUNDSTELLUNG, DIE NICHT TRÄGT: weicht nach dem Rückspielen eine Größe vom Grund ab, sind die übrigen Proben UNGEMESSEN beim
-        // Namen der Größe (nie ROT, nie ein Neuladen)
+        // DIE GRUNDSTELLUNG, DIE NICHT TRÄGT: weicht nach dem Rückspielen eine Größe vom Grund ab, geht sie durch die Tür; weicht sie auch
+        // danach ab, sind die übrigen Proben UNGEMESSEN beim Namen der Größe (nie ROT)
         const r7 = await lauf([[S("m.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)]], "anders", null);
-        pruef("SITZUNG eine Grundstellung, nach der eine Größe vom Grund abweicht: die übrigen Proben UNGEMESSEN beim Namen der Größe",
-            r7.es["m.K1#1"].gruen && r7.es["b.K1#1"].ungemessen === true && /abweichend vom Grund: augenblick\.brand/.test(r7.es["b.K1#1"].grund) && r7.z.join(",") === "start,nimm,warm,grund,stop",
+        pruef("SITZUNG eine Grundstellung, nach der eine Größe vom Grund abweicht, auch durch die Tür: die übrigen Proben UNGEMESSEN beim Namen der Größe",
+            r7.es["m.K1#1"].gruen && r7.es["b.K1#1"].ungemessen === true && /abweichend vom Grund: augenblick\.brand/.test(r7.es["b.K1#1"].grund) && r7.z.join(",") === "start,nimm,warm,grund,tuer,reload,grund,stop",
             JSON.stringify([r7.z, r7.es]));
+        // DAS RÜCKSPIELEN, DAS AN ORT UND STELLE NICHT TRÄGT (Radeon 6a571e3b Lauf 2: „tools materials“ nach tore.K3, 9 Proben ungemessen):
+        // die Abweichung geht durch die Tür, die nächste Probe misst in der heilen Welt, der Kopf nennt die Größe (anOrt)
+        const r7b = await lauf([[S("m.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)]], "anders-ort", null);
+        pruef("SITZUNG DAS RÜCKSPIELEN, DAS AN ORT UND STELLE NICHT TRÄGT: durch die Tür, die nächste Probe misst GRÜN, der Kopf nennt die Größe (anOrt augenblick.brand)",
+            r7b.es["m.K1#1"].gruen && r7b.es["b.K1#1"].gruen === true && !r7b.es["b.K1#1"].ungemessen && r7b.z.join(",") === "start,nimm,warm,grund,tuer,reload,grund,warm,stop" &&
+            JSON.stringify((r7b.kopf.anOrt || []).map((x) => x.vor + ":" + x.anders.join(" "))) === JSON.stringify(["b.K1#1:augenblick.brand"]),
+            JSON.stringify([r7b.z, r7b.es, r7b.kopf.anOrt]));
         // DIE ZEICHENKETTE DER SEITE (w4-grund-zeichner; champion bild-klasse 31.10.: der alte `wasserStrom` ließ `renderer.render` stumm und
         // `postProcessingFailed` an — gelaende.K2#1 blieb ungenannt, tiere.K3#2 fiel als Rückfall „tier-Pixel 0/0/0/0“): eine Probe bricht die
         // Kette wie er, ohne `mutiert` (ihr folgte keine Grundstellung) und mit (wie gelaende.K2#1: die Grundstellung danach spielte nur den
@@ -3867,6 +3975,115 @@ async function selbsttest(o = {}) {
                 bruch.wie["zeichner.renderer.render"] === "getauscht: function () {}" && heil.bleibt.length === 0 && danach.anders.length === 0 &&
                 welt.state.renderer.render === echt && welt.state.renderer.setAnimationLoop === haken && welt.state.voxelWorker === faden && welt._syncStelle === null,
                 JSON.stringify([still, bruch, heil, danach]));
+        }
+        // DIE LEIHE DER HÄNGER-LINSE (haengerLeihe; Radeon 6a571e3b 02.11.: profiband.K4#1 „zeichner.renderer._renderObjectDirect getauscht:
+        // … const vor = H.c“ — kein Urteil): das Instrument der Werkbank hängt sich beim ersten `/haenger` in Renderer, Knoten-Bau und die
+        // Prototypen des Geräts. Ohne die Leihe nennt die Zeichenkette den Auftraggeber (vorher ROT); mit ihr kehrt jedes Glied zurück, das
+        // Gedächtnis fällt (die nächste Probe hängt es frisch an), ein Haken, den die Leihe nicht kennt, bleibt beim Namen; stand das Instrument
+        // schon vor der Probe in der Seite, leiht sie nichts
+        {
+            const vorbau = (win) => {
+                const nativ = function createRenderPipeline() {}, puffer = function createBuffer() {}, vram = function writeBuffer() {};
+                win.GPUDevice = function () {};
+                Object.assign(win.GPUDevice.prototype, { createRenderPipeline: nativ, createBuffer: puffer });
+                win.GPUQueue = function () {};
+                win.GPUQueue.prototype.writeBuffer = vram;
+                const diaet = function _renderObjectDirect() {}, bau = { getForRender() {} };
+                const welt = { state: { renderer: { _renderObjectDirect: diaet, _nodes: Object.create(bau), render() {}, domElement: { isConnected: true } },
+                    postProcessing: null, postProcessingFailed: false, voxelWorker: {}, _deviceLost: false } };
+                return { welt, nativ, puffer, vram, diaet };
+            };
+            const haengerAn = (win, welt, auchPuffer) => {
+                win.__haengerH = { an: false };
+                const R = welt.state.renderer, rod = R._renderObjectDirect, N = R._nodes, gfr = N.getForRender, P = win.GPUDevice.prototype;
+                R._renderObjectDirect = function () { const vor = win.__haengerH.cur; return rod.apply(this, arguments) || vor; };
+                N.getForRender = function () { return gfr.apply(this, arguments); };
+                const crp = P.createRenderPipeline;
+                P.createRenderPipeline = function (d) { return crp.call(this, d); };
+                const wb = win.GPUQueue.prototype.writeBuffer;
+                win.GPUQueue.prototype.writeBuffer = function () { return wb.apply(this, arguments); };
+                if (auchPuffer) {
+                    const cb = P.createBuffer;
+                    P.createBuffer = function () { return cb.apply(this, arguments); };
+                }
+            };
+            const mit = (win) => [new Function("window", "return " + haengerLeihe.toString())(win), new Function("window", "return " + zeichnerKette.toString())(win)];
+            // vorher: ohne die Leihe nennt die Zeichenkette den Auftraggeber
+            const w0 = {}, v0 = vorbau(w0), [, Z0] = mit(w0), soll0 = Z0(v0.welt, null).abdruck;
+            haengerAn(w0, v0.welt);
+            const ohne = Z0(v0.welt, soll0);
+            // nachher: die Leihe gibt jedes Glied zurück, die Kette steht, das Gedächtnis fällt
+            const w1 = {}, v1 = vorbau(w1), [L1, Z1] = mit(w1), soll1 = Z1(v1.welt, null).abdruck;
+            const nimm = L1(v1.welt, false);
+            haengerAn(w1, v1.welt);
+            const gib = L1(v1.welt, true), still = Z1(v1.welt, soll1);
+            const R1 = v1.welt.state.renderer, P1 = w1.GPUDevice.prototype;
+            // die Mutante: das Instrument hängt sich an ein Glied, das die Leihe nicht kennt — es bleibt beim Namen
+            const w2 = {}, v2 = vorbau(w2), [L2] = mit(w2);
+            L2(v2.welt, false);
+            haengerAn(w2, v2.welt, true);
+            const gib2 = L2(v2.welt, true);
+            // das Instrument stand schon: nichts geliehen, nichts zurück
+            const w3 = { __haengerH: {} }, v3 = vorbau(w3), [L3] = mit(w3);
+            const da = L3(v3.welt, false), ohne3 = L3(v3.welt, true);
+            pruef("SITZUNG DIE LEIHE DER HÄNGER-LINSE: ohne sie nennt die Zeichenkette den Auftraggeber (vorher ROT); mit ihr kehren Auftraggeber, Knoten-Bau und die Prototypen des Geräts zurück, die Kette steht, das Gedächtnis fällt; ein Glied, das die Leihe nicht kennt, bleibt beim Namen; stand das Instrument schon, leiht sie nichts",
+                ohne.anders.join(" ") === "zeichner.renderer._renderObjectDirect" && nimm.leiht === 10 &&
+                JSON.stringify(gib) === JSON.stringify({ zurueck: ["renderer._renderObjectDirect", "renderer._nodes.getForRender", "GPUDevice.createRenderPipeline", "GPUQueue.writeBuffer"], bleibt: [] }) &&
+                still.anders.length === 0 && R1._renderObjectDirect === v1.diaet && !Object.prototype.hasOwnProperty.call(R1._nodes, "getForRender") &&
+                P1.createRenderPipeline === v1.nativ && w1.GPUQueue.prototype.writeBuffer === v1.vram && !("__haengerH" in w1) && !("__punkteHaengerLeihe" in w1) &&
+                JSON.stringify(gib2.bleibt) === JSON.stringify(["GPUDevice.createBuffer"]) && da.da === true && ohne3.ohne === true,
+                JSON.stringify([ohne, nimm, gib, still, gib2, da, ohne3]));
+        }
+        // ... und in der Sitzung: eine Probe hängt das Instrument an (wie `/haenger`), zweimal hintereinander — keine nennt die Zeichenkette,
+        // je Probe kehrt es zurück (im Kopf `haenger`), ohne Grundstellung; die Mutante mit einem unbekannten Glied ist ein Werkzeug-Bruch beim Namen
+        {
+            const HAENGER = (puffer) => "seite: const R = r.state.renderer, rod = R._renderObjectDirect, P = window.GPUDevice.prototype, crp = P.createRenderPipeline; " +
+                "window.__haengerH = { an: false }; R._renderObjectDirect = function () { const vor = window.__haengerH.cur; return rod.apply(this, arguments) || vor; }; " +
+                "P.createRenderPipeline = function (d) { return crp.call(this, d); }; " +
+                (puffer ? "const cb = P.createBuffer; P.createBuffer = function () { return cb.apply(this, arguments); }; " : "") + "return \"warm\";";
+            const r18 = await lauf([[S("h.K1", 1, { befehl: [...ruf, HAENGER(false)], sek: 30 }, warm)], [S("h.K2", 1, { befehl: [...ruf, HAENGER(false)], sek: 30 }, warm)],
+                [S("h.K3", 1, { befehl: [...ruf, HAENGER(true)], sek: 30 }, warm)]], "gut", null);
+            const hx = r18.es;
+            pruef("SITZUNG DIE LEIHE DER HÄNGER-LINSE in der Sitzung: zwei Proben, die das Instrument anhängen, urteilen GRÜN ohne Werkzeug-Bruch und ohne Grundstellung, je Probe kehren 2 Glieder zurück; die Mutante mit einem unbekannten Glied am Gerät ist ein Werkzeug-Bruch beim Namen (haenger.GPUDevice.createBuffer)",
+                hx["h.K1#1"].gruen === true && hx["h.K2#1"].gruen === true && !hx["h.K1#1"].ungemessen && !hx["h.K2#1"].ungemessen &&
+                JSON.stringify((r18.kopf.haenger || []).map((x) => x.probe + ":" + x.zurueck)) === JSON.stringify(["h.K1#1:2", "h.K2#1:2", "h.K3#1:2"]) &&
+                hx["h.K3#1"].ungemessen === true && /^Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert \(haenger\.GPUDevice\.createBuffer nicht zurück/.test(hx["h.K3#1"].grund) &&
+                (r18.kopf.zeichner || []).map((x) => x.probe).join(",") === "h.K3#1" && r18.z.join(",") === "start,nimm,warm,stop", JSON.stringify([r18.z, hx, r18.kopf.haenger, r18.kopf.zeichner]));
+        }
+        // DIE FLÄCHE EINER GEFALLENEN MARKE IST KEINE (Radeon 6a571e3b 02.11.: nach der Tür „wege −1 [-119.1,-274.9,279.2,201/272]“, der Belag des
+        // Genesis-Orts, die Sitzung endete nach 3 von 72 Proben): fiel die Marke „genesis“ mit der Seite, ist ihre fehlende Fläche keine
+        // Abweichung; steht die Marke und die Fläche fehlt, ging der Weg verloren (ROT wie bisher); legte das Gesetz den Weg des Grunds an
+        // einem Ort wieder, ließ die Probe dort nichts liegen (bauAbweichung mit dem Grund) — ohne den Grund wäre sie beim Namen gerufen
+        {
+            const plan = { x0: -119.1, z0: -274.9, x1: 279.2, z1: 201, formen: Array(272).fill({}) };
+            const welt = (fl, keys) => ({ state: { wegeKarte: { siedlungen: fl }, architectures: [] }, _stlWegeKeys: new Set(keys) });
+            const grund = wegeAbdruck(welt([plan], ["genesis"])), tuer = wegeAbdruck(welt([], [])), verloren = wegeAbdruck(welt([], ["genesis"]));
+            const bauLeer = { werke: [], edits: 0, orte: [], wege: tuer }, bauGelegt = { werke: [], edits: 0, orte: [], wege: grund };
+            pruef("SITZUNG DIE FLÄCHE EINER GEFALLENEN MARKE IST KEINE: nach der Tür fehlt der Belag des Genesis-Orts ohne Abweichung; steht seine Marke ohne Fläche, ist der Weg verloren (−1); legt das Gesetz ihn an seinem Ort wieder, nennt bauAbweichung die Probe nur ohne den Grund",
+                wegeAbweichung(grund, tuer) === null && wegeAbweichung(grund, verloren) === "wege −1 [-119.1,-274.9,279.2,201/272]" &&
+                bauAbweichung(bauLeer, bauGelegt, grund) === null && /^wege \+1 \[-119\.1,-274\.9,279\.2,201\/272\] \(genesis\)$/.test(String(bauAbweichung(bauLeer, bauGelegt))),
+                JSON.stringify([wegeAbweichung(grund, tuer), wegeAbweichung(grund, verloren), bauAbweichung(bauLeer, bauGelegt, grund), bauAbweichung(bauLeer, bauGelegt)]));
+        }
+        // GRUND_ZUSTAND (Radeon 6a571e3b 02.11.: die Herde am Hang ließ `maxCreatures` bei ihren 5 Gliedern, die Grundstellung brachte 5 von
+        // 9 Wesen zurück, die Welt trug nicht mehr): der Grund trägt die Kappe, das Rückspielen setzt sie VOR dem Stand zurück und nennt sie;
+        // ohne ihr Wort im Grund (die Mutante: ein Grund von vor GRUND_ZUSTAND) kehren die Wesen unter der Kappe der Probe wieder — 5 von 9
+        {
+            const welt = (max) => {
+                const st = { maxCreatures: max, creatures: [], worldMeta: { worldId: "w1" } };
+                return { state: st, _grundstellung() {
+                    st.creatures = Array.from({ length: Math.min(9, st.maxCreatures) }, (_, i) => i);
+                    return { ok: true, anders: st.creatures.length === 9 ? [] : ["creatures"], neu: { wesen: st.creatures.length } };
+                }, buildStateSnapshot: () => ({ creatures: st.creatures }) };
+            };
+            const spiel = (g, w) => new Function("r", "window", "performance", grundSpielen(g))(w, {}, { now: () => 0 });
+            const g = { grund: JSON.stringify({ stand: { creatures: Array(9).fill(0) } }), seite: [], wege: null, zustand: { maxCreatures: 20 } };
+            const w1 = welt(5), heil = spiel(g, w1);
+            const w2 = welt(5), alt = spiel({ ...g, zustand: undefined }, w2);
+            const w3 = welt(20), still = spiel(g, w3);
+            pruef("SITZUNG GRUND_ZUSTAND: die Kappe der Wesen kehrt vor dem Stand zurück (9 von 9 Wesen, genannt: maxCreatures); ohne ihr Wort im Grund kehren 5 von 9 wieder (vorher ROT: creatures); stand sie, nennt die Grundstellung nichts",
+                heil.ok && heil.anders.length === 0 && heil.zustand.join() === "maxCreatures" && w1.state.maxCreatures === 20 && w1.state.creatures.length === 9 &&
+                alt.anders.join() === "creatures" && w2.state.creatures.length === 5 && still.anders.length === 0 && still.zustand.length === 0,
+                JSON.stringify([heil, alt, still]));
         }
         // DAS SCHLOSS ZWISCHEN DEN PROBEN: wartet ein CI-Job (die letzte Zeile von hook.log), geht das Schloss an der Proben-Grenze an ihn und kommt
         // danach wieder — die Welt startet nie neu, das Warten zählt nie in die Fahrt
