@@ -208,3 +208,4 @@ takt-z158a-gtx gemessen punkte 6a571e3b gtx: 0 grün / 4 rot
 takt-z158b-gtx gemessen punkte 6a571e3b gtx: 0 grün / 4 rot
 z158-abab LANGSAMER abab 6a571e3b gegen 6d6a8336: w-ego 4+4 nicht-langsamer · stadt 4+4 LANGSAMER
 general-6a57-gtx gemessen punkte 6a571e3b gtx: 13 grün / 15 rot
+takt-z159a-gtx gemessen punkte 10770eb5 gtx: 0 grün / 5 rot
