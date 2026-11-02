@@ -235,7 +235,7 @@ leibPx: +(2 * (rs[rs.length >> 1] || 0)).toFixed(1),
 
   ✅ herde     {"fremdN":5,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":5,"wurfAnteil":0.8,"mittel":1,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null,"enge":1.05,"engst":[0.93,"Joro","Una",52]},"flucht":{"n":5,"wurfAnteil":0.8,"mittel":1,"fluchtAnteil":0.323,"fluchtMittel":1,"fluchtMin":1,"enge":0.83,"engst":[0.54,"Joro","Yto",41]}},"ausrichtung":{"mittel":0.992,"takte":1182},"alarm":{"laufen":5,"zweiteHand":4,"letzterS":0.58},"fluchtWegM":33.9,"id":{"bruch":null,"fluchtS":[5,7]}}
 
-  (18 s)
+  (17 s)
 
 ✅ GRÜN — herde
 
