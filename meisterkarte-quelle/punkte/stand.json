@@ -611,7 +611,7 @@
   },
   "feld.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: feld.K5#1 headless: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: feld.K5#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
    "stationen": [
     {
      "id": "feld.K5#1",
@@ -619,7 +619,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
      "ungemessen": true
     }
    ]
@@ -959,7 +959,7 @@
   },
   "haar.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: haar.K3#1 headless: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: haar.K3#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +13)",
    "stationen": [
     {
      "id": "haar.K3#1",
@@ -967,7 +967,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +13)",
      "ungemessen": true
     }
    ]
@@ -1238,7 +1238,7 @@
   },
   "ki.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ki.K5#1 headless: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: ki.K5#1 headless: Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +2)",
    "stationen": [
     {
      "id": "ki.K5#1",
@@ -1246,7 +1246,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +2)",
      "ungemessen": true
     }
    ]
@@ -1862,7 +1862,7 @@
   },
   "luftwasser.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: luftwasser.K3#1 headless: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: luftwasser.K3#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
    "stationen": [
     {
      "id": "luftwasser.K3#1",
@@ -1870,14 +1870,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
      "ungemessen": true
     }
    ]
   },
   "luftwasser.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: luftwasser.K4#1 headless: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: luftwasser.K4#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
    "stationen": [
     {
      "id": "luftwasser.K4#1",
@@ -1885,7 +1885,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
      "ungemessen": true
     }
    ]
@@ -2162,7 +2162,7 @@
   },
   "mensch.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: mensch.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) · mensch.K4#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) · mensch.K4#2 headless: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/diag-mensch-anatomie.cjs +7) — zuletzt an 25ac4c0c: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: ohne Menge oder Gesicht (Exit 1)) · Täter: Node.js v22.23.4",
+   "beleg": "Maschine: 0 — offen: mensch.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) · mensch.K4#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) · mensch.K4#2 headless: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/diag-mensch-anatomie.cjs +7) — zuletzt an 6d6a8336: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: ohne Menge oder Gesicht (Exit 1)) · Täter: Node.js v22.23.4",
    "stationen": [
     {
      "id": "mensch.K4#1",
@@ -2188,7 +2188,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/diag-mensch-anatomie.cjs +7) — zuletzt an 25ac4c0c: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: ohne Menge oder Gesicht (Exit 1)) · Täter: Node.js v22.23.4",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/diag-mensch-anatomie.cjs +7) — zuletzt an 6d6a8336: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: ohne Menge oder Gesicht (Exit 1)) · Täter: Node.js v22.23.4",
      "ungemessen": true
     }
    ]
@@ -2420,7 +2420,7 @@
   },
   "physik.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: physik.K4#1 headless: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: physik.K4#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
    "stationen": [
     {
      "id": "physik.K4#1",
@@ -2428,14 +2428,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
      "ungemessen": true
     }
    ]
   },
   "physik.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: physik.K5#1 headless: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: physik.K5#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
    "stationen": [
     {
      "id": "physik.K5#1",
@@ -2443,7 +2443,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
      "ungemessen": true
     }
    ]
@@ -2474,7 +2474,7 @@
   },
   "pipeline.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: pipeline.K2#1 headless: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: pipeline.K2#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +1)",
    "stationen": [
     {
      "id": "pipeline.K2#1",
@@ -2482,7 +2482,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +1)",
      "ungemessen": true
     }
    ]
@@ -2555,7 +2555,7 @@
   },
   "pipeline.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: pipeline.K5#1 headless: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: pipeline.K5#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +1)",
    "stationen": [
     {
      "id": "pipeline.K5#1",
@@ -2563,7 +2563,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +1)",
      "ungemessen": true
     }
    ]
@@ -3246,7 +3246,7 @@
   },
   "spielgang.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: spielgang.K5#1 headless: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: spielgang.K5#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +1)",
    "stationen": [
     {
      "id": "spielgang.K5#1",
@@ -3254,7 +3254,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +1)",
      "ungemessen": true
     }
    ]
@@ -3324,7 +3324,7 @@
   },
   "stoffe.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: stoffe.K4#1 headless: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: stoffe.K4#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
    "stationen": [
     {
      "id": "stoffe.K4#1",
@@ -3332,7 +3332,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
      "ungemessen": true
     }
    ]
@@ -4083,7 +4083,7 @@
   },
   "wetter.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: wetter.K4#1 headless: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: wetter.K4#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
    "stationen": [
     {
      "id": "wetter.K4#1",
@@ -4091,7 +4091,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
      "ungemessen": true
     }
    ]
@@ -4123,6 +4123,6 @@
  },
  "rueckfall": [],
  "kopfVoll": "6a571e3b98934cbc73b85e217f7fa69b080d415a",
- "zeit": "2026-11-02T07:18:17.950Z",
- "vorher": "6d6a8336"
+ "zeit": "2026-11-02T07:36:36.276Z",
+ "vorher": "6a571e3b"
 }
