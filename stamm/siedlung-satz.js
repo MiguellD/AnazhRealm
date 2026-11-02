@@ -794,6 +794,85 @@ class AnazhRealm_siedlung_satz {
         return id;
     }
 
+    // === DAS ALTER EINES WERKS (stoffe.K4): die Verwitterung wächst mit der Spielzeit ===
+    // Ein Werk altert ab seiner Geburt in SPIELZEIT, nie in Wanduhr: `entry.geburt` ist der Welt-Tag seines Akts (ein Werk, das
+    // ein Wort setzte: Bau-Modus, Satz, KI — es reist im Stand), sonst der erste Tag der Welt (was das Feld warf und das Gesetz
+    // legte, stand, als die Welt begann). Das Alter in Tagen × die Nässe des Orts (`_feuchteAt`: am Ufer altert es schneller)
+    // speist den Regler `verwitterung` seiner Art (wo PARAMS_BY_KIND ihn trägt: Ausstattung, Bank, Leiter, Brücke, Geräte) über
+    // den EINEN Lese-Punkt des Stempels (`_artifactStudioOv`): vom eigenen Stand w0 (der Stempel, sonst die Vorgabe der Zeile)
+    // zieht er zu 1, W = w0 + (1 − w0)·(1 − e^(−t/τ)), gerastert auf den Schritt der Zeile. Was der Stoff daraus macht, sagt
+    // sein Kern (fachwerk `ausFaerbe`: Holz vergraut zum Silber, Eisen rostet, Stein trägt den grünen Belag, je nach Freilage
+    // der Fläche, und Moos an der Nordseite — der Stempel trägt dazu die Gier des Werks in Achteln, `nord`). Alter 0 trägt keinen Kanal: die Bytes byte-alt. KOSTEN AN DER ÄNDERUNG: der Körper wechselt nur beim Sprung
+    // der Rasterstufe (≤ 10 je Leben); der Takt vergleicht EINE Zahl (den Tag), sein Wechsel fragt die gezeichneten Werke einer
+    // alternden Art, und ihr neuer Körper tritt ein, sobald er da ist (`_tickWerkAlter`; bis dahin steht die Welt nicht).
+    _werkAlterZeile(preset) {
+        const f = this._foundry;
+        if (!preset || !f || !f.recipes || !f.paramsByKind) return null;
+        if (f._alterVon !== f.paramsByKind) [f._alterVon, f._alterZeilen] = [f.paramsByKind, new Map()];
+        if (!f._alterZeilen.has(preset)) {
+            const rec = f.recipes[preset];
+            const zeilen = (rec && f.paramsByKind[rec.kind]) || [];
+            f._alterZeilen.set(preset, zeilen.find((z) => z && z.id === "verwitterung") || null);
+        }
+        return f._alterZeilen.get(preset);
+    }
+    // Der Stempel eines Werks mit seinem Alter (`ov` = der eigene Stempel oder null); je Eintrag gemerkt, solange Stufe und
+    // Stempel gleich sind (derselbe Gegenstand: der ov-Hash merkt sich ihn).
+    _werkAlterOv(entry, ov) {
+        const z = this._werkAlterZeile(this._foundryPresetForEntry(entry));
+        if (!z) return ov;
+        const A = AnazhRealm.WERK_ALTER;
+        if (!Number.isFinite(entry._nass)) {
+            const p = entry.position;
+            entry._nass = A.nassMin + Math.max(0, Math.min(1, +this._feuchteAt(p.x, p.z, p.y) || 0));
+        }
+        const wm = this.state.worldMeta;
+        const tage = Math.max(0, ((wm && wm.tag) || 0) - (entry.geburt || 0)) * entry._nass;
+        const w0 = ov && Number.isFinite(ov.verwitterung) ? ov.verwitterung : z.def;
+        const schritt = z.step > 0 ? z.step : 0.05;
+        const k = Math.floor(((Math.min(1, z.max) - w0) * (1 - Math.exp(-tage / A.tauTage))) / schritt + 1e-9);
+        if (!(k > 0)) {
+            entry._alter = null;
+            return ov;
+        }
+        const a = entry._alter;
+        if (a && a.k === k && a.quelle === ov) return a.ov;
+        const w = Math.round((w0 + k * schritt) * 1e6) / 1e6;
+        // die Lage des Werks reist mit (der Sektor seiner Gier in Achteln): der Kern kennt seine Nordseite, das Moos sitzt dort
+        const nord = ((Math.round((entry.rotationY || 0) / (Math.PI / 4)) % 8) + 8) % 8;
+        entry._alter = { k, quelle: ov, ov: Object.freeze(Object.assign({}, ov, { verwitterung: w, nord })) };
+        return entry._alter.ov;
+    }
+    // Der Tag der Welt sprang (der Takt: EIN Vergleich): die gezeichneten Werke einer alternden Art, deren Stufe sprang, warten
+    // auf ihren neuen Körper. Die kalten lesen ihr Alter, wenn sie das nächste Mal gebaut werden.
+    _werkeAltern() {
+        const wm = this.state.worldMeta;
+        const tag = (wm && wm.tag) || 0;
+        if (this._werkAlterTag === tag) return;
+        this._werkAlterTag = tag;
+        const offen = this._werkAltertOffen || (this._werkAltertOffen = new Set());
+        for (const e of this.state.architectures) {
+            if (!e.instanced || e.instFoundry !== true || !e.position) continue;
+            const vor = e._alter ? e._alter.ov : this._artifactStudioOv({ studioOv: e.studioOv });
+            if (this._artifactStudioOv(e) !== vor) offen.add(e);
+        }
+    }
+    // Der neue Körper eines alternden Werks tritt ein, sobald er da ist (dieselbe Stufe, der Stempel mit dem Alter).
+    _tickWerkAlter() {
+        this._werkeAltern();
+        const offen = this._werkAltertOffen;
+        if (!offen || !offen.size) return;
+        for (const e of offen) {
+            const preset = e.instanced && this.state.architectures.includes(e) ? this._foundryPresetForEntry(e) : null;
+            const flat = preset ? this._foundryFlattenFor(e, preset, e._lodLevel) : false;
+            if (flat === null) continue; // lädt
+            offen.delete(e);
+            if (!flat || !flat.instanceable) continue;
+            this._archInstanceRemove(e);
+            this._archInstanceAdd(e, flat);
+        }
+    }
+
     spawnArchitecture(type, position, opts = {}) {
         // JEDE ABSAGE DER WURZEL TRÄGT IHREN GRUND (Schau-2, Gegenprüfung Runde 3): `opts.absage(grund)` — der Setz-Op zählt sie,
         // der Satz des Ergebnisses (`_ergebnisSatz`, `SETZ_GRUND`) sagt sie; vorher fiel ein Wurf hier still.
@@ -918,6 +997,10 @@ class AnazhRealm_siedlung_satz {
         // die KI, eine Regel des Spielers (`opts.werk`, die Spawn-Ops der DSL ohne das Feld) —, ist Werk und weicht keinem
         // Räumer (`_weichtDemBau`), gleich aus welchem Stoff. Sie reist durch den Save.
         if (opts.werk === true || (typeof opts.id === "string" && opts.id)) entry.werk = true;
+        // DIE GEBURT DES WERKS (stoffe.K4, `_werkAlterOv`): der Welt-Tag seines Akts — der Stand bringt seine mit, ein neues Werk
+        // nimmt den Tag der Welt; ohne Zeile (Feld, Gesetz, Tag 0) der erste Tag. Sie reist durch den Save.
+        const geburt = "geburt" in opts ? opts.geburt : entry.werk ? (this.state.worldMeta || {}).tag : null;
+        if (Number.isInteger(geburt) && geburt > 0) entry.geburt = geburt;
         // Der Guss-Stempel reist am Eintrag (Snapshot + P2P): NUR ein non-leeres plain object, tief
         // JSON-kopiert, max 8 KiB (dieselbe Taille-Wand wie _carryUnknown — ein Riesenstempel wäre ein
         // Quota-DoS). _foundryFlattenFor liest ihn als Unikat-ov.
@@ -1470,3 +1553,7 @@ AnazhRealm.FELD_WURF = Object.freeze([
     "glutbrunnen",
 ]);
 AnazhRealm.STRUCTURE_CLEAR_MIN_FOOTPRINT = 3.0; // darunter = klein/intentional → nicht schieben
+// DAS ALTER EINES WERKS (stoffe.K4, `_werkAlterOv`): τ die Tage, in denen der Regler `verwitterung` 63 % seines Wegs zu 1 geht;
+// die Nässe des Orts (`_feuchteAt` 0..1) dehnt die Zeit von nassMin (trocken: das Tempo der Referenz) bis nassMin + 1 (am
+// Wasser doppelt). Geeicht an der Staffel (stoffe.K4#2): nach 30 Tagen am trockenen Ort W 0,75 — Holz −35 % Sättigung.
+AnazhRealm.WERK_ALTER = Object.freeze({ tauTage: 40, nassMin: 1 });
