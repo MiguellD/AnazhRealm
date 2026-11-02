@@ -68,7 +68,7 @@ async function vokabular() {
         return e && e.mesh ? __abdruck(e.mesh.geometry) : null;
     };
     const pumpChunk = async (cx, cz, ms) => {
-        for (const weiter = __deckel(`der Chunk ${cx},${cz}`, ms / 25); weiter(); ) {
+        for (const weiter = __deckel(`der Chunk ${cx},${cz}`, ms / 25); weiter();) {
             const e = chunk(cx, cz);
             if (e && (e.mesh || e.empty)) return e;
             r._ensureVoxelChunkAt(cx, cz, 0);
@@ -88,14 +88,28 @@ async function jobKalt(_, V) {
     const pm = st.playerMesh;
     const pcx = pm ? Math.floor(pm.position.x / span) : 0;
     const pcz = pm ? Math.floor(pm.position.z / span) : 0;
-    const cands = [
-        [pcx + 3, pcz],
-        [pcx - 3, pcz],
-        [pcx, pcz + 3],
-        [pcx, pcz - 3],
-        [pcx + 3, pcz + 3],
-        [pcx - 3, pcz - 3],
-    ].filter(([cx, cz]) => !st.voxelChunks || !st.voxelChunks.has(cx + "," + cz));
+    // DIE PROBE LIEGT, WO DAS GESETZ DIE PLATTE ÖFFNET: der Warm-Start gilt nur edit-freien Footprints (`_chunkFootprintEditFrei`
+    // — kein Edit, kein Erdbau eines Orts, kein Stau in der 3 × 3-Box); die Kandidaten sind die Chunks der Ringe 3–8 um den
+    // Spieler (je Ring die Achsen, dann die Diagonalen), deren Footprint das Gesetz frei nennt. Bis hierher standen sie fest bei
+    // ±3 — seit der Genesis-Ort seinen Erdbau bis zu den Toren legt (w4-genesis-ort-wirt6), lag dort Erdbau: der Faden las und
+    // stiftete zu Recht nichts (Hits 0/0), und die Linse urteilte am gefallenen Wildnis-Ring statt am Gesetz.
+    const cands = [];
+    for (let ring = 3; ring <= 8; ring++)
+        for (const [ux, uz] of [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+            [1, 1],
+            [-1, -1],
+            [1, -1],
+            [-1, 1],
+        ]) {
+            const cx = pcx + ux * ring,
+                cz = pcz + uz * ring;
+            if (st.voxelChunks && st.voxelChunks.has(cx + "," + cz)) continue;
+            if (r._chunkFootprintEditFrei(cx, cz)) cands.push([cx, cz]);
+        }
     const t0 = performance.now();
     const probes = [];
     for (const [cx, cz] of cands) {
@@ -186,7 +200,7 @@ async function jobWarm(kaltIn, V) {
     if (!added) return Object.assign(out, { err: "Voxel-Edit wurde nicht angenommen (_addVoxelEdit false)" });
     const hitABefore = byKey.get(keyA) | 0;
     let rebuilt = false;
-    for (const weiter = __deckel("der Neubau des Chunks", 2400); !rebuilt && weiter(); ) {
+    for (const weiter = __deckel("der Neubau des Chunks", 2400); !rebuilt && weiter();) {
         rebuilt = r._rebuildVoxelChunk(A[0], A[1], 0);
         if (!rebuilt) await sleep(25);
     }
@@ -232,8 +246,7 @@ async function jobSelbsttest(kaltIn) {
     // rechnet den EHRLICHEN Stempel, sieht "kaputt" → clear
     await __weltDa(() => r.state.voxelWorkerWorldgenSynced);
     const [bx, bz] = kaltIn.probes[1];
-    for (const weiter = __deckel("der Chunk B", 2400); weiter() && !r._ensureVoxelChunkAt(bx, bz, 0); )
-        await sleep(25);
+    for (const weiter = __deckel("der Chunk B", 2400); weiter() && !r._ensureVoxelChunkAt(bx, bz, 0);) await sleep(25);
     const keyA = kaltIn.seed + "|" + kaltIn.probes[0][0] + "," + kaltIn.probes[0][1] + "|0";
     return await new Promise((resolve) => {
         const req = indexedDB.open("anazhChunkMesh", 1);
