@@ -928,6 +928,7 @@ class AnazhRealm_vegetation_wiese {
                     ufer: y - this._koerperWasser(x, z, y),
                     fels: feld ? feld.dichte : null,
                     hang: this._slopeAt(x, z, boden),
+                    leben: this._lebenStufe(x, z), // das Leben-Overlay am Ort in Stufen (feld.K5: die Pflege lässt blühen)
                 };
                 for (let a = 0; a < arten.length; a++) {
                     const A = arten[a];
@@ -1155,6 +1156,26 @@ class AnazhRealm_vegetation_wiese {
         k.zustand = null;
     }
 
+    // Die Streu im Rechteck würfelt neu, wo ein Feld sie anders trägt (die Leben-Stufe, `_lebenStufeMalen`): nur die Kacheln, die
+    // stehen — ihr Satz gilt als alt, der nächste Takt würfelt ihn an derselben Kachel und tauscht die Blöcke in EINEM Bau (die
+    // alten Pflanzen stehen bis dahin, kein Loch). Rückgabe: Zahl der Kacheln.
+    _nahStreuNeuIn(x0, z0, x1, z1) {
+        const ns = this.state.nahStreu;
+        if (!ns || !ns.kacheln.size) return 0;
+        const K = AnazhRealm.NAH_STREU.kachel;
+        let n = 0;
+        for (let tz = Math.floor(z0 / K); tz < Math.ceil(z1 / K); tz++)
+            for (let tx = Math.floor(x0 / K); tx < Math.ceil(x1 / K); tx++) {
+                const k = ns.kacheln.get(tx + "," + tz);
+                if (!k) continue;
+                k.satzAlt = true;
+                k.zustand = null;
+                n++;
+            }
+        if (n) this._weltRegt(); // die Stand-Wache weckt die Streu
+        return n;
+    }
+
     // Je Takt (scatterDeco, prio 2): Kacheln im Ring um die KAMERA anlegen (nah zuerst, ≤ kachelnJeTakt Neubauten),
     // die Stufe je PFLANZE aus ihrer Distanz zur Kamera (die Armlänge `stufe0` trägt L0, sonst die leichteste
     // deklarierte Stufe — `_foundryDeclaredStage`, mit Hysterese, `_nahStreuArmlaenge`), das Rand-Band dünnt über die
@@ -1229,21 +1250,30 @@ class AnazhRealm_vegetation_wiese {
                 ns.offen++;
                 continue;
             }
-            if (!k) {
+            if (!k || k.satzAlt) {
                 const satz = this._nahStreuKachel(w.tx, w.tz, arten);
                 if (!satz) {
                     ns.offen++;
                     continue;
                 }
-                k = {
-                    key: w.key,
-                    items: satz.items,
-                    chunks: satz.chunks,
-                    wasser: satz.wasser,
-                    senken: new Set(),
-                    zustand: null,
-                    nahZahl: 0,
-                };
+                // ein alter Satz (`_nahStreuNeuIn`) würfelt an seiner Kachel neu: die Blöcke tauschen unten in EINEM Bau
+                if (k)
+                    k = Object.assign(k, {
+                        items: satz.items,
+                        chunks: satz.chunks,
+                        wasser: satz.wasser,
+                        satzAlt: false,
+                    });
+                else
+                    k = {
+                        key: w.key,
+                        items: satz.items,
+                        chunks: satz.chunks,
+                        wasser: satz.wasser,
+                        senken: new Set(),
+                        zustand: null,
+                        nahZahl: 0,
+                    };
                 ns.kacheln.set(w.key, k);
             }
             const zustand = this._nahStreuArmlaenge(k, cam, w.imKreis) + "|" + rand;

@@ -1992,7 +1992,51 @@ class AnazhRealm_feld_leben {
                     now + Math.max(0, Math.log(Math.abs(a) / cfg.epsilon)) / cfg.decayPerSec,
                     now
                 );
+                this._lebenStufeMalen(cx + dx, cz + dz); // der Ort sieht den Akt (feld.K5)
             }
+        }
+    }
+
+    // DIE LEBEN-STUFE am Ort (feld.K5): das Leben-Overlay in Stufen (`LIFE_FIELD.stufen` je Einheit) — die Nah-Streu liest sie
+    // (`_nahStreuKachel`, das Boden-Gesetz `leben`: die gepflegte Wiese blüht), nie den stetigen Zerfall; so baut sie nur, wo
+    // eine Stufe springt. Ohne Overlay 0: die Streu steht byte-gleich.
+    _lebenStufe(x, z) {
+        const S = AnazhRealm.LIFE_FIELD.stufen;
+        return Math.round(this._lifeOverlayAt(x, z) * S) / S;
+    }
+
+    // Die Stufe der Zelle (cx, cz) malen: springt sie gegen die zuletzt gemalte (`_lebenStand`), wächst die Nah-Streu darüber neu
+    // (`_nahStreuNeuIn`, nur die Kacheln dieser Zelle). Die Zelle wacht zum nächsten Sprung ihres Zerfalls (|a| fällt unter die
+    // halbe Stufe darunter, `_tickLebenStufen`); auf Stufe 0 schläft sie — die Kosten tragen die Sprünge, nie das Feld.
+    _lebenStufeMalen(cx, cz) {
+        const L = AnazhRealm.LIFE_FIELD;
+        const st = this._lebenStand || (this._lebenStand = new Map());
+        const key = cx + "," + cz;
+        const [x, z] = [(cx + 0.5) * L.cell, (cz + 0.5) * L.cell];
+        const a = this._lifeOverlayAt(x, z);
+        const k = Math.round(a * L.stufen);
+        const alt = st.get(key);
+        if ((alt ? alt.k : 0) !== k)
+            this._nahStreuNeuIn(cx * L.cell, cz * L.cell, (cx + 1) * L.cell, (cz + 1) * L.cell);
+        if (k === 0) return void st.delete(key);
+        const wach =
+            this.state.spielZeit + Math.log(Math.abs(a) / ((Math.abs(k) - 0.5) / L.stufen)) / L.decayPerSec + 1e-6;
+        st.set(key, { k, wach });
+        if (!(wach >= this._lebenFaellig)) this._lebenFaellig = wach;
+    }
+
+    // Der Zerfall der Leben-Stufen (je Takt, scatterDeco): schläft bis zum frühesten Sprung (`_lebenFaellig`), dann malt er nur die
+    // fälligen Zellen neu.
+    _tickLebenStufen() {
+        if (!(this.state.spielZeit >= this._lebenFaellig)) return;
+        this._lebenFaellig = Infinity;
+        for (const [key, e] of [...this._lebenStand]) {
+            if (this.state.spielZeit < e.wach) {
+                this._lebenFaellig = Math.min(this._lebenFaellig, e.wach);
+                continue;
+            }
+            const [cx, cz] = key.split(",").map(Number);
+            this._lebenStufeMalen(cx, cz);
         }
     }
 
@@ -2887,6 +2931,7 @@ AnazhRealm.LIFE_FIELD = Object.freeze({
     max: 0.7, // Sättigung pro Zelle (frozen+overlay → ~1; Wiederhol-Pulse sättigen → Nexus zieht weiter)
     kahl: -1, // der Boden des Fraßes: eine abgeäste Zelle trägt lebendig 0, nie weniger (auraAt klemmt)
     epsilon: 0.004, // darunter wird eine Zelle gepruned (die Map bleibt bounded)
+    stufen: 8, // je Einheit: so fein liest die Nah-Streu das Overlay (`_lebenStufe`) — sie baut nur, wo eine Stufe springt
     // Kreatur-Trickle: nur Nexus/Spieler-getragene Kreaturen (tendsLife) träufeln Leben, wo sie wohnen —
     // die ambiente Fauna ist die FOLGE des Feldes (kein Runaway). Sanft + rate-limitiert; wandernde
     // Kreaturen ziehen einen zarten Lebens-Pfad.
