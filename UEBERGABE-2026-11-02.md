@@ -34,3 +34,14 @@ Y6nuChFfb1dJTf7Btch4J5 steht auf 123 (27.10.) — aus meisterkarte.html neu ver�
   champion heilt als **w4-leck-knoten2**. w4-proben-6a57 ist unschuldig vermutet — notfalls allein fahren.
 - z162 = w4-sprache2 fährt; z163 = w4-stadt-gehen + w4-ci-alle-schritte (Kette wartet auf „z162 ende“).
 - Nach z163: das CI-Urteil nennt ALLE roten Schritte je Job (neu) — die Fahrt-Urteile werden länger, aber eine Runde reicht.
+
+## Nachtrag 14:00 (Woche 96 %)
+- **w4-leck-knoten2 e7be4022** heilt z161 (`_samplerLoesen` nimmt nur den Hörer ab, schreibt die Bindung nicht; CI-SwiftShader ROT 3/3 → GRÜN,
+  Leck bleibt zu) → fährt mit w4-proben-6a57 als **z164** (Kette wartet auf „z163 ende“).
+- **z163** = w4-stadt-gehen + w4-ci-alle-schritte fährt (Vorzug grün 13:56).
+- **z162 Sprache ROT** an drei Linsen, die UI-Texte lesen: voll 7 Ankunfts-Linse (Ladeschirm, Fadenkreuz, Hilfe, Chat-Taste …), voll 9
+  Weltgrenze, voll 12 Boot-Rettung (Lauf 41441436568). Wurzel vermutlich: die Linsen suchen die alten harten Texte/IDs statt der Schlüssel der
+  Sprach-Tafel (`_t`). Nächster Schritt: Linsen auf Schlüssel umstellen (PFADFINDER), w4-sprache3, eigener Zug.
+- Nachwache z159-abab: stadt LANGSAMER 18,0 gegen 6a571e3b — nach z163 (Stadt-Wurzel) neu messen, ob z159 (Fische/Bestäuber/Schnee-Tafel) etwas trägt.
+- OMEN: general-1077-gtx (101 Stationen am 10770eb5) in der Reihe; danach buchen.
+- Messplatz-Blick neu gestartet (Terminal-Tab „Messplatz“).
