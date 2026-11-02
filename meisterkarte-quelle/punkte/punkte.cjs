@@ -1348,9 +1348,16 @@ async function grundstellung(w, datei, o = {}) {
         };
         let z = o.abbruch ? { ok: false, welt: null } : await spiel(), tuer = false;
         const wege = z.ok ? (z.anders || []).find((a) => /^wege\b/.test(a)) || null : null;
-        const k1 = z.ok && !wege ? await kette() : null;
+        // DAS RÜCKSPIELEN, DAS AN ORT UND STELLE NICHT TRÄGT (Radeon 6a571e3b 02.11., Lauf 2: tore.K3 fiel mitten in der Konformanz
+        // des Portals, ihr mitgebrachtes Werkzeug und Material — ohne `name`, `_standRueckspielen` räumt die Säcke je `name` — blieben,
+        // „tools materials“ abweichend, die Welt endete vor fahrzeug.K2#1, 9 Proben ungemessen): JEDE Größe, die an Ort und Stelle vom
+        // Grund abweicht, geht durch die Tür wie Weg und Kette — die Lade-Kette baut den Stand aus dem Grund neu; im Kopf beim Namen
+        // (`anOrt`: die Größen und WIE), nie still. Erst was auch die Tür nicht zurückbringt, beendet die Welt
+        const anOrt = z.ok ? (z.anders || []).filter((a) => !/^wege\b/.test(a)) : [];
+        const k1 = z.ok && !wege && !anOrt.length ? await kette() : null;
         const ketteTuer = k1 && k1.bleibt.length ? k1.bleibt : null;
-        if (wege || ketteTuer) z = { ok: false, welt: null };
+        const anOrtWie = anOrt.length ? z.wie || null : null, zustand0 = z.zustand || [];
+        if (wege || ketteTuer || anOrt.length) z = { ok: false, welt: null };
         if (!z.ok && z.welt !== g.welt) {
             const t = await rufFrist(w, "/eval", { code: GRUND_TUER(g) }, 60000);
             if (!t || !t.ergebnis || !t.ergebnis.ok) throw new Error("die Tür zurück in die Welt " + g.welt + ": " + JSON.stringify(t).slice(0, 300));
@@ -1368,7 +1375,8 @@ async function grundstellung(w, datei, o = {}) {
         if (!f || !Array.isArray(f.fenster)) throw new Error("/fenster: " + JSON.stringify(f).slice(0, 300));
         return { ok: true, s: +((Date.now() - t0) / 1000).toFixed(1), ms: z.ms, neu: z.neu, ...(tuer ? { tuer } : {}), ...(wege ? { wege } : {}),
             ...(k1 && k1.anders.length && !ketteTuer ? { kette: k1.anders } : {}), ...(ketteTuer ? { ketteTuer } : {}),
-            ...(Array.isArray(z.zustand) && z.zustand.length ? { zustand: z.zustand } : {}) };
+            ...(anOrt.length ? { anOrt, anOrtWie } : {}),
+            ...((() => { const zs = [...new Set([...zustand0, ...(z.zustand || [])])]; return zs.length ? { zustand: zs } : {}; })()) };
     } catch (e) {
         return { ok: false, s: +((Date.now() - t0) / 1000).toFixed(1), grund: String((e && e.message) || e).split("\n")[0] };
     }
@@ -1985,8 +1993,10 @@ async function fahreSitzung(gruppen0, ctx, melde) {
                 if (taeter && (gs.kette || gs.ketteTuer)) taeter.zurueck = { vor: schluessel(g[0]), wie: gs.ketteTuer ? "durch die Tür" : "an Ort und Stelle", s: gs.s };
                 (aktOrt = null), (ortNach = gs.tuer ? "der Tür" : "der Grundstellung"); // der Grund stellt den Spieler an seinen Ort zurück
                 console.log("  SITZUNG Grundstellung vor " + schluessel(g[0]) + ": " + gs.s + " s (im Spiel " + gs.ms + " ms" +
-                    (gs.tuer ? ", durch die Tür" + (gs.wege ? " — " + gs.wege : "") + (gs.ketteTuer ? " — " + gs.ketteTuer.join(" ") : "") : "") + ")" +
+                    (gs.tuer ? ", durch die Tür" + (gs.wege ? " — " + gs.wege : "") + (gs.ketteTuer ? " — " + gs.ketteTuer.join(" ") : "") +
+                        (gs.anOrt ? " — an Ort und Stelle abweichend: " + gs.anOrt.join(" ") + (gs.anOrtWie ? " · wie " + JSON.stringify(gs.anOrtWie).slice(0, 300) : "") : "") : "") + ")" +
                     (gs.kette ? " · die Zeichenkette zurück: " + gs.kette.join(" ") : "") + (gs.zustand ? " · der Zustand zurück: " + gs.zustand.join(" ") : ""));
+                if (gs.anOrt) (kopf.anOrt = kopf.anOrt || []).push({ vor: schluessel(g[0]), anders: gs.anOrt, wie: gs.anOrtWie });
                 if (gs.zustand) (kopf.grundZustand = kopf.grundZustand || []).push({ vor: schluessel(g[0]), zurueck: gs.zustand });
             } else {
                 tot = "Grundstellung: " + gs.grund;
@@ -3696,7 +3706,7 @@ async function selbsttest(o = {}) {
             '  const inSeite = (c) => { try { return s({ ergebnis: new Function("r", "window", c)(seite.welt, seite.win) }); } catch (e) { return s({ fehler: String(e && e.message) }); } };',
             '  if (q.url === "/eval") { if (/^seite: /.test(b.code)) return inSeite(b.code.slice(7)); if (/__punkteZeichner|__punkteHaengerLeihe/.test(b.code)) return inSeite(b.code);',
             '    if (/_grundstellung\\(\\)/.test(b.code)) { n("nimm"); return s({ ergebnis: { grund: "{}", n: 3, ms: 1, welt: "w1", seite: [], wege: { flaechen: [], keys: [] } } }); }',
-            '    if (/_grundstellung\\("/.test(b.code)) { n("grund"); return s({ ergebnis: { ok: true, anders: (art === "anders" ? ["augenblick.brand"] : []).concat(weg()), neu: {}, ms: 1, welt: "w1" } }); }',
+            '    if (/_grundstellung\\("/.test(b.code)) { n("grund"); return s({ ergebnis: { ok: true, anders: (art === "anders" || (art === "anders-ort" && !geladen) ? ["augenblick.brand"] : []).concat(weg()), neu: {}, ms: 1, welt: "w1" } }); }',
             '    if (/__punkteStrom/.test(b.code)) return s({ ergebnis: new Function("r", "window", "performance", b.code)(seite.welt, seite.win, performance) });',
             '    if (/_weltBetreten\\(/.test(b.code)) { n("tuer"); return s({ ergebnis: { ok: true, worldId: "w1" } }); }',
             // DER WARME START: das Einschwingen der Sitzung vor einer Probe ohne Ort (WELT_STEHT)
@@ -3905,12 +3915,19 @@ async function selbsttest(o = {}) {
         const vo = [plan(["wiese", "third", 0.5, null, "wiese"]), plan(["genesis", "ego", 0.5, null, "wiese"], ["wiese", "ego", 0.3, null, "wiese"]), plan()].map(probeOrt);
         pruef("SITZUNG DER ORT eines Vegetations-Laufs: der erste Stand seines Plans (wiese, genesis), ohne Plan keiner",
             vo.join(",") === "wiese,genesis," && vo[2] === null, JSON.stringify(vo));
-        // DIE GRUNDSTELLUNG, DIE NICHT TRÄGT: weicht nach dem Rückspielen eine Größe vom Grund ab, sind die übrigen Proben UNGEMESSEN beim
-        // Namen der Größe (nie ROT, nie ein Neuladen)
+        // DIE GRUNDSTELLUNG, DIE NICHT TRÄGT: weicht nach dem Rückspielen eine Größe vom Grund ab, geht sie durch die Tür; weicht sie auch
+        // danach ab, sind die übrigen Proben UNGEMESSEN beim Namen der Größe (nie ROT)
         const r7 = await lauf([[S("m.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)]], "anders", null);
-        pruef("SITZUNG eine Grundstellung, nach der eine Größe vom Grund abweicht: die übrigen Proben UNGEMESSEN beim Namen der Größe",
-            r7.es["m.K1#1"].gruen && r7.es["b.K1#1"].ungemessen === true && /abweichend vom Grund: augenblick\.brand/.test(r7.es["b.K1#1"].grund) && r7.z.join(",") === "start,nimm,warm,grund,stop",
+        pruef("SITZUNG eine Grundstellung, nach der eine Größe vom Grund abweicht, auch durch die Tür: die übrigen Proben UNGEMESSEN beim Namen der Größe",
+            r7.es["m.K1#1"].gruen && r7.es["b.K1#1"].ungemessen === true && /abweichend vom Grund: augenblick\.brand/.test(r7.es["b.K1#1"].grund) && r7.z.join(",") === "start,nimm,warm,grund,tuer,reload,grund,stop",
             JSON.stringify([r7.z, r7.es]));
+        // DAS RÜCKSPIELEN, DAS AN ORT UND STELLE NICHT TRÄGT (Radeon 6a571e3b Lauf 2: „tools materials“ nach tore.K3, 9 Proben ungemessen):
+        // die Abweichung geht durch die Tür, die nächste Probe misst in der heilen Welt, der Kopf nennt die Größe (anOrt)
+        const r7b = await lauf([[S("m.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)]], "anders-ort", null);
+        pruef("SITZUNG DAS RÜCKSPIELEN, DAS AN ORT UND STELLE NICHT TRÄGT: durch die Tür, die nächste Probe misst GRÜN, der Kopf nennt die Größe (anOrt augenblick.brand)",
+            r7b.es["m.K1#1"].gruen && r7b.es["b.K1#1"].gruen === true && !r7b.es["b.K1#1"].ungemessen && r7b.z.join(",") === "start,nimm,warm,grund,tuer,reload,grund,warm,stop" &&
+            JSON.stringify((r7b.kopf.anOrt || []).map((x) => x.vor + ":" + x.anders.join(" "))) === JSON.stringify(["b.K1#1:augenblick.brand"]),
+            JSON.stringify([r7b.z, r7b.es, r7b.kopf.anOrt]));
         // DIE ZEICHENKETTE DER SEITE (w4-grund-zeichner; champion bild-klasse 31.10.: der alte `wasserStrom` ließ `renderer.render` stumm und
         // `postProcessingFailed` an — gelaende.K2#1 blieb ungenannt, tiere.K3#2 fiel als Rückfall „tier-Pixel 0/0/0/0“): eine Probe bricht die
         // Kette wie er, ohne `mutiert` (ihr folgte keine Grundstellung) und mit (wie gelaende.K2#1: die Grundstellung danach spielte nur den
