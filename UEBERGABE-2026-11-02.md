@@ -59,3 +59,7 @@ Y6nuChFfb1dJTf7Btch4J5 steht auf 123 (27.10.) — aus meisterkarte.html neu ver�
 - **z167 = w4-feld b7945342** (feld.K5: Blumen lesen das Leben-Overlay, 26 → 32; Modul-Karte nachgetragen) fährt; `nach-z167.sh` misst danach
   gezielt feld.K5#1 (+ affekt) headless und bucht.
 - Messplatz-Blick läuft im Terminal-Tab „Messplatz“. OMEN: general-1077-gtx in der Reihe.
+- **z167 ROT (w4-feld b7945342)** an voll 2 gate:stand-takt („im Stand kostet die Welt nichts“): `_tickLebenStufen` (stamm/dirigent-takt.js) läuft
+  im Stand mit — er muss bis zum nächsten Stufen-Sprung wirklich schlafen (Ereignis statt Takt) bzw. in die Ruhe-Liste der Stand-Linse. voll 16
+  Verdeckungs-Abfrage war Wackler (Versuch 2 grün). Danach feld.K5 headless messen (`punkte.cjs run --nur feld.K5#1`) → +1.
+- Ende 20:30: nichts läuft mehr (kein Zug, kein Agent, keine Buchungs-Schleife). OMEN: general-1077-gtx steht noch in der Warteschlange.
