@@ -791,6 +791,11 @@ class AnazhRealm_koerper_fahrt {
         }
         this.state.player.mountedArch = entry.id;
         this._mountedEntry = entry; // der Sim-Schritt (Lenk-Pfad, `_rittSchritt`) kennt das Werk ab dem ersten Schritt
+        // DIE FAHRT DES WAGENS, NIE DER SCHRITT DES LEIBS: der Fahr-Schritt liest seine Fahrt aus der Geschwindigkeit des Reiters
+        // (`_fahrPlan`) — beim Aufstieg ist sie die des Wagens (`_fahrWagenGeschw`, ein Wagen ohne Fahr-Zustand steht). Bis hier
+        // trug der Wagen den Schritt des Leibs davon: wer am Hang einstieg, während er rutschte, rollte mit 1,1 m/s los, und die
+        // Haltebremse (vehicle-core `haltV` 0,08 m/s) griff nie (gate:fahr-leben T2, 24-%-Hang: 10 m in 3 s).
+        const wagenV = this._fahrWagenGeschw(entry);
         // Frischer Aufstieg = frischer Fahr-Zustand des Kerns (Lenksäule zentriert, Gier-Rate null, Federn ruhig, die
         // Vertikale auf dem Boden) und ein frisch gelesener Fahr-Satz (das Buch kann sich geändert haben).
         entry._fahr = null;
@@ -863,6 +868,8 @@ class AnazhRealm_koerper_fahrt {
             this.log(`Sitzt auf „${entry.type}"`, "INFO");
             return { ok: true, entry };
         }
+        const pv = this.state.playerVel;
+        if (pv) pv.setValue(wagenV ? wagenV.x : 0, pv.y(), wagenV ? wagenV.z : 0);
         const art =
             prof && prof.radCount > 0
                 ? `${prof.radCount}× Rad — rollt`
