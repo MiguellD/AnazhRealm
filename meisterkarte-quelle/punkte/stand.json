@@ -1,9 +1,9 @@
 {
- "kopf": "10770eb5",
+ "kopf": "95d7bba1",
  "je": {
   "affekt.K1": {
    "punkte": 2,
-   "beleg": "Maschine: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 6.38 dB, Nachbar 0 dB, Stempel 0/0 an 10770eb5 headless · gehalten: Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an 25ac4c0c radeon · gehalten: Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an b4bcf19c gtx",
+   "beleg": "Maschine: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 6.38 dB, Nachbar 0 dB, Stempel 0/0 an 10770eb5 headless · gehalten: Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an 25ac4c0c radeon · Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an 10770eb5 gtx",
    "stationen": [
     {
      "id": "affekt.K1#1",
@@ -27,9 +27,8 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25)",
-     "sha": "b4bcf19c21d456de2547313768915d6a821e4087",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an 6b3da705: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     }
    ]
   },
@@ -91,7 +90,7 @@
   },
   "ankunft.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: ungemessen (R10) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · ankunft.K1#1 gtx: ungemessen (R10) — zuletzt an 10770eb5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) 0, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolle · ankunft.K1#2 radeon: ungemessen (R10) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · ankunft.K1#2 gtx: ungemessen (R10) — zuletzt an 6a571e3b: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) 0, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolle",
+   "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: ungemessen (R10) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · ankunft.K1#1 gtx: ungemessen (R10) — zuletzt an c5a9a2f5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) 0, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolle · ankunft.K1#2 radeon: ungemessen (R10) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · ankunft.K1#2 gtx: ungemessen (R10) — zuletzt an 10770eb5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) 0, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolle",
    "stationen": [
     {
      "id": "ankunft.K1#1",
@@ -109,7 +108,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 10770eb5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) 0, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolle",
+     "grund": "ungemessen (R10) — zuletzt an c5a9a2f5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) 0, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolle",
      "ungemessen": true,
      "beide": true
     },
@@ -128,14 +127,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 6a571e3b: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) 0, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolle",
+     "grund": "ungemessen (R10) — zuletzt an 10770eb5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) 0, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolle",
      "ungemessen": true
     }
    ]
   },
   "ankunft.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K2#1 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · ankunft.K2#1 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: kein Bild der Kontrolle (t(Kontrolle) 0 ms, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontroll",
+   "beleg": "Maschine: 0 — offen: ankunft.K2#1 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · ankunft.K2#1 gtx: Station seit der Messung geändert — zuletzt an c5a9a2f5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: kein Bild der Kontrolle (t(Kontrolle) 0 ms, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontroll",
    "stationen": [
     {
      "id": "ankunft.K2#1",
@@ -152,14 +151,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: kein Bild der Kontrolle (t(Kontrolle) 0 ms, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontroll",
+     "grund": "Station seit der Messung geändert — zuletzt an c5a9a2f5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: kein Bild der Kontrolle (t(Kontrolle) 0 ms, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontroll",
      "ungemessen": true
     }
    ]
   },
   "ankunft.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · ankunft.K3#1 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 2 Zweit-Boots mit Kontrolle von außen (Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrol",
+   "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · ankunft.K3#1 gtx: Station seit der Messung geändert — zuletzt an c5a9a2f5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 2 Zweit-Boots mit Kontrolle von außen (Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrol",
    "stationen": [
     {
      "id": "ankunft.K3#1",
@@ -176,7 +175,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 2 Zweit-Boots mit Kontrolle von außen (Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrol",
+     "grund": "Station seit der Messung geändert — zuletzt an c5a9a2f5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 2 Zweit-Boots mit Kontrolle von außen (Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrol",
      "ungemessen": true
     }
    ]
@@ -198,7 +197,7 @@
   },
   "bauen.K1": {
    "punkte": 1,
-   "beleg": "Maschine: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–2) · hotbar 24/24 (Eingaben 2–2) an 10770eb5 headless — offen: bauen.K1#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · bauen.K1#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 3)) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt d",
+   "beleg": "Maschine: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–2) · hotbar 24/24 (Eingaben 2–2) an 10770eb5 headless — offen: bauen.K1#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · bauen.K1#2 gtx: Station seit der Messung geändert — zuletzt an c5a9a2f5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 3)) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt d",
    "stationen": [
     {
      "id": "bauen.K1#1",
@@ -223,14 +222,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 3)) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt d",
+     "grund": "Station seit der Messung geändert — zuletzt an c5a9a2f5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 3)) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt d",
      "ungemessen": true
     }
    ]
   },
   "bauen.K2": {
    "punkte": 2,
-   "beleg": "Maschine: haus_italienisch am Hang 0.408 (Soll ≥ 0,15) · Erdbau 3 Splats (Platte, Grund, Vorplatz) · byte-gleich dem Dorf-Slot true · Vorplatz-Boden 1 (Erde 0,3 m unter, keine 0,3 m über der Platte) · Erde über der Diele 0/315 an 10770eb5 headless · haus_italienisch auf der Gasse: Grundriss-Punkte auf der Gasse 15 → 0 (von 25) · Erdbau byte-gleich dem Ein-Slot-Plan true · Fremd-Slots im Plan 1 · Gang in den Keller erreicht, Hub 0.20 m je Schritt (Soll ≤ 0,3) an 10770eb5 headless",
+   "beleg": "Maschine: gehalten: haus_italienisch am Hang 0.408 (Soll ≥ 0,15) · Erdbau 3 Splats (Platte, Grund, Vorplatz) · byte-gleich dem Dorf-Slot true · Vorplatz-Boden 1 (Erde 0,3 m unter, keine 0,3 m über der Platte) · Erde über der Diele 0/315 an 10770eb5 headless · gehalten: haus_italienisch auf der Gasse: Grundriss-Punkte auf der Gasse 15 → 0 (von 25) · Erdbau byte-gleich dem Ein-Slot-Plan true · Fremd-Slots im Plan 1 · Gang in den Keller erreicht, Hub 0.20 m je Schritt (Soll ≤ 0,3) an 10770eb5 headless",
    "stationen": [
     {
      "id": "bauen.K2#1",
@@ -238,7 +237,8 @@
      "gruen": true,
      "zahl": "haus_italienisch am Hang 0.408 (Soll ≥ 0,15) · Erdbau 3 Splats (Platte, Grund, Vorplatz) · byte-gleich dem Dorf-Slot true · Vorplatz-Boden 1 (Erde 0,3 m unter, keine 0,3 m über der Platte) · Erde über der Diele 0/315",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-haus-welt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8)",
+     "gehalten": true
     },
     {
      "id": "bauen.K2#2",
@@ -246,7 +246,8 @@
      "gruen": true,
      "zahl": "haus_italienisch auf der Gasse: Grundriss-Punkte auf der Gasse 15 → 0 (von 25) · Erdbau byte-gleich dem Ein-Slot-Plan true · Fremd-Slots im Plan 1 · Gang in den Keller erreicht, Hub 0.20 m je Schritt (Soll ≤ 0,3)",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-haus-welt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8)",
+     "gehalten": true
     }
    ]
   },
@@ -296,7 +297,7 @@
   },
   "bauen.K5": {
    "punkte": 2,
-   "beleg": "Maschine: 6/6 Werke tragen ihr Verb über die Taste an 10770eb5 headless · gehalten: 6/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal) an 25ac4c0c radeon · gehalten: 6/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal) an b4bcf19c gtx",
+   "beleg": "Maschine: gehalten: 6/6 Werke tragen ihr Verb über die Taste an 10770eb5 headless · gehalten: 6/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal) an 25ac4c0c radeon · gehalten: 6/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal) an b4bcf19c gtx",
    "stationen": [
     {
      "id": "bauen.K5#1",
@@ -304,7 +305,8 @@
      "gruen": true,
      "zahl": "6/6 Werke tragen ihr Verb über die Taste",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-werkstatt-weg.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +5)",
+     "gehalten": true
     },
     {
      "id": "bauen.K5#2",
@@ -321,7 +323,7 @@
      "gruen": true,
      "zahl": "6/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal)",
      "sha": "b4bcf19c21d456de2547313768915d6a821e4087",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-werkstatt-weg.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-werkstatt-weg.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3) — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "gehalten": true
     }
    ]
@@ -350,7 +352,7 @@
   },
   "fahrzeug.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: fahrzeug.K2#1 radeon: ungemessen (R10) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · fahrzeug.K2#1 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · fahrzeug.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +7) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · fahrzeug.K2#2 gtx: ungemessen (R10) — zuletzt an 10770eb5: Deckel 55 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "beleg": "Maschine: 0 — offen: fahrzeug.K2#1 radeon: ungemessen (R10) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · fahrzeug.K2#1 gtx: Station seit der Messung geändert — zuletzt an c5a9a2f5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · fahrzeug.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +7) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · fahrzeug.K2#2 gtx: ungemessen (R10) — zuletzt an c5a9a2f5: Deckel 55 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
    "stationen": [
     {
      "id": "fahrzeug.K2#1",
@@ -367,7 +369,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+     "grund": "Station seit der Messung geändert — zuletzt an c5a9a2f5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
      "ungemessen": true
     },
     {
@@ -385,14 +387,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 10770eb5: Deckel 55 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+     "grund": "ungemessen (R10) — zuletzt an c5a9a2f5: Deckel 55 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
      "ungemessen": true
     }
    ]
   },
   "fahrzeug.K3": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Garage FOV +9.07° Arm +18.1 % bei 15.21/16.00 m/s · Welt FOV +9.47° Arm +18.4 % bei 15.18 m/s (Ende ok) an 25ac4c0c radeon · gehalten: Garage FOV +9.06° Arm +18.1 % bei 15.21/16.00 m/s · Welt FOV +9.47° Arm +18.4 % bei 15.18 m/s (Ende ok) an b4bcf19c gtx · gehalten: Drift Kamera ≤ 2.7° neben dem Fahrtvektor (Schlupf bis 1.2°) · Rückkehr 1.08 s nach 69° Orbit · Ruck p95 0.002 m (165) · FOV-Schreiber [_kamFov] an b3f9ae95 radeon · gehalten: Drift Kamera ≤ 0° neben dem Fahrtvektor (Schlupf bis 4.7°) · Rückkehr 1.08 s nach 67° Orbit · Ruck p95 0.002 m (165) · FOV-Schreiber [_kamFov] an b3f9ae95 gtx",
+   "beleg": "Maschine: gehalten: Garage FOV +9.07° Arm +18.1 % bei 15.21/16.00 m/s · Welt FOV +9.47° Arm +18.4 % bei 15.18 m/s (Ende ok) an 25ac4c0c radeon · Garage FOV +9.06° Arm +18.1 % bei 15.21/16.00 m/s · Welt FOV +9.47° Arm +18.4 % bei 15.18 m/s (Ende ok) an 10770eb5 gtx · gehalten: Drift Kamera ≤ 2.7° neben dem Fahrtvektor (Schlupf bis 1.2°) · Rückkehr 1.08 s nach 69° Orbit · Ruck p95 0.002 m (165) · FOV-Schreiber [_kamFov] an b3f9ae95 radeon · gehalten: Drift Kamera ≤ 0° neben dem Fahrtvektor (Schlupf bis 4.7°) · Rückkehr 1.08 s nach 67° Orbit · Ruck p95 0.002 m (165) · FOV-Schreiber [_kamFov] an b3f9ae95 gtx",
    "stationen": [
     {
      "id": "fahrzeug.K3#1",
@@ -408,9 +410,8 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "Garage FOV +9.06° Arm +18.1 % bei 15.21/16.00 m/s · Welt FOV +9.47° Arm +18.4 % bei 15.18 m/s (Ende ok)",
-     "sha": "b4bcf19c21d456de2547313768915d6a821e4087",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "fahrzeug.K3#2",
@@ -427,7 +428,7 @@
      "gruen": true,
      "zahl": "Drift Kamera ≤ 0° neben dem Fahrtvektor (Schlupf bis 4.7°) · Rückkehr 1.08 s nach 67° Orbit · Ruck p95 0.002 m (165) · FOV-Schreiber [_kamFov]",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: Frist der Probe 33 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: gate:fahr-leben ohne Zeile T4/T5 (Exit 0)) · Täter: @@PUNKTE@@ FRIST 33 s der Probe gerissen — WELT (31.0 s)",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 33 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: gate:fahr-leben ohne Zeile T4/T5 (Exit 0)) · Täter: @@PUNKTE@@ FRIST 33 s der Probe gerissen — WELT (31.0 s)",
      "gehalten": true
     }
    ]
@@ -451,7 +452,7 @@
      "gruen": true,
      "zahl": "nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.74 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 0.8° · Hang 17.4°",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: Frist der Probe 33 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: gate:fahr-leben ohne Zeile T4 (Exit 0)) · Täter: @@PUNKTE@@ FRIST 33 s der Probe gerissen — WELT (31.0 s)",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 33 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: gate:fahr-leben ohne Zeile T4 (Exit 0)) · Täter: @@PUNKTE@@ FRIST 33 s der Probe gerissen — WELT (31.0 s)",
      "gehalten": true
     },
     {
@@ -469,7 +470,7 @@
      "gruen": true,
      "zahl": "nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.74 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 0.8° · Hang 17.4°",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: Frist der Probe 33 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: gate:fahr-leben ohne Zeile T4 (Exit 0)) · Täter: @@PUNKTE@@ FRIST 33 s der Probe gerissen — WELT (31.0 s)",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 33 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: gate:fahr-leben ohne Zeile T4 (Exit 0)) · Täter: @@PUNKTE@@ FRIST 33 s der Probe gerissen — WELT (31.0 s)",
      "gehalten": true
     }
    ]
@@ -493,7 +494,7 @@
      "gruen": true,
      "zahl": "Federung im Bild: Drift-Wank 8.613 gegen Glatt 0.541 mm, Stoß-Antwort Glatt/Hang 7.239/9.209 mm (Mutante 2.744/0.499) · Rumble Drift 1 gegen Glatt 0.004, Summen 0.594/0.58 (Mutante 0, 0.126) · Motor 66.7 Hz je 1000 Upm (klang-zensus F) · RM1–3 ✅✅✅",
      "sha": "94c079cb714239d8f146ac3185295b0b220d8602",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs +22) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs +22) — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "gehalten": true
     }
    ]
@@ -522,7 +523,7 @@
   },
   "feld.K2": {
    "punkte": 1,
-   "beleg": "Maschine: 6 (e)-Proben GRÜN: (e) Leib: B's Ghost rechnet A's Schritte aus seinen Eingaben bit-gleich (je seq) — 206 geteilte Schritte, maxΔ 0 | (e) Peers: der Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden) byte-gleich auf A und B — edits gleich · bauten gleich · boden gl | (e) Reload: B trägt nach dem Neuladen denselben Abdruck — edits gleich · bauten gleich · boden gleich · zug gleich an 10770eb5 headless — offen: feld.K2#2 headless: ROT: Zug der Welt-Uhr gleich in 2 von 2 (e)-Zeilen (Exit 0) · OFFEN (f) Peers: Teil-Simulationen gleich — Wetter gleich · Leben 0/9 gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uhr, Fraß, Entfachen rei | OFFEN (f) Reload mitten im Sturm: Teil-Simulationen gleich — Wetter gleich · Leben 0/9 gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uhr, Fr an 10770eb5",
+   "beleg": "Maschine: gehalten: 6 (e)-Proben GRÜN: (e) Leib: B's Ghost rechnet A's Schritte aus seinen Eingaben bit-gleich (je seq) — 206 geteilte Schritte, maxΔ 0 | (e) Peers: der Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden) byte-gleich auf A und B — edits gleich · bauten gleich · boden gl | (e) Reload: B trägt nach dem Neuladen denselben Abdruck — edits gleich · bauten gleich · boden gleich · zug gleich an 10770eb5 headless — offen: feld.K2#2 headless: ROT: Zug der Welt-Uhr gleich in 2 von 2 (e)-Zeilen (Exit 0) · OFFEN (f) Peers: Teil-Simulationen gleich — Wetter gleich · Leben 0/9 gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uhr, Fraß, Entfachen rei | OFFEN (f) Reload mitten im Sturm: Teil-Simulationen gleich — Wetter gleich · Leben 0/9 gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uhr, Fr an 10770eb5",
    "stationen": [
     {
      "id": "feld.K2#1",
@@ -530,7 +531,8 @@
      "gruen": true,
      "zahl": "6 (e)-Proben GRÜN: (e) Leib: B's Ghost rechnet A's Schritte aus seinen Eingaben bit-gleich (je seq) — 206 geteilte Schritte, maxΔ 0 | (e) Peers: der Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden) byte-gleich auf A und B — edits gleich · bauten gleich · boden gl | (e) Reload: B trägt nach dem Neuladen denselben Abdruck — edits gleich · bauten gleich · boden gleich · zug gleich",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-mp-sync.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +5)",
+     "gehalten": true
     },
     {
      "id": "feld.K2#2",
@@ -602,7 +604,7 @@
   },
   "ferne.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Koschmieder T/T_soll 0.88–1.07 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3 an 715754fc radeon · gehalten: Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal an b3f9ae95 gtx — offen: ferne.K1#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN · ferne.K1#2 gtx: Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN",
+   "beleg": "Maschine: gehalten: Koschmieder T/T_soll 0.88–1.07 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3 an 715754fc radeon · gehalten: Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal an b3f9ae95 gtx — offen: ferne.K1#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN · ferne.K1#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 10 s gerissen — beendet, UNGEMESSEN",
    "stationen": [
     {
      "id": "ferne.K1#1",
@@ -619,7 +621,7 @@
      "gruen": true,
      "zahl": "Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 10 s gerissen — beendet, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -637,7 +639,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 10 s gerissen — beendet, UNGEMESSEN",
      "ungemessen": true
     }
    ]
@@ -661,7 +663,7 @@
      "gruen": true,
      "zahl": "Restkontrast am Rand 1.0–1.3 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] nvidia/pascal",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 10 s gerissen — beendet, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -679,14 +681,14 @@
      "gruen": true,
      "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.9k/120k Dreiecke · [linse-gpu] nvidia/pascal",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 10 s gerissen — beendet, UNGEMESSEN",
      "gehalten": true
     }
    ]
   },
   "ferne.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ferne.K3#1 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +3)",
+   "beleg": "Maschine: 0 — offen: ferne.K3#1 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +5)",
    "stationen": [
     {
      "id": "ferne.K3#1",
@@ -694,14 +696,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +3)",
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +5)",
      "ungemessen": true
     }
    ]
   },
   "ferne.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ferne.K4#1 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +3)",
+   "beleg": "Maschine: 0 — offen: ferne.K4#1 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +5)",
    "stationen": [
     {
      "id": "ferne.K4#1",
@@ -709,7 +711,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +3)",
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +5)",
      "ungemessen": true
     }
    ]
@@ -762,7 +764,7 @@
   },
   "gelaende.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5) an b3f9ae95 radeon · gehalten: 8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5) an 715754fc gtx — offen: gelaende.K2#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · gelaende.K2#2 gtx: Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "beleg": "Maschine: gehalten: 8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5) an b3f9ae95 radeon · gehalten: 8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5) an 715754fc gtx — offen: gelaende.K2#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · gelaende.K2#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
    "stationen": [
     {
      "id": "gelaende.K2#1",
@@ -779,7 +781,7 @@
      "gruen": true,
      "zahl": "8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
      "gehalten": true
     },
     {
@@ -797,7 +799,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
      "ungemessen": true
     }
    ]
@@ -850,7 +852,7 @@
   },
   "gelaende.K5": {
    "punkte": 2,
-   "beleg": "Maschine: im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 0.8 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) an 10770eb5 headless · gehalten: alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) an b3f9ae95 radeon · gehalten: alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) an 715754fc gtx",
+   "beleg": "Maschine: gehalten: im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 0.8 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) an 10770eb5 headless · gehalten: alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) an b3f9ae95 radeon · gehalten: alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) an 715754fc gtx",
    "stationen": [
     {
      "id": "gelaende.K5#1",
@@ -858,7 +860,8 @@
      "gruen": true,
      "zahl": "im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 0.8 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht)",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-koerper-stand.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +9)",
+     "gehalten": true
     },
     {
      "id": "gelaende.K5#2",
@@ -866,7 +869,7 @@
      "gruen": true,
      "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Pfad seit der Messung geändert (R6: gelaende-core.js, stamm/dirigent-takt.js, stamm/koerper-bewegung.js +5) — zuletzt an 25ac4c0c: Deckel 24 s gerissen — beendet, UNGEMESSEN (zuletzt: == hang · SICHT first (8.9 s): fein 4.3/200 · streu 0.9/711 · huf 0.8/201 · rad 1.2/200 (p95 cm / Kontakte))",
+     "grund": "Pfad seit der Messung geändert (R6: gelaende-core.js, stamm/dirigent-takt.js, stamm/koerper-bewegung.js +6) — zuletzt an 25ac4c0c: Deckel 24 s gerissen — beendet, UNGEMESSEN (zuletzt: == hang · SICHT first (8.9 s): fein 4.3/200 · streu 0.9/711 · huf 0.8/201 · rad 1.2/200 (p95 cm / Kontakte))",
      "gehalten": true
     },
     {
@@ -875,7 +878,7 @@
      "gruen": true,
      "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: == wiese · SICHT first (3.0 s): fein 1.1/200 · streu 0.5/350 · huf 0.2/202 · rad 0.1/200 (p95 cm / Kontakte))",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: == wiese · SICHT third (6.0 s): fein 1.1/200 · streu 0.8/363 · huf 0.2/202 · rad 0.1/200 (p95 cm / Kontakte))",
      "gehalten": true
     }
    ]
@@ -944,7 +947,7 @@
   },
   "haar.K4": {
    "punkte": 1,
-   "beleg": "Maschine: 1320 mittelalter poncho/pants/boot · 1935 moderne tshirt/pants/sneaker: im Bild 63.0 % der Leib-Pixel anders (Soll ≥ 25 %), der Schnitt allein 16.2 % (≥ 5 %), Umriss-Deckung 0.9602, die Mutante 0.0 % (≤ 0,2 %) · Leib 7696/7419/7696/7409 px (≥ 2 000), Treue 0 Bytes an 10770eb5 headless — offen: haar.K4#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: gehalten: 1320 mittelalter poncho/pants/boot · 1935 moderne tshirt/pants/sneaker: im Bild 63.0 % der Leib-Pixel anders (Soll ≥ 25 %), der Schnitt allein 16.2 % (≥ 5 %), Umriss-Deckung 0.9602, die Mutante 0.0 % (≤ 0,2 %) · Leib 7696/7419/7696/7409 px (≥ 2 000), Treue 0 Bytes an 10770eb5 headless — offen: haar.K4#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "haar.K4#1",
@@ -952,7 +955,8 @@
      "gruen": true,
      "zahl": "1320 mittelalter poncho/pants/boot · 1935 moderne tshirt/pants/sneaker: im Bild 63.0 % der Leib-Pixel anders (Soll ≥ 25 %), der Schnitt allein 16.2 % (≥ 5 %), Umriss-Deckung 0.9602, die Mutante 0.0 % (≤ 0,2 %) · Leib 7696/7419/7696/7409 px (≥ 2 000), Treue 0 Bytes",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18)",
+     "gehalten": true
     }
    ]
   },
@@ -998,7 +1002,7 @@
      "gruen": true,
      "zahl": "vor: Treffer KE 74.6 J · p 5.96 · v 23.3 · Schaden 15.8 · edgeQ 1.000/Bild 0.998 · Werk 1.383 kg β 26.3° · Labor 1.383 kg β 26.3° | masse: Treffer KE 79.9 J · p 6.80 · v 22.1 · Schaden 17.2 · edgeQ 1.000/Bild 1.000 · Werk 1.646 kg β 26.3° · Labor 1.646 kg β 26.3° | schneide: Treffer KE 72.3 J · p 5.63 · v 23.5 · Schaden 15.6 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 22.7° · Labor 1.383 kg β 22.7°",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "gehalten": true
     }
    ]
@@ -1022,7 +1026,7 @@
      "gruen": true,
      "zahl": "schlechtester von 3 Läufen p95 ms third/hieb 41 · ego/hieb 28.1 · Bild 15.5/15.5/15.3 ms · Hit-Stop im schlechtesten Lauf 12 Bilder · im Spiel Halt gesetzt 59-mal (124–179 ms, gleitet bis 0 mm je Takt) / 60-mal (153–168 ms, gleitet bis 0 mm je Takt) / 60-mal (120–175 ms, gleitet bis 0 mm je Takt)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
      "gehalten": true
     },
     {
@@ -1098,7 +1102,7 @@
      "gruen": true,
      "zahl": "Sturz 2 · 4 · 8 · 12 m · Wurf: 0.0 · 10.7 · 57.0 · 101.7 · 47.7 hp (Aufprall 6.2 · 8.8 · 12.6 · 15.4 · 11.9 m/s) · Tod-Lage 60 / 15 Hz 29.2° 4.5 cm / 29.2° 4.5 cm · Tod jagd, Anker 0.0 m · Abdruck 1566c4d6e4ba → 1566c4d6e4ba",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -1116,7 +1120,7 @@
      "gruen": true,
      "zahl": "hpMax/staminaMax/manaMax/defense leer 116.0/158.0/84.5/10.4 · Werk eisen 154.9/129.8/84.5/15.9 · bronze 152.7/131.0/84.5/15.5 · holz 131.9/144.5/84.5/12.6 · Nahrung kraut 125.9/151.5/93.1/11.8 · fleisch 127.2/150.2/92.9/11.9 · Stand 184.0/104.5/92.9/19.8 → 184.0/104.5/92.9/19.8 · Nahrung im Stand [[\"consume:_k5\"],[\"consume:_k5\"]]",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "gehalten": true
     }
    ]
@@ -1209,7 +1213,7 @@
   },
   "klang.K1": {
    "punkte": 2,
-   "beleg": "Maschine: Wiese wind -36.3 · vogel -37.5 dB aus 17 Leibern (17 gezeichnet), ohne Leib still · Ufer -25.8 (wind -36.3) · Wald laub -31.1 · Dorf glut -27.2 an 10770eb5 headless · Nacht grille -40.1 · vogel −∞ dB (0 Leiber) · Regen regen -30.4 (wind -23.2, vogel −∞ aus 0 Leibern) · gehend 10 m wind -36.3 vogel -41.4 (16/16) · fahrend 30 m im Sattel wind -36.4 vogel -42.0 (16/16) an 10770eb5 headless",
+   "beleg": "Maschine: gehalten: Wiese wind -36.3 · vogel -37.5 dB aus 17 Leibern (17 gezeichnet), ohne Leib still · Ufer -25.8 (wind -36.3) · Wald laub -31.1 · Dorf glut -27.2 an 10770eb5 headless · gehalten: Nacht grille -40.1 · vogel −∞ dB (0 Leiber) · Regen regen -30.4 (wind -23.2, vogel −∞ aus 0 Leibern) · gehend 10 m wind -36.3 vogel -41.4 (16/16) · fahrend 30 m im Sattel wind -36.4 vogel -42.0 (16/16) an 10770eb5 headless",
    "stationen": [
     {
      "id": "klang.K1#1",
@@ -1217,7 +1221,8 @@
      "gruen": true,
      "zahl": "Wiese wind -36.3 · vogel -37.5 dB aus 17 Leibern (17 gezeichnet), ohne Leib still · Ufer -25.8 (wind -36.3) · Wald laub -31.1 · Dorf glut -27.2",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +9)",
+     "gehalten": true
     },
     {
      "id": "klang.K1#2",
@@ -1225,13 +1230,14 @@
      "gruen": true,
      "zahl": "Nacht grille -40.1 · vogel −∞ dB (0 Leiber) · Regen regen -30.4 (wind -23.2, vogel −∞ aus 0 Leibern) · gehend 10 m wind -36.3 vogel -41.4 (16/16) · fahrend 30 m im Sattel wind -36.4 vogel -42.0 (16/16)",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +7)",
+     "gehalten": true
     }
    ]
   },
   "klang.K2": {
    "punkte": 2,
-   "beleg": "Maschine: r 0.63 bei Lag 0 (n 102), Spitze 0.63 bei -0.2 s, CV Bild 0.23 / Ohr 0.51, 56.2 fps, Klang an an 6a571e3b radeon · r 0.75 bei Lag 0 (n 104), Spitze 0.77 bei -0.8 s, CV Bild 0.22 / Ohr 0.62, 68.1 fps, Klang an an 6a571e3b gtx · Ufer r 0.93 bei Lag 0 (n 270, Spitze 0.93 bei 0 s, CV Bild 0.32 / Ohr 0.40, stumm 0/266) · Regen r 1.00 bei Lag 0 (n 270, Spitze 1.00 bei -0.5 s, CV Bild 0.63 / Ohr 0.63, stumm 0/261) · Selbsttest (eingefroren) ROT an 10770eb5 headless",
+   "beleg": "Maschine: gehalten: r 0.63 bei Lag 0 (n 102), Spitze 0.63 bei -0.2 s, CV Bild 0.23 / Ohr 0.51, 56.2 fps, Klang an an 6a571e3b radeon · gehalten: r 0.75 bei Lag 0 (n 104), Spitze 0.77 bei -0.8 s, CV Bild 0.22 / Ohr 0.62, 68.1 fps, Klang an an 6a571e3b gtx · Ufer r 0.93 bei Lag 0 (n 270, Spitze 0.93 bei 0 s, CV Bild 0.32 / Ohr 0.40, stumm 0/266) · Regen r 1.00 bei Lag 0 (n 270, Spitze 1.00 bei -0.5 s, CV Bild 0.63 / Ohr 0.63, stumm 0/261) · Selbsttest (eingefroren) ROT an 10770eb5 headless",
    "stationen": [
     {
      "id": "klang.K2#1",
@@ -1239,7 +1245,8 @@
      "gruen": true,
      "zahl": "r 0.63 bei Lag 0 (n 102), Spitze 0.63 bei -0.2 s, CV Bild 0.23 / Ohr 0.51, 56.2 fps, Klang an",
      "sha": "6a571e3b98934cbc73b85e217f7fa69b080d415a",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +14)",
+     "gehalten": true
     },
     {
      "id": "klang.K2#1",
@@ -1247,7 +1254,8 @@
      "gruen": true,
      "zahl": "r 0.75 bei Lag 0 (n 104), Spitze 0.77 bei -0.8 s, CV Bild 0.22 / Ohr 0.62, 68.1 fps, Klang an",
      "sha": "6a571e3b98934cbc73b85e217f7fa69b080d415a",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +13)",
+     "gehalten": true
     },
     {
      "id": "klang.K2#2",
@@ -1261,7 +1269,7 @@
   },
   "klang.K3": {
    "punkte": 1,
-   "beleg": "Maschine: 24/24 Vorzeichen richtig (tier 12, glut 12) · |ILD| ≥ 80.6 dB bei 90°, ≥ 7.7 dB bei 30° · Pegel fällt: tier 3 m -22.9 › 8 m -31.4 › 20 m -39.4 · glut 1.5 m -17.7 › 3 m -23.7 › 6 m -29.7 dB an 10770eb5 headless",
+   "beleg": "Maschine: gehalten: 24/24 Vorzeichen richtig (tier 12, glut 12) · |ILD| ≥ 80.6 dB bei 90°, ≥ 7.7 dB bei 30° · Pegel fällt: tier 3 m -22.9 › 8 m -31.4 › 20 m -39.4 · glut 1.5 m -17.7 › 3 m -23.7 › 6 m -29.7 dB an 10770eb5 headless",
    "stationen": [
     {
      "id": "klang.K3#1",
@@ -1269,7 +1277,8 @@
      "gruen": true,
      "zahl": "24/24 Vorzeichen richtig (tier 12, glut 12) · |ILD| ≥ 80.6 dB bei 90°, ≥ 7.7 dB bei 30° · Pegel fällt: tier 3 m -22.9 › 8 m -31.4 › 20 m -39.4 · glut 1.5 m -17.7 › 3 m -23.7 › 6 m -29.7 dB",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
+     "gehalten": true
     }
    ]
   },
@@ -1292,7 +1301,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +19) — zuletzt an 10770eb5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +19) — zuletzt an c5a9a2f5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
      "ungemessen": true
     },
     {
@@ -1310,7 +1319,7 @@
      "gruen": true,
      "zahl": "✅ Schritte gras 5591 Hz (n 30) · laub 5159 Hz (n 19) · quarz 3213 Hz (n 20), kleinster Abstand 432 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.51 dB je m/s, r 0.9958 (1 m 4.4 m/s -52.8 dB · 2 m 6.2 m/s -51.6 dB · 4 m 8.8 m/s -50.1 dB · 8 m 12.6 m/s -48.3 dB · 12 m 15.4 m/s -47.2 dB) · ✅ Doppler Steigung 1.0000 r 1.0000 (-9 m 13.3 m/s 1.0404/1.0404 · -4.5 m 9.6 m/s 1.0289/1.0289 · -2 m 5.0 m/s 1.0147/1.0147 · 2 m -5.2 m/s 0.9850/0.9850 · 4.5 m -7.3 m/s 0.9792/0.9792 · 9 m -6.5 m/s 0.9814/0.9814)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +19) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +19) — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "gehalten": true
     }
    ]
@@ -1342,14 +1351,14 @@
      "gruen": true,
      "zahl": "Klang-Takt p95 gehen 0.13 · fahrt 0.14 · nacht 0.14 ms · Aussetzer 0 in 602 s Wiedergabe (0 s still) (Exit 0)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +19) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +19) — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "gehalten": true
     }
    ]
   },
   "leib.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: schlechtester von 1 Läufen p95 ms ego/gehen 43.8 · third/gehen 45.4 · ego/wechsel 32 · third/wechsel 29.7 · Bild 16.5 ms an b4bcf19c gtx — offen: leib.K1#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1) · leib.K1#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "beleg": "Maschine: schlechtester von 1 Läufen p95 ms ego/gehen 41.8 · third/gehen 39.5 · ego/wechsel 38.3 · third/wechsel 21.8 · Bild 16.7 ms an 10770eb5 gtx — offen: leib.K1#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1) · leib.K1#2 gtx: Station seit der Messung geändert — zuletzt an c5a9a2f5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
    "stationen": [
     {
      "id": "leib.K1#1",
@@ -1364,10 +1373,9 @@
      "id": "leib.K1#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 43.8 · third/gehen 45.4 · ego/wechsel 32 · third/wechsel 29.7 · Bild 16.5 ms",
-     "sha": "b4bcf19c21d456de2547313768915d6a821e4087",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +13)",
-     "gehalten": true
+     "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 41.8 · third/gehen 39.5 · ego/wechsel 38.3 · third/wechsel 21.8 · Bild 16.7 ms",
+     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+     "grund": null
     },
     {
      "id": "leib.K1#2",
@@ -1384,7 +1392,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+     "grund": "Station seit der Messung geändert — zuletzt an c5a9a2f5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
      "ungemessen": true
     }
    ]
@@ -1408,7 +1416,7 @@
      "gruen": true,
      "zahl": "hang 1.4 (n 201) · falllinie 1.2 (n 200) · treppe hang 1.2 (n 201) · treppe wiese 0.4 (n 201) cm p95 · Steckenbleiber 0",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -1426,7 +1434,7 @@
      "gruen": true,
      "zahl": "Ego 0.323/2.846 → 0.179/2.156 → 0.503/3.45 · Third 0.323/2.846 → 0.179/2.156 → 0.503/3.45 m (Leib → Masse ×1,25 → Kraft ×1,25) · Fuß hang 1.4 (n 200) · falllinie 1.2 (n 200) · treppe hang 1.2 (n 201) · treppe wiese 0.4 (n 200) cm p95 · Steckenbleiber 0",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "gehalten": true
     }
    ]
@@ -1447,7 +1455,7 @@
   },
   "leib.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":18} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.41 m · Kugel {\"orbit fern: im Stamm baum_tanne\":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0053 höchstens 2.700 m an b3f9ae95 radeon · gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":18} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.41 m · Kugel {\"orbit fern: im Stamm baum_tanne\":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0053 höchstens 2.700 m an b3f9ae95 gtx — offen: leib.K4#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · leib.K4#2 gtx: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+   "beleg": "Maschine: gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":18} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.41 m · Kugel {\"orbit fern: im Stamm baum_tanne\":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0053 höchstens 2.700 m an b3f9ae95 radeon · gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":18} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.41 m · Kugel {\"orbit fern: im Stamm baum_tanne\":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0053 höchstens 2.700 m an b3f9ae95 gtx — offen: leib.K4#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · leib.K4#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "leib.K4#1",
@@ -1464,7 +1472,7 @@
      "gruen": true,
      "zahl": "stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":18} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.41 m · Kugel {\"orbit fern: im Stamm baum_tanne\":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0053 höchstens 2.700 m",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -1482,7 +1490,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "ungemessen": true
     }
    ]
@@ -1511,7 +1519,7 @@
   },
   "licht.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: licht.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an 6a571e3b: Deckel 40 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"wiese\",\"sicht\":\"ego\"} · 15.6 s · 32.6 s)",
+   "beleg": "Maschine: 0 — offen: licht.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an 10770eb5: Deckel 40 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 8.2 s · 35.8 s)",
    "stationen": [
     {
      "id": "licht.K1#1",
@@ -1519,14 +1527,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an 6a571e3b: Deckel 40 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /umstellen {\"ort\":\"wiese\",\"sicht\":\"ego\"} · 15.6 s · 32.6 s)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an 10770eb5: Deckel 40 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 8.2 s · 35.8 s)",
      "ungemessen": true
     }
    ]
   },
   "licht.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Verhältnis 5.333 (5–12,5), Schatten-Anteil 0.1875 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an 25ac4c0c radeon · gehalten: Verhältnis 5.333 (5–12,5), Schatten-Anteil 0.1875 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an b4bcf19c gtx — offen: licht.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) · licht.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an 6a571e3b: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0)",
+   "beleg": "Maschine: gehalten: Verhältnis 5.333 (5–12,5), Schatten-Anteil 0.1875 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an 25ac4c0c radeon · gehalten: Verhältnis 5.333 (5–12,5), Schatten-Anteil 0.1875 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an b4bcf19c gtx — offen: licht.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) · licht.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an 10770eb5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0)",
    "stationen": [
     {
      "id": "licht.K2#1",
@@ -1561,14 +1569,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an 6a571e3b: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an 10770eb5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0)",
      "ungemessen": true
     }
    ]
   },
   "licht.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: licht.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) — zuletzt an 6a571e3b: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 4 statt /lauf {\"sek\":5,\"ein\":8,\"ruhe\":120,\"regler\":\"voll\"}: die Welt steht nach 1 Takten, 0.2 s · 44.6 s) · licht.K3#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an 6a571e3b: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 6 statt /lauf {\"sek\":5,\"ein\":8,\"ruhe\":120,\"regler\":\"voll\"}: die Welt steht nach 1 Takten, 0.0 s · 44.8 s) · licht.K3#2 radeon: ungemessen (R10) — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 1 statt /lauf {\"sek\":5,\"ein\":8,\"ruhe\":120,\"regler\":\"voll\"}: die Welt steht nach 40 Takten, 0.5 s · 3.9 s) · licht.K3#2 gtx: Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 1 statt /lauf {\"sek\":5,\"ein\":8,\"ruhe\":120,\"regler\":\"voll\"}: die Welt steht nach 40 Takten, 0.7 s · 4.1 s)",
+   "beleg": "Maschine: 0 — offen: licht.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) — zuletzt an 6a571e3b: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 4 statt /lauf {\"sek\":5,\"ein\":8,\"ruhe\":120,\"regler\":\"voll\"}: die Welt steht nach 1 Takten, 0.2 s · 44.6 s) · licht.K3#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an 10770eb5: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 4 statt /lauf {\"sek\":5,\"ein\":8,\"ruhe\":120,\"regler\":\"voll\"}: die Welt steht nach 1 Takten, 0.1 s · 20.0 s) · licht.K3#2 radeon: ungemessen (R10) — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 1 statt /lauf {\"sek\":5,\"ein\":8,\"ruhe\":120,\"regler\":\"voll\"}: die Welt steht nach 40 Takten, 0.5 s · 3.9 s) · licht.K3#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 1 statt /lauf {\"sek\":5,\"ein\":8,\"ruhe\":120,\"regler\":\"voll\"}: die Welt steht nach 1 Takten, 0.0 s · 3.9 s)",
    "stationen": [
     {
      "id": "licht.K3#1",
@@ -1585,7 +1593,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an 6a571e3b: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 6 statt /lauf {\"sek\":5,\"ein\":8,\"ruhe\":120,\"regler\":\"voll\"}: die Welt steht nach 1 Takten, 0.0 s · 44.8 s)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an 10770eb5: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 4 statt /lauf {\"sek\":5,\"ein\":8,\"ruhe\":120,\"regler\":\"voll\"}: die Welt steht nach 1 Takten, 0.1 s · 20.0 s)",
      "ungemessen": true
     },
     {
@@ -1603,14 +1611,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 1 statt /lauf {\"sek\":5,\"ein\":8,\"ruhe\":120,\"regler\":\"voll\"}: die Welt steht nach 40 Takten, 0.7 s · 4.1 s)",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 1 statt /lauf {\"sek\":5,\"ein\":8,\"ruhe\":120,\"regler\":\"voll\"}: die Welt steht nach 1 Takten, 0.0 s · 3.9 s)",
      "ungemessen": true
     }
    ]
   },
   "licht.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: licht.K4#1 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +3)",
+   "beleg": "Maschine: 0 — offen: licht.K4#1 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +5)",
    "stationen": [
     {
      "id": "licht.K4#1",
@@ -1618,7 +1626,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +3)",
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +5)",
      "ungemessen": true
     }
    ]
@@ -1649,7 +1657,7 @@
   },
   "lod.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) · lod.K1#1 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 30 s gerissen — beendet, UNGEMESSEN (zuletzt: fenster · Exit 0)",
+   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) · lod.K1#1 gtx: Station seit der Messung geändert — zuletzt an c5a9a2f5: Deckel 30 s gerissen — beendet, UNGEMESSEN (zuletzt: wiese · Exit 0)",
    "stationen": [
     {
      "id": "lod.K1#1",
@@ -1666,7 +1674,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 30 s gerissen — beendet, UNGEMESSEN (zuletzt: fenster · Exit 0)",
+     "grund": "Station seit der Messung geändert — zuletzt an c5a9a2f5: Deckel 30 s gerissen — beendet, UNGEMESSEN (zuletzt: wiese · Exit 0)",
      "ungemessen": true
     }
    ]
@@ -1705,14 +1713,14 @@
      "gruen": true,
      "zahl": "Deckung/IoU bc -20° 0.994/0.942 · 0° 0.984/0.871 · 40° 1.001/0.966 · 80° 0.97/0.963 (waagrecht 80° 0.323/0.224) · rgba8 -20° 0.994/0.942 · 0° 0.986/0.886 · 40° 1.001/0.966 · 80° 0.97/0.963 (waagrecht 80° 0.323/0.224) (Soll ≥ 0,75/0,65) · [linse-gpu] nvidia/pascal",
      "sha": "b4bcf19c21d456de2547313768915d6a821e4087",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-foundry-impostor.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +19) — zuletzt an 6a571e3b: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine C6-Zeile (Exit 1) · [linse-gpu] nvidia/pascal) · Täter: PROBE-FEHLER Error: ANKER fehlt in scripts/diag-foundry-impostor.cjs kle",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-foundry-impostor.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +19) — zuletzt an 10770eb5: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine C6-Zeile (Exit 1) · [linse-gpu] nvidia/pascal) · Täter: PROBE-FEHLER Error: ANKER fehlt in scripts/diag-foundry-impostor.cjs kle",
      "gehalten": true
     }
    ]
   },
   "lod.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: lod.K4#1 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +3)",
+   "beleg": "Maschine: 0 — offen: lod.K4#1 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +5)",
    "stationen": [
     {
      "id": "lod.K4#1",
@@ -1720,14 +1728,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +3)",
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +5)",
      "ungemessen": true
     }
    ]
   },
   "lod.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 10770eb5 headless — offen: lod.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) · lod.K5#1 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+   "beleg": "Maschine: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 10770eb5 headless — offen: lod.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +14) · lod.K5#1 gtx: Station seit der Messung geändert — zuletzt an c5a9a2f5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
    "stationen": [
     {
      "id": "lod.K5#1",
@@ -1744,7 +1752,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+     "grund": "Station seit der Messung geändert — zuletzt an c5a9a2f5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
      "ungemessen": true
     },
     {
@@ -1759,7 +1767,7 @@
   },
   "luftwasser.K1": {
    "punkte": 2,
-   "beleg": "Maschine: Wiese 17 Vogel-Leiber gezeichnet (17 gehört), Flug 5.55 m/s 11.79 m über Grund, Ruf -37.5 dB (Soll: > 0 Leiber rufen, ≥ 1 m/s, ≥ 2 m) an 10770eb5 headless · wiese 17/17 5.55 m/s · nacht 0/0 0 m/s · regen 0/0 0 m/s · gehend 16/16 5.46 m/s · fahrend 16/16 5.69 m/s · wald 21/21 5.12 m/s · dorf 15/15 5.82 m/s · glutArm 15/15 5.14 m/s · seeufer 16/16 5.41 m/s · fallArm 18/18 5.44 m/s (gehört/gezeichnet) · ohne Leib 0 Leiber, Chor still an 10770eb5 headless",
+   "beleg": "Maschine: gehalten: Wiese 17 Vogel-Leiber gezeichnet (17 gehört), Flug 5.55 m/s 11.79 m über Grund, Ruf -37.5 dB (Soll: > 0 Leiber rufen, ≥ 1 m/s, ≥ 2 m) an 10770eb5 headless · gehalten: wiese 17/17 5.55 m/s · nacht 0/0 0 m/s · regen 0/0 0 m/s · gehend 16/16 5.46 m/s · fahrend 16/16 5.69 m/s · wald 21/21 5.12 m/s · dorf 15/15 5.82 m/s · glutArm 15/15 5.14 m/s · seeufer 16/16 5.41 m/s · fallArm 18/18 5.44 m/s (gehört/gezeichnet) · ohne Leib 0 Leiber, Chor still an 10770eb5 headless",
    "stationen": [
     {
      "id": "luftwasser.K1#1",
@@ -1767,7 +1775,8 @@
      "gruen": true,
      "zahl": "Wiese 17 Vogel-Leiber gezeichnet (17 gehört), Flug 5.55 m/s 11.79 m über Grund, Ruf -37.5 dB (Soll: > 0 Leiber rufen, ≥ 1 m/s, ≥ 2 m)",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
+     "gehalten": true
     },
     {
      "id": "luftwasser.K1#2",
@@ -1775,7 +1784,8 @@
      "gruen": true,
      "zahl": "wiese 17/17 5.55 m/s · nacht 0/0 0 m/s · regen 0/0 0 m/s · gehend 16/16 5.46 m/s · fahrend 16/16 5.69 m/s · wald 21/21 5.12 m/s · dorf 15/15 5.82 m/s · glutArm 15/15 5.14 m/s · seeufer 16/16 5.41 m/s · fallArm 18/18 5.44 m/s (gehört/gezeichnet) · ohne Leib 0 Leiber, Chor still",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
+     "gehalten": true
     }
    ]
   },
@@ -1864,7 +1874,7 @@
   },
   "material.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] amd/rdna-3) · Täter: @@ 4.1 s · Labor: Protocol · material.K1#1 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: @@ 4 s · Labor: Protoco · material.K1#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] am · material.K1#2 gtx: Station seit der Messung geändert — zuletzt an 6a571e3b: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nv",
+   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] amd/rdna-3) · Täter: @@ 4.1 s · Labor: Protocol · material.K1#1 gtx: Station seit der Messung geändert — zuletzt an c5a9a2f5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: @@ 4 s · Labor: Protoco · material.K1#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] am · material.K1#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nv",
    "stationen": [
     {
      "id": "material.K1#1",
@@ -1881,7 +1891,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: @@ 4 s · Labor: Protoco",
+     "grund": "Station seit der Messung geändert — zuletzt an c5a9a2f5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: @@ 4 s · Labor: Protoco",
      "ungemessen": true
     },
     {
@@ -1899,14 +1909,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nv",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nv",
      "ungemessen": true
     }
    ]
   },
   "material.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: material.K2#1 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: boden-0.5 · Exit 0) · material.K2#1 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: fels-weit · Exit 0)",
+   "beleg": "Maschine: 0 — offen: material.K2#1 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: boden-0.5 · Exit 0) · material.K2#1 gtx: Station seit der Messung geändert — zuletzt an c5a9a2f5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: fels-weit · Exit 0)",
    "stationen": [
     {
      "id": "material.K2#1",
@@ -1923,14 +1933,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: fels-weit · Exit 0)",
+     "grund": "Station seit der Messung geändert — zuletzt an c5a9a2f5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: fels-weit · Exit 0)",
      "ungemessen": true
     }
    ]
   },
   "material.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.983 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2389 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3 an 715754fc radeon · gehalten: Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.984 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2389 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal an b3f9ae95 gtx · gehalten: haus@0.5 l1 0.992/l2 0.983 · birke@0.5 l1 0.992/karte 0.998 · fichte@0.5 l1 1.001/karte 0.958 · haus@0.27 l1 0.992/l2 0.983 · birke@0.27 l1 0.994/karte 1.000 · fichte@0.27 l1 1.000/karte 0.958 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3 an b3f9ae95 radeon — offen: material.K3#2 gtx: Station seit der Messung geändert — zuletzt an 6a571e3b: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: albedo --tafel ohne Messung: ) · Täter: @@ 4.1 s · Labor: Protocol error (Runtime.evaluate): Target closed",
+   "beleg": "Maschine: gehalten: Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.983 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2389 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3 an 715754fc radeon · gehalten: Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.984 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2389 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal an b3f9ae95 gtx · gehalten: haus@0.5 l1 0.992/l2 0.983 · birke@0.5 l1 0.992/karte 0.998 · fichte@0.5 l1 1.001/karte 0.958 · haus@0.27 l1 0.992/l2 0.983 · birke@0.27 l1 0.994/karte 1.000 · fichte@0.27 l1 1.000/karte 0.958 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3 an b3f9ae95 radeon — offen: material.K3#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: albedo --tafel ohne Messung: ) · Täter: @@ 4 s · Labor: Protocol error (Runtime.evaluate): Target closed",
    "stationen": [
     {
      "id": "material.K3#1",
@@ -1947,7 +1957,7 @@
      "gruen": true,
      "zahl": "Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.984 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2389 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: albedo --tafel ohne Messung: ) · Täter: @@ 4.1 s · Labor: Protocol error (Runtime.evaluate): Target closed",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: albedo --tafel ohne Messung: ) · Täter: @@ 4 s · Labor: Protocol error (Runtime.evaluate): Target closed",
      "gehalten": true
     },
     {
@@ -1965,7 +1975,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: albedo --tafel ohne Messung: ) · Täter: @@ 4.1 s · Labor: Protocol error (Runtime.evaluate): Target closed",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: albedo --tafel ohne Messung: ) · Täter: @@ 4 s · Labor: Protocol error (Runtime.evaluate): Target closed",
      "ungemessen": true
     }
    ]
@@ -2037,14 +2047,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 33 s gerissen — beendet, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an c5a9a2f5: Deckel 33 s gerissen — beendet, UNGEMESSEN",
      "ungemessen": true
     }
    ]
   },
   "mensch.K2": {
    "punkte": 2,
-   "beleg": "Maschine: Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an 10770eb5 headless · gehalten: Soll-Orte alle 108/108 ≥ 0,9 (min 0.983), Wege je Tag 5–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.261 m), Sprünge 0, Plan bit-gleich true an 715754fc radeon · gehalten: Soll-Orte alle 81/81 ≥ 0,9 (min 0.983), Wege je Tag 5–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.204 m), Sprünge 0, Plan bit-gleich true an b3f9ae95 gtx",
+   "beleg": "Maschine: gehalten: Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an 10770eb5 headless · gehalten: Soll-Orte alle 108/108 ≥ 0,9 (min 0.983), Wege je Tag 5–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.261 m), Sprünge 0, Plan bit-gleich true an 715754fc radeon · gehalten: Soll-Orte alle 81/81 ≥ 0,9 (min 0.983), Wege je Tag 5–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.204 m), Sprünge 0, Plan bit-gleich true an b3f9ae95 gtx",
    "stationen": [
     {
      "id": "mensch.K2#1",
@@ -2052,7 +2062,8 @@
      "gruen": true,
      "zahl": "Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +7)",
+     "gehalten": true
     },
     {
      "id": "mensch.K2#2",
@@ -2069,14 +2080,14 @@
      "gruen": true,
      "zahl": "Soll-Orte alle 81/81 ≥ 0,9 (min 0.983), Wege je Tag 5–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.204 m), Sprünge 0, Plan bit-gleich true",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 33 s gerissen — beendet, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 33 s gerissen — beendet, UNGEMESSEN",
      "gehalten": true
     }
    ]
   },
   "mensch.K3": {
    "punkte": 2,
-   "beleg": "Maschine: Durchdringung 0, Tür 266/266, Hüllen 18/18, Gangzeit auf Wegen 0.899 an 10770eb5 headless · Stadt 33 Häuser: Steckenbleiber 0, Gangzeit auf Wegen 0.967, Strecke min 165 m, Berührung 0, Durchdringung 0, Tür 390/390 an 10770eb5 headless",
+   "beleg": "Maschine: gehalten: Durchdringung 0, Tür 266/266, Hüllen 18/18, Gangzeit auf Wegen 0.899 an 10770eb5 headless · gehalten: Stadt 33 Häuser: Steckenbleiber 0, Gangzeit auf Wegen 0.967, Strecke min 165 m, Berührung 0, Durchdringung 0, Tür 390/390 an 10770eb5 headless",
    "stationen": [
     {
      "id": "mensch.K3#1",
@@ -2084,7 +2095,8 @@
      "gruen": true,
      "zahl": "Durchdringung 0, Tür 266/266, Hüllen 18/18, Gangzeit auf Wegen 0.899",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +7)",
+     "gehalten": true
     },
     {
      "id": "mensch.K3#2",
@@ -2092,7 +2104,8 @@
      "gruen": true,
      "zahl": "Stadt 33 Häuser: Steckenbleiber 0, Gangzeit auf Wegen 0.967, Strecke min 165 m, Berührung 0, Durchdringung 0, Tür 390/390",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +8)",
+     "gehalten": true
     }
    ]
   },
@@ -2148,7 +2161,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 10 s gerissen — beendet, UNGEMESSEN",
      "ungemessen": true
     }
    ]
@@ -2246,7 +2259,7 @@
      "gruen": true,
      "zahl": "first GRÜN: Wurf 6 Wölfe, umstellt 16.85 s, Furcht chaos 0.908 (Gegenlauf 0), 4 Jäger fallen, Triumph joy+hope 0.42 (Gegenlauf 0)",
      "sha": "eeb5d2bfbcdae181388a990d13c434cd67b923a0",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +18) — zuletzt an 6a571e3b: Deckel 31 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +18) — zuletzt an 10770eb5: Deckel 31 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
      "gehalten": true
     }
    ]
@@ -2297,7 +2310,7 @@
   },
   "physik.K2": {
    "punkte": 1,
-   "beleg": "Maschine: (V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 16.37 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m an 10770eb5 headless — offen: physik.K2#2 radeon: Station seit der Messung geändert · physik.K2#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: (V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 16.37 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m an 10770eb5 headless — offen: physik.K2#2 radeon: Station seit der Messung geändert · physik.K2#2 gtx: Station seit der Messung geändert — zuletzt an c5a9a2f5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
    "stationen": [
     {
      "id": "physik.K2#1",
@@ -2322,14 +2335,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an c5a9a2f5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
      "ungemessen": true
     }
    ]
   },
   "physik.K3": {
    "punkte": 1,
-   "beleg": "Maschine: 5 Kisten ruhen nach 0.87 s, Zittern 0.00 cm (wach 0.00), Boden 0.002 m, Fugen -0.001/-0.000/0.001/0.001 m · GT 8.77 → 8.56 m/s, Fass 161.0° · Mutanten: Schwere 0 Boden 0.107 m, ohne Stoß 3.0° an 10770eb5 headless — offen: physik.K3#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: gehalten: 5 Kisten ruhen nach 0.87 s, Zittern 0.00 cm (wach 0.00), Boden 0.002 m, Fugen -0.001/-0.000/0.001/0.001 m · GT 8.77 → 8.56 m/s, Fass 161.0° · Mutanten: Schwere 0 Boden 0.107 m, ohne Stoß 3.0° an 10770eb5 headless — offen: physik.K3#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "physik.K3#1",
@@ -2337,7 +2350,8 @@
      "gruen": true,
      "zahl": "5 Kisten ruhen nach 0.87 s, Zittern 0.00 cm (wach 0.00), Boden 0.002 m, Fugen -0.001/-0.000/0.001/0.001 m · GT 8.77 → 8.56 m/s, Fass 161.0° · Mutanten: Schwere 0 Boden 0.107 m, ohne Stoß 3.0°",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/diag-kollision-bild.cjs, scripts/lib/abnahme-urteil.cjs +9)",
+     "gehalten": true
     }
    ]
   },
@@ -2407,7 +2421,7 @@
   },
   "pipeline.K3": {
    "punkte": 2,
-   "beleg": "Maschine: über Budget 0 (Staffel 1 ≤ 3) in 8665 Bauten, leer 0, Exits 0/0/0 an 10770eb5 headless · über Budget 0, Quote max L1/L0 0.50 · L2/L0 0.15 an 10770eb5 headless",
+   "beleg": "Maschine: gehalten: über Budget 0 (Staffel 1 ≤ 3) in 8665 Bauten, leer 0, Exits 0/0/0 an 10770eb5 headless · gehalten: über Budget 0, Quote max L1/L0 0.50 · L2/L0 0.15 an 10770eb5 headless",
    "stationen": [
     {
      "id": "pipeline.K3#1",
@@ -2415,7 +2429,8 @@
      "gruen": true,
      "zahl": "über Budget 0 (Staffel 1 ≤ 3) in 8665 Bauten, leer 0, Exits 0/0/0",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-regler-wirkt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9)",
+     "gehalten": true
     },
     {
      "id": "pipeline.K3#2",
@@ -2423,7 +2438,8 @@
      "gruen": true,
      "zahl": "über Budget 0, Quote max L1/L0 0.50 · L2/L0 0.15",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-regler-wirkt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9)",
+     "gehalten": true
     }
    ]
   },
@@ -2446,7 +2462,7 @@
      "gruen": true,
      "zahl": "183 von 183 build-asset von der Platte (100.0 %), Bau-Ereignisse Werk 0 · Haupt-Faden 0, leer 0, verschluckt 0",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Liefer-Zeile am Zweit-Boot (Exit 0)) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleMs\":1963,\"belegtMs\":1437,\"laengsteMs\"",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Liefer-Zeile am Zweit-Boot (Exit 0)) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleMs\":1475,\"belegtMs\":1147,\"laengsteMs\"",
      "gehalten": true
     },
     {
@@ -2464,7 +2480,7 @@
      "gruen": true,
      "zahl": "Zweit-Boot von der Platte blatt-atlas 1/1 0 ms · dorf-export 2/2 0 ms · karte 19/19 7 ms · Kern-Wechsel fachwerk: 43 Leser neu, fremd 0 , alt 0 ",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Art-Zeile oder kein Kern-Wechsel (Exit 0)) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleMs\":1963,\"belegtMs\":1437,\"laeng",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Art-Zeile oder kein Kern-Wechsel (Exit 0)) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleMs\":1475,\"belegtMs\":1147,\"laeng",
      "gehalten": true
     }
    ]
@@ -2485,7 +2501,7 @@
   },
   "profiband.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · profiband.K1#1 gtx: ROT: Bild-p95 ≤ 33: wiese-ego-geht 33.4 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 33.4 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 60.6 s · [linse-gpu] nvidia/pascal — ROT 6: wiese-ego-geht Bild-p95 33.4 > 33 | wiese-ego-sprint: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-fahrt: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-third-geht Bild-p95 33.4 > 33 | stadt-ego-geht: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 58 s trug den Schritt nicht) an 10770eb5 · profiband.K1#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · profiband.K1#2 gtx: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · profiband.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an 6d6a8336: die Fahrt riss 1800 s (vor siedlung.K4#2) — offen, UNGEMESSEN · profiband.K1#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · profiband.K1#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "profiband.K1#1",
@@ -2501,9 +2517,10 @@
      "id": "profiband.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "Bild-p95 ≤ 33: wiese-ego-geht 33.4 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 33.4 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 60.6 s · [linse-gpu] nvidia/pascal — ROT 6: wiese-ego-geht Bild-p95 33.4 > 33 | wiese-ego-sprint: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-fahrt: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-third-geht Bild-p95 33.4 > 33 | stadt-ego-geht: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 58 s trug den Schritt nicht)",
-     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": "ROT: Bild-p95 ≤ 33: wiese-ego-geht 33.4 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 33.4 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 60.6 s · [linse-gpu] nvidia/pascal — ROT 6: wiese-ego-geht Bild-p95 33.4 > 33 | wiese-ego-sprint: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-fahrt: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-third-geht Bild-p95 33.4 > 33 | stadt-ego-geht: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 58 s trug den Schritt nicht)",
+     "zahl": null,
+     "sha": null,
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an 6d6a8336: die Fahrt riss 1800 s (vor siedlung.K4#2) — offen, UNGEMESSEN",
+     "ungemessen": true,
      "beide": true
     },
     {
@@ -2521,14 +2538,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "ungemessen": true
     }
    ]
   },
   "profiband.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · profiband.K2#1 gtx: ROT: Belegung p95 ≤ 5.8: wiese-ego-steht 48.66 · wiese-third-steht ? · genesis-ego-steht 122.01 · genesis-third-steht 13.1 · Gang 60.6 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht Belegung p95 48.66 > 5.8 | wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-ego-steht Belegung p95 122.01 > 5.8 | genesis-third-steht Belegung p95 13.1 > 5.8 an 10770eb5 · profiband.K2#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · profiband.K2#2 gtx: ROT: Belegung p95 ≤ 5.8: wiese-ego-steht 48.66 · wiese-third-steht ? · genesis-ego-steht 122.01 · genesis-third-steht 13.1 ‖ Belegung p95 ≤ 8: wiese-ego-geht 33.51 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 35.24 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 60.6 s · [linse-gpu] nvidia/pascal — ROT 10: wiese-ego-steht Belegung p95 48.66 > 5.8 | wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-ego-steht Belegung p95 122.01 > 5.8 | genesis-third-steht Belegung p95 13.1 > 5.8 | wiese-ego-geht Belegung p95 33.51 > 8 | wiese-ego-sprint: ungemessen (die Uhr 58 s trug den Schritt nicht) an 10770eb5",
+   "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · profiband.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an 6d6a8336: die Fahrt riss 1800 s (vor siedlung.K4#2) — offen, UNGEMESSEN · profiband.K2#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · profiband.K2#2 gtx: Pfad seit der Messung geändert (R6: stamm/stoff-instanz.js) — zuletzt an 6d6a8336: die Fahrt riss 1800 s (vor siedlung.K4#2) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "profiband.K2#1",
@@ -2543,9 +2560,10 @@
      "id": "profiband.K2#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "Belegung p95 ≤ 5.8: wiese-ego-steht 48.66 · wiese-third-steht ? · genesis-ego-steht 122.01 · genesis-third-steht 13.1 · Gang 60.6 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht Belegung p95 48.66 > 5.8 | wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-ego-steht Belegung p95 122.01 > 5.8 | genesis-third-steht Belegung p95 13.1 > 5.8",
-     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": "ROT: Belegung p95 ≤ 5.8: wiese-ego-steht 48.66 · wiese-third-steht ? · genesis-ego-steht 122.01 · genesis-third-steht 13.1 · Gang 60.6 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht Belegung p95 48.66 > 5.8 | wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-ego-steht Belegung p95 122.01 > 5.8 | genesis-third-steht Belegung p95 13.1 > 5.8"
+     "zahl": null,
+     "sha": null,
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an 6d6a8336: die Fahrt riss 1800 s (vor siedlung.K4#2) — offen, UNGEMESSEN",
+     "ungemessen": true
     },
     {
      "id": "profiband.K2#2",
@@ -2560,15 +2578,16 @@
      "id": "profiband.K2#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "Belegung p95 ≤ 5.8: wiese-ego-steht 48.66 · wiese-third-steht ? · genesis-ego-steht 122.01 · genesis-third-steht 13.1 ‖ Belegung p95 ≤ 8: wiese-ego-geht 33.51 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 35.24 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 60.6 s · [linse-gpu] nvidia/pascal — ROT 10: wiese-ego-steht Belegung p95 48.66 > 5.8 | wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-ego-steht Belegung p95 122.01 > 5.8 | genesis-third-steht Belegung p95 13.1 > 5.8 | wiese-ego-geht Belegung p95 33.51 > 8 | wiese-ego-sprint: ungemessen (die Uhr 58 s trug den Schritt nicht)",
-     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": "ROT: Belegung p95 ≤ 5.8: wiese-ego-steht 48.66 · wiese-third-steht ? · genesis-ego-steht 122.01 · genesis-third-steht 13.1 ‖ Belegung p95 ≤ 8: wiese-ego-geht 33.51 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 35.24 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 60.6 s · [linse-gpu] nvidia/pascal — ROT 10: wiese-ego-steht Belegung p95 48.66 > 5.8 | wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-ego-steht Belegung p95 122.01 > 5.8 | genesis-third-steht Belegung p95 13.1 > 5.8 | wiese-ego-geht Belegung p95 33.51 > 8 | wiese-ego-sprint: ungemessen (die Uhr 58 s trug den Schritt nicht)"
+     "zahl": null,
+     "sha": null,
+     "grund": "Pfad seit der Messung geändert (R6: stamm/stoff-instanz.js) — zuletzt an 6d6a8336: die Fahrt riss 1800 s (vor siedlung.K4#2) — offen, UNGEMESSEN",
+     "ungemessen": true
     }
    ]
   },
   "profiband.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · profiband.K3#1 gtx: ROT: Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 112 · 413k · 120 MB · 16.04 ms | wiese-third ? | genesis-ego 91 · 381k · 117 MB · 10.82 ms | genesis-third 104 · 344k · 114.1 MB · 10.63 ms | dorf-ego ? | dorf-third ? · Gang 60.6 s · [linse-gpu] nvidia/pascal — ROT 6: Band wiese-ego: Band ROT streu haupt: 7 befehle über der Ratsche 4 (Täter: streuSatz, f:blume:L2) · baum k1: 12 befehle über der Ratsche 5 (Täter: f:tanne:L1, f:eiche:L1, f:tanne:L0) · , gpu-bank 16.04 ms > 12, nicht eingeschwungen | Band wiese-third: ungemessen (die Uhr 58 s trug den Schritt nicht) | Band genesis-ego: Band ROT vorbau:haus_alemannisch: 17 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · f:sitzbank:L0: 4 Befehle, keine Haushalt-Klasse nimmt den , nicht eingeschwungen | Band genesis-third: Band ROT f:sitzbank:L0: 6 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · baum k1: 7 befehle über der Ratsche 3 (Täter: f:tanne:L1, f:eiche:L1, | Band dorf-ego: ungemessen (die Uhr 58 s trug den Schritt nicht) | Band dorf-third: ungemessen (die Uhr 58 s trug den Schritt nicht) an 10770eb5 · profiband.K3#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · profiband.K3#2 gtx: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · profiband.K3#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an 6d6a8336: die Fahrt riss 1800 s (vor siedlung.K4#2) — offen, UNGEMESSEN · profiband.K3#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · profiband.K3#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "profiband.K3#1",
@@ -2584,9 +2603,10 @@
      "id": "profiband.K3#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 112 · 413k · 120 MB · 16.04 ms | wiese-third ? | genesis-ego 91 · 381k · 117 MB · 10.82 ms | genesis-third 104 · 344k · 114.1 MB · 10.63 ms | dorf-ego ? | dorf-third ? · Gang 60.6 s · [linse-gpu] nvidia/pascal — ROT 6: Band wiese-ego: Band ROT streu haupt: 7 befehle über der Ratsche 4 (Täter: streuSatz, f:blume:L2) · baum k1: 12 befehle über der Ratsche 5 (Täter: f:tanne:L1, f:eiche:L1, f:tanne:L0) · , gpu-bank 16.04 ms > 12, nicht eingeschwungen | Band wiese-third: ungemessen (die Uhr 58 s trug den Schritt nicht) | Band genesis-ego: Band ROT vorbau:haus_alemannisch: 17 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · f:sitzbank:L0: 4 Befehle, keine Haushalt-Klasse nimmt den , nicht eingeschwungen | Band genesis-third: Band ROT f:sitzbank:L0: 6 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · baum k1: 7 befehle über der Ratsche 3 (Täter: f:tanne:L1, f:eiche:L1, | Band dorf-ego: ungemessen (die Uhr 58 s trug den Schritt nicht) | Band dorf-third: ungemessen (die Uhr 58 s trug den Schritt nicht)",
-     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": "ROT: Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 112 · 413k · 120 MB · 16.04 ms | wiese-third ? | genesis-ego 91 · 381k · 117 MB · 10.82 ms | genesis-third 104 · 344k · 114.1 MB · 10.63 ms | dorf-ego ? | dorf-third ? · Gang 60.6 s · [linse-gpu] nvidia/pascal — ROT 6: Band wiese-ego: Band ROT streu haupt: 7 befehle über der Ratsche 4 (Täter: streuSatz, f:blume:L2) · baum k1: 12 befehle über der Ratsche 5 (Täter: f:tanne:L1, f:eiche:L1, f:tanne:L0) · , gpu-bank 16.04 ms > 12, nicht eingeschwungen | Band wiese-third: ungemessen (die Uhr 58 s trug den Schritt nicht) | Band genesis-ego: Band ROT vorbau:haus_alemannisch: 17 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · f:sitzbank:L0: 4 Befehle, keine Haushalt-Klasse nimmt den , nicht eingeschwungen | Band genesis-third: Band ROT f:sitzbank:L0: 6 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · baum k1: 7 befehle über der Ratsche 3 (Täter: f:tanne:L1, f:eiche:L1, | Band dorf-ego: ungemessen (die Uhr 58 s trug den Schritt nicht) | Band dorf-third: ungemessen (die Uhr 58 s trug den Schritt nicht)",
+     "zahl": null,
+     "sha": null,
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an 6d6a8336: die Fahrt riss 1800 s (vor siedlung.K4#2) — offen, UNGEMESSEN",
+     "ungemessen": true,
      "beide": true
     },
     {
@@ -2604,14 +2624,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "ungemessen": true
     }
    ]
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 4 von 4 Sitzungen ohne Frame > 100 ms (max 67.2 · 50.2 · 50.2 · 50 ms; Hänger 0/0/0/0) an b3f9ae95 radeon — offen: profiband.K4#2 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +11) — zuletzt an 25ac4c0c: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._renderObjectDirect getauscht: function (object, material, scene, camera) { const vor = H.c) — kein Urteil, UNGEMESSEN (die · profiband.K4#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +31) — zuletzt an 6a571e3b: Deckel 29 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "beleg": "Maschine: gehalten: 4 von 4 Sitzungen ohne Frame > 100 ms (max 67.2 · 50.2 · 50.2 · 50 ms; Hänger 0/0/0/0) an b3f9ae95 radeon — offen: profiband.K4#2 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +13) — zuletzt an 25ac4c0c: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._renderObjectDirect getauscht: function (object, material, scene, camera) { const vor = H.c) — kein Urteil, UNGEMESSEN (die · profiband.K4#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +31) — zuletzt an 10770eb5: Deckel 29 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -2619,7 +2639,7 @@
      "gruen": true,
      "zahl": "4 von 4 Sitzungen ohne Frame > 100 ms (max 67.2 · 50.2 · 50.2 · 50 ms; Hänger 0/0/0/0)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +11) — zuletzt an 25ac4c0c: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._renderObjectDirect getauscht: function (object, material, scene, camera) { const vor = H.c) — kein Urteil, UNGEMESSEN (die",
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +13) — zuletzt an 25ac4c0c: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._renderObjectDirect getauscht: function (object, material, scene, camera) { const vor = H.c) — kein Urteil, UNGEMESSEN (die",
      "gehalten": true
     },
     {
@@ -2628,7 +2648,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +31) — zuletzt an 6a571e3b: Deckel 29 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +31) — zuletzt an 10770eb5: Deckel 29 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
      "ungemessen": true
     },
     {
@@ -2637,7 +2657,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +11) — zuletzt an 25ac4c0c: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._renderObjectDirect getauscht: function (object, material, scene, camera) { const vor = H.c) — kein Urteil, UNGEMESSEN (die",
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +13) — zuletzt an 25ac4c0c: Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._renderObjectDirect getauscht: function (object, material, scene, camera) { const vor = H.c) — kein Urteil, UNGEMESSEN (die",
      "ungemessen": true
     },
     {
@@ -2646,7 +2666,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +31) — zuletzt an 6a571e3b: Deckel 29 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +31) — zuletzt an 10770eb5: Deckel 29 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
      "ungemessen": true
     }
    ]
@@ -2719,7 +2739,7 @@
   },
   "schatten.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: schatten.K2#1 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +3)",
+   "beleg": "Maschine: 0 — offen: schatten.K2#1 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +5)",
    "stationen": [
     {
      "id": "schatten.K2#1",
@@ -2727,14 +2747,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +3)",
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +5)",
      "ungemessen": true
     }
    ]
   },
   "schatten.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: schatten.K3#1 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +3)",
+   "beleg": "Maschine: 0 — offen: schatten.K3#1 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +5)",
    "stationen": [
     {
      "id": "schatten.K3#1",
@@ -2742,14 +2762,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +3)",
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +5)",
      "ungemessen": true
     }
    ]
   },
   "schatten.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: schatten.K4#1 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +3)",
+   "beleg": "Maschine: 0 — offen: schatten.K4#1 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +5)",
    "stationen": [
     {
      "id": "schatten.K4#1",
@@ -2757,14 +2777,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +3)",
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +5)",
      "ungemessen": true
     }
    ]
   },
   "schatten.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: schatten.K5#1 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +3)",
+   "beleg": "Maschine: 0 — offen: schatten.K5#1 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +5)",
    "stationen": [
     {
      "id": "schatten.K5#1",
@@ -2772,14 +2792,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +3)",
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +5)",
      "ungemessen": true
     }
    ]
   },
   "siedlung.K1": {
    "punkte": 1,
-   "beleg": "Maschine: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 10770eb5 headless — offen: siedlung.K1#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Start-Dorfs (Gang und Innen-Bild)) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt  · siedlung.K1#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.00 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ A",
+   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 10770eb5 headless — offen: siedlung.K1#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Start-Dorfs (Gang und Innen-Bild)) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt  · siedlung.K1#2 gtx: Station seit der Messung geändert — zuletzt an c5a9a2f5: Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.00 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ A",
    "stationen": [
     {
      "id": "siedlung.K1#1",
@@ -2787,7 +2807,8 @@
      "gruen": true,
      "zahl": "1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-haus-welt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +10)",
+     "gehalten": true
     },
     {
      "id": "siedlung.K1#2",
@@ -2804,7 +2825,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.00 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ A",
+     "grund": "Station seit der Messung geändert — zuletzt an c5a9a2f5: Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.00 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ A",
      "ungemessen": true
     }
    ]
@@ -2828,7 +2849,7 @@
      "gruen": true,
      "zahl": "Z1 7/8 Saaten · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 1424 m vom Genesis-Ort · Mauer 21 Segmente/3 Türme, Pool 104 · Schuss vom acker 103 m vor der Mitte, 3.5 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 103.23 m · Luma 62.1 σ 25.9 schwarz 0.0 % weiß 0.0 % ·",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -2846,7 +2867,7 @@
      "gruen": true,
      "zahl": "ZIPF ζ 1.022 [0.956; 1.158] über 8 Saaten, Mauer und Graph 7/7 · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 · Mauer 21 Segmente, Pool 104 · mittags ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.5 · Dämmerung ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.25 (Exit 0)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "gehalten": true
     }
    ]
@@ -2875,7 +2896,7 @@
   },
   "siedlung.K4": {
    "punkte": 1,
-   "beleg": "Maschine: Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0 an 10770eb5 headless — offen: siedlung.K4#2 radeon: Station seit der Messung geändert · siedlung.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0 an 10770eb5 headless — offen: siedlung.K4#2 radeon: Station seit der Messung geändert · siedlung.K4#2 gtx: Station seit der Messung geändert — zuletzt an c5a9a2f5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: })",
    "stationen": [
     {
      "id": "siedlung.K4#1",
@@ -2883,7 +2904,8 @@
      "gruen": true,
      "zahl": "Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-settlement.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3)",
+     "gehalten": true
     },
     {
      "id": "siedlung.K4#2",
@@ -2900,7 +2922,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an c5a9a2f5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: })",
      "ungemessen": true
     }
    ]
@@ -2924,7 +2946,7 @@
      "gruen": true,
      "zahl": "nH 12 erstes Haus nach 62.3 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 172.2 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -2942,7 +2964,7 @@
      "gruen": true,
      "zahl": "nH 12 erstes Haus nach 62.3 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 172.2 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "gehalten": true
     }
    ]
@@ -2966,7 +2988,7 @@
      "gruen": true,
      "zahl": "20 Tode: Alter max 3.339 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -2984,14 +3006,14 @@
      "gruen": true,
      "zahl": "20 Tode: Alter max 3.339 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "gehalten": true
     }
    ]
   },
   "speicher.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 97 Rufe in 7713 Bildern; aufgefüllt je Bild p95 0, blind) an b3f9ae95 radeon · gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 100 Rufe in 4733 Bildern; aufgefüllt je Bild p95 0, blind) an 715754fc gtx — offen: speicher.K2#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · speicher.K2#2 gtx: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+   "beleg": "Maschine: gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 97 Rufe in 7713 Bildern; aufgefüllt je Bild p95 0, blind) an b3f9ae95 radeon · gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 100 Rufe in 4733 Bildern; aufgefüllt je Bild p95 0, blind) an 715754fc gtx — offen: speicher.K2#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · speicher.K2#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "speicher.K2#1",
@@ -3008,7 +3030,7 @@
      "gruen": true,
      "zahl": "je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 100 Rufe in 4733 Bildern; aufgefüllt je Bild p95 0, blind)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -3026,7 +3048,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "ungemessen": true
     }
    ]
@@ -3055,7 +3077,7 @@
   },
   "speicher.K4": {
    "punkte": 1,
-   "beleg": "Maschine: ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 102/102 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 102/102 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 102/102 | ✅ Dichte über den Reload: Linie 364 Löcher, 0 korrupt an 10770eb5 headless — offen: speicher.K4#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · speicher.K4#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an 10770eb5: Deckel 15 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "beleg": "Maschine: gehalten: ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 102/102 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 102/102 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 102/102 | ✅ Dichte über den Reload: Linie 364 Löcher, 0 korrupt an 10770eb5 headless — offen: speicher.K4#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · speicher.K4#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an c5a9a2f5: Deckel 15 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
    "stationen": [
     {
      "id": "speicher.K4#1",
@@ -3063,7 +3085,8 @@
      "gruen": true,
      "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 102/102 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 102/102 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 102/102 | ✅ Dichte über den Reload: Linie 364 Löcher, 0 korrupt",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +57)",
+     "gehalten": true
     },
     {
      "id": "speicher.K4#2",
@@ -3080,14 +3103,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an 10770eb5: Deckel 15 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an c5a9a2f5: Deckel 15 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
      "ungemessen": true
     }
    ]
   },
   "speicher.K5": {
    "punkte": 2,
-   "beleg": "Maschine: ✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 95/95 an 10770eb5 headless · ✅ (V) Korpus: 101 Stände 18.530.0 … 18.546.165 und 1 Kopf laden am Kopf — Bauten 510/510 · Gruben 306/306 · Inventar 291/291 · ganz 102/102 | ✅ (V) Versions-Stufe 18.546.165: ihr Stand steht im Korpus (bump-version.cjs) an 10770eb5 headless",
+   "beleg": "Maschine: gehalten: ✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 95/95 an 10770eb5 headless · gehalten: ✅ (V) Korpus: 101 Stände 18.530.0 … 18.546.165 und 1 Kopf laden am Kopf — Bauten 510/510 · Gruben 306/306 · Inventar 291/291 · ganz 102/102 | ✅ (V) Versions-Stufe 18.546.165: ihr Stand steht im Korpus (bump-version.cjs) an 10770eb5 headless",
    "stationen": [
     {
      "id": "speicher.K5#1",
@@ -3095,7 +3118,8 @@
      "gruen": true,
      "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 95/95",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +57)",
+     "gehalten": true
     },
     {
      "id": "speicher.K5#2",
@@ -3103,13 +3127,14 @@
      "gruen": true,
      "zahl": "✅ (V) Korpus: 101 Stände 18.530.0 … 18.546.165 und 1 Kopf laden am Kopf — Bauten 510/510 · Gruben 306/306 · Inventar 291/291 · ganz 102/102 | ✅ (V) Versions-Stufe 18.546.165: ihr Stand steht im Korpus (bump-version.cjs)",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +57)",
+     "gehalten": true
     }
    ]
   },
   "spielgang.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: HUD deckt 3.94 % (1920×1080, im Spiel) · INP HUD 112 ms (50) · Menü 184 ms (20) an 25ac4c0c radeon",
+   "beleg": "Maschine: gehalten: HUD deckt 3.94 % (1920×1080, im Spiel) · INP HUD 112 ms (50) · Menü 184 ms (20) an 25ac4c0c radeon · HUD deckt 2.53 % (1920×1080, im Spiel) · INP HUD 88 ms (50) · Menü 200 ms (20) an c5a9a2f5 gtx",
    "stationen": [
     {
      "id": "spielgang.K3#1",
@@ -3123,10 +3148,10 @@
     {
      "id": "spielgang.K3#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": "HUD deckt 2.53 % (1920×1080, im Spiel) · INP HUD 144 ms (50) · Menü 208 ms (20)",
-     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": "ROT: HUD deckt 2.53 % (1920×1080, im Spiel) · INP HUD 144 ms (50) · Menü 208 ms (20)"
+     "gruen": true,
+     "zahl": "HUD deckt 2.53 % (1920×1080, im Spiel) · INP HUD 88 ms (50) · Menü 200 ms (20)",
+     "sha": "c5a9a2f565f517a92cbf8ada22cebe9c4df5023d",
+     "grund": null
     }
    ]
   },
@@ -3146,15 +3171,16 @@
   },
   "spielgang.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: spielgang.K5#1 headless: ROT: 951 harte UI-Zeilen (Code 243 in 84 von 3571 Gliedern · DOM 708) · je Senke textContent 184 · _hudSchreib 1 · title 40 · confirm 7 · placeholder 2 · innerHTML 4 · prompt 3 · alert 1 · innerText 1 · Text-Quelle DE/EN: keine · z. B. setCameraMode textContent: \"Sicht: 3rd\" | setCameraMode textContent: \"Sicht: 1st\" | tickStatsHud _hudSchreib: \"Stats nicht initialisiert\" an 10770eb5",
+   "beleg": "Maschine: 0 — offen: spielgang.K5#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +1)",
    "stationen": [
     {
      "id": "spielgang.K5#1",
      "geraet": "headless",
      "gruen": false,
-     "zahl": "951 harte UI-Zeilen (Code 243 in 84 von 3571 Gliedern · DOM 708) · je Senke textContent 184 · _hudSchreib 1 · title 40 · confirm 7 · placeholder 2 · innerHTML 4 · prompt 3 · alert 1 · innerText 1 · Text-Quelle DE/EN: keine · z. B. setCameraMode textContent: \"Sicht: 3rd\" | setCameraMode textContent: \"Sicht: 1st\" | tickStatsHud _hudSchreib: \"Stats nicht initialisiert\"",
-     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": "ROT: 951 harte UI-Zeilen (Code 243 in 84 von 3571 Gliedern · DOM 708) · je Senke textContent 184 · _hudSchreib 1 · title 40 · confirm 7 · placeholder 2 · innerHTML 4 · prompt 3 · alert 1 · innerText 1 · Text-Quelle DE/EN: keine · z. B. setCameraMode textContent: \"Sicht: 3rd\" | setCameraMode textContent: \"Sicht: 1st\" | tickStatsHud _hudSchreib: \"Stats nicht initialisiert\""
+     "zahl": null,
+     "sha": null,
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +1)",
+     "ungemessen": true
     }
    ]
   },
@@ -3218,7 +3244,7 @@
   },
   "stoffe.K4": {
    "punkte": 1,
-   "beleg": "Maschine: Tag 30, 14 Klassen im Umkreis 60 m des Dorfs · größte Δ der Albedo nach 30 Tagen: bauSatz nord 0.028/sued 0.007/oben 0.015 · formationenSatz nord 0.001/sued 0.003/oben 0.001 · bodenSatz nord 0/sued 0/oben 0 · 1 altern (≥ 0,02), 1 nach Lage (Soll ≥ 1) an 10770eb5 headless",
+   "beleg": "Maschine: gehalten: Tag 30, 14 Klassen im Umkreis 60 m des Dorfs · größte Δ der Albedo nach 30 Tagen: bauSatz nord 0.028/sued 0.007/oben 0.015 · formationenSatz nord 0.001/sued 0.003/oben 0.001 · bodenSatz nord 0/sued 0/oben 0 · 1 altern (≥ 0,02), 1 nach Lage (Soll ≥ 1) an 10770eb5 headless",
    "stationen": [
     {
      "id": "stoffe.K4#1",
@@ -3226,7 +3252,8 @@
      "gruen": true,
      "zahl": "Tag 30, 14 Klassen im Umkreis 60 m des Dorfs · größte Δ der Albedo nach 30 Tagen: bauSatz nord 0.028/sued 0.007/oben 0.015 · formationenSatz nord 0.001/sued 0.003/oben 0.001 · bodenSatz nord 0/sued 0/oben 0 · 1 altern (≥ 0,02), 1 nach Lage (Soll ≥ 1)",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +4)",
+     "gehalten": true
     }
    ]
   },
@@ -3271,7 +3298,7 @@
      "gruen": true,
      "zahl": "Frame p95 Median 49.9 ms (41.7 · 49.9 · 49.9) · CPU-Takt p95 40.3 · 42.4 · 44.1 ms · die Welt steht nach 14.4 · 15.2 · 15.2 s · Bauten sonst 0/0/0 · 3 von 3 gültig · TAKT: _dispatchFrameJobs › run x11 | TAKT: _loopVoxelStreaming › _runFrameScheduler x6 | TAKT: verteilt x2 · [linse-gpu] nvidia/pascal",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: SPRUNG 1 EXIT=0 {\"m\":1000,\"stehtS\":16.7,\"bau\":0,\"frames\":823,\"frameMs\":{\"p50\":16.7,\"p95\":41.7,\"p99\":58.4,\"max\":166.8},\"taktMs\":{\"p50\":17.9,\"p95\":38",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: SPRUNG 1 EXIT=0 {\"m\":1000,\"stehtS\":16.7,\"bau\":0,\"frames\":829,\"frameMs\":{\"p50\":16.8,\"p95\":33.4,\"p99\":50,\"max\":225.1},\"taktMs\":{\"p50\":17.8,\"p95\":34.6",
      "gehalten": true
     }
    ]
@@ -3303,7 +3330,7 @@
      "gruen": true,
      "zahl": "Bauten 0 außerhalb der Sync-Stellen · 5 an ihnen {\"naht\":5} · Hydrosphären 14 aus dem Faden · 0 im Haupt-Faden · Gang 120.0 s · 6 Bau-Klicks · [linse-gpu] nvidia/pascal",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-worker-dichte.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +20) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-worker-dichte.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +20) — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "gehalten": true
     }
    ]
@@ -3332,7 +3359,7 @@
   },
   "studios.K1": {
    "punkte": 1,
-   "beleg": "Maschine: 142/144 Zeilen von PARAMS_BY_KIND wirken am Bild bzw. Ohr (98.6 %, davon 17 an ihrem Leser der Welt) · Bild-Schwelle 0,1 mm 0.01 % → tot · 3 cm 4.30 % → wirkt · tot koerper:koerper:mass (0.68 %), koerper:koerper:hairVol (0.45 %) · Baum-Zeilen keine in PARAMS_BY_KIND · Exits 0/0/0 an 10770eb5 headless — offen: studios.K1#2 headless: ROT: 142/144 Zeilen von PARAMS_BY_KIND wirken am Bild bzw. Ohr (98.6 %, davon 17 an ihrem Leser der Welt) · Bild-Schwelle 0,1 mm 0.01 % → tot · 3 cm 4.30 % → wirkt · tot koerper:koerper:mass (0.68 %), koerper:koerper:hairVol (0.45 %) · Baum-Zeilen keine in PARAMS_BY_KIND · Exits 0/0/0 an 10770eb5",
+   "beleg": "Maschine: gehalten: 142/144 Zeilen von PARAMS_BY_KIND wirken am Bild bzw. Ohr (98.6 %, davon 17 an ihrem Leser der Welt) · Bild-Schwelle 0,1 mm 0.01 % → tot · 3 cm 4.30 % → wirkt · tot koerper:koerper:mass (0.68 %), koerper:koerper:hairVol (0.45 %) · Baum-Zeilen keine in PARAMS_BY_KIND · Exits 0/0/0 an 10770eb5 headless — offen: studios.K1#2 headless: Linse seit der Messung geändert (R6: scripts/diag-regler-wirkt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +7)",
    "stationen": [
     {
      "id": "studios.K1#1",
@@ -3340,21 +3367,23 @@
      "gruen": true,
      "zahl": "142/144 Zeilen von PARAMS_BY_KIND wirken am Bild bzw. Ohr (98.6 %, davon 17 an ihrem Leser der Welt) · Bild-Schwelle 0,1 mm 0.01 % → tot · 3 cm 4.30 % → wirkt · tot koerper:koerper:mass (0.68 %), koerper:koerper:hairVol (0.45 %) · Baum-Zeilen keine in PARAMS_BY_KIND · Exits 0/0/0",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-regler-wirkt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +7)",
+     "gehalten": true
     },
     {
      "id": "studios.K1#2",
      "geraet": "headless",
      "gruen": false,
-     "zahl": "142/144 Zeilen von PARAMS_BY_KIND wirken am Bild bzw. Ohr (98.6 %, davon 17 an ihrem Leser der Welt) · Bild-Schwelle 0,1 mm 0.01 % → tot · 3 cm 4.30 % → wirkt · tot koerper:koerper:mass (0.68 %), koerper:koerper:hairVol (0.45 %) · Baum-Zeilen keine in PARAMS_BY_KIND · Exits 0/0/0",
-     "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": "ROT: 142/144 Zeilen von PARAMS_BY_KIND wirken am Bild bzw. Ohr (98.6 %, davon 17 an ihrem Leser der Welt) · Bild-Schwelle 0,1 mm 0.01 % → tot · 3 cm 4.30 % → wirkt · tot koerper:koerper:mass (0.68 %), koerper:koerper:hairVol (0.45 %) · Baum-Zeilen keine in PARAMS_BY_KIND · Exits 0/0/0"
+     "zahl": null,
+     "sha": null,
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-regler-wirkt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +7)",
+     "ungemessen": true
     }
    ]
   },
   "studios.K2": {
    "punkte": 1,
-   "beleg": "Maschine: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 10770eb5 headless — offen: studios.K2#2 radeon: Station seit der Messung geändert · studios.K2#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 0 ms –, Neubau höchstens 577 ms garage, je Studio null Griffe)",
+   "beleg": "Maschine: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 10770eb5 headless — offen: studios.K2#2 radeon: Station seit der Messung geändert · studios.K2#2 gtx: Station seit der Messung geändert — zuletzt an c5a9a2f5: Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 0 ms –, Neubau höchstens 510 ms garage, je Studio null Griffe)",
    "stationen": [
     {
      "id": "studios.K2#1",
@@ -3379,14 +3408,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 0 ms –, Neubau höchstens 577 ms garage, je Studio null Griffe)",
+     "grund": "Station seit der Messung geändert — zuletzt an c5a9a2f5: Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 0 ms –, Neubau höchstens 510 ms garage, je Studio null Griffe)",
      "ungemessen": true
     }
    ]
   },
   "studios.K3": {
    "punkte": 1,
-   "beleg": "Maschine: Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %) an 10770eb5 headless — offen: studios.K3#2 radeon: Station seit der Messung geändert · studios.K3#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 0/0 Orte im Quantum, ohne garage L0 GPU 0.0236 ms↔",
+   "beleg": "Maschine: Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %) an 10770eb5 headless — offen: studios.K3#2 radeon: Station seit der Messung geändert · studios.K3#2 gtx: Station seit der Messung geändert — zuletzt an c5a9a2f5: Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 0/0 Orte im Quantum, ohne garage L0 GPU 0.0246 ms↔",
    "stationen": [
     {
      "id": "studios.K3#1",
@@ -3411,14 +3440,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 0/0 Orte im Quantum, ohne garage L0 GPU 0.0236 ms↔",
+     "grund": "Station seit der Messung geändert — zuletzt an c5a9a2f5: Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 0/0 Orte im Quantum, ohne garage L0 GPU 0.0246 ms↔",
      "ungemessen": true
     }
    ]
   },
   "studios.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · studios.K4#1 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 83.2 %/– [Differenz 0.83 · studios.K4#2 radeon: ungemessen (R10) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · studios.K4#2 gtx: ungemessen (R10) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · studios.K4#1 gtx: Station seit der Messung geändert — zuletzt an c5a9a2f5: Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 83.2 %/– [Differenz 0.83 · studios.K4#2 radeon: ungemessen (R10) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · studios.K4#2 gtx: ungemessen (R10) — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "studios.K4#1",
@@ -3435,7 +3464,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 83.2 %/– [Differenz 0.83",
+     "grund": "Station seit der Messung geändert — zuletzt an c5a9a2f5: Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 83.2 %/– [Differenz 0.83",
      "ungemessen": true
     },
     {
@@ -3453,14 +3482,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "ungemessen": true
     }
    ]
   },
   "studios.K5": {
    "punkte": 2,
-   "beleg": "Maschine: 3/3 Baupläne · Stufen L0 160 · L1 32 · L2 14 △ · Kosten pass/pass/pass · Neuladen steht · der Wirt nennt die Art 0× an 10770eb5 headless · 4/4 Wege (✓ Werkstatt 6f1c8c0a/1 · ✓ KI-Satz a996fd2b/1 · ✓ Foundry 6f1c8c0a/1 · af97477e/1 · dbd19cd4/1 · ✓ P2P 6f1c8c0a/1) · Atlas worlds/neuntes-buch/stele-core.js · der Wirt nennt die Art 0× an 10770eb5 headless",
+   "beleg": "Maschine: gehalten: 3/3 Baupläne · Stufen L0 160 · L1 32 · L2 14 △ · Kosten pass/pass/pass · Neuladen steht · der Wirt nennt die Art 0× an 10770eb5 headless · gehalten: 4/4 Wege (✓ Werkstatt 6f1c8c0a/1 · ✓ KI-Satz a996fd2b/1 · ✓ Foundry 6f1c8c0a/1 · af97477e/1 · dbd19cd4/1 · ✓ P2P 6f1c8c0a/1) · Atlas worlds/neuntes-buch/stele-core.js · der Wirt nennt die Art 0× an 10770eb5 headless",
    "stationen": [
     {
      "id": "studios.K5#1",
@@ -3468,7 +3497,8 @@
      "gruen": true,
      "zahl": "3/3 Baupläne · Stufen L0 160 · L1 32 · L2 14 △ · Kosten pass/pass/pass · Neuladen steht · der Wirt nennt die Art 0×",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-atlas.cjs, scripts/diag-nervensystem.cjs, scripts/lib/abnahme-urteil.cjs +6)",
+     "gehalten": true
     },
     {
      "id": "studios.K5#2",
@@ -3476,13 +3506,14 @@
      "gruen": true,
      "zahl": "4/4 Wege (✓ Werkstatt 6f1c8c0a/1 · ✓ KI-Satz a996fd2b/1 · ✓ Foundry 6f1c8c0a/1 · af97477e/1 · dbd19cd4/1 · ✓ P2P 6f1c8c0a/1) · Atlas worlds/neuntes-buch/stele-core.js · der Wirt nennt die Art 0×",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-atlas.cjs, scripts/diag-nervensystem.cjs, scripts/lib/abnahme-urteil.cjs +6)",
+     "gehalten": true
     }
    ]
   },
   "tiere.K1": {
    "punkte": 1,
-   "beleg": "Maschine: Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.323) an 10770eb5 headless — offen: tiere.K1#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · tiere.K1#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde)",
+   "beleg": "Maschine: Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.323) an 10770eb5 headless — offen: tiere.K1#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · tiere.K1#2 gtx: Station seit der Messung geändert — zuletzt an c5a9a2f5: Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde)",
    "stationen": [
     {
      "id": "tiere.K1#1",
@@ -3507,7 +3538,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde)",
+     "grund": "Station seit der Messung geändert — zuletzt an c5a9a2f5: Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde)",
      "ungemessen": true
     }
    ]
@@ -3539,14 +3570,14 @@
      "gruen": true,
      "zahl": "Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 13.6 s, 3 fressen: tier:wolf 12459 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.18 m · Luma 89.2 σ 39.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: ORT [50,-10])",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: ORT [50,-13.8])",
      "gehalten": true
     }
    ]
   },
   "tiere.K3": {
    "punkte": 1,
-   "beleg": "Maschine: Schlupf des Stand-Fußes max 0.017 in 25 Läufen als Leib (4 Gattungen), max 0.048 in 16 im Satz (4 Gattungen) an 10770eb5 headless — offen: tiere.K3#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · tiere.K3#2 gtx: Linse seit der Messung geändert (R6: koerper-core.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +23) — zuletzt an 10770eb5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 72.1 σ 31.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.16",
+   "beleg": "Maschine: gehalten: Schlupf des Stand-Fußes max 0.017 in 25 Läufen als Leib (4 Gattungen), max 0.048 in 16 im Satz (4 Gattungen) an 10770eb5 headless — offen: tiere.K3#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · tiere.K3#2 gtx: Linse seit der Messung geändert (R6: koerper-core.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +23) — zuletzt an c5a9a2f5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 72.1 σ 31.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.16",
    "stationen": [
     {
      "id": "tiere.K3#1",
@@ -3554,7 +3585,8 @@
      "gruen": true,
      "zahl": "Schlupf des Stand-Fußes max 0.017 in 25 Läufen als Leib (4 Gattungen), max 0.048 in 16 im Satz (4 Gattungen)",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: koerper-core.js, scripts/diag-tier-gang.cjs, scripts/lib/abnahme-urteil.cjs +6)",
+     "gehalten": true
     },
     {
      "id": "tiere.K3#2",
@@ -3571,7 +3603,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: koerper-core.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +23) — zuletzt an 10770eb5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 72.1 σ 31.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.16",
+     "grund": "Linse seit der Messung geändert (R6: koerper-core.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +23) — zuletzt an c5a9a2f5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 72.1 σ 31.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.16",
      "ungemessen": true
     }
    ]
@@ -3632,7 +3664,7 @@
      "gruen": true,
      "zahl": "30/30 Ring-Welten × Teile byte-gleich vor dem Tor · drüben · daheim (skeleton Apertur, fluid Apertur, terrain Apertur, garage Apertur, portale Apertur, schmiede Apertur, fachwerk Apertur, klang E, koerperstudio E, tetrapoda E)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -3650,7 +3682,7 @@
      "gruen": true,
      "zahl": "leib 10/10 · inventar 10/10 · wield 10/10 · reittier 10/10 · werk 10/10 Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: die Fahrt riss 1800 s (vor bauen.K5#2) — offen, UNGEMESSEN",
      "gehalten": true
     }
    ]
@@ -3721,7 +3753,7 @@
   },
   "ultiversum.K5": {
    "punkte": 2,
-   "beleg": "Maschine: ✅ op:rule — op:rule · Geteiltes Werk abgewiesen: der Code trägt ein Verb, das ein geteiltes Werk nie trägt (op:rule). | ✅ P2P: eine Regel mit verbotenem Effekt fällt benannt (rule_effect_forbidden) | ✅ 0 Schreibe: Baupläne, Bauten, Regeln, Edits, Same, Erinnerung unverändert — true an 10770eb5 headless · ✅ FEIND Wand: jede Erinnerung trägt ihre Namen als Datum — 0 ungetarnt | ✅ FEIND erreicht: keine Injektion erreicht das Modell — 0 von 7 (Rufe {\"stimme\":1,\"wesen\":1,\"journal\":8}) | ✅ FEIND ausgeführt: 0 fremde Anweisungen — 0 Taten | ✅ FEIND Signatur: die Manipulation schlägt an — valid,modified,forged | ✅ FEIND Anzeige: der Spieler liest den Namen — „Ich kenne ⁨Kanarie5Gewitter⁩.“ an 10770eb5 headless",
+   "beleg": "Maschine: ✅ op:rule — op:rule · Geteiltes Werk abgewiesen: der Code trägt ein Verb, das ein geteiltes Werk nie trägt (op:rule). | ✅ P2P: eine Regel mit verbotenem Effekt fällt benannt (rule_effect_forbidden) | ✅ 0 Schreibe: Baupläne, Bauten, Regeln, Edits, Same, Erinnerung unverändert — true an 10770eb5 headless · gehalten: ✅ FEIND Wand: jede Erinnerung trägt ihre Namen als Datum — 0 ungetarnt | ✅ FEIND erreicht: keine Injektion erreicht das Modell — 0 von 7 (Rufe {\"stimme\":1,\"wesen\":1,\"journal\":8}) | ✅ FEIND ausgeführt: 0 fremde Anweisungen — 0 Taten | ✅ FEIND Signatur: die Manipulation schlägt an — valid,modified,forged | ✅ FEIND Anzeige: der Spieler liest den Namen — „Ich kenne ⁨Kanarie5Gewitter⁩.“ an 10770eb5 headless",
    "stationen": [
     {
      "id": "ultiversum.K5#1",
@@ -3737,7 +3769,8 @@
      "gruen": true,
      "zahl": "✅ FEIND Wand: jede Erinnerung trägt ihre Namen als Datum — 0 ungetarnt | ✅ FEIND erreicht: keine Injektion erreicht das Modell — 0 von 7 (Rufe {\"stimme\":1,\"wesen\":1,\"journal\":8}) | ✅ FEIND ausgeführt: 0 fremde Anweisungen — 0 Taten | ✅ FEIND Signatur: die Manipulation schlägt an — valid,modified,forged | ✅ FEIND Anzeige: der Spieler liest den Namen — „Ich kenne ⁨Kanarie5Gewitter⁩.“",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +5)",
+     "gehalten": true
     }
    ]
   },
@@ -3791,7 +3824,7 @@
   },
   "vegetation.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +3)",
+   "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +5)",
    "stationen": [
     {
      "id": "vegetation.K3#1",
@@ -3799,14 +3832,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +3)",
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +5)",
      "ungemessen": true
     }
    ]
   },
   "vegetation.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57343 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 radeon · gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.6 s) · vegetation.K4#2 gtx: Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.0 s)",
+   "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57343 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 radeon · gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.6 s) · vegetation.K4#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 0.9 s)",
    "stationen": [
     {
      "id": "vegetation.K4#1",
@@ -3823,7 +3856,7 @@
      "gruen": true,
      "zahl": "42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.0 s)",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 0.9 s)",
      "gehalten": true
     },
     {
@@ -3841,14 +3874,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 6a571e3b: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.0 s)",
+     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 0.9 s)",
      "ungemessen": true
     }
    ]
   },
   "vegetation.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Krone sommer 192366 px · winter 20106 px → Winter 0.105 × Sommer an 25ac4c0c radeon · gehalten: Krone sommer 193187 px · winter 21705 px → Winter 0.112 × Sommer an b4bcf19c gtx — offen: vegetation.K5#2 radeon: ungemessen (R10) — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s) · vegetation.K5#2 gtx: ungemessen (R10) — zuletzt an 10770eb5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s)",
+   "beleg": "Maschine: gehalten: Krone sommer 192366 px · winter 20106 px → Winter 0.105 × Sommer an 25ac4c0c radeon · gehalten: Krone sommer 193187 px · winter 21705 px → Winter 0.112 × Sommer an b4bcf19c gtx — offen: vegetation.K5#2 radeon: ungemessen (R10) — zuletzt an 6a571e3b: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s) · vegetation.K5#2 gtx: ungemessen (R10) — zuletzt an c5a9a2f5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s)",
    "stationen": [
     {
      "id": "vegetation.K5#1",
@@ -3883,7 +3916,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 10770eb5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s)",
+     "grund": "ungemessen (R10) — zuletzt an c5a9a2f5: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s)",
      "ungemessen": true
     }
    ]
@@ -3986,7 +4019,7 @@
   }
  },
  "rueckfall": [],
- "kopfVoll": "10770eb5698e05aef55914ee1b08907fb4b285a6",
- "zeit": "2026-11-02T13:09:02.840Z",
+ "kopfVoll": "95d7bba1c91eeea0a0abca9373b6ed53ee6e0adf",
+ "zeit": "2026-11-02T14:35:16.147Z",
  "vorher": "10770eb5"
 }
