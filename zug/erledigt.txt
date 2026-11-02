@@ -197,3 +197,4 @@ takt-z145b-gtx gemessen punkte 28dd7a47 gtx: 0 grün / 1 rot
 knoten-wurzel-kalt Exit0 station ankunft-kalt.sh an b7ea7cdc
 knoten-wurzel-abab nicht-langsamer abab b7ea7cdc gegen 1e90e7cd: w-ego 4+4 nicht-langsamer · stadt 2+2 nicht-langsamer
 z145-abab nicht-langsamer abab 28dd7a47 gegen baf9d828: w-ego 4+4 nicht-langsamer · stadt 2+2 nicht-langsamer
+takt-z148a-gtx gemessen punkte ab884210 gtx: 1 grün / 0 rot
