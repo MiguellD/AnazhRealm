@@ -1,0 +1,130 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-persistence.cjs
+  [T] 0 Tod idb · geladen {"w":"f102c4b4-6489-482b-b832-c40388d2871b","x":0,"z":0,"e":0,"b":0,"l":0} · Alter undefined s · 
+  [T] 1 Tod zufall · geladen {"w":"f102c4b4-6489-482b-b832-c40388d2871b","x":0,"z":766,"e":13,"b":0,"l":13} · Alter 5.059 s · 
+  [T] 2 Tod fest · geladen {"w":"f102c4b4-6489-482b-b832-c40388d2871b","x":0,"z":6845,"e":105,"b":3,"l":105} · Alter 4.736 s · 
+  [T] 3 Tod zufall · geladen {"w":"f102c4b4-6489-482b-b832-c40388d2871b","x":0,"z":12779,"e":200,"b":6,"l":200} · Alter 0.005 s · 
+  [T] 4 Tod idb · geladen {"w":"f102c4b4-6489-482b-b832-c40388d2871b","x":0,"z":13524,"e":212,"b":6,"l":212} · Alter 3.117 s · 
+  [T] 5 Tod zufall · geladen {"w":"f102c4b4-6489-482b-b832-c40388d2871b","x":0,"z":14302,"e":225,"b":6,"l":225} · Alter 5.209 s · 
+  [T] 6 Tod fest · geladen {"w":"f102c4b4-6489-482b-b832-c40388d2871b","x":0,"z":15109,"e":237,"b":6,"l":237} · Alter 4.678 s · 
+  [T] 7 Tod zufall · geladen {"w":"f102c4b4-6489-482b-b832-c40388d2871b","x":0,"z":26650,"e":485,"b":15,"l":485} · Alter 0.005 s · 
+  [V] 18.530.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.534.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.532.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.538.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.536.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.540.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.41: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.4: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.541.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.53: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.60: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.66: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.72: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.78: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.77: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.81: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.79: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.80: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.82: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.85: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.84: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.86: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.87: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.88: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.89: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.90: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.91: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.92: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.93: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.94: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.95: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.96: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.97: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.98: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.99: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.100: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.101: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.102: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.103: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.104: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.105: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.106: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.109: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.107: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.108: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.111: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.112: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.110: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.113: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.115: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.114: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.116: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.118: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.117: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.119: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.120: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.121: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.122: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.123: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.124: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.125: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.126: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.127: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.128: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.129: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.130: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.131: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.132: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.133: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.134: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.135: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.136: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.137: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.138: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.139: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.140: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.141: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.142: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.143: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.144: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.145: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.146: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.147: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.148: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.150: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.149: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.151: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.152: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.153: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.154: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.155: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.156: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.157: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.158: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.159: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.160: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.161: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.162: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.163: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.164: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.166: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.165: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.167: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.168: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.168 Kopf: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+
+=== Persistenz-Härtung (Tab-Tod, Lade-Pfad, save-server, Weg) ===
+  ✅ (V) Korpus: 104 Stände 18.530.0 … 18.546.168 und 1 Kopf laden am Kopf — Bauten 525/525 · Gruben 315/315 · Inventar 300/300 · ganz 105/105
+  ✅ (V) Versions-Stufe 18.546.168: ihr Stand steht im Korpus (bump-version.cjs)
+  ✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7
+  ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 98/98
+  ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 105/105
+  ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 105/105
+  ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 105/105
+  ✅ (S) save-server: ein voller Save hält den Stand davor im .bak (voll: Ziel neu, .bak alt · Tod an Punkt 1 → alt, 2 → alt, 3 → alt, 4 → alt, 5 → alt, 6 → alt, 7 → alt, 8 → neu)
+  ✅ (S) save-server: ein Kill mitten im Schreiben lässt den alten oder neuen Stand GANZ (8/8)
+  ✅ (T) Tab-Tod ohne save-server, Zyklen 0-7: 8 Tode: Alter max 5.209 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt · Linie 491 Löcher
+  ✅ (C) save-server: jede statische Datei trägt ETag + no-cache, die Nachfrage bekommt 304, neuer Inhalt neuen ETag (erst 200 ETag ja „no-cache" · nachgefragt 304 (0 B) · Inhalt geändert 200 neuer ETag)
+
+11/11 Persistenz-Invarianten OK.
+✅ Die Welt überlebt Tod und korrupten Write — kein stiller Datenverlust.
