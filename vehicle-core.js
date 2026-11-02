@@ -340,6 +340,12 @@
         laterne: { color: 0xffe0a8, emissive: 0xffb45a, ei: 1.0, roughness: 0.3, metalness: 0, stoff: "licht", seh: "glut" },
         lichtKante: { color: 0xe6fbff, emissive: 0x9fe8ff, ei: 1.6, roughness: 0.25, metalness: 0, stoff: "licht", seh: "glut" },
         kanzel: { color: 0x1d3440, roughness: 0.05, metalness: 0.55, durch: 0.62, stoff: "glas", seh: "glas" }, // das Glas der Kanzel: getönt, spiegelnd
+        // DER KÖRPER JEDER ZEIT (EPOCHE_GESETZ `koerper`): nur „heute" trägt den Lack des Samens — die Stufen davor und danach
+        // tragen den Stoff ihrer Zeit, damit die Achse sich auf einen Blick liest (am 02.11. waren heute und Zukunft im selben
+        // Azurblau kaum zu trennen): der Motorwagen das Wagengrün der Karosseriebauer (Uni, kein Metallic), die Zukunft eine
+        // perlgraue Keramik, die das Bernstein des Hauptlichts warm färbt (die Wärme der Antike über dem Graphit des Unterbaus und dem Licht der Kanten)
+        wagengruen: { color: 0x1f3d2e, roughness: 0.28, metalness: 0, stoff: "lack", seh: "stoff" },
+        keramik: { color: 0xbcbfbe, roughness: 0.24, metalness: 0, stoff: "lack", seh: "stoff" },
     };
     const EPOCHE_STOFF_GEBAUT = {};
     function epocheStoff(art) {
@@ -2525,6 +2531,37 @@
             teile.push(strang(pts, [Math.cos(th), -Math.sin(th), 0], 0.035, 0.022, M.holzDunkel)); // der Spriegel
         }
         for (const sd of [-1, 1]) teile.push(C(px, py, sd * (hw + 0.02), "z", 0.045, 0.02, M.messing, 14)); // das Scharnier
+        // DIE PERSENNING (offen, zu < 0,25): gefaltet liegt das Leder nie als Fächer aus Spriegeln, sondern als gerollter Balg
+        // über dem Stapel — ein Schlauch entlang des mittleren Spriegels, eine Rolle, die den Stapel deckt (am Scharnier
+        // knapp, am Scheitel um die Hälfte dicker — nie ein Horn), im Stoff des Leders (dasselbe Mesh, kein Befehl mehr)
+        if (zu < 0.25) {
+            const um = (n - 1) / 2,
+                [thm] = spr(um),
+                Qn = new THREE.Vector3(Math.cos(thm), -Math.sin(thm), 0),
+                spreiz = L0 * Math.abs(spr(n - 1)[0] - spr(0)[0]),
+                mitte = (v) => new THREE.Vector3(...punkt(um, Math.max(0, Math.min(1, v)), 1)),
+                T = new THREE.Vector3(),
+                N = new THREE.Vector3(),
+                pv = new THREE.Vector3();
+            teile.push(
+                gitter(
+                    nv,
+                    teil(10, 6),
+                    (v, w) => {
+                        T.subVectors(mitte(v + 0.01), mitte(v - 0.01)).normalize();
+                        N.crossVectors(T, Qn).normalize();
+                        const a = 0.045 + 0.3 * spreiz * (0.5 + 0.5 * Math.sqrt(Math.sin(Math.PI * v))),
+                            ph = 2 * Math.PI * w;
+                        pv.copy(mitte(v))
+                            .addScaledVector(Qn, a * Math.cos(ph))
+                            .addScaledVector(N, 0.075 * Math.sin(ph));
+                        return [pv.x, pv.y, pv.z];
+                    },
+                    M.leder,
+                    false
+                )
+            );
+        }
         return baugruppe("verdeck", teile);
     }
 
@@ -4449,7 +4486,8 @@
     // Speichenrad, Felge, geschlossene Scheibe —, ob es frei neben dem Kasten steht, der Antrieb — Zugtier, Motor, leise —,
     // die Haut — offen oder mit Glashaus —, die eigene GESTALT `topo` — Kutsche, Motorwagen, Kanzel: TOPO statt der Haut
     // von heute) und ihre STOFFE (`stoffe`: die Tafel der Zeit über dieselben Stoff-Schlüssel, `epocheTafel`; `koerper` nennt
-    // den Stoff des Kastens statt des Lacks der Gestalt — Holz, das Lackholz der Kutsche).
+    // den Stoff des Kastens statt des Lacks der Gestalt — Holz, das Lackholz der Kutsche, das Wagengrün, die Keramik; nur „heute"
+    // trägt den Lack des Samens).
     // `gestalt` nennt die Baugruppen, die die eigene Gestalt beim Namen trägt (die Linse E zählt sie am Bau; wer sie trägt, trägt
     // nie die Haut von heute `autoHaut`). Zwischen zwei Stufen interpoliert die Form stetig, die Sprünge trägt die nächste Stufe (Math.round): der Motorwagen
     // springt bei 2,5 aus der Kutsche, die Felge bei 3,5 aus dem Speichenrad. „heute" trägt nichts — der Regler auf 4 (und
@@ -4491,6 +4529,7 @@
             lab: "früher Motorwagen",
             jahr: 1900,
             erbe: 0.5,
+            koerper: "wagengruen",
             s: { radstand: 2.55, spur: 1.42, ueberhangV: 0.35, ueberhangH: 0.55, taille: 0, radR: 0.41, radVorn: 1, fahrhoehe: 0.34, guertel: 1.12, dach: 1.95, kabineMitte: -0.6, kabineLaenge: 1.7, tumblehome: 0, windshieldRake: 0.05, verdeck: 0 },
             gestuft: { rad: "speiche", radFrei: true, antrieb: "motor", topo: "motorwagen" },
             gestalt: ["kuehler", "haube", "kotfluegel", "trittbrett", "scheinwerfer", "windschutz", "lenkrad", "rahmen"],
@@ -4502,6 +4541,7 @@
             lab: "Zukunft",
             jahr: 2150,
             erbe: 0.7,
+            koerper: "keramik",
             s: { radstand: 3.0, spur: 1.66, ueberhangV: 0.62, ueberhangH: 1.2, taille: 0, radR: 0.35, fahrhoehe: 0.12, guertel: 0.8, dach: 1.22, kabineMitte: 0.35, kabineLaenge: 1.9, tumblehome: 0.2, windshieldRake: 0.9 },
             gestuft: { rad: "aero", radInnen: 0.08, antrieb: "leise", topo: "kanzel" },
             gestalt: ["monocoque", "kanzel", "lichtKante", "radVerkleidung"],
