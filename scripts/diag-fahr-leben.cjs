@@ -847,7 +847,6 @@ const BAHN = {
     vorM: 2, // F1: W 2 s
     vorFrames: 120,
     neigungGrad: 15, // F1: die Rad-Ebene
-    tore: 10, // F1: der Genesis-Ring
     settleFrames: 60, // F1: 1 s Welt nach dem Platz
     freiM: 1, // F4: so weit vom Stoß ist er frei
     freiFrames: 120, // F4: in 2 s
@@ -1272,8 +1271,19 @@ async function probeBahn(B) {
         return m;
     };
     const M = r._genesisMitte();
+    // DER STAND VOR DEM GARAGE-TOR (das Gesetz der Vorschau, `_genesisVorschau`: sie steht erst, wenn der Spieler ≤ `nahM` vor
+    // ihrem Tor steht): auf der Linie von der Mitte zum Tor, `nahM`/2 vor ihm. Bis hier stand die Linse in der Mitte des Orts —
+    // das Tor des Plans steht 22 m draußen (fachwerk GENESIS_ORT.ring.torR), die Vorschau kam nie, und das Warten hing mit
+    // „wald 221" (CI z150, 41375246207: der Ort-Takt allein treibt die Wald-Schlange nicht).
+    const vorDemTor = () => {
+        const { ort, tore } = r._genesisPlan;
+        const t = tore.find((q) => q.welt === "garage");
+        const k = 1 - t.vorschau.nahM / 2 / Math.hypot(t.x, t.z);
+        stelle(ort.x + t.x * k, ort.z + t.z * k);
+    };
     const vorschau = async () => {
         let e = null;
+        vorDemTor();
         // der Ort-Takt des Spiels: je Takt das Glied des Genesis-Orts, Tore und Vorschau (die Platz-Suche läuft im Takt,
         // FAHR_PLATZ_JE_TAKT Orte; die Vorschau steht, wenn der Spieler vor ihrem Tor steht); das EINE
         // Warten (welt-boot `__gebautNach`) zählt Takte ohne Offenes, nie Sekunden
@@ -1289,7 +1299,6 @@ async function probeBahn(B) {
     };
 
     // ════ F2 — DIE VORSCHAU DES SPIELS am Garage-Tor (der Ort des Befunds; danach 1 s Welt) ════
-    stelle(M.x, M.z);
     const ev = await vorschau();
     if (ev) {
         await gebaut(ev);
@@ -1300,7 +1309,10 @@ async function probeBahn(B) {
     } else out.vorschau = { da: false, grund: "keine Vorschau am Garage-Tor" };
 
     phase("Boot + F2");
-    // ════ F1 — DER PLATZ AN JEDEM TOR des Genesis-Rings (der Weg der Vorschau: autonomous, Blick vom Ring hinaus) ════
+    // ════ F1 — DER PLATZ AN JEDEM TOR MIT VORSCHAU (der Weg der Vorschau: autonomous, Blick vom Ring hinaus) ════
+    // Das Soll zählt der Plan des Orts (fachwerk GENESIS_ORT.tafel: die Tore mit der Zeile `vorschau`) — ein Tor ohne sie hat keinen
+    // Wunsch-Ort, dort stellt das Spiel nie einen Wagen (bis zum Plan trug jedes der zehn Tore des Rings eine Vorschau-Stelle).
+    out.toreSoll = r._genesisPlan.tore.filter((q) => q.vorschau).length;
     const tore = st.architectures.filter((a) => {
         const bp = a && st.blueprints[a.type];
         return (
@@ -1318,10 +1330,7 @@ async function probeBahn(B) {
     stelle(M.x, M.z);
     for (const t of tore) {
         const ort = r._portalVorschauOrt(t);
-        if (!ort) {
-            out.tore.push({ tor: t.type, da: false, grund: "kein Wunsch-Ort der Vorschau (_portalVorschauOrt)" });
-            continue;
-        }
+        if (!ort) continue; // kein Tor mit Vorschau im Plan (fehlt einem Tor des Solls der Ort, fehlt es dem Soll beim Zählen)
         const e = r.spawnArchitecture(
             "fahrzeug_gt",
             { x: ort.x, y: ort.y, z: ort.z },
@@ -1399,7 +1408,6 @@ async function probeBahn(B) {
               )
             : null;
         if (stamm) await gebaut(stamm);
-        stelle(M.x, M.z);
         const e3 = await vorschau();
         out.schmuggelPlatz = e3 ? platzMessung(e3) : { da: false, grund: "keine Vorschau" };
         out.schmuggelPlatz.gesetzStub = hatGesetz;
@@ -2818,9 +2826,9 @@ hauptLauf(async () => {
         const toreDa = (bahn.tore || []).filter((m) => m.da).length;
         const neigMax = Math.max(0, ...(bahn.tore || []).filter((m) => m.da).map((m) => m.neigung));
         check(
-            `F1 an jedem Tor des Genesis-Rings (${BAHN.tore}) steht der GT der Welt nach 1 s Welt auf fahrbarem Grund (≤ 15°, ohne Berührung), E steigt ein und aus`,
-            toreDa >= BAHN.tore && torTaeter.length === 0,
-            `${toreDa}/${(bahn.tore || []).length} Tore · Neigung höchstens ${neigMax.toFixed(1)}° · weiter als der Wunsch-Ort höchstens ${Math.max(0, ...(bahn.tore || []).filter((m) => m.da).map((m) => m.weiter || 0)).toFixed(0)} m${torTaeter.length ? " — Täter: " + torTaeter.slice(0, 6).join(" · ") : ""}`
+            `F1 an jedem Tor mit Vorschau (${bahn.toreSoll}) steht der GT der Welt nach 1 s Welt auf fahrbarem Grund (≤ 15°, ohne Berührung), E steigt ein und aus`,
+            bahn.toreSoll > 0 && toreDa >= bahn.toreSoll && torTaeter.length === 0,
+            `${toreDa}/${bahn.toreSoll} Tore · Neigung höchstens ${neigMax.toFixed(1)}° · weiter als der Wunsch-Ort höchstens ${Math.max(0, ...(bahn.tore || []).filter((m) => m.da).map((m) => m.weiter || 0)).toFixed(0)} m${torTaeter.length ? " — Täter: " + torTaeter.slice(0, 6).join(" · ") : ""}`
         );
         const wv = bahnWandVerdict(bahn.wand);
         check(
