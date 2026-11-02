@@ -1,0 +1,20 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u
+WP=$((7804 + 20000)); LP=$((7804 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; FRISCH=1
+boot() { if [ -z "$FRISCH" ]; then node "$PUNKTE_MASCHINE" grundstellung > "$L/grund.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; cat "$L/grund.txt"; exit 3; }; fi; FRISCH=; if [ $# -gt 0 ]; then timeout 300 $W umstellen "$@" > "$L/boot.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/boot.txt"; exit 3; }; fi; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+rm -f "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\10770eb5-gtx\leib.K1_1.json.lauf1.json"
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil LATENZ1 $W latenz --proben 15 --sicht ego,third --verb gehen,wechsel --json "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\10770eb5-gtx\leib.K1_1.json.lauf1.json"
+node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs.writeFileSync(aus, JSON.stringify({ laeufe: f.map((x) => { try { return JSON.parse(fs.readFileSync(x, "utf8")); } catch (_e) { return null; } }) }));' "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\10770eb5-gtx\leib.K1_1.json" "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\10770eb5-gtx\leib.K1_1.json.lauf1.json"
+@@PUNKTE@@ LATENZ1
+ego/gehen {"n":15,"fehlt":0,"p50":28.1,"p95":41.8,"max":41.8,"eingabe":3.7,"hoerer":0,"kette":8.7,"kurve":16.7,"takte":3}
+ego/wechsel {"n":15,"fehlt":0,"p50":11.7,"p95":38.3,"max":38.3,"eingabe":0.3,"hoerer":0.3,"kette":9,"kurve":0,"takte":1}
+third/gehen {"n":15,"fehlt":0,"p50":29.7,"p95":39.5,"max":39.5,"eingabe":0.3,"hoerer":0,"kette":12.6,"kurve":16.4,"takte":4}
+third/wechsel {"n":15,"fehlt":0,"p50":11.6,"p95":21.8,"max":21.8,"eingabe":0.3,"hoerer":0.3,"kette":7.9,"kurve":0,"takte":1}
+LATENZ GRÜN (Bild 16.7 ms) 
+@@PUNKTE@@ EXIT 0
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
