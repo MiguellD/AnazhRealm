@@ -1201,6 +1201,8 @@ class AnazhRealm_dirigent_takt {
         this._tickBewohner(delta); // die Bewohner der Siedlungen (Meisterkarte mensch.K1)
         this._tickVerkehr(); // wer einsteigt, heimfährt, aussteigt; der Leib am Steuer (PFLICHT-OFFEN C)
         this._vogelTakt(); // die Vögel des Hör-Kreises (Klang K1: jeder Ruf hat einen Leib)
+        this._fischTakt(delta); // die Fische lesen die Strömung (luftwasser.K3)
+        this._bestaeuberTakt(delta); // die Bestäuber lesen Blüte, Wind, Feuchte und Tag (luftwasser.K4)
         this._perfSenseLap("creatures", _ct);
         // DER WETTER-ZUG AUF DER WELT-UHR (wetter.K1, feld.K2#2): je `WETTER_ZUG_SEK` (120 s) der Welt-Uhr (`spielZeit`) EIN Zug
         // — er zieht das Wort, das die Welt sich wünscht (`wetterWunsch` — Nexus, seine Gesetze, die Emotion, die Wesen

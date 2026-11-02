@@ -2462,6 +2462,191 @@
         return paare;
     }
 
+    // DER FISCH (luftwasser.K3, 02.11., additiv — die Fische sind keine Tetrapoda; der Kern der Tiere trägt sie wie Vogel und
+    // Schwarm: EIN Gesetzbuch der Fauna). Die Welt ist eine Funktion, kein Sack: kein Fisch wird geboren oder gespeichert, jeder
+    // STANDPLATZ ist der Wurf seiner Zelle (Raster zelleM, je Zelle mit dem Anteil anteil ein Stand) und liest die EINE Strömung
+    // des Wassers (der Wirt fragt `_waterFlowAt`, gate:kopplung F1). DER STAND (fischStand): von standWuerfe Würfen der Zelle,
+    // die im fließenden Wasser liegen, die LANGSAMSTE Stelle — der Kolk, der Strömungsschatten am Ufer (Forellen stehen dort, wo
+    // sie die Drift sehen und wenig Kraft zahlen; Fausch 1984), nie über haltMs (die Dauer-Schwimmleistung einer Bachforelle
+    // ~1,5 m/s), nie im stehenden Wasser unter minMs. Je Stand glieder Fische, je Fisch sein Platz im Trupp (truppM, längs und
+    // quer im Rahmen der Strömung). DIE RHEOTAXIS (fischSchritt): der Kopf steht GEGEN die Strömung am Ort des Fischs (positive
+    // Rheotaxis, Arnold 1974), gewendet mit wendeRad je s; der Leib pendelt um seinen Platz (pendelM, pendelHz) und schlägt mit
+    // dem Schwanz (schlagHz, schlagRad — die Gier des Bilds, nie die des Gesetzes). Ohne Strömung (See, Tümpel) zieht er seine
+    // Bahn ohne Richtung (kreisHz). DIE FLUCHT (fischFlucht): kommt der Spieler näher als fluchtM (der Schatten über dem Bach:
+    // Forellen fliehen auf 3–6 m), schießt der Fisch mit fluchtMs längs des Laufs fort — stromauf oder stromab, auf der Seite,
+    // auf der er steht —, bis wegM vom Spieler, und hält dort, Kopf wieder gegen die Strömung; nach ruheS kehrt er heim, wenn der
+    // Spieler fort ist. Die Kosten hängen am Auge: Stände nur binnen nahM, die Ankunft an einem Lauf baut je Takt
+    // höchstens zelleJeTakt Zellen. DER LEIB: eine Bachforelle (Salmo trutta, 0,3 m)
+    // als Doppel-Keil (Oktaeder) der Ausdehnung groesse (x quer, y hoch, z längs; Farbe sRGB), tiefe = sein Anteil der
+    // Wassertiefe über dem Bett.
+    var FISCH_GESETZ = Object.freeze({
+        zelleM: 6,
+        anteil: 0.55,
+        standWuerfe: 5,
+        minMs: 0.05,
+        haltMs: 1.6,
+        glieder: [1, 4],
+        truppM: [1.6, 0.9],
+        tiefe: 0.4,
+        tempoMs: 0.7,
+        wendeRad: 3,
+        pendelM: 0.3,
+        pendelHz: 0.07,
+        kreisHz: 0.05,
+        schlagHz: 2.5,
+        schlagRad: 0.1,
+        flucht: Object.freeze({ fluchtM: 4.5, fluchtMs: 2.8, wegM: 10, ruheS: 8 }),
+        nahM: 48,
+        zelleJeTakt: 48,
+        leib: Object.freeze({ groesse: [0.06, 0.075, 0.3], farbe: 0x6b6a52 }),
+    });
+    // proben = je Wurf der Zelle die Strömung dort (m/s) oder null (trocken, ohne Lauf). Liefert den Index des Stands (der Kolk:
+    // die langsamste Stelle im haltbaren Band) oder −1.
+    function fischStand(proben, F) {
+        var best = -1;
+        for (var i = 0; i < proben.length; i++) {
+            var m = proben[i];
+            if (m === null || !(m >= F.minMs) || m > F.haltMs) continue;
+            if (best < 0 || m < proben[best]) best = i;
+        }
+        return best;
+    }
+    // f = der Fisch {x, y, z, gier, vx, vz}, ziel = {x, y, z} sein Platz (oder das Ziel der Flucht), w = die Strömung am Ort
+    // des Fischs {x, z} (m/s) oder null, eilt = er flieht, ph = sein Wurf (0..1), t = die Uhr der Welt, dt (s). Schreibt f;
+    // liefert die Gier des Bilds (Blick +z, mit dem Schwanzschlag).
+    function fischSchritt(f, ziel, w, eilt, ph, t, dt, F) {
+        var dx = ziel.x - f.x,
+            dz = ziel.z - f.z,
+            d = Math.sqrt(dx * dx + dz * dz);
+        var tempo = eilt ? F.flucht.fluchtMs : F.tempoMs;
+        var s = d > 1e-6 ? Math.min(d, tempo * dt) / d : 0;
+        f.x += dx * s;
+        f.z += dz * s;
+        f.y += (ziel.y - f.y) * Math.min(1, 2 * dt);
+        var m = w ? Math.sqrt(w.x * w.x + w.z * w.z) : 0;
+        var wunsch;
+        if (eilt && d > 0.5) wunsch = Math.atan2(dx, dz);
+        else if (m >= F.minMs) wunsch = Math.atan2(-w.x, -w.z);
+        else wunsch = ph * 6.283185307179586 + 6.283185307179586 * F.kreisHz * t;
+        var dg = wunsch - f.gier;
+        dg -= 6.283185307179586 * Math.round(dg / 6.283185307179586);
+        var max = F.wendeRad * (eilt ? 3 : 1) * dt;
+        f.gier += dg > max ? max : dg < -max ? -max : dg;
+        return f.gier + F.schlagRad * (eilt ? 2 : 1) * Math.sin(6.283185307179586 * F.schlagHz * (eilt ? 3 : 1) * t + ph * 97);
+    }
+    // Das Ziel der Flucht: der Fisch (fx, fz) vor dem Spieler (px, pz), u = die Richtung des Laufs am Stand {x, z} (normiert)
+    // oder null. Schreibt out {x, z}: wegM vom Spieler, längs des Laufs auf der Seite des Fischs (ohne Lauf radial fort).
+    function fischFlucht(fx, fz, px, pz, u, F, out) {
+        var rx = fx - px,
+            rz = fz - pz,
+            W = F.flucht.wegM;
+        if (u) {
+            var l = rx * u.x + rz * u.z,
+                q = -rx * u.z + rz * u.x;
+            var sl = l < 0 ? -1 : 1;
+            out.x = px + sl * W * u.x - q * 0.5 * u.z;
+            out.z = pz + sl * W * u.z + q * 0.5 * u.x;
+            return out;
+        }
+        var r = Math.sqrt(rx * rx + rz * rz) || 1;
+        out.x = px + (rx / r) * W;
+        out.z = pz + (rz / r) * W;
+        return out;
+    }
+
+    // DER BESTÄUBER (luftwasser.K4, 02.11., additiv): Bienen und Hummeln lesen das Feld. Kein Insekt wird geboren oder
+    // gespeichert: jede GEZEICHNETE Blüte der Welt (der Wirt reicht die Blumen der Nah-Streu, Studio-kind flower) trägt je
+    // Fenster fensterS je Platz ihren Wurf — besucht oder nicht (bestaeuberBesuch), mit der Wahrscheinlichkeit besuch × Aktivität ×
+    // Nektar; ein Blütenkopf (Korb, Dolde) trägt gaeste Plätze. Die Aktivität folgt dem Feld mit der Trägheit traegS: ein
+    // Sammelflug dauert Minuten — wer draußen ist, fliegt ihn zu Ende, wer im Nest ist, wartet das Wetter ab. DIE AKTIVITÄT (bestaeuberAktiv): der Tag (sonne: Stützstellen sin der Sonnenhöhe → Anteil; Hummeln fliegen ab der
+    // Dämmerung, Bienen erst bei Licht; Heinrich 1979) × die Wind-Ruhe am GRUNDWIND des Orts (ohne die Einzelböe: ein Insekt sucht
+    // Deckung vor dem Wetter, nicht vor jedem Stoß — voll bis windMs[0], still ab windMs[1]; die Hummel fliegt noch, wo die
+    // Honigbiene längst ruht) × die Regen-Ruhe (voll bis regen[0], still ab regen[1]: Hummeln sammeln im Niesel- und Landregen, erst
+    // der Wolkenbruch hält sie im Nest; Peat & Goulson 2005). DER NEKTAR: nektarBasis + (1 − nektarBasis) × Feuchte am Ort (die
+    // Nektar-Sekretion fällt mit dem Wasser-Stress der Pflanze; Phillips 2018). DIE BAHN (bestaeuberBahn): im Fenster fliegt das
+    // Insekt anflugS an — GEGEN den Wind, die Duftfahne hinauf (es kommt von der Lee-Seite, anflugM fort) —, schwebt über der
+    // Blüte (schwebM, schwebHz, über ihr hoeheM) und fliegt anflugS vor dem Ende zu seiner nächsten Blüte fort (eine Richtung
+    // seines Wurfs). Kosten an den gezeichneten Blüten (der Ring der Nah-Streu am Auge), nie an der Welt. DER LEIB: eine
+    // Hummel (Bombus, 0,02 m) als Doppel-Keil der Ausdehnung groesse (Farbe sRGB).
+    var BESTAEUBER_GESETZ = Object.freeze({
+        fensterS: 14,
+        anflugS: 1.6,
+        anflugM: [1.2, 3.5],
+        besuch: 0.6,
+        gaeste: 3,
+        nektarBasis: 0.4,
+        traegS: 90,
+        sonne: Object.freeze([[-0.1, 0], [0.05, 0.25], [0.3, 1], [1, 1]]),
+        windMs: [3, 10],
+        regen: [0.25, 1],
+        schwebM: [0.06, 0.2],
+        schwebHz: [0.6, 1.4],
+        hoeheM: 0.12,
+        leib: Object.freeze({ groesse: [0.016, 0.014, 0.022], farbe: 0x3a2e14 }),
+    });
+    // sonne = sin der Sonnenhöhe, regen 0..1, windMs der Wind am Ort (m/s). Liefert die Aktivität (0..1).
+    function bestaeuberAktiv(sonne, regen, windMs, B) {
+        var C = B.sonne,
+            tag = C[C.length - 1][1];
+        if (sonne <= C[0][0]) tag = C[0][1];
+        else
+            for (var i = 1; i < C.length; i++)
+                if (sonne <= C[i][0]) {
+                    tag = C[i - 1][1] + ((C[i][1] - C[i - 1][1]) * (sonne - C[i - 1][0])) / (C[i][0] - C[i - 1][0]);
+                    break;
+                }
+        var r = (regen - B.regen[0]) / (B.regen[1] - B.regen[0]);
+        r = r > 0 ? (r < 1 ? r : 1) : 0;
+        var w = (windMs - B.windMs[0]) / (B.windMs[1] - B.windMs[0]);
+        w = w > 0 ? (w < 1 ? w : 1) : 0;
+        return tag * (1 - r * r * (3 - 2 * r)) * (1 - w * w * (3 - 2 * w));
+    }
+    // h = der Wurf der Blüte (uint32), t = die Uhr der Welt (s), aktiv = bestaeuberAktiv, feuchte die Feuchte am Ort (0..1).
+    // Liefert die Zahl ihrer Gäste im Fenster (0..gaeste, geschichtet: ⌊gaeste · p + u⌋ mit dem Wurf u des Fensters — der Kopf
+    // trägt im Mittel genau gaeste · p, nie drei unabhängige Zufälle) und schreibt out.tp, die Phase im Fenster (s, ≥ 0).
+    function bestaeuberBesuch(h, t, aktiv, feuchte, B, out) {
+        var F = B.fensterS,
+            ph = vogelWurf(h, 0, 0, 0) * F,
+            k = Math.floor((t + ph) / F);
+        var f = feuchte > 0 ? (feuchte < 1 ? feuchte : 1) : 0;
+        var p = B.besuch * aktiv * (B.nektarBasis + (1 - B.nektarBasis) * f);
+        out.tp = t + ph - k * F;
+        return Math.min(B.gaeste, Math.floor(B.gaeste * p + vogelWurf(h, k, 1, 1)));
+    }
+    // h = der Wurf der Blüte, tp = die Phase im Fenster (bestaeuberBesuch), t = die Uhr der Welt, (wx, wz) die Richtung des
+    // Winds (wohin er weht, normiert). Schreibt out {dx, dy, dz (von der Blüte), gier (Blick +z)}.
+    function bestaeuberBahn(h, tp, t, wx, wz, B, out) {
+        var F = B.fensterS,
+            A = B.anflugS,
+            k = Math.round((t - tp) * 4) | 0; // der Beginn des Fensters (s), im Fenster fest: sein Wurf
+        var R = B.schwebM[0] + (B.schwebM[1] - B.schwebM[0]) * vogelWurf(h, 0, 2, 0);
+        var om = 6.283185307179586 * (B.schwebHz[0] + (B.schwebHz[1] - B.schwebHz[0]) * vogelWurf(h, 0, 3, 0));
+        var phi = om * tp + vogelWurf(h, 0, 4, 0) * 6.283185307179586;
+        var sx = R * Math.cos(phi),
+            sz = R * Math.sin(phi),
+            sy = B.hoeheM + 0.3 * R * Math.sin(2.3 * phi);
+        var weg = 0,
+            ax = 0,
+            az = 0,
+            M = B.anflugM[0] + (B.anflugM[1] - B.anflugM[0]) * vogelWurf(h, k, 5, 0);
+        if (tp < A) {
+            weg = 1 - tp / A;
+            ax = wx;
+            az = wz; // die Lee-Seite: es kommt die Duftfahne hinauf
+        } else if (tp > F - A) {
+            weg = (tp - (F - A)) / A;
+            var g = vogelWurf(h, k, 6, 0) * 6.283185307179586;
+            ax = Math.cos(g);
+            az = Math.sin(g);
+        }
+        var e = weg * weg * (3 - 2 * weg);
+        out.dx = sx * (1 - e) + ax * M * e;
+        out.dz = sz * (1 - e) + az * M * e;
+        out.dy = sy + e * (1 - e) * 2.4 + e * 0.6;
+        out.gier = e > 0.02 ? Math.atan2(tp < A ? -ax : ax, tp < A ? -az : az) : phi + 1.5707963267948966;
+        return out;
+    }
+
     // Mit folge (GANG_FOLGE, die Gangart aus dem Tempo) zieht das Netz jedes Bein in DIESES Muster: jedes Bein an jedes, die
     // Phasen-Differenz um den Versatz der Folge verschoben, die Stärke GANG_FOLGE.kopplung × Takt — im voll verbundenen Netz ist das
     // verschobene Gleichgewicht der einzige stabile Zustand (Kuramoto 1984; im Ring der vier Kanten blieb der Wechsel Trab →
@@ -3922,6 +4107,14 @@
         schwarmLeittier: schwarmLeittier,
         schwarmSitz: schwarmSitz,
         schwarmSeparation: schwarmSeparation,
+        FISCH_GESETZ: FISCH_GESETZ,
+        fischStand: fischStand,
+        fischSchritt: fischSchritt,
+        fischFlucht: fischFlucht,
+        BESTAEUBER_GESETZ: BESTAEUBER_GESETZ,
+        bestaeuberAktiv: bestaeuberAktiv,
+        bestaeuberBesuch: bestaeuberBesuch,
+        bestaeuberBahn: bestaeuberBahn,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,
         FELL_SCHALE: FELL_SCHALE,

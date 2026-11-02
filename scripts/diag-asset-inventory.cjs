@@ -133,8 +133,7 @@ hauptLauf(async () => {
             }
         if (st.chunkSaetze)
             for (const [art, s] of st.chunkSaetze)
-                if (s.spec?.userData?.streuSatz && streuKeys.has(art))
-                    meshKeys.set(s.mesh, streuKeys.get(art));
+                if (s.spec?.userData?.streuSatz && streuKeys.has(art)) meshKeys.set(s.mesh, streuKeys.get(art));
         // der Bau-Satz (`_bauSatzArt`): ein Satz-Mesh zeichnet die Bereiche seiner Gruppen — er trägt ihre
         // Schlüssel wie ein Batch (die schlechteste Klasse gewinnt); ein Bau-Satz ohne Bereich bleibt unbekannt.
         if (st.chunkSaetze)
@@ -196,6 +195,8 @@ hauptLauf(async () => {
             "siedlung-zaun": { b: "substanz", why: "siedlung-zaun (Zaun-Streifen der Siedlungen, ein Pool)" },
             "siedlung-mauer": { b: "substanz", why: "siedlung-mauer (die Stadtmauern, ein Pool)" },
             vogel: { b: "substanz", why: "vogel (ein Pool)" },
+            "tier:fisch": { b: "substanz", why: "tier:fisch (die Fische der Welt-Funktion, ein Pool)" },
+            "tier:bestaeuber": { b: "substanz", why: "tier:bestaeuber (die Bestäuber an den Blüten, ein Pool)" },
         };
         const chainOf = (node) => {
             const c = [];
@@ -263,8 +264,7 @@ hauptLauf(async () => {
                     return tally(worst.b, worst.why);
                 }
                 // 2) Welt-Substanz-Identitäten:
-                if (node.userData?.isHydrosphere || waterSet.has(node))
-                    return tally("substanz", "wasser");
+                if (node.userData?.isHydrosphere || waterSet.has(node)) return tally("substanz", "wasser");
                 // das Fern-Wasser-Sheet (`_ensureFarWaterSheet`, hydroKind "farWater")
                 // und jede andere Hydro-Fläche tragen ihre Identität als hydroKind-Stempel.
                 if (node.userData && typeof node.userData.hydroKind === "string")
