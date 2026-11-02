@@ -400,3 +400,4 @@ takt-z164a-gtx 1 punkte sha=95d7bba1c91eeea0a0abca9373b6ed53ee6e0adf geraet=gtx 
 takt-z164b-gtx 1 punkte sha=95d7bba1c91eeea0a0abca9373b6ed53ee6e0adf geraet=gtx nur=physik.K2#2
 z165-abab 3 abab A=95d7bba1c91eeea0a0abca9373b6ed53ee6e0adf B=5fba36ea44a6e80bb9bd645900a9584c1fcce0b9 zellen=w-ego,stadt
 takt-z164b-gtx 0 storno
+takt-z165a-gtx 1 punkte sha=5fba36ea44a6e80bb9bd645900a9584c1fcce0b9 geraet=gtx nur=physik.K2#2,tiere.K1#2,tiere.K3#2,mensch.K1#1,vegetation.K5#2,material.K2#1,material.K1#1,lod.K1#1,lod.K5#1,studios.K2#2,studios.K3#2,bauen.K1#2,studios.K4#1,siedlung.K1#2,siedlung.K4#2,leib.K1#2,fahrzeug.K2#1,fahrzeug.K2#2,ankunft.K2#1,ankunft.K3#1,ankunft.K1#1,profiband.K1#1,profiband.K2#1,profiband.K2#2,profiband.K3#1,klang.K4#1,speicher.K4#2
