@@ -82,6 +82,10 @@
             "zweck": "Struktur: die Orte der Meshes der Hülle (je `new THREE.Mesh(` seine Funktion) — die Arena der Schmiede baut kein Gerät in der Hülle (w4-arena-welt A4)",
             "datei": 1
         },
+        "scripts/diag-sprache.cjs": {
+            "zweck": "Struktur: die Sprach-Wand (gate:sprache, spielgang.K5) liest index.html — Schlüssel statt Text — und die EINE Tafel in stamm/daten.js",
+            "datei": 2
+        },
         "scripts/diag-streu-wahrheit.cjs": {
             "zweck": "Messung: führt phyto-core und foundry-core im vm aus (Kern-Daten, Karten-Codec) und liest die Emitter je Art am Kern",
             "datei": 2

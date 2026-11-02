@@ -42,7 +42,7 @@
 //                                      „ersetzen" MUSS rot werden: die Seite erwacht in A) — beide beim Namen
 // Port: WELTGRENZE_PORT (Default 4401). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf, argOpt: opt, weltTor, waitFor, jsonLesen, jsonSchreiben, jsonKlon, path, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { frageJa, statikServer, starteBrowser, nullRenderer, hauptLauf, argOpt: opt, weltTor, waitFor, jsonLesen, jsonSchreiben, jsonKlon, path, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 const JSON_AUS = opt("--json", null);
 const PORT = Number(process.env.WELTGRENZE_PORT) || 4401;
@@ -339,6 +339,7 @@ async function fahreWeg(browser, weg, schein) {
     const tuer = TUEREN.has(basis);
     let gemeldet = null;
     page.on("dialog", (d) => d.accept().catch(() => {}));
+    await page.evaluateOnNewDocument(frageJa); // die Fragen der Welt (#frage-dialog, spielgang.K5)
     await page.exposeFunction("__grenzeMelde", (x) => {
         gemeldet = x;
     });

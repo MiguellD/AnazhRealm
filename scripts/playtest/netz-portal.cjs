@@ -2310,7 +2310,7 @@ async function checkBandW18Dwell({ page, check }) {
 // Quarantäne-Queue, nie ausgeführt), der Mensch GEWÄHRT (grant_capability), der LAUF geht durch die
 // dslRun-Sandbox; der Rückruf wirkt VOR und NACH der Gewähr; die Gewähr überlebt den Reload.
 async function checkBandR6Capability({ page, check }) {
-    const res = await safeEvaluate(page, () => {
+    const res = await safeEvaluate(page, async () => {
         const out = {};
         const savedPo = r._portalOverlay;
         const savedProps = st.capabilityProposals;
@@ -2345,16 +2345,22 @@ async function checkBandR6Capability({ page, check }) {
             out.rejectsGarbage =
                 r._portalReceiveCapability({ type: "capability", name: "ÜBEL!", dsl: ["weather", "rainy"] }) === false;
             out.notExecuted = st.weather === savedWeather;
-            out.grantNoProposal = r.grantCapability("gibtsnicht").reason === "no_proposal";
-            // die souveräne Geste: ohne Ja landet nichts, der Vorschlag bleibt in der Quarantäne
-            const altConfirm = window.confirm;
+            out.grantNoProposal = (await r.grantCapability("gibtsnicht")).reason === "no_proposal";
+            // die souveräne Geste: ohne Ja landet nichts, der Vorschlag bleibt in der Quarantäne. Die Frage stellt die
+            // eigene Oberfläche (#frage-dialog, spielgang.K5): der Spieler sagt Nein.
+            const frage = document.getElementById("frage-dialog");
             let gefragt = 0,
                 nein;
-            window.confirm = () => (gefragt++, false);
+            const spieler = new MutationObserver(() => {
+                if (!frage.open) return;
+                gefragt++;
+                frage.querySelector("#frage-nein").click();
+            });
+            spieler.observe(frage, { attributes: true, attributeFilter: ["open"] });
             try {
-                nein = r.grantCapability("regen-tanz");
+                nein = await r.grantCapability("regen-tanz");
             } finally {
-                window.confirm = altConfirm;
+                spieler.disconnect();
             }
             out.gestureWired =
                 gefragt === 1 &&
@@ -2362,7 +2368,7 @@ async function checkBandR6Capability({ page, check }) {
                 nein.reason === "declined" &&
                 !st.grantedCapabilities["regen-tanz"] &&
                 st.capabilityProposals.has("regen-tanz");
-            const granted = r.grantCapability("regen-tanz", { skipConfirm: true });
+            const granted = await r.grantCapability("regen-tanz", { skipConfirm: true });
             out.grants =
                 granted.ok === true &&
                 !!st.grantedCapabilities["regen-tanz"] &&
@@ -2378,7 +2384,7 @@ async function checkBandR6Capability({ page, check }) {
             r._portalReceiveCapability({ type: "capability", name: "zweite", dsl: ["weather", "sunny"] });
             const p2 = st.capabilityProposals.get("zweite");
             if (p2) p2.authorPubKey = pub;
-            out.revokeGates = r.grantCapability("zweite", { skipConfirm: true }).reason === "revoked";
+            out.revokeGates = (await r.grantCapability("zweite", { skipConfirm: true })).reason === "revoked";
             st.revokedKeys.delete(pub);
             st.grantedCapabilities["regen-tanz"].authorPubKey = "";
             const snap = r.buildStateSnapshot();

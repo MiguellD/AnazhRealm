@@ -1954,11 +1954,14 @@ class AnazhRealm_werkstatt_bauen {
         const cloneBtn = document.getElementById("workshop-clone-btn");
         const newBtn = document.getElementById("workshop-new-btn");
         if (cloneBtn) {
-            cloneBtn.addEventListener("click", () => {
+            cloneBtn.addEventListener("click", async () => {
                 const wsLocal = this._ensureWorkshopState();
                 const selected = this.state.blueprints[wsLocal.selectedBlueprint];
                 if (!selected) return;
-                const newName = window.prompt(this._t("bauen.prompt-kopie"), `${selected.name}-kopie`);
+                const newName = await this._frage(this._t("bauen.prompt-kopie"), {
+                    art: "eingabe",
+                    vorgabe: `${selected.name}-kopie`,
+                });
                 if (!newName) return;
                 if (this.cloneBlueprint(selected.name, newName)) {
                     this.selectBlueprintForEdit(newName);
@@ -1966,8 +1969,8 @@ class AnazhRealm_werkstatt_bauen {
             });
         }
         if (newBtn) {
-            newBtn.addEventListener("click", () => {
-                const name = window.prompt(this._t("bauen.prompt-neu"));
+            newBtn.addEventListener("click", async () => {
+                const name = await this._frage(this._t("bauen.prompt-neu"), { art: "eingabe" });
                 if (!name) return;
                 if (this.createBlueprint(name, name)) this.selectBlueprintForEdit(name);
             });
@@ -1993,10 +1996,10 @@ class AnazhRealm_werkstatt_bauen {
             });
         }
         if (delBlueprintBtn) {
-            delBlueprintBtn.addEventListener("click", () => {
+            delBlueprintBtn.addEventListener("click", async () => {
                 const selected = this.state.blueprints[this._ensureWorkshopState().selectedBlueprint];
                 if (!selected || selected.builtIn) return;
-                if (!window.confirm(this._t("bauen.confirm-loeschen", { name: selected.name }))) return;
+                if (!(await this._frage(this._t("bauen.confirm-loeschen", { name: selected.name })))) return;
                 this.deleteBlueprint(selected.name);
                 const remaining = Object.keys(this.state.blueprints);
                 if (remaining.length > 0) this.selectBlueprintForEdit(remaining[0]);

@@ -22,12 +22,10 @@ class AnazhRealm_werkstatt_sozial {
     //   2) Host → createNewWorld mit role="host", Auto-Start P2P nach dem Wechsel, Host-Banner (den Code gibt `teileWelt`)
     //   3) Joinen → der Welt-Code (`empfangeWerk` → `_weltBeitritt`: world-request → world-snapshot → _importGuestWorld → Wechsel)
     _openNewWorldDialog() {
+        // spielgang.K5: die Frage stellt die eigene Oberfläche — es gibt keinen prompt/confirm-Zwilling mehr; fehlt der
+        // Dialog, bricht es laut
         const dialog = document.getElementById("new-world-dialog");
-        if (!dialog || typeof dialog.showModal !== "function") {
-            // Fallback wenn <dialog> nicht supported (alte Browser, headless?)
-            this._openNewWorldDialogLegacy();
-            return;
-        }
+        if (!dialog) throw new Error("NEUE WELT: index.html trägt kein #new-world-dialog");
         const slugInput = document.getElementById("new-world-slug");
         const modeRadios = dialog.querySelectorAll('input[name="new-world-mode"]');
         const roleFieldset = dialog.querySelector(".new-world-role");
@@ -136,38 +134,7 @@ class AnazhRealm_werkstatt_sozial {
 
         cancelBtn.addEventListener("click", onCancel);
         confirmBtn.addEventListener("click", onConfirm);
-        try {
-            dialog.showModal();
-        } catch {
-            // Fallback bei modal-Konflikten
-            this._openNewWorldDialogLegacy();
-        }
-    }
-
-    // Legacy-Fallback (prompt/confirm) für Umgebungen ohne <dialog>-Support
-    // oder bei UI-Fehlern. Ring 8 Original-Pfad.
-    _openNewWorldDialogLegacy() {
-        let slugRaw = "";
-        try {
-            slugRaw = window.prompt(this._t("sozial.neue-welt-name"), "") || "";
-        } catch {
-            slugRaw = "";
-        }
-        const slug = slugRaw.trim();
-        let inherit = false;
-        try {
-            inherit = window.confirm(this._t("sozial.person-uebernehmen"));
-        } catch {
-            inherit = false;
-        }
-        const newId = this.createNewWorld({ slug: slug || null, inheritPlayer: inherit, reload: true });
-        if (!newId) {
-            try {
-                window.alert(this._t("sozial.neue-welt-nicht-erschaffen"));
-            } catch {
-                /* headless */
-            }
-        }
+        dialog.showModal();
     }
 
     updateWorldInfo() {
@@ -297,14 +264,8 @@ class AnazhRealm_werkstatt_sozial {
             recipesBtn.type = "button";
             recipesBtn.textContent = this._t("sozial.rezepte-holen");
             recipesBtn.title = this._t("sozial.rezepte-holen-titel");
-            recipesBtn.addEventListener("click", () => {
-                let confirmed = false;
-                try {
-                    confirmed = window.confirm(this._t("sozial.rezepte-import-frage", { welt: String(entry.slug) }));
-                } catch {
-                    confirmed = true;
-                }
-                if (!confirmed) return;
+            recipesBtn.addEventListener("click", async () => {
+                if (!(await this._frage(this._t("sozial.rezepte-import-frage", { welt: String(entry.slug) })))) return;
                 const result = this.importRecipesFromWorld(entry.worldId);
                 const chatOutput = document.getElementById("chat-output");
                 if (chatOutput) {
@@ -327,14 +288,8 @@ class AnazhRealm_werkstatt_sozial {
             const delBtn = document.createElement("button");
             delBtn.type = "button";
             delBtn.textContent = this._t("sozial.loeschen");
-            delBtn.addEventListener("click", () => {
-                let confirmed = false;
-                try {
-                    confirmed = window.confirm(this._t("sozial.welt-loeschen-frage", { welt: String(entry.slug) }));
-                } catch {
-                    confirmed = true;
-                }
-                if (confirmed) {
+            delBtn.addEventListener("click", async () => {
+                if (await this._frage(this._t("sozial.welt-loeschen-frage", { welt: String(entry.slug) }))) {
                     this.deleteWorld(entry.worldId);
                     this._renderWorldPicker();
                 }

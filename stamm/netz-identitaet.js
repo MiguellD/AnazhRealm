@@ -121,8 +121,9 @@ class AnazhRealm_netz_identitaet {
     // Die EINE Host-gerenderte souveräne Geste: Akte am innersten Ring (Signieren, Identität wechseln)
     // laufen NUR hier — außerhalb jedes iframes, Klartext WAS · WERT · an WEN, JEDES MAL frisch (kein
     // „merken"). Der postMessage-Pfad erreicht sie nie; sie schützt vor der gefälschten Geste, nicht vor
-    // getäuschter Absicht. `opts.skipConfirm` nur für den Playtest.
-    _sovereignGesture(action, detail, opts) {
+    // getäuschter Absicht. `opts.skipConfirm` nur für den Playtest. Die Frage stellt die eigene Oberfläche (`_frage`,
+    // spielgang.K5) — async: der Aufrufer wartet auf das Ja.
+    async _sovereignGesture(action, detail, opts) {
         opts = opts || {};
         // Eine unbekannte/nicht-souveräne Aktion wird VERWEIGERT (die Wand
         // lässt nur die eingefrorene Liste durch — kein Schmuggel).
@@ -134,21 +135,14 @@ class AnazhRealm_netz_identitaet {
         // Headless / Test / kein Host-Confirm verfügbar → der skipConfirm-Pfad
         // (derselbe Vertrag wie importVibePass: die Wand ist die Host-Geste,
         // nicht ein Zwang gegen den Eigentümer-Code).
-        if (opts.skipConfirm || typeof window === "undefined" || typeof window.confirm !== "function") {
-            return true;
-        }
+        if (opts.skipConfirm || typeof document === "undefined") return true;
         const d = detail && typeof detail === "object" ? detail : {};
-        const lines = [
-            "Souveräne Handlung — sie berührt deine Identität/Autorität:",
-            "",
-            `WAS:  ${d.what || action}`,
-            `WERT: ${d.value || "—"}`,
-            `WEM:  ${d.whom || "dir selbst"}`,
-            "",
-            "Diese Handlung kann KEINE Welt und KEIN Assistent für dich auslösen.",
-            "Nur du, jetzt. Fortfahren?",
-        ];
-        return window.confirm(lines.join("\n")) === true;
+        const karte = {
+            was: String(d.what || action),
+            wert: String(d.value || "—"),
+            wem: String(d.whom || this._t("pass.geste.dir-selbst")),
+        };
+        return (await this._frage(this._t("pass.geste.karte", karte))) === true;
     }
 
     // Antikörper-Archiv: die vier Angriffsklassen, je mit ihrer strukturellen Wand (dem lebenden Guard) +
@@ -368,15 +362,15 @@ class AnazhRealm_netz_identitaet {
         // G8 R2 (M3) — change_identity ist eine SOUVERÄNE Aktion: sie läuft durch
         // die EINE Host-Geste (außerhalb jedes iframes, Klartext, jedes Mal frisch).
         if (
-            !this._sovereignGesture(
+            !(await this._sovereignGesture(
                 "change_identity",
                 {
-                    what: "Identität (Vibe-Pass) wiederherstellen",
-                    value: "deine aktuelle Identität wird ERSETZT",
-                    whom: "dir selbst — sichere die alte zuerst",
+                    what: this._t("pass.geste.identitaet.was"),
+                    value: this._t("pass.geste.identitaet.wert"),
+                    whom: this._t("pass.geste.identitaet.wem"),
                 },
                 opts
-            )
+            ))
         ) {
             return { ok: false, reason: "cancelled" };
         }
@@ -452,27 +446,25 @@ class AnazhRealm_netz_identitaet {
             const wait = document.createElement("div");
             wait.className = "drawer-hint";
             wait.textContent =
-                typeof crypto !== "undefined" && crypto.subtle
-                    ? "Der Vibe-Pass wird erzeugt …"
-                    : "Vibe-Pass ruht — öffne die Welt über https oder localhost.";
+                typeof crypto !== "undefined" && crypto.subtle ? this._t("pass.wird-erzeugt") : this._t("pass.ruht");
             body.appendChild(wait);
             return;
         }
         const fp = document.createElement("div");
         fp.className = "vibe-pass-fingerprint";
         fp.textContent = vp.fingerprint;
-        fp.title = "ed25519:" + vp.publicKeyHex;
+        fp.title = this._t("pass.schluessel-id", { hex: vp.publicKeyHex });
         body.appendChild(fp);
 
         const idEl = document.createElement("div");
         idEl.className = "vibe-pass-id";
-        idEl.textContent = "ed25519:" + vp.publicKeyHex;
+        idEl.textContent = this._t("pass.schluessel-id", { hex: vp.publicKeyHex });
         body.appendChild(idEl);
 
         if (vp.createdAt) {
             const born = document.createElement("div");
             born.className = "vibe-pass-born";
-            born.textContent = "Erweckt am " + new Date(vp.createdAt).toLocaleDateString();
+            born.textContent = this._t("pass.erweckt", { datum: new Date(vp.createdAt).toLocaleDateString() });
             body.appendChild(born);
         }
     }
@@ -549,15 +541,15 @@ class AnazhRealm_netz_identitaet {
         const vp = this.state.vibePass;
         if (!vp || !vp.ready) return { ok: false, reason: "no_vibepass" };
         if (
-            !this._sovereignGesture(
+            !(await this._sovereignGesture(
                 "sign_manifest",
                 {
-                    what: `Bauplan „${bp.label || name}" signieren`,
-                    value: "deine Signatur bürgt dafür",
-                    whom: "jeden, der ihn empfängt",
+                    what: this._t("pass.geste.bauplan.was", { name: String(bp.label || name) }),
+                    value: this._t("pass.geste.buergt"),
+                    whom: this._t("pass.geste.bauplan.wem"),
                 },
                 opts
-            )
+            ))
         ) {
             return { ok: false, reason: "cancelled" };
         }
@@ -660,11 +652,11 @@ class AnazhRealm_netz_identitaet {
         const vp = this.state.vibePass;
         if (!vp || !vp.ready) return { ok: false, grund: "no_vibepass" };
         const was = {
-            what: `Werk „${this._werkLabel(name)}" teilen`,
-            value: "deine Signatur bürgt dafür",
-            whom: "jeden mit dem Code",
+            what: this._t("pass.geste.werk.was", { name: String(this._werkLabel(name)) }),
+            value: this._t("pass.geste.buergt"),
+            whom: this._t("pass.geste.code.wem"),
         };
-        if (!this._sovereignGesture("sign_manifest", was, opts)) return { ok: false, grund: "cancelled" };
+        if (!(await this._sovereignGesture("sign_manifest", was, opts))) return { ok: false, grund: "cancelled" };
         return this._werkCode({ programm: this._werkReise(name) });
     }
 
@@ -683,7 +675,9 @@ class AnazhRealm_netz_identitaet {
     async empfangeWerk(code, opts = {}) {
         const W = AnazhRealm.WERK_CODE;
         const ab = (grund) => {
-            this._spielerSagt(`Geteiltes Werk abgewiesen: ${W.grund[grund.split(":")[0]]} (${grund}).`);
+            this._spielerSagt(
+                this._t("pass.werk.abgewiesen", { grund: String(W.grund[grund.split(":")[0]]), code: grund })
+            );
             return { ok: false, grund };
         };
         if (typeof code !== "string" || !code.startsWith(W.praefix)) return ab("kein_code");
@@ -754,7 +748,12 @@ class AnazhRealm_netz_identitaet {
                 name: ziel,
             }
         );
-        this._spielerSagt(`Geteiltes Werk steht: ${this._werkLabel(ziel)} (von ${this._vibeFingerprint(h.autor)}).`);
+        this._spielerSagt(
+            this._t("pass.werk.steht", {
+                werk: String(this._werkLabel(ziel)),
+                autor: String(this._vibeFingerprint(h.autor)),
+            })
+        );
         return { ok: true, id: steht.id, name: ziel, autor: h.autor, fremd };
     }
 
@@ -767,7 +766,10 @@ class AnazhRealm_netz_identitaet {
         if (!addr.sig) return ab("unsigniert");
         if ((await this.verifyWorldAddress(addr)) !== "valid") return ab("signatur");
         this._spielerSagt(
-            `Geteilte Welt „${addr.label}" (von ${this._vibeFingerprint(addr.authorPubKey)}) — trete bei …`
+            this._t("pass.welt.trete-bei", {
+                welt: String(addr.label),
+                autor: String(this._vibeFingerprint(addr.authorPubKey)),
+            })
         );
         const res = await this._weltBeitritt(addr, { slugHint: opts.slugHint || addr.label });
         return res.ok ? { ok: true, welt: res.worldId, autor: addr.authorPubKey } : ab("beitritt:" + res.reason);
@@ -873,7 +875,14 @@ class AnazhRealm_netz_identitaet {
     async bibliothekLege(art, quelle, opts) {
         const fracht = this._bibliothekFracht(art, quelle);
         return fracht
-            ? this._bibliothekSiegeln(fracht, `${art} „${quelle ?? "diese Welt"}"`, opts)
+            ? this._bibliothekSiegeln(
+                  fracht,
+                  this._t("pass.bibliothek.eintrag", {
+                      art: String(art),
+                      quelle: String(quelle ?? this._t("pass.bibliothek.diese-welt")),
+                  }),
+                  opts
+              )
             : { ok: false, grund: "unbekannt" };
     }
 
@@ -886,18 +895,18 @@ class AnazhRealm_netz_identitaet {
         const kette = [...this._sanitizeProvenance(provenance), { by: alt.eintrag.autor, at: Date.now(), code }];
         const fracht = { programm, gesetz, provenance: kette };
         if (aendere) aendere(fracht);
-        return this._bibliothekSiegeln(fracht, `Fork von ${code.slice(0, 12)}`, opts);
+        return this._bibliothekSiegeln(fracht, this._t("pass.bibliothek.fork", { code: code.slice(0, 12) }), opts);
     }
 
     async _bibliothekSiegeln(fracht, was, opts) {
         const vp = this.state.vibePass;
         if (!vp || !vp.ready) return { ok: false, grund: "no_vibepass" };
         const geste = {
-            what: `${was} in die Bibliothek legen`,
-            value: "deine Signatur bürgt dafür",
-            whom: "jeden mit dem Code",
+            what: this._t("pass.geste.bibliothek.was", { was }),
+            value: this._t("pass.geste.buergt"),
+            whom: this._t("pass.geste.code.wem"),
         };
-        if (!this._sovereignGesture("sign_manifest", geste, opts)) return { ok: false, grund: "cancelled" };
+        if (!(await this._sovereignGesture("sign_manifest", geste, opts))) return { ok: false, grund: "cancelled" };
         const h = await this._werkCode(fracht, Infinity);
         return h.ok ? this.bibliothekAufnehmen(h.huelle) : h;
     }
@@ -960,15 +969,15 @@ class AnazhRealm_netz_identitaet {
         const subst = this._buildWorldAddressSubstance(opts || {});
         if (!subst) return { ok: false, reason: "no_world" };
         if (
-            !this._sovereignGesture(
+            !(await this._sovereignGesture(
                 "sign_manifest",
                 {
-                    what: `Welt-Adresse „${subst.label}" signieren`,
+                    what: this._t("pass.geste.adresse.was", { name: String(subst.label) }),
                     value: `${subst.broker} → ${subst.roomId}`,
-                    whom: "jeden, der durchs Portal kommt",
+                    whom: this._t("pass.geste.adresse.wem"),
                 },
                 opts
-            )
+            ))
         ) {
             return { ok: false, reason: "cancelled" };
         }
@@ -1412,15 +1421,15 @@ class AnazhRealm_netz_identitaet {
         const vp = this.state.vibePass;
         if (!vp || !vp.ready) return { ok: false, reason: "no_vibepass" };
         if (
-            !this._sovereignGesture(
+            !(await this._sovereignGesture(
                 "sign_manifest",
                 {
-                    what: `Portal-Halle „${hall.label}" signieren (${hall.entries.length} Adressen)`,
-                    value: "deine Signatur bürgt für diese Kuration",
-                    whom: "jeden, der die Halle empfängt",
+                    what: this._t("pass.geste.halle.was", { name: String(hall.label), n: hall.entries.length }),
+                    value: this._t("pass.geste.halle.wert"),
+                    whom: this._t("pass.geste.halle.wem"),
                 },
                 opts
-            )
+            ))
         ) {
             return { ok: false, reason: "cancelled" };
         }
@@ -1616,15 +1625,15 @@ class AnazhRealm_netz_identitaet {
         const vp = this.state.vibePass;
         if (!vp || !vp.ready) return { ok: false, reason: "no_vibepass" };
         if (
-            !this._sovereignGesture(
+            !(await this._sovereignGesture(
                 "sign_manifest",
                 {
-                    what: `Compute-Resultat (${String(inputHash).slice(0, 8)}…) bürgen`,
-                    value: `Ergebnis-Hash ${String(outputHash).slice(0, 8)}…`,
-                    whom: "jeden, der den Spec re-rechnet",
+                    what: this._t("pass.geste.compute.was", { hash: String(inputHash).slice(0, 8) }),
+                    value: this._t("pass.geste.compute.wert", { hash: String(outputHash).slice(0, 8) }),
+                    whom: this._t("pass.geste.compute.wem"),
                 },
                 opts
-            )
+            ))
         ) {
             return { ok: false, reason: "cancelled" };
         }
@@ -1783,15 +1792,15 @@ class AnazhRealm_netz_identitaet {
         const vp = this.state.vibePass;
         if (!vp || !vp.ready) return { ok: false, reason: "no_vibepass" };
         if (
-            !this._sovereignGesture(
+            !(await this._sovereignGesture(
                 "sign_manifest",
                 {
-                    what: `Playtest-Lauf bürgen (commit ${commit.slice(0, 8)}…)`,
-                    value: `Resultat „${result}", ${total} Invarianten`,
-                    whom: "die Gesundheit des Ultiversums",
+                    what: this._t("pass.geste.playtest.was", { commit: commit.slice(0, 8) }),
+                    value: this._t("pass.geste.playtest.wert", { resultat: String(result), n: String(total) }),
+                    whom: this._t("pass.geste.playtest.wem"),
                 },
                 opts
-            )
+            ))
         ) {
             return { ok: false, reason: "cancelled" };
         }
@@ -2302,15 +2311,15 @@ class AnazhRealm_netz_identitaet {
         const vp = this.state.vibePass;
         if (!vp || !vp.ready) return { ok: false, reason: "no_vibepass" };
         if (
-            !this._sovereignGesture(
+            !(await this._sovereignGesture(
                 "sign_manifest",
                 {
-                    what: `Welt „${entry.label || key}" signieren`,
-                    value: "deine Signatur bürgt dafür",
-                    whom: "jeden, der sie empfängt",
+                    what: this._t("pass.geste.welt.was", { name: String(entry.label || key) }),
+                    value: this._t("pass.geste.buergt"),
+                    whom: this._t("pass.geste.welt.wem"),
                 },
                 opts
-            )
+            ))
         ) {
             return { ok: false, reason: "cancelled" };
         }

@@ -57,7 +57,7 @@ class AnazhRealm_werkstatt_vorschau {
             h.className = "workshop-list-section stammbaum-" + ebene + (zu.has(id) ? " zu" : "");
             h.setAttribute("data-knoten", id);
             h.setAttribute("data-pfad", pfad);
-            h.textContent = text || "⚠ ohne Namen";
+            h.textContent = text || this._t("vorschau.ohne-namen");
             const n = document.createElement("span");
             n.className = "stammbaum-zahl";
             n.textContent = String(zahl);
@@ -114,27 +114,35 @@ class AnazhRealm_werkstatt_vorschau {
         }
         const nameSpan = document.createElement("span");
         nameSpan.className = "name";
-        nameSpan.textContent = String(t.lab).split(t.rezept ? /\s[·—(]/ : /\s[—(]/)[0];
+        const nameSchnitt = t.rezept ? /\s[·—(]/ : /\s[—(]/;
+        nameSpan.textContent = String(t.lab).split(nameSchnitt)[0];
         const badge = document.createElement("span");
         badge.className = "badge";
         badge.textContent = t.waise
-            ? "⚠ ohne Buch"
+            ? this._t("vorschau.ohne-buch")
             : t.werk === "wesen"
-              ? "Wesen"
+              ? this._t("sozial.art.wesen")
               : t.werk === "praegung"
-                ? "Prägung"
+                ? this._t("vorschau.badge.praegung")
                 : !bp
-                  ? "Rezept"
+                  ? this._t("sozial.art.rezept")
                   : bp.builtIn
-                    ? "fest"
+                    ? this._t("vorschau.badge.fest")
                     : t.rezept
-                      ? "Studio"
-                      : "eigen";
+                      ? this._t("vorschau.badge.studio")
+                      : this._t("vorschau.badge.eigen");
         row.appendChild(nameSpan);
         row.appendChild(badge);
         const q = t.quelle || {};
-        const gesetz = q.datei ? `${q.datei} · ${q.anker}` : t.eigen ? "dein Werk" : "der Wirt";
-        row.title = `${t.lab} — Gesetz: ${gesetz} · Leser: ${t.konsum || "keiner (tot)"}${t.ziel ? "" : " · kein Griff: nur anschaubar"}`;
+        const gesetz = q.datei
+            ? `${q.datei} · ${q.anker}`
+            : t.eigen
+              ? this._t("vorschau.gesetz.dein-werk")
+              : this._t("vorschau.gesetz.der-wirt");
+        const knoten = { lab: String(t.lab), gesetz, leser: t.konsum || this._t("vorschau.leser.keiner") };
+        row.title = t.ziel
+            ? this._t("vorschau.knoten-titel", knoten)
+            : this._t("vorschau.knoten-titel.ohne-griff", knoten);
         const rec = t.rezept && this._foundry && this._foundry.recipes ? this._foundry.recipes[t.rezept] : null;
         const ort = rec && rec.fx && rec.fx.place ? [rec.fx.place.mode, rec.fx.place.siteTag] : [];
         row.setAttribute(
@@ -146,7 +154,12 @@ class AnazhRealm_werkstatt_vorschau {
             g.type = "button";
             g.className = "stammbaum-griff";
             g.textContent = "⤓";
-            g.title = `${t.lab} in die Welt legen — ein Griff (${t.werk === "praegung" ? "prägt die Welt" : t.werk === "wesen" ? "ein Wesen erscheint" : "das Werk steht, wohin du blickst"})`;
+            g.title =
+                t.werk === "praegung"
+                    ? this._t("vorschau.griff.praegung", { lab: String(t.lab) })
+                    : t.werk === "wesen"
+                      ? this._t("vorschau.griff.wesen", { lab: String(t.lab) })
+                      : this._t("vorschau.griff.werk", { lab: String(t.lab) });
             g.addEventListener("click", (e) => {
                 e.stopPropagation();
                 this._stammbaumGriff(t);
@@ -620,7 +633,7 @@ class AnazhRealm_werkstatt_vorschau {
         if (out.floatingParts.length) {
             out.lines.push({
                 sev: "warn",
-                text: `${out.floatingParts.length}× schwebendes Teil — der Lastpfad zum Boden ist gebrochen`,
+                text: this._t("vorschau.physik.schwebt", { n: out.floatingParts.length }),
             });
         }
         // Ω-Φ2 Stabilität — für STEHENDE Werke (kippt → wankt). Ein Schwert „kippt" nicht.
@@ -628,12 +641,12 @@ class AnazhRealm_werkstatt_vorschau {
             const stab = this._stability(bp, boden);
             if (!stab.inside) {
                 out.lean = 1;
-                out.lines.push({ sev: "warn", text: "kippt — der Schwerpunkt liegt außerhalb der Standfläche" });
+                out.lines.push({ sev: "warn", text: this._t("vorschau.physik.kippt") });
             } else if (stab.margin < 0.25) {
                 out.lean = Math.max(0, Math.min(1, 1 - stab.margin / 0.25)); // nahe der Kipp-Kante
-                out.lines.push({ sev: "warn", text: "wackelig — der Schwerpunkt sitzt nah an der Kipp-Kante" });
+                out.lines.push({ sev: "warn", text: this._t("vorschau.physik.wackelig") });
             } else {
-                out.lines.push({ sev: "ok", text: "steht — der Schwerpunkt sitzt sicher über der Standfläche" });
+                out.lines.push({ sev: "ok", text: this._t("vorschau.physik.steht") });
             }
             // Kipp-Richtung: vom Stützpolygon-Schwerpunkt zum CoM.xz (dorthin überhängt das Gewicht).
             const poly = this._supportPolygon(bp, boden);
@@ -665,17 +678,16 @@ class AnazhRealm_werkstatt_vorschau {
             if (balanceFrac > 0.5)
                 out.lines.push({
                     sev: "warn",
-                    text: "kopflastig — die Masse sitzt weit vom Griff, der Schwung ist träge",
+                    text: this._t("vorschau.physik.kopflastig"),
                 });
-            else if (sw.mass > 0)
-                out.lines.push({ sev: "ok", text: "griffnah balanciert — schnelle, leichte Führung" });
+            else if (sw.mass > 0) out.lines.push({ sev: "ok", text: this._t("vorschau.physik.griffnah") });
             // Klinge/Brecher: eine durchgehende Schneide?
             if (role === "weapon" || role === "brecher") {
                 const edge = this._edgeContinuity(bp);
                 if (edge < 0.999)
                     out.lines.push({
                         sev: "warn",
-                        text: "die Schneide hat eine Lücke — sie schneidet nicht durchgehend",
+                        text: this._t("vorschau.physik.schneide-luecke"),
                     });
             }
         }
@@ -1277,12 +1289,11 @@ class AnazhRealm_werkstatt_vorschau {
         if (!rec) return;
         const head = document.createElement("div");
         head.className = "workshop-recipe-stats-head";
-        head.textContent = (rec.lab || presetId) + " · Studio-Rezept (" + (rec.kind || "?") + ")";
+        head.textContent = this._t("vorschau.rezept-kopf", { lab: rec.lab || presetId, art: rec.kind || "?" });
         panel.appendChild(head);
         const hint = document.createElement("div");
         hint.className = "workshop-recipe-stats-hint";
-        hint.textContent =
-            "Ein Eintrag des LIVE-Rezeptbuchs — anschaubar + regelbar (Studio-Regler links), nicht platzierbar. Das Welt-Verhalten bestimmt allein place.mode des Rezepts.";
+        hint.textContent = this._t("vorschau.rezept-hinweis");
         panel.appendChild(hint);
         // Klang-Rezept: kein 3D, sein Verb ist HÖREN. „Als Welt-Klang setzen“ wählt das Genre für den EINEN
         // Lofi-Konsumenten (state.klangPreset, persistiert; Tempo/Skala ab dem nächsten Akkord live) und
@@ -1294,9 +1305,8 @@ class AnazhRealm_werkstatt_vorschau {
             const kBtn = document.createElement("button");
             kBtn.type = "button";
             kBtn.className = "workshop-recipe-dice";
-            kBtn.textContent = cur === presetId ? "♪ Welt-Klang (aktiv)" : "♪ Als Welt-Klang setzen";
-            kBtn.title =
-                "Der Lofi-Strom der Welt folgt diesem Genre (Tempo + Skala aus dem Genesis-Rezept) — ab dem nächsten Akkord.";
+            kBtn.textContent = cur === presetId ? this._t("vorschau.klang.aktiv") : this._t("vorschau.klang.setzen");
+            kBtn.title = this._t("vorschau.klang.titel");
             kBtn.addEventListener("click", () => {
                 this.state.klangPreset = presetId;
                 this.saveState && this.saveState();
@@ -1330,7 +1340,7 @@ class AnazhRealm_werkstatt_vorschau {
                 el.className = "workshop-studio-status";
                 panel.prepend(el);
             }
-            el.textContent = "Studio-Asset lädt…";
+            el.textContent = this._t("vorschau.studio-laedt");
         } else if (el) {
             el.remove();
         }
@@ -2260,7 +2270,7 @@ class AnazhRealm_werkstatt_vorschau {
         const snapBtn = document.getElementById("workshop-snap-toggle");
         if (snapBtn) {
             snapBtn.classList.toggle("active", ws.snapEnabled);
-            snapBtn.textContent = ws.snapEnabled ? "Snap" : "frei";
+            snapBtn.textContent = ws.snapEnabled ? this._t("ui.snap") : this._t("hof.frei");
         }
         // Read-only-Banner: sichtbar bei Built-in-Bauplan, sonst versteckt.
         // Plus Mode-Bar disable wenn Built-in (visuell + klick-wirkungslos).
@@ -2362,9 +2372,8 @@ class AnazhRealm_werkstatt_vorschau {
         row.className = "stat-row workshop-umwidmen-row";
         const label = document.createElement("span");
         label.className = "stat-label";
-        label.textContent = "Intent";
-        label.title =
-            "Die ROLLE fixt der Prozess (Werkzeug auf den Part ziehen). Hier leben nur die drei Akte, die KEIN Prozess ableiten kann: Ziel, Zweck, Loslassen.";
+        label.textContent = this._t("vorschau.intent");
+        label.title = this._t("vorschau.intent.titel");
         row.appendChild(label);
         const acts = document.createElement("span");
         acts.className = "workshop-umwidmen-acts";
@@ -2392,18 +2401,14 @@ class AnazhRealm_werkstatt_vorschau {
             wOpt.textContent = AnazhRealm.WORLD_REGISTRY[wid].label;
             portalSel.appendChild(wOpt);
         }
-        mkBtn(
-            "Portal →",
-            "Das ZIEL ist Wille, keine Substanz: auf die gewählte Welt richten — das Werk wird ein Tor.",
-            () => this.aimBlueprintAtWorld(bp.name, portalSel.value)
+        mkBtn(this._t("vorschau.intent.portal"), this._t("vorschau.intent.portal.titel"), () =>
+            this.aimBlueprintAtWorld(bp.name, portalSel.value)
         );
         acts.appendChild(portalSel);
-        mkBtn(
-            "⚒ Station",
-            "Der ZWECK ist Wille: dieses Bauwerk DIENT als Werkstatt (Esse/Brennkolben-Zwilling) — die bediente Domäne emergiert aus seiner Substanz.",
-            () => this.setBlueprintAsWorkshopStation(bp.name)
+        mkBtn(this._t("vorschau.intent.station"), this._t("vorschau.intent.station.titel"), () =>
+            this.setBlueprintAsWorkshopStation(bp.name)
         );
-        mkBtn("✨ Emergent", "LOSLASSEN: Markierung lösen — die Rolle emergiert wieder aus der Substanz.", () =>
+        mkBtn(this._t("vorschau.intent.emergent"), this._t("vorschau.intent.emergent.titel"), () =>
             this.resetBlueprintRole(bp.name)
         );
         row.appendChild(acts);
@@ -2417,7 +2422,7 @@ class AnazhRealm_werkstatt_vorschau {
         if (!zone || typeof document === "undefined") return;
         const h = document.createElement("div");
         h.className = "workshop-werk-heading";
-        h.textContent = "Werk";
+        h.textContent = this._t("vorschau.werk");
         zone.appendChild(h);
     }
 
@@ -2439,14 +2444,14 @@ class AnazhRealm_werkstatt_vorschau {
         const bauwerk = role !== "armor" && !isSoul && role !== "consumable" && this._isPlaceableBlueprint(bp);
         const verb =
             role === "armor"
-                ? "Rüstung weben (tragen)"
+                ? this._t("vorschau.verb.ruestung")
                 : isSoul
-                  ? "Körper formen (verkörpern)"
+                  ? this._t("vorschau.verb.koerper")
                   : role === "consumable"
-                    ? "Trank brauen (trinken)"
+                    ? this._t("vorschau.verb.trank")
                     : bauwerk
-                      ? "Bauen (das Werk steht, wohin du blickst)"
-                      : "Gerät schmieden (in die Hand)";
+                      ? this._t("vorschau.verb.bauen")
+                      : this._t("vorschau.verb.geraet");
         const row = document.createElement("div");
         row.className = "stat-row workshop-fertigen-row";
         // Step 1 — kein „Werk"-stat-label mehr: das _workshopAppendWerkHeading darüber trägt
@@ -2454,8 +2459,8 @@ class AnazhRealm_werkstatt_vorschau {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "workshop-fertigen";
-        btn.textContent = "⚒ FERTIGEN";
-        btn.title = `${verb} — das reale Werk herstellen: zieht Material (pfad/frieden, frei in schöpfer), friert die Präzision ein, rüstet/wirkt. Re-fertigbar.`;
+        btn.textContent = this._t("vorschau.fertigen");
+        btn.title = this._t("vorschau.fertigen.titel", { verb });
         btn.addEventListener("click", () => {
             const res = isSoul ? this.embodyBlueprint(bp.name) : this.fertigeBlueprint(bp.name);
             // embodyBlueprint lässt `free` weg, wenn es den freien Verkörpern-Pfad nahm (schon geformt
@@ -2477,12 +2482,16 @@ class AnazhRealm_werkstatt_vorschau {
         const hint = document.createElement("span");
         hint.className = "workshop-fertigen-station";
         if (station.ok && station.found) {
-            hint.textContent = `⚙ ${this._stationLabelForDomain(station.domain)} nah`;
-            hint.title = "Die passende Welt-Werkstatt ist in der Nähe — du kannst hier fertigen.";
+            hint.textContent = this._t("vorschau.station.nah", {
+                station: this._stationLabelForDomain(station.domain),
+            });
+            hint.title = this._t("vorschau.station.nah.titel");
         } else if (!station.ok) {
-            hint.textContent = `⚙ braucht ${this._stationLabelForDomain(station.neededDomain)}`;
+            hint.textContent = this._t("vorschau.station.braucht", {
+                station: this._stationLabelForDomain(station.neededDomain),
+            });
             hint.classList.add("workshop-fertigen-station-missing");
-            hint.title = "Im pfad-Modus braucht dieses Werk die passende Welt-Werkstatt in der Nähe.";
+            hint.title = this._t("vorschau.station.braucht.titel");
         }
         if (hint.textContent) row.appendChild(hint);
         panel.appendChild(row);
@@ -2491,7 +2500,7 @@ class AnazhRealm_werkstatt_vorschau {
     // Das Label der Welt-Werkstatt, die eine Domäne bedient (Esse/Brennkolben/…) — für die
     // FERTIGEN-Station-Hinweise. Fällt auf das Domänen-Label zurück, wenn kein Bauplan passt.
     _stationLabelForDomain(domain) {
-        if (!domain) return "Werkstatt";
+        if (!domain) return this._t("ui.werkstatt");
         for (const b of Object.values(this.state.blueprints || {})) {
             if (b && b.role === "workshop-station" && this._computeWorkshopDomain(b) === domain)
                 return b.label || b.name;

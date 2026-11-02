@@ -26,7 +26,7 @@
 //                                                    nur-idb und idb-frischer MÜSSEN rot werden, beim Namen
 // Port: BOOT_RETTUNG_PORT (Default 4402). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf, sleep, argOpt: opt, path, SELBSTTEST, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { frageJa, statikServer, starteBrowser, nullRenderer, hauptLauf, sleep, argOpt: opt, path, SELBSTTEST, jsonSchreiben } = require("./lib/welt-boot.cjs");
 
 const JSON_AUS = opt("--json", null);
 const PORT = Number(process.env.BOOT_RETTUNG_PORT) || 4402;
@@ -101,6 +101,7 @@ async function fahreForm(browser, form, schein) {
     const page = await ctx.newPage();
     const rep = { form, schein: !!schein, befunde: [], boots: [] };
     page.on("dialog", (d) => d.accept().catch(() => {}));
+    await page.evaluateOnNewDocument(frageJa); // die Fragen der Welt (#frage-dialog, spielgang.K5)
     await nullRenderer(page);
     if (schein) await page.evaluateOnNewDocument(scheinNurPlatz);
     const t0 = Date.now();

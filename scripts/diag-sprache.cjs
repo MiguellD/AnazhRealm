@@ -66,7 +66,7 @@ function pruefeTafel(Z, rot) {
 
 // ── C/K: der Code ──
 const SENKE =
-    /\.(textContent|innerText|innerHTML|title|placeholder)\s*=(?!=)\s*|\b(_hudSchreib|_chatEcho|alert|confirm|prompt|_el|appendChatOutput|_spielerSagt|_ladeschirmStand)\s*\(|\bsetAttribute\(\s*["'](title|placeholder|aria-label|alt)["']\s*,/g;
+    /\.(textContent|innerText|innerHTML|title|placeholder)\s*=(?!=)\s*|\b(_hudSchreib|_chatEcho|alert|confirm|prompt|_el|append|appendChatOutput|_spielerSagt|_ladeschirmStand)\s*\(|\bsetAttribute\(\s*["'](title|placeholder|aria-label|alt)["']\s*,/g;
 function ausdruck(code, i, ruf) {
     let tiefe = 0;
     let q = null;
@@ -95,7 +95,12 @@ function pruefeCode(dateien, Z, rot) {
     const gesehen = new Set();
     let senken = 0;
     for (const { pfad, text } of dateien) {
-        const code = stammLib.ohneKommentare(text);
+        // die Tafel selbst liest sich nie: ihr Block fällt (Zeilen bleiben)
+        const a = text.indexOf("// SPRACH-ZEILEN AUF");
+        const e = text.indexOf("// SPRACH-ZEILEN ZU");
+        const ohneTafel =
+            a >= 0 && e > a ? text.slice(0, a) + text.slice(a, e).replace(/[^\n]/g, " ") + text.slice(e) : text;
+        const code = stammLib.ohneKommentare(ohneTafel);
         for (const m of code.matchAll(SENKE)) {
             senken++;
             const ruf = !!m[2] || !!m[3];
@@ -114,20 +119,34 @@ function pruefeCode(dateien, Z, rot) {
                 );
             }
         }
-        for (const m of code.matchAll(/\b_t\(\s*(["'`])([^"'`]+)\1/g))
+        // K: jedes Literal, das wie ein Schlüssel der Tafel aussieht (ihr Präfix, dann [a-z0-9.-]), steht in ihr — auch in
+        // Ternären und Tafeln (`_t(an ? "a.x" : "a.y")`, `_t(label)`); U zählt, welche Zeilen ein Leser trägt
+        for (const m of code.matchAll(/\b_t\(\s*(["'])([^"']+)\1/g))
             if (!(m[2] in Z)) rot(`K: ${pfad}:${zeileVon(code, m.index)} der Schlüssel „${m[2]}“ fehlt in der Tafel`);
+        for (const m of code.matchAll(SCHLUESSEL_LIT(Z))) {
+            genutzt.add(m[2]);
+            if (!(m[2] in Z) && !/\b_t\(\s*$/.test(code.slice(Math.max(0, m.index - 12), m.index)))
+                rot(`K: ${pfad}:${zeileVon(code, m.index)} der Schlüssel „${m[2]}“ fehlt in der Tafel`);
+        }
     }
     return senken;
 }
+const SCHLUESSEL_LIT = (Z) => {
+    const praefix = [...new Set(Object.keys(Z).map((k) => k.split(".")[0]))].join("|") || "ui";
+    return new RegExp(`(["'])((?:${praefix})\\.[a-z0-9][a-z0-9.-]*)\\1`, "g");
+};
+const genutzt = new Set();
 
 // ── H: index.html ──
 function pruefeHtml(html, Z, rot) {
     const zeile = (i) => html.slice(0, i).split("\n").length;
     const body = html.indexOf("<body");
     const titel = html.indexOf("<title");
-    const ROH = /<(script|style|textarea)\b[^>]*>[\s\S]*?<\/\1>|<!--[\s\S]*?-->/g;
-    // die Roh-Blöcke und Kommentare fallen (Zeilen bleiben), dann Tags und Text
-    const flach = html.replace(ROH, (s) => s.replace(/[^\n]/g, " "));
+    // der INHALT der Roh-Blöcke und die Kommentare fallen (Zeilen bleiben) — der öffnende Tag bleibt: auch ein <textarea>
+    // trägt Attribute (placeholder)
+    const ROH = /(<(script|style|textarea)\b[^>]*>)([\s\S]*?)(<\/\2>)|<!--[\s\S]*?-->/g;
+    const blank = (t) => t.replace(/[^\n]/g, " ");
+    const flach = html.replace(ROH, (s, auf, _n, innen, zu) => (auf ? auf + blank(innen) + zu : blank(s)));
     const TAG = /<\/?[a-zA-Z][^>]*>/g;
     let letzte = 0;
     let n = 0;
@@ -148,12 +167,14 @@ function pruefeHtml(html, Z, rot) {
         }
         for (const k of tag.matchAll(/\sdata-t(?:-[a-z-]+)?="([^"]*)"/g))
             if (!(k[1] in Z)) rot(`K: index.html:${zeile(m.index)} der Schlüssel „${k[1]}“ fehlt in der Tafel`);
+            else genutzt.add(k[1]);
     }
     text(letzte, flach.length);
     return n;
 }
 
 function pruefe({ dateien, html, daten }) {
+    genutzt.clear();
     const befund = [];
     const rot = (s) => befund.push(s);
     let Z = {};
@@ -165,6 +186,9 @@ function pruefe({ dateien, html, daten }) {
     pruefeTafel(Z, rot);
     const senken = pruefeCode(dateien, Z, rot);
     const tags = pruefeHtml(html, Z, rot);
+    // U: eine Zeile, die kein Leser trägt, ist toter Text (ein Abschied nimmt seine Zeilen mit)
+    for (const k of Object.keys(Z))
+        if (!genutzt.has(k)) rot(`U: die Zeile „${k}“ trägt keinen Leser (Stamm, index.html)`);
     return { befund, zeilen: Object.keys(Z).length, senken, tags };
 }
 
@@ -213,6 +237,14 @@ if (SELBSTTEST) {
     fall("harter DOM-Text", (e) => ((e.html = e.html.replace("<body", "<body><p>Hallo Welt</p")), e), "H");
     fall("hartes Attribut", (e) => ((e.html = e.html.replace("<body", '<body><i title="Schließen"></i')), e), "H");
     fall("Zeile ohne en", (e) => ((e.daten = e.daten.replace(/("ui\.[^"]+": \["[^"]*"), "[^"]*"\]/, "$1]")), e), "T");
+    fall(
+        "Zeile ohne Leser",
+        (e) => (
+            (e.daten = e.daten.replace("const Z = {\n", 'const Z = {\n"ui.niemand-liest": ["Niemand", "Nobody"],\n')),
+            e
+        ),
+        "U"
+    );
     fall("Wert nur in de", (e) => ((e.daten = e.daten.replace(/("ui\.[^"]+": \["[^"]*)", /, '$1 {n}", ')), e), "T");
     const sauber = (e) => e;
     const r = pruefe(sauber(echt));
@@ -278,7 +310,7 @@ async function welt() {
         }
     };
     const p = await lauf("pseudo");
-    for (const h of p.hart.slice(0, 80)) console.log("  ROT W: " + h);
+    for (const h of p.hart.slice(0, process.argv.includes("--alle") ? 1e9 : 80)) console.log("  ROT W: " + h);
     if (p.hart.length > 80) console.log(`  … und ${p.hart.length - 80} weitere`);
     console.log(
         `gate:sprache --welt — ${p.hart.length} harte Zeilen im lebenden DOM (pseudo, ${p.wortKnoten} Wort-Knoten)`

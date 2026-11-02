@@ -1916,7 +1916,7 @@ async function checkBandV1748Social({ page, check }) {
 // von jedem Auto-Pool + eine Host-gerenderte Geste. Eine vergiftete Welt/LLM/
 // Regel kann einen souveränen Akt NIE auslösen — nur du, jetzt, über die Geste.
 async function checkBandG8R2SovereignWall({ page, check }) {
-    const res = await safeEvaluate(page, () => {
+    const res = await safeEvaluate(page, async () => {
         const K = AnazhRealm;
         const out = {};
         const SA = K.SOVEREIGN_ACTIONS;
@@ -1949,9 +1949,11 @@ async function checkBandG8R2SovereignWall({ page, check }) {
         out.chainBlocksSovereignNotRest =
             run2.log.some((e) => e.event === "sovereign_blocked") && st.weather === "rainy";
         st.weather = savedWeather;
-        // (4) die Host-Geste: skipConfirm → true; ein NICHT-souveräner Akt → verweigert.
-        out.gestureSkipConfirm = r._sovereignGesture("wallet_transfer", { what: "x" }, { skipConfirm: true }) === true;
-        out.gestureRefusesUnknown = r._sovereignGesture("plant_a_tree", {}, { skipConfirm: true }) === false;
+        // (4) die Host-Geste (async, spielgang.K5: die eigene Oberfläche fragt): skipConfirm → true; ein NICHT-souveräner Akt
+        // → verweigert.
+        out.gestureSkipConfirm =
+            (await r._sovereignGesture("wallet_transfer", { what: "x" }, { skipConfirm: true })) === true;
+        out.gestureRefusesUnknown = (await r._sovereignGesture("plant_a_tree", {}, { skipConfirm: true })) === false;
         // (6) eine Welt-REGEL kann keinen souveränen Effekt ausführen.
         const ctxr = r.dslCtx({ source: "rule-test" });
         r.dslEval(["grant_capability", "world", "domain"], ctxr);
