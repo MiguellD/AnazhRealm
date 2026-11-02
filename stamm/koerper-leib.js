@@ -532,13 +532,15 @@ class AnazhRealm_koerper_leib {
     // unter Fels (nur dort tastet das Feld); ohne Karte (fern, ungebaut) trägt der Träger. Leser: Fuß-IK des Menschen
     // (`_gaitBodenY`) und des Tiers (`_kreaturFussBoden`), Tier-Lage (`_creatureSlopeProben`, die Mitte im Frame-Takt), der
     // Stoß-Schritt, die Tod-Lage. Die Karte am Punkt liest `_bodenSichtAt` (am Chunk-Rand die des Nachbarn).
-    // Über einem gefrorenen Spiegel (`_eisAt`, stoffe.K3) sieht das Auge das Eis, nie den Grund unter ihm.
+    // Über einem gefrorenen Spiegel (`_eisAt`, stoffe.K3) sieht das Auge das Eis, nie den Grund unter ihm. In der Schnee-Decke
+    // (wetter.K4) steht der Fuß um ihren Tritt unter der gezeichneten Fläche (`_schneeTrittAt`), wie der Leib (`_koerperGrund`).
     _standSicht(x, z, traegerY, struktur) {
         if (struktur === true) return traegerY;
         const band = AnazhRealm.STAND_SICHT_BAND;
         const karte = this._bodenSichtAt(x, z);
         const eis = this._eisAt(x, z, traegerY + band, 2 * band, karte);
-        const k = eis !== null && !(karte >= eis) ? eis : karte;
+        const k =
+            eis !== null && !(karte >= eis) ? eis : karte === null ? karte : karte - this._schneeTrittAt(x, karte, z);
         if (!Number.isFinite(traegerY)) return Number.isFinite(k) ? k : NaN;
         if (!Number.isFinite(k)) return traegerY;
         if (Math.abs(k - traegerY) <= band) return k;
