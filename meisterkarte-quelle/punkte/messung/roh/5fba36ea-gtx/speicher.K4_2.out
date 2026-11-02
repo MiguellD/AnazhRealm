@@ -119,8 +119,6 @@ const speicherBildSeite = async function speicherBildSeite(setzen, wasser) {
     return j;
 }); C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\5fba36ea-gtx\speicher.K4_2.json C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte
 [linse-gpu] nvidia/pascal
-(B) bild-diff 71.21 % nach dem Neuladen (2288 ms), Rauschen 0.09 %, Pflicht vor {"bau":true,"grube":true,"wasser":2} · nach {"bau":false,"grube":false,"wasser":2}
-PROBE 47 s
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
