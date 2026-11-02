@@ -301,7 +301,7 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
     console.log("  (a) " + ((Date.now() - t0) / 1000).toFixed(1) + " s");
     await cdp.detach().catch(() => {});
     fs.writeFileSync(tor.aus, JSON.stringify(erg, null, 1));
-})(tor).then(() => process.exitCode || 0, (e) => (console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\5fba36ea-gtx\gelaende.K2_1.json C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte
+})(tor).then(() => process.exitCode || 0, (e) => (console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\5fba36ea-gtx\gelaende.K2_2.json C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte
 [linse-gpu] nvidia/pascal
 
 --- gpu-zeuge ---

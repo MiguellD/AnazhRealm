@@ -67,7 +67,7 @@ $ C:\Program Files\nodejs\node.exe -e (async function folge(plan) {
     console.log(aus.adapter || "[linse-gpu] ungenannt");
     console.log(aus.fehler ? "FOLGE ROT: " + aus.fehler : "FOLGE " + plan.name + ": " + plan.schritte.length + " Schritte");
     process.exit(code);
-})({"name":"ferne","schritte":[{"name":"luft","args":["licht","--luft","--datei","@DIR@/luft.json"],"datei":"@DIR@/luft.json"},{"name":"genesis","args":["umstellen","--ort","genesis","--sicht","ego"],"muss":true},{"name":"band","args":["band","--ort","genesis","--datei","@DIR@/band.json"],"datei":"@DIR@/band.json"}]}) C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\5fba36ea-gtx\ferne.K1_1.json C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte
+})({"name":"ferne","schritte":[{"name":"luft","args":["licht","--luft","--datei","@DIR@/luft.json"],"datei":"@DIR@/luft.json"},{"name":"genesis","args":["umstellen","--ort","genesis","--sicht","ego"],"muss":true},{"name":"band","args":["band","--ort","genesis","--datei","@DIR@/band.json"],"datei":"@DIR@/band.json"}]}) C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\5fba36ea-gtx\ferne.K1_2.json C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
