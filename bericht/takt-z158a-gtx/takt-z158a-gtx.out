@@ -1,0 +1,74 @@
+Punkte-Maschine: 26 Station(en) in 20 Läufen auf gtx am 6a571e3b · Sitzung 20 Proben in EINER Welt (Deckel Σ 9 min) · Zeit 0 Läufe ~0 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~0 min (Soll-Minuten ohne Sitzung) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  SITZUNG gtx · die Welt steht nach 6.3 s (Schloss nach 0.01 min) · 20 Proben · Welt :27804
+  SITZUNG profiband.K4#1 ließ die Zeichenkette verändert: zeichner.renderer._renderObjectDirect — kein Urteil (Werkzeug-Bruch), die Grundstellung folgt
+  OFFEN profiband.K4#1 · Deckel 29 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._renderObjectDirect getauscht: function (object, material, scene, camera) { const vor = H.c) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG der Grund der Welt: 79 Größen in 0.2 s
+  SITZUNG Grundstellung vor vegetation.K5#2: 0.2 s (im Spiel 73 ms)
+  SITZUNG Ort wiese vor vegetation.K5#2: 19.6 s (709 Takte, 81 Chunks, nach der Grundstellung)
+  OFFEN vegetation.K5#2 · Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor material.K2#1: 7 s (im Spiel 2546.8 ms, durch die Tür)
+  SITZUNG Ort wiese vor material.K2#1: 16.5 s (623 Takte, 81 Chunks, nach der Tür)
+  SITZUNG material.K2#1 ließ die Welt verändert und trägt kein mutiert: wege +1 [-119.1,-274.9,279.2,201/272] (genesis) — die Grundstellung folgt
+  OFFEN material.K2#1 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: fels-weit · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor lod.K1#1: 9.1 s (im Spiel 1696.3 ms, durch die Tür)
+  SITZUNG Ort wiese vor lod.K1#1: 16.3 s (603 Takte, 81 Chunks, nach der Tür)
+  OFFEN lod.K1#1 · Deckel 30 s gerissen — beendet, UNGEMESSEN (zuletzt: tafel · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor lod.K5#1: 7.7 s (im Spiel 3219 ms, durch die Tür)
+  SITZUNG Ort wiese vor lod.K5#1: 15.2 s (588 Takte, 81 Chunks, nach der Tür)
+  SITZUNG lod.K5#1 ließ die Welt verändert und trägt kein mutiert: werke +2 (−0) — die Grundstellung folgt
+  OFFEN lod.K5#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor material.K1#1: 7.9 s (im Spiel 1607.3 ms, durch die Tür)
+  SITZUNG Ort genesis vor material.K1#1: 15.4 s (602 Takte, 81 Chunks, nach der Tür)
+  SITZUNG material.K1#1 ließ die Welt verändert und trägt kein mutiert: werke +1 (−0) — die Grundstellung folgt
+  OFFEN material.K1#1 · Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: @@ 4 s · Labor: Protocol error (Runtime.evaluate): Target closed · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor mensch.K1#1: 7.2 s (im Spiel 1705.8 ms, durch die Tür)
+  SITZUNG Ort genesis vor mensch.K1#1: 14.9 s (611 Takte, 81 Chunks, nach der Tür)
+  OFFEN mensch.K1#1 · Deckel 33 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor siedlung.K1#2: 11.9 s (im Spiel 1572.8 ms, durch die Tür)
+  SITZUNG Ort genesis vor siedlung.K1#2: 14.7 s (619 Takte, 81 Chunks, nach der Tür)
+  OFFEN siedlung.K1#2 · Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.00 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch undefined/undefined (Frist d) · Täter: haus_skandinavisch · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor leib.K1#2: 7.7 s (im Spiel 1570.7 ms, durch die Tür)
+  SITZUNG Ort wiese vor leib.K1#2: 16.9 s (606 Takte, 81 Chunks, nach der Tür)
+  OFFEN leib.K1#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor tiere.K1#2: 9.1 s (im Spiel 1985.4 ms, durch die Tür)
+  SITZUNG die Welt vor tiere.K1#2: 15.2 s (699 Takte, 81 Chunks, nach der Tür)
+  OFFEN tiere.K1#2 · Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor tiere.K3#2: 7.3 s (im Spiel 1772.3 ms, durch die Tür)
+  SITZUNG die Welt vor tiere.K3#2: 14.6 s (728 Takte, 81 Chunks, nach der Tür)
+  OFFEN tiere.K3#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.11 m · Luma 81.8 σ 41.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.164 · Bühne sum) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor studios.K2#2: 7 s (im Spiel 1727.6 ms, durch die Tür)
+  SITZUNG die Welt vor studios.K2#2: 13.8 s (689 Takte, 81 Chunks, nach der Tür)
+  OFFEN studios.K2#2 · Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 0 ms –, Neubau höchstens 511 ms garage, je Studio null Griffe) · Neuladen 2/8 · A/B 2/8) · Täter: @@PUNKTE@@ FRIST 19 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN studios.K3#2 · Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 0/0 Orte im Quantum, ohne garage L0 GPU 0.0236 ms↔Bank 7.275 (+1), schmiede L0 GPU 0.0041 ms↔Bank 0.3917, portale (keine Zeile), fachwerk (keine Zeile), koerperst) · Täter: @@PUNKTE@@ FRIST 19 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor bauen.K1#2: 6.8 s (im Spiel 1578.6 ms, durch die Tür)
+  SITZUNG die Welt vor bauen.K1#2: 14.6 s (701 Takte, 81 Chunks, nach der Tür)
+  OFFEN bauen.K1#2 · Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt null · warm null ms (0+0) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt null · warm null ms (0+0) · ROT: werkstatt · schöpfer · Eiche · ) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Fall werkstatt · schöpfer · Eiche · Ego und die folgenden ausgelassen · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor studios.K4#1: 7.2 s (im Spiel 1829.1 ms, durch die Tür)
+  SITZUNG die Welt vor studios.K4#1: 14.5 s (721 Takte, 81 Chunks, nach der Tür)
+  OFFEN studios.K4#1 · die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein K4-JSON (Exit 2): ) · Täter: @@ PROBE-FEHLER Error: Cannot find module 'puppeteer' | Require stack: | - C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\stationen\sitzung-seite.js | - C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\bericht\2910-w3w-studios\skripte\k4-bild.cjs |     at Module._r · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor siedlung.K4#2: 0.2 s (im Spiel 70 ms)
+  SITZUNG die Welt vor siedlung.K4#2: 3.3 s (310 Takte, 81 Chunks, nach der Grundstellung)
+  OFFEN siedlung.K4#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: }) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor fahrzeug.K2#1: 7.8 s (im Spiel 1763 ms, durch die Tür)
+  SITZUNG die Welt vor fahrzeug.K2#1: 13.9 s (689 Takte, 81 Chunks, nach der Tür)
+  OFFEN fahrzeug.K2#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor fahrzeug.K2#2: 7.8 s (im Spiel 1871.4 ms, durch die Tür)
+  SITZUNG die Welt vor fahrzeug.K2#2: 14 s (691 Takte, 81 Chunks, nach der Tür)
+  OFFEN fahrzeug.K2#2 · Deckel 55 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor ankunft.K2#1: 10.6 s (im Spiel 2395.7 ms, durch die Tür)
+  SITZUNG die Welt vor ankunft.K2#1: 13.7 s (665 Takte, 81 Chunks, nach der Tür)
+  OFFEN ankunft.K2#1 · Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: kein Bild der Kontrolle (t(Kontrolle) 0 ms, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {"stand":"gemessen","kontrolleMs":1635,"belegtMs":1250,"laengsteMs":592,"langeN":4,"langeMs":806,"halter":["(program) hält den Haupt-Faden vor dem ersten Bild 104 ms (bei 0.4 s; 2× ≥ 50 ms, Σ 162 ms)","grow [phyto-core.js] (phyto-core.js:104) hält den Haupt-Faden vor dem ersten Bild 81 ms  · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN ankunft.K3#1 · Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 2 Zweit-Boots mit Kontrolle von außen (Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {"stand":"gemessen","kontrolleMs":1635,"belegtMs":1250,"laengsteMs":592,"langeN":4,"langeMs":806,"halter":["(program) hält den Haupt-Faden vor dem ersten Bild 104 ms (bei 0.4 s; 2× ≥ 50 ms, Σ 162 ms)","grow [phyto-core.js] (phyto-core.js:104) hält den Haupt-Faden vor dem ersten Bild 81 ms  · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN ankunft.K1#1 · Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) 0, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {"stand":"gemessen","kontrolleMs":1635,"belegtMs":1250,"laengsteMs":592,"langeN":4,"langeMs":806,"halter":["(program) hält den Haupt-Faden vor dem ersten Bild 104 ms (bei 0.4 s; 2× ≥ 50 ms, Σ 162 ms)","grow [phyto-core.js] (phyto-core.js:104) hält den Haupt-Faden vor dem ersten Bild 81 ms  · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor profiband.K1#1: 10.1 s (im Spiel 2376 ms, durch die Tür)
+  SITZUNG die Welt vor profiband.K1#1: 19.4 s (687 Takte, 81 Chunks, nach der Tür)
+  ROT  profiband.K1#1 · Bild-p95 ≤ 33: wiese-ego-geht 41.7 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 33.3 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 60.8 s · [linse-gpu] nvidia/pascal — ROT 6: wiese-ego-geht Bild-p95 41.7 > 33 | wiese-ego-sprint: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-fahrt: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-third-geht Bild-p95 33.3 > 33 | stadt-ego-geht: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 58 s trug den Schritt nicht) · Sitzung · Exit 0 · 1.02 min
+  ROT  profiband.K2#1 · Belegung p95 ≤ 5.8: wiese-ego-steht 51.08 · wiese-third-steht ? · genesis-ego-steht 121.9 · genesis-third-steht 12.77 · Gang 60.8 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht Belegung p95 51.08 > 5.8 | wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-ego-steht Belegung p95 121.9 > 5.8 | genesis-third-steht Belegung p95 12.77 > 5.8 · Sitzung · Exit 0 · 1.02 min (Zwilling von profiband.K1#1)
+  ROT  profiband.K2#2 · Belegung p95 ≤ 5.8: wiese-ego-steht 51.08 · wiese-third-steht ? · genesis-ego-steht 121.9 · genesis-third-steht 12.77 ‖ Belegung p95 ≤ 8: wiese-ego-geht 37.61 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 31.67 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 60.8 s · [linse-gpu] nvidia/pascal — ROT 10: wiese-ego-steht Belegung p95 51.08 > 5.8 | wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-ego-steht Belegung p95 121.9 > 5.8 | genesis-third-steht Belegung p95 12.77 > 5.8 | wiese-ego-geht Belegung p95 37.61 > 8 | wiese-ego-sprint: ungemessen (die Uhr 58 s trug den Schritt nicht) · Sitzung · Exit 0 · 1.02 min (Zwilling von profiband.K1#1)
+  ROT  profiband.K3#1 · Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 111 · 413k · 120.2 MB · 16.42 ms | wiese-third ? | genesis-ego 96 · 411k · 119.8 MB · 10.98 ms | genesis-third 106 · 374k · 114.3 MB · 10.63 ms | dorf-ego ? | dorf-third ? · Gang 60.8 s · [linse-gpu] nvidia/pascal — ROT 6: Band wiese-ego: Band ROT streu haupt: 7 befehle über der Ratsche 4 (Täter: streuSatz, f:blume:L2) · baum k1: 12 befehle über der Ratsche 5 (Täter: f:tanne:L1, f:eiche:L1, f:tanne:L0) · , gpu-bank 16.42 ms > 12, nicht eingeschwungen | Band wiese-third: ungemessen (die Uhr 58 s trug den Schritt nicht) | Band genesis-ego: Band ROT vorbau:haus_alemannisch: 17 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · f:sitzbank:L0: 4 Befehle, keine Haushalt-Klasse nimmt den , nicht eingeschwungen | Band genesis-third: Band ROT f:sitzbank:L0: 6 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · fscatter:geroell:L0: L0 bis 69 m im Hauptbild (Wand 64 m) — Der still | Band dorf-ego: ungemessen (die Uhr 58 s trug den Schritt nicht) | Band dorf-third: ungemessen (die Uhr 58 s trug den Schritt nicht) · Sitzung · Exit 0 · 1.02 min (Zwilling von profiband.K1#1)
+  SITZUNG Grundstellung vor speicher.K4#2: 13.8 s (im Spiel 2316.6 ms, durch die Tür — wege +1 [-119.1,-274.9,279.2,201/272])
+  SITZUNG die Welt vor speicher.K4#2: 16.7 s (695 Takte, 81 Chunks, nach der Tür)
+  OFFEN speicher.K4#2 · Deckel 15 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG DER ORT IM DECKEL (die Probe zog weiter als 250 m von dem Ort, an dem die Sitzung sie begann — ihr Deckel trug den Ring): fahrzeug.K2#1 1129 m (Ring 4 → -1), material.K2#1 1083 m (Ring 4 → 1), profiband.K1#1 1078 m (Ring 4 → -1), speicher.K4#2 958 m (Ring 4 → 0), fahrzeug.K2#2 956 m (Ring 4 → 0), siedlung.K4#2 649 m (Ring 4 → 0)
+  SITZUNG Fahrt 954.1 s (Soll ≤ 1800 s) · 20 Proben · Grundstellung 19×
+→ meisterkarte-quelle\punkte\messung\6a571e3b-gtx.json

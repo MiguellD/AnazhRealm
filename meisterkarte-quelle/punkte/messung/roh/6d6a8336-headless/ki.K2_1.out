@@ -1,0 +1,124 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-praegung-welt.cjs
+
+=== (L) BIBLIOTHEK — signierte Gesetze ≤ 8 KB, über den Code wieder ===
+  ✅ BIBLIOTHEK welt: signiert, ≤ 8 KB, über den Code wieder — 1041 B · dae9388edeb7beef · Akten 1, Regeln 7
+  ✅ BIBLIOTHEK regel: signiert, ≤ 8 KB, über den Code wieder — 335 B · 4d23c86db78fb0cf
+  ✅ BIBLIOTHEK bauplan: signiert, ≤ 8 KB, über den Code wieder — 428 B · 49e74b95f79b52af
+  ✅ BIBLIOTHEK offen lesbar: das Gesetz im Eintrag = das Gesetz der Welt
+  ✅ MUTANTE Byte: ein manipuliertes Byte fällt an der Signatur — signatur
+  ✅ MUTANTE Code: ein Eintrag unter fremdem Code fällt — code
+  ✅ MUTANTE Mesh: ein Mesh im Eintrag fällt an der Größe — gross 17850 B
+  ✅ FORK: Herkunfts-Kette (Autor und Code je Vorgänger), eigene Signatur, das Gesetz verändert
+[stall-akte] Seite #2: der Puls kehrt zurück nach 22.5 s — complete · renderer bereit · weltbild da · programme 0 · gl-sync 0
+[stall-akte] ═══ diag-praegung-welt.cjs · Seite #2 http://127.0.0.1:7704/index.html · der Puls steht seit 21.0 s
+[stall-akte] offen evaluate(async (REGLER) => { const res = { s: {}, n: {}, g: {}, r: {}, b: {} }; const fp = window._) seit 151.5 s
+[stall-akte] Puls 130×, zuletzt vor 21.0 s — complete · renderer bereit · weltbild da · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 3418 84 % · GPU 3317 1 %
+[stall-akte] Fäden des GPU-Prozesses (2 s) VizCompositorTh 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 14:05 gpu 0/r 101 · 14:07 gpu 0/r 103 · 14:09 gpu 0/r 95 · 14:11 gpu 0/r 100 · 14:13 gpu 0/r 100 · 14:15 gpu 0/r 84 · 14:17 gpu 0/r 94 · 14:19 gpu 0/r 87 · 14:21 gpu 0/r 98 · 14:23 gpu 0/r 102 · 14:25 gpu 0/r 98 · 14:27 gpu 1/r 94 · 14:29 gpu 0/r 89 · 14:31 gpu 0/r 91 · 14:33 gpu 0/r 94 · 14:35 gpu 0/r 98 · 14:37 gpu 0/r 93 · 14:39 gpu 0/r 98 · 14:41 gpu 0/r 46 · 14:43 gpu 0 [VizCompositorTh 1 %]/r 108 · 14:45 gpu 0/r 109 · 14:47 gpu 1 [Chrome_ChildIOT 1 %]/r 97 · 14:49 gpu 1 [VizCompositorTh 1 %]/r 89 · 14:51 gpu 0 [VizCompositorTh 1 %]/r 108 · 14:53 gpu 1/r 102 · 14:55 gpu 0 [Chrome_ChildIOT 1 %]/r 108 · 14:57 gpu 1 [VizCompositorTh 1 %]/r 89 · 14:59 gpu 0 [VizCompositorTh 1 %]/r 101 · 15:01 gpu 1/r 95 · 15:03 gpu 1 [VizCompositorTh 1 %]/r 88
+[stall-akte] Stapel window.__flatFor :4
+[stall-akte] Konsole log: [AnazhRealm V18.546.163] [INFO] Seele gewechselt: Mensch (human)
+[stall-akte] Konsole log: [AnazhRealm V18.546.163] [INFO] Studio-Übergabe: das Werk „mensch" (koerper) steht in der Prägung der Welt.
+[stall-akte] Konsole log: [AnazhRealm V18.546.163] [INFO] Seele gewechselt: Mensch (human)
+[stall-akte] Konsole log: [AnazhRealm V18.546.163] [INFO] Seele gewechselt: Mensch (human)
+[stall-akte] Konsole log: [AnazhRealm V18.546.163] [ERROR] FADEN-UMGANGEN: Guss „kreatur“ ohne Vorlage im Haupt-Faden — _buildCreatureGroup (Lehre 14)
+[stall-akte] Konsole log: [AnazhRealm V18.546.163] [INFO] Studio-Übergabe: das Werk „wolf" (kreatur) steht in der Prägung der Welt.
+[stall-akte] Konsole log: [AnazhRealm V18.546.163] [INFO] Studio-Übergabe: das Werk „wolf" (kreatur) steht in der Prägung der Welt.
+[stall-akte] Konsole log: [AnazhRealm V18.546.163] [INFO] Studio-Übergabe: das Werk „wolf" (kreatur) steht in der Prägung der Welt.
+[stall-akte] Konsole log: [AnazhRealm V18.546.163] [INFO] Studio-Übergabe: das Werk „wolf" (kreatur) steht in der Prägung der Welt.
+[stall-akte] Konsole log: [AnazhRealm V18.546.163] [INFO] Studio-Übergabe: das Werk „wolf" (kreatur) steht in der Prägung der Welt.
+[stall-akte] Konsole log: [AnazhRealm V18.546.163] [ERROR] FADEN-UMGANGEN: Guss „mensch“ ohne Vorlage im Haupt-Faden — _buildHumanoidRig (Lehre 14) (wieder: 15× seit der letzten Meldung, 16× insgesamt)
+[stall-akte] Konsole log: [AnazhRealm V18.546.163] [ERROR] FADEN-UMGANGEN: Guss „kreatur“ ohne Vorlage im Haupt-Faden — _buildCreatureGroup (Lehre 14) (wieder: 9× seit der letzten Meldung, 10× insgesamt)
+[stall-akte] Stderr [3284:3299:1102/071237.403994:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [3284:3299:1102/071302.934242:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [3284:3299:1102/071400.769005:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr Warning: vkCreateInstance: Found no drivers!
+[stall-akte] Stderr Warning: vkCreateInstance failed with VK_ERROR_INCOMPATIBLE_DRIVER
+[stall-akte] Stderr     at CheckVkSuccessImpl (../../third_party/dawn/src/dawn/native/vulkan/VulkanError.cpp:106)
+[stall-akte] Stderr Warning: Couldn't get proc eglChooseConfig
+[stall-akte] Stderr  - While trying to discover a BackendType::OpenGLES adapter.
+[stall-akte] Stderr     at LoadClientProcs (../../third_party/dawn/src/dawn/native/opengl/EGLFunctions.cpp:119)
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in window.__flatFor :4
+
+=== (S) SELBST-TEST — der alte Riss ist ERKENNBAR (nicht vakuös) ===
+  ✅ gestrippter Entry-Stempel ⇒ EXAKT der ungeprägte Fingerabdruck — 515787a7/12 vs 515787a7/12
+  ✅ gestrippter Hand-Stempel ⇒ EXAKT der ungeprägte Hand-Fingerabdruck — 439da209/18 vs 439da209/18
+
+=== (N) NAHT — die Prägung formt in der Hand ===
+  ✅ HAND-Guss: klinge_langschwert geprägt (Nihon) ≠ ungeprägt — 439da209/18 fc241ed2/17
+
+=== (G) GUSS-SEMANTIK — Stempel beim Guss, gefroren danach ===
+  ✅ wieldBlueprint (schöpfer, ungeschmiedet) stempelt bp.studioOv als TIEFE Kopie
+  ✅ nachträgliches präge ändert das bestehende Artefakt NICHT
+  ✅ Neu-Guss OHNE Prägung räumt den Alt-Stempel
+  ✅ auch der Schmiede-Guss stempelt (_forgeMaterialAndFreeze → _stampStudioOv)
+
+=== (R) ROUNDTRIP — Snapshot · Bauplan-Zwilling · Taille ===
+  ✅ spawnArchitecture stempelt den Entry (tiefe Kopie)
+  ✅ Snapshot trägt den Entry-Stempel + Restore bringt ihn zurück
+  ✅ Bauplan-Zwilling: _serializeBlueprint/_deserializeBlueprint tragen studioOv
+  ✅ Taille des eigenen Zweigs: ein kaputter Stempel fällt in Serialisierung und Laden
+  ✅ Taille-Wand: >8-KiB-Stempel fällt am Chokepoint
+
+=== (B) BYTE-IDENTITÄT + CACHE-REINHEIT des ungeprägten Pfads ===
+  ✅ der ungeprägte Bau legt NUR den alten Schlüssel (ohne |ov:) an, geprägte NUR |ov:-Schlüssel — plain=["gt|3|1","gt|3|0"] ov=4
+  ✅ der exakte Körper-Schlüssel (preset|gestalt|lod, ohne ov) lebt unverändert
+  ✅ kein JSON-Schlüssel im Welt-Cache (die Rezept-Linsen-Reinheit hält)
+  ✅ BYTE-IDENTITÄT: ungeprägter Flatten == direkter ov-loser _foundryRequest-Bau — 515787a7/12 vs 515787a7/12
+
+=== (K) KI-REGLER — spawn_studio prägt ===
+  ✅ SELBST-TEST: ein ov, das nicht ankommt (Stempel · Bau · Gesetz · Wesen · Prägung), ist ROT — {"Stempel":"unbewegt","Bau":"unbewegt","Gesetz":"unbewegt","Wesen":"unbewegt","Prägung":"unbewegt"}
+  ✅ ERREICHT: 124 von 124 Zeilen von PARAMS_BY_KIND (100.0 %) erreicht — je Art vehicle 16/16 · gate 29/29 · weapon 18/18 · haus 21/21 · ausstattung 3/3 · bank 3/3 · leiter 3/3 · bruecke 2/2 · klang 7/7 · koerper 8/8 · kreatur 5/5 · flower 5/5 · grass 4/4 (tot 0, ohne Wort 0)
+  ✅ KLEMME: W -3 · pitchDeg 75 · annexN 1,6 → 6 · 60 · 2, benannt, gebaut wie das Studio-Werk — {"st":"erreicht","ov":{"W":6,"pitchDeg":60,"annexN":2},"genannt":["W -3→6","pitchDeg 75→60","annexN 1.6→2"],"ok":true}
+  ✅ FAIL-CLOSED: fremder Regler · Text · Liste · Art ohne Zeilen · Wesen · Prägung setzen nichts, benannt — {"fremd":true,"text":true,"liste":true,"baum":true,"wesen":true,"praegung":true}
+  ✅ PROMPT: jede Zeile jeder sagbaren Art mit Bereich, aus DERSELBEN Quelle (Mutation gewinnt) — fehlt:  · Mutation true
+  ✅ KORPUS-TEIL Regler-Wörter: 24 Sätze, jeder ein Programm-Ziel
+
+=== (T) TEILEN in EINER Geste: A klickt, B gibt den Code in den Chat ===
+  ✅ A: Werkstatt → GT → Teilen liefert EINEN Code ≤ 4 KB — 530 Zeichen, eigener Bauplan 845
+  ✅ B ist ein ANDERES GERÄT: eigener Browser-Prozess, frisches Profil (Platte + localStorage vor dem Boot leer) — --user-data-dir=/tmp/puppeteer_dev_chrome_profile-lMIIdF,--user-data-dir=/tmp/puppeteer_dev_chrome_profile-FwjAo1,--user-data-dir=/tmp/puppeteer_dev_chrome_profile-lMIIdF 0
+  ✅ SELBST-TEST: B als zweiter Kontext im Chrome von A ist ROT
+  ✅ B: Chat-Taste · Code · Enter — das Werk steht, Signatur von A (der Peer am Anschluss) — p-chnu-otxz501m{"ok":true,"id":"w-fahrzeug_gt-xajf6","name":"fahrzeug_gt","autor":"406440412e0fa549407fa3cf0702688b75f0b754201fb84d15f56ec3676eff3d","fremd":[]}
+  ✅ B: gezeichnet an der eigenen Pose (≤ 24 m, im Bild) — 12 m 0,-0.3448466481985802,0.9835316865019835
+  ✅ ZEIT: Klick bis Code + Enter bis gezeichnet ≤ 10 s — 191 ms (A 820)
+  ✅ B: Stempel und Same reisen tief gleich
+  ✅ BAU-HASH A ↔ B byte-gleich, der Stempel wirkt (≠ ungeprägt) — A=9c183437/12 B=9c183437/12 ohne=515787a7/12
+  ✅ der eigene Bauplan kommt byte-gleich (kanonische Substanz)
+  ✅ WELT: A teilt die Welt — EIN Code, die Hülle des Werks, Signatur von A — 518 Zeichen
+  ✅ WELT: B steht in A's Welt (Id, Same, Gast, > 128 KB) und kennt A am Anschluss — a1be7af0-734b-4792-b5ab-b9d6ea37edca 142 KB guest true
+  ✅ WELT: KONTROLLE ≤ 5 s — Klick bis Code + Enter bis zum ersten Weltbild — 1324 ms (A 489, B null)
+  ✅ WELT: am Ort — die Seite von B lädt nicht neu — 0 Navigationen
+  ✅ WELT: der Leib geht unter W ≥ 1 m — 1150 ms
+
+=== (U) FUSION auf zwei Geräten ===
+  ✅ FUSION A+B byte-gleich — 1149 Bytes
+  ✅ GERICHTET: B+A ≠ A+B
+  ✅ TÄTER-PROBE: Date.now in der Geburt ist ROT
+
+=== (F) KORPUS fremder Codes ===
+  ✅ gross — gross · Geteiltes Werk abgewiesen: der Code ist größer als 4 KB (gross).
+  ✅ kaputt — kaputt · Geteiltes Werk abgewiesen: der Code ist beschädigt (kaputt).
+  ✅ version — version · Geteiltes Werk abgewiesen: der Code spricht eine fremde Version (version).
+  ✅ op:voxel_carve — op:voxel_carve · Geteiltes Werk abgewiesen: der Code trägt ein Verb, das ein geteiltes Werk nie trägt (op:voxel_carve).
+  ✅ op:rule — op:rule · Geteiltes Werk abgewiesen: der Code trägt ein Verb, das ein geteiltes Werk nie trägt (op:rule).
+  ✅ op:player_soul — op:player_soul · Geteiltes Werk abgewiesen: der Code trägt ein Verb, das ein geteiltes Werk nie trägt (op:player_soul).
+  ✅ form — form · Geteiltes Werk abgewiesen: das Programm hat nicht die Form eines Werks (form).
+  ✅ regler:segments — regler:segments · Geteiltes Werk abgewiesen: der Stempel trägt einen Regler, den das Studio nicht ausweist (regler:segments).
+  ✅ band:radstand — band:radstand · Geteiltes Werk abgewiesen: ein Regler liegt außerhalb seines Bands (band:radstand).
+  ✅ regler:cEdge — regler:cEdge · Geteiltes Werk abgewiesen: der Stempel trägt einen Regler, den das Studio nicht ausweist (regler:cEdge).
+  ✅ name — name · Geteiltes Werk abgewiesen: der Name ist kein Bauplan-Name (name).
+  ✅ teile:shape_not_allowed:evil — teile:shape_not_allowed:evil · Geteiltes Werk abgewiesen: ein Teil steht nicht im Bau-Vertrag (teile:shape_not_allowed:evil).
+  ✅ builtin:fahrzeug_gt — builtin:fahrzeug_gt · Geteiltes Werk abgewiesen: ein fremder Bauplan überschreibt keinen der Welt (builtin:fahrzeug_gt).
+  ✅ signatur — signatur · Geteiltes Werk abgewiesen: die Signatur passt nicht zum Werk (signatur).
+  ✅ signatur — signatur · Geteiltes Werk abgewiesen: die Signatur passt nicht zum Werk (signatur).
+  ✅ unsigniert — unsigniert · Geteiltes Werk abgewiesen: der Code ist nicht signiert (unsigniert).
+  ✅ adresse — adresse · Geteiltes Werk abgewiesen: die Welt-Adresse ist ungültig (adresse).
+  ✅ signatur — signatur · Geteiltes Werk abgewiesen: die Signatur passt nicht zum Werk (signatur).
+  ✅ 0 Schreibe: Baupläne, Bauten, Regeln, Edits, Same, Erinnerung unverändert — true
+  ✅ P2P: Slot 6 mit einem Regler außerhalb des Vertrags fällt benannt (dieselbe Wand)
+  ✅ P2P: eine Regel mit verbotenem Effekt fällt benannt (rule_effect_forbidden)
+  ✅ must-ignore gilt FREMDEN Hüllen-Feldern: das Werk steht, das Feld ist benannt — {"ok":true,"id":"w-fahrzeug_gt-xajf6~2","name":"fahrzeug_gt","autor":"406440412e0fa549407fa3cf0702688b75f0b754201fb84d15f56ec3676eff3d","fremd":["zukunft"],"laut":"Geteiltes Werk steht: GT (von 4064 4041 2e0f a549)."}
+  ✅ ein Name aus fremder Hand erreicht die KI nie (Werk steht, System-Prompt ohne ihn)
+  ✅ TÄTER-PROBE: ohne die Vertrags-Wand käme der Täter durch — das Urteil wird ROT
+
+✅ GRÜN — die Prägung reist mit dem Artefakt, per Code zum anderen Gerät, jeder fremde Code fällt beim Namen

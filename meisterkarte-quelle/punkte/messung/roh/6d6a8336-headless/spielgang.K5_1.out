@@ -1,0 +1,89 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node -e (async function textZaehlung(port, aus) {
+    const path = require("path");
+    const fs = require("fs");
+    const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    let out = { glieder: 0 };
+    const server = WB.statikServer();
+    await server.lausche(Number(port));
+    const { browser, page } = await WB.nullSeite({ frist: 300000 });
+    try {
+        await server.zeige(page, 120000);
+        await page.evaluate(() => window.__weltDa((r) => r.state._weltbildDa > 0));
+        out = await page.evaluate(() => {
+            const r = window.anazhRealm, C = r.constructor;
+            if (typeof window.__codeOf !== "function") return { glieder: 0, fehler: "die Seite trägt kein window.__codeOf" };
+            const SENKE = /\.(textContent|innerText|innerHTML|title|placeholder)\s*=(?!=)\s*|\b(_hudSchreib|_chatEcho|alert|confirm|prompt)\s*\(/g;
+            const LIT = /"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`/g;
+            // Wort-Text: nach Abzug von `${…}`, Markup und Entitäten ein Wort aus ≥ 2 Buchstaben UND ein Zeichen der Sprache (Großbuchstabe,
+            // Umlaut, Satzzeichen) — Bezeichner, CSS-Klassen, Attribut-Namen und Vergleichs-Wörter („width“, „stats-hud-hp-glow“, „third“) nie
+            const wort = (l) => {
+                const t = l.slice(1, -1).replace(/\$\{[^}]*\}/g, " ").replace(/<[^>]*>/g, " ").replace(/&\w+;/g, " ");
+                return /[A-Za-zÄÖÜäöüß]{2,}/.test(t) && /[A-ZÄÖÜäöüß…!?:]/.test(t);
+            };
+            // der Ausdruck hinter der Senke: bis zum Ende der Anweisung (Zuweisung) bzw. bis zur schließenden Klammer (Ruf)
+            const ausdruck = (code, i, ruf) => {
+                let tiefe = 0, q = null;
+                for (let k = i; k < code.length; k++) {
+                    const c = code[k];
+                    if (q) { if (c === "\\") k++; else if (c === q) q = null; continue; }
+                    if (c === '"' || c === "'" || c === "`") q = c;
+                    else if ("([{".includes(c)) tiefe++;
+                    else if (")]}".includes(c)) { if (tiefe === 0) return code.slice(i, k); tiefe--; }
+                    else if (!ruf && tiefe === 0 && (c === ";" || c === "\n")) return code.slice(i, k);
+                }
+                return code.slice(i);
+            };
+            const glieder = [];
+            for (const o of [C.prototype, C])
+                for (const k of Object.getOwnPropertyNames(o)) {
+                    const d = Object.getOwnPropertyDescriptor(o, k);
+                    if (k !== "constructor" && d && typeof d.value === "function") glieder.push([k, d.value]);
+                }
+            const senken = {}, beispiele = [], mit = new Set(), gesehen = new Set();
+            for (const [name, fn] of glieder) {
+                const code = window.__codeOf(fn);
+                for (const m of code.matchAll(SENKE)) {
+                    const s = m[1] || m[2];
+                    for (const l of (ausdruck(code, m.index + m[0].length, !!m[2]).match(LIT) || []).filter(wort)) {
+                        const key = name + "|" + l;
+                        if (gesehen.has(key)) continue;
+                        gesehen.add(key);
+                        mit.add(name);
+                        senken[s] = (senken[s] || 0) + 1;
+                        if (beispiele.length < 8) beispiele.push(name + " " + s + ": " + l.slice(0, 60));
+                    }
+                }
+            }
+            // das DOM aus index.html: jeder Text-Knoten mit Wort-Text (auch verborgene Tafeln — sie zeigen sich später)
+            const dom = new Set();
+            const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+            for (let n = tw.nextNode(); n; n = tw.nextNode()) {
+                const p = n.parentElement;
+                if (!p || /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE)$/.test(p.tagName)) continue;
+                const t = n.textContent.trim();
+                if (/[A-Za-zÄÖÜäöüß]{2,}/.test(t)) dom.add(t.slice(0, 80));
+            }
+            // die EINE Text-Quelle: eine Tafel mit de und en (je ≥ 10 Zeilen, dieselben Schlüssel) am Stamm oder am Fenster
+            let quelle = null;
+            const tafel = (v) => v && typeof v === "object" && v.de && v.en && typeof v.de === "object" && typeof v.en === "object" &&
+                Object.keys(v.de).length >= 10 && Object.keys(v.de).every((x) => x in v.en);
+            for (const [wo, o] of [["AnazhRealm", C], ["window", window], ["state", r.state]])
+                for (const k of Object.getOwnPropertyNames(o)) {
+                    let v;
+                    try { v = o[k]; } catch (_e) { continue; }
+                    if (tafel(v)) { quelle = wo + "." + k + " (de " + Object.keys(v.de).length + ", en " + Object.keys(v.en).length + ")"; break; }
+                }
+            if (dom.size) beispiele.push(...[...dom].slice(0, 3).map((t) => "DOM: " + t));
+            return { glieder: glieder.length, gliederMit: mit.size, code: gesehen.size, dom: dom.size, senken, quelle, beispiele };
+        });
+    } catch (e) {
+        out.fehler = String(e.message).split("\n")[0].slice(0, 300);
+    } finally {
+        fs.writeFileSync(aus, JSON.stringify(out));
+        console.log("TEXTE " + JSON.stringify(out));
+        await browser.close().catch(() => {});
+        server.close();
+        process.exit(0);
+    }
+})(process.argv[1], process.argv[2]); 7704 /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/6d6a8336-headless/spielgang.K5_1.json
+TEXTE {"glieder":3532,"gliederMit":84,"code":243,"dom":703,"senken":{"textContent":184,"_hudSchreib":1,"title":40,"confirm":7,"placeholder":2,"innerHTML":4,"prompt":3,"alert":1,"innerText":1},"quelle":null,"beispiele":["setCameraMode textContent: \"Sicht: 3rd\"","setCameraMode textContent: \"Sicht: 1st\"","tickStatsHud _hudSchreib: \"Stats nicht initialisiert\"","_kernPflichtWand textContent: \" — jeder Gesetz-Leser bricht laut (KERN-PFLICHT), es gibt k","assignTaskToNearestCreature textContent: \"(Keine Kreatur in der Nähe.)\"","_renderMeshWorldCatalog textContent: \"Kein Mitspieler hat eine Welt zu teilen — vendorte Welten e","_renderMeshWorldCatalog textContent: \"Mitspieler\"","_renderMeshWorldCatalog title: \"id: \"","DOM: Anazh Realm","DOM: Die Welt erwacht …","DOM: Ich bin Eins. Diese Welt ist still — bis du sprichst. Sag, was werden soll."]}

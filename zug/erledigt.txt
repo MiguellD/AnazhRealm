@@ -203,3 +203,7 @@ z148-abab nicht-langsamer abab ab884210 gegen 28dd7a47: w-ego 4+4 nicht-langsame
 z156-abab nicht-langsamer abab 6d6a8336 gegen ab884210: w-ego 2+2 nicht-langsamer · stadt 4+4 nicht-langsamer
 takt-z156a-gtx gemessen punkte 6d6a8336 gtx: 0 grün / 0 rot
 takt-z156b-gtx gemessen punkte 6d6a8336 gtx: 0 grün / 0 rot
+general-6d6a-gtx gemessen punkte 6d6a8336 gtx: 14 grün / 10 rot
+takt-z158a-gtx gemessen punkte 6a571e3b gtx: 0 grün / 4 rot
+takt-z158b-gtx gemessen punkte 6a571e3b gtx: 0 grün / 4 rot
+z158-abab LANGSAMER abab 6a571e3b gegen 6d6a8336: w-ego 4+4 nicht-langsamer · stadt 4+4 LANGSAMER
