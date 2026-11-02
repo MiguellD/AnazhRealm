@@ -133,8 +133,7 @@ hauptLauf(async () => {
             }
         if (st.chunkSaetze)
             for (const [art, s] of st.chunkSaetze)
-                if (s.spec?.userData?.streuSatz && streuKeys.has(art))
-                    meshKeys.set(s.mesh, streuKeys.get(art));
+                if (s.spec?.userData?.streuSatz && streuKeys.has(art)) meshKeys.set(s.mesh, streuKeys.get(art));
         // der Bau-Satz (`_bauSatzArt`): ein Satz-Mesh zeichnet die Bereiche seiner Gruppen — er trägt ihre
         // Schlüssel wie ein Batch (die schlechteste Klasse gewinnt); ein Bau-Satz ohne Bereich bleibt unbekannt.
         if (st.chunkSaetze)
@@ -192,11 +191,11 @@ hauptLauf(async () => {
             "wetter-regen": { b: "substanz", why: "wetter-regen (Niederschlags-Punkte)" },
             "dorf-rauch": { b: "substanz", why: "dorf-rauch (Rauch der Siedlungs-Kamine, ein Satz)" },
             funken: { b: "substanz", why: "funken (Späne eines Treffers, ein Satz)" },
-            // die Bau-Pools (`AnazhRealm._poolKennung`, gestempelt bei jeder Erzeugung, auch beim Verdoppeln)
-            "siedlung-zaun": { b: "substanz", why: "siedlung-zaun (Zaun-Streifen der Siedlungen, ein Pool)" },
-            "siedlung-mauer": { b: "substanz", why: "siedlung-mauer (die Stadtmauern, ein Pool)" },
-            vogel: { b: "substanz", why: "vogel (ein Pool)" },
         };
+        // die Pools (`AnazhRealm._poolKennung`, gestempelt bei jeder Erzeugung, auch beim Verdoppeln): Zaun und Mauer der
+        // Siedlungen, die Fauna (Vogel, Fisch, Bestäuber) — Substanz, ihr Grund ist ihr Name
+        for (const k of ["siedlung-zaun", "siedlung-mauer", "vogel", "tier:fisch", "tier:bestaeuber"])
+            INVENTAR[k] = { b: "substanz", why: k + " (ein Pool)" };
         const chainOf = (node) => {
             const c = [];
             let p = node;
@@ -263,8 +262,7 @@ hauptLauf(async () => {
                     return tally(worst.b, worst.why);
                 }
                 // 2) Welt-Substanz-Identitäten:
-                if (node.userData?.isHydrosphere || waterSet.has(node))
-                    return tally("substanz", "wasser");
+                if (node.userData?.isHydrosphere || waterSet.has(node)) return tally("substanz", "wasser");
                 // das Fern-Wasser-Sheet (`_ensureFarWaterSheet`, hydroKind "farWater")
                 // und jede andere Hydro-Fläche tragen ihre Identität als hydroKind-Stempel.
                 if (node.userData && typeof node.userData.hydroKind === "string")

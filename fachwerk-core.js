@@ -5567,16 +5567,33 @@
     // AUS_FRISCH × 0,6). Im Mittel der Welt (0,5) wirkt keiner der beiden Terme: die Bytes jedes Werks byte-alt (studios.K1: mit
     // Erdsaum unter 0,25 m und Bleiche × 1,05 bewegten Ausstattung, Bank, Leiter und die acht Geräte des Spielplatzes an keinem
     // Rand das Bild um 18 Luma, der Regler war tot).
+    // DER ROST UND DER BELAG (stoffe.K4, das Alter des Werks speist `verwitterung`): über dem Mittel der Welt rostet das Eisen
+    // zum Oxid-Braun (lineare Albedo AUS_ROST, Farbton 20°), und der Stein trägt den grünen Belag (Algen und junges Moos,
+    // AUS_BELAG), wo die Glut nicht hinreicht (der Ruß des Teils hält ihn ab) — je die freie Fläche, auf die der Regen fällt,
+    // zuerst, bis 0,6 der Freilage im ältesten Werk; bis 0,5 bleiben beide aus (die Bytes jedes Werks im Mittel byte-alt).
+    // DAS MOOS DER NORDSEITE: kennt der Bau die Lage des Werks (ov `nord`, der Sektor seiner Gier in Achteln, `_ausNord` die
+    // Welt-Nordrichtung im Asset-Raum), sitzt auf Stein und Holz, die nach Norden schauen (schattig, lange nass), Moos
+    // (lineare Albedo AUS_MOOS_NORD, der Moos-Ton des Fels-Gesetzes), bis 0,8 im ältesten Werk (die Nordseite alter Feldsteine
+    // trägt es fast deckend), nie an der Glut.
     var AUS_SILBER = [0.2, 0.2, 0.19],
         AUS_FRISCH = [1.08, 0.9, 0.72],
-        _ausSilberF = null;
+        AUS_ROST = [0.26, 0.05, 0.01],
+        AUS_BELAG = [0.09, 0.12, 0.04],
+        AUS_MOOS_NORD = [0.069, 0.111, 0.019],
+        _ausSilberF = null,
+        _ausRostF = null,
+        _ausBelagF = null,
+        _ausMoosSF = null,
+        _ausMoosHF = null,
+        _ausNord = null;
     function ausFaerbe(geo, rolle, w, fn) {
         var P = geo.attributes.position,
             N = geo.attributes.normal,
             n = P.count,
             c = new Float32Array(n * 3);
         var stein = rolle === "stein",
-            holz = rolle === "holz" || rolle === "lattung" || rolle === "stamm";
+            holz = rolle === "holz" || rolle === "lattung" || rolle === "stamm",
+            eisen = rolle === "metall";
         var glut = rolle === "feuer";
         for (var i = 0; i < n; i++) {
             var x = P.getX(i),
@@ -5626,6 +5643,21 @@
                     }
                 }
                 var ru = e && e.russ ? Math.max(0, Math.min(1, e.russ)) : 0;
+                if ((eisen || stein) && w > 0.5) {
+                    var ziel = eisen ? _ausRostF || (_ausRostF = ausAuf(AUS_ROST, "metall")) : _ausBelagF || (_ausBelagF = ausAuf(AUS_BELAG, "stein"));
+                    var rs = 0.6 * (w - 0.5) * 2 * (0.6 + 0.4 * Math.max(0, ny)) * (1 - ru);
+                    r = r * (1 - rs) + ziel[0] * rs;
+                    g = g * (1 - rs) + ziel[1] * rs;
+                    b = b * (1 - rs) + ziel[2] * rs;
+                }
+                if ((stein || holz) && w > 0.5 && _ausNord) {
+                    if (!_ausMoosSF) [_ausMoosSF, _ausMoosHF] = [ausAuf(AUS_MOOS_NORD, "stein"), ausAuf(AUS_MOOS_NORD, "holz")];
+                    var mz = stein ? _ausMoosSF : _ausMoosHF,
+                        mn = 0.8 * (w - 0.5) * 2 * Math.max(0, nx * _ausNord[0] + nz * _ausNord[1]) * (1 - ru);
+                    r = r * (1 - mn) + mz[0] * mn;
+                    g = g * (1 - mn) + mz[1] * mn;
+                    b = b * (1 - mn) + mz[2] * mn;
+                }
                 r *= 1 + (AUS_RUSS[0] - 1) * ru;
                 g *= 1 + (AUS_RUSS[1] - 1) * ru;
                 b *= 1 + (AUS_RUSS[2] - 1) * ru;
@@ -7559,6 +7591,8 @@
         for (var i = 0; i < stufen.length; i++) if (stufen[i] <= L) stufe = stufen[i];
         var kol = ausFarben(rezeptId, sd);
         var wahl = stufe === 3 ? ausWahl(rezeptId, p, sd, kol) : null;
+        var ns = ov && typeof ov === "object" && typeof ov.nord === "number" && isFinite(ov.nord) ? ((Math.round(ov.nord) % 8) + 8) % 8 : -1;
+        _ausNord = ns < 0 ? null : [Math.sin((ns * Math.PI) / 4), -Math.cos((ns * Math.PI) / 4)];
         // DIE STUFE TRÄGT IHRE ZEILE (pipeline.K3, B2c — auch am Rand jedes Reglers): die Fülle legt Steine und Scheite
         // zu, die Zeile der Stufe wächst nicht; trägt der Bau mehr Dreiecke, fällt die Teilung jedes Drehkörpers um das
         // Verhältnis und der Bau steht neu (höchstens vier Mal) — ein Bau auf seiner Zeile bleibt byte-gleich.
@@ -7586,6 +7620,7 @@
             }
         } finally {
             _ausDetail = 1;
+            _ausNord = null;
         }
         g.traverse(function (o) {
             if (o.isMesh && o.material && o.material.emissive && o.material.emissive.getHex() !== 0) o.castShadow = false;
