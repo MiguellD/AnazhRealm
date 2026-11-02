@@ -45,3 +45,6 @@ Y6nuChFfb1dJTf7Btch4J5 steht auf 123 (27.10.) — aus meisterkarte.html neu ver�
 - Nachwache z159-abab: stadt LANGSAMER 18,0 gegen 6a571e3b — nach z163 (Stadt-Wurzel) neu messen, ob z159 (Fische/Bestäuber/Schnee-Tafel) etwas trägt.
 - OMEN: general-1077-gtx (101 Stationen am 10770eb5) in der Reihe; danach buchen.
 - Messplatz-Blick neu gestartet (Terminal-Tab „Messplatz“).
+
+## Nachtrag 14:25
+- **z163 GELANDET c5a9a2f5**: w4-stadt-gehen (Stand-Prüfung über Raster) + w4-ci-alle-schritte (CI fährt alle Schritte, ein Urteil). buche-schleife am c5a9a2f5 mit 170. z164 (leck2 + proben) fährt. Nach z164: Nachwache stadt prüfen.
