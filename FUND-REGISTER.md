@@ -9,7 +9,7 @@ Eine Zeile je Fund: Datei:Zeile · Wurzel · was es bewegt · Größe. Wer eine 
 - `_standRueckspielen` räumt tools/materials nach `name` statt Schlüssel; `haengerAn` gibt seine Haken nicht je Lauf zurück · Grundstellung · S
 
 ## Spiel
-- Stadt gehend LANGSAMER seit z158 (GTX fps 34→27, CPU p99 63→85 ms) · E · in Arbeit (w4-stadt-gehen)
+- Stadt gehend LANGSAMER seit z158 · geheilt w4-stadt-gehen 9c39c3c0 (Stand-Prüfung über Raster, Suche nur bei Änderung im Kreis; Takt max 2,6 s → 0,2 s) · fährt z163 · Rest: Ankunft-Wache 231 ms
 - Heap-Leck `nodeBuilderCache` +30,6 MB/min · profiband.K5, E · in Arbeit (funde-6a57 heil:leck)
 - Wege-Karte: erstes Zentrieren am Genesis-Ort 112 ms Haupt-Faden, Flächen ohne Band je 48-m-Umzug neu · B, E · M
 - Metropole `platzVoll: 87` — 87 Marktstände ohne Platz neben der Trasse (alle Punkte in Hausgrundrissen) · siedlung, C · Plan der Stadt · M
