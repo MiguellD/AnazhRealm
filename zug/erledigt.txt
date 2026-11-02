@@ -191,3 +191,4 @@ hebend-5fba-s3-gtx gemessen punkte 5fba36ea gtx: 12 grün / 10 rot
 eich-hebend-5fba-s1-gtx Exit0 station eich-nur-gtx.sh an 5fba36ea
 eich-hebend-5fba-s2-gtx Exit0 station eich-nur-gtx.sh an 5fba36ea
 eich-hebend-5fba-s3-gtx Exit0 station eich-nur-gtx.sh an 5fba36ea
+eichtafel-5fba-gtx Exit0 station eichtafel-gtx.sh an 5fba36ea

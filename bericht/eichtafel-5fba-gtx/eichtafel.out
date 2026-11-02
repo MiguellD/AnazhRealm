@@ -1,0 +1,73 @@
+  profiband.K4#1+profiband.K4#2 · Deckel 29 s · 38 s → 45 s · Deckel zu knapp
+  gelaende.K5#2 · Deckel 10 s · — · ohne Zahl
+  vegetation.K2#1 · Deckel 16 s · 4.4 s → 13 s · Deckel zu weit
+  mensch.K4#1 · Deckel 28 s · 19.3 s → 35 s · Deckel zu knapp
+  haar.K2#1 · Deckel 32 s · 19.7 s → 36 s · Deckel zu knapp
+  vegetation.K1#1 · Deckel 45 s · 2.8 s → 11 s · Deckel zu weit
+  vegetation.K5#1 · Deckel 23 s · 15.5 s → 30 s · Deckel zu knapp
+  vegetation.K5#2 · Deckel 10 s · 29.3 s → 45 s · Deckel zu knapp
+  licht.K2#1 · Deckel 14 s · 9.9 s → 21 s · Deckel zu knapp
+  licht.K2#2 · Deckel 33 s · 34.8 s → 45 s · Deckel zu knapp
+  material.K2#1 · Deckel 33 s · 57.3 s → 10 s · über dem Gesetz 45 s — schneller machen · Ort im Deckel 1083 m
+  lod.K1#1 · Deckel 30 s · 51.6 s → 10 s · über dem Gesetz 45 s — schneller machen
+  lod.K5#1 · Deckel 10 s · 20.5 s → 37 s · Deckel zu knapp
+  lod.K2#1 · Deckel 21 s · 14.3 s → 28 s · Deckel zu knapp
+  leib.K1#1 · Deckel 37 s · 27.4 s → 45 s · Deckel zu knapp
+  spielgang.K3#1 · Deckel 24 s · 11 s → 23 s · Deckel zu weit
+  streaming.K3#1 · Deckel 33 s · — · ohne Zahl
+  klang.K2#1 · Deckel 36 s · 25 s → 44 s · Deckel zu knapp
+  ferne.K1#1+ferne.K2#1+ferne.K1#2+ferne.K2#2 · Deckel 10 s · — · ohne Zahl
+  licht.K5#1 · Deckel 33 s · 25.6 s → 45 s · Deckel zu knapp
+  material.K3#1+material.K3#2+material.K1#1+material.K1#2 · Deckel 10 s · — · ohne Zahl
+  licht.K1#1 · Deckel 40 s · 46.8 s → 10 s · über dem Gesetz 45 s — schneller machen · Ort im Deckel 1083 m
+  licht.K3#2 · Deckel 10 s · — · ohne Zahl
+  gelaende.K3#1 · Deckel 26 s · 15 s → 29 s · Deckel zu knapp
+  ferne.K5#1 · Deckel 31 s · — · ohne Zahl
+  material.K4#1 · Deckel 10 s · 5.7 s → 15 s · Deckel zu knapp
+  material.K5#1 · Deckel 17 s · 11.2 s → 23 s · Deckel zu knapp
+  lod.K3#1 · Deckel 10 s · — · ohne Zahl
+  profiband.K5#1+profiband.K5#2 · Deckel 23 s · 17.7 s → 33 s · Deckel zu knapp
+  gelaende.K2#1+gelaende.K2#2 · Deckel 10 s · — · ohne Zahl
+  physik.K2#2 · Deckel 10 s · 38 s → 45 s · Deckel zu knapp
+  affekt.K1#2 · Deckel 10 s · 6 s → 15 s · Deckel zu knapp
+  oekologie.K4#2 · Deckel 31 s · 20.1 s → 37 s · Deckel zu knapp
+  haar.K1#1 · Deckel 35 s · 25.4 s → 45 s · Deckel zu knapp
+  fahrzeug.K3#1 · Deckel 42 s · 30.4 s → 45 s · Deckel zu knapp
+  fahrzeug.K3#2+fahrzeug.K4#1+fahrzeug.K4#2 · Deckel 33 s · — · ohne Zahl
+  leib.K1#2+halten.K2#1 · Deckel 33 s · 83 s → 10 s · über dem Gesetz 45 s — schneller machen
+  wetter.K2#1 · Deckel 25 s · 18.8 s → 35 s · Deckel zu knapp
+  licht.K3#1 · Deckel 45 s · 66 s → 10 s · über dem Gesetz 45 s — schneller machen
+  mensch.K1#1+mensch.K2#2 · Deckel 33 s · — · ohne Zahl
+  vegetation.K4#1+vegetation.K4#2 · Deckel 33 s · — · ohne Zahl
+  mensch.K5#1 · Deckel 10 s · — · ohne Zahl
+  siedlung.K1#2 · Deckel 33 s · ≥ 90 s → 10 s · ≥ 90 s — schneller machen
+  schatten.K1#1 · Deckel 22 s · 15.6 s → 30 s · Deckel zu knapp
+  tiere.K1#2 · Deckel 41 s · 63.9 s → 10 s · über dem Gesetz 45 s — schneller machen
+  tiere.K3#2 · Deckel 33 s · 52.6 s → 10 s · über dem Gesetz 45 s — schneller machen
+  tiere.K2#2 · Deckel 10 s · — · ohne Zahl
+  luftwasser.K5#1+luftwasser.K5#2 · Deckel 10 s · — · ohne Zahl
+  studios.K2#2+studios.K3#2 · Deckel 25 s · ≥ 90 s → 10 s · ≥ 90 s — schneller machen
+  pipeline.K4#1+pipeline.K4#2+ankunft.K2#1+ankunft.K3#1+ankunft.K1#1+ankunft.K1#2 · Deckel 10 s · — · ohne Zahl
+  bauen.K1#2 · Deckel 10 s · ≥ 90 s → 10 s · ≥ 90 s — schneller machen
+  bauen.K5#2 · Deckel 10 s · — · ohne Zahl
+  studios.K4#1+studios.K4#2 · Deckel 33 s · 73.3 s → 10 s · über dem Gesetz 45 s — schneller machen
+  siedlung.K2#1+siedlung.K2#2 · Deckel 10 s · — · ohne Zahl
+  siedlung.K5#1+siedlung.K5#2 · Deckel 31 s · — · ohne Zahl
+  siedlung.K4#2 · Deckel 33 s · 89.5 s → 10 s · über dem Gesetz 45 s — schneller machen
+  leib.K2#1+leib.K2#2 · Deckel 33 s · — · ohne Zahl
+  leib.K4#1+leib.K4#2 · Deckel 33 s · — · ohne Zahl
+  halten.K5#1+halten.K5#2 · Deckel 19 s · — · ohne Zahl
+  halten.K1#2 · Deckel 10 s · — · ohne Zahl
+  fahrzeug.K5#1 · Deckel 35 s · — · ohne Zahl
+  tore.K3#1+tore.K3#2 · Deckel 10 s · — · ohne Zahl
+  fahrzeug.K2#1 · Deckel 10 s · ≥ 90 s → 10 s · ≥ 90 s — schneller machen
+  fahrzeug.K2#2 · Deckel 55 s · — · ohne Zahl
+  streaming.K4#2 · Deckel 10 s · — · ohne Zahl
+  profiband.K1#1+profiband.K1#2+profiband.K2#1+profiband.K2#2+profiband.K3#1+profiband.K3#2 · Deckel 64 s · 62.9 s → 90 s · Deckel zu knapp
+  klang.K4#1+klang.K4#2 · Deckel 10 s · — · ohne Zahl
+  klang.K5#2 · Deckel 10 s · 24.8 s → 44 s · Deckel zu knapp
+  speicher.K1#1+speicher.K1#2 · Deckel 33 s · — · ohne Zahl
+  speicher.K2#1+speicher.K2#2 · Deckel 33 s · — · ohne Zahl
+  speicher.K4#2 · Deckel 15 s · 47.1 s → 10 s · über dem Gesetz 45 s — schneller machen
+EICHTAFEL gtx am 5fba36ea: 42 von 71 Läufen geeicht · Σ Deckel heute 1725 s → aus den Zahlen 1724 s (Budget 1740 s = Fahrt 1800 − Boot 60)
+DECKEL-TAFEL gtx: 52 Proben aus den Zahlen am 5fba36ea (Reserve ⌈1.5 × s⌉) → deckel.json · die Fahrt 1784 s
