@@ -3,7 +3,8 @@
 Eine Zeile je Fund: Datei:Zeile · Wurzel · was es bewegt · Größe. Wer eine Zeile heilt, löscht sie im selben Commit. Stand 02.11. (main 10770eb5).
 
 ## Werkzeug (macht jede Welle billiger)
-- Farm headless: die langsamste Station bestimmt den Lauf (Scheibe 1 ~41 min, vermutlich affekt.K2#1 mit Deckel 2400 s, riss ihn am 02.11.) — elf Scheiben 9–25 min · die Station selbst schneller machen (Welt-Simulation im Zeitraffer statt Wanduhr) · alle Farm-Läufe −30 min · M
+- Farm headless: die langsamste Station (affekt.K2#1/K3#1) · Wurzel war GPU-Arbeit neben der Leine (stamm/bild-himmel.js `_atmoTakt`/`_ensureSkyEnvironment`), Zweig w4-affekt 7105403d: swiftshader K2 940 → 87 s, K3 Farm > 3600 → 296 s lokal, beide GRÜN · landen + Farm-Lauf zeigt die Zahl · S
+- Linse fehlt: GPU-Arbeit neben der Leine (Takt ohne Bild, `_gpuLeineStraff` wahr) — ein Zähler an `device.queue.submit` über N Takte in der Werkbank, ROT beim Namen des Schreibers (Mutante: `_atmoTakt` ohne Leinen-Frage) · Familie diaet-linse · hält K2/K3-Dauer und jede Zeitraffer-Station · S
 - Nach einer Landung gezielt messen (`punkte.cjs run --nur <kriterium#n>`) statt `--offen` über 129 Stationen, wenn nur ein Kriterium auf der Kippe steht · Koordinator-Disziplin · S
 - `punkte.cjs` / deckel.json · ~20 Proben fallen an der 10-s-Grenze (u. a. tiere.K5#1), studios.K2#2/K3#2 reißen 4 s trotz Tafel 10 s · Messung blind · S
 - volle Radeon-Fahrt ≤ 30 min unbewiesen (Lauf 2: 63 Proben in 1462 s) · alle Radeon-Punkte · M
