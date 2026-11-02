@@ -1537,3 +1537,4 @@
 2026-11-02 11:54:14 takt-z159a-gtx START 27 Stationen in 1 Läufen
 2026-11-02 12:14:26 takt-z159a-gtx tiere.K1#2,tiere.K3#2,mensch.K1#1,vegetation.K5#2,material.K2#1,material.K1#1,lod.K1#1,lod.K5#1,studios.K2#2,studios.K3#2,bauen.K1#2,studios.K4#1,siedlung.K1#2,siedlung.K4#2,leib.K1#2,spielgang.K3#1,fahrzeug.K2#1,fahrzeug.K2#2,ankunft.K2#1,ankunft.K3#1,ankunft.K1#1,profiband.K1#1,profiband.K2#1,profiband.K2#2,profiband.K3#1,klang.K4#1,speicher.K4#2 OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/ROT/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/ROT/ROT/ROT/ROT/OFFEN/OFFEN 20.1 · 27/27
 2026-11-02 12:14:55 z159-abab START 2 Zellen
+2026-11-02 12:27:05 z159-abab w-ego VERLÄNGERN 12.1 · 1/2 (2+2)
