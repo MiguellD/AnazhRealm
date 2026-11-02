@@ -852,6 +852,11 @@ class AnazhRealm_koerper_fahrt {
             pm.z = entry.position.z;
             pm.y = entry.position.y - 0.5 + entry._sitzHeight; // der Sitz misst von der Basis (position.y − 0.5)
         }
+        // DER GERITTENE TRÄGT SEINE STUFE AB DEM AUFSTIEG: der Reiter sitzt auf ihm (Abstand 0, die Geritten-Wand: Stufe 0) —
+        // seine Stufe urteilt im nächsten Takt der Stufen-Wahl (`_archBewegteUrteilen`), die L0 wird bestellt und steht, sobald
+        // sie gebacken ist. Bis hier urteilte erst der Wagen in Fahrt: wer aufstieg, saß in der Stufe des Setzens (der GT am
+        // Steilhang auf L1, gate:fahr-leben T4), bis der Wagen rollte — und erst dann ging die Bestellung der L0 an das Werk
+        this._archBewegt(entry);
         // Reiter + Gefährt = EIN Körper: die eigenen Blocker des gerittenen Werks blocken es nie (der Struktur-Löser
         // überspringt riddenId); was kollidiert, ist die HÜLLE des Gesetz-Wagens (`_fahrHuelle`, Welle L Q5) bzw. ohne
         // Fahr-Gesetz die Reiter-Kapsel. Absteigen baut die Blocker lazy neu. Profil wird dabei lesbar.

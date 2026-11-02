@@ -1105,14 +1105,17 @@ async function probeLeben(expected) {
             const kurs = () => e.rotationY + Math.PI / 2; // Studio-Wagen: Bug +x
             const wink = (a) => Math.round((Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) * 1800) / Math.PI) / 10;
             const pr = e && r._foundryPresetForEntry(e);
-            // DER BAND-PARTNER STEHT, BEVOR DIE PROBE IHN BRAUCHT (das EINE Warten, welt-boot `__gebautNach`): die Stufe L1 des
-            // Wagens liegt gebacken bereit (`_foundryStufeBereit`) — sonst hält die L0 voll ohne Partner (`_lodHaltSetzen` „wartet"),
-            // und der Ritt zählt kein Band (vakuös). Am Genesis-Ort trägt die Foundry mehr Aufträge: in drei von sechs Läufen stand
-            // der Partner im ganzen Ritt nicht (band 0), in den anderen 210 Bilder
+            // DER GERITTENE WAGEN TRÄGT SEINE STUFE, BEVOR DER RITT BEGINNT (das EINE Warten, welt-boot `__gebautNach`): die Welt
+            // urteilt die Stufe des Gerittenen beim Aufstieg (`mountArchitecture` → `_archBewegt`) und serviert seine L0, sobald
+            // sie gebacken ist (`_servedLod`), dazu liegt ihr Band-Partner L1 bereit (`_foundryStufeBereit`). Der Ritt ist ein
+            // Takt ohne Warten (`frame`): was zu seinem Beginn nicht gebacken ist, kommt in ihm nie an. Bis hier wartete die Probe
+            // nur auf die L1 — sie stand schon, der Wagen trug die Stufe seines Setzens (L1, das Auge der Third-Sicht) und die L0
+            // war erst als Band-Partner bestellt; im CI (ein Werk-Faden, Genesis-Ort) kam sie vor dem Ritt nicht: band 0, Stufe L1
             if (e)
                 await __gebautNach(e, {
-                    fertig: () => r._foundryStufeBereit(e, pr, 1),
+                    fertig: () => e._servedLod === 0 && r._foundryStufeBereit(e, pr, 1),
                     bau: () => r._foundryFlattenFor(e, pr, 1),
+                    warum: () => `Stufe ${e._lodLevel}, serviert ${e._servedLod}, L1 ${r._foundryStufeBereit(e, pr, 1)}`,
                 });
             let [i, n, q, ausEgo, fv, wf] = [0, 0, [], false, 0, 0];
             const bild = () => {
