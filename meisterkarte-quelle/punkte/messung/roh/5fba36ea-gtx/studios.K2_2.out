@@ -232,16 +232,12 @@ H.fahre(async function probeStudios(H) {
     await L.gang();
     return { griffe: L.GRIFFE, adapter };
 }); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\5fba36ea-gtx\studios.K2_2.json 25
-=== H7 DIE SITZUNG — Saat 789653, die Zeit geurteilt (Karte)
-@@ 0.6 s · neue Seite der Linse
-@@ 9.2 s · neue Seite der Linse
-  ⏱ garage         Griff → Bild p95 Gesetz-Wert – ms · Neubau 552 ms · 5 Griffe mit Bild · Neuladen 15/15
-  garage          15 Anfragen · r184 WebGPU · Schieber 2.9 → 3.4, Strg+Z → 2.9, Strg+Umschalt+Z → 3.4, Strg+Z → 2.9, Strg+Y → 3.4, A → 2.9, B → 3.4 · Kosten [{"stufe":"0","leiste":"28992","deckel":"32000","befehle":"328","vram":"1222304","gezeichnet":"28992","befehleGezeichnet":"328","vramGpu":"1222304","vramDeckel":"5822681","msDeckel":"0.9635","ms":"0.0236","bank":"5.95","bankCpu":"2.7167","fertig":"1"},{"stufe":"1","leiste":"9924","deckel":"10600","befehle":"328","vram":"539792","gezeichnet":"9924","befehleGezeichnet":"328","vramGpu":"539792","vramDeckel":"1928763","msDeckel":"0.8029","ms":"0.0236","bank":"3.45","bankCpu":"3.0667","fertig":"1"}]
-@@ 10.1 s · neue Seite der Linse
-@@ 14.9 s · neue Seite der Linse
-  ⏱ schmiede       Griff → Bild p95 Gesetz-Wert – ms · Neubau 45 ms · 5 Griffe mit Bild · Neuladen 11/11
-  schmiede        16 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/CopyShader.js /worlds/terrain/lib/LuminosityHighPassShader.js /worlds/terrain/lib/FXAAShader.js /worlds/terrain/lib/EffectComposer.js /worlds/terrain/lib/RenderPass.js /worlds/terrain/lib/MaskPass.js /worlds/terrain/lib/ShaderPass.js /worlds/terrain/lib/UnrealBloomPass.js · Schieber 0.95 → 1.25, Strg+Z → 0.95, Strg+Umschalt+Z → 1.25, Strg+Z → 0.95, Strg+Y → 1.25, A → 0.95, B → 1.25 · Kosten [{"stufe":"0","leiste":"18824","deckel":"22000","befehle":"18","vram":"462252","gezeichnet":"18824","befehleGezeichnet":"18","vramGpu":"462252","ms":"0.0041","bank":"0.425","bankCpu":"0.35","vramDeckel":"4003093","msDeckel":"0.5403","fertig":"1"}]
-@@ 15.9 s · neue Seite der Linse
+=== H7 DIE SITZUNG — Saat 395057, die Zeit geurteilt (Karte)
+@@ 0.8 s · neue Seite der Linse
+@@ 11.9 s · neue Seite der Linse
+  ⏱ garage         Griff → Bild p95 Gesetz-Wert – ms · Neubau 804 ms · 5 Griffe mit Bild · Neuladen 15/15
+  garage          15 Anfragen · r184 WebGPU · Schieber 2.9 → 3.4, Strg+Z → 2.9, Strg+Umschalt+Z → 3.4, Strg+Z → 2.9, Strg+Y → 3.4, A → 2.9, B → 3.4 · Kosten [{"stufe":"0","leiste":"28992","deckel":"32000","befehle":"328","vram":"1222304","gezeichnet":"28992","befehleGezeichnet":"328","vramGpu":"1222304","vramDeckel":"5822681","msDeckel":"0.9635","ms":"0.0236","bank":"7.7667","bankCpu":"4.0333","fertig":"1"},{"stufe":"1","leiste":"9924","deckel":"10600","befehle":"328","vram":"539792","gezeichnet":"9924","befehleGezeichnet":"328","vramGpu":"539792","vramDeckel":"1928763","msDeckel":"0.8029","ms":"0.0236","bank":"4.125","bankCpu":"3.95","fertig":"1"}]
+@@ 13 s · neue Seite der Linse
 @@PUNKTE@@ FRIST 19 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier
 
 --- gpu-zeuge ---
