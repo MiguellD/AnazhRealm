@@ -1,7 +1,7 @@
 {
  "sha": "6d6a8336a11149456ca4edcab3c9c550a6b11f01",
  "geraet": "gtx",
- "zeit": "2026-11-02T06:57:22.513Z",
+ "zeit": "2026-11-02T07:02:00.908Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {},
  "ungemessen": {
@@ -383,286 +383,65 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "klang.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.17,
+   "grund": "Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 10.2,
+   "zeit": "2026-11-02T07:02:00.908Z",
+   "abdruck": "cac836c98bb9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-02T06:41:02.489Z",
+  "start": "2026-11-02T07:01:33.925Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 7.3,
-  "grundstellungS": [
-   0.2,
-   7.8,
-   7.5,
-   6.2,
-   7.4,
-   7.1,
-   7.6,
-   7.1,
-   8.3,
-   5.6,
-   6.9,
-   6.6,
-   6.4,
-   0.1,
-   7,
-   7.2,
-   8.6,
-   8,
-   12.4
-  ],
-  "proben": 20,
+  "bootS": 5.8,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "vegetation.K5#2",
-    "s": 19.8,
-    "takte": 668,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": "wiese",
-    "vor": "material.K2#1",
-    "s": 16.8,
-    "takte": 640,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "lod.K1#1",
-    "s": 19,
-    "takte": 615,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "lod.K5#1",
-    "s": 16.7,
-    "takte": 642,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "genesis",
-    "vor": "material.K1#1",
-    "s": 17.6,
-    "takte": 630,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "genesis",
-    "vor": "mensch.K1#1",
-    "s": 15.8,
-    "takte": 632,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "genesis",
-    "vor": "siedlung.K1#2",
-    "s": 15.4,
-    "takte": 631,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "leib.K1#2",
-    "s": 16.9,
-    "takte": 626,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
     "ort": null,
-    "vor": "tiere.K1#2",
-    "s": 16.6,
-    "takte": 675,
+    "vor": "klang.K4#1",
+    "s": 20.2,
+    "takte": 680,
     "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "tiere.K3#2",
-    "s": 18.8,
-    "takte": 648,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "studios.K2#2",
-    "s": 18.2,
-    "takte": 687,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "bauen.K1#2",
-    "s": 15.8,
-    "takte": 678,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "studios.K4#1",
-    "s": 15.3,
-    "takte": 685,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "siedlung.K4#2",
-    "s": 2.3,
-    "takte": 226,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "fahrzeug.K2#1",
-    "s": 30,
-    "takte": 2215,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "fahrzeug.K2#2",
-    "s": 30.6,
-    "takte": 2231,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "ankunft.K2#1",
-    "s": 29.8,
-    "takte": 2226,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "profiband.K1#1",
-    "s": 19.6,
-    "takte": 664,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "speicher.K4#2",
-    "s": 20.1,
-    "takte": 685,
-    "chunks": 81,
-    "nach": "der Tür"
+    "nach": null
    }
   ],
   "wegeTueren": [],
-  "zeichner": [
-   {
-    "probe": "profiband.K4#1",
-    "anders": [
-     "zeichner.renderer._renderObjectDirect",
-     "zeichner.renderer._renderScene"
-    ],
-    "wie": {
-     "zeichner.renderer._renderObjectDirect": "getauscht: function (object, material, scene, camera) { const vor = H.c",
-     "zeichner.renderer._renderScene": "getauscht: function (scene, camera, ...rest) { const name = window.__pa"
-    }
-   },
-   {
-    "probe": "ankunft.K2#1",
-    "anders": [
-     "zeichner.postKette"
-    ],
-    "wie": {
-     "zeichner.postKette": "fort"
-    }
-   },
-   {
-    "probe": "profiband.K1#1",
-    "anders": [
-     "zeichner.renderer._renderScene"
-    ],
-    "wie": {
-     "zeichner.renderer._renderScene": "getauscht: function (scene, camera, ...rest) { const name = window.__pa"
-    }
-   }
-  ],
-  "unerklaert": [
-   {
-    "probe": "lod.K5#1",
-    "wie": "werke +2 (−0)"
-   },
-   {
-    "probe": "material.K1#1",
-    "wie": "werke +1 (−0)"
-   }
-  ],
-  "ciBlicke": 21,
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 2906,
-   "frameP95": 33.6,
-   "taktP95": 33.6,
-   "vramMax": 135.8,
-   "seiten": 20,
-   "marken": 1,
+   "bilder": 250,
+   "frameP95": 66.7,
+   "taktP95": 53.1,
+   "vramMax": 151.5,
+   "seiten": 1,
+   "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "fahrzeug.K2#1",
-     "m": 1468,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "profiband.K1#1",
-     "m": 1086,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "material.K2#1",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": 1
-    },
-    {
-     "probe": "speicher.K4#2",
-     "m": 970,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "fahrzeug.K2#2",
-     "m": 950,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "siedlung.K4#2",
-     "m": 639,
+     "probe": "klang.K4#1",
+     "m": 1088,
      "ringVor": 4,
      "ringMin": 0
     }
    ],
-   "zapfen": 855,
-   "luecken": 7,
-   "letzteLuecke": "kein Renderer"
+   "zapfen": 31,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 994.6,
-  "minuten": 16.65
+  "fahrtS": 36.6,
+  "minuten": 0.67
  }
 }
