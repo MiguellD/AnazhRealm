@@ -7,6 +7,7 @@ Eine Zeile je Fund: Datei:Zeile · Wurzel · was es bewegt · Größe. Wer eine 
 - `punkte.cjs` / deckel.json · ~20 Proben fallen an der 10-s-Grenze (u. a. tiere.K5#1), studios.K2#2/K3#2 reißen 4 s trotz Tafel 10 s · Messung blind · S
 - volle Radeon-Fahrt ≤ 30 min unbewiesen (Lauf 2: 63 Proben in 1462 s) · alle Radeon-Punkte · M
 - `_standRueckspielen` räumt tools/materials nach `name` statt Schlüssel; `haengerAn` gibt seine Haken nicht je Lauf zurück · Grundstellung · S
+- `package.json:20` check:statik (Puls 1, lokal `npm run check`) · eine `&&`-Kette aus 74 Befehlen: die erste rote Linse verbirgt jede dahinter — dieselbe Klasse wie die voll-Kette (w4-ci-alle-schritte), dort nicht geheilt, weil npm unter Windows cmd fährt und gate:ci-deckung die Kette befehlsweise liest ((S)-Logik) · ein Läufer, der jede Linse fährt und alle Roten nennt · S–M
 
 ## Spiel
 - Stadt gehend LANGSAMER seit z158 · geheilt w4-stadt-gehen 9c39c3c0 (Stand-Prüfung über Raster, Suche nur bei Änderung im Kreis; Takt max 2,6 s → 0,2 s) · fährt z163 · Rest: Ankunft-Wache 231 ms

@@ -1,0 +1,101 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node -e (async function weltProbeLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const { statikServer, nullSeite, warteAufWelt } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const { messort } = require(path.resolve("scripts/lib/welt-orte.cjs"));
+    const [aus, port, grund, probenText] = process.argv.slice(1);
+    const orte = Object.fromEntries(["wiese", "dorf"].map((id) => [id, messort(id)]));
+    const erg = { proben: {}, fehler: [] };
+    const server = statikServer();
+    let browser = null;
+    try {
+        await server.lausche(Number(port));
+        const ns = await nullSeite({ frist: 1800000 });
+        browser = ns.browser;
+        const seite = ns.page;
+        seite.setDefaultTimeout(1200000);
+        seite.on("pageerror", (e) => erg.fehler.length < 8 && erg.fehler.push(String(e.message || e).split("\n")[0].slice(0, 200)));
+        await server.zeige(seite, 240000, "index.html", "networkidle0");
+        await warteAufWelt(seite, 300000);
+        await seite.evaluate(async () => {
+            while (!(window.anazhRealm && window.anazhRealm.erwacht)) await new Promise((ok) => setTimeout(ok, 50));
+            await window.anazhRealm.erwacht;
+            window.anazhRealm.state.renderer.setAnimationLoop(null);
+        });
+        for (const [name, fn, o] of JSON.parse(probenText)) {
+            const t0 = Date.now();
+            let e;
+            try {
+                e = await seite.evaluate("(" + fn + ")(window.anazhRealm, THREE, " + JSON.stringify(Object.assign({ orte }, o)) + ", (" + grund + ")(window.anazhRealm, THREE))");
+            } catch (x) {
+                e = { fehler: String((x && x.message) || x).split("\n")[0].slice(0, 300) };
+            }
+            e = Object.assign({}, e || { fehler: "die Probe gab nichts zurück" }, { sek: Math.round((Date.now() - t0) / 100) / 10 });
+            erg.proben[name] = e;
+            console.log("WELTPROBE " + name + " " + JSON.stringify(e));
+        }
+    } catch (x) {
+        erg.fehler.push(String((x && x.message) || x).split("\n")[0].slice(0, 300));
+    } finally {
+        if (browser) await browser.close().catch(() => {});
+        server.close();
+    }
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+    console.log("WELTPROBE-ENDE " + JSON.stringify({ proben: Object.keys(erg.proben), fehler: erg.fehler }));
+})() /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/10770eb5-headless/physik.K4_1.json 7704 function weltGrund(r, T) {
+    const s = r.state;
+    const A = r.constructor;
+    let t = performance.now();
+    s.perfRegulator = false;
+    const takt = (n = 1) => {
+        for (let i = 0; i < n; i++) r._gameLoopTick((t += 1000 / 60));
+    };
+    const y = (x, z) => r._voxelSurfaceY(x, z);
+    const stehen = async (x, z) => {
+        s.playerMesh.position.set(x, y(x, z) + A.PLAYER_FOOT_OFFSET, z);
+        s.playerVel.setValue(0, 0, 0);
+        await window.__weltStehtNach(() => takt());
+        takt(30);
+    };
+    const tage = (n) => {
+        for (let k = 0; k < n * 4; k++) {
+            r.setTimeOfDay((s.timeOfDay + 0.25) % 1, "regler");
+            takt(3);
+        }
+    };
+    const trocken = () => {
+        r._setWeather("sunny", "human");
+        s.weatherEffectTime = -1e9;
+        r._naesseTakt(1e6);
+        r.setTimeOfDay(0.5, "regler");
+        takt(2);
+    };
+    const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+    // DIE GEZEICHNETE NAH-STREU (feld.K5, luftwasser.K4): je Senke ihre gezeichneten Glieder (`bloecke[].ids` über den Kacheln
+    // `kacheln.items` — dieselbe Zählung wie feld.K4, diag-stand-takt) am Ort `drin(x, z)`; Blumen = Senken der Art `blume*` (die
+    // Streu wählt sie auf lebendigem Boden, stamm/vegetation-streu.js)
+    const streu = (drin) => {
+        const ns = s.nahStreu;
+        const n = { alle: 0, blumen: 0 };
+        if (!ns) return n;
+        for (const a of ns.senken.values())
+            for (const [key, b] of a.bloecke) {
+                const k = ns.kacheln.get(key);
+                if (!k) continue;
+                const ids = new Set(b.ids);
+                for (const it of k.items)
+                    if (ids.has(it.id) && drin(it.x, it.z)) {
+                        n.alle++;
+                        if (/^blume/.test(a.preset || "")) n.blumen++;
+                    }
+            }
+        return n;
+    };
+    return { s, A, takt, y, stehen, tage, trocken, r3, streu };
+} [["seil","async (r, T, o, G) => {\n\nreturn await (async function seilProbe(r, T, o, G) {\n    const { s, takt, stehen, r3 } = G;\n    const pm = s.playerMesh;\n    for (let i = 0; i < 600 && !Object.keys(s.blueprints || {}).some((k) => /^klinge_/.test(k)); i++) takt(), await new Promise((ok) => setTimeout(ok, 10));\n    const klingen = Object.keys(s.blueprints || {}).filter((k) => /^klinge_/.test(k));\n    const seile = klingen.filter((k) => /flegel|seil|kette|morgenstern|flail/i.test(k));\n    const aus = { klingen: klingen.length, seile, je: {} };\n    if (!seile.length) return Object.assign(aus, { namen: klingen.map((k) => k.slice(7)) });\n    await stehen(o.orte.wiese.x, o.orte.wiese.z);\n    for (const name of seile) {\n        r.equipHeld(name);\n        let h = null;\n        for (let i = 0; i < 400 && !((h = pm.userData && pm.userData.heldMesh) && h.userData && h.userData.foundryHeld); i++) takt(), await new Promise((ok) => setTimeout(ok, 10));\n        if (!h) {\n            aus.je[name] = { fehler: \"keine Gestalt in der Hand\" };\n            continue;\n        }\n        const teile = [];\n        h.traverse((m) => m.isMesh && m !== h && teile.push(m));\n        const inv = new T.Matrix4();\n        const lage = () => {\n            h.updateMatrixWorld(true);\n            inv.copy(h.matrixWorld).invert();\n            return teile.map((m) => new T.Box3().setFromObject(m).getCenter(new T.Vector3()).applyMatrix4(inv));\n        };\n        s.keys.w = true;\n        takt(90);\n        s.keys.w = false;\n        const L0 = lage();\n        const fern = L0.reduce((b, p, i) => (p.length() > L0[b].length() ? i : b), 0);\n        let schwung = 0;\n        const laengen = [];\n        const v2 = [];\n        let vor = L0;\n        for (let k = 0; k < 180; k++) {\n            takt();\n            const L = lage();\n            L.forEach((p, i) => (schwung = Math.max(schwung, p.distanceTo(L0[i]))));\n            laengen.push(L[fern].length());\n            v2.push(L[fern].distanceToSquared(vor[fern]) * 3600);\n            vor = L;\n        }\n        const mittel = (a) => a.reduce((x, y) => x + y, 0) / Math.max(1, a.length);\n        aus.je[name] = {\n            teile: teile.length,\n            schwungM: r3(schwung),\n            laengeM: [r3(Math.min(...laengen)), r3(Math.max(...laengen))],\n            energie: [r3(mittel(v2.slice(0, 60))), r3(mittel(v2.slice(120)))],\n        };\n        r.equipHeld(null);\n    }\n    return aus;\n})(r, T, o, G);\n}",{}],["stoss","async (r, T, o, G) => {\n\nreturn await (async function stossProbe(r, T, o, G) {\n    const { s, A, takt, stehen, r3 } = G;\n    const pm = s.playerMesh;\n    let x0 = o.orte.wiese.x;\n    const z0 = o.orte.wiese.z;\n    for (let i = 0; i < 20 && !r._landAt(x0, z0, 2); i++) x0 += 12;\n    const masse0 = r._leibMasse.bind(r);\n    const knoechel = [];\n    pm.traverse((n) => /^ankle-?1$/.test(n.name) && knoechel.push(n));\n    if (!knoechel.length) return { fehler: \"kein Knöchel (ankle1/ankle-1) am Leib des Spielers\" };\n    const gang = async (kraft, richtung, massenFaktor) => {\n        r._leibMasse = (k) => masse0(k) * (k === pm ? massenFaktor : 1);\n        try {\n            await stehen(x0, z0);\n            s.yaw = 0;\n            const quer = new T.Vector3(Math.cos(s.yaw), 0, -Math.sin(s.yaw));\n            const m = r._leibMasse(pm);\n            s.keys.w = true;\n            takt(90);\n            const bahn = [];\n            const w = new T.Vector3();\n            for (let k = 0; k < 162; k++) {\n                if (kraft && k < 12) {\n                    const dv = (kraft * richtung * (1 / 60)) / m;\n                    const v = s.playerVel;\n                    v.setValue(v.x() + quer.x * dv, v.y(), v.z() + quer.z * dv);\n                }\n                takt();\n                pm.updateMatrixWorld(true);\n                bahn.push([pm.position.dot(quer), pm.position.y, ...knoechel.map((n) => n.getWorldPosition(w).dot(quer))]);\n            }\n            s.keys.w = false;\n            return { m, bahn, tot: !!(s.player && s.player.dead) };\n        } finally {\n            r._leibMasse = masse0;\n        }\n    };\n    const B = await gang(0, 1, 1);\n    const lesen = (P, richtung) => {\n        let ausfall = 0;\n        let quer = 0;\n        let erholt = null;\n        let sturz = P.tot;\n        for (let k = 0; k < P.bahn.length; k++) {\n            const [q, h, ...f] = P.bahn[k];\n            const [qb, hb, ...fb] = B.bahn[k];\n            quer = Math.max(quer, richtung * (q - qb));\n            f.forEach((x, i) => (ausfall = Math.max(ausfall, richtung * (x - fb[i]))));\n            if (h < hb - 0.3) sturz = true;\n            const v = k > 0 ? Math.abs(q - qb - (P.bahn[k - 1][0] - B.bahn[k - 1][0])) * 60 : 1;\n            if (k >= 12 && v <= 0.05 && erholt === null) erholt = k / 60;\n            if (v > 0.05) erholt = null;\n        }\n        return { masse: r3(P.m), ausfallM: r3(ausfall), querM: r3(quer), erholtS: erholt === null ? null : r3(erholt), sturz };\n    };\n    const echt = lesen(await gang(200, 1, 1), 1);\n    const gegen = lesen(await gang(200, -1, 1), -1);\n    const schwer = lesen(await gang(200, 1, 2), 1);\n    return { ort: [r3(x0), r3(z0)], knoechel: knoechel.length, echt, gegen, schwer };\n})(r, T, o, G);\n}",{}],["feld","async (r, T, o, G) => {\n\nreturn await (async function feldProbe(r, T, o, G) {\n    const { s, A, takt, stehen, r3 } = G;\n    const C = A.LIFE_FIELD.cell;\n    const cx = Math.floor(o.orte.wiese.x / C);\n    const cz = Math.floor(o.orte.wiese.z / C);\n    const zelle = (i) => [(cx + i) * C, (cz) * C];\n    const drin = (i) => (x, z) => x >= zelle(i)[0] && x < zelle(i)[0] + C && z >= zelle(i)[1] && z < zelle(i)[1] + C;\n    const mitte = [(cx + 0.5) * C, (cz + 0.5) * C];\n    const nachbar = [(cx + 2.5) * C, (cz + 0.5) * C];\n    const lies = () => ({\n        mitte: G.streu(drin(0)),\n        nachbar: G.streu(drin(2)),\n        feld: [r3(r.auraAt(mitte[0], mitte[1]).lebendig), r3(r.auraAt(nachbar[0], nachbar[1]).lebendig)],\n    });\n    const stand = [(cx + 1.5) * C, (cz + 0.5) * C];\n    await stehen(stand[0], stand[1]);\n    const vor = lies();\n    takt(3600);\n    const ruhe = lies();\n    s.playerMesh.position.set(mitte[0], G.y(mitte[0], mitte[1]) + A.PLAYER_FOOT_OFFSET, mitte[1]);\n    const akt = r.dslRun([\"deposit_life\", null, A.LIFE_FIELD.max], { source: \"spieler\" });\n    await stehen(stand[0], stand[1]);\n    takt(3600);\n    const nach = lies();\n    return { zelleM: C, mitte, nachbar, vor, ruhe, nach, akt: !!akt };\n})(r, T, o, G);\n}",{}],["alter","async (r, T, o, G) => {\n\nreturn await (async function alterProbe(r, T, o, G) {\n    const { s, takt, stehen, tage, trocken, r3 } = G;\n    const D = o.orte.dorf;\n    s.autoSeason = false;\n    r.setSeason(\"sommer\");\n    await stehen(D.x, D.z);\n    const lies = () => {\n        const aus = {};\n        const c = new T.Color();\n        const n = new T.Vector3();\n        const p = new T.Vector3();\n        const nm = new T.Matrix3();\n        const im = new T.Matrix4();\n        const wm = new T.Matrix4();\n        const P = s.playerMesh.position;\n        const sammle = (kl, lage, rgb) => {\n            const e = (aus[kl] ||= {});\n            const q = (e[lage] ||= [0, 0, 0, 0]);\n            q[0] += rgb[0], q[1] += rgb[1], q[2] += rgb[2], q[3]++;\n        };\n        s.scene.traverse((m) => {\n            if (!m.isMesh || !m.visible || !m.geometry || !m.geometry.attributes.normal) return;\n            const kl = r._taeterKlasse(m);\n            if (/^UNBENANNT|^leer:|himmel|sky|wasser|water|^spieler|^bewohner|^tier:|^vogel/i.test(kl)) return;\n            const g = m.geometry;\n            const pos = g.attributes.position;\n            const nor = g.attributes.normal;\n            const col = g.attributes.color;\n            const mc = m.material && !Array.isArray(m.material) && m.material.color ? m.material.color : c.setRGB(1, 1, 1);\n            const inst = m.isInstancedMesh ? Math.min(m.count, 64) : 1;\n            for (let i = 0; i < inst; i++) {\n                if (m.isInstancedMesh) m.getMatrixAt(i, im), wm.multiplyMatrices(m.matrixWorld, im);\n                else wm.copy(m.matrixWorld);\n                const ox = wm.elements[12], oz = wm.elements[14];\n                if (m.isInstancedMesh && Math.hypot(ox - P.x, oz - P.z) > 60) continue;\n                nm.getNormalMatrix(wm);\n                const ic = m.isInstancedMesh && m.instanceColor ? [m.instanceColor.getX(i), m.instanceColor.getY(i), m.instanceColor.getZ(i)] : [1, 1, 1];\n                const schritt = m.isInstancedMesh ? Math.max(1, Math.floor(pos.count / 400)) : Math.max(1, Math.floor(pos.count / 300000));\n                for (let v = 0; v < pos.count; v += schritt) {\n                    if (!m.isInstancedMesh && (p.fromBufferAttribute(pos, v).applyMatrix4(wm), Math.hypot(p.x - P.x, p.z - P.z) > 60)) continue;\n                    n.fromBufferAttribute(nor, v).applyMatrix3(nm).normalize();\n                    const lage = n.y > 0.7 ? \"oben\" : n.z < -0.5 ? \"nord\" : n.z > 0.5 ? \"sued\" : null;\n                    if (!lage) continue;\n                    const vc = col ? [col.getX(v), col.getY(v), col.getZ(v)] : [1, 1, 1];\n                    sammle(kl, lage, [vc[0] * mc.r * ic[0], vc[1] * mc.g * ic[1], vc[2] * mc.b * ic[2]]);\n                }\n            }\n        });\n        for (const e of Object.values(aus)) for (const [l, q] of Object.entries(e)) e[l] = q[3] ? [q[0] / q[3], q[1] / q[3], q[2] / q[3], q[3]] : null;\n        return aus;\n    };\n    trocken();\n    const vor = lies();\n    trocken();\n    const zwei = lies();\n    tage(30);\n    trocken();\n    await stehen(D.x, D.z);\n    const nach = lies();\n    const tag = (s.worldMeta && s.worldMeta.tag) || 0;\n    const delta = (a, b) => (a && b ? Math.max(...[0, 1, 2].map((k) => Math.abs(b[k] - a[k]))) : null);\n    const je = {};\n    for (const kl of Object.keys(vor)) {\n        if (!nach[kl]) continue;\n        const d = {};\n        for (const l of [\"nord\", \"sued\", \"oben\"]) if (vor[kl][l] && nach[kl][l] && vor[kl][l][3] >= 20) d[l] = r3(delta(vor[kl][l], nach[kl][l]));\n        const rausch = Math.max(0, ...Object.keys(d).map((l) => delta(vor[kl][l], zwei[kl] && zwei[kl][l]) || 0));\n        if (Object.keys(d).length) je[kl] = Object.assign(d, { rausch: r3(rausch) });\n    }\n    return { dorf: [D.x, D.z], tag, klassen: Object.keys(je).length, je };\n})(r, T, o, G);\n}",{}],["schnee","async (r, T, o, G) => {\n\nreturn await (async function schneeProbe(r, T, o, G) {\n    const { s, A, takt, stehen, tage, r3 } = G;\n    const K = globalThis.__gelaendeCore;\n    const L = r._gelaende();\n    s.autoSeason = false;\n    if (!r.setSeason(\"winter\")) return { fehler: \"das Wort winter gilt nicht\" };\n    tage(10);\n    const schnee = (x, yy, z) => K.schnee(L, yy, x, z, r._schneeGilt());\n    const W = o.orte.wiese;\n    let ort = null;\n    for (let d = 0; d <= 3000 && !ort; d += 100)\n        for (let k = 0; k < (d ? 32 : 1) && !ort; k++) {\n            const x = W.x + d * Math.cos((k / 32) * 2 * Math.PI);\n            const z = W.z + d * Math.sin((k / 32) * 2 * Math.PI);\n            if (r._landAt(x, z, 1) && schnee(x, r._terrainMacroSurfaceY(x, z), z) >= 0.95) ort = [x, z];\n        }\n    if (!ort) return { fehler: \"kein Ort über der Schneegrenze binnen 3 km (Versatz \" + r3(r._schneeGilt()) + \")\" };\n    const tiefe = async (x, z) => {\n        await stehen(x, z);\n        takt(60);\n        const p = s.playerMesh.position;\n        const b = r._bodenSichtAt(p.x, p.z);\n        return { tiefeM: b == null ? null : r3(b - (p.y - A.PLAYER_FOOT_OFFSET)), schnee: b == null ? null : r3(schnee(p.x, b, p.z)) };\n    };\n    const fuss = await tiefe(ort[0], ort[1]);\n    const versatz = r3(r._schneeGilt());\n    const tag = (s.worldMeta && s.worldMeta.tag) || 0;\n    let n = 0;\n    let weiss = 0;\n    for (let dx = -20; dx <= 20; dx += 2)\n        for (let dz = -20; dz <= 20; dz += 2) {\n            if (dx * dx + dz * dz > 400) continue;\n            const b = r._bodenSichtAt(ort[0] + dx, ort[1] + dz);\n            if (b == null) continue;\n            n++;\n            if (schnee(ort[0] + dx, b, ort[1] + dz) >= 0.5) weiss++;\n        }\n    r.setSeason(\"sommer\");\n    tage(10);\n    const gegen = await tiefe(W.x, W.z);\n    gegen.versatz = r3(r._schneeGilt());\n    r.setSeason(\"winter\");\n    return { ort: ort.map(r3), hoeheM: r3(r._terrainMacroSurfaceY(ort[0], ort[1])), versatz, tag, proben: n, deckung: n ? r3(weiss / n) : null, fuss, gegen };\n})(r, T, o, G);\n}",{}]]
+WELTPROBE seil {"klingen":22,"seile":[],"je":{},"namen":["langschwert","saebel","degen","grossschwert","dolch","messer","langbogen","kriegsbogen","reiterbogen","recurvebogen","streitkolben","kriegsaxt","kriegshammer","keule","faellaxt","spaltmaul","vorschlaghammer","beil","spitzhacke","spaten","schaufel","sichel"],"sek":0}
+WELTPROBE stoss {"ort":[-280.4,-1045.6],"knoechel":4,"echt":{"masse":89.022,"ausfallM":0.008,"querM":0.008,"erholtS":0.2,"sturz":false},"gegen":{"masse":89.022,"ausfallM":0.008,"querM":0.008,"erholtS":0.2,"sturz":false},"schwer":{"masse":178.043,"ausfallM":0.004,"querM":0.004,"erholtS":0.2,"sturz":false},"sek":14.9}
+WELTPROBE feld {"zelleM":16,"mitte":[-280,-1048],"nachbar":[-248,-1048],"vor":{"mitte":{"alle":29,"blumen":26},"nachbar":{"alle":30,"blumen":24},"feld":[0.855,0.658]},"ruhe":{"mitte":{"alle":29,"blumen":26},"nachbar":{"alle":30,"blumen":24},"feld":[0.855,0.658]},"nach":{"mitte":{"alle":29,"blumen":26},"nachbar":{"alle":30,"blumen":24},"feld":[1,0.658]},"akt":true,"sek":8.7}
+WELTPROBE alter {"dorf":[-841,-861],"tag":30,"klassen":14,"je":{"bodenSatz":{"nord":0,"sued":0,"oben":0,"rausch":0},"formationenSatz":{"nord":0.001,"sued":0.003,"oben":0.001,"rausch":0},"bauSatz":{"nord":0.028,"sued":0.007,"oben":0.015,"rausch":0},"streuSatz":{"nord":0,"sued":0,"oben":0,"rausch":0},"f:birke:L0":{"nord":0,"sued":0,"oben":0,"rausch":0},"f:eiche:L0":{"nord":0,"sued":0,"oben":0,"rausch":0},"f:fichte:L0":{"nord":0,"sued":0,"oben":0,"rausch":0},"f:tanne:L0":{"nord":0,"sued":0,"oben":0,"rausch":0},"f:birke:L1":{"nord":0,"sued":0,"oben":0,"rausch":0},"f:eiche:L1":{"nord":0,"sued":0,"oben":0,"rausch":0},"f:fichte:L1":{"nord":0,"sued":0,"oben":0,"rausch":0},"f:weide:L1":{"nord":0,"sued":0,"oben":0,"rausch":0},"f:strauch:L1":{"nord":0,"sued":0,"oben":0,"rausch":0},"f:tanne:L1":{"nord":0,"sued":0,"oben":0,"rausch":0}},"sek":6.1}
+WELTPROBE schnee {"ort":[-280.4,-1045.6],"hoeheM":27.612,"versatz":-160,"tag":40,"proben":317,"deckung":1,"fuss":{"tiefeM":0.204,"schnee":1},"gegen":{"tiefeM":-0.01,"schnee":0,"versatz":0},"sek":5}
+WELTPROBE-ENDE {"proben":["seil","stoss","feld","alter","schnee"],"fehler":[]}
