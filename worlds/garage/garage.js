@@ -149,20 +149,21 @@ function clear(g){if(!g)return;if(g.parent)g.parent.remove(g);g.traverse(o=>{if(
   if(o.isSprite&&o.material){if(o.material.map)o.material.map.dispose();o.material.dispose();}});}
 function rebuild(){_wecke();
   clear(gFrame);clear(gJoints);clear(gBody);clear(gCal);clear(gNeg);clear(gPackage);clear(gWheels);doors.length=0;
-  const H=hardpoints(P);const res=evalLehren(P);
+  const PE=VC.epocheForm(P);   // die Zeit-Achse (vehicle-core EPOCHE_GESETZ): EIN geformtes P für den Bau UND die Ebenen
+  const H=hardpoints(PE);const res=evalLehren(PE);
   const ctx={M:M,bodyMat:bodyMat,doors:doors,corners:corners};   // der Kern baut MIT den Shell-Objekten (Tür-/Rad-Animation bleibt verdrahtet)
   const V=sicht();
   // LABOR = WELT (18.10.): der Wagen kommt vom Bauer der Welt (vehicle-core buildInstance — derselbe Bau wie der Foundry-Worker,
   // Baukörper · Haut · Räder, verjüngt und plan-konvex), mit den Hörern der Werkstatt (Lack, Türen, Rad-Ecken); die Ebenen
   // Rahmen · Gelenke · Lehren · Negativ legt die Werkstatt darüber.
-  [gPackage,gBody,gWheels]=VC.buildInstance(presetId,1,0,P,ctx).children.slice();
+  [gPackage,gBody,gWheels]=VC.buildInstance(presetId,1,0,PE,ctx).children.slice();
   gPackage.visible=V.pkg;gSprung.add(gPackage);gBody.visible=V.body;gSprung.add(gBody);
   gWheels.visible=V.wheels;vehicle.add(gWheels);  // ungefedert → bleibt am Boden geerdet
-  gFrame=VC.buildFrame(H,P,ctx); gFrame.visible=V.frame;   gSprung.add(gFrame);
-  gJoints=buildJoints(H,P);gJoints.visible=V.joints;gSprung.add(gJoints);
-  gCal=buildCalipers(H,P,res);gCal.visible=V.cal;   gSprung.add(gCal);
-  gNeg=buildNeg(H,P);     gNeg.visible=V.neg;        gSprung.add(gNeg);
-  taperBody(gFrame,scal(H,P),P);   // der Rahmen folgt derselben Sektion wie Karosserie und Bauraum
+  gFrame=VC.buildFrame(H,PE,ctx); gFrame.visible=V.frame;   gSprung.add(gFrame);
+  gJoints=buildJoints(H,PE);gJoints.visible=V.joints;gSprung.add(gJoints);
+  gCal=buildCalipers(H,PE,res);gCal.visible=V.cal;   gSprung.add(gCal);
+  gNeg=buildNeg(H,PE);     gNeg.visible=V.neg;        gSprung.add(gNeg);
+  taperBody(gFrame,scal(H,PE),PE);   // der Rahmen folgt derselben Sektion wie Karosserie und Bauraum
   gSprung.position.set(0,0,0);gSprung.rotation.set(0,0,0);
   renderTafel(res);
   kostenLeiste.neu();
