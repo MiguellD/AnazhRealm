@@ -2370,7 +2370,7 @@
   },
   "physik.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: (V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 16.37 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m an 25ac4c0c headless — offen: physik.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-kollision-bild.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +15) — zuletzt an 6a571e3b: Deckel der Fahrt 1800 s gerissen nach 1 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · physik.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-kollision-bild.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +19)",
+   "beleg": "Maschine: gehalten: (V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 16.37 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m an 25ac4c0c headless — offen: physik.K2#2 radeon: Station seit der Messung geändert · physik.K2#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "physik.K2#1",
@@ -2387,7 +2387,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kollision-bild.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +15) — zuletzt an 6a571e3b: Deckel der Fahrt 1800 s gerissen nach 1 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     },
     {
@@ -2396,7 +2396,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kollision-bild.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +19)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     }
    ]
@@ -2961,7 +2961,7 @@
   },
   "siedlung.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0 an 25ac4c0c headless — offen: siedlung.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-settlement.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +15) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · siedlung.K4#2 gtx: Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: })",
+   "beleg": "Maschine: gehalten: Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0 an 25ac4c0c headless — offen: siedlung.K4#2 radeon: Station seit der Messung geändert · siedlung.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "siedlung.K4#1",
@@ -2978,7 +2978,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-settlement.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +15) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     },
     {
@@ -2987,7 +2987,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 10770eb5: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: })",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     }
    ]
@@ -4116,6 +4116,6 @@
  },
  "rueckfall": [],
  "kopfVoll": "10770eb5698e05aef55914ee1b08907fb4b285a6",
- "zeit": "2026-11-02T11:20:05.818Z",
+ "zeit": "2026-11-02T11:42:47.758Z",
  "vorher": "10770eb5"
 }
