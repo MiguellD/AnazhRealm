@@ -149,8 +149,12 @@ function transport(R) {
 
 function alles() {
     const out = [];
+    // je Same dazu eine Stufe der Zeit-Achse (EPOCHE_GESETZ, reihum alle sechs): Holz, Leder, Bronze, Messing, Eisen-Band,
+    // Laterne und Licht-Kante liegen im Band ihrer Natur wie die Stoffe von heute
     for (const id of Object.keys(VC.PRESETS))
-        for (let s = 1; s <= 8; s++) out.push(...urteil(`fahrzeug ${id} Same ${s}`, VC.buildInstance(id, s, 0)));
+        for (let s = 1; s <= 8; s++)
+            for (const ov of [null, { epoche: s % 6 }])
+                out.push(...urteil(`fahrzeug ${id} Same ${s} ${JSON.stringify(ov)}`, VC.buildInstance(id, s, 0, ov)));
     for (const id of Object.keys(SC.PRESETS)) out.push(...urteil(`klinge ${id}`, SC.buildInstance(id, 1, 0)));
     out.push(...lackGestalten());
     out.push(...transport(PC.budgetRegler("unknown", LACK_GLAS)));
