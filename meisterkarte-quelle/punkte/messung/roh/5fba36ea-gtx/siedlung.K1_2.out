@@ -496,26 +496,8 @@ H.fahre(async function probeStartDorf(H) {
                 `innen ${h.innen} ÷ außen ${h.aussen} = ${h.quote}${h.fehler ? " · " + h.fehler : ""}${h.bildFehlt ? " · " + h.bildFehlt : ""}`
         );
     return j;
-}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\5fba36ea-gtx\siedlung.K1_2.json 90
-@@PUNKTE@@ FRIST 84 s der Probe gerissen — 12 von 18 Häusern an der Frist ausgelassen
-  haus_gotisch · Gang Hub 0.00 m · innen 0.0077153383513069865 ÷ außen 0.029563669316457153 = 0.261 · Gang warf: A._parkourGesetz is not a function
-  haus_alpenchalet · Gang Hub 0.00 m · innen 0.010867941937884833 ÷ außen 0.06382704343632994 = 0.17 · Gang warf: A._parkourGesetz is not a function
-  haus_schwarzwald · Gang Hub 0.00 m · innen 0.013908193780412916 ÷ außen 0.05645634072015922 = 0.246 · Gang warf: A._parkourGesetz is not a function
-  haus_schwarzwald · Gang Hub 0.00 m · innen 0.013572323967864265 ÷ außen 0.08493061648002388 = 0.16 · Gang warf: A._parkourGesetz is not a function
-  haus_schwarzwald · Gang Hub 0.00 m · innen 0.011160483603231866 ÷ außen 0.16034455875136372 = 0.07 · Gang warf: A._parkourGesetz is not a function
-  haus_schwarzwald · Gang Hub 0.00 m · innen 0.014244566190539239 ÷ außen 0.1360673029947165 = 0.105 · Gang warf: A._parkourGesetz is not a function
-  haus_schwarzwald · Gang Hub 0.00 m · innen undefined ÷ außen undefined = undefined · Gang warf: A._parkourGesetz is not a function · Frist der Probe
-  haus_schwarzwald · Gang Hub 0.00 m · innen undefined ÷ außen undefined = undefined · Gang warf: A._parkourGesetz is not a function · Frist der Probe
-  haus_schwarzwald · Gang Hub 0.00 m · innen undefined ÷ außen undefined = undefined · Gang warf: A._parkourGesetz is not a function · Frist der Probe
-  haus_alpenchalet · Gang Hub 0.00 m · innen undefined ÷ außen undefined = undefined · Gang warf: A._parkourGesetz is not a function · Frist der Probe
-  haus_alpenchalet · Gang Hub 0.00 m · innen undefined ÷ außen undefined = undefined · Gang warf: A._parkourGesetz is not a function · Frist der Probe
-  haus_alpenchalet · Gang Hub 0.00 m · innen undefined ÷ außen undefined = undefined · Gang warf: A._parkourGesetz is not a function · Frist der Probe
-  haus_schwarzwald · Gang Hub 0.00 m · innen undefined ÷ außen undefined = undefined · Gang warf: A._parkourGesetz is not a function · Frist der Probe
-  haus_schwarzwald · Gang Hub 0.00 m · innen undefined ÷ außen undefined = undefined · Gang warf: A._parkourGesetz is not a function · Frist der Probe
-  haus_schwarzwald · Gang Hub 0.00 m · innen undefined ÷ außen undefined = undefined · Gang warf: A._parkourGesetz is not a function · Frist der Probe
-  haus_skandinavisch · Gang Hub 0.00 m · innen undefined ÷ außen undefined = undefined · Gang warf: A._parkourGesetz is not a function · Frist der Probe
-  haus_alpenchalet · Gang Hub 0.00 m · innen undefined ÷ außen undefined = undefined · Gang warf: A._parkourGesetz is not a function · Frist der Probe
-  haus_skandinavisch · Gang Hub 0.00 m · innen undefined ÷ außen undefined = undefined · Gang warf: A._parkourGesetz is not a function · Frist der Probe
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\5fba36ea-gtx\siedlung.K1_2.json 10
+@@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

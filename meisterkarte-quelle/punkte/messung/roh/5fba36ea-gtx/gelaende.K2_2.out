@@ -303,7 +303,6 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
     fs.writeFileSync(tor.aus, JSON.stringify(erg, null, 1));
 })(tor).then(() => process.exitCode || 0, (e) => (console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\5fba36ea-gtx\gelaende.K2_2.json C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte
 [linse-gpu] nvidia/pascal
-  (b)(d) 15.1 s · Damm {"krone":27.79,"saeulen":21,"stromauf":[{"d":6,"wasser":24.88,"ueberlauf":24.3,"fluss":24.88},{"d":12,"wasser":24.98,"ueberlauf":24.38,"fluss":24.97}],"stromab":[{"d":6,"wasser":24.63,"fluss":24.63},{"d":12,"wasser":24.48,"fluss":24.48}]} · Ferne {"fehler":"Cannot read properties of undefined (reading 'length')"}
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

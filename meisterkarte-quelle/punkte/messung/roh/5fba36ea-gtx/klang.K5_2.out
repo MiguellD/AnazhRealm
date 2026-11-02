@@ -135,13 +135,13 @@ $ C:\Program Files\nodejs\node.exe -e const taktFahrt = async function taktFahrt
 }); C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\5fba36ea-gtx\klang.K5_2.json C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte
 [linse-gpu] nvidia/pascal
 Klang-Takt: {"isoliert":false,"tiere":9}
-── gehen: Klang-ms je Bild p95 0.2 · max 2.5 (609 Bilder, 6 m) · trägt _lofiPlayGroove 0.12 · _umweltLage 0.07 · _lofiPlayChord 0.05
-── fahrt: Klang-ms je Bild p95 0.2 · max 2.6 (601 Bilder, 25 m) · trägt _fahrtKlangTick 0.13 · _lofiPlayGroove 0.09 · _umweltLage 0.06
-── nacht: Klang-ms je Bild p95 0.2 · max 2.5 (608 Bilder, 6 m) · trägt _lofiPlayGroove 0.15 · _umweltLage 0.09 · _lofiPlayBass 0.07
+── gehen: Klang-ms je Bild p95 0.2 · max 2.2 (611 Bilder, 6 m) · trägt _lofiPlayGroove 0.12 · _lofiPlayChord 0.09 · _umweltLage 0.07
+── fahrt: Klang-ms je Bild p95 0.2 · max 3 (601 Bilder, 25 m) · trägt _fahrtKlangTick 0.11 · _lofiPlayGroove 0.09 · _umweltLage 0.07
+── nacht: Klang-ms je Bild p95 0.2 · max 3.4 (609 Bilder, 7 m) · trägt _lofiPlayGroove 0.16 · _lofiPlayChord 0.12 · _playSchrittOneShot 0.07
 ── Aussetzer am Ausgang: 0 in 20 s Wiedergabe (0 s still)
-   T gehen: 609 Bilder, 6 m — keine Bewegung gemessen
-   T nacht: 608 Bilder, 6 m — keine Bewegung gemessen
-PROBE 24.7 s
+   T gehen: 611 Bilder, 6 m — keine Bewegung gemessen
+   T nacht: 609 Bilder, 7 m — keine Bewegung gemessen
+PROBE 24.2 s
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

@@ -143,18 +143,16 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
     fs.writeFileSync(tor.aus, JSON.stringify({ zeilen: Z, schmuggel: T.schmuggel, schuss: S ? { px: S.px, zeile: S.zeile, fehler: S.fehler } : null }));
 })(tor).then(() => process.exitCode || 0, (e) => (console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\5fba36ea-gtx\physik.K2_2.json
 [linse-gpu] nvidia/pascal
-  (V) Kontakt beim Tempo: 24/126 Zeilen · Schmuggel {"koerper":"schmuggel","hindernis":"mauer","kad":"deckel","v":5.86,"wer":"_t_kontakt_mauer#3181","durch":true,"tief":0.285,"spalt":0}
-  gekürzt auf Wagen, gestoßenen Bären und Schmuggel (die Leiber: physik.K2#1) · 36.4 s in der Welt der Sitzung
-      wagen      19.630 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.018 m · im Bild Spalt max 0.066 m, Eindringen max 0.081 m · fahrzeug_supersport vmax 16.36 m/s × 1.2
-      gestossen  16.370 m/s · Durchtritt 0/4 · Eindringen max 0.000 m · Spalt max 0.000 m · im Bild Spalt max 0.000 m, Eindringen max 0.170 m
-  Stoß im Ausgabe-Bild: Wagen 8324 px · Bär 572 px in 640×360 · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Bär an der Mauer im Bild frei 7.48 m · Luma 74.5 σ 36.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.168 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen
-  OFFEN (V) BILD ≠ KOLLISION: wagen 19.63 m/s @144 → _t_kontakt_mauer#3181 — im Bild Spalt 0 m, Eindringen 0.035 m
-  OFFEN (V) BILD ≠ KOLLISION: wagen 19.62 m/s @60 → _t_kontakt_mauer#3181 — im Bild Spalt 0 m, Eindringen 0.081 m
-  OFFEN (V) BILD ≠ KOLLISION: wagen 19.61 m/s @30 → _t_kontakt_mauer#3181 — im Bild Spalt 0.066 m, Eindringen 0 m
-  OFFEN (V) BILD ≠ KOLLISION: gestossen 16.37 m/s @144 → _t_kontakt_mauer#3181 — im Bild Spalt 0 m, Eindringen 0.045 m
-  OFFEN (V) BILD ≠ KOLLISION: gestossen 16.37 m/s @60 → _t_kontakt_mauer#3181 — im Bild Spalt 0 m, Eindringen 0.1 m
-  OFFEN (V) BILD ≠ KOLLISION: gestossen 16.37 m/s @30 → _t_kontakt_mauer#3181 — im Bild Spalt 0 m, Eindringen 0.162 m
-  OFFEN (V) BILD ≠ KOLLISION: gestossen 16.24 m/s @deckel → _t_kontakt_mauer#3181 — im Bild Spalt 0 m, Eindringen 0.17 m
+  (V) Kontakt beim Tempo: 24/126 Zeilen · Schmuggel {"koerper":"schmuggel","hindernis":"mauer","kad":"deckel","v":5.86,"wer":"_t_kontakt_mauer#2098","durch":true,"tief":0.285,"spalt":0}
+  gekürzt auf Wagen, gestoßenen Bären und Schmuggel (die Leiber: physik.K2#1) · 39.0 s in der Welt der Sitzung
+      wagen      19.630 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.018 m · im Bild Spalt max 0.035 m, Eindringen max 0.029 m · fahrzeug_supersport vmax 16.36 m/s × 1.2
+      gestossen  16.370 m/s · Durchtritt 0/4 · Eindringen max 0.000 m · Spalt max 0.000 m · im Bild Spalt max 0.000 m, Eindringen max 0.171 m
+  Stoß im Ausgabe-Bild: Wagen 8326 px · Bär 566 px in 640×360 · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Bär an der Mauer im Bild frei 7.48 m · Luma 74.4 σ 36.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.168 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen
+  OFFEN (V) BILD ≠ KOLLISION: wagen 19.62 m/s @144 → _t_kontakt_mauer#2098 — im Bild Spalt 0 m, Eindringen 0.029 m
+  OFFEN (V) BILD ≠ KOLLISION: gestossen 16.37 m/s @144 → _t_kontakt_mauer#2098 — im Bild Spalt 0 m, Eindringen 0.065 m
+  OFFEN (V) BILD ≠ KOLLISION: gestossen 16.37 m/s @60 → _t_kontakt_mauer#2098 — im Bild Spalt 0 m, Eindringen 0.094 m
+  OFFEN (V) BILD ≠ KOLLISION: gestossen 16.37 m/s @30 → _t_kontakt_mauer#2098 — im Bild Spalt 0 m, Eindringen 0.163 m
+  OFFEN (V) BILD ≠ KOLLISION: gestossen 16.24 m/s @deckel → _t_kontakt_mauer#2098 — im Bild Spalt 0 m, Eindringen 0.171 m
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

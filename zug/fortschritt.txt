@@ -1311,3 +1311,6 @@
 2026-11-02 23:18:18 hebend2-5fba-s1-gtx START 8 Stationen in 1 Läufen
 2026-11-02 23:24:22 hebend2-5fba-s1-gtx leib.K1#2,studios.K2#2,studios.K3#2,fahrzeug.K2#1,licht.K3#1,speicher.K4#2,licht.K2#2,leib.K4#2 OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/ROT/OFFEN 6.0 · 8/8
 2026-11-02 23:24:44 hebend2-5fba-s2-gtx START 13 Stationen in 1 Läufen
+2026-11-02 23:34:52 hebend2-5fba-s2-gtx vegetation.K5#2,siedlung.K1#2,gelaende.K2#2,speicher.K2#2,siedlung.K4#2,profiband.K1#1,profiband.K2#1,profiband.K3#1,profiband.K4#1,ferne.K1#2,klang.K5#2,oekologie.K4#2,bauen.K1#2 ROT/OFFEN/OFFEN/OFFEN/OFFEN/ROT/ROT/ROT/ROT/OFFEN/ROT/GRÜN/OFFEN 10.0 · 13/13
+2026-11-02 23:35:14 hebend2-5fba-s3-gtx START 14 Stationen in 1 Läufen
+2026-11-02 23:45:23 hebend2-5fba-s3-gtx studios.K4#1,material.K2#1,vegetation.K4#2,material.K3#2,material.K1#1,lod.K1#1,licht.K1#1,tiere.K3#2,tiere.K1#2,lod.K5#1,physik.K2#2,ankunft.K2#1,ankunft.K3#1,ankunft.K1#1 OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/ROT/ROT/OFFEN/OFFEN/OFFEN 10.0 · 14/14
