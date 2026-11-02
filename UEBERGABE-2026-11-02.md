@@ -48,3 +48,14 @@ Y6nuChFfb1dJTf7Btch4J5 steht auf 123 (27.10.) — aus meisterkarte.html neu ver�
 
 ## Nachtrag 14:25
 - **z163 GELANDET c5a9a2f5**: w4-stadt-gehen (Stand-Prüfung über Raster) + w4-ci-alle-schritte (CI fährt alle Schritte, ein Urteil). buche-schleife am c5a9a2f5 mit 170. z164 (leck2 + proben) fährt. Nach z164: Nachwache stadt prüfen.
+
+## Nachtrag 19:55 (Woche 97 %) — STAND BEI DER BREMSE
+- main **5fba36ea** (z163 Stadt-Gehen + CI alle Schritte, z164 Arena-Leck + Proben, z165 Sprach-Tafel). **GEBUCHT 170/330**
+  (Maschine sagt 169: ki.K3 LLM-Streuung 8/12, profiband.K4 Radeon frisch ROT — beide im FUND-REGISTER; buche.sh bucht Fälle nur mit BUCHE_FALL=1).
+- **z166 ROT (w4-affekt 7105403d)**: voll 13 kamera-leib — `diag-kamera-laub.cjs` hängt 900 s in `evaluate(leibWiese)` (protocolTimeout). Täter
+  sehr wahrscheinlich der eigene Schnitt: `_ensureSkyEnvironment`/`_atmoZeichne` fragen jetzt `_gpuLeineStraff` (stamm/bild-himmel.js:619/:1874) —
+  in einer Probe, die die Welt ohne Bild weiterdreht, lockert die Leine nie, die Umgebung entsteht nie. Heilung: die Umgebung beim ersten Bedarf
+  (kein env vorhanden) an der Leine VORBEI bauen, nur das Nachzeichnen an die Leine. Danach affekt.K2 (87 s), affekt.K3 (296 s, 9/9) grün → +2.
+- **z167 = w4-feld b7945342** (feld.K5: Blumen lesen das Leben-Overlay, 26 → 32; Modul-Karte nachgetragen) fährt; `nach-z167.sh` misst danach
+  gezielt feld.K5#1 (+ affekt) headless und bucht.
+- Messplatz-Blick läuft im Terminal-Tab „Messplatz“. OMEN: general-1077-gtx in der Reihe.
