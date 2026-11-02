@@ -17,6 +17,30 @@ node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs
 }
 @@PUNKTE@@ EXIT 0
 @@PUNKTE@@ LATENZ1
+ego/gehen {"n":15,"fehlt":0,"p50":29.8,"p95":40.4,"max":40.4,"eingabe":2.6,"hoerer":0.1,"kette":14,"kurve":0,"takte":4}
+ego/springen {"n":15,"fehlt":0,"p50":23.7,"p95":37.3,"max":37.3,"eingabe":0.3,"hoerer":0.1,"kette":13.1,"kurve":0,"takte":3}
+ego/einsteigen {"n":15,"fehlt":0,"p50":29.1,"p95":107,"max":107,"eingabe":4.3,"hoerer":0.5,"kette":24.6,"kurve":0,"takte":2}
+ego/hieb {"n":15,"fehlt":0,"p50":20.1,"p95":64,"max":64,"eingabe":0.4,"hoerer":2,"kette":13.6,"kurve":0,"takte":2,"halt":12}
+third/gehen {"n":15,"fehlt":0,"p50":31.7,"p95":58.1,"max":58.1,"eingabe":0.4,"hoerer":0,"kette":19.4,"kurve":9.4,"takte":3}
+third/springen {"n":15,"fehlt":0,"p50":21.6,"p95":36.2,"max":36.2,"eingabe":0.3,"hoerer":0.3,"kette":13.4,"kurve":7.5,"takte":2}
+third/einsteigen {"n":15,"fehlt":0,"p50":15,"p95":29,"max":29,"eingabe":0.4,"hoerer":0.3,"kette":13.1,"kurve":0,"takte":1}
+third/hieb {"n":15,"fehlt":0,"p50":30.1,"p95":39.3,"max":39.3,"eingabe":8.9,"hoerer":1.9,"kette":21.2,"kurve":0,"takte":3,"halt":11}
+LATENZ ROT (Bild 16.2 ms) ego/einsteigen p95 107 ms > 50 (fehlt 0) — Täter kette 24.6 ms, 2 Takte · ego/hieb p95 64 ms > 50 (fehlt 0) — Täter kette 13.6 ms, 2 Takte · third/gehen p95 58.1 ms > 50 (fehlt 0) — Täter kette 19.4 ms, 3 Takte
+@@PUNKTE@@ EXIT 1
+@@PUNKTE@@ SPIEL1
+{
+ "ms": 1,
+ "ergebnis": {
+  "gesetzt": 30,
+  "dauerMs": [
+   165,
+   200
+  ],
+  "haltTakte": 558,
+  "gleitMm": 0
+ }
+}
+@@PUNKTE@@ EXIT 0
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

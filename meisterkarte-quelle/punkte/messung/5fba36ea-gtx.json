@@ -1,7 +1,7 @@
 {
  "sha": "5fba36ea44a6e80bb9bd645900a9584c1fcce0b9",
  "geraet": "gtx",
- "zeit": "2026-11-02T21:28:22.913Z",
+ "zeit": "2026-11-02T21:40:34.280Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K2#1": {
@@ -300,6 +300,25 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "licht.K2#2": {
+   "gruen": false,
+   "zahl": "Uhr 0.5 klar (Sonne 74.2°) 5.231, Schatten-Anteil 0.1912 · Uhr 0.27 klar (Sonne 7.2°) 0.89 UNGÜLTIG (A/B 0.767, A/C 1.000, 1463 px) · Uhr 0.73 klar (Sonne 6.7°) 1.033 UNGÜLTIG (A/B 0.791, A/C 1.000, 1501 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.759 UNGÜLTIG (A/B 1.000, A/C 1.028, 1463 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.938 · Uhr 0.73 Regen (Sonne 6.7°) 1.063 · Himmel zur Sonne kein freier Himmel · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.58,
+   "grund": "ROT: Uhr 0.5 klar (Sonne 74.2°) 5.231, Schatten-Anteil 0.1912 · Uhr 0.27 klar (Sonne 7.2°) 0.89 UNGÜLTIG (A/B 0.767, A/C 1.000, 1463 px) · Uhr 0.73 klar (Sonne 6.7°) 1.033 UNGÜLTIG (A/B 0.791, A/C 1.000, 1501 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.759 UNGÜLTIG (A/B 1.000, A/C 1.028, 1463 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.938 · Uhr 0.73 Regen (Sonne 6.7°) 1.063 · Himmel zur Sonne kein freier Himmel · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 34.8,
+   "eich": {
+    "s": 34.8,
+    "sek": 33,
+    "gesetzS": 45
+   },
+   "zeit": "2026-11-02T21:31:06.266Z",
+   "abdruck": "d6391e3052d5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "ungemessen": {
@@ -391,13 +410,20 @@
   },
   "leib.K1#2": {
    "gruen": false,
+   "zahl": "EICH: 83 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: schlechtester von 1 Läufen p95 ms ego/gehen 40.4 · third/gehen 58.1 · ego/springen 37.3 · third/springen 36.2 · ego/einsteigen 107 · third/einsteigen 29 · ego/hieb 64 · third/hieb 39.3 · Bild 16.2 ms)",
+   "exit": 0,
+   "minuten": 1.38,
+   "grund": "EICH: 83 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: schlechtester von 1 Läufen p95 ms ego/gehen 40.4 · third/gehen 58.1 · ego/springen 37.3 · third/springen 36.2 · ego/einsteigen 107 · third/einsteigen 29 · ego/hieb 64 · third/hieb 39.3 · Bild 16.2 ms)",
+   "gpu": "nvidia/pascal",
+   "s": 83,
    "ungemessen": true,
-   "zahl": "Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
-   "exit": 1,
-   "minuten": 0.59,
-   "grund": "Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
-   "s": 33.2,
-   "zeit": "2026-11-02T21:02:11.975Z",
+   "eich": {
+    "s": 83,
+    "sek": 33,
+    "gesetzS": 45,
+    "urteil": "ROT"
+   },
+   "zeit": "2026-11-02T21:33:35.303Z",
    "abdruck": "3ca90f3f9917",
    "port": 7804,
    "bahn": "sitzung",
@@ -462,14 +488,20 @@
   },
   "studios.K2#2": {
    "gruen": false,
-   "zahl": "Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 0 ms –, Neubau höchstens 804 ms garage, je Studio null Griffe) · Neuladen 1/8 · A/B 1/8) · Täter: @@PUNKTE@@ FRIST 19 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "zahl": "EICH: ≥ 90 s — Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 339 ms garage, Neubau höchstens 964 ms fachwerk, je Studio null Griffe) · Neuladen 5/8 · A/B 5/8) · Täter: @@ PROBE-FEHLER Error: Waiting failed |     at <instance_members_initializer> (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\common\\WaitTask.js:24:21) |     at new WaitTask (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\pup",
    "exit": 3,
-   "minuten": 0.32,
-   "grund": "Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 0 ms –, Neubau höchstens 804 ms garage, je Studio null Griffe) · Neuladen 1/8 · A/B 1/8) · Täter: @@PUNKTE@@ FRIST 19 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "minuten": 1.41,
+   "grund": "EICH: ≥ 90 s — Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 339 ms garage, Neubau höchstens 964 ms fachwerk, je Studio null Griffe) · Neuladen 5/8 · A/B 5/8) · Täter: @@ PROBE-FEHLER Error: Waiting failed |     at <instance_members_initializer> (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\common\\WaitTask.js:24:21) |     at new WaitTask (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\pup",
    "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "s": 19.2,
-   "zeit": "2026-11-02T21:03:14.207Z",
+   "s": 84.7,
+   "eich": {
+    "s": 84.7,
+    "sek": 25,
+    "gesetzS": 45,
+    "gerissen": true
+   },
+   "zeit": "2026-11-02T21:35:08.413Z",
    "abdruck": "ba1e28ae950e",
    "port": 7804,
    "bahn": "sitzung",
@@ -477,14 +509,20 @@
   },
   "studios.K3#2": {
    "gruen": false,
-   "zahl": "Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 0/0 Orte im Quantum, ohne garage L0 GPU 0.0236 ms↔Bank 7.7667 (+1), schmiede (keine Zeile), portale (keine Zeile), fachwerk (keine Zeile), koerperstudio (keine Ze) · Täter: @@PUNKTE@@ FRIST 19 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "zahl": "EICH: ≥ 90 s — Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.149 ms), ohne garage L0 GPU 0.0502 ms↔Bank 6.4667 (+1), schmiede L0 GPU 0.0133 ms↔Bank 0.4833, portale L0 Bank 2.1833) · Täter: @@ PROBE-FEHLER Error: Waiting failed |     at <instance_members_initializer> (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\common\\WaitTask.js:24:21) |     at new WaitTask (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\pup",
    "exit": 3,
-   "minuten": 0.32,
-   "grund": "Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 0/0 Orte im Quantum, ohne garage L0 GPU 0.0236 ms↔Bank 7.7667 (+1), schmiede (keine Zeile), portale (keine Zeile), fachwerk (keine Zeile), koerperstudio (keine Ze) · Täter: @@PUNKTE@@ FRIST 19 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "minuten": 1.41,
+   "grund": "EICH: ≥ 90 s — Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.149 ms), ohne garage L0 GPU 0.0502 ms↔Bank 6.4667 (+1), schmiede L0 GPU 0.0133 ms↔Bank 0.4833, portale L0 Bank 2.1833) · Täter: @@ PROBE-FEHLER Error: Waiting failed |     at <instance_members_initializer> (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\common\\WaitTask.js:24:21) |     at new WaitTask (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\pup",
    "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "s": 19.2,
-   "zeit": "2026-11-02T21:03:14.207Z",
+   "s": 84.7,
+   "eich": {
+    "s": 84.7,
+    "sek": 25,
+    "gesetzS": 45,
+    "gerissen": true
+   },
+   "zeit": "2026-11-02T21:35:08.413Z",
    "abdruck": "559736e07a50",
    "port": 7804,
    "bahn": "sitzung",
@@ -538,12 +576,18 @@
   "fahrzeug.K2#1": {
    "gruen": false,
    "ungemessen": true,
-   "zahl": "Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "zahl": "EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
    "exit": 1,
-   "minuten": 0.17,
-   "grund": "Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
-   "s": 10.2,
-   "zeit": "2026-11-02T21:04:44.769Z",
+   "minuten": 1.5,
+   "grund": "EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 90.2,
+   "eich": {
+    "s": 90.2,
+    "sek": 10,
+    "gesetzS": 45,
+    "gerissen": true
+   },
+   "zeit": "2026-11-02T21:38:37.816Z",
    "abdruck": "cd6615e5a9f1",
    "port": 7804,
    "bahn": "sitzung",
@@ -682,13 +726,20 @@
   },
   "speicher.K4#2": {
    "gruen": false,
+   "zahl": "EICH: 47.1 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: bild-diff 71.21 % (Soll ≤ 1; Rauschen ohne Neuladen 0.09 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":false,\"grube\":false,\"wasser\":2} · [linse-gpu] nvidia/pascal)",
+   "exit": 0,
+   "minuten": 0.78,
+   "grund": "EICH: 47.1 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: bild-diff 71.21 % (Soll ≤ 1; Rauschen ohne Neuladen 0.09 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":false,\"grube\":false,\"wasser\":2} · [linse-gpu] nvidia/pascal)",
+   "gpu": "nvidia/pascal",
+   "s": 47.1,
    "ungemessen": true,
-   "zahl": "Deckel 15 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
-   "exit": 1,
-   "minuten": 0.25,
-   "grund": "Deckel 15 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
-   "s": 15.2,
-   "zeit": "2026-11-02T21:05:16.591Z",
+   "eich": {
+    "s": 47.1,
+    "sek": 15,
+    "gesetzS": 45,
+    "urteil": "ROT"
+   },
+   "zeit": "2026-11-02T21:40:34.280Z",
    "abdruck": "ac33134651c2",
    "port": 7804,
    "bahn": "sitzung",
@@ -733,20 +784,6 @@
    "s": 10.2,
    "zeit": "2026-11-02T19:40:27.706Z",
    "abdruck": "f376598e20e1",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "licht.K2#2": {
-   "gruen": false,
-   "ungemessen": true,
-   "zahl": "Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: setz-2 · Exit 0)",
-   "exit": 1,
-   "minuten": 0.55,
-   "grund": "Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: setz-2 · Exit 0)",
-   "s": 33.3,
-   "zeit": "2026-11-02T20:59:35.127Z",
-   "abdruck": "d6391e3052d5",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -1018,13 +1055,20 @@
   },
   "licht.K3#1": {
    "gruen": false,
-   "ungemessen": true,
-   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 4 statt /lauf {\"sek\":5,\"ein\":8,\"ruhe\":120,\"regler\":\"voll\"}: die Welt steht nach 1 Takten, 0.1 s · 23.6 s)",
+   "zahl": "EICH: 66 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tan)",
    "exit": 1,
-   "minuten": 0.75,
-   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 4 statt /lauf {\"sek\":5,\"ein\":8,\"ruhe\":120,\"regler\":\"voll\"}: die Welt steht nach 1 Takten, 0.1 s · 23.6 s)",
-   "s": 45.3,
-   "zeit": "2026-11-02T21:00:53.470Z",
+   "minuten": 1.1,
+   "grund": "EICH: 66 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tan)",
+   "gpu": "nvidia/pascal",
+   "s": 66,
+   "ungemessen": true,
+   "eich": {
+    "s": 66,
+    "sek": 45,
+    "gesetzS": 45,
+    "urteil": "ROT"
+   },
+   "zeit": "2026-11-02T21:32:04.149Z",
    "abdruck": "07a374c24448",
    "port": 7804,
    "bahn": "sitzung",
@@ -1291,14 +1335,20 @@
   },
   "leib.K4#2": {
    "gruen": false,
-   "zahl": "Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Gang-Zeile — ROT: Staffel 1: Täter: Gang: Error: die Frist der Probe · Täter: Gang: Error: die Frist der Probe · kein Gang innen, innen-sprint, steil, steil-sprint) · Täter: @@PUNKTE@@ PROBE 27.3 s · Exit 1",
+   "zahl": "EICH: ≥ 90 s — Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Gang-Zeile — ROT: Staffel 1: Täter: Gang: Error: die Frist der Probe · Täter: Gang: Error: die Frist der Probe · kein Gang innen, innen-sprint, steil, steil-sprint) · Täter: @@PUNKTE@@ PROBE 84.2 s · Exit 1",
    "exit": 1,
-   "minuten": 0.46,
-   "grund": "Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Gang-Zeile — ROT: Staffel 1: Täter: Gang: Error: die Frist der Probe · Täter: Gang: Error: die Frist der Probe · kein Gang innen, innen-sprint, steil, steil-sprint) · Täter: @@PUNKTE@@ PROBE 27.3 s · Exit 1",
+   "minuten": 1.4,
+   "grund": "EICH: ≥ 90 s — Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Gang-Zeile — ROT: Staffel 1: Täter: Gang: Error: die Frist der Probe · Täter: Gang: Error: die Frist der Probe · kein Gang innen, innen-sprint, steil, steil-sprint) · Täter: @@PUNKTE@@ PROBE 84.2 s · Exit 1",
    "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "s": 27.4,
-   "zeit": "2026-11-02T21:03:54.551Z",
+   "s": 84.3,
+   "eich": {
+    "s": 84.3,
+    "sek": 33,
+    "gesetzS": 45,
+    "gerissen": true
+   },
+   "zeit": "2026-11-02T21:36:53.812Z",
    "abdruck": "01e4a8070fc4",
    "port": 7804,
    "bahn": "sitzung",
@@ -1509,159 +1559,132 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-02T21:19:35.404Z",
+  "start": "2026-11-02T21:30:35.864Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 8.6,
+  "bootS": 5.8,
   "grundstellungS": [
-   6,
-   4.5,
-   4,
-   3.6,
-   5.2,
-   4.3,
-   3.6,
-   3.4,
-   3.1,
-   3.2
+   6.1,
+   0.2,
+   5,
+   4.8,
+   10.7
   ],
-  "proben": 11,
+  "proben": 7,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "material.K2#1",
-    "s": 26.6,
-    "takte": 763,
+    "vor": "licht.K2#2",
+    "s": 23.6,
+    "takte": 704,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "dorf",
+    "vor": "licht.K3#1",
+    "s": 23,
+    "takte": 1206,
     "chunks": 81,
     "nach": null
    },
    {
     "ort": "wiese",
-    "vor": "lod.K1#1",
-    "s": 20.5,
-    "takte": 748,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "lod.K5#1",
-    "s": 18.5,
-    "takte": 753,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "genesis",
-    "vor": "material.K3#2",
-    "s": 17,
-    "takte": 656,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "genesis",
-    "vor": "licht.K1#1",
-    "s": 16.8,
-    "takte": 678,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "physik.K2#2",
-    "s": 18.4,
-    "takte": 736,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "genesis",
-    "vor": "vegetation.K4#2",
-    "s": 16.2,
-    "takte": 632,
+    "vor": "leib.K1#2",
+    "s": 19,
+    "takte": 762,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": null,
-    "vor": "tiere.K1#2",
+    "vor": "studios.K2#2",
+    "s": 9.9,
+    "takte": 630,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": null,
+    "vor": "leib.K4#2",
+    "s": 15.7,
+    "takte": 895,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "fahrzeug.K2#1",
+    "s": 14.8,
+    "takte": 901,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "speicher.K4#2",
     "s": 15.2,
-    "takte": 887,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "tiere.K3#2",
-    "s": 14.4,
-    "takte": 796,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "studios.K4#1",
-    "s": 15.1,
-    "takte": 872,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "ankunft.K2#1",
-    "s": 15.3,
-    "takte": 875,
+    "takte": 898,
     "chunks": 81,
     "nach": "der Tür"
    }
   ],
-  "wegeTueren": [],
-  "unerklaert": [
+  "wegeTueren": [
    {
-    "probe": "material.K2#1",
-    "wie": "wege +1 [-119.1,-274.9,279.2,201/272] (genesis)"
-   },
-   {
-    "probe": "lod.K5#1",
-    "wie": "werke +1 (−0)"
-   },
-   {
-    "probe": "material.K3#2",
-    "wie": "werke +1 (−0)"
+    "vor": "leib.K1#2",
+    "wege": "wege +12 [-119.1,-274.9,279.2,201/272] [-294.9,-1146.1,33.7,-1122.6/5] [-326.2,-1161.7,66.1,-1099.7/89] …",
+    "s": 6.1
    }
   ],
-  "ciBlicke": 12,
+  "eich": {
+   "deckelS": 90,
+   "gesetzS": 45,
+   "ausnahmeS": 90,
+   "fahrtMaxS": 1800
+  },
+  "ciBlicke": 8,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 12,
+   "bilder": 5524,
+   "frameP95": 33.3,
+   "taktP95": 30.2,
+   "vramMax": 132.2,
+   "seiten": 6,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "material.K2#1",
-     "m": 1083,
+     "probe": "fahrzeug.K2#1",
+     "m": 2056,
      "ringVor": 4,
-     "ringMin": 1
+     "ringMin": -1
     },
     {
-     "probe": "licht.K1#1",
+     "probe": "speicher.K4#2",
+     "m": 1147,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "leib.K4#2",
      "m": 1083,
      "ringVor": 4,
-     "ringMin": 1
+     "ringMin": -1
+    },
+    {
+     "probe": "licht.K3#1",
+     "m": 602,
+     "ringVor": 4,
+     "ringMin": 2
     }
    ],
-   "zapfen": 447,
-   "luecken": 4,
-   "letzteLuecke": "kein Renderer"
+   "zapfen": 629,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 530.7,
-  "minuten": 8.92
+  "fahrtS": 644.9,
+  "minuten": 10.82
  }
 }
