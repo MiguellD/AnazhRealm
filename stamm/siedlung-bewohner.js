@@ -151,9 +151,35 @@ class AnazhRealm_siedlung_bewohner {
                 if (a && e) gassen.push([S.ox + a.x, S.oz + a.z, S.ox + e.x, S.oz + e.z]);
             }
         const G2 = BW.gasseFreiM * BW.gasseFreiM;
+        // DAS RASTER DER GASSEN (Lehre 25: der billige Filter zuerst, nie über alle): jede Gasse liegt in jeder Zelle
+        // (`gasseZelleM`), die ihr Rahmen samt `gasseFreiM` deckt — die Frage eines Punkts liest nur die Gassen seiner Zelle, das
+        // Urteil je Gasse ist dasselbe. Bis hier ging jede Frage jede Gasse des Plans durch: an der Stadt (`dorf 7 120`, 531
+        // Gassen) trug das Gesetz der Stände (`gilt`) 1,56 von 2,39 s einer ganzen Prüfung der Stände (Radeon, headless)
+        const GZ = BW.gasseZelleM;
+        const gassenRaster = new Map();
+        for (const g of gassen) {
+            const [ax, az, ex, ez] = g;
+            for (
+                let i = Math.floor((Math.min(ax, ex) - BW.gasseFreiM) / GZ);
+                i <= Math.floor((Math.max(ax, ex) + BW.gasseFreiM) / GZ);
+                i++
+            )
+                for (
+                    let j = Math.floor((Math.min(az, ez) - BW.gasseFreiM) / GZ);
+                    j <= Math.floor((Math.max(az, ez) + BW.gasseFreiM) / GZ);
+                    j++
+                ) {
+                    const k = i * 2097152 + j;
+                    const l = gassenRaster.get(k);
+                    if (l) l.push(g);
+                    else gassenRaster.set(k, [g]);
+                }
+        }
         const amWeg = (x, z) => {
+            const zelle = gassenRaster.get(Math.floor(x / GZ) * 2097152 + Math.floor(z / GZ));
+            if (!zelle) return false;
             const pkt = { minX: x, maxX: x, minZ: z, maxZ: z };
-            return gassen.some(
+            return zelle.some(
                 ([ax, az, ex, ez]) =>
                     x > Math.min(ax, ex) - BW.gasseFreiM &&
                     x < Math.max(ax, ex) + BW.gasseFreiM &&
@@ -2512,12 +2538,26 @@ class AnazhRealm_siedlung_bewohner {
     // DER AUSWEG eines Orts, der keinen Knoten frei erreicht (`_bewohnerStrecke`): der nächste Punkt im Ring um ihn (bis
     // `auswegM`, je 0,6 m ein Ring, auf ihm je höchstens 0,6 m ein Punkt, mindestens zwölf), den er in gerader Linie frei
     // erreicht — `ausDerWand`: steht er selbst in einer Hülle, zählt die Linie nicht —, der frei steht (mit `rand` Raum), Land
-    // ist, in keinem Grundriss liegt, `raum` (Stände) nicht näher als `raumM` trägt und selbst einen Knoten frei erreicht.
+    // ist, in keinem Grundriss liegt, `raum` (die Probe der Stände, `_bewohnerStandPruefen`: wahr, wo einer näher als `raumM`
+    // steht) nicht trägt und selbst einen Knoten frei erreicht.
     // Gemerkt je Stand der Wache (`o._ausweg`); null: keiner. Bis w4-genesis-ort-wirt5 fragte jeder Ring zwölf Richtungen: in
     // 15 m (`spurAuswegM`) lagen sie 7,9 m auseinander, und der gerückte Stand übersprang die Lücke neben der Fahrbahn.
     // `gesetz` (x, z): das Gesetz des Stands (`gilt`) — jeder Punkt hält es, und ein Ring, auf dem keiner es hält, beendet die
     // Suche: dort endet sein Gesetz (der Platz und sein Rand um den Ursprung auf ihm), weiter draußen liegt keiner mehr.
-    _bewohnerAusweg(
+    // Die Suche ist EIN Gang (`_bewohnerAuswegGang`): der Ausweg geht ihn ganz, die Prüfung der Stände tritt ihn in Raten.
+    _bewohnerAusweg(N, o, ausDerWand, raum, rand, frei, weit, gesetz) {
+        const gang = this._bewohnerAuswegGang(N, o, ausDerWand, raum, rand, frei, weit, gesetz);
+        for (;;) {
+            const w = gang.next();
+            if (w.done) return w.value;
+        }
+    }
+
+    // DER GANG DES AUSWEGS (Lehre 14: schwere Arbeit in Raten): je Punkt, der am Anschluss scheitert (`anschlussN` Strecken
+    // gegen die Wand), und je `auswegSchritt` Punkten ein Schritt (`yield`) — die Geburt der Liste (`listeWerk`) hält so ihre
+    // Frist auch IN einer Suche. Bis hier war die Suche eines Stands ein Stück: an der Stadt (`dorf 7 120`) trug ein Stand der
+    // Geburt 121–273 ms in einem Takt, 77 Punkte scheiterten am Anschluss (Radeon, headless).
+    *_bewohnerAuswegGang(
         N,
         o,
         ausDerWand = false,
@@ -2530,9 +2570,11 @@ class AnazhRealm_siedlung_bewohner {
         if (o._ausweg !== undefined) return o._ausweg;
         const BW = AnazhRealm.BEWOHNER;
         let gefunden = null;
+        let punkte = 0;
         for (let r = 0.6, drin = 1; r <= weit + 1e-6 && !gefunden && drin; r += 0.6) {
             drin = gesetz ? 0 : 1;
             for (let i = 0, n = Math.max(12, Math.ceil((2 * Math.PI * r) / 0.6)); i < n && !gefunden; i++) {
+                if (++punkte % BW.auswegSchritt === 0) yield;
                 const q = {
                     x: o.x + Math.cos((i * 2 * Math.PI) / n) * r,
                     z: o.z + Math.sin((i * 2 * Math.PI) / n) * r,
@@ -2543,13 +2585,13 @@ class AnazhRealm_siedlung_bewohner {
                     drin++;
                 }
                 if (frei && !frei(q)) continue;
-                if (raum && raum.some((p) => p !== o && (p.x - q.x) ** 2 + (p.z - q.z) ** 2 < BW.raumM * BW.raumM))
-                    continue;
+                if (raum && raum(q)) continue;
                 const g = this._imGrundriss(q.x, q.z, BW.saumM);
                 if (g === "haus" || g === "bau") continue;
                 if (this._bewohnerWand(q, q, true, rand) || (!ausDerWand && this._bewohnerWand(o, q))) continue;
                 if (!this._landAt(q.x, q.z, 0.2)) continue;
                 if (this._bewohnerAnschluss(N, q) >= 0) gefunden = q;
+                else yield;
             }
         }
         return (o._ausweg = gefunden);
@@ -2580,20 +2622,111 @@ class AnazhRealm_siedlung_bewohner {
         let rueckte = false;
         // die Stände, deren Gesetz neben der Spur keinen Ort trägt (der Fehler des Plans, laut; die Kreatur-Linse liest ihn)
         const ohneOrt = S.standOhneOrt || (S.standOhneOrt = new Set());
+        // DER RAUM ZU ALLEN STÄNDEN (der Ursprung jedes anderen und der Ort jedes gerückten) als RASTER in Zellen von `raumM`
+        // (Lehre 25): die Probe eines Punkts fragt die 3 × 3 Zellen um ihn, nie jeden Stand; gebaut mit dem ersten geprüften
+        // Stand, nachgeführt mit jedem, der rückt (je Eintrag x, z, Eigner). Bis hier baute jeder geprüfte Stand die Liste aller
+        // anderen neu und jeder Punkt seines Auswegs ging sie ganz durch: an der Stadt (`dorf 7 120`, 1 300 Stände) trug ein
+        // Ausweg bis 15 m 293 ms, die Hälfte der Zeit des Gangs (Radeon, headless)
+        const RM = BW.raumM;
+        const zelle = (kx, kz) => kx * 4194304 + kz;
+        let gitter = null;
+        const legen = (x, z, p) => {
+            const k = zelle(Math.floor(x / RM), Math.floor(z / RM));
+            const L = gitter.get(k);
+            if (L) L.push(x, z, p);
+            else gitter.set(k, [x, z, p]);
+        };
+        const heben = (x, z, p) => {
+            const L = gitter.get(zelle(Math.floor(x / RM), Math.floor(z / RM)));
+            for (let i = 0; L && i < L.length; i += 3)
+                if (L[i + 2] === p && L[i] === x && L[i + 1] === z) return void L.splice(i, 3);
+        };
+        const raumVon = (o) => (q) => {
+            const kx = Math.floor(q.x / RM);
+            const kz = Math.floor(q.z / RM);
+            for (let a = kx - 1; a <= kx + 1; a++)
+                for (let c = kz - 1; c <= kz + 1; c++) {
+                    const L = gitter.get(zelle(a, c));
+                    if (L)
+                        for (let i = 0; i < L.length; i += 3)
+                            if (L[i + 2] !== o && (L[i] - q.x) ** 2 + (L[i + 1] - q.z) ** 2 < RM * RM) return true;
+                }
+            return false;
+        };
+        // DIE SCHEIBE EINES GERÜCKTEN (Gebot 7: die Kosten an der Änderung): sein Ort ist der erste Punkt seiner Suche vom
+        // Ursprung, der alle Proben hält — er wechselt nur, wenn eine Probe in der Scheibe, die seine Suche ging (`_standR`, der
+        // Radius bis zum Fund, eine erfolglose Stufe ganz, dazu `raumM`), einen früheren Punkt frei gibt oder seinen Ort sperrt:
+        // ein Stand verlässt einen Ort in ihr (der Raum wird frei), einer tritt näher als `raumM` an ihn (ein neuer Ort sperrt nur,
+        // früher Gescheitertes bleibt gescheitert), eine Hülle wechselt in ihr oder auf dem Strich zu seinem Knoten (`trifft`).
+        // Dann ist er `_standSchmutz`, und nur dann urteilt ihn die Folge eines Rückens neu — bis hier ging nach jedem Rücken jeder
+        // gerückte Stand seine ganze Suche erneut (an der Stadt 105–261 Suchen in EINEM Takt, gehend 0,7–2,6 s, Radeon headless)
+        const scheibe = (p) => (Number.isFinite(p._standR) ? p._standR : Infinity) + RM;
+        const inScheibe = (p, x, z) => (x - p.ur.x) ** 2 + (z - p.ur.z) ** 2 <= scheibe(p) ** 2;
+        // DIE STÄNDE, DIE GINGEN ODER KAMEN (`standSatz`, der Satz des letzten Gangs): wessen Platz der volle Platz nimmt
+        // (`_bewohnerOhneStand`), dessen Stand fällt aus der Reihe — er gibt seinen Raum frei wie einer, der rückt; einer, der
+        // kam, sperrt nur, wem er näher als `raumM` steht. Ohne Satz (der erste Gang) urteilt jeder gerückte neu.
+        const vorher = S.standSatz;
+        S.standSatz = staende;
+        const wechsel = [];
+        if (vorher) {
+            const merke = (p, ging) => {
+                const u = p.ur || p;
+                wechsel.push(u.x, u.z, ging);
+                if (weg(p)) wechsel.push(p.x, p.z, ging);
+            };
+            for (const p of vorher) if (!staende.has(p)) merke(p, true);
+            for (const p of staende) if (!vorher.has(p)) merke(p, false);
+        }
+        if (trifft || wechsel.length || !vorher)
+            for (const p of staende) {
+                if (!weg(p) || p._standSchmutz === true) continue;
+                const R = scheibe(p);
+                const K = N.knoten[p._standK];
+                let schmutz =
+                    !vorher ||
+                    (trifft &&
+                        (trifft({ x: p.ur.x - R, z: p.ur.z - R }, { x: p.ur.x + R, z: p.ur.z + R }) ||
+                            (K && trifft(p, K))));
+                for (let i = 0; !schmutz && i < wechsel.length; i += 3)
+                    schmutz = wechsel[i + 2]
+                        ? inScheibe(p, wechsel[i], wechsel[i + 1])
+                        : (p.x - wechsel[i]) ** 2 + (p.z - wechsel[i + 1]) ** 2 < RM * RM;
+                if (schmutz) p._standSchmutz = true;
+            }
         for (const o of staende) {
             S.listeRest--;
             const ur = o.ur || (o.ur = { x: o.x, z: o.z, blick: o.blick });
-            if (trifft && !trifft(o, o) && !trifft(ur, ur) && !(rueckte && weg(o))) continue;
-            // DER RAUM ZU ALLEN STÄNDEN: der Ursprung jedes anderen und der Ort jedes gerückten
-            const raum = [];
-            for (const p of staende)
-                if (p !== o) {
-                    raum.push(p.ur || p);
-                    if (weg(p)) raum.push(p);
+            if (trifft && !trifft(o, o) && !trifft(ur, ur) && !(rueckte && weg(o) && o._standSchmutz !== false))
+                continue;
+            if (!gitter) {
+                gitter = new Map();
+                for (const p of staende) {
+                    const u = p.ur || p;
+                    legen(u.x, u.z, p);
+                    if (weg(p)) legen(p.x, p.z, p);
                 }
-            // das Gesetz seiner Art gilt auch dem gerückten (`gilt`, `_bewohnerListe`: der Stand am Platz bleibt am Platz)
-            const neu = (rand, frei, weit, gesetz = o.gilt) =>
-                this._bewohnerAusweg(N, { x: ur.x, z: ur.z }, true, raum, rand, frei, weit, gesetz);
+            }
+            const raum = raumVon(o);
+            // das Gesetz seiner Art gilt auch dem gerückten (`gilt`, `_bewohnerListe`: der Stand am Platz bleibt am Platz);
+            // `R` misst die Scheibe, die seine Suche ging
+            let R = 0;
+            const realm = this;
+            const neu = function* (rand, frei, weit = BW.auswegM, gesetz = o.gilt) {
+                const p = yield* realm._bewohnerAuswegGang(
+                    N,
+                    { x: ur.x, z: ur.z },
+                    true,
+                    raum,
+                    rand,
+                    frei,
+                    weit,
+                    gesetz
+                );
+                R = Math.max(R, p ? Math.hypot(p.x - ur.x, p.z - ur.z) : weit);
+                return p;
+            };
+            const gemerkt = (q) =>
+                Object.assign(o, { _standR: R, _standK: q ? q._knoten : undefined, _standSchmutz: false });
             // DER STAND WEICHT DER SPUR (PFLICHT-OFFEN C): wer stundenlang steht, steht nie in der Spur eines Wagens
             // (`_verkehrAufSpur`) — er sucht den nächsten Ort, der sein Gesetz UND den Raum zu jedem Stand hält: erst die Gasse
             // daneben (`spurAuswegM`, die Lücke zwischen zwei Häusern), dann so weit sein Gesetz reicht (`gesetzAuswegM`, der
@@ -2610,10 +2743,10 @@ class AnazhRealm_siedlung_bewohner {
                 !wand && (!frei || frei(ur))
                     ? ur
                     : frei &&
-                      (neu(BW.standRandM, frei, BW.spurAuswegM) ||
-                          neu(0, frei, BW.spurAuswegM) ||
-                          neu(0, frei, BW.gesetzAuswegM) ||
-                          (o.gilt !== o.art && neu(0, frei, BW.gesetzAuswegM, o.art)));
+                      ((yield* neu(BW.standRandM, frei, BW.spurAuswegM)) ||
+                          (yield* neu(0, frei, BW.spurAuswegM)) ||
+                          (yield* neu(0, frei, BW.gesetzAuswegM)) ||
+                          (o.gilt !== o.art && (yield* neu(0, frei, BW.gesetzAuswegM, o.art))));
             if (!frei || q) ohneOrt.delete(o);
             else {
                 if (!ohneOrt.has(o))
@@ -2622,17 +2755,35 @@ class AnazhRealm_siedlung_bewohner {
                     );
                 ohneOrt.add(o);
                 if (this._bewohnerOhneStand(S, o)) {
+                    gemerkt(null);
                     yield;
                     continue;
                 }
             }
-            q = q || (!wand ? ur : neu(BW.standRandM) || (!this._bewohnerWand(ur, ur, true) ? ur : neu(0)));
+            if (!q)
+                q = !wand
+                    ? ur
+                    : (yield* neu(BW.standRandM)) || (!this._bewohnerWand(ur, ur, true) ? ur : yield* neu(0));
+            gemerkt(q);
             if (!q)
                 this._bruchMelden(
                     `BEWOHNER: der Stand ${ur.x.toFixed(1)}/${ur.z.toFixed(1)} steht in einer Hülle, kein Ausweg`
                 );
             else if (q.x !== o.x || q.z !== o.z) {
                 rueckte = true;
+                // das Raster folgt ihm (der alte Ort fällt, wenn er gerückt war; der neue steht, wenn er nicht der Ursprung ist),
+                // und jeder gerückte urteilt in der Folge neu, in dessen Scheibe der alte liegt oder dessen Ort der neue sperrt
+                const alt = weg(o) ? [o.x, o.z] : null;
+                if (alt) heben(alt[0], alt[1], o);
+                const hin = q.x !== ur.x || q.z !== ur.z;
+                if (hin) legen(q.x, q.z, o);
+                for (const p of staende)
+                    if (p !== o && weg(p) && p._standSchmutz === false)
+                        if (
+                            (alt && inScheibe(p, alt[0], alt[1])) ||
+                            (hin && (p.x - q.x) ** 2 + (p.z - q.z) ** 2 < RM * RM)
+                        )
+                            p._standSchmutz = true;
                 // sein Blick dreht um den Punkt, auf den er sieht (`anker`), wie der Stand um ihn rückte
                 const A = o.anker;
                 Object.assign(o, {
@@ -2802,9 +2953,9 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_bewohner]);
 // Richtungen tastet er ab, die ausweichWahl besten fragt er nach der Wand (`_bewohnerAusweichen`) · tuerFreiM = so nah an
 // der Tür steht keiner, wenn er aus ihr tritt · aufholen = so viel schneller (je Tempo) eilt, wer hinter seinem Tag ist (`_bewohnerGehen`) · besuchM = so fern von seiner Tür und der Mitte des Platzes liegt die Tür
 // seines Besuchs, besuchWeitM = so fern von ihnen und seinem Werk höchstens (`_bewohnerGestalten`) · gasseFreiM = so fern
-// von der Mitte jeder Gasse steht jeder Stand · anschlussN = so viele Knoten fragt
+// von der Mitte jeder Gasse steht jeder Stand, gasseZelleM = die Zelle ihres Rasters (`amWeg`) · anschlussN = so viele Knoten fragt
 // der Anschluss eines Orts (`_bewohnerAnschluss`) · auswegM = so weit sucht ein Ort ohne freien Anschluss seinen Ausweg
-// (`_bewohnerAusweg`), spurAuswegM ein Stand in der Spur eines Wagens (`_verkehrAufSpur`), gesetzAuswegM er, wo die Gasse daneben
+// (`_bewohnerAusweg`; je auswegSchritt Punkten ein Schritt seines Gangs, `_bewohnerAuswegGang`), spurAuswegM ein Stand in der Spur eines Wagens (`_verkehrAufSpur`), gesetzAuswegM er, wo die Gasse daneben
 // keinen Ort seines Gesetzes trägt (der Platz endet früher, am Ring ohne einen Punkt seines Gesetzes) · standRandM = so viel Raum hält jeder Stand zu jeder Wand über die Kapsel hinaus: ein Gehender
 // passt zwischen beide (`_bewohnerStandPruefen`) · umRandM = so weit über zwei Kapseln geht er am Stehenden vorbei
 // (`_bewohnerUm`) · linieM = so weit voraus auf seinem Bein liegt der Punkt, auf den zurückgeht, wer auswich
@@ -2857,8 +3008,10 @@ AnazhRealm.BEWOHNER = Object.freeze({
     besuchM: 40,
     besuchWeitM: 60,
     gasseFreiM: 1.6,
+    gasseZelleM: 8,
     anschlussN: 48,
     auswegM: 3,
+    auswegSchritt: 512,
     spurAuswegM: 15,
     gesetzAuswegM: 60,
     standRandM: 0.75,
