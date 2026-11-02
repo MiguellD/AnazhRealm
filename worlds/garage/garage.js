@@ -155,10 +155,10 @@ function buildCalipers(H,P,res,riss){const g=new THREE.Group();const by=id=>res.
   // Überhänge
   g.add(caliper([H.A_F[0],0.02,-(P.spur/2+0.45)],[H.NOSE[0],0.02,-(P.spur/2+0.45)],cU,'ÜH-V '+tV,[0,0.06,0]));
   g.add(caliper([H.A_R[0],0.02,-(P.spur/2+0.45)],[H.TAIL[0],0.02,-(P.spur/2+0.45)],cU,'ÜH-H '+tH,[0,0.06,0]));
-  // Bodenfreiheit
-  g.add(caliper([H.A_F[0]-0.35,0.0,P.spur/2+0.45],[H.A_F[0]-0.35,P.fahrhoehe,P.spur/2+0.45],cB,'FREI '+tF,[0.06,0,0]));
-  // Rad-Ø
-  g.add(caliper([H.A_F[0],0,P.spur/2+0.18],[H.A_F[0],P.radR*2,P.spur/2+0.18],0x6fd0e8,'RAD-Ø '+tO,[0.06,0,0]));
+  // Bodenfreiheit an der Hinterachse, der Rad-Ø mit dem Schild über dem Vorderrad: die drei Schilder der Nahseite stehen
+  // getrennt (Hinterachse · Mitte · Vorderrad) — in der Isometrie lagen FREI, RAD-Ø und RADSTAND übereinander am Vorderrad
+  g.add(caliper([H.A_R[0]+0.35,0.0,P.spur/2+0.45],[H.A_R[0]+0.35,P.fahrhoehe,P.spur/2+0.45],cB,'FREI '+tF,[0.06,0,0]));
+  g.add(caliper([H.A_F[0],0,P.spur/2+0.18],[H.A_F[0],P.radR*2,P.spur/2+0.18],0x6fd0e8,'RAD-Ø '+tO,[0.06,0,0],{at:[H.A_F[0],P.radR*2+0.16,P.spur/2+0.18]}));
   return g;}
 
 // ── Negativraum — die Leere, die formt (subtraktive Lesart) ──
@@ -214,6 +214,7 @@ function rebuild(){_wecke();
   taperBody(gFrame,scal(H,PE),PE);   // der Rahmen folgt derselben Sektion wie Karosserie und Bauraum
   gSprung.position.set(0,0,0);gSprung.rotation.set(0,0,0);
   explosionsPlan(PE);   // die Achsen der Explosion stehen am neuen Bau; die Ansicht legt sie im selben Bild an
+  if(mode!=='fahren'&&proj!=='persp')einpassen();   // orthografisch füllt jeder Bau (Schlitten 3 m bis Zukunft 5 m) das Bild
   renderTafel(res);
   kostenLeiste.neu();
 }
@@ -247,8 +248,8 @@ const sitz=AnazhHuelle.sitzung({werte:P,zustand:()=>({presetId,kulturId,markiert
     const cids=Object.keys(CULTURES);[...cdiv.querySelectorAll('button')].forEach((c,i)=>c.classList.toggle('on',cids[i]===kulturId));},
   anwenden:()=>rebuild()});
 sitz.leiste(document.getElementById('sitzung'),{seed:false});
-function presetSetzen(pid){presetId=pid;for(const k in P)delete P[k];
-  Object.assign(P,VC.DEFAULT_P,VC.presetPatch(pid),kulturId?CULTURES[kulturId].fx:{});syncSliders();rebuild();}
+function presetSetzen(pid){presetId=pid;const ep=P.epoche;for(const k in P)delete P[k];   // die Gattung wählt die Form, nie die Zeit: die Epoche bleibt
+  Object.assign(P,VC.DEFAULT_P,VC.presetPatch(pid),kulturId?CULTURES[kulturId].fx:{});if(ep!=null)P.epoche=ep;syncSliders();rebuild();}
 function kulturSetzen(kid){const alt=kulturId?CULTURES[kulturId].fx:{};const basis=Object.assign({},VC.DEFAULT_P,VC.presetPatch(presetId));
   for(const k in alt){if(k in basis)P[k]=basis[k];else delete P[k];}   // die alte Kultur fällt ganz, die Regler bleiben
   kulturId=kid;if(kid)Object.assign(P,CULTURES[kid].fx);rebuild();}
@@ -299,7 +300,12 @@ ergB.onclick=()=>{ergOn=!ergOn;ergB.classList.toggle('on',ergOn);
 const regler=AnazhHuelle.regler(document.getElementById('sliders'),PARAMS,{werte:P,ruheMs:0,sitzung:sitz,
   basis:()=>Object.assign({},VC.DEFAULT_P,VC.presetPatch(presetId),kulturId?CULTURES[kulturId].fx:{}),
   bei:(id,v,pp)=>{if(!pp.dyn)[...pdiv.children].forEach(c=>c.classList.remove('on'));},
+  format:(z,v)=>z.id==='epoche'?(+v).toFixed(2)+' · '+VC.EPOCHE_GESETZ[Math.round(+v)].lab:null,
   nachRuhe:(ids,bau)=>{if(bau)rebuild();}});
+// DIE ZEIT IN DER ANSICHT: die Zeile `epoche` des EINEN Generators (dieselbe Sitzung, derselbe Rückgängig-Weg) steht über
+// den Regeln der Ansicht — Isometrie, Seite und Explosion zeigen jede Stufe des EPOCHE_GESETZ am selben Bau.
+{const z=document.querySelector('#sliders [data-regler="epoche"]'),ort=document.getElementById('epocheOrt');
+ if(z&&ort){const h=z.previousElementSibling;if(h&&h.classList.contains('h-gruppe')&&(!z.nextElementSibling||!z.nextElementSibling.matches('[data-regler]')))h.remove();ort.appendChild(z);}}
 function syncSliders(){regler.sync();}
 // Die Kosten-Leiste der Hülle: die WELT-Gestalt (buildInstance des Kerns mit P als ov — derselbe Bau wie der Foundry-Worker)
 // gegen die Budget-Zeile je Stufe; neu gemessen, wenn der Regler-Zug ruht.
@@ -323,7 +329,7 @@ const adiv=document.getElementById('ansicht');
 for(const p in PROJ){const b=document.createElement('button');b.className='btn'+(p===proj?' on':'');b.dataset.ansicht=p;
   b.textContent=PROJ[p].lab;b.title='Taste '+PROJ[p].taste;b.onclick=()=>projSetzen(p);adiv.appendChild(b);}
 // die Lehren legen sich in die Ebene der Ansicht (Riss in der Seite, am Boden sonst) — nur die Maße bauen neu, nie der Wagen
-function lehrenNeu(){const H=hardpoints(P);clear(gCal);gCal=buildCalipers(H,P,evalLehren(P),proj==='seite');gCal.visible=sicht().cal;gSprung.add(gCal);}
+function lehrenNeu(){const PE=VC.epocheForm(P),H=hardpoints(PE);clear(gCal);gCal=buildCalipers(H,PE,evalLehren(PE),proj==='seite');gCal.visible=sicht().cal;gSprung.add(gCal);}
 function projSetzen(p){const riss=proj==='seite';proj=p;if(riss!==(p==='seite')&&gCal)lehrenNeu();[...adiv.children].forEach(b=>b.classList.toggle('on',b.dataset.ansicht===p));
   const Q=PROJ[p];if(Q.el!==undefined){oc.az=rast(oc.az,Q);oc.el=Q.el;oc.vAz=oc.vEl=0;einpassen();}_wecke();}
 // EINPASSEN: die Hülle des Wagens (ohne Explosion, ohne Schilder) in die Achsen des Blicks gelegt — die Bildhöhe, in der er

@@ -329,8 +329,8 @@
     // licht) und seine Seh-Klasse; die Paletten-Hex sind sRGB-Absichten wie in der heutigen Tafel. Die Stufe „heute" trägt
     // keine Tafel: der Bau liest `materials()` selbst (byte-gleich).
     const EPOCHE_STOFF_ART = {
-        holz: { color: 0x8a5a33, roughness: 0.78, metalness: 0, stoff: "holz", seh: "stoff" },
-        holzDunkel: { color: 0x6b4428, roughness: 0.7, metalness: 0, stoff: "holz", seh: "stoff" },
+        holz: { color: 0x75583c, roughness: 0.82, metalness: 0, stoff: "holz", seh: "stoff" },
+        holzDunkel: { color: 0x56412d, roughness: 0.76, metalness: 0, stoff: "holz", seh: "stoff" },
         leder: { color: 0x5c3420, roughness: 0.58, metalness: 0, stoff: "leder", seh: "stoff" },
         bronze: { color: 0xb58a4a, roughness: 0.38, metalness: 0.9, stoff: "buntmetall", seh: "metall" },
         messing: { color: 0xc9a45a, roughness: 0.3, metalness: 0.92, stoff: "buntmetall", seh: "metall" },
