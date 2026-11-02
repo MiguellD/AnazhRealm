@@ -219,3 +219,4 @@ takt-z165a-gtx gemessen punkte 5fba36ea gtx: 0 grün / 0 rot
 z164-abab nicht-langsamer abab 95d7bba1 gegen c5a9a2f5: w-ego 4+4 nicht-langsamer · stadt 4+4 nicht-langsamer
 z165-abab LANGSAMER abab 5fba36ea gegen 95d7bba1: w-ego 4+4 nicht-langsamer · stadt 4+4 LANGSAMER
 voll-5fba-gtx gemessen punkte 5fba36ea gtx: 11 grün / 10 rot
+hebend-5fba-s1-gtx gemessen punkte 5fba36ea gtx: 11 grün / 10 rot
