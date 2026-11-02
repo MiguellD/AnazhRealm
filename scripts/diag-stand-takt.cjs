@@ -305,6 +305,13 @@ function selbsttest() {
             /TREUE-LÜCKE: archLod \(_tickArchitectureLOD\) änderte nach der Ruhe seine Runde \(1638 → 1702 Einheiten\)/,
         ],
         [
+            // z154: der Schritt der Schneegrenze bestellte den Ring in der Täter-Phase neu, der Saum ruhte 165 Frames, der neue
+            // Ring überschrieb den Saum-Täter
+            "der Ring wird in der Täter-Phase neu bestellt",
+            (b) => Object.assign(b.taeter.phase.takte.deckWache, { wirkt: 0, ortWechsel: "0 → 1048576" }),
+            [/TREUE-TÄTER: .* von deckWache .* nicht/, /TREUE-EINGABE: deckWache .* seinen Ort \(0 → 1048576\)/],
+        ],
+        [
             "ein Wahrnehmungs-Schritt weckt die Streu nicht (der Stempel liest die LOD-Distanzen nicht)",
             (b) => Object.assign(b.wecken.wahrnehmung.takte.streuLod, { summe: 0, mitArbeit: 0 }),
             /WECKEN: ein Wahrnehmungs-Schritt \(LOD_DISTANCES, ohne Weckruf\) weckt streuLod nicht/,
@@ -1159,6 +1166,13 @@ const BRANDLAUF = process.argv.includes("--brand");
                 // PID Frame für Frame ohne die Grenzzyklus-Wand des Spiels (`_nexusPerfActuate`) — ein atmender Radius ist
                 // eine echte Eingabe der Wache (er weckt sie, Phase W prüft es), aber kein Stand.
                 st.perfRegulator = false;
+                // Das Jahr hält (wie die Sim-Ruhe unten): die Jahres-Uhr ist eine Eingabe — sie treibt die Schneegrenze, und ihr
+                // Schritt um 2 m (`_schneeTakt`) bestellt den Fern-Ring neu (`_fernRingNeuBestellen`: der Saum ruht, bis der Faden
+                // ihn ganz neu legte). Er fällt zu fester Spielzeit nach der Bühne (Sommer-Mitte 0,375 → 0,3807, ~820 Takte, dann
+                // alle ~1 850), in welche Phase, hängt an den Takten der Fäden: z154 (CI 41387513274, beide Versuche) traf er die
+                // Täter-Phase, der neue Ring überschrieb den verstellten Saum-Punkt, ehe die Wache ihn ging (TREUE-TÄTER deckWache,
+                // 216/248 statt 51 Frames). Ihr Wecken prüft die Sim-Phase (WS saison, das Wort).
+                st.autoSeason = false;
                 st.playerMesh.position.set(MESS.x, r._voxelSurfaceY(MESS.x, MESS.z) + 1.8, MESS.z);
                 // einschwingen: die Welt steht (A9, das EINE Einschwingen, welt-boot `__weltStehtNach`: Chunks, die Foundry, der Wald
                 // samt seinen Pflanz-Gängen — K69: solange er plant, weckt seine Regung die Fege-Takte)
@@ -1260,12 +1274,19 @@ const BRANDLAUF = process.argv.includes("--brand");
                     const a0 = Object.fromEntries(namen.map((n) => [n, arbeit(n)]));
                     const runden = {};
                     const rundeVon = {}; // die erste Runde, wenn sie sich während der Phase änderte
+                    const orte = {};
+                    const wechsel = {}; // der erste Wechsel des Orts (ein Wert: Zelle, Anker-Generation) während der Phase
                     const gang = () => Object.fromEntries(namen.map((n) => [n, arbeit(n) - a0[n]]));
                     P._standRuht = function (...a) {
                         const r = a[1] | 0;
                         if (runden[a[0]] !== undefined && runden[a[0]] !== r && !(a[0] in rundeVon))
                             rundeVon[a[0]] = runden[a[0]];
                         runden[a[0]] = r;
+                        if (typeof a[2] !== "object") {
+                            if (orte[a[0]] !== undefined && orte[a[0]] !== a[2])
+                                wechsel[a[0]] = wechsel[a[0]] || `${orte[a[0]]} → ${a[2]}`;
+                            orte[a[0]] = a[2];
+                        }
                         ruheRuf.apply(this, a);
                         return false;
                     };
@@ -1291,7 +1312,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                         if (ph.takte[n])
                             Object.assign(
                                 ph.takte[n],
-                                { runde: runden[n], gang: g[n] },
+                                { runde: runden[n], gang: g[n], ortWechsel: wechsel[n] },
                                 n in rundeVon ? { rundeVon: rundeVon[n] } : {}
                             );
                     return ph;

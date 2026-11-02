@@ -323,6 +323,57 @@
         return m;
     }
 
+    // DIE STOFFE DER EPOCHE (die Zeit-Achse, EPOCHE_GESETZ unten): je Stufe EINE Tafel, die Stoffe der heutigen Tafel durch die
+    // Stoffe ihrer Zeit ersetzt — Holz, Leder, Bronze und Messing, ein Eisen-Band statt des Gummis, die Laterne statt der LED,
+    // im Verbund das Licht als Kante. Jeder Stoff trägt sein Band (gate:gegenstand-stoff: holz · leder · buntmetall · metall ·
+    // licht) und seine Seh-Klasse; die Paletten-Hex sind sRGB-Absichten wie in der heutigen Tafel. Die Stufe „heute" trägt
+    // keine Tafel: der Bau liest `materials()` selbst (byte-gleich).
+    const EPOCHE_STOFF_ART = {
+        holz: { color: 0x75583c, roughness: 0.82, metalness: 0, stoff: "holz", seh: "stoff" },
+        holzDunkel: { color: 0x56412d, roughness: 0.76, metalness: 0, stoff: "holz", seh: "stoff" },
+        lackholz: { color: 0x643523, roughness: 0.3, metalness: 0, stoff: "holz", seh: "stoff" }, // geölt und lackiert: der Kasten der Kutsche
+        leder: { color: 0x5c3420, roughness: 0.58, metalness: 0, stoff: "leder", seh: "stoff" },
+        bronze: { color: 0xb58a4a, roughness: 0.38, metalness: 0.9, stoff: "buntmetall", seh: "metall" },
+        messing: { color: 0xc9a45a, roughness: 0.3, metalness: 0.92, stoff: "buntmetall", seh: "metall" },
+        eisen: { color: 0x5c5f63, roughness: 0.62, metalness: 0.8, stoff: "metall", seh: "metall" },
+        verbund: { color: 0x24282e, roughness: 0.3, metalness: 0.1, stoff: "kunststoff", seh: "stoff" },
+        laterne: { color: 0xffe0a8, emissive: 0xffb45a, ei: 1.0, roughness: 0.3, metalness: 0, stoff: "licht", seh: "glut" },
+        lichtKante: { color: 0xe6fbff, emissive: 0x9fe8ff, ei: 1.6, roughness: 0.25, metalness: 0, stoff: "licht", seh: "glut" },
+        kanzel: { color: 0x1d3440, roughness: 0.05, metalness: 0.55, durch: 0.62, stoff: "glas", seh: "glas" }, // das Glas der Kanzel: getönt, spiegelnd
+        // DER KÖRPER JEDER ZEIT (EPOCHE_GESETZ `koerper`): nur „heute" trägt den Lack des Samens — die Stufen davor und danach
+        // tragen den Stoff ihrer Zeit, damit die Achse sich auf einen Blick liest (am 02.11. waren heute und Zukunft im selben
+        // Azurblau kaum zu trennen): der Motorwagen das Wagengrün der Karosseriebauer (Uni, kein Metallic), die Zukunft eine
+        // perlgraue Keramik, die das Bernstein des Hauptlichts warm färbt (die Wärme der Antike über dem Graphit des Unterbaus und dem Licht der Kanten)
+        wagengruen: { color: 0x1f3d2e, roughness: 0.28, metalness: 0, stoff: "lack", seh: "stoff" },
+        keramik: { color: 0xbcbfbe, roughness: 0.24, metalness: 0, stoff: "lack", seh: "stoff" },
+    };
+    const EPOCHE_STOFF_GEBAUT = {};
+    function epocheStoff(art) {
+        if (EPOCHE_STOFF_GEBAUT[art]) return EPOCHE_STOFF_GEBAUT[art];
+        const a = EPOCHE_STOFF_ART[art];
+        const m = new THREE.MeshStandardMaterial({ color: a.color, roughness: a.roughness, metalness: a.metalness });
+        if (a.emissive != null) {
+            m.emissive.setHex(a.emissive);
+            m.emissiveIntensity = a.ei;
+        }
+        if (a.durch != null) [m.transparent, m.opacity] = [true, a.durch];
+        m.userData.__stoff = a.stoff;
+        m.userData.__seh = a.seh;
+        m.userData.__epoche = art;
+        stoffFarbe(m);
+        EPOCHE_STOFF_GEBAUT[art] = m;
+        return m;
+    }
+    const EPOCHE_TAFELN = new Map(); // je Stufe (das Objekt der Tafel, nie ihr Name) EINE Tafel
+    function epocheTafel(E) {
+        if (!E || !E.stoffe) return materials();
+        if (EPOCHE_TAFELN.has(E.stoffe)) return EPOCHE_TAFELN.get(E.stoffe);
+        const T = Object.assign({}, materials());
+        for (const k in E.stoffe) T[k] = epocheStoff(E.stoffe[k]);
+        EPOCHE_TAFELN.set(E.stoffe, T);
+        return T;
+    }
+
     // ── Geometrie-Helfer (wie s/c/b in der Körperbasis) ──
     function box(w, h, d, m) {
         const me = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
@@ -558,14 +609,19 @@
         const D = derive(P);
         const hz = P.spur / 2;
         const rk = P.fahrhoehe;
+        // DAS FREIE RAD (die Zeit-Achse, EPOCHE_GESETZ): Speichen- und Vollrad stehen NEBEN dem Kasten (Karren, Kutsche, früher
+        // Motorwagen) — die Nabe rückt um die Kasten-Wange + die halbe Lauffläche nach außen; das Rad im Radhaus (heute) bleibt hz.
+        // das verborgene Rad (die Kanzel, radInnen) rückt unter die Haut
+        const hzR = P.radFrei && P.rad !== "kufe" ? hz + RAD_FREI_AUSSEN : P.radInnen ? hz - P.radInnen : hz;
+        const rF = P.radVorn != null ? P.radR * P.radVorn : P.radR; // das kleinere Vorderrad (Kutsche: radVorn < 1)
         return {
             // Achs- & Radmitten (Radmitte = Gelenk)
             A_F: [D.fAx, 0, 0],
             A_R: [D.rAx, 0, 0],
-            HUB_FL: [D.fAx, P.radR, -hz],
-            HUB_FR: [D.fAx, P.radR, hz],
-            HUB_RL: [D.rAx, P.radR, -hz],
-            HUB_RR: [D.rAx, P.radR, hz],
+            HUB_FL: [D.fAx, rF, -hzR],
+            HUB_FR: [D.fAx, rF, hzR],
+            HUB_RL: [D.rAx, P.radR, -hzR],
+            HUB_RR: [D.rAx, P.radR, hzR],
             // Längs-Enden
             NOSE: [D.noseX, rk + 0.06, 0],
             TAIL: [D.tailX, rk + 0.04, 0],
@@ -617,8 +673,70 @@
             g.add(seg([H.NOSE[0], P.guertel, s * hz * 0.9], [H.TAIL[0], P.guertel, s * hz * 0.9], lineM));
         return g;
     }
-    function makeWheel(P, os, ctx) {
+    // DIE RÄDER DER ZEIT (EPOCHE_GESETZ `rad`): das Vollrad (Bohlen-Scheibe mit Eisen-Band — der Ochsenkarren), das Speichenrad
+    // (Nabe, Speichen, Felgen-Kranz, Reifen-Band — Kutsche und früher Motorwagen) und die Kufe (der Schlitten, ohne Rad). Ihre
+    // Stoffe liest jedes aus der Tafel der Stufe: rimM das Holz der Scheibe/Speichen, rimD die Nabe, tire das Band.
+    const RAD_FREI_AUSSEN = 0.26;
+    function zeitRad(P, os, M, rEcke) {
+        const g = new THREE.Group();
+        const r = rEcke || P.radR,
+            w = P.rad === "voll" ? 0.16 : 0.09,
+            band = Math.max(0.018, r * 0.05);
+        const tyre = new THREE.Mesh(new THREE.TorusGeometry(r - band / 2, band / 2, teil(6, 3), teil(36, 12)), M.tire);
+        tyre.scale.z = w / band;
+        g.add(tyre); // das Band (Eisen am Holzrad, Gummi am Motorwagen) — der Scheitel IST der Rad-Radius
+        if (P.rad === "voll") {
+            const disc = new THREE.Mesh(new THREE.CylinderGeometry(r - band, r - band, w * 0.9, teil(28, 10)), M.rimM);
+            disc.rotation.x = Math.PI / 2;
+            g.add(disc); // die Bohlen-Scheibe
+            for (const dy of [-0.34, 0.34]) {
+                const leiste = box(w * 0.5, r * 0.16, (r - band) * 1.7 * Math.sqrt(1 - dy * dy), M.rimD);
+                leiste.rotation.y = Math.PI / 2;
+                leiste.position.set(0, dy * r, os * w * 0.5);
+                g.add(leiste); // die Quer-Leisten, die die Bohlen halten
+            }
+        } else {
+            const kranz = new THREE.Mesh(new THREE.TorusGeometry(r - band * 1.9, band * 0.9, teil(6, 3), teil(36, 12)), M.rimM);
+            g.add(kranz); // der Felgen-Kranz (Holz)
+            const nSp = r > 0.48 ? 14 : 12,
+                rin = r * 0.16,
+                rout = r - band * 2.4;
+            for (let i = 0; i < nSp; i++) {
+                const a = (i / nSp) * Math.PI * 2;
+                const sp = box(rout - rin, r * 0.045, w * 0.42, M.rimM);
+                sp.position.set((Math.cos(a) * (rin + rout)) / 2, (Math.sin(a) * (rin + rout)) / 2, os * w * 0.12);
+                sp.rotation.z = a;
+                g.add(sp); // die Speiche (leicht gestürzt nach außen: das Rad trägt seinen Teller)
+            }
+        }
+        const nabe = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.15, r * 0.19, w * 1.5, teil(14, 6)), M.rimD);
+        nabe.rotation.x = Math.PI / 2;
+        nabe.position.z = os * w * 0.3;
+        g.add(nabe); // die Nabe (Bronze, Messing)
+        return baugruppe("rad", [g]); // je Stoff EIN Mesh (die Speichen ein Zug)
+    }
+    // Die Kufe: zwei Läufer unter dem Kasten, vorn hochgebogen, je drei Stützen zum Boden des Kastens (ySill).
+    function kufen(H, P, M) {
+        const g = new THREE.Group();
+        const S = scal(H, P),
+            hz = P.spur / 2;
+        const x0 = S.tailX + 0.08,
+            x1 = S.noseX + 0.05,
+            len = x1 - x0;
+        for (const sd of [-1, 1]) {
+            const lauf = Bsub((x0 + x1) / 2, 0.025, sd * hz, len / 2, 0.025, 0.035, M.rimM, teil(16, 6), 1);
+            bend(lauf, "x", "y", (u) => (u > 0.55 ? Math.pow((u - 0.55) / 0.45, 2) * 0.32 : 0));
+            g.add(lauf); // der Läufer, vorn aufgebogen
+            for (const f of [0.15, 0.5, 0.82]) {
+                const x = x0 + len * f * 0.92;
+                g.add(B(x, (0.05 + S.ySill) / 2, sd * hz, 0.025, (S.ySill - 0.05) / 2, 0.025, M.rimD));
+            }
+        }
+        return g;
+    }
+    function makeWheel(P, os, ctx, rEcke) {
         const M = (ctx && ctx.M) || materials();
+        if (P.rad === "voll" || P.rad === "speiche") return zeitRad(P, os, M, rEcke);
         const g = new THREE.Group();
         const w = 0.22,
             r = P.radR;
@@ -722,6 +840,17 @@
             lb.position.set(Math.cos(a) * r * 0.1, Math.sin(a) * r * 0.1, os * w * 0.4);
             g.add(lb);
         }
+        if (P.rad === "aero") {
+            // DAS GESCHLOSSENE RAD (die Zukunft): eine bündige Scheibe über der Felge, an ihrem Rand die blanke Kante (kein
+            // Licht im drehenden Rad: Glut faltet nie, ein Licht-Ring kostete je Rad-Klasse einen Befehl über der Zeile)
+            const deck = new THREE.Mesh(new THREE.CylinderGeometry(rimLip * 0.98, rimLip * 0.98, w * 0.05, teil(36, 12)), M.rimD);
+            deck.rotation.x = Math.PI / 2;
+            deck.position.z = os * w * 0.44;
+            g.add(deck);
+            const kante = new THREE.Mesh(new THREE.TorusGeometry(rimLip * 0.9, 0.006, teil(6, 3), teil(36, 12)), M.rimM);
+            kante.position.z = os * w * 0.47;
+            g.add(kante);
+        }
         return g;
     }
     function buildWheels(H, P, ctx) {
@@ -729,6 +858,11 @@
         const corners = (ctx && ctx.corners) || [];
         const g = new THREE.Group();
         corners.length = 0;
+        if (P.rad === "kufe") {
+            g.add(kufen(H, P, M)); // der Schlitten gleitet: keine Ecke dreht, keine lenkt
+            return g;
+        }
+        const zeit = P.rad === "voll" || P.rad === "speiche";
         const defs = [
             ["HUB_FL", true],
             ["HUB_FR", true],
@@ -746,10 +880,13 @@
             const spin = new THREE.Group();
             spin.userData.radDreht = true;
             hub.add(spin);
-            spin.add(makeWheel(P, Math.sign(p[2]), ctx));
-            const cal = box(0.05, P.radR * 0.24, 0.085, M.cal);
-            cal.position.set(0, P.radR * 0.5, -Math.sign(p[2]) * 0.07);
-            hub.add(cal); // Bremssattel (über Rotor, innerhalb Lauffläche)
+            const rad = makeWheel(P, Math.sign(p[2]), ctx, p[1]);
+            spin.add(TOPO[P.topo] && !zeit ? baugruppe("rad", [rad]) : rad); // die Gestalt der Zeit: je Stoff EIN Mesh
+            if (!zeit) {
+                const cal = box(0.05, P.radR * 0.24, 0.085, M.cal);
+                cal.position.set(0, P.radR * 0.5, -Math.sign(p[2]) * 0.07);
+                hub.add(cal); // Bremssattel (über Rotor, innerhalb Lauffläche)
+            }
             g.add(hub);
             corners.push({ grp: hub, wheelSpin: spin, front, phase: k.endsWith("L") ? 0 : Math.PI * 0.5, baseY: p[1] });
         }
@@ -1227,9 +1364,13 @@
             cSta = P.cStance != null ? P.cStance : 0.5; // KULTUR-Achsen
         const cMul = (1 - cEdge * 0.4) * (0.82 + cTen * 0.4); // Kante↔Fläche × Spannung → Crown-Multiplikator (Kante=flacher, Spannung=voller)
         const { fAx, rAx, noseX, tailX, cowlX, backX, roofF, roofR, bw, ySill, yBelt, yRoof } = S;
+        // die Zeit-Achse (EPOCHE_GESETZ): das freie Rad steht neben dem Kasten — kein Radhaus, keine Aussparung; die offene
+        // Haut trägt kein Glashaus (Dach, Säulen, Scheiben), der Kasten endet am Gürtel
+        const radFrei = !!P.radFrei,
+            offen = P.haut === "offen";
         const t = 0.025,
             cwK = bw - 0.015,
-            archHalf = P.radR * 1.18,
+            archHalf = radFrei ? 0 : P.radR * 1.18,
             hz = P.spur / 2,
             clr = hz - 0.135;
         const yC = (ySill + yBelt) / 2,
@@ -1240,10 +1381,12 @@
             Cw = S.Cwin,
             gB = yBelt + 0.02,
             gT = yRoof - 0.022;
-        const gaps = [
-            [fAx - archHalf, fAx + archHalf],
-            [rAx - archHalf, rAx + archHalf],
-        ];
+        const gaps = radFrei
+            ? []
+            : [
+                  [fAx - archHalf, fAx + archHalf],
+                  [rAx - archHalf, rAx + archHalf],
+              ];
         const dFx = Math.min(cowlX - 0.02, fAx - archHalf - 0.04),
             dBx = P.kabineMitte; // Türvorderkante: nie in der Radaussparung
         const hasVent = cowlX - 0.02 - dFx > 0.05; // FWD/SUV: Kabine weit vorn → Eckfenster nötig
@@ -1315,7 +1458,7 @@
                     for (const [a, b] of clipSegs(x0, x1, gaps))
                         g.add(B((a + b) / 2, ySh, sd * zSh, (b - a) / 2, 0.013, 0.013, bodyMat));
             } // nur Karosserie-Paneele (Türzonen frei) // CHARAKTER-SICKE: Schulterlinie bricht die flache Flanke
-            for (const x of [fAx, rAx]) {
+            for (const x of radFrei ? [] : [fAx, rAx]) {
                 const isFront = x === fAx; // Radkasten: folgt dem Rad als hochgezogener Bogen
                 // Freiraum GEMESSEN aus der LIVE-Fahrphysik: Nicktauchen+Squat (vertikal) · Einlenk-Schwenk+Wanken (inboard) — keine 1-g-Schaetzung
                 const WC = wheelClearance(P, x, isFront);
@@ -1586,8 +1729,8 @@
                 const zz = -dH + 0.02 + ((2 * dH - 0.04) * i) / 4;
                 g.add(B(tailX + 0.02, (yDB + yDT) / 2, zz, 0.02, (yDT - yDB) / 2 - 0.005, 0.012, M.steel));
             } //   Finnen (vertikal)
-            // ── KULTUR Auspuff (Marken-Signatur am Heck) ──
-            {
+            // ── KULTUR Auspuff (Marken-Signatur am Heck) — nur, wer verbrennt (die Zeit-Achse: Zugtier und leise tragen keinen) ──
+            if (P.antrieb == null || P.antrieb === "motor") {
                 const ey = ySill + 0.035,
                     ex = tailX - 0.012,
                     gr = P.cGrille;
@@ -1764,7 +1907,7 @@
                     }
             }
         } // Radloch ausgespart
-        for (const ax of [fAx, rAx]) {
+        for (const ax of radFrei ? [] : [fAx, rAx]) {
             const isFront = ax === fAx; // RADLAUF-BROW: EIN glatter Bogen je Seite (ersetzt 26 Facetten-Boxen → keine Treppe), folgt archShoulderY
             const humpRise = Math.max(0.015, 2 * P.radR + wheelClearance(P, ax, isFront).gap - yBelt),
                 NB = Math.max(34, Math.round(archHalf * 72));
@@ -1774,7 +1917,7 @@
                 g.add(brow);
             }
         }
-        {
+        if (!offen) {
             const roofZ = cwK + 0.028;
             const rf = dome(
                 (roofF + roofR) / 2,
@@ -1803,7 +1946,7 @@
             lenCp = Math.hypot(roofR - backX, yRoof - footRpil); // C-Säulen-Fuss höher → Unterkante sitzt auf der Bogenlinie, taucht nicht durch
         const xAtC2 = (y) =>
             backX + ((y - footR) / (yRoof - footR)) * (roofR - backX) + 0.034 * Math.max(0, 1 - (y - footR) / 0.13); // + HOFMEISTER-KNICK (konkav am C-Säulen-Fuss)                                                   // C-Säulen-Linie ab Schulter (Quarter/Sail)
-        for (const sd of [-1, 1]) {
+        for (const sd of offen ? [] : [-1, 1]) {
             {
                 const pA = B((cowlX + roofF) / 2, (footF + yRoof) / 2, sd * cwK, lenA / 2, 0.028, 0.028, bodyMat, angA);
                 g.add(pA);
@@ -1881,63 +2024,65 @@
                         )
                     );
         }
-        // ── H · GLAS — gewölbt (folgt der Dachwölbung in z), Fuss auf Schulter ──
-        g.add(
-            dome(
-                (cowlX + roofF) / 2,
-                (footF + yRoof) / 2,
-                0,
-                lenA / 2,
-                0.005,
-                cwK,
-                M.glass,
-                -Math.min(0.095, cwK * 0.11),
-                angA,
-                true
-            )
-        ); // Windschutz gewölbt — NEG: lokal+Y zeigt bei dieser Neigung nach innen, also minus = nach aussen (konvex)
-        g.add(
-            dome(
-                (backX + roofR) / 2,
-                (footR + yRoof) / 2,
-                0,
-                lenC / 2,
-                0.005,
-                cwK,
-                M.glass,
-                Math.min(0.085, cwK * 0.1),
-                angC,
-                true
-            )
-        ); // Heckscheibe gewölbt (konvex, dezenter)
-        if (tueren < 4)
-            for (const sd of [-1, 1]) {
-                const gBr = Math.max(gB, footR);
-                g.add(
-                    bowedQuad(
-                        [dBx + 0.02, gBr, sd * cwK],
-                        [xAtC2(gBr), gBr, sd * cwK],
-                        [xAtC2(gT), gT, sd * cwK],
-                        [dBx + 0.02, gT, sd * cwK],
-                        sd * 0.026,
-                        M.glass
-                    )
-                );
-            } // Quarter (Basis auf Schulter)
-        if (hasRearQ)
-            for (const sd of [-1, 1]) {
-                const gBr = Math.max(gB, footR);
-                g.add(
-                    quad4(
-                        [dRx, gBr, sd * cwK],
-                        [xAtC2(gBr), gBr, sd * cwK],
-                        [xAtC2(gT), gT, sd * cwK],
-                        [dRx, gT, sd * cwK],
-                        M.glass
-                    )
-                ); // hinteres Eckfenster (Sail) — Basis auf Schulter
-                g.add(B(dRx, (gBr + yRoof) / 2, sd * cwK, 0.024, (yRoof - gBr) / 2, 0.024, bodyMat)); // Säule zwischen Hintertür und Eckfenster
-            }
+        // ── H · GLAS — gewölbt (folgt der Dachwölbung in z), Fuss auf Schulter (die offene Haut trägt keins) ──
+        if (!offen) {
+            g.add(
+                dome(
+                    (cowlX + roofF) / 2,
+                    (footF + yRoof) / 2,
+                    0,
+                    lenA / 2,
+                    0.005,
+                    cwK,
+                    M.glass,
+                    -Math.min(0.095, cwK * 0.11),
+                    angA,
+                    true
+                )
+            ); // Windschutz gewölbt — NEG: lokal+Y zeigt bei dieser Neigung nach innen, also minus = nach aussen (konvex)
+            g.add(
+                dome(
+                    (backX + roofR) / 2,
+                    (footR + yRoof) / 2,
+                    0,
+                    lenC / 2,
+                    0.005,
+                    cwK,
+                    M.glass,
+                    Math.min(0.085, cwK * 0.1),
+                    angC,
+                    true
+                )
+            ); // Heckscheibe gewölbt (konvex, dezenter)
+            if (tueren < 4)
+                for (const sd of [-1, 1]) {
+                    const gBr = Math.max(gB, footR);
+                    g.add(
+                        bowedQuad(
+                            [dBx + 0.02, gBr, sd * cwK],
+                            [xAtC2(gBr), gBr, sd * cwK],
+                            [xAtC2(gT), gT, sd * cwK],
+                            [dBx + 0.02, gT, sd * cwK],
+                            sd * 0.026,
+                            M.glass
+                        )
+                    );
+                } // Quarter (Basis auf Schulter)
+            if (hasRearQ)
+                for (const sd of [-1, 1]) {
+                    const gBr = Math.max(gB, footR);
+                    g.add(
+                        quad4(
+                            [dRx, gBr, sd * cwK],
+                            [xAtC2(gBr), gBr, sd * cwK],
+                            [xAtC2(gT), gT, sd * cwK],
+                            [dRx, gT, sd * cwK],
+                            M.glass
+                        )
+                    ); // hinteres Eckfenster (Sail) — Basis auf Schulter
+                    g.add(B(dRx, (gBr + yRoof) / 2, sd * cwK, 0.024, (yRoof - gBr) / 2, 0.024, bodyMat)); // Säule zwischen Hintertür und Eckfenster
+                }
+        }
         // ── G2 · TÜREN — Trapez-Glas (Kanten folgen den Säulen); Vorder-+Hintertür bei 4-Türern ──
         const ySillTop = ySill + 0.1,
             pvY = (ySillTop + yBelt) / 2;
@@ -1956,11 +2101,11 @@
                     bb = [beFn(gB) - xHinge, gB - pvY, dz],
                     bt = [beFn(gT) - xHinge, gT - pvY, dz],
                     ft = [feFn(gT) - xHinge, gT - pvY, dz];
-                pv.add(bowedQuad(fb, bb, bt, ft, sd * 0.032, M.glass)); // Türglas gewölbt (konvex nach aussen)                                                                             // Türglas (Trapez)
+                if (!offen) pv.add(bowedQuad(fb, bb, bt, ft, sd * 0.032, M.glass)); // Türglas gewölbt (konvex nach aussen)                                                                             // Türglas (Trapez)
                 const topLen = Math.abs(bt[0] - ft[0]);
                 const fr = box(topLen, 0.028, 0.028, M.pillar);
                 fr.position.set((ft[0] + bt[0]) / 2, gT - pvY, dz);
-                pv.add(fr); // Rahmen oben
+                if (!offen) pv.add(fr); // Rahmen oben
                 const belt = box(doorLen, 0.05, 0.05, bodyMat);
                 belt.position.set(-doorLen / 2, yBelt - pvY, 0);
                 pv.add(belt); // Gürtel (fährt mit)
@@ -1992,7 +2137,7 @@
         makeDoor(dFx, dBx, dFxAt, (y) => dBx + 0.02, true); // Vordertür (vorn raked A-Säule, hinten an B-Säule)
         if (tueren >= 4) makeDoor(dBx, dRx, (y) => dBx - 0.02, hasRearQ ? (y) => dRx : xAtC, false); // Hintertür (Hinterkante an dRx = vor dem Hinterrad; sonst an C-Säule)
         // Eckfenster (Vent) für cab-forward Presets: füllt A-Säule ↔ Türvorderkante, plus Türvorderkante-Säule
-        if (hasVent)
+        if (hasVent && !offen)
             for (const sd of [-1, 1]) {
                 g.add(
                     quad4(
@@ -2026,15 +2171,22 @@
         const S = scal(H, P);
         const { fAx, rAx, noseX, tailX, cowlX, backX, roofF, roofR, hz, bw, cw, yFloor, yBatt, ySill, yBelt, yRoof } =
             S;
+        // die Zeit-Achse (EPOCHE_GESETZ): das freie Rad braucht kein Radhaus, das Zugtier keinen Antrieb im Wagen (kein Akku,
+        // kein Motor, keine Welle, kein Lenkrad — es zieht an der Deichsel), die offene Haut kein Glashaus-Gerippe
+        const radFrei = !!P.radFrei,
+            zugtier = P.antrieb === "zugtier",
+            offen = P.haut === "offen";
         const cwK = bw - 0.015,
-            archHalf = P.radR * 1.18,
-            gaps = [
-                [fAx - archHalf, fAx + archHalf],
-                [rAx - archHalf, rAx + archHalf],
-            ];
+            archHalf = radFrei ? 0 : P.radR * 1.18,
+            gaps = radFrei
+                ? []
+                : [
+                      [fAx - archHalf, fAx + archHalf],
+                      [rAx - archHalf, rAx + archHalf],
+                  ];
         const cellY = (ySill + yBelt) / 2 + 0.05;
         // Plattform — alle Querbauteile schmaler als die Reifen-Innenkante (hz-0.11≈0.70), damit nichts durch die Räder geht
-        {
+        if (!zugtier) {
             const bBot = Math.max(yFloor, ySill),
                 bTop = Math.max(yBatt, bBot + 0.06);
             g.add(B(0, (bBot + bTop) / 2, 0, P.radstand / 2 - 0.05, (bTop - bBot) / 2, hz - 0.18, M.batt));
@@ -2048,9 +2200,9 @@
         g.add(B(noseX - 0.05, 0.34, 0, 0.04, 0.06, hz * 0.9, M.steel));
         g.add(B(tailX + 0.05, 0.32, 0, 0.04, 0.06, hz * 0.9, M.steel)); // Crashträger (vor/hinter Rädern)
         // Antrieb (Wellen liegen auf der Nabenlinie → koaxial)
-        g.add(C(fAx, 0.27, 0, "z", 0.13, 0.34, M.motor, 18));
-        g.add(C(rAx, 0.27, 0, "z", 0.14, 0.4, M.motor, 18));
-        for (const sd of [-1, 1]) {
+        if (!zugtier) g.add(C(fAx, 0.27, 0, "z", 0.13, 0.34, M.motor, 18));
+        if (!zugtier) g.add(C(rAx, 0.27, 0, "z", 0.14, 0.4, M.motor, 18));
+        for (const sd of zugtier ? [] : [-1, 1]) {
             g.add(C(fAx, P.radR, sd * 0.49, "z", 0.026, 0.62, M.rimM, 12));
             g.add(C(rAx, P.radR, sd * 0.49, "z", 0.028, 0.62, M.rimM, 12));
         }
@@ -2097,47 +2249,49 @@
                 gaps
             ))
                 g.add(B((a + b) / 2, ySill + 0.075, sd * (bw - 0.17), (b - a) / 2, 0.035, 0.03, M.trim)); // Schweller höher+WEIT innen (innerhalb der eingezogenen Tuck-Flanke → ragt nicht raus/unter Tür)
-            {
-                const pa = B(
-                    (cowlX + roofF) / 2,
-                    (yBelt + yRoof) / 2,
-                    sd * cwK,
-                    Math.hypot(roofF - cowlX, yRoof - yBelt) / 2,
-                    0.022,
-                    0.022,
-                    M.steel,
-                    S.Awin
-                );
-                g.add(pa);
-            } // A-Säule GEBOGEN wie Haut
-            g.add(B(P.kabineMitte, (yBelt + yRoof) / 2, sd * cwK, 0.022, (yRoof - yBelt) / 2, 0.022, M.steel)); // B-Säule
-            {
-                const pc = B(
-                    (backX + roofR) / 2,
-                    (yBelt + yRoof) / 2,
-                    sd * cwK,
-                    Math.hypot(roofR - backX, yRoof - yBelt) / 2,
-                    0.022,
-                    0.022,
-                    M.steel,
-                    S.Cwin
-                );
-                g.add(pc);
-            } // C-Säule GEBOGEN wie Haut
-            {
-                const dh = Bsub(
-                    (roofF + roofR) / 2,
-                    yRoof - 0.02,
-                    sd * cwK,
-                    (roofF - roofR) / 2,
-                    0.02,
-                    0.022,
-                    M.steel,
-                    Math.max(6, Math.round((roofF - roofR) * 10)),
-                    1
-                );
-                bend(dh, "x", "y", (u) => (P.roofArc != null ? P.roofArc : 0.022) * (1 - Math.pow(u, 4)));
-                g.add(dh);
+            if (!offen) {
+                {
+                    const pa = B(
+                        (cowlX + roofF) / 2,
+                        (yBelt + yRoof) / 2,
+                        sd * cwK,
+                        Math.hypot(roofF - cowlX, yRoof - yBelt) / 2,
+                        0.022,
+                        0.022,
+                        M.steel,
+                        S.Awin
+                    );
+                    g.add(pa);
+                } // A-Säule GEBOGEN wie Haut
+                g.add(B(P.kabineMitte, (yBelt + yRoof) / 2, sd * cwK, 0.022, (yRoof - yBelt) / 2, 0.022, M.steel)); // B-Säule
+                {
+                    const pc = B(
+                        (backX + roofR) / 2,
+                        (yBelt + yRoof) / 2,
+                        sd * cwK,
+                        Math.hypot(roofR - backX, yRoof - yBelt) / 2,
+                        0.022,
+                        0.022,
+                        M.steel,
+                        S.Cwin
+                    );
+                    g.add(pc);
+                } // C-Säule GEBOGEN wie Haut
+                {
+                    const dh = Bsub(
+                        (roofF + roofR) / 2,
+                        yRoof - 0.02,
+                        sd * cwK,
+                        (roofF - roofR) / 2,
+                        0.02,
+                        0.022,
+                        M.steel,
+                        Math.max(6, Math.round((roofF - roofR) * 10)),
+                        1
+                    );
+                    bend(dh, "x", "y", (u) => (P.roofArc != null ? P.roofArc : 0.022) * (1 - Math.pow(u, 4)));
+                    g.add(dh);
+                }
             }
         } // Dachholm FOLGT der Haut-Dachkurve
         // Sitze — Reihen an der Kabine verankert (vorn an Cowl, hinten vorm Schott); Lenkrad fix am Brett
@@ -2158,10 +2312,728 @@
         } // Mitteltunnel: Boden auf Schwellerlinie (ragt nicht unter die Karosserie)
         // Cockpit — Brett an Cowl, Säule verbindet Brett→Lenkrad (kein Schweben mehr)
         g.add(B(cowlX - 0.12, yBelt - 0.06, 0, 0.1, 0.06, hz - 0.14, M.trim)); // Armaturenbrett
-        g.add(B(cowlX - 0.23, yBelt - 0.05, -0.38, 0.11, 0.018, 0.018, M.trim)); // Lenksäule (Brett → Lenkrad)
-        g.add(C(cowlX - 0.34, yBelt - 0.02, -0.38, "x", 0.15, 0.025, M.trim, 16)); // Lenkrad (am Säulenende)
+        if (!zugtier) {
+            g.add(B(cowlX - 0.23, yBelt - 0.05, -0.38, 0.11, 0.018, 0.018, M.trim)); // Lenksäule (Brett → Lenkrad)
+            g.add(C(cowlX - 0.34, yBelt - 0.02, -0.38, "x", 0.15, 0.025, M.trim, 16)); // Lenkrad (am Säulenende)
+        }
         return g;
     }
+
+    // DIE DEICHSEL (die Zeit-Achse, Antrieb Zugtier): das Zugtier zieht, der Wagen trägt die Deichsel — der Baum von der
+    // Vorderachse nach vorn, am Kopf das Ortscheit (das Querholz der Stränge), dazu der Bock des Lenkers über der Nase.
+    // Sie entsteht NACH der Verjüngung (taperBody/bowEnds formen nur den Kasten). Der Leib des Tiers ist ein Wesen des
+    // Kreatur-Gesetzes, nicht dieses Buchs.
+    function buildDeichsel(H, P, ctx) {
+        const M = (ctx && ctx.M) || materials();
+        const g = new THREE.Group();
+        const S = scal(H, P);
+        const y0 = Math.max(0.3, P.radR * 0.85),
+            x0 = S.fAx - 0.1,
+            lang = S.noseX - x0 + 2.4,
+            yK = y0 + 0.28;
+        const baum = Bsub(x0 + lang / 2, y0, 0, lang / 2, 0.045, 0.045, M.rimM, teil(12, 4), 1);
+        bend(baum, "x", "y", (u) => Math.max(0, (u + 1) / 2) * (yK - y0));
+        g.add(baum); // der Deichsel-Baum, zum Kopf leicht steigend (auf Brusthöhe des Tiers)
+        g.add(B(x0 + lang - 0.15, yK, 0, 0.05, 0.04, Math.max(0.45, S.hz * 0.85), M.rimM)); // das Ortscheit
+        for (const sd of [-1, 1]) g.add(C(x0 + lang - 0.15, yK, sd * Math.max(0.45, S.hz * 0.85), "z", 0.03, 0.05, M.rimD, 8));
+        if (P.rad !== "kufe" && !TOPO[P.topo]) {
+            const yB = S.yBelt + 0.32,
+                xB = S.noseX - 0.22;
+            g.add(B(xB, yB, 0, 0.22, 0.045, S.bw * 0.82, M.seat)); // der Bock (Sitz des Lenkers)
+            g.add(B(xB + 0.24, (S.yBelt + yB) / 2, 0, 0.02, (yB - S.yBelt) / 2, S.bw * 0.8, M.steel)); // sein Fußbrett
+            for (const sd of [-1, 1]) g.add(B(xB - 0.12, (S.yBelt + yB) / 2, sd * S.bw * 0.75, 0.025, (yB - S.yBelt) / 2, 0.025, M.steel));
+        }
+        return g;
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // DIE GESTALTEN DER ZEIT (EPOCHE_GESETZ `topo`): je Stufe ihr eigener Bau statt der Haut von heute auf alten Rädern —
+    //   die Kutsche (Kasten über den Rädern, Bock, Bänke, Faltdach, Blattfedern, Laternen), der Motorwagen (Leiterrahmen,
+    //   Messing-Kühler, lange Haube, freie Kotflügel mit Trittbrett, aufrechte Scheibe, steiles Lenkrad) und die Kanzel der
+    //   Zukunft (EIN Rumpf ohne Spalt über verborgenen Rädern, durchgehendes Glas, das Licht als Linie). Jede liest dieselben
+    //   Rezept-Parameter (scal/hardpoints) — die Achse bleibt stetig, die Topologie springt mit der Stufe. Jede Baugruppe ist
+    //   EIN benannter Knoten (die Explosion der Ansicht zieht Baugruppen, nicht Splitter; die Linse E liest die Namen),
+    //   je Stoff EIN Mesh (verschmolzen). Die Stoffe stammen aus der Tafel der Zeit (EPOCHE_STOFF_ART) und der Tafel von heute.
+    // ════════════════════════════════════════════════════════════════════
+    // Die Baugruppe: ihre Teile (beliebig verschachtelt) je Stoff zu EINEM Mesh verschmolzen, im Rahmen der Gruppe.
+    function baugruppe(name, teile) {
+        const wurzel = new THREE.Group();
+        for (const t of teile) if (t) wurzel.add(t);
+        wurzel.updateMatrixWorld(true);
+        const je = new Map();
+        wurzel.traverse((o) => {
+            if (!o.isMesh) return;
+            if (!je.has(o.material)) je.set(o.material, []);
+            je.get(o.material).push(o);
+        });
+        const g = new THREE.Group();
+        g.name = name;
+        const v = new THREE.Vector3(),
+            nm = new THREE.Matrix3();
+        for (const [mat, ms] of je) {
+            const pos = [],
+                nor = [],
+                uv = [],
+                idx = [];
+            for (const o of ms) {
+                const geo = o.geometry,
+                    p = geo.attributes.position,
+                    n = geo.attributes.normal,
+                    t = geo.attributes.uv,
+                    b = pos.length / 3;
+                nm.getNormalMatrix(o.matrixWorld);
+                for (let i = 0; i < p.count; i++) {
+                    v.fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld);
+                    pos.push(v.x, v.y, v.z);
+                    v.fromBufferAttribute(n, i).applyMatrix3(nm).normalize();
+                    nor.push(v.x, v.y, v.z);
+                    uv.push(t ? t.getX(i) : 0, t ? t.getY(i) : 0);
+                }
+                if (geo.index) for (let i = 0; i < geo.index.count; i++) idx.push(b + geo.index.getX(i));
+                else for (let i = 0; i < p.count; i++) idx.push(b + i);
+                geo.dispose();
+            }
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+            geo.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
+            geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+            geo.setIndex(idx);
+            const me = new THREE.Mesh(geo, mat);
+            me.castShadow = me.receiveShadow = true;
+            g.add(me);
+        }
+        return g;
+    }
+    function netz(pos, idx, m) {
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+        geo.setAttribute("uv", new THREE.Float32BufferAttribute(new Array((pos.length / 3) * 2).fill(0), 2));
+        geo.setIndex(idx);
+        geo.computeVertexNormals();
+        const me = new THREE.Mesh(geo, m);
+        me.castShadow = me.receiveShadow = true;
+        return me;
+    }
+    // DER STRANG: ein Rechteck-Profil (b quer, d in der Ebene senkrecht zum Pfad) entlang eines Pfads — Leiste, Feder-Blatt,
+    // Kotflügel, Spriegel, Licht-Linie. `quer` steht senkrecht auf dem Pfad; die Enden sind gedeckelt.
+    function strang(pts, quer, b, d, m) {
+        const n = pts.length,
+            Q = new THREE.Vector3(...quer).normalize(),
+            V = pts.map((p) => new THREE.Vector3(...p)),
+            t = new THREE.Vector3(),
+            nn = new THREE.Vector3(),
+            w = new THREE.Vector3(),
+            pos = [],
+            idx = [];
+        for (let i = 0; i < n; i++) {
+            t.subVectors(V[Math.min(n - 1, i + 1)], V[Math.max(0, i - 1)]).normalize();
+            nn.crossVectors(t, Q).normalize();
+            for (const [a, c] of [
+                [1, -1],
+                [1, 1],
+                [-1, 1],
+                [-1, -1],
+            ]) {
+                w.copy(V[i]).addScaledVector(Q, (a * b) / 2).addScaledVector(nn, (c * d) / 2);
+                pos.push(w.x, w.y, w.z);
+            }
+        }
+        for (let i = 0; i < n - 1; i++)
+            for (let k = 0; k < 4; k++) {
+                const a = i * 4 + k,
+                    e = i * 4 + ((k + 1) % 4);
+                idx.push(a, e, e + 4, a, e + 4, a + 4);
+            }
+        const s = (n - 1) * 4;
+        idx.push(0, 2, 1, 0, 3, 2, s, s + 1, s + 2, s, s + 2, s + 3);
+        return netz(pos, idx, m);
+    }
+    // DAS GITTER: eine Fläche (u längs, v quer) aus fn(u, v) → [x, y, z]; `wende` dreht die Außenseite.
+    function gitter(nu, nv, fn, m, wende) {
+        const pos = [],
+            idx = [];
+        for (let i = 0; i <= nu; i++) for (let j = 0; j <= nv; j++) pos.push(...fn(i / nu, j / nv));
+        for (let i = 0; i < nu; i++)
+            for (let j = 0; j < nv; j++) {
+                const a = i * (nv + 1) + j,
+                    b = a + 1,
+                    c = a + nv + 1,
+                    d = c + 1;
+                if (wende) idx.push(a, c, b, b, c, d);
+                else idx.push(a, b, c, b, d, c);
+            }
+        return netz(pos, idx, m);
+    }
+    const bogen = (cx, cy, r, a0, a1, n) =>
+        Array.from({ length: n + 1 }, (_, i) => {
+            const a = a0 + ((a1 - a0) * i) / n;
+            return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+        });
+    // Die Blattfeder: drei Blätter je Paket, je kürzer; das untere Paket lächelt (Mitte auf der Achse yU, Enden auf yU + h),
+    // das obere (elliptisch) runzelt die Stirn bis yU + 2h — halb trägt nur das untere (die Feder des Motorwagens).
+    function blattfeder(x, yU, z, len, h, halb, m) {
+        const teile = [],
+            n = teil(8, 4);
+        for (const oben of halb ? [false] : [false, true])
+            for (let k = 0; k < 3; k++) {
+                const L = (len / 2) * (1 - k * 0.24),
+                    pts = [];
+                for (let i = 0; i <= n; i++) {
+                    const u = -1 + (2 * i) / n;
+                    pts.push([x + u * L, oben ? yU + 2 * h - h * u * u + k * 0.014 : yU + h * u * u - k * 0.014, z]);
+                }
+                teile.push(strang(pts, [0, 0, 1], 0.05, 0.012, m));
+            }
+        return teile;
+    }
+    // DAS FALTDACH (Kutsche und Motorwagen): Leder über n Spriegeln, die um EIN Scharnier je Seite (px, py) schwenken — zu
+    // (zu = 1) reicht der vorderste Spriegel bis (xVorn, yTop), offen (0) liegen alle gefaltet hinter dem Scharnier; zwischen
+    // zwei Spriegeln hängt das Leder durch (die Falten). Der Bogen eines Spriegels ist eine Superellipse vom Fuß (z = ±hw) zum
+    // Scheitel; die Rückwand füllt den hintersten.
+    function faltdach(px, py, hw, yTop, xVorn, zu, M) {
+        const n = 4,
+            q = teil(4, 2),
+            nv = teil(16, 8),
+            th0 = -0.22,
+            L0 = (yTop - py) / Math.cos(th0),
+            Lf = Math.hypot(xVorn - px, yTop - py),
+            thf = Math.atan2(xVorn - px, yTop - py);
+        const spr = (u) => {
+            const i = Math.min(n - 2, Math.floor(u)),
+                f = u - i;
+            const at = (k) => {
+                const o = k / (n - 1);
+                return [-1.5 + 0.09 * k + (th0 + (thf - th0) * o + 1.5 - 0.09 * k) * zu, L0 + (Lf - L0) * o * zu];
+            };
+            const [a, b] = [at(i), at(i + 1)];
+            return [a[0] + (b[0] - a[0]) * f, (a[1] + (b[1] - a[1]) * f) * (1 - 0.05 * Math.sin(Math.PI * f) * zu)];
+        };
+        const punkt = (u, v, s) => {
+            const [th, L] = spr(u),
+                phi = Math.PI * v,
+                c = Math.cos(phi),
+                si = Math.sin(phi);
+            const z = hw * s * Math.sign(c) * Math.sqrt(Math.abs(c)),
+                y = L * s * Math.sqrt(si);
+            return [px + y * Math.sin(th), py + y * Math.cos(th), z];
+        };
+        const teile = [];
+        for (const [s, w] of [
+            [1, true],
+            [0.985, false],
+        ]) {
+            teile.push(gitter((n - 1) * q, nv, (u, v) => punkt(u * (n - 1), v, s), M.leder, w));
+            teile.push(gitter(1, nv, (r, v) => punkt(0, v, s * (1 - r * zu) + 0.001), M.leder, !w)); // die Rückwand (faltet mit)
+        }
+        for (let k = 0; k < n; k++) {
+            const [th] = spr(k),
+                pts = Array.from({ length: nv + 1 }, (_, j) => punkt(k, j / nv, 1.012));
+            teile.push(strang(pts, [Math.cos(th), -Math.sin(th), 0], 0.035, 0.022, M.holzDunkel)); // der Spriegel
+        }
+        for (const sd of [-1, 1]) teile.push(C(px, py, sd * (hw + 0.02), "z", 0.045, 0.02, M.messing, 14)); // das Scharnier
+        // DIE PERSENNING (offen, zu < 0,25): gefaltet liegt das Leder nie als Fächer aus Spriegeln, sondern als gerollter Balg
+        // über dem Stapel — ein Schlauch entlang des mittleren Spriegels, eine Rolle, die den Stapel deckt (am Scharnier
+        // knapp, am Scheitel um die Hälfte dicker — nie ein Horn), im Stoff des Leders (dasselbe Mesh, kein Befehl mehr)
+        if (zu < 0.25) {
+            const um = (n - 1) / 2,
+                [thm] = spr(um),
+                Qn = new THREE.Vector3(Math.cos(thm), -Math.sin(thm), 0),
+                spreiz = L0 * Math.abs(spr(n - 1)[0] - spr(0)[0]),
+                mitte = (v) => new THREE.Vector3(...punkt(um, Math.max(0, Math.min(1, v)), 1)),
+                T = new THREE.Vector3(),
+                N = new THREE.Vector3(),
+                pv = new THREE.Vector3();
+            teile.push(
+                gitter(
+                    nv,
+                    teil(10, 6),
+                    (v, w) => {
+                        T.subVectors(mitte(v + 0.01), mitte(v - 0.01)).normalize();
+                        N.crossVectors(T, Qn).normalize();
+                        const a = 0.045 + 0.3 * spreiz * (0.5 + 0.5 * Math.sqrt(Math.sin(Math.PI * v))),
+                            ph = 2 * Math.PI * w;
+                        pv.copy(mitte(v))
+                            .addScaledVector(Qn, a * Math.cos(ph))
+                            .addScaledVector(N, 0.075 * Math.sin(ph));
+                        return [pv.x, pv.y, pv.z];
+                    },
+                    M.leder,
+                    false
+                )
+            );
+        }
+        return baugruppe("verdeck", teile);
+    }
+
+    // ── DIE KUTSCHE (Stufe 2): der Kasten hängt über Blattfedern zwischen großen Hinter- und kleineren Vorderrädern, vorn der
+    // Bock des Kutschers mit Fußbrett, Spritzleder und Laternen, im Kasten zwei Bänke gegeneinander, hinten das Faltdach.
+    function bauKutsche(H, P, ctx) {
+        const S = scal(H, P),
+            Q = epocheStoff,
+            M = { leder: Q("leder"), holz: Q("holz"), holzDunkel: Q("holzDunkel"), messing: Q("messing"), eisen: Q("eisen") };
+        const lack = ctx.bodyMat,
+            rR = H.HUB_RL[1],
+            rF = H.HUB_FL[1],
+            hzR = Math.abs(H.HUB_FL[2]),
+            { fAx, rAx } = S;
+        const kb = Math.min(hzR - 0.2, S.bw - 0.05),
+            x0 = P.kabineMitte - P.kabineLaenge / 2,
+            x1 = P.kabineMitte + P.kabineLaenge / 2,
+            yK = S.ySill,
+            yF = yK + 0.17,
+            yG = S.yBelt,
+            fl = 0.08;
+        const nb = teil(14, 6),
+            bauch = Array.from({ length: nb + 1 }, (_, i) => {
+                const t = i / nb;
+                return [x0 + (x1 - x0) * t, yF - (yF - yK) * Math.pow(Math.sin(Math.PI * t), 0.6)];
+            });
+        // der Kasten: der Bauch massiv bis zum Boden, darüber die Wände (Seiten, Stirn, Rücken), Leisten und Beschläge
+        const form = new THREE.Shape();
+        form.moveTo(bauch[0][0], bauch[0][1]);
+        for (const [x, y] of bauch.slice(1)) form.lineTo(x, y);
+        const unten = new THREE.Mesh(new THREE.ExtrudeGeometry(form, { depth: 2 * kb, bevelEnabled: false, curveSegments: 1 }), lack);
+        unten.position.z = -kb;
+        const wand = new THREE.Shape();
+        wand.moveTo(x0, yF);
+        wand.lineTo(x1, yF);
+        wand.lineTo(x1 + fl * 0.5, yG);
+        wand.lineTo(x0 - fl, yG);
+        const kasten = [unten];
+        for (const sd of [-1, 1]) {
+            const w = new THREE.Mesh(new THREE.ExtrudeGeometry(wand, { depth: 0.04, bevelEnabled: false }), lack);
+            w.position.z = sd > 0 ? kb - 0.04 : -kb;
+            kasten.push(w);
+            const zO = sd * (kb + 0.006),
+                xd = P.kabineMitte,
+                dw = Math.min(0.34, (x1 - x0) * 0.22);
+            kasten.push(strang(bauch.map(([x, y]) => [x, y + 0.05, zO]), [0, 0, sd], 0.012, 0.035, M.holzDunkel)); // die Leiste des Bauchs
+            kasten.push(
+                strang(
+                    [
+                        [xd - dw, yK + 0.07, zO],
+                        [xd - dw, yG - 0.05, zO],
+                        [xd + dw, yG - 0.05, zO],
+                        [xd + dw, yK + 0.07, zO],
+                    ],
+                    [0, 0, sd],
+                    0.012,
+                    0.03,
+                    M.holzDunkel
+                )
+            ); // der Rahmen der Tür
+            kasten.push(B(xd + dw - 0.08, yG - 0.2, sd * (kb + 0.02), 0.035, 0.012, 0.012, M.messing)); // der Griff
+            for (const y of [yK + 0.2, yG - 0.15]) kasten.push(B(xd - dw + 0.06, y, sd * (kb + 0.012), 0.08, 0.012, 0.006, M.messing)); // die Bänder
+            kasten.push(B((x0 + x1) / 2 - fl * 0.25, yG, sd * (kb - 0.02), (x1 - x0) / 2 + fl * 0.75, 0.014, 0.03, M.messing)); // die Gürtelleiste
+            for (const x of [x0 - fl, x1 + fl * 0.5]) kasten.push(B(x, yG, sd * kb, 0.03, 0.03, 0.03, M.messing)); // die Eckbeschläge
+            kasten.push(strang([[xd, yK + 0.04, sd * kb], [xd, yK - 0.16, sd * (kb + 0.1)]], [1, 0, 0], 0.03, 0.02, M.eisen));
+            kasten.push(B(xd, yK - 0.17, sd * (kb + 0.12), 0.1, 0.012, 0.07, M.eisen)); // der Tritt
+        }
+        for (const [xa, xb] of [
+            [x1, x1 + fl * 0.5],
+            [x0, x0 - fl],
+        ])
+            kasten.push(B((xa + xb) / 2, (yF + yG) / 2, 0, 0.02, Math.hypot(xb - xa, yG - yF) / 2, kb, lack, Math.atan2(xa - xb, yG - yF)));
+        // der Bock: Kasten, Polster, Lehne, Fußbrett, Spritzleder, die Stützen zum Kasten und zur Vorderachse
+        const yS = yG + 0.22,
+            xB = x1 + 0.38,
+            bb = kb * 0.82;
+        const bock = [
+            B(xB, yS - 0.2, 0, 0.2, 0.18, bb, lack),
+            B(xB, yS + 0.03, 0, 0.21, 0.05, bb + 0.02, M.leder),
+            B(xB - 0.2, yS + 0.18, 0, 0.03, 0.12, bb, M.leder, -0.18),
+            strang(
+                [
+                    [xB + 0.2, yS - 0.36, 0],
+                    [xB + 0.5, yS - 0.36, 0],
+                    [xB + 0.62, yS - 0.05, 0],
+                    [xB + 0.66, yS + 0.14, 0],
+                ],
+                [0, 0, 1],
+                bb * 2,
+                0.025,
+                M.leder
+            ),
+            B(xB + 0.36, yS - 0.33, 0, 0.16, 0.012, bb * 0.95, M.holzDunkel),
+        ];
+        for (const sd of [-1, 1]) {
+            const z = sd * bb * 0.8;
+            bock.push(strang([[x1 + fl * 0.3, yF + 0.05, z], [x1 + 0.12, yS - 0.5, z], [xB - 0.1, yS - 0.38, z]], [0, 0, 1], 0.04, 0.035, M.eisen));
+            bock.push(strang([[xB + 0.15, yS - 0.38, z], [fAx + 0.05, (yS + rF) / 2, z], [fAx - 0.02, rF + 0.2, z]], [0, 0, 1], 0.04, 0.035, M.eisen));
+        }
+        // die Laternen am Bock: Messing-Gehäuse, Glut-Scheibe, Dach und Arm
+        const laternen = [-1, 1].map((sd) => {
+            const z = sd * (bb + 0.12),
+                y = yS + 0.12;
+            return baugruppe("laterne", [
+                B(xB + 0.12, y, z, 0.055, 0.09, 0.055, M.messing),
+                B(xB + 0.17, y, z, 0.008, 0.07, 0.04, Q("laterne")),
+                C(xB + 0.12, y + 0.12, z, "y", 0.045, 0.05, M.messing, 10),
+                B(xB + 0.06, y - 0.05, sd * (bb + 0.04), 0.012, 0.012, 0.08, M.eisen),
+            ]);
+        });
+        // der Unterwagen: Achsen, Blattfedern, der Langbaum, der Drehschemel vorn, der Federträger hinten
+        const hF = 0.08,
+            unter = [
+                C(rAx, rR, 0, "z", 0.035, 2 * hzR - 0.1, M.eisen, 10),
+                C(fAx, rF, 0, "z", 0.035, 2 * hzR - 0.1, M.eisen, 10),
+                B(rAx, rR + 0.03 + 2 * hF, 0, 0.045, 0.03, kb * 0.9, M.holzDunkel),
+                new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.02, teil(6, 3), teil(24, 10)), M.eisen),
+                strang(
+                    [
+                        [rAx, rR + 0.03 + 2 * hF, 0],
+                        [x0 + 0.2, yK - 0.05, 0],
+                        [x1 - 0.2, yK - 0.05, 0],
+                        [fAx, rF + 0.03 + 2 * hF, 0],
+                    ],
+                    [0, 0, 1],
+                    0.08,
+                    0.07,
+                    M.holzDunkel
+                ),
+            ];
+        unter[3].rotation.x = Math.PI / 2;
+        unter[3].position.set(fAx, rF + 0.03 + 2 * hF + 0.02, 0);
+        for (const sd of [-1, 1]) {
+            unter.push(...blattfeder(rAx, rR + 0.03, sd * kb * 0.8, 0.8, hF, false, M.eisen));
+            unter.push(...blattfeder(fAx, rF + 0.03, sd * kb * 0.7, 0.7, hF, false, M.eisen));
+            unter.push(B((rAx + x0) / 2, (rR + 0.03 + 2 * hF + yF) / 2, sd * kb * 0.8, (x0 - rAx) / 2 + 0.05, 0.03, 0.03, M.holzDunkel));
+        }
+        const innen = new THREE.Group();
+        // die Bänke im Kasten, gegeneinander (vis-à-vis): Sockel, Polster, Lehne an der Wand
+        for (const [x, sd] of [
+            [x0 + 0.28, -1],
+            [x1 - 0.24, 1],
+        ])
+            innen.add(
+                baugruppe("bank", [
+                    B(x, yF + 0.17, 0, 0.2, 0.17, kb - 0.06, M.holzDunkel),
+                    B(x, yF + 0.37, 0, 0.21, 0.04, kb - 0.07, M.leder),
+                    B(x + sd * 0.19, yF + 0.6, 0, 0.04, 0.2, kb - 0.07, M.leder, sd * 0.12),
+                ])
+            );
+        innen.add(baugruppe("boden", [B((x0 + x1) / 2, yF + 0.005, 0, (x1 - x0) / 2, 0.005, kb - 0.04, M.holzDunkel)]));
+        const zu = P.verdeck != null ? Math.max(0, Math.min(1, P.verdeck)) : 1;
+        const aussen = new THREE.Group();
+        aussen.add(baugruppe("kasten", kasten));
+        aussen.add(baugruppe("bock", bock));
+        for (const l of laternen) aussen.add(l);
+        aussen.add(baugruppe("unterwagen", unter));
+        aussen.add(faltdach(x0 + 0.2, yG - 0.1, kb + 0.03, S.yRoof, P.kabineMitte + 0.1, zu, M));
+        return { innen, aussen };
+    }
+
+    // ── DER MOTORWAGEN (Stufe 3, ~1905–1925): Leiterrahmen über halbelliptischen Federn, vorn hoch der Messing-Kühler mit
+    // senkrechtem Grill, die lange schmale Haube bis zur Spritzwand, die aufrechte Scheibe, die offene Wanne mit zwei hohen
+    // Bänken, das steile Lenkrad, freie Kotflügel über den Rädern mit dem Trittbrett dazwischen, die Scheinwerfer-Töpfe.
+    function bauMotorwagen(H, P, ctx) {
+        const S = scal(H, P),
+            Q = epocheStoff,
+            M = { leder: Q("leder"), holz: Q("holz"), holzDunkel: Q("holzDunkel"), messing: Q("messing"), eisen: Q("eisen") };
+        const lack = ctx.bodyMat,
+            T = ctx.M,
+            rR = H.HUB_RL[1],
+            rF = H.HUB_FL[1],
+            hzR = Math.abs(H.HUB_FL[2]),
+            { fAx, rAx, noseX, tailX } = S;
+        const kb = Math.min(hzR - 0.24, S.bw - 0.04),
+            yG = S.yBelt,
+            yR = Math.max(P.fahrhoehe + 0.08, Math.max(rF, rR) + 0.16),
+            yFl = yR + 0.16,
+            xS = P.kabineMitte + P.kabineLaenge / 2,
+            xT = P.kabineMitte - P.kabineLaenge / 2,
+            hwH = Math.max(0.22, kb * 0.38),
+            xK = fAx - 0.02,
+            hwK = hwH + 0.03,
+            yK = yG + 0.1;
+        const rahmen = [];
+        for (const sd of [-1, 1]) {
+            rahmen.push(B((noseX + tailX) / 2, yR, sd * (kb - 0.14), (noseX - tailX) / 2 - 0.05, 0.055, 0.03, M.eisen));
+            rahmen.push(...blattfeder(fAx, rF + 0.03, sd * (kb - 0.14), 0.75, yR - 0.055 - rF - 0.03, true, M.eisen));
+            rahmen.push(...blattfeder(rAx, rR + 0.03, sd * (kb - 0.14), 0.9, yR - 0.055 - rR - 0.03, true, M.eisen));
+        }
+        for (const x of [noseX - 0.08, xS, rAx, tailX + 0.08]) rahmen.push(B(x, yR, 0, 0.03, 0.045, kb - 0.14, M.eisen));
+        rahmen.push(B(fAx, rF, 0, 0.03, 0.04, hzR - 0.05, M.eisen), C(rAx, rR, 0, "z", 0.035, 2 * hzR - 0.1, M.eisen, 10));
+        rahmen.push(dot([rAx, rR, 0], M.eisen, 0.12));
+        // der Kühler: Messing-Schale, dunkler Block, senkrechte Stäbe, Verschluss
+        const yk0 = yR + 0.04,
+            hk = (yK - yk0) / 2,
+            kuehler = [
+                B(xK, yk0 + hk, hwK - 0.025, 0.06, hk, 0.025, M.messing),
+                B(xK, yk0 + hk, -hwK + 0.025, 0.06, hk, 0.025, M.messing),
+                B(xK, yK - 0.03, 0, 0.06, 0.03, hwK, M.messing),
+                B(xK, yk0 + 0.03, 0, 0.06, 0.03, hwK, M.messing),
+                B(xK, yk0 + hk, 0, 0.045, hk - 0.05, hwK - 0.05, T.grille),
+                C(xK, yK + 0.035, 0, "y", 0.035, 0.05, M.messing, 12),
+            ];
+        const nG = teil(9, 5);
+        for (let i = 0; i < nG; i++)
+            kuehler.push(B(xK + 0.05, yk0 + hk, -hwK + 0.06 + ((2 * hwK - 0.12) * i) / (nG - 1), 0.006, hk - 0.06, 0.006, M.messing));
+        // die Haube: gewölbter Deckel, Seiten mit Luftschlitzen
+        const hl = (xK - 0.06 - xS) / 2,
+            hx = xS + hl,
+            hy0 = yR + 0.05,
+            hy1 = yG - 0.06;
+        const haube = [dome(hx, hy1, 0, hl, 0.02, hwH, lack, 0.05)];
+        for (const sd of [-1, 1]) {
+            haube.push(B(hx, (hy0 + hy1) / 2, sd * hwH, hl, (hy1 - hy0) / 2, 0.012, lack));
+            for (let i = 0; i < 7; i++) haube.push(B(hx - hl * 0.6 + (hl * 1.2 * i) / 6, (hy0 + hy1) / 2 + 0.04, sd * (hwH + 0.012), 0.008, (hy1 - hy0) * 0.28, 0.004, T.grille));
+        }
+        // Spritzwand, Scheibe, Wanne, Rücken, Gepäckkasten
+        const ws = [
+            B(xS + 0.012, yG + 0.3, 0, 0.004, 0.27, kb - 0.08, T.glass),
+            B(xS + 0.012, yG + 0.6, 0, 0.014, 0.014, kb - 0.06, M.messing),
+            B(xS + 0.012, yG + 0.3, 0, 0.012, 0.01, kb - 0.06, M.messing),
+        ];
+        for (const sd of [-1, 1]) ws.push(B(xS + 0.012, yG + 0.3, sd * (kb - 0.06), 0.014, 0.31, 0.014, M.messing));
+        const wanne = [
+            B(xS, (yR + yG) / 2 + 0.03, 0, 0.02, (yG - yR) / 2 + 0.03, kb, M.holz),
+            B(xS + 0.01, yG + 0.03, 0, 0.03, 0.012, kb, M.messing),
+            B((xS + xT) / 2, (yR + yFl) / 2, 0, (xS - xT) / 2, (yFl - yR) / 2, kb - 0.02, lack),
+            B(xT - 0.02, (yR + yG) / 2 + 0.06, 0, 0.03, (yG - yR) / 2 + 0.06, kb, lack, 0.12),
+            B((xT + tailX) / 2 + 0.03, yR + 0.2, 0, (xT - tailX) / 2 - 0.06, 0.15, kb * 0.8, M.holzDunkel),
+        ];
+        for (const sd of [-1, 1]) {
+            const z = sd * (kb - 0.02);
+            wanne.push(B((xS + xT) / 2, (yR + yG) / 2 + 0.03, z, (xS - xT) / 2, (yG - yR) / 2 + 0.03, 0.02, lack));
+            wanne.push(C((xS + xT) / 2, yG + 0.06, z, "x", 0.03, xS - xT, M.leder, 10)); // der Wulst
+            for (const [a, b] of [
+                [xS - 0.15, xS - 0.75],
+                [xT + 0.12, xT + 0.7],
+            ])
+                wanne.push(strang([[a, yR + 0.1, sd * (kb + 0.006)], [a, yG - 0.04, sd * (kb + 0.006)], [b, yG - 0.04, sd * (kb + 0.006)], [b, yR + 0.1, sd * (kb + 0.006)]], [0, 0, sd], 0.008, 0.02, T.grille));
+        }
+        const innen = new THREE.Group();
+        for (const [x, hoch] of [
+            [xS - 0.5, 0.3],
+            [xT + 0.42, 0.4],
+        ])
+            innen.add(
+                baugruppe("bank", [
+                    B(x, yFl + 0.2, 0, 0.22, 0.07, kb - 0.08, M.leder),
+                    B(x - 0.22, yFl + 0.27 + hoch / 2, 0, 0.05, hoch / 2 + 0.06, kb - 0.08, M.leder, -0.1),
+                ])
+            );
+        // das Lenkrad: steile Säule vom Boden an der Spritzwand, das Rad senkrecht auf ihr
+        const zL = -kb * 0.45,
+            a = new THREE.Vector3(xS - 0.06, yFl, zL),
+            e = new THREE.Vector3(xS - 0.4, yG + 0.16, zL),
+            dir = e.clone().sub(a).normalize();
+        const rad = new THREE.Group();
+        rad.add(new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.016, teil(6, 3), teil(24, 10)), M.holz));
+        for (let i = 0; i < 3; i++) {
+            const sp = box(0.17, 0.02, 0.012, M.messing);
+            sp.rotation.z = (i * Math.PI * 2) / 3;
+            sp.position.set(Math.cos(sp.rotation.z) * 0.085, Math.sin(sp.rotation.z) * 0.085, 0);
+            rad.add(sp);
+        }
+        rad.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
+        rad.position.copy(e);
+        innen.add(baugruppe("lenkrad", [strang([a.toArray(), e.toArray()], [0, 0, 1], 0.035, 0.035, M.eisen), rad]));
+        // die Kotflügel je Seite (frei über dem Rad, vorn und hinten bis zum Trittbrett) und das Trittbrett
+        const yRB = yR - 0.03,
+            xRB1 = fAx - rF - 0.18,
+            xRB0 = rAx + rR + 0.12,
+            nk = teil(12, 6);
+        const fluegel = [-1, 1].map((sd) => {
+            const z = sd * hzR,
+                vorn = bogen(fAx, rF, rF + 0.08, 0.2, Math.PI - 0.55, nk).map(([x, y]) => [x, y, z]),
+                hinten = bogen(rAx, rR, rR + 0.08, Math.PI - 0.5, 0.25, nk).map(([x, y]) => [x, y, z]);
+            vorn.push([xRB1, yRB + 0.01, z]);
+            hinten.unshift([xRB0, yRB + 0.01, z]);
+            return baugruppe("kotfluegel", [strang(vorn, [0, 0, 1], 0.22, 0.014, lack), strang(hinten, [0, 0, 1], 0.24, 0.014, lack)]);
+        });
+        const zTB = (kb + hzR) / 2 + 0.02,
+            tritt = baugruppe(
+                "trittbrett",
+                [-1, 1].map((sd) => strang([[xRB1, yRB, sd * zTB], [xRB0, yRB, sd * zTB]], [0, 0, 1], hzR - kb + 0.1, 0.03, M.holzDunkel))
+            );
+        // die Scheinwerfer-Töpfe: Messing-Trommel, Glut-Scheibe, Arm zum Rahmen
+        const lampen = [-1, 1].map((sd) => {
+            const z = sd * (hwK + 0.17),
+                y = yR + 0.36,
+                x = xK + 0.1;
+            return baugruppe("scheinwerfer", [
+                C(x, y, z, "x", 0.1, 0.18, M.messing, 16),
+                C(x + 0.092, y, z, "x", 0.085, 0.012, Q("laterne"), 16),
+                B(x - 0.02, (y + yR) / 2, z, 0.015, (y - yR) / 2, 0.015, M.eisen),
+                B(x - 0.02, yR + 0.02, (z + sd * (kb - 0.14)) / 2, 0.015, 0.015, Math.abs(z - sd * (kb - 0.14)) / 2, M.eisen),
+            ]);
+        });
+        const aussen = new THREE.Group();
+        aussen.add(baugruppe("rahmen", rahmen));
+        aussen.add(baugruppe("kuehler", kuehler));
+        aussen.add(baugruppe("haube", haube));
+        aussen.add(baugruppe("windschutz", ws));
+        aussen.add(baugruppe("wanne", wanne));
+        for (const f of fluegel) aussen.add(f);
+        aussen.add(tritt);
+        for (const l of lampen) aussen.add(l);
+        const zu = P.verdeck != null ? Math.max(0, Math.min(1, P.verdeck)) : 0;
+        aussen.add(faltdach(xT + 0.14, yG - 0.04, kb + 0.03, S.yRoof, xS - 0.04, zu, M));
+        return { innen, aussen };
+    }
+
+    // ── DIE KANZEL DER ZUKUNFT (Stufe 5): EIN Rumpf aus einer Haut (kein Spalt, keine Haube, kein Grill, kein Spiegel) über
+    // verborgenen Rädern, die Kabine weit vorn unter durchgehendem Glas, das Heck ein langer Tropfen; das Licht zeichnet die
+    // Linie — die Taille als Leuchtband um den ganzen Wagen (hinten rot), der Saum des Glases, ein Bogen um jedes verborgene Rad.
+    // Der Querschnitt je Station ist eine Superellipse um die Taille yw (unten kantiger, oben runder mit Einzug); die Enden
+    // schließen in einer Kappe (Nase, Tropfen). Die Oberlinie liegt über jedem Rad (das Rad bleibt verborgen).
+    function bauKanzel(H, P, ctx) {
+        const S = scal(H, P),
+            Q = epocheStoff,
+            lack = ctx.bodyMat,
+            T = ctx.M;
+        const { fAx, rAx, noseX, tailX, hz } = S,
+            r = P.radR,
+            yG = S.yBelt,
+            yD = S.yRoof,
+            kM = P.kabineMitte,
+            kL = P.kabineLaenge,
+            yb0 = P.fahrhoehe + 0.08,
+            Wm = hz + 0.17,
+            nL = 6,
+            nU = 3;
+        const sst = (a, b, x) => {
+            const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
+            return t * t * (3 - 2 * t);
+        };
+        // die Oberlinie: Schlüsselpunkte (Tropfen, Hinterrad, Scheitel, Glas-Fuß vorn, Nase), monoton kubisch verbunden
+        const yBo = (x) => yb0 + 0.08 * sst(noseX - 0.4, noseX, x) + 0.16 * sst(tailX + 0.5, tailX, x);
+        const K = [
+            [tailX, Math.max(yG - 0.04, 2 * r - 0.02)],
+            [rAx, Math.max(yG + 0.08, 2 * r + 0.14)],
+            [kM + 0.1 * kL, yD],
+            [Math.min(fAx - 0.05, kM + 0.5 * kL), yG + 0.03],
+            [noseX, yb0 + 0.7 * (yG - yb0)],
+        ].sort((p, q) => p[0] - q[0]);
+        for (let i = 1; i < K.length; i++) K[i][0] = Math.max(K[i][0], K[i - 1][0] + 0.05);
+        const m = K.map((p, i) => {
+            if (i === 0 || i === K.length - 1) return 0;
+            const d0 = (p[1] - K[i - 1][1]) / (p[0] - K[i - 1][0]),
+                d1 = (K[i + 1][1] - p[1]) / (K[i + 1][0] - p[0]);
+            return d0 * d1 <= 0 ? 0 : (2 * d0 * d1) / (d0 + d1);
+        });
+        const radOben = (x) => {
+            let y = 0;
+            for (const ax of [fAx, rAx]) {
+                const d = Math.abs(x - ax);
+                if (d < r + 0.06) y = Math.max(y, r + Math.sqrt((r + 0.06) ** 2 - d * d) + 0.1);
+            }
+            return y;
+        };
+        const yTo = (x) => {
+            let i = 0;
+            while (i < K.length - 2 && x > K[i + 1][0]) i++;
+            const [x0, y0] = K[i],
+                [x1, y1] = K[i + 1],
+                h = x1 - x0,
+                t = Math.max(0, Math.min(1, (x - x0) / h));
+            const h00 = 2 * t ** 3 - 3 * t * t + 1,
+                h10 = t ** 3 - 2 * t * t + t,
+                h01 = -2 * t ** 3 + 3 * t * t,
+                h11 = t ** 3 - t * t;
+            return Math.max(radOben(x), h00 * y0 + h10 * h * m[i] + h01 * y1 + h11 * h * m[i + 1]);
+        };
+        // die Station x: Boden, Taille, Scheitel, Breite, Kappe, Glas-Grenze sb (Anteil der oberen Hälfte)
+        const station = (x) => {
+            const yb = yBo(x),
+                yt = yTo(x),
+                yGl = yG + 0.16 * sst(kM - 0.3 * kL, rAx, x),
+            yw = yb + 0.45 * (Math.min(yt, yG) - yb),
+                W = Wm * (1 - 0.36 * sst(rAx, tailX, x) - 0.1 * sst(fAx, noseX, x));
+            const kap = (a, b) => (x > a === b > a ? Math.pow(1 - Math.min(1, Math.abs(x - a) / Math.abs(b - a)) ** 2.2, 1 / 2.2) : 1);
+            const c = Math.min(kap(noseX - 0.45, noseX), kap(tailX + 0.32, tailX));
+            const sb = yt > yGl + 0.006 ? Math.max(0, Math.min(1, (yGl - yw) / (yt - yw))) : 1;
+            return { yb, yt, yw, W, c, sb, tum: Math.min(0.3, P.tumblehome / Wm) * 0.5 };
+        };
+        const quer = (Z, s, oben, sd) => {
+            const y = oben ? Z.yw + (Z.yt - Z.yw) * s : Z.yw - (Z.yw - Z.yb) * s,
+                n = oben ? nU : nL,
+                z = Z.W * Math.pow(Math.max(0, 1 - s ** n), 1 / n) * (oben ? 1 - Z.tum * s : 1);
+            return [Z.yw + (y - Z.yw) * Z.c, sd * z * Z.c];
+        };
+        const L = noseX - tailX,
+            nu = teil(56, 18),
+            X = (u) => tailX + L * u;
+        const Zs = new Map(),
+            st = (u) => {
+                if (!Zs.has(u)) Zs.set(u, station(X(u)));
+                return Zs.get(u);
+            };
+        const pt = (u, s, oben, sd) => {
+            const [y, z] = quer(st(u), s, oben, sd);
+            return [X(u), y, z];
+        };
+        const nS = teil(6, 3);
+        const rumpf = [
+            gitter(nu, 2 * nS, (u, v) => (v <= 0.5 ? pt(u, Math.sin((v * 2 * Math.PI) / 2), false, 1) : pt(u, Math.sin(((1 - v) * 2 * Math.PI) / 2), false, -1)), Q("verbund"), false),
+        ];
+        for (const sd of [-1, 1]) rumpf.push(gitter(nu, nS, (u, v) => pt(u, v * st(u).sb, true, sd), lack, sd > 0));
+        const nG = teil(14, 6),
+            glas = gitter(
+                nu,
+                nG,
+                (u, v) => {
+                    const sb = st(u).sb,
+                        w = v <= 0.5 ? v * 2 : (1 - v) * 2;
+                    return pt(u, sb + (1 - sb) * Math.sin((w * Math.PI) / 2), true, v <= 0.5 ? 1 : -1);
+                },
+                Q("kanzel"),
+                true
+            );
+        // die Licht-Linien: die Taille (vorn weiß, hinten rot), der Saum des Glases, die Bögen um die Räder
+        const aus = 0.005,
+            taille = (u, sd) => {
+                const Z = st(u);
+                return [X(u), Z.yw, sd * (Z.W * Z.c + aus)];
+            },
+            xRot = tailX + 0.45;
+        const us = Array.from({ length: nu + 1 }, (_, i) => i / nu),
+            weiss = [...us.filter((u) => X(u) >= xRot).map((u) => taille(u, 1)), ...us.filter((u) => X(u) >= xRot).reverse().map((u) => taille(u, -1)).slice(1)],
+            rot = [...us.filter((u) => X(u) <= xRot).reverse().map((u) => taille(u, 1)), ...us.filter((u) => X(u) <= xRot).map((u) => taille(u, -1)).slice(1)];
+        const saumU = us.filter((u) => st(u).sb < 1),
+            saum = [...saumU.map((u) => pt(u, st(u).sb, true, 1)), ...saumU.reverse().map((u) => pt(u, st(u).sb, true, -1))].map(([x, y, z]) => [x, y + 0.004, z * 1.004]);
+        const licht = [strang(weiss, [0, 1, 0], 0.016, 0.01, Q("lichtKante")), strang(rot, [0, 1, 0], 0.016, 0.01, T.lensR)];
+        if (saum.length > 3) licht.push(strang(saum, [0, 1, 0], 0.01, 0.008, Q("lichtKante")));
+        // je Rad: der Bogen auf der Flanke über dem verborgenen Rad (Radius r + 0,08), von Boden zu Boden
+        const flanke = (x, y) => {
+            const Z = station(x),
+                yy = Z.yw + (y - Z.yw) / Math.max(1e-3, Z.c),
+                oben = yy >= Z.yw,
+                s = oben ? (yy - Z.yw) / Math.max(1e-3, Z.yt - Z.yw) : (Z.yw - yy) / Math.max(1e-3, Z.yw - Z.yb);
+            return quer(Z, Math.max(0, Math.min(1, s)), oben, 1)[1];
+        };
+        const verkleidung = [];
+        for (const ax of [fAx, rAx])
+            for (const sd of [-1, 1]) {
+                const R = r + 0.08,
+                    a0 = Math.asin(Math.max(-0.9, Math.min(0.9, (yBo(ax) + 0.05 - r) / R)));
+                const pts = bogen(ax, r, R, a0, Math.PI - a0, teil(16, 8)).map(([x, y]) => [x, y, sd * (flanke(x, y) + aus)]);
+                verkleidung.push(baugruppe("radVerkleidung", [strang(pts, [0, 0, 1], 0.01, 0.014, Q("lichtKante"))]));
+            }
+        // innen: zwei Sitzschalen unter dem Glas, das Licht-Band des Bretts
+        const yI = yb0 + 0.14,
+            innen = new THREE.Group();
+        innen.add(
+            baugruppe(
+                "sitze",
+                [-1, 1].flatMap((sd) => [
+                    B(kM - 0.15, yI + 0.08, sd * 0.36, 0.26, 0.06, 0.22, T.seat),
+                    B(kM - 0.42, yI + 0.34, sd * 0.36, 0.05, 0.28, 0.21, T.seat, -0.35),
+                ])
+            )
+        );
+        innen.add(baugruppe("brett", [B(kM + 0.42, yG - 0.02, 0, 0.12, 0.05, Wm * 0.62, Q("verbund")), B(kM + 0.32, yG + 0.03, 0, 0.006, 0.006, Wm * 0.55, Q("lichtKante"))]));
+        const aussen = new THREE.Group();
+        const haut = baugruppe("monocoque", rumpf);
+        haut.add(baugruppe("lichtKante", licht));
+        for (const v of verkleidung) haut.add(v);
+        aussen.add(haut);
+        aussen.add(baugruppe("kanzel", [glas]));
+        return { innen, aussen };
+    }
+    const TOPO = { kutsche: bauKutsche, motorwagen: bauMotorwagen, kanzel: bauKanzel };
 
     // Schwerpunkthöhe ABGELEITET aus der Form: Bodenfreiheit + Masse sitzt tief (Chassis/Akku) + etwas Aufbau.
     // → flacher Supersportler = tiefer SP = wenig Wanken · hoher SUV = hoher SP = mehr Wanken (automatisch).
@@ -2515,7 +3387,7 @@
     // der Presets) mergt ueber DIESELBE Basis wie buildInstance (DEFAULT_P + BASE_P) — die
     // eine Merge-Ordnung, kein Duplikat.
     function exportDrive(Pin) {
-        const P = Object.assign({}, DEFAULT_P, BASE_P, Pin || {});
+        const P = epocheForm(Object.assign({}, DEFAULT_P, BASE_P, Pin || {})); // dieselbe Zeit-Achse wie der Bau
         const ph = carPhys(P);
         // DONOR-ABSCHIED (18.07., rein additiv): die Stations-Wahrheit des Baus
         // (derive + scal-Y-Linien + seatRow-Anker) reist als DATEN mit — der
@@ -3397,6 +4269,16 @@
             uniform: true, // ein Gesetz-Wert (Vertrag §3 B4): kein Bau-Byte, das Fahr-Gesetz liest ihn (reglerGesetz vehicle:grip)
             law: "Reibkreis μ · weniger = früher Drift/Übersteuern",
         },
+        {
+            id: "epoche",
+            lab: "Epoche",
+            min: 0,
+            max: 5,
+            step: 0.05,
+            def: 4,
+            grp: "EPOCHE",
+            law: "Schlitten 0 · Ochsenkarren 1 · Kutsche 2 · Motorwagen 3 · heute 4 · Zukunft 5 — die Form stetig, Rad · Antrieb · Haut · Stoff gestuft (EPOCHE_GESETZ)",
+        },
     ];
     // ── KULTUREN: eingefrorener Kontroll-Vektor je Marke (orthogonal zum Typ). Achsen: cEdge Kante↔Fläche · cTension Spannung · cStance Haltung · cGrille Signatur. ──
     const CULTURES = {
@@ -3596,6 +4478,117 @@
         grip: 1.0,
     };
     const BASE_P = { heck: "stufe", windshieldRake: 0.5 };
+
+    // ── DIE ZEIT-ACHSE: EIN Gesetz, das die Rezept-Parameter durch die Geschichte formt ──
+    // Der Regler `epoche` (0…5, PARAMS) läuft über die Stufen der Tafel; jede Stufe trägt ihr Jahr (die Welt rechnet
+    // ihr Jahr per `epocheAusJahr` auf die Achse), ihre FORM (absolute Ziele der stetigen Parameter, `s`; der Charakter des
+    // Rezepts überlebt zu `erbe` als Abstand zum Grund-Wagen DEFAULT_P) und ihre SPRÜNGE (`gestuft`: das Rad — Kufe, Vollrad,
+    // Speichenrad, Felge, geschlossene Scheibe —, ob es frei neben dem Kasten steht, der Antrieb — Zugtier, Motor, leise —,
+    // die Haut — offen oder mit Glashaus —, die eigene GESTALT `topo` — Kutsche, Motorwagen, Kanzel: TOPO statt der Haut
+    // von heute) und ihre STOFFE (`stoffe`: die Tafel der Zeit über dieselben Stoff-Schlüssel, `epocheTafel`; `koerper` nennt
+    // den Stoff des Kastens statt des Lacks der Gestalt — Holz, das Lackholz der Kutsche, das Wagengrün, die Keramik; nur „heute"
+    // trägt den Lack des Samens).
+    // `gestalt` nennt die Baugruppen, die die eigene Gestalt beim Namen trägt (die Linse E zählt sie am Bau; wer sie trägt, trägt
+    // nie die Haut von heute `autoHaut`). Zwischen zwei Stufen interpoliert die Form stetig, die Sprünge trägt die nächste Stufe (Math.round): der Motorwagen
+    // springt bei 2,5 aus der Kutsche, die Felge bei 3,5 aus dem Speichenrad. „heute" trägt nichts — der Regler auf 4 (und
+    // jeder Bau ohne Epoche) ist der Bau von heute, byte-gleich (gate:asset-contract).
+    const EPOCHE_GESETZ = [
+        {
+            id: "schlitten",
+            lab: "Schleife · Schlitten",
+            jahr: -5000,
+            erbe: 0.2,
+            koerper: "holz",
+            s: { radstand: 2.0, spur: 1.0, ueberhangV: 0.55, ueberhangH: 0.25, taille: 0, radR: 0.2, fahrhoehe: 0.22, guertel: 0.6, dach: 1.0, kabineMitte: -0.1, kabineLaenge: 1.2, tumblehome: 0, windshieldRake: 0.3 },
+            gestuft: { rad: "kufe", radFrei: true, antrieb: "zugtier", haut: "offen", heck: "steil", tueren: 2 },
+            stoffe: { rimM: "holz", rimD: "holzDunkel", tire: "eisen", steel: "holzDunkel", seat: "leder", trim: "holz", pillar: "holzDunkel", housing: "holzDunkel", grille: "holz", liner: "holzDunkel", drl: "holzDunkel", lensW: "holzDunkel", lensR: "holzDunkel", lensA: "holzDunkel" },
+        },
+        {
+            id: "ochsenkarren",
+            lab: "Ochsenkarren",
+            jahr: -3000,
+            erbe: 0.3,
+            koerper: "holz",
+            s: { radstand: 2.1, spur: 1.2, ueberhangV: 0.5, ueberhangH: 0.4, taille: 0, radR: 0.42, fahrhoehe: 0.42, guertel: 0.92, dach: 1.3, kabineMitte: -0.1, kabineLaenge: 1.4, tumblehome: 0, windshieldRake: 0.3 },
+            gestuft: { rad: "voll", radFrei: true, antrieb: "zugtier", haut: "offen", heck: "steil", tueren: 2 },
+            stoffe: { rimM: "holz", rimD: "bronze", tire: "eisen", steel: "holzDunkel", seat: "leder", trim: "holz", pillar: "holzDunkel", housing: "bronze", grille: "holz", liner: "holzDunkel", drl: "holzDunkel", lensW: "holzDunkel", lensR: "holzDunkel", lensA: "holzDunkel" },
+        },
+        {
+            id: "kutsche",
+            lab: "Kutsche · Fuhrwerk",
+            jahr: 1700,
+            erbe: 0.4,
+            koerper: "lackholz",
+            s: { radstand: 2.5, spur: 1.36, ueberhangV: 0.3, ueberhangH: 0.66, taille: 0, radR: 0.66, radVorn: 0.72, fahrhoehe: 0.55, guertel: 1.55, dach: 2.3, kabineMitte: -0.25, kabineLaenge: 1.5, tumblehome: 0, windshieldRake: 0.08, verdeck: 1 },
+            gestuft: { rad: "speiche", radFrei: true, antrieb: "zugtier", topo: "kutsche" },
+            gestalt: ["kasten", "bock", "bank", "verdeck", "laterne", "unterwagen"],
+            stoffe: { rimM: "holz", rimD: "messing", tire: "eisen" },
+        },
+        {
+            id: "motorwagen",
+            lab: "früher Motorwagen",
+            jahr: 1900,
+            erbe: 0.5,
+            koerper: "wagengruen",
+            s: { radstand: 2.55, spur: 1.42, ueberhangV: 0.35, ueberhangH: 0.55, taille: 0, radR: 0.41, radVorn: 1, fahrhoehe: 0.34, guertel: 1.12, dach: 1.95, kabineMitte: -0.6, kabineLaenge: 1.7, tumblehome: 0, windshieldRake: 0.05, verdeck: 0 },
+            gestuft: { rad: "speiche", radFrei: true, antrieb: "motor", topo: "motorwagen" },
+            gestalt: ["kuehler", "haube", "kotfluegel", "trittbrett", "scheinwerfer", "windschutz", "lenkrad", "rahmen"],
+            stoffe: { rimM: "holz", rimD: "messing" },
+        },
+        { id: "heute", lab: "heute", jahr: 2025 },
+        {
+            id: "zukunft",
+            lab: "Zukunft",
+            jahr: 2150,
+            erbe: 0.7,
+            koerper: "keramik",
+            s: { radstand: 3.0, spur: 1.66, ueberhangV: 0.62, ueberhangH: 1.2, taille: 0, radR: 0.35, fahrhoehe: 0.12, guertel: 0.8, dach: 1.22, kabineMitte: 0.35, kabineLaenge: 1.9, tumblehome: 0.2, windshieldRake: 0.9 },
+            gestuft: { rad: "aero", radInnen: 0.08, antrieb: "leise", topo: "kanzel" },
+            gestalt: ["monocoque", "kanzel", "lichtKante", "radVerkleidung"],
+        },
+    ];
+    const EPOCHE_FORM = ["radstand", "spur", "ueberhangV", "ueberhangH", "taille", "radR", "fahrhoehe", "guertel", "dach", "kabineMitte", "kabineLaenge", "tumblehome", "windshieldRake", "radVorn", "verdeck"];
+    function epocheZiel(E, P, k) {
+        if (!E.s || E.s[k] == null) return P[k];
+        const ref = DEFAULT_P[k] != null ? DEFAULT_P[k] : BASE_P[k];
+        if (ref == null) return P[k] != null ? P[k] : E.s[k]; // ein Maß nur der Zeit (Vorderrad, Verdeck): das Wort des Rezepts gilt
+        return E.s[k] + (P[k] != null && ref != null ? (P[k] - ref) * E.erbe : 0);
+    }
+    // P (gemergt) → P der Epoche. Ohne `epoche` und auf „heute" genau DASSELBE Objekt (byte-gleich); sonst ein neues, das
+    // `epoche` VERBRAUCHT hat (idempotent: ein geformtes P formt nie zweimal) und seine Stufe beim Namen trägt (`epocheStufe`).
+    function epocheForm(P) {
+        if (!P || P.epoche == null || !Number.isFinite(+P.epoche)) return P;
+        const n = EPOCHE_GESETZ.length - 1;
+        const e = Math.max(0, Math.min(n, +P.epoche));
+        const i0 = Math.floor(e),
+            t = e - i0,
+            i1 = Math.min(n, i0 + 1);
+        const E0 = EPOCHE_GESETZ[i0],
+            E1 = EPOCHE_GESETZ[i1],
+            Es = EPOCHE_GESETZ[Math.round(e)];
+        if (t === 0 && !E0.s && !E0.gestuft && !E0.stoffe) return P; // eine Stufe, die nichts trägt (heute), formt nichts
+        const Q = Object.assign({}, P);
+        delete Q.epoche;
+        for (const k of EPOCHE_FORM) {
+            const a = epocheZiel(E0, P, k),
+                b = epocheZiel(E1, P, k);
+            if (a == null || b == null) continue;
+            Q[k] = a + (b - a) * t;
+        }
+        if (Es.gestuft) Object.assign(Q, Es.gestuft);
+        Q.epocheStufe = Es.id;
+        return Q;
+    }
+    // Das Jahr eines Orts → die Achse (stückweise linear zwischen den Jahren der Stufen, geklemmt).
+    function epocheAusJahr(jahr) {
+        const J = EPOCHE_GESETZ.map((E) => E.jahr);
+        if (!(jahr > J[0])) return 0;
+        for (let i = 1; i < J.length; i++) if (jahr <= J[i]) return i - 1 + (jahr - J[i - 1]) / (J[i] - J[i - 1]);
+        return J.length - 1;
+    }
+    function epocheStufe(P) {
+        return EPOCHE_GESETZ.find((E) => E.id === (P && P.epocheStufe)) || null;
+    }
     function presetPatch(id) {
         const pre = PRESETS[id];
         if (!pre) return null;
@@ -3613,7 +4606,8 @@
     function buildInstance(rezeptId, seed, lod, ov, werk) {
         const pre = PRESETS[rezeptId];
         if (!pre) return null;
-        const P = Object.assign({}, DEFAULT_P, BASE_P, pre.s, pre.fx, ov || {});
+        // die Zeit-Achse (EPOCHE_GESETZ): ohne `epoche` bzw. auf „heute" dasselbe P
+        const P = epocheForm(Object.assign({}, DEFAULT_P, BASE_P, pre.s, pre.fx, ov || {}));
         // die gezeigte Stufe (kindStages.vehicle = [0, 1]): die größte deklarierte ≤ dem Wunsch
         const st = lod >= 1 ? 1 : 0;
         // DIE STUFE TRÄGT IHRE ZEILE (pipeline.K3, B2c — auch am Rand jedes Reglers): trägt der Bau mehr Dreiecke als die
@@ -3644,22 +4638,34 @@
         }
     }
     function baueFahrzeug(rezeptId, seed, P, st, werk) {
-        const mats = materials();
+        // die Tafel der Epoche (ohne Stufe die Tafel von heute); ein Kasten aus Holz ersetzt den Lack der Gestalt, nie das
+        // Ton-Modell der Werkstatt (die Anatomie-Ansicht bleibt Ton)
+        const E = epocheStufe(P);
+        const mats = epocheTafel(E);
         const w = werk || {};
-        const ctx = { M: mats, bodyMat: w.bodyMat || lackStoff(lackIndex(seed)), doors: w.doors || [], corners: w.corners || [] };
+        const bodyMat =
+            E && E.koerper && w.bodyMat !== materials().clay ? epocheStoff(E.koerper) : w.bodyMat || lackStoff(lackIndex(seed));
+        const ctx = { M: mats, bodyMat: bodyMat, doors: w.doors || [], corners: w.corners || [] };
         const H = hardpoints(P);
         const g = new THREE.Group();
-        const pkg = buildPackage(H, P, ctx);
-        const body = buildSkin(H, P, ctx);
+        // die Gestalt der Stufe (TOPO: Kutsche, Motorwagen, Kanzel) baut Innen und Außen selbst; ohne sie die Haut von heute
+        // mit derselben Nachbearbeitung wie die Shell-rebuild (Verjüngung + Bug-Konvexität)
+        const topo = TOPO[P.topo] && TOPO[P.topo](H, P, ctx);
+        const pkg = topo ? topo.innen : buildPackage(H, P, ctx);
+        const body = topo ? topo.aussen : buildSkin(H, P, ctx);
         const wheels = buildWheels(H, P, ctx);
         g.add(pkg);
         g.add(body);
         g.add(wheels);
-        const S = scal(H, P); // dieselbe Nachbearbeitung wie die Shell-rebuild (Verjüngung + Bug-Konvexität)
-        taperBody(pkg, S, P);
-        taperBody(body, S, P);
-        bowEnds(body, S);
-        bowEnds(pkg, S);
+        if (!topo) {
+            const S = scal(H, P);
+            taperBody(pkg, S, P);
+            taperBody(body, S, P);
+            bowEnds(body, S);
+            bowEnds(pkg, S);
+            body.name = "autoHaut"; // die Linse E liest den Namen: keine Stufe mit eigener Gestalt trägt sie
+        }
+        if (P.antrieb === "zugtier") body.add(buildDeichsel(H, P, ctx)); // nach der Verjüngung: sie formt nur den Kasten
         g.userData = { kind: "vehicle", rezeptId: rezeptId, seed: seed, lod: st };
         g.updateMatrixWorld(true);
         return g;
@@ -3681,6 +4687,10 @@
         CULTURES: CULTURES,
         DEFAULT_P: DEFAULT_P,
         BASE_P: BASE_P,
+        // die Zeit-Achse (rein additiv): die Tafel der Stufen, die Form eines P, das Jahr eines Orts auf der Achse
+        EPOCHE_GESETZ: EPOCHE_GESETZ,
+        epocheForm: epocheForm,
+        epocheAusJahr: epocheAusJahr,
         presetPatch: presetPatch,
         buildInstance: buildInstance,
         // Mess- & Physik-Fläche (Shell + Wirt lesen dieselben Gesetze)
