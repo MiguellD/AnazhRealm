@@ -1509,3 +1509,4 @@
 2026-11-02 01:15:49 takt-z148a-gtx tiere.K1#2,tiere.K3#2,mensch.K1#1,haar.K2#1,vegetation.K5#2,material.K2#1,material.K1#1,lod.K1#1,lod.K5#1,studios.K2#2,studios.K3#2,bauen.K1#2,studios.K4#1,siedlung.K1#2,siedlung.K4#2,leib.K1#2,fahrzeug.K2#1,fahrzeug.K2#2,ankunft.K2#1,profiband.K4#1,profiband.K1#1,profiband.K2#1,profiband.K2#2,profiband.K3#1,speicher.K4#2 OFFEN/OFFEN/OFFEN/GRÜN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN 20.1 · 25/25
 2026-11-02 01:16:11 takt-z148b-gtx START 3 Stationen in 1 Läufen
 2026-11-02 01:21:18 takt-z148b-gtx ankunft.K3#1,ankunft.K1#1,klang.K4#1 OFFEN/OFFEN/OFFEN 5.0 · 3/3
+2026-11-02 01:21:37 z148-abab START 2 Zellen
