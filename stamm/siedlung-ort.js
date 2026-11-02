@@ -1908,7 +1908,7 @@ class AnazhRealm_siedlung_ort {
         // Akt beim Spieler (Chat „dorf"), mit `position` nur dort — eine leere oder unendliche ist eine laute Absage.
         if ("position" in o && !(o.position && Number.isFinite(o.position.x) && Number.isFinite(o.position.z))) {
             this.log("Siedlung ohne Ort: der verlangte Ort fehlt — keine Gründung (nie still beim Spieler).", "ERROR");
-            this._chatEcho?.("Hier kann kein Dorf entstehen: der Ort fehlt.");
+            this._chatEcho?.(this._t("chat.befehl.dorf.ort-fehlt"));
             return null;
         }
         // FOUNDRY-WARM — Dorf braucht export-settlement. Kaltes Buch → LAUT blockieren
@@ -1995,8 +1995,11 @@ class AnazhRealm_siedlung_ort {
             if (this._spielerVerlangt(o.verlangt))
                 this._chatEcho?.(
                     res.placed > 0
-                        ? `„${res.name || "Das Dorf"}" steht vor dir: ${res.placed} ${res.placed === 1 ? "Haus" : "Häuser"}.`
-                        : "Hier findet kein Haus Grund — zu steil, zu nass oder verbaut. Versuch es an einem anderen Ort."
+                        ? this._t(res.placed === 1 ? "chat.befehl.dorf.steht-eins" : "chat.befehl.dorf.steht", {
+                              name: res.name || this._t("chat.befehl.dorf.name-leer"),
+                              n: res.placed,
+                          })
+                        : this._t("chat.befehl.dorf.kein-grund")
                 );
             // Konsum: Blick (nur für den, der das Dorf verlangt hat) + Locator automatisch
             this._nachDorfOrientieren(res, o.verlangt);

@@ -2419,14 +2419,14 @@ async function checkBandWaves9And10a({ page, check }) {
             out.roleLabelsFrozen =
                 !!AR.BLUEPRINT_ROLE_LABELS &&
                 Object.isFrozen(AR.BLUEPRINT_ROLE_LABELS) &&
-                AR.BLUEPRINT_ROLE_LABELS.architecture === "Bauwerk" &&
-                AR.BLUEPRINT_ROLE_LABELS.tool === "Werkzeug" &&
-                AR.BLUEPRINT_ROLE_LABELS.machine === "Maschine";
+                AR._t(AR.BLUEPRINT_ROLE_LABELS.architecture) === "Bauwerk" &&
+                AR._t(AR.BLUEPRINT_ROLE_LABELS.tool) === "Werkzeug" &&
+                AR._t(AR.BLUEPRINT_ROLE_LABELS.machine) === "Maschine";
             out.domainLabelsFrozen =
                 !!AR.TOOL_DOMAIN_LABELS &&
                 Object.isFrozen(AR.TOOL_DOMAIN_LABELS) &&
-                AR.TOOL_DOMAIN_LABELS.forging === "Schmiede" &&
-                AR.TOOL_DOMAIN_LABELS.alchemy === "Alchemie";
+                AR._t(AR.TOOL_DOMAIN_LABELS.forging) === "Schmiede" &&
+                AR._t(AR.TOOL_DOMAIN_LABELS.alchemy) === "Alchemie";
             out.domainColorsFrozen =
                 !!AR.TOOL_DOMAIN_COLORS &&
                 Object.isFrozen(AR.TOOL_DOMAIN_COLORS) &&

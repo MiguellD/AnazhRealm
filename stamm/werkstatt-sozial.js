@@ -22,12 +22,10 @@ class AnazhRealm_werkstatt_sozial {
     //   2) Host → createNewWorld mit role="host", Auto-Start P2P nach dem Wechsel, Host-Banner (den Code gibt `teileWelt`)
     //   3) Joinen → der Welt-Code (`empfangeWerk` → `_weltBeitritt`: world-request → world-snapshot → _importGuestWorld → Wechsel)
     _openNewWorldDialog() {
+        // spielgang.K5: die Frage stellt die eigene Oberfläche — es gibt keinen prompt/confirm-Zwilling mehr; fehlt der
+        // Dialog, bricht es laut
         const dialog = document.getElementById("new-world-dialog");
-        if (!dialog || typeof dialog.showModal !== "function") {
-            // Fallback wenn <dialog> nicht supported (alte Browser, headless?)
-            this._openNewWorldDialogLegacy();
-            return;
-        }
+        if (!dialog) throw new Error("NEUE WELT: index.html trägt kein #new-world-dialog");
         const slugInput = document.getElementById("new-world-slug");
         const modeRadios = dialog.querySelectorAll('input[name="new-world-mode"]');
         const roleFieldset = dialog.querySelector(".new-world-role");
@@ -89,7 +87,7 @@ class AnazhRealm_werkstatt_sozial {
                     reload: true,
                     role: "solo",
                 });
-                if (!id) statusEl.textContent = "Welt konnte nicht erschaffen werden — siehe Konsole.";
+                if (!id) statusEl.textContent = this._t("sozial.welt-nicht-erschaffen-konsole");
                 cleanup();
                 if (id) dialog.close();
                 else confirmBtn.disabled = false;
@@ -105,7 +103,7 @@ class AnazhRealm_werkstatt_sozial {
                     role: "host",
                 });
                 if (!id) {
-                    statusEl.textContent = "Welt konnte nicht erschaffen werden.";
+                    statusEl.textContent = this._t("sozial.welt-nicht-erschaffen");
                     confirmBtn.disabled = false;
                     return;
                 }
@@ -117,18 +115,18 @@ class AnazhRealm_werkstatt_sozial {
             // role === "join"
             const code = inviteInput.value.trim();
             if (!code) {
-                statusEl.textContent = "Bitte Einladungs-Code eingeben.";
+                statusEl.textContent = this._t("sozial.einladung-fehlt");
                 confirmBtn.disabled = false;
                 return;
             }
-            statusEl.textContent = "Verbinde mit Host…";
+            statusEl.textContent = this._t("sozial.verbinde-host");
             const result = await this.empfangeWerk(code, { slugHint: slug || null });
             if (!result.ok) {
                 statusEl.textContent = `${AnazhRealm.WERK_CODE.grund[result.grund.split(":")[0]]} (${result.grund})`;
                 confirmBtn.disabled = false;
                 return;
             }
-            statusEl.textContent = "Welt empfangen — lade…";
+            statusEl.textContent = this._t("sozial.welt-empfangen-lade");
             cleanup();
             dialog.close();
             // (die Tür lädt in die Gast-Welt: `_weltBeitritt` → `_importGuestWorld` → `_weltBetreten`)
@@ -136,42 +134,7 @@ class AnazhRealm_werkstatt_sozial {
 
         cancelBtn.addEventListener("click", onCancel);
         confirmBtn.addEventListener("click", onConfirm);
-        try {
-            dialog.showModal();
-        } catch {
-            // Fallback bei modal-Konflikten
-            this._openNewWorldDialogLegacy();
-        }
-    }
-
-    // Legacy-Fallback (prompt/confirm) für Umgebungen ohne <dialog>-Support
-    // oder bei UI-Fehlern. Ring 8 Original-Pfad.
-    _openNewWorldDialogLegacy() {
-        let slugRaw = "";
-        try {
-            slugRaw = window.prompt("Wie soll die neue Welt heißen? (leer = automatisch)", "") || "";
-        } catch {
-            slugRaw = "";
-        }
-        const slug = slugRaw.trim();
-        let inherit = false;
-        try {
-            inherit = window.confirm(
-                "Bisherige Person übernehmen?\n\n" +
-                    "OK: deine Werkzeuge, Seele, eigene Materialien + Baupläne wandern mit.\n" +
-                    "Abbrechen: frische Person in der neuen Welt."
-            );
-        } catch {
-            inherit = false;
-        }
-        const newId = this.createNewWorld({ slug: slug || null, inheritPlayer: inherit, reload: true });
-        if (!newId) {
-            try {
-                window.alert("Neue Welt konnte nicht erschaffen werden. Siehe Konsole.");
-            } catch {
-                /* headless */
-            }
-        }
+        dialog.showModal();
     }
 
     updateWorldInfo() {
@@ -189,11 +152,21 @@ class AnazhRealm_werkstatt_sozial {
             const journalCount = (this.state.worldJournal && this.state.worldJournal.entries.length) || 0;
             info.innerHTML = "";
             const line1 = document.createElement("div");
-            line1.textContent = `Name: ${m.slug || "(noch namenlos)"}  |  ID: ${idShort}…`;
+            line1.textContent = this._t("sozial.welt-info.name", {
+                name: m.slug || this._t("sozial.noch-namenlos"),
+                id: idShort,
+            });
             const line2 = document.createElement("div");
-            line2.textContent = `Alter: ${ageDays} Tag${ageDays === 1 ? "" : "e"}  |  Eltern-Welten: ${parents}`;
+            line2.textContent = this._t(ageDays === 1 ? "sozial.welt-info.alter-eins" : "sozial.welt-info.alter", {
+                tage: ageDays,
+                eltern: parents,
+            });
             const line3 = document.createElement("div");
-            line3.textContent = `Inventar: ${archCount} Bauwerke, ${bpCount} Baupläne, ${journalCount} Erinnerungen`;
+            line3.textContent = this._t("sozial.welt-info.inventar", {
+                bauwerke: archCount,
+                bauplaene: bpCount,
+                erinnerungen: journalCount,
+            });
             info.appendChild(line1);
             info.appendChild(line2);
             info.appendChild(line3);
@@ -216,9 +189,10 @@ class AnazhRealm_werkstatt_sozial {
         const peerCount = (p2p.peers && p2p.peers.size) || 0;
         banner.innerHTML = banner.hidden
             ? ""
-            : `<strong>Du hostest diese Welt.</strong> Status: ${p2p.connected ? "Bereit für Mitspieler" : "Verbinde…"}${
-                  peerCount > 0 ? ` (${peerCount} verbunden)` : ""
-              } — den Code gibt „Teilen" in der Bibliothek.`;
+            : this._t("sozial.host-banner", {
+                  status: this._t(p2p.connected ? "sozial.bereit-mitspieler" : "sozial.verbinde"),
+                  verbunden: peerCount > 0 ? this._t("sozial.n-verbunden", { n: peerCount }) : "",
+              });
     }
 
     // Ring 11.5: Guest-Banner. Sichtbar wenn worldMeta.role === "guest".
@@ -238,15 +212,16 @@ class AnazhRealm_werkstatt_sozial {
         banner.hidden = false;
         banner.innerHTML = "";
         const line1 = document.createElement("div");
-        line1.innerHTML = `<strong>Du bist Gast in dieser Welt.</strong> Status: ${
-            connected ? "Verbunden" : "Verbinde…"
-        }${peerCount > 0 ? ` (${peerCount} im Raum)` : ""}`;
+        line1.innerHTML = this._t("sozial.gast-banner", {
+            status: this._t(connected ? "sozial.verbunden" : "sozial.verbinde"),
+            raum: peerCount > 0 ? this._t("sozial.n-im-raum", { n: peerCount }) : "",
+        });
         const line2 = document.createElement("div");
         line2.style.marginTop = "0.35em";
         line2.style.fontSize = "0.88em";
         const url = hostInfo.url || "?";
         const room = hostInfo.roomId ? hostInfo.roomId.slice(0, 8) + "…" : "?";
-        line2.textContent = `Host: ${url} · Raum: ${room}`;
+        line2.textContent = this._t("sozial.host-raum", { url, raum: room });
         banner.appendChild(line1);
         banner.appendChild(line2);
     }
@@ -261,7 +236,7 @@ class AnazhRealm_werkstatt_sozial {
         const others = idx.filter((e) => e.worldId !== activeId);
         list.innerHTML = "";
         if (others.length === 0) {
-            list.textContent = "Nur diese eine Welt im Speicher.";
+            list.textContent = this._t("sozial.nur-eine-welt");
             return;
         }
         // Frisch sortieren: zuletzt gespielt zuerst.
@@ -274,36 +249,37 @@ class AnazhRealm_werkstatt_sozial {
             const label = document.createElement("div");
             label.style.cssText = "flex:1; min-width:0;";
             const ageDays = entry.bornAt ? Math.floor((Date.now() - entry.bornAt) / 86400000) : 0;
-            label.textContent = `${entry.slug || "(namenlos)"} — ${ageDays}d, ID ${entry.worldId.slice(0, 8)}…`;
+            label.textContent = this._t("sozial.picker-zeile", {
+                name: entry.slug || this._t("sozial.namenlos"),
+                tage: ageDays,
+                id: entry.worldId.slice(0, 8),
+            });
             const switchBtn = document.createElement("button");
             switchBtn.type = "button";
-            switchBtn.textContent = "wechseln";
+            switchBtn.textContent = this._t("sozial.wechseln");
             switchBtn.addEventListener("click", () => {
                 this.switchToWorld(entry.worldId, { reload: true });
             });
             const recipesBtn = document.createElement("button");
             recipesBtn.type = "button";
-            recipesBtn.textContent = "Rezepte holen";
-            recipesBtn.title = "Baupläne + Materialien + Werkzeuge aus dieser Welt in die aktive importieren";
-            recipesBtn.addEventListener("click", () => {
-                let confirmed = false;
-                try {
-                    confirmed = window.confirm(
-                        `Rezepte aus „${entry.slug}" in deine aktuelle Welt importieren? Konflikte bekommen -import-Suffix.`
-                    );
-                } catch {
-                    confirmed = true;
-                }
-                if (!confirmed) return;
+            recipesBtn.textContent = this._t("sozial.rezepte-holen");
+            recipesBtn.title = this._t("sozial.rezepte-holen-titel");
+            recipesBtn.addEventListener("click", async () => {
+                if (!(await this._frage(this._t("sozial.rezepte-import-frage", { welt: String(entry.slug) })))) return;
                 const result = this.importRecipesFromWorld(entry.worldId);
                 const chatOutput = document.getElementById("chat-output");
                 if (chatOutput) {
                     const line = document.createElement("div");
                     if (result.ok) {
                         const c = result.counts;
-                        line.textContent = `Aus „${entry.slug}" empfangen: ${c.blueprints} Baupläne, ${c.materials} Materialien, ${c.tools} Werkzeuge.`;
+                        line.textContent = this._t("sozial.rezepte-empfangen", {
+                            welt: String(entry.slug),
+                            bauplaene: String(c.blueprints),
+                            materialien: String(c.materials),
+                            werkzeuge: String(c.tools),
+                        });
                     } else {
-                        line.textContent = `Rezept-Import fehlgeschlagen: ${result.reason}`;
+                        line.textContent = this._t("sozial.rezept-import-fehl", { grund: String(result.reason) });
                     }
                     chatOutput.appendChild(line);
                     chatOutput.scrollTop = chatOutput.scrollHeight;
@@ -311,17 +287,9 @@ class AnazhRealm_werkstatt_sozial {
             });
             const delBtn = document.createElement("button");
             delBtn.type = "button";
-            delBtn.textContent = "löschen";
-            delBtn.addEventListener("click", () => {
-                let confirmed = false;
-                try {
-                    confirmed = window.confirm(
-                        `Welt „${entry.slug}" wirklich löschen? Das kann nicht rückgängig gemacht werden.`
-                    );
-                } catch {
-                    confirmed = true;
-                }
-                if (confirmed) {
+            delBtn.textContent = this._t("sozial.loeschen");
+            delBtn.addEventListener("click", async () => {
+                if (await this._frage(this._t("sozial.welt-loeschen-frage", { welt: String(entry.slug) }))) {
                     this.deleteWorld(entry.worldId);
                     this._renderWorldPicker();
                 }
@@ -345,8 +313,10 @@ class AnazhRealm_werkstatt_sozial {
         if (countEl) {
             countEl.textContent =
                 entries.length === 0
-                    ? "Keine Erinnerungen"
-                    : `${entries.length} Erinnerung${entries.length === 1 ? "" : "en"}`;
+                    ? this._t("sozial.keine-erinnerungen")
+                    : this._t(entries.length === 1 ? "sozial.n-erinnerung" : "sozial.n-erinnerungen", {
+                          n: entries.length,
+                      });
         }
         // Cache-Signatur: Anzahl + jüngster Eintrag (Inhalt + Zeit). Wenn
         // unverändert, DOM nicht anrühren — der Aufruf läuft alle 5s.
@@ -358,7 +328,7 @@ class AnazhRealm_werkstatt_sozial {
         if (entries.length === 0) {
             const empty = document.createElement("div");
             empty.className = "journal-empty";
-            empty.textContent = "Noch keine Erinnerungen geschrieben.";
+            empty.textContent = this._t("sozial.tagebuch-leer");
             list.appendChild(empty);
             return;
         }
@@ -371,12 +341,14 @@ class AnazhRealm_werkstatt_sozial {
             row.className = "journal-entry";
             const type = document.createElement("span");
             type.className = "journal-type";
-            type.textContent = e.type || "note";
+            type.textContent = this._journalTypName(e.type);
             const age = document.createElement("span");
             age.className = "journal-age";
             age.textContent = this._formatJournalAge(now - (e.at || now));
             const text = document.createElement("span");
             text.textContent = e.text || "";
+            // der Eintrag ist gespeicherte Geschichte der Welt — er bleibt in der Sprache, in der er geschah
+            text.setAttribute("translate", "no");
             row.appendChild(type);
             row.appendChild(age);
             row.appendChild(text);
@@ -384,17 +356,25 @@ class AnazhRealm_werkstatt_sozial {
         }
     }
 
+    // Der Name-Leser der Erinnerungs-Arten (spielgang.K5): jede Art, die der Stamm schreibt (`journalAppend`), trägt ihre
+    // Zeile in `AnazhRealm.JOURNAL_ARTEN`; eine fremde Art (ein alter Stand, ein gereistes Zeugnis) bleibt, wie sie kam.
+    // Der Eintrag selbst ist Gespeichertes — er bleibt in der Sprache, in der er entstand.
+    _journalTypName(typ) {
+        const art = typ || "note";
+        return Object.hasOwn(AnazhRealm.JOURNAL_ARTEN, art) ? this._t(AnazhRealm.JOURNAL_ARTEN[art]) : String(art);
+    }
+
     _formatJournalAge(deltaMs) {
         if (!Number.isFinite(deltaMs) || deltaMs < 0) return "";
         const s = Math.floor(deltaMs / 1000);
-        if (s < 30) return "eben";
-        if (s < 60) return `vor ${s}s`;
+        if (s < 30) return this._t("sozial.alter.eben");
+        if (s < 60) return this._t("sozial.alter.sek", { n: s });
         const m = Math.floor(s / 60);
-        if (m < 60) return `vor ${m}m`;
+        if (m < 60) return this._t("sozial.alter.min", { n: m });
         const h = Math.floor(m / 60);
-        if (h < 24) return `vor ${h}h`;
+        if (h < 24) return this._t("sozial.alter.std", { n: h });
         const d = Math.floor(h / 24);
-        return `vor ${d}t`;
+        return this._t("sozial.alter.tag", { n: d });
     }
 
     isSaveServerHost() {
@@ -510,18 +490,15 @@ class AnazhRealm_werkstatt_sozial {
         const active =
             this.state.feedSort === "rating" ? "rating" : this.state.feedSort === "fuerdich" ? "fuerdich" : "neueste";
         for (const [k, label] of [
-            ["neueste", "Neueste"],
-            ["fuerdich", "✦ Für dich"],
-            ["rating", "★ Bewertung"],
+            ["neueste", this._t("sozial.sort.neueste")],
+            ["fuerdich", this._t("sozial.sort.fuer-dich")],
+            ["rating", this._t("sozial.sort.bewertung")],
         ]) {
             const chip = this._el("button", {
                 class: "feed-kind-chip" + (k === active ? " active" : ""),
                 type: "button",
                 text: label,
-                title:
-                    k === "fuerdich"
-                        ? "Deine persönliche Reihung: Gefolgte zuerst, dann Gemeinschafts-Wertung, Gemerktes, dein Urteil, Gespräch — eine lesbare Summe, keine Black-Box."
-                        : undefined,
+                title: k === "fuerdich" ? this._t("sozial.sort.fuer-dich-titel") : undefined,
             });
             chip.addEventListener("click", () => {
                 this.state.feedSort = k === "rating" ? "rating" : k === "fuerdich" ? "fuerdich" : "neueste";
@@ -539,7 +516,7 @@ class AnazhRealm_werkstatt_sozial {
         const host = document.getElementById("feed-active-ident");
         if (host) {
             const m = this.state.worldMeta || {};
-            const name = m.slug || "(noch namenlos)";
+            const name = m.slug || this._t("sozial.noch-namenlos");
             const archCount = (this.state.architectures || []).length;
             const bpCount = Object.keys(this.state.blueprints || {}).length;
             const creatureCount = (this.state.creatures || []).length;
@@ -551,20 +528,29 @@ class AnazhRealm_werkstatt_sozial {
                     this._el(
                         "div",
                         { class: "spec-id" },
-                        this._el("span", { class: "spec-name lib-card-name", text: name }),
-                        this._el("span", { class: "feed-self-badge", text: "Diese Welt" })
+                        // der Name der Welt ist das Wort des Spielers (oder die Tafel-Zeile „noch namenlos“)
+                        this._el("span", {
+                            class: "spec-name lib-card-name",
+                            text: name,
+                            translate: m.slug ? false : null,
+                        }),
+                        this._el("span", { class: "feed-self-badge", text: this._t("sozial.diese-welt") })
                     ),
                     this._el("span", {
                         class: "lib-trust-seal trust-trusted",
-                        text: "✓ deine",
-                        title: "Deine eigene Welt — du gestaltest + teilst sie souverän (Vibe-Pass).",
+                        text: this._t("sozial.deine"),
+                        title: this._t("sozial.deine-titel"),
                     })
                 )
             );
             host.appendChild(
                 this._el("div", {
                     class: "feed-self-stats",
-                    text: `${archCount} Bauwerke · ${bpCount} Baupläne · ${creatureCount} Wesen`,
+                    text: this._t("sozial.eiland-bestand", {
+                        bauwerke: archCount,
+                        bauplaene: bpCount,
+                        wesen: creatureCount,
+                    }),
                 })
             );
         }
@@ -610,9 +596,11 @@ class AnazhRealm_werkstatt_sozial {
             }
             banner.textContent = "";
             banner.appendChild(
-                this._el("span", { text: `👤 Werke von ${this._vibeFingerprint(author)} — ${shown} im Feed ` })
+                this._el("span", {
+                    text: this._t("sozial.werke-von", { wer: String(this._vibeFingerprint(author)), n: shown }),
+                })
             );
-            const clear = this._el("button", { class: "library-author-clear", text: "✕ alle zeigen" });
+            const clear = this._el("button", { class: "library-author-clear", text: this._t("sozial.alle-zeigen") });
             clear.type = "button";
             clear.addEventListener("click", () => {
                 this.state._libraryAuthorFilter = null;
@@ -628,7 +616,7 @@ class AnazhRealm_werkstatt_sozial {
                 empty = this._el("div", { class: "library-empty" });
                 list.appendChild(empty);
             }
-            empty.textContent = q ? `Nichts passt zu „${q}".` : "Nichts in dieser Kategorie.";
+            empty.textContent = q ? this._t("sozial.nichts-passt", { suche: q }) : this._t("sozial.nichts-kategorie");
             empty.style.display = "";
         } else if (empty) {
             empty.style.display = "none";
@@ -1141,15 +1129,15 @@ class AnazhRealm_werkstatt_sozial {
             const colors = AnazhRealm.BLUEPRINT_ROLE_COLORS;
             base = colors[item.prof.role] || `hsl(${this._feedHueFrom(item.id)}, 45%, 42%)`;
             glyph = glyphMap[item.prof.role] || "⬢";
-            label = "Rezept";
+            label = this._t("sozial.art.rezept");
         } else if (item.kind === "creature") {
             base = `hsl(${this._feedHueFrom(item.prof.soul || item.id)}, 42%, 46%)`;
             glyph = "✦";
-            label = "Wesen";
+            label = this._t("sozial.art.wesen");
         } else {
             base = `hsl(${this._feedHueFrom(item.id)}, 46%, 42%)`;
             glyph = "◈";
-            label = "Welt";
+            label = this._t("sozial.art.welt");
         }
         const cover = this._el(
             "div",
@@ -1234,8 +1222,8 @@ class AnazhRealm_werkstatt_sozial {
             if (hint) {
                 hint.textContent =
                     item && item.kind === "world"
-                        ? "Welten sind eine ganze Szene — betritt sie durch das Tor."
-                        : "Klick eine Rezept- oder Wesen-Karte für die 3D-Vorschau.";
+                        ? this._t("sozial.vorschau-welt")
+                        : this._t("sozial.vorschau-hinweis");
                 hint.hidden = false;
             }
             return;
@@ -1300,7 +1288,11 @@ class AnazhRealm_werkstatt_sozial {
 
     _feedRecipeCard(item) {
         const p = item.prof;
-        const roleChip = this._el("span", { class: "feed-role-chip", text: p.role || "Rezept" });
+        // Rolle und Stoff-Achsen sind ids — ihr Name kommt aus den Namens-Tafeln (`_rolleName`, `_tafelName`, spielgang.K5)
+        const roleChip = this._el("span", {
+            class: "feed-role-chip",
+            text: p.role ? AnazhRealm._rolleName(p.role) : this._t("sozial.art.rezept"),
+        });
         if (p.roleColor) {
             roleChip.style.borderColor = p.roleColor;
             roleChip.style.color = p.roleColor;
@@ -1309,13 +1301,17 @@ class AnazhRealm_werkstatt_sozial {
         // Rollen-Chip): dieselbe lesbare Emergenz wie Werkstatt + Rezeptbuch.
         {
             const why = p.bp && this._blueprintRoleWhy(p.bp);
-            if (why && why.text) roleChip.title = `${AnazhRealm.ROLE_LABELS[why.role] || why.role}, weil: ${why.text}`;
+            if (why && why.text)
+                roleChip.title = this._t("sozial.rolle-weil", {
+                    rolle: AnazhRealm._tafelName(AnazhRealm.ROLE_LABELS, why.role),
+                    grund: String(why.text),
+                });
         }
         const header = this._el(
             "div",
             { class: "spec-header" },
             this._el("div", { class: "spec-id" }, this._el("span", { class: "spec-name", text: p.label }), roleChip),
-            this._el("span", { class: "feed-kind-badge kind-recipe", text: "Rezept" })
+            this._el("span", { class: "feed-kind-badge kind-recipe", text: this._t("sozial.art.rezept") })
         );
         const body = this._el(
             "div",
@@ -1324,15 +1320,20 @@ class AnazhRealm_werkstatt_sozial {
                 "div",
                 { class: "spec-stat-strip" },
                 ...(p.topTags.length
-                    ? p.topTags.map((k) => this._el("span", { class: "spec-stat-chip", text: k }))
-                    : [this._el("span", { class: "spec-empty", text: "schlichte Materie" })])
+                    ? p.topTags.map((k) =>
+                          this._el("span", {
+                              class: "spec-stat-chip",
+                              text: AnazhRealm._tafelName(AnazhRealm.AXIS_LABELS, k),
+                          })
+                      )
+                    : [this._el("span", { class: "spec-empty", text: this._t("sozial.schlichte-materie") })])
             )
         );
         const openBtn = this._el("button", {
             class: "library-get",
             type: "button",
-            text: "In die Werkstatt",
-            title: "Den Bauplan in der Werkstatt öffnen + verfeinern.",
+            text: this._t("sozial.in-die-werkstatt"),
+            title: this._t("sozial.in-die-werkstatt-titel"),
         });
         openBtn.addEventListener("click", () => {
             if (typeof this.selectBlueprintForEdit === "function") this.selectBlueprintForEdit(p.name);
@@ -1357,7 +1358,7 @@ class AnazhRealm_werkstatt_sozial {
                 this._el("span", { class: "spec-name soul-" + p.soul, text: p.name }),
                 this._el("span", { class: "spec-soul-label", text: p.soulLabel })
             ),
-            this._el("span", { class: "feed-kind-badge kind-creature", text: "Wesen" })
+            this._el("span", { class: "feed-kind-badge kind-creature", text: this._t("sozial.art.wesen") })
         );
         const body = this._el(
             "div",
@@ -1370,8 +1371,8 @@ class AnazhRealm_werkstatt_sozial {
         const visitBtn = this._el("button", {
             class: "library-get",
             type: "button",
-            text: "Zum Hof",
-            title: p.name + " im Hof aufsuchen.",
+            text: this._t("sozial.zum-hof"),
+            title: this._t("sozial.im-hof-aufsuchen", { name: String(p.name) }),
         });
         visitBtn.addEventListener("click", () => {
             this.state.hofFocusId = p.id;
@@ -1389,7 +1390,7 @@ class AnazhRealm_werkstatt_sozial {
     // Das WERTEN-Steuerelement — 5 Sterne, klickbar (lokal). Re-Klick aktualisiert NUR diese Sterne
     // (kein Feed-Rebuild) + frischt die „Bestbewertet"-Liste rechts.
     _feedRatingBar(item) {
-        const bar = this._el("div", { class: "feed-rating", title: "Bewerten — deine Wertung (lokal gespeichert)" });
+        const bar = this._el("div", { class: "feed-rating", title: this._t("sozial.bewerten-titel") });
         const stars = [];
         const paint = (val) => {
             for (let i = 0; i < 5; i++) stars[i].textContent = i < val ? "★" : "☆";
@@ -1415,7 +1416,7 @@ class AnazhRealm_werkstatt_sozial {
                 this._el("span", {
                     class: "feed-rating-agg",
                     text: ` Ø ${agg.avg.toFixed(1)} (${agg.count})`,
-                    title: "Gemeinschafts-Wertung (signierte Zeugnisse uebers Mesh)",
+                    title: this._t("sozial.gemeinschaft-wertung-titel"),
                 })
             );
         }
@@ -1425,7 +1426,7 @@ class AnazhRealm_werkstatt_sozial {
         const talk = this._el("span", {
             class: "feed-talk",
             text: `💬 ${cCount || ""}`.trim(),
-            title: "Worte der Gemeinschaft — lesen + eines zuruecklassen (signiert).",
+            title: this._t("sozial.worte-titel"),
         });
         talk.style.cursor = "pointer";
         talk.addEventListener("click", (e) => {
@@ -1448,7 +1449,7 @@ class AnazhRealm_werkstatt_sozial {
         const mark = this._el("span", {
             class: "feed-bookmark" + (this._feedBookmarked(item.id) ? " active" : ""),
             text: this._feedBookmarked(item.id) ? "🔖" : "📑",
-            title: "Lesezeichen — merken (privat, lokal)",
+            title: this._t("sozial.lesezeichen-titel"),
         });
         mark.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -1470,7 +1471,7 @@ class AnazhRealm_werkstatt_sozial {
             const ident = this._el("span", {
                 class: "feed-ident",
                 text: `👤 ${this._vibeFingerprint(item.author)}`,
-                title: "Alle Werke dieses Schöpfers zeigen (Identitäts-Seite).",
+                title: this._t("sozial.alle-werke-titel"),
             });
             ident.style.cursor = "pointer";
             ident.addEventListener("click", (e) => {
@@ -1484,8 +1485,8 @@ class AnazhRealm_werkstatt_sozial {
             const followed = this._feedFollowed(item.author);
             const follow = this._el("span", {
                 class: "feed-follow" + (followed ? " active" : ""),
-                text: followed ? "✓ folge" : "➕ folgen",
-                title: `Dem Schöpfer ${this._vibeFingerprint(item.author)} folgen — seine Werke im „Gefolgt"-Filter.`,
+                text: this._t(followed ? "sozial.folge" : "sozial.folgen"),
+                title: this._t("sozial.folgen-titel", { wer: String(this._vibeFingerprint(item.author)) }),
             });
             follow.style.cursor = "pointer";
             follow.style.marginLeft = "6px";
@@ -1498,7 +1499,7 @@ class AnazhRealm_werkstatt_sozial {
                         c.dataset.followed = on ? "1" : "";
                         const f = c.querySelector(".feed-follow");
                         if (f) {
-                            f.textContent = on ? "✓ folge" : "➕ folgen";
+                            f.textContent = this._t(on ? "sozial.folge" : "sozial.folgen");
                             f.classList.toggle("active", on);
                         }
                     }
@@ -1519,16 +1520,14 @@ class AnazhRealm_werkstatt_sozial {
         const shown = list.slice(-AnazhRealm.SOCIAL.maxCommentsShown);
         const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
         if (!shown.length) {
-            panel.appendChild(
-                this._el("div", { class: "feed-comment-empty", text: "Noch kein Wort — sei das erste." })
-            );
+            panel.appendChild(this._el("div", { class: "feed-comment-empty", text: this._t("sozial.kein-wort") }));
         }
         for (const c of shown) {
             const row = this._el("div", { class: "feed-comment-row" });
             const who = this._el("span", {
                 class: "feed-comment-who",
-                text: c.pub === myKey ? "du" : this._vibeFingerprint(c.pub),
-                title: "ed25519:" + c.pub,
+                text: c.pub === myKey ? this._t("sozial.du") : this._vibeFingerprint(c.pub),
+                title: this._t("sozial.ed25519", { schluessel: String(c.pub) }),
             });
             const text = this._el("span", { class: "feed-comment-text" });
             text.textContent = c.x; // NUR textContent — nie HTML aus dem Mesh
@@ -1540,11 +1539,11 @@ class AnazhRealm_werkstatt_sozial {
         const inputRow = this._el("div", { class: "feed-comment-input" });
         const input = this._el("input", {
             type: "text",
-            placeholder: ready ? "Ein Wort zuruecklassen …" : "Vibe-Pass noetig (Einstellungen → Identitaet)",
+            placeholder: this._t(ready ? "sozial.wort-zuruecklassen" : "sozial.vibe-pass-noetig"),
             maxlength: String(AnazhRealm.SOCIAL.maxCommentLen),
         });
         input.disabled = !ready;
-        const send = this._el("button", { type: "button", text: "➤", title: "Senden (signiert mit deinem Vibe-Pass)" });
+        const send = this._el("button", { type: "button", text: "➤", title: this._t("sozial.senden-titel") });
         send.disabled = !ready;
         const submit = async () => {
             const v = input.value.trim();
@@ -1588,12 +1587,12 @@ class AnazhRealm_werkstatt_sozial {
             if (it.author && this._feedFollowed(it.author)) followed++;
         }
         const kinds = [
-            ["alle", "Alle", total],
-            ["world", "Welten", counts.world],
-            ["recipe", "Rezepte", counts.recipe],
-            ["creature", "Wesen", counts.creature],
-            ["gemerkt", "🔖 Gemerkt", marked], // F4 Stufe 2 (V18.135)
-            ["gefolgt", "👤 Gefolgt", followed], // F4 Stufe 3 (V18.142)
+            ["alle", this._t("sozial.art.alle"), total],
+            ["world", this._t("sozial.art.welten"), counts.world],
+            ["recipe", this._t("sozial.art.rezepte"), counts.recipe],
+            ["creature", this._t("sozial.art.wesen"), counts.creature],
+            ["gemerkt", this._t("sozial.art.gemerkt"), marked], // F4 Stufe 2 (V18.135)
+            ["gefolgt", this._t("sozial.art.gefolgt"), followed], // F4 Stufe 3 (V18.142)
         ];
         for (const [k, label, n] of kinds) {
             const chip = this._el("button", {
@@ -1631,7 +1630,7 @@ class AnazhRealm_werkstatt_sozial {
             host.appendChild(
                 this._el("div", {
                     class: "drawer-hint",
-                    text: "Noch nichts bewertet — vergib Sterne, deine Favoriten erscheinen hier.",
+                    text: this._t("sozial.noch-nichts-bewertet"),
                 })
             );
             return;
@@ -1669,17 +1668,17 @@ class AnazhRealm_werkstatt_sozial {
             data: { worldId: prof.id, search: prof.searchText },
         });
         // Signatur-Siegel (Body) + Signieren/Teilen (Footer) teilen EINE async Verifikation.
-        const sigSeal = this._el("span", { class: "lib-sig-seal", text: "prüfe …" });
+        const sigSeal = this._el("span", { class: "lib-sig-seal", text: this._t("sozial.pruefe") });
         const sigBtn = this._el("button", {
             class: "library-sig-btn",
             type: "button",
-            text: "Signieren",
+            text: this._t("sozial.signieren"),
             disabled: true,
         });
         const exportBtn = this._el("button", {
             class: "library-sig-btn library-export-btn",
             type: "button",
-            text: "Teilen…",
+            text: this._t("sozial.teilen"),
             disabled: true,
         });
         card.appendChild(this._libraryCardHeader(prof));
@@ -1712,10 +1711,8 @@ class AnazhRealm_werkstatt_sozial {
             idZone.appendChild(
                 this._el("span", {
                     class: "library-mp-mark",
-                    text: jsCompute ? "Multiplayer · JS-Compute" : "Multiplayer",
-                    title: jsCompute
-                        ? "Eine Gruppe taucht gemeinsam ein; ein Peer wird Compute-Host für die autoritative Server-JS (W17 — B-JS-Compute)."
-                        : "Eine Gruppe kann gemeinsam durch das Tor dieser Welt eintreten (W17 — Gruppen-Portal).",
+                    text: this._t(jsCompute ? "sozial.mp-js" : "sozial.mp"),
+                    title: this._t(jsCompute ? "sozial.mp-js-titel" : "sozial.mp-titel"),
                 })
             );
         }
@@ -1725,8 +1722,8 @@ class AnazhRealm_werkstatt_sozial {
             idZone.appendChild(
                 this._el("span", {
                     class: "library-mp-mark",
-                    text: "Ko-Präsenz",
-                    title: "Ihr seht euch in dieser Welt — AnazhRealm trägt die Posen übers Mesh, die Welt rendert die Gefährten (W18-B).",
+                    text: this._t("sozial.ko-praesenz"),
+                    title: this._t("sozial.ko-praesenz-titel"),
                 })
             );
         }
@@ -1735,14 +1732,12 @@ class AnazhRealm_werkstatt_sozial {
             "div",
             {
                 class: "spec-quality lib-trust",
-                title: trusted
-                    ? "Vertraute Welt — eine Built-in- oder eigene Welt; sie läuft im selben Kontext."
-                    : "Sandgesichert — eine fremde, ungeprüfte Welt läuft null-origin (kann AnazhRealm nicht berühren). Irreversibel.",
+                title: this._t(trusted ? "sozial.vertraut-titel" : "sozial.sandbox-titel"),
             },
-            this._el("span", { class: "spec-q-label", text: "Vertrauen" }),
+            this._el("span", { class: "spec-q-label", text: this._t("sozial.vertrauen") }),
             this._el("span", {
                 class: "lib-trust-seal " + (trusted ? "trust-trusted" : "trust-sandboxed"),
-                text: trusted ? "✓ vertraut" : "⛨ Sandbox",
+                text: this._t(trusted ? "sozial.vertraut" : "sozial.sandbox"),
             })
         );
         return this._el("div", { class: "spec-header" }, idZone, trustZone);
@@ -1755,19 +1750,22 @@ class AnazhRealm_werkstatt_sozial {
         // „VOKABULAR"/„NETZ & VERTRAUEN"-Form-Labels machten die Karte zum Datenblatt; ein Feed-Card
         // zeigt nur die Signale, die zählen (DSL-Vokabular · nur Multiplayer-Abweichung · Signatur subtil).
         const meta = this._el("div", { class: "lib-card-meta" });
+        // die DSL-Wörter sind Befehle der Eingabe-Grammatik (der Spieler tippt sie so) — keine Sprache: translate="no"
         if (prof.hasDsl)
-            for (const op of prof.dsl) meta.appendChild(this._el("span", { class: "library-dsl-word", text: op }));
-        else meta.appendChild(this._el("span", { class: "spec-empty", text: "kein DSL-Vokabular" }));
+            for (const op of prof.dsl)
+                meta.appendChild(this._el("span", { class: "library-dsl-word", text: op, translate: false }));
+        else meta.appendChild(this._el("span", { class: "spec-empty", text: this._t("sozial.kein-dsl") }));
         // Einzelwelt ist der Default → nicht zeigen (Profi: nur die Abweichung signalisieren).
         if (prof.multiplayer)
             meta.appendChild(
                 this._el("span", {
                     class: "lib-net-badge",
-                    text: prof.serverMode === "js-compute" ? "Multiplayer · JS-Compute" : "Multiplayer",
+                    text: this._t(prof.serverMode === "js-compute" ? "sozial.mp-js" : "sozial.mp"),
                 })
             );
         // W18-B — die Ko-Präsenz-Abweichung (ihr seht euch drinnen).
-        if (prof.coPresence) meta.appendChild(this._el("span", { class: "lib-net-badge", text: "Ko-Präsenz" }));
+        if (prof.coPresence)
+            meta.appendChild(this._el("span", { class: "lib-net-badge", text: this._t("sozial.ko-praesenz") }));
         meta.appendChild(sigSeal);
         return this._el("div", { class: "spec-body lib-card-body" }, meta);
     }
@@ -1786,8 +1784,8 @@ class AnazhRealm_werkstatt_sozial {
             const buildBtn = this._el("button", {
                 class: "library-get library-build",
                 type: "button",
-                text: "Welt aufbauen",
-                title: "Die KI gibt dieser übersetzten Welt eine deklarative Szene — danach führt ihr Portal hindurch.",
+                text: this._t("sozial.welt-aufbauen"),
+                title: this._t("sozial.welt-aufbauen-titel"),
             });
             buildBtn.addEventListener("click", () => this._runWorldBuild(worldId, buildBtn, status));
             acts.appendChild(buildBtn);
@@ -1795,27 +1793,29 @@ class AnazhRealm_werkstatt_sozial {
             const getBtn = this._el("button", {
                 class: "library-get",
                 type: "button",
-                text: "Betreten",
+                text: this._t("sozial.betreten"),
                 disabled: true,
-                title: "Die Welt-Dateien sind nicht verfügbar — nur das Manifest kam an.",
+                title: this._t("sozial.dateien-fehlen-titel"),
             });
-            status.textContent = "Welt-Dateien nicht verfügbar";
+            status.textContent = this._t("sozial.dateien-fehlen");
             status.className = "library-status library-unreachable";
             acts.appendChild(getBtn);
         } else {
             const getBtn = this._el("button", {
                 class: "library-get",
                 type: "button",
-                text: "Betreten",
-                title: "Portal holen — legt ein Tor ins Inventar; platziere es über die Hotbar + geh per E-Taste hindurch.",
+                text: this._t("sozial.betreten"),
+                title: this._t("sozial.betreten-titel"),
             });
             getBtn.addEventListener("click", () => {
                 const res = this.obtainPortalForWorld(worldId);
                 if (res.ok) {
-                    status.textContent = `✓ „${res.label}" liegt im Inventar`;
+                    status.textContent = this._t("sozial.im-inventar", { welt: prof.label });
                     this.log(`Bibliothek: Portal zur ${res.label} ins Inventar gelegt.`, "INFO");
                 } else {
-                    status.textContent = res.reason === "inventory_full" ? "Inventar voll" : "konnte nicht holen";
+                    status.textContent = this._t(
+                        res.reason === "inventory_full" ? "sozial.inventar-voll" : "sozial.nicht-holen"
+                    );
                     this.log(`obtainPortalForWorld: ${res.reason}`, "ERROR");
                 }
             });
@@ -1825,8 +1825,8 @@ class AnazhRealm_werkstatt_sozial {
                 const rebuildBtn = this._el("button", {
                     class: "library-sig-btn library-rebuild",
                     type: "button",
-                    text: "neu aufbauen",
-                    title: "Die KI baut eine neue Szene für diese Welt.",
+                    text: this._t("sozial.neu-aufbauen"),
+                    title: this._t("sozial.neu-aufbauen-titel"),
                 });
                 rebuildBtn.addEventListener("click", () => this._runWorldBuild(worldId, rebuildBtn, status));
                 acts.appendChild(rebuildBtn);
@@ -1853,27 +1853,29 @@ class AnazhRealm_werkstatt_sozial {
                     custom && custom.signature ? custom : this.state.signedWorlds && this.state.signedWorlds[worldId];
                 if (st === "valid") {
                     const who =
-                        sig && sig.authorPubKey === myKey ? "dir" : this._vibeFingerprint(sig && sig.authorPubKey);
-                    seal.textContent = `✓ signiert von ${who}`;
+                        sig && sig.authorPubKey === myKey
+                            ? this._t("sozial.dir")
+                            : this._vibeFingerprint(sig && sig.authorPubKey);
+                    seal.textContent = this._t("sozial.signiert-von", { wer: String(who) });
                     seal.className = "lib-sig-seal sig-valid";
-                    if (sig) seal.title = "ed25519:" + sig.authorPubKey;
-                    sigBtn.textContent = "Neu signieren";
+                    if (sig) seal.title = this._t("sozial.ed25519", { schluessel: String(sig.authorPubKey) });
+                    sigBtn.textContent = this._t("sozial.neu-signieren");
                 } else if (st === "modified") {
-                    seal.textContent = "geändert — neu signieren";
+                    seal.textContent = this._t("sozial.geaendert");
                     seal.className = "lib-sig-seal sig-modified";
-                    sigBtn.textContent = "Neu signieren";
+                    sigBtn.textContent = this._t("sozial.neu-signieren");
                 } else if (st === "forged") {
-                    seal.textContent = "⚠ Signatur ungültig";
+                    seal.textContent = this._t("sozial.signatur-ungueltig");
                     seal.className = "lib-sig-seal sig-forged";
-                    sigBtn.textContent = "Neu signieren";
+                    sigBtn.textContent = this._t("sozial.neu-signieren");
                 } else {
-                    seal.textContent = "nicht signiert";
+                    seal.textContent = this._t("sozial.nicht-signiert");
                     seal.className = "lib-sig-seal sig-unsigned";
-                    sigBtn.textContent = "Signieren";
+                    sigBtn.textContent = this._t("sozial.signieren");
                 }
                 exportBtn.disabled = st === "unsigned";
                 sigBtn.disabled = prof.imported || !vpReady;
-                if (!prof.imported && !vpReady) sigBtn.title = "Vibe-Pass nicht bereit — siehe Spieler-Drawer.";
+                if (!prof.imported && !vpReady) sigBtn.title = this._t("sozial.vibe-pass-nicht-bereit");
             });
         };
         sigBtn.addEventListener("click", async () => {
@@ -2018,20 +2020,20 @@ class AnazhRealm_werkstatt_sozial {
     // einen klaren Weg nach vorn zeigen, nicht einen rohen Fehler-Code).
     _translatorReasonText(reason) {
         const map = {
-            description_too_short: "Beschreibe die Welt etwas ausführlicher (ein paar Worte mindestens).",
-            description_too_long: "Die Beschreibung ist zu lang — fasse dich kürzer (max. 4000 Zeichen).",
-            "LLM nicht aktiv": "Keine KI aktiv — schalte sie im Einstellungen-Drawer ein.",
-            "API-Key fehlt": "Der KI fehlt ein API-Key — siehe Einstellungen-Drawer.",
-            no_manifest_in_response:
-                "Die KI lieferte kein verwertbares Manifest. Versuch es nochmal oder beschreibe die Welt klarer.",
-            id_is_builtin: "Die KI wählte eine schon vergebene Welt-id — versuch es nochmal.",
-            invalid_manifest: "Das übersetzte Manifest war unbrauchbar — versuch es nochmal.",
-            no_scene_in_response: "Die KI lieferte keine verwertbare Szene. Versuch es nochmal.",
-            world_too_thin: "Diese Welt hat zu wenig Substanz — übersetze sie zuerst ausführlicher.",
-            not_translated: "Nur KI-übersetzte Welten lassen sich aufbauen.",
-            world_unknown: "Diese Welt ist nicht in der Bibliothek.",
+            description_too_short: "sozial.ki.zu-kurz",
+            description_too_long: "sozial.ki.zu-lang",
+            "LLM nicht aktiv": "sozial.ki.llm-aus",
+            "API-Key fehlt": "sozial.ki.api-key",
+            no_manifest_in_response: "sozial.ki.kein-manifest",
+            id_is_builtin: "sozial.ki.id-vergeben",
+            invalid_manifest: "sozial.ki.manifest-unbrauchbar",
+            no_scene_in_response: "sozial.ki.keine-szene",
+            world_too_thin: "sozial.ki.zu-duenn",
+            not_translated: "sozial.ki.nicht-uebersetzt",
+            world_unknown: "sozial.ki.unbekannt",
         };
-        return map[reason] || `Übersetzung fehlgeschlagen: ${reason}`;
+        const k = map[reason];
+        return typeof k === "string" ? this._t(k) : this._t("sozial.ki.fehl", { grund: String(reason) });
     }
 
     // Den Übersetzer laufen lassen (Knopf-Handler).
@@ -2046,21 +2048,21 @@ class AnazhRealm_werkstatt_sozial {
             review.hidden = true;
             review.innerHTML = "";
         }
-        status.textContent = "Die KI übersetzt …";
+        status.textContent = this._t("sozial.ki.uebersetzt");
         status.className = "translator-status";
         if (runBtn) runBtn.disabled = true;
         let res;
         try {
             res = await this.translateWorldManifest(input.value || "");
         } catch (e) {
-            res = { ok: false, reason: (e && e.message) || "Fehler" };
+            res = { ok: false, reason: (e && e.message) || this._t("sozial.fehler") };
         }
         if (runBtn) runBtn.disabled = false;
         if (res && res.ok) {
             status.textContent = "";
             this._renderTranslatorReview(res.manifest);
         } else {
-            status.textContent = this._translatorReasonText(res ? res.reason : "Fehler");
+            status.textContent = this._translatorReasonText(res ? res.reason : this._t("sozial.fehler"));
             status.className = "translator-status translator-status-error";
         }
     }
@@ -2089,12 +2091,12 @@ class AnazhRealm_werkstatt_sozial {
 
         const title = document.createElement("div");
         title.className = "translator-review-title";
-        title.textContent = "KI-Vorschlag — prüfen und aufnehmen";
+        title.textContent = this._t("sozial.ki.vorschlag");
         review.appendChild(title);
 
         const idRow = document.createElement("div");
         idRow.className = "translator-field-id";
-        idRow.textContent = "id: " + manifest.id;
+        idRow.textContent = this._t("sozial.id", { id: String(manifest.id) });
         review.appendChild(idRow);
 
         const labelInput = document.createElement("input");
@@ -2102,14 +2104,14 @@ class AnazhRealm_werkstatt_sozial {
         labelInput.className = "translator-edit";
         labelInput.maxLength = 60;
         labelInput.value = manifest.label || "";
-        review.appendChild(this._translatorField("Name", labelInput));
+        review.appendChild(this._translatorField(this._t("sozial.feld.name"), labelInput));
 
         const descInput = document.createElement("textarea");
         descInput.className = "translator-edit translator-edit-desc";
         descInput.rows = 2;
         descInput.maxLength = 240;
         descInput.value = manifest.desc || "";
-        review.appendChild(this._translatorField("Beschreibung", descInput));
+        review.appendChild(this._translatorField(this._t("sozial.feld.beschreibung"), descInput));
 
         const dslWrap = document.createElement("div");
         dslWrap.className = "library-dsl";
@@ -2124,16 +2126,16 @@ class AnazhRealm_werkstatt_sozial {
         } else {
             const none = document.createElement("span");
             none.className = "library-dsl-empty";
-            none.textContent = "kein DSL-Vokabular";
+            none.textContent = this._t("sozial.kein-dsl");
             dslWrap.appendChild(none);
         }
-        review.appendChild(this._translatorField("DSL-Vokabular", dslWrap));
+        review.appendChild(this._translatorField(this._t("sozial.feld.dsl"), dslWrap));
 
         const actions = document.createElement("div");
         actions.className = "actions";
         const acceptBtn = document.createElement("button");
         acceptBtn.type = "button";
-        acceptBtn.textContent = "In Bibliothek aufnehmen";
+        acceptBtn.textContent = this._t("sozial.ki.aufnehmen");
         acceptBtn.addEventListener("click", () => {
             const edited = Object.assign({}, manifest, {
                 label: labelInput.value,
@@ -2143,7 +2145,7 @@ class AnazhRealm_werkstatt_sozial {
             const status = document.getElementById("translator-status");
             if (res.ok) {
                 if (status) {
-                    status.textContent = `✓ „${res.label}" steht jetzt in deiner Bibliothek.`;
+                    status.textContent = this._t("sozial.ki.aufgenommen", { welt: String(res.label) });
                     status.className = "translator-status";
                 }
                 review.hidden = true;
@@ -2159,7 +2161,7 @@ class AnazhRealm_werkstatt_sozial {
         });
         const discardBtn = document.createElement("button");
         discardBtn.type = "button";
-        discardBtn.textContent = "Verwerfen";
+        discardBtn.textContent = this._t("sozial.verwerfen");
         discardBtn.addEventListener("click", () => {
             review.hidden = true;
             review.innerHTML = "";
@@ -2175,14 +2177,14 @@ class AnazhRealm_werkstatt_sozial {
     async _runWorldBuild(worldId, btn, statusEl) {
         if (btn) btn.disabled = true;
         if (statusEl) {
-            statusEl.textContent = "Die KI baut die Welt …";
+            statusEl.textContent = this._t("sozial.ki.baut");
             statusEl.className = "library-status";
         }
         let res;
         try {
             res = await this.buildTranslatedWorld(worldId);
         } catch (e) {
-            res = { ok: false, reason: (e && e.message) || "Fehler" };
+            res = { ok: false, reason: (e && e.message) || this._t("sozial.fehler") };
         }
         if (res && res.ok) {
             this.log(`KI-Übersetzer: „${res.label}" hat einen Körper — die Welt ist betretbar.`, "INFO");
@@ -2190,7 +2192,7 @@ class AnazhRealm_werkstatt_sozial {
         } else {
             if (btn) btn.disabled = false;
             if (statusEl) {
-                statusEl.textContent = this._translatorReasonText(res ? res.reason : "Fehler");
+                statusEl.textContent = this._translatorReasonText(res ? res.reason : this._t("sozial.fehler"));
                 statusEl.className = "library-status library-unreachable";
             }
         }
@@ -2203,22 +2205,22 @@ class AnazhRealm_werkstatt_sozial {
     // Reason-Code → menschenlesbarer Hinweis (wie _translatorReasonText).
     _vendorReasonText(reason) {
         const map = {
-            invalid_world_id: "Die Welt-id darf nur a-z, 0-9, - und _ enthalten (1-40 Zeichen).",
-            reserved_world_id: "Diese id gehört einer Built-in-Welt — wähle eine andere.",
-            no_files: "Es wurden keine Dateien gewählt.",
-            too_many_files: "Der Ordner enthält zu viele Dateien für ein Welt-Bündel.",
-            bad_file_entry: "Eine Datei im Bündel ist unbrauchbar.",
-            bad_file_path: "Ein Datei-Pfad ist unsicher (kein Verzeichnis-Aufstieg, kein absoluter Pfad).",
-            bad_file_ext: "Eine Datei hat eine nicht erlaubte Endung (nur Text: html/js/css/json/…).",
-            file_too_large: "Eine Datei ist zu groß fürs Vendoring.",
-            bundle_too_large: "Das Welt-Bündel ist insgesamt zu groß.",
-            no_index_html: "Dem Bündel fehlt eine index.html im Wurzel-Ordner (der Welt-Eingang).",
-            save_server_unreachable:
-                "Der lokale save-server ist nicht erreichbar — Vendoring braucht die Dev-Umgebung (npm start).",
-            invalid_manifest: "Das Welt-Manifest war unbrauchbar.",
-            not_a_github_url: "Das ist keine github.com-Repo-URL — z. B. https://github.com/owner/repo.",
+            invalid_world_id: "sozial.dock.id-ungueltig",
+            reserved_world_id: "sozial.dock.id-reserviert",
+            no_files: "sozial.dock.keine-dateien",
+            too_many_files: "sozial.dock.zu-viele",
+            bad_file_entry: "sozial.dock.datei-unbrauchbar",
+            bad_file_path: "sozial.dock.pfad-unsicher",
+            bad_file_ext: "sozial.dock.endung",
+            file_too_large: "sozial.dock.datei-gross",
+            bundle_too_large: "sozial.dock.buendel-gross",
+            no_index_html: "sozial.dock.kein-index",
+            save_server_unreachable: "sozial.dock.server-fehlt",
+            invalid_manifest: "sozial.dock.manifest",
+            not_a_github_url: "sozial.dock.kein-github",
         };
-        return map[reason] || `Andocken fehlgeschlagen: ${reason}`;
+        const k = map[reason];
+        return typeof k === "string" ? this._t(k) : this._t("sozial.dock.fehl", { grund: String(reason) });
     }
 
     // Picked File-Objekte → [{path, content}]. webkitdirectory liefert
@@ -2265,7 +2267,7 @@ class AnazhRealm_werkstatt_sozial {
             if (lim.allowedExt.indexOf((rel.split(".").pop() || "").toLowerCase()) >= 0) n++;
         }
         status.className = "vendor-status";
-        status.textContent = n ? `${n} verwertbare Datei(en) gewählt — id + Name eingeben, dann Andocken.` : "";
+        status.textContent = n ? this._t("sozial.dock.gewaehlt", { n }) : "";
     }
 
     // Den Auto-Vendor laufen lassen (Knopf-Handler).
@@ -2282,11 +2284,11 @@ class AnazhRealm_werkstatt_sozial {
         status.className = "vendor-status";
         const picked = fileInput && fileInput.files ? Array.from(fileInput.files) : [];
         if (!picked.length) {
-            status.textContent = "Wähle zuerst den Ordner einer Welt.";
+            status.textContent = this._t("sozial.dock.ordner-zuerst");
             status.className = "vendor-status vendor-status-error";
             return;
         }
-        status.textContent = "Lese die Dateien …";
+        status.textContent = this._t("sozial.dock.lese");
         if (dockBtn) dockBtn.disabled = true;
         let files = null;
         try {
@@ -2295,12 +2297,12 @@ class AnazhRealm_werkstatt_sozial {
             files = null;
         }
         if (!files || !files.length) {
-            status.textContent = "Keine verwertbaren Text-Dateien im Ordner gefunden.";
+            status.textContent = this._t("sozial.dock.keine-text");
             status.className = "vendor-status vendor-status-error";
             if (dockBtn) dockBtn.disabled = false;
             return;
         }
-        status.textContent = "Die Welt dockt an …";
+        status.textContent = this._t("sozial.dock.dockt");
         const dsl = String(dslEl ? dslEl.value : "")
             .split(/[\s,]+/)
             .map((s) => s.trim().toLowerCase())
@@ -2320,15 +2322,18 @@ class AnazhRealm_werkstatt_sozial {
                 files,
             });
         } catch (e) {
-            res = { ok: false, reason: (e && e.message) || "Fehler" };
+            res = { ok: false, reason: (e && e.message) || this._t("sozial.fehler") };
         }
         if (dockBtn) dockBtn.disabled = false;
         if (res && res.ok) {
-            status.textContent = `✓ „${res.label}" ist angedockt (${res.fileCount} Dateien) — siehe „Welten" unten.`;
+            status.textContent = this._t("sozial.dock.angedockt", {
+                welt: String(res.label),
+                n: String(res.fileCount),
+            });
             this.renderLibraryUI();
             this.log(`Auto-Vendor: Welt „${res.id}" angedockt.`, "INFO");
         } else {
-            status.textContent = this._vendorReasonText(res ? res.reason : "Fehler");
+            status.textContent = this._vendorReasonText(res ? res.reason : this._t("sozial.fehler"));
             status.className = "vendor-status vendor-status-error";
         }
     }
@@ -2348,11 +2353,11 @@ class AnazhRealm_werkstatt_sozial {
         status.className = "vendor-status";
         const repoUrl = String(repoEl ? repoEl.value : "").trim();
         if (!repoUrl) {
-            status.textContent = "Gib eine GitHub-Repo-URL an.";
+            status.textContent = this._t("sozial.dock.repo-fehlt");
             status.className = "vendor-status vendor-status-error";
             return;
         }
-        status.textContent = "Hole das Repo von GitHub …";
+        status.textContent = this._t("sozial.dock.hole-repo");
         if (btn) btn.disabled = true;
         const dsl = String(dslEl ? dslEl.value : "")
             .split(/[\s,]+/)
@@ -2373,15 +2378,18 @@ class AnazhRealm_werkstatt_sozial {
                 serverMode: jsEl && jsEl.checked ? "js-compute" : "relay",
             });
         } catch (e) {
-            res = { ok: false, reason: (e && e.message) || "Fehler" };
+            res = { ok: false, reason: (e && e.message) || this._t("sozial.fehler") };
         }
         if (btn) btn.disabled = false;
         if (res && res.ok) {
-            status.textContent = `✓ „${res.label}" aus GitHub geholt (${res.fileCount} Dateien) — siehe „Welten" unten.`;
+            status.textContent = this._t("sozial.dock.github-geholt", {
+                welt: String(res.label),
+                n: String(res.fileCount),
+            });
             this.renderLibraryUI();
             this.log(`Auto-Vendor: Welt „${res.id}" aus GitHub angedockt.`, "INFO");
         } else {
-            status.textContent = this._vendorReasonText(res ? res.reason : "Fehler");
+            status.textContent = this._vendorReasonText(res ? res.reason : this._t("sozial.fehler"));
             status.className = "vendor-status vendor-status-error";
         }
     }
@@ -2468,4 +2476,25 @@ AnazhRealm.BLUEPRINT_ROLE_COLORS = Object.freeze({
     portal: "#43c98a",
     vehicle: "#c98a43", // M2 — Wagen-Ocker (Reise/Leder)
     "workshop-station": "#cc6b35", // M2 — Essen-Glut (die Designation sichtbar)
+});
+
+// Die Arten der Erinnerung (das Tagebuch, `journalAppend(type, …)`): je Art, die der Stamm schreibt, der Schlüssel ihres
+// Namens in der Tafel (spielgang.K5) — gelesen von `_journalTypName`. Die Art selbst bleibt Daten (Speicher, KI-Erinnerung).
+AnazhRealm.JOURNAL_ARTEN = Object.freeze({
+    architecture: "bib.journal.architecture",
+    creatures: "bib.journal.creatures",
+    emotion: "bib.journal.emotion",
+    genesis: "bib.journal.genesis",
+    growth: "bib.journal.growth",
+    loss: "bib.journal.loss",
+    note: "bib.journal.note",
+    portal: "bib.journal.portal",
+    reach: "bib.journal.reach",
+    relationship: "bib.journal.relationship",
+    ritual: "bib.journal.ritual",
+    rule: "bib.journal.rule",
+    share: "bib.journal.share",
+    weakness: "bib.journal.weakness",
+    weather: "bib.journal.weather",
+    witness: "bib.journal.witness",
 });

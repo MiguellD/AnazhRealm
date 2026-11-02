@@ -74,7 +74,7 @@ class AnazhRealm_dienst {
         const cfg = llm.providerConfig[llm.provider];
         if (def.requiresKey && (!cfg || !cfg.apiKey))
             return {
-                error: `für ${def.label} fehlt der Schlüssel — trage ihn unter Einstellungen → Begleiter-Stimme ein`,
+                error: `für ${this._t(def.label)} fehlt der Schlüssel — trage ihn unter Einstellungen → Begleiter-Stimme ein`,
             };
         while (llm.inFlight) {
             if (hintergrund || !this._llmHintergrund) return { error: "Anfrage läuft bereits" };
@@ -1428,6 +1428,131 @@ class AnazhRealm_dienst {
         }
     }
 
+    // ═══ DIE SPRACHE DES SPIELERS (spielgang.K5) ═══
+    // Jede UI-Zeile liest EINE Quelle: die Tafel `AnazhRealm.TEXTE` (Daten: je Schlüssel eine Zeile je Sprache) über den EINEN
+    // Leser `_t(schluessel, werte)`; `{name}` im Text nimmt `werte.name`. Ein fehlender Schlüssel oder Wert bricht laut. Die
+    // Sprache ist ein Wort des Spielers je Gerät (`anazh.sprache`, die Wahl in den Einstellungen; `?sprache=` übersteuert).
+    // `pseudo` ist die Sprache der Linse (diag-sprache): jedes Stück der Tafel steht in ⟦ ⟧ — Wort-Text außerhalb ist hart.
+    static _t(schluessel, werte) {
+        const sp = AnazhRealm._sprache();
+        const tafel = AnazhRealm.TEXTE;
+        const zeile = tafel[sp === "pseudo" ? "de" : sp][schluessel];
+        if (typeof zeile !== "string") throw new Error(`SPRACHE: die Tafel trägt keinen Text „${schluessel}“`);
+        return zeile
+            .split(/(\{\w+\})/)
+            .map((stueck) => {
+                const m = /^\{(\w+)\}$/.exec(stueck);
+                if (!m) return sp === "pseudo" && stueck ? `⟦${stueck}⟧` : stueck;
+                if (!werte || werte[m[1]] == null)
+                    throw new Error(`SPRACHE: „${schluessel}“ verlangt den Wert ${m[1]}`);
+                return String(werte[m[1]]);
+            })
+            .join("");
+    }
+
+    _t(schluessel, werte) {
+        return AnazhRealm._t(schluessel, werte);
+    }
+
+    // die Sprache des Spielers: einmal gelesen (URL vor Gerät, sonst Deutsch); eine fremde bricht laut
+    static _sprache() {
+        if (AnazhRealm._spracheJetzt) return AnazhRealm._spracheJetzt;
+        let sp = null;
+        try {
+            sp = new URLSearchParams(globalThis.location.search).get("sprache");
+        } catch (_e) {
+            sp = null;
+        }
+        if (!sp)
+            try {
+                sp = globalThis.localStorage.getItem("anazh.sprache");
+            } catch (_e) {
+                sp = null;
+            }
+        sp = sp || "de";
+        if (sp !== "pseudo" && !(sp in AnazhRealm.TEXTE))
+            throw new Error(`SPRACHE: die Tafel trägt keine Sprache „${sp}“`);
+        AnazhRealm._spracheJetzt = sp;
+        return sp;
+    }
+
+    // der Wechsel am Ort: das Wort auf dem Gerät, die Spalte neu gelesen, das DOM aus index.html neu gefüllt (`_sprachDom`) —
+    // jede Zeile, die danach entsteht, liest die neue Spalte; die Seite lädt nie neu (gate:weltgrenze: `location.reload`
+    // steht nur im lauten Rückfall des Welt-Wechsels)
+    _spracheSetzen(sp) {
+        if (!(sp in AnazhRealm.TEXTE)) throw new Error(`SPRACHE: die Tafel trägt keine Sprache „${sp}“`);
+        if (sp === AnazhRealm._sprache()) return;
+        localStorage.setItem("anazh.sprache", sp);
+        AnazhRealm._spracheJetzt = sp;
+        AnazhRealm._sprachDom(document);
+    }
+
+    // die Wahl in den Einstellungen (#sprache-wahl): sie zeigt die Sprache des Geräts, ein Wechsel ruft `_spracheSetzen`
+    _sprachWahlInit() {
+        const wahl = typeof document !== "undefined" && document.getElementById("sprache-wahl");
+        if (!wahl) return;
+        wahl.value = AnazhRealm._sprache() === "pseudo" ? "de" : AnazhRealm._sprache();
+        wahl.addEventListener("change", () => {
+            try {
+                this._spracheSetzen(wahl.value);
+            } catch (e) {
+                this._bruchMelden(`SPRACHE: der Wechsel brach (${e.message})`);
+            }
+        });
+    }
+
+    // DIE FRAGE DER WELT (spielgang.K5): Bestätigen · Eingabe · Hinweis über die eigene Oberfläche (#frage-dialog) statt
+    // window.confirm/prompt/alert — der Text kommt aus der Tafel, der Zeiger wird frei. art „ja-nein“ → true/false ·
+    // „eingabe“ → Text oder null · „hinweis“ → true. Eine zweite Frage reiht sich hinter die offene.
+    _frage(text, { art = "ja-nein", vorgabe = "" } = {}) {
+        const frage = () =>
+            new Promise((antwort) => {
+                const d = document.getElementById("frage-dialog");
+                if (!d) throw new Error("FRAGE: index.html trägt kein #frage-dialog");
+                const $ = (id) => d.querySelector(`#${id}`);
+                const ein = $("frage-eingabe");
+                const ja = $("frage-ja");
+                const nein = $("frage-nein");
+                $("frage-text").textContent = text;
+                $("frage-eingabe-zeile").hidden = art !== "eingabe";
+                nein.hidden = art === "hinweis";
+                ein.value = vorgabe;
+                const ende = (wert) => {
+                    ja.onclick = nein.onclick = d.oncancel = ein.onkeydown = null;
+                    d.close();
+                    antwort(wert);
+                };
+                ja.onclick = () => ende(art === "eingabe" ? ein.value : true);
+                nein.onclick = () => ende(art === "eingabe" ? null : false);
+                d.oncancel = (e) => {
+                    e.preventDefault();
+                    ende(art === "eingabe" ? null : art === "hinweis");
+                };
+                ein.onkeydown = (e) => {
+                    if (e.key !== "Enter") return;
+                    e.preventDefault();
+                    ja.onclick();
+                };
+                if (document.pointerLockElement && document.exitPointerLock) document.exitPointerLock();
+                d.showModal();
+                (art === "eingabe" ? ein : ja).focus();
+            });
+        const p = (this._frageKette || Promise.resolve()).then(frage);
+        this._frageKette = p.catch(() => {});
+        return p;
+    }
+
+    // das DOM aus index.html: `data-t` trägt den Text, `data-t-<attribut>` ein Attribut (title · placeholder · aria-label · alt)
+    static _sprachDom(wurzel) {
+        if (!wurzel || typeof wurzel.querySelectorAll !== "function") return;
+        const t = AnazhRealm._t;
+        if (wurzel.documentElement) wurzel.documentElement.lang = AnazhRealm._sprache() === "en" ? "en" : "de";
+        for (const el of wurzel.querySelectorAll("[data-t]")) el.textContent = t(el.dataset.t);
+        for (const a of AnazhRealm.SPRACH_ATTRIBUTE)
+            for (const el of wurzel.querySelectorAll(`[data-t-${a}]`))
+                el.setAttribute(a, t(el.getAttribute(`data-t-${a}`)));
+    }
+
     // ═══ DIE STAND-WACHE (Welle K, Lehre 25, Gebot 7) ═══
     // Befund 07.10. (OMEN, GTX 1060, Mess-Wiese, Regler voll, der Spieler STEHT): `_loopVoxelStreaming` kostete 3,27 ms je
     // Frame, `tickArchitectureCulling` · `_tickArchitectureLOD` · `_lodTreeVisHeight` · noise2D standen im Selbstzeit-Top.
@@ -1651,3 +1776,6 @@ AnazhRealm.WELT_MARCH = Object.freeze({
 // DER SCHWUND (ms): so lange dithert ein Analog-Satz aus, wenn sein Mesh übernimmt (`_weltFeldAktiv`) — der
 // Übergang Satz → Studio-Stufe trägt die Blende der Stufen statt eines Pops.
 AnazhRealm.WELT_SCHWUND_MS = 500;
+// DIE ATTRIBUTE DER SPRACHE (`_sprachDom`): je Name trägt `data-t-<name>` den Schlüssel seiner Zeile in der Tafel
+// (`data-hud-zeigen` liest das CSS: der Wink `body.hud-hidden::after`).
+AnazhRealm.SPRACH_ATTRIBUTE = Object.freeze(["title", "placeholder", "aria-label", "alt", "data-hud-zeigen"]);

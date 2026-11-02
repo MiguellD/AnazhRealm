@@ -48,12 +48,12 @@ class AnazhRealm_netz_portal {
     // Leser: Portal-Hinweis + Einladungs-Banner — der Spieler erfährt die Stufe VOR dem Tor.
     _portalCoPresenceTier(meta) {
         if (meta && meta.coPresence === true) {
-            return { tier: 2, label: "Ko-Präsenz — ihr seht euch in dieser Welt" };
+            return { tier: 2, label: this._t("portal.stufe.ko-praesenz") };
         }
         if (meta && meta.multiplayer === true) {
-            return { tier: 1, label: "Multiplayer — die Welt verbindet euch übers Mesh" };
+            return { tier: 1, label: this._t("portal.stufe.multiplayer") };
         }
-        return { tier: 0, label: "Einzelwelt — jeder reist in seiner eigenen Instanz" };
+        return { tier: 0, label: this._t("portal.stufe.einzelwelt") };
     }
 
     // W18-A — der EINE Schreiber des Portal-Hinweises (V9.82: vorher setzten
@@ -62,18 +62,16 @@ class AnazhRealm_netz_portal {
     _portalRefreshHint(po) {
         const target = po || this._portalOverlay;
         if (!target || !target.hintEl) return;
-        const parts = [
-            target.dsl ? "Esc — Heimkehr · Konsole — Befehle an diese Welt" : "Esc — zurück zur Heimat-Welt",
-        ];
+        const parts = [target.dsl ? this._t("portal.hinweis.esc-konsole") : this._t("portal.hinweis.esc-heimat")];
         parts.push(this._portalCoPresenceTier(target).label);
         // W18-C — die Input-Brücke ist aktiv: deine Tasten wirken drinnen.
         if (target.inputActions && target.inputActions.length) {
-            parts.push("deine Tasten wirken (WASD · Pfeile)");
+            parts.push(this._t("portal.hinweis.tasten"));
         }
         // W18-D — du WOHNST hier: Esc ist nur der kurze Heimweg.
         const dwell = this._loadPortalDwelling();
         if (dwell && this._resolvePortalWorldId(target) === dwell.worldId) {
-            parts[0] = `Esc — kurz heim (du wohnst hier · „ziehe heim" beendet das Wohnen)`;
+            parts[0] = this._t("portal.hinweis.esc-wohnen");
         }
         target.hintEl.textContent = parts.join(" · ");
     }
@@ -149,7 +147,7 @@ class AnazhRealm_netz_portal {
         overlay.id = "portal-overlay";
         const iframe = document.createElement("iframe");
         iframe.className = "portal-frame";
-        iframe.title = meta.label || "Portal-Welt";
+        iframe.title = meta.label || this._t("portal.welt");
         // Sandbox aus der Vertrauensstufe der Welt — EINE Quelle _portalSandboxAttr
         // (sandboxed: allow-scripts ALLEIN, nie allow-same-origin).
         iframe.setAttribute("sandbox", this._portalSandboxAttr(meta));
@@ -352,12 +350,14 @@ class AnazhRealm_netz_portal {
                 custom && custom.signature ? custom : this.state.signedWorlds && this.state.signedWorlds[reg.id];
             if (st === "valid" && sig) {
                 const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
-                const who = sig.authorPubKey === myKey ? "dir" : this._vibeFingerprint(sig.authorPubKey);
-                po.sigEl.textContent = `✓ signiert von ${who}`;
+                po.sigEl.textContent =
+                    sig.authorPubKey === myKey
+                        ? this._t("portal.signiert.von-dir")
+                        : this._t("sozial.signiert-von", { wer: this._vibeFingerprint(sig.authorPubKey) });
                 po.sigEl.className = "portal-sig sig-valid";
                 po.sigEl.hidden = false;
             } else if (st === "modified" || st === "forged") {
-                po.sigEl.textContent = "⚠ Signatur dieser Welt ungültig";
+                po.sigEl.textContent = this._t("portal.signatur-ungueltig");
                 po.sigEl.className = "portal-sig sig-bad";
                 po.sigEl.hidden = false;
             }
@@ -594,7 +594,7 @@ class AnazhRealm_netz_portal {
             status = await this.verifyWorldAddress(addr);
         }
         // Karte zeigen — im Headless ein synchroner skipConfirm-Pfad.
-        const confirmed = this._portalAddressConfirm(addr, status, entry);
+        const confirmed = await this._portalAddressConfirm(addr, status, entry);
         if (!confirmed) {
             this.log(`Portal „${addr.label}" — Reise abgebrochen.`, "INFO");
             return { ok: false, reason: "declined", status };
@@ -622,37 +622,30 @@ class AnazhRealm_netz_portal {
         });
     }
 
-    // Φ1 — die Bestätigungs-Karte. Im Browser ein confirm()-Dialog (R2-konform:
-    // außerhalb jedes iframes, Klartext, frisch). Im Headless / opts.skipConfirm
-    // → still bestätigt (Tests). status ∈ {"valid", "invalid", "unsigned"}.
-    _portalAddressConfirm(addr, status, _entry) {
-        if (typeof window === "undefined" || typeof window.confirm !== "function") {
-            return true;
-        }
-        const author = addr.authorPubKey ? `${addr.authorPubKey.slice(0, 8)}…${addr.authorPubKey.slice(-4)}` : "anonym";
-        const statusLabel =
-            status === "valid"
-                ? "Signatur GÜLTIG (verifiziert)"
-                : status === "invalid"
-                  ? "Signatur UNGÜLTIG — Warnung, das Portal könnte lügen"
-                  : "unsigniert (anonyme Adresse)";
-        const lines = [
-            `Portal-Reise zur Welt „${addr.label}":`,
-            "",
-            `BROKER:  ${addr.broker}`,
-            `RAUM:    ${addr.roomId}`,
-            `AUTOR:   ${author}`,
-            `STATUS:  ${statusLabel}`,
-            "",
-            status === "invalid"
-                ? "Diese Adresse trägt eine kaputte Signatur — Reise wird verweigert."
-                : "Hindurchgehen?",
-        ];
+    // Φ1 — die Bestätigungs-Karte über die eigene Oberfläche (`_frage`, spielgang.K5; R2-konform: außerhalb jedes
+    // iframes, Klartext, frisch). Ohne Dokument → still bestätigt. status ∈ {"valid", "invalid", "unsigned"}.
+    async _portalAddressConfirm(addr, status, _entry) {
+        if (typeof document === "undefined") return true;
+        const author = addr.authorPubKey
+            ? `${addr.authorPubKey.slice(0, 8)}…${addr.authorPubKey.slice(-4)}`
+            : this._t("portal.reise.anonym");
+        const karte = {
+            welt: String(addr.label),
+            broker: String(addr.broker),
+            raum: String(addr.roomId),
+            autor: author,
+            status:
+                status === "valid"
+                    ? this._t("portal.reise.gueltig")
+                    : status === "invalid"
+                      ? this._t("portal.reise.ungueltig")
+                      : this._t("portal.reise.unsigniert"),
+        };
         if (status === "invalid") {
-            window.alert(lines.join("\n"));
+            await this._frage(this._t("portal.reise.karte-verweigert", karte), { art: "hinweis" });
             return false;
         }
-        return window.confirm(lines.join("\n")) === true;
+        return (await this._frage(this._t("portal.reise.karte", karte))) === true;
     }
 
     // W12 Phase 1 — ein Portal verlassen. Räumt das Overlay; der Game-Loop
@@ -1305,7 +1298,7 @@ class AnazhRealm_netz_portal {
 
     // Die GEWÄHR — nur durch die R2-Host-Geste (außerhalb jedes iframes,
     // Klartext, frisch). Ein revoziertes Herkunfts-Glied fällt am Tor.
-    grantCapability(name, opts) {
+    async grantCapability(name, opts) {
         const key = String(name || "")
             .trim()
             .toLowerCase();
@@ -1317,12 +1310,12 @@ class AnazhRealm_netz_portal {
             this.log(`Fähigkeit „${key}" verweigert — die Herkunft ist revoziert.`, "WARN");
             return { ok: false, reason: "revoked" };
         }
-        const granted = this._sovereignGesture(
+        const granted = await this._sovereignGesture(
             "grant_capability",
             {
-                what: `Fähigkeit „${key}" gewähren (von „${prop.fromLabel}")`,
+                what: this._t("portal.geste.faehigkeit.was", { key: String(key), von: String(prop.fromLabel) }),
                 value: typeof this.describeProgram === "function" ? this.describeProgram(prop.dsl) : key,
-                whom: "deiner Welt",
+                whom: this._t("portal.geste.faehigkeit.wem"),
             },
             opts
         );
@@ -1405,7 +1398,7 @@ class AnazhRealm_netz_portal {
         if (po.serverIframe) return po.serverIframe;
         const serverIframe = document.createElement("iframe");
         serverIframe.className = "portal-server-frame";
-        serverIframe.title = "Server-Kontext";
+        serverIframe.title = this._t("portal.server-kontext");
         serverIframe.setAttribute("aria-hidden", "true");
         serverIframe.setAttribute("sandbox", "allow-scripts");
         serverIframe.style.display = "none";
@@ -1752,7 +1745,7 @@ class AnazhRealm_netz_portal {
         banner.innerHTML = "";
         const text = document.createElement("div");
         text.className = "portal-invite-text";
-        text.textContent = `${who} öffnete ein Tor nach „${inv.label}"`;
+        text.textContent = this._t("portal.einladung", { wer: who, welt: String(inv.label) });
         // W18-A — die ehrliche Ko-Präsenz-Stufe VOR dem Mitkommen: der
         // Empfänger löst die Welt lokal auf (seine Bibliothek) und erfährt,
         // ob er die Gefährten drinnen SEHEN wird oder jeder allein reist.
@@ -1767,12 +1760,12 @@ class AnazhRealm_netz_portal {
         const joinBtn = document.createElement("button");
         joinBtn.type = "button";
         joinBtn.className = "portal-invite-join";
-        joinBtn.textContent = "Mitkommen";
+        joinBtn.textContent = this._t("portal.mitkommen");
         joinBtn.addEventListener("click", () => this.joinPortalInvite());
         const dismissBtn = document.createElement("button");
         dismissBtn.type = "button";
         dismissBtn.className = "portal-invite-dismiss";
-        dismissBtn.textContent = "Schließen";
+        dismissBtn.textContent = this._t("ui.schliessen");
         dismissBtn.addEventListener("click", () => this.dismissPortalInvite());
         row.appendChild(joinBtn);
         row.appendChild(dismissBtn);
@@ -1802,7 +1795,7 @@ class AnazhRealm_netz_portal {
         if (entry) {
             const bp = this.state.blueprints && this.state.blueprints[entry.type];
             const label = (bp && bp.portalMeta && bp.portalMeta.label) || entry.type;
-            prompt.textContent = `E — Portal betreten: ${label}`;
+            prompt.textContent = this._t("portal.betreten", { label: String(label) });
             prompt.hidden = false;
         } else if (!prompt.hidden) {
             prompt.hidden = true;

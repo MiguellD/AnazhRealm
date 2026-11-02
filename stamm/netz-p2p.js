@@ -1134,8 +1134,7 @@ class AnazhRealm_netz_p2p {
         if (!withWorlds.length) {
             const empty = document.createElement("div");
             empty.className = "drawer-hint";
-            empty.textContent =
-                "Kein Mitspieler hat eine Welt zu teilen — vendorte Welten erscheinen, sobald ein Mitspieler im Mesh-Raum eine hat.";
+            empty.textContent = this._t("p2p.katalog.leer");
             host.appendChild(empty);
             return;
         }
@@ -1144,7 +1143,10 @@ class AnazhRealm_netz_p2p {
             group.className = "mesh-catalog-peer";
             const head = document.createElement("div");
             head.className = "mesh-catalog-peer-name";
-            head.textContent = (peer.avatarName || "Mitspieler") + " · " + pid.slice(0, 8);
+            head.textContent = this._t("p2p.katalog.peer", {
+                name: peer.avatarName || this._t("p2p.mitspieler"),
+                id: pid.slice(0, 8),
+            });
             group.appendChild(head);
             for (const w of peer.catalog) {
                 const row = document.createElement("div");
@@ -1152,7 +1154,9 @@ class AnazhRealm_netz_p2p {
                 const name = document.createElement("span");
                 name.className = "mesh-catalog-world";
                 name.textContent = w.label || w.id;
-                name.title = "id: " + w.id + (w.hash ? " · Hash " + w.hash.slice(0, 12) + "…" : "");
+                name.title = w.hash
+                    ? this._t("p2p.katalog.id-hash", { id: w.id, hash: w.hash.slice(0, 12) })
+                    : this._t("sozial.id", { id: w.id });
                 row.appendChild(name);
                 // W17 — eine Multiplayer-Welt im Katalog kenntlich machen;
                 // W17 P-Vendor — eine js-compute-Welt zusätzlich markieren.
@@ -1160,10 +1164,10 @@ class AnazhRealm_netz_p2p {
                     const mp = document.createElement("span");
                     mp.className = "library-mp-mark";
                     const jsCompute = w.serverMode === "js-compute";
-                    mp.textContent = jsCompute ? "Multiplayer · JS-Compute" : "Multiplayer";
+                    mp.textContent = jsCompute ? this._t("sozial.mp-js") : this._t("sozial.mp");
                     mp.title = jsCompute
-                        ? "Eine Gruppe taucht gemeinsam ein; ein Peer wird Compute-Host für die autoritative Server-JS."
-                        : "Eine Gruppe kann gemeinsam durch das Tor dieser Welt eintreten.";
+                        ? this._t("p2p.marke.js-compute.titel")
+                        : this._t("p2p.marke.multiplayer.titel");
                     row.appendChild(mp);
                 }
                 // W18-B — eine Ko-Präsenz-Welt im Katalog kenntlich machen:
@@ -1171,20 +1175,19 @@ class AnazhRealm_netz_p2p {
                 if (w.coPresence === true) {
                     const cp = document.createElement("span");
                     cp.className = "library-mp-mark";
-                    cp.textContent = "Ko-Präsenz";
-                    cp.title =
-                        "Ihr seht euch in dieser Welt — AnazhRealm trägt die Posen übers Mesh, die Welt rendert die Gefährten.";
+                    cp.textContent = this._t("sozial.ko-praesenz");
+                    cp.title = this._t("p2p.marke.ko-praesenz.titel");
                     row.appendChild(cp);
                 }
                 if (this._haveWorldByHashOrId(w.id, w.hash)) {
                     const have = document.createElement("span");
                     have.className = "mesh-catalog-have";
-                    have.textContent = "✓ vorhanden";
+                    have.textContent = this._t("p2p.katalog.vorhanden");
                     row.appendChild(have);
                 } else {
                     const btn = document.createElement("button");
                     btn.type = "button";
-                    btn.textContent = "Holen";
+                    btn.textContent = this._t("p2p.katalog.holen");
                     btn.dataset.meshWorld = w.id;
                     btn.dataset.meshPeer = pid;
                     // W16-Politur — der Katalog-Hash reist zum Pull mit, damit
@@ -1204,27 +1207,29 @@ class AnazhRealm_netz_p2p {
         const status = document.getElementById("mesh-world-status");
         if (!status) return;
         if (res && res.ok) {
-            status.textContent = `✓ „${res.label || res.id}" über das Mesh geholt — siehe „Welten" unten.`;
+            status.textContent = this._t("p2p.welt.geholt", { welt: res.label || res.id });
             status.className = "vendor-status";
         } else {
-            status.textContent = this._meshWorldReasonText(res ? res.reason : "Fehler");
+            status.textContent = this._meshWorldReasonText(res ? res.reason : this._t("sozial.fehler"));
             status.className = "vendor-status vendor-status-error";
         }
     }
 
     _meshWorldReasonText(reason) {
         const map = {
-            invalid_world_id: "Ungültige Welt-id (a-z 0-9 - _, 1-40 Zeichen).",
-            already_have: "Diese Welt hast du schon in deiner Bibliothek.",
-            no_such_peer: "Dieser Mitspieler ist nicht mehr verbunden.",
-            no_channel: "Zu diesem Mitspieler steht keine Mesh-Verbindung.",
-            send_failed: "Die Anfrage konnte nicht gesendet werden.",
-            not_found: "Dieser Mitspieler hat diese Welt nicht.",
-            unavailable: "Der Mitspieler konnte die Welt nicht liefern.",
-            timeout: "Zeitüberschreitung — der Mitspieler antwortete nicht. Versuch es erneut.",
-            hash_mismatch: "Das empfangene Bündel stimmt nicht mit dem Katalog überein — verworfen.",
+            invalid_world_id: () => this._t("p2p.welt.grund.ungueltige-id"),
+            already_have: () => this._t("p2p.welt.grund.schon-da"),
+            no_such_peer: () => this._t("p2p.welt.grund.kein-peer"),
+            no_channel: () => this._t("p2p.welt.grund.kein-kanal"),
+            send_failed: () => this._t("p2p.welt.grund.senden"),
+            not_found: () => this._t("p2p.welt.grund.nicht-gefunden"),
+            unavailable: () => this._t("p2p.welt.grund.nicht-lieferbar"),
+            timeout: () => this._t("p2p.welt.grund.zeit"),
+            hash_mismatch: () => this._t("p2p.welt.grund.hash"),
         };
-        return map[reason] || `Konnte die Welt nicht über das Mesh holen (${reason || "Fehler"}).`;
+        return Object.hasOwn(map, reason)
+            ? map[reason]()
+            : this._t("p2p.welt.grund.sonst", { grund: reason || this._t("sozial.fehler") });
     }
 
     // W16 Phase 2 — der Holen-Knopf einer Katalog-Zeile. worldId + peerId
@@ -1236,7 +1241,7 @@ class AnazhRealm_netz_p2p {
             const status = document.getElementById("mesh-world-status");
             if (status) {
                 if (res.ok) {
-                    status.textContent = `Frage „${res.worldId}" beim Mitspieler an …`;
+                    status.textContent = this._t("p2p.welt.frage", { welt: res.worldId });
                     status.className = "vendor-status";
                 } else {
                     this._renderMeshWorldResult(res);
@@ -1316,7 +1321,7 @@ class AnazhRealm_netz_p2p {
         const p2p = this.state.p2p;
         const peerId = this._p2pFindVoicePeer();
         if (!peerId) {
-            if (appendChatOutput) appendChatOutput("(Keine geteilte Stimme verfügbar.)");
+            if (appendChatOutput) appendChatOutput(this._t("p2p.stimme.keine"));
             return { ok: false, reason: "no_voice" };
         }
         const reqId = "v-" + p2p.peerId + "-" + p2p._voiceReqSeq++;
@@ -1326,17 +1331,17 @@ class AnazhRealm_netz_p2p {
             prompt: String(prompt || "").slice(0, AnazhRealm.P2P_VOICE_PROMPT_MAX),
         });
         if (!sent) {
-            if (appendChatOutput) appendChatOutput("(Geteilte Stimme nicht erreichbar.)");
+            if (appendChatOutput) appendChatOutput(this._t("p2p.stimme.unerreichbar"));
             return { ok: false, reason: "send_failed" };
         }
         const timeout = setTimeout(() => {
             const pending = p2p._voiceRequests.get(reqId);
             if (!pending) return;
             p2p._voiceRequests.delete(reqId);
-            if (pending.cb) pending.cb("(Geteilte Stimme schweigt — Zeitüberschreitung.)");
+            if (pending.cb) pending.cb(this._t("p2p.stimme.schweigt"));
         }, AnazhRealm.P2P_VOICE_TIMEOUT_MS);
         p2p._voiceRequests.set(reqId, { cb: appendChatOutput, timeout, peerId });
-        if (appendChatOutput) appendChatOutput("Geteilte Stimme denkt nach…");
+        if (appendChatOutput) appendChatOutput(this._t("p2p.stimme.denkt"));
         return { ok: true, reqId, peerId };
     }
 
@@ -1392,16 +1397,16 @@ class AnazhRealm_netz_p2p {
         if (pending.timeout) clearTimeout(pending.timeout);
         const cb = pending.cb;
         if (msg.error) {
-            const human =
-                {
-                    not_sharing: "Der Peer teilt seine Stimme nicht mehr.",
-                    rate_limited: "Geteilte Stimme gerade beschäftigt — kurze Pause.",
-                    empty_prompt: "Leere Anfrage.",
-                }[msg.error] || msg.error;
-            if (cb) cb(`(Geteilte Stimme: ${human})`);
+            const grund = {
+                not_sharing: () => this._t("p2p.stimme.grund.teilt-nicht"),
+                rate_limited: () => this._t("p2p.stimme.grund.beschaeftigt"),
+                empty_prompt: () => this._t("p2p.stimme.grund.leer"),
+            };
+            const human = Object.hasOwn(grund, msg.error) ? grund[msg.error]() : msg.error;
+            if (cb) cb(this._t("p2p.stimme.klammer", { text: human }));
             return;
         }
-        if (cb && msg.say) cb(`Geteilte Stimme: ${msg.say}`);
+        if (cb && msg.say) cb(this._t("p2p.stimme.sagt", { text: msg.say }));
         // Das DSL-Programm läuft durch DIESELBE Sandbox wie das eigene LLM
         // (source ≠ human → kein Re-Broadcast; es ist meine lokale Welt-
         // Reaktion). dslRun ist die Vertrauens-Wand, wie beim eigenen LLM.
@@ -1410,8 +1415,12 @@ class AnazhRealm_netz_p2p {
                 const result = this.dslRun(msg.program, { source: "remote-voice" });
                 if (cb && result) {
                     const weicht = this._ergebnisSatz(result.log);
-                    if (weicht) cb(`(Geteilte Stimme: ${weicht.satz})`);
-                    else if (result.ok) cb(`(Welt verändert: ${JSON.stringify(msg.program).slice(0, 140)})`);
+                    if (weicht) cb(this._t("p2p.stimme.klammer", { text: weicht.satz }));
+                    else if (result.ok)
+                        cb(
+                            // die Tat in Worten (`describeProgram`), nie das rohe Programm (W6, wie die eigene KI)
+                            this._t("p2p.stimme.welt-veraendert", { tat: this.describeProgram(msg.program) })
+                        );
                 }
             } catch {
                 /* Sandbox-Fehler schweigend — der say-Text steht schon */
@@ -1691,7 +1700,11 @@ class AnazhRealm_netz_p2p {
         p2p.brokerStats = { rooms, peers, at: Date.now() };
         if (typeof document !== "undefined") {
             const el = document.getElementById("p2p-broker-stats");
-            if (el) el.textContent = `Knoten: ${peers} online in ${rooms} ${rooms === 1 ? "Raum" : "Räumen"}`;
+            if (el)
+                el.textContent =
+                    rooms === 1
+                        ? this._t("p2p.knoten.ein-raum", { peers, rooms })
+                        : this._t("p2p.knoten.raeume", { peers, rooms });
         }
     }
 
@@ -3095,10 +3108,10 @@ class AnazhRealm_netz_p2p {
                 if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
                     navigator.clipboard.writeText(room).catch(() => {
                         // Fallback: zeige Raum im Status-Text
-                        if (statusEl) statusEl.textContent = `Raum-ID: ${room}`;
+                        if (statusEl) statusEl.textContent = this._t("p2p.raum-id", { room });
                     });
                 } else if (statusEl) {
-                    statusEl.textContent = `Raum-ID: ${room}`;
+                    statusEl.textContent = this._t("p2p.raum-id", { room });
                 }
             });
         }
@@ -3118,27 +3131,21 @@ class AnazhRealm_netz_p2p {
         // über das Mesh (heilt eine ggf. divergierte Welt).
         const resyncBtn = document.getElementById("p2p-resync");
         if (resyncBtn) {
-            resyncBtn.addEventListener("click", () => {
+            resyncBtn.addEventListener("click", async () => {
                 // Der Resync ersetzt die aktuelle Welt durch die des Hosts —
                 // lokale Änderungen seit dem Join gehen verloren. Rückfrage
                 // wie bei importVibePass (eine ersetzende Geste).
-                if (
-                    typeof window !== "undefined" &&
-                    typeof window.confirm === "function" &&
-                    !window.confirm("Welt vom Host neu holen? Deine aktuelle Welt wird durch die des Hosts ersetzt.")
-                ) {
-                    return;
-                }
+                if (!(await this._frage(this._t("p2p.resync.frage")))) return;
                 const res = this._p2pRequestWorldResync();
                 if (!res.ok) {
-                    const reason =
-                        {
-                            no_mesh: "Mesh steht noch nicht.",
-                            no_host: "Kein Host im Raum gefunden.",
-                            no_channel: "Kein offener Kanal zum Host.",
-                            send_failed: "Anfrage konnte nicht gesendet werden.",
-                        }[res.reason] || res.reason;
-                    if (statusEl) statusEl.textContent = `Resync nicht möglich: ${reason}`;
+                    const grund = {
+                        no_mesh: () => this._t("p2p.resync.grund.kein-mesh"),
+                        no_host: () => this._t("p2p.resync.grund.kein-host"),
+                        no_channel: () => this._t("p2p.resync.grund.kein-kanal"),
+                        send_failed: () => this._t("p2p.resync.grund.senden"),
+                    };
+                    const reason = Object.hasOwn(grund, res.reason) ? grund[res.reason]() : res.reason;
+                    if (statusEl) statusEl.textContent = this._t("p2p.resync.nicht", { reason: String(reason) });
                 }
             });
         }
@@ -3149,7 +3156,7 @@ class AnazhRealm_netz_p2p {
                 const now = !this.state.p2p.voiceShared;
                 const applied = this.setVoiceShared(now);
                 if (now && !applied && statusEl) {
-                    statusEl.textContent = "Stimme teilen braucht ein aktives eigenes LLM.";
+                    statusEl.textContent = this._t("p2p.stimme.braucht-llm");
                 }
             });
         }
@@ -3164,7 +3171,7 @@ class AnazhRealm_netz_p2p {
                     const res = this.publishToLobby(lobbyLabel ? lobbyLabel.value : "");
                     if (!res.ok) {
                         lobbyPub.checked = false;
-                        if (statusEl) statusEl.textContent = "Lobby: erst Multi-User verbinden.";
+                        if (statusEl) statusEl.textContent = this._t("p2p.lobby.erst-verbinden");
                     }
                 } else {
                     this.unpublishFromLobby();
@@ -3174,7 +3181,7 @@ class AnazhRealm_netz_p2p {
         if (lobbyRefresh) {
             lobbyRefresh.addEventListener("click", () => {
                 const res = this.requestLobbyList();
-                if (!res.ok && statusEl) statusEl.textContent = "Lobby: erst Multi-User verbinden.";
+                if (!res.ok && statusEl) statusEl.textContent = this._t("p2p.lobby.erst-verbinden");
             });
         }
         if (lobbyList) {
@@ -3196,7 +3203,7 @@ class AnazhRealm_netz_p2p {
         if (!rooms.length) {
             const empty = document.createElement("div");
             empty.className = "drawer-hint";
-            empty.textContent = "Keine öffentlichen Räume — „Lobby durchsuchen“ klicken.";
+            empty.textContent = this._t("p2p.lobby.leer");
             listEl.appendChild(empty);
             return;
         }
@@ -3206,10 +3213,10 @@ class AnazhRealm_netz_p2p {
             row.className = "p2p-lobby-row";
             const name = document.createElement("span");
             name.className = "p2p-lobby-name";
-            name.textContent = `${r.label || r.room.slice(0, 16)} · ${r.peers || 0} Spieler`;
+            name.textContent = this._t("p2p.lobby.raum", { name: r.label || r.room.slice(0, 16), n: r.peers || 0 });
             const btn = document.createElement("button");
             btn.type = "button";
-            btn.textContent = "Beitreten";
+            btn.textContent = this._t("p2p.lobby.beitreten");
             btn.dataset.lobbyRoom = r.room;
             row.appendChild(name);
             row.appendChild(btn);
@@ -3223,33 +3230,37 @@ class AnazhRealm_netz_p2p {
         if (toggle) {
             const an = this.state.p2p.enabled === true;
             toggle.setAttribute("aria-pressed", an ? "true" : "false");
-            toggle.textContent = an ? "Deaktivieren" : "Aktivieren";
+            toggle.textContent = an ? this._t("p2p.deaktivieren") : this._t("ui.aktivieren");
         }
         const statusEl = document.getElementById("p2p-status");
         if (statusEl) {
             const p = this.state.p2p;
             if (!p.enabled) {
-                statusEl.textContent = "Inaktiv.";
+                statusEl.textContent = this._t("ui.inaktiv");
             } else if (p.lastError) {
-                statusEl.textContent = `Fehler: ${p.lastError}`;
+                statusEl.textContent = this._t("p2p.status.fehler", { fehler: p.lastError });
             } else if (!p.connected) {
-                statusEl.textContent = "Verbinde…";
+                statusEl.textContent = this._t("sozial.verbinde");
             } else if (p._lastXferProgress) {
                 // W7 Phase 2 — ein Welt-Transfer läuft.
                 const x = p._lastXferProgress;
-                statusEl.textContent = `Welt-Transfer: ${x.received}/${x.total} Stücke …`;
+                statusEl.textContent = this._t("p2p.status.transfer", {
+                    erhalten: String(x.received),
+                    gesamt: String(x.total),
+                });
             } else {
                 const room = p.room ? `${p.room.slice(0, 8)}…` : "—";
                 const peerCount = p.peers.size;
                 // W7 Phase 1 — Transport sichtbar machen: Mesh (peer-to-peer)
                 // sobald alle Kanäle stehen, sonst Relay über den Server.
-                const transport = peerCount > 0 ? (p.meshActive ? " · Mesh p2p" : " · Server-Relay") : "";
+                const transport =
+                    peerCount > 0 ? (p.meshActive ? this._t("p2p.status.mesh") : this._t("p2p.status.relay")) : "";
                 // W7 Phase 3 — Hinweis: nutzt der Chat eine geteilte Stimme?
                 let voice = "";
-                if (p.voiceShared && this._p2pVoiceCapable()) voice = " · Stimme geteilt";
+                if (p.voiceShared && this._p2pVoiceCapable()) voice = this._t("p2p.status.stimme-geteilt");
                 else if (typeof this._p2pVoiceAvailable === "function" && this._p2pVoiceAvailable())
-                    voice = " · geteilte Stimme nutzbar";
-                statusEl.textContent = `Verbunden (Raum ${room}, ${peerCount} Mitspieler${transport}${voice}).`;
+                    voice = this._t("p2p.status.stimme-nutzbar");
+                statusEl.textContent = this._t("p2p.status.verbunden", { room, n: peerCount, transport, voice });
             }
         }
         // W16 Phase 2 — den Welt-Katalog der „Welt vom Mitspieler holen"-
@@ -3272,7 +3283,7 @@ class AnazhRealm_netz_p2p {
             voiceBtn.hidden = !capable;
             const on = !!this.state.p2p.voiceShared;
             voiceBtn.setAttribute("aria-pressed", on ? "true" : "false");
-            voiceBtn.textContent = on ? "Stimme geteilt ✓" : "Stimme teilen";
+            voiceBtn.textContent = on ? this._t("p2p.stimme.geteilt") : this._t("ui.stimme-teilen");
         }
         // Ring 11.5: Banner mit Connection-Stand aktualisieren (Host:
         // peerCount, Guest: connected-Indikator).

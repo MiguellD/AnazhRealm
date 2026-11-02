@@ -27,9 +27,9 @@ class AnazhRealm_werkstatt_hof {
         const push = (label, d, digits = 1) => {
             if (Math.abs(d) >= 0.05) parts.push(`${d > 0 ? "+" : "−"}${Math.abs(d).toFixed(digits)} ${label}`);
         };
-        push("Abwehr", (after.defense || 0) - (before.defense || 0));
-        push("Tempo", (after.speed || 0) - (before.speed || 0));
-        push("HP", (after.hpMax || 0) - (before.hpMax || 0), 0);
+        push(this._t("hof.abwehr"), (after.defense || 0) - (before.defense || 0));
+        push(this._t("hof.tempo"), (after.speed || 0) - (before.speed || 0));
+        push(this._t("hof.hp"), (after.hpMax || 0) - (before.hpMax || 0), 0);
         return parts.join(" · ");
     }
 
@@ -48,16 +48,14 @@ class AnazhRealm_werkstatt_hof {
             const bp = eq.held && bps[eq.held];
             const el = document.createElement("div");
             el.className = "equip-slot";
-            el.appendChild(this._el("span", { class: "equip-kind", text: "Haupthand" }));
+            el.appendChild(this._el("span", { class: "equip-kind", text: this._t("hof.haupthand") }));
             el.appendChild(
                 this._el("span", {
                     class: "equip-name",
-                    text: eq.held ? (bp && bp.label) || eq.held : "— leer (Faust) —",
+                    text: eq.held ? (bp && bp.label) || eq.held : this._t("hof.leer-faust"),
                 })
             );
-            el.title = eq.held
-                ? "Klick → ablegen · Wechseln über die Hotbar · G tauscht mit der Nebenhand"
-                : "Die Haupthand — wählen über die Hotbar; G tauscht mit der Nebenhand (Slot links der Hotbar)";
+            el.title = eq.held ? this._t("hof.haupthand-ablegen") : this._t("hof.haupthand-titel");
             if (eq.held) {
                 el.addEventListener("click", () => {
                     this.equipHeld(null);
@@ -73,12 +71,12 @@ class AnazhRealm_werkstatt_hof {
             const { armorBlueprints } = this._equipPartitionEquipBlueprints();
             const el = document.createElement("div");
             el.className = "equip-slot";
-            el.appendChild(this._el("span", { class: "equip-kind", text: "Rüstung" }));
+            el.appendChild(this._el("span", { class: "equip-kind", text: this._t("hof.ruestung") }));
             if (armorBlueprints.length) {
                 const sel = document.createElement("select");
                 sel.className = "equip-slot-select";
-                sel.title = "Rüstung wechseln (frei, wenn schon geschmiedet)";
-                sel.appendChild(this._el("option", { value: "", text: "— keine —" }));
+                sel.title = this._t("hof.ruestung-wechseln");
+                sel.appendChild(this._el("option", { value: "", text: this._t("hof.keine-wahl") }));
                 for (const name of armorBlueprints) {
                     const opt = this._el("option", { value: name, text: (bps[name] && bps[name].label) || name });
                     // W-C(a) (R-005) — der PREIS lesbar VOR der Wahl: die Stat-FOLGE
@@ -111,7 +109,7 @@ class AnazhRealm_werkstatt_hof {
                 el.appendChild(
                     this._el("span", {
                         class: "equip-name",
-                        text: eq.armor ? (bps[eq.armor] && bps[eq.armor].label) || eq.armor : "— leer —",
+                        text: eq.armor ? (bps[eq.armor] && bps[eq.armor].label) || eq.armor : this._t("hof.leer"),
                     })
                 );
             }
@@ -136,18 +134,18 @@ class AnazhRealm_werkstatt_hof {
         const active = boosts.filter((b) => b && b.expiresAt > nowSec);
         const row = this._el("div", { class: "ich-boosts" });
         if (!active.length) {
-            row.appendChild(this._el("span", { class: "ich-boosts-empty", text: "keine aktiven Boosts" }));
+            row.appendChild(this._el("span", { class: "ich-boosts-empty", text: this._t("hof.keine-boosts") }));
         } else {
             for (const b of active) {
                 const rest = Math.max(0, Math.round(b.expiresAt - nowSec));
                 const effect = this._boostEffectLabel(b);
-                const chip = this._el("span", {
-                    class: "ich-boost-chip",
-                    text: `✺ ${b.label || b.source}${effect ? ` · ${effect}` : ""} (${rest}s)`,
-                });
+                const base = `✺ ${b.label || b.source}${effect ? ` · ${effect}` : ""}`;
+                const chip = this._el("span", { class: "ich-boost-chip", text: `${base} (${rest}s)` });
                 chip.setAttribute("data-expires", String(b.expiresAt));
-                chip.setAttribute("data-base", `✺ ${b.label || b.source}${effect ? ` · ${effect}` : ""}`);
-                chip.title = effect ? `Wirkt jetzt: ${effect} — läuft in ${rest}s aus.` : `Läuft in ${rest}s aus.`;
+                chip.setAttribute("data-base", base);
+                chip.title = effect
+                    ? this._t("hof.boost-wirkt", { effekt: effect, rest })
+                    : this._t("hof.boost-laeuft", { rest });
                 row.appendChild(chip);
             }
         }
@@ -169,7 +167,7 @@ class AnazhRealm_werkstatt_hof {
             }
         }
         if (!bestK || !bestV) return "";
-        const label = (AnazhRealm.AXIS_LABELS && AnazhRealm.AXIS_LABELS[bestK]) || bestK;
+        const label = AnazhRealm._tafelName(AnazhRealm.AXIS_LABELS, bestK);
         return `${bestV > 0 ? "+" : ""}${Math.round(bestV * 100) / 100} ${label}`;
     }
 
@@ -188,7 +186,7 @@ class AnazhRealm_werkstatt_hof {
                 chip.remove();
                 continue;
             }
-            const base = chip.getAttribute("data-base") || "✺ Boost";
+            const base = chip.getAttribute("data-base") || this._t("hof.boost-basis");
             const next = `${base} (${rest}s)`;
             this._hudSchreib(chip, next);
         }
@@ -242,12 +240,12 @@ class AnazhRealm_werkstatt_hof {
             const griff = [];
             const groups = { hold: [], wear: [], drink: [], vehicle: [], place: [] };
             const groupLabel = {
-                griff: "Griffbereit",
-                hold: "In die Hand",
-                wear: "Rüstung",
-                drink: "Trank",
-                vehicle: "Fahrzeug",
-                place: "Bauwerk",
+                griff: this._t("hof.griffbereit"),
+                hold: this._t("hof.in-die-hand"),
+                wear: this._t("hof.ruestung"),
+                drink: this._t("hof.trank"),
+                vehicle: this._t("hof.fahrzeug"),
+                place: this._t("hof.bauwerk"),
             };
             for (const name of this._katalogReihe(Object.keys(bps))) {
                 const bp = bps[name];
@@ -275,7 +273,7 @@ class AnazhRealm_werkstatt_hof {
             if (!any) {
                 const empty = document.createElement("p");
                 empty.className = "inventory-hint";
-                empty.textContent = "Noch keine craftbaren Baupläne — entwirf eines in der Werkstatt.";
+                empty.textContent = this._t("hof.rezepte-leer");
                 host.appendChild(empty);
             }
             // V18.65 — den aktuellen Selbst-Such-Filter nach dem Neu-Aufbau wieder anwenden (die Zeilen werden
@@ -348,7 +346,11 @@ class AnazhRealm_werkstatt_hof {
             // W-C(h)/R-036 — der WARUM-CHIP an der Rezept-Zeile (Tooltip): die
             // lesbare Emergenz reist an jede Rollen-Anzeige.
             const why = this._blueprintRoleWhy(bp);
-            if (why && why.text) row.title = `${AnazhRealm.ROLE_LABELS[why.role] || why.role}, weil: ${why.text}`;
+            if (why && why.text)
+                row.title = this._t("hof.rolle-weil", {
+                    rolle: AnazhRealm._tafelName(AnazhRealm.ROLE_LABELS, why.role),
+                    grund: why.text,
+                });
         }
         const info = document.createElement("div");
         info.className = "recipe-info";
@@ -360,10 +362,7 @@ class AnazhRealm_werkstatt_hof {
         const check = this.checkBuildCost(name);
         const cost = document.createElement("span");
         cost.className = "recipe-cost";
-        cost.textContent =
-            Object.entries(check.cost || {})
-                .map(([m, n]) => `${n}× ${m}`)
-                .join(" · ") || "frei";
+        cost.textContent = this._kostenText(check.cost) || this._t("hof.frei");
         info.appendChild(cost);
         // Status: erst BAUPLAN (Information — Fertigen kostet Materie) oder schon WERK (forgedPrecision
         // eingefroren) — die Zeile sagt, warum ein Bauplan noch nicht wirkt.
@@ -372,12 +371,12 @@ class AnazhRealm_werkstatt_hof {
         // Ein Bauwerk (place, vehicle) ist nie „Werk ✓": jedes Setzen zahlt (Frieden und Pfad), der Weg ist der Bau-Modus.
         const bauwerk = kind === "place" || kind === "vehicle";
         const isWerk = !bauwerk && Number.isFinite(bp && bp.forgedPrecision);
-        status.textContent = isWerk ? "Werk ✓" : "Bauplan";
+        status.textContent = isWerk ? this._t("hof.werk") : this._t("hof.bauplan");
         status.title = isWerk
-            ? "Gefertigt — die Präzision ist eingefroren, der Gebrauch ist frei."
+            ? this._t("hof.status-werk")
             : bauwerk
-              ? "Fertigen setzt das Werk, wohin du blickst — das Setzen zieht das Material (Frieden und Pfad), frei ist nur Schöpfer."
-              : "Reine Information — das Fertigen zieht das Material (Frieden und Pfad), dann ist der Gebrauch frei.";
+              ? this._t("hof.status-bauwerk")
+              : this._t("hof.status-bauplan");
         status.style.opacity = "0.75";
         status.style.fontStyle = "italic";
         // in der Kosten-Zeile (bauen.K1): eine Zeile weniger je Rezept, das Griffbereite steht ganz im Bild
@@ -391,24 +390,18 @@ class AnazhRealm_werkstatt_hof {
         // dann platziert; der alte sonst-Zweig log „In die Hand").
         btn.textContent =
             kind === "wear"
-                ? "Anlegen"
+                ? this._t("hof.anlegen")
                 : kind === "drink"
-                  ? "Brauen + Trinken"
+                  ? this._t("hof.brauen-trinken")
                   : kind === "place" || kind === "vehicle"
-                    ? "Fertigen"
-                    : "In die Hand";
-        if (bauwerk)
-            btn.title =
-                "Fertigen — das Werk steht, wohin du blickst; trägt der Ort nicht, zielt das Phantom (F setzt).";
+                    ? this._t("hof.fertigen")
+                    : this._t("hof.in-die-hand");
+        if (bauwerk) btn.title = this._t("hof.fertigen-titel");
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
         const free = mode === "schöpfer" || isWerk;
         btn.disabled = !free && !check.ok;
         if (btn.disabled) {
-            btn.title =
-                "Es fehlt: " +
-                Object.entries(check.missing || {})
-                    .map(([m, n]) => `${n}× ${m}`)
-                    .join(", ");
+            btn.title = this._t("hof.es-fehlt", { liste: this._kostenText(check.missing, ", ") });
         }
         btn.addEventListener("click", () => {
             const res = this.craftFromRecipe(name);
@@ -558,7 +551,7 @@ class AnazhRealm_werkstatt_hof {
             name: ud.name || "?",
             soul: typeof ud.soul === "string" ? ud.soul : "",
             soulLabel:
-                (ud.soul && AnazhRealm.CREATURE_SOULS[ud.soul] && AnazhRealm.CREATURE_SOULS[ud.soul].label) || "—",
+                ud.soul && AnazhRealm.CREATURE_SOULS[ud.soul] ? this._t(AnazhRealm.CREATURE_SOULS[ud.soul].label) : "—",
             bond: Number.isFinite(ud.bond) ? ud.bond : 0,
             equipped: ud.equipped || {},
             boosts: Array.isArray(ud.boosts) ? ud.boosts : [],
@@ -810,7 +803,7 @@ class AnazhRealm_werkstatt_hof {
             host.appendChild(
                 this._el("div", {
                     class: "hof-stage-empty",
-                    text: "Wähle ein Wesen aus dem Orchester — es tritt hier auf die Bühne.",
+                    text: this._t("hof.buehne-leer"),
                 })
             );
             return;
@@ -843,9 +836,9 @@ class AnazhRealm_werkstatt_hof {
             "div",
             {
                 class: "spec-quality",
-                title: "Bindung — die Beziehung wächst, während das Wesen folgt + nah bleibt (gewichtet Contagion + Verlust).",
+                title: this._t("hof.bindung-titel"),
             },
-            this._el("span", { class: "spec-q-label", text: "Bindung" }),
+            this._el("span", { class: "spec-q-label", text: this._t("hof.bindung") }),
             this._el("span", { class: "spec-q-stars", text: "★".repeat(b5) + "☆".repeat(5 - b5) }),
             this._el("span", { class: "spec-q-val", text: bond.toFixed(2) })
         );
@@ -855,32 +848,38 @@ class AnazhRealm_werkstatt_hof {
         // PRIMÄR), rechts NATUR (die Substanz, aus der die Werte EMERGIEREN — sekundär). Schöpfer-Befund:
         // „bei der Kreatur ist Damage etc. interessanter als Resonanz" — die Capabilities führen, die Tags folgen.
         const fracLvl = (f) => (f > 0.66 ? "lvl-2" : f > 0.33 ? "lvl-1" : "lvl-0");
-        const werteChildren = [this._el("div", { class: "spec-col-head", text: "Werte" })];
+        const werteChildren = [this._el("div", { class: "spec-col-head", text: this._t("hof.werte") })];
         if (prof.stats) {
             const cs = prof.stats;
             const hpFrac = prof.hpMax > 0 ? prof.hp / prof.hpMax : 0;
             werteChildren.push(
                 this._specBar(
-                    "HP",
+                    this._t("hof.hp"),
                     hpFrac,
                     `${Math.round(prof.hp)}/${Math.round(prof.hpMax)}`,
                     fracLvl(hpFrac),
-                    "Lebenspunkte (lebend/max)"
+                    this._t("hof.hp-titel-wesen")
                 )
             );
             // Die Kombat-/Aktions-Werte als Balken — der Anteil füllt gegen eine GEMESSENE Referenz (die
             // Formel-Decke aus STAT_FROM_TAGS, weiche Skala), die echte Zahl steht im Label (ehrlich, V17.31).
             const statBars = [
-                ["Schaden", cs.damage, 25, "Schaden pro Schlag (härte+dichte)"],
-                ["Tempo", cs.speed, 14, "Bewegungstempo (leicht+magieleitung)"],
-                ["Ausdauer", cs.staminaMax, 200, "max. Ausdauer (leicht+wärmeleitung)"],
-                ["Abwehr", cs.defense, 14, "physische Abwehr (dichte+härte)"],
-                ["Präzision", cs.precision, 1, "Präzision (magieleitung+zähigkeit)"],
+                ["hof.schaden", cs.damage, 25, "hof.schaden-titel-wesen"],
+                ["hof.tempo", cs.speed, 14, "hof.tempo-titel-wesen"],
+                ["hof.ausdauer", cs.staminaMax, 200, "hof.ausdauer-titel-wesen"],
+                ["hof.abwehr", cs.defense, 14, "hof.abwehr-titel-wesen"],
+                ["hof.praezision", cs.precision, 1, "hof.praezision-titel"],
             ];
             for (const [label, v, ref, title] of statBars) {
                 if (!Number.isFinite(v)) continue;
                 werteChildren.push(
-                    this._specBar(label, v / ref, v.toFixed(1), fracLvl(v / ref), `${title}: ${v.toFixed(2)}`)
+                    this._specBar(
+                        this._t(label),
+                        v / ref,
+                        v.toFixed(1),
+                        fracLvl(v / ref),
+                        `${this._t(title)}: ${v.toFixed(2)}`
+                    )
                 );
             }
             // Elementar-Resists als kompakter Chip-Streifen (klein, sekundär).
@@ -891,34 +890,34 @@ class AnazhRealm_werkstatt_hof {
                     { class: "spec-stat-strip" },
                     this._el(
                         "span",
-                        { class: "spec-stat-chip", title: "Magie-Resistenz" },
-                        this._el("span", { class: "spec-stat-name", text: "MR" }),
+                        { class: "spec-stat-chip", title: this._t("hof.magie-resistenz") },
+                        this._el("span", { class: "spec-stat-name", text: this._t("hof.mr") }),
                         this._el("span", { class: "spec-stat-val", text: fmt(cs.magicResist) })
                     ),
                     this._el(
                         "span",
-                        { class: "spec-stat-chip", title: "Hitze-Resistenz" },
-                        this._el("span", { class: "spec-stat-name", text: "HR" }),
+                        { class: "spec-stat-chip", title: this._t("hof.hitze-resistenz") },
+                        this._el("span", { class: "spec-stat-name", text: this._t("hof.hr") }),
                         this._el("span", { class: "spec-stat-val", text: fmt(cs.heatResist) })
                     )
                 )
             );
         } else {
-            werteChildren.push(this._el("span", { class: "spec-empty", text: "Werte werden berechnet …" }));
+            werteChildren.push(this._el("span", { class: "spec-empty", text: this._t("hof.werte-berechnet") }));
         }
         const leftCol = this._el("div", { class: "spec-col" }, ...werteChildren);
 
         // W-B (R-002, meister-plan §8.2) — die EMOTION an der STELLE der Natur:
         // die 6 Achsen als intuitive Balken (wie HP), gebaut vom EINEN Renderer
         // (_buildEmotionRows — dieselbe Sprache wie das Ich, statisch pro Render).
-        const rightChildren = [this._el("div", { class: "spec-col-head", text: "Gefühl" })];
+        const rightChildren = [this._el("div", { class: "spec-col-head", text: this._t("hof.gefuehl") })];
         if (prof.emotions) {
             const built = this._buildEmotionRows(prof.emotions);
             const rowsHost = this._el("div", { class: "hof-emotion-rows" });
             for (const row of built.rows) rowsHost.appendChild(row);
             rightChildren.push(rowsHost);
         } else {
-            rightChildren.push(this._el("span", { class: "spec-empty", text: "noch kein Innenleben" }));
+            rightChildren.push(this._el("span", { class: "spec-empty", text: this._t("hof.kein-innenleben") }));
         }
         // NATUR (Werkstatt-Wissen, sekundär) — die Compound-Tags wandern in ein
         // einklappbares <details>: einen Klick entfernt, prägt die Karte nicht mehr.
@@ -932,15 +931,15 @@ class AnazhRealm_werkstatt_hof {
                 v / 3,
                 v.toFixed(2),
                 this._natureLevelClass(v),
-                `${k}: ${v.toFixed(2)} (Natur, 0–3 — speist die Werte)`
+                this._t("hof.natur-titel", { tag: k, wert: v.toFixed(2) })
             )
         );
         if (natBars.length) {
             const natDetails = document.createElement("details");
             natDetails.className = "spec-nature-details";
             const natSum = document.createElement("summary");
-            natSum.textContent = "Substanz — speist die Werte";
-            natSum.title = "Die Compound-Tags (Natur, 0–3), aus denen die Werte emergieren — Werkstatt-Wissen.";
+            natSum.textContent = this._t("hof.substanz");
+            natSum.title = this._t("hof.substanz-titel");
             natDetails.appendChild(natSum);
             for (const b of natBars) natDetails.appendChild(b);
             rightChildren.push(natDetails);
@@ -953,16 +952,18 @@ class AnazhRealm_werkstatt_hof {
         // (Overflow gekappt) + die jüngste Tat aus ud.memory + die Gesamtzahl der Erinnerungen (graceful, kein Overflow).
         const threshold = AnazhRealm.CREATURE_SPECIALIZATION_LEVEL_THRESHOLD;
         const maxLevel = AnazhRealm.CREATURE_SPECIALIZATION_MAX_LEVEL;
-        const growChildren = [this._el("div", { class: "spec-col-head", text: "Wachstum & Geschichte" })];
+        const growChildren = [this._el("div", { class: "spec-col-head", text: this._t("hof.wachstum") })];
         const grow = (prof.specs || []).slice(0, 3).map((s) => {
             const atMax = s.level >= maxLevel;
             const into = s.count - s.level * threshold;
             return this._specBar(
-                `${s.kind === "gather" ? "Sammler" : "Bauer"}·${s.key}`,
+                `${this._t(s.kind === "gather" ? "hof.sammler" : "hof.bauer")}·${s.key}`,
                 atMax ? 1 : Math.max(0, Math.min(1, into / threshold)),
                 atMax ? `L${s.level} ✦` : `L${s.level} · ${into}/${threshold}`,
                 atMax ? "lvl-3" : "lvl-2",
-                `${s.count} Erfolge — ${atMax ? "Meisterschaft" : "auf dem Weg zu L" + (s.level + 1)}`
+                atMax
+                    ? this._t("hof.erfolge-meister", { n: s.count })
+                    : this._t("hof.erfolge-weg", { n: s.count, level: s.level + 1 })
             );
         });
         if (grow.length) {
@@ -971,7 +972,7 @@ class AnazhRealm_werkstatt_hof {
                 growChildren.push(
                     this._el("div", {
                         class: "spec-grow-more",
-                        text: `+ ${prof.specCount - grow.length} weitere Fertigkeiten`,
+                        text: this._t("hof.weitere-fertigkeiten", { n: prof.specCount - grow.length }),
                     })
                 );
         }
@@ -983,14 +984,14 @@ class AnazhRealm_werkstatt_hof {
                     "div",
                     {
                         class: "spec-deed",
-                        title: `${prof.memoryCount} Erinnerungen (gekappt auf das Lebens-Gedächtnis)`,
+                        title: this._t("hof.erinnerungen", { n: prof.memoryCount }),
                     },
-                    this._el("span", { class: "spec-deed-label", text: "Geschichte" }),
+                    this._el("span", { class: "spec-deed-label", text: this._t("hof.geschichte") }),
                     this._el("span", { class: "spec-deed-text", text: deed })
                 )
             );
         else if (!grow.length)
-            growChildren.push(this._el("span", { class: "spec-empty", text: "noch keine Geschichte" }));
+            growChildren.push(this._el("span", { class: "spec-empty", text: this._t("hof.keine-geschichte") }));
         const growth = this._el("div", { class: "spec-growth-zone" }, ...growChildren);
 
         // FOOTER — die HABE (Werkzeug/Rüstung/Boosts) als Chips + der würdevolle Abschied.
@@ -1011,8 +1012,8 @@ class AnazhRealm_werkstatt_hof {
             this._el("button", {
                 class: "spec-dismiss",
                 type: "button",
-                text: "✕ Verabschieden",
-                title: `${prof.name} aus der Welt verabschieden`,
+                text: this._t("hof.verabschieden"),
+                title: this._t("hof.verabschieden-titel", { name: prof.name }),
                 on: {
                     click: (e) => {
                         e.stopPropagation();
@@ -1043,11 +1044,14 @@ class AnazhRealm_werkstatt_hof {
                 "div",
                 {
                     class: `emotion hof-emotion-bar ${es.dominant}`,
-                    title: `Dominante Emotion: ${(AnazhRealm.EMOTION_LABEL && AnazhRealm.EMOTION_LABEL[es.dominant]) || es.dominant} — Intensität ${(es.intensity * 100) | 0} % (färbt Verhalten + Contagion).`,
+                    title: this._t("hof.emotion-titel", {
+                        emotion: this._t(AnazhRealm.EMOTION_LABEL[es.dominant]),
+                        prozent: (es.intensity * 100) | 0,
+                    }),
                 },
                 this._el("span", {
                     class: "name",
-                    text: (AnazhRealm.EMOTION_LABEL && AnazhRealm.EMOTION_LABEL[es.dominant]) || es.dominant,
+                    text: this._t(AnazhRealm.EMOTION_LABEL[es.dominant]),
                 }),
                 bar,
                 this._el("span", { class: "value", text: `${(es.intensity * 100) | 0}%` })
@@ -1074,10 +1078,10 @@ class AnazhRealm_werkstatt_hof {
             const s = Math.max(0, Math.round((Date.now() - e.at) / 1000));
             ago =
                 s < 60
-                    ? ` · vor ${s}s`
+                    ? ` · ${this._t("hof.vor-s", { n: s })}`
                     : s < 3600
-                      ? ` · vor ${Math.round(s / 60)}m`
-                      : ` · vor ${Math.round(s / 3600)}h`;
+                      ? ` · ${this._t("hof.vor-m", { n: Math.round(s / 60) })}`
+                      : ` · ${this._t("hof.vor-h", { n: Math.round(s / 3600) })}`;
         }
         return `${what}${ago}`;
     }
@@ -1097,7 +1101,7 @@ class AnazhRealm_werkstatt_hof {
         return {
             soul,
             soulLabel: (custom && custom.label) || (builtin && builtin.label) || soul,
-            name: typeof p.name === "string" && p.name.trim() ? p.name.trim().slice(0, 48) : "Du",
+            name: typeof p.name === "string" && p.name.trim() ? p.name.trim().slice(0, 48) : this._t("hof.du"),
             mode: typeof this.getGameMode === "function" ? this.getGameMode() : "frieden",
             stats,
             tags: p.statTags || {},
@@ -1130,38 +1134,44 @@ class AnazhRealm_werkstatt_hof {
         const v5 = Math.round(vigor * 5);
         const qualZone = this._el(
             "div",
-            { class: "spec-quality", title: "Verfassung — dein Lebensanteil (HP / max)." },
-            this._el("span", { class: "spec-q-label", text: "Verfassung" }),
+            { class: "spec-quality", title: this._t("hof.verfassung-titel") },
+            this._el("span", { class: "spec-q-label", text: this._t("hof.verfassung") }),
             this._el("span", { class: "spec-q-stars", text: "★".repeat(v5) + "☆".repeat(5 - v5) }),
             this._el("span", { class: "spec-q-val", text: `${Math.round(prof.hp)}/${Math.round(prof.hpMax)}` })
         );
         const header = this._el("div", { class: "spec-header" }, idZone, qualZone);
 
         // BODY — WERTE führen (links, equip-gefaltet, Balken) | NATUR sekundär (rechts, Compound-Tags).
-        const werteChildren = [this._el("div", { class: "spec-col-head", text: "Werte" })];
+        const werteChildren = [this._el("div", { class: "spec-col-head", text: this._t("hof.werte") })];
         if (prof.stats) {
             const cs = prof.stats;
             const hpFrac = prof.hpMax > 0 ? prof.hp / prof.hpMax : 0;
             werteChildren.push(
                 this._specBar(
-                    "HP",
+                    this._t("hof.hp"),
                     hpFrac,
                     `${Math.round(prof.hp)}/${Math.round(prof.hpMax)}`,
                     fracLvl(hpFrac),
-                    "Lebenskraft (lebend/max)"
+                    this._t("hof.hp-titel-ich")
                 )
             );
             const statBars = [
-                ["Schaden", cs.damage, 25, "Schaden pro Schlag (härte+dichte, + Werkzeug)"],
-                ["Tempo", cs.speed, 14, "Lauf-Tempo (leicht+magieleitung)"],
-                ["Ausdauer", cs.staminaMax, 200, "max. Ausdauer"],
-                ["Abwehr", cs.defense, 14, "physische Abwehr (dichte+härte, + Rüstung)"],
-                ["Präzision", cs.precision, 1, "Präzision (magieleitung+zähigkeit)"],
+                ["hof.schaden", cs.damage, 25, "hof.schaden-titel-ich"],
+                ["hof.tempo", cs.speed, 14, "hof.tempo-titel-ich"],
+                ["hof.ausdauer", cs.staminaMax, 200, "hof.ausdauer-titel-ich"],
+                ["hof.abwehr", cs.defense, 14, "hof.abwehr-titel-ich"],
+                ["hof.praezision", cs.precision, 1, "hof.praezision-titel"],
             ];
             for (const [label, val, ref, title] of statBars) {
                 if (!Number.isFinite(val)) continue;
                 werteChildren.push(
-                    this._specBar(label, val / ref, val.toFixed(1), fracLvl(val / ref), `${title}: ${val.toFixed(2)}`)
+                    this._specBar(
+                        this._t(label),
+                        val / ref,
+                        val.toFixed(1),
+                        fracLvl(val / ref),
+                        `${this._t(title)}: ${val.toFixed(2)}`
+                    )
                 );
             }
             const fmt = (n) => (Number.isFinite(n) ? n.toFixed(2) : "—");
@@ -1171,22 +1181,20 @@ class AnazhRealm_werkstatt_hof {
                     { class: "spec-stat-strip" },
                     this._el(
                         "span",
-                        { class: "spec-stat-chip", title: "Magie-Resistenz" },
-                        this._el("span", { class: "spec-stat-name", text: "MR" }),
+                        { class: "spec-stat-chip", title: this._t("hof.magie-resistenz") },
+                        this._el("span", { class: "spec-stat-name", text: this._t("hof.mr") }),
                         this._el("span", { class: "spec-stat-val", text: fmt(cs.magicResist) })
                     ),
                     this._el(
                         "span",
-                        { class: "spec-stat-chip", title: "Hitze-Resistenz" },
-                        this._el("span", { class: "spec-stat-name", text: "HR" }),
+                        { class: "spec-stat-chip", title: this._t("hof.hitze-resistenz") },
+                        this._el("span", { class: "spec-stat-name", text: this._t("hof.hr") }),
                         this._el("span", { class: "spec-stat-val", text: fmt(cs.heatResist) })
                     )
                 )
             );
         } else {
-            werteChildren.push(
-                this._el("span", { class: "spec-empty", text: "Werte werden berechnet, wenn die Seele steht." })
-            );
+            werteChildren.push(this._el("span", { class: "spec-empty", text: this._t("hof.werte-seele") }));
         }
         const leftCol = this._el("div", { class: "spec-col" }, ...werteChildren);
 
@@ -1200,14 +1208,16 @@ class AnazhRealm_werkstatt_hof {
                 v / 3,
                 v.toFixed(2),
                 this._natureLevelClass(v),
-                `${k}: ${v.toFixed(2)} (Natur, 0–3 — speist die Werte)`
+                this._t("hof.natur-titel", { tag: k, wert: v.toFixed(2) })
             )
         );
         const rightCol = this._el(
             "div",
             { class: "spec-col" },
-            this._el("div", { class: "spec-col-head", text: "Natur" }),
-            ...(natBars.length ? natBars : [this._el("span", { class: "spec-empty", text: "noch keine Substanz" })])
+            this._el("div", { class: "spec-col-head", text: this._t("hof.natur") }),
+            ...(natBars.length
+                ? natBars
+                : [this._el("span", { class: "spec-empty", text: this._t("hof.keine-substanz") })])
         );
         const body = this._el("div", { class: "spec-body" }, leftCol, rightCol);
 
@@ -1225,7 +1235,7 @@ class AnazhRealm_werkstatt_hof {
                       { class: "spec-habe" },
                       ...habe.map((h) => this._el("span", { class: "spec-stat-chip", text: h }))
                   )
-                : this._el("span", { class: "spec-empty", text: "nichts getragen" })
+                : this._el("span", { class: "spec-empty", text: this._t("hof.nichts-getragen") })
         );
         return this._el("div", { class: "spec-sheet hof-spec-sheet" }, header, body, footer);
     }
@@ -1243,7 +1253,7 @@ class AnazhRealm_werkstatt_hof {
                 : [];
         const entries = all.slice(-6).reverse();
         if (!entries.length) {
-            host.appendChild(this._el("span", { class: "ability-empty", text: "Die Welt hat noch nichts erlebt." }));
+            host.appendChild(this._el("span", { class: "ability-empty", text: this._t("hof.chronik-leer") }));
             return;
         }
         const now = Date.now();
@@ -1251,7 +1261,12 @@ class AnazhRealm_werkstatt_hof {
             let ago = "";
             if (Number.isFinite(e.at)) {
                 const s = Math.max(0, Math.round((now - e.at) / 1000));
-                ago = s < 60 ? `vor ${s}s` : s < 3600 ? `vor ${Math.round(s / 60)}m` : `vor ${Math.round(s / 3600)}h`;
+                ago =
+                    s < 60
+                        ? this._t("hof.vor-s", { n: s })
+                        : s < 3600
+                          ? this._t("hof.vor-m", { n: Math.round(s / 60) })
+                          : this._t("hof.vor-h", { n: Math.round(s / 3600) });
             }
             host.appendChild(
                 this._el(
@@ -1264,7 +1279,10 @@ class AnazhRealm_werkstatt_hof {
         }
         if (all.length > entries.length)
             host.appendChild(
-                this._el("div", { class: "chronik-more", text: `+ ${all.length - entries.length} ältere Einträge` })
+                this._el("div", {
+                    class: "chronik-more",
+                    text: this._t("hof.aeltere-eintraege", { n: all.length - entries.length }),
+                })
             );
     }
 
@@ -1423,12 +1441,12 @@ class AnazhRealm_werkstatt_hof {
     // Hof-F (hof-plan §D.2) — die freundlichen Sektions-Labels (Seele + Spezialisierung).
     static get HOF_SECTION_LABELS() {
         return this._einmal("HOF_SECTION_LABELS", {
-            wesen: "Hirsche",
-            wolf: "Wölfe",
-            fuchs: "Füchse",
-            baer: "Bären",
-            gather: "Sammler",
-            build: "Bauer",
+            wesen: AnazhRealm._t("hof.sektion-wesen"),
+            wolf: AnazhRealm._t("hof.sektion-wolf"),
+            fuchs: AnazhRealm._t("hof.sektion-fuchs"),
+            baer: AnazhRealm._t("hof.sektion-baer"),
+            gather: AnazhRealm._t("hof.sammler"),
+            build: AnazhRealm._t("hof.bauer"),
         });
     }
 
@@ -1447,7 +1465,7 @@ class AnazhRealm_werkstatt_hof {
             counts.set(sec, (counts.get(sec) || 0) + 1);
         }
         const active = this.state.hofSection || "alle";
-        const chips = [["alle", "Alle", creatures.length]];
+        const chips = [["alle", this._t("hof.alle"), creatures.length]];
         for (const [sec, n] of counts) chips.push([sec, labels[sec] || sec, n]);
         for (const [sec, label, n] of chips) {
             host.appendChild(
@@ -1478,12 +1496,15 @@ class AnazhRealm_werkstatt_hof {
         }
         cmdHost.hidden = false;
         cmdHost.appendChild(
-            this._el("span", { class: "hof-section-cmd-label", text: `Alle ${labels[active] || active}:` })
+            this._el("span", {
+                class: "hof-section-cmd-label",
+                text: this._t("hof.alle-sektion", { sektion: labels[active] || active }),
+            })
         );
         for (const [lbl, task] of [
-            ["Folge", "follow_player"],
-            ["Warte", "wait"],
-            ["Streift", "wander"],
+            [this._t("hof.folge"), "follow_player"],
+            [this._t("hof.warte"), "wait"],
+            [this._t("hof.streift"), "wander"],
         ]) {
             cmdHost.appendChild(
                 this._el("button", {
@@ -1514,7 +1535,7 @@ class AnazhRealm_werkstatt_hof {
             list.appendChild(
                 this._el("div", {
                     class: "hof-empty",
-                    text: "Dein Hof ist still. ✦ Rufe dein erstes Wesen — wähle eine Form unten und drücke +1.",
+                    text: this._t("hof.hof-leer"),
                 })
             );
             this._hofRefreshFocus(); // leere Bühne + einladender Platzhalter
@@ -1529,7 +1550,7 @@ class AnazhRealm_werkstatt_hof {
             list.appendChild(
                 this._el("div", {
                     class: "hof-empty",
-                    text: `Keine „${labels[active] || active}" mehr im Hof. Wähle „Alle" oben.`,
+                    text: this._t("hof.sektion-leer", { sektion: labels[active] || active }),
                 })
             );
             this._hofRefreshFocus();
@@ -1546,11 +1567,18 @@ class AnazhRealm_werkstatt_hof {
             if (prof.stats) {
                 const cs = prof.stats;
                 const fmt = (n) => (Number.isFinite(n) ? n.toFixed(1) : "—");
-                rowTitle =
-                    `HP ${fmt(prof.hp)}/${fmt(prof.hpMax)} · DMG ${fmt(cs.damage)} · SPD ${fmt(cs.speed)} · ` +
-                    `JMP ${fmt(cs.jumpPower)} · STA ${fmt(cs.staminaMax)} · ` +
-                    `PRC ${fmt(cs.precision)} · MR ${fmt(cs.magicResist)} · HR ${fmt(cs.heatResist)} · ` +
-                    `Stimmung ${prof.moodLabel}`;
+                rowTitle = this._t("hof.wesen-zeile-titel", {
+                    hp: fmt(prof.hp),
+                    hpMax: fmt(prof.hpMax),
+                    dmg: fmt(cs.damage),
+                    spd: fmt(cs.speed),
+                    jmp: fmt(cs.jumpPower),
+                    sta: fmt(cs.staminaMax),
+                    prc: fmt(cs.precision),
+                    mr: fmt(cs.magicResist),
+                    hr: fmt(cs.heatResist),
+                    stimmung: prof.moodLabel,
+                });
             }
             // Welle 6.H Phase 2E V1.1 — Soul-Klasse für farbige Identität (cyan=Sprite-
             // Magie, brass=Wesen-erdig, grün=Geist-ätherisch).
@@ -1567,8 +1595,8 @@ class AnazhRealm_werkstatt_hof {
                           specs.map((s) =>
                               this._el("span", {
                                   class: `creature-spec creature-spec-${s.kind}`,
-                                  text: `${s.kind === "gather" ? "Sammler" : "Bauer"}·${s.key}·L${s.level}`,
-                                  title: `${s.count} Erfolge`,
+                                  text: `${this._t(s.kind === "gather" ? "hof.sammler" : "hof.bauer")}·${s.key}·L${s.level}`,
+                                  title: this._t("hof.erfolge", { n: s.count }),
                               })
                           )
                       )
@@ -1584,14 +1612,14 @@ class AnazhRealm_werkstatt_hof {
                               ? this._el("span", {
                                     class: "creature-equip creature-equip-tool",
                                     text: `⚒ ${equipped.tool}`,
-                                    title: `Werkzeug: ${equipped.tool}`,
+                                    title: this._t("hof.werkzeug-titel", { name: equipped.tool }),
                                 })
                               : null,
                           equipped.armor
                               ? this._el("span", {
                                     class: "creature-equip creature-equip-armor",
                                     text: `⛨ ${equipped.armor}`,
-                                    title: `Rüstung: ${equipped.armor}`,
+                                    title: this._t("hof.ruestung-titel", { name: equipped.armor }),
                                 })
                               : null
                       )
@@ -1621,12 +1649,16 @@ class AnazhRealm_werkstatt_hof {
             const taskName = prof.taskName;
             const taskArgs = prof.taskArgs;
             const TASK_LABELS = {
-                follow_player: "folgt",
-                wait: "wartet",
-                wander: "streift",
-                gather: taskArgs.material ? `sammelt ${taskArgs.material}` : "sammelt",
-                build: taskArgs.blueprint ? `baut ${taskArgs.blueprint}` : "baut",
-                drink: "trinkt am Ufer",
+                follow_player: this._t("hof.task-folgt"),
+                wait: this._t("hof.task-wartet"),
+                wander: this._t("hof.task-streift"),
+                gather: taskArgs.material
+                    ? this._t("hof.task-sammelt-material", { material: taskArgs.material })
+                    : this._t("hof.task-sammelt"),
+                build: taskArgs.blueprint
+                    ? this._t("hof.task-baut-bauplan", { bauplan: taskArgs.blueprint })
+                    : this._t("hof.task-baut"),
+                drink: this._t("hof.task-trinkt"),
             };
             const taskEl = this._el("span", { class: `creature-task ${taskName}`, text: TASK_LABELS[taskName] || "—" });
             // Hof-D (hof-plan §D.1/§G.2) — die STIMMUNG als Glyph, immer sichtbar (kompakt). Ehrlich geerdet:
@@ -1636,14 +1668,14 @@ class AnazhRealm_werkstatt_hof {
             const moodEl = this._el("span", {
                 class: "creature-mood" + (moodSad ? " mood-sad" : " mood-happy"),
                 text: (moodSad ? "☹ " : "☺ ") + prof.moodLabel,
-                title: `Stimmung: ${prof.moodLabel} — die Resonanz des Wesens auf das Feld + die Bindung`,
+                title: this._t("hof.stimmung-titel", { stimmung: prof.moodLabel }),
             });
             // ALLE Befehle leben INLINE am Wesen: die drei arg-freien Kern-Tasks als Knöpfe, die arg-basierten
             // (Sammle Material / Baue Bauplan) als EIN „Auftrag ▾“-Select für GENAU dieses Wesen.
             const TASK_BTNS = [
-                ["Folge", "follow_player"],
-                ["Warte", "wait"],
-                ["Streift", "wander"],
+                [this._t("hof.folge"), "follow_player"],
+                [this._t("hof.warte"), "wait"],
+                [this._t("hof.streift"), "wander"],
             ];
             const GATHER_MATS = [
                 "holz",
@@ -1669,8 +1701,8 @@ class AnazhRealm_werkstatt_hof {
                 "select",
                 {
                     class: "creature-order-select",
-                    "aria-label": `Auftrag für ${ud.name || "Wesen"}`,
-                    title: `${ud.name || "Wesen"}: Sammle ein Material oder Baue einen Bauplan`,
+                    "aria-label": this._t("hof.auftrag-fuer", { name: ud.name || this._t("hof.wesen") }),
+                    title: this._t("hof.auftrag-titel", { name: ud.name || this._t("hof.wesen") }),
                     onChange: (e) => {
                         e.stopPropagation();
                         const v = e.target.value;
@@ -1685,16 +1717,16 @@ class AnazhRealm_werkstatt_hof {
                         this._renderCreatureListUI();
                     },
                 },
-                this._el("option", { value: "", text: "⚒ Auftrag…" }),
+                this._el("option", { value: "", text: this._t("hof.auftrag") }),
                 this._el(
                     "optgroup",
-                    { label: "Sammle" },
+                    { label: this._t("hof.sammle") },
                     GATHER_MATS.map((m) => this._el("option", { value: `gather:${m}`, text: cap(m) }))
                 ),
                 bpNames.length
                     ? this._el(
                           "optgroup",
-                          { label: "Baue" },
+                          { label: this._t("hof.baue") },
                           bpNames.map((n) =>
                               this._el("option", { value: `build:${n}`, text: this.state.blueprints[n].label || n })
                           )
@@ -1710,7 +1742,7 @@ class AnazhRealm_werkstatt_hof {
                         class: "creature-action-btn" + (taskName === task ? " active" : ""),
                         text: label,
                         "data-task": task,
-                        title: `${ud.name || "Wesen"}: ${label}`,
+                        title: `${ud.name || this._t("hof.wesen")}: ${label}`,
                         onClick: (e) => {
                             e.stopPropagation();
                             if (typeof this.assignCreatureTask === "function") this.assignCreatureTask(c, task);
@@ -1728,7 +1760,7 @@ class AnazhRealm_werkstatt_hof {
                 "div",
                 {
                     class: "creature-row-main" + (focused ? " focused" : ""),
-                    title: "Klick: Wesen auf die Bühne holen",
+                    title: this._t("hof.klick-buehne"),
                     on: {
                         click: () => this._toggleHofFocus(prof.id),
                     },
@@ -1989,11 +2021,13 @@ _stammZonen(AnazhRealm, [AnazhRealm_werkstatt_hof]);
 // ===== ATLAS · Werkstatt/hof — Außen-Konstanten =====
 // Menschen-lesbare Namen der Achsen — der fusionierte Readout (`_emotionState`)
 // gibt sie an die KI/das Journal/die UI als REICHEN Zustand statt sechs Zahlen.
+// Je Achse ihr Schlüssel der Sprach-Tafel (`gefuehl.*`); jeder Leser ruft `_t` — die KI hört das Gefühl in der Sprache
+// des Spielers wie die Leiste.
 AnazhRealm.EMOTION_LABEL = Object.freeze({
-    joy: "Freude",
-    awe: "Ehrfurcht",
-    sorrow: "Trauer",
-    hope: "Hoffnung",
-    peace: "Frieden",
-    chaos: "Aufruhr",
+    joy: "gefuehl.freude",
+    awe: "gefuehl.ehrfurcht",
+    sorrow: "gefuehl.trauer",
+    hope: "gefuehl.hoffnung",
+    peace: "gefuehl.frieden",
+    chaos: "gefuehl.aufruhr",
 });

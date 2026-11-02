@@ -1485,7 +1485,23 @@ function scanWarteWand(dateien, rest = Object.assign({}, ...Object.values(requir
     return errs;
 }
 
+// DIE ANTWORT DES SPIELERS (spielgang.K5): window.confirm/prompt/alert fielen — die Welt fragt über ihre eigene Oberfläche
+// (#frage-dialog, `_frage`). Eine Linse, die bisher `page.on("dialog", (d) => d.accept())` sagte, legt `frageJa` vor die Seite
+// (`evaluateOnNewDocument`/`addInitScript`) oder ruft es in der stehenden Seite (`evaluate`): jede Frage bekommt ihr Ja.
+function frageJa() {
+    const an = () => {
+        const d = document.getElementById("frage-dialog");
+        if (!d) return;
+        new MutationObserver(() => {
+            if (d.open) d.querySelector("#frage-ja").click();
+        }).observe(d, { attributes: true, attributeFilter: ["open"] });
+    };
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", an);
+    else an();
+}
+
 module.exports = {
+    frageJa,
     fs,
     path,
     stammLib,

@@ -222,16 +222,16 @@ class AnazhRealm_speicher_laden {
         if (!fund.state) {
             // Eine frische Welt hat noch keinen Stand (die Vorlade sagte es schon laut); ERROR nur, wenn etwas da war, das
             // sich nicht lesen ließ.
-            const kaputt = fund.befund.some((b) => /korrupt|unlesbar|nicht lesbar/.test(b));
+            const kaputt = fund.befund.some((b) => ["korrupt", "unlesbar", "nicht-lesbar"].includes(b.art));
             this.log(
-                `Die Welt ${activeId} ließ sich nicht laden: ${fund.befund.join(", ")}.`,
+                `Die Welt ${activeId} ließ sich nicht laden: ${this._befundText(fund.befund)}.`,
                 kaputt ? "ERROR" : "DEBUG"
             );
             return null;
         }
         // laut nur die Rettung: ein korruptes Glied oder der .bak (ein atomarer Schreiber hinterlässt keins von beiden)
-        if (fund.quelle.startsWith(".bak") || fund.befund.some((b) => /korrupt|unlesbar/.test(b)))
-            this.log(`Welt aus ${fund.quelle} geladen (${fund.befund.join(", ")}).`, "WARN");
+        if (fund.quelle.startsWith(".bak") || fund.befund.some((b) => ["korrupt", "unlesbar"].includes(b.art)))
+            this.log(`Welt aus ${fund.quelle} geladen (${this._befundText(fund.befund)}).`, "WARN");
         return fund.state;
     }
 
@@ -1136,7 +1136,7 @@ class AnazhRealm_speicher_laden {
             schirm.hidden = false;
             schirm.classList.remove("weg");
         }
-        this._ladeschirmStand("die Welt wechselt");
+        this._ladeschirmStand(this._t("speicher.welt-wechselt"));
         const tausch = this._speicherVerlassen()
             .then(() => this._speicherStill())
             .catch((e) => this.log(`Der Speicher-Faden schloss die verlassene Welt nicht ab (${e.message}).`, "ERROR"))
@@ -1304,7 +1304,7 @@ class AnazhRealm_speicher_laden {
                 const chatOutput = document.getElementById("chat-output");
                 if (chatOutput) {
                     const line = document.createElement("div");
-                    line.textContent = `Import fehlgeschlagen: ${e.message}`;
+                    line.textContent = this._t("speicher.import-fehl", { grund: String(e.message) });
                     chatOutput.appendChild(line);
                     chatOutput.scrollTop = chatOutput.scrollHeight;
                 }
@@ -1359,12 +1359,12 @@ class AnazhRealm_speicher_laden {
                 return;
             }
         }
-        this.state.pendingImport = { parsed, fileName: (file && file.name) || "unbekannt" };
+        this.state.pendingImport = { parsed, fileName: (file && file.name) || this._t("speicher.unbekannt") };
         const dialog = document.getElementById("world-tor-dialog");
         const summary = document.getElementById("world-tor-summary");
         if (summary) {
             const m = parsed.worldMeta || {};
-            const slug = m.slug || "(namenlos)";
+            const slug = m.slug || this._t("speicher.namenlos");
             const ageDays = m.bornAt ? Math.floor((Date.now() - m.bornAt) / 86400000) : 0;
             const idShort = (m.worldId || "?").slice(0, 8);
             const bp = Array.isArray(parsed.blueprints) ? parsed.blueprints.length : 0;
@@ -1373,7 +1373,14 @@ class AnazhRealm_speicher_laden {
                 parsed.worldJournal && Array.isArray(parsed.worldJournal.entries)
                     ? parsed.worldJournal.entries.length
                     : 0;
-            summary.textContent = `„${slug}" (ID ${idShort}…, ${ageDays} Tag${ageDays === 1 ? "" : "e"} alt, ${arch} Bauwerke, ${bp} eigene Baupläne, ${journal} Erinnerungen) klopft an dein Tor. Wie willst du sie empfangen?`;
+            summary.textContent = this._t(ageDays === 1 ? "speicher.tor-anklopfen-1" : "speicher.tor-anklopfen", {
+                slug,
+                id: idShort,
+                tage: ageDays,
+                bauwerke: arch,
+                plaene: bp,
+                erinnerungen: journal,
+            });
         }
         if (dialog && typeof dialog.showModal === "function") {
             try {
@@ -1413,7 +1420,7 @@ class AnazhRealm_speicher_laden {
         if (erbgutNein) {
             if (chatOutput) {
                 const line = document.createElement("div");
-                line.textContent = `Ersetzen abgelehnt: ${erbgutNein}`;
+                line.textContent = this._t("speicher.ersetzen-abgelehnt", { grund: erbgutNein });
                 chatOutput.appendChild(line);
                 chatOutput.scrollTop = chatOutput.scrollHeight;
             }
@@ -1432,8 +1439,8 @@ class AnazhRealm_speicher_laden {
         if (chatOutput) {
             const line = document.createElement("div");
             line.textContent = r.ok
-                ? `Datei ${fileName} importiert — die Welt erwacht neu.`
-                : `Ersetzen fehlgeschlagen: ${fileName} ließ sich nicht ablegen (${r.reason}) — du bleibst in deiner Welt.`;
+                ? this._t("speicher.ersetzen-ok", { datei: fileName })
+                : this._t("speicher.ersetzen-fehl", { datei: fileName, grund: String(r.reason) });
             chatOutput.appendChild(line);
             chatOutput.scrollTop = chatOutput.scrollHeight;
         }
@@ -1452,9 +1459,13 @@ class AnazhRealm_speicher_laden {
         if (chatOutput) {
             const line = document.createElement("div");
             if (result.ok) {
-                line.textContent = `Datei ${fileName} liegt nun als „${result.slug}" neben dir (ID ${result.worldId.slice(0, 8)}…).`;
+                line.textContent = this._t("speicher.daneben-ok", {
+                    datei: fileName,
+                    slug: String(result.slug),
+                    id: result.worldId.slice(0, 8),
+                });
             } else {
-                line.textContent = `Daneben legen fehlgeschlagen: ${result.reason}`;
+                line.textContent = this._t("speicher.daneben-fehl", { grund: String(result.reason) });
             }
             chatOutput.appendChild(line);
             chatOutput.scrollTop = chatOutput.scrollHeight;
@@ -1483,7 +1494,7 @@ class AnazhRealm_speicher_laden {
             const chatOutput = document.getElementById("chat-output");
             if (chatOutput) {
                 const line = document.createElement("div");
-                line.textContent = `Fusion-Vorbereitung fehlgeschlagen: ${result.reason}`;
+                line.textContent = this._t("speicher.fusion-vorbereitung-fehl", { grund: String(result.reason) });
                 chatOutput.appendChild(line);
                 chatOutput.scrollTop = chatOutput.scrollHeight;
             }
@@ -1511,7 +1522,7 @@ class AnazhRealm_speicher_laden {
         const parentBSelect = document.getElementById("world-fusion-parent-b");
         const slugInput = document.getElementById("world-fusion-slug");
         const activeId = this.state.worldMeta && this.state.worldMeta.worldId;
-        const activeSlug = (this.state.worldMeta && this.state.worldMeta.slug) || "(diese Welt)";
+        const activeSlug = (this.state.worldMeta && this.state.worldMeta.slug) || this._t("speicher.diese-welt");
         if (parentALabel) parentALabel.textContent = activeSlug;
         if (parentBSelect) {
             parentBSelect.innerHTML = "";
@@ -1519,7 +1530,7 @@ class AnazhRealm_speicher_laden {
             if (others.length === 0) {
                 const opt = document.createElement("option");
                 opt.value = "";
-                opt.textContent = "— keine andere Welt im Speicher —";
+                opt.textContent = this._t("speicher.keine-andere-welt");
                 opt.disabled = true;
                 parentBSelect.appendChild(opt);
             } else {
@@ -1527,7 +1538,10 @@ class AnazhRealm_speicher_laden {
                 for (const e of others) {
                     const opt = document.createElement("option");
                     opt.value = e.worldId;
-                    opt.textContent = `${e.slug || "(namenlos)"} — ID ${e.worldId.slice(0, 8)}…`;
+                    opt.textContent = this._t("speicher.welt-option", {
+                        slug: e.slug || this._t("speicher.namenlos"),
+                        id: e.worldId.slice(0, 8),
+                    });
                     if (preselectB && e.worldId === preselectB) opt.selected = true;
                     parentBSelect.appendChild(opt);
                 }
@@ -1606,14 +1620,14 @@ class AnazhRealm_speicher_laden {
             : [];
         list.innerHTML = "";
         if (parents.length === 0) {
-            list.textContent = "Diese Welt ist eigenständig — keine Eltern-Welten.";
+            list.textContent = this._t("speicher.keine-eltern");
             return;
         }
         const strategy = (this.state.worldMeta && this.state.worldMeta.fusionStrategy) || null;
         if (strategy) {
             const head = document.createElement("div");
             head.style.cssText = "margin-bottom:0.4em; opacity:0.78; font-style:italic;";
-            head.textContent = `Fusion-Strategie: ${strategy}`;
+            head.textContent = this._t("speicher.fusion-strategie", { strategie: strategy });
             list.appendChild(head);
         }
         const idx = this.worldsIndexLoad();
@@ -1625,15 +1639,15 @@ class AnazhRealm_speicher_laden {
                 const link = document.createElement("button");
                 link.type = "button";
                 link.className = "lineage-link";
-                link.textContent = entry.slug || "(namenlos)";
+                link.textContent = entry.slug || this._t("speicher.namenlos");
                 link.addEventListener("click", () => this.switchToWorld(parentId, { reload: true }));
                 row.appendChild(link);
                 const meta = document.createElement("span");
                 meta.style.cssText = "opacity:0.7; font-size:0.85em;";
-                meta.textContent = `— ID ${parentId.slice(0, 8)}…`;
+                meta.textContent = this._t("speicher.eltern-id", { id: parentId.slice(0, 8) });
                 row.appendChild(meta);
             } else {
-                row.textContent = `(verloren) — ID ${parentId.slice(0, 8)}…`;
+                row.textContent = this._t("speicher.eltern-verloren", { id: parentId.slice(0, 8) });
                 row.style.opacity = "0.6";
             }
             list.appendChild(row);
@@ -2319,7 +2333,7 @@ class AnazhRealm_speicher_laden {
                 const ok = this.initSymphony();
                 if (ok) {
                     toggle.setAttribute("aria-pressed", "true");
-                    toggle.textContent = "Klang: an";
+                    toggle.textContent = this._t("speicher.klang-an");
                 }
                 return;
             }
@@ -2327,7 +2341,7 @@ class AnazhRealm_speicher_laden {
             const targetGain = currentlyOn ? 0 : 0.35;
             s.masterGain.gain.setValueAtTime(targetGain, s.ctx.currentTime);
             toggle.setAttribute("aria-pressed", currentlyOn ? "false" : "true");
-            toggle.textContent = currentlyOn ? "Klang: aus" : "Klang: an";
+            toggle.textContent = currentlyOn ? this._t("speicher.klang-aus") : this._t("speicher.klang-an");
         });
     }
 }

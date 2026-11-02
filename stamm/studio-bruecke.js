@@ -1570,9 +1570,27 @@ class AnazhRealm_studio_bruecke {
             name: z.id,
             text: `das Rezept „${z.id}" steht in ${z.traeger} und ${z.kern}`,
         }));
-        const werkstatt = { id: "werkstatt", ebene: "studio", lab: "Werkstatt", quelle: null, kinder: [] };
-        const ultiversum = { id: "ultiversum", ebene: "studio", lab: "Ultiversum", quelle: null, kinder: [] };
-        const wirt = { id: "wirt", ebene: "studio", lab: "Ohne Gesetzbuch", quelle: null, kinder: [] };
+        const werkstatt = {
+            id: "werkstatt",
+            ebene: "studio",
+            lab: this._t("werk.baum.werkstatt"),
+            quelle: null,
+            kinder: [],
+        };
+        const ultiversum = {
+            id: "ultiversum",
+            ebene: "studio",
+            lab: this._t("werk.baum.ultiversum"),
+            quelle: null,
+            kinder: [],
+        };
+        const wirt = {
+            id: "wirt",
+            ebene: "studio",
+            lab: this._t("werk.baum.ohne-gesetzbuch"),
+            quelle: null,
+            kinder: [],
+        };
         const ast = (w, id, lab) => {
             let b = w.kinder.find((x) => x.id === id);
             if (!b) w.kinder.push((b = { id, ebene: "bereich", lab, quelle: null, kinder: [] }));
@@ -1596,16 +1614,17 @@ class AnazhRealm_studio_bruecke {
             };
             if (bp.role === "portal" && bp.portalMeta) {
                 t.welt = bp.portalMeta.world || null;
-                ast(ultiversum, "ultiversum:tore", "Tore in die Welten").kinder.push(t);
+                ast(ultiversum, "ultiversum:tore", this._t("werk.baum.tore")).kinder.push(t);
             } else if (!bp.builtIn && !bp._foundryAutoSpecies) {
                 t.eigen = true;
-                ast(werkstatt, "werkstatt:eigen", "Eigene Werke").kinder.push(t);
+                ast(werkstatt, "werkstatt:eigen", this._t("werk.baum.eigene-werke")).kinder.push(t);
             } else {
                 // die deklarierte Rolle (Daten), nie die errechnete: `_displayRole` baut für die emergente Rolle Gestalt
                 // (`_makePartGeometry`) — der Baum liegt auf dem Prompt-Pfad der KI
                 const rolle = bp.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
                 t.waise = !t.gestalt;
-                ast(wirt, "wirt:" + rolle, AnazhRealm.BLUEPRINT_ROLE_LABELS[rolle] || rolle).kinder.push(t);
+                const rollenName = AnazhRealm._tafelName(AnazhRealm.BLUEPRINT_ROLE_LABELS, rolle);
+                ast(wirt, "wirt:" + rolle, rollenName).kinder.push(t);
                 if (t.gestalt)
                     zwillinge.push({
                         art: "traeger",
@@ -3356,6 +3375,15 @@ AnazhRealm.KIND_POLICY = Object.freeze({
     kreatur: Object.freeze({ werk: "wesen" }),
     koerper: Object.freeze({ werk: "praegung" }),
     klang: Object.freeze({ werk: "praegung" }),
+});
+// Die Leser eines Teils im Stammbaum (`konsum`, `_stammbaum`) beim Namen — je Leser der Schlüssel seiner Zeile der Sprach-Tafel;
+// die Bibliothek der Werkstatt nennt ihn im Titel der Zeile.
+AnazhRealm.KONSUM_LESER = Object.freeze({
+    werk: "werk.leser.werk",
+    wesen: "werk.leser.wesen",
+    praegung: "werk.leser.praegung",
+    streu: "werk.leser.streu",
+    welt: "werk.leser.welt",
 });
 AnazhRealm.KNUTH_INVERS = 244002641;
 // DIE NAMEN DER STREU (`_foundryPresetFor`, die Tabelle vor der generischen Regel): die Spezies, unter denen Wald, Streu und

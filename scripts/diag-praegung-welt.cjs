@@ -7,7 +7,7 @@
 // (Welt, Regel, Bauplan) ein signierter Eintrag ≤ 8 KB, über den Code wieder, Byte-, Code- und Mesh-Mutante ROT, Fork mit Kette
 // (`--bibliothek` endet nach (L), ohne Gerät B); jede Wand mit ihrer Täter-Probe.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE, hauptLauf, startProc, eigenePorte, pruefer, halteBis, wandEnde, jsonKlon, fehlerStapel } = require("./lib/welt-boot.cjs");
+const { frageJa, statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE, hauptLauf, startProc, eigenePorte, pruefer, halteBis, wandEnde, jsonKlon, fehlerStapel } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.PRAEGUNG_WELT_PORT || 4439);
 const server = statikServer();
@@ -386,7 +386,7 @@ hauptLauf(async () => {
     await server.zeige(pageB, undefined, "package.json", "load");
     const leer = await pageB.evaluate(async () => (await indexedDB.databases()).length + localStorage.length);
     await welt(pageB, B_ART);
-    page.on("dialog", (d) => d.accept()); // die souveräne Geste des Senders (window.confirm)
+    await page.evaluate(frageJa); // die souveräne Geste des Senders (#frage-dialog, spielgang.K5)
     // die Geste in echten Klicks, bis der Code in der Zeile steht — DER KNOPF AM DOM, NIE AM PIXEL (wie die Bibliothek unten): der
     // Klick auf die Lage traf, während die Lade glitt, daneben, die Werkstatt hielt ihre Wahl, und A teilte die Eiche (CI
     // 40407492230, Farm 715754fc: B baute sie, ihr Abdruck am Preset gt hieß „ungeprägt")

@@ -463,7 +463,7 @@ async function checkBandWave10b({ page, check }) {
                 AR.AFFORDANCE_THRESHOLDS.moveable.midlineFactor === 0.5 &&
                 AR.AFFORDANCE_THRESHOLDS.moveable.dichteMin === 0.3 &&
                 AR.AFFORDANCE_THRESHOLDS.magnifying.axialAlignmentMin === 0.6;
-            out.affordanceLabelsExist = !!AR.AFFORDANCE_LABELS && AR.AFFORDANCE_LABELS.moveable === "fahrbar";
+            out.affordanceLabelsExist = !!AR.AFFORDANCE_LABELS && AR._t(AR.AFFORDANCE_LABELS.moveable) === "fahrbar";
 
             out.emptyBpEmpty = Object.keys(r.computeBlueprintAffordances(null)).length === 0;
             out.bpNoParts = Object.keys(r.computeBlueprintAffordances({ parts: [] })).length === 0;
@@ -514,7 +514,7 @@ async function checkBandWave10b({ page, check }) {
             out.scopeIsMagnifying = r.computeBlueprintAffordances(st.blueprints.test_10b_scope).magnifying === true;
 
             // ── W10 ext. — radiating (resonanz-strahlendes Compound) ──
-            out.radiatingLabel = AR.AFFORDANCE_LABELS.radiating === "strahlend";
+            out.radiatingLabel = AR._t(AR.AFFORDANCE_LABELS.radiating) === "strahlend";
             out.radiatingThresholds =
                 !!AR.AFFORDANCE_THRESHOLDS.radiating &&
                 AR.AFFORDANCE_THRESHOLDS.radiating.minParts === 3 &&
@@ -567,7 +567,7 @@ async function checkBandWave10b({ page, check }) {
             st.architectures = st.architectures.filter((e) => e.type !== "test_10ext_radiator");
 
             // ── W10 ext. — broadcasting (leitfähiger Relais-Mast) ──
-            out.broadcastingLabel = AR.AFFORDANCE_LABELS.broadcasting === "sendend";
+            out.broadcastingLabel = AR._t(AR.AFFORDANCE_LABELS.broadcasting) === "sendend";
             out.broadcastingThresholds =
                 !!AR.AFFORDANCE_THRESHOLDS.broadcasting &&
                 AR.AFFORDANCE_THRESHOLDS.broadcasting.alignMin === 0.6 &&
@@ -679,7 +679,7 @@ async function checkBandWave10b({ page, check }) {
             );
 
             // ── W10 ext. balancing (gründende Form) ──
-            out.balancingLabel = AR.AFFORDANCE_LABELS.balancing === "gründend";
+            out.balancingLabel = AR._t(AR.AFFORDANCE_LABELS.balancing) === "gründend";
             out.balancingThresholds =
                 !!AR.AFFORDANCE_THRESHOLDS.balancing &&
                 AR.AFFORDANCE_THRESHOLDS.balancing.bottomHeavyMin === 0.6 &&
@@ -719,7 +719,7 @@ async function checkBandWave10b({ page, check }) {
             emoR.chaos = chaosBefore0;
 
             // ── W10 ext. lifting (Auftriebs-Feld) ──
-            out.liftingLabel = AR.AFFORDANCE_LABELS.lifting === "hebend";
+            out.liftingLabel = AR._t(AR.AFFORDANCE_LABELS.lifting) === "hebend";
             out.liftingThresholds =
                 !!AR.AFFORDANCE_THRESHOLDS.lifting &&
                 AR.AFFORDANCE_THRESHOLDS.lifting.magieMin === 1.5 &&

@@ -130,7 +130,7 @@ class AnazhRealm_bau_buch {
                 bestAxis = axis;
             }
         }
-        return bestAxis ? { axis: bestAxis, label: AnazhRealm.AXIS_LABELS[bestAxis] || bestAxis } : null;
+        return bestAxis ? { axis: bestAxis, label: AnazhRealm._tafelName(AnazhRealm.AXIS_LABELS, bestAxis) } : null;
     }
 
     // WARUM-FÜHRUNG: die kleinste Achsen-Drehung zur WUNSCH-Rolle („+0.3 Standfläche → Fahrzeug").
@@ -169,12 +169,12 @@ class AnazhRealm_bau_buch {
             if (!best || need < best.need) best = { axis, need };
         }
         if (!best) return { targetRole, winner, infeasible: true };
-        const label = AnazhRealm.AXIS_LABELS[best.axis] || best.axis;
-        const roleLabel = AnazhRealm.ROLE_LABELS[targetRole] || targetRole;
+        const label = AnazhRealm._tafelName(AnazhRealm.AXIS_LABELS, best.axis);
+        const roleLabel = AnazhRealm._tafelName(AnazhRealm.ROLE_LABELS, targetRole);
         const action = actions[best.axis];
         const text = action
-            ? `${action} → ${roleLabel}`
-            : `+${Math.max(0.05, best.need).toFixed(2)} ${label} → ${roleLabel}`;
+            ? this._t("werk.weg.tat", { tat: this._t(action), rolle: roleLabel })
+            : this._t("werk.weg.achse", { n: Math.max(0.05, best.need).toFixed(2), achse: label, rolle: roleLabel });
         return { targetRole, winner, axis: best.axis, need: best.need, text };
     }
 
@@ -205,13 +205,16 @@ class AnazhRealm_bau_buch {
         if (!beitraege.length) return null;
         beitraege.sort((a, b) => Math.abs(b.contrib) - Math.abs(a.contrib));
         const top = beitraege.slice(0, 3);
-        const clsTag = { physik: "gerechnet", konvention: "Welt-Konvention" };
+        const clsTag = { physik: "werk.beitrag.gerechnet", konvention: "werk.beitrag.konvention" };
         const text = top
             .map((p) => {
-                const label = (AnazhRealm.AXIS_LABELS && AnazhRealm.AXIS_LABELS[p.axis]) || p.axis;
-                const tag = clsTag[p.cls] ? ` (${clsTag[p.cls]})` : ""; // Form bleibt unmarkiert (Übergang)
+                const achse = AnazhRealm._tafelName(AnazhRealm.AXIS_LABELS, p.axis);
                 // 2 Dezimalen — die Skala ist der ÷3-normierte Vektor (klein, ehrlich).
-                return `${label}${tag} ${p.contrib < 0 ? "−" : ""}${Math.abs(p.contrib).toFixed(2)}`;
+                const wert = `${p.contrib < 0 ? "−" : ""}${Math.abs(p.contrib).toFixed(2)}`;
+                // Form bleibt unmarkiert (Übergang)
+                return clsTag[p.cls]
+                    ? this._t(clsTag[p.cls], { achse, wert })
+                    : this._t("werk.beitrag", { achse, wert });
             })
             .join(" · ");
         return { role, text, beitraege: top };
@@ -232,8 +235,8 @@ class AnazhRealm_bau_buch {
         const v = this._blueprintProductVector(bp);
         for (const axis in sigTop) {
             if (sigTop[axis] > 0 && actions[axis] && (v[axis] || 0) === 0) {
-                const roleLabel = AnazhRealm.ROLE_LABELS[top.role] || top.role;
-                return { role: top.role, axis, text: `${roleLabel} ruft: ${actions[axis]}` };
+                const rolle = AnazhRealm._tafelName(AnazhRealm.ROLE_LABELS, top.role);
+                return { role: top.role, axis, text: this._t("werk.ruft", { rolle, tat: this._t(actions[axis]) }) };
             }
         }
         return null;
@@ -2798,31 +2801,32 @@ AnazhRealm.QUALITY_ROLE_FIT = Object.freeze({
         architecture: 2.5,
     }),
 });
+// Die Namen der Achsen (je Achse der Schlüssel ihrer Zeile der Sprach-Tafel; Leser über `AnazhRealm._tafelName`).
 AnazhRealm.AXIS_LABELS = Object.freeze({
-    pointedFraction: "Schärfe",
-    elongation: "Streckung",
-    härte: "Härte",
-    dichte: "Dichte",
-    zähigkeit: "Zähigkeit",
-    hollowness: "Hohlraum",
-    axialSymmetry: "Symmetrie",
-    spread: "Standfläche",
-    lebendig: "Lebendigkeit",
-    transparent: "Transparenz",
-    resoniert: "Resonanz",
-    magieleitung: "Magie-Leitung",
-    stromleitung: "Strom-Leitung",
-    wärmeleitung: "Wärme-Leitung",
-    brennbar: "Brennbarkeit",
-    bodyShape: "Körper-Form",
-    portalShape: "Tor-Form",
+    pointedFraction: "werk.achse.schaerfe",
+    elongation: "werk.achse.streckung",
+    härte: "werk.achse.haerte",
+    dichte: "werk.achse.dichte",
+    zähigkeit: "werk.achse.zaehigkeit",
+    hollowness: "werk.achse.hohlraum",
+    axialSymmetry: "werk.achse.symmetrie",
+    spread: "werk.achse.standflaeche",
+    lebendig: "werk.achse.lebendigkeit",
+    transparent: "werk.achse.transparenz",
+    resoniert: "werk.achse.resonanz",
+    magieleitung: "werk.achse.magie-leitung",
+    stromleitung: "werk.achse.strom-leitung",
+    wärmeleitung: "werk.achse.waerme-leitung",
+    brennbar: "werk.achse.brennbarkeit",
+    bodyShape: "werk.achse.koerper-form",
+    portalShape: "werk.achse.tor-form",
     // Ω-L1 (wahrerbauplan §5) — die GERECHNETEN Physik-Achsen (Säule I).
-    stability: "Standfestigkeit",
-    stiffness: "Steifigkeit",
-    balance: "Balance",
-    leverage: "Hebelwucht",
-    loadSound: "Lastpfad",
-    rollable: "Rollfähigkeit",
+    stability: "werk.achse.standfestigkeit",
+    stiffness: "werk.achse.steifigkeit",
+    balance: "werk.achse.balance",
+    leverage: "werk.achse.hebelwucht",
+    loadSound: "werk.achse.lastpfad",
+    rollable: "werk.achse.rollfaehigkeit",
 });
 // Geltungsbereich jeder Achse (Warum-Chip + Werkstatt): „physik" = gerechnete Wahrheit mit externem
 // Richter (darf Wahrheit behaupten); „konvention" = AnazhRealms erfundene, konsistente Welt-Physik
@@ -2860,20 +2864,20 @@ AnazhRealm.AXIS_CLASS = Object.freeze({
     bulk: "form",
 });
 // §7.3(b) (V18.164) — KONJUNKTIONS-Achsen (0/1) sind TATEN, keine Zahlen: die
-// WARUM-Führung (_blueprintRoleGapHint) spricht sie als deutsche Handlung aus.
+// WARUM-Führung (_blueprintRoleGapHint) spricht sie als Handlung aus (je Achse der Schlüssel ihrer Zeile der Sprach-Tafel).
 AnazhRealm.AXIS_ACTION_HINTS = Object.freeze({
-    rideable: "setze einen Sitz-Anker (Fahrzeug = Sitz + Antrieb)",
-    livingBody: "nutze lebendiges Material am Körper",
-    bodyShape: "forme einen Körper (symmetrisch · vertikal · Glieder)",
-    portalShape: "forme einen Ring in Reisenden-Größe",
+    rideable: "werk.tat.rideable",
+    livingBody: "werk.tat.living-body",
+    bodyShape: "werk.tat.body-shape",
+    portalShape: "werk.tat.portal-shape",
     // Die gerechneten Physik-Achsen bekommen ihr physik-wahres Verb: der Hinweis zitiert das Gesetz
     // (die Tat verschiebt die gerechnete Größe messbar in die versprochene Richtung).
-    stability: "verbreitere die Basis (Schwerpunkt sicher über der Standfläche)",
-    loadSound: "schließe den Lastpfad zum Boden (kein schwebendes Teil)",
-    rollable: "setze runde Räder an den Boden (rollt um eine freie Achse)",
-    stiffness: "lege Material weg von der Biegeachse (Hohlrohr/I-Profil statt Vollstab)",
-    balance: "verlagere die Masse zum Griff (näher balanciert → schnellere Führung)",
-    leverage: "rücke die Kopfmasse nach vorn (längerer Hebel → mehr Wucht)",
+    stability: "werk.tat.stability",
+    loadSound: "werk.tat.load-sound",
+    rollable: "werk.tat.rollable",
+    stiffness: "werk.tat.stiffness",
+    balance: "werk.tat.balance",
+    leverage: "werk.tat.leverage",
 });
 
 // Katalysator-Op aus der Form: opClass = argmax-Resonanz des Produkt-Vektors (Tags ⊕
