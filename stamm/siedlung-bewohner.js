@@ -205,12 +205,13 @@ class AnazhRealm_siedlung_bewohner {
             return false;
         };
         // DAS GESETZ DES STANDS (`gilt`): was er bei seiner Geburt hielt, hält er auch gerückt (`_bewohnerStandPruefen`) — die
-        // Gasse frei (`amRand`), dazu das Gesetz seiner Art (der Platz)
+        // Gasse frei (`amRand`), dazu das Gesetz seiner Art (`art`, der Platz); wie die Geburt steht er erst am Rand der Gasse,
+        // dann auch in ihr, nie jenseits seiner Art
         const nimm = (o, amRand = true) => {
             if (!o) return o;
             legen(o.x, o.z);
-            const art = o.gilt;
-            o.gilt = !amRand ? art || null : art ? (x, z) => art(x, z) && !amWeg(x, z) : (x, z) => !amWeg(x, z);
+            const art = (o.art = o.gilt || null);
+            o.gilt = !amRand ? art : art ? (x, z) => art(x, z) && !amWeg(x, z) : (x, z) => !amWeg(x, z);
             return o;
         };
         const steht = new Map();
@@ -2514,17 +2515,33 @@ class AnazhRealm_siedlung_bewohner {
     // ist, in keinem Grundriss liegt, `raum` (Stände) nicht näher als `raumM` trägt und selbst einen Knoten frei erreicht.
     // Gemerkt je Stand der Wache (`o._ausweg`); null: keiner. Bis w4-genesis-ort-wirt5 fragte jeder Ring zwölf Richtungen: in
     // 15 m (`spurAuswegM`) lagen sie 7,9 m auseinander, und der gerückte Stand übersprang die Lücke neben der Fahrbahn.
-    _bewohnerAusweg(N, o, ausDerWand = false, raum = null, rand = 0, frei = null, weit = AnazhRealm.BEWOHNER.auswegM) {
+    // `gesetz` (x, z): das Gesetz des Stands (`gilt`) — jeder Punkt hält es, und ein Ring, auf dem keiner es hält, beendet die
+    // Suche: dort endet sein Gesetz (der Platz und sein Rand um den Ursprung auf ihm), weiter draußen liegt keiner mehr.
+    _bewohnerAusweg(
+        N,
+        o,
+        ausDerWand = false,
+        raum = null,
+        rand = 0,
+        frei = null,
+        weit = AnazhRealm.BEWOHNER.auswegM,
+        gesetz = null
+    ) {
         if (o._ausweg !== undefined) return o._ausweg;
         const BW = AnazhRealm.BEWOHNER;
         let gefunden = null;
-        for (let r = 0.6; r <= weit + 1e-6 && !gefunden; r += 0.6)
+        for (let r = 0.6, drin = 1; r <= weit + 1e-6 && !gefunden && drin; r += 0.6) {
+            drin = gesetz ? 0 : 1;
             for (let i = 0, n = Math.max(12, Math.ceil((2 * Math.PI * r) / 0.6)); i < n && !gefunden; i++) {
                 const q = {
                     x: o.x + Math.cos((i * 2 * Math.PI) / n) * r,
                     z: o.z + Math.sin((i * 2 * Math.PI) / n) * r,
                 };
-                // die billigen Proben zuerst (Lehre 25): die Spur, der Raum, der Grundriss — dann die Wand und das Land
+                // die billigen Proben zuerst (Lehre 25): das Gesetz, die Spur, der Raum, der Grundriss — dann die Wand und das Land
+                if (gesetz) {
+                    if (!gesetz(q.x, q.z)) continue;
+                    drin++;
+                }
                 if (frei && !frei(q)) continue;
                 if (raum && raum.some((p) => p !== o && (p.x - q.x) ** 2 + (p.z - q.z) ** 2 < BW.raumM * BW.raumM))
                     continue;
@@ -2534,14 +2551,15 @@ class AnazhRealm_siedlung_bewohner {
                 if (!this._landAt(q.x, q.z, 0.2)) continue;
                 if (this._bewohnerAnschluss(N, q) >= 0) gefunden = q;
             }
+        }
         return (o._ausweg = gefunden);
     }
 
     // DER STAND WEICHT DER HÜLLE (mensch.K3 Staffel 2): bei der Geburt der Liste und wenn eine Hülle wechselt (`trifft`,
     // `_bewohnerWechsel`; der Baum, der Busch, der Fels des Wald-Takts), gilt jeder Stand an seinem Ursprung (`ur`, der Ort
     // der Liste), wo dort auf dem Boden Raum für einen Gehenden neben ihm ist (`standRandM`); sonst rückt er auf den Ausweg
-    // seines Ursprungs (`_bewohnerAusweg` aus der Wand, `raumM` zum Ursprung jedes anderen Stands UND zum Ort jedes gerückten
-    // vor ihm in der Reihe der Liste; mit dem Raum, sonst ohne ihn) — wer dort steht oder hingeht, geht neu. Vom Ursprung aus,
+    // seines Ursprungs (`_bewohnerAusweg` aus der Wand, `raumM` zum Ursprung jedes anderen Stands UND zum Ort jedes gerückten,
+    // vor ihm in der Reihe wie hinter ihm aus einem früheren Gang) — wer dort steht oder hingeht, geht neu. Vom Ursprung aus,
     // in der Reihe der Liste: dieselbe Welt gibt jeder Liste dieselben Stände; rückt im Gang nach einem Wechsel einer, urteilt
     // jeder gerückte nach ihm neu. Bis w4-genesis-ort-wirt5 hielt der Raum nur die Ursprünge: am Genesis-Ort rückten sieben
     // Stände aus der Spur der Wagen in dieselbe Lücke zwischen haus_schwarzwald #508675 und einer Kiefer (−47/−186, je 0,1–0,9 m
@@ -2557,43 +2575,52 @@ class AnazhRealm_siedlung_bewohner {
         for (const b of S.liste)
             for (const k of ["heim", "platz", "werk", "besuch"]) if (b.orte[k]) staende.add(b.orte[k]);
         S.listeRest = staende.size; // der Rest des Werks (`_weltOffen` leute): je Stand einer
-        // die gerückten Stände vor ihm in der Reihe der Liste (ihr Ort, nie ihr Ursprung) und ob einer in diesem Gang rückte
-        const [gerueckt, weg] = [[], (o) => o.ur && (o.x !== o.ur.x || o.z !== o.ur.z)];
+        // ob ein Stand gerückt steht (sein Ort ist nicht sein Ursprung) und ob einer in diesem Gang rückte
+        const weg = (o) => o.ur && (o.x !== o.ur.x || o.z !== o.ur.z);
         let rueckte = false;
+        // die Stände, deren Gesetz neben der Spur keinen Ort trägt (der Fehler des Plans, laut; die Kreatur-Linse liest ihn)
+        const ohneOrt = S.standOhneOrt || (S.standOhneOrt = new Set());
         for (const o of staende) {
             S.listeRest--;
             const ur = o.ur || (o.ur = { x: o.x, z: o.z, blick: o.blick });
-            if (trifft && !trifft(o, o) && !trifft(ur, ur) && !(rueckte && weg(o))) {
-                if (weg(o)) gerueckt.push(o);
-                continue;
-            }
-            const raumUr = [...staende].filter((p) => p !== o).map((p) => p.ur || p);
-            const raum = raumUr.concat(gerueckt);
+            if (trifft && !trifft(o, o) && !trifft(ur, ur) && !(rueckte && weg(o))) continue;
+            // DER RAUM ZU ALLEN STÄNDEN: der Ursprung jedes anderen und der Ort jedes gerückten
+            const raum = [];
+            for (const p of staende)
+                if (p !== o) {
+                    raum.push(p.ur || p);
+                    if (weg(p)) raum.push(p);
+                }
             // das Gesetz seiner Art gilt auch dem gerückten (`gilt`, `_bewohnerListe`: der Stand am Platz bleibt am Platz)
-            const mit = (f) => (o.gilt ? (p) => o.gilt(p.x, p.z) && (!f || f(p)) : f);
-            const neu = (rand, frei, weit, art = true, rm = raum) =>
-                this._bewohnerAusweg(N, { x: ur.x, z: ur.z }, true, rm, rand, art ? mit(frei) : frei, weit);
+            const neu = (rand, frei, weit, gesetz = o.gilt) =>
+                this._bewohnerAusweg(N, { x: ur.x, z: ur.z }, true, raum, rand, frei, weit, gesetz);
             // DER STAND WEICHT DER SPUR (PFLICHT-OFFEN C): wer stundenlang steht, steht nie in der Spur eines Wagens
-            // (`_verkehrAufSpur`) — sein Ausweg reicht dafür bis `spurAuswegM` (die Gasse daneben, die Lücke zwischen zwei Häusern);
-            // trägt keiner, steht er, wo er stand (der Wagen hält vor ihm, und er macht Platz, `_verkehrFolge`). Die Spur geht vor dem
-            // Gesetz seiner Art und vor dem Raum zu den gerückten: trägt kein Ausweg am Platz (`gilt`), rückt er ohne es aus der Spur,
-            // trägt auch dann keiner, mit dem Raum nur zu den Ursprüngen (wie vor w4-genesis-ort-wirt5) — bis hier blieb der Stand am
-            // Platz dann in ihr stehen, und um 10 Uhr standen zwei Leiber der Metropole auf der Trasse am Markt (#7:55:1, #7:57:1):
-            // 20 Wagen warteten in zwei Ketten 600 s auf sie, kein Wagen erreichte ein Ziel (gate:fahr-leben --verkehr)
+            // (`_verkehrAufSpur`) — er sucht den nächsten Ort, der sein Gesetz UND den Raum zu jedem Stand hält: erst die Gasse
+            // daneben (`spurAuswegM`, die Lücke zwischen zwei Häusern), dann so weit sein Gesetz reicht (`gesetzAuswegM`, der
+            // Platz endet am Ring ohne einen Punkt seines Gesetzes), dann wie bei seiner Geburt auch in der Gasse (`art`: am
+            // Genesis-Ort trug der Platz neben der Trasse am Rand der Gassen keinen freien Punkt mehr — 771 Punkte mit Raum, alle
+            // im Grundriss eines Hauses, markt #431794). Trägt keiner, bietet der Plan zu wenig Platz: laut und beim
+            // Namen (`standOhneOrt`), er steht, wo er stand (der Wagen hält vor ihm, und er macht Platz, `_verkehrFolge`). Bis hier
+            // gab er nach den 15 m erst das Gesetz, dann den Raum zu den gerückten auf (w4-genesis-ort-wirt9): am Genesis-Ort stand
+            // der Platz-Stand fahrer #45665 jenseits des Platzes und drei Stände bei −47/−173 näher als `raumM`, zwei auf einem Punkt
             const frei = S.verkehr ? (p) => !this._verkehrAufSpur(S, p.x, p.z) : null;
-            const q =
-                !this._bewohnerWand(ur, ur, true, BW.standRandM) && (!frei || frei(ur))
+            const wand = this._bewohnerWand(ur, ur, true, BW.standRandM);
+            let q =
+                !wand && (!frei || frei(ur))
                     ? ur
-                    : (frei &&
-                          (neu(BW.standRandM, frei, BW.spurAuswegM) ||
-                              neu(0, frei, BW.spurAuswegM) ||
-                              (o.gilt &&
-                                  (neu(BW.standRandM, frei, BW.spurAuswegM, false) ||
-                                      neu(0, frei, BW.spurAuswegM, false))) ||
-                              neu(0, frei, BW.spurAuswegM, false, raumUr))) ||
-                      (!this._bewohnerWand(ur, ur, true, BW.standRandM)
-                          ? ur
-                          : neu(BW.standRandM) || (!this._bewohnerWand(ur, ur, true) ? ur : neu(0)));
+                    : frei &&
+                      (neu(BW.standRandM, frei, BW.spurAuswegM) ||
+                          neu(0, frei, BW.spurAuswegM) ||
+                          neu(0, frei, BW.gesetzAuswegM) ||
+                          (o.gilt !== o.art && neu(0, frei, BW.gesetzAuswegM, o.art)));
+            if (!frei || q) ohneOrt.delete(o);
+            else if (!ohneOrt.has(o)) {
+                ohneOrt.add(o);
+                this._bruchMelden(
+                    `BEWOHNER: der Stand ${ur.x.toFixed(1)}/${ur.z.toFixed(1)} findet neben der Spur keinen Ort seines Gesetzes — der Plan bietet zu wenig Platz`
+                );
+            }
+            q = q || (!wand ? ur : neu(BW.standRandM) || (!this._bewohnerWand(ur, ur, true) ? ur : neu(0)));
             if (!q)
                 this._bruchMelden(
                     `BEWOHNER: der Stand ${ur.x.toFixed(1)}/${ur.z.toFixed(1)} steht in einer Hülle, kein Ausweg`
@@ -2620,7 +2647,6 @@ class AnazhRealm_siedlung_bewohner {
                         if (b.ziel === o) b.da = false;
                     }
             }
-            if (weg(o)) gerueckt.push(o);
             yield;
         }
         S.listeRest = 0;
@@ -2753,7 +2779,8 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_bewohner]);
 // seines Besuchs, besuchWeitM = so fern von ihnen und seinem Werk höchstens (`_bewohnerGestalten`) · gasseFreiM = so fern
 // von der Mitte jeder Gasse steht jeder Stand · anschlussN = so viele Knoten fragt
 // der Anschluss eines Orts (`_bewohnerAnschluss`) · auswegM = so weit sucht ein Ort ohne freien Anschluss seinen Ausweg
-// (`_bewohnerAusweg`), spurAuswegM ein Stand in der Spur eines Wagens (`_verkehrAufSpur`) · standRandM = so viel Raum hält jeder Stand zu jeder Wand über die Kapsel hinaus: ein Gehender
+// (`_bewohnerAusweg`), spurAuswegM ein Stand in der Spur eines Wagens (`_verkehrAufSpur`), gesetzAuswegM er, wo die Gasse daneben
+// keinen Ort seines Gesetzes trägt (der Platz endet früher, am Ring ohne einen Punkt seines Gesetzes) · standRandM = so viel Raum hält jeder Stand zu jeder Wand über die Kapsel hinaus: ein Gehender
 // passt zwischen beide (`_bewohnerStandPruefen`) · umRandM = so weit über zwei Kapseln geht er am Stehenden vorbei
 // (`_bewohnerUm`) · linieM = so weit voraus auf seinem Bein liegt der Punkt, auf den zurückgeht, wer auswich
 // (`_bewohnerLinie`) · lenkS = so lange hält er seine Wahl höchstens, solange ihn keiner erreichen kann (`_bewohnerAusweichen`,
@@ -2808,6 +2835,7 @@ AnazhRealm.BEWOHNER = Object.freeze({
     anschlussN: 48,
     auswegM: 3,
     spurAuswegM: 15,
+    gesetzAuswegM: 60,
     standRandM: 0.75,
     umRandM: 0.15,
     linieM: 2,

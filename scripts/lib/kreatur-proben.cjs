@@ -2672,7 +2672,13 @@ async function kreaturProben(r, T, opts) {
                 if (ueber) decke(ueber, mit, ab);
                 for (let i = 0; i < (voll ? 600 : (taeter ? 30 : 240) * takte); i++) takt(voll ? 1 / 60 : DT, M);
                 sicht[t] = {
-                    stadt: { haeuser: haeuserIn(S.plan.slots, S.ox, S.oz).length, [voll ? "ring" : "wege"]: M.zahl(), menge: voll ? M.menge(S) : undefined },
+                    stadt: {
+                        haeuser: haeuserIn(S.plan.slots, S.ox, S.oz).length,
+                        [voll ? "ring" : "wege"]: M.zahl(),
+                        menge: voll ? M.menge(S) : undefined,
+                        // der Ort neben der Spur (`standOhneOrt`): der Plan der Stadt bietet jedem Stand seinen
+                        ohneOrt: [...(S.standOhneOrt || [])].map((o) => `${q3(o.ur.x)}/${q3(o.ur.z)}`),
+                    },
                 };
                 for (const f of ab) f();
             }
@@ -2903,6 +2909,11 @@ async function kreaturProben(r, T, opts) {
             staende.slice(i + 1).flatMap((q) => (ab(p, q) < A.BEWOHNER.raumM - 1e-6 ? [`${q3(p.x)}/${q3(p.z)}`] : []))
         );
         [s1.x, s1.z] = alt;
+        // DER ORT NEBEN DER SPUR (`_bewohnerStandPruefen`, `standOhneOrt`): wessen Gesetz neben der Spur keinen Ort trägt, steht in
+        // ihr — der Plan bietet zu wenig Platz, beim Namen. Täter (Selbsttest): der erste Stand ohne Ort
+        const ohneOrt = [...(r._bewohnerSiedlungen.get(S.key).standOhneOrt || [])];
+        if (hat("bewohner-ohne-ort")) ohneOrt.push(s0);
+        const ortWer = (o) => `${q3((o.ur || o).x)}/${q3((o.ur || o).z)}`;
         const unter = liste.filter((b) => !(treffer.get(b) >= 0.9));
         // der Heimkehrer geht 1 h vor jeder Prüf-Stunde fort und findet die neu Geborenen (Takt 0). Täter: geboren am Ziel
         const wiederkehr = async () => {
@@ -2978,6 +2989,7 @@ async function kreaturProben(r, T, opts) {
             ohnePlatz: ohnePlatz.length,
             ohnePlatzWer: ohnePlatz.slice(0, 4).map(wer),
             stapel,
+            ohneOrt: ohneOrt.map(ortWer),
             huellen: hausE.filter((e) => e._hausHuelle).length,
             wege: SD.zahl(),
             wiederkehr: await wiederkehr(),
@@ -3398,6 +3410,11 @@ function urteil(name, z) {
         );
         soll(!z.ohnePlatz, `ohne Platz: ${z.ohnePlatz} (${z.ohnePlatzWer.join(" · ")})`);
         soll(!z.stapel.length, `Stände gestapelt: ${z.stapel.length} näher als raumM (${z.stapel.slice(0, 4)})`);
+        const oo = z.ohneOrt.concat((z.stadt && z.stadt.ohneOrt) || []);
+        soll(
+            !oo.length,
+            `ohne Ort neben der Spur: ${oo.length} (${oo.slice(0, 4).join(" · ")}) — der Plan bietet zu wenig Platz`
+        );
         // jedes Haus trägt die Hülle seines Studios (die Wand der Wege)
         soll(z.huellen === z.haeuser, `${z.haeuser - z.huellen} Häuser ohne Hülle`);
     }
@@ -3862,6 +3879,7 @@ const TAETER = {
         ["bewohner-nord", /der Blick der Stehenden/],
         ["bewohner-daheim", /ohne Platz/],
         ["bewohner-stapel", /Stände gestapelt: [1-9]/],
+        ["bewohner-ohne-ort", /ohne Ort neben der Spur: [1-9]/],
         ["bewohner-wiederkehr", /Wiederkehr nach 1 h Abwesenheit: [1-9]/],
         ["bewohner-stadt-blind", /Stadt: Durchdringung: [1-9]/],
         ["bewohner-stadt-rempeln", /Berührung: [1-9]/],
