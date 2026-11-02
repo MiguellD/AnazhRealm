@@ -374,8 +374,15 @@ async function gang() {
             const pfade = (netz[id] = []); // jeden Seitenfehler nennt der EINE Sammler der Weiche (welt-boot), der Lauf wird rot
             let netzZaehlt = true; // H6 zählt den ersten Besuch, nie das Neuladen der Sitzung
             page.on("request", (q) => netzZaehlt && pfade.push(new URL(q.url()).pathname));
+            const t0 = Date.now(),
+                sek = (t) => ((Date.now() - t) / 1000).toFixed(1);
             await s.zeige(page, 90000, seite(id) + (zeit ? "?bank=12" : ""), "load"); // auf der Karte die Bank der Leiste (H8)
-            await sleep(1500);
+            // ein Studio steht, wenn seine Hülle die Sitzung von zuletzt geladen hat (`laden`: die Regler stehen, A trägt die Öffnung) —
+            // das EINE Warten, nie eine Uhr (bis 02.11. 1,5 s je Seite: 12 s des Gangs, der in der Sitzung seine Frist riss); eine
+            // Nebenwelt trägt keine Sitzung, ihre späten Anfragen (H6) zählt die halbe Ruhe wie bisher
+            if (STUDIOS.includes(id)) await waitFor(page, () => window.AnazhHuelle && AnazhHuelle.gang().geladen, `${id}: die Hülle lädt die Sitzung`);
+            else await sleep(1500);
+            const tSeite = sek(t0);
             // H3: der Spieler zieht und greift im selben Atemzug die Tasten des VERLAUFs (kein Bild, keine Ruhe dazwischen), je
             // Taste am LEBENDEN Schieber seiner Zeile (die schmiede baut ihre Leiste im Rückweg neu — ein abgehängter trüge nie ans Fenster)
             const z = (seiten[id] = await page.evaluate((verlauf) => {
@@ -399,15 +406,19 @@ async function gang() {
             // `waitFor`): ein Hänger endet an der Frist des Browsers, die Stall-Akte nennt die Seite
             const zeilen = () => [...document.querySelectorAll(".h-kosten-zeile")].map((e) => ({ ...e.dataset }));
             if (STUDIOS.includes(id)) {
+                const tL = Date.now();
                 await waitFor(page, `(${zeilen})().every((k) => k.fertig)`, `${id}: jede Zeile der Kosten-Leiste mit Gegenzahl, Zeit und Deckel`);
                 z.kosten = await page.evaluate(zeilen);
-            }
-            if (STUDIOS.includes(id)) {
+                const tLeiste = sek(tL);
                 netzZaehlt = false;
                 // das Neuladen: die Seite geht, dieselbe Seite öffnet neu (derselbe Speicher der Herkunft)
-                const neu = async () => (await page.close(), (page = await browser.newPage()), await s.zeige(page, 90000, seite(id), "load"), page);
+                let tN = null;
+                const neu = async () => ((tN = Date.now()), await page.close(), (page = await browser.newPage()), await s.zeige(page, 90000, seite(id), "load"), page);
+                const tG = Date.now();
                 Object.assign(z, await sitzungsGang(page, saat + STUDIOS.indexOf(id), neu, zeit ? GRIFFE : 4));
-                console.log(`  ⏱ ${id.padEnd(14)} ${sitzungText(sitzungZahl(z))}`);
+                // die Sekunden je Schritt (die Dauer des Gangs beim Namen des Studios): Seite bis zur Sitzung · Leiste fertig · Griffe · Neuladen
+                const schritte = `Seite ${tSeite} · Leiste ${tLeiste} · Griffe ${((tN - tG) / 1000).toFixed(1)} · Neuladen ${sek(tN)}`;
+                console.log(`  ⏱ ${id.padEnd(14)} ${sitzungText(sitzungZahl(z))} · ${sek(t0)} s (${schritte})`);
             }
             await page.close();
             const fremd = [...new Set(pfade.filter((p) => ENGINE_FREMD.test(p)))];
