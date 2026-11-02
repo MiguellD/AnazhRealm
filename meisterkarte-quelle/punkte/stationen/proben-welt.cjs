@@ -137,6 +137,13 @@ async function kollisionTempo(tor) {
         ["for (const sprint of [false, true])", "for (const sprint of [])"],
         ['for (const kad of ["60", "deckel"]) {', "for (const kad of []) {"],
     ]);
+    // DER ORT DER PROBE (w4-urteile-6a57, wie bodenRollen): `tempo` setzt Mauer, Fels, Baum und Haus 14–30 m neben die Mess-Wiese und
+    // erbte in der Linse den Stand von `probe` — in der Sitzung stand der Spieler, wo die Tür ihn ließ (Radeon 25ac4c0c: am Spawn
+    // [68,5 −2,4], 1,1 km von der Wiese), die Welt servierte das Haus dort nie, und es trug nie seine Hülle (`_hausHuelleSetzen`):
+    // „DER BAU STEHT NICHT: haus_alemannisch#500 nach 268 Takten" (GTX 1e90e7cd #496, Radeon 3ef20f9f #3346, seit 31.10.). Headless
+    // am Kopf 6a571e3b nachgestellt (die Linse ohne `probe`, Spieler am Spawn): dieselbe Zeile, #4 nach 578 Takten; an der Wiese
+    // eingeschwungen 126/126 Zeilen. Die Sitzung stellt die Wiese VOR dem Deckel (punkte.cjs `probeOrt` liest den Ort aus diesem Befehl).
+    await tor.ruf("/umstellen", { ort: "wiese", sicht: "ego" }, 1000 * Math.max(30, Number(process.env.PUNKTE_PROBE_DECKEL_S) || 90));
     const page = await tor.seite();
     const karte = tor.karte();
     await page.evaluate(["rahmen", "lok", "aussen", "zuBox"].map((n) => "window." + n + " = " + tor.quelle(L, n) + ";").join("\n"));
