@@ -391,10 +391,10 @@ H.fahre(async function probeAnkunftKalt(H) {
     await schliesse();
     j.spur = spur;
     return j;
-}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\6a571e3b-gtx\ankunft.K2_1.json 10
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\6a571e3b-gtx\pipeline.K4_1.json 10
 @@PUNKTE@@ FRIST 4 s der Probe gerissen — die Kontrolle des Kalt-Boots an der Frist
-@@ 3 s · kalt: t(Kontrolle) —
-SPUR kalt {"stand":"gemessen","kontrolleMs":1635,"belegtMs":1250,"laengsteMs":592,"langeN":4,"langeMs":806,"halter":["(program) hält den Haupt-Faden vor dem ersten Bild 104 ms (bei 0.4 s; 2× ≥ 50 ms, Σ 162 ms)","grow [phyto-core.js] (phyto-core.js:104) hält den Haupt-Faden vor dem ersten Bild 81 ms (bei 0.9 s; 1× ≥ 50 ms, Σ 81 ms)","_blueprintProductVector (stamm/bau-buch.js:1366) hält den Haupt-Faden vor dem ersten Bild 67 ms (bei 0.9 s; 1× ≥ 50 ms, Σ 67 ms)"]}
+@@ 3.3 s · kalt: t(Kontrolle) —
+SPUR kalt {"stand":"gemessen","kontrolleMs":1963,"belegtMs":1437,"laengsteMs":550,"langeN":4,"langeMs":945,"halter":["(program) hält den Haupt-Faden vor dem ersten Bild 268 ms (bei 1.7 s; 3× ≥ 50 ms, Σ 395 ms)","grow [phyto-core.js] (phyto-core.js:104) hält den Haupt-Faden vor dem ersten Bild 68 ms (bei 1.0 s; 1× ≥ 50 ms, Σ 68 ms)","_chatEcho (stamm/feld-leben.js:680) hält den Haupt-Faden vor dem ersten Bild 68 ms (bei 1.0 s; 1× ≥ 50 ms, Σ 68 ms)"]}
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

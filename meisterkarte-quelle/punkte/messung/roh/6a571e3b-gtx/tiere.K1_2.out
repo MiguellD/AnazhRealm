@@ -51,6 +51,7 @@ datei,
 } catch (e) {
 erg.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 400);
 } finally {
+erg.ende = await ruf(szene, { phase: "ende" }).catch((e) => ({ fehler: String((e && e.message) || e).split("\n")[0] }));
 tor.stop();
 }
 fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
@@ -90,6 +91,13 @@ fliehen: g.filter(flieht).length,
 takte: Z.takte,
 };
 };
+if (o.phase === "ende") {
+if (Z && Number.isFinite(Z.max)) s.maxCreatures = Z.max;
+const eigen = Object.prototype.hasOwnProperty.call(r, "updateCreatures");
+if (eigen) delete r.updateCreatures;
+delete window.__herdeHang;
+return { ende: true, max: s.maxCreatures, takt: eigen };
+}
 if (o.phase !== "start") {
 for (let k = 0; k < o.takte; k++) takt();
 return pose();
@@ -124,6 +132,7 @@ s.camera.position.set(pm.x, pm.y + 1.6, pm.z);
 s.camera.lookAt(pm.x + 1, pm.y + 1.6, pm.z);
 s.camera.updateMatrixWorld(true);
 r._loopFrustumCulling();
+Z.max = s.maxCreatures;
 Object.assign(s, { maxCreatures: 64, creatureAnimationTime: 100 });
 r._faunaStroeme = null;
 Z.glieder = r._kreaturWurf({ x: hang.x, z: hang.z }, "wesen", "happy", r._faunaRng("verband"), 7);
@@ -226,7 +235,7 @@ leibPx: +(2 * (rs[rs.length >> 1] || 0)).toFixed(1),
 
   ✅ herde     {"fremdN":5,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":5,"wurfAnteil":0.8,"mittel":1,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null,"enge":1.05,"engst":[0.93,"Joro","Una",52]},"flucht":{"n":5,"wurfAnteil":0.8,"mittel":1,"fluchtAnteil":0.323,"fluchtMittel":1,"fluchtMin":1,"enge":0.83,"engst":[0.54,"Joro","Yto",41]}},"ausrichtung":{"mittel":0.992,"takte":1182},"alarm":{"laufen":5,"zweiteHand":4,"letzterS":0.58},"fluchtWegM":33.9,"id":{"bruch":null,"fluchtS":[5,7]}}
 
-  (17 s)
+  (18 s)
 
 ✅ GRÜN — herde
 

@@ -233,8 +233,8 @@ H.fahre(async function probeBildWeg(H) {
     offen = false;
     Object.assign(j, await L.bauWeg(page, "ende"));
     return j;
-}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\6a571e3b-gtx\bauen.K1_2.json 10
-@@PUNKTE@@ FRIST 4 s der Probe gerissen — Fall werkstatt · schöpfer · Eiche · Ego und die folgenden ausgelassen
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\6a571e3b-gtx\bauen.K1_2.json 1
+@@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „1“: der Läufer ersetzt den Platzhalter SEK)
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
