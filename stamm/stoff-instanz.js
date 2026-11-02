@@ -1110,7 +1110,7 @@ class AnazhRealm_stoff_instanz {
                 this._nSpaet = [];
                 this._nBelegt = 0;
                 // die Senken ohne Platz auf der Instanz-Seite: ihnen folgt eine größere Arena (`_folgen`), einmal gezählt
-                this._wartend = new Set();
+                this._wartend = new Map(); // Senke → ihr Bedarf an Plätzen, als sie scheiterte
                 // die Glieder mit Instanzen: ohne eines betritt die Arena keinen Pass (die Instanz-Zahl zaehlt mit)
                 this._lebend = 0;
                 // DER EINE AUFTRAGS-PUFFER (`_ind`): je Pass-Kamera (lose) und je aufnehmender Kamera (Bündel) ein Abschnitt
@@ -1149,7 +1149,7 @@ class AnazhRealm_stoff_instanz {
                 // nach dem ersten Zug wächst die Instanz-Seite nicht mehr: reicht ihr Platz nicht, folgt eine Arena mit Platz
                 // für den Bedarf
                 if (this.__instanzQuelle.instanceMatrix && !this._nPasst(platz(m.count | 0))) {
-                    this._wartend.add(m);
+                    this._wartend.set(m, platz(m.count | 0));
                     return void this._folgen();
                 }
                 this._wartend.delete(m);
@@ -1395,11 +1395,17 @@ class AnazhRealm_stoff_instanz {
                 setTimeout(() => {
                     const reg = AnazhRealm.__arenen;
                     if (!reg || reg.get(this.__key) !== this || !this.parent || !this.glieder.length) return;
-                    // der Bedarf: jedes Glied mit seinem Block, jede wartende Senke mit ihrer Zahl von JETZT — jede einmal gezählt,
-                    // und ein Achtel darüber
+                    // DER BEDARF IST DAS MASS DES BLOCKS (w4-leck-knoten): jedes Glied mit dem Platz seines Fensters
+                    // (`_blockFuer`: die größte Zahl dieses und des letzten Fensters), jede wartende Senke mit dem Bedarf, an
+                    // dem sie scheiterte — jede einmal gezählt, und ein Achtel darüber. Bis hier las der Bedarf `count` im
+                    // Zeitgeber, zwischen den Bildern: die Wahl jedes Passes stellt die Zahl um und zurück (`_instanzZahl`),
+                    // außerhalb des Bilds steht die ganze Senke. Die Folgerin wuchs auf die ganze Zahl (Kronen-Karten 1 877 →
+                    // 2 712 Plätze), ihr Block nach dem Fenster blieb bei der gezogenen (873 → 1 096 belegt, unter der Hälfte),
+                    // das Verdichten rief die nächste — EINE neue Arena je Bild, ewig, samt Render-Objekt, Bindungen und
+                    // Instanz-Seite (headless 6a571e3b im Stand: 63 neue Render-Objekte in 73 Bildern).
                     let n = 0;
-                    for (const m of this.glieder) n += Math.max(m.__arenaZ.cap, platz(m.count | 0));
-                    for (const m of this._wartend) if (!m.__arena && m.parent) n += platz(m.count | 0);
+                    for (const m of this.glieder) n += platz(Math.max(m.__arenaZ.spitze, m.__arenaZ.spitzeVor));
+                    for (const [m, bedarf] of this._wartend) if (!m.__arena && m.parent) n += bedarf;
                     this._wartend.clear();
                     AnazhRealm.__arenaFolgen = (AnazhRealm.__arenaFolgen | 0) + 1;
                     const a = new GeometrieArena(
@@ -1411,14 +1417,29 @@ class AnazhRealm_stoff_instanz {
                     );
                     a._imBuendel(this.__buendel);
                     a._rend = this._rend;
+                    // DIE WAND DER FOLGE: eine Arena folgt einmal je Fenster, nie je Bild — folgt eine Folgerin, bevor ihr
+                    // erstes Fenster (GPU_KEHRAUS_MS) verging, wächst die Kette; ab ARENA_KETTE in Folge bricht sie laut beim
+                    // Stoff über den EINEN Melder (die Folge je Bild war das Leck: je Folge Render-Objekt, Bindungen, Instanz-Seite)
+                    const jetzt = AnazhRealm.__arenaJetzt || 0;
+                    a._geboren = jetzt;
+                    a._kette =
+                        jetzt - (this._geboren ?? -Infinity) < AnazhRealm.GPU_KEHRAUS_MS ? (this._kette | 0) + 1 : 0;
+                    if (a._kette === AnazhRealm.ARENA_KETTE)
+                        globalThis.anazhRealm._bruchMelden(
+                            `ARENA-FOLGE: die Arena des Stoffs „${a.material.name || a.material.type}" folgte ${a._kette}× in Folge, ` +
+                                `jede vor ihrem ersten Fenster (${n} Plätze, ${this.glieder.length} Glieder)`
+                        );
                     reg.set(this.__key, a);
                     this.parent.add(a);
                     // die Gestalten bleiben im Lager: die Folgerin nimmt sie, bevor die Arena sie lässt
+                    // — und ihr Fenster zieht mit: die Folgerin misst den Block nach derselben Spitze, nach der sie wuchs
                     for (const m of this.glieder.splice(0)) {
-                        const g = m.__arenaZ.gestalt;
+                        const z = m.__arenaZ;
                         m.__arena = null;
                         a.nehmen(m);
-                        this._lager.lassen(g);
+                        const y = m.__arenaZ;
+                        if (y !== z) [y.spitze, y.spitzeVor, y.spitzeT] = [z.spitze, z.spitzeVor, z.spitzeT];
+                        this._lager.lassen(z.gestalt);
                     }
                     this._fallen();
                 }, 0);
@@ -1609,11 +1630,13 @@ class AnazhRealm_stoff_instanz {
                 if (fremd)
                     for (let i = 0; i < fremd.length; i += 2) {
                         const m = fremd[i],
-                            p = fremd[i + 1];
+                            p = fremd[i + 1],
+                            z = m.__arenaZ; // `lassen` nimmt ihn: der Bedarf, an dem der Block scheiterte, ist sein Fenster
+                        const bedarf = platz(Math.max(z.spitze, z.spitzeVor));
                         this.lassen(m, true);
                         if (p === 2) AnazhRealm._arenaNimmt(m, renderer);
                         else if (p === 3) {
-                            this._wartend.add(m);
+                            this._wartend.set(m, bedarf);
                             this._folgen();
                         }
                     }
@@ -1850,8 +1873,21 @@ class AnazhRealm_stoff_instanz {
                             const td = rend._textures.get(b.texture);
                             if (td.bindGroups) td.bindGroups.delete(bg);
                         }
+                    AnazhRealm._samplerLoesen(bg);
                 }
         }
+    }
+    // DIE SAMPLER-HÖRER FALLEN MIT IHRER BINDEGRUPPE (w4-leck-knoten): r184 klont je Render-Objekt jede Sampler-Bindung (Textur
+    // und Sampler), und der Klon hängt einen dispose-Hörer an seine Textur (vendor `nR.clone`: `e.texture = this.texture` →
+    // `addEventListener("dispose", e._onTextureDispose)`), den nur ein Wechsel der Textur abnimmt — weder `deleteForRender`
+    // noch der Collector. Eine geteilte Textur (Umgebung, Karten-Atlas, Spiegel) hielt so jede Bindung jedes je gezeichneten
+    // Render-Objekts (headless 6a571e3b nach zwei Reisen: 9 569 Hörer an 18 Texturen, je Reise +6 459 Textur- und +6 439
+    // Sampler-Bindungen). Die Textur null nimmt ihn ab; geteilte Gruppen gehören allen. Die Rufer: das Lösen eines Objekts
+    // (`_renderObjekteLoesen`) und das Register, wenn r184 ein Render-Objekt selbst löst (`_renderObjektRegister`).
+    static _samplerLoesen(bg) {
+        const b0 = bg && bg.bindings && bg.bindings[0];
+        if (!b0 || (b0.groupNode && b0.groupNode.shared === true)) return;
+        for (const b of bg.bindings) if (b.isSampler && b.texture) b.texture = null;
     }
     // DAS RENDER-OBJEKT-REGISTER: r184 baut je (Objekt × Stoff × Pass-Kontext) ein Render-Objekt mit eigenen Uniform-Puffern
     // (`bindingBuffer…_object` · `_render`) und hängt es an das `dispose`-Ereignis seines STOFFS und seiner GEOMETRIE — ein
@@ -1899,6 +1935,7 @@ class AnazhRealm_stoff_instanz {
                 const i = l ? l.indexOf(ro) : -1;
                 if (i >= 0) l.splice(i, 1);
                 roDispose();
+                for (const bg of ro._bindings || []) AnazhRealm._samplerLoesen(bg);
             };
             return ro;
         };
@@ -2354,3 +2391,6 @@ AnazhRealm._studioPlatzKern = function () {
         throw new Error("Die Platzierung: foundry-core.js fehlt (__terrainCore.PORTAL_RENDER_CONFIG.placement)");
     return pl;
 };
+// DIE WAND DER FOLGE (`_folgen`): so viele Folgen einer Arena in Folge, jede vor dem ersten Fenster ihrer Vorgängerin, bricht
+// sie laut — eine Folge je Bild ist ein Leck (w4-leck-knoten), Wachstum beim Boot folgt mit einem Achtel Luft weit seltener.
+AnazhRealm.ARENA_KETTE = 16;
