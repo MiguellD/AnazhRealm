@@ -34,7 +34,7 @@ WACHSTUM {"je":["1/- 12→37 37/37 1993","2/- 12→36 36/36 2011","3/- 12→37 3
 @@PUNKTE@@ EXIT 0
 @@PUNKTE@@ ORT
 {
- "ms": 26,
+ "ms": 17,
  "ergebnis": {
   "S": {
    "x": 400.0000000000001,
@@ -49,6 +49,90 @@ WACHSTUM {"je":["1/- 12→37 37/37 1993","2/- 12→36 36/36 2011","3/- 12→37 3
  }
 }
 
+@@PUNKTE@@ VOR
+{
+ "ms": 62,
+ "ergebnis": {
+  "k": "d:7@400,693",
+  "groesse": "dorf",
+  "jahr": 1412,
+  "slots": 12,
+  "haeuser": 12,
+  "haus": [
+   411.5494421948886,
+   634.7573561691634
+  ],
+  "hill": {
+   "x": 446.8216772838709,
+   "y": 48.04837041391,
+   "z": 457.4318557307756
+  }
+ }
+}
+
+@@PUNKTE@@ UHR
+{
+ "ms": 3,
+ "ergebnis": {
+  "kern": true,
+  "jahr": 1412,
+  "haeuser": 12,
+  "uhr": 1556.4966000000036
+ }
+}
+
+@@PUNKTE@@ STAND
+{
+ "ms": 2,
+ "ergebnis": {
+  "jahr": [
+   1412,
+   1724
+  ],
+  "haeuser": [
+   12,
+   19
+  ],
+  "slots": 20,
+  "bleiben": 0.917,
+  "ring": {
+   "neu": 8,
+   "zumHaus": 22,
+   "zumOrt": 59
+  },
+  "offen": 0
+ }
+}
+
+@@PUNKTE@@ KAMERA
+{
+ "ms": 2,
+ "ergebnis": {
+  "pose": [
+   446.82,
+   49.75,
+   457.43,
+   405.77,
+   40.34,
+   663.79
+  ],
+  "d": 210,
+  "hoeher": 11.7
+ }
+}
+
+@@PUNKTE@@ BILD
+{
+ "ms": 5826,
+ "fehler": "ABNAHME ROT [Vordergrund 48.3 % näher als 8 m (der halbe Ziel-Abstand): Mesh 25.7 %, Laub baum_birke 21.9 %, Rinde baum_birke 0.7 % · Ziel Blickziel verdeckt von siedlung-mauer in 139.26 m · Ziel Blickziel nicht gezeichnet: wandlaterne_dorf 480 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 210.61 m · Luma 60.9 σ 35.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.168 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 42 Posen — die Blick-Wahl fand in 42 Posen keine freie — die Aufnahme speichert nichts",
+ "stapel": [
+  "abnahme (pptr:evaluate;lade%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5CAnazhRealm-mess%5C.claude%5Cworktrees%5Cpunkte-gtx%5Cscripts%5Cwerkbank.cjs%3A854%3A24):1343:32)",
+  "at abnahme (evaluate at lade (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\.claude\\worktrees\\punkte-gtx\\scripts\\werkbank.cjs:854:24), <anonymous>:1342:31)",
+  "at evaluate (evaluate at lade (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\.claude\\worktrees\\punkte-gtx\\scripts\\werkbank.cjs:854:24), <anonymous>:1420:76)",
+  "at #evaluate (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionContext.js:391:56)"
+ ]
+}
+@@PUNKTE@@ EXIT 1
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
