@@ -2485,7 +2485,7 @@ module.exports = [
             { name: "ein globaler Tint: der Nachbar wächst mit", stdout: weltRoh("feld", (x) => Object.assign(x, { nach: { mitte: { alle: 36, blumen: 33 }, nachbar: { alle: 37, blumen: 31 }, feld: [1, 0.658] } })), gruen: false },
             { name: "der Akt wirkt nicht aufs Feld (die Probe wäre blind)", stdout: weltRoh("feld", (x) => Object.assign(x, { nach: { mitte: { alle: 36, blumen: 33 }, nachbar: { alle: 30, blumen: 24 }, feld: [0.855, 0.658] } })), gruen: false },
         ],
-        pfad: ["stamm/feld-*.js", "stamm/vegetation-*.js", "phyto-core.js", ...WELT_PFAD],
+        pfad: ["stamm/feld-*.js", "stamm/vegetation-*.js", "phyto-core.js", "foundry-core.js", ...WELT_PFAD],
         quelle: "1 = ein Leser sichtbar am Ort an einem Gerät",
     },
     // stoffe.K4 — an main 25ac4c0c ROT: nach 30 Tagen (Tag 30) in 14 Klassen um das Dorf (bodenSatz, bauSatz, streuSatz, formationenSatz,
