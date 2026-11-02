@@ -2527,7 +2527,9 @@ class AnazhRealm_bau_teile {
                 });
                 g.pose.um = { x: kante.x, y: poly.boden, z: kante.z };
             }
-            this._spielerSagt(`${name}: ${text} — ${faellt ? "es fällt" : "es stürzt ein"}.`);
+            this._spielerSagt(
+                this._t(faellt ? "bauen.sagt-sturz-faellt" : "bauen.sagt-sturz-einsturz", { name, text })
+            );
         } else {
             const rollen = [];
             if (!(entry.affordances && entry.affordances.moveable) && this._rollableFraction(bp, rollen) >= 1) {

@@ -830,20 +830,24 @@ class AnazhRealm_dirigent_regler {
                 row("tris", Math.round((s.renderTris || 0) / 1000) + "k") +
                 row("heap", heap) +
                 row(
-                    "GPU (" + gpuQ + ")",
+                    this._t("kern.perf-gpu", { quelle: gpuQ }),
                     gpuMs != null ? gpuMs.toFixed(1) + " ms" : "—",
                     gpuMs != null && gpuMs > AnazhRealm.PERF_TARGET_MS ? "#ff8a8a" : undefined
                 ) +
                 row(this._t("kern.perf-szene"), szene + "%") +
                 row(
-                    "Impostor",
+                    this._t("kern.perf-impostor"),
                     z ? `${z.gebacken}✓ ${z.wartend}○ ${z.gescheitert}✗` : "—",
                     z && z.gescheitert > 0 ? "#ff8a8a" : "#8fe98f"
                 ) +
-                row("LT/s", ltSec ? ltSec.ms.toFixed(0) + " ms" : "—", ltSec && ltSec.ms > 50 ? "#ff8a8a" : undefined) +
-                row("GC", fr ? String(fr.gcN || 0) : "—") +
-                row("Pipes+", (s.pipesNeuProS || 0).toFixed(1) + "/s") +
-                row("Up MB/s", upMBs.toFixed(2), upMBs > 8 ? "#ffd166" : undefined);
+                row(
+                    this._t("kern.perf-lt"),
+                    ltSec ? ltSec.ms.toFixed(0) + " ms" : "—",
+                    ltSec && ltSec.ms > 50 ? "#ff8a8a" : undefined
+                ) +
+                row(this._t("kern.perf-gc"), fr ? String(fr.gcN || 0) : "—") +
+                row(this._t("kern.perf-pipes"), (s.pipesNeuProS || 0).toFixed(1) + "/s") +
+                row(this._t("kern.perf-upload"), upMBs.toFixed(2), upMBs > 8 ? "#ffd166" : undefined);
         }
         // ── Verteilung (die 6 Flugschreiber-Eimer als Prozent-Zeile) ──
         const bk = document.getElementById("pp-buckets");

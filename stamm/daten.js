@@ -674,7 +674,6 @@ class AnazhRealm_daten {
     // UI-Senke geht an ihr vorbei.
     static get TEXTE() {
         const S = ["de", "en"];
-        // SPRACH-ZEILEN AUF
         // prettier-ignore
         const Z = {
             "bau.birke": ["Birke", "Birch"],
@@ -793,6 +792,8 @@ class AnazhRealm_daten {
             "bauen.sagt-ort-traegt-nicht": ["{label}: hier steht es nicht — der Ort trägt das Werk nicht.", "{label}: it won't stand here — this spot can't carry the work."],
             "bauen.sagt-standort": ["{label}: der Standort trägt nicht (rote Markierung) — ziel auf ebenen Boden.", "{label}: the ground here won't hold it (red marker) — aim for level ground."],
             "bauen.sagt-werkstatt": ["{label}: du brauchst eine Werkstatt der Domäne „{domaene}\" in der Nähe.", "{label}: you need a workshop of the “{domaene}” domain nearby."],
+            "bauen.sagt-sturz-einsturz": ["{name}: {text} — es stürzt ein.", "{name}: {text} — it collapses."],
+            "bauen.sagt-sturz-faellt": ["{name}: {text} — es fällt.", "{name}: {text} — it falls."],
             "bauen.signatur": ["Signatur", "Signature"],
             "bauen.signatur-geaendert": ["geändert seit der Signatur — neu signieren", "changed since signing — sign again"],
             "bauen.signatur-pruefe": ["prüfe …", "checking …"],
@@ -856,6 +857,11 @@ class AnazhRealm_daten {
             "chat.befehl.dorf.gruendung": ["Siedlung wird gegründet (Settlement-Export läuft) …", "Founding the settlement (settlement export running) …"],
             "chat.befehl.dorf.keine-epoche": ["Keine Epoche „{epoche}\" — es gibt {epochen}.", "No era “{epoche}” — there are: {epochen}."],
             "chat.befehl.dorf.keine-epoche-kern": ["Keine Epoche „{epoche}\" — es gibt keine (Kern fehlt).", "No era “{epoche}” — there are none (core missing)."],
+            "chat.befehl.dorf.kein-grund": ["Hier findet kein Haus Grund — zu steil, zu nass oder verbaut. Versuch es an einem anderen Ort.", "No house finds ground here — too steep, too wet or built over. Try another place."],
+            "chat.befehl.dorf.name-leer": ["Das Dorf", "The village"],
+            "chat.befehl.dorf.ort-fehlt": ["Hier kann kein Dorf entstehen: der Ort fehlt.", "No village can rise here: the place is missing."],
+            "chat.befehl.dorf.steht": ["„{name}\" steht vor dir: {n} Häuser.", "“{name}” stands before you: {n} houses."],
+            "chat.befehl.dorf.steht-eins": ["„{name}\" steht vor dir: 1 Haus.", "“{name}” stands before you: 1 house."],
             "chat.befehl.faehigkeit.ausgefuehrt": ["Fähigkeit '{name}' ausgeführt", "Ability '{name}' performed"],
             "chat.befehl.faehigkeit.gelernt": ["Fähigkeit '{name}' gelernt: {beschreibung}", "Ability '{name}' learned: {beschreibung}"],
             "chat.befehl.faehigkeit.gewaehr-aus": ["Die Gewähr blieb aus.", "The grant was not given."],
@@ -1165,12 +1171,17 @@ class AnazhRealm_daten {
             "kern.perf-export": ["Export: Einstellungen → Leistung → „Perf-Daten exportieren\"", "Export: Settings → Performance → “Export perf data”"],
             "kern.perf-fps-leer": ["— fps", "— fps"],
             "kern.perf-frame": ["frame  ø {mittel}  max {max} / soll {soll} ms", "frame  ø {mittel}  max {max} / target {soll} ms"],
+            "kern.perf-gc": ["GC", "GC"],
+            "kern.perf-gpu": ["GPU ({quelle})", "GPU ({quelle})"],
             "kern.perf-gpu-echt": ["GPU    {ms} ms (echt: timestamp-query)", "GPU    {ms} ms (real: timestamp-query)"],
             "kern.perf-gpu-proxy": ["GPU    {ms} ms (proxy: frame−ΣCPU)", "GPU    {ms} ms (proxy: frame−ΣCPU)"],
             "kern.perf-hud": ["HUD  {fps} fps · Szene {szene}% · {dc}dc · {tris}k▲", "HUD  {fps} fps · Scene {szene}% · {dc}dc · {tris}k▲"],
+            "kern.perf-impostor": ["Impostor", "Impostor"],
             "kern.perf-kopf": ["PERF-SENSE (der Nexus misst seine Last)", "PERF-SENSE (the Nexus measures its load)"],
             "kern.perf-kosten": ["kosten/kreatur {ms} ms · chunks {chunks} arch {arch} coll {coll}", "cost/creature {ms} ms · chunks {chunks} arch {arch} coll {coll}"],
+            "kern.perf-lt": ["LT/s", "LT/s"],
             "kern.perf-phase": [" {phase}:{ms}ms", " {phase}:{ms}ms"],
+            "kern.perf-pipes": ["Pipes+", "Pipes+"],
             "kern.perf-pos": ["POS  {pos}  (x,y,z)", "POS  {pos}  (x,y,z)"],
             "kern.perf-regel": ["REGEL  loadScale {skala}  δ {delta} ms", "RULE   loadScale {skala}  δ {delta} ms"],
             "kern.perf-ring": ["max-Frame je Sekunde → {n}s", "max frame per second → {n}s"],
@@ -1178,6 +1189,7 @@ class AnazhRealm_daten {
             "kern.perf-spike": ["SPIKE  schlimmster {phase} {ms} ms · frame-max {max} ms", "SPIKE  worst {phase} {ms} ms · frame max {max} ms"],
             "kern.perf-stellgr": ["stellgr  streamBudget {stream} ms  waterBudget {water} ms", "levers  streamBudget {stream} ms  waterBudget {water} ms"],
             "kern.perf-szene": ["Szene", "Scene"],
+            "kern.perf-upload": ["Up MB/s", "Up MB/s"],
             "kern.perf-verteilung": ["ms-Verteilung", "ms distribution"],
             "kern.perf-worst": ["⚠ {frame}ms (GPU {gpu} [{quelle}] · CPU {cpu}{top} · {dc}dc)", "⚠ {frame}ms (GPU {gpu} [{quelle}] · CPU {cpu}{top} · {dc}dc)"],
             "kern.seitentitel": ["Anazh Realm {version} – Das Ultiversum", "Anazh Realm {version} – The Ultiverse"],
@@ -2273,7 +2285,6 @@ class AnazhRealm_daten {
             "wesen.teil.torso": ["Torso", "Torso"],
             "wesen.wolf": ["Wolf", "Wolf"],
         };
-        // SPRACH-ZEILEN ZU
         const tafel = Object.fromEntries(S.map((sp) => [sp, {}]));
         // die Zeile hält ihr Gesetz beim Bau (laut): ein Schlüssel nur aus [a-z0-9.-], jede Sprache ein Text, dieselben Werte
         const werte = (t) => (t.match(/\{\w+\}/g) || []).sort().join(" ");
