@@ -15,11 +15,12 @@ const CAM_FOV=34,cam=new THREE.PerspectiveCamera(CAM_FOV,innerWidth/innerHeight,
 // (ColorManagement an, Lehre 21), die Lichter physikalisch: r128 trug π im Legacy-Modus selbst, jetzt tragen es die Stärken.
 const R=new THREE.WebGPURenderer({antialias:true});R.setSize(innerWidth,innerHeight);R.setPixelRatio(Math.min(devicePixelRatio,2));
 R.toneMapping=THREE.NeutralToneMapping;R.toneMappingExposure=1.04;
-R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;document.body.appendChild(R.domElement);
+R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFShadowMap;   // PCF statt PCF-weich: swiftshader Iso 105 → 90 ms (02.11.)
+document.body.appendChild(R.domElement);
 
 // KEINE STUDIO-UMGEBUNG (01.11.): die gemalte Grauverlauf-Env lag als PMREM in jedem PBR-Stoff — unter swiftshader die Hälfte
 // des Bildes (Isometrie 1280×720: 262 → 86 ms mit der Abtastung unten), im Bild kaum sichtbar (Bildpaar v2-iso ↔ v2env0-iso).
-// Den Lack zeichnen die drei Lichter und der Himmel (HemisphereLight); der Spiegel-Himmel gehört der Welt (Lehre 21).
+// Den Lack zeichnen die drei Lichter der Werkstatt; der Spiegel-Himmel gehört der Welt (Lehre 21).
 
 // ── DIE BÜHNE (Boden · Raster · Zifferblatt · Kontaktschatten) — das Möbel der Werkstatt, die Probefahrt fährt auf ihrem Gelände ──
 // DER BODEN IST UNBELEUCHTET (01.11., gemessen unter swiftshader, Isometrie 1280×720): der metallische PBR-Boden spiegelte die
@@ -29,12 +30,18 @@ const PI=Math.PI;
 const buehne=new THREE.Group();scene.add(buehne);
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(60,60),new THREE.MeshBasicMaterial({color:0x080c11}));
 floor.rotation.x=-PI/2;buehne.add(floor);
-const kontakt=(function(){const c=document.createElement('canvas');c.width=256;c.height=128;const x=c.getContext('2d');
-  x.filter='blur(14px)';x.fillStyle='rgba(0,0,0,0.92)';x.beginPath();x.roundRect(34,30,188,68,30);x.fill();
-  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;
-  const m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:t,transparent:true,depthWrite:false,color:0x000000}));
-  m.rotation.x=-PI/2;m.position.y=0.002;m.renderOrder=1;return m;})();
-buehne.add(kontakt);
+// DER WEICHE BODEN-KONTAKT (02.11.): drei Schichten in EINEM Bild am Bau gemalt — der weite Hof, der Kern unter dem Boden des
+// Wagens und je Rad (Kufe) der dunkle Auflagepunkt; das Bild spannt die Hülle des Baus plus 0,6 m, gezeichnet in EINEM Befehl.
+const kontaktBild=document.createElement('canvas');kontaktBild.width=256;kontaktBild.height=128;
+const kontaktTex=new THREE.CanvasTexture(kontaktBild);kontaktTex.colorSpace=THREE.SRGBColorSpace;
+const kontakt=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:kontaktTex,transparent:true,depthWrite:false,color:0x000000}));
+kontakt.rotation.x=-PI/2;kontakt.position.y=0.002;kontakt.renderOrder=1;buehne.add(kontakt);
+function kontaktMalen(H,P){const L=H.NOSE[0]-H.TAIL[0]+1.2,B=P.spur+1.2,xm=(H.NOSE[0]+H.TAIL[0])/2,x=kontaktBild.getContext('2d');
+  const u=wx=>(wx-xm)/L*256+128,v=wz=>wz/B*128+64,fleck=(a,b,c,d,r,al,bl)=>{x.filter=`blur(${bl}px)`;x.fillStyle=`rgba(0,0,0,${al})`;x.beginPath();x.roundRect(a,b,c,d,r);x.fill();};
+  x.clearRect(0,0,256,128);const k=0.6/L*256,q=0.6/B*128;
+  fleck(k*0.4,q*0.4,256-k*0.8,128-q*0.8,40,0.45,14);fleck(k,q,256-2*k,128-2*q,26,0.75,8);
+  const r=(P.radR||0.3)*256/L;for(const n of['HUB_FL','HUB_FR','HUB_RL','HUB_RR'])fleck(u(H[n][0])-r*0.9,v(H[n][2])-6,r*1.8,12,6,0.95,3);
+  kontaktTex.needsUpdate=true;kontakt.scale.set(L,B,1);kontakt.position.x=xm;}
 // DAS RASTER DER MATRIX (Stahl-Cyan): ein feines Halbmeter-Netz und darüber das Fünfmeter-Netz — zwei Linien-Befehle
 const grid=new THREE.GridHelper(60,120,0x1e3c4a,0x0d1a22);grid.position.y=0.001;grid.material.opacity=0.55;grid.material.transparent=true;buehne.add(grid);
 const gridGrob=new THREE.GridHelper(60,12,0x2f6476,0x1d4352);gridGrob.position.y=0.0015;gridGrob.material.opacity=0.6;gridGrob.material.transparent=true;buehne.add(gridGrob);
@@ -49,14 +56,24 @@ buehne.add(zifferblatt);
 
 // ── Licht ── (die Studio-Lichter sind unter r128 roh, also linear, eingestellt: `_lin` hält ihren Ton — als sRGB dekodiert
 // sättigten Füll-, Rand- und Himmelslicht den Lack cyan; der Lack selbst bleibt FARB-GESETZ des Kerns, sRGB → linear)
-// ZUKUNFT MIT DER WÄRME DER ANTIKE (01.11.): das Hauptlicht warm wie Lampenlicht (Leuchtdichte gehalten: 2,6 / 0,887), die
-// Kante von hinten Bronze, die Füllung bleibt Stahl — drei Richtungen und der Himmel, kein Post.
+// DAS STUDIO-LICHT DER MATRIX-ANTIKE (02.11.): drei Richtungen, die DEM BLICK FOLGEN (die Werkstatt-Kugel, `werkOrbit`) — das
+// Haupt (Bernstein, wirft den Schatten) 46° neben der Kamera und 49° hoch, die Blick-Füllung (Stahl) 20° neben ihr und flach
+// (8,5°): sie trägt den Lack der Flanke, den kein Himmel spiegelt; die Gegenkante (Cyan) hinter dem Wagen flach (15°) zeichnet
+// den Umriss. Jede Ansicht (Isometrie, Riss, Explosion, Drehteller) steht im selben Licht; vorher lag die Flanke im Riss im
+// Dunkel, und der Himmel fiel (er erhellte nur Stoff, nie Lack; unter swiftshader kostet jede Richtung ~6–12 ms je Bild).
+// EIN Regler „Licht" (warm 0 ↔ kühl 1) über die Hülle: warm das Haupt in Bernstein und die Kante in Cyan, kühl das Haupt im
+// Tageslicht und die Kante in Bronze, die Füllung gegenläufig. Die Leuchtdichte des Hauptlichts bleibt (2,6 · π über die
+// Luminanz seiner Farbe) — der Regler färbt, er hellt nie. Nur Farben und Stärken (Uniformen): kein Programm, kein Post.
 const _lin=h=>new THREE.Color().setHex(h,THREE.LinearSRGBColorSpace);
-scene.add(new THREE.HemisphereLight(_lin(0x7a8da0),_lin(0x0c1016),0.55*PI));
-const key=new THREE.DirectionalLight(0xfff0dc,2.93*PI);key.position.set(5,9,4);key.castShadow=true;
+const key=new THREE.DirectionalLight(0xfff0dc,2.93*PI);key.castShadow=true;
 key.shadow.mapSize.set(1024,1024);key.shadow.bias=-0.0002;Object.assign(key.shadow.camera,{left:-6,right:6,top:5,bottom:-3,far:26});scene.add(key);
-const fill=new THREE.DirectionalLight(_lin(0x4f8fa6),0.6*PI);fill.position.set(-2,3,6);scene.add(fill);
-const rim=new THREE.DirectionalLight(_lin(0xffa65a),0.9*PI);rim.position.set(-6,4.5,-4);scene.add(rim);
+const fill=new THREE.DirectionalLight(0xffffff,0.7*PI);scene.add(fill);
+const rim=new THREE.DirectionalLight(0xffffff,0.9*PI);scene.add(rim);
+const LICHT={key:[0xffe2bf,0xe2ebff],fill:[0x9fc4d8,0xd8c0a0],rim:[0x52d4ff,0xffa65a]},_lc=[new THREE.Color(),new THREE.Color()];
+function lichtSetzen(w){const mix=(c,[a,b],lin)=>c.lerpColors(lin?_lin(a):_lc[0].set(a),lin?_lin(b):_lc[1].set(b),w);
+  mix(key.color,LICHT.key);key.intensity=2.6*PI/(0.2126*key.color.r+0.7152*key.color.g+0.0722*key.color.b);
+  mix(rim.color,LICHT.rim,1);mix(fill.color,LICHT.fill,1);}
+lichtSetzen(0);
 
 /* ── DER KERN-ANSCHLUSS (W7a, Studio-Vertrag Phase 1 — docs/studio-vertrag.md §7):
    die generative Substanz (Lehren · Rahmen · Räder · Haut · Baukörper · Presets/
@@ -109,28 +126,25 @@ function buildJoints(H,P){const g=new THREE.Group();              // nur DOF-Hin
 
 // ── Maßlinien (Lehren räumlich) — Farbe = Zustand der zugehörigen Lehre ──
 // Die Maßlinie in Pergament, die Endstriche und der Punkt des Schilds in der Farbe des Urteils (colHex).
-// EIN Linien-Befehl je Maß (Linie + zwei Endstriche als Segmente mit Ecken-Farbe; vorher drei Linien, drei Befehle).
+// EIN Linien-Befehl für ALLE Maße (Linien + Endstriche als Segmente mit Ecken-Farbe, 02.11.; vorher einer je Maß).
 const PERGAMENT=0xe6d6b0,PERGAMENT_HEX='#efe3c4',_massStoff=new THREE.LineBasicMaterial({vertexColors:true});
-function caliper(a,b,colHex,txt,perp,schild){const g=new THREE.Group();
+function caliper(g,a,b,colHex,txt,perp,schild){
   const t=perp||[0,0.05,0];                          // Endstrich-Richtung
-  const pg=new THREE.Color(PERGAMENT),ur=new THREE.Color(colHex),pos=[],col=[];
+  const pg=new THREE.Color(PERGAMENT),ur=new THREE.Color(colHex),{pos,col}=g.userData;
   const strich=(p,q,c)=>{pos.push(...p,...q);col.push(c.r,c.g,c.b,c.r,c.g,c.b);};
   strich(a,b,pg);
   strich([a[0]-t[0],a[1]-t[1],a[2]-t[2]],[a[0]+t[0],a[1]+t[1],a[2]+t[2]],ur);
   strich([b[0]-t[0],b[1]-t[1],b[2]-t[2]],[b[0]+t[0],b[1]+t[1],b[2]+t[2]],ur);
-  const ge=new THREE.BufferGeometry();ge.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));ge.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
-  g.add(new THREE.LineSegments(ge,_massStoff));
   const mid=schild&&schild.at||[(a[0]+b[0])/2,(a[1]+b[1])/2+0.10,(a[2]+b[2])/2];
   const hex='#'+colHex.toString(16).padStart(6,'0');const lb=label(txt,PERGAMENT_HEX,0.2,hex);lb.position.set(...mid);
-  if(schild&&schild.anker)lb.center.set(...schild.anker);g.add(lb);
-  return g;}
+  if(schild&&schild.anker)lb.center.set(...schild.anker);g.add(lb);}
 /* V18.491.265 — Lab caliper status colors ← PRUEF_GESETZ fail-soft; Host none (PRUEF_VIS). ≠ LACK. */
 const PRUEF_FALLBACK={pass:0x4ec98a,warn:0xe8b54a,fail:0xe0664a};
 const _PG=(typeof VC!=='undefined'&&VC&&VC.PRUEF_GESETZ)||(window.__vehicleCore&&window.__vehicleCore.PRUEF_GESETZ)||null;
 const STc=(_PG&&Number.isFinite(_PG.pass)&&Number.isFinite(_PG.warn)&&Number.isFinite(_PG.fail))
   ? {pass:_PG.pass,warn:_PG.warn,fail:_PG.fail}
   : Object.assign({}, PRUEF_FALLBACK);
-function buildCalipers(H,P,res,riss){const g=new THREE.Group();const by=id=>res.find(r=>r.L.id===id).st;
+function buildCalipers(H,P,res,riss){const g=new THREE.Group();g.userData={pos:[],col:[]};const by=id=>res.find(r=>r.L.id===id).st;
   const cR=STc[by('rl')], cD=STc[by('dta')], cU=STc[by('ueb')], cB=STc[by('bf')];
   const tR=(P.radstand*1000|0),tD=(((H.A_F[0]-H.COWL[0]))*1000|0),tV=(P.ueberhangV*1000|0),tH=(P.ueberhangH*1000|0),tF=(P.fahrhoehe*1000|0),tO=(P.radR*2000|0);
   if(riss){
@@ -138,28 +152,30 @@ function buildCalipers(H,P,res,riss){const g=new THREE.Group();const by=id=>res.
     // unter dem Boden die Maßkette Überhang · Radstand · Überhang und darunter die Länge, über dem Dach Dash→Achse, die Höhe
     // vor dem Bug, Bodenfreiheit und Rad-Ø mit dem Schild in der Kette darunter (der Boden steht in der Seite auf Kante).
     const z=P.spur/2+0.9,k1=-0.34,k2=-0.78,v=[0,0.07,0],h=[0.07,0,0],unter=y=>y-0.15;
-    g.add(caliper([H.TAIL[0],k1,z],[H.A_R[0],k1,z],cU,'ÜH-H '+tH,v,{at:[(H.TAIL[0]+H.A_R[0])/2,unter(k1),z]}));
-    g.add(caliper([H.A_R[0],k1,z],[H.A_F[0],k1,z],cR,'RADSTAND '+tR,v,{at:[(H.A_R[0]+H.A_F[0])/2,unter(k1),z]}));
-    g.add(caliper([H.A_F[0],k1,z],[H.NOSE[0],k1,z],cU,'ÜH-V '+tV,v,{at:[(H.A_F[0]+H.NOSE[0])/2,unter(k1),z]}));
-    g.add(caliper([H.TAIL[0],k2,z],[H.NOSE[0],k2,z],0x6fd0e8,'LÄNGE '+(((H.NOSE[0]-H.TAIL[0]))*1000|0),v,{at:[(H.TAIL[0]+H.NOSE[0])/2,unter(k2),z]}));
-    g.add(caliper([H.COWL[0],P.dach+0.24,z],[H.A_F[0],P.dach+0.24,z],cD,'DASH→ACHSE '+tD,v,{at:[(H.COWL[0]+H.A_F[0])/2,P.dach+0.39,z]}));
-    g.add(caliper([H.NOSE[0]+0.26,0,z],[H.NOSE[0]+0.26,P.dach,z],0x6fd0e8,'HÖHE '+(P.dach*1000|0),h,{at:[H.NOSE[0]+0.3,P.dach+0.16,z],anker:[1,0.5]}));
+    caliper(g,[H.TAIL[0],k1,z],[H.A_R[0],k1,z],cU,'ÜH-H '+tH,v,{at:[(H.TAIL[0]+H.A_R[0])/2,unter(k1),z]});
+    caliper(g,[H.A_R[0],k1,z],[H.A_F[0],k1,z],cR,'RADSTAND '+tR,v,{at:[(H.A_R[0]+H.A_F[0])/2,unter(k1),z]});
+    caliper(g,[H.A_F[0],k1,z],[H.NOSE[0],k1,z],cU,'ÜH-V '+tV,v,{at:[(H.A_F[0]+H.NOSE[0])/2,unter(k1),z]});
+    caliper(g,[H.TAIL[0],k2,z],[H.NOSE[0],k2,z],0x6fd0e8,'LÄNGE '+(((H.NOSE[0]-H.TAIL[0]))*1000|0),v,{at:[(H.TAIL[0]+H.NOSE[0])/2,unter(k2),z]});
+    caliper(g,[H.COWL[0],P.dach+0.24,z],[H.A_F[0],P.dach+0.24,z],cD,'DASH→ACHSE '+tD,v,{at:[(H.COWL[0]+H.A_F[0])/2,P.dach+0.39,z]});
+    caliper(g,[H.NOSE[0]+0.26,0,z],[H.NOSE[0]+0.26,P.dach,z],0x6fd0e8,'HÖHE '+(P.dach*1000|0),h,{at:[H.NOSE[0]+0.3,P.dach+0.16,z],anker:[1,0.5]});
     const xf=(H.A_F[0]+H.A_R[0])/2;
-    g.add(caliper([xf,0,z],[xf,P.fahrhoehe,z],cB,'FREI '+tF,h,{at:[xf,-0.13,z]}));
-    g.add(caliper([H.A_F[0],0,z],[H.A_F[0],P.radR*2,z],0x6fd0e8,'RAD-Ø '+tO,h,{at:[H.A_F[0]+0.12,-0.13,z],anker:[0,0.5]}));
-    return g;}
-  // Radstand (Boden)
-  g.add(caliper([H.A_F[0],0.02,P.spur/2+0.45],[H.A_R[0],0.02,P.spur/2+0.45],cR,'RADSTAND '+tR,[0,0.06,0]));
-  // Dash-to-Axle (Höhe Gürtel)
-  g.add(caliper([H.A_F[0],P.guertel+0.05,0],[H.COWL[0],P.guertel+0.05,0],cD,'DASH→ACHSE '+tD,[0,0.05,0]));
-  // Überhänge
-  g.add(caliper([H.A_F[0],0.02,-(P.spur/2+0.45)],[H.NOSE[0],0.02,-(P.spur/2+0.45)],cU,'ÜH-V '+tV,[0,0.06,0]));
-  g.add(caliper([H.A_R[0],0.02,-(P.spur/2+0.45)],[H.TAIL[0],0.02,-(P.spur/2+0.45)],cU,'ÜH-H '+tH,[0,0.06,0]));
-  // Bodenfreiheit an der Hinterachse, der Rad-Ø mit dem Schild über dem Vorderrad: die drei Schilder der Nahseite stehen
-  // getrennt (Hinterachse · Mitte · Vorderrad) — in der Isometrie lagen FREI, RAD-Ø und RADSTAND übereinander am Vorderrad
-  g.add(caliper([H.A_R[0]+0.35,0.0,P.spur/2+0.45],[H.A_R[0]+0.35,P.fahrhoehe,P.spur/2+0.45],cB,'FREI '+tF,[0.06,0,0]));
-  g.add(caliper([H.A_F[0],0,P.spur/2+0.18],[H.A_F[0],P.radR*2,P.spur/2+0.18],0x6fd0e8,'RAD-Ø '+tO,[0.06,0,0],{at:[H.A_F[0],P.radR*2+0.16,P.spur/2+0.18]}));
-  return g;}
+    caliper(g,[xf,0,z],[xf,P.fahrhoehe,z],cB,'FREI '+tF,h,{at:[xf,-0.13,z]});
+    caliper(g,[H.A_F[0],0,z],[H.A_F[0],P.radR*2,z],0x6fd0e8,'RAD-Ø '+tO,h,{at:[H.A_F[0]+0.12,-0.13,z],anker:[0,0.5]});
+  }else{
+    // DER BODEN DER NAHSEITE (Isometrie und Perspektive, 02.11.): fünf Maße, alle auf der Seite des Blicks und am Boden — die
+    // Kette Überhang · Radstand · Überhang außen, ihre Schilder davor; Bodenfreiheit (vor dem Hinterrad) und Rad-Ø stehen
+    // senkrecht an der Flanke, ihr Schild an ihrem Fuß. Kein Schild schwebt über der Karosserie (vorher lagen ÜH-V und ÜH-H auf
+    // der fernen Seite und DASH→ACHSE über der Haube); Dash→Achse misst der Riss.
+    const z=P.spur/2+0.55,zs=z+0.24,zf=P.spur/2+0.12,v=[0,0.06,0],h=[0.06,0,0],y=0.02;
+    caliper(g,[H.TAIL[0],y,z],[H.A_R[0],y,z],cU,'ÜH-H '+tH,v,{at:[(H.TAIL[0]+H.A_R[0])/2,y,zs]});
+    caliper(g,[H.A_R[0],y,z],[H.A_F[0],y,z],cR,'RADSTAND '+tR,v,{at:[(H.A_R[0]+H.A_F[0])/2,y,zs]});
+    caliper(g,[H.A_F[0],y,z],[H.NOSE[0],y,z],cU,'ÜH-V '+tV,v,{at:[(H.A_F[0]+H.NOSE[0])/2,y,zs]});
+    const xb=H.A_R[0]+P.radR*1.25;
+    caliper(g,[xb,0,zf],[xb,P.fahrhoehe,zf],cB,'FREI '+tF,h,{at:[xb,y,zf+0.06]});
+    caliper(g,[H.A_F[0],0,zf],[H.A_F[0],P.radR*2,zf],0x6fd0e8,'RAD-Ø '+tO,h,{at:[H.A_F[0],y,zf+0.06]});
+  }
+  const ge=new THREE.BufferGeometry();ge.setAttribute('position',new THREE.Float32BufferAttribute(g.userData.pos,3));ge.setAttribute('color',new THREE.Float32BufferAttribute(g.userData.col,3));
+  g.add(new THREE.LineSegments(ge,_massStoff));return g;}
 
 // ── Negativraum — die Leere, die formt (subtraktive Lesart) ──
 function buildNeg(H,P){const g=new THREE.Group();const hz=P.spur/2;const bw=hz+0.13;
@@ -194,7 +210,32 @@ const gSprung=new THREE.Group();vehicle.add(gSprung);   // gefederte Masse (Aufb
 // zerstörten Puffer ("used in submit while destroyed", der Submit fällt, das Bild steht).
 function clear(g){if(!g)return;if(g.parent)g.parent.remove(g);g.traverse(o=>{if(o.geometry&&!o.isSprite)o.geometry.dispose();
   if(o.isSprite&&o.material){if(o.material.map)o.material.map.dispose();o.material.dispose();}});}
-function rebuild(){_wecke();
+// DIE FALTUNG (02.11.): die Werkstatt zeichnet, wie die Welt zeichnet — Teile EINES Stoffs und EINER Attribut-Form im selben
+// Raum sind EINE Geometrie (die Sippe des Budget-Gesetzes, Stoff × Form; die Welt faltet sie in `_foundryFlatVerschmelzen`).
+// Gefaltet wird je Knoten, der sich bewegt (`gelenke`: Schicht der Explosion · Rad-Ecke · Rad-Drehung · Tür-Scharnier) —
+// was Explosion, Animation und Türen bewegen, bleibt ein eigener Knoten. Vorher zeichnete das Labor jedes seiner 157–392
+// Teile einzeln (swiftshader 1280×720: 294–806 Befehle je Bild mit dem Schatten). Ein gespiegeltes Teil (Determinante < 0)
+// dreht beim Backen seinen Umlauf, sonst stünde es von innen.
+function falten(wurzel,gelenke){wurzel.updateMatrixWorld(true);const inv=wurzel.matrixWorld.clone().invert(),topf=new Map(),m4=new THREE.Matrix4();
+  (function sammle(o){for(const c of o.children){if(gelenke.has(c)){falten(c,gelenke);continue;}
+    const g=c.geometry,A=g&&g.attributes;
+    if(c.isMesh&&!c.isInstancedMesh&&c.visible&&!Array.isArray(c.material)&&A.position&&!Object.values(A).some(a=>a.isInterleavedBufferAttribute)){
+      const k=c.material.uuid+'|'+(+c.castShadow)+(+c.receiveShadow)+c.renderOrder+'|'+Object.keys(A).sort().map(n=>n+A[n].itemSize).join();
+      (topf.get(k)||topf.set(k,[]).get(k)).push(c);}
+    sammle(c);}})(wurzel);
+  for(const teile of topf.values()){if(teile.length<2&&teile[0].parent===wurzel)continue;
+    const A0=teile[0].geometry.attributes,namen=Object.keys(A0),feld={},ix=[];let nV=0;
+    for(const t of teile)nV+=t.geometry.attributes.position.count;
+    for(const n of namen)feld[n]=new Float32Array(nV*A0[n].itemSize);
+    let v=0;for(const t of teile){m4.multiplyMatrices(inv,t.matrixWorld);const g=t.geometry.clone().applyMatrix4(m4),dreh=m4.determinant()<0;
+      for(const n of namen){const a=g.attributes[n],s=a.itemSize,f=feld[n];for(let j=0;j<a.count;j++)for(let q=0;q<s;q++)f[(v+j)*s+q]=a.getComponent(j,q);}
+      const I=g.index?g.index.array:null,nI=I?I.length:g.attributes.position.count;
+      for(let j=0;j<nI;j+=3){const a=I?I[j]:j,b=I?I[j+1]:j+1,c=I?I[j+2]:j+2;ix.push(v+a,v+(dreh?c:b),v+(dreh?b:c));}
+      v+=g.attributes.position.count;g.dispose();t.parent.remove(t);t.geometry.dispose();}
+    const ge=new THREE.BufferGeometry();for(const n of namen)ge.setAttribute(n,new THREE.BufferAttribute(feld[n],A0[n].itemSize));
+    ge.setIndex(new THREE.BufferAttribute(new Uint32Array(ix),1));
+    const me=new THREE.Mesh(ge,teile[0].material);me.castShadow=teile[0].castShadow;me.receiveShadow=teile[0].receiveShadow;me.renderOrder=teile[0].renderOrder;wurzel.add(me);}}
+function rebuild(){_wecke();RAEDER.length=0;
   clear(gFrame);clear(gJoints);clear(gBody);clear(gCal);clear(gNeg);clear(gPackage);clear(gWheels);doors.length=0;
   const PE=VC.epocheForm(P);   // die Zeit-Achse (vehicle-core EPOCHE_GESETZ): EIN geformtes P für den Bau UND die Ebenen
   const H=hardpoints(PE);const res=evalLehren(PE);
@@ -209,11 +250,14 @@ function rebuild(){_wecke();
   gFrame=VC.buildFrame(H,PE,ctx); gFrame.visible=V.frame;   gSprung.add(gFrame);
   gJoints=buildJoints(H,PE);gJoints.visible=V.joints;gSprung.add(gJoints);
   gCal=buildCalipers(H,PE,res,proj==='seite');gCal.visible=V.cal;   gSprung.add(gCal);
-  kontakt.scale.set((H.NOSE[0]-H.TAIL[0])/0.70,(PE.spur+0.3)/0.5,1);kontakt.position.x=(H.NOSE[0]+H.TAIL[0])/2;   // der Kontaktschatten trägt die Hülle des Baus
   gNeg=buildNeg(H,PE);     gNeg.visible=V.neg;        gSprung.add(gNeg);
   taperBody(gFrame,scal(H,PE),PE);   // der Rahmen folgt derselben Sektion wie Karosserie und Bauraum
   gSprung.position.set(0,0,0);gSprung.rotation.set(0,0,0);
+  const gelenke=new Set([...corners.flatMap(c=>[c.grp,c.wheelSpin]),...doors.map(d=>d.pv)]);
+  for(const s of[gPackage,gBody,gWheels,gFrame])falten(s,gelenke);
+  kontaktMalen(H,PE);
   explosionsPlan(PE);   // die Achsen der Explosion stehen am neuen Bau; die Ansicht legt sie im selben Bild an
+  raederFalten();
   if(mode!=='fahren'&&proj!=='persp')einpassen();   // orthografisch füllt jeder Bau (Schlitten 3 m bis Zukunft 5 m) das Bild
   renderTafel(res);
   kostenLeiste.neu();
@@ -332,12 +376,13 @@ for(const p in PROJ){const b=document.createElement('button');b.className='btn'+
 function lehrenNeu(){const PE=VC.epocheForm(P),H=hardpoints(PE);clear(gCal);gCal=buildCalipers(H,PE,evalLehren(PE),proj==='seite');gCal.visible=sicht().cal;gSprung.add(gCal);}
 function projSetzen(p){const riss=proj==='seite';proj=p;if(riss!==(p==='seite')&&gCal)lehrenNeu();[...adiv.children].forEach(b=>b.classList.toggle('on',b.dataset.ansicht===p));
   const Q=PROJ[p];if(Q.el!==undefined){oc.az=rast(oc.az,Q);oc.el=Q.el;oc.vAz=oc.vEl=0;einpassen();}_wecke();}
-// EINPASSEN: die Hülle des Wagens (ohne Explosion, ohne Schilder) in die Achsen des Blicks gelegt — die Bildhöhe, in der er
+// EINPASSEN: die Hülle des Wagens und seiner Maß-Schilder (ohne Explosion) in die Achsen des Blicks gelegt — die Bildhöhe, in der er
 // den freien Raum zwischen den Tafeln füllt (42 % der Breite, 62 % der Höhe); das Ziel ist seine Mitte.
 const _box=new THREE.Box3(),_v=new THREE.Vector3();
 function einpassen(){explosionAnwenden(0);vehicle.updateMatrixWorld(true);_box.makeEmpty();
-  vehicle.traverseVisible(o=>{if(o.isMesh&&o.geometry){o.geometry.boundingBox||o.geometry.computeBoundingBox();
-    _box.union(new THREE.Box3().copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld));}});
+  vehicle.traverseVisible(o=>{if(o.isMesh&&o.geometry){const b=o.isInstancedMesh?(o.computeBoundingBox(),o.boundingBox):(o.geometry.boundingBox||o.geometry.computeBoundingBox(),o.geometry.boundingBox);
+    _box.union(new THREE.Box3().copy(b).applyMatrix4(o.matrixWorld));}
+    else if(o.isSprite&&o.parent===gCal){o.getWorldPosition(_v);_box.expandByPoint(_v.clone().addScalar(o.scale.x/2));_box.expandByPoint(_v.addScalar(-o.scale.x));}});
   explosionAnwenden(eZeig);if(_box.isEmpty())return;
   const c=_box.getCenter(new THREE.Vector3()),ce=Math.cos(oc.el);
   const f=new THREE.Vector3(-Math.cos(oc.az)*ce,-Math.sin(oc.el),-Math.sin(oc.az)*ce),re=new THREE.Vector3().crossVectors(f,new THREE.Vector3(0,1,0)).normalize(),up=new THREE.Vector3().crossVectors(re,f);
@@ -345,21 +390,44 @@ function einpassen(){explosionAnwenden(0);vehicle.updateMatrixWorld(true);_box.m
     hx=Math.max(hx,Math.abs(_v.dot(re)));hy=Math.max(hy,Math.abs(_v.dot(up)));}
   const h=Math.max(hy/0.62,hx/(cam.aspect*0.42));oc.ziel.copy(c);oc.dist=Math.max(3.5,Math.min(16,h/Math.tan(CAM_FOV*PI/360)));}
 
-// DIE EXPLOSION: die Schichten der Anatomie steigen entlang der Hochachse (Rahmen und Gelenke bleiben die Basis, der Baukörper
-// hebt sich um 0,55 · Dachhöhe, die Haut um 1,15 · Dachhöhe), die Baugruppen jeder Schicht gleiten entlang ihrer Achse aus der Mitte
-// der Schicht (quer am weitesten — die Flanken öffnen sich), die Räder entlang ihrer Achse nach außen; die Lehren bleiben der
-// Grund, auf dem gemessen wird. Der Plan entsteht am Bau (rebuild), der Regler setzt nur den Anteil e.
-const EXPL=[];let explLift=1.3,eZeig=0;
-function explosionsPlan(P){EXPL.length=0;explLift=P.dach||1.3;vehicle.updateMatrixWorld(true);
-  const schicht=(g,dy,k)=>{if(!g)return;const bc=new THREE.Box3().setFromObject(g).getCenter(new THREE.Vector3());
-    EXPL.push({o:g,basis:g.position.clone(),d:new THREE.Vector3(0,dy,0)});
-    for(const c of g.children){if(c.isSprite)continue;const bb=new THREE.Box3().setFromObject(c);if(bb.isEmpty())continue;
-      const m=bb.getCenter(new THREE.Vector3()).sub(bc);EXPL.push({o:c,basis:c.position.clone(),d:new THREE.Vector3(m.x*k[0],m.y*k[1],m.z*k[2])});}};
-  schicht(gPackage,0.55*explLift,[0.35,0.2,0.9]);
-  schicht(gBody,1.15*explLift,[0.22,0.3,1.1]);
-  for(const cc of corners)EXPL.push({o:cc.grp,basis:cc.grp.position.clone(),d:new THREE.Vector3(0,0,Math.sign(cc.grp.position.z)*0.55*P.spur)});
+// DIE EXPLOSION (02.11.): die Schichten der Anatomie trennen sich GESTAFFELT und ohne Durchdringung — Rahmen und Lehren bleiben
+// der Grund, auf dem gemessen wird; zuerst hebt die Haut ab (Regler 0–0,55), dann steigt der Baukörper (0,3–0,8), zuletzt gleiten
+// die Räder entlang ihrer Achse aus (0,45–0,95), jede Bewegung glatt ein und aus. Die Hübe stehen aus den Hüllen: der Baukörper
+// steigt um 0,45 · Dachhöhe, die Haut so weit, dass ihre Unterkante 0,3 · Dachhöhe über dem gehobenen Baukörper steht — bei 1,0
+// liegt Luft zwischen den Schichten. Die ACHSEN (Pergament, EIN Linien-Befehl über allem) ziehen vom Herkunfts-Kreuz jeder
+// Gruppe zu ihrem Ort.
+// Vorher glitt jedes der 130–200 Teile einer Schicht einzeln aus ihrer Mitte: bei 0,5 flirrte das Bild, bei 1,0 lag es dicht.
+const EXPL=[];let explHub=1.3,eZeig=0;const _glatt=x=>x<=0?0:x>=1?1:x*x*(3-2*x);
+const achsen=new THREE.LineSegments(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:PERGAMENT,transparent:true,opacity:0.8,depthTest:false,depthWrite:false}));
+achsen.frustumCulled=false;achsen.renderOrder=3;achsen.visible=false;vehicle.add(achsen);
+function explosionsPlan(P){EXPL.length=0;vehicle.updateMatrixWorld(true);const dach=P.dach||1.3,hb=new THREE.Box3();
+  const hub=g=>g?hb.setFromObject(g).clone():new THREE.Box3(new THREE.Vector3(),new THREE.Vector3());
+  const bp=hub(gPackage),bh=hub(gBody),hP=0.45*dach,hH=Math.max(0.6*dach,bp.max.y+hP+0.3*dach-bh.min.y);explHub=hH;
+  const weg=(o,d,a,b)=>{const c=hb.setFromObject(o).getCenter(new THREE.Vector3());EXPL.push({o,basis:o.position.clone(),d,a,b,c,lc:o.worldToLocal(c.clone())});};
+  weg(gBody,new THREE.Vector3(0,hH,0),0,0.55);weg(gPackage,new THREE.Vector3(0,hP,0),0.3,0.8);
+  for(const cc of corners)weg(cc.grp,new THREE.Vector3(0,0,Math.sign(cc.grp.position.z)*0.6*P.spur),0.45,0.95);
+  achsen.geometry.dispose();achsen.geometry=new THREE.BufferGeometry().setAttribute('position',new THREE.BufferAttribute(new Float32Array(EXPL.length*24),3));
   explosionAnwenden(mode==='fahren'?0:eZeig);}
-function explosionAnwenden(e){for(const x of EXPL)x.o.position.copy(x.basis).addScaledVector(x.d,e);}
+const _ac=new THREE.Vector3();
+// DAS RAD ZEICHNET EINMAL (02.11.) — wie in der Welt (foundry-bruecke, Welle L: das Rad der Ecke 0 reist, die Welt setzt es je
+// Ecke als Instanz, die Gegenseite um π gedreht): je gefaltetes Teil des Rads der Ecke 0 EIN InstancedMesh über alle Ecken. Die
+// Ecken bleiben Knoten (Lenkung, Rolle, Explosion); ihre Lage schreibt `raederSetzen` vor jedem Bild in die Instanzen.
+// Vorher zeichnete jede Ecke ihre acht Teile selbst (32 Befehle, 16 Werfer).
+const RAEDER=[],_rm=new THREE.Matrix4(),_rinv=new THREE.Matrix4(),_rpi=new THREE.Matrix4().makeRotationY(PI);
+function raederFalten(){if(corners.length<2)return;const c0=corners[0];
+  for(const k of['wheelSpin','grp']){for(const m of c0[k].children)if(m.isMesh){m.updateMatrix();
+      const im=new THREE.InstancedMesh(m.geometry,m.material,corners.length);Object.assign(im,{castShadow:m.castShadow,receiveShadow:m.receiveShadow,frustumCulled:false});
+      gWheels.add(im);RAEDER.push({im,k,lok:m.matrix.clone()});}
+    for(const cc of corners)for(const m of cc[k].children.filter(o=>o.isMesh)){cc[k].remove(m);if(cc!==c0)m.geometry.dispose();}}
+  raederSetzen();}
+function raederSetzen(){if(!RAEDER.length)return;gWheels.updateMatrixWorld(true);_rinv.copy(gWheels.matrixWorld).invert();const s0=Math.sign(corners[0].grp.position.z);
+  for(const r of RAEDER){corners.forEach((cc,i)=>{_rm.multiplyMatrices(_rinv,cc[r.k].matrixWorld);if(Math.sign(cc.grp.position.z)!==s0)_rm.multiply(_rpi);r.im.setMatrixAt(i,_rm.multiply(r.lok));});
+    r.im.instanceMatrix.needsUpdate=true;}}
+function explosionAnwenden(e){for(const x of EXPL)x.o.position.copy(x.basis).addScaledVector(x.d,_glatt((e-x.a)/(x.b-x.a)));
+  achsen.visible=e>0.01&&EXPL.length>0;if(!achsen.visible)return raederSetzen();vehicle.updateMatrixWorld(true);
+  const p=achsen.geometry.attributes.position;EXPL.forEach((x,i)=>{_ac.copy(x.lc).applyMatrix4(x.o.matrixWorld);p.setXYZ(8*i,x.c.x,x.c.y,x.c.z);p.setXYZ(8*i+1,_ac.x,_ac.y,_ac.z);
+    for(let k=0;k<3;k++){const d=[0,0,0];d[k]=0.09;p.setXYZ(8*i+2+2*k,x.c.x-d[0],x.c.y-d[1],x.c.z-d[2]);p.setXYZ(8*i+3+2*k,x.c.x+d[0],x.c.y+d[1],x.c.z+d[2]);}});   // je Gruppe die Achse und ihr Herkunfts-Kreuz
+  p.needsUpdate=true;raederSetzen();}
 
 // DIE ANIMATION AUS DEM GESETZ: ein Fahrer-Programm (Gas 3 s · Bremse 1,4 s · Rollen, das Lenkrad pendelt) gibt Eingaben,
 // alles Weitere rechnet der EINE Fahr-Schritt des Kerns (VC.fahrSchritt, derselbe wie Probefahrt und Welt-Ritt) — die Räder
@@ -372,16 +440,17 @@ function animSchritt(dt,t){const z=t%7;inA.throttle=z<3?1:0;inA.brake=z>=3&&z<4.
   VC.fahrSchritt(carA,inA,fahrGesetzLab(),_eben,dt);
   if(Math.abs(carA.x)>4e3||Math.abs(carA.z)>4e3){carA.x=0;carA.z=0;}
   gSprung.rotation.z=carA.fNick;gSprung.rotation.x=carA.fWank;gSprung.position.y=carA.fHub;
-  corners.forEach(cc=>{cc.wheelSpin.rotation.z=-carA.wheelAng;if(cc.front)cc.grp.rotation.y=carA.steer;});}
+  corners.forEach(cc=>{cc.wheelSpin.rotation.z=-carA.wheelAng;if(cc.front)cc.grp.rotation.y=carA.steer;});raederSetzen();}
 
 // Die Regler der Ansicht trägt die Hülle (derselbe Generator wie die Gesetz-Regler, ohne Sitzung: die Ansicht ist kein Bau).
-const ANS={explode:0,anim:0,dreh:0};
+const ANS={explode:0,anim:0,dreh:0,licht:0};
 const ansichtRegler=AnazhHuelle.regler(document.getElementById('ansichtRegler'),[
-  {id:'explode',lab:'Explosion',min:0,max:1,step:0.01,def:0,law:'Haut ↑ 1,15 · Baukörper ↑ 0,55 · Dachhöhe, Baugruppen und Räder entlang ihrer Achsen'},
+  {id:'explode',lab:'Explosion',min:0,max:1,step:0.01,def:0,law:'gestaffelt: Haut hebt ab · Baukörper steigt · Räder gleiten aus — die Achsen zeigen die Herkunft'},
   {id:'anim',lab:'Animation',min:0,max:1,step:1,def:0,law:'VC.fahrSchritt — Räder rollen, Federn arbeiten, Lenkung schlägt ein'},
-  {id:'dreh',lab:'Drehteller',min:0,max:1,step:1,def:0,law:'20°/s um die Hochachse über dem Zifferblatt'}],
+  {id:'dreh',lab:'Drehteller',min:0,max:1,step:1,def:0,law:'20°/s um die Hochachse über dem Zifferblatt'},
+  {id:'licht',lab:'Licht',min:0,max:1,step:0.01,def:0,law:'warm (Bernstein-Haupt, Cyan-Kante) ↔ kühl (Tageslicht-Haupt, Bronze-Kante)'}],
   {werte:ANS,ruheMs:0,zuruecksetzen:false,gruppen:false,
-   bei:(id,v)=>{_wecke();if(id==='anim'&&mode!=='fahren')animSetzen(!!v);
+   bei:(id,v)=>{_wecke();if(id==='anim'&&mode!=='fahren')animSetzen(!!v);if(id==='licht')lichtSetzen(+v);
      if(id==='explode'&&v>0&&!explGezeigt){explGezeigt=true;Object.assign(show,{frame:true,pkg:true});applyVis();syncLayerButtons();}}});
 let explGezeigt=false;   // die erste Explosion legt die Anatomie frei (Rahmen · Baukörper), danach gehören die Ebenen dem Schöpfer
 function ansichtLebt(){return ANS.anim||ANS.dreh||Math.abs(eZeig-ANS.explode)>1e-4;}
@@ -569,13 +638,14 @@ function werkOrbit(dt){dt=dt||0;if(ANS.dreh)oc.az+=0.349*dt;
   if(Q.el!==undefined&&oc.zug<0){const k=1-Math.exp(-dt*9);oc.vAz*=0.5;oc.vEl*=0.5;
     if(!ANS.dreh){const z=rast(oc.az,Q);oc.az=Math.abs(z-oc.az)<1e-4?z:oc.az+(z-oc.az)*k;}
     oc.el=Math.abs(Q.el-oc.el)<1e-4?Q.el:oc.el+(Q.el-oc.el)*k;}
-  if(gCal)gCal.scale.z=proj==='seite'&&Math.sin(oc.az)<0?-1:1;   // der Riss liegt immer auf der Seite des Blicks
-  _ziel.copy(oc.ziel);_ziel.y+=eZeig*explLift*0.42;
+  if(gCal)gCal.scale.z=Math.sin(oc.az)<0?-1:1;   // die Maße liegen immer auf der Seite des Blicks (Riss wie Boden-Kette)
+  _ziel.copy(oc.ziel);_ziel.y+=eZeig*explHub*0.5;
   const ce=Math.cos(oc.el),dx=Math.cos(oc.az)*ce,dy=Math.sin(oc.el),dz=Math.sin(oc.az)*ce;
   cam.position.set(_ziel.x+dx*oc.dist,_ziel.y+dy*oc.dist,_ziel.z+dz*oc.dist);cam.lookAt(_ziel);
-  const h=oc.dist*Math.tan(CAM_FOV*PI/360)*(1+0.45*eZeig),w=h*cam.aspect;
+  const h=oc.dist*Math.tan(CAM_FOV*PI/360)+eZeig*explHub*0.35,w=h*cam.aspect;
   if(camO.top!==h||camO.right!==w){camO.left=-w;camO.right=w;camO.top=h;camO.bottom=-h;camO.updateProjectionMatrix();}
-  camO.position.copy(cam.position);camO.lookAt(_ziel);}   // derselbe Ort wie die Perspektive: der Nebel liest dieselbe Tiefe
+  camO.position.copy(cam.position);camO.lookAt(_ziel);
+  for(const[l,d,y]of[[key,-0.8,8],[fill,0.35,1.2],[rim,PI,2.2]])l.position.set(Math.cos(oc.az+d)*7,y,Math.sin(oc.az+d)*7);}   // derselbe Ort wie die Perspektive: der Nebel liest dieselbe Tiefe
 // Maus/Touch: in der Werkstatt die Kugel (links drehen, rechts schieben, Rad zoomen); in der Fahrt greifen → frei umsehen,
 // loslassen → sanft zurück hinter das Auto
 R.domElement.style.touchAction='none';
@@ -616,7 +686,7 @@ function animate(zeit){const dt=tAlt?Math.min(1/30,(zeit-tAlt)/1000):0;tAlt=zeit
   doors.forEach(d=>{const tgt=(d.sd<0?-open:open);d.pv.rotation.y+=(tgt-d.pv.rotation.y)*0.08;if(Math.abs(tgt-d.pv.rotation.y)>1e-3)tuerZieht=true;});
   const K=kamera();K.updateMatrixWorld();
   if(mode!=='fahren'&&!tuerZieht&&!ansichtLebt()&&performance.now()>wachBis&&_camGleich(K))return;
-  _kamAlt=K;_camAlt.copy(K.matrixWorld);_projAlt.copy(K.projectionMatrix);R.render(scene,K);}
+  _kamAlt=K;_camAlt.copy(K.matrixWorld);_projAlt.copy(K.projectionMatrix);raederSetzen();R.render(scene,K);}
 // DAS CPU-RASTER ZEICHNET OHNE VIELFACH-ABTASTUNG: liefert der Adapter Software (swiftshader, llvmpipe, lavapipe), fällt das
 // MSAA vor dem ersten Bild — wie three es im Kompatibilitäts-Modus selbst tut (backend.init: _samples = 0); die Karte behält es.
 // Gemessen (Isometrie 1280×720, swiftshader): 196 → 86 ms je Bild.
