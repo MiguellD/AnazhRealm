@@ -15,11 +15,11 @@
     content="default-src 'self'; script-src 'self' 'sha256-0GvGmzWavRegxN1My7wRvCLRbft9D2pWirOHv/rDu50='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none';"
 />
 <title>ANATOMIE · FAHRZEUG — Rahmen · Gelenke · Lehren</title>
-<link rel="stylesheet" href="../huelle/huelle.css?v=18.546.162">
+<link rel="stylesheet" href="../huelle/huelle.css?v=18.546.163">
 <style>
 :root{
   --bg:#070b10; --panel:rgba(9,14,20,.82); --ink:#cdd8e2; --mut:#6d7d8c; --hair:rgba(90,140,170,.16);
-  --steel:#4f8fa6; --steel-bright:#6fd0e8; --joint:#ffb24a; --glass:#7aa0c0;
+  --steel:#4f8fa6; --steel-bright:#6fd0e8; --joint:#ffb24a; --glass:#7aa0c0; --bronze:#c4965c; --pergament:#e6d6b0;
   --pass:#4ec98a; --warn:#e8b54a; --fail:#e0664a;
   --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
   --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -32,6 +32,7 @@ canvas{display:block}
 #brand .eb{font-family:var(--mono);font-size:10px;letter-spacing:.32em;color:var(--steel)}
 #brand h1{font-size:15px;font-weight:600;letter-spacing:.04em;margin-top:3px}
 #brand h1 b{color:var(--steel-bright);font-weight:600}
+#brand h1 i{color:var(--bronze);font-style:normal;font-weight:600}
 #brand p{font-size:11px;color:var(--mut);margin-top:4px;max-width:330px;line-height:1.55}
 /* ── Lehren-Tafel (links) ── der Signaturteil ── */
 #lehren{position:fixed;top:96px;left:18px;width:336px;max-height:calc(100vh - 200px);overflow-y:auto;z-index:10;
@@ -88,7 +89,7 @@ canvas{display:block}
 <body>
 <div id="brand">
   <div class="eb">ANATOMISCHE METHODE · KAROSSERIE</div>
-  <h1><b>Rahmen</b> · Gelenke · <b>Lehren</b> · Baukörper · Haut</h1>
+  <h1><b>Rahmen</b> · <i>Gelenke</i> · <b>Lehren</b> · Baukörper · Haut</h1>
   <p>Wie beim Körper: zuerst Skelett und Soll-Maße, dann die Organe (Baukörper), zuletzt die Haut. Form folgt aus Knochen × Lehre — nie umgekehrt. <b>Haut aus</b> legt die funktionalen Baukörper frei: Akku, Motoren, Wellen, Zelle, Sitze, Lenkung.</p>
 </div>
 
@@ -108,6 +109,9 @@ canvas{display:block}
   <div class="sec-t">EBENEN</div>
   <div class="row" id="layers"></div>
   <div class="sec-t">ANSICHT</div>
+  <div class="row" id="ansicht"></div>
+  <div id="epocheOrt"></div>
+  <div id="ansichtRegler"></div>
   <div class="row"><button class="btn" id="kin">Türen</button><button class="btn" id="clay">Clay / Lack</button><button class="btn" id="ergebnis">Ergebnis</button></div>
   <div class="row" id="paintrow" style="flex-wrap:wrap;gap:5px;margin:1px 0 3px;align-items:center"><span style="font-size:9.5px;color:var(--mut);letter-spacing:.08em;width:100%">LACK</span></div>
   <div id="sliders"></div>
@@ -117,13 +121,13 @@ canvas{display:block}
 <div id="leg">
   <span class="k" style="background:#6fd0e8"></span>Rahmen — Hardpoints &amp; Glieder<br>
   <span class="k" style="background:#ffb24a"></span>Gelenke — Freiheitsgrade (DOF-Hinweise)<br>
-  <span class="k" style="background:#4ec98a"></span>Lehren — Maßlinien (Soll erfüllt)<br>
+  <span class="k" style="background:#e6d6b0"></span>Lehren — Maßlinien in Pergament, der Punkt urteilt (grün = Soll)<br>
   <span class="k" style="background:#3a536a"></span>Baukörper — Akku · Motoren · Zelle · Sitze<br>
   <span class="k" style="background:#b4c0cc"></span>Räder — Reifen · Felge · Bremse (Ergebnis)<br>
   <span class="k" style="background:#8d9499"></span>Haut — Karosserie aus dem Rahmen<br>
   <span class="k" style="background:#ff5a7a"></span>Negativraum — die Leere, die formt
 </div>
-<div id="hint">MAUS orbit · 1–7 Ebenen · K Türen · P Preset · Fahrzustand oben rechts · „Ergebnis" = fertiges Auto</div>
+<div id="hint">MAUS orbit · 1–7 Ebenen · 8 Perspektive · 9 Isometrie · 0 Seite · X Explosion · N Animation · T Drehteller · K Türen · P Preset</div>
 <div id="hud"><span class="spd-wrap"><span id="spd">0</span> <span class="u">km/h</span></span><span class="keys"><b>W</b>/<b>S</b> Gas·Brems&nbsp;&nbsp;<b>A</b>/<b>D</b> Lenken&nbsp;&nbsp;<b>Leer</b> Handbremse&nbsp;&nbsp;<b>Maus</b> umsehen&nbsp;&nbsp;<b>ESC</b> Werkstatt&nbsp;&nbsp;·&nbsp;&nbsp;<b>Pylonen</b> umfahren · Reifen brennen Spuren</span></div>
 
 <!-- DIE EINE ENGINE (18.10.): die Garage läuft auf der Engine der Welt — dieselbe Import-Map, derselbe Bootstrap
@@ -131,9 +135,9 @@ canvas{display:block}
      __vehicleCore — die EINE generative Quelle für Shell UND Foundry), die Hülle und das Werk (defer hält die Reihe
      hinter dem Modul). -->
 <script type="importmap">{"imports":{"three":"../../vendor/three.module.min.js","three/webgpu":"../../vendor/three.webgpu.min.js","three/tsl":"../../vendor/three.tsl.min.js"}}</script>
-<script type="module" src="../../vendor/three-bootstrap.js?v=18.546.162"></script>
-<script src="../../vehicle-core.js?v=18.546.162" defer></script>
-<script src="../huelle/huelle.js?v=18.546.162" defer></script>
-<script src="garage.js?v=18.546.162" defer></script>
+<script type="module" src="../../vendor/three-bootstrap.js?v=18.546.163"></script>
+<script src="../../vehicle-core.js?v=18.546.163" defer></script>
+<script src="../huelle/huelle.js?v=18.546.163" defer></script>
+<script src="garage.js?v=18.546.163" defer></script>
 </body>
 </html>

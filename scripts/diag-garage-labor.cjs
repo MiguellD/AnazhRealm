@@ -1,32 +1,43 @@
 // diag-garage-labor.cjs — DIE LABOR-LINSE DER GARAGE (Welle L, Familie fahren): die Probefahrt-Werkstatt so, wie der
-// Schöpfer sie bedient — Maus ziehen, Probefahrt starten, Gas geben, Gattung und Kultur wechseln.
-//   G1 Maus (ein Seitenfehler beim Ziehen: der EINE Sammler, welt-boot) · G2 HUD · G3 Tacho · G4 Preset · G5 Kultur · G6 Lehren · G7 Tempo — je Zeile das Soll im Namen ihres Checks.
+// Schöpfer sie bedient — Maus ziehen, Probefahrt starten, Gas geben, Gattung und Kultur wechseln, die Ansicht wählen.
+//   G1 Maus: Orbit-Zug und Umsehen ohne Seitenfehler (der EINE Sammler, welt-boot; vorher ReferenceError je Mausbewegung).
+//   G2 HUD: im Fahr-Modus ein Flex-Band, die Einheit ≥ 10 px von der Tastenhilfe (display:block klebte sie an).
+//   G3 Tacho: die Anzeige ist |v| · 3,6 (FAHR.kmh, ± 1 km/h) im selben Bild (vorher × 12).
+//   G4 Preset: nach Gattungs- und Kultur-Wechsel ist P == DEFAULT_P + Preset (+ Kultur) + die Epoche des Reglers, keine Zeile
+//      der Hülle zeigt NaN (Supersport → GT ließ grip 0,85; die Epoche fiel beim Wechsel).
+//   G5 Kultur: der zweite Klick wählt sie ab.  G6 Lehren: in der Probefahrt kein Maß-Schild, in der Werkstatt sind sie zurück.
+//   G7 Tempo: camera.fov = Ruhe + Tempo aus Fahr-Zustand und vmax wie im Ritt, der Orbit kehrt in 1–1,25 s zurück.
+//   G8 die Ansicht (02.11.): je Modus (Isometrie · Seite · Explosion 1,0 · Animation) zeigt das Bild den Wagen (sein Anteil an den
+//      Farbwerten: das Bild mit gegen ohne Wagen, ≥ 1,5 %) und zeichnet höchstens 120 Befehle (die Faltung der Ansicht, vorher
+//      294–806) — ein gebrochener Modus steht beim Namen, ein Bild ohne Spannweite mit dem Anteil „leer“ (der blinde Leser).
+//      Gemessen am Wagen der Zukunft (der schwerste Bau).
 // Die Seite läuft in ihrem echten Renderer (r184 WebGPU, die Engine der Welt) im Kopflos-Browser; gezählt wird an der Seite selbst.
+// Die Prüfungen G2–G6 und G8 lesen das EINE Verdikt (`laborVerdict`, je Täter ein Präfix) — Browser-Probe und Selbst-Test.
 //   node scripts/diag-garage-labor.cjs [--selftest]          Port: GARAGE_LABOR_PORT (Standard 4414)
+/* eslint-disable no-undef */
 "use strict";
 const { statikServer, starteBrowser, pruefer, hauptLauf, sleep, urteilEnde, selbsttestEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { tempoVerdict, tempoSpion } = require("./lib/fahr-proben.cjs");
 
 const PORT = Number(process.env.GARAGE_LABOR_PORT || 4414);
 const { errs, check } = pruefer();
+const ANSICHTEN = ["iso", "seite", "explosion", "animation"];
 
 // ── DAS LABOR-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test): die Täter beim Namen. ──
 function laborVerdict(m) {
+    if (m?.geladen !== true) return ["laden"];
     const out = [];
-    if (!m || m.geladen !== true) return ["laden"];
-    if (m.hudDisplay !== "flex") out.push(`hud display ${m.hudDisplay}`);
-    if (!(m.hudAbstand >= 10)) out.push(`hud Einheit klebt (${Math.round(m.hudAbstand)} px)`);
-    if (!(m.tachoV > 3)) out.push(`tacho keine Fahrt (${(m.tachoV || 0).toFixed(1)} m/s)`);
-    else if (!(Math.abs(m.tachoAnzeige - m.tachoV * 3.6) <= 1))
-        out.push(
-            `tacho ${m.tachoAnzeige} bei ${(m.tachoV * 3.6).toFixed(1)} km/h (×${(m.tachoAnzeige / m.tachoV).toFixed(2)})`
-        );
-    if (m.presetLeck && m.presetLeck.length) out.push(`preset Leck ${m.presetLeck.join(",")}`);
-    if (m.reglerLeck && m.reglerLeck.length) out.push(`regler ${m.reglerLeck.join(",")}`);
-    if (m.kulturAb !== true) out.push("kultur nicht abwählbar");
-    if (m.schilderFahrt !== 0)
-        out.push(`lehren ${m.schilderFahrt} Schilder in der Probefahrt (${m.schilderNamen || ""})`);
-    else if (!(m.schilderWerkstatt > 0)) out.push("lehren fehlen in der Werkstatt (nach der Fahrt)");
+    if (m.hudDisplay !== "flex" || !(m.hudAbstand >= 10)) out.push(`hud ${m.hudDisplay} ${Math.round(m.hudAbstand)} px`);
+    if (!(Math.abs(m.tachoAnzeige - m.tachoV * 3.6) <= 1 && m.tachoV > 3)) out.push(`tacho ${m.tachoAnzeige} bei ${m.tachoV} m/s`);
+    if (m.presetLeck?.length) out.push(`preset ${m.presetLeck}`);
+    if (m.reglerLeck?.length) out.push(`regler ${m.reglerLeck}`);
+    if (m.kulturAb !== true) out.push("kultur bleibt");
+    if (m.schilderFahrt !== 0 || !(m.schilderWerkstatt > 0)) out.push(`lehren ${m.schilderFahrt} in der Fahrt, ${m.schilderWerkstatt} danach`);
+    for (const n of ANSICHTEN) {
+        // ein Bild ohne Spannweite trägt den Anteil „leer“: der blinde Leser (der 2D-Abzug der CI, z152), nie ein Wagen
+        const [b, a] = m.ansicht?.[n] || [];
+        if (!(b <= 120 && a >= 0.015)) out.push(`${n} ${b} Befehle, Wagen ${a} des Bildes`);
+    }
     return out;
 }
 
@@ -35,36 +46,25 @@ const server = statikServer({ start: "/worlds/garage/index.html" });
 hauptLauf(async () => {
     if (SELBSTTEST) {
         console.log("=== SELBST-TEST: die Labor-Linse nennt jeden Täter des Befunds ===");
-        const gesund = {
-            geladen: true,
-            hudDisplay: "flex",
-            hudAbstand: 22,
-            tachoV: 10.5,
-            tachoAnzeige: 38,
-            presetLeck: [],
-            reglerLeck: [],
-            kulturAb: true,
-            schilderFahrt: 0,
-            schilderWerkstatt: 6,
-        };
-        check("Selbst-Test 0: gesundes Labor == 0 Täter", laborVerdict(gesund).length === 0);
-        for (const [name, bruch, soll] of [
-            ["HUD display:block", { hudDisplay: "block", hudAbstand: 0 }, "hud display"],
-            ["126 km/h angezeigt bei 10,5 m/s (×12)", { tachoAnzeige: 126 }, "tacho"],
-            ["Supersport → GT lässt grip 0,85", { presetLeck: ["grip"] }, "preset"],
-            ["Federrate-Regler 95 bei Zustand 100", { reglerLeck: ["springRate"] }, "regler"],
-            ["Kultur nicht abwählbar", { kulturAb: false }, "kultur"],
-            ["RADSTAND, ÜH-H … über dem fahrenden Wagen", { schilderFahrt: 6 }, "lehren"],
-            ["die Lehren kommen nach der Fahrt nicht zurück", { schilderWerkstatt: 0 }, "lehren"],
+        const ansicht = Object.fromEntries(ANSICHTEN.map((n) => [n, [60, 0.2]]));
+        const gesund = { geladen: true, hudDisplay: "flex", hudAbstand: 22, tachoV: 10.5, tachoAnzeige: 38, kulturAb: true, schilderFahrt: 0, schilderWerkstatt: 6, ansicht };
+        check("Selbst-Test 0: gesundes Labor == 0 Täter", !laborVerdict(gesund).length);
+        for (const [soll, bruch] of [
+            ["hud", { hudDisplay: "block" }],
+            ["tacho", { tachoAnzeige: 126 }],
+            ["preset", { presetLeck: ["grip"] }],
+            ["regler", { reglerLeck: ["springRate"] }],
+            ["kultur", { kulturAb: false }],
+            ["lehren", { schilderFahrt: 6 }],
+            ["lehren", { schilderWerkstatt: 0 }],
+            ["seite", { ansicht: { ...ansicht, seite: [40, 0] } }],
+            ["explosion", { ansicht: { ...ansicht, explosion: [806, 0.2] } }],
+            ["iso", { ansicht: { ...ansicht, iso: [22, "leer"] } }],
         ]) {
-            const v = laborVerdict(Object.assign({}, gesund, bruch));
-            check(
-                `Selbst-Test: ‚${name}' → die Linse nennt ${soll}`,
-                v.length >= 1 && v[0].startsWith(soll),
-                v.join(" · ")
-            );
+            const v = laborVerdict({ ...gesund, ...bruch });
+            check(`Selbst-Test ${JSON.stringify(bruch).slice(0, 60)} → ${soll}`, v[0]?.startsWith(soll), v.join(" · "));
         }
-        selbsttestEnde(errs, "die Labor-Linse nennt Maus, HUD, Tacho, Preset, Kultur und Lehren beim Namen.");
+        selbsttestEnde(errs, "die Labor-Linse nennt Maus, HUD, Tacho, Preset, Kultur, Lehren und jeden Modus der Ansicht beim Namen.");
         process.exit(0);
     }
 
@@ -73,148 +73,117 @@ hauptLauf(async () => {
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
     await server.zeige(page, 60000, "worlds/garage/index.html", "load");
-    await page.waitForFunction(() => typeof window.__vehicleCore === "object" && document.querySelector("canvas"), {
-        timeout: 30000,
-    });
+    await page.waitForFunction(() => typeof __vehicleCore === "object" && document.querySelector("canvas"), { timeout: 30000 });
     await sleep(500);
     const m = { geladen: true };
-    // G4 (Teil): der Regler-Zustand beim ersten Laden == das Modell (vor jedem Klick).
-    m.reglerLeck = await page.evaluate(() => {
-        const out = [];
-        for (const pp of window.__vehicleCore.PARAMS_BY_KIND.vehicle) {
-            const el = document.querySelector(`#v_${pp.id}`);
-            const inp = el && el.closest(".sl") ? el.closest(".sl").querySelector("input") : null;
-            // eslint-disable-next-line no-undef
-            if (inp && Math.abs(parseFloat(inp.value) - P[pp.id]) > 1e-6) out.push(`${pp.id} ${inp.value}≠${P[pp.id]}`);
-        }
-        return out;
-    });
     // G1: die Maus in der Werkstatt (Orbit-Zug) und in der Probefahrt (Umsehen).
-    await page.mouse.move(640, 360);
-    await page.mouse.down();
-    for (let i = 0; i < 10; i++) await page.mouse.move(640 + i * 8, 360 + i * 2);
-    await page.mouse.up();
+    const zug = async (dx, dy) => {
+        await page.mouse.move(640, 360);
+        await page.mouse.down();
+        for (let i = 0; i < 10; i++) await page.mouse.move(640 + i * dx, 360 + i * dy);
+        await page.mouse.up();
+    };
+    await zug(8, 2);
     await page.click("#start");
     await sleep(300);
-    await page.evaluate(
-        `window.__m7 = (${tempoSpion})(window.__vehicleCore, cam, (z, vm) => z === car && vm === fahrGesetzLab().vmax)`
-    );
-    await page.mouse.move(640, 360);
-    await page.mouse.down();
-    for (let i = 0; i < 10; i++) await page.mouse.move(640 - i * 8, 360);
-    await page.mouse.up();
-    await page.waitForFunction(() => window.__m7.rueck !== null, { timeout: 30000, polling: 100 }).catch(() => {});
-    // G2: der HUD im Fahr-Modus.
-    Object.assign(
-        m,
-        await page.evaluate(() => {
-            const hud = document.getElementById("hud");
-            const u = hud.querySelector(".u").getBoundingClientRect();
-            const k = hud.querySelector(".keys").getBoundingClientRect();
-            return { hudDisplay: getComputedStyle(hud).display, hudAbstand: k.left - u.right };
-        })
-    );
-    // G6: die Schilder (Sprites) am Wagen, die der Renderer zeichnet — in der Probefahrt keines.
-    const schilder = () =>
+    await page.evaluate(`window.__m7 = (${tempoSpion})(__vehicleCore, cam, (z, vm) => z === car && vm === fahrGesetzLab().vmax)`);
+    await zug(-8, 0);
+    await page.waitForFunction(() => __m7.rueck !== null, { timeout: 30000, polling: 100 }).catch(() => {});
+    // G2 der HUD im Fahr-Modus · G6 die Schilder (Sprites) am Wagen, die der Renderer zeichnet
+    const blick = () =>
         page.evaluate(() => {
-            const namen = [];
-            // eslint-disable-next-line no-undef
-            vehicle.traverseVisible((o) => {
-                if (o.isSprite) namen.push(o.name || "Schild");
-            });
-            return namen;
+            const hud = document.getElementById("hud"),
+                r = (s) => hud.querySelector(s).getBoundingClientRect(),
+                namen = [];
+            vehicle.traverseVisible((o) => o.isSprite && namen.push(o.name));
+            return { hudDisplay: getComputedStyle(hud).display, hudAbstand: r(".keys").left - r(".u").right, namen };
         });
-    const sf = await schilder();
-    m.schilderFahrt = sf.length;
-    m.schilderNamen = sf.slice(0, 4).join(", ");
-    // G3: Gas geben, dann Anzeige gegen das echte Tempo desselben Frames.
+    const b = await blick();
+    Object.assign(m, b, { schilderFahrt: b.namen.length });
+    // G3: Gas geben, dann Anzeige gegen das echte Tempo desselben Frames — bis der Wagen fährt (> 3 m/s), nie eine feste Uhr:
+    // auf dem CPU-Raster der CI kommen in 1,8 s nur wenige Frames (gemessen 1,1 m/s), der Tacho ist eine Frage der Umrechnung.
     await page.keyboard.down("KeyW");
-    // bis der Wagen fährt (> 3 m/s) — nie eine feste Uhr: auf dem CPU-Raster der CI kommen in 1,8 s nur wenige Frames
-    // (gemessen 1,1 m/s), der Tacho ist aber eine Frage der Umrechnung, nicht der Bildrate
-    await page
-        // eslint-disable-next-line no-undef
-        .waitForFunction(() => Math.abs(car.speed) > 3, { timeout: 90000, polling: 100 })
-        .catch(() => {});
+    await page.waitForFunction(() => Math.abs(car.speed) > 3, { timeout: 90000, polling: 100 }).catch(() => {});
     Object.assign(
         m,
-        await page.evaluate(
-            () =>
-                new Promise((res) =>
-                    requestAnimationFrame(() =>
-                        res({
-                            tachoAnzeige: parseInt(document.querySelector("#hud #spd").textContent, 10),
-                            // eslint-disable-next-line no-undef
-                            tachoV: Math.abs(car.speed),
-                        })
-                    )
-                )
-        )
+        await page.evaluate(() => new Promise((res) => requestAnimationFrame(() => res({ tachoAnzeige: +document.querySelector("#hud #spd").textContent, tachoV: Math.abs(car.speed) }))))
     );
     await page.keyboard.up("KeyW");
-    m.tempo = await page.evaluate(() => (window.__m7.ende(), Object.assign(window.__m7, { fov: undefined })));
+    m.tempo = await page.evaluate(() => (__m7.ende(), Object.assign(__m7, { fov: undefined })));
     await page.keyboard.press("Escape");
     await sleep(200);
-    m.schilderWerkstatt = (await schilder()).length;
-    // G4/G5: Gattung und Kultur wechseln — P ist DEFAULT_P + Preset (+ die gewählte Kultur), ohne Rest.
+    m.schilderWerkstatt = (await blick()).namen.length;
+    // G4/G5: Gattung und Kultur wechseln — P ist DEFAULT_P + Preset (+ die gewählte Kultur) + die Epoche des Reglers, ohne Rest;
+    // Regler == Modell: was der Schöpfer an der Zeile liest (bis 02.11. suchte hier eine Abfrage #v_-Ids, die die Hülle nie baut)
     Object.assign(
         m,
         await page.evaluate(() => {
-            const VC = window.__vehicleCore;
-            const knopf = (text) => [...document.querySelectorAll("#ctl button")].find((b) => b.textContent === text);
-            const soll = (pid, kid) =>
-                Object.assign({}, VC.DEFAULT_P, VC.presetPatch(pid), kid ? VC.CULTURES[kid].fx : {});
-            const leck = (s) => {
-                const out = [];
-                // eslint-disable-next-line no-undef
-                const ist = P;
-                for (const k of new Set([...Object.keys(s), ...Object.keys(ist)]))
-                    if (s[k] !== ist[k]) out.push(`${k} ${JSON.stringify(ist[k])}≠${JSON.stringify(s[k])}`);
-                return out;
-            };
-            const presetLeck = [];
-            knopf(VC.PRESETS.supersport.lab).click();
-            knopf(VC.PRESETS.gt.lab).click();
-            presetLeck.push(...leck(soll("gt", null)));
-            knopf(VC.CULTURES.toro.lab).click();
-            knopf(VC.PRESETS.limousine.lab).click();
-            presetLeck.push(...leck(soll("limousine", "toro")));
-            knopf(VC.CULTURES.toro.lab).click(); // zweiter Klick: ab
-            const kulturAb =
-                leck(soll("limousine", null)).length === 0 && !knopf(VC.CULTURES.toro.lab).classList.contains("on");
-            return { presetLeck, kulturAb };
+            const VC = __vehicleCore,
+                knopf = (z) => [...document.querySelectorAll("#ctl button")].find((b) => b.textContent === z.lab),
+                leck = (pid, kid) => {
+                    const s = { ...VC.DEFAULT_P, ...VC.presetPatch(pid), ...(kid && VC.CULTURES[kid].fx), epoche: 2 };
+                    return Object.keys({ ...s, ...P }).filter((k) => s[k] !== P[k]).map((k) => `${k} ${P[k]}≠${s[k]}`);
+                };
+            P.epoche = 2;
+            knopf(VC.PRESETS.supersport).click();
+            knopf(VC.PRESETS.gt).click();
+            const presetLeck = leck("gt");
+            knopf(VC.CULTURES.toro).click();
+            knopf(VC.PRESETS.limousine).click();
+            presetLeck.push(...leck("limousine", "toro"));
+            knopf(VC.CULTURES.toro).click(); // zweiter Klick: ab
+            const reglerLeck = [...document.querySelectorAll("#ctl .h-wert")].filter((w) => /NaN/.test(w.textContent)).map((w) => w.closest("[data-regler]").dataset.regler);
+            return { presetLeck, reglerLeck, kulturAb: !leck("limousine").length && !knopf(VC.CULTURES.toro).classList.contains("on") };
         })
     );
+    // G8: die Ansicht je Modus am Wagen der Zukunft — das Bild mit gegen ohne Wagen (160×90), die Befehle des Bilds. Die Pixel
+    // reisen über die RENDERER-API zurück (das Ausgabe-Ziel des Renderers, Tonkurve + sRGB wie die Leinwand, `__zielLesen`): ein
+    // 2D-Abzug der WebGPU-Leinwand (drawImage) las auf der CI (Linux, swiftshader ohne Vulkan-Oberfläche) ein leeres Bild —
+    // z152 02.11.: 22/25/45/44 Befehle wie lokal, Wagen 0 in jedem Modus; das Ziel liest auf jedem Backend dasselbe Bild.
+    m.ansicht = await page.evaluate(async (ANSICHTEN) => {
+        R.setAnimationLoop(null);
+        P.epoche = 5;
+        rebuild();
+        const ziel = new THREE.RenderTarget(160, 90),
+            a = {};
+        R.setOutputRenderTarget(ziel);
+        const bild = async (an) => {
+            vehicle.visible = an;
+            // ein Bild wie im Loop: erst ein Frame der Seite (der Takt des Renderers setzt Zähler und Node-Frame, der Schatten-Pass
+            // zählt mit wie in jedem Frame der Werkstatt), sonst hinge die Zahl daran, ob zwischen zwei Lesungen einer lief
+            await new Promise(requestAnimationFrame);
+            R.render(scene, kamera());
+            return [R.info.render.drawCalls, await __zielLesen(ziel, 160, 90, R)];
+        };
+        for (const n of ANSICHTEN) {
+            projSetzen(n === "seite" ? n : "iso");
+            // die Explosion über ihren Regler (die erste legt Rahmen und Baukörper frei, wie der Schöpfer sie sieht)
+            if (n === "explosion") Object.assign(ansichtRegler.eingabe("explode"), { value: 1 }).dispatchEvent(new Event("input", { bubbles: true }));
+            explosionAnwenden((eZeig = +(n === "explosion")));
+            for (let i = 0; i < 40; i++) werkOrbit(0.1), n === "animation" && animSchritt(1 / 30, i / 30);
+            const ohne = (await bild(false))[1],
+                [befehle, mit] = await bild(true);
+            // ein Bild aus einem Farbwert ist ein Leser ohne Bild, nie ein Wagen: „leer“; der Alpha-Kanal ist in beiden Bildern
+            // deckend (zählt nie, das Bild trägt 160·90·3 Farbwerte)
+            a[n] = [befehle, mit.some((w) => w !== mit[0]) ? mit.filter((w, i) => Math.abs(w - ohne[i]) > 20).length / 43200 : "leer"];
+        }
+        return a;
+    }, ANSICHTEN);
     await browser.close();
     server.close();
 
     console.log("=== G — DIE GARAGE IM KOPFLOS-BROWSER (r184 WebGPU, echte Seite) ===");
-    const v = laborVerdict(m);
-    check(
-        "G2 der Fahr-HUD ist ein Flex-Band (Einheit getrennt von der Tastenhilfe)",
-        m.hudDisplay === "flex" && m.hudAbstand >= 10,
-        `display ${m.hudDisplay} · Abstand ${Math.round(m.hudAbstand)} px`
-    );
-    check(
-        "G3 der Tacho zeigt km/h (×3,6 aus FAHR.kmh)",
-        !v.some((t) => t.startsWith("tacho")),
-        `Anzeige ${m.tachoAnzeige} bei ${(m.tachoV || 0).toFixed(2)} m/s = ${((m.tachoV || 0) * 3.6).toFixed(1)} km/h`
-    );
-    check(
-        "G4 Preset-Wechsel und erstes Laden: P == DEFAULT_P + Preset + Kultur, Regler == Modell",
-        !m.presetLeck.length && !m.reglerLeck.length,
-        [...m.presetLeck, ...m.reglerLeck].slice(0, 4).join(" · ") || "kein Leck"
-    );
-    check("G5 die Kultur lässt sich abwählen (zweiter Klick)", m.kulturAb === true);
-    const v7 = tempoVerdict(m.tempo);
-    check(
-        "G7 die Probefahrt atmet das Tempo wie der Ritt: camera.fov = Ruhe + Tempo aus Fahr-Zustand und vmax, Orbit zurück in 1–1,25 s",
-        v7.length === 0,
-        `${JSON.stringify(m.tempo)}${v7.length ? " — Täter: " + v7.join(" · ") : ""}`
-    );
-    check(
-        "G6 die Probefahrt fährt den gebauten Wagen: kein Lehren-Schild über dem Wagen, in der Werkstatt sind sie zurück",
-        m.schilderFahrt === 0 && m.schilderWerkstatt > 0,
-        `Fahrt ${m.schilderFahrt} Schilder · Werkstatt ${m.schilderWerkstatt}`
-    );
-    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en): ${v.join(" · ")}`, "\n✅ GRÜN — die Garage: Maus ohne Fehler, HUD als Band, Tacho in km/h, Preset und Kultur ohne Leck, die Probefahrt ohne Lehren.");
+    const v = laborVerdict(m),
+        v7 = tempoVerdict(m.tempo);
+    for (const [name, frei, detail] of [
+        ["G2 der Fahr-HUD ist ein Flex-Band", "hud", `${m.hudDisplay} · ${m.hudAbstand} px`],
+        ["G3 der Tacho zeigt km/h", "tacho", `${m.tachoAnzeige} bei ${m.tachoV} m/s`],
+        ["G4 P == DEFAULT_P + Preset + Kultur, Regler == Modell", "preset regler", [...m.presetLeck, ...m.reglerLeck].slice(0, 4).join(" · ")],
+        ["G5 die Kultur lässt sich abwählen", "kultur"],
+        ["G6 keine Lehren in der Probefahrt, zurück in der Werkstatt", "lehren", `${m.schilderFahrt} · ${m.schilderWerkstatt}`],
+        ["G8 die Ansicht zeigt den Wagen je Modus (≥ 1,5 % des Bildes) in ≤ 120 Befehlen", ANSICHTEN.join(" "), m.ansicht],
+    ])
+        check(name, !v.some((t) => frei.split(" ").includes(t.split(" ")[0])), detail);
+    check("G7 die Probefahrt atmet das Tempo wie der Ritt", !v7.length, `${JSON.stringify(m.tempo)} ${v7}`);
+    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en): ${[...v, ...v7].join(" · ")}`, "\n✅ GRÜN — die Garage: Maus, HUD, Tacho, Preset, Kultur, Lehren, Tempo und die Ansicht in jedem Modus.");
 });

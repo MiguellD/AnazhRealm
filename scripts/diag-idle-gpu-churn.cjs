@@ -68,7 +68,7 @@ hauptLauf(async () => {
     // SETTLE in kurzen Schritten (Node treibt, Node hält die Wand von 240 s): ein einziger evaluate mit der ganzen
     // Settle-Schleife lag mit seiner Wand dicht an der Protokoll-Frist. Gerendert wird gestubbt (Tempo).
     await ruf("Settle-Start", () => {
-        window.__settle = { start: performance.now(), stubbed: false, lastSize: -1, stableFor: 0, done: false, sz: 0 };
+        window.__settle = { start: performance.now(), stubbed: false, done: false, sz: 0 };
     });
     for (;;) {
         const st = await ruf("Settle-Schritt", async () => {
@@ -99,10 +99,9 @@ hauptLauf(async () => {
                         }, 120);
                         S.done = true;
                     } catch (e) {
-                        if (!/DIE WELT STEHT NICHT/.test(String(e && e.message))) throw e;
-                        S.grund = e.message;
+                        if (!/DIE WELT STEHT NICHT/.test(e?.message)) throw e;
                     }
-                    S.dorf = !!r._autoSettlementStartHopeless || !r._autoSettlementQueue;
+                    S.dorf = r._autoSettlementStartHopeless || !r._autoSettlementQueue;
                 }
                 await sleep(6);
             }
@@ -272,8 +271,14 @@ hauptLauf(async () => {
             for (const [k, liste] of kalt) {
                 const an = new Set();
                 for (const o of liste) for (let p = o; p; p = p.parent) an.add(p);
-                const vorher = objs.map((o) => o.visible);
-                for (const o of objs) o.visible = an.has(o);
+                // DER SCHLÜSSEL ZEICHNET, WO DIE KAMERA AUCH STEHT: ein Objekt außerhalb des Sicht-Kegels (Haupt-Bild und
+                // Kaskaden) zeichnete im Schlüssel-Bild nichts, kompilierte nichts und galt doch als warm — sein Programm
+                // baute erst das volle Bild, in das es hineinlief. Gemessen am Bewohner des Start-Dorfs (bewohner-satz, 63 KB):
+                // sichtbar ab Warmup-Frame 4, als warm gebucht, kompiliert in „Bild (Ruhe-Frame 0)" — an main ab884210 und am
+                // Zweig w4-fahrzeug2-studio2 gleich (swiftshader lokal 36 Compiles, 1 Nachzügler), in der CI z151 2 von 2 über
+                // die Frist von 300 s. Im Schlüssel-Bild zeichnet jedes Objekt des Schlüssels ohne Kegel-Probe.
+                const vorher = objs.map((o) => [o.visible, o.frustumCulled]);
+                for (const o of objs) [o.visible, o.frustumCulled] = [an.has(o), false];
                 // die Kaskaden rendern nur auf Markierung (autoUpdate aus) — ungemarkt kompilierten die Schatten-
                 // Programme erst im ersten vollen Frame (gemessen: 70 Compiles in EINEM Render, 122 s)
                 r._schattenAlleNeu();
@@ -284,7 +289,7 @@ hauptLauf(async () => {
                 try { r._loopRender(); } catch {} finally { window.__imWarm = false; }
                 let lichter = 0;
                 s.scene.traverseVisible((o) => { if (o.isLight) lichter++; });
-                objs.forEach((o, i) => (o.visible = vorher[i]));
+                objs.forEach((o, i) => ([o.visible, o.frustumCulled] = vorher[i]));
                 const v = (versuche.get(k) || 0) + 1;
                 versuche.set(k, v);
                 const unruhig = !!E && (E.verschoben !== v0 || E.wartetN !== w0);

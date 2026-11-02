@@ -2,7 +2,19 @@
 // Wahrheits-Satz und ohne zweiten Fahr-Pfad; A statisch und numerisch (Node), B im lebenden Draht (Browser, Foundry an,
 // Null-Renderer). Jede Zeile trägt ihr Soll im Namen ihres Checks, der Selbst-Test je Verdikt einen Täter.
 //   node scripts/diag-vehicle-drive.cjs [--selftest]
-const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, studioKern, jsonKlon, fehlerText, SELBSTTEST, stammLib } = require("./lib/welt-boot.cjs");
+const {
+    statikServer,
+    hauptLauf,
+    nullSeite,
+    pruefer,
+    wandEnde,
+    selbsttestEnde,
+    studioKern,
+    jsonKlon,
+    fehlerText,
+    SELBSTTEST,
+    stammLib,
+} = require("./lib/welt-boot.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
 const server = statikServer();
@@ -88,7 +100,9 @@ function staticLaws(garage) {
         /maxSteer\s*:|function\s+carPhys/,
         { datei: "worlds/garage/garage.js", wandel: garage }
     );
-    fehlt("A4: die Brücke kennt kein Namensraum-Literal self.__vehicleCore", null, /self\.__vehicleCore/, { datei: "foundry-bruecke.js" });
+    fehlt("A4: die Brücke kennt kein Namensraum-Literal self.__vehicleCore", null, /self\.__vehicleCore/, {
+        datei: "foundry-bruecke.js",
+    });
     // N6.4 — EIN Bewegungs-Pfad: die ride-Skalare liest NUR der Bewegungs-Schritt (_loopPlayerMovement).
     fehlt(
         "A5/N6.4: EIN Bewegungs-Pfad (ride.topSpeedMul/kAcc/kBrake nur in _loopPlayerMovement)",
@@ -119,54 +133,40 @@ hauptLauf(async () => {
             "Selbst-Test 3: Shell mit eigenem FAHR-Literal → die Umzugs-Wand feuert",
             a1.some((l) => l[1] === false)
         );
-        // V3 (B2): die FAHR-VERDIKT-Linse feuert auf beide Verletzungs-Klassen des Befunds.
-        const healthy = {
-            spawned: true,
-            mounted: true,
-            dist: 14.4,
-            seated: true,
-            blockerMax: 2.1,
-            riderSkip: true,
-            flatFoundry: true,
-            flatBauplan: true,
-            snapDist: 14.4,
-            sitzKern: true,
-            huelleKern: true,
-        };
-        check("Selbst-Test 4 (B2): gesunde Fahr-Probe == 0 Verstoesse", driveVerdict(healthy).length === 0);
-        // V5 (DONOR-ABSCHIED): der Rueckfall auf Donor-Sitz/Donor-Huelle MUSS feuern.
-        check(
-            "Selbst-Test 8 (DONOR): Donor-Sitz/Donor-Huelle → die Abschieds-Linse feuert",
-            driveVerdict(Object.assign({}, healthy, { sitzKern: false })).length >= 1 &&
-                driveVerdict(Object.assign({}, healthy, { huelleKern: false })).length >= 1
-        );
-        check(
-            "Selbst-Test 5 (B2): ‚der Eintrag bleibt stehen' → die Fahr-Linse feuert",
-            driveVerdict(Object.assign({}, healthy, { dist: 0.0, snapDist: 0.0 })).length >= 1
-        );
-        // V6 (B-e, W5): das FAHR-GEFÜHL-Verdikt feuert auf jeden der vier gemessenen Täter des Vor-Stands.
-        const gesund = { spawned: true, achseGrad: 2.1, kontaktM: 0.03, lenkSpitzeG: 1.45, schwimmGrad: 6 };
-        check("Selbst-Test 9 (B-e): gesunde Fahrt == 0 Verstoesse", fahrGefuehlVerdict(gesund).length === 0);
-        for (const [name, bruch] of [
-            ["der Wagen faehrt quer (90°)", { achseGrad: 90 }],
-            ["die Raeder 0,48 m im Boden", { kontaktM: 0.48 }],
-            ["der Wagen dreht sich auf (4,2 rad/s · 8 m/s)", { lenkSpitzeG: 3.4 }],
-            ["der Wagen laeuft im Einschlag quer (Schwimmwinkel 70°)", { schwimmGrad: 70 }],
+        // V3–V7: jedes Verdikt schweigt am gesunden Stand und nennt je gebrochenem Wert EINEN Täter — die Fahr-Probe (B2: der Eintrag
+        // bleibt stehen; DONOR: der Rückfall auf Donor-Sitz/-Hülle), das FAHR-GEFÜHL (B-e, W5: quer 90°, Räder 0,48 m im Boden,
+        // Aufdrehen 4,2 rad/s bei 8 m/s, Schwimmwinkel 70°) und der STAND (B-f, W5: waagrecht am Hang, Rad 0,49 m frei; keine Probe)
+        const fahrt = {
+                spawned: true,
+                mounted: true,
+                dist: 14.4,
+                seated: true,
+                blockerMax: 2.1,
+                riderSkip: true,
+                flatFoundry: true,
+                flatBauplan: true,
+                snapDist: 14.4,
+                sitzKern: true,
+                huelleKern: true,
+            },
+            gefuehl = { spawned: true, achseGrad: 2.1, kontaktM: 0.03, lenkSpitzeG: 1.45, schwimmGrad: 6 },
+            stand = { proben: 6, spaltM: 0.05 };
+        for (const [V, basis, ...brueche] of [
+            [driveVerdict, fahrt, { dist: 0, snapDist: 0 }, { sitzKern: false }, { huelleKern: false }],
+            [
+                fahrGefuehlVerdict,
+                gefuehl,
+                { achseGrad: 90 },
+                { kontaktM: 0.48 },
+                { lenkSpitzeG: 3.4 },
+                { schwimmGrad: 70 },
+            ],
+            [standVerdict, stand, { spaltM: 0.49 }, { proben: 0 }],
         ])
-            check(
-                `Selbst-Test 10 (B-e): ‚${name}' → die Fahr-Gefühl-Linse feuert`,
-                fahrGefuehlVerdict(Object.assign({}, gesund, bruch)).length === 1
-            );
-        // V7 (B-f, W5): das STAND-Verdikt feuert auf den waagrecht geparkten Wagen und auf eine leere Probe.
-        check("Selbst-Test 11 (B-f): gesunder Stand == 0 Verstoesse", standVerdict({ proben: 6, spaltM: 0.05 }).length === 0);
-        check(
-            "Selbst-Test 12 (B-f): ‚der Wagen parkt waagrecht am Hang (Rad 0,49 m frei)' → die Stand-Linse feuert",
-            standVerdict({ proben: 6, spaltM: 0.49 }).length === 1
-        );
-        check(
-            "Selbst-Test 13 (B-f): ‚keine Hang-Probe gefunden' → die Stand-Linse feuert",
-            standVerdict({ proben: 0, spaltM: 0 }).length === 1
-        );
+            for (const b of [{}, ...brueche]) {
+                const v = V({ ...basis, ...b });
+                check(`Selbst-Test ${V.name} ${JSON.stringify(b)}`, v.length === Object.keys(b).length, v.join(" · "));
+            }
         selbsttestEnde(errs, "die Linse feuert auf beide Verletzungs-Klassen.");
         process.exit(0);
     }
@@ -216,14 +216,17 @@ hauptLauf(async () => {
         await __weltDa();
         const f = r._ensureAssetFoundry();
         // Buch + Auto-Blueprint abwarten (das fahrprofil reist im selben get-recipes-Reply).
-        await __weltDa(() => f &&
+        await __weltDa(
+            () =>
+                f &&
                 f.ready &&
                 f.recipes &&
                 f.recipes.gt &&
                 f.recipes.gt.fx &&
                 f.recipes.gt.fx.fahrprofil &&
                 r.state.blueprints &&
-                r.state.blueprints.fahrzeug_gt);
+                r.state.blueprints.fahrzeug_gt
+        );
         // ===== B-a: das LIVE-Buch je Fahrzeug-Preset =====
         try {
             for (const id in f.recipes) {
@@ -237,9 +240,7 @@ hauptLauf(async () => {
         // ===== B-c: das Host-Profil — Lab fuehrt (fahrzeug_gt) · Emergenz bleibt (fahrzeug_wagen) =====
         try {
             const pGt = r._vehicleProfile({ type: "fahrzeug_gt" });
-            res.prof.gt = pGt
-                ? { topSpeedMul: pGt.topSpeedMul, kAcc: pGt.kAcc, kBrake: pGt.kBrake }
-                : null;
+            res.prof.gt = pGt ? { topSpeedMul: pGt.topSpeedMul, kAcc: pGt.kAcc, kBrake: pGt.kBrake } : null;
             // AUSLÖSCHUNGS-WELLE: der Alt-Blueprint fahrzeug_wagen ist gefallen — die
             // EMERGENZ wird an einem Test-Blueprint aus der Substanz-Tabelle bewiesen
             // (parts+connections JSON-geklont, registriert, danach aufgeraeumt).
@@ -254,9 +255,7 @@ hauptLauf(async () => {
                 connections: jsonKlon(sub.connections || []),
             };
             const pWg = r._vehicleProfile({ type: "_drive_probe_wagen" });
-            res.prof.wagen = pWg
-                ? { topSpeedMul: pWg.topSpeedMul, kAcc: pWg.kAcc, kBrake: pWg.kBrake }
-                : null;
+            res.prof.wagen = pWg ? { topSpeedMul: pWg.topSpeedMul, kAcc: pWg.kAcc, kBrake: pWg.kBrake } : null;
             // fahrzeug_wagen loest auf KEIN Buch-Preset ("wagen" steht in keinem Buch -> null,
             // der dokumentierte Substanz-Pfad) — die 0-Regress-Praemisse: kein Override moeglich.
             res.prof.wagenPreset = r._foundryPresetFor("fahrzeug_wagen");
@@ -326,9 +325,7 @@ hauptLauf(async () => {
                     const hip = r.constructor.SITZ_HIP_OFFSET;
                     const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
                     const kernSitz =
-                        drv && drv.sitz && Number.isFinite(drv.sitz.y)
-                            ? Math.max(0.45, drv.sitz.y * sc + hip)
-                            : null;
+                        drv && drv.sitz && Number.isFinite(drv.sitz.y) ? Math.max(0.45, drv.sitz.y * sc + hip) : null;
                     const donorSp = r._attachPointFor(r.state.blueprints.fahrzeug_gt, "sitz").point;
                     const donorSitz = Number.isFinite(donorSp.y) ? Math.max(0.45, donorSp.y * sc + hip) : null;
                     res.drive.sitzKern =
@@ -660,5 +657,8 @@ hauptLauf(async () => {
             `größter Rad-Spalt ${(st.spaltM || 0).toFixed(3)} m über ${st.proben || 0} Hang-Proben (Steigung ${JSON.stringify(st.steigung || [])}, je ${JSON.stringify(st.je || [])})${sv.length ? " — Täter: " + sv.join(", ") : ""}`
     );
 
-    wandEnde(errs, "DAS LAB-FAHRPROFIL FÜHRT (N6/H7): EINE Formel (exportDrive aus carPhys+FAHR+Federrate, dieselben Primitive wie die Probefahrt), die Bruecke rechnet sie beim Buch-Bau (kein Duplikat), _vehicleProfile faehrt die Lab-Werte, ohne Buch bleibt die Emergenz byte-gleich — der Bewegungs-Loop ist EIN Pfad.");
+    wandEnde(
+        errs,
+        "DAS LAB-FAHRPROFIL FÜHRT (N6/H7): EINE Formel (exportDrive aus carPhys+FAHR+Federrate, dieselben Primitive wie die Probefahrt), die Bruecke rechnet sie beim Buch-Bau (kein Duplikat), _vehicleProfile faehrt die Lab-Werte, ohne Buch bleibt die Emergenz byte-gleich — der Bewegungs-Loop ist EIN Pfad."
+    );
 });
