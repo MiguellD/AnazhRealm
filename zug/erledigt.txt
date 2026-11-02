@@ -201,3 +201,4 @@ takt-z148a-gtx gemessen punkte ab884210 gtx: 1 grün / 0 rot
 takt-z148b-gtx gemessen punkte ab884210 gtx: 1 grün / 0 rot
 z148-abab nicht-langsamer abab ab884210 gegen 28dd7a47: w-ego 4+4 nicht-langsamer · stadt 2+2 nicht-langsamer
 z156-abab nicht-langsamer abab 6d6a8336 gegen ab884210: w-ego 2+2 nicht-langsamer · stadt 4+4 nicht-langsamer
+takt-z156a-gtx gemessen punkte 6d6a8336 gtx: 0 grün / 0 rot
