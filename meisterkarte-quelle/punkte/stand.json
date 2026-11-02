@@ -3985,11 +3985,8 @@
    ]
   }
  },
- "rueckfall": [
-  "affekt.K2#1 headless: Deckel 2400 s überschritten — beendet (zuletzt: AFFEKT-gemuet {\"mutante\":\"starr\",\"bauten\":49,\"zuege\":15,\"sonne\":3,\"frontSonne\":3,\"ausGesetz\":0,\"gesetz\":{\"id\":4,\"feuer\":0},\"hoffnungS\":0,\"folge\":\"rcssssrffrrrff) an 10770eb5 (grün gebucht an 25ac4c0c)",
-  "ki.K4#1 headless: LLM-Regeln neu je Drittel 1/2/2, erneuert 9 · verfallen 5 · verdrängt 0 (Nexus 94 · 63 · 3); Gegenlauf: erneuert LLM δ+ 0.78 · δ− 0.00, verdrängt 0, Täter keine llm-Regel verdrängt an 10770eb5 (grün gebucht an 25ac4c0c)"
- ],
+ "rueckfall": [],
  "kopfVoll": "10770eb5698e05aef55914ee1b08907fb4b285a6",
- "zeit": "2026-11-02T12:06:50.770Z",
+ "zeit": "2026-11-02T12:26:12.076Z",
  "vorher": "10770eb5"
 }
