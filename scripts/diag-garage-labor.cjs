@@ -9,13 +9,15 @@
 //   G7 Tempo: camera.fov = Ruhe + Tempo aus Fahr-Zustand und vmax wie im Ritt, der Orbit kehrt in 1–1,25 s zurück.
 //   G8 die Ansicht (02.11.): je Modus (Isometrie · Seite · Explosion 1,0 · Animation) zeigt das Bild den Wagen (sein Anteil an den
 //      Farbwerten: das Bild mit gegen ohne Wagen, ≥ 1,5 %) und zeichnet höchstens 120 Befehle (die Faltung der Ansicht, vorher
-//      294–806) — ein gebrochener Modus steht beim Namen. Gemessen am Wagen der Zukunft (der schwerste Bau).
+//      294–806) — ein gebrochener Modus steht beim Namen, ein Bild ohne Spannweite als „leer“ (der blinde Leser, nie ein Wagen).
+//      Gemessen am Wagen der Zukunft (der schwerste Bau); GARAGE_LABOR_BILD=<dir> legt die Bilder mit Wagen als PNG ab.
 // Die Seite läuft in ihrem echten Renderer (r184 WebGPU, die Engine der Welt) im Kopflos-Browser; gezählt wird an der Seite selbst.
 // Die Prüfungen G2–G6 und G8 lesen das EINE Verdikt (`laborVerdict`, je Täter ein Präfix) — Browser-Probe und Selbst-Test.
 //   node scripts/diag-garage-labor.cjs [--selftest]          Port: GARAGE_LABOR_PORT (Standard 4414)
 /* eslint-disable no-undef */
 "use strict";
-const { statikServer, starteBrowser, pruefer, hauptLauf, sleep, urteilEnde, selbsttestEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const path = require("path");
+const { statikServer, starteBrowser, pruefer, hauptLauf, sleep, urteilEnde, selbsttestEnde, SELBSTTEST, pngDatei } = require("./lib/welt-boot.cjs");
 const { tempoVerdict, tempoSpion } = require("./lib/fahr-proben.cjs");
 
 const PORT = Number(process.env.GARAGE_LABOR_PORT || 4414);
@@ -33,8 +35,10 @@ function laborVerdict(m) {
     if (m.kulturAb !== true) out.push("kultur bleibt");
     if (m.schilderFahrt !== 0 || !(m.schilderWerkstatt > 0)) out.push(`lehren ${m.schilderFahrt} in der Fahrt, ${m.schilderWerkstatt} danach`);
     for (const n of ANSICHTEN) {
-        const [b, a] = m.ansicht?.[n] || [];
-        if (!(b <= 120 && a >= 0.015)) out.push(`${n} ${b} Befehle, Wagen ${a} des Bildes`);
+        const [b, a, spanne] = m.ansicht?.[n] || [];
+        // der blinde Leser zuerst: ein Bild ohne Spannweite trägt keine Szene (der leere 2D-Abzug der CI, z152)
+        if (!(spanne >= 8)) out.push(`${n} leer — der Leser sah kein Bild (Spannweite ${spanne}), ${b} Befehle`);
+        else if (!(b <= 120 && a >= 0.015)) out.push(`${n} ${b} Befehle, Wagen ${a} des Bildes`);
     }
     return out;
 }
@@ -44,7 +48,7 @@ const server = statikServer({ start: "/worlds/garage/index.html" });
 hauptLauf(async () => {
     if (SELBSTTEST) {
         console.log("=== SELBST-TEST: die Labor-Linse nennt jeden Täter des Befunds ===");
-        const ansicht = Object.fromEntries(ANSICHTEN.map((n) => [n, [60, 0.2]]));
+        const ansicht = Object.fromEntries(ANSICHTEN.map((n) => [n, [60, 0.2, 180]]));
         const gesund = { geladen: true, hudDisplay: "flex", hudAbstand: 22, tachoV: 10.5, tachoAnzeige: 38, kulturAb: true, schilderFahrt: 0, schilderWerkstatt: 6, ansicht };
         check("Selbst-Test 0: gesundes Labor == 0 Täter", !laborVerdict(gesund).length);
         for (const [soll, bruch] of [
@@ -55,11 +59,12 @@ hauptLauf(async () => {
             ["kultur", { kulturAb: false }],
             ["lehren", { schilderFahrt: 6 }],
             ["lehren", { schilderWerkstatt: 0 }],
-            ["seite", { ansicht: { ...ansicht, seite: [40, 0] } }],
-            ["explosion", { ansicht: { ...ansicht, explosion: [806, 0.2] } }],
+            ["seite", { ansicht: { ...ansicht, seite: [40, 0, 180] } }],
+            ["explosion", { ansicht: { ...ansicht, explosion: [806, 0.2, 180] } }],
+            ["iso leer", { ansicht: { ...ansicht, iso: [22, 0, 0] } }],
         ]) {
             const v = laborVerdict({ ...gesund, ...bruch });
-            check(`Selbst-Test ${JSON.stringify(bruch).slice(0, 60)} → ${soll}`, v[0]?.startsWith(soll), v.join(" · "));
+            check(`Selbst-Test ${JSON.stringify(bruch).slice(0, 60)} → ${soll}`, v.length === 1 && v[0].startsWith(soll), v.join(" · "));
         }
         selbsttestEnde(errs, "die Labor-Linse nennt Maus, HUD, Tacho, Preset, Kultur, Lehren und jeden Modus der Ansicht beim Namen.");
         process.exit(0);
@@ -133,20 +138,29 @@ hauptLauf(async () => {
             return { presetLeck, reglerLeck, kulturAb: !leck("limousine").length && !knopf(VC.CULTURES.toro).classList.contains("on") };
         })
     );
-    // G8: die Ansicht je Modus am Wagen der Zukunft — das Bild mit gegen ohne Wagen (160×90, gelesen im selben Takt wie der
-    // Render: danach ist das Bild der WebGPU-Leinwand verbraucht), die Befehle des Bilds
-    m.ansicht = await page.evaluate(() => {
+    // G8: die Ansicht je Modus am Wagen der Zukunft — das Bild mit gegen ohne Wagen (160×90), die Befehle des Bilds. Die Pixel
+    // reisen über die RENDERER-API zurück (das Ausgabe-Ziel des Renderers, Tonkurve + sRGB wie die Leinwand, `__zielLesen`): ein
+    // 2D-Abzug der WebGPU-Leinwand (drawImage) las auf der CI (Linux, swiftshader ohne Vulkan-Oberfläche) ein leeres Bild —
+    // z152 02.11.: 22/25/45/44 Befehle wie lokal, Wagen 0 in jedem Modus; das Ziel liest auf jedem Backend dasselbe Bild.
+    m.ansicht = await page.evaluate(async (bilder) => {
         R.setAnimationLoop(null);
         P.epoche = 5;
         rebuild();
-        const c = Object.assign(document.createElement("canvas"), { width: 160, height: 90 }).getContext("2d"),
-            a = {};
-        const bild = (an) => {
+        const W = 160,
+            H = 90,
+            ziel = new THREE.RenderTarget(W, H),
+            a = {},
+            png = {};
+        R.setOutputRenderTarget(ziel);
+        const bild = async (an) => {
             vehicle.visible = an;
+            // ein Bild wie im Loop: der Schritt des Node-Frames zuerst (der Schatten-Pass zählt mit, wie in jedem Frame der
+            // Werkstatt), sonst hinge die Zahl daran, ob zwischen zwei Lesungen ein Frame der Seite lief
+            R._nodes.nodeFrame.update();
             R.info.reset();
             R.render(scene, kamera());
-            c.drawImage(R.domElement, 0, 0, 160, 90);
-            return [R.info.render.drawCalls, c.getImageData(0, 0, 160, 90).data];
+            const befehle = R.info.render.drawCalls;
+            return [befehle, await window.__zielLesen(ziel, W, H, R)];
         };
         for (const n of ["iso", "seite", "explosion", "animation"]) {
             projSetzen(n === "seite" ? "seite" : "iso");
@@ -154,10 +168,20 @@ hauptLauf(async () => {
             if (n === "explosion") Object.assign(ansichtRegler.eingabe("explode"), { value: 1 }).dispatchEvent(new Event("input", { bubbles: true }));
             explosionAnwenden((eZeig = +(n === "explosion")));
             for (let i = 0; i < 40; i++) werkOrbit(0.1), n === "animation" && animSchritt(1 / 30, i / 30);
-            const ohne = bild(false)[1],
-                [befehle, mit] = bild(true);
-            a[n] = [befehle, mit.filter((w, i) => i % 4 < 3 && Math.abs(w - ohne[i]) > 20).length / 43200];
+            const ohne = (await bild(false))[1],
+                [befehle, mit] = await bild(true);
+            // die Spannweite des Bilds mit Wagen (größter minus kleinster Farbwert): 0 ist ein Leser ohne Bild, nie ein Wagen
+            let lo = 255,
+                hi = 0;
+            for (let i = 0; i < mit.length; i++) if (i % 4 < 3) (lo = Math.min(lo, mit[i])), (hi = Math.max(hi, mit[i]));
+            a[n] = [befehle, mit.filter((w, i) => i % 4 < 3 && Math.abs(w - ohne[i]) > 20).length / (W * H * 3), hi - lo];
+            if (bilder) png[n] = window.__png(mit, W, H);
         }
+        R.setOutputRenderTarget(null);
+        ziel.dispose();
+        return { a, png };
+    }, !!process.env.GARAGE_LABOR_BILD).then(({ a, png }) => {
+        for (const [n, url] of Object.entries(png)) pngDatei(path.join(process.env.GARAGE_LABOR_BILD, `garage-${n}.png`), url);
         return a;
     });
     await browser.close();

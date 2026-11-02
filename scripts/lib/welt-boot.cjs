@@ -71,11 +71,12 @@ function loopBild() {
     st.renderer._nodes?.nodeFrame?.update();
     r._loopRender();
 }
-// DIE EINE ZIEL-LESUNG (`await window.__zielLesen(ziel, W, H)`): die Pixel eines Ziels als Uint8Array in Zeilen zu W·4 Byte —
+// DIE EINE ZIEL-LESUNG (`await window.__zielLesen(ziel, W, H, renderer)`): die Pixel eines Ziels als Uint8Array in Zeilen zu W·4
+// Byte (ohne `renderer` der der Welt, ein Studio reicht seinen) —
 // WebGPU kopiert jede Zeile auf 256 Byte ausgerichtet (bytesPerRow), r184 reicht das Polster durch (bei W·4 ∤ 256 lag jede Zeile
 // versetzt); je Linse ein eigenes Entpolstern war ein Zwilling (sechs bis w4-b-knoten)
-async function zielLesen(ziel, W, H) {
-    const px = await st.renderer.readRenderTargetPixelsAsync(ziel, 0, 0, W, H);
+async function zielLesen(ziel, W, H, renderer) {
+    const px = await (renderer || st.renderer).readRenderTargetPixelsAsync(ziel, 0, 0, W, H);
     const roh = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
     const zeile = W * 4,
         schritt = roh.length > zeile * H ? Math.ceil(zeile / 256) * 256 : zeile;
