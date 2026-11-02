@@ -1,5 +1,5 @@
 {
-  "stand": "2026-11-01",
+  "stand": "2026-11-02",
   "kopf": "ab884210",
   "version": "V18.546.162",
   "skala": "2.0",
@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "ab884210",
-    "zeit": "2026-11-01T23:47:35.717Z",
+    "zeit": "2026-11-02T00:08:41.384Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -4547,7 +4547,7 @@
       "was": "Mess-Takt 2 an 4a5f5e2c (Züge 26 und 28b: Gelände K1/K4 im Kern, Huf, Herde, Treffer-kalt, Temperatur aus EINER Quelle mit Stefan-Eis, Werkstatt-Bühnen über _buehneRenderer, Fahr-Gesetz in der Welt, Tore-Abdruck; headless 63/2, Radeon in Ruhe nachgemessen, GTX 28/8): gelaende.K1 und K4 → 2, feld.K2, tore.K3, fahrzeug.K1 und K4 → 2, speicher.K4 je +1; leib.K1 2 → 1 (zwei Hiebe ohne Treffer-Ereignis an der Radeon, Karte leib-k1-hieb)."
     },
     {
-      "stand": "2026-11-01",
+      "stand": "2026-11-02",
       "kopf": "ab884210",
       "summe": 167,
       "max": 330,
@@ -4556,7 +4556,7 @@
     }
   ],
   "text": {
-    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 01.11.2026, Kopf main ab884210 (V18.546.162)",
+    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 02.11.2026, Kopf main ab884210 (V18.546.162)",
     "einleitung": [
       "Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.",
       "",
