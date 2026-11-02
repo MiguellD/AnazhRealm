@@ -2658,17 +2658,17 @@ class AnazhRealm_siedlung_bewohner {
         S.listeRest = 0;
     }
 
-    // DER TAG OHNE DEN STAND, DEN DER PLAN NICHT TRÄGT (`_bewohnerStandPruefen`): wer am Platz, am Werk oder zu Besuch an ihm
-    // stand, geht nach dem Gesetz des Tags ohne ihn — koerper-core `tagesPlan` liest `platz || heim` (er bleibt zu den Stunden
-    // des Platzes vor seiner Tür), das Werk wird der Stand vor der eigenen Tür (wie wo keine Station steht, `_bewohnerListe`),
-    // der Besuch fällt; wer dort stand oder hinging, geht neu. Ein Stand vor der eigenen Tür trägt den Tag: er bleibt (false).
+    // DER VOLLE PLATZ (`_bewohnerStandPruefen`): wessen Stand am Platz der Plan neben der Spur nicht trägt, geht seinen Tag ohne
+    // ihn — koerper-core `tagesPlan` liest `platz || heim` (er bleibt zu den Stunden des Platzes vor seiner Tür), das Werk des
+    // Markts am Platz wird der Stand vor der eigenen Tür (wie wo keine Station steht, `_bewohnerListe`); wer dort stand oder
+    // hinging, geht neu. Die Kreatur-Linse nennt ihn „ohne Platz". Ein Stand, der niemandes Platz ist, bleibt (false).
     // Bis hier rückte der Stand ohne sein Gesetz und ohne den Raum (w4-genesis-ort-wirt9): an der Metropole (stadt-voll) trägt
     // der Platz neben der Trasse 87 seiner Stände nicht (je ~810 Punkte mit Raum, alle im Grundriss eines Hauses)
     _bewohnerOhneStand(S, o) {
-        if (S.liste.some((b) => b.orte.heim === o)) return false;
+        if (!S.liste.some((b) => b.orte.platz === o)) return false;
         for (const b of S.liste) {
-            for (const k of ["platz", "werk", "besuch"])
-                if (b.orte[k] === o) b.orte[k] = k === "werk" ? b.orte.heim : null;
+            if (b.orte.platz === o) b.orte.platz = null;
+            if (b.orte.werk === o) b.orte.werk = b.orte.heim;
             if (b.leib && !b.drinnen && (b.ziel === o || b.stand === o)) {
                 if (b.ziel === o) b.da = false;
                 Object.assign(b, { weg: null, stand: null, wegRest: null });

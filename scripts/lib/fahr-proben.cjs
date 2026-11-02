@@ -953,9 +953,7 @@ async function probeLeben(expected) {
                 ankunft,
                 netz: { verboten, ausNetz: ausNetz.length, irrweg: VK.zahl.irrweg },
                 // der Plan der Stadt trägt diese Stände neben der Trasse nicht (`standOhneOrt`): wer an ihnen stand, geht ohne sie
-                platzVoll: ((v) => ({ n: v.length, wo: v.slice(0, 6).map((o) => ort2(o.ur).join("/")) }))([
-                    ...(S.standOhneOrt || []),
-                ]),
+                platzVoll: (S.standOhneOrt || []).size,
                 ohneSchluessel: m.ohne,
                 ohneOrte: m.ohneOrte,
                 querMax: +m.quer.toFixed(2),
@@ -1119,7 +1117,6 @@ async function probeLeben(expected) {
                 await __gebautNach(e, {
                     fertig: () => e._servedLod === 0 && r._foundryStufeBereit(e, pr, 1),
                     bau: () => r._foundryFlattenFor(e, pr, 1),
-                    warum: () => `Stufe ${e._lodLevel}, serviert ${e._servedLod}, L1 ${r._foundryStufeBereit(e, pr, 1)}`,
                 });
             let [i, n, q, ausEgo, fv, wf] = [0, 0, [], false, 0, 0];
             const bild = () => {
