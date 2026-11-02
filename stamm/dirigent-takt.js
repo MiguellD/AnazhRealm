@@ -272,6 +272,8 @@ class AnazhRealm_dirigent_takt {
                 // Bild der ruhenden Welt schickte den nächsten Auftrag, jede Antwort landete zwischen zwei Bildern, das Wasser am
                 // Bach der Mess-Wiese wechselte unter der stehenden Welt (gate:ziel-zensus RUNDUNG: dieselbe Phase 0,011 der Pixel)
                 if (!ruht) this._spiegelFeldTakt();
+                // ### Das Haar ### (haar.K3) — die Feder des nahen, gezeichneten Haars im Takt der Welt (`spielZeit`), nie im Bild
+                this._haarFederTakt();
 
                 // ### Rendering ###
                 // VOR dem Render: entscheiden, ob die Schatten-Map neu muss (im Stand gecacht). Eine erste Zeichnung baut

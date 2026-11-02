@@ -233,6 +233,8 @@ class AnazhRealm_studio_gestalt {
         // DER SCHATTEN-TEIL (S3, Umschlag out.teil, additiv): die Baum-L1 liefert ihren Wurf als eigenes Teil
         // (`teil: "schatten"`, Attribut aDeckt) — der Flatten legt es als Schatten-Zwilling in die Kaskaden.
         if (typeof m.teil === "string") mesh.userData.__teil = m.teil;
+        // DIE ACHSE DER STRÄHNE und der Verweis ihrer Feder (haar.K3, `_haarAchse`): jedes Haar-Teil trägt sie ab dem Bau
+        this._haarAchse(mesh);
         return mesh;
     }
     // DIE JAHRES-ECKEN einer Gestalt (vegetation.K5, `_foundryBuildMesh`): je Ecke [u, v,] Mitte und Typ in EINEM verschränkten
