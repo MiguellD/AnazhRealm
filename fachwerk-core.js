@@ -6033,7 +6033,8 @@
                     var yr = i ? 0.47 : 0.12;
                     var reif = ausDreh([[0.236, -0.018], [0.241, 0], [0.236, 0.018]], 12, false, false);
                     ausSetze(reif, fx, yr - 0.02, fz, 0, 0, 0);
-                    ausFaerbe(reif, "holz", 0, function () {
+                    // der Stoff des Reifs ist Eisen (das Alter des Holzes vergraut ihn nie), sein Draw der des Fasses
+                    ausFaerbe(reif, "metall", 0, function () {
                         return { ton: [0.42, 0.4, 0.38] }; // geschmiedetes Band, dunkel angelaufen
                     });
                     ausTeil(g, reif, "holz");
@@ -6160,15 +6161,15 @@
             for (i = 0; i < 2; i++) {
                 var er = ausDreh([[0.131 + i * 0.016, -0.012], [0.135 + i * 0.016, 0], [0.131 + i * 0.016, 0.012]], 10, false, false);
                 ausSetze(er, 0.05, yE + 0.04 + i * 0.16, 0, 0, 0, 0);
-                ausFaerbe(er, "holz", 0, function () {
-                    return { ton: [0.42, 0.4, 0.38] }; // Eisenband, dunkel angelaufen
+                ausFaerbe(er, "metall", 0, function () {
+                    return { ton: [0.42, 0.4, 0.38] }; // Eisenband, dunkel angelaufen (Stoff Eisen, Draw des Eimers)
                 });
                 ausTeil(g, er, "holz");
             }
             var buegel = ausKiste(0.3, 0.012, 0.012, 0);
             ausSetze(buegel, 0.05, yE + 0.3, 0, 0, 0, 0);
-            ausFaerbe(buegel, "holz", 0, function () {
-                return { ton: [0.42, 0.4, 0.38] };
+            ausFaerbe(buegel, "metall", 0, function () {
+                return { ton: [0.42, 0.4, 0.38] }; // der Bügel: Eisen wie die Bänder
             });
             ausTeil(g, buegel, "holz");
         }
