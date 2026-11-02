@@ -8,9 +8,7 @@ async function probeLeben(expected) {
     await __weltDa();
     const VC = window.__vehicleCore;
     const f = r._ensureAssetFoundry();
-    await __weltDa(
-        () => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt
-    );
+    await __weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt);
     const P = Object.getPrototypeOf(r);
     const A = P.constructor; // die Klasse der Welt (Gesetze und Konstanten)
     const DT = 1 / 60;
@@ -1107,6 +1105,15 @@ async function probeLeben(expected) {
             const kurs = () => e.rotationY + Math.PI / 2; // Studio-Wagen: Bug +x
             const wink = (a) => Math.round((Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) * 1800) / Math.PI) / 10;
             const pr = e && r._foundryPresetForEntry(e);
+            // DER BAND-PARTNER STEHT, BEVOR DIE PROBE IHN BRAUCHT (das EINE Warten, welt-boot `__gebautNach`): die Stufe L1 des
+            // Wagens liegt gebacken bereit (`_foundryStufeBereit`) — sonst hält die L0 voll ohne Partner (`_lodHaltSetzen` „wartet"),
+            // und der Ritt zählt kein Band (vakuös). Am Genesis-Ort trägt die Foundry mehr Aufträge: in drei von sechs Läufen stand
+            // der Partner im ganzen Ritt nicht (band 0), in den anderen 210 Bilder
+            if (e)
+                await __gebautNach(e, {
+                    fertig: () => r._foundryStufeBereit(e, pr, 1),
+                    bau: () => r._foundryFlattenFor(e, pr, 1),
+                });
             let [i, n, q, ausEgo, fv, wf] = [0, 0, [], false, 0, 0];
             const bild = () => {
                 const v = spielerTempo();
@@ -2866,9 +2873,7 @@ async function probeKoerper(opt) {
     await __weltDa();
     const A = Object.getPrototypeOf(r).constructor;
     const f = r._ensureAssetFoundry();
-    await __weltDa(
-        () => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt
-    );
+    await __weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt);
     const res = { err: null };
     const hh = (a, b) => r.getTerrainHeightAt(a, b);
     let tMs = performance.now();
