@@ -495,8 +495,15 @@ const K4_VOR =
     "const a0 = Math.atan2(K.hill.z - c.z, K.hill.x - c.x); for (let i = 0; i < 16 && !K.haus; i++) { const a = a0 + (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 0.39, x = c.x + Math.cos(a) * R, z = c.z + Math.sin(a) * R; " +
     "if (K.land(x, z) && r.spawnArchitecture(\"haus_alemannisch\", { x, y: K.hoch(x, z) + 0.5, z }, { seed: 4711, werk: true })) K.haus = [x, z]; } " +
     "return { k, groesse: P.groesse, jahr: P.jahr + P.spanne, slots: P.slots.length, haeuser: K.E0.length, haus: K.haus || null, hill: K.haus ? K.hill : null };";
+// DIE UHR GEHT MIT DEM DORF-TAKT DES SPIELS (w4-urteile-6a57, wie STADT_STAND): die Sitzung bootet mit `start --ort wiese`, der Haken
+// legt `__anazhAutoSettlement` false vor JEDE Ladung — `_tickAutoSettlement` kehrt am `_dorfTaktLebt` um, `_ortWachstumTakt` lief nie:
+// Radeon 25ac4c0c „1500 s: 1412 → 1412, Häuser 12 → 12/12, Ring 0 neu" (bis 29.10., vor dem Haken, 715754fc: 1412 → 1744). Headless
+// am Kopf 6a571e3b nachgestellt (Null-Renderer, der Haken gesetzt, dieselben vier Schritte): ohne das Wort 1412 → 1412, Ring 0; mit
+// ihm 1412 → 1744, 12 → 20/21, die alten 0,917, Ring 9 neu, Median 22 m vom Haus / 59 m vom Ort (die Zahl von 715754fc).
+// Erst an der Uhr: Ort, Haus und Hügel stehen wie bisher ohne fremde Dörfer. Die Probe ist `mutiert`: die Tür danach lädt die
+// Seite neu, der Haken steht wieder.
 const K4_UHR =
-    "const K = window.__k4; K.E1 = K.haeuser(); K.j0 = K.c.wachs && K.c.wachs.jahr; r.state.spielZeit += 1500; " +
+    "const K = window.__k4; window.__anazhAutoSettlement = true; K.E1 = K.haeuser(); K.j0 = K.c.wachs && K.c.wachs.jahr; r.state.spielZeit += 1500; " +
     "return { kern: !!K.c.kern, jahr: K.j0, haeuser: K.E1.length, uhr: r.state.spielZeit };";
 const K4_STAND =
     "const K = window.__k4, c = K.c, E = K.haeuser(), ring = E.filter((e) => !K.E1.includes(e)).map((e) => [e.position.x, e.position.z]); " +
