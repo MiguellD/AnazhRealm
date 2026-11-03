@@ -246,8 +246,6 @@ class AnazhRealm_dirigent_takt {
                     // jeden Frame über sin/cos relativ zum aktuellen walkPhase
                     // rotiert. Idle-Loop (atmen, hover) läuft auch im Stand.
                     this.animatePlayerSoul(currentTime);
-                    // DAS SEIL AM LEIB (physik.K4): nach der Haltung dieses Takts — der Anker folgt der Hand, die eben stand
-                    this._seilTakt(delta);
                 }
 
                 // Ring 6 V2: Culling-Tick (1 Hz) — baut/disposed Meshes je nach
@@ -274,6 +272,8 @@ class AnazhRealm_dirigent_takt {
                 // Bild der ruhenden Welt schickte den nächsten Auftrag, jede Antwort landete zwischen zwei Bildern, das Wasser am
                 // Bach der Mess-Wiese wechselte unter der stehenden Welt (gate:ziel-zensus RUNDUNG: dieselbe Phase 0,011 der Pixel)
                 if (!ruht) this._spiegelFeldTakt();
+                // DAS SEIL AM LEIB (physik.K4): als Letztes vor dem Bild — jede Haltung dieses Takts steht, der Anker folgt der Hand
+                if (!ruht) this._seilTakt(delta);
 
                 // ### Rendering ###
                 // VOR dem Render: entscheiden, ob die Schatten-Map neu muss (im Stand gecacht). Eine erste Zeichnung baut

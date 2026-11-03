@@ -1,17 +1,18 @@
 # w5-physik-k4 — physik.K4 Staffel 1: das Schmiede-Seil schwingt in der Welt am Leib
 
-**Geschnitten:** EIN Seil-Gesetz im Schmiede-Kern (`schmiede-core.js:2250` `SEIL_GESETZ`, `:2298` `seilSchritt` — Verlet + Abstands-Bedingungen nach
-Jakobsen 2001, die Länge hart nach Müller 2012 „follow the leader", Ruhe-Erkennung; `:2414` `seilPosen` die Pose jedes Teils, `:2459` `bauSeil` die
-Gestalt) und die Gattung Flegel in der Tafel (`:2617`, Stiel + 7 Glieder + Stachelkugel, `fx.seil` im Buch); die Brücke reicht `seil` (`foundry-bruecke.js:851`),
-die Hand hängt das Seil ein (`stamm/koerper-seele.js:845` `_seilAmLeib`) und der Takt rechnet es nach der Haltung (`stamm/dirigent-takt.js:250` →
-`stamm/koerper-seele.js:876` `_seilTakt`, fern von `SEIL_NAH_M` 40 m und in Ruhe 0 Schritte); das Labor ruft dieselben drei Kern-Funktionen
-(`worlds/schmiede/schmiede.js` `seilTakt`, Werkbank und Prüfstand); die Linse H-S in `gate:nervensystem-schmiede` (Selbsttest: 7 Mutanten ROT beim Namen).
+**Geschnitten:** EIN Seil-Gesetz im Schmiede-Kern (`schmiede-core.js:2250` `SEIL_GESETZ`, `:2309` `seilSchritt` — Verlet + Abstands-Bedingungen nach
+Jakobsen 2001, die Länge hart nach Müller 2012 „follow the leader", Ruhe-Erkennung; `:2425` `seilPosen` die Pose jedes Teils, `:2472` `bauSeil` die
+Gestalt) und die Gattung Flegel in der Tafel (`:2630`, Stiel + 7 Glieder + Stachelkugel, `fx.seil` im Buch); die Brücke reicht `seil` (`foundry-bruecke.js:851`),
+die Hand hängt das Seil ein (`stamm/koerper-seele.js:845` `_seilAmLeib`) und der Takt rechnet es (`stamm/dirigent-takt.js:276` →
+`stamm/koerper-seele.js:876` `_seilTakt`, als Letztes vor dem Bild; fern von `SEIL_NAH_M` 40 m und in Ruhe 0 Schritte); das Labor ruft dieselben
+Kern-Funktionen (`worlds/schmiede/schmiede.js` `seilTakt`, Werkbank und Prüfstand; `seilGesetz` stellt das Seil eines Geräts samt Werkstoff
+zusammen); die Linse H-S in `gate:nervensystem-schmiede` (teile · schwung · ruht · fern, je Täter eine Mutante ROT beim Namen).
 
 **Gemessen:** Station `physik.K4#1` headless im Baum dieses Zweigs: vorher (main 5fba36ea) ROT „kein Seil am Leib: 0 von 22 Gattungen" → nachher
-**GRÜN** „klinge_flegel Schwung 0,489 m, Länge (längs) 0,328–0,332 m, v² 3,195 → 0,251" (Lauf 11,6 s); die Station ist dazu geschärft (Zweig
+**GRÜN** „klinge_flegel Schwung 0,476 m, Länge (längs) 0,328–0,328 m, v² 3,183 → 0,257" (Lauf 12 s); die Station ist dazu geschärft (Zweig
 `w5-physik-k4-pm`, Selbsttest 130/130): die Seil-Länge misst längs des Seils vom Anker des Gesetzes im Buch (vorher die Sehne vom Schaft-Ende —
 0,393–0,826 m, ein Hebel, und auch vom Anker hängt jede echte Kette durch, wenn die Hand beim Halt schneller fällt als die Schwere: 0,11 m in 0,13 s),
-ein Seil ohne Gesetz im Buch ist ROT; die Linse in der Welt: 279 Schritte, Schwung 0,30 m, Länge ±0,76 %, v² 1,48 → 0,02, ruht, fern 0 Schritte.
+ein Seil ohne Gesetz im Buch ist ROT; die Linse in der Welt GRÜN (teile 8/8, schwingt, ruht, fern 0 Schritte), `gate:kampf-gefuehl` GRÜN.
 
 **Ehrlich offen:** Staffel 2 (Tuch, Hängebrücke, Phasen-Korrelation mit dem Gras, byte-Diff der Seil-Bahn Labor ↔ Welt bei gleicher Saat) ist nicht
 gebaut — der Weg steht (Zustand, Schritt und Pose leben im Kern, beide Leser kopieren nur Matrizen); die Kette kollidiert nicht mit dem Leib, sie

@@ -2429,7 +2429,9 @@
             o = out || new Float64Array(16 * (n + 1)),
             ul = Math.hypot(seil.unten[0], seil.unten[1], seil.unten[2]),
             u = [seil.unten[0] / ul, seil.unten[1] / ul, seil.unten[2] / ul],
-            qi = [-qh[0], -qh[1], -qh[2], qh[3]];
+            ql = Math.hypot(qh[0], qh[1], qh[2], qh[3]); // die Hand der Welt ist geschert: ihre Drehung kommt ungenormt
+        qh = [qh[0] / ql, qh[1] / ql, qh[2] / ql, qh[3] / ql];
+        var qi = [-qh[0], -qh[1], -qh[2], qh[3]];
         for (var i = 0; i <= n; i++) {
             var a = 3 * i,
                 b = a + 3,
