@@ -2051,12 +2051,15 @@ module.exports = [
         quelle: "1 = Edits und Bauten aus Schreib-Akten byte-gleich über Peers und Reload, gemessen",
     },
 
-    // ── feld.K2 Staffel 2 ── gate:mp-sync (f) (zwei Seiten einer Maschine, ein echter Broker): A springt 20 min Spielzeit in einen
-    // Zug, in dem am Ort ein Sturm aufzieht; B trägt die Welt-Uhr von A (`pos.w`, `_weltUhrNimm`) und denselben Zug im Abdruck
-    // von (e), über Peers und den Reload mitten im Sturm. Was Stufe 2 noch verlangt, schreibt die Linse als (f)-Zeile mit Zahl:
-    // Wetter (Wort, Übergang) und Leben je Zelle gleich, Brand und Pegel gemessen — OFFEN, bis jede Teil-Simulation gleich ist.
-    // GRÜN erst, wenn beide (f)-Zeilen OK sind und (e) den Zug in Peers und Reload gleich trägt. An main ROT (B trägt die Uhr
-    // von A nicht, fk2-uhr); am Schnitt fk2-uhr: Zug gleich, Wetter gleich, Leben 0 von 237 Zellen, Brand und Pegel ungemessen.
+    // ── feld.K2 Staffel 2 ── gate:mp-sync (f) (zwei Seiten einer Maschine, ein echter Broker): A springt in die Trockenheit und in
+    // einen Zug, in dem am Ort ein Sturm aufzieht; B trägt die Welt-Uhr von A (`pos.w`, `_weltUhrNimm`) und denselben Zug im
+    // Abdruck von (e). A entfacht am Anfang des Sturms ein Feuer (der Akt `entfache`), gräbt, baut und pflegt. Die Linse urteilt
+    // je Teil-Simulation an EINER Welt-Uhr beider Seiten, über Peers und den Reload mitten im Sturm: wetter, leben, gefuehl,
+    // asche, brand (je Schritt), naesse (je Schritt des Rasters), pegel, uhr (Tag und Jahr) — je Teil „g/n". GRÜN nur, wenn jede
+    // (f)-Zeile OK ist, (e) den Zug in Peers und Reload gleich trägt UND beide Urteils-Zeilen MESSEN (w6-feld-gleich-pm): Leben
+    // ≥ 1 Zelle, der Brand brannte (≥ 1 brennender Schritt) oder ließ Asche, ≥ 5 Schritte Nässe, Pegel, Uhr und Wetter 1/1 —
+    // und der Selbsttest (ein Zufalls-Schreiber des Lebens bei B) ROT beim Namen. An main ROT („Leben 0/9 gleich · Brand, Pegel
+    // ungemessen" als OFFEN); am Schnitt w6-feld-gleich Peers und Reload je Teil gleich.
     {
         kriterium: "feld.K2",
         staffel: 2,
@@ -2070,8 +2073,22 @@ module.exports = [
             const z = String(lauf.stdout || "").split(/\r?\n/);
             const f = z.filter((x) => /^\s*(OK|ROT|OFFEN)\s+\(f\)/.test(x));
             const zug = z.filter((x) => /^\s*OK\s+\(e\) (Peers|Reload):/.test(x) && /zug gleich/.test(x)).length;
+            // eine Urteils-Zeile MISST, wenn jeder Teil seinen Gegenstand trägt (g/n mit g = n)
+            const teil = (x, k) => (new RegExp("\\b" + k + " (\\d+)/(\\d+)").exec(x) || []).slice(1).map(Number);
+            const misst = (x) => {
+                const [[l, ln], [b, bn], [a, an], [n, nn]] = ["leben", "brand", "asche", "naesse"].map((k) => teil(x, k));
+                const brennt = +((/brand \d+\/\d+ \((\d+) brennend\)/.exec(x) || [])[1] || 0);
+                return (
+                    l >= 1 && l === ln && n >= 5 && n === nn && b === bn && a === an && (brennt >= 1 || a >= 1) &&
+                    ["pegel", "uhr", "wetter"].every((k) => teil(x, k).join("/") === "1/1")
+                );
+            };
+            const urteile = f.filter((x) => /\(f\) (Peers|Reload mitten im Sturm): Teil-Simulationen/.test(x));
+            const selbst = f.some((x) => /^\s*OK\s+\(f\) Selbsttest: ein Zufalls-Schreiber/.test(x) && /Täter/.test(x));
             return {
-                gruen: lauf.exit === 0 && zug === 2 && f.length >= 2 && f.every((x) => /^\s*OK/.test(x)),
+                gruen:
+                    lauf.exit === 0 && zug === 2 && f.length >= 2 && f.every((x) => /^\s*OK/.test(x)) &&
+                    urteile.length === 2 && urteile.every(misst) && selbst,
                 zahl:
                     "Zug der Welt-Uhr gleich in " + zug + " von 2 (e)-Zeilen (Exit " + lauf.exit + ") · " +
                     (f.length ? f.map((x) => x.replace(/^\s*/, "").slice(0, 160)).join(" | ") : "keine (f)-Zeile"),
@@ -2089,6 +2106,10 @@ module.exports = [
             "save-server.js",
             "scripts/diag-mp-sync.cjs",
             "scripts/lib/welt-boot.cjs",
+            "stamm/stoff-*.js",
+            "stamm/wasser-*.js",
+            "stamm/koerper-*.js",
+            "stamm/vegetation-*.js",
         ],
         quelle: "2 = alle Teil-Simulationen (Wetter am Ort, Pegel, Overlays, Brand) ohne Zustands-Nachricht; ein Reload mitten im Sturm setzt denselben Zustand fort",
     },
