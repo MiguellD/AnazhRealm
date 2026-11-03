@@ -1740,12 +1740,13 @@ class AnazhRealm_kreatur_leben {
         return ort;
     }
 
-    // WIE FERN EIN LEIB ERSCHEINT: außerhalb der Witterung des Spielers (tetrapoda furcht.noticeRadius) — näher hätte das Tier
-    // ihn schon bemerkt; dass es nie im Bild erscheint, sagt der Blick (`_kreaturLeibImBlick`, der Leib als Kugel), nie die Ferne.
-    // Bis w7-begegnung stand hier eine Konstante (CREATURE_SPAWN_FAR_MIN, 130 m): jeder Leib erschien ≥ 130 m fern, auch ein
-    // Tier, dessen Weide 30 m neben dem Spieler lag — es äste heim, während der Spieler weiterzog.
+    // WIE FERN EIN LEIB ERSCHEINT: jenseits des Nah-Kreises (`_feldGrenzen` des Tiers, sein Austritt samt Hysterese) — diesseits
+    // lebt das Tier als Leib (der Riss am Maul, `_bestandTode`), dorthin tritt es, nie erscheint es dort; dass es nie im Bild
+    // erscheint, sagt der Blick (`_kreaturLeibImBlick`, der Leib als Kugel), nie die Ferne. Bis w7-begegnung stand hier eine
+    // Konstante (CREATURE_SPAWN_FAR_MIN, 130 m), doppelt so weit wie der Kreis: ein Tier, dessen Anker 70 m neben dem
+    // Spieler lag, erschien 130 m fern und äste heim, während der Spieler weiterzog.
     _kreaturGeburtFernM() {
-        return AnazhRealm._verhaltenGesetz().furcht.noticeRadius;
+        return this._feldGrenzen(false).aus;
     }
 
     // Steht (x, z) im Blick des Spielers (das Frustum des Vor-Takts, einen Meter über dem Grund)? Ohne Frustum nie.
@@ -1758,8 +1759,8 @@ class AnazhRealm_kreatur_leben {
     // Stünde der LEIB einer Gattung `g` der Größe `bs` an (x, z) im Blick? Seine Körper-Kugel wie `_kreaturAusserBlick`
     // (Reichweite + halbe Höhe um die halbe Höhe über dem Fuß, dazu der Saum) — dieselbe Frage, die das Bild an den Leib stellt;
     // die Geburt fragt sie (`_kreaturWurf`, `_bestandLeibOrt`). Bis w7-begegnung fragte jede Geburt den Punkt: ein Leib am Rand
-    // des Blicks, dessen Fuß-Punkt draußen lag, ragte bei der Geburt ins Bild (Kreis-Sonde der Mess-Wiese: 2 im Blick
-    // erschienen in 600 Spiel-s).
+    // des Blicks, dessen Fuß-Punkt draußen lag, ragte bei der Geburt ins Bild (Kreis-Sonde der Mess-Wiese, 600 Spiel-s:
+    // Ego 3, Third 6 im Blick erschienen).
     _kreaturLeibImBlick(x, z, g, bs) {
         const fr = this._frustumCache;
         if (!fr) return false;
@@ -2042,6 +2043,7 @@ class AnazhRealm_kreatur_leben {
         const BG = AnazhRealm._bestandGesetz();
         const B = BG.B;
         const LG = AnazhRealm._lebensraumGesetz();
+        const pflanz = AnazhRealm._verhaltenGesetz().temperament.gattung.pflanzDiet;
         const beuteMasse = AnazhRealm._verhaltenGesetz().jagd.beuteMasse;
         const R = this._bestandRegionen().regionen[key];
         const tiere = R ? R.tiere : [];
@@ -2073,7 +2075,9 @@ class AnazhRealm_kreatur_leben {
             for (const g of jagt) jaeger[g] += diet[h.g];
         }
         for (const o of beuteVon.keys()) gejagt[o.g]++;
-        const beute = this._bestandBeute(tiere);
+        let beuteN = 0;
+        for (const g in n) if (diet[g] <= pflanz) beuteN += n[g];
+        const beute = Math.min(1, beuteN / B.beuteVoll);
         const K = {};
         for (const g in n) K[g] = 0;
         for (const c of feld.zellen) {
@@ -2170,15 +2174,12 @@ class AnazhRealm_kreatur_leben {
     // eigenen Zeit (die Spiel-Uhr steht für ihn auf seiner Stunde: Fraß, Gabe und Verblassen des Felds laufen wie damals), nur
     // das Journal schweigt. Vorher holte fern ein Takt ohne Fraß nach, am Substrat: fern trug das Rotwild das ganze Feld, nah
     // das abgeäste, und eine ferne Region stand unter der halben Nahrung still (27.10.: −4 %). Die Fälle gezeichneter Tiere
-    // sammelt `tode` (ohne: sie fallen am Ende). Liefert die Region. Die Stunde gilt auch in einer jungen Welt: die Uhr der
-    // Region beginnt aufholS vor dem Lesen, wenn die Spiel-Zeit noch keine Stunde zählt (ihre Takte stehen dann vor der Null
-    // der Spiel-Uhr). Bis w7-begegnung begann sie bei max(0, …): an der Mess-Wiese begann jede Region bei 0 leer, nach 600
-    // Spiel-s standen dort 17 Hirsche gegen eine Kapazität von 55.
+    // sammelt `tode` (ohne: sie fallen am Ende). Liefert die Region.
     _bestandRegion(key, aufholen = true, bis = 0, max = Infinity, tode = null) {
         const F = this._bestandRegionen();
         const B = AnazhRealm._bestandGesetz().B;
         const jetzt = this.state.spielZeit || 0;
-        const fern = jetzt - AnazhRealm.BESTAND_REGION.aufholS;
+        const fern = Math.max(0, jetzt - AnazhRealm.BESTAND_REGION.aufholS);
         const R = F.regionen[key] || (F.regionen[key] = { t: fern, seq: 0, tiere: [] });
         if (R.t < fern) R.t = fern;
         if (!aufholen) return R;
@@ -2212,57 +2213,6 @@ class AnazhRealm_kreatur_leben {
                 zellen.push({ x, z, klasse, aesung: this._kreaturNahrung(x, z) });
             }
         return { ha: (S / BR.zellen) ** 2 / 1e4, zellen };
-    }
-
-    // DIE BEUTE EINER REGION (tetrapoda bestandNahrung): ihre Pflanzenfresser (diet bis pflanzDiet) gegen beuteVoll Köpfe,
-    // auf 1 geklemmt — die Kapazität (`_kreaturBestand`) und die Weide (`_bestandWeideOrt`) lesen dieselbe Zahl.
-    _bestandBeute(tiere) {
-        const pflanz = AnazhRealm._verhaltenGesetz().temperament.gattung.pflanzDiet;
-        let n = 0;
-        for (const t of tiere) if (this._ofenKreaturDials(t.g).dials.diet <= pflanz) n++;
-        return Math.min(1, n / AnazhRealm._bestandGesetz().B.beuteVoll);
-    }
-
-    // DIE WEIDE (tiere.K5): wo ein Tier des Bestands JETZT steht — eine Funktion der Welt und der Zeit, nah wie fern dieselbe.
-    // Das Revier eines Tiers ist die Region seines Ankers (die Kachel, deren Zellen seine Kapazität tragen, `_kreaturBestand`);
-    // je Ruhe-Takt seiner Gattung (tetrapoda ETHOGRAMM_GESETZ `ruheTaktS`, die Phase aus der Identität der Gruppe) zieht die
-    // Gruppe auf EINE Zelle des Reviers, gewählt nach dem Gewicht, mit dem die Zelle ihre Kapazität trägt: Lebensraum der
-    // Gattung in der Boden-Klasse × die Nahrung der Zelle nach ihrer Ernährung (Äsung, Beute — `bestandNahrung`). Die Herde
-    // steht dort, wo ihre Zahl herkommt, und wechselt mit der Zeit: Lebensraum × Zeit, die Scheu bleibt das Furcht-Gesetz.
-    // Alle Glieder einer Gruppe (dieselbe Verband-Marke `v`) ziehen auf dieselbe Weide; ein Revier ohne Gewicht hält den
-    // Anker. Gelesen von der Zeichnung (`_bestandVerkoerpern`: wer nah STEHT, wird gezeichnet; `_bestandLeibOrt`: der Leib
-    // erscheint an seiner Weide) und von der Leine des Leibs (`_creatureCharacterWander`). Bis w7-begegnung stand jedes Tier
-    // an seinem Geburts-Ort, die Leine (8–28 m) hielt es dort, während seine Kapazität aus der ganzen Kachel kam: an der
-    // Mess-Wiese standen 10 357 von 15 248 Leib-Proben ≤ 25 m vom Anker, in 600 Spiel-s Kreis 0 Tiere im Bild (Radeon).
-    _bestandWeideOrt(t) {
-        const LG = AnazhRealm._lebensraumGesetz();
-        const G = LG.E.gattung[t.g];
-        const gruppe = String(t.v != null ? t.v : t.id);
-        const takt = G ? G.ruheTaktS : AnazhRealm._bestandGesetz().B.taktS;
-        if (!(t._weidePhase >= 0)) t._weidePhase = this._streamRng("weide:" + gruppe)();
-        const slot = Math.floor((this.state.spielZeit || 0) / takt + t._weidePhase);
-        const W = t._weide;
-        if (W && W.slot === slot) return W.ort;
-        const key = this._bestandKey(t.x, t.z);
-        const feld = this._bestandFeld(key);
-        const R = this._bestandRegionen().regionen[key];
-        const beute = this._bestandBeute(R ? R.tiere : []);
-        const diet = this._ofenKreaturDials(t.g).dials.diet;
-        const BG = AnazhRealm._bestandGesetz();
-        let summe = 0;
-        const w = feld.zellen.map(
-            (c) => (summe += LG.lebensraum(t.g, c.klasse, LG.L) * BG.nahrung(diet, c.aesung, beute))
-        );
-        let ort = { x: t.x, z: t.z };
-        if (summe > 0) {
-            const rng = this._streamRng("weide:" + gruppe + ":" + slot);
-            const u = rng() * summe;
-            const c = feld.zellen[w.findIndex((s) => s > u)];
-            const halb = this._bestandSeite() / AnazhRealm.BESTAND_REGION.zellen / 2;
-            ort = { x: c.x + (rng() * 2 - 1) * halb, z: c.z + (rng() * 2 - 1) * halb };
-        }
-        t._weide = { slot, ort };
-        return ort;
     }
 
     // DIE MASSE EINES TIERS DES BESTANDS (kg — die EINE Masse des Leibs, `_leibMasse`, ohne Leib): das Volumen der Gestalt seiner
@@ -2435,10 +2385,7 @@ class AnazhRealm_kreatur_leben {
             for (const t of F.regionen[key] ? F.regionen[key].tiere : []) {
                 const gk = key + "|" + (t.v != null ? t.v : "e" + t.id);
                 let G = gruppen.get(gk);
-                if (!G) {
-                    const w = this._bestandWeideOrt(t); // wo die Gruppe JETZT steht, nicht wo sie geboren wurde
-                    gruppen.set(gk, (G = { d: Math.hypot(w.x - p.x, w.z - p.z), tiere: [] }));
-                }
+                if (!G) gruppen.set(gk, (G = { d: Math.hypot(t.x - p.x, t.z - p.z), tiere: [] }));
                 G.tiere.push(t);
             }
         // eine Gruppe, die gezeichnet steht, hält ihren Platz um eine halbe Kachel (kein Flattern, wenn eine nähere geboren wird)
@@ -2487,9 +2434,10 @@ class AnazhRealm_kreatur_leben {
         t.leib = null;
     }
 
-    // DIE GRUPPE WIRD GEZEICHNET: ihr erster Leib steht am nächsten Ort der Spirale um ihre Weide (`_bestandWeideOrt`), der fern
-    // vom Spieler, außer Blick (der Leib, seine Kugel), auf freiem Grund und im Lebensraum liegt (`_bestandLeibOrt`), die übrigen im Wurf um ihn (`_kreaturWurf` mit den
-    // Tieren — Raum, Fenster, Lebensraum der Herde); der Verband bindet alle gezeichneten Glieder. Liefert die neuen Leiber.
+    // DIE GRUPPE WIRD GEZEICHNET: ihr erster Leib steht am nächsten Ort der Spirale um den Anker, der fern vom Spieler (jenseits
+    // des Nah-Kreises, `_kreaturGeburtFernM`), außer Blick (der Leib als Kugel, `_kreaturLeibImBlick`), auf freiem Grund und im
+    // Lebensraum liegt (`_bestandLeibOrt`), die übrigen im Wurf um ihn (`_kreaturWurf` mit den Tieren — Raum, Fenster, Lebensraum
+    // der Herde); der Verband bindet alle gezeichneten Glieder. Liefert die neuen Leiber.
     _bestandLeiber(fehlt, gruppe = fehlt) {
         const ort = this._bestandLeibOrt(fehlt[0]);
         if (!ort) return [];
@@ -2505,13 +2453,12 @@ class AnazhRealm_kreatur_leben {
         const p = this.state.playerMesh.position;
         const LG = AnazhRealm._lebensraumGesetz();
         const lebt = (x, z) => LG.lebensraum(t.g, this._bodenKlasseAt(x, z), LG.L) > 0;
-        const w = this._bestandWeideOrt(t);
-        const imRaum = lebt(w.x, w.z);
+        const imRaum = lebt(t.x, t.z);
+        const fernM = this._kreaturGeburtFernM();
         for (let k = 0; k < 64; k++) {
-            const x = w.x + Math.cos(k * 2.39996) * 25 * Math.sqrt(k);
-            const z = w.z + Math.sin(k * 2.39996) * 25 * Math.sqrt(k);
-            if (Math.hypot(x - p.x, z - p.z) < this._kreaturGeburtFernM() || this._kreaturLeibImBlick(x, z, t.g, t.bs))
-                continue;
+            const x = t.x + Math.cos(k * 2.39996) * 25 * Math.sqrt(k);
+            const z = t.z + Math.sin(k * 2.39996) * 25 * Math.sqrt(k);
+            if (Math.hypot(x - p.x, z - p.z) < fernM || this._kreaturLeibImBlick(x, z, t.g, t.bs)) continue;
             if (this._kreaturGrundFrei(x, z) && (!imRaum || lebt(x, z))) return { x, z };
         }
         return null;
@@ -2525,11 +2472,7 @@ class AnazhRealm_kreatur_leben {
               )
             : this.spawnCreatureAt(x, y, z, "happy", t.soul, { bodySize: t.bs });
         if (!c) return null;
-        Object.assign(c.userData, {
-            alterS: t.alterS,
-            wanderAnchor: this._bestandWeideOrt(t),
-            name: this._bestandName(t),
-        });
+        Object.assign(c.userData, { alterS: t.alterS, wanderAnchor: { x: t.x, z: t.z }, name: this._bestandName(t) });
         [c.userData._bestand, t.leib, t.snap] = [t, c, null];
         return c;
     }

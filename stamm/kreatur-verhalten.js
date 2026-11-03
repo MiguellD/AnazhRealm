@@ -891,7 +891,7 @@ class AnazhRealm_kreatur_verhalten {
     // erreichen kann (das Grob-Tor des Treffers, _trefferErreichbar), bevor die Gestalt selbst richtet. Gemessen über die
     // Treffer-Glieder als räumliche Spanne vom Fuß-Ursprung (sie deckt jede Lage des Leibs), vier Gattungen × acht Größen
     // im Spiel-Takt: Wolf 1,86 · Bär 2,00 · Hirsch 2,01 · Fuchs 2,21 L (die Rute) gegen 2,6 L (gate:kampf-gefuehl T12).
-    // Ohne `creature` (der Leib, der an einem Ort erst stünde — die Geburt fragt den Blick, `_kreaturImBlick`) trägt er L und
+    // Ohne `creature` (der Leib, der an einem Ort erst stünde — die Geburt fragt den Blick, `_kreaturLeibImBlick`) trägt er L und
     // blickt nach +z.
     _kreaturLeib(creature, L, out) {
         const l = L > 0 ? L : this._kreaturHueftL(creature);
@@ -1555,10 +1555,8 @@ class AnazhRealm_kreatur_verhalten {
         }
         const mag = speed * K.wanderSpeedMul * amp;
         direction.set(Math.cos(ud._wanderHeading) * mag, 0, Math.sin(ud._wanderHeading) * mag);
-        // die LEINE: furchtsam bleibt nah am Anker, mutig streift weiter. Der Anker eines Tiers des Bestands ist seine Weide
-        // (`_bestandWeideOrt`: die Zelle seines Reviers, auf die seine Gruppe in diesem Ruhe-Takt zieht) — er wandert mit der Zeit.
-        if (ud._bestand) ud.wanderAnchor = this._bestandWeideOrt(ud._bestand);
-        else if (!ud.wanderAnchor) ud.wanderAnchor = { x: creature.position.x, z: creature.position.z };
+        // die LEINE: furchtsam bleibt nah am Anker, mutig streift weiter.
+        if (!ud.wanderAnchor) ud.wanderAnchor = { x: creature.position.x, z: creature.position.z };
         const leash = this._creatureMoveCharacter(creature).leashM;
         const dx = ud.wanderAnchor.x - creature.position.x;
         const dz = ud.wanderAnchor.z - creature.position.z;
