@@ -193,36 +193,38 @@ const wacheLeer = (P, b = "nachtwaechter", a = "waechter", W = {}) => {
 // Schwerpunkt an (die Wurzel quer ≥ ½ Δv am Ende des Stoßes), S2 der Ausfallschritt (ein Fuß des Stoß-Zustands ≥ 0,1 m in
 // Stoß-Richtung, in beiden Richtungen), S3 die Erholung (die Wurzel quer ≤ 5 cm/s gegen die Bahn ab ≤ 1,5 s), S4 die doppelte
 // Masse halbiert den Schritt (≤ 0,8 ×), S5 ein Hauch (20 N) fängt der Knöchel (kein Schritt), S6 ein Versetzen des Leibs (Lage
-// springt, Geschwindigkeit 0) trägt keinen Stoß. Bis w5-physik-k5 zog der Antrieb (kAcc 40/s) jeden Stoß in 25 ms auf das Ziel
+// springt, eine neue Geschwindigkeit) trägt keinen Stoß, S7 ein Halt am Ort (Geschwindigkeit 0, die Bühne, die den Leib stellt) auch
+// nicht: der Gang danach Takt für Takt wie der eines frischen Leibs aus der Ruhe (an z171 ROT: der Halt galt als Stoß rückwärts,
+// die Gamepad-Verben gingen gebremst). Bis w5-physik-k5 zog der Antrieb (kAcc 40/s) jeden Stoß in 25 ms auf das Ziel
 // des Gangs: der Leib wich 0,008 m. Leser: der Wirt (`_loopPlayerMovement` → leibPlan, `_stepCharacter` → leibLandung) und das
 // Körper-Studio (playSchritt). Täter (Selbsttest): der Leib ohne Bein (der Antrieb schluckt den Stoß), kein Ausfallschritt, die
-// Wache des Versetzens blind.
-function stossLauf(C, { kraft = 200, richtung = 1, masse = 89, beinM = 0.85, versetzen = false, mutante = null } = {}) {
-    const L = C.leibZustand();
-    const K = { tempo: 4.5, gehTempo: 4.5, hang: 1, rittKAcc: null, rittKBrake: null, lage: [0, 0, 0], beinM, g: 9.81 };
-    const p = K.lage;
-    const bahn = [];
-    let ausfall = 0, schritte = 0, versetzt = false;
-    for (let k = 0; k < 270; k++) {
-        const v = L.playerVel;
+// Wache des Versetzens blind, der Halt als Stoß gelesen.
+function stossLauf(C, { kraft = 200, richtung = 1, masse = 89, beinM = 0.85, eingriff = null, mutante = null, ab = 0, L = C.leibZustand(), lage = [0, 0, 0] } = {}) {
+    const K = { tempo: 4.5, gehTempo: 4.5, hang: 1, rittKAcc: null, rittKBrake: null, lage, beinM, g: 9.81 };
+    const [p, v] = [K.lage, L.playerVel];
+    const bahn = [], vz = [];
+    let ausfall = 0, schritte = 0, versetzt = false, haltLage = null;
+    for (let k = ab; k < 270; k++) {
         if (kraft && k >= 90 && k < 102) v.setValue(v.x() + (richtung * kraft) / 60 / masse, 0, v.z());
-        if (versetzen && k === 150) {
+        if (eingriff === "versetzen" && k === 150) {
             p[0] += 40;
-            v.setValue(0, 0, 0);
+            v.setValue(0.7, 0, v.z());
             if (mutante === "versatz") L._stossLage = [p[0], p[2]];
         }
+        if (eingriff === "halt" && k === 150) (haltLage = [...p]), v.setValue(mutante === "halt" ? 1e-3 : 0, 0, 0);
         C.leibRichtung(L, 0, 1, 0);
         C.leibPlan(L, { vor: 1, quer: 0 }, K, k / 60, 1 / 60);
         const B = L.leibStoss;
         if (B && mutante === "ohneSchritt") B.naechster = Infinity;
         if (B) for (const i of [0, 1]) ausfall = Math.max(ausfall, richtung * C.leibStossFuss(B, i)[0]);
-        if (B) [schritte, versetzt] = [Math.max(schritte, B.schritte), versetzt || (versetzen && k === 150)];
+        if (B) [schritte, versetzt] = [Math.max(schritte, B.schritte), versetzt || (eingriff && k >= 150)];
         p[0] += v.x() / 60;
         p[2] += v.z() / 60;
         C.leibLandung(L, true, false, k / 60);
         bahn.push(richtung * p[0]);
+        if (k >= 150 && k < 162) vz.push(v.z());
     }
-    return { bahn, ausfall, schritte, versetzt };
+    return { bahn, ausfall, schritte, versetzt, haltLage, vz };
 }
 function stossUrteil(C, mutante = null) {
     const beinM = mutante === "ohneBein" ? 0 : 0.85;
@@ -235,15 +237,19 @@ function stossUrteil(C, mutante = null) {
         return { ...P, vEnde: vq(101), erholt };
     };
     const [a, g, m, h] = [{}, { richtung: -1 }, { masse: 178 }, { kraft: 20 }].map(lies);
+    // S7 der Halt am Ort: der Leib geht danach Takt für Takt wie ein frischer Leib aus der Ruhe an derselben Lage
+    const H = stossLauf(C, { kraft: 0, beinM, eingriff: "halt", mutante });
+    const F = stossLauf(C, { kraft: 0, beinM, ab: 150, lage: [...H.haltLage] });
     const rot = [
         [a.vEnde >= 0.22, `S1 der Antrieb schluckt den Stoß (leibPlan): Wurzel ${a.vEnde.toFixed(3)} m/s`],
         [a.ausfall >= 0.1 && g.ausfall >= 0.1, `S2 kein Ausfallschritt (leibStossSchritt): ${a.ausfall.toFixed(3)} / ${g.ausfall.toFixed(3)} m`],
         [a.erholt <= 1.5, `S3 erholt ${a.erholt} s`],
         [m.ausfall > 0 && m.ausfall <= 0.8 * a.ausfall, `S4 die Masse ×2 zieht nicht: ${m.ausfall.toFixed(3)} m`],
         [!h.schritte, `S5 20 N: ${h.schritte} Schritte`],
-        [!stossLauf(C, { kraft: 0, beinM, versetzen: true, mutante }).versetzt, "S6 das Versetzen trägt einen Stoß (leibStossLesen)"],
+        [!stossLauf(C, { kraft: 0, beinM, eingriff: "versetzen", mutante }).versetzt, "S6 das Versetzen trägt einen Stoß (leibStossLesen)"],
+        [!H.versetzt && H.vz.every((x, i) => x === F.vz[i]), `S7 der Halt trägt einen Stoß (leibStossLesen): ${H.vz[11].toFixed(3)} statt ${F.vz[11].toFixed(3)} m/s nach 12 Takten`],
     ].filter(([ok]) => !ok).map(([, z]) => z);
-    return { rot, a, m };
+    return { rot, a, m, H };
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -262,16 +268,16 @@ if (selftest) {
     const w = wacheLeer(core.tagesPlan, "waechter");
     // der Stoß im Gang: jeder Täter fällt ROT beim Namen, das Gesetz hält
     const gut = !stossUrteil(core).rot.length;
-    const taeter = ["ohneBein S1", "ohneSchritt S2", "versatz S6"].map((m) => [gut && stossUrteil(core, m.split(" ")[0]).rot.some((z) => z.startsWith(m.split(" ")[1])), m]);
+    const taeter = ["ohneBein S1", "ohneSchritt S2", "versatz S6", "halt S7"].map((m) => [gut && stossUrteil(core, m.split(" ")[0]).rot.some((z) => z.startsWith(m.split(" ")[1])), m]);
     for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], ...taeter])
         if (!x) {
             console.log(`⛔ Selbsttest: ${n}-Injektion NICHT erkannt`);
             fails++;
         }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle sieben injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, drei Täter des Stoßes).`);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle acht injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, vier Täter des Stoßes).`);
 }
 
 const r = runVergleich(neuMorph, core.labProportionen, core.labLandmarks);
 const leer = wacheLeer(core.tagesPlan);
 const st = stossUrteil(core);
-urteilEnde(r.points < 500 || r.diffs || leer || st.rot.length, `❌ ROT — Gitter ${r.points} Punkte, ${r.diffs} Abweichungen alt↔neu, ${leer} Proben ohne Wache${st.rot.length ? " · " + st.rot.join(" · ") : ""}`, `✅ DER MENSCH IST EINER — Dial-Gitter ${r.points} Punkte, ${r.values} Werte alt==neu exakt (0 Abweichungen); Proportionen + Landmarken-Urteil identisch; DIE WACHE STEHT zu jeder Stunde; DER STOSS IM GANG: Ausfall ${st.a.ausfall.toFixed(3)} m (Masse ×2 ${st.m.ausfall.toFixed(3)}), erholt ${st.a.erholt.toFixed(3)} s.`);
+urteilEnde(r.points < 500 || r.diffs || leer || st.rot.length, `❌ ROT — Gitter ${r.points} Punkte, ${r.diffs} Abweichungen alt↔neu, ${leer} Proben ohne Wache${st.rot.length ? " · " + st.rot.join(" · ") : ""}`, `✅ DER MENSCH IST EINER — Dial-Gitter ${r.points} Punkte, ${r.values} Werte alt==neu exakt (0 Abweichungen); Proportionen + Landmarken-Urteil identisch; DIE WACHE STEHT zu jeder Stunde; DER STOSS IM GANG: Ausfall ${st.a.ausfall.toFixed(3)} m (Masse ×2 ${st.m.ausfall.toFixed(3)}), erholt ${st.a.erholt.toFixed(3)} s; nach dem Halt ${st.H.vz[11].toFixed(3)} m/s wie aus der Ruhe.`);

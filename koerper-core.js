@@ -1907,6 +1907,10 @@
         versetztM: 0.5,
         hebKnieRad: 0.8,
     });
+    // DER STOSS-ZUSTAND AM LEIB (die Felder, die ein Wirt mit dem Leib tauscht, wenn er einen fremden Schritt auf demselben
+    // Zustand fährt — das Replay, der Geist des Lockstep): der Stoß, die Geschwindigkeit nach dem Kontakt, die Lage des letzten
+    // Plans, der Plan zu Fuß, der gemeldete Stoß im Kontakt
+    var LEIB_STOSS_FELDER = Object.freeze(["leibStoss", "_leibNach", "_stossLage", "_stossFrei", "_stossOffen"]);
     // ein Stoß, den der Wirt IM Kontakt-Schritt in die Geschwindigkeit schrieb (der Wagen, die Kiste, gegen die er prallt)
     function leibStossMerke(L, dvx, dvz) {
         var o = L._stossOffen || (L._stossOffen = [0, 0]);
@@ -1940,9 +1944,13 @@
             n = L._leibNach,
             vor = L._stossLage,
             lage = K.lage;
+        // DER HALT: wer die Geschwindigkeit auf Ruhe setzt (die Rettung, das Aufschütten, der Ladestand, das Absteigen, eine Bühne,
+        // die den Leib stellt), hält ihn an — er stößt nicht; die Kraft, die einen gehenden Leib genau auf 0 brächte, gibt es nicht.
+        // Bis w6-physik-k5 las der Plan den Halt als Stoß gegen die Laufrichtung, der Leib fiel rückwärts und der nächste Gang
+        // ging gebremst (Gamepad-Verben leib.K5 an z171: 0,431 statt 0,628 m/s bei 0,6 Auslenkung).
         var dx = 0,
             dz = 0,
-            versetzt = !vor || !lage;
+            versetzt = !vor || !lage || (v.x() === 0 && v.z() === 0);
         if (!versetzt) {
             var weg = Math.hypot(lage[0] - vor[0], lage[2] - vor[1]);
             versetzt = weg > (n ? Math.hypot(n[0], n[1]) : 0) * dt + Math.hypot(v.x(), v.z()) * dt + S.versetztM;
@@ -4281,6 +4289,7 @@
         leibFall: leibFall,
         leibLandung: leibLandung,
         LEIB_STOSS: LEIB_STOSS,
+        LEIB_STOSS_FELDER: LEIB_STOSS_FELDER,
         leibStossMerke: leibStossMerke,
         leibStossLesen: leibStossLesen,
         leibStossSchritt: leibStossSchritt,

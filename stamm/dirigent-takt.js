@@ -1100,6 +1100,8 @@ class AnazhRealm_dirigent_takt {
             _groundedCache: undefined,
             _groundedCachedAt: undefined,
         };
+        // der Stoß-Zustand des Leibs (physik.K5): das Replay beginnt ohne Stoß, der des Spiels kehrt danach zurück
+        for (const k of AnazhRealm._leibTakt().LEIB_STOSS_FELDER) frisch[k] = null;
         const gerettet = {};
         for (const k in frisch) ((gerettet[k] = s[k]), (s[k] = frisch[k]));
         let t = 0;
