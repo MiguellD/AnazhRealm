@@ -216,6 +216,10 @@ async function welt() {
         // Schirm-Gesetz (auf main schwankte dieselbe Klasse ±40 je Reihe, nur nie im Buckel der Mitte). Ihr Takt ruht: der Pool
         // behält die Lage seines letzten Takts
         r._vogelTakt = () => {};
+        // DIE BESTÄUBER EBENSO: ihr Besuch je Blüte folgt der Welt-Uhr (`_bestaeuberTakt`: `bestaeuberBesuch(h, spielZeit, …)`),
+        // nie dem Schirm — am 03.11. (w5-stufen, zwei Läufe) flog im kleinen Fenster einer mehr, tier:bestaeuber 432 > 416–424
+        // Dreiecke; ihr Pool behält die Lage seines letzten Takts
+        r._bestaeuberTakt = () => {};
         // DER WOLF DER FELL-PROBE: im Abstand d*, an dem das Fell-Gesetz im großen Fenster trägt (px ≥ px·(1+hyst)) und
         // im kleinen nicht (px < px·(1−hyst)) — das geometrische Mittel der Schwellen der beiden Ränder der Reihe.
         const cam = st.camera;
