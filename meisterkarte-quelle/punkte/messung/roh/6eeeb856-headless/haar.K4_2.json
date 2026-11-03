@@ -1,0 +1,52 @@
+{
+ "proben": {
+  "tuch": {
+   "loeser": [],
+   "rufe": {},
+   "teile": [
+    "haar",
+    "haut*",
+    "stoff*",
+    "*",
+    "auge*",
+    "haar*"
+   ],
+   "kleidung": {
+    "top": "poncho",
+    "bottom": "pants",
+    "shoes": "boot",
+    "farben": [
+     "sand",
+     "olive",
+     "grey",
+     "mustard",
+     "burgundy"
+    ]
+   },
+   "ruhe": {
+    "durchdringung": 544
+   },
+   "rufeImGang": {},
+   "gang": {
+    "ecken": 9950,
+    "durchdringung": 9905,
+    "bilderMitDurchdringung": 40,
+    "loeserTraegtM": 0
+   },
+   "stillgelegt": {
+    "ecken": 9950,
+    "durchdringung": 9905,
+    "bilderMitDurchdringung": 40
+   },
+   "labor": {
+    "kern": true,
+    "rufe": {},
+    "fehler": null
+   },
+   "sek": 33.5
+  }
+ },
+ "fehler": [
+  "Error creating WebGL context."
+ ]
+}

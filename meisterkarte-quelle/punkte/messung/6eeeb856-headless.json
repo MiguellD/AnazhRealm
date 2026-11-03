@@ -1,0 +1,77 @@
+{
+ "sha": "6eeeb856589d2e571e7ef015a82b008c0c8545c2",
+ "geraet": "headless",
+ "zeit": "2026-11-03T16:39:59.964Z",
+ "host": "farm:41676230919",
+ "je": {
+  "luftwasser.K4#2": {
+   "gruen": true,
+   "zahl": "Feld der Mitte 0.658 → 0.823 · Bestäuber der Mitte 5.414/5.6 → 8.1 nach der Geste, Nachbar 5.943/6.543 → 6.643 (Rauschen ±0.6) · Uhr: Mittag 14.743 → Mitternacht 0.186 (Aktivität 0.01) → Mittag 10.914 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag)",
+   "exit": 0,
+   "minuten": 0.91,
+   "zeit": "2026-11-03T16:39:53.613Z",
+   "abdruck": "e773ca5890e4",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41676230919/1"
+  },
+  "affekt.K5#2": {
+   "gruen": false,
+   "zahl": "Erregung 0.9 ↔ -0.7 (awe/peace): Periode 3.248 ↔ 3.248 s (Rauschen 3.248), Dichte 10.967 ↔ 7.783 Quellen/s (10.883) · Schicht L1 Sturm 0, Nacht 0 (Rauschen 0.011) · 600 s: 185 Phrasen, 185 mit Ton, 1 wiederholt · Duck Schritt 0 · Ruf 0 · Gespräch 0 dB (Rauschen 0.01) · ROT das Tempo folgt der Erregung nicht (Periode 3.248 ↔ 3.248 s, Rauschen 3.248); das Wetter wechselt die Schicht nicht (L1 0, Rauschen 0.011); die Uhr wechselt die Schicht nicht (L1 0, Rauschen 0.011); 1 Phrasen wiederholen sich binnen 10 min; die Musik duckt sich nicht unter schritt (0 dB); die Musik duckt sich nicht unter ruf (0 dB); die Musik duckt sich nicht unter gespraech (0 dB)",
+   "exit": 0,
+   "minuten": 0.12,
+   "grund": "ROT: Erregung 0.9 ↔ -0.7 (awe/peace): Periode 3.248 ↔ 3.248 s (Rauschen 3.248), Dichte 10.967 ↔ 7.783 Quellen/s (10.883) · Schicht L1 Sturm 0, Nacht 0 (Rauschen 0.011) · 600 s: 185 Phrasen, 185 mit Ton, 1 wiederholt · Duck Schritt 0 · Ruf 0 · Gespräch 0 dB (Rauschen 0.01) · ROT das Tempo folgt der Erregung nicht (Periode 3.248 ↔ 3.248 s, Rauschen 3.248); das Wetter wechselt die Schicht nicht (L1 0, Rauschen 0.011); die Uhr wechselt die Schicht nicht (L1 0, Rauschen 0.011); 1 Phrasen wiederholen sich binnen 10 min; die Musik duckt sich nicht unter schritt (0 dB); die Musik duckt sich nicht unter ruf (0 dB); die Musik duckt sich nicht unter gespraech (0 dB)",
+   "zeit": "2026-11-03T16:39:59.964Z",
+   "abdruck": "215429e9a889",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41676230919/2"
+  },
+  "haar.K4#2": {
+   "gruen": false,
+   "zahl": "Tracht poncho/pants, 9950 Tuch-Ecken · Löser [] 0 Rufe im Gang · was der Löser trägt 0 m · Durchdringung im Gang 9905 (40 von 40 Bildern; in Ruhe 544, nicht gezählt) · Labor 0 Rufe · ROT kein Tuch-Löser im Körper-Kern (xpbd · tuch · cloth); der Löser trägt das Tuch nicht (stillgelegt weicht es 0 m ab: es folgt nur der Haut); der Gang drückt 9905 Tuch-Ecken hinter die Haut (in 40 von 40 Bildern); das Labor ruft den Löser nicht (Labor ≠ Welt)",
+   "exit": 1,
+   "minuten": 0.66,
+   "grund": "ROT: Tracht poncho/pants, 9950 Tuch-Ecken · Löser [] 0 Rufe im Gang · was der Löser trägt 0 m · Durchdringung im Gang 9905 (40 von 40 Bildern; in Ruhe 544, nicht gezählt) · Labor 0 Rufe · ROT kein Tuch-Löser im Körper-Kern (xpbd · tuch · cloth); der Löser trägt das Tuch nicht (stillgelegt weicht es 0 m ab: es folgt nur der Haut); der Gang drückt 9905 Tuch-Ecken hinter die Haut (in 40 von 40 Bildern); das Labor ruft den Löser nicht (Labor ≠ Welt)",
+   "zeit": "2026-11-03T16:39:43.664Z",
+   "abdruck": "1b02b3b55148",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41676230919/3"
+  },
+  "streaming.K5#1": {
+   "gruen": true,
+   "zahl": "0.69 MB/min am Empfang in 60.0 s Fahrt",
+   "exit": 0,
+   "minuten": 1.84,
+   "zeit": "2026-11-03T16:39:42.816Z",
+   "abdruck": "08885852a938",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "farm:41676230919/4"
+  },
+  "streaming.K5#2": {
+   "gruen": true,
+   "zahl": "0.69 MB/min in 60.0 s Fahrt · Kopie 0.00 MB · Speicher-Faden ja (Fäden: buch · voxel · streu · speicher · wald)",
+   "exit": 0,
+   "minuten": 1.84,
+   "zeit": "2026-11-03T16:39:42.816Z",
+   "abdruck": "1fe252f89810",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "farm:41676230919/4",
+   "zwilling": "streaming.K5#1"
+  },
+  "physik.K4#1": {
+   "gruen": true,
+   "zahl": "klinge_flegel Schwung 0.481 m, Länge (längs) 0.328–0.328 m, v² 3.038 → 0.262 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde)",
+   "exit": 0,
+   "minuten": 0.82,
+   "zeit": "2026-11-03T16:39:48.523Z",
+   "abdruck": "760735d7e530",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41676230919/5"
+  }
+ }
+}
