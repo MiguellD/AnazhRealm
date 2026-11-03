@@ -72,7 +72,9 @@ class AnazhRealm_dienst {
             .slice(0, 12)}] ${satz}`;
     }
 
-    async llmCall(userText, systemPromptOverride = null, { hintergrund = false } = {}) {
+    // `form`: die Antwort-Form des Rufers als JSON-Schema über die Platzhalter DIESER Anfrage (`form(platz)`; die Seele eines
+    // Wesens, `_kiSeeleSchema`) — ein Anbieter, der eine Form erzwingt (ollama `format`), sampelt nur sie.
+    async llmCall(userText, systemPromptOverride = null, { hintergrund = false, form = null } = {}) {
         const llm = this.state.llm;
         const defs = this.llmProviderDefs();
         const def = defs[llm.provider];
@@ -117,7 +119,7 @@ class AnazhRealm_dienst {
             const headers = def.buildHeaders(cfg.apiKey, cfg);
             // V7.95 — cfg als 4. Argument für Provider die OpenAI-kompat-
             // Detection brauchen (Ollama Cloud). Andere Provider ignorieren es.
-            const body = def.buildBody(cfg.model, system, userContent, cfg);
+            const body = def.buildBody(cfg.model, system, userContent, cfg, form && form(platz));
             // useProxy (Ollama Cloud): Request über localhost:4312/api/proxy/llm, damit der Browser nicht an
             // CORS scheitert (der save-server setzt CORS-Header). Bei localhost/127.0.0.1-URLs automatisch
             // umgangen — kein CORS-Problem, und der Proxy scheiterte am https-only-Check.
@@ -159,8 +161,9 @@ class AnazhRealm_dienst {
             llm.lastError = parsed.error || null;
             // die Antwort bekommt die Namen zurück (isoliert, wie sie kamen) — der Spieler liest den Namen, nie den Platzhalter
             const name = new Map([...karte].map(([s, h]) => [h, s]));
-            if (parsed.say)
-                parsed.say = parsed.say.replace(/«N\d+»/g, (h) => (name.has(h) ? AnazhRealm._datum(name.get(h)) : h));
+            const zurueck = (t) => t.replace(/«N\d+»/g, (h) => (name.has(h) ? AnazhRealm._datum(name.get(h)) : h));
+            if (parsed.say) parsed.say = zurueck(parsed.say);
+            if (typeof parsed.erinnerung === "string") parsed.erinnerung = zurueck(parsed.erinnerung);
             return parsed;
         } catch (err) {
             if (abbruch.signal.aborted) return { error: "dem Satz des Spielers gewichen" };

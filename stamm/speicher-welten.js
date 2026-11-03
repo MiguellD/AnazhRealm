@@ -1432,21 +1432,50 @@ class AnazhRealm_speicher_welten {
         // ganz im Stand.
         for (const z of C.augenblick) feld(z, true);
         const alles = !takt || voll || K.geaendert.includes("playerInventory");
-        // (2) DER KOPF: die Felder ohne Art, je Feld sein Stück JSON (gefragt oder gefegt), EIN Text, EIN Vergleich — neu
-        // zusammengesetzt nur, wenn ein Stück sich regte; der Faden setzt ihn als Felder ohne Klammern ein
+        // (2) DER KOPF: die Felder ohne Art, je Feld sein Stück JSON (gefragt oder gefegt) — gesendet reist NUR das Stück, das
+        // sich gegen das gesendete regte (Teil `KOPF_TEIL` + Name; `S.kopf` hält je Feld das gesendete Stück, null: der Faden
+        // hält keinen Kopf), die Reihe der Felder (`kopfOrdnung`) nur mit einem neuen Kopf; der Faden setzt die Stücke als
+        // Felder ohne Klammern ein. EIN OBJEKT-FELD (worldMeta) reist je Glied (Teil `KOPF_TEIL` + Name + `KOPF_TEIL` + Glied,
+        // die Reihe seiner Glieder in `kopfGlieder`, nur wenn sie sich regte). Bis streaming-k5 reiste der GANZE Kopf als EIN
+        // Text, sobald ein Stück sich regte — je Bau-Klick (`worldMeta.bauSame`, 9 Zeichen) 20 kB, in der Minute Fahrt
+        // 0,28 MB Klon an den Speicher-Faden (gate:worker-dichte K5).
+        let kopfOrdnung = null;
+        const kopfGlieder = {};
         if (alles || S.kopf === null || S.kopfNeu) {
             S.kopfNeu = false;
-            const kopf = [];
-            for (const z of C.kopf) {
-                if (alles || !S.kopfStuecke.has(z[0])) this._standFrage(z, K);
-                const s = S.kopfStuecke.get(z[0]);
-                if (s) kopf.push(s);
+            if (voll || S.kopf === null) {
+                S.kopf = new Map();
+                kopfOrdnung = C.kopf.map((z) => z[0]);
             }
-            const kopfJson = kopf.join(",");
-            if (voll || S.kopf !== kopfJson) {
-                S.kopf = kopfJson;
-                teile.push("");
-                stuecke.push(kopfJson);
+            const KT = AnazhRealm.KOPF_TEIL;
+            for (const z of C.kopf) {
+                const k = z[0];
+                if (alles || !S.kopfStuecke.has(k)) this._standFrage(z, K);
+                const s = S.kopfStuecke.get(k) || "";
+                const g = S.kopf.get(k);
+                if (typeof s === "string") {
+                    if (g === s) continue;
+                    S.kopf.set(k, s);
+                    teile.push(KT + k);
+                    stuecke.push(s);
+                    continue;
+                }
+                // je Glied: die Reihe, wo sie sich regte (ein Glied, das fiel, fällt im Faden mit ihr), dann jedes andere Stück
+                const G = g && typeof g === "object" ? g : { reihe: null, stk: new Map() };
+                if (G.reihe !== s.reihe) {
+                    G.reihe = s.reihe;
+                    kopfGlieder[k] = s.ordnung;
+                    const lebt = new Set(s.ordnung);
+                    for (const m of G.stk.keys()) if (!lebt.has(m)) G.stk.delete(m);
+                }
+                for (const m of s.ordnung) {
+                    const p = s.stk.get(m);
+                    if (G.stk.get(m) === p) continue;
+                    G.stk.set(m, p);
+                    teile.push(KT + k + KT + m);
+                    stuecke.push(p);
+                }
+                S.kopf.set(k, G);
             }
         }
         // die ruhigen Felder mit eigener Art (Marke oder eigenes Urteil), die aus keiner Liste folgen
@@ -1549,6 +1578,8 @@ class AnazhRealm_speicher_welten {
         // neu nur, wo ein Feld seinen Wert gewann oder verlor (`_standFrage`) oder die Tafel wuchs
         const daten = stuecke.concat(listenStuecke).join("\u0001");
         const nachricht = { teile, listen, daten };
+        if (kopfOrdnung) nachricht.kopfOrdnung = kopfOrdnung;
+        for (const k in kopfGlieder) (nachricht.kopfGlieder || (nachricht.kopfGlieder = {}))[k] = kopfGlieder[k];
         if (voll || !S.ordnung) {
             const ordnung = [];
             let mitKopf = false;
@@ -1595,7 +1626,35 @@ class AnazhRealm_speicher_welten {
             wert = z[1],
             art = z[2];
         if (!art) {
-            const j = JSON.stringify(wert(true, K));
+            const v = wert(true, K);
+            // ein schlichtes Objekt je Glied (`"m":JSON`, in der Reihe seiner Schlüssel, ohne die undefined) — dieselben Bytes wie
+            // JSON.stringify des Ganzen; jedes andere Feld als EIN Stück
+            if (
+                v &&
+                typeof v === "object" &&
+                Object.getPrototypeOf(v) === Object.prototype &&
+                typeof v.toJSON !== "function"
+            ) {
+                const [ordnung, stk] = [[], new Map()];
+                for (const m of Object.keys(v)) {
+                    const j = JSON.stringify(v[m]);
+                    if (j === undefined) continue;
+                    ordnung.push(m);
+                    stk.set(m, JSON.stringify(m) + ":" + j);
+                }
+                const reihe = JSON.stringify(ordnung);
+                const a = S.kopfStuecke.get(k);
+                if (
+                    a &&
+                    typeof a === "object" &&
+                    a.reihe === reihe &&
+                    ordnung.every((m) => a.stk.get(m) === stk.get(m))
+                )
+                    return false;
+                S.kopfStuecke.set(k, { ordnung, reihe, stk });
+                return (S.kopfNeu = true);
+            }
+            const j = JSON.stringify(v);
             const s = j === undefined ? "" : JSON.stringify(k) + ":" + j;
             if (S.kopfStuecke.get(k) === s) return false;
             S.kopfStuecke.set(k, s);
@@ -2966,6 +3025,9 @@ AnazhRealm.STAND_LEER = Object.freeze([]);
 // DER STAND DES TAKTS im Leerlauf (`_standSichern`): spätestens `fristMs` nach dem Ruf, vorher nur in einem Fenster mit `platzMs`;
 // der Besen schläft, bis ein Glied fällig ist, mindestens `schlafMs`, und fegt je Fenster höchstens `fegeMs`
 AnazhRealm.STAND_TAKT = Object.freeze({ fristMs: 1000, platzMs: 4, schlafMs: 100, fegeMs: 0.05 });
+// Das Zeichen vor dem Namen eines Kopf-Felds unter den Teilen eines Stands (speicher-faden.js `KOPF_TEIL`, dasselbe Zeichen):
+// kein Name der Tafel beginnt mit einem Steuerzeichen
+AnazhRealm.KOPF_TEIL = "\u0002";
 AnazhRealm.BLUEPRINT_KNOWN_KEYS = Object.freeze([
     "name",
     "label",
