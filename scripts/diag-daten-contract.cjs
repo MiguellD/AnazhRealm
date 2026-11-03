@@ -16,7 +16,8 @@
 //      (spec/asset-contract/v7/golden/daten.json — gemintet NUR wenn es fehlt).
 //   --selftest: Schema-Verletzungen (klang, motion) und ein Kern, der beim Laden eine Transzendente ruft, werden erkannt.
 //   node scripts/diag-daten-contract.cjs [--selftest]
-const { pruefer, wandEnde, selbsttestEnde, ausDatei, SELBSTTEST, fs, vm, jsonLesen, jsonSchreiben, jsonKlon, path, ROOT: root, kernKontext } = require("./lib/welt-boot.cjs");
+const { pruefer, wandEnde, selbsttestEnde, ausDatei, SELBSTTEST, fs, vm, jsonLesen, jsonSchreiben, jsonKlon, path, ROOT: root } = require("./lib/welt-boot.cjs");
+const { kernKontext } = require("./lib/asset-worker-harness.cjs");
 const { probeWand } = require("./lib/plattform-probe.cjs");
 
 const goldenDir = path.join(root, "spec/asset-contract/v7/golden");

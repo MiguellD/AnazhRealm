@@ -632,6 +632,9 @@ const foundryKanal = (() => {
         // (foundry-core tree[1].wurf, `teil: "schatten"`, Attribut aDeckt) — der Wirt zeichnet es nur in den Kaskaden.
         // Andere Teile tragen das Feld nie (ihre Replies bleiben byte-alt). Der drawRange-Vorsatz (`wurf`) ist gefallen.
         if (mesh.userData && typeof mesh.userData.__teil === "string") out.teil = mesh.userData.__teil;
+        // DAS SEIL REIST MIT (physik.K4, additiv, must-ignore): ein Glied oder der Kopf eines Seils der Schmiede (schmiede-core
+        // `bauSeil`, userData.__seil = seine Nummer) — der Leser der Welt bewegt jedes Teil nach dem EINEN Seil-Gesetz.
+        if (mesh.userData && Number.isInteger(mesh.userData.__seil)) out.seil = mesh.userData.__seil;
         // V18.465 — DIE TÜR REIST MIT (additiv, must-ignore): ein Tor-Flügel-Mesh
         // (porta-core buildGate: leafL/R/LB/RB tragen userData.side + die Hinge-
         // Position der Gruppe) bekommt sein Scharnier als DATEN — die Welt baut
