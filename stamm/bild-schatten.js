@@ -62,18 +62,22 @@ class AnazhRealm_bild_schatten {
         };
         const rt = ziel("rueckstrahl:boden");
         st.rueckstrahlLeser = Object.assign(
-            { rt, halt: ziel("rueckstrahl:halt"), tex: T.texture(rt.texture) },
+            { rt, halt: ziel("rueckstrahl:halt") },
             this._uniformHeimatTeilen({ an: T.uniform(0) })
         );
         return st.rueckstrahlLeser;
     }
 
     // Die Strahldichte, die die untere Hemisphäre der Umgebung ändert (rgb, TSL): gemessener Boden − Boden der Atmosphäre.
+    // Die Texel liest ein Laden mit der Stufe 0 BEIM NAMEN: der Leser lebt in der Bestrahlung der Umgebung, und r184 reicht
+    // jedem Textur-Knoten ohne eigene Stufe die Stufe ihres Zusammenhangs (`getTextureLevel`, dort 1) — das Laden fragte die
+    // Stufe 1 eines Ziels ohne Stufen, außerhalb seiner Grenzen: 0 auf jeder GPU, die Wand trug den Boden nie (Radeon
+    // 59d8aec1: LA = LB 0,1741 auch mit `an` × 40; WGSL der Wand `textureLoad(…, u32(1.0))`).
     _rueckstrahlUnten() {
         const T = THREE.TSL;
         const L = this._rueckstrahlLeser();
-        const boden = L.tex.load(T.ivec2(0, 0)).rgb;
-        const atmo = L.tex.load(T.ivec2(1, 0)).rgb;
+        const boden = T.textureLoad(L.rt.texture, T.ivec2(0, 0), T.int(0)).rgb;
+        const atmo = T.textureLoad(L.rt.texture, T.ivec2(1, 0), T.int(0)).rgb;
         return boden.sub(atmo).mul(L.an);
     }
 
@@ -193,9 +197,11 @@ class AnazhRealm_bild_schatten {
     // Eintrag, kein Zwilling; fern und
     // unwichtig bleibt der Pool ohne Wurf. Die Würfel-Kamera ist ein Schatten-Pass (`_schattenKameraIndex`: Wurf-Ebene,
     // Satz- und Werfer-Wahl je Seite wie eine Kaskade) und sieht nur die Werfer bis zur Reichweite; der Kern der Quelle
-    // (`kernM` × `kernAnteil`, ihre nahe Ebene) wirft nicht — die Flamme ist Licht, nie ihr eigener Werfer (die Scheite
-    // lägen sonst als harte Keile auf dem Boden). Die Karte zeichnet nur der Haupt-Pass der Welt-Szene (ein Stoff der
-    // Vorschau oder der Karten-Bühne liest den Pool auch: ihr Bild zeichnete sonst die Würfel-Karte aus der fremden Szene).
+    // (`kernM` × `kernAnteil`, ihre nahe Ebene) wirft nicht — die Flamme ist Licht, nie ihr eigener Werfer: der Kern des
+    // Gesetzes ist der Leib, den der Abfall der Quelle schon rechnet, und was in ihm liegt (Scheite, der Steinring des Herds)
+    // nimmt ihr nichts (Radeon, Karte des Faktors am Boden um den Glutbrunnen: mit der halben Kern-Ebene warf der eigene
+    // Ring zwei harte Keile, mit dem ganzen Kern gleicht der Boden dem ohne jeden Bau). Die Karte zeichnet der Licht-Takt
+    // vor dem Bild in der Welt-Szene (`_lichtWurfKarte`) — ein Stoff der Vorschau oder der Karten-Bühne liest den Pool auch.
     _lichtWurf() {
         if (this._lichtWurfK) return this._lichtWurfK;
         const LW = AnazhRealm.LICHT_WURF;
@@ -227,13 +233,15 @@ class AnazhRealm_bild_schatten {
         sh.needsUpdate = false;
         sh.camera.near = LW.nahM;
         sh.camera.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
-        const welt = this;
+        // DIE KARTE ZEICHNET DER LICHT-TAKT VOR DEM BILD (`_lichtWurfTakt` → `_lichtWurfKarte`), nie das Vorher eines Empfängers:
+        // r184 zeichnet einen Schatten im `updateBefore` des ersten Stoffs, der ihn liest — im Bündel-Abspiel, unter der
+        // Diät und vor fertigen Programmen zeichnete so keiner, und der Platz trug den Faktor einer nie gezeichneten Würfel-Tiefe
+        // (0 je Texel: alles im Wurf — GTX 59d8aec1, der Glutbrunnen nachts −91 % auch ohne Pfosten)
         class WurfSchatten extends Basis {
-            updateBefore(frame) {
-                if (frame.scene === welt.state.scene) super.updateBefore(frame);
-            }
+            updateBefore() {}
         }
-        const knoten = THREE.TSL.nodeObject(new WurfSchatten(licht));
+        const roh = new WurfSchatten(licht);
+        const knoten = THREE.TSL.nodeObject(roh);
         // der Faktor im Stoff: ohne Schatten-Karte des Renderers (Holz kienspan) wirft nichts — wie jede Kaskade dort
         const N = Object.getPrototypeOf(THREE.InstanceNode);
         class WurfFaktor extends N {
@@ -248,6 +256,7 @@ class AnazhRealm_bild_schatten {
         }
         this._lichtWurfK = {
             licht,
+            roh,
             knoten,
             faktor: THREE.TSL.nodeObject(new WurfFaktor()),
             platz: this._uniformHeimatTeilen({ p: THREE.TSL.uniform(-1) }).p,
@@ -303,11 +312,7 @@ class AnazhRealm_bild_schatten {
         }
         if (altK >= 0 && altW * LW.halten >= bestW) ((best = altK), (bestW = altW));
         W.wichtig = bestW;
-        if (best < 0) {
-            W.id = null;
-            W.platz.value = -1;
-            return;
-        }
+        if (best < 0) return this._lichtWurfRuht(W);
         const q = pool.halter[best];
         const lage = atmo.lichtLage[best].value;
         const stand = `${lage.x.toFixed(2)},${lage.y.toFixed(2)},${lage.z.toFixed(2)},${lage.w}`;
@@ -334,15 +339,36 @@ class AnazhRealm_bild_schatten {
                 L.shadow.camera.near = nah;
                 L.shadow.camera.updateProjectionMatrix();
             }
-            L.shadow.needsUpdate = true;
+            if (!this._lichtWurfKarte(cam)) return this._lichtWurfRuht(W);
             W.stand = stand;
             W.karteBild = W.bild;
             W.karten++;
             W.neu = false;
             W.id = q.id;
         }
-        // die Karte zeichnet in DIESEM Bild (der Haupt-Pass, `updateBefore`): ab jetzt trägt der Platz ihren Faktor
+        // die Karte steht (gezeichnet vor diesem Bild): ab jetzt trägt der Platz ihren Faktor
         W.platz.value = W.id === q.id ? best : -1;
+    }
+
+    // DIE WÜRFEL-KARTE JETZT, vor dem Bild: r184s Zeichnung der sechs Seiten (`updateShadow`, die Wurf-Ebene der Würfel-Kamera,
+    // der Stand des Renderers gesichert) in der Welt-Szene. Ohne Schatten-Karte des Renderers (Holz kienspan) oder bevor ein
+    // Stoff den Faktor gebaut hat (die Karte entsteht mit seinem Knoten), zeichnet nichts — dann trägt kein Platz den Faktor.
+    _lichtWurfKarte(cam) {
+        const W = this._lichtWurfK;
+        const R = this.state.renderer;
+        if (!W.roh.shadowMap || !R || !R.shadowMap || R.shadowMap.enabled !== true) return false;
+        W.roh.updateShadow({ renderer: R, scene: this.state.scene, camera: cam });
+        W.licht.shadow.needsUpdate = false;
+        return true;
+    }
+
+    // DER WURF RUHT (keine Quelle wichtig, keine Karte): kein Platz trägt den Faktor, und die Matrix der Karte legt jedes Fragment
+    // jenseits ihrer Reichweite — r184s Würfel-Filter tastet dann in keinem Fragment (mittags kostet das Feuer nichts, auch
+    // in den Metern um die zuletzt werfende Quelle); die nächste Zeichnung setzt sie neu.
+    _lichtWurfRuht(W) {
+        W.id = null;
+        W.platz.value = -1;
+        W.licht.shadow.matrix.makeTranslation(1e7, 1e7, 1e7);
     }
 
     // ═══ DIE KASKADEN-BOX (W7) ═══
@@ -1104,7 +1130,7 @@ AnazhRealm.RUECKSTRAHL = Object.freeze({ raster: 12, unterAugeM: 0.5, umkreisM: 
 AnazhRealm.LICHT_WURF = Object.freeze({
     kartePx: 256,
     nahM: 0.05,
-    kernAnteil: 0.5,
+    kernAnteil: 1,
     bias: -0.0003,
     normalBiasM: 0.035,
     weichPx: 2,
