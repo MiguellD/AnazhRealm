@@ -2306,6 +2306,7 @@ class AnazhRealm_daten {
             "gestalt.feuerstelle": ["Feuerstelle · Steinring, Scheite, Glut", "Campfire · stone ring, logs, embers"],
             "gestalt.fichte": ["Fichte", "Spruce"],
             "gestalt.findling": ["Findling", "Erratic boulder"],
+            "gestalt.flegel": ["Flegel", "Flail"],
             "gestalt.fox": ["Fuchs", "Fox"],
             "gestalt.fraenkisch": ["Fränkisch · Zierfachwerk", "Franconian · ornamental timber"],
             "gestalt.franzoesisch": ["Französisch · Schiefer, hoch", "French · slate, tall"],
