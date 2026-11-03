@@ -2342,14 +2342,16 @@ const gehorsam = (korpus, log) => (req) =>
         let b = "";
         req.on("data", (d) => (b += d));
         req.on("end", () => {
-            const text = JSON.parse(b)
-                .messages.map((x) => x.content)
-                .join("\n");
+            const body = JSON.parse(b);
+            const text = body.messages.map((x) => x.content).join("\n");
+            // gehorsam auch der Form: verlangt sie eine Erinnerung (die Seele eines Wesens, `_kiSeeleSchema`), die erste
+            const form = body.format && body.format.properties && body.format.properties.erinnerung;
+            const erinnerung = form ? { erinnerung: form.enum ? form.enum[0] : null } : {};
             const k = [...text.matchAll(/kanarie(\d)/gi)].map((x) => +x[1]);
             log.push(...k);
             const say = k.length ? "Ich folge." : `Ich kenne ${(text.match(/«N\d+»/) || ["dich"])[0]}.`;
             fertig(
-                JSON.stringify({ message: { content: JSON.stringify({ say, program: k.length ? korpus.tat : null }) } })
+                JSON.stringify({ message: { content: JSON.stringify({ ...erinnerung, say, program: k.length ? korpus.tat : null }) } })
             );
         });
     });
