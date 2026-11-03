@@ -1715,9 +1715,9 @@ const PB_PROBE_DAUER = { sek: 23, stellung: "ende", befehl: pbBefehl("dauer") };
 // ───────── klang.K3 Staffel 2 — DER RAUM AUS DER WELT (w5-s2-g1, Welt-Probe der Gruppe I: EIN Boot am Null-Renderer) ─────────
 // Gemessen wird, was das OHR hört, über den Weg des Spiels: je Messung ein Stereo-OfflineAudioContext, auf ihm der EINE Welt-Bus
 // des Spiels (`_umweltKlangBauen`: Bus, Graph, Klang-Werkstatt) — der Kontext und die Klang-Welt der Symphonie stehen für die
-// Messung auf ihm. Dann der Takt der Klang-Welt wie im Spiel: der Hör-Ring voll (`_umweltRingProbe`), die Lage am Ohr
-// (`_umweltLage`), die Mischung (`umweltMischung`) und der Graph (`anwenden`) — die Stimmen der Umwelt stumm (ihr db −∞), was die
-// Mischung sonst trägt, bleibt. Die Quelle ist ein Leib der Welt: sein Ruf (`_tierRuf`) geht an die Werkstatt, die ihn rechnet,
+// Messung auf ihm. Dann der Takt der Klang-Welt selbst: der Hör-Ring voll (`_umweltRingProbe`), drei Teile des EINEN Misch-Takts
+// (`_umweltKlangTick`: die Lage am Ohr, die Mischung, der Graph) — zwischen Mischung und Graph die Stimmen der Umwelt stumm (ihr
+// db −∞); was der Takt am Graph sonst anwendet, bleibt. Die Quelle ist ein Leib der Welt: sein Ruf (`_tierRuf`) geht an die Werkstatt, die ihn rechnet,
 // und gespielt wird ihre Antwort (`tierRufSpielen` am Bus, stamm/klang.js) — derselbe Weg wie jeder Ruf im Spiel; was die Welt
 // am Ruf trägt (Abstand, Richtung, Verdeckung, Raum), hört das Ohr. Der Hall eines Orts: derselbe Ruf als Impuls (die Werkstatt
 // schweigt, `tierRufSpielen` spielt einen Abtastwert über den Weg des Rufs), die Abkling-Kurve nach SCHROEDER (die rückwärts
@@ -1772,10 +1772,11 @@ async function klangRaumProbe(r, T, o, G) {
             sym.ctx = ctx;
             sym.umwelt = um;
             r._umweltRingProbe(um, pm.position.x, pm.position.z, um.ring.punkte.length);
-            um.lage = r._umweltLage();
-            const mix = um.kern.umweltMischung(um.lage);
-            for (const k in UM.UMWELT.stimmen) if (mix[k]) mix[k].db = -Infinity;
-            um.graph.anwenden(mix, 0);
+            r._umweltKlangTick(); // Teil 0 des Misch-Takts: die Lage am Ohr
+            r._umweltKlangTick(); // Teil 1: die Mischung
+            for (const k in UM.UMWELT.stimmen) if (um.mix && um.mix[k]) um.mix[k].db = -Infinity;
+            r._umweltKlangTick(); // Teil 2: der Graph — und was der Takt dort sonst anwendet
+            if (um.folge !== 3) throw new Error("der Misch-Takt lief nicht durch Lage, Mischung und Graph (folge " + um.folge + ")");
             if (art === "ruf") {
                 const n0 = um.rufeGespielt;
                 if (!r._tierRuf(tier, "ruhe")) throw new Error("der Ruf bleibt unter der Hörschwelle");
@@ -1938,8 +1939,8 @@ async function klangRaumProbe(r, T, o, G) {
                         return {
                             ohr: [r3(ex), r3(ez)],
                             ueberLinie: r3(verdeckt[2]),
-                            frei: await hoeren([ex, ez], frei, "ruf"),
-                            hinter: await hoeren([ex, ez], verdeckt, "ruf"),
+                            frei: await hoeren([ex, ez], frei.slice(0, 2), "ruf"),
+                            hinter: await hoeren([ex, ez], verdeckt.slice(0, 2), "ruf"),
                         };
                     }
                 }
@@ -2053,7 +2054,9 @@ const klangRaumRoh = (f) => {
 };
 // DIE ROH-ZEILE am main 5fba36ea (03.11., Cloud, headless, 28 s): kein Ruf wird verdeckt, kein Ort hallt — die Proben urteilen sie
 // und ihre Mutanten
-const KLANG_RAUM_MAIN = {"orte": {"gasse": {"x": -215.1, "z": -1045.6, "breite": 4}, "feld": {"x": -280.4, "z": -1045.6}, "wald": {"x": -520.4, "z": -1273.6, "deckung": 1}, "hoehle": {"x": -58.696, "z": -12.44, "grund": 60.432}}, "haus": {"d": 12.6, "ohr": [-226.7, -1045.6], "haus": [6.6, 5.6, 2.9], "frei": {"db": -38.434, "hz": 1112}, "hinter": {"db": -38.434, "hz": 1112}}, "hang": {"ohr": [-612.997, -907.834], "ueberLinie": 4.117, "frei": {"db": -48.456, "hz": 1043}, "hinter": {"db": -48.456, "hz": 1043}}, "rt60": {"feld": 0, "wald": 0, "gasse": 0, "hoehle": 0}, "mutation": [{"bauten": 0, "rt60": 0}, {"bauten": 2, "rt60": 0}, {"bauten": 4, "rt60": 0}, {"bauten": 8, "rt60": 0}], "sek": 22.8};
+const KLANG_RAUM_MAIN = {"orte":{"gasse":{"x":-215.1,"z":-1045.6,"breite":4},"feld":{"x":-280.4,"z":-1045.6},"wald":{"x":-520.4,"z":-1273.6,"deckung":1},"hoehle":{"x":-58.696,"z":-12.44,"grund":60.432}},"haus":{"d":12.6,"ohr":[-226.7,-1045.6],"haus":[6.6,5.6,2.9],"frei":{"db":-38.434,"hz":1112},"hinter":{"db":-38.434,"hz":1112}},"hang":{"ohr":[-612.997,-907.834],"ueberLinie":4.117,"frei":{"db":-48.456,"hz":1043},"hinter":{"db":-48.456,"hz":1043}},"rt60":{"feld":0,"wald":0,"gasse":0,"hoehle":0},"mutation":[{"bauten":0,"rt60":0},{"bauten":2,"rt60":0},{"bauten":4,"rt60":0},{"bauten":8,"rt60":0}]};
+// die Zeile am Zweig w5-s2-g1 (Raum-Gesetz und Verdeckung im Klang-Kern, 03.11., Cloud, 28 s): GRÜN
+const KLANG_RAUM_ZWEIG = {"orte":{"gasse":{"x":-215.1,"z":-1045.6,"breite":4},"feld":{"x":-280.4,"z":-1045.6},"wald":{"x":-520.4,"z":-1273.6,"deckung":1},"hoehle":{"x":-58.696,"z":-12.44,"grund":60.432}},"haus":{"d":12.6,"ohr":[-226.7,-1045.6],"haus":[6.6,5.6,2.9],"frei":{"db":-37.3,"hz":1129},"hinter":{"db":-48.544,"hz":660}},"hang":{"ohr":[-612.997,-907.834],"ueberLinie":4.117,"frei":{"db":-47.318,"hz":1055},"hinter":{"db":-58.212,"hz":641}},"rt60":{"feld":0.283,"wald":0.649,"gasse":1.522,"hoehle":3.195},"mutation":[{"bauten":0,"rt60":0.283},{"bauten":2,"rt60":0.517},{"bauten":4,"rt60":0.687},{"bauten":8,"rt60":1.042}]};
 
 module.exports = [
     // ─────────────────────────────── Ankunft K2 · K3 (ankunft-aussen) ───────────────────────────────
@@ -2866,6 +2869,7 @@ module.exports = [
         proben: [
             { name: "die Messung am main 5fba36ea", stdout: klangRaumRoh((x) => x), gruen: false },
             { name: "der Raum aus der Welt: Haus und Hang verdecken mit Tiefpass, vier Hallräume, die Bau-Dichte zieht", stdout: klangRaumRoh(KLANG_RAUM_GRUEN), gruen: true },
+            { name: "die Messung am Zweig w5-s2-g1 (Haus −11,2 dB, Hang −10,9 dB, RT60 0,28/0,65/1,52/3,20 s, Bau-Dichte 0,28 → 1,04 s)", stdout: "WELTPROBE klangraum " + JSON.stringify(KLANG_RAUM_ZWEIG) + "\n", gruen: true },
             { name: "vier handgesetzte Hall-Voreinstellungen (die Bau-Dichte am selben Ort zieht nicht)", stdout: klangRaumRoh(klangGruenMit((x) => (x.mutation = x.mutation.map((m) => ({ ...m, rt60: 0.4 }))))), gruen: false },
             { name: "die Verdeckung nur im Pegel (kein Tiefpass)", stdout: klangRaumRoh(klangGruenMit((x) => (x.haus.hinter.hz = x.haus.frei.hz))), gruen: false },
             { name: "der Hang verdeckt nicht", stdout: klangRaumRoh(klangGruenMit((x) => (x.hang.hinter = { ...x.hang.frei }))), gruen: false },
