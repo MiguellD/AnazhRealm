@@ -1070,7 +1070,7 @@ function selbsttest() {
         ["npm ci fehlt", (d) => V(d).steps.splice(3, 1), /\(V\) VORBEREITUNG: „voll" Schritt 4 ist nicht „npm ci"/],
         [
             "Vorbereitung nur in Gruppe 1",
-            (d) => (d.jobs.puls.steps[2].if = "matrix.gruppe == 1"),
+            ["jobs.puls.steps.2.if=", "matrix.gruppe == 1"],
             /\(V\) VORBEREITUNG: „puls" „System-Libs" trägt eine Bedingung/,
         ],
         ["keine Matrix", (d) => delete V(d).strategy.matrix, /\(V\) MATRIX: „voll"/],
@@ -1081,7 +1081,7 @@ function selbsttest() {
         // die zwei Stufen: genau puls und voll, der Puls ohne Bedingung, voll unter der EINEN Bedingung
         [
             "ein dritter Job neben puls und voll",
-            (d) => (d.jobs.check = { steps: [{ name: "X", run: "npm run gate:x" }] }),
+            ["jobs.check=", { steps: [{ name: "X", run: "npm run gate:x" }] }],
             /\(V\) JOB: „check" steht außerhalb von puls und voll/,
         ],
         [
@@ -1091,12 +1091,12 @@ function selbsttest() {
         ],
         [
             "der Puls unter einer Bedingung",
-            (d) => (d.jobs.puls.if = "github.ref == 'refs/heads/main'"),
+            ["jobs.puls.if=", "github.ref == 'refs/heads/main'"],
             /\(V\) PULS: „puls" trägt die Bedingung/,
         ],
-        ["kein Job voll", (d) => delete d.jobs.voll, /\(V\) LEER: kein Job „voll"/],
+        ["kein Job voll", ["jobs.voll"], /\(V\) LEER: kein Job „voll"/],
         // EIN URTEIL JE KOPF: der Kopf-Richter vor der Batterie, nie stumm, EIN Schritt
-        ["kein Kopf-Richter", (d) => delete d.jobs.kopf, /\(V\) KOPF: kein Job „kopf"/],
+        ["kein Kopf-Richter", ["jobs.kopf"], /\(V\) KOPF: kein Job „kopf"/],
         [
             "die Batterie ohne den Kopf-Richter",
             (d) => {
@@ -1107,7 +1107,7 @@ function selbsttest() {
         ],
         [
             "der Kopf-Richter unter einer anderen Bedingung",
-            (d) => (d.jobs.kopf.if = "github.ref == 'refs/heads/main'"),
+            ["jobs.kopf.if=", "github.ref == 'refs/heads/main'"],
             /\(V\) KOPF: „kopf" läuft unter „github\.ref == 'refs\/heads\/main'"/,
         ],
         [
@@ -1120,8 +1120,8 @@ function selbsttest() {
             (d) => d.jobs.kopf.steps.push({ name: "X", run: "npm run gate:x" }),
             /\(V\) KOPF: „kopf" trägt 2 Schritte neben checkout/,
         ],
-        ["die Ausgabe nicht weitergereicht", (d) => delete d.jobs.kopf.outputs, /\(V\) KOPF: „kopf" reicht outputs\.voll nicht/],
-        ["der Puls wartet auf den Kopf", (d) => (d.jobs.puls.needs = KOPF_JOB), /\(V\) PULS: „puls" .*wartet auf kopf/],
+        ["die Ausgabe nicht weitergereicht", ["jobs.kopf.outputs"], /\(V\) KOPF: „kopf" reicht outputs\.voll nicht/],
+        ["der Puls wartet auf den Kopf", ["jobs.puls.needs=", KOPF_JOB], /\(V\) PULS: „puls" .*wartet auf kopf/],
         // die Caches: der Schlüssel vor dem Cache, der Cache vor npm ci
         [
             "ein Cache nach npm ci",

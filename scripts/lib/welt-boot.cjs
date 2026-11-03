@@ -1148,11 +1148,19 @@ async function seiteZu(browser, server, out, kopf, feld = "error") {
 // DIE TÄTER-FÄLLE eines Selbsttests ohne Browser: je Fall `[name, tat, muss]` (die Tat an einem frischen `klon()`) oder
 // `{ name, z, muss }` das Urteil; jedes `muss` (ein Muster oder eine Liste) trifft einen Befund, `null` verlangt keinen — sonst steht
 // der Fall beim Namen in `fehler`. `selbsttestEnde` schließt: ROT mit Exit 1, sonst der Grün-Satz.
+// Der Täter eines Falls ist eine Funktion des Klons oder seine TAFEL `[pfad, wert]` („a.b.0"): „pfad=" setzt den Wert, sonst
+// mischt er sich in den Knoten, ohne Wert fällt der Pfad — bis w6-stoffe-k5 schrieb jede Wand je Täter ihre eigene Closure.
 function taeterFaelle(faelle, urteil, { fehler = [], klon } = {}) {
     for (const f of faelle) {
         const [name, tat, muss] = Array.isArray(f) ? f : [f.name, null, f.muss];
         const z = tat ? klon() : f.z;
-        if (tat) tat(z);
+        if (Array.isArray(tat)) {
+            const p = tat[0].replace(/=$/, "").split(".");
+            const o = p.slice(0, -1).reduce((x, k) => x[k], z);
+            if (tat.length < 2) delete o[p.at(-1)];
+            else if (tat[0].endsWith("=")) o[p.at(-1)] = tat[1];
+            else Object.assign(o[p.at(-1)], tat[1]);
+        } else if (tat) tat(z);
         const v = urteil(z);
         const fehlt =
             muss == null ? v.slice(0, v.length && 1) : [].concat(muss).filter((re) => !v.some((s) => re.test(s)));
