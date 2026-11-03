@@ -307,10 +307,17 @@ class AnazhRealm_speicher_welten {
     // der Befund als Zeilen der Tafel (eine Liste: sie wechselt mit der Sprache, wo sie im Chat steht)
     _befundZeilen(befund) {
         const glied = (g) => (g === "platz" ? ["speicher.befund.platz"] : g);
-        return befund.map((b) => [
-            `speicher.befund.${b.art}`,
-            { glied: glied(b.glied || ""), fehler: String(b.fehler || "") },
-        ]);
+        // je Art des Befunds ihre Zeile als Schlüssel (die Arten sind eine geschlossene Menge — gate:sprache K liest jede)
+        const zeile = {
+            "kein-zeiger": "speicher.befund.kein-zeiger",
+            "kein-legacy": "speicher.befund.kein-legacy",
+            leer: "speicher.befund.leer",
+            unlesbar: "speicher.befund.unlesbar",
+            korrupt: "speicher.befund.korrupt",
+            "nicht-lesbar": "speicher.befund.nicht-lesbar",
+            bak: "speicher.befund.bak",
+        };
+        return befund.map((b) => [zeile[b.art], { glied: glied(b.glied || ""), fehler: String(b.fehler || "") }]);
     }
 
     // Der IndexedDB-Stand des Boot-Vorlaufs für die Welt `id` (nur lesen; loadState verbraucht ihn).

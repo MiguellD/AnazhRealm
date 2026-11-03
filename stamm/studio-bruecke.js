@@ -384,6 +384,16 @@ class AnazhRealm_studio_bruecke {
             this._stoffBruch("der Avatar (Körper-Studio-Gestalt)", _e);
         }
     }
+    // DAS WORT EINES BUCHS (spielgang.K5 × Studio-Vertrag B1/B8): ein Werk, eine Art, ein Studio heißt, wie die Tafel es
+    // übersetzt (`gestalt.<id>` · `art.<art>` · `studio.<kern>`) — jedes Buch des Manifests trägt dort jede Zeile (gate:sprache F
+    // zählt sie aus dem Kanal get-book). Ein Rezept, das die Tafel nicht kennt (ein neues Rezept im alten Buch, ein neues
+    // Gesetzbuch ohne Zeile im Wirt, gate:nervensystem E), nennt sich mit dem Wort seines Buchs (`lab`, `STAMMBAUM`) — Daten
+    // wie ein Name des Spielers; ohne Wort bricht die Zeile laut (`_t`). → `[schlüssel, werte]` für `_t`/`etikett`
+    static _buchWort(schluessel, wort) {
+        return schluessel in AnazhRealm.TEXTE.de || typeof wort !== "string" || !wort
+            ? [schluessel]
+            : ["buch.wort", { wort }];
+    }
     _foundryAutoRegisterSpecies(book) {
         const bps = this.state && this.state.blueprints;
         if (!bps || !book) return 0;
@@ -432,10 +442,10 @@ class AnazhRealm_studio_bruecke {
             // DIE EINE Klon-Sichtbarkeits-Regel (wie cloneBlueprint, gate:trias B10): ein Klon ist SICHTBAR —
             // `donorOnly` reist NIE mit (sonst fällt jeder Auto-Blueprint still aus allen Pickern).
             delete clone.donorOnly;
-            // der Name des Werks ist eine Zeile der Tafel je Rezept (`gestalt.<id>`, DE = der Name im Gesetzbuch), nie der
-            // deutsche Text des Kerns — ein Rezept ohne Zeile bricht laut (`_t`)
+            // der Name des Werks ist eine Zeile der Tafel je Rezept (`gestalt.<id>`, DE = der Name im Gesetzbuch), ein Rezept
+            // ohne Zeile spricht das Wort seines Buchs (`_buchWort`)
             delete clone.label;
-            clone.etikett = [`gestalt.${id.replace(/_/g, "-")}`];
+            clone.etikett = AnazhRealm._buchWort(`gestalt.${id.replace(/_/g, "-")}`, rec.lab);
             AnazhRealm._etikett(clone);
             if (pol.grown) clone._grownSpecies = name;
             else clone.name = name;
@@ -1500,7 +1510,9 @@ class AnazhRealm_studio_bruecke {
                 rezept: id,
                 art: rec.kind,
                 kern,
-                lab: (sichtbar(ziel) && bps[ziel].label) || this._t(`gestalt.${id.replace(/_/g, "-")}`),
+                lab:
+                    (sichtbar(ziel) && bps[ziel].label) ||
+                    this._t(...AnazhRealm._buchWort(`gestalt.${id.replace(/_/g, "-")}`, rec.lab)),
                 ziel,
                 werk,
                 sichtbar: sichtbar(ziel),
@@ -1541,7 +1553,10 @@ class AnazhRealm_studio_bruecke {
                         art,
                         kern,
                         // der Name, den das Gesetzbuch der Art gibt, gelesen aus der Tafel (`art.<art>`, DE = das Buch)
-                        lab: arten && typeof arten[art] === "string" ? this._t(`art.${art}`) : null,
+                        lab:
+                            arten && typeof arten[art] === "string"
+                                ? this._t(...AnazhRealm._buchWort(`art.${art}`, arten[art]))
+                                : null,
                         quelle: { datei, anker: "STAMMBAUM.arten." + art },
                         kinder: [],
                     };
@@ -1555,7 +1570,8 @@ class AnazhRealm_studio_bruecke {
         };
         const getafelt = new Set();
         for (const k of (tafel && tafel.kerne) || []) {
-            const s = studio(k.kern, k.studio ? this._t(`studio.${k.kern}`) : null, k.datei || null, k.arten);
+            const name = k.studio ? this._t(...AnazhRealm._buchWort(`studio.${k.kern}`, k.studio)) : null;
+            const s = studio(k.kern, name, k.datei || null, k.arten);
             for (const id of k.rezepte || [])
                 if (recipes[id] && !getafelt.has(id)) {
                     getafelt.add(id);
