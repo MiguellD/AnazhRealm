@@ -280,6 +280,7 @@ class AnazhRealm_speicher_laden {
                 ? state.wetterWort
                 : null;
         this.state.wetterWunsch = null;
+        this.state.wetterSchreiber = typeof state.wetterSchreiber === "string" ? state.wetterSchreiber.slice(0, 80) : null;
         if (this.state.skybox) this.updateSkyboxWeather();
     }
 

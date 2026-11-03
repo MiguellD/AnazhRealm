@@ -61,7 +61,7 @@ class AnazhRealm_dienst {
     // Eine Erinnerung fürs Modell: ein Satz dieser Welt (`d`, nur journalAppend) trägt Namen isoliert in `ki`, jede andere ist Datum.
     _erinnerungFuerKi(e) {
         const wert = (w) => (typeof w === "number" ? String(w) : AnazhRealm._datum(w));
-        const sp = AnazhRealm._sprache() === "pseudo" ? "de" : AnazhRealm._sprache();
+        const sp = AnazhRealm._spracheKi();
         const satz = Array.isArray(e.t)
             ? AnazhRealm._tIn(sp, e.t[0], e.t[1], wert)
             : e.d === 1
@@ -1580,6 +1580,14 @@ class AnazhRealm_dienst {
             throw new Error(`SPRACHE: die Tafel trägt keine Sprache „${sp}“`);
         AnazhRealm._spracheJetzt = sp;
         return sp;
+    }
+
+    // DIE SPRACHE DER KI (spielgang.K5#2) ist die Sprache des Spielers: die Spalte der Tafel, die er gewählt hat (die Linsen-
+    // Sprache `pseudo` spricht mit der KI in der Quell-Sprache). Leser: der System-Prompt der Welt (`llmBuildSystemPrompt`), der
+    // Prompt der Seele (`_buildCreaturePersonaPrompt`), die Erinnerung an das Modell (`_erinnerungFuerKi`), die Stimme (`grokRender`).
+    static _spracheKi() {
+        const sp = AnazhRealm._sprache();
+        return sp === "pseudo" ? "de" : sp;
     }
 
     // der Wechsel am Ort: das Wort auf dem Gerät, die Spalte neu gelesen, das DOM aus index.html neu gefüllt (`_sprachDom`) —

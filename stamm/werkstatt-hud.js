@@ -60,7 +60,7 @@ class AnazhRealm_werkstatt_hud {
         if (grok.speechEnabled && typeof window !== "undefined" && "speechSynthesis" in window) {
             try {
                 const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = "de-DE";
+                utterance.lang = AnazhRealm._spracheKi() === "en" ? "en-US" : "de-DE"; // die Sprache des Spielers
                 utterance.rate = 1.0;
                 utterance.pitch = 1.0;
                 // Welle 6.X.4 D2 V8.15 — Stimme-Volume aus state.symphony.voiceVolume.
@@ -1405,7 +1405,7 @@ class AnazhRealm_werkstatt_hud {
         const hidden = ordered.length - shown.length;
         const signature =
             `${list.length}:${expanded ? "E" : "C"}:` +
-            shown.map((a) => `${a.name}:${a.source || "?"}:${a.description ? "d" : "_"}`).join("|");
+            shown.map((a) => `${a.name}:${a.source || "?"}`).join("|");
         if (signature === r.abilitiesSignature) return;
         r.abilitiesSignature = signature;
         const container = r.abilities;
@@ -1483,18 +1483,11 @@ class AnazhRealm_werkstatt_hud {
             forget.setAttribute("aria-label", this._t("hud.geste-vergessen", { name: ability.name }));
             head.appendChild(forget);
             row.appendChild(head);
-            // Beschreibung (Lazy-Compute für Legacy-Saves, dann persistiert).
-            if (!ability.description && Array.isArray(ability.program)) {
-                try {
-                    ability.description = this.describeProgram(ability.program);
-                } catch {
-                    ability.description = "wirkt auf die Welt";
-                }
-            }
-            if (ability.description) {
+            // die Beschreibung aus dem Programm, in der Sprache von jetzt (`describeProgram`)
+            if (Array.isArray(ability.program)) {
                 const desc = document.createElement("div");
                 desc.className = "ability-desc";
-                desc.textContent = ability.description;
+                this._tSetze(desc, ...this.describeProgram(ability.program));
                 row.appendChild(desc);
             }
             container.appendChild(row);
@@ -1607,11 +1600,7 @@ class AnazhRealm_werkstatt_hud {
         row.appendChild(head);
         const desc = document.createElement("div");
         desc.className = "ability-desc";
-        try {
-            desc.textContent = this.describeProgram(["rule", rule.cond, rule.effect]);
-        } catch {
-            desc.textContent = this._t("hud.welt-regel");
-        }
+        this._tSetze(desc, ...this.describeProgram(["rule", rule.cond, rule.effect]));
         row.appendChild(desc);
         return row;
     }

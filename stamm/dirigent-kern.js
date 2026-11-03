@@ -287,6 +287,11 @@ class AnazhRealm {
             // Der WUNSCH der Welt (Nexus, seine Gesetze, die Emotion, die Wesen): das Wort, das der nächste Zug zieht.
             wetterWort: null,
             wetterWunsch: null,
+            // DER SCHREIBER DES WETTERS (affekt.K4#2): wer das Wetter, das gerade gilt, schrieb — die Quelle am EINEN Schreiber
+            // `_setWeather` (der Spieler, sein Gesetz, das Laden), beim Zug der Wunsch, den er zog (Nexus, seine Gesetze, die
+            // Emotion, die Wesen), ohne Wunsch die Front („front"); persistiert. Leser: der Kontext der KI (`llmBuildContext`),
+            // die Antwort auf „warum regnet es?" (`_wetterWarum`).
+            wetterSchreiber: null,
             // Tag-Nacht: timeOfDay 0..1 (0=Mitternacht, 0.25=Aufgang, 0.5=Mittag, 0.75=Untergang), persistiert; ihn
             // schreibt nur der EINE Uhr-Schreiber `_uhrSetzen`. dayLengthMinutes = Echtzeit je Zyklus (Slider 1–60), die
             // Wahl des Spielers (localStorage, nie im Spielstand). Lichter + Skybox leiten sich pro Frame aus timeOfDay ab.

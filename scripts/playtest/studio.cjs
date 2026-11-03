@@ -174,7 +174,7 @@ async function checkBandV18493CoSchoepferStudio({ page, check }) {
             try {
                 nw = r.dslEvalPos(["near_water", 160], nwCtx);
             } catch (e) {
-                nwFehler = e && e.dslKeinOrt ? e.dslKeinOrt.grund : String(e);
+                nwFehler = e && e.dslKeinOrt ? r._t(...e.dslKeinOrt.grund) : String(e);
             }
             const amWasser =
                 !!nw &&
@@ -182,7 +182,7 @@ async function checkBandV18493CoSchoepferStudio({ page, check }) {
                 Number.isFinite(nw.z) &&
                 Math.hypot(nw.x - pm0.x, nw.z - pm0.z) > 0.5 &&
                 nassPunkte.some(([x, z]) => Math.hypot(x - nw.x, z - nw.z) <= 8);
-            const benannt = nwFehler === "kein Wasser im Umkreis von 160 m";
+            const benannt = nwFehler === "Kein Wasser im Umkreis von 160 m";
             out.nearWater = nassNah ? amWasser : !nassFern ? benannt : amWasser || benannt;
             out.nearWaterBefund = { nassNah, nassFern, nw, nwFehler };
             out.nearWaterTrocken = nw ? r._landAt(nw.x, nw.z, 0.3) : benannt;

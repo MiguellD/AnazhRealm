@@ -110,9 +110,9 @@ async function checkBandWelle6HCreatures({ page, check }) {
             alleWarten && alleWarten.program[0] === "creature_task_all" && alleWarten.program[1] === "wait";
 
         // describeProgram-Einträge
-        const desc1 = r.describeProgram(["creature_task_nearest", "follow_player"]);
+        const desc1 = r._t(...r.describeProgram(["creature_task_nearest", "follow_player"]));
         out.descNearest = typeof desc1 === "string" && /folge|nächste|Auftrag/i.test(desc1);
-        const desc2 = r.describeProgram(["creature_task_all", "wait"]);
+        const desc2 = r._t(...r.describeProgram(["creature_task_all", "wait"]));
         out.descAll = typeof desc2 === "string" && /alle/i.test(desc2);
 
         // removeCreature räumt Aura mit
@@ -278,8 +278,8 @@ async function checkBandWelle6HCreatures({ page, check }) {
         out.statusEmptyDash = taskText2 === "—";
 
         // === describeProgram zeigt Distanz ===
-        const descWithDist = r.describeProgram(["creature_task_nearest", "follow_player", 1.5]);
-        const descWithoutDist = r.describeProgram(["creature_task_nearest", "follow_player"]);
+        const descWithDist = r._t(...r.describeProgram(["creature_task_nearest", "follow_player", 1.5]));
+        const descWithoutDist = r._t(...r.describeProgram(["creature_task_nearest", "follow_player"]));
         out.descShowsDistance = /1\.5m|Distanz/i.test(descWithDist);
         out.descNoDistanceWhenNotGiven = !/1\.5/.test(descWithoutDist);
 
@@ -765,7 +765,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
         out.statusShowsFollow = /1 folgen/.test(stext);
 
         // describeProgram
-        const d1 = r.describeProgram(["creature_task_nearest", "gather", "holz"]);
+        const d1 = r._t(...r.describeProgram(["creature_task_nearest", "gather", "holz"]));
         out.descShowsMaterial = /Material/.test(d1) && /holz/.test(d1);
 
         // Liste zeigt 'sammelt holz'

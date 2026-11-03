@@ -12,10 +12,11 @@
 //   WORT — der Korpus (spec/abnahme/ki-korpus.json) über den echten Chat-Pfad `maybeAnswerWithLlm` → `llmCall` → `dslRun`;
 //     --echt fragt den Anbieter, --aufnahme schreibt den Mitschnitt (Ratsche, sinkt nie), die CI spielt ihn ab; --regler
 //     fährt den Korpus-Teil Regler-Wörter (KI K2, das Soll am Stempel der Werke, eigene Ratsche ratsche-ki-korpus-regler.json),
-//     --seele das Gespräch mit Wesen über ihre Erinnerungen (KI K3), --regeln den Selbstlauf der Regeln des Modells (KI K4).
+//     --seele das Gespräch mit Wesen über ihre Erinnerungen (KI K3), --regeln den Selbstlauf der Regeln des Modells (KI K4),
+//     --en den Korpus in der Sprache EN (spielgang.K5#2: die Welt spricht EN, das Modell bekommt den Prompt des Spielers).
 //   FEIND — der feindliche Korpus (spec/abnahme/ki-feind-korpus.json) kommt durch die Eingänge der Fremde zu einem
 //     gehorsamen Modell: 0 erreicht · 0 ausgeführt · die Signatur schlägt an · der Spieler liest den Namen.
-//   node scripts/diag-v1-pfad.cjs [--selftest | --korpus [--regler | --seele | --regeln] [--echt [--bild] [--aufnahme]] | --feind]
+//   node scripts/diag-v1-pfad.cjs [--selftest | --korpus [--regler | --seele | --regeln | --en] [--echt [--bild] [--aufnahme]] | --feind]
 //   Port: V1_PFAD_PORT (4421) · Mutanten: V1_MUTANTE=gedaechtnis-leer (--seele) · wertung-aus (--regeln)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
@@ -187,7 +188,7 @@ const ORT_OPS = [
 function ortVerdict(m) {
     if (!m || m.gestartet !== true) return ["start"];
     const out = [];
-    const soll = new RegExp(`kein Wasser im Umkreis von ${m.radius} m`);
+    const soll = new RegExp(`kein Wasser im Umkreis von ${m.radius} m`, "i");
     for (const op of ORT_OPS) {
         const e = m.ops && m.ops[op];
         if (!e) {
@@ -332,7 +333,7 @@ function knotenEintragOk(e, soll, effekt) {
         !e.fehler &&
         !(e.akte && e.akte.length) &&
         !e.ok &&
-        new RegExp(soll).test(e.grund || "") &&
+        new RegExp(soll, "i").test(e.grund || "") &&
         e.effekt === effekt
     );
 }
@@ -350,12 +351,12 @@ function knotenVerdict(m) {
             out.push(
                 `${name}: wirkt ohne Ort (${e.akte.map((a) => `${a.nm} ${a.abstand == null ? "ohne Ort" : a.abstand + " m vom Spieler"}`).join(", ")})`
             );
-        if (!(new RegExp(soll).test(e.grund || "") && e.effekt === effekt))
+        if (!(new RegExp(soll, "i").test(e.grund || "") && e.effekt === effekt))
             out.push(`${name}: scheitert nicht benannt (${e.grund ? `„${e.grund}“ an ${e.effekt}` : "kein Grund"})`);
         if (e.ok) out.push(`${name}: meldet Erfolg`);
     }
     const d = m.defaults || {};
-    if (d.near_water !== `kein Wasser im Umkreis von ${KNOTEN_DEFAULT.near_water} m`)
+    if (String(d.near_water).toLowerCase() !== `kein wasser im umkreis von ${KNOTEN_DEFAULT.near_water} m`)
         out.push(`near_water ohne Radius: „${d.near_water}“ (Soll ${KNOTEN_DEFAULT.near_water} m)`);
     for (const k of ["at_player_forward", "at_field_need"])
         if (!(Math.abs((d[k] == null ? NaN : d[k]) - KNOTEN_DEFAULT[k]) < 0.05))
@@ -1356,7 +1357,8 @@ async function probe(arg) {
             const wurf = res.log.find((e) => /exception/.test(e.event));
             return {
                 ok: res.ok,
-                grund: ohne ? ohne.grund || null : null,
+                // der Grund ist eine Zeile der Tafel (spielgang.K5#2) — gelesen in der Quell-Sprache
+                grund: ohne && ohne.grund ? r.constructor._tIn("de", ...[].concat(ohne.grund)) : null,
                 effekt: ohne ? ohne.effekt || null : null,
                 fehler: wurf ? `${wurf.event}: ${wurf.message}` : null,
                 kalt: res.log.some((e) => e.event === "skipped"),
@@ -1386,7 +1388,7 @@ async function probe(arg) {
                         r.dslEvalPos(node, r.dslCtx({ source: "test" }));
                         return null;
                     } catch (e) {
-                        return e && e.dslKeinOrt ? e.dslKeinOrt.grund : String(e);
+                        return e && e.dslKeinOrt ? r.constructor._tIn("de", ...e.dslKeinOrt.grund) : String(e);
                     }
                 };
                 const abstandVon = (node) => {
@@ -1905,6 +1907,8 @@ async function korpusAufbau(a) {
     // die Welt steht und das Studio-Buch kennt jedes Wort des Korpus
     for (let i = 0; i < 200 && !(i && a.worte.every((w) => r._studioBlueprintForWord(w))); i++)
         await __weltStehtNach();
+    // die Sprache des Spielers (der Korpus-Teil en): die Wahl der Tafel, wie in den Einstellungen
+    if (a.sprache) r._spracheSetzen(a.sprache);
     // DER SPIELER STELLT DIE STIMME EIN, im Fenster der KI
     for (const [id, w] of [
         ["llm-provider", "ollama"],
@@ -2149,6 +2153,9 @@ const KORPUS_TEILE = {
     regler: [{ absicht: 0.8 }, ([w, r]) => ({ werk: w === "*" ? w : [w], regler: r })],
     seele: [{ gueltig: 0, absicht: 0.7, p95Ms: 0 }, ([name, wesen, ...taten]) => ({ name, wesen, taten })],
     regeln: [{ gueltig: 0, absicht: 0, p95Ms: 0 }, (regel) => ({ regel })],
+    // DER KORPUS IN EN (spielgang.K5#2): dieselben Prädikate, die Welt spricht EN (`_spracheSetzen`) — das Modell bekommt den Prompt
+    // in der Sprache des Spielers; das Urteil über die Sprache der Antworten fällt an der Station (punkte-maschine g5.js)
+    en: [{}, null],
 };
 async function korpusHaupt() {
     const echt = process.argv.includes("--echt");
@@ -2168,7 +2175,7 @@ async function korpusHaupt() {
         await page.evaluate(AUSGABE_INSTALL);
         const worte = [...new Set(korpus.saetze.flatMap(([, s]) => (Array.isArray(s.werk) ? s.werk : [])))];
         const endpunkt = echt ? process.env.KI_ENDPUNKT || "http://127.0.0.1:11434/" : `http://127.0.0.1:${PORT}/`;
-        const arg = { modell, endpunkt, worte, gegenprobe: KORPUS_SOLL.gegenprobe, mutante };
+        const arg = { modell, endpunkt, worte, gegenprobe: KORPUS_SOLL.gegenprobe, mutante, sprache: teil === "en" ? "en" : null };
         const auf = await page.evaluate(korpusAufbau, arg);
         m.tueren = auf.tueren;
         Object.assign(arg, {

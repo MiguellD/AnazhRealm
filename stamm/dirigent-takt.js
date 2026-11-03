@@ -1227,7 +1227,6 @@ class AnazhRealm_dirigent_takt {
         this._wetterZug = zug;
         if (this._messHalt()) return;
         const wunsch = st.wetterWunsch;
-        st.wetterWunsch = null;
         const pm = st.playerMesh;
         const [x, z] = pm ? [pm.position.x, pm.position.z] : [0, 0];
         const next =
@@ -1236,7 +1235,9 @@ class AnazhRealm_dirigent_takt {
         if (next !== st.weather)
             this.log(`Das Wetter zieht zu ${next}${wunsch ? ` (Wunsch: ${wunsch.quelle})` : ""}`, "INFO");
         else if (wunsch) this.log(`Das Wetter bleibt ${next} (Wunsch: ${wunsch.quelle})`, "INFO");
+        // der Zug zieht den Wunsch: `_setWeather` liest ihn als Schreiber (`wetterSchreiber`); danach ist er verbraucht
         if (next !== st.weather || von !== next) this._setWeather(next, "auto-zug", { von, beginn: zug * Z });
+        if (st.wetterWunsch === wunsch) st.wetterWunsch = null;
     }
 
     // DIE EINE REGEL DER WELT-UHR (feld.K2#2): eine Uhr von außen — der Stand beim Laden, der Mitspieler in jedem Ort (`pos.w`) —

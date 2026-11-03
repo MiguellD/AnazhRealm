@@ -542,7 +542,7 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
             built2.program[1] === "schöpfer";
 
         // describeProgram-Eintrag
-        const desc = r.describeProgram(["set_mode", "pfad"]);
+        const desc = r._t(...r.describeProgram(["set_mode", "pfad"]));
         out.describeWorks = typeof desc === "string" && /Welt-Beziehung|pfad/.test(desc);
 
         // UI: Radio + Status-Bar
@@ -641,7 +641,7 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
             AnazhRealm.NON_BROADCASTABLE_OPS && AnazhRealm.NON_BROADCASTABLE_OPS.has("add_to_inventory");
 
         // describeProgram-Eintrag
-        const d = r.describeProgram(["add_to_inventory", "baum_eiche", 5]);
+        const d = r._t(...r.describeProgram(["add_to_inventory", "baum_eiche", 5]));
         out.describeWorks = typeof d === "string" && /Inventar|baum_eiche|5/.test(d);
 
         // UI: Overlay-Element + Grid + Selected-Display

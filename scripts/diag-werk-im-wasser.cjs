@@ -1300,7 +1300,7 @@ async function probe(A) {
                 };
                 // die Gründe aus der EINEN Tafel des Stamms (fehlt sie, nennt der Satz keinen — das Urteil sagt es)
                 const T = r.constructor.SETZ_GRUND || {};
-                const G = new Proxy(T, { get: (t, k) => t[k] || `(kein Grund „${String(k)}" in SETZ_GRUND)` });
+                const G = new Proxy(T, { get: (t, k) => (t[k] ? r._t(t[k]) : `(kein Grund „${String(k)}" in SETZ_GRUND)`) });
                 stelle(cx + 40, cz + 40);
                 // E1 die Obergrenze der Kreaturen: noch 3 Plätze, dann keiner
                 const maxAlt = st.maxCreatures;

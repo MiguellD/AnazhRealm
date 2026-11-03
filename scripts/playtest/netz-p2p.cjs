@@ -53,8 +53,8 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
         st.worldMeta.voxelEdits = [];
 
         // (5) describeProgram kennt die neuen Ops.
-        const dCarve = r.describeProgram(["voxel_carve", 1, 2, 3, 4]);
-        const dFill = r.describeProgram(["voxel_fill", 1, 2, 3, 4]);
+        const dCarve = r._t(...r.describeProgram(["voxel_carve", 1, 2, 3, 4]));
+        const dFill = r._t(...r.describeProgram(["voxel_fill", 1, 2, 3, 4]));
         out.describeCarve = typeof dCarve === "string" && /schnitzt|Voxel/i.test(dCarve);
         out.describeFill = typeof dFill === "string" && /schüttet|auf/i.test(dFill);
 
@@ -1161,7 +1161,7 @@ async function checkBandLateMultiUser({ page, check }) {
         out.removeArchitectureSafe = st.architectures.length === cnt;
 
         // describeProgram kennt remove_architecture.
-        out.describeRemove = /ab/i.test(r.describeProgram(["remove_architecture", "a-x"]) || "");
+        out.describeRemove = /ab/i.test(r._t(...r.describeProgram(["remove_architecture", "a-x"])) || "");
 
         // spawn_blueprint + remove_architecture MÜSSEN broadcasten
         // (nicht in NON_BROADCASTABLE_OPS).

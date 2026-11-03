@@ -510,7 +510,7 @@ async function checkBandWelle6HBuildAndPersist({ page, check }) {
             p2.program[2] === "stein_block";
 
         // 15. describeProgram
-        const desc1 = r.describeProgram(["creature_task_nearest", "build", "stein_block"]);
+        const desc1 = r._t(...r.describeProgram(["creature_task_nearest", "build", "stein_block"]));
         out.describeProgramShowsBp = /Bauplan/.test(desc1) && /stein_block/.test(desc1);
 
         // 16. Status-Bar zeigt 'N bauen'
@@ -1376,11 +1376,11 @@ async function checkBandWelle6HCreatureStats({ page, check }) {
             Class.NON_BROADCASTABLE_OPS.has("creature_unequip");
 
         // 10. describeProgram-Einträge
-        const d1 = r.describeProgram(["creature_equip_tool", 0, "schmiede-hammer"]);
+        const d1 = r._t(...r.describeProgram(["creature_equip_tool", 0, "schmiede-hammer"]));
         out.descEquipTool = /Werkzeug/.test(d1) && /hammer/.test(d1);
-        const d2 = r.describeProgram(["creature_equip_armor", 0, "lederrüstung"]);
+        const d2 = r._t(...r.describeProgram(["creature_equip_armor", 0, "lederrüstung"]));
         out.descEquipArmor = /Rüstung/.test(d2);
-        const d3 = r.describeProgram(["creature_unequip", 0, "tool"]);
+        const d3 = r._t(...r.describeProgram(["creature_unequip", 0, "tool"]));
         out.descUnequip = /tool/.test(d3) || /Slot/.test(d3);
 
         // 11. Snapshot persistiert equipped (Round-Trip)
@@ -1585,7 +1585,7 @@ async function checkBandWelle6HCreatureStats({ page, check }) {
         out.opNonBroadcast = Class.NON_BROADCASTABLE_OPS.has("creature_apply_boost");
 
         // 12. describeProgram
-        const desc = r.describeProgram(["creature_apply_boost", 0, tonicName]);
+        const desc = r._t(...r.describeProgram(["creature_apply_boost", 0, tonicName]));
         out.descShowsBp = /Trank/.test(desc) && desc.includes(tonicName);
 
         // 13. Inventar-Konsum: _consumeBlueprintFromInventory

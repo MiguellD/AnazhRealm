@@ -906,12 +906,12 @@ async function checkBandWelle6APolish({ page, check }) {
     const wave6e1Results = await safeEvaluate(page, () => {
         const out = {};
         // Vorlagen-Smoke-Tests
-        out.weatherDesc = r.describeProgram(["weather", "rainy"]);
-        out.spawnCreatureDesc = r.describeProgram(["spawn_creature", ["at_player"], 3, "happy"]);
-        out.chainDesc = r.describeProgram(["chain", ["weather", "sunny"], ["spawn_tree", ["near_player"], 4]]);
-        out.whenDesc = r.describeProgram(["when", ["emotion_above", "joy", 0.7], ["skybox_color", "0xffaa00"]]);
-        out.unknownDesc = r.describeProgram(["fictional_op", 42]);
-        out.weatherOk = /Wetter/.test(out.weatherDesc) && /rainy/.test(out.weatherDesc);
+        out.weatherDesc = r._t(...r.describeProgram(["weather", "rainy"]));
+        out.spawnCreatureDesc = r._t(...r.describeProgram(["spawn_creature", ["at_player"], 3, "happy"]));
+        out.chainDesc = r._t(...r.describeProgram(["chain", ["weather", "sunny"], ["spawn_tree", ["near_player"], 4]]));
+        out.whenDesc = r._t(...r.describeProgram(["when", ["emotion_above", "joy", 0.7], ["skybox_color", "0xffaa00"]]));
+        out.unknownDesc = r._t(...r.describeProgram(["fictional_op", 42]));
+        out.weatherOk = /Wetter/.test(out.weatherDesc) && /Regen/.test(out.weatherDesc);
         out.creatureOk =
             /3/.test(out.spawnCreatureDesc) &&
             /happy/.test(out.spawnCreatureDesc) &&
@@ -919,25 +919,25 @@ async function checkBandWelle6APolish({ page, check }) {
         out.chainOk = /und/.test(out.chainDesc);
         out.whenOk = /joy/.test(out.whenDesc) && /Himmel/.test(out.whenDesc);
         out.unknownOk = /fictional_op/.test(out.unknownDesc);
-        // Diskrimination: Beschreibung wird beim addNewAbility gespeichert
+        // die Beschreibung reist nie im Eintrag (spielgang.K5#2): die Liste liest sie je Zeichnen aus dem Programm, als Zeile
+        // der Tafel am Knoten (sie wechselt mit der Sprache) — auch ein alter Eintrag mit deutschem Text zeigt die Zeile
         const beforeCount = st.dsl.abilities.length;
         r.addNewAbility("test_desc_e1", ["weather", "rainy"], "test");
         const added = st.dsl.abilities.find((a) => a.name === "test_desc_e1");
-        out.persistedDescription = added ? added.description : null;
-        out.persistedOk = !!(added && added.description && /Wetter/.test(added.description));
+        out.persistedOk = !!added && !("description" in added);
         st.dsl.abilities = st.dsl.abilities.slice(0, beforeCount);
         delete st.abilities.test_desc_e1;
-        // Lazy-Compute für Legacy-Save: Eintrag ohne description hinzufügen,
-        // renderAbilitiesList ruft → description wird befüllt.
         st.dsl.abilities.push({
             name: "legacy_test_e1",
             program: ["weather", "sunny"],
             source: "test",
+            description: "alter Text",
             createdAt: 0,
         });
+        st.hofGestenExpanded = true;
         r.renderAbilitiesList();
-        const legacyAfter = st.dsl.abilities.find((a) => a.name === "legacy_test_e1");
-        out.lazyComputed = !!(legacyAfter && legacyAfter.description);
+        const zeilen = [...document.querySelectorAll(".ability-desc")];
+        out.lazyComputed = zeilen.some((d) => d.getAttribute("data-t") === "tat.wetter" && /Wetter/.test(d.textContent));
         st.dsl.abilities = st.dsl.abilities.filter((a) => a.name !== "legacy_test_e1");
         return out;
     });
@@ -948,9 +948,9 @@ async function checkBandWelle6APolish({ page, check }) {
         check("Welle 6.E1: chain-Op verbindet Teile mit 'und'", wave6e1Results.chainOk);
         check("Welle 6.E1: when-Op rendert Condition + Then", wave6e1Results.whenOk);
         check("Welle 6.E1: unbekannter Op fällt sauber auf Fallback", wave6e1Results.unknownOk);
-        check("Welle 6.E1: addNewAbility persistiert description-Feld", wave6e1Results.persistedOk);
+        check("Welle 6.E1: addNewAbility trägt keine Beschreibung im Eintrag (die Liste liest das Programm)", wave6e1Results.persistedOk);
         check(
-            "Welle 6.E1: Lazy-Compute füllt description bei alten Saves (renderAbilitiesList)",
+            "Welle 6.E1: die Liste zeigt die Tat als Zeile der Tafel, auch für alte Saves (renderAbilitiesList)",
             wave6e1Results.lazyComputed
         );
     }

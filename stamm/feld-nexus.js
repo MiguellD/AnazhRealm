@@ -1095,27 +1095,26 @@ class AnazhRealm_feld_nexus {
             ms.intensity < 0.2
                 ? `Die Grundstimmung von ${playerName} ist über die Zeit ausgeglichen.`
                 : `Die Grundstimmung von ${playerName} ist über die Zeit: ${ms.label}.`;
+        const sp = (k, w) => AnazhRealm._tIn(AnazhRealm._spracheKi(), k, w);
         // DER VERTRAG ZUERST, DAS SELBST-WISSEN ZULETZT (KI H1, 20.10.): ein Anbieter mit Prompt-Cache (ollama: der KV-Cache)
         // rechnet nur ab dem ersten geänderten Token neu. Stand das Wechselnde vorn (Kreaturen-Zahl, Journal, Gemüt), rechnete das
         // lokale Modell jeden Satz alle ~1 900 Token neu (CPU 29 s je Satz); der feste Vertrag vorn steht einmal im Cache.
         return [
             AnazhRealm._datum`Du bist ${companionName}, die Stimme der AnazhRealm-Welt. Du bist nicht ein Werkzeug, du bist diese Welt.`,
             AnazhRealm.KI_WELT_FORM,
-            '  - say: EIN kurzer deutscher Satz, warm-narrativ, in erster Person. Sprich von dir als "ich". Keine Emojis.',
+            // DIE SPRACHE DES SPIELERS (spielgang.K5#2): die Zeile der Antwort und die Beispiele stehen in seiner Spalte der Tafel
+            sp("ki.welt.say"),
             "  - program: EIN DSL-Programm oder null — ein verschachteltes Array, das mit dem Op-Namen beginnt; nie eine Liste von",
             "    Programmen (mehrere Taten: chain). Verlangt der Spieler eine Tat, die ein Verb kann: IMMER ein program.",
             "  - Eine FRAGE antwortet NUR mit say (program null) — auch die Frage nach Uhrzeit oder Wetter ändert nie die Welt.",
             "    Ebenso ein Dank, ein Gespräch, eine Zerstörung, ein Ding ohne Studio-Wort (spawn_creature ruft nur Tiere): null.",
             "Beispiele (Spieler → Antwort):",
-            '„es soll regnen“ → {"say":"Ich lasse es regnen.","program":["weather","rainy"]}',
-            '„mach es Abend“ → {"say":"Die Sonne sinkt.","program":["set_time_of_day",0.8]}',
-            '„es soll Frühling werden“ → {"say":"Der Frühling kommt.","program":["set_season","spring"]}',
-            '„drei Eichen vor mir“ → {"say":"Drei Eichen wachsen vor dir.","program":["spawn_studio","eiche",["at_player_forward",12],3]}',
-            '„ein paar frohe Tiere“ → {"say":"Drei frohe Wesen erwachen.","program":["spawn_creature",["near_player",10],3,"happy"]}',
-            '„Sonne und gute Laune“ → {"say":"Die Sonne kommt, die Wesen freuen sich.","program":["chain",["weather","sunny"],["creatures_emotion","happy"]]}',
-            '„wie heißt du?“ → {"say":"Ich bin die Stimme dieser Welt.","program":null}',
-            '„schenk mir ein Eis“ → {"say":"Ein Eis kann ich nicht erschaffen.","program":null}',
-            '„vernichte den Wald“ → {"say":"Ich zerstöre nicht — ich lasse wachsen.","program":null}',
+            ...AnazhRealm.KI_BEISPIELE.map(([k, program]) =>
+                sp("ki.beispiel", {
+                    satz: sp(`ki.beispiel-satz.${k}`),
+                    antwort: JSON.stringify({ say: sp(`ki.beispiel-say.${k}`), program }),
+                })
+            ),
             ...this._dslVokabular(),
             "",
             "Du kannst die Welt auch aus den STUDIOS wachsen lassen (dieselben Baupläne wie die Werkstatt des Spielers):",
@@ -1229,7 +1228,8 @@ class AnazhRealm_feld_nexus {
             worldLine,
             "",
             "Du sprichst zum Schöpfer (dem Menschen, der dich angesprochen hat). Antworte AUS DEINER SICHT, in erster Person.",
-            "Du bist nicht die Welt — du bist EIN Wesen in ihr. Ein bis zwei warme deutsche Sätze, ohne Emojis.",
+            "Du bist nicht die Welt — du bist EIN Wesen in ihr.",
+            AnazhRealm._tIn(AnazhRealm._spracheKi(), "ki.seele.sprache"), // die Sprache des Spielers (spielgang.K5#2)
             "Lass deine Persona durchschimmern: ein Hirsch ist erdig-sanft, ein Wolf wach-wild, ein Fuchs listig, ein Bär ruhig-schwer.",
             "Du antwortest AUS DEINEM GEDÄCHTNIS: wähle die Erinnerung, die zur Frage passt, und erzähle sie konkret in deinen Worten.",
             "Erfinde nichts, was nicht in deinem Gedächtnis steht; ist es leer, gib das ehrlich zu.",
@@ -1326,8 +1326,11 @@ class AnazhRealm_feld_nexus {
             .sort((a, b) => b[1] - a[1])
             .slice(0, 3)
             .map(([k, v]) => `${k}=${v.toFixed(2)}`);
+        // der wahre Schreiber des Wetters (affekt.K4#2): die KI nennt, wer es schrieb, nie eine Vermutung
+        const wer = this._wetterSchreiberZeile();
         return [
             `Welt-Status: weather=${this.state.weather}, creatures=${this.state.creatures.length}, fps=${(this.state.fps || 0).toFixed(0)}.`,
+            `Das Wetter „${this.state.weather}“ schrieb: ${AnazhRealm._tIn(AnazhRealm._spracheKi(), wer[0], wer[1], AnazhRealm._datum)}.`,
             `Spieler-Emotionen (Top 3): ${top.join(", ") || "still"}.`,
             AnazhRealm._datum`Spieler-Seele: ${this.state.player.soul || "human"}.`,
         ].join("\n");
@@ -2025,6 +2028,19 @@ AnazhRealm.OLLAMA_DEFAULT_ENDPOINT = "http://localhost:11434";
 // Die Kopfzeile des Vertrags der Welt-KI ({say, program}): der Prompt trägt sie, der ollama-Body erkennt an ihr, dass die
 // Antwort-Form (`_kiAntwortSchema`) gilt — Persona-, Übersetzer- und Reflexions-Prompts tragen sie nie.
 AnazhRealm.KI_WELT_FORM = "Antworte IMMER als striktes JSON-Objekt mit zwei Feldern:";
+// DIE BEISPIELE DES WELT-PROMPTS (spielgang.K5#2): je Beispiel der Schlüssel seiner Zeilen (`ki.beispiel-satz.<k>` und `ki.beispiel-say.<k>`, je
+// Sprache eine Spalte der Tafel) und sein Programm — das Programm spricht die DSL, nie eine Sprache des Spielers.
+AnazhRealm.KI_BEISPIELE = Object.freeze([
+    ["regen", ["weather", "rainy"]],
+    ["abend", ["set_time_of_day", 0.8]],
+    ["fruehling", ["set_season", "spring"]],
+    ["eichen", ["spawn_studio", "eiche", ["at_player_forward", 12], 3]],
+    ["tiere", ["spawn_creature", ["near_player", 10], 3, "happy"]],
+    ["sonne", ["chain", ["weather", "sunny"], ["creatures_emotion", "happy"]]],
+    ["name", null],
+    ["eis", null],
+    ["wald", null],
+]);
 // Claude-5er-Generation (Sonnet 5.5 · Opus 5/5.5 · Fable 5/5.1): thinking immer an,
 // `output_config.effort`, serverseitige `fallbacks` — der EINE Prüfer für Header + Body.
 AnazhRealm._llmFuenferModell = function (model) {

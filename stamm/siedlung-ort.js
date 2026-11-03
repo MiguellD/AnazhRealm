@@ -2781,7 +2781,7 @@ class AnazhRealm_siedlung_ort {
             if (z !== "steht" && z !== "gesetzt") {
                 abgesagt.set(w.id, z);
                 this._bruchMelden(
-                    `GENESIS-ORT: ${w.id} (${w.typ}) steht nicht — die Wurzel sagte ab: ${z} (${AnazhRealm.SETZ_GRUND[z] || AnazhRealm.SETZ_GRUND.unbenannt}); ${abgesagt.size} Elemente des Plans abgesagt`
+                    `GENESIS-ORT: ${w.id} (${w.typ}) steht nicht — die Wurzel sagte ab: ${z} (${AnazhRealm._tIn("de", AnazhRealm.SETZ_GRUND[z] || AnazhRealm.SETZ_GRUND.unbenannt)}); ${abgesagt.size} Elemente des Plans abgesagt`
                 );
                 continue;
             }

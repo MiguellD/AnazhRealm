@@ -693,24 +693,28 @@ class AnazhRealm_netz_portal {
     // Op im Subset → an den Welt-Adapter.
     _portalRouteDsl(program, describe, append) {
         const po = this._portalOverlay;
-        const say = typeof append === "function" ? append : (m) => this.log(m, "INFO");
+        // jede Antwort ist eine Zeile der Tafel (die Sprache des Spielers); das Log liest die Quell-Sprache
+        const say =
+            typeof append === "function"
+                ? append
+                : (z) => this.log(Array.isArray(z) ? AnazhRealm._tIn("de", z[0], z[1]) : String(z), "INFO");
         if (!po) return { forwarded: false, reason: "not_in_portal" };
-        const label = po.label || "diese Welt";
+        const label = po.label || ["portal.dsl.diese-welt"];
         if (!Array.isArray(po.dsl) || !po.dsl.length) {
-            say(`„${label}" ist ausgestellt — sie versteht die DSL noch nicht.`);
+            say(["portal.dsl.ausgestellt", { label }]);
             return { forwarded: false, reason: "exhibited" };
         }
         const ops = this._portalProgramOps(program);
         const unknown = ops.find((op) => !po.dsl.includes(op));
         if (!ops.length || unknown) {
-            say(`„${label}" versteht „${unknown || "diesen Befehl"}" nicht.`);
+            say(["portal.dsl.unbekannt", { label, op: unknown || ["portal.dsl.dieser-befehl"] }]);
             return { forwarded: false, reason: "unknown_op", op: unknown || null };
         }
         if (!this._portalForwardDsl(program)) {
-            say(`„${label}" konnte den Befehl nicht empfangen.`);
+            say(["portal.dsl.kein-empfang", { label }]);
             return { forwarded: false, reason: "no_frame" };
         }
-        say(`→ ${describe || "an die Welt gesendet"}`);
+        say(["portal.dsl.gesendet", { tat: describe || ["portal.dsl.an-die-welt"] }]);
         return { forwarded: true, reason: "sent" };
     }
 
@@ -1310,7 +1314,7 @@ class AnazhRealm_netz_portal {
             "grant_capability",
             {
                 what: this._t("portal.geste.faehigkeit.was", { key: String(key), von: String(prop.fromLabel) }),
-                value: typeof this.describeProgram === "function" ? this.describeProgram(prop.dsl) : key,
+                value: this._t(...this.describeProgram(prop.dsl)),
                 whom: this._t("portal.geste.faehigkeit.wem"),
             },
             opts

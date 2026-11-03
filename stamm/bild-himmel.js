@@ -3152,6 +3152,11 @@ class AnazhRealm_bild_himmel {
         } else if (wer === "gesetz" && this.state.wetterWort) this.state.wetterWort = name;
         const oldWeather = this.state.weather;
         this.state.weather = name;
+        // der wahre Schreiber (affekt.K4#2): der Zug zieht den Wunsch der Welt (er ist verbraucht, sein Wünscher schrieb) oder die Front
+        const wunsch = quelle === "auto-zug" && this.state.wetterWunsch;
+        if (wunsch && wunsch.wort === name) this.state.wetterWunsch = null;
+        this.state.wetterSchreiber =
+            quelle !== "auto-zug" ? quelle || "?" : wunsch && wunsch.wort === name ? wunsch.quelle : "front";
         if (zug) {
             this.state.weatherTransition = null;
             this.requestWeatherTransition(name, this.constructor.WEATHER_TRANSITION_DURATION_MS, zug.von, zug.beginn);

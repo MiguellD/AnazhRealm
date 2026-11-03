@@ -16,6 +16,10 @@
 //   U) eine Zeile der Tafel keinen Leser hat (kein Literal, keine Familie `` `präfix.${…}` ``);
 //   Z) eine aufgelöste Zeile `_t(…)` an einer Chat-Senke steht (sie wechselt nie mit der Sprache: die Senke nimmt
 //      `[schlüssel, werte]`).
+// DER WERT-TEXT (spielgang.K5#2): ein Satz, den der Spieler als WERT einer Zeile liest, ist selbst eine Senke — die Antwort des
+// Chat-Satzes (`describe:`), die Absage eines Gesetzes (`absage:`) und jede Rückgabe eines Satz-Bauers (SATZ: die Tat in Worten,
+// der Satz des Ergebnisses, die Stimme des Felds, die Absage, die Hilfe, die Antwort auf das Wetter). Bis w8-sprache sah die Wand
+// sie nicht (der Wert reiste als Datum): die KI antwortete im englischen Chat „(World changed: Grok lässt das Wetter …)“.
 // Wort-Text: nach Abzug von `${…}`, Markup und Entitäten ein Wort aus ≥ 2 Buchstaben UND ein Zeichen der Sprache
 // (Großbuchstabe, Umlaut, …!?:) oder zwei kleine Wörter; ein Bezeichner ist ein Name.
 // DIE LEBENDE HÄLFTE ist die Station spielgang.K5#1 (punkte-maschine, stationen/g5.js `sprachLauf`): die Welt am Null-Renderer
@@ -39,7 +43,9 @@ const SENKE_RUF =
     /^(_hudSchreib|_chatEcho|alert|confirm|prompt|_el|append|appendChatOutput|_spielerSagt|_ladeschirmStand|journalAppend|journalAppendOnce)$/;
 const SENKE_FELD = /^(textContent|innerText|innerHTML|title|placeholder)$/;
 const SENKE_ATTR = /^(title|placeholder|aria-label|alt)$/;
-const ETIKETT = /^(label|hint|lab|titel|title|tip|desc|description|beschreibung|text|name)$/;
+const ETIKETT = /^(label|hint|lab|titel|title|tip|desc|description|beschreibung|text|name|describe|absage)$/;
+const SATZ =
+    /^(describeProgram|_describeDslPosition|_describeDslCondition|_dslDescriptionTable|_describeCreatureTaskArg|_ergebnisSatz|_feldStimmeZeile|_tatSchreiber|_studioSatzAbsage|_regelAusSatz|_hilfeZeilen|_dslAbsageSatz|_wetterWarum|_wetterSchreiberZeile)$/;
 const DATEN_ATTR = /^(value|class|className|klasse|sprecherKlasse|id|type|name|href|src|for|role|key|style)$/;
 const CHAT = /^(_chatEcho|appendChatOutput|_spielerSagt)$/;
 const nameVon = (c) =>
@@ -48,8 +54,13 @@ const nameVon = (c) =>
 // die Senke, die einen Knoten trägt (am AST, die Ahnen von innen nach außen): eine Zuweisung an ein Text-Feld (rechts),
 // ein Senken-Ruf (in seinen Argumenten), setAttribute mit einem Text-Attribut (sein Wert); ein Daten-Attribut schweigt
 function senke(n, ahnen) {
+    let rueck = false;
     for (let i = ahnen.length - 1, kind = n; i >= 0; kind = ahnen[i--]) {
         const a = ahnen[i];
+        // die Rückgabe eines Satz-Bauers (ein `return`, der Leib eines Pfeils) — sein Name an der Methode, der Funktion, der Eigenschaft
+        if (a.type === "ReturnStatement" || (a.type === "ArrowFunctionExpression" && a.body === kind)) rueck = true;
+        if (rueck && /^(MethodDefinition|FunctionDeclaration)$/.test(a.type) && SATZ.test(nameVon(a.key || a.id || {})))
+            return "satz " + nameVon(a.key || a.id) + ":";
         if (a.type === "Property" && kind === a.value && DATEN_ATTR.test(nameVon(a))) return null;
         // das DATEN-ETIKETT (w5-spielgang-k5): ein Name oder Hinweis in einem Datensatz (`label:`, `hint:`, `lab:`, `title:`,
         // `text:` …) fließt später in eine Senke, die kein Literal mehr sieht (`bp.label`, `d.hint`) — er ist selbst die Senke
@@ -125,6 +136,9 @@ if (require.main !== module) {
         ["mehrzeiliger Ausdruck", "C", mit('function p(el, an) { el.innerHTML = an +\n    zeile("Impostor"); }')],
         ["harter Chat", "C", mit("function p(n) { this._chatEcho(`Die Welt hört dich, ${n}!`); }")],
         ["hartes _el", "C", mit('function p() { this._el("button", { text: "Speichern" }); }')],
+        ["harter Chat-Satz (describe)", "C", mit('function p() { return { program: [], describe: "Baum gepflanzt" }; }')],
+        ["harte Rückgabe eines Satz-Bauers", "C", mit("class X { describeProgram(a) { return `lässt das Wetter zu ${a} wechseln`; } }")],
+        ["harter Satz im Pfeil des Satz-Bauers", "C", mit('class X { _dslDescriptionTable() { return { abbau: () => "baut ein Bauwerk ab" }; } }')],
         ["harter title", "C", mit('function p(el) { el.setAttribute("title", "Schließen"); }')],
         ["fremder Schlüssel", "K", mit('function p(el) { el.textContent = this._t("gibt.es.nicht"); }')],
         ["aufgelöste Chat-Zeile", "Z", mit('function p() { this._chatEcho(this._t("ui.abbrechen")); }')],
