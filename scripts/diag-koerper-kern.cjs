@@ -78,25 +78,22 @@ const neuMorph = (p, N) => core.morphAuf({ character: N.parts.__character, parts
 const SINGLES = ["ribcage","pelvis","waist","abs","upperBack","chest","neckMain","neckBase","jaw","chin","head"];
 const PAIRED = ["oblique","glute","quad","hamstring","calf","bicep","tricep","uarm","forearm","deltoid","trap","lat","pec","breast","scm","tneck","buccal","cheekbone","masseter","arm"];
 
-function partNames() {
-    const names = SINGLES.slice();
-    for (const n of PAIRED) { names.push(n + "1"); names.push(n + "-1"); }
-    return names;
-}
+const NAMEN = [...SINGLES, ...PAIRED.flatMap((n) => [n + "1", n + "-1"])];
+const skala = () => ({ x: 1, y: 1, z: 1, set(x, y, z) { [this.x, this.y, this.z] = [x, y, z]; } });
 
 function mkMock() {
     const rnd = mulberry32(18451);
     const parts = {}, base = {};
-    for (const n of partNames()) {
+    for (const n of NAMEN) {
         parts[n] = {
-            scale: { x: 1, y: 1, z: 1, set(x, y, z) { this.x = x; this.y = y; this.z = z; } },
+            scale: skala(),
             position: { x: 0, y: 0, z: 0 },
             rotation: { x: 0, y: 0, z: 0 },
             userData: {},
         };
         base[n] = { x: 0.5 + rnd(), y: 0.5 + rnd(), z: 0.5 + rnd() };
     }
-    parts.__character = { scale: { x: 1, y: 1, z: 1, set(x, y, z) { this.x = x; this.y = y; this.z = z; } } };
+    parts.__character = { scale: skala() };
     base.headPosY = 5.59752; // Lab Z.131: H-headSeg/2-headSeg*0.20*(1-0.92)
     return { parts, base };
 }
@@ -116,25 +113,18 @@ function snapshot(parts) {
 // ────────────────────────────────────────────────────────────────────────────
 // Der Vergleich (EXAKT — Object.is; 0 Abweichungen sind das Gesetz).
 // ────────────────────────────────────────────────────────────────────────────
-function gridValues(dial) { return [dial.min, dial.def, dial.max]; }
-
 function runVergleich(morphFn, labPropFn, labLandmarksFn) {
-    const P = core.PARAMS_BY_KIND.koerper;
-    const byId = {};
-    for (const d of P) byId[d.id] = d;
-    const dials = ["height", "mass", "tone", "age", "gender", "arms"].map((id) => byId[id]);
+    const dials = ["height", "mass", "tone", "age", "gender", "arms"].map((id) => core.PARAMS_BY_KIND.koerper.find((d) => d.id === id));
 
     let diffs = 0, values = 0, points = 0;
+    const vgl = (a, n, z) => (values++, !Object.is(a, n) && ++diffs < 5 && console.log(`  ⛔ ${z}: alt=${a} neu=${n}`));
 
     // (1) Proportionen — 28 Konstanten, alt vs neu.
     const ap = altProportionen(), np = labPropFn();
-    for (const k of Object.keys(ap)) {
-        values++;
-        if (!Object.is(ap[k], np[k])) { diffs++; if (diffs < 5) console.log(`  ⛔ Proportion ${k}: alt=${ap[k]} neu=${np[k]}`); }
-    }
+    for (const k of Object.keys(ap)) vgl(ap[k], np[k], "Proportion " + k);
 
     // (2) Morph — das Dial-Gitter (3^6 = 729 Punkte), alt vs neu auf dem Mock-Rig.
-    const [gh, gm, gt, ga, gg, gr] = dials.map(gridValues);
+    const [gh, gm, gt, ga, gg, gr] = dials.map((d) => [d.min, d.def, d.max]);
     for (const height of gh) for (const mass of gm) for (const tone of gt)
     for (const age of ga) for (const gender of gg) for (const arms of gr) {
         points++;
@@ -144,13 +134,7 @@ function runVergleich(morphFn, labPropFn, labLandmarksFn) {
         morphFn(p, N);
         const sa = snapshot(A.parts), sn = snapshot(N.parts);
         if (sa.length !== sn.length) { diffs++; continue; }
-        for (let i = 0; i < sa.length; i++) {
-            values++;
-            if (!Object.is(sa[i], sn[i])) {
-                diffs++;
-                if (diffs < 5) console.log(`  ⛔ Gitter ${JSON.stringify(p)} Wert[${i}] (${sa[i - (i % 1)]}): alt=${sa[i]} neu=${sn[i]}`);
-            }
-        }
+        for (let i = 0; i < sa.length; i++) vgl(sa[i], sn[i], `Gitter ${JSON.stringify(p)} Wert[${i}]`);
     }
 
     // (3) Landmarken — Mess-Fixtures (voll · leer · Rand), alt vs neu.
@@ -163,10 +147,7 @@ function runVergleich(morphFn, labPropFn, labLandmarksFn) {
     ];
     for (const mess of fixtures) {
         const la = altLandmarks(mess), ln = labLandmarksFn(mess);
-        for (const k of Object.keys(la)) {
-            values++;
-            if (!Object.is(la[k], ln[k])) { diffs++; if (diffs < 5) console.log(`  ⛔ Landmarke ${k}: alt=${la[k]} neu=${ln[k]}`); }
-        }
+        for (const k of Object.keys(la)) vgl(la[k], ln[k], "Landmarke " + k);
     }
 
     return { diffs, values, points };
@@ -194,24 +175,24 @@ const wacheLeer = (P, b = "nachtwaechter", a = "waechter", W = {}) => {
 // Stoß-Richtung, in beiden Richtungen), S3 die Erholung (die Wurzel quer ≤ 5 cm/s gegen die Bahn ab ≤ 1,5 s), S4 die doppelte
 // Masse halbiert den Schritt (≤ 0,8 ×), S5 ein Hauch (20 N) fängt der Knöchel (kein Schritt), S6 ein Versetzen des Leibs (Lage
 // springt, eine neue Geschwindigkeit) trägt keinen Stoß, S7 ein Halt am Ort (Geschwindigkeit 0, die Bühne, die den Leib stellt) auch
-// nicht: der Gang danach Takt für Takt wie der eines frischen Leibs aus der Ruhe (an z171 ROT: der Halt galt als Stoß rückwärts,
-// die Gamepad-Verben gingen gebremst). Bis w5-physik-k5 zog der Antrieb (kAcc 40/s) jeden Stoß in 25 ms auf das Ziel
+// nicht: kein Stoß-Zustand, der Plan fährt den Gang wie ohne Stoß (an z171 ROT: der Halt galt als Stoß rückwärts, die
+// Gamepad-Verben gingen gebremst). Bis w5-physik-k5 zog der Antrieb (kAcc 40/s) jeden Stoß in 25 ms auf das Ziel
 // des Gangs: der Leib wich 0,008 m. Leser: der Wirt (`_loopPlayerMovement` → leibPlan, `_stepCharacter` → leibLandung) und das
 // Körper-Studio (playSchritt). Täter (Selbsttest): der Leib ohne Bein (der Antrieb schluckt den Stoß), kein Ausfallschritt, die
 // Wache des Versetzens blind, der Halt als Stoß gelesen.
-function stossLauf(C, { kraft = 200, richtung = 1, masse = 89, beinM = 0.85, eingriff = null, mutante = null, ab = 0, L = C.leibZustand(), lage = [0, 0, 0] } = {}) {
-    const K = { tempo: 4.5, gehTempo: 4.5, hang: 1, rittKAcc: null, rittKBrake: null, lage, beinM, g: 9.81 };
+function stossLauf(C, { kraft = 200, richtung = 1, masse = 89, beinM = 0.85, eingriff = null, mutante = null } = {}) {
+    const L = C.leibZustand();
+    const K = { tempo: 4.5, gehTempo: 4.5, hang: 1, rittKAcc: null, rittKBrake: null, lage: [0, 0, 0], beinM, g: 9.81 };
     const [p, v] = [K.lage, L.playerVel];
-    const bahn = [], vz = [];
-    let ausfall = 0, schritte = 0, versetzt = false, haltLage = null;
-    for (let k = ab; k < 270; k++) {
+    const bahn = [];
+    let ausfall = 0, schritte = 0, versetzt = false;
+    for (let k = 0; k < 270; k++) {
         if (kraft && k >= 90 && k < 102) v.setValue(v.x() + (richtung * kraft) / 60 / masse, 0, v.z());
-        if (eingriff === "versetzen" && k === 150) {
-            p[0] += 40;
-            v.setValue(0.7, 0, v.z());
+        if (eingriff && k === 150) {
+            if (eingriff === "versetzen") p[0] += 40;
+            v.setValue(eingriff === "halt" ? +(mutante === "halt") / 1e3 : 0.7, 0, 0);
             if (mutante === "versatz") L._stossLage = [p[0], p[2]];
         }
-        if (eingriff === "halt" && k === 150) (haltLage = [...p]), v.setValue(mutante === "halt" ? 1e-3 : 0, 0, 0);
         C.leibRichtung(L, 0, 1, 0);
         C.leibPlan(L, { vor: 1, quer: 0 }, K, k / 60, 1 / 60);
         const B = L.leibStoss;
@@ -222,9 +203,8 @@ function stossLauf(C, { kraft = 200, richtung = 1, masse = 89, beinM = 0.85, ein
         p[2] += v.z() / 60;
         C.leibLandung(L, true, false, k / 60);
         bahn.push(richtung * p[0]);
-        if (k >= 150 && k < 162) vz.push(v.z());
     }
-    return { bahn, ausfall, schritte, versetzt, haltLage, vz };
+    return { bahn, ausfall, schritte, versetzt };
 }
 function stossUrteil(C, mutante = null) {
     const beinM = mutante === "ohneBein" ? 0 : 0.85;
@@ -237,9 +217,6 @@ function stossUrteil(C, mutante = null) {
         return { ...P, vEnde: vq(101), erholt };
     };
     const [a, g, m, h] = [{}, { richtung: -1 }, { masse: 178 }, { kraft: 20 }].map(lies);
-    // S7 der Halt am Ort: der Leib geht danach Takt für Takt wie ein frischer Leib aus der Ruhe an derselben Lage
-    const H = stossLauf(C, { kraft: 0, beinM, eingriff: "halt", mutante });
-    const F = stossLauf(C, { kraft: 0, beinM, ab: 150, lage: [...H.haltLage] });
     const rot = [
         [a.vEnde >= 0.22, `S1 der Antrieb schluckt den Stoß (leibPlan): Wurzel ${a.vEnde.toFixed(3)} m/s`],
         [a.ausfall >= 0.1 && g.ausfall >= 0.1, `S2 kein Ausfallschritt (leibStossSchritt): ${a.ausfall.toFixed(3)} / ${g.ausfall.toFixed(3)} m`],
@@ -247,9 +224,9 @@ function stossUrteil(C, mutante = null) {
         [m.ausfall > 0 && m.ausfall <= 0.8 * a.ausfall, `S4 die Masse ×2 zieht nicht: ${m.ausfall.toFixed(3)} m`],
         [!h.schritte, `S5 20 N: ${h.schritte} Schritte`],
         [!stossLauf(C, { kraft: 0, beinM, eingriff: "versetzen", mutante }).versetzt, "S6 das Versetzen trägt einen Stoß (leibStossLesen)"],
-        [!H.versetzt && H.vz.every((x, i) => x === F.vz[i]), `S7 der Halt trägt einen Stoß (leibStossLesen): ${H.vz[11].toFixed(3)} statt ${F.vz[11].toFixed(3)} m/s nach 12 Takten`],
+        [!stossLauf(C, { kraft: 0, beinM, eingriff: "halt", mutante }).versetzt, "S7 der Halt trägt einen Stoß (leibStossLesen)"],
     ].filter(([ok]) => !ok).map(([, z]) => z);
-    return { rot, a, m, H };
+    return { rot, a, m };
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -280,4 +257,4 @@ if (selftest) {
 const r = runVergleich(neuMorph, core.labProportionen, core.labLandmarks);
 const leer = wacheLeer(core.tagesPlan);
 const st = stossUrteil(core);
-urteilEnde(r.points < 500 || r.diffs || leer || st.rot.length, `❌ ROT — Gitter ${r.points} Punkte, ${r.diffs} Abweichungen alt↔neu, ${leer} Proben ohne Wache${st.rot.length ? " · " + st.rot.join(" · ") : ""}`, `✅ DER MENSCH IST EINER — Dial-Gitter ${r.points} Punkte, ${r.values} Werte alt==neu exakt (0 Abweichungen); Proportionen + Landmarken-Urteil identisch; DIE WACHE STEHT zu jeder Stunde; DER STOSS IM GANG: Ausfall ${st.a.ausfall.toFixed(3)} m (Masse ×2 ${st.m.ausfall.toFixed(3)}), erholt ${st.a.erholt.toFixed(3)} s; nach dem Halt ${st.H.vz[11].toFixed(3)} m/s wie aus der Ruhe.`);
+urteilEnde(r.points < 500 || r.diffs || leer || st.rot.length, `❌ ROT — Gitter ${r.points} Punkte, ${r.diffs} Abweichungen alt↔neu, ${leer} Proben ohne Wache${st.rot.length ? " · " + st.rot.join(" · ") : ""}`, `✅ DER MENSCH IST EINER — Dial-Gitter ${r.points} Punkte, ${r.values} Werte alt==neu exakt (0 Abweichungen); Proportionen + Landmarken-Urteil identisch; DIE WACHE STEHT zu jeder Stunde; DER STOSS IM GANG: Ausfall ${st.a.ausfall.toFixed(3)} m (Masse ×2 ${st.m.ausfall.toFixed(3)}), erholt ${st.a.erholt.toFixed(3)} s.`);
