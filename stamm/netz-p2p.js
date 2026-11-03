@@ -2909,6 +2909,8 @@ class AnazhRealm_netz_p2p {
         this._loopPlayerMovement(ls.simT, FIXED_DT);
         this._stepCharacter(FIXED_DT, ls.simT);
         this._rittSchritt(FIXED_DT); // der Ghost reitet nie (mountedArch null) — die Ordnung bleibt exakt
+        // der Mitspieler tritt den Pfad wie der eigene Leib (stoffe.K4, `_tritt`): dieselbe Zelle, dieselbe Zahl auf jedem Peer
+        this._tritt(ls, mesh.position.x, mesh.position.z, st.isInAir !== true && st.playerUnderwater !== true, true);
         ls.simT += FIXED_DT;
         // --- Ghost sichern ---
         ls.x = mesh.position.x;

@@ -1081,6 +1081,8 @@ class AnazhRealm_kreatur_verhalten {
         }
         const pm = st.playerMesh;
         if (pm && pm.position && !(st.player && st.player.mountedArch != null)) this._leibTeil(pm, teil(n++));
+        const fuss = st.isInAir !== true && st.playerUnderwater !== true; // der Spieler tritt, wo er steht; ein Tier geht am Boden
+        for (let k = 0; k < n; k++) this._tritt(T[k].q, T[k].x, T[k].z, T[k].q !== pm || fuss, T[k].q === pm); // der Pfad (stoffe.K4)
         if (n < 2) return;
         const nah = this._leibKontaktNah || (this._leibKontaktNah = {});
         for (let gang = 0; gang < AnazhRealm.LEIB_GAENGE; gang++) {

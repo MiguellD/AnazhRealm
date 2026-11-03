@@ -812,6 +812,7 @@ class AnazhRealm_speicher_laden {
             werk: a.werk === true || (state.herkunft !== 1 && a.feldWurf !== true && !this._naturArt({ type: typ })),
             // die Geburt des Werks reist durch den Reload mit (stoffe.K4: sein Alter ist Spielzeit seit ihr)
             geburt: a.geburt,
+            geburtNass: +a.geburtNass || 0,
             // PRÄGUNG-WELT — der Guss-Stempel reist durch den Reload mit
             // (spawnArchitecture ist der EINE Sanitize-Chokepoint).
             studioOv: a.studioOv,

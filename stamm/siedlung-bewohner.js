@@ -1784,6 +1784,7 @@ class AnazhRealm_siedlung_bewohner {
             [b.grundX, b.grundZ, b.grundH] = [x, z, Number.isFinite(h) ? h : sohle];
         }
         g.position.set(x, this._bewohnerTritt(x, z, sohle, b.grundH, kand) + fuss, z); // die Boxen seiner Reichweite trägt kand
+        this._tritt(g, x, z, true, false); // sein Gang tritt den Pfad (stoffe.K4)
         if (rx || rz) {
             const TC = globalThis.__tetrapodaCore;
             const om = TC.STEUER_GESETZ.wende * Math.sqrt(TC.GANG_GESETZ.g / b.beinL) * dt;

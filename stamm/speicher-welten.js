@@ -1180,6 +1180,7 @@ class AnazhRealm_speicher_welten {
                             a.feldWurf,
                             a.werk,
                             a.geburt,
+                            a.geburtNass,
                             a.studioOv,
                             a.fundament,
                             a.tuer,
@@ -1217,6 +1218,8 @@ class AnazhRealm_speicher_welten {
                         ...(a.werk === true ? { werk: true } : {}),
                         // die Geburt des Werks überlebt den Reload (stoffe.K4: sein Alter ist Spielzeit seit ihr)
                         ...(Number.isInteger(a.geburt) && a.geburt > 0 ? { geburt: a.geburt } : {}),
+                        // ebenso die Nässe-Dosis seiner Geburt (stoffe.K4, `_werkAlter`)
+                        ...(a.geburtNass > 0 ? { geburtNass: a.geburtNass } : {}),
                         // PRÄGUNG-WELT — der Guss-Stempel überlebt den Reload (sonst verlöre
                         // ein geprägtes Werk beim Restore seinen Charakter, V8.59-Klasse).
                         ...(a.studioOv && typeof a.studioOv === "object" ? { studioOv: a.studioOv } : {}),

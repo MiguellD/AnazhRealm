@@ -856,7 +856,13 @@ class AnazhRealm_siedlung_bauten {
             // Opts sind über alle Varianten identisch (globale holz/laub-Tags, Farbe per-Vertex) → das geteilte
             // Tag-Signatur-Material (_foliageMatCache-Konvention: NIE disposen).
             const mat = this._sharedFoliageMaterial(matOpts);
-            leaves.push({ geom: merged, mat, localMatrix: new THREE.Matrix4() });
+            // die Zeile, aus der die Gruppe altert (`_werkAlterFaerbe`; die Gruppe teilt den Stoff ihres ersten Teils)
+            leaves.push({
+                geom: merged,
+                mat,
+                localMatrix: new THREE.Matrix4(),
+                stoff: refMatDef ? refPart.material : null,
+            });
         }
         if (leaves.length === 0) return null;
         return { leaves };
@@ -894,6 +900,7 @@ class AnazhRealm_siedlung_bauten {
             const m = new THREE.Mesh(leaf.geom.clone(), leaf.mat);
             m.castShadow = true;
             m.receiveShadow = true;
+            if (leaf.stoff) m.userData.stoff = leaf.stoff;
             group.add(m);
         }
         if (group.children.length === 0) return this._buildFromBlueprint(bp); // defensive
