@@ -4293,7 +4293,7 @@
     // Tuch-Ecke liegt mindestens `luftM` über der nächsten Haut-Ecke, längs deren Normale, im Radius `hautM`). Die Webung der
     // Kleid-Zeile wählt die Art: Wolle (der weite Poncho) fällt frei, Denim sitzt eng.
     var TUCH_GESETZ = Object.freeze({
-        schrittS: 1 / 120, // der Teil-Schritt (Small Steps: viele Schritte, je EINE Runde)
+        schrittS: 1 / 60, // der Teil-Schritt (Small Steps: je Bild der Welt EIN Schritt mit EINER Runde)
         iter: 1,
         maxSchritte: 6, // je Aufruf höchstens (nach einer Pause springt der Leib, das Tuch schießt nicht)
         daempfungS: 2.5, // 1/s — die Luft und die Reibung des Gewebes
@@ -4304,11 +4304,13 @@
         hautM: 0.035, // der Radius der Haut-Suche
         bandM: 0.002, // das Band um die nächste Haut-Ecke, in dem jede ihre Halb-Ebene hält (Gleichstände der zwei Stufen)
         tiefeM: 0.004,
-        ruheM: 1e-3, // m je Bild: so wenig ändert sich die Abweichung eines ruhenden Tuchs von seinem Ziel (im Mittel der freien Punkte;
-        // gemessen im Stand 0,45 mm — das Zittern der Falten —, ein schwingendes Tuch nach dem Gang weit darüber)
+        ruheM: 2e-3, // m je Schritt: so wenig ändert sich die Abweichung eines ruhenden Tuchs von seinem Ziel (im Mittel der freien
+        // Punkte; gemessen im Stand 0,8 mm — das Zittern der Falten —, ein schwingendes Tuch nach dem Gang zentimeterweit)
         ruheA: 1e-4, // m je Bild²: so wenig beschleunigt das Ziel eines ruhenden Tuchs (das Wiegen, der Atem — der Gang 0,8 mm)
         ruheSchritte: 30,
         nahM: 14, // nur so nahe Leiber rechnen ihr Tuch (vom Auge, m) — ferner ruht es in der Pose
+        taktS: 1 / 30, // so oft rechnet ein Tuch höchstens (Spielzeit; dazwischen trägt es seine Abweichung starr mit der Haut)
+        leiber: 2, // höchstens so viele (die dem Auge nächsten sichtbaren): die Kosten gehören dem Schirm, nie der Zahl der Leiber
         webe: {
             wool: { hz: 2.2, freiM: 0.045 },
             knit: { hz: 3.0, freiM: 0.03 },
@@ -4687,21 +4689,23 @@
         var fuell = z.gF && z.gF.length >= n ? z.gF : (z.gF = new Int32Array(n));
         fuell.set(S.subarray(0, n));
         for (i = 0; i < nh; i++) L[fuell[zelle[i]]++] = i;
-        // die Nähe: die Belegung, geweitet längs x, dann y, dann z
+        // die Nähe: die Belegung, geweitet längs x, dann y, dann z (eine Zelle: keine Haut näher als hautM, wo sie 0 liest)
         for (i = 0; i < n; i++) N[i] = S[i + 1] > S[i] ? 1 : 0;
-        var a, b2, d;
-        for (d = 0; d < 3; d++) {
-            var st = d === 0 ? 1 : d === 1 ? nx : nx * ny,
-                lim = d === 0 ? nx : d === 1 ? ny : nz;
-            for (i = 0; i < n; i++) {
-                a = d === 0 ? i % nx : d === 1 ? ((i / nx) | 0) % ny : (i / (nx * ny)) | 0;
-                b2 = N[i];
-                if (!b2 && a > 0) b2 = N[i - st];
-                if (!b2 && a < lim - 1) b2 = N[i + st];
-                W[i] = b2;
+        var weiten = function (Q) {
+            for (var d = 0; d < 3; d++) {
+                var st = d === 0 ? 1 : d === 1 ? nx : nx * ny,
+                    lim = d === 0 ? nx : d === 1 ? ny : nz;
+                for (var j = 0; j < n; j++) {
+                    var a = d === 0 ? j % nx : d === 1 ? ((j / nx) | 0) % ny : (j / (nx * ny)) | 0,
+                        b2 = Q[j];
+                    if (!b2 && a > 0) b2 = Q[j - st];
+                    if (!b2 && a < lim - 1) b2 = Q[j + st];
+                    W[j] = b2;
+                }
+                Q.set(W.subarray(0, n));
             }
-            N.set(W.subarray(0, n));
-        }
+        };
+        weiten(N);
         z.gx0 = x0;
         z.gy0 = y0;
         z.gz0 = z0;
@@ -4712,7 +4716,7 @@
     // DIE HAUT BLEIBT INNEN: je Punkt die nächste Haut-Ecke im Radius hautM (die Haut dieses Bilds, beide Stufen); liegt er
     // weniger als luftM über ihr (längs ihrer Normale), hebt er sich auf luftM — die Haut bewegt sich nie (sie ist der Leib).
     function _tuchKollision(z) {
-        _hautHeben(z, z.p, z.n, z.kontakt, z.q, false);
+        _hautHeben(z, z.p, z.n, z.kontakt, z.q, true);
     }
     // DIE PRÜFUNG einer Lage (x, y, zz) gegen die Haut: die nächste Haut-Ecke im Radius hautM und jede im Band um sie (`bandM`:
     // Gleichstände — die Haut beider Stufen liegt oft deckungsgleich, mit anderen Normalen); `q` erhält [nächste, tiefste,
@@ -5055,19 +5059,22 @@
                     ux = g0 * dB[3 * e0] + g1 * dB[3 * e1] + g2 * dB[3 * e2],
                     uy = g0 * dB[3 * e0 + 1] + g1 * dB[3 * e1 + 1] + g2 * dB[3 * e2 + 1],
                     uz = g0 * dB[3 * e0 + 2] + g1 * dB[3 * e1 + 2] + g2 * dB[3 * e2 + 2];
-                // die Ecke selbst gegen die Haut: in die Welt durch ihre Knochen, gehoben, zurück
-                _tuchBlend(Bf, F.bi, F.bw, i, mF, 0);
-                var rx = F.r[o] + ux, ry = F.r[o + 1] + uy, rz = F.r[o + 2] + uz;
-                pt[0] = mF[0] * rx + mF[3] * ry + mF[6] * rz + mF[9];
-                pt[1] = mF[1] * rx + mF[4] * ry + mF[7] * rz + mF[10];
-                pt[2] = mF[2] * rx + mF[5] * ry + mF[8] * rz + mF[11];
-                var wx = pt[0], wy = pt[1], wz = pt[2];
-                if (_hautHeben(z, pt, 1, null, null, true)) {
-                    var cx = pt[0] - wx, cy = pt[1] - wy, cz = pt[2] - wz;
-                    _m3inv(mF, 0, inv);
-                    ux += inv[0] * cx + inv[1] * cy + inv[2] * cz;
-                    uy += inv[3] * cx + inv[4] * cy + inv[5] * cz;
-                    uz += inv[6] * cx + inv[7] * cy + inv[8] * cz;
+                // die Ecke selbst gegen die Haut: in die Welt durch ihre Knochen, gehoben, zurück (die feine Stufe liegt innerhalb der
+                // groben — die Haut erreicht sie, wo sie das Gitter nicht berührt)
+                {
+                    _tuchBlend(Bf, F.bi, F.bw, i, mF, 0);
+                    var rx = F.r[o] + ux, ry = F.r[o + 1] + uy, rz = F.r[o + 2] + uz;
+                    pt[0] = mF[0] * rx + mF[3] * ry + mF[6] * rz + mF[9];
+                    pt[1] = mF[1] * rx + mF[4] * ry + mF[7] * rz + mF[10];
+                    pt[2] = mF[2] * rx + mF[5] * ry + mF[8] * rz + mF[11];
+                    var wx = pt[0], wy = pt[1], wz = pt[2];
+                    if (_hautHeben(z, pt, 1, null, null, true)) {
+                        var cx = pt[0] - wx, cy = pt[1] - wy, cz = pt[2] - wz;
+                        _m3inv(mF, 0, inv);
+                        ux += inv[0] * cx + inv[1] * cy + inv[2] * cz;
+                        uy += inv[3] * cx + inv[4] * cy + inv[5] * cz;
+                        uz += inv[6] * cx + inv[7] * cy + inv[8] * cz;
+                    }
                 }
                 fa[o] = F.ruhe[o] + fI[0] * ux + fI[1] * uy + fI[2] * uz;
                 fa[o + 1] = F.ruhe[o + 1] + fI[3] * ux + fI[4] * uy + fI[5] * uz;

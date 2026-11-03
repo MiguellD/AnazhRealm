@@ -169,6 +169,7 @@ class AnazhRealm_koerper_fahrt {
         const st = this.state;
         // das Auge sieht die feine Stufe (Ego nimmt den eigenen Leib aus seiner Ebene: dort rechnet kein Tuch)
         let an = !G.istFern && group.visible && !!st.camera && st.camera.layers.test(u._tuchTeile.auge.layers);
+        let d2 = Infinity;
         if (an) {
             let root = group;
             while (root.parent) root = root.parent;
@@ -180,7 +181,8 @@ class AnazhRealm_koerper_fahrt {
             const nah = KC.TUCH_GESETZ.nahM;
             const v = this._tuchV || (this._tuchV = new THREE.Vector3());
             v.set(group.position.x, group.position.y + 0.9 * s, group.position.z);
-            an = cam.position.distanceToSquared(v) < nah * nah;
+            d2 = cam.position.distanceToSquared(v);
+            an = d2 < nah * nah;
             if (an) {
                 const kegel =
                     this._tuchKegel ||
@@ -193,10 +195,30 @@ class AnazhRealm_koerper_fahrt {
                 an = kegel.f.intersectsSphere(kegel.k);
             }
         }
+        // DIE NAH-WAHL DES TUCHS: höchstens TUCH_GESETZ.leiber Leiber rechnen, die dem Auge nächsten — ein näherer verdrängt den
+        // fernsten (der ruht ab da in der Pose); wer die Szene verließ, fällt aus der Wahl
+        const wahl = AnazhRealm._tuchWahl || (AnazhRealm._tuchWahl = new Map());
+        if (an && !wahl.has(group)) {
+            let fern = null;
+            for (const [g, w] of wahl) {
+                let r = g;
+                while (r.parent) r = r.parent;
+                if (r !== st.scene || !g.userData._tuch) {
+                    wahl.delete(g);
+                    continue;
+                }
+                if (!fern || w > wahl.get(fern)) fern = g;
+            }
+            if (wahl.size >= KC.TUCH_GESETZ.leiber) {
+                if (fern && wahl.get(fern) > d2) this._tuchLoesen(fern);
+                else an = false;
+            }
+        }
         if (!an) {
             if (u._tuch) this._tuchLoesen(group);
             return;
         }
+        wahl.set(group, d2);
         if (!u._tuch) {
             const { sim, folge } = u._tuchTeile;
             const haut = [];
@@ -221,7 +243,9 @@ class AnazhRealm_koerper_fahrt {
             u._tuchMeshes = sim.concat(folge);
             u._tuchT = null;
         }
+        // der Takt des Tuchs: höchstens alle TUCH_GESETZ.taktS Spielzeit (die Zeit sammelt sich; ein Rücksprung beginnt frisch)
         const dt = u._tuchT == null ? 0 : t - u._tuchT;
+        if (dt > 0 && dt < KC.TUCH_GESETZ.taktS - 1e-6) return;
         u._tuchT = t;
         // die Welt-Matrizen dieses Takts (die Pose steht; der Löser liest die Knochen)
         this._leibMatrix(group);
@@ -247,6 +271,7 @@ class AnazhRealm_koerper_fahrt {
     _tuchLoesen(group) {
         const u = group.userData;
         globalThis.__koerperCore.tuchRuhe(u._tuch);
+        if (AnazhRealm._tuchWahl) AnazhRealm._tuchWahl.delete(group);
         for (const m of u._tuchMeshes || []) {
             if (m.userData.__tuchVorlage) m.geometry = m.userData.__tuchVorlage;
             delete m.userData.__tuchVorlage;
