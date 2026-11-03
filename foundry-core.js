@@ -5218,6 +5218,23 @@ var PARAMS_BY_KIND = {
         { id: "density", lab: "Dichte", min: 0.06, max: 1, step: 0.01, def: 0.7, grp: "Halm" },
         { id: "droop", lab: "Neigung", min: 0.04, max: 1.35, step: 0.01, def: 0.5, grp: "Halm" },
     ],
+    // DER BAUM (studios.K1, „EINE Regler-Tafel für alle Studios"): die Gesetz-Felder des Skeletts, wie die Ableitung `treeParams`
+    // (phyto-core) sie aus Reglern, Saat und Phänotyp der Art setzt — der Wert ersetzt das Feld NACH der Ableitung (der ov-Kanal von
+    // buildInstance), gelesen von `growSkeleton` und den Bau-Stufen; jedes Feld ist stufen-gleich (Blatt-Maß `leafSize` und
+    // Wurzeln `roots` tragen den Faktor ihrer Stufe und sind darum keine Zeile). Die Ränder halten die Budget-Zeile jeder Stufe
+    // (lod.budget.tree: L0 ≤ 12 000, L1 ≤ 2 900, L1/L0 ≤ 0,5 — gate:regler-wirkt STUFEN, Saat 1): darüber reißt delta 1,8 die L0
+    // (19 100), crownBase 0,3 die Mammut-L0 (13 120), trop ab 0,3 die Quote des Totholzes (0,51). Höhe und Stammzahl sind keine
+    // Zeile: das Welt-Maß (hoeheM, hd) trägt die Höhe, eine zweite Stammachse verdoppelt den Baum (32 780).
+    tree: [
+        { id: "apical", lab: "Apikaldominanz", min: 0, max: 1, step: 0.01, def: 0.5, law: "Leittrieb gegen Verzweigung — über 0,62 Quirle und Leittrieb (Nadelbaum), darunter die Laubkrone", grp: "Wuchs" },
+        { id: "slim", lab: "Schlankheit", min: 0, max: 1, step: 0.01, def: 0.5, law: "H = k·D^(2/3) — McMahon, die elastische Knickgrenze (k 13 → 22)", grp: "Wuchs" },
+        { id: "delta", lab: "Verästelung Δ", min: 2, max: 2.3, step: 0.01, def: 2.2, law: "r_Stamm^Δ = Σ r_Ast^Δ — da Vinci / Pipe-Modell", grp: "Wuchs" },
+        { id: "trop", lab: "Gravitropismus", min: -0.5, max: 0.2, step: 0.01, def: -0.14, law: "Sollwinkel zur Vertikalen — aufrecht (−) bis überhängend (+)", grp: "Wuchs" },
+        { id: "crownBase", lab: "Kronenansatz", min: 0.35, max: 0.7, step: 0.01, def: 0.45, law: "Selbst-Astung: unter diesem Anteil der Höhe sterben die Schattenäste", grp: "Krone" },
+        { id: "leafD", lab: "Belaubung", min: 0.05, max: 1, step: 0.01, def: 0.6, law: "Blattdichte je Trieb (Corner-Regel: Axialkonformität)", grp: "Krone" },
+        { id: "whorlSpacing", lab: "Quirl-Abstand", min: 0.09, max: 0.16, step: 0.005, def: 0.12, law: "Abstand der Astquirle als Anteil der Höhe (Nadelbaum: ein Quirl je Jahrestrieb)", grp: "Krone" },
+        { id: "flare", lab: "Stammfuß", min: 0, max: 1.2, step: 0.01, def: 0.3, law: "Wurzelanlauf: der Stamm weitet sich zum Boden (Strebepfeiler)", grp: "Stamm" },
+    ],
 };
 function buildInstance(presetId, seed, lod, ov) {
     const sS = subject,
