@@ -32,7 +32,7 @@ Bild-Beweis auf der Radeon (Himmels-Licht und Dunst tragen beide Hänge, ungemes
   Drift begrenzt das Gesetz selbst (das feine Feld zieht gegen das grobe: r − r0 klein), die Höhe nur σ und Ausschnitt.
 - Nachbau ferne.K4: `wirtAmGesetz` (das echte `_terrainMacroSurfaceY`), Orts-Wahl der Station verbatim (Saat 7, 2 000 Würfe):
   43 Orte, 4 im Schatten, 39 im Licht, im besten Azimut 30° nur 3/7 — Radeon 5fba36ea: „aus 3/7 Orten“.
-- Linsen: `npm run check`, `diag-atlas --check`, `stamm:lint`, eslint, format:check grün; die Stoff-Wand fing den ersten Fang des
+- Linsen: `npm run check` (EXIT 0), `playtest:fast` (21 ✅ · 0 ❌), `diag-atlas --check`, `stamm:lint`, eslint, format:check grün; die Stoff-Wand fing den ersten Fang des
   Gitters (`_bruchMelden` statt `_stoffBruch`) — geheilt im selben Zug.
 
 ## FUNDE
