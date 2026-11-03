@@ -146,7 +146,7 @@ class AnazhRealm_bild_schatten {
         if (typeof Quad !== "function") throw new Error("RÜCKSTRAHL: Quad der Post-Kette fehlt (Vendor-Drift)");
         const quad = new Quad(mat);
         quad.name = "rueckstrahl:boden";
-        st.rueckstrahlPass = { quad, mat, U, vp: new THREE.Matrix4(), laeufe: 0 };
+        st.rueckstrahlPass = { quad, mat, U, vp: new THREE.Matrix4(), laeufe: 0, sig: null };
         return st.rueckstrahlPass;
     }
 
@@ -163,11 +163,18 @@ class AnazhRealm_bild_schatten {
         try {
             const P = this._rueckstrahlPass();
             const cam = st.camera;
+            const sprung = P.laeufe === 0 || !!(st._traaR && st._traaR.sprung);
+            // IM STAND MISST ER NICHT NEU: der Boden um ein ruhendes Auge unter demselben Licht ist derselbe — ein Messen je Bild
+            // folgte nur dem Wechsel der Auflösung und dem Raster (die ruhende Welt änderte 0,27 der Pixel, gate:ziel-zensus)
+            if (!this._rueckstrahlWach(P, sprung)) {
+                L.an.value = 1;
+                return;
+            }
             P.vp.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
             P.U.invVP.value.copy(P.vp).invert();
             P.U.auge.value.setFromMatrixPosition(cam.matrixWorld);
             // springt das Auge, gilt der neue Boden sofort (der erste Lauf, ein Sprung der Zeit-Auflösung)
-            P.U.folge.value = P.laeufe === 0 || (st._traaR && st._traaR.sprung) ? 1 : AnazhRealm.RUECKSTRAHL.folge;
+            P.U.folge.value = sprung ? 1 : AnazhRealm.RUECKSTRAHL.folge;
             const rend = st.renderer;
             const vor = rend.getRenderTarget();
             rend.setRenderTarget(L.rt);
@@ -184,6 +191,23 @@ class AnazhRealm_bild_schatten {
                 err
             );
         }
+    }
+
+    // DIE RUHE DES RÜCKSTRAHLS: er misst neu, wenn das Auge weiter als `ruheM` wandert oder der Blick weiter als `ruheRad` dreht (die
+    // Ruhe des Auges wie beim Spiegel, `AnazhRealm.SPIEGEL`), das Licht der Welt eine neue Sonde trägt (`_weltLicht().stand`) oder
+    // das Auge springt (`sprung`: der erste Lauf, ein Sprung der Zeit-Auflösung — auch jede Aufnahme beginnt so).
+    _rueckstrahlWach(P, sprung) {
+        const e = this.state.camera.matrixWorld.elements;
+        const K = AnazhRealm.SPIEGEL;
+        const v = [e[12], e[13], e[14], e[8], e[9], e[10], this._weltLicht().stand];
+        const a = P.sig;
+        let wach = sprung || !a;
+        for (let i = 0; !wach && i < v.length; i++) {
+            const d = Math.abs(v[i] - a[i]);
+            wach = i < 3 ? d > K.ruheM : i < 6 ? d > K.ruheRad : d !== 0;
+        }
+        if (wach) P.sig = v;
+        return wach;
     }
 
     // ═══ DER WURF DES FEUERS (schatten.K5) ═══
