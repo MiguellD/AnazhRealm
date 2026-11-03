@@ -1753,7 +1753,7 @@ class AnazhRealm_kreatur_leben {
     // (`_kreaturBlickRand`: das Frustum ist das des Vor-Takts, die Kamera dreht weiter) — dieselbe Frage, die die Ruhe an einen
     // Leib stellt; die Geburt fragt sie (`_kreaturWurf`, `_bestandLeibOrt`). Bis w7-begegnung fragte jede Geburt den Punkt
     // ohne Rand: ein Leib am Rand des Blicks, dessen Fuß-Punkt draußen lag, ragte bei der Geburt ins Bild (Kreis-Sonde der
-    // Mess-Wiese, 600 Spiel-s: Ego 3, Third 6 im Blick erschienen).
+    // Mess-Wiese, 400 s ein + 600 Spiel-s, Null-Renderer: am main 2d2a5f11 Ego 3, Third 5 im Blick erschienen, hier 0 und 0).
     _kreaturLeibImBlick(x, z, g, bs) {
         const fr = this._frustumCache;
         if (!fr) return false;
