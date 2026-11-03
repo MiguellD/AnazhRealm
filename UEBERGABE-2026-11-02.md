@@ -48,27 +48,3 @@ Y6nuChFfb1dJTf7Btch4J5 steht auf 123 (27.10.) — aus meisterkarte.html neu ver�
 
 ## Nachtrag 14:25
 - **z163 GELANDET c5a9a2f5**: w4-stadt-gehen (Stand-Prüfung über Raster) + w4-ci-alle-schritte (CI fährt alle Schritte, ein Urteil). buche-schleife am c5a9a2f5 mit 170. z164 (leck2 + proben) fährt. Nach z164: Nachwache stadt prüfen.
-
-## Nachtrag 19:55 (Woche 97 %) — STAND BEI DER BREMSE
-- main **5fba36ea** (z163 Stadt-Gehen + CI alle Schritte, z164 Arena-Leck + Proben, z165 Sprach-Tafel). **GEBUCHT 170/330**
-  (Maschine sagt 169: ki.K3 LLM-Streuung 8/12, profiband.K4 Radeon frisch ROT — beide im FUND-REGISTER; buche.sh bucht Fälle nur mit BUCHE_FALL=1).
-- **z166 ROT (w4-affekt 7105403d)**: voll 13 kamera-leib — `diag-kamera-laub.cjs` hängt 900 s in `evaluate(leibWiese)` (protocolTimeout). Täter
-  sehr wahrscheinlich der eigene Schnitt: `_ensureSkyEnvironment`/`_atmoZeichne` fragen jetzt `_gpuLeineStraff` (stamm/bild-himmel.js:619/:1874) —
-  in einer Probe, die die Welt ohne Bild weiterdreht, lockert die Leine nie, die Umgebung entsteht nie. Heilung: die Umgebung beim ersten Bedarf
-  (kein env vorhanden) an der Leine VORBEI bauen, nur das Nachzeichnen an die Leine. Danach affekt.K2 (87 s), affekt.K3 (296 s, 9/9) grün → +2.
-- **z167 = w4-feld b7945342** (feld.K5: Blumen lesen das Leben-Overlay, 26 → 32; Modul-Karte nachgetragen) fährt; `nach-z167.sh` misst danach
-  gezielt feld.K5#1 (+ affekt) headless und bucht.
-- Messplatz-Blick läuft im Terminal-Tab „Messplatz“. OMEN: general-1077-gtx in der Reihe.
-- **z167 ROT (w4-feld b7945342)** an voll 2 gate:stand-takt („im Stand kostet die Welt nichts“): `_tickLebenStufen` (stamm/dirigent-takt.js) läuft
-  im Stand mit — er muss bis zum nächsten Stufen-Sprung wirklich schlafen (Ereignis statt Takt) bzw. in die Ruhe-Liste der Stand-Linse. voll 16
-  Verdeckungs-Abfrage war Wackler (Versuch 2 grün). Danach feld.K5 headless messen (`punkte.cjs run --nur feld.K5#1`) → +1.
-- Ende 20:30: nichts läuft mehr (kein Zug, kein Agent, keine Buchungs-Schleife). OMEN: general-1077-gtx steht noch in der Warteschlange.
-- **Abschluss 02.11. ~21:00:** OMEN fährt die volle GTX-Messung `voll-5fba-gtx` (107 Stationen am 5fba36ea) — ihr Ergebnis zeigt, wo die GTX-Sitzung bricht (Fund-Register Zeile 1). Radeon frei (kein Schloss, keine Prozesse). Worktrees 206 → 143 (gelandet+sauber entfernt).
-
-## Reflexion und Weg zu 330 (21:30)
-- Woche: 161 → 170 bei 97 %. Bester Modus: schmale headless 0→1-Kriterien in der Cloud, je eigener Zug (+4 für ~7 %).
-- OMEN volle Fahrt 5fba36ea: nur **21 von 107** geurteilt (11 grün / 10 rot) in 35 min → die GTX-Sitzung ist Engpass Nr. 1.
-- Auge (Radeon, main): Ankunft zeigt einen leeren grauen Platz mit zwei Regenbogen-Toren, kein Dorf im ersten Bild; WASD bewegte nach einem
-  Klick nicht (Fokus Konsole?) — prüfen. Garage-Ansicht trägt auf main.
-- Reihenfolge: (1) GTX-Sitzung 107/107 (2) affekt-Leine +2, feld Stand-Takt +1, spielgang.K5 DOM-Zählung +1 (3) Cloud-0→1-Wellen
-  (physik.K4/K5, pipeline.K2/K5, ki.K5, haar.K3) (4) Staffel 1→2 gebündelt auf GPU ohne Last (5) Pflicht B/C/E/A.

@@ -1,3 +1,37 @@
+z6-punkte gemessen punkte 6579e8f4 gtx: 20 grün / 8 rot
+z7-abab LANGSAMER abab 877d3e04 gegen f7dd313c: w-ego 4+4 nicht-langsamer · g-third 4+4 nicht-langsamer · d-ego 4+4 LANGSAMER · stadt 4+4 nicht-langsamer · fahrt 4+4 nicht-langsamer
+z9-abab nicht-langsamer abab a2b28770 gegen f7dd313c: w-ego 2+2 nicht-langsamer · g-third 2+2 nicht-langsamer · d-ego 2+2 nicht-langsamer · stadt 2+2 nicht-langsamer · fahrt 4+4 nicht-langsamer
+z9-abab-berichtigt UNENTSCHIEDEN die Zeile 'nicht-langsamer' von z9-abab ist falsch: alle A-Boots leer (das Instrument aus B bootete A nicht), der Richter liess leere Kern-Groessen fallen statt UNENTSCHIEDEN zu urteilen (behoben)
+z9c-abab nicht-langsamer abab 13c95713 gegen f7dd313c: w-ego 4+4 nicht-langsamer · g-third 2+2 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 4+4 nicht-langsamer · fahrt 4+4 nicht-langsamer
+z10b-abab nicht-langsamer abab 833bbc24 gegen 13c95713: w-ego 2+2 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 4+4 nicht-langsamer
+w6-material-gtx gemessen punkte f7dd313c gtx: keine Mess-Datei
+z13-abab LANGSAMER abab 18a84649 gegen 833bbc24: w-ego 4+4 nicht-langsamer · d-ego 4+4 LANGSAMER · stadt 2+2 nicht-langsamer
+z10b-punkte gemessen punkte 833bbc24 gtx: 23 grün / 6 rot
+z14c-abab nicht-langsamer abab 056330d8 gegen 18a84649: w-ego 2+2 nicht-langsamer · d-ego 2+2 nicht-langsamer · stadt 2+2 nicht-langsamer
+omen-z13-takt Exit0 station omen-z13-takt.sh an 056330d8
+z13-punkte gemessen punkte 18a84649 gtx: 27 grün / 5 rot
+z15d-abab LANGSAMER abab 3d2b3276 gegen 056330d8: w-ego 2+2 nicht-langsamer · d-ego 2+2 nicht-langsamer · stadt 4+4 LANGSAMER
+z16b-abab LANGSAMER abab 3046bc79 gegen 3d2b3276: w-ego 4+4 nicht-langsamer · d-ego 2+2 nicht-langsamer · stadt 4+4 LANGSAMER
+z17-abab LANGSAMER abab 6f8a2c66 gegen 3046bc79: w-ego 4+4 nicht-langsamer · d-ego 2+2 nicht-langsamer · stadt 4+4 LANGSAMER
+z1920-abab nicht-langsamer abab 1d9164e9 gegen 6f8a2c66: w-ego 4+4 nicht-langsamer · d-ego 2+2 nicht-langsamer
+takt1b-gtx gemessen punkte 206b395a gtx: 29 grün / 5 rot
+takt1b-abab nicht-langsamer abab 206b395a gegen 79c0fae2: w-ego 4+4 nicht-langsamer · g-third 2+2 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 2+2 nicht-langsamer
+takt2-gtx gemessen punkte 4a5f5e2c gtx: 28 grün / 8 rot
+nw2628-abab nicht-langsamer abab 4a5f5e2c gegen 206b395a: w-ego 4+4 nicht-langsamer · g-third 4+4 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 4+4 nicht-langsamer
+b-kalt-833b Exit0 station ankunft-kalt.sh an 833bbc24
+takt3-gtx gemessen punkte 8f1802b1 gtx: 27 grün / 11 rot
+nw3031-abab LANGSAMER abab 8f1802b1 gegen 4a5f5e2c: w-ego 4+4 nicht-langsamer · g-third 2+2 nicht-langsamer · d-ego 2+2 nicht-langsamer · stadt 4+4 LANGSAMER
+b-kalt-8f18 Exit0 station ankunft-kalt.sh an 8f1802b1
+z34-abab nicht-langsamer abab d43cb61c gegen 8f1802b1: w-ego 2+2 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 2+2 nicht-langsamer
+z32-abab LANGSAMER abab 83df2052 gegen d43cb61c: w-ego 4+4 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 4+4 LANGSAMER
+z35-abab LANGSAMER abab 8dff8f15 gegen 83df2052: w-ego 4+4 nicht-langsamer · d-ego 2+2 nicht-langsamer · stadt 4+4 LANGSAMER
+z36-abab LANGSAMER abab eeaff9d6 gegen 8dff8f15: w-ego 4+4 LANGSAMER · d-ego 2+2 nicht-langsamer · stadt 2+2 nicht-langsamer
+z32k-gtx gemessen punkte 034952a7 gtx: 32 grün / 9 rot
+z37-abab nicht-langsamer abab 9ceeca71 gegen eeaff9d6: w-ego 2+2 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 2+2 nicht-langsamer
+z38-abab nicht-langsamer abab b2c6c627 gegen 9ceeca71: w-ego 2+2 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 2+2 nicht-langsamer
+z39-abab nicht-langsamer abab f85ddf35 gegen b2c6c627: w-ego 4+4 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 2+2 nicht-langsamer
+takt5z-gtx gemessen punkte eeaff9d6 gtx: 32 grün / 11 rot
+takt6-gtx gemessen punkte b2c6c627 gtx: 11 grün / 5 rot
 takt7-gtx gemessen punkte 607d0c73 gtx: 13 grün / 7 rot
 z40z43-abab nicht-langsamer abab 607d0c73 gegen f85ddf35: w-ego 4+4 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 2+2 nicht-langsamer
 z44b-abab nicht-langsamer abab 5b8603c1 gegen 607d0c73: w-ego 4+4 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 2+2 nicht-langsamer
@@ -182,16 +216,3 @@ takt-z163b-gtx gemessen punkte c5a9a2f5 gtx: 1 grün / 4 rot
 z163-abab nicht-langsamer abab c5a9a2f5 gegen 10770eb5: w-ego 4+4 nicht-langsamer · stadt 4+4 nicht-langsamer
 takt-z164a-gtx gemessen punkte 95d7bba1 gtx: 0 grün / 1 rot
 takt-z165a-gtx gemessen punkte 5fba36ea gtx: 0 grün / 0 rot
-z164-abab nicht-langsamer abab 95d7bba1 gegen c5a9a2f5: w-ego 4+4 nicht-langsamer · stadt 4+4 nicht-langsamer
-z165-abab LANGSAMER abab 5fba36ea gegen 95d7bba1: w-ego 4+4 nicht-langsamer · stadt 4+4 LANGSAMER
-voll-5fba-gtx gemessen punkte 5fba36ea gtx: 11 grün / 10 rot
-hebend-5fba-s1-gtx gemessen punkte 5fba36ea gtx: 11 grün / 10 rot
-hebend-5fba-s2-gtx gemessen punkte 5fba36ea gtx: 12 grün / 10 rot
-hebend-5fba-s3-gtx gemessen punkte 5fba36ea gtx: 12 grün / 10 rot
-eich-hebend-5fba-s1-gtx Exit0 station eich-nur-gtx.sh an 5fba36ea
-eich-hebend-5fba-s2-gtx Exit0 station eich-nur-gtx.sh an 5fba36ea
-eich-hebend-5fba-s3-gtx Exit0 station eich-nur-gtx.sh an 5fba36ea
-eichtafel-5fba-gtx Exit0 station eichtafel-gtx.sh an 5fba36ea
-hebend2-5fba-s1-gtx gemessen punkte 5fba36ea gtx: 12 grün / 20 rot
-hebend2-5fba-s2-gtx gemessen punkte 5fba36ea gtx: 12 grün / 20 rot
-hebend2-5fba-s3-gtx gemessen punkte 5fba36ea gtx: 12 grün / 20 rot

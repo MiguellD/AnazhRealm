@@ -1,7 +1,5 @@
 # Messplatz GTX: eine Warteschlange statt Chat (23.10.)
 
-**Lage 02.11.:** Die OMEN (GTX 1060) fährt ohne LLM, was als Zeile in `zug/warteschlange.txt` steht (nie Chat) — ABAB 2+2→4+4, Punkte-Stationen in EINER Sitzungs-Welt, Station-Skripte —, aber kein volles Punkte-Paket in einem Lauf (Fahrt-Deckel 1800 s: voll-5fba-gtx urteilte 21/107; besser ≤ 27 Stationen je Zeile ≈ 20 min, profiband.K5 mit 13–15 min allein), keine `nur=`-Station ohne gtx-Station (Rückzug-Schleife bis Storno) und keine id aus `zug/archiv/` noch einmal (ihre erledigt-Zeile liegt dort, sie führe neu); Stand und Fallen: `bericht/OMEN-STAND-2026-11-02.md`.
-
 Bisher kam jeder GTX-Auftrag als Chat-Nachricht an die OMEN-Sitzung. Eine Nachricht landet aber erst am Ende ihrer laufenden Runde.
 Am 23.10. warteten deshalb vier Aufträge 2 h, während die Sitzung die Serie für Zug 6 fuhr. Außerdem schrieb die Sitzung je Zug
 `serie.sh` neu. Ab jetzt gilt:

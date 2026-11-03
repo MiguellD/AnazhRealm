@@ -3,19 +3,12 @@
 Eine Zeile je Fund: Datei:Zeile · Wurzel · was es bewegt · Größe. Wer eine Zeile heilt, löscht sie im selben Commit. Stand 02.11. (main 10770eb5).
 
 ## Werkzeug (macht jede Welle billiger)
-- GTX-Messung: die volle Fahrt riss nur FAHRT_MAX 30 min (21/107 geurteilt, Sitzung intakt). Geheilt durch `artifacts/profiband/werkzeug/hebend-messen.sh <sha> gtx` (nur Stationen, die heben: 35 statt 107, Scheiben ~24 min) — am 02.11. 22:30 drei Scheiben hebend-5fba-s1..s3 in der OMEN-Schlange; buche-schleife am 5fba36ea bucht · S
-- Farm headless: die langsamste Station (affekt.K2#1/K3#1) · Wurzel war GPU-Arbeit neben der Leine (stamm/bild-himmel.js `_atmoTakt`/`_ensureSkyEnvironment`), Zweig w4-affekt 7105403d: swiftshader K2 940 → 87 s, K3 Farm > 3600 → 296 s lokal, beide GRÜN · landen + Farm-Lauf zeigt die Zahl · S
-- Linse fehlt: GPU-Arbeit neben der Leine (Takt ohne Bild, `_gpuLeineStraff` wahr) — ein Zähler an `device.queue.submit` über N Takte in der Werkbank, ROT beim Namen des Schreibers (Mutante: `_atmoTakt` ohne Leinen-Frage) · Familie diaet-linse · hält K2/K3-Dauer und jede Zeitraffer-Station · S
-- Nach einer Landung gezielt messen (`punkte.cjs run --nur <kriterium#n>`) statt `--offen` über 129 Stationen, wenn nur ein Kriterium auf der Kippe steht · Koordinator-Disziplin · S
 - `punkte.cjs` / deckel.json · ~20 Proben fallen an der 10-s-Grenze (u. a. tiere.K5#1), studios.K2#2/K3#2 reißen 4 s trotz Tafel 10 s · Messung blind · S
 - volle Radeon-Fahrt ≤ 30 min unbewiesen (Lauf 2: 63 Proben in 1462 s) · alle Radeon-Punkte · M
 - `_standRueckspielen` räumt tools/materials nach `name` statt Schlüssel; `haengerAn` gibt seine Haken nicht je Lauf zurück · Grundstellung · S
 - `package.json:20` check:statik (Puls 1, lokal `npm run check`) · eine `&&`-Kette aus 74 Befehlen: die erste rote Linse verbirgt jede dahinter — dieselbe Klasse wie die voll-Kette (w4-ci-alle-schritte), dort nicht geheilt, weil npm unter Windows cmd fährt und gate:ci-deckung die Kette befehlsweise liest ((S)-Logik) · ein Läufer, der jede Linse fährt und alle Roten nennt · S–M
 
 ## Spiel
-- spielgang.K5#1 nach z165: Code-Senken 0 (vorher 243), aber DOM 700 harte Zeilen (z. B. „Anazh Realm“, „Die Welt erwacht …“, „Hallo. Die Welt steht …“) — die Station zählt lebendes DOM anders als gate:sprache (dort 18 in pseudo); Linse der Station und gate:sprache auf EINE Zählung bringen, dann die Rest-Senken · spielgang.K5 (0) · M
-- profiband.K4 Radeon frisch ROT am 5fba36ea ohne Fremdlast: Gehen 22,9 % > 33 ms, Fahrt 82 % > 33 ms, max 403 ms · E, profiband.K4 (gebucht 1, Ratsche hält bis BUCHE_FALL) · M
-- ki.K3 headless 8/12 statt ≥ 70 % (vorher 9/12) — LLM-Streuung, Korpus/Zahl der Fragen erhöhen statt Wackler · ki.K3 · S
 - Heap-Leck `nodeBuilderCache` +30,6 MB/min · profiband.K5, E · in Arbeit (funde-6a57 heil:leck)
 - Wege-Karte: erstes Zentrieren am Genesis-Ort 112 ms Haupt-Faden, Flächen ohne Band je 48-m-Umzug neu · B, E · M
 - Metropole `platzVoll: 87` — 87 Marktstände ohne Platz neben der Trasse (alle Punkte in Hausgrundrissen) · siedlung, C · Plan der Stadt · M
