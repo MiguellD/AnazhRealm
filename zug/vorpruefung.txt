@@ -14,3 +14,4 @@ w6-alter a7827678 ROT check   ✗ R2 DECKE: stamm/kreatur-verhalten.js trägt 40
 w5-physik-k5 b8a0f2bc ROT check   ✗ R2 DECKE: stamm/kreatur-verhalten.js trägt 4003 Zeilen > 4000 — die Karte teilt ihr Modul (Modul/teil, ein Name der Domäne), dann node scripts/stamm-umzug.cjs --nach-karte
 w6-alter a7827678 OFFEN Korrektur: R2 DECKE kreatur-verhalten.js 4002 ist Reihenfolge (main 4000); Vorprüfung neu gegen main nach z185 spielgang-decke
 w5-physik-k5 b8a0f2bc OFFEN Korrektur: R2 DECKE kreatur-verhalten.js 4003 ist Reihenfolge (main 4000); Vorprüfung neu gegen main nach z185 spielgang-decke
+w6-weiches f32add32 ROT playtest-voll ❌ 4 Invariante(n) verletzt: Φ5 (Q14+Q15): pinnedWorlds-Map existiert + pinCurrentWorld erzeugt hash/bytes/persistiert (Manifest UND Snapshot), Φ5 (Q16): listPinnedWorlds liefert das volle Eintragsschema (worldId · h
