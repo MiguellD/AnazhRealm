@@ -585,7 +585,9 @@ jobs:
               # Wechsel der Laub-Dichte, die Weckrufe des Stand-Stempels durch sie, die neuen Lagen des Hauptbilds, dazu
               # _tickArchitectureLOD, _lodTreeVisHeight, _foundrySichtHoehe, _chunkSatzAbschnitt, _hoehlenSicht. main 66005ca6:
               # Dichte, Stempel und Lage in 100 % der Takte (CPU-Takt frei 4,8 -> 11,7 ms). Gegenprobe (stossende Dichte) und
-              # --selftest zuerst.
+              # --selftest zuerst. DIE LEINE: 40 Takte an straffer GPU-Leine, der Himmel je Takt faellig — 0 Abgaben an
+              # device.queue.submit ausser der Karte (die begonnene, ihr wachsender Atlas), kein Binder ausser Bild und Karte,
+              # die Umgebung des ersten Bedarfs entsteht; Gegenprobe _atmoTakt ohne die Frage an die Leine faellt beim Namen.
               run: npm run gate:takt-atem
 
             - name: Volle-Bühne-Prädikat (W2 — Kriterium 2 wird messbar)

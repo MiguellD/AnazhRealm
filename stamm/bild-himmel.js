@@ -612,7 +612,8 @@ class AnazhRealm_bild_himmel {
         if (!force && last && (gleich || (!sprung && seit >= 0 && seit < AnazhRealm.SKY_ENV_REGEN_MIN_MS))) return true;
         // DIE LEINE FRAGT DIE UMGEBUNG (wie das Bild und die Karte, `_gpuLeineStraff`): Equirekt, PMREM und Rücklesung sind
         // GPU-Arbeit — an gespannter Leine wartet die fällige Neuzeichnung auf den nächsten freien Takt (die Umgebung davor gilt
-        // weiter), nur der Zwang und der Sprung der Uhr gehen an ihr vorbei; was gezeichnet ist, bindet sich an. Bis zur
+        // weiter), nur der Zwang, der Sprung der Uhr und der erste Bedarf (noch keine Umgebung) gehen an ihr vorbei; das Bild des
+        // freien Takts bindet sie mit an (`_atmoTakt`: die Leine zählt Takte, nie Pässe). Bis zur
         // Nachbesserung zeichnete sie neben der Leine: im Zeitraffer der Szene (affekt.K2#1, swiftshader, Mess-Wiese, 3 × 18 000
         // Takte) stauten sich je 0,5 Welt-Sekunden ein PMREM und eine Rücklesung ohne Bild dazwischen, bis der dritte Lauf in
         // seinen ersten 1 500 Takten 599 ms je Takt am Stau der GPU hing (744 s statt 83 s; die Farm am Deckel 2 400 s).
@@ -639,7 +640,6 @@ class AnazhRealm_bild_himmel {
             st._skyEnvLast = neu;
             st._skyEnvLastRegenMs = nowMs;
             this._himmelUmgebungLesen();
-            this._gpuLeineBinden();
             return true;
         } catch (err) {
             this.log(
@@ -1798,7 +1798,6 @@ class AnazhRealm_bild_himmel {
     // (`_buehneRender`, gate:v1-pfad W2): ein Bruch des Passes meldet sich laut beim Namen.
     _atmoZeichne(quad, rt, leeren = false) {
         const r = this.state.renderer;
-        this._atmoMalZahl = (this._atmoMalZahl || 0) + 1; // je Pass +1 (`_atmoTakt` bindet, was er zeichnete, an die Leine)
         const ziel = r.getRenderTarget();
         const mrt = typeof r.getMRT === "function" ? r.getMRT() : null;
         const rof = typeof r.getRenderObjectFunction === "function" ? r.getRenderObjectFunction() : null;
@@ -1867,11 +1866,15 @@ class AnazhRealm_bild_himmel {
         if (!rend || rend._isHeadlessNull || !st.rendererReady) return A;
         // DIE LEINE FRAGT DIE TAFELN (wie das Bild, die Karte und die Umgebung, `_gpuLeineStraff`): an gespannter Leine zeichnet
         // der Takt kein Bild, und seine Tafeln und die Horizont-Karte warten mit ihm — ihre Schlüssel bleiben alt, der nächste
-        // freie Takt zeichnet sie vor seinem Bild; nur der Anker und der Sprung der Uhr gehen vorbei. Was gezeichnet ist, bindet
-        // sich an. Bis zur Nachbesserung zeichneten sie neben der Leine: im Zeitraffer der Szene (affekt.K2#1, swiftshader,
-        // Mess-Wiese) hing der dritte Lauf nach der Umgebung noch 300 s in einem Block von 1 500 Takten an `_atmoZeichne`.
-        if (!anker && !sprung && this._gpuLeineStraff()) return A;
-        const malVor = this._atmoMalZahl || 0;
+        // freie Takt zeichnet sie vor seinem Bild; nur der Anker, der Sprung der Uhr und der ERSTE Bedarf der Umgebung (noch keine
+        // gezeichnet: ohne frische Tafeln entstünde sie nie) gehen vorbei. Bis zur Nachbesserung zeichneten sie neben der Leine:
+        // im Zeitraffer der Szene (affekt.K2#1, swiftshader, Mess-Wiese) hing der dritte Lauf nach der Umgebung noch 300 s in einem
+        // Block von 1 500 Takten an `_atmoZeichne`. Sie binden sich NIE selbst an: ein freier Takt zeichnet sein Bild, und dessen
+        // Bindung (`_gpuLeineAnlegen`, onSubmittedWorkDone) deckt jede vorher abgeschickte Arbeit — die Leine zählt Takte, nie
+        // Pässe. Banden sie sich selbst an (w4-affekt 7105403d), nahmen Tafeln und Umgebung im freien Takt beide Plätze der Leine,
+        // ehe der Karten-Takt fragte: die Karte begann nie (gate:kamera-leib, swiftshader, Mess-Wiese: 15 Karten und 494 Bauten
+        // standen nach 600 s offen, das Weltbild nie; main 0 nach 215 s).
+        if (!anker && !sprung && st._skyEnvLast && this._gpuLeineStraff()) return A;
         if (!A.tafelnFrisch) {
             this._atmoZeichne(A.qT, A.rtT);
             this._atmoZeichne(A.qMS, A.rtMS);
@@ -1893,7 +1896,6 @@ class AnazhRealm_bild_himmel {
             this._himmelsTafelLesen();
         }
         this._horizontKarteTakt();
-        if ((this._atmoMalZahl || 0) !== malVor) this._gpuLeineBinden();
         return A;
     }
 
