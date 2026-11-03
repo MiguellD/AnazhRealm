@@ -7222,7 +7222,7 @@ function __feldVerdeckung(F, vox, x, y, z, V) {
 // Punkte, die schon TIEF innen liegen, kann kein weiteres smin mehr über Null heben, und ein Primitiv,
 // dessen Abstand (untere Schranke |p−c| − R) um blend über dem Feld liegt, ändert nichts — beide
 // überspringen die Abstands-Rechnung. Die Primitive werden __nichtGiessen (gegossen wird die Haut).
-function __tierFeld(prims, vox, blend) {
+function __tierFeld(prims, vox, blend, anker) {
     const lo = [1e9, 1e9, 1e9],
         hi = [-1e9, -1e9, -1e9];
     for (const p of prims)
@@ -7230,6 +7230,7 @@ function __tierFeld(prims, vox, blend) {
             lo[d] = Math.min(lo[d], p.c[d] - p.ext);
             hi[d] = Math.max(hi[d], p.c[d] + p.ext);
         }
+    if (anker) for (let d = 0; d < 3; d++) lo[d] = Math.floor(lo[d] / vox) * vox;
     const nx = Math.ceil((hi[0] - lo[0]) / vox) + 2,
         ny = Math.ceil((hi[1] - lo[1]) / vox) + 2,
         nz = Math.ceil((hi[2] - lo[2]) / vox) + 2;
@@ -8453,7 +8454,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             if (n.isMesh && n.material.userData.__klasse === "shadow" && !unterAuge(n)) n.userData.__nichtGiessen = true;
         });
         if (prims.length < 2) throw new Error("MENSCH-HAUT: der Kopf trägt keine Haut-Primitive");
-        const Fk = __tierFeld(prims, KH.vox, KH.blend);
+        const Fk = __tierFeld(prims, KH.vox, KH.blend, true);
         const geo = __huelleAusFeld(kern, Fk.f, Fk.nx, Fk.ny, Fk.nz, Fk.lo, KH.vox, 0, 0, null, null, 0);
         if (!geo) throw new Error("MENSCH-HAUT: die Kopf-Haut lieferte keine Fläche");
         // je Vertex die Farbe des nächsten Primitivs (normierter Abstand |Mi·p|/r − 1), linear wie das Material
@@ -8676,15 +8677,34 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         });
         const anteil = huelleD > 0 ? (ziel - festD) / huelleD : 1;
         if (!(anteil > 0)) throw new Error(`MENSCH-GUSS: die festen Teile (${festD} Dreiecke) tragen die Zeile ${ziel} allein`);
-        if (anteil < 1)
-            for (const h of huellen) {
-                const alt = h.geometry;
-                const neu = __huelleKollaps(alt, Math.floor((alt.index.count / 3) * anteil));
-                if (neu !== alt) {
-                    alt.dispose();
-                    h.geometry = neu;
-                }
+        const kollabiere = (h, ziel) => {
+            const alt = h.geometry;
+            const neu = __huelleKollaps(alt, ziel);
+            if (neu !== alt) {
+                alt.dispose();
+                h.geometry = neu;
             }
+        };
+        if (anteil < 1) for (const h of huellen) kollabiere(h, Math.floor((h.geometry.index.count / 3) * anteil));
+        // DER KOPF TRÄGT SEINE ZEILE (mensch.K4, KOPF_SOLL kopfDreiecke): in der nahen Stufe trägt der Kopf (Haut, Augen, Lider,
+        // Haar) höchstens kopfDreiecke[1] — was darüber liegt, nimmt seine Haut (die Kappe des großen Haars macht sie größer:
+        // afro, locken, lang trugen 12 146–12 440 über 12 000); jeder andere Stil bleibt byte-gleich
+        const kopfZeile = !fein && kern.KOPF_SOLL && kern.KOPF_SOLL.kopfDreiecke ? kern.KOPF_SOLL.kopfDreiecke[1] : null;
+        if (kopfZeile > 0) {
+            let kopfD = 0;
+            const kopfHuellen = [];
+            B.parts.head.traverse((node) => {
+                if (!node.isMesh || !node.geometry || node.userData.__nichtGiessen) return;
+                kopfD += (node.geometry.index ? node.geometry.index.count : node.geometry.attributes.position.count) / 3;
+                if (node.userData.__huelle) kopfHuellen.push(node);
+            });
+            const hautD = kopfHuellen.reduce((a, h) => a + h.geometry.index.count / 3, 0);
+            if (kopfD > kopfZeile && hautD > 0) {
+                const k = (kopfZeile - (kopfD - hautD)) / hautD;
+                if (!(k > 0)) throw new Error(`MENSCH-GUSS: Augen, Lider und Haar (${kopfD - hautD} Dreiecke) tragen die Kopf-Zeile ${kopfZeile} allein`);
+                for (const h of kopfHuellen) kollabiere(h, Math.floor((h.geometry.index.count / 3) * k));
+            }
+        }
     }
     // DAS VOLUMEN DES LEIBS (1310-15, physik K1): die Masse des Menschen liest das Volumen seines Leibs — die Vereinigung seiner
     // Teile unter der Haut (skin · shorts · joint, Kopf, Hände und Füße eingeschlossen) in der Ruhe-Pose, je Teil das Netz der

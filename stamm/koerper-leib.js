@@ -51,6 +51,12 @@ class AnazhRealm_koerper_leib {
             haarLaenge: g.range("haarLaenge", 0.7, 1.4),
             haarFuelle: g.range("haarFuelle", 0.8, 1.3),
             alter: g.range("alter", 0.05, 0.5),
+            // DAS GESICHT (mensch.K4): die Achsen des Gesichts-Gesetzes (koerper GESICHT_GENOM) — die Größe des Auges, die Breite
+            // des Munds, die Höhe der Brauen, der Haar-Ansatz; der Kern rechnet ihre Bereiche, die Dials tragen sie in den Guss
+            auge: g.axis("auge"),
+            mund: g.axis("mund"),
+            braue: g.axis("braue"),
+            haaransatz: g.axis("haaransatz"),
         };
     }
     // Genom→Dial-Brücke: der EINE Bau-Pfad ist bauMensch(dials); die Brücke invertiert die
