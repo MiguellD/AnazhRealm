@@ -3,11 +3,11 @@
   "kopf": "8e6262cc",
   "version": "V18.546.173",
   "skala": "2.0",
-  "summe": 182,
+  "summe": 183,
   "max": 330,
   "maschine": {
     "kopf": "8e6262cc",
-    "zeit": "2026-11-03T18:17:18.164Z",
+    "zeit": "2026-11-03T18:32:00.145Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -217,7 +217,7 @@
     {
       "key": "schoepfung",
       "titel": "IV · SCHÖPFUNG — die Studios, die Pipeline, die KI im System, Spieler-Bauen",
-      "summe": 24,
+      "summe": 25,
       "max": 40,
       "bereiche": [
         "studios",
@@ -2542,7 +2542,7 @@
       "key": "ki",
       "titel": "Die KI im System — Satz → Tat, Regler-Sprache, Gedächtnis, Modell-Regeln",
       "gruppe": "schoepfung",
-      "punkte": 4,
+      "punkte": 5,
       "pfad": "v1 (mit der KI erschaffen, Drehbuch-Schritt 18)",
       "dateien": "`stamm/feld-nexus.js` (maybeAnswerWithLlm, Prompt, ollama) · `stamm/feld-dsl.js` (70 Ops, spawn_studio) · `stamm/dienst.js` llmCall · `save-server.js` (/api/proxy/llm)",
       "aaaa": "Ein Satz wird Tat: aus einem eingefrorenen Korpus von 40 Schöpfer-Sätzen ergeben ≥ 95 % ein gültiges Programm und ≥ 85 % die gemeinte Welt-Änderung (Prädikat am Welt-Zustand und im Bild), 0 brechen die feste Welt, p95 bis zur ersten sichtbaren Änderung ≤ 3 s — mit Anthropic oder einem lokalen Modell; ohne Schlüssel trägt der Satz-Parser die Grundstufe. Die KI spricht das ganze Gesetz: alle Regler der acht Studios, am Kern geklemmt — „eine knorrige alte Eiche“ setzt die Regler der Eiche. Wesen erinnern sich im Gespräch, und die Regeln, die das Modell schreibt, laufen durch dieselbe Wertung wie die des Nexus. **Wo wir die Besten schlagen:** Generative Agents lebt im Text, Voyager spielt allein, Genie 3 träumt Pixel für Minuten; bei uns schreiben Mensch, Nexus und KI dieselbe DSL in EIN Gesetz — deterministisch, gespeichert, teilbar —, und jedes KI-Wort löst auf dieselben Rezepte auf wie die Werkstatt: kein halluziniertes Asset.",
@@ -2584,10 +2584,10 @@
         },
         {
           "name": "Die Regeln des Modells laufen durch dieselbe Wertung",
-          "punkte": 0,
+          "punkte": 1,
           "staffel": "1 = im Selbstlauf mit Modell registrierte LLM-Regeln (source llm) werden von derselben Fitness gewertet und verdrängt wie Nexus-Regeln, gegen den Gegenlauf mit gemischtem δ · 2 = ihr Anteil an überlebenden Regeln mit δ > 0 gemessen, 0 verbotene Ops, Takt ≤ 0,2 ms, beide Geräte",
           "messung": "10 min Selbstlauf an Genesis mit Modell (wie Affekt K3, derselbe Lauf), Zählung der LLM-Regeln je Drittel.",
-          "beleg": "Maschine: 0 — offen: ki.K4#1 headless: Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +4)",
+          "beleg": "Maschine: LLM-Regeln neu je Drittel 2/2/2, erneuert 13 · verfallen 6 · verdrängt 0 (Nexus 171 · 139 · 0); Gegenlauf: erneuert LLM δ+ 0.78 · δ− 0.00, verdrängt 3 an 8e6262cc headless",
           "schlupfloch": "LLM-Regeln, die die reaktive Schicht nur kosmetisch tönen, zählen erst mit positivem δ; Regeln zu zählen statt ihrer Wirkung zählt 0.",
           "aenderung": "Heim des Nexus ist Affekt K3 (B01, B51); hier bleibt der Anteil des Modells.",
           "maschine": true
@@ -2597,7 +2597,7 @@
           "punkte": 0,
           "staffel": "1 = p95 Satz → erstes sichtbares Ergebnis gemessen mit Anbieter-Host im Netz-Log, an einem Gerät, im Soll (Haiku-Klasse ≤ 3 s, lokal ≤ 6 s) · 2 = dazu Prompt ≤ 4 000 Tokens, 0 Hänger > 100 ms, während die KI-Werke bauen (werkbank haenger), ≤ 0,002 $ je Satz, beide Geräte",
           "messung": "Über den Korpus aus K1 in derselben Sitzung.",
-          "beleg": "Maschine: 0 — offen: ki.K5#1 headless: Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +2)",
+          "beleg": "Maschine: 0 — offen: ki.K5#1 headless: ROT: p95 Satz → Welt ∞ über 32 Positiv-Sätze (Soll lokal ≤ 6 s; ohne Wirkung 5) · 40/40 Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434 an 8e6262cc",
           "schlupfloch": "Die Latenz am Stub messen; den Prompt kürzen, indem Vokabular fällt — der Korpus aus K1 muss halten.",
           "maschine": true
         }
@@ -4553,7 +4553,7 @@
     {
       "stand": "2026-11-03",
       "kopf": "8e6262cc",
-      "summe": 182,
+      "summe": 183,
       "max": 330,
       "skala": "2.0",
       "was": "Mess-Takt 3 an 8f1802b1 (Züge 29c und 30: Stoff-Tafel, Speicher-Weg, Tier-Gang, Halten K5, Kaskade, Siedlung-Trasse, Nässe unter Dach, GPU-Wand, Leib-Hieb, Kaskaden-Riss, Hänger; headless 66/2, Radeon 27/11, GTX gemessen): stoffe.K1, speicher.K3, halten.K5, siedlung.K3 je +1, leib.K1, oekologie.K1, tiere.K3 → 2; klang.K4 1 → 0 und klang.K5 2 → 1 (2 Stoffe mit ≥ 5 Schritten), siedlung.K5 2 → 0 (nH 300 erstes Haus 974 ms — der Rang des Dorf-Zugs; die Heilung siedlung-k5-erstes-haus fährt in Zug 32)."

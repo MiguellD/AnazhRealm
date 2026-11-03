@@ -1254,32 +1254,30 @@
    ]
   },
   "ki.K4": {
-   "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ki.K4#1 headless: Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +4)",
+   "punkte": 1,
+   "beleg": "Maschine: LLM-Regeln neu je Drittel 2/2/2, erneuert 13 · verfallen 6 · verdrängt 0 (Nexus 171 · 139 · 0); Gegenlauf: erneuert LLM δ+ 0.78 · δ− 0.00, verdrängt 3 an 8e6262cc headless",
    "stationen": [
     {
      "id": "ki.K4#1",
      "geraet": "headless",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +4)",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "LLM-Regeln neu je Drittel 2/2/2, erneuert 13 · verfallen 6 · verdrängt 0 (Nexus 171 · 139 · 0); Gegenlauf: erneuert LLM δ+ 0.78 · δ− 0.00, verdrängt 3",
+     "sha": "8e6262cc1094d470905b1caffe0133a2066dbe81",
+     "grund": null
     }
    ]
   },
   "ki.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ki.K5#1 headless: Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +2)",
+   "beleg": "Maschine: 0 — offen: ki.K5#1 headless: ROT: p95 Satz → Welt ∞ über 32 Positiv-Sätze (Soll lokal ≤ 6 s; ohne Wirkung 5) · 40/40 Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434 an 8e6262cc",
    "stationen": [
     {
      "id": "ki.K5#1",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +2)",
-     "ungemessen": true
+     "zahl": "p95 Satz → Welt ∞ über 32 Positiv-Sätze (Soll lokal ≤ 6 s; ohne Wirkung 5) · 40/40 Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434",
+     "sha": "8e6262cc1094d470905b1caffe0133a2066dbe81",
+     "grund": "ROT: p95 Satz → Welt ∞ über 32 Positiv-Sätze (Soll lokal ≤ 6 s; ohne Wirkung 5) · 40/40 Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434"
     }
    ]
   },
@@ -4220,6 +4218,6 @@
  },
  "rueckfall": [],
  "kopfVoll": "8e6262cc1094d470905b1caffe0133a2066dbe81",
- "zeit": "2026-11-03T18:17:18.164Z",
+ "zeit": "2026-11-03T18:32:00.145Z",
  "vorher": "8e6262cc"
 }
