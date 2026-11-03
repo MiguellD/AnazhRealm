@@ -197,11 +197,16 @@ class AnazhRealm_bild_schatten {
     _lichtWurf() {
         if (this._lichtWurfK) return this._lichtWurfK;
         const LW = AnazhRealm.LICHT_WURF;
-        const Basis = THREE.PointShadowNode;
-        if (typeof Basis !== "function" || typeof THREE.PointLight !== "function")
-            throw new Error("LICHT-WURF: THREE.PointShadowNode/PointLight fehlt im Bootstrap (Vendor-Drift)");
+        if (typeof THREE.PointLight !== "function" || typeof THREE.TSL.pointShadow !== "function")
+            throw new Error("LICHT-WURF: THREE.PointLight/TSL.pointShadow fehlt (Vendor-Drift)");
         const licht = new THREE.PointLight(0xffffff, 1, 1, 2);
+        // die Klasse aus r184s TSL-Bauer `pointShadow` (das Bündel der Seite reicht `PointShadowNode` nur dort)
+        const Basis = THREE.TSL.pointShadow(licht).constructor;
+        if (typeof Basis !== "function" || Basis.type !== "PointShadowNode")
+            throw new Error("LICHT-WURF: TSL.pointShadow baut keinen PointShadowNode (Vendor-Drift)");
         licht.name = "licht:wurf";
+        // es wirft (sein Wort, `_wurfEbene`): ohne das rechnet r184s Schatten-Matrix je Render die eines Richtlichts (mit Ziel)
+        licht.castShadow = true;
         const sh = licht.shadow;
         sh.mapSize.set(LW.kartePx, LW.kartePx);
         sh.bias = LW.bias;
