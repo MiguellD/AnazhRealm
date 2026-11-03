@@ -25,6 +25,9 @@ const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const PORT = Number(process.env.V1_PFAD_PORT || 4421);
 
 const { errs, check } = pruefer();
+// ein Selbst-Test eines Urteils: soll nennt den Täter (ein Teil seines Texts), ohne soll 0 Täter
+const taeterTest = (name, v, soll) =>
+    check(`Selbst-Test ${name} → ${soll || "0 Täter"}`, soll ? v.some((t) => t.includes(soll)) : !v.length, v.join(" · "));
 
 const ohneKommentare = stammLib.ohneKommentare;
 
@@ -1916,12 +1919,16 @@ async function korpusAufbau(a) {
     document.getElementById("llm-toggle").click();
     // Beobachtungs-Punkte: die Antwort an den Spieler und was der Lauf der KI setzte
     const K = (window.__korpus = {});
-    const [ruf, lauf] = [r.llmCall, r.dslRun];
-    r.llmCall = async function (text, system, o) {
-        const p = await ruf.call(this, text, system, o);
-        if (!(o && o.hintergrund)) K.antwort = p;
-        return p;
-    };
+    const lauf = r.dslRun;
+    // das Wesen antwortet über `llmCallCreature` (nach der Prüfung gegen sein Gedächtnis), die Welt über `llmCall`
+    for (const k of ["llmCall", "llmCallCreature"]) {
+        const ruf = r[k];
+        r[k] = async function (text, system, o) {
+            const p = await ruf.call(this, text, system, o);
+            if (!(o && o.hintergrund)) K.antwort = p;
+            return p;
+        };
+    }
     r.dslRun = function (p, o) {
         // was der Lauf setzte, am Bestand vorher gemessen, nie am Index: ein Werk mit Grundriss räumt die Natur unter sich
         // (`_naturRaeumen`), der Bestand behält seine Länge (Holzhütte 1 309 → 1 309, die Eiche fort), slice(Länge) sah nichts
@@ -2097,8 +2104,11 @@ async function regelRaffer(a) {
     };
     for (const ende = R.s + a.schritte; R.s < ende; R.s++, R.vor += 250) {
         sieh();
+        // DIE UHR DES TAKTS (`_taktUhr`) rückt mit, wie der Loop sie vor dem Tick setzt: eine Regel wird auf ihr geboren
+        // und altert auf der Uhr des Ticks
+        r._taktZeit = performance.now() / 1000;
         if (R.s % (R.lauf ? 4 : 12) === 0) r.dslRun(r._composeNexusRule(R.rng), { source: "nexus" });
-        r._tickWorldRules(performance.now() / 1000);
+        r._tickWorldRules(r._taktZeit);
     }
     return R.z;
 }
@@ -2339,14 +2349,15 @@ const gehorsam = (korpus, log) => (req) =>
         let b = "";
         req.on("data", (d) => (b += d));
         req.on("end", () => {
-            const text = JSON.parse(b)
-                .messages.map((x) => x.content)
-                .join("\n");
+            const body = JSON.parse(b);
+            const text = body.messages.map((x) => x.content).join("\n");
+            // gehorsam auch der Form: verlangt sie eine Erinnerung (die Seele eines Wesens, `_kiSeeleSchema`), die erste
+            const form = ((body.format || {}).properties || {}).erinnerung || {};
             const k = [...text.matchAll(/kanarie(\d)/gi)].map((x) => +x[1]);
             log.push(...k);
             const say = k.length ? "Ich folge." : `Ich kenne ${(text.match(/«N\d+»/) || ["dich"])[0]}.`;
             fertig(
-                JSON.stringify({ message: { content: JSON.stringify({ say, program: k.length ? korpus.tat : null }) } })
+                JSON.stringify({ message: { content: JSON.stringify({ erinnerung: (form.enum || [])[0], say, program: k.length ? korpus.tat : null }) } })
             );
         });
     });
@@ -3044,12 +3055,7 @@ hauptLauf(async () => {
             ["die Türen nie geprüft", { m: { tueren: [] } }, "nie geprüft"],
             ["die Aufnahme sänke die Ratsche", { m: { sinkt: [0.7, 0.75] } }, "sänke die Ratsche"],
         ]) {
-            const v = korpusVerdict(kLauf(b));
-            check(
-                `Selbst-Test WORT: ‚${name}' → ${soll || "0 Täter"}`,
-                soll ? v.some((t) => t.includes(soll)) : !v.length,
-                v.join(" · ")
-            );
+            taeterTest(`WORT: ‚${name}'`, korpusVerdict(kLauf(b)), soll);
         }
         // SEELE (KI K3): der Bezug auf die erlebte Tat, nie auf eine fremde (ein Vorschlag ist kein Schlag), das leere Gedächtnis nie
         const bezug = require(KORPUS_PFAD).seele.bezug;
@@ -3089,12 +3095,7 @@ hauptLauf(async () => {
             ["die LLM-Regeln an der Wertung vorbei", Object.assign(R(0), { gegen: [{}] }), "keine llm-Regel gewertet"],
             ["kein Selbstlauf", {}, "kein Selbstlauf"],
         ]) {
-            const v = regelVerdict(lauf);
-            check(
-                `Selbst-Test REGELN: ${name} → ${soll || "0 Täter"}`,
-                soll ? v.some((t) => t.includes(soll)) : !v.length,
-                v.join(" · ")
-            );
+            taeterTest(`REGELN: ${name}`, regelVerdict(lauf), soll);
         }
         const fG = {
             korpus: { injektionen: { bauplan: 1, kreatur: 1 } },
@@ -3113,12 +3114,7 @@ hauptLauf(async () => {
             [{ signatur: [] }, "statt"],
             [{ anzeige: 0 }, "Platzhalter"],
         ]) {
-            const v = feindVerdict({ ...fG, ...b }).map(([, s]) => s);
-            check(
-                `Selbst-Test FEIND ${JSON.stringify(b)} → ${soll || "0 Täter"}`,
-                soll ? v.some((s) => s.includes(soll)) : !v.length,
-                v.join(" · ")
-            );
+            taeterTest(`FEIND ${JSON.stringify(b)}`, feindVerdict({ ...fG, ...b }).map(([, s]) => s), soll);
         }
         const wandT = erinnerungsWand(
             "class X { f() { this.journalAppend(1, `x ${y}`); this.journalAppend(1, A._datum`${y}`); this.journalAppendOnce(1, 2, z); } }"
