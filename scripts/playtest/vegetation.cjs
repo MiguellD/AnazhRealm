@@ -2011,8 +2011,8 @@ async function checkBandScatterScheibe({ page, check }) {
             // trägt die Welt keine Siedlung, legt die Probe eine Feuerstelle als Werk eine Region neben den Spieler, samt ihrer
             // Tritt-Fläche (`_trittFlaecheSetzen`, wie ihre Instanz sie setzt) — bis w3v-brand-bild warf das Feld sie, und ihre
             // Tritt-Fläche war der Ort der Probe
-            const [fx, fz] = [pos.x + SC.regionM, pos.z];
-            const feuer = st.wegeKarte && !st.wegeKarte.siedlungen.length && r.spawnArchitecture("glutbrunnen", { x: fx, y: r._voxelSurfaceY(fx, fz) + 0.5, z: fz }, { precise: true, werk: true }); // prettier-ignore
+            const fx = pos.x + SC.regionM;
+            const feuer = st.wegeKarte?.siedlungen.length === 0 && r.spawnArchitecture("glutbrunnen", { x: fx, y: r._voxelSurfaceY(fx, pos.z) + 0.5, z: pos.z }, { precise: true, werk: true }); // prettier-ignore
             if (feuer) r._trittFlaecheSetzen(feuer);
             const sd = st.wegeKarte && st.wegeKarte.siedlungen[0];
             const orte = [[rx, rz, pos.x, pos.z]];
