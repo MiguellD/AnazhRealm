@@ -459,6 +459,10 @@ function simUrteil(b, v) {
         if (karte.length || arbeit > 2 * F.geschrieben)
             v.push(`FELD-BESUCH: die Wellen kosteten ${arbeit} Einheiten für ${F.geschrieben} geschriebene Zellen` +
                 (karte.length ? `, die Räumung ging über die ganze Karte oder ihr Rad (${karte.map((x) => x.join(" ")).join(", ")})` : "") + " — sie besucht Unberührte");
+        // (feld.K5) die Halde der Leben-Stufen trägt jede Zelle höchstens einmal: nie länger als der Stand (nach 100 Taten an einem Ort)
+        if (!(F.stand > 0)) v.push("LEER: die Taten im Feld legen keinen Stand der Leben-Stufen an");
+        else if (!(F.halde <= F.stand))
+            v.push(`HALDE: die Halde der Leben-Stufen trägt ${F.halde} Plätze für ${F.stand} Zellen — eine Zelle steht mehrfach, sie wächst je Tat ohne Schranke`);
     }
     // (stoffe.K2 · feld.K3#2) der Brand arbeitet nur in seinen Zellen (≤ BRAND_JE je Zelle und Schritt), seine Front läuft mit
     // dem Wind 0,5–2 m/s, gegen ihn ≤ 0,2 m/s und ohne ihn nirgends ≥ 0,5 m/s (die Mutante), er erlischt im Regen, hinterlässt

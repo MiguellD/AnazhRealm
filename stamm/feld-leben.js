@@ -2020,9 +2020,9 @@ class AnazhRealm_feld_leben {
         const alt = st.get(key);
         if ((alt ? alt.k : 0) !== k)
             this._nahStreuNeuIn(cx * L.cell, cz * L.cell, (cx + 1) * L.cell, (cz + 1) * L.cell);
-        if (k === 0) return void st.delete(key);
+        if (k === 0) return void st.delete(key); // gemalt heißt aus der Halde genommen (`_tickLebenStufen`): kein Platz bleibt
         if (alt) alt.k = k;
-        else st.set(key, { k, wach: Infinity });
+        else st.set(key, { key, k, wach: Infinity, i: -1 });
         AnazhRealm._lebenWecken(
             this,
             key,
@@ -2031,38 +2031,46 @@ class AnazhRealm_feld_leben {
     }
 
     // DER WECKER DER LEBEN-STUFEN (feld.K5, Ereignis statt Takt): die Zelle `key` wird um Spielzeit `wach` fällig — ihr Eintrag
-    // im Stand (`_lebenStand`, mit Stufe 0 angelegt, wo die Tat eine neue Zelle schreibt) trägt die Zeit, die Halde
-    // (`_lebenWecker`, Min-Heap [wach, key]) ordnet sie; ein neu geplanter Eintrag macht seinen alten Platz in der Halde stumm.
+    // im Stand (`_lebenStand`, mit Stufe 0 angelegt, wo die Tat eine neue Zelle schreibt) trägt die Zeit und seinen Platz `i`
+    // in der Halde (`_lebenWecker`, Min-Heap der Stand-Einträge nach `wach`, -1 = nicht darin). JEDE ZELLE STEHT HÖCHSTENS
+    // EINMAL in der Halde: ein neu geplanter Eintrag rückt an seinem Platz auf oder ab — die Halde ist nie länger als der Stand,
+    // der Stand nie größer als die berührten Zellen (Gebot 7). Bis zum Schnitt legte jede Tat je Zelle einen NEUEN Platz an
+    // (der alte blieb stumm liegen): im Zeitraffer der Kaskade (Fraß je Tier und Takt, 9 Zellen je Tat, ohne Takt der Stufen)
+    // wuchs sie ohne Schranke, bis die Seite abstürzte (voll 2/18, z170/z174: „Page crashed!“; gate:stand-takt HALDE).
     // Statisch: die Tat ruft ihn je geschriebener Zelle, er besucht nie eine andere.
     static _lebenWecken(welt, key, wach) {
         const st = welt._lebenStand || (welt._lebenStand = new Map());
-        const e = st.get(key);
-        if (e) e.wach = wach;
-        else st.set(key, { k: 0, wach });
         const H = welt._lebenWecker || (welt._lebenWecker = []);
-        let i = H.push(null) - 1;
-        for (let p; i > 0 && H[(p = (i - 1) >> 1)][0] > wach; i = p) H[i] = H[p];
-        H[i] = [wach, key];
+        let e = st.get(key);
+        if (!e) st.set(key, (e = { key, k: 0, wach, i: -1 }));
+        e.wach = wach;
+        if (e.i < 0) e.i = H.push(e) - 1;
+        AnazhRealm._lebenHaldeRueck(H, e.i);
     }
 
-    // Der Zerfall der Leben-Stufen (je Takt, scatterDeco): schläft, bis die Halde ihre früheste Zelle fällig nennt — dann malt er
-    // nur die fälligen (`_lebenStufeMalen`), jede plant ihren nächsten Sprung neu. Im Stand ohne Tat: ein Vergleich je Takt.
+    // Den Eintrag an Platz `i` der Halde an seinen Ort rücken (auf, sonst ab) — jeder Eintrag kennt seinen Platz (`e.i`)
+    static _lebenHaldeRueck(H, i) {
+        const e = H[i];
+        for (let p; i > 0 && H[(p = (i - 1) >> 1)].wach > e.wach; i = p) (H[i] = H[p]).i = i;
+        for (let c; (c = 2 * i + 1) < H.length; i = c) {
+            if (c + 1 < H.length && H[c + 1].wach < H[c].wach) c++;
+            if (H[c].wach >= e.wach) break;
+            (H[i] = H[c]).i = i;
+        }
+        (H[i] = e).i = i;
+    }
+
+    // Der Zerfall der Leben-Stufen (je Takt, scatterDeco): schläft, bis die Halde ihre früheste Zelle fällig nennt — dann nimmt er
+    // nur die fälligen heraus und malt sie (`_lebenStufeMalen`), jede plant ihren nächsten Sprung neu. Im Stand ohne Tat: ein
+    // Vergleich je Takt.
     _tickLebenStufen() {
         const H = this._lebenWecker;
-        const jetzt = this.state.spielZeit;
-        while (H && H.length && H[0][0] <= jetzt) {
-            const [wach, key] = H[0];
+        while (H && H.length && H[0].wach <= this.state.spielZeit) {
+            const e = H[0];
             const letzt = H.pop();
-            let i = 0;
-            for (let c = 1; c < H.length; i = c, c = 2 * i + 1) {
-                if (c + 1 < H.length && H[c + 1][0] < H[c][0]) c++;
-                if (H[c][0] >= letzt[0]) break;
-                H[i] = H[c];
-            }
-            if (H.length) H[i] = letzt;
-            const e = this._lebenStand.get(key);
-            if (!e || e.wach !== wach) continue; // neu geplant: sein späterer Platz in der Halde trägt ihn
-            const [cx, cz] = key.split(",").map(Number);
+            e.i = -1;
+            if (H.length) ((H[0] = letzt), AnazhRealm._lebenHaldeRueck(H, 0));
+            const [cx, cz] = e.key.split(",").map(Number);
             this._lebenStufeMalen(cx, cz);
         }
     }
