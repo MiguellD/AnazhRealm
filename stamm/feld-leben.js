@@ -2125,6 +2125,10 @@ class AnazhRealm_feld_leben {
         const leb = this.auraAt(x, z).lebendig;
         let f = null;
         if (leb >= AnazhRealm.BRAND.minStoff && !this._nassAt(x, z)) {
+            // DER BODEN STEHT NOCH NICHT (fern, ungebaut — `_bodenSichtAt` ohne Karte): das Bett ist unbekannt, nicht leer — die
+            // Zelle trägt jetzt keines und kein Gedächtnis. Bis w5-stoffe-k5 merkte sich das Bett das Urteil des ungebauten Bodens
+            // (der Stoff der Ebene statt des Grüns, `_kontaktStoffAt`) für immer: wohin der Ring erst wuchs, lief keine Front mehr.
+            if (this._bodenSichtAt(x, z) === null) return null;
             const y = this._voxelSurfaceY(x, z);
             const zeile = this._stoff(this._kontaktStoffAt(x, z, y));
             if (zeile && zeile.brenn) {

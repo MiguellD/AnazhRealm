@@ -751,6 +751,8 @@ function nachwuchsUrteil({ echt: e, mutante: m } = {}) {
 //   Mutante (der Nährstoff steht auf 1) lässt den Wuchs gleich.
 //   ZEIT — 2 km fern der Mess-Wiese fängt jede Zelle mit Bett einer Spirale, bis 2 000 brennen: je Schritt die Wanduhr des Takts
 //   und der Leser (Licht, Glut am Ohr) je Bild; SCHIRM das Bild des Brands (`_brandBild`, Flammen und Fahne) je Bild ≤ 1 ms.
+//   UNGEBAUT — eine Zelle mit Last jenseits des Rings trägt kein Bett und kein Gedächtnis (`_brandBett`: ihr Boden steht noch nicht);
+//   die Mutante (der Boden hieße gebaut) merkt sich das Urteil.
 // je Probe [Name, gilt, Befund]: die Zeilen, die nicht gelten, beim Namen samt ihrem Befund
 const rot = (T) => T.filter((t) => !t[1]).map(([n, , x]) => n + ": " + JSON.stringify(x));
 function brandUrteil(b) {
@@ -775,6 +777,8 @@ function brandUrteil(b) {
         ["MUTANTE-ASCHE", a.mutante.halme >= 0.8 * a.vor.halme, a.mutante],
         ["ZEIT", z.brennend >= 2000 && z.bildMs <= 0.5 && z.verzugS <= 2, z],
         ["SCHIRM", z.schirmMs <= 1, z],
+        ["UNGEBAUT", b.ungebaut && !b.ungebaut.bett && !b.ungebaut.gemerkt, b.ungebaut],
+        ["MUTANTE-UNGEBAUT", b.ungebautM && b.ungebautM.gemerkt, b.ungebautM],
     ]);
 }
 
@@ -913,12 +917,32 @@ async function brandSeite(MESS) {
         N.ernte = { n: gepflueckt, N0: r3(N0), W0: r3(W0), N: r3(r._naehrstoffAt(...E)), W: r3(r._wuchsAt(...E)) };
         N.mutante = { W0: r3(W0m), W: r3(fest(() => r._wuchsAt(...E))) };
         leer();
+        // UNGEBAUT: die erste Zelle mit Last (lebendig ≥ minStoff, trocken) östlich jenseits des Rings — ihr Bett ist unbekannt, kein
+        // Gedächtnis (`_brandBett`); die Mutante (der Boden hieße gebaut) merkt sich das Urteil des ungebauten Bodens
+        const ungebaut = (mutante) => {
+            for (let D = 400; D <= 1600; D += cs) {
+                const [cx, cz] = zelle(MESS.x + D, MESS.z);
+                const [x, z] = xz(cx, cz);
+                if (!(r.auraAt(x, z).lebendig >= B.minStoff) || r._nassAt(x, z) || r._bodenSichtAt(x, z) !== null) continue;
+                if (mutante) r._bodenSichtAt = () => 0;
+                const f = r._brandStoff(cx, cz);
+                delete r._bodenSichtAt;
+                const U = { zelle: [cx, cz], bett: !!f, gemerkt: !!(r._brandBett && r._brandBett.has(cx + "," + cz)) };
+                if (r._brandBett) r._brandBett.delete(cx + "," + cz);
+                return U;
+            }
+            return null;
+        };
+        [aus.ungebaut, aus.ungebautM] = [ungebaut(false), ungebaut(true)];
         // HALT: der Herd windauf des Flusses nächst der Mess-Wiese — längs des Strahls gegen den Wind vom Fluss aus (die Spitze läuft
         // ihn zurück): Wasser, dann nasses Bett, dann ununterbrochen trockenes Bett bis zum Herd (Boden-Feuchte ≤ 0,05, ≥ 2 Zellen
-        // hinter dem letzten nassen)
+        // hinter dem letzten nassen). Der Strahl liest gebauten Boden: die Probe steht am Fluss, bevor sie ihn liest (ein Punkt
+        // mehr als 60 m vom Stand fern rückt den Stand nach; bis w5-stoffe-k5 las sie von der Mess-Wiese aus, und der Ring reichte
+        // in der Cloud 108 m — der Fluss lag 170 m fern, jedes Bett ungebaut)
         const d = (q) => Math.hypot(q.x - MESS.x, q.z - MESS.z);
-        let herd = null;
+        let [herd, stand] = [null, null];
         for (const p of fluss(MESS, 320)) {
+            if (!stand || Math.hypot(p.x - stand.x, p.z - stand.z) > 60) await stehen((stand = p));
             const w = r._windAt(p.x, p.z, st.spielZeit);
             const [seen, strahl] = [new Set(), []];
             for (let D = 0; D <= 400; D += 8) {
@@ -937,11 +961,12 @@ async function brandSeite(MESS) {
             let j = k;
             while (j + 1 < strahl.length && strahl[j + 1].art === "trocken") j++;
             while (j > k && !(strahl[j].boden <= 0.05)) j--;
-            if (j > k && (!herd || j - k > herd.abstand)) herd = { c: xz(strahl[j].cx, strahl[j].cz), abstand: j - k };
+            if (j > k && (!herd || j - k > herd.abstand)) herd = { c: xz(strahl[j].cx, strahl[j].cz), abstand: j - k, stand };
         }
         if (!herd) return { fehler: "kein Strahl Fluss → nasses Bett → trockenes Bett (Herd mit Boden-Feuchte ≤ 0,05) binnen 320 m um die Mess-Wiese" };
         // die Uhr ist Spieler-Wort: der Brand läuft mittags (die Zünd-Wärme liest die Luft des Temperatur-Felds — bis w3v-brand-bild
         // lief die Uhr, so weit das Booten brauchte, und derselbe Herd trug 0 bis 95 Aschen)
+        await stehen(herd.stand);
         const lauf = () => (r.setTimeOfDay(0.5, "regler"), r._brandEntfachen(...herd.c), brennen(3600));
         aus.halt = Object.assign({ herd: herd.c.map(Math.round) }, (lauf(), zaehle()));
         leer();
@@ -950,8 +975,8 @@ async function brandSeite(MESS) {
         delete r._feuchteAt;
         aus.haltM = zaehle();
         leer();
-        leer();
         delete r._brandZuenden;
+        await stehen(MESS);
         // REGEN und LESER am Herd der Mess-Wiese: Licht, Ohr und das Bild (15 s zu 0,1 s, `_brandBild`: die Fahne steht) — die Flammen der Front,
         // die Fahne und ihre DECKUNG: der dichteste Strahl quer zum Wind durch ihre Ballen 8 m über den Flammen, 1 − Π(1 − Deckung)
         const leser = () => {
@@ -1173,8 +1198,10 @@ if (SELBSTTEST) {
                     kanteM: { n: 280, achse: 0.95, linie: 0.3 },
                     asche: { vor: { halme: 40 }, asche: { a: 1 }, gras: { a: 0 }, mutante: { halme: 40 } },
                     zeit: { brennend: 2000, bildMs: 0.3, verzugS: 1.1, schirmMs: 0.6 },
+                    ungebaut: { bett: false, gemerkt: false },
+                    ungebautM: { bett: false, gemerkt: true },
                 },
-                [["HALT", "halt.nass", 0], ["HALT-BRUCH", "halt.nassGebrannt", 1], ["MUTANTE-HALT", "haltM.nassGebrannt", 0], ["FLUSS", "halt.wasser", 0, "haltM.wasser", 0], ["FELS", "halt.fels", 0], ["REGEN", "regen.s", 196], ["MUTANTE-REGEN", "regenM.s", 20], ["LESER", "leser.rauch", 0], ["LESER", "leser.flammen", 0], ["MUTANTE-LESER", "leserM.licht", 1], ["DECKUNG", "leser.deckung", 0.5], ["MUTANTE-DECKUNG", "leserD.deckung", 0.95], ["KANTE", "kante.achse", 0.9], ["KANTE", "kante.linie", 0.4], ["MUTANTE-KANTE", "kanteM.achse", 0.2], ["ASCHE", "asche.asche.a", 0.9], ["GRÜNT", "asche.gras.a", 0.5], ["MUTANTE-ASCHE", "asche.mutante.halme", 20], ["ZEIT", "zeit.bildMs", 2], ["ZEIT", "zeit.verzugS", 9], ["SCHIRM", "zeit.schirmMs", 4]]
+                [["HALT", "halt.nass", 0], ["HALT-BRUCH", "halt.nassGebrannt", 1], ["MUTANTE-HALT", "haltM.nassGebrannt", 0], ["FLUSS", "halt.wasser", 0, "haltM.wasser", 0], ["FELS", "halt.fels", 0], ["REGEN", "regen.s", 196], ["MUTANTE-REGEN", "regenM.s", 20], ["LESER", "leser.rauch", 0], ["LESER", "leser.flammen", 0], ["MUTANTE-LESER", "leserM.licht", 1], ["DECKUNG", "leser.deckung", 0.5], ["MUTANTE-DECKUNG", "leserD.deckung", 0.95], ["KANTE", "kante.achse", 0.9], ["KANTE", "kante.linie", 0.4], ["MUTANTE-KANTE", "kanteM.achse", 0.2], ["ASCHE", "asche.asche.a", 0.9], ["GRÜNT", "asche.gras.a", 0.5], ["MUTANTE-ASCHE", "asche.mutante.halme", 20], ["ZEIT", "zeit.bildMs", 2], ["ZEIT", "zeit.verzugS", 9], ["SCHIRM", "zeit.schirmMs", 4], ["UNGEBAUT", "ungebaut.gemerkt", true], ["MUTANTE-UNGEBAUT", "ungebautM.gemerkt", false]]
             ),
             ...falsch(
                 sukzessionUrteil,
