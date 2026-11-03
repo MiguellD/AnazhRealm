@@ -1759,8 +1759,10 @@ class AnazhRealm_kreatur_leben {
         if (!fr) return false;
         const rand = this._kreaturBlickRand();
         if (rand < 0) return true; // die Kamera dreht schneller, als der Rand trägt: keine Geburt in diesem Takt
+        // der Leib, der dort erst stünde: ein Stellvertreter ohne Gier trägt seine Hüfte (`_kreaturLeib` liest nur die Gier)
+        const stell = this._geburtsStell || (this._geburtsStell = { rotation: { y: 0 } });
         const leib = this._kreaturLeib(
-            null,
+            stell,
             this._gattungLeib(g).beinL * bs,
             this._geburtsLeib || (this._geburtsLeib = {})
         );

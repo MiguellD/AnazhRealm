@@ -891,19 +891,16 @@ class AnazhRealm_kreatur_verhalten {
     // erreichen kann (das Grob-Tor des Treffers, _trefferErreichbar), bevor die Gestalt selbst richtet. Gemessen über die
     // Treffer-Glieder als räumliche Spanne vom Fuß-Ursprung (sie deckt jede Lage des Leibs), vier Gattungen × acht Größen
     // im Spiel-Takt: Wolf 1,86 · Bär 2,00 · Hirsch 2,01 · Fuchs 2,21 L (die Rute) gegen 2,6 L (gate:kampf-gefuehl T12).
-    // Ohne `creature` (der Leib, der an einem Ort erst stünde — die Geburt fragt den Blick, `_kreaturLeibImBlick`) trägt er L und
-    // blickt nach +z.
     _kreaturLeib(creature, L, out) {
         const l = L > 0 ? L : this._kreaturHueftL(creature);
         const o = out || {};
-        const gier = creature ? creature.rotation.y : 0;
         o.L = l;
         o.radius = Math.max(0.12, 0.3 * l);
         o.halb = 0.8 * l;
         o.hoehe = Math.max(0.5, 1.8 * l);
         o.reichweite = o.halb + o.hoehe;
-        o.fx = Math.sin(gier);
-        o.fz = Math.cos(gier);
+        o.fx = Math.sin(creature.rotation.y);
+        o.fz = Math.cos(creature.rotation.y);
         return o;
     }
 
@@ -2993,15 +2990,14 @@ class AnazhRealm_kreatur_verhalten {
         const cam = st.camera;
         // DER RAND DES BLICKS: der Frustum ist der des Vor-Frames, die Kamera dreht bis zum Render dieses Frames weiter —
         // der Rand wächst um die doppelte Drehung des Vor-Frames; dreht sie schneller als ~69°, ruht in diesem Frame keiner.
-        let rand = -1;
+        let rand = (this._blickRand = -1); // die Geburt und das Entkörpern fragen denselben Rand (`_kreaturBlickRand`)
         if (fr && cam && auge) {
             const q = this._ruheKamQ || (this._ruheKamQ = cam.quaternion.clone());
             const dreh = 2 * Math.acos(Math.min(1, Math.abs(q.dot(cam.quaternion))));
             q.copy(cam.quaternion);
             const winkel = R.randGrad * (Math.PI / 180) + 2 * dreh;
-            if (winkel < 1.2) rand = Math.tan(winkel);
+            if (winkel < 1.2) rand = this._blickRand = Math.tan(winkel);
         }
-        this._blickRand = rand; // die Geburt und das Entkörpern fragen denselben Rand (`_kreaturLeibImBlick`)
         for (let i = 0; i < W.length; i++) {
             const c = W[i];
             if (!c || !c.userData) continue;
