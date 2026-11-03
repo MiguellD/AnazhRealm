@@ -373,7 +373,10 @@ class AnazhRealm_feld_dsl {
                 try {
                     pos = fn.call(this, node.slice(1), ctx);
                 } catch (err) {
-                    grund = err && err.dslKeinOrt ? err.dslKeinOrt.grund : ["dsl.grund.warf", { op, fehler: String((err && err.message) || err) }];
+                    grund =
+                        err && err.dslKeinOrt
+                            ? err.dslKeinOrt.grund
+                            : ["dsl.grund.warf", { op, fehler: String((err && err.message) || err) }];
                 }
                 if (!grund && !(pos && Number.isFinite(pos.x) && Number.isFinite(pos.y) && Number.isFinite(pos.z)))
                     grund = ["dsl.grund.kein-ort", { op }];
@@ -424,7 +427,8 @@ class AnazhRealm_feld_dsl {
             return def;
         }
         const n = this._fremdeZahl(v);
-        if (!Number.isFinite(n)) throw this._dslKeinOrt(op, ["dsl.grund.keine-zahl", { op, was, wert: this._dslZeig(v) }]);
+        if (!Number.isFinite(n))
+            throw this._dslKeinOrt(op, ["dsl.grund.keine-zahl", { op, was, wert: this._dslZeig(v) }]);
         return Math.min(hi, Math.max(lo, n));
     }
 
@@ -960,7 +964,15 @@ class AnazhRealm_feld_dsl {
                 const e = emotion || "happy"; // das Gesetz der Werte hält dslEval (`AnazhRealm.DSL_WERTE`)
                 const { spawned, gruende, lastBorn } = this._dslWesenSetzen(ctx, pos, n, e, null, null);
                 ctx.log.push({ event: "spawned_creature", count: spawned, emotion: e });
-                this._setzErgebnis(ctx, "spawn_creature", n, spawned, gruende, ["ergebnis.ding.kreaturen"], "erschienen");
+                this._setzErgebnis(
+                    ctx,
+                    "spawn_creature",
+                    n,
+                    spawned,
+                    gruende,
+                    ["ergebnis.ding.kreaturen"],
+                    "erschienen"
+                );
                 // Spawnt DER SPIELER Leben (source "human") → joy + peace; der autonome Nexus hebt die
                 // Spieler-Emotion nicht (seine Tat, nicht meine).
                 if (spawned > 0 && ctx.source === "human")
@@ -1073,7 +1085,15 @@ class AnazhRealm_feld_dsl {
                     event: "spawned_ufo",
                     pos: ufo ? { x: ufo.position.x, y: ufo.position.y, z: ufo.position.z } : pos,
                 });
-                this._setzErgebnis(ctx, "spawn_ufo", 1, ufo ? 1 : 0, ufo ? {} : { buehne: 1 }, ["ergebnis.ding.ufo"], "gerufen");
+                this._setzErgebnis(
+                    ctx,
+                    "spawn_ufo",
+                    1,
+                    ufo ? 1 : 0,
+                    ufo ? {} : { buehne: 1 },
+                    ["ergebnis.ding.ufo"],
+                    "gerufen"
+                );
             },
             // Bau-Primitive: Position über die Selektor-Form (at_player, at_origin, near_player N), jeder Bau
             // = 1 Spawn-Budget. Optionales Seed für deterministische Visuals; beim Broadcast bettet der Sender
@@ -1116,16 +1136,9 @@ class AnazhRealm_feld_dsl {
                 ctx.log.push({ event: "spawned_village", id: null, pos, seed: s });
                 // DER BAU FOLGT (asynchron: das Buch, der Plan des Studios): jetzt steht nichts — der Satz sagt „wird gebaut",
                 // das Dorf meldet sein Ergebnis selbst, wenn es steht (`spawnSettlement` → `_chatEcho`, an den, der es verlangt)
-                this._setzErgebnis(
-                    ctx,
-                    "spawn_village",
-                    1,
-                    0,
-                    {},
-                    ["ergebnis.ding.dorf"],
-                    "gebaut",
-                    ["ergebnis.dorf-folgt"]
-                );
+                this._setzErgebnis(ctx, "spawn_village", 1, 0, {}, ["ergebnis.ding.dorf"], "gebaut", [
+                    "ergebnis.dorf-folgt",
+                ]);
             },
             // AUSLÖSCHUNGS-WELLE — der TEMPEL ist die klassische PORTIKUS-Kultur des
             // fachwerk-Labs (haus_griechisch, KULTNAMES — der sakrale Klassik-Bau des
@@ -1169,7 +1182,15 @@ class AnazhRealm_feld_dsl {
                 const absage = (g) => (gruende[g] = (gruende[g] || 0) + 1);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
-                    this._setzErgebnis(ctx, "spawn_waterfall", 1, 0, { budget: 1 }, ["ergebnis.ding.wasserfall"], "gebaut");
+                    this._setzErgebnis(
+                        ctx,
+                        "spawn_waterfall",
+                        1,
+                        0,
+                        { budget: 1 },
+                        ["ergebnis.ding.wasserfall"],
+                        "gebaut"
+                    );
                     return;
                 }
                 ctx.budget.spawnsLeft--;
@@ -1181,7 +1202,15 @@ class AnazhRealm_feld_dsl {
                     absage,
                 });
                 ctx.log.push({ event: "spawned_waterfall", id: entry ? entry.id : null, pos, seed: s });
-                this._setzErgebnis(ctx, "spawn_waterfall", 1, entry ? 1 : 0, gruende, ["ergebnis.ding.wasserfall"], "gebaut");
+                this._setzErgebnis(
+                    ctx,
+                    "spawn_waterfall",
+                    1,
+                    entry ? 1 : 0,
+                    gruende,
+                    ["ergebnis.ding.wasserfall"],
+                    "gebaut"
+                );
             },
             // Generischer Bauplan-Spawn für jeden Namen (built-in oder eigen), z. B. ["spawn_blueprint",
             // "mein-tempelplatz", ["at_player"]] — der universelle Pfad von Hotbar + Werkstatt. Slot 6
@@ -2009,7 +2038,8 @@ class AnazhRealm_feld_dsl {
         const istBaum = name.startsWith("baum_");
         const natur = this._istNatur({ type: name });
         const werk = this._studioWerkVerb(name);
-        const verb = werk === "praegung" ? "gepraegt" : werk === "wesen" ? "erschienen" : natur ? "gewachsen" : "gebaut";
+        const verb =
+            werk === "praegung" ? "gepraegt" : werk === "wesen" ? "erschienen" : natur ? "gewachsen" : "gebaut";
         if (befund.geklemmt && befund.geklemmt.length)
             ctx.log.push({ event: "studio_regler_geklemmt", kind: name, geklemmt: befund.geklemmt });
         if (stamp === false) {
@@ -2231,8 +2261,7 @@ class AnazhRealm_feld_dsl {
                 // zurück zum Spieler durchs Wasser, und die Zwillings-Probe nannte den Rand des Flusses Land.
                 if (!this._landAt(p.x, p.z, 0.4)) {
                     const u = this._findNearestWaterPoint(p.x, p.z, r, true);
-                    if (!u)
-                        throw this._dslKeinOrt("near_water", ["dsl.grund.kein-ufer", { r: Math.round(r) }]);
+                    if (!u) throw this._dslKeinOrt("near_water", ["dsl.grund.kein-ufer", { r: Math.round(r) }]);
                     const L = Math.hypot(u.x - p.x, u.z - p.z) || 1;
                     return { x: u.x + ((u.x - p.x) / L) * 2, y: p.y, z: u.z + ((u.z - p.z) / L) * 2 };
                 }

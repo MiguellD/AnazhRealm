@@ -613,7 +613,8 @@ class AnazhRealm_netz_portal {
             zeugnisA: {
                 key: `portalAddress:${addr.worldId}`,
                 type: "portal",
-                zeile: ["journal.tor-welt-erstmals", { welt: addr.label }],
+                schluessel: "journal.tor-welt-erstmals",
+                werte: { welt: addr.label },
             },
         });
     }

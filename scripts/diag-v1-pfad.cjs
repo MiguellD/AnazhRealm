@@ -12,15 +12,31 @@
 //   WORT — der Korpus (spec/abnahme/ki-korpus.json) über den echten Chat-Pfad `maybeAnswerWithLlm` → `llmCall` → `dslRun`;
 //     --echt fragt den Anbieter, --aufnahme schreibt den Mitschnitt (Ratsche, sinkt nie), die CI spielt ihn ab; --regler
 //     fährt den Korpus-Teil Regler-Wörter (KI K2, das Soll am Stempel der Werke, eigene Ratsche ratsche-ki-korpus-regler.json),
-//     --seele das Gespräch mit Wesen über ihre Erinnerungen (KI K3), --regeln den Selbstlauf der Regeln des Modells (KI K4),
-//     --en den Korpus in der Sprache EN (spielgang.K5#2: die Welt spricht EN, das Modell bekommt den Prompt des Spielers).
+//     --seele das Gespräch mit Wesen über ihre Erinnerungen (KI K3), --regeln den Selbstlauf der Regeln des Modells (KI K4).
 //   FEIND — der feindliche Korpus (spec/abnahme/ki-feind-korpus.json) kommt durch die Eingänge der Fremde zu einem
 //     gehorsamen Modell: 0 erreicht · 0 ausgeführt · die Signatur schlägt an · der Spieler liest den Namen.
-//   node scripts/diag-v1-pfad.cjs [--selftest | --korpus [--regler | --seele | --regeln | --en] [--echt [--bild] [--aufnahme]] | --feind]
+//   node scripts/diag-v1-pfad.cjs [--selftest | --korpus [--regler | --seele | --regeln] [--echt [--bild] [--aufnahme]] | --feind]
 //   Port: V1_PFAD_PORT (4421) · Mutanten: V1_MUTANTE=gedaechtnis-leer (--seele) · wertung-aus (--regeln)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, jsonLesen, jsonSchreiben, jsonKlon, fehlerStapel, SELBSTTEST, path, fs, stammLib } = require("./lib/welt-boot.cjs");
+const {
+    statikServer,
+    warteAufWelt,
+    ROOT: root,
+    hauptLauf,
+    nullSeite,
+    pruefer,
+    wandEnde,
+    selbsttestEnde,
+    jsonLesen,
+    jsonSchreiben,
+    jsonKlon,
+    fehlerStapel,
+    SELBSTTEST,
+    path,
+    fs,
+    stammLib,
+} = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 const PORT = Number(process.env.V1_PFAD_PORT || 4421);
@@ -28,7 +44,11 @@ const PORT = Number(process.env.V1_PFAD_PORT || 4421);
 const { errs, check } = pruefer();
 // ein Selbst-Test eines Urteils: soll nennt den Täter (ein Teil seines Texts), ohne soll 0 Täter
 const taeterTest = (name, v, soll) =>
-    check(`Selbst-Test ${name} → ${soll || "0 Täter"}`, soll ? v.some((t) => t.includes(soll)) : !v.length, v.join(" · "));
+    check(
+        `Selbst-Test ${name} → ${soll || "0 Täter"}`,
+        soll ? v.some((t) => t.includes(soll)) : !v.length,
+        v.join(" · ")
+    );
 
 const ohneKommentare = stammLib.ohneKommentare;
 
@@ -1004,7 +1024,10 @@ function korpusPraedikat(soll, vor, nach, wortTyp) {
     // Stempel eines Baus, der Guss eines Wesens, die Prägung eines Rezepts (`stempel`: [Werk-Ziel, Werte])
     const zahl = (x) =>
         soll.regler
-            ? x.stempel.filter(([t, ov]) => traf(t) && Object.entries(soll.regler).every(([id, [a, b]]) => ov && ov[id] >= a && ov[id] <= b)).length
+            ? x.stempel.filter(
+                  ([t, ov]) =>
+                      traf(t) && Object.entries(soll.regler).every(([id, [a, b]]) => ov && ov[id] >= a && ov[id] <= b)
+              ).length
             : Object.entries(x.werke).reduce((s, [t, n]) => s + (traf(t) ? n : 0), 0);
     if (soll.werk) return zahl(nach) - zahl(vor) >= (soll.min || 1);
     for (const k of ["wesen", "traurig", "regel"]) if (soll[k]) return nach[k] - vor[k] >= soll[k];
@@ -1097,7 +1120,9 @@ async function probe(arg) {
         m.trocken = r._landAt(P.x, P.z, 0);
         // die Ankunft ist idempotent: jedes Element des Plans steht EINMAL (seine id ist der Stempel), auch nach weiteren Takten
         for (let i = 0; i < 3; i++) r._genesisOrt(st.playerMesh.position);
-        const torIds = st.architectures.filter((a) => a && typeof a.id === "string" && a.id.startsWith("genesis:tor:")).map((a) => a.id);
+        const torIds = st.architectures
+            .filter((a) => a && typeof a.id === "string" && a.id.startsWith("genesis:tor:"))
+            .map((a) => a.id);
         m.doppelt = torIds.length - new Set(torIds).size;
         // Der Wald wächst um den Spieler: ticken, bis die Welt steht (`__weltStehtNach`).
         const baeume = () =>
@@ -1127,7 +1152,8 @@ async function probe(arg) {
         window.__anazhAutoSettlement = true;
         Object.defineProperty(st, "_frameOverBudget", { configurable: true, get: () => true, set: () => {} });
         try {
-            for (let i = 0; i < 40 && !(st.worldMeta.genesisOrt && st.worldMeta.genesisOrt.steht); i++) await __takte(1, 60);
+            for (let i = 0; i < 40 && !(st.worldMeta.genesisOrt && st.worldMeta.genesisOrt.steht); i++)
+                await __takte(1, 60);
         } finally {
             delete st._frameOverBudget;
             st._frameOverBudget = false;
@@ -1187,7 +1213,7 @@ async function probe(arg) {
             llm.providerConfig.ollama.endpoint = alt.ep;
             llm.providerConfig.ollama.useProxy = alt.px;
         }
-        m.fehler = antwort && antwort.error ? String(antwort.error) : null;
+        m.fehler = antwort && antwort.error ? r.constructor._tIn("de", ...[].concat(antwort.error)) : null; // eine Zeile der Tafel
         m.host = "127.0.0.1:" + kiPort;
         m.gestartet = true;
     } catch (e) {
@@ -1792,7 +1818,11 @@ async function probe(arg) {
         const bodenArt = (r._foundryLibrarySpec().species || []).find(
             (sp) => !r._foundryPresetIsTree(sp) && r._foundryGestalten(sp) > 0
         );
-        await window.__gebautNach("der Boot-Vorrat", { fertig: () => !f._vorrat, takt: () => __takte(1, 80), max: 275 }); // der Boot-Vorrat läuft aus
+        await window.__gebautNach("der Boot-Vorrat", {
+            fertig: () => !f._vorrat,
+            takt: () => __takte(1, 80),
+            max: 275,
+        }); // der Boot-Vorrat läuft aus
         if (bodenArt && !f._vorrat) {
             const lodV = (r._foundryKindStages(bodenArt) || [2, 0])[0];
             const vKey = r._foundryKoerperKey(bodenArt, 1, lodV);
@@ -1905,10 +1935,7 @@ async function probe(arg) {
 // ── WORT — DIE SEITE ──
 async function korpusAufbau(a) {
     // die Welt steht und das Studio-Buch kennt jedes Wort des Korpus
-    for (let i = 0; i < 200 && !(i && a.worte.every((w) => r._studioBlueprintForWord(w))); i++)
-        await __weltStehtNach();
-    // die Sprache des Spielers (der Korpus-Teil en): die Wahl der Tafel, wie in den Einstellungen
-    if (a.sprache) r._spracheSetzen(a.sprache);
+    for (let i = 0; i < 200 && !(i && a.worte.every((w) => r._studioBlueprintForWord(w))); i++) await __weltStehtNach();
     // DER SPIELER STELLT DIE STIMME EIN, im Fenster der KI
     for (const [id, w] of [
         ["llm-provider", "ollama"],
@@ -1994,7 +2021,7 @@ async function korpusAufbau(a) {
         const alt = JSON.parse(v.praegung);
         for (const p in ws)
             if (JSON.stringify(ws[p]) !== JSON.stringify(alt[p]))
-                r._praegungSetzen(r._foundry.recipes[p].kind, p, alt[p] || {}), alt[p] || delete ws[p];
+                (r._praegungSetzen(r._foundry.recipes[p].kind, p, alt[p] || {}), alt[p] || delete ws[p]);
         for (const x of st.architectures.filter((x) => !v.werke.has(x)).reverse()) r.removeArchitecture(x);
         for (const c of st.creatures.filter((c) => !v.wesen.has(c))) r.removeCreature(c);
         for (const [c, e] of v.gemuet) if (c.userData && c.userData.emotions) c.userData.emotions = e;
@@ -2153,9 +2180,6 @@ const KORPUS_TEILE = {
     regler: [{ absicht: 0.8 }, ([w, r]) => ({ werk: w === "*" ? w : [w], regler: r })],
     seele: [{ gueltig: 0, absicht: 0.7, p95Ms: 0 }, ([name, wesen, ...taten]) => ({ name, wesen, taten })],
     regeln: [{ gueltig: 0, absicht: 0, p95Ms: 0 }, (regel) => ({ regel })],
-    // DER KORPUS IN EN (spielgang.K5#2): dieselben Prädikate, die Welt spricht EN (`_spracheSetzen`) — das Modell bekommt den Prompt
-    // in der Sprache des Spielers; das Urteil über die Sprache der Antworten fällt an der Station (punkte-maschine g5.js)
-    en: [{}, null],
 };
 async function korpusHaupt() {
     const echt = process.argv.includes("--echt");
@@ -2175,7 +2199,7 @@ async function korpusHaupt() {
         await page.evaluate(AUSGABE_INSTALL);
         const worte = [...new Set(korpus.saetze.flatMap(([, s]) => (Array.isArray(s.werk) ? s.werk : [])))];
         const endpunkt = echt ? process.env.KI_ENDPUNKT || "http://127.0.0.1:11434/" : `http://127.0.0.1:${PORT}/`;
-        const arg = { modell, endpunkt, worte, gegenprobe: KORPUS_SOLL.gegenprobe, mutante, sprache: teil === "en" ? "en" : null };
+        const arg = { modell, endpunkt, worte, gegenprobe: KORPUS_SOLL.gegenprobe, mutante };
         const auf = await page.evaluate(korpusAufbau, arg);
         m.tueren = auf.tueren;
         Object.assign(arg, {
@@ -2218,8 +2242,7 @@ async function korpusHaupt() {
             const prog = (a) => (a && !a.error && !a.fallbackUsed ? a.program || null : false);
             const mit = Object.fromEntries(m.saetze.map((e) => [e.satz, prog(e.antwort)]));
             const kopf = { modell, anbieter: new URL(endpunkt).host, datum: new Date().toISOString().slice(0, 10) };
-            if (!m.sinkt)
-                jsonSchreiben(ratschePfad, { ...kopf, quote, mitschnitt: mit }, 1, "\n");
+            if (!m.sinkt) jsonSchreiben(ratschePfad, { ...kopf, quote, mitschnitt: mit }, 1, "\n");
         }
     }
     const v = [...korpusVerdict(m), ...(teil === "regeln" ? regelVerdict(m.regeln) : [])];
@@ -2260,6 +2283,9 @@ function erinnerungsWand(t) {
         (a.type === "TemplateLiteral" && !a.expressions.length) ||
         (a.type === "TaggedTemplateExpression" && datum(a.tag)) ||
         (a.type === "CallExpression" && datum(a.callee)) ||
+        // eine Zeile der Tafel `[schlüssel, werte]` (w5-spielgang-k5): die Tür der KI isoliert jeden Wert (`_erinnerungFuerKi`), ein
+        // Schlüssel außerhalb der Tafel bricht laut (`_tIn`)
+        a.type === "ArrayExpression" ||
         (a.type === "ConditionalExpression" && ok(a.consequent) && ok(a.alternate));
     stammLib.wandere(stammLib.ast(t), (n, ahnen) => {
         const k = n.type === "CallExpression" && n.callee.type === "MemberExpression" && n.callee.property.name;
@@ -2364,7 +2390,15 @@ const gehorsam = (korpus, log) => (req) =>
             log.push(...k);
             const say = k.length ? "Ich folge." : `Ich kenne ${(text.match(/«N\d+»/) || ["dich"])[0]}.`;
             fertig(
-                JSON.stringify({ message: { content: JSON.stringify({ erinnerung: (form.enum || [])[0], say, program: k.length ? korpus.tat : null }) } })
+                JSON.stringify({
+                    message: {
+                        content: JSON.stringify({
+                            erinnerung: (form.enum || [])[0],
+                            say,
+                            program: k.length ? korpus.tat : null,
+                        }),
+                    },
+                })
             );
         });
     });
@@ -2427,7 +2461,9 @@ hauptLauf(async () => {
             vorrat: { key: "gras|1|1", imFlug: true, auftraege: 1 },
         };
         const zugMit = (wer, z) => ({ [wer]: { ...zugGesund[wer], ...z } });
-        const stufeL2 = (l2) => ({ stufen: [...zugGesund.stufen.slice(0, 2), { lod: 2, wart: "fimp:eiche|2", da: true, ...l2 }] });
+        const stufeL2 = (l2) => ({
+            stufen: [...zugGesund.stufen.slice(0, 2), { lod: 2, wart: "fimp:eiche|2", da: true, ...l2 }],
+        });
         const waffe = (id, fuell) => ({ art: "rezept", id, kind: "weapon", fuell, kante: 0.4, dist: 3 });
         const gesundR = { gestartet: true, waffenImBuch: 2, eintraege: [waffe("beil", 0.7), waffe("messer", 0.7)] };
         const gesundA = {
@@ -2511,7 +2547,11 @@ hauptLauf(async () => {
                 vorschauVerdict,
                 gesundV,
                 [
-                    ["leere Vorschau (21 108 Dreiecke, 0 im Bild)", { anteil: 0, maskeImRender: 1, augeAbstand: 36 }, "vorschau 0.0 %"],
+                    [
+                        "leere Vorschau (21 108 Dreiecke, 0 im Bild)",
+                        { anteil: 0, maskeImRender: 1, augeAbstand: 36 },
+                        "vorschau 0.0 %",
+                    ],
                     ["Vorschau zeichnet nie", { renders: 0 }, "vorschau zeichnete nie"],
                     ["Welt-Maske bleibt aus", { maskeDanach: 0 }, "welt-maske"],
                 ],
@@ -2522,16 +2562,40 @@ hauptLauf(async () => {
                 zugGesund,
                 [
                     ["die Vorschau schläft nach der Ankunft", zugMit("vorschau", { ms: null }), "zug vorschau schläft"],
-                    ["der fremde Zug im Rang der Ferne", zugMit("vorschau", { ms: null, imCache: false }), "zug vorschau: eiche|2|0 nach"],
+                    [
+                        "der fremde Zug im Rang der Ferne",
+                        zugMit("vorschau", { ms: null, imCache: false }),
+                        "zug vorschau: eiche|2|0 nach",
+                    ],
                     ["die Hand schläft nach der Ankunft", zugMit("hand", { ms: null }), "zug hand schläft"],
-                    ["kein fremder Zug (vakuös)", zugMit("vorschau", { fremd: false }), "zug vorschau: kein fremder Zug"],
+                    [
+                        "kein fremder Zug (vakuös)",
+                        zugMit("vorschau", { fremd: false }),
+                        "zug vorschau: kein fremder Zug",
+                    ],
                     ["keine Klinge im Buch (vakuös)", { hand: null }, "zug hand: keine Probe"],
-                    ["die L2-Karte schläft nach der Ankunft ihrer Höhen-Stufe (K38-N1 offen)", stufeL2({ ms: null }), "zug stufe L2 schläft"],
+                    [
+                        "die L2-Karte schläft nach der Ankunft ihrer Höhen-Stufe (K38-N1 offen)",
+                        stufeL2({ ms: null }),
+                        "zug stufe L2 schläft",
+                    ],
                     ["keine Stufen gemessen (vakuös)", { stufen: [] }, "zug stufen: 0 von 3"],
-                    ["der Leser bestellt im Flug des Vorrats neu", zugMit("vorrat", { auftraege: 2 }), "zug vorrat: gras|1|1 2×"],
-                    ["der Vorrat zieht nicht (vakuös)", zugMit("vorrat", { imFlug: false }), "zug vorrat: gras|1|1 nicht im Flug"],
+                    [
+                        "der Leser bestellt im Flug des Vorrats neu",
+                        zugMit("vorrat", { auftraege: 2 }),
+                        "zug vorrat: gras|1|1 2×",
+                    ],
+                    [
+                        "der Vorrat zieht nicht (vakuös)",
+                        zugMit("vorrat", { imFlug: false }),
+                        "zug vorrat: gras|1|1 nicht im Flug",
+                    ],
                     ["keine Vorrats-Probe (vakuös)", { vorrat: null }, "zug vorrat: keine Probe"],
-                    ["die Vorschau rahmt den Stamm (Box des Einheits-Quads)", stufeL2({ ms: 900, hoch: 1.1, soll: 21 }), "zug stufe L2 rahmen"],
+                    [
+                        "die Vorschau rahmt den Stamm (Box des Einheits-Quads)",
+                        stufeL2({ ms: 900, hoch: 1.1, soll: 21 }),
+                        "zug stufe L2 rahmen",
+                    ],
                 ],
             ],
             [
@@ -2539,10 +2603,41 @@ hauptLauf(async () => {
                 rahmenVerdict,
                 gesundR,
                 [
-                    ["Messer 0,059 (3-m-Mindestabstand, Runner WS-01)", { eintraege: [waffe("beil", 0.7), waffe("messer", 0.059)] }, "rahmen 1 außerhalb"],
-                    ["ein Bauplan sprengt das Bild (0,97)", { eintraege: [...gesundR.eintraege, { art: "bauplan", id: "haus", kind: "teile", fuell: 0.97 }] }, "rahmen 1 außerhalb"],
-                    ["eine Waffe ungemessen", { eintraege: [waffe("beil", 0.7), { art: "rezept", id: "messer", kind: "weapon", leer: true }] }, "rahmen waffen 1 von 2"],
-                    ["eine Gestalt bleibt pending", { eintraege: [...gesundR.eintraege, { art: "rezept", id: "eiche", kind: "tree", frist: true }] }, "rahmen 1 ohne Gestalt"],
+                    [
+                        "Messer 0,059 (3-m-Mindestabstand, Runner WS-01)",
+                        { eintraege: [waffe("beil", 0.7), waffe("messer", 0.059)] },
+                        "rahmen 1 außerhalb",
+                    ],
+                    [
+                        "ein Bauplan sprengt das Bild (0,97)",
+                        {
+                            eintraege: [
+                                ...gesundR.eintraege,
+                                { art: "bauplan", id: "haus", kind: "teile", fuell: 0.97 },
+                            ],
+                        },
+                        "rahmen 1 außerhalb",
+                    ],
+                    [
+                        "eine Waffe ungemessen",
+                        {
+                            eintraege: [
+                                waffe("beil", 0.7),
+                                { art: "rezept", id: "messer", kind: "weapon", leer: true },
+                            ],
+                        },
+                        "rahmen waffen 1 von 2",
+                    ],
+                    [
+                        "eine Gestalt bleibt pending",
+                        {
+                            eintraege: [
+                                ...gesundR.eintraege,
+                                { art: "rezept", id: "eiche", kind: "tree", frist: true },
+                            ],
+                        },
+                        "rahmen 1 ohne Gestalt",
+                    ],
                 ],
             ],
             [
@@ -2550,7 +2645,11 @@ hauptLauf(async () => {
                 ankunftVerdict,
                 gesundA,
                 [
-                    ["Tanne 2,0 m vom Mittelpunkt (V-D1)", { kronen: 2, naechsterStamm: 1.97, naechsteArt: "baum_tanne" }, "2 Krone"],
+                    [
+                        "Tanne 2,0 m vom Mittelpunkt (V-D1)",
+                        { kronen: 2, naechsterStamm: 1.97, naechsteArt: "baum_tanne" },
+                        "2 Krone",
+                    ],
                     ["ein Tor 36 m neben seinem Slot des Plans", { slotAbstand: 36 }, "ein Tor steht 36 m neben"],
                     ["kein Tor über dem Frame-Budget", { ringPortale: 0 }, "0 Tore am Genesis-Ort"],
                     ["9 von 10 Toren (eines fehlt)", { ringPortale: 9 }, "9 Tore am Genesis-Ort"],
@@ -2619,13 +2718,26 @@ hauptLauf(async () => {
                         }),
                         "spawn_creature: wirft",
                     ],
-                    ["Dorf am Spieler-Ort über die Op", mitOp("spawn_village", { akte: [{ nm: "spawnSettlement", abstand: null }] }), "spawn_village: wirkt ohne Ort"],
+                    [
+                        "Dorf am Spieler-Ort über die Op",
+                        mitOp("spawn_village", { akte: [{ nm: "spawnSettlement", abstand: null }] }),
+                        "spawn_village: wirkt ohne Ort",
+                    ],
                     [
                         "still am Spieler-Ort",
-                        mitOp("spawn_studio", { ok: true, grund: null, effekt: null, akte: [{ nm: "spawnArchitecture", abstand: 4.1 }] }),
+                        mitOp("spawn_studio", {
+                            ok: true,
+                            grund: null,
+                            effekt: null,
+                            akte: [{ nm: "spawnArchitecture", abstand: 4.1 }],
+                        }),
                         "spawn_studio: wirkt ohne Ort",
                     ],
-                    ["Absage ohne Grund", mitOp("deposit_life", { grund: null }), "deposit_life: scheitert nicht benannt"],
+                    [
+                        "Absage ohne Grund",
+                        mitOp("deposit_life", { grund: null }),
+                        "deposit_life: scheitert nicht benannt",
+                    ],
                     ["chain meldet Erfolg", { chain: { ...gesundO.chain, ok: true } }, "chain: meldet Erfolg"],
                     ["chain bricht ganz ab", { chain: { ...gesundO.chain, akte: [] } }, "chain: bricht ganz ab"],
                     ["spawnSettlement ohne Ort gründet beim Spieler", { dorfAuftraege: 1 }, "dorf ohne Ort gründet"],
@@ -2636,19 +2748,63 @@ hauptLauf(async () => {
                 knotenVerdict,
                 gesundK,
                 [
-                    ["der Text wird der Ursprung", mitK(KNOTEN[0][0], still("spawnArchitecture", 412.6)), `${KNOTEN[0][0]}: wirkt ohne Ort`],
-                    ["at(null) wird die 0 (Lehre 17)", mitK("at mit null (Number(null) === 0)", still("spawnCreatureAt", 300.2)), "at mit null (Number(null) === 0): wirkt ohne Ort"],
-                    ["das Dorf ohne Abstände beim Spieler", mitK("far_player ohne Abstände (das Dorf)", still("spawnSettlement", 9.6)), "far_player ohne Abstände (das Dorf): wirkt ohne Ort"],
-                    ["voxel_carve gräbt bei 0", mitK("voxel_carve mit null-Koordinaten", still("carveVoxel", 300.2)), "voxel_carve mit null-Koordinaten: wirkt ohne Ort"],
-                    ["ohne Spieler am Ursprung", mitK("at_player ohne Spieler", still("spawnArchitecture", 300.2)), "at_player ohne Spieler: wirkt ohne Ort"],
-                    ["die nächste Kreatur am Ursprung", mitK("die nächste Kreatur ohne Spieler", still("assignTaskToNearestCreature", 300.2)), "die nächste Kreatur ohne Spieler: wirkt ohne Ort"],
-                    ["Absage ohne die Op", mitK("leerer Knoten", { effekt: null }), "leerer Knoten: scheitert nicht benannt"],
-                    ["near_water ohne Radius sucht 8 m", mitD({ near_water: "kein Wasser im Umkreis von 8 m" }), "near_water ohne Radius"],
+                    [
+                        "der Text wird der Ursprung",
+                        mitK(KNOTEN[0][0], still("spawnArchitecture", 412.6)),
+                        `${KNOTEN[0][0]}: wirkt ohne Ort`,
+                    ],
+                    [
+                        "at(null) wird die 0 (Lehre 17)",
+                        mitK("at mit null (Number(null) === 0)", still("spawnCreatureAt", 300.2)),
+                        "at mit null (Number(null) === 0): wirkt ohne Ort",
+                    ],
+                    [
+                        "das Dorf ohne Abstände beim Spieler",
+                        mitK("far_player ohne Abstände (das Dorf)", still("spawnSettlement", 9.6)),
+                        "far_player ohne Abstände (das Dorf): wirkt ohne Ort",
+                    ],
+                    [
+                        "voxel_carve gräbt bei 0",
+                        mitK("voxel_carve mit null-Koordinaten", still("carveVoxel", 300.2)),
+                        "voxel_carve mit null-Koordinaten: wirkt ohne Ort",
+                    ],
+                    [
+                        "ohne Spieler am Ursprung",
+                        mitK("at_player ohne Spieler", still("spawnArchitecture", 300.2)),
+                        "at_player ohne Spieler: wirkt ohne Ort",
+                    ],
+                    [
+                        "die nächste Kreatur am Ursprung",
+                        mitK("die nächste Kreatur ohne Spieler", still("assignTaskToNearestCreature", 300.2)),
+                        "die nächste Kreatur ohne Spieler: wirkt ohne Ort",
+                    ],
+                    [
+                        "Absage ohne die Op",
+                        mitK("leerer Knoten", { effekt: null }),
+                        "leerer Knoten: scheitert nicht benannt",
+                    ],
+                    [
+                        "near_water ohne Radius sucht 8 m",
+                        mitD({ near_water: "kein Wasser im Umkreis von 8 m" }),
+                        "near_water ohne Radius",
+                    ],
                     ["vorn ohne Abstand 1 m", mitD({ at_player_forward: 1 }), "at_player_forward ohne Zahl"],
                     ["Bedarf ohne Radius 10 m", mitD({ at_field_need: 10 }), "at_field_need ohne Zahl"],
-                    ["der Mess-Ort ohne Spieler ist der Ursprung", { messOrtOhneSpieler: { x: 0, z: 0 } }, "der Mess-Ort"],
-                    ["ohne Knoten scheitert der Spawn", { ohneKnoten: "nicht verlangt" }, "ohne Knoten kein Default-Ort"],
-                    ["ein gültiger Knoten wirkt nicht (vakuös)", { gesund: { ok: false, akte: 0, grund: "at: x fehlt" } }, "ein gültiger at-Knoten"],
+                    [
+                        "der Mess-Ort ohne Spieler ist der Ursprung",
+                        { messOrtOhneSpieler: { x: 0, z: 0 } },
+                        "der Mess-Ort",
+                    ],
+                    [
+                        "ohne Knoten scheitert der Spawn",
+                        { ohneKnoten: "nicht verlangt" },
+                        "ohne Knoten kein Default-Ort",
+                    ],
+                    [
+                        "ein gültiger Knoten wirkt nicht (vakuös)",
+                        { gesund: { ok: false, akte: 0, grund: "at: x fehlt" } },
+                        "ein gültiger at-Knoten",
+                    ],
                 ],
             ],
             [
@@ -2656,10 +2812,26 @@ hauptLauf(async () => {
                 sucheVerdict,
                 gesundW,
                 [
-                    ["Spalten-Scan je Probe", mitZ("ki@trocken", { R: 200, proben: 1954, scans: 1954 }), "ki 200 m: 1954 Spalten-Scans"],
-                    ["ohne Wasser alle 8037 Proben gescannt", mitZ("ki@trocken-voll", { R: 200, proben: 8037, scans: 8037 }), "ki@trocken-voll 200 m: 8037"],
-                    ["Trinken scannt je Probe", mitZ("trinken@trocken", { R: 40, proben: 351, scans: 351 }), "trinken 40 m"],
-                    ["der Fels-Beweis lügt", { exakt: { n: 3600, falsch: 3, nass: 400, beispiele: ["(1, 2, 0.2)"] } }, "das Urteil weicht"],
+                    [
+                        "Spalten-Scan je Probe",
+                        mitZ("ki@trocken", { R: 200, proben: 1954, scans: 1954 }),
+                        "ki 200 m: 1954 Spalten-Scans",
+                    ],
+                    [
+                        "ohne Wasser alle 8037 Proben gescannt",
+                        mitZ("ki@trocken-voll", { R: 200, proben: 8037, scans: 8037 }),
+                        "ki@trocken-voll 200 m: 8037",
+                    ],
+                    [
+                        "Trinken scannt je Probe",
+                        mitZ("trinken@trocken", { R: 40, proben: 351, scans: 351 }),
+                        "trinken 40 m",
+                    ],
+                    [
+                        "der Fels-Beweis lügt",
+                        { exakt: { n: 3600, falsch: 3, nass: 400, beispiele: ["(1, 2, 0.2)"] } },
+                        "das Urteil weicht",
+                    ],
                     ["kein nasser Punkt (vakuös)", { exakt: { n: 3600, falsch: 0, nass: 0 } }, "kein nasser Punkt"],
                 ],
             ],
@@ -2984,7 +3156,17 @@ hauptLauf(async () => {
             // die Regler-Wörter: W 7 trifft [6, 8]; W 12 und ein Werk ohne Stempel nie; die alte Prägung (lofi) zählt nie
             ...[7, 12, null].map((w) => [
                 `Regler-Wörter: ein neues Haus mit W ${w}, die alte Prägung W 7`,
-                korpusPraedikat({ werk: "*", regler: { W: [6, 8] } }, { stempel: [["lofi", { W: 7 }]] }, { stempel: [["lofi", { W: 7 }], ["haus", w && { W: w }]] }, {}),
+                korpusPraedikat(
+                    { werk: "*", regler: { W: [6, 8] } },
+                    { stempel: [["lofi", { W: 7 }]] },
+                    {
+                        stempel: [
+                            ["lofi", { W: 7 }],
+                            ["haus", w && { W: w }],
+                        ],
+                    },
+                    {}
+                ),
                 w === 7,
             ]),
         ])
@@ -3121,7 +3303,11 @@ hauptLauf(async () => {
             [{ signatur: [] }, "statt"],
             [{ anzeige: 0 }, "Platzhalter"],
         ]) {
-            taeterTest(`FEIND ${JSON.stringify(b)}`, feindVerdict({ ...fG, ...b }).map(([, s]) => s), soll);
+            taeterTest(
+                `FEIND ${JSON.stringify(b)}`,
+                feindVerdict({ ...fG, ...b }).map(([, s]) => s),
+                soll
+            );
         }
         const wandT = erinnerungsWand(
             "class X { f() { this.journalAppend(1, `x ${y}`); this.journalAppend(1, A._datum`${y}`); this.journalAppendOnce(1, 2, z); } }"
@@ -3214,7 +3400,9 @@ hauptLauf(async () => {
             knotenVerdict,
             (km) => {
                 const [kl, kd] = [km.laeufe || {}, km.defaults || {}];
-                const benannt = KNOTEN.filter(([name, , soll, effekt]) => knotenEintragOk(kl[name], soll, effekt)).length;
+                const benannt = KNOTEN.filter(([name, , soll, effekt]) =>
+                    knotenEintragOk(kl[name], soll, effekt)
+                ).length;
                 const kAkte = KNOTEN.reduce((n, [name]) => n + ((kl[name] && kl[name].akte) || []).length, 0);
                 return `${benannt}/${KNOTEN.length} benannt · ${kAkte} Welt-Akte ohne Ort · near_water ohne Radius „${kd.near_water}“ · vorn ohne Abstand ${kd.at_player_forward} m · Bedarf ohne Radius ${kd.at_field_need} m · Mess-Ort ohne Spieler ${JSON.stringify(km.messOrtOhneSpieler)}`;
             },
@@ -3225,7 +3413,11 @@ hauptLauf(async () => {
             out.suche,
             sucheVerdict,
             (sm) =>
-                `${sm.exakt ? `${sm.exakt.falsch} von ${sm.exakt.n} Urteilen abweichend (${sm.exakt.nass} nass)` : "—"} · ${["trinken", "chat", "ki"]
+                `${sm.exakt ? `${sm.exakt.falsch} von ${sm.exakt.n} Urteilen abweichend (${sm.exakt.nass} nass)` : "—"} · ${[
+                    "trinken",
+                    "chat",
+                    "ki",
+                ]
                     .flatMap((p) => [`${p}@trocken`, `${p}@plattform`])
                     .concat(["ki@trocken-voll"])
                     .map(zZeile(sm.zaehlung || {}))

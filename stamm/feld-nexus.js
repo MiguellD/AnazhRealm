@@ -1304,10 +1304,10 @@ class AnazhRealm_feld_nexus {
     // Antwort eine von ihnen, sonst schweigt das Wesen benannt (jeder Anbieter, auch einer ohne erzwungene Form).
     // Liefert dasselbe Response-Shape wie llmCall ({say, program, erinnerung}|{error}).
     async llmCallCreature(creature, userText, { anlass = "", hintergrund = false } = {}) {
-        if (!creature || !creature.userData) return { error: "Keine Kreatur." };
+        if (!creature || !creature.userData) return { error: ["llm.fehler.keine-kreatur"] };
         const gedaechtnis = this._creatureGedaechtnis(creature);
         const personaPrompt = this._buildCreaturePersonaPrompt(creature, gedaechtnis);
-        if (!personaPrompt) return { error: "Persona-Prompt konnte nicht gebaut werden." };
+        if (!personaPrompt) return { error: ["llm.fehler.persona"] };
         const reply = await this.llmCall(userText, personaPrompt + (anlass ? "\n\n" + anlass : ""), {
             hintergrund,
             form: (platz) => this._kiSeeleSchema(gedaechtnis.map(platz)),
@@ -1317,7 +1317,7 @@ class AnazhRealm_feld_nexus {
         if (typeof reply.erinnerung === "string" && gedaechtnis.some((g) => roh(g) === roh(reply.erinnerung)))
             return reply;
         const ist = JSON.stringify(reply.erinnerung === undefined ? null : reply.erinnerung).slice(0, 80);
-        return { error: `antwortete aus keiner Erinnerung seines Gedächtnisses (${ist})` };
+        return { error: ["llm.fehler.keine-erinnerung", { ist }] };
     }
 
     llmBuildContext() {
@@ -1341,7 +1341,7 @@ class AnazhRealm_feld_nexus {
         // VOR der JSON-Suche gestrippt; (2) Markdown-Code-Fences werden extrahiert; (3) Plain-Text ohne
         // JSON (kleine lokale Modelle) → der ganze Text wird say. Strikte JSON-Modelle verlieren nichts.
         if (typeof raw !== "string" || raw.length === 0) {
-            return { error: "Leere Antwort vom Modell (raw=0 chars)" };
+            return { error: ["llm.fehler.leer"] };
         }
         let text = raw.trim();
         // Schritt 1: Reasoning-Tags entfernen
@@ -1383,7 +1383,7 @@ class AnazhRealm_feld_nexus {
             return { say: plainText, program: null, raw, fallbackUsed: "plain-text" };
         }
         return {
-            error: `Modell antwortete, aber Inhalt war leer nach Parsing (raw='${raw.slice(0, 80)}…')`,
+            error: ["llm.fehler.leer-geparst", { roh: raw.slice(0, 80) }],
             raw,
         };
     }
@@ -1955,7 +1955,7 @@ class AnazhRealm_feld_nexus {
             // Key (AIza…) versehentlich im OpenRouter-Feld. Verhindert Save
             // nicht, macht den Fehler aber sofort sichtbar.
             if (def.requiresKey && def.keyPrefix && trimmed && !trimmed.startsWith(def.keyPrefix)) {
-                this.state.llm.lastError = this._t("nexus.schluessel.praefix", { praefix: def.keyPrefix });
+                this.state.llm.lastError = ["nexus.schluessel.praefix", { praefix: def.keyPrefix }];
             } else {
                 this.state.llm.lastError = null;
             }
@@ -1978,7 +1978,7 @@ class AnazhRealm_feld_nexus {
             const def = this.llmProviderDefs()[this.state.llm.provider];
             const cfg = this.state.llm.providerConfig[this.state.llm.provider];
             if (def.requiresKey && (!cfg || !cfg.apiKey)) {
-                this.state.llm.lastError = this._t("nexus.schluessel.erst-speichern");
+                this.state.llm.lastError = ["nexus.schluessel.erst-speichern"];
                 this.llmUpdateStatus();
                 return;
             }

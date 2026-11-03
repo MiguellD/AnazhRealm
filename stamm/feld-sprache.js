@@ -555,7 +555,10 @@ class AnazhRealm_feld_sprache {
                     const natur = this._istNatur({ type: name });
                     return {
                         program: ["spawn_studio", wort, pos, n, seed],
-                        describe: [natur ? "chat.satz.studio-gewachsen" : "chat.satz.studio-gebaut", { n: String(n), was: label, wo }],
+                        describe: [
+                            natur ? "chat.satz.studio-gewachsen" : "chat.satz.studio-gebaut",
+                            { n: String(n), was: label, wo },
+                        ],
                     };
                 },
             },
@@ -1351,7 +1354,8 @@ class AnazhRealm_feld_sprache {
                     : ["feldstimme.nicht-gilt", { bedingung: this._describeDslCondition(e.weil.cond) }]),
         ].filter(Boolean);
         let ursache;
-        if (weil.length) ursache = ["feldstimme.weil", { bedingung: weil.reduce((a, b) => ["tat.wenn.und", { a, b }]) }];
+        if (weil.length)
+            ursache = ["feldstimme.weil", { bedingung: weil.reduce((a, b) => ["tat.wenn.und", { a, b }]) }];
         else if (e.grund) ursache = ["feldstimme.wort", { wort: String(e.grund).slice(0, 60) }];
         else if (e.knoten === "at_field_need") ursache = ["feldstimme.feld-arm"];
         else ursache = ["feldstimme.antrieb"];
@@ -1388,8 +1392,9 @@ class AnazhRealm_feld_sprache {
     _wetterWarum(satz) {
         const t = String(satz || "").trim();
         const frage =
-            /^(?:warum|wieso|weshalb)\b.*\b(?:regn|regen|stürm|sturm|gewitter|nebel|neblig|wolkig|bewölkt|sonn|wetter)/i.test(t) ||
-            /^why\b.*\b(?:rain|storm|thunder|fog|cloud|sun|weather)/i.test(t);
+            /^(?:warum|wieso|weshalb)\b.*\b(?:regn|regen|stürm|sturm|gewitter|nebel|neblig|wolkig|bewölkt|sonn|wetter)/i.test(
+                t
+            ) || /^why\b.*\b(?:rain|storm|thunder|fog|cloud|sun|weather)/i.test(t);
         if (!frage) return null;
         return ["wetter.warum", { wetter: this._wetterZeile(this.state.weather), wer: this._wetterSchreiberZeile() }];
     }

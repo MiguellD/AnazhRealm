@@ -1322,7 +1322,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check }) {
         st.llm.enabled = false;
         return new Promise((resolve) => {
             r.llmCall("test").then((rep) => {
-                out.callBlockedWhenDisabled = rep.error === "LLM nicht aktiv";
+                out.callBlockedWhenDisabled = Array.isArray(rep.error) && r._t(...rep.error) === "LLM nicht aktiv";
                 resolve(out);
             });
         });
@@ -1510,9 +1510,11 @@ async function checkBandWorkshopPolishAndLlm({ page, check }) {
             cfg.model = "foo-not-real";
             st.llm.inFlight = false;
             const reply = await r.llmCall("test");
-            out.errorMentionsModel = /Modell.*nicht gefunden/.test(reply.error || "");
-            out.errorMentionsOllamaList = /ollama list/.test(reply.error || "");
-            out.errorMentionsModelName = /foo-not-real/.test(reply.error || "");
+            // der Fehler ist eine Zeile der Tafel (spielgang.K5#2), gelesen in der Sprache der Seite
+            const fehler = Array.isArray(reply.error) ? r._t(...reply.error) : String(reply.error || "");
+            out.errorMentionsModel = /Modell.*nicht gefunden/.test(fehler);
+            out.errorMentionsOllamaList = /ollama list/.test(fehler);
+            out.errorMentionsModelName = /foo-not-real/.test(fehler);
         } finally {
             window.fetch = origFetch;
         }
@@ -1562,7 +1564,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check }) {
 
         // 7. Komplett leerer Input → klarer Error mit raw-Hinweis
         const emptyResp = r.llmParseResponse("");
-        out.emptyHasError = typeof emptyResp.error === "string" && /raw=0/.test(emptyResp.error);
+        out.emptyHasError = Array.isArray(emptyResp.error) && /raw=0/.test(r._t(...emptyResp.error));
 
         // 8. JSON mit leerem say UND text drumherum → Plain-Text-Fallback nimmt drumherum
         const emptyJsonResp = r.llmParseResponse('Vorab-Text {"say":""} Nach-Text');

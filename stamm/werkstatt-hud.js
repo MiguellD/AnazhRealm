@@ -1405,8 +1405,7 @@ class AnazhRealm_werkstatt_hud {
         const shown = expanded ? ordered : ordered.slice(0, GESTEN_SHOWN);
         const hidden = ordered.length - shown.length;
         const signature =
-            `${list.length}:${expanded ? "E" : "C"}:` +
-            shown.map((a) => `${a.name}:${a.source || "?"}`).join("|");
+            `${list.length}:${expanded ? "E" : "C"}:` + shown.map((a) => `${a.name}:${a.source || "?"}`).join("|");
         if (signature === r.abilitiesSignature) return;
         r.abilitiesSignature = signature;
         const container = r.abilities;

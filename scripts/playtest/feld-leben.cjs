@@ -80,7 +80,10 @@ async function checkBandV1727WritableField({ page, check }) {
         const capD = st.maxCreatures;
         const nD = st.creatures.length;
         st.maxCreatures = nD + 1;
-        out.spawnDeposits = window.__consumes(r, "dslRun", r, "_depositLife", [["spawn_creature", ["at_player"], 1, "happy"], { source: "test" }]);
+        out.spawnDeposits = window.__consumes(r, "dslRun", r, "_depositLife", [
+            ["spawn_creature", ["at_player"], 1, "happy"],
+            { source: "test" },
+        ]);
         if (st.creatures[nD]) r.removeCreature(st.creatures[nD]);
         st.maxCreatures = capD;
         // sauberer Start
@@ -92,7 +95,7 @@ async function checkBandV1727WritableField({ page, check }) {
         out.emptyEqualsFrozen = r.auraAt(X, Z).lebendig === frozen;
         // (2) Deposit HEBT lebendig (min(frozen + pulse, 1)) — im selben Takt exakt, auch wenn die Wanduhr 3 ms läuft (GC, Last):
         r._depositLife(X, Z); // die Feld-Uhr ist `state.spielZeit` (CI 39002548016: die Wanduhr trieb 5e-6 ab, ROT ohne Code-Änderung)
-        for (const t0 = performance.now(); performance.now() - t0 < 3; ); // die Wanduhr läuft, der Takt steht
+        for (const t0 = performance.now(); performance.now() - t0 < 3;); // die Wanduhr läuft, der Takt steht
         const afterDeposit = r.auraAt(X, Z).lebendig;
         out.depositRaises = afterDeposit > frozen;
         out.depositExact = Math.abs(afterDeposit - Math.min(1, frozen + cfg.pulseCenter)) < 1e-6;
@@ -316,10 +319,7 @@ async function checkBandV1742Wohl({ page, check }) {
         "Wertung: das Wohl-Maß — Struktur = lebendig, Erlebt = Valenz (joy + / sorrow − / awe neutral)",
         res.wohlStruktur && res.wohlErlebtValence
     );
-    check(
-        "Wertung: die Feld-Baseline Cold-Start = die erste Beobachtung (keine Überraschung anfangs)",
-        res.coldStart
-    );
+    check("Wertung: die Feld-Baseline Cold-Start = die erste Beobachtung (keine Überraschung anfangs)", res.coldStart);
     check("Wertung: stabiler Input → die Baseline HÄLT (EMA driftet nicht ohne Änderung)", res.stableHolds);
     check(
         "Wertung: ein Sprung → die Baseline TRACKT, aber LAGGT weit darunter (das EMA-Wesen, zeit-korrigiert)",
@@ -576,7 +576,6 @@ async function checkBandWelle6APolish({ page, check }) {
         if (!r || !st.playerVel) return null;
         const out = {};
 
-
         // 6.A2 Diskrimination an eindeutiger Setup-Position (frühere Tests verschieben mesh.position):
         // in der Luft → not grounded, auf gespawntem Bauwerk → grounded.
         const savedX = st.playerMesh.position.x;
@@ -785,8 +784,6 @@ async function checkBandWelle6APolish({ page, check }) {
         delete st.blueprints._t_w6a3_haus;
         st.playerMesh.position.set(_savedX, _savedY, _savedZ);
 
-
-
         return out;
     });
 
@@ -810,9 +807,6 @@ async function checkBandWelle6APolish({ page, check }) {
     // isStable, hit}): das Phantom folgt der Blickrichtung (Pitch wirkt), Tint grün bei stabilem Boden, sonst rot.
     const wave6a45Results = await safeEvaluate(page, () => {
         const out = {};
-
-
-
 
         // Build-Modus auf "stein_block"-Slot 0, Kamera in den Boden schauen lassen, tickBuildMode →
         // Phantom liegt im Treffer-Bereich + isStable=true.
@@ -902,56 +896,49 @@ async function checkBandWelle6APolish({ page, check }) {
         }
     }
 
-    // ### Welle 6.E1 — Fähigkeit-Beschreibung (describeProgram) ###
-    const wave6e1Results = await safeEvaluate(page, () => {
-        const out = {};
-        // Vorlagen-Smoke-Tests
-        out.weatherDesc = r._t(...r.describeProgram(["weather", "rainy"]));
-        out.spawnCreatureDesc = r._t(...r.describeProgram(["spawn_creature", ["at_player"], 3, "happy"]));
-        out.chainDesc = r._t(...r.describeProgram(["chain", ["weather", "sunny"], ["spawn_tree", ["near_player"], 4]]));
-        out.whenDesc = r._t(...r.describeProgram(["when", ["emotion_above", "joy", 0.7], ["skybox_color", "0xffaa00"]]));
-        out.unknownDesc = r._t(...r.describeProgram(["fictional_op", 42]));
-        out.weatherOk = /Wetter/.test(out.weatherDesc) && /Regen/.test(out.weatherDesc);
-        out.creatureOk =
-            /3/.test(out.spawnCreatureDesc) &&
-            /happy/.test(out.spawnCreatureDesc) &&
-            /Spieler/.test(out.spawnCreatureDesc);
-        out.chainOk = /und/.test(out.chainDesc);
-        out.whenOk = /joy/.test(out.whenDesc) && /Himmel/.test(out.whenDesc);
-        out.unknownOk = /fictional_op/.test(out.unknownDesc);
-        // die Beschreibung reist nie im Eintrag (spielgang.K5#2): die Liste liest sie je Zeichnen aus dem Programm, als Zeile
-        // der Tafel am Knoten (sie wechselt mit der Sprache) — auch ein alter Eintrag mit deutschem Text zeigt die Zeile
-        const beforeCount = st.dsl.abilities.length;
-        r.addNewAbility("test_desc_e1", ["weather", "rainy"], "test");
-        const added = st.dsl.abilities.find((a) => a.name === "test_desc_e1");
-        out.persistedOk = !!added && !("description" in added);
-        st.dsl.abilities = st.dsl.abilities.slice(0, beforeCount);
-        delete st.abilities.test_desc_e1;
+    // ### DIE TAT IN WORTEN (spielgang.K5#2; bis dahin je Op ein Wort-Test in sechs Dateien): jedes Op der Tafel ist eine Zeile ###
+    // der Tafel in jeder Sprache, ihre Werte stehen darin, ein fremdes Op heißt sich beim Namen; die Liste der Gesten liest sie
+    const tatResults = await safeEvaluate(page, () => {
+        const C = r.constructor;
+        const W = {
+            creature_task_nearest: ["build", "stein_block"],
+            creature_task_all: ["follow_player", 1.5],
+            creature_apply_boost: [0, "tonic_q"],
+            set_mode: ["pfad"],
+        };
+        const fehl = [];
+        for (const op of [...Object.keys(r._dslDescriptionTable()), "fictional_op"]) {
+            const [k, w] = r.describeProgram([op, ...(W[op] || ["q7", ["at_player"], 3, "happy"])]);
+            const t = ["de", "en"].map((sp) => C._tIn(sp, k, w));
+            // jeder genannte Wert steht in der Zeile (der Auftrag und sein Bauplan, die Distanz, der Trank, das fremde Op)
+            const werte = op === "fictional_op" ? [op] : W[op] ? W[op].filter((x) => x).map(String) : [];
+            if ((k === "tat.wirkt") !== (op === "fictional_op") || !t.every((x) => werte.every((v) => x.includes(v))))
+                fehl.push(op + " → " + t.join(" | "));
+        }
         st.dsl.abilities.push({
-            name: "legacy_test_e1",
+            name: "e1",
             program: ["weather", "sunny"],
             source: "test",
-            description: "alter Text",
+            description: "alt",
             createdAt: 0,
         });
         st.hofGestenExpanded = true;
         r.renderAbilitiesList();
-        const zeilen = [...document.querySelectorAll(".ability-desc")];
-        out.lazyComputed = zeilen.some((d) => d.getAttribute("data-t") === "tat.wetter" && /Wetter/.test(d.textContent));
-        st.dsl.abilities = st.dsl.abilities.filter((a) => a.name !== "legacy_test_e1");
-        return out;
+        const liste = [...document.querySelectorAll(".ability-desc")].some(
+            (d) => d.getAttribute("data-t") === "tat.wetter"
+        );
+        st.dsl.abilities.pop();
+        return { fehl, liste };
     });
-
-    if (wave6e1Results) {
-        check("Welle 6.E1: weather-Op wird beschrieben (Wetter + Wert)", wave6e1Results.weatherOk);
-        check("Welle 6.E1: spawn_creature-Op nutzt count + emotion + position", wave6e1Results.creatureOk);
-        check("Welle 6.E1: chain-Op verbindet Teile mit 'und'", wave6e1Results.chainOk);
-        check("Welle 6.E1: when-Op rendert Condition + Then", wave6e1Results.whenOk);
-        check("Welle 6.E1: unbekannter Op fällt sauber auf Fallback", wave6e1Results.unknownOk);
-        check("Welle 6.E1: addNewAbility trägt keine Beschreibung im Eintrag (die Liste liest das Programm)", wave6e1Results.persistedOk);
+    if (tatResults) {
         check(
-            "Welle 6.E1: die Liste zeigt die Tat als Zeile der Tafel, auch für alte Saves (renderAbilitiesList)",
-            wave6e1Results.lazyComputed
+            "die Tat in Worten: jedes Op eine Zeile der Tafel in de und en, die Werte darin",
+            !tatResults.fehl.length,
+            tatResults.fehl.slice(0, 3).join(" · ")
+        );
+        check(
+            "die Liste der Gesten liest die Tat aus dem Programm (nie den alten Text des Eintrags)",
+            tatResults.liste
         );
     }
 
@@ -1095,8 +1082,7 @@ async function checkBandWelle6APolish({ page, check }) {
         out.weakIsBelowThreshold = weakStrength < 0.7;
 
         // Journal-Counter vor spawn
-        const beforeJournal =
-            st.worldJournal && st.worldJournal.entries ? st.worldJournal.entries.length : 0;
+        const beforeJournal = st.worldJournal && st.worldJournal.entries ? st.worldJournal.entries.length : 0;
         const beforeSeenKeys =
             st.worldJournal && st.worldJournal.seen
                 ? Object.keys(st.worldJournal.seen).filter((k) => k.startsWith("weak_connection:")).length
@@ -1107,15 +1093,13 @@ async function checkBandWelle6APolish({ page, check }) {
             st.worldJournal && st.worldJournal.seen
                 ? Object.keys(st.worldJournal.seen).filter((k) => k.startsWith("weak_connection:")).length
                 : 0;
-        const afterJournal =
-            st.worldJournal && st.worldJournal.entries ? st.worldJournal.entries.length : 0;
+        const afterJournal = st.worldJournal && st.worldJournal.entries ? st.worldJournal.entries.length : 0;
         out.weakJournalIncrement = afterJournal - beforeJournal >= 1;
         out.weakSeenKeyAdded = afterSeenKeys > beforeSeenKeys;
 
         // 6.F2 Idempotenz: zweimal spawnen → kein zweiter Eintrag
         r.spawnArchitecture(weakName, { x: 260, y: 0, z: 260 }, { seed: 2 });
-        const after2Journal =
-            st.worldJournal && st.worldJournal.entries ? st.worldJournal.entries.length : 0;
+        const after2Journal = st.worldJournal && st.worldJournal.entries ? st.worldJournal.entries.length : 0;
         out.weakIsIdempotent = after2Journal === afterJournal;
 
         // Negativ-Kontrolle: starker Bauplan → KEIN weak_connection-Eintrag
@@ -1169,10 +1153,7 @@ async function checkBandWelle6APolish({ page, check }) {
         check("Welle 6.F1: mittlere Verbindung (0.7..1.5) = goldgelb 0xffcc44", wave6fResults.colorOkIsYellow);
         check("Welle 6.F1: starke Verbindung (≥1.5) = grün 0x66ff88", wave6fResults.colorStrongIsGreen);
         check("Welle 6.F1: Bauplan mit Connection erhält THREE.Line im Group", wave6fResults.lineExists);
-        check(
-            "die Gelenk-Linien sind WERKSTATT-Werkzeug — die Welt bleibt rein",
-            wave6fResults.worldClean
-        );
+        check("die Gelenk-Linien sind WERKSTATT-Werkzeug — die Welt bleibt rein", wave6fResults.worldClean);
         check("Welle 6.F1: Line trägt userData.isConnectionLine-Flag", wave6fResults.lineHasUserDataFlag);
         check("Welle 6.F2: weakBauplan hat strength < 0.7 (test-setup korrekt)", wave6fResults.weakIsBelowThreshold);
         check(
@@ -1219,7 +1200,11 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         // sperrte G1 und D2M (n=1159); den Hänger richtet gate:ankunft L2a, hier das Gesetz (Bäume in architectures).
         const istBaum = (a) => typeof a.type === "string" && /^(baum_|stamm_|grown_)/.test(a.type);
         const wald = () =>
-            r._weltbildLuecken(true).filter((l) => /^(pflanzung|bauten)$/.test(l.term)).map((l) => l.satz).join(" · ");
+            r
+                ._weltbildLuecken(true)
+                .filter((l) => /^(pflanzung|bauten)$/.test(l.term))
+                .map((l) => l.satz)
+                .join(" · ");
         out.waldErsterBlick = st.architectures.filter(istBaum).length;
         out.waldLueckeErst = wald();
         for (out.waldTakte = 0; wald() && out.waldTakte < 1500; out.waldTakte++) {
@@ -1357,10 +1342,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         const ufoBuilt = r.parseChatToDsl("rufe ufo hier");
         const ufoProg = ufoBuilt && ufoBuilt.program;
         out.chatUfoProg =
-            Array.isArray(ufoProg) &&
-            ufoProg[0] === "spawn_ufo" &&
-            Array.isArray(ufoProg[1]) &&
-            ufoProg[1][0] === "at";
+            Array.isArray(ufoProg) && ufoProg[0] === "spawn_ufo" && Array.isArray(ufoProg[1]) && ufoProg[1][0] === "at";
 
         return out;
     });
@@ -1546,8 +1528,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         // Werte (Noise nicht-konstant).
         const a1 = r.worldFieldAt(50, 30);
         const a2 = r.worldFieldAt(50, 30);
-        out.fieldDeterministic =
-            Math.abs(a1.lebendig - a2.lebendig) < 1e-9 && Math.abs(a1.dichte - a2.dichte) < 1e-9;
+        out.fieldDeterministic = Math.abs(a1.lebendig - a2.lebendig) < 1e-9 && Math.abs(a1.dichte - a2.dichte) < 1e-9;
         const b1 = r.worldFieldAt(50, 30);
         const b2 = r.worldFieldAt(1000, -1000);
         out.fieldVariesBySamplePos =
@@ -1650,8 +1631,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             for (const a of AFF_AXES) slim[a] = Math.round((tags[a] || 0) * 1e6) / 1e6;
             out.archAffinityTags[n] = slim;
             out.archResoniert[n] = Math.round((tags.resoniert || 0) * 1e6) / 1e6;
-            const aff =
-                r.computeBlueprintAffordances(bp);
+            const aff = r.computeBlueprintAffordances(bp);
             out.archBroadcasting[n] = !!(aff && aff.broadcasting);
         }
         return out;
@@ -2018,13 +1998,9 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             r._pickArchitectureAtCrosshair = () => null;
             const realHit = r._raycastWorldHit(40);
             out.realRaycastHit = !!(realHit && realHit.hit);
-            const matSumBefore = inv
-                .filter((s) => s && s.kind === "material")
-                .reduce((a, s) => a + (s.count || 0), 0);
+            const matSumBefore = inv.filter((s) => s && s.kind === "material").reduce((a, s) => a + (s.count || 0), 0);
             r.tryMouseBreak();
-            const matSumAfter = inv
-                .filter((s) => s && s.kind === "material")
-                .reduce((a, s) => a + (s.count || 0), 0);
+            const matSumAfter = inv.filter((s) => s && s.kind === "material").reduce((a, s) => a + (s.count || 0), 0);
             out.realDigYielded = matSumAfter > matSumBefore;
             for (let i = 0; i < inv.length; i++) inv[i] = invSnapshot[i];
             r._pickArchitectureAtCrosshair = origPick;
@@ -2152,8 +2128,6 @@ async function checkBandV18203Gamma3FeldCharakter({ page, check }) {
             out.totalDeltaMagie = Number(totalDeltaMagie.toFixed(3));
             out.totalDeltaDichte = Number(totalDeltaDichte.toFixed(3));
 
-
-
             // (F9) DOMAIN-WARP: bei gen=3 verschiebt der Warp die Lese-Position.
             // Wir vergleichen: worldFieldAt(x,z) mit warp vs. ohne warp
             // (manuell, mit den ECHTEN Noise-Instanzen).
@@ -2172,7 +2146,6 @@ async function checkBandV18203Gamma3FeldCharakter({ page, check }) {
             const withWarp = n01(fwNoise.lebendigNoise.noise2D(wx * sLeb, wz * sLeb));
             out.warpedMatchesActual = Math.abs(fW.lebendig - withWarp) < 1e-9;
             out.warpChangesValue = Math.abs(noWarp - withWarp) > 1e-6;
-
 
             // (F11) Bei gen<3: warp wird NICHT angewendet (Legacy bleibt clean)
             st.worldMeta.genVersion = 1;
@@ -2201,10 +2174,7 @@ async function checkBandV18203Gamma3FeldCharakter({ page, check }) {
         "(F2) LEGACY gen=1: bit-identisch zu manueller s=0.005-Berechnung (Pre-V18.203)",
         res.legacyBitIdentical === true
     );
-    check(
-        "(F3) GEN=3: Werte verschieden zu Legacy (Frequenz-Fächer aktiv)",
-        res.gen3DiffersFromLegacy === true
-    );
+    check("(F3) GEN=3: Werte verschieden zu Legacy (Frequenz-Fächer aktiv)", res.gen3DiffersFromLegacy === true);
     check("(F4) GEN=3: Werte endlich (kein NaN durch Warp/Fächer)", res.gen3ValuesFinite === true);
     check("(F5) GEN=2 (Γ1-Feuchte-Tor) bleibt Legacy (kein Γ3-Charakter)", res.gen2StaysLegacy === true);
     check(
@@ -2212,15 +2182,19 @@ async function checkBandV18203Gamma3FeldCharakter({ page, check }) {
         res.magieMoreVariable === true
     );
     check("(F9a) Warp ändert den gelesenen Wert (Sample-Position verschoben)", res.warpChangesValue === true);
-    check(
-        "(F9b) Implementierung matched manuelle Warp-Berechnung (bit-identisch)",
-        res.warpedMatchesActual === true
-    );
+    check("(F9b) Implementierung matched manuelle Warp-Berechnung (bit-identisch)", res.warpedMatchesActual === true);
     check("(F11) gen<3: kein Warp angewendet (Legacy clean, kein Drift)", res.legacyNoWarp === true);
 }
 
 module.exports = {
-    checkBandV1721LivingFieldAura, checkBandV1727WritableField, checkBandV1729CreatureTrickle,
-    checkBandV1732SpatialEmotion, checkBandV1742Wohl, checkBandV1744Appraisal, checkBandV1750Klammer,
-    checkBandWelle6APolish, checkBandWelle6GHylomorphism, checkBandV18203Gamma3FeldCharakter,
+    checkBandV1721LivingFieldAura,
+    checkBandV1727WritableField,
+    checkBandV1729CreatureTrickle,
+    checkBandV1732SpatialEmotion,
+    checkBandV1742Wohl,
+    checkBandV1744Appraisal,
+    checkBandV1750Klammer,
+    checkBandWelle6APolish,
+    checkBandWelle6GHylomorphism,
+    checkBandV18203Gamma3FeldCharakter,
 };

@@ -280,7 +280,8 @@ class AnazhRealm_speicher_laden {
                 ? state.wetterWort
                 : null;
         this.state.wetterWunsch = null;
-        this.state.wetterSchreiber = typeof state.wetterSchreiber === "string" ? state.wetterSchreiber.slice(0, 80) : null;
+        this.state.wetterSchreiber =
+            typeof state.wetterSchreiber === "string" ? state.wetterSchreiber.slice(0, 80) : null;
         if (this.state.skybox) this.updateSkyboxWeather();
     }
 
@@ -1059,7 +1060,8 @@ class AnazhRealm_speicher_laden {
     _weltBetreten(snapshot, meta = null, { wechseln = true, aktiv = true, zeugnisA = null, p2pAuto = null } = {}) {
         if (!snapshot || typeof snapshot !== "object") return { ok: false, reason: "kein Snapshot" };
         if (!this._weltWechselSperre && this.state.worldMeta && this.state.worldMeta.worldId) {
-            if (zeugnisA) this.journalAppendOnce(zeugnisA.key, zeugnisA.type || "portal", zeugnisA.zeile);
+            if (zeugnisA)
+                this.journalAppendOnce(zeugnisA.key, zeugnisA.type || "portal", [zeugnisA.schluessel, zeugnisA.werte]);
             this.saveState();
         }
         const wm = snapshot.worldMeta && typeof snapshot.worldMeta === "object" ? snapshot.worldMeta : {};

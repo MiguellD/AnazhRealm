@@ -266,7 +266,15 @@ class AnazhRealm_feld_leben {
 
     // Der Ort eines Positions-Knotens als Zeile der Tafel (ein Wert der Tat-Zeile).
     _describeDslPosition(arg) {
-        const ORT = { at_player: 1, near_player: 1, random_position: 1, near_water: 1, far_player: 1 };
+        const ORT = {
+            at_player: 1,
+            at_player_forward: 1,
+            near_player: 1,
+            random_position: 1,
+            near_water: 1,
+            far_player: 1,
+            at_field_need: 1,
+        };
         const head = Array.isArray(arg) ? arg[0] : null;
         if (head === "at" && arg.length >= 4) return ["tat.ort.at", { x: arg[1], y: arg[2], z: arg[3] }];
         return ORT[head] ? [`tat.ort.${head.replace(/_/g, "-")}`] : ["tat.ort.stelle"];
@@ -279,7 +287,9 @@ class AnazhRealm_feld_leben {
         const a = node.slice(1);
         const w = (i) => String(a[i]);
         if (op === "emotion_above")
-            return a[1] == null ? ["tat.wenn.emotion", { achse: w(0) }] : ["tat.wenn.emotion-ueber", { achse: w(0), n: w(1) }];
+            return a[1] == null
+                ? ["tat.wenn.emotion", { achse: w(0) }]
+                : ["tat.wenn.emotion-ueber", { achse: w(0), n: w(1) }];
         if (op === "fps_below") return ["tat.wenn.fps", { n: w(0) }];
         if (op === "player_y_below") return ["tat.wenn.hoehe", { n: w(0) }];
         if (op === "weather_is") return ["tat.wenn.wetter", { wetter: this._wetterZeile(a[0]) }];
@@ -315,7 +325,8 @@ class AnazhRealm_feld_leben {
             return extra ? [kMit, { ...werte, extra }] : [k, werte];
         };
         return {
-            weather: (a) => (a[0] === "frei" ? ["tat.wetter-frei"] : ["tat.wetter", { wetter: this._wetterZeile(a[0]) }]),
+            weather: (a) =>
+                a[0] === "frei" ? ["tat.wetter-frei"] : ["tat.wetter", { wetter: this._wetterZeile(a[0]) }],
             gravity: (a) => ["tat.schwere", { n: s(a[0]) }],
             terrain_steepness: (a) => ["tat.steilheit", { n: s(a[0]) }],
             terrain_base_height: (a) => ["tat.grundhoehe", { n: s(a[0]) }],
@@ -329,7 +340,10 @@ class AnazhRealm_feld_leben {
             deposit_emotion: (a) => ["tat.praegt-feld", { achse: s(a[0]), ort: pos(a[2]) }],
             spawn_creature: (a) =>
                 a[2]
-                    ? [(a[1] || 1) !== 1 ? "tat.kreaturen-gemuet" : "tat.kreatur-gemuet", { n: n(a[1]), gemuet: s(a[2]), ort: pos(a[0]) }]
+                    ? [
+                          (a[1] || 1) !== 1 ? "tat.kreaturen-gemuet" : "tat.kreatur-gemuet",
+                          { n: n(a[1]), gemuet: s(a[2]), ort: pos(a[0]) },
+                      ]
                     : [(a[1] || 1) !== 1 ? "tat.kreaturen" : "tat.kreatur", { n: n(a[1]), ort: pos(a[0]) }],
             spawn_tree: (a) => [(a[1] || 1) !== 1 ? "tat.baeume" : "tat.baum", { n: n(a[1]), ort: pos(a[0]) }],
             spawn_studio: (a) => {
@@ -1591,7 +1605,9 @@ class AnazhRealm_feld_leben {
         );
         // je Zeile eine Zeile der Tafel (spielgang.K5#2): die Sätze der Welt sind Daten (die DSL spricht Deutsch), der Rahmen die
         // Sprache des Spielers
-        const pad = Object.entries(this.state.padBelegung || AnazhRealm.PAD_BELEGUNG).map(([a, c]) => `${fmt(c)} ${name(a)}`);
+        const pad = Object.entries(this.state.padBelegung || AnazhRealm.PAD_BELEGUNG).map(
+            ([a, c]) => `${fmt(c)} ${name(a)}`
+        );
         return [
             ["hilfe.zeile.sprich", { taste: fmt(kb.chat || AnazhRealm.DEFAULT_KEYBINDINGS.chat) }],
             ["hilfe.zeile.probier", { liste: probier.map(q).join(" · ") }],
@@ -2762,14 +2778,26 @@ class AnazhRealm_feld_leben {
                 "ergebnis.und"
             );
             if (a.gesetzt)
-                return ["ergebnis.teil", { n: String(a.gesetzt), von: String(a.gewollt), art, verb, fehl: String(fehl), gruende }];
+                return [
+                    "ergebnis.teil",
+                    { n: String(a.gesetzt), von: String(a.gewollt), art, verb, fehl: String(fehl), gruende },
+                ];
             const weiter = a.gruende.lichtung || a.gruende.haus || a.gruende.bau || a.gruende.weg || a.gruende.wasser;
             const praes = PRAESENS[a.verb] || "steht";
             return liste.length > 1
                 ? ["ergebnis.mehrere", { art, nichts: [`ergebnis.art.${praes}`], gruende }]
-                : [weiter ? "ergebnis.einzeln-weiter" : "ergebnis.einzeln", { nichts: [`ergebnis.hier.${praes}`], gruende }];
+                : [
+                      weiter ? "ergebnis.einzeln-weiter" : "ergebnis.einzeln",
+                      { nichts: [`ergebnis.hier.${praes}`], gruende },
+                  ];
         });
-        return { satz: kette(saetze.map((z) => ["ergebnis.punkt", { s: z }]), "ergebnis.folge"), kern: kette(saetze, "ergebnis.und") };
+        return {
+            satz: kette(
+                saetze.map((z) => ["ergebnis.punkt", { s: z }]),
+                "ergebnis.folge"
+            ),
+            kern: kette(saetze, "ergebnis.und"),
+        };
     }
 
     // Das Wort des Spielers für ein Werk (Leben-Schau 07.10., V-D8): das Label seines Bauplans bis zum ersten Zusatz („Eiche",
