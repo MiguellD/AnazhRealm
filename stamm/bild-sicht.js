@@ -661,13 +661,22 @@ class AnazhRealm_bild_sicht {
         const himmel = T.pmremTexture(quelle).mul(this._umgebungLicht());
         const [a, b] = AnazhRealm.SPIEGEL.glanzRauheit;
         const N = Object.getPrototypeOf(THREE.InstanceNode);
+        // DIE UNTERE HEMISPHÄRE (schatten.K4, `_rueckstrahlPass`): in der Bestrahlung (r184 reicht die Stufe als Konstante, die
+        // Richtung ist die Normale) ersetzt der gezeichnete Boden den Boden der Atmosphäre — gewichtet mit dem Anteil des
+        // Halbraums unter dem Horizont, den die Fläche sieht, (1 − n.y)/2: der Boden selbst empfängt nichts von sich, die
+        // senkrechte Wand die Hälfte, die Unterseite alles.
+        const unten = this._rueckstrahlUnten();
         class SpiegelUmgebung extends N {
             constructor() {
                 super("vec3");
             }
             setup(builder) {
                 const stufe = builder.context.getTextureLevel ? builder.context.getTextureLevel(this, builder) : null;
-                if (!stufe || stufe.isConstNode === true) return himmel;
+                if (!stufe) return himmel;
+                if (stufe.isConstNode === true) {
+                    const n = builder.context.getUV(this, builder);
+                    return T.max(himmel.add(unten.mul(T.float(1).sub(n.y).mul(0.5))), T.vec3(0));
+                }
                 const clip = L.vp.mul(T.vec4(T.positionWorld, 1));
                 const w = T.max(clip.w, 1e-4);
                 const uv = T.vec2(clip.x.div(w).mul(0.5).add(0.5), T.float(0.5).sub(clip.y.div(w).mul(0.5)));

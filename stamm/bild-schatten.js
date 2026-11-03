@@ -33,6 +33,300 @@ class AnazhRealm_bild_schatten {
         const lichter = csm && csm.lights && csm.lights.length ? csm.lights : dl ? [dl] : [];
         for (const l of lichter) if (l.shadow) l.shadow.needsUpdate = true;
         if (csm && csm._anazhFit) csm._anazhFit.length = 0;
+        // der Wurf des Feuers zeichnet im nächsten Bild an der Lage, die dann gilt (`_lichtWurfTakt`)
+        if (this._lichtWurfK) this._lichtWurfK.neu = true;
+    }
+
+    // ═══ DER RÜCKSTRAHL DES BODENS (schatten.K4) ═══
+    // Am Tag trug nur der Himmel die Umgebung, ihre untere Hälfte der Boden der Atmosphäre: eine weiße Wand im Eigenschatten
+    // neben besonnter Wiese zeigte dieselbe Luma wie vor einer schwarzen Platte (Radeon 5fba36ea: 0,1636 gegen 0,1636). Der
+    // Boden strahlt zurück, was er empfängt — Sonne × cos × Albedo, Himmel × Albedo — und genau das hat der Szenen-Pass
+    // gezeichnet: die STRAHLDICHTE DES GEZEICHNETEN BODENS um das Auge (`umkreisM`, unter dem Auge um `unterAugeM`, die
+    // Fläche waagrecht bis `normalY`, aus der Tiefe), gemittelt über ein Raster von `raster`² Pixeln des Bilds, ist die untere
+    // Hemisphäre der EINEN Umgebung (Frostbite/UE: das Himmels-Licht mit der Farbe der unteren Hemisphäre aus dem Boden).
+    // Ein Ziel 2 × 1: Texel 0 der gemessene Boden (gefolgt mit `folge` je Bild — ohne Boden im Bild hält er), Texel 1 der Boden
+    // der Atmosphäre (die PMREM-Umgebung nach unten in der Stufe der Bestrahlung × das Licht jetzt) — der Stoff ersetzt ihn
+    // (`_spiegelUmgebung`: + (Boden − Atmosphäre) · (1 − n.y)/2, die Bestrahlung einer geneigten Fläche aus dem Halbraum).
+    // Ein Boden aus Albedo 0 trägt nichts zurück. Der Pass läuft nach dem Bild (wie der Spiegel), das nächste liest ihn: EIN
+    // Dreieck in 2 Pixel, eine Kopie.
+    _rueckstrahlLeser() {
+        const st = this.state;
+        if (st.rueckstrahlLeser) return st.rueckstrahlLeser;
+        const T = THREE.TSL;
+        const ziel = (name) => {
+            const rt = new THREE.RenderTarget(2, 1, { type: THREE.HalfFloatType, depthBuffer: false });
+            rt.name = rt.texture.name = name;
+            rt.texture.minFilter = rt.texture.magFilter = THREE.NearestFilter;
+            rt.texture.generateMipmaps = false;
+            return rt;
+        };
+        const rt = ziel("rueckstrahl:boden");
+        st.rueckstrahlLeser = Object.assign(
+            { rt, halt: ziel("rueckstrahl:halt"), tex: T.texture(rt.texture) },
+            this._uniformHeimatTeilen({ an: T.uniform(0) })
+        );
+        return st.rueckstrahlLeser;
+    }
+
+    // Die Strahldichte, die die untere Hemisphäre der Umgebung ändert (rgb, TSL): gemessener Boden − Boden der Atmosphäre.
+    _rueckstrahlUnten() {
+        const T = THREE.TSL;
+        const L = this._rueckstrahlLeser();
+        const boden = L.tex.load(T.ivec2(0, 0)).rgb;
+        const atmo = L.tex.load(T.ivec2(1, 0)).rgb;
+        return boden.sub(atmo).mul(L.an);
+    }
+
+    _rueckstrahlPass() {
+        const st = this.state;
+        if (st.rueckstrahlPass) return st.rueckstrahlPass;
+        const T = THREE.TSL;
+        const { Fn, Loop, If, float, vec2, vec3, vec4, ivec2, uniform, screenUV, select, mix, abs, normalize, cross } =
+            T;
+        const R = AnazhRealm.RUECKSTRAHL;
+        const L = this._rueckstrahlLeser();
+        const tiefe = T.texture(st.scenePass.getTextureNode("depth").value);
+        const farbe = T.texture(st.scenePass.getTextureNode().value);
+        const halt = T.texture(L.halt.texture);
+        const webgpuRaum = st.renderer.coordinateSystem === THREE.WebGPUCoordinateSystem;
+        const U = this._uniformHeimatTeilen({
+            invVP: uniform(new THREE.Matrix4()),
+            auge: uniform(new THREE.Vector3()),
+            folge: uniform(1),
+        });
+        // der Boden der Atmosphäre: dieselbe PMREM-Stufe und dasselbe Licht wie der Himmel jedes Stoffs (`_spiegelUmgebung`)
+        const atmoBoden = T.pmremTexture(st._skyEnvRT.texture, vec3(0, -1, 0), float(1)).mul(this._umgebungLicht());
+        const mat = new THREE.MeshBasicNodeMaterial();
+        mat.name = "rueckstrahl:boden";
+        mat.fog = false;
+        mat.depthTest = false;
+        mat.depthWrite = false;
+        mat.fragmentNode = Fn(() => {
+            const summe = vec3(0).toVar();
+            const n = float(0).toVar();
+            const gr = vec2(tiefe.size());
+            const welt = (px) => {
+                const d = tiefe.load(px).r;
+                const uv = vec2(px).add(0.5).div(gr);
+                const w4 = U.invVP.mul(
+                    vec4(uv.x.mul(2).sub(1), float(1).sub(uv.y).mul(2).sub(1), webgpuRaum ? d : d.mul(2).sub(1), 1)
+                );
+                return vec4(w4.xyz.div(w4.w), d);
+            };
+            Loop(R.raster, R.raster, ({ i, j }) => {
+                const px = ivec2(vec2(float(i), float(j)).add(0.5).div(R.raster).mul(gr.sub(2)));
+                const p = welt(px).toVar();
+                If(p.w.lessThan(0.99999), () => {
+                    const ax = welt(px.add(ivec2(1, 0))).xyz.sub(p.xyz);
+                    const ay = welt(px.add(ivec2(0, 1))).xyz.sub(p.xyz);
+                    const nY = abs(normalize(cross(ax, ay)).y);
+                    const rel = p.xyz.sub(U.auge);
+                    If(
+                        rel.y
+                            .lessThan(-R.unterAugeM)
+                            .and(rel.xz.length().lessThan(R.umkreisM))
+                            .and(nY.greaterThan(R.normalY)),
+                        () => {
+                            summe.addAssign(farbe.load(px).rgb);
+                            n.addAssign(1);
+                        }
+                    );
+                });
+            });
+            const alt = halt.load(ivec2(0, 0)).rgb;
+            const boden = select(n.greaterThan(0), mix(alt, summe.div(n.max(1)), U.folge), alt);
+            return vec4(select(screenUV.x.lessThan(0.5), boden, atmoBoden), 1);
+        })();
+        const pp = st.postProcessing;
+        const Quad = pp && pp._quadMesh && pp._quadMesh.constructor;
+        if (typeof Quad !== "function") throw new Error("RÜCKSTRAHL: Quad der Post-Kette fehlt (Vendor-Drift)");
+        const quad = new Quad(mat);
+        quad.name = "rueckstrahl:boden";
+        st.rueckstrahlPass = { quad, mat, U, vp: new THREE.Matrix4(), laeufe: 0 };
+        return st.rueckstrahlPass;
+    }
+
+    // NACH DEM BILD (`_loopRender`, auf der Post-Kette, neben dem Spiegel): der Pass misst den Boden dieses Bilds in seiner
+    // Ansicht, das nächste Bild liest ihn. Ohne Szenen-Pass oder ohne Umgebung misst niemand (`an` 0): dann trägt kein Stoff
+    // einen gezeichneten Boden — ein Bruch des Passes meldet sich beim EINEN Melder und lässt `an` auf 0.
+    _rueckstrahlZeichne() {
+        const st = this.state;
+        const L = this._rueckstrahlLeser();
+        if (!st.scenePass || !st._skyEnvRT || st.rueckstrahlBruch) {
+            L.an.value = 0;
+            return;
+        }
+        try {
+            const P = this._rueckstrahlPass();
+            const cam = st.camera;
+            P.vp.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+            P.U.invVP.value.copy(P.vp).invert();
+            P.U.auge.value.setFromMatrixPosition(cam.matrixWorld);
+            // springt das Auge, gilt der neue Boden sofort (der erste Lauf, ein Sprung der Zeit-Auflösung)
+            P.U.folge.value = P.laeufe === 0 || (st._traaR && st._traaR.sprung) ? 1 : AnazhRealm.RUECKSTRAHL.folge;
+            const rend = st.renderer;
+            const vor = rend.getRenderTarget();
+            rend.setRenderTarget(L.rt);
+            P.quad.render(rend);
+            rend.setRenderTarget(vor);
+            rend.copyTextureToTexture(L.rt.texture, L.halt.texture);
+            P.laeufe++;
+            L.an.value = 1;
+        } catch (err) {
+            st.rueckstrahlBruch = true;
+            L.an.value = 0;
+            this._stoffBruch(
+                "der Rückstrahl des Bodens (schatten.K4) — die Umgebung trägt unten den Boden der Atmosphäre",
+                err
+            );
+        }
+    }
+
+    // ═══ DER WURF DES FEUERS (schatten.K5) ═══
+    // Das Leuchtquellen-Gesetz wirkt als Pool im Stoff (`_lichtPoolTerm`, K11): je Platz ein Zweig, kein Szenen-Licht, kein
+    // Schatten — ein Pfosten 2 m vom Feuer warf nichts (Radeon 5fba36ea: Kontrast 0,768:1, ohne Pfosten 0,768). Wie RDR2 und
+    // Witcher 3 wirft nur die WICHTIGSTE Quelle im Blick: EIN Platz des Pools (`platz`, die Wahl `_lichtWurfTakt`) trägt den
+    // Faktor seines Würfel-Schattens — r184s `PointShadowNode` (sechs Seiten in eine Würfel-Tiefe, der Vergleich mit PCF) an
+    // einem PointLight, das NIE in der Szene steht (r184 sammelte es in den Licht-Hash jedes Stoffs, K15): sein Knoten lebt
+    // im Pool-Term, die Lage, Reichweite und Farbe bleiben die des Platzes — derselbe Eintrag, kein Zwilling; fern und
+    // unwichtig bleibt der Pool ohne Wurf. Die Würfel-Kamera ist ein Schatten-Pass (`_schattenKameraIndex`: Wurf-Ebene,
+    // Satz- und Werfer-Wahl je Seite wie eine Kaskade) und sieht nur die Werfer bis zur Reichweite; der Kern der Quelle
+    // (`kernM` × `kernAnteil`, ihre nahe Ebene) wirft nicht — die Flamme ist Licht, nie ihr eigener Werfer (die Scheite
+    // lägen sonst als harte Keile auf dem Boden). Die Karte zeichnet nur der Haupt-Pass der Welt-Szene (ein Stoff der
+    // Vorschau oder der Karten-Bühne liest den Pool auch: ihr Bild zeichnete sonst die Würfel-Karte aus der fremden Szene).
+    _lichtWurf() {
+        if (this._lichtWurfK) return this._lichtWurfK;
+        const LW = AnazhRealm.LICHT_WURF;
+        const Basis = THREE.PointShadowNode;
+        if (typeof Basis !== "function" || typeof THREE.PointLight !== "function")
+            throw new Error("LICHT-WURF: THREE.PointShadowNode/PointLight fehlt im Bootstrap (Vendor-Drift)");
+        const licht = new THREE.PointLight(0xffffff, 1, 1, 2);
+        licht.name = "licht:wurf";
+        const sh = licht.shadow;
+        sh.mapSize.set(LW.kartePx, LW.kartePx);
+        sh.bias = LW.bias;
+        sh.normalBias = LW.normalBiasM;
+        sh.radius = LW.weichPx;
+        sh.autoUpdate = false;
+        sh.needsUpdate = false;
+        sh.camera.near = LW.nahM;
+        sh.camera.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
+        const welt = this;
+        class WurfSchatten extends Basis {
+            updateBefore(frame) {
+                if (frame.scene === welt.state.scene) super.updateBefore(frame);
+            }
+        }
+        const knoten = THREE.TSL.nodeObject(new WurfSchatten(licht));
+        // der Faktor im Stoff: ohne Schatten-Karte des Renderers (Holz kienspan) wirft nichts — wie jede Kaskade dort
+        const N = Object.getPrototypeOf(THREE.InstanceNode);
+        class WurfFaktor extends N {
+            constructor() {
+                super("float");
+            }
+            setup(builder) {
+                return builder.renderer && builder.renderer.shadowMap && builder.renderer.shadowMap.enabled === true
+                    ? knoten
+                    : THREE.TSL.float(1);
+            }
+        }
+        this._lichtWurfK = {
+            licht,
+            knoten,
+            faktor: THREE.TSL.nodeObject(new WurfFaktor()),
+            platz: this._uniformHeimatTeilen({ p: THREE.TSL.uniform(-1) }).p,
+            id: null,
+            stand: "",
+            bild: 0,
+            karteBild: -1e9,
+            karten: 0,
+            neu: false,
+            wichtig: 0,
+        };
+        return this._lichtWurfK;
+    }
+
+    // DIE WAHL DES WURFS je Bild (aus `_leuchtTakt`, nach den Plätzen): unter den Plätzen mit Licht (ohne das Licht des Auges,
+    // es folgt der Kamera und trägt nur ohne Himmel) die Quelle mit der größten Wichtigkeit im Bild — die Bestrahlung in
+    // `bezugM` (der Abfall des Gesetzes, wie der Stoff ihn rechnet) × die Fläche ihrer Reichweite im Bild (R / Abstand)²,
+    // ihre Kugel im Frustum —, wichtig erst, wenn sie in `bezugM` mindestens `wichtigAb` des Lichts der Welt trägt (die
+    // waagrechte Bestrahlung der Belichtung, `_belichtungE`: mittags wirft kein Lagerfeuer sichtbar). Die Wahl hält,
+    // solange keine andere um `halten` wichtiger ist. Die Karte zeichnet neu bei neuer Wahl oder Lage (die Lage des Lichts
+    // springt nur mit der Karte: Karte und Abfrage tragen dieselbe Lage) und im Takt `takt` Bilder, wenn in diesem Bild
+    // keine Kaskade zeichnet (die Werfer am Feuer bewegen sich); `platz` trägt den Faktor erst, wenn die Karte steht.
+    _lichtWurfTakt(pool, cam) {
+        const W = this._lichtWurf();
+        const LW = AnazhRealm.LICHT_WURF;
+        const atmo = this.state.atmoUniforms;
+        W.bild++;
+        const F = this._leuchtKegel(cam);
+        const kugel = this._lichtWurfKugel || (this._lichtWurfKugel = new THREE.Sphere());
+        const E = this._belichtungE;
+        const eWelt = E ? 0.2126 * E[0] + 0.7152 * E[1] + 0.0722 * E[2] : 0;
+        const cp = cam.position;
+        let best = -1,
+            bestW = 0,
+            altK = -1,
+            altW = 0;
+        for (let k = 0; k < pool.halter.length; k++) {
+            const q = pool.halter[k];
+            const lage = atmo.lichtLage[k].value;
+            const farbe = atmo.lichtFarbe[k].value;
+            if (!q || !(lage.w > 0) || q.quelle === "auge" || (q.L && q.L.ersatz)) continue;
+            if (!F.intersectsSphere(kugel.set(kugel.center.set(lage.x, lage.y, lage.z), lage.w))) continue;
+            const d = LW.bezugM / lage.w;
+            const eBezug =
+                (0.2126 * farbe.x + 0.7152 * farbe.y + 0.0722 * farbe.z) *
+                Math.pow(LW.bezugM * LW.bezugM + atmo.lichtKern[k].value, -farbe.w / 2) *
+                Math.max(0, 1 - d ** 4) ** 2;
+            if (!(eBezug >= LW.wichtigAb * eWelt)) continue;
+            const ab = Math.max(1, Math.hypot(lage.x - cp.x, lage.y - cp.y, lage.z - cp.z));
+            const w = eBezug * (lage.w / ab) ** 2;
+            if (q.id === W.id) ((altK = k), (altW = w));
+            if (w > bestW) ((best = k), (bestW = w));
+        }
+        if (altK >= 0 && altW * LW.halten >= bestW) ((best = altK), (bestW = altW));
+        W.wichtig = bestW;
+        if (best < 0) {
+            W.id = null;
+            W.platz.value = -1;
+            return;
+        }
+        const q = pool.halter[best];
+        const lage = atmo.lichtLage[best].value;
+        const stand = `${lage.x.toFixed(2)},${lage.y.toFixed(2)},${lage.z.toFixed(2)},${lage.w}`;
+        const kaskadeJetzt = (() => {
+            const csm = this.state.csmNode;
+            const dl = this.state.directionalLight;
+            const lichter = csm && csm.lights && csm.lights.length ? csm.lights : dl ? [dl] : [];
+            return lichter.some((l) => l.shadow && l.shadow.needsUpdate === true);
+        })();
+        const neueWahl = q.id !== W.id;
+        const faellig =
+            neueWahl ||
+            W.neu ||
+            (stand !== W.stand && W.bild - W.karteBild >= LW.takt) ||
+            (!kaskadeJetzt && W.bild - W.karteBild >= LW.takt);
+        if (faellig) {
+            const L = W.licht;
+            L.position.set(lage.x, lage.y, lage.z);
+            L.distance = lage.w;
+            L.updateMatrixWorld(true);
+            const kern = q.L && q.L.kernM > 0 ? q.L.kernM : 0;
+            const nah = Math.max(LW.nahM, kern * LW.kernAnteil);
+            if (L.shadow.camera.near !== nah) {
+                L.shadow.camera.near = nah;
+                L.shadow.camera.updateProjectionMatrix();
+            }
+            L.shadow.needsUpdate = true;
+            W.stand = stand;
+            W.karteBild = W.bild;
+            W.karten++;
+            W.neu = false;
+            W.id = q.id;
+        }
+        // die Karte zeichnet in DIESEM Bild (der Haupt-Pass, `updateBefore`): ab jetzt trägt der Platz ihren Faktor
+        W.platz.value = W.id === q.id ? best : -1;
     }
 
     // ═══ DIE KASKADEN-BOX (W7) ═══
@@ -685,7 +979,12 @@ class AnazhRealm_bild_schatten {
             for (let i = 0; i < csm.lights.length; i++)
                 if (csm.lights[i].shadow && csm.lights[i].shadow.camera === kamera) return i;
         const dl = this.state.directionalLight;
-        return dl && dl.shadow && dl.shadow.camera === kamera ? 0 : -1;
+        if (dl && dl.shadow && dl.shadow.camera === kamera) return 0;
+        // die Würfel-Kamera des Wurfs (`_lichtWurf`) ist der Schatten-Pass hinter den Kaskaden
+        const W = this._lichtWurfK;
+        if (W && W.licht.shadow.camera === kamera)
+            return csm && csm.lights && csm.lights.length ? csm.lights.length : 1;
+        return -1;
     }
 
     // DER SCHATTEN-TAKT je Kaskade (04.10., echte GPU): r184 liest `renderer.shadowMap.needsUpdate` NICHT — der
@@ -778,6 +1077,26 @@ AnazhRealm.SCHATTEN_TAKT = Object.freeze({ nahMax: 2, fernFaktor: 3 });
 // Die Ruhe der Kamera für den Schatten-Takt (_loopShadowUpdate): jedes Element der Welt-Matrix höchstens so weit vom
 // vorigen Frame (Meter bzw. Drehung) — darüber gilt die Kamera als bewegt, die nahe Kaskade folgt jedem Frame.
 AnazhRealm.SCHATTEN_RUHE_EPS = 1e-4;
+// DER RÜCKSTRAHL DES BODENS (schatten.K4, `_rueckstrahlPass`): ein Raster `raster`² über das Bild; Boden ist, was `unterAugeM`
+// unter dem Auge und im `umkreisM` liegt und waagrecht ist (|n.y| > `normalY`); der Messwert folgt je Bild mit `folge`.
+AnazhRealm.RUECKSTRAHL = Object.freeze({ raster: 12, unterAugeM: 0.5, umkreisM: 16, normalY: 0.7, folge: 0.5 });
+// DER WURF DES FEUERS (schatten.K5, `_lichtWurf` · `_lichtWurfTakt`): EIN Platz des Licht-Pools wirft — die Würfel-Karte je
+// Seite `kartePx` (256: 2,3 cm je Texel in 3 m), die nahe Ebene mindestens `nahM`, sonst `kernAnteil` × der Kern der Quelle (der
+// Leib der Flamme wirft nicht); `bias` (Tiefe, negativ: zum Licht) und `normalBiasM` (Welt-Meter längs der Normale, 1,5 Texel in
+// 3 m) halten die Akne; PCF über `weichPx`. Wichtig ist eine Quelle ab `wichtigAb` des Lichts der Welt in `bezugM`, gehalten
+// bis eine andere `halten`-fach wichtiger ist; die Karte zeichnet höchstens je `takt` Bilder neu (nie neben einer Kaskade).
+AnazhRealm.LICHT_WURF = Object.freeze({
+    kartePx: 256,
+    nahM: 0.05,
+    kernAnteil: 0.5,
+    bias: -0.0003,
+    normalBiasM: 0.035,
+    weichPx: 2,
+    bezugM: 2,
+    wichtigAb: 0.25,
+    halten: 1.25,
+    takt: 3,
+});
 // DIE KASKADEN-BOX (_kaskadenPassen): jede Kaskade misst die Frustum-Scheibe im Licht-Raum statt ihrer Diagonale.
 // `texelM` = die Texel-Kante je Kaskade, die die längste Box-Kante bei jeder Blickrichtung hält — die des
 // Addon-Quadrats (k0 339 m / 2048, k1 961 m / 2048): kein Schatten wird gröber als bis V18.529. Die Karten-Größe folgt

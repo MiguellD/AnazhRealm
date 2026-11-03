@@ -1996,7 +1996,16 @@ class AnazhRealm_stoff_material {
     // Boden-Fragment (`werkbank shader --stoff boden`) trägt je Platz `if (Bedingung) { Lambert + GGX } else { 0 }` und kein
     // `select(`. Jedes Fragment zahlt also die Bedingung je Platz (Ort in den Blick-Raum, Abstand, N·L); die BRDF zahlt eine
     // Welle der GPU nur, wenn eines ihrer Fragmente den Zweig nimmt.
+    // DER WURF (schatten.K5, `_lichtWurf`): der Platz `platz` trägt den Faktor seines Würfel-Schattens — EIN Faktor je Fragment,
+    // VOR den Zweigen der Plätze gebaut (`toVar` im Stapel: r184 schreibt einen Knoten, wo er zuerst gebaut wird, Lehre 26 —
+    // im Zweig des ersten Platzes läse jeder spätere Platz die ungerechnete Variable). Außerhalb der Reichweite des Wurfs
+    // rechnet r184s Würfel-Filter nur den Vergleich mit Nah- und Fern-Ebene, keine Abtastung.
     _lichtPoolTerm(Te, atmo, himmel) {
+        const W = this._lichtWurf();
+        return Te.Fn(() => this._lichtPoolSumme(Te, atmo, himmel, W.faktor.toVar(), W.platz))();
+    }
+
+    _lichtPoolSumme(Te, atmo, himmel, wurf, wurfPlatz) {
         const N = Te.normalView;
         const P = Te.positionView;
         let summe = null;
@@ -2023,7 +2032,12 @@ class AnazhRealm_stoff_material {
                 .pow2()
                 .mul(d.mul(d).add(kern).pow(farbe.a.mul(-0.5)));
             const beitrag = farbe.rgb
-                .mul(nl.mul(abst).mul(gewicht))
+                .mul(
+                    nl
+                        .mul(abst)
+                        .mul(gewicht)
+                        .mul(Te.select(wurfPlatz.equal(k), wurf, Te.float(1)))
+                )
                 .mul(this._punktLichtBrdf(Te, N, L, P.negate().normalize(), nl));
             const term = Te.select(bedingung, beitrag, Te.vec3(0));
             summe = summe ? summe.add(term) : term;
