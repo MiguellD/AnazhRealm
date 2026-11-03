@@ -610,6 +610,14 @@ class AnazhRealm_bild_himmel {
             last.m === neu.m &&
             Math.abs(last.h - neu.h) < 0.05;
         if (!force && last && (gleich || (!sprung && seit >= 0 && seit < AnazhRealm.SKY_ENV_REGEN_MIN_MS))) return true;
+        // DIE LEINE FRAGT DIE UMGEBUNG (wie das Bild und die Karte, `_gpuLeineStraff`): Equirekt, PMREM und Rücklesung sind
+        // GPU-Arbeit — an gespannter Leine wartet die fällige Neuzeichnung auf den nächsten freien Takt (die Umgebung davor gilt
+        // weiter), nur der Zwang, der Sprung der Uhr und der erste Bedarf (noch keine Umgebung) gehen an ihr vorbei; das Bild des
+        // freien Takts bindet sie mit an (`_atmoTakt`: die Leine zählt Takte, nie Pässe). Bis zur
+        // Nachbesserung zeichnete sie neben der Leine: im Zeitraffer der Szene (affekt.K2#1, swiftshader, Mess-Wiese, 3 × 18 000
+        // Takte) stauten sich je 0,5 Welt-Sekunden ein PMREM und eine Rücklesung ohne Bild dazwischen, bis der dritte Lauf in
+        // seinen ersten 1 500 Takten 599 ms je Takt am Stau der GPU hing (744 s statt 83 s; die Farm am Deckel 2 400 s).
+        if (!force && !sprung && last && this._gpuLeineStraff()) return true;
         try {
             // Null-Renderer (headless): kein Pass, kein PMREM — die Equirekt-Tafel ist die Umgebung (ungezeichnet).
             if (st.renderer._isHeadlessNull) {
@@ -1042,7 +1050,11 @@ class AnazhRealm_bild_himmel {
         // DIE EINE ATMOSPHÄRE (D3): der Durchlass zur Sonne EINMAL je Anwendung (das Richtlicht), die Tafeln im Takt ihrer
         // Änderung (Medium, Stufe der Sonne, Mond, Auge) — Kuppel, Umgebung und Luft lesen dieselbe Himmels-Sicht.
         const atm = this._atmoSonne(sunDir.y);
-        this._atmoTakt(sunDir, moonDir, tint);
+        // Ein Sprung des Himmels (`_himmelSprung`, gesetzt vom Uhr-Schreiber) zeichnet Tafeln und Umgebung EINMAL sofort — an
+        // der Raten-Drossel und an der Leine vorbei.
+        const sprung = this._himmelSprung === true;
+        this._himmelSprung = false;
+        this._atmoTakt(sunDir, moonDir, tint, sprung);
         this._dayNightApplySkybox(tint);
         this._dayNightApplyStarField(achse, tint.skyMul);
         this._dayNightApplyDirectionalLight(sunDir, tint, moonDir, atm, achse);
@@ -1052,10 +1064,7 @@ class AnazhRealm_bild_himmel {
         // DIE HIMMELS-UMGEBUNG malt sich aus BEIDEN Quellen, die jetzt gelten — dem Zenit (die Skybox-Tönung, oben) und dem
         // Horizont (die Luft-Farbe, eben): erst danach, und vor jedem Leser ihrer Bestrahlung (Wasser, Belichtung). Bis K10
         // malte `_dayNightApplySkybox` sie vor der Luft — die Nacht nach einem Sprung trug den Horizont des Tags (intern
-        // gedrosselt: regeneriert nur bei Farb-Drift; ein Einmal-Fehlschlag versucht es nicht erneut). Ein Sprung des Himmels
-        // (`_himmelSprung`, gesetzt vom Uhr-Schreiber) geht an der Raten-Drossel vorbei, EINMAL.
-        const sprung = this._himmelSprung === true;
-        this._himmelSprung = false;
+        // gedrosselt: regeneriert nur bei Farb-Drift; ein Einmal-Fehlschlag versucht es nicht erneut).
         if (!this.state._skyEnvFailed) this._ensureSkyEnvironment(false, sprung);
         this._dayNightApplyWaterMaterials(lightDir);
         this._dayNightApplyBelichtung(achse);
@@ -1816,7 +1825,7 @@ class AnazhRealm_bild_himmel {
     // Höhe des Auges (10 m) und dem Medium — Kosten an Änderung (Gebot 7). Das Licht jetzt (E0) und der Mond in Einheiten von
     // E0 sind Uniforms der Leser: ihr stetiger Gang über den Tag zeichnet keine Tafel (bis zur Nachbesserung trug der Schlüssel
     // E0 auf 4 Stellen — am Abend 60 von 60 Frames eine neue Himmels-Sicht). Der Null-Renderer zeichnet nichts.
-    _atmoTakt(sunDir, moonDir, tint) {
+    _atmoTakt(sunDir, moonDir, tint, sprung = false) {
         const st = this.state;
         const A = this._atmoLutBau();
         const U = A.U;
@@ -1855,6 +1864,17 @@ class AnazhRealm_bild_himmel {
         const schluessel = `${s ? s.winkel : 0}:${h}:${A.mediumBeta}`;
         const rend = st.renderer;
         if (!rend || rend._isHeadlessNull || !st.rendererReady) return A;
+        // DIE LEINE FRAGT DIE TAFELN (wie das Bild, die Karte und die Umgebung, `_gpuLeineStraff`): an gespannter Leine zeichnet
+        // der Takt kein Bild, und seine Tafeln und die Horizont-Karte warten mit ihm — ihre Schlüssel bleiben alt, der nächste
+        // freie Takt zeichnet sie vor seinem Bild; nur der Anker, der Sprung der Uhr und der ERSTE Bedarf der Umgebung (noch keine
+        // gezeichnet: ohne frische Tafeln entstünde sie nie) gehen vorbei. Bis zur Nachbesserung zeichneten sie neben der Leine:
+        // im Zeitraffer der Szene (affekt.K2#1, swiftshader, Mess-Wiese) hing der dritte Lauf nach der Umgebung noch 300 s in einem
+        // Block von 1 500 Takten an `_atmoZeichne`. Sie binden sich NIE selbst an: ein freier Takt zeichnet sein Bild, und dessen
+        // Bindung (`_gpuLeineAnlegen`, onSubmittedWorkDone) deckt jede vorher abgeschickte Arbeit — die Leine zählt Takte, nie
+        // Pässe. Banden sie sich selbst an (w4-affekt 7105403d), nahmen Tafeln und Umgebung im freien Takt beide Plätze der Leine,
+        // ehe der Karten-Takt fragte: die Karte begann nie (gate:kamera-leib, swiftshader, Mess-Wiese: 15 Karten und 494 Bauten
+        // standen nach 600 s offen, das Weltbild nie; main 0 nach 215 s).
+        if (!anker && !sprung && st._skyEnvLast && this._gpuLeineStraff()) return A;
         if (!A.tafelnFrisch) {
             this._atmoZeichne(A.qT, A.rtT);
             this._atmoZeichne(A.qMS, A.rtMS);

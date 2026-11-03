@@ -1409,12 +1409,13 @@ class AnazhRealm_kreatur_leben {
         const eventHint = isMaxLevel
             ? `Du hast gerade die HÖCHSTE Stufe (5) als ${kind === "gather" ? "Sammler" : "Bauer"} von „${AnazhRealm._datum(key)}" erreicht. Drücke aus, was dieser Meisterschafts-Moment in dir auslöst — und biete ggf. eine Welt-Aktion an, die zu deiner Freude passt.`
             : `Du hast eine NEUE Stärke entwickelt: ${kind === "gather" ? "Sammler" : "Bauer"} von „${AnazhRealm._datum(key)}" (Stufe ${newLevel}). Drücke diesen Wachstums-Moment aus — und biete ggf. eine Welt-Aktion an, die diesen neuen Pfad feiert.`;
-        const personaPrompt = this._buildCreaturePersonaPrompt(creature);
-        if (!personaPrompt) return false;
-        const fullPrompt = personaPrompt + "\n\n" + eventHint;
         const name = creature.userData.name || "Wesen";
-        // Async-Call ohne await — V3 lebt mit Eventual-Render
-        this.llmCall("(Selbst-Reflexion: bedeutsamer Moment.)", fullPrompt, { hintergrund: true })
+        // Async-Call ohne await — V3 lebt mit Eventual-Render; derselbe Weg wie das Gespräch (`llmCallCreature`: das
+        // Gedächtnis, die Antwort-Form der Seele und die Prüfung gegen das Gedächtnis), der Moment als Anlass
+        this.llmCallCreature(creature, "(Selbst-Reflexion: bedeutsamer Moment.)", {
+            anlass: eventHint,
+            hintergrund: true,
+        })
             .then((reply) => {
                 if (!reply || reply.error) return;
                 if (reply.say) {
@@ -3114,6 +3115,34 @@ AnazhRealm.ERINNERUNG_SATZ = Object.freeze({
     rejected_action: () => "schlug eine Tat vor, die der Schöpfer verwarf",
     accepted_action: () => "sah meinen Vorschlag vom Schöpfer angenommen",
     auto_executed_action: () => "veränderte die Welt für den Schöpfer",
+});
+// DAS GEWICHT EINER ERINNERUNG (KI K3): wie bedeutsam ein Typ dem Wesen ist — der Abruf des Gedächtnisses
+// (`_creatureGedaechtnis`) wählt aus den 30 Erinnerungen die 8 mit Gewicht + Frische, das Bedeutsamste zuerst (der Abruf
+// der Generative Agents: Wichtigkeit × Aktualität). Die Taten des Schöpfers am Wesen wiegen voll, die Arbeit mittel; das
+// Gespräch selbst (0) ist kein Erlebnis — seine Zeile trägt nicht, was gesagt wurde, der Abruf übergeht es (der Hof zeigt es
+// weiter). Bis KI K3 (03.11.) war „sprach den Schöpfer von selbst an" nach einer Gabe die jüngste Zeile, und das Wesen
+// erzählte sie statt der Gabe und erfand ihren Inhalt (qwen3:4b-instruct, 3 von 4 Gaben: „das war mein erster Satz").
+AnazhRealm.ERINNERUNG_GEWICHT = Object.freeze({
+    geschlagen: 1,
+    gefuettert: 1,
+    gefolgt: 1,
+    accepted_action: 0.8,
+    rejected_action: 0.8,
+    no_inventory_for_build: 0.7,
+    auto_executed_action: 0.7,
+    built: 0.6,
+    delivered: 0.6,
+    gathered: 0.4,
+    took_materials: 0.4,
+    drank: 0.3,
+    no_material: 0.3,
+    no_blueprint: 0.3,
+    no_water: 0.3,
+    proposed_action: 0.3,
+    proposal_blocked: 0.3,
+    spoken_rare_event: 0,
+    spoken: 0,
+    spoke_proactive: 0,
 });
 // W-D/M-F1 (V18.170, R-017) — der Min-Abstand frischer Kreatur-Spawns zum
 // Spieler (die M6-Struktur-Klemme aufs Wesen; Restore/Peer-Sicht = precise).
