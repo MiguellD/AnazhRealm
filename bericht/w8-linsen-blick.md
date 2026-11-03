@@ -8,7 +8,7 @@ Spiel-Zweig `w8-linsen-blick` (von main 8e6262cc), pm-Zweig `w8-linsen-blick-pm`
 - Schnitt: die Bänder tragen 2·5·10·20·40 als Kanten (Spiel), `wieseRinge` summiert je Ring des Gesetzes, ein Ring ohne Kanten
   ist UNGEMESSEN (pm); Mutante „die Bänder des Radius" ROT beim Namen, „der Radius im Ring 10–20 m" GRÜN.
 - Am main 8e6262cc (pm-Linse): 10–20 und 20–40 UNGEMESSEN beim Namen (die Bänder 0/2/5/10/14/30/80/200 tragen die festen Ringe nicht).
-- Zahl (Radeon, Zweig 006ca421): LAI 2–5 2,42 · 5–10 2,24 · 10–20 1,87 · 20–40 1,07 — ROT: die Wiese dünnt jenseits 20 m aus
+- Zahl (Radeon, Zweig 717cac2e): LAI 2–5 2,42 · 5–10 2,24 · 10–20 1,87 · 20–40 1,07 — ROT: die Wiese dünnt jenseits 20 m aus
   (der Verlauf (14/d)^4 von w4-gras-saum), das ist ein Spiel-Fund.
 - Der Verdecker „Mesh in 3,98 m" (d880c8e8, nach mensch.K4#1) war am Kopf nicht nachzustellen; die Kamera-Linse nennt einen
   Verdecker ohne Namen jetzt beim Namen seines Trägers (`_taeterKlasse`, scripts/lib/kamera-nah.cjs).
@@ -19,10 +19,11 @@ Spiel-Zweig `w8-linsen-blick` (von main 8e6262cc), pm-Zweig `w8-linsen-blick-pm`
   (sie zieht nur sichtbare Glieder), die Wahl der Linse ist ein Gesetz (`bundles(waehlt)`).
 - Die Schwellen der Linse (0,3/0,6) erreichten die Wahl nie: `_baumGrenzen` hielt die Grenzen des letzten Schirms
   (stamm/vegetation-streu.js `_stufenSchirm`), und die Hysterese in Metern der Wahrnehmung (3,4) hielt die Fichte aus 8 m auf L0.
-  Schnitt: die Grenzen folgen den Schwellen; die Linse urteilt die Bäume 40 m um das Auge sofort am Abstand ohne Zustand.
+  Schnitt: die Grenzen folgen den Schwellen, eine neue Epoche wählt die Bäume 60 m um das Auge am Abstand ohne Zustand
+  (stamm/siedlung-bauten.js `_tickArchitectureLOD`); die Decke zahlt (scripts −1 Atom).
   Beweis: das Exemplar steht im Karten-Schuss auf L2 (`fimp:atlas:L2` am Fuß, vorher L0 gegen L0 — ein falsches Grün 1,06).
 - Fichte und Tanne am Exemplar nächst dem Dorf (`--ort dorf`): der kalte Gang zur Mess-Wiese trug 18,1 s im 45-s-Deckel.
-- Zahl (Radeon, Zweig 006ca421, 0,58 min im 45-s-Deckel): fichte 1,047 · 0,999 · 1,061 · tanne 0,973 · 1,087 · 1,149 · ring 1 ·
+- Zahl (Radeon, Zweig 717cac2e, 0,53 min im 45-s-Deckel): fichte 1,041 · 1,002 · 1,063 · tanne 0,983 · 1,084 · 1,152 · ring 1 ·
   0,998 · 1 — ROT allein an tanne@0,05 (die Karte der Tanne nachts 15 % heller als ihre Gestalt): ein Spiel-Fund. Am main 8e6262cc
   bleibt sie „kein Pixel" (die Heilung liegt im Spiel-Zweig).
 
