@@ -2038,7 +2038,7 @@ async function checkBandTodZensus({ page, check }) {
                 "journalAppend",
                 (alt) =>
                     function (typ, text, ...rest) {
-                        if (/fällt an dich zurück/.test(String(text))) lastJournal++;
+                        if (Array.isArray(text) && text[0] === "journal.last-zurueck") lastJournal++;
                         return alt.call(this, typ, text, ...rest);
                     }
             );

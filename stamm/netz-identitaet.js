@@ -267,7 +267,7 @@ class AnazhRealm_netz_identitaet {
                 this.journalAppendOnce(
                     "vibepass:genesis",
                     "ritual",
-                    AnazhRealm._datum`Der Avatar empfing seinen Vibe-Pass — eine souveräne Identität, ein Schlüssel, der nur ihm gehört (${vp.fingerprint}).`,
+                    ["journal.vibepass-genesis", { abdruck: vp.fingerprint }],
                     { fingerprint: vp.fingerprint }
                 );
             }
@@ -332,7 +332,7 @@ class AnazhRealm_netz_identitaet {
         }
         const tag = (this.state.vibePass.publicKeyHex || "pass").slice(0, 12);
         this.triggerStateDownload(obj, `anazh-vibe-pass-${tag}.json`);
-        this.journalAppend("ritual", "Ich sicherte meinen Vibe-Pass — den Schlüssel meiner Identität.");
+        this.journalAppend("ritual", ["journal.vibepass-gesichert"]);
         return obj;
     }
 
@@ -377,10 +377,7 @@ class AnazhRealm_netz_identitaet {
         try {
             await this._adoptVibePassJwk(jwk, parsed.createdAt, false);
             this._persistVibePass();
-            this.journalAppend(
-                "ritual",
-                AnazhRealm._datum`Ein Vibe-Pass wurde wiederhergestellt — meine Identität ist nun ${this.state.vibePass.fingerprint}.`
-            );
+            this.journalAppend("ritual", ["journal.vibepass-wieder", { abdruck: this.state.vibePass.fingerprint }]);
             this._renderVibePassUI();
             this.log(`Vibe-Pass wiederhergestellt: ${this.vibePassId()}`, "INFO");
             return { ok: true, id: this.vibePassId() };
@@ -455,13 +452,13 @@ class AnazhRealm_netz_identitaet {
         fp.className = "vibe-pass-fingerprint";
         fp.setAttribute("translate", "no");
         fp.textContent = vp.fingerprint;
-        fp.title = this._t("pass.schluessel-id", { hex: vp.publicKeyHex });
+        fp.title = `ed25519:${vp.publicKeyHex}`;
         body.appendChild(fp);
 
         const idEl = document.createElement("div");
         idEl.className = "vibe-pass-id";
         idEl.setAttribute("translate", "no");
-        idEl.textContent = this._t("pass.schluessel-id", { hex: vp.publicKeyHex });
+        idEl.textContent = `ed25519:${vp.publicKeyHex}`;
         body.appendChild(idEl);
 
         if (vp.createdAt) {
@@ -570,7 +567,7 @@ class AnazhRealm_netz_identitaet {
         // leer, sonst Überträger eines empfangenen + weiterveränderten Werks).
         this._appendProvenance(bp, vp.publicKeyHex);
         this.saveState();
-        this.journalAppend("ritual", AnazhRealm._datum`Ich versiegelte „${bp.label || name}" mit meinem Vibe-Pass.`, {
+        this.journalAppend("ritual", ["journal.versiegelt", { werk: bp.etikett || bp.label || name }], {
             blueprint: name,
         });
         return { ok: true, authorPubKey: bp.authorPubKey };
@@ -678,9 +675,7 @@ class AnazhRealm_netz_identitaet {
     async empfangeWerk(code, opts = {}) {
         const W = AnazhRealm.WERK_CODE;
         const ab = (grund) => {
-            this._spielerSagt(
-                this._t("pass.werk.abgewiesen", { grund: String(W.grund[grund.split(":")[0]]), code: grund })
-            );
+            this._spielerSagt(["pass.werk.abgewiesen", { grund: String(W.grund[grund.split(":")[0]]), code: grund }]);
             return { ok: false, grund };
         };
         if (typeof code !== "string" || !code.startsWith(W.praefix)) return ab("kein_code");
@@ -744,19 +739,16 @@ class AnazhRealm_netz_identitaet {
             .map((k) => k.replace(/[^\w-]/g, "?").slice(0, 24));
         if (fremd.length)
             this.log(`Geteiltes Werk: fremde Felder der Hülle ignoriert (must-ignore): ${fremd.join(", ")}`, "INFO");
-        this.journalAppend(
-            "witness",
-            AnazhRealm._datum`Ich empfing ein geteiltes Werk von ${this._vibeFingerprint(h.autor)}.`,
+        this.journalAppend("witness", ["journal.werk-empfangen", { von: this._vibeFingerprint(h.autor) }], {
+            name: ziel,
+        });
+        this._spielerSagt([
+            "pass.werk.steht",
             {
-                name: ziel,
-            }
-        );
-        this._spielerSagt(
-            this._t("pass.werk.steht", {
                 werk: String(this._werkLabel(ziel)),
                 autor: String(this._vibeFingerprint(h.autor)),
-            })
-        );
+            },
+        ]);
         return { ok: true, id: steht.id, name: ziel, autor: h.autor, fremd };
     }
 
@@ -768,12 +760,13 @@ class AnazhRealm_netz_identitaet {
         if (!addr) return ab("adresse");
         if (!addr.sig) return ab("unsigniert");
         if ((await this.verifyWorldAddress(addr)) !== "valid") return ab("signatur");
-        this._spielerSagt(
-            this._t("pass.welt.trete-bei", {
+        this._spielerSagt([
+            "pass.welt.trete-bei",
+            {
                 welt: String(addr.label),
                 autor: String(this._vibeFingerprint(addr.authorPubKey)),
-            })
-        );
+            },
+        ]);
         const res = await this._weltBeitritt(addr, { slugHint: opts.slugHint || addr.label });
         return res.ok ? { ok: true, welt: res.worldId, autor: addr.authorPubKey } : ab("beitritt:" + res.reason);
     }
@@ -2175,10 +2168,10 @@ class AnazhRealm_netz_identitaet {
         this._saveRevokedKeys();
         const purged = this._purgeRevokedArtifacts();
         if (!opts.silent && typeof this.journalAppend === "function") {
-            this.journalAppend(
-                "ritual",
-                AnazhRealm._datum`Ich rief einen Schlüssel zurück (${this._vibeFingerprint(norm)}) — ${purged} Artefakt(e) ausgestoßen.`
-            );
+            this.journalAppend("ritual", [
+                "journal.schluessel-zurueck",
+                { abdruck: this._vibeFingerprint(norm), n: purged },
+            ]);
         }
         return { ok: true, key: norm, purged };
     }
@@ -2342,7 +2335,7 @@ class AnazhRealm_netz_identitaet {
         };
         this._appendProvenance(this.state.signedWorlds[key], vp.publicKeyHex);
         this._saveSignedWorlds();
-        this.journalAppend("ritual", AnazhRealm._datum`Ich veröffentlichte die ${entry.label} mit meinem Vibe-Pass.`, {
+        this.journalAppend("ritual", ["journal.veroeffentlicht", { welt: this._weltNameZeile(entry) }], {
             world: key,
         });
         return { ok: true, authorPubKey: vp.publicKeyHex };

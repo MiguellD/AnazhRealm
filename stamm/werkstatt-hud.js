@@ -185,28 +185,28 @@ class AnazhRealm_werkstatt_hud {
         if (this._chatCommandHelpCache) return this._chatCommandHelpCache;
         const dslExamples = this.chatDslPatterns.map((p) => p.example);
         this._chatCommandHelpCache = [
-            { title: "Welt-Effekte (DSL)", commands: dslExamples },
+            { title: "hilfe.gruppe.dsl", commands: dslExamples },
             {
-                title: "Welt-Triggers",
+                title: "hilfe.gruppe.trigger",
                 commands: ["Spawne neue Welt", "Boden nicht sichtbar"],
             },
             {
-                title: "Fähigkeiten",
+                title: "hilfe.gruppe.faehigkeiten",
                 commands: [
                     "Lerne Fähigkeit farbwechsel Ändere Farbe von Kreaturen zu blau",
                     "Führe Fähigkeit aus farbwechsel",
                 ],
             },
             {
-                title: "Multisensorik",
+                title: "hilfe.gruppe.sinne",
                 commands: ["Aktiviere Anazh-Symphonie"],
             },
             {
-                title: "Spieler-Seele",
+                title: "hilfe.gruppe.seele",
                 commands: ["Werde Mensch", "Werde Wolf", "Werde Hirsch"],
             },
             {
-                title: "Bauwerke (Ring 6)",
+                title: "hilfe.gruppe.bauwerke",
                 commands: [
                     "Baue Dorf hier",
                     "Baue Tempel hier",
@@ -217,7 +217,7 @@ class AnazhRealm_werkstatt_hud {
                 ],
             },
             {
-                title: "System / Persistenz",
+                title: "hilfe.gruppe.system",
                 commands: [
                     "Speichere Zustand",
                     "Lade Zustand",
@@ -228,7 +228,7 @@ class AnazhRealm_werkstatt_hud {
                 ],
             },
             {
-                title: "Self-Heal",
+                title: "hilfe.gruppe.heilung",
                 commands: ["Behebe Physik-Tunneling", "Optimiere Physik"],
             },
         ];
@@ -264,13 +264,14 @@ class AnazhRealm_werkstatt_hud {
             // .emotion.<axis>) zeigt die Farbe direkt neben dem Namen.
             // eine Achse der sechs liest ihre Zeilen der Tafel (`gefuehl.*`); eine fremde Achse aus einem alten Stand trägt
             // ihren rohen Namen (sie ist Inhalt des Stands, keine Zeile der Welt)
-            const wort = AnazhRealm.EMOTION_LABEL[axis] ? this._t(AnazhRealm.EMOTION_LABEL[axis]) : axis;
-            row.title = AnazhRealm.EMOTION_WIRKT[axis]
-                ? `${wort} — ${this._t(AnazhRealm.EMOTION_WIRKT[axis])}`
-                : `${wort} — `;
+            // die Zeilen tragen ihren Schlüssel am Knoten (`_tSetze`): der Wechsel der Sprache liest sie neu
+            const wort = AnazhRealm.EMOTION_LABEL[axis] ? [AnazhRealm.EMOTION_LABEL[axis]] : axis;
+            const wirkt = AnazhRealm.EMOTION_WIRKT[axis] ? [AnazhRealm.EMOTION_WIRKT[axis]] : "";
+            this._tSetze(row, "hud.gefuehl-titel", { wort, wirkt }, "title");
             const name = document.createElement("span");
             name.className = "name";
-            name.textContent = wort;
+            if (Array.isArray(wort)) this._tSetze(name, wort[0]);
+            else name.textContent = wort;
             const bar = document.createElement("span");
             bar.className = "bar";
             const fill = document.createElement("div");
@@ -872,7 +873,7 @@ class AnazhRealm_werkstatt_hud {
                         onClick: () => this._omniboxExecute(r),
                     },
                     this._el("span", { class: "omnibox-kind", text: r.kindLabel }),
-                    this._el("span", { class: "omnibox-label", text: r.label }),
+                    this._el("span", { class: "omnibox-label", text: r.label, translate: r.befehl ? false : null }),
                     r.sub ? this._el("span", { class: "omnibox-sub", text: r.sub }) : null
                 )
             );
@@ -955,7 +956,8 @@ class AnazhRealm_werkstatt_hud {
                         out.push({
                             kindLabel: this._t("hud.befehl"),
                             label: cmd,
-                            sub: g.title,
+                            befehl: true, // ein Befehl der Eingabe-Grammatik: der Spieler tippt ihn so — Daten, keine Sprache
+                            sub: this._t(g.title),
                             run: () => this.processChatCommand(cmd),
                         });
                 }
@@ -1173,8 +1175,8 @@ class AnazhRealm_werkstatt_hud {
         handle.className = `resize-handle resize-${corner}`;
         // W-A (V18.165, Korpus R-001): die Konsole wächst nach OBEN (bottom-Anker) —
         // der Griff sagt es jetzt (Titel + sichtbare Ecken-Affordanz im CSS).
-        handle.setAttribute("title", corner === "tr" ? this._t("hud.groesse-ziehen") : this._t("hud.groesse-default"));
-        handle.setAttribute("aria-label", this._t("hud.groesse-aendern"));
+        this._tSetze(handle, corner === "tr" ? "hud.groesse-ziehen" : "hud.groesse-default", null, "title");
+        this._tSetze(handle, "hud.groesse-aendern", null, "aria-label");
         container.appendChild(handle);
 
         // Container-ID für Persistence (entweder #id oder data-drawer)
@@ -2290,7 +2292,7 @@ class AnazhRealm_werkstatt_hud {
             row.dataset.action = action;
             const label = document.createElement("span");
             label.className = "keybind-label";
-            label.textContent = this._t(AnazhRealm.KEYBINDING_LABELS[action]);
+            this._tSetze(label, AnazhRealm.KEYBINDING_LABELS[action]);
             row.appendChild(label);
             for (const art of ["keybind-rebind", "keybind-rebind keybind-pad"]) {
                 const pad = art !== "keybind-rebind";

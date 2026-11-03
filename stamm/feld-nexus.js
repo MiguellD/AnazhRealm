@@ -1397,10 +1397,10 @@ class AnazhRealm_feld_nexus {
         // Ohne Schlüssel schwieg der Chat ganz (die Stimme war an, der Satz verschwand): der Fehler von `llmCall` nennt ihn.
         // Welle 6.X.4 F1 V8.13 — Begleiter-Name in Chat-Output statt hardcoded.
         const compName = (this.state.grok && this.state.grok.companionName) || "Grok";
-        appendChatOutput(this._t("nexus.denkt-nach", { name: compName }));
+        appendChatOutput(["nexus.denkt-nach", { name: compName }]);
         const reply = await this.llmCall(userText);
         if (reply.error) {
-            appendChatOutput(this._t("nexus.schweigt", { name: compName, fehler: reply.error }));
+            appendChatOutput(["nexus.schweigt", { name: compName, fehler: reply.error }]);
             this.llmUpdateStatus();
             return true;
         }
@@ -1421,15 +1421,16 @@ class AnazhRealm_feld_nexus {
             // per Default, whitelist-gesichert); ihre Fitness läuft über das Lebens-Fenster, NICHT über den
             // 5-s-Gesten-Finalizer (der nur die Registrierung mäße).
             if (result.ok && reply.program[0] === "rule") {
-                appendChatOutput(this._t("nexus.gesetz-auf", { name: compName }));
+                appendChatOutput(["nexus.gesetz-auf", { name: compName }]);
             } else if (result.ok) {
                 const weicht = this._ergebnisSatz(result.log);
                 if (!weicht)
                     // die Tat in Worten (`describeProgram`), nie das rohe Programm (V-D8: ids und DSL-JSON im Spieler-Chat)
-                    appendChatOutput(
-                        this._t("nexus.welt-veraendert", { name: compName, tat: this.describeProgram(reply.program) })
-                    );
-                if (weicht) appendChatOutput(this._t("nexus.vorschlag", { name: compName, satz: weicht.satz }));
+                    appendChatOutput([
+                        "nexus.welt-veraendert",
+                        { name: compName, tat: this.describeProgram(reply.program) },
+                    ]);
+                if (weicht) appendChatOutput(["nexus.vorschlag", { name: compName, satz: weicht.satz }]);
                 // Wie ein Chat-Programm: in Pattern-Memory verknüpfen via
                 // recentKeywords (die enthalten den userText bereits).
                 const historyEntry = {
@@ -1455,11 +1456,14 @@ class AnazhRealm_feld_nexus {
                 const weicht = this._ergebnisSatz(result.log);
                 appendChatOutput(
                     weicht
-                        ? this._t("nexus.vorschlag", { name: compName, satz: weicht.satz })
-                        : this._t("nexus.vorschlag-abgelehnt", {
-                              name: compName,
-                              satz: this._dslAbsageSatz(result.log),
-                          })
+                        ? ["nexus.vorschlag", { name: compName, satz: weicht.satz }]
+                        : [
+                              "nexus.vorschlag-abgelehnt",
+                              {
+                                  name: compName,
+                                  satz: this._dslAbsageSatz(result.log),
+                              },
+                          ]
                 );
             }
         }
@@ -1507,34 +1511,26 @@ class AnazhRealm_feld_nexus {
         const phrases = pool[soulName] || pool.default || pool.wesen || [];
         if (phrases.length === 0) return false;
         // die Wahl der Worte zieht aus dem Fauna-Strom der Stimme (Γ5): dieselbe Welt, dieselben Worte
-        const tpl = phrases[Math.floor(this._faunaRng("stimme")() * phrases.length)];
-        // Template-Variablen ersetzen. Unbekannte Variablen bleiben drin
-        // (helfen beim Debug-Erkennen).
-        const text = tpl.replace(/\$\{(\w+)\}/g, (m, key) => {
-            const v = ctx[key];
-            return v !== undefined && v !== null ? String(v) : m;
-        });
-        const name = creature.userData.name || "Wesen";
-        // Direkter DOM-Pfad (analog maybeAnswerCreature V1.1 Soul-Span).
+        // die Stimme ist eine Zeile der Tafel (`stimme.*`): ihre Werte aus dem Kontext des Ereignisses, sie wechselt mit der Sprache
+        const zeile = [phrases[Math.floor(this._faunaRng("stimme")() * phrases.length)], ctx];
+        const name = creature.userData.name || this._t("journal.ein-wesen");
         const chatOutput = typeof document !== "undefined" ? document.getElementById("chat-output") : null;
-        if (chatOutput) {
-            const line = document.createElement("div");
-            line.className = "chat-proactive-line";
-            const nameSpan = document.createElement("span");
-            nameSpan.className = `chat-creature-name soul-${soulName}`;
-            nameSpan.textContent = `${name}: `;
-            line.appendChild(nameSpan);
-            line.appendChild(document.createTextNode(text));
-            chatOutput.appendChild(line);
-            chatOutput.scrollTop = chatOutput.scrollHeight;
-        }
+        if (chatOutput)
+            this._chatEcho(zeile, {
+                klasse: "chat-proactive-line",
+                sprecher: name,
+                sprecherKlasse: `chat-creature-name soul-${soulName}`,
+            });
         // Throttle-Stempel setzen — erst NACH erfolgreichem Render.
         creature.userData.lastProactiveSpeech = now;
         this.state.lastCreatureProactiveSpeech = now;
         // Memory-Eintrag (Vision §1.1 — die Kreatur erinnert sich an
         // ihre Aussagen). Spec-Filter zählt das NICHT als Skill.
         if (typeof this._creatureRemember === "function") {
-            this._creatureRemember(creature, "spoke_proactive", { event: eventType, said: text.slice(0, 120) });
+            this._creatureRemember(creature, "spoke_proactive", {
+                event: eventType,
+                said: AnazhRealm._tIn("de", zeile[0], ctx).slice(0, 120),
+            });
         }
         return true;
     }
@@ -1546,20 +1542,20 @@ class AnazhRealm_feld_nexus {
         if (!creature) {
             // Name am Anfang, aber keine solche Kreatur: höflich ablehnen statt ein Gespräch zu faken;
             // LLM/Suggestion-Fallback läuft ohnehin weiter.
-            appendChatOutput(this._t("nexus.niemand", { name: parsed.name }));
+            appendChatOutput(["nexus.niemand", { name: parsed.name }]);
             return true;
         }
         // LLM-Aktiv-Check (analog maybeAnswerWithLlm): wenn nicht aktiv,
         // schreiben wir einen poetischen Hinweis statt der LLM-Antwort.
         const llm = this.state.llm;
         if (!llm || !llm.enabled) {
-            appendChatOutput(this._t("nexus.keine-stimme", { name: parsed.name }));
+            appendChatOutput(["nexus.keine-stimme", { name: parsed.name }]);
             return true;
         }
-        appendChatOutput(this._t("nexus.sammelt-sich", { name: parsed.name }));
+        appendChatOutput(["nexus.sammelt-sich", { name: parsed.name }]);
         const reply = await this.llmCallCreature(creature, parsed.message);
         if (reply.error) {
-            appendChatOutput(this._t("nexus.schweigt", { name: parsed.name, fehler: reply.error }));
+            appendChatOutput(["nexus.schweigt", { name: parsed.name, fehler: reply.error }]);
             this.llmUpdateStatus();
             return true;
         }
@@ -1570,14 +1566,11 @@ class AnazhRealm_feld_nexus {
             const soulName = (creature.userData && creature.userData.soul) || "wesen";
             const chatOutput = typeof document !== "undefined" ? document.getElementById("chat-output") : null;
             if (chatOutput) {
-                const line = document.createElement("div");
-                const nameSpan = document.createElement("span");
-                nameSpan.className = `chat-creature-name soul-${soulName}`;
-                nameSpan.textContent = `${parsed.name}: `;
-                line.appendChild(nameSpan);
-                line.appendChild(document.createTextNode(sayText));
-                chatOutput.appendChild(line);
-                chatOutput.scrollTop = chatOutput.scrollHeight;
+                // die Antwort des Modells ist Daten (sie spricht, wie sie kam), der Name des Wesens ebenso
+                this._chatEcho(sayText, {
+                    sprecher: parsed.name,
+                    sprecherKlasse: `chat-creature-name soul-${soulName}`,
+                });
             } else {
                 appendChatOutput(`${parsed.name}: ${sayText}`);
             }
@@ -1620,14 +1613,16 @@ class AnazhRealm_feld_nexus {
             }
             const chatOutput = typeof document !== "undefined" ? document.getElementById("chat-output") : null;
             if (chatOutput) {
-                const line = document.createElement("div");
-                line.className = "chat-proposal-blocked";
-                line.textContent = this._t("nexus.vorschlag-verworfen", {
-                    name,
-                    grund: String(allowed.forbiddenOp || allowed.reason),
-                });
-                chatOutput.appendChild(line);
-                chatOutput.scrollTop = chatOutput.scrollHeight;
+                this._chatEcho(
+                    [
+                        "nexus.vorschlag-verworfen",
+                        {
+                            name,
+                            grund: String(allowed.forbiddenOp || allowed.reason),
+                        },
+                    ],
+                    { klasse: "chat-proposal-blocked" }
+                );
             }
             this.log(
                 `Kreatur-Vorschlag verworfen (${allowed.reason}): ${JSON.stringify(program).slice(0, 100)}`,
@@ -1674,31 +1669,27 @@ class AnazhRealm_feld_nexus {
         // sieht was passiert ist)
         const chatOutput = typeof document !== "undefined" ? document.getElementById("chat-output") : null;
         if (chatOutput) {
-            const line = document.createElement("div");
-            line.className = ok ? "chat-proposal-executed" : "chat-proposal-failed";
             const summary = JSON.stringify(program).slice(0, 100);
+            let zeile;
             if (ok) {
                 const zusatz = !wetter
                     ? ""
                     : wetter.event === "wetter_gehalten"
-                      ? this._t("nexus.wetter-haelt", { wort: this.state.wetterWort || this._t("nexus.wetter-halt") })
-                      : this._t("nexus.wetter-zieht", { wort: String(wetter.wort) });
-                line.textContent = auto
-                    ? this._t("nexus.vorschlag-auto-ausgefuehrt", { name, summary, zusatz })
-                    : this._t("nexus.vorschlag-ausgefuehrt", { name, summary, zusatz });
+                      ? ["nexus.wetter-haelt", { wort: this.state.wetterWort || ["nexus.wetter-halt"] }]
+                      : ["nexus.wetter-zieht", { wort: String(wetter.wort) }];
+                zeile = [
+                    auto ? "nexus.vorschlag-auto-ausgefuehrt" : "nexus.vorschlag-ausgefuehrt",
+                    { name, summary, zusatz },
+                ];
             } else {
                 const reason =
                     (result &&
                         result.log &&
                         result.log.find((e) => /budget|invalid|exception|unknown/.test(e.event))) ||
                     null;
-                line.textContent = this._t("nexus.vorschlag-fehlgeschlagen", {
-                    name,
-                    grund: reason ? reason.event : this._t("nexus.sandbox"),
-                });
+                zeile = ["nexus.vorschlag-fehlgeschlagen", { name, grund: reason ? reason.event : ["nexus.sandbox"] }];
             }
-            chatOutput.appendChild(line);
-            chatOutput.scrollTop = chatOutput.scrollHeight;
+            this._chatEcho(zeile, { klasse: ok ? "chat-proposal-executed" : "chat-proposal-failed" });
         }
         return ok;
     }
@@ -1721,16 +1712,16 @@ class AnazhRealm_feld_nexus {
         line.className = "chat-proposal-pending";
         const intro = document.createElement("span");
         const summary = JSON.stringify(program).slice(0, 120);
-        intro.textContent = this._t("nexus.schlaegt-vor", { name, summary });
+        this._tSetze(intro, "nexus.schlaegt-vor", { name, summary });
         line.appendChild(intro);
         const yesBtn = document.createElement("button");
         yesBtn.type = "button";
         yesBtn.className = "chat-proposal-btn accept";
-        yesBtn.textContent = this._t("nexus.ausfuehren");
+        this._tSetze(yesBtn, "nexus.ausfuehren");
         const noBtn = document.createElement("button");
         noBtn.type = "button";
         noBtn.className = "chat-proposal-btn reject";
-        noBtn.textContent = this._t("nexus.ablehnen");
+        this._tSetze(noBtn, "nexus.ablehnen");
         line.appendChild(yesBtn);
         line.appendChild(noBtn);
         chatOutput.appendChild(line);
@@ -1899,12 +1890,12 @@ class AnazhRealm_feld_nexus {
         for (const [name, def] of Object.entries(defs)) {
             const opt = document.createElement("option");
             opt.value = name;
-            opt.textContent = this._t(def.label);
+            this._tSetze(opt, def.label);
             providerSel.appendChild(opt);
         }
         providerSel.value = this.state.llm.provider;
         toggleBtn.setAttribute("aria-pressed", this.state.llm.enabled ? "true" : "false");
-        toggleBtn.textContent = this.state.llm.enabled ? this._t("p2p.deaktivieren") : this._t("ui.aktivieren");
+        this._tSetze(toggleBtn, this.state.llm.enabled ? "p2p.deaktivieren" : "ui.aktivieren");
         this.llmRefreshProviderUI();
         providerSel.addEventListener("change", () => {
             this.state.llm.provider = providerSel.value;
@@ -1912,7 +1903,7 @@ class AnazhRealm_feld_nexus {
             this.state.llm.enabled = false;
             this.state.llm.lastError = null;
             toggleBtn.setAttribute("aria-pressed", "false");
-            toggleBtn.textContent = this._t("ui.aktivieren");
+            this._tSetze(toggleBtn, "ui.aktivieren");
             this.llmPersist();
             this.llmRefreshProviderUI();
         });
@@ -1975,7 +1966,7 @@ class AnazhRealm_feld_nexus {
                 this.state.llm.enabled = false;
                 keyInput.value = "";
                 toggleBtn.setAttribute("aria-pressed", "false");
-                toggleBtn.textContent = this._t("ui.aktivieren");
+                this._tSetze(toggleBtn, "ui.aktivieren");
                 this.llmPersist();
                 this.llmUpdateStatus();
             });
@@ -1991,7 +1982,7 @@ class AnazhRealm_feld_nexus {
             this.state.llm.enabled = !this.state.llm.enabled;
             this.state.llm.lastError = null;
             toggleBtn.setAttribute("aria-pressed", this.state.llm.enabled ? "true" : "false");
-            toggleBtn.textContent = this.state.llm.enabled ? this._t("p2p.deaktivieren") : this._t("ui.aktivieren");
+            this._tSetze(toggleBtn, this.state.llm.enabled ? "p2p.deaktivieren" : "ui.aktivieren");
             this.llmPersist();
             this.llmUpdateStatus();
             // „Aktiv" erst nach der Frage an den Dienst (V-D6): ein lokaler Endpunkt ohne Dienst steht sofort im Status.

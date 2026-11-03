@@ -1134,7 +1134,7 @@ class AnazhRealm_netz_p2p {
         if (!withWorlds.length) {
             const empty = document.createElement("div");
             empty.className = "drawer-hint";
-            empty.textContent = this._t("p2p.katalog.leer");
+            this._tSetze(empty, "p2p.katalog.leer");
             host.appendChild(empty);
             return;
         }
@@ -1321,7 +1321,7 @@ class AnazhRealm_netz_p2p {
         const p2p = this.state.p2p;
         const peerId = this._p2pFindVoicePeer();
         if (!peerId) {
-            if (appendChatOutput) appendChatOutput(this._t("p2p.stimme.keine"));
+            if (appendChatOutput) appendChatOutput(["p2p.stimme.keine"]);
             return { ok: false, reason: "no_voice" };
         }
         const reqId = "v-" + p2p.peerId + "-" + p2p._voiceReqSeq++;
@@ -1331,7 +1331,7 @@ class AnazhRealm_netz_p2p {
             prompt: String(prompt || "").slice(0, AnazhRealm.P2P_VOICE_PROMPT_MAX),
         });
         if (!sent) {
-            if (appendChatOutput) appendChatOutput(this._t("p2p.stimme.unerreichbar"));
+            if (appendChatOutput) appendChatOutput(["p2p.stimme.unerreichbar"]);
             return { ok: false, reason: "send_failed" };
         }
         const timeout = setTimeout(() => {
@@ -1341,7 +1341,7 @@ class AnazhRealm_netz_p2p {
             if (pending.cb) pending.cb(this._t("p2p.stimme.schweigt"));
         }, AnazhRealm.P2P_VOICE_TIMEOUT_MS);
         p2p._voiceRequests.set(reqId, { cb: appendChatOutput, timeout, peerId });
-        if (appendChatOutput) appendChatOutput(this._t("p2p.stimme.denkt"));
+        if (appendChatOutput) appendChatOutput(["p2p.stimme.denkt"]);
         return { ok: true, reqId, peerId };
     }
 

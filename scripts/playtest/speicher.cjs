@@ -439,8 +439,8 @@ async function checkBandRing8({ page, check }) {
             Array.isArray(aSave.worldJournal.entries) &&
             aSave.worldJournal.entries[0] &&
             aSave.worldJournal.entries[0].type === "genesis" &&
-            aSave.worldJournal.entries[0].text &&
-            aSave.worldJournal.entries[0].text.includes("seed-a");
+            // die Zeile reist als Schlüssel + Werte (`t`), ihr Wortlaut ist abgeleitet
+            AnazhRealm._journalZeile(aSave.worldJournal.entries[0]).text.includes("seed-a");
         out.genesisCtxHasSeed =
             aSave.worldJournal.entries[0].ctx && typeof aSave.worldJournal.entries[0].ctx.seed === "string";
 
@@ -599,7 +599,7 @@ async function checkBandRing9to10({ page, check }) {
             newSave.worldJournal &&
             Array.isArray(newSave.worldJournal.entries) &&
             newSave.worldJournal.entries.find((e) => e.type === "witness");
-        out.newSaveHasWitnessEntry = !!witnessEntry && /neben/.test(witnessEntry.text);
+        out.newSaveHasWitnessEntry = !!witnessEntry && /neben/.test(AnazhRealm._journalZeile(witnessEntry).text);
         out.witnessEntryHasProvenance =
             witnessEntry && witnessEntry.ctx && witnessEntry.ctx.fromWorldId === originalSrcId;
         // Aktive Welt wurde NICHT umgeleitet
@@ -708,9 +708,7 @@ async function checkBandRing9to10({ page, check }) {
             {
                 name: "tempel-besonderer",
                 label: "Tempel",
-                parts: [
-                    __teil("box", "stein", 0, 0, 0, 1, 1, 1),
-                ],
+                parts: [__teil("box", "stein", 0, 0, 0, 1, 1, 1)],
                 connections: [],
             },
         ];
@@ -743,7 +741,7 @@ async function checkBandRing9to10({ page, check }) {
             !!seqSave &&
             seqSave.worldJournal.entries[0] &&
             seqSave.worldJournal.entries[0].type === "genesis" &&
-            /fusion-parent-a.*fusion-parent-b/.test(seqSave.worldJournal.entries[0].text);
+            /fusion-parent-a.*fusion-parent-b/.test(AnazhRealm._journalZeile(seqSave.worldJournal.entries[0]).text);
         out.seqFusionStrategyInMeta = !!seqSave && seqSave.worldMeta.fusionStrategy === "sequence";
 
         // Strategie TAG-MERGE
@@ -805,9 +803,7 @@ async function checkBandRing9to10({ page, check }) {
             {
                 name: "kollidierer",
                 label: "A-Version",
-                parts: [
-                    __teil("box", "stein", 0, 0, 0, 1, 1, 1),
-                ],
+                parts: [__teil("box", "stein", 0, 0, 0, 1, 1, 1)],
                 connections: [],
             },
         ];
@@ -817,9 +813,7 @@ async function checkBandRing9to10({ page, check }) {
             {
                 name: "kollidierer",
                 label: "B-Version",
-                parts: [
-                    __teil("sphere", "quarz", 0, 0, 0, 1, 1, 1),
-                ],
+                parts: [__teil("sphere", "quarz", 0, 0, 0, 1, 1, 1)],
                 connections: [],
                 role: "tool",
                 toolMeta: { opName: "B-Hammer", opClass: "form_geben" },
@@ -922,17 +916,13 @@ async function checkBandRing9to10({ page, check }) {
             {
                 name: "fremder-altar",
                 label: "Fremder Altar",
-                parts: [
-                    __teil("box", "stein", 0, 0, 0, 1, 1, 1),
-                ],
+                parts: [__teil("box", "stein", 0, 0, 0, 1, 1, 1)],
                 connections: [],
             },
             {
                 name: "fremder-hammer-bp",
                 label: "Fremder Hammer (Bauplan)",
-                parts: [
-                    __teil("cylinder", "eisen", 0, 0, 0, 1, 1, 1),
-                ],
+                parts: [__teil("cylinder", "eisen", 0, 0, 0, 1, 1, 1)],
                 connections: [],
                 role: "tool",
                 // Der Import läuft durch dieselbe Wand wie der Save-Restore (TOOL_OP_CLASSES + opName-Pattern) →
@@ -1931,7 +1921,10 @@ async function checkBandTailleOmega2({ page, check }) {
             label: "Ω2",
             builtIn: false,
             parts: [
-                __teil("box", "stein", 0, 0, 0, 1, 1, 1, { rotation: { x: 0, y: 0, z: 0 }, opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }] }),
+                __teil("box", "stein", 0, 0, 0, 1, 1, 1, {
+                    rotation: { x: 0, y: 0, z: 0 },
+                    opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+                }),
             ],
             connections: [],
             xZukunft: { tief: [1, 2, { drei: true }] },
@@ -2060,10 +2053,7 @@ async function checkBandV18207R5StructureTexture({ page, check }) {
         return out;
     });
 
-    check(
-        `(R1b) microBoost sinnvoll (>0, <5; gemessen ${res.microBoostValue})`,
-        res.microBoostSensible === true
-    );
+    check(`(R1b) microBoost sinnvoll (>0, <5; gemessen ${res.microBoostValue})`, res.microBoostSensible === true);
 }
 
 module.exports = {

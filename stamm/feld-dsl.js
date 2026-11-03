@@ -856,9 +856,7 @@ class AnazhRealm_feld_dsl {
         this.journalAppendOnce(
             `ruleAwoke:${rule._sig || rule.id}`,
             "rule",
-            wer === "du"
-                ? AnazhRealm._datum`Dein Gesetz erwachte — ${desc}.`
-                : AnazhRealm._datum`Das Gesetz von ${wer} erwachte — ${desc}.`
+            wer === "du" ? ["journal.dein-gesetz", { was: desc }] : ["journal.gesetz-von", { wer, was: desc }]
         );
     }
 
@@ -1294,9 +1292,7 @@ class AnazhRealm_feld_dsl {
                     const fremd = /^(remote:|teilen)/.test(String(ctx.source));
                     this.journalAppend(
                         "growth",
-                        fremd
-                            ? "Ein Bauplan kam von außen."
-                            : AnazhRealm._datum`Ein neuer Bauplan entstand: ${result.name}.`,
+                        fremd ? ["journal.bauplan-fremd"] : ["journal.bauplan-neu", { name: result.name }],
                         {
                             name: result.name,
                             parts: valid.parts.length,
@@ -1549,7 +1545,7 @@ class AnazhRealm_feld_dsl {
                     });
                 }
                 if (result.ok) {
-                    this.journalAppend("growth", AnazhRealm._datum`Ein neues Konsumabel entstand: ${result.name}.`, {
+                    this.journalAppend("growth", ["journal.konsumabel-neu", { name: result.name }], {
                         name: result.name,
                     });
                 }
@@ -1582,7 +1578,7 @@ class AnazhRealm_feld_dsl {
                     reason: result.reason,
                 });
                 if (result.ok) {
-                    this.journalAppend("growth", AnazhRealm._datum`Eine neue Seele entstand: ${result.name}.`, {
+                    this.journalAppend("growth", ["journal.seele-neu", { name: result.name }], {
                         name: result.name,
                         parts: valid.parts.length,
                     });
@@ -1602,7 +1598,7 @@ class AnazhRealm_feld_dsl {
                     reason: result.reason,
                 });
                 if (result.ok) {
-                    this.journalAppend("growth", AnazhRealm._datum`Eine neue Substanz wurde benannt: ${result.name}.`, {
+                    this.journalAppend("growth", ["journal.substanz-neu", { name: result.name }], {
                         name: result.name,
                     });
                 }
@@ -1632,7 +1628,7 @@ class AnazhRealm_feld_dsl {
                 if (r.ok) {
                     this.journalAppend(
                         "growth",
-                        AnazhRealm._datum`Ein eigenes Werkzeug entstand: ${blueprintName} (Cap ${r.precisionCap.toFixed(2)}).`,
+                        ["journal.werkzeug-neu", { name: blueprintName, cap: r.precisionCap.toFixed(2) }],
                         { tool: blueprintName, cap: r.precisionCap }
                     );
                 }
@@ -1695,7 +1691,7 @@ class AnazhRealm_feld_dsl {
                     return;
                 }
                 this.addNewAbility(safeName, program, "llm");
-                this.journalAppend("growth", AnazhRealm._datum`Eine neue Fähigkeit ruht in mir: ${safeName}.`, {
+                this.journalAppend("growth", ["journal.faehigkeit-neu", { name: safeName }], {
                     name: safeName,
                 });
                 ctx.log.push({ event: "defined_ability", name: safeName });
