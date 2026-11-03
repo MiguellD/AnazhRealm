@@ -6,7 +6,8 @@
 // im Sender ein memcpy: postMessage 0,07–0,10 ms gegen 0,19–0,25 ms für Kodieren und Transfer eines Puffers, ABAB 3× headless),
 // die Glieder der Listen (Bauten, Baupläne, Wesen) je Seriennummer, ihre Ordnung, wenn sie sich änderte, und die neuen Edits
 // als Zahlen per Transfer; zurück kommen Quittungen und das Abbild per Transfer. Der Teil „" der Ordnung ist der Kopf: die
-// Felder ohne eigenen Teil als Text ohne Klammern — je Feld ein Teil `KOPF_TEIL` + Name, gesendet nur, wenn sein Stück sich regte. Dieser Faden hält je Welt das Modell des Stands, setzt das JSON zusammen (die Bytes, die
+// Felder ohne eigenen Teil als Text ohne Klammern — je Feld ein Teil `KOPF_TEIL` + Name, gesendet nur, wenn sein Stück sich regte;
+// ein Objekt-Feld je Glied (`KOPF_TEIL` + Name + `KOPF_TEIL` + Glied, die Reihe seiner Glieder in `kopfGlieder`). Dieser Faden hält je Welt das Modell des Stands, setzt das JSON zusammen (die Bytes, die
 // `JSON.stringify` der Tafel ergäbe) und schreibt ATOMAR in IndexedDB („anazhRealm" · „worlds"): EINE Transaktion liest den
 // vorigen Stand, legt ihn als `<id>.bak` ab und schreibt den neuen unter `<id>` — tmp + Rename + .bak des save-servers;
 // ein Tod mitten darin lässt beide, wie sie waren. Das Format auf der Platte ist das des Lesers (`_idbPreload`): {at, json}.
@@ -129,7 +130,9 @@ function komponiere(W) {
             const kopf = [];
             for (const f of W.kopfOrdnung) {
                 const st = W.kopf.get(f);
-                if (st) kopf.push(st);
+                if (st && typeof st === "object")
+                    kopf.push(JSON.stringify(f) + ":{" + st.ordnung.map((g) => st.stk.get(g)).join(",") + "}");
+                else if (st) kopf.push(st);
             }
             if (kopf.length) out.push(kopf.join(","));
             continue;
@@ -154,7 +157,14 @@ const OPS = {
     async stand(m) {
         let W = welten.get(m.welt);
         if (m.voll) {
-            W = { ordnung: [], teile: new Map(), kopf: new Map(), kopfOrdnung: [], listen: new Map(), edits: editsNeu() };
+            W = {
+                ordnung: [],
+                teile: new Map(),
+                kopf: new Map(),
+                kopfOrdnung: [],
+                listen: new Map(),
+                edits: editsNeu(),
+            };
             welten.set(m.welt, W);
         } else if (!W) return { ok: false, grund: "kein Modell der Welt im Faden (der Haupt-Faden sendet sie ganz)" };
         try {
@@ -163,9 +173,26 @@ const OPS = {
             if (m.ordnung) W.ordnung = m.ordnung;
             // ein neuer Kopf (die Reihe seiner Felder) trägt jedes seiner Stücke
             if (m.kopfOrdnung) [W.kopf, W.kopfOrdnung] = [new Map(), m.kopfOrdnung];
-            for (const k of m.teile)
-                if (k[0] === KOPF_TEIL) W.kopf.set(k.slice(1), stuecke[i++]);
-                else W.teile.set(k, stuecke[i++]);
+            // ein Objekt-Feld des Kopfs: die neue Reihe seiner Glieder (ein Glied, das nicht mehr in ihr steht, fällt)
+            for (const f in m.kopfGlieder || {}) {
+                const alt = W.kopf.get(f);
+                const stk = alt && typeof alt === "object" ? alt.stk : new Map();
+                const lebt = new Set(m.kopfGlieder[f]);
+                for (const g of stk.keys()) if (!lebt.has(g)) stk.delete(g);
+                W.kopf.set(f, { ordnung: Array.from(m.kopfGlieder[f]), stk });
+            }
+            for (const k of m.teile) {
+                const st = stuecke[i++];
+                if (k[0] !== KOPF_TEIL) W.teile.set(k, st);
+                else if (k.indexOf(KOPF_TEIL, 1) < 0) W.kopf.set(k.slice(1), st);
+                else {
+                    const j = k.indexOf(KOPF_TEIL, 1);
+                    const O = W.kopf.get(k.slice(1, j));
+                    if (!O || typeof O !== "object")
+                        throw new Error(`das Glied „${k.slice(j + 1)}" ohne sein Feld „${k.slice(1, j)}"`);
+                    O.stk.set(k.slice(j + 1), st);
+                }
+            }
             for (const k in m.listen || {}) {
                 const l = m.listen[k];
                 const L = W.listen.get(k) || { ordnung: [], glieder: new Map() };

@@ -19,7 +19,22 @@
 // `--selftest` setzt in der Kopie das direkte Schreiben wieder ein (`schreibeGanz` → fs.writeFile) und MUSS rot werden.
 // Ports: PERSISTENCE_PORT (Seite, Standard 4326), PERSISTENCE_SERVER_PORT (Sandbox-Server, Standard 4327).
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, nullRenderer, startProc, sleep, ROOT: root, nullSeite, urteilEnde, ausDatei, path, fs, os, SELBSTTEST, jsonLesen } = require("./lib/welt-boot.cjs");
+const {
+    statikServer,
+    starteBrowser,
+    nullRenderer,
+    startProc,
+    sleep,
+    ROOT: root,
+    nullSeite,
+    urteilEnde,
+    ausDatei,
+    path,
+    fs,
+    os,
+    SELBSTTEST,
+    jsonLesen,
+} = require("./lib/welt-boot.cjs");
 const http = require("http");
 const { spawnSync } = require("child_process");
 const zlib = require("zlib");
@@ -437,6 +452,18 @@ async function wegSeite(km, min, edits) {
     const sortiert = (o) =>
         JSON.stringify(o, (k, v) => (v && v.constructor === Object ? Object.fromEntries(Object.entries(v).sort()) : v));
     const abw = [];
+    // DIE ÄNDERUNG IST BYTE-GLEICH (streaming-k5): der Stand des Fadens aus den Änderungen gegen denselben Stand ganz gesendet
+    // (die Seite vergisst das Modell des Fadens, `_speicher.welt`) → null oder die erste abweichende Stelle beider
+    const ganz = async (json) => {
+        r._speicher.welt = null;
+        r.saveState();
+        const g = await __stand();
+        if (g === json) return null;
+        let i = 0;
+        while (json[i] === g[i]) i++;
+        const um = (t) => JSON.stringify(t.slice(Math.max(0, i - 24), i + 24));
+        return `Bytes ab ${i}: ${um(json)} ≠ ganz ${um(g)}`;
+    };
     const stand = async () => {
         r.saveState();
         r.saveState(); // der .bak trägt denselben Stand
@@ -444,6 +471,8 @@ async function wegSeite(km, min, edits) {
         const [voll, s] = [r.buildStateSnapshot(), r._standNormal(JSON.parse(json))];
         abw.push(Object.keys({ ...voll, ...s }).filter((k) => sortiert(voll[k]) !== sortiert(s[k])));
         S.push([json, (await r._idbGetWorld(st.worldMeta.worldId + ".bak")).json]);
+        const b = await ganz(json);
+        if (b) abw[abw.length - 1].push(b);
     };
     await takt(200);
     await stand();
@@ -464,7 +493,17 @@ async function wegSeite(km, min, edits) {
     await stand();
     r._standTafel().push(["wegSpur", () => spur]);
     await stand();
-    return { S, abw };
+    // SELBSTTEST der Bytes: ein verlorenes Glied des Kopfs — die Seite glaubt `worldMeta.k5Probe` gesendet, der Faden hält das alte
+    const wm = st.worldMeta;
+    wm.k5Probe = 1;
+    r.saveState();
+    await __stand();
+    wm.k5Probe = 2;
+    r._speicher.kopf.get("worldMeta").stk.set("k5Probe", '"k5Probe":2');
+    r.saveState();
+    const verloren = await ganz(await __stand());
+    delete wm.k5Probe;
+    return { S, abw, verloren };
 }
 // Δ je Schlüssel zweier Stände [JSON, .bak]; `ohne` und `ohnePlatte` ohne das Leben, `taeter` der stärkste Schlüssel außer ihm
 function wegDelta([a, aBak], [b, bBak]) {
@@ -493,7 +532,7 @@ async function wegLauf(km, min, edits) {
     const { browser, page } = await nullSeite({ frist: 3600000 });
     await page.evaluateOnNewDocument(() => (window.__anazhAutoSettlement = true));
     await server.zeige(page);
-    const { S, abw } = await page.evaluate(wegSeite, km, min, edits);
+    const { S, abw, verloren } = await page.evaluate(wegSeite, km, min, edits);
     await browser.close();
     return {
         km: km * Math.hypot(1, 0.15),
@@ -501,6 +540,7 @@ async function wegLauf(km, min, edits) {
         edits: wegDelta(S[1], S[2]),
         spur: wegDelta(S[2], S[3]),
         abw,
+        verloren,
     };
 }
 const [KORPUS, STUFE] = [path.join(root, "spec", "speicher-korpus"), require("../package.json").version];
@@ -614,7 +654,11 @@ async function korpusLauf(selbst) {
         zeilen[i] = z;
     };
     let n = 0;
-    await Promise.all([0, 1, 2].map(async () => { while (n < liste.length) await stand(liste[n], n++); }));
+    await Promise.all(
+        [0, 1, 2].map(async () => {
+            while (n < liste.length) await stand(liste[n], n++);
+        })
+    );
     await browser.close();
     return zeilen;
 }
@@ -677,8 +721,12 @@ function korpusUrteil(z, selbst) {
                   pass: w.spur.ohne > 1e4 && w.spur.taeter[0] === "wegSpur",
               },
               {
-                  name: `(D) jeder Stand des Speicher-Fadens ist die volle Serialisierung: ${w.abw.map((x) => x.join(" ") || "gleich").join(" · ")}`,
+                  name: `(D) jeder Stand des Speicher-Fadens ist die volle Serialisierung, byte-gleich mit dem ganz gesendeten: ${w.abw.map((x) => x.join(" ") || "gleich").join(" · ")}`,
                   pass: w.abw.every((x) => !x.length),
+              },
+              {
+                  name: `(D) SELBSTTEST: ein verlorenes Glied des Kopfs ist ROT an seinem Namen: ${w.verloren || "BLIEB BLIND"}`,
+                  pass: !!w.verloren && w.verloren.includes("k5Probe"),
               },
           ];
     if (w && EDITS)
@@ -769,5 +817,9 @@ function urteile(checks) {
         if (!c.pass) fails++;
     }
     console.log(`\n${checks.length - fails}/${checks.length} Persistenz-Invarianten OK.`);
-    urteilEnde(fails, "⛔ Die Persistenz-Härtung greift nicht — die Welt ist bei Korruption noch verlierbar.", "✅ Die Welt überlebt Tod und korrupten Write — kein stiller Datenverlust.");
+    urteilEnde(
+        fails,
+        "⛔ Die Persistenz-Härtung greift nicht — die Welt ist bei Korruption noch verlierbar.",
+        "✅ Die Welt überlebt Tod und korrupten Write — kein stiller Datenverlust."
+    );
 }

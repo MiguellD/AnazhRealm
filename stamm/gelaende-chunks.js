@@ -2825,7 +2825,15 @@ class AnazhRealm_gelaende_chunks {
                 // eine Kopie der Lage des Fadens je Chunk und Klick, 0,26 MB in der Minute Fahrt — und war die Lage das Netz
                 // selbst, verglich die Karte die bewegte Kopie mit der bewegten Lage und sah die Säule nie)
                 const nV = P.length / 3;
-                const k = this._bodenKarteNaht(g, cx, cz, E.lod || 0, L, "lage", saum(I, L === P ? bewegtP : saeule(L, N), nV));
+                const k = this._bodenKarteNaht(
+                    g,
+                    cx,
+                    cz,
+                    E.lod || 0,
+                    L,
+                    "lage",
+                    saum(I, L === P ? bewegtP : saeule(L, N), nV)
+                );
                 // die Karte der Ziele trägt die Säule im Inneren (`bewegt`, w4-b-boden): der Leser im Übergangs-Band rastert sonst
                 // nur, was am Saum zog — sie liegt seit dem Einbau (aus dem Faden), ein Neu-Raster der Lage allein ließe sie alt
                 const kz =
