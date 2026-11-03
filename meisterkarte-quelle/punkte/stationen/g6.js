@@ -2058,6 +2058,287 @@ const KLANG_RAUM_MAIN = {"orte":{"gasse":{"x":-215.1,"z":-1045.6,"breite":4},"fe
 // die Zeile am Zweig w5-s2-g1 (Raum-Gesetz und Verdeckung im Klang-Kern, 03.11., Cloud, 28 s): GRÜN
 const KLANG_RAUM_ZWEIG = {"orte":{"gasse":{"x":-215.1,"z":-1045.6,"breite":4},"feld":{"x":-280.4,"z":-1045.6},"wald":{"x":-520.4,"z":-1273.6,"deckung":1},"hoehle":{"x":-58.696,"z":-12.44,"grund":60.432}},"haus":{"d":12.6,"ohr":[-226.7,-1045.6],"haus":[6.6,5.6,2.9],"frei":{"db":-37.3,"hz":1129},"hinter":{"db":-48.544,"hz":660}},"hang":{"ohr":[-612.997,-907.834],"ueberLinie":4.117,"frei":{"db":-47.318,"hz":1055},"hinter":{"db":-58.212,"hz":641}},"rt60":{"feld":0.283,"wald":0.649,"gasse":1.522,"hoehle":3.195},"mutation":[{"bauten":0,"rt60":0.283},{"bauten":2,"rt60":0.517},{"bauten":4,"rt60":0.687},{"bauten":8,"rt60":1.042}]};
 
+// ───────── DIE FAHRT (w7-rang-pm, 03.11.): streaming.K1#1 · streaming.K2#1 — EIN Lauf am Null-Renderer ─────────
+// Bedarfe und Ereignisse sind Buchführung, kein Bild (die Welt-Probe der Gruppe I, stationen/g1.js `weltProbe`: EIN Boot, die Zeile
+// „WELTPROBE fahrt {…}“). DIE BAHN: fest, eine Gerade von der Mess-Wiese durch das Dorf der Zelle −4,−4 (die Messorte des Haushalts,
+// `wiese` → `dorf`) und weiter hinaus — 60 s im Sprint des Leibs (`state.sprintSpeed`), dann 60 s im Tempo des GT (vehicle-core
+// `exportDrive(presetPatch("gt")).vmax`), aus dem geladenen Ring heraus (1,58 km); je Bild der Takt des Spiels mit der Wanduhr
+// (`_gameLoopTick(performance.now())`, wie der Loop), der Spieler an seinem Ort der Bahn, Gier und Tempo-Vektor längs der Bahn. Der
+// Regler des Spielers (R8): das HOLZ-Profil „voll" (Ring 4) — der Null-Renderer wählt sonst „kienspan" (Ring 2, swiftshader).
+// DER BEDARF kommt aus dem Gesetz, nie aus dem Rang des Spiels: im Sichtkegel (der Schirm der Kamera, `_imErstenBlick(…, schirm)`)
+// bis 384 m je Ding — der Boden-Ring (Chebyshev ≤ Ring um die Spieler-Zelle) mit der Stufe aus BODEN_STUFEN am Kasten-Abstand
+// (`bis`, ohne Vorlauf), jeder Eintrag (Bau in der Mesh-Zone `architectureCullingRadius`, Baum und Karte bis zu seinem
+// Karten-Horizont `_archKartenHorizont`; jedes Ding, sobald sein Boden im Ring liegt — es steht auf ihm —, ein Baum, sobald sein Chunk diesseits des Laub-Rands
+// PERF_FOLIAGE_RADIUS_MAX liegt) mit der Stufe des Wahrnehmungs-Gesetzes (`_chooseLODForDistance` samt der Hysterese des Gesetzes,
+// der Bau nach den Grenzen seines Gesetzbuchs), die Pflanz-Schlange bis 384 m und das Dorf in der Schlange (noch kein Eintrag), die Saat eines
+// gebauten Chunks im Laub-Radius, jede Streu-Region in Reichweite (`_streuRegionInReichweite`), der Horizont. DIE LÜCKE (K1): ein
+// Ding im Kegel ohne Gestalt — ein Eintrag ohne Bild (`_archIsRendered`), ein Baum der Schlange, ein Haus der Schlange, ein Chunk
+// bis zum Existenz-Boden ohne Netz (dahinter deckt der Fern-Ring, wo er gilt), eine wartende Streu-Region oder Saat. DAS
+// EREIGNIS (K2): je Ding und Klasse seiner Stufe (der Chunk je Stufe, der Baum der Mesh-Stufen, die Karte, der Bau) der erste Takt im Kegel („tritt in den Sichtkegel"; was zu Beginn schon darin lag, zählt nicht) und ob
+// es da in der verlangten Stufe steht (eine feinere Stufe gilt, eine gröbere nie); sonst die Sekunden, bis es steht.
+async function fahrtProbe(r, T, o, G) {
+    const { s, takt, r3 } = G;
+    const A = r.constructor;
+    const W = o.orte.wiese,
+        D = o.orte.dorf;
+    const L = Math.hypot(D.x - W.x, D.z - W.z);
+    const u = { x: (D.x - W.x) / L, z: (D.z - W.z) / L };
+    const gier = Math.atan2(u.x, u.z);
+    const VC = window.__vehicleCore;
+    const gt = VC && VC.exportDrive && VC.presetPatch ? VC.exportDrive(VC.presetPatch("gt")).vmax : null;
+    const KEGEL = 384;
+    const SC = A.SCATTER;
+    const pm = s.playerMesh;
+    const stell = (x, z) => {
+        const y = r._voxelSurfaceY(x, z);
+        pm.position.set(x, (Number.isFinite(y) ? y : r._terrainMacroSurfaceY(x, z)) + A.PLAYER_FOOT_OFFSET, z);
+    };
+    s.chunkRingRadius = A.HOLZ_PROFILE.voll.ring;
+    r._applyHolzProfil("voll");
+    s.yaw = gier;
+    stell(W.x, W.z);
+    s.playerVel.setValue(0, 0, 0);
+    await window.__weltStehtNach(() => takt());
+    takt(30);
+    const { span } = r._voxelChunkConfig();
+    const imKegel = (x, z, rr, p) => Math.hypot(x - p.x, z - p.z) <= KEGEL + rr && r._imErstenBlick(x, z, rr, true);
+    const ding = A.ERSTER_BLICK.dingM;
+    const ort = (x, z) => "a:" + Math.round(x * 10) + "," + Math.round(z * 10);
+    const ST = A.BODEN_STUFEN.stufen;
+    // die Stufe, die der Abstand verlangt: Boden am Kasten-Abstand (BODEN_STUFEN `bis`), Eintrag am Wahrnehmungs-Gesetz
+    const bodenSoll = (cx, cz, p) => {
+        const d = Math.max(Math.max(cx * span - p.x, 0, p.x - (cx + 1) * span), Math.max(cz * span - p.z, 0, p.z - (cz + 1) * span));
+        return (ST.find((x) => d < x.bis) || ST[ST.length - 1]).lod;
+    };
+    const eintragSoll = (e, auge, ferne) => {
+        const dist = Math.hypot(e.position.x - auge.x, e.position.z - auge.z);
+        const baum = !!e._lodSpecies && Number.isFinite(e._lodVariantIndex);
+        if (!baum && e.instFoundry !== true) return null; // keine Stufen-Kette (Grammatik-Bau): da ist fertig
+        // die Hysterese ist Gesetz (`_stufeNachGrenzen`: wer eine Stufe trägt, hält sie bis (1 − h)·ab) — wie die Wahl selbst, nur am
+        // Abstand JETZT (nie an der Vorausschau des Spiels)
+        const zustand = e._lodAmAbstand === true ? e._lodLevel : undefined;
+        if (baum) {
+            const h = r._lodTreeVisHeight(e);
+            return h === null ? undefined : r._chooseLODForDistance(dist, e._bruecke ? undefined : zustand, h);
+        }
+        const gr = r._archStufenGrenzen(e);
+        return gr ? A._stufeNachGrenzen(dist * ferne, zustand, gr, Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1) : null;
+    };
+    // je Ding [Schlüssel, Klasse, da (K1), fertig in der verlangten Stufe (K2)]
+    const bedarf = () => {
+        const p = pm.position;
+        const out = [];
+        const { ringRadius } = r._voxelChunkConfig();
+        const pcx = Math.floor(p.x / span),
+            pcz = Math.floor(p.z / span);
+        const fern = r._fernRingGilt() ? !!(s.fernRing && s.fernRing.ready) : true;
+        for (let dz = -ringRadius; dz <= ringRadius; dz++)
+            for (let dx = -ringRadius; dx <= ringRadius; dx++) {
+                const [cx, cz] = [pcx + dx, pcz + dz];
+                if ((dx || dz) && !imKegel((cx + 0.5) * span, (cz + 0.5) * span, span * Math.SQRT1_2, p)) continue;
+                const e = s.voxelChunks && s.voxelChunks.get(cx + "," + cz);
+                const netz = !!(e && (e.mesh || e.empty));
+                const fertig = netz && (e.empty || (Number.isFinite(e.lod) ? e.lod : 0) <= bodenSoll(cx, cz, p));
+                const deckt = Math.max(Math.abs(dx), Math.abs(dz)) > A.RING_EXIST_FLOOR && fern;
+                out.push(["b:" + cx + "," + cz + ":" + bodenSoll(cx, cz, p), "boden", netz || deckt, fertig]);
+            }
+        if (r._fernRingGilt()) out.push(["h", "horizont", fern, fern]);
+        const R = Number.isFinite(s.architectureCullingRadius) ? s.architectureCullingRadius : 150;
+        // ein Ding steht auf seinem Boden: sein Bedarf beginnt, wenn sein Chunk im Ring liegt (derselbe Ring wie der Boden-Bedarf)
+        const imRing = (x, z) => Math.max(Math.abs(Math.floor(x / span) - pcx), Math.abs(Math.floor(z / span) - pcz)) <= ringRadius;
+        // der Wald wächst auf seinem Chunk bis zum Rand des Laubs (das Gesetz PERF_FOLIAGE_RADIUS_MAX an der Mitte des Chunks, nie
+        // der Regler `foliageRadius`): ein Baum ist Bedarf, sobald sein Chunk diesseits liegt
+        const LAUB = A.PERF_FOLIAGE_RADIUS_MAX;
+        const imLaub = (x, z) => Math.hypot((Math.floor(x / span) + 0.5) * span - p.x, (Math.floor(z / span) + 0.5) * span - p.z) <= LAUB;
+        const auge = r._lodAuge() || p;
+        const ferne = r._ankunftsFerne();
+        for (const e of s.architectures || []) {
+            if (!e || !e.position) continue;
+            const d = Math.hypot(e.position.x - p.x, e.position.z - p.z);
+            if (d > KEGEL + ding) continue;
+            const karte = !!r._archKartenPreset(e);
+            const rand = !karte ? R : d <= SC.outerM - A.KARTEN_HORIZONT_SAUM_M ? KEGEL : Math.min(KEGEL, r._archKartenHorizont(e));
+            const baum = !!e._lodSpecies || karte;
+            if (d > rand || !imRing(e.position.x, e.position.z) || (baum && !imLaub(e.position.x, e.position.z))) continue;
+            if (!r._imErstenBlick(e.position.x, e.position.z, ding, true)) continue;
+            const da = r._archIsRendered(e);
+            const soll = eintragSoll(e, auge, ferne);
+            const kl = !baum ? "bau" : soll === 2 || (soll === undefined && d > R) ? "karte" : "baum";
+            const fertig = da && (soll === null || (soll !== undefined && e.instanced && Number.isFinite(e._lodLevel) && e._lodLevel <= soll) || (!e.instanced && soll !== undefined));
+            out.push([ort(e.position.x, e.position.z) + ":" + kl, kl, da, fertig]);
+        }
+        // die Pflanz-Schlange: ein gepflanzter Baum ist Bedarf wie sein Eintrag (in der Mesh-Zone ein Baum, dahinter bis 384 m eine Karte)
+        for (const t of s.pendingVegSpawns || []) {
+            const q = t && t.position;
+            if (!q) continue;
+            const d = Math.hypot(q.x - p.x, q.z - p.z);
+            if (d <= KEGEL && imRing(q.x, q.z) && imLaub(q.x, q.z) && r._imErstenBlick(q.x, q.z, ding, true)) {
+                const kl = d <= R ? "baum" : "karte";
+                out.push([ort(q.x, q.z) + ":" + kl, kl, false, false]);
+            }
+        }
+        const q = r._autoSettlementQueue;
+        if (q && q.plan && Array.isArray(q.plan.slots) && q.origin)
+            for (let i = q.idx; i < q.plan.slots.length; i++) {
+                const sl = q.plan.slots[q.reihe[i]];
+                if (!sl) continue;
+                const [hx, hz] = [q.origin.x + sl.x, q.origin.z + sl.z];
+                if (Math.hypot(hx - p.x, hz - p.z) <= R && imRing(hx, hz) && r._imErstenBlick(hx, hz, ding, true)) out.push([ort(hx, hz) + ":bau", "bau", false, false]);
+            }
+        const offen = new Set();
+        for (const P of [s.pendingFoliageChunks, r._waldPflanzWarten, r._saatOffen && r._saatOffen.keys()]) if (P) for (const k of P) offen.add(k);
+        for (const [k, e] of s.voxelChunks || []) {
+            if (!e || e.empty || !e.mesh) continue;
+            const i = k.indexOf(",");
+            const [x, z] = [(+k.slice(0, i) + 0.5) * span, (+k.slice(i + 1) + 0.5) * span];
+            if (Math.hypot(x - p.x, z - p.z) > LAUB || !r._imErstenBlick(x, z, span * Math.SQRT1_2, true)) continue;
+            out.push(["s:" + k, "wuchs", !offen.has(k), !offen.has(k)]);
+        }
+        const [rx0, rz0] = [Math.floor(p.x / SC.regionM), Math.floor(p.z / SC.regionM)];
+        for (let dz = -SC.ringRegions; dz <= SC.ringRegions; dz++)
+            for (let dx = -SC.ringRegions; dx <= SC.ringRegions; dx++) {
+                const [rx, rz] = [rx0 + dx, rz0 + dz];
+                if (!r._streuRegionInReichweite(rx, rz, p)) continue;
+                if (!imKegel((rx + 0.5) * SC.regionM, (rz + 0.5) * SC.regionM, SC.regionM * Math.SQRT1_2, p)) continue;
+                const da = !r._streuRegionWartet(rx + "," + rz);
+                out.push(["r:" + rx + "," + rz, "streu", da, da]);
+            }
+        return out;
+    };
+    const vorher = new Set(bedarf().map((b) => b[0]));
+    const ein = new Map();
+    const je = {};
+    const takte = [];
+    let [weg, bilder] = [0, 0];
+    const t0 = performance.now();
+    for (const [name, v, sek] of [["sprint", s.sprintSpeed, o.sek], ["gt", gt, o.sek]]) {
+        const P = (je[name] = { v: r3(v), bilder: 0, luecke: 0, je: {}, zeugen: [] });
+        if (!(v > 0)) continue;
+        const tp = performance.now();
+        let t = tp;
+        for (;;) {
+            await new Promise((ok) => setTimeout(ok, 0));
+            const jetzt = performance.now();
+            if (jetzt - tp >= sek * 1000) break;
+            weg += v * Math.min(0.1, (jetzt - t) / 1000);
+            t = jetzt;
+            const [x, z] = [W.x + u.x * weg, W.z + u.z * weg];
+            s.yaw = gier;
+            stell(x, z);
+            s.playerVel.setValue(u.x * v, 0, u.z * v);
+            const a = performance.now();
+            r._gameLoopTick(jetzt);
+            takte.push(performance.now() - a);
+            stell(x, z);
+            bilder++;
+            P.bilder++;
+            let fehlt = 0;
+            for (const [key, k, da, fertig] of bedarf()) {
+                if (!da) {
+                    fehlt++;
+                    P.je[k] = (P.je[k] || 0) + 1;
+                    if (P.zeugen.length < 6 && !P.zeugen.some((zz) => zz.startsWith(key + " "))) {
+                        const c = key.slice(2).split(":")[0].split(",").map(Number);
+                        const w = key[0] === "a" ? Math.round(Math.hypot(c[0] / 10 - x, c[1] / 10 - z)) : null;
+                        P.zeugen.push(key + " " + k + (w != null ? " " + w + " m" : ""));
+                    }
+                }
+                if (vorher.has(key)) continue;
+                const ev = ein.get(key);
+                if (!ev) ein.set(key, { k, ok: !!fertig, t: jetzt, spaet: fertig ? 0 : null });
+                else if (ev.spaet === null && fertig) ev.spaet = (jetzt - ev.t) / 1000;
+            }
+            if (fehlt) P.luecke++;
+        }
+        P.sek = r3((performance.now() - tp) / 1000);
+        P.wegM = Math.round(weg);
+    }
+    s.playerVel.setValue(0, 0, 0);
+    const eintritt = {};
+    for (const ev of ein.values()) {
+        const z = (eintritt[ev.k] = eintritt[ev.k] || { n: 0, ok: 0, spaet: [] });
+        z.n++;
+        if (ev.ok) z.ok++;
+        else z.spaet.push(ev.spaet === null ? -1 : r3(ev.spaet));
+    }
+    const lang = (x) => (x < 0 ? 1e9 : x);
+    for (const z of Object.values(eintritt)) z.spaet = z.spaet.sort((a, b) => lang(b) - lang(a)).slice(0, 6);
+    takte.sort((a, b) => a - b);
+    return {
+        von: [W.x, W.z],
+        richtung: [r3(u.x), r3(u.z)],
+        ring: r._voxelChunkConfig().ringRadius,
+        holz: s._holzProfil,
+        bilder,
+        sek: r3((performance.now() - t0) / 1000),
+        taktMs: { p50: r3(takte[takte.length >> 1]), p95: r3(takte[Math.floor(takte.length * 0.95)]) },
+        je,
+        eintritt,
+    };
+}
+
+// DIE GÜLTIGKEIT DER FAHRT (beide Urteile): der Ring des Spielers (Profil „voll", Ring 4 — ein geschrumpfter Ring ist das
+// Schlupfloch „den Sichtradius per Regler schrumpfen"), je Phase ≥ 55 s im Soll-Tempo (der Sprint des Leibs, der GT ≥ 15,5 m/s —
+// das Tempo kommt aus vehicle-core und steigt mit seiner vmax), ≥ 600 Bilder je Phase (eine Diashow sieht keine Lücke) und
+// ≥ 1 200 m Weg (die Bahn führt aus dem geladenen Ring, nie eine Schleife darin)
+function fahrtGueltig(e) {
+    const rot = [];
+    const [sp, gt] = [(e.je && e.je.sprint) || {}, (e.je && e.je.gt) || {}];
+    if (!(e.ring >= 4)) rot.push("Ring " + e.ring + " < 4 (Regler)");
+    if (!(sp.sek >= 55 && gt.sek >= 55)) rot.push("Fahrt " + sp.sek + " + " + gt.sek + " s < 55 s je Phase");
+    if (!(sp.v >= 5 && gt.v >= 15.5)) rot.push("Tempo Sprint " + sp.v + " · GT " + gt.v + " m/s unter dem Soll");
+    if (!(sp.bilder >= 600 && gt.bilder >= 600)) rot.push("Bilder " + sp.bilder + " · " + gt.bilder + " < 600 je Phase");
+    if (!(gt.wegM >= 1200)) rot.push("Weg " + gt.wegM + " m < 1 200 m");
+    return rot;
+}
+const fahrtJe = (je) => Object.entries(je || {}).map(([k, n]) => k + " " + n).join(", ");
+// streaming.K1#1 — 0 Bilder mit einer Lücke im Kegel, in beiden Phasen
+function fahrtLueckeUrteil(e) {
+    if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE fahrt" };
+    if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler };
+    const rot = fahrtGueltig(e);
+    const z = ["sprint", "gt"].map((n) => {
+        const P = e.je[n] || {};
+        if (P.luecke > 0) rot.push(n + " " + P.luecke + " Lücken-Bilder");
+        return n + " " + P.v + " m/s " + P.sek + " s: " + P.luecke + " von " + P.bilder + " Bildern mit Lücke" + (P.luecke ? " (" + fahrtJe(P.je) + "; " + (P.zeugen || []).slice(0, 3).join(" · ") + ")" : "");
+    });
+    return {
+        gruen: !rot.length,
+        zahl: z.join(" · ") + " · Weg " + (e.je.gt || {}).wegM + " m, Ring " + e.ring + ", Takt p95 " + (e.taktMs || {}).p95 + " ms" + (rot.length ? " · ROT " + rot.join(", ") : "") + " (Soll 0 Lücken-Bilder)",
+    };
+}
+// streaming.K2#1 — je Klasse der Staffel (Chunks, Bäume, Karten, Bauten) ≥ 95 % in der verlangten Stufe beim Eintritt in den Kegel, je
+// Klasse ≥ 10 Eintritte (keine Klasse versteckt sich im Mittel der anderen); Streu und Saat nennt die Zahl mit
+const FAHRT_KLASSEN = ["boden", "baum", "karte", "bau"];
+function fahrtEintrittUrteil(e) {
+    if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE fahrt" };
+    if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler };
+    const rot = fahrtGueltig(e);
+    const E = e.eintritt || {};
+    const pz = (k) => (E[k] && E[k].n ? Math.round((1000 * E[k].ok) / E[k].n) / 10 : null);
+    for (const k of FAHRT_KLASSEN) {
+        const x = E[k];
+        if (!x || x.n < 10) rot.push(k + " " + (x ? x.n : 0) + " Eintritte < 10");
+        else if (x.ok / x.n < 0.95) rot.push(k + " " + pz(k) + " %");
+    }
+    const z = [...FAHRT_KLASSEN.filter((k) => E[k]), ...Object.keys(E).filter((k) => !FAHRT_KLASSEN.includes(k))].map((k) => k + " " + E[k].ok + "/" + E[k].n + " (" + pz(k) + " %" + (E[k].spaet && E[k].spaet.length ? ", spät " + E[k].spaet.slice(0, 3).join("/") + " s" : "") + ")");
+    return { gruen: !rot.length, zahl: "fertig beim Eintritt: " + z.join(" · ") + (rot.length ? " · ROT " + rot.join(", ") : "") + " (Soll je Klasse ≥ 95 %)" };
+}
+const FAHRT = require("./g1.js").weltProbe.befehl([["fahrt", fahrtProbe, { sek: 60 }]]);
+const fahrtZeile = (j, lauf) => require("./g1.js").weltProbe.zeile(j, lauf, "fahrt");
+// DIE ROH-ZEILE am main 6eeeb856 (03.11., Cloud, headless, 131 s; an 0e3eadad dieselbe Klasse: 549 + 1 077 Lücken-Bilder): die Proben jeder der zwei Stationen urteilen sie und ihre Mutanten
+const FAHRT_MAIN = {"von":[-280.4,-1045.6],"richtung":[-0.95,0.313],"ring":4,"holz":"voll","bilder":8373,"sek":131.4,"taktMs":{"p50":6.4,"p95":13.1},"je":{"sprint":{"v":5.175,"bilder":4232,"luecke":543,"je":{"karte":16527,"wuchs":1,"bau":122,"streu":25},"zeugen":["a:-4829,-10822:karte karte 185 m","a:-5091,-11199:karte karte 222 m","a:-5003,-11226:karte karte 215 m","a:-5169,-11118:karte karte 226 m","a:-5122,-11052:karte karte 220 m","a:-4999,-11073:karte karte 209 m"],"sek":60.001,"wegM":310},"gt":{"v":15.998,"bilder":4141,"luecke":1084,"je":{"bau":83,"streu":156,"karte":30087},"zeugen":["a:-6372,-8100:bau bau 150 m","a:-7279,-9439:bau bau 150 m","a:-7452,-9569:bau bau 150 m","a:-7193,-8532:bau bau 150 m","r:-4,-3 streu","a:-7622,-7742:karte karte 231 m"],"sek":60.014,"wegM":1270}},"eintritt":{"baum":{"n":646,"ok":72,"spaet":[-1,-1,-1,-1,-1,-1]},"boden":{"n":484,"ok":206,"spaet":[-1,-1,0.761,0.74,0.436,0.436]},"karte":{"n":3872,"ok":298,"spaet":[-1,-1,-1,-1,-1,-1]},"wuchs":{"n":239,"ok":238,"spaet":[0.018]},"bau":{"n":318,"ok":250,"spaet":[0.144,0.119,0.102,0.099,0.09,0.085]},"streu":{"n":15,"ok":0,"spaet":[-1,0.48,0.383,0.289,0.263,0.182]}}};
+// die Zeile am Zweig w7-rang (der EINE Rang, Zeit bis Bedarf; gemergt mit main d880c8e8; 03.11., Cloud, headless, 130 s): GRÜN
+const FAHRT_ZWEIG = {"von":[-280.4,-1045.6],"richtung":[-0.95,0.313],"ring":4,"holz":"voll","bilder":7730,"sek":130.2,"taktMs":{"p50":7.1,"p95":15.3},"je":{"sprint":{"v":5.175,"bilder":4143,"luecke":0,"je":{},"zeugen":[],"sek":60.006,"wegM":310},"gt":{"v":15.998,"bilder":3587,"luecke":0,"je":{},"zeugen":[],"sek":60.012,"wegM":1270}},"eintritt":{"baum":{"n":709,"ok":700,"spaet":[-1,-1,-1,0.361,0.32,0.257]},"wuchs":{"n":257,"ok":257,"spaet":[]},"boden":{"n":484,"ok":484,"spaet":[]},"karte":{"n":3529,"ok":3529,"spaet":[]},"bau":{"n":318,"ok":318,"spaet":[]},"streu":{"n":15,"ok":15,"spaet":[]}}};
+const fahrtRoh = (f, x = FAHRT_MAIN) => "WELTPROBE fahrt " + JSON.stringify(f(JSON.parse(JSON.stringify(x)))) + "\n";
+// die Fahrt, die das Soll hält: keine Lücke, jede Klasse ≥ 95 % fertig beim Eintritt
+const fahrtGruen = (x) => {
+    for (const P of Object.values(x.je)) [P.luecke, P.je, P.zeugen] = [0, {}, []];
+    for (const z of Object.values(x.eintritt)) [z.ok, z.spaet] = [Math.ceil(z.n * 0.97), []];
+    return x;
+};
+const fahrtGruenMit = (f) => (x) => (f(fahrtGruen(x)), x);
+
 module.exports = [
     // ─────────────────────────────── Ankunft K2 · K3 (ankunft-aussen) ───────────────────────────────
     {
@@ -2260,6 +2541,61 @@ module.exports = [
             "scripts/lib/software-gpu.cjs",
         ],
         quelle: "1 = beim Teleport um 1 km Frame p95 ≤ 50 ms an einem Gerät",
+    },
+
+    // ─────────────────────────────── Streaming K1 · K2 (w7-rang-pm): DIE FAHRT — EIN Lauf (Zwillinge) ───────────────────────────────
+    // die Probe, ihre Urteile und die Roh-Zeile am main oben (fahrtProbe, fahrtLueckeUrteil, fahrtEintrittUrteil, FAHRT_MAIN).
+    // streaming.K1 — an main 6eeeb856 ROT: Sprint 5,2 m/s 543 von 4 232 Bildern mit Lücke (Karten 16 527 Ding-Bilder, Bauten 122,
+    // Streu 25), GT 16,0 m/s 1 084 von 4 141 (Karten 30 087, Streu 156, Bauten 83): der Wald am Rand des Rings wird im Kegel geboren
+    // und wartet auf Saat, Plan und Karte (200–240 m), das Dorf am Rand der Mesh-Zone (150 m), die Streu-Region −4,−3. Am Zweig w7-rang
+    // (der EINE Rang, Zeit bis Bedarf; gemergt mit main d880c8e8) GRÜN: 0 von 4 143 und 0 von 3 587.
+    {
+        kriterium: "streaming.K1",
+        staffel: 1,
+        geraet: "headless",
+        befehl: FAHRT,
+        gpu: false,
+        zeit: true,
+        minuten: 6,
+        urteil: (j, lauf) => fahrtLueckeUrteil(fahrtZeile(j, lauf)),
+        proben: [
+            { name: "die Messung am main 6eeeb856", stdout: fahrtRoh((x) => x), gruen: false },
+            { name: "die Bahn ohne Lücke", stdout: fahrtRoh(fahrtGruen), gruen: true },
+            { name: "die Messung am Zweig w7-rang (03.11., Cloud, headless)", stdout: fahrtRoh((x) => x, FAHRT_ZWEIG), gruen: true },
+            { name: "langsam fahren (der GT mit 8 m/s)", stdout: fahrtRoh(fahrtGruenMit((x) => (x.je.gt.v = 8))), gruen: false },
+            { name: "den Sichtradius per Regler schrumpfen (Ring 2)", stdout: fahrtRoh(fahrtGruenMit((x) => (x.ring = 2))), gruen: false },
+            { name: "eine Schleife im geladenen Ring (300 m Weg)", stdout: fahrtRoh(fahrtGruenMit((x) => (x.je.gt.wegM = 300))), gruen: false },
+            { name: "eine Diashow (200 Bilder je Phase)", stdout: fahrtRoh(fahrtGruenMit((x) => (x.je.sprint.bilder = x.je.gt.bilder = 200))), gruen: false },
+            { name: "ein Lücken-Bild im Sprint", stdout: fahrtRoh(fahrtGruenMit((x) => ((x.je.sprint.luecke = 1), (x.je.sprint.je = { karte: 1 })))), gruen: false },
+            { name: "die Fahrt bricht nach 20 s ab", stdout: fahrtRoh(fahrtGruenMit((x) => (x.je.gt.sek = 20))), gruen: false },
+        ],
+        pfad: ["stamm/*.js", "*-core.js", "voxel-worker.js", "foundry-bruecke.js", "index.html", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "spec/profiband/haushalt.json"],
+        quelle: "1 = 0 Lücken-Bilder in 60 s bei Sprint und GT-vmax auf fester Bahn an einem Gerät",
+    },
+    // streaming.K2 — an main 6eeeb856 ROT: fertig beim Eintritt Boden 206/484 (42,6 %), Bäume 72/646 (11,1 %), Karten 298/3 872
+    // (7,7 %), Bauten 250/318 (78,6 %), Streu 0/15 — jede Schlange ordnet für sich, keine schaut voraus. Am Zweig w7-rang GRÜN:
+    // Boden 484/484, Bäume 700/709 (98,7 %), Karten 3 529/3 529, Bauten 318/318, Streu 15/15.
+    {
+        kriterium: "streaming.K2",
+        staffel: 1,
+        geraet: "headless",
+        befehl: FAHRT,
+        gpu: false,
+        zeit: true,
+        minuten: 6,
+        urteil: (j, lauf) => fahrtEintrittUrteil(fahrtZeile(j, lauf)),
+        proben: [
+            { name: "die Messung am main 6eeeb856", stdout: fahrtRoh((x) => x), gruen: false },
+            { name: "jede Klasse ≥ 95 % fertig beim Eintritt", stdout: fahrtRoh(fahrtGruen), gruen: true },
+            { name: "die Messung am Zweig w7-rang (03.11., Cloud, headless)", stdout: fahrtRoh((x) => x, FAHRT_ZWEIG), gruen: true },
+            { name: "die Bäume 93,5 % (die Stufe ohne Vorlauf)", stdout: fahrtRoh((x) => ((x.eintritt.baum.ok = Math.floor(x.eintritt.baum.n * 0.935)), x), FAHRT_ZWEIG), gruen: false },
+            { name: "der Boden 80 % (im Mittel der Bäume versteckt)", stdout: fahrtRoh(fahrtGruenMit((x) => (x.eintritt.boden.ok = Math.floor(x.eintritt.boden.n * 0.8)))), gruen: false },
+            { name: "keine Karte tritt ein (die Klasse fehlt)", stdout: fahrtRoh(fahrtGruenMit((x) => delete x.eintritt.karte)), gruen: false },
+            { name: "langsam fahren (der GT mit 8 m/s)", stdout: fahrtRoh(fahrtGruenMit((x) => (x.je.gt.v = 8))), gruen: false },
+            { name: "den Sichtradius per Regler schrumpfen (Ring 2)", stdout: fahrtRoh(fahrtGruenMit((x) => (x.ring = 2))), gruen: false },
+        ],
+        pfad: ["stamm/*.js", "*-core.js", "voxel-worker.js", "foundry-bruecke.js", "index.html", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "spec/profiband/haushalt.json"],
+        quelle: "1 = ≥ 95 % der Chunks, Bäume, Bauten und Karten in der verlangten Stufe fertig vor dem Eintritt in den Sichtkegel, an einem Gerät",
     },
 
     // ─────────────────────────────── Streaming K4 · K5 (hydro-faden) ───────────────────────────────
@@ -3448,6 +3784,4 @@ module.exports.ANKUNFT_KALT = ANKUNFT_KALT;
 module.exports.fehlt = [
     { kriterium: "ankunft.K4", staffel: 1, befehl: null, grund: "nicht gebaut (p3-stationen-g456): am Spawn (`_genesisMitte`) der erste Blick nach der Kontrolle plus 4 Azimute, Ego und Third, je Klasse ein Schuss aus dem Ausgabe-Pfad mit Maske (`werkbank bild --klasse … --ist`) und das Urteil der Soll-Tafel (`sollTafelUrteil`) — 10 Posen × die Klassen im Bild, je Schuss 3–8 s (haar.K1#1: zwei Schüsse 35 s): ein eigener Lauf von ≥ 60 s, die Fahrt hat 10 s frei. Die Tafel trägt am Spawn 3 von 12 Klassen mit Zeile (tor-fern, tor-bunt, tor-ziel), vier sichtbare Klassen haben keine — das externe Soll neuer Zeilen fehlt" },
     { kriterium: "ankunft.K5", staffel: 2, befehl: null, grund: "nicht gebaut (p3-stationen-g456): die Spur des Kalt-Boots (ankunft.K5#1) misst längste Aufgabe und belegte Zeit bis zur Kontrolle; die Staffel 2 verlangt dazu die Antwort auf eine Kamera-Drehung im Lade-Bild — die Probe der Ankunft hält nur W (die Kontrolle von außen), eine Maus-Drehung mit gemessener Antwort (Event-Timing, das Bild dreht) trägt sie nicht" },
-    { kriterium: "streaming.K1", staffel: 1, befehl: null, grund: "nicht gebaut (p3-stationen-g456): 60 s Sprint und GT-vmax auf fester Bahn durch Wald und Dorf, je Bild die offenen Bedarfe im Sichtkegel bis 384 m und der bild-diff gegen das eingeschwungene Bild derselben Pose — ein Lauf von ≥ 60 s Fahrt plus Einschwingen, die Fahrt hat 10 s frei; es gibt keine Linse der Lücke in Fahrt (F5 fand der Schöpfer) und keine feste Bahn im Spiel-Baum (die Proben der Welt `fahrWelt`/`fahrWegenetz` fahren das Wegenetz, nicht aus dem Ring heraus)" },
-    { kriterium: "streaming.K2", staffel: 1, befehl: null, grund: "nicht gebaut (p3-stationen-g456): die Ereignis-Zählung „fertig in der verlangten Stufe“ gegen „tritt in den Sichtkegel“ je Ding braucht einen Haken an jeder Schlange (Boden `_voxelChunkLodFor`, Wuchs `_tickPendingVegSpawns`, Streu, Bauten, Foundry `_foundryRang`) — keine Liefer-Marke nennt die Stufe je Ding beim Eintritt, und der Spieler-Weg dazu ist dieselbe Fahrt wie streaming.K1 (≥ 60 s, die Fahrt hat 10 s frei)" },
 ];

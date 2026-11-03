@@ -1,8 +1,8 @@
 {
  "sha": "d880c8e86310a0d180b67d2099be0c6247e9bf9f",
  "geraet": "headless",
- "zeit": "2026-11-03T17:42:50.935Z",
- "host": "farm:41685919343",
+ "zeit": "2026-11-03T17:54:40.207Z",
+ "host": "farm:41688398518",
  "je": {
   "haar.K3#1": {
    "gruen": true,
@@ -14,6 +14,30 @@
    "port": 7704,
    "bahn": "1/1",
    "host": "farm:41685919343/1"
+  },
+  "pipeline.K2#1": {
+   "gruen": false,
+   "zahl": "zwei Bäcker: Studio bakeImpostorAtlas (three r128) eiche/471452 rgba8 128×256 131072 B sha 2d680fabe8 ⇄ Welt _karteWeltBacken (three r184) eiche/Gestalt 0 bc 128×3584 1835008 B sha 37a74a8be3",
+   "exit": 0,
+   "minuten": 0.59,
+   "grund": "ROT: zwei Bäcker: Studio bakeImpostorAtlas (three r128) eiche/471452 rgba8 128×256 131072 B sha 2d680fabe8 ⇄ Welt _karteWeltBacken (three r184) eiche/Gestalt 0 bc 128×3584 1835008 B sha 37a74a8be3",
+   "zeit": "2026-11-03T17:54:32.079Z",
+   "abdruck": "d11d2298c488",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41688398518/1"
+  },
+  "pipeline.K5#1": {
+   "gruen": false,
+   "zahl": "1 Foundry-Fäden (buch): worlds/*/lib/three* 603610 B über das Netz, geparst worlds/terrain/lib/three-r128.min.js · synchrones XHR 1 (cores.manifest.json) · THREE im Faden r128 gegen die Welt r184",
+   "exit": 0,
+   "minuten": 0.14,
+   "grund": "ROT: 1 Foundry-Fäden (buch): worlds/*/lib/three* 603610 B über das Netz, geparst worlds/terrain/lib/three-r128.min.js · synchrones XHR 1 (cores.manifest.json) · THREE im Faden r128 gegen die Welt r184",
+   "zeit": "2026-11-03T17:54:40.207Z",
+   "abdruck": "48b6aeb89343",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41688398518/2"
   }
  }
 }
