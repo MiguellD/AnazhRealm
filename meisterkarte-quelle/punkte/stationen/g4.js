@@ -387,16 +387,12 @@ function k1Lesen(lauf) {
         bild: bild ? bild[0].replace(/^✅ SELBST-TEST Bild-Schwelle: /, "") : null,
         baum: /^STUFEN \(B2c, pipeline\.K3\): .*Reduktion je Art .*\btree L1\/L0/m.test(out),
         exits: [...out.matchAll(/^TEIL (\d) EXIT (\d+)/gm)].map((m) => +m[2]),
-        // die Zeilen-Ratsche der Linse je Teil (`ZEILEN-RATSCHE Teil N: …`) und ihre Täter beim Namen
-        ratsche: (out.match(/^ZEILEN-RATSCHE Teil \d: /gm) || []).length,
-        gefallen: [...out.matchAll(/^❌ ZEILE GEFALLEN: (\S+)/gm)].map((m) => m[1]),
-        neuZeile: [...out.matchAll(/^❌ NEUE ZEILE: (\S+)/gm)].map((m) => m[1]),
     };
 }
 // DER NENNER DER STAFFEL 2 (studios.K1: „der Nenner ist die Zeilen-Zahl bei der Messung — eine Ratsche, die nur wächst, mit den
 // Baum-Zeilen"): die Zeilen von PARAMS_BY_KIND bei der Messung, die studios.K1#2 hob (w5-studios-k1, 03.11.: 144 + 8 Baum-Zeilen).
-// Die Ratsche lebt HIER, nicht im gemessenen Baum: ein Zweig, der tote Zeilen streicht und die Ratsche der Linse mitnimmt, fällt unter
-// sie (142/142 ist kein Sieg). Heben ist ein Akt in diesem Zweig, wenn die Messung mehr Zeilen trägt; senken nie.
+// Die Ratsche lebt EINMAL hier, nie im gemessenen Baum (dort senkte ein Zweig sie mit der gestrichenen Zeile): wer tote Zeilen
+// streicht, fällt unter sie (142/142 ist kein Sieg). Heben ist ein Akt in diesem Zweig, wenn die Messung mehr Zeilen trägt; senken nie.
 const K1_NENNER = 152;
 const k1Zahl = (k) =>
     k.wirkt + "/" + k.zeilen + " Zeilen von PARAMS_BY_KIND wirken am Bild bzw. Ohr (" + (k.zeilen ? ((100 * k.wirkt) / k.zeilen).toFixed(1) : "–") +
@@ -404,8 +400,6 @@ const k1Zahl = (k) =>
     (k.tot.length ? " · tot " + k.tot.map(([n, g]) => n + " (" + (/(\d+(?:\.\d+)?) %/.exec(g) || ["", "0"])[1] + " %)").join(", ") : "") +
     (k.bricht.length ? " · BRICHT " + k.bricht.join(", ") : "") + " · Baum-Zeilen " + (k.baum ? "gemessen" : "keine in PARAMS_BY_KIND") +
     " · Nenner " + k.zeilen + (k.zeilen < K1_NENNER ? " UNTER der Ratsche " + K1_NENNER : " (Ratsche " + K1_NENNER + ")") +
-    (k.ratsche === 3 ? "" : " · Zeilen-Ratsche der Linse in " + k.ratsche + " von 3 Teilen") +
-    (k.gefallen.length ? " · GEFALLEN " + k.gefallen.join(", ") : "") + (k.neuZeile.length ? " · NEU ohne Ratsche " + k.neuZeile.join(", ") : "") +
     " · Exits " + k.exits.join("/");
 
 // DIE K4-PROBE (studios.K4, Zweig w3w-studios-koord): das Skript im Koordinations-Baum (bericht/2910-w3w-studios/skripte/k4-bild.cjs)
@@ -2013,30 +2007,25 @@ const alle = [
         urteil: (j, lauf) => {
             const k = k1Lesen(lauf);
             if (k.teile !== 3) return { gruen: false, zahl: k.teile + " von 3 Teilen mit Zeilen-Zahl (Exits " + k.exits.join("/") + ")" };
-            const ratsche = k.zeilen >= K1_NENNER && k.ratsche === 3 && !k.gefallen.length && !k.neuZeile.length;
-            return { gruen: !!k.bild && k.baum && ratsche && k.wirkt === k.zeilen, zahl: k1Zahl(k) };
+            return { gruen: !!k.bild && k.baum && k.zeilen >= K1_NENNER && k.wirkt === k.zeilen, zahl: k1Zahl(k) };
         },
-        // DIE MUTANTEN: der Nenner fällt (die toten Zeilen gestrichen) · die Linse ohne Zeilen-Ratsche · eine Zeile gefallen beim
-        // Namen · ohne Baum · eine tote Zeile — jede ROT; der Lauf mit allen 152 Zeilen, Baum und Ratsche GRÜN
+        // DIE MUTANTEN: der Nenner fällt (die toten Zeilen gestrichen, mit und ohne Baum, eine Baum-Zeile gestrichen) · ohne Baum ·
+        // eine tote Zeile — jede ROT; der Lauf mit allen 152 Zeilen und dem Baum GRÜN
         proben: (() => {
             const lauf = (n, o = {}) =>
                 "✅ SELBST-TEST Bild-Schwelle: 0,1 mm 0.01 % → tot · 3 cm 4.30 % → wirkt (Schwelle 1.00 % der Gestalt-Pixel, ΔLuma > 18)\n" +
                 "Regler-wirkt Teil 1 (ohne haus): " + n + " PARAMS-Zeilen · 4995 Bauten über die echte Brücke (Seed 1) · 26 Güsse im Host-Ofen · 17 Zeilen an ihrem Leser der Welt (Membran · Ritt · Ohr)\n" +
                 (o.tot ? "  TOT koerper:koerper:mass — bewegt den Ofen-Guss, nicht sein Bild (höchstens 0.68 % der Gestalt-Pixel, Schwelle 1.00 %)\n" : "") +
                 "STUFEN (B2c, pipeline.K3): 4995 Bauten · über Budget 0 · Reduktion je Art arena L1/L0 0.50" + (o.ohneBaum ? "" : " · tree L1/L0 0.47") + "\n" +
-                (o.ohneRatsche ? "" : "ZEILEN-RATSCHE Teil 1: " + n + " Zeilen gemessen = Ratsche " + n + " von " + (n + 21) + " (der Nenner wächst nur)\n") +
-                (o.gefallen ? "❌ ZEILE GEFALLEN: phyto:tree:flare — die Ratsche trägt sie, PARAMS_BY_KIND nicht mehr (der Nenner sinkt nie)\n" : "") +
-                "TEIL 1 EXIT " + (o.gefallen || o.tot ? 1 : 0) + "\n" +
+                "TEIL 1 EXIT " + (o.tot ? 1 : 0) + "\n" +
                 [2, 3].map((t) => "Regler-wirkt Teil " + t + " (haus Regler W): " + (t === 2 ? 11 : 10) + " PARAMS-Zeilen · 2136 Bauten über die echte Brücke · 0 Güsse im Host-Ofen der Werkstatt () · 0 Zeilen an ihrem Leser der Welt (Membran · Ritt · Ohr)\n" +
                     "STUFEN (B2c, pipeline.K3): 2136 Bauten · über Budget 0 · Reduktion je Art haus L1/L0 0.49 L2/L0 0.12\n" +
-                    (o.ohneRatsche ? "" : "ZEILEN-RATSCHE Teil " + t + ": " + (t === 2 ? 11 : 10) + " Zeilen gemessen = Ratsche " + (t === 2 ? 11 : 10) + " von " + (n + 21) + " (der Nenner wächst nur)\n") +
                     "TEIL " + t + " EXIT 0\n").join("");
             return [
-                { name: "alle 152 Zeilen wirken, mit Baum und Zeilen-Ratsche", stdout: lauf(131), gruen: true },
+                { name: "alle 152 Zeilen wirken, mit Baum", stdout: lauf(131), gruen: true },
                 { name: "die toten Zeilen gestrichen: 142/142, der Nenner unter der Ratsche", stdout: lauf(121, { ohneBaum: true }), gruen: false },
                 { name: "die toten Zeilen gestrichen, der Baum dabei: 150/150 unter der Ratsche 152", stdout: lauf(129), gruen: false },
-                { name: "die Linse ohne Zeilen-Ratsche (Lauf vor w5-studios-k1)", stdout: lauf(131, { ohneRatsche: true }), gruen: false },
-                { name: "eine Zeile gefallen beim Namen", stdout: lauf(131, { gefallen: true }), gruen: false },
+                { name: "eine Baum-Zeile gestrichen: 151/151", stdout: lauf(130), gruen: false },
                 { name: "ohne Baum-Zeilen", stdout: lauf(131, { ohneBaum: true }), gruen: false },
                 { name: "eine tote Zeile (mass am Bild 0,68 %)", stdout: lauf(131, { tot: true }), gruen: false },
             ];
