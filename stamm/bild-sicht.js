@@ -2595,8 +2595,10 @@ class AnazhRealm_bild_sicht {
         );
         const sc = st.scene;
         U.ei.value = sc && Number.isFinite(sc.environmentIntensity) ? sc.environmentIntensity : 1;
-        // die Horizont-Karte an das Licht DIESES Bilds (die Sonnen-Sicht jedes Empfängers liest sie)
+        // die Horizont-Karte und die Karte des Wolken-Wurfs an das Licht und die Uhr DIESES Bilds (die Sonnen-Sicht jedes
+        // Empfängers liest sie)
         this._horizontKarteTakt();
+        this._wolkenKarteTakt();
     }
 
     // DIE HIMMELS-IRRADIANZ auf der CPU (E/π) für zwei Normalen (oben · waagrecht) aus der Umgebung der EINEN Atmosphäre, wie die
