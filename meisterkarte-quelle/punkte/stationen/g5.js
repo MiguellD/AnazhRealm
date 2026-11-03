@@ -26,6 +26,109 @@ const sitzung = (sek, ...zeilen) => ({ sek, befehl: ["bash", "-c", [...KOPF, ...
 // (DER EIGENE BOOT von siedlung.K5 fiel am 29.10.: auch dort misst die Kälte der EINE Start der Sitzung — `dorfErwachen` unten.)
 const K = { K: "{KOORD}" }; // die Mess-Skripte der Berichte liegen im Koordinations-Baum (bericht/…)
 
+// ───────── DIE LEBENDE SPRACH-ZÄHLUNG (spielgang.K5#1, w6-spielgang-decke) — läuft als `node -e` im Spiel-Baum, Null-Renderer ─────────
+// Den CODE zählt die EINE Wand des Baums (`scripts/diag-sprache.cjs`, per require `befund(baum())`: jede UI-Senke mit Wort-Text, jedes
+// Daten-Etikett, jeder fehlende oder ungelesene Schlüssel); das DOM zählt diese Probe (bis w6-spielgang-decke als `diag-sprache
+// --lebend` im Baum, dort ohne Leser in der CI — die Decke scripts/ zahlte +1895 Atome für Code, den nur die Station liest).
+async function sprachLauf(port, aus) {
+    const path = require("path");
+    const fs = require("fs");
+    const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const S = require(path.resolve("scripts/diag-sprache.cjs")); // ohne Export (der Stand vor w6-spielgang-decke) endet hier der Lauf
+    // die Erzeuger-Wache (vor jedem Skript der Seite): je Schreiber von Sprache der erste Rahmen in stamm/ ohne die Helfer
+    function ZEUGE() {
+        const zeugen = (window.__sprachZeugen = new WeakMap());
+        const merke = (o, v) => {
+            if (!o || typeof v !== "string" || !/[A-Za-zÄÖÜäöüß]{2,}/.test(v)) return;
+            for (const z of String(new Error().stack).split("\n")) {
+                const m = /\/((?:stamm|worlds)\/[^\s:)?]+)[^:]*:(\d+)/.exec(z);
+                const fn = (/at (?:async )?([\w.$]+) \(/.exec(z) || [])[1] || "";
+                if (m && !/(^|\.)(_el|_elAppend|_tSetze|_chatEcho)$/.test(fn))
+                    return zeugen.set(o, `${m[1]}:${m[2]} ${fn.replace(/^AnazhRealm[\w$]*\./, "")}`.trim());
+            }
+        };
+        const haken = (proto, feld, ziel = (o) => o) => {
+            const d = Object.getOwnPropertyDescriptor(proto, feld);
+            Object.defineProperty(proto, feld, { ...d, set(v) { merke(ziel(this), v); d.set.call(this, v); } });
+        };
+        haken(Node.prototype, "textContent");
+        haken(Element.prototype, "innerHTML");
+        haken(CharacterData.prototype, "data", (n) => n.parentElement || n);
+        haken(HTMLElement.prototype, "title");
+        const [ctn, sa] = [Document.prototype.createTextNode, Element.prototype.setAttribute];
+        Document.prototype.createTextNode = function (v) { const n = ctn.call(this, v); merke(n, v); return n; };
+        Element.prototype.setAttribute = function (a, v) { merke(this, v); return sa.call(this, a, v); };
+    }
+    // die Zählung im Fenster: je Zeile Erzeuger · Ort · Text, Daten, Marke; `wechsel` gibt die stehenden
+    function ZAEHLE(wechsel) {
+        const zeugen = window.__sprachZeugen || new WeakMap();
+        const ort = (el) => (el.closest("[id]") ? "#" + el.closest("[id]").id + " " : "") + el.tagName.toLowerCase();
+        const zeilen = [];
+        const zeile = (n, el, wo, t) => {
+            t = String(t).replace(/\s+/g, " ").trim();
+            if (!/[A-Za-zÄÖÜäöüß]{2,}/.test(t)) return;
+            const name = `${zeugen.get(n) || zeugen.get(el) || "index.html"} · ${ort(el)}${wo}: ${t.slice(0, 90)}`;
+            const daten = !!el.closest('[translate="no"]');
+            const marke = t.includes("⟦");
+            zeilen.push({ name, daten, marke, hart: daten ? marke : /[A-Za-zÄÖÜäöüß]{2,}/.test(t.replace(/⟦[^⟧]*⟧|⁨[^⁩]*⁩/g, " ")) });
+        };
+        const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n = tw.nextNode(); n; n = tw.nextNode())
+            if (!/^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE)$/.test(n.parentElement.tagName)) zeile(n, n.parentElement, "", n.textContent);
+        zeile(document.documentElement, document.documentElement, " <title>", document.title);
+        for (const el of document.body.querySelectorAll("[title],[placeholder],[aria-label],[alt]"))
+            for (const a of ["title", "placeholder", "aria-label", "alt"]) if (el.hasAttribute(a)) zeile(el, el, " @" + a, el.getAttribute(a));
+        if (wechsel) return zeilen.filter((z) => z.marke && !z.daten).map((z) => z.name);
+        const C = window.anazhRealm.constructor;
+        const [de, en] = [C.TEXTE.de, C.TEXTE.en || {}];
+        return {
+            sprache: C._sprache(),
+            glieder: Object.getOwnPropertyNames(C.prototype).length,
+            zeilen: zeilen.length,
+            markiert: zeilen.filter((z) => z.marke && !z.hart).length,
+            hart: zeilen.filter((z) => z.hart).map((z) => z.name),
+            daten: zeilen.filter((z) => z.daten).length,
+            quelle: Object.keys(de).every((k) => k in en) && `AnazhRealm.TEXTE (de ${Object.keys(de).length}, en ${Object.keys(en).length})`,
+        };
+    }
+    const statisch = S.befund(S.baum());
+    const out = { glieder: 0, code: statisch.length, beispiele: statisch.slice(0, 3) };
+    const server = WB.statikServer();
+    await server.lausche(Number(port));
+    const { browser, page } = await WB.nullSeite({ frist: 300000 });
+    try {
+        await page.evaluateOnNewDocument(ZEUGE);
+        await server.zeige(page, 120000, "index.html?sprache=pseudo");
+        await page.evaluate(() => window.__weltDa((r) => r.state._weltbildDa > 0));
+        Object.assign(out, await page.evaluate(ZAEHLE, false));
+        // der Selbsttest im Lauf: eine harte Zeile am Leib, eine Zeile der Tafel, die beim Wechsel niemand neu liest
+        const [mit, stehen] = await page.evaluate((f) => {
+            const C = window.anazhRealm.constructor;
+            const zeile = (id, t) => document.body.appendChild(Object.assign(document.createElement("i"), { id, hidden: true, textContent: t }));
+            zeile("sprach-mutante-hart", "Hallo Welt");
+            zeile("sprach-mutante-steht", C._t(Object.keys(C.TEXTE.de).find((k) => /^[A-Za-zÄÖÜäöüß ]{4,}$/.test(C.TEXTE.de[k]))));
+            const Z = new Function("return " + f)();
+            const mit = Z(false).hart;
+            document.getElementById("sprach-mutante-hart").remove();
+            window.anazhRealm._spracheSetzen("en");
+            return [mit, Z(true)];
+        }, String(ZAEHLE));
+        const muss = (liste, id) => liste.some((h) => h.includes("#" + id));
+        out.blind = ["sprach-mutante-hart", "sprach-mutante-steht"].filter((id, i) => !muss(i ? stehen : mit, id));
+        out.stehenNamen = stehen.filter((h) => !h.includes("#sprach-mutante-steht"));
+        out.stehen = out.stehenNamen.length;
+        out.dom = out.hart.length;
+    } catch (e) {
+        out.fehler = String(e.message).split("\n")[0].slice(0, 300);
+    } finally {
+        fs.writeFileSync(aus, JSON.stringify(out));
+        console.log("TEXTE " + JSON.stringify(out));
+        await browser.close().catch(() => {});
+        server.close();
+        process.exit(0);
+    }
+}
+
 // ───────── DIE PROBEN AN DER SEITE (Zweig proben-leib, stationen/seite.cjs): leib.K2 · leib.K4 · halten.K1#2 · halten.K5 · tore.K3 ─────────
 // Bis 29.10. bootete jede dieser Stationen ihre Linse mit eigener Welt (Takt 19 an b3f9ae95: 4–10 Soll-Minuten je Lauf); jetzt
 // ruft die Probe in der Welt der Sitzung die Seiten-Funktionen der Linse selbst (aus ihrer Datei am SHA, `H.quelle`) und nur
@@ -2980,8 +3083,8 @@ const stationen = [
     },
 
     // ───────── spielgang.K5 — die Sprache des Spielers: die EINE Zählung (w5-spielgang-k5) ─────────
-    // Die Station und gate:sprache lesen DIESELBE Funktion (scripts/lib/sprach-zaehlung.cjs im Baum, gerufen über
-    // `diag-sprache.cjs --lebend`): bis w5-spielgang-k5 zählte die Station hier selbst jeden Text-Knoten des DOM als hart (707 an
+    // Die Station und gate:sprache lesen DIESELBE Code-Zählung (`scripts/diag-sprache.cjs`, per require in `sprachLauf` oben), das DOM
+    // zählt `sprachLauf` (bis w6-spielgang-decke `diag-sprache.cjs --lebend` im Baum): bis w5-spielgang-k5 zählte die Station hier selbst jeden Text-Knoten des DOM als hart (707 an
     // 5fba36ea, auch „Anazh Realm“ aus der Tafel), die Wand in pseudo 19 — zwei Zählungen derselben Wahrheit. DAS GESETZ
     // (Pseudo-Lokalisierung): die Welt bootet am Null-Renderer in `?sprache=pseudo`, jedes Stück der Tafel trägt ⟦ ⟧, jeder
     // eingesetzte Wert ⁨ ⁩; ein Wort aus ≥ 2 Buchstaben außerhalb jeder Marke ist hart — im Text-Knoten, im Titel, in den
@@ -2997,7 +3100,7 @@ const stationen = [
         kriterium: "spielgang.K5",
         staffel: 1,
         geraet: "headless",
-        befehl: ["node", "scripts/diag-sprache.cjs", "--lebend", "--port", "{PORT}", "--json", "{AUS}"],
+        befehl: ["node", "-e", "(" + sprachLauf + ")(process.argv[1], process.argv[2]);", "{PORT}", "{AUS}"],
         gpu: false,
         zeit: false,
         minuten: 4,
@@ -3025,7 +3128,7 @@ const stationen = [
             { name: "die alte Zählung ohne Pseudo-Sprache und Wechsel", stdout: 'TEXTE {"glieder":4100,"gliederMit":0,"code":0,"dom":0,"senken":{},"quelle":"AnazhRealm.TEXTE (de 412, en 412)","beispiele":[]}', gruen: false },
             { name: "keine Tafel", stdout: 'TEXTE {"glieder":3600,"code":0,"sprache":"pseudo","zeilen":1602,"markiert":1436,"dom":0,"hart":[],"daten":166,"quelle":null,"stehen":0,"stehenNamen":[],"blind":[]}', gruen: false },
         ],
-        pfad: ["stamm/", "index.html", "scripts/diag-sprache.cjs", "scripts/lib/sprach-zaehlung.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/stamm.cjs"],
+        pfad: ["stamm/", "index.html", "scripts/diag-sprache.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/stamm.cjs"],
         quelle: "1 = jede UI-Zeile aus EINER Text-Quelle in DE und EN (0 harte Strings, Zählung), an einem Gerät umgeschaltet",
     },
     // ───────── spielgang.K4 — Zugänglichkeit aus dem Gesetz: die Untertitel (Zweig hud-zugang) ─────────
