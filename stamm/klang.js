@@ -1268,7 +1268,8 @@ class AnazhRealm_klang {
             if (pat.kick.indexOf(step) >= 0) this._lofiKick(t, kick);
             if (tag > 0.001 && pat.snare.indexOf(step) >= 0) this._lofiSnare(t, tag);
             // peace > 0.6 lässt die Off-Beat-Hihats aus — ein ruhigerer Groove.
-            if (tag > 0.001 && pat.hihat.indexOf(step) >= 0 && !(peace > 0.6 && step % 2 === 1)) this._lofiHihat(t, tag);
+            if (tag > 0.001 && pat.hihat.indexOf(step) >= 0 && !(peace > 0.6 && step % 2 === 1))
+                this._lofiHihat(t, tag);
             if (tag > 0.001 && regen > 0.001) this._lofiHihat(t + stepDur / 2, regen * tag);
         }
     }
@@ -1670,7 +1671,10 @@ class AnazhRealm_klang {
         const now = s.ctx.currentTime;
         const laeuft = L.duckBis > now;
         const ziel = Math.min(laeuft ? L.duckZiel : 1, Math.pow(10, z.db / 20));
-        const bis = Math.max(laeuft ? L.duckBis : 0, now + D.angriffSek + Math.max(z.haltSek, zeichen * (z.sekProZeichen || 0)));
+        const bis = Math.max(
+            laeuft ? L.duckBis : 0,
+            now + D.angriffSek + Math.max(z.haltSek, zeichen * (z.sekProZeichen || 0))
+        );
         const g = L.duck.gain;
         if (typeof g.cancelAndHoldAtTime === "function") g.cancelAndHoldAtTime(now);
         else {
