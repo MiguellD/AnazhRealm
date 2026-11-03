@@ -92,85 +92,122 @@ async function foundryFadenLog(port, aus) {
     }
 }
 
-// ───────── ZWEI BÄCKER ODER EINER (pipeline.K2, p3-stationen-g456) — läuft als `node -e` im Spiel-Baum, swiftshader ─────────
-// Die Karte eines Baums aus dem STUDIO: das Labor der Bäume (worlds/terrain, die Brücke `bakeImpostorAtlas` auf three r128) backt
-// seinen Atlas; gelesen wird die erste Zelle (Art und Saat aus `_impSpecs[0]`, die erste Ansicht) als RGBA-Bytes aus seinem Ziel.
-// Die Karte desselben Baums aus der WELT: der Bäcker der Welt (`_karteWeltBacken` auf ihrem Renderer, die Höhen-Stufe der Art)
-// backt eine Zelle derselben Art (ihre Gestalt 0) in einen frischen Atlas; gelesen wird sein Bühnen-Ziel nach dem ersten Ring. Verglichen
-// werden Bytes (sha1 und Länge) und die Art — „dieselben Zahlen lesen“ zählt nie (die Welt wählt die Gestalt 0 ihrer Art; gleiche
-// Bytes heißen derselbe Baum). Kann die Welt die Art nicht backen, steht es
-// beim Namen (ROT).
-async function karteZweiBaecker(port, aus) {
+// ───────── EIN BÄCKER DER KARTE (pipeline.K2 Staffel 1 und 2, w8-ein-baecker) — läuft als `node -e` im Spiel-Baum, swiftshader ─────────
+// DAS LABOR: das Labor der Bäume (worlds/terrain, three r128) öffnet als Tor über der Welt; sein Wald (`buildForest`) pflanzt die
+// Gestalten der Welt und fragt ihre Karten über das Tor (`karte-bitte` → `_karteAbzug`) — gelesen werden die Bytes, die seine
+// Fernstufe zeichnet (`_impMat` map/nmap, je Zelle `_impSpecs[i]` = Art, Gestalt: Albedo und Normale der Schicht).
+// DIE WELT: der Bäcker der Welt (`_karteWeltBacken` auf ihrem Renderer) backt jede Zelle selbst — jede Art mit Karte des Buchs der
+// Welt (KIND_POLICY impostor und eine Karten-Stufe im Budget), je Gestalt 1..T (`_foundryGestalten`, mit dem Solitär) — und die
+// Probe liest ihre Schicht selbst nach dem letzten Ring (BC: das Bühnen-Ziel, rgba8: die Schicht des Array-Ziels; Albedo und Normale im selben Zug). Verglichen werden sha1 und Länge je Zelle;
+// eine Zelle, die nur eine Seite trägt, steht beim Namen. Gleiche Bytes aus derselben Bake-Rechnung heißen EIN Bäcker. EINE Fahrt
+// trägt beide Staffeln (Zwillinge): die 1 urteilt die erste Zelle des Labors, die 2 jede Art.
+async function karteBaecker(port, aus) {
     const path = require("path");
     const fs = require("fs");
-    const crypto = require("crypto");
     const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
-    const out = { studio: null, welt: null };
-    const sha = (b64) => (b64 ? crypto.createHash("sha1").update(Buffer.from(b64, "base64")).digest("hex") : null);
+    const out = { welt: null, labor: null, fehler: null };
     const server = WB.statikServer();
     await server.lausche(Number(port));
-    const browser = await WB.starteBrowser({ art: "linse", frist: 600000, viewport: { width: 640, height: 360 } });
+    const browser = await WB.starteBrowser({ art: "linse", frist: 1500000, viewport: { width: 640, height: 360 } });
+    // sha1 im Browser (crypto.subtle) über Albedo und Normale einer Zelle
+    const SHA = "async (a, n) => { const x = new Uint8Array(a.length + n.length); x.set(a, 0); x.set(n, a.length); const h = new Uint8Array(await crypto.subtle.digest('SHA-1', x)); return { sha: Array.from(h, (v) => v.toString(16).padStart(2, '0')).join(''), b: x.length }; }";
     try {
-        // DAS STUDIO: das Labor der Bäume bootet, sein Atlas steht (`_impRT` der Brücke, `_impSpecs` die Baubeschreibungen)
-        const ps = await browser.newPage();
-        await server.zeige(ps, 180000, "worlds/terrain/index.html");
-        // der Wald des Labors (sein Knopf ruft `buildForest`: die Gestalten je Art, die Baubeschreibungen, der Bake des Atlas)
-        await ps.waitForFunction(() => typeof buildForest === "function" && typeof renderer !== "undefined" && renderer, { timeout: 180000, polling: 500 });
-        await ps.evaluate(() => buildForest());
-        await ps.waitForFunction(() => typeof _impRT !== "undefined" && _impRT && _impSpecs.length > 0 && _impBakedSig, { timeout: 240000, polling: 500 });
-        out.studio = await ps.evaluate(() => {
-            const sp = _impSpecs[0];
-            const cw = _impRT.width / Math.max(1, _impK), ch = _impRT.height / Math.max(1, _impV);
-            const px = new Uint8Array(cw * ch * 4);
-            renderer.readRenderTargetPixels(_impRT, 0, 0, cw, ch, px);
-            let s = "";
-            for (let i = 0; i < px.length; i += 0x8000) s += String.fromCharCode.apply(null, px.subarray(i, i + 0x8000));
-            return { baecker: "bakeImpostorAtlas (three r" + THREE.REVISION + ")", art: sp.sp, saat: sp.seed, format: "rgba8 " + cw + "×" + ch, b: px.length, bytes: btoa(s) };
-        });
-        out.studio.sha = sha(out.studio.bytes);
-        delete out.studio.bytes;
-        await ps.close();
-        // DIE WELT: derselbe Baum (Art, Saat) durch den Bäcker der Welt auf ihrem Renderer, ein frischer Atlas
         const pw = await browser.newPage();
-        await server.zeige(pw, 180000);
-        await pw.evaluate(() => window.__weltDa((r) => r._foundry && r._foundry.ready && r.state.rendererReady));
-        out.welt = await pw.evaluate(async (art, saat) => {
-            const r = window.anazhRealm, st = r.state;
-            const o = { baecker: "_karteWeltBacken (three r" + THREE.REVISION + ")", art: null, saat: null, format: null, b: 0, bytes: null };
+        await server.zeige(pw, 240000);
+        await pw.evaluate(() => window.__weltDa((r) => r._foundry && r._foundry.ready && r._foundry.recipes && r.state.rendererReady));
+        // DAS LABOR im Tor dieser Welt
+        await pw.evaluate(() => window.anazhRealm._buildPortalOverlay({ world: "worlds/terrain/index.html", label: "Labor" }));
+        let fr = null;
+        for (const t0 = Date.now(); !fr && Date.now() - t0 < 120000; await WB.sleep(500))
+            fr = pw.frames().find((f) => /worlds\/terrain\/index\.html/.test(f.url()));
+        if (!fr) throw new Error("das Tor öffnet kein Labor");
+        await fr.waitForFunction(() => typeof buildForest === "function" && typeof _labHeimat !== "undefined" && _labHeimat && renderer, { timeout: 240000, polling: 500 });
+        await fr.evaluate(() => buildForest());
+        await fr.waitForFunction(() => _karteLabor && (_karteLabor.offen === 0 || _karteLabor.fehler), { timeout: 900000, polling: 1000 });
+        out.labor = await fr.evaluate(async (SHA) => {
+            const sha = eval(SHA);
+            const o = { baecker: null, karten: {}, fehler: _karteLabor.fehler };
+            if (o.fehler) return o;
+            const A = _impMat.uniforms.map.value.image,
+                N = _impMat.uniforms.nmap.value.image;
+            const n = A.width * A.height * 4;
+            o.baecker = "Labor-Fernstufe (three r" + THREE.REVISION + ", " + A.width + "×" + A.height + ")";
+            for (let i = 0; i < _impSpecs.length; i++)
+                o.karten[_impSpecs[i].sp + "|" + _impSpecs[i].seed] = await sha(A.data.subarray(i * n, (i + 1) * n), N.data.subarray(i * n, (i + 1) * n));
+            return o;
+        }, SHA);
+        if (out.labor.fehler) throw new Error("das Labor: " + out.labor.fehler);
+        // DIE WELT — ihr Bäcker, ihre Schicht, von der Probe gelesen
+        out.welt = await pw.evaluate(async (SHA) => {
+            const sha = eval(SHA);
+            const r = window.anazhRealm, rend = r.state.renderer;
+            const o = { baecker: "_karteWeltBacken (three r" + THREE.REVISION + ")", format: null, karten: {}, fehler: null };
             const at = r._impostorAtlas();
-            if (!at) return Object.assign(o, { fehler: "die Welt trägt keinen Karten-Atlas" });
-            const preset = Object.keys(r._foundry.recipes || {}).find((k) => k === art || k.startsWith(art)) || null;
-            if (!preset) return Object.assign(o, { fehler: "die Welt kennt die Art „" + art + "“ des Studios nicht als Rezept" });
-            const z = r._impostorZelleNeu(at, "p3:" + preset + "|0", preset, 0, null);
-            if (!r._impostorAtlasTexturen(at, z.idx + 1)) return Object.assign(o, { fehler: "der Atlas hat keine Texturen" });
-            Object.assign(o, { art: preset, saat: "Gestalt 0" });
-            z._weltNeu = true;
-            let e = null;
-            for (const t0 = performance.now(); performance.now() - t0 < 120000; await new Promise((f) => setTimeout(f, 100))) {
-                e = r._karteWeltBacken(at, z);
-                if (e === true || e === 0 || e === false) break;
+            const rec = r._foundry.recipes;
+            const budget = (AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod && AnazhRealm._studioRenderConfig.lod.budget) || {};
+            const zellen = [];
+            for (const art of Object.keys(rec)) {
+                const kind = rec[art] && rec[art].kind, pol = AnazhRealm.KIND_POLICY[kind], zeile = budget[kind];
+                if (!(pol && pol.impostor && zeile && Object.values(zeile).some((s) => s && s.karte))) continue;
+                for (let g = 1; g <= (r._foundryGestalten(art) || 0); g++) zellen.push(art + "|" + g);
             }
-            const B = r._karteBuehneSatz;
-            if (e === false || !B || !B.ziel) return Object.assign(o, { fehler: "die Welt backte keine Karte (" + e + ")" });
-            const rt = B.ziel;
-            const px = new Uint8Array(await st.renderer.readRenderTargetPixelsAsync(rt, 0, 0, rt.width, rt.height));
-            let s = "";
-            for (let i = 0; i < px.length; i += 0x8000) s += String.fromCharCode.apply(null, px.subarray(i, i + 0x8000));
-            return Object.assign(o, { format: (at.fmt || "?") + " " + rt.width + "×" + rt.height, b: px.length, bytes: btoa(s) });
-        }, out.studio.art, out.studio.saat);
-        out.welt.sha = sha(out.welt.bytes);
-        delete out.welt.bytes;
-        if (out.welt.fehler) out.fehler = out.welt.fehler;
+            if (!zellen.length) return Object.assign(o, { fehler: "das Buch der Welt nennt keine Art mit Karte" });
+            for (const key of zellen) {
+                const [art, g] = [key.split("|")[0], Number(key.split("|")[1])];
+                const z = r._foundryEnsureImpostorRecord(art, g, null);
+                if (!z || !r._impostorAtlasTexturen(at, z.idx + 1)) { o.karten[key] = { fehler: "keine Zelle" }; continue; }
+                z._weltNeu = true;
+                z._platte = null;
+                let e = null;
+                for (const t0 = performance.now(); performance.now() - t0 < 180000; await new Promise((f) => setTimeout(f, e === 0 ? 0 : 50))) {
+                    if (at.offen && at.offen.z !== z) r._karteWeltBacken(at, at.offen.z);
+                    e = r._karteWeltBacken(at, z);
+                    if (e === true || e === false) break;
+                }
+                if (e !== true) { o.karten[key] = { fehler: "die Welt backte keine Karte (" + e + ")" }; continue; }
+                const bc = at.fmt === "bc";
+                const rt = bc ? r._karteBuehneSatz.ziel : at.rt;
+                o.format = (at.fmt || "?") + " " + rt.width + "×" + rt.height;
+                const lies = (i) => rend.readRenderTargetPixelsAsync(rt, 0, 0, rt.width, rt.height, i, bc ? 0 : z.idx);
+                const [a, n] = await Promise.all([lies(0), lies(1)]); // beide Kopien im selben Zug: danach backt der nächste
+                o.karten[key] = await sha(new Uint8Array(a.buffer, a.byteOffset, a.byteLength), new Uint8Array(n.buffer, n.byteOffset, n.byteLength));
+            }
+            return o;
+        }, SHA);
+        out.fehler = out.welt.fehler || null;
     } catch (e) {
         out.fehler = String(e.message).split("\n")[0].slice(0, 300);
     } finally {
         fs.writeFileSync(aus, JSON.stringify(out));
-        console.log("KARTE " + JSON.stringify(out));
+        console.log("KARTEN " + JSON.stringify(out));
         await browser.close().catch(() => {});
         server.close();
         process.exit(0);
     }
 }
+
+// Das Urteil der Fahrt je Zelle und je Art (beide Staffeln lesen es): je Art ihre Gestalten beider Seiten, gleich, wenn jede Gestalt
+// auf beiden Seiten mit gleichem sha1 und gleicher Länge steht; der Art-Hash ist sha1 über die Zell-Hashes der Welt in der Reihe der
+// Gestalten, die Größe die Summe ihrer Bytes. Eine Zelle, die nur eine Seite trägt, ist ROT beim Namen.
+function karteZellen(j) {
+    const W = (j && j.welt && j.welt.karten) || {}, L = (j && j.labor && j.labor.karten) || {};
+    const gleich = (w, l) => !!(w && l && w.sha && w.sha === l.sha && w.b === l.b);
+    const roh = (k) => k + (!L[k] ? " fehlt im Labor" : !W[k] ? " fehlt in der Welt" : W[k].fehler || L[k].fehler ? " " + (W[k].fehler || L[k].fehler)
+        : " " + String(W[k].sha).slice(0, 8) + "/" + W[k].b + " B ≠ Labor " + String(L[k].sha).slice(0, 8) + "/" + L[k].b + " B");
+    const arten = new Map();
+    for (const k of new Set([...Object.keys(W), ...Object.keys(L)])) {
+        const art = k.split("|")[0];
+        if (!arten.has(art)) arten.set(art, []);
+        arten.get(art).push(k);
+    }
+    return [...arten].map(([art, ks]) => {
+        ks.sort((x, y) => Number(x.split("|")[1]) - Number(y.split("|")[1]));
+        const rot = ks.filter((k) => !gleich(W[k], L[k])).map(roh);
+        const sha = require("crypto").createHash("sha1").update(ks.map((k) => (W[k] && W[k].sha) || "").join(",")).digest("hex");
+        return { art, n: ks.length, rot, sha, b: ks.reduce((s, k) => s + ((W[k] && W[k].b) || 0), 0), gleich: (k) => gleich(W[k], L[k]) };
+    });
+}
+const MB = (b) => (b / 1048576).toFixed(1).replace(".", ",") + " MB";
 
 // Studio-Seite → die Arten aus PARAMS_BY_KIND, die ihr werk() der Hülle schickt (worlds/<seite>/*.js `werk:`)
 const SEITEN = {
@@ -1025,37 +1062,70 @@ const alle = [
         quelle: "2 = jede Lieferung (Blatt-Atlas, Dorf-Export, Karten) 100 %, ein geänderter Kern-SHA baut nur seine Art neu (0 fremde Neubauten), beide Geräte",
     },
 
-    // ───────────── pipeline.K2 — EIN Karten-Bäcker (p3-stationen-g456): Byte-Vergleich der Karte aus Studio und Welt ─────────────
+    // ───────────── pipeline.K2 — EIN Karten-Bäcker (w8-ein-baecker): die Karte des Labors IST die Karte des Welt-Bäckers ─────────────
+    // EINE Fahrt (karteBaecker) trägt beide Staffeln — gleicher Befehl, gleiche Umgebung: Zwillinge, die Maschine fährt sie einmal
     {
         kriterium: "pipeline.K2",
         staffel: 1,
         geraet: "headless",
-        befehl: ["node", "-e", "(" + karteZweiBaecker + ")(process.argv[1], process.argv[2]);", "{PORT}", "{AUS}"],
+        befehl: ["node", "-e", "(" + karteBaecker + ")(process.argv[1], process.argv[2]);", "{PORT}", "{AUS}"],
         env: SOFT,
         gpu: false,
         zeit: false,
-        minuten: 6,
+        minuten: 20,
         urteil: (j, lauf) => {
-            j = j || jsonZeile(lauf.stdout, /^KARTE \{/);
-            if (!j || !j.studio || !j.welt) return { gruen: false, zahl: "keine KARTE-Zeile (Exit " + lauf.exit + ")" + (j && j.fehler ? ": " + j.fehler : "") };
-            const s = j.studio, w = j.welt;
-            const gleich = !!(s.sha && w.sha && s.sha === w.sha && s.b === w.b && s.art === w.art);
+            j = j || jsonZeile(lauf.stdout, /^KARTEN \{/);
+            if (!j || !j.welt || !j.labor) return { gruen: false, zahl: "keine KARTEN-Zeile (Exit " + lauf.exit + ")" + (j && j.fehler ? ": " + j.fehler : "") };
+            // die erste Zelle des Labors (der erste Baum seines Walds) gegen dieselbe Zelle aus dem Bäcker der Welt
+            const k = Object.keys(j.labor.karten || {})[0];
+            const a = k && karteZellen(j).find((x) => x.art === k.split("|")[0]);
+            const gleich = !!(a && a.gleich(k)) && !j.fehler;
+            const w = (k && j.welt.karten[k]) || {}, l = (k && j.labor.karten[k]) || {};
             return {
                 gruen: gleich,
-                zahl:
-                    (gleich ? "byte-gleich: " : "zwei Bäcker: ") + "Studio " + (s.baecker || "?") + " " + (s.art || "?") + "/" + (s.saat == null ? "?" : s.saat) + " " +
-                    (s.format || "?") + " " + (s.b || 0) + " B sha " + String(s.sha || "—").slice(0, 10) + " ⇄ Welt " + (w.baecker || "?") + " " + (w.art || "?") + "/" +
-                    (w.saat == null ? "?" : w.saat) + " " + (w.format || "?") + " " + (w.b || 0) + " B sha " + String(w.sha || "—").slice(0, 10) +
-                    (j.fehler ? " · " + j.fehler : ""),
+                zahl: (gleich ? "byte-gleich: " : "zwei Bäcker: ") + "Labor " + (j.labor.baecker || "?") + " " + (k || "—") + " " + (l.b || 0) + " B sha " + String(l.sha || "—").slice(0, 10) +
+                    " ⇄ Welt " + (j.welt.baecker || "?") + " " + (j.welt.format || "?") + " " + (w.b || 0) + " B sha " + String(w.sha || "—").slice(0, 10) + (j.fehler ? " · " + j.fehler : ""),
             };
         },
         proben: [
-            { name: "dieselben Bytes aus beiden Bäckern", stdout: 'KARTE {"studio":{"baecker":"x","art":"eiche","saat":3,"format":"rgba8 128×256","b":131072,"sha":"ab12"},"welt":{"baecker":"x","art":"eiche","saat":3,"format":"rgba8 128×256","b":131072,"sha":"ab12"}}', gruen: true },
-            { name: "zwei Bäcker, die dieselben Zahlen lesen (gleiche Maße, andere Bytes)", stdout: 'KARTE {"studio":{"baecker":"bakeImpostorAtlas","art":"eiche","saat":3,"format":"rgba8 128×256","b":131072,"sha":"ab12"},"welt":{"baecker":"_karteWeltBacken","art":"eiche","saat":3,"format":"rgba8 128×256","b":131072,"sha":"cd34"}}', gruen: false },
-            { name: "die Welt backt nie", stdout: 'KARTE {"studio":{"baecker":"bakeImpostorAtlas","art":"eiche","saat":3,"b":131072,"sha":"ab12"},"welt":{"baecker":"_karteWeltBacken","sha":null,"b":0},"fehler":"die Welt backte keine Karte"}', gruen: false },
+            { name: "dieselben Bytes aus dem EINEN Bäcker", stdout: "KARTEN {\"welt\":{\"baecker\":\"_karteWeltBacken (three r184)\",\"format\":\"bc 128×3584\",\"karten\":{\"eiche|1\":{\"sha\":\"aa01\",\"b\":3670016},\"eiche|2\":{\"sha\":\"aa02\",\"b\":3670016},\"fichte|1\":{\"sha\":\"bb01\",\"b\":3670016}}},\"labor\":{\"baecker\":\"Labor-Fernstufe (three r128, 128×3584)\",\"karten\":{\"eiche|1\":{\"sha\":\"aa01\",\"b\":3670016},\"eiche|2\":{\"sha\":\"aa02\",\"b\":3670016},\"fichte|1\":{\"sha\":\"bb01\",\"b\":3670016}}}}", gruen: true },
+            { name: "zwei Bäcker, die dieselben Zahlen lesen (gleiche Maße, andere Bytes)", stdout: "KARTEN {\"welt\":{\"baecker\":\"_karteWeltBacken (three r184)\",\"format\":\"bc 128×3584\",\"karten\":{\"eiche|1\":{\"sha\":\"aa01\",\"b\":3670016},\"eiche|2\":{\"sha\":\"aa02\",\"b\":3670016},\"fichte|1\":{\"sha\":\"bb01\",\"b\":3670016}}},\"labor\":{\"baecker\":\"Labor-Fernstufe (three r128, 128×3584)\",\"karten\":{\"eiche|1\":{\"sha\":\"aa99\",\"b\":3670016},\"eiche|2\":{\"sha\":\"aa02\",\"b\":3670016},\"fichte|1\":{\"sha\":\"bb01\",\"b\":3670016}}}}", gruen: false },
+            { name: "die Welt backt nie", stdout: "KARTEN {\"welt\":{\"baecker\":\"_karteWeltBacken (three r184)\",\"karten\":{},\"fehler\":\"die Welt backte keine Karte\"},\"labor\":{\"baecker\":\"Labor-Fernstufe (three r128, 128×3584)\",\"karten\":{\"eiche|1\":{\"sha\":\"aa01\",\"b\":3670016},\"eiche|2\":{\"sha\":\"aa02\",\"b\":3670016},\"fichte|1\":{\"sha\":\"bb01\",\"b\":3670016}}},\"fehler\":\"die Welt backte keine Karte\"}", gruen: false },
         ],
-        pfad: ["foundry-bruecke.js", "foundry-core.js", "phyto-core.js", "worlds/terrain/", "stamm/stoff-karte.js", "stamm/studio-*.js", "cores.manifest.json", "scripts/lib/welt-boot.cjs"],
+        pfad: ["foundry-bruecke.js", "foundry-core.js", "phyto-core.js", "worlds/terrain/", "stamm/stoff-karte.js", "stamm/netz-portal.js", "stamm/dirigent-takt.js", "stamm/studio-*.js", "cores.manifest.json", "scripts/lib/welt-boot.cjs"],
         quelle: "1 = die Karte eines Baums aus Studio und Welt byte-gleich (EIN Bäcker)",
+    },
+    {
+        kriterium: "pipeline.K2",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "-e", "(" + karteBaecker + ")(process.argv[1], process.argv[2]);", "{PORT}", "{AUS}"],
+        env: SOFT,
+        gpu: false,
+        zeit: false,
+        minuten: 20,
+        urteil: (j, lauf) => {
+            j = j || jsonZeile(lauf.stdout, /^KARTEN \{/);
+            if (!j || !j.welt || !j.labor) return { gruen: false, zahl: "keine KARTEN-Zeile (Exit " + lauf.exit + ")" + (j && j.fehler ? ": " + j.fehler : "") };
+            // je Art mit Karte: jede Gestalt der Welt (das Buch) und jede Zelle des Labor-Walds byte-gleich aus EINER Bake-Rechnung
+            const arten = karteZellen(j);
+            const rot = arten.filter((a) => a.rot.length);
+            return {
+                gruen: arten.length > 0 && !rot.length && !j.fehler,
+                zahl: (arten.length - rot.length) + "/" + arten.length + " Arten mit Karte byte-gleich (Welt " + (j.welt.baecker || "?") + " " + (j.welt.format || "?") + " ⇄ Labor " +
+                    (j.labor.baecker || "?") + "): " + arten.map((a) => a.art + " ×" + a.n + " " + a.sha.slice(0, 8) + " " + MB(a.b)).join(" · ") +
+                    (rot.length ? " · ROT " + rot.map((a) => a.art + " [" + a.rot.join("; ") + "]").join(" · ") : "") + (j.fehler ? " · " + j.fehler : ""),
+            };
+        },
+        proben: [
+            { name: "EIN Bäcker: jede Art byte-gleich", stdout: "KARTEN {\"welt\":{\"baecker\":\"_karteWeltBacken (three r184)\",\"format\":\"bc 128×3584\",\"karten\":{\"eiche|1\":{\"sha\":\"aa01\",\"b\":3670016},\"eiche|2\":{\"sha\":\"aa02\",\"b\":3670016},\"fichte|1\":{\"sha\":\"bb01\",\"b\":3670016}}},\"labor\":{\"baecker\":\"Labor-Fernstufe (three r128, 128×3584)\",\"karten\":{\"eiche|1\":{\"sha\":\"aa01\",\"b\":3670016},\"eiche|2\":{\"sha\":\"aa02\",\"b\":3670016},\"fichte|1\":{\"sha\":\"bb01\",\"b\":3670016}}}}", gruen: true },
+            { name: "ein zweiter Bäcker mit anderer Auflösung (r128, 128×256 je Ansicht)", stdout: "KARTEN {\"welt\":{\"baecker\":\"_karteWeltBacken (three r184)\",\"format\":\"bc 128×3584\",\"karten\":{\"eiche|1\":{\"sha\":\"aa01\",\"b\":3670016},\"eiche|2\":{\"sha\":\"aa02\",\"b\":3670016},\"fichte|1\":{\"sha\":\"bb01\",\"b\":3670016}}},\"labor\":{\"baecker\":\"bakeImpostorAtlas (three r128, 1280×2048)\",\"karten\":{\"eiche|1\":{\"sha\":\"caa01\",\"b\":1048576},\"eiche|2\":{\"sha\":\"caa02\",\"b\":1048576},\"fichte|1\":{\"sha\":\"cbb01\",\"b\":1048576}}}}", gruen: false },
+            { name: "eine Art, die anders backt (die Fichte)", stdout: "KARTEN {\"welt\":{\"baecker\":\"_karteWeltBacken (three r184)\",\"format\":\"bc 128×3584\",\"karten\":{\"eiche|1\":{\"sha\":\"aa01\",\"b\":3670016},\"eiche|2\":{\"sha\":\"aa02\",\"b\":3670016},\"fichte|1\":{\"sha\":\"bb01\",\"b\":3670016}}},\"labor\":{\"baecker\":\"Labor-Fernstufe (three r128, 128×3584)\",\"karten\":{\"eiche|1\":{\"sha\":\"aa01\",\"b\":3670016},\"eiche|2\":{\"sha\":\"aa02\",\"b\":3670016},\"fichte|1\":{\"sha\":\"bb99\",\"b\":3670016}}}}", gruen: false },
+            { name: "eine Karten-Art der Welt fehlt im Labor-Wald", stdout: "KARTEN {\"welt\":{\"baecker\":\"_karteWeltBacken (three r184)\",\"format\":\"bc 128×3584\",\"karten\":{\"eiche|1\":{\"sha\":\"aa01\",\"b\":3670016},\"eiche|2\":{\"sha\":\"aa02\",\"b\":3670016},\"fichte|1\":{\"sha\":\"bb01\",\"b\":3670016}}},\"labor\":{\"baecker\":\"Labor-Fernstufe (three r128, 128×3584)\",\"karten\":{\"eiche|1\":{\"sha\":\"aa01\",\"b\":3670016},\"eiche|2\":{\"sha\":\"aa02\",\"b\":3670016}}}}", gruen: false },
+            { name: "die Welt backt nie", stdout: "KARTEN {\"welt\":{\"baecker\":\"_karteWeltBacken (three r184)\",\"karten\":{},\"fehler\":\"die Welt backte keine Karte\"},\"labor\":{\"baecker\":\"Labor-Fernstufe (three r128, 128×3584)\",\"karten\":{\"eiche|1\":{\"sha\":\"aa01\",\"b\":3670016},\"eiche|2\":{\"sha\":\"aa02\",\"b\":3670016},\"fichte|1\":{\"sha\":\"bb01\",\"b\":3670016}}},\"fehler\":\"die Welt backte keine Karte\"}", gruen: false },
+        ],
+        pfad: ["foundry-bruecke.js", "foundry-core.js", "phyto-core.js", "worlds/terrain/", "stamm/stoff-karte.js", "stamm/netz-portal.js", "stamm/dirigent-takt.js", "stamm/studio-*.js", "cores.manifest.json", "scripts/lib/welt-boot.cjs"],
+        quelle: "2 = jede Art mit Karte, aus derselben Bake-Rechnung wie L0",
     },
     // ───────────── pipeline.K5 — EIN Bauer auf der Engine der Welt (p3-stationen-g456): Netz- und Parse-Log der Foundry-Fäden ─────────────
     {
@@ -2126,7 +2196,6 @@ const alle = [
 module.exports = alle.filter((st) => st.befehl !== null);
 module.exports.fehlt = alle.filter((st) => st.befehl === null).concat([
     // p3-stationen-g456 (01.11.): die Staffeln 2, deren Werkzeug fehlt — beim Namen
-    { kriterium: "pipeline.K2", staffel: 2, befehl: null, grund: "nicht gebaut (p3-stationen-g456): je Art mit Karte der Byte-Vergleich aus derselben Bake-Rechnung wie L0 — die Station der Staffel 1 (`karteZweiBaecker`) vergleicht EINE Zelle der ersten Art; je Art verlangt das Labor jede Art im Wald und die Welt jede Karten-Art, und solange zwei Bäcker backen (Studio `bakeImpostorAtlas` r128, Welt `_karteWeltBacken` r184), fällt schon die 1" },
     { kriterium: "pipeline.K5", staffel: 2, befehl: null, grund: "nicht gebaut (p3-stationen-g456): „kalt bereit ≤ 300 ms an beiden Geräten“ verlangt die Bereitschaft des Foundry-Fadens am Kalt-Boot auf jeder Karte — die Probe der Ankunft in der Sitzung nennt sie nicht, ein eigener Lauf hat in der Fahrt keinen Platz (Radeon 1 790 / 1 800 s)" },
     { kriterium: "ki.K5", staffel: 2, befehl: null, grund: "nicht gebaut (p3-stationen-g456): Prompt ≤ 4 000 Tokens (der Prompt ist nie gezählt: kein Zähler am Chat-Pfad), 0 Hänger > 100 ms während die KI-Werke bauen (`werkbank haenger` in derselben Sitzung — die Korpus-Linse läuft am Null-Renderer), ≤ 0,002 $ je Satz (kein Preis am lokalen Modell), beide Geräte (das Modell läuft nur am Laptop)" },
 ]);
