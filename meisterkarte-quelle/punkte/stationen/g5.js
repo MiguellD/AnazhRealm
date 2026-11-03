@@ -1376,6 +1376,238 @@ const LEIB_K3_PROBEN = (() => {
     ];
 })();
 
+// ultiversum.K1 #1 (w8-ultiversum-k1): ZWEI PER TOR ERREICHBARE WELTEN MIT VERSCHIEDENEN KONSTANTEN, JE KONSTANTE EIN LESER. Null-Renderer,
+// EINE Seite, der echte Weg: A ist die Welt der Seite (das Gesetz der Erde, `worldMeta.gesetz`); der Spieler holt ein Tor in die Ferne
+// (`obtainPortalForWorld("ferne")` → `portal_ferne`, portalMeta.gesetz), setzt es und geht hindurch (`enterPortal` → `_weltTorBetreten`:
+// die Welt wird mit dem Gesetz der Ferne geboren, die Tür `_weltBetreten` wechselt am Ort, `erwacht`); in der Ferne steht das Heimtor
+// (`heimtor-<A>`), durch das der Spieler zurückkehrt. Je Welt und Seite gemessen: das Gesetz im Speicher der Welt (Schwere,
+// Rayleigh-Tiefe, Wetter-Tafel, Relief-Regler) und je Konstante ihr Leser — SPRUNG: ein echter Sprung im Takt (der Leib-Löser,
+// `leibSprung` + 240 Bilder `_gameLoopTick`), der Scheitel über dem Stand gegen v²/2g; HIMMEL: das Medium der Atmosphäre
+// (`_atmoMediumJetzt().betaR`, Blau ÷ Rot des Zenits) und die Farbe der Sonne bei sin h = 0,5 (`_atmoSonne`) — die Zahl des
+// Himmels-Zustands, nie ein Bild (Null-Renderer); WETTER: das Wort des Wetter-Zugs (`_wetterAmOrt`) an 240 Orten × Zeiten, je Zeile
+// der Front (`wetterAt`) gegen die Tafel; GELÄNDE: das Relief der Höhe des Kerns (41 × 41 Punkte, 120 m) an der Lage der Welt gegen
+// dieselbe Lage unter dem Erbgut der Erde. Am main d880c8e8 ROT erwartet: es gibt kein Gesetz der Welt und kein Tor in die Ferne.
+async function ultiversumK1Lauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const [aus, port] = process.argv.slice(1);
+    const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const out = {};
+    let code = 2;
+    const server = WB.statikServer();
+    await server.lausche(Number(port));
+    const { browser, page } = await WB.nullSeite({ frist: 300000 });
+    function MISS() {
+        window.__k1Miss = async () => {
+            const r = window.anazhRealm;
+            const st = r.state;
+            const G = st.worldMeta.gesetz;
+            if (!G) throw new Error("die Welt trägt kein Gesetz (worldMeta.gesetz)");
+            const m = { welt: st.worldMeta.worldId, slug: st.worldMeta.slug };
+            m.gesetz = {
+                schwere: G.schwere,
+                rayleighTiefe: G.himmel.rayleighTiefe.slice(),
+                wetter: { ...G.wetter },
+                hoeheRegler: G.gelaende && G.gelaende.terme && G.gelaende.terme[0].hoehe != null ? G.gelaende.terme[0].hoehe : null,
+            };
+            m.g = st.gravity;
+            const pm = st.playerMesh;
+            let t = performance.now();
+            for (let i = 0; i < 120; i++) r._gameLoopTick((t += 1000 / 60));
+            const y0 = pm.position.y;
+            const abdruck = r._sprungAbdruck();
+            const sprang = AnazhRealm._leibTakt().leibSprung(st, r._leibOrt(), t / 1000);
+            let top = y0;
+            for (let i = 0; i < 240; i++) {
+                r._gameLoopTick((t += 1000 / 60));
+                top = Math.max(top, pm.position.y);
+            }
+            m.sprung = { y0: +y0.toFixed(3), hoehe: +(top - y0).toFixed(3), abdruck: +abdruck.toFixed(3), sprang: !!sprang };
+            const M = r._atmoMediumJetzt();
+            const s = r._atmoSonne(0.5);
+            m.himmel = { betaR: M.betaR.map((v) => +v.toFixed(5)), blauRot: +(M.betaR[2] / M.betaR[0]).toFixed(4), sonne: [s.col.r, s.col.g, s.col.b].map((v) => +v.toFixed(4)) };
+            const seed = st.worldMeta.seed;
+            const je = {};
+            let gegen = 0;
+            for (let i = 0; i < 240; i++) {
+                const x = (i % 16) * 2300 - 18000;
+                const z = Math.floor(i / 16) * 1700 - 12000;
+                const tt = i * 397;
+                const zeile = globalThis.__phytoCore.wetterAt(seed, x, z, tt).zeile;
+                const wort = r._wetterAmOrt(x, z, tt);
+                je[zeile + ">" + wort] = (je[zeile + ">" + wort] || 0) + 1;
+                if (wort !== G.wetter[zeile]) gegen++;
+            }
+            const worte = {};
+            for (const [k, n] of Object.entries(je)) worte[k.split(">")[1]] = (worte[k.split(">")[1]] || 0) + n;
+            m.wetter = { je, worte, gegenTafel: gegen };
+            const K = globalThis.__gelaendeCore;
+            const L = r._gelaende();
+            const LE = Object.create(L);
+            Object.defineProperty(LE, "erbgut", { value: { terme: K.erbgutNormal(undefined), wildnis: 1 } });
+            const p = pm.position;
+            const hs = [];
+            const he = [];
+            for (let i = 0; i < 41; i++)
+                for (let j = 0; j < 41; j++) {
+                    const x = p.x + (i - 20) * 120;
+                    const z = p.z + (j - 20) * 120;
+                    hs.push(K.hoehe(L, x, z, false));
+                    he.push(K.hoehe(LE, x, z, false));
+                }
+            const sd = (a) => {
+                const mu = a.reduce((q, v) => q + v, 0) / a.length;
+                return Math.sqrt(a.reduce((q, v) => q + (v - mu) ** 2, 0) / a.length);
+            };
+            const e0 = r._erbgut().terme[0];
+            m.gelaende = { relief: +sd(hs).toFixed(3), reliefErde: +sd(he).toFixed(3), verhaeltnis: +(sd(hs) / Math.max(1e-9, sd(he))).toFixed(4), leserRegler: e0.hoehe != null ? e0.hoehe : null };
+            return m;
+        };
+    }
+    try {
+        await server.zeige(page, 120000);
+        await page.evaluate(() => window.__weltDa((r) => r.state._weltbildDa > 0));
+        await page.evaluate(MISS.toString() + ";MISS()");
+        out.a = await page.evaluate(() => window.__k1Miss());
+        console.log("ULTI_K1 a " + JSON.stringify(out.a));
+        out.tor = await page.evaluate(async () => {
+            const r = window.anazhRealm, st = r.state;
+            const hol = r.obtainPortalForWorld("ferne");
+            if (!hol || !hol.ok) return { ok: false, grund: "obtainPortalForWorld " + (hol && hol.reason) };
+            const p = st.playerMesh.position;
+            const e = r.spawnArchitecture(hol.blueprint, { x: p.x + 4, y: p.y, z: p.z }, { id: "ulti-k1-tor", precise: true });
+            if (!e || !(e.affordances && e.affordances.isPortal)) return { ok: false, grund: "das Tor steht nicht als Portal" };
+            const idA = st.worldMeta.worldId;
+            const res = r.enterPortal(e);
+            if (!res || !res.ok) return { ok: false, grund: "enterPortal " + JSON.stringify(res) };
+            const erw = await r.erwacht;
+            const gA = JSON.parse(localStorage.getItem(r.worldStorageKey(idA)) || "{}");
+            const torA = (gA.architectures || []).find((a) => a && a.id === "ulti-k1-tor");
+            return { ok: erw === true && st !== r.state && r.state.worldMeta.worldId === res.worldId && res.geboren === true, a: idA, b: res.worldId, merkt: !!(torA && torA.portalMeta && torA.portalMeta.weltId === res.worldId) };
+        });
+        console.log("ULTI_K1 tor " + JSON.stringify(out.tor));
+        if (!out.tor.ok) throw new Error("das Tor führt nicht in die Ferne: " + JSON.stringify(out.tor));
+        await page.evaluate(() => window.__weltDa((r) => r.state._weltbildDa > 0));
+        out.b = await page.evaluate(() => window.__k1Miss());
+        console.log("ULTI_K1 b " + JSON.stringify(out.b));
+        out.heim = await page.evaluate(async (idA) => {
+            const r = window.anazhRealm, st = r.state;
+            const h = (st.architectures || []).find((a) => a && a.id === "heimtor-" + idA);
+            if (!h) return { ok: false, grund: "kein Heimtor in der Ferne" };
+            const res = r.enterPortal(h);
+            if (!res || !res.ok) return { ok: false, grund: "enterPortal " + JSON.stringify(res) };
+            const erw = await r.erwacht;
+            return { ok: erw === true && r.state.worldMeta.worldId === idA, hier: r.state.worldMeta.worldId };
+        }, out.tor.a);
+        console.log("ULTI_K1 heim " + JSON.stringify(out.heim));
+        if (!out.heim.ok) throw new Error("das Heimtor führt nicht zurück: " + JSON.stringify(out.heim));
+        await page.evaluate(() => window.__weltDa((r) => r.state._weltbildDa > 0));
+        out.a2 = await page.evaluate(() => window.__k1Miss());
+        console.log("ULTI_K1 a2 " + JSON.stringify(out.a2));
+        code = 0;
+    } catch (e) {
+        out.fehler = String((e && e.message) || e).split("\n")[0];
+        console.log("ULTI_K1 FEHLER " + out.fehler);
+    } finally {
+        fs.writeFileSync(aus, JSON.stringify(out, null, 1));
+        await browser.close().catch(() => {});
+        process.exit(code);
+    }
+}
+// das Urteil über `ULTI_K1 a|tor|b|heim|a2 {…}`: das Tor führt hin (geboren, das Tor merkt seine Welt) und das Heimtor zurück; je Welt
+// liest jeder Leser SEIN Gesetz — die Schwere ist `state.gravity`, der Scheitel des Sprungs v²/2g ±15 %, Blau ÷ Rot des Mediums die
+// Rayleigh-Tiefe ±0,1 %, jedes Wort des Wetter-Zugs die Zeile der Tafel, das Relief 1 unter dem Erbgut der Erde und ≠ 1 (> 5 %) unter
+// Reglern, die der Leser trägt; zwischen A und B ist JEDE Konstante verschieden UND ihr Leser zeigt es (Sprung, Blau ÷ Rot, ein Wort,
+// das Relief); nach der Rückkehr gleicht A2 der A in jeder Zahl. Jeder Bruch beim Namen der Konstante und der Welt.
+function ultiversumK1Urteil(lauf) {
+    const t = String(lauf.stdout || "");
+    const fehler = (/^ULTI_K1 FEHLER (.*)$/m.exec(t) || [])[1];
+    const W = { a: jsonZeile(t, /^ULTI_K1 a \{/), b: jsonZeile(t, /^ULTI_K1 b \{/), a2: jsonZeile(t, /^ULTI_K1 a2 \{/) };
+    const T = jsonZeile(t, /^ULTI_K1 tor \{/);
+    const H = jsonZeile(t, /^ULTI_K1 heim \{/);
+    if (!W.a || !T || !W.b || !H || !W.a2) return { gruen: false, zahl: "keine ULTI_K1-Zeile" + (fehler ? " — " + fehler : "") + " (Exit " + lauf.exit + ")" };
+    const rot = [];
+    if (!T.ok) rot.push("das Tor führt nicht in die Ferne");
+    if (!T.merkt) rot.push("das Tor merkt seine Welt nicht (der Stand von A)");
+    if (!H.ok) rot.push("das Heimtor führt nicht zurück");
+    if (W.a.welt !== T.a || W.b.welt !== T.b || W.a2.welt !== T.a || T.a === T.b) rot.push("die Welten sind nicht A → B → A");
+    const nah = (x, y, rel) => Number.isFinite(x) && Number.isFinite(y) && Math.abs(x - y) <= rel * Math.max(Math.abs(x), Math.abs(y), 1e-9);
+    for (const k of ["a", "b", "a2"]) {
+        const m = W[k];
+        const G = m.gesetz || {};
+        if (m.g !== G.schwere) rot.push(k + ": state.gravity " + m.g + " ≠ Gesetz " + G.schwere);
+        const soll = (m.sprung.abdruck * m.sprung.abdruck) / (2 * Math.abs(G.schwere));
+        if (!m.sprung.sprang) rot.push(k + ": der Leib springt nicht");
+        else if (!nah(m.sprung.hoehe, soll, 0.15)) rot.push(k + ": der Sprung liest die Schwere nicht (Scheitel " + m.sprung.hoehe + " m ≠ v²/2g " + soll.toFixed(3) + " m)");
+        const rt = G.rayleighTiefe || [];
+        if (!nah(m.himmel.blauRot, rt[2] / rt[0], 0.001)) rot.push(k + ": der Himmel liest seine Rayleigh-Tiefe nicht (Blau ÷ Rot " + m.himmel.blauRot + " ≠ " + (rt[2] / rt[0]).toFixed(4) + ")");
+        if (m.wetter.gegenTafel !== 0) rot.push(k + ": das Wetter liest seine Tafel nicht (" + m.wetter.gegenTafel + " von 240 Worten gegen die Tafel)");
+        if ((G.hoeheRegler ?? null) !== (m.gelaende.leserRegler ?? null)) rot.push(k + ": der Leser des Geländes trägt den Regler " + m.gelaende.leserRegler + " ≠ Gesetz " + G.hoeheRegler);
+        if (G.hoeheRegler == null ? !nah(m.gelaende.verhaeltnis, 1, 1e-6) : !(Math.abs(m.gelaende.verhaeltnis - 1) > 0.05))
+            rot.push(k + ": das Gelände liest sein Gesetz nicht (Relief ÷ Erde " + m.gelaende.verhaeltnis + ")");
+    }
+    const A = W.a, B = W.b;
+    const gleich = (x, y) => JSON.stringify(x) === JSON.stringify(y);
+    if (A.gesetz.schwere === B.gesetz.schwere) rot.push("die Schwere ist in beiden Welten " + A.gesetz.schwere);
+    else if (!(Math.abs(B.sprung.hoehe - A.sprung.hoehe) > 0.1 * Math.max(A.sprung.hoehe, B.sprung.hoehe))) rot.push("der Sprung ist in beiden Welten gleich (" + A.sprung.hoehe + " ↔ " + B.sprung.hoehe + " m)");
+    if (gleich(A.gesetz.rayleighTiefe, B.gesetz.rayleighTiefe)) rot.push("der Himmel ist in beiden Welten " + JSON.stringify(A.gesetz.rayleighTiefe));
+    else if (nah(A.himmel.blauRot, B.himmel.blauRot, 0.01)) rot.push("das Himmels-Medium ist in beiden Welten gleich (Blau ÷ Rot " + A.himmel.blauRot + ")");
+    if (gleich(A.gesetz.wetter, B.gesetz.wetter)) rot.push("die Wetter-Tafel ist in beiden Welten gleich");
+    else {
+        const zeigt = Object.keys(B.wetter.je).some((k) => { const z = k.split(">")[0]; return A.gesetz.wetter[z] !== k.split(">")[1]; });
+        if (!zeigt) rot.push("kein Wort des Wetter-Zugs der Ferne zeigt die andere Tafel");
+    }
+    if ((A.gesetz.hoeheRegler ?? null) === (B.gesetz.hoeheRegler ?? null)) rot.push("das Gelände trägt in beiden Welten den Regler " + A.gesetz.hoeheRegler);
+    const z = (m) => ({ gesetz: m.gesetz, g: m.g, sprung: m.sprung.hoehe, blauRot: m.himmel.blauRot, worte: m.wetter.worte, relief: m.gelaende.verhaeltnis });
+    if (!gleich(z(A), z(W.a2))) rot.push("nach der Rückkehr gilt in A nicht wieder das erste Gesetz (" + JSON.stringify(z(W.a2)) + ")");
+    const w = (m) => "g " + m.g + " Sprung " + m.sprung.hoehe + " m · Blau÷Rot " + m.himmel.blauRot + " · Wetter " + Object.entries(m.wetter.worte).map(([k, n]) => k + " " + n).join("/") + " · Relief ×" + m.gelaende.verhaeltnis;
+    return {
+        gruen: !rot.length && lauf.exit === 0,
+        zahl: "A " + w(A) + " | B " + w(B) + " | A2 " + (gleich(z(A), z(W.a2)) ? "= A" : w(W.a2)) + (rot.length ? " · ROT: " + rot.join(", ") : "") + " · Exit " + lauf.exit,
+    };
+}
+const ULTI_K1_PROBEN = (() => {
+    const TA = { klar: "sunny", bewoelkt: "cloudy", nebel: "foggy", regen: "rainy", sturm: "stormy" };
+    const TB = { klar: "sunny", bewoelkt: "foggy", nebel: "foggy", regen: "cloudy", sturm: "stormy" };
+    const welt = (id, o = {}) => Object.assign({
+        welt: id, slug: id === "b" ? "ferne" : "weite-aue",
+        gesetz: { schwere: -9.81, rayleighTiefe: [0.044, 0.1, 0.23], wetter: TA, hoeheRegler: null },
+        g: -9.81,
+        sprung: { y0: 90.805, hoehe: 0.323, abdruck: 2.599, sprang: true },
+        himmel: { betaR: [0.0055, 0.0125, 0.02875], blauRot: 5.2273, sonne: [1, 0.85, 0.66] },
+        wetter: { je: { "nebel>foggy": 29, "regen>rainy": 55, "klar>sunny": 69, "sturm>stormy": 32, "bewoelkt>cloudy": 55 }, worte: { foggy: 29, rainy: 55, sunny: 69, stormy: 32, cloudy: 55 }, gegenTafel: 0 },
+        gelaende: { relief: 27.02, reliefErde: 27.02, verhaeltnis: 1, leserRegler: null },
+    }, o);
+    const A = welt("a");
+    const B = welt("b", {
+        gesetz: { schwere: -3.71, rayleighTiefe: [0.13, 0.085, 0.05], wetter: TB, hoeheRegler: 1.6 },
+        g: -3.71,
+        sprung: { y0: 93.891, hoehe: 1.54, abdruck: 3.411, sprang: true },
+        himmel: { betaR: [0.01625, 0.01063, 0.00625], blauRot: 0.3846, sonne: [1, 0.4, 0.1] },
+        wetter: { je: { "regen>cloudy": 59, "nebel>foggy": 30, "sturm>stormy": 29, "klar>sunny": 69, "bewoelkt>foggy": 53 }, worte: { cloudy: 59, foggy: 83, stormy: 29, sunny: 69 }, gegenTafel: 0 },
+        gelaende: { relief: 53.47, reliefErde: 37.395, verhaeltnis: 1.4299, leserRegler: 1.6 },
+    });
+    const T = { ok: true, a: "a", b: "b", merkt: true };
+    const H = { ok: true, hier: "a" };
+    const z = (a, b, o = {}) => ["a " + JSON.stringify(a), "tor " + JSON.stringify(o.tor || T), "b " + JSON.stringify(b), "heim " + JSON.stringify(o.heim || H), "a2 " + JSON.stringify(o.a2 || a)].map((x) => "ULTI_K1 " + x).join("\n");
+    const mitB = (o) => Object.assign({}, B, o);
+    return [
+        { name: "zwei Welten, vier Konstanten, vier Leser, die Rückkehr", stdout: z(A, B), gruen: true },
+        { name: "dieselbe Schwere in beiden Welten (der Sprung gleich)", stdout: z(A, mitB({ gesetz: { ...B.gesetz, schwere: -9.81 }, g: -9.81, sprung: A.sprung })), gruen: false },
+        { name: "derselbe Himmel in beiden Welten", stdout: z(A, mitB({ gesetz: { ...B.gesetz, rayleighTiefe: A.gesetz.rayleighTiefe }, himmel: A.himmel })), gruen: false },
+        { name: "dieselbe Wetter-Tafel in beiden Welten", stdout: z(A, mitB({ gesetz: { ...B.gesetz, wetter: TA }, wetter: A.wetter })), gruen: false },
+        { name: "dieselben Gelände-Regler in beiden Welten", stdout: z(A, mitB({ gesetz: { ...B.gesetz, hoeheRegler: null }, gelaende: A.gelaende })), gruen: false },
+        { name: "der Leib liest die Schwere nicht (die Ferne springt wie die Erde)", stdout: z(A, mitB({ sprung: { ...B.sprung, hoehe: 0.344, abdruck: 2.599 } })), gruen: false },
+        { name: "der Himmel liest sein Gesetz nicht (das Medium der Erde unter der Ferne)", stdout: z(A, mitB({ himmel: A.himmel })), gruen: false },
+        { name: "das Wetter liest seine Tafel nicht (es regnet in der Ferne)", stdout: z(A, mitB({ wetter: { ...A.wetter, gegenTafel: 108 } })), gruen: false },
+        { name: "das Gelände liest sein Gesetz nicht (Relief wie die Erde)", stdout: z(A, mitB({ gelaende: { ...B.gelaende, verhaeltnis: 1, leserRegler: null } })), gruen: false },
+        { name: "nach der Rückkehr gilt das Gesetz der Ferne weiter", stdout: z(A, B, { a2: { ...A, g: -3.71, gesetz: { ...A.gesetz, schwere: -3.71 }, sprung: B.sprung } }), gruen: false },
+        { name: "das Tor vergisst seine Welt", stdout: z(A, B, { tor: { ...T, merkt: false } }), gruen: false },
+        { name: "kein Heimtor in der Ferne", stdout: "ULTI_K1 a " + JSON.stringify(A) + "\nULTI_K1 tor " + JSON.stringify(T) + "\nULTI_K1 b " + JSON.stringify(B) + "\nULTI_K1 FEHLER das Heimtor führt nicht zurück", gruen: false },
+        { name: "das Tor fehlt (der Stand vor dem Gesetz)", stdout: "ULTI_K1 a {}\nULTI_K1 FEHLER die Welt trägt kein Gesetz (worldMeta.gesetz)", gruen: false },
+    ];
+})();
+
 // ultiversum.K2 #2 (w5-s2-g5): DIE GEMISCHTEN REGELN IN DER FUSIONIERTEN WELT — „0 Schreibe auf den frozen Kern, die gemischten Regeln
 // werten nach Affekt K3". Null-Renderer, EINE Seite, der echte Weg: A ist die Welt der Seite und trägt zwei Gesetze des Nexus (über die
 // EINE Registrierung `_registerWorldRule`): Heil A (deposit_life an einem Ort) und Leer (deposit_emotion an einem fernen Ort — kein
@@ -2819,6 +3051,26 @@ const stationen = [
         quelle: "2 = jede Werkzeug-Form der Schmiede, Verschleiß aus dem Stoff",
     },
 
+    // ───────── ultiversum.K1 — Das Welt-Gesetz: Konstanten, die ein Leser liest (w8-ultiversum-k1) ─────────
+    // Die Probe `ultiversumK1Lauf` (oben): A (die Erde) → das Tor in die Ferne → B (Schwere 3,71, roter Himmel, trockene Wetter-Tafel,
+    // Hochland) → das Heimtor → A; je Welt die vier Konstanten im Gesetz der Welt und ihre Leser (Sprung, Himmels-Medium, Wetter-Zug,
+    // Relief). Headless: der Text verlangt Leser, die das Gesetz lesen (Mutation ändert Bild bzw. Leib) — das Bild misst die Staffel 2.
+    // An w8-ultiversum-k1 GRÜN: A g −9,81 Sprung 0,323 m · Blau÷Rot 5,2273 · Relief ×1 | B g −3,71 Sprung 1,54 m · Blau÷Rot 0,3846 ·
+    // kein Regen · Relief ×1,43–2,00 (je Saat der geborenen Ferne) | A2 = A. Am main d880c8e8 ROT: „die Welt trägt kein Gesetz".
+    {
+        kriterium: "ultiversum.K1",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "-e", "(" + knapp(ultiversumK1Lauf) + ")()", "{AUS}", "{PORT}"],
+        gpu: false,
+        zeit: false,
+        minuten: 3,
+        urteil: (j, lauf) => ultiversumK1Urteil(lauf),
+        proben: ULTI_K1_PROBEN,
+        pfad: ["stamm/speicher-*.js", "stamm/netz-portal.js", "stamm/bild-himmel.js", "stamm/koerper-bewegung.js", "stamm/gelaende-boden.js", "stamm/daten.js", "stamm/dirigent-kern.js", "scripts/lib/welt-boot.cjs"],
+        quelle: "1 = zwei per Tor erreichbare Welten mit verschiedenen Konstanten (g, Wetter-Tafel, Himmel, Gelände-Parameter), jede Konstante hat einen Leser (Mutation ändert Bild bzw. Leib)",
+    },
+
     // ───────── ultiversum.K2 — Welten heiraten (fusion-determ) ─────────
     {
         kriterium: "ultiversum.K2",
@@ -3678,7 +3930,6 @@ module.exports.fehlt = [
     { kriterium: "tore.K1", staffel: 1, befehl: null, grund: "nicht gebaut (p3-stationen-g456): t vom Kreuzen der Apertur (`enterPortal`) bis zur ersten angenommenen Eingabe mit Wirkung im Ausgabe-Bild der Ziel-Welt, jedes Zwischenbild in Luma 0,05–0,95, kein Frame > 100 ms, ≥ 4 Läufe — die Probe TORE_K3 (gate:portal-konformanz K8) geht durch jedes Studio-Tor, nimmt aber weder Zeit noch Bild; ein Lauf mit Uhr und Luma je Bild hinter der Apertur hat in der Fahrt keinen Platz (10 s frei). Heute bootet jedes Studio-Tor ein Vollbild-iframe kalt mit eigenem Renderer, der Welt-Wechsel lädt die Seite neu (`_weltWechselNeuLaden`)" },
     { kriterium: "tore.K2", staffel: 1, befehl: null, grund: "nicht gebaut (p3-stationen-g456): zwei Bilder aus dem Ausgabe-Pfad je Tor — die Membran 3 m vor der Apertur und das Welt-Bild nach der ersten Eingabe, die die Kamera ≥ 1° drehte — und Spearman r ≥ 0,5, milchweiss ≤ 0,05, oeffnungBunt ≥ 20, Stempel frisch; derselbe Gang wie tore.K1 (die Fahrt hat 10 s frei); die Klassen tor-fern, tor-bunt, tor-ziel der Soll-Tafel tragen am Kopf kein Ist" },
     { kriterium: "tore.K4", staffel: 1, befehl: null, grund: "unmessbar in EINEM Lauf auf EINEM Gerät: zwei physische Geräte im LAN (Radeon-Maschine und OMEN) über den signaling-server, der Peer im Ausgabe-Bild von B — die Punkte-Maschine fährt je Gerät eine eigene Sitzung, und kein Läufer verbindet zwei Sitzungen zweier Rechner; gate:mp-sync fährt zwei Seiten in EINEM Browser (das Schlupfloch der Staffel)" },
-    { kriterium: "ultiversum.K1", staffel: 1, befehl: null, grund: "nicht gebaut (p3-stationen-g456): zwei per Tor erreichbare Welten mit verschiedenen Konstanten und je Konstante ein Leser (Sprung-Höhe, Himmels-Bild) — g ist `state.gravity` (Vorgabe −9,81 in stamm/dirigent-kern.js, ein Wort des Spielers über die DSL `gravity`), ein Gesetz je Welt mit g, Himmel, Wetter-Tafel und Gelände-Parametern hinter einem Welt-Tor ist im Spiel nicht nachgewiesen; die Probe braucht dazu den Welt-Wechsel (ein Neuladen, Ring 8)" },
     { kriterium: "spielgang.K1", staffel: 1, befehl: null, grund: "nicht gebaut (p3-stationen-g456): EIN Lauf ohne Neuladen und ohne Konsole aus aufgenommenen Spieler-Eingaben über ≥ 3 der fünf Schritte (ankommen · laufen und sehen · bauen · mit der KI erschaffen · benutzen · teilen), je Schritt die Zahl seines Bereichs — es gibt keine Aufnahme der Eingaben und keinen Abspieler im Spiel-Baum; die Proben der Sitzung stellen die Welt über die Werkbank (eval, umstellen), das ist die Konsole; ein Lauf über fünf Schritte hat in der Fahrt keinen Platz" },
     { kriterium: "spielgang.K2", staffel: 1, befehl: null, grund: "unmessbar ohne Blind-Spieler: ein frischer Agent ohne Doku, der nur Bild und Eingabe kennt und in ≤ 3 min gehen, umsehen, Sicht-Wechsel, Werkstatt, Satz und Tor findet — kein solcher Agent läuft an der Punkte-Maschine (ein Läufer mit Bild-Modell und Eingabe-Schleife fehlt); die Zählung am Eingabe- und Ereignis-Strom gäbe es (`H.ereignisStrom`, stationen/sitzung-seite.js)" },
     { kriterium: "spielgang.K5", staffel: 2, befehl: null, grund: "nicht gebaut (p3-stationen-g456): die KI antwortet in der Sprache des Spielers — der Korpus aus ki.K1 trägt keinen Teil EN (spec/abnahme/ki-korpus.json), und die Staffel 1 (EINE Text-Quelle DE/EN) steht ROT: es gibt keine Sprache des Spielers" },

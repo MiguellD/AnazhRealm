@@ -1,0 +1,107 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node -e (async function ultiversumK2Lauf() {
+const TTL_S = 8;
+const fs = require("fs");
+const path = require("path");
+const [aus, port] = process.argv.slice(1);
+const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+const out = {};
+let code = 2;
+const server = WB.statikServer();
+await server.lausche(Number(port));
+const { browser, page } = await WB.nullSeite({ frist: 300000 });
+try {
+await server.zeige(page, 120000);
+await page.evaluate(() => window.__weltDa((r) => r.state._weltbildDa > 0));
+out.fusion = await page.evaluate(async (TTL) => {
+const r = window.anazhRealm, st = r.state;
+const p = st.playerMesh.position;
+const [x, z] = [Math.round(p.x), Math.round(p.z)];
+const regel = (n, effect) => ({ n, cond: ["random_chance", 1], effect, everySec: 1, ttlSec: TTL, source: "nexus" });
+const R = {
+heilA: regel("heilA", ["deposit_life", ["at", x + 24, 0, z], 0.6]),
+leer: regel("leer", ["deposit_emotion", "peace", 0.3, ["at", x + 400, 0, z + 400]]),
+heilB: regel("heilB", ["deposit_life", ["at", x - 24, 0, z], 0.6]),
+pflug: regel("pflug", ["voxel_carve", x + 6, Math.round(p.y) - 2, z + 6, 3]),
+steil: regel("steil", ["terrain_steepness", 1.9]),
+};
+const ctx = { source: "nexus", log: [], programId: "ulti-k2" };
+for (const k of ["heilA", "leer"]) r._registerWorldRule(R[k].cond, R[k].effect, { everySec: 1, ttlSec: TTL }, ctx);
+const idA = st.worldMeta.worldId;
+const B = JSON.parse(JSON.stringify(r.buildStateSnapshot()));
+const idB = "b0b0b0b0-0000-4000-8000-00000000b0b0";
+B.worldMeta = { ...B.worldMeta, worldId: idB, slug: "welt-b", seed: "w-ulti-k2-b" };
+B.worldRules = ["heilB", "pflug", "steil"].map((k) => ({ cond: R[k].cond, effect: R[k].effect, everySec: 1, ttlSec: TTL, source: "nexus" }));
+localStorage.setItem(r.worldStorageKey(idB), JSON.stringify(B));
+const f = r.fuseWorlds(idA, idB, "random-mix", { reload: true });
+if (!f || !f.ok) return { ok: false, grund: (f && f.reason) || "fuseWorlds ohne Antwort" };
+const erw = await r.erwacht;
+const g = JSON.parse(localStorage.getItem(r.worldStorageKey(f.worldId)) || "{}");
+window.__ultiK2 = { R, sig: Object.fromEntries(Object.entries(R).map(([k, v]) => [k, JSON.stringify(v.effect)])) };
+return {
+ok: erw === true && r.state.worldMeta.worldId === f.worldId,
+welt: f.worldId, eltern: f.parentWorlds, hier: r.state.worldMeta.worldId,
+imStand: Object.keys(R).filter((k) => (g.worldRules || []).some((x) => JSON.stringify(x.effect) === window.__ultiK2.sig[k])),
+};
+}, TTL_S);
+console.log("ULTI_K2 fusion " + JSON.stringify(out.fusion));
+if (!out.fusion.ok) throw new Error("die Fusion steht nicht: " + JSON.stringify(out.fusion));
+await page.evaluate(() => window.__weltDa((r) => r.state._weltbildDa > 0));
+out.lauf = await page.evaluate(async () => {
+const r = window.anazhRealm, st = r.state;
+const { sig } = window.__ultiK2;
+const schreibe = { carveVoxel: 0, fillVoxel: 0, _lavaGiessen: 0, terrainSteepness: 0, terrainBaseHeight: 0 };
+const echt = {};
+for (const k of ["carveVoxel", "fillVoxel", "_lavaGiessen"]) {
+echt[k] = r[k];
+r[k] = function (...a) {
+schreibe[k]++;
+return echt[k].apply(this, a);
+};
+}
+const wert = {};
+for (const k of ["terrainSteepness", "terrainBaseHeight"]) {
+wert[k] = st[k];
+Object.defineProperty(st, k, { configurable: true, enumerable: true, get: () => wert[k], set: (v) => { schreibe[k]++; wert[k] = v; } });
+}
+const akten0 = ((st.worldMeta && st.worldMeta.voxelEdits) || []).length;
+const finde = (k) => (st.worldRules || []).find((x) => x && JSON.stringify(x.effect) === sig[k]);
+const je = Object.fromEntries(Object.keys(sig).map((k) => [k, { da: !!finde(k), feuer: 0, value: null, erneuert: 0, verfiel: false, born: null, alt: 0, letzt: 0 }]));
+for (const k of Object.keys(je)) if (finde(k)) je[k].born = finde(k).born;
+let t = performance.now();
+const t0 = t;
+for (let i = 0; i < 1800; i++) {
+t += 1000 / 60;
+r._gameLoopTick(t);
+for (const k of Object.keys(je)) {
+const x = finde(k), e = je[k];
+if (!e.da || e.verfiel) continue;
+if (!x) { e.verfiel = true; continue; }
+if (x.born !== e.born) { e.erneuert++; e.born = x.born; e.alt += e.letzt; e.letzt = 0; }
+e.letzt = x.fires || 0;
+e.feuer = e.alt + e.letzt;
+e.value = x.value;
+}
+}
+const lauf = { sekunden: +((t - t0) / 1000).toFixed(1), schreibe: { ...schreibe }, akten: ((st.worldMeta && st.worldMeta.voxelEdits) || []).length - akten0 };
+const p = st.playerMesh.position;
+r.dslRun(["voxel_carve", p.x + 5, p.y - 2, p.z + 5, 2], { source: "human" });
+lauf.selbsttest = schreibe.carveVoxel - lauf.schreibe.carveVoxel;
+for (const k of Object.keys(echt)) r[k] = echt[k];
+for (const k of Object.keys(wert)) Object.defineProperty(st, k, { configurable: true, enumerable: true, writable: true, value: wert[k] });
+for (const e of Object.values(je)) { delete e.born; delete e.alt; delete e.letzt; if (e.value != null) e.value = +e.value.toFixed(4); }
+lauf.je = je;
+return lauf;
+});
+console.log("ULTI_K2 lauf " + JSON.stringify(out.lauf));
+code = 0;
+} catch (e) {
+out.fehler = String((e && e.message) || e).split("\n")[0];
+console.log("ULTI_K2 FEHLER " + out.fehler);
+} finally {
+fs.writeFileSync(aus, JSON.stringify(out, null, 1));
+await browser.close().catch(() => {});
+process.exit(code);
+}
+})() /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/2d2a5f11-headless/ultiversum.K2_2.json 7704
+ULTI_K2 fusion {"ok":true,"welt":"b65b18ad-33c9-2228-5729-9f67d01e159a","eltern":["ea94e87b-edd5-468c-a11d-ed3871213bdb","b0b0b0b0-0000-4000-8000-00000000b0b0"],"hier":"b65b18ad-33c9-2228-5729-9f67d01e159a","imStand":["heilA","leer","heilB"]}
+ULTI_K2 lauf {"sekunden":30,"schreibe":{"carveVoxel":0,"fillVoxel":0,"_lavaGiessen":0,"terrainSteepness":0,"terrainBaseHeight":0},"akten":0,"selbsttest":1,"je":{"heilA":{"da":true,"feuer":30,"value":0.5489,"erneuert":3,"verfiel":false},"leer":{"da":true,"feuer":7,"value":0,"erneuert":0,"verfiel":true},"heilB":{"da":true,"feuer":30,"value":0.6137,"erneuert":3,"verfiel":false},"pflug":{"da":false,"feuer":0,"value":null,"erneuert":0,"verfiel":false},"steil":{"da":false,"feuer":0,"value":null,"erneuert":0,"verfiel":false}}}
