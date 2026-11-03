@@ -253,6 +253,9 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
     const w7Results = await safeEvaluate(page, () => {
         const out = {};
         const p2p = st.p2p;
+        const leer = () => {
+            for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+        };
 
         out.w7StateFields =
             p2p.rtcPeers instanceof Map &&
@@ -263,7 +266,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
         // sauberer Ausgangszustand
         p2p.peerId = "self-test";
         p2p.ws = null;
-        for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+        leer();
         p2p.rtcPeers.clear();
 
         // Mesh ist NICHT bereit ohne Peers.
@@ -302,7 +305,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
 
         // Kanal-Empfang: die peerId wird aus der Kanal-Identität
         // gestempelt — anti-spoof.
-        for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+        leer();
         r._p2pHandleChannelMessage(
             "realPeer",
             JSON.stringify({ type: "pos", peerId: "SPOOFED", x: 7, y: 8, z: 9, yaw: 0 })
@@ -317,7 +320,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
 
         // p2pSend-Transport: bei komplettem Mesh geht der Broadcast
         // über den DataChannel, nicht über den WS.
-        for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+        leer();
         p2p.rtcPeers.clear();
         r._p2pEnsurePeerEntry("meshPeer");
         let channelPayload = null;
@@ -369,7 +372,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
         p2p.connected = true;
         p2p.lastError = null;
         p2p.room = "ui-test-room";
-        for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+        leer();
         r._p2pEnsurePeerEntry("uiPeer");
         p2p.meshActive = true;
         r.p2pUpdateStatus();
@@ -380,7 +383,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
         out.uiShowsRelay = !!statusEl && /Server-Relay/.test(statusEl.textContent);
 
         // Cleanup
-        for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+        leer();
         p2p.rtcPeers.clear();
         p2p.enabled = false;
         p2p.connected = false;
@@ -422,6 +425,9 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
     const w7p2Results = await safeEvaluate(page, () => {
         const out = {};
         const p2p = st.p2p;
+        const leer = () => {
+            for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+        };
 
         out.w7p2StateFields =
             p2p.worldXfers instanceof Map &&
@@ -449,7 +455,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
 
         // soul-Empfang speichert worldRole am Peer-Eintrag.
         p2p.peerId = "self-test";
-        for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+        leer();
         r.p2pHandleMessage(JSON.stringify({ type: "soul", peerId: "hostPeer", soulName: "human", worldRole: "host" }));
         const hp = p2p.peers.get("hostPeer");
         out.soulStoresWorldRole = !!hp && hp.worldRole === "host";
@@ -516,7 +522,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
         r._p2pApplyWorldSnapshot = origApply;
 
         // Resync-Fehlerpfade: kein Mesh → no_mesh.
-        for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+        leer();
         p2p.rtcPeers.clear();
         const noMesh = r._p2pRequestWorldResync();
         out.resyncNoMesh = noMesh.ok === false && noMesh.reason === "no_mesh";
@@ -568,7 +574,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
         out.resyncButtonExists = !!document.getElementById("p2p-resync");
 
         // Cleanup
-        for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+        leer();
         p2p.rtcPeers.clear();
         p2p.worldXfers.clear();
         p2p.pendingWorldSnapshot = false;
@@ -1202,6 +1208,9 @@ async function checkBandLateMultiUser({ page, check }) {
     const w7p3Results = await safeEvaluate(page, async () => {
         const out = {};
         const p2p = st.p2p;
+        const leer = () => {
+            for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+        };
         const K = AnazhRealm;
 
         out.stateFields =
@@ -1233,7 +1242,7 @@ async function checkBandLateMultiUser({ page, check }) {
         p2p.voiceShared = false;
 
         p2p.peerId = "self-w7p3";
-        for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+        leer();
         r.p2pHandleMessage(JSON.stringify({ type: "soul", peerId: "voicePeer", soulName: "human", voiceShared: true }));
         const vp = p2p.peers.get("voicePeer");
         out.soulStoresVoiceShared = !!vp && vp.voiceShared === true;
@@ -1309,7 +1318,7 @@ async function checkBandLateMultiUser({ page, check }) {
         r.dslRun(["weather", weatherBefore || "sunny"], { source: "test" });
 
         // _p2pRequestSharedVoice ohne Voice-Peer → no_voice.
-        for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+        leer();
         p2p.rtcPeers.clear();
         const noVoice = r._p2pRequestSharedVoice("frage", null);
         out.requestNoVoice = noVoice.ok === false && noVoice.reason === "no_voice";
@@ -1328,7 +1337,7 @@ async function checkBandLateMultiUser({ page, check }) {
         out.voiceButtonExists = !!document.getElementById("p2p-voice-share");
 
         // Cleanup
-        for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
+        leer();
         p2p.rtcPeers.clear();
         p2p._voiceRequests.clear();
         p2p._voiceServedAt.clear();

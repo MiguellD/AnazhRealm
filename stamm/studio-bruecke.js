@@ -127,10 +127,7 @@ class AnazhRealm_studio_bruecke {
                     // das Buch geht in die Welt, sobald der Wirt steht (nach dem Spielstand, `_foundryWirtSteht`)
                     if (f.wirt) this._foundryIngestBook(m);
                     else f.buch = m;
-                } else if (m.type === "buch-abgewiesen")
-                    // ein Gesetzbuch der Bibliothek fällt im Faden beim Namen (Signatur, Auspacken, Namensraum, Laden)
-                    this.log(`GESETZBUCH ${String(m.code).slice(0, 16)} abgewiesen: ${m.grund}`, "ERROR");
-                else if (m.type === "blatt-atlas") this._foundryBlattAtlas(f, m);
+                } else if (m.type === "blatt-atlas") this._foundryBlattAtlas(f, m);
                 else this._foundryAntwort(f, m);
                 this._foundryPumpe(f); // ein Platz im Worker wurde frei → der nächste Wartende (nah zuerst)
             };
@@ -159,7 +156,10 @@ class AnazhRealm_studio_bruecke {
     // der Karte an die Platte (karte; sie backt seit S2 im Welt-Renderer, `_karteWeltBacken`) — EINE pending-Map, die reqIds
     // sind disjunkt.
     _foundryAntwort(f, m) {
-        if (m.type === "asset") {
+        // ein Gesetzbuch der Bibliothek fällt im Faden beim Namen (Signatur, Auspacken, Namensraum, Laden) — laut, je Faden
+        if (m.type === "buch-abgewiesen")
+            this.log(`GESETZBUCH ${String(m.code).slice(0, 16)} abgewiesen: ${m.grund}`, "ERROR");
+        else if (m.type === "asset") {
             // Das Budget-Gesetz am Studio-Ausgang (W8) meldet einen Bruch LAUT — nie still.
             if (Array.isArray(m.budgetBruch) && m.budgetBruch.length)
                 this.log("BUDGET-BRUCH " + m.presetId + " L" + m.lod + ": " + JSON.stringify(m.budgetBruch), "ERROR");
