@@ -430,7 +430,6 @@ class AnazhRealm_speicher_welten {
                     {
                         id: 1,
                         at: Date.now(),
-                        tick: 0,
                         type: "genesis",
                         text: `Ich erwache als ${worldMeta.slug}.`,
                         ctx: {
@@ -467,9 +466,9 @@ class AnazhRealm_speicher_welten {
                 .map((t) => this._serializeTool(t));
             // Eigene Baupläne wandern mit (Schöpfer-Wissen); die Hotbar bleibt leer (welt-spezifisch).
             // Nur über _serializeBlueprint — sonst gehen Portal-Rolle + Signatur still verloren.
-            snap.blueprints = Object.values(this.state.blueprints || {})
-                .filter((bp) => bp && !bp.builtIn)
-                .map((bp) => this._serializeBlueprint(bp));
+            snap.blueprints = this._bauplaeneDesStands(
+                new Set(snap.tools.map((t) => t.sourceBlueprint).filter(Boolean))
+            ).map((bp) => this._serializeBlueprint(bp));
         }
         return snap;
     }
@@ -606,6 +605,90 @@ class AnazhRealm_speicher_welten {
         };
         this._carryUnknown(t, out, AnazhRealm.TOOL_KNOWN_KEYS);
         return out;
+    }
+
+    // DIE EIGENEN BAUPLÄNE EINES STANDS: jeder ohne builtIn — außer der Art des Buchs, die noch ihre Geburt ist und auf die keiner
+    // zeigt (`bezug`: die Namen, die der Stand nennt). DIE WELT IST EINE FUNKTION, KEIN SACK (Gebot 7): ein Auto-Bauplan
+    // (`_foundryAutoSpecies`) ist die Geburt seiner Buch-Zeile (`_autoArtGeburt`), jeder Boot gebiert ihn neu, sobald das Buch
+    // kommt. Bis w8-snapshot-schlank reiste jede Art: an der Playtest-Welt trugen 125 Arten 154 082 von 262 028 B des Stands (59 %),
+    // der Pin der Welt (`pinCurrentWorld`, 256 KiB) hatte 116 B Luft.
+    _bauplaeneDesStands(bezug) {
+        return Object.values(this.state.blueprints || {}).filter(
+            (bp) => bp && !bp.builtIn && (bezug.has(bp.name) || !this._bauplanAusBuch(bp))
+        );
+    }
+
+    // Ist der Bauplan die unveränderte Geburt seiner Buch-Zeile? Geurteilt am serialisierten Bauplan gegen die serialisierte Geburt
+    // (die Werkstatt, die Schmiede, der Verschleiß ändern ihn — dann reist er), gemerkt an seiner Marke (`_bauplanMarke`) und am
+    // Buch. Ohne Buch (ein Stand vor der Ankunft) ist die Geburt unbekannt: er reist.
+    _bauplanAusBuch(bp) {
+        const buch = this._foundry && this._foundry.recipes;
+        if (typeof bp._foundryAutoSpecies !== "string" || !buch) return false;
+        const marke = this._bauplanMarke(bp);
+        const memo = this._bauplanBuchMemo || (this._bauplanBuchMemo = new WeakMap());
+        const m = memo.get(bp);
+        if (m && m.buch === buch && m.marke.length === marke.length && m.marke.every((v, i) => v === marke[i]))
+            return m.frei;
+        const geburt = this._bauplanGeburt(bp);
+        const frei =
+            !!geburt &&
+            JSON.stringify(this._serializeBlueprint(bp)) === JSON.stringify(this._serializeBlueprint(geburt));
+        memo.set(bp, { buch, marke, frei });
+        return frei;
+    }
+
+    // Die Geburt eines Auto-Bauplans: seine Buch-Zeile unter ihrer Policy (`_autoArtGeburt`) → ein frischer Bauplan, oder null
+    // (kein Buch, keine Art des Buchs, eine gewachsene Art)
+    _bauplanGeburt(bp) {
+        const id = bp && bp._foundryAutoSpecies;
+        const rec = typeof id === "string" && this._foundry && this._foundry.recipes ? this._foundry.recipes[id] : null;
+        const pol = rec && AnazhRealm.KIND_POLICY[rec.kind];
+        return pol && !pol.grown && pol.prefix + id === bp.name ? this._autoArtGeburt(id, rec, pol) : null;
+    }
+
+    // Die Marke eines Bauplans (gleiche Marke, gleiches JSON): jedes eigene Feld (auch das Unbekannte, das `_carryUnknown` trägt),
+    // die Länge seiner Teile und Verbindungen, die Felder des Tor-Ziels und des Geräts und der jüngste Schritt seines Edit-Verlaufs
+    // (`_recordBlueprintEdit` geht jedem Teile-Edit voraus).
+    _bauplanMarke(bp) {
+        const m = Object.values(bp);
+        const pm = bp.portalMeta;
+        const h = this.state.blueprintEditHistory && this.state.blueprintEditHistory[bp.name];
+        m.push(Object.keys(bp).length, h && h.undo.length ? h.undo[h.undo.length - 1] : null);
+        if (Array.isArray(bp.parts)) m.push(bp.parts.length);
+        if (Array.isArray(bp.connections)) m.push(bp.connections.length);
+        if (pm && typeof pm === "object") m.push(...Object.values(pm));
+        if (bp.toolMeta && typeof bp.toolMeta === "object") m.push(...Object.values(bp.toolMeta));
+        return m;
+    }
+
+    // DIE NAMEN, AUF DIE DER STAND ZEIGT: das Laden kommt vor dem Buch (`_foundryWirtSteht` folgt `loadState`) und baut die Bauten,
+    // füllt Inventar, Gurt und Hand, rüstet die Wesen und bettet Teile — ein Bauplan, den einer davon nennt, reist auch als Geburt
+    // (sonst fiele das Studio-Haus beim Reload mit kaltem Buch, gate:persistence K). `K` der Kontext des Stands.
+    _standBezug(K) {
+        const st = this.state;
+        const b = new Set();
+        for (const a of K.bauten) b.add(a.type);
+        const pl = st.player || {};
+        for (const s of pl.inventory || AnazhRealm.STAND_LEER) if (s && s.blueprintName) b.add(s.blueprintName);
+        for (const n of st.hotbar || AnazhRealm.STAND_LEER) if (n) b.add(n);
+        if (pl.equipped) for (const n of Object.values(pl.equipped)) if (typeof n === "string") b.add(n);
+        for (const c of st.creatures || AnazhRealm.STAND_LEER) {
+            const e = c && c.userData && c.userData.equipped;
+            if (e && typeof e.armor === "string") b.add(e.armor);
+        }
+        for (const t of Object.values(st.tools || {})) if (t && t.sourceBlueprint) b.add(t.sourceBlueprint);
+        for (const bp of Object.values(st.blueprints || {}))
+            if (bp && !bp.builtIn && !bp._foundryAutoSpecies && Array.isArray(bp.parts))
+                for (const p of bp.parts) if (p && p.shape === "blueprint" && p.refName) b.add(p.refName);
+        return b;
+    }
+
+    // DER BUILT-IN-BAUPLAN EINER VERKÖRPERTEN SEELE: `bp_<name>` ist die Abschrift des Bauplans `name`
+    // (`applyPlayerSoulFromBlueprint`); ist er ein Built-in (die Körper der Tafel, nie editierbar), trägt das Gesetz ihre Teile.
+    // → der Bauplan oder null
+    _seelenGesetz(k) {
+        const bp = /^bp_/.test(k) && this.state.blueprints && this.state.blueprints[k.slice(3)];
+        return bp && bp.builtIn && Array.isArray(bp.parts) ? bp : null;
     }
 
     // Serialisiert einen Bauplan in ein JSON-taugliches Objekt. Reine
@@ -850,10 +933,6 @@ class AnazhRealm_speicher_welten {
         const st = () => this.state;
         const zahl = (v, d) => (Number.isFinite(v) ? v : d);
         const atm = (k, d) => (st().atmosphere && Number.isFinite(st().atmosphere[k]) ? st().atmosphere[k] : d);
-        const bpRolle = (bp) => {
-            const h = st().blueprintEditHistory && st().blueprintEditHistory[bp.name];
-            return h && h.undo.length ? h.undo[h.undo.length - 1] : null;
-        };
         // die Marke einer Reihe, die nur wächst oder vorn verliert: sie selbst, ihre Länge, ihr jüngstes Glied
         const angehaengt = (f) => ({ marke: () => [f(), f().length, f().at(-1)] });
         const pl = () => st().player;
@@ -1009,11 +1088,14 @@ class AnazhRealm_speicher_welten {
             ["playerPathBuckets", () => pl().pathBuckets || null],
             // Welle 1 D — Welt-Journal persistiert. Ohne das Journal hätte
             // jede Session ihre eigene Geschichte; mit ihm wächst die Welt
-            // über Reloads hinweg.
+            // über Reloads hinweg. Ein Satz mit Namen trägt sie isoliert in `ki`; sein `text` ist `ki` ohne die Marken
+            // (`_ohneIsolation`) und reist nicht — das Laden leitet ihn ab (an der Playtest-Welt 14,8 kB des Stands doppelt).
             [
                 "worldJournal",
                 () => ({
-                    entries: (st().worldJournal.entries || []).slice(-st().worldJournal.entryCap),
+                    entries: (st().worldJournal.entries || [])
+                        .slice(-st().worldJournal.entryCap)
+                        .map((e) => (e && typeof e.ki === "string" ? { ...e, text: undefined } : e)),
                     seen: { ...(st().worldJournal.seen || {}) },
                 }),
                 {
@@ -1116,8 +1198,16 @@ class AnazhRealm_speicher_welten {
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
             ["playerSoul", () => st().player.soul || "human"],
             // Welle 6.D Etappe 1.6 — Custom-Seelen persistieren (eigene Charaktere des Schöpfers). Built-ins sind in
-            // playerSoulDefs verdrahtet und werden NICHT persistiert.
-            ["customSouls", () => st().customSouls || {}],
+            // playerSoulDefs verdrahtet und werden NICHT persistiert. Die verkörperte Seele eines Built-in-Bauplans (`bp_koerper_wolf`,
+            // `_seelenGesetz`) ist seine Abschrift: sie reist ohne Leib, das Laden schreibt sie aus dem Gesetz neu ab (bis
+            // w8-snapshot-schlank je Tier ~10,7 kB, die das Laden nie las — 39 Teile fielen an der 32er-Wand des Prüfers).
+            [
+                "customSouls",
+                () => {
+                    const cs = st().customSouls || {};
+                    return Object.fromEntries(Object.keys(cs).map((k) => [k, this._seelenGesetz(k) ? {} : cs[k]]));
+                },
+            ],
             // Gewachsene Baupläne (`_grown_*`, _isGrown:true) reisen mit, weil state.architectures sie als `type`
             // referenziert — fehlen sie, schlägt spawnArchitecture beim Restore fehl. Nur die METADATA reist:
             // die `parts` sind pure Funktion von (species, seed) und wachsen beim Restore via `_growTreeBlueprint`
@@ -1302,27 +1392,17 @@ class AnazhRealm_speicher_welten {
                 () => (st().playtestContributions || []).slice(),
                 angehaengt(() => st().playtestContributions || AnazhRealm.STAND_LEER),
             ],
-            // Nur eigene Baupläne persistieren (die Built-ins erzeugt _defaultBlueprints() beim Init). Der Feld-Satz lebt in
-            // _serializeBlueprint — EINE Quelle für alle drei Snapshot-Pfade. Die Marke eines Bauplans: jedes eigene Feld
-            // (auch das Unbekannte, das `_carryUnknown` trägt), die Länge seiner Teile und Verbindungen, die Felder des
-            // Tor-Ziels und der jüngste Schritt seines Edit-Verlaufs (`_recordBlueprintEdit` geht jedem Teile-Edit voraus).
+            // Nur eigene Baupläne persistieren (die Built-ins erzeugt _defaultBlueprints() beim Init, die Arten des Buchs seine
+            // Ankunft — `_bauplaeneDesStands`). Der Feld-Satz lebt in _serializeBlueprint — EINE Quelle für alle drei
+            // Snapshot-Pfade, die Marke in `_bauplanMarke`.
             [
                 "blueprints",
                 null,
                 {
-                    liste: () => Object.values(st().blueprints || {}).filter((bp) => bp && !bp.builtIn),
+                    liste: (K) => this._bauplaeneDesStands(this._standBezug(K)),
                     // regte sich die Hand, fragt der Stand jeden Bauplan; den Hieb, der am Bauplan zehrt, fegt der Besen
                     alle: (K) => K.geaendert.includes("playerInventory"),
-                    marke: (bp) => {
-                        const m = Object.values(bp);
-                        const pm = bp.portalMeta;
-                        m.push(Object.keys(bp).length, bpRolle(bp));
-                        if (Array.isArray(bp.parts)) m.push(bp.parts.length);
-                        if (Array.isArray(bp.connections)) m.push(bp.connections.length);
-                        if (pm && typeof pm === "object") m.push(...Object.values(pm));
-                        if (bp.toolMeta && typeof bp.toolMeta === "object") m.push(...Object.values(bp.toolMeta));
-                        return m;
-                    },
+                    marke: (bp) => this._bauplanMarke(bp),
                     glied: (bp) => this._serializeBlueprint(bp),
                 },
             ],
@@ -1504,33 +1584,45 @@ class AnazhRealm_speicher_welten {
                 const anhaengen = !voll && !ganz && alt && alt !== glieder && alt.length <= glieder.length;
                 let ab = 0;
                 if (anhaengen) while (ab < alt.length && glieder[ab] === alt[ab]) ab++;
+                // DER EINTRITT: der Faden hält nur die Glieder seiner Ordnung (ein Glied, das sie verlässt, verwirft er) — ein Glied,
+                // das in sie eintritt, reist darum immer, frisch geprüft, auch wenn die Seite ein Gedächtnis von ihm hat (ein Bauplan,
+                // der wieder genannt wird oder nicht mehr seine Geburt ist, `_bauplaeneDesStands`; der Besen fegt auch ein
+                // ausgetretenes). Gemerkt je Glied an der Ordnung, in die es zuletzt reiste (`m.og`, die Ordnungen zählt `L.og`).
+                const og = L.og || 0;
                 if (anhaengen && ab === alt.length) {
+                    // ein Glied des Endes ist dem Faden neu
+                    const anhang = glieder.slice(ab).map((g) => {
+                        const m = this._standGlied(L, g);
+                        pruefe(g, m);
+                        L.gefegt.add(m);
+                        L.ordnung.push(m.s);
+                        m.og = og;
+                        return m.s;
+                    });
                     for (const m of L.gefegt) {
                         neu.push(m.s);
                         listenStuecke.push(m.json);
                     }
-                    // ein Glied des Endes ist dem Faden neu: es reist immer (mit dem JSON seines Gedächtnisses, wenn es eins hat)
-                    const anhang = glieder.slice(ab).map((g) => {
-                        const m = this._standGlied(L, g);
-                        if (m.json === null) pruefe(g, m);
-                        if (!L.gefegt.has(m)) (neu.push(m.s), listenStuecke.push(m.json));
-                        L.ordnung.push(m.s);
-                        return m.s;
-                    });
                     listen[k] = anhang.length ? { teile: neu, anhang } : { teile: neu };
                 } else {
                     const ord = new Array(glieder.length);
+                    const ms = new Array(glieder.length);
                     for (let j = 0; j < glieder.length; j++) {
-                        const m = this._standGlied(L, glieder[j]);
-                        const geaendert = (ganz || m.json === null) && pruefe(glieder[j], m);
-                        if (voll || geaendert || L.gefegt.has(m)) {
+                        const m = (ms[j] = this._standGlied(L, glieder[j]));
+                        const eintritt = m.og !== og;
+                        const geaendert = (ganz || eintritt || m.json === null) && pruefe(glieder[j], m);
+                        if (voll || geaendert || eintritt || L.gefegt.has(m)) {
                             neu.push(m.s);
                             listenStuecke.push(m.json);
                         }
                         ord[j] = m.s;
                     }
                     listen[k] = { teile: neu };
-                    if (voll || !gleich(L.ordnung, ord)) listen[k].ordnung = L.ordnung = ord;
+                    if (voll || !gleich(L.ordnung, ord)) {
+                        listen[k].ordnung = L.ordnung = ord;
+                        L.og = og + 1;
+                        for (const m of ms) m.og = L.og;
+                    }
                 }
                 L.glieder = glieder;
                 L.menge = art.menge ? menge : [glieder];

@@ -422,30 +422,8 @@ class AnazhRealm_studio_bruecke {
                 }
                 continue; // existiert (historische Arten + schon registrierte)
             }
-            // Donor-Auflösung: ein LEBENDER Blueprint (tree → baum_eiche) ODER die eingefrorene Substanz-Zeile
-            // (KIND_SUBSTANCE); donorTool (Policy-Daten): ein fx.tool-Rezept zieht die Werkzeug-Substanz.
-            const dKey = pol.donorTool && rec.fx && rec.fx.tool ? pol.donorTool : pol.donor;
-            const donor =
-                pol.substanz || bps[dKey] || (AnazhRealm.KIND_SUBSTANCE && AnazhRealm.KIND_SUBSTANCE[dKey]) || null;
-            if (!donor || !Array.isArray(donor.parts)) continue; // fail-closed je kind (Blueprint UND Tabelle leer)
-            const clone = JSON.parse(JSON.stringify(donor));
-            // DIE EINE Klon-Sichtbarkeits-Regel (wie cloneBlueprint, gate:trias B10): ein Klon ist SICHTBAR —
-            // `donorOnly` reist NIE mit (sonst fällt jeder Auto-Blueprint still aus allen Pickern).
-            delete clone.donorOnly;
-            clone.label = rec.lab || rec.label || id.charAt(0).toUpperCase() + id.slice(1);
-            if (pol.grown) clone._grownSpecies = name;
-            else clone.name = name;
-            if (pol.builtIn !== undefined) clone.builtIn = pol.builtIn;
-            clone._foundryAutoSpecies = id; // die Herkunfts-Marke (Diag/Provenienz)
-            // Rezept-Identität als DATEN-Feld, nicht nur im Namen: `studioGestalt` liest der EINE Resolver
-            // (`_foundryPresetForEntry`), `cloneBlueprint` erbt es → jeder Klon/Umbenennung behält die Gestalt.
-            clone.studioGestalt = id;
-            // V18.464 — die role-DATEN-Zeile der Policy stempeln (gate → "portal"):
-            // jedes registrierte Studio-Tor ist ab Geburt ein Welt-Tor.
-            if (pol.role) {
-                clone.role = pol.role;
-                clone.roleManual = true;
-            }
+            const clone = this._autoArtGeburt(id, rec, pol);
+            if (!clone) continue; // fail-closed je kind (Blueprint UND Tabelle leer)
             bps[name] = clone;
             registered++;
         }
@@ -457,6 +435,39 @@ class AnazhRealm_studio_bruecke {
             this.log(`Nervensystem: ${registered} neue Studio-Art(en) automatisch registriert.`, "INFO");
         }
         return registered;
+    }
+    // DIE GEBURT EINER ART AUS DEM BUCH (die EINE Quelle des Auto-Bauplans): die Zeile `rec` des Buchs unter ihrer Policy `pol`
+    // wird ein Bauplan — der Spender geklont, Name, Etikett und Herkunft gestempelt. Das Register legt ihn in die Welt, der
+    // Stand fragt sie, ob ein Bauplan noch seine Geburt ist (`_bauplanAusBuch`: dann reist er nicht, das Buch gebiert ihn neu).
+    // → der Bauplan oder null (kein Spender: fail-closed je kind)
+    _autoArtGeburt(id, rec, pol) {
+        const bps = this.state.blueprints || {};
+        const name = pol.prefix + id;
+        // Donor-Auflösung: ein LEBENDER Blueprint (tree → baum_eiche) ODER die eingefrorene Substanz-Zeile
+        // (KIND_SUBSTANCE); donorTool (Policy-Daten): ein fx.tool-Rezept zieht die Werkzeug-Substanz.
+        const dKey = pol.donorTool && rec.fx && rec.fx.tool ? pol.donorTool : pol.donor;
+        const donor =
+            pol.substanz || bps[dKey] || (AnazhRealm.KIND_SUBSTANCE && AnazhRealm.KIND_SUBSTANCE[dKey]) || null;
+        if (!donor || !Array.isArray(donor.parts)) return null;
+        const clone = JSON.parse(JSON.stringify(donor));
+        // DIE EINE Klon-Sichtbarkeits-Regel (wie cloneBlueprint, gate:trias B10): ein Klon ist SICHTBAR —
+        // `donorOnly` reist NIE mit (sonst fällt jeder Auto-Blueprint still aus allen Pickern).
+        delete clone.donorOnly;
+        clone.label = rec.lab || rec.label || id.charAt(0).toUpperCase() + id.slice(1);
+        if (pol.grown) clone._grownSpecies = name;
+        else clone.name = name;
+        if (pol.builtIn !== undefined) clone.builtIn = pol.builtIn;
+        clone._foundryAutoSpecies = id; // die Herkunfts-Marke (Diag/Provenienz)
+        // Rezept-Identität als DATEN-Feld, nicht nur im Namen: `studioGestalt` liest der EINE Resolver
+        // (`_foundryPresetForEntry`), `cloneBlueprint` erbt es → jeder Klon/Umbenennung behält die Gestalt.
+        clone.studioGestalt = id;
+        // V18.464 — die role-DATEN-Zeile der Policy stempeln (gate → "portal"):
+        // jedes registrierte Studio-Tor ist ab Geburt ein Welt-Tor.
+        if (pol.role) {
+            clone.role = pol.role;
+            clone.roleManual = true;
+        }
+        return clone;
     }
     // DIE WIRTS-ZEILE EINER ART REIST IM BUCH (Studio-Vertrag B7, studios.K5): der Wirt kennt eine Art nicht beim Namen —
     // ihr Gesetzbuch bringt die Zeile (`KIND_POLICY` des Kerns, die Brücke reicht sie mit der Kern-id als `kindPolicy`), der
