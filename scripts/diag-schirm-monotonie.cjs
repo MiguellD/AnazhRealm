@@ -216,8 +216,8 @@ async function welt() {
         // Schirm-Gesetz (auf main schwankte dieselbe Klasse ±40 je Reihe, nur nie im Buckel der Mitte). Ihr Takt ruht: der Pool
         // behält die Lage seines letzten Takts
         r._vogelTakt = () => {};
-        // DER WOLF DER FELL-PROBE: im Abstand d*, an dem das Fell-Gesetz im großen Fenster trägt (px ≥ pxMin·(1+hyst)) und
-        // im kleinen nicht (px < pxMin·(1−hyst)) — das geometrische Mittel der Schwellen der beiden Ränder der Reihe.
+        // DER WOLF DER FELL-PROBE: im Abstand d*, an dem das Fell-Gesetz im großen Fenster trägt (px ≥ px·(1+hyst)) und
+        // im kleinen nicht (px < px·(1−hyst)) — das geometrische Mittel der Schwellen der beiden Ränder der Reihe.
         const cam = st.camera;
         const vor = new window.THREE.Vector3();
         cam.getWorldDirection(vor);
@@ -262,12 +262,13 @@ async function welt() {
             still = waechst() ? 0 : still + 1;
         }
         // erst nach der Stille: der Wolf steht im Abstand d* seines jetzigen Maßes
-        const F = AnazhRealm.FELL_BILDSCHIRM;
-        const breite = F.breiteM * (tB.f || 1) * (w.scale.x || 1);
+        // das Maß des Fells ist die Höhe seines Schalen-Stapels (`_fellHoehe`), die Toleranz die jeder Stufe (LOD_SCHIRM.px)
+        if (!tB.straehnen) r._fellBildschirmGesetz(w, tB, cam.position);
+        const breite = AnazhRealm._fellHoehe(tB) * (w.scale.x || 1);
         const pxJeM = (h) => h / (2 * Math.tan((cam.fov * Math.PI) / 360));
         const gross = groessen[0][1],
             klein = groessen[groessen.length - 1][1];
-        const dStern = (breite * Math.sqrt(pxJeM(gross) * pxJeM(klein))) / F.pxMin;
+        const dStern = (breite * Math.sqrt(pxJeM(gross) * pxJeM(klein))) / AnazhRealm.LOD_SCHIRM.px;
         // horizontal so weit, dass der 3D-Abstand d* ist (die Kamera steht über dem Boden)
         for (let k = 0; k < 3; k++) {
             const dy = cam.position.y - w.position.y;

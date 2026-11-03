@@ -2894,13 +2894,14 @@ class AnazhRealm_kreatur_verhalten {
         return !!(u && u._kzNah !== true && u._drinnen !== true && (u._kzGlieder || u._kzVersuch));
     }
 
-    // DAS FELL-BILDSCHIRM-GESETZ (Gebot 7: Kosten an den Schirm): das Fell (seit V18.497 die Schalen, dazu
-    // Rest-Strähnen wie der Nasenrücken) zeichnet nur, solange seine projizierte Breite FELL_BILDSCHIRM.pxMin
-    // erreicht — darunter trägt die Haut mit FELL_LOOK das Tier. Die Grenze ist eine des Stufen-Gesetzes: die Brennweite des
-    // EINEN Schirms (`_brennweite`, Ruhe-Sichtfeld wie jede Stufe) und die Tiergröße (ein kleinerer Schirm schaltet früher ab),
-    // die EINE Wahl mit Hysterese und Gedächtnis (`_stufeGemerkt`) am Auge der Stufen `auge`; ihre Grenze trägt das Tier je
-    // Zeichenpuffer (die Epoche des Fells); geschaltet wird nur `visible`. Ohne Schirm bleibt der Zustand.
-    _fellBildschirmGesetz(creature, tB, auge) {
+    // DAS FELL-BILDSCHIRM-GESETZ (Gebot 7: Kosten an den Schirm): das Fell (die Schalen, dazu Rest-Strähnen wie der
+    // Nasenrücken) ist eine STUFE der Gestalt — es zeichnet nur, wo die feine Gestalt das Bild trägt (`gestalt`: nicht
+    // jenseits der Gelenk-Grenze, im Satz, im Feld — die Grobstufe ist kahl) und solange die Höhe seines Schalen-Stapels
+    // (`_fellHoehe`) LOD_SCHIRM.px Bildpunkte trägt, über die Brennweite des EINEN Schirms (`_brennweite`) und die
+    // Tiergröße; darunter trägt die Haut mit FELL_LOOK. Die EINE Wahl mit Hysterese und Gedächtnis (`_stufeGemerkt`) am Auge
+    // der Stufen; geschaltet wird nur `visible`. Vorher trugen Satz, Feld und Grobstufe `_fellAn` ungesetzt („an“ in jeder
+    // Ferne, haar.K5 Radeon 5fba36ea). Ohne Schirm bleibt der Zustand der feinen Gestalt.
+    _fellBildschirmGesetz(creature, tB, auge, gestalt = true) {
         if (!tB.straehnen) {
             tB.straehnen = [];
             tB.wrap.traverse((o) => {
@@ -2910,18 +2911,20 @@ class AnazhRealm_kreatur_verhalten {
             });
         }
         if (!tB.straehnen.length) return;
-        const pxJeM = this._schirm().pxJeM;
-        if (!auge || pxJeM == null) return;
-        const z = this._schirm().hoehe;
-        if (!tB._fellG || tB._fellG.z !== z || tB._fellG.f !== tB.f) {
-            const F = AnazhRealm.FELL_BILDSCHIRM;
-            const ab = (F.breiteM * (tB.f || 1) * AnazhRealm._brennweite(z)) / F.pxMin;
-            tB._fellG = { erste: 0, grenzen: [{ stufe: 1, ab, h: F.hyst }], z, f: tB.f };
-        }
         const war = tB._fellAn !== false;
-        const p = creature.position;
-        const m = tB._fellWahl || (tB._fellWahl = AnazhRealm._wahlGedaechtnis());
-        const an = AnazhRealm._stufeGemerkt(m, war ? 0 : 1, tB._fellG, creature.scale.x || 1, p, auge, true) === 0;
+        let an = false;
+        if (gestalt) {
+            const pxJeM = this._schirm().pxJeM;
+            if (!auge || pxJeM == null) return;
+            const z = this._schirm().hoehe;
+            if (!tB._fellG || tB._fellG.z !== z || tB._fellG.f !== tB.f) {
+                const ab = (AnazhRealm._fellHoehe(tB) * AnazhRealm._brennweite(z)) / AnazhRealm.LOD_SCHIRM.px;
+                tB._fellG = { erste: 0, grenzen: [{ stufe: 1, ab, h: AnazhRealm.FELL_BILDSCHIRM.hyst }], z, f: tB.f };
+            }
+            const p = creature.position;
+            const m = tB._fellWahl || (tB._fellWahl = AnazhRealm._wahlGedaechtnis());
+            an = AnazhRealm._stufeGemerkt(m, war ? 0 : 1, tB._fellG, creature.scale.x || 1, p, auge, true) === 0;
+        }
         if (an === war && tB._fellAn !== undefined) return;
         tB._fellAn = an;
         for (const s of tB.straehnen) s.visible = an;
@@ -2954,8 +2957,11 @@ class AnazhRealm_kreatur_verhalten {
         if (!this._kzBesitztFeld(creature)) creature.visible = this.state.creaturesHidden !== true && !ud._satz;
         const a = auge || this._lodAuge() || creature.position;
         const fern = this._gelenkStufe(creature, a, creature.position, zeilen);
+        // das Fell ist eine Stufe der feinen Gestalt (DIESELBE Wahl): tragen Grobstufe, Satz oder Feld das Bild, ist es aus
+        const gestalt = !fern && !ud._satz && !this._kzBesitztFeld(creature);
+        if (ud._tierBaum && !gestalt) this._fellBildschirmGesetz(creature, ud._tierBaum, a, false);
         if (!inFrustum) return fern; // das Bild-Gesetz setzt DERSELBE Frame, in dem der Leib in den Blick kommt
-        if (!fern && ud._tierBaum) this._fellBildschirmGesetz(creature, ud._tierBaum, a);
+        if (gestalt && ud._tierBaum) this._fellBildschirmGesetz(creature, ud._tierBaum, a);
         // Welle 6.H — die Aura des Auftrags folgt dem Leib (über dem Mesh), das Sprite der Traglast darüber (P2B.5)
         const auraY = ud.taskAura || ud.carryingSprite ? this._creatureAuraOffsetY(creature) : 0;
         if (ud.taskAura)
@@ -3967,12 +3973,28 @@ AnazhRealm.KREATUR_RUHE = Object.freeze({ takt: 4, wegMax: 0.25, randGrad: 10, s
 // steigt sonst in jedes Kind, auch unter `matrixWorldAutoUpdate = false`) übergeht sein Skelett. Leser ziehen über
 // `_leibMatrix` nach, das Erwachen (`_kreaturErwacht`) nimmt sie wieder ab.
 AnazhRealm._ruhendeWurzel = function ruhendeWurzel() {};
-// Das Fell-Bildschirm-Gesetz: mittlere Strähnen-Breite in Vorlagen-Einheiten (der Bäcker legt 2·t·1.8 an der
-// Wurzel, 2·t·0.65 an der Spitze, t ≈ 0.006–0.008; die Welt skaliert mit dem Guss-Faktor f ≈ 0,1) · Mindest-Breite
-// in Pixeln · Hysterese-Band. pxMin GEMESSEN (Fell-Linse diag-fell-blick, git-Archiv, 720p, fov 75°): die Strähnen ändern
-// 23 592 px bei 1,5 m · 8 421 bei 3 m · 1 808 bei 6 m · 0 ab 10 m — viele Strähnen unter einem Pixel wirken als
-// Dichte, bis ~0,1 px je Strähne (≈ 8 m bei 720p, ≈ 12 m bei 1080p).
-AnazhRealm.FELL_BILDSCHIRM = Object.freeze({ breiteM: 0.018, pxMin: 0.1, hyst: 0.1 });
+// `_fellBildschirmGesetz`: das Hysterese-Band (die Strähnen-Breite 0,018 bei 0,1 px fiel: geeicht vor V18.497 bei f ≈ 0,1)
+AnazhRealm.FELL_BILDSCHIRM = Object.freeze({ hyst: 0.1 });
+// DIE HÖHE DES FELLS in m bei Tiergröße 1: der Median von |Lage − Wurzel| über die äußerste Schale (foundry `__tierFellSchalen`:
+// aSchale.x = t, aWurzel die Haar-Wurzel) × Guss-Faktor `tB.f` — je Geometrie EINMAL; ein Fell ohne Schalen-Stapel bricht laut.
+AnazhRealm._fellHoehe = function (tB) {
+    let best = 0;
+    for (const { geometry: g } of tB.straehnen) {
+        const A = (g && g.attributes) || {};
+        if (!A.aSchale || !A.aWurzel) continue;
+        const [S, W, P, d] = [A.aSchale, A.aWurzel, A.position, []];
+        let tMax = 0;
+        for (let i = 0; i < S.count; i++) tMax = Math.max(tMax, S.getX(i));
+        for (let i = 0; i < S.count && !(g.userData._fellHoehe > 0); i++)
+            if (S.getX(i) >= tMax - 1e-4)
+                d.push(Math.hypot(P.getX(i) - W.getX(i), P.getY(i) - W.getY(i), P.getZ(i) - W.getZ(i)));
+        if (d.length) g.userData._fellHoehe = d.sort((x, y) => x - y)[d.length >> 1];
+        best = Math.max(best, g.userData._fellHoehe || 0);
+    }
+    if (!(best > 0))
+        throw new Error("FELL: das Fell des Tiers trägt keinen Schalen-Stapel (aSchale/aWurzel) — keine Höhe");
+    return best * (tB.f || 1);
+};
 // DIE TOD-LAGE (`_todHebeTafel`): der Kipp-Winkel des sterbenden Körpers (~83° — gekippt, nicht vergraben), die Zahl der
 // Winkel-Abschnitte der Hebe-Tafel (der Kipp-Takt liest sie linear) und die höchste Zahl der Haut-Punkte je Tod.
 AnazhRealm.TOD_KIPP_RAD = 1.45;
