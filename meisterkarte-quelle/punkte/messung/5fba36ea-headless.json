@@ -1,8 +1,8 @@
 {
  "sha": "5fba36ea44a6e80bb9bd645900a9584c1fcce0b9",
  "geraet": "headless",
- "zeit": "2026-11-03T11:43:53.677Z",
- "host": "farm:41629795547",
+ "zeit": "2026-11-03T11:53:40.325Z",
+ "host": "farm:41631101535",
  "je": {
   "affekt.K3#1": {
    "gruen": false,
@@ -1501,14 +1501,14 @@
   },
   "luftwasser.K3#2": {
    "gruen": true,
-   "zahl": "Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.631 m, heim 12 · Pegel 25.823 → 26.023 m nach 2 s Sturm, Fische 25.169 → 25.246 m (Anteil der Säule 0.325 → 0.374) · unter Wasser true, Sicht 30 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht)",
+   "zahl": "Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.645 m, heim 12 · Pegel 25.822 → 26.022 m nach 2 s Sturm, Fische 25.169 → 25.246 m (Anteil der Säule 0.327 → 0.375) · unter Wasser true, Sicht 30 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht)",
    "exit": 0,
-   "minuten": 1.13,
-   "zeit": "2026-11-03T11:43:53.677Z",
+   "minuten": 1.48,
+   "zeit": "2026-11-03T11:53:40.325Z",
    "abdruck": "df1524cafd0c",
    "port": 7704,
    "bahn": "1/1",
-   "host": "farm:41629795547/1"
+   "host": "farm:41631101535/1"
   }
  },
  "ungemessen": {
