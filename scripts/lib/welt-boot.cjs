@@ -231,6 +231,20 @@ async function weltDa(bed) {
     window.__weltDaWartet = null;
     return r;
 }
+// DIE FARBEN EINER GESTALT (`window.__farben(g)`): je Mesh die erste Vertex-Farbe auf drei Stellen; `window.__lin(hex)` schreibt
+// eine Farbe der Tafel (sRGB-Hex) linear in derselben Form. Bis w6-spielgang-decke trugen p2p-gestalt und studio-uebergabe je beide.
+function farben(g) {
+    const set = new Set();
+    g?.traverse((o) => {
+        const c = o.geometry?.attributes?.color?.array;
+        if (c?.length >= 3) set.add([c[0], c[1], c[2]].map((v) => v.toFixed(3)).join(","));
+    });
+    return set;
+}
+const lin = (hx) =>
+    [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255]
+        .map((c) => ((c /= 255) <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)).toFixed(3))
+        .join(",");
 // DER EINE ABDRUCK einer Gestalt (`window.__abdruck(x, alle)`): FNV-1a über die Puffer einer Gruppe (traverse), eines Flats (je
 // Geometrie seiner Blätter einmal, ohne Schatten-Zwilling) oder einer Geometrie — die Lage, mit `alle` jedes Attribut und der
 // Index (ein Farb-Regler bewegt die Vertex-Farbe, nie die Lage); „hash/Teile".
@@ -322,7 +336,7 @@ function png(u8, W, H) {
 // Bild neu (eine Linse blendet Klassen aus und ein, die Bühne wechselt)
 const bundlesNeu = () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
 const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
-const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__rufe = ${rufe};`;
+const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__rufe = ${rufe};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");

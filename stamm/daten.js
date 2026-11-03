@@ -838,6 +838,7 @@ class AnazhRealm_daten {
             "bib.stufe.ausgestellt-titel": ["Diese Welt ist spielbar, aber stumm gegenüber der DSL.", "This world is playable, but silent to the DSL."],
             "bib.stufe.uebersetzt": ["übersetzt", "translated"],
             "bib.stufe.uebersetzt-titel": ["Diese Welt versteht ein DSL-Vokabular (Stufe übersetzt). Beim Betreten kann sie es nativ bestätigen.", "This world understands a DSL vocabulary (stage: translated). On entering, it can confirm it natively."],
+            "buch.wort": ["{wort}", "{wort}"],
             "chat.absage.erschoepft": ["Die Welt ist für den Moment erschöpft — versuch es gleich noch einmal.", "The world is exhausted for the moment — try again shortly."],
             "chat.absage.nicht-ganz": ["Die Welt hat den Satz nicht ganz umgesetzt.", "The world didn't fully carry out that sentence."],
             "chat.absage.passt-nicht": ["Etwas an dem Satz passt nicht zur Welt.", "Something in that sentence doesn't fit the world."],

@@ -492,19 +492,20 @@ async function probe() {
             target.heatBuildup = w.dT;
             if (!w.quelle) continue;
             if (vorher < w.zuend / 2 && w.dT >= w.zuend / 2 && w.dT < w.zuend)
-                r._spielerSagt(
-                    `„${name(target)}" glimmt im Brennpunkt von „${name(w.quelle)}" — rück es aus dem Licht, sonst fängt es Feuer.`
-                );
+                r._spielerSagt(["welt.brennpunkt-glimmt", { ding: name(target), linse: name(w.quelle) }]);
             if (w.dT >= w.zuend) ignitions.push({ t: target, quelle: w.quelle });
         }
+        // die Sätze als Zeilen der Tafel (spielgang.K5: der Takt spricht Schlüssel und Werte, die Sprache liest der Chat)
         const pm = st.playerMesh && st.playerMesh.position;
         for (const { t, quelle } of ignitions) {
             const d = pm ? Math.hypot(t.position.x - pm.x, t.position.z - pm.z) : null;
             r._spielerSagt(
-                `Die Sonne entzündete durch „${name(quelle)}" „${name(t)}"${d != null ? ` (${Math.round(d)} m von dir)` : ""}.`
+                d != null
+                    ? ["welt.sonne-entzuendete-weit", { linse: name(quelle), ding: name(t), m: Math.round(d) }]
+                    : ["welt.sonne-entzuendete", { linse: name(quelle), ding: name(t) }]
             );
             if (r.journalAppend)
-                r.journalAppend("loss", AR._datum`Die Sonne entzündete durch „${name(quelle)}" „${name(t)}".`, {
+                r.journalAppend("loss", ["journal.sonne-zuendet", { linse: name(quelle), ziel: name(t) }], {
                     type: t.type,
                     linse: quelle.type,
                 });
@@ -514,7 +515,7 @@ async function probe() {
     // ein Lauf eines Takts mit gebuchten Wirkungen (Sätze, Journal, Abriss) — das Feuer wirkt erst danach
     const buche = (fn, dt) => {
         const b = { saetze: [], journal: [], feuer: [] };
-        r._spielerSagt = (t) => b.saetze.push(t);
+        r._spielerSagt = (t) => b.saetze.push(JSON.stringify(t));
         r.journalAppend = (...a) => b.journal.push(JSON.stringify(a));
         r.removeArchitecture = (e) => {
             b.feuer.push(e);

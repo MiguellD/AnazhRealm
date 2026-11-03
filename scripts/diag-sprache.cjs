@@ -15,7 +15,11 @@
 //   K) ein Schlüssel (ein Literal mit dem Präfix einer Tafel-Zeile, `_t("…")`, `data-t…="…"`) in der Tafel fehlt;
 //   U) eine Zeile der Tafel keinen Leser hat (kein Literal, keine Familie `` `präfix.${…}` ``);
 //   Z) eine aufgelöste Zeile `_t(…)` an einer Chat-Senke steht (sie wechselt nie mit der Sprache: die Senke nimmt
-//      `[schlüssel, werte]`).
+//      `[schlüssel, werte]`);
+//   F) ein Schlüssel einer FAMILIE (`` `präfix.${…}` ``, zur Laufzeit gesetzt) fehlt: je Familie zählt ihre Quelle jede id auf —
+//      die Bücher des Manifests (der Kanal get-book im vm: je Rezept `gestalt.<id>`, je Kern `studio.<kern>`, je Art
+//      `art.<art>`; ohne Zeile spräche es nur das deutsche Wort seines Buchs, `_buchWort`) und die Befund-Arten der
+//      Speicher-Kette (`art:` in `befund`); eine Familie ohne Quelle steht selbst beim Namen.
 // Wort-Text: nach Abzug von `${…}`, Markup und Entitäten ein Wort aus ≥ 2 Buchstaben UND ein Zeichen der Sprache
 // (Großbuchstabe, Umlaut, …!?:) oder zwei kleine Wörter; ein Bezeichner ist ein Name.
 // DIE LEBENDE HÄLFTE ist die Station spielgang.K5#1 (punkte-maschine, stationen/g5.js `sprachLauf`): die Welt am Null-Renderer
@@ -27,6 +31,15 @@
 // ============================================================================
 "use strict";
 const { ausDatei, stammLib, ROOT, SELBSTTEST, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
+const { kanalImVm } = require("./lib/asset-worker-harness.cjs");
+
+// F: die ids jeder Familie aus ihrer Quelle — das Buch der Kerne des Manifests (der Kanal im vm, ~0,2 s)
+const { book, stammbaum } = kanalImVm()({ type: "get-book" });
+const QUELLE = {
+    "gestalt.": Object.keys(book).map((id) => id.replace(/_/g, "-")),
+    "studio.": stammbaum.kerne.map((k) => k.kern),
+    "art.": stammbaum.kerne.flatMap((k) => Object.keys(k.arten)),
+};
 
 const wort = (t) => {
     t = String(t)
@@ -66,7 +79,7 @@ function senke(n, ahnen) {
 function pruefe({ dateien, html, Z }) {
     const rot = [];
     const genutzt = new Set();
-    const familien = new Set();
+    const familien = new Map();
     const praefix = [...new Set(Object.keys(Z).map((k) => k.split(".")[0]))].join("|") || "ui";
     const SCHLUESSEL = new RegExp(`^(?:${praefix})\\.[a-z0-9][a-z0-9.-]*$`);
     for (const { pfad, text } of dateien)
@@ -81,7 +94,7 @@ function pruefe({ dateien, html, Z }) {
             const ort = `${pfad}:${stammLib.zeileVon(text, n.start)}`;
             const wo = wort(s) && senke(n, ahnen);
             if (wo) rot.push(`C: ${ort} ${wo}: ${text.slice(n.start, n.end).slice(0, 90)}`);
-            if (quasi && quasi.length > 1 && /^[a-z0-9]+(\.[a-z0-9-]+)*\.$/.test(quasi[0])) familien.add(quasi[0]);
+            if (quasi && quasi.length > 1 && /^[a-z0-9]+(\.[a-z0-9-]+)*\.$/.test(quasi[0])) familien.set(quasi[0], ort);
             if (quasi || !(SCHLUESSEL.test(s) || (nameVon(vater.callee || {}) === "_t" && vater.arguments[0] === n)))
                 return;
             genutzt.add(s);
@@ -90,9 +103,12 @@ function pruefe({ dateien, html, Z }) {
     for (const k of html.matchAll(/\sdata-t(?:-[a-z-]+)?="([^"]*)"/g))
         if (k[1] in Z) genutzt.add(k[1]);
         else rot.push(`K: index.html:${html.slice(0, k.index).split("\n").length} der Schlüssel „${k[1]}“ fehlt`);
-    const inFamilie = (k) => [...familien].some((f) => k.startsWith(f) && k.split(".").length === f.split(".").length);
-    for (const k of Object.keys(Z))
-        if (!genutzt.has(k) && !inFamilie(k)) rot.push(`U: die Zeile „${k}“ trägt keinen Leser`);
+    // eine Familie liest genau die Zeilen ihrer Quelle (eine ohne Quelle nennt sich selbst: „präfix.…“)
+    for (const [f, ort] of familien)
+        if (SCHLUESSEL.test(f + "x"))
+            for (const id of QUELLE[f] || ["…"])
+                if (genutzt.add(f + id) && !(f + id in Z)) rot.push(`F: ${ort} „${f + id}“ fehlt in der Tafel`);
+    for (const k of Object.keys(Z)) if (!genutzt.has(k)) rot.push(`U: die Zeile „${k}“ trägt keinen Leser`);
     return rot;
 }
 
@@ -132,13 +148,15 @@ if (require.main !== module) {
         ["Zeile ohne Leser", "U", daten("const Z = {\n", 'const Z = {\n"ui.niemand-liest": ["Niemand", "Nobody"],\n')],
         ["Zeile ohne en", "T", daten(/("ui\.[^"]+": \["[^"]*"), "[^"]*"\]/, "$1]")],
         ["Wert nur in de", "T", daten(/("ui\.[^"]+": \["[^"]*)", /, '$1 {n}", ')],
+        ["Rezept ohne Zeile", "F", daten('"gestalt.eiche": ["Eiche", "Oak"],', "")],
+        ["Familie ohne Quelle", "F", mit("(x) => `hud.neu.${x}`")],
     ];
     const fehler = [];
     for (const [name, klasse, mut] of FAELLE) {
         const neu = befund(mut(echt)).filter((x) => !basis.has(x));
         if (!neu.length || !neu.every((x) => x.startsWith(klasse))) fehler.push(`${name} → ${neu[0] || "stumm"}`);
     }
-    selbsttestEnde(fehler, `gate:sprache nennt ${FAELLE.length} Mutanten beim Namen (C · K · U · Z · T).`);
+    selbsttestEnde(fehler, `gate:sprache nennt ${FAELLE.length} Mutanten beim Namen (C · K · U · Z · T · F).`);
 } else {
     const b = baum();
     wandEnde(
