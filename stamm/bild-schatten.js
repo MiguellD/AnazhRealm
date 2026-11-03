@@ -343,6 +343,14 @@ class AnazhRealm_bild_schatten {
         f.H = H;
         f.texel = tx;
         f.texelMin = Math.min(tx, ty); // der feinere Texel der Karte (die Stufe der Sonne, der Licht-Rand)
+        // DER URSPRUNG DES WELT-RASTERS (schatten.K2, `_ditherIGN` in der Kaskade): Spalte s der Karte liegt auf dem Welt-Index
+        // bx0/tx + s, Zeile z (von oben, r184 dreht y im Schatten-Koordinaten-Satz) auf by0/ty + Höhe − z — beide Ursprünge ganz
+        // (das Zentrum rastet, die Box trägt ganze Texel), modulo BLENDE_RASTER
+        const P = AnazhRealm.BLENDE_RASTER;
+        const modP = (x) => ((Math.round(x) % P) + P) % P;
+        if (!f.raster) f.raster = [0, 0];
+        f.raster[0] = modP(bx0 / tx);
+        f.raster[1] = modP(by0 / ty + sh.mapSize.height);
         // DER LÄNGSTE LICHT-WEG der Box (die Stufe der Sonne, `_sonnenStufe`): ein Schatten fällt vom Werfer (höchstens
         // `S.werferY`, eben von `_kaskadenWerferOben` über dieser Box gemessen) zum Empfänger (wenigstens der tiefste Punkt der
         // Scheibe) — sein Weg entlang des Lichts ist der Fall geteilt durch die Höhe des Lichts, nie länger als die Box tief.
@@ -778,6 +786,10 @@ AnazhRealm.SCHATTEN_TAKT = Object.freeze({ nahMax: 2, fernFaktor: 3 });
 // Die Ruhe der Kamera für den Schatten-Takt (_loopShadowUpdate): jedes Element der Welt-Matrix höchstens so weit vom
 // vorigen Frame (Meter bzw. Drehung) — darüber gilt die Kamera als bewegt, die nahe Kaskade folgt jedem Frame.
 AnazhRealm.SCHATTEN_RUHE_EPS = 1e-4;
+// DAS WELT-RASTER DER BLENDE in der Kaskade (`_ditherIGN`, schatten.K2): der Schlüssel des Rauschens ist der Index des
+// Texels der Welt im Licht-Raum modulo dieser Periode (ganze Zahlen — ein Versatz der Box um n Texel verschiebt Spalte und
+// Ursprung gegenläufig, der Rest bleibt; `_kaskadeFit` legt den Ursprung).
+AnazhRealm.BLENDE_RASTER = 256;
 // DIE KASKADEN-BOX (_kaskadenPassen): jede Kaskade misst die Frustum-Scheibe im Licht-Raum statt ihrer Diagonale.
 // `texelM` = die Texel-Kante je Kaskade, die die längste Box-Kante bei jeder Blickrichtung hält — die des
 // Addon-Quadrats (k0 339 m / 2048, k1 961 m / 2048): kein Schatten wird gröber als bis V18.529. Die Karten-Größe folgt

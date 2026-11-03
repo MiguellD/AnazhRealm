@@ -2960,13 +2960,44 @@ class AnazhRealm_stoff_material {
     // DAS RAUSCHEN DER BLENDE: Interleaved-Gradient-Noise, BYTE-GENAU __phytoCore.lodDitherIGN (52.9829189 · 0.06711056 ·
     // 0.00583715; foundry-core.js Z.212), zeitlich über uDitherT — EIN Knoten-Bauer für die Durchsicht, das Laub-Band und den
     // Ring der Karte (lod.K3). `versatz` n schiebt das Raster um n · 5,588 px (die Ring-Wahl, unkorreliert mit der Blende).
+    // IN DER KASKADE STEHT DIE BLENDE AN DER WELT (schatten.K2): der Schatten-Pass liest die Blende über colorNode.a (Lehre 26) —
+    // mit der Rotation je Bild (`uDitherT`, `_loopRender`) und dem Pixel der Karte als Schlüssel trug JEDER Kaskaden-Render eines
+    // überblendenden Werfers (Stufen-Band, Ring der Karte) ein anderes Loch-Muster, und jede Neulage der Box (die nahe Kaskade beim
+    // Gehen 6–22 Mal in 2 s, gate:schatten-werfer K9) schob es gegen die Welt: der Boden unter dem Werfer flackerte in ruhender
+    // Welt. In der Kaskade (orthographisch, m[3][3] = 1 — dieselbe Weiche wie `_laubVersatz`) dreht sie nicht, und ihr Schlüssel
+    // ist der Index des Welt-Rasters der Kaskade (Spalte + Ursprung, Ursprung − Zeile; `_kaskadeFit` legt den Ursprung,
+    // `_blendeRaster` reicht ihn je Pass), modulo `BLENDE_RASTER`: dasselbe Texel der Welt trägt in jedem Render dieselbe Schwelle.
     _ditherIGN(T, versatz) {
-        const fc = versatz ? T.screenCoordinate.add(T.vec2(versatz * 5.588238)) : T.screenCoordinate;
+        const fc0 = versatz ? T.screenCoordinate.add(T.vec2(versatz * 5.588238)) : T.screenCoordinate;
+        const P = AnazhRealm.BLENDE_RASTER;
+        const R = this._blendeRaster();
+        const welt = T.vec2(T.floor(fc0.x).add(R.x), R.y.add(16 * P).sub(T.floor(fc0.y)))
+            .mod(P)
+            .add(0.5);
+        const kaskade = T.cameraProjectionMatrix.element(3).w.greaterThan(0.5);
+        const fc = kaskade.select(welt, fc0);
         return T.fract(
             T.float(52.9829189)
                 .mul(T.fract(fc.x.mul(0.06711056).add(fc.y.mul(0.00583715))))
-                .add(this._ensureLodUniforms().uDitherT)
+                .add(kaskade.select(T.float(0), this._ensureLodUniforms().uDitherT))
         );
+    }
+
+    // DER URSPRUNG DES WELT-RASTERS je Pass (`_ditherIGN`): EINE Uniform der Render-Gruppe, gestellt je Render aus der Kamera des
+    // Passes — eine Kaskade reicht den Ursprung ihrer Box (`_kaskadeFit`, `raster`), jede andere Kamera 0.
+    _blendeRaster() {
+        if (this._blendeRasterU) return this._blendeRasterU;
+        const T = THREE.TSL;
+        const v = new THREE.Vector2();
+        this._blendeRasterU = T.uniform(v)
+            .setGroup(T.renderGroup)
+            .onRenderUpdate((frame) => {
+                const csm = this.state.csmNode;
+                const k = frame && frame.camera ? this._schattenKameraIndex(frame.camera) : -1;
+                const f = k >= 0 && csm && csm._anazhFit ? csm._anazhFit[k] : null;
+                return f && f.raster ? v.set(f.raster[0], f.raster[1]) : v.set(0, 0);
+            });
+        return this._blendeRasterU;
     }
 
     // Studio-Dither-Blende als TSL-Knoten = `__phytoCore.lodCrossfadeMask` symbolisch — jede Formel MUSS
@@ -2991,7 +3022,9 @@ class AnazhRealm_stoff_material {
             ]
                 .filter((k) => !_lu[k])
                 .concat(
-                    ["float", "fract", "screenCoordinate", "step", "mix"].filter((k) => !T[k]).map((k) => "TSL." + k)
+                    ["float", "fract", "screenCoordinate", "cameraProjectionMatrix", "step", "mix"]
+                        .filter((k) => !T[k])
+                        .map((k) => "TSL." + k)
                 );
             if (_fehlt.length) throw this._blendeBruch("es fehlt " + _fehlt.join(" · "));
             // W5.4 (Schritt 3) — die Band-Zahlen als LIVE-Uniforms (Quelle LOD_DISTANCES via
@@ -3000,14 +3033,9 @@ class AnazhRealm_stoff_material {
             const _edge0 = _lu.uLodD0.sub(_lu.uLodFade0); // D0 − FADE0
             const _fadeW = _lu.uLodFade.max(T.float(1e-3));
             const _fadeW0 = _lu.uLodFade0.max(T.float(1e-3));
-            // _dh — Interleaved-Gradient-Noise, BYTE-GENAU __phytoCore.lodDitherIGN
-            // (52.9829189 · 0.06711056 · 0.00583715; foundry-core.js Z.212).
-            const _fc = T.screenCoordinate;
-            const _dh = T.fract(
-                T.float(52.9829189)
-                    .mul(T.fract(_fc.x.mul(0.06711056).add(_fc.y.mul(0.00583715))))
-                    .add(_lu.uDitherT)
-            );
+            // _dh — das EINE Rauschen der Blende (`_ditherIGN`, BYTE-GENAU __phytoCore.lodDitherIGN; in der Kaskade am
+            // Welt-Raster, schatten.K2) — bis w5-kontakt stand hier sein Zwilling mit dem Pixel der Karte und der Rotation.
+            const _dh = this._ditherIGN(T, 0);
             if (opts && opts.impostor === true) {
                 // __phytoCore.lodCrossfadeMask lod=2: keep = max(min(2·f1,1), vOcc) ≥ dh — die Verdeckung reist als
                 // Instanz-Attribut (verdeckt-demotierte Bäume blenden VOLL; Default 0 = altes Verhalten).
