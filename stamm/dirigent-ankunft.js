@@ -474,6 +474,9 @@ class AnazhRealm_dirigent_ankunft {
         this.log("Kamera initialisiert", "INFO");
         this.state.selfAwareness.components.push("camera");
 
+        // DIE SPUR (spielgang.K1): ihre Aufnahme hört vor jedem Hörer der Seite, ihr Abspieler liegt bereit, bevor die Welt kommt —
+        // sie gehört der Seite
+        await this._spurAnlegen();
         // DIE SEITE (`_weltAbschied`): was init bis hier schrieb, trägt jeder Welt-Wechsel am Ort — die Felder am Wirt, die
         // Glieder des Zustands, die init neu setzte (Renderer, Szene, Himmel, Licht, Uniformen, Eingabe, Einstellungen), und
         // die Gestalten der Szene; was ab hier entsteht, gehört der Welt (Leib, Stand, Gelände, Leben) und fällt mit ihr
