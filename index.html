@@ -13,6 +13,10 @@
         2. worker-src 'self' blob:: der eigene Worker läuft als Blob-
            Worker (off-screen Kreatur-Bewegung im Hintergrund-Thread). Code
            steht inline als String-Konstante — kein User-Input fließt rein.
+        2b. script-src blob:: ein Gesetzbuch der Bibliothek (ultiversum.K4) lädt
+           im Foundry-Faden als Blob (importScripts) — erst NACH der Prüfung
+           seiner Ed25519-Signatur über die signierten Bytes im Faden selbst.
+           Eine Blob-URL prägt nur Code, der schon im Ursprung läuft.
         3. connect-src: vier LLM-Provider als Schicht-2-Stimme. Browser-Anfrage
            geht direkt vom Spieler-Browser an den jeweiligen Endpoint, Key liegt
            im localStorage — Single-User-Localhost-Spiel. Inklusive Ollama auf
@@ -28,7 +32,7 @@
     -->
         <meta
             http-equiv="Content-Security-Policy"
-            content="default-src 'self'; script-src 'self' 'sha256-0Uxx8GfPSERurkq9sL6uAmur5cQSOlBXJPyZmEpXMVA='; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: stun: turn: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
+            content="default-src 'self'; script-src 'self' blob: 'sha256-0Uxx8GfPSERurkq9sL6uAmur5cQSOlBXJPyZmEpXMVA='; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: stun: turn: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
         />
         <title data-t="ui.anazh-realm-v18-271-0"></title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
