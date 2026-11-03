@@ -832,6 +832,112 @@ class AnazhRealm_koerper_seele {
         };
         if (eq && eq.held) pm.userData.heldMesh = buildHand(eq.held, "right");
         if (eq && eq.offhand) pm.userData.offhandMesh = buildHand(eq.offhand, "left");
+        // DAS SEIL AM LEIB (physik.K4): trägt das Gerät ein Seil seiner Gattung, rechnet es ab jetzt der Takt
+        this._seilAmLeib(pm.userData.heldMesh);
+        this._seilAmLeib(pm.userData.offhandMesh);
+    }
+
+    // DAS SEIL AM LEIB (physik.K4) — der Leser des EINEN Seil-Gesetzes (schmiede-core `seilZustand` · `seilSchritt`, dasselbe
+    // rechnet das Labor): trägt die Gattung des gehaltenen Geräts ein Seil (`fx.seil` im LIVE-Buch: Glieder, Teilung, Kopf,
+    // Anker und Ruhe-Richtung an der Vorlage) und trägt die Gestalt seine Teile (`userData.__seil`, Glieder 0 … n−1, Kopf n),
+    // hängt das Seil im Buch der Seile (`this._seile`); `_seilTakt` rechnet es in der Welt und legt jedes Teil nach dem Zustand.
+    // Fehlt der Gestalt ein Teil, das das Gesetz nennt, ist das ein Bruch (laut), nie eine starre Kette.
+    _seilAmLeib(mesh) {
+        if (!this._seile) this._seile = new Set();
+        for (const e of this._seile) if (e.mesh === mesh || !e.mesh.parent) this._seile.delete(e);
+        if (!mesh || !mesh.userData || !mesh.userData.foundryHeld) return null;
+        const f = this._foundry;
+        const rec = f && f.recipes ? f.recipes[mesh.userData.heldPreset] : null;
+        const seil = rec && rec.fx && rec.fx.seil;
+        if (!seil) return null;
+        const teile = [];
+        for (const c of mesh.children) if (Number.isInteger(c.userData.__seil)) teile[c.userData.__seil] = c;
+        const n = seil.glieder;
+        if (teile.filter(Boolean).length !== n + 1 || teile.length !== n + 1) {
+            this._stoffBruch(
+                "das Seil am Leib",
+                new Error(`${mesh.userData.heldPreset}: die Gestalt trägt ${teile.filter(Boolean).length} von ${n + 1} Seil-Teilen`)
+            );
+            return null;
+        }
+        const C = globalThis.__schmiedeCore;
+        // die Ruhe-Lage der Vorlage (in ihr sind die Teile gebacken): Punkte und je Teil Mitte + Richtung im Raum des Geräts
+        const R = C.seilRuhe(seil, seil.anker, seil.unten, 1);
+        const P = (i) => new THREE.Vector3(R[3 * i], R[3 * i + 1], R[3 * i + 2]);
+        const ruhe = teile.map((m, i) => ({
+            mitte: i < n ? P(i).add(P(i + 1)).multiplyScalar(0.5) : P(n + 1),
+            dir: P(i + 1).sub(P(i)).normalize(),
+        }));
+        const e = { mesh, seil, teile, ruhe, z: null };
+        this._seile.add(e);
+        return e;
+    }
+
+    // DER TAKT DER SEILE (physik.K4): je Seil der Anker aus der Welt-Lage des Geräts, EIN Schritt des Gesetzes in Welt-Metern
+    // (die Schwere der Welt, die Bewegung des Leibs über den Anker), dann jedes Teil in seine WELT-Pose: Glied i von Punkt i nach
+    // i+1, der Kopf an seiner Mitte längs des letzten Glieds, gedreht mit der Hand (ihre Drehung, dann die Richtung des Glieds),
+    // starr in der Skala des Geräts. Die Teile tragen die volle Matrix (Hand⁻¹ · Welt-Pose): die Hand der Welt ist nicht
+    // maßtreu (der Rig-Knochen skaliert ungleich, das Gerät trägt Skalen 0,98–1,04 und Scherung), das Seil schon — seine Glieder
+    // halten in der Welt ihre Länge. Die Kosten gehören dem Schirm: ein Seil ferner als `SEIL_NAH_M` vom Auge rechnet nicht (es
+    // ruht in seiner letzten Lage), ein ruhendes Seil (Anker und Kette still) auch nicht.
+    _seilTakt(dt) {
+        const L = this._seile;
+        if (!L || !L.size) return;
+        const C = globalThis.__schmiedeCore;
+        const cam = this.state.camera;
+        const T = THREE;
+        const v =
+            this._seilV ||
+            (this._seilV = {
+                a: new T.Vector3(),
+                b: new T.Vector3(),
+                c: new T.Vector3(),
+                d: new T.Vector3(),
+                s: new T.Vector3(),
+                inv: new T.Matrix4(),
+                W: new T.Matrix4(),
+                qh: new T.Quaternion(),
+                qhi: new T.Quaternion(),
+                q: new T.Quaternion(),
+            });
+        for (const e of L) {
+            let root = e.mesh;
+            while (root.parent) root = root.parent;
+            if (root !== this.state.scene) {
+                L.delete(e);
+                continue;
+            }
+            e.mesh.updateWorldMatrix(true, false);
+            const A = v.a.fromArray(e.seil.anker).applyMatrix4(e.mesh.matrixWorld);
+            if (cam && cam.position.distanceToSquared(A) > AnazhRealm.SEIL_NAH_M * AnazhRealm.SEIL_NAH_M) continue;
+            const anker = [A.x, A.y, A.z];
+            if (!e.z) {
+                e.mesh.getWorldScale(v.s);
+                e.skala = (Math.abs(v.s.x) + Math.abs(v.s.y) + Math.abs(v.s.z)) / 3;
+                e.z = C.seilZustand(e.seil, anker, [0, -1, 0], e.skala);
+                for (const m of e.teile) m.matrixAutoUpdate = false;
+            } else if (!C.seilSchritt(e.z, anker, dt, [0, -C.SEIL_GESETZ.schwere * e.skala, 0])) continue;
+            const p = e.z.p;
+            v.inv.copy(e.mesh.matrixWorld).invert();
+            e.mesh.getWorldQuaternion(v.qh);
+            v.qhi.copy(v.qh).invert();
+            v.s.setScalar(e.skala);
+            const n = e.seil.glieder;
+            for (let i = 0; i <= n; i++) {
+                const a = v.a.set(p[3 * i], p[3 * i + 1], p[3 * i + 2]);
+                const b = v.b.set(p[3 * i + 3], p[3 * i + 4], p[3 * i + 5]);
+                const mitte = i < n ? v.c.copy(a).add(b).multiplyScalar(0.5) : v.c.copy(b);
+                const r = e.ruhe[i];
+                // die Drehung: die der Hand, dann im Rahmen der Hand die Ruhe-Richtung auf die Richtung des Glieds
+                v.d.copy(b).sub(a).normalize().applyQuaternion(v.qhi);
+                v.q.setFromUnitVectors(r.dir, v.d).premultiply(v.qh);
+                // Welt-Pose W · x = mitte + q · skala · (x − Ruhe-Mitte); das Teil trägt Hand⁻¹ · W
+                v.W.compose(v.d.copy(r.mitte).multiplyScalar(-e.skala).applyQuaternion(v.q).add(mitte), v.q, v.s);
+                const m = e.teile[i];
+                m.matrix.multiplyMatrices(v.inv, v.W);
+                m.matrixWorldNeedsUpdate = true;
+            }
+        }
     }
 
     // Die EINE Quelle der gehaltenen Studio-Gruppe, drei-wertig wie _workshopStudioPreviewFrom:
@@ -1676,6 +1782,9 @@ AnazhRealm.HELD_MESH = Object.freeze({
     // Boden statt im Boden).
     neigung: 0.44,
 });
+// DAS SEIL AM LEIB (physik.K4, `_seilTakt`): bis zu dieser Entfernung vom Auge rechnet ein Seil (m) — ferner ruht es in seiner
+// letzten Lage; die Kosten gehören dem Schirm, nie der Zahl der Seile in der Welt.
+AnazhRealm.SEIL_NAH_M = 40;
 AnazhRealm.STAMINA_REGEN_PER_SEC = 5;
 // V18.196 — MANA-Symmetrie (zweite Ausdauer-Achse). Langsamer als Stamina
 // weil Mana mächtiger ist; magieleitung im Spieler-Compound boostet die

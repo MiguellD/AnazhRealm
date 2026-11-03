@@ -1481,6 +1481,10 @@
             const pl = P.pickLen || 0.16;
             g.add(spikeZ(sR * 0.55, pl, 1, cx, rootR * 0.4, m)); // Dorn — Energie auf einen Punkt
             g.add(chiselZ(sR * 0.9, sR * 0.3, P.reach * 1.3 + 0.045, -1, cx, -rootR * 0.4, m)); // Meißel/Adze-Ende
+        } else if (P.kopfTyp === "flegel" && P.seil) {
+            // Flegel: an der Kappe hängt das Seil der Gattung (Kette + Stachelkugel) in seiner Ruhe-Lage — der Leser bewegt es
+            var sa = seilAnker(P, S);
+            g.add(bauSeil(P.seil, sa.anker, sa.unten, m));
         } else if (P.kopfTyp === "grabeblatt") {
             // Spaten/Schaufel: Tülle+Hals+Blatt als verbundenes Stück
             g.add(grabeBlatt(P, x0, m));
@@ -1660,6 +1664,14 @@
             parts.push({ x: cx, m: mC2, Iself: 0 });
             if ((P.beta || 40) >= 40) topo.poll = true;
             else topo.spike = true; // stumpfer Stein-Dorn = Werkzeug-Punkt
+        } else if (P.kopfTyp === "flegel" && P.seil) {
+            // der Flegel im Schwung: das Seil streckt sich längs des Schafts (die Fliehkraft), die Kette und die Kugel an ihrem Ende
+            topo.blunt = true;
+            topo.spike = true;
+            var sm = seilMasse(P.seil),
+                xs = S.xTip;
+            parts.push({ x: xs + (P.seil.glieder * P.seil.gliedM) / 2, m: sm.glied * P.seil.glieder, Iself: 0 });
+            parts.push({ x: xs + sm.laenge, m: sm.kopf, Iself: sm.kopf * P.seil.kopfR * P.seil.kopfR * 0.4 });
         } else if (P.kopfTyp === "grabeblatt") {
             topo.blunt = true;
             topo.poll = true; // Grabblatt = Werkzeug
@@ -2224,6 +2236,213 @@
         },
     ];
 
+    // ════════════════════════════════════════════════════════════════════
+    // DAS SEIL-GESETZ (physik.K4) — EIN Löser für jedes Seil der Schmiede; Labor und Welt rufen DIESELBE Funktion
+    //   (Gebot 4). Eine Kette von Punkt-Massen, Verlet-integriert, jedes Glied eine Abstands-Bedingung, gelöst durch
+    //   Relaxation (Jakobsen 2001, „Advanced Character Physics", GDC: Verlet ohne Tempo-Zustand, die Bedingungen der
+    //   Reihe nach projiziert); die Korrektur teilt sich nach den inversen Massen — der schwere Kopf zieht die leichte
+    //   Kette gerade, die Länge hält. Punkt 0 ist der Anker am Gerät und folgt der Hand (im Teil-Schritt linear
+    //   geführt); Schwere und die Bewegung des Leibs treiben, die Dämpfung (Luft + Reibung der Glieder) nimmt die
+    //   Energie. Steht der Anker und steht die Kette, RUHT das Seil: kein Schritt, keine Kosten, bis der Anker sich
+    //   regt. Welche Gattung welches Seil trägt, sagt ihr Eintrag `seil` in der Gattungs-Tafel; die Vorlage baut die
+    //   Glieder in der Ruhe-Lage (`seilRuhe`), der Leser bewegt sie nach dem Zustand (`seilZustand` · `seilSchritt`).
+    // ════════════════════════════════════════════════════════════════════
+    var SEIL_GESETZ = Object.freeze({
+        schrittS: 1 / 240, // der Teil-Schritt (wie das Gerät)
+        iter: 12, // Relaxations-Runden je Teil-Schritt
+        daempfungS: 1.1, // 1/s — v ← v · e^(−d·h): die Amplitude halbiert sich in ~0,6 s
+        schwere: 9.81,
+        ruheM: 2e-4, // m je Teil-Schritt: darunter steht ein Punkt (und der Anker)
+        ruheSchritte: 48, // so viele stille Teil-Schritte in Folge → das Seil ruht
+        maxSchritte: 16, // je Aufruf höchstens (nach einer Pause springt der Anker, die Kette schießt nicht)
+    });
+    // Die Masse und die Längen eines Seils aus seinem Eintrag (Meter, kg): n Glieder der Teilung gliedM, der Kopf am Ende
+    // (Mitte kopfR unter dem letzten Glied). Der Kopf ist eine Vollkugel des Werkstoffs (rho), sein Stachel-Saum zählt nicht.
+    function seilMasse(seil) {
+        var rho = seil.rho || 7850;
+        return {
+            glied: seil.gliedMasse,
+            kopf: rho * (4 / 3) * Math.PI * Math.pow(seil.kopfR, 3),
+            laenge: seil.glieder * seil.gliedM + seil.kopfR,
+        };
+    }
+    // Die RUHE-LAGE: die Punkte (Anker, Glied-Enden, Kopf-Mitte) längs `unten` vom Anker — flach [x,y,z,…]. Vorlage und Leser
+    // lesen dieselbe Lage (die Glieder sind in ihr gebacken).
+    function seilRuhe(seil, anker, unten, skala) {
+        var s = skala || 1,
+            n = seil.glieder,
+            out = [];
+        for (var i = 0; i <= n + 1; i++) {
+            var d = (i <= n ? i * seil.gliedM : n * seil.gliedM + seil.kopfR) * s;
+            out.push(anker[0] + unten[0] * d, anker[1] + unten[1] * d, anker[2] + unten[2] * d);
+        }
+        return out;
+    }
+    // DER ZUSTAND: die Punkte in der Ruhe-Lage längs `unten` (im Raum des Lesers, Skala `skala` je Meter), alle in Ruhe.
+    function seilZustand(seil, anker, unten, skala) {
+        var s = skala || 1,
+            ms = seilMasse(seil),
+            n = seil.glieder,
+            N = n + 2,
+            rest = [],
+            w = [0];
+        for (var i = 0; i < n; i++) rest.push(seil.gliedM * s);
+        rest.push(seil.kopfR * s);
+        for (var j = 1; j <= n; j++) w.push(1 / ms.glied);
+        w.push(1 / ms.kopf);
+        var p = new Float64Array(seilRuhe(seil, anker, unten, s));
+        return { n: n, N: N, rest: rest, w: w, p: p, q: new Float64Array(p), a: [anker[0], anker[1], anker[2]], skala: s, ruht: false, still: 0 };
+    }
+    // DER SCHRITT um dt (s): der Anker steht danach bei `anker`, die Schwere `g` ([x,y,z] je Meter des Lesers, ohne Angabe
+    // −9,81 längs y × Skala). Antwort: true, wenn das Seil rechnete; false, wenn es ruhte.
+    function seilSchritt(z, anker, dt, g) {
+        var G = SEIL_GESETZ,
+            s = z.skala,
+            p = z.p,
+            q = z.q,
+            N = z.N;
+        var dA = Math.hypot(anker[0] - z.a[0], anker[1] - z.a[1], anker[2] - z.a[2]);
+        if (z.ruht) {
+            if (dA < G.ruheM * s) return false;
+            z.ruht = false;
+            z.still = 0;
+        }
+        if (!(dt > 0)) return false;
+        var gx = g ? g[0] : 0,
+            gy = g ? g[1] : -G.schwere * s,
+            gz = g ? g[2] : 0;
+        var k = Math.min(G.maxSchritte, Math.max(1, Math.ceil(dt / G.schrittS - 1e-9))),
+            h = Math.min(dt, G.maxSchritte * G.schrittS) / k,
+            keep = Math.exp(-G.daempfungS * h),
+            h2 = h * h,
+            a0x = z.a[0],
+            a0y = z.a[1],
+            a0z = z.a[2],
+            bewegt = 0;
+        for (var st = 1; st <= k; st++) {
+            var t = st / k;
+            // Verlet: x' = x + (x − x_alt) · keep + g · h²
+            for (var i = 1; i < N; i++) {
+                var o = 3 * i,
+                    vx = (p[o] - q[o]) * keep,
+                    vy = (p[o + 1] - q[o + 1]) * keep,
+                    vz = (p[o + 2] - q[o + 2]) * keep;
+                q[o] = p[o];
+                q[o + 1] = p[o + 1];
+                q[o + 2] = p[o + 2];
+                p[o] += vx + gx * h2;
+                p[o + 1] += vy + gy * h2;
+                p[o + 2] += vz + gz * h2;
+            }
+            q[0] = p[0];
+            q[1] = p[1];
+            q[2] = p[2];
+            p[0] = a0x + (anker[0] - a0x) * t;
+            p[1] = a0y + (anker[1] - a0y) * t;
+            p[2] = a0z + (anker[2] - a0z) * t;
+            // die Glieder: |p_j+1 − p_j| = rest_j, die Korrektur nach den inversen Massen (der Anker trägt w 0)
+            for (var it = 0; it < G.iter; it++)
+                for (var j = 0; j < N - 1; j++) {
+                    var a = 3 * j,
+                        b = a + 3,
+                        dx = p[b] - p[a],
+                        dy = p[b + 1] - p[a + 1],
+                        dz = p[b + 2] - p[a + 2],
+                        d = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-9,
+                        wa = z.w[j],
+                        wb = z.w[j + 1],
+                        f = (d - z.rest[j]) / (d * (wa + wb));
+                    p[a] += dx * f * wa;
+                    p[a + 1] += dy * f * wa;
+                    p[a + 2] += dz * f * wa;
+                    p[b] -= dx * f * wb;
+                    p[b + 1] -= dy * f * wb;
+                    p[b + 2] -= dz * f * wb;
+                }
+            // die Länge HART (Müller et al. 2012, „Fast Simulation of Inextensible Hair and Fur", follow the leader): nach der
+            // Relaxation trägt jedes Glied vom Anker aus genau seine Teilung — das Seil dehnt sich nie, es biegt nur
+            for (var jf = 0; jf < N - 1; jf++) {
+                var fa = 3 * jf,
+                    fb = fa + 3,
+                    ex = p[fb] - p[fa],
+                    ey = p[fb + 1] - p[fa + 1],
+                    ez = p[fb + 2] - p[fa + 2],
+                    el = Math.sqrt(ex * ex + ey * ey + ez * ez) || 1e-9,
+                    fk = z.rest[jf] / el;
+                p[fb] = p[fa] + ex * fk;
+                p[fb + 1] = p[fa + 1] + ey * fk;
+                p[fb + 2] = p[fa + 2] + ez * fk;
+            }
+            var mx = 0;
+            for (var m = 3; m < 3 * N; m++) mx = Math.max(mx, Math.abs(p[m] - q[m]));
+            bewegt = Math.max(bewegt, mx);
+        }
+        z.a[0] = anker[0];
+        z.a[1] = anker[1];
+        z.a[2] = anker[2];
+        if (bewegt < G.ruheM * s && dA < G.ruheM * s * k) z.still += k;
+        else z.still = 0;
+        if (z.still >= G.ruheSchritte) z.ruht = true;
+        return true;
+    }
+    // Die GESTALT des Seils in der Ruhe-Lage (die Vorlage, im Raum des Geräts): je Glied ein ovaler Ring (abwechselnd um 90°
+    // gedreht, ineinander greifend), der Kopf eine Stachelkugel — jedes Teil ein eigenes Mesh mit `userData.__seil` = seine
+    // Nummer (Glieder 0 … n−1, der Kopf n): die Brücke reicht sie als `seil`, der Leser bewegt jedes Teil nach dem Zustand.
+    function bauSeil(seil, anker, unten, m) {
+        var g = new THREE.Group(),
+            R = seilRuhe(seil, anker, unten, 1),
+            n = seil.glieder,
+            tube = seil.gliedR,
+            rr = (seil.gliedM + 4 * tube) / 3; // die Innenlänge 2·(1,5·rr − tube) übergreift die Teilung um 2·tube
+        var u = new THREE.Vector3(unten[0], unten[1], unten[2]).normalize(),
+            qa = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), u);
+        for (var i = 0; i < n; i++) {
+            var geo = new THREE.TorusGeometry(rr, tube, 6, 14);
+            geo.scale(1, 1.5, 1); // oval längs y
+            geo.rotateX(Math.PI / 2); // → längs z, Ring-Ebene xz
+            if (i % 2) geo.rotateZ(Math.PI / 2); // jedes zweite Glied quer: Ring-Ebene yz
+            geo.applyMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(qa));
+            geo.translate((R[3 * i] + R[3 * i + 3]) / 2, (R[3 * i + 1] + R[3 * i + 4]) / 2, (R[3 * i + 2] + R[3 * i + 5]) / 2);
+            var gl = new THREE.Mesh(geo, m);
+            gl.castShadow = gl.receiveShadow = true;
+            gl.userData.__seil = i;
+            g.add(gl);
+        }
+        // der Kopf: eine Ikosaeder-Kugel, die 12 Ecken-Richtungen treiben Stacheln (EIN Mesh)
+        var kg = new THREE.IcosahedronGeometry(seil.kopfR, 3),
+            ico = new THREE.IcosahedronGeometry(1, 0).attributes.position,
+            dirs = [],
+            pa = kg.attributes.position,
+            v = new THREE.Vector3(),
+            cs = Math.cos(0.3),
+            stachel = seil.stachelM || 0;
+        for (var k = 0; k < ico.count; k++) {
+            var dv = new THREE.Vector3(ico.getX(k), ico.getY(k), ico.getZ(k)).normalize();
+            if (!dirs.some((x) => x.distanceToSquared(dv) < 1e-6)) dirs.push(dv);
+        }
+        for (var e = 0; e < pa.count; e++) {
+            v.set(pa.getX(e), pa.getY(e), pa.getZ(e));
+            var dn = v.clone().normalize(),
+                best = -1;
+            for (var c = 0; c < dirs.length; c++) best = Math.max(best, dn.dot(dirs[c]));
+            var hub = best > cs ? Math.pow((best - cs) / (1 - cs), 1.6) * stachel : 0;
+            v.copy(dn).multiplyScalar(seil.kopfR + hub);
+            pa.setXYZ(e, v.x, v.y, v.z);
+        }
+        kg.computeVertexNormals();
+        kg.translate(R[3 * (n + 1)], R[3 * (n + 1) + 1], R[3 * (n + 1) + 2]);
+        var kopf = new THREE.Mesh(kg, m);
+        kopf.castShadow = kopf.receiveShadow = true;
+        kopf.userData.__seil = n;
+        g.add(kopf);
+        return g;
+    }
+    // Der Anker und die Ruhe-Richtung eines Seils an der Vorlage seiner Gattung: am Ende des Schafts (die Spitze des
+    // Sockels, `stations(P).xTip`), die Ruhe längs +z — die Wucht-Vorlage legt ihren Kopf +z nach unten (die Faust des Wirts).
+    function seilAnker(P, S) {
+        return { anker: [S.xTip, 0, 0], unten: [0, 0, 1] };
+    }
+
     const GATTUNGEN = {
         Langschwert: {
             modus: "klinge",
@@ -2324,6 +2543,23 @@
             edgeLen: 0.1,
             backSpike: false,
             beak: false,
+        },
+        // physik.K4 (additiv): der Kriegsflegel — Stiel mit eiserner Kappe, daran die Kette (das Seil der Schmiede, `SEIL_GESETZ`)
+        // und die Stachelkugel. Die Wucht liegt im Kopf am Ende des Seils; die Gestalt der Kette folgt dem Löser, nie einer Pose.
+        Flegel: {
+            modus: "wucht",
+            intent: "schlag",
+            schaft: 0.5,
+            schaftR: 0.017,
+            kopfTyp: "flegel",
+            kopfLen: 0.045,
+            socketR: 0.021,
+            reach: 0.0,
+            beta: 30,
+            edgeLen: 0.1,
+            backSpike: false,
+            beak: false,
+            seil: { art: "kette", glieder: 7, gliedM: 0.042, gliedR: 0.0042, gliedMasse: 0.03, kopfR: 0.034, stachelM: 0.022, rho: 7850 },
         },
         Fällaxt: {
             modus: "wucht",
@@ -2903,7 +3139,7 @@
 
     // ── B1 REZEPTE — die GATTUNGEN des Labs im Vertrags-Namensraum [a-z0-9_-]+
     //    (`lab` = der Schöpfer-Wortlaut der Buttons; Umlaute normalisiert ae/oe/ss).
-    //    Die Rezept-Menge ist BEWUSST alle 22 Gattungen: Waffen UND Werkzeuge — die
+    //    Die Rezept-Menge ist BEWUSST alle 23 Gattungen: Waffen UND Werkzeuge — die
     //    tool:true-Einträge (Messer/Fällaxt/Spaltmaul/Vorschlaghammer/Beil/Spitzhacke/
     //    Spaten/Schaufel/Sichel) decken die geraet_spitzhacke-Klasse. ──
     // prettier-ignore
@@ -2911,7 +3147,7 @@
         langschwert: "Langschwert", saebel: "Säbel", degen: "Degen", grossschwert: "Großschwert",
         dolch: "Dolch", messer: "Messer",
         langbogen: "Langbogen", kriegsbogen: "Kriegsbogen", reiterbogen: "Reiterbogen", recurvebogen: "Recurvebogen",
-        streitkolben: "Streitkolben", kriegsaxt: "Kriegsaxt", kriegshammer: "Kriegshammer", keule: "Keule",
+        streitkolben: "Streitkolben", kriegsaxt: "Kriegsaxt", kriegshammer: "Kriegshammer", keule: "Keule", flegel: "Flegel",
         faellaxt: "Fällaxt", spaltmaul: "Spaltmaul", vorschlaghammer: "Vorschlaghammer", beil: "Beil",
         spitzhacke: "Spitzhacke", spaten: "Spaten", schaufel: "Schaufel", sichel: "Sichel",
     };
@@ -2959,6 +3195,13 @@
             fx.held = {
                 gripX: S && !S.bogen && isFinite(S.xGrip0) && isFinite(S.xGripEnd) ? (S.xGrip0 + S.xGripEnd) / 2 : 0,
             };
+            // DAS SEIL ALS VERTRAGS-DATEN (physik.K4, additiv, must-ignore): trägt die Gattung ein Seil, reist sein Gesetz mit — der
+            // Eintrag der Tafel, der Anker und die Ruhe-Richtung an der Vorlage. Der Leser der Welt (die Hand) und das Labor
+            // rechnen damit denselben Löser (`seilZustand` · `seilSchritt`); andere Rezepte tragen das Feld nie.
+            if (G.seil && S && !S.bogen) {
+                var sa = seilAnker(tp, S);
+                fx.seil = Object.assign({}, G.seil, { anker: sa.anker, unten: sa.unten });
+            }
             out[id] = { kind: "weapon", lab: name, s: s, fx: fx };
         }
         return out;
@@ -4729,6 +4972,13 @@
         ARENA_BUDGET: ARENA_BUDGET,
         ARENA_STUFEN: ARENA_STUFEN,
         GERAET_GESETZ: GERAET_GESETZ,
+        // DAS SEIL (physik.K4): der EINE Löser, den Labor und Welt rufen, und die Gestalt in der Ruhe-Lage
+        SEIL_GESETZ: SEIL_GESETZ,
+        seilMasse: seilMasse,
+        seilRuhe: seilRuhe,
+        seilZustand: seilZustand,
+        seilSchritt: seilSchritt,
+        bauSeil: bauSeil,
         arenaStrom: arenaStrom,
         arenaTeile: arenaTeile,
         arenaMasse: arenaMasse,

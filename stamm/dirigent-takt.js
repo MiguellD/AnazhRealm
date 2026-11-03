@@ -246,6 +246,8 @@ class AnazhRealm_dirigent_takt {
                     // jeden Frame über sin/cos relativ zum aktuellen walkPhase
                     // rotiert. Idle-Loop (atmen, hover) läuft auch im Stand.
                     this.animatePlayerSoul(currentTime);
+                    // DAS SEIL AM LEIB (physik.K4): nach der Haltung dieses Takts — der Anker folgt der Hand, die eben stand
+                    this._seilTakt(delta);
                 }
 
                 // Ring 6 V2: Culling-Tick (1 Hz) — baut/disposed Meshes je nach
