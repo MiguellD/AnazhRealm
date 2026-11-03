@@ -2849,6 +2849,7 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "hydroSurfaceUniforms",
         "weltLicht",
         "spiegelLeser",
+        "kontaktLeser",
         "horizontKarte",
         "_skyPmrem",
         "_skyEnvRT",

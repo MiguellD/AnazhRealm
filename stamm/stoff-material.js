@@ -1665,8 +1665,9 @@ class AnazhRealm_stoff_material {
                 throw this._stoffBruch("die Boden-Normale (Flatten · Relief · Zuwendung)", _e);
             }
             // DIE HIMMELS-SICHT als Verdeckung: das Himmels-Licht (Umgebung, Hemi, Ambient) erreicht nur, was den Himmel
-            // sieht — r184 multipliziert `aoNode` in das indirekte Licht (diffus und Glanz).
-            if (opts.himmelsSicht) mat.aoNode = this._bodenStufenKnoten().himmel;
+            // sieht — r184 multipliziert `aoNode` in das indirekte Licht (diffus und Glanz). Dazu die Kontakt-Verdeckung der
+            // Dinge auf ihm (schatten.K3, `_kontaktVerdeckung`: der Fuß, der Sockel, der Stamm nehmen dem Boden den Himmel).
+            if (opts.himmelsSicht) mat.aoNode = this._bodenStufenKnoten().himmel.mul(this._kontaktVerdeckung());
             if (_mikroH) this._mikroStoff(THREE.TSL, mat, _mikroH);
             // DAS LICHT DES AUGES (K02a, K15, K11 — `_dayNightApplyAugenLicht`, `AUGEN_LICHT`) ist ein Platz des Licht-Pools mit
             // Himmels-Ersatz: es trägt nur, wo der Himmel fehlt — der Boden reicht dem Pool seine Himmels-Sicht (`aHimmel`) unten

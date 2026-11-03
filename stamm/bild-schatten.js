@@ -768,6 +768,240 @@ class AnazhRealm_bild_schatten {
             }
         }
     }
+
+    // ═══ DIE KONTAKT-VERDECKUNG (schatten.K3) ═══
+    // Zwischen den Dingen gab es keine Verdeckung: der Himmel erreichte den Boden am Fuß eines Leibs, am Sockel eines Hauses
+    // und am Stamm wie auf freier Wiese (Radeon am 5fba36ea: das Kontaktband 2–18 cm vor der Fläche bei 98,9 % bzw. 100 % des
+    // freien Bodens, die Sonne aus). Die Himmels-Sicht (`aHimmel`, das Gelände-Gesetz) kennt nur das Gelände. EIN Baustein des
+    // Welt-Renderers schließt die Lücke: GTAO (Jimenez et al. 2016, „Practical Realtime Strategies for Accurate Indirect
+    // Occlusion"; das Integral wie XeGTAO) aus der Tiefe des Szenen-Passes, in HALBER Auflösung, NACH dem Bild (wie der Spiegel,
+    // `_spiegelPassZeichne`) — der Boden des nächsten Bilds liest ihn reprojiziert in dessen Ansicht (`_kontaktVerdeckung`) und
+    // multipliziert ihn in seinen aoNode: r184 trägt aoNode NUR ins indirekte Licht (diffus und Glanz), die Sonne und der
+    // Licht-Pool bleiben unberührt. Je Texel: die Lage aus der Tiefe, die Normale aus den Nachbarn mit dem kleineren Sprung, je
+    // Scheibe (`scheiben`, gedreht um das feste Interleaved-Gradient-Rauschen des Texels — kein Rauschen der Zeit) der Horizont
+    // beider Seiten in `schritte` quadratisch dichten Schritten bis `radiusM` (über `saum` ausgeblendet: was weiter liegt, verdeckt
+    // nicht — die Wand 1 m vor dem Boden nimmt ihm nichts), das Integral der Sicht mit der projizierten Normale, geteilt durch das
+    // Integral derselben Scheiben ohne Horizont (die freie Fläche liegt bei 1, ohne Rauschen der Scheiben-Wahl), hoch `potenz`.
+    // Gerechnet an der analytischen Bühne der Station (Boden + Leib 0,45 × 1,75 × 0,3 + Block 4 × 3 × 4, die Kamera der Probe):
+    // das Integral 0,656 am Fuß und 0,598 am Sockel (frei 0,990 / 0,999), mit `potenz` 1,5 0,53 / 0,46. Das Ziel trägt (Sicht,
+    // Sicht-Tiefe des Texels) — der Leser nimmt nur Texel seiner Tiefe (die Kante eines Leibs vor dem Boden reicht ihm nichts).
+    _kontaktLeser() {
+        const st = this.state;
+        if (st.kontaktLeser) return st.kontaktLeser;
+        const T = THREE.TSL;
+        const rt = new THREE.RenderTarget(1, 1, {
+            type: THREE.HalfFloatType,
+            format: THREE.RGFormat,
+            depthBuffer: false,
+        });
+        rt.name = rt.texture.name = "kontakt:verdeckung";
+        rt.texture.minFilter = rt.texture.magFilter = THREE.NearestFilter;
+        rt.texture.generateMipmaps = false;
+        // Ansicht und Schalter wechseln je Bild: sie reisen in der GETEILTEN renderGroup (`_uniformHeimatTeilen`, wie der Spiegel)
+        st.kontaktLeser = Object.assign(
+            { rt },
+            this._uniformHeimatTeilen({ vp: T.uniform(new THREE.Matrix4()), an: T.uniform(0) })
+        );
+        return st.kontaktLeser;
+    }
+
+    // DER LESER (der aoNode des Bodens, `_buildPbrNodeMaterial`): der Welt-Punkt des Fragments in der Ansicht des letzten Laufs,
+    // die vier Texel um ihn bilinear, je Texel nur, wenn seine Sicht-Tiefe die des Punkts ist (`tiefeRand` relativ) — sonst und
+    // außerhalb des Ziels 1. Ohne Lauf (`an` 0: Direktpfad, Bruch) 1.
+    _kontaktVerdeckung() {
+        if (this._kontaktK) return this._kontaktK;
+        const T = THREE.TSL;
+        const K = AnazhRealm.KONTAKT;
+        const L = this._kontaktLeser();
+        const tex = T.texture(L.rt.texture);
+        const clip = L.vp.mul(T.vec4(T.positionWorld, 1));
+        const w = T.max(clip.w, 1e-4);
+        const uv = T.vec2(clip.x.div(w).mul(0.5).add(0.5), T.float(0.5).sub(clip.y.div(w).mul(0.5)));
+        const gr = T.vec2(tex.size());
+        const p = uv.mul(gr).sub(0.5);
+        const b = T.floor(p);
+        const f = p.sub(b);
+        let summe = T.float(0),
+            gewicht = T.float(0);
+        for (const [i, j] of [
+            [0, 0],
+            [1, 0],
+            [0, 1],
+            [1, 1],
+        ]) {
+            const t = tex.load(T.ivec2(T.clamp(b.add(T.vec2(i, j)), T.vec2(0), gr.sub(1))));
+            const bi = (i ? f.x : T.float(1).sub(f.x)).mul(j ? f.y : T.float(1).sub(f.y)).add(1e-3);
+            const g = bi.mul(T.step(T.abs(t.y.sub(w)), w.mul(K.tiefeRand)));
+            summe = summe.add(t.x.mul(g));
+            gewicht = gewicht.add(g);
+        }
+        const drin = T.step(0, uv.x)
+            .mul(T.step(uv.x, 1))
+            .mul(T.step(0, uv.y))
+            .mul(T.step(uv.y, 1))
+            .mul(T.step(0, clip.w));
+        const ao = T.select(gewicht.greaterThan(1e-4), summe.div(T.max(gewicht, 1e-4)), T.float(1));
+        this._kontaktK = T.mix(T.float(1), ao, drin.mul(L.an));
+        return this._kontaktK;
+    }
+
+    // DER PASS (je Texel des halben Szenen-Ziels): Tiefe → Lage → Normale → `scheiben` × 2 Seiten × `schritte` Horizont-Proben.
+    _kontaktPass() {
+        const st = this.state;
+        if (st.kontaktPass) return st.kontaktPass;
+        const T = THREE.TSL;
+        const { Fn, If, float, vec2, vec3, vec4, uniform, texture, screenUV, ivec2, floor, clamp, max, dot } = T;
+        const { cross, normalize, length, acos, cos, sin, select, mix, fract } = T;
+        const K = AnazhRealm.KONTAKT;
+        const tiefe = texture(st.scenePass.getTextureNode("depth").value);
+        const webgpuRaum = st.renderer.coordinateSystem === THREE.WebGPUCoordinateSystem;
+        const U = { invP: uniform(new THREE.Matrix4()), p11: uniform(1) };
+        const H = Math.PI / 2;
+        const mat = new THREE.MeshBasicNodeMaterial();
+        mat.name = "kontakt:verdeckung";
+        mat.fog = false;
+        mat.depthTest = false;
+        mat.depthWrite = false;
+        mat.fragmentNode = Fn(() => {
+            const gr = vec2(tiefe.size());
+            // die Sicht-Lage des Texels q (ganzzahlig) aus der Tiefe des Szenen-Passes
+            const sicht = (q) => {
+                const qq = clamp(q, vec2(0), gr.sub(1));
+                const d = tiefe.load(ivec2(qq)).r;
+                const u = qq.add(0.5).div(gr);
+                const h = U.invP.mul(
+                    vec4(u.x.mul(2).sub(1), float(1).sub(u.y).mul(2).sub(1), webgpuRaum ? d : d.mul(2).sub(1), 1)
+                );
+                return h.xyz.div(h.w);
+            };
+            const aus = vec4(1, 0, 0, 1).toVar();
+            const q = floor(screenUV.mul(gr));
+            If(tiefe.load(ivec2(q)).r.lessThan(0.99999), () => {
+                const P = sicht(q).toVar();
+                const naeher = (a, b) => select(length(a).lessThan(length(b)), a, b);
+                const dx = naeher(sicht(q.add(vec2(1, 0))).sub(P), P.sub(sicht(q.sub(vec2(1, 0)))));
+                const dy = naeher(sicht(q.add(vec2(0, 1))).sub(P), P.sub(sicht(q.sub(vec2(0, 1)))));
+                const V = normalize(P.negate()).toVar();
+                const n0 = normalize(cross(dx, dy));
+                const N = select(dot(n0, V).lessThan(0), n0.negate(), n0).toVar();
+                // der Radius im Schirm (Texel des Szenen-Ziels) — fern unter `minPx` verdeckt nichts mehr
+                const rpx = float(K.radiusM).mul(U.p11).mul(gr.y.mul(0.5)).div(max(P.z.negate(), 1e-3)).toVar();
+                aus.assign(vec4(1, P.z.negate(), 0, 1));
+                If(rpx.greaterThan(K.minPx), () => {
+                    const ign = (o) =>
+                        fract(float(52.9829189).mul(fract(q.x.add(o).mul(0.06711056).add(q.y.add(o).mul(0.00583715)))));
+                    const phi0 = ign(0),
+                        jit = ign(7.13);
+                    let vis = float(0),
+                        vis0 = float(0);
+                    for (let s = 0; s < K.scheiben; s++) {
+                        const phi = phi0.add(s).mul(Math.PI / K.scheiben);
+                        const dir = vec2(cos(phi), sin(phi));
+                        const dV = vec3(dir.x, dir.y.negate(), 0);
+                        const ortho = dV.sub(V.mul(dot(dV, V)));
+                        const achse = normalize(cross(ortho, V));
+                        const nP = N.sub(achse.mul(dot(N, achse)));
+                        const nL = max(length(nP), 1e-4);
+                        const cosN = clamp(dot(nP, V).div(nL), -1, 1);
+                        const n = select(dot(ortho, nP).lessThan(0), float(-1), float(1)).mul(acos(cosN)).toVar();
+                        const tief0 = cos(n.add(H)),
+                            tief1 = cos(n.sub(H));
+                        let hc0 = tief0,
+                            hc1 = tief1;
+                        for (let t = 0; t < K.schritte; t++) {
+                            const k = jit.add(t).div(K.schritte);
+                            const spx = max(k.mul(k).mul(rpx), 1);
+                            for (const seite of [1, -1]) {
+                                const S = sicht(floor(q.add(0.5).add(dir.mul(spx.mul(seite)))));
+                                const del = S.sub(P);
+                                const weit = max(length(del), 1e-5);
+                                const g = clamp(
+                                    float(K.radiusM)
+                                        .sub(weit)
+                                        .div(K.radiusM * K.saum),
+                                    0,
+                                    1
+                                );
+                                const tief = seite > 0 ? tief0 : tief1;
+                                const hc = mix(tief, dot(del, V).div(weit), g);
+                                if (seite > 0) hc0 = max(hc0, hc);
+                                else hc1 = max(hc1, hc);
+                            }
+                        }
+                        const h0 = n.add(
+                            clamp(
+                                acos(clamp(hc1, -1, 1))
+                                    .negate()
+                                    .sub(n),
+                                -H,
+                                H
+                            )
+                        );
+                        const h1 = n.add(clamp(acos(clamp(hc0, -1, 1)).sub(n), -H, H));
+                        const sn = sin(n);
+                        const bogen = (h) =>
+                            cosN
+                                .add(h.mul(2).mul(sn))
+                                .sub(cos(h.mul(2).sub(n)))
+                                .mul(0.25);
+                        vis = vis.add(nL.mul(bogen(h0).add(bogen(h1))));
+                        vis0 = vis0.add(nL.mul(cosN.add(n.mul(sn))));
+                    }
+                    const ao = clamp(vis.div(max(vis0, 1e-4)), 0, 1).pow(K.potenz);
+                    aus.assign(vec4(ao, P.z.negate(), 0, 1));
+                });
+            });
+            return aus;
+        })();
+        // DAS VOLLBILD ist ein Pass der Post-Kette: das Quad ihrer Klasse (`pp._quadMesh`, wie der Spiegel)
+        const pp = st.postProcessing;
+        const Quad = pp && pp._quadMesh && pp._quadMesh.constructor;
+        if (typeof Quad !== "function") throw new Error("KONTAKT-PASS: Quad der Post-Kette fehlt (Vendor-Drift)");
+        const quad = new Quad(mat);
+        quad.name = "kontakt:verdeckung";
+        st.kontaktPass = { quad, mat, U, vp: new THREE.Matrix4(), tiefe };
+        return st.kontaktPass;
+    }
+
+    // NACH DEM BILD (`_loopRender`, nur auf der Post-Kette — der Szenen-Pass trägt die Tiefe): der Pass rechnet aus Tiefe und
+    // Ansicht DIESES Bilds in halber Auflösung des Szenen-Ziels, der Boden des nächsten liest ihn in dieser Ansicht. Er läuft je
+    // Bild (die Tiefe lebt: Leiber, Wind, das Zittern der Zeit-Auflösung) — seine Kosten hängen am Schirm, nie an der Welt.
+    // Läuft er nicht, liest der Boden 1 (`an` 0); ein Bruch meldet laut beim Namen, nie still byte-alt.
+    _kontaktPassZeichne(direkt) {
+        const st = this.state;
+        const L = this._kontaktLeser();
+        if (direkt || !st.scenePass || st.kontaktBruch) {
+            L.an.value = 0;
+            return;
+        }
+        try {
+            const P = this._kontaktPass();
+            const rend = st.renderer;
+            const cam = st.camera;
+            const sz = st.scenePass.renderTarget;
+            const w = Math.max(1, Math.ceil(sz.width / 2)),
+                h = Math.max(1, Math.ceil(sz.height / 2));
+            if (L.rt.width !== w || L.rt.height !== h) {
+                L.rt.setSize(w, h);
+                L.rt.texture.needsUpdate = true;
+            }
+            // die Matrizen DIESES Bilds (der Render rechnete sie, die Zeit-Auflösung nahm ihren Versatz zurück)
+            P.U.invP.value.copy(cam.projectionMatrixInverse);
+            P.U.p11.value = cam.projectionMatrix.elements[5];
+            P.vp.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+            const vor = rend.getRenderTarget();
+            rend.setRenderTarget(L.rt);
+            P.quad.render(rend);
+            rend.setRenderTarget(vor);
+            L.vp.value.copy(P.vp);
+            L.an.value = 1;
+            st._kontaktLaeufe = (st._kontaktLaeufe || 0) + 1;
+        } catch (err) {
+            st.kontaktBruch = true;
+            L.an.value = 0;
+            this._stoffBruch("der Kontakt-Pass (schatten.K3) — der Boden trägt keine Kontakt-Verdeckung", err);
+        }
+    }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_bild_schatten]);
 
@@ -790,6 +1024,21 @@ AnazhRealm.SCHATTEN_RUHE_EPS = 1e-4;
 // Texels der Welt im Licht-Raum modulo dieser Periode (ganze Zahlen — ein Versatz der Box um n Texel verschiebt Spalte und
 // Ursprung gegenläufig, der Rest bleibt; `_kaskadeFit` legt den Ursprung).
 AnazhRealm.BLENDE_RASTER = 256;
+// DIE KONTAKT-VERDECKUNG (`_kontaktPass`, schatten.K3): GTAO in halber Auflösung des Szenen-Ziels. `radiusM` = die Reichweite
+// der Horizont-Suche (Welt-m; die Wand 1 m vor dem Boden verdeckt nichts mehr, `saum` blendet die letzten 40 % aus), `scheiben`
+// × 2 Seiten × `schritte` Proben je Texel (24 Tiefen + 5 für Lage und Normale), `minPx` = unter so vielen Szenen-Texeln Radius
+// rechnet der Texel nicht (fern), `potenz` die Endpotenz der Sicht (XeGTAO „FinalValuePower"; an der Bühne der Station Fuß
+// 0,656 → 0,53, Sockel 0,598 → 0,46 — das Band 30–60 %), `tiefeRand` die relative Sicht-Tiefe, in der ein Texel dem
+// Leser gilt.
+AnazhRealm.KONTAKT = Object.freeze({
+    radiusM: 1.0,
+    saum: 0.4,
+    scheiben: 3,
+    schritte: 4,
+    minPx: 2,
+    potenz: 1.5,
+    tiefeRand: 0.04,
+});
 // DIE KASKADEN-BOX (_kaskadenPassen): jede Kaskade misst die Frustum-Scheibe im Licht-Raum statt ihrer Diagonale.
 // `texelM` = die Texel-Kante je Kaskade, die die längste Box-Kante bei jeder Blickrichtung hält — die des
 // Addon-Quadrats (k0 339 m / 2048, k1 961 m / 2048): kein Schatten wird gröber als bis V18.529. Die Karten-Größe folgt

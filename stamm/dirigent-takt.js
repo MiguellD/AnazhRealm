@@ -1806,6 +1806,8 @@ class AnazhRealm_dirigent_takt {
         }
         // DER SPIEGEL DES GESETZES (D10): nach dem Bild der Post-Kette, aus ihrer Tiefe — das Wasser des nächsten liest ihn
         if (!direkt) this._spiegelPassZeichne();
+        // DIE KONTAKT-VERDECKUNG (schatten.K3): nach dem Bild, aus seiner Tiefe — der Boden des nächsten liest sie
+        this._kontaktPassZeichne(direkt);
         // Das erste fertige Weltbild nimmt den Ladeschirm weg (L2: nie die schwarze Leinwand).
         if (!this.state._weltbildDa || this.state._nachlauf != null) this._ankunftsBild();
         // GPU-Last in den perfSense-Frame-Akku (Draw-Calls + Dreiecke, alle Pässe). Im r184-WebGPU-Info ist
