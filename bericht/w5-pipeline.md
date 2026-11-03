@@ -1,6 +1,6 @@
 # w5-pipeline — ZWISCHENSTAND (pipeline.K5 · pipeline.K2)
 
-**Geschnitten:** Der Foundry-Faden rechnet auf der Engine der Welt — `_foundryStart` (stamm/studio-bruecke.js:563) holt
+**Geschnitten:** Der Foundry-Faden rechnet auf der Engine der Welt — `_foundryStart` (stamm/studio-bruecke.js:580) holt
 das Manifest per fetch, lädt three r184 per `import()` aus der Import-Karte der Welt (Manifest-Feld `engine`,
 cores.manifest.json:7, statt der r128-`lib`), hält jede Nachricht bis Engine und Kerne stehen und bricht bei einer `lib`
 im Manifest beim Namen; die Kerne hängen an keinem Addon und keiner Engine-Rundung mehr (phyto-core `geoVerschmelzen` ·
@@ -19,7 +19,7 @@ asset-contract v1 (Pflanzen) 128/128 byte-gleich zu den alten Goldens; der Harne
 (EIN Boot), sechs Kern-vm der Linsen sind EIN `kernKontext`, die Decke von scripts/ hält (gate:betriebsgesetz ohne DECKE).
 
 **Ehrlich offen:** `pipeline.K2#1` bleibt ROT (0 → 0): die Karte des Studios backt `bakeImpostorAtlas` im Pflanzen-Labor
-auf dessen eigenem r128-WebGLRenderer (worlds/terrain/index.html:85, ein Atlas aus 8 Ansichten je Zelle), die Karte der Welt
+auf dessen eigenem r128-WebGLRenderer (foundry-bruecke.js:246, worlds/terrain/index.html:86, ein Atlas aus 8 Ansichten je Zelle), die Karte der Welt
 `_karteWeltBacken` mit den Stoffen der Welt in Hebungs-Ringe, MRT und BC-Ablage (stamm/stoff-karte.js:692) — EIN Bäcker
 verlangt das Labor auf der Engine und den Stoffen der Welt (wie die Garage), darum steht `bakeImpostorAtlas` mit seinem
 einen Leser (das Labor) und die r128-Datei mit sechs Labor-Seiten als Lesern.
