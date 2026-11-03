@@ -3052,13 +3052,16 @@ AnazhRealm.PORTAL_TRANSLATED_WORLD = "worlds/translated/index.html";
 // portalMeta hieraus; aimBlueprintAtWorld richtet eigene Magie-Ringe auf einen Eintrag.
 // DIE NAMEN (spielgang.K5): `label` ist die IDENTITÄT der Welt, kein Anzeige-Text — signierte Substanz
 // (`_canonicalManifest`, spec/golden/v1/world-manifest.json), Ziel-Wort von `aimBlueprintAtWorld`, portalMeta in jedem
-// Speicher, Mesh-Einladung, Wort-Katalog der Studio-Brücke; sie bleibt deutsch und byte-gleich der de-Zeile ihres
-// `name`. Angezeigt wird nur `name` (der Schlüssel der Tafel) und `desc` (der Schlüssel der Beschreibung) — über den EINEN
+// Speicher, Mesh-Einladung, Wort-Katalog der Studio-Brücke; sie IST die de-Zeile ihres `name` (ein Getter auf die Tafel —
+// bis w5-spielgang-k5 ein deutscher Zwilling der Zeile im Code). Angezeigt wird nur `name` (der Schlüssel der Tafel) und `desc` (der Schlüssel der Beschreibung) — über den EINEN
 // Name-Leser `_weltName` / `_weltText`.
 AnazhRealm.WORLD_REGISTRY = Object.freeze({
     skeleton: Object.freeze({
         id: "skeleton",
-        label: "Skelett-Welt",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.skeleton.name",
         world: AnazhRealm.PORTAL_SKELETON_WORLD,
         dsl: Object.freeze(["skybox_color"]),
@@ -3066,7 +3069,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     }),
     fluid: Object.freeze({
         id: "fluid",
-        label: "Strom-Welt",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.fluid.name",
         world: "worlds/fluid/index.html",
         dsl: Object.freeze(["weather", "skybox_color", "sturm", "ruhe", "set_turbulence"]),
@@ -3074,7 +3080,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     }),
     terrain: Object.freeze({
         id: "terrain",
-        label: "Phytogenesis & Lithos",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.terrain.name",
         world: "worlds/terrain/index.html",
         // Das Morphologie-Labor (phytogenesis). Die id "terrain" bleibt — load-bearing für
@@ -3116,7 +3125,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // probefahrt/werkstatt (Fahr-Modus rein/raus).
     garage: Object.freeze({
         id: "garage",
-        label: "Anatomie · Fahrzeug",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.garage.name",
         world: "worlds/garage/index.html",
         dsl: Object.freeze([
@@ -3139,7 +3151,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // Tiefe, begehbare Türen (E/R).
     portale: Object.freeze({
         id: "portale",
-        label: "Porta — Ordnungen & fraktale Tiefe",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.portale.name",
         world: "worlds/portale/index.html",
         dsl: Object.freeze([
@@ -3160,7 +3175,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // anschlagen + stahl.
     schmiede: Object.freeze({
         id: "schmiede",
-        label: "Anatomie · Klinge",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.schmiede.name",
         world: "worlds/schmiede/index.html",
         dsl: Object.freeze([
@@ -3200,7 +3218,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // Kulturen über #pK (change) + "dorf"/"haus" über #pDorf.
     fachwerk: Object.freeze({
         id: "fachwerk",
-        label: "Fachwerkhaus — parametrisch, begehbar",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.fachwerk.name",
         world: "worlds/fachwerk/index.html",
         dsl: Object.freeze([
@@ -3247,7 +3268,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // lowercase-Lab-Namen; die Buch-id-Ausnahmen modern-klang/barock-klang gelten nur dem Buch).
     klang: Object.freeze({
         id: "klang",
-        label: "Genesis — Generatives Musiksystem",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.klang.name",
         world: "worlds/klang/index.html",
         dsl: Object.freeze([
@@ -3281,7 +3305,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // DSL = #emotions-Buttons (data-e → emo.set) + zufall/zuruecksetzen (btnRandom/btnReset).
     koerperstudio: Object.freeze({
         id: "koerperstudio",
-        label: "Da Vinci Studio — Lebendiger Mensch",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.koerperstudio.name",
         world: "worlds/koerperstudio/index.html",
         dsl: Object.freeze([
@@ -3304,7 +3331,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // Profil-Buttons (#emotions, data-e); Wörter deutsch, ASCII-gefaltet (baer).
     tetrapoda: Object.freeze({
         id: "tetrapoda",
-        label: "Tetrapoda — Evolution Lab",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.tetrapoda.name",
         world: "worlds/tetrapoda/index.html",
         dsl: Object.freeze([
@@ -3325,7 +3355,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // Portal entzieht allow-same-origin: voller Lauf drinnen, null Reichweite raus.
     schwarm: Object.freeze({
         id: "schwarm",
-        label: "Schwarm-Welt",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.schwarm.name",
         world: "worlds/schwarm/index.html",
         dsl: Object.freeze(["sturm", "ruhe", "schwaermen", "skybox_color"]),
@@ -3337,7 +3370,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // selbst. Null-origin sandgesichert (das Protokoll quert die volle Wand).
     begegnung: Object.freeze({
         id: "begegnung",
-        label: "Begegnungs-Feld",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.begegnung.name",
         world: "worlds/begegnung/index.html",
         dsl: Object.freeze([]),

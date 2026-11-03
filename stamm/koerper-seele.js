@@ -1699,12 +1699,12 @@ AnazhRealm.SCENT = Object.freeze({
 // Emotion→Tag-Mapping für Boosts: jede der 6 Emotionen koppelt an einen MATERIAL_TAG_KEY; über 0.7
 // wirkt ein Tag-Delta auf den Spieler-Compound (Stat-Steigerung ~10–15 %, spürbar, nicht dominant).
 AnazhRealm.BOOST_EMOTION_TAG = Object.freeze({
-    joy: { tag: "wärmeleitung", delta: 0.15, label: "Freude wärmt" },
-    awe: { tag: "magieleitung", delta: 0.15, label: "Ehrfurcht öffnet" },
-    sorrow: { tag: "resoniert", delta: 0.15, label: "Trauer schwingt tief" },
-    hope: { tag: "lebendig", delta: 0.1, label: "Hoffnung belebt" },
-    peace: { tag: "zähigkeit", delta: 0.1, label: "Friede härtet leise" },
-    chaos: { tag: "stromleitung", delta: 0.15, label: "Chaos sprüht Funken" },
+    joy: AnazhRealm._etikett({ tag: "wärmeleitung", delta: 0.15, etikett: ["seele.boost.joy"] }),
+    awe: AnazhRealm._etikett({ tag: "magieleitung", delta: 0.15, etikett: ["seele.boost.awe"] }),
+    sorrow: AnazhRealm._etikett({ tag: "resoniert", delta: 0.15, etikett: ["seele.boost.sorrow"] }),
+    hope: AnazhRealm._etikett({ tag: "lebendig", delta: 0.1, etikett: ["seele.boost.hope"] }),
+    peace: AnazhRealm._etikett({ tag: "zähigkeit", delta: 0.1, etikett: ["seele.boost.peace"] }),
+    chaos: AnazhRealm._etikett({ tag: "stromleitung", delta: 0.15, etikett: ["seele.boost.chaos"] }),
 });
 AnazhRealm.BOOST_EMOTION_DURATION = 30; // s, läuft mit Emotion mit
 AnazhRealm.BOOST_EMOTION_REFRACT = 60; // s Pause nach Ablauf, sonst Endlos-Pulsen

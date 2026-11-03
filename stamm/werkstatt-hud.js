@@ -185,28 +185,28 @@ class AnazhRealm_werkstatt_hud {
         if (this._chatCommandHelpCache) return this._chatCommandHelpCache;
         const dslExamples = this.chatDslPatterns.map((p) => p.example);
         this._chatCommandHelpCache = [
-            { title: "Welt-Effekte (DSL)", commands: dslExamples },
+            { title: "hilfe.gruppe.dsl", commands: dslExamples },
             {
-                title: "Welt-Triggers",
+                title: "hilfe.gruppe.trigger",
                 commands: ["Spawne neue Welt", "Boden nicht sichtbar"],
             },
             {
-                title: "Fähigkeiten",
+                title: "hilfe.gruppe.faehigkeiten",
                 commands: [
                     "Lerne Fähigkeit farbwechsel Ändere Farbe von Kreaturen zu blau",
                     "Führe Fähigkeit aus farbwechsel",
                 ],
             },
             {
-                title: "Multisensorik",
+                title: "hilfe.gruppe.sinne",
                 commands: ["Aktiviere Anazh-Symphonie"],
             },
             {
-                title: "Spieler-Seele",
+                title: "hilfe.gruppe.seele",
                 commands: ["Werde Mensch", "Werde Wolf", "Werde Hirsch"],
             },
             {
-                title: "Bauwerke (Ring 6)",
+                title: "hilfe.gruppe.bauwerke",
                 commands: [
                     "Baue Dorf hier",
                     "Baue Tempel hier",
@@ -217,7 +217,7 @@ class AnazhRealm_werkstatt_hud {
                 ],
             },
             {
-                title: "System / Persistenz",
+                title: "hilfe.gruppe.system",
                 commands: [
                     "Speichere Zustand",
                     "Lade Zustand",
@@ -228,7 +228,7 @@ class AnazhRealm_werkstatt_hud {
                 ],
             },
             {
-                title: "Self-Heal",
+                title: "hilfe.gruppe.heilung",
                 commands: ["Behebe Physik-Tunneling", "Optimiere Physik"],
             },
         ];
@@ -872,7 +872,7 @@ class AnazhRealm_werkstatt_hud {
                         onClick: () => this._omniboxExecute(r),
                     },
                     this._el("span", { class: "omnibox-kind", text: r.kindLabel }),
-                    this._el("span", { class: "omnibox-label", text: r.label }),
+                    this._el("span", { class: "omnibox-label", text: r.label, translate: r.befehl ? false : null }),
                     r.sub ? this._el("span", { class: "omnibox-sub", text: r.sub }) : null
                 )
             );
@@ -955,7 +955,8 @@ class AnazhRealm_werkstatt_hud {
                         out.push({
                             kindLabel: this._t("hud.befehl"),
                             label: cmd,
-                            sub: g.title,
+                            befehl: true, // ein Befehl der Eingabe-Grammatik: der Spieler tippt ihn so — Daten, keine Sprache
+                            sub: this._t(g.title),
                             run: () => this.processChatCommand(cmd),
                         });
                 }

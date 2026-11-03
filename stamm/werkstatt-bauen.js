@@ -2686,30 +2686,44 @@ class AnazhRealm_werkstatt_bauen {
                 dials: [
                     {
                         key: "api",
-                        label: "Apikaldominanz",
+                        label: this._t("regler.baum.api"),
                         min: 0,
                         max: 1,
                         step: 0.01,
-                        hint: "Nadel-Kegel (1) ↔ Laub (0)",
+                        hint: this._t("regler.baum.api-hinweis"),
                     },
                     {
                         key: "slim",
-                        label: "Schlankheit",
+                        label: this._t("regler.baum.slim"),
                         min: 0,
                         max: 1,
                         step: 0.01,
-                        hint: "gedrungen (0) ↔ schlank (1)",
+                        hint: this._t("regler.baum.slim-hinweis"),
                     },
                     {
                         key: "trop",
-                        label: "Gravitropismus",
+                        label: this._t("regler.baum.trop"),
                         min: -0.3,
                         max: 1,
                         step: 0.01,
-                        hint: "aufrecht (−) ↔ hängend (+)",
+                        hint: this._t("regler.baum.trop-hinweis"),
                     },
-                    { key: "delta", label: "da-Vinci-Δ", min: 1.9, max: 2.9, step: 0.01, hint: "Astdicke-Erhalt" },
-                    { key: "leaf", label: "Blattdichte", min: 0, max: 1, step: 0.01, hint: "kahl (0) ↔ voll (1)" },
+                    {
+                        key: "delta",
+                        label: this._t("regler.baum.delta"),
+                        min: 1.9,
+                        max: 2.9,
+                        step: 0.01,
+                        hint: this._t("regler.baum.delta-hinweis"),
+                    },
+                    {
+                        key: "leaf",
+                        label: this._t("regler.baum.leaf"),
+                        min: 0,
+                        max: 1,
+                        step: 0.01,
+                        hint: this._t("regler.baum.leaf-hinweis"),
+                    },
                 ],
                 hasLod: true,
                 apply: (nd) => {
@@ -2739,10 +2753,38 @@ class AnazhRealm_werkstatt_bauen {
             return {
                 cur: Object.assign({}, cur),
                 dials: [
-                    { key: "round", label: "Rundheit", min: 0.05, max: 0.9, step: 0.01, hint: "kantig ↔ gerundet" },
-                    { key: "rough", label: "Rauheit", min: 0.05, max: 1, step: 0.01, hint: "glatt ↔ bruchig" },
-                    { key: "elong", label: "Streckung", min: 0.05, max: 0.8, step: 0.01, hint: "gedrungen ↔ länglich" },
-                    { key: "strat", label: "Schichtung", min: 0, max: 0.5, step: 0.01, hint: "massiv ↔ sedimentär" },
+                    {
+                        key: "round",
+                        label: this._t("regler.fels.round"),
+                        min: 0.05,
+                        max: 0.9,
+                        step: 0.01,
+                        hint: this._t("regler.fels.round-hinweis"),
+                    },
+                    {
+                        key: "rough",
+                        label: this._t("regler.fels.rough"),
+                        min: 0.05,
+                        max: 1,
+                        step: 0.01,
+                        hint: this._t("regler.fels.rough-hinweis"),
+                    },
+                    {
+                        key: "elong",
+                        label: this._t("regler.fels.elong"),
+                        min: 0.05,
+                        max: 0.8,
+                        step: 0.01,
+                        hint: this._t("regler.fels.elong-hinweis"),
+                    },
+                    {
+                        key: "strat",
+                        label: this._t("regler.fels.strat"),
+                        min: 0,
+                        max: 0.5,
+                        step: 0.01,
+                        hint: this._t("regler.fels.strat-hinweis"),
+                    },
                 ],
                 hasLod: true,
                 apply: (nd) => this._workshopRegrowRock(bp, nd, bp._rockSeedBase),
@@ -2760,14 +2802,21 @@ class AnazhRealm_werkstatt_bauen {
         return {
             cur: Object.assign({}, cur),
             dials: [
-                { key: "facets", label: "Facetten", min: 3, max: 12, step: 1, hint: "Prisma-Seiten (Quarz = 6)" },
+                {
+                    key: "facets",
+                    label: this._t("regler.kristall.facets"),
+                    min: 3,
+                    max: 12,
+                    step: 1,
+                    hint: this._t("regler.kristall.facets-hinweis"),
+                },
                 {
                     key: "termFrac",
-                    label: "Spitze",
+                    label: this._t("regler.kristall.spitze"),
                     min: 0.05,
                     max: 0.9,
                     step: 0.01,
-                    hint: "kurze ↔ lange Termination",
+                    hint: this._t("regler.kristall.spitze-hinweis"),
                 },
             ],
             apply: (nd) => this._workshopRegrowCrystal(bp, nd, bp._crystalSeedBase),
@@ -3537,90 +3586,101 @@ AnazhRealm.CONNECTION_TYPES = Object.freeze({
     // V18.110 — C7: intuitive deutsche Labels (S-Befund „die aktuellen
     // Benennungen sind unintuitiv, das Fundament passt") — die KEYS bleiben
     // (Persistenz/DSL), nur die Spieler-Sprache wird klar.
-    hafting: Object.freeze({
-        glyph: "⊕",
-        label: "Stecken (Stiel in Loch)",
-        description: "Stiel in Loch — Reibschluss",
-        strongTags: Object.freeze(["härte", "dichte"]),
-        typeStrength: 0.8,
-    }),
-    lashing: Object.freeze({
-        glyph: "∾",
-        label: "Binden (Umwicklung)",
-        description: "Umwicklung — Zugfest",
-        strongTags: Object.freeze(["zähigkeit"]),
-        typeStrength: 0.6,
-    }),
-    pinning: Object.freeze({
-        glyph: "⌖",
-        label: "Stiften (Bolzen)",
-        description: "Stift durch Loch — Scherung",
-        strongTags: Object.freeze(["härte"]),
-        typeStrength: 0.75,
-    }),
-    welding: Object.freeze({
-        glyph: "✶",
-        label: "Schweißen",
-        description: "Atomar verschmolzen",
-        strongTags: Object.freeze(["härte", "wärmeleitung"]),
-        typeStrength: 0.95,
-    }),
-    gluing: Object.freeze({
-        glyph: "≣",
-        label: "Kleben",
-        description: "Adhäsion — Schubfest",
-        strongTags: Object.freeze(["zähigkeit"]),
-        typeStrength: 0.55,
-    }),
-    masonry: Object.freeze({
-        glyph: "⊞",
-        label: "Mauern",
-        description: "Druckschluss + Mörtel",
-        strongTags: Object.freeze(["dichte"]),
-        typeStrength: 0.7,
-    }),
-    sewing: Object.freeze({
-        glyph: "✕",
-        label: "Nähen",
-        description: "Garn durch Material",
-        strongTags: Object.freeze(["zähigkeit"]),
-        typeStrength: 0.5,
-    }),
-    magic_bind: Object.freeze({
-        glyph: "✦",
-        label: "Magisch",
-        description: "Tag-Resonanz",
-        strongTags: Object.freeze(["magieleitung", "resoniert"]),
-        typeStrength: 0.85,
-    }),
+    hafting: Object.freeze(
+        AnazhRealm._etikett({
+            etikett: { label: ["fuegung.hafting"], description: ["fuegung.hafting-art"] },
+            glyph: "⊕",
+            strongTags: Object.freeze(["härte", "dichte"]),
+            typeStrength: 0.8,
+        })
+    ),
+    lashing: Object.freeze(
+        AnazhRealm._etikett({
+            etikett: { label: ["fuegung.lashing"], description: ["fuegung.lashing-art"] },
+            glyph: "∾",
+            strongTags: Object.freeze(["zähigkeit"]),
+            typeStrength: 0.6,
+        })
+    ),
+    pinning: Object.freeze(
+        AnazhRealm._etikett({
+            etikett: { label: ["fuegung.pinning"], description: ["fuegung.pinning-art"] },
+            glyph: "⌖",
+            strongTags: Object.freeze(["härte"]),
+            typeStrength: 0.75,
+        })
+    ),
+    welding: Object.freeze(
+        AnazhRealm._etikett({
+            etikett: { label: ["fuegung.welding"], description: ["fuegung.welding-art"] },
+            glyph: "✶",
+            strongTags: Object.freeze(["härte", "wärmeleitung"]),
+            typeStrength: 0.95,
+        })
+    ),
+    gluing: Object.freeze(
+        AnazhRealm._etikett({
+            etikett: { label: ["fuegung.gluing"], description: ["fuegung.gluing-art"] },
+            glyph: "≣",
+            strongTags: Object.freeze(["zähigkeit"]),
+            typeStrength: 0.55,
+        })
+    ),
+    masonry: Object.freeze(
+        AnazhRealm._etikett({
+            etikett: { label: ["fuegung.masonry"], description: ["fuegung.masonry-art"] },
+            glyph: "⊞",
+            strongTags: Object.freeze(["dichte"]),
+            typeStrength: 0.7,
+        })
+    ),
+    sewing: Object.freeze(
+        AnazhRealm._etikett({
+            etikett: { label: ["fuegung.sewing"], description: ["fuegung.sewing-art"] },
+            glyph: "✕",
+            strongTags: Object.freeze(["zähigkeit"]),
+            typeStrength: 0.5,
+        })
+    ),
+    magic_bind: Object.freeze(
+        AnazhRealm._etikett({
+            etikett: { label: ["fuegung.magic-bind"], description: ["fuegung.magic-bind-art"] },
+            glyph: "✦",
+            strongTags: Object.freeze(["magieleitung", "resoniert"]),
+            typeStrength: 0.85,
+        })
+    ),
     // ATTACHMENT-PUNKTE (GRIFF/SITZ/TRAGE): ein Punkt am Bauplan für die Außenwelt (Hand des Trägers,
     // Körper des Reiters, Torso unterm Panzer). partB optional (-1 = nur partA); `attachment: true` hält
     // sie aus der Statik (computeConnectionStrength) und den Gelenken (computeMotionRoles). Ohne
     // expliziten Punkt emergiert er per Form-Resonanz (_attachPointFor); der explizite ist der Override.
-    griff: Object.freeze({
-        glyph: "⊢",
-        label: "Griff (hier greift die Hand)",
-        description: "Attachment-Punkt: die Hand des Trägers",
-        strongTags: Object.freeze([]),
-        typeStrength: 0,
-        attachment: true,
-    }),
-    sitz: Object.freeze({
-        glyph: "⊓",
-        label: "Sitz (hier sitzt der Reiter)",
-        description: "Attachment-Punkt: der Körper des Reiters",
-        strongTags: Object.freeze([]),
-        typeStrength: 0,
-        attachment: true,
-    }),
-    trage: Object.freeze({
-        glyph: "◈",
-        label: "Trage (liegt am Körper an)",
-        description: "Attachment-Punkt: der Torso unterm Getragenen",
-        strongTags: Object.freeze([]),
-        typeStrength: 0,
-        attachment: true,
-    }),
+    griff: Object.freeze(
+        AnazhRealm._etikett({
+            etikett: { label: ["fuegung.griff"], description: ["fuegung.griff-art"] },
+            glyph: "⊢",
+            strongTags: Object.freeze([]),
+            typeStrength: 0,
+            attachment: true,
+        })
+    ),
+    sitz: Object.freeze(
+        AnazhRealm._etikett({
+            etikett: { label: ["fuegung.sitz"], description: ["fuegung.sitz-art"] },
+            glyph: "⊓",
+            strongTags: Object.freeze([]),
+            typeStrength: 0,
+            attachment: true,
+        })
+    ),
+    trage: Object.freeze(
+        AnazhRealm._etikett({
+            etikett: { label: ["fuegung.trage"], description: ["fuegung.trage-art"] },
+            glyph: "◈",
+            strongTags: Object.freeze([]),
+            typeStrength: 0,
+            attachment: true,
+        })
+    ),
 });
 
 // V17.89 — die Verben der Op-Namen (für das Prozess-Menü + die Werkzeuge-Box). Eine Quelle. Die Namens-Tafeln unten tragen

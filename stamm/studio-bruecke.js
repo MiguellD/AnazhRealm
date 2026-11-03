@@ -1572,7 +1572,7 @@ class AnazhRealm_studio_bruecke {
         const zwillinge = ((tafel && tafel.zwillinge) || []).map((z) => ({
             art: "rezept",
             name: z.id,
-            text: `das Rezept „${z.id}" steht in ${z.traeger} und ${z.kern}`,
+            grund: `das Rezept „${z.id}" steht in ${z.traeger} und ${z.kern}`,
         }));
         const werkstatt = {
             id: "werkstatt",
@@ -1633,7 +1633,7 @@ class AnazhRealm_studio_bruecke {
                     zwillinge.push({
                         art: "traeger",
                         name: n,
-                        text: `„${n}" trägt die Gestalt „${t.gestalt}" neben ihrem Ziel „${teilVon.get(t.gestalt).ziel}"`,
+                        grund: `„${n}" trägt die Gestalt „${t.gestalt}" neben ihrem Ziel „${teilVon.get(t.gestalt).ziel}"`,
                     });
             }
             teile.push(t);
@@ -1650,11 +1650,11 @@ class AnazhRealm_studio_bruecke {
             for (const b of w.kinder)
                 for (const t of b.kinder)
                     if (t.waise)
-                        ohneEltern.push({ name: t.ziel, text: `„${t.ziel}" (${b.lab}) trägt kein Gesetzbuch` });
+                        ohneEltern.push({ name: t.ziel, grund: `„${t.ziel}" (${b.lab}) trägt kein Gesetzbuch` });
                     else if (t.rezept && (!w.lab || !b.lab))
                         ohneEltern.push({
                             name: t.rezept,
-                            text: `das Rezept „${t.rezept}" hängt ohne ${!w.lab ? "Studio" : "Bereich"} (Art ${t.art}, Kern ${t.kern || "?"})`,
+                            grund: `das Rezept „${t.rezept}" hängt ohne ${!w.lab ? "Studio" : "Bereich"} (Art ${t.art}, Kern ${t.kern || "?"})`,
                         });
         const befund = {
             teile: teile.length,
@@ -3356,8 +3356,8 @@ AnazhRealm.KIND_POLICY = Object.freeze({
             art,
             Object.freeze({
                 prefix,
-                substanz: {
-                    label: "Kraut",
+                substanz: AnazhRealm._etikett({
+                    etikett: ["substanz.kraut"],
                     parts: [
                         {
                             shape: "cylinder",
@@ -3366,7 +3366,7 @@ AnazhRealm.KIND_POLICY = Object.freeze({
                             size: { x: 0.05, y: 0.6, z: 0.05 },
                         },
                     ],
-                },
+                }),
                 grown: false,
                 builtIn: false,
                 placeExtra: null,

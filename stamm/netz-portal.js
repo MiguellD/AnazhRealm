@@ -106,7 +106,7 @@ class AnazhRealm_netz_portal {
         if (typeof this._sanitizeImportedManifest === "function") {
             const m = this._sanitizeImportedManifest({
                 id: "g8r3_probe",
-                label: "Probe",
+                label: "g8r3_probe",
                 world: "worlds/g8r3_probe/index.html",
                 vendored: true,
                 trust: "trusted",

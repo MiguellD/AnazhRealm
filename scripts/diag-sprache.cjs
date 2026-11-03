@@ -27,7 +27,7 @@ const { ausDatei, stammLib, ROOT, SELBSTTEST, selbsttestEnde, wandEnde } = requi
 
 const { wort, ZEUGE, ZAEHLE, PFLANZE } = require("./lib/sprach-zaehlung.cjs"); // die EINE Zählung (Code UND lebendes DOM)
 const SENKE_RUF =
-    /^(_hudSchreib|_chatEcho|alert|confirm|prompt|_el|append|appendChatOutput|_spielerSagt|_ladeschirmStand)$/;
+    /^(_hudSchreib|_chatEcho|alert|confirm|prompt|_el|append|appendChatOutput|_spielerSagt|_ladeschirmStand|journalAppend|journalAppendOnce)$/;
 const SENKE_FELD = /^(textContent|innerText|innerHTML|title|placeholder)$/;
 const SENKE_ATTR = /^(title|placeholder|aria-label|alt)$/;
 const ETIKETT = /^(label|hint|lab|titel|title|tip|desc|beschreibung|text|name)$/;

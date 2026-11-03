@@ -1436,11 +1436,19 @@ AnazhRealm._sprintMulGesetz = function () {
 // (`_hilfeZeilen`) und der Tacho (`_fahrAnzeige`) nennen. `tasten` = Namen in state.keys (event.key klein; die Pfeile schreiben
 // w/a/s/d über PFEIL_ALIAS), `code` = KeyboardEvent.code, `zeigen` = die Taste für den Spieler.
 AnazhRealm.FAHR_TASTEN = Object.freeze({
-    einsteigen: Object.freeze({ code: "KeyE", zeigen: "E", label: "einsteigen/aussteigen" }),
-    gas: Object.freeze({ tasten: Object.freeze(["w"]), zeigen: "W", label: "Gas" }),
-    bremse: Object.freeze({ tasten: Object.freeze(["s"]), zeigen: "S", label: "Bremse/rückwärts" }),
-    lenken: Object.freeze({ tasten: Object.freeze(["a", "d"]), zeigen: "A/D", label: "lenken" }),
-    handbremse: Object.freeze({ tasten: Object.freeze(["shift"]), zeigen: "Shift", label: "Handbremse" }),
+    einsteigen: Object.freeze(AnazhRealm._etikett({ code: "KeyE", zeigen: "E", etikett: ["fahrt.taste.einsteigen"] })),
+    gas: Object.freeze(
+        AnazhRealm._etikett({ tasten: Object.freeze(["w"]), zeigen: "W", etikett: ["fahrt.taste.gas"] })
+    ),
+    bremse: Object.freeze(
+        AnazhRealm._etikett({ tasten: Object.freeze(["s"]), zeigen: "S", etikett: ["fahrt.taste.bremse"] })
+    ),
+    lenken: Object.freeze(
+        AnazhRealm._etikett({ tasten: Object.freeze(["a", "d"]), zeigen: "A/D", etikett: ["fahrt.taste.lenken"] })
+    ),
+    handbremse: Object.freeze(
+        AnazhRealm._etikett({ tasten: Object.freeze(["shift"]), zeigen: "Shift", etikett: ["fahrt.taste.handbremse"] })
+    ),
 });
 // FAHR-ABSCHLUSS (19.07.) — die Pfeil-Tasten schreiben die kanonischen
 // Bewegungs-Tasten (die Studio-Eingabe-Wahrheit: KeyW||ArrowUp usw.); der
