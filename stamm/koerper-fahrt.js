@@ -133,6 +133,114 @@ class AnazhRealm_koerper_fahrt {
                 rg._leibPoseAktiv = false;
             }
         }
+        // DAS TUCH folgt der Pose dieses Takts (haar.K4)
+        this._tuchTakt(group, t);
+    }
+
+    // DAS TUCH AM LEIB (haar.K4) — der Leser des EINEN weichen Lösers (koerper-core `tuchGitter` · `tuchZustand` · `tuchTakt`,
+    // dasselbe rechnet das Körper-Studio): nach der Pose des Leibs EIN Schritt seines Tuchs. Die Kosten gehören dem Schirm:
+    // gerechnet wird nur, was das Auge nahe sieht — die feine Stufe steht (`_gelenk.istFern` falsch: die Stufe entscheidet), der
+    // Leib hängt in der Szene und ist sichtbar, näher als TUCH_GESETZ.nahM am Auge und im Kegel der Kamera; sonst ruht das Tuch
+    // in der Pose (`tuchRuhe`: die Ruhe-Lage, der Zustand fällt). Das Gitter des Lösers ist das Tuch der Grobstufe, die feine
+    // Stufe folgt ihm; das Gitter (Kanten, Massen, Folger) entsteht je Vorlage EINMAL (`_tuchGitter`, die Leiber derselben
+    // Tracht teilen es). Jedes Tuch-Mesh trägt solange seine EIGENE Positions-Spalte (die übrigen Spalten und der Index bleiben
+    // die der Vorlage) — fällt der Zustand, kehrt die Geometrie der Vorlage zurück, die eigene Spalte nimmt der GPU-Kehraus.
+    _tuchTakt(group, t) {
+        const u = group.userData;
+        const G = u && u._gelenk;
+        if (!G) return;
+        const KC = globalThis.__koerperCore;
+        const st = this.state;
+        let an = !G.istFern && group.visible && !!st.camera;
+        if (an) {
+            let root = group;
+            while (root.parent) root = root.parent;
+            an = root === st.scene;
+        }
+        if (an) {
+            const cam = st.camera;
+            const s = group.scale.y || 1;
+            const nah = KC.TUCH_GESETZ.nahM;
+            const v = this._tuchV || (this._tuchV = new THREE.Vector3());
+            v.set(group.position.x, group.position.y + 0.9 * s, group.position.z);
+            an = cam.position.distanceToSquared(v) < nah * nah;
+            if (an) {
+                const kegel = this._tuchKegel || (this._tuchKegel = { f: new THREE.Frustum(), m: new THREE.Matrix4(), k: new THREE.Sphere() });
+                cam.updateMatrixWorld();
+                kegel.m.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+                kegel.f.setFromProjectionMatrix(kegel.m);
+                kegel.k.center.copy(v);
+                kegel.k.radius = 1.2 * s;
+                an = kegel.f.intersectsSphere(kegel.k);
+            }
+        }
+        if (!an) {
+            if (u._tuch) this._tuchLoesen(group);
+            return;
+        }
+        if (!u._tuch) {
+            const stoff = (wurzel) => {
+                const L = [];
+                if (wurzel) wurzel.traverse((n) => n.isSkinnedMesh && n.userData.__seh === "stoff" && L.push(n));
+                return L;
+            };
+            const fein = stoff(G.nah);
+            const grob = stoff(G.fern);
+            const sim = grob.length ? grob : fein;
+            const folge = grob.length ? fein : [];
+            if (!sim.length) return;
+            const haut = [];
+            group.traverse((n) => n.isSkinnedMesh && n.userData.__seh === "haut" && n.userData.__klasse === "haut" && haut.push(n));
+            const gitter = this._tuchGitter(sim, folge, haut);
+            // die eigene Positions-Spalte je Tuch-Mesh (die Vorlage bleibt unberührt)
+            for (const m of sim.concat(folge)) {
+                const g0 = m.geometry;
+                const g1 = new THREE.BufferGeometry();
+                for (const k in g0.attributes) g1.setAttribute(k, k === "position" ? g0.attributes.position.clone() : g0.attributes[k]);
+                g1.setIndex(g0.index);
+                for (const gr of g0.groups) g1.addGroup(gr.start, gr.count, gr.materialIndex);
+                if (g0.boundingSphere) g1.boundingSphere = g0.boundingSphere.clone();
+                if (g0.boundingBox) g1.boundingBox = g0.boundingBox.clone();
+                g1.userData = g0.userData;
+                m.userData.__tuchVorlage = g0;
+                m.geometry = g1;
+            }
+            u._tuch = KC.tuchZustand(gitter, sim, folge, haut);
+            u._tuchMeshes = sim.concat(folge);
+            u._tuchT = null;
+        }
+        const dt = u._tuchT == null ? 0 : t - u._tuchT;
+        u._tuchT = t;
+        // die Welt-Matrizen dieses Takts (die Pose steht; der Löser liest die Knochen)
+        this._leibMatrix(group);
+        KC.tuchTakt(u._tuch, dt);
+    }
+    // Das Gitter einer Tracht: je Vorlage (die Geometrie des ersten sim-Meshes) EINMAL gebaut, geteilt von jedem Leib
+    _tuchGitter(sim, folge, haut) {
+        const memo = AnazhRealm._tuchGitterMemo || (AnazhRealm._tuchGitterMemo = new WeakMap());
+        const key = sim[0].userData.__tuchVorlage || sim[0].geometry;
+        let g = memo.get(key);
+        if (!g) {
+            // die Webung der Kleid-Zeile (der Stoff trägt sie in seinen Ofen-Werten, `foundryMp`)
+            const webe = sim.map((m) => {
+                const ud = (m.material && m.material.userData) || {};
+                return ud.__webe || (ud.foundryMp && ud.foundryMp.webe) || null;
+            });
+            g = globalThis.__koerperCore.tuchGitter(sim, folge, haut, webe);
+            memo.set(key, g);
+        }
+        return g;
+    }
+    // Das Tuch ruht in der Pose: die Ruhe-Lage, die Geometrie der Vorlage kehrt zurück, der Zustand fällt
+    _tuchLoesen(group) {
+        const u = group.userData;
+        globalThis.__koerperCore.tuchRuhe(u._tuch);
+        for (const m of u._tuchMeshes || []) {
+            if (m.userData.__tuchVorlage) m.geometry = m.userData.__tuchVorlage;
+            delete m.userData.__tuchVorlage;
+        }
+        u._tuch = null;
+        u._tuchMeshes = null;
     }
 
     // DIE POSE DES LÖSERS AN DAS RIG: die Wurzel (Welt-Lage, Meter) in den Rahmen ihres Eltern-Gelenks, die Glieder lokal — die

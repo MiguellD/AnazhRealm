@@ -5902,7 +5902,7 @@ function __vereinigungsVolumen(netze, h) {
 // gezogen): jede Haut-Ecke gehört dem Teil, dessen Zentrum ihr am nächsten liegt; die Ecken der Zonen-Teile bilden die Region,
 // zweimal nach Mehrheit geglättet (keine ausgefransten Saum-Inseln) und bis zu dreimal gefüllt (Inseln mit ≥ 80 % gewählten
 // Nachbarn). Der Stoff sind die Dreiecke der Region, jede Ecke um `dicke` entlang der Haut-Normale gehoben, mit IDENTISCHEN
-// Gewichten; der Saum-Ring (die offenen Kanten) wird dreimal geglättet. Rückgabe { geo, wahl } (wahl = die gewählten Haut-Ecken,
+// Gewichten; der Saum-Ring (die offenen Kanten) wird sechsmal geglättet und hält danach seine Dicke über der Haut. Rückgabe { geo, wahl } (wahl = die gewählten Haut-Ecken,
 // deren Dreiecke der Stoff deckt) oder null.
 function __stoffAusHaut(hg, teile, zonenTeile, dicke) {
     const pa = hg.attributes.position.array,
@@ -6008,11 +6008,11 @@ function __stoffAusHaut(hg, teile, zonenTeile, dicke) {
     // DER STOFF SPANNT SICH (K45-2): Stoff liegt auf den Höhen der Haut und überbrückt ihre Mulden (Nabel, Muskel-Fugen,
     // die Zacken der Regions-Grenze) — 24 Schritte Laplace (λ 0,5) mit der Bedingung, nie näher als `dicke` an der Haut zu
     // liegen (gemessen entlang der Haut-Normale der Ecke): die Mulde füllt sich, die Höhe hält; der Saum bleibt auf der Haut
-    // liegen (kein Spalt am Kragen und am Ärmel)
+    // liegen (kein Spalt am Kragen und am Ärmel). S und N (die Haut-Lage je Stoff-Ecke) tragen auch den Saum (unten).
+    const S = new Float32Array(m * 3),
+        N = new Float32Array(m * 3);
     {
-        const nb = new Array(m),
-            S = new Float32Array(m * 3),
-            N = new Float32Array(m * 3);
+        const nb = new Array(m);
         for (let i = 0; i < n; i++) {
             const j = karte[i];
             if (j < 0) continue;
@@ -6074,6 +6074,14 @@ function __stoffAusHaut(hg, teile, zonenTeile, dicke) {
         ecken.forEach((v, e) => {
             for (let d = 0; d < 3; d++) pos[v * 3 + d] = neu[e * 3 + d];
         });
+    }
+    // DER SAUM HÄLT SEINE DICKE (haar.K4, w6-weiches): das Mitteln längs des Rings zieht jeden runden Saum (Kragen, Ärmel,
+    // Hosenbein) nach innen — die Sehne liegt unter dem Bogen; gemessen lagen in der Ruhe-Pose 544 von 9 950 Tuch-Ecken hinter der
+    // Haut. Jede Saum-Ecke kehrt auf ihre Dicke über der Haut zurück (dieselbe Bedingung wie das Spannen oben, längs der Normale
+    // ihrer Haut-Ecke); die Lage längs des Rings bleibt die geglättete.
+    for (const v of ecken) {
+        const h = (pos[v * 3] - S[v * 3]) * N[v * 3] + (pos[v * 3 + 1] - S[v * 3 + 1]) * N[v * 3 + 1] + (pos[v * 3 + 2] - S[v * 3 + 2]) * N[v * 3 + 2];
+        if (h < dicke) for (let d = 0; d < 3; d++) pos[v * 3 + d] += (dicke - h) * N[v * 3 + d];
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
@@ -7987,6 +7995,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         throw new Error("MENSCH-GUSS: koerper-Kern ohne menschTon/brauTon — die Farbe folgt dem Samen (fail-closed)");
     const tonStempel = (geo, t) => geo.setAttribute("aTon", new THREE.BufferAttribute(new Float32Array(geo.attributes.position.count).fill(t), 1));
     let mengenLeib = null;
+    let tuchDrapierung = null;
     if (typeof kern.surfaceNets === "function" && typeof kern.kleidZonen === "function") {
         B.character.updateMatrixWorld(true);
         const invChar = new THREE.Matrix4().copy(B.character.matrixWorld).invert();
@@ -8143,6 +8152,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         }
         const stoffHuellen = [];
         const stoffAusHaut = [];
+        const tuchAusHaut = [];
         const sohlen = new Map(); // Hülle einer Zone mit Sohle → ihre Quellen (Gelände H5)
         // DER LEIB DER MENGE (mensch.K4): EINE Hülle; seine Sohle ist die Unterkante der Füße, beschuht oder bloß (Gelände H5)
         if (menge) {
@@ -8177,6 +8187,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                     stoff.position.set(0, 0, 0);
                     gebauteHuellen.push(stoff);
                     stoffAusHaut.push(aus.wahl);
+                    tuchAusHaut.push(stoff);
                 }
                 continue;
             }
@@ -8328,6 +8339,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             g.dispose();
             hautHuelle.geometry = ng;
         }
+        // das Tuch dieser Stufe und die Haut, die bleibt: der Ofen drapiert es nach dem Kollaps der Hüllen (unten)
+        if (hautHuelle) tuchDrapierung = { haut: hautHuelle, tuch: stoffHuellen.concat(tuchAusHaut) };
         // der Leib der Menge in der Ruhe-Pose: seine Farben (`__mengenFarben`); jedes Primitiv war nur seine Quelle
         if (mengenLeib) {
             const KT0 = kern.kopfToene(skinCol);
@@ -8685,6 +8698,24 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                     h.geometry = neu;
                 }
             }
+    }
+    // DAS TUCH LIEGT ÜBER DER HAUT (haar.K4, w6-weiches): nach dem Schnitt und dem Kollaps der Hüllen drapiert der EINE weiche
+    // Löser des Körper-Kerns (`tuchDrapieren`, dieselbe Haut-Kollision wie im Takt der Welt) jedes Tuch dieser Stufe über die
+    // Haut, die bleibt — die Achsel, die Hand an der Hüfte, der Saum; Meter je Einheit und Achse: der Maßstab des Leibs mal die
+    // Skala der Wurzel (die Dials strecken ungleich)
+    if (tuchDrapierung && typeof kern.tuchDrapieren === "function") {
+        const hg = tuchDrapierung.haut.geometry;
+        const sk = new THREE.Vector3();
+        tuchDrapierung.haut.getWorldScale(sk);
+        const M = kern.leibMassstab();
+        const einheit = [M * Math.abs(sk.x), M * Math.abs(sk.y), M * Math.abs(sk.z)];
+        for (const m of tuchDrapierung.tuch) {
+            const pa = m.geometry.attributes.position;
+            if (kern.tuchDrapieren(pa.array, hg.attributes.position.array, hg.attributes.normal.array, einheit) > 0) {
+                pa.needsUpdate = true;
+                m.geometry.computeVertexNormals();
+            }
+        }
     }
     // DAS VOLUMEN DES LEIBS (1310-15, physik K1): die Masse des Menschen liest das Volumen seines Leibs — die Vereinigung seiner
     // Teile unter der Haut (skin · shorts · joint, Kopf, Hände und Füße eingeschlossen) in der Ruhe-Pose, je Teil das Netz der
