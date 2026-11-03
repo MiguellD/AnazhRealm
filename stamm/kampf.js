@@ -1897,10 +1897,7 @@ class AnazhRealm_kampf {
         if (mode === "schöpfer" || Number.isFinite(bp.forgedPrecision)) return ""; // frei → kein Marker
         const check = this.checkBuildCost(name);
         if (check.ok) return " · ✓"; // Material da → bereit zum Schmieden
-        const missing = Object.entries(check.missing || {})
-            .map(([m, n]) => `${n}× ${m}`)
-            .join(", ");
-        return ` · ✗ fehlt ${missing}`;
+        return this._t("werk.fehlt-suffix", { liste: this._kostenText(check.missing, ", ") });
     }
 
     // Emergente FÄHIGKEIT eines Bauplans aus Form × Material, unabhängig von der Rolle (Holzstiel +
@@ -1914,22 +1911,23 @@ class AnazhRealm_kampf {
         const bbox = this._compoundBBox(bp);
         const span = bbox ? Math.max(bbox.max.x - bbox.min.x, bbox.max.y - bbox.min.y, bbox.max.z - bbox.min.z) : 0;
         if (span <= AnazhRealm.IMPLEMENT_GRASP_SPAN_M) {
+            // die Lesart ist Daten („Klinge“ · „Brecher“ · „Gerät“, `_implementAffordanceLabel`), die Zeile spricht die Tafel
             const label = this._implementAffordanceLabel(bp);
-            const doing =
+            hints.push(
                 label === "Klinge"
-                    ? "schneidet Weiches (Holz/Pflanzen), schwach an Fels"
+                    ? this._t("werk.faehigkeit.klinge")
                     : label === "Brecher"
-                      ? "wuchtet Fels/Hartes, schneidet kaum"
-                      : "ausgewogen (schneiden + wuchten)";
-            hints.push(`${label} — ${doing}`);
+                      ? this._t("werk.faehigkeit.brecher")
+                      : this._t("werk.faehigkeit.geraet")
+            );
         }
         // (2) die Schutz-Lesart (Rüstung): dichte + härte verteilen den Stoß.
         const schutz = (t.dichte || 0) + (t.härte || 0);
-        if (schutz >= 1.2) hints.push(`Schutz (Rüstung) ~${(schutz * 0.5).toFixed(1)}`);
+        if (schutz >= 1.2) hints.push(this._t("werk.faehigkeit.schutz", { wert: (schutz * 0.5).toFixed(1) }));
         // (3) die FORM-emergenten Lesarten (dieselben Prädikate wie computeBlueprintRole):
-        if (this._isBodyShaped && this._isBodyShaped(bp)) hints.push("Wesen (Seele/Avatar)");
-        if (this._isPortalShaped && this._isPortalShaped(bp)) hints.push("Tor (Portal)");
-        if (this._isFoodLike && this._isFoodLike(bp)) hints.push("Wirkung (Trank/Nahrung)");
+        if (this._isBodyShaped && this._isBodyShaped(bp)) hints.push(this._t("werk.faehigkeit.wesen"));
+        if (this._isPortalShaped && this._isPortalShaped(bp)) hints.push(this._t("werk.faehigkeit.tor"));
+        if (this._isFoodLike && this._isFoodLike(bp)) hints.push(this._t("werk.faehigkeit.wirkung"));
         return hints;
     }
 
@@ -2327,11 +2325,9 @@ class AnazhRealm_kampf {
             }
             if (zuWeit && !gehalten) {
                 const bpW = this._heldImplementBlueprint();
-                const was = bpW ? String(bpW.label || bpW.name).split(/\s[·—(]/)[0] : "Deine Faust";
+                const was = bpW ? AnazhRealm._namensKopf(bpW.label || bpW.name) : this._t("welt.deine-faust");
                 const m = (x) => x.toFixed(1).replace(".", ",");
-                this._spielerSagt(
-                    `Zu weit: ${was} reicht ${m(zuWeit.klinge)} m — das Ziel steht ${m(zuWeit.d)} m vor deiner Schulter.`
-                );
+                this._spielerSagt(this._t("welt.zu-weit", { was, reichweite: m(zuWeit.klinge), abstand: m(zuWeit.d) }));
             }
             // der Schwung löst das Ziel in der Strike-Phase auf (Kreatur → Treffer, Gerät → Stoß, Leere → Luftschlag)
             return this._playerAttackCreature(creaturePick || geraetPick);
@@ -2538,7 +2534,10 @@ class AnazhRealm_kampf {
         if (!bauModusAn && heldP && this._isPlaceableBlueprint(heldP)) {
             this.equipHeld(null);
             const bauRes = this._bauModusFuer(heldP.name);
-            if (!bauRes.ok) this._spielerSagt(`${heldP.label || heldP.name}: ${this._machTorHint(bauRes)}`);
+            if (!bauRes.ok)
+                this._spielerSagt(
+                    this._t("bauen.label-grund", { label: heldP.label || heldP.name, grund: this._machTorHint(bauRes) })
+                );
             return bauRes.ok;
         }
         // Phase 3b — ist das Voxel-Terrain aktiv und KEIN Bau-Modus aktiv,
@@ -2572,7 +2571,7 @@ class AnazhRealm_kampf {
         if (!this.state.buildMode || !this.state.buildMode.active) return false;
         const gate = this._mouseActionStaminaGate();
         if (!gate.ok) {
-            this._spielerSagt(`Setzen: zu wenig Ausdauer (${gate.have}/${gate.cost}) — kurz verschnaufen.`);
+            this._spielerSagt(this._t("welt.setzen-ausdauer", { hat: gate.have, kostet: gate.cost }));
             return false;
         }
         // role:"consumable" + RMB-Raycast trifft eine Kreatur → Trank-Übergabe statt Bau. Phantom +

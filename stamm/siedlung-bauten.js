@@ -1204,7 +1204,7 @@ class AnazhRealm_siedlung_bauten {
         if (typeof document !== "undefined" && document.body && !document.getElementById("kern-pflicht-banner")) {
             const b = document.createElement("div");
             b.id = "kern-pflicht-banner";
-            b.textContent = "⚠ " + text + " — jeder Gesetz-Leser bricht laut (KERN-PFLICHT), es gibt keine Ersatz-Welt";
+            b.textContent = this._t("welt.kern-fehlt-banner", { kerne: fehlt.join(" · ") });
             b.style.cssText =
                 "position:fixed;top:0;left:0;right:0;z-index:99999;background:#7a1010;color:#fff;" +
                 "font:14px monospace;padding:8px 12px;text-align:center";

@@ -243,7 +243,7 @@ class AnazhRealm_feld_leben {
     // erklärt nichts (kein WASD/Hotbar-Dump), sie öffnet die Tür: die Welt wächst
     // aus dem ersten Wort. Das ist der WOW — die Welt antwortet auf deine Stimme.
     _firstWelcomeMessage() {
-        return "Ich bin Eins. Diese Welt ist still — bis du sprichst. Sag, was werden soll.";
+        return this._t("rede.eins-gruss");
     }
 
     // DSL-Programm → deutsche Beschreibung: bekannte Ops per Vorlage, sonst generischer Fallback;
@@ -870,7 +870,7 @@ class AnazhRealm_feld_leben {
         if (program) {
             this._portalRouteDsl(program, inWorld ? inWorld.describe : command, appendChatOutput);
         } else {
-            appendChatOutput(`(Im Portal — „${command}" ist kein DSL-Befehl für diese Welt.)`);
+            appendChatOutput(this._t("chat.portal.kein-befehl", { befehl: command }));
         }
         chatInput.value = "";
         return true;
@@ -886,8 +886,8 @@ class AnazhRealm_feld_leben {
             const result = this.dslRun(g.program, { source: "human" });
             appendChatOutput(
                 result.ok
-                    ? `Gesetz aufgestellt — ${this.describeProgram(g.program)}.`
-                    : "Die Regel ließ sich nicht aufstellen (siehe Log)."
+                    ? this._t("chat.gesetz.aufgestellt", { tat: this.describeProgram(g.program) })
+                    : this._t("chat.gesetz.nicht-aufgestellt")
             );
         } else appendChatOutput(g.absage);
         chatInput.value = "";
@@ -902,16 +902,29 @@ class AnazhRealm_feld_leben {
         if (/^(?:zeige|welche|liste|welt[-\s]*)?\s*(?:welt[-\s]*)?(?:regeln|gesetze)\??\s*$/i.test(c)) {
             const rules = this.state.worldRules || [];
             if (rules.length === 0) {
-                appendChatOutput(`Noch keine Welt-Regeln. Sag z. B. „${AnazhRealm.GESETZ_VORLAGEN[0]}".`);
+                appendChatOutput(this._t("chat.regeln.keine", { vorlage: AnazhRealm.GESETZ_VORLAGEN[0] }));
                 chatInput.value = "";
                 return true;
             }
-            appendChatOutput(`${rules.length} Welt-Regel${rules.length !== 1 ? "n" : ""}:`);
+            appendChatOutput(
+                rules.length === 1
+                    ? this._t("chat.regeln.eine", { n: rules.length })
+                    : this._t("chat.regeln.viele", { n: rules.length })
+            );
             for (const r of rules) {
                 const who =
                     this._gesetzGeber(r) ||
-                    (r.source === "nexus" ? "der Nexus" : r.source && r.source.startsWith("llm") ? "Grok" : r.source);
-                appendChatOutput(`• ${this.describeProgram(["rule", r.cond, r.effect])} (von ${who})`);
+                    (r.source === "nexus"
+                        ? this._t("chat.regeln.der-nexus")
+                        : r.source && r.source.startsWith("llm")
+                          ? "Grok"
+                          : r.source);
+                appendChatOutput(
+                    this._t("chat.regeln.zeile", {
+                        regel: this.describeProgram(["rule", r.cond, r.effect]),
+                        wer: String(who),
+                    })
+                );
             }
             chatInput.value = "";
             return true;
@@ -927,8 +940,10 @@ class AnazhRealm_feld_leben {
             const removed = before - this.state.worldRules.length;
             appendChatOutput(
                 removed > 0
-                    ? `${removed} deiner Gesetz${removed !== 1 ? "e" : ""} vergessen.`
-                    : "Du hattest keine eigenen Gesetze."
+                    ? removed === 1
+                        ? this._t("chat.gesetze.eins-vergessen", { n: removed })
+                        : this._t("chat.gesetze.vergessen", { n: removed })
+                    : this._t("chat.gesetze.keine-eigenen")
             );
             chatInput.value = "";
             return true;
@@ -950,7 +965,7 @@ class AnazhRealm_feld_leben {
                 const p = this.state.player;
                 if (typeof p.mana !== "number") p.mana = p.manaMax || 40;
                 if (p.mana < manaCost) {
-                    appendChatOutput(`Zu erschöpft für diese Geste (Mana ${p.mana | 0}/${manaCost} nötig).`);
+                    appendChatOutput(this._t("chat.mana.erschoepft", { mana: p.mana | 0, kosten: manaCost }));
                     chatInput.value = "";
                     return true;
                 }
@@ -972,12 +987,12 @@ class AnazhRealm_feld_leben {
         if (weicht) appendChatOutput(weicht.satz);
         else if (result.ok) appendChatOutput(parsed.describe);
         else if (ohneOrt) {
-            const grund = String(ohneOrt.grund || "kein Ort");
+            const grund = String(ohneOrt.grund || this._t("chat.ort.kein-ort"));
             const satz = grund.charAt(0).toUpperCase() + grund.slice(1);
             appendChatOutput(
                 ohneOrt.op === "near_water"
-                    ? `${satz} — am Wasser wächst hier nichts. Geh näher an ein Ufer.`
-                    : `${satz} — nichts geschah.`
+                    ? this._t("chat.ort.kein-wasser", { satz })
+                    : this._t("chat.ort.nichts-geschah", { satz })
             );
         } else {
             appendChatOutput(this._dslAbsageSatz(result.log));
@@ -992,12 +1007,12 @@ class AnazhRealm_feld_leben {
     _dslAbsageSatz(log) {
         const e = (log || []).find((x) => x && /budget|unknown|invalid|exception/.test(x.event));
         if (e) this.log(`Programm-Absage: ${e.event}${e.grund ? " — " + e.grund : ""}`, "INFO");
-        if (!e) return "Die Welt hat den Satz nicht ganz umgesetzt.";
-        if (/budget/.test(e.event)) return "Die Welt ist für den Moment erschöpft — versuch es gleich noch einmal.";
-        if (/unknown/.test(e.event)) return "Das kennt die Welt (noch) nicht.";
+        if (!e) return this._t("chat.absage.nicht-ganz");
+        if (/budget/.test(e.event)) return this._t("chat.absage.erschoepft");
+        if (/unknown/.test(e.event)) return this._t("chat.absage.unbekannt");
         if (e.grund) return String(e.grund).charAt(0).toUpperCase() + String(e.grund).slice(1) + ".";
-        if (/invalid/.test(e.event)) return "Etwas an dem Satz passt nicht zur Welt.";
-        return "Dabei ist etwas zerbrochen — das Logbuch nennt es.";
+        if (/invalid/.test(e.event)) return this._t("chat.absage.passt-nicht");
+        return this._t("chat.absage.zerbrochen");
     }
 
     // Das EINE Dispatch-Tor: Legacy-Befehle als DATEN-Tabelle ({example, re, run}, dieselbe Sprache wie
@@ -1011,13 +1026,22 @@ class AnazhRealm_feld_leben {
             const m = t.match(p.re);
             if (!m) continue;
             try {
-                p.run(m, appendChatOutput);
+                this._chatBefehlLauf(p, p.run(m, appendChatOutput));
             } catch (err) {
-                appendChatOutput(`(System-Befehl-Fehler: ${err.message || err})`);
+                appendChatOutput(this._t("chat.fehler.system", { fehler: err.message || err }));
             }
             return;
         }
         this._chatHandleConversationalFallback(command, appendChatOutput);
+    }
+
+    // Ein System-Befehl darf asynchron laufen (die Gewähr wartet auf grantCapability): sein Promise bricht nie still — das
+    // try/catch der Rufer fängt nur den synchronen Teil, der Rest meldet sich hier beim Namen des Befehls.
+    _chatBefehlLauf(p, lauf) {
+        if (lauf && typeof lauf.catch === "function")
+            lauf.catch((err) =>
+                this._bruchMelden(`CHAT-BEFEHL: „${p.example}" brach (${(err && err.message) || err})`)
+            );
     }
 
     // E1 — die System-Befehls-Tabelle (Fähigkeiten · Persistenz · Welt-
@@ -1055,13 +1079,18 @@ class AnazhRealm_feld_leben {
                     const EP = globalThis.__fachwerkCore && globalThis.__fachwerkCore.EPOCHEN;
                     if (m[4] !== undefined && !(EP && Object.hasOwn(EP, m[4].toLowerCase()))) {
                         append(
-                            `Keine Epoche „${m[4]}" — es gibt ${EP ? Object.keys(EP).join(", ") : "keine (Kern fehlt)"}.`
+                            EP
+                                ? this._t("chat.befehl.dorf.keine-epoche", {
+                                      epoche: m[4],
+                                      epochen: Object.keys(EP).join(", "),
+                                  })
+                                : this._t("chat.befehl.dorf.keine-epoche-kern", { epoche: m[4] })
                         );
                         return;
                     }
                     if (m[4] !== undefined) opts.epoche = m[4].toLowerCase();
                     this.spawnSettlement(opts);
-                    append("Siedlung wird gegründet (Settlement-Export läuft) …");
+                    append(this._t("chat.befehl.dorf.gruendung"));
                 },
             },
             {
@@ -1071,7 +1100,12 @@ class AnazhRealm_feld_leben {
                     const abilityName = m[1] ? m[1].toLowerCase() : undefined;
                     const abilityDesc = (m[2] || "").trim();
                     this.learnAbility(abilityName, abilityDesc);
-                    append(`Fähigkeit '${abilityName}' gelernt: ${abilityDesc}`);
+                    append(
+                        this._t("chat.befehl.faehigkeit.gelernt", {
+                            name: String(abilityName),
+                            beschreibung: abilityDesc,
+                        })
+                    );
                 },
             },
             {
@@ -1081,11 +1115,9 @@ class AnazhRealm_feld_leben {
                     const abilityName = m[1] ? m[1].toLowerCase() : undefined;
                     if (this.state.abilities[abilityName]) {
                         this.state.abilities[abilityName](this, this.state);
-                        append(`Fähigkeit '${abilityName}' ausgeführt`);
+                        append(this._t("chat.befehl.faehigkeit.ausgefuehrt", { name: String(abilityName) }));
                     } else {
-                        append(
-                            `Fähigkeit '${abilityName}' nicht gefunden. Lerne sie mit 'Lerne Fähigkeit <Name> <Beschreibung>'`
-                        );
+                        append(this._t("chat.befehl.faehigkeit.nicht-gefunden", { name: String(abilityName) }));
                     }
                 },
             },
@@ -1096,26 +1128,22 @@ class AnazhRealm_feld_leben {
                 re: /^wohne\s+hier(?:\s.*)?$/i,
                 run: (m, append) => {
                     const res = this.dwellInPortal();
-                    if (res.ok) append(`Du wohnst jetzt hier — der nächste Aufbruch bringt dich hierher zurück.`);
-                    else if (res.reason === "not_in_portal")
-                        append("Du bist in deiner Heimat-Welt — wohnen kannst du nur in einer Portal-Welt.");
-                    else append("Diese Welt ist nicht in deiner Bibliothek — hier kannst du nicht wohnen.");
+                    if (res.ok) append(this._t("chat.befehl.wohnen.hier"));
+                    else if (res.reason === "not_in_portal") append(this._t("chat.befehl.wohnen.heimat"));
+                    else append(this._t("chat.befehl.wohnen.nicht-bibliothek"));
                 },
             },
             {
                 // R6 (V18.152) — die souveräne GEWÄHR einer gereichten Fähigkeit.
                 example: "gewähre <fähigkeit>",
                 re: /^gew(?:ä|ae)hre\s+([a-z0-9_-]{1,32})\s*$/i,
-                run: (m, append) => {
-                    const res = this.grantCapability(m[1]);
-                    if (res.ok)
-                        append(
-                            `Fähigkeit „${m[1].toLowerCase()}" gewährt — „wirke ${m[1].toLowerCase()}" führt sie aus.`
-                        );
-                    else if (res.reason === "no_proposal") append("Keine Welt hat diese Fähigkeit gereicht.");
-                    else if (res.reason === "revoked")
-                        append("Verweigert — die Herkunft dieser Fähigkeit ist revoziert.");
-                    else append("Die Gewähr blieb aus.");
+                // Die Gewähr ist asynchron (grantCapability gibt ein Promise): der Dispatch meldet ein Brechen über `.catch`.
+                run: async (m, append) => {
+                    const res = await this.grantCapability(m[1]);
+                    if (res.ok) append(this._t("chat.befehl.faehigkeit.gewaehrt", { name: m[1].toLowerCase() }));
+                    else if (res.reason === "no_proposal") append(this._t("chat.befehl.faehigkeit.nicht-gereicht"));
+                    else if (res.reason === "revoked") append(this._t("chat.befehl.faehigkeit.revoziert"));
+                    else append(this._t("chat.befehl.faehigkeit.gewaehr-aus"));
                 },
             },
             {
@@ -1124,10 +1152,10 @@ class AnazhRealm_feld_leben {
                 re: /^wirke\s+([a-z0-9_-]{1,32})\s*$/i,
                 run: (m, append) => {
                     const res = this.runCapability(m[1]);
-                    if (res.ok) append(`Fähigkeit „${m[1].toLowerCase()}" gewirkt.`);
-                    else if (res.reason === "unknown") append("Diese Fähigkeit wurde (noch) nicht gewährt.");
-                    else if (res.reason === "revoked") append("Diese Fähigkeit ruht — ihre Herkunft wurde revoziert.");
-                    else append("Die Fähigkeit ließ sich nicht wirken.");
+                    if (res.ok) append(this._t("chat.befehl.faehigkeit.gewirkt", { name: m[1].toLowerCase() }));
+                    else if (res.reason === "unknown") append(this._t("chat.befehl.faehigkeit.nicht-gewaehrt"));
+                    else if (res.reason === "revoked") append(this._t("chat.befehl.faehigkeit.ruht"));
+                    else append(this._t("chat.befehl.faehigkeit.nicht-wirkbar"));
                 },
             },
             {
@@ -1136,11 +1164,7 @@ class AnazhRealm_feld_leben {
                 re: /^ziehe\s+heim(?:\s.*)?$/i,
                 run: (m, append) => {
                     const res = this.endDwelling();
-                    append(
-                        res.was
-                            ? "Du bist heimgezogen — deine Heimat-Welt ist wieder die Basis."
-                            : "Du wohnst nirgendwo fremd — du bist schon daheim."
-                    );
+                    append(res.was ? this._t("chat.befehl.heim.gezogen") : this._t("chat.befehl.heim.schon-daheim"));
                 },
             },
             {
@@ -1149,16 +1173,16 @@ class AnazhRealm_feld_leben {
                 run: (m, append) => {
                     // Verweigert die Sperre des Welt-Wechsels, sagt der Befehl es — nie „gespeichert", wenn nichts geschrieben wurde.
                     if (this.saveState() === false) {
-                        append("Nicht gespeichert: die Seite wechselt gerade die Welt.");
+                        append(this._t("chat.befehl.zustand.nicht-gespeichert"));
                         return;
                     }
                     this.saveToProjectFolder().then((result) => {
                         if (result === "server") {
-                            append("Zustand gespeichert (direkt im Spielordner + localStorage)");
+                            append(this._t("chat.befehl.zustand.gespeichert-ordner"));
                         } else if (result === "download") {
-                            append("Zustand gespeichert (Browser-Download + localStorage)");
+                            append(this._t("chat.befehl.zustand.gespeichert-download"));
                         } else {
-                            append("Zustand gespeichert (nur localStorage)");
+                            append(this._t("chat.befehl.zustand.gespeichert-lokal"));
                         }
                     });
                 },
@@ -1168,7 +1192,7 @@ class AnazhRealm_feld_leben {
                 re: /^lade\s+zustand(?:\s.*)?$/i,
                 run: (m, append) => {
                     this.loadState();
-                    append("Zustand aus localStorage geladen");
+                    append(this._t("chat.befehl.zustand.geladen"));
                 },
             },
             {
@@ -1176,7 +1200,7 @@ class AnazhRealm_feld_leben {
                 re: /^lade\s+datei(?:\s.*)?$/i,
                 run: (m, append) => {
                     this.openStateFilePicker();
-                    append("Datei-Picker geöffnet – wähle eine anazhRealmState.json");
+                    append(this._t("chat.befehl.zustand.datei-picker"));
                 },
             },
             {
@@ -1184,7 +1208,7 @@ class AnazhRealm_feld_leben {
                 re: /^spawne\s+neue\s+welt(?:\s.*)?$/i,
                 run: (m, append) => {
                     this.generateNewWorld();
-                    append("Neue Welt generiert");
+                    append(this._t("chat.befehl.welt.generiert"));
                 },
             },
             {
@@ -1201,9 +1225,13 @@ class AnazhRealm_feld_leben {
                         .trim();
                     const newId = this.createNewWorld({ slug: slug || null, inheritPlayer: inherit, reload: true });
                     if (newId) {
-                        append(`Neue Welt erschaffen (lade neu, Person ${inherit ? "übernommen" : "neu"}…)`);
+                        append(
+                            inherit
+                                ? this._t("chat.befehl.welt.erschaffen-mit-person")
+                                : this._t("chat.befehl.welt.erschaffen-neue-person")
+                        );
                     } else {
-                        append("Neue Welt konnte nicht erschaffen werden — siehe Log.");
+                        append(this._t("chat.befehl.welt.nicht-erschaffen"));
                     }
                 },
             },
@@ -1218,11 +1246,11 @@ class AnazhRealm_feld_leben {
                     const exact = idx.find((e) => e.slug === targetSlug);
                     const prefix = exact || idx.find((e) => e.slug && e.slug.startsWith(targetSlug));
                     if (!prefix) {
-                        append(`Welt „${targetSlug}" nicht gefunden. Befehl „liste welten" zeigt verfügbare.`);
+                        append(this._t("chat.befehl.welt.nicht-gefunden-liste", { slug: targetSlug }));
                     } else {
                         const ok = this.switchToWorld(prefix.worldId, { reload: true });
-                        if (ok) append(`Wechsle zu ${prefix.slug}…`);
-                        else append("Welt-Wechsel verweigert (siehe Log).");
+                        if (ok) append(this._t("chat.befehl.welt.wechsle", { slug: prefix.slug }));
+                        else append(this._t("chat.befehl.welt.wechsel-verweigert"));
                     }
                 },
             },
@@ -1234,12 +1262,12 @@ class AnazhRealm_feld_leben {
                     const idx = this.worldsIndexLoad();
                     const entry = idx.find((e) => e.slug === targetSlug);
                     if (!entry) {
-                        append(`Welt „${targetSlug}" nicht gefunden.`);
+                        append(this._t("chat.befehl.welt.nicht-gefunden", { slug: targetSlug }));
                     } else if (entry.worldId === this.state.worldMeta.worldId) {
-                        append("Die aktive Welt kann nicht gelöscht werden. Wechsle erst zu einer anderen.");
+                        append(this._t("chat.befehl.welt.aktiv-nicht-loeschbar"));
                     } else {
                         this.deleteWorld(entry.worldId);
-                        append(`Welt „${entry.slug}" gelöscht.`);
+                        append(this._t("chat.befehl.welt.geloescht", { slug: entry.slug }));
                         this.updateWorldInfo();
                     }
                 },
@@ -1250,7 +1278,7 @@ class AnazhRealm_feld_leben {
                 run: (m, append) => {
                     const idx = this.worldsIndexLoad();
                     if (idx.length === 0) {
-                        append("Nur diese eine Welt im Speicher.");
+                        append(this._t("chat.befehl.welten.nur-eine"));
                     } else {
                         const lines = idx
                             .slice()
@@ -1258,9 +1286,12 @@ class AnazhRealm_feld_leben {
                             .map((e) => {
                                 const ageDays = e.bornAt ? Math.floor((Date.now() - e.bornAt) / 86400000) : 0;
                                 const isActive = e.worldId === this.state.worldMeta.worldId;
-                                return `${isActive ? "★ " : "  "}${e.slug} — ${ageDays}d alt, ID ${e.worldId.slice(0, 8)}…`;
+                                const werte = { slug: String(e.slug), tage: ageDays, id: e.worldId.slice(0, 8) };
+                                return isActive
+                                    ? this._t("chat.befehl.welten.zeile-aktiv", werte)
+                                    : this._t("chat.befehl.welten.zeile", werte);
                             });
-                        append(`Welten im Speicher (${idx.length}):`);
+                        append(this._t("chat.befehl.welten.kopf", { n: idx.length }));
                         for (const l of lines) append(l);
                     }
                 },
@@ -1270,7 +1301,7 @@ class AnazhRealm_feld_leben {
                 re: /^behebe\s+physik-tunneling(?:\s.*)?$/i,
                 run: (m, append) => {
                     this.optimizeCollisions();
-                    append("Physik-Tunneling behoben: CCD angepasst");
+                    append(this._t("chat.befehl.physik.tunneling"));
                 },
             },
             {
@@ -1278,7 +1309,7 @@ class AnazhRealm_feld_leben {
                 re: /^optimiere\s+physik(?:\s.*)?$/i,
                 run: (m, append) => {
                     this.optimizePhysics();
-                    append("Physik optimiert");
+                    append(this._t("chat.befehl.physik.optimiert"));
                 },
             },
             {
@@ -1288,9 +1319,9 @@ class AnazhRealm_feld_leben {
                     const version = m[1] ? m[1].toLowerCase() : undefined;
                     if (this.state.versionHistory.includes(version)) {
                         this.loadVersion(version);
-                        append(`Version ${version} aktiviert`);
+                        append(this._t("chat.befehl.version.aktiviert", { version: String(version) }));
                     } else {
-                        append(`Version ${version} nicht gefunden`);
+                        append(this._t("chat.befehl.version.nicht-gefunden", { version: String(version) }));
                     }
                 },
             },
@@ -1303,7 +1334,7 @@ class AnazhRealm_feld_leben {
                     const wahl = m[1].toLowerCase();
                     if (wahl === "heimat") {
                         this.state.klangPreset = null;
-                        append("Klang: zurück zur Heimat-Stimme (Host-Lofi).");
+                        append(this._t("chat.befehl.klang.heimat"));
                         return;
                     }
                     const f = this._foundry;
@@ -1318,7 +1349,13 @@ class AnazhRealm_feld_leben {
                             ? AnazhRealm.Gesetz("klang:SCALE_LABELS." + kx.scaleName) || kx.scaleName
                             : "?";
                         append(
-                            `Klang: das Lofi-Pad führt jetzt „${(rec && rec.lab) || wahl}" — ${kx.bpm} BPM · ${skala} · ${kx.harmony || "?"}/${kx.rhythm || "?"}.`
+                            this._t("chat.befehl.klang.fuehrt", {
+                                genre: (rec && rec.lab) || wahl,
+                                bpm: String(kx.bpm),
+                                skala,
+                                harmonie: kx.harmony || "?",
+                                rhythmus: kx.rhythm || "?",
+                            })
                         );
                     } else {
                         const genres =
@@ -1329,8 +1366,8 @@ class AnazhRealm_feld_leben {
                                 : "";
                         append(
                             genres
-                                ? `Kein Klang-Genre „${wahl}". Das Studio kennt: ${genres} — oder „spiele heimat".`
-                                : "Das Klang-Buch ist noch kalt — gleich nochmal versuchen."
+                                ? this._t("chat.befehl.klang.kein-genre", { wahl, genres })
+                                : this._t("chat.befehl.klang.buch-kalt")
                         );
                     }
                 },
@@ -1350,12 +1387,17 @@ class AnazhRealm_feld_leben {
                         this._foundryPresetFor(gattung) || (f && f.recipes && f.recipes[gattung] ? gattung : null);
                     const rec = preset && f && f.recipes ? f.recipes[preset] : null;
                     if (!rec) {
-                        append(`Kein Studio-Rezept „${gattung}" im Buch.`);
+                        append(this._t("chat.befehl.praege.kein-rezept", { gattung }));
                         return;
                     }
                     const achse = AnazhRealm.KIND_CHARAKTER[rec.kind];
                     if (!achse) {
-                        append(`„${rec.lab || preset}" (${rec.kind}) trägt keine Charakter-Achse.`);
+                        append(
+                            this._t("chat.befehl.praege.keine-achse", {
+                                rezept: rec.lab || preset,
+                                art: String(rec.kind),
+                            })
+                        );
                         return;
                     }
                     const kern = typeof globalThis !== "undefined" ? globalThis[achse.ns] : null;
@@ -1364,8 +1406,11 @@ class AnazhRealm_feld_leben {
                     if (!zeileName) {
                         append(
                             tabelle
-                                ? `Die ${achse.wort} des Studios: ${Object.keys(tabelle).join(" · ")}.`
-                                : `Das ${achse.wort}-Gesetzbuch ist nicht geladen.`
+                                ? this._t("chat.befehl.praege.zeilen", {
+                                      achse: achse.wort,
+                                      zeilen: Object.keys(tabelle).join(" · "),
+                                  })
+                                : this._t("chat.befehl.praege.buch-fehlt", { achse: achse.wort })
                         );
                         return;
                     }
@@ -1382,7 +1427,13 @@ class AnazhRealm_feld_leben {
                         });
                         for (const k of tot) this._foundryCacheEvict(k);
                     }
-                    append(`Geprägt: „${rec.lab || preset}" trägt fortan die ${achse.wort} „${zeileName}".`);
+                    append(
+                        this._t("chat.befehl.praege.gepraegt", {
+                            rezept: rec.lab || preset,
+                            achse: achse.wort,
+                            zeile: zeileName,
+                        })
+                    );
                 },
             },
             {
@@ -1407,9 +1458,7 @@ class AnazhRealm_feld_leben {
                     );
                     this.state.abilities["anazhSymphony"]();
                     append(
-                        klang
-                            ? "Anazh-Symphonie aktiviert — die Welt klingt (und die Kreaturen beleben sich)."
-                            : "Anazh-Symphonie: Belebung aktiv; Klang konnte nicht starten (kein Audio-Kontext)."
+                        klang ? this._t("chat.befehl.symphonie.aktiviert") : this._t("chat.befehl.symphonie.ohne-klang")
                     );
                 },
             },
@@ -1418,7 +1467,7 @@ class AnazhRealm_feld_leben {
                 re: /^aktiviere\s+debug-logs(?:\s.*)?$/i,
                 run: (m, append) => {
                     this.state.debugLogging = true;
-                    append("Debug-Logs aktiviert");
+                    append(this._t("chat.befehl.debug.an"));
                 },
             },
             {
@@ -1426,7 +1475,7 @@ class AnazhRealm_feld_leben {
                 re: /^deaktiviere\s+debug-logs(?:\s.*)?$/i,
                 run: (m, append) => {
                     this.state.debugLogging = false;
-                    append("Debug-Logs deaktiviert");
+                    append(this._t("chat.befehl.debug.aus"));
                 },
             },
         ];
@@ -1456,7 +1505,7 @@ class AnazhRealm_feld_leben {
             // „Name, text" oder „Name: text" geht an die Kreatur (nicht an Grok).
             this.maybeAnswerCreature(command, appendChatOutput).catch((err) => {
                 this._bruchMelden("Kreatur-Antwort: " + (err.message || err));
-                appendChatOutput(`(Kreatur-Fehler: ${err.message || err})`);
+                appendChatOutput(this._t("chat.fehler.kreatur", { fehler: err.message || err }));
             });
             return;
         }
@@ -1464,9 +1513,8 @@ class AnazhRealm_feld_leben {
             // Schicht 2 — LLM-Fallback. Statt „Unbekannter Befehl" geht der Text
             // an Claude; Antwort kommt narrativ + optional als DSL-Programm.
             this.maybeAnswerWithLlm(command, appendChatOutput).catch((err) => {
-                appendChatOutput(
-                    `(${(this.state.grok && this.state.grok.companionName) || "Grok"}-Fehler: ${err.message || err})`
-                );
+                const compName = (this.state.grok && this.state.grok.companionName) || "Grok";
+                appendChatOutput(this._t("chat.fehler.begleiter", { name: compName, fehler: err.message || err }));
             });
             return;
         }
@@ -1492,9 +1540,9 @@ class AnazhRealm_feld_leben {
                     const m = String(suggestion).trim().match(p.re);
                     if (!m) continue;
                     try {
-                        p.run(m, appendChatOutput);
+                        this._chatBefehlLauf(p, p.run(m, appendChatOutput));
                     } catch (err) {
-                        appendChatOutput(`(Befehl-Fehler: ${err && err.message})`);
+                        appendChatOutput(this._t("chat.fehler.befehl", { fehler: String(err && err.message) }));
                     }
                     return;
                 }
@@ -1503,14 +1551,14 @@ class AnazhRealm_feld_leben {
             // jeder Zeile „Verb + Wort" ohne KI den Vorschlag, „mach licht" hörte nur den Katalog).
             appendChatOutput(
                 studioAbsage
-                    ? `${studioAbsage} Oder meintest du: '${suggestion}'?`
-                    : `Unbekannter Befehl. Meintest du: '${suggestion}'? („hilfe" zeigt, was die Welt versteht.)`
+                    ? this._t("chat.vorschlag.oder", { absage: studioAbsage, vorschlag: suggestion })
+                    : this._t("chat.vorschlag.unbekannt", { vorschlag: suggestion })
             );
         } else if (studioAbsage) {
             appendChatOutput(studioAbsage);
         } else {
             // Keine zweite Liste: die Hilfe liest die EINEN Tafeln (`_hilfeZeilen`), hier steht nur der Weg dorthin.
-            appendChatOutput(`Unbekannter Befehl — sag „hilfe", dann zeigt dir die Welt, was sie versteht.`);
+            appendChatOutput(this._t("chat.unbekannt"));
         }
     }
 
@@ -1527,8 +1575,11 @@ class AnazhRealm_feld_leben {
         const probier = [];
         for (const p of dsl.concat(this.chatSystemPatterns))
             if (Array.isArray(p.hilfe)) for (const b of p.hilfe) if (!probier.includes(b)) probier.push(b);
+        // der Name einer Aktion: die eingebaute liest ihre Zeile der Tafel; eine DSL-Fähigkeit, die der Spieler aufs Pad band,
+        // trägt den Namen, den er ihr gab (Spieler-Inhalt bleibt, wie er geschrieben wurde)
+        const name = (a) => (AnazhRealm.KEYBINDING_LABELS[a] ? this._t(AnazhRealm.KEYBINDING_LABELS[a]) : a);
         const tasten = AnazhRealm.KEYBINDING_ACTIONS.map(
-            (a) => `${fmt(kb[a] || AnazhRealm.DEFAULT_KEYBINDINGS[a])} ${AnazhRealm.KEYBINDING_LABELS[a] || a}`
+            (a) => `${fmt(kb[a] || AnazhRealm.DEFAULT_KEYBINDINGS[a])} ${name(a)}`
         );
         return [
             `Sprich mit der Welt: ${fmt(kb.chat || AnazhRealm.DEFAULT_KEYBINDINGS.chat)} öffnet das Gespräch, Enter sendet, Esc gibt die Welt zurück.`,
@@ -1540,7 +1591,7 @@ class AnazhRealm_feld_leben {
             `Gamepad: linker Stick laufen · rechter Stick blicken · RT/LT Gas/Bremse · ${Object.entries(
                 this.state.padBelegung || AnazhRealm.PAD_BELEGUNG
             )
-                .map(([a, c]) => `${fmt(c)} ${AnazhRealm.KEYBINDING_LABELS[a] || a}`)
+                .map(([a, c]) => `${fmt(c)} ${name(a)}`)
                 .join(" · ")}`,
         ];
     }
@@ -1593,18 +1644,18 @@ class AnazhRealm_feld_leben {
     }
     proactiveSuggestions() {
         const suggestions = [
-            "Möchtest du eine neue Fähigkeit lernen? Beispiel: 'Lerne Fähigkeit farbwechsel Ändere Farbe von Kreaturen zu blau'",
-            "Soll ich die Physik weiter optimieren? Sage 'Entwickle Physik'",
-            "Wie wäre es mit einem neuen Sternenhimmel? Beispiel: 'Ändere Sternenhimmel red'",
-            "Möchtest du mehr Kreaturen spawnen? Beispiel: 'Spawne Kreaturen 10'",
-            "Soll ich das Terrain flacher machen? Beispiel: 'Setze Terrain Steilheit 0.5'",
-            "Möchtest du eine neue Welt erschaffen? Beispiel: 'Erschaffe Welt forest'",
-            "Soll ich die Spielsteuerung erweitern? Beispiel: 'Implementiere Spielsteuerung'",
+            this._t("chat.ki-vorschlag.faehigkeit"),
+            this._t("chat.ki-vorschlag.physik"),
+            this._t("chat.ki-vorschlag.sternenhimmel"),
+            this._t("chat.ki-vorschlag.kreaturen"),
+            this._t("chat.ki-vorschlag.terrain"),
+            this._t("chat.ki-vorschlag.welt"),
+            this._t("chat.ki-vorschlag.steuerung"),
         ];
         const randomSuggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
         const chatOutput = document.getElementById("chat-output");
         const line = document.createElement("div");
-        line.textContent = `KI-Vorschlag: ${randomSuggestion}`;
+        line.textContent = this._t("chat.ki-vorschlag", { vorschlag: randomSuggestion });
         chatOutput.appendChild(line);
         chatOutput.scrollTop = chatOutput.scrollHeight;
     }
@@ -2713,7 +2764,7 @@ class AnazhRealm_feld_leben {
     _werkLabel(name) {
         const bp = this.state.blueprints && this.state.blueprints[name];
         const rec = !bp && this._foundry && this._foundry.recipes ? this._foundry.recipes[name] : null;
-        return String((bp && bp.label) || (rec && rec.lab) || name).split(/\s[·—(]/)[0];
+        return AnazhRealm._namensKopf((bp && bp.label) || (rec && rec.lab) || name);
     }
 
     // Das Grundriss-Gesetz einer Art: { preset, pre (die Zeile des Gesetzbuchs der Architektur), rec (die des Buchs) } für ein
@@ -2764,29 +2815,31 @@ AnazhRealm.FIELD_CHARACTER = Object.freeze({
     warpAmp: 40,
     warpScale: 1 / 600,
 });
+// Die Namen der Aktionen: je Aktion ihr Schlüssel der Sprach-Tafel (`taste.*`, der Leser ruft `_t`) — die Tasten-Liste, die
+// Hilfe und die Ankunfts-Linse lesen dieselbe Zeile.
 AnazhRealm.KEYBINDING_LABELS = Object.freeze({
-    break: "Abbauen (Architektur / Terrain)",
-    place: "Platzieren (Bau-Modus)",
-    confirmBuild: "Bauen bestätigen",
-    inventory: "Inventar öffnen",
-    cancelBuild: "Bau-Modus verlassen",
-    jump: "Springen",
-    drawerKreaturen: "Hof öffnen (Kreaturen · Nexus · Befehle)",
-    drawerSpieler: "Spieler-Drawer öffnen",
-    drawerWerkstatt: "Werkstatt-Drawer öffnen",
-    drawerEinstellungen: "Einstellungen-Drawer öffnen",
-    cameraToggle: "Kamera: 1st/3rd-Person",
-    swapHands: "Hand tauschen (Off-Hand)",
-    chat: "Gespräch öffnen (sprich mit der Welt)",
+    break: "taste.abbauen",
+    place: "taste.platzieren",
+    confirmBuild: "taste.bauen-bestaetigen",
+    inventory: "taste.inventar",
+    cancelBuild: "taste.bau-verlassen",
+    jump: "taste.springen",
+    drawerKreaturen: "taste.hof",
+    drawerSpieler: "taste.spieler-drawer",
+    drawerWerkstatt: "taste.werkstatt-drawer",
+    drawerEinstellungen: "taste.einstellungen-drawer",
+    cameraToggle: "taste.kamera",
+    swapHands: "taste.hand-tauschen",
+    chat: "taste.gespraech",
     // die Aktionen, die die Tastatur fest trägt und das Gamepad frei bindet (PAD_BELEGUNG, leib.K5)
-    einsteigen: "Aufsitzen/Absitzen · Sitzen · Portal betreten",
-    handbremse: "Handbremse (Fahrt)",
-    sprint: "Sprinten (unter Wasser: tauchen)",
-    rutschen: "Rutschen",
-    zoom: "Fernglas (halten)",
-    hud: "HUD aus/ein",
-    slotVor: "Nächster Hotbar-Slot",
-    slotZurueck: "Voriger Hotbar-Slot",
+    einsteigen: "taste.aufsitzen",
+    handbremse: "taste.handbremse",
+    sprint: "taste.sprinten",
+    rutschen: "taste.rutschen",
+    zoom: "taste.fernglas",
+    hud: "taste.hud",
+    slotVor: "taste.slot-vor",
+    slotZurueck: "taste.slot-zurueck",
 });
 // Der Grund der Natur-Wand im Satz des Spielers (Leser: `SETZ_GRUND` des Ergebnis-Satzes, `confirmBuild` und das Bau-HUD).
 AnazhRealm.NATUR_WAND_GRUND = Object.freeze({

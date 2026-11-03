@@ -335,6 +335,14 @@ async function checkBandW13W14VibePassLibrary({ page, check }) {
         const REG = AnazhRealm.WORLD_REGISTRY;
         // Jeder Registry-Eintrag trägt jetzt eine Beschreibung.
         out.registryHasDesc = Object.values(REG).every((w) => typeof w.desc === "string" && w.desc.length > 0);
+        // spielgang.K5 — Name und Beschreibung tragen ihre Zeile in jeder Sprache; die Identität `label` (signiert) ist
+        // byte-gleich der de-Zeile ihres `name` — kein Auseinanderlaufen von Identität und Anzeige.
+        const T = AnazhRealm.TEXTE;
+        out.registryNamenAusTafel = Object.values(REG).every(
+            (w) =>
+                T.de[w.name] === w.label &&
+                Object.values(T).every((sp) => typeof sp[w.name] === "string" && typeof sp[w.desc] === "string")
+        );
         // Tab + Drawer im DOM.
         out.tabInDom = !!document.querySelector('#topbar .tab[data-tab="bibliothek"]');
         // renderLibraryUI baut eine Karte pro Registry-Welt.
@@ -580,6 +588,10 @@ async function checkBandW13W14VibePassLibrary({ page, check }) {
 
     if (erreichbar(check, "W14 P1: Bibliothek-Tests laufen", w14Results)) {
         check("W14 P1: jeder WORLD_REGISTRY-Eintrag trägt eine Beschreibung", w14Results.registryHasDesc);
+        check(
+            "K5: Name + Beschreibung jeder eingebauten Welt aus der Tafel, label = de-Zeile ihres name",
+            w14Results.registryNamenAusTafel
+        );
         check("W14 P1: Bibliothek-Tab im Topbar", w14Results.tabInDom);
         check("W14 P1: renderLibraryUI baut eine Karte pro Welt", w14Results.cardPerWorld);
         check("W14 P1: Karte zeigt Label + DSL-Vokabular + Stufen-Marke", w14Results.cardShowsDsl);

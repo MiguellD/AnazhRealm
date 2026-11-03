@@ -1201,7 +1201,7 @@ class AnazhRealm {
         const toggle = typeof document !== "undefined" ? document.getElementById("camera-mode-toggle") : null;
         if (toggle) {
             toggle.setAttribute("aria-pressed", next === "third" ? "true" : "false");
-            toggle.textContent = next === "third" ? "Sicht: 3rd" : "Sicht: 1st";
+            toggle.textContent = next === "third" ? this._t("kern.sicht-third") : this._t("kern.sicht-first");
         }
         try {
             localStorage.setItem("anazhRealmCameraMode", next);
@@ -1218,6 +1218,13 @@ class AnazhRealm {
     // (beide + UI-Latches + Status-Bar + Save).
     static get GAME_MODES() {
         return this._einmal("GAME_MODES", Object.freeze(["frieden", "pfad", "schöpfer"]));
+    }
+    // je Modus der Schlüssel seines Namens in der Sprach-Tafel (die Status-Leiste `#status-mode` spricht ihn)
+    static get SPIELMODUS_NAMEN() {
+        return this._einmal(
+            "SPIELMODUS_NAMEN",
+            Object.freeze({ frieden: "modus.frieden", pfad: "modus.pfad", schöpfer: "modus.schoepfer" })
+        );
     }
 
     setGameMode(mode) {
@@ -1258,8 +1265,7 @@ class AnazhRealm {
         // Status-Bar-Item
         const statusItem = document.getElementById("status-mode");
         if (statusItem) {
-            const labels = { frieden: "frieden", pfad: "pfad", schöpfer: "schöpfer" };
-            statusItem.textContent = labels[mode] || mode;
+            statusItem.textContent = AnazhRealm._tafelName(AnazhRealm.SPIELMODUS_NAMEN, mode);
         }
     }
 
@@ -1449,33 +1455,33 @@ class AnazhRealm {
         if (!tooltip) return;
         const stats = (this.state.player && this.state.player.stats) || null;
         if (!stats) {
-            this._hudSchreib(tooltip, "Stats nicht initialisiert");
+            this._hudSchreib(tooltip, this._t("kern.stats-leer"));
             return;
         }
         const lines = [
-            `Schaden       ${(stats.damage || 0).toFixed(1)}`,
-            `Rückschlag    ${(stats.knockback || 0).toFixed(1)}`,
+            this._t("kern.stat-schaden", { wert: (stats.damage || 0).toFixed(1) }),
+            this._t("kern.stat-rueckschlag", { wert: (stats.knockback || 0).toFixed(1) }),
             // KAMPF-GEFÜHL — das Tempo liest die EINE Schwung-Quelle (Schwünge/s =
             // 1/Dauer ∝ 1/√I des Gehaltenen), nicht mehr die attackSpeed-Tag-Parallel-
             // Wahrheit (die als Kreatur-Profil weiterlebt — ihr Körper ist ihre Substanz).
-            `Angriffstempo ${(1 / this._playerSwingDauer()).toFixed(2)}/s`,
-            `Geschwindigk. ${(stats.speed || 0).toFixed(2)}`,
-            `Sprungkraft   ${(stats.jumpPower || 0).toFixed(2)}`,
-            `Präzision     ${(stats.precision || 0).toFixed(2)}`,
-            `Verteidigung  ${(stats.defense || 0).toFixed(1)}`,
-            `Magie-Resist  ${(stats.magicResist || 0).toFixed(2)}`,
-            `Hitze-Resist  ${(stats.heatResist || 0).toFixed(2)}`,
+            this._t("kern.stat-angriffstempo", { wert: (1 / this._playerSwingDauer()).toFixed(2) }),
+            this._t("kern.stat-geschwindigkeit", { wert: (stats.speed || 0).toFixed(2) }),
+            this._t("kern.stat-sprungkraft", { wert: (stats.jumpPower || 0).toFixed(2) }),
+            this._t("kern.stat-praezision", { wert: (stats.precision || 0).toFixed(2) }),
+            this._t("kern.stat-verteidigung", { wert: (stats.defense || 0).toFixed(1) }),
+            this._t("kern.stat-magie-resist", { wert: (stats.magicResist || 0).toFixed(2) }),
+            this._t("kern.stat-hitze-resist", { wert: (stats.heatResist || 0).toFixed(2) }),
         ];
         // Plus equipped + boosts kurz
         const eq = (this.state.player && this.state.player.equipped) || {};
-        if (eq.tool) lines.push(`Werkzeug      ${eq.tool}`);
-        if (eq.weapon) lines.push(`Waffe         ${eq.weapon}`);
-        if (eq.armor) lines.push(`Rüstung       ${eq.armor}`);
+        if (eq.tool) lines.push(this._t("kern.stat-werkzeug", { wert: eq.tool }));
+        if (eq.weapon) lines.push(this._t("kern.stat-waffe", { wert: eq.weapon }));
+        if (eq.armor) lines.push(this._t("kern.stat-ruestung", { wert: eq.armor }));
         const boosts = (this.state.player && this.state.player.boosts) || [];
         const now = performance.now() / 1000;
         const activeBoosts = boosts.filter((b) => b.expiresAt > now);
         if (activeBoosts.length > 0) {
-            lines.push(`Boosts        ${activeBoosts.length}`);
+            lines.push(this._t("kern.stat-boosts", { wert: activeBoosts.length }));
         }
         // <br>-getrennt damit das Tooltip schmal bleibt
         this._hudSchreib(tooltip, lines.join("<br>"), "html");
@@ -1837,7 +1843,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.164";
+AnazhRealm.VERSION = "18.546.168";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

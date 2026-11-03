@@ -397,7 +397,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
         const nVorAbsage = st.creatures.length;
         const fb = r.spawnCreatureAt(p.x + 4, p.y, p.z + 4, "happy", "fictional-soul");
         out.unknownSoulAbsage = fb === null && st.creatures.length === nVorAbsage;
-        out.soulLabelFindet = r._pickCreatureSoulName(AnazhRealm.CREATURE_SOULS.wesen.label) === "wesen";
+        out.soulLabelFindet = r._pickCreatureSoulName(r._t(AnazhRealm.CREATURE_SOULS.wesen.label)) === "wesen";
         out.spriteAuraOffset = Math.abs(r._creatureAuraOffsetY(sprite) - 0.75) < 0.01;
         out.wesenAuraOffset = Math.abs(r._creatureAuraOffsetY(wesen) - 0.8) < 0.01;
         out.spawnSpriteWorks = sprite && sprite.userData.soul === "wolf";
@@ -1106,7 +1106,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
         r.selectHotbarSlot(0);
         const hud = document.getElementById("build-mode-hud");
         const hudHtml = hud && hud.innerHTML;
-        out.hudShowsCostInPfad = hudHtml && /stein/.test(hudHtml) && /\(30\)/.test(hudHtml);
+        out.hudShowsCostInPfad = hudHtml && hudHtml.includes(r._stoffName("stein")) && /\(30\)/.test(hudHtml);
 
         r.setGameMode("schöpfer");
         const hudSchoepfer = document.getElementById("build-mode-hud").innerHTML;
@@ -1115,7 +1115,8 @@ async function checkBandWelle6HCreatures({ page, check }) {
         // S2 — frieden-HUD zeigt jetzt die Material-Kosten (wie pfad), nicht „frei".
         r.setGameMode("frieden");
         const hudFrieden = document.getElementById("build-mode-hud").innerHTML;
-        out.hudShowsCostInFrieden = hudFrieden && /stein/.test(hudFrieden) && /\(30\)/.test(hudFrieden);
+        out.hudShowsCostInFrieden =
+            hudFrieden && hudFrieden.includes(r._stoffName("stein")) && /\(30\)/.test(hudFrieden);
 
         // Cleanup: zurück auf frieden + Hotbar-Defaults für nachfolgende Tests.
         // Default-Hotbar (AUSLÖSCHUNGS-WELLE): [stein_block, waterfall, damm, null×6].

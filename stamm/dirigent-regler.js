@@ -17,7 +17,7 @@ class AnazhRealm_dirigent_regler {
             this.state._fpsFrames = 0;
             this.state._fpsElapsed = 0;
             const fpsDiv = typeof document !== "undefined" ? document.getElementById("fps") : null;
-            if (fpsDiv) fpsDiv.innerText = `FPS: ${fps}`;
+            if (fpsDiv) fpsDiv.innerText = this._t("kern.fps", { fps });
             // Leise Konsole: die Zahl lebt im HUD (#fps) + perf-Overlay; geloggt wird nur ein ECHTER Einbruch
             // (> 30 % unter die laufende Referenz, gedrosselt via Referenz-Reset).
             const ref = this._fpsLogRef || fps;
@@ -639,20 +639,56 @@ class AnazhRealm_dirigent_regler {
         const trisK = Math.round((s.renderTris || 0) / 1000);
         const pmesh = this.state.playerMesh && this.state.playerMesh.position;
         const posStr = pmesh ? `${pmesh.x.toFixed(0)}, ${pmesh.y.toFixed(0)}, ${pmesh.z.toFixed(0)}` : "—";
-        div.innerHTML =
-            `PERF-SENSE (der Nexus misst seine Last)\n` +
-            `HUD  <span style="color:${fpsCol}">${fps}</span> fps · Szene ${szenePct}% · ${rc.toFixed(0)}dc · ${trisK}k▲\n` +
-            `POS  ${posStr}  (x,y,z)\n` +
-            `frame  ø ${s.frameMs.toFixed(1)}  max <span style="color:${fmCol}">${fm.toFixed(0)}</span> / soll ${targetMs} ms\n` +
-            `stream ${ph("streaming")}  water ${ph("waterIso")}  arch ${ph("archCulling")}\n` +
-            `creat  ${ph("creatures")}  phys  ${ph("physics")}  rend ${ph("render")} ms\n` +
-            `GPU    ${ph("gpuMs")} ms (${s.gpuQuelle === "echt" ? "echt: timestamp-query" : "proxy: frame−ΣCPU"})\n` +
-            `RLOAD  <span style="color:${rcCol}">${rc.toFixed(0)}</span> draw-calls · ${(s.renderTris / 1e6).toFixed(2)}M tris  (max ${(s.renderCallsMax || 0).toFixed(0)} / ${((s.renderTrisMax || 0) / 1e6).toFixed(2)}M)\n` +
-            `SPIKE  schlimmster ${spikeK} <span style="color:${spCol}">${spikeV.toFixed(0)}</span> ms · frame-max ${fm.toFixed(0)} ms\n` +
-            `REGEL  loadScale <span style="color:${lsCol}">${(s.loadScale * 100).toFixed(0)}%</span>  δ ${(s.frameMs - targetMs).toFixed(1)} ms\n` +
-            `stellgr  streamBudget ${(this.state._voxelStreamBudgetMs || 0).toFixed(1)} ms  waterBudget ${((this.state.atmosphere && this.state.atmosphere.waterIsoBudgetMs) || 0).toFixed(1)} ms\n` +
-            `chunk SYNC ${s.syncBuildN.toFixed(2)}/f (${s.syncBuildMs.toFixed(0)} ms)  worker ${s.workerMeshN.toFixed(2)}/f  q${wq}\n` +
-            `kosten/kreatur ${s.perCreatureMs.toFixed(3)} ms · chunks ${vc} arch ${arch} coll ${coll}`;
+        const gpuMs = ph("gpuMs");
+        div.innerHTML = [
+            this._t("kern.perf-kopf"),
+            this._t("kern.perf-hud", {
+                fps: `<span style="color:${fpsCol}">${fps}</span>`,
+                szene: szenePct,
+                dc: rc.toFixed(0),
+                tris: trisK,
+            }),
+            this._t("kern.perf-pos", { pos: posStr }),
+            this._t("kern.perf-frame", {
+                mittel: s.frameMs.toFixed(1),
+                max: `<span style="color:${fmCol}">${fm.toFixed(0)}</span>`,
+                soll: targetMs,
+            }),
+            `stream ${ph("streaming")}  water ${ph("waterIso")}  arch ${ph("archCulling")}`,
+            `creat  ${ph("creatures")}  phys  ${ph("physics")}  rend ${ph("render")} ms`,
+            this._t(s.gpuQuelle === "echt" ? "kern.perf-gpu-echt" : "kern.perf-gpu-proxy", { ms: gpuMs }),
+            this._t("kern.perf-rload", {
+                dc: `<span style="color:${rcCol}">${rc.toFixed(0)}</span>`,
+                tris: (s.renderTris / 1e6).toFixed(2),
+                dcmax: (s.renderCallsMax || 0).toFixed(0),
+                trismax: ((s.renderTrisMax || 0) / 1e6).toFixed(2),
+            }),
+            this._t("kern.perf-spike", {
+                phase: spikeK,
+                ms: `<span style="color:${spCol}">${spikeV.toFixed(0)}</span>`,
+                max: fm.toFixed(0),
+            }),
+            this._t("kern.perf-regel", {
+                skala: `<span style="color:${lsCol}">${(s.loadScale * 100).toFixed(0)}%</span>`,
+                delta: (s.frameMs - targetMs).toFixed(1),
+            }),
+            this._t("kern.perf-stellgr", {
+                stream: (this.state._voxelStreamBudgetMs || 0).toFixed(1),
+                water: ((this.state.atmosphere && this.state.atmosphere.waterIsoBudgetMs) || 0).toFixed(1),
+            }),
+            this._t("kern.perf-chunk", {
+                sync: s.syncBuildN.toFixed(2),
+                syncms: s.syncBuildMs.toFixed(0),
+                worker: s.workerMeshN.toFixed(2),
+                q: wq,
+            }),
+            this._t("kern.perf-kosten", {
+                ms: s.perCreatureMs.toFixed(3),
+                chunks: vc,
+                arch,
+                coll,
+            }),
+        ].join("\n");
         // V18.293 — die Blackbox-Zeile: der schlimmste erfasste Frame + seine GPU-Lücke
         // (frameMs − CPU-Phasen ≈ Present/GPU — die Zeit, für die der ganze Freeze-Bogen blind war).
         const fr = this.state.flightRecorder;
@@ -660,8 +696,13 @@ class AnazhRealm_dirigent_regler {
             const w = fr.worst[0];
             const wCol = w.frameMs > 100 ? "#ff6b6b" : w.frameMs > 50 ? "#ffd166" : "#8fe98f";
             div.innerHTML +=
-                `\nBLACKBOX schlimmster <span style="color:${wCol}">${w.frameMs}</span> ms` +
-                ` (GPU-Lücke ${w.gpuGapMs} · CPU ${w.cpuSumMs}) · ${fr.frames}F → anazhRealmPerf.json`;
+                "\n" +
+                this._t("kern.perf-blackbox", {
+                    ms: `<span style="color:${wCol}">${w.frameMs}</span>`,
+                    luecke: String(w.gpuGapMs),
+                    cpu: String(w.cpuSumMs),
+                    frames: fr.frames,
+                });
         }
     }
 
@@ -688,7 +729,9 @@ class AnazhRealm_dirigent_regler {
                 '<div id="pp-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px"></div>' +
                 '<div id="pp-buckets" style="margin-top:4px"></div>' +
                 '<div id="pp-worst" style="margin-top:4px;color:#ffb3b3"></div>' +
-                '<div style="margin-top:4px;color:#9fb8d0;font-weight:600">Export: Einstellungen → Leistung → „Perf-Daten exportieren"</div>';
+                '<div style="margin-top:4px;color:#9fb8d0;font-weight:600">' +
+                this._t("kern.perf-export") +
+                "</div>";
             document.body.appendChild(div);
         }
         return div;
@@ -713,7 +756,7 @@ class AnazhRealm_dirigent_regler {
         const fr = this.state.flightRecorder;
         const head = document.getElementById("pp-head");
         if (!s || !head) {
-            if (head) head.textContent = "— fps";
+            if (head) head.textContent = this._t("kern.perf-fps-leer");
             return;
         }
         // ── Kopf: Version (der Screenshot MUSS sie tragen) + die große fps-Zahl ──
@@ -754,7 +797,7 @@ class AnazhRealm_dirigent_regler {
                     ctx.fillText(g + "ms", W - 34, gy - 2);
                 }
                 ctx.fillStyle = "#9fb8d0";
-                ctx.fillText("max-Frame je Sekunde → " + n + "s", 4, 10);
+                ctx.fillText(this._t("kern.perf-ring", { n }), 4, 10);
             }
         }
         // ── Kern-Zahlen (2 Spalten, Label gedimmt / Wert hell) ──
@@ -787,20 +830,24 @@ class AnazhRealm_dirigent_regler {
                 row("tris", Math.round((s.renderTris || 0) / 1000) + "k") +
                 row("heap", heap) +
                 row(
-                    "GPU (" + gpuQ + ")",
+                    this._t("kern.perf-gpu", { quelle: gpuQ }),
                     gpuMs != null ? gpuMs.toFixed(1) + " ms" : "—",
                     gpuMs != null && gpuMs > AnazhRealm.PERF_TARGET_MS ? "#ff8a8a" : undefined
                 ) +
-                row("Szene", szene + "%") +
+                row(this._t("kern.perf-szene"), szene + "%") +
                 row(
-                    "Impostor",
+                    this._t("kern.perf-impostor"),
                     z ? `${z.gebacken}✓ ${z.wartend}○ ${z.gescheitert}✗` : "—",
                     z && z.gescheitert > 0 ? "#ff8a8a" : "#8fe98f"
                 ) +
-                row("LT/s", ltSec ? ltSec.ms.toFixed(0) + " ms" : "—", ltSec && ltSec.ms > 50 ? "#ff8a8a" : undefined) +
-                row("GC", fr ? String(fr.gcN || 0) : "—") +
-                row("Pipes+", (s.pipesNeuProS || 0).toFixed(1) + "/s") +
-                row("Up MB/s", upMBs.toFixed(2), upMBs > 8 ? "#ffd166" : undefined);
+                row(
+                    this._t("kern.perf-lt"),
+                    ltSec ? ltSec.ms.toFixed(0) + " ms" : "—",
+                    ltSec && ltSec.ms > 50 ? "#ff8a8a" : undefined
+                ) +
+                row(this._t("kern.perf-gc"), fr ? String(fr.gcN || 0) : "—") +
+                row(this._t("kern.perf-pipes"), (s.pipesNeuProS || 0).toFixed(1) + "/s") +
+                row(this._t("kern.perf-upload"), upMBs.toFixed(2), upMBs > 8 ? "#ffd166" : undefined);
         }
         // ── Verteilung (die 6 Flugschreiber-Eimer als Prozent-Zeile) ──
         const bk = document.getElementById("pp-buckets");
@@ -808,7 +855,7 @@ class AnazhRealm_dirigent_regler {
             const L = ["<17", "17-33", "33-50", "50-100", "100-200", ">200"];
             const C = ["#4caf50", "#8fe98f", "#ffd166", "#ffab5e", "#ff8a8a", "#ff5252"];
             bk.innerHTML =
-                '<span style="color:#9fb8d0;font-weight:600">ms-Verteilung </span>' +
+                `<span style="color:#9fb8d0;font-weight:600">${this._t("kern.perf-verteilung")} </span>` +
                 fr.buckets
                     .map(
                         (c2, i) => `<span style="color:${C[i]}">${L[i]}:${((c2 / fr.frames) * 100).toFixed(0)}%</span>`
@@ -824,7 +871,7 @@ class AnazhRealm_dirigent_regler {
                     let top = "";
                     try {
                         const e = Object.entries(w.cpu || {}).sort((a, c) => c[1] - a[1])[0];
-                        if (e && e[1] > 0.5) top = ` ${e[0]}:${e[1].toFixed(0)}ms`;
+                        if (e && e[1] > 0.5) top = this._t("kern.perf-phase", { phase: e[0], ms: e[1].toFixed(0) });
                     } catch {
                         /* Anzeige-only */
                     }
@@ -832,7 +879,14 @@ class AnazhRealm_dirigent_regler {
                     // Snapshots ohne das Feld fallen auf den gpuGapMs-Proxy zurück).
                     const g = Number.isFinite(w.gpuMs) ? w.gpuMs : w.gpuGapMs;
                     const gq = w.gpuQuelle === "echt" ? "echt" : "proxy";
-                    return `⚠ ${w.frameMs}ms (GPU ${g} [${gq}] · CPU ${w.cpuSumMs}${top} · ${w.drawCalls}dc)`;
+                    return this._t("kern.perf-worst", {
+                        frame: w.frameMs,
+                        gpu: g,
+                        quelle: gq,
+                        cpu: w.cpuSumMs,
+                        top,
+                        dc: w.drawCalls,
+                    });
                 })
                 .join("<br>");
         }

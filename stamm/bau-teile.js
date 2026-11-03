@@ -2504,7 +2504,7 @@ class AnazhRealm_bau_teile {
                 : v.buckles
                   ? "knickt"
                   : null;
-        const name = String(bp.label || entry.type).split(/\s[·—(]/)[0];
+        const name = AnazhRealm._namensKopf(bp.label || entry.type);
         const g = { pose: { q: new THREE.Quaternion(), um: { x: 0, y: 0, z: 0 }, sinken: 0 } };
         if (grund) {
             const text = v.lines.find((l) => l.sev === "warn" && (grund !== "knickt" || /knickt/.test(l.text))).text;
@@ -2527,7 +2527,9 @@ class AnazhRealm_bau_teile {
                 });
                 g.pose.um = { x: kante.x, y: poly.boden, z: kante.z };
             }
-            this._spielerSagt(`${name}: ${text} — ${faellt ? "es fällt" : "es stürzt ein"}.`);
+            this._spielerSagt(
+                this._t(faellt ? "bauen.sagt-sturz-faellt" : "bauen.sagt-sturz-einsturz", { name, text })
+            );
         } else {
             const rollen = [];
             if (!(entry.affordances && entry.affordances.moveable) && this._rollableFraction(bp, rollen) >= 1) {

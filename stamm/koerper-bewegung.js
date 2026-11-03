@@ -1022,6 +1022,9 @@ class AnazhRealm_koerper_bewegung {
                 nz,
                 footDrop + AnazhRealm.PLAYER_STEP_UP + AnazhRealm.PLAYER_GROUND_SNAP + 4
             );
+            // DIE SCHNEE-DECKE (wetter.K4): der Leib steht um ihren Tritt in ihr, wie jeder Körper (`_koerperGrund`)
+            const terrFels = terrSurf; // die Fels-Grenze trägt die Normale des Hangs
+            if (terrSurf !== null) terrSurf -= this._schneeTrittAt(nx, terrSurf, nz);
             // 8b. Kein Forward-Block: das Gleiten an Wänden übernimmt Schritt 5b (PM_ClipVelocity).
             // 8c. BODEN-SNAP — die effektive Oberfläche = die HÖHERE aus Terrain UND Struktur.
             const effSurf = Math.max(terrSurf === null ? -Infinity : terrSurf, supTop);
@@ -1053,7 +1056,7 @@ class AnazhRealm_koerper_bewegung {
                             traegerStruktur = true;
                         } else {
                             const gN = this._kopplungSlideN || (this._kopplungSlideN = {});
-                            this._fieldGradient(nx, terrSurf, nz, gN);
+                            this._fieldGradient(nx, terrFels, nz, gN);
                             groundNormalY = gN.y;
                             // STEILHANG: Gravitation entlang der Ebene. Auf zu steilem Grund (ny < hang.maxSlopeY — dieselbe
                             // Schwelle wie onSteepSlope, aus dem fail-closed Steilhang-Gesetz) rutscht der Körper:
@@ -3464,22 +3467,24 @@ AnazhRealm.PAD_BELEGUNG = Object.freeze({
     slotZurueck: "Pad14",
     slotVor: "Pad15",
 });
+// Je Knopf des Standard-Layouts der Schlüssel seines Namens in der Sprach-Tafel (`taste.pad-*`, „Pad A" …), Leser
+// `_formatBindingCode`; ein Knopf jenseits des Layouts heißt nach seiner Nummer (`taste.pad-nummer`).
 AnazhRealm.PAD_KNOPF_NAMEN = Object.freeze([
-    "A",
-    "B",
-    "X",
-    "Y",
-    "LB",
-    "RB",
-    "LT",
-    "RT",
-    "Zurück",
-    "Start",
-    "L3",
-    "R3",
-    "↑",
-    "↓",
-    "←",
-    "→",
-    "Home",
+    "taste.pad-a",
+    "taste.pad-b",
+    "taste.pad-x",
+    "taste.pad-y",
+    "taste.pad-lb",
+    "taste.pad-rb",
+    "taste.pad-lt",
+    "taste.pad-rt",
+    "taste.pad-zurueck",
+    "taste.pad-start",
+    "taste.pad-l3",
+    "taste.pad-r3",
+    "taste.pad-hoch",
+    "taste.pad-runter",
+    "taste.pad-links",
+    "taste.pad-rechts",
+    "taste.pad-home",
 ]);

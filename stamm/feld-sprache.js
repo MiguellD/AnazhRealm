@@ -1001,7 +1001,8 @@ class AnazhRealm_feld_sprache {
         const geo = AnazhRealm.EMOTION_GEOMETRY;
         const axes = AnazhRealm.EMOTION_AXES;
         const LABEL = AnazhRealm.EMOTION_LABEL;
-        if (!e) return { dominant: null, valence: 0, arousal: 0, intensity: 0, label: "leer", mix: null };
+        if (!e)
+            return { dominant: null, valence: 0, arousal: 0, intensity: 0, label: this._t("gefuehl.leer"), mix: null };
         let valence = 0;
         let arousal = 0;
         let sumSq = 0;
@@ -1029,14 +1030,14 @@ class AnazhRealm_feld_sprache {
         let label;
         let mix = null;
         if (intensity < 0.2 || !top1) {
-            label = "ruhig"; // wenig Aktivierung → ein ruhiger Grund-Affekt
+            label = this._t("gefuehl.ruhig"); // wenig Aktivierung → ein ruhiger Grund-Affekt
         } else if (top2 && top2v > 0.25 && top2v > 0.5 * top1v && geo[top1].valenz * geo[top2].valenz < 0) {
             // zwei vergleichbar starke Gefühle GEGENSÄTZLICHER Valenz koexistieren
             // → ein voller, ambivalenter Zustand (bittersüß), kein neutraler.
             mix = [top1, top2];
-            label = `Zwiespalt (${LABEL[top1]} und ${LABEL[top2]})`;
+            label = this._t("gefuehl.zwiespalt", { eins: this._t(LABEL[top1]), zwei: this._t(LABEL[top2]) });
         } else {
-            label = LABEL[top1]; // ein klares dominantes Gefühl
+            label = this._t(LABEL[top1]); // ein klares dominantes Gefühl
         }
         return { dominant: top1, valence, arousal, intensity, label, mix };
     }

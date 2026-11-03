@@ -1,10 +1,6 @@
 {
     "zweck": "Die Quelltext-Wand (gate:source-probes, PFLICHT-OFFEN D3 Teil 3): je Datei in scripts/ die Leser von Spiel-Quelltext, die NICHT über den EINEN Absenz-Helfer gehen (window.__fehlt, stammLib.fehlt) — Arten seite (__codeOf/__dokuOf, roher toString), stamm (stammLib.text/textAusRev), datei (readFileSync auf Spiel-Code). liste: Struktur- und Mess-Leser mit Zweck. ratsche: leer seit D3e (17.10.) — kein Präsenz-Leser bleibt, jeder neue ist ROT beim Namen.",
     "liste": {
-        "scripts/audit-strict.cjs": {
-            "zweck": "Werkzeug: der Strikt-Audit zählt Glieder und Rufe des Stamms am AST",
-            "stamm": 3
-        },
         "scripts/diag-altlasten.cjs": {
             "zweck": "Struktur: die EINE Rückkehr-Wand der Gefallenen (Token über Stamm und Kerne, D3b/S2b-Besitz)",
             "stamm": 8,
@@ -80,6 +76,10 @@
         },
         "scripts/diag-schmiede-contract.cjs": {
             "zweck": "Struktur: die Orte der Meshes der Hülle (je `new THREE.Mesh(` seine Funktion) — die Arena der Schmiede baut kein Gerät in der Hülle (w4-arena-welt A4)",
+            "datei": 1
+        },
+        "scripts/diag-sprache.cjs": {
+            "zweck": "Struktur: die Sprach-Wand (gate:sprache, spielgang.K5) liest index.html — Schlüssel statt Text; die Tafel lädt über den Stamm",
             "datei": 1
         },
         "scripts/diag-streu-wahrheit.cjs": {

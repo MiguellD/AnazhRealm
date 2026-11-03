@@ -1863,7 +1863,7 @@ class AnazhRealm_koerper_fahrt {
         if (licht) for (const fa of focusing) for (const p of this._brennpunkte(fa, licht)) punkte.push({ fa, p });
         const name = (e) => {
             const b = e && this.state.blueprints ? this.state.blueprints[e.type] : null;
-            return String((b && b.label) || (e && e.type) || "?").split(/\s[·—(]/)[0];
+            return AnazhRealm._namensKopf((b && b.label) || (e && e.type) || "?");
         };
         const ignitions = [];
         // Das GERITTENE Gefährt brennt nie unter dem Reiter weg (sonst Auto-Dismount aus dem Nichts) —
@@ -1901,16 +1901,16 @@ class AnazhRealm_koerper_fahrt {
             else N.warm.delete(target);
             if (!w.quelle) continue;
             if (vorher < w.zuend / 2 && w.dT >= w.zuend / 2 && w.dT < w.zuend)
-                this._spielerSagt(
-                    `„${name(target)}" glimmt im Brennpunkt von „${name(w.quelle)}" — rück es aus dem Licht, sonst fängt es Feuer.`
-                );
+                this._spielerSagt(this._t("welt.brennpunkt-glimmt", { ding: name(target), linse: name(w.quelle) }));
             if (w.dT >= w.zuend) ignitions.push({ t: target, quelle: w.quelle });
         }
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         for (const { t, quelle } of ignitions) {
             const d = pm ? Math.hypot(t.position.x - pm.x, t.position.z - pm.z) : null;
             this._spielerSagt(
-                `Die Sonne entzündete durch „${name(quelle)}" „${name(t)}"${d != null ? ` (${Math.round(d)} m von dir)` : ""}.`
+                d != null
+                    ? this._t("welt.sonne-entzuendete-weit", { linse: name(quelle), ding: name(t), m: Math.round(d) })
+                    : this._t("welt.sonne-entzuendete", { linse: name(quelle), ding: name(t) })
             );
             if (this.journalAppend) {
                 this.journalAppend(
@@ -2232,7 +2232,7 @@ class AnazhRealm_koerper_fahrt {
         let name = base;
         let n = 2;
         while (this.state.blueprints[name]) name = `${base}_${n++}`;
-        if (!this.createBlueprint(name, def.label ? `${def.label} (Körper)` : name))
+        if (!this.createBlueprint(name, def.label ? this._t("wesen.koerper", { name: def.label }) : name))
             return { ok: false, reason: "create_failed" };
         for (const part of def.bodyParts) {
             this.addPartToBlueprint(name, {

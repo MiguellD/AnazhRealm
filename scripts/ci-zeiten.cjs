@@ -16,7 +16,7 @@ const WORKFLOW = ".github/workflows/check.yml";
 const AUS = "spec/ci/ci-zeiten.json";
 const [JE_SCHRITT, HOECHSTENS] = [7, 40]; // Messungen je Schritt; Läufe höchstens
 const VORBEREITUNG =
-    /^(Set up job|Run actions\/checkout@|Run actions\/setup-node@|Run actions\/cache@|Cache-Schlüssel|System-Libs|Dependencies installieren|Post Run |Complete job)/;
+    /^(Set up job|Run actions\/checkout@|Run actions\/setup-node@|Run actions\/cache@|Cache-Schlüssel|System-Libs|Dependencies installieren|Urteil der Gruppe|Post Run |Complete job)/;
 // die Jobs und ihr Gruppen-Schlüssel („voll 16/18 gpu" → „voll 16", „echt (…)" → „echt")
 const GRUPPE = /^(puls|voll|kopf|echt)(?: (\d+)\/\d+)?/;
 
@@ -190,7 +190,7 @@ function verteile(jetzt, out) {
         );
     const nr = new Map(best.g.flatMap((g, i) => g.n.map((s) => [s, i + 1])));
     const neu = jetzt.jobs.voll.steps
-        .filter((s) => /^\s*matrix\.gruppe\s*==\s*\d+\s*$/.test(String(s.if)))
+        .filter((s) => /matrix\.gruppe == \d+$/.test(String(s.if)))
         .map((s) => nr.get(s));
     let yml = ausDatei(path.join(root, WORKFLOW));
     const block = (job) => {
@@ -206,7 +206,8 @@ function verteile(jetzt, out) {
         .replace(/^( +)- gruppe: \d+\n(?: +klasse: \w+\n| +- gruppe: \d+\n)*/m, (m, x) =>
             best.g.map((g, k) => `${x}- gruppe: ${k + 1}\n${x}  klasse: ${g.klasse}\n`).join("")
         )
-        .replace(/^( +if: matrix\.gruppe == )(\d+)$/gm, (m, x, alt) => x + (neu[zeile++] || alt));
+        // die Gruppen-Zeile samt WEITER (die Bedingung bleibt, die Nummer wandert)
+        .replace(/^( +if: .*matrix\.gruppe == )(\d+)$/gm, (m, x, alt) => x + (neu[zeile++] || alt));
     if (von < 0 || zeile !== neu.length)
         throw new Error(`${WORKFLOW}: ${zeile} Gruppen-Zeilen im Job voll, ${neu.length} Schritte mit Gruppe`);
     yml = yml.slice(0, von) + voll + yml.slice(bis);

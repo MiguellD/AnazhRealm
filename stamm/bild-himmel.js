@@ -2883,7 +2883,9 @@ class AnazhRealm_bild_himmel {
 
     // DIE TEMPERATUR AN DER HÖHE y (stoffe.K3) — die EINE Naht zum Feld des Gelände-Kerns: `_temperaturFeld` das Feld in
     // Wellen (`temperaturFeld`; `traegTage` die Wärme-Trägheit eines Körpers), `_temperaturAt` sein Wert zur Saison
-    // (`seasonPhase`) und Uhr (`timeOfDay`) der Welt. Leser: das Eis (`_eisLinien`) und die Grillen (`_umweltLage`).
+    // (`seasonPhase`) und Uhr (`timeOfDay`) der Welt unter ihrem Wetter (wetter.K4: das Feld `_weatherFieldFor` über den
+    // Übergang des Worts — die Wolke dämpft den Tagesgang, der Regen kühlt). Leser: die Grillen (`_umweltLage`), die Esse, die
+    // Lava, die Zünd-Wärme.
     _temperaturFeld(y, traegTage) {
         return globalThis.__gelaendeCore.temperaturFeld(this._gelaende(), y, traegTage);
     }
@@ -2892,8 +2894,35 @@ class AnazhRealm_bild_himmel {
         return globalThis.__gelaendeCore.temperaturAus(
             this._temperaturFeld(y, traegTage),
             st.seasonPhase,
-            st.timeOfDay
+            st.timeOfDay,
+            this._weatherFieldFor()
         );
+    }
+
+    // DER TRITT IN DIE SCHNEE-DECKE (wetter.K4): wie tief ein Körper an (x, z) auf der gezeichneten Fläche y in die Decke sinkt —
+    // das Gesetz des Kerns (`schneeTrittAm`: die Tiefe der weichen Decke an der Höhe, gedeckt nach dem Weiß der Schneegrenze mit
+    // dem Versatz, den die Welt trägt, `_schneeGilt`) aus der Tafel des Tags der Welt (`_schneeTafel`: je Tag der Saison, je Feld
+    // der Naht, Meer und Stoff des Wassers — nie je Bild). Das Netz zeichnet die Decke (ihr Weiß), der Körper steht in ihr. Leser:
+    // der Grund jedes Körpers (`_koerperGrund`, `_koerperBodenUnter`), die Kapsel (`_stepCharacter`), der Stand der Sicht
+    // (`_standSicht`: Fuß, Huf, Rad). Wo die Tafel keinen Schnee trägt, kostet er einen Vergleich (Lehre 25).
+    _schneeTrittAt(x, y, z) {
+        const T = this._schneeTafel();
+        return T ? globalThis.__gelaendeCore.schneeTrittAm(this._gelaende(), T, x, y, z, this._schneeGilt()) : 0;
+    }
+    _schneeTafel() {
+        const K = globalThis.__gelaendeCore;
+        const L = this._gelaende();
+        const n = K.TEMPERATUR.jahrTage;
+        const ph = this.state.seasonPhase;
+        const tag = Math.floor((typeof ph === "number" ? ph : K.TEMPERATUR.sommerPhase) * n) / n;
+        const W = this._stoff("wasser");
+        const rho = W ? W.rho : NaN; // ohne Zeile bricht der Kern laut beim Namen
+        const c = this._schneeTafelStand;
+        if (c && c.tag === tag && c.feld === this._temperaturFeld && c.wl === L.waterLevel && c.rho === rho)
+            return c.tafel;
+        const tafel = K.schneeTafel(L, tag, (y, tr) => this._temperaturFeld(y, tr), { wasser: W });
+        this._schneeTafelStand = { tag, feld: this._temperaturFeld, wl: L.waterLevel, rho, tafel };
+        return tafel;
     }
 
     // DER SCHNEE-PEGEL AN DER HÖHE y (stoffe.K3-2): das Gesetz des Kerns (`schneePegel`) auf dem Feld dieser Naht zur Saison der

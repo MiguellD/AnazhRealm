@@ -36,10 +36,11 @@ async function checkBandOmegaWerkstattSpiegel({ page, check }) {
         const o = {};
         // ── Ω-W2 physik-wahre Optimierung (die Tat verschiebt die GERECHNETE Größe) ──
         const h = C.AXIS_ACTION_HINTS || {};
+        const tat = (k) => (h[k] ? C._t(h[k]) : ""); // je Achse der Schlüssel ihrer Zeile der Sprach-Tafel
         o.w2Verbs =
-            /Basis|Standfläche/.test(h.stability || "") &&
-            /Lastpfad/.test(h.loadSound || "") &&
-            /Räder|Achse/.test(h.rollable || "");
+            /Basis|Standfläche/.test(tat("stability")) &&
+            /Lastpfad/.test(tat("loadSound")) &&
+            /Räder|Achse/.test(tat("rollable"));
         // ── Ω-W3 das Verdikt (rollen-bewusst; was steht: der Prüf-Satz, gate:werkstatt-weg) ──
         const vWeapon = r._workshopPhysicsVerdict(
             P([pt(0, 0.5, 0, 0.3, 1, 0.3, light), pt(0, 3, 0, 0.4, 4, 0.4, dense)], "weapon")
@@ -2115,7 +2116,9 @@ async function checkBandWCIchWahrheit({ page, check }) {
         // (a) EIN Formatter + drei Konsumenten (KONSUM am Ruf im Nutzer-Zustand).
         out.formatter =
             /sammeln|fehlt/.test(r._machTorHint({ ok: false, reason: "not_enough_material", missing: { eisen: 4 } })) &&
-            /4× eisen/.test(r._machTorHint({ ok: false, reason: "not_enough_material", missing: { eisen: 4 } })) &&
+            r
+                ._machTorHint({ ok: false, reason: "not_enough_material", missing: { eisen: 4 } })
+                .includes(`4× ${r._stoffName("eisen")}`) &&
             /⚒/.test(r._machTorHint({ ok: false, reason: "no_workshop_station", neededDomain: "forging" }));
         // (a) NUTZER-ZUSTAND (§8.7): frieden + leerer Beutel → der Web-Akt scheitert
         // EHRLICH strukturiert, der Hint nennt das fehlende Material. Deterministisch:
@@ -2130,7 +2133,10 @@ async function checkBandWCIchWahrheit({ page, check }) {
         r.setGameMode("frieden");
         const wres = r.wearArmor("ruestung_brustpanzer");
         out.torEhrlich =
-            !!wres && wres.ok === false && wres.reason === "not_enough_material" && /eisen/.test(r._machTorHint(wres));
+            !!wres &&
+            wres.ok === false &&
+            wres.reason === "not_enough_material" &&
+            r._machTorHint(wres).includes(r._stoffName("eisen"));
         out.keinAnlegen = (st.player.equipped && st.player.equipped.armor) === savedArmor;
         // die drei Inline-Konsumenten: Slot-Wechsel, Rezept-Zeile und FERTIGEN sprechen das Mach-Tor an ihrer Stelle
         r._renderInventoryEquip();
