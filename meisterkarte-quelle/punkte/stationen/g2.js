@@ -2035,6 +2035,235 @@ const AFFEKT_K5_PROBEN = (() => {
     ];
 })();
 
+// affekt.K5 #2 (w5-s2-g2, 03.11.): DIE MUSIK ÜBER ZEHN MINUTEN AM ABGRIFF. Eine Welt am Null-Renderer (Mechanik: der Abgriff ist ein
+// OfflineAudioContext, 8 kHz, zwei Kanäle — 0 die Lofi-Schicht des Spiels (`_buildLofiLayer` auf ihrem eigenen Bus), 1 alles übrige,
+// das auf den Master des Klangs geht: Schritt, die Klang-Welt samt Tier-Ruf (`_umweltKlangBauen` auf demselben Kontext; das nächste
+// Tier ruft 6 m vor dem Spieler)). Die Uhr
+// des Kontexts läuft mit `suspend` in Schritten zu 0,25 s, je Schritt ruft die Probe den echten Planer `_lofiTick` (wie symphonyTick);
+// gezählt wird, was er im Graph startet (jede Quelle: Oszillator nach Typ, Puffer), der Einsatz jedes Akkords (`lofi.lastChordAt`) und
+// die Phrase, die die Lead-Stimme spielt (`_lofiMelodyNotes`: Stufe + Tonhöhen und Einsätze im Sechzehntel-Raster). Die Achse ist die
+// ERREGUNG von `auraAt.emotion` am Spieler (global und als Feld, wie Staffel 1): die Achse der höchsten gegen die der tiefsten Erregung
+// (EMOTION_GEOMETRY). Läufe: hoch · tief · hoch mit anderer Saat (das Rauschen) je 60 s, Mittag Sonne; Mittag Sonne · Mittag Sturm ·
+// Mitternacht Sonne · Mittag Sonne mit anderer Saat je 60 s (die Schicht: das Spektrum der Quell-Typen je Lauf); 600 s Mittag Sonne
+// (die Phrasen); 24 s mit Schritt (8 s), Tier-Ruf (13 s) und Gespräch (`grokRender`, 18 s, die Stimme an) gegen denselben Lauf ohne —
+// der Pegel der Musik (Kanal 0, RMS) in den 0,6 s nach jedem Ereignis; das Rauschen bei 4 s.
+async function musik2Lauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const [aus, port, seite] = process.argv.slice(1);
+    const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const server = WB.statikServer();
+    await server.lausche(Number(port));
+    const browser = await WB.starteBrowser({ art: "null", headless: true, frist: 900000 });
+    const page = await browser.newPage();
+    await WB.nullRenderer(page);
+    let out = {};
+    try {
+        await server.zeige(page, 120000, "index.html");
+        await page.waitForFunction(() => window.r && typeof r._gameLoopTick === "function" && r._foundry && r._foundry.recipes, { timeout: 300000, polling: 250 });
+        out = await page.evaluate("(" + seite + ")()");
+    } catch (e) {
+        out = { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 300) };
+    } finally {
+        console.log("MUSIK2 " + JSON.stringify(out));
+        fs.writeFileSync(aus, JSON.stringify(out, null, 1));
+        await browser.close().catch(() => {});
+        server.close();
+        process.exit(0);
+    }
+}
+async function musik2Seite() {
+    const [sy, pm, A] = [st.symphony, st.playerMesh.position, r.constructor];
+    const [GEO, AX] = [A.EMOTION_GEOMETRY, A.EMOTION_AXES];
+    const ach = (v) => AX.reduce((b, a) => (v * ((GEO[a] || {}).erregung || 0) > v * ((GEO[b] || {}).erregung || 0) ? a : b));
+    const [HOCH, TIEF] = [ach(1), ach(-1)];
+    const leer = Object.fromEntries(AX.map((a) => [a, 0]));
+    const alt = { sy: Object.assign({}, sy), emo: st.player.emotions, ef: st.emotionField, mel: r._lofiMelodyNotes, sprache: st.grok.speechEnabled };
+    const setze = (e) => {
+        st.player.emotions = Object.assign({}, leer, e);
+        st.emotionField = new Map([[r._lifeCellKey(pm.x, pm.z), { axes: Object.assign({}, leer, e), t: st.spielZeit }]]);
+    };
+    const SR = 8000;
+    const ereignisTun = (art) => {
+        const p = st.playerMesh.position;
+        if (art === "schritt") return !!r._playSchrittOneShot(r._schrittKlangParams(r._schrittMaterialAt(p.x, p.z, p.y), false, 0));
+        if (art === "ruf") {
+            // das nächste Tier ruft 6 m vor dem Spieler (in Hörweite, `tierRufPegel`), danach steht es, wo es stand
+            const c = (st.creatures || []).filter((x) => x.position).sort((a, b) => a.position.distanceTo(p) - b.position.distanceTo(p))[0];
+            if (!c) return false;
+            const vor = c.position.clone();
+            c.position.set(p.x + 6, p.y, p.z);
+            try {
+                return !!r._tierRuf(c, "freude");
+            } finally {
+                c.position.copy(vor);
+            }
+        }
+        if (art === "gespraech") {
+            st.grok.speechEnabled = true;
+            r.grokRender("Hörst du den Bach dort unten?");
+            return true;
+        }
+        return false;
+    };
+    const fahre = async (L) => {
+        const ctx = new OfflineAudioContext(2, Math.ceil(SR * L.sek), SR);
+        const quellen = [];
+        for (const name of ["createOscillator", "createBufferSource"]) {
+            const f = ctx[name].bind(ctx);
+            ctx[name] = (...a) => {
+                const n = f(...a);
+                const s0 = n.start.bind(n);
+                n.start = (t = 0, ...b) => (quellen.push([Math.max(t, ctx.currentTime), n.type || "puffer"]), s0(t, ...b));
+                return n;
+            };
+        }
+        const zu = ctx.createChannelMerger(2);
+        zu.connect(ctx.destination);
+        const musik = ctx.createGain();
+        musik.connect(zu, 0, 0);
+        const welt = ctx.createGain();
+        welt.connect(zu, 0, 1);
+        r._setWeather(L.wetter || "sunny", "regler");
+        st.weatherEffectTime = -1e9;
+        r.setTimeOfDay(L.uhr == null ? 0.5 : L.uhr, "regler");
+        setze(L.emo || {});
+        Object.assign(sy, { ctx, masterGain: welt, enabled: true, umwelt: null });
+        sy.lofi = r._buildLofiLayer(ctx, musik);
+        sy.lofi.rngState = L.saat >>> 0;
+        if (L.ereignisse) sy.umwelt = r._umweltKlangBauen(ctx, welt, A._umweltGesetz());
+        const akkorde = [];
+        const phrasen = [];
+        r._lofiMelodyNotes = function (d, dur) {
+            const n = alt.mel.call(this, d, dur);
+            phrasen.push(d + ":" + n.map((x) => Math.round(12 * Math.log2(x.freq / A.LOFI_BASE_FREQ)) + "@" + Math.round(x.start / (dur / 16))).join(","));
+            return n;
+        };
+        const fehler = [];
+        const ereignisse = (L.ereignisse || []).map((e) => Object.assign({}, e));
+        const halt = (t) =>
+            ctx.suspend(t).then(() => {
+                try {
+                    r._lofiTick();
+                    if (Number.isFinite(sy.lofi.lastChordAt) && sy.lofi.lastChordAt !== akkorde[akkorde.length - 1]) akkorde.push(sy.lofi.lastChordAt);
+                    for (const e of ereignisse) if (!e.da && t >= e.t) (e.da = true), (e.ok = ereignisTun(e.art));
+                } catch (x) {
+                    if (fehler.length < 3) fehler.push(String((x && x.message) || x).slice(0, 160));
+                }
+                if (t + 0.25 < L.sek - 0.25) halt(t + 0.25);
+                ctx.resume();
+            });
+        halt(0.25);
+        const buf = await ctx.startRendering();
+        r._lofiMelodyNotes = alt.mel;
+        if (sy.umwelt && sy.umwelt.werkstatt) sy.umwelt.werkstatt.terminate();
+        const k0 = buf.getChannelData(0);
+        const rms = (t) => {
+            let s = 0;
+            const [a, b] = [Math.floor((t + 0.05) * SR), Math.floor((t + 0.65) * SR)];
+            for (let i = a; i < b; i++) s += k0[i] * k0[i];
+            return Math.sqrt(s / Math.max(1, b - a));
+        };
+        const typen = {};
+        for (const [, ty] of quellen) typen[ty] = (typen[ty] || 0) + 1;
+        const abst = akkorde
+            .slice(1)
+            .map((x, i) => x - akkorde[i])
+            .sort((a, b) => a - b);
+        return {
+            sek: L.sek,
+            fehler,
+            akkorde: akkorde.length,
+            periode: abst.length ? +abst[abst.length >> 1].toFixed(3) : null,
+            dichte: +(quellen.length / L.sek).toFixed(3),
+            typen,
+            phrasen,
+            ereignisse: ereignisse.map((e) => ({ art: e.art, t: e.t, ok: !!e.ok })),
+            rms: (L.messen || []).map((t) => +rms(t).toExponential(4)),
+        };
+    };
+    const J = { achsen: [HOCH, TIEF] };
+    try {
+        const erregung = (e) => (setze(e), +r._emotionState(r.auraAt(pm.x, pm.z).emotion).arousal.toFixed(2));
+        J.erregung = [erregung({ [HOCH]: 1 }), erregung({ [TIEF]: 1 })];
+        J.hoch = await fahre({ sek: 60, saat: 1, emo: { [HOCH]: 1 } });
+        J.tief = await fahre({ sek: 60, saat: 1, emo: { [TIEF]: 1 } });
+        J.hoch2 = await fahre({ sek: 60, saat: 2, emo: { [HOCH]: 1 } });
+        J.sonne = await fahre({ sek: 60, saat: 1 });
+        J.sturm = await fahre({ sek: 60, saat: 1, wetter: "stormy" });
+        J.nacht = await fahre({ sek: 60, saat: 1, uhr: 0 });
+        J.sonne2 = await fahre({ sek: 60, saat: 2 });
+        const lang = await fahre({ sek: 600, saat: 3 });
+        const zuletzt = new Map();
+        const wieder = [];
+        lang.phrasen.forEach((p, i) => {
+            const zwei = p + "|" + (lang.phrasen[i + 1] || "");
+            if (!/@/.test(zwei)) return;
+            if (zuletzt.has(zwei)) wieder.push([zuletzt.get(zwei), i]);
+            zuletzt.set(zwei, i);
+        });
+        J.lang = { sek: 600, akkorde: lang.akkorde, phrasen: lang.phrasen.length, mitTon: lang.phrasen.filter((p) => /@/.test(p)).length, wieder: wieder.length, beispiel: wieder.slice(0, 3), fehler: lang.fehler };
+        for (const k of ["hoch", "tief", "hoch2", "sonne", "sturm", "nacht", "sonne2"]) delete J[k].phrasen;
+        const EV = [{ art: "schritt", t: 8 }, { art: "ruf", t: 13 }, { art: "gespraech", t: 18 }];
+        const messen = [4, 8, 13, 18];
+        const mit = await fahre({ sek: 24, saat: 4, ereignisse: EV, messen });
+        const ohne = await fahre({ sek: 24, saat: 4, messen });
+        const db = (a, b) => (a > 0 && b > 0 ? +(20 * Math.log10(b / a)).toFixed(2) : null);
+        J.duck = { ereignisse: mit.ereignisse, rauschenDb: db(mit.rms[0], ohne.rms[0]), schrittDb: db(mit.rms[1], ohne.rms[1]), rufDb: db(mit.rms[2], ohne.rms[2]), gespraechDb: db(mit.rms[3], ohne.rms[3]), rms: [mit.rms, ohne.rms], fehler: mit.fehler };
+    } catch (e) {
+        J.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 300);
+    } finally {
+        Object.assign(sy, alt.sy);
+        [st.player.emotions, st.emotionField, st.grok.speechEnabled] = [alt.emo, alt.ef, alt.sprache];
+        r._lofiMelodyNotes = alt.mel;
+    }
+    return J;
+}
+// das Urteil (affekt.K5#2), jede Klausel der Staffel beim Namen: TEMPO aus der Erregung (die Akkord-Periode hoch ≤ 0,9 × tief; die Mutation
+// erreicht auraAt: Erregung hoch > tief) · DICHTE (Quellen je s hoch ≥ 1,2 × tief) · beides über dem Rauschen (hoch ↔ hoch2 unter der
+// Hälfte des Effekts) · WETTER und UHR wechseln die Schicht (L1 der Quell-Typen-Anteile Sonne ↔ Sturm und Sonne ↔ Nacht ≥ 0,2, Sonne ↔
+// Sonne2 ≤ 0,1) · 600 s ohne Wiederholung einer Phrase (zwei Akkorde: Stufe + Lead-Töne, mit ≥ 1 Ton; ≥ 20 Phrasen mit Ton) · DUCK:
+// Schritt, Ruf und Gespräch geschehen und senken die Musik um ≥ 6 dB, das Rauschen ≤ 1 dB
+function musik2Urteil(J) {
+    if (!J) return { gruen: false, zahl: "keine Zeile MUSIK2" };
+    if (J.fehler || !J.hoch || !J.lang || !J.duck) return { gruen: false, zahl: "Lauf: " + (J.fehler || "unvollständig") };
+    const rot = [];
+    const { hoch, tief, hoch2, sonne, sturm, nacht, sonne2, lang, duck } = J;
+    const anteile = (x) => {
+        const n = Object.values(x.typen).reduce((a, b) => a + b, 0) || 1;
+        return Object.fromEntries(Object.entries(x.typen).map(([k, v]) => [k, v / n]));
+    };
+    const l1 = (a, b) => {
+        const [p, q] = [anteile(a), anteile(b)];
+        return +[...new Set([...Object.keys(p), ...Object.keys(q)])].reduce((s, k) => s + Math.abs((p[k] || 0) - (q[k] || 0)), 0).toFixed(3);
+    };
+    if (!(J.erregung[0] > J.erregung[1])) rot.push("die Mutation erreicht die Erregung nicht (" + J.erregung.join(" ↔ ") + ")");
+    const [ph, pt, p2] = [hoch.periode, tief.periode, hoch2.periode];
+    if (!(ph > 0 && pt > 0 && ph <= 0.9 * pt && Math.abs(p2 - ph) < 0.5 * (pt - ph))) rot.push("das Tempo folgt der Erregung nicht (Periode " + ph + " ↔ " + pt + " s, Rauschen " + p2 + ")");
+    const [dh, dt, d2] = [hoch.dichte, tief.dichte, hoch2.dichte];
+    if (!(dh >= 1.2 * dt && Math.abs(d2 - dh) < 0.5 * (dh - dt))) rot.push("die Dichte folgt der Erregung nicht (" + dh + " ↔ " + dt + " Quellen/s, Rauschen " + d2 + ")");
+    const [ls, ln, lr] = [l1(sonne, sturm), l1(sonne, nacht), l1(sonne, sonne2)];
+    if (!(ls >= 0.2 && lr <= 0.1)) rot.push("das Wetter wechselt die Schicht nicht (L1 " + ls + ", Rauschen " + lr + ")");
+    if (!(ln >= 0.2 && lr <= 0.1)) rot.push("die Uhr wechselt die Schicht nicht (L1 " + ln + ", Rauschen " + lr + ")");
+    if (!(lang.mitTon >= 20)) rot.push("zu wenig Phrasen mit Ton (" + lang.mitTon + ")");
+    else if (lang.wieder > 0) rot.push(lang.wieder + " Phrasen wiederholen sich binnen 10 min");
+    const ev = Object.fromEntries((duck.ereignisse || []).map((e) => [e.art, e.ok]));
+    for (const [art, k] of [["schritt", "schrittDb"], ["ruf", "rufDb"], ["gespraech", "gespraechDb"]]) {
+        if (!ev[art]) rot.push(art + ": das Ereignis geschieht nicht");
+        else if (!(duck[k] >= 6)) rot.push("die Musik duckt sich nicht unter " + art + " (" + duck[k] + " dB)");
+    }
+    if (!(duck.rauschenDb !== null && Math.abs(duck.rauschenDb) <= 1)) rot.push("das Rauschen des Ducks " + duck.rauschenDb + " dB");
+    return {
+        gruen: !rot.length,
+        zahl:
+            "Erregung " + J.erregung.join(" ↔ ") + " (" + J.achsen.join("/") + "): Periode " + ph + " ↔ " + pt + " s (Rauschen " + p2 + "), Dichte " + dh + " ↔ " + dt + " Quellen/s (" + d2 +
+            ") · Schicht L1 Sturm " + ls + ", Nacht " + ln + " (Rauschen " + lr + ") · 600 s: " + lang.phrasen + " Phrasen, " + lang.mitTon + " mit Ton, " + lang.wieder +
+            " wiederholt · Duck Schritt " + duck.schrittDb + " · Ruf " + duck.rufDb + " · Gespräch " + duck.gespraechDb + " dB (Rauschen " + duck.rauschenDb + ")" +
+            (rot.length ? " · ROT " + rot.join("; ") : ""),
+    };
+}
+const MUSIK2_BEFEHL = ["node", "-e", "(" + musik2Lauf + ")()", "{AUS}", "{PORT}", String(musik2Seite)];
+
 // ───────── DIE WELT-PROBE der Gruppe II (p3-stationen-g12, 01.11.): luftwasser.K3 · luftwasser.K4 am Null-Renderer ─────────
 // Der Lauf, der Grund und die Form der Zeile sind die der Gruppe I (stationen/g1.js `weltProbe`: EIN Boot, je Probe ihre
 // Seiten-Funktion, die Zeile „WELTPROBE <name> {…}“); hier stehen nur die Proben dieser Gruppe und ihre Urteile.
@@ -2176,6 +2405,254 @@ function bestaeuberUrteil(e) {
     };
 }
 const WELT_G2 = WP.befehl([["fische", fischeProbe], ["bestaeuber", bestaeuberProbe]], [artAmOrt]);
+
+// ───────── DIE WELT-PROBE der Staffel 2 (w5-s2-g2, 03.11.): luftwasser.K3#2 · luftwasser.K4#2 am Null-Renderer — EIN Lauf (Zwillinge) ─────────
+// Derselbe Lauf und Grund wie die Staffel 1 (stationen/g1.js `weltProbe`), eigener Befehl (der Abdruck der Staffel 1 bleibt).
+// DIE GEZEICHNETEN KLEINTIERE AM ORT: je Instanz einer sichtbaren Senke der Täter-Klasse `muster` (`_taeterKlasse`, der Pool
+// `_kleintierZeichnen`: was das Bild trägt, nie die Liste dahinter) im Kreis rM um (x, z) ihre Lage samt Höhe. [{ x, y, z, m }]
+function kleintierAmOrt(r, T, muster, x, z, rM) {
+    const re = new RegExp(muster);
+    const aus = [];
+    const m4 = new T.Matrix4();
+    const p = new T.Vector3();
+    r.state.scene.traverse((m) => {
+        if (!m.isInstancedMesh || !m.visible || !re.test(r._taeterKlasse(m))) return;
+        m.updateMatrixWorld(true);
+        for (let i = 0; i < m.count; i++) {
+            m.getMatrixAt(i, m4);
+            p.setFromMatrixPosition(m4.premultiply(m.matrixWorld));
+            if (Math.hypot(p.x - x, p.z - z) <= rM) aus.push({ x: p.x, y: p.y, z: p.z, m });
+        }
+    });
+    return aus;
+}
+
+// luftwasser.K3#2 — DIE FISCHE MEIDEN DEN SPIELER, FOLGEN DEM PEGEL, SIND UNTER WASSER SICHTBAR. Der Bach wie in der Staffel 1 (die
+// Mitte eines Laufs binnen 1,5 km der Mess-Wiese, nass, mit Strömung); der Spieler 20 m quer daneben, 10 s Takt, das Wetter trocken.
+// (a) MEIDEN: der gezeichnete Trupp am Stand P (Fische binnen 6 m um den Fisch des Bachs mit den meisten Nachbarn) — der Spieler tritt
+// auf P, 5 s Takt: wie viele stehen binnen 3 m um ihn, wie nah ist ihm der nächste Fisch; dann der Spieler zurück, ruheS + 12 s: kehren sie heim
+// (ohne Heimkehr wäre die Flucht ein einmaliges Verstreuen, kein Meiden). (b) DER PEGEL: der echte Weg des Wassers — Sturm (das
+// Wetter-Wort, der Takt der Nässe hebt den Pegel der Welt, `_pegelTakt`, die gezeichneten Chunks bauen im Faden neu), bis der Spiegel am
+// Ort (`_koerperWasser`, die EINE Wasser-Wahrheit am Körper) um ≥ 5 cm steigt (höchstens 240 s), dann 5 s: je Fisch Höhe, Grund und
+// Spiegel vorher ↔ nachher; danach trocken (der Pegel fällt zurück). (c) SICHTBAR UNTER WASSER: die Kamera taucht 4 m vor dem
+// Trupp stromab unter den Spiegel (halbe Säule), blickt auf ihn; das Medium der Kamera aus dem Gesetz des Bilds (`_applyDayNightToScene`:
+// `kameraUnterWasser`, die Sicht `_luftSichtM` der EINEN Luft unter Wasser, LUFT.unterwasserM): je gezeichneter Fisch binnen 15 m,
+// ob er im Kegel der Kamera und vor der Sicht liegt (der Null-Renderer zeichnet kein Pixel — das Bild selbst misst eine GPU-Station).
+async function fische2Probe(r, T, o, G) {
+    const { s, A, takt, stehen, trocken, r3 } = G;
+    const F = A._fischGesetz().F;
+    const W = o.orte.wiese;
+    trocken();
+    let bach = null;
+    for (let d = 0; d <= 1500 && !bach; d += 25)
+        for (let k = 0; k < (d ? 48 : 1) && !bach; k++) {
+            const x = W.x + d * Math.cos((k / 48) * 2 * Math.PI);
+            const z = W.z + d * Math.sin((k / 48) * 2 * Math.PI);
+            const rv = r._hydroRiverAt(x, z);
+            if (rv && rv.centerness > 0.7 && r._waterFlowAt(x, z) && r._nassAt(x, z)) bach = [x, z];
+        }
+    if (!bach) return { fehler: "kein Bach mit Strömung binnen 1,5 km der Mess-Wiese" };
+    const fische = (x, z, rM) => kleintierAmOrt(r, T, "^tier:fisch", x, z, rM);
+    const fern = [bach[0] + 20, bach[1]];
+    await stehen(fern[0], fern[1]);
+    takt(600);
+    const F0 = fische(bach[0], bach[1], 40);
+    const aus = { bach: bach.map(r3), gesetz: { tiefe: F.tiefe, fluchtM: F.flucht.fluchtM, wegM: F.flucht.wegM, ruheS: F.flucht.ruheS }, fische: F0.length };
+    if (F0.length < 3) return Object.assign(aus, { fehler: "nur " + F0.length + " gezeichnete Fische binnen 40 m des Bachs" });
+    // der Stand P: der Fisch, um den binnen 6 m die meisten stehen (der dichteste Trupp des Bachs)
+    const P = F0.reduce((b, f) => (fische(f.x, f.z, 6).length > fische(b.x, b.z, 6).length ? f : b));
+    const P0 = [P.x, P.z];
+    const n0 = fische(P0[0], P0[1], 6).length;
+    // (a) MEIDEN
+    await stehen(P0[0], P0[1]);
+    takt(300);
+    const pm = s.playerMesh.position;
+    const nah = fische(pm.x, pm.z, 15);
+    const n1 = fische(pm.x, pm.z, 3).length;
+    const dmin = nah.length ? Math.min(...nah.map((f) => Math.hypot(f.x - pm.x, f.z - pm.z))) : null;
+    await stehen(fern[0], fern[1]);
+    takt((F.flucht.ruheS + 12) * 60);
+    const n2 = fische(P0[0], P0[1], 6).length;
+    aus.meiden = { stand: P0.map(r3), vorher: n0, spielerAmStand: n1, naechsterM: r3(dmin), heim: n2 };
+    // (b) DER PEGEL
+    const lage = () =>
+        fische(bach[0], bach[1], 40).map((f) => {
+            const bett = r._voxelSurfaceY(f.x, f.z);
+            return { x: f.x, z: f.z, y: f.y, bett, spiegel: r._koerperWasser(f.x, f.z, bett) };
+        });
+    const vor = lage();
+    const spiegel0 = r._koerperWasser(P0[0], P0[1], r._voxelSurfaceY(P0[0], P0[1]));
+    s.weatherEffectTime = 0; // der Mess-Halt des Grunds (`trocken`, `_messHalt`) fällt: er hielte das Wort des Sturms
+    r._setWeather("stormy", "human");
+    let sek = 0;
+    const spur = [];
+    for (; sek < 240; sek++) {
+        takt(60);
+        await new Promise((ok) => setTimeout(ok, 30)); // der Faden baut die Chunks des neuen Pegels (die Antwort braucht die Ereignis-Schleife)
+        const sp = r._koerperWasser(P0[0], P0[1], r._voxelSurfaceY(P0[0], P0[1]));
+        if (sek % 20 === 0) spur.push([sek, r3(r._weatherFieldFor().rain), r3(sp)]);
+        if (sp - spiegel0 >= 0.05) break;
+    }
+    for (let i = 0; i < 10; i++) takt(30), await new Promise((ok) => setTimeout(ok, 30));
+    const nach = lage();
+    const spiegel1 = r._koerperWasser(P0[0], P0[1], r._voxelSurfaceY(P0[0], P0[1]));
+    trocken();
+    const mittel = (L, f) => (L.length ? r3(L.reduce((a, x) => a + f(x), 0) / L.length) : null);
+    aus.pegel = {
+        sekunden: sek,
+        spur,
+        spiegel: [r3(spiegel0), r3(spiegel1)],
+        vor: { n: vor.length, y: mittel(vor, (f) => f.y), spiegel: mittel(vor, (f) => f.spiegel), anteil: mittel(vor, (f) => (f.y - f.bett) / Math.max(1e-3, f.spiegel - f.bett)) },
+        nach: { n: nach.length, y: mittel(nach, (f) => f.y), spiegel: mittel(nach, (f) => f.spiegel), anteil: mittel(nach, (f) => (f.y - f.bett) / Math.max(1e-3, f.spiegel - f.bett)),
+            ueber: nach.filter((f) => f.y > f.spiegel).length },
+    };
+    // (c) SICHTBAR UNTER WASSER — der Trupp daheim, die Kamera taucht
+    await stehen(fern[0], fern[1]);
+    takt((F.flucht.ruheS + 12) * 60);
+    const trupp = fische(P0[0], P0[1], 6);
+    if (!trupp.length) return Object.assign(aus, { sicht: { fehler: "der Trupp ist nicht daheim" } });
+    const M = new T.Vector3(trupp.reduce((a, f) => a + f.x, 0) / trupp.length, trupp.reduce((a, f) => a + f.y, 0) / trupp.length, trupp.reduce((a, f) => a + f.z, 0) / trupp.length);
+    // die Kamera 4 m stromab des Trupps (die Strömung trägt zu ihr), der Blick stromauf auf ihn
+    const w = r._waterFlowAt(M.x, M.z) || { x: 1, z: 0 };
+    const wn = Math.hypot(w.x, w.z) || 1;
+    const kx = M.x + (w.x / wn) * 4;
+    const kz = M.z + (w.z / wn) * 4;
+    const kb = r._voxelSurfaceY(kx, kz);
+    const ks = r._koerperWasser(kx, kz, kb);
+    const cam = s.camera;
+    cam.position.set(kx, kb + 0.5 * Math.max(0, ks - kb), kz);
+    cam.lookAt(M);
+    cam.updateMatrixWorld(true);
+    cam.updateProjectionMatrix();
+    r._applyDayNightToScene();
+    const unter = !!s.kameraUnterWasser;
+    const sichtM = r._luftSichtM(cam.position.y);
+    const kegel = new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
+    const L15 = fische(kx, kz, 15);
+    const imBild = L15.filter((f) => kegel.containsPoint(new T.Vector3(f.x, f.y, f.z)) && cam.position.distanceTo(new T.Vector3(f.x, f.y, f.z)) <= sichtM);
+    aus.sicht = { kamera: [kx, cam.position.y, kz].map(r3), saeule: r3(ks - kb), unterWasser: unter, sichtM: r3(sichtM), trupp: trupp.length, binnen15: L15.length, imBild: imBild.length,
+        naechsterM: imBild.length ? r3(Math.min(...imBild.map((f) => cam.position.distanceTo(new T.Vector3(f.x, f.y, f.z))))) : null };
+    takt(2);
+    return aus;
+}
+// das Urteil (luftwasser.K3#2): (a) ≥ 3 Fische im Trupp (binnen 6 m um P), mit dem Spieler auf P ≤ 20 % davon binnen 3 m um ihn und
+// kein Fisch näher als 3 m, nach seinem Gehen ≥ 60 % daheim; (b) der Spiegel steigt ≥ 5 cm, die Fische steigen mit ≥ ½ × tiefe × Hub (sie halten ihren Anteil
+// der Säule), keiner über dem Spiegel; (c) die Kamera ist unter Wasser, ≥ 3 Fische im Kegel vor der Sicht des Wassers
+function fische2Urteil(e) {
+    if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE fische2" };
+    if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler };
+    const [m, p, v] = [e.meiden || {}, e.pegel || {}, e.sicht || {}];
+    const rot = [];
+    if (!(m.vorher >= 3)) rot.push("der Trupp trägt " + m.vorher + " Fische (Soll ≥ 3)");
+    else {
+        if (!(m.spielerAmStand <= Math.floor(0.2 * m.vorher) && m.naechsterM !== null && m.naechsterM >= 3)) rot.push("sie meiden den Spieler nicht");
+        if (!(m.heim >= Math.ceil(0.6 * m.vorher))) rot.push("sie kehren nicht heim");
+    }
+    const hub = p.spiegel && p.spiegel[1] - p.spiegel[0];
+    const dy = p.vor && p.nach && p.nach.y - p.vor.y;
+    const tiefe = (e.gesetz && e.gesetz.tiefe) || 0;
+    if (!(hub >= 0.05)) rot.push("der Pegel steigt nicht (die Probe ist blind)");
+    else if (!(p.nach.n >= 3 && dy >= 0.5 * tiefe * hub)) rot.push("sie folgen dem Pegel nicht");
+    if (p.nach && p.nach.ueber > 0) rot.push(p.nach.ueber + " Fische über dem Spiegel");
+    if (v.fehler) rot.push("Sicht: " + v.fehler);
+    else if (!(v.unterWasser === true)) rot.push("die Kamera taucht nicht (Säule " + v.saeule + " m)");
+    else if (!(v.imBild >= 3)) rot.push("unter Wasser sichtbar " + v.imBild + " (Soll ≥ 3)");
+    const f = (x) => (x == null ? "—" : x);
+    return {
+        gruen: !rot.length,
+        zahl: "Bach " + (e.bach || []).join("/") + ": Trupp " + f(m.vorher) + " Fische, Spieler am Stand → " + f(m.spielerAmStand) + " binnen 3 m, der nächste " + f(m.naechsterM) +
+            " m, heim " + f(m.heim) + " · Pegel " + (p.spiegel || []).join(" → ") + " m nach " + f(p.sekunden) + " s Sturm, Fische " + f(p.vor && p.vor.y) + " → " + f(p.nach && p.nach.y) +
+            " m (Anteil der Säule " + f(p.vor && p.vor.anteil) + " → " + f(p.nach && p.nach.anteil) + ") · unter Wasser " + f(v.unterWasser) + ", Sicht " + f(v.sichtM) + " m, im Bild " +
+            f(v.imBild) + " von " + f(v.binnen15) + (rot.length ? " · ROT " + rot.join(", ") : "") +
+            " (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ ½·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht)",
+    };
+}
+
+// luftwasser.K4#2 — DIE BESTÄUBER FOLGEN DER PFLEGE-GESTE UND DER UHR. Sommer, trocken, Mittag; die Zelle des Lebens-Felds unter der
+// Mess-Wiese (Mitte) und die Nachbarzelle zwei Zellen daneben (wie feld.K5), der Spieler dazwischen; der Takt des Spiels in Schritten zu
+// 0,1 s (die Aktivität folgt dem Feld mit traegS: die Uhr braucht Minuten). Je Lesung 20 Proben im Abstand 1 s: die gezeichneten
+// Bestäuber (Täter-Klasse tier:bestaeuber) im Kreis der halben Zelle um Mitte und Nachbar, gemittelt. vorher · nach 60 s Ruhe (das
+// Rauschen) · 60 s nach der Pflege-Geste (die DSL-Op `deposit_life` am Ort der Mitte, Menge LIFE_FIELD.max, der Weg von feld.K5);
+// dann die Uhr: Mitternacht (3 × traegS), wieder Mittag (3 × traegS) — die Summe beider Kreise.
+async function bestaeuber2Probe(r, T, o, G) {
+    const { s, A, stehen, trocken, r3 } = G;
+    s.autoSeason = false;
+    r.setSeason("sommer");
+    trocken();
+    s.weatherEffectTime = 0; // der Mess-Halt fällt (`_messHalt` hielte die Geste als Welt-Akt); das Wort des Spielers (sonnig) hält das Wetter
+    let t = performance.now();
+    const lauf = (sek) => {
+        for (let i = 0; i < sek * 10; i++) r._gameLoopTick((t += 100));
+    };
+    const B = A._bestaeuberGesetz().B;
+    const C = A.LIFE_FIELD.cell;
+    const W = o.orte.wiese;
+    const cx = Math.floor(W.x / C);
+    const cz = Math.floor(W.z / C);
+    const mitte = [(cx + 0.5) * C, (cz + 0.5) * C];
+    const nachbar = [(cx + 2.5) * C, (cz + 0.5) * C];
+    const stand = [(cx + 1.5) * C, (cz + 0.5) * C];
+    const lies = () => {
+        let [m, n] = [0, 0];
+        for (let k = 0; k < 20; k++) {
+            lauf(1);
+            m += kleintierAmOrt(r, T, "^tier:bestaeuber", mitte[0], mitte[1], C / 2).length;
+            n += kleintierAmOrt(r, T, "^tier:bestaeuber", nachbar[0], nachbar[1], C / 2).length;
+        }
+        return { mitte: r3(m / 20), nachbar: r3(n / 20), feld: [r3(r.auraAt(mitte[0], mitte[1]).lebendig), r3(r.auraAt(nachbar[0], nachbar[1]).lebendig)], aktiv: r3(r._bestaeuberAktiv) };
+    };
+    await stehen(stand[0], stand[1]);
+    lauf(30);
+    const vor = lies();
+    lauf(40);
+    const ruhe = lies();
+    s.playerMesh.position.set(mitte[0], G.y(mitte[0], mitte[1]) + A.PLAYER_FOOT_OFFSET, mitte[1]);
+    const akt = r.dslRun(["deposit_life", null, A.LIFE_FIELD.max], { source: "spieler" });
+    const geste = [r3(r.auraAt(mitte[0], mitte[1]).lebendig), r3(s.spielZeit)];
+    await stehen(stand[0], stand[1]);
+    lauf(40);
+    const nach = lies();
+    geste.push(r3(s.spielZeit));
+    r.setTimeOfDay(0, "regler");
+    lauf(3 * B.traegS);
+    const nacht = lies();
+    r.setTimeOfDay(0.5, "regler");
+    lauf(3 * B.traegS);
+    const tag = lies();
+    return { zelleM: C, mitte, nachbar, traegS: B.traegS, akt: !!akt, geste, vor, ruhe, nach, nacht, tag };
+}
+// das Urteil (luftwasser.K4#2): die Geste hebt das Feld der Mitte (≥ 0,1); die Bestäuber der Mitte steigen über das Doppelte des Rauschens
+// (+≥ 0,5 und +≥ 25 %), die der Nachbarzelle bleiben im Rauschen (+0,5); die Uhr: Mittag ≥ 1 im Mittel beider Kreise, Mitternacht ≤ 0,2 ×
+// Mittag nach der Geste, der Mittag danach ≥ 0,7 × davor (die Uhr, nie ein Verfall)
+function bestaeuber2Urteil(e) {
+    if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE bestaeuber2" };
+    if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler };
+    const { vor, ruhe, nach, nacht, tag } = e;
+    const rausch = Math.max(Math.abs(ruhe.mitte - vor.mitte), Math.abs(ruhe.nachbar - vor.nachbar));
+    const hub = nach.feld[0] - ruhe.feld[0];
+    const dm = nach.mitte - ruhe.mitte;
+    const dn = nach.nachbar - ruhe.nachbar;
+    const summe = (x) => x.mitte + x.nachbar;
+    const r3 = (x) => Math.round(x * 1000) / 1000;
+    const rot = [];
+    if (!(hub >= 0.1)) rot.push("die Geste hebt das Feld nicht");
+    if (!(summe(ruhe) >= 1)) rot.push("keine Bestäuber am Ort (die Probe ist blind)");
+    else if (!(dm >= Math.max(0.5, 2 * rausch, 0.25 * ruhe.mitte))) rot.push("sie folgen der Pflege-Geste nicht");
+    if (!(Math.abs(dn) <= rausch + 0.5)) rot.push("die Nachbarzelle bewegt sich");
+    if (!(summe(nach) >= 1 && summe(nacht) <= 0.2 * summe(nach))) rot.push("sie folgen der Uhr nicht (Nacht)");
+    if (!(summe(tag) >= 0.7 * summe(nach))) rot.push("der Mittag kehrt nicht zurück");
+    return {
+        gruen: !rot.length,
+        zahl: "Feld der Mitte " + ruhe.feld[0] + " → " + nach.feld[0] + " · Bestäuber der Mitte " + vor.mitte + "/" + ruhe.mitte + " → " + nach.mitte + " nach der Geste, Nachbar " +
+            vor.nachbar + "/" + ruhe.nachbar + " → " + nach.nachbar + " (Rauschen ±" + r3(rausch) + ") · Uhr: Mittag " + r3(summe(nach)) + " → Mitternacht " + r3(summe(nacht)) +
+            " (Aktivität " + nacht.aktiv + ") → Mittag " + r3(summe(tag)) + (rot.length ? " · ROT " + rot.join(", ") : "") +
+            " (Soll: Mitte +≥ max(0,5; 2·Rauschen; 25 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag)",
+    };
+}
+const WELT_G2_S2 = WP.befehl([["bestaeuber2", bestaeuber2Probe], ["fische2", fische2Probe]], [kleintierAmOrt]);
+// DIE ROH-AUSGABE der Welt-Probe der Staffel 2 am main 5fba36ea (03.11., Cloud, headless): die Proben beider Stationen urteilen sie
+const WELT_ROH3 = {"bestaeuber2": {"zelleM": 16, "mitte": [-280, -1048], "nachbar": [-248, -1048], "traegS": 90, "akt": true, "geste": [1, 118.451, 178.952], "vor": {"mitte": 7.7, "nachbar": 7.85, "feld": [0.855, 0.658], "aktiv": 1}, "ruhe": {"mitte": 6.9, "nachbar": 8.15, "feld": [0.855, 0.658], "aktiv": 1}, "nach": {"mitte": 7.9, "nachbar": 8.2, "feld": [1, 0.658], "aktiv": 1}, "nacht": {"mitte": 0.5, "nachbar": 0, "feld": [0.897, 0.658], "aktiv": 0.04}, "tag": {"mitte": 8.35, "nachbar": 8.15, "feld": [0.859, 0.658], "aktiv": 0.962}}, "fische2": {"bach": [-309.768, -822.525], "gesetz": {"tiefe": 0.4, "fluchtM": 4.5, "wegM": 10, "ruheS": 8}, "fische": 27, "meiden": {"stand": [-300.982, -817.567], "vorher": 12, "spielerAmStand": 0, "naechsterM": 4.894, "heim": 12}, "pegel": {"sekunden": 2, "spur": [[0, 0.046, 25.853]], "spiegel": [25.853, 26.053], "vor": {"n": 27, "y": 25.179, "spiegel": 25.524, "anteil": 0.368}, "nach": {"n": 27, "y": 25.248, "spiegel": 25.724, "anteil": 0.333, "ueber": 0}}, "sicht": {"kamera": [-299.01, 25.315, -813.827], "saeule": 0.63, "unterWasser": true, "sichtM": 30, "trupp": 12, "binnen15": 16, "imBild": 9, "naechsterM": 3.877}}};
+const weltRoh3 = (name, aendern) => "WELTPROBE " + name + " " + JSON.stringify(aendern(JSON.parse(JSON.stringify(WELT_ROH3[name]))));
 
 // ───────── haar.K3 — DAS HAAR IM EINEN WIND (p3-stationen-g12, 01.11.) ─────────
 // DIE SZENE (in der Seite der Werkbank, r = Welt, T = THREE): am Ort des Spielers die Bühne (Mittag, Sonne, Sommer), der Spieler steht;
@@ -3534,6 +4011,21 @@ const stationen = [
         pfad: ["stamm/klang.js", "klang-core.js", "stamm/feld-leben.js", "stamm/feld-sprache.js", "stamm/studio-bruecke.js", "scripts/lib/welt-boot.cjs"],
         quelle: "1 = ein Leser: Tonart/Modus folgt der Valenz von `auraAt.emotion` am Spieler (die Mutation der Achse ändert die Spektral-Merkmale am Abgriff)",
     },
+    // ───────── affekt.K5#2 (w5-s2-g2) — die Musik über zehn Minuten am Abgriff (musik2Lauf, musik2Seite, musik2Urteil oben). Die Staffel nennt
+    // kein Gerät: headless (Mechanik am OfflineAudioContext, wie Staffel 1).
+    {
+        kriterium: "affekt.K5",
+        staffel: 2,
+        geraet: "headless",
+        befehl: MUSIK2_BEFEHL,
+        gpu: false,
+        zeit: false,
+        minuten: 10,
+        urteil: (j, lauf) => musik2Urteil(j || jsonZeile(lauf.stdout, /^MUSIK2 /)),
+        proben: [],
+        pfad: ["stamm/klang.js", "klang-core.js", "stamm/feld-leben.js", "stamm/feld-sprache.js", "stamm/werkstatt-hud.js", "stamm/studio-bruecke.js", "scripts/lib/welt-boot.cjs"],
+        quelle: "2 = Tempo und Dichte aus der Erregung, Wetter und Uhr wechseln die Schicht, keine Phrase wiederholt sich binnen 10 min, die Musik duckt sich unter Schritt, Ruf und Gespräch um ≥ 6 dB",
+    },
 
     // ───────── oekologie.K2 / K1 / K5 — Zweig oeko-bestand-k2 (tetrapoda BESTAND_GESETZ, UMWEG_GESETZ) ─────────
     // Proben der Kreatur-Linse (Null-Renderer, R3: sie messen ein Gesetz). kaskade: der echte Lebenszyklus
@@ -4578,6 +5070,51 @@ const stationen = [
         ],
         pfad: ["stamm/vegetation-*.js", "stamm/kreatur-*.js", "stamm/feld-*.js", "stamm/dirigent-*.js", "tetrapoda-core.js", "phyto-core.js", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs", "spec/profiband/haushalt.json"],
         quelle: "1 = die Dichte der Bestäuber korreliert mit dem Blüten-Anteil am Ort (r ≥ 0,5)",
+    },
+    // ───────── luftwasser.K3#2 · luftwasser.K4#2 (w5-s2-g2) — DIE WELT-PROBE der Staffel 2 (fische2Probe, bestaeuber2Probe oben), EIN Lauf
+    // (Zwillinge). Die Staffel nennt kein Gerät: headless (Null-Renderer).
+    {
+        kriterium: "luftwasser.K3",
+        staffel: 2,
+        geraet: "headless",
+        befehl: WELT_G2_S2,
+        gpu: false,
+        zeit: false,
+        minuten: 12,
+        urteil: (j, lauf) => fische2Urteil(WP.zeile(j, lauf, "fische2")),
+        proben: [
+            { name: "die Messung am main 5fba36ea", stdout: weltRoh3("fische2", (x) => x), gruen: true },
+            { name: "der Trupp bleibt beim Spieler (kein Meiden)", stdout: weltRoh3("fische2", (x) => ((x.meiden.spielerAmStand = 9), (x.meiden.naechsterM = 0.6), x)), gruen: false },
+            { name: "die Flucht verstreut den Trupp für immer (keine Heimkehr)", stdout: weltRoh3("fische2", (x) => ((x.meiden.heim = 2), x)), gruen: false },
+            { name: "der Stand ist fest: der Pegel steigt, die Fische nicht", stdout: weltRoh3("fische2", (x) => ((x.pegel.nach.y = x.pegel.vor.y), x)), gruen: false },
+            { name: "der Pegel steigt nicht (die Probe ist blind)", stdout: weltRoh3("fische2", (x) => ((x.pegel.spiegel = [x.pegel.spiegel[0], x.pegel.spiegel[0]]), x)), gruen: false },
+            { name: "Fische schweben über dem Spiegel", stdout: weltRoh3("fische2", (x) => ((x.pegel.nach.ueber = 4), x)), gruen: false },
+            { name: "die Kamera taucht nicht", stdout: weltRoh3("fische2", (x) => ((x.sicht.unterWasser = false), x)), gruen: false },
+            { name: "unter Wasser liegt kein Fisch vor der Sicht", stdout: weltRoh3("fische2", (x) => ((x.sicht.imBild = 0), x)), gruen: false },
+            { name: "kein Bach", stdout: weltRoh3("fische2", () => ({ fehler: "kein Bach mit Strömung binnen 1,5 km der Mess-Wiese" })), gruen: false },
+        ],
+        pfad: ["stamm/wasser-*.js", "stamm/kreatur-*.js", "stamm/dirigent-*.js", "stamm/bild-himmel.js", "tetrapoda-core.js", "gelaende-core.js", "voxel-worker.js", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs", "spec/profiband/haushalt.json"],
+        quelle: "2 = sie meiden den Spieler, folgen dem Pegel und sind unter Wasser sichtbar (Leib K3)",
+    },
+    {
+        kriterium: "luftwasser.K4",
+        staffel: 2,
+        geraet: "headless",
+        befehl: WELT_G2_S2,
+        gpu: false,
+        zeit: false,
+        minuten: 12,
+        urteil: (j, lauf) => bestaeuber2Urteil(WP.zeile(j, lauf, "bestaeuber2")),
+        proben: [
+            { name: "die Messung am main 5fba36ea: die Uhr ja, die Geste nicht (Mitte +1,0 bei Rauschen ±0,8)", stdout: weltRoh3("bestaeuber2", (x) => x), gruen: false },
+            { name: "die Bestäuber folgen der Geste in ihre Zelle", stdout: weltRoh3("bestaeuber2", (x) => ((x.nach.mitte = 13.9), x)), gruen: true },
+            { name: "die Geste zieht alle Zellen gleich (kein Ort)", stdout: weltRoh3("bestaeuber2", (x) => ((x.nach.mitte = 13.9), (x.nach.nachbar = 14.2), x)), gruen: false },
+            { name: "die Geste hebt das Feld nicht (der Mess-Halt hält den Welt-Akt)", stdout: weltRoh3("bestaeuber2", (x) => ((x.nach.mitte = 13.9), (x.nach.feld = [0.855, 0.658]), x)), gruen: false },
+            { name: "nachts fliegen sie wie am Tag", stdout: weltRoh3("bestaeuber2", (x) => ((x.nach.mitte = 13.9), (x.nacht = Object.assign({}, x.nach)), x)), gruen: false },
+            { name: "nach der Nacht kehrt der Mittag nicht zurück (ein Verfall, keine Uhr)", stdout: weltRoh3("bestaeuber2", (x) => ((x.nach.mitte = 13.9), (x.tag.mitte = 1), (x.tag.nachbar = 1), x)), gruen: false },
+        ],
+        pfad: ["stamm/vegetation-*.js", "stamm/kreatur-*.js", "stamm/feld-*.js", "stamm/dirigent-*.js", "stamm/bild-himmel.js", "tetrapoda-core.js", "phyto-core.js", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs", "spec/profiband/haushalt.json"],
+        quelle: "2 = sie folgen der Pflege-Geste (Feld K5) und der Uhr",
     },
     // ───────── haar.K3 — das Haar im EINEN Wind (haarWindLauf, haarWindSzene oben). Die Staffel nennt kein Gerät: headless (swiftshader).
     // An main 25ac4c0c ROT (Cloud, 4,6 min): das Haar 7 135 px, im Wind ×4 (5,2–6,6 m/s am Ort) 0,093 Luma-Stufen je Bild gegen 0,076
