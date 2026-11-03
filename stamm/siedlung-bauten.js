@@ -146,6 +146,15 @@ class AnazhRealm_siedlung_bauten {
         // Kronen-Gitter throttled neu bauen (einmal je Gang eingehängt).
         const st = this.state;
         const occlOn = st.useOcclusionDemotion !== false && !(st.renderer && st.renderer._isHeadlessNull);
+        // DIE NEUE EPOCHE DER BAUM-GRENZEN (`_stufenSchirm`): die Bäume 60 m um das Auge wählen jetzt, am Abstand ohne Zustand —
+        // ihre Hysterese hing an den alten Grenzen, und der rollende Gang (5 Wechsel je Takt) erreichte sie erst nach Tausenden
+        if (this._baumEpoche) {
+            this._baumEpoche = false;
+            const z0 = this._archStufeZaehler();
+            for (const e of archs || [])
+                if (e && e._lodSpecies && Math.abs(e.position.x - pm.x) + Math.abs(e.position.z - pm.z) < 60)
+                    (e._lodAmAbstand = false), this._archStufeUrteil(e, pm, occlOn, z0);
+        }
         // DIE BEWEGTEN (das EINE Stufen-Gesetz: Bewegte prüfen) urteilen vor der Wache — ihre Kosten tragen sie selbst
         const bewegt = this._archBewegteUrteilen(pm, occlOn);
         // DIE STAND-WACHE: ging die Stufen-Wahl eine volle Runde über alle Einträge, ohne zu wechseln und ohne dass einer

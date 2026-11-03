@@ -1793,12 +1793,22 @@ class AnazhRealm_vegetation_streu {
         const ref = this.state && this.state.lodRef > 0 ? this.state.lodRef : D.lodRef;
         const h = this._schirm().hoehe;
         const M = D.hysteresis;
-        if (h === this._stufenSchirmH && ref === this._stufenSchirmRef && M === this._stufenSchirmM) return;
-        [this._stufenSchirmH, this._stufenSchirmRef, this._stufenSchirmM] = [h, ref, M];
-        D.thresh01 = this._wechselAbstand("tree", 1, ref);
-        D.thresh12 = this._wechselAbstand("tree", 2, ref);
+        if (!(h === this._stufenSchirmH && ref === this._stufenSchirmRef && M === this._stufenSchirmM)) {
+            [this._stufenSchirmH, this._stufenSchirmRef, this._stufenSchirmM] = [h, ref, M];
+            D.thresh01 = this._wechselAbstand("tree", 1, ref);
+            D.thresh12 = this._wechselAbstand("tree", 2, ref);
+        }
+        // die Grenzen der Wahl folgen den Schwellen (EINE Quelle): wer sie stellt — das Gesetz des Schirms oder die Linse der Karte
+        // (`werkbank licht --laub --karte`, die Stufen jedes Baums auf die Karte) —, stellt die Wahl; bis w8-linsen-blick hielt die Wahl
+        // die Grenzen des letzten Schirms, und die Karte des Exemplars erschien nie (licht.K3: Karte und Gestalt 0 Pixel)
+        const B = this._baumGrenzen;
+        if (B && B.M === M && B.grenzen[0].ab === D.thresh01 && B.grenzen[1].ab === D.thresh12) return;
+        // EINE NEUE EPOCHE: die Hysterese der alten Grenzen gilt nicht mehr — die nahen Bäume wählen im nächsten Gang am Abstand
+        // (`_tickArchitectureLOD`); bis dahin hielt sie die Fichte aus 8 m auf L0 (die Hysterese 3,4 m über der Schwelle 0,6)
+        this._baumEpoche = !!B;
         this._baumGrenzen = {
             erste: 0,
+            M,
             grenzen: [D.thresh01, D.thresh12].map((ab, i) => ({ stufe: i + 1, ab, h: M / ab })),
         };
     }
