@@ -12,3 +12,5 @@ w6-baecker 56c21c75 ROT playtest-voll ❌ 4 Invariante(n) verletzt: Φ5 (Q14+Q15
 w6-baecker 56c21c75 OFFEN Korrektur: playtest Φ5 Q14–Q18 war Flake (Gegenprobe 19:12–19:17: Kontrolle f49405a1 + Zweig 004c70f4 2× ✅ Alle Invarianten OK); Familien-gates folgen nach Serie 5
 w6-alter a7827678 ROT check   ✗ R2 DECKE: stamm/kreatur-verhalten.js trägt 4002 Zeilen > 4000 — die Karte teilt ihr Modul (Modul/teil, ein Name der Domäne), dann node scripts/stamm-umzug.cjs --nach-karte
 w5-physik-k5 b8a0f2bc ROT check   ✗ R2 DECKE: stamm/kreatur-verhalten.js trägt 4003 Zeilen > 4000 — die Karte teilt ihr Modul (Modul/teil, ein Name der Domäne), dann node scripts/stamm-umzug.cjs --nach-karte
+w6-alter a7827678 OFFEN Korrektur: R2 DECKE kreatur-verhalten.js 4002 ist Reihenfolge (main 4000); Vorprüfung neu gegen main nach z185 spielgang-decke
+w5-physik-k5 b8a0f2bc OFFEN Korrektur: R2 DECKE kreatur-verhalten.js 4003 ist Reihenfolge (main 4000); Vorprüfung neu gegen main nach z185 spielgang-decke
