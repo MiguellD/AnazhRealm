@@ -1439,6 +1439,66 @@ class AnazhRealm_dirigent_ankunft {
         return T.mix(T.float(1), licht, AnazhRealm._imEinheitsQuadrat(q).mul(K.U.aktiv));
     }
 
+    // DIE SICHT DES GELÄNDES AUF DER CPU am Punkt (x, y, z) zum Licht `L` (normiert): der Lichtmesser des Orts
+    // (`_waagrechtIrradianz`, die Kamera) liest DIESELBE Karte wie jeder Empfänger — das Gitter des Passes (r16f, `hoehen`), derselbe
+    // Marsch je Texel-Mitte (`schritte` × `schrittM`, außerhalb `leerM`), bilinear zwischen den vier Mitten wie die Abtastung von
+    // `_horizontSicht`, derselbe Halbschatten. 1, wo die Karte ruht (`_horizontKarteTakt`: ohne Gitter, ohne Wurf des Lichts, unter
+    // dem Horizont, am Null-Renderer). Bis dahin maß die Kamera am Abend die Sonne, die der Grat dem Ort schon nahm: das Bild der
+    // Mess-Wiese fiel in 0,002 der Uhr um 0,29 EV (Tag-Achse, Radeon; der Grat 660 m vor ihr, die Sonne 7,35° → 6,68°).
+    _horizontSichtAm(x, y, z, L) {
+        const st = this.state;
+        const K = st.horizontKarte;
+        const rend = st.renderer;
+        const dl = st.directionalLight;
+        if (
+            !K ||
+            !K.bereit ||
+            !rend ||
+            rend._isHeadlessNull ||
+            !st.rendererReady ||
+            !dl ||
+            !dl.castShadow ||
+            !(L.y > 0)
+        )
+            return 1;
+        const H = AnazhRealm.HORIZONT_KARTE;
+        const [n, d] = [H.gitter, H.zelleM];
+        const [ox, oz] = [K.U.ursprung.value.x, K.U.ursprung.value.y];
+        const g = K.hoehen.image.data;
+        const halb = THREE.DataUtils.fromHalfFloat;
+        const drin = (u, v) => u >= -0.5 && u <= n - 0.5 && v >= -0.5 && v <= n - 0.5;
+        // bilinear über die Texel-Mitten (Rand geklemmt), wie die Abtastung des Passes und des Empfängers
+        const bilinear = (u, v, f) => {
+            const [i, j] = [Math.floor(u), Math.floor(v)];
+            const [fu, fv] = [u - i, v - j];
+            const c = (a, b) => f(Math.min(n - 1, Math.max(0, a)), Math.min(n - 1, Math.max(0, b)));
+            const [a, b, e, h] = [c(i, j), c(i + 1, j), c(i, j + 1), c(i + 1, j + 1)];
+            return a.map((w, k) => (w * (1 - fu) + b[k] * fu) * (1 - fv) + (e[k] * (1 - fu) + h[k] * fu) * fv);
+        };
+        const hoehe = (wx, wz) => {
+            const [u, v] = [(wx - ox) / d, (wz - oz) / d];
+            return drin(u, v) ? bilinear(u, v, (i, j) => [halb(g[j * n + i])])[0] : -H.leerM;
+        };
+        const flach = Math.max(Math.hypot(L.x, L.z), 1e-4);
+        const [ax, az, tanH] = [L.x / flach, L.z / flach, L.y / flach];
+        const texel = (i, j) => {
+            const [cx, cz] = [ox + i * d, oz + j * d];
+            let [best, weg] = [-H.leerM, 0];
+            for (let k = 1; k <= H.schritte; k++) {
+                const s = k * H.schrittM;
+                const h = hoehe(cx + ax * s, cz + az * s) - tanH * s;
+                if (h > best) [best, weg] = [h, s];
+            }
+            return [best, weg];
+        };
+        const [u, v] = [(x - ox) / d, (z - oz) / d];
+        if (!drin(u, v)) return 1;
+        const [schatten, weg] = bilinear(u, v, texel);
+        const band = Math.max(H.bandM, weg * AnazhRealm.SCHATTEN_KASKADE.sonneTan * 0.5);
+        const t = Math.max(0, Math.min(1, (y - K.U.bezug.value - (schatten - band)) / (2 * band)));
+        return t * t * (3 - 2 * t);
+    }
+
     // DIE SONNEN-SICHT am Welt-Punkt `p` (Vorgabe `positionWorld`): was das direkte Licht von Sonne oder Mond jenseits der Kaskaden
     // trifft — der Horizont des Gelände-Gesetzes (`_horizontSicht`, ferne.K4) × der Wurf der Wolke (`_wolkenSchatten`, licht.K4).
     // Leser: der EINE Knoten der Kaskaden (jeder Empfänger der Welt) und der Licht-Baustein von Feld und Panorama (`_weltLicht`).

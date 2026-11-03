@@ -1851,7 +1851,6 @@ function lichtWeg(opts) {
         window.__buehne({ uhr: opts.uhr });
         await r._himmelFrisch();
         if (!fp) return { fehler: "kein Feld-Pass" };
-        r._weltLichtTakt();
         const pp = st.playerMesh.position, o = new T.Vector3(pp.x, r._voxelSurfaceY(pp.x, pp.z) + 45, pp.z), unten = new T.Vector3(0.001, -1, 0);
         const W = 32, zl = window.__linsenZiel(W, W), rt = zl.rt, alle = [], dl = st.directionalLight, wurf = dl.castShadow;
         // die Normale der senkrechten Fläche: waagrecht, `grad` Grad neben dem Azimut der Sonne — das Auge blickt gegen sie
@@ -1890,6 +1889,8 @@ function lichtWeg(opts) {
         const panoAlt = fp.panoDaten.slice(), WL = Object.values(r._weltLicht().U), wlAlt = WL.map((u) => (u.value.clone ? u.value.clone() : u.value));
         try {
             dl.castShadow = false;
+            // das Licht dieser Uhr, ohne Wurf: die Sonnen-Sicht von Feld und Panorama ruht wie die Kaskaden der Karte (`_sonnenSicht`)
+            r._weltLichtTakt();
             luftZurueck = zl.ohneLuft();
             let welt = await lies(karte, senkrecht ? nh.clone().multiplyScalar(-3) : unten, senkrecht);
             let weg;

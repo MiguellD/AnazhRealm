@@ -212,7 +212,8 @@ class AnazhRealm_bild_himmel {
 
     // DER TAKT DER KARTE (je Bild aus `_weltLichtTakt`, nach der Bild-Uhr): die Mitte ist der Punkt, an dem das Licht über dem
     // Spieler die Schicht quert, auf die Zelle gelegt (dasselbe Gitter der Welt — kein Schwimmen); neu gemalt, wenn die Bild-Uhr
-    // `zugS` weiter ist (der Zug 11 m/s: 1,1 m bei 16 m Zelle), die Deckung oder die Mitte wechselt. Der Null-Renderer malt nichts.
+    // `zugS` weiter ist (der Zug 11 m/s: 1,1 m bei 16 m Zelle), die Deckung oder die Mitte wechselt. Der Null-Renderer malt nichts;
+    // ohne Wurf des Lichts (`castShadow`) ruht der Wurf (1) wie der Horizont (`_horizontKarteTakt`).
     _wolkenKarteTakt() {
         const st = this.state;
         const rend = st.renderer;
@@ -221,6 +222,10 @@ class AnazhRealm_bild_himmel {
         const pm = st.playerMesh || st.camera;
         if (!pm) return;
         const K = this._wolkenKarte();
+        if (!st.directionalLight || !st.directionalLight.castShadow) {
+            K.U.aktiv.value = 0;
+            return;
+        }
         const W = AnazhRealm.WOLKEN_SCHICHT;
         const L = st.weltLicht.U.l0d.value;
         const wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
@@ -2521,7 +2526,11 @@ class AnazhRealm_bild_himmel {
             out[1] += c.g * k;
             out[2] += c.b * k;
         };
-        add(dl.color, dl.intensity * dy);
+        // der Lichtmesser steht am Ort des Spielers: die Sonne, die der Horizont des Gesetzes ihm nimmt, misst er nicht
+        // (`_horizontSichtAm`, dieselbe Karte wie jeder Empfänger); den Wurf der Wolke trägt er im Mittel (lightMul im Richtlicht)
+        const ort = st.playerMesh || st.camera;
+        const sicht = ort && dy > 0 ? this._horizontSichtAm(ort.position.x, ort.position.y, ort.position.z, dir) : 1;
+        add(dl.color, dl.intensity * dy * sicht);
         let himmel = this._himmelsBestrahlung(this._himmelE || (this._himmelE = [0, 0, 0]));
         const A = st.atmoLut;
         if (A) {

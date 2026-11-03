@@ -3004,7 +3004,8 @@ class AnazhRealm_bild_kosten {
     // DER TAKT DER HORIZONT-KARTE (je Bild aus `_weltLichtTakt`, wo das Richtlicht dieses Bilds steht; dazu aus `_atmoTakt`): das
     // Gitter des Gesetzes folgt dem Anker (`_horizontGitterTakt`), die Karte wird neu gemalt, wenn das Licht sich um `lichtRad`
     // gedreht hat oder ein Gitter kam — Kosten an Änderung (Gebot 7), der Null-Renderer zeichnet nichts. Unter dem Horizont, vor
-    // dem ersten Gitter und nach einem Bruch des Fadens ruht die Sicht (1).
+    // dem ersten Gitter, nach einem Bruch des Fadens und ohne Wurf des Lichts (`castShadow`: die Sonnen-Sicht ist ein Schatten wie
+    // die Kaskaden jedes Stoffs) ruht die Sicht (1).
     _horizontKarteTakt() {
         const st = this.state;
         const K = st.horizontKarte;
@@ -3017,7 +3018,7 @@ class AnazhRealm_bild_kosten {
         const L = this._horizontLicht || (this._horizontLicht = new THREE.Vector3());
         L.copy(dl.position);
         if (dl.target) L.sub(dl.target.position);
-        if (!K.bereit || !(L.lengthSq() > 0) || !(L.normalize().y > 0)) {
+        if (!K.bereit || !dl.castShadow || !(L.lengthSq() > 0) || !(L.normalize().y > 0)) {
             K.U.aktiv.value = 0;
             return K;
         }
