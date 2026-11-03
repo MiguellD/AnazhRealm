@@ -395,6 +395,36 @@
         }
     };
 
+    // ── DIE MUSIK AM OHR (affekt.K5 Staffel 2, 03.11., rein additiv — kein bestehender Wert bewegt sich): die Lofi-Schicht
+    //    des Wirts ist EINE Funktion des Felds am Ohr (auraAt(Spieler).emotion · Wetter · Uhr); ihre Zahlen stehen hier.
+    //    tempo   — die ERREGUNG führt das Tempo (Arousal ↔ BPM; die Valenz bleibt bei Tonart und Modus): Genre-bpm ×
+    //              2^(erregung · oktavProErregung), geklemmt auf [min, max]. Ruhe (peace −0,7) dehnt, Staunen (awe 0,9) treibt.
+    //    schicht — Wetter und Uhr wechseln die Schicht DESSELBEN Generators (kein zweiter Musik-Zwilling), je Kanal ein
+    //              weicher Schritt von ab bis voll: regen (WX rain) legt die Hihats auf Sechzehntel (das Rascheln,
+    //              hihatPegel), sturm (WX wind) legt ein Streicher-Tremolo (Sägezahn, Grundton + Quinte eine Oktave unter
+    //              dem Pad, tremoloProSchlag Pulse je Schlag) unter den Akkord, nacht (die EINE Tag-Achse) nimmt Snare und
+    //              Hihats aus dem Groove, der Puls bleibt als Herzschlag (kickPegel).
+    //    phrase  — das Gedächtnis der Melodie: eine Phrase (Stufe + Lead-Töne im Sechzehntel-Raster) kehrt binnen sperrSek
+    //              nicht wieder; die Markov-Wanderung zieht neu (höchstens versuche), sonst gilt die am längsten ungehörte.
+    //    duck    — der Sidechain-Bus der Musik: Schritt, Ruf und Gespräch senken sie um db binnen angriffSek, halten
+    //              haltSek (das Gespräch: Zeichen × sekProZeichen, die Sprechdauer) und lösen in freiSek. ──
+    // prettier-ignore
+    var MUSIK = {
+        tempo: { oktavProErregung: 0.32, min: 0.7, max: 1.4 },
+        schicht: {
+            regen: { ab: 0.3, voll: 0.8, hihatPegel: 0.55 },
+            sturm: { ab: 0.5, voll: 0.9, pegel: 0.08, tremoloProSchlag: 4 },
+            nacht: { ab: 0.4, voll: 0.8, kickPegel: 0.7 }
+        },
+        phrase: { sperrSek: 600, versuche: 12 },
+        duck: {
+            angriffSek: 0.03, freiSek: 0.35,
+            schritt: { db: -9, haltSek: 0.55 },
+            ruf: { db: -10, haltSek: 0.9 },
+            gespraech: { db: -12, haltSek: 1.2, sekProZeichen: 0.07 }
+        }
+    };
+
     // ═══════════════════════════════════════════════════════════════════════
     //  DIE UMWELT (Welle 5 Klang, 05.10.) — die Klang-Gesetze der WELT: was man
     //  an einem Ort hoert, folgt aus dem, was dort IST (Wind · Kronen-Deckung ·
@@ -1615,6 +1645,8 @@
         SCHRITT_TIMBRE: SCHRITT_TIMBRE,
         RHYTHMUS_MUSTER: RHYTHMUS_MUSTER,
         RAUM: RAUM,
+        // affekt.K5 Staffel 2 (rein additiv) — die Musik am Ohr: Tempo · Schicht · Phrase · Duck
+        MUSIK: MUSIK,
         UMWELT: UMWELT,
         umweltTextur: umweltTextur,
         umweltPaket: umweltPaket,

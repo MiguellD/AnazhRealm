@@ -76,6 +76,7 @@ class AnazhRealm_werkstatt_hud {
                     if (match) utterance.voice = match;
                 }
                 window.speechSynthesis.speak(utterance);
+                this._musikDuck("gespraech", text.length); // die Musik tritt unter die Stimme (klang:MUSIK.duck)
             } catch {
                 // Speech-API kann auf manchen Plattformen werfen; stumm fallback.
             }

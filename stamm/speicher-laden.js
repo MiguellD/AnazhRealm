@@ -916,6 +916,10 @@ class AnazhRealm_speicher_laden {
     // Welt-Regeln wiederherstellen: jede FRISCH registriert (born=jetzt, fires=0, _sig neu), das
     // ttl-Fenster einer Nexus-Regel startet neu. Dedup über die Signatur (wie _registerWorldRule) + Cap.
     // Mutiert `state.worldRules` feldweise (kein Wholesale-Replace); ohne Feld bleibt das leere [].
+    // DIE SPERRLISTE GILT AUCH HIER (ultiversum.K2 Staffel 2): ein Stand ist fremde Bytes — eine Fusion, ein Welt-Bündel, ein alter
+    // Platz —, und eine Regel, deren Wirkung den frozen Worldgen pflügt (`RULE_FORBIDDEN_EFFECT_OPS`), fällt am Eingang wie an der
+    // Registrierung (`_isRuleEffectAllowed`), laut beim Namen. Bis w5-s2-g5 übergingen Laden und Fusion die Liste: B's Pflug-Regel
+    // feuerte in der fusionierten Welt (30 s Takt: carveVoxel 30, terrainSteepness 30, 30 Akten).
     _loadStateRestoreWorldRules(state) {
         if (!Array.isArray(state.worldRules)) return;
         const cfg = AnazhRealm.WORLD_RULES;
@@ -930,6 +934,13 @@ class AnazhRealm_speicher_laden {
                 s.effect.length === 0
             )
                 continue;
+            if (!this._isRuleEffectAllowed(s.effect)) {
+                this.log(
+                    `Welt-Regel verworfen: ihre Wirkung ${JSON.stringify(s.effect).slice(0, 80)} schreibt den frozen Worldgen`,
+                    "WARN"
+                );
+                continue;
+            }
             if (restored.length >= cfg.cap) break;
             const source = typeof s.source === "string" ? s.source : "unknown";
             const everySec = this.dslClamp(s.everySec, cfg.minEverySec, 600) || cfg.defaultEverySec;
@@ -2240,7 +2251,8 @@ class AnazhRealm_speicher_laden {
     }
 
     // Regel-Sätze vereinigen: Union + Dedup über die Signatur Quelle|cond|effect (wie _registerWorldRule),
-    // nur die definierenden Felder (Laufzeit-Akkus setzt der Restore), Cap.
+    // nur die definierenden Felder (Laufzeit-Akkus setzt der Restore), Cap; eine Regel, die den frozen Worldgen schreibt, reist nie in die
+    // neue Welt (die Sperrliste der Registrierung, `_isRuleEffectAllowed` — die Welt eines Elternteils kann sie in ihrem Stand tragen).
     _fusionMergeWorldRules(saveA, saveB) {
         const rulesA = Array.isArray(saveA.worldRules) ? saveA.worldRules : [];
         const rulesB = Array.isArray(saveB.worldRules) ? saveB.worldRules : [];
@@ -2249,7 +2261,8 @@ class AnazhRealm_speicher_laden {
         const cap = AnazhRealm.WORLD_RULES.cap;
         for (const list of [rulesA, rulesB]) {
             for (const r of list) {
-                if (!r || !Array.isArray(r.cond) || !Array.isArray(r.effect)) continue;
+                if (!r || !Array.isArray(r.cond) || !Array.isArray(r.effect) || !this._isRuleEffectAllowed(r.effect))
+                    continue;
                 const source = typeof r.source === "string" ? r.source : "unknown";
                 const sig = source + "|" + JSON.stringify(r.cond) + "|" + JSON.stringify(r.effect);
                 if (seen.has(sig)) continue;
