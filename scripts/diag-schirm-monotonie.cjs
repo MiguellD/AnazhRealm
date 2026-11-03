@@ -8,7 +8,8 @@
 //      andere Methode ist ein zweiter Weg und wird mit Zeile genannt — auch über einen Alias des Renderer-Canvas (eine
 //      Variable, der `….domElement` zugewiesen wird, und dort `.width/.height`).
 //   K  KONSUM: `_schirm()` folgt dem Fenster, und das Fell-Gesetz liest ihn im echten Takt — derselbe Wolf im selben
-//      Abstand trägt sein Fell im großen Fenster und im kleinen nicht (ein kleinerer Schirm schaltet früher ab).
+//      Abstand trägt sein Fell im großen Fenster und im kleinen nicht (ein kleinerer Schirm schaltet früher ab); K-fern:
+//      jenseits der Gelenk-Grenze ist sein Fell aus (die Grobstufe ist kahl), zurück an d* kehrt es zurück.
 //   M  MONOTONIE: dieselbe Welt (Bühne Mittag · Sonne · Sommer je Takt gehalten, Tiere still, Regler headless voll,
 //      eingeschwungen, bis sie nicht mehr wächst) in drei Fenstergrößen, gespiegelt (groß → klein → groß), je Größe drei
 //      Proben aus Takten durch den echten Loop: der Szenen-Zensus je Pass (haupt = Kamera-Layer, schatten = castShadow;
@@ -19,7 +20,7 @@
 // VERKEHRT (die Probe-Gruppe `schirmProbe` zeichnet mehr Instanzen, je kleiner der Schirm) → M rot, die Klasse genannt;
 // (b) eine eingeschmuggelte Zeile liest die Canvas-Höhe an `_schirm` vorbei → Q rot, die Methode genannt; (d) dieselbe
 // Lesung über einen Alias (`leinwand = renderer.domElement`, `leinwand.height`) → Q rot; (c) die Quelle eingefroren (ein
-// fester Schirm) → K rot.
+// fester Schirm) → K rot; (e) das alte Fell (das Gesetz entscheidet nur an der feinen Gestalt) → K-fern rot.
 //   node scripts/diag-schirm-monotonie.cjs [--selftest]       (npm run gate:schirm-monotonie)
 "use strict";
 const { statikServer, ROOT: root, hauptLauf, sleep, nullSeite, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
@@ -334,6 +335,45 @@ async function welt() {
     };
 
     const messung = await reihe();
+    // DAS FELL FOLGT DER STUFE (K-fern, w5-stufen): derselbe Wolf jenseits der Gelenk-Grenze (1,5 × `ab` der Grobstufe) — die
+    // Grobstufe ist kahl, `_fellAn` ist false und keine Strähne sichtbar; zurück an d* kehrt das Fell zurück. Vorher trug ein
+    // Tier jenseits (oder im Satz, im Feld) den Zustand seines letzten nahen Takts oder keinen („an“ in jeder Ferne, haar.K5).
+    const fernProbe = () =>
+        page.evaluate(async () => {
+            const w = window.__schirmWolf;
+            const tB = w.userData._tierBaum;
+            const cam = st.camera;
+            const vor = new window.THREE.Vector3();
+            cam.getWorldDirection(vor);
+            vor.y = 0;
+            vor.normalize();
+            const p0 = w.position.clone();
+            const ab = window.__tetrapodaCore.PORTAL_RENDER_CONFIG.lod.budget.kreatur[1].ab * (w.scale.x || 1);
+            const [px, pz] = [cam.position.x + vor.x * 1.5 * ab, cam.position.z + vor.z * 1.5 * ab];
+            const sichtbar = (o) => {
+                for (let x = o; x; x = x.parent) if (!x.visible) return false;
+                return true;
+            };
+            for (let i = 0; i < 20; i++) {
+                w.position.set(px, r._voxelSurfaceY(px, pz) + 0.5, pz);
+                window.__schirmTakt();
+                await sleep(10);
+            }
+            const aus = {
+                d: +cam.position.distanceTo(w.position).toFixed(1),
+                fern: w.userData._gelenk.istFern === true,
+                fell: tB._fellAn,
+                sichtbar: (tB.straehnen || []).filter(sichtbar).length,
+            };
+            for (let i = 0; i < 20; i++) {
+                w.position.copy(p0);
+                window.__schirmTakt();
+                await sleep(10);
+            }
+            aus.zurueck = tB._fellAn;
+            return aus;
+        });
+    const fern = await fernProbe();
     // die EINE Quelle liest den Zeichenpuffer am Ruf
     const quelleLiest = await page.evaluate(() => {
         const ren = st.renderer,
@@ -381,9 +421,21 @@ async function welt() {
         await page.evaluate(() => {
             delete r._schirmMessen;
         });
+        // (e) DAS ALTE FELL: das Gesetz entscheidet nur an der feinen Gestalt (jenseits bleibt der Zustand stehen) — K-fern rot
+        await page.evaluate(() => {
+            const roh = Object.getPrototypeOf(r)._fellBildschirmGesetz;
+            r._fellBildschirmGesetz = function (c, tB, a, gestalt = true) {
+                if (!gestalt) return;
+                return roh.call(this, c, tB, a, gestalt);
+            };
+        });
+        selbst.fern = await fernProbe();
+        await page.evaluate(() => {
+            delete r._fellBildschirmGesetz;
+        });
     }
     await ende();
-    return { boot, messung, selbst, quelleLiest };
+    return { boot, messung, fern, selbst, quelleLiest };
 }
 
 // K: das Fell-Gesetz folgt dem Schirm (Reihe groß → klein → Kontrolle)
@@ -398,6 +450,16 @@ function konsumBefunde(reihe) {
     if (c.fell !== false)
         b.push(`der Wolf trägt im kleinen Fenster (${c.groesse}, ${c.dWolf} m) noch Fell — das Fell-Gesetz liest den Schirm nicht`);
     if (kontrolle.fell !== true) b.push(`zurück im großen Fenster kehrt das Fell nicht zurück (${kontrolle.fell})`);
+    return b;
+}
+
+// K-fern: jenseits der Gelenk-Grenze ist das Fell aus (die Grobstufe ist kahl), zurück an d* kehrt es zurück
+function fernBefunde(f) {
+    const b = [];
+    if (!f || f.fern !== true) return [`der Wolf steht nicht jenseits der Gelenk-Grenze (${f && f.d} m) — die Probe ist blind`];
+    if (f.fell !== false || f.sichtbar > 0)
+        b.push(`jenseits der Gelenk-Grenze (${f.d} m, Grobstufe) trägt der Wolf Fell (_fellAn ${f.fell}, ${f.sichtbar} Strähnen sichtbar) — das Fell folgt der Stufe der Gestalt nicht`);
+    if (f.zurueck !== true) b.push(`zurück an d* kehrt das Fell nicht zurück (_fellAn ${f.zurueck})`);
     return b;
 }
 
@@ -437,6 +499,10 @@ hauptLauf(async () => {
     }
     console.log("=== K · das Fell-Gesetz liest den Schirm ===");
     check("K derselbe Wolf: Fell im großen Fenster, keines im kleinen, zurück im großen", konsumBefunde(w.messung));
+    check(
+        `K-fern derselbe Wolf jenseits der Gelenk-Grenze (${w.fern && w.fern.d} m): kein Fell, zurück an d* wieder Fell`,
+        fernBefunde(w.fern)
+    );
     check("Q die EINE Quelle `_schirmMessen` liest den Zeichenpuffer (getDrawingBufferSize, am Ruf)", w.quelleLiest ? [] : ["kein Ruf"]);
     console.log("=== M · ein kleinerer Schirm trägt höchstens gleich viel (je Pass und Täter-Klasse) ===");
     check("M Befehle und Dreiecke fallen oder halten von groß nach klein (Spannen, beide Klammern)", monotonieBefunde(w.messung));
@@ -481,6 +547,12 @@ hauptLauf(async () => {
             sc.some((x) => /noch Fell|folgt dem Fenster nicht/.test(x)) ? [] : ["K blieb blind"]
         );
         for (const x of sc.slice(0, 2)) console.log(`      (Selbsttest) ${x}`);
+        const se = fernBefunde(w.selbst.fern);
+        check(
+            "S(e) das alte Fell (das Gesetz entscheidet nur an der feinen Gestalt): K-fern rot",
+            se.some((x) => /trägt der Wolf Fell/.test(x)) ? [] : ["K-fern blieb blind: " + (se[0] || "kein Befund")]
+        );
+        for (const x of se.slice(0, 2)) console.log(`      (Selbsttest) ${x}`);
     }
     console.log(ok ? "GRÜN schirm-monotonie" : "ROT schirm-monotonie");
     process.exit(ok ? 0 : 1);
