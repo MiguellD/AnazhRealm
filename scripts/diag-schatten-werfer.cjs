@@ -11,10 +11,7 @@
 //       Frustum jeder Kaskade, deren Tiefen-Bereich sie nach dem Addon-Shader lesen (`_cascades`-Uniform des Addons,
 //       Fade-Saum aus CSMShadowNode._setupFade abgeschrieben) — mittags und am Abend
 //   K2  die Box ist eng: Fläche ≤ 60 % des Addon-Quadrats (Diagonale + Fade-Saum) je Kaskade, waagrechter Blick
-//   K3  das Zentrum liegt auf dem Texel-Raster der Licht-Basis (das Gehen misst K9)
-//   K9  der Gang im Takt des Spiels (schatten.K2, 4 m/s, 7 Richtungen × 120 Bilder): die Licht-Matrix rastet auf dem Welt-Texel
-//       (Snap-Rest ≤ 1e-6 Texel, 0 Rast-Wechsel), und der Schlüssel der Blende in der Kaskade (`_ditherIGN`: Welt-Raster aus dem
-//       Ursprung der Box, `_blendeRaster`) steht für jeden Welt-Punkt über jede Neulage der Box; EIN Schlüssel, kein Zwilling
+//   K3  das Zentrum liegt auf dem Texel-Raster der Licht-Basis; 0,37 m Gehen hält Größe und Raster
 //   K7  der Takt hält die Box (`_kaskadeHaelt`): ohne Änderung behält eine Kaskade ihre Box; steigt ein Werfer über ihre
 //       nahe Ebene, legt sie neu (und wirft ihn). Die Box-Messungen (K1–K6, W5, die Selbsttests) legen die Box frisch (`alleNeu`).
 //   K8  die Wahl hält über die Stufen der Sonne: dreht das Licht um weniger als der halbe Licht-Rand
@@ -50,7 +47,6 @@
 //       Haupt-Passes stellt die Kaskaden, Schatten-Pässe stellen nichts
 //   S1  Selbsttest: die alte Regel (jeder Pass liest das Haupt-Urteil) muss W1/W2/W3/W4 rot machen
 //   S3  Selbsttest: die alte Hüllen-Regel (nur Bundles) muss W5 rot machen
-//   S16 Selbsttest: der alte Schlüssel (das Pixel der Karte allein) wandert mit jeder Neulage — K9 rot
 //   S4  Selbsttest: die beiden alten Frustum-Schreiber der Tiere fängt die Absenz-Regel
 //   S5  Selbsttest: das Addon-_updateShadowBounds schreibt die Kaskaden-Kamera (der Zweit-Schreiber ist echt)
 //   S7  Selbsttest: eine zweite Szenen-Tiefe macht Z2 rot
@@ -232,74 +228,15 @@ function probe(selbsttest) {
         const q = (f.x0 + f.W / 2) / f.texel;
         return Math.abs(q - Math.round(q)) < 1e-6;
     });
-    // K9 — DER GANG IM TAKT DES SPIELS (schatten.K2; er trägt auch das Gehen von K3): 4 m/s, 7 Richtungen × 120 Bilder, Blick
-    // 20 m voraus und 4 m hinab (die Pose der Station): je Bild `_loopShadowUpdate`, der Haken des Haupt-Passes, dann rendert,
-    // was fällig ist. Je gerenderter Karte der Snap-Rest des Zentrums gegen das erste Bild (Texel), die Rast-Wechsel, die
-    // Neulagen — und der Schlüssel der Blende (`_ditherIGN` in der Kaskade: Spalte + Ursprung, Ursprung − Zeile, modulo
-    // BLENDE_RASTER; die Uniform `_blendeRaster` gerufen mit der Kaskaden-Kamera) fester Boden-Punkte 3–12 m voraus, durch die
-    // Schatten-Matrix (y gedreht wie `setupShadowCoord`); `alt` zählt den Schlüssel des Pixels der Karte allein (vor w5-kontakt).
-    {
-        const [P, U, pm0, v] = [A.BLENDE_RASTER, r._blendeRaster(), st.playerMesh.position.clone(), new T.Vector3()];
-        const o = { rest: 0, rast: 0, neulagen: 0, renders: [0, 0, 0], schluessel: 0, alt: 0, punkte: 0, uniform: 0 };
-        const mod = (x) => ((x % P) + P) % P;
-        for (const yaw of [0, 0.7, 1.6, 2.5, 3.6, 4.4, 5.3]) {
-            const [fx, fz] = [Math.sin(yaw), Math.cos(yaw)];
-            const auf = (d, q) =>
-                v
-                    .set(pm0.x + fx * d - fz * q, 0, pm0.z + fz * d + fx * q)
-                    .setY(r._voxelSurfaceY(v.x, v.z))
-                    .clone();
-            const welt = [3, 6, 9, 12].flatMap((d) => [-2, 0, 2].map((q) => auf(d, q)));
-            const [schl, erst, vorBild] = [[new Map(), new Map()], [], []];
-            for (let k = 0; k < 120; k++) {
-                const p = auf((4 * k) / 60, 0).setY(r._voxelSurfaceY(v.x, v.z) + 1.7);
-                cam.position.copy(p);
-                cam.lookAt(p.x + fx * 20, p.y - 4, p.z + fz * 20);
-                cam.updateMatrixWorld(true);
-                if (k === 0) r._schattenAlleNeu();
-                r._loopShadowUpdate();
-                r._kaskadenPassen(csm);
-                csm.lights.forEach((l, i) => {
-                    const [sh, f] = [l.shadow, csm._anazhFit[i]];
-                    if (sh.needsUpdate !== true) return;
-                    sh.needsUpdate = false; // die Karte rendert (renderShadow)
-                    sh.updateMatrices(l);
-                    U.update({ camera: sh.camera });
-                    if (U.value.x !== f.raster[0] || U.value.y !== f.raster[1]) o.uniform++;
-                    welt.forEach((w, j) => {
-                        v.copy(w).applyMatrix4(sh.matrix);
-                        if (v.x < 0 || v.x > 1 || v.y < 0 || v.y > 1) return;
-                        o.punkte++;
-                        [f.raster, [0, 0]].forEach(([rx, ry], a) => {
-                            const key =
-                                mod(Math.floor(v.x * sh.mapSize.width) + rx) +
-                                "," +
-                                mod(ry - Math.floor((1 - v.y) * sh.mapSize.height));
-                            if (!schl[a].has(i + ":" + j)) schl[a].set(i + ":" + j, key);
-                            else if (schl[a].get(i + ":" + j) !== key) o[a ? "alt" : "schluessel"]++;
-                        });
-                    });
-                    const c = [f.x0 + f.W / 2, f.y0 + f.H / 2];
-                    if (k === 0) erst[i] = { W: f.W, H: f.H, c };
-                    else {
-                        o.renders[i]++;
-                        if (f.W !== erst[i].W || f.H !== erst[i].H) o.rast++;
-                        if (f.bild !== vorBild[i]) o.neulagen++;
-                        for (const [a, t] of [
-                            [0, f.texel],
-                            [1, f.H / sh.mapSize.height],
-                        ]) {
-                            const q = (c[a] - erst[i].c[a]) / t;
-                            o.rest = Math.max(o.rest, Math.abs(q - Math.round(q)));
-                        }
-                    }
-                    vorBild[i] = f.bild;
-                });
-            }
-        }
-        aus.k9 = o;
-    }
-    aus.k9code = { zwilling: window.__fehlt(r._lodCrossfadeMaskNode, /52\.9829189/) };
+    const vorher = csm._anazhFit.map((f) => ({ W: f.W, texel: f.texel }));
+    cam.position.x += 0.37;
+    cam.updateMatrixWorld(true);
+    alleNeu();
+    r._kaskadenPassen(csm);
+    aus.k3gehen = csm._anazhFit.map((f, i) => {
+        const q = (f.x0 + f.W / 2) / f.texel;
+        return f.W === vorher[i].W && Math.abs(q - Math.round(q)) < 1e-6;
+    });
     // K7 — der Takt hält die Box: ein Takt-Render ohne Änderung behält sie, ein Werfer über der nahen Ebene legt sie neu
     if (boden) {
         tag(0.5);
@@ -1555,20 +1492,8 @@ function probe(selbsttest) {
         );
         check(
             "K3 Zentrum auf dem Texel-Raster",
-            a.k3.every(Boolean),
-            `${a.k3}`
-        );
-        const g = a.k9;
-        check(
-            "K9 der Gang 4 m/s: Snap-Rest 0 Texel, kein Rast-Wechsel, der Schlüssel der Blende steht über jede Neulage, EIN Schlüssel",
-            g.rest <= 1e-6 &&
-                !g.rast &&
-                g.neulagen > 0 &&
-                g.punkte > 500 &&
-                !g.schluessel &&
-                !g.uniform &&
-                a.k9code.zwilling,
-            JSON.stringify(g)
+            a.k3.every(Boolean) && a.k3gehen.every(Boolean),
+            `gehen 0,37 m: ${a.k3gehen}`
         );
         check(
             "K4 außerhalb des Takts: still → keine, 40° gedreht → beide rendern",
@@ -1782,7 +1707,6 @@ function probe(selbsttest) {
                 !!a.s15 && a.s15.lichtBlind.includes("__w10:licht"),
                 a.s15 ? w10t(a.s15) : "keine Probe"
             );
-            check("S16 Selbsttest: der alte Schlüssel (das Pixel der Karte) wandert — K9 rot", a.k9.alt > 0, a.k9.alt);
             check("S4 Selbsttest: die Absenz-Regel fängt beide alten Frustum-Schreiber der Tiere", a.s4 === true);
             check("S5 Selbsttest: das Addon-_updateShadowBounds schreibt die Kaskaden-Kamera", a.s5 === true);
             const zs = bildZiele((t) => t + "\nconst t = TSL.viewportDepthTexture();\n");

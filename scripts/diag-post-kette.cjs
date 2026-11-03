@@ -26,10 +26,6 @@
 //       (`rahmenZielBefunde`) nennt es.
 //       DIE DRIFT: fehlt r184s Abschied am Leinwand-Ziel, fällt das Ziel trotzdem, und `_rahmenZielAbschied`
 //       meldet ERROR — eine ERROR-Zeile von ihm außerhalb der Probe und jede andere ERROR-Zeile der Seite sind rot.
-//   (k) KONTAKT (schatten.K3) — die Kontakt-Verdeckung am echten Frame: auf dem Boden der Welt ein Leib (Fuß) und ein Block
-//       (Sockel), die Sonne aus; das Band 3–15 cm vor der Fläche trägt 30–60 % des freien Bodens (mit/ohne Körper, linear),
-//       der freie Boden 1–2 m davor 1 ± 0,1; der Pass (`_kontaktPassZeichne`) lief und sein Ziel ist die halbe Auflösung des
-//       Szenen-Ziels.
 //   (h) DUNKEL (D3-N2, der Abend) — eine flache Fläche füllt das Bild mit dunklem Szenen-Licht, belichtet gleich hell
 //       (0,05 bei Belichtung 1, 0,0125 bei 4 — ein Schatten 1,6 EV unter dem belichteten Mittelgrau): das Bild ist nicht schwarz
 //       und bei beiden Belichtungen gleich: der Kontrast dreht über Belichtung 1 um 0,5 nach der Belichtung (25c).
@@ -227,22 +223,6 @@ function urteil(z) {
         v.push(
             `DUNKEL: das Licht der Nacht (${DUNKEL_NACHT_LICHT} bei Belichtung 1, nightFactor 1) zeigt Luma ${dk.lumaNacht} (Soll ≥ ${DUNKEL_LUMA_MIN}) — der Kontrast des Gradings schwärzt die Nacht (Post-Kette 25c: er fadet nicht über nightFactor)`
         );
-    const kt = z.kontakt || { abbruch: "fehlt" };
-    const kp = kt.pass || {};
-    if (
-        kt.abbruch ||
-        kp.bruch ||
-        !(kp.laeufe > 0) ||
-        kp.an !== 1 ||
-        kp.ziel.b !== Math.ceil(kp.szene.b / 2) ||
-        kp.ziel.h !== Math.ceil(kp.szene.h / 2)
-    )
-        v.push(`KONTAKT: der Pass in halber Auflösung lief nicht — ${JSON.stringify(kt.abbruch || kp)}`);
-    for (const x of kt.je || [])
-        if (!(x.n >= 10 && Math.abs(x.frei - 1) <= 0.1 && x.band >= 0.3 && x.band <= 0.6))
-            v.push(
-                `KONTAKT: ${x.was} — Band ${x.band} des freien Bodens (Soll 0,3–0,6, schatten.K3), frei ${x.frei} (1 ± 0,1), ${x.n} Punkte`
-            );
     const g = z.godray || {};
     if (!(g.staerke > 0)) v.push(`GODRAYS: die Sonne im Bild gibt Stärke ${g.staerke} (die Probe ist blind)`);
     else if (!(g.aenderungPct >= GODRAY_MIN_PCT))
@@ -305,10 +285,6 @@ function selbsttest() {
         saum: { leinwand: [321, 241], kanten: 30, abweichend: 0, dMax: 3, paritaeten: 2, gpuFehler: [] },
         rahmenEnde: { ziele: 0, n: 0, mb: 0 },
         dunkel: { k1: 1, k4: 4, luma1: 8, luma4: 8, nachtFaktor: 1, lumaNacht: 6 },
-        kontakt: {
-            je: [{ was: "fuss", band: 0.52, frei: 0.99, n: 20 }, { was: "sockel", band: 0.45, frei: 1.0, n: 20 }],
-            pass: { laeufe: 66, an: 1, ziel: { b: 120, h: 90 }, szene: { b: 240, h: 180 }, bruch: false },
-        },
     };
     if (urteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteil(gruen).join(" · "));
     const mit = (f) => {
@@ -446,10 +422,6 @@ function selbsttest() {
         },
         { name: "Shader blind", z: mit((z) => (z.ausgabe = null)), muss: /kein Fragment der Ausgabe/ },
         { name: "Bühne bricht ab", z: mit((z) => (z.abbruch = "TypeError: x")), muss: /ABBRUCH/ },
-        { name: "keine Kontakt-Verdeckung (Radeon 5fba36ea)", z: mit((z) => (z.kontakt.je[0].band = 0.989)), muss: /KONTAKT: fuss — Band 0.989/ },
-        { name: "schwarz statt Kontakt", z: mit((z) => (z.kontakt.je[1].band = 0.12)), muss: /KONTAKT: sockel — Band 0.12/ },
-        { name: "Kontakt dunkelt den freien Boden", z: mit((z) => (z.kontakt.je[0].frei = 0.7)), muss: /frei 0.7/ },
-        { name: "Kontakt-Pass voll aufgelöst", z: mit((z) => (z.kontakt.pass.ziel = { b: 240, h: 180 })), muss: /halber Auflösung lief nicht/ },
         { name: "Godray-Zweig trägt nicht", z: mit((z) => (z.godray.aenderungPct = 0)), muss: /der Zweig trägt nicht/ },
         { name: "Godray-Probe blind", z: mit((z) => (z.godray.staerke = 0)), muss: /die Probe ist blind/ },
         {
@@ -584,127 +556,6 @@ function saumProbe(ort) {
 }
 
 // DIE BÜHNE (Seiten-Kontext): die echte Welt-Szene, der echte Frame, eigene Gegenstände vor der Kamera.
-// (k) DIE KONTAKT-VERDECKUNG (schatten.K3) — die Mechanik der Station am echten Frame: am Ort des Spielers (der Platz der
-// Ankunft, eben) ein Leib 0,45 × 1,75 × 0,3 (Fuß) und ein Block 4 × 3 × 4 (Sockel), die Sonne aus (das indirekte Licht, das der aoNode
-// trägt), das Auge der Probe (4,5 m davor, 2,6 m hoch); je Körper ein Blick (25° bzw. 45°) auf das Band 3–15 cm vor der
-// Fläche und auf den freien Boden 1–2 m davor, je mit/ohne Körper, linear (sRGB, PBR Neutral, Belichtung zurück); dazu Lauf
-// und Ziel-Maß des Passes.
-function kontaktProbe() {
-    return (async () => {
-        const [T, rend, cam, dl] = [window.THREE, st.renderer, st.camera, st.directionalLight];
-        rend.setAnimationLoop(null);
-        window.__buehne();
-        const [aus, y] = [{}, (x, z) => r._voxelSurfaceY(x, z)];
-        const M = { p: st.playerMesh.position.clone().setY(y(st.playerMesh.position.x, st.playerMesh.position.z)) };
-        const [c, b, koerper, LUT] = [
-            new T.Vector3(0, 0, 1),
-            new T.Vector3(1, 0, 0),
-            [],
-            [...Array(256)].map((_, i) => (i / 255 <= 0.04045 ? i / 3294.6 : ((i / 255 + 0.055) / 1.055) ** 2.4)),
-        ];
-        const ding = (w, h, t, s) => {
-            const k = new T.Mesh(new T.BoxGeometry(w, h, t), new T.MeshBasicNodeMaterial({ color: 0x736e66 }));
-            const q = M.p.clone().addScaledVector(b, s);
-            k.position.set(q.x, y(q.x, q.z) + h / 2 - 0.02, q.z);
-            (st.scene.add(k), koerper.push(k));
-            const pt = (e, u) =>
-                q
-                    .clone()
-                    .addScaledVector(c, t / 2 + e)
-                    .addScaledVector(b, u)
-                    .setY(0);
-            const us = [-0.4, -0.2, 0, 0.2, 0.4].map((f) => f * (w - 0.1));
-            const punkte = (es) => es.flatMap((e) => us.map((u) => pt(e, u))).map((p) => p.setY(y(p.x, p.z) + 0.01));
-            return {
-                band: punkte([0.03, 0.07, 0.11, 0.15]),
-                frei: punkte([1, 1.3, 1.6, 2]),
-                ziel: punkte([0.09, 1.5]).filter((_, i) => i % 5 === 2),
-                spanne: 0.4 * w + 0.11,
-            };
-        };
-        const Y = (u8, W, H, [x, y]) => {
-            const L = [];
-            for (let j = -1; j <= 1; j++)
-                for (let i = -1; i <= 1; i++) {
-                    const p =
-                        (Math.min(H - 1, Math.max(0, Math.round(y) + j)) * W +
-                            Math.min(W - 1, Math.max(0, Math.round(x) + i))) *
-                        4;
-                    const v = [0, 1, 2].map((k) => LUT[u8[p + k]]);
-                    const hi = Math.min(Math.max(...v), 0.9995),
-                        f = hi >= 0.76 ? (0.0576 / (1 - hi) + 0.52) / hi : 1,
-                        m = Math.min(...v) * f,
-                        s = Math.sqrt(m / 6.25);
-                    const l = v.map((q) => q * f + (m < 0.04 ? s - 6.25 * s * s : 0.04));
-                    L.push((0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2]) / rend.toneMappingExposure);
-                }
-            return L.reduce((a, q) => a + q, 0) / 9;
-        };
-        // je Blick ein Paar mit/ohne Körper; der Median über die Punkte im Bild
-        const paar = async (ziel, fov, spanne, pts) => {
-            const aus2 = [];
-            for (const mit of [true, false]) {
-                koerper.forEach((k) => (k.visible = mit));
-                cam.position
-                    .copy(M.p)
-                    .addScaledVector(c, 4.5)
-                    .setY(M.p.y + 2.6);
-                cam.fov = Math.max(
-                    fov,
-                    (360 / Math.PI) * Math.atan(spanne / cam.position.distanceTo(ziel) / cam.aspect)
-                );
-                (cam.updateProjectionMatrix(), cam.lookAt(ziel), cam.updateMatrixWorld(true), r._schattenAlleNeu());
-                const { x: W, y: H } = rend.getDrawingBufferSize(new T.Vector2());
-                const u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
-                const q = pts
-                    .map((p) => p.clone().project(cam))
-                    .filter((p) => Math.abs(p.x) < 0.97 && Math.abs(p.y) < 0.97);
-                const L = q
-                    .map((p) => Y(u8, W, H, [((p.x + 1) / 2) * W - 0.5, ((1 - p.y) / 2) * H - 0.5]))
-                    .sort((a, b) => a - b);
-                aus2.push({ L: L[L.length >> 1], n: L.length });
-            }
-            return aus2;
-        };
-        const merk = [cam.position.clone(), cam.quaternion.clone(), cam.fov, dl.intensity, st._kontaktLaeufe || 0];
-        dl.intensity = 0;
-        try {
-            aus.je = [];
-            for (const [was, d] of [
-                ["fuss", ding(0.45, 1.75, 0.3, -2.8)],
-                ["sockel", ding(4, 3, 4, 2.2)],
-            ]) {
-                const [[bm, bo], [fm, fo]] = [
-                    await paar(d.ziel[0], 25, d.spanne, d.band),
-                    await paar(d.ziel[1], 45, d.spanne, d.frei),
-                ];
-                aus.je.push({
-                    was,
-                    band: +(bm.L / bo.L / (fm.L / fo.L)).toFixed(4),
-                    frei: +(fm.L / fo.L).toFixed(4),
-                    n: Math.min(bm.n, fm.n),
-                });
-            }
-            const [L, sz] = [st.kontaktLeser, st.scenePass.renderTarget];
-            aus.pass = {
-                laeufe: st._kontaktLaeufe - merk[4],
-                an: L.an.value,
-                ziel: { b: L.rt.width, h: L.rt.height },
-                szene: { b: sz.width, h: sz.height },
-                bruch: !!st.kontaktBruch,
-            };
-        } finally {
-            koerper.forEach((k) => (st.scene.remove(k), k.geometry.dispose(), k.material.dispose()));
-            [cam.fov, dl.intensity] = [merk[2], merk[3]];
-            (cam.position.copy(merk[0]),
-                cam.quaternion.copy(merk[1]),
-                cam.updateProjectionMatrix(),
-                cam.updateMatrixWorld(true));
-        }
-        return aus;
-    })();
-}
-
 function buehne(nFrames, nachtLicht) {
     return (async () => {
         const T = window.THREE;
@@ -1073,21 +924,6 @@ function buehne(nFrames, nachtLicht) {
         await page.evaluate(SK.SHADER_INSTALL);
         out = await page.evaluate(buehne, N_FRAMES, DUNKEL_NACHT_LICHT);
         if (out.abbruch) log(`ABBRUCH: ${out.abbruch}`);
-        // die Probe auf einer Leinwand, die das 12-cm-Band am Fuß in so vielen Pixeln trägt wie die Station (480 × 360, Blick 25°:
-        // der Leib ~80 px breit, in der Station 1920 × 1080 bei 70° ~74 px); danach wächst sie für (f) ohnehin neu
-        await page.setViewport({ width: 480, height: 360 });
-        await page.evaluate(async () => {
-            for (let i = 0; i < 6; i++) {
-                window.__loopBild();
-                await sleep(50);
-            }
-        });
-        try {
-            out.kontakt = await page.evaluate(kontaktProbe);
-        } catch (e) {
-            out.kontakt = { abbruch: fehlerText(e) };
-        }
-        log(`Kontakt (Sonne aus): ${JSON.stringify(out.kontakt)}`);
         // (f) die ungerade Leinwand: die Seite wächst um ein Pixel je Achse, die Welt zieht nach (Resize, Leser neu gebunden)
         await page.setViewport({ width: 321, height: 241 });
         await page.evaluate(async () => {

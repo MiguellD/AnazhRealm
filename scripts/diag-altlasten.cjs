@@ -3643,8 +3643,8 @@ function main() {
             const schmuggel = [
                 [
                     "in",
-                    "mat.aoNode = PC.halmNarbe(A, uv.y, T.float(1.0)).himmel.mul(this._kontaktVerdeckung());",
-                    'const _hatF = "float" in T; mat.aoNode = PC.halmNarbe(A, uv.y, T.float(1.0)).himmel.mul(this._kontaktVerdeckung());',
+                    "mat.aoNode = PC.halmNarbe(A, uv.y, T.float(1.0)).himmel;",
+                    'const _hatF = "float" in T; mat.aoNode = PC.halmNarbe(A, uv.y, T.float(1.0)).himmel;',
                     /^Ausstattungs-Wenn$/,
                 ],
                 [
