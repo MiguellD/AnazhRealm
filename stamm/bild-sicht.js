@@ -664,8 +664,11 @@ class AnazhRealm_bild_sicht {
         // DIE UNTERE HEMISPHÄRE (schatten.K4, `_rueckstrahlPass`): in der Bestrahlung (r184 reicht die Stufe als Konstante, die
         // Richtung ist die Normale) ersetzt der gezeichnete Boden den Boden der Atmosphäre — gewichtet mit dem Anteil des
         // Halbraums unter dem Horizont, den die Fläche sieht, (1 − n.y)/2: der Boden selbst empfängt nichts von sich, die
-        // senkrechte Wand die Hälfte, die Unterseite alles.
+        // senkrechte Wand die Hälfte, die Unterseite alles. DIE BESTRAHLUNG ERKANNT: r184 reicht ihre Stufe als Variable über der
+        // Konstanten 1 (`float(1)` in einer VarNode, gelesen am Vendor 03.11.) — bis dahin fragte der Zweig nur `isConstNode`,
+        // nahm nie, und jede Bestrahlung las den Spiegel mit dem Gewicht 0 (eine Abtastung je Fragment für nichts).
         const unten = this._rueckstrahlUnten();
+        const konstant = (n) => !!n && (n.isConstNode === true || (n.isVarNode === true && konstant(n.node)));
         class SpiegelUmgebung extends N {
             constructor() {
                 super("vec3");
@@ -673,7 +676,7 @@ class AnazhRealm_bild_sicht {
             setup(builder) {
                 const stufe = builder.context.getTextureLevel ? builder.context.getTextureLevel(this, builder) : null;
                 if (!stufe) return himmel;
-                if (stufe.isConstNode === true) {
+                if (konstant(stufe)) {
                     const n = builder.context.getUV(this, builder);
                     return T.max(himmel.add(unten.mul(T.float(1).sub(n.y).mul(0.5))), T.vec3(0));
                 }
