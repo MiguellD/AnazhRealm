@@ -5,8 +5,8 @@
 // sich änderte, als EINE Zeichenkette (durch "\u0001" getrennt — ein JSON-Text trägt das Steuerzeichen nie roh; ihr Klon ist
 // im Sender ein memcpy: postMessage 0,07–0,10 ms gegen 0,19–0,25 ms für Kodieren und Transfer eines Puffers, ABAB 3× headless),
 // die Glieder der Listen (Bauten, Baupläne, Wesen) je Seriennummer, ihre Ordnung, wenn sie sich änderte, und die neuen Edits
-// als Zahlen per Transfer; zurück kommen Quittungen und das Abbild per Transfer. Der Teil „" ist der Kopf: die Felder ohne
-// eigenen Teil als Text ohne Klammern. Dieser Faden hält je Welt das Modell des Stands, setzt das JSON zusammen (die Bytes, die
+// als Zahlen per Transfer; zurück kommen Quittungen und das Abbild per Transfer. Der Teil „" der Ordnung ist der Kopf: die
+// Felder ohne eigenen Teil als Text ohne Klammern — je Feld ein Teil `KOPF_TEIL` + Name, gesendet nur, wenn sein Stück sich regte. Dieser Faden hält je Welt das Modell des Stands, setzt das JSON zusammen (die Bytes, die
 // `JSON.stringify` der Tafel ergäbe) und schreibt ATOMAR in IndexedDB („anazhRealm" · „worlds"): EINE Transaktion liest den
 // vorigen Stand, legt ihn als `<id>.bak` ab und schreibt den neuen unter `<id>` — tmp + Rename + .bak des save-servers;
 // ein Tod mitten darin lässt beide, wie sie waren. Das Format auf der Platte ist das des Lesers (`_idbPreload`): {at, json}.
@@ -23,7 +23,9 @@
 
 const STORE = "worlds";
 const TRENNER = "\u0001";
-const welten = new Map(); // welt → {ordnung, teile: Map, listen: Map(key → {ordnung, glieder: Map}), edits}
+// der Teil eines Kopf-Felds: dieses Zeichen + sein Name (stamm `AnazhRealm.KOPF_TEIL`) — der Kopf reist je Feld als Delta
+const KOPF_TEIL = "\u0002";
+const welten = new Map(); // welt → {ordnung, teile: Map, kopf: Map, kopfOrdnung, listen: Map(key → {ordnung, glieder: Map}), edits}
 let platteP = null;
 
 // Die EINE Datenbank (dieselbe wie die des Lesers). Ohne IndexedDB (null-origin der inneren Welt) antwortet jede Op mit
@@ -121,9 +123,15 @@ function editsJson(E) {
 function komponiere(W) {
     const out = [];
     for (const k of W.ordnung) {
-        // der Kopf: die Felder ohne eigenen Teil, als Text ohne Klammern (leer, wenn sie alle undefined sind)
+        // der Kopf: die Felder ohne eigenen Teil in der Reihe der Tafel, als Text ohne Klammern (leer, wenn sie alle
+        // undefined sind) — je Feld sein Stück, wie es zuletzt reiste
         if (k === "") {
-            if (W.teile.get("")) out.push(W.teile.get(""));
+            const kopf = [];
+            for (const f of W.kopfOrdnung) {
+                const st = W.kopf.get(f);
+                if (st) kopf.push(st);
+            }
+            if (kopf.length) out.push(kopf.join(","));
             continue;
         }
         const L = W.listen.get(k);
@@ -146,14 +154,18 @@ const OPS = {
     async stand(m) {
         let W = welten.get(m.welt);
         if (m.voll) {
-            W = { ordnung: [], teile: new Map(), listen: new Map(), edits: editsNeu() };
+            W = { ordnung: [], teile: new Map(), kopf: new Map(), kopfOrdnung: [], listen: new Map(), edits: editsNeu() };
             welten.set(m.welt, W);
         } else if (!W) return { ok: false, grund: "kein Modell der Welt im Faden (der Haupt-Faden sendet sie ganz)" };
         try {
             const stuecke = m.daten.split(TRENNER);
             let i = 0;
             if (m.ordnung) W.ordnung = m.ordnung;
-            for (const k of m.teile) W.teile.set(k, stuecke[i++]);
+            // ein neuer Kopf (die Reihe seiner Felder) trägt jedes seiner Stücke
+            if (m.kopfOrdnung) [W.kopf, W.kopfOrdnung] = [new Map(), m.kopfOrdnung];
+            for (const k of m.teile)
+                if (k[0] === KOPF_TEIL) W.kopf.set(k.slice(1), stuecke[i++]);
+                else W.teile.set(k, stuecke[i++]);
             for (const k in m.listen || {}) {
                 const l = m.listen[k];
                 const L = W.listen.get(k) || { ordnung: [], glieder: new Map() };
