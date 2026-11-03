@@ -23,3 +23,13 @@ Eine Zeile je Fund: Datei:Zeile · Wurzel · was es bewegt · Größe. Wer eine 
 - physik.K2#2 „DER BAU STEHT NICHT: haus_alemannisch#429“, siedlung.K4#2 ROT · in Arbeit (heil:urteile)
 - B Ankunft ≤ 5 s: 55 strukturelle Programm-Varianten vor Kontrolle (bauSatz, arena, streuSatz, fern-ring) → Stoff-Foundry (Messen zuerst) · B · L
 - stamm/stoff-instanz.js `_renderObjekteLoesen`/`_renderObjektRegister` · eine gelöste Sampler-Bindung wird danach noch gelesen (Bündel-Wiedergabe oder lebendes Objekt nach dem Lösen; `texture = null` traf so die Leinwand, z161 3/3 ROT) — den Leser benennen, dann das Lösen erst nach seinem letzten Zug · gate:kamera-leib (CI-swiftshader) · S
+
+## Welle w5 (03.11.)
+- `meisterkarte-quelle/punkte/punkte.cjs` fahrtSumme · die GPU-Fahrt steht Radeon 1798 / GTX 1799 von 1800 s — jede weitere GPU-Station (leib.K3#2, spielgang.K4#2, tore.K5#2, physik.K3#2, wetter.K3#2/K4#2, stoffe.K1#2) wartet auf schnellere Proben (Prüfbühne: Ortswechsel/Grundstellung 5–23 s je Probe) · ~30 Staffel-2-Punkte · L
+- lod.K4 (GTX-Blick w5-stufen) · Täter `f:birke`: 63 % der Wechsel-Pixel, die Krone kippt −24…−30 % in der Luma mit Schatten aus · lod.K4 · M
+- haar.K5 · an der GTX steht kein Wolf der Herde im Bild (0 Befehle tier:wolf) — die Grenze „tier ≤ 30 Befehle“ urteilt blind · haar.K5#1 (Linse) · S
+- scripts/diag-takt-atem.cjs (Zweig w5-affekt-linse cdcf338f) · die Leinen-Linse (GPU-Arbeit neben der Leine beim Namen) kostet +1135 Atome der Decke · Werkzeug · M
+- stamm/feld-nexus.js:332 `_composeNexusRule` · nur `source === "nexus"` sind Eltern, eine bewährte LLM-Regel vererbt nie (zweites Gesetz) · ki.K4, Gebot 4 · S
+- spec/abnahme/ki-korpus.json:78 · der Bezug `gefuettert` enthält das nackte „gegeben“ und wertet „den Schlag … gegeben“ als Gabe · ki.K3 (Linse) · S
+- stamm/koerper-bewegung.js (freier Körper des Werks) · Steinplatte 4×4 m auf vier Pfosten kippt binnen 2 s, steigt 4 m und verschwindet aus state.architectures · physik.K3 · M
+- messort("dorf") baut in der Welt-Probe (Null-Renderer) 0 Häuser nach 9000 Takten · jede Probe „am Dorf“ · M
