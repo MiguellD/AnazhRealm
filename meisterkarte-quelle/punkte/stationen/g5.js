@@ -2991,6 +2991,8 @@ const stationen = [
     // `_spracheSetzen("en")` — jede Zeile, die danach noch ⟦ trägt, wechselte nicht (`stehen`). DER SELBSTTEST IM LAUF: die Zählung
     // pflanzt je Lauf eine harte und eine stehende Zeile und muss beide beim Namen nennen (`blind` leer), sonst ist sie blind.
     // Staffel 1: 0 harte Zeilen (Code und DOM) · 0 stehende · nicht blind · die Tafel AnazhRealm.TEXTE mit de und en.
+    // Gemessen (headless, cloud): main 5fba36ea ROT (die alte Zählung 707 harte Zeilen; die neue findet dort keine TEXTE-Zeile) →
+    // w5-spielgang-k5 GRÜN: 0 hart (DOM 0 von 1602 Zeilen, 1436 aus der Tafel, 166 Daten), 0 stehend, beide Mutanten genannt.
     {
         kriterium: "spielgang.K5",
         staffel: 1,
