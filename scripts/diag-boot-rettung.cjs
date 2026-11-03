@@ -26,18 +26,7 @@
 //                                                    nur-idb und idb-frischer MÜSSEN rot werden, beim Namen
 // Port: BOOT_RETTUNG_PORT (Default 4402). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
-const {
-    frageJa,
-    statikServer,
-    starteBrowser,
-    nullRenderer,
-    hauptLauf,
-    sleep,
-    argOpt: opt,
-    path,
-    SELBSTTEST,
-    jsonSchreiben,
-} = require("./lib/welt-boot.cjs");
+const { frageJa, statikServer, starteBrowser, nullRenderer, hauptLauf, sleep, argOpt: opt, path, SELBSTTEST, jsonSchreiben } = require("./lib/welt-boot.cjs");
 
 const JSON_AUS = opt("--json", null);
 const PORT = Number(process.env.BOOT_RETTUNG_PORT) || 4402;
@@ -78,16 +67,7 @@ function scheinNurPlatz() {
             const roh = v._weltRettungsKette.bind(v);
             v._weltRettungsKette = (id) => {
                 const f = roh(id, null);
-                return f.quelle === "Platz"
-                    ? f
-                    : {
-                          state: null,
-                          quelle: null,
-                          befund: [
-                              { art: "leer", glied: "IndexedDB" },
-                              { art: "leer", glied: ".bak" },
-                          ],
-                      };
+                return f.quelle === "Platz" ? f : { state: null, quelle: null, befund: [{ art: "leer", glied: "IndexedDB" }, { art: "leer", glied: ".bak" }] };
             };
         },
     });
@@ -109,8 +89,7 @@ async function bereit(page) {
                     zeiger: r.activeWorldGet(),
                     marken: (snap.match(/MARK-[A-Z0-9]+/g) || []).filter((x, i, a) => a.indexOf(x) === i),
                     index: r.worldsIndexLoad().map((e) => e.worldId),
-                    // die Zeilen der Welt im Chat: Schlüssel und Werte (`_chatEcho` trägt sie am Knoten), nie der Wortlaut
-                    chat: chat ? [...chat.querySelectorAll("[data-t]")].map((e) => [e.dataset.t, e.getAttribute("data-t-werte") || ""]) : [], // prettier-ignore
+                    chat: chat ? chat.innerHTML : "", // die Zeilen der Welt mit Schlüssel und Werten am Knoten, nie der Wortlaut
                 };
             }
         }
@@ -233,7 +212,7 @@ async function fahreForm(browser, form, schein) {
         if (v.leer) {
             // EINE NEUE WELT NUR, WENN ALLES LEER IST — UND DANN LAUT
             if (b1.welt === v.welt) befund(`Boot 1 erwachte unter der leeren Id ${v.welt}`);
-            if (!b1.chat.some(([k, w]) => k === "rede.welt-fehlt" && w.includes(v.welt)))
+            if (!new RegExp('"rede.welt-fehlt"[^>]*' + v.welt).test(b1.chat))
                 befund("die frische Welt erwachte still (kein Satz im Chat, der die Welt nennt)");
         } else {
             const erwartet = v.welt || b1.zeiger;

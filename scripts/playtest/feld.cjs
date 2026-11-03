@@ -52,7 +52,9 @@ async function checkRing2Dsl({ page, check }) {
         st.maxCreatures = creBefore + 2;
         const res3 = r.dslRun(["spawn_creature", ["at_origin"], 2, "happy"]);
         out.positionEffect =
-            res3.ok && res3.log.some((e) => e.event === "spawned_creature") && st.creatures.length === creBefore + 2;
+            res3.ok &&
+            res3.log.some((e) => e.event === "spawned_creature") &&
+            st.creatures.length === creBefore + 2;
         st.maxCreatures = _saveMaxPos;
 
         const res4 = r.dslRun(["when", ["weather_is", "sunny"], ["player_jump_power", jB]]);
@@ -776,11 +778,7 @@ async function checkBandV1736HumanRules({ page, check }) {
         const out = {};
         const mkSink = () => {
             const msgs = [];
-            return {
-                input: { value: "x" },
-                append: (s) => msgs.push(Array.isArray(s) ? r._t(s[0], s[1]) : String(s)),
-                msgs,
-            };
+            return { input: { value: "x" }, append: (s) => msgs.push(Array.isArray(s) ? r._t(s[0], s[1]) : String(s)), msgs };
         };
 
         // --- (2) _parseChatCondition: Sprache → DSL-Bedingung ---
@@ -1070,7 +1068,8 @@ async function checkBandV1739RulesUX({ page, check }) {
             });
         }
         out.pinnedSurvivesEviction =
-            st.worldRules.length <= AnazhRealm.WORLD_RULES.cap && st.worldRules.some((x) => x.id === keepId);
+            st.worldRules.length <= AnazhRealm.WORLD_RULES.cap &&
+            st.worldRules.some((x) => x.id === keepId);
 
         // --- (E) ein ephemeres Nexus-Experiment ist DIREKT steuerbar — ⏸ + ✕ in JEDEM Modus
         //         (kein pin-zuerst-Trap). Geheilter Schöpfer-Befund „muss zuerst pinnen, um zu stoppen". ---
@@ -1112,7 +1111,8 @@ async function checkBandV1739RulesUX({ page, check }) {
         const snapHasFlags = snap.worldRules[0].pinned === true && snap.worldRules[0].disabled === true;
         st.worldRules.length = 0;
         r._loadStateRestoreWorldRules(snap);
-        out.persistFlags = snapHasFlags && st.worldRules[0].pinned === true && st.worldRules[0].disabled === true;
+        out.persistFlags =
+            snapHasFlags && st.worldRules[0].pinned === true && st.worldRules[0].disabled === true;
 
         // restore
         st.worldRules = savedRules;
@@ -1262,7 +1262,9 @@ async function checkBandV1741RuleThread({ page, check }) {
         st.weather = "rainy";
         hRule.lastFired = -Infinity;
         r._tickWorldRules(now()); // fires===1 → Erwachen
-        const awoke = st.worldJournal.entries.slice(jBefore).find((e) => e.type === "rule" && /erwachte/.test(e.text));
+        const awoke = st.worldJournal.entries
+            .slice(jBefore)
+            .find((e) => e.type === "rule" && /erwachte/.test(e.text));
         out.journalAwoke = !!awoke && st.weather === "sunny";
 
         // --- (5) idempotent über die Signatur: dieselbe Regel NEU aufgestellt (frische

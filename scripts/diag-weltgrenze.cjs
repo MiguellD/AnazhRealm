@@ -42,22 +42,7 @@
 //                                      „ersetzen" MUSS rot werden: die Seite erwacht in A) — beide beim Namen
 // Port: WELTGRENZE_PORT (Default 4401). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
-const {
-    frageJa,
-    statikServer,
-    starteBrowser,
-    nullRenderer,
-    hauptLauf,
-    argOpt: opt,
-    weltTor,
-    waitFor,
-    jsonLesen,
-    jsonSchreiben,
-    jsonKlon,
-    path,
-    stammLib,
-    SELBSTTEST,
-} = require("./lib/welt-boot.cjs");
+const { frageJa, statikServer, starteBrowser, nullRenderer, hauptLauf, argOpt: opt, weltTor, waitFor, jsonLesen, jsonSchreiben, jsonKlon, path, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 const JSON_AUS = opt("--json", null);
 const PORT = Number(process.env.WELTGRENZE_PORT) || 4401;
@@ -241,10 +226,7 @@ function seitenPruefer() {
             const cam = st.camera.position;
             r._leuchtPool = null;
             r._tickPortalLicht({
-                entry: {
-                    position: st.camera.getWorldDirection(cam.clone()).setY(0).normalize().multiplyScalar(3).add(cam),
-                    scale: 1,
-                },
+                entry: { position: st.camera.getWorldDirection(cam.clone()).setY(0).normalize().multiplyScalar(3).add(cam), scale: 1 },
                 tor: { mu: { springY: 1 } },
                 _act: 1,
                 u: null,
@@ -290,8 +272,7 @@ function seitenPruefer() {
                 _leuchtPool: !!r._leuchtPool?.halter.some((h) => h?.herkunft === T),
             };
             for (const k of Object.keys(ged)) if (ged[k]) out.push(`Gedächtnis this.${k}`);
-            if (r._kartenAtlas?.zellen.has(T) && !r._impostorBakeQueue?.includes(T))
-                out.push("Seite: Karte ohne Back-Schlange");
+            if (r._kartenAtlas?.zellen.has(T) && !r._impostorBakeQueue?.includes(T)) out.push("Seite: Karte ohne Back-Schlange");
             if (ganz) {
                 const snap = r.buildStateSnapshot();
                 for (const p of pfade(snap, "Snapshot", 3)) if (!ok.has(p.replace(/^Snapshot\./, ""))) out.push(p);
@@ -413,8 +394,7 @@ async function fahreWeg(browser, weg, schein) {
                 };
             });
         }
-        if (schein === "stand")
-            await page.evaluate(() => void (window.__alteSeite = Object.getPrototypeOf(r).dslPositions));
+        if (schein === "stand") await page.evaluate(() => void (window.__alteSeite = Object.getPrototypeOf(r).dslPositions));
         // DIE SEITE LÄDT NIE NEU (der Wechsel am Ort): jede Navigation nach dem Boot von A ist ein Befund
         let navigationen = 0;
         page.on("framenavigated", (f) => f === page.mainFrame() && navigationen++);
@@ -444,7 +424,7 @@ async function fahreWeg(browser, weg, schein) {
                         r._weltTorImportReplace();
                         const out = ablage(r.activeWorldGet());
                         const chat = document.getElementById("chat-output");
-                        out.chat = chat ? [...chat.querySelectorAll("[data-t]")].map((e) => e.dataset.t).slice(-5) : [];
+                        out.chat = chat ? chat.innerHTML : ""; // die Schlüssel der Zeilen am Knoten, nie der Wortlaut
                         out.liveWelt = st.worldMeta.worldId;
                         g.fensterNach();
                         return out;
@@ -511,12 +491,12 @@ async function fahreWeg(browser, weg, schein) {
                                 { type: "welt_portal", affordances: { isPortal: true } },
                                 { worldId: id, roomId: id, broker: "ws://127.0.0.1:9", label: "grenze-b" }
                             );
-                        else
-                            await r._weltBeitritt({ broker: "ws://127.0.0.1:9", roomId: id }, { slugHint: "grenze-b" });
+                        else await r._weltBeitritt({ broker: "ws://127.0.0.1:9", roomId: id }, { slugHint: "grenze-b" });
                         return {};
                     }
                     if (basis === "reload") {
-                        const id = B.worldMeta?.worldId || "grenze-platz-" + Date.now();
+                        const id =
+                            B.worldMeta?.worldId || "grenze-platz-" + Date.now();
                         localStorage.setItem(r.worldStorageKey(id), JSON.stringify(B));
                         r.worldsIndexUpsert({
                             worldId: id,
@@ -557,11 +537,9 @@ async function fahreWeg(browser, weg, schein) {
                 zeiger: r.activeWorldGet(),
                 welt: st.worldMeta.worldId,
             }));
-            if (z.zeiger !== aId)
-                rep.befunde.push(`der Aktiv-Zeiger zeigt nach der gescheiterten Ablage auf ${z.zeiger}`);
+            if (z.zeiger !== aId) rep.befunde.push(`der Aktiv-Zeiger zeigt nach der gescheiterten Ablage auf ${z.zeiger}`);
             if (z.welt !== aId) rep.befunde.push(`die Seite trägt nach der gescheiterten Ablage die Welt ${z.welt}`);
-            if (!(lauf.chat || []).includes("speicher.ersetzen-fehl"))
-                rep.befunde.push("die gescheiterte Ablage blieb still (kein Satz im Chat)");
+            if (!/"speicher\.ersetzen-fehl"/.test(lauf.chat || "")) rep.befunde.push("die gescheiterte Ablage blieb still (kein Satz im Chat)");
             rep.befunde.push(...(await lege((id) => window.__grenze.befundeA(id, true), aId)));
             return rep;
         }
@@ -580,9 +558,7 @@ async function fahreWeg(browser, weg, schein) {
                 if (basis !== "geburt" && !(await page.evaluate(() => window.__grenze.markerB())))
                     rep.befunde.push("am Ort: MARKER-B fehlt — B lebt nicht");
                 rep.befunde.push(
-                    ...(await lege((ok) => window.__grenze.befundeLive(ok, true), rep.erlaubt)).map(
-                        (f) => `am Ort: ${f}`
-                    )
+                    ...(await lege((ok) => window.__grenze.befundeLive(ok, true), rep.erlaubt)).map((f) => `am Ort: ${f}`)
                 );
             }
             // der nächste Schritt des Spiels — der Autosave schreibt, was die Seite trägt
@@ -670,12 +646,7 @@ hauptLauf(async () => {
         const namen = spread.befunde.filter((f) => f.startsWith("in der Seite: worldMeta."));
         const fenster = sperre.befunde.filter((f) => /zeigt der Aktiv-Zeiger|erwachte in/.test(f));
         const proto = stand.befunde.filter((f) => /_dslPositionsCache/.test(f));
-        selbst = {
-            spread: namen,
-            sperre: fenster,
-            stand: proto,
-            befunde: { spread: spread.befunde, sperre: sperre.befunde },
-        };
+        selbst = { spread: namen, sperre: fenster, stand: proto, befunde: { spread: spread.befunde, sperre: sperre.befunde } };
         console.log(
             `\n  SELBSTTEST 1 (der alte Spread am Lade-Engpass zum Schein): ${namen.length} Felder von A beim Namen — ${namen
                 .map((f) => f.replace("in der Seite: ", ""))
