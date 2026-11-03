@@ -79,7 +79,21 @@ class AnazhRealm_klang {
         const s = this.state.symphony;
         bus.gain.value = typeof s.creaturePingVolume === "number" ? s.creaturePingVolume : 1.0;
         bus.connect(masterGain);
-        const um = { kern: K, bus, werkstatt: null, bestellt: 0, geliefert: 0, rufeBestellt: 0, rufeGespielt: 0 };
+        // DER RAUM (klang.K3#2): der Nachhall des Orts auf dem Welt-Bus — jede Stimme und jeder Ruf klingt in ihm
+        const raum = K.umweltRaum(ctx, bus, masterGain);
+        const RS = UM.UMWELT.raum.strahlen;
+        const um = {
+            kern: K,
+            bus,
+            raum,
+            // die Raum-Strahlen am Ohr (`_raumStrahlen`): je Strahl Bau und Hang getroffen, rund um die Uhr wie der Hör-Ring
+            raumStrahl: { bau: new Uint8Array(RS), fels: new Uint8Array(RS), idx: 0 },
+            werkstatt: null,
+            bestellt: 0,
+            geliefert: 0,
+            rufeBestellt: 0,
+            rufeGespielt: 0,
+        };
         um.werkstatt = this._klangWerkstattBooten(um);
         // Der Hör-Ring: Mitte + ohr.radien × ohr.richtungen, Einheits-Richtungen fest (Welt-Achsen).
         const punkte = [{ r: 0, ux: 0, uz: 0 }];
@@ -183,6 +197,7 @@ class AnazhRealm_klang {
             if (teil === 1) um.mix = um.kern.umweltMischung(um.lage);
             else if (teil === 2) {
                 um.graph.anwenden(um.mix, jetzt);
+                um.raum.setzen(um.kern.umweltRaumNachhall(um.lage && um.lage.raum), jetzt);
                 this._untertitelStimmen(um.graph);
             } else this._tierRufTakt(um.rufDt);
             return;
@@ -209,6 +224,8 @@ class AnazhRealm_klang {
             const fl = nass ? this._waterFlowAt(x, z) : null;
             R.tempo[i] = fl ? Math.hypot(fl.x, fl.z) : 0;
         }
+        const pm = this.state.playerMesh;
+        if (pm) this._raumStrahlen(um, px, pm.position.y - AnazhRealm.PLAYER_FOOT_OFFSET, pz, n);
     }
 
     // Die Brenn-Fläche eines Baus (m²): Σ der Grundflächen seiner Teile mit Material „glut" (Kugel und Zylinder als
@@ -351,12 +368,15 @@ class AnazhRealm_klang {
             });
         }
         const glut = this._glutAmOhr(px, pz, pan);
+        const deckung = this._kronenStreuAt(px, pz);
         return {
             // der EINE Wind am Ohr (`_windAt` auf der Bild-Uhr, A9): die Stärke am Ort und die wandernde Böe — dieselben Zahlen
             // (WIND_BOE) und dieselbe Richtung wie `_windSwayOffset` im Shader: was das Gras biegt, rauscht im Ohr
             windFeld: wind.staerke,
             boe: wind.boe,
-            deckung: this._kronenStreuAt(px, pz),
+            deckung,
+            // der Raum am Ohr (klang.K3#2): Kronen, Bauten, Hang und Fels über dem Ohr — sein Nachhall (`umweltRaumNachhall`)
+            raum: this._raumAmOhr(um, px, pm.position.y - AnazhRealm.PLAYER_FOOT_OFFSET, pz, deckung),
             regen: wf.rain,
             sonne: this._sonnenRichtung().y, // die Sonnenhöhe (sin) der EINEN Tag-Achse, mit der Neigung der Bahn
             // die Wärme der Grillen (stoffe.K3): das EINE Temperatur-Feld an der Höhe des Spielers zu Saison und Uhr der Welt, mit
@@ -394,11 +414,121 @@ class AnazhRealm_klang {
             d,
             pan: this._umweltPanorama()(dx, dz),
             saat: (um.rufSaat = (Math.imul(um.rufSaat, 1664525) + 1013904223) >>> 0),
+            verdeckung: this._klangVerdeckung(pm, creature),
         };
         um.rufeBestellt++;
         um.werkstatt.postMessage({ typ: "ruf", ruf });
         this._untertitel("ruf", ruf.stimmung, creature.userData && creature.userData.name, ruf.pan);
         return ruf;
+    }
+
+    // DIE BAUTEN IM RAUM (klang.K3#2): die Hüllen der Bauten, deren Hülle (x, z) auf `reich` m erreicht — aus dem Blocker-Netz
+    // (`_blockerNahe`), ohne den Wuchs der Natur (Bäume und Büsche: `baum_*`, `grown_*`, ein Leib der LOD-Kette); ihre Kronen
+    // zählen als Deckung (`_kronenStreuAt`), nie als Wand.
+    _klangBauHuellen(x, z, reich) {
+        const nah = this._blockerNahe(x, z, reich, -Infinity, (this._klangBauNah = this._klangBauNah || []));
+        const aus = [];
+        for (const e of nah) {
+            if (!e || !e.blockerAABBs || e._lodSpecies || /^(baum_|grown_)/.test(e.type || "")) continue;
+            for (const b of e.blockerAABBs) if (b && Number.isFinite(b.minX)) aus.push(b);
+        }
+        nah.length = 0;
+        return aus;
+    }
+
+    // Die Strecke a → b (Welt) gegen eine Hülle: der Bruchteil t ∈ [0, 1] des ersten Eintritts oder null (Platten-Probe in x, y, z).
+    static _klangStrecke(a, b, h) {
+        let t0 = 0;
+        let t1 = 1;
+        for (const [p, q, lo, hi] of [
+            [a[0], b[0], h.minX, h.maxX],
+            [a[1], b[1], h.botY, h.topY],
+            [a[2], b[2], h.minZ, h.maxZ],
+        ]) {
+            const d = q - p;
+            if (Math.abs(d) < 1e-9) {
+                if (p < lo || p > hi) return null;
+                continue;
+            }
+            let u0 = (lo - p) / d;
+            let u1 = (hi - p) / d;
+            if (u0 > u1) [u0, u1] = [u1, u0];
+            t0 = Math.max(t0, u0);
+            t1 = Math.min(t1, u1);
+            if (t0 > t1) return null;
+        }
+        return t0;
+    }
+
+    // DIE RAUM-STRAHLEN (klang.K3#2): vom Ohr (Fuß `fy` + UMWELT.raum.augeM) je Bild `n` der raum.strahlen waagerechten Strahlen, rund
+    // um die Uhr wie der Hör-Ring (`_umweltRingProbe` ruft sie mit seiner Zahl) — trifft der Strahl binnen raum.weiteM einen Bau
+    // (`_klangBauHuellen`), steigt das Gelände-Gesetz dort über das Ohr (der Hang, Stützstellen je 2,5 m)? Kosten je Bild: n Strahlen
+    // (raum.weiteM / 2,5 Gesetz-Höhen und die Hüllen im Umkreis), nie die Weltgröße; bis zum Schnitt maß die Lage alle 16 Strahlen
+    // auf einmal: 0,3–0,4 ms je Misch-Takt (Null-Renderer, w5-s2-g1).
+    _raumStrahlen(um, px, fy, pz, n) {
+        const S = um && um.raumStrahl;
+        if (!S) return;
+        const R = AnazhRealm._umweltGesetz().UMWELT.raum;
+        const ey = fy + R.augeM;
+        const huellen = this._klangBauHuellen(px, pz, R.weiteM);
+        for (let k = 0; k < n; k++) {
+            const i = S.idx;
+            S.idx = (S.idx + 1) % R.strahlen;
+            const w = (i / R.strahlen) * Math.PI * 2;
+            const ux = Math.cos(w);
+            const uz = Math.sin(w);
+            const a = [px, ey, pz];
+            const b = [px + ux * R.weiteM, ey, pz + uz * R.weiteM];
+            S.bau[i] = huellen.some((h) => AnazhRealm._klangStrecke(a, b, h) !== null) ? 1 : 0;
+            S.fels[i] = 0;
+            for (let d = 2.5; d <= R.weiteM; d += 2.5) {
+                const h = this.getTerrainHeightAt(px + ux * d, pz + uz * d);
+                if (Number.isFinite(h) && h > ey) {
+                    S.fels[i] = 1;
+                    break;
+                }
+            }
+        }
+    }
+
+    // DER RAUM AM OHR (klang.K3#2) → { deckung, bau, fels, hoehle }: die Anteile der Raum-Strahlen (`_raumStrahlen`), die Bau bzw.
+    // Hang treffen, und Fels über dem Ohr (die oberste Fläche des Bodens `_voxelSurfaceY` mehr als 2 m über ihm: die Höhle).
+    _raumAmOhr(um, px, fy, pz, deckung) {
+        const R = AnazhRealm._umweltGesetz().UMWELT.raum;
+        const S = um.raumStrahl;
+        let bau = 0;
+        let fels = 0;
+        for (let i = 0; i < R.strahlen; i++) ((bau += S.bau[i]), (fels += S.fels[i]));
+        const dach = this._voxelSurfaceY(px, pz);
+        return {
+            deckung: Number.isFinite(deckung) ? deckung : 0,
+            bau: bau / R.strahlen,
+            fels: fels / R.strahlen,
+            hoehle: Number.isFinite(dach) && dach > fy + R.augeM + 2 ? 1 : 0,
+        };
+    }
+
+    // DIE VERDECKUNG EINES RUFS (klang.K3#2): die Sichtlinie vom Ohr (Fuß + raum.augeM) zur Quelle (ihr Fuß + raum.quelleM) — schneidet
+    // sie den Hang (das Gelände-Gesetz über der Linie, je Meter) oder einen Bau (`_klangBauHuellen` um ihre Mitte), trägt der Ruf
+    // { db: raum.verdecktDb, hz: raum.tiefpassHz } (gespielt von `tierRufSpielen`), sonst null.
+    _klangVerdeckung(pm, quelle) {
+        if (!pm || !quelle || !quelle.position) return null;
+        const R = AnazhRealm._umweltGesetz().UMWELT.raum;
+        const a = [pm.position.x, pm.position.y - AnazhRealm.PLAYER_FOOT_OFFSET + R.augeM, pm.position.z];
+        const b = [quelle.position.x, quelle.position.y + R.quelleM, quelle.position.z];
+        const L = Math.hypot(b[0] - a[0], b[2] - a[2]);
+        const n = Math.max(2, Math.ceil(L));
+        let verdeckt = false;
+        for (let i = 1; i < n && !verdeckt; i++) {
+            const t = i / n;
+            const h = this.getTerrainHeightAt(a[0] + (b[0] - a[0]) * t, a[2] + (b[2] - a[2]) * t);
+            if (Number.isFinite(h) && h > a[1] + (b[1] - a[1]) * t) verdeckt = true;
+        }
+        if (!verdeckt) {
+            const huellen = this._klangBauHuellen((a[0] + b[0]) / 2, (a[2] + b[2]) / 2, L / 2 + 1);
+            verdeckt = huellen.some((h) => AnazhRealm._klangStrecke(a, b, h) !== null);
+        }
+        return verdeckt ? { db: R.verdecktDb, hz: R.tiefpassHz } : null;
     }
 
     // Die Stimmung des Rufs aus dem Innenleben: Freude/Hoffnung/Staunen → freude, Trauer → trauer, Chaos → furcht,
