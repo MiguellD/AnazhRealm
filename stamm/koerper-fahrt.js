@@ -148,10 +148,27 @@ class AnazhRealm_koerper_fahrt {
     _tuchTakt(group, t) {
         const u = group.userData;
         const G = u && u._gelenk;
-        if (!G) return;
+        if (!G || u._tuchKein) return;
+        // die Tuch-Meshes des Leibs: die Grobstufe ist das Gitter des Lösers, die feine folgt ihm (einmal gesucht; ein Leib ohne
+        // Tuch kostet ab hier nichts mehr)
+        if (!u._tuchTeile) {
+            const stoff = (wurzel) => {
+                const L = [];
+                if (wurzel) wurzel.traverse((n) => n.isSkinnedMesh && n.userData.__seh === "stoff" && L.push(n));
+                return L;
+            };
+            const fein = stoff(G.nah);
+            const grob = stoff(G.fern);
+            if (!fein.length && !grob.length) {
+                u._tuchKein = true;
+                return;
+            }
+            u._tuchTeile = { sim: grob.length ? grob : fein, folge: grob.length ? fein : [], auge: fein[0] || grob[0] };
+        }
         const KC = globalThis.__koerperCore;
         const st = this.state;
-        let an = !G.istFern && group.visible && !!st.camera;
+        // das Auge sieht die feine Stufe (Ego nimmt den eigenen Leib aus seiner Ebene: dort rechnet kein Tuch)
+        let an = !G.istFern && group.visible && !!st.camera && st.camera.layers.test(u._tuchTeile.auge.layers);
         if (an) {
             let root = group;
             while (root.parent) root = root.parent;
@@ -181,16 +198,7 @@ class AnazhRealm_koerper_fahrt {
             return;
         }
         if (!u._tuch) {
-            const stoff = (wurzel) => {
-                const L = [];
-                if (wurzel) wurzel.traverse((n) => n.isSkinnedMesh && n.userData.__seh === "stoff" && L.push(n));
-                return L;
-            };
-            const fein = stoff(G.nah);
-            const grob = stoff(G.fern);
-            const sim = grob.length ? grob : fein;
-            const folge = grob.length ? fein : [];
-            if (!sim.length) return;
+            const { sim, folge } = u._tuchTeile;
             const haut = [];
             group.traverse(
                 (n) => n.isSkinnedMesh && n.userData.__seh === "haut" && n.userData.__klasse === "haut" && haut.push(n)
@@ -206,7 +214,6 @@ class AnazhRealm_koerper_fahrt {
                 for (const gr of g0.groups) g1.addGroup(gr.start, gr.count, gr.materialIndex);
                 if (g0.boundingSphere) g1.boundingSphere = g0.boundingSphere.clone();
                 if (g0.boundingBox) g1.boundingBox = g0.boundingBox.clone();
-                g1.userData = g0.userData;
                 m.userData.__tuchVorlage = g0;
                 m.geometry = g1;
             }

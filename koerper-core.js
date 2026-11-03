@@ -4898,7 +4898,7 @@
         return k;
     }
     // DER TAKT DES TUCHS: die Knochen des Bilds (die Welt-Matrizen müssen stehen), daraus je Punkt seine Haut-Pose (das Ziel),
-    // die Haut des Bilds in der Hash-Tafel, EIN Löser-Schritt um dt — dann die Abweichung jedes Punkts zurück in den Raum der
+    // die Haut des Bilds in ihrem Gitter (`_hautGitter`), EIN Löser-Schritt um dt — dann die Abweichung jedes Punkts zurück in den Raum der
     // Bindung (die Inverse seiner Blend-Matrix) in die Positionen der sim-Meshes und, über die Eltern, der Folger. dt ≤ 0
     // oder ein Sprung (> 0,25 s) setzt das Tuch in die Haut-Pose. Stehen alle Knochen und ruht das Tuch, rechnet nichts.
     // Antwort: true, wenn Positionen neu sind (der Wirt lädt sie hoch).
