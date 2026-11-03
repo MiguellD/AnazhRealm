@@ -444,6 +444,10 @@ function browserOptionen({ art, frist, zusatz = [], headless = true, viewport, p
 // headless-Kontext und was die Linse als `erwartet` nennt.
 const HARMLOS = /favicon|net::ERR|Failed to load resource|save-server|localhost:|127\.0\.0\.1:\d+\/api/i;
 const KOSTEN = /^\[budget\] |BUDGET-BRUCH /;
+// DIE POST-KETTE BRICHT NIE STILL: der EINE Melder (`_stoffBruch` → `_bruchMelden`) schreibt ihren Bruch — im Bau oder im
+// Render-Lauf, danach zeichnet der Schirm direkt — als ERROR-Zeile über console.log; bis hier sah der Sammler nur console.error,
+// und jede Linse außer gate:post-kette blieb über ihm grün (gate:fern-ring meldete auf main JEDEN Frame „STOFF: die Post-Kette
+// (Render-Lauf …)", CI 41622260772). Jetzt ist er in JEDER Linse, die hier bootet, ROT beim Namen (der Selbsttest: wirft.html).
 const sammlung = { fehler: [], erwartet: null, wache: false, selbsttest: null };
 
 function melde(art, text) {
@@ -477,8 +481,9 @@ function fehlerSammler(page) {
     page.on("pageerror", (e) => melde("pageerror", (e && (e.stack || e.message)) || e));
     page.on("error", (e) => melde("absturz", e?.message || e));
     page.on("console", (m) => {
-        if (m.type() !== "error") return;
         const t = m.text();
+        if (/\[ERROR\] STOFF: die Post-Kette/.test(t)) return melde("post-kette", t);
+        if (m.type() !== "error") return;
         if (HARMLOS.test(t)) return;
         // ein Budget-Bruch ist ein KOSTEN-Urteil mit eigenem Richter (gate:asset-contract, regler-wirkt), kein Absturz der Welt
         if (KOSTEN.test(t)) return console.log(`[welt-boot] KOSTEN (Richter gate:asset-contract): ${t.slice(0, 300)}`);
@@ -1566,7 +1571,8 @@ async function selbsttest() {
         "/schleife.html":
             "<!doctype html><script>function __stallSchleife(){var e=performance.now()+9000;while(performance.now()<e){}}setTimeout(__stallSchleife,300)</script>",
         "/haenger.html": "<!doctype html><script>window.__nie=function(){return new Promise(function(){})}</script>",
-        "/wirft.html": "<!doctype html><script>setTimeout(function(){throw new Error('__seitenWurf')},50)</script>",
+        "/wirft.html":
+            "<!doctype html><script>setTimeout(function(){console.log('[ERROR] STOFF: die Post-Kette');throw new Error('__seitenWurf')},50)</script>",
     };
     const server = statikServer({ seiten });
     await server.lausche(0);
@@ -1643,7 +1649,8 @@ async function selbsttest() {
     await server.zeige(await kontext.newPage(), undefined, "wirft.html", "load");
     await sleep(400);
     const wurf = sammlung.fehler.filter((f) => f.includes("__seitenWurf"));
-    sammlung.fehler = sammlung.fehler.filter((f) => !wurf.includes(f));
+    const kette = sammlung.fehler.filter((f) => f.startsWith("post-kette: "));
+    sammlung.fehler = sammlung.fehler.filter((f) => !wurf.includes(f) && !kette.includes(f));
     const code = fs
         .readdirSync(path.join(ROOT, "scripts"), { recursive: true })
         .map((f) => f.replace(/\\/g, "/"))
@@ -1734,6 +1741,7 @@ async function selbsttest() {
             /^pageerror: Error: __seitenWurf/.test(wurf[0]),
             `Seiten-Wurf: ${wurf[0] || "KEIN Fehler gesammelt — still grün"}`,
         ],
+        [kette.length === 1, `Bruch der Post-Kette: ${kette[0] || "still grün"}`],
         [!zwillinge.length, `eigene pageerror-Sammler neben dem EINEN: ${zwillinge.join(", ") || "keiner"}`],
         [
             !namen.length && `${vonHand("window.__deckel = 1; (window.__weltDa = r); window.sleep == r;")}` === "__deckel,__weltDa",

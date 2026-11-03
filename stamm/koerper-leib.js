@@ -1607,7 +1607,8 @@ class AnazhRealm_koerper_leib {
     // zwei an der Wurzel (Ton × HAAR_STRICH.wurzel), zwei an der Spitze (der Ton), die Kreuz-Karte zwei solche Bänder; die Braue
     // im selben Teil trägt ihren eigenen Ton (koerper `menschTon`) und steht. Gelesen hier, am Bau jedes Teils
     // (`_foundryBuildMesh`): ein Band, das dem Gesetz nicht folgt, meldet der EINE Melder beim Namen. Der Ofen-Guss bleibt
-    // byte-gleich (gate:ofen-contract); die Grobstufe (die Kappe ohne Strähnen) trägt keine Achse. Liefert die Zahl der Strähnen.
+    // byte-gleich (gate:ofen-contract); die Grobstufe (die Kappe ohne Strähnen, einfarbig) trägt keine Achse. Liefert die Zahl der
+    // Strähnen.
     _haarAchse(mesh) {
         const kl =
             mesh &&
@@ -1627,15 +1628,23 @@ class AnazhRealm_koerper_leib {
         const gleich = (x, y) => Math.abs(x - y) <= 1e-5 + 2e-3 * Math.abs(y);
         let [zahl, bruch] = [0, 0];
         for (let i = 0; i + 3 < n; i += 4) {
-            if (Math.round(t.getX(i)) !== ton) continue;
-            let gesetz = true;
-            for (let k = 0; k < 4; k++) gesetz = gesetz && Math.round(t.getX(i + k)) === ton;
-            for (const f of ["getX", "getY", "getZ"])
+            let haar = true;
+            for (let k = 0; k < 4; k++) haar = haar && Math.round(t.getX(i + k)) === ton;
+            if (!haar) continue;
+            let [gesetz, flach] = [true, true];
+            for (const f of ["getX", "getY", "getZ"]) {
                 gesetz =
                     gesetz &&
                     gleich(c[f](i), c[f](i + 1)) &&
                     gleich(c[f](i + 2), c[f](i + 3)) &&
                     gleich(c[f](i), wz * c[f](i + 2));
+                for (let k = 1; k < 4; k++) flach = flach && gleich(c[f](i + k), c[f](i));
+            }
+            // EINE FLÄCHE, KEINE STRÄHNE: die Kappe der Grobstufe (foundry-core: das Haar-Volumen `haarKappe` als Kugel im Stoff
+            // des Haars, im Teil der Brauen) trägt den Ton des Haars in jeder Ecke einfarbig — die Strähne trägt immer ihren
+            // Verlauf (Wurzel = HAAR_STRICH.wurzel × Spitze). Bis hier las die Achse jede Vierergruppe der Kappe als gebrochenes
+            // Band: 15 Brüche je Grobstufe, ERROR in jeder Linse am Leib (gate:post-kette, CI 41622260772)
+            if (!gesetz && flach) continue;
             if (!gesetz) {
                 bruch++;
                 continue;
