@@ -1159,7 +1159,9 @@ async function stimmeGang(o) {
         const [dx, dz] = w.ort ? [w.ort.x - o.x, w.ort.z - o.z] : [0, 0];
         const d = Math.round(Math.hypot(dx, dz));
         const wo = !w.ort ? " — überall, " : d < 2 ? " — bei dir, " : ` — ${d} m ${RI[Math.round((Math.atan2(dx, -dz) / Math.PI) * 4 + 8) % 8]} von dir, `;
-        const weil = [w.regel, w.weil].filter(Boolean).map((x) => r._describeDslCondition(x.cond)).concat(w.weil && !w.weil.ja ? ["nicht gilt, dass"] : []);
+        // die Bedingung in Worten: eine Zeile der Tafel (w8-sprache, spielgang.K5#2) — gelesen in der Sprache der Seite
+        const wenn = (c) => ((d) => (Array.isArray(d) ? r._t(d[0], d[1]) : d))(r._describeDslCondition(c));
+        const weil = [w.regel, w.weil].filter(Boolean).map((x) => wenn(x.cond)).concat(w.weil && !w.weil.ja ? ["nicht gilt, dass"] : []);
         const ursache = w.regel || w.weil ? "weil " : w.grund ? `auf dein Wort „${w.grund}“` : w.ort && w.ort.k === "at_field_need" ? "weil das Feld dort am ärmsten war" : "aus eigenem Antrieb";
         const was = w.op === "weather" && w.wunsch ? `wünscht sich das Wetter „` : "";
         const soll = [nom + " ", was, wo, ...weil, ursache, w.regel ? `(Gesetz Nr. ${w.regel.id} ${gen}` : `(Programm ${w.prog}`, seit.length > 1 ? `dazu ${seit.length - 1} weitere Tat` : ""];
@@ -1270,7 +1272,8 @@ async function warumSzene(r, T, o) {
             r.llmCall = async (...a) => (antwort = await alt.llm.apply(r, a));
             const t0 = performance.now();
             await r.maybeAnswerWithLlm(o.satz, () => {});
-            faelle.push({ fall, wahr, llm: !!st.llm.enabled, ms: Math.round(performance.now() - t0), fehler: antwort && antwort.error ? String(antwort.error).slice(0, 160) : null,
+            const fehler = antwort && antwort.error ? (Array.isArray(antwort.error) ? r._t(...antwort.error) : String(antwort.error)) : null; // eine Zeile der Tafel (w8-sprache)
+            faelle.push({ fall, wahr, llm: !!st.llm.enabled, ms: Math.round(performance.now() - t0), fehler: fehler && fehler.slice(0, 160),
                 say: antwort && typeof antwort.say === "string" ? antwort.say.slice(0, 400) : null });
             r.llmCall = alt.llm;
         }

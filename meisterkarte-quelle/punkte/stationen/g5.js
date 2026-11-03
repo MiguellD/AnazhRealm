@@ -129,6 +129,296 @@ async function sprachLauf(port, aus) {
     }
 }
 
+// ───────── DIE KI SPRICHT DIE SPRACHE DES SPIELERS (spielgang.K5#2, w8-sprache) — läuft als `node -e` im Spiel-Baum, Null-Renderer ─────────
+// Die Sprache des Spielers ist EIN Zustand der Welt (die Spalte der Tafel, `_spracheSetzen`); je Sprache (de · en) geht JEDER Satz
+// ihres Korpus-Teils (spec/abnahme/ki-korpus.json: `saetze` und `en.saetze`, dieselben Prädikate an derselben Stelle) zwei Wege:
+//   REGEL — ohne KI über den Chat des Spielers (`processChatCommand`: die Sätze der Welt, ihre Gesetze, ihre Absagen, die Antwort
+//           der Welt auf „warum regnet es?") · NEXUS — über den Weg der KI (`maybeAnswerWithLlm` → `llmCall` → `dslRun`) gegen den
+//           Prüf-Anbieter der Probe: er antwortet in der Sprache, die der System-Prompt verlangt (die Zeile `ki.welt.say` der Tafel
+//           in ihrer Spalte), mit dem Programm des Mitschnitts (spec/profiband/ratsche-ki-korpus.json, der DE-Satz derselben Stelle).
+// Dazu der Fehler-Fall des Nexus-Wegs: der Prüf-Anbieter antwortet leer (die Tür der KI nennt den Fehler).
+// Gemessen je Satz jede neue Zeile des Chats und der Stimme (`grokRender`): ihre Sprache an ihren Funktions-Wörtern (Text in
+// Anführung ist Datum: ein Befehl der Welt, das Wort des Spielers) — eine Zeile mit Wörtern der anderen Sprache ist FREMD; dazu je
+// Satz des Nexus-Wegs die Sprache, die der Prompt verlangte. Bei „warum regnet es?" schreibt die Probe den Regen je Fall (das Wort
+// des Spielers `_setWeather` „human" · der Wunsch des Nexus, den der Zug zieht): der Kontext der KI und die Antwort der Welt nennen
+// den wahren Schreiber (affekt.K4#2). DAS MODELL: trägt der lokale Anbieter (KI_ENDPUNKT, KI_MODELL — am Laptop ollama) das Modell,
+// fragt die Probe es mit jedem Satz in beiden Sprachen; sonst steht MODELL mit seinem Grund (ungemessen, nie still grün).
+// DER SELBSTTEST IM LAUF (EN): „prompt-de" (der Prompt verlangt Deutsch) · „tafel-de" (die Welt liest die DE-Spalte) · „schreiber"
+// (der Kontext nennt die Front) — jeder muss ROT messen, sonst ist die Probe blind.
+async function kiSpracheLauf(port, aus) {
+    const path = require("path");
+    const fs = require("fs");
+    const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const { AUSGABE_INSTALL } = require(path.resolve("scripts/lib/ausgabe-aufnahme.cjs"));
+    const K = JSON.parse(fs.readFileSync(path.resolve("spec/abnahme/ki-korpus.json"), "utf8"));
+    const R = JSON.parse(fs.readFileSync(path.resolve("spec/profiband/ratsche-ki-korpus.json"), "utf8"));
+    const TEIL = { de: Object.keys(K.saetze || {}), en: Object.keys((K.en && K.en.saetze) || {}) };
+    const soll = (sp, i) => (sp === "en" ? K.en.saetze : K.saetze)[TEIL[sp][i]];
+    const out = { saetze: { de: TEIL.de.length, en: TEIL.en.length }, gleich: TEIL.de.length === TEIL.en.length, laeufe: {}, mutanten: {}, schreiber: {}, modell: null };
+    out.gleich = out.gleich && TEIL.de.every((s, i) => JSON.stringify(soll("de", i)) === JSON.stringify(soll("en", i)));
+    let SAY = null;
+    const LEER = "(leer)";
+    const anfragen = [];
+    // der Prüf-Anbieter: die Sprache, die der Prompt verlangt, und das Programm des Mitschnitts
+    const pruefer = (req) =>
+        new Promise((ok) => {
+            let b = "";
+            req.on("data", (d) => (b += d));
+            req.on("end", () => {
+                const j = JSON.parse(b);
+                const sys = String(j.messages[0].content);
+                const u = String(j.messages[j.messages.length - 1].content);
+                const satz = u.slice(u.lastIndexOf("Spieler sagt: ") + 14);
+                const sp = SAY ? Object.keys(SAY).find((s) => sys.includes(SAY[s])) || null : null;
+                const i = Math.max(TEIL.de.indexOf(satz), TEIL.en.indexOf(satz));
+                const p = i >= 0 ? (R.mitschnitt || {})[TEIL.de[i]] : undefined;
+                anfragen.push({ satz, sp, kontext: u.slice(0, u.lastIndexOf("Spieler sagt: ")) });
+                // der Fehler-Fall: eine leere Antwort (die Tür der KI sagt es in der Sprache des Spielers)
+                if (satz === LEER) return ok(JSON.stringify({ message: { role: "assistant", content: "" } }));
+                const say = { de: "Ich höre dich, und die Welt antwortet dir.", en: "I hear you, and the world answers you." }[sp];
+                ok(JSON.stringify(say ? { message: { role: "assistant", content: JSON.stringify({ say, program: p || null }) } } : { error: "kein Prompt mit Sprache" }));
+            });
+        });
+    // das Modell der Sitzung (am Laptop): trägt der Anbieter es?
+    const ep = String(process.env.KI_ENDPUNKT || "").replace(/\/+$/, "");
+    const modell = process.env.KI_MODELL || "";
+    let modellDa = null;
+    if (ep && modell)
+        try {
+            const t = await fetch(ep + "/api/tags", { signal: AbortSignal.timeout(4000) }).then((x) => x.json());
+            modellDa = (t.models || []).some((m) => m.name === modell || m.name === modell + ":latest") ? true : "trägt " + modell + " nicht";
+        } catch (e) {
+            modellDa = ep + " antwortet nicht (" + String(e.message).slice(0, 60) + ")";
+        }
+    else modellDa = "kein KI_ENDPUNKT/KI_MODELL (der Läufer stellt kein Modell)";
+    const server = WB.statikServer({ seiten: { "/api/chat": pruefer } });
+    await server.lausche(Number(port));
+    const { browser, page } = await WB.nullSeite({ frist: 900000 });
+    // IN DER SEITE: die Stimme stellen (Anbieter, Modell, Endpunkt — wie der Spieler im Fenster der KI), die Mutanten
+    const STIMME = (a) => {
+        const r = window.anazhRealm;
+        const st = r.state;
+        if (!window.__kiStimme) {
+            const gr = r.grokRender;
+            window.__kiStimme = [];
+            r.grokRender = function (t) {
+                window.__kiStimme.push(String(t));
+                return gr.call(this, t);
+            };
+            window.__kiOrig = { t: r.constructor._t, ki: r.constructor._spracheKi, sch: r._wetterSchreiberZeile };
+        }
+        const C = r.constructor;
+        const O = window.__kiOrig;
+        [C._t, C._spracheKi, r._wetterSchreiberZeile] = [O.t, O.ki, O.sch];
+        if (a.mutante === "prompt-de") C._spracheKi = () => "de";
+        if (a.mutante === "tafel-de") C._t = (k, w) => C._tIn("de", k, w);
+        if (a.mutante === "schreiber") r._wetterSchreiberZeile = () => ["wetter.schreiber.front"];
+        if (a.sprache) r._spracheSetzen(a.sprache);
+        if (a.endpunkt) {
+            for (const [id, w] of [["llm-provider", "ollama"], ["llm-model", a.modell], ["llm-endpoint", a.endpunkt], ["llm-use-proxy", true]]) {
+                const el = document.getElementById(id);
+                el[w === true ? "checked" : "value"] = w;
+                el.dispatchEvent(new Event("change"));
+            }
+        }
+        if (!!st.llm.enabled !== !!a.ki) document.getElementById("llm-toggle").click();
+        return { sprache: C._sprache(), ki: !!st.llm.enabled, say: { de: C.TEXTE.de["ki.welt.say"], en: C.TEXTE.en["ki.welt.say"] }, schreiber: { de: { spieler: C.TEXTE.de["wetter.schreiber.spieler"], nexus: C.TEXTE.de["feldstimme.wer.nexus"] }, en: { spieler: C.TEXTE.en["wetter.schreiber.spieler"], nexus: C.TEXTE.en["feldstimme.wer.nexus"] } } };
+    };
+    // IN DER SEITE: ein Satz auf einem Weg — die neuen Zeilen des Chats (ohne das Echo des Satzes) und der Stimme
+    const SATZ = async (a) => {
+        const r = window.anazhRealm;
+        const st = r.state;
+        const box = document.getElementById("chat-output");
+        const [n0, s0] = [box.children.length, window.__kiStimme.length];
+        if (a.fall) {
+            st.weatherEffectTime = 0;
+            st.wetterWort = null;
+            st.wetterWunsch = null;
+            r._setWeather("sunny", "auto-zug");
+            if (a.fall === "spieler") r._setWeather("rainy", "human");
+            else r._setWeather("rainy", "nexus"), r._setWeather("rainy", "auto-zug");
+        }
+        const t0 = performance.now();
+        if (a.weg === "regel") r.processChatCommand(a.satz);
+        else await r.maybeAnswerWithLlm(a.satz, (z) => r._chatEcho(z));
+        const ms = Math.round(performance.now() - t0);
+        for (let i = 0; i < 6; i++) {
+            r._gameLoopTick(performance.now());
+            await new Promise((ok) => setTimeout(ok, 20));
+        }
+        const zeilen = [...box.children]
+            .slice(n0)
+            .map((el) => el.textContent.replace(/[⁦-⁩]/g, "").replace(/\s+/g, " ").trim())
+            .filter((t) => t && !t.startsWith("> "));
+        return { zeilen, stimme: window.__kiStimme.slice(s0), ms, schreiber: st.wetterSchreiber };
+    };
+    const lauf = async (sp, weg, opt = {}) => {
+        const satze = opt.saetze || [...TEIL[sp], ...(weg === "nexus" && !opt.endpunkt.includes(":11434") ? [LEER] : [])];
+        const a0 = anfragen.length;
+        const S = await page.evaluate(STIMME, { sprache: sp, ki: weg !== "regel", mutante: opt.mutante || null, endpunkt: opt.endpunkt || null, modell: opt.modell || "pruefer" });
+        if (S.sprache !== sp) throw new Error("die Welt spricht " + S.sprache + ", nicht " + sp);
+        const e = [];
+        for (const satz of satze) {
+            const i = TEIL[sp].indexOf(satz);
+            const faelle = soll(sp, i) && soll(sp, i).schreiber ? Object.keys(soll(sp, i).schreiber) : [null];
+            for (const fall of faelle) {
+                const n = anfragen.length;
+                const x = await page.evaluate(SATZ, { satz, weg: weg === "regel" ? "regel" : "ki", fall });
+                const q = anfragen.slice(n);
+                e.push({ satz, fall, ...x, prompt: q.map((z) => z.sp), kontext: q.map((z) => z.kontext.slice(0, 400)) });
+            }
+        }
+        return { sprache: sp, weg, mutante: opt.mutante || null, anfragen: anfragen.length - a0, saetze: e };
+    };
+    try {
+        await server.zeige(page, 120000);
+        await page.evaluate(() => window.__weltDa((r) => r.state && r.state.rendererReady && r.state.blueprints && r.nexus));
+        await page.evaluate(AUSGABE_INSTALL);
+        const S0 = await page.evaluate(STIMME, { ki: false });
+        SAY = S0.say;
+        out.schreiberNamen = S0.schreiber;
+        const pruef = "http://127.0.0.1:" + port + "/";
+        for (const sp of ["de", "en"]) {
+            out.laeufe[sp + ".regel"] = await lauf(sp, "regel");
+            out.laeufe[sp + ".nexus"] = await lauf(sp, "nexus", { endpunkt: pruef });
+        }
+        // DER SELBSTTEST IM LAUF (EN, je Mutante die ersten acht Sätze und „warum regnet es?")
+        const wenige = [...TEIL.en.slice(0, 8), TEIL.en[TEIL.en.length - 1]];
+        out.mutanten["prompt-de"] = await lauf("en", "nexus", { endpunkt: pruef, mutante: "prompt-de", saetze: wenige });
+        out.mutanten["tafel-de"] = await lauf("en", "regel", { mutante: "tafel-de", saetze: wenige });
+        out.mutanten["schreiber"] = await lauf("en", "nexus", { endpunkt: pruef, mutante: "schreiber", saetze: wenige.slice(-1) });
+        await page.evaluate(STIMME, { ki: false });
+        // DAS MODELL (am Laptop): jeder Satz in beiden Sprachen über den Weg der KI
+        if (modellDa === true) {
+            out.modell = { endpunkt: ep, name: modell, laeufe: {} };
+            for (const sp of ["de", "en"]) out.modell.laeufe[sp] = await lauf(sp, "modell", { endpunkt: ep + "/", modell });
+        } else out.modell = { grund: modellDa };
+    } catch (e) {
+        out.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 300);
+    } finally {
+        fs.writeFileSync(aus, JSON.stringify(out));
+        console.log("KISPRACHE " + JSON.stringify(out));
+        await browser.close().catch(() => {});
+        server.close();
+        process.exit(0);
+    }
+}
+
+// DIE SPRACHE EINER ZEILE (rein; Probe, Urteil und Proben): ihre Funktions-Wörter je Sprache — Text in Anführung („…“ “…” "…" '…')
+// ist Datum (ein Befehl der Welt, das Wort des Spielers, ein Name), ein Wort mit Umlaut oder ß ist Deutsch.
+const SPRACH_WORT = {
+    de: new Set("der das den dem des und ist nicht ein eine einen einem einer ich du er es wir ihr sie mit auf für von zu zum zur im vom nach wird werden sich sind kein keine keinen noch nur wie aber oder wenn dann hier dir mir dich mich bei aus vor nichts kennt steht welt gesetzt gebaut gewachsen dein deine weil auch schon jetzt wetter gesetz geschrieben hat".split(" ")),
+    en: new Set("the and is not of to you your it its with for from this that there here nothing world are be been has have can cannot does doesn't don't i i'm my me into at on by or if then no just more than shore water creature creatures grows built placed weather law written which what".split(" ")),
+};
+function zeilenSprache(t) {
+    const frei = String(t)
+        .replace(/„[^“”"]*[“”"]|“[^”]*”|"[^"]*"|(^|[\s(:])'[^'\n]*'/g, " ")
+        .toLowerCase();
+    const n = { de: 0, en: 0 };
+    for (const w of frei.split(/[^a-zäöüß']+/)) {
+        if (!w) continue;
+        if (/[äöüß]/.test(w) || SPRACH_WORT.de.has(w)) n.de++;
+        if (SPRACH_WORT.en.has(w)) n.en++;
+    }
+    return n;
+}
+// das Urteil eines Laufs: je Satz die Zeilen in der Sprache des Laufs, keine fremde, der Prompt (Nexus-Weg) in ihr; „warum regnet es?"
+// nennt den wahren Schreiber (Kontext der KI, Antwort der Welt)
+function kiSpracheLaufUrteil(l, namen) {
+    const sp = l.sprache;
+    const anders = sp === "de" ? "en" : "de";
+    const r = { saetze: l.saetze.length, zeilen: 0, eigen: 0, fremd: [], stumm: [], prompt: 0, promptFalsch: [], schreiber: [] };
+    for (const e of l.saetze) {
+        let eigen = 0;
+        for (const z of [...e.zeilen, ...e.stimme]) {
+            const n = zeilenSprache(z);
+            r.zeilen++;
+            if (n[anders] > 0) r.fremd.push("„" + e.satz + "“ → " + z.slice(0, 120));
+            else if (n[sp] > 0) eigen++;
+        }
+        r.eigen += eigen;
+        if (!eigen) r.stumm.push(e.satz);
+        if (l.weg === "nexus") {
+            if (e.prompt.length && e.prompt.every((p) => p === sp)) r.prompt++;
+            else r.promptFalsch.push("„" + e.satz + "“ verlangt " + (e.prompt.join("/") || "nichts"));
+        }
+        if (e.fall && namen && l.weg !== "modell") {
+            const wahr = namen[sp][e.fall];
+            const falsch = namen[sp][e.fall === "spieler" ? "nexus" : "spieler"];
+            const text = l.weg === "regel" ? e.zeilen.join(" ") : (e.kontext || []).join(" ");
+            if (!(text.includes(wahr) && !text.includes(falsch))) r.schreiber.push(e.fall + " (" + l.weg + ")");
+        }
+    }
+    r.gruen = r.saetze > 0 && !r.fremd.length && !r.stumm.length && !r.promptFalsch.length && !r.schreiber.length;
+    return r;
+}
+function kiSpracheUrteil(j) {
+    if (!j || !j.laeufe) return { gruen: false, zahl: "keine KISPRACHE-Zeile" };
+    if (j.fehler) return { gruen: false, zahl: "Lauf: " + j.fehler };
+    const rot = [];
+    if (!(j.saetze.de > 0) || j.saetze.de !== j.saetze.en) rot.push("der Korpus trägt keinen EN-Teil (de " + j.saetze.de + ", en " + j.saetze.en + ")");
+    else if (!j.gleich) rot.push("der EN-Teil trägt nicht dieselben Prädikate an derselben Stelle");
+    const zahl = [];
+    for (const k of ["de.regel", "de.nexus", "en.regel", "en.nexus"]) {
+        const l = j.laeufe[k];
+        if (!l) {
+            rot.push(k + " nicht gelaufen");
+            continue;
+        }
+        const u = kiSpracheLaufUrteil(l, j.schreiberNamen);
+        zahl.push(k + " " + u.saetze + " Sätze · " + u.zeilen + " Zeilen, fremd " + u.fremd.length + (l.weg === "nexus" ? " · Prompt " + u.prompt + "/" + u.saetze : ""));
+        if (u.fremd.length) rot.push(k + " fremd: " + u.fremd.slice(0, 2).join(" | "));
+        if (u.stumm.length) rot.push(k + " ohne Zeile in " + l.sprache + ": " + u.stumm.slice(0, 3).join(" · "));
+        if (u.promptFalsch.length) rot.push(k + " Prompt: " + u.promptFalsch.slice(0, 2).join(" · "));
+        if (u.schreiber.length) rot.push(k + " nennt nicht den wahren Schreiber: " + u.schreiber.join(", "));
+    }
+    const blind = ["prompt-de", "tafel-de", "schreiber"].filter((m) => !(j.mutanten[m] && !kiSpracheLaufUrteil(j.mutanten[m], j.schreiberNamen).gruen));
+    if (blind.length) rot.push("Selbsttest blind: " + blind.join(", ") + " misst GRÜN");
+    let modell = "MODELL ungemessen: " + ((j.modell && j.modell.grund) || "kein Lauf");
+    if (j.modell && j.modell.laeufe) {
+        const m = ["de", "en"].map((sp) => [sp, kiSpracheLaufUrteil(j.modell.laeufe[sp] || { sprache: sp, weg: "modell", saetze: [] }, j.schreiberNamen)]);
+        modell = "MODELL " + j.modell.name + " @ " + j.modell.endpunkt + ": " + m.map(([sp, u]) => sp + " " + u.saetze + " Sätze, " + u.eigen + "/" + u.zeilen + " Zeilen in " + sp + ", fremd " + u.fremd.length).join(" · ");
+        for (const [sp, u] of m) {
+            if (u.fremd.length) rot.push("Modell " + sp + " fremd: " + u.fremd.slice(0, 2).join(" | "));
+            if (u.stumm.length) rot.push("Modell " + sp + " ohne Antwort in " + sp + ": " + u.stumm.slice(0, 3).join(" · "));
+        }
+    }
+    return { gruen: !rot.length, zahl: zahl.join(" · ") + " · Selbsttest " + (blind.length ? "BLIND" : "3/3 ROT") + " · " + modell + (rot.length ? " · ROT " + rot.join("; ") : "") };
+}
+
+// DIE PROBEN des Urteils (knapp erzeugt): je Lauf ein Satz und die zwei Fälle von „warum regnet es?"
+const KS_NAMEN = {
+    de: { spieler: "Du selbst — dein Wort steht, bis du es freigibst", nexus: "Der Nexus" },
+    en: { spieler: "You yourself — your word stands until you release it", nexus: "The Nexus" },
+};
+const KS_ZEILE = { de: "Grok: Ich höre dich, und die Welt antwortet dir.", en: "Grok: I hear you, and the world answers you." };
+const ksWarum = (sp, f) => (sp === "de" ? "Das Wetter ist „Regen“. Geschrieben hat es: " : "The weather is “rain”. Written by: ") + KS_NAMEN[sp][f] + ".";
+function ksLauf(sp, weg, o = {}) {
+    const ki = weg !== "regel";
+    const satz = (satz, fall, zeile) => ({ satz, fall, zeilen: [zeile], stimme: [], prompt: ki ? [o.prompt || sp] : [], kontext: ki && fall ? ["Das Wetter schrieb: " + KS_NAMEN[sp][fall]] : [] });
+    return { sprache: sp, weg, saetze: [satz("s1", null, o.zeile || KS_ZEILE[sp]), ...["spieler", "nexus"].map((f) => satz("w", f, ki ? KS_ZEILE[sp] : o.warum || ksWarum(sp, f)))] };
+}
+function ksRoh(o = {}) {
+    const laeufe = {};
+    for (const sp of ["de", "en"]) for (const weg of ["regel", "nexus"]) laeufe[sp + "." + weg] = ksLauf(sp, weg, (o.lauf || {})[sp + "." + weg]);
+    const mutanten = { "prompt-de": ksLauf("en", "nexus", { prompt: "de", zeile: KS_ZEILE.de }), "tafel-de": ksLauf("en", "regel", { zeile: "Unbekannter Befehl — sag „hilfe“, dann zeigt dir die Welt, was sie versteht." }), schreiber: ksLauf("en", "nexus", { warum: ksWarum("en", "spieler") }) };
+    mutanten.schreiber.saetze.forEach((e) => (e.kontext = e.fall ? ["Das Wetter schrieb: The world's weather front (its drift)"] : []));
+    const j = { saetze: { de: 42, en: o.en == null ? 42 : o.en }, gleich: true, laeufe, mutanten: { ...mutanten, ...(o.mutanten || {}) }, schreiberNamen: KS_NAMEN, modell: o.modell || { grund: "kein KI_ENDPUNKT/KI_MODELL (der Läufer stellt kein Modell)" } };
+    return "KISPRACHE " + JSON.stringify(j);
+}
+const KS_PROBEN = [
+    { name: "die Welt antwortet in de und en, der Prompt verlangt die Sprache des Spielers, ohne Modell beim Namen", stdout: ksRoh(), gruen: true },
+    { name: "die Tat in Worten steht deutsch im englischen Chat", stdout: ksRoh({ lauf: { "en.nexus": { zeile: "(World changed: Grok lässt das Wetter zu „Regen“ wechseln.)" } } }), gruen: false },
+    { name: "der Prompt verlangt Deutsch, der Spieler spricht EN", stdout: ksRoh({ lauf: { "en.nexus": { prompt: "de" } } }), gruen: false },
+    { name: "eine Antwort des Regel-Wegs ohne Zeile in der Sprache des Spielers", stdout: ksRoh({ lauf: { "de.regel": { zeile: "→ 3" } } }), gruen: false },
+    { name: "der Korpus trägt keinen EN-Teil", stdout: ksRoh({ en: 0 }), gruen: false },
+    { name: "der Selbsttest ist blind (eine Mutante misst grün)", stdout: ksRoh({ mutanten: { "tafel-de": ksLauf("en", "regel") } }), gruen: false },
+    { name: "„warum regnet es?“ nennt nicht den wahren Schreiber", stdout: ksRoh({ lauf: { "de.regel": { warum: ksWarum("de", "spieler") } } }), gruen: false },
+    { name: "das Modell antwortet in jeder Sprache des Spielers", stdout: ksRoh({ modell: { endpunkt: "http://127.0.0.1:11434", name: "qwen3:4b-instruct", laeufe: { de: ksLauf("de", "modell"), en: ksLauf("en", "modell") } } }), gruen: true },
+    { name: "das Modell antwortet deutsch, der Spieler spricht EN", stdout: ksRoh({ modell: { endpunkt: "http://127.0.0.1:11434", name: "qwen3:4b-instruct", laeufe: { de: ksLauf("de", "modell"), en: ksLauf("en", "modell", { zeile: "Grok: Ich lasse es regnen, weil du es wolltest." }) } } }), gruen: false },
+    { name: "kein Lauf (die Welt kam nicht)", stdout: 'KISPRACHE {"fehler":"Welt kam nicht","laeufe":{}}', gruen: false },
+];
+
 // ───────── DIE PROBEN AN DER SEITE (Zweig proben-leib, stationen/seite.cjs): leib.K2 · leib.K4 · halten.K1#2 · halten.K5 · tore.K3 ─────────
 // Bis 29.10. bootete jede dieser Stationen ihre Linse mit eigener Welt (Takt 19 an b3f9ae95: 4–10 Soll-Minuten je Lauf); jetzt
 // ruft die Probe in der Welt der Sitzung die Seiten-Funktionen der Linse selbst (aus ihrer Datei am SHA, `H.quelle`) und nur
@@ -3721,6 +4011,37 @@ const stationen = [
         pfad: ["stamm/", "index.html", "scripts/diag-sprache.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/stamm.cjs"],
         quelle: "1 = jede UI-Zeile aus EINER Text-Quelle in DE und EN (0 harte Strings, Zählung), an einem Gerät umgeschaltet",
     },
+    // ───────── spielgang.K5 Staffel 2 (w8-sprache) — die KI antwortet in der Sprache des Spielers (kiSpracheLauf, kiSpracheUrteil oben) ─────────
+    // Je Sprache (de · en) jeder Satz ihres Korpus-Teils über den Regel-Weg (ohne KI) und den Nexus-Weg (die KI gegen den Prüf-Anbieter,
+    // der die Sprache des Prompts spricht); jede neue Zeile des Chats und der Stimme in der Sprache des Spielers, keine fremde, der
+    // Prompt verlangt sie, „warum regnet es?" nennt den wahren Schreiber; der Selbsttest im Lauf (prompt-de · tafel-de · schreiber) ROT.
+    // DAS MODELL: env KI_ENDPUNKT/KI_MODELL (die Farm stellt ollama mit qwen3:4b-instruct, am Laptop `--farm laptop`) — trägt der Anbieter
+    // es, fragt die Probe es mit jedem Satz in beiden Sprachen und urteilt die Sprache jeder Antwort; sonst steht „MODELL ungemessen“
+    // mit dem Grund in der Zahl (nie still). Gemessen (headless, cloud, w8-sprache): de.regel 42 Sätze · 46 Zeilen, fremd 0 · de.nexus
+    // 43 · 159, fremd 0, Prompt 43/43 · en.regel 42 · 46, fremd 0 · en.nexus 43 · 158, fremd 0, Prompt 43/43 · Selbsttest 3/3 ROT; an der
+    // Basis (w6-spielgang-decke) Prompt 0/43 und en.nexus 42 fremde Zeilen.
+    {
+        kriterium: "spielgang.K5",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "-e", "(" + kiSpracheLauf + ")(process.argv[1], process.argv[2]);", "{PORT}", "{AUS}"],
+        env: { KI_ENDPUNKT: "http://127.0.0.1:11434/", KI_MODELL: "qwen3:4b-instruct" },
+        gpu: false,
+        zeit: false,
+        minuten: 20,
+        urteil: (j, lauf) => kiSpracheUrteil(j || jsonZeile(lauf.stdout, /^KISPRACHE \{/)),
+        proben: KS_PROBEN,
+        pfad: [
+            "spec/abnahme/ki-korpus.json",
+            "spec/profiband/ratsche-ki-korpus.json",
+            "stamm/",
+            "index.html",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/stamm.cjs",
+        ],
+        quelle: "2 = die KI antwortet in der Sprache des Spielers (Korpus-Teil EN aus KI K1)",
+    },
     // ───────── spielgang.K4 — Zugänglichkeit aus dem Gesetz: die Untertitel (Zweig hud-zugang) ─────────
     {
         kriterium: "spielgang.K4",
@@ -3932,7 +4253,6 @@ module.exports.fehlt = [
     { kriterium: "tore.K4", staffel: 1, befehl: null, grund: "unmessbar in EINEM Lauf auf EINEM Gerät: zwei physische Geräte im LAN (Radeon-Maschine und OMEN) über den signaling-server, der Peer im Ausgabe-Bild von B — die Punkte-Maschine fährt je Gerät eine eigene Sitzung, und kein Läufer verbindet zwei Sitzungen zweier Rechner; gate:mp-sync fährt zwei Seiten in EINEM Browser (das Schlupfloch der Staffel)" },
     { kriterium: "spielgang.K1", staffel: 1, befehl: null, grund: "nicht gebaut (p3-stationen-g456): EIN Lauf ohne Neuladen und ohne Konsole aus aufgenommenen Spieler-Eingaben über ≥ 3 der fünf Schritte (ankommen · laufen und sehen · bauen · mit der KI erschaffen · benutzen · teilen), je Schritt die Zahl seines Bereichs — es gibt keine Aufnahme der Eingaben und keinen Abspieler im Spiel-Baum; die Proben der Sitzung stellen die Welt über die Werkbank (eval, umstellen), das ist die Konsole; ein Lauf über fünf Schritte hat in der Fahrt keinen Platz" },
     { kriterium: "spielgang.K2", staffel: 1, befehl: null, grund: "unmessbar ohne Blind-Spieler: ein frischer Agent ohne Doku, der nur Bild und Eingabe kennt und in ≤ 3 min gehen, umsehen, Sicht-Wechsel, Werkstatt, Satz und Tor findet — kein solcher Agent läuft an der Punkte-Maschine (ein Läufer mit Bild-Modell und Eingabe-Schleife fehlt); die Zählung am Eingabe- und Ereignis-Strom gäbe es (`H.ereignisStrom`, stationen/sitzung-seite.js)" },
-    { kriterium: "spielgang.K5", staffel: 2, befehl: null, grund: "nicht gebaut (p3-stationen-g456): die KI antwortet in der Sprache des Spielers — der Korpus aus ki.K1 trägt keinen Teil EN (spec/abnahme/ki-korpus.json), und die Staffel 1 (EINE Text-Quelle DE/EN) steht ROT: es gibt keine Sprache des Spielers" },
     // fahrzeug.K2#2 ist seit w4-sitzung-reif eine Station (der Verkehr der Stadt, PFLICHT-OFFEN C); ihre übrigen Teile nennt sie selbst:
     // die feste Route der 1 quert drei Bäche (Furten: zwei Feldwege und eine Gasse von 4,−7), aber keinen 25°-Hang — das Wegenetz legt
     // keinen Weg so steil (die Trassen fallen höchstens um `gefaelle`), ein Hang-Teil braucht eine eigene Strecke am Messort hang
