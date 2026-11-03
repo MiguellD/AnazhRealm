@@ -1445,9 +1445,44 @@ class AnazhRealm_dienst {
                 if (!m) return sp === "pseudo" && stueck ? `⟦${stueck}⟧` : stueck;
                 if (!werte || werte[m[1]] == null)
                     throw new Error(`SPRACHE: „${schluessel}“ verlangt den Wert ${m[1]}`);
-                return String(werte[m[1]]);
+                // ein Wert als `[schlüssel, werte]` ist selbst eine Zeile der Tafel (gelesen in der Sprache von jetzt)
+                const w = werte[m[1]];
+                return Array.isArray(w) ? AnazhRealm._t(w[0], w[1]) : String(w);
             })
             .join("");
+    }
+
+    // DAS ETIKETT (spielgang.K5): ein Ding der Welt (Bauplan, Stoff, Werkzeug, Studio-Werk) trägt seinen Namen als SCHLÜSSEL
+    // `etikett: [schlüssel, werte]`, nie als aufgelösten Text — `label` liest ihn bei jedem Zugriff in der Sprache von jetzt,
+    // so wechselt jeder Leser (Hotbar, Katalog, Inventar, Tooltip) mit der Sprache, ohne dass er es weiß. Wer `label`
+    // schreibt (der Spieler benennt um), macht es zu Daten: der Schlüssel fällt.
+    static _etikett(o) {
+        if (!o || !Array.isArray(o.etikett)) return o;
+        Object.defineProperty(o, "label", {
+            configurable: true,
+            enumerable: true,
+            get() {
+                return Array.isArray(this.etikett) ? AnazhRealm._t(this.etikett[0], this.etikett[1]) : undefined;
+            },
+            set(v) {
+                delete this.etikett;
+                Object.defineProperty(this, "label", {
+                    value: v,
+                    writable: true,
+                    enumerable: true,
+                    configurable: true,
+                });
+            },
+        });
+        return o;
+    }
+    // der Name in der Quell-Sprache des Gesetzes (de) — für die Wörter der DSL, die nie mit der Sprache des Spielers wechseln
+    static _etikettQuelle(o) {
+        if (!o) return undefined;
+        if (!Array.isArray(o.etikett)) return o.label;
+        const z = AnazhRealm.TEXTE.de[o.etikett[0]];
+        const w = o.etikett[1] || {};
+        return z.replace(/\{(\w+)\}/g, (_, k) => (Array.isArray(w[k]) ? AnazhRealm.TEXTE.de[w[k][0]] : String(w[k])));
     }
 
     _t(schluessel, werte) {

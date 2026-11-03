@@ -432,7 +432,11 @@ class AnazhRealm_studio_bruecke {
             // DIE EINE Klon-Sichtbarkeits-Regel (wie cloneBlueprint, gate:trias B10): ein Klon ist SICHTBAR —
             // `donorOnly` reist NIE mit (sonst fällt jeder Auto-Blueprint still aus allen Pickern).
             delete clone.donorOnly;
-            clone.label = rec.lab || rec.label || id.charAt(0).toUpperCase() + id.slice(1);
+            // der Name des Werks ist eine Zeile der Tafel je Rezept (`gestalt.<id>`, DE = der Name im Gesetzbuch), nie der
+            // deutsche Text des Kerns — ein Rezept ohne Zeile bricht laut (`_t`)
+            delete clone.label;
+            clone.etikett = [`gestalt.${id.replace(/_/g, "-")}`];
+            AnazhRealm._etikett(clone);
             if (pol.grown) clone._grownSpecies = name;
             else clone.name = name;
             if (pol.builtIn !== undefined) clone.builtIn = pol.builtIn;
@@ -1474,7 +1478,6 @@ class AnazhRealm_studio_bruecke {
         // die Leser der Welt ohne Bauplan: die Nah-Streu (ihre Boden-Arten) und die Namen der Streu
         const streu = new Set(Object.values(AnazhRealm.STREU_NAMEN));
         for (const a of (cfg && this._nahStreuArten()) || []) streu.add(a.id);
-        const gross = (w) => w.charAt(0).toUpperCase() + w.slice(1);
         const teile = [];
         const teilVon = new Map();
         const zielVon = new Map();
@@ -1497,7 +1500,7 @@ class AnazhRealm_studio_bruecke {
                 rezept: id,
                 art: rec.kind,
                 kern,
-                lab: (sichtbar(ziel) && bps[ziel].label) || rec.lab || gross(id),
+                lab: (sichtbar(ziel) && bps[ziel].label) || this._t(`gestalt.${id.replace(/_/g, "-")}`),
                 ziel,
                 werk,
                 sichtbar: sichtbar(ziel),
@@ -1537,7 +1540,8 @@ class AnazhRealm_studio_bruecke {
                         ebene: "bereich",
                         art,
                         kern,
-                        lab: arten && typeof arten[art] === "string" ? arten[art] : null,
+                        // der Name, den das Gesetzbuch der Art gibt, gelesen aus der Tafel (`art.<art>`, DE = das Buch)
+                        lab: arten && typeof arten[art] === "string" ? this._t(`art.${art}`) : null,
                         quelle: { datei, anker: "STAMMBAUM.arten." + art },
                         kinder: [],
                     };
@@ -1551,7 +1555,7 @@ class AnazhRealm_studio_bruecke {
         };
         const getafelt = new Set();
         for (const k of (tafel && tafel.kerne) || []) {
-            const s = studio(k.kern, k.studio || null, k.datei || null, k.arten);
+            const s = studio(k.kern, k.studio ? this._t(`studio.${k.kern}`) : null, k.datei || null, k.arten);
             for (const id of k.rezepte || [])
                 if (recipes[id] && !getafelt.has(id)) {
                     getafelt.add(id);
@@ -1733,7 +1737,8 @@ class AnazhRealm_studio_bruecke {
                 .filter((x) => x.length >= 3)
                 .map(falte);
         const istTor = (n) => !bps[n] || bps[n].role === "portal";
-        const label = (t) => (bps[t] ? bps[t].label : recipes[t] && recipes[t].lab);
+        // die Wörter der DSL sprechen die Quell-Sprache des Gesetzes (de), nie die Sprache des Spielers
+        const label = (t) => (bps[t] ? AnazhRealm._etikettQuelle(bps[t]) : recipes[t] && recipes[t].lab);
         // der Träger je Rezept ist das Ziel seines Teils im EINEN Stammbaum (`_stammbaum` trägt die Regel)
         const traeger = {};
         const artVon = {};

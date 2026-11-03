@@ -18,10 +18,13 @@
 "use strict";
 
 // Wort-Text im Code (die Senken am AST): ein Wort aus ≥ 2 Buchstaben UND ein Zeichen der Sprache (Großbuchstabe, Umlaut,
-// Satzzeichen); camelCase ist ein Name
+// Satzzeichen)
 const wort = (t) => {
     t = String(t).replace(/<[^>]*>|&\w+;/g, " ");
-    return /[A-Za-zÄÖÜäöüß]{2,}/.test(t) && /[A-ZÄÖÜäöüß…!?:]/.test(t) && !/^[a-z]+[A-Z]\w*$/.test(t);
+    // camelCase und ein Bezeichner ohne Leerzeichen in Kleinbuchstaben („szene:tiefenabbild“, „stein_block“) sind Namen
+    // Sprache ist auch die kleine Zeile aus zwei Wörtern („kahl (0) ↔ voll (1)“, „glatt ↔ bruchig“)
+    const satz = /[A-ZÄÖÜäöüß…!?:]/.test(t) || /[a-zäöüß]{2,}[\s(),↔·–—/]+[^\s]*[a-zäöüß]{2,}/.test(t);
+    return /[A-Za-zÄÖÜäöüß]{2,}/.test(t) && satz && !/^[a-z]+[A-Z]\w*$/.test(t) && !/^[a-z][\w.:/-]*$/.test(t);
 };
 
 // DIE ERZEUGER-WACHE — läuft im Fenster vor jedem Skript (evaluateOnNewDocument). Reine Funktion ohne freie Namen.

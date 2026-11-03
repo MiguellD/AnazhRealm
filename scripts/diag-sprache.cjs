@@ -30,6 +30,7 @@ const SENKE_RUF =
     /^(_hudSchreib|_chatEcho|alert|confirm|prompt|_el|append|appendChatOutput|_spielerSagt|_ladeschirmStand)$/;
 const SENKE_FELD = /^(textContent|innerText|innerHTML|title|placeholder)$/;
 const SENKE_ATTR = /^(title|placeholder|aria-label|alt)$/;
+const ETIKETT = /^(label|hint|lab|titel|title|tip|desc|beschreibung|text|name)$/;
 const DATEN_ATTR = /^(value|class|className|id|type|name|href|src|for|role|key|style)$/;
 const nameVon = (c) =>
     c.type === "MemberExpression" ? !c.computed && c.property.name : c.key ? c.key.name || c.key.value : c.name;
@@ -40,6 +41,9 @@ function senke(n, ahnen) {
     for (let i = ahnen.length - 1, kind = n; i >= 0; kind = ahnen[i--]) {
         const a = ahnen[i];
         if (a.type === "Property" && kind === a.value && DATEN_ATTR.test(nameVon(a))) return null;
+        // das DATEN-ETIKETT (w5-spielgang-k5): ein Name oder Hinweis in einem Datensatz (`label:`, `hint:`, `lab:`, `title:`,
+        // `text:` …) fließt später in eine Senke, die kein Literal mehr sieht (`bp.label`, `d.hint`) — er ist selbst die Senke
+        if (a.type === "Property" && kind === a.value && ETIKETT.test(nameVon(a))) return nameVon(a) + ":";
         const feld = a.type === "AssignmentExpression" && kind === a.right && nameVon(a.left);
         if (a.left?.type === "MemberExpression" && SENKE_FELD.test(feld)) return feld;
         const ruf = a.type === "CallExpression" && kind !== a.callee && nameVon(a.callee);
