@@ -1551,7 +1551,10 @@ const ULTI_K2_PROBEN = (() => {
 // quaxturm), ohne Kommentar-Zeilen; sein SHA-256 trägt kein Kern des Spiel-Manifests und kein Buch unter worlds/. Nach dem Neuladen
 // muss es dasselbe Andocken bestehen wie (G), und der Wirt (Stamm, Seite, Manifest, Kerne) nennt die Art 0×. Am main 5fba36ea ROT
 // erwartet: die Bibliothek kennt die Art gesetzbuch nicht (`_bibliothekFracht` trägt welt · regel · bauplan), der Kern-Weg liest nur
-// das Manifest des Servers (`_foundryStart`).
+// das Manifest des Servers (`_foundryStart`). DIE WAND DAHINTER (w5-s2-g5, gemessen am Spiel-Zweig): mit der Art gesetzbuch in der
+// Bibliothek und den Büchern als Blob-Zeilen in der Geburt des Fadens fällt der Faden an der CSP der Seite (index.html `script-src
+// 'self'` ohne blob: — importScripts „failed to load“, W.onmessage fehlt): ein Buch des Spielers ist fremder Code; wie es sicher
+// andockt (eigener Faden ohne Platte, oder ein Buch als Daten), entscheidet das Vertrauens-Gesetz (ultiversum.K5), nie diese Probe.
 async function ultiversumK4Lauf() {
     const fs = require("fs");
     const path = require("path");
