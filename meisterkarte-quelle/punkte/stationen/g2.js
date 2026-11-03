@@ -2263,6 +2263,29 @@ function musik2Urteil(J) {
     };
 }
 const MUSIK2_BEFEHL = ["node", "-e", "(" + musik2Lauf + ")()", "{AUS}", "{PORT}", String(musik2Seite)];
+// DIE ROH-AUSGABE am main 5fba36ea (03.11., Cloud, headless, 8 s): die Proben der Station urteilen sie und ihre Mutanten
+const MUSIK2_ROH = {"achsen": ["awe", "peace"], "erregung": [0.9, -0.7], "hoch": {"sek": 60, "fehler": [], "akkorde": 19, "periode": 3.248, "dichte": 10.967, "typen": {"sine": 297, "triangle": 114, "puffer": 247}, "ereignisse": [], "rms": []}, "tief": {"sek": 60, "fehler": [], "akkorde": 19, "periode": 3.248, "dichte": 7.783, "typen": {"sine": 182, "triangle": 114, "puffer": 171}, "ereignisse": [], "rms": []}, "hoch2": {"sek": 60, "fehler": [], "akkorde": 19, "periode": 3.248, "dichte": 10.883, "typen": {"sine": 292, "triangle": 114, "puffer": 247}, "ereignisse": [], "rms": []}, "sonne": {"sek": 60, "fehler": [], "akkorde": 19, "periode": 3.248, "dichte": 9.383, "typen": {"sine": 202, "triangle": 114, "puffer": 247}, "ereignisse": [], "rms": []}, "sturm": {"sek": 60, "fehler": [], "akkorde": 19, "periode": 3.248, "dichte": 9.383, "typen": {"sine": 202, "triangle": 114, "puffer": 247}, "ereignisse": [], "rms": []}, "nacht": {"sek": 60, "fehler": [], "akkorde": 19, "periode": 3.248, "dichte": 9.383, "typen": {"sine": 202, "triangle": 114, "puffer": 247}, "ereignisse": [], "rms": []}, "sonne2": {"sek": 60, "fehler": [], "akkorde": 19, "periode": 3.248, "dichte": 9.3, "typen": {"sine": 197, "triangle": 114, "puffer": 247}, "ereignisse": [], "rms": []}, "lang": {"sek": 600, "akkorde": 185, "phrasen": 185, "mitTon": 185, "wieder": 1, "beispiel": [[70, 160]], "fehler": []}, "duck": {"ereignisse": [{"art": "schritt", "t": 8, "ok": true}, {"art": "ruf", "t": 13, "ok": true}, {"art": "gespraech", "t": 18, "ok": true}], "rauschenDb": -0.01, "schrittDb": 0, "rufDb": 0, "gespraechDb": 0, "rms": [[0.098475, 0.18014, 0.012076, 0.17256], [0.098391, 0.18012, 0.012076, 0.17257]], "fehler": []}};
+const musik2Roh = (aendern) => "MUSIK2 " + JSON.stringify(aendern(JSON.parse(JSON.stringify(MUSIK2_ROH))));
+// der Lauf, der jede Klausel hält: Tempo und Dichte aus der Erregung, Sturm und Nacht mit eigener Schicht, keine Wiederholung, Duck 9 dB
+const musik2Gut = (x) => {
+    x.hoch.periode = 2.6;
+    x.hoch2.periode = 2.62;
+    x.sturm.typen = { sine: 120, triangle: 114, puffer: 400, sawtooth: 60 };
+    x.nacht.typen = { sine: 260, triangle: 40, puffer: 90 };
+    x.lang.wieder = 0;
+    Object.assign(x.duck, { schrittDb: 9.1, rufDb: 8.4, gespraechDb: 10.2 });
+    return x;
+};
+const MUSIK2_PROBEN = [
+    { name: "die Messung am main 5fba36ea (Tempo, Schicht, Wiederholung, Duck ROT; die Dichte folgt)", stdout: musik2Roh((x) => x), gruen: false },
+    { name: "jede Klausel hält", stdout: musik2Roh(musik2Gut), gruen: true },
+    { name: "eine Playlist je Wetter: die Schicht wechselt, das Tempo nicht", stdout: musik2Roh((x) => ((x = musik2Gut(x)), (x.hoch.periode = x.tief.periode), (x.hoch2.periode = x.tief.periode), x)), gruen: false },
+    { name: "der Duck nur unter dem Schritt", stdout: musik2Roh((x) => ((x = musik2Gut(x)), (x.duck.gespraechDb = 0.3), x)), gruen: false },
+    { name: "der Ruf geschieht nicht (ohne Ereignis kein Duck)", stdout: musik2Roh((x) => ((x = musik2Gut(x)), (x.duck.ereignisse[1].ok = false), x)), gruen: false },
+    { name: "eine Phrase kehrt binnen 10 min wieder", stdout: musik2Roh((x) => ((x = musik2Gut(x)), (x.lang.wieder = 1), x)), gruen: false },
+    { name: "das Tempo ist Rauschen der Saat", stdout: musik2Roh((x) => ((x = musik2Gut(x)), (x.hoch2.periode = 3.3), x)), gruen: false },
+    { name: "die Welt bootet nicht", stdout: "MUSIK2 " + JSON.stringify({ fehler: "Waiting failed: 300000ms exceeded" }), gruen: false },
+];
 
 // ───────── DIE WELT-PROBE der Gruppe II (p3-stationen-g12, 01.11.): luftwasser.K3 · luftwasser.K4 am Null-Renderer ─────────
 // Der Lauf, der Grund und die Form der Zeile sind die der Gruppe I (stationen/g1.js `weltProbe`: EIN Boot, je Probe ihre
@@ -4022,7 +4045,7 @@ const stationen = [
         zeit: false,
         minuten: 10,
         urteil: (j, lauf) => musik2Urteil(j || jsonZeile(lauf.stdout, /^MUSIK2 /)),
-        proben: [],
+        proben: MUSIK2_PROBEN,
         pfad: ["stamm/klang.js", "klang-core.js", "stamm/feld-leben.js", "stamm/feld-sprache.js", "stamm/werkstatt-hud.js", "stamm/studio-bruecke.js", "scripts/lib/welt-boot.cjs"],
         quelle: "2 = Tempo und Dichte aus der Erregung, Wetter und Uhr wechseln die Schicht, keine Phrase wiederholt sich binnen 10 min, die Musik duckt sich unter Schritt, Ruf und Gespräch um ≥ 6 dB",
     },
