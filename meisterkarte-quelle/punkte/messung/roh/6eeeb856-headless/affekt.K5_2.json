@@ -1,0 +1,167 @@
+{
+ "achsen": [
+  "awe",
+  "peace"
+ ],
+ "erregung": [
+  0.9,
+  -0.7
+ ],
+ "hoch": {
+  "sek": 60,
+  "wetter": "sunny",
+  "fehler": [],
+  "akkorde": 19,
+  "periode": 3.248,
+  "dichte": 10.967,
+  "typen": {
+   "sine": 297,
+   "triangle": 114,
+   "puffer": 247
+  },
+  "ereignisse": [],
+  "rms": []
+ },
+ "tief": {
+  "sek": 60,
+  "wetter": "sunny",
+  "fehler": [],
+  "akkorde": 19,
+  "periode": 3.248,
+  "dichte": 7.783,
+  "typen": {
+   "sine": 182,
+   "triangle": 114,
+   "puffer": 171
+  },
+  "ereignisse": [],
+  "rms": []
+ },
+ "hoch2": {
+  "sek": 60,
+  "wetter": "sunny",
+  "fehler": [],
+  "akkorde": 19,
+  "periode": 3.248,
+  "dichte": 10.883,
+  "typen": {
+   "sine": 292,
+   "triangle": 114,
+   "puffer": 247
+  },
+  "ereignisse": [],
+  "rms": []
+ },
+ "sonne": {
+  "sek": 60,
+  "wetter": "sunny",
+  "fehler": [],
+  "akkorde": 19,
+  "periode": 3.248,
+  "dichte": 9.383,
+  "typen": {
+   "sine": 202,
+   "triangle": 114,
+   "puffer": 247
+  },
+  "ereignisse": [],
+  "rms": []
+ },
+ "sturm": {
+  "sek": 60,
+  "wetter": "stormy",
+  "fehler": [],
+  "akkorde": 19,
+  "periode": 3.248,
+  "dichte": 9.383,
+  "typen": {
+   "sine": 202,
+   "triangle": 114,
+   "puffer": 247
+  },
+  "ereignisse": [],
+  "rms": []
+ },
+ "nacht": {
+  "sek": 60,
+  "wetter": "sunny",
+  "fehler": [],
+  "akkorde": 19,
+  "periode": 3.248,
+  "dichte": 9.383,
+  "typen": {
+   "sine": 202,
+   "triangle": 114,
+   "puffer": 247
+  },
+  "ereignisse": [],
+  "rms": []
+ },
+ "sonne2": {
+  "sek": 60,
+  "wetter": "sunny",
+  "fehler": [],
+  "akkorde": 19,
+  "periode": 3.248,
+  "dichte": 9.3,
+  "typen": {
+   "sine": 197,
+   "triangle": 114,
+   "puffer": 247
+  },
+  "ereignisse": [],
+  "rms": []
+ },
+ "lang": {
+  "sek": 600,
+  "akkorde": 185,
+  "phrasen": 185,
+  "mitTon": 185,
+  "wieder": 1,
+  "beispiel": [
+   [
+    70,
+    160
+   ]
+  ],
+  "fehler": []
+ },
+ "duck": {
+  "ereignisse": [
+   {
+    "art": "schritt",
+    "t": 8,
+    "ok": true
+   },
+   {
+    "art": "ruf",
+    "t": 13,
+    "ok": true
+   },
+   {
+    "art": "gespraech",
+    "t": 18,
+    "ok": true
+   }
+  ],
+  "rauschenDb": 0.01,
+  "schrittDb": 0,
+  "rufDb": 0,
+  "gespraechDb": 0,
+  "rms": [
+   [
+    0.098323,
+    0.1802,
+    0.012076,
+    0.17257
+   ],
+   [
+    0.098468,
+    0.18016,
+    0.012076,
+    0.17257
+   ]
+  ],
+  "fehler": []
+ }
+}
