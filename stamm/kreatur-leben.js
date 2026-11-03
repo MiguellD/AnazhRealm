@@ -1712,16 +1712,16 @@ class AnazhRealm_kreatur_leben {
     }
 
     // DER GEBURTS-ORT — die Boot-Regel als EIN Gesetz für den Boot-Spawn UND die natürliche Geburt: fern
-    // (`_kreaturGeburtFernM` + Streu-Spanne um den Spieler), außerhalb des Blicks und auf freiem Grund
-    // (`_kreaturGrundFrei`). Die Leben-Prüfung (R-D13) sah die Geburt 12–25 m vor dem Spieler, einen Hirsch 2 m neben ihm.
-    // Bis zu acht Würfe suchen einen freien Ort außerhalb des Blicks; fern ist jeder. Ein WUNSCH-Ort (die Nexus-Geburt am Ort
-    // des Bedarfs) gilt, wenn er selbst fern, außerhalb des Blicks und frei liegt.
+    // (CREATURE_SPAWN_FAR_MIN + Streu-Spanne um den Spieler), außerhalb des Blicks und auf freiem Grund
+    // (`_kreaturGrundFrei`); das Wesen taucht aus der Distanz auf, sein Satz blendet ein (`einblenden`). Die Leben-Prüfung
+    // (R-D13) sah die Geburt 12–25 m vor dem Spieler, einen Hirsch 2 m neben ihm. Bis zu acht Würfe suchen einen freien Ort
+    // außerhalb des Blicks; fern ist jeder. Ein WUNSCH-Ort (die Nexus-Geburt am Ort des Bedarfs) gilt, wenn er selbst fern,
+    // außerhalb des Blicks und frei liegt.
     _kreaturGeburtsOrt(rng, spanne = 80, wunsch = null) {
         const pm = this.state.playerMesh;
         const cx = pm ? pm.position.x : 0;
         const cz = pm ? pm.position.z : 0;
-        const fernM = this._kreaturGeburtFernM();
-        if (wunsch && Math.hypot(wunsch.x - cx, wunsch.z - cz) >= fernM) {
+        if (wunsch && Math.hypot(wunsch.x - cx, wunsch.z - cz) >= AnazhRealm.CREATURE_SPAWN_FAR_MIN) {
             if (!this._kreaturImBlick(wunsch.x, wunsch.z))
                 return this._kreaturGrundFrei(wunsch.x, wunsch.z) ? { x: wunsch.x, z: wunsch.z } : null;
         }
@@ -1730,7 +1730,7 @@ class AnazhRealm_kreatur_leben {
         let ort = null;
         for (let k = 0; k < 8; k++) {
             const ang = rng() * Math.PI * 2;
-            const d = fernM + rng() * spanne;
+            const d = AnazhRealm.CREATURE_SPAWN_FAR_MIN + rng() * spanne;
             const x = cx + Math.cos(ang) * d;
             const z = cz + Math.sin(ang) * d;
             if (!this._kreaturGrundFrei(x, z)) continue;
@@ -1738,15 +1738,6 @@ class AnazhRealm_kreatur_leben {
             if (!this._kreaturImBlick(x, z)) break;
         }
         return ort;
-    }
-
-    // WIE FERN EIN LEIB ERSCHEINT: jenseits des Nah-Kreises (`_feldGrenzen` des Tiers, sein Austritt samt Hysterese) — diesseits
-    // lebt das Tier als Leib (der Riss am Maul, `_bestandTode`), dorthin tritt es, nie erscheint es dort; dass es nie im Bild
-    // erscheint, sagt der Blick (`_kreaturLeibImBlick`, der Leib als Kugel), nie die Ferne. Bis w7-begegnung stand hier eine
-    // Konstante (CREATURE_SPAWN_FAR_MIN, 130 m), doppelt so weit wie der Kreis: ein Tier, dessen Anker 70 m neben dem
-    // Spieler lag, erschien 130 m fern und äste heim, während der Spieler weiterzog.
-    _kreaturGeburtFernM() {
-        return this._feldGrenzen(false).aus;
     }
 
     // Steht (x, z) im Blick des Spielers (das Frustum des Vor-Takts, einen Meter über dem Grund)? Ohne Frustum nie.
@@ -1833,7 +1824,7 @@ class AnazhRealm_kreatur_leben {
             const bs = tiere ? tiere[geboren.length].bs : AnazhRealm._verhaltenGesetz().groessen.at(-1).max;
             if (gattung && this._kreaturLeibImBlick(x, z, gattung, bs)) continue;
             if (k > 0) {
-                const fern = Math.hypot(x - p.x, z - p.z) >= this._kreaturGeburtFernM();
+                const fern = Math.hypot(x - p.x, z - p.z) >= AnazhRealm.CREATURE_SPAWN_FAR_MIN;
                 if (!fern || !this._kreaturGrundFrei(x, z) || (imRaum && !lebt(x, z))) continue;
                 if (!geboren.some((g) => Math.hypot(g.position.x - x, g.position.z - z) <= fenster * abstand)) continue;
             }
@@ -2434,9 +2425,8 @@ class AnazhRealm_kreatur_leben {
         t.leib = null;
     }
 
-    // DIE GRUPPE WIRD GEZEICHNET: ihr erster Leib steht am nächsten Ort der Spirale um den Anker, der fern vom Spieler (jenseits
-    // des Nah-Kreises, `_kreaturGeburtFernM`), außer Blick (der Leib als Kugel, `_kreaturLeibImBlick`), auf freiem Grund und im
-    // Lebensraum liegt (`_bestandLeibOrt`), die übrigen im Wurf um ihn (`_kreaturWurf` mit den Tieren — Raum, Fenster, Lebensraum
+    // DIE GRUPPE WIRD GEZEICHNET: ihr erster Leib steht am nächsten Ort der Spirale um den Anker, der fern vom Spieler, außer
+    // Blick (der Leib als Kugel, `_kreaturLeibImBlick`), auf freiem Grund und im Lebensraum liegt (`_bestandLeibOrt`), die übrigen im Wurf um ihn (`_kreaturWurf` mit den Tieren — Raum, Fenster, Lebensraum
     // der Herde); der Verband bindet alle gezeichneten Glieder. Liefert die neuen Leiber.
     _bestandLeiber(fehlt, gruppe = fehlt) {
         const ort = this._bestandLeibOrt(fehlt[0]);
@@ -2454,11 +2444,14 @@ class AnazhRealm_kreatur_leben {
         const LG = AnazhRealm._lebensraumGesetz();
         const lebt = (x, z) => LG.lebensraum(t.g, this._bodenKlasseAt(x, z), LG.L) > 0;
         const imRaum = lebt(t.x, t.z);
-        const fernM = this._kreaturGeburtFernM();
         for (let k = 0; k < 64; k++) {
             const x = t.x + Math.cos(k * 2.39996) * 25 * Math.sqrt(k);
             const z = t.z + Math.sin(k * 2.39996) * 25 * Math.sqrt(k);
-            if (Math.hypot(x - p.x, z - p.z) < fernM || this._kreaturLeibImBlick(x, z, t.g, t.bs)) continue;
+            if (
+                Math.hypot(x - p.x, z - p.z) < AnazhRealm.CREATURE_SPAWN_FAR_MIN ||
+                this._kreaturLeibImBlick(x, z, t.g, t.bs)
+            )
+                continue;
             if (this._kreaturGrundFrei(x, z) && (!imRaum || lebt(x, z))) return { x, z };
         }
         return null;
@@ -3167,6 +3160,7 @@ AnazhRealm.ERINNERUNG_SATZ = Object.freeze({
 AnazhRealm.CREATURE_SPAWN_CLEAR_M = 3;
 // V18.301 — DER LADE-RHYTHMUS-RING: der beim Boot aktive Terrain-Chunk-Ring startet KLEIN
 // (eine settled Basis statt 81 Chunks auf einmal) und wächst monoton zum chunkRingRadius-Ziel.
+AnazhRealm.CREATURE_SPAWN_FAR_MIN = 130; // V18.315 — Boot-Kreaturen spawnen ≥130 m fern: sie tauchen aus der Distanz auf, ihr Satz blendet ein (_weltFeldEintrag, einblenden)
 // Berg-Schatten (feld-natives Hi-Z, s. _archRegionBundleCull): konservativer Sichtlinien-Test
 // Kamera→Kugel-Oberkante gegen das EINE Höhen-Gesetz — je bergiger die Welt, desto billiger.
 // DIE EINE NAH-GRENZE DES ANALOG-FELDS (Schöpfer-Wort 30.09.: „am Ende AAA-Niveau, nicht Kapseln"): bis hierher ist
