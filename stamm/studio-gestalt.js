@@ -238,6 +238,9 @@ class AnazhRealm_studio_gestalt {
         // DER SCHATTEN-TEIL (S3, Umschlag out.teil, additiv): die Baum-L1 liefert ihren Wurf als eigenes Teil
         // (`teil: "schatten"`, Attribut aDeckt) — der Flatten legt es als Schatten-Zwilling in die Kaskaden.
         if (typeof m.teil === "string") mesh.userData.__teil = m.teil;
+        // DAS SEIL (physik.K4, Umschlag out.seil, additiv): die Nummer des Seil-Teils (Glied 0 … n−1, Kopf n) — die Hand bewegt
+        // es nach dem Seil-Gesetz (`_seilAmLeib`)
+        if (Number.isInteger(m.seil)) mesh.userData.__seil = m.seil;
         return mesh;
     }
     // DIE JAHRES-ECKEN einer Gestalt (vegetation.K5, `_foundryBuildMesh`): je Ecke [u, v,] Mitte und Typ in EINEM verschränkten

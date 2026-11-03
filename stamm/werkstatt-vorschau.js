@@ -1042,6 +1042,8 @@ class AnazhRealm_werkstatt_vorschau {
             mesh.userData.sharedGeom = true;
             mesh.userData.sharedMat = true;
             mesh.userData.foundryPreview = true;
+            // das Seil-Teil behält seine Nummer (physik.K4): die Hand bewegt es nach dem Seil-Gesetz (`_seilAmLeib`)
+            if (Number.isInteger(ch.userData && ch.userData.__seil)) mesh.userData.__seil = ch.userData.__seil;
             out.add(mesh);
         }
         return out.children.length ? out : null;
