@@ -764,11 +764,15 @@ function brandUrteil(b) {
 
 // Die Folge (stoffe.K5#2): auf der Asche kein Halm und kein Kraut, nach der Stufe Gras die Halme (≥ 80 %) vor den Kräutern (≤ 30 %),
 // nach der Stufe Busch die Kräuter (≥ 80 %); die Ernte nimmt Nährstoff und Wuchs, Asche und Leichnam geben ihn zurück, die Mutante
-// lässt den Wuchs gleich; der Jungwuchs (Stubben → Sämling, der Wald nach dem Busch) ist nicht gebaut — SÄMLING nennt ihn.
+// lässt den Wuchs gleich. Der SÄMLING: am Stubben erst kein Baum, dann der Jungwuchs älter je Stufe in seiner Größe (Skala =
+// Alter), nach der Heilung der gewachsene; seine GESTALT trägt weniger Ordnungen und Glieder (die Mutante ohne `alter` dieselben).
+// Der WALD: der Brand nimmt jeden Baum seiner Zellen (≥ 3), der Wald kehrt als Jungwuchs (≥ 60 %) und geheilt (≥ 90 %) zurück.
 function sukzessionUrteil(s) {
-    const [a, n] = [s && s.asche, s && s.naehr];
-    if (!a || !a.asche || !n || !(a.vor.halme >= 20) || !(a.vor.kraut >= 3)) return ["LEER: " + JSON.stringify(a && a.vor)];
-    const [v, g, e] = [a.vor, a.gras, n.ernte];
+    const [a, n, S, W] = [s && s.asche, s && s.naehr, s && s.saemling, s && s.wald];
+    if (!a || !a.asche || !n || !S || !W || !(a.vor.halme >= 20) || !(a.vor.kraut >= 3)) return ["LEER: " + JSON.stringify(a && a.vor)];
+    const [v, g, e, J] = [a.vor, a.gras, n.ernte, S.stufen || []];
+    const jung = J.slice(1, -1);
+    const waechst = jung.every((q, i) => q.alter > 0 && q.alter < 1 && Math.abs(q.skala - q.alter) < 0.01 && (!i || q.alter >= jung[i - 1].alter));
     return rot([
         ["ASCHE", a.asche.halme <= 0.05 * v.halme && a.asche.kraut === 0, a.asche],
         ["GRAS", g && g.halme >= 0.8 * v.halme && g.kraut <= 0.3 * v.kraut, g],
@@ -776,7 +780,10 @@ function sukzessionUrteil(s) {
         ["ERNTE", e.n >= 3 && e.N < e.N0 - 0.04 && e.W < e.W0, e],
         ["RÜCKGABE", n.asche >= 1.2 && n.leichnam >= 1.1, n],
         ["MUTANTE-NÄHRSTOFF", n.mutante.W === n.mutante.W0, n.mutante],
-        ["SÄMLING", s.saemling, "kein Jungwuchs aus dem Stubben, der Wald wirft den gewachsenen Baum (treeParams(alter))"],
+        ["SÄMLING", J.length === 5 && J[0].alter === 0 && waechst && jung.at(-1).alter > jung[0].alter && J[4].alter === 1 && J[4].skala === 1, J],
+        ["GESTALT", S.gestalt && S.gestalt[0][0] < S.gestalt[1][0] && S.gestalt[0][1] < S.gestalt[1][1], S.gestalt],
+        ["MUTANTE-GESTALT", S.mutante && S.mutante[0][1] === S.mutante[1][1], S.mutante],
+        ["WALD", W.vor >= 3 && W.brand === 0 && W.jung >= 0.6 * W.vor && W.heil >= 0.9 * W.vor, W],
     ]);
 }
 
@@ -1002,6 +1009,12 @@ async function brandSeite(MESS) {
         aus.regenM = regen(true);
         aus.regen = regen(false);
         N.asche = r3(r._naehrstoffAt(MESS.x, MESS.z)); // die Asche des Herds, frisch
+        // die Welt-Stunde bis `h` (die Uhr in Schritten ≤ 4 h, je Schritt ein Takt: der Nachwuchs wacht), dann steht die Welt
+        const reif = async (h) => {
+            for (let n = 0; n < 400 && r._weltStunde() < h; n++)
+                r.setTimeOfDay((st.timeOfDay + Math.min(4, h - r._weltStunde() + 1e-3) / 24) % 1, "regler"), takt();
+            await stehen(MESS);
+        };
         // ASCHE: die Zelle des Herds (verbrannt, im Regen erloschen) auf der Asche, nach der Stufe Gras, nach der Stufe Busch
         const a = asche().find((q) => zelle(q.x, q.z).join(",") === hx + "," + hz);
         const F = (aus.asche = { vor, zelle: [hx, hz], tat: !!a });
@@ -1012,14 +1025,7 @@ async function brandSeite(MESS) {
             F.mutante = folge(hx, hz);
             delete r._ascheAt;
             const dauer = r._tatIndex().dauer.get(a);
-            const bis = async (s) => {
-                for (let n = 0; n < 400 && r._weltStunde() < a.h + s * dauer; n++) {
-                    r.setTimeOfDay((st.timeOfDay + Math.min(4, a.h + s * dauer - r._weltStunde() + 1e-3) / 24) % 1, "regler");
-                    takt();
-                }
-                await stehen(MESS);
-                return Object.assign(folge(hx, hz), { s: r3(r._sukzession(a).s) });
-            };
+            const bis = async (s) => (await reif(a.h + s * dauer), Object.assign(folge(hx, hz), { s: r3(r._sukzession(a).s) }));
             F.dauer = r3(dauer);
             F.gras = await bis(0.31);
             F.busch = await bis(0.61);
@@ -1030,6 +1036,64 @@ async function brandSeite(MESS) {
         const tier = r.spawnCreatureAt(Dx, y(Dx, Dz), Dz, "calm", "wolf", { precise: true, bodySize: 1 });
         if (tier) r._creatureCombatDeath(tier, "player");
         N.leichnam = r3(r._naehrstoffAt(Dx, Dz));
+        // DER SÄMLING (stoffe.K5#2): der nächste Baum des Walds fällt (`harvestArchitecture`) — an seinem Ort steht bis zum Austrieb
+        // des Stubbens kein Baum, dann sein Jungwuchs (`studioOv.alter` in `alter` × seiner Größe), Stufe um Stufe älter, nach der
+        // Heilung der gewachsene; die Gestalt der Jugend liest der gefühlte Baum (das Skelett der Prägung, `skelettDerGestalt`), die
+        // Mutante (treeParams ohne `alter`) wächst ihn als den alten. DER WALD NACH DEM BRAND: der nächste Baum zündet; die Bäume in
+        // den Zellen der Asche nimmt der Brand, mit dem Wald der Sukzession kehrt ihr Jungwuchs zurück, nach der Heilung gewachsen.
+        leer(), trocken(), wort("cloudy");
+        r._vegSpawnImmediate = true;
+        const dart = (p, W = C.FOREST.cell) => r._forestCellDarts(Math.floor(p.x / W), Math.floor(p.z / W), r._forestSeedInt()).some((q) => Math.hypot(q.x - p.x, q.z - p.z) < 0.05);
+        const baeume = () => st.architectures.filter((e) => e && e.position && /^baum_/.test(e._lodSpecies || "") && dart(e.position));
+        const am = (p) => baeume().find((e) => Math.hypot(e.position.x - p.x, e.position.z - p.z) < 0.05);
+        const alter = (p) => ((e) => (e ? (e.studioOv && e.studioOv.alter) || 1 : 0))(am(p));
+        // der nächste GEWACHSENE Baum (die Zellen der Asche oben tragen den Jungwuchs ihres Walds)
+        const naechster = () => baeume().filter((e) => !(e.studioOv && e.studioOv.alter)).sort((u, v) => d(u.position) - d(v.position))[0];
+        const gestalt = (e, pr = r._foundryPresetForEntry(e), g = r._foundryGestaltFor(e, pr) ?? 1) =>
+            [e.studioOv, null].map((ov) => ((k) => [k.P.maxDepth, k.nodes.segs.length])(globalThis.__terrainCore.skelettDerGestalt(pr, g, 0, r._foundryGestaltOv(pr, g, ov))));
+        const S = (aus.saemling = { stufen: [] });
+        const B0 = naechster();
+        if (B0) {
+            const [p, s0] = [{ x: B0.position.x, z: B0.position.z }, B0.scale];
+            r.harvestArchitecture(B0, "welt");
+            const a = L.find((q) => q.tat === "faellen" && Math.hypot(q.x - p.x, q.z - p.z) < 0.05);
+            const h = (s) => a.h + s * r._tatIndex().dauer.get(a);
+            for (const s of [0.1, 0.35, 0.6, 0.85, 1.02]) {
+                await reif(s > 1 ? h(1) + 0.1 : h(s));
+                const e = am(p);
+                S.stufen.push({ alter: alter(p), skala: e ? r3(e.scale / s0) : 0 });
+                if (!e || !e.studioOv || S.gestalt) continue;
+                const PC = globalThis.__phytoCore;
+                const tp = PC.treeParams;
+                S.gestalt = gestalt(e);
+                PC.treeParams = (dl, sd, sf, art, w) => tp(dl, sd, sf, art, w);
+                S.mutante = gestalt(e);
+                PC.treeParams = tp;
+            }
+        }
+        leer(), trocken();
+        const B1 = naechster();
+        const W = (aus.wald = {});
+        if (B1) {
+            const orte = baeume().filter((e) => Math.hypot(e.position.x - B1.position.x, e.position.z - B1.position.z) < 96).map((e) => ({ x: e.position.x, z: e.position.z }));
+            r._brandEntfachen(B1.position.x, B1.position.z);
+            brennen(900), await stehen(MESS);
+            const T = r._tatIndex();
+            const N = orte.filter((o) => (T.je.get(r._lifeCellKey(o.x, o.z)) || []).some((q) => q.tat === "brand"));
+            const zaehl = (f) => N.filter((o) => f(alter(o))).length;
+            Object.assign(W, { vor: N.length, brand: zaehl((v) => v > 0) });
+            // der Jungwuchs je Baum, solange seine Zelle im Wald der Sukzession steht: gesehen an sechs Stunden (die Zellen heilen
+            // nach ihrem Wuchs verschieden schnell)
+            const [Q, jung] = [asche().map((q) => q.h + 0.8 * T.dauer.get(q)).sort((u, v) => u - v), new Set()];
+            for (let k = 0; k < 6 && Q.length; k++) {
+                await reif(Q[Math.floor(((Q.length - 1) * k) / 5)]);
+                N.forEach((o, i) => ((v) => v > 0 && v < 1 && jung.add(i))(alter(o)));
+            }
+            W.jung = jung.size;
+            await reif(Math.max(...asche().map((q) => q.h + T.dauer.get(q))) + 0.1);
+            W.heil = zaehl((v) => v === 1);
+        }
+        r._vegSpawnImmediate = false;
         // ZEIT: jede Zelle mit Bett im geladenen Ring um die Mess-Wiese fängt (eine Spirale); trägt die Welt dort weniger als
         // 2 000 Zellen Bett (das Bett der Wiese liest die Boden-Karte gebauter Chunks), füllen Abzüge der brennenden Zellen den
         leer(), trocken(), wort("cloudy");
@@ -1065,10 +1129,9 @@ async function brandSeite(MESS) {
         const p95 = (v) => r3(v.sort(aufsteigend)[Math.floor(v.length * 0.95)]);
         aus.zeit = { brennend: zn, echt: echt.length, bildMs: p95(ms), leserMs: p95(lms), verzugS: r3(verzug) };
         leer();
-        aus.saemling = null; // der Jungwuchs ist nicht gebaut (treeParams(alter))
         return aus;
     } finally {
-        for (const k of ["_brandZuenden", "_naesseTakt", "_feuchteAt", "_brandFeuchte", "_ascheAt", "_naehrstoffAt"]) delete r[k];
+        for (const k of ["_brandZuenden", "_naesseTakt", "_feuchteAt", "_brandFeuchte", "_ascheAt", "_naehrstoffAt", "_vegSpawnImmediate"]) delete r[k];
         st.weatherEffectTime = uhr;
         st.autoSeason = jahr;
     }
@@ -1111,9 +1174,14 @@ if (SELBSTTEST) {
                 {
                     asche: { vor: { halme: 40, kraut: 6 }, asche: { halme: 0, kraut: 0 }, gras: { halme: 38, kraut: 1 }, busch: { kraut: 6 } },
                     naehr: { ernte: { n: 5, N0: 1, N: 0.9, W0: 0.8, W: 0.78 }, asche: 1.4, leichnam: 1.2, mutante: { W0: 0.8, W: 0.8 } },
-                    saemling: true,
+                    saemling: {
+                        stufen: [{ alter: 0, skala: 0 }, { alter: 0.06, skala: 0.06 }, { alter: 0.18, skala: 0.18 }, { alter: 0.7, skala: 0.7 }, { alter: 1, skala: 1 }],
+                        gestalt: [[5, 1461], [9, 2933]],
+                        mutante: [[5, 2933], [9, 2933]],
+                    },
+                    wald: { vor: 6, brand: 0, jung: 5, heil: 6 },
                 },
-                [["ASCHE", "asche.asche.halme", 30], ["GRAS", "asche.gras.kraut", 6], ["BUSCH", "asche.busch.kraut", 1], ["ERNTE", "naehr.ernte.N", 1], ["RÜCKGABE", "naehr.asche", 1], ["MUTANTE-NÄHRSTOFF", "naehr.mutante.W", 0.7], ["SÄMLING", "saemling", null]]
+                [["ASCHE", "asche.asche.halme", 30], ["GRAS", "asche.gras.kraut", 6], ["BUSCH", "asche.busch.kraut", 1], ["ERNTE", "naehr.ernte.N", 1], ["RÜCKGABE", "naehr.asche", 1], ["MUTANTE-NÄHRSTOFF", "naehr.mutante.W", 0.7], ["SÄMLING", "saemling.stufen.0.alter", 0.5], ["SÄMLING", "saemling.stufen.2.skala", 1], ["GESTALT", "saemling.gestalt.0.0", 9], ["MUTANTE-GESTALT", "saemling.mutante.0.1", 600], ["WALD", "wald.brand", 2], ["WALD", "wald.heil", 1]]
             ),
         ],
         "die Tat-, Nachwuchs-, Brand- und Sukzessions-Linse nennen jeden Täter."
@@ -2286,11 +2354,11 @@ const BRANDLAUF = process.argv.includes("--brand");
         // je Staffel EINE Zeile und ihr Urteil (stoffe.K2#2 BRAND, stoffe.K5#2 SUKZESSION), das Ende trägt beide
         const vb = brandUrteil(befund);
         const vs = sukzessionUrteil(befund);
-        const { asche, naehr, saemling, ...brand } = befund;
+        const { asche, naehr, saemling, wald, ...brand } = befund;
         console.log("BRAND " + JSON.stringify(Object.assign(brand, { asche: asche && { vor: asche.vor, asche: asche.asche, gras: asche.gras, mutante: asche.mutante } })));
-        console.log("SUKZESSION " + JSON.stringify({ asche, naehr, saemling }));
+        console.log("SUKZESSION " + JSON.stringify({ asche, naehr, saemling, wald }));
         console.log(vb.length ? "❌ BRAND ROT — " + vb.join(" | ") : "✅ BRAND GRÜN — die Front hält an Wasser, Fels und nassem Gras, der Regen löscht, die Asche liegt im Boden-Stoff und grünt nach, Licht, Rauch und Knistern lesen den Brand");
-        console.log(vs.length ? "❌ SUKZESSION ROT — " + vs.join(" | ") : "✅ SUKZESSION GRÜN — Asche → Gras → Busch, der Nährstoff geht mit der Ernte und kehrt mit Asche und Leichnam zurück");
+        console.log(vs.length ? "❌ SUKZESSION ROT — " + vs.join(" | ") : "✅ SUKZESSION GRÜN — Asche → Gras → Busch → Wald, der Stubben treibt den Sämling, der Nährstoff geht mit der Ernte und kehrt mit Asche und Leichnam zurück");
         urteilEnde(vb.length + vs.length, "❌ BRAND · SUKZESSION ROT", "✅ BRAND · SUKZESSION GRÜN");
     }
     befund.pageErrors = befund.taktFehler || [];
