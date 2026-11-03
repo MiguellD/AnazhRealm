@@ -920,7 +920,8 @@ class AnazhRealm_siedlung_satz {
         }
         if (!this.state.scene) return nein("buehne");
         // DIE TAT BLEIBT, WO DAS GESETZ NEU SETZT (speicher.K3): ein Wurf des Gesetzes fällt, wo eine Tat ihn nahm (`_tatSperrt`)
-        if (opts.ausGesetz === true && position && this._tatSperrt(position.x, position.z)) return nein("tat");
+        if (opts.ausGesetz === true && position && this._tatSperrt(position.x, position.z, opts.studioOv))
+            return nein("tat");
         // Der Same eines Werks ohne eigenen (Bau einer Kreatur, Plattform, Portal) kommt aus dem Welt-Strom seiner Art (Γ5,
         // Lehre 7) — nie Math.random: der Mitspieler und der Reload sähen ein anderes Werk.
         const seed = Number.isFinite(opts.seed) ? opts.seed : this._bauSame("bau:" + type);
@@ -1534,12 +1535,13 @@ AnazhRealm.KIND_SUBSTANCE = Object.freeze({
     },
 });
 // DIE WÜRFE DES FELDS (K10-6) — die Arten, die das Affinitäts-Feld wirft (`_vegetationSampleSpawn`: der Sieger der Affinität
-// je Sample): die Baumarten, der Fels, die Geode und die Feuerstelle des Glut-Felds. Was das Feld wirft, trägt die Marke des
-// Wurfs (`feldWurf`, `_enqueueVegetationSpawn`) und weicht dem Bau wie die Natur (`_weichtDemBau`): es sperrt keinem Ort den
-// Grund (`_bauFrei`), und der Grundriss eines Baus und der Weg eines Dorfs räumen es (`_naturRaeumen`); dieselbe Art aus dem
-// Satz, dem Bau-Modus oder der KI ist Bau. Die Feuerstelle ist keine Art des Terrain-Studios (ihre Gestalt trägt das Fachwerk) —
-// bis K10-6 stand sie als Bau: eine im Grundriss des Dorfs der Zelle −4,−4 schob die Ort-Wahl von 80 auf 96 m, je nach
-// Lade-Stand der Würfe.
+// je Sample): die Baumarten, der Fels und die Geode. Was das Feld wirft, trägt die Marke des Wurfs (`feldWurf`,
+// `_enqueueVegetationSpawn`) und weicht dem Bau wie die Natur (`_weichtDemBau`): es sperrt keinem Ort den Grund (`_bauFrei`),
+// und der Grundriss eines Baus und der Weg eines Dorfs räumen es (`_naturRaeumen`); dieselbe Art aus dem Satz, dem Bau-Modus
+// oder der KI ist Bau. DAS FELD WIRFT KEIN FEUER (stoffe.K2#2): die Feuerstelle (`glutbrunnen`, die Gestalt des Fachwerks mit
+// Glut, Flammen und Feuer-Licht) ist ein Werk der Hand — bis w3v-brand-bild warf die Stimme glut sie in die Wildnis (65 brennende
+// Feuerstellen binnen 400 m um die Mess-Wiese, die nächste 13 m vom Herd: die orangen Flammen-Marken im Gras vor jedem Brand);
+// das Feuer der Wildnis ist der Brand des Felds (`brandFeld`).
 AnazhRealm.FELD_WURF = Object.freeze([
     "baum_eiche",
     "baum_kiefer",
@@ -1550,7 +1552,6 @@ AnazhRealm.FELD_WURF = Object.freeze([
     "baum_karst",
     "stein_block",
     "kristall_geode",
-    "glutbrunnen",
 ]);
 AnazhRealm.STRUCTURE_CLEAR_MIN_FOOTPRINT = 3.0; // darunter = klein/intentional → nicht schieben
 // DAS ALTER EINES WERKS (stoffe.K4, `_werkAlterOv`): τ die Tage, in denen der Regler `verwitterung` 63 % seines Wegs zu 1 geht;

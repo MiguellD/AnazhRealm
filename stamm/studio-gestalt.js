@@ -4,7 +4,7 @@ class AnazhRealm_studio_gestalt {
     // gefühlter Leib aus DERSELBEN Gestalt wie das Bild — die Gestalt des Eintrags (`_foundryGestaltFor`, V synchron aus dem
     // Kern wie beim Fels), die Prägung des Orts samt Besteller (`_foundryGestaltOv`: der Solitär trägt FREISTAND), das
     // Skelett, wie der Worker es baut (`_growTreeBlueprintRich` mit `gestalt`, L0). Gemerkt je Art, Gestalt und Prägung (je
-    // Art höchstens V+1 Gestalten). Rückgabe: die Teile · false = kein Studio-Baum (der Bauplan ist das Bild) · null = die
+    // Art höchstens V+1 Gestalten). Rückgabe: die Teile ([] der weiche Waldboden) · false = kein Studio-Baum (der Bauplan ist das Bild) · null = die
     // Gestalt wartet auf ihren Ort (`entry._huelleWartet`; `_foundryGestaltFor` setzt die Hülle, sobald sie steht).
     _baumGestaltTeile(entry) {
         if (!entry || typeof entry.type !== "string" || !this._foundryEnabled()) return false;
@@ -13,7 +13,12 @@ class AnazhRealm_studio_gestalt {
         if (!tab) return false;
         const preset = this._foundryPresetForEntry(entry);
         const rec = preset ? tab[preset] : null;
-        if (!rec || (rec.kind !== "tree" && rec.kind !== "shrub")) return false;
+        if (!rec) return false;
+        // DER WEICHE WALDBODEN: Farn und Schilf zeichnet das Studio ohne Skelett und ohne Leib — der Körper geht durch ihre Wedel
+        // wie durch Gras. Ihr Bauplan ist ein zweites Individuum: der Farn `grown_farn_busch_v1` trug 80 Teile auf 5,7 × 4,8 m,
+        // gezeichnet steht er 1,25 m breit (gate:kollision-bild (B) 0,86 m, sichtbar, seit das Feld keine Feuerstelle mehr wirft).
+        if (rec.kind === "fern" || rec.kind === "reed") return [];
+        if (rec.kind !== "tree" && rec.kind !== "shrub") return false;
         entry._huelleWartet = false; // die eigene Frage löst die Hülle nicht erneut aus
         entry._huelleG = null;
         const g = this._foundryGestaltFor(entry, preset, AnazhRealm._studioGestaltenKern(preset));

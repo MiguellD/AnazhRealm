@@ -688,8 +688,9 @@ class AnazhRealm_siedlung_wege {
     // zur getretenen Erde (R +), zum Acker (G +) und zuletzt zum Kopfstein (G −) der Wege-Karte (`WEGE_KARTE.belag`), in den
     // Farben der Boden-Palette (dieselbe Pfad-Erde wie der gebackene Ufer-Pfad), dem Mittel des Halms (`WIESEN_GRUND`) und
     // dem Stein-Gesetz (`_kopfsteinFarbe`), nur auf Begehbarem — ein Hang unter dem Weg bleibt Hang. Die Stufe wählt dieselbe Grenze wie `_wegeFeldAt`. Ohne die
-    // Karte bricht der Boden-Stoff laut (der Chunk-Boden liest sie immer, kein stiller Boden ohne Weg).
-    _wegeBodenFarbe(_T, vc) {
+    // Karte bricht der Boden-Stoff laut (der Chunk-Boden liest sie immer, kein stiller Boden ohne Weg). `aus` (optional) nimmt den Anteil der Asche je
+    // Fragment (`aus.asche`), den die Rauheit des Stoffs liest.
+    _wegeBodenFarbe(_T, vc, aus) {
         const wk = this._wegeKarteEnsure();
         if (!wk || !wk.stufen[0].U || !_T.texture || !_T.positionWorld || !_T.normalWorldGeometry)
             throw new Error("Wege-Karte: der Boden-Stoff braucht Karte, Uniforms und TSL (texture/positionWorld)");
@@ -743,10 +744,15 @@ class AnazhRealm_siedlung_wege {
         const mitStreu = _T.mix(mitRasen, _T.vec3(l[0], l[1], l[2]), _k);
         // DIE ASCHE DES BRANDS (stoffe.K2#2, `_ascheMalen`): wo die Front ein Bett verzehrte, liegt die Asche der Palette über
         // Wiese und Streu, bis sie nachgrünt (`_sukzession`) — nur auf Begehbarem (die Wand des Hangs trug kein Bett). Dieselben
-        // Bytes liest die Nah-Wiese (`_ascheAt`): auf der Asche steht kein Halm.
+        // Bytes liest die Nah-Wiese (`_ascheAt`): auf der Asche steht kein Halm. Sie ist kein Belag in EINER Farbe: verkohlte
+        // Halme und graue Asche liegen in Flecken (dasselbe Rauschen wie die Zungen der Laubstreu, ±½ um die Albedo der Palette —
+        // keine eigene Probe: der Boden-Stoff trägt seine Atlas-Ladungen, gate RAUSCH-GESETZ) und matt (die Rauheit 1,
+        // `aus.asche`) — eine glatte, einfarbig dunkle Fläche las sich als nasse Platte.
         const s = P.asche;
         const _a = _T.mix(dFern.g, dNah.g, innen).mul(_begehbar).mul(imFenster);
-        const mitAsche = _T.mix(mitStreu, _T.vec3(s[0], s[1], s[2]), _a);
+        const _fleck = _laubRausch.mul(5 / 3).add(1);
+        if (aus) aus.asche = _a;
+        const mitAsche = _T.mix(mitStreu, _T.vec3(s[0], s[1], s[2]).mul(_fleck), _a);
         const e = P.dirt;
         const a = P.wet;
         const mitErde = _T.mix(mitAsche, _T.vec3(e[0], e[1], e[2]), _erde);
