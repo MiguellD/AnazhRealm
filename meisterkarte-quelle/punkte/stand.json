@@ -1,5 +1,5 @@
 {
- "kopf": "8e6262cc",
+ "kopf": "2d2a5f11",
  "je": {
   "affekt.K1": {
    "punkte": 2,
@@ -2616,7 +2616,7 @@
   },
   "profiband.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Pfad seit der Messung geändert (R6: klang-core.js, stamm/klang.js, stamm/netz-p2p.js +1) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K1#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K1#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Pfad seit der Messung geändert (R6: klang-core.js, stamm/klang.js, stamm/netz-p2p.js +2) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K1#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K1#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K1#1",
@@ -2624,7 +2624,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: klang-core.js, stamm/klang.js, stamm/netz-p2p.js +1) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+     "grund": "Pfad seit der Messung geändert (R6: klang-core.js, stamm/klang.js, stamm/netz-p2p.js +2) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
      "ungemessen": true,
      "beide": true
     },
@@ -2660,7 +2660,7 @@
   },
   "profiband.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: Pfad seit der Messung geändert (R6: klang-core.js, stamm/klang.js, stamm/netz-p2p.js +1) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K2#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K2#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: Pfad seit der Messung geändert (R6: klang-core.js, stamm/klang.js, stamm/netz-p2p.js +2) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K2#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K2#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K2#1",
@@ -2668,7 +2668,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: klang-core.js, stamm/klang.js, stamm/netz-p2p.js +1) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+     "grund": "Pfad seit der Messung geändert (R6: klang-core.js, stamm/klang.js, stamm/netz-p2p.js +2) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
      "ungemessen": true
     },
     {
@@ -2702,7 +2702,7 @@
   },
   "profiband.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: Pfad seit der Messung geändert (R6: klang-core.js, stamm/klang.js, stamm/netz-p2p.js +1) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K3#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K3#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K3#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: Pfad seit der Messung geändert (R6: klang-core.js, stamm/klang.js, stamm/netz-p2p.js +2) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K3#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K3#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K3#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K3#1",
@@ -2710,7 +2710,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: klang-core.js, stamm/klang.js, stamm/netz-p2p.js +1) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+     "grund": "Pfad seit der Messung geändert (R6: klang-core.js, stamm/klang.js, stamm/netz-p2p.js +2) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
      "ungemessen": true,
      "beide": true
     },
@@ -3127,7 +3127,7 @@
   },
   "speicher.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 97 Rufe in 7713 Bildern; aufgefüllt je Bild p95 0, blind) an b3f9ae95 radeon · gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 100 Rufe in 4733 Bildern; aufgefüllt je Bild p95 0, blind) an 715754fc gtx — offen: speicher.K2#2 radeon: ROT: Speicher-Bild frisch p50 0.1 / p95 0.2 / max 0.4 ms (298 Bilder), 0 von 40 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0.1 / p95 0.2 / max 0.8 ms (313 Bilder), 0 von 5 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ 0,1) an d880c8e8 · speicher.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 5fba36ea: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "beleg": "Maschine: gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 97 Rufe in 7713 Bildern; aufgefüllt je Bild p95 0, blind) an b3f9ae95 radeon · gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 100 Rufe in 4733 Bildern; aufgefüllt je Bild p95 0, blind) an 715754fc gtx — offen: speicher.K2#2 radeon: Pfad seit der Messung geändert (R6: stamm/speicher-laden.js) — zuletzt an 5fba36ea: die Fahrt riss 1800 s (in profiband.K1#1) — offen, UNGEMESSEN · speicher.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 5fba36ea: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
    "stationen": [
     {
      "id": "speicher.K2#1",
@@ -3151,9 +3151,10 @@
      "id": "speicher.K2#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "Speicher-Bild frisch p50 0.1 / p95 0.2 / max 0.4 ms (298 Bilder), 0 von 40 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0.1 / p95 0.2 / max 0.8 ms (313 Bilder), 0 von 5 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ 0,1)",
-     "sha": "d880c8e86310a0d180b67d2099be0c6247e9bf9f",
-     "grund": "ROT: Speicher-Bild frisch p50 0.1 / p95 0.2 / max 0.4 ms (298 Bilder), 0 von 40 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0.1 / p95 0.2 / max 0.8 ms (313 Bilder), 0 von 5 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ 0,1)"
+     "zahl": null,
+     "sha": null,
+     "grund": "Pfad seit der Messung geändert (R6: stamm/speicher-laden.js) — zuletzt an 5fba36ea: die Fahrt riss 1800 s (in profiband.K1#1) — offen, UNGEMESSEN",
+     "ungemessen": true
     },
     {
      "id": "speicher.K2#2",
@@ -3200,7 +3201,7 @@
      "gruen": true,
      "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 102/102 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 102/102 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 102/102 | ✅ Dichte über den Reload: Linie 364 Löcher, 0 korrupt",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +63)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +64)",
      "gehalten": true
     },
     {
@@ -3233,7 +3234,7 @@
      "gruen": true,
      "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 95/95",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +63)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +64)",
      "gehalten": true
     },
     {
@@ -3242,7 +3243,7 @@
      "gruen": true,
      "zahl": "✅ (V) Korpus: 101 Stände 18.530.0 … 18.546.165 und 1 Kopf laden am Kopf — Bauten 510/510 · Gruben 306/306 · Inventar 291/291 · ganz 102/102 | ✅ (V) Versions-Stufe 18.546.165: ihr Stand steht im Korpus (bump-version.cjs)",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +63)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +64)",
      "gehalten": true
     }
    ]
@@ -3872,9 +3873,24 @@
     }
    ]
   },
+  "ultiversum.K1": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: ultiversum.K1#1 headless: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "ultiversum.K1#1",
+     "geraet": "headless",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    }
+   ]
+  },
   "ultiversum.K2": {
-   "punkte": 1,
-   "beleg": "Maschine: gehalten: ✅ FUSION A+B byte-gleich — 1149 Bytes | ✅ GERICHTET: B+A ≠ A+B | ✅ TÄTER-PROBE: Date.now in der Geburt ist ROT an 5fba36ea headless — offen: ultiversum.K2#2 headless: ungemessen (R10)",
+   "punkte": 2,
+   "beleg": "Maschine: gehalten: ✅ FUSION A+B byte-gleich — 1149 Bytes | ✅ GERICHTET: B+A ≠ A+B | ✅ TÄTER-PROBE: Date.now in der Geburt ist ROT an 5fba36ea headless · Schreibe 0 (Selbsttest 1) · heilA 30× v 0.5489 ern. 3 · heilB 30× v 0.6137 ern. 3 · leer 7× v 0 verfiel · pflug fehlt · steil fehlt · im Stand heilA/leer/heilB · Exit 0 an 2d2a5f11 headless",
    "stationen": [
     {
      "id": "ultiversum.K2#1",
@@ -3888,11 +3904,10 @@
     {
      "id": "ultiversum.K2#2",
      "geraet": "headless",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Schreibe 0 (Selbsttest 1) · heilA 30× v 0.5489 ern. 3 · heilB 30× v 0.6137 ern. 3 · leer 7× v 0 verfiel · pflug fehlt · steil fehlt · im Stand heilA/leer/heilB · Exit 0",
+     "sha": "2d2a5f1100df8a53f28acae9f1a4bbd1837a5448",
+     "grund": null
     }
    ]
   },
@@ -3922,7 +3937,7 @@
   },
   "ultiversum.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: OK   (h) A schreibt ein neues Gesetz im Gespräch, B trägt es, beide würfeln gleich, es wirkt bei beiden — Hash d7ff724d neu true · bei B true · Wurf in 40 Scheiben gleich true · wirkt bei A true, bei B true · B erinnert  | OK   (h) Selbsttest: die Vorlage ist nicht neu, B mit taubem dsl-Kanal trägt das Gesetz nicht — Vorlage neu false · taub bei B false an 10770eb5 headless — offen: ultiversum.K4#2 headless: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: OK   (h) A schreibt ein neues Gesetz im Gespräch, B trägt es, beide würfeln gleich, es wirkt bei beiden — Hash d7ff724d neu true · bei B true · Wurf in 40 Scheiben gleich true · wirkt bei A true, bei B true · B erinnert  | OK   (h) Selbsttest: die Vorlage ist nicht neu, B mit taubem dsl-Kanal trägt das Gesetz nicht — Vorlage neu false · taub bei B false an 10770eb5 headless — offen: ultiversum.K4#2 headless: ROT: Gegenlauf 3/3 Rezepte · 3/3 Baupläne · steht 160 △ · nach dem Laden da · Bibliothek nein: unbekannt · Spieler-Buch (7822 B, neu true, der Wirt nennt es 0×) 0/3 Rezepte · 0/3 Baupläne · steht nicht · Laden fehlt · ROT: die Bibliothek nimmt das Gesetzbuch nicht (unbekannt), das Spieler-Buch dockt nicht an · Exit 0 an 2d2a5f11",
    "stationen": [
     {
      "id": "ultiversum.K4#1",
@@ -3937,10 +3952,9 @@
      "id": "ultiversum.K4#2",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "Gegenlauf 3/3 Rezepte · 3/3 Baupläne · steht 160 △ · nach dem Laden da · Bibliothek nein: unbekannt · Spieler-Buch (7822 B, neu true, der Wirt nennt es 0×) 0/3 Rezepte · 0/3 Baupläne · steht nicht · Laden fehlt · ROT: die Bibliothek nimmt das Gesetzbuch nicht (unbekannt), das Spieler-Buch dockt nicht an · Exit 0",
+     "sha": "2d2a5f1100df8a53f28acae9f1a4bbd1837a5448",
+     "grund": "ROT: Gegenlauf 3/3 Rezepte · 3/3 Baupläne · steht 160 △ · nach dem Laden da · Bibliothek nein: unbekannt · Spieler-Buch (7822 B, neu true, der Wirt nennt es 0×) 0/3 Rezepte · 0/3 Baupläne · steht nicht · Laden fehlt · ROT: die Bibliothek nimmt das Gesetzbuch nicht (unbekannt), das Spieler-Buch dockt nicht an · Exit 0"
     }
    ]
   },
@@ -4217,7 +4231,7 @@
   }
  },
  "rueckfall": [],
- "kopfVoll": "8e6262cc1094d470905b1caffe0133a2066dbe81",
- "zeit": "2026-11-03T18:32:00.145Z",
+ "kopfVoll": "2d2a5f1100df8a53f28acae9f1a4bbd1837a5448",
+ "zeit": "2026-11-03T19:21:10.024Z",
  "vorher": "8e6262cc"
 }

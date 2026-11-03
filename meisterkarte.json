@@ -1,13 +1,13 @@
 {
   "stand": "2026-11-03",
-  "kopf": "8e6262cc",
-  "version": "V18.546.173",
+  "kopf": "2d2a5f11",
+  "version": "V18.546.174",
   "skala": "2.0",
-  "summe": 183,
+  "summe": 184,
   "max": 330,
   "maschine": {
-    "kopf": "8e6262cc",
-    "zeit": "2026-11-03T18:32:00.145Z",
+    "kopf": "2d2a5f11",
+    "zeit": "2026-11-03T19:21:10.024Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -153,6 +153,7 @@
       "tiere.K5",
       "tore.K3",
       "tore.K5",
+      "ultiversum.K1",
       "ultiversum.K2",
       "ultiversum.K3",
       "ultiversum.K4",
@@ -230,7 +231,7 @@
     {
       "key": "wege",
       "titel": "V · WELTEN UND WEGE — Tore, Fahrt, Siedlung, Leib, Halten, der gespielte Pfad, das Ultiversum",
-      "summe": 43,
+      "summe": 44,
       "max": 70,
       "bereiche": [
         "tore",
@@ -3430,7 +3431,7 @@
       "key": "ultiversum",
       "titel": "Das Ultiversum — Welten als Gesetz, Fusion, Bibliothek, Vertrauen",
       "gruppe": "wege",
-      "punkte": 6,
+      "punkte": 7,
       "pfad": "nach v1.0 (Feature-Stopp) — außer K5 (Sicherheit des Teilens)",
       "dateien": "`stamm/speicher-*.js` (fuseWorlds, Welten) · `stamm/feld-dsl.js` (Regeln, Whitelist) · `stamm/netz-*.js` (Signatur, Einladung) · `docs/das-lebendige-feld.md` §4.5",
       "aaaa": "Eine Welt ist ein Satz DSL-Bäume, deterministische Saaten und Spieler-Geschichte, mit eigenem Gesetz: Gelände-Funktion, Physik-Konstanten, Kreatur-Verhalten, Wetter, Himmel. Durch ein Tor betritt der Spieler eine Welt mit anderer Schwerkraft und anderem Himmel; zwei Welten heiraten (fuseWorlds) und mischen ihre Regeln, deterministisch auf jedem Gerät. Die Bibliothek trägt signierte Welten, Regeln und Baupläne von wenigen KB, auffindbar und forkbar — die Bibliothek von Alexandria, voll open source. Spieler schreiben Gesetze und teilen sie, und eine fremde Welt kann meine nicht töten. **Wo wir die Besten schlagen:** Roblox verbindet Asset-Pakete über Ladeschirme, Minecraft-Datapacks ändern Regeln EINER Engine; bei uns ist jede Welt eine Funktion aus Gesetz und Saat, die Bibliothek wiegt Kilobytes.",
@@ -3445,16 +3446,17 @@
           "punkte": 0,
           "staffel": "1 = zwei per Tor erreichbare Welten mit verschiedenen Konstanten (g, Wetter-Tafel, Himmel, Gelände-Parameter), jede Konstante hat einen Leser (Mutation ändert Bild bzw. Leib) · 2 = alle Kapitel des Gesetzes je Welt, beide Geräte",
           "messung": "Welt-Tor (Tore K1) in eine Welt mit anderem g und Himmel; Sprung-Höhe und Himmels-Bild als Leser.",
-          "beleg": "Welten sind Saat + Edits + Regeln (state-of-realm §4); eine Konstante je Welt mit Leser ist ungemessen.",
+          "beleg": "Maschine: 0 — offen: ultiversum.K1#1 headless: ungemessen (R10)",
           "schlupfloch": "Eine Konstante im Speicher, die keiner liest: die Mutation ändert Bild bzw. Leib.",
-          "aenderung": "Neu (V06)."
+          "aenderung": "Neu (V06).",
+          "maschine": true
         },
         {
           "name": "Welten heiraten: Fusion deterministisch",
-          "punkte": 1,
+          "punkte": 2,
           "staffel": "1 = fuseWorlds(A, B) byte-gleich auf zwei Geräten · 2 = 0 Schreibe auf den frozen Kern, die gemischten Regeln werten nach Affekt K3",
           "messung": "Fusion auf Radeon und OMEN mit gleichen Eingaben; Byte-Vergleich des Ergebnis-Stands.",
-          "beleg": "Maschine: gehalten: ✅ FUSION A+B byte-gleich — 1149 Bytes | ✅ GERICHTET: B+A ≠ A+B | ✅ TÄTER-PROBE: Date.now in der Geburt ist ROT an 5fba36ea headless — offen: ultiversum.K2#2 headless: ungemessen (R10)",
+          "beleg": "Maschine: gehalten: ✅ FUSION A+B byte-gleich — 1149 Bytes | ✅ GERICHTET: B+A ≠ A+B | ✅ TÄTER-PROBE: Date.now in der Geburt ist ROT an 5fba36ea headless · Schreibe 0 (Selbsttest 1) · heilA 30× v 0.5489 ern. 3 · heilB 30× v 0.6137 ern. 3 · leer 7× v 0 verfiel · pflug fehlt · steil fehlt · im Stand heilA/leer/heilB · Exit 0 an 2d2a5f11 headless",
           "schlupfloch": "Eine Fusion, die nur Namen mischt: der Byte-Vergleich der Regel-Programme.",
           "aenderung": "Neu (V06).",
           "maschine": true
@@ -3474,7 +3476,7 @@
           "punkte": 1,
           "staffel": "1 = ein Spieler schreibt eine DSL-Regel im Spiel, sie wirkt und reist zum Mitspieler · 2 = ein Spieler-Gesetzbuch dockt über Studios K5 an",
           "messung": "Spielgang: Regel im Spiel schreiben, Wirkung im Bild, Mitspieler sieht sie.",
-          "beleg": "Maschine: gehalten: OK   (h) A schreibt ein neues Gesetz im Gespräch, B trägt es, beide würfeln gleich, es wirkt bei beiden — Hash d7ff724d neu true · bei B true · Wurf in 40 Scheiben gleich true · wirkt bei A true, bei B true · B erinnert  | OK   (h) Selbsttest: die Vorlage ist nicht neu, B mit taubem dsl-Kanal trägt das Gesetz nicht — Vorlage neu false · taub bei B false an 10770eb5 headless — offen: ultiversum.K4#2 headless: ungemessen (R10)",
+          "beleg": "Maschine: gehalten: OK   (h) A schreibt ein neues Gesetz im Gespräch, B trägt es, beide würfeln gleich, es wirkt bei beiden — Hash d7ff724d neu true · bei B true · Wurf in 40 Scheiben gleich true · wirkt bei A true, bei B true · B erinnert  | OK   (h) Selbsttest: die Vorlage ist nicht neu, B mit taubem dsl-Kanal trägt das Gesetz nicht — Vorlage neu false · taub bei B false an 10770eb5 headless — offen: ultiversum.K4#2 headless: ROT: Gegenlauf 3/3 Rezepte · 3/3 Baupläne · steht 160 △ · nach dem Laden da · Bibliothek nein: unbekannt · Spieler-Buch (7822 B, neu true, der Wirt nennt es 0×) 0/3 Rezepte · 0/3 Baupläne · steht nicht · Laden fehlt · ROT: die Bibliothek nimmt das Gesetzbuch nicht (unbekannt), das Spieler-Buch dockt nicht an · Exit 0 an 2d2a5f11",
           "schlupfloch": "Eine Regel aus einer Vorlage auswählen ist kein Schreiben: die Regel muss neu sein (Hash).",
           "aenderung": "Neu (Fehlliste B: Modding und Open Source).",
           "maschine": true
@@ -3782,7 +3784,7 @@
           "punkte": 0,
           "staffel": "1 = Frame p95 ≤ 33 ms (der Boden von PFLICHT E) in jeder Bewegungszelle an beiden Geräten · 2 = ≤ 16,7 ms in jeder Zelle",
           "messung": "`werkbank lauf` in Bewegung, ABAB 4 Boots je Gerät, Regler voll, Tiere frei, 1920×1080. Zellen: Gehen 4 m/s (Wiese Ego, Genesis Third), Sprint, GT-Fahrt mit Third↔Ego, Sturm mit 50 Tieren (Feld K3), Messort stadt (nH ≥ 120, dorfZug an) gehend durch die Hauptgasse.",
-          "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Pfad seit der Messung geändert (R6: klang-core.js, stamm/klang.js, stamm/netz-p2p.js +1) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K1#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K1#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Pfad seit der Messung geändert (R6: klang-core.js, stamm/klang.js, stamm/netz-p2p.js +2) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K1#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K1#2 gtx: Station seit der Messung geändert",
           "schlupfloch": "Regler herunter, Sicht kürzen, Tiere anhalten, leeres Gelände: Regler voll und Tiere frei fest, die Bahn fest, und dieselbe Sitzung hält die A-Klassen am Ausgabe-Bild.",
           "aenderung": "EIN Heim des Bands (V26): LOD K5, Spielgang K3, der Band-Teil von Fahrzeug K2, Siedlung K5(b) und Feld K3 (Sturm) zählen hier als Zellen. Karte 1.0 maß im Stand (B63).",
           "maschine": true
@@ -3792,7 +3794,7 @@
           "punkte": 0,
           "staffel": "1 = stehend ≤ 5,8 ms an einem Gerät · 2 = stehend ≤ 5,8 UND bewegt ≤ 8 ms an beiden",
           "messung": "Trace der Haupt-Faden-Belegung zwischen zwei Bildern (LongTask/CDP), nie `_gameLoopTick`; dieselben Läufe wie K1. Die Zerlegung nach Herkunft (Stamm-Zone je Methode) ist ein Spiegel ohne Punkte, der den Täter nennt.",
-          "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: Pfad seit der Messung geändert (R6: klang-core.js, stamm/klang.js, stamm/netz-p2p.js +1) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K2#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K2#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: Pfad seit der Messung geändert (R6: klang-core.js, stamm/klang.js, stamm/netz-p2p.js +2) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K2#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K2#2 gtx: Station seit der Messung geändert",
           "schlupfloch": "Arbeit in requestIdleCallback, setTimeout oder Worker-Rückrufe zwischen den Takten schieben: gezählt wird die ganze Belegung des Intervalls.",
           "aenderung": "Die 1 der Synthese stand auf der Takt-Funktion (B66) → 0; die Radeon-Belegung (M12) gemessen 21.10.: p95 10,4 ms je Bild, ROT — das Vorher.",
           "maschine": true
@@ -3802,7 +3804,7 @@
           "punkte": 0,
           "staffel": "1 = im Stand an beiden Geräten frisch am Kopf (Ratsche + gpu-bank) · 2 = alle Zellen samt Bewegung",
           "messung": "`werkbank band` und die Ratsche je Ort × Gerät × Sicht (12 Dateien `spec/profiband/ratsche-*.json`) plus dieselbe Zählung in Bewegung mit gpu-bank: Befehle ≤ 208, Dreiecke ≤ 680k, VRAM ≤ 118 MB, GPU p95 ≤ 12 ms.",
-          "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: Pfad seit der Messung geändert (R6: klang-core.js, stamm/klang.js, stamm/netz-p2p.js +1) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K3#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K3#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K3#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: Pfad seit der Messung geändert (R6: klang-core.js, stamm/klang.js, stamm/netz-p2p.js +2) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K3#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K3#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K3#2 gtx: Station seit der Messung geändert",
           "schlupfloch": "Kaskaden oder Karten abschalten, `SZENE_SKALA` unter 0,75 senken: die EINE Skala ist fest, A urteilt in derselben Sitzung.",
           "aenderung": "Der Punkt stand auf veralteten Zahlen (R6) → 0; die Neumessung (M13, 21.10.) stellte ihn nicht wieder her: ROT an beiden Geräten — das Vorher.",
           "maschine": true
@@ -4012,7 +4014,7 @@
           "punkte": 1,
           "staffel": "1 = ≤ 0,3 ms je Bild (p95) in einer frischen Welt, auf dem Pfad des Spielers · 2 = ≤ 0,1 ms in der frischen Welt UND nach 2 h mit 10 000 Edits, kein Frame > 16,7 ms wegen des Speicherns, beide Geräte",
           "messung": "Trace im Spiel: Haupt-Faden-ms des Speicher-Bilds (saveState, Edit-Timer); saveToProjectFolder zählt nur auf dem lokalen Host.",
-          "beleg": "Maschine: gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 97 Rufe in 7713 Bildern; aufgefüllt je Bild p95 0, blind) an b3f9ae95 radeon · gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 100 Rufe in 4733 Bildern; aufgefüllt je Bild p95 0, blind) an 715754fc gtx — offen: speicher.K2#2 radeon: ROT: Speicher-Bild frisch p50 0.1 / p95 0.2 / max 0.4 ms (298 Bilder), 0 von 40 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0.1 / p95 0.2 / max 0.8 ms (313 Bilder), 0 von 5 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ 0,1) an d880c8e8 · speicher.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 5fba36ea: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+          "beleg": "Maschine: gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 97 Rufe in 7713 Bildern; aufgefüllt je Bild p95 0, blind) an b3f9ae95 radeon · gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 100 Rufe in 4733 Bildern; aufgefüllt je Bild p95 0, blind) an 715754fc gtx — offen: speicher.K2#2 radeon: Pfad seit der Messung geändert (R6: stamm/speicher-laden.js) — zuletzt an 5fba36ea: die Fahrt riss 1800 s (in profiband.K1#1) — offen, UNGEMESSEN · speicher.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 5fba36ea: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
           "schlupfloch": "Das Intervall strecken, also seltener speichern: K1 verlangt höchstens 10 s Verlust.",
           "aenderung": "Teilweise verworfen (B71): der Punkt bleibt, weil der Teil, den der Spieler zahlt (saveState 0,12 ms), gemessen ist; die Neumessung auf einem Host ohne save-server (M16, 21.10.) bestätigt die 1; nach R6 (speicher-h1) 1 → 0, am neuen Pfad gemessen 22.10. 0 → 1; nach R6 (fahrt-takt 36ef06e6) 22.10. 1 → 0; an 6cfce28a gemessen (M35) 22.10. 0 → 1.; nach R6 (stadt-erwachen be20b0153, 16dd81d0 `_imLeerlauf`) 23.10. 1 → 0.",
           "maschine": true
@@ -4552,15 +4554,15 @@
     },
     {
       "stand": "2026-11-03",
-      "kopf": "8e6262cc",
-      "summe": 183,
+      "kopf": "2d2a5f11",
+      "summe": 184,
       "max": 330,
       "skala": "2.0",
       "was": "Mess-Takt 3 an 8f1802b1 (Züge 29c und 30: Stoff-Tafel, Speicher-Weg, Tier-Gang, Halten K5, Kaskade, Siedlung-Trasse, Nässe unter Dach, GPU-Wand, Leib-Hieb, Kaskaden-Riss, Hänger; headless 66/2, Radeon 27/11, GTX gemessen): stoffe.K1, speicher.K3, halten.K5, siedlung.K3 je +1, leib.K1, oekologie.K1, tiere.K3 → 2; klang.K4 1 → 0 und klang.K5 2 → 1 (2 Stoffe mit ≥ 5 Schritten), siedlung.K5 2 → 0 (nH 300 erstes Haus 974 ms — der Rang des Dorf-Zugs; die Heilung siedlung-k5-erstes-haus fährt in Zug 32)."
     }
   ],
   "text": {
-    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 03.11.2026, Kopf main 8e6262cc (V18.546.173)",
+    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 03.11.2026, Kopf main 2d2a5f11 (V18.546.174)",
     "einleitung": [
       "Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.",
       "",
