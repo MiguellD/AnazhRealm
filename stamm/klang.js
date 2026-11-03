@@ -1070,7 +1070,7 @@ class AnazhRealm_klang {
 
     // Synthetische Kick: Sinus mit Tonhöhen-Abfall 200 → 70 Hz + kurzer Noise-Klick als Transient.
     // Nie tiefer (etwa 140 → 48 Hz) — auf Laptop-Lautsprechern praktisch stumm.
-    _lofiKick(t, pegel = 1) {
+    _lofiKick(t, pegel = 1, klickFilter = null) {
         const s = this.state.symphony;
         if (!s.ctx || !s.lofi || !s.lofi.grooveGain || !s.lofi.noiseBuffer) return;
         const ctx = s.ctx;
@@ -1092,67 +1092,77 @@ class AnazhRealm_klang {
         // der den Schlag auch ohne Tiefbass-Wiedergabe trägt.
         const click = ctx.createBufferSource();
         click.buffer = s.lofi.noiseBuffer;
-        const hp = ctx.createBiquadFilter();
-        hp.type = "highpass";
-        hp.frequency.value = 1600;
+        const hp = klickFilter || this._lofiTrommelFilter().klick;
         const cenv = ctx.createGain();
         cenv.gain.setValueAtTime(0.0001, t);
         cenv.gain.exponentialRampToValueAtTime(0.5 * pegel, t + 0.002);
         cenv.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
-        click.connect(hp);
-        hp.connect(cenv);
-        cenv.connect(s.lofi.grooveGain);
+        click.connect(cenv);
+        cenv.connect(hp);
         click.start(t);
         click.stop(t + 0.05);
     }
 
     // W4 V3 Phase 3 — eine synthetische Snare: ein White-Noise-Burst durch
     // einen Hochpass, kurze scharfe Hüllkurve.
-    _lofiSnare(t, pegel = 1) {
+    _lofiSnare(t, pegel = 1, filter = null) {
         const s = this.state.symphony;
         if (!s.ctx || !s.lofi || !s.lofi.grooveGain || !s.lofi.noiseBuffer) return;
         const ctx = s.ctx;
         const TB = this._lofiDrumTimbre(); // ZENSUS-REST V18.488 — inst.drums färbt
         const src = ctx.createBufferSource();
         src.buffer = s.lofi.noiseBuffer;
-        const hp = ctx.createBiquadFilter();
-        hp.type = "highpass";
-        hp.frequency.value = 1200 * TB.snareHp;
+        const hp = filter || this._lofiTrommelFilter().snare;
         const env = ctx.createGain();
         env.gain.setValueAtTime(0.0001, t);
         env.gain.exponentialRampToValueAtTime(0.5 * (TB.gainMul || 1) * pegel, t + 0.005);
         env.gain.exponentialRampToValueAtTime(0.0001, t + 0.18 * TB.snareDauer);
-        src.connect(hp);
-        hp.connect(env);
-        env.connect(s.lofi.grooveGain);
+        src.connect(env);
+        env.connect(hp);
         src.start(t);
         src.stop(t + 0.22 * TB.snareDauer);
     }
 
     // W4 V3 Phase 3 — ein synthetisches Hihat: ein sehr kurzer, hoch-
     // gefilterter White-Noise-Tick.
-    _lofiHihat(t, pegel = 1) {
+    _lofiHihat(t, pegel = 1, filter = null) {
         const s = this.state.symphony;
         if (!s.ctx || !s.lofi || !s.lofi.grooveGain || !s.lofi.noiseBuffer) return;
         const ctx = s.ctx;
         const TB = this._lofiDrumTimbre(); // ZENSUS-REST V18.488 — inst.drums färbt
         const src = ctx.createBufferSource();
         src.buffer = s.lofi.noiseBuffer;
-        const hp = ctx.createBiquadFilter();
-        hp.type = "highpass";
-        // W4 V4 Sub-Schritt 1 — eine glut-Region schärft das Hihat: der
-        // Hochpass steigt 7000..9500 Hz (dünner, „tssss" — eine Spur
-        // Spannung in der Klangfarbe, ohne eine einzige Note zu ändern).
-        hp.frequency.value = (7000 + this._lofiWorldField().glut * 2500) * TB.hihatHp;
+        const hp = filter || this._lofiTrommelFilter().hihat;
         const env = ctx.createGain();
         env.gain.setValueAtTime(0.0001, t);
         env.gain.exponentialRampToValueAtTime(0.22 * TB.hihatGain * (TB.gainMul || 1) * pegel, t + 0.004);
         env.gain.exponentialRampToValueAtTime(0.0001, t + 0.045);
-        src.connect(hp);
-        hp.connect(env);
-        env.connect(s.lofi.grooveGain);
+        src.connect(env);
+        env.connect(hp);
         src.start(t);
         src.stop(t + 0.08);
+    }
+
+    // Die Hochpässe der Trommeln einer Akkord-Dauer, je einer an den Groove-Bus: der Klick der Kick (1600 Hz), die Snare
+    // (1200 Hz × inst.drums) und das Hihat — W4 V4: eine glut-Region schärft es, der Hochpass steigt 7000..9500 Hz (dünner,
+    // „tssss" — eine Spur Spannung in der Klangfarbe, ohne eine einzige Note zu ändern). Hüllkurve vor dem Filter: beide
+    // linear, die Reihenfolge ändert den Klang nicht.
+    _lofiTrommelFilter() {
+        const s = this.state.symphony;
+        const ctx = s.ctx;
+        const TB = this._lofiDrumTimbre();
+        const hp = (hz) => {
+            const f = ctx.createBiquadFilter();
+            f.type = "highpass";
+            f.frequency.value = hz;
+            f.connect(s.lofi.grooveGain);
+            return f;
+        };
+        return {
+            klick: hp(1600),
+            snare: hp(1200 * TB.snareHp),
+            hihat: hp((7000 + this._lofiWorldField().glut * 2500) * TB.hihatHp),
+        };
     }
 
     // Das Genre wählt den Groove: RHYTHMUS_MUSTER (klang-Gesetzbuch) je LAWS.rhythm-Option, gewählt
@@ -1248,6 +1258,8 @@ class AnazhRealm_klang {
     // Hihats aus (ruhiger), joy lässt sie voll (lebhafter).
     // DIE SCHICHT (affekt.K5 Staffel 2, `_musikSchicht`): der Regen legt zwischen die Schritte je ein leises Hihat (Sechzehntel,
     // das Rascheln), die Nacht nimmt Snare und Hihats zurück (ganz Nacht: aus, der Kick bleibt leiser als Herzschlag).
+    // DIE FILTER DES GROOVE sind je Akkord-Dauer EINE: Klick-, Snare- und Hihat-Hochpass (`_lofiTrommelFilter`) — vorher baute
+    // jeder Schlag seinen eigenen und jedes Hihat las das Feld am Ohr (`auraAt`) neu (klang.K5: der Groove trug den Klang-Takt).
     _lofiPlayGroove(durSec, t0) {
         const s = this.state.symphony;
         if (!s.enabled || !s.ctx || !s.lofi || !s.lofi.grooveGain || !s.lofi.noiseBuffer) return;
@@ -1263,14 +1275,15 @@ class AnazhRealm_klang {
         const tag = 1 - sch.nacht; // Snare und Hihats: ganz Nacht schweigen sie (keine unhörbare Quelle)
         const kick = 1 - sch.nacht * (1 - S.nacht.kickPegel);
         const regen = sch.regen * S.regen.hihatPegel;
+        const F = this._lofiTrommelFilter();
         for (let step = 0; step < STEPS; step++) {
             const t = now + this._grooveStepTime(step, stepDur, swing);
-            if (pat.kick.indexOf(step) >= 0) this._lofiKick(t, kick);
-            if (tag > 0.001 && pat.snare.indexOf(step) >= 0) this._lofiSnare(t, tag);
+            if (pat.kick.indexOf(step) >= 0) this._lofiKick(t, kick, F.klick);
+            if (tag > 0.001 && pat.snare.indexOf(step) >= 0) this._lofiSnare(t, tag, F.snare);
             // peace > 0.6 lässt die Off-Beat-Hihats aus — ein ruhigerer Groove.
             if (tag > 0.001 && pat.hihat.indexOf(step) >= 0 && !(peace > 0.6 && step % 2 === 1))
-                this._lofiHihat(t, tag);
-            if (tag > 0.001 && regen > 0.001) this._lofiHihat(t + stepDur / 2, regen * tag);
+                this._lofiHihat(t, tag, F.hihat);
+            if (tag > 0.001 && regen > 0.001) this._lofiHihat(t + stepDur / 2, regen * tag, F.hihat);
         }
     }
 
