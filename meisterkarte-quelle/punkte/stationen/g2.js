@@ -5251,9 +5251,11 @@ const stationen = [
             if (!m || !g) return { gruen: false, zahl: "ohne Menge oder Gesicht (Exit " + lauf.exit + ")" };
             const r3 = (x) => Math.round(x * 1000) / 1000;
             const T = m.typ;
-            // je Bewohner seine Maße (m) und sein Kleid: die Vorlage seines Typs × Breite · Höhe · Tiefe
-            const B = m.je.map(([seed, t, h, b, d, nah]) => ({ seed, t, nah, b, mass: [b * h, h, d * h].map((x, e) => x * T[t].mass[e]) }));
-            const farbe = (x) => ["skinTone", "hairColor", "topColor", "bottomColor", "shoeColor", "gender"].map((k) => T[x.t].dials[k]).join();
+            // je Bewohner seine Maße (m) und sein Kleid: die Vorlage seines Typs × Breite · Höhe · Tiefe; seine Farben sind seine eigenen
+            // (die siebte Spalte, `_bewohnerGenome` → Ton-Tafel: Stoff, Gang-Satz und Feld zeichnen sie), ohne sie die seines Typs —
+            // bis w7-gesicht las die Station nur die des Typs: zwei Bewohner eines Typs in verschiedenen Farben hießen gleich
+            const B = m.je.map(([seed, t, h, b, d, nah, farben]) => ({ seed, t, nah, b, farben, mass: [b * h, h, d * h].map((x, e) => x * T[t].mass[e]) }));
+            const farbe = (x) => ["skinTone", "hairColor", "topColor", "bottomColor", "shoeColor"].map((k) => (x.farben || T[x.t].dials)[k]).concat(T[x.t].dials.gender).join();
             let [min, paar, gleich] = [Infinity, null, 0];
             for (let i = 0; i < B.length; i++)
                 for (let k = i + 1; k < B.length; k++) {
@@ -5306,6 +5308,27 @@ const stationen = [
             "spec/profiband/haushalt.json",
         ],
         quelle: "2 = 50 Bewohner aus 50 Seeds ohne zwei gleiche, Körperhöhe ±8 %, Gesichtsmaße in MENSCH_SOLL, ≤ 150k Dreiecke und ≤ 1 ms CPU, beide Geräte",
+        // die Proben: eine Menge wie am Kopf von w7-gesicht (zwei Typen, jeder Bewohner in seinen Farben), die Farben der Typen
+        // (die Spalte fehlt: der Stand vor mensch.K4 — zwei Bewohner eines Typs, 0,3 px auseinander, sind gleich) und zwei
+        // Bewohner in denselben eigenen Farben und Maßen; dazu der Lauf ohne Gesicht (der Export der Linse fehlt)
+        proben: (() => {
+            const toene = ["hell", "sand", "bronze", "umbra"], haar = ["black", "brown", "grey", "blond"], tuch = ["sand", "teal", "red", "white"];
+            const roh = (f) => {
+                const je = [...Array(50)].map((_, i) => ["7:" + i + ":0", i & 1, 0.93 + (0.14 * i) / 49, 1 + 0.0003 * i, 1, i < 5,
+                    { skinTone: toene[i & 3], hairColor: haar[(i >> 2) & 3], topColor: tuch[(i >> 4) & 3], bottomColor: tuch[i % 3], shoeColor: tuch[(i >> 1) & 3] }]); // prettier-ignore
+                const dials = (gender) => ({ skinTone: "sand", hairColor: "brown", topColor: "red", bottomColor: "teal", shoeColor: "sand", gender });
+                const typ = [0.9, 0.1].map((g) => ({ dials: dials(g), mass: [0.6, 1.8, 0.43], dreiecke: [1700, 360] }));
+                const gesicht = (s) => ({ kopfH: 0.1334, kopfB: 0.0924, augenAbstand: 0.0368, augapfel: 0.0133 * s, iris: 0.0062 * s, mund: 0.03 });
+                const x = f({ menge: { je, typ, pxM: 87.97, kaskaden: 3, takt: [1.4, 3] }, gesicht: { typ: [gesicht(0.99), gesicht(1.07)], soll: { kopfH: [0.12, 0.138], kopfB: [0.078, 0.096], augenAbstand: [0.031, 0.039], augapfel: [0.012, 0.016], iris: [0.0058, 0.0076], mund: [0.025, 0.033] }, zeile: [1700, 360] } }); // prettier-ignore
+                return "  ❌ bewohner  " + JSON.stringify({ stadt: { haeuser: 254, ring: { gesamt: 1094 }, menge: x.menge } }) + "\n" + (x.gesicht ? "GESICHT " + JSON.stringify(x.gesicht) + "\n" : "");
+            };
+            return [
+                { name: "die Menge in eigenen Farben (w7-gesicht)", stdout: roh((x) => x), gruen: true },
+                { name: "die Farben des Typs (vor mensch.K4: die siebte Spalte fehlt)", stdout: roh((x) => ((x.menge.je = x.menge.je.map((r) => r.slice(0, 6))), x)), gruen: false },
+                { name: "zwei Bewohner in denselben eigenen Farben und Maßen", stdout: roh((x) => ((x.menge.je[3] = [...x.menge.je[1].slice(0, 1).map(() => "7:3:0"), ...x.menge.je[1].slice(1)]), x)), gruen: false },
+                { name: "ohne Gesicht (die Linse exportiert ladeWelt nicht)", stdout: roh((x) => ((x.gesicht = null), x)), gruen: false },
+            ];
+        })(),
     },
     // haar.K1 Staffel 1 — der Wolf aus dem Gesetz der Tetrapoda (fellStreu) 3 m vor dem Ego-Auge, gehalten; arm: die Kamera 0,7 m
     // vor seinem Fell quer zum Leib, 0,5 m über seiner Mitte; third: 4 m quer, 1 m darüber (der Blick des Third). Soll: strich der REF
