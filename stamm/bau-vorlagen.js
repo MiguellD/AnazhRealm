@@ -805,7 +805,7 @@ class AnazhRealm_bau_vorlagen {
                 const name = `koerper_${key}`;
                 builtinBodyBlueprints[name] = {
                     name,
-                    etikett: ["wesen.koerper", { name: def.label || key }],
+                    etikett: ["wesen.koerper", { name: def.etikett || def.label || key }],
                     builtIn: true,
                     role: "soul",
                     roleManual: true,

@@ -1441,12 +1441,13 @@ class AnazhRealm_werkstatt_hof {
     // Hof-F (hof-plan §D.2) — die freundlichen Sektions-Labels (Seele + Spezialisierung).
     static get HOF_SECTION_LABELS() {
         return this._einmal("HOF_SECTION_LABELS", {
-            wesen: AnazhRealm._t("hof.sektion-wesen"),
-            wolf: AnazhRealm._t("hof.sektion-wolf"),
-            fuchs: AnazhRealm._t("hof.sektion-fuchs"),
-            baer: AnazhRealm._t("hof.sektion-baer"),
-            gather: AnazhRealm._t("hof.sammler"),
-            build: AnazhRealm._t("hof.bauer"),
+            // Schlüssel der Tafel (die Konstante ist einmal gemünzt — eine aufgelöste Zeile stünde nach dem Wechsel alt)
+            wesen: "hof.sektion-wesen",
+            wolf: "hof.sektion-wolf",
+            fuchs: "hof.sektion-fuchs",
+            baer: "hof.sektion-baer",
+            gather: "hof.sammler",
+            build: "hof.bauer",
         });
     }
 
@@ -1466,7 +1467,7 @@ class AnazhRealm_werkstatt_hof {
         }
         const active = this.state.hofSection || "alle";
         const chips = [["alle", this._t("hof.alle"), creatures.length]];
-        for (const [sec, n] of counts) chips.push([sec, labels[sec] || sec, n]);
+        for (const [sec, n] of counts) chips.push([sec, labels[sec] ? this._t(labels[sec]) : sec, n]);
         for (const [sec, label, n] of chips) {
             host.appendChild(
                 this._el(

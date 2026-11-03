@@ -72,7 +72,7 @@ class AnazhRealm_koerper_seele {
         // Start-Charaktere; eigene über die DSL-Op `define_soul(name, bodyParts)`.
         this._playerSoulDefsCache = {
             human: {
-                label: this._t("wesen.mensch"), // die Built-in-Seelen entstehen je Boot: der Name in der Sprache des Spielers
+                etikett: ["wesen.mensch"], // der Name liest seinen Schlüssel in der Sprache von jetzt (`_etikett`)
                 color: 0xff0000,
                 build: () => this._buildHumanGroup(),
                 // Die Emotionen reisen in den Rig: MOTION_RIG_MAP (sad/joy/fear/fight aus dem koerper-Gesetzbuch)
@@ -88,46 +88,47 @@ class AnazhRealm_koerper_seele {
                         material: "fleisch",
                         size: { x: 0.6, y: 0.7, z: 0.3 },
                         position: { x: 0, y: 0.45, z: 0 },
-                        label: this._t("wesen.teil.torso"),
+                        etikett: ["wesen.teil.torso"],
                     },
                     {
                         shape: "sphere",
                         material: "knochen",
                         size: { x: 0.38, y: 0.38, z: 0.38 },
                         position: { x: 0, y: 1.0, z: 0 },
-                        label: this._t("wesen.teil.kopf"),
+                        etikett: ["wesen.teil.kopf"],
                     },
                     {
                         shape: "cylinder",
                         material: "fleisch",
                         size: { x: 0.16, y: 0.7, z: 0.16 },
                         position: { x: 0.42, y: 0.5, z: 0 },
-                        label: this._t("wesen.teil.arm-rechts"),
+                        etikett: ["wesen.teil.arm-rechts"],
                     },
                     {
                         shape: "cylinder",
                         material: "fleisch",
                         size: { x: 0.16, y: 0.7, z: 0.16 },
                         position: { x: -0.42, y: 0.5, z: 0 },
-                        label: this._t("wesen.teil.arm-links"),
+                        etikett: ["wesen.teil.arm-links"],
                     },
                     {
                         shape: "cylinder",
                         material: "knochen",
                         size: { x: 0.18, y: 0.8, z: 0.18 },
                         position: { x: 0.17, y: -0.05, z: 0 },
-                        label: this._t("wesen.teil.bein-rechts"),
+                        etikett: ["wesen.teil.bein-rechts"],
                     },
                     {
                         shape: "cylinder",
                         material: "knochen",
                         size: { x: 0.18, y: 0.8, z: 0.18 },
                         position: { x: -0.17, y: -0.05, z: 0 },
-                        label: this._t("wesen.teil.bein-links"),
+                        etikett: ["wesen.teil.bein-links"],
                     },
                 ],
             },
         };
+        for (const d of Object.values(this._playerSoulDefsCache)) AnazhRealm._etikett(d);
         return this._playerSoulDefsCache;
     }
 

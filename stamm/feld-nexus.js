@@ -1348,10 +1348,10 @@ class AnazhRealm_feld_nexus {
         // Ohne Schlüssel schwieg der Chat ganz (die Stimme war an, der Satz verschwand): der Fehler von `llmCall` nennt ihn.
         // Welle 6.X.4 F1 V8.13 — Begleiter-Name in Chat-Output statt hardcoded.
         const compName = (this.state.grok && this.state.grok.companionName) || "Grok";
-        appendChatOutput(this._t("nexus.denkt-nach", { name: compName }));
+        appendChatOutput(["nexus.denkt-nach", { name: compName }]);
         const reply = await this.llmCall(userText);
         if (reply.error) {
-            appendChatOutput(this._t("nexus.schweigt", { name: compName, fehler: reply.error }));
+            appendChatOutput(["nexus.schweigt", { name: compName, fehler: reply.error }]);
             this.llmUpdateStatus();
             return true;
         }
@@ -1372,15 +1372,16 @@ class AnazhRealm_feld_nexus {
             // per Default, whitelist-gesichert); ihre Fitness läuft über das Lebens-Fenster, NICHT über den
             // 5-s-Gesten-Finalizer (der nur die Registrierung mäße).
             if (result.ok && reply.program[0] === "rule") {
-                appendChatOutput(this._t("nexus.gesetz-auf", { name: compName }));
+                appendChatOutput(["nexus.gesetz-auf", { name: compName }]);
             } else if (result.ok) {
                 const weicht = this._ergebnisSatz(result.log);
                 if (!weicht)
                     // die Tat in Worten (`describeProgram`), nie das rohe Programm (V-D8: ids und DSL-JSON im Spieler-Chat)
-                    appendChatOutput(
-                        this._t("nexus.welt-veraendert", { name: compName, tat: this.describeProgram(reply.program) })
-                    );
-                if (weicht) appendChatOutput(this._t("nexus.vorschlag", { name: compName, satz: weicht.satz }));
+                    appendChatOutput([
+                        "nexus.welt-veraendert",
+                        { name: compName, tat: this.describeProgram(reply.program) },
+                    ]);
+                if (weicht) appendChatOutput(["nexus.vorschlag", { name: compName, satz: weicht.satz }]);
                 // Wie ein Chat-Programm: in Pattern-Memory verknüpfen via
                 // recentKeywords (die enthalten den userText bereits).
                 const historyEntry = {
@@ -1497,20 +1498,20 @@ class AnazhRealm_feld_nexus {
         if (!creature) {
             // Name am Anfang, aber keine solche Kreatur: höflich ablehnen statt ein Gespräch zu faken;
             // LLM/Suggestion-Fallback läuft ohnehin weiter.
-            appendChatOutput(this._t("nexus.niemand", { name: parsed.name }));
+            appendChatOutput(["nexus.niemand", { name: parsed.name }]);
             return true;
         }
         // LLM-Aktiv-Check (analog maybeAnswerWithLlm): wenn nicht aktiv,
         // schreiben wir einen poetischen Hinweis statt der LLM-Antwort.
         const llm = this.state.llm;
         if (!llm || !llm.enabled) {
-            appendChatOutput(this._t("nexus.keine-stimme", { name: parsed.name }));
+            appendChatOutput(["nexus.keine-stimme", { name: parsed.name }]);
             return true;
         }
-        appendChatOutput(this._t("nexus.sammelt-sich", { name: parsed.name }));
+        appendChatOutput(["nexus.sammelt-sich", { name: parsed.name }]);
         const reply = await this.llmCallCreature(creature, parsed.message);
         if (reply.error) {
-            appendChatOutput(this._t("nexus.schweigt", { name: parsed.name, fehler: reply.error }));
+            appendChatOutput(["nexus.schweigt", { name: parsed.name, fehler: reply.error }]);
             this.llmUpdateStatus();
             return true;
         }
@@ -1850,12 +1851,12 @@ class AnazhRealm_feld_nexus {
         for (const [name, def] of Object.entries(defs)) {
             const opt = document.createElement("option");
             opt.value = name;
-            opt.textContent = this._t(def.label);
+            this._tSetze(opt, def.label);
             providerSel.appendChild(opt);
         }
         providerSel.value = this.state.llm.provider;
         toggleBtn.setAttribute("aria-pressed", this.state.llm.enabled ? "true" : "false");
-        toggleBtn.textContent = this.state.llm.enabled ? this._t("p2p.deaktivieren") : this._t("ui.aktivieren");
+        this._tSetze(toggleBtn, this.state.llm.enabled ? "p2p.deaktivieren" : "ui.aktivieren");
         this.llmRefreshProviderUI();
         providerSel.addEventListener("change", () => {
             this.state.llm.provider = providerSel.value;
@@ -1863,7 +1864,7 @@ class AnazhRealm_feld_nexus {
             this.state.llm.enabled = false;
             this.state.llm.lastError = null;
             toggleBtn.setAttribute("aria-pressed", "false");
-            toggleBtn.textContent = this._t("ui.aktivieren");
+            this._tSetze(toggleBtn, "ui.aktivieren");
             this.llmPersist();
             this.llmRefreshProviderUI();
         });
@@ -1926,7 +1927,7 @@ class AnazhRealm_feld_nexus {
                 this.state.llm.enabled = false;
                 keyInput.value = "";
                 toggleBtn.setAttribute("aria-pressed", "false");
-                toggleBtn.textContent = this._t("ui.aktivieren");
+                this._tSetze(toggleBtn, "ui.aktivieren");
                 this.llmPersist();
                 this.llmUpdateStatus();
             });
@@ -1942,7 +1943,7 @@ class AnazhRealm_feld_nexus {
             this.state.llm.enabled = !this.state.llm.enabled;
             this.state.llm.lastError = null;
             toggleBtn.setAttribute("aria-pressed", this.state.llm.enabled ? "true" : "false");
-            toggleBtn.textContent = this.state.llm.enabled ? this._t("p2p.deaktivieren") : this._t("ui.aktivieren");
+            this._tSetze(toggleBtn, this.state.llm.enabled ? "p2p.deaktivieren" : "ui.aktivieren");
             this.llmPersist();
             this.llmUpdateStatus();
             // „Aktiv" erst nach der Frage an den Dienst (V-D6): ein lokaler Endpunkt ohne Dienst steht sofort im Status.

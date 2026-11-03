@@ -56,12 +56,13 @@ class AnazhRealm_werkstatt_bauen {
                 if (!result.ok) {
                     // Die Absage des Griffs spricht der Spieler-Kanal (Gegenprüfung 08.10.: sie stand nur im
                     // eingeklappten Log) — derselbe Formatter wie Werkstatt-Knopf und Setzen (`_machTorHint`).
-                    this._spielerSagt(
-                        this._t("bauen.label-grund", {
+                    this._spielerSagt([
+                        "bauen.label-grund",
+                        {
                             label: AnazhRealm._namensKopf(label),
                             grund: this._machTorHint(result),
-                        })
-                    );
+                        },
+                    ]);
                 } else {
                     this.log(`In der Hand: ${label} (Slot ${idx + 1})`, "INFO");
                 }
@@ -384,11 +385,11 @@ class AnazhRealm_werkstatt_bauen {
         // (`_setzUrteil`): Standort und Werkstatt sagt es hier, Natur-Wand und Material sagen die Akte unten.
         const urteil = this._setzUrteil(name, spawnPos, bm.phantomOnGround);
         if (urteil.grund === "standort") {
-            this._spielerSagt(this._t("bauen.sagt-standort", { label }));
+            this._spielerSagt(["bauen.sagt-standort", { label }]);
             return false;
         }
         if (urteil.grund === "werkstatt") {
-            this._spielerSagt(this._t("bauen.sagt-werkstatt", { label, domaene: String(urteil.domaene) }));
+            this._spielerSagt(["bauen.sagt-werkstatt", { label, domaene: String(urteil.domaene) }]);
             this._renderBuildModeHud && this._renderBuildModeHud();
             return false;
         }
@@ -428,25 +429,24 @@ class AnazhRealm_werkstatt_bauen {
             ? this._naturSetzen(name, spawnPos, {}, setzen, (wo) => (wand = wo))
             : setzen();
         if (wand) {
-            this._spielerSagt(
-                this._t("bauen.sagt-natur-wand", { label, grund: String(AnazhRealm.NATUR_WAND_GRUND[wand]) })
-            );
+            this._spielerSagt(["bauen.sagt-natur-wand", { label, grund: String(AnazhRealm.NATUR_WAND_GRUND[wand]) }]);
             return false;
         }
         if (gate && !gate.ok) {
-            this._spielerSagt(
-                this._t("bauen.label-grund", {
+            this._spielerSagt([
+                "bauen.label-grund",
+                {
                     label,
                     grund: this._machTorHint(Object.assign({ reason: "not_enough_material" }, gate)),
-                })
-            );
+                },
+            ]);
             this._renderBuildModeHud && this._renderBuildModeHud();
             return false;
         }
         if (!steht) {
             if (gate && gate.ok && !gate.free)
                 for (const [m, n] of Object.entries(gate.cost || {})) this.addMaterialToInventory(m, n);
-            this._spielerSagt(this._t("bauen.sagt-ort-traegt-nicht", { label }));
+            this._spielerSagt(["bauen.sagt-ort-traegt-nicht", { label }]);
             return false;
         }
         if (this.state.p2p && this.state.p2p.enabled && typeof this.p2pBroadcastDsl === "function") {
@@ -1927,7 +1927,7 @@ class AnazhRealm_werkstatt_bauen {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.dataset.teilen = art;
-        btn.textContent = this._t("bauen.teilen");
+        this._tSetze(btn, "bauen.teilen");
         const out = document.createElement("code");
         out.dataset.teilen = art;
         out.style.wordBreak = "break-all";

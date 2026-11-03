@@ -679,11 +679,9 @@ class AnazhRealm_dirigent_ankunft {
             const b = this._bootLeer;
             // der Satz an den Spieler aus der Tafel; der Befund ist die Diagnose der Speicher-Kette (ihre Glieder, die Meldung
             // des Browsers) und steht, wie sie das Log trägt
-            const befund = this._befundText(b.befund);
-            const satz = b.id
-                ? this._t("rede.welt-fehlt", { welt: b.id, befund })
-                : this._t("rede.kein-stand", { befund });
-            this.log(satz, b.id ? "ERROR" : "INFO");
+            const befund = this._befundZeilen(b.befund);
+            const satz = b.id ? ["rede.welt-fehlt", { welt: b.id, befund }] : ["rede.kein-stand", { befund }];
+            this.log(AnazhRealm._tIn("de", satz[0], satz[1]), b.id ? "ERROR" : "INFO");
             this._chatEcho(satz);
         }
         // Die Empfänger-Wand des Erbguts (fail-closed): ein Erbgut, das dieser Build nicht trägt, lässt die Welt nicht

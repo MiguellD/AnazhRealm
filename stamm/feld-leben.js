@@ -677,15 +677,32 @@ class AnazhRealm_feld_leben {
         }
         return parts.length ? `vehicle ${parts.join(" ")}` : null;
     }
-    _chatEcho(message) {
-        try {
-            const chatOutput = document.getElementById("chat-output");
-            if (!chatOutput) return;
-            const line = document.createElement("div");
-            line.textContent = String(message || "");
-            chatOutput.appendChild(line);
-            chatOutput.scrollTop = chatOutput.scrollHeight;
-        } catch (_) {}
+    // DIE EINE CHAT-ZEILE (spielgang.K5): jede Zeile in #chat-output entsteht hier. Spricht die Welt, ist sie eine Zeile der
+    // Tafel `[schlüssel, werte]` und trägt ihren Schlüssel am Knoten (`_tSetze`: der Wechsel der Sprache liest sie neu);
+    // ein Text (das Wort des Spielers, der KI, eines Mitspielers) ist Daten (`translate="no"`). `sprecher` setzt den Namen
+    // davor (Daten), `klasse` die Art der Zeile.
+    _chatEcho(zeile, { klasse = null, sprecher = null, sprecherKlasse = null } = {}) {
+        const chatOutput = typeof document !== "undefined" && document.getElementById("chat-output");
+        if (!chatOutput) return null;
+        const line = document.createElement("div");
+        if (klasse) line.className = klasse;
+        if (sprecher != null) {
+            const nameSpan = document.createElement("span");
+            nameSpan.className = sprecherKlasse || "chat-creature-name";
+            nameSpan.translate = false;
+            nameSpan.textContent = `${sprecher}: `;
+            line.appendChild(nameSpan);
+        }
+        const text = document.createElement("span");
+        if (Array.isArray(zeile)) this._tSetze(text, zeile[0], zeile[1]);
+        else {
+            text.textContent = String(zeile == null ? "" : zeile);
+            text.translate = false;
+        }
+        line.appendChild(text);
+        chatOutput.appendChild(line);
+        chatOutput.scrollTop = chatOutput.scrollHeight;
+        return line;
     }
     processChatCommand(command) {
         // Chat-Naht: ZWSP/BOM/Weird-Spaces killen sonst exakte Patterns
@@ -700,12 +717,7 @@ class AnazhRealm_feld_leben {
         const parts = command.toLowerCase().split(" ");
         const chatInput = document.getElementById("chat-input");
         const chatOutput = document.getElementById("chat-output");
-        const appendChatOutput = (message) => {
-            const line = document.createElement("div");
-            line.textContent = message;
-            chatOutput.appendChild(line);
-            chatOutput.scrollTop = chatOutput.scrollHeight;
-        };
+        const appendChatOutput = (zeile) => this._chatEcho(zeile);
         appendChatOutput(`> ${command}`);
         this._chatRecordInputForLearning(command);
         // Voxel-Debug bricht früh ab OHNE chatInput-Cleanup (Original-Verhalten).
@@ -870,7 +882,7 @@ class AnazhRealm_feld_leben {
         if (program) {
             this._portalRouteDsl(program, inWorld ? inWorld.describe : command, appendChatOutput);
         } else {
-            appendChatOutput(this._t("chat.portal.kein-befehl", { befehl: command }));
+            appendChatOutput(["chat.portal.kein-befehl", { befehl: command }]);
         }
         chatInput.value = "";
         return true;
@@ -902,7 +914,7 @@ class AnazhRealm_feld_leben {
         if (/^(?:zeige|welche|liste|welt[-\s]*)?\s*(?:welt[-\s]*)?(?:regeln|gesetze)\??\s*$/i.test(c)) {
             const rules = this.state.worldRules || [];
             if (rules.length === 0) {
-                appendChatOutput(this._t("chat.regeln.keine", { vorlage: AnazhRealm.GESETZ_VORLAGEN[0] }));
+                appendChatOutput(["chat.regeln.keine", { vorlage: AnazhRealm.GESETZ_VORLAGEN[0] }]);
                 chatInput.value = "";
                 return true;
             }
@@ -919,12 +931,13 @@ class AnazhRealm_feld_leben {
                         : r.source && r.source.startsWith("llm")
                           ? "Grok"
                           : r.source);
-                appendChatOutput(
-                    this._t("chat.regeln.zeile", {
+                appendChatOutput([
+                    "chat.regeln.zeile",
+                    {
                         regel: this.describeProgram(["rule", r.cond, r.effect]),
                         wer: String(who),
-                    })
-                );
+                    },
+                ]);
             }
             chatInput.value = "";
             return true;
@@ -965,7 +978,7 @@ class AnazhRealm_feld_leben {
                 const p = this.state.player;
                 if (typeof p.mana !== "number") p.mana = p.manaMax || 40;
                 if (p.mana < manaCost) {
-                    appendChatOutput(this._t("chat.mana.erschoepft", { mana: p.mana | 0, kosten: manaCost }));
+                    appendChatOutput(["chat.mana.erschoepft", { mana: p.mana | 0, kosten: manaCost }]);
                     chatInput.value = "";
                     return true;
                 }
@@ -1028,7 +1041,7 @@ class AnazhRealm_feld_leben {
             try {
                 this._chatBefehlLauf(p, p.run(m, appendChatOutput));
             } catch (err) {
-                appendChatOutput(this._t("chat.fehler.system", { fehler: err.message || err }));
+                appendChatOutput(["chat.fehler.system", { fehler: err.message || err }]);
             }
             return;
         }
@@ -1505,7 +1518,7 @@ class AnazhRealm_feld_leben {
             // „Name, text" oder „Name: text" geht an die Kreatur (nicht an Grok).
             this.maybeAnswerCreature(command, appendChatOutput).catch((err) => {
                 this._bruchMelden("Kreatur-Antwort: " + (err.message || err));
-                appendChatOutput(this._t("chat.fehler.kreatur", { fehler: err.message || err }));
+                appendChatOutput(["chat.fehler.kreatur", { fehler: err.message || err }]);
             });
             return;
         }
@@ -1514,7 +1527,7 @@ class AnazhRealm_feld_leben {
             // an Claude; Antwort kommt narrativ + optional als DSL-Programm.
             this.maybeAnswerWithLlm(command, appendChatOutput).catch((err) => {
                 const compName = (this.state.grok && this.state.grok.companionName) || "Grok";
-                appendChatOutput(this._t("chat.fehler.begleiter", { name: compName, fehler: err.message || err }));
+                appendChatOutput(["chat.fehler.begleiter", { name: compName, fehler: err.message || err }]);
             });
             return;
         }
@@ -1542,7 +1555,7 @@ class AnazhRealm_feld_leben {
                     try {
                         this._chatBefehlLauf(p, p.run(m, appendChatOutput));
                     } catch (err) {
-                        appendChatOutput(this._t("chat.fehler.befehl", { fehler: String(err && err.message) }));
+                        appendChatOutput(["chat.fehler.befehl", { fehler: String(err && err.message) }]);
                     }
                     return;
                 }
@@ -1558,7 +1571,7 @@ class AnazhRealm_feld_leben {
             appendChatOutput(studioAbsage);
         } else {
             // Keine zweite Liste: die Hilfe liest die EINEN Tafeln (`_hilfeZeilen`), hier steht nur der Weg dorthin.
-            appendChatOutput(this._t("chat.unbekannt"));
+            appendChatOutput(["chat.unbekannt"]);
         }
     }
 

@@ -302,12 +302,15 @@ class AnazhRealm_speicher_welten {
 
     // DER SATZ EINES BEFUNDS (spielgang.K5): die Glieder der Rettungs-Kette aus der Tafel; `fehler` ist die Meldung des Browsers
     _befundText(befund) {
-        const glied = (g) => (g === "platz" ? this._t("speicher.befund.platz") : g);
-        return befund
-            .map((b) =>
-                this._t(`speicher.befund.${b.art}`, { glied: glied(b.glied || ""), fehler: String(b.fehler || "") })
-            )
-            .join(", ");
+        return AnazhRealm._tIn("de", "speicher.befund.liste", { liste: this._befundZeilen(befund) });
+    }
+    // der Befund als Zeilen der Tafel (eine Liste: sie wechselt mit der Sprache, wo sie im Chat steht)
+    _befundZeilen(befund) {
+        const glied = (g) => (g === "platz" ? ["speicher.befund.platz"] : g);
+        return befund.map((b) => [
+            `speicher.befund.${b.art}`,
+            { glied: glied(b.glied || ""), fehler: String(b.fehler || "") },
+        ]);
     }
 
     // Der IndexedDB-Stand des Boot-Vorlaufs für die Welt `id` (nur lesen; loadState verbraucht ihn).

@@ -375,15 +375,17 @@ class AnazhRealm_dienst {
     // einmal (ein gehaltener Rechtsklick spammt nicht). Befund: „Bauen: nicht genug Material", „Sonnen-Brennglas entzündete"
     // standen nur im eingeklappten Log. Leser: jede Absage des Bau-Flusses (FERTIGEN, Bau-Modus, Setzen) und jede
     // Zerstörung, die die Welt selbst wirkt.
-    _spielerSagt(text) {
-        const t = String(text || "");
+    _spielerSagt(zeile) {
+        // eine Zeile der Tafel `[schlüssel, werte]` (sie wechselt mit der Sprache) oder ein Text (Daten); das Log liest die
+        // Quell-Sprache, die Drossel den Text
+        const t = Array.isArray(zeile) ? AnazhRealm._tIn("de", zeile[0], zeile[1]) : String(zeile || "");
         if (!t) return;
         this.log(t, "INFO");
         const jetzt = performance.now();
         const alt = this._spielerSagtLetzte;
         if (alt && alt.t === t && jetzt - alt.ms < 2000) return;
         this._spielerSagtLetzte = { t, ms: jetzt };
-        this._chatEcho(t);
+        this._chatEcho(zeile);
     }
 
     // DER EINE MELDER (K22 Nachbesserung 3): jeder Bruch meldet ERROR — eine NEUE Meldung sofort, dieselbe wieder (ein
@@ -1434,7 +1436,12 @@ class AnazhRealm_dienst {
     // Sprache ist ein Wort des Spielers je Gerät (`anazh.sprache`, die Wahl in den Einstellungen; `?sprache=` übersteuert).
     // `pseudo` ist die Sprache der Linse (diag-sprache): jedes Stück der Tafel steht in ⟦ ⟧ — Wort-Text außerhalb ist hart.
     static _t(schluessel, werte) {
-        const sp = AnazhRealm._sprache();
+        return AnazhRealm._tIn(AnazhRealm._sprache(), schluessel, werte);
+    }
+
+    // die Zeile in einer bestimmten Sprache (`de` ist die Quell-Sprache des Gesetzes: DSL-Wörter, Log, Journal-Quelle);
+    // `wert` formt jeden einfachen Wert (die Tür der KI isoliert damit Namen, `_datum`)
+    static _tIn(sp, schluessel, werte, wert = String) {
         const tafel = AnazhRealm.TEXTE;
         const zeile = tafel[sp === "pseudo" ? "de" : sp][schluessel];
         if (typeof zeile !== "string") throw new Error(`SPRACHE: die Tafel trägt keinen Text „${schluessel}“`);
@@ -1445,9 +1452,12 @@ class AnazhRealm_dienst {
                 if (!m) return sp === "pseudo" && stueck ? `⟦${stueck}⟧` : stueck;
                 if (!werte || werte[m[1]] == null)
                     throw new Error(`SPRACHE: „${schluessel}“ verlangt den Wert ${m[1]}`);
-                // ein Wert als `[schlüssel, werte]` ist selbst eine Zeile der Tafel (gelesen in der Sprache von jetzt)
+                // ein Wert als `[schlüssel, werte]` ist selbst eine Zeile der Tafel (gelesen in derselben Sprache), eine Liste
+                // solcher Zeilen `[[schlüssel, werte], …]` steht mit Komma
                 const w = werte[m[1]];
-                return Array.isArray(w) ? AnazhRealm._t(w[0], w[1]) : String(w);
+                if (Array.isArray(w) && Array.isArray(w[0]))
+                    return w.map((z) => AnazhRealm._tIn(sp, z[0], z[1], wert)).join(", ");
+                return Array.isArray(w) ? AnazhRealm._tIn(sp, w[0], w[1], wert) : wert(w);
             })
             .join("");
     }
@@ -1457,32 +1467,41 @@ class AnazhRealm_dienst {
     // so wechselt jeder Leser (Hotbar, Katalog, Inventar, Tooltip) mit der Sprache, ohne dass er es weiß. Wer `label`
     // schreibt (der Spieler benennt um), macht es zu Daten: der Schlüssel fällt.
     static _etikett(o) {
-        if (!o || !Array.isArray(o.etikett)) return o;
-        Object.defineProperty(o, "label", {
-            configurable: true,
-            enumerable: true,
-            get() {
-                return Array.isArray(this.etikett) ? AnazhRealm._t(this.etikett[0], this.etikett[1]) : undefined;
-            },
-            set(v) {
-                delete this.etikett;
-                Object.defineProperty(this, "label", {
-                    value: v,
-                    writable: true,
-                    enumerable: true,
-                    configurable: true,
-                });
-            },
-        });
+        if (!o) return o;
+        for (const feld of ["parts", "bodyParts"])
+            if (Array.isArray(o[feld])) for (const p of o[feld]) AnazhRealm._etikett(p);
+        const e = o.etikett;
+        if (!e || typeof e !== "object") return o;
+        // `etikett: [schlüssel, werte]` trägt `label`; `etikett: { feld: [schlüssel, werte], … }` je Feld eine Zeile
+        for (const feld of Array.isArray(e) ? ["label"] : Object.keys(e))
+            Object.defineProperty(o, feld, {
+                configurable: true,
+                enumerable: true,
+                get() {
+                    const z = Array.isArray(this.etikett)
+                        ? feld === "label"
+                            ? this.etikett
+                            : null
+                        : this.etikett?.[feld];
+                    return z ? AnazhRealm._t(z[0], z[1]) : undefined;
+                },
+                set(v) {
+                    if (Array.isArray(this.etikett) || !this.etikett) delete this.etikett;
+                    else delete this.etikett[feld];
+                    Object.defineProperty(this, feld, {
+                        value: v,
+                        writable: true,
+                        enumerable: true,
+                        configurable: true,
+                    });
+                },
+            });
         return o;
     }
     // der Name in der Quell-Sprache des Gesetzes (de) — für die Wörter der DSL, die nie mit der Sprache des Spielers wechseln
     static _etikettQuelle(o) {
         if (!o) return undefined;
-        if (!Array.isArray(o.etikett)) return o.label;
-        const z = AnazhRealm.TEXTE.de[o.etikett[0]];
-        const w = o.etikett[1] || {};
-        return z.replace(/\{(\w+)\}/g, (_, k) => (Array.isArray(w[k]) ? AnazhRealm.TEXTE.de[w[k][0]] : String(w[k])));
+        return Array.isArray(o.etikett) ? AnazhRealm._tIn("de", o.etikett[0], o.etikett[1]) : o.label;
     }
 
     _t(schluessel, werte) {
@@ -1520,6 +1539,22 @@ class AnazhRealm_dienst {
         localStorage.setItem("anazh.sprache", sp);
         AnazhRealm._spracheJetzt = sp;
         AnazhRealm._sprachDom(document);
+        // die Zeichner der Oberfläche zeichnen neu (jeder liest die Tafel und die Etiketten in der neuen Spalte); die Linse
+        // (gate:sprache --lebend, der Wechsel am Ort) nennt jede Zeile, die danach noch in der alten Sprache steht, beim Erzeuger
+        for (const z of AnazhRealm.SPRACH_ZEICHNER) this[z]();
+    }
+
+    // DIE ZEILE AM KNOTEN (spielgang.K5): ein Knoten, den ein Bauer EINMAL füllt, trägt seinen Schlüssel (`data-t`, je Attribut
+    // `data-t-<attribut>`, die Werte als JSON daneben) — `_sprachDom` füllt ihn bei jedem Wechsel neu
+    _tSetze(el, schluessel, werte, attr) {
+        const name = attr ? "data-t-" + attr : "data-t";
+        el.setAttribute(name, schluessel);
+        if (werte) el.setAttribute(name + "-werte", JSON.stringify(werte));
+        else el.removeAttribute(name + "-werte");
+        const text = AnazhRealm._t(schluessel, werte);
+        if (attr) el.setAttribute(attr, text);
+        else el.textContent = text;
+        return el;
     }
 
     // die Wahl in den Einstellungen (#sprache-wahl): sie zeigt die Sprache des Geräts, ein Wechsel ruft `_spracheSetzen`
@@ -1582,10 +1617,12 @@ class AnazhRealm_dienst {
         if (!wurzel || typeof wurzel.querySelectorAll !== "function") return;
         const t = AnazhRealm._t;
         if (wurzel.documentElement) wurzel.documentElement.lang = AnazhRealm._sprache() === "en" ? "en" : "de";
-        for (const el of wurzel.querySelectorAll("[data-t]")) el.textContent = t(el.dataset.t);
+        const werte = (el, name) => (el.hasAttribute(name) ? JSON.parse(el.getAttribute(name)) : undefined);
+        for (const el of wurzel.querySelectorAll("[data-t]"))
+            el.textContent = t(el.dataset.t, werte(el, "data-t-werte"));
         for (const a of AnazhRealm.SPRACH_ATTRIBUTE)
             for (const el of wurzel.querySelectorAll(`[data-t-${a}]`))
-                el.setAttribute(a, t(el.getAttribute(`data-t-${a}`)));
+                el.setAttribute(a, t(el.getAttribute(`data-t-${a}`), werte(el, `data-t-${a}-werte`)));
     }
 
     // ═══ DIE STAND-WACHE (Welle K, Lehre 25, Gebot 7) ═══
@@ -1814,3 +1851,20 @@ AnazhRealm.WELT_SCHWUND_MS = 500;
 // DIE ATTRIBUTE DER SPRACHE (`_sprachDom`): je Name trägt `data-t-<name>` den Schlüssel seiner Zeile in der Tafel
 // (`data-hud-zeigen` liest das CSS: der Wink `body.hud-hidden::after`).
 AnazhRealm.SPRACH_ATTRIBUTE = Object.freeze(["title", "placeholder", "aria-label", "alt", "data-hud-zeigen"]);
+// DIE ZEICHNER DER OBERFLÄCHE (spielgang.K5, der Wechsel am Ort): jeder baut sein Stück aus Tafel und Etiketten neu und ist
+// wiederholbar; was ein Bauer EINMAL baut, trägt seine Schlüssel am Knoten (`_tSetze`) und füllt `_sprachDom`
+AnazhRealm.SPRACH_ZEICHNER = Object.freeze([
+    "renderInventoryUI",
+    "_renderHotbarDOM",
+    "_renderWorkshopDOM",
+    "renderLibraryUI",
+    "_renderKeybindingsUI",
+    "updateWorldInfo",
+    "_refreshSoulSelect",
+    "_renderCreatureListUI",
+    "_renderVibePassUI",
+    "_renderMeshWorldCatalog",
+    "_renderLobbyUI",
+    "llmRefreshProviderUI",
+    "_populateCompanionVoiceSelect",
+]);

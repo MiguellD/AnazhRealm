@@ -455,13 +455,13 @@ class AnazhRealm_netz_identitaet {
         fp.className = "vibe-pass-fingerprint";
         fp.setAttribute("translate", "no");
         fp.textContent = vp.fingerprint;
-        fp.title = this._t("pass.schluessel-id", { hex: vp.publicKeyHex });
+        fp.title = `ed25519:${vp.publicKeyHex}`;
         body.appendChild(fp);
 
         const idEl = document.createElement("div");
         idEl.className = "vibe-pass-id";
         idEl.setAttribute("translate", "no");
-        idEl.textContent = this._t("pass.schluessel-id", { hex: vp.publicKeyHex });
+        idEl.textContent = `ed25519:${vp.publicKeyHex}`;
         body.appendChild(idEl);
 
         if (vp.createdAt) {
@@ -678,9 +678,7 @@ class AnazhRealm_netz_identitaet {
     async empfangeWerk(code, opts = {}) {
         const W = AnazhRealm.WERK_CODE;
         const ab = (grund) => {
-            this._spielerSagt(
-                this._t("pass.werk.abgewiesen", { grund: String(W.grund[grund.split(":")[0]]), code: grund })
-            );
+            this._spielerSagt(["pass.werk.abgewiesen", { grund: String(W.grund[grund.split(":")[0]]), code: grund }]);
             return { ok: false, grund };
         };
         if (typeof code !== "string" || !code.startsWith(W.praefix)) return ab("kein_code");
@@ -751,12 +749,13 @@ class AnazhRealm_netz_identitaet {
                 name: ziel,
             }
         );
-        this._spielerSagt(
-            this._t("pass.werk.steht", {
+        this._spielerSagt([
+            "pass.werk.steht",
+            {
                 werk: String(this._werkLabel(ziel)),
                 autor: String(this._vibeFingerprint(h.autor)),
-            })
-        );
+            },
+        ]);
         return { ok: true, id: steht.id, name: ziel, autor: h.autor, fremd };
     }
 
@@ -768,12 +767,13 @@ class AnazhRealm_netz_identitaet {
         if (!addr) return ab("adresse");
         if (!addr.sig) return ab("unsigniert");
         if ((await this.verifyWorldAddress(addr)) !== "valid") return ab("signatur");
-        this._spielerSagt(
-            this._t("pass.welt.trete-bei", {
+        this._spielerSagt([
+            "pass.welt.trete-bei",
+            {
                 welt: String(addr.label),
                 autor: String(this._vibeFingerprint(addr.authorPubKey)),
-            })
-        );
+            },
+        ]);
         const res = await this._weltBeitritt(addr, { slugHint: opts.slugHint || addr.label });
         return res.ok ? { ok: true, welt: res.worldId, autor: addr.authorPubKey } : ab("beitritt:" + res.reason);
     }

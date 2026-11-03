@@ -20,7 +20,9 @@
 // Wort-Text im Code (die Senken am AST): ein Wort aus ≥ 2 Buchstaben UND ein Zeichen der Sprache (Großbuchstabe, Umlaut,
 // Satzzeichen)
 const wort = (t) => {
-    t = String(t).replace(/<[^>]*>|&\w+;/g, " ");
+    t = String(t)
+        .replace(/<[^>]*>|&\w+;/g, " ")
+        .trim();
     // camelCase und ein Bezeichner ohne Leerzeichen in Kleinbuchstaben („szene:tiefenabbild“, „stein_block“) sind Namen
     // Sprache ist auch die kleine Zeile aus zwei Wörtern („kahl (0) ↔ voll (1)“, „glatt ↔ bruchig“)
     const satz = /[A-ZÄÖÜäöüß…!?:]/.test(t) || /[a-zäöüß]{2,}[\s(),↔·–—/]+[^\s]*[a-zäöüß]{2,}/.test(t);
@@ -140,13 +142,15 @@ function ZAEHLE(stufe) {
     const sprache = zeilen.filter((z) => /[A-Za-zÄÖÜäöüß]{2,}/.test(z.text));
     const name = (z) => z.erzeuger + " · " + z.wo + ": " + z.text;
     if (stufe === "wechsel") {
-        const stehen = sprache.filter((z) => z.marke);
+        const stehen = sprache.filter((z) => z.marke && !z.daten);
         const jeErzeuger = {};
         for (const z of stehen)
             jeErzeuger[z.erzeuger.replace(/:\d+/, "")] = (jeErzeuger[z.erzeuger.replace(/:\d+/, "")] || 0) + 1;
         return { stehen: stehen.length, stehenNamen: stehen.map(name), jeErzeuger, zeilen: sprache.length };
     }
-    const hart = sprache.filter((z) => !z.daten && z.hart);
+    // hart: Wort-Text ohne Marke außerhalb der Daten — und eine Zeile der Tafel IM Daten-Bereich (sie gibt sich als Daten
+    // aus und wechselt nie mit der Sprache)
+    const hart = sprache.filter((z) => (z.daten ? z.marke : z.hart));
     const daten = sprache.filter((z) => z.daten);
     const jeErzeuger = {};
     for (const z of hart)

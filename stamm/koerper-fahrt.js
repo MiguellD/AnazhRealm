@@ -1901,7 +1901,7 @@ class AnazhRealm_koerper_fahrt {
             else N.warm.delete(target);
             if (!w.quelle) continue;
             if (vorher < w.zuend / 2 && w.dT >= w.zuend / 2 && w.dT < w.zuend)
-                this._spielerSagt(this._t("welt.brennpunkt-glimmt", { ding: name(target), linse: name(w.quelle) }));
+                this._spielerSagt(["welt.brennpunkt-glimmt", { ding: name(target), linse: name(w.quelle) }]);
             if (w.dT >= w.zuend) ignitions.push({ t: target, quelle: w.quelle });
         }
         const pm = this.state.playerMesh && this.state.playerMesh.position;
@@ -2400,7 +2400,7 @@ class AnazhRealm_koerper_fahrt {
         // IDEMPOTENT am Chokepoint: jeder erfolgreiche Seelen-Bau erfüllt den deferierten Boot-Avatar-Bau
         // mit — der Loop-Defer stapelt keinen zweiten Bau, egal welcher Pfad (Restore/DSL/UI) zuerst baute.
         this.state._deferredAvatarSoul = null;
-        this.log(`Seele gewechselt: ${def.label} (${canonical})`, "INFO");
+        this.log(`Seele gewechselt: ${AnazhRealm._etikettQuelle(def)} (${canonical})`, "INFO"); // das Log spricht die Quell-Sprache
         if (typeof document !== "undefined") {
             const select = document.getElementById("player-soul-select");
             if (select && select.value !== canonical) {
@@ -2413,7 +2413,8 @@ class AnazhRealm_koerper_fahrt {
                 }
             }
             const status = document.getElementById("status-soul");
-            if (status) status.textContent = def.label;
+            if (status && Array.isArray(def.etikett)) this._tSetze(status, def.etikett[0], def.etikett[1]);
+            else if (status) status.textContent = def.label;
         }
         // Stats neu berechnen: bei Seelen-Wechsel tauschen die Tag-Profile (HP-Max, Speed, Sprung, Ausdauer,
         // Resistenzen), die Wandlung füllt die Lebenswerte — nur sie: derselbe Leib neu gebaut (der Boot-Avatar, der Guss nach
