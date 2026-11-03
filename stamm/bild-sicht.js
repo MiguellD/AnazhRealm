@@ -650,8 +650,8 @@ class AnazhRealm_bild_sicht {
     // Welt-Punkt des Fragments in der Ansicht seines Laufs, wo er die Fläche deckte, sonst der Himmel der EINEN Atmosphäre
     // (die PMREM-Umgebung, `_skyEnvRT`) in Richtung und Stufe, die r184s Umgebungs-Licht reicht (`getUV`, `getTextureLevel`).
     // Der Spiegel trägt nur die glatte Fläche (Gewicht 1 − smoothstep(`glanzRauheit`) der Stufe, wie sein Glanz-Ziel); das
-    // Umgebungs-Licht (Stufe 1, die Bestrahlung) liest den Himmel allein. Bis material.K4 spiegelte jeder Stoff außer dem
-    // Wasser den Himmel ohne Szene (die IBL des PMREM).
+    // Umgebungs-Licht (Stufe 1, die Bestrahlung) liest den Himmel und unten den gezeichneten Boden (schatten.K4). Bis
+    // material.K4 spiegelte jeder Stoff außer dem Wasser den Himmel ohne Szene (die IBL des PMREM).
     _spiegelUmgebung(quelle) {
         if (this._spiegelUmgebungK) return this._spiegelUmgebungK;
         const T = THREE.TSL;
