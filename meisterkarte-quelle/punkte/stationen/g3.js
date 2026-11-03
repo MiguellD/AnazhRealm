@@ -761,21 +761,28 @@ const ZUG_PROBE = {
 //   schatten.K4  eine weiße Wand 4 × 3 m (Albedo 0,8) auf freiem, ebenem Boden, die Fläche von der Sonne weg (Eigenschatten, N·L < 0),
 //              Uhr 0,5: Luma der Fläche mit dem besonnten Boden davor gegen den Gegenschuss mit einer Platte Albedo 0 (16 × 16 m) davor.
 //   schatten.K3  ohne Sonne (nur Himmel und Umgebung — die Himmels-Sicht allein): ein Körper wie ein stehender Mensch (0,45 × 1,75 × 0,3,
-//              der Fuß) und ein Haus-Block 4 × 3 × 4 m (der Sockel); das Kontaktband 2–18 cm vor der Fläche zur Kamera gegen den freien
-//              Boden 1–2 m davor, je mit/ohne Körper (die Textur des Bodens fällt heraus).
+//              der Fuß) und ein Haus-Block 4 × 3 × 4 m (der Sockel), die Stirnflächen auf einer Linie, auf freiem Boden ohne Halm-Marke
+//              (Raster ±150 m, Grün ≤ 0,05) und Höhe aus dem gezeichneten Boden; das Auge 2 m davor, 2,5 m hoch: das Kontaktband
+//              7–16 cm vor der Fläche gegen den freien Boden 1–1,6 m davor, je mit/ohne Körper (die Textur des Bodens fällt heraus), nur
+//              über Punkten, deren Plättchen das Auge sieht (w6-g3-linsen).
 //   lod.K4     derselbe Blick der Sitzung, das Auge der Stufen (`_lodAuge`, die EINE Naht von Maske und Wahl) um ±4 m längs des Blicks
 //              versetzt: die Pixel, die der Wechsel ändert, ihre Luma vorher/nachher und das Zweiton-Raster (`__klassenMasse`).
-//   licht.K4   Deckung 0,4 gegen 0, die Bild-Uhr t und t + 5 s, das Auge 90 m über dem Boden schräg auf die Fläche: S = Bild/Bild der
-//              Deckung 0 zur selben Uhr (das Gras im Wind fällt heraus); Varianz von S und die beste Korrelation S(t) ↔ S(t + 5)
-//              über die Verschiebung — ein gemaltes Muster steht (Verschiebung 0), ein dunklerer Himmel trägt keine Varianz am Boden.
+//   licht.K4   Deckung 0,4 gegen 0, die Bild-Uhr t und t + 5 s, das Auge 600 m LOTRECHT über dem Boden: der Durchlass D = (Bild − Bild
+//              ohne Richtlicht) bei 0,4 gegen bei 0 über besonnten Blöcken (die statische Sonnen-Maske fällt heraus); Varianz von D, die
+//              beste Korrelation D(t) ↔ D(t + 5) über die Verschiebung und der Anteil der Änderung, den sie erklärt — ein gemaltes
+//              Muster steht (Verschiebung 0), ein dunklerer Himmel trägt keinen Durchlass am Boden (w6-g3-linsen).
 //   ferne.K4   die Uhr der Sonne 5° (die Abend-Uhr der Bühne, halbiert), Orte 2,5–7 km aus dem Gelände-Gesetz: zur Sonne geneigt
-//              (N·L > 0,2), vom Auge (80 m über dem Boden; aus 40 m sah es am Dorf 8 von 500) sichtbar; im Schatten, wo der Horizont zur Sonne > 6,5° steht und sein Grat
-//              ≥ 2 km vom Auge liegt, im Licht unter 3,5°. Luma je N·L im Schatten gegen im Licht (eine dunklere Fern-Farbe trifft beide).
+//              (N·L > 0,2), dem Auge zugewandt (N·V ≥ 0,2) und vom Auge sichtbar — das Auge 1 500 · 600 · 250 m über dem Spieler, die
+//              erste Höhe mit ≥ 5 Orten je Seite (aus 80 m sah es am Dorf 3 im Schatten); im Schatten, wo der Horizont zur Sonne > 6,5°
+//              steht und sein Grat ≥ 2 km vom Auge liegt, im Licht unter 3,5°. Luma je N·L im Schatten gegen im Licht über den Orten,
+//              die das Bild trägt (eine dunklere Fern-Farbe trifft beide).
 //   schatten.K5  Mitternacht, die nächste Leuchtquelle des LICHT_GESETZ (`_blockerMit("licht")`, im Pool der Probe), ein Pfosten
-//              0,3 × 2 m 2 m daneben: Boden 0,35–0,85 m hinter dem Pfosten gegen denselben Radius ±30° daneben; dazu ohne Pfosten (Kontrolle).
+//              0,3 × 2 m 2 m daneben: Boden 0,35–0,85 m hinter dem Pfosten gegen denselben Radius ±30° daneben, das Auge 5 m lotrecht
+//              darüber, der Pfosten im Blick (sein Plättchen gesehen); dazu ohne Pfosten (Kontrolle, je Pose zuerst).
 //   schatten.K2  Gehen 4 m/s im Takt des Spiels (`_loopShadowUpdate` + Bild, 20 Bilder, 4 eingeschwungen): derselbe Gang mit und ohne
-//              Schatten (Intensität 0 je Kaskade, kein Programm-Wechsel); ein Pixel ist unerklärt, wenn es mit Schatten von Bild zu Bild
-//              um > 18 Luma springt, ohne Schatten nicht — Kamera, Stufen und Gras erklären sich in beiden Gängen.
+//              Schatten (Intensität 0 je Kaskade, kein Programm-Wechsel); ein Rand-Pixel des Schattens ist unerklärt, wenn das per
+//              Kamera-Bewegung reprojizierte Vorbild (die Ebene des Bodens) ihn mit Schatten nicht trägt (±18 über die 3 × 3), ohne
+//              Schatten schon — die Parallaxe ortsfester Schatten erklärt sich, das Schwimmen der Kaskade nicht (w6-g3-linsen).
 //   vegetation.K3  der Boden unter Kronen (ein Strahl nach oben trifft einen Werfer) gegen offenen Boden, Uhr 0,5 und 0,56: die Flecken
 //              (Variationskoeffizient der Block-Luma) und ihr Wandern mit der Sonne (Korrelation der zwei Uhren). Das Band der REF
 //              real-mischwald für Stämme und Unterholz steht nirgends (nicht im Spiel-Baum, nicht in der Soll-Tafel): ROT beim Namen.
@@ -1062,41 +1069,107 @@ async function neunSeite(r, T, C) {
         // ───── schatten.K3 — Kontakt und Himmels-Sicht (die Sonne aus) ─────
         await teil("schatten.K3", async () => {
             window.__buehne({});
-            const M = platz(5, null, plaetze);
+            // DER FREIE BODEN (w6-g3-linsen): Fuß und Sockel stehen, wo die Wiese keinen Halm trägt — der Grün-Kanal des gezeichneten Bodens
+            // (`_bodenSichtAt` aus, die Halm-Marke der Wiese: Rasen grünt, Pflaster deckt) ≤ C.k3Gruen über dem ganzen Platz; am Dorf deckte
+            // Gras das Band 2–18 cm, die Station maß Halme (GTX 8ed70734: Fuß 0,9998). Höhe jedes Punkts: der GEZEICHNETE Boden (Lehre 22)
+            const sichtY = (x, z) => {
+                const y = r._bodenSichtAt(x, z);
+                if (y === null) throw new Error("kein gezeichneter Boden bei " + x.toFixed(1) + ", " + z.toFixed(1));
+                return y;
+            };
+            const gruen = (x, z) => {
+                const g = {};
+                return r._bodenSichtAt(x, z, g) === null ? null : g.gruen;
+            };
+            // der Platz: das Raster ±C.k3Feld m um den Spieler (C.k3Schritt), nah zuerst — eben (Hang ≤ C.hangMax über ±5 m), Land, ohne Halm
+            // an neun Punkten des Platzes, über ihm kein Werfer; die 16 Richtungen von `platz` trafen am Dorf keinen (137 von 144 am Hang)
+            const grund = { hang: 0, gruen: 0, werfer: 0, wasser: 0 };
+            const kand = [];
+            for (let dx = -C.k3Feld; dx <= C.k3Feld; dx += C.k3Schritt)
+                for (let dz = -C.k3Feld; dz <= C.k3Feld; dz += C.k3Schritt) {
+                    const x = P0.x + dx, z = P0.z + dz, R = 5;
+                    if (Math.hypot(dx, dz) < 8 || plaetze.some((q) => Math.hypot(q.x - x, q.z - z) < 14)) continue;
+                    if (typeof r._landAt === "function" && !r._landAt(x, z, 0.3)) (grund.wasser++, 0);
+                    else if ([[0, 0], [R, 0], [-R, 0], [0, R], [0, -R], [R / 2, R / 2], [-R / 2, -R / 2], [R / 2, -R / 2], [-R / 2, R / 2]].some(([a, b]) => {
+                        const g = gruen(x + a, z + b);
+                        return g === null || g > C.k3Gruen;
+                    })) grund.gruen++;
+                    else {
+                        const h = boden(x, z);
+                        let hang = 0;
+                        for (const [a, b] of [[R, 0], [-R, 0], [0, R], [0, -R], [0.7 * R, 0.7 * R], [-0.7 * R, -0.7 * R], [0.7 * R, -0.7 * R], [-0.7 * R, 0.7 * R]])
+                            hang = Math.max(hang, Math.abs(boden(x + a, z + b) - h) / R);
+                        if (!(hang <= C.hangMax)) grund.hang++;
+                        else kand.push({ x, z, h, hang, d: Math.hypot(dx, dz) });
+                    }
+                }
+            kand.sort((p, q) => p.d - q.d);
+            const fund = kand.slice(0, 12).find((q) => frei(new T.Vector3(q.x, q.h + 0.3, q.z), OBEN, 120));
+            if (!fund) throw new Error("kein freier Boden ohne Halm (±" + C.k3Feld + " m): " + JSON.stringify(Object.assign(grund, { kand: kand.length })));
+            const M = Object.assign(new T.Vector3(fund.x, fund.h, fund.z), { hang: +fund.hang.toFixed(3) });
             plaetze.push(M);
             const c = fwd0.clone().negate(); // zur Kamera
             const b = new T.Vector3(-c.z, 0, c.x);
             const I0 = dl.intensity;
             dl.intensity = 0;
             try {
-                const ding = (name, w, h, t, s) => {
-                    const q = M.clone().addScaledVector(b, s);
-                    q.y = boden(q.x, q.z);
+                // DIE ARMLÄNGE (w6-g3-linsen): beide Stirnflächen auf EINER Linie quer zum Auge, das Auge 2 m davor und 2,5 m hoch, steil auf den
+                // Boden — aus 4,5 m und 2,6 m Höhe lag das Band 1–2 px unter der Kante des Körpers, die Kante blutete in den Punkt (main: das Band
+                // 15–18 % HELLER als der freie Boden, aus 3 m flach 344 %); das Band 7–16 cm vor der Fläche (≥ 4 px), der Sockel über seine
+                // mittleren 2 m, der freie Boden 1–1,6 m davor
+                const ding = (name, w, h, t, s, breit) => {
+                    const q = M.clone().addScaledVector(b, s).addScaledVector(c, -t / 2);
+                    q.y = sichtY(q.x, q.z);
                     const k = koerper(new T.BoxGeometry(w, h, t), [0.45, 0.43, 0.4], name);
                     k.position.set(q.x, q.y + h / 2 - 0.02, q.z);
                     k.rotation.y = Math.atan2(c.x, c.z);
                     const pt = (e, u) => {
                         const p = q.clone().addScaledVector(c, t / 2 + e).addScaledVector(b, u);
-                        return p.setY(boden(p.x, p.z) + 0.01);
+                        return p.setY(sichtY(p.x, p.z) + 0.01);
                     };
-                    const us = [-0.4, -0.2, 0, 0.2, 0.4].map((f) => f * (w - 0.1));
-                    return { k, band: [0.03, 0.07, 0.11, 0.15].flatMap((e) => us.map((u) => pt(e, u))), frei: [1.0, 1.3, 1.6, 2.0].flatMap((e) => us.map((u) => pt(e, u))) };
+                    const us = [-0.4, -0.2, 0, 0.2, 0.4].map((f) => f * (breit - 0.1));
+                    return { k, band: [0.07, 0.1, 0.13, 0.16].flatMap((e) => us.map((u) => pt(e, u))), frei: [1.0, 1.2, 1.4, 1.6].flatMap((e) => us.map((u) => pt(e, u))) };
                 };
-                const D = [ding("fuss", 0.45, 1.75, 0.3, -2.8), ding("sockel", 4, 3, 4, 2.2)];
-                stell(M.clone().addScaledVector(c, 4.5).setY(M.y + 2.6), M.clone().addScaledVector(c, 1.2), 70);
+                const D = [ding("fuss", 0.45, 1.75, 0.3, 1.2, 0.45), ding("sockel", 4, 3, 4, -1.6, 2)];
+                stell(M.clone().addScaledVector(b, -0.2).addScaledVector(c, 2).setY(M.y + 2.5), M.clone().addScaledVector(b, -0.2).addScaledVector(c, 0.6), 70);
                 const mit = await schuss();
                 D.forEach((d) => (d.k.visible = false));
                 const ohne = await schuss();
+                // DIE SICHT AUF DEN BODEN (die Tiefe des Schusses): je Punkt ein Plättchen 4 cm, unbeleuchtet weiß, 1 cm über dem Boden — sieht
+                // das Auge es, ändert sich der Pixel; ein Halm, ein Stein oder der Körper davor deckt es. Gemessen wird nur, wo die Sicht trägt
+                const zeichen = koerper(new T.BufferGeometry(), [1, 1, 1], "zeichen");
+                zeichen.material.dispose();
+                zeichen.material = new T.MeshBasicMaterial({ color: 0xffffff, side: T.DoubleSide });
+                zeichen.castShadow = zeichen.receiveShadow = false;
+                const lage = [];
+                for (const d of D) for (const p of [...d.band, ...d.frei]) for (const [dx, dz] of [[-0.02, -0.02], [0.02, -0.02], [0.02, 0.02], [-0.02, -0.02], [0.02, 0.02], [-0.02, 0.02]]) lage.push(p.x + dx, p.y + 0.005, p.z + dz);
+                zeichen.geometry.setAttribute("position", new T.Float32BufferAttribute(lage, 3));
+                D.forEach((d) => (d.k.visible = true));
+                const mark = await schuss();
+                // gemessen wird nur, was das Auge vom Boden sieht (das Plättchen hebt den Pixel um > 30); n zählt die gesehenen Punkte
+                const sieht = (pts) => pts.filter((p) => {
+                    const q = bp(p);
+                    if (!q) return false;
+                    const i = (Math.round(q[1]) * W + Math.round(q[0])) * 4;
+                    return l8(mark, i) - l8(mit, i) > 30;
+                });
+                // je Punkt sein EINER Pixel (das Plättchen sah genau ihn): die 3 × 3 um einen Punkt 3 cm vor dem Körper griffen seinen Fuß
+                const L1 = (u8, pts) => {
+                    const q = pts.map(bp).filter(Boolean);
+                    return { L: med(q.map(([x, y]) => Yp(u8, (Math.round(y) * W + Math.round(x)) * 4))), n: q.length };
+                };
                 const je = D.map((d, i) => {
-                    const [bm, bo, fm, fo] = [probeL(mit, d.band), probeL(ohne, d.band), probeL(mit, d.frei), probeL(ohne, d.frei)];
+                    const [sb, sf] = [sieht(d.band), sieht(d.frei)];
+                    const [bm, bo, fm, fo] = [L1(mit, sb), L1(ohne, sb), L1(mit, sf), L1(ohne, sf)];
                     return {
                         was: ["fuss", "sockel"][i],
                         band: bm.L > 0 && bo.L > 0 && fm.L > 0 && fo.L > 0 ? r4(bm.L / bo.L / (fm.L / fo.L)) : null,
                         frei: fm.L > 0 && fo.L > 0 ? r4(fm.L / fo.L) : null,
                         n: Math.min(bm.n, fm.n),
+                        sicht: r4(Math.min(sb.length / d.band.length, sf.length / d.frei.length)),
                     };
                 });
-                return { je, platz: [+M.x.toFixed(1), +M.z.toFixed(1)], hang: M.hang };
+                return { je, platz: [+M.x.toFixed(1), +M.z.toFixed(1)], hang: M.hang, gruen: r4(gruen(M.x, M.z)) };
             } finally {
                 dl.intensity = I0;
             }
@@ -1147,61 +1220,95 @@ async function neunSeite(r, T, C) {
             const U = st.skyboxUniforms;
             if (!U || !U.cloudCover) throw new Error("keine Wolken-Uniforms (skyboxUniforms.cloudCover)");
             const hb = boden(P0.x, P0.z);
-            stell(new T.Vector3(P0.x, hb + 90, P0.z), new T.Vector3(P0.x + fwd0.x * 110, hb, P0.z + fwd0.z * 110), 70);
+            // DER BLICK SENKRECHT (w6-g3-linsen): aus C.wolkeHoch m lotrecht auf den Boden ist ein Zug in der Welt EINE Verschiebung im Bild —
+            // schräg (90 m, 70°) zog derselbe Zug nah 40 Blöcke und fern 5, und keine Verschiebung erklärte ihn
+            stell(new T.Vector3(P0.x, hb + C.wolkeHoch, P0.z), new T.Vector3(P0.x + fwd0.x, hb, P0.z + fwd0.z), C.wolkeFov);
+            const mpp = (2 * C.wolkeHoch * Math.tan((C.wolkeFov * Math.PI) / 360)) / H;
             // die Bild-Uhr hält die Bühne (`__uhrHalten`: `_bildZeit` liest `__buehneUhr.T`, ein Schreiben verweigert sie und zählt es)
             const BU = window.__buehneUhr;
             if (!BU) throw new Error("die Bühne hält keine Bild-Uhr (__buehneUhr)");
-            const t = BU.T, cov0 = U.cloudCover.value;
-            const auf = async (cov, dt) => {
+            const t = BU.T, cov0 = U.cloudCover.value, I0 = dl.intensity;
+            // DER DURCHLASS (w6-g3-linsen): das Bild ohne Richtlicht (unten: EIN Schuss trägt beide Deckungen und Uhren) zieht Himmel, Umgebung und Gras ab — was
+            // bleibt, ist das direkte Licht; sein Verhältnis Deckung 0,4 gegen 0 ist der Wurf der Wolke allein. Bild/Bild trug die statische
+            // Sonnen-Maske (Kaskade, Eigenschatten der Kronen: ein Block im Schatten bleibt 1, ein besonnter fällt) — r0 ≥ 0,8 bei [0,0]
+            const auf = async (cov, dt, an) => {
                 BU.T = t + dt;
                 U.cloudCover.value = cov;
+                dl.intensity = an ? I0 : 0;
                 const u = await schuss();
                 return { u, cov: U.cloudCover.value };
             };
-            let c0, c5, a, b;
+            const bilder = {};
             try {
-                [c0, a, c5, b] = [await auf(0, 0), await auf(C.wolkeDeckung, 0), await auf(0, C.wolkeSek), await auf(C.wolkeDeckung, C.wolkeSek)];
+                // VIER SCHÜSSE (das Budget der Probe): aus 600 m lotrecht trägt das Bild ohne Sonne weder Wind noch Deckung, das Bild ohne Wolke
+                // keinen Wind (Zweig 35414866, je Pixel gemittelt: ohne Sonne 0,4 gegen 0 0,004 %, ohne Sonne t gegen t + 5 s 0,007 %, Deckung 0
+                // t gegen t + 5 s 0,07 % — der Wurf ändert 3,6 %) — gemessen werden Deckung 0 mit und ohne Sonne zur Uhr t, Deckung 0,4 zu t und t + 5 s
+                for (const [dt, cov, an] of [[0, 0, true], [0, 0, false], [0, C.wolkeDeckung, true], [C.wolkeSek, C.wolkeDeckung, true]]) bilder[[dt, cov, an].join()] = await auf(cov, dt, an);
             } finally {
                 BU.T = t;
                 U.cloudCover.value = cov0;
+                dl.intensity = I0;
             }
-            const B = 8, gx = Math.floor(W / B), y0 = Math.floor((0.35 * H) / B), gy = Math.floor(H / B) - y0;
-            const feld = (x, z) => {
-                const f = new Float32Array(gx * gy);
+            const B = C.wolkeBlock, gx = Math.floor(W / B), y0 = 0, gy = Math.floor(H / B);
+            // je Uhr der Durchlass D = (Bild − ohne Richtlicht) bei Deckung 0,4 gegen bei 0 je Block 8 × 8 (16 Proben) — nur, wo JEDE Probe
+            // besonnt ist (das direkte Licht trägt ≥ C.wolkeDirekt ihres Bilds bei Deckung 0) und kein Kanal nahe Weiß steht (die Rück-Rechnung
+            // des Tons trägt dort nicht: Dächer standen hell in D, an t und t + 5 s gleich); dazu fällt, was mehr als 4 MAD vom Median steht
+            // (Wasser spiegelt die Sonne, kein Lambert) — sonst NaN. Halbschatten-Blöcke und weiße Dächer trugen ein stehendes Muster in D
+            const durchlass = (dt) => {
+                const [b0, o0, b4, o4] = [[0, 0, true], [0, 0, false], [dt, C.wolkeDeckung, true], [0, 0, false]].map((k) => bilder[k.join()].u);
+                const D = new Float32Array(gx * gy);
                 for (let j = 0; j < gy; j++)
                     for (let i = 0; i < gx; i++) {
-                        let s = 0, s0 = 0;
-                        for (let yy = 0; yy < B; yy += 2)
-                            for (let xx = 0; xx < B; xx += 2) {
-                                const p = (((y0 + j) * B + yy) * W + i * B + xx) * 4;
-                                (s += Yp(x.u, p)), (s0 += Yp(z.u, p));
+                        let s0 = 0, s4 = 0, ok = true;
+                        for (let yy = 0; yy < B && ok; yy += B / 4)
+                            for (let xx = 0; xx < B && ok; xx += B / 4) {
+                                const q = (((y0 + j) * B + yy) * W + i * B + xx) * 4;
+                                const [hb0, ho0] = [Yp(b0, q), Yp(o0, q)];
+                                if (Math.max(b0[q], b0[q + 1], b0[q + 2], b4[q], b4[q + 1], b4[q + 2]) >= 235 || !(hb0 > 0) || hb0 - ho0 < C.wolkeDirekt * hb0) ok = false;
+                                else (s0 += hb0 - ho0), (s4 += Yp(b4, q) - Yp(o4, q));
                             }
-                        f[j * gx + i] = s0 > 0 ? s / s0 : 1;
+                        D[j * gx + i] = ok ? s4 / s0 : NaN;
                     }
-                return f;
+                const m = med(Array.from(D)), mad = med(Array.from(D).filter(Number.isFinite).map((v) => Math.abs(v - m)));
+                for (let k = 0; k < D.length; k++) if (Number.isFinite(D[k]) && Math.abs(D[k] - m) > 4 * 1.4826 * Math.max(mad, 1e-4)) D[k] = NaN;
+                return D;
             };
-            const SA = feld(a, c0), SB = feld(b, c5);
-            const mw = SA.reduce((p, q) => p + q, 0) / SA.length;
-            const sigma = Math.sqrt(SA.reduce((p, q) => p + (q - mw) * (q - mw), 0) / SA.length);
+            const SA = durchlass(0), SB = durchlass(C.wolkeSek);
+            const da = Array.from(SA).filter(Number.isFinite);
+            const mw = da.length ? da.reduce((p, q) => p + q, 0) / da.length : NaN;
+            const sigma = da.length ? Math.sqrt(da.reduce((p, q) => p + (q - mw) * (q - mw), 0) / da.length) : null;
             const korr = (dx, dy) => {
                 let n = 0, sa = 0, sb = 0, saa = 0, sbb = 0, sab = 0;
                 for (let j = Math.max(0, -dy); j < gy - Math.max(0, dy); j++)
                     for (let i = Math.max(0, -dx); i < gx - Math.max(0, dx); i++) {
                         const p = SA[j * gx + i], q = SB[(j + dy) * gx + i + dx];
-                        (n++, (sa += p), (sb += q), (saa += p * p), (sbb += q * q), (sab += p * q));
+                        if (Number.isFinite(p) && Number.isFinite(q)) (n++, (sa += p), (sb += q), (saa += p * p), (sbb += q * q), (sab += p * q));
                     }
-                if (n < 0.4 * gx * gy) return null;
+                if (n < 60 || n < 0.4 * da.length) return null;
                 const va = saa - (sa * sa) / n, vb = sbb - (sb * sb) / n;
                 return va > 1e-9 && vb > 1e-9 ? (sab - (sa * sb) / n) / Math.sqrt(va * vb) : null;
             };
             let best = { r: -2, dx: 0, dy: 0 };
-            const R = Math.floor(gx / 4);
+            const R = Math.ceil(0.2 * gx);
             for (let dy = -R; dy <= R; dy++)
                 for (let dx = -R; dx <= R; dx++) {
                     const k = korr(dx, dy);
                     if (k != null && k > best.r) best = { r: k, dx, dy };
                 }
-            return { sigma: r4(sigma), r0: r4(korr(0, 0)), r: r4(best.r), verschiebung: [best.dx, best.dy], deckung: [r4(c0.cov), r4(a.cov)], sek: C.wolkeSek, block: [gx, gy] };
+            const [c0, a] = [bilder[[0, 0, true].join()], bilder[[0, C.wolkeDeckung, true].join()]];
+            // DIE ÄNDERUNG und was der Zug von ihr erklärt: eine Wolke von einigen hundert Metern, die in 5 s 50 m zieht, korreliert mit sich
+            // selbst schon ohne Verschiebung hoch (r0) — das Maß ist der Anteil der Änderung, den die Verschiebung erklärt ((r − r0)/(1 − r0)),
+            // und die Änderung selbst (RMS von D(t + 5) − D(t) am Ort): ein stehendes Muster ändert sich nicht, eines, das seine Form
+            // wechselt statt zu ziehen, bleibt unerklärt
+            let dn = 0, dq = 0;
+            for (let k = 0; k < SA.length; k++) if (Number.isFinite(SA[k]) && Number.isFinite(SB[k])) (dn++, (dq += (SB[k] - SA[k]) ** 2));
+            const r0 = korr(0, 0);
+            return {
+                mass: "durchlass", besonnt: r4(da.length / SA.length), mittel: r4(mw), sigma: r4(sigma), r0: r4(r0), r: r4(best.r),
+                aenderung: dn ? r4(Math.sqrt(dq / dn)) : null, erklaert: r0 != null && r0 < 1 && best.r > -2 ? r4((best.r - r0) / (1 - r0)) : null,
+                verschiebung: [best.dx, best.dy], zugMS: r4((Math.hypot(best.dx, best.dy) * B * mpp) / C.wolkeSek), deckung: [r4(c0.cov), r4(a.cov)], sek: C.wolkeSek,
+                block: [gx, gy], blockM: r4(B * mpp),
+            };
         });
         // ───── ferne.K4 — Grate werfen Abendschatten ─────
         await teil("ferne.K4", async () => {
@@ -1215,13 +1322,17 @@ async function neunSeite(r, T, C) {
             }
             const S = sonne(), el = Math.asin(S.y);
             const a = new T.Vector3(S.x, 0, S.z).normalize();
-            const E = new T.Vector3(P0.x, boden(P0.x, P0.z) + C.fernHoch, P0.z);
+            // DIE ORTE hängen nur am Gelände-Gesetz und an der Sonne (zur Sonne geneigt, Horizont zur Sonne über oder unter ihr) — EINMAL
+            // gerechnet; DAS AUGE wählt die Station (w6-g3-linsen): je Höhe C.fernHoch (über dem Boden am Spieler) die Sicht auf jeden Ort und
+            // der Grat ≥ 2 km vom Auge, die erste Höhe, aus der ein Azimut ≥ C.fernMin Orte im Schatten UND im Licht zeigt (aus 80 m sah das
+            // Auge am Dorf 3 im Schatten — das Gelände trug den Text, das Auge nicht)
+            const B0 = boden(P0.x, P0.z);
             let saat = 7;
             const zufall = () => (saat = (saat * 1664525 + 1013904223) >>> 0) / 4294967296;
-            const orte = [];
+            const kand = [];
             for (let i = 0; i < C.fernOrte; i++) {
                 const w = zufall() * 2 * Math.PI, d = C.fernAb[0] + (C.fernAb[1] - C.fernAb[0]) * Math.sqrt(zufall());
-                const x = E.x + d * Math.sin(w), z = E.z + d * Math.cos(w), h = gesetz(x, z);
+                const x = P0.x + d * Math.sin(w), z = P0.z + d * Math.cos(w), h = gesetz(x, z);
                 const N = new T.Vector3(gesetz(x - 25, z) - gesetz(x + 25, z), 50, gesetz(x, z - 25) - gesetz(x, z + 25)).normalize();
                 const nl = N.dot(S);
                 if (!(nl > 0.2)) continue;
@@ -1230,35 +1341,48 @@ async function neunSeite(r, T, C) {
                     const q = Math.atan((gesetz(x + a.x * s, z + a.z * s) - h) / s);
                     if (q > hor) (hor = q), (hd = s);
                 }
-                const gratAb = Math.hypot(x + a.x * hd - E.x, z + a.z * hd - E.z);
+                const gratAb = Math.hypot(x + a.x * hd - P0.x, z + a.z * hd - P0.z);
                 const schatten = hor > el + (1.5 * Math.PI) / 180 && gratAb >= 2000;
                 const licht = hor < el - (1.5 * Math.PI) / 180;
-                if (!schatten && !licht) continue;
-                let sicht = true;
-                for (let k = 1; k < 40 && sicht; k++) {
-                    const f = k / 40, px = E.x + (x - E.x) * f, pz = E.z + (z - E.z) * f;
-                    if (gesetz(px, pz) > E.y + (h + 1 - E.y) * f - 2) sicht = false;
+                if (schatten || licht) kand.push({ p: new T.Vector3(x, h + 1, z), N, nl, schatten, w, gratAb });
+            }
+            const halb = (0.9 * C.fernFov * Math.PI) / 360;
+            let E = null, orte = [], wahl = null;
+            for (const hoch of C.fernHoch) {
+                const Eh = new T.Vector3(P0.x, B0 + hoch, P0.z);
+                // der Hang zeigt dem Auge sein Gesicht (N·V ≥ C.fernNv): zur Sonne geneigt und vom Auge abgewandt sah das Bild den Rücken
+                // des Hangs oder den Himmel über ihm (Zweig 35414866 aus 250 m: 6 von 13 Orten am Horizont-Saum)
+                const sichtbar = kand.filter((o) => {
+                    if (o.N.dot(Eh.clone().sub(o.p).normalize()) < C.fernNv) return false;
+                    for (let k = 1; k < 40; k++) {
+                        const f = k / 40;
+                        if (gesetz(Eh.x + (o.p.x - Eh.x) * f, Eh.z + (o.p.z - Eh.z) * f) > Eh.y + (o.p.y - Eh.y) * f - 2) return false;
+                    }
+                    return true;
+                });
+                let wh = null;
+                for (let k = 0; k < 24; k++) {
+                    const az = (k * Math.PI) / 12;
+                    const im = sichtbar.filter((o) => Math.abs(Math.atan2(Math.sin(o.w - az), Math.cos(o.w - az))) < halb);
+                    const ns = im.filter((o) => o.schatten).length, nli = im.length - ns;
+                    if (!wh || Math.min(ns, nli) > Math.min(wh.ns, wh.nl)) wh = { az, ns, nl: nli, hoch };
                 }
-                if (sicht) orte.push({ p: new T.Vector3(x, h + 1, z), nl, schatten, w: Math.atan2(x - E.x, z - E.z), gratAb });
+                if (!wahl || Math.min(wh.ns, wh.nl) > Math.min(wahl.ns, wahl.nl)) [E, orte, wahl] = [Eh, sichtbar, wh];
+                if (Math.min(wh.ns, wh.nl) >= C.fernMin) break;
             }
-            let wahl = null;
-            for (let k = 0; k < 24; k++) {
-                const az = (k * Math.PI) / 12;
-                const im = orte.filter((o) => Math.abs(Math.atan2(Math.sin(o.w - az), Math.cos(o.w - az))) < (C.fernFov * Math.PI) / 360);
-                const ns = im.filter((o) => o.schatten).length, nli = im.length - ns;
-                if (!wahl || Math.min(ns, nli) > Math.min(wahl.ns, wahl.nl)) wahl = { az, ns, nl: nli };
-            }
-            const im = orte.filter((o) => Math.abs(Math.atan2(Math.sin(o.w - wahl.az), Math.cos(o.w - wahl.az))) < (C.fernFov * Math.PI) / 360);
+            const im = orte.filter((o) => Math.abs(Math.atan2(Math.sin(o.w - wahl.az), Math.cos(o.w - wahl.az))) < halb);
             const zielY = med(im.map((o) => o.p.y));
             stell(E, new T.Vector3(E.x + Math.sin(wahl.az) * 4000, zielY == null ? E.y : zielY, E.z + Math.cos(wahl.az) * 4000), C.fernFov / (W / H));
             const u8 = await schuss();
-            const je = (s) => med(im.filter((o) => o.schatten === s).map((o) => {
+            // gezählt wird, was das Bild trägt (der Ort projiziert ins Bild), nie der Plan
+            const je = (s) => im.filter((o) => o.schatten === s).map((o) => {
                 const q = bp(o.p);
                 return q ? Yb(u8, q[0], q[1]) / o.nl : NaN;
-            }));
-            const [Ls, Ll] = [je(true), je(false)];
+            }).filter(Number.isFinite);
+            const [js, jl] = [je(true), je(false)];
+            const [Ls, Ll] = [med(js), med(jl)];
             return {
-                sonneGrad: r4((el * 180) / Math.PI), uhr: r4(st.timeOfDay), orte: orte.length, imBild: [wahl.ns, wahl.nl],
+                sonneGrad: r4((el * 180) / Math.PI), uhr: r4(st.timeOfDay), hochM: wahl.hoch, orte: orte.length, imBild: [js.length, jl.length],
                 gratKm: r4(med(im.filter((o) => o.schatten).map((o) => o.gratAb)) / 1000), Ls: r4(Ls), Ll: r4(Ll),
                 verhaeltnis: Ls != null && Ll > 0 ? r4(Ls / Ll) : null,
             };
@@ -1271,45 +1395,98 @@ async function neunSeite(r, T, C) {
                 .filter((q) => q.d <= C.feuerM)
                 .sort((p, q) => p.d - q.d);
             if (!qs.length) throw new Error("keine Leuchtquelle des LICHT_GESETZ im Umkreis " + C.feuerM + " m");
-            const q = qs[0].e, L = r._lichtDatum(q), sk = Number.isFinite(q.scale) && q.scale > 0 ? q.scale : 1;
-            const Q = new T.Vector3(q.position.x, q.position.y - 0.5 + (L.hoeheM || 0) * sk, q.position.z);
-            const zuP = new T.Vector3(P0.x - Q.x, 0, P0.z - Q.z).normalize();
-            let dir = null, gy = null;
-            for (const w of [0, 90, -90, 180, 45, -45, 135, -135]) {
-                const d = zuP.clone().applyAxisAngle(OBEN, (w * Math.PI) / 180);
-                const p = Q.clone().addScaledVector(d, 2);
-                const h = boden(p.x, p.z);
-                if ([0.6, 1.2, -0.6].every((e) => Math.abs(boden(p.x + d.x * e, p.z + d.z * e) - h) < 0.3)) {
-                    (dir = d), (gy = h);
-                    break;
-                }
-            }
-            if (!dir) throw new Error("kein ebener Boden 2 m neben der Leuchtquelle " + (q.type || "?"));
-            const quer = new T.Vector3(-dir.z, 0, dir.x);
-            const pf = koerper(new T.BoxGeometry(0.3, 2, 0.3), [0.4, 0.4, 0.4], "pfosten");
-            const PF = Q.clone().addScaledVector(dir, 2);
-            pf.position.set(PF.x, gy + 0.98, PF.z);
-            pf.rotation.y = Math.atan2(dir.x, dir.z);
-            // von der Seite (quer zum Strahl Feuer → Pfosten): vom Feuer her verdeckte der Pfosten den Boden hinter sich, die Probe las seine
-            // beleuchtete Fläche (swiftshader, Dorf: „Schatten“ 4,43 gegen Licht 0,37)
-            stell(PF.clone().addScaledVector(quer, 3).setY(gy + 2.6), PF.clone().addScaledVector(dir, 0.5).setY(gy), 70);
-            if (r._leuchtPool) r._leuchtPool.t = r._leuchtPool.uhr = -Infinity;
-            window.__buehne({ uhr: C.mitternacht });
-            const P = r._leuchtPool;
-            const imPool = !!P && P.halter.some((h, j) => h && h.id === q && P.blende[j] > 0);
-            const pt = (d, e, u) => {
-                const p = Q.clone().addScaledVector(d, e).addScaledVector(new T.Vector3(-d.z, 0, d.x), u);
-                return p.setY(boden(p.x, p.z) + 0.01);
+            // Höhe jedes Punkts: der GEZEICHNETE Boden (Lehre 22)
+            const sichtY = (x, z) => {
+                const y = r._bodenSichtAt(x, z);
+                if (y === null) throw new Error("kein gezeichneter Boden bei " + x.toFixed(1) + ", " + z.toFixed(1));
+                return y;
             };
             const rs = [2.35, 2.5, 2.65, 2.85];
-            const dS = rs.flatMap((e) => [-0.05, 0, 0.05].map((u) => pt(dir, e, u)));
-            const dL = [30, -30].flatMap((w) => rs.flatMap((e) => [-0.05, 0, 0.05].map((u) => pt(dir.clone().applyAxisAngle(OBEN, (w * Math.PI) / 180), e, u))));
-            const mit = await schuss();
-            pf.visible = false;
-            const ohne = await schuss();
+            const ptVon = (Q) => (d, e, u) => {
+                const p = Q.clone().addScaledVector(d, e).addScaledVector(new T.Vector3(-d.z, 0, d.x), u);
+                return p.setY(sichtY(p.x, p.z) + 0.01);
+            };
+            // DIE POSEN (w6-g3-linsen): je Leuchtquelle des Gesetzes (nah zuerst) und Richtung mit ebenem Boden 2 m neben ihr der Pfosten, das
+            // Auge C.k5Hoch m LOTRECHT über den Messpunkten (2,35–2,85 m von der Quelle): zwischen ihm und dem Boden steht nur, was über dem
+            // Punkt selbst wächst. Von der Seite (3 m quer, 2,6 m hoch) stand das Auge im Schilf um den Glutbrunnen (GTX b4bb2f62), jeder Halm
+            // deckte Boden und Pfosten
+            const posen = [];
+            for (const { e: q, d: abM } of qs) {
+                const Lq = r._lichtDatum(q), sk = Number.isFinite(q.scale) && q.scale > 0 ? q.scale : 1;
+                const Q = new T.Vector3(q.position.x, q.position.y - 0.5 + (Lq.hoeheM || 0) * sk, q.position.z);
+                const zuP = new T.Vector3(P0.x - Q.x, 0, P0.z - Q.z).normalize();
+                for (const w of [0, 90, -90, 180, 45, -45, 135, -135]) {
+                    const d = zuP.clone().applyAxisAngle(OBEN, (w * Math.PI) / 180);
+                    const p = Q.clone().addScaledVector(d, 2);
+                    const h = boden(p.x, p.z);
+                    if ([0.6, 1.2, -0.6].every((e) => Math.abs(boden(p.x + d.x * e, p.z + d.z * e) - h) < 0.3)) posen.push({ q, abM, Q, dir: d });
+                }
+            }
+            if (!posen.length) throw new Error("kein ebener Boden 2 m neben einer Leuchtquelle im Umkreis " + C.feuerM + " m (" + qs.length + " Quellen)");
+            const pf = koerper(new T.BoxGeometry(0.3, 2, 0.3), [0.4, 0.4, 0.4], "pfosten");
+            // DIE SICHT: je Pose EIN Schuss mit Zeichen — ein grünes, unbeleuchtetes Plättchen 4 cm auf jedem Messpunkt und eines auf dem Kopf
+            // des Pfostens; die erste Pose, aus der das Auge den Pfosten sieht, misst (höchstens C.k5Versuche) — sonst die beste.
+            // Gemessen wird, was das Auge in der Säule über jedem Punkt sieht (aus C.k5Hoch m lotrecht: den Boden oder den Halm, der auf ihm
+            // steht und den Wurf so fängt wie er); `boden` nennt, wie viel davon Boden ist
+            const zeichen = koerper(new T.BufferGeometry(), [0, 1, 0], "zeichen");
+            zeichen.material.dispose();
+            zeichen.material = new T.MeshBasicMaterial({ color: 0x00ff00, side: T.DoubleSide });
+            zeichen.castShadow = zeichen.receiveShadow = false;
+            const gruenPx = (u8, p) => {
+                const q2 = bp(p);
+                if (!q2) return false;
+                const i = (Math.round(q2[1]) * W + Math.round(q2[0])) * 4;
+                return u8[i + 1] - Math.max(u8[i], u8[i + 2]) > 100;
+            };
+            // je Pose zuerst OHNE Pfosten (die Kontrolle: der Boden hinter und neben ihm gleich hell — am Glutbrunnen lag ohne Pfosten schon der
+            // Wurf seines Steinrings auf dem Platz, 2,99 : 1), dann mit Pfosten und Zeichen; die erste Pose mit Pfosten im Blick und ruhiger
+            // Kontrolle misst
+            const stellPose = (ps, gy) => {
+                const A = ps.Q.clone().addScaledVector(ps.dir, 2.6);
+                stell(A.clone().setY(gy + C.k5Hoch), A.clone().addScaledVector(ps.dir, -0.05).setY(gy), 70);
+                // der Pool der Probe an der Pose (neu gewählt, dann die Uhr)
+                if (r._leuchtPool) r._leuchtPool.t = r._leuchtPool.uhr = -Infinity;
+                window.__buehne({ uhr: C.mitternacht });
+            };
+            const ruhig = (k) => k != null && k >= 0.67 && k <= 1.5;
+            let wahl = null;
+            for (const ps of posen.slice(0, C.k5Versuche)) {
+                const dir = ps.dir, pt = ptVon(ps.Q);
+                const PF = ps.Q.clone().addScaledVector(dir, 2), gy = sichtY(PF.x, PF.z);
+                pf.position.set(PF.x, gy + 0.98, PF.z);
+                pf.rotation.y = Math.atan2(dir.x, dir.z);
+                const dS = rs.flatMap((e) => [-0.05, 0, 0.05].map((u) => pt(dir, e, u)));
+                const dL = [30, -30].flatMap((w) => rs.flatMap((e) => [-0.05, 0, 0.05].map((u) => pt(dir.clone().applyAxisAngle(OBEN, (w * Math.PI) / 180), e, u))));
+                const pfZ = PF.clone().setY(gy + 1.99);
+                const lage = [];
+                // das Plättchen liegt 8 cm NEBEN dem Punkt (quer, 4 cm): der Schuss mit Zeichen ist zugleich der Schuss mit Pfosten — gemessen wird
+                // der Pixel des Punkts, gesehen ist der Boden daneben
+                const nb = (p) => [p.x + 0.08 * dir.z, p.z - 0.08 * dir.x];
+                for (const p of [...dS, ...dL]) for (const [dx, dz] of [[-0.02, -0.02], [0.02, -0.02], [0.02, 0.02], [-0.02, -0.02], [0.02, 0.02], [-0.02, 0.02]]) lage.push(nb(p)[0] + dx, p.y + 0.005, nb(p)[1] + dz);
+                for (const [u, v] of [[-0.05, -0.05], [0.05, -0.05], [0.05, 0.05], [-0.05, -0.05], [0.05, 0.05], [-0.05, 0.05]]) lage.push(pfZ.x + u, pfZ.y, pfZ.z + v);
+                zeichen.geometry.setAttribute("position", new T.Float32BufferAttribute(lage, 3));
+                stellPose(ps, gy);
+                const P = r._leuchtPool;
+                const imPool = !!P && P.halter.some((h, j) => h && h.id === ps.q && P.blende[j] > 0);
+                [pf.visible, zeichen.visible] = [false, false];
+                const ohne = await schuss();
+                [pf.visible, zeichen.visible] = [true, true];
+                const mark = await schuss();
+                zeichen.visible = false;
+                const neben = (p) => new T.Vector3(nb(p)[0], p.y, nb(p)[1]);
+                const sS = dS.filter((p) => gruenPx(mark, neben(p))), sL = dL.filter((p) => gruenPx(mark, neben(p)));
+                const sicht = Math.min(sS.length / dS.length, sL.length / dL.length), pfosten = gruenPx(mark, pfZ);
+                const [s0, l0] = [probeL(ohne, dS), probeL(ohne, dL)];
+                const kontrolle = s0.L > 0 && l0.L > 0 ? l0.L / s0.L : null;
+                const kand = { ps, PF, gy, dS, dL, sicht, pfosten, ohne, mit: mark, kontrolle, imPool, gut: pfosten && ruhig(kontrolle) };
+                if (!wahl || (kand.gut && !wahl.gut) || (kand.gut === wahl.gut && pfosten && !wahl.pfosten)) wahl = kand;
+                if (kand.gut) break;
+            }
+            const { ps, dS, dL, ohne, mit, imPool } = wahl;
+            const q = ps.q;
             const [s1, l1, s0, l0] = [probeL(mit, dS), probeL(mit, dL), probeL(ohne, dS), probeL(ohne, dL)];
             return {
-                quelle: String(q.type || "?"), abM: r4(qs[0].d), imPool, uhr: r4(st.timeOfDay), quer: !!quer,
+                quelle: String(q.type || "?"), abM: r4(ps.abM), imPool, uhr: r4(st.timeOfDay), boden: r4(wahl.sicht), pfosten: wahl.pfosten,
                 Llicht: r4(l1.L), Lschatten: r4(s1.L), kontrast: s1.L > 0 ? r4(l1.L / s1.L) : null,
                 kontrolle: s0.L > 0 && l0.L > 0 ? r4(l0.L / s0.L) : null, n: Math.min(s1.n, l1.n),
             };
@@ -1328,6 +1505,7 @@ async function neunSeite(r, T, C) {
                 const p = new T.Vector3(x, boden(x, z) + 1.7, z);
                 stell(p, p.clone().addScaledVector(fwd0, 20).setY(p.y - 4), merk.fov);
             };
+            const Kam = [];
             const gang = async (an) => {
                 lichter.forEach((l, i) => (l.shadow.intensity = an ? I0[i] : 0));
                 const tn = st.traaNode;
@@ -1343,6 +1521,7 @@ async function neunSeite(r, T, C) {
                 try {
                     for (let k = 0; k < C.gangBilder; k++) {
                         pose(k);
+                        if (an && k >= C.gangEin) Kam.push({ welt: cam.matrixWorld.clone(), inv: cam.projectionMatrixInverse.clone(), proj: cam.projectionMatrix.clone() });
                         r._loopShadowUpdate();
                         window.__loopBild();
                         if (k >= C.gangEin) bilder.push((await window.__zielLesen(rt, W, H)).slice());
@@ -1361,20 +1540,73 @@ async function neunSeite(r, T, C) {
                 lichter.forEach((l, i) => (l.shadow.intensity = I0[i]));
                 rt.dispose();
             }
-            const je = [];
+            // DIE REPROJEKTION (w6-g3-linsen; main mit eingefrorenen Kaskaden maß 4,63 %: ein ortsfester Schatten zieht im Bild mit der Kamera,
+            // ohne Schatten zieht dort nichts — die alte Zählung nannte jede Parallaxe unerklärt): je Bild k und Rand-Pixel des Schattens (die
+            // Maske N − S > 18 wechselt zu einem Nachbarn) der Welt-Punkt auf der Ebene des Bodens unter dem Gang (kleinste Quadrate über dem
+            // Gelände-Gesetz voraus), mit der Kamera des Bilds k − 1 zurück ins Vorbild; erklärt ist der Pixel, wenn sein Wert in der Spanne
+            // der 3 × 3 des Vorbilds um ihn liegt (±18, wie die Bewegung von TAAU sie zuließe). Unerklärt: mit Schatten außerhalb, ohne Schatten
+            // innerhalb — was die Reprojektion ohne Schatten nicht trägt (ein Körper über dem Boden, ein Halm im Wind), fällt heraus
+            const ebene = (() => {
+                let [sxx, sxz, szz, sx, sz, n, sxy, szy, sy] = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+                for (let a = 0; a <= 30; a += 5)
+                    for (let b = -12; b <= 12; b += 4) {
+                        const x = P0.x + fwd0.x * a + quer0.x * b, z = P0.z + fwd0.z * a + quer0.z * b, y = boden(x, z);
+                        if (!Number.isFinite(y)) continue;
+                        const [u, v] = [x - P0.x, z - P0.z];
+                        (sxx += u * u), (sxz += u * v), (szz += v * v), (sx += u), (sz += v), n++, (sxy += u * y), (szy += v * y), (sy += y);
+                    }
+                const M = new T.Matrix3().set(sxx, sxz, sx, sxz, szz, sz, sx, sz, n).invert();
+                const k = new T.Vector3(sxy, szy, sy).applyMatrix3(M);
+                return { a: k.x, b: k.y, c: k.z }; // y = a·(x − P0.x) + b·(z − P0.z) + c
+            })();
+            const kam = Kam.map((m) => ({ welt: m.welt, inv: m.inv, proj: m.proj, sicht: m.welt.clone().invert() }));
+            const rueck = (k, px, py) => {
+                const A = kam[k], B = kam[k - 1];
+                const o = new T.Vector3().setFromMatrixPosition(A.welt);
+                const d = new T.Vector3(((px + 0.5) / W) * 2 - 1, 1 - ((py + 0.5) / H) * 2, 0.5).applyMatrix4(A.inv).applyMatrix4(A.welt).sub(o).normalize();
+                // die Ebene: n·X = c mit n = (−a, 1, −b) um P0
+                const nx = -ebene.a, nz = -ebene.b;
+                const den = nx * d.x + d.y + nz * d.z;
+                if (Math.abs(den) < 1e-6) return null;
+                const t = (ebene.c - (nx * (o.x - P0.x) + o.y + nz * (o.z - P0.z))) / den;
+                if (!(t > 0)) return null;
+                const X = o.addScaledVector(d, t).applyMatrix4(B.sicht).applyMatrix4(B.proj);
+                if (!(Math.abs(X.x) <= 1 && Math.abs(X.y) <= 1)) return null;
+                return [Math.round(((X.x + 1) / 2) * W - 0.5), Math.round(((1 - X.y) / 2) * H - 0.5)];
+            };
+            const spanne = (bild, x, y, v) => {
+                let lo = Infinity, hi = -Infinity;
+                for (let j = -1; j <= 1; j++)
+                    for (let i = -1; i <= 1; i++) {
+                        const xx = Math.min(W - 1, Math.max(0, x + i)), yy = Math.min(H - 1, Math.max(0, y + j));
+                        const w = l8(bild, (yy * W + xx) * 4);
+                        (lo = Math.min(lo, w)), (hi = Math.max(hi, w));
+                    }
+                return v >= lo - 18 && v <= hi + 18;
+            };
+            const je = [], rand = [];
             let schatten = 0;
             for (let k = 1; k < S.length; k++) {
-                let u = 0;
-                for (let p = 0; p < W * H * 4; p += 4) {
-                    const dS = Math.abs(l8(S[k], p) - l8(S[k - 1], p)), dN = Math.abs(l8(N[k], p) - l8(N[k - 1], p));
-                    if (dS > 18 && dN <= 18) u++;
-                    if (k === 1 && l8(N[k], p) - l8(S[k], p) > 18) schatten++;
-                }
+                const maske = new Uint8Array(W * H);
+                for (let p = 0; p < W * H; p++) maske[p] = l8(N[k], p * 4) - l8(S[k], p * 4) > 18 ? 1 : 0;
+                let u = 0, r0 = 0;
+                for (let y = 1; y < H - 1; y++)
+                    for (let x = 1; x < W - 1; x++) {
+                        const p = y * W + x;
+                        if (k === 1 && maske[p]) schatten++;
+                        const m = maske[p];
+                        if (maske[p - 1] === m && maske[p + 1] === m && maske[p - W] === m && maske[p + W] === m) continue;
+                        r0++;
+                        const q = rueck(k, x, y);
+                        if (!q || q[0] < 1 || q[1] < 1 || q[0] >= W - 1 || q[1] >= H - 1) continue;
+                        if (!spanne(S[k - 1], q[0], q[1], l8(S[k], p * 4)) && spanne(N[k - 1], q[0], q[1], l8(N[k], p * 4))) u++;
+                    }
                 je.push(u / (W * H));
+                rand.push(r0 ? u / r0 : 0);
             }
             return {
-                bilder: je.length, unerklaertMax: r4(Math.max(...je)), unerklaertMittel: r4(je.reduce((a, b) => a + b, 0) / je.length),
-                schattenAnteil: r4(schatten / (W * H)), ms: C.gangMs,
+                mass: "reprojektion", bilder: je.length, unerklaertMax: r4(Math.max(...je)), unerklaertMittel: r4(je.reduce((a, b) => a + b, 0) / je.length),
+                randMax: r4(Math.max(...rand)), schattenAnteil: r4(schatten / (W * H)), ms: C.gangMs, ebene: [r4(ebene.a), r4(ebene.b)],
             };
         });
         // ───── vegetation.K3 — der Wald von innen ─────
@@ -1443,12 +1675,21 @@ async function neunSeite(r, T, C) {
 // gemessenem Teil EINE Zeile „NEUN <kriterium> {…}“ (das Urteil liest sie), dazu {AUS}. Das Budget zählt ab dem Start des Prozesses.
 // DIE LÄNGE DES BEFEHLS: Windows startet node mit höchstens 32 767 Zeichen Kommandozeile (gpu-lauf.sh auf Radeon und GTX) — mit dem Tor
 // der Sitzung (`PW.torBefehl`, sein Text samt Kommentaren) und der Seite wörtlich trug der Befehl 40 923. Darum ein eigenes Tor (der Ruf
-// an die Werkbank, die Karte aus dem Log der Sitzung) und die Seite ohne Einrückung und Kommentarzeilen (`kompakt`): ~28 000.
+// an die Werkbank, die Karte aus dem Log der Sitzung) und die Seite ohne Einrückung und Kommentarzeilen (`kompakt`): ~28 000. Mit dem
+// Durchlass, der Sicht auf den Boden und dem Auge der Grate (w6-g3-linsen) trug er 33 298 — darum steht die Seite nicht mehr im Befehl:
+// die Probe lädt sie aus dieser Datei ({KOORD}, `neunSeite` am Export) und prüft ihren Abdruck gegen den des Befehls (sha1, 16 Zeichen) —
+// der Befehl ändert sich mit jeder Zeile der Seite (der Abdruck der Station), eine andere Seite misst nie (NEUN-BRUCH, kein Urteil).
 async function neunProbe() {
     const fs = require("fs");
     const http = require("http");
     const t0 = Date.now();
-    const [aus, cfg, seite] = process.argv.slice(1);
+    const [aus, cfg, datei, abdruck] = process.argv.slice(1);
+    const seite = require(datei).neunSeite;
+    const ist = require("crypto").createHash("sha1").update(String(seite)).digest("hex").slice(0, 16);
+    if (ist !== abdruck) {
+        console.log("NEUN-BRUCH die Seite in " + datei + " trägt den Abdruck " + ist + ", der Befehl " + abdruck);
+        process.exit(1);
+    }
     const C = JSON.parse(cfg);
     const rest = () => C.budgetS - (Date.now() - t0) / 1000;
     const ruf = (weg, nutz, ms) =>
@@ -1512,19 +1753,32 @@ const NEUN_C = {
     lodPixelMin: 1500,
     wolkeDeckung: 0.4,
     wolkeSek: 5,
+    wolkeDirekt: 0.25,
+    wolkeHoch: 600,
+    wolkeBlock: 8,
+    wolkeFov: 70,
     sonneGrad: 5,
-    fernHoch: 80,
-    fernOrte: 2000,
+    fernHoch: [1500, 600, 250],
+    fernMin: 5,
+    fernNv: 0.2,
+    fernOrte: 5000,
     fernAb: [2500, 7000],
     fernFov: 90,
     feuerM: 120,
+    k5Versuche: 3,
+    k5Hoch: 5,
     mitternacht: 0,
     gangMs: 4,
     gangBilder: 20,
     gangEin: 4,
     fleckUhr: 0.56,
     hangMax: 0.12,
+    k3Gruen: 0.05,
+    k3Feld: 150,
+    k3Schritt: 6,
 };
+const NEUN_SEITE = kompakt(neunSeite.toString());
+const NEUN_ABDRUCK = require("crypto").createHash("sha1").update(NEUN_SEITE).digest("hex").slice(0, 16);
 const NEUN_PROBE = {
     sek: 10,
     befehl: [
@@ -1533,7 +1787,8 @@ const NEUN_PROBE = {
         "(" + kompakt(neunProbe.toString()) + ")().then(() => process.exit(0), (e) => { console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\\n').slice(0, 4).join(' | ')); process.exit(1); });",
         "{AUS}",
         JSON.stringify(NEUN_C),
-        kompakt(neunSeite.toString()),
+        "{KOORD}/meisterkarte-quelle/punkte/stationen/g3.js",
+        NEUN_ABDRUCK,
     ],
 };
 // DAS URTEIL liest die Zeile seines Teils und die Karte der Sitzung (stdout); fehlt die Zeile, gleicht die Zahl der des leeren Laufs:
@@ -1583,11 +1838,16 @@ const NEUN = [
     neunStation(
         "schatten.K2",
         "1 = ≤ 0,5 % unerklärte Randpixel beim Gehen an einem Gerät",
-        (t) => [t.bilder >= 10 && t.schattenAnteil >= 0.01 && t.unerklaertMax <= 0.005, `unerklärt je Bild max ${(100 * t.unerklaertMax).toFixed(2)} %, Mittel ${(100 * t.unerklaertMittel).toFixed(2)} % (Soll ≤ 0,5 %) über ${t.bilder} Bilder Gang ${t.ms} m/s, Schatten im Bild ${(100 * t.schattenAnteil).toFixed(1)} % (≥ 1 %)`],
-        neunProben("schatten.K2", { bilder: 15, unerklaertMax: 0.003, unerklaertMittel: 0.001, schattenAnteil: 0.2, ms: 4 }, [
-            ["der Schatten flimmert (Anhalt GTX e0139769 1,6 %)", { bilder: 15, unerklaertMax: 0.016, unerklaertMittel: 0.008, schattenAnteil: 0.2, ms: 4 }],
-            ["kein Schatten im Bild (ein Standbild ist immer ruhig)", { bilder: 15, unerklaertMax: 0, unerklaertMittel: 0, schattenAnteil: 0.002, ms: 4 }],
-            ["zu kurzer Gang", { bilder: 3, unerklaertMax: 0, unerklaertMittel: 0, schattenAnteil: 0.2, ms: 4 }],
+        // DAS MASS IST DIE REPROJEKTION (w6-g3-linsen): unerklärt ist ein Rand-Pixel des Schattens, den das per Kamera-Bewegung reprojizierte
+        // Vorbild nicht trägt — die alte Zählung (Bild gegen Bild am selben Pixel) nannte die Parallaxe ortsfester Schatten unerklärt (main mit
+        // eingefrorenen Kaskaden 4,63 %)
+        (t) => [t.mass === "reprojektion" && t.bilder >= 10 && t.schattenAnteil >= 0.01 && t.unerklaertMax <= 0.005, `Maß ${t.mass || "Bild gegen Bild (die Parallaxe)"}: unerklärt je Bild max ${(100 * t.unerklaertMax).toFixed(2)} %, Mittel ${(100 * t.unerklaertMittel).toFixed(2)} % (Soll ≤ 0,5 %; je Rand-Pixel max ${t.randMax}) über ${t.bilder} Bilder Gang ${t.ms} m/s, Schatten im Bild ${(100 * t.schattenAnteil).toFixed(1)} % (≥ 1 %)`],
+        neunProben("schatten.K2", { mass: "reprojektion", bilder: 15, unerklaertMax: 0.0016, unerklaertMittel: 0.001, randMax: 0.0084, schattenAnteil: 0.51, ms: 4 }, [
+            ["der Schatten flimmert (Anhalt GTX e0139769 1,6 %)", { mass: "reprojektion", bilder: 15, unerklaertMax: 0.016, unerklaertMittel: 0.008, randMax: 0.1, schattenAnteil: 0.2, ms: 4 }],
+            ["die Kaskade schwimmt (main 0e3eadad, das Richtlicht ±1° je Bild: 0,57 %)", { mass: "reprojektion", bilder: 15, unerklaertMax: 0.0057, unerklaertMittel: 0.0031, randMax: 0.0443, schattenAnteil: 0.51, ms: 4 }],
+            ["kein Schatten im Bild (ein Standbild ist immer ruhig)", { mass: "reprojektion", bilder: 15, unerklaertMax: 0, unerklaertMittel: 0, randMax: 0, schattenAnteil: 0.002, ms: 4 }],
+            ["zu kurzer Gang", { mass: "reprojektion", bilder: 3, unerklaertMax: 0, unerklaertMittel: 0, randMax: 0, schattenAnteil: 0.2, ms: 4 }],
+            ["das alte Maß Bild gegen Bild (ohne Reprojektion)", { bilder: 15, unerklaertMax: 0.003, unerklaertMittel: 0.001, schattenAnteil: 0.2, ms: 4 }],
         ])
     ),
     neunStation(
@@ -1595,14 +1855,20 @@ const NEUN = [
         "1 = Kontaktband (0–20 cm) 30–60 % des freien Bodens an Fuß und Sockel an einem Gerät",
         (t) => {
             const je = t.je || [];
-            const ok = je.length === 2 && je.every((x) => x.band != null && x.band >= 0.3 && x.band <= 0.6 && x.frei != null && Math.abs(x.frei - 1) <= 0.1 && x.n >= 10);
-            return [ok, je.map((x) => `${x.was} Band ${x.band == null ? "—" : (100 * x.band).toFixed(1) + " %"} des freien Bodens (frei mit/ohne ${x.frei}, ${x.n} Punkte)`).join(" · ") + " (Soll 30–60 %, Himmel allein)"];
+            // gemessen über gesehenem Boden (das Plättchen je Punkt: ≥ 10 Punkte und ≥ 50 % in Band und frei) auf einem Platz ohne Halm-Marke
+            // (Grün ≤ 0,05, w6-g3-linsen: am Dorf deckte Gras das Band, die Station maß Halme)
+            const ok = t.gruen != null && t.gruen <= 0.05 && je.length === 2 &&
+                je.every((x) => x.band != null && x.band >= 0.3 && x.band <= 0.6 && x.frei != null && Math.abs(x.frei - 1) <= 0.1 && x.n >= 10 && x.sicht != null && x.sicht >= 0.5);
+            return [ok, je.map((x) => `${x.was} Band ${x.band == null ? "—" : (100 * x.band).toFixed(1) + " %"} des freien Bodens (frei mit/ohne ${x.frei}, ${x.n} Punkte gesehen, Sicht ${x.sicht})`).join(" · ") + ` (Soll 30–60 %, Himmel allein; Platz ${JSON.stringify(t.platz)} Grün ${t.gruen})`];
         },
-        neunProben("schatten.K3", { je: [{ was: "fuss", band: 0.52, frei: 0.99, n: 20 }, { was: "sockel", band: 0.45, frei: 1.0, n: 20 }] }, [
-            ["keine Verdeckung (Spike 94c079cb: 1,000)", { je: [{ was: "fuss", band: 1.0, frei: 1.0, n: 20 }, { was: "sockel", band: 0.998, frei: 1.0, n: 20 }] }],
-            ["nur der Sockel trägt", { je: [{ was: "fuss", band: 0.97, frei: 1.0, n: 20 }, { was: "sockel", band: 0.45, frei: 1.0, n: 20 }] }],
-            ["ein gemalter Ring dunkelt auch den freien Boden", { je: [{ was: "fuss", band: 0.5, frei: 0.7, n: 20 }, { was: "sockel", band: 0.45, frei: 0.7, n: 20 }] }],
-            ["schwarz statt Kontakt", { je: [{ was: "fuss", band: 0.1, frei: 1.0, n: 20 }, { was: "sockel", band: 0.12, frei: 1.0, n: 20 }] }],
+        neunProben("schatten.K3", { platz: [-739, -837], hang: 0.073, gruen: 0.0039, je: [{ was: "fuss", band: 0.4146, frei: 1.0013, n: 20, sicht: 1 }, { was: "sockel", band: 0.337, frei: 1.0, n: 20, sicht: 1 }] }, [
+            ["keine Verdeckung (main 0e3eadad: 1,000 und 1,000)", { platz: [-739, -837], hang: 0.073, gruen: 0.0039, je: [{ was: "fuss", band: 1.0, frei: 1.0, n: 20, sicht: 1 }, { was: "sockel", band: 1.0, frei: 1.0, n: 20, sicht: 1 }] }],
+            ["nur der Sockel trägt", { platz: [-739, -837], hang: 0.073, gruen: 0.0039, je: [{ was: "fuss", band: 0.97, frei: 1.0, n: 20, sicht: 1 }, { was: "sockel", band: 0.45, frei: 1.0, n: 20, sicht: 1 }] }],
+            ["ein gemalter Ring dunkelt auch den freien Boden", { platz: [-739, -837], hang: 0.073, gruen: 0.0039, je: [{ was: "fuss", band: 0.5, frei: 0.7, n: 20, sicht: 1 }, { was: "sockel", band: 0.45, frei: 0.7, n: 20, sicht: 1 }] }],
+            ["schwarz statt Kontakt", { platz: [-739, -837], hang: 0.073, gruen: 0.0039, je: [{ was: "fuss", band: 0.1, frei: 1.0, n: 20, sicht: 1 }, { was: "sockel", band: 0.12, frei: 1.0, n: 20, sicht: 1 }] }],
+            ["Gras deckt das Band (das Auge sieht 4 von 20 Punkten)", { platz: [-739, -837], hang: 0.073, gruen: 0.0039, je: [{ was: "fuss", band: 0.45, frei: 1.0, n: 4, sicht: 0.2 }, { was: "sockel", band: 0.4, frei: 1.0, n: 20, sicht: 1 }] }],
+            ["der Platz trägt Halme (Grün 1, die Pose am Dorf bis 03.11.)", { platz: [-829, -871], hang: 0.05, gruen: 1, je: [{ was: "fuss", band: 0.45, frei: 1.0, n: 20, sicht: 0.9 }, { was: "sockel", band: 0.4, frei: 1.0, n: 20, sicht: 0.9 }] }],
+            ["das alte Maß ohne Sicht und Platz (Halme im Band)", { je: [{ was: "fuss", band: 0.52, frei: 0.99, n: 20 }, { was: "sockel", band: 0.45, frei: 1.0, n: 20 }] }],
         ])
     ),
     neunStation(
@@ -1618,8 +1884,12 @@ const NEUN = [
     neunStation(
         "schatten.K5",
         "1 = Schatten-Kontrast ≥ 3:1 an einem Pfosten 2 m vom Feuer an einem Gerät",
-        (t) => [t.imPool && t.kontrast != null && t.kontrast >= 3 && t.kontrolle != null && t.kontrolle >= 0.67 && t.kontrolle <= 1.5 && t.n >= 6, `Kontrast ${t.kontrast}:1 (Soll ≥ 3:1) am Pfosten 2 m von ${t.quelle} (${t.abM} m vom Spieler, im Pool ${t.imPool}), ohne Pfosten ${t.kontrolle}, Uhr ${t.uhr}`],
-        neunProben("schatten.K5", { quelle: "feuerstelle", abM: 20, imPool: true, uhr: 0, Llicht: 0.06, Lschatten: 0.015, kontrast: 4, kontrolle: 1.05, n: 12 }, [
+        // DIE POSE (w6-g3-linsen): das Auge lotrecht über den Messpunkten, der Pfosten im Blick (sein Plättchen gesehen) — von der Seite stand
+        // es im Schilf (GTX b4bb2f62); `boden` nennt den Anteil gesehenen Bodens (in Gras misst die Säule den Halm, der den Wurf fängt)
+        (t) => [t.pfosten === true && t.imPool && t.kontrast != null && t.kontrast >= 3 && t.kontrolle != null && t.kontrolle >= 0.67 && t.kontrolle <= 1.5 && t.n >= 6, `Kontrast ${t.kontrast}:1 (Soll ≥ 3:1) am Pfosten 2 m von ${t.quelle} (${t.abM} m vom Spieler, im Pool ${t.imPool}, im Blick ${t.pfosten}, Boden gesehen ${t.boden}), ohne Pfosten ${t.kontrolle}, Uhr ${t.uhr}`],
+        neunProben("schatten.K5", { quelle: "glutbrunnen", abM: 6.27, imPool: true, uhr: 0, boden: 0, pfosten: true, Llicht: 0.0657, Lschatten: 0.0071, kontrast: 9.26, kontrolle: 1.45, n: 12 }, [
+            ["das Auge sieht den Pfosten nicht (im Schilf, GTX b4bb2f62)", { quelle: "glutbrunnen", abM: 6.27, imPool: true, uhr: 0, boden: 0, pfosten: false, Llicht: 0.06, Lschatten: 0.015, kontrast: 4, kontrolle: 1.05, n: 12 }],
+            ["das alte Maß ohne Sicht (die Pose von der Seite)", { quelle: "feuerstelle", abM: 20, imPool: true, uhr: 0, Llicht: 0.06, Lschatten: 0.015, kontrast: 4, kontrolle: 1.05, n: 12 }],
             ["das Feuer wirft nicht (Spike 94c079cb)", { quelle: "feuerstelle", abM: 20, imPool: true, uhr: 0, Llicht: 0.06, Lschatten: 0.058, kontrast: 1.03, kontrolle: 1.02, n: 12 }],
             ["eine gemalte Schatten-Textur (dunkel auch ohne Pfosten)", { quelle: "feuerstelle", abM: 20, imPool: true, uhr: 0, Llicht: 0.06, Lschatten: 0.015, kontrast: 4, kontrolle: 4, n: 12 }],
             ["die Quelle leuchtet nicht im Pool", { quelle: "feuerstelle", abM: 20, imPool: false, uhr: 0, Llicht: 0.06, Lschatten: 0.015, kontrast: 4, kontrolle: 1, n: 12 }],
@@ -1628,15 +1898,22 @@ const NEUN = [
     neunStation(
         "licht.K4",
         "1 = der Wolken-Schatten wandert mit dem Wolkenfeld über die Wiese (r ≥ 0,6) an einem Gerät",
+        // DAS MASS IST DER DURCHLASS (w6-g3-linsen): Bild/Bild trug die statische Sonnen-Maske (main r0 0,98, Zweig w5-fernschatten 0,79 bei
+        // [0,0]) — gemessen wird das direkte Licht allein über besonnten Blöcken, lotrecht aus 600 m (ein Zug der Welt ist EINE Verschiebung
+        // im Bild, das Feld ist größer als ein Blick aus 90 m); die Verschiebung muss die Änderung erklären (≥ 50 %), nicht nur ein Maximum
         (t) => {
             const zieht = t.verschiebung && (t.verschiebung[0] !== 0 || t.verschiebung[1] !== 0);
-            const ok = t.sigma >= 0.03 && t.r >= 0.6 && zieht && t.r - (t.r0 == null ? -1 : t.r0) >= 0.05 && t.deckung && Math.abs(t.deckung[1] - 0.4) <= 0.01;
-            return [ok, `r ${t.r} bei Verschiebung ${JSON.stringify(t.verschiebung)} Blöcke in ${t.sek} s (ohne Verschiebung ${t.r0}; Soll r ≥ 0,6, das Muster zieht), Schatten-σ ${t.sigma} (≥ 0,03), Deckung ${JSON.stringify(t.deckung)}`];
+            const ok = t.mass === "durchlass" && t.besonnt >= 0.3 && t.sigma >= 0.03 && t.r >= 0.6 && zieht && t.r - (t.r0 == null ? -1 : t.r0) >= 0.05 &&
+                t.erklaert != null && t.erklaert >= 0.5 && t.aenderung != null && t.aenderung >= 0.005 && t.deckung && Math.abs(t.deckung[1] - 0.4) <= 0.01;
+            return [ok, `Maß ${t.mass || "Bild/Bild (die Sonnen-Maske)"}: r ${t.r} bei Verschiebung ${JSON.stringify(t.verschiebung)} Blöcke à ${t.blockM} m in ${t.sek} s (${t.zugMS} m/s; ohne Verschiebung ${t.r0}; Soll r ≥ 0,6, das Muster zieht), der Zug erklärt ${t.erklaert} der Änderung ${t.aenderung} (≥ 0,5), Durchlass-σ ${t.sigma} (≥ 0,03) über ${t.besonnt} besonnten Blöcken (≥ 0,3), Deckung ${JSON.stringify(t.deckung)}`];
         },
-        neunProben("licht.K4", { sigma: 0.12, r0: 0.3, r: 0.82, verschiebung: [6, -1], deckung: [0, 0.4], sek: 5 }, [
-            ["kein Wurf (Spike 94c079cb: der Boden bleibt)", { sigma: 0.002, r0: 0.1, r: 0.2, verschiebung: [3, 2], deckung: [0, 0.4], sek: 5 }],
-            ["ein gemaltes Muster steht", { sigma: 0.12, r0: 0.95, r: 0.95, verschiebung: [0, 0], deckung: [0, 0.4], sek: 5 }],
-            ["die Deckung hielt nicht", { sigma: 0.12, r0: 0.3, r: 0.82, verschiebung: [6, -1], deckung: [0, 0.12], sek: 5 }],
+        neunProben("licht.K4", { mass: "durchlass", besonnt: 0.91, mittel: 0.927, sigma: 0.0725, r0: 0.876, r: 0.97, aenderung: 0.036, erklaert: 0.76, verschiebung: [0, -3], zugMS: 11.2, deckung: [0, 0.4], sek: 5, blockM: 18.7 }, [
+            ["kein Wurf (main 0e3eadad: der Durchlass bleibt 1)", { mass: "durchlass", besonnt: 0.9, mittel: 1, sigma: 0.002, r0: 0.1, r: 0.2, aenderung: 0.001, erklaert: 0.1, verschiebung: [3, 2], zugMS: 8, deckung: [0, 0.4], sek: 5, blockM: 18.7 }],
+            ["ein gemaltes Muster steht", { mass: "durchlass", besonnt: 0.9, mittel: 0.93, sigma: 0.12, r0: 0.95, r: 0.95, aenderung: 0.02, erklaert: 0, verschiebung: [0, 0], zugMS: 0, deckung: [0, 0.4], sek: 5, blockM: 18.7 }],
+            ["die Deckung hielt nicht", { mass: "durchlass", besonnt: 0.91, mittel: 0.927, sigma: 0.0725, r0: 0.876, r: 0.97, aenderung: 0.036, erklaert: 0.76, verschiebung: [0, -3], zugMS: 11.2, deckung: [0, 0.12], sek: 5, blockM: 18.7 }],
+            ["das alte Maß Bild/Bild (die Sonnen-Maske trägt S, kein Durchlass)", { sigma: 0.12, r0: 0.3, r: 0.82, verschiebung: [6, -1], deckung: [0, 0.4], sek: 5 }],
+            ["der Blick liegt im Schatten (kaum besonnte Blöcke)", { mass: "durchlass", besonnt: 0.08, mittel: 0.927, sigma: 0.0725, r0: 0.876, r: 0.97, aenderung: 0.036, erklaert: 0.76, verschiebung: [0, -3], zugMS: 11.2, deckung: [0, 0.4], sek: 5, blockM: 18.7 }],
+            ["das Muster wechselt die Form statt zu ziehen (Zweig 35414866 aus 200 m: der Zug erklärt 0,23)", { mass: "durchlass", besonnt: 0.46, mittel: 0.89, sigma: 0.0696, r0: 0.7476, r: 0.8052, aenderung: 0.048, erklaert: 0.23, verschiebung: [0, -5], zugMS: 6.2, deckung: [0, 0.4], sek: 5, blockM: 6.2 }],
         ])
     ),
     neunStation(
@@ -1652,8 +1929,12 @@ const NEUN = [
     neunStation(
         "ferne.K4",
         "1 = bei Sonne 5° Luma Schatten-/Lichthang ≤ 0,4 hinter einem ≥ 2 km fernen Grat an einem Gerät",
-        (t) => [t.verhaeltnis != null && t.verhaeltnis <= 0.4 && t.imBild[0] >= 5 && t.imBild[1] >= 5 && Math.abs(t.sonneGrad - 5) <= 0.5 && t.gratKm >= 2, `Schatten-/Lichthang ${t.verhaeltnis} (je N·L; Soll ≤ 0,4) aus ${t.imBild[0]}/${t.imBild[1]} Orten, Grat ${t.gratKm} km, Sonne ${t.sonneGrad}° (Uhr ${t.uhr})`],
-        neunProben("ferne.K4", { sonneGrad: 5.02, uhr: 0.74, orte: 140, imBild: [14, 22], gratKm: 3.1, Ls: 0.02, Ll: 0.09, verhaeltnis: 0.22 }, [
+        // DAS AUGE WÄHLT DIE STATION (w6-g3-linsen): die Höhe über dem Spieler, aus der ≥ 5 Orte im Schatten UND im Licht im Bild stehen, nur
+        // Hänge, die dem Auge ihr Gesicht zeigen (N·V ≥ 0,2), gezählt, was das Bild trägt — aus 80 m sah das Auge am Dorf 3 Orte im Schatten
+        (t) => [t.hochM != null && t.verhaeltnis != null && t.verhaeltnis <= 0.4 && t.imBild[0] >= 5 && t.imBild[1] >= 5 && Math.abs(t.sonneGrad - 5) <= 0.5 && t.gratKm >= 2, `Schatten-/Lichthang ${t.verhaeltnis} (je N·L; Soll ≤ 0,4) aus ${t.imBild[0]}/${t.imBild[1]} Orten im Bild, Auge ${t.hochM} m, Grat ${t.gratKm} km, Sonne ${t.sonneGrad}° (Uhr ${t.uhr})`],
+        neunProben("ferne.K4", { sonneGrad: 5.02, uhr: 0.74, hochM: 1500, orte: 377, imBild: [28, 100], gratKm: 5.4, Ls: 0.02, Ll: 0.09, verhaeltnis: 0.22 }, [
+            ["main 0e3eadad und Zweig 35414866: kein Abendschatten an den Hängen im Blick (0,71 aus 28/100)", { sonneGrad: 5.0039, uhr: 0.7351, hochM: 1500, orte: 377, imBild: [28, 100], gratKm: 5.4342, Ls: 0.0345, Ll: 0.0489, verhaeltnis: 0.7063 }],
+            ["das alte Auge 80 m ohne Wahl (3/7 Orte, der Rücken der Hänge: 0,24)", { sonneGrad: 5.02, uhr: 0.74, orte: 44, imBild: [3, 7], gratKm: 3.1, Ls: 0.02, Ll: 0.09, verhaeltnis: 0.24 }],
             ["jenseits der Kaskaden nur N·L (Spike 94c079cb)", { sonneGrad: 5.02, uhr: 0.74, orte: 140, imBild: [14, 22], gratKm: 3.1, Ls: 0.088, Ll: 0.09, verhaeltnis: 0.98 }],
             ["eine dunklere Fern-Farbe am Abend (trifft beide)", { sonneGrad: 5.02, uhr: 0.74, orte: 140, imBild: [14, 22], gratKm: 3.1, Ls: 0.03, Ll: 0.031, verhaeltnis: 0.97 }],
             ["die Sonne steht nicht bei 5°", { sonneGrad: 12, uhr: 0.7, orte: 140, imBild: [14, 22], gratKm: 3.1, Ls: 0.02, Ll: 0.09, verhaeltnis: 0.22 }],
@@ -2871,3 +3152,5 @@ stationen.fehlt = [
 ];
 
 module.exports = stationen;
+// die Seite der NEUN-Probe (die Probe lädt sie, `neunProbe`), nicht aufzählbar: die Liste bleibt die Liste der Stationen
+Object.defineProperty(stationen, "neunSeite", { value: NEUN_SEITE, enumerable: false });
