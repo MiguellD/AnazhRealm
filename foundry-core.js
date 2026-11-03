@@ -3,7 +3,7 @@
 // worlds/terrain/phytogenesis.js (Shell) + im Foundry-Worker (importScripts) VOR phytogenesis.
 // Verschoben (nicht kopiert) aus phytogenesis.js via scripts/move-to-foundry-core.cjs; die
 // Wuchs-/Asset-Mathematik lebt hier, phytogenesis.js ist die Display-/Welt-/UI-Shell + der
-// GL-Bäcker. THREE/BufferGeometryUtils/__phytoCore sind zur Laufzeit global (Ladereihenfolge).
+// GL-Bäcker. THREE/__phytoCore sind zur Laufzeit global (Ladereihenfolge; das Verschmelzen ist phyto-core, kein Addon).
 
 function mulberry32(a) {
     return function () {
@@ -1165,7 +1165,7 @@ function addMerged(geos, mat, weld) {
     if (!geos || !geos.length) return;
     let merged = null;
     try {
-        merged = THREE.BufferGeometryUtils.mergeBufferGeometries(geos, false);
+        merged = __phytoCore.geoVerschmelzen(geos);
     } catch (e) {
         merged = null;
     }
@@ -4315,7 +4315,7 @@ function emitColumns(P) {
     }
     let merged = null;
     try {
-        merged = THREE.BufferGeometryUtils.mergeBufferGeometries(geos, false);
+        merged = __phytoCore.geoVerschmelzen(geos);
     } catch (e) {}
     if (merged) {
         felsStoffNetz(P, merged); // der Stoff der Säulen ist das Fels-Gesetz (K17)
@@ -4481,7 +4481,7 @@ function emitCrystals(P) {
     const cB = vegFarbe(P.rockA).toArray(), // FARB-GESETZ (K17): die Töne des Kristalls sind sRGB-Absichten
         cT = vegFarbe(P.rockC).toArray(),
         dk = vegFarbe(P.rockB).toArray(); // amtMul: ANZAHL skaliert, Cluster-Flaeche ~sqrt -> Einzelkristall konstant
-    const baseGeo = THREE.BufferGeometryUtils.mergeVertices(new THREE.IcosahedronGeometry(P.size * 0.42 * spread, 1));
+    const baseGeo = __phytoCore.eckenVerschmelzen(new THREE.IcosahedronGeometry(P.size * 0.42 * spread, 1));
     baseGeo.deleteAttribute("uv");
     const bp = baseGeo.attributes.position;
     for (let i = 0; i < bp.count; i++) {
@@ -4504,7 +4504,7 @@ function emitCrystals(P) {
     }
     let merged = null;
     try {
-        merged = THREE.BufferGeometryUtils.mergeBufferGeometries(geos, false);
+        merged = __phytoCore.geoVerschmelzen(geos);
     } catch (e) {
         console.error("crystal merge", e.message);
     }

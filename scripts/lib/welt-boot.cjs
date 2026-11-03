@@ -326,11 +326,43 @@ const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bu
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
-// DER STUDIO-KERN in Node: three-r128 (einmal je Prozess — die Kerne bauen gegen das globale THREE) und der Kern `datei` (ab
+// DIE ENGINE DER KERNE (w5-pipeline, pipeline.K5): das Modul, das die Import-Karte von index.html für das Manifest-Feld
+// `engine` nennt (three r184 — dieselbe Datei wie Welt und Foundry-Faden, `_foundryStart`), als Pfad ab der Wurzel
+// (`ENGINE_MODUL`) und in Node als THREE der Kerne (`ENGINE_THREE`: require des ES-Moduls, eine veränderbare Kopie, ohne
+// ColorManagement wie im Faden — die Kerne rechnen ihre Farbe selbst). Ein Manifest ohne Engine oder eine Karte ohne ihr
+// Modul bricht laut.
+function ENGINE_MODUL() {
+    const mf = JSON.parse(fs.readFileSync(path.join(ROOT, "cores.manifest.json"), "utf8"));
+    const namen = [...new Set(mf.map((c) => c && c.engine).filter(Boolean))];
+    if (namen.length !== 1) throw new Error("ENGINE: das Kern-Manifest nennt " + namen.length + " Engines");
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const m = html.match(/<script type="importmap">([\s\S]*?)<\/script>/);
+    const u = m && (JSON.parse(m[1]).imports || {})[namen[0]];
+    if (!u) throw new Error("ENGINE: die Import-Karte von index.html nennt kein Modul „" + namen[0] + "“");
+    return "/" + u.replace(/^\.?\//, "");
+}
+let _engineThree = null;
+function ENGINE_THREE() {
+    if (!_engineThree) {
+        // Node liest die typlose .js als ES-Modul (require(esm)) und warnt dabei je Datei — die Warnung ist der Weg, kein Befund
+        const warn = process.emitWarning;
+        process.emitWarning = (w, ...r) => (/ES module|MODULE_TYPELESS/.test(String((w && w.message) || w) + r.join(" ")) ? undefined : warn.call(process, w, ...r));
+        let T;
+        try {
+            T = require(path.join(ROOT, ENGINE_MODUL()));
+        } finally {
+            process.emitWarning = warn;
+        }
+        T.ColorManagement.enabled = false;
+        _engineThree = Object.assign({}, T);
+    }
+    return _engineThree;
+}
+// DER STUDIO-KERN in Node: die Engine der Kerne (einmal je Prozess — die Kerne bauen gegen das globale THREE) und der Kern `datei` (ab
 // der Wurzel) → `globalThis[name]`; `frisch` lädt ihn neu (die Stoffe rechnen ihre Farbe beim ersten Bau). Bis zur Decke
 // w3s-sukzession lud jede Linse three und Kern in eigenen Zeilen (fünfzehn Mal).
 function studioKern(datei, name, frisch) {
-    global.THREE ||= require(path.join(ROOT, "worlds/terrain/lib/three-r128.min.js"));
+    global.THREE ||= ENGINE_THREE();
     if (frisch) delete require.cache[require.resolve(path.join(ROOT, datei))];
     require(path.join(ROOT, datei));
     return globalThis[name];
@@ -1501,6 +1533,8 @@ function frageJa() {
 }
 
 module.exports = {
+    ENGINE_MODUL,
+    ENGINE_THREE,
     frageJa,
     fs,
     path,
