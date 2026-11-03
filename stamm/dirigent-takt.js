@@ -2136,21 +2136,18 @@ AnazhRealm.REPLAY_MAX_FRAMES = 18000;
 
 // DIE SPUR (spielgang.K1, `_spurAnlegen`): die Ereignisse, die sie am Rand des Geräts nimmt, je Familie ihre Felder
 // (taste: Taste · Code · Umschalter; zeiger: Lage · Weg · Knopf · Knöpfe · Umschalter; rad: Lage · Weg · Modus · Umschalter;
-// feld: `+` Zeichen oder `=` Wert; die übrigen tragen nur ihr Ziel; fehlt ein Feld am Ende, ist es 0) und der Druck, ab dem ein Knopf des Gamepads gedrückt ist.
-AnazhRealm.SPUR = Object.freeze({
-    art: "anazh-spur",
-    fassung: 1,
-    arten: {
+// feld: `+` Zeichen oder `=` Wert; die übrigen tragen nur ihr Ziel; fehlt ein Feld am Ende, ist es 0), je Ereignis seine Familie
+// (eingefroren wie die Tafel) und der Druck, ab dem ein Knopf des Gamepads gedrückt ist.
+AnazhRealm.SPUR = (() => {
+    const arten = {
         taste: ["keydown", "keyup"],
         zeiger: ["mousedown", "mouseup", "click", "mousemove"],
         rad: ["wheel"],
         feld: ["input"],
         rest: ["focusin", "pointerlockchange", "blur"],
-    },
-    familie: {},
-    padDruck: 0.5,
-});
-for (const [fam, arten] of Object.entries(AnazhRealm.SPUR.arten))
-    for (const a of arten) AnazhRealm.SPUR.familie[a] = fam;
+    };
+    const familie = Object.freeze(Object.fromEntries(Object.entries(arten).flatMap(([f, l]) => l.map((a) => [a, f]))));
+    return Object.freeze({ art: "anazh-spur", fassung: 1, arten: Object.freeze(arten), familie, padDruck: 0.5 });
+})();
 // Ein Wort der Zeile trägt kein Leerzeichen: `%` und ` ` gehen als URI-Zeichen.
 AnazhRealm._spurKodiere = (s) => String(s).replace(/%/g, "%25").replace(/ /g, "%20");
