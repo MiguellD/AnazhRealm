@@ -274,6 +274,8 @@ class AnazhRealm_dirigent_takt {
                 if (!ruht) this._spiegelFeldTakt();
                 // ### Das Haar ### (haar.K3) — die Feder des nahen, gezeichneten Haars im Takt der Welt (`spielZeit`), nie im Bild
                 this._haarFederTakt();
+                // DAS SEIL AM LEIB (physik.K4): als Letztes vor dem Bild — jede Haltung dieses Takts steht, der Anker folgt der Hand
+                if (!ruht) this._seilTakt(delta);
 
                 // ### Rendering ###
                 // VOR dem Render: entscheiden, ob die Schatten-Map neu muss (im Stand gecacht). Eine erste Zeichnung baut
@@ -618,8 +620,9 @@ class AnazhRealm_dirigent_takt {
         L.ladeAus = (L.ladeAus || 0) + 1;
         return false;
     }
-    // Gespannt: GPU_FRAMES_IM_FLUG Arbeiten unterwegs. Jede GPU-Arbeit des Takts fragt dieselbe Zahl — das Bild und die
-    // Karte, diese bei ihrem Beginn (`_tickKarteWelt`: ihre Hebungs-Ringe folgen ohne neue Frage) (S2b: die Karte backte neben
+    // Gespannt: GPU_FRAMES_IM_FLUG Arbeiten unterwegs. Jede GPU-Arbeit des Takts fragt dieselbe Zahl — das Bild, die Tafeln
+    // des Himmels samt Horizont-Karte (`_atmoTakt`) und die Umgebung (`_ensureSkyEnvironment`), die das Bild des Takts mit
+    // anbindet, und die Karte, diese bei ihrem Beginn (`_tickKarteWelt`: ihre Hebungs-Ringe folgen ohne neue Frage) (S2b: die Karte backte neben
     // der Leine; swiftshader, Mess-Wiese, 20 Karten: in 15 s 3 Bilder, 17 Bakes bei gespannter Leine — die Probe des
     // Hauptbilds sah in der CI kein Bild).
     _gpuLeineStraff() {
