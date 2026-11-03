@@ -2097,8 +2097,11 @@ async function regelRaffer(a) {
     };
     for (const ende = R.s + a.schritte; R.s < ende; R.s++, R.vor += 250) {
         sieh();
+        // DIE UHR DES TAKTS (`_taktUhr`) rückt mit, wie der Loop sie vor dem Tick setzt: eine Regel wird auf ihr geboren
+        // und altert auf der Uhr des Ticks
+        r._taktZeit = performance.now() / 1000;
         if (R.s % (R.lauf ? 4 : 12) === 0) r.dslRun(r._composeNexusRule(R.rng), { source: "nexus" });
-        r._tickWorldRules(performance.now() / 1000);
+        r._tickWorldRules(r._taktZeit);
     }
     return R.z;
 }
