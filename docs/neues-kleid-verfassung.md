@@ -51,23 +51,19 @@ delegiert an `__core.growSkeleton`). Der alte ~275-Zeilen-Inline-Parallel-Wuchs 
 GESCHNITTEN — es gibt keine driftende Kopie mehr (Gesetz #0). Fehlt der Kern, gibt es ein
 graceful-leeres Ergebnis (die Gates fangen einen fehlenden Kern sofort).
 
-### Gesetz 3 — der STUDIO-Bäcker ist die Fernstufe (Bäcker-Vereinigung, kein Nachbau)
+### Gesetz 3 — EIN Bäcker ist die Fernstufe (die Welt backt, auch für das Labor)
 
-Der 8-Winkel-Impostor-Atlas backt im STUDIO-Bäcker des Foundry-Workers (`bakeImpostorAtlas` in der
-Foundry-Brücke `foundry-bruecke.js`, die Worker und Pflanzen-Labor laden; K42, vorher die Labor-Shell
-phytogenesis.js; über den Kanal `bake-impostor` → Reply `impostor`): `_tickImpostorBake`
-fragt je Atlas-Zelle (`presetId`, `seed = Gestalt`, Golden-Sommer, Schicht-Format `fmt`), die
-Transport-Schale kodiert die Karte im Worker mit dem Karten-Codec (phyto-core: deckungstreue
-Mips, BC1-sRGB/BC5 bzw. rgba8/rg8) und legt sie auf die Platte, `_applyStudioImpostorPayload`
-kopiert die Schicht ohne Umdrehen in den EINEN Karten-Atlas (W6, `_impostorAtlas`: eine
-Array-Textur je Albedo/Normale, EIN Material, EINE globale Gruppe `IMPOSTOR_ATLAS_GRUPPE`;
-Schicht, Bake-Rahmen und Sichthöhe — die Höhe der L1, negativ = verdeckt — reisen je Instanz im vec4 aKarte über
-`_lodSlotStamp`). Gefallen:
-der Canvas-Atlas je Karte, das Umdrehen im Haupt-Thread, die Silhouette, der Re-Frame
-(`gate:altlasten`). Der frühere Welt-RTT-Nachbau (`_bakeImpostorAtlasRTT` ·
-`_impostorBlitPixels` · `_impostorDilate` · `_foundryBakeLeaves`) ist GESCHNITTEN — ein Bäcker,
-eine Quelle; die Bake-DISZIPLIN blieb (ein Bake in Flug, im eigenen Bäcker-Faden `_foundryBaecker` · Watchdog `IMPOSTOR_BAKE_TIMEOUT_MS` ·
-3× Retry, dann gescheitert · Zensus). KEIN GL-Bake-iframe: die drei iframe-Impostor-Methoden
+Jede Karte backt der EINE Bäcker der Welt (`_karteWeltBacken`, stamm/stoff-karte.js, seit S2 im Welt-Renderer): die L1
+der Art mit den Stoffen der Welt in V Peilungen je Hebungs-Ring, über MRT Albedo, Normale und Sonnen-Sicht, mit BC die
+GPU-Ablage (`_karteAblage`) und die Platte der Schale, in den EINEN Karten-Atlas (W6, `_impostorAtlas`: eine Array-Textur
+je Albedo/Normale, EIN Material, EINE globale Gruppe `IMPOSTOR_ATLAS_GRUPPE`; Schicht, Bake-Rahmen und Sichthöhe — die Höhe
+der L1, negativ = verdeckt — reisen je Instanz im vec4 aKarte über `_lodSlotStamp`). Das Pflanzen-Labor backt keine Karte
+(pipeline.K2, w6): es fragt die Welt über die Nachricht `anazh-karte` (`_karteDienst` — als Portal die Eltern-Welt, allein
+die Welt verborgen im iframe) und legt die Bytes der Bühne in seinen Atlas; die Karte aus Labor und Welt ist für dieselbe
+Saat byte-gleich (`gate:constitution` K2: kein Labor-Bäcker in Brücke und Labor). Gefallen: der Studio-Bäcker
+`bakeImpostorAtlas` (r128) samt Kanal `bake-impostor`, der Canvas-Atlas je Karte, das Umdrehen im Haupt-Thread, die
+Silhouette, der Re-Frame (`gate:altlasten`); der frühere Welt-RTT-Nachbau (`_bakeImpostorAtlasRTT` ·
+`_impostorBlitPixels` · `_impostorDilate` · `_foundryBakeLeaves`) und die drei iframe-Impostor-Methoden
 (`_foundryRequestImpostor` · `_foundryEnsureBakeIframe` · `_foundryBuildImpostorRecord`) bleiben
 geschnitten. Headless/Null-Renderer → nichts wird gebacken, der L1-Rahmen trägt die Mechanik;
 Layout und Kleber-Wand prüft `gate:foundry-impostor` auf swiftshader-WebGPU, den Look die

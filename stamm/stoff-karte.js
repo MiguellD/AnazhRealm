@@ -979,7 +979,8 @@ class AnazhRealm_stoff_karte {
     async _karteFuerLabor(art, gestalt) {
         const bereit = () => this._foundry && this._foundry.ready && this.state.rendererReady;
         for (const t0 = performance.now(); !bereit(); await new Promise((f) => setTimeout(f, 100)))
-            if (performance.now() - t0 > 180000) throw this._stoffBruch("die Karte des Labors: die Welt wurde nicht bereit");
+            if (performance.now() - t0 > 180000)
+                throw this._stoffBruch("die Karte des Labors: die Welt wurde nicht bereit");
         if (!Object.prototype.hasOwnProperty.call(this._foundry.recipes || {}, art))
             throw this._stoffBruch(`die Karte des Labors: die Welt kennt die Art „${art}" nicht`);
         const at = this._impostorAtlas();
@@ -987,7 +988,8 @@ class AnazhRealm_stoff_karte {
             throw this._stoffBruch("die Karte des Labors: WebGL2 liest keine Schicht des Array-Ziels zurück");
         this._karteLaborN = (this._karteLaborN | 0) + 1;
         const z = this._impostorZelleNeu(at, `labor:${art}|${gestalt}#${this._karteLaborN}`, art, gestalt, null);
-        if (!this._impostorAtlasTexturen(at, z.idx + 1)) throw this._stoffBruch("die Karte des Labors: der Atlas hat keine Texturen");
+        if (!this._impostorAtlasTexturen(at, z.idx + 1))
+            throw this._stoffBruch("die Karte des Labors: der Atlas hat keine Texturen");
         z._platte = null;
         z._bedarfD2 = 0;
         z._weltNeu = true;
@@ -1021,7 +1023,12 @@ class AnazhRealm_stoff_karte {
                     V: at.V,
                     ringe: at.ringe.ringe.map((r) =>
                         Object.assign({}, r, {
-                            halbe: core.karteRingHalbe(core.WIND_ZAHLEN, fr.halfH, fr.halfW, (r.hebung * Math.PI) / 180),
+                            halbe: core.karteRingHalbe(
+                                core.WIND_ZAHLEN,
+                                fr.halfH,
+                                fr.halfW,
+                                (r.hebung * Math.PI) / 180
+                            ),
                         })
                     ),
                     frame: { halfW: fr.halfW, halfH: fr.halfH },
