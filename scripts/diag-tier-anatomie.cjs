@@ -19,7 +19,7 @@
 // (aSchale.y < 0,05: dort deckt keine Unterwolle — Stamm, Klasse fellSchale). Rot über KAHL_MAX.
 //   node scripts/diag-tier-anatomie.cjs [--selftest] [--json]
 "use strict";
-const { ENGINE, urteilEnde, fadenScope, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { urteilEnde, fadenScope, SELBSTTEST, OFEN_KERNE } = require("./lib/welt-boot.cjs");
 
 const ARTEN = ["wolf", "fox", "bear", "deer"];
 const WOLLE_SCHWELLE = 0.05; // aSchale.y, ab der die inneren Schalen decken (Welt-Material fellSchale)
@@ -79,7 +79,7 @@ function kahlAnteile(g) {
     return out;
 }
 
-const ladeWelt = () => fadenScope([ENGINE, "phyto-core.js", "koerper-core.js", "tetrapoda-core.js", "foundry-core.js"]);
+const ladeWelt = () => fadenScope(OFEN_KERNE);
 
 // DIE KOPF-SCHALEN: jede starre Kopf-Haut (Kopf und Kiefer — die Fell-Meshes an headGroup und jawGroup) trägt
 // Schalen im EINEN Stapel: Ecken mit Gewicht 1 an ihrem Gelenk, auf kopfSchalen − 1 Höhen (t = s / kopfSchalen), im Raster

@@ -11,7 +11,7 @@
 // Konstante zwischen den Scopes (ein window/self-Leck), fällt die Linse. Dazu der P-Zwilling und das Skelett im Haupt-Thread
 // (unten). Das ist die Gesetz-#0-Wand: EINE Quelle, viele Leser, KEIN Mirror, der driften kann.
 "use strict";
-const { ausDatei, path, vm } = require("./lib/welt-boot.cjs");
+const { ausDatei, path, vm, kernKontext, ENGINE_THREE } = require("./lib/welt-boot.cjs");
 
 // Der geteilte Kern läuft im IIFE-Muster und exportiert auf `root` (self||globalThis) — in
 // node ist das globalThis. Ein simpler require() reicht (die Datei ist kein CommonJS-Modul,
@@ -186,9 +186,8 @@ ok("Blatt-Budget: Cap deckelt die Blatt-Zahl", capped.leaves.length <= 50, cappe
 
 // ── DIE PARITÄT ── der WORKER-Pfad: ein frischer Context, in dem `self` das globale Objekt IST (Worker-Scope).
 // Der IIFE-Root-Ausdruck `typeof self !== "undefined" ? self : ...` greift dann `self`.
-const workerSandbox = {};
-workerSandbox.self = workerSandbox; // im Worker ist self === globalThis
-const workerCtx = vm.createContext(workerSandbox);
+const workerSandbox = kernKontext({}); // im Worker ist self === globalThis
+const workerCtx = workerSandbox;
 vm.runInContext(src, workerCtx, { filename: "phyto-core.js(worker)" });
 const workerCore = workerSandbox.self.__phytoCore;
 
@@ -239,11 +238,9 @@ ok(
 // Konsum-Leser: `buildInstance` (Foundry-Worker, jeder Baum der Welt) und `build()` (Studio).
 // Ein Scope wie im Faden `name`: die Engine (welt-boot `ENGINE_THREE`) → phyto-core → (`bruecke`, die Globale der Brücke) → foundry-core.
 const kernScope = (name, bruecke) => {
-    const sb = { console, performance: { now: () => 0 } };
-    sb.self = sb.globalThis = sb;
-    const ctx = vm.createContext(sb);
+    const sb = kernKontext({ console, THREE: ENGINE_THREE() });
+    const ctx = sb;
     const lies = (...p) => ausDatei(path.join(__dirname, "..", ...p));
-    sb.THREE = Object.assign({}, require("./lib/welt-boot.cjs").ENGINE_THREE());
     vm.runInContext(src, ctx, { filename: `phyto-core.js(${name})` });
     if (bruecke) vm.runInContext(bruecke, ctx);
     vm.runInContext(lies("foundry-core.js"), ctx, { filename: `foundry-core.js(${name})` });

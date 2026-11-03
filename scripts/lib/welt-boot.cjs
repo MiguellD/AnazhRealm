@@ -331,40 +331,17 @@ const ROOT = path.resolve(__dirname, "..", "..");
 // (`ENGINE_MODUL`) und in Node als THREE der Kerne (`ENGINE_THREE`: require des ES-Moduls, eine veränderbare Kopie, ohne
 // ColorManagement wie im Faden — die Kerne rechnen ihre Farbe selbst). Ein Manifest ohne Engine oder eine Karte ohne ihr
 // Modul bricht laut.
-// die Import-Karte der Welt (index.html `<script type="importmap">`): { Name: Pfad }
-function IMPORT_KARTE() {
-    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-    const m = html.match(/<script type="importmap">([\s\S]*?)<\/script>/);
-    if (!m) throw new Error("ENGINE: index.html trägt keine Import-Karte");
-    return JSON.parse(m[1]).imports || {};
-}
-function ENGINE_MODUL() {
-    const mf = JSON.parse(fs.readFileSync(path.join(ROOT, "cores.manifest.json"), "utf8"));
-    const namen = [...new Set(mf.map((c) => c && c.engine).filter(Boolean))];
-    if (namen.length !== 1) throw new Error("ENGINE: das Kern-Manifest nennt " + namen.length + " Engines");
-    const u = IMPORT_KARTE()[namen[0]];
-    if (!u) throw new Error("ENGINE: die Import-Karte von index.html nennt kein Modul „" + namen[0] + "“");
-    return "/" + u.replace(/^\.?\//, "");
-}
-// der Namensraum des Moduls (Node liest die typlose .js als ES-Modul, require(esm), und warnt dabei je Datei — die
-// Warnung ist der Weg, kein Befund)
-function ENGINE_NAMENSRAUM() {
-    const warn = process.emitWarning;
-    process.emitWarning = (w, ...r) => (/ES module|MODULE_TYPELESS/.test(String((w && w.message) || w) + r.join(" ")) ? undefined : warn.call(process, w, ...r));
-    try {
-        return require(path.join(ROOT, ENGINE_MODUL()));
-    } finally {
-        process.emitWarning = warn;
-    }
-}
-let _engineThree = null;
+// das Modul der Import-Karte der Welt (index.html `<script type="importmap">`) für das Manifest-Feld `engine`, ab der
+// Wurzel; ENGINE_THREE schweigt die Warnung von require(esm) (Node liest die typlose .js als ES-Modul — der Weg, kein Befund)
+const ENGINE_MODUL = () =>
+    JSON.parse(fs.readFileSync(path.join(ROOT, "index.html"), "utf8").match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports[jsonLesen("cores.manifest.json").find((c) => c.engine).engine].slice(1); // prettier-ignore
 function ENGINE_THREE() {
-    if (!_engineThree) {
-        const T = ENGINE_NAMENSRAUM();
-        T.ColorManagement.enabled = false;
-        _engineThree = Object.assign({}, T);
-    }
-    return _engineThree;
+    const w = process.emitWarning;
+    process.emitWarning = () => {};
+    const T = require(ROOT + ENGINE_MODUL());
+    process.emitWarning = w;
+    T.ColorManagement.enabled = false;
+    return { ...T };
 }
 // DER STUDIO-KERN in Node: die Engine der Kerne (einmal je Prozess — die Kerne bauen gegen das globale THREE) und der Kern `datei` (ab
 // der Wurzel) → `globalThis[name]`; `frisch` lädt ihn neu (die Stoffe rechnen ihre Farbe beim ersten Bau). Bis zur Decke
@@ -379,16 +356,23 @@ function studioKern(datei, name, frisch) {
 // globale Objekt, Math das des Gates (die Plattform-Probe erreicht so den Guss) — darin die `quellen` (Pfade ab der Wurzel, je
 // Prozess einmal gelesen) der Reihe nach. Bis zur Decke w3s-sukzession baute jede Linse ihn selbst (vier Mal).
 const QUELL_TEXT = {};
-// `ENGINE` in den Quellen ist die Engine des Fadens (`ENGINE_THREE`, je Scope eine eigene Kopie des Namensraums) — der
-// Faden rechnet auf three r184, kein Linsen-Scope auf einer zweiten three.
-const ENGINE = "engine:three";
+// EIN stiller Kern-Kontext im node-vm (self · globalThis sind er selbst); `mehr` legt Globale dazu (THREE, Math, …) — bis
+// w5-pipeline baute jede Linse ihn selbst (sechs Mal).
+function kernKontext(mehr) {
+    const ctx = require("vm").createContext({ console: { log() {}, warn() {}, error() {} }, performance: { now: () => 0 }, ...mehr }); // prettier-ignore
+    ctx.self = ctx.globalThis = ctx;
+    return ctx;
+}
+// die Kerne des Ofens (Tier und Mensch: foundry-core BAKERS_BY_KIND) in der Folge ihres Fadens
+const OFEN_KERNE = ["phyto-core.js", "koerper-core.js", "tetrapoda-core.js", "foundry-core.js"];
+// THREE ist die Engine des Fadens (`ENGINE_THREE`, je Scope eine eigene Kopie des Namensraums) — der Faden rechnet auf
+// three r184, kein Linsen-Scope auf einer zweiten three.
 function fadenScope(quellen) {
     const sb = { console, Math, performance: { now: () => Date.now() }, setTimeout, clearTimeout };
     sb.self = sb.globalThis = sb.window = sb;
+    sb.THREE = ENGINE_THREE();
     require("vm").createContext(sb);
-    for (const f of quellen)
-        if (f === ENGINE) sb.THREE = Object.assign({}, ENGINE_THREE());
-        else require("vm").runInContext((QUELL_TEXT[f] ||= fs.readFileSync(path.join(ROOT, f), "utf8")), sb, { filename: f });
+    for (const f of quellen) require("vm").runInContext((QUELL_TEXT[f] ||= fs.readFileSync(path.join(ROOT, f), "utf8")), sb, { filename: f });
     return sb;
 }
 
@@ -1546,10 +1530,9 @@ function frageJa() {
 }
 
 module.exports = {
-    ENGINE,
-    IMPORT_KARTE,
+    OFEN_KERNE,
+    kernKontext,
     ENGINE_MODUL,
-    ENGINE_NAMENSRAUM,
     ENGINE_THREE,
     frageJa,
     fs,

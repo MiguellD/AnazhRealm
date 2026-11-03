@@ -1,4 +1,4 @@
-const { ausDatei, path, fs, stammLib, vm, jsonLesen, ROOT: root, jsonKlon } = require("./lib/welt-boot.cjs");
+const { ausDatei, path, fs, stammLib, vm, jsonLesen, ROOT: root, jsonKlon, kernKontext } = require("./lib/welt-boot.cjs");
 // diag-studio-vertrag.cjs — DER MANIFEST-VALIDATOR (docs/studio-vertrag.md).
 // Die USD-/Schema-Lehre: ein Kern, der den Vertrag verletzt, wird ROT beim
 // Andocken — nicht stumm kaputt in der Welt. Statisch + vm (kein Browser, im
@@ -47,13 +47,7 @@ const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
 
 // Alle Kerne in EINEM Kontext wie im Main-Thread — die Seh-Klassen (BUDGET_GESETZ.seh, S3) und die Linse EIN WERT lesen sie.
 const KERNE = (() => {
-    const ctx = vm.createContext({
-        THREE: absorber(),
-        console: { log() {}, warn() {}, error() {} },
-        performance: { now: () => 0 },
-    });
-    ctx.self = ctx;
-    ctx.globalThis = ctx;
+    const ctx = kernKontext({ THREE: absorber() });
     for (const f of new Set(MANIFEST.flatMap((c) => c.scripts || [])))
         vm.runInContext(ausDatei(path.join(root, f)), ctx, { filename: f, timeout: 30000 });
     return Object.fromEntries(
@@ -190,13 +184,7 @@ function einWertTaeter(dateien, kerne) {
 }
 
 function loadCore(entry) {
-    const ctx = vm.createContext({
-        THREE: absorber(),
-        console: { log() {}, warn() {}, error() {} },
-        performance: { now: () => 0 },
-    });
-    ctx.self = ctx;
-    ctx.globalThis = ctx;
+    const ctx = kernKontext({ THREE: absorber() });
     let code = "";
     for (const dep of entry.deps || []) code += ausDatei(path.join(root, dep)) + "\n;";
     code += entry.quelle != null ? entry.quelle : ausDatei(path.join(root, entry.file)); // quelle: der Selbsttest

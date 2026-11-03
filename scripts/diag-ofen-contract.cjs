@@ -28,25 +28,18 @@
 //   die Klasse zahnfleisch) → rot an zahn|headGroup (fehlt) und zahnfleisch|headGroup · (S3) korruptes Golden → rot.
 //   node scripts/diag-ofen-contract.cjs [--selftest]
 "use strict";
-const { ENGINE, selbsttestEnde, wandEnde, fadenScope, pruefer, jsonLesen, jsonSchreiben, jsonKlon, ausDatei, SELBSTTEST, path, fs, crypto, vm, stammLib, ROOT } = require("./lib/welt-boot.cjs");
+const { OFEN_KERNE, selbsttestEnde, wandEnde, fadenScope, pruefer, jsonLesen, jsonSchreiben, jsonKlon, ausDatei, SELBSTTEST, path, fs, crypto, vm, stammLib, ROOT } = require("./lib/welt-boot.cjs");
 const { probeWand, objektAbdruck } = require("./lib/plattform-probe.cjs");
 
 const GOLDEN_DIR = path.join(ROOT, "spec/asset-contract/ofen/golden");
 const GOLDEN = path.join(GOLDEN_DIR, "bake.json");
-const QUELLEN = [
-    ENGINE,
-    "phyto-core.js",
-    "koerper-core.js",
-    "tetrapoda-core.js",
-    "foundry-core.js",
-];
 const SAME = 1;
 
 const { errs, check } = pruefer();
 
-// Die Welt des Ofens: die Engine des Fadens (three r184, `ENGINE`) und die Kerne im node-vm wie im Foundry-Worker; das Math des Gates (die
+// Die Welt des Ofens: die Engine des Fadens (three r184, `fadenScope`) und die Kerne im node-vm wie im Foundry-Worker; das Math des Gates (die
 // Plattform-Probe erreicht so den Guss).
-const ladeOfen = () => fadenScope(QUELLEN);
+const ladeOfen = () => fadenScope(OFEN_KERNE);
 
 // Die Fälle aus den Gesetzbüchern selbst: jede Art × jede deklarierte Stufe.
 function faelle(sb) {

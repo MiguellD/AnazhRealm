@@ -7,7 +7,7 @@
 //
 // mint-asset-goldens.cjs (schreibt die eingefrorenen Goldens) UND diag-asset-contract.cjs (das
 // Dauer-Gate) LESEN diese eine Datei — kein zweiter Boot-Pfad, der driften kann.
-const { statikServer, starteBrowser, ausDatei, path, crypto, stammLib, jsonLesen, ROOT, ENGINE_THREE } = require("./welt-boot.cjs");
+const { statikServer, starteBrowser, ausDatei, path, crypto, stammLib, jsonLesen, ROOT, ENGINE_THREE, ENGINE_MODUL, kernKontext } = require("./welt-boot.cjs");
 const { installiereDrift, FUNKTIONEN } = require("./plattform-probe.cjs");
 const { rasterDreieck } = require("./kronen-linse.cjs");
 const { luma709, linSrgb } = require("./abnahme-urteil.cjs");
@@ -20,27 +20,11 @@ const { luma709, linSrgb } = require("./abnahme-urteil.cjs");
 // kreatur …), nicht nur die Pflanzen — EINE Quelle, kein hartkodierter Zweitpfad.
 // (Die Pflanzen-Goldens bleiben byte-identisch — gate:asset-contract ist der stehende Beweis.)
 const CORES_MANIFEST = jsonLesen("cores.manifest.json");
-const { ENGINE_MODUL } = require("./welt-boot.cjs");
-const WORKER_SCRIPTS = (() => {
-    const rel = [];
-    for (const core of CORES_MANIFEST) if (core && Array.isArray(core.scripts)) for (const s of core.scripts) rel.push("/" + s);
-    for (const core of CORES_MANIFEST) if (core && typeof core.bruecke === "string" && core.bruecke) rel.push("/" + core.bruecke);
-    return rel;
-})();
-// Der Boot-Quelltext des Foundry-Workers als JS-AUSDRUCK für den Seiten-Kontext (location.origin) — das Harness setzt
-// DIESEN ein (`const boot = ${WORKER_BOOT};`), kein zweiter Boot-Text. Die Engine wie `_foundryStart` (import() des Moduls,
-// ohne ColorManagement, `self.THREE` die Kopie), die Brücke startet sich selbst (Foundry-Modus, Kanal-Hörer, ready).
-// Bis Engine und Kerne stehen, HÄLT der Faden jede Nachricht und reicht sie danach in ihrer Folge weiter (wie `_foundryStart`:
-// der Pool fragt gleich nach der Geburt).
-const WORKER_BOOT =
-    '"const gehalten = [], halte = (ev) => { ev.stopImmediatePropagation(); gehalten.push(ev.data); }; self.addEventListener(\'message\', halte);" + ' +
-    '"import(" + JSON.stringify(location.origin + ' +
-    JSON.stringify(ENGINE_MODUL()) +
-    ') + ").then((T) => { T.ColorManagement.enabled = false; self.THREE = Object.assign({}, T);" + "self.__PHYTO_FOUNDRY_WORKER=true;" + "self.__anazhCores=" + JSON.stringify(' +
-    JSON.stringify(CORES_MANIFEST) +
-    ') + ";" + "importScripts(" + ' +
-    JSON.stringify(WORKER_SCRIPTS) +
-    '.map((p) => JSON.stringify(location.origin + p)).join(",") + "); self.removeEventListener(\'message\', halte); for (const data of gehalten.splice(0)) self.dispatchEvent(new MessageEvent(\'message\', { data })); }).catch((e) => setTimeout(() => { throw e; }));"';
+const WORKER_SCRIPTS = ["scripts", "bruecke"].flatMap((f) => CORES_MANIFEST.flatMap((c) => [].concat(c[f] || [])));
+// Der Boot-Quelltext des Foundry-Workers als JS-AUSDRUCK für den Seiten-Kontext (location.origin): DERSELBE Start wie
+// die Welt (`_foundryStart` der echten Klasse — Manifest per fetch, die Engine der Import-Karte, Halten bis die Kerne
+// stehen), ohne Transport-Schale (das Harness liest den Bau roh). Die Brücke startet sich selbst (ready).
+const WORKER_BOOT = `"(function " + ${JSON.stringify(String(stammLib.ladeKlasse(ROOT).AnazhRealm._foundryStart))} + ")(" + JSON.stringify({ v: "", base: location.origin + "/", module: { three: location.origin + ${JSON.stringify(ENGINE_MODUL())} } }) + ", function () {});"`;
 
 // DER BAU-FINGERABDRUCK — die EINE Quelle für jeden Bau über die echte Brücke (die Seite per toString, Node direkt): die
 // Plattform-Probe (`__probeLauf`, kippt ein Byte unter ±1 ULP?) und gate:regler-wirkt (`__bauHashListe`, bewegt ein Regler den Bau?).
@@ -460,18 +444,8 @@ function absorber() {
 function kanalImVm(quellen = {}) {
     const vm = require("vm");
     const posts = [];
-    const ctx = vm.createContext({
-        THREE: ENGINE_THREE(),
-        console: { log() {}, warn() {}, error() {} },
-        performance: { now: () => 0 },
-        OffscreenCanvas: absorber(),
-        __anazhCores: CORES_MANIFEST,
-        postMessage: (p) => posts.push(p),
-    });
-    ctx.self = ctx;
-    ctx.globalThis = ctx;
-    for (const p of WORKER_SCRIPTS) {
-        const f = p.replace(/^\//, "");
+    const ctx = kernKontext({ THREE: ENGINE_THREE(), OffscreenCanvas: absorber(), __anazhCores: CORES_MANIFEST, postMessage: (p) => posts.push(p) }); // prettier-ignore
+    for (const f of WORKER_SCRIPTS) {
         const src = Object.prototype.hasOwnProperty.call(quellen, f)
             ? quellen[f]
             : ausDatei(path.join(ROOT, f));

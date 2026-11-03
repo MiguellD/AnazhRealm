@@ -31,7 +31,7 @@
 // Exit: 0 grün · 1 rot.
 // ============================================================================
 "use strict";
-const { ausDatei, SELBSTTEST, stammLib, vm } = require("./lib/welt-boot.cjs");
+const { ausDatei, SELBSTTEST, stammLib, vm, kernKontext } = require("./lib/welt-boot.cjs");
 
 const PHYTO = ausDatei("phyto-core.js");
 const KERN = ausDatei("foundry-core.js");
@@ -94,13 +94,7 @@ function kartenSaum(core, presets, ic) {
 // Die Daten des Pflanzen-Kerns (phyto-core + foundry-core, wie cores.manifest.json sie lädt): PRESETS und
 // PORTAL_RENDER_CONFIG. null, wenn der Kern nicht lädt.
 function kernDaten(phytoSrc, kernSrc) {
-    const ctx = vm.createContext({
-        THREE: absorber(),
-        console: { log() {}, warn() {}, error() {} },
-        performance: { now: () => 0 },
-    });
-    ctx.self = ctx;
-    ctx.globalThis = ctx;
+    const ctx = kernKontext({ THREE: absorber() });
     try {
         vm.runInContext(
             phytoSrc +

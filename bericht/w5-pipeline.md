@@ -15,13 +15,18 @@ r184" → nachher „0 B, geparst nichts · synchrones XHR 0 · THREE im Faden r
 (177 Arten × 2 Samen × 4 Stufen) bauen r128 und r184 1 212 von 1 416 Stufen byte-gleich, die 204 übrigen sind
 Engine-Drift (applyQuaternion/slerp/invert auf ULP-Ebene, Lathe-Normalen bis 6,7°, Cone-Index, Extrude-Triangulierung) bei
 gleicher Form je Fall — Vertrags-Akt: porta v4 18/52, schmiede v5 klingen 38/46 und arena 2/5, ofen 83/510 neu gemünzt,
-asset-contract v1 (Pflanzen) 128/128 byte-gleich zu den alten Goldens.
+asset-contract v1 (Pflanzen) 128/128 byte-gleich zu den alten Goldens; der Harness fährt jetzt den echten `_foundryStart`
+(EIN Boot), sechs Kern-vm der Linsen sind EIN `kernKontext`, die Decke von scripts/ hält (gate:betriebsgesetz ohne DECKE).
 
 **Ehrlich offen:** `pipeline.K2#1` bleibt ROT (0 → 0): die Karte des Studios backt `bakeImpostorAtlas` im Pflanzen-Labor
 auf dessen eigenem r128-WebGLRenderer (worlds/terrain/index.html:85, ein Atlas aus 8 Ansichten je Zelle), die Karte der Welt
 `_karteWeltBacken` mit den Stoffen der Welt in Hebungs-Ringe, MRT und BC-Ablage (stamm/stoff-karte.js:692) — EIN Bäcker
 verlangt das Labor auf der Engine und den Stoffen der Welt (wie die Garage), darum steht `bakeImpostorAtlas` mit seinem
 einen Leser (das Labor) und die r128-Datei mit sechs Labor-Seiten als Lesern.
+
+Fremd rot in `npm run check`: die ZITAT-WAND (8) — sie entsteht allein durch den Ordner `bericht/`, den dieser Bericht
+anlegt (CLAUDE.md:89 und docs/PFLICHT-OFFEN.md nennen `bericht/…` des Zweigs `koordination`, und diese Datei steht nicht in
+docs/README.md); ohne den Ordner ist sie grün.
 
 ## FUNDE
 
@@ -32,3 +37,5 @@ einen Leser (das Labor) und die r128-Datei mit sechs Labor-Seiten als Lesern.
   Farbe per Hex setzt (`new THREE.Color(hex)`, `setHex`), backt im Haupt-Faden (Kalt-Start/Headless-Bäcker) anders als im Faden —
   „EIN Gesetz, zwei Scheduler" hält nur, wo der Kern `setRGB` rechnet (foundry-core 6822) · pipeline (Labor = Welt) · klein bis
   mittel (die Farb-Pfade der Kerne auf `setRGB`/FARB-GESETZ, dann die Engine-Kurve überall aus oder überall an).
+- scripts/lib/stamm.cjs:663 · `ladeKlasse` lädt die Kerne im vm auf `vendor/three.min.js` (r160-UMD), eine dritte three der
+  Werkzeuge · pipeline.K5 (EINE Engine) · klein (THREE = welt-boot `ENGINE_THREE`, dann fällt vendor/three.min.js).
