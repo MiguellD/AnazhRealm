@@ -1172,7 +1172,8 @@ class AnazhRealm_vegetation_wiese {
                 k.zustand = null;
                 n++;
             }
-        if (n) this._weltRegt(); // die Stand-Wache weckt die Streu
+        // nur die Streu liest die Stufe: ihr Takt geht (`_standWecken`) — Wuchs, Stufen-Wahl und Cull schlafen weiter
+        if (n) this._standWecken("nahStreu");
         return n;
     }
 

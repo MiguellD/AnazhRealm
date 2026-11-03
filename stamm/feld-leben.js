@@ -1992,7 +1992,9 @@ class AnazhRealm_feld_leben {
                     now + Math.max(0, Math.log(Math.abs(a) / cfg.epsilon)) / cfg.decayPerSec,
                     now
                 );
-                this._lebenStufeMalen(cx + dx, cz + dz); // der Ort sieht den Akt (feld.K5)
+                // der Ort sieht den Akt (feld.K5): die Zelle wird JETZT fällig — der Wecker der Stufen (`_tickLebenStufen`) malt
+                // sie im nächsten Takt, nur wo ihre Stufe springt; die Tat trägt nur ihre Zelle (gate:stand-takt RUHE-TAT, FELD-BESUCH)
+                AnazhRealm._lebenWecken(this, key, now);
             }
         }
     }
@@ -2007,7 +2009,7 @@ class AnazhRealm_feld_leben {
 
     // Die Stufe der Zelle (cx, cz) malen: springt sie gegen die zuletzt gemalte (`_lebenStand`), wächst die Nah-Streu darüber neu
     // (`_nahStreuNeuIn`, nur die Kacheln dieser Zelle). Die Zelle wacht zum nächsten Sprung ihres Zerfalls (|a| fällt unter die
-    // halbe Stufe darunter, `_tickLebenStufen`); auf Stufe 0 schläft sie — die Kosten tragen die Sprünge, nie das Feld.
+    // halbe Stufe darunter, `_lebenWecken`); auf Stufe 0 schläft sie — die Kosten tragen die Sprünge, nie das Feld.
     _lebenStufeMalen(cx, cz) {
         const L = AnazhRealm.LIFE_FIELD;
         const st = this._lebenStand || (this._lebenStand = new Map());
@@ -2019,22 +2021,47 @@ class AnazhRealm_feld_leben {
         if ((alt ? alt.k : 0) !== k)
             this._nahStreuNeuIn(cx * L.cell, cz * L.cell, (cx + 1) * L.cell, (cz + 1) * L.cell);
         if (k === 0) return void st.delete(key);
-        const wach =
-            this.state.spielZeit + Math.log(Math.abs(a) / ((Math.abs(k) - 0.5) / L.stufen)) / L.decayPerSec + 1e-6;
-        st.set(key, { k, wach });
-        if (!(wach >= this._lebenFaellig)) this._lebenFaellig = wach;
+        if (alt) alt.k = k;
+        else st.set(key, { k, wach: Infinity });
+        AnazhRealm._lebenWecken(
+            this,
+            key,
+            this.state.spielZeit + Math.log(Math.abs(a) / ((Math.abs(k) - 0.5) / L.stufen)) / L.decayPerSec + 1e-6
+        );
     }
 
-    // Der Zerfall der Leben-Stufen (je Takt, scatterDeco): schläft bis zum frühesten Sprung (`_lebenFaellig`), dann malt er nur die
-    // fälligen Zellen neu.
+    // DER WECKER DER LEBEN-STUFEN (feld.K5, Ereignis statt Takt): die Zelle `key` wird um Spielzeit `wach` fällig — ihr Eintrag
+    // im Stand (`_lebenStand`, mit Stufe 0 angelegt, wo die Tat eine neue Zelle schreibt) trägt die Zeit, die Halde
+    // (`_lebenWecker`, Min-Heap [wach, key]) ordnet sie; ein neu geplanter Eintrag macht seinen alten Platz in der Halde stumm.
+    // Statisch: die Tat ruft ihn je geschriebener Zelle, er besucht nie eine andere.
+    static _lebenWecken(welt, key, wach) {
+        const st = welt._lebenStand || (welt._lebenStand = new Map());
+        const e = st.get(key);
+        if (e) e.wach = wach;
+        else st.set(key, { k: 0, wach });
+        const H = welt._lebenWecker || (welt._lebenWecker = []);
+        let i = H.push(null) - 1;
+        for (let p; i > 0 && H[(p = (i - 1) >> 1)][0] > wach; i = p) H[i] = H[p];
+        H[i] = [wach, key];
+    }
+
+    // Der Zerfall der Leben-Stufen (je Takt, scatterDeco): schläft, bis die Halde ihre früheste Zelle fällig nennt — dann malt er
+    // nur die fälligen (`_lebenStufeMalen`), jede plant ihren nächsten Sprung neu. Im Stand ohne Tat: ein Vergleich je Takt.
     _tickLebenStufen() {
-        if (!(this.state.spielZeit >= this._lebenFaellig)) return;
-        this._lebenFaellig = Infinity;
-        for (const [key, e] of [...this._lebenStand]) {
-            if (this.state.spielZeit < e.wach) {
-                this._lebenFaellig = Math.min(this._lebenFaellig, e.wach);
-                continue;
+        const H = this._lebenWecker;
+        const jetzt = this.state.spielZeit;
+        while (H && H.length && H[0][0] <= jetzt) {
+            const [wach, key] = H[0];
+            const letzt = H.pop();
+            let i = 0;
+            for (let c = 1; c < H.length; i = c, c = 2 * i + 1) {
+                if (c + 1 < H.length && H[c + 1][0] < H[c][0]) c++;
+                if (H[c][0] >= letzt[0]) break;
+                H[i] = H[c];
             }
+            if (H.length) H[i] = letzt;
+            const e = this._lebenStand.get(key);
+            if (!e || e.wach !== wach) continue; // neu geplant: sein späterer Platz in der Halde trägt ihn
             const [cx, cz] = key.split(",").map(Number);
             this._lebenStufeMalen(cx, cz);
         }
