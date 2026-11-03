@@ -1668,7 +1668,7 @@
             // der Flegel im Schwung: das Seil streckt sich längs des Schafts (die Fliehkraft), die Kette und die Kugel an ihrem Ende
             topo.blunt = true;
             topo.spike = true;
-            var sm = seilMasse(P.seil),
+            var sm = seilMasse(seilGesetz(P, S)),
                 xs = S.xTip;
             parts.push({ x: xs + (P.seil.glieder * P.seil.gliedM) / 2, m: sm.glied * P.seil.glieder, Iself: 0 });
             parts.push({ x: xs + sm.laenge, m: sm.kopf, Iself: sm.kopf * P.seil.kopfR * P.seil.kopfR * 0.4 });
@@ -2256,15 +2256,26 @@
         ruheSchritte: 48, // so viele stille Teil-Schritte in Folge → das Seil ruht
         maxSchritte: 16, // je Aufruf höchstens (nach einer Pause springt der Anker, die Kette schießt nicht)
     });
-    // Die Masse und die Längen eines Seils aus seinem Eintrag (Meter, kg): n Glieder der Teilung gliedM, der Kopf am Ende
-    // (Mitte kopfR unter dem letzten Glied). Der Kopf ist eine Vollkugel des Werkstoffs (rho), sein Stachel-Saum zählt nicht.
+    // Die Masse und die Längen eines Seils aus seinem Gesetz (Meter, kg): n Glieder der Teilung gliedM, der Kopf am Ende (Mitte kopfR
+    // unter dem letzten Glied), beide aus dem Werkstoff des Geräts (`rho`, die Stoff-Zeile über `metallRho` — eine Kern-Zahl zieht
+    // Stoß und Schwung): das Glied ein ovaler Ring (Umfang ≈ 2,5 π · rr, Draht π · gliedR²), der Kopf eine Vollkugel (sein
+    // Stachel-Saum zählt nicht). Ohne Werkstoff kein Seil (laut).
+    function _gliedRadius(seil) {
+        return (seil.gliedM + 4 * seil.gliedR) / 3; // die Innenlänge 2·(1,5·rr − gliedR) übergreift die Teilung um 2·gliedR
+    }
     function seilMasse(seil) {
-        var rho = seil.rho || 7850;
+        if (!(seil.rho > 0)) throw new Error("seilMasse: das Seil trägt keinen Werkstoff (rho)");
         return {
-            glied: seil.gliedMasse,
-            kopf: rho * (4 / 3) * Math.PI * Math.pow(seil.kopfR, 3),
+            glied: seil.rho * 2.5 * Math.PI * _gliedRadius(seil) * Math.PI * seil.gliedR * seil.gliedR,
+            kopf: seil.rho * (4 / 3) * Math.PI * Math.pow(seil.kopfR, 3),
             laenge: seil.glieder * seil.gliedM + seil.kopfR,
         };
+    }
+    // DAS SEIL EINES GERÄTS (die EINE Zusammenstellung): der Eintrag seiner Gattung (`P.seil`), der Anker und die Ruhe-Richtung an
+    // der Vorlage (`seilAnker`) und der Werkstoff (`metallRho`) — das Buch (`fx.seil`), die Masse (`headModel`) und das Labor lesen sie.
+    function seilGesetz(P, S) {
+        var sa = seilAnker(P, S);
+        return Object.assign({}, P.seil, { anker: sa.anker, unten: sa.unten, rho: metallRho(P) });
     }
     // Die RUHE-LAGE: die Punkte (Anker, Glied-Enden, Kopf-Mitte) längs `unten` vom Anker — flach [x,y,z,…]. Vorlage und Leser
     // lesen dieselbe Lage (die Glieder sind in ihr gebacken).
@@ -2461,7 +2472,7 @@
             R = seilRuhe(seil, anker, unten, 1),
             n = seil.glieder,
             tube = seil.gliedR,
-            rr = (seil.gliedM + 4 * tube) / 3; // die Innenlänge 2·(1,5·rr − tube) übergreift die Teilung um 2·tube
+            rr = _gliedRadius(seil);
         var u = new THREE.Vector3(unten[0], unten[1], unten[2]).normalize(),
             qa = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), u);
         for (var i = 0; i < n; i++) {
@@ -2627,7 +2638,7 @@
             edgeLen: 0.1,
             backSpike: false,
             beak: false,
-            seil: { art: "kette", glieder: 7, gliedM: 0.042, gliedR: 0.0042, gliedMasse: 0.03, kopfR: 0.034, stachelM: 0.022, rho: 7850 },
+            seil: { art: "kette", glieder: 7, gliedM: 0.042, gliedR: 0.0042, kopfR: 0.034, stachelM: 0.022 },
         },
         Fällaxt: {
             modus: "wucht",
@@ -3266,10 +3277,7 @@
             // DAS SEIL ALS VERTRAGS-DATEN (physik.K4, additiv, must-ignore): trägt die Gattung ein Seil, reist sein Gesetz mit — der
             // Eintrag der Tafel, der Anker und die Ruhe-Richtung an der Vorlage. Der Leser der Welt (die Hand) und das Labor
             // rechnen damit denselben Löser (`seilZustand` · `seilSchritt`); andere Rezepte tragen das Feld nie.
-            if (G.seil && S && !S.bogen) {
-                var sa = seilAnker(tp, S);
-                fx.seil = Object.assign({}, G.seil, { anker: sa.anker, unten: sa.unten });
-            }
+            if (G.seil && S && !S.bogen) fx.seil = seilGesetz(tp, S);
             out[id] = { kind: "weapon", lab: name, s: s, fx: fx };
         }
         return out;
@@ -5048,6 +5056,7 @@
         seilSchritt: seilSchritt,
         seilPosen: seilPosen,
         seilAnker: seilAnker,
+        seilGesetz: seilGesetz,
         bauSeil: bauSeil,
         arenaStrom: arenaStrom,
         arenaTeile: arenaTeile,

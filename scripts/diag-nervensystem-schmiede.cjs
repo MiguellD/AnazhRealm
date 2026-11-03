@@ -47,29 +47,15 @@ function faustVerdict(h) {
     if (!(h.winkel >= FAUST.winkel[0] && h.winkel <= FAUST.winkel[1])) out.push(`winkel ${(h.winkel || 0).toFixed(1)}°`);
     return out;
 }
-// ── H-S (physik.K4) — DAS SEIL AM LEIB (pure Funktion; Browser-Probe UND Selbst-Test). Der Flegel der Schmiede in der Hand:
-// der Leib geht 0,5 s (der Anker folgt der Hand), dann steht er; je Takt ruft der Takt der Seile (`_seilTakt`, der benannte
-// Konsum-Leser) das EINE Gesetz des Kerns (`__schmiedeCore.seilSchritt`). Gemessen in der WELT: der Schwung des Kopfs um den
-// Anker nach dem Halt, die Länge längs des Seils (Anker → die Ruhe-Enden jedes Teils durch seine Welt-Matrix → Kopf-Mitte) als
-// Band, die Energie des Kopfs (mittleres v² der ersten gegen die dritte Sekunde), und nach 12 s Stille ruht das Seil (kein
-// Schritt des Gesetzes mehr: die Kosten gehören der Änderung). Steht das Auge ferner als `SEIL_NAH_M`, rechnet das Seil nicht
-// (die Kosten gehören dem Schirm): dieselbe Bewegung mit dem Auge in der Ferne macht 0 Schritte.
-//   teile   = Glieder + Kopf (das Gesetz nennt sie, die Gestalt trägt sie, `userData.__seil`)
-//   schwung ≥ 0,05 m · band ≤ 2 % · v² dritte ≤ ½ erste Sekunde (erste > 0) · ruht · schritte > 0 (der Leser ruft das Gesetz)
-//   · fern 0 Schritte (das Auge jenseits SEIL_NAH_M)
-const SEIL = { schwungM: 0.05, band: 0.02, energie: 0.5 };
-function seilVerdict(h) {
-    if (!h || !Number.isFinite(h.schwungM)) return ["probe"];
-    const out = [];
-    if (!(h.teile > 0 && h.teile === h.soll)) out.push(`teile ${h.teile} von ${h.soll}`);
-    if (!(h.schritte > 0)) out.push("kein Schritt des Gesetzes (_seilTakt ruft seilSchritt nicht)");
-    if (!(h.schwungM >= SEIL.schwungM)) out.push(`schwung ${h.schwungM.toFixed(3)} m`);
-    if (!(h.band <= SEIL.band)) out.push(`länge ±${(100 * h.band).toFixed(1)} %`);
-    if (!(h.energie[0] > 0 && h.energie[1] <= SEIL.energie * h.energie[0])) out.push(`v² ${h.energie.map((x) => x.toFixed(3)).join(" → ")}`);
-    if (!h.ruht) out.push("ruht nie");
-    if (h.fernSchritte !== 0) out.push(`fern ${h.fernSchritte} Schritte (die Kosten folgen der Welt, nicht dem Schirm)`);
-    return out;
-}
+// ── H-S (physik.K4) — DAS SEIL AM LEIB (pure Funktion; Browser-Probe UND Selbst-Test): die Täter der Klasse „kein Seil am Leib"
+// beim Namen. Der Flegel der Schmiede in der Hand; das Auge erst fern (jenseits `SEIL_NAH_M`), dann 3 m vor dem Leib; der Leib
+// geht 0,5 s mit 3 m/s und steht, je Takt ruft der Takt der Seile (`_seilTakt`, der benannte Konsum-Leser) das EINE Gesetz des
+// Kerns). Urteil, je Täter ein Schlüssel: `teile` die Gestalt trägt die Teile, die das Gesetz nennt (Glieder + Kopf,
+// `userData.__seil` — die Brücke reicht `seil`) · `schwung` der Kopf schwingt nach dem Halt ≥ 5 cm (der Leser rechnet und legt
+// die Kette) · `ruht` nach 15 s Stille ruht das Seil (die Kosten gehören der Änderung) · `fern` mit dem Auge jenseits
+// SEIL_NAH_M rechnet es nicht (die Kosten gehören dem Schirm). Länge (±2 % längs des Seils) und Dämpfung misst die Station
+// physik.K4#1 der Punkte-Maschine in der Tiefe.
+const seilVerdict = (h) => (h ? Object.keys(h).filter((k) => h[k] === false || h[k] === 0) : ["probe"]);
 const { errs, check } = pruefer();
 /// ===== TEIL S: die statischen Gesetze — die Absenzen über den EINEN Helfer `stammLib.fehlt` (kommentarfrei; ein totes
 // Glied wirft beim Namen). (S3, M8 — kein kind-String-Vergleich im Auto-Register-Chokepoint — hält gate:pipeline-
@@ -114,21 +100,16 @@ hauptLauf(async () => {
                 faustVerdict(Object.assign({}, gesund, bruch)).length === 1
             );
         // V9 (H-S, physik.K4): das Seil-Verdikt feuert auf jeden Täter der Klasse „kein Seil am Leib" beim Namen.
-        const seil = { teile: 8, soll: 8, schritte: 600, fernSchritte: 0, schwungM: 0.3, band: 0.004, energie: [2.1, 0.2], ruht: true };
-        check("Selbst-Test 9 (H-S): gesundes Seil == 0 Verstoesse", seilVerdict(seil).length === 0, seilVerdict(seil).join(" · "));
-        for (const [name, bruch] of [
-            ["die Gestalt trägt keine Seil-Teile (die Brücke verliert `seil`)", { teile: 0 }],
-            ["der Takt ruft das Gesetz nicht (kein Leser)", { schritte: 0 }],
-            ["die Kette starr am Stiel", { schwungM: 0.002 }],
-            ["das Seil dehnt sich (Relaxation ohne harte Länge)", { band: 0.14 }],
-            ["der Schwung bleibt (ohne Dämpfung)", { energie: [2.1, 2.0] }],
-            ["das Seil ruht nie (der Leser rechnet die stille Kette)", { ruht: false }],
-            ["das ferne Seil rechnet (die Kosten an der Weltgröße)", { fernSchritte: 30 }],
-        ])
+        for (const [n, b] of Object.entries({
+            "": {},
+            teile: { teile: false },
+            schwung: { schwung: false },
+            ruht: { ruht: false },
+            fern: { fern: false },
+        }))
             check(
-                `Selbst-Test 10 (H-S): ‚${name}' → die Seil-Linse feuert`,
-                seilVerdict(Object.assign({}, seil, bruch)).length === 1,
-                seilVerdict(Object.assign({}, seil, bruch)).join(" · ")
+                `Selbst-Test 9 (H-S): ${n || "gesund"}`,
+                seilVerdict({ teile: true, schwung: true, ruht: true, fern: true, ...b }).join() === n
             );
         selbsttestEnde(errs, "die Linse feuert auf alle Verletzungs-Klassen (Faust, Seil).");
         process.exit(0);
@@ -142,36 +123,26 @@ hauptLauf(async () => {
         const res = { b: {}, d: {}, h: {} };
         const A = AnazhRealm;
         const f = r._ensureAssetFoundry();
-        const weapon = Object.values(f.recipes).filter((x) => x && x.kind === "weapon");
-        res.b.toolCount = weapon.filter((x) => x.fx && x.fx.tool).length;
-        res.b.paramsWeapon = f.paramsByKind && Array.isArray(f.paramsByKind.weapon) ? f.paramsByKind.weapon.length : -1;
+        const weapon = Object.values(f.recipes).filter((x) => x?.kind === "weapon");
+        res.b.toolCount = weapon.filter((x) => x.fx?.tool).length;
+        res.b.paramsWeapon = f.paramsByKind?.weapon?.length ?? -1;
         // ===== D (dazu): die Werkzeug-Klasse dockt ueber donorTool (geraet_spitzhacke-Substanz), die Rollen =====
         try {
             const B = st.blueprints || {};
             const KS = A.KIND_SUBSTANCE || {};
             res.d.spitzAbsent = !B.geraet_spitzhacke;
-            res.d.substanzSpitz = KS.geraet_spitzhacke && Array.isArray(KS.geraet_spitzhacke.parts) ? KS.geraet_spitzhacke.parts.length : 0;
+            res.d.substanzSpitz = KS.geraet_spitzhacke?.parts?.length || 0;
             res.d.weaponRole = B.klinge_langschwert ? r.computeBlueprintRole(B.klinge_langschwert) : null;
             const tbp = B.klinge_spitzhacke;
-            res.d.toolPartsMatch = !!tbp && !!KS.geraet_spitzhacke && JSON.stringify(tbp.parts) === JSON.stringify(KS.geraet_spitzhacke.parts);
+            res.d.toolPartsMatch = !!tbp && JSON.stringify(tbp.parts) === JSON.stringify(KS.geraet_spitzhacke?.parts);
             res.d.toolRole = tbp ? r.computeBlueprintRole(tbp) : null;
         } catch (e) {
             res.d.err = fehlerText(e);
         }
         // ===== H: DIE HAND (W-A4b) — die Studio-Gestalt am EINEN Equip-Chokepoint =====
         try {
-            const box3 = (obj) => {
-                obj.updateMatrixWorld(true);
-                const bb = new THREE.Box3().setFromObject(obj);
-                const rnd = (v) => Number(v.toFixed(3));
-                return {
-                    x: [rnd(bb.min.x), rnd(bb.max.x)],
-                    y: [rnd(bb.min.y), rnd(bb.max.y)],
-                    z: [rnd(bb.min.z), rnd(bb.max.z)],
-                };
-            };
             // Welt-bereit (Spieler-Mesh baut parallel zum Foundry-Handshake).
-            await __weltDa(() => !(!st.playerMesh || !st.player));
+            await __weltDa(() => st.playerMesh && st.player);
             const pm = st.playerMesh;
             res.h.playerReady = !!(pm && st.player);
             if (res.h.playerReady) {
@@ -179,35 +150,22 @@ hauptLauf(async () => {
                 // Abschnitt fragte ihn an; langschwert|8|0 kollidiert mit der F-Anfrage):
                 // der Equip zeigt SOFORT den Part-Bau, die Ankunft tauscht auf Studio.
                 r.equipHeld("klinge_degen");
-                const hm0 = pm.userData && pm.userData.heldMesh;
-                res.h.interimVisible = !!(
-                    hm0 &&
-                    hm0.children &&
-                    hm0.children.length > 0 &&
-                    !(hm0.userData && hm0.userData.foundryHeld)
-                );
-                for (const weiter = __deckel("der Degen der Schmiede", 300); weiter(); ) {
-                    const w = pm.userData && pm.userData.heldMesh;
-                    if (w && w.userData && w.userData.foundryHeld) break;
-                    await sleep(150);
-                }
-                const hmD = pm.userData && pm.userData.heldMesh;
-                res.h.degenStudio = !!(hmD && hmD.userData && hmD.userData.foundryHeld);
+                const studio = async (name) => {
+                    for (const weiter = __deckel(name, 300); weiter() && !pm.userData.heldMesh.userData.foundryHeld;)
+                        await sleep(150);
+                    return pm.userData.heldMesh;
+                };
+                const hm0 = pm.userData.heldMesh;
+                res.h.interimVisible = hm0.children.length > 0 && !hm0.userData.foundryHeld;
+                res.h.degenStudio = !!(await studio("der Degen der Schmiede")).userData.foundryHeld;
                 // (2) WARM: langschwert equipen, auf die Studio-Gestalt warten, Zahlen messen.
                 r.equipHeld("klinge_langschwert");
-                for (const weiter = __deckel("das Langschwert der Schmiede", 300); weiter(); ) {
-                    const w = pm.userData && pm.userData.heldMesh;
-                    if (w && w.userData && w.userData.foundryHeld) break;
-                    await sleep(150);
-                }
-                const hm = pm.userData && pm.userData.heldMesh;
-                res.h.studio = !!(hm && hm.userData && hm.userData.foundryHeld);
+                const hm = await studio("das Langschwert der Schmiede");
+                res.h.studio = !!hm.userData.foundryHeld;
                 if (res.h.studio) {
                     res.h.preset = hm.userData.heldPreset;
                     res.h.meshCount = hm.children.length;
-                    res.h.allShared = hm.children.every(
-                        (c) => c.userData && c.userData.sharedGeom && c.userData.sharedMat
-                    );
+                    res.h.allShared = hm.children.every((c) => c.userData.sharedGeom && c.userData.sharedMat);
                     // die WELT-Skala (W5: die Hand teilt die Anker-Skala heraus — lokal 1/0,27, in der Welt 1:1)
                     hm.updateMatrixWorld(true);
                     const hmWs = hm.getWorldScale(new THREE.Vector3()).x;
@@ -215,13 +173,10 @@ hauptLauf(async () => {
                     res.h.scaleOk = hmWs > 0 && hmWs <= AnazhRealm.HELD_MESH.maxScale;
                     res.h.gripX = hm.userData.heldGripX;
                     res.h.axis = hm.userData.heldAxis;
-                    res.h.rotZ = Number(hm.rotation.z.toFixed(4));
-                    const parts = pm.userData && pm.userData.parts;
-                    const armAnchor = parts && (parts.rightArm || parts.rightWing);
-                    res.h.anchored = hm.parent === (armAnchor || pm);
+                    const parts = pm.userData.parts || {};
+                    res.h.anchored = hm.parent === (parts.rightArm || parts.rightWing || pm);
                     const src = hm.userData.foundrySrcGroup;
                     res.h.liveRefs = src ? src._liveRefs : -1;
-                    if (src) res.h.bboxLang = box3(src); // Template-Raum (Quell-Gruppe, unskaliert)
                     // H-F (W5): DIE FAUST in Welt-Metern — Länge gegen das Gesetzbuch, Griff-Mitte gegen die Hand-Mitte
                     // (Schwerpunkt der Haut-Vertices, die das Handgelenk-Gelenk zu > 60 % trägt, Bind-Pose im Gelenk-
                     // Raum), Winkel Griff-Achse ↔ Unterarm (Ellbogen → Handgelenk).
@@ -270,9 +225,7 @@ hauptLauf(async () => {
                     }
                     // (3) UNEQUIP zerstoert das GETEILTE Asset NICHT — _queueDispose instrumentiert.
                     const sharedGeos = [];
-                    hm.traverse((o) => {
-                        if (o.userData && o.userData.sharedGeom && o.geometry) sharedGeos.push(o.geometry);
-                    });
+                    hm.traverse((o) => o.userData.sharedGeom && sharedGeos.push(o.geometry));
                     const refsBefore = src ? src._liveRefs : 0;
                     const queued = [];
                     const protoQD = AnazhRealm.prototype._queueDispose;
@@ -282,20 +235,13 @@ hauptLauf(async () => {
                     };
                     r.equipHeld(null);
                     delete r._queueDispose;
-                    res.h.unequipNoMesh = !(pm.userData && pm.userData.heldMesh);
-                    res.h.sharedSurvives = !queued.some((q) => sharedGeos.indexOf(q) >= 0);
+                    res.h.unequipNoMesh = !pm.userData.heldMesh;
+                    res.h.sharedSurvives = !queued.some((q) => sharedGeos.includes(q));
                     res.h.refReturned = !src || src._liveRefs === Math.max(0, refsBefore - 1);
-                    res.h.srcAlive = !!(
-                        src &&
-                        !src._geomDisposed &&
-                        src.children.length > 0 &&
-                        src.children[0].geometry &&
-                        src.children[0].geometry.attributes &&
-                        src.children[0].geometry.attributes.position
-                    );
+                    res.h.srcAlive = !!(src && !src._geomDisposed && src.children[0]?.geometry?.attributes?.position);
                     // (4) die Cache-Gruppe baut DANACH noch eine Werkstatt-Vorschau (ein Zug, viele Leser).
                     const wsWrap = src ? r._workshopWrapFoundryGroup(src) : null;
-                    res.h.workshopAfter = !!(wsWrap && wsWrap.children.length > 0);
+                    res.h.workshopAfter = wsWrap?.children.length > 0;
                     // (4b) KONSUM statt Quelltext: die Hand-Quelle zieht den Welt-Cache und die EINE Wrapper-Quelle (Spion je Glied).
                     const spion = (k) => ((f, z) => ((r[k] = (...a) => (z.n++, f.apply(r, a))), () => (delete r[k], z.n)))(r[k], { n: 0 });
                     const [zuW, zuC] = [spion("_workshopWrapFoundryGroup"), spion("_foundryCacheGet")];
@@ -304,118 +250,41 @@ hauptLauf(async () => {
                     if (wK && wK !== "pending") r._disposeSoulGroup(wK);
                 }
                 // (5) SPITZHACKE-Probe (Werkzeug-Klasse, s.schaft-Griff) — direkte Quelle + Zahlen.
-                let probe = r._heldFoundryGroup("klinge_spitzhacke");
-                for (const weiter = __deckel("die Spitzhacke", 300); probe === "pending" && weiter(); ) {
+                let probe;
+                for (
+                    const weiter = __deckel("die Spitzhacke", 300);
+                    (probe = r._heldFoundryGroup("klinge_spitzhacke")) === "pending" && weiter();
+                )
                     await sleep(150);
-                    probe = r._heldFoundryGroup("klinge_spitzhacke");
-                }
                 if (probe && probe !== "pending") {
                     res.h.spitzGrip = probe.userData.heldGripX;
                     res.h.spitzAxis = probe.userData.heldAxis;
-                    res.h.bboxSpitz = box3(probe);
                     r._disposeSoulGroup(probe); // Ref-Rueckgabe (die Probe haelt nichts fest)
                 }
-                // (5b) H-S (physik.K4): DAS SEIL AM LEIB — der Flegel in der Hand, der Leib geht 0,5 s und steht, je Takt der
-                // Takt der Seile (`_seilTakt`); der Spion zählt die Schritte des EINEN Gesetzes.
+                // (5b) H-S (physik.K4): DAS SEIL AM LEIB — der Flegel in der Hand (das Urteil oben bei seilVerdict)
                 try {
                     r.equipHeld("klinge_flegel");
-                    for (const weiter = __deckel("der Flegel der Schmiede", 300); weiter(); ) {
-                        const w = pm.userData && pm.userData.heldMesh;
-                        if (w && w.userData && w.userData.foundryHeld) break;
-                        await sleep(150);
-                    }
-                    const hf = pm.userData && pm.userData.heldMesh;
-                    const SC = window.__schmiedeCore;
-                    const e = r._seile && [...r._seile].find((x) => x.mesh === hf);
-                    const sg = e && e.seil;
-                    const st = [];
-                    if (hf) hf.traverse((m) => m.isMesh && Number.isInteger(m.userData.__seil) && (st[m.userData.__seil] = m));
-                    let wurzel = hf;
-                    while (wurzel && wurzel.parent) wurzel = wurzel.parent;
-                    res.h.seil = {
-                        teile: st.filter(Boolean).length,
-                        soll: sg ? sg.glieder + 1 : -1,
-                        schritte: 0,
-                        schwungM: NaN,
-                        inSzene: wurzel === r.state.scene,
-                        augeM: hf && r.state.camera ? r.state.camera.position.distanceTo(hf.getWorldPosition(new THREE.Vector3())) : null,
-                    };
-                    if (e && sg && st.length === sg.glieder + 1) {
-                        const R = SC.seilRuhe(sg, sg.anker, sg.unten, 1);
-                        const P = (i) => new THREE.Vector3(R[3 * i], R[3 * i + 1], R[3 * i + 2]);
-                        const echt = SC.seilSchritt;
-                        let schritte = 0;
-                        SC.seilSchritt = function () {
-                            const ok = echt.apply(this, arguments);
-                            if (ok) schritte++;
-                            return ok;
-                        };
-                        const lage = () => {
-                            pm.updateMatrixWorld(true);
-                            const a = new THREE.Vector3().fromArray(sg.anker).applyMatrix4(hf.matrixWorld);
-                            let l = 0,
-                                vor = a.clone();
-                            st.forEach((m, i) => {
-                                const p = P(i).applyMatrix4(m.matrixWorld),
-                                    q = P(i + 1).applyMatrix4(m.matrixWorld);
-                                l += vor.distanceTo(p) + p.distanceTo(q);
-                                vor = q;
-                            });
-                            return { a, kopf: P(sg.glieder + 1).applyMatrix4(st[sg.glieder].matrixWorld).sub(a), l };
-                        };
-                        const takt = () => r._seilTakt(1 / 60);
-                        const cam = r.state.camera;
-                        const camVor = cam.position.clone();
-                        try {
-                            // FERN: das Auge jenseits SEIL_NAH_M — der Leib geht, das Seil rechnet nicht
-                            const hand = hf.getWorldPosition(new THREE.Vector3());
-                            cam.position.copy(hand).add(new THREE.Vector3(0, 0, AnazhRealm.SEIL_NAH_M + 20));
-                            for (let k = 0; k < 30; k++) {
-                                pm.position.x += 0.01;
-                                takt();
-                            }
-                            res.h.seil.fernSchritte = schritte;
-                            pm.position.x -= 0.3;
-                            // NAH: das Auge 3 m vor dem Leib (wo die Kamera des Spiels steht)
-                            cam.position.copy(hand).add(new THREE.Vector3(0, 1, 3));
-                            takt();
-                            for (let k = 0; k < 30; k++) {
-                                pm.position.x += 0.05; // der Leib geht 3 m/s
-                                takt();
-                            }
-                            const k0 = lage().kopf;
-                            let schwung = 0,
-                                lmin = Infinity,
-                                lmax = 0,
-                                vor = k0;
-                            const v2 = [];
-                            for (let k = 0; k < 180; k++) {
-                                takt();
-                                const L = lage();
-                                schwung = Math.max(schwung, L.kopf.distanceTo(k0));
-                                lmin = Math.min(lmin, L.l);
-                                lmax = Math.max(lmax, L.l);
-                                v2.push(L.kopf.distanceToSquared(vor) * 3600);
-                                vor = L.kopf;
-                            }
-                            for (let k = 0; k < 720; k++) takt();
-                            const vorher = schritte;
-                            takt();
-                            const mittel = (x) => x.reduce((s, y) => s + y, 0) / Math.max(1, x.length);
-                            Object.assign(res.h.seil, {
-                                schritte: vorher - res.h.seil.fernSchritte,
-                                schwungM: schwung,
-                                band: lmax / lmin - 1,
-                                laengeM: [lmin, lmax],
-                                energie: [mittel(v2.slice(0, 60)), mittel(v2.slice(120))],
-                                ruht: !!e.z.ruht && schritte === vorher,
-                            });
-                        } finally {
-                            SC.seilSchritt = echt;
-                            pm.position.x -= 1.5;
-                            cam.position.copy(camVor);
-                        }
-                    }
+                    const hf = await studio("der Flegel"),
+                        cam = r.state.camera.position,
+                        weit = AnazhRealm.SEIL_NAH_M * 2,
+                        st = hf.children.filter((t) => t.userData.__seil >= 0),
+                        e = [...r._seile].find((x) => x.mesh === hf) || { seil: {} },
+                        kopf = () => new THREE.Box3().setFromObject(st[st.length - 1]).getCenter(new THREE.Vector3()),
+                        takt = (n, dx) => {
+                            for (let k = 0; k < n; k++) ((pm.position.x += dx), r._seilTakt(1 / 60));
+                        },
+                        h = { teile: st.length === e.seil.glieder + 1 };
+                    cam.copy(hf.getWorldPosition(cam)).z += weit;
+                    takt(30, 0.01);
+                    h.fern = !e.z;
+                    cam.z -= weit - 3;
+                    takt(31, 0.05);
+                    const k0 = kopf();
+                    let w = 0;
+                    for (let k = 0; k < 120; k++) (takt(1, 0), (w = Math.max(w, kopf().distanceTo(k0))));
+                    takt(900, 0);
+                    res.h.seil = Object.assign(h, { schwung: w >= 0.05, ruht: e.z.ruht });
+                    pm.position.x -= 1.85;
                     r.equipHeld(null);
                 } catch (e) {
                     res.h.seilErr = fehlerText(e);
@@ -424,13 +293,8 @@ hauptLauf(async () => {
                 const prevHook = window.__anazhGateNoFoundry;
                 window.__anazhGateNoFoundry = true;
                 r.equipHeld("klinge_langschwert");
-                const hmOff = pm.userData && pm.userData.heldMesh;
-                res.h.offIsPart = !!(
-                    hmOff &&
-                    hmOff.children &&
-                    hmOff.children.length > 0 &&
-                    !(hmOff.userData && hmOff.userData.foundryHeld)
-                );
+                const hmOff = pm.userData.heldMesh;
+                res.h.offIsPart = hmOff?.children.length > 0 && !hmOff.userData.foundryHeld;
                 r.equipHeld(null);
                 if (prevHook) window.__anazhGateNoFoundry = prevHook;
                 else delete window.__anazhGateNoFoundry;
@@ -451,13 +315,13 @@ hauptLauf(async () => {
     check("D: builtIn == false (Policy-Zeile; User-Werk-Sicht wie Fahrzeug/Tor)", eps.d.builtIn === false);
     check(
         "D: auch der Werkzeug-Donor ist ABWESEND, seine Substanz trägt 2 Parts (KIND_SUBSTANCE.geraet_spitzhacke)",
-        out.d.spitzAbsent === true && out.d.substanzSpitz === 2,
+        out.d.spitzAbsent && out.d.substanzSpitz === 2,
         out.d.err || `spitz=${out.d.substanzSpitz}`
     );
     check('D: die reine Waffe traegt role "weapon" (klinge_langschwert)', out.d.weaponRole === "weapon", `role=${out.d.weaponRole}`);
     check(
         'D: das Werkzeug traegt die WERKZEUG-Substanz byte-gleich + role "tool" (klinge_spitzhacke == KIND_SUBSTANCE.geraet_spitzhacke)',
-        out.d.toolPartsMatch === true && out.d.toolRole === "tool",
+        out.d.toolPartsMatch && out.d.toolRole === "tool",
         `role=${out.d.toolRole}`
     );
     check(
@@ -466,30 +330,29 @@ hauptLauf(async () => {
         eps.f.err || String(eps.f.key)
     );
     // ===== H: DIE HAND (W-A4b) — eigene Zaehlung =====
-    check("H: Spieler-Mesh bereit (der Hand-Beweis hat einen Traeger)", out.h.playerReady === true, out.h.err);
+    check("H: Spieler-Mesh bereit (der Hand-Beweis hat einen Traeger)", out.h.playerReady, out.h.err);
     check(
         "H: INTERIM — der Equip zeigt SOFORT den Part-Bau (klinge_degen, jungfraeulicher Schluessel; die Hand ist nie leer)",
-        out.h.interimVisible === true,
+        out.h.interimVisible,
         out.h.err
     );
     check(
         "H: die Asset-Ankunft tauscht GENAU EINMAL auf die Studio-Gestalt (foundryHeld, ohne zweiten Equip)",
-        out.h.degenStudio === true
+        out.h.degenStudio
     );
     check(
         "H: warm equipHeld(klinge_langschwert) -> der Held-Mesh traegt Studio-Wrapper (foundryHeld, preset langschwert)",
-        out.h.studio === true && out.h.preset === "langschwert",
+        out.h.studio && out.h.preset === "langschwert",
         String(out.h.preset)
     );
     check(
         "H: JEDES Wrapper-Kind teilt Geometrie+Material (sharedGeom/sharedMat — die EINE Wrapper-Quelle)",
-        out.h.allShared === true && out.h.meshCount > 3,
+        out.h.allShared && out.h.meshCount > 3,
         `meshes=${out.h.meshCount}`
     );
-    console.log(`      ↳ Hand-Mesh-Zahl langschwert: ${out.h.meshCount}`);
     check(
         "H: Welt-Skala in der Hand (0 < Welt-Skala <= maxScale) + am Arm-Anker geparentet",
-        out.h.scaleOk === true && out.h.anchored === true,
+        out.h.scaleOk && out.h.anchored,
         `scale=${out.h.scale}`
     );
     check(
@@ -497,13 +360,11 @@ hauptLauf(async () => {
         out.h.axis === "x" && Math.abs((out.h.gripX || 0) - 0.12) < 1e-6,
         `gripX=${out.h.gripX}`
     );
-    // H-S (physik.K4): das Seil am Leib — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test).
-    const sv = seilVerdict(out.h.seil);
-    console.log("  [H-S] Seil: " + JSON.stringify(out.h.seil) + (out.h.seilErr ? " FEHLER " + out.h.seilErr : ""));
+    // H-S (physik.K4): das Seil am Leib — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test)
     check(
-        "H-S/physik.K4: DAS SEIL AM LEIB — der Flegel trägt sein Seil (Gesetz im Buch, Teile in der Gestalt), der Takt der Seile (`_seilTakt`) ruft das EINE Gesetz, die Kette schwingt nach dem Halt, hält ihre Länge, verliert Energie und ruht",
-        sv.length === 0,
-        sv.join(" · ") + (out.h.seilErr ? " · " + out.h.seilErr : "")
+        "H-S/physik.K4: DAS SEIL AM LEIB (teile · schwung · ruht · fern)",
+        !seilVerdict(out.h.seil).length,
+        seilVerdict(out.h.seil) + (out.h.seilErr || "")
     );
     // H-F (W5): die Faust — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test).
     const fv = faustVerdict(out.h.faust);
@@ -514,33 +375,27 @@ hauptLauf(async () => {
         out.h.faustErr ||
             `Länge ${(fz.weltM || 0).toFixed(3)} m (Welt/Gesetz ${(fz.laenge || 0).toFixed(3)}) · Versatz ${fz.versatzM === null || fz.versatzM === undefined ? "—" : fz.versatzM.toFixed(3)} m · Winkel ${(fz.winkel || 0).toFixed(1)}°${fv.length ? " — Täter: " + fv.join(", ") : ""}`
     );
-    console.log(
-        `      ↳ Skala/Anker langschwert: scale=${out.h.scale} gripX=${out.h.gripX} axis=${out.h.axis} bbox=${JSON.stringify(out.h.bboxLang)}`
-    );
     check(
         "H: die Werkzeug-Klasse ankert ueber fx.held.gripX (klinge_spitzhacke gripX > 0, axis x — Vertrags-Daten aus stations(P))",
         out.h.spitzAxis === "x" && Number.isFinite(out.h.spitzGrip) && out.h.spitzGrip > 0,
         `gripX=${out.h.spitzGrip}`
     );
-    console.log(`      ↳ Skala/Anker spitzhacke: gripX=${out.h.spitzGrip} bbox=${JSON.stringify(out.h.bboxSpitz)}`);
     check(
         "H: der Unequip zerstoert das GETEILTE Asset NICHT (kein sharedGeom in _queueDispose, Quell-Gruppe lebt, Ref zurueckgegeben)",
-        out.h.unequipNoMesh === true &&
-            out.h.sharedSurvives === true &&
-            out.h.srcAlive === true &&
-            out.h.refReturned === true,
+        out.h.unequipNoMesh && out.h.sharedSurvives && out.h.srcAlive && out.h.refReturned,
         `refs=${out.h.liveRefs}`
     );
     check(
         "H: die Cache-Gruppe baut nach dem Unequip noch eine Werkstatt-Vorschau (ein Zug, viele Leser)",
-        out.h.workshopAfter === true
+        out.h.workshopAfter
     );
     const kH = out.h.konsum || {};
-    check("H: die Hand-Quelle zieht den Welt-Cache und die EINE Wrapper-Quelle (Konsum)", kH.wrap > 0 && kH.cache > 0, JSON.stringify(kH));
     check(
-        "H: foundry-off (lokaler Hook, gesichert/wiederhergestellt) -> der Part-Pfad byte-alt",
-        out.h.offIsPart === true
+        "H: die Hand-Quelle zieht den Welt-Cache und die EINE Wrapper-Quelle (Konsum)",
+        kH.wrap > 0 && kH.cache > 0,
+        JSON.stringify(kH)
     );
+    check("H: foundry-off (lokaler Hook, gesichert/wiederhergestellt) -> der Part-Pfad byte-alt", out.h.offIsPart);
 
     wandEnde(errs, "DER ε-BEWEIS STEHT: die Waffen-/Werkzeug-Domaene dockt NUR ueber die Checkliste §ε an (Manifest-Zeile + KIND_POLICY-Zeile + Donor-DATENBLOCK + fx.place-Daten), der Stamm traegt KEINEN neuen kind-Zweig — schmiede-core reist durch den EINEN Foundry-Worker (Rezepte + kindStages + B4-Regler + Asset), klinge_<id> entsteht am EINEN Chokepoint, hand reist als Daten ohne Streu (N5.5) — UND (W-A4b) die gehaltene Klinge traegt die STUDIO-GESTALT: Part-Interim -> Ankunfts-Tausch, sharedGeom-Wrapper, daten-getriebener Griff-Anker, Unequip laesst das geteilte Asset stehen, foundry-off bleibt Part byte-alt.");
 });

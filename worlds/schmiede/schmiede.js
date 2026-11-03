@@ -1197,12 +1197,12 @@ const clock=new THREE.Clock();
 let _lastT=0;
 // — DAS SEIL (physik.K4) — EIN Löser für Labor und Welt: der Kern rechnet Zustand, Schritt und die Pose jedes Teils (SC.seilZustand ·
 //   seilSchritt · seilPosen — die Hand der Welt ruft dieselben, `_seilTakt`). Je Gerät mit Seil-Teilen (userData.__seil, die Gestalt
-//   des Kerns) sein Zustand; der Anker (SC.seilAnker, am Ende des Schafts) folgt dem Gerät, die Schwere der Szene treibt; ein
+//   des Kerns) sein Zustand aus dem Seil des Geräts (SC.seilGesetz: Eintrag der Gattung, Anker am Ende des Schafts, Werkstoff); der Anker folgt dem Gerät, die Schwere der Szene treibt; ein
 //   ruhendes Seil rechnet nicht. Ein neuer Bau (Regler, Gattung) ist ein neues Gerät, sein Seil beginnt in Ruhe. —
 const _seilZ=new WeakMap(),_sv={a:new THREE.Vector3(),s:new THREE.Vector3(),q:new THREE.Quaternion(),inv:new THREE.Matrix4(),W:new THREE.Matrix4()};
 function seilTakt(g,dt){if(!g||!g.parent||!P.seil||P.modus!=='wucht')return;let e=_seilZ.get(g);
   if(!e){const teile=[];g.traverse(m=>{if(m.isMesh&&Number.isInteger(m.userData.__seil))teile[m.userData.__seil]=m;});
-    e={seil:Object.assign({},P.seil,SC.seilAnker(P,stations(P))),teile,z:null,posen:null};_seilZ.set(g,e);}
+    e={seil:SC.seilGesetz(P,stations(P)),teile,z:null,posen:null};_seilZ.set(g,e);}
   if(e.teile.length!==e.seil.glieder+1||!e.teile.every(Boolean))return;
   g.updateWorldMatrix(true,true);const A=_sv.a.fromArray(e.seil.anker).applyMatrix4(g.matrixWorld),anker=[A.x,A.y,A.z];
   if(!e.z){g.getWorldScale(_sv.s);e.skala=(Math.abs(_sv.s.x)+Math.abs(_sv.s.y)+Math.abs(_sv.s.z))/3;e.z=SC.seilZustand(e.seil,anker,[0,-1,0],e.skala);for(const m of e.teile)m.matrixAutoUpdate=false;}

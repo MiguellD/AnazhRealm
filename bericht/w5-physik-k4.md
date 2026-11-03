@@ -22,7 +22,11 @@ trägt keinen Treffer (der Flegel schlägt über das allgemeine Wucht-Profil), u
 - Vertrags-Akte im selben Zug, je mit Byte-Beweis: Goldens v5 `klingen.json` +2 Fälle (flegel s7/s12345, alle alten Fälle byte-gleich),
   `arena.json` Hof (der Waffen-Tisch wächst mit der Zahl der Gattungen, Objekte und Ecken gleich), v1 `recipes.json`/`render-config.json`
   (`MINT_NUR_DATEN=1`: nur `flegel` neu), Plattform-Ratsche v5 24 → 25 Fälle, cos/sin 20 → 21 (wie bei der Sichel: gedrehte Ringe).
-- `gate:schmiede-contract` zählt 23 Gattungen. Die Station-Schärfung landet getrennt: `w5-physik-k4-pm` (von origin/punkte-maschine).
+- `bericht/` im Baum feuert `gate:betriebsgesetz` ZITAT-WAND (8 Befunde: dieser Bericht fehlt in `docs/README.md`, und CLAUDE.md/PFLICHT-OFFEN
+  nennen Berichte, die im Zweig `koordination` leben) — ohne den Ordner ist die Wand GRÜN (scripts −2 Atome); der Bericht gehört beim Landen
+  nach `koordination`.
+- `gate:schmiede-contract` zählt 23 Gattungen; `gate:kampf-gefuehl` Q11 fand die feste Dichte im Flegel-Kopf — die Seil-Massen lesen seitdem den
+  Werkstoff (`seilGesetz` → `metallRho`). Die Station-Schärfung landet getrennt: `w5-physik-k4-pm` (von origin/punkte-maschine).
 
 ## FUNDE
 
@@ -32,5 +36,5 @@ trägt keinen Treffer (der Flegel schlägt über das allgemeine Wucht-Profil), u
   skalierte Rig-Knochen im Ofen). Das Seil ist davon frei (es trägt Hand⁻¹ · Welt-Pose).
 - `stamm/koerper-seele.js` `animatePlayerSoul` · die Hand ruckt im Gang: das Tempo des Seil-Ankers springt zwischen zwei Takten 1,07 → 2,85 →
   1,14 m/s (Takt 88 der Station), beim Halt fällt der Arm 0,11 m in 0,13 s (schneller als die Schwere) · leib/gang · klein–mittel.
-- `meisterkarte-quelle/src/g1.js` (punkte-maschine) physik.K4 `beleg` · nennt `worlds/schmiede/schmiede.js:1152-1161 stepRope` — das Seil lebt
+- im Zweig `punkte-maschine` `meisterkarte-quelle/src/g1.js` physik.K4 `beleg` · nennt `worlds/schmiede/schmiede.js:1152-1161 stepRope` — das Seil lebt
   seit diesem Zweig im Kern (`schmiede-core.js` `SEIL_GESETZ`), `stepRope` gibt es im Labor nicht mehr · physik.K4 · klein (Text der Soll-Tafel).
