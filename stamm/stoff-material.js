@@ -34,10 +34,7 @@ class AnazhRealm_stoff_material {
         );
         mat.roughnessNode = T.mix(mat.roughnessNode || T.float(mat.roughness), T.float(1.0), dach);
         mat.colorNode = T.vec4(mat.colorNode.rgb.mul(PC.halmAder(A, uv.x, fw)), mat.colorNode.a);
-        // die Narbe nimmt dem Halm den Himmel seines Fußes, die Kontakt-Verdeckung den der Dinge neben ihm (schatten.K3: das
-        // Band am Fuß und am Sockel liegt auf der Wiese im Halm, nicht auf dem Boden darunter)
         mat.aoNode = PC.halmNarbe(A, uv.y, T.float(1.0)).himmel;
-        mat.aoNode = mat.aoNode.mul(this._kontaktVerdeckung());
         mat.userData.halm = true;
         return mat;
     }
@@ -2967,7 +2964,7 @@ class AnazhRealm_stoff_material {
     // IN DER KASKADE STEHT DIE BLENDE AN DER WELT (schatten.K2): der Schatten-Pass liest die Blende über colorNode.a (Lehre 26) —
     // mit der Rotation je Bild (`uDitherT`, `_loopRender`) und dem Pixel der Karte als Schlüssel trug JEDER Kaskaden-Render eines
     // überblendenden Werfers (Stufen-Band, Ring der Karte) ein anderes Loch-Muster, und jede Neulage der Box (die nahe Kaskade beim
-    // Gehen 6–22 Mal in 2 s, gate:schatten-werfer K9) schob es gegen die Welt: der Boden unter dem Werfer flackerte in ruhender
+    // Gehen 6–22 Mal in 2 s) schob es gegen die Welt: der Boden unter dem Werfer flackerte in ruhender
     // Welt. In der Kaskade (orthographisch, m[3][3] = 1 — dieselbe Weiche wie `_laubVersatz`) dreht sie nicht, und ihr Schlüssel
     // ist der Index des Welt-Rasters der Kaskade (Spalte + Ursprung, Ursprung − Zeile; `_kaskadeFit` legt den Ursprung,
     // `_blendeRaster` reicht ihn je Pass), modulo `BLENDE_RASTER`: dasselbe Texel der Welt trägt in jedem Render dieselbe Schwelle.
