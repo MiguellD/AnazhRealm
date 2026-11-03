@@ -18,3 +18,4 @@ w6-weiches f32add32 ROT playtest-voll ❌ 4 Invariante(n) verletzt: Φ5 (Q14+Q15
 w6-weiches f32add32 OFFEN Korrektur: playtest Φ5 Q14–Q18 = Φ5-Wand (pinCurrentWorld Snapshot > 262144 B), kein Zweig-Fehler im engeren Sinn; Sonde: main 2d2a5f11 261952/261963 B, Zweig 262045/262065 B (+~100 B), beide Läufe grün; der ROT-Lauf 20:34 lag über der Wand
 w5-studios-k1 d5aa0e1f GRÜN check+playtest-voll+haus-welt+koerper-kern+koerper-stand+regler-wirkt+werk-im-wasser (main 2d2a5f11)
 w5-studios-k1 d5aa0e1f GRÜN Nachtrag Φ5=261880B (Sonde 22:15, main 2d2a5f11 261952–261963 B: −~75 B)
+w7-rang 9910fb73 ROT merge KONFLIKT mit main 2d2a5f11: 
