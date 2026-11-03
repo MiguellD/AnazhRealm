@@ -1,13 +1,13 @@
 {
   "stand": "2026-11-03",
-  "kopf": "d880c8e8",
-  "version": "V18.546.172",
+  "kopf": "8e6262cc",
+  "version": "V18.546.173",
   "skala": "2.0",
-  "summe": 180,
+  "summe": 181,
   "max": 330,
   "maschine": {
-    "kopf": "d880c8e8",
-    "zeit": "2026-11-03T17:48:55.942Z",
+    "kopf": "8e6262cc",
+    "zeit": "2026-11-03T18:10:46.641Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -136,6 +136,8 @@
       "stoffe.K3",
       "stoffe.K4",
       "stoffe.K5",
+      "streaming.K1",
+      "streaming.K2",
       "streaming.K3",
       "streaming.K4",
       "streaming.K5",
@@ -185,7 +187,7 @@
     {
       "key": "leben",
       "titel": "II · LEBEN — Pflanze, Tier, Ökologie, Mensch, Affekt, Haar und Fell, Luft und Wasser",
-      "summe": 45,
+      "summe": 46,
       "max": 70,
       "bereiche": [
         "vegetation",
@@ -1286,7 +1288,7 @@
       "key": "affekt",
       "titel": "Die Welt fühlt und wertet mit — δ, Emotion, Nexus, Stimme, Musik",
       "gruppe": "leben",
-      "punkte": 6,
+      "punkte": 7,
       "pfad": "Feature-Stopp bis v1.0",
       "dateien": "`stamm/feld-sprache.js` (WERTUNG, Emotion) · `stamm/feld-dsl.js` · `stamm/feld-nexus.js` · `stamm/klang.js` (GENRES) · `stamm/bild-himmel.js` (Tint, Schreiber)",
       "aaaa": "Die Welt ist der dritte Mitspieler: sie wertet, was geschieht, mit EINER Gleichung (TD-δ) und antwortet am Ort. Die erste gute Tat bewegt Licht und Klang binnen 2 s an genau dieser Stelle, die zehnte gleiche nur noch ≤ 30 % (Gewöhnung). Die Emotion formt die Welt über Regeln mit Quelle: getragene Trauer macht den Regen am Ort wahrscheinlicher, Freude lockt die Tiere. Der Nexus schreibt Regeln, wo das Feld arm ist; die mit δ > 0 überleben und wirken im Blick. Die Welt sagt, was sie tat und warum („es regnet, weil …“), und die Musik liest dasselbe Feld: Tonart aus der Valenz, Tempo aus der Erregung, nie zweimal dieselbe Phrase. **Wo wir die Besten schlagen:** der AI-Director von Left 4 Dead lenkt Spannung nach Drehbuch-Regeln, Journey führt die Musik mit dem Spieler; bei uns schreiben Mensch, Nexus und KI dieselbe DSL in EIN Gesetz, das wertet und lernt — deterministisch, gespeichert, teilbar.",
@@ -1338,10 +1340,10 @@
         },
         {
           "name": "Die Musik liest das Feld",
-          "punkte": 1,
+          "punkte": 2,
           "staffel": "1 = ein Leser: Tonart/Modus folgt der Valenz von `auraAt.emotion` am Spieler (die Mutation der Achse ändert die Spektral-Merkmale am Abgriff) · 2 = Tempo und Dichte aus der Erregung, Wetter und Uhr wechseln die Schicht, keine Phrase wiederholt sich binnen 10 min, die Musik duckt sich unter Schritt, Ruf und Gespräch um ≥ 6 dB",
           "messung": "Klang-Abgriff am Master über 10 Spielminuten mit Mutation der Emotion-Achse; Wiederholungs-Suche über Chroma-Fenster.",
-          "beleg": "Maschine: gehalten: feld Valenz 2.2 ↔ -1.6 → Chroma-Abstand 0.4894 (Rauschen 0) · global Valenz 2.2 ↔ -1.6 → Chroma-Abstand 0.4894 (Rauschen 0) · Exit 0 an 10770eb5 headless — offen: affekt.K5#2 headless: Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)",
+          "beleg": "Maschine: gehalten: feld Valenz 2.2 ↔ -1.6 → Chroma-Abstand 0.4894 (Rauschen 0) · global Valenz 2.2 ↔ -1.6 → Chroma-Abstand 0.4894 (Rauschen 0) · Exit 0 an 10770eb5 headless · Erregung 0.9 ↔ -0.7 (awe/peace): Periode 2.752 ↔ 3.744 s (Rauschen 2.752), Dichte 12.633 ↔ 6.583 Quellen/s (12.583) · Schicht L1 Sturm 0.295, Nacht 0.573 (Rauschen 0.009) · 600 s: 185 Phrasen, 185 mit Ton, 0 wiederholt · Duck Schritt 8.51 · Ruf 10 · Gespräch 12 dB (Rauschen 0) an 8e6262cc headless",
           "schlupfloch": "Eine Playlist je Wetter wäre ein Zustands-Schalter: die Mutation der Emotion-Achse am Abgriff verlangt das Feld.",
           "aenderung": "Neu: Pfeiler 4 (Multisensorik) hatte keine Musik (V04).",
           "maschine": true
@@ -2478,7 +2480,7 @@
           "punkte": 0,
           "staffel": "1 = die Karte eines Baums aus Studio und Welt byte-gleich (EIN Bäcker) · 2 = jede Art mit Karte, aus derselben Bake-Rechnung wie L0 (der Ton L2/L0 misst Material K3, der Umriss LOD K1)",
           "messung": "Byte-Vergleich des Karten-Atlas je Art aus Studio-Bake und Welt-Bake bei gleicher Saat und gleichem Gesetz-SHA.",
-          "beleg": "Maschine: 0 — offen: pipeline.K2#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +1)",
+          "beleg": "Maschine: 0 — offen: pipeline.K2#1 headless: ROT: zwei Bäcker: Studio bakeImpostorAtlas (three r128) eiche/471452 rgba8 128×256 131072 B sha 2d680fabe8 ⇄ Welt _karteWeltBacken (three r184) eiche/Gestalt 0 bc 128×3584 1835008 B sha 37a74a8be3 an d880c8e8",
           "schlupfloch": "Zwei Bäcker, die „dieselben Zahlen lesen“, sind ein Zwilling: die Probe verlangt Byte-Gleichheit der Ausgabe.",
           "aenderung": "Ersetzt „Stufen-Treue“: deren Ton zählt Material K3, deren Umriss LOD K1 (B47, V22).",
           "maschine": true
@@ -2508,7 +2510,7 @@
           "punkte": 0,
           "staffel": "1 = Netz- und Parse-Log des Foundry-Workers zeigt 0 Bytes auf worlds/*/lib/three* UND kein synchrones XHR · 2 = dazu kalt bereit ≤ 300 ms an beiden Geräten",
           "messung": "Netz- und Parse-Log des Foundry-Workers, Kalt-Boot je Gerät.",
-          "beleg": "Maschine: 0 — offen: pipeline.K5#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +1)",
+          "beleg": "Maschine: 0 — offen: pipeline.K5#1 headless: ROT: 1 Foundry-Fäden (buch): worlds/*/lib/three* 603610 B über das Netz, geparst worlds/terrain/lib/three-r128.min.js · synchrones XHR 1 (cores.manifest.json) · THREE im Faden r128 gegen die Welt r184 an d880c8e8",
           "schlupfloch": "Das Wort r128 aus dem Manifest streichen und eine Kopie inline laden (Text-Absenz): gemessen werden Netz- und Parse-Log, nie der Quelltext.",
           "maschine": true
         }
@@ -3661,17 +3663,19 @@
           "punkte": 0,
           "staffel": "1 = 0 Lücken-Bilder in 60 s bei Sprint und GT-vmax auf fester Bahn an einem Gerät · 2 = Tempo-Decke ≥ vmax des schnellsten Rezepts × 1,2 am Boden und 30 m darüber, auf einer Bahn aus dem geladenen Ring heraus, beide Geräte",
           "messung": "Spielgang-Station fahrt (echter Renderer): je Bild die offenen Bedarfe im Sichtkegel bis 384 m (Boden, Wuchs, Bauten, Karten) + bild-diff gegen das eingeschwungene Bild derselben Pose; Regler des Spielers (R8); der Bedarf kommt aus dem Gesetz (Kegel 384 m, Fern-Ring 8 km), nie aus dem Regler; das Soll-Tempo steigt im selben Commit mit der vmax.",
-          "beleg": "Keine Linse misst Lücken in Fahrt (F5 fand der Schöpfer, 17.10.); der Boden-Voraus ist fest 1–2 Chunks à 43,2 m (`stamm/gelaende-chunks.js:2542-2565`), eingebaut wird höchstens EIN Chunk je Takt (`:2941`); GT vmax 16,0 m/s (`vehicle-core.js:2481` VMAX_REF 10).",
+          "beleg": "Maschine: 0 — offen: streaming.K1#1 headless: ungemessen (R10)",
           "schlupfloch": "Langsam fahren, ins Offene legen, den Sichtradius per Regler schrumpfen: feste Bahn durch Wald und Dorf bei festem Tempo; „≥ 70 m/s“ war eine Pose, die kein Spiel-Fahrzeug hat (B67) — das Soll folgt der vmax des Gesetzes; eine Schleife im geladenen Ring: die Bahn führt heraus.",
-          "aenderung": "Lücke und Tempo-Decke maßen dieselbe Linse über das Tempo → EIN Kriterium; Fahrzeug K2 zählt das Tempo nicht mehr (V27). Der Stufen-Pop zählt LOD K2 (V20)."
+          "aenderung": "Lücke und Tempo-Decke maßen dieselbe Linse über das Tempo → EIN Kriterium; Fahrzeug K2 zählt das Tempo nicht mehr (V27). Der Stufen-Pop zählt LOD K2 (V20).",
+          "maschine": true
         },
         {
           "name": "Fertig vor Bedarf: EIN Rang, Zeit bis Bedarf",
           "punkte": 0,
           "staffel": "1 = ≥ 95 % der Chunks, Bäume, Bauten und Karten in der verlangten Stufe fertig vor dem Eintritt in den Sichtkegel, an einem Gerät · 2 = ≥ 99 % bei GT-Vollgas an beiden Geräten",
           "messung": "Ereignis-Zählung am Spieler-Weg je Ding: Zeit zwischen „fertig in der verlangten Stufe“ und „tritt in den Sichtkegel“; K1 prüft am Bild, dass fertig sichtbar ist.",
-          "beleg": "Jede Schlange ordnet für sich: der Boden nach Chebyshev ohne Tempo (`stamm/gelaende-boden.js:_voxelChunkLodFor` `:2587-2596`), der Wuchs FIFO mit 4 je Frame (`stamm/vegetation-baum.js:_tickPendingVegSpawns` `:2041`), die Streu ohne Bild-Rang; nur die Foundry rangiert (`stamm/studio-bruecke.js:_foundryRang` `:772`). Der Tempo-Rang fahrt-vorausschau 1bb06b4e liegt ungemergt.",
-          "schlupfloch": "„Fertig“ melden, sobald ein Platzhalter steht, oder eine Grobstufe, die nie verfeinert: fertig heißt die Stufe, die die Distanz verlangt."
+          "beleg": "Maschine: 0 — offen: streaming.K2#1 headless: ungemessen (R10)",
+          "schlupfloch": "„Fertig“ melden, sobald ein Platzhalter steht, oder eine Grobstufe, die nie verfeinert: fertig heißt die Stufe, die die Distanz verlangt.",
+          "maschine": true
         },
         {
           "name": "Der Sprung hält die Kadenz: Bild und Welt auf zwei Fäden",
@@ -4548,15 +4552,15 @@
     },
     {
       "stand": "2026-11-03",
-      "kopf": "d880c8e8",
-      "summe": 180,
+      "kopf": "8e6262cc",
+      "summe": 181,
       "max": 330,
       "skala": "2.0",
       "was": "Mess-Takt 3 an 8f1802b1 (Züge 29c und 30: Stoff-Tafel, Speicher-Weg, Tier-Gang, Halten K5, Kaskade, Siedlung-Trasse, Nässe unter Dach, GPU-Wand, Leib-Hieb, Kaskaden-Riss, Hänger; headless 66/2, Radeon 27/11, GTX gemessen): stoffe.K1, speicher.K3, halten.K5, siedlung.K3 je +1, leib.K1, oekologie.K1, tiere.K3 → 2; klang.K4 1 → 0 und klang.K5 2 → 1 (2 Stoffe mit ≥ 5 Schritten), siedlung.K5 2 → 0 (nH 300 erstes Haus 974 ms — der Rang des Dorf-Zugs; die Heilung siedlung-k5-erstes-haus fährt in Zug 32)."
     }
   ],
   "text": {
-    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 03.11.2026, Kopf main d880c8e8 (V18.546.172)",
+    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 03.11.2026, Kopf main 8e6262cc (V18.546.173)",
     "einleitung": [
       "Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.",
       "",
