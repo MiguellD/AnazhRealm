@@ -183,12 +183,16 @@ function weltGrund(r, T) {
 }
 // DER LAUF (im Spiel-Baum, cwd; Node): argv {AUS} {PORT} und die Proben als JSON [[name, Seiten-Funktion, Optionen]]; die Optionen
 // tragen die Messorte des Haushalts (scripts/lib/welt-orte.cjs, `messort`). Ein Wurf einer Probe ist ihr Fehler beim Namen, nie
-// der Abbruch der übrigen.
+// der Abbruch der übrigen. Jede Welt (der Boot und jeder Reload) trägt das EINE Orts-Gesetz der Seite (`WELT_ORTE_INSTALL`:
+// `__weltOrt` — Höhle, Hang, Ufer … am Gesetz der Welt, w5-s2-g1). DER RELOAD (w5-s2-g1, stoffe.K4#2 „über den Reload“): eine Probe
+// mit der Option `neuladen` läuft in einer frisch geladenen Seite — der Lauf lädt sie neu (dieselbe Seite, derselbe Speicher:
+// IndexedDB des Browsers), bootet die Welt aus ihrem Stand und ruft erst dann die Probe; was die Probe davor sicherte
+// (`saveState`, `_speicherStill`), ist das einzige, was hinüber reist.
 async function weltProbeLauf() {
     const fs = require("fs");
     const path = require("path");
     const { statikServer, nullSeite, warteAufWelt } = require(path.resolve("scripts/lib/welt-boot.cjs"));
-    const { messort } = require(path.resolve("scripts/lib/welt-orte.cjs"));
+    const { messort, WELT_ORTE_INSTALL } = require(path.resolve("scripts/lib/welt-orte.cjs"));
     const [aus, port, grund, probenText] = process.argv.slice(1);
     const orte = Object.fromEntries(["wiese", "dorf"].map((id) => [id, messort(id)]));
     const erg = { proben: {}, fehler: [] };
@@ -201,17 +205,25 @@ async function weltProbeLauf() {
         const seite = ns.page;
         seite.setDefaultTimeout(1200000);
         seite.on("pageerror", (e) => erg.fehler.length < 8 && erg.fehler.push(String(e.message || e).split("\n")[0].slice(0, 200)));
+        const erwacht = async () => {
+            await warteAufWelt(seite, 300000);
+            await seite.evaluate(async () => {
+                while (!(window.anazhRealm && window.anazhRealm.erwacht)) await new Promise((ok) => setTimeout(ok, 50));
+                await window.anazhRealm.erwacht;
+                window.anazhRealm.state.renderer.setAnimationLoop(null);
+            });
+            await seite.evaluate(WELT_ORTE_INSTALL);
+        };
         await server.zeige(seite, 240000, "index.html", "networkidle0");
-        await warteAufWelt(seite, 300000);
-        await seite.evaluate(async () => {
-            while (!(window.anazhRealm && window.anazhRealm.erwacht)) await new Promise((ok) => setTimeout(ok, 50));
-            await window.anazhRealm.erwacht;
-            window.anazhRealm.state.renderer.setAnimationLoop(null);
-        });
+        await erwacht();
         for (const [name, fn, o] of JSON.parse(probenText)) {
             const t0 = Date.now();
             let e;
             try {
+                if (o && o.neuladen) {
+                    await seite.reload({ waitUntil: "networkidle0", timeout: 240000 });
+                    await erwacht();
+                }
                 e = await seite.evaluate("(" + fn + ")(window.anazhRealm, THREE, " + JSON.stringify(Object.assign({ orte }, o)) + ", (" + grund + ")(window.anazhRealm, THREE))");
             } catch (x) {
                 e = { fehler: String((x && x.message) || x).split("\n")[0].slice(0, 300) };
