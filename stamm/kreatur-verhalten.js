@@ -2995,6 +2995,7 @@ class AnazhRealm_kreatur_verhalten {
             const winkel = R.randGrad * (Math.PI / 180) + 2 * dreh;
             if (winkel < 1.2) rand = Math.tan(winkel);
         }
+        this._blickRand = rand; // die Geburt und das Entkörpern fragen denselben Rand (`_kreaturLeibImBlick`)
         for (let i = 0; i < W.length; i++) {
             const c = W[i];
             if (!c || !c.userData) continue;

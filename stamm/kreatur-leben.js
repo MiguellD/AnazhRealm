@@ -1748,13 +1748,16 @@ class AnazhRealm_kreatur_leben {
         return fr.containsPoint(v.set(x, this.getTerrainHeightAt(x, z) + 1, z));
     }
     // Stünde der LEIB einer Gattung `g` der Größe `bs` an (x, z) im Blick? Seine Körper-Kugel wie `_kreaturAusserBlick`
-    // (Reichweite + halbe Höhe um die halbe Höhe über dem Fuß, dazu der Saum) — dieselbe Frage, die das Bild an den Leib stellt;
-    // die Geburt fragt sie (`_kreaturWurf`, `_bestandLeibOrt`). Bis w7-begegnung fragte jede Geburt den Punkt: ein Leib am Rand
-    // des Blicks, dessen Fuß-Punkt draußen lag, ragte bei der Geburt ins Bild (Kreis-Sonde der Mess-Wiese, 600 Spiel-s:
-    // Ego 3, Third 6 im Blick erschienen).
+    // (Reichweite + halbe Höhe um die halbe Höhe über dem Fuß, dazu der Saum) samt dem RAND DES BLICKS der Ruhe
+    // (`_kreaturBlickRand`: das Frustum ist das des Vor-Takts, die Kamera dreht weiter) — dieselbe Frage, die die Ruhe an einen
+    // Leib stellt; die Geburt fragt sie (`_kreaturWurf`, `_bestandLeibOrt`). Bis w7-begegnung fragte jede Geburt den Punkt
+    // ohne Rand: ein Leib am Rand des Blicks, dessen Fuß-Punkt draußen lag, ragte bei der Geburt ins Bild (Kreis-Sonde der
+    // Mess-Wiese, 600 Spiel-s: Ego 3, Third 6 im Blick erschienen).
     _kreaturLeibImBlick(x, z, g, bs) {
         const fr = this._frustumCache;
         if (!fr) return false;
+        const rand = this._kreaturBlickRand();
+        if (rand < 0) return true; // die Kamera dreht schneller, als der Rand trägt: keine Geburt in diesem Takt
         const leib = this._kreaturLeib(
             null,
             this._gattungLeib(g).beinL * bs,
@@ -1762,8 +1765,19 @@ class AnazhRealm_kreatur_leben {
         );
         const s = this._geburtsKugel || (this._geburtsKugel = new THREE.Sphere(new THREE.Vector3(), 0));
         s.center.set(x, this.getTerrainHeightAt(x, z) + 0.5 * leib.hoehe, z);
-        s.radius = leib.reichweite + 0.5 * leib.hoehe + AnazhRealm.KREATUR_RUHE.saumM;
+        s.radius =
+            leib.reichweite +
+            0.5 * leib.hoehe +
+            AnazhRealm.KREATUR_RUHE.saumM +
+            s.center.distanceTo(this.state.camera.position) * rand;
         return fr.intersectsSphere(s);
+    }
+    // DER RAND DES BLICKS im Takt (`_tickKreaturRuhe`: tan(randGrad + doppelte Drehung des Vor-Frames), −1 bei zu schneller
+    // Drehung); vor dem ersten Kreatur-Takt der Grund-Rand `KREATUR_RUHE.randGrad`.
+    _kreaturBlickRand() {
+        return Number.isFinite(this._blickRand)
+            ? this._blickRand
+            : Math.tan((AnazhRealm.KREATUR_RUHE.randGrad * Math.PI) / 180);
     }
 
     // TRÄGT DER GRUND EIN GEBORENES TIER? Die Geburt ist ein Wurf des Felds (`_wildnisTraegt`) und weicht dem Bau wie jeder
@@ -2403,10 +2417,16 @@ class AnazhRealm_kreatur_leben {
         const soll = new Set();
         for (const G of reihe) for (const t of G.tiere) if (!(t.leib && bleibt.has(t.leib)) && platz-- > 0) soll.add(t);
         // wer gehen soll, bleibt, solange er im Blick steht (sein Platz wartet, die Kappe hält: gezeichnet wird nur in freien Platz)
-        // (der Leib selbst, seine Kugel: `_kreaturAusserBlick` — ohne Frustum fragt keiner)
+        // (der Leib selbst, seine Kugel samt dem Rand des Blicks: `_kreaturAusserBlick`, `_kreaturBlickRand` — ohne Frustum fragt
+        // keiner)
         const fr = this._frustumCache;
+        const rand = this._kreaturBlickRand();
         for (const c of st.creatures.slice())
-            if (!bleibt.has(c) && !soll.has(c.userData._bestand) && (!fr || this._kreaturAusserBlick(c, fr, 0)))
+            if (
+                !bleibt.has(c) &&
+                !soll.has(c.userData._bestand) &&
+                (!fr || (rand >= 0 && this._kreaturAusserBlick(c, fr, rand)))
+            )
                 this._bestandEntkoerpern(c);
         // je Takt höchstens drei Orts-Suchen; eine Gruppe ohne Ort (fern, außer Blick, frei) fragt erst sechs Takte später wieder
         let suchen = 3;
