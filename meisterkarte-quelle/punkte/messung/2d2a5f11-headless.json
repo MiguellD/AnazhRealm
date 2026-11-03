@@ -1,0 +1,31 @@
+{
+ "sha": "2d2a5f1100df8a53f28acae9f1a4bbd1837a5448",
+ "geraet": "headless",
+ "zeit": "2026-11-03T19:15:04.238Z",
+ "host": "farm:41700943121",
+ "je": {
+  "ultiversum.K4#2": {
+   "gruen": false,
+   "zahl": "Gegenlauf 3/3 Rezepte · 3/3 Baupläne · steht 160 △ · nach dem Laden da · Bibliothek nein: unbekannt · Spieler-Buch (7822 B, neu true, der Wirt nennt es 0×) 0/3 Rezepte · 0/3 Baupläne · steht nicht · Laden fehlt · ROT: die Bibliothek nimmt das Gesetzbuch nicht (unbekannt), das Spieler-Buch dockt nicht an · Exit 0",
+   "exit": 0,
+   "minuten": 0.42,
+   "grund": "ROT: Gegenlauf 3/3 Rezepte · 3/3 Baupläne · steht 160 △ · nach dem Laden da · Bibliothek nein: unbekannt · Spieler-Buch (7822 B, neu true, der Wirt nennt es 0×) 0/3 Rezepte · 0/3 Baupläne · steht nicht · Laden fehlt · ROT: die Bibliothek nimmt das Gesetzbuch nicht (unbekannt), das Spieler-Buch dockt nicht an · Exit 0",
+   "zeit": "2026-11-03T19:14:29.795Z",
+   "abdruck": "9a31927ac502",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41700943121/1"
+  },
+  "ultiversum.K2#2": {
+   "gruen": true,
+   "zahl": "Schreibe 0 (Selbsttest 1) · heilA 30× v 0.5489 ern. 3 · heilB 30× v 0.6137 ern. 3 · leer 7× v 0 verfiel · pflug fehlt · steil fehlt · im Stand heilA/leer/heilB · Exit 0",
+   "exit": 0,
+   "minuten": 0.22,
+   "zeit": "2026-11-03T19:15:04.238Z",
+   "abdruck": "c3fb06329891",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41700943121/2"
+  }
+ }
+}
