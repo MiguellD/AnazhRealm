@@ -165,7 +165,9 @@ class AnazhRealm_koerper_fahrt {
             v.set(group.position.x, group.position.y + 0.9 * s, group.position.z);
             an = cam.position.distanceToSquared(v) < nah * nah;
             if (an) {
-                const kegel = this._tuchKegel || (this._tuchKegel = { f: new THREE.Frustum(), m: new THREE.Matrix4(), k: new THREE.Sphere() });
+                const kegel =
+                    this._tuchKegel ||
+                    (this._tuchKegel = { f: new THREE.Frustum(), m: new THREE.Matrix4(), k: new THREE.Sphere() });
                 cam.updateMatrixWorld();
                 kegel.m.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
                 kegel.f.setFromProjectionMatrix(kegel.m);
@@ -190,13 +192,16 @@ class AnazhRealm_koerper_fahrt {
             const folge = grob.length ? fein : [];
             if (!sim.length) return;
             const haut = [];
-            group.traverse((n) => n.isSkinnedMesh && n.userData.__seh === "haut" && n.userData.__klasse === "haut" && haut.push(n));
+            group.traverse(
+                (n) => n.isSkinnedMesh && n.userData.__seh === "haut" && n.userData.__klasse === "haut" && haut.push(n)
+            );
             const gitter = this._tuchGitter(sim, folge, haut);
             // die eigene Positions-Spalte je Tuch-Mesh (die Vorlage bleibt unberührt)
             for (const m of sim.concat(folge)) {
                 const g0 = m.geometry;
                 const g1 = new THREE.BufferGeometry();
-                for (const k in g0.attributes) g1.setAttribute(k, k === "position" ? g0.attributes.position.clone() : g0.attributes[k]);
+                for (const k in g0.attributes)
+                    g1.setAttribute(k, k === "position" ? g0.attributes.position.clone() : g0.attributes[k]);
                 g1.setIndex(g0.index);
                 for (const gr of g0.groups) g1.addGroup(gr.start, gr.count, gr.materialIndex);
                 if (g0.boundingSphere) g1.boundingSphere = g0.boundingSphere.clone();
@@ -205,7 +210,7 @@ class AnazhRealm_koerper_fahrt {
                 m.userData.__tuchVorlage = g0;
                 m.geometry = g1;
             }
-            u._tuch = KC.tuchZustand(gitter, sim, folge, haut);
+            u._tuch = KC.tuchZustand(gitter, sim, folge, haut, 1);
             u._tuchMeshes = sim.concat(folge);
             u._tuchT = null;
         }

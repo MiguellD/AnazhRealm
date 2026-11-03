@@ -330,6 +330,9 @@ class AnazhRealm_koerper_leib {
             return null;
         }
         AnazhRealm._ofenKlonRebind(fern, teile); // EIN Skelett: die Grobstufe trägt die Knochen der feinen
+        // DAS TUCH IN DER RUHE (haar.K4): hier kommen die Stufen zusammen — der EINE weiche Löser legt das Tuch beider über die
+        // Haut beider (`tuchDrapieren`), EINMAL je Vorlage (die Geometrie ist geteilt; jeder Klon trägt das Drapierte)
+        if (kind !== "kreatur") this._tuchVorlageDrapieren(klon, fern);
         // EINE Körper-Kugel je Gestalt: die Grobstufe cullt (Bild und Kaskaden) gegen die Kugel der feinen — ihre eigene
         // (ohne die Fell-Schalen) ließ den Schweif im Gang hinaus (Pose-Probe gate:kreatur-kosten (R): 4 von 246 240).
         let kugel = null;
@@ -401,6 +404,26 @@ class AnazhRealm_koerper_leib {
             if (fern && !g.haltungFest && !this._kreaturLaeuft(gruppe)) this._gelenkRuhe(gruppe);
         }
         return fern;
+    }
+
+    // Das Tuch einer Vorlage (beide Stufen) über die Haut beider Stufen: die Ruhe-Lage des Tuchs ist frei von der Haut (die Achsel,
+    // die Hand an der Hüfte, der Versatz der Stufen) — und damit das Ziel jedes Takts (`_tuchTakt`). Meter je Einheit der Bindung:
+    // der Maßstab des Leibs (koerper `leibMassstab`).
+    _tuchVorlageDrapieren(...stufen) {
+        const tuch = [];
+        const haut = [];
+        for (const w of stufen)
+            w.traverse((n) => {
+                if (!n.isSkinnedMesh) return;
+                if (n.userData.__seh === "stoff") tuch.push(n);
+                else if (n.userData.__seh === "haut" && n.userData.__klasse === "haut") haut.push(n);
+            });
+        if (!tuch.length || !haut.length || tuch[0].geometry.userData.__tuchDrapiert) return;
+        const KC = globalThis.__koerperCore;
+        stufen.forEach((w) => w.updateMatrixWorld(true));
+        if (KC.tuchDrapieren(tuch, haut, KC.leibMassstab()) > 0)
+            for (const m of tuch) m.geometry.computeVertexNormals();
+        for (const m of tuch) m.geometry.userData.__tuchDrapiert = true;
     }
 
     // DIE RUHE der Gelenk-Gestalt (S3): die Grobstufe hängt an den Knochen der feinen — wo der Gang ruht, stünde sie sonst
