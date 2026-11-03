@@ -5226,7 +5226,11 @@ const stationen = [
     // 50 aus 50 Samen, Höhe 1,703–1,951 m um 1,82, Gesicht 50 von 50, Leib/Wurf je Typ 1700/360, die 50: 132 200 Dreiecke,
     // 0,253 ms je 50 — ROT nur an „keine zwei gleich" (14 von 1 225 Paaren unter 1 px, je desselben Typs, min 0,284 px): die Farbe
     // je Person verlangt den Knoten des Gang-Satzes (stoff-instanz `_gangSatzKnoten`). Mutanten ROT: zwei gleiche Samen
-    // (samen, gleich), die Zeile 2 halbiert (budget).
+    // (samen, gleich), die Zeile 2 halbiert (budget). w7-gesicht (Cloud, 03.11.): seit 98177d01 endete die Station an jedem Kopf
+    // „ohne Menge oder Gesicht" (A.ladeWelt fehlte, die Wand EXPORT nennt es jetzt beim Namen); die siebte Spalte trägt seit
+    // mensch.K4 die eigenen Farben jedes Bewohners, die Station las die seines Typs (min 0,164 px, 4–7 Paare unter 1 px) — mit
+    // ihnen am Kopf von w7-gesicht GRÜN: 50 aus 50, 0 Paare unter 1 px, Höhe 1,684–1,927 m um 1,816, Gesicht 50 von 50 (die Typen
+    // tragen ihr Gesicht aus dem Genom: Iris 0,00615–0,00671 Hk statt 0,00621–0,00625), 132 200 Dreiecke, 0,063 ms je 50.
     {
         kriterium: "mensch.K4",
         staffel: 2,
