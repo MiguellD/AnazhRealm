@@ -587,16 +587,17 @@ class AnazhRealm_studio_bruecke {
     // sRGB-Kurve beim Bau, wie unter r128, das keines kannte) — die Komponente ist, was der Kern setzt. Das Kern-Manifest
     // kommt per fetch (ALLES aus cores.manifest.json, EINE Quelle, ?v= Pflicht; kein synchrones XHR). Bis Engine und
     // Kerne stehen, HÄLT der Faden jede Nachricht (der erste Hörer, `halte`) und reicht sie danach in ihrer Folge weiter —
-    // die Kerne laden in Manifest-Folge (phyto- VOR foundry-core), dann die Bücher des Spielers, dann steht die
-    // Transport-Schale VOR dem Studio (ihr Kanal-Hörer zuerst) → die Brücke ZULETZT (K42: keine Labor-Shell im Faden); importScripts braucht ABSOLUTE URLs
+    // dann steht die Transport-Schale VOR dem Studio (ihr Kanal-Hörer zuerst) und die Kerne laden in Manifest-Folge
+    // (phyto- VOR foundry-core), danach die Bücher des Spielers → die Brücke ZULETZT (K42: keine Labor-Shell im Faden); importScripts braucht ABSOLUTE URLs
     // (die Blob-URL hat keine Basis). Die Platte stempelt jede Lieferung mit dem Gesetz-SHA ihrer Kerne: je Kern seine
     // Quellen (scripts · engine · bruecke — die Brücke trägt `__extractAssetMesh`), nie die Labor-Shell; die Basis ist der
     // Kern der Brücke. Ein Manifest ohne Kern, eine Engine ohne Modul der Karte, ein Ladefehler brechen laut (`worker.onerror`).
     // DIE EINE LISTE DER KERNE (ultiversum.K4): das Manifest des Servers ⊕ die Gesetzbücher des Spielers (`b.buecher`, aus der
     // Bibliothek, gesiebt an der Sperrliste) — je Buch prüft der Faden die Signatur über die signierten Bytes (`pruefe`, die
     // EINE Ed25519-Prüfung des Wirts), packt es aus (`auspacken`, gedeckelt `b.buchMax`) und lädt es nach den Kernen des
-    // Servers als Blob; sein Namensraum ist der EINE neue `__<art>Core`, den es setzt — kein Kern des Servers darf sich
-    // dabei ändern. Seine Zeile (id · ns · scripts) steht danach in der Liste wie jede des Servers: die Schale stempelt es,
+    // Servers als Blob; sein Namensraum ist der EINE `__<art>Core` seines Quelltexts, den kein Kern des Servers trägt — der
+    // Lauf bestätigt ihn, kein Kern des Servers darf sich dabei ändern. Seine Zeile (id · ns · scripts) steht in der Liste
+    // wie jede des Servers, VOR der Schale: die Schale stempelt es,
     // die Brücke liest es als Zweit-Kern (Rezepte, Stufen, Budget, Regler, KIND_POLICY). Ein Buch, das fällt, fällt beim
     // Namen (`buch-abgewiesen`, der Wirt meldet es laut), nie die Welt.
     static _foundryStart(b, schale, pruefe, auspacken) {
@@ -656,42 +657,28 @@ class AnazhRealm_studio_bruecke {
                             if (typeof s === "string" && s) out.push(url(s));
                     return out;
                 };
-                T.ColorManagement.enabled = false;
-                W.THREE = Object.assign({}, T);
-                W.__PHYTO_FOUNDRY_WORKER = true;
-                W.importScripts(...liste("scripts"));
+                // DIE BÜCHER DES SPIELERS in die EINE Liste: ein Buch nennt seinen Namensraum selbst — der EINE `__<art>Core`
+                // seines Quelltexts, den kein Kern des Servers trägt; seine Zeile steht VOR der Schale (ihr Stempel liest sie)
                 const ab = (e, grund) => W.postMessage({ type: "buch-abgewiesen", code: e.code, grund });
+                const vergeben = new Set(manifest.flatMap((c) => [c.id, c.ns]).filter(Boolean));
+                const zeilen = [];
                 for (const [e, quelle] of buecher) {
-                    if (quelle === false) ab(e, "signatur");
-                    else if (quelle == null) ab(e, "auspacken");
-                    if (typeof quelle !== "string") continue;
-                    const vorher = new Map(Object.keys(W).map((k) => [k, W[k]]));
+                    if (typeof quelle !== "string") {
+                        ab(e, quelle === false ? "signatur" : "auspacken");
+                        continue;
+                    }
+                    const ns = [...new Set(quelle.match(/\b__[A-Za-z]\w*Core\b/g) || [])].filter(
+                        (n) => !vergeben.has(n)
+                    );
+                    const id = ns.length === 1 ? ns[0].slice(2, -4) : null;
+                    if (!id || vergeben.has(id)) {
+                        ab(e, "namensraum (" + ns.length + " freie __…Core)");
+                        continue;
+                    }
+                    [id, ns[0]].forEach((n) => vergeben.add(n));
                     const u = URL.createObjectURL(new Blob([quelle], { type: "text/javascript" }));
-                    try {
-                        W.importScripts(u);
-                    } catch (err) {
-                        ab(e, "laden: " + String((err && err.message) || err).slice(0, 120));
-                        continue;
-                    }
-                    const neu = Object.keys(W).filter((k) => !vorher.has(k) && /^__\w+Core$/.test(k));
-                    // ein Buch, das einen stehenden Kern umschreibt oder eine vergebene Kern-id trägt, fällt — der Kern
-                    // steht wieder, wie er war
-                    const fremd = [...vorher].filter(([k, v]) => /^__\w+Core$/.test(k) && W[k] !== v);
-                    for (const [k, v] of fremd) W[k] = v;
-                    const id = neu.length === 1 ? neu[0].slice(2, -4) : null;
-                    const grund = fremd.length
-                        ? "überschreibt " + fremd.map(([k]) => k).join(", ")
-                        : !id || !W[neu[0]] || typeof W[neu[0]] !== "object"
-                          ? "namensraum (" + neu.length + " neue __…Core)"
-                          : manifest.some((c) => (c.id || c.ns) === id || c.ns === neu[0])
-                            ? "id " + id + " ist vergeben"
-                            : null;
-                    if (grund) {
-                        for (const k of neu) delete W[k];
-                        ab(e, grund);
-                        continue;
-                    }
-                    manifest.push({ id, ns: neu[0], scripts: [u], buch: e.code });
+                    zeilen.push([e, { id, ns: ns[0], scripts: [u], buch: e.code }]);
+                    manifest.push(zeilen[zeilen.length - 1][1]);
                 }
                 const kerne = manifest.map((c) => ({
                     id: c.id || c.ns,
@@ -702,7 +689,33 @@ class AnazhRealm_studio_bruecke {
                         : liste("scripts", [c]).concat(c.engine ? [motor] : [], liste("bruecke", [c])),
                 }));
                 schale({ lesen: b.lesen, jahr: b.jahr, format: b.format, platte: b.platte, kerne, wirt: b.wirt || [] });
+                T.ColorManagement.enabled = false;
+                W.THREE = Object.assign({}, T);
+                W.__PHYTO_FOUNDRY_WORKER = true;
                 W.__anazhCores = manifest; // die Brücke liest die ns-Kerne generisch (vor den importScripts)
+                W.importScripts(...liste("scripts", server));
+                // je Buch der Lauf als Richter: es lädt, setzt seinen Namensraum und lässt jeden stehenden Kern, wie er war —
+                // sonst fällt es beim Namen, seine Zeile verlässt die Liste, der Kern steht wieder
+                for (const [e, zeile] of zeilen) {
+                    const vorher = Object.keys(W)
+                        .filter((k) => /^__\w+Core$/.test(k))
+                        .map((k) => [k, W[k]]);
+                    let grund = null;
+                    try {
+                        W.importScripts(zeile.scripts[0]);
+                    } catch (err) {
+                        grund = "laden: " + String((err && err.message) || err).slice(0, 120);
+                    }
+                    const fremd = vorher.filter(([k, v]) => W[k] !== v);
+                    if (!grund && fremd.length) grund = "überschreibt " + fremd.map(([k]) => k).join(", ");
+                    if (!grund && (!W[zeile.ns] || typeof W[zeile.ns] !== "object"))
+                        grund = "namensraum (" + zeile.ns + " steht nicht)";
+                    if (!grund) continue;
+                    for (const [k, v] of fremd) W[k] = v;
+                    delete W[zeile.ns];
+                    manifest.splice(manifest.indexOf(zeile), 1);
+                    ab(e, grund);
+                }
                 W.importScripts(...liste("bruecke")); // die Brücke startet sich selbst
                 W.removeEventListener("message", halte);
                 for (const data of gehalten.splice(0)) W.dispatchEvent(new W.MessageEvent("message", { data }));

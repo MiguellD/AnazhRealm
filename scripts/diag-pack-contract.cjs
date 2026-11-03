@@ -127,8 +127,8 @@ async function bootLauf(text) {
     // der Schein trägt kein XMLHttpRequest: ein synchrones XHR des Boots bricht beim Namen (`fehler`)
     const w = { TextEncoder, URL, indexedDB: {}, addEventListener: (t) => ord.push(t), removeEventListener() {}, postMessage: (m) => (aus.post = m) }; // prettier-ignore
     w.setTimeout = (f) => { try { f(); } catch (e) { aus.fehler = e.message; } }; // prettier-ignore
-    // die Schale (ihr Hörer) steht vor dem Laden: der Halte-Hörer der Geburt und der Kanal-Hörer der Schale
-    w.importScripts = (...u) => (aus.laden = ord.length > 1 ? u.join(" ") : "die Schale steht nicht davor");
+    // die Schale (ihr Hörer) steht vor JEDEM Laden: der Halte-Hörer der Geburt und der Kanal-Hörer der Schale (die Rufe in Folge)
+    w.importScripts = (...u) => (aus.laden = ord.length > 1 && !/nicht davor/.test(aus.laden) ? [aus.laden, ...u].filter(Boolean).join(" ") : "die Schale steht nicht davor"); // prettier-ignore
     w.fetch = (u) => Promise.resolve({ ok: true, json: async () => JSON.parse(text), text: async () => `<${u}>` });
     const st = [];
     w.crypto = { subtle: { digest: (_a, b) => (st.push(new TextDecoder().decode(b)), (aus.stempel = st.join("\n\n")), new Promise(() => {})) } }; // prettier-ignore
