@@ -836,7 +836,11 @@ async function brandSeite(MESS) {
         malen();
         for (const a of A) r._waldNachwuchs(a.x - cs, a.z - cs, a.x + cs, a.z + cs); // der Wald der Narbe steht wieder
     };
-    const [uhr, jahr] = [st.weatherEffectTime, st.autoSeason];
+    // DER RING DER BÜHNE ist das Wort des Reglers voll (HOLZ_PROFILE.voll, der Ring des Profi-Bands E): der Null-Renderer trägt das
+    // Holz kienspan (Ring 2, ±108 m), seit die Wahl des Geräts jede Welt deckelt (speicher-laden `_applyHolzProfil`) — der Fluss
+    // nächst der Mess-Wiese liegt 204 m fern, jenseits des Rings trägt keine Zelle ein Bett (die Wiese liest den gebauten Boden)
+    const [uhr, jahr, ring] = [st.weatherEffectTime, st.autoSeason, st.chunkRingRadius];
+    st.chunkRingRadius = C.HOLZ_PROFILE.voll.ring;
     st.weatherEffectTime = -1e9;
     st.autoSeason = false;
     const trocken = () => ((r._naesseTakt = () => (st.naesse = 0)), (st.naesse = 0));
@@ -924,6 +928,7 @@ async function brandSeite(MESS) {
         // hinter dem letzten nassen)
         const d = (q) => Math.hypot(q.x - MESS.x, q.z - MESS.z);
         let herd = null;
+        const spur = []; // je Flusspunkt der Strahl in Buchstaben (wasser · nass · trocken · laub · kein), der Täter beim Namen
         for (const p of fluss(MESS, 320)) {
             const w = r._windAt(p.x, p.z, st.spielZeit);
             const [seen, strahl] = [new Set(), []];
@@ -935,6 +940,7 @@ async function brandSeite(MESS) {
                 const art = f ? (nass(f) ? "nass" : f.zeile.name === "gras" ? "trocken" : "laub") : r._nassAt(...xz(cx, cz)) ? "wasser" : "kein";
                 strahl.push({ cx, cz, art, boden: f ? f.boden : null });
             }
+            spur.push(strahl.map((q) => (q.art === "kein" ? grund(q.cx, q.cz).replace("fels:", "").slice(0, 2).toUpperCase() : q.art[0]) + (q.art === "trocken" ? Math.round(q.boden * 100) : "")).join(""));
             // das Wasser, dann das nasse Bett, dann trockenes Bett ohne Lücke bis zum Herd — der längste trockene Lauf gewinnt
             const n = strahl.findIndex((q) => q.art === "nass");
             if (n < 1 || strahl[n - 1].art !== "wasser") continue;
@@ -945,7 +951,7 @@ async function brandSeite(MESS) {
             while (j > k && !(strahl[j].boden <= 0.05)) j--;
             if (j > k && (!herd || j - k > herd.abstand)) herd = { c: xz(strahl[j].cx, strahl[j].cz), abstand: j - k };
         }
-        if (!herd) return { fehler: "kein Strahl Fluss → nasses Bett → trockenes Bett (Herd mit Boden-Feuchte ≤ 0,05) binnen 320 m um die Mess-Wiese" };
+        if (!herd) return { fehler: "kein Strahl Fluss → nasses Bett → trockenes Bett (Herd mit Boden-Feuchte ≤ 0,05) binnen 320 m um die Mess-Wiese — " + spur.length + " Strahlen, die ersten " + JSON.stringify([...new Set(spur)].slice(0, 6)) };
         // die Uhr ist Spieler-Wort: der Brand läuft mittags (die Zünd-Wärme liest die Luft des Temperatur-Felds — bis w3v-brand-bild
         // lief die Uhr, so weit das Booten brauchte, und derselbe Herd trug 0 bis 95 Aschen)
         const lauf = () => (r.setTimeOfDay(0.5, "regler"), r._brandEntfachen(...herd.c), brennen(3600));
@@ -1145,6 +1151,7 @@ async function brandSeite(MESS) {
         for (const k of ["_brandZuenden", "_naesseTakt", "_feuchteAt", "_brandFeuchte", "_ascheAt", "_naehrstoffAt", "_brandRauch", "_brandNarbeFn"]) delete r[k];
         st.weatherEffectTime = uhr;
         st.autoSeason = jahr;
+        st.chunkRingRadius = ring;
     }
 }
 
