@@ -420,6 +420,46 @@ function hakenGesetzt(texte) {
 // je Station die gerufenen Haken, die niemand setzt: ["<id> ruft window.__x", …]; `text(st)` liefert ihren Quelltext samt Proben
 const toteHaken = (stationen, da, text) =>
     stationen.flatMap((st) => [...new Set([...text(st).matchAll(HAKEN_RUF)].map((m) => m[1]))].filter((h) => !da.has(h)).map((h) => schluessel(st) + " ruft window.__" + h));
+// DIE WAND EXPORT (w7-gesicht): eine Station liest ein Glied eines Werkzeugs des Spiels (`A = require("./scripts/<datei>")`, dann
+// `A.<glied>`), das der Kopf nicht exportiert. Befund an 5fba36ea headless: mensch.K4#2 las `A.ladeWelt` aus
+// scripts/diag-mensch-anatomie.cjs, das w4-stufen-gesetz (98177d01) als Export „ohne Leser" (git grep in main) gestrichen hatte —
+// die Station endete an jedem Kopf seither „ohne Menge oder Gesicht" (TypeError), UNGEMESSEN statt beim Namen. Exportiert heißt
+// `module.exports = { … }` oder `module.exports.<glied> =` der Datei am Kopf — ohne jeden Export ist das Modul leer (der Täter von
+// 98177d01); ein Export als Ausdruck (`module.exports = f`) und eine Datei ohne Kopf-Stand misst die Wand nicht (die Wand PFAD
+// nennt die fehlende Datei).
+const REQ_SKRIPT = /([A-Za-z_$][\w$]*)\s*=\s*require\(\\*["'](\.\/scripts\/[^"'\\]+)\\*["']\)/g;
+const toteExporte = (stationen, exporte, text) =>
+    stationen.flatMap((st) => {
+        const t = text(st);
+        const aus = new Set();
+        for (const m of t.matchAll(REQ_SKRIPT)) {
+            const da = exporte(m[2].slice(2));
+            const glied = new RegExp("(?<![\\w$.])" + m[1].replace(/\$/g, "\\$") + "\\.([A-Za-z_$][\\w$]*)", "g");
+            if (da) for (const g of t.matchAll(glied)) if (!da.has(g[1])) aus.add(schluessel(st) + " liest " + m[1] + "." + g[1] + " aus " + m[2].slice(2));
+        }
+        return [...aus];
+    });
+// die Exporte einer Datei am Kopf (je Datei einmal gelesen): eine Menge der Namen, null ohne Export-Objekt
+const exportVon = (text) => {
+    if (text == null) return null;
+    const da = new Set();
+    for (const m of text.matchAll(/module\.exports\s*=\s*\{([^}]*)\}/g)) for (const n of m[1].split(",")) if (n.trim()) da.add(n.split(":")[0].trim());
+    for (const m of text.matchAll(/module\.exports\.([A-Za-z_$][\w$]*)\s*=/g)) da.add(m[1]);
+    return !da.size && /module\.exports\s*=(?!\s*\{)/.test(text) ? null : da;
+};
+function exporteAm(repo, kopf) {
+    const memo = new Map();
+    return (datei) => {
+        if (!memo.has(datei)) {
+            let t = null;
+            try {
+                t = git(["show", kopf + ":" + datei], repo);
+            } catch (e) {}
+            memo.set(datei, exportVon(t));
+        }
+        return memo.get(datei);
+    };
+}
 // der Quelltext einer Station: ihr Eintrag (Befehl, Probe, env) samt jeder Datei, die er unter @KOORD@ oder {KOORD} nennt
 function stationText(st) {
     let t = JSON.stringify(st, (k, v) => (typeof v === "function" ? String(v) : v));
@@ -3423,6 +3463,10 @@ async function selbsttest(o = {}) {
         ]);
         const th = toteHaken([{ kriterium: "haar.K1", staffel: 1, t: "window.__tiereHalten(); window.__halten(); window.__wasserOrte({}); window.__wasserKroneVon(1); window.__aufnahmeRuhig(1); window.__buehne(); window.__weg?.()" }], da, (st) => st.t);
         pruef("WAND HAKEN der umbenannte Halter beim Namen, jeder gesetzte still", th.join() === "haar.K1#1 ruft window.__tiereHalten", th.join());
+        // DIE WAND EXPORT: der gestrichene Export beim Namen (98177d01: ladeWelt), der exportierte still, eine Datei ohne Export-Objekt nie
+        const ex = { "scripts/diag-mensch-anatomie.cjs": exportVon("const x = 1;\nmodule.exports = { messe };"), "scripts/lib/y.cjs": exportVon("module.exports.z = 1;"), "scripts/w.cjs": exportVon("module.exports = baue();") }; // prettier-ignore
+        const te = toteExporte([{ kriterium: "mensch.K4", staffel: 2, t: JSON.stringify(["node -e 'const A = require(\"./scripts/diag-mensch-anatomie.cjs\"), sb = A.ladeWelt(); A.messe(sb); const Y = require(\"./scripts/lib/y.cjs\"); Y.z; const W = require(\"./scripts/w.cjs\"); W.q'"]) }], (d) => ex[d], (st) => st.t); // prettier-ignore
+        pruef("WAND EXPORT der gestrichene Export beim Namen, jeder exportierte still", te.join() === "mensch.K4#2 liest A.ladeWelt aus scripts/diag-mensch-anatomie.cjs", te.join());
         let w = buchen("kopf", [s1], [M("a1", "radeon", "gelaende.K4#1", s1, true)], keine, h, [], { tot: () => ["worlds/schmiede/schmiede-core.js"] });
         pruef("WAND PFAD toter Glob am Kopf → 0", w.je["gelaende.K4"].punkte === 0 && /trifft am Kopf keine Datei \(R6 blind\): worlds\/schmiede/.test(w.je["gelaende.K4"].beleg), w.je["gelaende.K4"].beleg);
         const alt = [M("a1", "radeon", "gelaende.K4#1", s1, true, undefined, {})];
@@ -4266,6 +4310,8 @@ if (require.main === module) {
             }
             // DIE WAND HAKEN am Kopf: jeder gerufene Haken der Seite ist gesetzt
             for (const h of toteHaken(stationen, hakenAm(repo, kopf), stationText)) fehler.push(h + " — niemand setzt ihn am Kopf " + kopf.slice(0, 8) + " (Wand HAKEN)");
+            // DIE WAND EXPORT am Kopf: jedes Glied, das eine Station aus einem Werkzeug des Spiels liest, exportiert es
+            for (const x of toteExporte(stationen, exporteAm(repo, kopf), stationText)) fehler.push(x + " — der Kopf " + kopf.slice(0, 8) + " exportiert es nicht (Wand EXPORT)");
             for (const st of stationen) console.log("  " + schluessel(st) + " · " + geraeteVon(st).join("+") + (st.gpu ? " · GPU" : "") + (st.zeit ? " · Zeit" : " · Bild") + (st.probe ? " · Sitzung ≤ " + probeSek(st) + " s" : "") + " · " + st.minuten + " min · " + befehlVon(st).join(" ") + " · " + abdruck(st));
             for (const e of fehlt) console.log("  FEHLT " + e.kriterium + "#" + e.staffel + " · " + String(e.grund).slice(0, 140));
             for (const f of fehler) console.log("  ROT " + f);
