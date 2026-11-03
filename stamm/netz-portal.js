@@ -227,7 +227,12 @@ class AnazhRealm_netz_portal {
             // (`_karteAbzug`), das Labor zeigt ihre Bytes. Nur TRUSTED Welten; ein Bruch reist laut als `fehler` zurück.
             else if (msg.type === "karte-bitte" && po.trust !== "sandboxed") {
                 const ziel = po.iframe.contentWindow;
-                const antwort = (m) => ziel && ziel.postMessage(Object.assign({ type: "karte-abzug", reqId: msg.reqId }, m), window.location.origin);
+                const antwort = (m) =>
+                    ziel &&
+                    ziel.postMessage(
+                        Object.assign({ type: "karte-abzug", reqId: msg.reqId }, m),
+                        window.location.origin
+                    );
                 this._karteAbzug(String(msg.art), msg.gestalt | 0).then(antwort, (e) =>
                     antwort({ art: msg.art, gestalt: msg.gestalt, fehler: String((e && e.message) || e) })
                 );

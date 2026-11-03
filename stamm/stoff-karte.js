@@ -823,6 +823,10 @@ class AnazhRealm_stoff_karte {
         // färbt sie beim Zeichnen (`kartenGewicht`). Bis w8 backte sie die driftende Tönung ein — zwei Bakes derselben Zelle
         // wichen in 128 581 Albedo-Bytes um bis zu 5 Stufen ab, und das Jahr lag doppelt auf der Karte
         still(su && su.uSeasonMul, (w) => w.setRGB(1, 1, 1));
+        // … und trocken: die Nässe der Welt (`atmoUniforms.naesse`, wetter.K2) dunkelt die Albedo jedes Foundry-Stoffs — Regen
+        // backte sonst in die Karte (Nässe 1 und Winter-Tönung bewegten 320 085 Albedo-Bytes der Fichte, gehalten 0)
+        const au = this.state.atmoUniforms;
+        still(au && au.naesse, (w, u) => (u.value = 0));
         still(lu && lu.uLaubKante, (w) => (w.y = 0));
         still(lu && lu.uKamNah, (w) => w.setScalar(-AnazhRealm.KAMERA_DURCHSICHT.saumM));
         still(lu && lu.uKamZiel, (w) => w.set(lu.uKamAuge.value.x, lu.uKamAuge.value.y, lu.uKamAuge.value.z, 0));
@@ -965,12 +969,17 @@ class AnazhRealm_stoff_karte {
         const q = this._impostorBakeQueue || (this._impostorBakeQueue = []);
         z._weltNeu = true;
         if (!q.includes(z.key)) q.push(z.key);
-        // Ruht der Takt (das Portal friert die Heimat ein), treibt der Abzug den Bäcker selbst — ein Ring je Schritt
-        const t0 = performance.now();
+        // Ruht der Takt (das Portal friert die Heimat ein), treibt der Abzug den Bäcker selbst — ein Ring je Schritt. Die Frist
+        // zählt den Stillstand der Bühne (kein Ring irgendeiner Karte), nie das Warten: die Karten backen nacheinander
+        let ringe = -1,
+            t0 = 0;
         const schritt = () => {
             if (!z._abzug) return;
+            const n = at.schrittMs ? at.schrittMs.length : 0;
+            if (n !== ringe) [ringe, t0] = [n, performance.now()];
             if (performance.now() - t0 > 120000) {
-                for (const w of z._abzug.splice(0)) w.nein(this._stoffBruch(`die Karte ${z.key}: kein Abzug nach 120 s`));
+                for (const w of z._abzug.splice(0))
+                    w.nein(this._stoffBruch(`die Karte ${z.key}: die Bühne stand 120 s ohne Ring`));
                 z._abzug = null;
                 return;
             }
