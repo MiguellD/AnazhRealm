@@ -25,10 +25,7 @@
 "use strict";
 const { ausDatei, stammLib, ROOT, SELBSTTEST, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
 
-const wort = (t) => {
-    t = t.replace(/<[^>]*>|&\w+;/g, " ");
-    return /[A-Za-zÄÖÜäöüß]{2,}/.test(t) && /[A-ZÄÖÜäöüß…!?:]/.test(t) && !/^[a-z]+[A-Z]\w*$/.test(t); // camelCase: ein Name
-};
+const { wort, ZEUGE, ZAEHLE, PFLANZE } = require("./lib/sprach-zaehlung.cjs"); // die EINE Zählung (Code UND lebendes DOM)
 const SENKE_RUF =
     /^(_hudSchreib|_chatEcho|alert|confirm|prompt|_el|append|appendChatOutput|_spielerSagt|_ladeschirmStand)$/;
 const SENKE_FELD = /^(textContent|innerText|innerHTML|title|placeholder)$/;
@@ -113,7 +110,75 @@ function lies(dateien, html) {
 const baum = () => lies(stammLib.teileVon(ROOT), ausDatei("index.html"));
 const befund = (b) => (b.T ? [b.T] : pruefe(b)); // ohne Tafel ist nur T der Befund
 
-if (SELBSTTEST) {
+// DIE LEBENDE HÄLFTE (`--lebend [--port P] [--json AUS]`, der Befehl der Station spielgang.K5#1): die Welt am Null-Renderer in
+// `?sprache=pseudo`, die Erzeuger-Wache vor dem Boot, die Zählung (`ZAEHLE`), der Selbsttest im Lauf (`PFLANZE`), der Wechsel am
+// Ort auf en; dazu der statische Befund oben (C · K · U · H · T) als `code`. Die Zeile `TEXTE {…}` liest das Urteil der Station.
+async function lebend() {
+    const WB = require("./lib/welt-boot.cjs");
+    const arg = (n) => (process.argv.indexOf(n) > 0 ? process.argv[process.argv.indexOf(n) + 1] : null);
+    const aus = arg("--json");
+    const statisch = befund(baum());
+    const out = { glieder: 0, code: statisch.length, gliederMit: 0, senken: {}, beispiele: statisch.slice(0, 3) };
+    for (const v of statisch) out.senken[v[0]] = (out.senken[v[0]] || 0) + 1;
+    const server = WB.statikServer();
+    await server.lausche(Number(arg("--port") || 0));
+    const { browser, page } = await WB.nullSeite({ frist: 300000 });
+    try {
+        await page.evaluateOnNewDocument(ZEUGE);
+        await server.zeige(page, 120000, "index.html?sprache=pseudo");
+        await page.evaluate(() => window.__weltDa((r) => r.state._weltbildDa > 0));
+        const z = await page.evaluate(ZAEHLE, "zaehle");
+        await page.evaluate(PFLANZE);
+        const mit = await page.evaluate(ZAEHLE, "zaehle");
+        await page.evaluate(() => document.getElementById("sprach-mutante-hart").remove());
+        const w = await page.evaluate(
+            (zaehle) => (window.anazhRealm._spracheSetzen("en"), new Function("return (" + zaehle + ")")()("wechsel")),
+            String(ZAEHLE)
+        );
+        const blind = [];
+        if (!mit.hart.some((h) => h.includes("#sprach-mutante-hart: Hallo Welt")))
+            blind.push("die gepflanzte harte Zeile fehlt in der Zählung");
+        if (!w.stehenNamen.some((h) => h.includes("#sprach-mutante-steht")))
+            blind.push("die gepflanzte stehende Zeile fehlt im Wechsel");
+        Object.assign(out, z, {
+            stehen: w.stehen - 1,
+            stehenNamen: w.stehenNamen.filter((h) => !h.includes("#sprach-mutante-steht")).slice(0, 200),
+            hart: z.hart.slice(0, 200),
+            nachWechsel: w.zeilen,
+            stehenJeErzeuger: w.jeErzeuger,
+            blind,
+        });
+        out.beispiele = [
+            ...out.beispiele,
+            ...z.hart.slice(0, 3).map((t) => "DOM: " + t),
+            ...out.stehenNamen.slice(0, 2).map((t) => "STEHT: " + t),
+        ];
+    } catch (e) {
+        out.fehler = String(e.message).split("\n")[0].slice(0, 300);
+    } finally {
+        await browser.close().catch(() => {});
+        server.close();
+    }
+    if (aus) require("fs").writeFileSync(aus, JSON.stringify(out));
+    console.log("TEXTE " + JSON.stringify(out));
+    const rot = [
+        ...statisch,
+        ...(out.hart || []).map((t) => "DOM: " + t),
+        ...(out.stehenNamen || []).map((t) => "STEHT: " + t),
+        ...(out.blind || []).map((t) => "BLIND: " + t),
+        ...(out.fehler ? ["FEHLER: " + out.fehler] : []),
+        ...(out.quelle ? [] : ["die Tafel AnazhRealm.TEXTE fehlt im Fenster"]),
+    ];
+    for (const v of rot.slice(0, 60)) console.log("   • " + v);
+    wandEnde(
+        rot.length > 60 ? [...rot.slice(0, 60), `… ${rot.length - 60} weitere`] : rot,
+        `spielgang.K5 lebend — ${out.zeilen} Zeilen im DOM, jede aus der Tafel (${out.markiert} markiert, ${out.daten} Daten), der Wechsel auf en ließ keine stehen.`
+    );
+}
+
+if (process.argv.includes("--lebend")) {
+    lebend();
+} else if (SELBSTTEST) {
     const echt = baum();
     const basis = new Set(befund(echt));
     const mit = (zeile) => (b) => lies([...b.dateien, { pfad: "stamm/probe.js", text: zeile }], b.html);
