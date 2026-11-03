@@ -1,0 +1,19 @@
+{
+ "sha": "d880c8e86310a0d180b67d2099be0c6247e9bf9f",
+ "geraet": "headless",
+ "zeit": "2026-11-03T17:42:50.935Z",
+ "host": "farm:41685919343",
+ "je": {
+  "haar.K3#1": {
+   "gruen": true,
+   "zahl": "Haar 2412 px, 20 Bilder: Bewegung im Wind 21.412 gegen ohne Wind 5.336 Luma-Stufen je Bild (Rauschen 0), r(Wind, Bewegung) 0.721 (Soll r ≥ 0,6, ≥ 0,5 Stufen und ≥ 2 × ohne Wind)",
+   "exit": 0,
+   "minuten": 3.52,
+   "zeit": "2026-11-03T17:42:50.935Z",
+   "abdruck": "d8a6b2d46906",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41685919343/1"
+  }
+ }
+}
