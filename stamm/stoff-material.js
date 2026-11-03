@@ -117,13 +117,16 @@ class AnazhRealm_stoff_material {
         const { vec3, float, sin, cos, max } = TSL;
         const naht = this._weltNaht(TSL);
         const positionWorld = naht.lage;
-        const ampX = typeof opts.ampX === "number" ? opts.ampX : 1.5;
+        const WW = AnazhRealm.WIND_WIEGEN;
+        const ampX = typeof opts.ampX === "number" ? opts.ampX : WW.ampX;
         const wd = wu.uWindDir || null;
         const dotWW = wd ? positionWorld.x.mul(wd.x).add(positionWorld.z.mul(wd.y)) : null;
         const phase = wu.uWindTime
-            .mul(float(1.7))
+            .mul(float(WW.takt))
             .add(
-                dotWW ? dotWW.mul(float(0.35)) : positionWorld.x.mul(float(0.28)).add(positionWorld.z.mul(float(0.21)))
+                dotWW
+                    ? dotWW.mul(float(WW.raum))
+                    : positionWorld.x.mul(float(0.28)).add(positionWorld.z.mul(float(0.21)))
             );
         // Höhen-Gewicht = Höhe über der Wurzel. r184 setzt den positionNode VOR die Instanzierung: Phase, Böe und Biegung
         // lesen die Welt-Lage des Vertex aus der EINEN Naht (`_weltNaht`), der Versatz (Welt-Meter, Welt-Richtung) geht
@@ -148,7 +151,7 @@ class AnazhRealm_stoff_material {
         let windEff = wu.uWindStrength.mul(gust);
         if (typeof opts.windScale === "number") windEff = windEff.mul(float(opts.windScale));
         let offX = sin(phase).mul(windEff).mul(hf).mul(float(ampX));
-        let offZ = cos(phase.mul(float(0.7)))
+        let offZ = cos(phase.mul(float(WW.quer)))
             .mul(windEff)
             .mul(hf);
         // uBend: vec4 xyz+Radius (Radius 0 = Slot aus); Halme biegen radial weg, quadratisch auslaufend.
@@ -203,6 +206,16 @@ class AnazhRealm_stoff_material {
         const form = this._windForm(x, z, d);
         const staerke = this._weatherFieldFor(this.state.weather).wind * this._windWob(tt) * form;
         return { x: d.x, z: d.z, staerke, boe, form, ms: staerke * boe * globalThis.__phytoCore.WIND_FELD.sturmMS };
+    }
+    // DAS WIEGEN AM ORT auf der CPU (haar.K3): derselbe Versatz wie `_windSwayOffset` (WIND_WIEGEN: Phase t·takt + (Lage ·
+    // Richtung)·raum, quer x: sin · ampX, z: cos(Phase · quer)), die Wind-Wirkung Stärke × WEATHER_WIND_AMP × Böe des EINEN Winds
+    // am Ort (`_windAt`) — der Löser, der eine Uhr der Welt trägt (das Haar auf der Welt-Uhr), wiegt wie das Gras im Bild.
+    // `w` = `_windAt(x, z, t)`, `hoehe` in Metern; ohne Biegung der Halme. Liefert [x, z] in Welt-Metern.
+    _windWiegen(w, x, z, t, hoehe, ampX) {
+        const WW = AnazhRealm.WIND_WIEGEN;
+        const eff = w.staerke * AnazhRealm.WEATHER_WIND_AMP * w.boe * hoehe;
+        const phase = t * WW.takt + (x * w.x + z * w.z) * WW.raum;
+        return [Math.sin(phase) * eff * (ampX == null ? WW.ampX : ampX), Math.cos(phase * WW.quer) * eff];
     }
     // DIE BÖEN-DRIFT der Wind-Uhr t (Math.random-frei, ~±18 % um die Wort-Basis): bis wetter.K5 ein Feld, das nur das Bild schrieb
     // — der Wagen im Wind hing an der Bildrate (gate:fahr-leben L8 Lockstep 0,37 mm).
@@ -3526,3 +3539,6 @@ AnazhRealm.GRAS_BEND_SLOTS = 6;
 // GRAS_BEND_CREATURE_DIST_SQ: nur Kreaturen im 18-m-Umkreis des Spielers biegen
 // Gras (18² = 324) — weiter draußen ist der Effekt sub-pixel (Distanz-LOD-Lehre).
 AnazhRealm.GRAS_BEND_CREATURE_DIST_SQ = 324;
+// DAS WIEGEN IM EINEN WIND (`_windSwayOffset` im Shader, `_windWiegen` auf der CPU): die Phase t·takt + (Lage · Richtung)·raum,
+// quer der Faktor der zweiten Achse, ampX die Weite der ersten (der Charakter des Grases)
+AnazhRealm.WIND_WIEGEN = Object.freeze({ takt: 1.7, raum: 0.35, quer: 0.7, ampX: 1.5 });

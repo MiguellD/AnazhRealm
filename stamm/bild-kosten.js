@@ -1686,6 +1686,11 @@ class AnazhRealm_bild_kosten {
     // postProcessingFailed=true → der Loop rendert direkt renderer.render() (nie schwarzer Schirm).
     _ensurePostProcessing() {
         if (this.state.postProcessing || this.state.postProcessingFailed) return this.state.postProcessing;
+        // DER NULL-RENDERER TRÄGT KEINE KETTE (headless, `_isHeadlessNull`): er zeichnet nie, r184s RenderPipeline liest im
+        // render() seinen XR-Zustand (`renderer.xr.enabled`), den er nicht hat — bis hier warf die Kette dort JEDEN Frame, und
+        // jeder headless-Lauf meldete ERROR „STOFF: die Post-Kette (Render-Lauf …) — Cannot read properties of undefined
+        // (reading 'enabled')" (gate:fern-ring auf main, unbemerkt grün). Der Schirm ohne Pixel hat keine Kette — kein Bruch.
+        if (this.state.renderer && this.state.renderer._isHeadlessNull) return null;
         try {
             const TSL = THREE.TSL;
             // V18.113 — der PR-#81-Vendor benennt PostProcessing → RenderPipeline um
