@@ -509,26 +509,28 @@ class AnazhRealm_klang {
     }
 
     // DIE VERDECKUNG EINES RUFS (klang.K3#2): die Sichtlinie vom Ohr (Fuß + raum.augeM) zur Quelle (ihr Fuß + raum.quelleM) — schneidet
-    // sie den Hang (das Gelände-Gesetz über der Linie, je Meter) oder einen Bau (`_klangBauHuellen` um ihre Mitte), trägt der Ruf
-    // { db: raum.verdecktDb, hz: raum.tiefpassHz } (gespielt von `tierRufSpielen`), sonst null.
+    // sie Hang oder Bau (`_klangSichtVerdeckt`), trägt der Ruf { db: raum.verdecktDb, hz: raum.tiefpassHz } (gespielt von
+    // `tierRufSpielen`), sonst null.
     _klangVerdeckung(pm, quelle) {
         if (!pm || !quelle || !quelle.position) return null;
         const R = AnazhRealm._umweltGesetz().UMWELT.raum;
         const a = [pm.position.x, pm.position.y - AnazhRealm.PLAYER_FOOT_OFFSET + R.augeM, pm.position.z];
         const b = [quelle.position.x, quelle.position.y + R.quelleM, quelle.position.z];
+        return this._klangSichtVerdeckt(a, b) ? { db: R.verdecktDb, hz: R.tiefpassHz } : null;
+    }
+
+    // DIE SICHTLINIE a → b (Welt-Punkte, rein): verdeckt, wenn das Gelände-Gesetz über ihr steht (je Meter: der Hang) oder sie einen
+    // Bau schneidet (`_klangBauHuellen` um ihre Mitte, `_klangStrecke`).
+    _klangSichtVerdeckt(a, b) {
         const L = Math.hypot(b[0] - a[0], b[2] - a[2]);
         const n = Math.max(2, Math.ceil(L));
-        let verdeckt = false;
-        for (let i = 1; i < n && !verdeckt; i++) {
+        for (let i = 1; i < n; i++) {
             const t = i / n;
             const h = this.getTerrainHeightAt(a[0] + (b[0] - a[0]) * t, a[2] + (b[2] - a[2]) * t);
-            if (Number.isFinite(h) && h > a[1] + (b[1] - a[1]) * t) verdeckt = true;
+            if (Number.isFinite(h) && h > a[1] + (b[1] - a[1]) * t) return true;
         }
-        if (!verdeckt) {
-            const huellen = this._klangBauHuellen((a[0] + b[0]) / 2, (a[2] + b[2]) / 2, L / 2 + 1);
-            verdeckt = huellen.some((h) => AnazhRealm._klangStrecke(a, b, h) !== null);
-        }
-        return verdeckt ? { db: R.verdecktDb, hz: R.tiefpassHz } : null;
+        const huellen = this._klangBauHuellen((a[0] + b[0]) / 2, (a[2] + b[2]) / 2, L / 2 + 1);
+        return huellen.some((h) => AnazhRealm._klangStrecke(a, b, h) !== null);
     }
 
     // Die Stimmung des Rufs aus dem Innenleben: Freude/Hoffnung/Staunen → freude, Trauer → trauer, Chaos → furcht,

@@ -100,10 +100,6 @@ const OBERKANTE_BENANNT = {
     ],
     _creatureWaterContextAt: [["_voxelSurfaceY"], "Ufer-Suche: Land in den Nachbar-Spalten, nie der Boden des Leibs"],
     _bergSchattenVerdeckt: [["_terrainMacroSurfaceY"], "Sicht: die Berg-Verdeckung einer Region (kein Leib)"],
-    _klangVerdeckung: [
-        ["getTerrainHeightAt"],
-        "Hören: die Sichtlinie Ohr → rufender Leib gegen den Hang (klang.K3#2) — liest die Höhen, setzt keinen Leib",
-    ],
     _bodenUmzug: [
         ["_voxelSurfaceY", "_terrainMacroSurfaceY"],
         "Platzierung: ein Save eines alten Bodens setzt Bauten, Gruben und Spieler auf die Oberfläche des neuen (K16)",
