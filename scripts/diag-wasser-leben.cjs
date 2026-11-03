@@ -570,7 +570,7 @@ function selbsttest() {
         // K61, zweite Prüfung: die Teil-Welten trugen 9 der 12 Kacheln (38646124674) — 66 Quellen still ungeprüft, grün
         [
             "F5 KACHELN",
-            (b) => (b.quelle.kacheln = ["0,0", "-1,-1", "-1,0", "0,-1", "1,-3", "1,4", "1,5", "2,4", "2,5"]),
+            ["quelle.kacheln=", ["0,0", "-1,-1", "-1,0", "0,-1", "1,-3", "1,4", "1,5", "2,4", "2,5"]],
         ],
         ["F8 UNSICHTBAR", (b) => Object.assign(b.bach, { gezeichnet: 54, unsichtbarBreite: 177.5, mitUnsichtbar: 39 })],
         // d9f39b4f: 257 Punkte in 41 Querschnitten — das alte Urteil je Querschnitt (mit Nachbar-Toleranz) meldete 0
@@ -669,7 +669,7 @@ function selbsttest() {
         ["K8 LEER", (b) => (b.ufer.trocken = 0)],
         [
             "U1 UFER-SPRUNG",
-            (b) => Object.assign(b.uferFarbe, { spruenge: 34, maxSprung: 0.223, beispiele: [[607.8, -840, 8.24]] }),
+            ["uferFarbe", { spruenge: 34, maxSprung: 0.223, beispiele: [[607.8, -840, 8.24]] }],
         ],
         ["U LEER", (b) => (b.uferFarbe.schritte = 0)],
         ["U2 ZWEI FARBEN", (b) => Object.assign(b.uferFarbe.paritaet, { abweichend: 2137, maxDiff: 0.056 })],

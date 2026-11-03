@@ -1946,11 +1946,11 @@ function selbsttest() {
         kern: [],
     };
     const faelle = [
-        ["H Stamm im Wasser", (b) => (b.hain.staemme[3].tiefe = 2.4), /H: baum_eiche #3 .* steht 2\.40 m im Wasser/],
-        ["H Automat geweckt", (b) => (b.hain.caChunks = 15), /H: die Bauten am Ufer weckten den Wasser-Automaten \(15/],
-        ["H leer", (b) => (b.hain.satz = 2), /H LEER/],
+        ["H Stamm im Wasser", ["hain.staemme.3.tiefe=", 2.4], /H: baum_eiche #3 .* steht 2\.40 m im Wasser/],
+        ["H Automat geweckt", ["hain.caChunks=", 15], /H: die Bauten am Ufer weckten den Wasser-Automaten \(15/],
+        ["H leer", ["hain.satz=", 2], /H LEER/],
         ["K ein Leser ruft sein Gesetz nicht", (b) => (b.konsum["spawn_ufo → _setzErgebnis"] = false), /KONSUM: spawn_ufo/],
-        ["K nicht gemessen", (b) => delete b.konsum, /K LEER/],
+        ["K nicht gemessen", ["konsum"], /K LEER/],
         [
             "Z Fundament im Wasser",
             (b) =>
@@ -1965,7 +1965,7 @@ function selbsttest() {
                 }),
             /Z: haus_x #9 .* Fundament 0\.80 m im Wasser \(Dorf\)/,
         ],
-        ["Z leer", (b) => (b.zensus.werke = 3), /Z LEER/],
+        ["Z leer", ["zensus.werke=", 3], /Z LEER/],
         [
             "Z Haus aus dem Satz im Wasser",
             (b) =>
@@ -1992,8 +1992,8 @@ function selbsttest() {
             (b) => b.zensus.ohneWand.push({ typ: "wandlaterne_dorf", id: 9, x: 12.5, z: -3, quelle: "Dorf" }),
             /Z: wandlaterne_dorf #9 \(12\.50\/-3\.00\) hängt an keiner Wand — kein stehendes Haus trägt es \(Dorf\)/,
         ],
-        ["S keine Orte", (b) => (b.satz.orte = 2), /S LEER: nur 2 Uferorte/],
-        ["S keine Häuser", (b) => (b.satz.haeuser = 0), /S LEER: der Haus-Satz setzte 0 Häuser/],
+        ["S keine Orte", ["satz.orte=", 2], /S LEER: nur 2 Uferorte/],
+        ["S keine Häuser", ["satz.haeuser=", 0], /S LEER: der Haus-Satz setzte 0 Häuser/],
         [
             "S fern vom Wasser",
             (b) => b.satz.fern.push({ typ: "haus_x", id: 3, x: 0, z: 0, abstand: 31 }),
@@ -2004,26 +2004,26 @@ function selbsttest() {
             (b) => b.leser.push("das alte Protokoll `natur_weicht` lebt neben dem Ergebnis"),
             /L: das alte Protokoll/,
         ],
-        ["F ohne Widerstand", (b) => (b.wagen.v1 = 11.9), /F: Wagen im Wasser ohne Widerstand — 39\.60 km\/h/],
+        ["F ohne Widerstand", ["wagen.v1=", 11.9], /F: Wagen im Wasser ohne Widerstand — 39\.60 km\/h/],
         [
             "F Kamera",
             (b) => ((b.wagen.kameraUnter = 4), (b.wagen.kameraTiefe = 0.3)),
             /F: die Verfolger-Kamera steht in 4/,
         ],
-        ["F leer", (b) => (b.wagen.vEin = 1), /F LEER/],
+        ["F leer", ["wagen.vEin=", 1], /F LEER/],
         // A (Karte K02): die Zahlen des Kopfs c5e8fa44 am 5°-Ufer der Furt und im See
         [
             "A rollt weiter",
-            (b) => (b.ansaug.v3 = 0.86),
+            ["ansaug.v3=", 0.86],
             /A: 3 s nach der Ansaugung \(0\.72 m\) fährt der Wagen noch 0\.86/,
         ],
-        ["A Vortrieb", (b) => (b.ansaug.vMaxNach = 3.5), /A: Vortrieb nach der Ansaugung/],
-        ["A über dem Dach", (b) => (b.ansaug.maxTiefe = 2.3), /A: der Wagen taucht 2\.30 m tief/],
-        ["A Kamera", (b) => (b.ansaug.kameraUnter = 3), /A: die Verfolger-Kamera steht in 3/],
-        ["A nie an der Ansaugung", (b) => (b.ansaug.erreicht = false), /A LEER: das Wasser erreichte/],
+        ["A Vortrieb", ["ansaug.vMaxNach=", 3.5], /A: Vortrieb nach der Ansaugung/],
+        ["A über dem Dach", ["ansaug.maxTiefe=", 2.3], /A: der Wagen taucht 2\.30 m tief/],
+        ["A Kamera", ["ansaug.kameraUnter=", 3], /A: die Verfolger-Kamera steht in 3/],
+        ["A nie an der Ansaugung", ["ansaug.erreicht=", false], /A LEER: das Wasser erreichte/],
         [
             "A an Land auf dem Wagen",
-            (b) => (b.ansaug.land = { fussUeberBoden: 1.55, abstand: 1.1 }),
+            ["ansaug.land=", { fussUeberBoden: 1.55, abstand: 1.1 }],
             /A: Aussteigen an Land — der Spieler steht 1\.55 m/,
         ],
         [
@@ -2031,14 +2031,14 @@ function selbsttest() {
             (b) => ((b.ansaug.aussteigen.schwimmFrames = 1), (b.ansaug.aussteigen.ueberSpiegel = 0.57)),
             /A: Aussteigen in 1\.84 m Wasser — der Spieler schwimmt 1 von 180/,
         ],
-        ["A seicht", (b) => (b.ansaug.aussteigen.tiefeWagen = 0.6), /A LEER: der Wagen stand beim Aussteigen in 0\.60/],
-        ["A ohne Aussteigen", (b) => (b.ansaug.aussteigen = { fehler: "x" }), /A LEER: x/],
+        ["A seicht", ["ansaug.aussteigen.tiefeWagen=", 0.6], /A LEER: der Wagen stand beim Aussteigen in 0\.60/],
+        ["A ohne Aussteigen", ["ansaug.aussteigen=", { fehler: "x" }], /A LEER: x/],
         [
             "A der geparkte Wagen ist ein Damm",
-            (b) => (b.ansaug.damm = { invalidierungen: 1, nass: true, caChunks: 15, tiefe: 0.14, wer: "AnazhRealm._stampArchitectureSolidCellsInto" }),
+            ["ansaug.damm=", { invalidierungen: 1, nass: true, caChunks: 15, tiefe: 0.14, wer: "AnazhRealm._stampArchitectureSolidCellsInto" }],
             /A: der geparkte Wagen in 0\.14 m Wasser ist ein Damm .*1 Invalidierungen, 15 Chunks wach, Rufer AnazhRealm\._stamp/,
         ],
-        ["A ohne Neu-Stempel", (b) => delete b.ansaug.damm, /A LEER: der geparkte Wagen wurde nicht neu gestempelt/],
+        ["A ohne Neu-Stempel", ["ansaug.damm"], /A LEER: der geparkte Wagen wurde nicht neu gestempelt/],
         ["K Kern", (b) => b.kern.push("K2 …"), /K: K2/],
         [
             "D Stausee nach dem Reload weg",
@@ -2046,21 +2046,21 @@ function selbsttest() {
             /D: der Stausee des Damms #425 .* bildet sich nach dem Reload nicht neu — 2070 statt 2250/,
         ],
         // die Antwort des Fadens kommt verspätet (CI 40441173506): gezählt vor dem Stau ist ROT beim Namen dessen, was offen war
-        ["D Stau-Antwort verspätet", (b) => Object.assign(b.damm, { w2: 1, offen2: 1 }), /#425 wurde gezählt, ehe der Stau stand \(offen 0 · 1\)/],
-        ["D Stand ungemessen", (b) => delete b.damm.offen1, /ehe der Stau stand \(offen undefined · 0\)/],
-        ["D Stau nach dem Reload nie bestellt", (b) => (b.damm.hub2 = 0), /D: nach dem Reload trägt der Stau kein Feld des Damms #425 \(0 Spalten\)/],
+        ["D Stau-Antwort verspätet", ["damm", { w2: 1, offen2: 1 }], /#425 wurde gezählt, ehe der Stau stand \(offen 0 · 1\)/],
+        ["D Stand ungemessen", ["damm.offen1"], /ehe der Stau stand \(offen undefined · 0\)/],
+        ["D Stau nach dem Reload nie bestellt", ["damm.hub2=", 0], /D: nach dem Reload trägt der Stau kein Feld des Damms #425 \(0 Spalten\)/],
         // der Chunk, der vor dem Stau gebaut ohne ihn eintrat (4× Drossel am Kopf 455e5be8: 1047 → 1142 nach dem Neubau)
-        ["D Chunk vor dem Stau", (b) => (b.damm.w3 = 2290), /Damm #425 trug den Stau erst nach seinem Neubau \(2247 → 2290\)/],
+        ["D Chunk vor dem Stau", ["damm.w3=", 2290], /Damm #425 trug den Stau erst nach seinem Neubau \(2247 → 2290\)/],
         [
             "D Abbau weckt nicht",
-            (b) => (b.damm.abriss = 0),
+            ["damm.abriss=", 0],
             /D: der Abbau des Damms #425 nach dem Reload weckt den Wasser-Automaten nicht \(0/,
         ],
-        ["D Bild ohne Stau", (b) => (b.damm.w1 = 2100), /D: der Damm #425 hebt 51 Spalten, das gezeichnete Wasser staut 30 nasse Punkte/],
+        ["D Bild ohne Stau", ["damm.w1=", 2100], /D: der Damm #425 hebt 51 Spalten, das gezeichnete Wasser staut 30 nasse Punkte/],
         [
             "D Ort ohne Stau (die Furt −937/−1064)",
             // BÜHNE: Befund des Selbsttests (die Furt der alten Welt), kein gesetzter Ort
-            (b) => Object.assign(b.damm, { x: -937, z: -1064, hub: 0 }),
+            ["damm", { x: -937, z: -1064, hub: 0 }],
             /D LEER: das Stau-Feld des Damms #425 \(-937\.00\/-1064\.00\) hebt 0 Spalten .*der Ort trägt keinen Stau/,
         ],
         [
@@ -2070,25 +2070,25 @@ function selbsttest() {
         ],
         [
             "R Wasser weicht",
-            (b) => (b.rand.nass1 = 2637),
+            ["rand.nass1=", 2637],
             /R: das Wasser am Seerand ändert sich mit dem Dorf — nasse Punkte 2858 → 2637/,
         ],
         // K16: der Gesamtlauf warf das Haus am Seerand über den Nexus-Deckel — R LEER nennt den Deckel mit seinen Zahlen
-        ["R leer", (b) => (b.rand.randHaus = null), /R LEER: .*Nexus-Deckel 48, autonome Bauten 27 → 57/],
+        ["R leer", ["rand.randHaus=", null], /R LEER: .*Nexus-Deckel 48, autonome Bauten 27 → 57/],
         // K10-6: die Ort-Wahl rückt das Dorf aus dem Becken — reicht sein Erdbau an kein Wasser, prüft R nichts
         [
             "R ohne Wasser am Erdbau",
-            (b) => (b.rand.nassImErdbau = 0),
+            ["rand.nassImErdbau=", 0],
             /R LEER: der Erdbau des Dorfs \(1 Orte\) reicht an keine nasse Spalte — .* 52\.4 m vom Seeufer, die Ort-Wahl rückte das Dorf 64 m/,
         ],
         [
             "E Wunsch-Zahl der Kreaturen",
-            (b) => (b.setzen.faelle[0].chat = "> spawne kreaturen 1010 Kreaturen gespawnt (am Spieler)"),
+            ["setzen.faelle.0.chat=", "> spawne kreaturen 1010 Kreaturen gespawnt (am Spieler)"],
             /E: Kreaturen an der Obergrenze \(3 frei\) .* der Satz sagt den Wunsch „10 Kreaturen gespawnt" bei 3 von 10/,
         ],
         [
             "E Tempel ohne Grund",
-            (b) => (b.setzen.faelle[1].chat = "> baue tempel hierHier steht nichts."),
+            ["setzen.faelle.1.chat=", "> baue tempel hierHier steht nichts."],
             /E: Tempel bei kaltem Buch .* der Satz nennt den Grund nicht/,
         ],
         [
@@ -2098,14 +2098,14 @@ function selbsttest() {
                     "> baue tempel hierHier steht nichts: das Studio-Buch ist noch nicht geladen; ohne benannten Grund (das Log der Welt nennt ihn)."),
             /E: Tempel bei kaltem Buch .* eine Absage ohne Grund/,
         ],
-        ["E Fehl-Grund griff nicht", (b) => (b.setzen.faelle[1].gesetzt = 1), /E LEER: Tempel bei kaltem Buch/],
+        ["E Fehl-Grund griff nicht", ["setzen.faelle.1.gesetzt=", 1], /E LEER: Tempel bei kaltem Buch/],
         [
             "E Dorf sofort gebaut",
-            (b) => (b.setzen.dorf.sofort = "> baue dorf hierdorf vor dir gebaut"),
+            ["setzen.dorf.sofort=", "> baue dorf hierdorf vor dir gebaut"],
             /E: das Dorf im See — der Satz sagt sofort „> baue dorf hierdorf vor dir gebaut" bei 0/,
         ],
-        ["E Dorf meldet falsch", (b) => (b.setzen.dorf.haeuser = 2), /E: das Dorf im See meldet .* bei 2 stehenden/],
-        ["E Dorf stumm", (b) => (b.setzen.dorf.echo = ""), /E LEER: das Dorf im See meldete/],
+        ["E Dorf meldet falsch", ["setzen.dorf.haeuser=", 2], /E: das Dorf im See meldet .* bei 2 stehenden/],
+        ["E Dorf stumm", ["setzen.dorf.echo=", ""], /E LEER: das Dorf im See meldete/],
         [
             "C Wunsch-Zahl (der Satz, wie der Chat ihn zeigt)",
             (b) =>
@@ -2115,11 +2115,11 @@ function selbsttest() {
         ],
         [
             "C ohne Zahl",
-            (b) => (b.ergebnis.versuche[0].chat = "Birken gewachsen."),
+            ["ergebnis.versuche.0.chat=", "Birken gewachsen."],
             /C: der Satz nennt die tatsächliche Zahl nicht/,
         ],
-        ["C leer", (b) => (b.ergebnis.versuche[0].gesetzt = 6), /C LEER/],
-        ["D lief nicht", (b) => delete b.damm, /D: die Damm-Probe lief nicht/],
+        ["C leer", ["ergebnis.versuche.0.gesetzt=", 6], /C LEER/],
+        ["D lief nicht", ["damm"], /D: die Damm-Probe lief nicht/],
     ];
     const fehler = taeterFaelle([["grüner Befund", () => {}], ...faelle], urteil, { klon: () => jsonKlon(gruen) });
     // die Leser-Linse gegen eingeschmuggelte Täter im echten Stamm (der Vor-Stand über den EINEN Helfer)
