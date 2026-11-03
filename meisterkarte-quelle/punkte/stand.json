@@ -736,7 +736,7 @@
   },
   "ferne.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ferne.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+   "beleg": "Maschine: 0 — offen: ferne.K3#1 radeon: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "ferne.K3#1",
@@ -744,23 +744,22 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     }
    ]
   },
   "ferne.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ferne.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+   "beleg": "Maschine: 0 — offen: ferne.K4#1 radeon: ROT: Schatten-/Lichthang 0.7006 (je N·L; Soll ≤ 0,4) aus 21/64 Orten im Bild, Auge 1500 m, Grat 5.3294 km, Sonne 5.0039° (Uhr 0.7351) · Ort [-841,-861] · 0.49 s · [linse-gpu] amd/rdna-3 an 6eeeb856",
    "stationen": [
     {
      "id": "ferne.K4#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
-     "ungemessen": true
+     "zahl": "Schatten-/Lichthang 0.7006 (je N·L; Soll ≤ 0,4) aus 21/64 Orten im Bild, Auge 1500 m, Grat 5.3294 km, Sonne 5.0039° (Uhr 0.7351) · Ort [-841,-861] · 0.49 s · [linse-gpu] amd/rdna-3",
+     "sha": "6eeeb856589d2e571e7ef015a82b008c0c8545c2",
+     "grund": "ROT: Schatten-/Lichthang 0.7006 (je N·L; Soll ≤ 0,4) aus 21/64 Orten im Bild, Auge 1500 m, Grat 5.3294 km, Sonne 5.0039° (Uhr 0.7351) · Ort [-841,-861] · 0.49 s · [linse-gpu] amd/rdna-3"
     }
    ]
   },
@@ -1707,16 +1706,15 @@
   },
   "licht.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: licht.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+   "beleg": "Maschine: 0 — offen: licht.K4#1 radeon: ROT: Maß durchlass: r 0.3413 bei Verschiebung [-2,-14] Blöcke à 18.6722 m in 5 s (52.813 m/s; ohne Verschiebung 0.0708; Soll r ≥ 0,6, das Muster zieht), der Zug erklärt 0.2911 der Änderung 0 (≥ 0,5), Durchlass-σ 0 (≥ 0,03) über 0.9017 besonnten Blöcken (≥ 0,3), Deckung [0,0.4] · Ort [-841,-861] · 0.9 s · [linse-gpu] amd/rdna-3 an 6eeeb856",
    "stationen": [
     {
      "id": "licht.K4#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
-     "ungemessen": true
+     "zahl": "Maß durchlass: r 0.3413 bei Verschiebung [-2,-14] Blöcke à 18.6722 m in 5 s (52.813 m/s; ohne Verschiebung 0.0708; Soll r ≥ 0,6, das Muster zieht), der Zug erklärt 0.2911 der Änderung 0 (≥ 0,5), Durchlass-σ 0 (≥ 0,03) über 0.9017 besonnten Blöcken (≥ 0,3), Deckung [0,0.4] · Ort [-841,-861] · 0.9 s · [linse-gpu] amd/rdna-3",
+     "sha": "6eeeb856589d2e571e7ef015a82b008c0c8545c2",
+     "grund": "ROT: Maß durchlass: r 0.3413 bei Verschiebung [-2,-14] Blöcke à 18.6722 m in 5 s (52.813 m/s; ohne Verschiebung 0.0708; Soll r ≥ 0,6, das Muster zieht), der Zug erklärt 0.2911 der Änderung 0 (≥ 0,5), Durchlass-σ 0 (≥ 0,03) über 0.9017 besonnten Blöcken (≥ 0,3), Deckung [0,0.4] · Ort [-841,-861] · 0.9 s · [linse-gpu] amd/rdna-3"
     }
    ]
   },
@@ -1809,7 +1807,7 @@
   },
   "lod.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: lod.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+   "beleg": "Maschine: 0 — offen: lod.K4#1 radeon: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "lod.K4#1",
@@ -1817,7 +1815,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     }
    ]
@@ -2866,38 +2864,36 @@
    ]
   },
   "schatten.K2": {
-   "punkte": 0,
-   "beleg": "Maschine: 0 — offen: schatten.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+   "punkte": 1,
+   "beleg": "Maschine: Maß reprojektion: unerklärt je Bild max 0.12 %, Mittel 0.07 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.0087) über 15 Bilder Gang 4 m/s, Schatten im Bild 51.1 % (≥ 1 %) · Ort [-841,-861] · 0.77 s · [linse-gpu] amd/rdna-3 an 6eeeb856 radeon",
    "stationen": [
     {
      "id": "schatten.K2#1",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Maß reprojektion: unerklärt je Bild max 0.12 %, Mittel 0.07 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.0087) über 15 Bilder Gang 4 m/s, Schatten im Bild 51.1 % (≥ 1 %) · Ort [-841,-861] · 0.77 s · [linse-gpu] amd/rdna-3",
+     "sha": "6eeeb856589d2e571e7ef015a82b008c0c8545c2",
+     "grund": null
     }
    ]
   },
   "schatten.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: schatten.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+   "beleg": "Maschine: 0 — offen: schatten.K3#1 radeon: ROT: fuss Band 100.0 % des freien Bodens (frei mit/ohne 1, 20 Punkte gesehen, Sicht 1) · sockel Band 100.0 % des freien Bodens (frei mit/ohne 1, 20 Punkte gesehen, Sicht 1) (Soll 30–60 %, Himmel allein; Platz [-739,-837] Grün 0.0039) · Ort [-841,-861] · 0.76 s · [linse-gpu] amd/rdna-3 an 6eeeb856",
    "stationen": [
     {
      "id": "schatten.K3#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
-     "ungemessen": true
+     "zahl": "fuss Band 100.0 % des freien Bodens (frei mit/ohne 1, 20 Punkte gesehen, Sicht 1) · sockel Band 100.0 % des freien Bodens (frei mit/ohne 1, 20 Punkte gesehen, Sicht 1) (Soll 30–60 %, Himmel allein; Platz [-739,-837] Grün 0.0039) · Ort [-841,-861] · 0.76 s · [linse-gpu] amd/rdna-3",
+     "sha": "6eeeb856589d2e571e7ef015a82b008c0c8545c2",
+     "grund": "ROT: fuss Band 100.0 % des freien Bodens (frei mit/ohne 1, 20 Punkte gesehen, Sicht 1) · sockel Band 100.0 % des freien Bodens (frei mit/ohne 1, 20 Punkte gesehen, Sicht 1) (Soll 30–60 %, Himmel allein; Platz [-739,-837] Grün 0.0039) · Ort [-841,-861] · 0.76 s · [linse-gpu] amd/rdna-3"
     }
    ]
   },
   "schatten.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: schatten.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+   "beleg": "Maschine: 0 — offen: schatten.K4#1 radeon: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "schatten.K4#1",
@@ -2905,23 +2901,22 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     }
    ]
   },
   "schatten.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: schatten.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+   "beleg": "Maschine: 0 — offen: schatten.K5#1 radeon: ROT: Kontrast 1.474:1 (Soll ≥ 3:1) am Pfosten 2 m von glutbrunnen (6.2689 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0), ohne Pfosten 1.474, Uhr 0 · Ort [-841,-861] · 0.99 s · [linse-gpu] amd/rdna-3 an 6eeeb856",
    "stationen": [
     {
      "id": "schatten.K5#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
-     "ungemessen": true
+     "zahl": "Kontrast 1.474:1 (Soll ≥ 3:1) am Pfosten 2 m von glutbrunnen (6.2689 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0), ohne Pfosten 1.474, Uhr 0 · Ort [-841,-861] · 0.99 s · [linse-gpu] amd/rdna-3",
+     "sha": "6eeeb856589d2e571e7ef015a82b008c0c8545c2",
+     "grund": "ROT: Kontrast 1.474:1 (Soll ≥ 3:1) am Pfosten 2 m von glutbrunnen (6.2689 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0), ohne Pfosten 1.474, Uhr 0 · Ort [-841,-861] · 0.99 s · [linse-gpu] amd/rdna-3"
     }
    ]
   },
@@ -4005,7 +4000,7 @@
   },
   "vegetation.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+   "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "vegetation.K3#1",
@@ -4013,7 +4008,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     }
    ]
@@ -4207,6 +4202,6 @@
  },
  "rueckfall": [],
  "kopfVoll": "6eeeb856589d2e571e7ef015a82b008c0c8545c2",
- "zeit": "2026-11-03T16:44:38.370Z",
- "vorher": "9a6f3703"
+ "zeit": "2026-11-03T17:17:41.668Z",
+ "vorher": "6eeeb856"
 }

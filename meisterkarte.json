@@ -3,11 +3,11 @@
   "kopf": "6eeeb856",
   "version": "V18.546.171",
   "skala": "2.0",
-  "summe": 178,
+  "summe": 179,
   "max": 330,
   "maschine": {
     "kopf": "6eeeb856",
-    "zeit": "2026-11-03T16:44:38.370Z",
+    "zeit": "2026-11-03T17:17:41.668Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -201,7 +201,7 @@
     {
       "key": "sicht",
       "titel": "III · SICHT UND VISUELLE TIEFE — Licht, Ferne, Material, Schatten, Stufen",
-      "summe": 11,
+      "summe": 12,
       "max": 50,
       "bereiche": [
         "licht",
@@ -881,7 +881,7 @@
           "punkte": 0,
           "staffel": "1 = im Mischwald (Ego, Mittag) Stamm-Dichte und Unterholz-Deckung im Band der REF und Licht-Flecken am Boden aus der Kaskade, an einem Gerät · 2 = auch im Gegenlicht (Strahlen durch die Kronen, Uhr 0,3) und an einer Lichtung, beide Geräte, im Haushalt baum ≤ 40 Befehle / 150k Dreiecke",
           "messung": "werkbank bild an der Spielgang-Station wald gegen REF real-mischwald: Stämme je Bildbreite, Unterholz-Deckung 0–2 m, Licht-Flecken-Anteil (Varianz der Boden-Luma unter Kronen gegen offenen Boden), Strahl-Kontrast im Gegenlicht ≥ 1,1; die Flecken müssen mit der Sonne wandern (zwei Uhrzeiten).",
-          "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+          "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Station seit der Messung geändert",
           "schlupfloch": "Ein gemaltes Licht-Fleck-Muster bewegt sich nicht mit der Sonne: die Flecken kommen aus der Kaskade, zwei Uhrzeiten verschieben sie; Luft-Nebel als Strahl-Ersatz scheitert am Gegenlicht-Kontrast.",
           "aenderung": "Neu (V21): der Umriss zählt LOD K1, der Kamm-Saum Ferne K3 — frei wurde die Tiefe, die RDR2 und Tsushima tragen und die keine Karte maß.",
           "maschine": true
@@ -1694,7 +1694,7 @@
           "punkte": 0,
           "staffel": "1 = der Wolken-Schatten wandert mit dem Wolkenfeld über die Wiese (r ≥ 0,6) an einem Gerät · 2 = auch über Wald, Silberrand im Gegenlicht ≥ 1,3, Unterseite dunkler als Oberseite, Himmel ≤ 1,0 ms gpu-bank an der GTX, beide Geräte",
           "messung": "werkbank bild mit zwei Frames im Abstand 5 s an der Mess-Wiese, Deckung 0,4 gegen 0; Korrelation der Schatten-Verschiebung am Boden mit dem Wolkenfeld.",
-          "beleg": "Maschine: 0 — offen: licht.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+          "beleg": "Maschine: 0 — offen: licht.K4#1 radeon: ROT: Maß durchlass: r 0.3413 bei Verschiebung [-2,-14] Blöcke à 18.6722 m in 5 s (52.813 m/s; ohne Verschiebung 0.0708; Soll r ≥ 0,6, das Muster zieht), der Zug erklärt 0.2911 der Änderung 0 (≥ 0,5), Durchlass-σ 0 (≥ 0,03) über 0.9017 besonnten Blöcken (≥ 0,3), Deckung [0,0.4] · Ort [-841,-861] · 0.9 s · [linse-gpu] amd/rdna-3 an 6eeeb856",
           "schlupfloch": "Ein bei Deckung dunklerer Himmel erzeugt Varianz ohne Schatten: die Korrelation mit der Verschiebung am Boden verlangt den echten Wurf; ein gemaltes Muster wandert nicht mit dem Wind des Felds.",
           "maschine": true
         },
@@ -1815,7 +1815,7 @@
           "punkte": 0,
           "staffel": "1 = am Kamm in 0,4–4 km Kohärenz des Struktur-Tensors < 0,3 gegen REF real-mischwald und Umriss-Schwankung ≥ 3 m bei 2 km, an einem Gerät · 2 = Kronen-Relief ≥ 10 m bis 8 km, Kammlinie ≤ 0,22 wie REF real-felsen, 4 Azimute, 0,5/1/3/8 km, beide Geräte, im Boden-Haushalt",
           "messung": "Station Hügel: Grat-Linie im Ausgabe-Bild mit und ohne Wald (Schuss ohne die Kronen-Teile des Fern-Rings); Posen Wiese und Genesis, Mittag und Gegenlicht.",
-          "beleg": "Maschine: 0 — offen: ferne.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+          "beleg": "Maschine: 0 — offen: ferne.K3#1 radeon: Station seit der Messung geändert",
           "schlupfloch": "Ein gemaltes Sägezahn-Band oder ein Kronendach-Mesh nur am Messort: der Schuss mit/ohne Wald an vier Azimuten und drei Distanzen verlangt das Gesetz überall, die Kosten-Grenze verbietet das Mesh-Pflaster; Luft-Nebel glättet den Kamm und ist damit ROT.",
           "aenderung": "EIN Heim des Fern-Saums (vorher auch Vegetation K3; B26, V21).",
           "maschine": true
@@ -1825,7 +1825,7 @@
           "punkte": 0,
           "staffel": "1 = bei Sonne 5° Luma Schatten-/Lichthang ≤ 0,4 hinter einem ≥ 2 km fernen Grat an einem Gerät · 2 = die Schattengrenze stimmt mit dem Horizontwinkel des Gelände-Kerns überein (±2 px), Uhr 0,26 und 0,74, ≤ 0,3 ms an der GTX, beide Geräte",
           "messung": "Station Hügel bei Sonne 5°: Hang hinter einem fernen Grat.",
-          "beleg": "Maschine: 0 — offen: ferne.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+          "beleg": "Maschine: 0 — offen: ferne.K4#1 radeon: ROT: Schatten-/Lichthang 0.7006 (je N·L; Soll ≤ 0,4) aus 21/64 Orten im Bild, Auge 1500 m, Grat 5.3294 km, Sonne 5.0039° (Uhr 0.7351) · Ort [-841,-861] · 0.49 s · [linse-gpu] amd/rdna-3 an 6eeeb856",
           "schlupfloch": "Eine dunklere Fern-Farbe am Abend imitiert Schatten ohne Lage: der Vergleich der Grenze mit dem Horizontwinkel des Kerns schließt das.",
           "maschine": true
         },
@@ -2042,7 +2042,7 @@
       "key": "schatten",
       "titel": "Schatten und indirektes Licht",
       "gruppe": "sicht",
-      "punkte": 1,
+      "punkte": 2,
       "pfad": "v1 (sehen) · A · E",
       "dateien": "`stamm/bild-kosten.js` (Kaskaden, Takt) · `stamm/stoff-material.js` (receivedShadowNode, aoNode) · `stamm/bild-himmel.js` (Hemi) · `stamm/dirigent-kern.js` (`_leuchtTakt`)",
       "aaaa": "Schatten sind am Kontakt scharf und werden mit dem Abstand zum Werfer weich wie unter der echten Sonne (Halbschatten ≈ 0,9 cm je Meter bei 0,53°). Die ersten 15 m zeichnen mit Texel ≤ 5 cm (heute 17 cm), ohne Flimmern beim Gehen, Drehen und bei laufender Sonne. Jedes Ding steht: unter Fuß, Sockel, Stamm und Halm sitzt eine Kontakt-Verdeckung (30–60 % des freien Bodens), jede Fläche liest ihre Himmels-Sicht. Licht springt einmal: die sonnige Wiese hellt die Schattenseite der Hauswand um ≥ 10 % auf, durch die Tür ist der Innenraum lesbar, und nachts wirft das nächste Feuer Schatten. Alles ≤ 2,5 ms auf der GTX. **Wo wir die Besten schlagen:** Lumen braucht 4 ms auf der Konsole, Tsushima backt die Himmels-Sicht; wir lesen Himmels-Sicht und Horizont aus dem Gelände-Kern als Funktion, für jeden Ort, ohne Bake.",
@@ -2064,10 +2064,10 @@
         },
         {
           "name": "Ruhige Schatten unter Bewegung und laufender Sonne",
-          "punkte": 0,
+          "punkte": 1,
           "staffel": "1 = ≤ 0,5 % unerklärte Randpixel beim Gehen an einem Gerät · 2 = Gehen 4 m/s, Drehen 1°/Frame, Sonne in der Tageslänge, kein Kaskaden-Sprung im Takt, beide Geräte",
           "messung": "werkbank sicht --gehen/--drehen/--sonne plus Bild-Maß: Pixel im Schattenrand mit ΔLuma > 18 je Frame, die weder Kamera noch Sonne erklären; Regler des Spielers (R8).",
-          "beleg": "Maschine: 0 — offen: schatten.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+          "beleg": "Maschine: Maß reprojektion: unerklärt je Bild max 0.12 %, Mittel 0.07 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.0087) über 15 Bilder Gang 4 m/s, Schatten im Bild 51.1 % (≥ 1 %) · Ort [-841,-861] · 0.77 s · [linse-gpu] amd/rdna-3 an 6eeeb856 radeon",
           "schlupfloch": "Ein Standbild ist immer ruhig, ein weicher Schatten flimmert nie: K1 verlangt die Schärfe gleichzeitig.",
           "maschine": true
         },
@@ -2076,7 +2076,7 @@
           "punkte": 0,
           "staffel": "1 = Kontaktband (0–20 cm) 30–60 % des freien Bodens an Fuß und Sockel an einem Gerät · 2 = auch Stammfuß und Tor-Fuß, klar UND bedeckt, ≤ 0,5 ms an der GTX, beide Geräte",
           "messung": "werkbank bild mit Armlängen-Schüssen auf Fuß des Spielers, Haus-Sockel, Stammfuß und Tor-Fuß, Uhr 0,5, klar und bedeckt.",
-          "beleg": "Maschine: 0 — offen: schatten.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+          "beleg": "Maschine: 0 — offen: schatten.K3#1 radeon: ROT: fuss Band 100.0 % des freien Bodens (frei mit/ohne 1, 20 Punkte gesehen, Sicht 1) · sockel Band 100.0 % des freien Bodens (frei mit/ohne 1, 20 Punkte gesehen, Sicht 1) (Soll 30–60 %, Himmel allein; Platz [-739,-837] Grün 0.0039) · Ort [-841,-861] · 0.76 s · [linse-gpu] amd/rdna-3 an 6eeeb856",
           "schlupfloch": "Ein in jeden Stoff gemalter dunkler Ring bricht am Hang und am Wasser: vier Familien und bedeckter Himmel, wo nur die Verdeckung trägt.",
           "maschine": true
         },
@@ -2085,7 +2085,7 @@
           "punkte": 0,
           "staffel": "1 = weiße Hauswand im Schatten neben besonnter Wiese: Gewinn ≥ 10 % gegen den Gegenschuss mit Boden-Albedo 0, an einem Gerät · 2 = getönt zur Boden-Farbe, Innenraum durch die offene Tür ≥ 15 % des Außen-Schattens, beide Geräte",
           "messung": "Prüfbühne, Uhr 0,5, Luma mit und ohne Rückstrahlung.",
-          "beleg": "Maschine: 0 — offen: schatten.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+          "beleg": "Maschine: 0 — offen: schatten.K4#1 radeon: Station seit der Messung geändert",
           "schlupfloch": "Ein heller Ambient hebt die Wand ohne Physik: Tönung zur Boden-Farbe und der Gegenschuss mit Boden-Albedo 0.",
           "maschine": true
         },
@@ -2094,7 +2094,7 @@
           "punkte": 0,
           "staffel": "1 = Schatten-Kontrast ≥ 3:1 an einem Pfosten 2 m vom Feuer an einem Gerät · 2 = die Gasse in der kelvin-Farbe des Gesetzes (±200 K) lesbar, der gehende Spieler wirft, ≤ 0,4 ms an der GTX, beide Geräte",
           "messung": "Station Dorfgasse um Mitternacht mit Feuerstelle oder Laterne (LICHT_GESETZ).",
-          "beleg": "Maschine: 0 — offen: schatten.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+          "beleg": "Maschine: 0 — offen: schatten.K5#1 radeon: ROT: Kontrast 1.474:1 (Soll ≥ 3:1) am Pfosten 2 m von glutbrunnen (6.2689 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0), ohne Pfosten 1.474, Uhr 0 · Ort [-841,-861] · 0.99 s · [linse-gpu] amd/rdna-3 an 6eeeb856",
           "schlupfloch": "Eine gemalte Schatten-Textur unter Laternen trägt nicht für bewegte Körper: Pfosten und gehender Spieler.",
           "maschine": true
         }
@@ -2231,7 +2231,7 @@
           "punkte": 0,
           "staffel": "1 = Luma-Sprung je Klasse < 2 % und zweiton 0 bei Uhr 0,5 an einem Gerät · 2 = Uhr 0,5 und 0,27, Boden-Morph p90 ≤ 0,1 m im Bild, beide Geräte",
           "messung": "werkbank bild vor und nach einem erzwungenen Wechsel an der Stufen-Grenze (d0/d1 aus PORTAL_RENDER_CONFIG.lod). Die Stoff-Albedo je Stufe zählt Material K3.",
-          "beleg": "Maschine: 0 — offen: lod.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+          "beleg": "Maschine: 0 — offen: lod.K4#1 radeon: Station seit der Messung geändert",
           "schlupfloch": "Ein Gate auf die Geometrie (p90) prüft Mechanik, nicht Bild; ein langer Dither versteckt den Sprung im Rauschen: Bild-Paar vorher/nachher und zweite Uhr.",
           "maschine": true
         },
@@ -4549,7 +4549,7 @@
     {
       "stand": "2026-11-03",
       "kopf": "6eeeb856",
-      "summe": 178,
+      "summe": 179,
       "max": 330,
       "skala": "2.0",
       "was": "Mess-Takt 3 an 8f1802b1 (Züge 29c und 30: Stoff-Tafel, Speicher-Weg, Tier-Gang, Halten K5, Kaskade, Siedlung-Trasse, Nässe unter Dach, GPU-Wand, Leib-Hieb, Kaskaden-Riss, Hänger; headless 66/2, Radeon 27/11, GTX gemessen): stoffe.K1, speicher.K3, halten.K5, siedlung.K3 je +1, leib.K1, oekologie.K1, tiere.K3 → 2; klang.K4 1 → 0 und klang.K5 2 → 1 (2 Stoffe mit ≥ 5 Schritten), siedlung.K5 2 → 0 (nH 300 erstes Haus 974 ms — der Rang des Dorf-Zugs; die Heilung siedlung-k5-erstes-haus fährt in Zug 32)."
