@@ -2689,14 +2689,23 @@ const stationen = [
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
                 { name: "umstellen", args: ["umstellen", "--ort", "wiese"], muss: true },
-                { name: "kanten", probe: "@KOORD@/bericht/2910-lod-k5/kanten.js", blob: "f2ee19c9ed6d32e3b51436e4fb4b89d7a25126cb", muss: true, ms: 1800000 },
+                { name: "kanten", probe: "@KOORD@/bericht/2910-lod-k5/kanten.js", blob: "64942eb74271d12c08d4df01327ce89a06962311", muss: true, ms: 1800000 },
             ],
         }), },
         env: envDer,
         gpu: true,
         zeit: false,
         minuten: 15,
-        urteil: (j) => {
+        // DIE POSE DES TORS (w8-lod-wechsel, 03.11.): kanten.js stellt die Flügel der L0 über den EINEN Schwenk-Träger in die Fern-Pose,
+        // die die Stufe im Körper trägt — ein Tor-Fall ohne ihren Winkel (`pose`) maß die gebacken geschlossene L0 (8e6262cc: Kathedrale
+        // L1 9,95 px, die Flügel, nie der Bau) und ist ein Bruch. Ohne {AUS} liest das Urteil die Folge aus der Ausgabe (die Proben).
+        urteil: (j, lauf) => {
+            if (!j && lauf && /^s*{/.test(String(lauf.stdout)))
+                try {
+                    j = JSON.parse(lauf.stdout);
+                } catch (_e) {
+                    j = null;
+                }
             if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
             const hw = !!j.adapter && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(j.adapter);
             if (j.fehler) return { gruen: false, zahl: "Folge: " + j.fehler };
@@ -2708,6 +2717,7 @@ const stationen = [
             const bruch = [];
             for (const f of e.faelle) {
                 if (f.fehler || !f.ok || f.px == null || !(f.pixel >= 200)) bruch.push(f.kind + " L" + f.stufe + ": " + (f.fehler || (f.ok ? "Exemplar " + f.pixel + " px" : "Stufe nicht gestellt")));
+                else if (f.kind === "gate" && !Number.isFinite(f.pose)) bruch.push("gate L" + f.stufe + ": die L0 ohne die Pose des Spiels");
                 else je[f.kind] = Math.max(je[f.kind] || 0, f.px);
             }
             const fehlt = Object.keys(FAM).filter((x) => !(x in je));
@@ -2719,6 +2729,17 @@ const stationen = [
                     (bruch.length ? " · " + bruch.join(" · ") : "") + ", " + (j.adapter || "Adapter ungenannt"),
             };
         },
+        proben: (() => {
+            const fall = (kind, stufe, px, pose) => ({ kind, stufe, d: 12, px, pixel: 40000, pose, ok: true, geliefert: true });
+            const folge = (faelle) => JSON.stringify({ plan: "lod.K5#1", adapter: "[linse-gpu] amd/rdna-3", schritte: { kanten: { exit: 0, json: { ergebnis: { schirm: [1920, 1080], faelle } } } } });
+            const gut = [fall("tree", 1, 0.8), fall("haus", 2, 0.9), fall("gate", 1, 0.67, 0.975), fall("gate", 2, 0.9, 0.975), fall("vehicle", 1, 0.3)];
+            return [
+                { name: "jede Familie ≤ 1 px, die Tore in der Pose des Spiels", stdout: folge(gut), gruen: true },
+                { name: "ein Tor ohne die Pose des Spiels (die L0 gebacken zu)", stdout: folge(gut.map((f) => (f.kind === "gate" ? Object.assign({}, f, { pose: undefined }) : f))), gruen: false },
+                { name: "die geschlossene L0 neben der Fern-Pose (8e6262cc: Tor 9,95 px)", stdout: folge(gut.map((f, i) => (i === 2 ? Object.assign({}, f, { px: 9.952 }) : f))), gruen: false },
+                { name: "der Wagen ohne Exemplar im Bild", stdout: folge(gut.map((f) => (f.kind === "vehicle" ? Object.assign({}, f, { px: null, pixel: 0 }) : f))), gruen: false },
+            ];
+        })(),
         pfad: [...BILD, ...LOD_PFAD],
         quelle: "1 = je Familie (Baum, Haus, Tor, Wagen) ist am Wechsel-Abstand der Kanten-Versatz L0 ↔ Stufe ≤ 1 px bei 1920×1080, an einem Gerät",
     },

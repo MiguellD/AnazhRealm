@@ -129,6 +129,17 @@ const stelle = (e, s, d) =>
         [e._lodLevel, e._servedLod] = [s === 0 ? 1 : 0, undefined]; // kein Klammer-Kurzschluss: die Stufe kommt neu
         return r._switchArchitectureLOD(e, s, d) && e._lodLevel === s;
     });
+// DIE POSE DES SPIELS (w8-lod-wechsel, 03.11.): an der Grenze seiner Stufe 1 zeigt ein Tor die Flügel der L0 in der FERN-POSE, die
+// die Stufe im Körper trägt (K43-2, porta `TUER_GESETZ.fern`; der Takt `_tickPortalMembranes` stellt sie jenseits (1 − h)·ab, das Auge
+// steht hier AN der Grenze) — über den EINEN Schwenk-Träger `_tickTorFluegel`. Ohne ihn stand die L0 gebacken ZU neben der Stufe in der
+// Fern-Pose (Radeon 8e6262cc: Kathedrale L1 9,95 px — die Flügel, nie der Bau). Nur die Flügel: Licht und Membran des Tors hängen am
+// Eintrag, nie an der Stufe. Der Winkel steht im Fall (`pose`); ein Tor ohne ihn ist ein Bruch im Urteil.
+const pose = (e) => {
+    if (!(e.affordances && e.affordances.isPortal)) return undefined;
+    const rec = e.__k5Pose || (e.__k5Pose = { entry: e, tor: r._torGesetzFor(e) });
+    r._tickTorFluegel(rec, e, A._tuerFernAnteil());
+    return Number.isFinite(rec._fluegelWinkel) ? +rec._fluegelWinkel.toFixed(4) : null;
+};
 const grund = (x) => String((x && x.message) || x).split("\n")[0].slice(0, 300);
 const aus = { schirm: [W, H], fov: A.KAM_FOV_GRAD, faelle: [], treue: null };
 const neu = [];
@@ -176,6 +187,7 @@ try {
                 aus.faelle.push({ kind: F.kind, preset, stufe: s, d: +d.toFixed(2), hoehe, fehler: "L0: " + grund(x) });
                 continue;
             }
+            const winkel = pose(e);
             const b0 = await schuss();
             if (!aus.treue) {
                 // DIE TREUE (einmal je Lauf): dieselbe Szene ein zweites Mal — EINE Aufnahme je Schuss trägt nur, wenn sie Byte für Byte gleich ist
@@ -191,9 +203,10 @@ try {
                 aus.faelle.push({ kind: F.kind, preset, stufe: s, d: +d.toFixed(2), hoehe, fehler: "L" + s + ": " + grund(x) });
                 continue;
             }
+            pose(e);
             const bs = await schuss();
             const k = chamfer(maske(b0, leer), maske(bs, leer));
-            aus.faelle.push({ kind: F.kind, preset, stufe: s, d: +d.toFixed(2), hoehe, px: k.px == null ? null : +k.px.toFixed(3), pixel: k.pixel, ok: true, geliefert: true });
+            aus.faelle.push({ kind: F.kind, preset, stufe: s, d: +d.toFixed(2), hoehe, px: k.px == null ? null : +k.px.toFixed(3), pixel: k.pixel, pose: winkel, ok: true, geliefert: true });
         }
         r._archInstanceRemove(e);
     }
