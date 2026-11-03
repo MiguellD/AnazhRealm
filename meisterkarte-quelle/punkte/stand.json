@@ -1,5 +1,5 @@
 {
- "kopf": "0e3eadad",
+ "kopf": "9a6f3703",
  "je": {
   "affekt.K1": {
    "punkte": 2,
@@ -809,7 +809,7 @@
   },
   "gelaende.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5) an b3f9ae95 radeon · gehalten: 8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5) an 715754fc gtx — offen: gelaende.K2#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 7.2 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf · gelaende.K2#2 gtx: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "beleg": "Maschine: gehalten: 8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5) an b3f9ae95 radeon · gehalten: 8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5) an 715754fc gtx — offen: gelaende.K2#2 radeon: Station seit der Messung geändert · gelaende.K2#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "gelaende.K2#1",
@@ -817,7 +817,7 @@
      "gruen": true,
      "zahl": "8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 7.2 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true
     },
     {
@@ -826,7 +826,7 @@
      "gruen": true,
      "zahl": "8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true
     },
     {
@@ -835,7 +835,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 7.2 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     },
     {
@@ -844,7 +844,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     }
    ]
@@ -1018,17 +1018,16 @@
    ]
   },
   "haar.K5": {
-   "punkte": 0,
-   "beleg": "Maschine: 0 — offen: haar.K5#1 radeon: Pfad seit der Messung geändert (R6: stamm/kreatur-leben.js) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
+   "punkte": 1,
+   "beleg": "Maschine: Herde 8, Fell an je Abstand 1.3 m an · 5.2 m an · 14.7 m aus · 26.3 m aus · 41.7 m aus · 61.3 m aus · 89.5 m aus · 129.5 m aus · tier 1 Befehle (tier:wolf 1) (Soll nah an, fern aus, ≤ 30 Befehle) an 9a6f3703 radeon",
    "stationen": [
     {
      "id": "haar.K5#1",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: stamm/kreatur-leben.js) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Herde 8, Fell an je Abstand 1.3 m an · 5.2 m an · 14.7 m aus · 26.3 m aus · 41.7 m aus · 61.3 m aus · 89.5 m aus · 129.5 m aus · tier 1 Befehle (tier:wolf 1) (Soll nah an, fern aus, ≤ 30 Befehle)",
+     "sha": "9a6f3703475e29ecfa80c73e6eba026fe9cca9c0",
+     "grund": null
     }
    ]
   },
@@ -1238,7 +1237,7 @@
   },
   "ki.K3": {
    "punkte": 1,
-   "beleg": "Maschine: 11 von 12/12 Antworten nennen eine erlebte Tat (Soll 70 %) gegen qwen3:4b-instruct @ 127.0.0.1:11434, z. B. „hast du angst vor mir?“ → Nein, ich habe keine Angst vor dir. Ich wurde nur einmal geschlagen, und das war vor lange an 0e3eadad headless",
+   "beleg": "Maschine: gehalten: 11 von 12/12 Antworten nennen eine erlebte Tat (Soll 70 %) gegen qwen3:4b-instruct @ 127.0.0.1:11434, z. B. „hast du angst vor mir?“ → Nein, ich habe keine Angst vor dir. Ich wurde nur einmal geschlagen, und das war vor lange an 0e3eadad headless",
    "stationen": [
     {
      "id": "ki.K3#1",
@@ -1246,21 +1245,23 @@
      "gruen": true,
      "zahl": "11 von 12/12 Antworten nennen eine erlebte Tat (Soll 70 %) gegen qwen3:4b-instruct @ 127.0.0.1:11434, z. B. „hast du angst vor mir?“ → Nein, ich habe keine Angst vor dir. Ich wurde nur einmal geschlagen, und das war vor lange",
      "sha": "0e3eadaddfe59b5647e46ebd5c197e253714adbd",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +4)",
+     "gehalten": true
     }
    ]
   },
   "ki.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ki.K4#1 headless: ROT: LLM-Regeln neu je Drittel 2/2/2, erneuert 1 · verfallen 6 · verdrängt 0 (Nexus 100 · 146 · 0); Gegenlauf: erneuert LLM δ+ 0.00 · δ− 0.00, verdrängt 3, Täter die Wertung trennt llm nicht nach δ: erneuert 0.00 (+) · 0.00 (−) an 0e3eadad",
+   "beleg": "Maschine: 0 — offen: ki.K4#1 headless: Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +4)",
    "stationen": [
     {
      "id": "ki.K4#1",
      "geraet": "headless",
      "gruen": false,
-     "zahl": "LLM-Regeln neu je Drittel 2/2/2, erneuert 1 · verfallen 6 · verdrängt 0 (Nexus 100 · 146 · 0); Gegenlauf: erneuert LLM δ+ 0.00 · δ− 0.00, verdrängt 3, Täter die Wertung trennt llm nicht nach δ: erneuert 0.00 (+) · 0.00 (−)",
-     "sha": "0e3eadaddfe59b5647e46ebd5c197e253714adbd",
-     "grund": "ROT: LLM-Regeln neu je Drittel 2/2/2, erneuert 1 · verfallen 6 · verdrängt 0 (Nexus 100 · 146 · 0); Gegenlauf: erneuert LLM δ+ 0.00 · δ− 0.00, verdrängt 3, Täter die Wertung trennt llm nicht nach δ: erneuert 0.00 (+) · 0.00 (−)"
+     "zahl": null,
+     "sha": null,
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +4)",
+     "ungemessen": true
     }
    ]
   },
@@ -1338,7 +1339,7 @@
   },
   "klang.K3": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: 24/24 Vorzeichen richtig (tier 12, glut 12) · |ILD| ≥ 80.6 dB bei 90°, ≥ 7.7 dB bei 30° · Pegel fällt: tier 3 m -22.9 › 8 m -31.4 › 20 m -39.4 · glut 1.5 m -17.7 › 3 m -23.7 › 6 m -29.7 dB an 10770eb5 headless · haus −11.1 dB, Schwerpunkt 1122 → 657 Hz · hang −10.9 dB, Schwerpunkt 1055 → 641 Hz · RT60 feld 0.283 s · wald 0.649 s · gasse 1.522 s · hoehle 3.195 s · Bau-Dichte 0 → 0.283 s, 2 → 0.517 s, 4 → 0.687 s, 8 → 1.042 s (Soll: Verdeckung ≥ 6 dB + Tiefpass ≤ 0,85, RT60 ≥ 0,1 s paarweise ≥ 1,3 ×, Mutation monoton ≥ 5 %/Stufe) an 0e3eadad headless",
+   "beleg": "Maschine: gehalten: 24/24 Vorzeichen richtig (tier 12, glut 12) · |ILD| ≥ 80.6 dB bei 90°, ≥ 7.7 dB bei 30° · Pegel fällt: tier 3 m -22.9 › 8 m -31.4 › 20 m -39.4 · glut 1.5 m -17.7 › 3 m -23.7 › 6 m -29.7 dB an 10770eb5 headless · gehalten: haus −11.1 dB, Schwerpunkt 1122 → 657 Hz · hang −10.9 dB, Schwerpunkt 1055 → 641 Hz · RT60 feld 0.283 s · wald 0.649 s · gasse 1.522 s · hoehle 3.195 s · Bau-Dichte 0 → 0.283 s, 2 → 0.517 s, 4 → 0.687 s, 8 → 1.042 s (Soll: Verdeckung ≥ 6 dB + Tiefpass ≤ 0,85, RT60 ≥ 0,1 s paarweise ≥ 1,3 ×, Mutation monoton ≥ 5 %/Stufe) an 0e3eadad headless",
    "stationen": [
     {
      "id": "klang.K3#1",
@@ -1355,7 +1356,8 @@
      "gruen": true,
      "zahl": "haus −11.1 dB, Schwerpunkt 1122 → 657 Hz · hang −10.9 dB, Schwerpunkt 1055 → 641 Hz · RT60 feld 0.283 s · wald 0.649 s · gasse 1.522 s · hoehle 3.195 s · Bau-Dichte 0 → 0.283 s, 2 → 0.517 s, 4 → 0.687 s, 8 → 1.042 s (Soll: Verdeckung ≥ 6 dB + Tiefpass ≤ 0,85, RT60 ≥ 0,1 s paarweise ≥ 1,3 ×, Mutation monoton ≥ 5 %/Stufe)",
      "sha": "0e3eadaddfe59b5647e46ebd5c197e253714adbd",
-     "grund": null
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true
     }
    ]
   },
@@ -1429,7 +1431,7 @@
      "gruen": true,
      "zahl": "Klang-Takt p95 gehen 0.13 · fahrt 0.14 · nacht 0.14 ms · Aussetzer 0 in 602 s Wiedergabe (0 s still) (Exit 0)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Pfad seit der Messung geändert (R6: klang-core.js, stamm/dirigent-takt.js, stamm/klang.js +1)",
+     "grund": "Pfad seit der Messung geändert (R6: klang-core.js, stamm/dirigent-takt.js, stamm/klang.js +2)",
      "gehalten": true
     }
    ]
@@ -1898,7 +1900,7 @@
   },
   "luftwasser.K3": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.995 · umgekehrt 29 Fische, 0.989 (tier:fisch) · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an 10770eb5 headless · Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.61 m, heim 12 · Pegel 25.823 → 26.023 m nach 2 s Sturm, Fische 25.168 → 25.245 m (Anteil der Säule 0.326 → 0.373) · unter Wasser true, Sicht 30 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an 0e3eadad headless",
+   "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.995 · umgekehrt 29 Fische, 0.989 (tier:fisch) · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an 10770eb5 headless · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.61 m, heim 12 · Pegel 25.823 → 26.023 m nach 2 s Sturm, Fische 25.168 → 25.245 m (Anteil der Säule 0.326 → 0.373) · unter Wasser true, Sicht 30 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an 0e3eadad headless",
    "stationen": [
     {
      "id": "luftwasser.K3#1",
@@ -1915,7 +1917,8 @@
      "gruen": true,
      "zahl": "Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.61 m, heim 12 · Pegel 25.823 → 26.023 m nach 2 s Sturm, Fische 25.168 → 25.245 m (Anteil der Säule 0.326 → 0.373) · unter Wasser true, Sicht 30 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht)",
      "sha": "0e3eadaddfe59b5647e46ebd5c197e253714adbd",
-     "grund": null
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true
     }
    ]
   },
@@ -2370,7 +2373,7 @@
      "gruen": true,
      "zahl": "first GRÜN: Wurf 6 Wölfe, umstellt 16.85 s, Furcht chaos 0.908 (Gegenlauf 0), 4 Jäger fallen, Triumph joy+hope 0.42 (Gegenlauf 0)",
      "sha": "eeb5d2bfbcdae181388a990d13c434cd67b923a0",
-     "grund": "Pfad seit der Messung geändert (R6: stamm/kreatur-leben.js)",
+     "grund": "Pfad seit der Messung geändert (R6: stamm/kreatur-leben.js, stamm/kreatur-verhalten.js)",
      "gehalten": true
     }
    ]
@@ -2425,7 +2428,7 @@
   },
   "physik.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: (V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 16.37 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m an 10770eb5 headless — offen: physik.K2#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel 11 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · physik.K2#2 gtx: Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/kreatur-leben.js)",
+   "beleg": "Maschine: gehalten: (V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 16.37 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m an 10770eb5 headless — offen: physik.K2#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel 11 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · physik.K2#2 gtx: Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/kreatur-leben.js, stamm/kreatur-verhalten.js)",
    "stationen": [
     {
      "id": "physik.K2#1",
@@ -2451,7 +2454,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/kreatur-leben.js)",
+     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/kreatur-leben.js, stamm/kreatur-verhalten.js)",
      "ungemessen": true
     }
    ]
@@ -2621,7 +2624,7 @@
   },
   "profiband.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K1#1 gtx: Pfad seit der Messung geändert (R6: klang-core.js, stamm/bild-himmel.js, stamm/dienst.js +4) · profiband.K1#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K1#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K1#1 gtx: Pfad seit der Messung geändert (R6: klang-core.js, stamm/bild-himmel.js, stamm/dienst.js +5) · profiband.K1#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K1#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K1#1",
@@ -2639,7 +2642,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: klang-core.js, stamm/bild-himmel.js, stamm/dienst.js +4)",
+     "grund": "Pfad seit der Messung geändert (R6: klang-core.js, stamm/bild-himmel.js, stamm/dienst.js +5)",
      "ungemessen": true,
      "beide": true
     },
@@ -2665,7 +2668,7 @@
   },
   "profiband.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K2#1 gtx: Pfad seit der Messung geändert (R6: klang-core.js, stamm/bild-himmel.js, stamm/dienst.js +4) · profiband.K2#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K2#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K2#1 gtx: Pfad seit der Messung geändert (R6: klang-core.js, stamm/bild-himmel.js, stamm/dienst.js +5) · profiband.K2#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K2#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K2#1",
@@ -2682,7 +2685,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: klang-core.js, stamm/bild-himmel.js, stamm/dienst.js +4)",
+     "grund": "Pfad seit der Messung geändert (R6: klang-core.js, stamm/bild-himmel.js, stamm/dienst.js +5)",
      "ungemessen": true
     },
     {
@@ -2707,7 +2710,7 @@
   },
   "profiband.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K3#1 gtx: Pfad seit der Messung geändert (R6: klang-core.js, stamm/bild-himmel.js, stamm/dienst.js +4) · profiband.K3#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K3#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K3#1 gtx: Pfad seit der Messung geändert (R6: klang-core.js, stamm/bild-himmel.js, stamm/dienst.js +5) · profiband.K3#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K3#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K3#1",
@@ -2725,7 +2728,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: klang-core.js, stamm/bild-himmel.js, stamm/dienst.js +4)",
+     "grund": "Pfad seit der Messung geändert (R6: klang-core.js, stamm/bild-himmel.js, stamm/dienst.js +5)",
      "ungemessen": true,
      "beide": true
     },
@@ -2768,7 +2771,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: klang-core.js, stamm/bild-himmel.js, stamm/dienst.js +4)",
+     "grund": "Pfad seit der Messung geändert (R6: klang-core.js, stamm/bild-himmel.js, stamm/dienst.js +5)",
      "ungemessen": true
     },
     {
@@ -3205,7 +3208,7 @@
      "gruen": true,
      "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 102/102 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 102/102 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 102/102 | ✅ Dichte über den Reload: Linie 364 Löcher, 0 korrupt",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +59)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +60)",
      "gehalten": true
     },
     {
@@ -3238,7 +3241,7 @@
      "gruen": true,
      "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 95/95",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +59)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +60)",
      "gehalten": true
     },
     {
@@ -3247,7 +3250,7 @@
      "gruen": true,
      "zahl": "✅ (V) Korpus: 101 Stände 18.530.0 … 18.546.165 und 1 Kopf laden am Kopf — Bauten 510/510 · Gruben 306/306 · Inventar 291/291 · ganz 102/102 | ✅ (V) Versions-Stufe 18.546.165: ihr Stand steht im Korpus (bump-version.cjs)",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +59)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +60)",
      "gehalten": true
     }
    ]
@@ -3655,7 +3658,7 @@
   },
   "tiere.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.323) an 10770eb5 headless — offen: tiere.K1#2 radeon: Pfad seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/dienst.js, stamm/dirigent-takt.js +1) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · tiere.K1#2 gtx: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.323) an 10770eb5 headless — offen: tiere.K1#2 radeon: Pfad seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/dienst.js, stamm/dirigent-takt.js +2) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · tiere.K1#2 gtx: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
    "stationen": [
     {
      "id": "tiere.K1#1",
@@ -3672,7 +3675,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/dienst.js, stamm/dirigent-takt.js +1) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
+     "grund": "Pfad seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/dienst.js, stamm/dirigent-takt.js +2) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -3705,7 +3708,7 @@
      "gruen": true,
      "zahl": "Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 11.8 s, 3 fressen: tier:wolf 8845 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.31 m · Luma 75.5 σ 33.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Pfad seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/kreatur-leben.js) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
+     "grund": "Pfad seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/kreatur-leben.js, stamm/kreatur-verhalten.js) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -3721,7 +3724,7 @@
   },
   "tiere.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Schlupf des Stand-Fußes max 0.017 in 25 Läufen als Leib (4 Gattungen), max 0.048 in 16 im Satz (4 Gattungen) an 10770eb5 headless — offen: tiere.K3#2 radeon: Pfad seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/kreatur-leben.js) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · tiere.K3#2 gtx: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: BUEHNE {\"tiere\":[{\"seele\":\"wolf\",\"x\":-5,\"art\":\"schritt\",\"amBoden\":3},{\"seele\":\"fuchs\",\"x\":-1.5,\"art\":\"schritt\",\"amBoden\":3},{\"seele\":\"baer\",\"x\":2.1",
+   "beleg": "Maschine: gehalten: Schlupf des Stand-Fußes max 0.017 in 25 Läufen als Leib (4 Gattungen), max 0.048 in 16 im Satz (4 Gattungen) an 10770eb5 headless — offen: tiere.K3#2 radeon: Pfad seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/kreatur-leben.js, stamm/kreatur-verhalten.js) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · tiere.K3#2 gtx: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: BUEHNE {\"tiere\":[{\"seele\":\"wolf\",\"x\":-5,\"art\":\"schritt\",\"amBoden\":3},{\"seele\":\"fuchs\",\"x\":-1.5,\"art\":\"schritt\",\"amBoden\":3},{\"seele\":\"baer\",\"x\":2.1",
    "stationen": [
     {
      "id": "tiere.K3#1",
@@ -3738,7 +3741,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/kreatur-leben.js) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
+     "grund": "Pfad seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/kreatur-leben.js, stamm/kreatur-verhalten.js) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -4190,7 +4193,7 @@
   }
  },
  "rueckfall": [],
- "kopfVoll": "0e3eadaddfe59b5647e46ebd5c197e253714adbd",
- "zeit": "2026-11-03T14:24:04.454Z",
- "vorher": "95d7bba1"
+ "kopfVoll": "9a6f3703475e29ecfa80c73e6eba026fe9cca9c0",
+ "zeit": "2026-11-03T16:10:56.220Z",
+ "vorher": "0e3eadad"
 }
