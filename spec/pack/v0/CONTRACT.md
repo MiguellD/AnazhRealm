@@ -85,8 +85,9 @@ sha(kern) = SHA-256( script_1 + "\n" + … + lib_1 + … + bruecke_1 ) — die e
 stempel(lieferung) = "f" + FOUNDRY_PLATTE_FORMAT + "|" + ( <kern>:<sha> je gelesenem Kern, sortiert, mit "," )
 ```
 
-- gelesen sind: die Basis (der Kern mit `bruecke`, heute phyto: `phyto-core.js`, `foundry-core.js`, die lib three r128 und
-  `foundry-bruecke.js` — die Brücke trägt `__extractAssetMesh` und `bakeImpostorAtlas`), jeder Kern, dessen Tafel die Art
+- gelesen sind: die Basis (der Kern mit `bruecke`, heute phyto: `phyto-core.js`, `foundry-core.js`, seine Engine — das Modul,
+  das die Import-Karte der Welt für Manifest `engine` nennt, three r184 — und `foundry-bruecke.js` — die Brücke trägt
+  `__extractAssetMesh`), jeder Kern, dessen Tafel die Art
   trägt (`PRESETS`; der Dorf-Export: `exportSettlement`), und jeder Kern, den ein gelesener beim Namen (`ns`) nennt (heute
   nennt foundry-core `__gelaendeCore` und `__koerperCore`). Ein Kern-Edit baut so nur seine Leser neu (`diag-boot-stage
   --kern-wechsel`); ein Edit an der Labor-Shell `worlds/terrain/phytogenesis.js` bewegt keinen Stempel (gate:pack-contract `bootLauf`).

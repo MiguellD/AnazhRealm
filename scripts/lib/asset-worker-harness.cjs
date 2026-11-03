@@ -30,14 +30,17 @@ const WORKER_SCRIPTS = (() => {
 // Der Boot-Quelltext des Foundry-Workers als JS-AUSDRUCK für den Seiten-Kontext (location.origin) — das Harness setzt
 // DIESEN ein (`const boot = ${WORKER_BOOT};`), kein zweiter Boot-Text. Die Engine wie `_foundryStart` (import() des Moduls,
 // ohne ColorManagement, `self.THREE` die Kopie), die Brücke startet sich selbst (Foundry-Modus, Kanal-Hörer, ready).
+// Bis Engine und Kerne stehen, HÄLT der Faden jede Nachricht und reicht sie danach in ihrer Folge weiter (wie `_foundryStart`:
+// der Pool fragt gleich nach der Geburt).
 const WORKER_BOOT =
+    '"const gehalten = [], halte = (ev) => { ev.stopImmediatePropagation(); gehalten.push(ev.data); }; self.addEventListener(\'message\', halte);" + ' +
     '"import(" + JSON.stringify(location.origin + ' +
     JSON.stringify(ENGINE_MODUL()) +
     ') + ").then((T) => { T.ColorManagement.enabled = false; self.THREE = Object.assign({}, T);" + "self.__PHYTO_FOUNDRY_WORKER=true;" + "self.__anazhCores=" + JSON.stringify(' +
     JSON.stringify(CORES_MANIFEST) +
     ') + ";" + "importScripts(" + ' +
     JSON.stringify(WORKER_SCRIPTS) +
-    '.map((p) => JSON.stringify(location.origin + p)).join(",") + "); }).catch((e) => setTimeout(() => { throw e; }));"';
+    '.map((p) => JSON.stringify(location.origin + p)).join(",") + "); self.removeEventListener(\'message\', halte); for (const data of gehalten.splice(0)) self.dispatchEvent(new MessageEvent(\'message\', { data })); }).catch((e) => setTimeout(() => { throw e; }));"';
 
 // DER BAU-FINGERABDRUCK — die EINE Quelle für jeden Bau über die echte Brücke (die Seite per toString, Node direkt): die
 // Plattform-Probe (`__probeLauf`, kippt ein Byte unter ±1 ULP?) und gate:regler-wirkt (`__bauHashListe`, bewegt ein Regler den Bau?).

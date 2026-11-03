@@ -15,7 +15,7 @@
     "waffenhof": {
       "objects": 81,
       "vertices": 10581,
-      "sha256": "6fa146a48111f734848a40c14b8aa5edbe3c3c02b0e929cf45014135fd380968"
+      "sha256": "039cadc0349b893f6479808131a38d4eb07a08d8693b66c3fc53e6c4bc34a224"
     },
     "schnitthof": {
       "objects": 56,
@@ -25,7 +25,7 @@
     "schiessbahn": {
       "objects": 50,
       "vertices": 6839,
-      "sha256": "4a996f4c50e4ff08edc6c148fec5766a845733606e3f1688844a78ecd6553ab6"
+      "sha256": "2a6c5029fa0dfe8b41195bc15cc5c5fc86db2d045fcb5a94440e9dc318168326"
     }
   }
 }

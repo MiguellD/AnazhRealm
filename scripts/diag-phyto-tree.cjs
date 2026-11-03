@@ -234,16 +234,16 @@ ok(
 // Der gesehene Baum (foundry-core `deriveParamsPlant`, wie `buildInstance` ihn ruft: __dials = Preset-Regler, SEED,
 // __lod = Bau-Stufe) und das Gesetz (`__phytoCore.treeParams(s, Saat, Stufe, Art)`) müssen denselben P-Vektor
 // liefern — Schlüssel für Schlüssel, je Art × Gestalt (Saat) × Stufe. Der Foundry-Worker-Scope wird wie im Worker
-// gebaut (three-r128 → phyto-core → foundry-core); clamp/lerp/__dials/SEED/__lod stellt dort die Brücke
+// gebaut (die Engine three r184 → phyto-core → foundry-core); clamp/lerp/__dials/SEED/__lod stellt dort die Brücke
 // (foundry-bruecke.js), hier ihr Ersatz — die Dials liest der Kern nur aus `__dials` (K47: kein DOM-Leser `gv` mehr).
 // Konsum-Leser: `buildInstance` (Foundry-Worker, jeder Baum der Welt) und `build()` (Studio).
-// Ein Scope wie im Faden `name`: three-r128 → phyto-core → (`bruecke`, die Globale der Brücke) → foundry-core.
+// Ein Scope wie im Faden `name`: die Engine (welt-boot `ENGINE_THREE`) → phyto-core → (`bruecke`, die Globale der Brücke) → foundry-core.
 const kernScope = (name, bruecke) => {
     const sb = { console, performance: { now: () => 0 } };
     sb.self = sb.globalThis = sb;
     const ctx = vm.createContext(sb);
     const lies = (...p) => ausDatei(path.join(__dirname, "..", ...p));
-    vm.runInContext(lies("worlds", "terrain", "lib", "three-r128.min.js"), ctx, { filename: "three-r128" });
+    sb.THREE = Object.assign({}, require("./lib/welt-boot.cjs").ENGINE_THREE());
     vm.runInContext(src, ctx, { filename: `phyto-core.js(${name})` });
     if (bruecke) vm.runInContext(bruecke, ctx);
     vm.runInContext(lies("foundry-core.js"), ctx, { filename: `foundry-core.js(${name})` });
