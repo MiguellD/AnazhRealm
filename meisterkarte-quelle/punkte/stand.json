@@ -1,5 +1,5 @@
 {
- "kopf": "d880c8e8",
+ "kopf": "8e6262cc",
  "je": {
   "affekt.K1": {
    "punkte": 2,
@@ -98,8 +98,8 @@
    ]
   },
   "affekt.K5": {
-   "punkte": 1,
-   "beleg": "Maschine: gehalten: feld Valenz 2.2 ↔ -1.6 → Chroma-Abstand 0.4894 (Rauschen 0) · global Valenz 2.2 ↔ -1.6 → Chroma-Abstand 0.4894 (Rauschen 0) · Exit 0 an 10770eb5 headless — offen: affekt.K5#2 headless: Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)",
+   "punkte": 2,
+   "beleg": "Maschine: gehalten: feld Valenz 2.2 ↔ -1.6 → Chroma-Abstand 0.4894 (Rauschen 0) · global Valenz 2.2 ↔ -1.6 → Chroma-Abstand 0.4894 (Rauschen 0) · Exit 0 an 10770eb5 headless · Erregung 0.9 ↔ -0.7 (awe/peace): Periode 2.752 ↔ 3.744 s (Rauschen 2.752), Dichte 12.633 ↔ 6.583 Quellen/s (12.583) · Schicht L1 Sturm 0.295, Nacht 0.573 (Rauschen 0.009) · 600 s: 185 Phrasen, 185 mit Ton, 0 wiederholt · Duck Schritt 8.51 · Ruf 10 · Gespräch 12 dB (Rauschen 0) an 8e6262cc headless",
    "stationen": [
     {
      "id": "affekt.K5#1",
@@ -113,11 +113,10 @@
     {
      "id": "affekt.K5#2",
      "geraet": "headless",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Erregung 0.9 ↔ -0.7 (awe/peace): Periode 2.752 ↔ 3.744 s (Rauschen 2.752), Dichte 12.633 ↔ 6.583 Quellen/s (12.583) · Schicht L1 Sturm 0.295, Nacht 0.573 (Rauschen 0.009) · 600 s: 185 Phrasen, 185 mit Ton, 0 wiederholt · Duck Schritt 8.51 · Ruf 10 · Gespräch 12 dB (Rauschen 0)",
+     "sha": "8e6262cc1094d470905b1caffe0133a2066dbe81",
+     "grund": null
     }
    ]
   },
@@ -2536,16 +2535,15 @@
   },
   "pipeline.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: pipeline.K2#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +1)",
+   "beleg": "Maschine: 0 — offen: pipeline.K2#1 headless: ROT: zwei Bäcker: Studio bakeImpostorAtlas (three r128) eiche/471452 rgba8 128×256 131072 B sha 2d680fabe8 ⇄ Welt _karteWeltBacken (three r184) eiche/Gestalt 0 bc 128×3584 1835008 B sha 37a74a8be3 an d880c8e8",
    "stationen": [
     {
      "id": "pipeline.K2#1",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +1)",
-     "ungemessen": true
+     "zahl": "zwei Bäcker: Studio bakeImpostorAtlas (three r128) eiche/471452 rgba8 128×256 131072 B sha 2d680fabe8 ⇄ Welt _karteWeltBacken (three r184) eiche/Gestalt 0 bc 128×3584 1835008 B sha 37a74a8be3",
+     "sha": "d880c8e86310a0d180b67d2099be0c6247e9bf9f",
+     "grund": "ROT: zwei Bäcker: Studio bakeImpostorAtlas (three r128) eiche/471452 rgba8 128×256 131072 B sha 2d680fabe8 ⇄ Welt _karteWeltBacken (three r184) eiche/Gestalt 0 bc 128×3584 1835008 B sha 37a74a8be3"
     }
    ]
   },
@@ -2617,16 +2615,15 @@
   },
   "pipeline.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: pipeline.K5#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +1)",
+   "beleg": "Maschine: 0 — offen: pipeline.K5#1 headless: ROT: 1 Foundry-Fäden (buch): worlds/*/lib/three* 603610 B über das Netz, geparst worlds/terrain/lib/three-r128.min.js · synchrones XHR 1 (cores.manifest.json) · THREE im Faden r128 gegen die Welt r184 an d880c8e8",
    "stationen": [
     {
      "id": "pipeline.K5#1",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +1)",
-     "ungemessen": true
+     "zahl": "1 Foundry-Fäden (buch): worlds/*/lib/three* 603610 B über das Netz, geparst worlds/terrain/lib/three-r128.min.js · synchrones XHR 1 (cores.manifest.json) · THREE im Faden r128 gegen die Welt r184",
+     "sha": "d880c8e86310a0d180b67d2099be0c6247e9bf9f",
+     "grund": "ROT: 1 Foundry-Fäden (buch): worlds/*/lib/three* 603610 B über das Netz, geparst worlds/terrain/lib/three-r128.min.js · synchrones XHR 1 (cores.manifest.json) · THREE im Faden r128 gegen die Welt r184"
     }
    ]
   },
@@ -3220,7 +3217,7 @@
      "gruen": true,
      "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 102/102 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 102/102 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 102/102 | ✅ Dichte über den Reload: Linie 364 Löcher, 0 korrupt",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +62)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +63)",
      "gehalten": true
     },
     {
@@ -3253,7 +3250,7 @@
      "gruen": true,
      "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 95/95",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +62)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +63)",
      "gehalten": true
     },
     {
@@ -3262,7 +3259,7 @@
      "gruen": true,
      "zahl": "✅ (V) Korpus: 101 Stände 18.530.0 … 18.546.165 und 1 Kopf laden am Kopf — Bauten 510/510 · Gruben 306/306 · Inventar 291/291 · ganz 102/102 | ✅ (V) Versions-Stufe 18.546.165: ihr Stand steht im Korpus (bump-version.cjs)",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +62)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +63)",
      "gehalten": true
     }
    ]
@@ -3428,6 +3425,36 @@
      "zahl": null,
      "sha": null,
      "grund": "Linse seit der Messung geändert (R6: scripts/diag-stand-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +7)",
+     "ungemessen": true
+    }
+   ]
+  },
+  "streaming.K1": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: streaming.K1#1 headless: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "streaming.K1#1",
+     "geraet": "headless",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    }
+   ]
+  },
+  "streaming.K2": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: streaming.K2#1 headless: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "streaming.K2#1",
+     "geraet": "headless",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     }
    ]
@@ -4211,7 +4238,7 @@
   }
  },
  "rueckfall": [],
- "kopfVoll": "d880c8e86310a0d180b67d2099be0c6247e9bf9f",
- "zeit": "2026-11-03T17:48:55.942Z",
- "vorher": "6eeeb856"
+ "kopfVoll": "8e6262cc1094d470905b1caffe0133a2066dbe81",
+ "zeit": "2026-11-03T18:10:46.641Z",
+ "vorher": "d880c8e8"
 }
