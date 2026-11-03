@@ -187,8 +187,10 @@ class AnazhRealm_bild_schatten {
     // Schatten — ein Pfosten 2 m vom Feuer warf nichts (Radeon 5fba36ea: Kontrast 0,768:1, ohne Pfosten 0,768). Wie RDR2 und
     // Witcher 3 wirft nur die WICHTIGSTE Quelle im Blick: EIN Platz des Pools (`platz`, die Wahl `_lichtWurfTakt`) trägt den
     // Faktor seines Würfel-Schattens — r184s `PointShadowNode` (sechs Seiten in eine Würfel-Tiefe, der Vergleich mit PCF) an
-    // einem PointLight, das NIE in der Szene steht (r184 sammelte es in den Licht-Hash jedes Stoffs, K15): sein Knoten lebt
-    // im Pool-Term, die Lage, Reichweite und Farbe bleiben die des Platzes — derselbe Eintrag, kein Zwilling; fern und
+    // einem TRÄGER, der kein Licht ist: ein Knoten mit r184s Würfel-Schatten (`PointLightShadow`), Lage und Reichweite des
+    // Platzes — nie ein Szenen-Licht (K11/K15: r184 sammelte es in den Licht-Hash jedes Stoffs, und jedes Punktlicht ist ein
+    // Platz des Pools). Sein Knoten lebt im Pool-Term, Lage, Reichweite und Farbe bleiben die des Platzes — derselbe
+    // Eintrag, kein Zwilling; fern und
     // unwichtig bleibt der Pool ohne Wurf. Die Würfel-Kamera ist ein Schatten-Pass (`_schattenKameraIndex`: Wurf-Ebene,
     // Satz- und Werfer-Wahl je Seite wie eine Kaskade) und sieht nur die Werfer bis zur Reichweite; der Kern der Quelle
     // (`kernM` × `kernAnteil`, ihre nahe Ebene) wirft nicht — die Flamme ist Licht, nie ihr eigener Werfer (die Scheite
@@ -197,16 +199,25 @@ class AnazhRealm_bild_schatten {
     _lichtWurf() {
         if (this._lichtWurfK) return this._lichtWurfK;
         const LW = AnazhRealm.LICHT_WURF;
-        if (typeof THREE.PointLight !== "function" || typeof THREE.TSL.pointShadow !== "function")
-            throw new Error("LICHT-WURF: THREE.PointLight/TSL.pointShadow fehlt (Vendor-Drift)");
-        const licht = new THREE.PointLight(0xffffff, 1, 1, 2);
+        if (typeof THREE.TSL.pointShadow !== "function")
+            throw new Error("LICHT-WURF: THREE.TSL.pointShadow fehlt (Vendor-Drift)");
+        // DIE WÜRFEL-KARTE wie r184s `PointLightShadow` (eine 90°-Kamera über `LightShadow`, `isPointLightShadow`): r184
+        // exportiert keine der beiden Klassen — die Basis steht in der Kette jeder Richtlicht-Karte (gelesen am Vendor 03.11.)
+        const LightShadow = Object.getPrototypeOf(new THREE.DirectionalLight().shadow.constructor);
+        const licht = new THREE.Object3D();
+        licht.name = "licht:wurf";
+        licht.shadow =
+            typeof LightShadow === "function" ? new LightShadow(new THREE.PerspectiveCamera(90, 1, 0.5, 500)) : null;
+        if (!licht.shadow || !licht.shadow.mapSize || typeof licht.shadow.updateMatrices !== "function")
+            throw new Error("LICHT-WURF: die Basis der Schatten-Karte (LightShadow) fehlt (Vendor-Drift)");
+        licht.shadow.isPointLightShadow = true;
+        licht.distance = 1;
+        // er wirft (`_wurfEbene`): ohne das rechnete r184s Schatten-Matrix je Render die eines Richtlichts (mit Ziel)
+        licht.castShadow = true;
         // die Klasse aus r184s TSL-Bauer `pointShadow` (das Bündel der Seite reicht `PointShadowNode` nur dort)
         const Basis = THREE.TSL.pointShadow(licht).constructor;
         if (typeof Basis !== "function" || Basis.type !== "PointShadowNode")
             throw new Error("LICHT-WURF: TSL.pointShadow baut keinen PointShadowNode (Vendor-Drift)");
-        licht.name = "licht:wurf";
-        // es wirft (sein Wort, `_wurfEbene`): ohne das rechnet r184s Schatten-Matrix je Render die eines Richtlichts (mit Ziel)
-        licht.castShadow = true;
         const sh = licht.shadow;
         sh.mapSize.set(LW.kartePx, LW.kartePx);
         sh.bias = LW.bias;
