@@ -1874,7 +1874,7 @@
         waldSd: 0.7,
         randSd: 0.5,
         gattung: Object.freeze({
-            deer: Object.freeze({ wiese: 1, waldrand: 1 }),
+            deer: Object.freeze({ wiese: 1, waldrand: 1, wald: 0.5 }),
             fox: Object.freeze({ waldrand: 1, wiese: 0.5 }),
             wolf: Object.freeze({ wald: 1 }),
             bear: Object.freeze({ fluss: 1, hang: 1 }),
