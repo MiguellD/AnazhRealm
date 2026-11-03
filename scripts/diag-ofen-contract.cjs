@@ -17,7 +17,7 @@
 //   <fall>|beipack            — der übrige Beipack (root · art · base · skinJoints · tailSegs · masse · handMitte)
 // Rot nennt den Täter beim Namen: `wolf-L0|fell|earL: sha256 weicht ab`, `…: fehlt im Ist`, `…: neu (nicht im Golden)`.
 //
-// PLATTFORM: die Bäcker rechnen in three r128 und den Kernen mit sin/cos/pow — Math.pow kippt seit dem Raster in
+// PLATTFORM: die Bäcker rechnen in three r184 (der Faden) und den Kernen mit sin/cos/pow — Math.pow kippt seit dem Raster in
 // tetrapoda-core (skullR) keine Klasse, sin/cos stehen benannt in spec/asset-contract/plattform-ratsche.json (Satz
 // `ofen`). Node 22 (CI) und Node 24 (lokal) prägen dieselben Bytes.
 //
@@ -28,13 +28,13 @@
 //   die Klasse zahnfleisch) → rot an zahn|headGroup (fehlt) und zahnfleisch|headGroup · (S3) korruptes Golden → rot.
 //   node scripts/diag-ofen-contract.cjs [--selftest]
 "use strict";
-const { selbsttestEnde, wandEnde, fadenScope, pruefer, jsonLesen, jsonSchreiben, jsonKlon, ausDatei, SELBSTTEST, path, fs, crypto, vm, stammLib, ROOT } = require("./lib/welt-boot.cjs");
+const { ENGINE, selbsttestEnde, wandEnde, fadenScope, pruefer, jsonLesen, jsonSchreiben, jsonKlon, ausDatei, SELBSTTEST, path, fs, crypto, vm, stammLib, ROOT } = require("./lib/welt-boot.cjs");
 const { probeWand, objektAbdruck } = require("./lib/plattform-probe.cjs");
 
 const GOLDEN_DIR = path.join(ROOT, "spec/asset-contract/ofen/golden");
 const GOLDEN = path.join(GOLDEN_DIR, "bake.json");
 const QUELLEN = [
-    "worlds/terrain/lib/three-r128.min.js",
+    ENGINE,
     "phyto-core.js",
     "koerper-core.js",
     "tetrapoda-core.js",
@@ -44,7 +44,7 @@ const SAME = 1;
 
 const { errs, check } = pruefer();
 
-// Die Welt des Ofens: three r128 und die Kerne im node-vm wie im Foundry-Worker; das Math des Gates (die
+// Die Welt des Ofens: die Engine des Fadens (three r184, `ENGINE`) und die Kerne im node-vm wie im Foundry-Worker; das Math des Gates (die
 // Plattform-Probe erreicht so den Guss).
 const ladeOfen = () => fadenScope(QUELLEN);
 

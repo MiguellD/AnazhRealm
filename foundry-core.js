@@ -5035,8 +5035,18 @@ function deriveParamsWaldboden(pre, d, IR, J, O) {
     };
 }
 
+// Die Mischung zweier Paletten-Hex — renderer-frei, die Arithmetik der Golden-Stufen (three r128 `Color.setHex · lerp ·
+// getHex`: je Kanal Byte/255, linear gemischt, ×255 ganzzahlig ABGESCHNITTEN): r184 rundet in getHex, die Engine wechselt
+// nie das Gesetz des Kerns (w5-pipeline, findling-s7-L0 Farbe).
 function lerpHex(a, b, t) {
-    return new THREE.Color(a).lerp(new THREE.Color(b), clamp(t, 0, 1)).getHex();
+    t = clamp(t, 0, 1);
+    a = Math.floor(a);
+    b = Math.floor(b);
+    const k = (s) => {
+        const x = ((a >> s) & 255) / 255;
+        return x + (((b >> s) & 255) / 255 - x) * t;
+    };
+    return ((255 * k(16)) << 16) ^ ((255 * k(8)) << 8) ^ ((255 * k(0)) << 0);
 }
 
 // DAS FARB-GESETZ DER VEGETATION (V18.506): ein Paletten-Hex ist eine sRGB-ABSICHT (Farbwähler,
@@ -5326,8 +5336,8 @@ __terrainCore.skelettDerGestalt = skelettDerGestalt;
 // PIPE gebacken: der Dispatch in der Foundry-Shell schlägt hier nach
 // (BAKERS_BY_KIND[preset.kind]) statt einem Kern-buildInstance — tabellengetrieben
 // (M8), kein Kern-spezifisches Literal, tetrapoda-core bleibt THREE-frei.
-// Derselbe Bäcker läuft im Worker (r128) UND auf dem Stamm-Main-Thread (r184,
-// Kalt-Start/Headless) — EIN Gesetz, zwei Scheduler, byte-gleiche Ausgabe.
+// Derselbe Bäcker läuft im Worker UND auf dem Stamm-Main-Thread — beide auf three r184 (w5-pipeline: der Faden lädt
+// die Engine der Welt), EIN Gesetz, zwei Scheduler.
 // ════════════════════════════════════════════════════════════════════════════
 
 // Indizierter Merge (pos+nor+idx, Offsets verschoben) — bewusst pur (kein

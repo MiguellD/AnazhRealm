@@ -600,6 +600,11 @@ class AnazhRealm_studio_bruecke {
             .then((manifest) => {
                 if (!Array.isArray(manifest) || !manifest.length)
                     throw new Error("STOFF: die Foundry bootet nicht — das Kern-Manifest trägt keinen Kern");
+                // eine Bibliothek neben den Kernen (`lib`, bis w5-pipeline three r128 + BufferGeometryUtils) wäre eine zweite
+                // Engine im Faden — sie bricht beim Namen, nie still übergangen
+                const lib = manifest.filter((c) => c && c.lib).map((c) => c.id || c.ns);
+                if (lib.length)
+                    throw new Error("STOFF: die Foundry bootet nicht — das Kern-Manifest trägt lib (" + lib.join(", ") + ")");
                 const motoren = [...new Set(manifest.map(engine).filter(Boolean))];
                 if (motoren.length !== 1) throw new Error("STOFF: die Foundry bootet nicht — " + motoren.length + " Engines im Manifest");
                 return import(motoren[0]).then((T) => [manifest, T, motoren[0]]);

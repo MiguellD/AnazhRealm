@@ -341,18 +341,21 @@ function ENGINE_MODUL() {
     if (!u) throw new Error("ENGINE: die Import-Karte von index.html nennt kein Modul „" + namen[0] + "“");
     return "/" + u.replace(/^\.?\//, "");
 }
+// der Namensraum des Moduls (Node liest die typlose .js als ES-Modul, require(esm), und warnt dabei je Datei — die
+// Warnung ist der Weg, kein Befund)
+function ENGINE_NAMENSRAUM() {
+    const warn = process.emitWarning;
+    process.emitWarning = (w, ...r) => (/ES module|MODULE_TYPELESS/.test(String((w && w.message) || w) + r.join(" ")) ? undefined : warn.call(process, w, ...r));
+    try {
+        return require(path.join(ROOT, ENGINE_MODUL()));
+    } finally {
+        process.emitWarning = warn;
+    }
+}
 let _engineThree = null;
 function ENGINE_THREE() {
     if (!_engineThree) {
-        // Node liest die typlose .js als ES-Modul (require(esm)) und warnt dabei je Datei — die Warnung ist der Weg, kein Befund
-        const warn = process.emitWarning;
-        process.emitWarning = (w, ...r) => (/ES module|MODULE_TYPELESS/.test(String((w && w.message) || w) + r.join(" ")) ? undefined : warn.call(process, w, ...r));
-        let T;
-        try {
-            T = require(path.join(ROOT, ENGINE_MODUL()));
-        } finally {
-            process.emitWarning = warn;
-        }
+        const T = ENGINE_NAMENSRAUM();
         T.ColorManagement.enabled = false;
         _engineThree = Object.assign({}, T);
     }
@@ -371,11 +374,16 @@ function studioKern(datei, name, frisch) {
 // globale Objekt, Math das des Gates (die Plattform-Probe erreicht so den Guss) — darin die `quellen` (Pfade ab der Wurzel, je
 // Prozess einmal gelesen) der Reihe nach. Bis zur Decke w3s-sukzession baute jede Linse ihn selbst (vier Mal).
 const QUELL_TEXT = {};
+// `ENGINE` in den Quellen ist die Engine des Fadens (`ENGINE_THREE`, je Scope eine eigene Kopie des Namensraums) — der
+// Faden rechnet auf three r184, kein Linsen-Scope auf einer zweiten three.
+const ENGINE = "engine:three";
 function fadenScope(quellen) {
     const sb = { console, Math, performance: { now: () => Date.now() }, setTimeout, clearTimeout };
     sb.self = sb.globalThis = sb.window = sb;
     require("vm").createContext(sb);
-    for (const f of quellen) require("vm").runInContext((QUELL_TEXT[f] ||= fs.readFileSync(path.join(ROOT, f), "utf8")), sb, { filename: f });
+    for (const f of quellen)
+        if (f === ENGINE) sb.THREE = Object.assign({}, ENGINE_THREE());
+        else require("vm").runInContext((QUELL_TEXT[f] ||= fs.readFileSync(path.join(ROOT, f), "utf8")), sb, { filename: f });
     return sb;
 }
 
@@ -1533,7 +1541,9 @@ function frageJa() {
 }
 
 module.exports = {
+    ENGINE,
     ENGINE_MODUL,
+    ENGINE_NAMENSRAUM,
     ENGINE_THREE,
     frageJa,
     fs,

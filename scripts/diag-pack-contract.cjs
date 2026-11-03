@@ -92,19 +92,27 @@ async function selftest() {
     const ohne = JSON.stringify(PK.readManifest(PK.ROOT).map((c) => Object.assign({}, c, { bruecke: undefined })));
     const t = await bootLauf(ohne);
     check(t.laden !== t.sollLaden && t.stempel !== t.sollStempel, "Täter-Manifest ohne core.bruecke → Laden und Stempel rot");
+    // … und ein Manifest, das dem Faden eine zweite Engine mitgibt (die r128-lib bis w5-pipeline), bricht beim Namen
+    const r128 = JSON.stringify(PK.readManifest(PK.ROOT).map((c, i) => (i ? c : Object.assign({}, c, { lib: ["worlds/terrain/lib/three-r128.min.js"] })))); // prettier-ignore
+    const z = await bootLauf(r128);
+    check(!z.laden && /trägt lib \(phyto\)/.test(z.fehler || ""), `Täter-Manifest mit lib (three r128) → der Boot bricht beim Namen (${z.fehler || z.laden})`); // prettier-ignore
     urteilEnde(fails, "\n❌ SELBST-TEST ROT — der Detektor ist vakuös.", "\n✅ SELBST-TEST GRÜN — ein korruptes Pack-Artefakt wird sicher rot.");
 }
 
 // DER BOOT ALS LAUF (B3a): die Geburt des Wirts (`_ensureAssetFoundry` der echten Klasse im vm, `ladeKlasse`) baut den
-// Boot-Blob synchron, und der Blob läuft in einem Schein-Faden, der das Manifest `text` liefert, Laden, Abruf und Digest
-// mitschreibt. Das Soll kommt aus dem echten Manifest; ohne Blob bei der Geburt nennt `fehler` den Täter.
+// Boot-Blob synchron, und der Blob läuft in einem Schein-Faden, der das Manifest `text` per fetch liefert, Engine (das
+// import() — die Engine der Welt, three r184, beim Namen), Laden, synchrones XHR, Abruf und Digest mitschreibt. Das Soll
+// kommt aus dem echten Manifest und der Import-Karte von index.html; ohne Blob bei der Geburt nennt `fehler` den Täter.
 async function bootLauf(text) {
     const vm = require("vm");
+    const { ENGINE_MODUL, ENGINE_NAMENSRAUM } = require("./lib/welt-boot.cjs");
     const { AnazhRealm: A, ctx } = stammLib.ladeKlasse(PK.ROOT);
     const g = vm.runInContext("globalThis", ctx);
-    const aus = { geburt: null, fehler: null, laden: null, stempel: null, wand: false };
+    const aus = { geburt: null, fehler: null, laden: null, stempel: null, wand: false, motor: null, sync: 0 };
     let blob = null;
+    const karte = ausDatei(path.join(PK.ROOT, "index.html")).match(/<script type="importmap">([\s\S]*?)<\/script>/)[1];
     Object.assign(g, { indexedDB: {}, crypto: { subtle: {} }, location: { href: "http://wirt/index.html" } });
+    g.document = { querySelector: () => ({ textContent: karte }), querySelectorAll: () => [] };
     g.Blob = function (teile) { blob = teile.join(""); }; // prettier-ignore
     g.URL = class extends URL { static createObjectURL() { return "blob:boot"; } }; // prettier-ignore
     g.Worker = function (_u, o) { aus.geburt = (o && o.name) || "ohne Namen"; this.postMessage = () => {}; }; // prettier-ignore
@@ -112,22 +120,36 @@ async function bootLauf(text) {
     try { A.prototype._ensureAssetFoundry.call(wirt, true); } catch (e) { aus.fehler = e.message; } // prettier-ignore
     const echt = PK.readManifest(PK.ROOT);
     const url = (p) => new URL(p + "?v=" + A.VERSION, "http://wirt/index.html").href;
+    aus.sollMotor = new URL("." + ENGINE_MODUL(), "http://wirt/index.html").href;
     const liste = (feld) => echt.flatMap((c) => [].concat(c[feld] || [])).map(url);
-    aus.sollLaden = ["lib", "scripts", "bruecke"].flatMap(liste).join(" ");
-    const je = (c) => ["scripts", "lib", "bruecke"].flatMap((f) => [].concat(c[f] || [])).map((p) => `<${url(p)}>`);
+    aus.sollLaden = ["scripts", "bruecke"].flatMap(liste).join(" ");
+    const je = (c) => [].concat([].concat(c.scripts || []).map(url), c.engine ? [aus.sollMotor] : [], [].concat(c.bruecke || []).map(url)).map((u) => `<${u}>`); // prettier-ignore
     aus.sollStempel = echt.map((c) => je(c).join("\n")).join("\n\n");
     if (!blob) return Object.assign(aus, { fehler: "kein Boot-Blob bei der Geburt — der Haupt-Faden holt das Manifest (fetch) vor ihr" }); // prettier-ignore
     const ord = [];
-    const w = { TextEncoder, URL, indexedDB: {}, addEventListener: (t) => ord.push(t), postMessage: (m) => (aus.post = m) };
-    w.XMLHttpRequest = function () { this.open = () => {}; this.send = () => (this.responseText = text); }; // prettier-ignore
-    w.importScripts = (...u) => (ord.push("laden"), (aus.laden = ord[0] === "message" ? u.join(" ") : "die Schale steht nicht davor")); // prettier-ignore
-    w.fetch = (u) => Promise.resolve({ text: () => Promise.resolve(`<${u}>`) });
+    const w = { TextEncoder, URL, indexedDB: {}, addEventListener: (t) => ord.push(t), removeEventListener: (t) => ord.push("frei:" + t), postMessage: (m) => (aus.post = m) }; // prettier-ignore
+    w.setTimeout = (f) => { try { f(); } catch (e) { aus.fehler = e.message; } }; // prettier-ignore
+    w.XMLHttpRequest = function () { this.open = (_m, _u, as) => { if (as === false) aus.sync++; }; this.send = () => (this.responseText = text); }; // prettier-ignore
+    // die Schale (ihr Hörer) steht vor dem Laden: der Halte-Hörer der Geburt und der Kanal-Hörer der Schale
+    w.importScripts = (...u) => (ord.push("laden"), (aus.laden = ord.filter((t) => t === "message").length >= 2 ? u.join(" ") : "die Schale steht nicht davor")); // prettier-ignore
+    w.fetch = (u) => Promise.resolve(/cores\.manifest\.json/.test(u) ? { ok: true, json: () => Promise.resolve(JSON.parse(text)) } : { text: () => Promise.resolve(`<${u}>`) }); // prettier-ignore
+    w.MessageEvent = class { constructor(t, o) { Object.assign(this, o, { type: t }); } }; // prettier-ignore
+    w.dispatchEvent = () => true;
     const st = [];
     w.crypto = { subtle: { digest: (_a, b) => (st.push(new TextDecoder().decode(b)), (aus.stempel = st.join("\n\n")), new Promise(() => {})) } }; // prettier-ignore
     w.self = w.globalThis = w;
-    vm.runInContext(blob, vm.createContext(w));
-    w.postMessage({ type: "asset", meshes: [{ position: { array: new Float32Array(3) }, aWind: { array: new Float32Array(3) } }] }); // prettier-ignore
-    aus.wand = !!(aus.post && aus.post.meshes[0].position && !aus.post.meshes[0].aWind);
+    // der Lader des Scheins: das EINE import() des Boots (die Engine) holt den Namensraum der Engine-Datei und schreibt
+    // seine URL mit (vm lädt Module nur unter --experimental-vm-modules — der Schein ersetzt den Lader wie fetch und XHR)
+    const importe = blob.split(/\bimport\(/).length - 1;
+    if (importe !== 1) return Object.assign(aus, { fehler: `der Boot trägt ${importe} import() — die Engine der Welt lädt genau einer` }); // prettier-ignore
+    w.__lader = (u) => ((aus.motor = u), Promise.resolve(ENGINE_NAMENSRAUM()));
+    vm.runInContext(blob.replace(/\bimport\(/, "__lader("), vm.createContext(w));
+    for (let i = 0; i < 200 && !aus.laden && !aus.fehler; i++) await new Promise((r) => setImmediate(r));
+    if (aus.laden) {
+        w.postMessage({ type: "asset", meshes: [{ position: { array: new Float32Array(3) }, aWind: { array: new Float32Array(3) } }] }); // prettier-ignore
+        aus.wand = !!(aus.post && aus.post.meshes[0].position && !aus.post.meshes[0].aWind);
+        aus.revision = w.THREE && w.THREE.REVISION;
+    }
     for (let i = 0; i < 50 && st.length < echt.length; i++) await new Promise((r) => setImmediate(r));
     return aus;
 }
@@ -168,9 +190,10 @@ async function main() {
     const lauf = await bootLauf(ausDatei(path.join(PK.ROOT, "cores.manifest.json")));
     check(lauf.geburt === "buch", `Boot: der Faden kommt synchron mit der Geburt und heißt „buch" (${lauf.geburt || lauf.fehler})`);
     const labor = /\/worlds\/[^/?]+\/(?!lib\/)[^?]*\.js|\/(OrbitControls|PointerLockControls|EffectComposer|UnrealBloomPass|FXAAShader)\.js/; // prettier-ignore
-    check(lauf.laden === lauf.sollLaden && !labor.test(lauf.laden), "Boot: die Schale steht vor dem Studio, der Faden lädt lib · scripts · bruecke allein aus dem Manifest, keine Labor-Datei (K42)"); // prettier-ignore
+    check(lauf.laden === lauf.sollLaden && !labor.test(lauf.laden), "Boot: die Schale steht vor dem Studio, der Faden lädt scripts · bruecke allein aus dem Manifest, keine Labor-Datei (K42)" + (lauf.fehler ? " — " + lauf.fehler : "")); // prettier-ignore
+    check(lauf.motor === lauf.sollMotor && lauf.revision === "184" && lauf.sync === 0, `Boot: der Faden rechnet auf der Engine der Welt (pipeline.K5: import ${lauf.motor || "—"} r${lauf.revision || "—"} · Soll ${lauf.sollMotor}) · synchrones XHR ${lauf.sync}`); // prettier-ignore
     check(lauf.wand, "Boot: die Konsum-Wand (FOUNDRY_LESEN) reist in die Schale — ein ungelesenes Attribut fällt vor dem Transfer");
-    check(lauf.stempel === lauf.sollStempel && !labor.test(lauf.stempel), "Stempel: je Kern seine scripts · lib · bruecke (Mesh-Extraktion, Karten-Bäcker), keine Labor-Shell (K42)"); // prettier-ignore
+    check(lauf.stempel === lauf.sollStempel && !labor.test(lauf.stempel), "Stempel: je Kern seine scripts · engine · bruecke (Mesh-Extraktion), keine Labor-Shell (K42)"); // prettier-ignore
     if (fails) {
         console.error(`\n❌ ROT — ${fails} statische Prüfung(en) verletzt (Browser-Teil übersprungen).`);
         process.exit(1);
