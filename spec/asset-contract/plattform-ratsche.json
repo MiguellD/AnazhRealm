@@ -45,11 +45,11 @@
         },
         "v5": {
             "kern": "schmiede-core.js",
-            "faelle": 24,
-            "probe": "Samen 7 je Gattung + 2 ov-Faelle. Gehoben um EINEN Fall (halten.K3: die Sichel kam additiv dazu, 23 -> 24): sie kippt wie jede Klinge mit Wicklung an cos/sin (19 -> 20) und an der Tangenten-Laenge ihrer gekruemmten Mittellinie (hypot 7 -> 8, wie der Saebel); kein alter Fall kippt neu, pow bleibt 0",
+            "faelle": 25,
+            "probe": "Samen 7 je Gattung + 2 ov-Faelle. Gehoben um EINEN Fall (physik.K4: der Flegel kam additiv dazu, 24 -> 25): er kippt an cos/sin wie jede Gestalt mit gedrehten Ringen (Haft-Wicklung, Ketten-Glieder; 20 -> 21), atan2 und hypot bleiben, kein alter Fall kippt neu, pow bleibt 0. Davor gehoben um EINEN Fall (halten.K3: die Sichel kam additiv dazu, 23 -> 24): sie kippt wie jede Klinge mit Wicklung an cos/sin (19 -> 20) und an der Tangenten-Laenge ihrer gekruemmten Mittellinie (hypot 7 -> 8, wie der Saebel); kein alter Fall kippt neu, pow bleibt 0",
             "kippt": {
-                "cos": 20,
-                "sin": 20,
+                "cos": 21,
+                "sin": 21,
                 "atan2": 15,
                 "hypot": 8
             },

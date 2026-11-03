@@ -395,6 +395,36 @@
         }
     };
 
+    // ── DIE MUSIK AM OHR (affekt.K5 Staffel 2, 03.11., rein additiv — kein bestehender Wert bewegt sich): die Lofi-Schicht
+    //    des Wirts ist EINE Funktion des Felds am Ohr (auraAt(Spieler).emotion · Wetter · Uhr); ihre Zahlen stehen hier.
+    //    tempo   — die ERREGUNG führt das Tempo (Arousal ↔ BPM; die Valenz bleibt bei Tonart und Modus): Genre-bpm ×
+    //              2^(erregung · oktavProErregung), geklemmt auf [min, max]. Ruhe (peace −0,7) dehnt, Staunen (awe 0,9) treibt.
+    //    schicht — Wetter und Uhr wechseln die Schicht DESSELBEN Generators (kein zweiter Musik-Zwilling), je Kanal ein
+    //              weicher Schritt von ab bis voll: regen (WX rain) legt die Hihats auf Sechzehntel (das Rascheln,
+    //              hihatPegel), sturm (WX wind) legt ein Streicher-Tremolo (Sägezahn, Grundton + Quinte eine Oktave unter
+    //              dem Pad, tremoloProSchlag Pulse je Schlag) unter den Akkord, nacht (die EINE Tag-Achse) nimmt Snare und
+    //              Hihats aus dem Groove, der Puls bleibt als Herzschlag (kickPegel).
+    //    phrase  — das Gedächtnis der Melodie: eine Phrase (Stufe + Lead-Töne im Sechzehntel-Raster) kehrt binnen sperrSek
+    //              nicht wieder; die Markov-Wanderung zieht neu (höchstens versuche), sonst gilt die am längsten ungehörte.
+    //    duck    — der Sidechain-Bus der Musik: Schritt, Ruf und Gespräch senken sie um db binnen angriffSek, halten
+    //              haltSek (das Gespräch: Zeichen × sekProZeichen, die Sprechdauer) und lösen in freiSek. ──
+    // prettier-ignore
+    var MUSIK = {
+        tempo: { oktavProErregung: 0.32, min: 0.7, max: 1.4 },
+        schicht: {
+            regen: { ab: 0.3, voll: 0.8, hihatPegel: 0.55 },
+            sturm: { ab: 0.5, voll: 0.9, pegel: 0.08, tremoloProSchlag: 4 },
+            nacht: { ab: 0.4, voll: 0.8, kickPegel: 0.7 }
+        },
+        phrase: { sperrSek: 600, versuche: 12 },
+        duck: {
+            angriffSek: 0.03, freiSek: 0.35,
+            schritt: { db: -9, haltSek: 0.55 },
+            ruf: { db: -10, haltSek: 0.9 },
+            gespraech: { db: -12, haltSek: 1.2, sekProZeichen: 0.07 }
+        }
+    };
+
     // ═══════════════════════════════════════════════════════════════════════
     //  DIE UMWELT (Welle 5 Klang, 05.10.) — die Klang-Gesetze der WELT: was man
     //  an einem Ort hoert, folgt aus dem, was dort IST (Wind · Kronen-Deckung ·
@@ -439,6 +469,17 @@
         // Meter) wird mit probenJeFrame Punkten je Frame abgetastet (die Glut liest der Wirt aus seinem Verzeichnis); die
         // Mischung laeuft im Takt mischSek (Sekunden).
         ohr: { radien: [4, 10, 22, 40], richtungen: 8, probenJeFrame: 2, mischSek: 0.1 },
+        // DER RAUM AM OHR (klang.K3 Staffel 2, w5-s2-g1, rein additiv): der Nachhall folgt aus dem, was um das Ohr STEHT —
+        // RT60 = basis + krone·Deckung + bau·Bau-Anteil + fels·Fels-Anteil + hoehle·(Fels ueber dem Ohr), geklemmt auf maxSek
+        // (umweltRaumNachhall). Bau- und Fels-Anteil = der Anteil der `strahlen` waagerechten Strahlen in Ohr-Hoehe, die binnen
+        // weiteM einen Bau (Huelle) bzw. den Hang treffen (der Wirt misst, `_raumAmOhr`). Gespielt als vier Kammfilter
+        // (umweltRaum: Verzoegerung kammSek, Rueckkopplung g = 10^(−3·d/RT60) — jeder Kamm klingt genau in RT60 um 60 dB ab),
+        // ihr Nachhall-Anteil `nass` (Amplitude: die Energie der Kaemme = nass² × die des Direktschalls), auf dem Welt-Bus.
+        // VERDECKUNG: ein Ruf, dessen Sichtlinie Ohr (augeM) → Quelle (quelleM ueber ihrem Fuss) Hang oder Bau schneidet, klingt
+        // verdecktDb leiser und durch einen Tiefpass bei tiefpassHz (die Beugung ueber die Kante traegt die Hoehen nicht).
+        raum: { basisSek: 0.3, kroneSek: 0.5, bauSek: 2.2, felsSek: 0.8, hoehleSek: 2.0, maxSek: 4, strahlen: 16, weiteM: 15,
+                augeM: 1.7, quelleM: 0.8, nass: 0.6, kammSek: [0.0297, 0.0371, 0.0411, 0.0437], kammPan: 0.7, rampeSek: 0.3,
+                verdecktDb: -10, tiefpassHz: 700 },
         stimmen: {
             // Wind ueber offenem Land: v = vMin + (vMax − vMin)·windFeld, vEff = v·Boee am Ohr.
             wind:   { textur: ["wind"], sr: 22050, sek: 9.7, saat: 11, quellen: 2, spreizung: 0.6, filter: "bandpass",
@@ -1169,6 +1210,55 @@
         return { eingang: vor, ausgang: w };
     }
 
+    // ── DER RAUM AM OHR (UMWELT.raum): die Lage des Raums → RT60 (Sekunden), reine Mathematik ──
+    // raumLage = { deckung, bau, fels, hoehle } (je 0…1; hoehle 1 = Fels ueber dem Ohr)
+    function umweltRaumNachhall(raumLage) {
+        var R = UMWELT.raum, L = raumLage || {};
+        var c01 = function (v) { return typeof v === "number" && isFinite(v) ? (v < 0 ? 0 : v > 1 ? 1 : v) : 0; };
+        var t = R.basisSek + R.kroneSek * c01(L.deckung) + R.bauSek * c01(L.bau) + R.felsSek * c01(L.fels) + R.hoehleSek * c01(L.hoehle);
+        return Math.min(R.maxSek, t);
+    }
+    // umweltRaum(ctx, eingang, ausgang) → { setzen(rt60, t), rt60 }: vier Kammfilter (DelayNode im Kreis mit seiner
+    // Rueckkopplung, links/rechts gestreut) von `eingang` nach `ausgang`; der Audio-Faden rechnet, der Takt schreibt nur
+    // Parameter (ziel). Der erste setzen() stellt die Werte sofort, jeder weitere rampt (rampeSek).
+    function umweltRaum(ctx, eingang, ausgang) {
+        var R = UMWELT.raum, kamm = [], erst = true;
+        for (var i = 0; i < R.kammSek.length; i++) {
+            var d = ctx.createDelay(1), fb = ctx.createGain(), aus = ctx.createGain(), pan = ctx.createStereoPanner();
+            d.delayTime.value = R.kammSek[i];
+            fb.gain.value = 0;
+            aus.gain.value = 0;
+            pan.pan.value = (i % 2 ? 1 : -1) * R.kammPan;
+            eingang.connect(d);
+            d.connect(fb);
+            fb.connect(d);
+            d.connect(aus);
+            aus.connect(pan);
+            pan.connect(ausgang);
+            kamm.push({ sek: R.kammSek[i], fb: fb, aus: aus });
+        }
+        var raum = {
+            rt60: 0,
+            setzen: function (rt60, t) {
+                var T = typeof rt60 === "number" && isFinite(rt60) && rt60 > 0 ? rt60 : R.basisSek;
+                var zeit = typeof t === "number" ? t : ctx.currentTime;
+                raum.rt60 = T;
+                for (var k = 0; k < kamm.length; k++) {
+                    var g = Math.pow(10, (-3 * kamm[k].sek) / T), a = R.nass * Math.sqrt((1 - g * g) / kamm.length);
+                    if (erst) {
+                        kamm[k].fb.gain.value = g;
+                        kamm[k].aus.gain.value = a;
+                    } else {
+                        ziel(kamm[k].fb.gain, g, zeit, R.rampeSek);
+                        ziel(kamm[k].aus.gain, a, zeit, R.rampeSek);
+                    }
+                }
+                erst = false;
+            }
+        };
+        return raum;
+    }
+
     // ── DER TIER-RUF: die Stimme folgt dem Koerper ──
     // ruf = { laengeM, stimmung: freude|ruhe|trauer|furcht, saat } → Float32Array (sr = UMWELT.tier.sr),
     // geeicht auf texturRmsDb. Quelle: Saegezahn-Glottis (Harmonische 1/k bis Nyquist) + Atem-Rauschen,
@@ -1221,13 +1311,22 @@
         var b = ctx.createBuffer(1, tex.daten.length, tex.sr);
         b.getChannelData(0).set(tex.daten);
         var src = ctx.createBufferSource(), pan = ctx.createStereoPanner(), g = ctx.createGain();
+        // DIE VERDECKUNG (UMWELT.raum, w5-s2-g1): der Wirt legt sie an den Ruf ({ db, hz }), wenn Hang oder Bau die Sichtlinie schneiden
+        var vd = r.verdeckung && typeof r.verdeckung.db === "number" && isFinite(r.verdeckung.db) ? r.verdeckung : null;
+        var lp = vd ? ctx.createBiquadFilter() : null;
         src.buffer = b;
         pan.pan.value = typeof r.pan === "number" && isFinite(r.pan) ? Math.max(-1, Math.min(1, r.pan)) : 0;
-        g.gain.value = Math.pow(10, (pegel - UMWELT.texturRmsDb) / 20);
+        g.gain.value = Math.pow(10, (pegel + (vd ? vd.db : 0) - UMWELT.texturRmsDb) / 20);
         src.connect(pan);
-        pan.connect(g);
+        if (lp) {
+            lp.type = "lowpass";
+            lp.frequency.value = vd.hz;
+            lp.Q.value = 0.707;
+            pan.connect(lp);
+            lp.connect(g);
+        } else pan.connect(g);
         g.connect(ausgang);
-        src.onended = function () { try { pan.disconnect(); g.disconnect(); } catch (_e) {} };
+        src.onended = function () { try { pan.disconnect(); g.disconnect(); if (lp) lp.disconnect(); } catch (_e) {} };
         src.start(t);
         return { quelle: src, pegelDb: pegel, f0: tex.f0, sek: b.duration };
     }
@@ -1546,6 +1645,8 @@
         SCHRITT_TIMBRE: SCHRITT_TIMBRE,
         RHYTHMUS_MUSTER: RHYTHMUS_MUSTER,
         RAUM: RAUM,
+        // affekt.K5 Staffel 2 (rein additiv) — die Musik am Ohr: Tempo · Schicht · Phrase · Duck
+        MUSIK: MUSIK,
         UMWELT: UMWELT,
         umweltTextur: umweltTextur,
         umweltPaket: umweltPaket,
@@ -1553,6 +1654,8 @@
         umweltMischung: umweltMischung,
         umweltGraph: umweltGraph,
         umweltSpitze: umweltSpitze,
+        umweltRaum: umweltRaum,
+        umweltRaumNachhall: umweltRaumNachhall,
         schwerpunkt: schwerpunkt,
         tierRufPuffer: tierRufPuffer,
         tierRufPegel: tierRufPegel,

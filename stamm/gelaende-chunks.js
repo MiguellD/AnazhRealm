@@ -1640,29 +1640,33 @@ class AnazhRealm_gelaende_chunks {
     // denen ein Dreieck gegen die vorige seine Lage ändert (`_bodenKarteAusMesh` mit `basis`); die Karte ist danach unveränderlich
     // und hält ihre Lage. `art` "lage": die gezeichnete Lage samt Grün (Bau und Naht-Morph, je Ruf ein neuer Puffer), "ziel": die
     // Morph-Ziele, nur die Höhe (`_bodenStufeMisch`; der Attribut-Puffer, darum eine Kopie).
-    // `ganz`: jede Ecke kann sich bewegt haben (die vorläufige Gestalt eines Edits, `_editGestaltVorlaeufig`), nicht nur der Saum.
-    _bodenKarteNaht(geom, cx, cz, lod, lage, art, ganz = false) {
+    // `bewegt` ({ rand, randTri }): die vorläufige Gestalt eines Edits (`_editGestaltVorlaeufig`) bewegte genau diese Ecken an
+    // Ort und Stelle in `lage` (sie ist die Lage der Karte, ohne Kopie) — gerastert wird unter ihren Dreiecken, nicht am Saum.
+    _bodenKarteNaht(geom, cx, cz, lod, lage, art, bewegt = null) {
         if (!geom.index) return null;
         const naht = this._bodenNaht(geom, cx, cz, lod);
         // DIE KARTE EINES FADEN-NETZES RASTERT DER FADEN (w4-b-boden): ihre erste Lage im Haupt-Faden ist ein Bau neben ihm —
         // er zählt an seiner Sync-Stelle oder bricht laut beim Namen (`_fadenUmgangen`, die Faden-Linse liest das Buch). Seit
         // w4-b-boden2 rastert der Faden auch jede weitere (der Naht-Morph, die Karte der Ziele): hier rastert nur die vorläufige
-        // Gestalt eines Edits (`ganz`) — jede andere Lage eines Faden-Netzes ist ein Bau neben ihm
+        // Gestalt eines Edits (`bewegt`) — jede andere Lage eines Faden-Netzes ist ein Bau neben ihm
         if (
-            (!naht[art] || !ganz) &&
+            (!naht[art] || !bewegt) &&
             geom.userData.ausFaden &&
             geom.index.array.length >= 3 &&
             (art === "lage" || (lod | 0) < 3)
         )
             this._fadenUmgangen(`Boden-Karte (${art}) eines Faden-Netzes`);
         const col = art === "lage" && geom.attributes.color ? geom.attributes.color.array : null;
-        const ref = art === "lage" ? lage : new Float32Array(lage);
+        // KEINE KOPIE EMPFANGENER BYTES (streaming.K5): die Lage einer vorläufigen Gestalt ist der Puffer, den sie an Ort und
+        // Stelle bewegte (der Neubau aus dem Faden ersetzt das Netz, kein Teil des Fadens legt sich bis dahin an,
+        // `_bodenTeilLegen`); nur die Karte der Ziele eines Sync-Baus hält ihre Lage als Kopie des Attributs
+        const ref = art === "lage" || bewegt ? lage : new Float32Array(lage);
         // DIE KARTE AN ORT UND STELLE (w4-b-boden): jede weitere Karte derselben Geometrie rastert in die Felder der vorigen —
         // keine Kopie je Naht-Morph (die Karte kommt aus dem Faden: der Haupt-Faden kopierte ihre Bytes, Fahrt 12,7 MB/min,
         // gate:worker-dichte K5). Der Stand der Karte zählt jede neue Lage, je Zelle der Stand ihres letzten Wechsels: der
         // Leser einer früheren Lage (`_bodenKartenStehen`) fragt ihn statt einer alten Kopie.
         const alt = naht[art];
-        const k = this._bodenKarteAusMesh(ref, geom.index.array, col, cx, cz, lod, alt, ganz ? null : naht, !!alt);
+        const k = this._bodenKarteAusMesh(ref, geom.index.array, col, cx, cz, lod, alt, bewegt || naht, !!alt);
         if (!k || !alt) return (naht[art] = k && Object.assign(k, { ref }));
         // dieselbe Karte (dieselben Felder, dasselbe Objekt): ihr Stand steigt, die gewechselten Zellen tragen ihn
         alt.stand = (alt.stand | 0) + 1;
@@ -2776,16 +2780,25 @@ class AnazhRealm_gelaende_chunks {
         if (!vc || !vc.size || !(ed.r > 0)) return 0;
         const { span, step } = this._voxelChunkConfig();
         const [y0, y1, rr, fill] = [ed.y - ed.r, ed.y + ed.r, ed.r * ed.r, ed.mode === "fill"];
-        // die Säule an der Lage A (Ecke v, ihre Normale in N): true, wo sie eine Ecke bewegt
+        // die Säule an der Lage A (Ecke v, ihre Normale in N), an Ort und Stelle → die Ecken, die sie bewegte
         const saeule = (A, N) => {
-            let bewegt = false;
+            const bewegt = [];
             for (let v = 0; v < A.length; v += 3) {
                 const [dx, y, dz] = [A[v] - ed.x, A[v + 1], A[v + 2] - ed.z];
                 if (dx * dx + dz * dz >= rr || !(y > y0 && y < y1)) continue;
                 A[v + 1] = N[v + 1] >= 0 === fill ? y1 : y0;
-                bewegt = true;
+                bewegt.push(v / 3);
             }
             return bewegt;
+        };
+        // der Saum der Karte (gelaende-core `bodenKarte`, `rand.bewegt`): die bewegten Ecken und je Dreieck mit einer von ihnen
+        // sein Index-Anfang
+        const saum = (I, ecken, nV) => {
+            const an = new Uint8Array(nV);
+            for (const v of ecken) an[v] = 1;
+            const randTri = [];
+            for (let t = 0; t + 2 < I.length; t += 3) if (an[I[t]] || an[I[t + 1]] || an[I[t + 2]]) randTri.push(t);
+            return { rand: ecken, randTri, bewegt: true };
         };
         // die Chunks, deren Netz (samt Saum, ein Schritt) in die Säule reicht
         const [a0, a1] = [Math.floor((ed.x - ed.r - step) / span), Math.floor((ed.x + ed.r + step) / span)];
@@ -2796,23 +2809,38 @@ class AnazhRealm_gelaende_chunks {
                 const E = vc.get(`${cx},${cz}`);
                 if (!E || E.empty || !E.mesh) continue;
                 const g = E.mesh.geometry;
-                const N = g.attributes.normal.array;
-                if (!saeule(g.attributes.position.array, N)) continue;
+                const [P, N, I] = [g.attributes.position.array, g.attributes.normal.array, g.index && g.index.array];
+                // die Lage der Karte (der Puffer des Fadens: die Lage selbst oder die gezeichnete samt Naht-Morph des Saums), ehe
+                // die Säule das Netz bewegt — ist sie die Lage selbst, bewegt die Säule sie mit dem Netz
+                const naht = this._bodenNaht(g, cx, cz, E.lod || 0);
+                const L = (naht.lage && naht.lage.ref) || P;
+                const bewegtP = saeule(P, N);
+                if (!bewegtP.length) continue;
                 // das Netz trägt jetzt eine Gestalt, die der Faden nicht kennt: bis sein Neubau kommt, legt der Takt keinen
                 // Morph des Fadens an (`_bodenTeilLegen`) — der Neubau trägt eine neue Bau-Nummer und morpht ganz
                 E.vorlaeufig = true;
-                saeule(g.attributes.aMorphTarget.array, N);
-                this._chunkSatzMarke("boden", `${cx},${cz}`, ["position", "aMorphTarget"]);
-                // die Karte aus der gezeichneten Lage (samt Naht-Morph des Saums), die Säule darin wie im Netz
-                const naht = this._bodenNaht(g, cx, cz, E.lod || 0);
-                const L = new Float32Array((naht.lage && naht.lage.ref) || g.attributes.position.array);
-                saeule(L, N);
-                const k = this._bodenKarteNaht(g, cx, cz, E.lod || 0, L, "lage", true);
-                // die Karte der Ziele trägt die Säule im Inneren (`ganz`, w4-b-boden): der Leser im Übergangs-Band rastert sonst
-                // nur, was am Saum zog — sie liegt seit dem Einbau (aus dem Faden), ein Neu-Raster der Lage allein ließe sie alt
                 const Z = g.attributes.aMorphTarget.array;
+                const bewegtZ = saeule(Z, N);
+                this._chunkSatzMarke("boden", `${cx},${cz}`, ["position", "aMorphTarget"]);
+                // die Karte aus der gezeichneten Lage, die Säule darin an Ort und Stelle wie im Netz (streaming.K5: bis hierher
+                // eine Kopie der Lage des Fadens je Chunk und Klick, 0,26 MB in der Minute Fahrt — und war die Lage das Netz
+                // selbst, verglich die Karte die bewegte Kopie mit der bewegten Lage und sah die Säule nie)
+                const nV = P.length / 3;
+                const k = this._bodenKarteNaht(
+                    g,
+                    cx,
+                    cz,
+                    E.lod || 0,
+                    L,
+                    "lage",
+                    saum(I, L === P ? bewegtP : saeule(L, N), nV)
+                );
+                // die Karte der Ziele trägt die Säule im Inneren (`bewegt`, w4-b-boden): der Leser im Übergangs-Band rastert sonst
+                // nur, was am Saum zog — sie liegt seit dem Einbau (aus dem Faden), ein Neu-Raster der Lage allein ließe sie alt
                 const kz =
-                    naht.ziel && (E.lod || 0) < 3 ? this._bodenKarteNaht(g, cx, cz, E.lod || 0, Z, "ziel", true) : null;
+                    naht.ziel && (E.lod || 0) < 3
+                        ? this._bodenKarteNaht(g, cx, cz, E.lod || 0, Z, "ziel", saum(I, bewegtZ, nV))
+                        : null;
                 [E.surfMap, E.gruenMap, E.surfMapZiel] = [k && k.hoehe, k && k.gruen, kz && kz.hoehe];
                 this._streuFussNeu(cx, cz);
                 n++;

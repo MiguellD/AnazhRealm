@@ -20,7 +20,7 @@ const { ausDatei, path, fs, stammLib, vm, jsonLesen, ROOT: root, jsonKlon } = re
 // Eine neue Domäne (vehicle-core/porta-core) trägt sich in CORES ein und wird
 // automatisch mitvalidiert (§5 Andock-Sequenz Schritt 5).
 //   node scripts/diag-studio-vertrag.cjs
-const { kanalImVm, ersteAbweichung, DATEN_KANAELE, absorber } = require("./lib/asset-worker-harness.cjs");
+const { kanalImVm, ersteAbweichung, DATEN_KANAELE, kernKontext } = require("./lib/asset-worker-harness.cjs");
 
 // Die registrierten Studio-Kerne — N2 (Nervensystem-Plan, „Runtime = Validator"): die Liste
 // kommt aus cores.manifest.json, der EINEN Kern-Quelle (Worker-Boot `_ensureAssetFoundry` +
@@ -47,13 +47,7 @@ const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
 
 // Alle Kerne in EINEM Kontext wie im Main-Thread — die Seh-Klassen (BUDGET_GESETZ.seh, S3) und die Linse EIN WERT lesen sie.
 const KERNE = (() => {
-    const ctx = vm.createContext({
-        THREE: absorber(),
-        console: { log() {}, warn() {}, error() {} },
-        performance: { now: () => 0 },
-    });
-    ctx.self = ctx;
-    ctx.globalThis = ctx;
+    const ctx = kernKontext();
     for (const f of new Set(MANIFEST.flatMap((c) => c.scripts || [])))
         vm.runInContext(ausDatei(path.join(root, f)), ctx, { filename: f, timeout: 30000 });
     return Object.fromEntries(
@@ -190,13 +184,7 @@ function einWertTaeter(dateien, kerne) {
 }
 
 function loadCore(entry) {
-    const ctx = vm.createContext({
-        THREE: absorber(),
-        console: { log() {}, warn() {}, error() {} },
-        performance: { now: () => 0 },
-    });
-    ctx.self = ctx;
-    ctx.globalThis = ctx;
+    const ctx = kernKontext();
     let code = "";
     for (const dep of entry.deps || []) code += ausDatei(path.join(root, dep)) + "\n;";
     code += entry.quelle != null ? entry.quelle : ausDatei(path.join(root, entry.file)); // quelle: der Selbsttest

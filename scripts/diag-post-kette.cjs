@@ -38,6 +38,9 @@
 "use strict";
 
 const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, fs, SELBSTTEST, jsonKlon, fehlerText, seiteZu, rotListe } = require("./lib/welt-boot.cjs");
+// der Bruch, den die Wand selbst in die Kette wirft (Schritt „Render-Fehler") — der EINE Fehler-Sammler (welt-boot) nennt jeden
+// anderen Bruch der Post-Kette ROT beim Namen, diesen erwartet die Linse und zählt ihn selbst (GENAU einmal, `urteil`)
+const ERZWUNGEN = /\[ERROR\] STOFF: die Post-Kette .*gate:post-kette — erzwungener Render-Fehler der Kette/;
 const SK = require("./lib/shader-kosten.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 
@@ -192,7 +195,6 @@ function urteil(z) {
     // (a) DER ERZWUNGENE BRUCH: der Render-Fehler, den die Wand selbst in die Kette wirft, bricht LAUT beim Namen
     // (`_loopRender` → `_stoffBruch`, ERROR „STOFF: die Post-Kette …" mit der Ursache) — GENAU EINMAL; still (0) ist rot,
     // ein zweiter ist rot. Bis zur Nachbesserung 2 zählte die Konsolen-Wand ihn als fremd (die CI voll 6/11 rot).
-    const ERZWUNGEN = /\[ERROR\] STOFF: die Post-Kette .*gate:post-kette — erzwungener Render-Fehler der Kette/;
     const fang = schritte.find((s) => s.name === "Render-Fehler");
     const erzwungen = (z.konsolenFehler || []).filter((x) => ERZWUNGEN.test(x));
     if (fang && erzwungen.length !== 1)
@@ -895,7 +897,7 @@ function buehne(nFrames, nachtLicht) {
         "=== POST-KETTE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan): Weiche · Tiefe · Shader · Godrays ==="
     );
     await server.lausche(0);
-    const browser = await starteBrowser({ art: "linse", frist: 900000 });
+    const browser = await starteBrowser({ art: "linse", frist: 900000, erwartet: ERZWUNGEN });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 240 });
     // die ERROR-Zeilen der Seite (das Spiel meldet über `log(…, "ERROR")` → console.log „[ERROR]")
