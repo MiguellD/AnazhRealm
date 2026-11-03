@@ -2328,8 +2328,8 @@ const FAHRT = require("./g1.js").weltProbe.befehl([["fahrt", fahrtProbe, { sek: 
 const fahrtZeile = (j, lauf) => require("./g1.js").weltProbe.zeile(j, lauf, "fahrt");
 // DIE ROH-ZEILE am main 6eeeb856 (03.11., Cloud, headless, 131 s; an 0e3eadad dieselbe Klasse: 549 + 1 077 Lücken-Bilder): die Proben jeder der zwei Stationen urteilen sie und ihre Mutanten
 const FAHRT_MAIN = {"von":[-280.4,-1045.6],"richtung":[-0.95,0.313],"ring":4,"holz":"voll","bilder":8373,"sek":131.4,"taktMs":{"p50":6.4,"p95":13.1},"je":{"sprint":{"v":5.175,"bilder":4232,"luecke":543,"je":{"karte":16527,"wuchs":1,"bau":122,"streu":25},"zeugen":["a:-4829,-10822:karte karte 185 m","a:-5091,-11199:karte karte 222 m","a:-5003,-11226:karte karte 215 m","a:-5169,-11118:karte karte 226 m","a:-5122,-11052:karte karte 220 m","a:-4999,-11073:karte karte 209 m"],"sek":60.001,"wegM":310},"gt":{"v":15.998,"bilder":4141,"luecke":1084,"je":{"bau":83,"streu":156,"karte":30087},"zeugen":["a:-6372,-8100:bau bau 150 m","a:-7279,-9439:bau bau 150 m","a:-7452,-9569:bau bau 150 m","a:-7193,-8532:bau bau 150 m","r:-4,-3 streu","a:-7622,-7742:karte karte 231 m"],"sek":60.014,"wegM":1270}},"eintritt":{"baum":{"n":646,"ok":72,"spaet":[-1,-1,-1,-1,-1,-1]},"boden":{"n":484,"ok":206,"spaet":[-1,-1,0.761,0.74,0.436,0.436]},"karte":{"n":3872,"ok":298,"spaet":[-1,-1,-1,-1,-1,-1]},"wuchs":{"n":239,"ok":238,"spaet":[0.018]},"bau":{"n":318,"ok":250,"spaet":[0.144,0.119,0.102,0.099,0.09,0.085]},"streu":{"n":15,"ok":0,"spaet":[-1,0.48,0.383,0.289,0.263,0.182]}}};
-// die Zeile am Zweig w7-rang (der EINE Rang, Zeit bis Bedarf; 03.11., Cloud, headless, 130 s): GRÜN
-const FAHRT_ZWEIG = {"von":[-280.4,-1045.6],"richtung":[-0.95,0.313],"ring":4,"holz":"voll","bilder":8032,"sek":130.2,"taktMs":{"p50":6.8,"p95":14.1},"je":{"sprint":{"v":5.175,"bilder":4236,"luecke":0,"je":{},"zeugen":[],"sek":60.014,"wegM":310},"gt":{"v":15.998,"bilder":3796,"luecke":0,"je":{},"zeugen":[],"sek":60.006,"wegM":1270}},"eintritt":{"baum":{"n":710,"ok":700,"spaet":[-1,-1,-1,0.42,0.315,0.219]},"wuchs":{"n":257,"ok":257,"spaet":[]},"boden":{"n":484,"ok":484,"spaet":[]},"karte":{"n":3530,"ok":3530,"spaet":[]},"bau":{"n":318,"ok":318,"spaet":[]},"streu":{"n":15,"ok":15,"spaet":[]}}};
+// die Zeile am Zweig w7-rang (der EINE Rang, Zeit bis Bedarf; gemergt mit main d880c8e8; 03.11., Cloud, headless, 130 s): GRÜN
+const FAHRT_ZWEIG = {"von":[-280.4,-1045.6],"richtung":[-0.95,0.313],"ring":4,"holz":"voll","bilder":7730,"sek":130.2,"taktMs":{"p50":7.1,"p95":15.3},"je":{"sprint":{"v":5.175,"bilder":4143,"luecke":0,"je":{},"zeugen":[],"sek":60.006,"wegM":310},"gt":{"v":15.998,"bilder":3587,"luecke":0,"je":{},"zeugen":[],"sek":60.012,"wegM":1270}},"eintritt":{"baum":{"n":709,"ok":700,"spaet":[-1,-1,-1,0.361,0.32,0.257]},"wuchs":{"n":257,"ok":257,"spaet":[]},"boden":{"n":484,"ok":484,"spaet":[]},"karte":{"n":3529,"ok":3529,"spaet":[]},"bau":{"n":318,"ok":318,"spaet":[]},"streu":{"n":15,"ok":15,"spaet":[]}}};
 const fahrtRoh = (f, x = FAHRT_MAIN) => "WELTPROBE fahrt " + JSON.stringify(f(JSON.parse(JSON.stringify(x)))) + "\n";
 // die Fahrt, die das Soll hält: keine Lücke, jede Klasse ≥ 95 % fertig beim Eintritt
 const fahrtGruen = (x) => {
@@ -2548,7 +2548,7 @@ module.exports = [
     // streaming.K1 — an main 6eeeb856 ROT: Sprint 5,2 m/s 543 von 4 232 Bildern mit Lücke (Karten 16 527 Ding-Bilder, Bauten 122,
     // Streu 25), GT 16,0 m/s 1 084 von 4 141 (Karten 30 087, Streu 156, Bauten 83): der Wald am Rand des Rings wird im Kegel geboren
     // und wartet auf Saat, Plan und Karte (200–240 m), das Dorf am Rand der Mesh-Zone (150 m), die Streu-Region −4,−3. Am Zweig w7-rang
-    // (der EINE Rang, Zeit bis Bedarf) GRÜN: 0 von 4 236 und 0 von 3 796.
+    // (der EINE Rang, Zeit bis Bedarf; gemergt mit main d880c8e8) GRÜN: 0 von 4 143 und 0 von 3 587.
     {
         kriterium: "streaming.K1",
         staffel: 1,
@@ -2574,7 +2574,7 @@ module.exports = [
     },
     // streaming.K2 — an main 6eeeb856 ROT: fertig beim Eintritt Boden 206/484 (42,6 %), Bäume 72/646 (11,1 %), Karten 298/3 872
     // (7,7 %), Bauten 250/318 (78,6 %), Streu 0/15 — jede Schlange ordnet für sich, keine schaut voraus. Am Zweig w7-rang GRÜN:
-    // Boden 484/484, Bäume 700/710 (98,6 %), Karten 3 530/3 530, Bauten 318/318, Streu 15/15.
+    // Boden 484/484, Bäume 700/709 (98,7 %), Karten 3 529/3 529, Bauten 318/318, Streu 15/15.
     {
         kriterium: "streaming.K2",
         staffel: 1,

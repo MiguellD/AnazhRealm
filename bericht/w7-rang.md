@@ -9,16 +9,18 @@ im Ring mit der Stufe aus `BODEN_STUFEN`; jeder Eintrag mit der Stufe der Wahrne
 Karte bis zu ihrem Horizont; die Pflanz-Schlange und das Dorf in der Schlange sind Bedarf wie ihr Eintrag; die Streu-Region
 in Reichweite; der Horizont.
 
-| | main 0e3eadad | w7-rang |
+| | main 6eeeb856 | w7-rang (mit main d880c8e8) |
 |---|---|---|
-| K1 Lücken-Bilder Sprint | 549 / 4 376 | **0** / 4 236 |
-| K1 Lücken-Bilder GT | 1 077 / 3 875 | **0** / 3 796 |
-| K2 Boden (je Stufe) | 208 / 484 (43,0 %) | 484 / 484 (100 %) |
-| K2 Bäume (Mesh-Stufe) | 66 / 646 (10,2 %) | 700 / 710 (98,6 %) |
-| K2 Karten | 307 / 3 866 (7,9 %) | 3 530 / 3 530 (100 %) |
-| K2 Bauten | 240 / 318 (75,5 %) | 318 / 318 (100 %) |
+| K1 Lücken-Bilder Sprint | 543 / 4 232 | **0** / 4 143 |
+| K1 Lücken-Bilder GT | 1 084 / 4 141 | **0** / 3 587 |
+| K2 Boden (je Stufe) | 206 / 484 (42,6 %) | 484 / 484 (100 %) |
+| K2 Bäume (Mesh-Stufe) | 72 / 646 (11,1 %) | 700 / 709 (98,7 %) |
+| K2 Karten | 298 / 3 872 (7,7 %) | 3 529 / 3 529 (100 %) |
+| K2 Bauten | 250 / 318 (78,6 %) | 318 / 318 (100 %) |
 | Streu (genannt) | 0 / 15 | 15 / 15 |
-| CPU-Takt p95 (Null-Renderer) | 14,0 ms | 14,1 ms |
+| CPU-Takt p95 (Null-Renderer, Median aus 6 · 7 Läufen) | 15,2 ms | 15,3 ms |
+
+An main 0e3eadad dieselbe Klasse (549 + 1 077 Lücken-Bilder; Boden 43,0 %, Bäume 10,2 %, Karten 7,9 %, Bauten 75,5 %).
 
 Mutanten (Schlupflöcher der Soll-Tafel): langsam fahren, Ring 2 per Regler, Schleife im Ring, Diashow, ein Lücken-Bild, Abbruch,
 der Boden 80 % im Mittel versteckt, eine fehlende Klasse, die Bäume ohne Vorlauf (93,5 %) — jede ROT. `punkte.cjs selbsttest
@@ -33,6 +35,13 @@ Kalt-Schätzer) und die Foundry (`_foundryAuftragD2`).
 
 **FUND:** jeder Wald-Baum am Rand des Rings wurde im Sichtkegel geboren und wartete 1–2 Bilder auf die Gestalt seines Orts —
 den Plan der ±4 Zellen um ihn bestellte erst der geborene Baum (`_ortGestaltSame` → `_waldPlanSteht`, `var` null in 186–246 m).
+
+**Linsen am Kopf** (gemergt mit main d880c8e8): `npm run check`, voller Playtest („Alle Invarianten OK"), gate:takt,
+gate:ankunft, gate:worker-dichte, gate:streu-fern, gate:fernwald, gate:scatter-lod, gate:welt-boot, gate:trias, gate:hoehlen-sicht,
+gate:schatten-terminator, gate:asset-contract, gate:pflanzen-nah, gate:nervensystem-schmiede, gate:fachwerk-contract GRÜN;
+gate:stand-takt, gate:chunk-satz, gate:arch-feld und gate:klang-zensus ROT — mit demselben Befund am sauberen main 6eeeb856
+in dieser Umgebung (Cloud, swiftshader): „keine Weck-Probe für wuchs …", „DIE WELT HÄNGT … wald 5", „Eiche ab Takt null",
+„S wald: laub ≥ Wiese.laub + 8".
 
 **Offen:** Staffel 2 (Tempo-Decke ≥ vmax × 1,2 am Boden und 30 m darüber, beide Geräte; ≥ 99 % bei GT-Vollgas an beiden
 Geräten) misst diese Station nicht; die Vorausschau liest den Tempo-Vektor der Bahn, das Wegenetz trägt sie nicht.
