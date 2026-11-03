@@ -1544,7 +1544,11 @@ class AnazhRealm_stoff_material {
                     // Boden (Chunk, Insel, Voxel-Test, Bauplan-Verschmelzung), Rinde, Laub, Klinge, Kronen-Kern; die
                     // Karte ersetzt sie durch den Atlas und hat kein color-Attribut. Bis 06.10. schaltete nur der Boden ab:
                     // Grammatik-Rinde/-Laub und der Fels zeichneten Farbe², die Werkstatt-Vorschau desselben Baums Farbe¹.
-                    if (mat.colorNode) mat.vertexColors = false;
+                    // `eckeImKnoten` sagt es jedem späteren Schreiber der Ecke (das Alter, `_werkAlterFaerbe`).
+                    if (mat.colorNode) {
+                        mat.vertexColors = false;
+                        mat.userData.eckeImKnoten = true;
+                    }
                 } else if (isFlatStructure) {
                     // Flach-Farb-Werke (Tempel · Schwert · Rüstung · Esse · …) fließen durch den EINEN Substanz-
                     // Charakter-Kern (Korn · Kavität · Ton · Verwitterung · Moos · Counter-Shading · Roughness),

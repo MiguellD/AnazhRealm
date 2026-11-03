@@ -914,13 +914,37 @@ class AnazhRealm_siedlung_satz {
                 }
             }
             g.setAttribute("color", new THREE.BufferAttribute(c, 3));
-            if (!m.material.vertexColors) {
-                m.material.vertexColors = true; // der Teil-Stoff ist sein eigener (`_buildFromBlueprint`); r184 liest Farbe × Ecke
-                m.material.needsUpdate = true;
+            // DIE ECKE EINMAL (Farbe einmal G1/G2): ein Stoff, dessen colorNode die Ecke schon liest (`eckeImKnoten`: der
+            // verschmolzene Bau teilt `_sharedFoliageMaterial`, das Teil mit Vertex-Farbe), liest das neue Attribut — er
+            // bleibt, wie er ist (bis hier schaltete das Alter vertexColors an: Farbe² und der geteilte Stoff kippte für jeden
+            // Bau). Ein flacher Werk-Stoff (colorNode ohne Ecke) trägt sie IN seinem colorNode (`_eckeFarbe`, EIN Knoten je
+            // Quell-Knoten, die Gestalt teilt ihr Programm weiter); ein Stoff ohne colorNode liest sie über vertexColors.
+            const mat = m.material;
+            if (mat.colorNode) {
+                if (!mat.userData.eckeImKnoten) {
+                    mat.colorNode = this._eckeFarbe(mat.colorNode);
+                    mat.userData.eckeImKnoten = true;
+                    mat.needsUpdate = true;
+                }
+            } else if (!mat.vertexColors) {
+                mat.vertexColors = true; // der Teil-Stoff ist sein eigener (`_buildFromBlueprint`); r184 liest Farbe × Ecke
+                mat.needsUpdate = true;
             }
         });
         entry._alterStoffe = stufen.size ? [...stufen.keys()] : null;
         entry._alterStufe = stufen.size ? [...stufen.values()].join(",") : null;
+    }
+    // Der Farb-Knoten `farbe` × die Ecke (`vertexColor`: ohne color-Attribut 1) — EINER je Quell-Knoten (r184 schlüsselt das
+    // Programm nach Knoten-Identität; der Leser: `_werkAlterFaerbe`)
+    _eckeFarbe(farbe) {
+        const E = this._eckeFarbeCache || (this._eckeFarbeCache = new WeakMap());
+        let f = E.get(farbe);
+        if (!f) {
+            const TSL = THREE.TSL;
+            const c = TSL.vec4(farbe);
+            E.set(farbe, (f = TSL.vec4(c.rgb.mul(TSL.vertexColor().rgb), c.a)));
+        }
+        return f;
     }
     // Der Tag der Welt sprang (der Takt: EIN Vergleich): die gezeichneten Werke einer alternden Art, deren Stufe sprang, warten
     // auf ihren neuen Körper — die Studio-Werke (der Regler `verwitterung`) und die Werke aus Bau-Teilen (die Stoff-Zeile,
