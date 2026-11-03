@@ -875,7 +875,7 @@ class AnazhRealm_kreatur_leben {
         // ihr kippte die Kaskade (gate:kreatur-takt kaskade, Wölfe −0,52 statt 0).
         const p = creature.position;
         const fall = () => {
-            if (p) this._depositEmotion(p.x, p.z, AnazhRealm._furchtGesetz().F.riss);
+            if (p) this._gefuehlPraegen(p.x, p.z, AnazhRealm._furchtGesetz().F.riss);
             this._kreaturFaellt(creature); // der Fall: kippen, liegen, sinken — kein Wesen mehr
         };
         if (source === "player" && p) this._handTat("toeten", p, () => (this._tatSchreiben("riss", p.x, p.z), fall()));
@@ -1676,7 +1676,7 @@ class AnazhRealm_kreatur_leben {
         // Der Tod nährt das Feld: das Wesen gibt seine Lebendigkeit (∝ lebendig-Substanz) an den Ort
         // zurück — im SELBEN Overlay, in das die Geburt schreibt.
         if (naehrt && creature.position) {
-            this._depositLife(
+            this._lebenGeben(
                 creature.position.x,
                 creature.position.z,
                 AnazhRealm.LIFE_FIELD.pulseCenter * (0.8 + lebendig)
@@ -2078,7 +2078,7 @@ class AnazhRealm_kreatur_leben {
         for (const g in bestand) {
             const F = bestand[g].n * bestand[g].frass;
             const summe = F > 0 ? zellen.reduce((s, c) => s + c.je[g], 0) : 0;
-            if (summe > 0) for (const c of zellen) if (c.je[g] > 0) this._depositLife(c.x, c.z, (-F * c.je[g]) / summe);
+            if (summe > 0) for (const c of zellen) if (c.je[g] > 0) this._lebenGeben(c.x, c.z, (-F * c.je[g]) / summe);
         }
     }
 
@@ -2252,10 +2252,10 @@ class AnazhRealm_kreatur_leben {
         R.tiere.splice(R.tiere.indexOf(t), 1);
         if (ursache !== "jagd") {
             const leb = Math.min(1, Math.max(0, this._creatureSoulTags(t.soul).lebendig || 0));
-            this._depositLife(t.x, t.z, AnazhRealm.LIFE_FIELD.pulseCenter * (0.8 + leb));
+            this._lebenGeben(t.x, t.z, AnazhRealm.LIFE_FIELD.pulseCenter * (0.8 + leb));
         }
         if (t.leib) tode.push({ R, t, ursache, jaeger });
-        else if (ursache === "jagd") this._depositEmotion(t.x, t.z, AnazhRealm._furchtGesetz().F.riss);
+        else if (ursache === "jagd") this._gefuehlPraegen(t.x, t.z, AnazhRealm._furchtGesetz().F.riss);
     }
 
     // DER FALL DER GEZEICHNETEN, nach dem Gesetz aller Regionen eines Takts (kein Gefühl eines Falls färbt eine Wahl desselben

@@ -75,12 +75,14 @@ class AnazhRealm_wasser_hydro {
     // Tafel, die die Welt trägt: der Spiegel des Kerns liest sie über die Lage (`L.pegel`) im Main und im Faden (`pegel` im
     // Stand), bit-gleich; `_pegelTakt` zieht sie nach — gerufen vom Takt der Saison und vom Takt der Nässe (`_naesseTakt`), der
     // schläft, solange das Wetter-Feld steht (`_regenRuht`).
-    _pegelTafel() {
+    // `t`: die Welt-Uhr, zu der die Tafel gilt (feld.K2#2: Jahr und Wetter-Feld sind ihre Funktionen) — ohne t jetzt.
+    _pegelTafel(t) {
         const K = globalThis.__gelaendeCore;
         const L = this._gelaende();
         const n = K.TEMPERATUR.jahrTage;
-        const tag = Math.floor(this.state.seasonPhase * n) / n;
-        const regen = K.pegelRegen(L, this._weatherFieldFor().rain);
+        const zur = Number.isFinite(t);
+        const tag = Math.floor((zur ? this._saisonDerUhr(t) : this.state.seasonPhase) * n) / n;
+        const regen = K.pegelRegen(L, this._weatherFieldFor(undefined, zur ? t : undefined).rain);
         const c = this._pegelStand;
         if (c && c.tag === tag && c.regen === regen && c.feld === this._temperaturFeld && c.wl === L.waterLevel)
             return c.tafel;

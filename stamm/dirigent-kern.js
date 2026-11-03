@@ -291,6 +291,12 @@ class AnazhRealm {
             // schreibt nur der EINE Uhr-Schreiber `_uhrSetzen`. dayLengthMinutes = Echtzeit je Zyklus (Slider 1–60), die
             // Wahl des Spielers (localStorage, nie im Spielstand). Lichter + Skybox leiten sich pro Frame aus timeOfDay ab.
             timeOfDay: 0.5,
+            // DER TAG UND DAS JAHR SIND FUNKTIONEN DER WELT-UHR (feld.K2#2): je Anker { wert, s, laenge } — der Tag zählt
+            // wert + (spielZeit − s) / laenge Tage (`_weltTage`), das Jahr ebenso seine Phase (`_saisonDerUhr`); ein Wort des
+            // Spielers, eine neue Tag- oder Jahres-Länge und das Laden setzen den Anker neu, der Stand trägt ihn. So zeigt jeder
+            // Peer an derselben Welt-Uhr denselben Tag und dasselbe Jahr — die Wanduhr einer Seite treibt nichts.
+            uhrAnker: { wert: 0.5, s: 0, laenge: null },
+            saisonAnker: { wert: 0.375, s: 0, laenge: null },
             // JAHRESZEIT (Vorlagen-Phaenologie): eine langsame Uhr treibt die Saison; die Foundry
             // backt die Assets in dieser Jahreszeit (Herbst golden, Winter kahl). Auto-Zyklus an,
             // per Chat/DSL setzbar. seasonPhase 0=Fruehling .25=Sommer .5=Herbst .75=Winter.
@@ -303,7 +309,6 @@ class AnazhRealm {
             klangPreset: null,
             seasonYearSeconds: 2400, // ein Jahr ueber 40 min Echtzeit (10 min/Saison)
             dayLengthMinutes: AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES,
-            _lastDayNightTick: -Infinity, // Sentinel, erste Iteration setzt initialen Stand
             directionalLight: null, // Reference, in initThreeJS gesetzt
             ambientLight: null,
             // Welle 6.G3 V2 (V8.25) — Himmelskörper als sichtbare Meshes.

@@ -1221,8 +1221,10 @@ class AnazhRealm_dirigent_takt {
         if (st.wetterWort || zug === this._wetterZug || !this._buehneSteht()) return;
         this._wetterZug = zug;
         if (this._messHalt()) return;
-        const wunsch = st.wetterWunsch;
-        st.wetterWunsch = null;
+        // der Wunsch gehört dem Zug, vor dessen Beginn er fiel (seine Uhr, feld.K2#2) — ein späterer wartet auf den nächsten
+        const w0 = st.wetterWunsch;
+        const wunsch = w0 && !(w0.uhr >= zug * Z) ? w0 : null;
+        if (wunsch) st.wetterWunsch = null;
         const pm = st.playerMesh;
         const [x, z] = pm ? [pm.position.x, pm.position.z] : [0, 0];
         const next =

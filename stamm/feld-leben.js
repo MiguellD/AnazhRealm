@@ -324,6 +324,8 @@ class AnazhRealm_feld_leben {
             voxel_carve: (a) => `schnitzt das Voxel-Terrain bei (${a[0]}, ${a[1]}, ${a[2]}) im Radius ${a[3]}`,
             voxel_fill: (a) => `schüttet das Voxel-Terrain bei (${a[0]}, ${a[1]}, ${a[2]}) im Radius ${a[3]} auf`,
             lava: (a) => `gießt Lava bei (${a[0]}, ${a[2]})`,
+            entfache: (a) => `entfacht Feuer bei (${a[0]}, ${a[2]})`,
+            feld_akt: (a) => `gibt ${Array.isArray(a[0]) ? a[0].length : 0} Gaben ins Feld`,
             set_time_of_day: (a) => `stellt die Uhr auf ${a[0]}`,
             skybox_color: () => `färbt den Himmel`,
             deposit_life: (a) => `trägt Leben ins Feld ${pos(a[0])}`,
@@ -1764,14 +1766,16 @@ class AnazhRealm_feld_leben {
     // auraAt(x, z, t) ist die EINE Lese-Schnittstelle: das worldgen-eingefrorene Substrat (worldFieldAt) +
     // die dynamische Achse `emotion` + die Zeit `t`. Wer eine „lebendige Welt"-Wirkung baut, LIEST hier
     // (kein eigener _tickX). `emotion` ist eine Live-Referenz — nicht mutieren.
-    auraAt(x, z, t = 0) {
+    // `uhr`: die Welt-Uhr, zu der Leben und Narbe gelesen werden (der Brand misst sein Bett zur Ankunft der Front, feld.K2#2) —
+    // ohne sie jetzt.
+    auraAt(x, z, t = 0, uhr = this.state.spielZeit) {
         const f = this.worldFieldAt(x, z);
         const e = (this.state.player && this.state.player.emotions) || {};
         // SCHREIB-Seite: das Leben-Overlay HEBT lebendig über dem frozen Substrat, der Fraß senkt es (geklemmt auf 0..1, nie
         // überschreiben); leerer Overlay → lebendig == frozen. at_field_need + FIELD_TO_EMOTION lesen es mit.
-        const overlay = this._lifeOverlayAt(x, z);
+        const overlay = this._lifeOverlayAt(x, z, uhr);
         // DIE NARBE DER TAT (feld.K4) senkt es am Ort der Tat, bis sie heilt (`_narbeAt`) — leer → lebendig == frozen + overlay.
-        const narbe = this._narbeAt(x, z);
+        const narbe = this._narbeAt(x, z, uhr);
         // V17.32 — die emotion-Achse ist RÄUMLICH: der lokale emotionale Abdruck
         // (das Gedächtnis des Ortes) blendet ÜBER die globale Stimmung. Leerer
         // Abdruck → emotion == globale Stimmung (backward-compatible, kein Alloc).
@@ -1948,26 +1952,64 @@ class AnazhRealm_feld_leben {
 
     // Die aktuelle (zerfallene) Overlay-Menge an (x,z) — 0, wenn keine Zelle oder ihr Betrag unter `epsilon` zerfiel (tot: die
     // Räumung ist nur Gedächtnis, sie entscheidet nie, was gelesen wird).
-    _lifeOverlayAt(x, z) {
+    _lifeOverlayAt(x, z, uhr = this.state.spielZeit) {
         const lf = this.state.lifeField;
         if (!lf || lf.size === 0) return 0;
         const e = lf.get(this._lifeCellKey(x, z));
         if (!e) return 0;
-        const dt = Math.max(0, this.state.spielZeit - e.t);
-        const a = dt === 0 ? e.a : e.a * Math.exp(-AnazhRealm.LIFE_FIELD.decayPerSec * dt);
-        return Math.abs(a) < AnazhRealm.LIFE_FIELD.epsilon ? 0 : a;
+        const L = AnazhRealm.LIFE_FIELD;
+        const dt = Math.max(0, uhr - e.t);
+        const a = Math.max(L.kahl, Math.min(L.max, dt === 0 ? e.a : e.a * Math.exp(-L.decayPerSec * dt)));
+        return Math.abs(a) < L.epsilon ? 0 : a;
     }
 
-    // Leben deponieren: ein 3×3-Kernel um (x,z), jede Zelle decay-then-add,
-    // geklemmt auf [LIFE_FIELD.kahl, LIFE_FIELD.max] (Sättigung → der Nexus zieht weiter). Die EINE
+    // DIE GABE IM FESTKOMMA (feld.K2#2): eine Karte des Felds trägt je Zelle ihre Gaben als GANZE Zahlen je Scheibe der Welt-Uhr
+    // (`n`: Beginn E der Scheibe → Σ round(g · e^(λ·(t − E)) · q), FELD_GABE) — die Summe ganzer Zahlen hängt an keiner Folge,
+    // und der Betrag zur Uhr T der Zelle (Σ über die Scheiben in ihrer Folge, n/q · e^(−λ·(T − E))) ist dieselbe Zahl, gleich in
+    // welcher Folge die Gaben ankamen (die eigene, die eines Peers, eine nachgereichte). Eine Scheibe, deren Ende `horizont`/λ
+    // vor T liegt, fällt (ihr Rest ist unter e^(−horizont)), und eine Gabe in sie zählt nicht. Bis feld.K2#2 zerfiel der
+    // Betrag je Gabe und nahm sie dazu: zwei Peers mit denselben Gaben in anderer Folge trugen 0,3021540647553942 ↔ …414
+    // (gate:mp-sync (f) Gefühl). `g` 0 leitet nur neu ab. → der Betrag zur Uhr T (ungeklemmt; die Leser klemmen).
+    _feldGabe(n, g, t, T, lambda) {
+        const G = AnazhRealm.FELD_GABE;
+        const H = T - G.horizont / lambda;
+        const E = Math.floor(t / G.scheibeS) * G.scheibeS;
+        if (g && Number.isFinite(g) && E + G.scheibeS > H)
+            n[E] = (n[E] || 0) + Math.round(g * Math.exp(lambda * (t - E)) * G.q);
+        let a = 0;
+        for (const k of Object.keys(n)
+            .map(Number)
+            .sort((x, y) => x - y)) {
+            if (k + G.scheibeS <= H || !n[k]) {
+                delete n[k];
+                continue;
+            }
+            a += (n[k] / G.q) * Math.exp(-lambda * (T - k));
+        }
+        return a;
+    }
+
+    // Die Gaben einer Zelle, die ohne sie geschrieben wurde (ein Betrag a zur Uhr t): EINE Gabe zu t.
+    _feldGabeAus(a, t, lambda) {
+        const n = {};
+        if (a && Number.isFinite(a) && Number.isFinite(t)) this._feldGabe(n, a, t, t, lambda);
+        return n;
+    }
+
+    // Leben deponieren: ein 3×3-Kernel um (x,z), jede Zelle zerfällt und nimmt die Gabe (`_feldGabe`: ganzzahlig je Scheibe der
+    // Welt-Uhr, feld.K2#2), gelesen geklemmt auf [LIFE_FIELD.kahl, LIFE_FIELD.max] (Sättigung → der Nexus zieht weiter). Die EINE
     // Schreib-API — wer Leben in die Welt trägt (Geburt, Pflege, Kreatur-Trickle) und wer es frisst (der Fraß
     // des Bestands, negativ; Ökologie K1) ruft sie. Der Decay führt beides zum Substrat zurück → nie Überschreiben.
-    _depositLife(x, z, amount = AnazhRealm.LIFE_FIELD.pulseCenter) {
+    // DIE UHR DES SCHREIBERS (feld.K2#2): `t` ist der Moment der Gabe — die Uhr des Akts (`ctx.uhr`), sonst die Welt-Uhr. Kommt
+    // eine Gabe später an, als die Zelle zuletzt schrieb (die Akt-Nachricht eines Peers nach einer eigenen Gabe), zählt sie
+    // zerfallen bis dorthin (a + Δ·e^(−λ·(t_Zelle − t))) — der Zerfall ist linear, die Reihenfolge der Ankunft ändert nichts.
+    // Bis feld.K2#2 schrieb jeder Peer zu seiner Ankunft: die Pflege von A stand bei B 0,0375 s später (gate:mp-sync (f) 0/9).
+    _depositLife(x, z, amount = AnazhRealm.LIFE_FIELD.pulseCenter, t = this.state.spielZeit) {
         if (!amount || !Number.isFinite(amount)) return;
         if (!this.state.lifeField) this.state.lifeField = new Map();
         const lf = this.state.lifeField;
         const cfg = AnazhRealm.LIFE_FIELD;
-        const now = this.state.spielZeit;
+        const now = Number.isFinite(t) ? t : this.state.spielZeit;
         const cx = Math.floor(x / cfg.cell);
         const cz = Math.floor(z / cfg.cell);
         const neighborAmount = amount * (cfg.pulseNeighbor / cfg.pulseCenter);
@@ -1976,23 +2018,62 @@ class AnazhRealm_feld_leben {
                 const add = dx === 0 && dz === 0 ? amount : neighborAmount;
                 const key = cx + dx + "," + (cz + dz);
                 const e = lf.get(key);
-                let cur = 0;
-                if (e) {
-                    const dt = Math.max(0, now - e.t);
-                    cur = e.a * Math.exp(-cfg.decayPerSec * dt);
-                }
-                const a = Math.max(cfg.kahl, Math.min(cfg.max, cur + add));
-                const zelle = e ? Object.assign(e, { a, t: now }) : { a, t: now };
+                const zelle = e || { a: 0, t: -Infinity, n: {} };
                 if (!e) lf.set(key, zelle);
+                if (!zelle.n) zelle.n = this._feldGabeAus(zelle.a, zelle.t, cfg.decayPerSec); // eine Zelle von außen (a, t)
+                zelle.t = Math.max(zelle.t, now);
+                zelle.a = this._feldGabe(zelle.n, add, now, zelle.t, cfg.decayPerSec);
+                const [a, tz] = [zelle.a, zelle.t];
+                lf.gen = (lf.gen | 0) + 1; // die Marke des Stands (`lebenFeld`)
                 // die Tat räumt (`_feldTod`): die Zelle stirbt, wo |a| · e^(−λ·Δt) unter epsilon fällt
                 this._feldTod(
                     lf,
                     key,
                     zelle,
-                    now + Math.max(0, Math.log(Math.abs(a) / cfg.epsilon)) / cfg.decayPerSec,
-                    now
+                    tz + Math.max(0, Math.log(Math.abs(a) / cfg.epsilon)) / cfg.decayPerSec,
+                    this.state.spielZeit
                 );
             }
+        }
+    }
+
+    // DER SCHREIBER EINER SEITE REIST (feld.K2#2): was nur eine Seite rechnet — der Fraß und der Tod im Bestand ihrer Regionen,
+    // das Träufeln ihrer Wesen, ihr Tod, der Riss —, schreibt sie in ihr Feld (zur Welt-Uhr seines Moments `t`) UND als
+    // Schreib-Akt an jeden Mitspieler (`_feldAktSenden`: `deposit_life` mit dieser Uhr) — jeder Peer trägt dieselben Gaben. Bis
+    // feld.K2#2 schrieb jede Seite nur ihren eigenen Bestand (gate:mp-sync (f): nach dem Reload 297 Zellen Fraß nur bei A).
+    // DIE GESCHICHTE STEHT IM FELD: was vor der Uhr eines geladenen Stands geschah (`_feldGeschichte`, `_standWeltSims`), trägt
+    // das Feld des Stands schon — ein Bestand, der diese Zeit nachholt, gibt sie nicht ein zweites Mal (bis feld.K2#2 schrieb B
+    // nach dem Reload jeden Fraß der nachgeholten Stunde neu: 297 Zellen mit doppeltem Betrag).
+    _lebenGeben(x, z, amount, t = this.state.spielZeit) {
+        if (!amount || !Number.isFinite(amount) || t <= this._feldGeschichte) return;
+        this._depositLife(x, z, amount, t);
+        this._feldAktSenden(["leben", x, z, amount], t);
+    }
+
+    // Die Gaben der Seite ([art, x, z, wert]), gebündelt je Uhr bis zum nächsten Takt des Anschlusses (`p2pTick` →
+    // `_feldAktSchicken`) — auch während die Leitung noch aufgeht (nach dem Reload rechnet der Bestand, bevor sie steht); ohne
+    // die Absicht zu spielen (`p2p.enabled`) nichts.
+    _feldAktSenden(op, t) {
+        const p2p = this.state.p2p;
+        if (!p2p || !p2p.enabled) return;
+        const P = this._feldAktPuffer || (this._feldAktPuffer = new Map());
+        // ohne Leitung hält der Puffer höchstens das Gedächtnis der Akte (die ältesten Uhren fallen zuerst)
+        if (P.size >= AnazhRealm.AKT_GEDAECHTNIS) P.delete(P.keys().next().value);
+        const L = P.get(t);
+        if (L) L.push(op);
+        else P.set(t, [op]);
+    }
+
+    // Der Takt des Anschlusses schickt den Puffer: je Uhr EIN Akt (`feld_akt`, höchstens FELD_AKT_JE Gaben), in der Folge seiner
+    // Uhren.
+    _feldAktSchicken() {
+        const P = this._feldAktPuffer;
+        if (!P || !P.size) return;
+        this._feldAktPuffer = null;
+        const n = AnazhRealm.FELD_AKT_JE;
+        for (const t of [...P.keys()].sort((a, b) => a - b)) {
+            const L = P.get(t);
+            for (let i = 0; i < L.length; i += n) this.p2pBroadcastDsl(["feld_akt", L.slice(i, i + n)], t);
         }
     }
 
@@ -2004,7 +2085,7 @@ class AnazhRealm_feld_leben {
         const last = creature.userData.lastLifeTrickle ?? -Infinity;
         if (now - last < AnazhRealm.LIFE_FIELD.trickleEverySec) return;
         creature.userData.lastLifeTrickle = now;
-        this._depositLife(creature.position.x, creature.position.z, AnazhRealm.LIFE_FIELD.trickle);
+        this._lebenGeben(creature.position.x, creature.position.z, AnazhRealm.LIFE_FIELD.trickle);
     }
 
     // === DER BRAND (stoffe.K2 · feld.K3#2): das Feuer auf dem Feld — die Front läuft nach Rothermel, gerechnet, wo es brennt ===
@@ -2027,7 +2108,8 @@ class AnazhRealm_feld_leben {
     // DAS BETT, WIE DIE FRONT ES ANTRIFFT (stoffe.K2#2): je Brand misst die Welt jede Zelle EINMAL — Stoff, Last, Boden, Höhe und
     // das Gefälle über die Zelle (`gx`, `gz`, das `_brandTempo` liest) —, erreicht sie die Front wieder (eine zweite Nachbarin
     // brennt), liest sie das Gemessene (`_brandBett`, geleert, wenn ein neuer Brand fängt). Die Asche fragt der Index jedes Mal.
-    _brandStoff(cx, cz) {
+    // `t`: die Ankunft der Front (feld.K2#2) — Leben und Narbe des Betts zu ihr, nie zum Bild, das die Zündung abarbeitet.
+    _brandStoff(cx, cz, t = this.state.spielZeit) {
         const key = cx + "," + cz;
         const je = this._tatIndex().je.get(key);
         if (je && je.some((a) => a.tat === "brand")) return null;
@@ -2035,7 +2117,7 @@ class AnazhRealm_feld_leben {
         if (M.has(key)) return M.get(key);
         const cs = AnazhRealm.LIFE_FIELD.cell;
         const [x, z] = [(cx + 0.5) * cs, (cz + 0.5) * cs];
-        const leb = this.auraAt(x, z).lebendig;
+        const leb = this.auraAt(x, z, 0, t).lebendig;
         let f = null;
         if (leb >= AnazhRealm.BRAND.minStoff && !this._nassAt(x, z)) {
             const y = this._voxelSurfaceY(x, z);
@@ -2057,9 +2139,10 @@ class AnazhRealm_feld_leben {
     // hält (`nass`) — er löscht, wo sie die Erlöschungs-Feuchte des Betts erreicht. Bis stoffe.K2#2 trug die Nässe nur bis zur
     // Faser-Sättigung (0,35) und kein Ort sein eigenes Bett: das Laub fiel im Landregen erst nach 196 s, das Gras am Ufer
     // brannte wie das auf der Kuppe.
-    _brandFeuchte(boden) {
+    // `t`: die Welt-Uhr des Schritts (feld.K2#2) — die Nässe des Rasters zu ihr (`_naesseUm`), nie die des Bilds.
+    _brandFeuchte(boden, t = this.state.spielZeit) {
         const F = AnazhRealm.BRAND.feuchte;
-        return F.trocken + (F.faser - F.trocken) * (boden || 0) + F.nass * (this.state.naesse || 0);
+        return F.trocken + (F.faser - F.trocken) * (boden || 0) + F.nass * (this._naesseUm(t) || 0);
     }
 
     // DAS TEMPO DER FRONT (stoffe.K2) → { R, ecc, px, pz, tr } oder null (das Bett erstickt): Rothermel 1972 (USDA INT-115) mit
@@ -2082,7 +2165,7 @@ class AnazhRealm_feld_leben {
         const q = beta / (3.348 * sig ** -0.8189);
         const A = 133 * sig ** -0.7913;
         const gam = (sig ** 1.5 / (495 + 0.0594 * sig ** 1.5)) * q ** A * Math.exp(A * (1 - q));
-        const M = this._brandFeuchte(f.boden);
+        const M = this._brandFeuchte(f.boden, t);
         // an der Erlöschungs-Feuchte ist η_M null (Rothermel 1972) — im Gleitkomma blieb das Polynom bei 4·10⁻¹⁶, und das nasse Bett
         // fing mit einem Tempo, das nie ausbrannte (stoffe.K2#2: 3 nasse Zellen am Ufer brannten)
         if (!(M < b.mx)) return null;
@@ -2090,13 +2173,13 @@ class AnazhRealm_feld_leben {
         const etaM = 1 - 2.59 * r + 5.11 * r * r - 3.52 * r * r * r;
         const IR = gam * w0 * (1 - B.mineral.gesamt) * b.heiz * 4.2992e-4 * etaM * 0.174 * B.mineral.frei ** -0.19;
         if (!(IR > 0)) return null;
-        const [W, luft] = [this._stoff("wasser"), this._temperaturAt(f.y)];
+        const [W, luft] = [this._stoff("wasser"), this._temperaturAt(f.y, undefined, t)];
         const Qig = ((Z.tZuend - 273.15 - luft) * Z.c + M * (W.c * (100 - luft) + W.Lv)) * 4.2992e-4;
         const R0 =
             (IR * Math.exp((0.792 + 0.681 * sig ** 0.5) * (beta + 0.1))) /
             (192 + 0.2595 * sig) /
             ((w0 / tiefe) * Math.exp(-138 / sig) * Qig);
-        const w = this._windAt(f.x, f.z, t);
+        const w = this._windAt(f.x, f.z, t, this._weatherFieldFor(undefined, t));
         const [C, Bw, E] = [
             7.47 * Math.exp(-0.133 * sig ** 0.55),
             0.02526 * sig ** 0.54,
@@ -2116,18 +2199,19 @@ class AnazhRealm_feld_leben {
         return { R: R0 * (1 + phi) * 0.00508, ecc, px: phi ? vx / phi : 1, pz: phi ? vz / phi : 0, tr: 23040 / sig };
     }
 
-    // Die Zelle unter (x, z) fängt Feuer → die Zelle oder null (sie brennt schon, trägt kein Bett, die Welt ist zu nass).
-    _brandEntfachen(x, z) {
+    // Die Zelle unter (x, z) fängt Feuer zur Welt-Uhr t (die Uhr des Akts, feld.K2#2 — jeder Peer zündet denselben Moment) →
+    // die Zelle oder null (sie brennt schon, trägt kein Bett, die Welt ist zu nass).
+    _brandEntfachen(x, z, t = this.state.spielZeit) {
         const st = this.state;
         const bf = st.brandFeld || (st.brandFeld = new Map());
         const cs = AnazhRealm.LIFE_FIELD.cell;
         const [cx, cz] = [Math.floor(x / cs), Math.floor(z / cs)];
         const n = bf.get(cx + "," + cz);
         if (n && n.t0 !== null) return null;
+        const uhr = Number.isFinite(t) ? t : st.spielZeit;
         // ein neuer Brand misst sein Bett neu, und nichts eines alten wartet
-        if (!bf.size)
-            [this._brandUhr, this._brandBett, this._brandRest, bf.glutBlock] = [st.spielZeit, null, null, null];
-        return this._brandZuenden(cx, cz, st.spielZeit, x, z);
+        if (!bf.size) [this._brandUhr, this._brandBett, this._brandRest, bf.glutBlock] = [uhr, null, null, null];
+        return this._brandZuenden(cx, cz, uhr, x, z);
     }
 
     // Die Front erreicht die Zelle zur Zeit t am Punkt (ex, ez) ihres Rands (der Herd: am Ort der Tat). Ihr Bett und ihr Tempo
@@ -2142,7 +2226,7 @@ class AnazhRealm_feld_leben {
     _brandZuenden(cx, cz, t, ex, ez) {
         const bf = this.state.brandFeld;
         const key = cx + "," + cz;
-        const f = this._brandStoff(cx, cz);
+        const f = this._brandStoff(cx, cz, t);
         const T = f && this._brandTempo(f, t);
         if (!T || !(T.R > 0)) {
             bf.delete(key);
@@ -2232,7 +2316,7 @@ class AnazhRealm_feld_leben {
         const bf = this.state.brandFeld;
         const [aschen, faellig, glueht] = [[], [], []];
         for (const [key, z] of bf) {
-            const M = this._brandFeuchte(z.boden);
+            const M = this._brandFeuchte(z.boden, t);
             if (M < z.mx && z.t0 === null) {
                 if (z.an <= t) faellig.push(z);
                 continue;
@@ -2286,7 +2370,7 @@ class AnazhRealm_feld_leben {
             if (R.i < n) {
                 const z = R.aschen[R.i];
                 const [ax, az] = [(z.cx + 0.5) * cs, (z.cz + 0.5) * cs];
-                this._tatSchreiben("brand", ax, az, { w: Math.round(this._wuchsAt(ax, az, z.boden) * 1e3) / 1e3 });
+                this._tatSchreiben("brand", ax, az, { w: Math.round(this._wuchsAt(ax, az, z.boden) * 1e3) / 1e3 }, R.t);
                 continue;
             }
             const z = R.faellig[R.i - n];
@@ -2444,19 +2528,21 @@ class AnazhRealm_feld_leben {
     // und 23 Pflanzen mit tryMouseBreak — Δlebendig 0, kein Stumpf, nach dem Reload 23 von 23 Pflanzen zurück).
 
     // DIE WELT-STUNDE: Stunden seit dem ersten Tag der Welt — ihr Tag (`worldMeta.tag`, `_uhrSetzen` zählt ihn) und die Uhr.
-    _weltStunde() {
-        const st = this.state;
-        return 24 * (((st.worldMeta && st.worldMeta.tag) || 0) + (st.timeOfDay || 0));
+    // Seit feld.K2#2 eine Funktion der Welt-Uhr t (`_weltTage`): jeder Peer stempelt seine Taten zur selben Stunde, und eine Tat
+    // zur Uhr ihres Moments (die Asche zum Schritt des Brands, nie zum Bild, das ihn abarbeitet).
+    _weltStunde(t = this.state.spielZeit) {
+        return 24 * this._weltTage(t);
     }
 
     // Die Tat schreibt: an ihren Ort, zur Welt-Stunde; `mehr` trägt, was ihre Klasse braucht (die Ernte ihre Kachel und Kennung,
     // das Fällen die Größe des Baums für den Stumpf). Der Nachwuchs wacht zu ihrem Ende (die Asche zur nächsten Stufe ihrer
     // Sukzession, `_sukzessionNaechste`), die nächste Sicherung trägt sie.
-    _tatSchreiben(tat, x, z, mehr) {
+    // `uhr`: die Welt-Uhr ihres Moments (ohne sie jetzt).
+    _tatSchreiben(tat, x, z, mehr, uhr = this.state.spielZeit) {
         const wm = this.state.worldMeta;
         if (!Array.isArray(wm.taten)) wm.taten = [];
         const r2 = (v, k) => Math.round(v * k) / k;
-        const a = Object.assign({ tat, x: r2(x, 100), z: r2(z, 100), h: r2(this._weltStunde(), 1e4) }, mehr);
+        const a = Object.assign({ tat, x: r2(x, 100), z: r2(z, 100), h: r2(this._weltStunde(uhr), 1e4) }, mehr);
         this._weltRegt(); // der Weckruf vor jedem Schreiben
         wm.taten.push(a);
         const ende = tat === "brand" ? this._sukzessionNaechste(a) : a.h + this._tatIndex().dauer.get(a);
@@ -2507,12 +2593,12 @@ class AnazhRealm_feld_leben {
     }
 
     // Die Narbe an (x,z): Σ Tiefe × Rest je Tat der Zelle (der Rest fällt linear von 1 auf 0 über ihre Dauer), gekappt.
-    _narbeAt(x, z) {
+    _narbeAt(x, z, uhr = this.state.spielZeit) {
         const I = this._tatIndex();
         const je = I.n ? I.je.get(this._lifeCellKey(x, z)) : null;
         if (!je) return 0;
         const N = AnazhRealm.TAT_NARBE;
-        const h = this._weltStunde();
+        const h = this._weltStunde(uhr);
         let s = 0;
         for (const a of je) s += N[a.tat].tiefe * Math.min(1, Math.max(0, 1 - (h - a.h) / I.dauer.get(a)));
         return Math.min(N.max, s);
@@ -2539,29 +2625,41 @@ class AnazhRealm_feld_leben {
     // === die SCHREIB-Seite der emotion-Achse (das räumliche Gedächtnis) ===
     // Eine emotionale Tat (`_feelAction`) prägt ihre Emotion an der Spieler-Zelle ein; `auraAt` blendet
     // den Abdruck über die globale Stimmung, der Welt-Tint liest das. Lazy-Decay, kein Frame-Sweep.
-    _depositEmotion(x, z, emotionMap) {
+    // `t`: der Moment der Prägung (die Uhr des Akts, feld.K2#2) — eine spätere Ankunft zählt zerfallen bis zur Uhr der Zelle,
+    // wie die Gabe des Lebens (`_depositLife`).
+    _depositEmotion(x, z, emotionMap, t = this.state.spielZeit) {
         if (!emotionMap) return;
         if (!this.state.emotionField) this.state.emotionField = new Map();
         const ef = this.state.emotionField;
         const cfg = AnazhRealm.EMOTION_FIELD;
-        const now = this.state.spielZeit;
+        const now = Number.isFinite(t) ? t : this.state.spielZeit;
         const key = this._lifeCellKey(x, z); // dieselbe 16-m-Zelle wie das Leben
         let cell = ef.get(key);
-        if (cell) {
-            const f = Math.exp(-cfg.decayPerSec * Math.max(0, now - cell.t)); // erst zerfallen
-            for (const k of Object.keys(cell.axes)) cell.axes[k] *= f;
-            cell.t = now;
-        } else {
-            cell = { axes: {}, t: now };
-            ef.set(key, cell);
+        if (!cell) ef.set(key, (cell = { axes: {}, t: -Infinity, n: {} }));
+        if (!cell.n) {
+            cell.n = {}; // eine Zelle von außen (axes, t): je Achse EINE Gabe zu t
+            for (const k of Object.keys(cell.axes))
+                cell.n[k] = this._feldGabeAus(cell.axes[k], cell.t, cfg.decayPerSec);
         }
+        cell.t = Math.max(cell.t, now);
+        for (const axis of Object.keys(emotionMap)) if (!cell.n[axis]) cell.n[axis] = {};
         let m = 0;
-        for (const axis of Object.keys(emotionMap)) {
-            cell.axes[axis] = Math.min(cfg.max, (cell.axes[axis] || 0) + emotionMap[axis] * cfg.imprintScale);
+        for (const axis of Object.keys(cell.n)) {
+            const g = emotionMap[axis] ? emotionMap[axis] * cfg.imprintScale : 0;
+            const v = this._feldGabe(cell.n[axis], g, now, cell.t, cfg.decayPerSec);
+            if (Object.keys(cell.n[axis]).length) cell.axes[axis] = v;
+            else (delete cell.axes[axis], delete cell.n[axis]);
+            m = Math.max(m, Math.min(cfg.max, v));
         }
-        for (const axis of Object.keys(cell.axes)) m = Math.max(m, cell.axes[axis]);
+        ef.gen = (ef.gen | 0) + 1; // die Marke des Stands (`gefuehlFeld`)
         // die Tat räumt (`_feldTod`): die Zelle stirbt, wo ihre stärkste Achse unter epsilon zerfällt
-        this._feldTod(ef, key, cell, now + Math.max(0, Math.log(m / cfg.epsilon)) / cfg.decayPerSec, now);
+        this._feldTod(
+            ef,
+            key,
+            cell,
+            cell.t + Math.max(0, Math.log(Math.max(m, 1e-12) / cfg.epsilon)) / cfg.decayPerSec,
+            this.state.spielZeit
+        );
     }
 
     // Der aktuelle (zerfallene) Emotions-Abdruck an (x,z) — null, wenn keine Zelle
@@ -2576,7 +2674,7 @@ class AnazhRealm_feld_leben {
         let out = null;
         let lebt = false; // tot, wenn jede Achse unter `epsilon` zerfiel (wie die Räumung urteilt)
         for (const axis of Object.keys(cell.axes)) {
-            const v = cell.axes[axis] * f;
+            const v = Math.min(AnazhRealm.EMOTION_FIELD.max, cell.axes[axis] * f);
             if (v >= AnazhRealm.EMOTION_FIELD.epsilon) lebt = true;
             if (v > 1e-4) {
                 if (!out) out = {};
@@ -2911,6 +3009,12 @@ AnazhRealm.TAT_NARBE = Object.freeze({
 });
 AnazhRealm.TAT_LEER = Object.freeze(new Set()); // die Kachel ohne Ernte (`_geerntetIn`)
 
+// Das Gedächtnis der gesendeten Akte einer Seite (`p2pBroadcastDsl`, `_aktNachreichen`): so viele hält sie für Wiederkehrende.
+AnazhRealm.AKT_GEDAECHTNIS = 4096;
+// DIE GABE IM FESTKOMMA (`_feldGabe`): die Scheibe der Welt-Uhr (s), die Einheit (1/q) und der Horizont (in 1/λ: e^(−14,4) ≈ 5,6e-7).
+AnazhRealm.FELD_GABE = Object.freeze({ scheibeS: 600, q: 1e9, horizont: 14.4 });
+// Die Gaben eines Feld-Akts der Seite (`_feldAktSchicken`, der Op `feld_akt`): so viele reisen in EINER Nachricht.
+AnazhRealm.FELD_AKT_JE = 200;
 // Die Scheibe des Todes-Rads einer Feld-Karte in Spielzeit-Sekunden (`_feldTod`): eine tote Zelle liegt höchstens so lange
 // über ihrem Tod in der Karte (gelesen ist sie schon tot); FELD_LEER die fehlende Zelle.
 AnazhRealm.FELD_TOD_EIMER_S = 8;

@@ -838,6 +838,45 @@ class AnazhRealm_speicher_welten {
         return this._standBautenMemo.bauten;
     }
 
+    // DER STAND DER TEIL-SIMULATIONEN (feld.K2#2) — was `_standWeltSims` beim Laden zurückspielt: je Karte ihre Zellen
+    // [Zelle, Gaben, Uhr] in der Ordnung der Karte (die Gaben im Festkomma, `_feldGabe`; das Gefühl je Achse), der Brand mit seinen Zellen (ohne den gemerkten Ort ihrer Leser), seiner Uhr
+    // und dem angefangenen Schritt.
+    _weltSimsStand() {
+        const st = this.state;
+        const zellen = (M, wert) => (M && M.size ? [...M].map(([k, e]) => [k, wert(e), e.t]) : []);
+        const ohneOrt = (c) => {
+            const o = Object.assign({}, c);
+            delete o.ort;
+            return o;
+        };
+        const bf = st.brandFeld;
+        const R = this._brandRest;
+        return {
+            uhrAnker: st.uhrAnker || null,
+            akte: st.aktGesehen || null,
+            saisonAnker: st.saisonAnker || null,
+            naesse: Number.isFinite(st.naesse) ? st.naesse : 0,
+            naesseSchritt: Number.isFinite(st.naesseSchritt) ? st.naesseSchritt : null,
+            leben: zellen(st.lifeField, (e) => e.n || this._feldGabeAus(e.a, e.t, AnazhRealm.LIFE_FIELD.decayPerSec)),
+            gefuehl: zellen(st.emotionField, (e) => e.n || {}),
+            brand:
+                (bf && bf.size) || R
+                    ? {
+                          uhr: this._brandUhr,
+                          zellen: bf ? [...bf.values()].map(ohneOrt) : [],
+                          rest: R
+                              ? {
+                                    t: R.t,
+                                    aschen: R.aschen.map(ohneOrt),
+                                    faellig: R.faellig.map((z) => z.cx + "," + z.cz),
+                                    i: R.i,
+                                }
+                              : null,
+                      }
+                    : null,
+        };
+    }
+
     // DIE STAND-TAFEL — die EINE Quelle des Feld-Satzes, in der Ordnung des Stands: je Feld [Schlüssel, Wert, Art].
     // `wert(stand, K)`: der Wert des Felds (`stand` = für den Speicher-Faden: die Edits reisen dort als eigener Teil
     // `voxelEdits`, kompakt; `K` der Kontext des Stands, `K.bauten` die Bauten des Stands). Die ART: `marke(K)` sind die Werte,
@@ -1062,6 +1101,9 @@ class AnazhRealm_speicher_welten {
             // DIE WELT-UHR (feld.K2#2) reist: nach dem Reload laufen Front, Zug, Leben und Brand an ihr weiter (`_weltUhrNimm`);
             // der Übergang des Wetter-Zugs ist ihre Funktion (der erste Takt zieht ihn neu), darum reist weatherTransition nicht.
             ["spielZeit", () => st().spielZeit, { augenblick: true }],
+            // DIE TEIL-SIMULATIONEN (feld.K2#2, `_standWeltSims`): die Anker von Tag und Jahr, das Raster der Nässe, die Zellen des
+            // Lebens und des Gefühls und der Brand — was aus Akten wuchs, reist, damit der Reload mitten im Sturm fortsetzt.
+            ["weltSims", () => this._weltSimsStand(), { augenblick: true }],
             ["timeOfDay", () => (typeof st().timeOfDay === "number" ? st().timeOfDay : 0.5), { augenblick: true }],
             // DAS JAHR DER WELT (speicher.K4): die Phase der Saison reist — ohne sie begann jede Wiederkehr am Sommer-Anfang
             // (0,375), und der Pegel des Jahrs (`_pegelTafel`: die Schmelze hebt See und Fluss) zeichnete Ufer, Wasser und den

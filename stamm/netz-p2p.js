@@ -1884,11 +1884,44 @@ class AnazhRealm_netz_p2p {
         const pid = msg.peerId;
         if (typeof pid !== "string" || pid === p2p.peerId) return;
         if (!Array.isArray(msg.program) || msg.program.length === 0) return;
+        // DIE UHR DES AKTS (feld.K2#2): der Akt wirkt zu der Welt-Uhr, zu der der Absender ihn tat (`w`) — die Seite nimmt sie
+        // (`_weltUhrNimm`) und schreibt Leben, Gefühl und Brand zu ihr; ein Akt ohne Uhr wirkt jetzt
+        if (!this._aktNeu(pid, this._fremdeZahl(msg.s), this._fremdeZahl(msg.i))) return; // schon getragen (nachgereicht)
+        const w = this._fremdeZahl(msg.w);
+        this._weltUhrNimm(w);
         try {
-            this.dslRun(msg.program, { source: `remote:${pid}` });
+            this.dslRun(msg.program, { source: `remote:${pid}`, uhr: Number.isFinite(w) ? w : undefined });
         } catch (err) {
             this.log(`P2P-DSL Ausführungsfehler von ${pid}: ${err.message}`, "WARN");
         }
+    }
+
+    // DIE AKTE WÄHREND DER ABWESENHEIT (feld.K2#2): ein Akt mit Kennung [s, i] ist neu, wenn die Seite ihn weder vor ihrem Stand
+    // trug (die Marke des Stands je Absender, `_aktStandMarke`) noch in dieser Sitzung empfing; die Marke je Absender
+    // (`state.aktGesehen`, die späteste Kennung) reist im Stand. Ein Akt ohne Kennung ist immer neu.
+    _aktNeu(pid, s, i) {
+        if (!Number.isFinite(s) || !Number.isFinite(i)) return true;
+        const m = this._aktStandMarke && this._aktStandMarke[pid];
+        if (m && (s < m[0] || (s === m[0] && i <= m[1]))) return false;
+        const E = this._aktEmpfangen || (this._aktEmpfangen = new Set());
+        const k = pid + "|" + s + "|" + i;
+        if (E.has(k)) return false;
+        E.add(k);
+        const G = this.state.aktGesehen || (this.state.aktGesehen = {});
+        const g = G[pid];
+        if (!g || s > g[0] || (s === g[0] && i > g[1])) G[pid] = [s, i];
+        return true;
+    }
+
+    // Ein Wiederkehrender nennt in seiner Seele (`akte`), welchen Akt dieser Seite er zuletzt trug (`marke`): die Seite reicht
+    // jeden späteren aus ihrem Gedächtnis nach, in seiner Folge — was er in dieser Sitzung schon empfing, fällt bei ihm (`_aktNeu`).
+    // Bis feld.K2#2 verlor B jeden Akt, den A sandte, während B neu lud (gate:mp-sync (f): 297 Zellen Fraß nur bei A).
+    _aktNachreichen(marke) {
+        if (!Array.isArray(marke) || !Number.isFinite(marke[0]) || !Number.isFinite(marke[1])) return 0;
+        let n = 0;
+        for (const m of this._aktGedaechtnis || [])
+            if (m.s > marke[0] || (m.s === marke[0] && m.i > marke[1])) (this.p2pSend(m), n++);
+        return n;
     }
 
     _p2pMsgSoul(msg, p2p) {
@@ -1896,6 +1929,7 @@ class AnazhRealm_netz_p2p {
         // KEIN DSL-Pfad — eine Peer-Seele ist Darstellung, keine Welt-Mutation.
         const pid = msg.peerId;
         if (typeof pid !== "string" || pid === p2p.peerId) return;
+        if (msg.akte && typeof msg.akte === "object") this._aktNachreichen(msg.akte[p2p.peerId]);
         const entry = this._p2pEnsurePeerEntry(pid);
         const soulName = typeof msg.soulName === "string" ? msg.soulName : "";
         if (!soulName) return;
@@ -2497,6 +2531,10 @@ class AnazhRealm_netz_p2p {
         // W7 Phase 2 — die Welt-Rolle mitteilen, damit ein Guest weiss,
         // welcher verbundene Peer der Host ist (Ziel des Welt-Resync).
         msg.worldRole = (this.state.worldMeta && this.state.worldMeta.role) || "solo";
+        // DIE MARKEN DER AKTE (feld.K2#2): je Absender der letzte Akt, den diese Seite trug — nach einem Reload die des Stands
+        // (`_aktStandMarke`), sonst die der Sitzung; der Absender reicht den Rest nach (`_aktNachreichen`)
+        const marken = this._aktStandMarke || this.state.aktGesehen;
+        if (marken && Object.keys(marken).length) msg.akte = marken;
         // W7 Phase 3 — mitteilen, ob ich meine LLM-Stimme teile.
         msg.voiceShared = !!(this.state.p2p && this.state.p2p.voiceShared);
         // W16 Phase 2 — den eigenen Welt-Katalog annoncieren (wie worldRole).
@@ -2628,6 +2666,7 @@ class AnazhRealm_netz_p2p {
     p2pTick(currentTimeMs) {
         const p2p = this.state.p2p;
         if (!p2p.enabled || !p2p.connected || !p2p.ws) return;
+        this._feldAktSchicken(); // die Akte der Seite (feld.K2#2): Fraß, Tod, Riss — je Uhr EIN Akt
         // Position-Broadcast bei 30 Hz. lastBroadcastAt ist in ms,
         // currentTimeMs sollte performance.now() sein. Der Takt des Anschlusses trägt die Welt-Uhr (`w`, feld.K2#2): jede
         // Seite nimmt sie, wenn sie später ist (`_weltUhrNimm`) — die Uhr reist, kein Zustand einer Teil-Simulation.

@@ -254,6 +254,18 @@ class AnazhRealm_feld_sprache {
                 },
             },
             {
+                // Das Entfachen (feld.K2#2): die Zelle unter dem Spieler fängt Feuer — ein Schreib-Akt, der mit seiner Uhr reist.
+                example: "entfache feuer",
+                re: /^(?:entfache|entzünde|entzuende|zünde|zuende)(?:\s+(?:ein\s+|das\s+)?(?:feuer|land|feld))?(?:\s+an)?\s*$/i,
+                build: () => {
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
+                    return {
+                        program: ["entfache", p.x, p.y, p.z],
+                        describe: "Du entfachst ein Feuer — die Front läuft mit dem Wind",
+                    };
+                },
+            },
+            {
                 example: "setze insel hier",
                 re: /^(?:setze|erschaffe|baue)\s+insel\s+hier\s*$/i,
                 build: () => {
@@ -782,7 +794,24 @@ class AnazhRealm_feld_sprache {
         // Emotion der Tat wird an der Spieler-Zelle deponiert (das räumliche Gedächtnis
         // der Welt — ein Ort, an dem ich eine Kathedrale baute, trägt diese Stimmung).
         const pm = this.state.playerMesh && this.state.playerMesh.position;
-        if (pm) this._depositEmotion(pm.x, pm.z, contrib);
+        if (pm) this._gefuehlPraegen(pm.x, pm.z, contrib);
+    }
+
+    // DIE PRÄGUNG DES SPIELERS IST EIN SCHREIB-AKT (feld.K2#2): was er fühlt, prägt seine Zelle (`_depositEmotion`, zur Welt-Uhr)
+    // und reist als Akt `deposit_emotion` mit ihrer Uhr — jeder Peer trägt dasselbe Gedächtnis des Orts. Die Achse trägt das
+    // Gesetz des Akts (0 … 1, nur ein Positives prägt), auf jeder Seite gleich. Bis feld.K2#2 prägte jede Seite nur ihre eigenen
+    // Gefühle, und ein Akt des Mitspielers das Gefühl der Seite an ihrem Ort (gate:mp-sync (f): Gefühl 0/5 gleich).
+    _gefuehlPraegen(x, z, contrib, t = this.state.spielZeit) {
+        if (t <= this._feldGeschichte) return; // die Geschichte des Stands trägt ihr Feld schon (`_lebenGeben`)
+        const achsen = {};
+        for (const a of Object.keys(contrib)) {
+            const v = Math.max(0, Math.min(1, Number(contrib[a])));
+            if (AnazhRealm.EMOTION_AXES.includes(a) && v > 0) achsen[a] = v;
+        }
+        const liste = Object.keys(achsen);
+        if (!liste.length) return;
+        this._depositEmotion(x, z, achsen, t);
+        for (const a of liste) this._feldAktSenden([a, x, z, achsen[a]], t);
     }
 
     // Emotion aus Substanz: Tags (× Magnitude) über die frozen Tabelle TAG_TO_EMOTION. Tags > 1
@@ -1162,7 +1191,7 @@ class AnazhRealm_feld_sprache {
         const amt = AnazhRealm.EMOTION_TEND.amount;
         p.emotions.hope = Math.min(1, (p.emotions.hope || 0) + amt); // der Trost hebt die Hoffnung
         const pm = this.state.playerMesh && this.state.playerMesh.position;
-        if (pm) this._depositEmotion(pm.x, pm.z, { hope: amt }); // der Ort erinnert die Geste
+        if (pm) this._gefuehlPraegen(pm.x, pm.z, { hope: amt }); // der Ort erinnert die Geste
     }
 
     // Der EINE Balance-Leser des Regelkreises: liest das 6-Achsen-Substrat über `_emotionState` und

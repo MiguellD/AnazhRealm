@@ -49,6 +49,9 @@ class AnazhRealm_feld_dsl {
             state: this.state,
             realm: this,
             startTime: this._taktUhr(),
+            // DIE UHR DES AKTS (feld.K2#2): die Welt-Uhr, zu der das Programm wirkt — der Absender schickt sie mit (`w`,
+            // `p2pBroadcastDsl`), jeder Peer schreibt Leben, Gefühl, Brand, Jahr und Wetter-Übergang zu ihr, nie zu seiner Ankunft
+            uhr: Number.isFinite(opts.uhr) ? opts.uhr : this.state.spielZeit,
             rng: this._samenStrom(typeof opts.seed === "number" ? opts.seed : this._bauSame("dsl")),
             budget: opts.budget || this.dslDefaultBudget(),
             log: opts.log || [],
@@ -105,7 +108,7 @@ class AnazhRealm_feld_dsl {
             this.state.p2p.enabled &&
             this.state.p2p.connected
         ) {
-            this.p2pBroadcastDsl(this._dslMitOrten(program, ctx));
+            this.p2pBroadcastDsl(this._dslMitOrten(program, ctx), ctx.uhr);
         }
         return { ok: outcome.errors === 0, log: ctx.log, outcome, programId: ctx.programId };
     }
@@ -188,6 +191,8 @@ class AnazhRealm_feld_dsl {
                 "voxel_carve",
                 "voxel_fill",
                 "lava",
+                "entfache",
+                "feld_akt",
                 // schwere Struktur-Spawns (zu teuer für eine wiederholt feuernde Regel)
                 "spawn_village",
                 "spawn_temple",
@@ -245,13 +250,25 @@ class AnazhRealm_feld_dsl {
 
     // DSL-Broadcast: skip bei nicht-broadcastbarem Op; sendet {type:"dsl", program}, der Server
     // stempelt peerId; Empfänger routen via p2pHandleMessage → dslRun(source="remote:<peerId>").
-    p2pBroadcastDsl(program) {
+    // `w`: die Uhr des Akts (feld.K2#2, `ctx.uhr`) — der Empfänger nimmt sie (`_weltUhrNimm`) und wirkt zu ihr. Jeder Akt trägt
+    // seine Kennung [s, i] (die Welt-Uhr seines Sendens und seine Folge in ihr — die Uhr geht nie zurück, auch über den Reload
+    // des Absenders) und bleibt im Gedächtnis der Seite (`_aktGedaechtnis`), bis ein Wiederkehrender ihn nachgereicht bekommt
+    // (`_aktNachreichen`).
+    p2pBroadcastDsl(program, w = this.state.spielZeit) {
         if (!Array.isArray(program) || program.length === 0) return;
         if (this._dslContainsAnyOp(program, AnazhRealm.NON_BROADCASTABLE_OPS)) {
             // Programm enthält Spieler-private Op — bewusst lokal behalten.
             return;
         }
-        this.p2pSend({ type: "dsl", program });
+        const s = this.state.spielZeit;
+        const L = this._aktLetzt;
+        const i = L && L[0] === s ? L[1] + 1 : 0;
+        this._aktLetzt = [s, i];
+        const msg = { type: "dsl", program, w, s, i };
+        const G = this._aktGedaechtnis || (this._aktGedaechtnis = []);
+        G.push(msg);
+        if (G.length > AnazhRealm.AKT_GEDAECHTNIS) G.splice(0, G.length - AnazhRealm.AKT_GEDAECHTNIS);
+        this.p2pSend(msg);
     }
 
     dslEval(program, ctx) {
@@ -678,8 +695,15 @@ class AnazhRealm_feld_dsl {
             }
             if (r.disabled) continue; // V17.39 — pausiertes Gesetz feuert nicht (ttl/Eviction gelten weiter)
             if (budget <= 0) continue; // Budget erschöpft → nächsten Frame
-            if (currentTime - r.lastFired < r.everySec) continue; // everySec-Gate
-            const ctx = this._worldRuleCtx(r);
+            // DAS GESETZ DES SPIELERS FEUERT JE SCHEIBE DER WELT-UHR (feld.K2#2): höchstens einmal je Scheibe k = ⌊spielZeit /
+            // everySec⌋, sein Akt zur Uhr ihres Beginns — jeder Peer feuert dieselbe Scheibe zur selben Uhr. Bis feld.K2#2 hielt
+            // die Wanduhr der Seite das Tor (`currentTime`): zwei Peers feuerten ein Gesetz mit Wetter-Wort in verschiedenen
+            // Momenten, das Wort stand bei A und fehlte im Stand von B (gate:mp-sync (f) Reload). Die Regeln des Nexus (mit
+            // `ttlSec`) bleiben Erprobung der Seite an ihrer Uhr.
+            const gesetz = r.ttlSec == null;
+            const k = Math.floor(this.state.spielZeit / r.everySec);
+            if (gesetz ? r.scheibe === k : currentTime - r.lastFired < r.everySec) continue; // everySec-Gate
+            const ctx = this._worldRuleCtx(r, gesetz ? k * r.everySec : undefined);
             let condTrue = false;
             try {
                 condTrue = this.dslEvalCond(r.cond, ctx);
@@ -689,6 +713,7 @@ class AnazhRealm_feld_dsl {
             if (!condTrue) continue;
             budget--;
             r.lastFired = currentTime;
+            if (gesetz) r.scheibe = k;
             r.fires = (r.fires || 0) + 1;
             // Lokal-attribuierte Fitness: (a) den Reward des VORIGEN Feuerns messen (EMA → rule.value);
             // (b) für DIESES Feuern Ort + Baseline VOR dem Effekt festhalten (_observeFieldWohl). Beides VOR
@@ -726,8 +751,9 @@ class AnazhRealm_feld_dsl {
     // Ein eigener Ctx pro Regel-Lauf: deterministische Regel-RNG + reduziertes
     // Budget (ein Regel-Effekt ist klein). Die Quelle wird zu `rule:<urspr.>`
     // gestempelt (für Journal/Fitness in Phase C).
-    _worldRuleCtx(rule) {
+    _worldRuleCtx(rule, uhr) {
         return this.dslCtx({
+            uhr,
             seed: this._worldRuleSeed(rule, Math.floor(this.state.spielZeit / rule.everySec)),
             source: `rule:${rule.source || "unknown"}`,
             budget: this._worldRuleBudget(),
@@ -892,7 +918,7 @@ class AnazhRealm_feld_dsl {
                         ctx.log.push({ event: "wetter_gehalten", quelle, wort: name });
                     return;
                 }
-                const ok = this._setWeather(name, quelle);
+                const ok = this._setWeather(name, quelle, null, ctx && ctx.uhr);
                 // die Welt schreibt das Wetter nie selbst, sie wünscht es (die Stimme sagt es so, `_feldStimmeZeile`)
                 if (ctx && ctx.tat) ctx.tat.wunsch = ok === "wunsch";
                 if (ctx && ok === "wunsch") ctx.log.push({ event: "wetter_gewuenscht", quelle, wort: name });
@@ -907,8 +933,8 @@ class AnazhRealm_feld_dsl {
             },
             // JAHRESZEIT setzen (Vorlagen-Phaenologie): "fruehling/sommer/herbst/winter" -> die
             // Foundry backt den Wald in dieser Saison um (Herbst golden, Winter kahl).
-            set_season: ([name]) => {
-                this.setSeason(name);
+            set_season: ([name], ctx) => {
+                this.setSeason(name, ctx && ctx.uhr);
             },
             gravity: ([value]) => {
                 // P3 — die Schwerkraft ist eine Skalar-Konstante, die `_stepCharacter` liest
@@ -940,6 +966,17 @@ class AnazhRealm_feld_dsl {
             },
             // lava(x, y, z): der Schreib-Akt der Lava (stoffe.K3-2, `_lavaGiessen`) — die 16-m-Zelle am Ort trägt eine Decke
             // geschmolzenen Steins, die über die glut-Achse zu Stein erstarrt (broadcastable wie jeder Welt-Akt).
+            // entfache(x, y, z): DAS ENTFACHEN ALS SCHREIB-AKT (feld.K2#2) — die 16-m-Zelle unter dem Ort fängt Feuer zur Uhr des
+            // Akts (`_brandEntfachen`), die Front läuft als Funktion ihrer Ankunft; jeder Peer entfacht denselben Brand.
+            entfache: ([x, y, z], ctx) => {
+                const p = this.dslEvalPos(["at", x, y, z], ctx);
+                const zelle = this._brandEntfachen(p.x, p.z, ctx.uhr);
+                ctx.log.push(
+                    zelle
+                        ? { event: "entfacht", x: zelle.cx, z: zelle.cz, stoff: zelle.stoff }
+                        : { event: "entfachen_absage", x: p.x, z: p.z }
+                );
+            },
             lava: ([x, y, z], ctx) => {
                 const p = this.dslEvalPos(["at", x, y, z], ctx);
                 const a = this._lavaGiessen(p.x, p.z);
@@ -1877,14 +1914,33 @@ class AnazhRealm_feld_dsl {
                 const pos = this._dslRulePos(positionNode, ctx);
                 const amt =
                     amount != null ? c(amount, 0, AnazhRealm.LIFE_FIELD.max) : AnazhRealm.LIFE_FIELD.pulseCenter;
-                this._depositLife(pos.x, pos.z, amt);
+                this._depositLife(pos.x, pos.z, amt, ctx && ctx.uhr);
+            },
+            // feld_akt([[art, x, z, wert], …]): DIE GABEN EINER SEITE (feld.K2#2, `_feldAktSchicken`) — was nur eine Seite rechnet
+            // (Fraß und Tod im Bestand, Träufeln, Riss, die Prägung des Spielers), zur Uhr des Akts in jedes Feld: `leben` gibt
+            // Leben (negativ der Fraß, bis `kahl`), eine Achse des Gefühls prägt (0 … 1). Kein Welt-Akt: keine Tat, kein Halt.
+            feld_akt: ([liste], ctx) => {
+                if (!Array.isArray(liste)) return;
+                const LF = AnazhRealm.LIFE_FIELD;
+                for (const g of liste.slice(0, AnazhRealm.FELD_AKT_JE)) {
+                    if (!Array.isArray(g) || !Number.isFinite(g[1]) || !Number.isFinite(g[2])) continue;
+                    // der Wunsch der Welt einer Seite (das Wort, das ihr nächster Zug zieht, `_setWeather`)
+                    if (g[0] === "wunsch") {
+                        if (typeof g[3] === "string") this._setWeather(g[3], "welt:" + ctx.source, null, ctx.uhr);
+                        continue;
+                    }
+                    const [art, x, z, w] = g;
+                    if (art === "leben") this._depositLife(x, z, c(w, LF.kahl, LF.max), ctx.uhr);
+                    else if (AnazhRealm.EMOTION_AXES.includes(art) && c(w, 0, 1) > 0)
+                        this._depositEmotion(x, z, { [art]: c(w, 0, 1) }, ctx.uhr);
+                }
             },
             deposit_emotion: ([axis, amount, positionNode], ctx) => {
                 if (typeof axis !== "string" || !AnazhRealm.EMOTION_AXES.includes(axis)) return;
                 const amt = c(amount, 0, 1); // Tat-Intensität; _depositEmotion skaliert mit imprintScale
                 if (!(amt > 0)) return;
                 const pos = this._dslRulePos(positionNode, ctx);
-                this._depositEmotion(pos.x, pos.z, { [axis]: amt });
+                this._depositEmotion(pos.x, pos.z, { [axis]: amt }, ctx && ctx.uhr);
             },
 
             // Control-Flow
@@ -2148,7 +2204,7 @@ class AnazhRealm_feld_dsl {
             // Eine Geburt TRÄGT Leben ins Feld: hebt lebendig an der Wiege → schließt den at_field_need-Loop
             // (Mangel sinkt, der Nexus zieht weiter), die Region ergrünt. NUR dieser intentionale Pfad
             // deponiert — ambiente Fauna + Restore nie (sonst positives Feedback-Runaway in üppigen Regionen).
-            this._depositLife(sx, sz);
+            this._depositLife(sx, sz, undefined, ctx.uhr);
             spawned++;
         }
         return { spawned, gruende, lastBorn };
@@ -2423,6 +2479,7 @@ AnazhRealm.DSL_WELTAKTE = Object.freeze([
     "voxel_carve",
     "voxel_fill",
     "lava",
+    "entfache",
     "terrain_steepness",
     "terrain_base_height",
     "gravity",

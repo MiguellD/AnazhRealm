@@ -798,19 +798,15 @@ class AnazhRealm_bild_himmel {
     // lässt das Laub fallen und austreiben (`_saisonPraesenz`). Kein Neubau, kein Schlüssel-Wechsel: das Studio trägt sein
     // Jahr genauso (uSeasonMul · uLeafPresence · uBloom). Bis vegetation.K5 war die Saison NUR eine Farbe: die Krone deckte im
     // Winter, was sie im Sommer deckte (GTX, main 24a0f3ef: Laub-Maske Winter 1,003 × Sommer).
-    _tickSeason(currentTime) {
+    // DAS JAHR IST EINE FUNKTION DER WELT-UHR (feld.K2#2): die Phase läuft mit dem Anker des Jahrs (`saisonAnker`, `_saisonDerUhr`)
+    // — steht sie (das Wort der Bühne `autoSeason` false), setzt der Anker an ihr neu an und hält sie, bis sie wieder läuft. Bis
+    // feld.K2#2 trieb die Wanduhr jeder Seite die Phase (je Bild gekappt auf 0,2 s, erst ab der Bühne): zwei Peers an derselben
+    // Welt-Uhr standen 0,003 Jahre auseinander (gate:mp-sync (f), 0,3880 ↔ 0,3912) — der Tag des Pegels, der Schnee und die Luft
+    // des Brands mit ihnen.
+    _tickSeason(_currentTime) {
         const st = this.state;
         if (typeof st.seasonPhase !== "number") st.seasonPhase = 0.375;
-        // Nur der DRIFT wartet auf die Bühne (die Tönung läuft immer). `_lastSeasonTime` bleibt bis zur Bühne null →
-        // der erste Tick startet mit dt=0 (kein Zeit-Sprung).
-        if (st.autoSeason !== false && this._buehneSteht()) {
-            const now = currentTime || 0;
-            if (this._lastSeasonTime == null) this._lastSeasonTime = now;
-            const dt = Math.min(0.2, Math.max(0, (now - this._lastSeasonTime) / 1000));
-            this._lastSeasonTime = now;
-            const yearSec = st.seasonYearSeconds > 0 ? st.seasonYearSeconds : 2400;
-            st.seasonPhase = (st.seasonPhase + dt / yearSec) % 1;
-        }
+        st.seasonPhase = this._saisonDerUhr();
         // DIE RUHE IST DER FIXPUNKT (feld.K3): Tönung und Name sind eine Funktion der Phase — steht sie (das Wort, die Bühne,
         // ein Lauf ohne Drift), schläft der Takt; jeder Schreiber der Phase weckt ihn, weil er sie ändert. Bis feld.K3 malte er
         // die Uniform in jedem Bild neu (gate:stand-takt RUHE-SIM, Mess-Wiese 60 s: 10 800 Rufe).
@@ -825,9 +821,29 @@ class AnazhRealm_bild_himmel {
         this._schneeTakt(); // die Schneegrenze folgt dem Pegel (stoffe.K3-2)
         this._pegelTakt(); // die Schmelze speist See und Fluss (stoffe.K3-2)
     }
+    // DIE PHASE DES JAHRS zur Welt-Uhr t: wert + (t − s) / Jahres-Länge (`seasonYearSeconds`), auf [0, 1) gefaltet. Hält das
+    // Jahr (`autoSeason` false) oder wechselt seine Länge, setzt der Anker an der Phase der Welt neu an.
+    _saisonDerUhr(t = this.state.spielZeit) {
+        const st = this.state;
+        const L = st.seasonYearSeconds > 0 ? st.seasonYearSeconds : 2400;
+        const phase = typeof st.seasonPhase === "number" ? st.seasonPhase : 0.375;
+        if (st.autoSeason === false) {
+            st.saisonAnker = null; // das Jahr hält: es läuft an der Uhr weiter, zu der es wieder geht
+            return phase;
+        }
+        let A = st.saisonAnker;
+        if (!A || !Number.isFinite(A.wert + A.s)) A = st.saisonAnker = { wert: phase, s: st.spielZeit, laenge: L };
+        if (A.laenge == null) A.laenge = L;
+        else if (A.laenge !== L) {
+            const jetzt = st.spielZeit;
+            A = st.saisonAnker = { wert: A.wert + (jetzt - A.s) / A.laenge, s: jetzt, laenge: L };
+        }
+        const p = A.wert + (t - A.s) / A.laenge;
+        return p - Math.floor(p);
+    }
     // Explizit setzen (Chat/DSL): "fruehling/sommer/herbst/winter" — die Phase springt auf die Saison-Mitte, die
     // Tönung folgt im nächsten Tick (kein Neubau).
-    setSeason(name) {
+    setSeason(name, uhr) {
         const map = {
             fruehling: "spring",
             frühling: "spring",
@@ -842,6 +858,12 @@ class AnazhRealm_bild_himmel {
         if (!key) return false;
         const phaseFor = { spring: 0.125, summer: 0.375, autumn: 0.625, winter: 0.875 };
         this.state.seasonPhase = phaseFor[key];
+        // das Jahr setzt an der neuen Phase neu an, zur Uhr des Worts (`uhr`, die Uhr des Akts — jeder Peer am selben Moment)
+        this.state.saisonAnker = {
+            wert: phaseFor[key],
+            s: Number.isFinite(uhr) ? uhr : this.state.spielZeit,
+            laenge: null,
+        };
         this.state.season = key;
         return true;
     }
@@ -937,7 +959,7 @@ class AnazhRealm_bild_himmel {
         // (gate:stand-takt RUHE-SIM, Mess-Wiese 60 s: 21 600 Rufe).
         const ruht = this._regenRuht;
         if (ruht && ruht.wort === st.weather && !st.weatherTransition && ruht.naesse === st.naesse) {
-            this._naesseUhr = st.spielZeit;
+            st.naesseSchritt = Math.floor(st.spielZeit / AnazhRealm.NAESSE.schrittS);
             return;
         }
         this._regenRuht = null;
@@ -2671,21 +2693,15 @@ class AnazhRealm_bild_himmel {
         pin(this.state.moonMesh);
     }
 
-    // Treibt timeOfDay nach Echtzeit + dayLength; currentTime in Sekunden (performance.now()/1000).
-    // Delta aus _lastDayNightTick, gegen Sprünge (Tab-Wechsel) auf 1.0 s gekappt.
+    // DER GANG DER UHR (feld.K2#2): die Tageszeit ist eine Funktion der Welt-Uhr — `_weltTage` aus dem Anker des Tags
+    // (`uhrAnker`) und der Tag-Länge des Spielers; der Tag der Welt (`worldMeta.tag`) ist ihr ganzer Teil. Bis feld.K2#2 trieb
+    // die Wanduhr jeder Seite die Uhr (je Bild gekappt auf 1 s): zwei Peers an derselben Welt-Uhr standen 0,0024 Tage
+    // auseinander (gate:mp-sync (f), 0,5090 ↔ 0,5114), und die Luft des Brands, die Stunde jeder Tat mit ihnen.
     tickDayNight(currentTime) {
-        const last = this.state._lastDayNightTick;
-        if (!Number.isFinite(last)) {
-            this.state._lastDayNightTick = currentTime;
-            this._applyDayNightToScene();
-            return;
-        }
-        const delta = Math.min(1.0, currentTime - last); // Sekunden, gegen Tab-Sleeps
-        this.state._lastDayNightTick = currentTime;
-        const minutes = this.state.dayLengthMinutes || this.constructor.DAY_LENGTH_DEFAULT_MINUTES;
-        const cycleSeconds = Math.max(60, minutes * 60); // hard-floor 1min
-        const advance = delta / cycleSeconds; // wieviel von 0..1 in delta vergeht
-        this._uhrSetzen((this.state.timeOfDay + advance) % 1, "uhr");
+        const tage = this._weltTage();
+        const tag = Math.floor(tage);
+        if (this.state.worldMeta) this.state.worldMeta.tag = tag;
+        this._uhrSetzen(tage - tag, "uhr");
         // Läuft JEDEN Frame, kein Throttle: bei 10 Hz sprang die Beleuchtung in Stufen (ruckelnde Schatten);
         // die Funktion ist billig genug (Color-Lerps + Vector-Copies).
         this._applyDayNightToScene();
@@ -2696,6 +2712,22 @@ class AnazhRealm_bild_himmel {
             this.state._lastDayNightApply = currentTime;
             this._uhrAnzeigen(this.state.timeOfDay);
         }
+    }
+
+    // DIE TAGE DER WELT zur Welt-Uhr t (feld.K2#2): wert + (t − s) / Länge des Ankers (`uhrAnker`); die Länge ist der Tag des
+    // Spielers (`dayLengthMinutes`, mindestens eine Minute) — wechselt er sie, setzt der Anker an der Uhr neu an, und die Zeit
+    // springt nicht. Leser: der Gang der Uhr (`tickDayNight`), die Welt-Stunde jeder Tat (`_weltStunde`), die Luft (`_temperaturAt`).
+    _weltTage(t = this.state.spielZeit) {
+        const st = this.state;
+        const L = Math.max(60, (st.dayLengthMinutes || this.constructor.DAY_LENGTH_DEFAULT_MINUTES) * 60);
+        let A = st.uhrAnker;
+        if (!A || !Number.isFinite(A.wert + A.s)) A = st.uhrAnker = { wert: 0.5, s: 0, laenge: L };
+        if (A.laenge == null) A.laenge = L;
+        else if (A.laenge !== L) {
+            const jetzt = st.spielZeit;
+            A = st.uhrAnker = { wert: A.wert + (jetzt - A.s) / A.laenge, s: jetzt, laenge: L };
+        }
+        return A.wert + (t - A.s) / A.laenge;
     }
 
     // DIE ANZEIGE DER UHR (Leben-Schau 2: der Tageszeit-Regler zeigte 12:00 bei Welt 01:41 — er las die Uhr nur beim
@@ -2767,11 +2799,20 @@ class AnazhRealm_bild_himmel {
             this._himmelSprung = true;
             if (this._leuchtPool) this._leuchtPool.t = -Infinity;
         }
-        // DER TAG DER WELT (feld.K4, `_weltStunde`): kreuzt die Uhr Mitternacht (der kürzere Bogen), zählt der Tag vor oder
-        // zurück; das Laden setzt nur die Uhr — der Tag reist im worldMeta
+        // DER TAG DER WELT (feld.K4, `_weltStunde`): stellt ein Wort die Uhr über Mitternacht (der kürzere Bogen), zählt der Tag
+        // vor oder zurück, und der Anker des Tags (`uhrAnker`, feld.K2#2) setzt an der Welt-Uhr neu an — der Gang der Uhr
+        // schreibt Tag und Zeit aus ihm (`tickDayNight`), das Laden setzt beide aus dem Stand (der Tag reist im worldMeta)
         const d = v - this.state.timeOfDay;
         const wm = this.state.worldMeta;
-        if (quelle !== "laden" && wm && Math.abs(d) > 0.5) wm.tag = (wm.tag || 0) + (d < 0 ? 1 : -1);
+        if (quelle !== "laden" && quelle !== "uhr") {
+            if (wm && Math.abs(d) > 0.5) wm.tag = (wm.tag || 0) + (d < 0 ? 1 : -1);
+            const A = this.state.uhrAnker;
+            this.state.uhrAnker = {
+                wert: ((wm && wm.tag) || 0) + v,
+                s: this.state.spielZeit,
+                laenge: A ? A.laenge : null,
+            };
+        }
         this.state.timeOfDay = v;
         return true;
     }
@@ -2843,7 +2884,8 @@ class AnazhRealm_bild_himmel {
     // from/to/progress-Lerp wie `_weatherBlendedValue`, vektoriell). `w` = Wort-Vorgabe (Default
     // state.weather), während einer Transition führen from/to; unbekannt → sunny.
     // Gibt eine FRISCHE Kopie zurück (die frozen Statics bleiben unberührt).
-    _weatherFieldFor(w) {
+    // `t`: die Welt-Uhr, zu der das Feld gilt (der Übergang an seiner Stelle zur Uhr, feld.K2#2) — ohne t sein Stand im Takt.
+    _weatherFieldFor(w, t) {
         const FLD = AnazhRealm.WEATHER_FIELD;
         const base = FLD.sunny;
         const fieldFor = (word) => FLD[word] || base;
@@ -2856,7 +2898,8 @@ class AnazhRealm_bild_himmel {
         });
         const wt = this.state.weatherTransition;
         if (wt && wt.from && wt.to) {
-            const p = Math.max(0, Math.min(1, wt.progress || 0));
+            const roh = Number.isFinite(t) ? ((t - wt.startedAt) * 1000) / wt.duration : wt.progress || 0;
+            const p = Math.max(0, Math.min(1, roh));
             return lerpField(fieldFor(wt.from), fieldFor(wt.to), p);
         }
         const f = fieldFor(typeof w === "string" ? w : this.state.weather);
@@ -2889,13 +2932,16 @@ class AnazhRealm_bild_himmel {
     _temperaturFeld(y, traegTage) {
         return globalThis.__gelaendeCore.temperaturFeld(this._gelaende(), y, traegTage);
     }
-    _temperaturAt(y, traegTage) {
+    // `t`: die Welt-Uhr, zu der die Luft gilt (feld.K2#2: Jahr, Tag und Wetter-Feld sind ihre Funktionen) — ohne t jetzt.
+    _temperaturAt(y, traegTage, t) {
         const st = this.state;
+        const zur = Number.isFinite(t);
+        const tage = zur ? this._weltTage(t) : 0;
         return globalThis.__gelaendeCore.temperaturAus(
             this._temperaturFeld(y, traegTage),
-            st.seasonPhase,
-            st.timeOfDay,
-            this._weatherFieldFor()
+            zur ? this._saisonDerUhr(t) : st.seasonPhase,
+            zur ? tage - Math.floor(tage) : st.timeOfDay,
+            this._weatherFieldFor(undefined, zur ? t : undefined)
         );
     }
 
@@ -3068,27 +3114,71 @@ class AnazhRealm_bild_himmel {
     }
 
     // DIE NÄSSE (wetter.K2) — EIN Zustand der Welt aus dem Wetter-Feld (`state.naesse`, 0 trocken … 1 nass): Regen benetzt
-    // (τ = NAESSE.benetzenS / rain), ohne Regen trocknet die Welt (τ = trocknenS / max(sun, 0,2)) — exakt je Schritt, also
-    // dieselbe Nässe nach 600 Takten wie nach einem Schritt von 600 s (die Bühne der Linse `werkbank licht --naesse`). Ohne `dt`
-    // zählt die Spiel-Zeit seit dem letzten Ruf (`_tickRain`). Der Leser ist der EINE Welt-Stoff (`_naesseImStoff`) über
+    // (τ = NAESSE.benetzenS / rain), ohne Regen trocknet die Welt (τ = trocknenS / max(sun, 0,2)) — exakt je Schritt. Ein `dt`
+    // ist der Schritt der Bühne (die Linse `werkbank licht --naesse`: dieselbe Nässe nach 600 Takten wie nach 600 s); ohne `dt`
+    // schreitet sie auf dem Raster der Welt-Uhr (`_naesseRaster`). Der Leser ist der EINE Welt-Stoff (`_naesseImStoff`) über
     // `atmoUniforms.naesse`; den Dach-Pool seiner Himmels-Sicht wählt derselbe Takt (`_dachTakt`).
     _naesseTakt(dt) {
         const st = this.state;
-        const N = AnazhRealm.NAESSE;
-        if (dt == null) {
-            dt = Number.isFinite(this._naesseUhr) ? st.spielZeit - this._naesseUhr : 0;
-            this._naesseUhr = st.spielZeit;
+        if (dt == null) this._naesseRaster();
+        else {
+            const N = AnazhRealm.NAESSE;
+            const wf = this._weatherFieldFor(st.weather);
+            const n0 = Number.isFinite(st.naesse) ? st.naesse : 0;
+            const ziel = wf.rain > N.regenAb ? 1 : 0;
+            const tau = ziel ? N.benetzenS / wf.rain : N.trocknenS / Math.max(wf.sun, 0.2);
+            const n = ziel + (n0 - ziel) * Math.exp(-Math.max(0, dt) / tau);
+            st.naesse = Math.abs(n - ziel) < N.ruhe ? ziel : n; // am Ziel steht sie (der Fixpunkt, an dem der Regen schläft)
+            this._naesseRaster(true); // das Raster setzt an der Nässe der Bühne neu an
         }
-        const wf = this._weatherFieldFor(st.weather);
-        const n0 = Number.isFinite(st.naesse) ? st.naesse : 0;
-        const ziel = wf.rain > N.regenAb ? 1 : 0;
-        const tau = ziel ? N.benetzenS / wf.rain : N.trocknenS / Math.max(wf.sun, 0.2);
-        const n = ziel + (n0 - ziel) * Math.exp(-Math.max(0, dt) / tau);
-        st.naesse = Math.abs(n - ziel) < N.ruhe ? ziel : n; // am Ziel steht sie (der Fixpunkt, an dem der Regen schläft)
         this._ensureAtmoUniforms().naesse.value = st.naesse;
         this._dachTakt();
         this._pegelTakt(); // der Regen des Felds speist See und Fluss (wetter.K3) — neu nur an einem neuen Stempel (`pegelRegen`)
         return st.naesse;
+    }
+
+    // DAS RASTER DER NÄSSE (feld.K2#2): je Schritt k der Welt-Uhr (`NAESSE.schrittS`) die Nässe aus der des vorigen und dem Feld
+    // in der Mitte des Schritts (`_weatherFieldFor` zur Uhr — der Übergang des Zugs ist eine Funktion der Welt-Uhr), bis zum
+    // letzten ganzen Schritt vor der Uhr; die Nässe der Welt ist die des letzten Schritts. Jede Teilung der Takte — ein Sprung
+    // der Uhr, die Uhr des Mitspielers in Raten, ein Reload — rechnet dieselben Schritte, also dieselbe Zahl. Bis feld.K2#2
+    // schritt sie je Takt um sein dt mit dem Feld des Takts: zwei Peers an derselben Welt-Uhr trugen 0,393377 ↔ 0,393356
+    // (gate:mp-sync (f)). `neu`: das Raster setzt an der Nässe der Welt neu an (die Bühne, das Laden). Liefert die Nässe.
+    _naesseRaster(neu = false) {
+        const st = this.state;
+        const N = AnazhRealm.NAESSE;
+        const kz = Math.floor(st.spielZeit / N.schrittS);
+        const R =
+            this._naesseRing ||
+            (this._naesseRing = { k: new Float64Array(N.ringN).fill(NaN), n: new Float64Array(N.ringN) });
+        let k = st.naesseSchritt;
+        let n = Number.isFinite(st.naesse) ? st.naesse : 0;
+        if (neu || !Number.isFinite(k) || k > kz) k = kz;
+        if (kz - k > N.ringN) k = kz - N.ringN; // eine Uhr, die weiter sprang als der Ring: von der Nässe der Welt
+        for (; k < kz; k++) {
+            const wf = this._weatherFieldFor(undefined, (k + 0.5) * N.schrittS);
+            const ziel = wf.rain > N.regenAb ? 1 : 0;
+            const tau = ziel ? N.benetzenS / wf.rain : N.trocknenS / Math.max(wf.sun, 0.2);
+            n = ziel + (n - ziel) * Math.exp(-N.schrittS / tau);
+            if (Math.abs(n - ziel) < N.ruhe) n = ziel;
+            const i = (k + 1) % N.ringN;
+            [R.k[i], R.n[i]] = [k + 1, n];
+        }
+        const i = kz % N.ringN;
+        [R.k[i], R.n[i]] = [kz, n];
+        st.naesseSchritt = kz;
+        st.naesse = n;
+        return n;
+    }
+
+    // DIE NÄSSE ZUR WELT-UHR t (feld.K2#2): der Schritt des Rasters, in dem t liegt (der Brand liest sie in seinem Schritt, der der
+    // Uhr nachläuft); was das Raster nie rechnete (die Ruhe, vor dem Ring), trägt die Nässe der Welt.
+    _naesseUm(t) {
+        const N = AnazhRealm.NAESSE;
+        const n = this._naesseRaster();
+        const k = Math.floor(t / N.schrittS);
+        const R = this._naesseRing;
+        const i = ((k % N.ringN) + N.ringN) % N.ringN;
+        return Number.isFinite(t) && R.k[i] === k ? R.n[i] : n;
     }
 
     // Der EINE Wetter-Schreiber: state.weather wird SOFORT gesetzt (weather_is + DSL reagieren instant),
@@ -3106,7 +3196,7 @@ class AnazhRealm_bild_himmel {
     // Takt (`WETTER_ZUG_SEK`). Vorher hielt „setze wetter sonnig" bis zum nächsten Nexus-Regen (alle 4,7 s).
     // `zug` ({ von, beginn }) trägt der Wetter-Zug: sein Übergang ist eine Funktion der Welt-Uhr — aus dem Wort der Front `von`,
     // ab `beginn`, über die Dauer des Gesetzes (nie die Laune einer Seite), gleich welcher Übergang lief.
-    _setWeather(name, quelle, zug) {
+    _setWeather(name, quelle, zug, uhr) {
         if (!(name in AnazhRealm.WEATHER_INTENSITY)) return false;
         if (this._messHalt()) {
             this.log(`Wetter gehalten: ${quelle || "?"} wollte ${name}`, "DEBUG");
@@ -3122,7 +3212,15 @@ class AnazhRealm_bild_himmel {
                 return false;
             }
             if (wer === "welt") {
-                this.state.wetterWunsch = { wort: name, quelle: quelle || "?" };
+                // DER WUNSCH DER WELT IST EIN SCHREIB-AKT (feld.K2#2): er trägt die Uhr seines Moments; es gilt der späteste
+                // (bei gleicher Uhr das größere Wort), gleich in welcher Folge er ankommt — und was eine Seite wünscht (ihr Nexus,
+                // die Emotion, ein Wesen), reist als Gabe `wunsch` (`_feldAktSenden`) zu jedem Mitspieler. Bis feld.K2#2 zog
+                // jeder Zug den Wunsch seiner Seite: das Wetter zweier Peers ging auseinander, sobald eine Seite wünschte.
+                const u = Number.isFinite(uhr) ? uhr : this.state.spielZeit;
+                const alt = this.state.wetterWunsch;
+                if (!alt || !(u <= alt.uhr) || (u === alt.uhr && name > alt.wort))
+                    this.state.wetterWunsch = { wort: name, quelle: quelle || "?", uhr: u };
+                if (!/remote:/.test(String(quelle))) this._feldAktSenden(["wunsch", 0, 0, name], u);
                 return "wunsch";
             }
         }
@@ -3136,7 +3234,8 @@ class AnazhRealm_bild_himmel {
             this.state.weatherTransition = null;
             this.requestWeatherTransition(name, this.constructor.WEATHER_TRANSITION_DURATION_MS, zug.von, zug.beginn);
         } else if (oldWeather !== name) {
-            this.requestWeatherTransition(name, undefined, oldWeather);
+            // der Übergang eines Worts beginnt zur Uhr seines Akts (`uhr`, feld.K2#2) — jeder Peer am selben Moment
+            this.requestWeatherTransition(name, undefined, oldWeather, Number.isFinite(uhr) ? uhr : undefined);
         }
         // updateSkyboxWeather wird nicht direkt gerufen —
         // _applyDayNightToScene übernimmt das pro Frame.

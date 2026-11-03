@@ -195,13 +195,14 @@ class AnazhRealm_stoff_material {
     // wie der Shader). `staerke` = U · Form (die Böen-Amplitude am Ort ist staerke · WIND_BOE.amp), `ms` der Wind in m/s
     // (staerke · Böe · WIND_FELD.sturmMS). t: die Wind-Uhr — das Bild liest die Bild-Uhr (A9), der Sim-Schritt seine Uhr
     // (`state._simZeit`); der Wind ist eine reine Funktion von Saat, Wetter, Ort und t.
-    _windAt(x, z, t) {
+    // `wf`: das Wetter-Feld, das ihn treibt (der Brand liest es zur Uhr seines Schritts, feld.K2#2) — ohne es das des Worts.
+    _windAt(x, z, t, wf = this._weatherFieldFor(this.state.weather)) {
         const tt = Number.isFinite(t) ? t : 0;
         const d = this._windDirAt(tt);
         const B = AnazhRealm.WIND_BOE;
         const boe = Math.sin(tt * B.omega - (x * d.x + z * d.z) * B.k) * B.amp + B.mitte;
         const form = this._windForm(x, z, d);
-        const staerke = this._weatherFieldFor(this.state.weather).wind * this._windWob(tt) * form;
+        const staerke = wf.wind * this._windWob(tt) * form;
         return { x: d.x, z: d.z, staerke, boe, form, ms: staerke * boe * globalThis.__phytoCore.WIND_FELD.sturmMS };
     }
     // DIE BÖEN-DRIFT der Wind-Uhr t (Math.random-frei, ~±18 % um die Wort-Basis): bis wetter.K5 ein Feld, das nur das Bild schrieb
@@ -3471,7 +3472,11 @@ AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, w
 // Decken tragen die Häuser (Hülle) und die `dachArten` (Rezept oder Art: ihre Form schließt oben, `_dachKastenSetzen`). Näher als
 // `ruhe` an ihrem Ziel steht die Nässe dort (ein Tausendstel verschiebt eine Albedo um höchstens 2,5e-4) — der Fixpunkt, an dem
 // der Regen schläft (feld.K3, `_tickRain`). Wie nass ein Reifen greift, trägt die Stoff-Zeile je Stoff (`muRadNass`, `_fahrHaft`).
+// DAS RASTER (feld.K2#2): die Nässe schreitet in `schrittS` der Welt-Uhr (`_naesseRaster`), je Schritt das Feld seiner Mitte; der
+// Ring hält die letzten `ringN` Schritte für den Leser einer früheren Uhr (der Brand in seinem Schritt, `_naesseUm`).
 AnazhRealm.NAESSE = Object.freeze({
+    schrittS: 1,
+    ringN: 4096,
     regenAb: 0.05,
     benetzenS: 150,
     trocknenS: 1500,

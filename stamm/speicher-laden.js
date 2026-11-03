@@ -76,6 +76,125 @@ class AnazhRealm_speicher_laden {
         return true;
     }
 
+    // DIE TEIL-SIMULATIONEN DES STANDS (feld.K2#2): was die Welt-Uhr allein nicht herstellt, weil es aus Akten wuchs, kehrt aus dem
+    // Stand wieder — die Anker von Tag und Jahr (`uhrAnker`, `saisonAnker`: ihr Moment `s` ist eine Uhr des Stands; läuft die Welt
+    // schon später, setzt der Anker an der Uhr des Stands mit seiner Zeit an), das Raster der Nässe (`naesseSchritt`), die Zellen
+    // des Lebens und des Gefühls (je [Zelle, Betrag, Uhr], ihr Tod neu im Rad, `_feldTod`) und der Brand (seine Zellen, seine Uhr
+    // und der angefangene Schritt). Ein Stand ohne Zeile lässt die Welt, wie sie ist. So setzt ein Reload mitten im Sturm
+    // denselben Zustand fort, den die Welt vor ihm trug — bis feld.K2#2 begann er mit Nässe 0,0387 statt 0,3934 und ohne Leben.
+    _standWeltSims(state) {
+        const st = this.state;
+        const S = state.weltSims;
+        if (!S || typeof S !== "object") return;
+        const zahl = (v) => typeof v === "number" && Number.isFinite(v);
+        const gleich = zahl(state.spielZeit) && state.spielZeit === st.spielZeit;
+        const anker = (A, wert) =>
+            A && zahl(A.wert) && zahl(A.s) && (A.laenge === null || zahl(A.laenge))
+                ? gleich
+                    ? { wert: A.wert, s: A.s, laenge: A.laenge }
+                    : { wert, s: st.spielZeit, laenge: A.laenge }
+                : undefined;
+        const tage = ((st.worldMeta && st.worldMeta.tag) || 0) + (st.timeOfDay || 0);
+        if (S.akte && typeof S.akte === "object") {
+            const M = {};
+            for (const [pid, m] of Object.entries(S.akte))
+                if (Array.isArray(m) && zahl(m[0]) && zahl(m[1])) M[pid] = [m[0], m[1]];
+            st.aktGesehen = Object.assign({}, M);
+            this._aktStandMarke = M; // was vor dem Stand ankam, fällt am Empfang; der Rest wird nachgereicht (`_aktNachreichen`)
+            // stand die Leitung schon, nennt die Seele die Marken jetzt (der Mitspieler reicht nach)
+            if (st.p2p && st.p2p.enabled && st.p2p.connected) this._p2pBroadcastSoul();
+        }
+        const u = anker(S.uhrAnker, tage);
+        if (u) st.uhrAnker = u;
+        if (st.autoSeason !== false) {
+            const j = anker(S.saisonAnker, st.seasonPhase);
+            if (j) st.saisonAnker = j;
+        }
+        if (zahl(S.naesse) && S.naesse >= 0 && S.naesse <= 1) {
+            st.naesse = S.naesse;
+            st.naesseSchritt = gleich && zahl(S.naesseSchritt) ? S.naesseSchritt : null;
+            this._naesseRaster(!(gleich && zahl(S.naesseSchritt)));
+        }
+        const karte = (L, zelle, tod) => {
+            if (!Array.isArray(L)) return null;
+            const M = new Map();
+            for (const z of L) {
+                if (!Array.isArray(z) || typeof z[0] !== "string" || !zahl(z[2])) continue;
+                const c = zelle(z);
+                if (!c) continue;
+                M.set(z[0], c);
+                this._feldTod(M, z[0], c, tod(c), st.spielZeit);
+            }
+            return M;
+        };
+        const LF = AnazhRealm.LIFE_FIELD;
+        // die Gaben je Scheibe (ganze Zahlen) — der Betrag folgt aus ihnen (`_feldGabe`)
+        const gaben = (o) => {
+            if (!o || typeof o !== "object") return null;
+            const n = {};
+            for (const [k, v] of Object.entries(o)) if (zahl(Number(k)) && Number.isSafeInteger(v)) n[k] = v;
+            return n;
+        };
+        const lf = karte(
+            S.leben,
+            (z) => {
+                const n = gaben(z[1]);
+                return n ? { n, t: z[2], a: this._feldGabe(n, 0, z[2], z[2], LF.decayPerSec) } : null;
+            },
+            (c) => c.t + Math.max(0, Math.log(Math.abs(c.a) / LF.epsilon)) / LF.decayPerSec
+        );
+        if (lf) {
+            st.lifeField = lf;
+            this._feldGeschichte = state.spielZeit; // bis hierher trägt der Stand das Feld (`_lebenGeben`)
+        }
+        const EF = AnazhRealm.EMOTION_FIELD;
+        const ef = karte(
+            S.gefuehl,
+            (z) => {
+                if (!z[1] || typeof z[1] !== "object") return null;
+                const [axes, n] = [{}, {}];
+                for (const k of AnazhRealm.EMOTION_AXES) {
+                    const g = gaben(z[1][k]);
+                    if (!g) continue;
+                    n[k] = g;
+                    axes[k] = this._feldGabe(g, 0, z[2], z[2], EF.decayPerSec);
+                }
+                return { axes, n, t: z[2] };
+            },
+            (c) =>
+                c.t +
+                Math.max(
+                    0,
+                    Math.log(Math.max(1e-12, ...Object.values(c.axes).map((v) => Math.min(EF.max, v))) / EF.epsilon)
+                ) /
+                    EF.decayPerSec
+        );
+        if (ef) st.emotionField = ef;
+        const B = S.brand;
+        if (B === null && st.brandFeld) {
+            // der Stand trägt kein Feuer: was brennt, erlischt mit ihm (die Grundstellung einer Probe)
+            st.brandFeld.clear();
+            [st.brandFeld.glutBlock, this._brandRest, this._brandBett] = [null, null, null];
+        } else if (B && Array.isArray(B.zellen)) {
+            const bf = st.brandFeld || (st.brandFeld = new Map());
+            bf.clear();
+            for (const c of B.zellen)
+                if (c && zahl(c.cx) && zahl(c.cz)) bf.set(c.cx + "," + c.cz, Object.assign({}, c));
+            const R = B.rest;
+            this._brandRest =
+                R && zahl(R.t) && Array.isArray(R.aschen) && Array.isArray(R.faellig)
+                    ? {
+                          t: R.t,
+                          aschen: R.aschen.map((c) => Object.assign({}, c)),
+                          faellig: R.faellig.map((k) => bf.get(k)).filter(Boolean),
+                          i: zahl(R.i) ? R.i : 0,
+                      }
+                    : null;
+            this._brandUhr = zahl(B.uhr) ? B.uhr : st.spielZeit;
+            [bf.glutBlock, this._brandBett] = [null, null];
+        }
+    }
+
     // DIE GRUNDSTELLUNG OHNE NEULADEN (w4-grundstellung; der Schöpfer 29.10.: „Die Welt ist in wenigen Sekunden geladen — das
     // Prüftheater hat ein Ende"). Ohne `grund` nimmt sie den Grund der laufenden Welt: ihren Stand (das Speicher-Gesetz,
     // `buildStateSnapshot`) und je Zeile der GRUND_TAFEL den Augenblick, den der Stand nicht trägt. Mit `grund` (sein JSON) spielt
@@ -419,6 +538,7 @@ class AnazhRealm_speicher_laden {
             this._uhrSetzen(state.timeOfDay, "laden");
         }
         this._weltUhrNimm(state.spielZeit); // die Welt-Uhr des Stands (feld.K2#2)
+        this._standWeltSims(state); // Anker von Tag und Jahr, Nässe, Leben, Gefühl und Brand (feld.K2#2)
         // das Jahr des Stands (speicher.K4): Tönung, Schneegrenze und Pegel folgen ihm im nächsten Takt der Saison (`_tickSeason`)
         if (typeof state.seasonPhase === "number" && state.seasonPhase >= 0 && state.seasonPhase < 1)
             this.state.seasonPhase = state.seasonPhase;
@@ -2361,9 +2481,9 @@ AnazhRealm.BAUPLAN_UMZUG = Object.freeze({
 });
 // DIE GRUND-TAFEL (w4-grundstellung): je Größe, die der Stand nicht trägt und eine Probe der Mess-Sitzung ändert, ihr Name, ihr
 // Leser und ihr Wort zurück (`_grundstellung`: jedes Wort vor dem Stand) — der Ritt (der Spieler steigt aus, ehe der Stand ihn
-// stellt), die Sicht und der Blick des Spielers, die Nässe der Welt und der Übergang des Wetters (der Stand trägt das Wort,
-// `_loadStateRestoreBasicState`), die Zellen des Brands (nicht persistiert, die Asche reist als Tat). Der Stand trägt Uhr,
-// Welt-Uhr, Saison, Wetter-Wort, Spieler-Ort, Wesen, Werke und Edits.
+// stellt), die Sicht und der Blick des Spielers und der Übergang des Wetters (der Stand trägt das Wort, der erste Zug zieht den
+// Übergang neu, `_loadStateRestoreBasicState`). Der Stand trägt Uhr, Welt-Uhr, Saison und ihre Anker, Wetter-Wort, Nässe, Leben,
+// Gefühl und Brand (feld.K2#2, `_standWeltSims`), Spieler-Ort, Wesen, Werke und Edits.
 AnazhRealm.GRUND_TAFEL = Object.freeze([
     [
         "ritt",
@@ -2394,24 +2514,12 @@ AnazhRealm.GRUND_TAFEL = Object.freeze([
         },
     ],
     [
-        "naesse",
+        "uebergang",
         function () {
-            return [this.state.naesse, this.state.weatherTransition || null];
+            return this.state.weatherTransition || null;
         },
         function (v) {
-            [this.state.naesse, this.state.weatherTransition] = v;
-        },
-    ],
-    [
-        "brand",
-        function () {
-            return [...(this.state.brandFeld || new Map()).keys()].sort();
-        },
-        function (v) {
-            const bf = this.state.brandFeld;
-            if (v.length || !bf) return;
-            bf.clear();
-            [bf.glutBlock, this._brandRest, this._brandBett] = [null, null, null];
+            this.state.weatherTransition = v;
         },
     ],
 ]);
