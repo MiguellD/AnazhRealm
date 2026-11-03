@@ -1247,6 +1247,97 @@ async function stimmeLauf() {
     process.exit(0);
 }
 
+// affekt.K4 #2 (w5-s2-g2, 03.11.): „WARUM REGNET ES?“ — EINE Probe der Sitzung (die Staffel nennt beide Geräte): in der Welt der Sitzung
+// an der Weiche ({PORT}+20000) zwei Fälle mit bekanntem Schreiber des Regens — das Wort des Spielers (`_setWeather` „human“: sein Wort)
+// und der Wunsch des Nexus, den der Wetter-Zug zieht (`_setWeather` „nexus“ → `wetterWunsch`, dann „auto-zug“) —, je Fall die Frage
+// über den echten Weg der KI (`maybeAnswerWithLlm`, das Modell der Sitzung über `llmCall`); gemessen die Antwort des Modells (Fehler,
+// Text), ob sie den wahren Schreiber nennt und nicht den anderen, und das Prädikat des Korpus (spec/abnahme/ki-korpus.json, der Satz
+// „warum regnet es?“: `schreiber` — ohne den Eintrag ist die Erzählung ungeprüft).
+async function warumSzene(r, T, o) {
+    const st = r.state;
+    const alt = { wort: st.wetterWort, wunsch: st.wetterWunsch, wetter: st.weather, halt: st.weatherEffectTime, llm: r.llmCall };
+    const faelle = [];
+    st.weatherEffectTime = 0;
+    try {
+        for (const fall of ["spieler", "nexus"]) {
+            st.wetterWort = null;
+            st.wetterWunsch = null;
+            r._setWeather("sunny", "auto-zug");
+            if (fall === "spieler") r._setWeather("rainy", "human");
+            else r._setWeather("rainy", "nexus"), r._setWeather("rainy", "auto-zug");
+            const wahr = { wort: st.wetterWort, wunsch: st.wetterWunsch && st.wetterWunsch.quelle, wetter: st.weather };
+            let antwort = null;
+            r.llmCall = async (...a) => (antwort = await alt.llm.apply(r, a));
+            const t0 = performance.now();
+            await r.maybeAnswerWithLlm(o.satz, () => {});
+            faelle.push({ fall, wahr, llm: !!st.llm.enabled, ms: Math.round(performance.now() - t0), fehler: antwort && antwort.error ? String(antwort.error).slice(0, 160) : null,
+                say: antwort && typeof antwort.say === "string" ? antwort.say.slice(0, 400) : null });
+            r.llmCall = alt.llm;
+        }
+    } finally {
+        r.llmCall = alt.llm;
+        st.wetterWort = alt.wort;
+        st.wetterWunsch = alt.wunsch;
+        st.weatherEffectTime = alt.halt;
+    }
+    return { satz: o.satz, korpus: o.korpus, faelle };
+}
+async function warumLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const { werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const [aus, port, szene] = process.argv.slice(1);
+    const W = Number(port) + 20000;
+    const satz = "warum regnet es?";
+    let erg;
+    try {
+        const K = JSON.parse(fs.readFileSync(path.resolve("spec/abnahme/ki-korpus.json"), "utf8"));
+        const korpus = (K.saetze && K.saetze[satz]) || null;
+        for (const z of fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8").split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+        const a = await werkbankRuf(W, "/eval", { code: "return await (" + szene + ")(r, T, " + JSON.stringify({ satz, korpus }) + ");" });
+        if (!a || a.ergebnis === undefined) throw new Error("eval: " + JSON.stringify(a).slice(0, 300));
+        erg = a.ergebnis;
+    } catch (e) {
+        erg = { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 300) };
+    }
+    console.log("WARUM " + JSON.stringify(erg));
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+}
+// der Schreiber beim Namen in der Antwort: der Spieler (du, dein Wort) · der Nexus
+const WARUM_NAME = { spieler: /\b(du|dein\w*|dir|spieler\w*)\b/i, nexus: /\bnexus\b/i };
+// das Urteil (affekt.K4#2): der Korpus trägt das Prädikat (`schreiber`); je Fall antwortet das Modell (ohne Fehler, erzählend: ≥ 8 Wörter)
+// und nennt den wahren Schreiber, nie den anderen
+function warumUrteil(e) {
+    if (!e) return { gruen: false, zahl: "keine Zeile WARUM" };
+    if (e.fehler) return { gruen: false, zahl: "Lauf: " + e.fehler };
+    const rot = [];
+    if (!(e.korpus && e.korpus.schreiber)) rot.push("der Korpus trägt kein Prädikat für „" + e.satz + "“ (spec/abnahme/ki-korpus.json, schreiber)");
+    const z = (e.faelle || []).map((f) => {
+        const andere = Object.keys(WARUM_NAME).filter((k) => k !== f.fall);
+        const woerter = f.say ? f.say.split(/\s+/).filter(Boolean).length : 0;
+        const nennt = !!f.say && WARUM_NAME[f.fall].test(f.say) && !andere.some((k) => WARUM_NAME[k].test(f.say));
+        if (!f.llm) rot.push(f.fall + ": ohne Modell (die KI der Sitzung ist aus)");
+        else if (f.fehler || !f.say) rot.push(f.fall + ": das Modell antwortet nicht (" + (f.fehler || "ohne Text") + ")");
+        else if (woerter < 8) rot.push(f.fall + ": keine Erzählung (" + woerter + " Wörter)");
+        else if (!nennt) rot.push(f.fall + ": nennt nicht den wahren Schreiber");
+        return f.fall + " → " + (f.say ? "„" + f.say.slice(0, 90) + "“" : f.fehler || "—") + " (" + f.ms + " ms)";
+    });
+    if ((e.faelle || []).length !== 2) rot.push("Fälle " + (e.faelle || []).length + "/2");
+    return { gruen: !rot.length, zahl: z.join(" · ") + (rot.length ? " · ROT " + rot.join("; ") : "") };
+}
+const WARUM_BEFEHL = ["node", "-e", "(" + warumLauf + ")()", "{AUS}", "{PORT}", String(warumSzene)];
+const warumRoh = (faelle, korpus = null) => "[linse-gpu] amd/rdna3\nWARUM " + JSON.stringify({ satz: "warum regnet es?", korpus, faelle });
+const WARUM_FALL = (fall, o) => Object.assign({ fall, wahr: {}, llm: true, ms: 2100, fehler: null, say: null }, o);
+const WARUM_PROBEN = [
+    { name: "die Szene am main 5fba36ea in einer Null-Welt der Cloud (ohne Schlüssel, der Korpus ohne Prädikat)", stdout: "WARUM " + JSON.stringify({"satz": "warum regnet es?", "korpus": null, "faelle": [{"fall": "spieler", "wahr": {"wort": "rainy", "wunsch": null, "wetter": "rainy"}, "llm": true, "ms": 1, "fehler": "für Claude (Anthropic, kostet) fehlt der Schlüssel — trage ihn unter Einstellungen → Begleiter-Stimme ein", "say": null}, {"fall": "nexus", "wahr": {"wort": null, "wunsch": "nexus", "wetter": "rainy"}, "llm": true, "ms": 0, "fehler": "für Claude (Anthropic, kostet) fehlt der Schlüssel — trage ihn unter Einstellungen → Begleiter-Stimme ein", "say": null}]}), gruen: false },
+    { name: "ohne Schlüssel: das Modell antwortet nicht", stdout: warumRoh([WARUM_FALL("spieler", { fehler: "kein API-Schlüssel" }), WARUM_FALL("nexus", { fehler: "kein API-Schlüssel" })], { schreiber: true }), gruen: false },
+    { name: "das Modell nennt je Fall den wahren Schreiber", stdout: warumRoh([WARUM_FALL("spieler", { say: "Es regnet, weil du es mit deinem Wort so wolltest – die Wolken folgen dir." }), WARUM_FALL("nexus", { say: "Es regnet, weil der Nexus sich den Regen gewünscht hat und der Wetter-Zug ihn brachte." })], { schreiber: true }), gruen: true },
+    { name: "das Modell sagt immer „der Nexus“", stdout: warumRoh([WARUM_FALL("spieler", { say: "Es regnet, weil der Nexus sich den Regen gewünscht hat und der Wetter-Zug ihn brachte." }), WARUM_FALL("nexus", { say: "Es regnet, weil der Nexus sich den Regen gewünscht hat und der Wetter-Zug ihn brachte." })], { schreiber: true }), gruen: false },
+    { name: "generisch statt Schreiber", stdout: warumRoh([WARUM_FALL("spieler", { say: "Regen entsteht, wenn feuchte Luft aufsteigt und sich abkühlt, ganz natürlich." }), WARUM_FALL("nexus", { say: "Regen entsteht, wenn feuchte Luft aufsteigt und sich abkühlt, ganz natürlich." })], { schreiber: true }), gruen: false },
+    { name: "der Korpus trägt kein Prädikat", stdout: warumRoh([WARUM_FALL("spieler", { say: "Es regnet, weil du es mit deinem Wort so wolltest – die Wolken folgen dir." }), WARUM_FALL("nexus", { say: "Es regnet, weil der Nexus sich den Regen gewünscht hat und der Wetter-Zug ihn brachte." })], null), gruen: false },
+    { name: "ohne Modell (die KI ist aus)", stdout: warumRoh([WARUM_FALL("spieler", { llm: false }), WARUM_FALL("nexus", { llm: false })], { schreiber: true }), gruen: false },
+];
+
 // die Zeilen eines Laufs (stdout) als Objekte
 const zeilenVon = (lauf, marke) =>
     String(lauf.stdout || "")
@@ -2677,6 +2768,252 @@ const WELT_G2_S2 = WP.befehl([["bestaeuber2", bestaeuber2Probe], ["fische2", fis
 const WELT_ROH3 = {"bestaeuber2": {"zelleM": 16, "mitte": [-280, -1048], "nachbar": [-248, -1048], "traegS": 90, "akt": true, "geste": [1, 118.451, 178.952], "vor": {"mitte": 7.7, "nachbar": 7.85, "feld": [0.855, 0.658], "aktiv": 1}, "ruhe": {"mitte": 6.9, "nachbar": 8.15, "feld": [0.855, 0.658], "aktiv": 1}, "nach": {"mitte": 7.9, "nachbar": 8.2, "feld": [1, 0.658], "aktiv": 1}, "nacht": {"mitte": 0.5, "nachbar": 0, "feld": [0.897, 0.658], "aktiv": 0.04}, "tag": {"mitte": 8.35, "nachbar": 8.15, "feld": [0.859, 0.658], "aktiv": 0.962}}, "fische2": {"bach": [-309.768, -822.525], "gesetz": {"tiefe": 0.4, "fluchtM": 4.5, "wegM": 10, "ruheS": 8}, "fische": 27, "meiden": {"stand": [-300.982, -817.567], "vorher": 12, "spielerAmStand": 0, "naechsterM": 4.894, "heim": 12}, "pegel": {"sekunden": 2, "spur": [[0, 0.046, 25.853]], "spiegel": [25.853, 26.053], "vor": {"n": 27, "y": 25.179, "spiegel": 25.524, "anteil": 0.368}, "nach": {"n": 27, "y": 25.248, "spiegel": 25.724, "anteil": 0.333, "ueber": 0}}, "sicht": {"kamera": [-299.01, 25.315, -813.827], "saeule": 0.63, "unterWasser": true, "sichtM": 30, "trupp": 12, "binnen15": 16, "imBild": 9, "naechsterM": 3.877}}};
 const weltRoh3 = (name, aendern) => "WELTPROBE " + name + " " + JSON.stringify(aendern(JSON.parse(JSON.stringify(WELT_ROH3[name]))));
 
+// haar.K4 #2 (w5-s2-g2, 03.11.): DAS TUCH AM LEIB IM GANG. Am Null-Renderer (Welt-Probe der Gruppe I, `weltProbe`): ein Bewohner aus dem
+// Ofen der Welt — der Plan des Dorfs (`_foundryRequestSettlement`, Epoche der Tracht), seine Gestalt (`_bewohnerGestalten`), sein Leib
+// (`_buildHumanGroup`) —, 2 s Gang im Leib-Gesetz des Spiels (`_animateHuman`, je Bild 1/20 s). Je Bild jede Ecke von Haut (die Teile
+// mit dem Seh-Stoff „haut") und Tuch (Seh-Stoff „stoff") in Welt-Lage, durch das Skelett gerechnet (`getVertexPosition`, die CPU-Haut).
+// (a) DER EINE LÖSER: die Funktionen des Körper-Kerns, deren Name einen XPBD- oder Tuch-Löser nennt (xpbd · tuch · cloth), ihre Rufe im
+// Gang; derselbe Gang mit stillgelegtem Löser (die Mutante: er gibt zurück, was er bekam) — was er trägt, ist die größte Lage-Differenz
+// einer Tuch-Ecke zwischen beiden (ein Tuch, das nur der Haut folgt, liegt gleich). (b) DIE DURCHDRINGUNG: je Bild die Tuch-Ecken, die
+// hinter der Haut liegen (der Versatz zur nächsten Haut-Ecke des Bilds gegen deren Normale, durch dieselben Knochen gedreht, < −2 mm) und
+// es in der Ruhe-Pose des Ofens nicht taten — was der GANG hineindrückt (die Ruhe-Zahl steht offen daneben: der geglättete Saum). (c) LABOR = WELT: das Körper-Studio
+// (worlds/koerperstudio) als Rahmen derselben Seite, 4 s seiner Schleife — ruft es denselben Löser des Kerns?
+async function tuchProbe(r, T, o, G) {
+    const s = r.state;
+    const A = r.constructor;
+    const kc = window.__koerperCore;
+    const loeser = Object.keys(kc || {}).filter((k) => typeof kc[k] === "function" && /xpbd|tuch|cloth/i.test(k));
+    const rufe = Object.fromEntries(loeser.map((k) => [k, 0]));
+    const echt = Object.fromEntries(loeser.map((k) => [k, kc[k]]));
+    for (const k of loeser)
+        kc[k] = function (...a) {
+            rufe[k]++;
+            return echt[k].apply(this, a);
+        };
+    const aus = { loeser, rufe };
+    const W = o.orte.wiese;
+    await G.stehen(W.x, W.z);
+    const ep = A.Gesetz("fachwerk:epocheImJahr")(1320);
+    const plan = await r._foundryRequestSettlement({ seed: 7, epoche: ep });
+    if (!plan || !plan.kleidung) return Object.assign(aus, { fehler: "der Plan trägt keine Tracht" });
+    const Gs = r._bewohnerGestalten({ plan, key: "haar-k4-2" })[0];
+    const g = r._buildHumanGroup(Gs.ov);
+    g.position.set(W.x, G.y(W.x, W.z) + A.PLAYER_FOOT_OFFSET, W.z);
+    s.scene.add(g);
+    const haut = [];
+    const tuch = [];
+    const namen = new Set();
+    g.traverse((n) => {
+        if (!n.isMesh || !n.geometry || !n.geometry.attributes.position) return;
+        const seh = String((n.userData && n.userData.__seh) || "");
+        namen.add(seh + (n.isSkinnedMesh ? "*" : ""));
+        // die Haut, aus der der Ofen das Tuch hebt (`__stoffAusHaut`): die Hüllen der Klasse „haut“ (die Klasse „skin“ trägt Kopf und Lider)
+        if (seh === "haut" && n.userData.__klasse === "haut") haut.push(n);
+        else if (seh === "stoff") tuch.push(n);
+    });
+    aus.teile = [...namen].slice(0, 24);
+    aus.kleidung = plan.kleidung;
+    if (!haut.length || !tuch.length) {
+        s.scene.remove(g);
+        return Object.assign(aus, { fehler: "am Leib fehlt " + (!haut.length ? "die Haut" : "das Tuch") });
+    }
+    const v = new T.Vector3();
+    const nv = new T.Vector3();
+    const M4 = new T.Matrix4();
+    const S4 = new T.Matrix4();
+    const N3 = new T.Matrix3();
+    // je Ecke die Welt-Lage durch das Skelett (`getVertexPosition`); mit `normalen` auch die Normale, durch dieselben Knochen gedreht
+    // (Σ w · Knochen × Bindung, die Drehung davon), in die Welt
+    const lage = (meshes, normalen) => {
+        const P = [];
+        const Nn = [];
+        for (const m of meshes) {
+            m.updateMatrixWorld(true);
+            const geo = m.geometry;
+            const n = geo.attributes.position.count;
+            const si = geo.attributes.skinIndex;
+            const sw = geo.attributes.skinWeight;
+            const na = geo.attributes.normal;
+            if (m.isSkinnedMesh) m.skeleton.update();
+            for (let i = 0; i < n; i++) {
+                if (m.isSkinnedMesh) m.getVertexPosition(i, v);
+                else v.fromBufferAttribute(geo.attributes.position, i);
+                v.applyMatrix4(m.matrixWorld);
+                P.push(v.x, v.y, v.z);
+                if (!normalen) continue;
+                nv.fromBufferAttribute(na, i);
+                if (m.isSkinnedMesh) {
+                    S4.set(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+                    for (let k = 0; k < 4; k++) {
+                        const w = sw.getComponent(i, k);
+                        if (!w) continue;
+                        const j = si.getComponent(i, k);
+                        M4.multiplyMatrices(m.skeleton.bones[j].matrixWorld, m.skeleton.boneInverses[j]);
+                        for (let e = 0; e < 16; e++) S4.elements[e] += w * M4.elements[e];
+                    }
+                    S4.premultiply(m.bindMatrixInverse).multiply(m.bindMatrix).premultiply(m.matrixWorld);
+                } else S4.copy(m.matrixWorld);
+                nv.applyMatrix3(N3.setFromMatrix4(S4)).normalize();
+                Nn.push(nv.x, nv.y, nv.z);
+            }
+        }
+        return { P: Float32Array.from(P), N: Float32Array.from(Nn) };
+    };
+    // je Tuch-Ecke die nächste Haut-Ecke DES BILDS (Gitter 4 cm, ±8 cm), gezählt nur in Berührung (≤ 3 cm: unter dem Tuch fällt die
+    // Haut, `__stoffAusHaut` — über dem Loch wäre die nächste Ecke ein ferner Rand): liegt sie hinter der Haut (Versatz gegen die
+    // Haut-Normale < −2 mm), durchdringt sie
+    const hinter = (H, U, ruhe) => {
+        const Z = 0.04;
+        const zelle = new Map();
+        for (let i = 0; i < H.P.length / 3; i++) {
+            const k = Math.floor(H.P[3 * i] / Z) + "," + Math.floor(H.P[3 * i + 1] / Z) + "," + Math.floor(H.P[3 * i + 2] / Z);
+            (zelle.get(k) || zelle.set(k, []).get(k)).push(i);
+        }
+        let n = 0;
+        const flag = new Uint8Array(U.length / 3);
+        for (let j = 0; j < U.length / 3; j++) {
+            const [x, y, z] = [U[3 * j], U[3 * j + 1], U[3 * j + 2]];
+            let [b, bd] = [-1, Infinity];
+            for (let dx = -2; dx <= 2; dx++)
+                for (let dy = -2; dy <= 2; dy++)
+                    for (let dz = -2; dz <= 2; dz++)
+                        for (const i of zelle.get(Math.floor(x / Z) + dx + "," + (Math.floor(y / Z) + dy) + "," + (Math.floor(z / Z) + dz)) || []) {
+                            const d = (H.P[3 * i] - x) ** 2 + (H.P[3 * i + 1] - y) ** 2 + (H.P[3 * i + 2] - z) ** 2;
+                            if (d < bd) [b, bd] = [i, d];
+                        }
+            if (b >= 0 && bd <= 0.0009 && (x - H.P[3 * b]) * H.N[3 * b] + (y - H.P[3 * b + 1]) * H.N[3 * b + 1] + (z - H.P[3 * b + 2]) * H.N[3 * b + 2] < -0.002) {
+                flag[j] = 1;
+                if (!(ruhe && ruhe[j])) n++;
+            }
+        }
+        hinter.flag = flag;
+        return n;
+    };
+    let ruheFlag = null;
+    const gang = (bilder) => {
+        const dt = 1 / 20;
+        const spur = [];
+        let durch = 0;
+        let durchBilder = 0;
+        let ecken = 0;
+        for (let b = 0; b < bilder; b++) {
+            r._animateHuman(g, b * dt, b * dt * 2 * Math.PI * 1.6, true, false, s.player.emotions, null);
+            g.updateMatrixWorld(true);
+            const [H, U] = [lage(haut, true), lage(tuch, false).P];
+            ecken = U.length / 3;
+            spur.push(U);
+            const hier = hinter(H, U, ruheFlag);
+            durch += hier;
+            if (hier) durchBilder++;
+        }
+        return { ecken, durchdringung: durch, bilderMitDurchdringung: durchBilder, spur };
+    };
+    try {
+        // die Ruhe vor dem Gang (die Pose des Ofens, ohne Leib-Gesetz): die Kontrolle der Linse — hier liegt jedes Tuch außen
+        g.updateMatrixWorld(true);
+        aus.ruhe = { durchdringung: hinter(lage(haut, true), lage(tuch, false).P) };
+        ruheFlag = hinter.flag;
+        const echtG = gang(40);
+        aus.rufeImGang = Object.assign({}, rufe);
+        for (const k of loeser) kc[k] = (x) => x;
+        const still = gang(40);
+        // was der Löser am Tuch trägt: die größte Lage-Differenz einer Tuch-Ecke zwischen dem Gang und dem Gang mit stillgelegtem Löser
+        let diff = 0;
+        echtG.spur.forEach((U, b) => {
+            const V = still.spur[b];
+            for (let k = 0; k + 2 < U.length && k + 2 < V.length; k += 3) diff = Math.max(diff, Math.hypot(U[k] - V[k], U[k + 1] - V[k + 1], U[k + 2] - V[k + 2]));
+        });
+        delete echtG.spur;
+        delete still.spur;
+        aus.gang = Object.assign(echtG, { loeserTraegtM: +diff.toFixed(4) });
+        aus.stillgelegt = still;
+    } finally {
+        for (const k of loeser) kc[k] = echt[k];
+        s.scene.remove(g);
+    }
+    aus.labor = await tuchLabor();
+    return aus;
+}
+// (c) DAS LABOR: das Körper-Studio als Rahmen derselben Seite (derselbe Ursprung), 4 s seiner Schleife; die Löser seines Kerns
+// (dieselben Namen wie in der Welt) gezählt — Labor = Welt heißt: es ruft denselben Löser, nie einen eigenen
+async function tuchLabor() {
+    const f = document.createElement("iframe");
+    f.style.cssText = "position:fixed;left:0;top:0;width:640px;height:360px;border:0";
+    const da = new Promise((ok) => (f.onload = ok));
+    f.src = "worlds/koerperstudio/index.html";
+    document.body.appendChild(f);
+    try {
+        await Promise.race([da, new Promise((ok) => setTimeout(ok, 60000))]);
+        const w = f.contentWindow;
+        const kc = w && w.__koerperCore;
+        if (!kc) return { kern: false };
+        const rufe = {};
+        for (const k of Object.keys(kc))
+            if (typeof kc[k] === "function" && /xpbd|tuch|cloth/i.test(k)) {
+                const g = kc[k];
+                rufe[k] = 0;
+                kc[k] = function (...a) {
+                    rufe[k]++;
+                    return g.apply(this, a);
+                };
+            }
+        await new Promise((ok) => setTimeout(ok, 4000));
+        return { kern: true, rufe, fehler: w.__fehler || null };
+    } catch (e) {
+        return { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 200) };
+    } finally {
+        f.remove();
+    }
+}
+// das Urteil (haar.K4#2): (a) der Kern trägt einen Tuch-Löser, die Welt ruft ihn im Gang, und er trägt das Tuch (stillgelegt liegt eine
+// Tuch-Ecke ≥ 1 cm anders — sonst folgt es nur der Haut); (b) der Gang drückt in keinem Bild eine Tuch-Ecke hinter die Haut;
+// (c) das Labor ruft denselben Löser
+function tuchUrteil(e) {
+    if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE tuch" };
+    if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler + (e.teile ? " (Teile " + e.teile.join(", ") + ")" : "") };
+    const [g, L] = [e.gang || {}, e.labor || {}];
+    const rot = [];
+    const imGang = Object.values(e.rufeImGang || {}).reduce((a, b) => a + b, 0);
+    if (!e.loeser.length) rot.push("kein Tuch-Löser im Körper-Kern (xpbd · tuch · cloth)");
+    else if (!imGang) rot.push("die Welt ruft den Löser im Gang nicht");
+    if (!(g.loeserTraegtM >= 0.01)) rot.push("der Löser trägt das Tuch nicht (stillgelegt weicht es " + g.loeserTraegtM + " m ab: es folgt nur der Haut)");
+    if (!(g.ecken > 0 && e.ruhe && g.durchdringung === 0)) rot.push("der Gang drückt " + g.durchdringung + " Tuch-Ecken hinter die Haut (in " + g.bilderMitDurchdringung + " von 40 Bildern)");
+    const lr = Object.values(L.rufe || {}).reduce((a, b) => a + b, 0);
+    if (L.fehler && !L.kern) rot.push("das Labor: " + L.fehler);
+    else if (!L.kern) rot.push("das Labor lädt den Körper-Kern nicht");
+    else if (!(e.loeser.length && lr > 0)) rot.push("das Labor ruft den Löser nicht (Labor ≠ Welt)");
+    return {
+        gruen: !rot.length,
+        zahl: "Tracht " + [e.kleidung && e.kleidung.top, e.kleidung && e.kleidung.bottom].join("/") + ", " + g.ecken + " Tuch-Ecken · Löser [" + e.loeser.join(", ") + "] " + imGang +
+            " Rufe im Gang · was der Löser trägt " + g.loeserTraegtM + " m · Durchdringung im Gang " + g.durchdringung + " (" + g.bilderMitDurchdringung +
+            " von 40 Bildern; in Ruhe " + (e.ruhe ? e.ruhe.durchdringung : "—") + ", nicht gezählt) · Labor " + (L.kern ? lr + " Rufe" : "—") + (rot.length ? " · ROT " + rot.join("; ") : ""),
+    };
+}
+const WELT_TUCH = WP.befehl([["tuch", tuchProbe]], [tuchLabor]);
+// DIE ROH-AUSGABE am main 5fba36ea (03.11., Cloud, headless): die Proben der Station urteilen sie und ihre Mutanten
+const TUCH_ROH = {"loeser": [], "rufe": {}, "teile": ["haar", "haut*", "stoff*", "*", "auge*", "haar*"], "kleidung": {"top": "poncho", "bottom": "pants", "shoes": "boot", "farben": ["sand", "olive", "grey", "mustard", "burgundy"]}, "ruhe": {"durchdringung": 544}, "rufeImGang": {}, "gang": {"ecken": 9950, "durchdringung": 9905, "bilderMitDurchdringung": 40, "loeserTraegtM": 0}, "stillgelegt": {"ecken": 9950, "durchdringung": 9905, "bilderMitDurchdringung": 40}, "labor": {"kern": true, "rufe": {}, "fehler": null}};
+const tuchRoh = (aendern) => "WELTPROBE tuch " + JSON.stringify(aendern(JSON.parse(JSON.stringify(TUCH_ROH))));
+// der Lauf, der jede Klausel hält: der Löser des Kerns, gerufen in Welt und Labor, trägt das Tuch, der Gang drückt nichts hinein
+const tuchGut = (x) => {
+    x.loeser = ["tuchXpbdSchritt"];
+    x.rufe = x.rufeImGang = { tuchXpbdSchritt: 40 };
+    x.gang.loeserTraegtM = 0.034;
+    x.gang.durchdringung = 0;
+    x.gang.bilderMitDurchdringung = 0;
+    x.labor.rufe = { tuchXpbdSchritt: 212 };
+    return x;
+};
+const TUCH_PROBEN = [
+    { name: "die Messung am main 5fba36ea (kein Löser, der Gang drückt 9 905 Tuch-Ecken hinter die Haut)", stdout: tuchRoh((x) => x), gruen: false },
+    { name: "jede Klausel hält", stdout: tuchRoh(tuchGut), gruen: true },
+    { name: "der Löser steht im Kern, die Welt ruft ihn nie", stdout: tuchRoh((x) => ((x = tuchGut(x)), (x.rufeImGang = { tuchXpbdSchritt: 0 }), x)), gruen: false },
+    { name: "der Löser läuft, das Tuch folgt nur der Haut (stillgelegt gleich)", stdout: tuchRoh((x) => ((x = tuchGut(x)), (x.gang.loeserTraegtM = 0), x)), gruen: false },
+    { name: "das Tuch durchdringt den Leib im Gang", stdout: tuchRoh((x) => ((x = tuchGut(x)), (x.gang.durchdringung = 12), (x.gang.bilderMitDurchdringung = 3), x)), gruen: false },
+    { name: "das Labor rechnet sein eigenes Tuch (Labor ≠ Welt)", stdout: tuchRoh((x) => ((x = tuchGut(x)), (x.labor.rufe = { tuchXpbdSchritt: 0 }), x)), gruen: false },
+    { name: "das Labor lädt den Kern nicht", stdout: tuchRoh((x) => ((x = tuchGut(x)), (x.labor = { kern: false }), x)), gruen: false },
+    { name: "der Plan trägt keine Tracht", stdout: "WELTPROBE tuch " + JSON.stringify({ loeser: [], rufe: {}, fehler: "der Plan trägt keine Tracht" }), gruen: false },
+];
+
 // ───────── haar.K3 — DAS HAAR IM EINEN WIND (p3-stationen-g12, 01.11.) ─────────
 // DIE SZENE (in der Seite der Werkbank, r = Welt, T = THREE): am Ort des Spielers die Bühne (Mittag, Sonne, Sommer), der Spieler steht;
 // das Haar = die Teile seines Leibs der Klasse spieler:kopf/hair (`_kopfKlasse`, die Teilung der Werkbank), Third; die Pose des Leibs
@@ -3882,6 +4219,22 @@ const stationen = [
             "stamm/bild-himmel.js", "stamm/dirigent-takt.js", "stamm/kreatur-leben.js", "scripts/lib/welt-boot.cjs", "scripts/lib/ausgabe-aufnahme.cjs"],
         quelle: "1 = jede Tat von Nexus oder KI im Blick schreibt eine Zeile mit Ort, Ursache und Gesetz in die Dialog-Box, Faktentreue gegen state 100 %, ≤ 1 Zeile je 30 s (Vorlage ohne Modell)",
     },
+    // ───────── affekt.K4 Staffel 2 (w5-s2-g2) — „warum regnet es?“ (warumSzene, warumLauf, warumUrteil oben): die Staffel nennt beide Geräte —
+    // EINE Probe der Sitzung (radeon, gtx), zwei Fragen an das Modell der Sitzung. DIE FAHRT: Radeon 1 783 → 1 798, GTX 1 784 → 1 799 von
+    // 1 800 s (der Deckel 15 s: zwei Antworten des Modells, je ~2–5 s). Ungemessen bis zur Fahrt.
+    {
+        kriterium: "affekt.K4",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        probe: { sek: 15, befehl: WARUM_BEFEHL },
+        gpu: true,
+        zeit: false,
+        minuten: 2,
+        urteil: (j, lauf) => warumUrteil(j || jsonZeile(lauf.stdout, /^WARUM /)),
+        proben: WARUM_PROBEN,
+        pfad: ["stamm/feld-nexus.js", "stamm/dienst.js", "stamm/bild-himmel.js", "stamm/werkstatt-hud.js", "stamm/feld-sprache.js", "spec/abnahme/ki-korpus.json", "scripts/lib/welt-boot.cjs"],
+        quelle: "2 = „warum regnet es?“ nennt den wahren Schreiber, mit Modell erzählend (Korpus-Prädikat), beide Geräte",
+    },
 
     // ───────── affekt.K1 Staffel 2 — die schädliche Tat kehrt das Vorzeichen um (Zweig affekt-wert) ─────────
     // Der Wert-Gang (`wertGang`, oben) in EINER Werkbank an der Weiche an der Mess-Wiese, Port {PORT}+20000: vier Gänge (12 und
@@ -5022,6 +5375,22 @@ const stationen = [
         ],
         quelle: "1 = Bewohner tragen Kleidung aus der Epoche ihres Hauses (zwei Epochen im Bild unterscheidbar)",
     },
+    // haar.K4 Staffel 2 (w5-s2-g2): das Tuch am Leib im Gang (tuchProbe, tuchLabor, tuchUrteil oben). Die Staffel nennt kein Gerät: headless
+    // (Null-Renderer, die CPU-Haut von three).
+    {
+        kriterium: "haar.K4",
+        staffel: 2,
+        geraet: "headless",
+        befehl: WELT_TUCH,
+        gpu: false,
+        zeit: false,
+        minuten: 6,
+        urteil: (j, lauf) => tuchUrteil(WP.zeile(j, lauf, "tuch")),
+        proben: TUCH_PROBEN,
+        pfad: ["koerper-core.js", "foundry-core.js", "foundry-bruecke.js", "fachwerk-core.js", "stamm/koerper-*.js", "stamm/siedlung-bewohner.js", "stamm/studio-bruecke.js",
+            "worlds/koerperstudio/**", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"],
+        quelle: "2 = Tuch des EINEN XPBD-Lösers, 0 Durchdringung beim Gang, Labor = Welt",
+    },
     // ───────── vegetation.K1 — die Wiese bis zum Saum (Zweig w3w-wald): Staffel 1 EINE Pose (Mess-Wiese, Third, Mittag),
     // Staffel 2 Mess-Wiese UND Genesis × Ego UND Third × Uhr 0,5 und 0,3 (vegetationLauf, wieseUrteil) ─────────
     // (Staffel 2 — Mess-Wiese UND Genesis × Ego UND Third × Uhr 0,5 und 0,3 — steht in `fehlt`: acht Schüsse an zwei Orten sind
@@ -5192,12 +5561,6 @@ const fehlt = [
         grund: "dieselbe fehlende REF real-mischwald wie Staffel 1, dazu fehlt das Gesetz der Strahlen: Volumen-Licht über die EINE Luft gibt es nicht (Strahl-Kontrast im Gegenlicht ungemessen)",
     },
     // DER SPIKE w4-stationen-a (31.10., am main 94c079cb): Kriterien ohne jede Station — was dem Spiel fehlt, beim Namen
-    {
-        kriterium: "haar.K4",
-        staffel: 2,
-        befehl: null,
-        grund: "nicht gebaut (w4-stationen-a baute Staffel 1): ein Tuch des EINEN XPBD-Lösers gibt es nicht — die Kleidung wird aus der Haut extrudiert (foundry-core `_garmentFromSkin`, K45-2) und folgt der Haut, ein Tuch-Löser fehlt der Welt (physik.K4); ohne Tuch keine Durchdringung beim Gang zu zählen",
-    },
     // vegetation.K1#2 (w4-sitzung-reif, 30.10.): die Staffel verlangt acht Schüsse an zwei Orten — die Arbeit ihres Plans (vegetationDeckel:
     // Mess-Wiese Ego und Third warm 2 × 5 s, Genesis kalt 15 s und Third 5 s, je Wiesen-Schuss 15 s) ist 150 s, über dem Gesetz der Fahrt
     {
