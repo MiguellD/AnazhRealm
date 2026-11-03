@@ -1,0 +1,19 @@
+{
+ "sha": "8e6262cc1094d470905b1caffe0133a2066dbe81",
+ "geraet": "headless",
+ "zeit": "2026-11-03T18:07:09.914Z",
+ "host": "farm:41690508937",
+ "je": {
+  "affekt.K5#2": {
+   "gruen": true,
+   "zahl": "Erregung 0.9 ↔ -0.7 (awe/peace): Periode 2.752 ↔ 3.744 s (Rauschen 2.752), Dichte 12.633 ↔ 6.583 Quellen/s (12.583) · Schicht L1 Sturm 0.295, Nacht 0.573 (Rauschen 0.009) · 600 s: 185 Phrasen, 185 mit Ton, 0 wiederholt · Duck Schritt 8.51 · Ruf 10 · Gespräch 12 dB (Rauschen 0)",
+   "exit": 0,
+   "minuten": 0.28,
+   "zeit": "2026-11-03T18:07:09.914Z",
+   "abdruck": "215429e9a889",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41690508937/1"
+  }
+ }
+}
