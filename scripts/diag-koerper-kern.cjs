@@ -9,8 +9,8 @@
 //
 //   (a) ALT = die hier EINGEFRORENEN Original-Formeln (byte-treu aus dem
 //       Lab-Stand vor der Wanderung kopiert, Quelle zitiert),
-//   (b) NEU = der Kern, konsumiert EXAKT wie die neue Shell es tut
-//       (morphAuf, wie Shell und Stamm ihn rufen; labLandmarks auf Messwerte),
+//   (b) NEU = der Kern, wie Shell und Stamm ihn rufen (morphAuf auf den
+//       Teile-Baum, labLandmarks auf Messwerte),
 //   verglichen auf dem Dial-Gitter: die 6 morph-wirksamen Dials
 //   (height/mass/tone/age/gender/arms) je min/def/max kombiniert = 729
 //   Gitter-Punkte (>=500; hairLen/hairVol wirken nicht auf morph — sie
