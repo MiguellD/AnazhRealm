@@ -1007,15 +1007,16 @@ function wetterSelbsttest() {
 //          nur), ein Zug schneller als `zugSek`, kein Wunsch der Welt im Buch, kein Zug zieht ein gewünschtes Wort;
 //   TÄTER  ein Täter des Laufs steht nicht im Buch (er schrieb nicht oder der Spion ist blind).
 // Verweigerte Züge und Wünsche sind grün und stehen je Quelle beim Namen.
+// DIE UHR ALS „hh:mm" (der Tag-Bruchteil `t`, jede Zahl auf den Tag gefaltet) — das Urteil und die Himmels-Wache lesen sie
+const hm = (t) => {
+    const x = (((Number(t) % 1) + 1) % 1) * 24;
+    const h = Math.floor(x);
+    return `${String(h).padStart(2, "0")}:${String(Math.floor((x - h) * 60)).padStart(2, "0")}`;
+};
 function himmelUrteil(g) {
     const taeter = [];
     const verweigert = {};
     const gewuenscht = {};
-    const hm = (t) => {
-        const x = (((Number(t) % 1) + 1) % 1) * 24;
-        const h = Math.floor(x);
-        return `${String(h).padStart(2, "0")}:${String(Math.floor((x - h) * 60)).padStart(2, "0")}`;
-    };
     const wer = (e) => (e.quelle && e.quelle !== "?" ? `${e.quelle} (${e.stapel})` : e.stapel);
     const U = g.uhr || { buch: [], gang: { n: 0, weg: 0, max: 0 } };
     const W = g.wetter || { buch: [] };
@@ -1383,6 +1384,7 @@ module.exports = {
     wetterUrteil,
     wetterSelbsttest,
     himmelUrteil,
+    hm,
     himmelSelbsttest,
     weltaktUrteil,
     weltaktSelbsttest,
