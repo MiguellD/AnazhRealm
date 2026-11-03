@@ -1272,7 +1272,7 @@ class AnazhRealm_werkstatt_hof {
                 this._el(
                     "div",
                     { class: "chronik-row" },
-                    this._el("span", { class: "chronik-text", text: e.text || "—" }),
+                    this._journalSetze(this._el("span", { class: "chronik-text" }), e),
                     this._el("span", { class: "chronik-when", text: ago })
                 )
             );

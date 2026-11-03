@@ -1418,17 +1418,12 @@ class AnazhRealm_kreatur_leben {
                     const sayText = String(reply.say).slice(0, 400);
                     const soulName = creature.userData.soul || "wesen";
                     const chatOutput = typeof document !== "undefined" ? document.getElementById("chat-output") : null;
-                    if (chatOutput) {
-                        const line = document.createElement("div");
-                        line.className = "chat-rare-event-line";
-                        const nameSpan = document.createElement("span");
-                        nameSpan.className = `chat-creature-name soul-${soulName}`;
-                        nameSpan.textContent = `${name}: `;
-                        line.appendChild(nameSpan);
-                        line.appendChild(document.createTextNode(sayText));
-                        chatOutput.appendChild(line);
-                        chatOutput.scrollTop = chatOutput.scrollHeight;
-                    }
+                    if (chatOutput)
+                        this._chatEcho(sayText, {
+                            klasse: "chat-rare-event-line",
+                            sprecher: name,
+                            sprecherKlasse: `chat-creature-name soul-${soulName}`,
+                        });
                     if (typeof this._creatureRemember === "function") {
                         this._creatureRemember(creature, "spoken_rare_event", {
                             said: sayText.slice(0, 120),

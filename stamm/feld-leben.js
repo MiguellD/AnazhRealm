@@ -712,7 +712,6 @@ class AnazhRealm_feld_leben {
             .trim();
         const parts = command.toLowerCase().split(" ");
         const chatInput = document.getElementById("chat-input");
-        const chatOutput = document.getElementById("chat-output");
         const appendChatOutput = (zeile) => this._chatEcho(zeile);
         appendChatOutput(`> ${command}`);
         this._chatRecordInputForLearning(command);
@@ -894,8 +893,8 @@ class AnazhRealm_feld_leben {
             const result = this.dslRun(g.program, { source: "human" });
             appendChatOutput(
                 result.ok
-                    ? this._t("chat.gesetz.aufgestellt", { tat: this.describeProgram(g.program) })
-                    : this._t("chat.gesetz.nicht-aufgestellt")
+                    ? ["chat.gesetz.aufgestellt", { tat: this.describeProgram(g.program) }]
+                    : ["chat.gesetz.nicht-aufgestellt"]
             );
         } else appendChatOutput(g.absage);
         chatInput.value = "";
@@ -916,8 +915,8 @@ class AnazhRealm_feld_leben {
             }
             appendChatOutput(
                 rules.length === 1
-                    ? this._t("chat.regeln.eine", { n: rules.length })
-                    : this._t("chat.regeln.viele", { n: rules.length })
+                    ? ["chat.regeln.eine", { n: rules.length }]
+                    : ["chat.regeln.viele", { n: rules.length }]
             );
             for (const r of rules) {
                 const who =
@@ -950,9 +949,9 @@ class AnazhRealm_feld_leben {
             appendChatOutput(
                 removed > 0
                     ? removed === 1
-                        ? this._t("chat.gesetze.eins-vergessen", { n: removed })
-                        : this._t("chat.gesetze.vergessen", { n: removed })
-                    : this._t("chat.gesetze.keine-eigenen")
+                        ? ["chat.gesetze.eins-vergessen", { n: removed }]
+                        : ["chat.gesetze.vergessen", { n: removed }]
+                    : ["chat.gesetze.keine-eigenen"]
             );
             chatInput.value = "";
             return true;
@@ -999,9 +998,7 @@ class AnazhRealm_feld_leben {
             const grund = String(ohneOrt.grund || this._t("chat.ort.kein-ort"));
             const satz = grund.charAt(0).toUpperCase() + grund.slice(1);
             appendChatOutput(
-                ohneOrt.op === "near_water"
-                    ? this._t("chat.ort.kein-wasser", { satz })
-                    : this._t("chat.ort.nichts-geschah", { satz })
+                ohneOrt.op === "near_water" ? ["chat.ort.kein-wasser", { satz }] : ["chat.ort.nichts-geschah", { satz }]
             );
         } else {
             appendChatOutput(this._dslAbsageSatz(result.log));
@@ -1560,8 +1557,8 @@ class AnazhRealm_feld_leben {
             // jeder Zeile „Verb + Wort" ohne KI den Vorschlag, „mach licht" hörte nur den Katalog).
             appendChatOutput(
                 studioAbsage
-                    ? this._t("chat.vorschlag.oder", { absage: studioAbsage, vorschlag: suggestion })
-                    : this._t("chat.vorschlag.unbekannt", { vorschlag: suggestion })
+                    ? ["chat.vorschlag.oder", { absage: studioAbsage, vorschlag: suggestion }]
+                    : ["chat.vorschlag.unbekannt", { vorschlag: suggestion }]
             );
         } else if (studioAbsage) {
             appendChatOutput(studioAbsage);
@@ -1653,20 +1650,16 @@ class AnazhRealm_feld_leben {
     }
     proactiveSuggestions() {
         const suggestions = [
-            this._t("chat.ki-vorschlag.faehigkeit"),
-            this._t("chat.ki-vorschlag.physik"),
-            this._t("chat.ki-vorschlag.sternenhimmel"),
-            this._t("chat.ki-vorschlag.kreaturen"),
-            this._t("chat.ki-vorschlag.terrain"),
-            this._t("chat.ki-vorschlag.welt"),
-            this._t("chat.ki-vorschlag.steuerung"),
+            ["chat.ki-vorschlag.faehigkeit"],
+            ["chat.ki-vorschlag.physik"],
+            ["chat.ki-vorschlag.sternenhimmel"],
+            ["chat.ki-vorschlag.kreaturen"],
+            ["chat.ki-vorschlag.terrain"],
+            ["chat.ki-vorschlag.welt"],
+            ["chat.ki-vorschlag.steuerung"],
         ];
         const randomSuggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
-        const chatOutput = document.getElementById("chat-output");
-        const line = document.createElement("div");
-        line.textContent = this._t("chat.ki-vorschlag", { vorschlag: randomSuggestion });
-        chatOutput.appendChild(line);
-        chatOutput.scrollTop = chatOutput.scrollHeight;
+        this._chatEcho(["chat.ki-vorschlag", { vorschlag: randomSuggestion }]);
     }
     updateCreatureEmotions() {
         // Wetter = ambienter Achsen-Impuls auf das 6-Achsen-Innenleben (kein Binär-Würfel), das Etikett

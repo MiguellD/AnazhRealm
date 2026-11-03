@@ -1302,10 +1302,7 @@ class AnazhRealm_speicher_laden {
                 this.log(`Import fehlgeschlagen (${file.name}): ${e.message}`, "ERROR");
                 const chatOutput = document.getElementById("chat-output");
                 if (chatOutput) {
-                    const line = document.createElement("div");
-                    line.textContent = this._t("speicher.import-fehl", { grund: String(e.message) });
-                    chatOutput.appendChild(line);
-                    chatOutput.scrollTop = chatOutput.scrollHeight;
+                    this._chatEcho(["speicher.import-fehl", { grund: String(e.message) }]);
                 }
             }
         };
@@ -1350,10 +1347,7 @@ class AnazhRealm_speicher_laden {
                 this.log(grund, "ERROR");
                 const chatOutput = typeof document !== "undefined" ? document.getElementById("chat-output") : null;
                 if (chatOutput) {
-                    const line = document.createElement("div");
-                    line.textContent = grund;
-                    chatOutput.appendChild(line);
-                    chatOutput.scrollTop = chatOutput.scrollHeight;
+                    this._chatEcho(grund);
                 }
                 return;
             }
@@ -1418,10 +1412,7 @@ class AnazhRealm_speicher_laden {
         const erbgutNein = AnazhRealm._erbgutEinlass(parsed);
         if (erbgutNein) {
             if (chatOutput) {
-                const line = document.createElement("div");
-                line.textContent = this._t("speicher.ersetzen-abgelehnt", { grund: erbgutNein });
-                chatOutput.appendChild(line);
-                chatOutput.scrollTop = chatOutput.scrollHeight;
+                this._chatEcho(["speicher.ersetzen-abgelehnt", { grund: erbgutNein }]);
             }
             this._closeWeltTorDialog();
             return;
@@ -1436,12 +1427,11 @@ class AnazhRealm_speicher_laden {
         this._closeWeltTorDialog();
         const r = this._weltBetreten(neu);
         if (chatOutput) {
-            const line = document.createElement("div");
-            line.textContent = r.ok
-                ? this._t("speicher.ersetzen-ok", { datei: fileName })
-                : this._t("speicher.ersetzen-fehl", { datei: fileName, grund: String(r.reason) });
-            chatOutput.appendChild(line);
-            chatOutput.scrollTop = chatOutput.scrollHeight;
+            this._chatEcho(
+                r.ok
+                    ? ["speicher.ersetzen-ok", { datei: fileName }]
+                    : ["speicher.ersetzen-fehl", { datei: fileName, grund: String(r.reason) }]
+            );
         }
     }
 
@@ -1455,20 +1445,15 @@ class AnazhRealm_speicher_laden {
         const fileName = pending.fileName;
         const result = this.importWorldBeside(parsed);
         const chatOutput = document.getElementById("chat-output");
-        if (chatOutput) {
-            const line = document.createElement("div");
-            if (result.ok) {
-                line.textContent = this._t("speicher.daneben-ok", {
-                    datei: fileName,
-                    slug: String(result.slug),
-                    id: result.worldId.slice(0, 8),
-                });
-            } else {
-                line.textContent = this._t("speicher.daneben-fehl", { grund: String(result.reason) });
-            }
-            chatOutput.appendChild(line);
-            chatOutput.scrollTop = chatOutput.scrollHeight;
-        }
+        if (chatOutput)
+            this._chatEcho(
+                result.ok
+                    ? [
+                          "speicher.daneben-ok",
+                          { datei: fileName, slug: String(result.slug), id: result.worldId.slice(0, 8) },
+                      ]
+                    : ["speicher.daneben-fehl", { grund: String(result.reason) }]
+            );
         if (result.ok) {
             this.journalAppend("witness", ["journal.welt-neben", { welt: result.slug }]);
             this.updateWorldInfo();
@@ -1492,10 +1477,7 @@ class AnazhRealm_speicher_laden {
         } else {
             const chatOutput = document.getElementById("chat-output");
             if (chatOutput) {
-                const line = document.createElement("div");
-                line.textContent = this._t("speicher.fusion-vorbereitung-fehl", { grund: String(result.reason) });
-                chatOutput.appendChild(line);
-                chatOutput.scrollTop = chatOutput.scrollHeight;
+                this._chatEcho(["speicher.fusion-vorbereitung-fehl", { grund: String(result.reason) }]);
             }
         }
     }
@@ -1586,10 +1568,7 @@ class AnazhRealm_speicher_laden {
         const chatOutput = document.getElementById("chat-output");
         const speak = (text) => {
             if (chatOutput) {
-                const line = document.createElement("div");
-                line.textContent = text;
-                chatOutput.appendChild(line);
-                chatOutput.scrollTop = chatOutput.scrollHeight;
+                this._chatEcho(text);
             }
         };
         if (!activeId) {

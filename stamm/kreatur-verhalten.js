@@ -82,11 +82,7 @@ class AnazhRealm_kreatur_verhalten {
             if (typeof document !== "undefined") {
                 const chatOutput = document.getElementById("chat-output");
                 if (chatOutput) {
-                    const line = document.createElement("div");
-                    line.textContent = this._t("welt.keine-kreatur");
-                    line.style.opacity = "0.65";
-                    chatOutput.appendChild(line);
-                    chatOutput.scrollTop = chatOutput.scrollHeight;
+                    this._chatEcho(["welt.keine-kreatur"]).style.opacity = "0.65";
                 }
             }
             if (typeof this.log === "function") {

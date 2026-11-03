@@ -1909,8 +1909,8 @@ class AnazhRealm_koerper_fahrt {
             const d = pm ? Math.hypot(t.position.x - pm.x, t.position.z - pm.z) : null;
             this._spielerSagt(
                 d != null
-                    ? this._t("welt.sonne-entzuendete-weit", { linse: name(quelle), ding: name(t), m: Math.round(d) })
-                    : this._t("welt.sonne-entzuendete", { linse: name(quelle), ding: name(t) })
+                    ? ["welt.sonne-entzuendete-weit", { linse: name(quelle), ding: name(t), m: Math.round(d) }]
+                    : ["welt.sonne-entzuendete", { linse: name(quelle), ding: name(t) }]
             );
             if (this.journalAppend) {
                 this.journalAppend("loss", ["journal.sonne-zuendet", { linse: name(quelle), ziel: name(t) }], {

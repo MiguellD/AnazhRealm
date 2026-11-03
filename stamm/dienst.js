@@ -282,6 +282,15 @@ class AnazhRealm_dienst {
         }
     }
 
+    // die Erinnerung am Knoten (Tagebuch, Chronik): ein Satz der Welt ist eine Zeile der Tafel (er wechselt mit der Sprache);
+    // ein fremder Satz und ein Eintrag aus einem Stand vor der Tafel sind Daten, wie sie kamen
+    _journalSetze(el, e) {
+        if (Array.isArray(e.t)) return this._tSetze(el, e.t[0], e.t[1]);
+        el.textContent = e.text || "—";
+        el.setAttribute("translate", "no");
+        return el;
+    }
+
     // Idempotente Variante: nur schreiben, wenn der Schlüssel noch nie
     // gesehen wurde. Für „erstes Mal X"-Erinnerungen.
     journalAppendOnce(key, type, zeile, ctx) {

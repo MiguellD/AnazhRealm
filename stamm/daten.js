@@ -264,7 +264,7 @@ class AnazhRealm_daten {
         return 8; // s — Mindest-Abstand zwischen ALLEN Kreatur-Aussagen
     }
     static get CREATURE_PROACTIVE_PHRASES() {
-        // [eventType][soulName] → Array von Phrase-Templates.
+        // [eventType][soulName] → die Schlüssel ihrer Zeilen in der Tafel (`stimme.*`, die Werte aus dem Kontext des Ereignisses).
         // soulName "default" wirkt als Fallback wenn ein neuer Soul-Typ
         // hinzukommt ohne spezifische Phrasen.
         return this._einmal(
@@ -272,39 +272,30 @@ class AnazhRealm_daten {
             Object.freeze({
                 level_up_gather: {
                     wesen: Object.freeze([
-                        "Mein Boden trägt ${material} jetzt fester. Stufe ${level}.",
-                        "Ich kenne ${material} tiefer. Stufe ${level} in mir.",
-                        "${material} wird zu meinem Hand-Wissen — Stufe ${level}.",
+                        "stimme.level-up-gather.wesen-1",
+                        "stimme.level-up-gather.wesen-2",
+                        "stimme.level-up-gather.wesen-3",
                     ]),
-                    default: Object.freeze(["Ich werde besser im Sammeln von ${material}. Stufe ${level}."]),
+                    default: Object.freeze(["stimme.level-up-gather.default-1"]),
                 },
                 level_up_build: {
-                    wesen: Object.freeze([
-                        "Ich baue ${blueprint} jetzt mit ruhigerer Hand. Stufe ${level}.",
-                        "${blueprint} wird Teil meines Wesens — Stufe ${level}.",
-                    ]),
-                    default: Object.freeze(["Ich verstehe ${blueprint} jetzt tiefer. Stufe ${level}."]),
+                    wesen: Object.freeze(["stimme.level-up-build.wesen-1", "stimme.level-up-build.wesen-2"]),
+                    default: Object.freeze(["stimme.level-up-build.default-1"]),
                 },
                 boost_received: {
-                    wesen: Object.freeze([
-                        "${label} setzt sich warm in mein Innerstes.",
-                        "Ich fühle ${label} durch meine Glieder gehen.",
-                    ]),
-                    default: Object.freeze(["Der Trank ${label} wirkt in mir."]),
+                    wesen: Object.freeze(["stimme.boost-received.wesen-1", "stimme.boost-received.wesen-2"]),
+                    default: Object.freeze(["stimme.boost-received.default-1"]),
                 },
                 no_material_found: {
-                    wesen: Object.freeze([
-                        "${material} ist nirgends in Reichweite.",
-                        "Ich finde kein ${material}. Soll ich anderes suchen?",
-                    ]),
-                    default: Object.freeze(["Ich finde kein ${material} mehr."]),
+                    wesen: Object.freeze(["stimme.no-material-found.wesen-1", "stimme.no-material-found.wesen-2"]),
+                    default: Object.freeze(["stimme.no-material-found.default-1"]),
                 },
                 no_inventory_for_build: {
                     wesen: Object.freeze([
-                        "Du hast kein Material für ${blueprint} bei dir.",
-                        "Mir fehlt für ${blueprint} der Stoff aus deiner Hand.",
+                        "stimme.no-inventory-for-build.wesen-1",
+                        "stimme.no-inventory-for-build.wesen-2",
                     ]),
-                    default: Object.freeze(["Mir fehlt Material für ${blueprint}."]),
+                    default: Object.freeze(["stimme.no-inventory-for-build.default-1"]),
                 },
             })
         );
@@ -2636,6 +2627,22 @@ class AnazhRealm_daten {
             "journal.wohnt": ["Du wohnst jetzt in „{welt}“.", "You now live in „{welt}“."],
             "journal.wort-zurueck": ["Ich ließ ein Wort bei „{wo}“ zurück: „{wort}“", "I left a word at „{wo}“: „{wort}“"],
             "journal.zur-erde": ["{name} kehrt zur Erde zurück.", "{name} returns to the earth."],
+            "stimme.boost-received.default-1": ["Der Trank {label} wirkt in mir.", "The potion {label} works within me."],
+            "stimme.boost-received.wesen-1": ["{label} setzt sich warm in mein Innerstes.", "{label} settles warmly into my core."],
+            "stimme.boost-received.wesen-2": ["Ich fühle {label} durch meine Glieder gehen.", "I feel {label} flow through my limbs."],
+            "stimme.level-up-build.default-1": ["Ich verstehe {blueprint} jetzt tiefer. Stufe {level}.", "I understand {blueprint} more deeply now. Level {level}."],
+            "stimme.level-up-build.wesen-1": ["Ich baue {blueprint} jetzt mit ruhigerer Hand. Stufe {level}.", "I build {blueprint} with a calmer hand now. Level {level}."],
+            "stimme.level-up-build.wesen-2": ["{blueprint} wird Teil meines Wesens — Stufe {level}.", "{blueprint} becomes part of my being — level {level}."],
+            "stimme.level-up-gather.default-1": ["Ich werde besser im Sammeln von {material}. Stufe {level}.", "I am getting better at gathering {material}. Level {level}."],
+            "stimme.level-up-gather.wesen-1": ["Mein Boden trägt {material} jetzt fester. Stufe {level}.", "My ground carries {material} more firmly now. Level {level}."],
+            "stimme.level-up-gather.wesen-2": ["Ich kenne {material} tiefer. Stufe {level} in mir.", "I know {material} more deeply. Level {level} within me."],
+            "stimme.level-up-gather.wesen-3": ["{material} wird zu meinem Hand-Wissen — Stufe {level}.", "{material} becomes the knowledge of my hands — level {level}."],
+            "stimme.no-inventory-for-build.default-1": ["Mir fehlt Material für {blueprint}.", "I lack material for {blueprint}."],
+            "stimme.no-inventory-for-build.wesen-1": ["Du hast kein Material für {blueprint} bei dir.", "You carry no material for {blueprint}."],
+            "stimme.no-inventory-for-build.wesen-2": ["Mir fehlt für {blueprint} der Stoff aus deiner Hand.", "For {blueprint} I lack the material from your hand."],
+            "stimme.no-material-found.default-1": ["Ich finde kein {material} mehr.", "I find no more {material}."],
+            "stimme.no-material-found.wesen-1": ["{material} ist nirgends in Reichweite.", "{material} is nowhere within reach."],
+            "stimme.no-material-found.wesen-2": ["Ich finde kein {material}. Soll ich anderes suchen?", "I find no {material}. Shall I look for something else?"],
             "wesen.baer": ["Bär", "Bear"],
             "wesen.fuchs": ["Fuchs", "Fox"],
             "wesen.hirsch": ["Hirsch", "Deer"],

@@ -269,20 +269,20 @@ class AnazhRealm_werkstatt_sozial {
                 const result = this.importRecipesFromWorld(entry.worldId);
                 const chatOutput = document.getElementById("chat-output");
                 if (chatOutput) {
-                    const line = document.createElement("div");
-                    if (result.ok) {
-                        const c = result.counts;
-                        line.textContent = this._t("sozial.rezepte-empfangen", {
-                            welt: String(entry.slug),
-                            bauplaene: String(c.blueprints),
-                            materialien: String(c.materials),
-                            werkzeuge: String(c.tools),
-                        });
-                    } else {
-                        line.textContent = this._t("sozial.rezept-import-fehl", { grund: String(result.reason) });
-                    }
-                    chatOutput.appendChild(line);
-                    chatOutput.scrollTop = chatOutput.scrollHeight;
+                    const c = result.counts;
+                    this._chatEcho(
+                        result.ok
+                            ? [
+                                  "sozial.rezepte-empfangen",
+                                  {
+                                      welt: String(entry.slug),
+                                      bauplaene: String(c.blueprints),
+                                      materialien: String(c.materials),
+                                      werkzeuge: String(c.tools),
+                                  },
+                              ]
+                            : ["sozial.rezept-import-fehl", { grund: String(result.reason) }]
+                    );
                 }
             });
             const delBtn = document.createElement("button");
@@ -345,14 +345,7 @@ class AnazhRealm_werkstatt_sozial {
             const age = document.createElement("span");
             age.className = "journal-age";
             age.textContent = this._formatJournalAge(now - (e.at || now));
-            const text = document.createElement("span");
-            // ein Satz der Welt ist eine Zeile der Tafel (er wechselt mit der Sprache); ein fremder Satz und ein Eintrag aus
-            // einem Stand vor der Tafel sind Daten, wie sie kamen
-            if (Array.isArray(e.t)) this._tSetze(text, e.t[0], e.t[1]);
-            else {
-                text.textContent = e.text || "";
-                text.setAttribute("translate", "no");
-            }
+            const text = this._journalSetze(document.createElement("span"), e);
             row.appendChild(type);
             row.appendChild(age);
             row.appendChild(text);
