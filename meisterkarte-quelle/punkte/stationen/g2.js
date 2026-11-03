@@ -1,5 +1,5 @@
 // Stationen der Gruppe II (src/g2.js). Format und Regeln: punkte/punkte.cjs (Kopf).
-// Erfasst: jedes Kriterium mit Punkten am Kopf (tiere.K1 · tiere.K3 · oekologie.K5 · mensch.K2 · mensch.K3), mensch.K4 (Zweig w3v-leib-menge), luftwasser.K1 (Zweig vogel-zensus), luftwasser.K2#1 (Zweig w3s-schwarm) und #2 (Zweig w3u-leittier), luftwasser.K5 (Zweig schwarm), mensch.K5#1, vegetation.K2#1 (Zweig boe-zeit), vegetation.K1 und K5 (Zweig w3w-wald) und jedes der
+// Erfasst: (w5-s2-g2) die Staffel 2 von affekt.K4 (GPU-Probe) · affekt.K5 · haar.K4 · luftwasser.K3 · luftwasser.K4 (headless); jedes Kriterium mit Punkten am Kopf (tiere.K1 · tiere.K3 · oekologie.K5 · mensch.K2 · mensch.K3), mensch.K4 (Zweig w3v-leib-menge), luftwasser.K1 (Zweig vogel-zensus), luftwasser.K2#1 (Zweig w3s-schwarm) und #2 (Zweig w3u-leittier), luftwasser.K5 (Zweig schwarm), mensch.K5#1, vegetation.K2#1 (Zweig boe-zeit), vegetation.K1 und K5 (Zweig w3w-wald) und jedes der
 // Messschuld M30–M43 (M40 mensch.K1 · M41 vegetation.K4 · M42 tiere.K3); kein Stau-Zweig kippt ein Kriterium der Gruppe II. Dazu
 // (p3-stationen-g12) luftwasser.K3 und K4 über die Welt-Probe der Gruppe I, haar.K3 (headless) und haar.K5 (GTX).
 // Was sich nicht als Station fassen lässt, steht in `fehlt` (befehl: null, grund beim Namen) — die Liste der Stationen
@@ -2547,7 +2547,7 @@ function kleintierAmOrt(r, T, muster, x, z, rM) {
 // auf P, 5 s Takt: wie viele stehen binnen 3 m um ihn, wie nah ist ihm der nächste Fisch; dann der Spieler zurück, ruheS + 12 s: kehren sie heim
 // (ohne Heimkehr wäre die Flucht ein einmaliges Verstreuen, kein Meiden). (b) DER PEGEL: der echte Weg des Wassers — Sturm (das
 // Wetter-Wort, der Takt der Nässe hebt den Pegel der Welt, `_pegelTakt`, die gezeichneten Chunks bauen im Faden neu), bis der Spiegel am
-// Ort (`_koerperWasser`, die EINE Wasser-Wahrheit am Körper) um ≥ 5 cm steigt (höchstens 240 s), dann 5 s: je Fisch Höhe, Grund und
+// Ort (`_koerperWasser`, die EINE Wasser-Wahrheit am Körper) um ≥ 5 cm steigt (höchstens 240 s), dann 30 s: je Fisch Höhe, Grund und
 // Spiegel vorher ↔ nachher; danach trocken (der Pegel fällt zurück). (c) SICHTBAR UNTER WASSER: die Kamera taucht 4 m vor dem
 // Trupp stromab unter den Spiegel (halbe Säule), blickt auf ihn; das Medium der Kamera aus dem Gesetz des Bilds (`_applyDayNightToScene`:
 // `kameraUnterWasser`, die Sicht `_luftSichtM` der EINEN Luft unter Wasser, LUFT.unterwasserM): je gezeichneter Fisch binnen 15 m,
@@ -2607,7 +2607,8 @@ async function fische2Probe(r, T, o, G) {
         if (sek % 20 === 0) spur.push([sek, r3(r._weatherFieldFor().rain), r3(sp)]);
         if (sp - spiegel0 >= 0.05) break;
     }
-    for (let i = 0; i < 10; i++) takt(30), await new Promise((ok) => setTimeout(ok, 30));
+    // 30 s: der Stand jeder Zelle liest den Spiegel neu, je Takt EINE Zelle (`_fischTakt`, `fk.lauf`: ~1 150 Zellen ≈ 19 s je Umlauf)
+    for (let i = 0; i < 60; i++) takt(30), await new Promise((ok) => setTimeout(ok, 30));
     const nach = lage();
     const spiegel1 = r._koerperWasser(P0[0], P0[1], r._voxelSurfaceY(P0[0], P0[1]));
     trocken();
@@ -2650,7 +2651,7 @@ async function fische2Probe(r, T, o, G) {
     return aus;
 }
 // das Urteil (luftwasser.K3#2): (a) ≥ 3 Fische im Trupp (binnen 6 m um P), mit dem Spieler auf P ≤ 20 % davon binnen 3 m um ihn und
-// kein Fisch näher als 3 m, nach seinem Gehen ≥ 60 % daheim; (b) der Spiegel steigt ≥ 5 cm, die Fische steigen mit ≥ ½ × tiefe × Hub (sie halten ihren Anteil
+// kein Fisch näher als 3 m, nach seinem Gehen ≥ 60 % daheim; (b) der Spiegel steigt ≥ 5 cm, die Fische steigen mit ≥ 0,8 × tiefe × Hub (sie halten ihren Anteil
 // der Säule), keiner über dem Spiegel; (c) die Kamera ist unter Wasser, ≥ 3 Fische im Kegel vor der Sicht des Wassers
 function fische2Urteil(e) {
     if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE fische2" };
@@ -2666,7 +2667,7 @@ function fische2Urteil(e) {
     const dy = p.vor && p.nach && p.nach.y - p.vor.y;
     const tiefe = (e.gesetz && e.gesetz.tiefe) || 0;
     if (!(hub >= 0.05)) rot.push("der Pegel steigt nicht (die Probe ist blind)");
-    else if (!(p.nach.n >= 3 && dy >= 0.5 * tiefe * hub)) rot.push("sie folgen dem Pegel nicht");
+    else if (!(p.nach.n >= 3 && dy >= 0.8 * tiefe * hub)) rot.push("sie folgen dem Pegel nicht");
     if (p.nach && p.nach.ueber > 0) rot.push(p.nach.ueber + " Fische über dem Spiegel");
     if (v.fehler) rot.push("Sicht: " + v.fehler);
     else if (!(v.unterWasser === true)) rot.push("die Kamera taucht nicht (Säule " + v.saeule + " m)");
@@ -2678,13 +2679,14 @@ function fische2Urteil(e) {
             " m, heim " + f(m.heim) + " · Pegel " + (p.spiegel || []).join(" → ") + " m nach " + f(p.sekunden) + " s Sturm, Fische " + f(p.vor && p.vor.y) + " → " + f(p.nach && p.nach.y) +
             " m (Anteil der Säule " + f(p.vor && p.vor.anteil) + " → " + f(p.nach && p.nach.anteil) + ") · unter Wasser " + f(v.unterWasser) + ", Sicht " + f(v.sichtM) + " m, im Bild " +
             f(v.imBild) + " von " + f(v.binnen15) + (rot.length ? " · ROT " + rot.join(", ") : "") +
-            " (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ ½·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht)",
+            " (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht)",
     };
 }
 
 // luftwasser.K4#2 — DIE BESTÄUBER FOLGEN DER PFLEGE-GESTE UND DER UHR. Sommer, trocken, Mittag; die Zelle des Lebens-Felds unter der
-// Mess-Wiese (Mitte) und die Nachbarzelle zwei Zellen daneben (wie feld.K5), der Spieler dazwischen; der Takt des Spiels in Schritten zu
-// 0,1 s (die Aktivität folgt dem Feld mit traegS: die Uhr braucht Minuten). Je Lesung 20 Proben im Abstand 1 s: die gezeichneten
+// Mess-Wiese und die zwei Zellen daneben (wie feld.K5): die ärmere ist der Ort der Geste („Mitte“), die andere der Nachbar, der Spieler
+// dazwischen; der Takt des Spiels in Schritten zu
+// 0,1 s (die Aktivität folgt dem Feld mit traegS: die Uhr braucht Minuten). Je Lesung 70 Proben im Abstand 2 s: die gezeichneten
 // Bestäuber (Täter-Klasse tier:bestaeuber) im Kreis der halben Zelle um Mitte und Nachbar, gemittelt. vorher · nach 60 s Ruhe (das
 // Rauschen) · 60 s nach der Pflege-Geste (die DSL-Op `deposit_life` am Ort der Mitte, Menge LIFE_FIELD.max, der Weg von feld.K5);
 // dann die Uhr: Mitternacht (3 × traegS), wieder Mittag (3 × traegS) — die Summe beider Kreise.
@@ -2703,17 +2705,21 @@ async function bestaeuber2Probe(r, T, o, G) {
     const W = o.orte.wiese;
     const cx = Math.floor(W.x / C);
     const cz = Math.floor(W.z / C);
-    const mitte = [(cx + 0.5) * C, (cz + 0.5) * C];
-    const nachbar = [(cx + 2.5) * C, (cz + 0.5) * C];
+    // die Geste dort, wo das Feld ärmer ist: von den beiden Zellen (zwei Zellen auseinander, außerhalb des 3×3-Blocks der Geste) die mit
+    // dem kleineren lebendig — an der lebendigeren klemmt die Geste am Deckel 1 (Mess-Wiese 0,855 → 1: +17 %, im Rauschen der Zählung)
+    const [z0, z2] = [[(cx + 0.5) * C, (cz + 0.5) * C], [(cx + 2.5) * C, (cz + 0.5) * C]];
+    const [mitte, nachbar] = r.auraAt(z2[0], z2[1]).lebendig < r.auraAt(z0[0], z0[1]).lebendig ? [z2, z0] : [z0, z2];
     const stand = [(cx + 1.5) * C, (cz + 0.5) * C];
+    // je Lesung 70 Proben im Abstand 2 s: zehn Fenster des Besuchs (fensterS 14 s) — in einem Fenster steht der Wurf jeder Blüte,
+    // erst über Fenster mittelt die Zählung (mit 20 Proben in 1,5 Fenstern rauschte sie ±0,8 und kippte die Nachbarzelle)
     const lies = () => {
         let [m, n] = [0, 0];
-        for (let k = 0; k < 20; k++) {
-            lauf(1);
+        for (let k = 0; k < 70; k++) {
+            lauf(2);
             m += kleintierAmOrt(r, T, "^tier:bestaeuber", mitte[0], mitte[1], C / 2).length;
             n += kleintierAmOrt(r, T, "^tier:bestaeuber", nachbar[0], nachbar[1], C / 2).length;
         }
-        return { mitte: r3(m / 20), nachbar: r3(n / 20), feld: [r3(r.auraAt(mitte[0], mitte[1]).lebendig), r3(r.auraAt(nachbar[0], nachbar[1]).lebendig)], aktiv: r3(r._bestaeuberAktiv) };
+        return { mitte: r3(m / 70), nachbar: r3(n / 70), feld: [r3(r.auraAt(mitte[0], mitte[1]).lebendig), r3(r.auraAt(nachbar[0], nachbar[1]).lebendig)], aktiv: r3(r._bestaeuberAktiv) };
     };
     await stehen(stand[0], stand[1]);
     lauf(30);
@@ -2736,8 +2742,8 @@ async function bestaeuber2Probe(r, T, o, G) {
     return { zelleM: C, mitte, nachbar, traegS: B.traegS, akt: !!akt, geste, vor, ruhe, nach, nacht, tag };
 }
 // das Urteil (luftwasser.K4#2): die Geste hebt das Feld der Mitte (≥ 0,1); die Bestäuber der Mitte steigen über das Doppelte des Rauschens
-// (+≥ 0,5 und +≥ 25 %), die der Nachbarzelle bleiben im Rauschen (+0,5); die Uhr: Mittag ≥ 1 im Mittel beider Kreise, Mitternacht ≤ 0,2 ×
-// Mittag nach der Geste, der Mittag danach ≥ 0,7 × davor (die Uhr, nie ein Verfall)
+// (+≥ 0,5 und +≥ 10 %, die Schwelle der Familie: feld.K5 „alle +≥ 10 % am Ort“), die der Nachbarzelle bleiben im Rauschen (+0,5); die Uhr: Mittag ≥ 1 im Mittel beider Kreise, Mitternacht ≤ 0,2 ×
+// Mittag nach der Geste, der Mittag danach ≥ 0,7 × der Mittag vor der Geste (die Uhr, nie ein Verfall; die Pflege verklingt dazwischen)
 function bestaeuber2Urteil(e) {
     if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE bestaeuber2" };
     if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler };
@@ -2751,21 +2757,23 @@ function bestaeuber2Urteil(e) {
     const rot = [];
     if (!(hub >= 0.1)) rot.push("die Geste hebt das Feld nicht");
     if (!(summe(ruhe) >= 1)) rot.push("keine Bestäuber am Ort (die Probe ist blind)");
-    else if (!(dm >= Math.max(0.5, 2 * rausch, 0.25 * ruhe.mitte))) rot.push("sie folgen der Pflege-Geste nicht");
+    else if (!(dm >= Math.max(0.5, 2 * rausch, 0.1 * ruhe.mitte))) rot.push("sie folgen der Pflege-Geste nicht");
     if (!(Math.abs(dn) <= rausch + 0.5)) rot.push("die Nachbarzelle bewegt sich");
     if (!(summe(nach) >= 1 && summe(nacht) <= 0.2 * summe(nach))) rot.push("sie folgen der Uhr nicht (Nacht)");
-    if (!(summe(tag) >= 0.7 * summe(nach))) rot.push("der Mittag kehrt nicht zurück");
+    if (!(summe(tag) >= 0.7 * summe(ruhe))) rot.push("der Mittag kehrt nicht zurück");
     return {
         gruen: !rot.length,
         zahl: "Feld der Mitte " + ruhe.feld[0] + " → " + nach.feld[0] + " · Bestäuber der Mitte " + vor.mitte + "/" + ruhe.mitte + " → " + nach.mitte + " nach der Geste, Nachbar " +
             vor.nachbar + "/" + ruhe.nachbar + " → " + nach.nachbar + " (Rauschen ±" + r3(rausch) + ") · Uhr: Mittag " + r3(summe(nach)) + " → Mitternacht " + r3(summe(nacht)) +
             " (Aktivität " + nacht.aktiv + ") → Mittag " + r3(summe(tag)) + (rot.length ? " · ROT " + rot.join(", ") : "") +
-            " (Soll: Mitte +≥ max(0,5; 2·Rauschen; 25 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag)",
+            " (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag)",
     };
 }
 const WELT_G2_S2 = WP.befehl([["bestaeuber2", bestaeuber2Probe], ["fische2", fische2Probe]], [kleintierAmOrt]);
-// DIE ROH-AUSGABE der Welt-Probe der Staffel 2 am main 5fba36ea (03.11., Cloud, headless): die Proben beider Stationen urteilen sie
-const WELT_ROH3 = {"bestaeuber2": {"zelleM": 16, "mitte": [-280, -1048], "nachbar": [-248, -1048], "traegS": 90, "akt": true, "geste": [1, 118.451, 178.952], "vor": {"mitte": 7.7, "nachbar": 7.85, "feld": [0.855, 0.658], "aktiv": 1}, "ruhe": {"mitte": 6.9, "nachbar": 8.15, "feld": [0.855, 0.658], "aktiv": 1}, "nach": {"mitte": 7.9, "nachbar": 8.2, "feld": [1, 0.658], "aktiv": 1}, "nacht": {"mitte": 0.5, "nachbar": 0, "feld": [0.897, 0.658], "aktiv": 0.04}, "tag": {"mitte": 8.35, "nachbar": 8.15, "feld": [0.859, 0.658], "aktiv": 0.962}}, "fische2": {"bach": [-309.768, -822.525], "gesetz": {"tiefe": 0.4, "fluchtM": 4.5, "wegM": 10, "ruheS": 8}, "fische": 27, "meiden": {"stand": [-300.982, -817.567], "vorher": 12, "spielerAmStand": 0, "naechsterM": 4.894, "heim": 12}, "pegel": {"sekunden": 2, "spur": [[0, 0.046, 25.853]], "spiegel": [25.853, 26.053], "vor": {"n": 27, "y": 25.179, "spiegel": 25.524, "anteil": 0.368}, "nach": {"n": 27, "y": 25.248, "spiegel": 25.724, "anteil": 0.333, "ueber": 0}}, "sicht": {"kamera": [-299.01, 25.315, -813.827], "saeule": 0.63, "unterWasser": true, "sichtM": 30, "trupp": 12, "binnen15": 16, "imBild": 9, "naechsterM": 3.877}}};
+// DIE ROH-AUSGABE der Welt-Probe der Staffel 2 am main 5fba36ea (03.11., Cloud, headless): die Proben beider Stationen urteilen sie;
+// dazu die Bestäuber am Spiel-Zweig w5-s2-g2 (der Nektar liest das Leben des Orts, tetrapoda `bestaeuberBesuch`)
+const BESTAEUBER_ZWEIG = {"zelleM": 16, "mitte": [-248, -1048], "nachbar": [-280, -1048], "traegS": 90, "akt": true, "geste": [1, 362.03, 542.531], "vor": {"mitte": 5.443, "nachbar": 5.929, "feld": [0.658, 0.855], "aktiv": 1}, "ruhe": {"mitte": 5.686, "nachbar": 6.571, "feld": [0.658, 0.855], "aktiv": 1}, "nach": {"mitte": 7.829, "nachbar": 6.343, "feld": [0.823, 0.855], "aktiv": 1}, "nacht": {"mitte": 0.2, "nachbar": 0, "feld": [0.664, 0.855], "aktiv": 0.01}, "tag": {"mitte": 5.014, "nachbar": 5.5, "feld": [0.658, 0.855], "aktiv": 0.99}};
+const WELT_ROH3 = {"bestaeuber2": {"zelleM": 16, "mitte": [-248, -1048], "nachbar": [-280, -1048], "traegS": 90, "akt": true, "geste": [1, 361.465, 541.966], "vor": {"mitte": 7.7, "nachbar": 7.014, "feld": [0.658, 0.855], "aktiv": 1}, "ruhe": {"mitte": 7.657, "nachbar": 7.857, "feld": [0.658, 0.855], "aktiv": 1}, "nach": {"mitte": 8.271, "nachbar": 7.957, "feld": [0.823, 0.855], "aktiv": 1}, "nacht": {"mitte": 0.229, "nachbar": 0, "feld": [0.664, 0.855], "aktiv": 0.01}, "tag": {"mitte": 8.129, "nachbar": 7.943, "feld": [0.658, 0.855], "aktiv": 0.99}}, "fische2": {"bach": [-309.768, -822.525], "gesetz": {"tiefe": 0.4, "fluchtM": 4.5, "wegM": 10, "ruheS": 8}, "fische": 27, "meiden": {"stand": [-300.436, -817.36], "vorher": 13, "spielerAmStand": 0, "naechsterM": 4.739, "heim": 12}, "pegel": {"sekunden": 3, "spur": [[0, 0.046, 25.823]], "spiegel": [25.823, 26.022], "vor": {"n": 27, "y": 25.167, "spiegel": 25.508, "anteil": 0.355}, "nach": {"n": 27, "y": 25.243, "spiegel": 25.708, "anteil": 0.353, "ueber": 0}}, "sicht": {"kamera": [-298.872, 25.406, -813.812], "saeule": 0.833, "unterWasser": true, "sichtM": 30, "trupp": 12, "binnen15": 16, "imBild": 9, "naechsterM": 4.01}}};
 const weltRoh3 = (name, aendern) => "WELTPROBE " + name + " " + JSON.stringify(aendern(JSON.parse(JSON.stringify(WELT_ROH3[name]))));
 
 // haar.K4 #2 (w5-s2-g2, 03.11.): DAS TUCH AM LEIB IM GANG. Am Null-Renderer (Welt-Probe der Gruppe I, `weltProbe`): ein Bewohner aus dem
@@ -5498,10 +5506,11 @@ const stationen = [
         minuten: 12,
         urteil: (j, lauf) => bestaeuber2Urteil(WP.zeile(j, lauf, "bestaeuber2")),
         proben: [
-            { name: "die Messung am main 5fba36ea: die Uhr ja, die Geste nicht (Mitte +1,0 bei Rauschen ±0,8)", stdout: weltRoh3("bestaeuber2", (x) => x), gruen: false },
+            { name: "die Messung am main 5fba36ea: die Uhr ja, die Geste nicht (Mitte +0,61 bei Rauschen ±0,84)", stdout: weltRoh3("bestaeuber2", (x) => x), gruen: false },
+            { name: "die Messung am Spiel-Zweig w5-s2-g2: der Nektar liest das Leben (Mitte +2,14, Soll 1,28)", stdout: "WELTPROBE bestaeuber2 " + JSON.stringify(BESTAEUBER_ZWEIG), gruen: true },
             { name: "die Bestäuber folgen der Geste in ihre Zelle", stdout: weltRoh3("bestaeuber2", (x) => ((x.nach.mitte = 13.9), x)), gruen: true },
             { name: "die Geste zieht alle Zellen gleich (kein Ort)", stdout: weltRoh3("bestaeuber2", (x) => ((x.nach.mitte = 13.9), (x.nach.nachbar = 14.2), x)), gruen: false },
-            { name: "die Geste hebt das Feld nicht (der Mess-Halt hält den Welt-Akt)", stdout: weltRoh3("bestaeuber2", (x) => ((x.nach.mitte = 13.9), (x.nach.feld = [0.855, 0.658]), x)), gruen: false },
+            { name: "die Geste hebt das Feld nicht (der Mess-Halt hält den Welt-Akt)", stdout: weltRoh3("bestaeuber2", (x) => ((x.nach.mitte = 13.9), (x.nach.feld = x.ruhe.feld.slice()), x)), gruen: false },
             { name: "nachts fliegen sie wie am Tag", stdout: weltRoh3("bestaeuber2", (x) => ((x.nach.mitte = 13.9), (x.nacht = Object.assign({}, x.nach)), x)), gruen: false },
             { name: "nach der Nacht kehrt der Mittag nicht zurück (ein Verfall, keine Uhr)", stdout: weltRoh3("bestaeuber2", (x) => ((x.nach.mitte = 13.9), (x.tag.mitte = 1), (x.tag.nachbar = 1), x)), gruen: false },
         ],
