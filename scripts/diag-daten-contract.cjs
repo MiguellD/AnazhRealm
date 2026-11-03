@@ -34,13 +34,13 @@ const { sha } = require("./lib/stamm.cjs");
 
 // Frischer vm-Kontext je Ladung (Determinismus-Beweis über zwei unabhängige Läufe). Der Kontext liest das Math des
 // Gates (dieselben Funktionen) — so erreicht die Plattform-Probe den Kern.
-function ladeKontext(file) {
+function ladeKontext(file, vor = "") {
     const ctx = kernKontext({ Math });
-    vm.runInContext(ausDatei(path.join(root, file)), ctx, { timeout: 20000, filename: file });
+    vm.runInContext(vor + ausDatei(path.join(root, file)), ctx, { timeout: 20000, filename: file });
     return ctx;
 }
-function loadCore(file, ns) {
-    return ladeKontext(file)[ns];
+function loadCore(file, ns, vor) {
+    return ladeKontext(file, vor)[ns];
 }
 
 function canonical(N) {
@@ -150,13 +150,8 @@ function validateDaten(N, spec) {
         // V4: ein Kern, der beim Laden eine Transzendente ruft (der Täter: Math.sin vor dem Kern-Code), erscheint im
         // Nenner der Plattform-Probe — die transzendenten-freie Zeile v7 reißt beim Namen.
         const { plattformProbe } = require("./lib/plattform-probe.cjs");
-        const quelle = ausDatei(path.join(root, CORES[0].file));
         const PPt = await plattformProbe({
-            laden: () => {
-                const ctx = kernKontext({ Math });
-                vm.runInContext("var __taeter = Math.sin(0.3);\n" + quelle, ctx, { filename: CORES[0].file });
-                return ctx[CORES[0].ns];
-            },
+            laden: () => loadCore(CORES[0].file, CORES[0].ns, "var __taeter = Math.sin(0.3);\n"),
             bauen: (N) => ({ [CORES[0].file]: sha(canonical(N)) }),
         });
         check(
