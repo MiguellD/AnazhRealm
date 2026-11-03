@@ -1712,16 +1712,16 @@ class AnazhRealm_kreatur_leben {
     }
 
     // DER GEBURTS-ORT — die Boot-Regel als EIN Gesetz für den Boot-Spawn UND die natürliche Geburt: fern
-    // (CREATURE_SPAWN_FAR_MIN + Streu-Spanne um den Spieler), außerhalb des Blicks und auf freiem Grund
-    // (`_kreaturGrundFrei`); das Wesen taucht aus der Distanz auf, sein Satz blendet ein (`einblenden`). Die Leben-Prüfung
-    // (R-D13) sah die Geburt 12–25 m vor dem Spieler, einen Hirsch 2 m neben ihm. Bis zu acht Würfe suchen einen freien Ort
-    // außerhalb des Blicks; fern ist jeder. Ein WUNSCH-Ort (die Nexus-Geburt am Ort des Bedarfs) gilt, wenn er selbst fern,
-    // außerhalb des Blicks und frei liegt.
+    // (`_kreaturGeburtFernM` + Streu-Spanne um den Spieler), außerhalb des Blicks und auf freiem Grund
+    // (`_kreaturGrundFrei`). Die Leben-Prüfung (R-D13) sah die Geburt 12–25 m vor dem Spieler, einen Hirsch 2 m neben ihm.
+    // Bis zu acht Würfe suchen einen freien Ort außerhalb des Blicks; fern ist jeder. Ein WUNSCH-Ort (die Nexus-Geburt am Ort
+    // des Bedarfs) gilt, wenn er selbst fern, außerhalb des Blicks und frei liegt.
     _kreaturGeburtsOrt(rng, spanne = 80, wunsch = null) {
         const pm = this.state.playerMesh;
         const cx = pm ? pm.position.x : 0;
         const cz = pm ? pm.position.z : 0;
-        if (wunsch && Math.hypot(wunsch.x - cx, wunsch.z - cz) >= AnazhRealm.CREATURE_SPAWN_FAR_MIN) {
+        const fernM = this._kreaturGeburtFernM();
+        if (wunsch && Math.hypot(wunsch.x - cx, wunsch.z - cz) >= fernM) {
             if (!this._kreaturImBlick(wunsch.x, wunsch.z))
                 return this._kreaturGrundFrei(wunsch.x, wunsch.z) ? { x: wunsch.x, z: wunsch.z } : null;
         }
@@ -1730,7 +1730,7 @@ class AnazhRealm_kreatur_leben {
         let ort = null;
         for (let k = 0; k < 8; k++) {
             const ang = rng() * Math.PI * 2;
-            const d = AnazhRealm.CREATURE_SPAWN_FAR_MIN + rng() * spanne;
+            const d = fernM + rng() * spanne;
             const x = cx + Math.cos(ang) * d;
             const z = cz + Math.sin(ang) * d;
             if (!this._kreaturGrundFrei(x, z)) continue;
@@ -1740,22 +1740,36 @@ class AnazhRealm_kreatur_leben {
         return ort;
     }
 
-    // Steht (x, z) im Blick des Spielers (das Frustum des Vor-Takts)? Ohne Frustum nie. Mit `g` (die Gattung) und `bs` (die
-    // Größe) fragt es den LEIB, der dort stünde: seine Körper-Kugel wie `_kreaturAusserBlick` (Reichweite + halbe Höhe um die
-    // halbe Höhe über dem Fuß, dazu der Saum) — dieselbe Frage, die das Bild an den Leib stellt. Ohne Gattung ein Punkt einen Meter
-    // über dem Grund. Bis w7-begegnung fragte jede Geburt den Punkt: ein Leib am Rand des Blicks, dessen Fuß-Punkt draußen lag,
-    // ragte bei der Geburt mit dem Kopf ins Bild (Kreis-Sonde der Mess-Wiese: 2 im Blick erschienen in 600 Spiel-s).
-    _kreaturImBlick(x, z, g = null, bs = 1) {
+    // WIE FERN EIN LEIB ERSCHEINT: außerhalb der Witterung des Spielers (tetrapoda furcht.noticeRadius) — näher hätte das Tier
+    // ihn schon bemerkt; dass es nie im Bild erscheint, sagt der Blick (`_kreaturLeibImBlick`, der Leib als Kugel), nie die Ferne.
+    // Bis w7-begegnung stand hier eine Konstante (CREATURE_SPAWN_FAR_MIN, 130 m): jeder Leib erschien ≥ 130 m fern, auch ein
+    // Tier, dessen Weide 30 m neben dem Spieler lag — es äste heim, während der Spieler weiterzog.
+    _kreaturGeburtFernM() {
+        return AnazhRealm._verhaltenGesetz().furcht.noticeRadius;
+    }
+
+    // Steht (x, z) im Blick des Spielers (das Frustum des Vor-Takts, einen Meter über dem Grund)? Ohne Frustum nie.
+    _kreaturImBlick(x, z) {
         const fr = this._frustumCache;
         if (!fr) return false;
-        const y = this.getTerrainHeightAt(x, z);
-        if (!g) {
-            const v = this._geburtsOrtV || (this._geburtsOrtV = new THREE.Vector3());
-            return fr.containsPoint(v.set(x, y + 1, z));
-        }
-        const leib = this._kreaturLeib(null, this._gattungLeib(g).beinL * bs, this._geburtsLeib || (this._geburtsLeib = {}));
+        const v = this._geburtsOrtV || (this._geburtsOrtV = new THREE.Vector3());
+        return fr.containsPoint(v.set(x, this.getTerrainHeightAt(x, z) + 1, z));
+    }
+    // Stünde der LEIB einer Gattung `g` der Größe `bs` an (x, z) im Blick? Seine Körper-Kugel wie `_kreaturAusserBlick`
+    // (Reichweite + halbe Höhe um die halbe Höhe über dem Fuß, dazu der Saum) — dieselbe Frage, die das Bild an den Leib stellt;
+    // die Geburt fragt sie (`_kreaturWurf`, `_bestandLeibOrt`). Bis w7-begegnung fragte jede Geburt den Punkt: ein Leib am Rand
+    // des Blicks, dessen Fuß-Punkt draußen lag, ragte bei der Geburt ins Bild (Kreis-Sonde der Mess-Wiese: 2 im Blick
+    // erschienen in 600 Spiel-s).
+    _kreaturLeibImBlick(x, z, g, bs) {
+        const fr = this._frustumCache;
+        if (!fr) return false;
+        const leib = this._kreaturLeib(
+            null,
+            this._gattungLeib(g).beinL * bs,
+            this._geburtsLeib || (this._geburtsLeib = {})
+        );
         const s = this._geburtsKugel || (this._geburtsKugel = new THREE.Sphere(new THREE.Vector3(), 0));
-        s.center.set(x, y + 0.5 * leib.hoehe, z);
+        s.center.set(x, this.getTerrainHeightAt(x, z) + 0.5 * leib.hoehe, z);
         s.radius = leib.reichweite + 0.5 * leib.hoehe + AnazhRealm.KREATUR_RUHE.saumM;
         return fr.intersectsSphere(s);
     }
@@ -1813,12 +1827,12 @@ class AnazhRealm_kreatur_leben {
             const a = dreh + k * 2.39996;
             const x = ort.x + Math.cos(a) * abstand * Math.sqrt(geboren.length);
             const z = ort.z + Math.sin(a) * abstand * Math.sqrt(geboren.length);
-            // außer Blick ist der LEIB, der dort stünde (seine Kugel, `_kreaturImBlick` mit Gattung und Größe; ein Tier ohne
+            // außer Blick ist der LEIB, der dort stünde (seine Kugel, `_kreaturLeibImBlick`; ein Tier ohne
             // Bestand würfelt seine Größe erst im Guss — gefragt wird die größte des Gesetzes) — auch der erste
             const bs = tiere ? tiere[geboren.length].bs : AnazhRealm._verhaltenGesetz().groessen.at(-1).max;
-            if (this._kreaturImBlick(x, z, gattung, bs)) continue;
+            if (gattung && this._kreaturLeibImBlick(x, z, gattung, bs)) continue;
             if (k > 0) {
-                const fern = Math.hypot(x - p.x, z - p.z) >= AnazhRealm.CREATURE_SPAWN_FAR_MIN;
+                const fern = Math.hypot(x - p.x, z - p.z) >= this._kreaturGeburtFernM();
                 if (!fern || !this._kreaturGrundFrei(x, z) || (imRaum && !lebt(x, z))) continue;
                 if (!geboren.some((g) => Math.hypot(g.position.x - x, g.position.z - z) <= fenster * abstand)) continue;
             }
@@ -2236,7 +2250,9 @@ class AnazhRealm_kreatur_leben {
         const diet = this._ofenKreaturDials(t.g).dials.diet;
         const BG = AnazhRealm._bestandGesetz();
         let summe = 0;
-        const w = feld.zellen.map((c) => (summe += LG.lebensraum(t.g, c.klasse, LG.L) * BG.nahrung(diet, c.aesung, beute)));
+        const w = feld.zellen.map(
+            (c) => (summe += LG.lebensraum(t.g, c.klasse, LG.L) * BG.nahrung(diet, c.aesung, beute))
+        );
         let ort = { x: t.x, z: t.z };
         if (summe > 0) {
             const rng = this._streamRng("weide:" + gruppe + ":" + slot);
@@ -2491,14 +2507,10 @@ class AnazhRealm_kreatur_leben {
         const lebt = (x, z) => LG.lebensraum(t.g, this._bodenKlasseAt(x, z), LG.L) > 0;
         const w = this._bestandWeideOrt(t);
         const imRaum = lebt(w.x, w.z);
-        // der Leib steht in der Leine seiner Weide (die weiteste der Gattung, `wandern.leashBaseM + leashSpanM`, × Größe) —
-        // nie versetzt an den Rand des Blicks; trägt sie keinen Ort außer Blick, wartet die Gruppe
-        const K = AnazhRealm._verhaltenGesetz().wandern;
-        const leine = (K.leashBaseM + K.leashSpanM) * t.bs;
-        for (let k = 0; k < 16; k++) {
-            const x = w.x + Math.cos(k * 2.39996) * leine * Math.sqrt(k / 15);
-            const z = w.z + Math.sin(k * 2.39996) * leine * Math.sqrt(k / 15);
-            if (Math.hypot(x - p.x, z - p.z) < AnazhRealm.CREATURE_SPAWN_FAR_MIN || this._kreaturImBlick(x, z, t.g, t.bs))
+        for (let k = 0; k < 64; k++) {
+            const x = w.x + Math.cos(k * 2.39996) * 25 * Math.sqrt(k);
+            const z = w.z + Math.sin(k * 2.39996) * 25 * Math.sqrt(k);
+            if (Math.hypot(x - p.x, z - p.z) < this._kreaturGeburtFernM() || this._kreaturLeibImBlick(x, z, t.g, t.bs))
                 continue;
             if (this._kreaturGrundFrei(x, z) && (!imRaum || lebt(x, z))) return { x, z };
         }
@@ -2513,7 +2525,11 @@ class AnazhRealm_kreatur_leben {
               )
             : this.spawnCreatureAt(x, y, z, "happy", t.soul, { bodySize: t.bs });
         if (!c) return null;
-        Object.assign(c.userData, { alterS: t.alterS, wanderAnchor: this._bestandWeideOrt(t), name: this._bestandName(t) });
+        Object.assign(c.userData, {
+            alterS: t.alterS,
+            wanderAnchor: this._bestandWeideOrt(t),
+            name: this._bestandName(t),
+        });
         [c.userData._bestand, t.leib, t.snap] = [t, c, null];
         return c;
     }
@@ -3208,7 +3224,6 @@ AnazhRealm.ERINNERUNG_SATZ = Object.freeze({
 AnazhRealm.CREATURE_SPAWN_CLEAR_M = 3;
 // V18.301 — DER LADE-RHYTHMUS-RING: der beim Boot aktive Terrain-Chunk-Ring startet KLEIN
 // (eine settled Basis statt 81 Chunks auf einmal) und wächst monoton zum chunkRingRadius-Ziel.
-AnazhRealm.CREATURE_SPAWN_FAR_MIN = 22; // V18.315 — Boot-Kreaturen spawnen ≥130 m fern: sie tauchen aus der Distanz auf, ihr Satz blendet ein (_weltFeldEintrag, einblenden)
 // Berg-Schatten (feld-natives Hi-Z, s. _archRegionBundleCull): konservativer Sichtlinien-Test
 // Kamera→Kugel-Oberkante gegen das EINE Höhen-Gesetz — je bergiger die Welt, desto billiger.
 // DIE EINE NAH-GRENZE DES ANALOG-FELDS (Schöpfer-Wort 30.09.: „am Ende AAA-Niveau, nicht Kapseln"): bis hierher ist

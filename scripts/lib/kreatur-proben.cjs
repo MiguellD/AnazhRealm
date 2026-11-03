@@ -1443,7 +1443,7 @@ async function kreaturProben(r, T, opts) {
             geburten: geboren.length,
             geburtImBlick: imBlickN,
             geburtMinM: geboren.length ? +minD.toFixed(1) : null,
-            fernMin: A.CREATURE_SPAWN_FAR_MIN,
+            fernMin: r._kreaturGeburtFernM(),
         };
     });
 

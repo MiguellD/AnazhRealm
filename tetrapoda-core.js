@@ -1866,8 +1866,11 @@
     // der Hang des Gelaende-Gesetzes ueber hangTan steigt (20°), sonst nach der Bestandsdichte des Walds (phyto
     // forestStandDensity): Wald ab waldSd, Waldrand ab randSd, darunter Wiese. Je Gattung ihr Lebensraum (gattung: Klasse →
     // Eignung) und ihre Haeufigkeit (Beute ist haeufig, der Jaeger selten); lebensraum = Eignung × Haeufigkeit, 0 = die Gattung
-    // lebt dort nicht. Das Rotwild aest auf Wiese und Saum (Clutton-Brock et al. 1982), der Wolf jagt aus dem Wald, der Baer
-    // sucht Fluss und Hang, der Fuchs den Saum. Die Art waehlt der Ort, nie ein Tag (Lehre 8).
+    // lebt dort nicht. Das Rotwild aest auf Wiese und Saum (Clutton-Brock et al. 1982) und lebt im Wald, halb so dicht: dort
+    // ruht es in der Deckung und verbeisst den Jungwuchs (Gill 1992, Forestry 65:145) — der Wald, aus dem der Wolf jagt, traegt
+    // seine Beute. Der Baer sucht Fluss und Hang, der Fuchs den Saum. Die Art waehlt der Ort, nie ein Tag (Lehre 8). Bis
+    // w7-begegnung lebte das Rotwild nur auf Wiese und Saum: an der Mess-Wiese, einer Lichtung im Wald, trugen 4 Regionen
+    // 17 Hirsche und kein Tier stand in 600 Spiel-s Kreis im Bild.
     var LEBENSRAUM_GESETZ = Object.freeze({
         flussM: 40,
         hangTan: 0.36,

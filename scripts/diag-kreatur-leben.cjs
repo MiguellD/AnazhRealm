@@ -706,13 +706,20 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                         alt.apply(r, a).slice(0, 1)
             );
         const LG = A._lebensraumGesetz();
-        const z = { n: 0, drin: 0, gattung: {}, klasse: {}, geburten: 0, gruppen: 0, journal: 0, minM: Infinity };
-        Object.assign(z, {
+        const z = {
+            n: 0,
+            drin: 0,
+            gattung: {},
+            klasse: {},
+            geburten: 0,
+            gruppen: 0,
+            journal: 0,
+            minM: Infinity,
             imBlick: 0,
             fensterMax: 0,
-            fernMin: A.CREATURE_SPAWN_FAR_MIN,
+            fernMin: r._kreaturGeburtFernM(),
             baer: { fluss: [0, 0], sonst: [0, 0] },
-        });
+        };
         const p0 = pm.clone();
         for (let i = 0; i < (taeter ? 3 : 9); i++) {
             pm.set(p0.x + ((i % 3) - 1) * 300, p0.y, p0.z + (Math.floor(i / 3) - 1) * 300);
