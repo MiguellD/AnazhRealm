@@ -245,8 +245,8 @@ function werkzeug() {
             await sleep(0);
         }
         if (wald) orte.wald = wald;
-        // Dorf: der nächste Glut-Bau (aus der gestreamten Welt um die Wiese), 4 m davor. Die Bauten streamen nach den
-        // Chunks (Pflanz-/Bau-Takt): der Loop läuft weiter, bis einer im Umkreis von 160 m steht (der Deckel zählt Takte).
+        // Dorf: der nächste Glut-Bau um die Wiese (≤ 160 m), 4 m davor. Bis w3v-brand-bild warf das Feld ihn (`FELD_WURF`); trägt
+        // die Welt keinen, setzt die Probe die Feuerstelle als Werk 60 m östlich des Messorts (trockenes Land der Wiese).
         const sucheGlut = () => {
             let g;
             for (const e of st.architectures || []) {
@@ -257,13 +257,7 @@ function werkzeug() {
             return g;
         };
         let glut = sucheGlut();
-        for (const weiter = __deckel("eine Glut in Hörweite", 3000); !(glut?.d < 160) && weiter();) {
-            W.takt();
-            st.playerMesh.position.x = wx;
-            st.playerMesh.position.z = wz;
-            await sleep(30);
-            glut = sucheGlut();
-        }
+        if (!(glut?.d < 160)) r.spawnArchitecture("glutbrunnen", { x: wx + 60, y: r._voxelSurfaceY(wx + 60, wz) + 0.5, z: wz }, { precise: true, werk: true }), (glut = sucheGlut()); // prettier-ignore
         if (glut) {
             const ex = glut.e.position.x;
             const ez = glut.e.position.z;

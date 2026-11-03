@@ -601,7 +601,7 @@ class AnazhRealm_vegetation_streu {
         ];
         const tf = { x: darts[i + 2], z: darts[i + 3], yaw: darts[i + 4], scale: darts[i + 5] };
         if (this._scatterIsCellPromoted(tf.x, tf.z, layer.name)) return false;
-        if (layer.promotable && this._tatSperrt(tf.x, tf.z)) return false;
+        if (layer.promotable && (this._tatSperrt(tf.x, tf.z) || this._baumAlter(tf.x, tf.z) < 1)) return false;
         if (!this._landAt(tf.x, tf.z, 0.4)) return false;
         const species = this._scatterSpeciesForLayer(layer.kind, lebendig, moisture, h);
         const variantIndex = h % AnazhRealm.VARIANTS_PER_SPECIES;
