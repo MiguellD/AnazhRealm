@@ -3289,6 +3289,8 @@ AnazhRealm._leibTakt = function () {
     const KC = globalThis.__koerperCore;
     if (!KC || typeof KC.leibPlan !== "function" || typeof KC.leibGesetz !== "function")
         return AnazhRealm._kernPflichtBruch("koerper:leibPlan (der EINE Bewegungs-Takt)");
+    if (typeof KC.leibStossPose !== "function" || typeof KC.leibStossMerke !== "function")
+        return AnazhRealm._kernPflichtBruch("koerper:leibStossPose (der Stoß im Gang, physik.K5)");
     KC.leibGesetz();
     AnazhRealm._leibTaktMemo = KC;
     return KC;

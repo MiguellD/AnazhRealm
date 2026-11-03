@@ -892,7 +892,8 @@ class AnazhRealm_koerper_leib {
         );
         // DER AUSFALLSCHRITT (koerper-core `leibStossPose`, physik.K5 — dieselbe Funktion setzt das Körper-Studio): die Hüfte rollt
         // jedes Bein quer zu seinem Fuß des Stoß-Zustands, im Schwung hebt das Knie ihn — vor der Fuß-IK, die den Stand hält
-        if (gait && gait.ik) AnazhRealm._leibTakt().leibStossPose(r, gait.stossLeib, gait.ik.yaw, this._gaitBeinMass(r));
+        if (gait && gait.ik)
+            AnazhRealm._leibTakt().leibStossPose(r, gait.stossLeib, gait.ik.yaw, this._gaitBeinMass(r));
         // ═══ KÖRPER-BEWEGUNG (3) — Fuß-IK/Foot-Lock/Becken/Hang-Lehne (nur mit
         // gerüstetem Kontext = der lokale Avatar; s. _gaitTick Budget-Disziplin).
         if (gait && gait.ik) this._gaitApplyFussIK(r, walkPhase, wB, gait.ik);

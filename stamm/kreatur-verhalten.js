@@ -1203,13 +1203,16 @@ class AnazhRealm_kreatur_verhalten {
         this._leibPaar(a, this._leibTeil(pm, b), i + cr.length, nah);
     }
 
-    // DER STOSS AUF DEN SPIELER: dv (m/s) längs (nx, nz) in seine Geschwindigkeit — die Beschleunigungs- und Brems-Kurven
-    // des Gehens (`_loopPlayerMovement`) zehren ihn auf wie jede Fahrt. Im Sattel trägt ihn das Gefährt (kein Stoß).
+    // DER STOSS AUF DEN SPIELER: dv (m/s) längs (nx, nz) in seine Geschwindigkeit — zu Fuß trägt ihn der Schwerpunkt, bis die
+    // Balance des Leibs ihn mit dem Ausfallschritt abbaut (koerper-core `leibStossLesen`, physik.K5); gemeldet, weil er auch IM
+    // Kontakt-Schritt fällt (der Wagen, gegen den der Spieler läuft — `leibStossMerke`). Bis w5-physik-k5 zehrte der Antrieb des
+    // Gehens ihn in 25 ms auf. Im Sattel trägt ihn das Gefährt (kein Stoß).
     _spielerStoss(nx, nz, dv) {
         const st = this.state;
         if (!(dv > 0) || !st.playerVel || (st.player && st.player.mountedArch != null)) return;
         const v = st.playerVel;
         v.setValue(v.x() + nx * dv, v.y(), v.z() + nz * dv);
+        AnazhRealm._leibTakt().leibStossMerke(st, nx * dv, nz * dv);
     }
 
     // DER WEG DES LEIBS (kontakt-tempo, Lehre 13): EIN Weg für jeden Schritt, der ein Tier trägt — den Gang im Frame-Takt
