@@ -7,12 +7,18 @@ class AnazhRealm_gelaende_fern {
         const { span, ringRadius } = this._voxelChunkConfig();
         const pcx = Math.floor(playerPos.x / span);
         const pcz = Math.floor(playerPos.z / span);
+        // der Ring der Bahn (`_bedarfVoraus`, der EINE Rang) bleibt: was der Strom voraus baut, räumt die Pflege nie
+        const v = this._bedarfVoraus();
+        const vcx = v ? Math.floor(v.x / span) : pcx;
+        const vcz = v ? Math.floor(v.z / span) : pcz;
         const drop = [];
         for (const key of this.state.voxelChunks.keys()) {
             const parts = key.split(",");
             const cx = Number(parts[0]);
             const cz = Number(parts[1]);
-            if (Math.abs(cx - pcx) > ringRadius + 1 || Math.abs(cz - pcz) > ringRadius + 1) drop.push(key);
+            if (Math.abs(cx - pcx) <= ringRadius + 1 && Math.abs(cz - pcz) <= ringRadius + 1) continue;
+            if (Math.abs(cx - vcx) <= ringRadius && Math.abs(cz - vcz) <= ringRadius) continue;
+            drop.push(key);
         }
         for (const key of drop) this._disposeVoxelChunk(key);
         // Basis-Density-Cache distanzbasiert prunen (Speicher bounded), beide LOD-Keys (`,0`/`,1`). NICHT

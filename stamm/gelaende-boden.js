@@ -2496,10 +2496,14 @@ class AnazhRealm_gelaende_boden {
     // (Streaming-Takt) hält die Hysterese einen feineren Chunk, bis der Abstand `bis + vorlauf + halt` erreicht. Der
     // Wechsel geschieht so nur, wo jeder Vertex des Chunks ganz auf der gröberen Fläche liegt (Gewicht 1, `_stufeGewicht`):
     // der Ring der Stufe-0-Zone (r ≤ 1) war für die CDLOD-Bedingung zu grob — ein Chunk-Ring trägt 2 Spannen Abstand.
-    _voxelChunkLodFor(cx, cz, px, pz, currentLod = null) {
+    // `voraus` (optional, {x, z}): der Spieler am Ende des Vorlaufs (`_bedarfVoraus`, der EINE Rang) — die Stufe gilt für den
+    // näheren der beiden Orte: was die Bahn binnen des Vorlaufs fein braucht, baut fein, bevor sie ankommt.
+    _voxelChunkLodFor(cx, cz, px, pz, currentLod = null, voraus = null) {
         const B = AnazhRealm.BODEN_STUFEN;
         const S = this._voxelChunkConfig(0).span;
-        const d = Math.max(Math.max(cx * S - px, 0, px - (cx + 1) * S), Math.max(cz * S - pz, 0, pz - (cz + 1) * S));
+        const kasten = (x, z) =>
+            Math.max(Math.max(cx * S - x, 0, x - (cx + 1) * S), Math.max(cz * S - z, 0, z - (cz + 1) * S));
+        const d = voraus ? Math.min(kasten(px, pz), kasten(voraus.x, voraus.z)) : kasten(px, pz);
         const st = B.stufen;
         let lod = st[st.length - 1].lod;
         for (let i = 0; i < st.length; i++)

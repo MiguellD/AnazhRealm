@@ -1548,6 +1548,7 @@ class AnazhRealm_dirigent_takt {
     // `_frameOverBudget` ist die FOLGE des Schedulers (Budget leer).
     _runFrameScheduler(playerPos) {
         const st = this.state;
+        this._bedarfTakt(); // DER EINE RANG (w7-rang): das Tempo der Bahn, bevor eine Schlange dieses Bilds nach ihm fragt
         this._ensureFarWaterSheet(); // V18.381 — steady-state No-op (Anker-Hysterese), Rebuild budget-gegated
         const B = st._frameBudget || (st._frameBudget = this._makeFrameBudget());
         B.totalMs = this._deferrableBudgetMs();
