@@ -129,6 +129,210 @@ async function sprachLauf(port, aus) {
     }
 }
 
+// ───────── DER SPIELGANG AUS DER SPUR (spielgang.K1#1, w8-spielgang-k1) — `node -e` im Spiel-Baum, Null-Renderer ─────────
+// Die Spur `spec/spielgang/k1-spur.json` trägt die aufgenommenen Eingaben eines Spielers (Tasten, Maus, Gamepad — echte
+// CDP-Ereignisse, die Aufnahme nimmt nur isTrusted), gestempelt mit dem Sim-Schritt seit der Kontrolle; der Abspieler des Spiels
+// (`_spurAnlegen`/`_spurTakt`, `?spur=<pfad>`) wirft sie in DIESELBEN Hörer zurück. Die Station lädt EINE Welt, ruft nie eine
+// Methode, die die Welt stellt (kein eval, kein umstellen): sie gibt dem Null-Renderer seine Uhr (`__handTakt`, je 20 ms ein Takt
+// — er tickt nicht selbst) und LIEST je Takt Lage, Blick und Sicht und an jeder Marke der Spur den Stand. Je Schritt die Zahl seines
+// Bereichs: ankommen (die Kontrolle in ms, die erste Eingabe fängt den Zeiger) · laufen und sehen (Meter des Wegs, Grad des Blicks,
+// Sicht Ego → Third → Ego) · bauen (das Werk der Werkstatt steht, die Eingaben bis dahin) · mit der KI erschaffen (der Satz stellt
+// ein Werk der Studio-Art: spawn_studio, die Grundstufe ohne Schlüssel) · benutzen (der Leib sitzt auf der gebauten Bank).
+const SPIELGANG = { spur: "spec/spielgang/k1-spur.json", werk: "bank_sitzbank", wegM: 5, blickGrad: 45, mindest: 3 };
+async function spielgangLauf(port, aus, G) {
+    const path = require("path");
+    const fs = require("fs");
+    const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const out = { spur: G.spur, laden: 0, schritte: {} };
+    const server = WB.statikServer();
+    await server.lausche(Number(port));
+    const { browser, page } = await WB.nullSeite({ frist: 300000 });
+    page.on("framenavigated", (f) => f === page.mainFrame() && out.laden++);
+    try {
+        const spur = JSON.parse(fs.readFileSync(G.spur, "utf8"));
+        const marken = Object.entries(spur.marken).sort((a, b) => a[1] - b[1]);
+        out.marken = marken.map(([m]) => m);
+        await page.setViewport({ width: spur.schirm[0], height: spur.schirm[1] });
+        await server.zeige(page, 120000, "index.html?spur=" + G.spur);
+        await page.evaluate(() => window.__weltDa((r) => r.state._weltbildDa > 0 || (r._spur && r._spur.fehler)));
+        if (!(await page.evaluate(() => !!r._spur))) throw new Error("kein Abspieler im Spiel: ?spur= liest niemand (r._spur fehlt)");
+        // DIE UHR und DER LESER: je Takt [Schritt, x, z, Gier, Sicht] — gelesen, nie gestellt
+        await page.evaluate(() => {
+            window.__lese = [];
+            setInterval(() => {
+                __handTakt();
+                window.__lese.push([r._spur.schritt, pm.position.x, pm.position.z, st.yaw, st.cameraMode]);
+            }, 20);
+        });
+        const stand = () =>
+            page.evaluate((werk) => {
+                const [sp, bank] = [r._spur, st.architectures.find((a) => a.type === werk)];
+                return {
+                    s: sp.schritt, i: sp.i, fehler: sp.fehler || null, verfehlt: sp.verfehlt.length, kontrolleMs: Math.round(st._weltbildDa || 0),
+                    lade: r._ladeschirmSteht(), zeiger: st.isPointerLocked, modus: r.getGameMode(),
+                    werke: st.architectures.filter((a) => a.type === werk).length,
+                    studio: st.architectures.filter((a) => /^w-/.test(String(a.id))).map((a) => a.type),
+                    sitzt: !!bank && st.player.mountedArch === bank.id,
+                    satz: ([...document.querySelectorAll("#chat-output > div")].pop() || { textContent: "" }).textContent,
+                };
+            }, G.werk);
+        const am = {};
+        for (const [m, s] of marken) {
+            await page.waitForFunction((n) => r._spur.fehler || r._spur.schritt >= n, { timeout: 180000, polling: 10 }, s);
+            am[m] = await stand();
+            if (am[m].fehler) throw new Error("die Spur lädt nicht: " + am[m].fehler);
+        }
+        const lese = await page.evaluate(() => window.__lese);
+        const ende = am[marken[marken.length - 1][0]];
+        Object.assign(out, { abgespielt: ende.i, eingaben: spur.zeilen.length, verfehlt: ende.verfehlt, kontrolleMs: am[marken[0][0]].kontrolleMs });
+        const folgt = (m) => out.marken[out.marken.indexOf(m) + 1];
+        const nach = (m) => am[folgt(m)];
+        const S = out.schritte;
+        // die Eingaben eines Schritts: je Taste, Knopf und Raste eine (keydown ohne Wiederholung, mousedown, wheel)
+        const eingaben = (m) =>
+            spur.zeilen.map((z) => z.split(" ")).filter(([s, art, , , , mods]) => +s >= spur.marken[m] && +s < spur.marken[folgt(m)] && (art === "mousedown" || art === "wheel" || (art === "keydown" && !(+mods & 16)))).length;
+        if (am.ankommen) S.ankommen = { kontrolleMs: am.ankommen.kontrolleMs, zeiger: nach("ankommen").zeiger };
+        if (am.laufen) {
+            const teil = lese.filter(([s]) => s >= spur.marken.laufen && s <= spur.marken[folgt("laufen")]);
+            let weg = 0;
+            for (let k = 1; k < teil.length; k++) weg += Math.hypot(teil[k][1] - teil[k - 1][1], teil[k][2] - teil[k - 1][2]);
+            const gier = teil.length ? Math.abs(teil[teil.length - 1][3] - teil[0][3]) : 0;
+            const sichten = teil.map((t) => t[4]).filter((v, k, l) => v !== l[k - 1]);
+            S.laufen = { wegM: Math.round(weg * 100) / 100, blickGrad: Math.round((gier * 180) / Math.PI), sicht: sichten.join("→") };
+        }
+        if (am.bauen) S.bauen = { werk: nach("bauen").werke - am.bauen.werke, modus: nach("bauen").modus, eingaben: eingaben("bauen") };
+        if (am.ki) S.ki = { werke: nach("ki").studio.length - am.ki.studio.length, art: nach("ki").studio.slice(am.ki.studio.length).join(","), satz: nach("ki").satz };
+        if (am.benutzen) S.benutzen = { sitzt: nach("benutzen").sitzt };
+    } catch (e) {
+        out.fehler = String(e.message).split("\n")[0].slice(0, 300);
+    } finally {
+        fs.writeFileSync(aus, JSON.stringify(out));
+        console.log("SPIELGANG " + JSON.stringify(out));
+        await browser.close().catch(() => {});
+        server.close();
+        process.exit(0);
+    }
+}
+// DAS URTEIL je Schritt: die Zahl seines Bereichs hält, oder der Schritt steht beim Namen
+function spielgangSchritte(j, G) {
+    const S = j.schritte || {};
+    const halten = {
+        ankommen: (x) => [x.kontrolleMs > 0 && x.zeiger === true, `Kontrolle ${x.kontrolleMs} ms, Zeiger ${x.zeiger ? "gefangen" : "frei"}`],
+        laufen: (x) => [x.wegM >= G.wegM && x.blickGrad >= G.blickGrad && /^first→third→first$/.test(x.sicht), `${x.wegM} m, Blick ${x.blickGrad}°, Sicht ${x.sicht || "—"}`],
+        bauen: (x) => [x.werk === 1, `${G.werk} ${x.werk === 1 ? "steht" : "steht nicht (" + x.werk + ")"} in ${x.modus}, ${x.eingaben} Eingaben`],
+        ki: (x) => [x.werke === 1 && /gebaut/.test(x.satz), `der Satz stellt ${x.werke} Studio-Werk${x.art ? " (" + x.art + ")" : ""}: „${String(x.satz).slice(0, 60)}“`],
+        benutzen: (x) => [x.sitzt === true, x.sitzt ? "der Leib sitzt auf der gebauten Bank" : "sitzt nicht"],
+    };
+    return (j.marken || []).filter((m) => halten[m]).map((m) => {
+        const [ok, zahl] = S[m] ? halten[m](S[m]) : [false, "ungemessen"];
+        return { m, ok, zahl };
+    });
+}
+
+// die Mutanten der Station: der gesunde Lauf (w8-spielgang-k1, headless) und je Klausel ein Bruch
+const SG_GESUND = {
+    spur: SPIELGANG.spur, laden: 1, marken: ["ankommen", "laufen", "bauen", "ki", "benutzen", "ende"], abgespielt: 93, eingaben: 93, verfehlt: 0, kontrolleMs: 941,
+    schritte: {
+        ankommen: { kontrolleMs: 941, zeiger: true },
+        laufen: { wegM: 12.81, blickGrad: 141, sicht: "first→third→first" },
+        bauen: { werk: 1, modus: "schöpfer", eingaben: 8 },
+        ki: { werke: 1, art: "haus_alemannisch", satz: "1× Alemannisch aus dem Studio vor dir gebaut" },
+        benutzen: { sitzt: true },
+    },
+};
+const sgProbe = (name, bruch, gruen = false) => {
+    const j = JSON.parse(JSON.stringify(SG_GESUND));
+    bruch(j);
+    return { name, stdout: "SPIELGANG " + JSON.stringify(j), gruen };
+};
+// DIE AUFNAHME DER SPUR (von Hand, im Spiel-Baum): `node -e "require('<punkte>/stationen/g5.js').spurAufnahme(4712)"` — eine Welt mit
+// `?spur=aufnahme`, die Schritte als echte CDP-Eingaben (page.keyboard · page.mouse) und ein Gamepad als Gerät (sein Stand
+// `window.__pad`, gelesen über navigator.getGamepads), je Schritt eine Marke; schreibt die Spur nach SPIELGANG.spur.
+async function spurAufnahme(port) {
+    const path = require("path");
+    const fs = require("fs");
+    const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const server = WB.statikServer();
+    await server.lausche(Number(port));
+    const { browser, page } = await WB.nullSeite({ frist: 300000 });
+    await page.evaluateOnNewDocument(() => {
+        window.__pad = null;
+        Object.defineProperty(navigator, "getGamepads", { configurable: true, value: () => [window.__pad] });
+    });
+    const lies = (f, ...a) => page.evaluate(f, ...a);
+    const schritte = async (n) => {
+        const ziel = (await lies(() => r._spur.schritt)) + n;
+        await page.waitForFunction((z) => r._spur.schritt >= z, { timeout: 120000, polling: 20 }, ziel);
+    };
+    const marke = (m) => lies((m) => r._spurMarke(m), m);
+    const taste = async (code, n = 3) => (await page.keyboard.press(code), schritte(n));
+    const pad = (rx) => lies((rx) => (window.__pad = { connected: true, axes: [0, 0, rx, 0], buttons: [] }), rx);
+    const klick = async (sel) => {
+        const el = await page.waitForSelector(sel, { timeout: 20000 });
+        for (let i = 0; i < 40 && !(await el.isIntersectingViewport({ threshold: 1 })); i++) {
+            const b = await el.boundingBox();
+            await page.mouse.move(b.x + b.width / 2, 300);
+            await page.mouse.wheel({ deltaY: b.y < 300 ? -100 : 100 });
+            await schritte(2);
+        }
+        const b = await el.boundingBox();
+        await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
+        await schritte(3);
+    };
+    try {
+        await page.setViewport({ width: 800, height: 600 });
+        await server.zeige(page, 120000, "index.html?spur=aufnahme");
+        await lies(() => window.__weltDa((r) => r.state._weltbildDa > 0));
+        await lies(() => setInterval(() => __handTakt(), 20));
+        await schritte(10);
+        await marke("ankommen"); // ein Klick in die Welt fängt den Zeiger
+        await page.mouse.click(400, 300);
+        await schritte(10);
+        await marke("laufen"); // W, die Maus dreht, Umschalt sprintet, V wechselt die Sicht, der rechte Stick dreht, V zurück
+        await page.keyboard.down("KeyW");
+        await schritte(60);
+        for (let i = 1; i <= 4; i++) await page.mouse.move(400 + i * 75, 300), await schritte(3);
+        await page.keyboard.down("ShiftLeft");
+        await schritte(90);
+        await page.keyboard.up("ShiftLeft");
+        await taste("KeyV", 30);
+        await pad(0.9);
+        await schritte(40);
+        await pad(0);
+        await schritte(30);
+        await taste("KeyV", 10);
+        await page.keyboard.up("KeyW");
+        await schritte(10);
+        await marke("bauen"); // I: die Welt-Beziehung Schöpfer, ein Klick in die Welt, B: die Werkstatt, die Bank, Fertigen
+        await taste("KeyI", 15);
+        await klick("#game-mode-radios label:nth-child(3)");
+        await page.mouse.click(8, 592);
+        await schritte(5);
+        await taste("KeyB", 15);
+        await klick('#workshop-list .workshop-list-row[data-blueprint="bank_sitzbank"]');
+        await klick("#workshop-action-zone .workshop-fertigen");
+        await page.waitForFunction(() => st.architectures.some((a) => a.type === "bank_sitzbank"), { timeout: 60000 });
+        await marke("ki"); // Enter, der Satz, Enter
+        await taste("Enter", 5);
+        for (const c of "bau ein haus") await page.keyboard.type(c);
+        await taste("Enter", 30);
+        await marke("benutzen"); // W bis vor die Bank, E setzt sich
+        const abstand = () => lies(() => { const b = st.architectures.find((a) => a.type === "bank_sitzbank"); return Math.hypot(b.position.x - pm.position.x, b.position.z - pm.position.z); });
+        await page.keyboard.down("KeyW");
+        while ((await abstand()) > 1.6) await schritte(2);
+        await page.keyboard.up("KeyW");
+        await schritte(5);
+        await taste("KeyE", 20);
+        await marke("ende");
+        fs.mkdirSync(path.dirname(SPIELGANG.spur), { recursive: true });
+        fs.writeFileSync(SPIELGANG.spur, (await lies(() => r._spurText())) + "\n");
+        console.log("SPUR " + SPIELGANG.spur + " · sitzt " + (await lies(() => st.player.mountedArch != null)));
+    } finally {
+        await browser.close().catch(() => {});
+        server.close();
+    }
+}
+
 // ───────── DIE PROBEN AN DER SEITE (Zweig proben-leib, stationen/seite.cjs): leib.K2 · leib.K4 · halten.K1#2 · halten.K5 · tore.K3 ─────────
 // Bis 29.10. bootete jede dieser Stationen ihre Linse mit eigener Welt (Takt 19 an b3f9ae95: 4–10 Soll-Minuten je Lauf); jetzt
 // ruft die Probe in der Welt der Sitzung die Seiten-Funktionen der Linse selbst (aus ihrer Datei am SHA, `H.quelle`) und nur
@@ -3469,6 +3673,57 @@ const stationen = [
         pfad: ["stamm/", "index.html", "scripts/diag-sprache.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/stamm.cjs"],
         quelle: "1 = jede UI-Zeile aus EINER Text-Quelle in DE und EN (0 harte Strings, Zählung), an einem Gerät umgeschaltet",
     },
+    // ───────── spielgang.K1 — die Schritte in EINER Sitzung aus aufgenommenen Eingaben (w8-spielgang-k1) ─────────
+    // `spielgangLauf` oben: EINE Welt, die Spur des Spiel-Baums (spec/spielgang/k1-spur.json) über den Abspieler des Spiels, kein
+    // eval und kein umstellen; das Urteil hält JEDEN Schritt, den die Spur trägt (mindestens 3), an der Zahl seines Bereichs, dazu
+    // EIN Laden der Seite, jede Eingabe an ihrem Ziel und die Spur bis zu ihrem Ende. Gemessen (headless, cloud): main 8e6262cc
+    // ohne Station (keine Aufnahme, kein Abspieler) → w8-spielgang-k1 GRÜN: die Zahlen im Bericht des Zweigs.
+    {
+        kriterium: "spielgang.K1",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "-e", "(" + spielgangLauf + ")(process.argv[1], process.argv[2], " + JSON.stringify(SPIELGANG) + ");", "{PORT}", "{AUS}"],
+        gpu: false,
+        zeit: false,
+        minuten: 5,
+        urteil: (j, lauf) => {
+            j = j || jsonZeile(lauf.stdout, /^SPIELGANG \{/);
+            if (!j) return { gruen: false, zahl: "keine SPIELGANG-Zeile (Exit " + lauf.exit + ")" };
+            if (j.fehler) return { gruen: false, zahl: "der Lauf brach: " + j.fehler };
+            const schritte = spielgangSchritte(j, SPIELGANG);
+            const rot = [];
+            if (j.laden !== 1) rot.push(`die Seite lud ${j.laden}× (EIN Lauf ohne Neuladen)`);
+            if (j.verfehlt !== 0) rot.push(`${j.verfehlt} Eingaben ohne Ziel`);
+            if (!(j.eingaben > 0) || j.abgespielt !== j.eingaben) rot.push(`die Spur endet nicht: ${j.abgespielt} von ${j.eingaben} Eingaben abgespielt`);
+            if (schritte.length < SPIELGANG.mindest) rot.push(`die Spur trägt ${schritte.length} Schritte (Soll ≥ ${SPIELGANG.mindest})`);
+            for (const x of schritte) if (!x.ok) rot.push(`${x.m}: ${x.zahl}`);
+            return {
+                gruen: rot.length === 0,
+                zahl:
+                    `${schritte.filter((x) => x.ok).length}/${schritte.length} Schritte gehalten in EINER Sitzung (${j.laden}× geladen, ${j.eingaben} Eingaben aus der Spur, ${j.verfehlt} ohne Ziel): ` +
+                    schritte.map((x) => `${x.m} ${x.zahl}`).join(" · ") + (rot.length ? " — ROT: " + rot.join(" | ") : ""),
+            };
+        },
+        proben: [
+            sgProbe("fünf Schritte aus der Spur, jeder hält seine Zahl", () => {}, true),
+            sgProbe("die Kontrolle kommt nicht", (j) => (j.schritte.ankommen.kontrolleMs = 0)),
+            sgProbe("die erste Eingabe fängt den Zeiger nicht", (j) => (j.schritte.ankommen.zeiger = false)),
+            sgProbe("der Leib läuft keine 5 m", (j) => (j.schritte.laufen.wegM = 1.2)),
+            sgProbe("der Blick dreht keine 45°", (j) => (j.schritte.laufen.blickGrad = 12)),
+            sgProbe("die Sicht wechselt nicht", (j) => (j.schritte.laufen.sicht = "first")),
+            sgProbe("das Werk der Werkstatt steht nicht", (j) => (j.schritte.bauen.werk = 0)),
+            sgProbe("der Satz stellt kein Werk", (j) => Object.assign(j.schritte.ki, { werke: 0, art: "", satz: "Unbekannter Befehl" })),
+            sgProbe("der Leib sitzt nicht auf der Bank", (j) => (j.schritte.benutzen.sitzt = false)),
+            sgProbe("ein Schritt der Spur ungemessen", (j) => delete j.schritte.bauen),
+            sgProbe("die Seite lud neu", (j) => (j.laden = 2)),
+            sgProbe("Eingaben ohne Ziel", (j) => (j.verfehlt = 2)),
+            sgProbe("die Spur endet nicht", (j) => (j.abgespielt = 40)),
+            sgProbe("die Spur trägt nur zwei Schritte", (j) => ((j.marken = ["ankommen", "laufen", "ende"]), (j.schritte = { ankommen: j.schritte.ankommen, laufen: j.schritte.laufen }))),
+            { name: "der Lauf brach (keine Spur im Baum)", stdout: 'SPIELGANG {"spur":"spec/spielgang/k1-spur.json","laden":1,"schritte":{},"fehler":"ENOENT: no such file or directory, open \'spec/spielgang/k1-spur.json\'"}', gruen: false },
+        ],
+        pfad: ["stamm/", "index.html", "spec/spielgang/k1-spur.json", "scripts/lib/welt-boot.cjs"],
+        quelle: "1 = ≥ 3 von 5 Schritten in EINER Sitzung gemessen gehalten an einem Gerät",
+    },
     // ───────── spielgang.K4 — Zugänglichkeit aus dem Gesetz: die Untertitel (Zweig hud-zugang) ─────────
     {
         kriterium: "spielgang.K4",
@@ -3661,6 +3916,7 @@ const stationen = [
 ];
 
 module.exports = stationen;
+module.exports.spurAufnahme = spurAufnahme; // die Aufnahme der Spur von Hand (spielgang.K1#1)
 
 // NICHT FASSBAR als Station (befehl null): das Werkzeug fehlt oder die Staffel verlangt, was EIN Lauf auf EINEM Gerät nie misst.
 module.exports.fehlt = [
@@ -3679,7 +3935,6 @@ module.exports.fehlt = [
     { kriterium: "tore.K2", staffel: 1, befehl: null, grund: "nicht gebaut (p3-stationen-g456): zwei Bilder aus dem Ausgabe-Pfad je Tor — die Membran 3 m vor der Apertur und das Welt-Bild nach der ersten Eingabe, die die Kamera ≥ 1° drehte — und Spearman r ≥ 0,5, milchweiss ≤ 0,05, oeffnungBunt ≥ 20, Stempel frisch; derselbe Gang wie tore.K1 (die Fahrt hat 10 s frei); die Klassen tor-fern, tor-bunt, tor-ziel der Soll-Tafel tragen am Kopf kein Ist" },
     { kriterium: "tore.K4", staffel: 1, befehl: null, grund: "unmessbar in EINEM Lauf auf EINEM Gerät: zwei physische Geräte im LAN (Radeon-Maschine und OMEN) über den signaling-server, der Peer im Ausgabe-Bild von B — die Punkte-Maschine fährt je Gerät eine eigene Sitzung, und kein Läufer verbindet zwei Sitzungen zweier Rechner; gate:mp-sync fährt zwei Seiten in EINEM Browser (das Schlupfloch der Staffel)" },
     { kriterium: "ultiversum.K1", staffel: 1, befehl: null, grund: "nicht gebaut (p3-stationen-g456): zwei per Tor erreichbare Welten mit verschiedenen Konstanten und je Konstante ein Leser (Sprung-Höhe, Himmels-Bild) — g ist `state.gravity` (Vorgabe −9,81 in stamm/dirigent-kern.js, ein Wort des Spielers über die DSL `gravity`), ein Gesetz je Welt mit g, Himmel, Wetter-Tafel und Gelände-Parametern hinter einem Welt-Tor ist im Spiel nicht nachgewiesen; die Probe braucht dazu den Welt-Wechsel (ein Neuladen, Ring 8)" },
-    { kriterium: "spielgang.K1", staffel: 1, befehl: null, grund: "nicht gebaut (p3-stationen-g456): EIN Lauf ohne Neuladen und ohne Konsole aus aufgenommenen Spieler-Eingaben über ≥ 3 der fünf Schritte (ankommen · laufen und sehen · bauen · mit der KI erschaffen · benutzen · teilen), je Schritt die Zahl seines Bereichs — es gibt keine Aufnahme der Eingaben und keinen Abspieler im Spiel-Baum; die Proben der Sitzung stellen die Welt über die Werkbank (eval, umstellen), das ist die Konsole; ein Lauf über fünf Schritte hat in der Fahrt keinen Platz" },
     { kriterium: "spielgang.K2", staffel: 1, befehl: null, grund: "unmessbar ohne Blind-Spieler: ein frischer Agent ohne Doku, der nur Bild und Eingabe kennt und in ≤ 3 min gehen, umsehen, Sicht-Wechsel, Werkstatt, Satz und Tor findet — kein solcher Agent läuft an der Punkte-Maschine (ein Läufer mit Bild-Modell und Eingabe-Schleife fehlt); die Zählung am Eingabe- und Ereignis-Strom gäbe es (`H.ereignisStrom`, stationen/sitzung-seite.js)" },
     { kriterium: "spielgang.K5", staffel: 2, befehl: null, grund: "nicht gebaut (p3-stationen-g456): die KI antwortet in der Sprache des Spielers — der Korpus aus ki.K1 trägt keinen Teil EN (spec/abnahme/ki-korpus.json), und die Staffel 1 (EINE Text-Quelle DE/EN) steht ROT: es gibt keine Sprache des Spielers" },
     // fahrzeug.K2#2 ist seit w4-sitzung-reif eine Station (der Verkehr der Stadt, PFLICHT-OFFEN C); ihre übrigen Teile nennt sie selbst:
