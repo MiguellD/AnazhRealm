@@ -814,9 +814,12 @@ class AnazhRealm_stoff_karte {
             setze(u.value, u);
         };
         still(wu && wu.uWindStrength, (w, u) => (u.value = 0));
-        // die Karte ist Sommer gebacken (volle Krone, wie der Studio-Bäcker): das Jahr der Welt (`uLaubPraesenz`) hält still
+        // die Karte ist Golden-Sommer gebacken (volle Krone, Tönung ×1): das Jahr der Welt hält still — die Präsenz
+        // (`uLaubPraesenz`) UND die Tönung (`uSeasonMul`; der Kartenstoff tönt sie zur Laufzeit, `kartenGewicht`). Bis w6 fuhr
+        // die Tönung mit: die Karte trug die Saison ihres Backens (zwei Welten, dieselbe Saat: ±1 LSB auf 41 % der Texel).
         const su = this.state.seasonUniforms;
         still(su && su.uLaubPraesenz, (w) => w.set(1, 1));
+        still(su && su.uSeasonMul, (w) => w.setRGB(1, 1, 1));
         still(lu && lu.uLaubKante, (w) => (w.y = 0));
         still(lu && lu.uKamNah, (w) => w.setScalar(-AnazhRealm.KAMERA_DURCHSICHT.saumM));
         still(lu && lu.uKamZiel, (w) => w.set(lu.uKamAuge.value.x, lu.uKamAuge.value.y, lu.uKamAuge.value.z, 0));
@@ -925,6 +928,9 @@ class AnazhRealm_stoff_karte {
             return 0;
         }
         at.offen = null;
+        // die Karte des Labors (`_karteFuerLabor`): die Bühne geht zurück, bevor sie die nächste Karte trägt — die Kopie der GPU
+        // reiht sich im selben Takt ein (copyTextureToBuffer vor dem ersten await)
+        if (z._laborLeser) this._karteLaborLesen(at, z, B, fr, bc ? 0 : z.idx);
         const platte = z._liefer && {
             preset: z.preset,
             rest: z._liefer.rest,
@@ -937,6 +943,94 @@ class AnazhRealm_stoff_karte {
         z._weltNeu = false;
         if (!z.gebacken) this._karteGebacken(z, fr);
         return true;
+    }
+
+    // DER BÄCKER DES LABORS (pipeline.K2, EIN Bäcker — der Editor backt mit dem Code der Laufzeit): ein Studio fragt die Karte
+    // einer Gestalt (Art, Gestalt) über EINE Nachricht `anazh-karte` — das Pflanzen-Labor als Portal der Welt (`window.parent`)
+    // oder die Welt verborgen im Labor (sein iframe). Die Welt backt sie mit `_karteWeltBacken`: dieselben Zellen, Ringe, Stoffe
+    // und Formate wie jede ihrer Karten; die Antwort trägt die Bühne nach dem letzten Ring (Albedo, Normale und Sonnen-Sicht je
+    // Texel, rgba8, Zeile 0 oben) samt Rahmen und Ringen. Bis w6 backte das Labor mit einem zweiten Bäcker (`bakeImpostorAtlas`, three r128).
+    _karteDienst() {
+        if (this._karteDienstAn || typeof window === "undefined" || !window.addEventListener) return;
+        this._karteDienstAn = true;
+        window.addEventListener("message", (e) => {
+            const m = e.data;
+            if (!m || m.type !== "anazh-karte" || !e.source || e.origin !== window.location.origin) return;
+            const an = e.source;
+            this._karteFuerLabor(String(m.art), m.gestalt | 0).then(
+                (k) =>
+                    an.postMessage(Object.assign({ type: "anazh-karte-da", reqId: m.reqId }, k), e.origin, [
+                        k.albedo,
+                        k.normal,
+                        k.sicht,
+                    ]),
+                (f) =>
+                    an.postMessage(
+                        { type: "anazh-karte-da", reqId: m.reqId, fehler: String((f && f.message) || f) },
+                        e.origin
+                    )
+            );
+        });
+    }
+
+    // Die Karte einer Gestalt für das Labor: eine frische Zelle des EINEN Atlas (nie die Platte — das Labor liest die Bühne), nah
+    // zuerst in der Schlange; dieser Ruf treibt ihre Ringe selbst (die verborgene Welt zeichnet ein Bild von 1 px), der Takt
+    // der Welt darf dieselbe Zelle weiterbacken. Die Bytes liest `_karteLaborLesen` am letzten Ring.
+    async _karteFuerLabor(art, gestalt) {
+        const bereit = () => this._foundry && this._foundry.ready && this.state.rendererReady;
+        for (const t0 = performance.now(); !bereit(); await new Promise((f) => setTimeout(f, 100)))
+            if (performance.now() - t0 > 180000) throw this._stoffBruch("die Karte des Labors: die Welt wurde nicht bereit");
+        if (!Object.prototype.hasOwnProperty.call(this._foundry.recipes || {}, art))
+            throw this._stoffBruch(`die Karte des Labors: die Welt kennt die Art „${art}" nicht`);
+        const at = this._impostorAtlas();
+        if (this._impostorAtlasFormat() === "rgba8" && !(this.state.renderer.backend || {}).isWebGPUBackend)
+            throw this._stoffBruch("die Karte des Labors: WebGL2 liest keine Schicht des Array-Ziels zurück");
+        this._karteLaborN = (this._karteLaborN | 0) + 1;
+        const z = this._impostorZelleNeu(at, `labor:${art}|${gestalt}#${this._karteLaborN}`, art, gestalt, null);
+        if (!this._impostorAtlasTexturen(at, z.idx + 1)) throw this._stoffBruch("die Karte des Labors: der Atlas hat keine Texturen");
+        z._platte = null;
+        z._bedarfD2 = 0;
+        z._weltNeu = true;
+        const da = new Promise((ok, nein) => (z._laborLeser = { ok, nein }));
+        for (let e = null; e !== true; await new Promise((f) => setTimeout(f, e === 0 ? 0 : 50))) {
+            e = z.gebacken && !z._weltNeu ? true : this._karteWeltBacken(at, z);
+            if (e === false || z.gescheitert) throw this._stoffBruch(`die Karte des Labors: ${z.key} backte nicht`);
+        }
+        return da;
+    }
+
+    // Die Bühne der fertigen Karte zurück an das Labor: Albedo (Ziel 0), Normale (Ziel 1) und Sonnen-Sicht (Ziel 2) der Schicht, dazu
+    // die Lage der Karte
+    // (Zellen, Peilungen, Ringe mit ihrer halben Bild-Höhe `karteRingHalbe`) und ihr Rahmen.
+    _karteLaborLesen(at, z, B, fr, schicht) {
+        const L = z._laborLeser;
+        z._laborLeser = null;
+        const rend = this.state.renderer;
+        const rt = B.ziel;
+        const core = globalThis.__phytoCore;
+        const lies = (i) => rend.readRenderTargetPixelsAsync(rt, 0, 0, rt.width, rt.height, i, schicht);
+        Promise.all([lies(0), lies(1), lies(2)]).then(
+            ([a, n, l]) =>
+                L.ok({
+                    art: z.preset,
+                    gestalt: z.variant,
+                    w: rt.width,
+                    h: rt.height,
+                    cw: at.cw,
+                    ch: at.ch,
+                    V: at.V,
+                    ringe: at.ringe.ringe.map((r) =>
+                        Object.assign({}, r, {
+                            halbe: core.karteRingHalbe(core.WIND_ZAHLEN, fr.halfH, fr.halfW, (r.hebung * Math.PI) / 180),
+                        })
+                    ),
+                    frame: { halfW: fr.halfW, halfH: fr.halfH },
+                    albedo: new Uint8Array(a).buffer,
+                    normal: new Uint8Array(n).buffer,
+                    sicht: new Uint8Array(l).buffer,
+                }),
+            L.nein
+        );
     }
 
     // DER SAUM DER KARTE JE HEBUNGS-RING (w4-laub-saum, phyto-core `karteSaumRinge`): die Blattgröße der Art aus ihrem Gesetz

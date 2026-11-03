@@ -1664,6 +1664,196 @@ function findClearing(trees, R, seedInt) {
     return best || { x: 0, z: 0 };
 }
 /* =================== ENDE ECO-ENGINE =================== */
+
+/* ---------- DIE FERNSTUFE DES LABORS: die Karte der Welt (pipeline.K2, EIN Bäcker) ----------
+   Jede Karte des Labor-Walds backt der EINE Bäcker der Welt (`_karteWeltBacken`, three r184, die Stoffe der Welt): das Labor
+   fragt je Gestalt (Art, Same = Gestalt-Index) über die Nachricht `anazh-karte` — als Portal die Welt, die es zeigt
+   (`window.parent`), allein die Welt verborgen in seinem iframe (ein Bild von 1 px, nach den Karten fällt es). Die Antwort ist
+   die Bühne der fertigen Karte (Albedo sRGB und Normale oktaedrisch, rgba8, Zeile 0 oben, alle Hebungs-Ringe); das Labor legt
+   sie Byte für Byte in die Zelle seines Atlas (`_impRT`: eine Zelle je Gestalt nebeneinander, EINE Zeile — `_impV` 1). Bis w6
+   backte das Labor mit einem zweiten Bäcker (`bakeImpostorAtlas`, r128, eigene Samen, Halbkugel-Licht statt Albedo). */
+let _impAtlas = null,
+    _impK = 0,
+    _impGeo = null,
+    _impRT = null,
+    _impNrmRT = null,
+    _impNrm = null,
+    _impSichtRT = null,
+    _impSicht = null,
+    _impBakedSig = "",
+    _impLaedt = null,
+    _impT = 0,
+    _impMat = null,
+    _impSpecs = [],
+    _impCellOf = {},
+    _impKarte = {}; // "Art|Gestalt" → { zelle, frame, ring: der 0°-Ring {y, teiler, halbe} } der gelegten Karte
+// das Licht der Karte im Labor (`updateWorld`): Faktoren auf Farbe × Stärke von Sonne und Halbkugel
+const KARTE_LICHT = { sonne: 1.0, halbkugel: 1.0 };
+const _impV = 1, // die Zeilen des Atlas: jede Zelle trägt eine ganze Karte der Welt
+    _impYAxis = new THREE.Vector3(0, 1, 0);
+let _baecker = null,
+    _baeckerN = 0;
+const _baeckerWarten = new Map();
+// Das Fenster des Bäckers: die Welt, die das Labor als Portal zeigt, sonst die Welt verborgen im Labor — sie hört, sobald ihr
+// Stamm lebt (`_karteDienst`).
+function baeckerDerWelt() {
+    if (_baecker) return _baecker;
+    window.addEventListener("message", (e) => {
+        const m = e.data;
+        if (!m || m.type !== "anazh-karte-da" || e.origin !== location.origin) return;
+        const w = _baeckerWarten.get(m.reqId);
+        if (!w) return;
+        _baeckerWarten.delete(m.reqId);
+        if (m.fehler) w.nein(new Error(m.fehler));
+        else w.ok(m);
+    });
+    let eltern = null;
+    try {
+        eltern = window.parent !== window && window.parent.anazhRealm ? window.parent : null;
+    } catch (_) {
+        eltern = null; // fremder Ursprung: keine Welt des Labors
+    }
+    if (eltern) return (_baecker = Promise.resolve({ ziel: eltern, frame: null }));
+    const f = document.createElement("iframe");
+    f.title = "der Bäcker der Welt";
+    f.setAttribute("aria-hidden", "true");
+    f.tabIndex = -1;
+    f.style.cssText = "position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none;border:0";
+    f.src = new URL("../../index.html", location.href).href;
+    document.body.appendChild(f);
+    _baecker = new Promise((ok) => {
+        const hoert = () => {
+            const w = f.contentWindow;
+            if (w && w.anazhRealm && w.anazhRealm._karteDienstAn) ok({ ziel: w, frame: f });
+            else setTimeout(hoert, 100);
+        };
+        hoert();
+    });
+    return _baecker;
+}
+function karteDerWelt(art, gestalt) {
+    return baeckerDerWelt().then(
+        (b) =>
+            new Promise((ok, nein) => {
+                const reqId = ++_baeckerN;
+                _baeckerWarten.set(reqId, { ok, nein });
+                b.ziel.postMessage({ type: "anazh-karte", reqId, art, gestalt }, location.origin);
+            })
+    );
+}
+// Die Karten des Walds: je Baubeschreibung die Karte der Welt; steht die Signatur, liegt der Atlas — kein Neubau.
+function kartenDerWelt() {
+    const sig = _impSpecs.map((s) => s.sp + s.seed).join(",");
+    if (!_impSpecs.length || _impBakedSig === sig || _impLaedt === sig) return;
+    _impLaedt = sig;
+    const specs = _impSpecs.slice();
+    Promise.all(specs.map((s) => karteDerWelt(s.sp, s.seed)))
+        .then((karten) => {
+            if (_impLaedt !== sig) return; // ein neuerer Wald fragt schon
+            kartenLegen(specs, karten);
+            _impLaedt = null;
+            _impBakedSig = sig;
+            // die verborgene Welt hat gedient: sie fällt, sobald ihr Boot steht (ein Abriss mitten im Boot ließe seine
+            // Versprechen ins Leere laufen — „[ERROR] STOFF … getAnimationLoop")
+            return _baecker.then((b) => {
+                if (!b.frame) return;
+                _baecker = null;
+                return Promise.resolve(b.ziel.anazhRealm && b.ziel.anazhRealm.erwacht).then(() => b.frame.remove());
+            });
+        })
+        .catch((e) => {
+            _impLaedt = null;
+            console.error("[labor] die Karte der Welt: " + ((e && e.message) || e));
+        });
+}
+// Die Karten Byte für Byte in den Atlas: Zelle i = Spalte i (Zeile 0 der Karte = Zeile 0 der Textur — die Zelle liest
+// gespiegelt, wie der Stoff der Welt), danach die Rahmen der Karten an die Instanzen des Walds.
+function kartenLegen(specs, karten) {
+    const cw = karten[0].w,
+        H = karten[0].h,
+        K = specs.length;
+    for (const k of karten)
+        if (k.w !== cw || k.h !== H || k.albedo.byteLength !== cw * H * 4)
+            throw new Error("die Karten der Welt tragen verschiedene Maße");
+    if (!_impRT || _impRT.width !== cw * K || _impRT.height !== H) {
+        for (const rt of [_impRT, _impNrmRT, _impSichtRT]) if (rt) rt.dispose();
+        const neu = () => {
+            const rt = new THREE.WebGLRenderTarget(cw * K, H, {
+                minFilter: THREE.LinearMipmapLinearFilter,
+                magFilter: THREE.LinearFilter,
+                format: THREE.RGBAFormat,
+                generateMipmaps: true,
+            });
+            rt.texture.flipY = false; // die Bytes der Welt liegen, wie sie kommen
+            rt.texture.anisotropy = Math.min(
+                8,
+                renderer.capabilities && renderer.capabilities.getMaxAnisotropy ? renderer.capabilities.getMaxAnisotropy() : 1
+            );
+            return rt;
+        };
+        _impRT = neu();
+        _impNrmRT = neu();
+        _impSichtRT = neu();
+        _impAtlas = _impRT.texture;
+        _impNrm = _impNrmRT.texture;
+        _impSicht = _impSichtRT.texture;
+    }
+    _impK = K;
+    const pRT = renderer.getRenderTarget(),
+        pA = renderer.getClearAlpha(),
+        pC = renderer.getClearColor(new THREE.Color());
+    renderer.setClearColor(0x000000, 0);
+    for (const rt of [_impRT, _impNrmRT, _impSichtRT]) {
+        renderer.setRenderTarget(rt);
+        renderer.clear(true, false, false);
+    }
+    renderer.setRenderTarget(pRT);
+    renderer.setClearColor(pC, pA);
+    const pos = new THREE.Vector2();
+    karten.forEach((k, i) => {
+        pos.set(i * cw, 0);
+        for (const [rt, b] of [
+            [_impRT, k.albedo],
+            [_impNrmRT, k.normal],
+            [_impSichtRT, k.sicht],
+        ]) {
+            const dt = new THREE.DataTexture(new Uint8Array(b), cw, H, THREE.RGBAFormat, THREE.UnsignedByteType);
+            renderer.copyTextureToTexture(pos, dt, rt.texture);
+            dt.dispose();
+        }
+        const r0 = k.ringe.find((r) => r.hebung === 0);
+        if (!r0) throw new Error("die Karte der Welt trägt keinen waagrechten Ring");
+        _impKarte[specs[i].sp + "|" + specs[i].seed] = { zelle: i, frame: k.frame, ring: r0, cw: k.cw, ch: k.ch, V: k.V };
+    });
+    const k0 = _impKarte[specs[0].sp + "|" + specs[0].seed];
+    if (_impMat) {
+        const u = _impMat.uniforms;
+        u.map.value = _impAtlas;
+        u.nmap.value = _impNrm;
+        u.smap.value = _impSicht;
+        u.uK.value = K;
+        u.uLage.value.set(k0.cw, k0.ch, H, k0.V);
+        u.uRing.value.set(k0.ring.y, k0.ring.teiler);
+    }
+    for (const e of _treeLOD) kartenRahmen(e);
+}
+// Der Rahmen der Karte an die Instanzen einer Gestalt: das Quad deckt das Bild des 0°-Rings (Breite 2·halfW, Höhe 2·halbe um
+// die Mitte halfH), die Instanz-Matrix trägt Lage, Drehung, Maße und in z die Sichthöhe der L1 (das LOD-Urteil).
+function kartenRahmen(e) {
+    const k = _impKarte[e.sp + "|" + e.seed];
+    if (!k) return;
+    const fr = k.frame,
+        hh = k.ring.halbe;
+    for (const p of e.placements)
+        p.bm.compose(
+            _impPos.set(p.x, p.y + (fr.halfH - hh) * p.sc, p.z),
+            _impQ.setFromAxisAngle(_impYAxis, p.rotY),
+            _impS.set(2 * fr.halfW * p.sc, 2 * hh * p.sc, p.bh)
+        );
+}
+const _impPos = new THREE.Vector3(),
+    _impQ = new THREE.Quaternion(),
+    _impS = new THREE.Vector3();
 let __forest = null;
 function buildForest() {
     if (typeof _lvCache !== "undefined") _lvCache.clear(); // neue Kronen -> Zyklus-Speicher ungueltig
@@ -1978,16 +2168,6 @@ function buildForest() {
     const _WG = (typeof WALD_GESETZ !== "undefined" && WALD_GESETZ)
       || (typeof __terrainCore !== "undefined" && __terrainCore && __terrainCore.WALD_GESETZ)
       || null;
-    const _CB_FB = { eiche: 0.42, fichte: 0.3, birke: 0.42, weide: 0.4, tanne: 0.3, mammut: 0.46 };
-    const FLOD = (_WG && Number.isFinite(_WG.flod)) ? _WG.flod : 0; // feine Stufe -> saubere Baeume aus der Naehe (NICHT die grobe Fernsicht-LOD)
-    const CB = (_WG && _WG.crownBase) ? {
-      eiche: Number.isFinite(_WG.crownBase.eiche) ? _WG.crownBase.eiche : _CB_FB.eiche,
-      fichte: Number.isFinite(_WG.crownBase.fichte) ? _WG.crownBase.fichte : _CB_FB.fichte,
-      birke: Number.isFinite(_WG.crownBase.birke) ? _WG.crownBase.birke : _CB_FB.birke,
-      weide: Number.isFinite(_WG.crownBase.weide) ? _WG.crownBase.weide : _CB_FB.weide,
-      tanne: Number.isFinite(_WG.crownBase.tanne) ? _WG.crownBase.tanne : _CB_FB.tanne,
-      mammut: Number.isFinite(_WG.crownBase.mammut) ? _WG.crownBase.mammut : _CB_FB.mammut
-    } : _CB_FB; // Stamm freistellen (Selbstastung im Wald)
     // Der Stamm des Studio-Walds ist der Stamm der Welt: seine Schlankheit traegt das Welt-Mass des Kerns (K20, ph.hd) —
     // der Wald-Faktor trunkMul 0,5, der die Vorlagen-Formel (H/D 13–18) schlanker zog, ist gefallen.
     const poolL = [{}, {}];
@@ -1995,15 +2175,19 @@ function buildForest() {
         sp,
         n
     ) => {
+        // DIE GESTALTEN DER WELT (pipeline.K2, Labor = Welt): Gestalt i einer Art ist der Bau (Art, Same i, Stufe, ohne ov) — wie
+        // die Welt sie bestellt (`_foundryRequest`, build-asset) und wie ihr Bäcker ihre Karte backt (`_karteFuerLabor`). Bis w6
+        // trug das Labor eigene Samen (RNG) und eine Labor-Astung (crownBase): seine Karte zeigte einen Baum, den die Welt nie
+        // baut. Der Wurf je Gestalt bleibt (der Strom des Walds dahinter würfelt unverändert).
         const seeds = [];
-        for (let i = 0; i < n; i++) seeds.push(Math.floor(RNG() * 1e6));
+        for (let i = 0; i < n; i++) RNG(), seeds.push(i);
         for (let L = 0; L < 2; L++)
             poolL[L][sp] = seeds.map((sd) => {
-                const g = buildInstance(sp, sd, L, { crownBase: CB[sp] });
+                const g = buildInstance(sp, sd, L, null);
                 g.userData.seed = sd;
                 return g;
             });
-    }; // 3 LOD-Stufen, gleiche Seeds -> selber Baum, andere Detailtiefe
+    }; // 2 Stufen der Gestalt (L0, L1), dieselbe Gestalt -> selber Baum, andere Detailtiefe; fern die Karte der Welt
     // DIE GESTALTEN je Art lesen das Studio-Budget (PORTAL_RENDER_CONFIG.lod.budget.gestalten) — dieselben Zahlen
     // waehlt die Welt (`_foundryVariantFor`). Reihenfolge + Zahl der RNG()-Wuerfe wie zuvor (2/2/2/2/1/1).
     const _GEST = PORTAL_RENDER_CONFIG.lod.budget.gestalten;
@@ -2014,7 +2198,7 @@ function buildForest() {
     for (const sp of Object.keys(poolL[0])) {
         poolL[0][sp].forEach((tmpl, v) => {
             _impCellOf[sp + "|" + v] = _impSpecs.length;
-            _impSpecs.push({ sp, seed: tmpl.userData.seed, crownBase: CB[sp] });
+            _impSpecs.push({ sp, seed: tmpl.userData.seed });
         });
     }
     // LOD-WURZEL (08.07.) — DIE STUFEN-WAHRHEIT JE ART AUS DEN VERTRAGS-DATEN
@@ -2189,18 +2373,24 @@ function buildForest() {
         }
     };
 
-    // 5) IMPOSTOR-Material EINMAL — LOD2 jedes Baums ist sein kamerazugewandtes Billboard an SEINER festen Position (SpeedTree)
-    bakeImpostorAtlas();
+    // 5) DIE KARTE DER WELT (pipeline.K2): LOD2 jedes Baums ist sein kamerazugewandtes Quad an SEINER festen Position, es liest
+    //    die Karte, die der EINE Bäcker der Welt für seine Gestalt backte (`kartenDerWelt`, die Zellen der Welt: V Peilungen
+    //    je Ring, der 0°-Ring in voller Zelle, Zeile 0 oben). Bis die Karten liegen, zeichnet die Fernstufe nichts.
+    kartenDerWelt();
     if (!_impGeo) {
         _impGeo = new THREE.PlaneGeometry(1, 1);
         _impGeo.translate(0, 0.5, 0);
     }
+    const _KG = __phytoCore.KARTEN_GESETZ;
     _impMat = new THREE.ShaderMaterial({
         uniforms: {
             map: { value: _impAtlas },
             nmap: { value: _impNrm },
-            uK: { value: _impK },
-            uV: { value: _impV },
+            smap: { value: _impSicht }, // die Sonnen-Sicht der Krone (zenit, Deckung, 45°-Kranz)
+            uK: { value: Math.max(1, _impK) },
+            uLage: { value: new THREE.Vector4(1, 1, 1, 1) }, // Zelle (Breite, Höhe), Höhe der Karte, Peilungen
+            uRing: { value: new THREE.Vector2(0, 1) }, // der 0°-Ring: erste Zeile, Teiler
+            uSchwelle: { value: _KG.schwelle },
             uFogColor: { value: new THREE.Color(0xa6bcc6) },
             uFogNear: { value: 42.0 },
             uFogFar: { value: 120.0 },
@@ -2219,9 +2409,13 @@ function buildForest() {
             uDitherT: _lodU.uDitherT,
         },
         vertexShader:
-            "uniform float uFogNear,uFogFar,uK,uTime,uWind,uLodRef;uniform vec3 uWindDir;attribute float aCell;attribute float aDepthBias;attribute float aOccl;varying float vOcc;varying vec2 vUv;varying float vFog;varying float vCD;varying float vView;varying vec3 vLk;varying vec3 vRt;varying vec3 vTintI;void main(){vOcc=aOccl;vUv=vec2((uv.x+aCell)/uK,uv.y);vec3 inst=instanceMatrix[3].xyz;float _th=fract(sin(dot(inst.xz,vec2(127.1,311.7)))*43758.5453);float _th2=fract(sin(dot(inst.xz,vec2(269.5,183.3)))*43758.5453);float _lu=(_th-0.5)*0.22,_hu=(_th2-0.5)*0.18;vTintI=vec3(_lu+_hu*0.6,_lu,_lu-_hu*0.6);float sx=length(instanceMatrix[0].xyz),sy=length(instanceMatrix[1].xyz);float aRot=atan(-instanceMatrix[0].z,instanceMatrix[0].x);vec3 up=vec3(0.0,1.0,0.0);vec3 look=cameraPosition-inst;look.y=0.0;float ll=length(look);float szV=length(instanceMatrix[2].xyz);vCD=ll*min(uLodRef/max(szV,0.001),1.0);look=(ll>1e-4)?look/ll:vec3(0.0,0.0,1.0);vLk=look;float ang=atan(look.x,look.z);vView=fract((ang-aRot)/6.2831853+1.0);vec3 right=normalize(cross(up,look));vRt=right;vec3 wp=inst+right*(position.x*sx)+up*(position.y*sy);float sway=sin(uTime*1.7+inst.x*0.35+inst.z*0.27)*position.y*position.y*sy*0.012*(0.4+1.2*uWind);wp.xz+=uWindDir.xz*sway;vec4 mv=viewMatrix*vec4(wp,1.0);mv.z-=aDepthBias;vFog=clamp((-mv.z-uFogNear)/(uFogFar-uFogNear),0.0,1.0);gl_Position=projectionMatrix*mv;}" /* aRot aus T*Ry*S dekodiert; sway: Kronenspitze (y^2) pendelt in Windrichtung; vRt/vLk = Zell-Rahmen; FIX v27 vTintI = derselbe Positions-Hash wie das 3D-Laub -> Kronenfarbe konstant ueber L0/L1/L2 */,
+            "uniform float uFogNear,uFogFar,uTime,uWind,uLodRef;uniform vec3 uWindDir;attribute float aCell;attribute float aDepthBias;attribute float aOccl;varying float vOcc;varying vec2 vUv;varying float vCell;varying float vFog;varying float vCD;varying float vView;varying vec3 vLk;varying vec3 vRt;varying vec3 vTintI;void main(){vOcc=aOccl;vUv=uv;vCell=aCell;vec3 inst=instanceMatrix[3].xyz;float _th=fract(sin(dot(inst.xz,vec2(127.1,311.7)))*43758.5453);float _th2=fract(sin(dot(inst.xz,vec2(269.5,183.3)))*43758.5453);float _lu=(_th-0.5)*0.22,_hu=(_th2-0.5)*0.18;vTintI=vec3(_lu+_hu*0.6,_lu,_lu-_hu*0.6);float sx=length(instanceMatrix[0].xyz),sy=length(instanceMatrix[1].xyz);float aRot=atan(-instanceMatrix[0].z,instanceMatrix[0].x);vec3 up=vec3(0.0,1.0,0.0);vec3 look=cameraPosition-inst;look.y=0.0;float ll=length(look);float szV=length(instanceMatrix[2].xyz);vCD=ll*min(uLodRef/max(szV,0.001),1.0);look=(ll>1e-4)?look/ll:vec3(0.0,0.0,1.0);vLk=look;float ang=atan(look.x,look.z);vView=fract((ang-aRot)/6.2831853+2.0);vec3 right=normalize(cross(up,look));vRt=right;vec3 wp=inst+right*(position.x*sx)+up*(position.y*sy);float sway=sin(uTime*1.7+inst.x*0.35+inst.z*0.27)*position.y*position.y*sy*0.012*(0.4+1.2*uWind);wp.xz+=uWindDir.xz*sway;vec4 mv=viewMatrix*vec4(wp,1.0);mv.z-=aDepthBias;vFog=clamp((-mv.z-uFogNear)/(uFogFar-uFogNear),0.0,1.0);gl_Position=projectionMatrix*mv;}" /* aRot aus T*Ry*S dekodiert, die Peilung wie der Stoff der Welt; sway: Kronenspitze (y^2) pendelt in Windrichtung; vRt/vLk = Zell-Rahmen; vTintI = derselbe Positions-Hash wie das 3D-Laub */,
         fragmentShader:
-            "uniform sampler2D map,nmap;uniform vec3 uFogColor,uSunDir,uSunCol,uHemiCol,uSeasonMul;uniform float uFade,uV,uD1,uPres,uLodMaskOn,uDitherT;varying vec2 vUv;varying float vFog;varying float vCD;varying float vView;varying vec3 vLk;varying vec3 vRt;varying vec3 vTintI;varying float vOcc;void main(){float fV=vView*uV;float v0=floor(fV);float fb=fract(fV);float v1=mod(v0+1.0,uV);vec2 uvA=vec2(vUv.x,(vUv.y+v0)/uV),uvB=vec2(vUv.x,(vUv.y+v1)/uV);vec4 t=mix(texture2D(map,uvA),texture2D(map,uvB),fb);float fin=clamp((vCD-(uD1-uFade))/uFade,0.0,1.0);float ath=0.34+(1.0-clamp(uPres,0.0,1.0))*" + SAISON_GESETZ.karteSchwelle.toFixed(1) + ";if(t.a<ath)discard;if(uLodMaskOn>0.5){float _dh=fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(0.06711056,0.00583715)))+uDitherT);if(max(min(fin*2.0,1.0),vOcc)<_dh)discard;}vec3 nc=mix(texture2D(nmap,uvA).xyz,texture2D(nmap,uvB).xyz,fb)*2.0-1.0;vec3 N=normalize(vRt*nc.x+vec3(0.0,1.0,0.0)*nc.y+vLk*nc.z);float lam=clamp((dot(N,uSunDir)+0.18)/1.18,0.0,1.0);float sunW=mix(0.34,1.0,lam);vec3 alb=t.rgb*mix(vec3(1.0),uSeasonMul," + SAISON_GESETZ.kartenGewicht.toFixed(1) + ")*clamp(vec3(1.0)+vTintI,0.0,2.0);vec3 lit=alb*(uHemiCol+uSunCol*sunW);vec3 c=mix(lit,uFogColor,vFog*0.9);gl_FragColor=vec4(c,1.0);}" /* SAISONINVARIANTER ATLAS + FIX v27 Per-Baum-Tint (gleicher Hash wie 3D) -> kein Hue-Pop beim L1->L2-Uebergang */,
+            "uniform sampler2D map,nmap,smap;uniform vec4 uLage;uniform vec2 uRing;uniform vec3 uFogColor,uSunDir,uSunCol,uHemiCol,uSeasonMul;uniform float uK,uSchwelle,uFade,uD1,uPres,uLodMaskOn,uDitherT;varying vec2 vUv;varying float vCell;varying float vFog;varying float vCD;varying float vView;varying vec3 vLk;varying vec3 vRt;varying vec3 vTintI;varying float vOcc;" +
+            "vec2 zelle(float a){float tW=uRing.y;float bw=uLage.x/tW,bh=uLage.y/tW;float x0=vCell*uLage.x+mod(a,tW)*bw;float y0=uRing.x+floor(a/tW)*bh;return vec2((x0+vUv.x*bw)/(uLage.x*uK),(y0+(1.0-vUv.y)*bh)/uLage.z);}" +
+            "vec3 okt(vec4 t){vec2 e=t.xy/max(t.z,1e-3)*2.0-1.0;vec3 n=vec3(e,1.0-abs(e.x)-abs(e.y));if(n.z<0.0)n.xy=(1.0-abs(n.yx))*vec2(n.x>=0.0?1.0:-1.0,n.y>=0.0?1.0:-1.0);return normalize(n);}" +
+            "vec3 lin(vec3 c){return mix(c/12.92,pow((c+0.055)/1.055,vec3(2.4)),step(0.04045,c));}" +
+            "void main(){float V=uLage.w;float fV=vView*V;float v0=floor(fV);float fb=fract(fV);float v1=mod(v0+1.0,V);vec2 uvA=zelle(v0),uvB=zelle(v1);vec4 t=mix(texture2D(map,uvA),texture2D(map,uvB),fb);float fin=clamp((vCD-(uD1-uFade))/uFade,0.0,1.0);float ath=uSchwelle+(1.0-clamp(uPres,0.0,1.0))*" + SAISON_GESETZ.karteSchwelle.toFixed(1) + ";if(t.a<=ath)discard;if(uLodMaskOn>0.5){float _dh=fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(0.06711056,0.00583715)))+uDitherT);if(max(min(fin*2.0,1.0),vOcc)<_dh)discard;}vec3 nc=normalize(mix(okt(texture2D(nmap,uvA)),okt(texture2D(nmap,uvB)),fb));vec3 N=normalize(vRt*nc.x+vec3(0.0,1.0,0.0)*nc.y+vLk*nc.z);float lam=clamp((dot(N,uSunDir)+0.18)/1.18,0.0,1.0);vec4 sl=mix(texture2D(smap,uvA),texture2D(smap,uvB),fb);vec2 s2=min(vec2(sl.r,sl.b)/max(sl.g,1e-3),vec2(1.0));float sicht=mix(s2.y,s2.x,clamp((normalize(uSunDir).y-0.70710678)/0.29289322,0.0,1.0));float sunW=mix(0.34,1.0,lam)*sicht;vec3 alb=lin(clamp(t.rgb/max(t.a,1e-3),0.0,1.0))*mix(vec3(1.0),uSeasonMul," + SAISON_GESETZ.kartenGewicht.toFixed(1) + ")*clamp(vec3(1.0)+vTintI,0.0,2.0);vec3 lit=alb*(uHemiCol+uSunCol*sunW);vec3 c=mix(lit,uFogColor,vFog*0.9);gl_FragColor=vec4(c,1.0);\n#include <tonemapping_fragment>\n#include <encodings_fragment>\n}" /* die Ausgabe wie jeder Stoff des Labors (r128: Tonkurve und Kodierung je Stoff — bis w6 trug der alte Atlas die Kurve eingebacken); die Karte der Welt ist Albedo (sRGB-Bytes einer linearen Albedo, vormultipliziert) und Golden-Sommer gebacken: das Jahr tönt sie hier wie der Stoff der Welt; die Normale reist oktaedrisch, ihre Deckung in z */,
         side: THREE.DoubleSide,
         transparent: false,
         depthTest: true,
@@ -2239,19 +2433,14 @@ function buildForest() {
             const tr = trees[i];
             if (tr.sp !== sp) continue;
             const vi = Math.floor(hash01(i * 2 + 1) * nVar);
-            const _ci = _impCellOf[sp + "|" + vi],
-                _isp = _ci !== undefined ? _impSpecs[_ci] : null;
             const sc = SCALE[sp] * tr.s * TREE_SCALE_MUL,
-                bh = H0arr[vi] * sc,
-                bw = bh * ((_isp && _impWR[_isp.sp + _isp.seed]) || 0.5); // FIX v28: Quad-Seitenverhaeltnis = Zell-Rahmen der Art (Weide breiter) -> Silhouette unverzerrt und ungeclippt
+                bh = H0arr[vi] * sc;
             const bhL = Math.min(H0arr[vi], PORTAL_RENDER_CONFIG.lod.blattKappe / (SCALE[sp] * TREE_SCALE_MUL)) * sc; // FIX v30: Blatt-Sichthoehe = aH0L * Instanzskala — EXAKT die Zahl, die der Shader bildet (CPU==GPU, kein Drift)
-            const bm = new THREE.Matrix4().compose(
-                new THREE.Vector3(tr.x, tr.y, tr.z),
-                new THREE.Quaternion().setFromAxisAngle(_impYAxis, tr.rotY),
-                new THREE.Vector3(bw, bh, bh)
-            ); /* S=(B,H, VISUELLE Hoehe in z): z traegt bh fuer das Wahrnehmungs-k im Shader -- kompaktierungssicher, kein Extra-Buffer */ // T*Ry*S: die Drehung des ECHTEN Baums steckt in der Matrix -> Shader dekodiert sie, Billboard zeigt dieselbe Seite wie das 3D-LOD
-            plByVar[vi].push({ x: tr.x, z: tr.z, bh, bhL, m: compose(tr.x, tr.y, tr.z, tr.rotY, sc).clone(), bm });
-        } // 3D-Matrix + Billboard-Matrix vorberechnet; bh = Sichthoehe fuer Wahrnehmungs-LOD, bhL = Blatt-Sichthoehe
+            // die Karten-Matrix (T·Ry·S, z = die Sichthöhe der L1 für das LOD-Urteil) setzt der Rahmen der Karte der Welt
+            // (`kartenRahmen`); bis sie liegt, ist das Quad leer (Maß 0)
+            const bm = new THREE.Matrix4().makeScale(0, 0, 0);
+            plByVar[vi].push({ x: tr.x, y: tr.y, z: tr.z, rotY: tr.rotY, sc, bh, bhL, m: compose(tr.x, tr.y, tr.z, tr.rotY, sc).clone(), bm });
+        } // 3D-Matrix vorberechnet, die Karten-Matrix aus dem Rahmen der Karte; bh = Sichthoehe fuer Wahrnehmungs-LOD, bhL = Blatt-Sichthoehe
         for (let v = 0; v < nVar; v++) {
             const placements = plByVar[v];
             if (!placements.length) continue;
@@ -2342,7 +2531,9 @@ function buildForest() {
                 meshesByLod[2].push(im);
                 drawMeshes++;
             }
-            _treeLOD.push({ placements, meshesByLod });
+            const _e = { placements, meshesByLod, sp, seed: poolL[0][sp][v].userData.seed };
+            _treeLOD.push(_e);
+            kartenRahmen(_e); // liegt die Karte schon (ein Wald neu auf demselben Atlas), steht ihr Rahmen sofort
         }
     }
     const nT = trees.length;
@@ -3410,10 +3601,13 @@ function updateWorld(dt) {
     if (_impMat) {
         const iu = _impMat.uniforms;
         iu.uSunDir.value.copy(_wSunPos); // die ECHTE Sonnenrichtung -> Gegenlicht-Silhouetten bei tiefer Sonne
-        iu.uSunCol.value.copy(keyLight.color).multiplyScalar(keyLight.intensity * 0.46); // FIX v28: 0.36->0.46 — kalibriert gegen das reale Rig: 3D-Krone ~ alb*(key*NdotL + IBL + Rim) ≈ 1.3-2.0*alb; die Karte lag bei 0.4-0.75*alb (Screenshots: dunkle Platten)
+        // DAS LICHT DES RIGS (pipeline.K2): die Karte der Welt ist reine Albedo — sie trägt das Licht wie die Krone der L1 (r128:
+        // Albedo × Farbe × Stärke, die Sonne × N·L × die Sonnen-Sicht der Krone). Bis w6 stand hier die Eichung gegen den alten
+        // Atlas, der sein Halbkugel-Licht und die Tonkurve eingebacken trug (Sonne × 0,46, Halbkugel × 1,4).
+        iu.uSunCol.value.copy(keyLight.color).multiplyScalar(keyLight.intensity * KARTE_LICHT.sonne);
         iu.uHemiCol.value
             .copy(hemiL.color)
-            .multiplyScalar(hemiL.intensity * 1.4)
+            .multiplyScalar(hemiL.intensity * KARTE_LICHT.halbkugel)
             .addScalar(0.06 + 0.3 * atm.lum); // Streulicht-Floor vertritt IBL+Fresnel-Rim der 3D-Baeume — skaliert mit Tageslicht (nachts 0.06, sonst wuerden Karten im Dunkeln gluehen)
         iu.uTime.value = WIND.uTime.value;
         iu.uWind.value = WIND.uWindStrength.value;
@@ -3808,14 +4002,8 @@ function animate() {
         _impT += dt;
         if (_impT > 0.3) {
             _impT = 0;
-            if (_impRT) {
-                const _isig = _impSpecs.map((s) => s.sp + s.seed).join(",");
-                if (_isig !== _impBakedSig) {
-                    bakeImpostorAtlas();
-                    _heavyNow = true;
-                }
-            }
-        } // NUR bei neuen Seeds (Nutzeraktion). Saison kostet den Atlas NICHTS mehr: Praesenz-Erosion + Tint laufen als Uniform im Shader
+            kartenDerWelt(); // fragt die Welt nur bei neuer Signatur (ein neuer Wald); das Jahr kostet den Atlas nichts (Präsenz + Tönung im Stoff)
+        }
         _lodT += dt;
         {
             const dx = camera.position.x - _lodCx,
