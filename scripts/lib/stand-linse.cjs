@@ -180,16 +180,12 @@ function standLinseAn(takte, blaetter, eigeneUhr) {
     const namen = Object.keys(takte);
     const orig = {};
     const stapel = [];
-    let frame = {};
-    let ms = {};
     const leer = () => Object.fromEntries(namen.map((n) => [n, 0]));
-    frame = leer();
-    ms = leer();
-    for (const n of namen) {
-        const m = takte[n];
-        if (typeof P[m] !== "function" || orig[m]) continue;
-        const f = (orig[m] = P[m]);
-        P[m] = function (...a) {
+    let [frame, ms, wirkt] = [leer(), leer(), leer()];
+    // je Methode EINE Hülle (die erste gewinnt): `h(f)` baut die neue um das Original `f`
+    const um = (m, h) => typeof P[m] === "function" && !orig[m] && (P[m] = h((orig[m] = P[m])));
+    for (const n of namen)
+        um(takte[n], (f) => function (...a) {
             stapel.push(n);
             const t0 = performance.now();
             try {
@@ -198,73 +194,50 @@ function standLinseAn(takte, blaetter, eigeneUhr) {
                 stapel.pop();
                 ms[n] += performance.now() - t0;
             }
-        };
-    }
-    for (const b of blaetter) {
-        if (typeof P[b] !== "function" || orig[b]) continue;
-        const f = (orig[b] = P[b]);
-        P[b] = function (...a) {
+        });
+    for (const b of blaetter)
+        um(b, (f) => function (...a) {
             const oben = stapel[stapel.length - 1];
             if (oben) frame[oben]++;
             return f.apply(this, a);
-        };
-    }
-    for (const m of eigeneUhr || []) {
-        if (typeof P[m] !== "function" || orig[m]) continue;
-        const f = (orig[m] = P[m]);
-        P[m] = function (...a) {
+        });
+    for (const m of eigeneUhr || [])
+        um(m, (f) => function (...a) {
             stapel.push("");
             try {
                 return f.apply(this, a);
             } finally {
                 stapel.pop();
             }
-        };
-    }
+        });
     // DIE TREUE: jeder Gang, der die Welt änderte (`_standMeldet(…, gewirkt)`) — nach einer Ruhe zeigt ein Gang mit
     // gebrochener Wache, ob die Wache eine Änderung verschlief (er wirkte dann).
-    let wirkt = leer();
-    if (typeof P._standMeldet === "function") {
-        const f = (orig._standMeldet = P._standMeldet);
-        P._standMeldet = function (name, besucht, gewirkt, offen) {
-            if (gewirkt && name in wirkt) wirkt[name]++;
-            return f.call(this, name, besucht, gewirkt, offen);
-        };
-    }
+    um("_standMeldet", (f) => function (name, besucht, gewirkt, offen) {
+        if (gewirkt && name in wirkt) wirkt[name]++;
+        return f.call(this, name, besucht, gewirkt, offen);
+    });
     // DIE WELT-MATRIZEN: jeder Besuch von `updateMatrixWorld` (ein Knoten je Gang) und jede neu gesetzte lokale Matrix.
-    const O = window.THREE && window.THREE.Object3D ? window.THREE.Object3D.prototype : null;
+    const O = window.THREE.Object3D.prototype;
     const mx = { knoten: 0, compose: 0 };
-    const oUMW = O ? O.updateMatrixWorld : null;
-    const oUM = O ? O.updateMatrix : null;
-    if (O) {
-        O.updateMatrixWorld = function (...a) {
-            mx.knoten++;
-            return oUMW.apply(this, a);
-        };
-        O.updateMatrix = function (...a) {
-            mx.compose++;
-            return oUM.apply(this, a);
+    const oM = {};
+    for (const [m, z] of [["updateMatrixWorld", "knoten"], ["updateMatrix", "compose"]]) {
+        const f = (oM[m] = O[m]);
+        O[m] = function (...a) {
+            mx[z]++;
+            return f.apply(this, a);
         };
     }
     return {
         namen,
         frame() {
-            const aus = frame;
-            aus.ms = ms;
-            aus.wirkt = wirkt;
-            aus.matrix = { knoten: mx.knoten, compose: mx.compose };
-            frame = leer();
-            ms = leer();
-            wirkt = leer();
+            const aus = Object.assign(frame, { ms, wirkt, matrix: { ...mx } });
+            [frame, ms, wirkt] = [leer(), leer(), leer()];
             mx.knoten = mx.compose = 0;
             return aus;
         },
         aus() {
-            for (const m in orig) P[m] = orig[m];
-            if (O) {
-                O.updateMatrixWorld = oUMW;
-                O.updateMatrix = oUM;
-            }
+            Object.assign(P, orig);
+            Object.assign(O, oM);
         },
     };
 }
@@ -459,10 +432,8 @@ function simUrteil(b, v) {
         if (karte.length || arbeit > 2 * F.geschrieben)
             v.push(`FELD-BESUCH: die Wellen kosteten ${arbeit} Einheiten für ${F.geschrieben} geschriebene Zellen` +
                 (karte.length ? `, die Räumung ging über die ganze Karte oder ihr Rad (${karte.map((x) => x.join(" ")).join(", ")})` : "") + " — sie besucht Unberührte");
-        // (feld.K5) die Halde der Leben-Stufen trägt jede Zelle höchstens einmal: nie länger als der Stand (nach 100 Taten an einem Ort)
-        if (!(F.stand > 0)) v.push("LEER: die Taten im Feld legen keinen Stand der Leben-Stufen an");
-        else if (!(F.halde <= F.stand))
-            v.push(`HALDE: die Halde der Leben-Stufen trägt ${F.halde} Plätze für ${F.stand} Zellen — eine Zelle steht mehrfach, sie wächst je Tat ohne Schranke`);
+        // (feld.K5) die Halde der Leben-Stufen trägt jede Zelle höchstens einmal: nach 100 Taten an einem Ort kein Platz über dem Stand
+        if (F.ueber !== 0) v.push(`HALDE: ${F.ueber} Plätze über dem Stand der Leben-Stufen — eine Zelle steht mehrfach`);
     }
     // (stoffe.K2 · feld.K3#2) der Brand arbeitet nur in seinen Zellen (≤ BRAND_JE je Zelle und Schritt), seine Front läuft mit
     // dem Wind 0,5–2 m/s, gegen ihn ≤ 0,2 m/s und ohne ihn nirgends ≥ 0,5 m/s (die Mutante), er erlischt im Regen, hinterlässt
