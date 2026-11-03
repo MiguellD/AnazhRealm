@@ -436,7 +436,6 @@ class AnazhRealm_speicher_welten {
                         tick: 0,
                         type: "genesis",
                         t: ["journal.erwache-als", { welt: worldMeta.slug }],
-                        text: AnazhRealm._tIn("de", "journal.erwache-als", { welt: worldMeta.slug }),
                         ctx: {
                             worldId: worldMeta.worldId,
                             seed: worldMeta.seed || null,
@@ -616,9 +615,10 @@ class AnazhRealm_speicher_welten {
     // Transformation (liest nur bp.*); der Aufrufer filtert die Built-ins
     // (sie entstehen je Init aus _defaultBlueprints()).
     _serializeBlueprint(bp) {
+        // ein Name aus der Tafel reist als sein Schlüssel (`etikett`), nie zusätzlich als aufgelöster Text (spielgang.K5)
         const out = {
             name: bp.name,
-            label: bp.label || bp.name,
+            ...(Array.isArray(bp.etikett) ? { etikett: bp.etikett } : { label: bp.label || bp.name }),
             parts: Array.isArray(bp.parts)
                 ? JSON.parse(JSON.stringify(bp.parts.map((p) => this._teilMigriert(p))))
                 : [],
@@ -809,7 +809,7 @@ class AnazhRealm_speicher_welten {
         const stempel = AnazhRealm._stempelVon(data.studioOv);
         if (stempel) restored.studioOv = stempel;
         this._carryUnknown(data, restored, AnazhRealm.BLUEPRINT_KNOWN_KEYS);
-        return restored;
+        return AnazhRealm._etikett(restored); // der Name liest seinen Schlüssel in der Sprache von jetzt
     }
 
     // Der Stand als Objekt (Export, Fusion, Netz, Download): die Stand-Tafel ganz, `worldMeta.voxelEdits` als Liste.

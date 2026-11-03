@@ -1010,6 +1010,7 @@ class AnazhRealm_speicher_laden {
             const j = state.worldJournal;
             if (Array.isArray(j.entries)) {
                 this.state.worldJournal.entries = j.entries
+                    .map((e) => AnazhRealm._journalZeile(e))
                     .filter((e) => e && typeof e.text === "string")
                     .slice(-this.state.worldJournal.entryCap);
             }
@@ -1647,7 +1648,7 @@ class AnazhRealm_speicher_laden {
         // eine Zeile der Tafel `[schlüssel, werte]` (das Tagebuch liest sie in der Sprache von jetzt, `text` ist die de-Quelle)
         const eintrag = { id: snap.worldJournal.entries.length + 1, at: Date.now(), tick: 0, type: "witness" };
         eintrag.t = zeile;
-        eintrag.text = AnazhRealm._tIn("de", zeile[0], zeile[1]);
+        AnazhRealm._journalZeile(eintrag);
         if (ctx) eintrag.ctx = ctx;
         snap.worldJournal.entries.push(eintrag);
     }
@@ -2287,7 +2288,6 @@ class AnazhRealm_speicher_laden {
             tick: 0,
             type: "genesis",
             t: ["journal.erwache-aus", { a: identity.slugA, b: identity.slugB }],
-            text: AnazhRealm._tIn("de", "journal.erwache-aus", { a: identity.slugA, b: identity.slugB }),
             ctx: {
                 worldId: identity.newWorldId,
                 seed: identity.newSeed,

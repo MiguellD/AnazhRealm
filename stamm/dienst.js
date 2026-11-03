@@ -260,18 +260,23 @@ class AnazhRealm_dienst {
     journalAppend(type, zeile, ctx) {
         const j = this.state.worldJournal;
         if (!j || !Array.isArray(j.entries)) return;
-        const welt = Array.isArray(zeile);
-        const text = welt ? AnazhRealm._tIn("de", zeile[0], zeile[1]) : zeile;
-        if (typeof text !== "string" || text.length === 0) return;
         const entry = {
             id: j.entries.length + 1,
             at: Date.now(),
             tick: performance.now() / 1000,
             type: String(type || "note"),
-            text: text.slice(0, 240),
             d: 1,
         };
-        if (welt) entry.t = zeile[1] ? [zeile[0], zeile[1]] : [zeile[0]];
+        if (Array.isArray(zeile)) {
+            entry.t = zeile[1] ? [zeile[0], zeile[1]] : [zeile[0]];
+            AnazhRealm._journalZeile(entry);
+            if (ctx && typeof ctx === "object") entry.ctx = ctx;
+            j.entries.push(entry);
+            if (j.entries.length > (j.entryCap || 200)) j.entries = j.entries.slice(-j.entryCap);
+            return;
+        }
+        if (typeof zeile !== "string" || zeile.length === 0) return;
+        entry.text = zeile.slice(0, 240);
         // ein Schnitt mitten in einem Namen schließt seine Isolation; der Spieler liest den Satz rein, das Modell `ki` isoliert
         if (entry.text.lastIndexOf("⁨") > entry.text.lastIndexOf("⁩")) entry.text += "⁩";
         if (/[⁦-⁩]/.test(entry.text)) [entry.ki, entry.text] = [entry.text, entry.text.replace(/[⁦-⁩]/g, "")];
@@ -280,6 +285,17 @@ class AnazhRealm_dienst {
         if (j.entries.length > (j.entryCap || 200)) {
             j.entries = j.entries.slice(-j.entryCap);
         }
+    }
+
+    // die Zeile einer Erinnerung: `t` ist die EINE Quelle, `text` ihre Lesart in der Quell-Sprache (de) — nie gespeichert
+    // (nicht aufzählbar: der Stand trägt jeden Satz einmal), jeder Leser (Suche, Proben, Mesh) liest sie wie ein Feld
+    static _journalZeile(e) {
+        if (e && Array.isArray(e.t) && !Object.getOwnPropertyDescriptor(e, "text"))
+            Object.defineProperty(e, "text", {
+                configurable: true,
+                get: () => AnazhRealm._tIn("de", e.t[0], e.t[1]),
+            });
+        return e;
     }
 
     // die Erinnerung am Knoten (Tagebuch, Chronik): ein Satz der Welt ist eine Zeile der Tafel (er wechselt mit der Sprache);
