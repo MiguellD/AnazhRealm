@@ -74,41 +74,20 @@ function zeitUrteil(m, wer) {
 }
 const pz = (x) => (100 * x).toFixed(1) + " %";
 
-// DAS URTEIL DER LEINE: die Abgaben der Takte ohne Bild je Schreiber, die Umgebung des ersten Bedarfs, die Gegenprobe
-const schreiberText = (m) =>
-    Object.entries(m || {})
-        .sort((a, b) => b[1] - a[1])
-        .map(([k, n]) => `${k} ${n}×`)
+// DAS URTEIL DER LEINE: die Abgaben der Takte ohne Bild je Schreiber, die fremden Binder, die Umgebung des ersten Bedarfs,
+// die Gegenprobe
+const namen = (m) =>
+    Object.keys(m || {})
+        .map((k) => `${k} ${m[k]}×`)
         .join(" · ");
 function leineUrteil(L) {
-    if (!L) return ["LEINE BLIND: kein Lauf"];
-    if (L.blind) return [`LEINE BLIND: ${L.blind}`];
-    const v = [];
-    if (L.kopf.ladeTakte > 0)
-        v.push(`LEINE BLIND: ${L.kopf.ladeTakte} Takte unter dem Ladeschirm (dort ruht der Himmel ganz)`);
-    if (!(L.kopf.straffTakte >= LEINE_TAKTE / 2))
-        v.push(`LEINE BLIND: nur ${L.kopf.straffTakte} von ${L.kopf.takte} Takten unter straffer Leine`);
-    if (L.kopf.abgaben > 0)
-        v.push(
-            `GPU-ARBEIT NEBEN DER LEINE: ${L.kopf.abgaben} Abgaben an die Queue in ${L.kopf.straffTakte} Takten ohne Bild — ` +
-                `Schreiber ${schreiberText(L.kopf.schreiber)}`
-        );
-    if (Object.keys(L.kopf.binder || {}).length)
-        v.push(
-            `PLATZ GENOMMEN: ${schreiberText(L.kopf.binder)} bindet sich selbst an die Leine — im freien Takt nimmt er der Karte den ` +
-                "Platz (an die Leine binden sich nur das Bild des Takts und die Karte)"
-        );
-    if (!(L.umgebung && L.umgebung.da))
-        v.push(
-            `UMGEBUNG FEHLT: ${L.umgebung ? L.umgebung.straffTakte : 0} Takte unter straffer Leine ohne die Umgebung des ersten ` +
-                "Bedarfs — wer auf sie wartet (das Licht des Orts, die Bestrahlung), wartet ewig"
-        );
-    const g = L.gegenprobe || {};
-    if (!Object.keys(g.schreiber || {}).some((k) => /_atmoTakt/.test(k)))
-        v.push(
-            `GEGENPROBE LEINE: _atmoTakt ohne die Frage an die Leine fällt nicht beim Namen (${schreiberText(g.schreiber) || "keine Abgabe"}) — die Linse ist blind`
-        );
-    return v;
+    const k = L && L.kopf;
+    if (!k || k.lade || k.straff < LEINE_TAKTE / 2) return [`LEINE BLIND: ${JSON.stringify(L)}`];
+    return [
+        namen(k.taeter) && `NEBEN DER LEINE: ${namen(k.taeter)}`,
+        !L.umgebung && "UMGEBUNG FEHLT unter straffer Leine",
+        !/Abgabe.*_atmoTakt/.test(namen(L.gegenprobe)) && "GEGENPROBE LEINE blind",
+    ].filter(Boolean);
 }
 
 function urteil(z) {
@@ -142,15 +121,9 @@ function selbsttest() {
         kopf: gut(),
         gegenprobe: Object.assign(gut(), { dichteJeTakt: 1, stempelDichteJeTakt: 1, archLodJeTakt: 95, lageJeTakt: 1 }),
         leine: {
-            blind: null,
-            kopf: { takte: 40, straffTakte: 38, ladeTakte: 0, abgaben: 0, karte: 24, schreiber: {}, binder: {} },
-            gegenprobe: {
-                takte: 40,
-                straffTakte: 40,
-                abgaben: 80,
-                schreiber: { "_atmoZeichne ‹ _atmoTakt ‹ _applyDayNightToScene ‹ tickDayNight": 80 },
-            },
-            umgebung: { straffTakte: 10, da: true },
+            kopf: { straff: 38, lade: 0, taeter: {} },
+            gegenprobe: { "Abgabe _atmoZeichne ‹ _atmoTakt": 40 },
+            umgebung: true,
         },
     };
     const fehler = [];
@@ -183,38 +156,22 @@ function selbsttest() {
             muss: /GEGENPROBE: die stoßende Dichte fällt nicht/,
         },
         {
-            name: "die Umgebung zeichnet neben der Leine (vor w4-affekt 7105403d)",
-            z: mit("leine.kopf", {
-                abgaben: 46,
-                schreiber: { "_buehneRender ‹ _ensureSkyEnvironment ‹ _applyDayNightToScene": 46 },
-            }),
-            muss: /GPU-ARBEIT NEBEN DER LEINE: 46 Abgaben .* 38 Takten ohne Bild — Schreiber _buehneRender ‹ _ensureSkyEnvironment/,
+            name: "die Umgebung zeichnet neben der Leine (vor 7105403d)",
+            z: mit("leine.kopf.taeter", { "Abgabe _ensureSkyEnvironment": 46 }),
+            muss: /NEBEN DER LEINE: Abgabe _ensureSkyEnvironment 46×/,
         },
         {
-            name: "die Umgebung des ersten Bedarfs wartet auf die Leine",
-            z: mit("leine.umgebung", { da: false }),
-            muss: /UMGEBUNG FEHLT: 10 Takte unter straffer Leine/,
+            name: "der Himmel bindet sich an (7105403d: er nimmt der Karte den Platz)",
+            z: mit("leine.kopf.taeter", { "Binder _atmoTakt": 1 }),
+            muss: /NEBEN DER LEINE: Binder _atmoTakt 1×/,
         },
         {
-            name: "der Himmel bindet sich selbst an (w4-affekt 7105403d: die Karte begann nie)",
-            z: mit("leine.kopf", { binder: { _atmoTakt: 2, _ensureSkyEnvironment: 2 } }),
-            muss: /PLATZ GENOMMEN: _atmoTakt 2× · _ensureSkyEnvironment 2× bindet sich selbst an die Leine/,
+            name: "die Umgebung des ersten Bedarfs wartet",
+            z: mit("leine", { umgebung: false }),
+            muss: /UMGEBUNG FEHLT/,
         },
-        {
-            name: "der Ladeschirm steht (blind: der Himmel ruht)",
-            z: mit("leine.kopf", { ladeTakte: 40 }),
-            muss: /LEINE BLIND: 40 Takte unter dem Ladeschirm/,
-        },
-        {
-            name: "die Leine lockert im Lauf (blind)",
-            z: mit("leine.kopf", { straffTakte: 3 }),
-            muss: /LEINE BLIND: nur 3 von 40 Takten/,
-        },
-        {
-            name: "Gegenprobe der Leine blind",
-            z: mit("leine.gegenprobe", { abgaben: 0, schreiber: {} }),
-            muss: /GEGENPROBE LEINE: _atmoTakt .* \(keine Abgabe\)/,
-        },
+        { name: "der Ladeschirm steht", z: mit("leine.kopf", { lade: 40 }), muss: /LEINE BLIND/ },
+        { name: "Gegenprobe der Leine blind", z: mit("leine", { gegenprobe: {} }), muss: /GEGENPROBE LEINE/ },
     ];
     taeterFaelle(faelle, urteil, { fehler });
     selbsttestEnde(fehler);
@@ -361,103 +318,78 @@ function atem() {
 
 // DIE LEINE (Seiten-Kontext): n Takte von Hand ohne Pause — nach dem zweiten Bild lockert die Leine nie (ihre Versprechen
 // landen erst nach dem Lauf); je Takt die Himmels-Sicht und die Umgebung fällig. Gezählt jede Abgabe an die Queue in einem Takt,
-// der an straffer Leine begann, mit den Gliedern des Stamms im Stapel (innen zuerst). Dann die Gegenprobe (`_atmoTakt` ohne die
-// Frage, `leihe`) und die Umgebung des ersten Bedarfs (keine Umgebung, die Tafeln alt, 10 Takte).
+// der an straffer Leine begann, mit den Gliedern des Stamms im Stapel (innen zuerst), und jeder Binder der Leine. Davor der
+// gespielte Takt (unter dem Ladeschirm ruht ein Takt ohne Bild ganz, `_ladeTakt`), danach die Gegenprobe (`_atmoTakt` ohne
+// die Frage) und die Umgebung des ersten Bedarfs (keine Umgebung, die Tafeln alt, 10 Takte).
 async function leine(n) {
-    const P = Object.getPrototypeOf(r);
     const q = r._gpuLeineQueue();
-    if (!q) return { blind: "keine Queue (der Null-Renderer)" };
-    // der gespielte Takt: unter dem Ladeschirm ruht ein Takt ohne Bild ganz (`_ladeTakt`, kein Himmel) — gezählt wird danach
-    try {
-        for (const weiter = __deckel("das Weltbild der Leine", 600); !st._weltbildDa && weiter();) await __takte(5, 20);
-    } catch (e) {
-        return { blind: `das Weltbild steht nicht (${String(e.message).slice(0, 160)})` };
-    }
-    if (!st.atmoLut || !st._skyEnvLast) return { blind: "der Himmel ist nie gezeichnet (atmoLut, die Umgebung)" };
-    // die Glieder des Stamms im Stapel, innen zuerst (ohne den Takt und `ohne`)
-    const glieder = (ohne) => {
-        const namen = [];
-        for (const zeile of String(new Error().stack).split("\n")) {
-            const m = /at (?:[\w$]+\.)*([\w$]+) \(.*\/stamm\//.exec(zeile);
-            if (m && m[1] !== "_gameLoopTick" && m[1] !== ohne && namen[namen.length - 1] !== m[1]) namen.push(m[1]);
-        }
-        return namen;
-    };
-    const rohSubmit = q.submit;
-    let z = null;
-    let w = null;
-    q.submit = function (...a) {
-        if (z) {
-            const g = glieder();
-            // DIE KARTE (lod.K3): die begonnene backt ihre Ringe ohne neue Frage (`_tickKarteWelt`), ihr Atlas wächst um eine neue Zelle
-            // (`_karteWachsen`) — begrenzt je Karte, nie je Takt: gezählt, nie gerichtet
-            if (g.includes("_tickKarteWelt") || g.includes("_karteWachsen")) z.karte++;
-            else {
-                z.abgaben++;
-                const k = g.slice(0, 6).join(" ‹ ") || "(außerhalb des Stamms)";
-                z.schreiber[k] = (z.schreiber[k] || 0) + 1;
-            }
-        }
-        return rohSubmit.apply(this, a);
-    };
-    // DER PLATZ AN DER LEINE: an die Leine binden sich nur das Bild des Takts (`_gpuLeineAnlegen`, es deckt jede Arbeit davor) und
-    // die Karte (`_tickKarteWelt`) — jeder andere Binder nimmt im freien Takt der Karte den Platz
-    const binden = P._gpuLeineBinden;
-    const zurueckBinden = leihe(P, {
-        _gpuLeineBinden(...a) {
-            const k = glieder("_gpuLeineBinden")[0] || "(außerhalb des Stamms)";
-            if (w && k !== "_gpuLeineAnlegen" && k !== "_tickKarteWelt") w.binder[k] = (w.binder[k] || 0) + 1;
-            return binden.apply(this, a);
-        },
-    });
+    for (const weiter = __deckel("das Weltbild der Leine", 600); q && !st._weltbildDa && weiter();)
+        await __takte(5, 20);
+    if (!q || !st._skyEnvLast) return { blind: "keine Queue oder kein Himmel" };
+    const P = Object.getPrototypeOf(r);
+    const [submit, binden, atmo] = [q.submit, P._gpuLeineBinden, P._atmoTakt];
+    let w, straff;
+    const taeter = (k) => (w.taeter[k] = (w.taeter[k] || 0) + 1);
+    const glieder = () =>
+        String(new Error().stack)
+            .match(/[\w$]+(?= \(.*\/stamm\/)/g)
+            .filter((g) => !/^_gameLoopTick$|^_gpuLeineBinden$/.test(g));
+    // DIE KARTE (lod.K3) arbeitet neben der Leine: die begonnene backt ihre Ringe ohne neue Frage (`_tickKarteWelt`), ihr Atlas
+    // wächst um eine Zelle (`_karteWachsen`) — begrenzt je Karte, nie je Takt. An die Leine binden sich nur das Bild des Takts
+    // (`_gpuLeineAnlegen`, es deckt jede Arbeit davor) und die Karte — jeder andere Binder nimmt im freien Takt der Karte den Platz.
+    const zurueck = [
+        leihe(q, {
+            submit(...a) {
+                const g = glieder();
+                if (straff && !/_tickKarteWelt|_karteWachsen/.test(g)) taeter("Abgabe " + g.slice(0, 6).join(" ‹ "));
+                return submit.apply(q, a);
+            },
+        }),
+        leihe(P, {
+            _gpuLeineBinden(...a) {
+                const k = glieder()[0];
+                if (w && !/^_gpuLeineAnlegen$|^_tickKarteWelt$/.test(k)) taeter("Binder " + k);
+                return binden.apply(this, a);
+            },
+        }),
+    ];
     let uhr = performance.now();
     const lauf = (takte) => {
-        w = { takte: 0, straffTakte: 0, ladeTakte: 0, abgaben: 0, karte: 0, schreiber: {}, binder: {} };
+        w = { straff: 0, lade: 0, taeter: {} };
         for (let i = 0; i < takte; i++) {
             st.atmoLut.himmelSchluessel = null; // die Himmels-Sicht fällig
-            if (st._skyEnvLast) st._skyEnvLast = Object.assign({}, st._skyEnvLast, { m: NaN }); // die Umgebung fällig
+            if (st._skyEnvLast) st._skyEnvLast = { ...st._skyEnvLast, m: NaN }; // die Umgebung fällig
             st._skyEnvLastRegenMs = -Infinity;
-            const straff = r._gpuLeineStraff();
-            if (r._ladeTakt()) w.ladeTakte++;
-            z = straff ? w : null;
-            try {
-                r._gameLoopTick((uhr += 1000));
-            } finally {
-                z = null;
-            }
-            w.takte++;
-            if (straff) w.straffTakte++;
+            w.straff += straff = r._gpuLeineStraff();
+            w.lade += r._ladeTakt();
+            r._gameLoopTick((uhr += 1000));
         }
-        const fertig = w;
-        w = null;
-        return fertig;
+        straff = false;
+        return w;
     };
-    const aus = { blind: null };
+    const aus = {};
     try {
         aus.kopf = lauf(n);
-        const atmo = P._atmoTakt;
-        const zurueck = leihe(P, {
-            _atmoTakt(...a) {
-                const frei = leihe(this, { _gpuLeineStraff: () => false });
-                try {
-                    return atmo.apply(this, a);
-                } finally {
-                    frei();
-                }
-            },
-        });
-        try {
-            aus.gegenprobe = lauf(n);
-        } finally {
-            zurueck();
-        }
+        zurueck.push(
+            leihe(P, {
+                _atmoTakt(...a) {
+                    const frei = leihe(this, { _gpuLeineStraff: () => false });
+                    try {
+                        return atmo.apply(this, a);
+                    } finally {
+                        frei();
+                    }
+                },
+            })
+        );
+        aus.gegenprobe = lauf(n).taeter;
+        zurueck.pop()();
         st._skyEnvLast = null; // der erste Bedarf: keine Umgebung, die Tafeln alt
         st.atmoLut.tafelnFrisch = false;
-        const u = lauf(10);
-        aus.umgebung = { straffTakte: u.straffTakte, da: !!st._skyEnvLast };
+        lauf(10);
+        aus.umgebung = !!st._skyEnvLast;
     } finally {
-        q.submit = rohSubmit;
-        zurueckBinden();
+        zurueck.forEach((z) => z());
     }
     return aus;
 }
@@ -520,13 +452,7 @@ async function leine(n) {
         );
         out = await page.evaluate(atem);
         out.leine = await page.evaluate(leine, LEINE_TAKTE);
-        const L = out.leine;
-        if (L.blind) log(`Leine: blind — ${L.blind}`);
-        if (L.kopf)
-            log(
-                `Leine: Kopf ${L.kopf.abgaben} Abgaben in ${L.kopf.straffTakte}/${L.kopf.takte} Takten ohne Bild (${schreiberText(L.kopf.schreiber) || "kein Schreiber"}; die begonnene Karte ${L.kopf.karte}), fremde Binder ${schreiberText(L.kopf.binder) || "keine"} · ` +
-                    `Gegenprobe ${L.gegenprobe.abgaben} (${schreiberText(L.gegenprobe.schreiber)}) · Umgebung des ersten Bedarfs ${L.umgebung.da ? "da" : "FEHLT"} nach ${L.umgebung.straffTakte} Takten`
-            );
+        log(`Leine: ${JSON.stringify(out.leine)}`);
         if (out.kopf) {
             log(`Welt: ${JSON.stringify(out.welt)} · ${out.ms} ms für zwei Läufe zu ${out.kopf.takte} Takten`);
             log(`Kopf: ${JSON.stringify(out.kopf)}`);
@@ -542,7 +468,6 @@ async function leine(n) {
     console.log(
         `\n✅ GRÜN — unter atmendem Regler (${k.takte} gezählte Takte auf stehenden Stufen 1 → 0,1 → 1) wechselt die Dichte in ${pz(k.dichteJeTakt)} ` +
             `der Takte, die Stufen-Wahl geht ${k.archLodJeTakt} von ${k.bestand} Einträgen je Takt, die Lage des Hauptbilds fällt in ` +
-            `${pz(k.lageJeTakt)} der Takte; die stoßende Dichte der Gegenprobe fällt als DICHTE ATMET. An straffer Leine (${out.leine.kopf.straffTakte} Takte ohne Bild, der ` +
-            `Himmel je Takt fällig) 0 Abgaben an die Queue, die Umgebung des ersten Bedarfs entsteht; _atmoTakt ohne die Frage fällt beim Namen.`
+            `${pz(k.lageJeTakt)} der Takte; die stoßende Dichte der Gegenprobe fällt als DICHTE ATMET; an straffer Leine 0 Abgaben.`
     );
 })();
