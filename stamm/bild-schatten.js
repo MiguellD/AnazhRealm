@@ -16,12 +16,18 @@ class AnazhRealm_bild_schatten {
     // depthBiasSlopeScale) nicht verlässlich — der Pipeline-Schlüssel enthält ihn nicht (WebGPUBackend.getRenderCacheKey), der
     // Stoff-Schlüssel kennt Zahlen nur als 0/≠0, und r184 legt den Schatten-Stoff einer Kaskade neu an (bei der Geburt gesetzt,
     // im Lauf wieder 0: gemessen 09.10.). Ein Bias, der nach dem nächsten Neubau still fehlt, wäre der Bruch.
+    // DIE WÜRFEL-KARTE (schatten.K5, `_lichtWurf`) trägt dasselbe Gesetz: ihr `texel` ist die Kante an der Fern-Ebene (die
+    // Reichweite, die gröbste der Seite), der Tiefen-Nudge geht durch die Steigung IHRER Tiefe — r184s `PointShadowNode`
+    // vergleicht die perspektivische Tiefe (`viewZToPerspectiveDepth`, gelesen am Vendor 03.11.), an der Fern-Ebene
+    // d' = Nah / (Fern · Tiefe der Box); die Kaskade ist orthographisch, d' = 1 / Tiefe. Dort hält er `tiefeTexel` Texel.
     _schattenBias(licht, texel, tiefe) {
         const K = AnazhRealm.SCHATTEN_KASKADE;
         const sh = licht && licht.shadow;
         if (!sh || !(texel > 0) || !(tiefe > 0)) return;
+        const c = sh.camera;
+        const steigung = c && c.isPerspectiveCamera ? c.near / ((c.near + tiefe) * tiefe) : 1 / tiefe;
         sh.normalBias = this._schattenNormalBias(texel);
-        sh.bias = (-K.tiefeTexel * texel) / tiefe;
+        sh.bias = -K.tiefeTexel * texel * steigung;
     }
 
     // Alle Schatten-Maps im nächsten Render neu — die EINE Markierung (Werkzeuge vor einer Aufnahme): je Licht am
@@ -44,59 +50,54 @@ class AnazhRealm_bild_schatten {
     // gezeichnet: die STRAHLDICHTE DES GEZEICHNETEN BODENS um das Auge (`umkreisM`, unter dem Auge um `unterAugeM`, die
     // Fläche waagrecht bis `normalY`, aus der Tiefe), gemittelt über ein Raster von `raster`² Pixeln des Bilds, ist die untere
     // Hemisphäre der EINEN Umgebung (Frostbite/UE: das Himmels-Licht mit der Farbe der unteren Hemisphäre aus dem Boden).
-    // Ein Ziel 2 × 1: Texel 0 der gemessene Boden (gefolgt mit `folge` je Bild — ohne Boden im Bild hält er), Texel 1 der Boden
-    // der Atmosphäre (die PMREM-Umgebung nach unten in der Stufe der Bestrahlung × das Licht jetzt) — der Stoff ersetzt ihn
-    // (`_spiegelUmgebung`: + (Boden − Atmosphäre) · (1 − n.y)/2, die Bestrahlung einer geneigten Fläche aus dem Halbraum).
-    // Ein Boden aus Albedo 0 trägt nichts zurück. Der Pass läuft nach dem Bild (wie der Spiegel), das nächste liest ihn: EIN
-    // Dreieck in 2 Pixel, eine Kopie.
+    // Ein Ziel 2 × 1: Texel 0 der gemessene Boden (Alpha 1, wo das Raster Boden traf), Texel 1 der Boden der Atmosphäre (die
+    // PMREM-Umgebung nach unten in der Stufe der Bestrahlung × das Licht jetzt). ZWEI ZAHLEN, KEINE KARTE: die Lesung kommt
+    // zurück (`_rueckstrahlZeichne`) und trägt `boden` (gefolgt mit `folge` je Messung — ohne Boden im Bild hält er) und
+    // `atmo` als geteilte Uniforms — bis 03.11. las jeder beleuchtete Stoff das Ziel als eigene Sampler-Einheit, und der
+    // Fern-Ring trug 17 > 16 (gate:webgl-probe W6: der Rückfall linkt ihn nie). Der Stoff ersetzt den Boden der Atmosphäre
+    // (`_rueckstrahlHalbraum`: + (Boden − Atmosphäre) · (1 − n.y)/2, die Bestrahlung einer geneigten Fläche aus dem Halbraum).
+    // Ein Boden aus Albedo 0 trägt nichts zurück. Der Pass läuft nach dem Bild (wie der Spiegel): EIN Dreieck in 2 Pixel.
     _rueckstrahlLeser() {
         const st = this.state;
         if (st.rueckstrahlLeser) return st.rueckstrahlLeser;
         const T = THREE.TSL;
-        const ziel = (name) => {
-            const rt = new THREE.RenderTarget(2, 1, { type: THREE.HalfFloatType, depthBuffer: false });
-            rt.name = rt.texture.name = name;
-            rt.texture.minFilter = rt.texture.magFilter = THREE.NearestFilter;
-            rt.texture.generateMipmaps = false;
-            return rt;
-        };
-        const rt = ziel("rueckstrahl:boden");
-        st.rueckstrahlLeser = Object.assign(
-            { rt, halt: ziel("rueckstrahl:halt") },
-            this._uniformHeimatTeilen({ an: T.uniform(0) })
-        );
+        const rt = new THREE.RenderTarget(2, 1, { type: THREE.HalfFloatType, depthBuffer: false });
+        rt.name = rt.texture.name = "rueckstrahl:boden";
+        rt.texture.minFilter = rt.texture.magFilter = THREE.NearestFilter;
+        rt.texture.generateMipmaps = false;
+        const U = this._uniformHeimatTeilen({
+            an: T.uniform(0),
+            boden: T.uniform(new THREE.Vector3()),
+            atmo: T.uniform(new THREE.Vector3()),
+        });
+        st.rueckstrahlLeser = Object.assign({ rt, lesung: null, gelesen: false }, U);
+        // die Strahldichte, die die untere Hemisphäre ändert — EIN Knoten für jeden Leser
+        st.rueckstrahlLeser.unten = U.boden.sub(U.atmo).mul(U.an);
         return st.rueckstrahlLeser;
     }
 
-    // Die Strahldichte, die die untere Hemisphäre der Umgebung ändert (rgb, TSL): gemessener Boden − Boden der Atmosphäre.
-    // Die Texel liest ein Laden mit der Stufe 0 BEIM NAMEN: der Leser lebt in der Bestrahlung der Umgebung, und r184 reicht
-    // jedem Textur-Knoten ohne eigene Stufe die Stufe ihres Zusammenhangs (`getTextureLevel`, dort 1) — das Laden fragte die
-    // Stufe 1 eines Ziels ohne Stufen, außerhalb seiner Grenzen: 0 auf jeder GPU, die Wand trug den Boden nie (Radeon
-    // 59d8aec1: LA = LB 0,1741 auch mit `an` × 40; WGSL der Wand `textureLoad(…, u32(1.0))`).
-    _rueckstrahlUnten() {
+    // DIE UNTERE HEMISPHÄRE DER BESTRAHLUNG (rgb, TSL) — das EINE Gesetz für die Umgebung der Stoffe (`_spiegelUmgebung`) und das
+    // Licht der Welt (`_weltLicht`: Feld, Panorama, Spiegel, Wasser): der Himmel der Normale `n` plus der gezeichnete Boden
+    // anstelle des Bodens der Atmosphäre, gewichtet mit dem Anteil des Halbraums unter dem Horizont, den die Fläche sieht.
+    _rueckstrahlHalbraum(himmel, n) {
         const T = THREE.TSL;
-        const L = this._rueckstrahlLeser();
-        const boden = T.textureLoad(L.rt.texture, T.ivec2(0, 0), T.int(0)).rgb;
-        const atmo = T.textureLoad(L.rt.texture, T.ivec2(1, 0), T.int(0)).rgb;
-        return boden.sub(atmo).mul(L.an);
+        const unten = this._rueckstrahlLeser().unten;
+        return T.max(himmel.add(unten.mul(T.float(1).sub(n.y).mul(0.5))), T.vec3(0));
     }
 
     _rueckstrahlPass() {
         const st = this.state;
         if (st.rueckstrahlPass) return st.rueckstrahlPass;
         const T = THREE.TSL;
-        const { Fn, Loop, If, float, vec2, vec3, vec4, ivec2, uniform, screenUV, select, mix, abs, normalize, cross } =
-            T;
+        const { Fn, Loop, If, float, vec2, vec3, vec4, ivec2, uniform, screenUV, select, abs, normalize, cross } = T;
         const R = AnazhRealm.RUECKSTRAHL;
         const L = this._rueckstrahlLeser();
         const tiefe = T.texture(st.scenePass.getTextureNode("depth").value);
         const farbe = T.texture(st.scenePass.getTextureNode().value);
-        const halt = T.texture(L.halt.texture);
         const webgpuRaum = st.renderer.coordinateSystem === THREE.WebGPUCoordinateSystem;
         const U = this._uniformHeimatTeilen({
             invVP: uniform(new THREE.Matrix4()),
             auge: uniform(new THREE.Vector3()),
-            folge: uniform(1),
         });
         // der Boden der Atmosphäre: dieselbe PMREM-Stufe und dasselbe Licht wie der Himmel jedes Stoffs (`_spiegelUmgebung`)
         const atmoBoden = T.pmremTexture(st._skyEnvRT.texture, vec3(0, -1, 0), float(1)).mul(this._umgebungLicht());
@@ -137,8 +138,8 @@ class AnazhRealm_bild_schatten {
                     );
                 });
             });
-            const alt = halt.load(ivec2(0, 0)).rgb;
-            const boden = select(n.greaterThan(0), mix(alt, summe.div(n.max(1)), U.folge), alt);
+            // ohne Boden im Raster −1 (eine Strahldichte ist nie negativ): die Lesung hält dann den alten Boden
+            const boden = select(n.greaterThan(0), summe.div(n.max(1)), vec3(-1));
             return vec4(select(screenUV.x.lessThan(0.5), boden, atmoBoden), 1);
         })();
         const pp = st.postProcessing;
@@ -146,13 +147,14 @@ class AnazhRealm_bild_schatten {
         if (typeof Quad !== "function") throw new Error("RÜCKSTRAHL: Quad der Post-Kette fehlt (Vendor-Drift)");
         const quad = new Quad(mat);
         quad.name = "rueckstrahl:boden";
-        st.rueckstrahlPass = { quad, mat, U, vp: new THREE.Matrix4(), laeufe: 0, sig: null };
+        st.rueckstrahlPass = { quad, mat, U, vp: new THREE.Matrix4(), laeufe: 0, sig: null, sprung: false };
         return st.rueckstrahlPass;
     }
 
     // NACH DEM BILD (`_loopRender`, auf der Post-Kette, neben dem Spiegel): der Pass misst den Boden dieses Bilds in seiner
-    // Ansicht, das nächste Bild liest ihn. Ohne Szenen-Pass oder ohne Umgebung misst niemand (`an` 0): dann trägt kein Stoff
-    // einen gezeichneten Boden — ein Bruch des Passes meldet sich beim EINEN Melder und lässt `an` auf 0.
+    // Ansicht, die Lesung kommt zurück und trägt die Uniforms — EINE unterwegs, bis sie da ist misst er nicht neu. `an` steht
+    // erst, wenn ein Boden gelesen ist. Ohne Szenen-Pass oder ohne Umgebung misst niemand (`an` 0): dann trägt kein Stoff
+    // einen gezeichneten Boden — ein Bruch des Passes oder der Lesung meldet sich beim EINEN Melder und lässt `an` auf 0.
     _rueckstrahlZeichne() {
         const st = this.state;
         const L = this._rueckstrahlLeser();
@@ -160,29 +162,49 @@ class AnazhRealm_bild_schatten {
             L.an.value = 0;
             return;
         }
+        L.an.value = L.gelesen ? 1 : 0;
         try {
             const P = this._rueckstrahlPass();
             const cam = st.camera;
-            const sprung = P.laeufe === 0 || !!(st._traaR && st._traaR.sprung);
+            // ein Sprung wartet auf die nächste Messung, solange eine Lesung unterwegs ist
+            P.sprung = P.sprung || P.laeufe === 0 || !!(st._traaR && st._traaR.sprung);
             // IM STAND MISST ER NICHT NEU: der Boden um ein ruhendes Auge unter demselben Licht ist derselbe — ein Messen je Bild
             // folgte nur dem Wechsel der Auflösung und dem Raster (die ruhende Welt änderte 0,27 der Pixel, gate:ziel-zensus)
-            if (!this._rueckstrahlWach(P, sprung)) {
-                L.an.value = 1;
-                return;
-            }
+            if (L.lesung || !this._rueckstrahlWach(P, P.sprung)) return;
             P.vp.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
             P.U.invVP.value.copy(P.vp).invert();
             P.U.auge.value.setFromMatrixPosition(cam.matrixWorld);
-            // springt das Auge, gilt der neue Boden sofort (der erste Lauf, ein Sprung der Zeit-Auflösung)
-            P.U.folge.value = sprung ? 1 : AnazhRealm.RUECKSTRAHL.folge;
             const rend = st.renderer;
+            if (typeof rend.readRenderTargetPixelsAsync !== "function")
+                throw new Error("der Renderer liest kein Ziel zurück (readRenderTargetPixelsAsync fehlt, Vendor)");
             const vor = rend.getRenderTarget();
             rend.setRenderTarget(L.rt);
             P.quad.render(rend);
             rend.setRenderTarget(vor);
-            rend.copyTextureToTexture(L.rt.texture, L.halt.texture);
+            // springt das Auge, gilt der neue Boden sofort (der erste Lauf, ein Sprung der Zeit-Auflösung), sonst folgt er
+            const folge = P.sprung ? 1 : AnazhRealm.RUECKSTRAHL.folge;
+            P.sprung = false;
             P.laeufe++;
-            L.an.value = 1;
+            L.lesung = rend.readRenderTargetPixelsAsync(L.rt, 0, 0, 2, 1).then(
+                (px) => {
+                    L.lesung = null;
+                    const w = (i) => (px instanceof Uint16Array ? AnazhRealm._halbZuFloat(px[i]) : px[i]);
+                    L.atmo.value.set(w(4), w(5), w(6));
+                    if (!(w(0) >= 0)) return;
+                    const f = L.gelesen ? folge : 1;
+                    const b = L.boden.value;
+                    b.set(b.x + (w(0) - b.x) * f, b.y + (w(1) - b.y) * f, b.z + (w(2) - b.z) * f);
+                    L.gelesen = true;
+                },
+                (err) => {
+                    st.rueckstrahlBruch = true;
+                    L.an.value = 0;
+                    this._stoffBruch(
+                        "die Lesung des Rückstrahls (schatten.K4) — die Umgebung trägt unten den Boden der Atmosphäre",
+                        err
+                    );
+                }
+            );
         } catch (err) {
             st.rueckstrahlBruch = true;
             L.an.value = 0;
@@ -250,8 +272,7 @@ class AnazhRealm_bild_schatten {
             throw new Error("LICHT-WURF: TSL.pointShadow baut keinen PointShadowNode (Vendor-Drift)");
         const sh = licht.shadow;
         sh.mapSize.set(LW.kartePx, LW.kartePx);
-        sh.bias = LW.bias;
-        sh.normalBias = LW.normalBiasM;
+        // den Bias schreibt das EINE Gesetz der Kaskade (`_schattenBias`) bei jeder Zeichnung aus Reichweite und Nah-Ebene
         sh.radius = LW.weichPx;
         sh.autoUpdate = false;
         sh.needsUpdate = false;
@@ -359,10 +380,14 @@ class AnazhRealm_bild_schatten {
             L.updateMatrixWorld(true);
             const kern = q.L && q.L.kernM > 0 ? q.L.kernM : 0;
             const nah = Math.max(LW.nahM, kern * LW.kernAnteil);
-            if (L.shadow.camera.near !== nah) {
-                L.shadow.camera.near = nah;
-                L.shadow.camera.updateProjectionMatrix();
+            const C = L.shadow.camera;
+            if (C.near !== nah || C.far !== lage.w) {
+                C.near = nah;
+                C.far = lage.w;
+                C.updateProjectionMatrix();
             }
+            // DER BIAS aus dem EINEN Gesetz (`_schattenBias`): die Texel-Kante der 90°-Seite an der Reichweite, 2 · Fern / Karte
+            this._schattenBias(L, (2 * lage.w) / L.shadow.mapSize.width, lage.w - nah);
             if (!this._lichtWurfKarte(cam)) return this._lichtWurfRuht(W);
             W.stand = stand;
             W.karteBild = W.bild;
@@ -1148,15 +1173,13 @@ AnazhRealm.SCHATTEN_RUHE_EPS = 1e-4;
 AnazhRealm.RUECKSTRAHL = Object.freeze({ raster: 12, unterAugeM: 0.5, umkreisM: 16, normalY: 0.7, folge: 0.5 });
 // DER WURF DES FEUERS (schatten.K5, `_lichtWurf` · `_lichtWurfTakt`): EIN Platz des Licht-Pools wirft — die Würfel-Karte je
 // Seite `kartePx` (256: 2,3 cm je Texel in 3 m), die nahe Ebene mindestens `nahM`, sonst `kernAnteil` × der Kern der Quelle (der
-// Leib der Flamme wirft nicht); `bias` (Tiefe, negativ: zum Licht) und `normalBiasM` (Welt-Meter längs der Normale, 1,5 Texel in
-// 3 m) halten die Akne; PCF über `weichPx`. Wichtig ist eine Quelle ab `wichtigAb` des Lichts der Welt in `bezugM`, gehalten
+// Leib der Flamme wirft nicht); den Bias schreibt das Gesetz der Kaskade (`_schattenBias`, die Texel-Kante an der Reichweite);
+// PCF über `weichPx`. Wichtig ist eine Quelle ab `wichtigAb` des Lichts der Welt in `bezugM`, gehalten
 // bis eine andere `halten`-fach wichtiger ist; die Karte zeichnet höchstens je `takt` Bilder neu (nie neben einer Kaskade).
 AnazhRealm.LICHT_WURF = Object.freeze({
     kartePx: 256,
     nahM: 0.05,
     kernAnteil: 1,
-    bias: -0.0003,
-    normalBiasM: 0.035,
     weichPx: 2,
     bezugM: 2,
     wichtigAb: 0.25,

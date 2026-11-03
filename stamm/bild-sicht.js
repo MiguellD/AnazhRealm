@@ -661,13 +661,13 @@ class AnazhRealm_bild_sicht {
         const himmel = T.pmremTexture(quelle).mul(this._umgebungLicht());
         const [a, b] = AnazhRealm.SPIEGEL.glanzRauheit;
         const N = Object.getPrototypeOf(THREE.InstanceNode);
-        // DIE UNTERE HEMISPHÄRE (schatten.K4, `_rueckstrahlPass`): in der Bestrahlung (r184 reicht die Stufe als Konstante, die
-        // Richtung ist die Normale) ersetzt der gezeichnete Boden den Boden der Atmosphäre — gewichtet mit dem Anteil des
-        // Halbraums unter dem Horizont, den die Fläche sieht, (1 − n.y)/2: der Boden selbst empfängt nichts von sich, die
-        // senkrechte Wand die Hälfte, die Unterseite alles. DIE BESTRAHLUNG ERKANNT: r184 reicht ihre Stufe als Variable über der
-        // Konstanten 1 (`float(1)` in einer VarNode, gelesen am Vendor 03.11.) — bis dahin fragte der Zweig nur `isConstNode`,
-        // nahm nie, und jede Bestrahlung las den Spiegel mit dem Gewicht 0 (eine Abtastung je Fragment für nichts).
-        const unten = this._rueckstrahlUnten();
+        // DIE UNTERE HEMISPHÄRE (schatten.K4, `_rueckstrahlHalbraum`, dasselbe Gesetz wie das Licht der Welt): in der Bestrahlung
+        // (r184 reicht die Stufe als Konstante, die Richtung ist die Normale) ersetzt der gezeichnete Boden den Boden der
+        // Atmosphäre — gewichtet mit dem Anteil des Halbraums unter dem Horizont, den die Fläche sieht, (1 − n.y)/2: der Boden
+        // selbst empfängt nichts von sich, die senkrechte Wand die Hälfte, die Unterseite alles. DIE BESTRAHLUNG ERKANNT: r184
+        // reicht ihre Stufe als Variable über der Konstanten 1 (`float(1)` in einer VarNode, gelesen am Vendor 03.11.) — bis
+        // dahin fragte der Zweig nur `isConstNode`, nahm nie, und jede Bestrahlung las den Spiegel mit dem Gewicht 0 (eine Abtastung je Fragment für nichts).
+        const halbraum = (n) => this._rueckstrahlHalbraum(himmel, n);
         const konstant = (n) => !!n && (n.isConstNode === true || (n.isVarNode === true && konstant(n.node)));
         class SpiegelUmgebung extends N {
             constructor() {
@@ -677,8 +677,7 @@ class AnazhRealm_bild_sicht {
                 const stufe = builder.context.getTextureLevel ? builder.context.getTextureLevel(this, builder) : null;
                 if (!stufe) return himmel;
                 if (konstant(stufe)) {
-                    const n = builder.context.getUV(this, builder);
-                    return T.max(himmel.add(unten.mul(T.float(1).sub(n.y).mul(0.5))), T.vec3(0));
+                    return halbraum(builder.context.getUV(this, builder));
                 }
                 const clip = L.vp.mul(T.vec4(T.positionWorld, 1));
                 const w = T.max(clip.w, 1e-4);
@@ -2534,7 +2533,10 @@ class AnazhRealm_bild_sicht {
         const fn = TSL.Fn(([n]) => {
             const direkt = U.l0c.mul(TSL.max(TSL.dot(n, U.l0d), 0.0));
             const hemi = TSL.mix(U.hemiUnten, U.hemiOben, n.y.mul(0.5).add(0.5));
-            const umgebung = sonde.sample(TSL.equirectUV(n)).level(0).rgb.mul(U.ei).mul(licht);
+            // der Boden um das Auge in der unteren Hemisphäre — dasselbe Gesetz wie die Umgebung der Stoffe (schatten.K4)
+            const umgebung = this._rueckstrahlHalbraum(sonde.sample(TSL.equirectUV(n)).level(0).rgb.mul(licht), n).mul(
+                U.ei
+            );
             return direkt
                 .add(U.ambientFarbe)
                 .add(hemi)
