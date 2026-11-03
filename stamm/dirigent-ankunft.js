@@ -625,6 +625,11 @@ class AnazhRealm_dirigent_ankunft {
             // B4 (V18.130) — die CSM-Frusta hängen an der Kamera-Projektion
             // (Addon-Vertrag: „call every time you change camera settings").
             if (this.state.csmNode && this.state.csmNode.camera) this.state.csmNode.updateFrustums();
+            // DER SCHIRM folgt dem Wechsel, nicht erst dem nächsten Takt (`_schirmMessen`, mit ihm die Schwellen der Stufen): ein Bild
+            // ohne Takt danach (die ruhende Welt der Aufnahme) zeichnete die Zeit-Auflösung in der alten Größe — dunkel, gerastert
+            // (Radeon, Dorf 1920 → 640: lod.K4 Luma-Sprung 8,1 % statt 1,8 %, der Boden 0,17 statt 0,53)
+            this._schirmMessen();
+            this._stufenSchirm();
             // setSize legt Szene-Tiefe und Tiefen-Abbild im nächsten Frame neu an; die Leser folgen der neuen Textur über die
             // EINE Refresh-Entscheidung der Diät (Vorher-Textur-Wächter, `_diaetVorTextur`) — wie bei jedem anderen Wechsel
             // der Pixel-Ratio. Kein Neubau hier: der frühere Wasser-Neubau war ein Zwilling des Wächters (0910-3 A).
