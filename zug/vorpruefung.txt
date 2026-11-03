@@ -7,3 +7,4 @@ w6-spielgang-decke 95d2a786 ROT merge KONFLIKT mit main 6eeeb856: spec/stamm/mod
 w6-haar-heil 590e6f42 ROT merge KONFLIKT mit main 6eeeb856: spec/stamm/modul-karte.json stamm/dirigent-takt.js stamm/studio-gestalt.js 
 w6-musik 6c4b8f35 ROT merge KONFLIKT mit main 6eeeb856: spec/stamm/modul-karte.json 
 w6-baecker cd53fd10 ROT merge KONFLIKT mit main 6eeeb856: scripts/diag-streu-wahrheit.cjs scripts/diag-studio-vertrag.cjs scripts/lib/asset-worker-harness.cjs 
+w5-s2-g5 f97248eb GRÜN check+playtest-voll (main d880c8e8)
