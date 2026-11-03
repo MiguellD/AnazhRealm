@@ -2526,10 +2526,9 @@ class AnazhRealm_bild_himmel {
             out[1] += c.g * k;
             out[2] += c.b * k;
         };
-        // der Lichtmesser steht am Ort des Spielers: die Sonne, die der Horizont des Gesetzes ihm nimmt, misst er nicht
-        // (`_horizontSichtAm`, dieselbe Karte wie jeder Empfänger); den Wurf der Wolke trägt er im Mittel (lightMul im Richtlicht)
-        const ort = st.playerMesh || st.camera;
-        const sicht = ort && dy > 0 ? this._horizontSichtAm(ort.position.x, ort.position.y, ort.position.z, dir) : 1;
+        // der Lichtmesser misst den Boden im Bild: die Sonne, die der Horizont des Gesetzes ihm nimmt, misst er nicht
+        // (`_horizontSichtImBild`, dieselbe Karte wie jeder Empfänger); den Wurf der Wolke trägt er im Mittel (lightMul im Richtlicht)
+        const sicht = dy > 0 ? this._horizontSichtImBild(dir) : 1;
         add(dl.color, dl.intensity * dy * sicht);
         let himmel = this._himmelsBestrahlung(this._himmelE || (this._himmelE = [0, 0, 0]));
         const A = st.atmoLut;

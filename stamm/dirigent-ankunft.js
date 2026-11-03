@@ -1464,8 +1464,13 @@ class AnazhRealm_dirigent_ankunft {
         const H = AnazhRealm.HORIZONT_KARTE;
         const [n, d] = [H.gitter, H.zelleM];
         const [ox, oz] = [K.U.ursprung.value.x, K.U.ursprung.value.y];
-        const g = K.hoehen.image.data;
-        const halb = THREE.DataUtils.fromHalfFloat;
+        // die Höhen des Gitters als Zahlen, EINMAL je Gitter (der Pass liest dieselben Halb-Floats)
+        if (!this._horizontHoehen || this._horizontHoehen.stand !== K.stand)
+            this._horizontHoehen = {
+                stand: K.stand,
+                g: Float32Array.from(K.hoehen.image.data, (w) => THREE.DataUtils.fromHalfFloat(w)),
+            };
+        const g = this._horizontHoehen.g;
         const drin = (u, v) => u >= -0.5 && u <= n - 0.5 && v >= -0.5 && v <= n - 0.5;
         // bilinear über die Texel-Mitten (Rand geklemmt), wie die Abtastung des Passes und des Empfängers
         const bilinear = (u, v, f) => {
@@ -1477,11 +1482,17 @@ class AnazhRealm_dirigent_ankunft {
         };
         const hoehe = (wx, wz) => {
             const [u, v] = [(wx - ox) / d, (wz - oz) / d];
-            return drin(u, v) ? bilinear(u, v, (i, j) => [halb(g[j * n + i])])[0] : -H.leerM;
+            return drin(u, v) ? bilinear(u, v, (i, j) => [g[j * n + i]])[0] : -H.leerM;
         };
         const flach = Math.max(Math.hypot(L.x, L.z), 1e-4);
         const [ax, az, tanH] = [L.x / flach, L.z / flach, L.y / flach];
+        // je Licht und Gitter EIN Marsch je Texel-Mitte (die Strahlen des Bild-Messers teilen ihre Texel)
+        const merk = `${K.stand}|${L.x}|${L.y}|${L.z}`;
+        if (!this._horizontMerk || this._horizontMerk.merk !== merk) this._horizontMerk = { merk, texel: new Map() };
+        const memo = this._horizontMerk.texel;
         const texel = (i, j) => {
+            const alt = memo.get(j * n + i);
+            if (alt) return alt;
             const [cx, cz] = [ox + i * d, oz + j * d];
             let [best, weg] = [-H.leerM, 0];
             for (let k = 1; k <= H.schritte; k++) {
@@ -1489,6 +1500,7 @@ class AnazhRealm_dirigent_ankunft {
                 const h = hoehe(cx + ax * s, cz + az * s) - tanH * s;
                 if (h > best) [best, weg] = [h, s];
             }
+            memo.set(j * n + i, [best, weg]);
             return [best, weg];
         };
         const [u, v] = [(x - ox) / d, (z - oz) / d];
@@ -1497,6 +1509,37 @@ class AnazhRealm_dirigent_ankunft {
         const band = Math.max(H.bandM, weg * AnazhRealm.SCHATTEN_KASKADE.sonneTan * 0.5);
         const t = Math.max(0, Math.min(1, (y - K.U.bezug.value - (schatten - band)) / (2 * band)));
         return t * t * (3 - 2 * t);
+    }
+
+    // DER LICHTMESSER IM BILD (`_waagrechtIrradianz`, die Kamera): die Sicht des Geländes gemittelt über den Boden, den das Bild
+    // zeigt — die Strahlen der unteren Bildhälfte (`messer`: spalten × zeilen, gleich im Schirm verteilt wie die Pixel, die die
+    // Belichtung trägt), je Strahl der Boden des Gesetzes, wo er die Ebene unter dem Auge trifft (höchstens `weitM`). Bis dahin
+    // mass er am Punkt des Spielers: der Grat nahm ihm die Sonne in einem Schritt der Uhr ganz, dem Bild nur den nahen Boden
+    // (die fernen besonnten Flecken blieben) — die Belichtung überholte das Bild um 0,10 EV (Wiese 0,728 → 0,73, Radeon und GTX).
+    // Ohne Strahl auf den Boden (das Auge blickt in den Himmel, steht unter dem Gelände) misst er am Auge; ohne Auge 1.
+    _horizontSichtImBild(L) {
+        const st = this.state;
+        const cam = st.camera;
+        const K = st.horizontKarte;
+        if (!cam || !K || !K.bereit || !(L.y > 0)) return 1;
+        const M = AnazhRealm.HORIZONT_KARTE.messer;
+        const p = cam.position;
+        const ebene = this._terrainMacroSurfaceY(p.x, p.z, true);
+        const r = this._messerStrahl || (this._messerStrahl = new THREE.Vector3());
+        let [summe, zahl] = [0, 0];
+        for (let i = 0; i < M.spalten; i++)
+            for (let j = 0; j < M.zeilen; j++) {
+                r.set(((i + 0.5) / M.spalten) * 2 - 1, -(j + 0.5) / M.zeilen, 0.5)
+                    .unproject(cam)
+                    .sub(p)
+                    .normalize();
+                const s = r.y < 0 ? Math.min(M.weitM, (p.y - ebene) / -r.y) : 0;
+                if (!(s > 0)) continue;
+                const [x, z] = [p.x + r.x * s, p.z + r.z * s];
+                summe += this._horizontSichtAm(x, this._terrainMacroSurfaceY(x, z, true), z, L);
+                zahl++;
+            }
+        return zahl ? summe / zahl : this._horizontSichtAm(p.x, p.y, p.z, L);
     }
 
     // DIE SONNEN-SICHT am Welt-Punkt `p` (Vorgabe `positionWorld`): was das direkte Licht von Sonne oder Mond jenseits der Kaskaden
@@ -1579,8 +1622,11 @@ AnazhRealm.ANKUNFT_TAKT = Object.freeze({ bau: 32, streu: 16, streuScan: 640 });
 // Weltbild (die Ankunft trägt es nie) und neu, wenn der Anker `nachM` gewandert ist. Neu gemalt wird die Karte, wenn das Licht
 // sich um `lichtRad` dreht (0,05°: am Grat in 3 km 2,6 m Schatten-Höhe) oder ein Gitter kommt — nie je Frame. `bandM` ist der
 // halbe Halbschatten mindestens (Gitter und r16f), `leerM` die Höhe, die kein Gelände trägt (außerhalb, vor der ersten Antwort).
-// Speicher: Gitter r16f 128 KB + Karte rg16f 256 KB (vorher die Licht-Tiefe 512² r16f, 512 KB).
+// Speicher: Gitter r16f 128 KB + Karte rg16f 256 KB (vorher die Licht-Tiefe 512² r16f, 512 KB). `messer` der Lichtmesser der Kamera
+// (`_horizontSichtImBild`): `spalten` × `zeilen` Strahlen der unteren Bildhälfte, je bis `weitM` — an der Wiese 9 Texel, 0,2 ms
+// je neuem Licht, 0,1 ms je Ruf (Radeon); die Höhen des Gitters liegen dazu einmal je Gitter als Float32 (256 KB) im Main.
 AnazhRealm.HORIZONT_KARTE = Object.freeze({
+    messer: Object.freeze({ spalten: 4, zeilen: 8, weitM: 3000 }),
     gitter: 256,
     zelleM: 96,
     schrittM: 60,
