@@ -28,7 +28,16 @@ class AnazhRealm_dirigent_takt {
             // DIE EINGABE je Bild (leib.K5): das Gamepad in die Verb-Tafel, der Blick in die Kamera-Kugel — auch bei offenem Portal,
             // dessen Zurück-Knopf es verlässt (`_eingabeTakt`)
             this._eingabeTakt(delta);
-            if (this._portalOverlay) return;
+            // die gefrorene Heimat backt nur, was das Labor im Tor erfragt (`_tickKarteAbzug`, pipeline.K2): ihr Takt treibt den
+            // Bäcker; ein Bruch geht an die Fehler-Grenze des Loops, die Frist des Abzugs nennt ihn dem Labor
+            if (this._portalOverlay) {
+                try {
+                    this._tickKarteAbzug();
+                } catch (err) {
+                    this._loopErrorBoundary(err);
+                }
+                return;
+            }
             this.state.spielZeit += delta; // DIE WELT-UHR: nur Takte der Heimat-Welt zählen (das Portal friert sie ein)
             // DIE BILD-UHR (A9, Gesetz #0): die EINE Shader-Zeit der Welt in Sekunden, hier EINMAL je Takt geschrieben — Himmel,
             // Wasser, Wind und Böe, Tor, Regen, Flackern, Chaos-Flimmern und die TSL-`time` (`_loopRender`) lesen nur sie

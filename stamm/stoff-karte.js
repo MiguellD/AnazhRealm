@@ -275,7 +275,7 @@ class AnazhRealm_stoff_karte {
     // `_foundryWecker` an; bis K38-N2 hörte niemand den Bake, und die Vorschau blieb „pending", bis der Spieler neu wählte.
     _karteEndet(z, ok) {
         if (ok) z.gebacken = true;
-        else z.gescheitert = true;
+        else (z.gescheitert = true), this._karteAbzugBruch(z, "gescheitert");
         if (z._endeLoes) z._endeLoes(!!ok);
     }
 
@@ -483,7 +483,8 @@ class AnazhRealm_stoff_karte {
         if (nurHalbe && !(at.offen && !at.offen.frage)) return 0;
         const d2 = (k) => {
             const z = at.zellen.get(k);
-            return z && Number.isFinite(z._bedarfD2) ? z._bedarfD2 : 1e30;
+            // ein wartender Abzug (das Labor im Tor, `_karteAbzug`) zuerst
+            return z && z._abzug ? -1 : z && Number.isFinite(z._bedarfD2) ? z._bedarfD2 : 1e30;
         };
         q.sort((a, b) => d2(a) - d2(b));
         // die halbe Karte zuerst
@@ -965,36 +966,43 @@ class AnazhRealm_stoff_karte {
         const at = this._impostorAtlas();
         const z = this._foundryEnsureImpostorRecord(preset, gestalt, null);
         if (!z) return Promise.reject(this._stoffBruch(`die Karte ${preset}|${gestalt}: keine Zelle`));
+        if (z.gescheitert) return Promise.reject(this._stoffBruch(`die Karte ${z.key}: gescheitert`));
         const zusage = new Promise((ja, nein) => (z._abzug || (z._abzug = [])).push({ ja, nein }));
         const q = this._impostorBakeQueue || (this._impostorBakeQueue = []);
         z._weltNeu = true;
         if (!q.includes(z.key)) q.push(z.key);
-        // Ruht der Takt (das Portal friert die Heimat ein), treibt der Abzug den Bäcker selbst — ein Ring je Schritt. Die Frist
-        // zählt den Stillstand der Bühne (kein Ring irgendeiner Karte), nie das Warten: die Karten backen nacheinander
-        let ringe = -1,
-            t0 = 0;
-        const schritt = () => {
-            if (!z._abzug) return;
-            const n = at.schrittMs ? at.schrittMs.length : 0;
-            if (n !== ringe) [ringe, t0] = [n, performance.now()];
-            if (performance.now() - t0 > 120000) {
-                for (const w of z._abzug.splice(0))
-                    w.nein(this._stoffBruch(`die Karte ${z.key}: die Bühne stand 120 s ohne Ring`));
-                z._abzug = null;
-                return;
-            }
-            // die halbe Karte einer anderen Zelle trägt die Bühne: sie backt zuerst zu Ende
-            if (at.offen && at.offen.z !== z) this._karteWeltBacken(at, at.offen.z);
-            const e = this._impostorAtlasTexturen(at, z.idx + 1) ? this._karteWeltBacken(at, z) : null;
-            if (e === false) {
-                for (const w of z._abzug.splice(0)) w.nein(this._stoffBruch(`die Karte ${z.key}: gescheitert`));
-                z._abzug = null;
-                return;
-            }
-            if (e !== true) setTimeout(schritt, e === 0 ? 0 : 50);
-        };
-        schritt();
+        // der Bäcker der Welt backt sie (`_tickKarteWelt`, wartende Abzüge zuerst); friert das Portal die Heimat ein, treibt ihn
+        // ihr Render-Takt über `_tickKarteAbzug` — kein eigener Zeitgeber (gate:v1-pfad W7)
+        const offen = this._karteAbzugOffen || (this._karteAbzugOffen = new Set());
+        if (!offen.size) this._karteAbzugFrist = { ringe: -1, seit: 0 };
+        offen.add(z);
         return zusage;
+    }
+    // DER TAKT DES ABZUGS (W7: der Foundry-Pfad pollt nicht): friert das Portal die Heimat ein, kehrt ihr Render-Takt vor jedem
+    // Tick um (`dirigent-takt`) und ruft nur diesen — solange ein Abzug wartet, treibt er den EINEN Bäcker der Welt
+    // (`_tickImpostorBake`: dieselbe Leine, dasselbe Budget je Takt wie im Spiel), sonst bleibt die Heimat gefroren. Bis w8
+    // trieb der Abzug den Bäcker mit eigenem Zeitgeber, der sich je Ring neu ansetzte (ein Zeit-Kreis neben dem Takt). Die
+    // Frist zählt den Stillstand der Bühne (kein Ring irgendeiner Karte in 120 s), nie das Warten: die Karten backen nacheinander.
+    _tickKarteAbzug() {
+        const offen = this._karteAbzugOffen;
+        if (!offen || !offen.size) return 0;
+        for (const z of offen) if (!z._abzug) offen.delete(z);
+        if (!offen.size) return 0;
+        const at = this._impostorAtlas();
+        const n = at && at.schrittMs ? at.schrittMs.length : 0;
+        const F = this._karteAbzugFrist;
+        const jetzt = performance.now();
+        if (n !== F.ringe) [F.ringe, F.seit] = [n, jetzt];
+        if (jetzt - F.seit <= 120000) return this._tickImpostorBake();
+        for (const z of offen) this._karteAbzugBruch(z, "die Bühne stand 120 s ohne Ring");
+        offen.clear();
+        return 0;
+    }
+    // Jeder Wartende der Zelle erfährt den Bruch laut (das Labor zeigt ihn als `fehler`).
+    _karteAbzugBruch(z, grund) {
+        if (!z._abzug) return;
+        for (const w of z._abzug.splice(0)) w.nein(this._stoffBruch(`die Karte ${z.key}: ${grund}`));
+        z._abzug = null;
     }
     // Die Schicht `schicht` des Ziels `rt` lesen (Albedo und Normale, Stufe 0) und jeden Wartenden der Zelle lösen. WebGPU liest
     // je Schicht (`readRenderTargetPixelsAsync`, die Kopie geht beim Ruf in die Schlange — vor jeder späteren Karte); das
