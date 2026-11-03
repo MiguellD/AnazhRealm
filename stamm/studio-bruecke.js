@@ -1320,11 +1320,11 @@ class AnazhRealm_studio_bruecke {
         const qx = x - e.x,
             qz = z - e.z;
         const d = Math.hypot(qx, qz);
-        const B = this._bedarf;
+        const [vx, vz] = this._bedarfTempo();
         const v0 = this._bedarfFuss();
-        const s = B ? Math.hypot(B.vx, B.vz) : 0;
+        const s = Math.hypot(vx, vz);
         if (!(s > v0 * AnazhRealm.BEDARF.fahrtAb)) return d;
-        const a = (qx * B.vx + qz * B.vz) / s;
+        const a = (qx * vx + qz * vz) / s;
         const b = Math.sqrt(Math.max(0, d * d - a * a));
         const w = Math.sqrt(s * s - v0 * v0);
         if (a < (b * v0) / w) return d;
@@ -1359,7 +1359,14 @@ class AnazhRealm_studio_bruecke {
             B.vx += (dx / dt - B.vx) * k;
             B.vz += (dz / dt - B.vz) * k;
         }
-        [B.x, B.z, B.t] = [e.x, e.z, t];
+        [B.x, B.z, B.t, B.wand] = [e.x, e.z, t, performance.now()];
+    }
+    // DAS TEMPO DER BAHN [vx, vz] — nur, solange ein Takt es erneuert (`_bedarfTakt`, je Bild): ruht der Loop länger als
+    // BEDARF.frischMs (eine Linse fährt den Strom von Hand, das Spiel steht), gilt es nicht mehr — ein stehengebliebenes Tempo
+    // schöbe die Vorausschau über eine Welt, die niemand fährt (gate:chunk-satz: die Stufen erreichten ihr Soll nie).
+    _bedarfTempo() {
+        const B = this._bedarf;
+        return B && performance.now() - B.wand <= AnazhRealm.BEDARF.frischMs ? [B.vx, B.vz] : [0, 0];
     }
     // DER ORT DER BAHN IN BEDARF.vorlaufS SEKUNDEN (die Vorausschau): wo `p` (der Ort eines Lesers — der Spieler, das Auge der Stufen;
     // ohne Angabe der Spieler) mit dem Tempo-Vektor der Bahn sein wird. Jeder Leser, der Dinge NACH ABSTAND zulässt (der Ring des
@@ -1368,9 +1375,8 @@ class AnazhRealm_studio_bruecke {
     _bedarfVoraus(p) {
         const e = p || (this.state.playerMesh && this.state.playerMesh.position);
         if (!e) return null;
-        const B = this._bedarf;
         const T = AnazhRealm.BEDARF.vorlaufS;
-        const [vx, vz] = B ? [B.vx, B.vz] : [0, 0];
+        const [vx, vz] = this._bedarfTempo();
         return { x: e.x + vx * T, z: e.z + vz * T, weg: Math.hypot(vx, vz) * T }; // je Ruf ein eigener Ort: ein Leser hält ihn
     }
     // DER ABSTAND DER BAHN zu (x, z) von einem Auge `auge` (der Stufen, `_lodAuge`): der nähere des Auges jetzt und des Auges am
@@ -1378,9 +1384,9 @@ class AnazhRealm_studio_bruecke {
     // bevor die Bahn ankommt.
     _bedarfAbstand(x, z, auge) {
         const d = Math.hypot(x - auge.x, z - auge.z);
-        const B = this._bedarf;
+        const [vx, vz] = this._bedarfTempo();
         const T = AnazhRealm.BEDARF.vorlaufS;
-        return B && (B.vx || B.vz) ? Math.min(d, Math.hypot(x - auge.x - B.vx * T, z - auge.z - B.vz * T)) : d;
+        return vx || vz ? Math.min(d, Math.hypot(x - auge.x - vx * T, z - auge.z - vz * T)) : d;
     }
     // Die BAHN eines Auftrags (Präfix der Request-Nummer): ein Werk-Helfer (`_foundryHelfer`) trägt seinen Faden in der
     // Nummer (`w<k>_<n>`): seine Bahn ist "werk<k>", sonst das Werk.
@@ -3580,7 +3586,8 @@ AnazhRealm.KARTEN_HORIZONT_SAUM_M = 32;
 // (`_pruneDistantVoxelChunks`). `tauS` — die Zeit-Konstante, mit der das Tempo dem Weg folgt; `tempoMax` (m/s) — ein Schritt
 // schneller ist ein Sprung (Teleport, Tor, ein gestellter Stand), kein Tempo — über jedem Fahr-Gesetz der Welt (der GT 16 m/s),
 // so reicht der Vorlauf höchstens 180 m; `fahrtAb` — unter diesem Vielfachen des Gehens ist der Rang der Abstand (Stand, Gang).
-AnazhRealm.BEDARF = Object.freeze({ vorlaufS: 3, tauS: 0.3, tempoMax: 60, fahrtAb: 1.05 });
+// `frischMs` — so lange gilt das Tempo nach seinem letzten Takt (TAKT_DECKEL_S 0,1 s ist der längste Schritt des Spiels, ein Bild unter Last 0,2–0,3 s).
+AnazhRealm.BEDARF = Object.freeze({ vorlaufS: 3, tauS: 0.3, tempoMax: 60, fahrtAb: 1.05, frischMs: 500 });
 AnazhRealm.KARTEN_HORIZONT_SALZ = 0x4b48;
 // DIE EINE WORKER-SCHLANGE (`_foundryAuftrag`): Aufträge gleichzeitig im Worker und das Alter, ab dem der Älteste jede
 // zweite Wahl bekommt. Jeder Nachschub braucht einen Haupt-Thread-Rundlauf; kleine Aufträge (Platte, Fels, Klinge) sind
