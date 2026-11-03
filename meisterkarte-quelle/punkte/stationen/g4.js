@@ -1072,7 +1072,7 @@ const alle = [
         env: SOFT,
         gpu: false,
         zeit: false,
-        minuten: 20,
+        minuten: 12, // lokal 3,7 min (EINE Fahrt beider Staffeln), die Farm ~3,5× langsamer
         urteil: (j, lauf) => {
             j = j || jsonZeile(lauf.stdout, /^KARTEN \{/);
             if (!j || !j.welt || !j.labor) return { gruen: false, zahl: "keine KARTEN-Zeile (Exit " + lauf.exit + ")" + (j && j.fehler ? ": " + j.fehler : "") };
@@ -1103,7 +1103,7 @@ const alle = [
         env: SOFT,
         gpu: false,
         zeit: false,
-        minuten: 20,
+        minuten: 12,
         urteil: (j, lauf) => {
             j = j || jsonZeile(lauf.stdout, /^KARTEN \{/);
             if (!j || !j.welt || !j.labor) return { gruen: false, zahl: "keine KARTEN-Zeile (Exit " + lauf.exit + ")" + (j && j.fehler ? ": " + j.fehler : "") };
