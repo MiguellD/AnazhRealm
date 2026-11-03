@@ -1541,6 +1541,150 @@ const ULTI_K2_PROBEN = (() => {
     ];
 })();
 
+// ultiversum.K4 #2 (w5-s2-g5): EIN SPIELER-GESETZBUCH DOCKT ÜBER STUDIOS K5 AN. Null-Renderer, Foundry an, zwei Läufe in zwei frischen
+// Profilen am selben statischen Server. (G) DER GEGENLAUF — das Schlupfloch: das Fixture-Buch der studios.K5 (worlds/neuntes-buch,
+// Art stele) reist als zusätzliche Zeile des SERVER-Manifests durch den EINEN Kern-Weg; die Probe misst das Andocken (je Rezept das
+// Rezept im Buch, je Rezept der Bauplan `stele_<rezept>` mit seiner Gestalt, ein Werk über spawn_studio vor dem Spieler mit Stufe 0 und
+// Dreiecken, nach Speichern + Neuladen steht es wieder) — sieht sie das nicht, ist sie blind; das Buch kam nie vom Spieler. (S) DER
+// SPIELER: das Manifest des Servers bleibt Byte für Byte; der Spieler legt in der Bibliothek (`bibliothekLege`, die EINE Hülle des
+// Teilens, signiert) ein NEUES Gesetzbuch ab — der Quelltext der Stele, umbenannt zu Art „quaxmal“ (Rezepte quaxstein · quaxpfahl ·
+// quaxturm), ohne Kommentar-Zeilen; sein SHA-256 trägt kein Kern des Spiel-Manifests und kein Buch unter worlds/. Nach dem Neuladen
+// muss es dasselbe Andocken bestehen wie (G), und der Wirt (Stamm, Seite, Manifest, Kerne) nennt die Art 0×. Am main 5fba36ea ROT
+// erwartet: die Bibliothek kennt die Art gesetzbuch nicht (`_bibliothekFracht` trägt welt · regel · bauplan), der Kern-Weg liest nur
+// das Manifest des Servers (`_foundryStart`).
+async function ultiversumK4Lauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const crypto = require("crypto");
+    const [aus, port] = process.argv.slice(1);
+    const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const lies = (f) => fs.readFileSync(path.resolve(f), "utf8");
+    const MANIFEST = JSON.parse(lies("cores.manifest.json"));
+    const NEUN = "worlds/neuntes-buch/stele-core.js";
+    let einschleusen = true;
+    const server = WB.statikServer({
+        seiten: { "/cores.manifest.json": () => JSON.stringify(einschleusen ? [...MANIFEST, { id: "stele", scripts: [NEUN], vertrag: NEUN, ns: "__steleCore" }] : MANIFEST) },
+    });
+    await server.lausche(Number(port));
+    const NAMEN = { stele: "quaxmal", Stele: "Quaxmal", meilenstein: "quaxstein", grenzstein: "quaxpfahl", obelisk: "quaxturm" };
+    const buch = lies(NEUN).split("\n").filter((l) => !/^\s*\/\//.test(l)).map((l) => l.trim()).filter(Boolean).join("\n").replace(/stele|Stele|meilenstein|grenzstein|obelisk/g, (w) => NAMEN[w]);
+    const sha = (t) => crypto.createHash("sha256").update(t).digest("hex");
+    const kerne = [...MANIFEST.flatMap((k) => [].concat(k.scripts || [], k.lib || [], k.bruecke || [])), NEUN].filter((f) => fs.existsSync(path.resolve(f)));
+    const out = { neu: !kerne.some((f) => sha(lies(f)) === sha(buch)), bytes: Buffer.byteLength(buch) };
+    const wirt = ["index.html", "cores.manifest.json", ...MANIFEST.flatMap((k) => [].concat(k.scripts || [], k.bruecke || []))]
+        .filter((f) => fs.existsSync(path.resolve(f))).map(lies);
+    const stamm = fs.readdirSync(path.resolve("stamm")).filter((f) => f.endsWith(".js")).map((f) => lies("stamm/" + f));
+    out.nennt = (wirt.concat(stamm).join("\n").match(/quaxmal|quaxstein|quaxpfahl|quaxturm/gi) || []).length;
+    let code = 2;
+    const browser = await WB.starteBrowser({ art: "null", frist: 300000 });
+    const seite = async () => {
+        const k = await browser.createBrowserContext();
+        const page = await k.newPage();
+        await WB.nullRenderer(page);
+        await server.zeige(page, 60000);
+        return page;
+    };
+    const buchDa = (page) => page.evaluate(() => window.__weltDa((x) => x._foundry && x._foundry.ready && x._foundry.recipes && x.state._weltbildDa > 0));
+    // DAS ANDOCKEN einer Art (in der Seite): Rezept · Bauplan · Werk vor dem Spieler (Stufe 0, Dreiecke) — `art` und ihre Rezepte
+    const dock = (page, art, rezepte) =>
+        page.evaluate(async (art, rezepte) => {
+            const r = window.anazhRealm, st = r.state, f = r._foundry;
+            const d = { rezepte: rezepte.filter((x) => f.recipes && f.recipes[x]).length, bauplaene: rezepte.filter((x) => (st.blueprints[art + "_" + x] || {}).studioGestalt === x).length, steht: false, tris: 0 };
+            if (d.rezepte < rezepte.length) return d;
+            const p = st.playerMesh.position;
+            const x = p.x + 6;
+            r.dslRun(["spawn_studio", rezepte[0], ["at", x, r._voxelSurfaceY(x, p.z), p.z], 1, 4711, {}], { source: "human" });
+            const w = () => st.architectures.find((a) => a.type === art + "_" + rezepte[0]);
+            const takt = async () => r._gameLoopTick(performance.now());
+            d.steht = await window.__gebautNach("das Werk " + art, { fertig: () => w() && w()._servedLod === 0 && w().instSlots.length, takt }).then(() => true, (e) => String(e.message || e).slice(0, 160));
+            if (d.steht === true) d.tris = [...new Set(w().instSlots.map((s) => st.archInstanceGroups.get(s.key).mesh.geometry))].reduce((n, g) => n + g.index.count / 3, 0);
+            if (d.steht === true) r.saveState();
+            return d;
+        }, art, rezepte);
+    const geladen = async (page, art, rezept) => {
+        await new Promise((ok) => setTimeout(ok, 1500));
+        await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
+        await buchDa(page);
+        return page.evaluate(async (art, rezept) => {
+            const r = window.anazhRealm;
+            const w = () => r.state.architectures.find((a) => a.type === art + "_" + rezept);
+            return window.__gebautNach("das Werk nach dem Laden", { fertig: () => w() && w().instSlots && w().instSlots.length, takt: async () => r._gameLoopTick(performance.now()) }).then(() => true, (e) => String(e.message || e).slice(0, 160));
+        }, art, rezept);
+    };
+    try {
+        const G = await seite();
+        await buchDa(G);
+        out.gegenlauf = await dock(G, "stele", ["meilenstein", "grenzstein", "obelisk"]);
+        out.gegenlauf.geladen = out.gegenlauf.steht === true ? await geladen(G, "stele", "meilenstein") : false;
+        console.log("ULTI_K4 gegenlauf " + JSON.stringify(out.gegenlauf));
+        einschleusen = false;
+        const S = await seite();
+        await buchDa(S);
+        out.bibliothek = await S.evaluate(async (q) => {
+            const r = window.anazhRealm;
+            for (let i = 0; i < 300 && !(r.state.vibePass && r.state.vibePass.ready); i++) await new Promise((ok) => setTimeout(ok, 50));
+            const a = await r.bibliothekLege("gesetzbuch", q, { skipConfirm: true });
+            return { ok: !!(a && a.ok), art: a && a.art, code: a && a.code ? String(a.code).slice(0, 16) : null, grund: a && a.grund, bytes: a && a.bytes };
+        }, buch);
+        console.log("ULTI_K4 bibliothek " + JSON.stringify(out.bibliothek));
+        await new Promise((ok) => setTimeout(ok, 1500));
+        await S.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
+        await buchDa(S);
+        out.spieler = await dock(S, "quaxmal", ["quaxstein", "quaxpfahl", "quaxturm"]);
+        out.spieler.geladen = out.spieler.steht === true ? await geladen(S, "quaxmal", "quaxstein") : false;
+        console.log("ULTI_K4 spieler " + JSON.stringify({ ...out.spieler, neu: out.neu, nennt: out.nennt, bytes: out.bytes }));
+        code = 0;
+    } catch (e) {
+        out.fehler = String((e && e.message) || e).split("\n")[0];
+        console.log("ULTI_K4 FEHLER " + out.fehler);
+    } finally {
+        fs.writeFileSync(aus, JSON.stringify(out, null, 1));
+        await browser.close().catch(() => {});
+        server.close();
+        process.exit(code);
+    }
+}
+// das Urteil über `ULTI_K4 gegenlauf|bibliothek|spieler {…}`: der Gegenlauf dockt (sonst ist die Probe blind); der Spieler legt ein
+// neues Buch signiert ab (art gesetzbuch, Code), es dockt nach dem Neuladen ganz an (3/3 Rezepte, 3/3 Baupläne, das Werk steht mit
+// Dreiecken, übersteht Speichern + Neuladen), sein SHA trägt kein Kern, und der Wirt nennt die Art 0×.
+function ultiversumK4Urteil(lauf) {
+    const t = String(lauf.stdout || "");
+    const fehler = (/^ULTI_K4 FEHLER (.*)$/m.exec(t) || [])[1];
+    const G = jsonZeile(t, /^ULTI_K4 gegenlauf \{/);
+    const B = jsonZeile(t, /^ULTI_K4 bibliothek \{/);
+    const S = jsonZeile(t, /^ULTI_K4 spieler \{/);
+    if (!G || !B || !S) return { gruen: false, zahl: "keine ULTI_K4-Zeile für " + [["gegenlauf", G], ["bibliothek", B], ["spieler", S]].filter(([, x]) => !x).map(([n]) => n).join(", ") + (fehler ? " — " + fehler : "") + " (Exit " + lauf.exit + ")" };
+    const ganz = (d) => d.rezepte === 3 && d.bauplaene === 3 && d.steht === true && d.tris > 0 && d.geladen === true;
+    const z = (d) => d.rezepte + "/3 Rezepte · " + d.bauplaene + "/3 Baupläne · " + (d.steht === true ? "steht " + d.tris + " △" : "steht nicht" + (typeof d.steht === "string" ? " (" + d.steht + ")" : "")) + " · " + (d.geladen === true ? "nach dem Laden da" : "Laden fehlt");
+    const rot = [];
+    if (!ganz(G)) rot.push("der Gegenlauf (Server-Manifest) dockt nicht — die Probe ist blind");
+    if (!(B.ok && B.art === "gesetzbuch" && B.code)) rot.push("die Bibliothek nimmt das Gesetzbuch nicht (" + (B.grund || B.art || "?") + ")");
+    if (!ganz(S)) rot.push("das Spieler-Buch dockt nicht an");
+    if (S.neu !== true) rot.push("das Buch ist nicht neu (ein Kern trägt seinen SHA)");
+    if (S.nennt !== 0) rot.push("der Wirt nennt die Art " + S.nennt + "×");
+    return {
+        gruen: !rot.length && lauf.exit === 0,
+        zahl: "Gegenlauf " + z(G) + " · Bibliothek " + (B.ok ? B.art + " " + B.code : "nein: " + (B.grund || "?")) + " · Spieler-Buch (" + S.bytes + " B, neu " + S.neu + ", der Wirt nennt es " + S.nennt + "×) " + z(S) +
+            (rot.length ? " · ROT: " + rot.join(", ") : "") + " · Exit " + lauf.exit,
+    };
+}
+const ULTI_K4_PROBEN = (() => {
+    const d = (o = {}) => Object.assign({ rezepte: 3, bauplaene: 3, steht: true, tris: 160, geladen: true }, o);
+    const z = (g, b, s) => ["ULTI_K4 gegenlauf " + JSON.stringify(g), "ULTI_K4 bibliothek " + JSON.stringify(b), "ULTI_K4 spieler " + JSON.stringify({ neu: true, nennt: 0, bytes: 7800, ...s })].join("\n");
+    const bOk = { ok: true, art: "gesetzbuch", code: "ab12cd34ef56ab12", bytes: 7900 };
+    const nichts = d({ rezepte: 0, bauplaene: 0, steht: false, tris: 0, geladen: false });
+    return [
+        { name: "das Spieler-Buch dockt über die Bibliothek ganz an", stdout: z(d(), bOk, d()), gruen: true },
+        { name: "die Bibliothek kennt die Art gesetzbuch nicht (main)", stdout: z(d(), { ok: false, grund: "unbekannt" }, nichts), gruen: false },
+        { name: "das Buch steht nur über das Server-Manifest, nie vom Spieler (das Schlupfloch)", stdout: z(d(), { ok: false, grund: "unbekannt" }, d()), gruen: false },
+        { name: "der Gegenlauf dockt nicht (die Probe ist blind)", stdout: z(nichts, bOk, d()), gruen: false },
+        { name: "das Werk übersteht das Neuladen nicht", stdout: z(d(), bOk, d({ geladen: "die Frist" })), gruen: false },
+        { name: "der Wirt nennt die Art (ein Sonderweg im Stamm)", stdout: z(d(), bOk, { ...d(), nennt: 2 }), gruen: false },
+        { name: "das Buch ist ein vorhandener Kern (kein Schreiben)", stdout: z(d(), bOk, { ...d(), neu: false }), gruen: false },
+        { name: "die Seite bricht", stdout: "ULTI_K4 FEHLER die Frist", gruen: false },
+    ];
+})();
+
 const stationen = [
     // ───────── fahrzeug.K3 — die Kamera atmet das Tempo ─────────
     {
@@ -3374,6 +3518,23 @@ const stationen = [
         ],
         quelle: "1 = ein Spieler schreibt eine DSL-Regel im Spiel, sie wirkt und reist zum Mitspieler",
     },
+    // ultiversum.K4 #2 (w5-s2-g5): die Probe `ultiversumK4Lauf` (oben) — das Andocken der studios.K5 (Rezept, Bauplan, Werk mit Stufe 0,
+    // Speichern + Neuladen, der Wirt nennt die Art nie) für ein Buch, das der Spieler in der Bibliothek ablegt, gegen den Gegenlauf des
+    // Server-Manifests; headless (Mechanik des Kern-Wegs, kein Bild).
+    {
+        kriterium: "ultiversum.K4",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "-e", "(" + knapp(ultiversumK4Lauf) + ")()", "{AUS}", "{PORT}"],
+        gpu: false,
+        zeit: false,
+        minuten: 8,
+        urteil: (j, lauf) => ultiversumK4Urteil(lauf),
+        proben: ULTI_K4_PROBEN,
+        pfad: ["stamm/netz-identitaet.js", "stamm/studio-bruecke.js", "stamm/feld-dsl.js", "stamm/speicher-*.js", "cores.manifest.json", "foundry-bruecke.js",
+            "worlds/neuntes-buch/", "index.html", "scripts/lib/welt-boot.cjs"],
+        quelle: "2 = ein Spieler-Gesetzbuch dockt über Studios K5 an",
+    },
 
     // ───────── fahrzeug.K2 — die Fahrt kommt durch: das Wegenetz trägt das Rad (Staffel 1, w3t-wegenetz) ─────────
     // gate:fahr-leben --wegenetz: die feste Route der Saat — von der Mess-Wiese über die Orte −1,−5 · 0,−5 · 1,−6 · 2,−7 · 3,−6 ·
@@ -3481,7 +3642,6 @@ module.exports.fehlt = [
     // als Probe der EINEN Welt der Sitzung — tore.K5#2 fuhr gate:praegung-welt mit eigenem Boot (A und B je ein Browser, Radeon b3f9ae95
     // 1,69 min, ROT Kontrolle 7 699 ms; GTX 98ef98bb ROT 3,0 min)
     { kriterium: "tore.K5", staffel: 2, befehl: null, grund: "nicht als Probe der Sitzung gebaut: das Kriterium verlangt B als eigenen Browser-Prozess mit frischem Profil (das andere Gerät) neben A, und der Teil (T) samt WELT lebt inline im hauptLauf von scripts/diag-praegung-welt.cjs (686 Z., L S N G R B K T F U in EINEM Lauf mit eigener Welt A) — ohne Seiten-Funktion des Teils (T) im Spiel-Baum misst keine Probe A in der Welt der Sitzung; der eigene Boot je Station ist auf radeon|gtx gefallen (die Fahrt ≤ 30 min). Letzte Messung: Radeon b3f9ae95 ROT (Kontrolle 7 699 ms > 5 s), GTX 98ef98bb ROT" },
-    { kriterium: "ultiversum.K4", staffel: 2, befehl: null, grund: "nicht gebaut (w3t-spielergesetz baute Staffel 1): ein Spieler-Gesetzbuch dockt über den Weg von studios.K5 an (ein neuntes Gesetzbuch mit PARAMS_BY_KIND und Bauer, `git diff stamm/` = 0), und der Weg ist selbst ungebaut — die Übergabe kennt eine Positivliste (`stamm/netz-portal.js`, koerper und kreatur), der Wirt kennt Arten beim Namen. Ein Gesetz aus dem Satz („wann immer …“) ist eine Welt-Regel (`_registerWorldRule`), kein Gesetzbuch" },
     // p3-stationen-g456 (01.11.): DIE FAHRT trägt keine neue Probe — die Summe der Deckel steht Radeon 1 790 / GTX 1 785 von 1 800 s
     // (FAHRT_MAX_S samt Boot); was hier steht, braucht einen eigenen Lauf mit Sekunden, die erst die Eich-Fahrt freigibt, oder ein
     // Werkzeug oder Spiel, das es nicht gibt — je Eintrag beim Namen
