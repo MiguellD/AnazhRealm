@@ -1,0 +1,168 @@
+{
+ "art": "nexus",
+ "laeufe": [
+  {
+   "mutante": null,
+   "saat": 0,
+   "erstes": [
+    13,
+    28
+   ],
+   "letztes": [
+    20,
+    31
+   ],
+   "verlauf": "0/0 0/1 0/2 0/1 0/1 0/2 0/1 0/2 0/0 0/0 1/1 1/1 1/1 1/3 1/3 1/2 1/1 1/1 2/2 3/3 3/3 3/3 3/3 3/3 3/3 4/4 5/5 5/5 3/4 3/4 3/4 2/2 2/2 1/2 1/2 1/1 1/1 1/2 1/2 1/2 1/1 1/2 1/2 1/1 1/1 1/2 1/2 1/1 1/2 1/2 1/1 1/1 1/1 1/2 1/2 1/2 1/1 1/2 1/2 1/1",
+   "taten": 32,
+   "gesprochen": 3,
+   "zeilen": [
+    "Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 56 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 18 des Nexus; dazu 6 weitere Taten seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": "gemischt",
+   "saat": 0,
+   "erstes": [
+    2,
+    9
+   ],
+   "letztes": [
+    6,
+    7
+   ],
+   "verlauf": "0/0 0/1 0/2 0/1 0/0 0/1 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 1/1 1/1 1/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 1/1 1/1 1/1 1/1 1/1 1/1",
+   "taten": 32,
+   "gesprochen": 7,
+   "zeilen": [
+    "Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 43 m südwestlich von dir, weil Zufall ≤ 0.63. (Gesetz Nr. 13 des Nexus; dazu 3 weitere Taten seit der letzten Zeile)",
+    "Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 43 m südwestlich von dir, weil Zufall ≤ 0.63. (Gesetz Nr. 13 des Nexus; dazu 2 weitere Taten seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": "aus",
+   "saat": 0,
+   "erstes": [
+    0,
+    8
+   ],
+   "letztes": [
+    0,
+    0
+   ],
+   "verlauf": "0/0 0/1 0/2 0/1 0/0 0/1 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0",
+   "taten": 32,
+   "gesprochen": 12,
+   "zeilen": [
+    "Ein Gesetz des Nexus färbt alle Kreaturen — überall, weil Zufall ≤ 0.7. (Gesetz Nr. 11 des Nexus; dazu 5 weitere Taten seit der letzten Zeile)",
+    "Ein Gesetz des Nexus färbt alle Kreaturen — überall, weil Zufall ≤ 0.7. (Gesetz Nr. 11 des Nexus; dazu 1 weitere Tat seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": null,
+   "saat": 1,
+   "erstes": [
+    0,
+    16
+   ],
+   "letztes": [
+    8,
+    10
+   ],
+   "verlauf": "0/1 0/1 0/1 0/1 0/1 0/2 0/1 0/1 0/1 0/2 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1",
+   "taten": 32,
+   "gesprochen": 6,
+   "zeilen": [
+    "Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 76 m südlich von dir, weil Zufall ≤ 0.58. (Gesetz Nr. 15 des Nexus)",
+    "Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 76 m südwestlich von dir, weil Zufall ≤ 0.58. (Gesetz Nr. 15 des Nexus)"
+   ]
+  },
+  {
+   "mutante": "gemischt",
+   "saat": 1,
+   "erstes": [
+    0,
+    16
+   ],
+   "letztes": [
+    4,
+    6
+   ],
+   "verlauf": "0/1 0/1 0/1 0/1 0/1 0/2 0/1 0/1 0/1 0/2 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 1/1 1/1 1/1 1/1 0/0 0/0 0/0 0/0",
+   "taten": 32,
+   "gesprochen": 9,
+   "zeilen": [
+    "Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 76 m südwestlich von dir, weil Zufall ≤ 0.58. (Gesetz Nr. 15 des Nexus; dazu 1 weitere Tat seit der letzten Zeile)",
+    "Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 76 m südöstlich von dir, weil Zufall ≤ 0.58. (Gesetz Nr. 15 des Nexus; dazu 2 weitere Taten seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": "aus",
+   "saat": 1,
+   "erstes": [
+    0,
+    16
+   ],
+   "letztes": [
+    0,
+    4
+   ],
+   "verlauf": "0/1 0/1 0/1 0/1 0/1 0/2 0/1 0/1 0/1 0/2 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0",
+   "taten": 32,
+   "gesprochen": 16,
+   "zeilen": [
+    "Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 76 m südwestlich von dir, weil Zufall ≤ 0.58. (Gesetz Nr. 15 des Nexus; dazu 1 weitere Tat seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": null,
+   "saat": 2,
+   "erstes": [
+    33,
+    40
+   ],
+   "letztes": [
+    20,
+    25
+   ],
+   "verlauf": "0/1 0/1 0/1 0/0 0/1 0/1 2/2 2/2 2/3 2/3 2/2 2/2 2/2 2/2 2/2 3/3 3/3 3/3 3/3 3/3 2/2 1/2 1/1 1/1 1/1 1/1 1/1 1/1 1/2 1/2 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/2 1/2 1/2 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/2 1/2 1/1 1/1",
+   "taten": 32,
+   "gesprochen": 4,
+   "zeilen": [
+    "Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 39 m südöstlich von dir, weil Zufall ≤ 0.39. (Gesetz Nr. 11 des Nexus; dazu 7 weitere Taten seit der letzten Zeile)",
+    "Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 39 m südwestlich von dir, weil Zufall ≤ 0.39. (Gesetz Nr. 11 des Nexus; dazu 2 weitere Taten seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": "gemischt",
+   "saat": 2,
+   "erstes": [
+    8,
+    22
+   ],
+   "letztes": [
+    0,
+    2
+   ],
+   "verlauf": "0/1 0/1 0/1 0/0 0/1 0/1 1/1 1/1 1/2 1/2 1/1 1/2 1/2 1/2 0/0 0/1 0/0 0/1 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0",
+   "taten": 32,
+   "gesprochen": 9,
+   "zeilen": []
+  },
+  {
+   "mutante": "aus",
+   "saat": 2,
+   "erstes": [
+    0,
+    13
+   ],
+   "letztes": [
+    0,
+    4
+   ],
+   "verlauf": "0/1 0/1 0/1 0/0 0/1 0/1 0/1 0/0 0/1 0/0 0/0 0/1 0/1 0/0 0/0 0/1 0/0 0/1 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0",
+   "taten": 32,
+   "gesprochen": 10,
+   "zeilen": []
+  }
+ ]
+}

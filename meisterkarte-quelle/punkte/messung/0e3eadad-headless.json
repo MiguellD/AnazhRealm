@@ -1,0 +1,52 @@
+{
+ "sha": "0e3eadaddfe59b5647e46ebd5c197e253714adbd",
+ "geraet": "headless",
+ "zeit": "2026-11-03T14:05:31.314Z",
+ "host": "farm:41650176718",
+ "je": {
+  "affekt.K3#1": {
+   "gruen": true,
+   "zahl": "value > 0 echt 0.548 → 0.727 · gemischt 0.213 → 0.667 · stumm 0.000 → 0.000 · Stimme: Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 56 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.",
+   "exit": 0,
+   "minuten": 8.13,
+   "zeit": "2026-11-03T14:05:31.314Z",
+   "abdruck": "8469f3478dae",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41650176718/1"
+  },
+  "klang.K3#2": {
+   "gruen": true,
+   "zahl": "haus −11.1 dB, Schwerpunkt 1122 → 657 Hz · hang −10.9 dB, Schwerpunkt 1055 → 641 Hz · RT60 feld 0.283 s · wald 0.649 s · gasse 1.522 s · hoehle 3.195 s · Bau-Dichte 0 → 0.283 s, 2 → 0.517 s, 4 → 0.687 s, 8 → 1.042 s (Soll: Verdeckung ≥ 6 dB + Tiefpass ≤ 0,85, RT60 ≥ 0,1 s paarweise ≥ 1,3 ×, Mutation monoton ≥ 5 %/Stufe)",
+   "exit": 0,
+   "minuten": 0.88,
+   "zeit": "2026-11-03T14:05:27.798Z",
+   "abdruck": "c9b53f543207",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41650176718/2"
+  },
+  "affekt.K2#1": {
+   "gruen": true,
+   "zahl": "Sonne echt 12/15 (10 Züge aus rule:emotion:hope, das Gesetz feuert 34×, Hoffnung 908.6 s über der Schwelle) · starr 3 (Front 3) · Gesetz pausiert 3 · Bauten 49/49/49",
+   "exit": 0,
+   "minuten": 2.66,
+   "zeit": "2026-11-03T14:05:29.373Z",
+   "abdruck": "6b04a66e0e46",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41650176718/3"
+  },
+  "luftwasser.K3#2": {
+   "gruen": true,
+   "zahl": "Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.61 m, heim 12 · Pegel 25.823 → 26.023 m nach 2 s Sturm, Fische 25.168 → 25.245 m (Anteil der Säule 0.326 → 0.373) · unter Wasser true, Sicht 30 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht)",
+   "exit": 0,
+   "minuten": 0.91,
+   "zeit": "2026-11-03T14:05:26.232Z",
+   "abdruck": "df1524cafd0c",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41650176718/4"
+  }
+ }
+}
