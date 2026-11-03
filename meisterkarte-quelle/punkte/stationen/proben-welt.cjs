@@ -898,7 +898,11 @@ async function wasserGraben(tor) {
     // trockenen Sonnenlicht, das (b)(d) als Wort des Spielers setzt
     await tor.ruf("/umstellen", { ort: "wiese", sicht: "ego" }, 300000);
     const t1 = Date.now();
-    await page.evaluate(() => (r._setWeather("sunny", "human"), r._naesseTakt(1e6), 1));
+    // das Wort über den EINEN Weg einer Probe (`__wetterSetzen`): `umstellen` hält den Mess-Halt, `_setWeather` von Hand fiel darunter still
+    await page.evaluate(() => {
+        if (window.__wetterSetzen("sunny") !== "sunny") throw new Error("das Wetter der Probe gilt nicht: sunny (es gilt " + st.weather + ")");
+        return (r._naesseTakt(1e6), 1);
+    });
     const fluss = await page.evaluate(async () => (await window.__wasserOrte({})).fluss);
     for (const [teil, ferne] of [["ferne", true], ["damm", false]])
         try {

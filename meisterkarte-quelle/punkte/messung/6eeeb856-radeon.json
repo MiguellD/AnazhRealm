@@ -1,0 +1,119 @@
+{
+ "sha": "6eeeb856589d2e571e7ef015a82b008c0c8545c2",
+ "geraet": "radeon",
+ "zeit": "2026-11-03T17:14:36.680Z",
+ "host": "MiguellD",
+ "je": {
+  "schatten.K2#1": {
+   "gruen": true,
+   "zahl": "Maß reprojektion: unerklärt je Bild max 0.12 %, Mittel 0.07 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.0087) über 15 Bilder Gang 4 m/s, Schatten im Bild 51.1 % (≥ 1 %) · Ort [-841,-861] · 0.77 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.15,
+   "gpu": "amd/rdna-3",
+   "s": 8.7,
+   "zeit": "2026-11-03T17:14:36.680Z",
+   "abdruck": "22fb7c2e16b6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "schatten.K3#1": {
+   "gruen": false,
+   "zahl": "fuss Band 100.0 % des freien Bodens (frei mit/ohne 1, 20 Punkte gesehen, Sicht 1) · sockel Band 100.0 % des freien Bodens (frei mit/ohne 1, 20 Punkte gesehen, Sicht 1) (Soll 30–60 %, Himmel allein; Platz [-739,-837] Grün 0.0039) · Ort [-841,-861] · 0.76 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.15,
+   "grund": "ROT: fuss Band 100.0 % des freien Bodens (frei mit/ohne 1, 20 Punkte gesehen, Sicht 1) · sockel Band 100.0 % des freien Bodens (frei mit/ohne 1, 20 Punkte gesehen, Sicht 1) (Soll 30–60 %, Himmel allein; Platz [-739,-837] Grün 0.0039) · Ort [-841,-861] · 0.76 s · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 8.7,
+   "zeit": "2026-11-03T17:14:36.680Z",
+   "abdruck": "c5c705608197",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "schatten.K2#1",
+   "modus": "session"
+  },
+  "schatten.K5#1": {
+   "gruen": false,
+   "zahl": "Kontrast 1.474:1 (Soll ≥ 3:1) am Pfosten 2 m von glutbrunnen (6.2689 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0), ohne Pfosten 1.474, Uhr 0 · Ort [-841,-861] · 0.99 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.15,
+   "grund": "ROT: Kontrast 1.474:1 (Soll ≥ 3:1) am Pfosten 2 m von glutbrunnen (6.2689 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0), ohne Pfosten 1.474, Uhr 0 · Ort [-841,-861] · 0.99 s · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 8.7,
+   "zeit": "2026-11-03T17:14:36.680Z",
+   "abdruck": "9ac22eab3993",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "schatten.K2#1",
+   "modus": "session"
+  },
+  "licht.K4#1": {
+   "gruen": false,
+   "zahl": "Maß durchlass: r 0.3413 bei Verschiebung [-2,-14] Blöcke à 18.6722 m in 5 s (52.813 m/s; ohne Verschiebung 0.0708; Soll r ≥ 0,6, das Muster zieht), der Zug erklärt 0.2911 der Änderung 0 (≥ 0,5), Durchlass-σ 0 (≥ 0,03) über 0.9017 besonnten Blöcken (≥ 0,3), Deckung [0,0.4] · Ort [-841,-861] · 0.9 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.15,
+   "grund": "ROT: Maß durchlass: r 0.3413 bei Verschiebung [-2,-14] Blöcke à 18.6722 m in 5 s (52.813 m/s; ohne Verschiebung 0.0708; Soll r ≥ 0,6, das Muster zieht), der Zug erklärt 0.2911 der Änderung 0 (≥ 0,5), Durchlass-σ 0 (≥ 0,03) über 0.9017 besonnten Blöcken (≥ 0,3), Deckung [0,0.4] · Ort [-841,-861] · 0.9 s · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 8.7,
+   "zeit": "2026-11-03T17:14:36.680Z",
+   "abdruck": "70a00d69eb08",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "schatten.K2#1",
+   "modus": "session"
+  },
+  "ferne.K4#1": {
+   "gruen": false,
+   "zahl": "Schatten-/Lichthang 0.7006 (je N·L; Soll ≤ 0,4) aus 21/64 Orten im Bild, Auge 1500 m, Grat 5.3294 km, Sonne 5.0039° (Uhr 0.7351) · Ort [-841,-861] · 0.49 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.15,
+   "grund": "ROT: Schatten-/Lichthang 0.7006 (je N·L; Soll ≤ 0,4) aus 21/64 Orten im Bild, Auge 1500 m, Grat 5.3294 km, Sonne 5.0039° (Uhr 0.7351) · Ort [-841,-861] · 0.49 s · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 8.7,
+   "zeit": "2026-11-03T17:14:36.680Z",
+   "abdruck": "e98c2f31508d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "schatten.K2#1",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-03T17:13:56.209Z",
+  "port": 7804,
+  "warten": 0.11,
+  "bootS": 6.8,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "dorf",
+    "vor": "schatten.K2#1",
+    "s": 24,
+    "takte": 852,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 40,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 42.4,
+  "minuten": 0.9
+ }
+}

@@ -1,1 +1,9 @@
 w5-stufen 4dcd8810 GRÜN check+playtest-voll+koerper-kern+koerper-stand+schirm-monotonie (main 0e3eadad)
+w4-feld eb875cf4 ROT playtest-voll ❌ 1 Invariante(n) verletzt: Leistungs-Vertrag: 0 Stand-Churn (0), der Ingest-Takt 3/1 je Frame in Reihenfolge, die Gruppen klettern nicht (59 → 59), die Mess-Flächen im Trace, Szene 13.4 MB < 700, der Selbsttest feu
+w4-feld eb875cf4 OFFEN KORREKTUR: das ROT playtest-voll 16:27 (Leistungs-Vertrag V2 nachTick1 2/3) war ein Wackler - Gegenprobe voller Playtest main 0e3eadad GRÜN, Zweig-Merge 329d19b8 2x GRÜN (17:03, 17:06); Familien ego-schatten/haus-welt/post-kette/werk-im-wasser folgen
+w5-streaming-k5 acc8310c ROT gate:haus-welt ❌ gate:haus-welt ROT (1)
+w5-streaming-k5 acc8310c OFFEN KORREKTUR: das ROT gate:haus-welt 17:50 ist kein Urteil über den Zweig - main 9a6f3703 fällt an der OMEN in derselben Linse (Teil 2/2, 4 Welten zugleich: Selbsttest stab/weg blind, W9 Plan 0 Gründe), in der CI 41648899494 trug Teil 2 mit diesem Zweig GRÜN; check + voller Playtest + gelaende-realismus + gelaende-studio GRÜN, haus-welt folgt mit HAUS_WELT_PARALLEL=1
+w6-spielgang-decke 95d2a786 ROT merge KONFLIKT mit main 6eeeb856: spec/stamm/modul-karte.json 
+w6-haar-heil 590e6f42 ROT merge KONFLIKT mit main 6eeeb856: spec/stamm/modul-karte.json stamm/dirigent-takt.js stamm/studio-gestalt.js 
+w6-musik 6c4b8f35 ROT merge KONFLIKT mit main 6eeeb856: spec/stamm/modul-karte.json 
+w6-baecker cd53fd10 ROT merge KONFLIKT mit main 6eeeb856: scripts/diag-streu-wahrheit.cjs scripts/diag-studio-vertrag.cjs scripts/lib/asset-worker-harness.cjs 

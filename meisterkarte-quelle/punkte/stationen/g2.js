@@ -2152,6 +2152,7 @@ async function musik2Lauf() {
     try {
         await server.zeige(page, 120000, "index.html");
         await page.waitForFunction(() => window.r && typeof r._gameLoopTick === "function" && r._foundry && r._foundry.recipes, { timeout: 300000, polling: 250 });
+        await page.evaluate(require(path.resolve("scripts/lib/ausgabe-aufnahme.cjs")).AUSGABE_INSTALL); // der EINE Wetter-Weg (`__wetterSetzen`)
         out = await page.evaluate("(" + seite + ")()");
     } catch (e) {
         out = { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 300) };
@@ -2215,8 +2216,11 @@ async function musik2Seite() {
         musik.connect(zu, 0, 0);
         const welt = ctx.createGain();
         welt.connect(zu, 0, 1);
-        r._setWeather(L.wetter || "sunny", "regler");
-        st.weatherEffectTime = -1e9;
+        // DAS WETTER DES LAUFS über den EINEN Weg einer Probe (`__wetterSetzen`, scripts/lib/ausgabe-aufnahme.cjs): er taut den
+        // Mess-Halt für DIESES Wort und hält danach wieder. Bis 03.11. setzte die Probe das Wort selbst und fror den Halt dahinter
+        // (`weatherEffectTime` −1e9): ab dem zweiten Lauf verweigerte `_setWeather` jedes Wort, der Sturm lief sonnig (w6-musik 6c4b8f35)
+        const wort = L.wetter || "sunny";
+        if (window.__wetterSetzen(wort) !== wort) throw new Error("das Wetter des Laufs gilt nicht: " + wort + " (es gilt " + st.weather + ")");
         r.setTimeOfDay(L.uhr == null ? 0.5 : L.uhr, "regler");
         setze(L.emo || {});
         Object.assign(sy, { ctx, masterGain: welt, enabled: true, umwelt: null });
@@ -2263,6 +2267,7 @@ async function musik2Seite() {
             .sort((a, b) => a - b);
         return {
             sek: L.sek,
+            wetter: st.weather,
             fehler,
             akkorde: akkorde.length,
             periode: abst.length ? +abst[abst.length >> 1].toFixed(3) : null,
@@ -2333,6 +2338,11 @@ function musik2Urteil(J) {
     if (!(ph > 0 && pt > 0 && ph <= 0.9 * pt && Math.abs(p2 - ph) < 0.5 * (pt - ph))) rot.push("das Tempo folgt der Erregung nicht (Periode " + ph + " ↔ " + pt + " s, Rauschen " + p2 + ")");
     const [dh, dt, d2] = [hoch.dichte, tief.dichte, hoch2.dichte];
     if (!(dh >= 1.2 * dt && Math.abs(d2 - dh) < 0.5 * (dh - dt))) rot.push("die Dichte folgt der Erregung nicht (" + dh + " ↔ " + dt + " Quellen/s, Rauschen " + d2 + ")");
+    // DAS WETTER JEDES LAUFS steht, wie die Probe es setzte (Sturm im Sturm-Lauf, sonst Sonne): ein anderes Wort heißt, die Probe
+    // setzte unter dem Mess-Halt (`_setWeather` verweigert, die Schicht des Sturms ist ungemessen) — ROT beim Namen
+    const unterHalt = [["hoch", hoch], ["tief", tief], ["hoch2", hoch2], ["sonne", sonne], ["sturm", sturm], ["nacht", nacht], ["sonne2", sonne2]]
+        .filter(([k, x]) => x.wetter !== (k === "sturm" ? "stormy" : "sunny")).map(([k, x]) => k + " " + x.wetter);
+    if (unterHalt.length) rot.push("die Probe setzt das Wetter unter dem Mess-Halt (" + unterHalt.join(", ") + ")");
     const [ls, ln, lr] = [l1(sonne, sturm), l1(sonne, nacht), l1(sonne, sonne2)];
     if (!(ls >= 0.2 && lr <= 0.1)) rot.push("das Wetter wechselt die Schicht nicht (L1 " + ls + ", Rauschen " + lr + ")");
     if (!(ln >= 0.2 && lr <= 0.1)) rot.push("die Uhr wechselt die Schicht nicht (L1 " + ln + ", Rauschen " + lr + ")");
@@ -2359,6 +2369,8 @@ const MUSIK2_ROH = {"achsen": ["awe", "peace"], "erregung": [0.9, -0.7], "hoch":
 const musik2Roh = (aendern) => "MUSIK2 " + JSON.stringify(aendern(JSON.parse(JSON.stringify(MUSIK2_ROH))));
 // der Lauf, der jede Klausel hält: Tempo und Dichte aus der Erregung, Sturm und Nacht mit eigener Schicht, keine Wiederholung, Duck 9 dB
 const musik2Gut = (x) => {
+    for (const k of ["hoch", "tief", "hoch2", "sonne", "nacht", "sonne2"]) x[k].wetter = "sunny";
+    x.sturm.wetter = "stormy";
     x.hoch.periode = 2.6;
     x.hoch2.periode = 2.62;
     x.sturm.typen = { sine: 120, triangle: 114, puffer: 400, sawtooth: 60 };
@@ -2375,6 +2387,10 @@ const MUSIK2_PROBEN = [
     { name: "der Ruf geschieht nicht (ohne Ereignis kein Duck)", stdout: musik2Roh((x) => ((x = musik2Gut(x)), (x.duck.ereignisse[1].ok = false), x)), gruen: false },
     { name: "eine Phrase kehrt binnen 10 min wieder", stdout: musik2Roh((x) => ((x = musik2Gut(x)), (x.lang.wieder = 1), x)), gruen: false },
     { name: "das Tempo ist Rauschen der Saat", stdout: musik2Roh((x) => ((x = musik2Gut(x)), (x.hoch2.periode = 3.3), x)), gruen: false },
+    // die Probe setzt unter dem EIGENEN Halt (w6-musik 6c4b8f35): der Sturm-Lauf läuft sonnig — auch wenn eine andere Schicht ihn trüge
+    { name: "die Probe setzt unter dem Mess-Halt: der Sturm-Lauf läuft sonnig", stdout: musik2Roh((x) => ((x = musik2Gut(x)), (x.sturm.wetter = "sunny"), x)), gruen: false },
+    { name: "das Wetter der Läufe ist ungemessen (kein Wort im Lauf)", stdout: musik2Roh((x) => ((x = musik2Gut(x)), delete x.nacht.wetter, x)), gruen: false },
+    { name: "der EINE Weg verweigert das Wort (die Probe bricht laut)", stdout: "MUSIK2 " + JSON.stringify({ fehler: "das Wetter des Laufs gilt nicht: stormy (es gilt sunny)" }), gruen: false },
     { name: "die Welt bootet nicht", stdout: "MUSIK2 " + JSON.stringify({ fehler: "Waiting failed: 300000ms exceeded" }), gruen: false },
 ];
 
@@ -2553,7 +2569,7 @@ function kleintierAmOrt(r, T, muster, x, z, rM) {
 // `kameraUnterWasser`, die Sicht `_luftSichtM` der EINEN Luft unter Wasser, LUFT.unterwasserM): je gezeichneter Fisch binnen 15 m,
 // ob er im Kegel der Kamera und vor der Sicht liegt (der Null-Renderer zeichnet kein Pixel — das Bild selbst misst eine GPU-Station).
 async function fische2Probe(r, T, o, G) {
-    const { s, A, takt, stehen, trocken, r3 } = G;
+    const { s, A, takt, stehen, wetter, trocken, r3 } = G;
     const F = A._fischGesetz().F;
     const W = o.orte.wiese;
     trocken();
@@ -2596,8 +2612,7 @@ async function fische2Probe(r, T, o, G) {
         });
     const vor = lage();
     const spiegel0 = r._koerperWasser(P0[0], P0[1], r._voxelSurfaceY(P0[0], P0[1]));
-    s.weatherEffectTime = 0; // der Mess-Halt des Grunds (`trocken`, `_messHalt`) fällt: er hielte das Wort des Sturms
-    r._setWeather("stormy", "human");
+    wetter("stormy", true); // der EINE Weg (`__wetterSetzen`): der Halt des Grunds taut für das Wort des Sturms und hält danach wieder; sein Übergang bleibt
     let sek = 0;
     const spur = [];
     for (; sek < 240; sek++) {
@@ -4407,7 +4422,7 @@ const stationen = [
         minuten: 10,
         urteil: (j, lauf) => musik2Urteil(j || jsonZeile(lauf.stdout, /^MUSIK2 /)),
         proben: MUSIK2_PROBEN,
-        pfad: ["stamm/klang.js", "klang-core.js", "stamm/feld-leben.js", "stamm/feld-sprache.js", "stamm/werkstatt-hud.js", "stamm/studio-bruecke.js", "scripts/lib/welt-boot.cjs"],
+        pfad: ["stamm/klang.js", "klang-core.js", "stamm/feld-leben.js", "stamm/feld-sprache.js", "stamm/werkstatt-hud.js", "stamm/studio-bruecke.js", "stamm/bild-himmel.js", "scripts/lib/welt-boot.cjs", "scripts/lib/ausgabe-aufnahme.cjs"],
         quelle: "2 = Tempo und Dichte aus der Erregung, Wetter und Uhr wechseln die Schicht, keine Phrase wiederholt sich binnen 10 min, die Musik duckt sich unter Schritt, Ruf und Gespräch um ≥ 6 dB",
     },
 
