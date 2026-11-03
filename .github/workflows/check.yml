@@ -188,22 +188,6 @@ jobs:
               run: |
                   grep -nE "(TODO|FIXME|XXX|HACK|TBD)" stamm/*.js save-server.js || echo "keine TODOs"
 
-            - name: Fahrzeug-Asset-Vertrag v3 (vehicle-core buildInstance byte-eingefroren, Plattform-Probe)
-              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 2
-              # cv:3 (spec/asset-contract/v3): 12 frozen sha256-Goldens (5 Gattungen × 2 Seeds + 2 ov-Kulturen),
-              # Node-direkt (r128) — Determinismus · Geometrie seed-invariant, der Same waehlt den Lack · ov-Kanal ·
-              # Plattform-Probe (Math.pow ±1 ULP kippt kein Byte; sin/cos/atan2/hypot halten ihre Ratsche,
-              # spec/asset-contract/plattform-ratsche.json) · Selbst-Test. Bis zur Integration W5 lief er nur lokal.
-              run: npm run gate:vehicle-contract
-
-            - name: Tor-Asset-Vertrag v4 (porta-core buildInstance byte-eingefroren, Byte-Raster am Ausgang)
-              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 2
-              # cv:4 (spec/asset-contract/v4): 16 frozen sha256-Goldens (7 Ordnungen × 2 Seeds + 2 ov-Faelle), Node-direkt
-              # (r128) — Determinismus · Seed-Invarianz · ov-Kanal · lod-Klemme · Plattform-Probe (jede Transzendente
-              # ±1 ULP kippt kein Byte: das Raster am Ausgang, Ratsche 0) · Selbst-Test. Bis S1 Waende lief er nur lokal —
-              # und war unter Node 22 rot (16/16, three r128 CatmullRom 'centripetal' + convertSRGBToLinear rufen pow).
-              run: npm run gate:porta-contract
-
             - name: Klingen-Asset-Vertrag v5 (W-A4a — schmiede-core buildInstance byte-eingefroren)
               if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 2
               # cv:5 (spec/asset-contract/v5): 44 frozen sha256-Goldens (21 Gattungen × 2 Seeds +
@@ -590,6 +574,23 @@ jobs:
               # Dichte, Stempel und Lage in 100 % der Takte (CPU-Takt frei 4,8 -> 11,7 ms). Gegenprobe (stossende Dichte) und
               # --selftest zuerst.
               run: npm run gate:takt-atem
+
+            - name: Fahrzeug-Asset-Vertrag v3 (vehicle-core buildInstance byte-eingefroren, Plattform-Probe)
+              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 4
+              # seit 04.11. in voll 4/18 und 5/18: „puls 2/2“ stand mit 14 Schritten auf dem Deckel 2,0 min (Waage), der Zug fährt ihn weiter
+              # cv:3 (spec/asset-contract/v3): 12 frozen sha256-Goldens (5 Gattungen × 2 Seeds + 2 ov-Kulturen),
+              # Node-direkt (r128) — Determinismus · Geometrie seed-invariant, der Same waehlt den Lack · ov-Kanal ·
+              # Plattform-Probe (Math.pow ±1 ULP kippt kein Byte; sin/cos/atan2/hypot halten ihre Ratsche,
+              # spec/asset-contract/plattform-ratsche.json) · Selbst-Test. Bis zur Integration W5 lief er nur lokal.
+              run: npm run gate:vehicle-contract
+
+            - name: Tor-Asset-Vertrag v4 (porta-core buildInstance byte-eingefroren, Byte-Raster am Ausgang)
+              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 5
+              # cv:4 (spec/asset-contract/v4): 16 frozen sha256-Goldens (7 Ordnungen × 2 Seeds + 2 ov-Faelle), Node-direkt
+              # (r128) — Determinismus · Seed-Invarianz · ov-Kanal · lod-Klemme · Plattform-Probe (jede Transzendente
+              # ±1 ULP kippt kein Byte: das Raster am Ausgang, Ratsche 0) · Selbst-Test. Bis S1 Waende lief er nur lokal —
+              # und war unter Node 22 rot (16/16, three r128 CatmullRom 'centripetal' + convertSRGBToLinear rufen pow).
+              run: npm run gate:porta-contract
 
             - name: Volle-Bühne-Prädikat (W2 — Kriterium 2 wird messbar)
               if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 14
