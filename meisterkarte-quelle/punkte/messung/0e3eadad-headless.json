@@ -1,8 +1,8 @@
 {
  "sha": "0e3eadaddfe59b5647e46ebd5c197e253714adbd",
  "geraet": "headless",
- "zeit": "2026-11-03T14:05:31.314Z",
- "host": "farm:41650176718",
+ "zeit": "2026-11-03T14:14:31.841Z",
+ "host": "laptop",
  "je": {
   "affekt.K3#1": {
    "gruen": true,
@@ -47,6 +47,29 @@
    "port": 7704,
    "bahn": "1/1",
    "host": "farm:41650176718/4"
+  },
+  "ki.K3#1": {
+   "gruen": true,
+   "zahl": "11 von 12/12 Antworten nennen eine erlebte Tat (Soll 70 %) gegen qwen3:4b-instruct @ 127.0.0.1:11434, z. B. „hast du angst vor mir?“ → Nein, ich habe keine Angst vor dir. Ich wurde nur einmal geschlagen, und das war vor lange",
+   "exit": 0,
+   "minuten": 7.48,
+   "zeit": "2026-11-03T14:14:31.803Z",
+   "abdruck": "d2f1a5573ec4",
+   "port": 7704,
+   "bahn": "1/2",
+   "host": "laptop"
+  },
+  "ki.K4#1": {
+   "gruen": false,
+   "zahl": "LLM-Regeln neu je Drittel 2/2/2, erneuert 1 · verfallen 6 · verdrängt 0 (Nexus 100 · 146 · 0); Gegenlauf: erneuert LLM δ+ 0.00 · δ− 0.00, verdrängt 3, Täter die Wertung trennt llm nicht nach δ: erneuert 0.00 (+) · 0.00 (−)",
+   "exit": 1,
+   "minuten": 7.71,
+   "grund": "ROT: LLM-Regeln neu je Drittel 2/2/2, erneuert 1 · verfallen 6 · verdrängt 0 (Nexus 100 · 146 · 0); Gegenlauf: erneuert LLM δ+ 0.00 · δ− 0.00, verdrängt 3, Täter die Wertung trennt llm nicht nach δ: erneuert 0.00 (+) · 0.00 (−)",
+   "zeit": "2026-11-03T14:14:31.841Z",
+   "abdruck": "2be763004ac5",
+   "port": 7714,
+   "bahn": "2/2",
+   "host": "laptop"
   }
  }
 }
