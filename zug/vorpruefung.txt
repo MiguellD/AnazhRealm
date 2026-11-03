@@ -8,3 +8,4 @@ w6-haar-heil 590e6f42 ROT merge KONFLIKT mit main 6eeeb856: spec/stamm/modul-kar
 w6-musik 6c4b8f35 ROT merge KONFLIKT mit main 6eeeb856: spec/stamm/modul-karte.json 
 w6-baecker cd53fd10 ROT merge KONFLIKT mit main 6eeeb856: scripts/diag-streu-wahrheit.cjs scripts/diag-studio-vertrag.cjs scripts/lib/asset-worker-harness.cjs 
 w5-s2-g5 f97248eb GRÜN check+playtest-voll (main d880c8e8)
+w6-baecker 56c21c75 ROT playtest-voll ❌ 4 Invariante(n) verletzt: Φ5 (Q14+Q15): pinnedWorlds-Map existiert + pinCurrentWorld erzeugt hash/bytes/persistiert (Manifest UND Snapshot), Φ5 (Q16): listPinnedWorlds liefert das volle Eintragsschema (worldId · h
