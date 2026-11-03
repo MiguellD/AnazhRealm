@@ -840,7 +840,7 @@ class AnazhRealm_gelaende_chunks {
         // DER LAUB-RAND DER BAHN (der EINE Rang, w7-rang): der Chunk sät, wenn seine Mitte am Spieler ODER an seinem Ort am Ende des
         // Vorlaufs (`_bedarfVoraus`) im Radius liegt — sein Wald steht, bevor die Bahn den Rand des Laubs über ihn schiebt. Bis
         // w7-rang säte er erst am Spieler: jeder Baum am Rand trat ungesetzt in den Sichtkegel (streaming.K1, Null-Renderer).
-        const v = this._bedarfVoraus();
+        const v = this._bedarfVoraus(pm.position);
         const d = Math.hypot(ccx - pm.position.x, ccz - pm.position.z);
         // vor dem ersten Weltbild sät nur der Chunk im Blick (`_blickDerAnkunft`), die übrigen sät der Nachlauf
         return (
@@ -2472,7 +2472,7 @@ class AnazhRealm_gelaende_chunks {
         // (`_bedarfVoraus`), geordnet nach der Zeit bis Bedarf (`_bedarfWeg`) — was die Bahn braucht, steht, bevor sie ankommt.
         // Bis w7-rang ging der Ring in Chebyshev-Reihe um den Spieler, und ein Voraus fragte 1–2 Chunks in Laufrichtung an: beim
         // GT-Tempo trat jeder neue Chunk unfertig in den Sichtkegel (streaming.K2, Null-Renderer an main 0e3eadad: Boden 2 von 241).
-        const voraus = this._bedarfVoraus();
+        const voraus = this._bedarfVoraus(playerPos);
         const vcx = voraus ? Math.floor(voraus.x / span) : pcx;
         const vcz = voraus ? Math.floor(voraus.z / span) : pcz;
         let built = 0;

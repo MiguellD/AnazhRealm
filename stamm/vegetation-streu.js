@@ -1477,7 +1477,7 @@ class AnazhRealm_vegetation_streu {
             return Math.hypot(nx - q.x, nz - q.z) <= R;
         };
         if (nah(p)) return true;
-        const v = bahn ? this._bedarfVoraus() : null;
+        const v = bahn ? this._bedarfVoraus(p) : null;
         return !!v && v.weg > 0 && nah(v);
     }
 

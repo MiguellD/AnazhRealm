@@ -2429,7 +2429,7 @@ class AnazhRealm_vegetation_baum {
         // DER ABSTAND DER BAHN (der EINE Rang, w7-rang): ein Eintrag gilt am näheren der zwei Orte — dem Spieler und seinem Ort am
         // Ende des Vorlaufs (`_bedarfVoraus`); was die Bahn binnen des Vorlaufs in der Mesh-Zone oder diesseits des Karten-Horizonts
         // braucht, steht, bevor sie ankommt. Der Weg der Wache zählt den weiteren der beiden Wege (ein Schlaf in Metern hält).
-        const vb = this._bedarfVoraus() || playerPos;
+        const vb = this._bedarfVoraus(playerPos) || playerPos;
         const K = this._cullWache();
         K.odo +=
             K.px === null

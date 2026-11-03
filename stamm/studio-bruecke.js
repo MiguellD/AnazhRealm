@@ -1361,31 +1361,26 @@ class AnazhRealm_studio_bruecke {
         }
         [B.x, B.z, B.t] = [e.x, e.z, t];
     }
-    // DER SPIELER IN BEDARF.vorlaufS SEKUNDEN (die Vorausschau der Bahn): wo er mit seinem Tempo-Vektor sein wird. Jeder Leser,
-    // der Dinge NACH ABSTAND zulässt (der Ring des Bodens, die Stufe eines Chunks, die Mesh-Zone der Bauten, die Reichweite der
-    // Streu), lässt zu, was am Spieler JETZT oder an diesem Punkt im Radius liegt: was die Bahn binnen des Vorlaufs braucht, steht.
-    _bedarfVoraus() {
-        const e = this.state.playerMesh && this.state.playerMesh.position;
+    // DER ORT DER BAHN IN BEDARF.vorlaufS SEKUNDEN (die Vorausschau): wo `p` (der Ort eines Lesers — der Spieler, das Auge der Stufen;
+    // ohne Angabe der Spieler) mit dem Tempo-Vektor der Bahn sein wird. Jeder Leser, der Dinge NACH ABSTAND zulässt (der Ring des
+    // Bodens und seine Pflege, die Stufe eines Chunks, die Mesh-Zone der Bauten, die Reichweite der Streu, der Laub-Rand), lässt zu,
+    // was an `p` JETZT oder an diesem Punkt im Radius liegt: was die Bahn binnen des Vorlaufs braucht, steht. `weg` = der Weg dahin.
+    _bedarfVoraus(p) {
+        const e = p || (this.state.playerMesh && this.state.playerMesh.position);
         if (!e) return null;
         const B = this._bedarf;
         const T = AnazhRealm.BEDARF.vorlaufS;
-        const o = this._bedarfVorausP || (this._bedarfVorausP = { x: 0, z: 0, weg: 0 });
-        const vx = B ? B.vx : 0,
-            vz = B ? B.vz : 0;
-        o.x = e.x + vx * T;
-        o.z = e.z + vz * T;
-        o.weg = Math.hypot(vx, vz) * T;
-        return o;
+        const [vx, vz] = B ? [B.vx, B.vz] : [0, 0];
+        return { x: e.x + vx * T, z: e.z + vz * T, weg: Math.hypot(vx, vz) * T }; // je Ruf ein eigener Ort: ein Leser hält ihn
     }
     // DER ABSTAND DER BAHN zu (x, z) von einem Auge `auge` (der Stufen, `_lodAuge`): der nähere des Auges jetzt und des Auges am
-    // Ende des Vorlaufs (das Auge trägt den Weg des Spielers mit) — die Stufen-Wahl der Einträge liest ihn (`_archStufeUrteil`,
-    // `_foundryLodForEntry`): die feine Stufe steht, bevor die Bahn ankommt.
+    // Ende des Vorlaufs — die Stufen-Wahl der Einträge liest ihn (`_archStufeUrteil`, `_foundryLodForEntry`): die feine Stufe steht,
+    // bevor die Bahn ankommt.
     _bedarfAbstand(x, z, auge) {
         const d = Math.hypot(x - auge.x, z - auge.z);
-        const v = this._bedarfVoraus();
-        const p = this.state.playerMesh && this.state.playerMesh.position;
-        if (!v || !p || !(v.weg > 0)) return d;
-        return Math.min(d, Math.hypot(x - auge.x - (v.x - p.x), z - auge.z - (v.z - p.z)));
+        const B = this._bedarf;
+        const T = AnazhRealm.BEDARF.vorlaufS;
+        return B && (B.vx || B.vz) ? Math.min(d, Math.hypot(x - auge.x - B.vx * T, z - auge.z - B.vz * T)) : d;
     }
     // Die BAHN eines Auftrags (Präfix der Request-Nummer): ein Werk-Helfer (`_foundryHelfer`) trägt seinen Faden in der
     // Nummer (`w<k>_<n>`): seine Bahn ist "werk<k>", sonst das Werk.

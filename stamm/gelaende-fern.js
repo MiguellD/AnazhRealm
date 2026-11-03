@@ -8,7 +8,7 @@ class AnazhRealm_gelaende_fern {
         const pcx = Math.floor(playerPos.x / span);
         const pcz = Math.floor(playerPos.z / span);
         // der Ring der Bahn (`_bedarfVoraus`, der EINE Rang) bleibt: was der Strom voraus baut, räumt die Pflege nie
-        const v = this._bedarfVoraus();
+        const v = this._bedarfVoraus(playerPos);
         const vcx = v ? Math.floor(v.x / span) : pcx;
         const vcz = v ? Math.floor(v.z / span) : pcz;
         const drop = [];
