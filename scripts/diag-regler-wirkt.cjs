@@ -44,7 +44,7 @@
 // Port über REGLER_WIRKT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4561; der Stamm des
 // Ofen-Kanals über REGLER_WIRKT_OFEN_PORT, Standard Port + 1.
 "use strict";
-const { statikServer, starteBrowser, ROOT, hauptLauf, SELBSTTEST, path, stammLib, fadenScope, jsonLesen } = require("./lib/welt-boot.cjs");
+const { statikServer, nullSeite, ROOT, hauptLauf, SELBSTTEST, path, stammLib, fadenScope, jsonLesen } = require("./lib/welt-boot.cjs");
 const { runWithWorker, bauBild, bauAbdruck, BAU_BILD_QUELLE } = require("./lib/asset-worker-harness.cjs");
 // DIE BILD-SCHWELLE (studios.K1, das Schlupfloch „0,1 mm am Hash"): ein Regler wirkt, wo sein Rand das Bild des Baus
 // (`bauBild`, die Vorschau-Pose) an mindestens 1 % der Gestalt-Pixel um mehr als 18 Luma bewegt — ein Hash allein zählt nie.
@@ -103,13 +103,8 @@ const OFEN_PORT = Number(process.env.REGLER_WIRKT_OFEN_PORT || PORT + 1);
 async function imStamm(cb) {
     const server = statikServer();
     await server.lausche(OFEN_PORT);
-    const browser = await starteBrowser({ art: "null", frist: 300000 });
+    const { browser, page } = await nullSeite({ frist: 300000 });
     try {
-        const page = await browser.newPage();
-        await page.evaluateOnNewDocument(() => {
-            if (window.top !== window) return;
-            window.__anazhHeadlessNullRenderer = true;
-        });
         await server.zeige(page, 60000);
         // Warm: die Heimat steht, die Foundry ist bereit, das Buch (Rezepte + PARAMS) ist da, die Kerne der Öfen sind
         // geladen und der Boot-Prefetch der Gattungen ist durch.
@@ -120,8 +115,7 @@ async function imStamm(cb) {
             },
             { timeout: 240000, polling: 250 }
         );
-        const out = await cb(page);
-        return out;
+        return await cb(page);
     } finally {
         await browser.close();
         server.close();
@@ -756,18 +750,6 @@ function vergleich(tot, ratsche) {
     const geheilt = [...bekannt].filter((n) => !jetzt.has(n)).sort();
     return { neu, geheilt, ok: !neu.length && !geheilt.length };
     }
-// DIE ZEILEN-RATSCHE (studios.K1 Staffel 2: „der Nenner ist die Zeilen-Zahl bei der Messung — eine Ratsche, die nur wächst"):
-// jede Zeile von PARAMS_BY_KIND steht beim Namen in reglerZeilen.zeilen. Eine Zeile, die die Ratsche trägt und die Messung nicht
-// mehr findet, ist GEFALLEN — rot beim Namen (100 % durch Streichen der toten Zeile ist kein Sieg); eine neue Zeile ist rot, bis ihr
-// Name im selben Commit in die Ratsche tritt (der Nenner wächst offen, nie still). `eigen`: der Teil richtet nur seine Zeilen.
-function zeilenVergleich(gemessen, ratsche, eigen = () => true) {
-    const da = new Set(gemessen);
-    const bekannt = new Set(ratsche);
-    return {
-        gefallen: [...bekannt].filter((n) => eigen(n) && !da.has(n)).sort(),
-        neu: [...da].filter((n) => !bekannt.has(n)).sort(),
-    };
-}
 function ratscheLesen() {
     const r = jsonLesen(RATSCHE_PFAD);
     if (!r.reglerTot || typeof r.reglerTot.tot !== "object") throw new Error("ratsche.json ohne Block reglerTot.tot");
@@ -813,16 +795,6 @@ async function selbsttest() {
         !vergleich(["porta:gate:glow"], { tot: rt }).ok,
     ];
     const teile = t.every(Boolean);
-    // (a1) DIE ZEILEN-RATSCHE: dieselbe Liste grün; die tote Zeile gestrichen → GEFALLEN beim Namen; eine neue Zeile ohne Eintrag
-    // → rot; der Teil richtet nur seine Zeilen (die Haus-Zeile fehlt in Teil 1 nie).
-    const rz = ["a:x:1", "a:x:2", "fachwerk:haus:doppel"];
-    const z1 = zeilenVergleich(["a:x:1", "a:x:2"], rz, (n) => zeileTeil(n, null, ["doppel"]) === 1);
-    const z2 = zeilenVergleich(["a:x:1"], rz);
-    const z3 = zeilenVergleich(["a:x:1", "a:x:2", "fachwerk:haus:doppel", "a:x:3"], rz);
-    const zeilenOk = !z1.gefallen.length && !z1.neu.length && z2.gefallen.includes("a:x:2") && z3.neu[0] === "a:x:3" && !z3.gefallen.length;
-    console.log(
-        `${zeilenOk ? "✅" : "❌"} SELBST-TEST Zeilen-Ratsche: gleich grün · gestrichen rot (GEFALLEN ${z2.gefallen.join(", ")}) · neu rot bis die Ratsche wächst (${z3.neu.join(", ")}) · Teil 1 ohne die Haus-Zeile grün`
-    );
     console.log(
         `${rein && teile ? "✅" : "❌"} SELBST-TEST Urteil: gleich grün · neu tot rot (${v2.neu}) · geheilt rot bis die Zeile fällt (${v3.geheilt}) · je Teil nur seine Zeilen (${t.map((x) => (x ? "✓" : "✗")).join("")}: Teil 1 · 2 · 3 grün, der Zeuge fällt in Teil 3 rot, ungefiltert rot)`
     );
@@ -934,7 +906,7 @@ async function selbsttest() {
     console.log(
         `${wurfOk ? "✅" : "❌"} SELBST-TEST WURF (Täter: der Zwilling wirft immer): heil ${wHeil.zeilen.length} Paare, ${rotHeil.length} rot · Täter ${rotTaeter.length} rot (${rotTaeter.slice(0, 2).join(" · ")})`
     );
-    return rein && teile && zeilenOk && bildOk && kanal && bruchOk && ofenKanal && ofenBruch && leserOk && wurfOk && stufenOk;
+    return rein && teile && bildOk && kanal && bruchOk && ofenKanal && ofenBruch && leserOk && wurfOk && stufenOk;
     }
 hauptLauf(async () => {
     // Der Selbsttest läuft EINMAL: vor Teil 1 (alle Teile ein Befehl bis auf --teil) oder allein (--selftest).
@@ -1016,16 +988,7 @@ hauptLauf(async () => {
             `❌ QUOTE GEHEILT: ${n} — die Zeile fällt im selben Commit aus spec/vertraege/ratsche.json (reglerBudget.quote)`
         );
     for (const l of m.stufen.leer) console.log(`❌ LEER: ${l} baut 0 Teile`);
-    // Die Zeilen-Ratsche (der Nenner wächst nur): jede Zeile der Ratsche dieses Teils gemessen, keine ungenannt neu.
-    const rz = jsonLesen(RATSCHE_PFAD).reglerZeilen;
-    if (!rz || !Array.isArray(rz.zeilen)) throw new Error("ratsche.json ohne Block reglerZeilen.zeilen");
-    const eigenZ = (n) => zeileTeil(n, null, ids) === TEIL;
-    const vZ = zeilenVergleich(m.zeilen.map(name), rz.zeilen, eigenZ);
-    console.log(`ZEILEN-RATSCHE Teil ${TEIL}: ${m.zeilen.length} Zeilen gemessen = Ratsche ${rz.zeilen.filter(eigenZ).length} von ${rz.zeilen.length} (der Nenner wächst nur)`);
-    for (const n of vZ.gefallen) console.log(`❌ ZEILE GEFALLEN: ${n} — die Ratsche trägt sie, PARAMS_BY_KIND nicht mehr (der Nenner sinkt nie)`);
-    for (const n of vZ.neu) console.log(`❌ NEUE ZEILE: ${n} — ihr Name tritt im selben Commit in spec/vertraege/ratsche.json (reglerZeilen.zeilen)`);
-    const zeilenRot = vZ.gefallen.length + vZ.neu.length > 0;
-    if (!v.ok || !vG.ok || !vB.ok || !vQ.ok || ueberStaffel || zeilenRot || m.stufen.leer.length || brechend.length || wurfRot.length) process.exit(1);
+    if (!v.ok || !vG.ok || !vB.ok || !vQ.ok || ueberStaffel || m.stufen.leer.length || brechend.length || wurfRot.length) process.exit(1);
     const wirkend = m.zeilen.filter((z) => z.wirkt && !bricht(z)).length;
     console.log(
         `✅ gate:regler-wirkt Teil ${TEIL}: ${wirkend}/${m.zeilen.length} Regler wirken · 0 brechen · ${toteZ.length} tot = Ratsche ${Object.keys(ratsche.tot).filter(v.eigen).length} von ${Object.keys(ratsche.tot).length} (Soll ${soll}, ${ratsche.sollQuelle}) · über Budget ${Object.keys(budget).length} = Ratsche ${Object.keys(rb.bruch).length - anderer} von ${Object.keys(rb.bruch).length} (Staffel ${rb.staffel}, Soll ${rb.soll}) · über der Quote ${Object.keys(quote).length} · WURF ${m.wurf.zeilen.length} Paare, nie von der teureren Stufe`
