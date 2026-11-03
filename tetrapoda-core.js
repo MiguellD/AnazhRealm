@@ -2563,7 +2563,8 @@
     // Deckung vor dem Wetter, nicht vor jedem Stoß — voll bis windMs[0], still ab windMs[1]; die Hummel fliegt noch, wo die
     // Honigbiene längst ruht) × die Regen-Ruhe (voll bis regen[0], still ab regen[1]: Hummeln sammeln im Niesel- und Landregen, erst
     // der Wolkenbruch hält sie im Nest; Peat & Goulson 2005). DER NEKTAR: nektarBasis + (1 − nektarBasis) × Feuchte am Ort (die
-    // Nektar-Sekretion fällt mit dem Wasser-Stress der Pflanze; Phillips 2018). DIE BAHN (bestaeuberBahn): im Fenster fliegt das
+    // Nektar-Sekretion fällt mit dem Wasser-Stress der Pflanze; Phillips 2018) × das Leben des Orts (das Feld lebendig: die Pflege
+    // hebt es, der Fraß und die Narbe senken es — die Kraft der Pflanze trägt ihren Nektar; luftwasser.K4#2, 03.11.). DIE BAHN (bestaeuberBahn): im Fenster fliegt das
     // Insekt anflugS an — GEGEN den Wind, die Duftfahne hinauf (es kommt von der Lee-Seite, anflugM fort) —, schwebt über der
     // Blüte (schwebM, schwebHz, über ihr hoeheM) und fliegt anflugS vor dem Ende zu seiner nächsten Blüte fort (eine Richtung
     // seines Wurfs). Kosten an den gezeichneten Blüten (der Ring der Nah-Streu am Auge), nie an der Welt. DER LEIB: eine
@@ -2604,12 +2605,15 @@
     // h = der Wurf der Blüte (uint32), t = die Uhr der Welt (s), aktiv = bestaeuberAktiv, feuchte die Feuchte am Ort (0..1).
     // Liefert die Zahl ihrer Gäste im Fenster (0..gaeste, geschichtet: ⌊gaeste · p + u⌋ mit dem Wurf u des Fensters — der Kopf
     // trägt im Mittel genau gaeste · p, nie drei unabhängige Zufälle) und schreibt out.tp, die Phase im Fenster (s, ≥ 0).
-    function bestaeuberBesuch(h, t, aktiv, feuchte, B, out) {
+    // leben (optional, 0..1) = das Leben des Orts (`auraAt.lebendig` des Wirts): der Nektar fließt nach der Kraft der Pflanze — ohne es
+    // (undefined) gilt 1, byte-alt
+    function bestaeuberBesuch(h, t, aktiv, feuchte, B, out, leben) {
         var F = B.fensterS,
             ph = vogelWurf(h, 0, 0, 0) * F,
             k = Math.floor((t + ph) / F);
         var f = feuchte > 0 ? (feuchte < 1 ? feuchte : 1) : 0;
-        var p = B.besuch * aktiv * (B.nektarBasis + (1 - B.nektarBasis) * f);
+        var l = leben === undefined ? 1 : leben > 0 ? (leben < 1 ? leben : 1) : 0;
+        var p = B.besuch * aktiv * (B.nektarBasis + (1 - B.nektarBasis) * f) * l;
         out.tp = t + ph - k * F;
         return Math.min(B.gaeste, Math.floor(B.gaeste * p + vogelWurf(h, k, 1, 1)));
     }
