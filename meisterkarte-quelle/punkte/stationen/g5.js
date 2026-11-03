@@ -1363,6 +1363,184 @@ const LEIB_K3_PROBEN = (() => {
     ];
 })();
 
+// ultiversum.K2 #2 (w5-s2-g5): DIE GEMISCHTEN REGELN IN DER FUSIONIERTEN WELT — „0 Schreibe auf den frozen Kern, die gemischten Regeln
+// werten nach Affekt K3". Null-Renderer, EINE Seite, der echte Weg: A ist die Welt der Seite und trägt zwei Gesetze des Nexus (über die
+// EINE Registrierung `_registerWorldRule`): Heil A (deposit_life an einem Ort) und Leer (deposit_emotion an einem fernen Ort — kein
+// δ von lebendig). B ist ein Stand im Platz der Welten (localStorage, wie jede abgelegte Welt) mit Heil B und den zwei Gesetzen, die
+// den frozen Worldgen pflügen (voxel_carve, terrain_steepness — die Sperrliste `RULE_FORBIDDEN_EFFECT_OPS`): eine fremde Welt kann sie
+// in ihrem Stand tragen. `fuseWorlds(A, B, "random-mix", { reload: true })` gebiert die Welt und wechselt am Ort (`_weltWechsel` →
+// `erwacht`); in ihr läuft der echte Takt (`_gameLoopTick`, 60 Bilder/s Spielzeit) 30 s. Gezählt: jeder Ruf der Schreiber des frozen
+// Kerns (carveVoxel · fillVoxel · _lavaGiessen) und jede Schreibung von terrainSteepness/terrainBaseHeight; der SELBSTTEST danach
+// gräbt einmal als Mensch (dslRun voxel_carve) — sieht der Zähler ihn nicht, ist die Probe blind. Die Wertung (affekt.K3: value = EMA
+// des lokalen δ, `_measureRuleReward`; Fitness 0,5 + 0,5·value an ttl → erneuert oder verfällt, `_worldRuleFitness`): je gemischter
+// Regel Feuer, value, Erneuerungen und ob sie verfiel. Am main 5fba36ea ROT erwartet: Fusion (`_fusionMergeWorldRules`) und Laden
+// (`_loadStateRestoreWorldRules`) übergehen die Sperrliste — B's Pflug feuert in der neuen Welt.
+async function ultiversumK2Lauf() {
+    const TTL_S = 8;
+    const fs = require("fs");
+    const path = require("path");
+    const [aus, port] = process.argv.slice(1);
+    const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const out = {};
+    let code = 2;
+    const server = WB.statikServer();
+    await server.lausche(Number(port));
+    const { browser, page } = await WB.nullSeite({ frist: 300000 });
+    try {
+        await server.zeige(page, 120000);
+        await page.evaluate(() => window.__weltDa((r) => r.state._weltbildDa > 0));
+        out.fusion = await page.evaluate(async (TTL) => {
+            const r = window.anazhRealm, st = r.state;
+            const p = st.playerMesh.position;
+            const [x, z] = [Math.round(p.x), Math.round(p.z)];
+            const regel = (n, effect) => ({ n, cond: ["random_chance", 1], effect, everySec: 1, ttlSec: TTL, source: "nexus" });
+            const R = {
+                heilA: regel("heilA", ["deposit_life", ["at", x + 24, 0, z], 0.6]),
+                leer: regel("leer", ["deposit_emotion", "peace", 0.3, ["at", x + 400, 0, z + 400]]),
+                heilB: regel("heilB", ["deposit_life", ["at", x - 24, 0, z], 0.6]),
+                pflug: regel("pflug", ["voxel_carve", x + 6, Math.round(p.y) - 2, z + 6, 3]),
+                steil: regel("steil", ["terrain_steepness", 1.9]),
+            };
+            const ctx = { source: "nexus", log: [], programId: "ulti-k2" };
+            for (const k of ["heilA", "leer"]) r._registerWorldRule(R[k].cond, R[k].effect, { everySec: 1, ttlSec: TTL }, ctx);
+            const idA = st.worldMeta.worldId;
+            const B = JSON.parse(JSON.stringify(r.buildStateSnapshot()));
+            const idB = "b0b0b0b0-0000-4000-8000-00000000b0b0";
+            B.worldMeta = { ...B.worldMeta, worldId: idB, slug: "welt-b", seed: "w-ulti-k2-b" };
+            B.worldRules = ["heilB", "pflug", "steil"].map((k) => ({ cond: R[k].cond, effect: R[k].effect, everySec: 1, ttlSec: TTL, source: "nexus" }));
+            localStorage.setItem(r.worldStorageKey(idB), JSON.stringify(B));
+            const f = r.fuseWorlds(idA, idB, "random-mix", { reload: true });
+            if (!f || !f.ok) return { ok: false, grund: (f && f.reason) || "fuseWorlds ohne Antwort" };
+            const erw = await r.erwacht;
+            const g = JSON.parse(localStorage.getItem(r.worldStorageKey(f.worldId)) || "{}");
+            window.__ultiK2 = { R, sig: Object.fromEntries(Object.entries(R).map(([k, v]) => [k, JSON.stringify(v.effect)])) };
+            return {
+                ok: erw === true && r.state.worldMeta.worldId === f.worldId,
+                welt: f.worldId, eltern: f.parentWorlds, hier: r.state.worldMeta.worldId,
+                imStand: Object.keys(R).filter((k) => (g.worldRules || []).some((x) => JSON.stringify(x.effect) === window.__ultiK2.sig[k])),
+            };
+        }, TTL_S);
+        console.log("ULTI_K2 fusion " + JSON.stringify(out.fusion));
+        if (!out.fusion.ok) throw new Error("die Fusion steht nicht: " + JSON.stringify(out.fusion));
+        await page.evaluate(() => window.__weltDa((r) => r.state._weltbildDa > 0));
+        out.lauf = await page.evaluate(async () => {
+            const r = window.anazhRealm, st = r.state;
+            const { sig } = window.__ultiK2;
+            const schreibe = { carveVoxel: 0, fillVoxel: 0, _lavaGiessen: 0, terrainSteepness: 0, terrainBaseHeight: 0 };
+            const echt = {};
+            for (const k of ["carveVoxel", "fillVoxel", "_lavaGiessen"]) {
+                echt[k] = r[k];
+                r[k] = function (...a) {
+                    schreibe[k]++;
+                    return echt[k].apply(this, a);
+                };
+            }
+            const wert = {};
+            for (const k of ["terrainSteepness", "terrainBaseHeight"]) {
+                wert[k] = st[k];
+                Object.defineProperty(st, k, { configurable: true, enumerable: true, get: () => wert[k], set: (v) => { schreibe[k]++; wert[k] = v; } });
+            }
+            const akten0 = ((st.worldMeta && st.worldMeta.voxelEdits) || []).length;
+            const finde = (k) => (st.worldRules || []).find((x) => x && JSON.stringify(x.effect) === sig[k]);
+            const je = Object.fromEntries(Object.keys(sig).map((k) => [k, { da: !!finde(k), feuer: 0, value: null, erneuert: 0, verfiel: false, born: null, alt: 0, letzt: 0 }]));
+            for (const k of Object.keys(je)) if (finde(k)) je[k].born = finde(k).born;
+            let t = performance.now();
+            const t0 = t;
+            for (let i = 0; i < 1800; i++) {
+                t += 1000 / 60;
+                r._gameLoopTick(t);
+                for (const k of Object.keys(je)) {
+                    const x = finde(k), e = je[k];
+                    if (!e.da || e.verfiel) continue;
+                    if (!x) { e.verfiel = true; continue; }
+                    if (x.born !== e.born) { e.erneuert++; e.born = x.born; e.alt += e.letzt; e.letzt = 0; }
+                    e.letzt = x.fires || 0;
+                    e.feuer = e.alt + e.letzt;
+                    e.value = x.value;
+                }
+            }
+            const lauf = { sekunden: +((t - t0) / 1000).toFixed(1), schreibe: { ...schreibe }, akten: ((st.worldMeta && st.worldMeta.voxelEdits) || []).length - akten0 };
+            // DER SELBSTTEST des Zählers: EIN Graben als Mensch (die Geste des Spielers darf graben) — der Zähler muss ihn sehen
+            const p = st.playerMesh.position;
+            r.dslRun(["voxel_carve", p.x + 5, p.y - 2, p.z + 5, 2], { source: "human" });
+            lauf.selbsttest = schreibe.carveVoxel - lauf.schreibe.carveVoxel;
+            for (const k of Object.keys(echt)) r[k] = echt[k];
+            for (const k of Object.keys(wert)) Object.defineProperty(st, k, { configurable: true, enumerable: true, writable: true, value: wert[k] });
+            for (const e of Object.values(je)) { delete e.born; delete e.alt; delete e.letzt; if (e.value != null) e.value = +e.value.toFixed(4); }
+            lauf.je = je;
+            return lauf;
+        });
+        console.log("ULTI_K2 lauf " + JSON.stringify(out.lauf));
+        code = 0;
+    } catch (e) {
+        out.fehler = String((e && e.message) || e).split("\n")[0];
+        console.log("ULTI_K2 FEHLER " + out.fehler);
+    } finally {
+        fs.writeFileSync(aus, JSON.stringify(out, null, 1));
+        await browser.close().catch(() => {});
+        process.exit(code);
+    }
+}
+// das Urteil über `ULTI_K2 fusion|lauf {…}`: die Fusion steht (die Seite trägt die neue Welt, Eltern A und B); 0 Schreibe auf den frozen
+// Kern über 30 s Takt und der Zähler sieht den Menschen (Selbsttest); jede erlaubte gemischte Regel (Heil A, Heil B, Leer) ist in der
+// neuen Welt und feuert ≥ 2×; die Wertung trennt nach δ: Heil A und Heil B value > 0 und erneuert, Leer unter beiden und verfallen.
+function ultiversumK2Urteil(lauf) {
+    const t = String(lauf.stdout || "");
+    const fehler = (/^ULTI_K2 FEHLER (.*)$/m.exec(t) || [])[1];
+    const F = jsonZeile(t, /^ULTI_K2 fusion \{/);
+    const L = jsonZeile(t, /^ULTI_K2 lauf \{/);
+    if (!F || !L || !L.je || !L.schreibe) return { gruen: false, zahl: "keine ULTI_K2-Zeile" + (fehler ? " — " + fehler : "") + " (Exit " + lauf.exit + ")" };
+    const rot = [];
+    if (!F.ok || !Array.isArray(F.eltern) || F.eltern.length !== 2) rot.push("die Fusion steht nicht in der Seite");
+    const s = Object.values(L.schreibe).reduce((a, x) => a + x, 0);
+    if (s !== 0 || L.akten) rot.push(s + " Schreibe auf den frozen Kern (" + Object.entries(L.schreibe).filter(([, x]) => x).map(([k, x]) => k + " " + x).join(", ") + (L.akten ? "; " + L.akten + " neue Akten der Voxel-Edits" : "") + ")");
+    if (!(L.selbsttest >= 1)) rot.push("der Zähler sieht den Menschen nicht (Selbsttest " + L.selbsttest + ") — die Probe ist blind");
+    if (!(L.sekunden >= 29)) rot.push("der Takt lief " + L.sekunden + " s < 30 s");
+    const J = L.je;
+    for (const k of ["heilA", "heilB", "leer"]) {
+        const e = J[k];
+        if (!e || !e.da) rot.push(k + " fehlt in der neuen Welt");
+        else if (!(e.feuer >= 2)) rot.push(k + " feuert " + e.feuer + "× < 2");
+    }
+    const v = (k) => (J[k] && Number.isFinite(J[k].value) ? J[k].value : null);
+    for (const k of ["heilA", "heilB"]) {
+        if (!(v(k) > 0)) rot.push(k + " value " + v(k) + " ≤ 0 (die Wertung sieht sein δ nicht)");
+        if (J[k] && (J[k].verfiel || !(J[k].erneuert >= 1))) rot.push(k + (J[k].verfiel ? " verfiel" : " nie erneuert"));
+    }
+    if (J.leer && J.leer.da) {
+        if (!(v("leer") !== null && v("leer") < Math.min(v("heilA") ?? -Infinity, v("heilB") ?? -Infinity))) rot.push("Leer value " + v("leer") + " nicht unter den Heilern");
+        if (!J.leer.verfiel) rot.push("Leer verfiel nicht (die Fitness wählt nicht)");
+    }
+    const z = (k) => (J[k] ? k + " " + (J[k].da ? J[k].feuer + "× v " + J[k].value + (J[k].verfiel ? " verfiel" : " ern. " + J[k].erneuert) : "fehlt") : k + " ?");
+    return {
+        gruen: !rot.length && lauf.exit === 0,
+        zahl: "Schreibe " + s + " (Selbsttest " + L.selbsttest + ") · " + ["heilA", "heilB", "leer", "pflug", "steil"].map(z).join(" · ") + " · im Stand " +
+            (F.imStand || []).join("/") + (rot.length ? " · ROT: " + rot.join(", ") : "") + " · Exit " + lauf.exit,
+    };
+}
+const ULTI_K2_PROBEN = (() => {
+    const F = { ok: true, welt: "f1", eltern: ["a", "b"], hier: "f1", imStand: ["heilA", "leer", "heilB"] };
+    const je = (o = {}) => Object.assign({
+        heilA: { da: true, feuer: 9, value: 0.12, erneuert: 2, verfiel: false },
+        heilB: { da: true, feuer: 9, value: 0.1, erneuert: 2, verfiel: false },
+        leer: { da: true, feuer: 8, value: 0, erneuert: 0, verfiel: true },
+        pflug: { da: false, feuer: 0, value: null, erneuert: 0, verfiel: false },
+        steil: { da: false, feuer: 0, value: null, erneuert: 0, verfiel: false },
+    }, o);
+    const L = (o = {}) => Object.assign({ sekunden: 30, schreibe: { carveVoxel: 0, fillVoxel: 0, _lavaGiessen: 0, terrainSteepness: 0, terrainBaseHeight: 0 }, akten: 0, selbsttest: 1, je: je() }, o);
+    const z = (f, l) => "ULTI_K2 fusion " + JSON.stringify(f) + "\nULTI_K2 lauf " + JSON.stringify(l);
+    return [
+        { name: "0 Schreibe, die Heiler erneuert, Leer verfällt", stdout: z(F, L()), gruen: true },
+        { name: "B's Pflug gräbt in der neuen Welt (die Sperrliste umgangen)", stdout: z(F, L({ schreibe: { ...L().schreibe, carveVoxel: 30, terrainSteepness: 30 }, je: je({ pflug: { da: true, feuer: 30, value: 0, erneuert: 0, verfiel: true } }) })), gruen: false },
+        { name: "der Zähler ist blind (der Mensch gräbt ungezählt)", stdout: z(F, L({ selbsttest: 0 })), gruen: false },
+        { name: "die Regeln aus B fehlen in der neuen Welt", stdout: z(F, L({ je: je({ heilB: { da: false, feuer: 0, value: null, erneuert: 0, verfiel: false } }) })), gruen: false },
+        { name: "die Wertung ist stumm (value 0 für alle, alle verfallen)", stdout: z(F, L({ je: je({ heilA: { da: true, feuer: 9, value: 0, erneuert: 0, verfiel: true }, heilB: { da: true, feuer: 9, value: 0, erneuert: 0, verfiel: true } }) })), gruen: false },
+        { name: "Leer überlebt (die Fitness wählt nicht)", stdout: z(F, L({ je: je({ leer: { da: true, feuer: 8, value: 0, erneuert: 2, verfiel: false } }) })), gruen: false },
+        { name: "die Seite trägt die neue Welt nicht", stdout: z({ ...F, ok: false }, L()), gruen: false },
+        { name: "die Fusion bricht", stdout: "ULTI_K2 FEHLER die Fusion steht nicht", gruen: false },
+    ];
+})();
+
 const stationen = [
     // ───────── fahrzeug.K3 — die Kamera atmet das Tempo ─────────
     {
@@ -2507,6 +2685,22 @@ const stationen = [
         },
         pfad: ["stamm/speicher-*.js", "stamm/netz-identitaet.js", "stamm/siedlung-ort.js", "scripts/diag-praegung-welt.cjs", "scripts/lib/welt-boot.cjs"],
         quelle: "1 = fuseWorlds(A, B) byte-gleich auf zwei Geräten",
+    },
+    // ultiversum.K2 #2 (w5-s2-g5): die Probe `ultiversumK2Lauf` (oben) — die Fusion zweier Welten, deren eine den frozen Worldgen pflügen
+    // will, im echten Weg (fuseWorlds → Welt-Wechsel am Ort → der Takt); headless (Mechanik des Felds, der Text verlangt kein Bild und
+    // kein zweites Gerät).
+    {
+        kriterium: "ultiversum.K2",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "-e", "(" + knapp(ultiversumK2Lauf) + ")()", "{AUS}", "{PORT}"],
+        gpu: false,
+        zeit: false,
+        minuten: 4,
+        urteil: (j, lauf) => ultiversumK2Urteil(lauf),
+        proben: ULTI_K2_PROBEN,
+        pfad: ["stamm/speicher-*.js", "stamm/feld-dsl.js", "stamm/feld-leben.js", "stamm/feld-nexus.js", "stamm/dirigent-takt.js", "scripts/lib/welt-boot.cjs"],
+        quelle: "2 = 0 Schreibe auf den frozen Kern, die gemischten Regeln werten nach Affekt K3",
     },
 
     // ───────── ultiversum.K3 — Die Bibliothek (w3s-bibliothek) ─────────
