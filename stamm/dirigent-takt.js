@@ -353,6 +353,9 @@ class AnazhRealm_dirigent_takt {
     // eines Körpers platziert nichts von selbst (`_foundryRewarmColdTrees`) — die ruhende Welt ändert sich nur, wo einer fragt.
     // Der Null-Renderer kennt keinen Loop: headless ruht er nie (der Wächter lässt dort ohnehin alles durch).
     _loopRuht() {
+        // das Portal friert die Heimat ein (der Takt kehrt vor jedem Tick um): sie ruht wie ohne Bild-Schleife — der Wächter
+        // hält nichts, das Bäcker-Bild baut am Stück (der Abzug der Karte für das Labor, pipeline.K2)
+        if (this._portalOverlay) return true;
         const r = this.state.renderer;
         return !!r && typeof r.getAnimationLoop === "function" && !r.getAnimationLoop();
     }

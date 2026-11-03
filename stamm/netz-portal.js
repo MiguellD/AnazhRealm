@@ -223,6 +223,15 @@ class AnazhRealm_netz_portal {
             // DER EINE ÜBERGABE-KANAL: die Hülle eines Studios reicht sein Werk (Art · Rezept · Same · Prägung) an die Welt. Nur
             // TRUSTED Welten; fail-closed am EINEN Empfänger _studioUebergabeEmpfang (Kern-Klemme · Taille-Cap · must-ignore).
             else if (msg.type === "uebergabe" && po.trust !== "sandboxed") this._studioUebergabeEmpfang(msg);
+            // DER EINE BÄCKER DER KARTE (pipeline.K2): das Labor der Bäume fragt die Karte einer Gestalt der Welt — sie backt hier
+            // (`_karteAbzug`), das Labor zeigt ihre Bytes. Nur TRUSTED Welten; ein Bruch reist laut als `fehler` zurück.
+            else if (msg.type === "karte-bitte" && po.trust !== "sandboxed") {
+                const ziel = po.iframe.contentWindow;
+                const antwort = (m) => ziel && ziel.postMessage(Object.assign({ type: "karte-abzug", reqId: msg.reqId }, m), window.location.origin);
+                this._karteAbzug(String(msg.art), msg.gestalt | 0).then(antwort, (e) =>
+                    antwort({ art: msg.art, gestalt: msg.gestalt, fehler: String((e && e.message) || e) })
+                );
+            }
             // W17 Phase A — der Transport-Shim einer Multiplayer-Welt postet
             // ihren Netz-Verkehr (`__anazhNet`-Envelope, kein `type`-Feld).
             else if (msg.__anazhNet === true) this._portalNetReceive(msg);

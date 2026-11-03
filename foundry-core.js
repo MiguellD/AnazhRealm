@@ -415,8 +415,8 @@ const PORTAL_RENDER_CONFIG = {
         //   draws    = Obergrenze der Sippen je Instanz (Host-Verschmelz-Regel: Stoff × Attribut-Form × Index) =
         //              Draws je Instanz-Gruppe und Pass;
         //   schatten = die Stufe, deren Gestalt den Schatten wirft (L0-Baum wirft seine L1), oder false;
-        //   karte    = die Stufe IST die Studio-Karte (bakeImpostorAtlas aus L1, beim Host das Achsen-Quad mit
-        //              2 Dreiecken) — die L2-Geometrie wird dort nicht geliefert (gate:studio-vertrag haelt
+        //   karte    = die Stufe IST die Karte des EINEN Bäckers (die Welt backt sie aus L1, `_karteWeltBacken`; das
+        //              Labor zeigt ihre Bytes; beim Host das Gitter der Karte) — die L2-Geometrie wird dort nicht geliefert (gate:studio-vertrag haelt
         //              karte ⇔ KIND_POLICY.impostor des Hosts).
         // Herleitung aus dem Profi-Band (680k Dreiecke je Frame ueber alle Paesse, spec/profiband/haushalt.json
         // `band`; Mess-Wiese V18.526: 5,1 M, davon Pflanzen nah/mittel 3,3 M — Baum-L1 trug 39,5k bei
@@ -739,12 +739,12 @@ const PORTAL_RENDER_CONFIG = {
         },
     },
     // DER BÄCKER-SPEC („Drähte statt Kopien" 08.07., Studio-Vertrag B2): das Atlas-Rezept des
-    // 8-Winkel-Impostors als DATEN — Blickwinkel + Zell-Maße. Studio-Bäcker (bakeImpostorAtlas)
-    // UND AnazhRealms RTT-Bäcker lesen DIESELBEN Zahlen; wer die Fern-Karten-Auflösung ändert,
+    // 8-Winkel-Impostors als DATEN — Blickwinkel + Zell-Maße. Der EINE Bäcker (der Welt-Renderer,
+    // `_karteWeltBacken`, pipeline.K2) liest sie; wer die Fern-Karten-Auflösung ändert,
     // ändert sie HIER, nirgends sonst.
     // DIE HEBUNGS-RINGE (lod.K3, additiv): die Blick-Hebungen der Welt-Karte in Grad, aufsteigend — je Hebung ein Ring
     // der `views` Peilungen in derselben Schicht; der Ring 0° in voller Zelle, jeder andere in 1/ringTeiler je Achse
-    // (DIE ATLAS-DIÄT: ¼ der Zellfläche, ringTeiler Ansichten je Zeile). Der Studio-Bäcker liest nur den Ring 0°.
+    // (DIE ATLAS-DIÄT: ¼ der Zellfläche, ringTeiler Ansichten je Zeile). Das Labor zeigt den Ring 0°.
     impostor: { views: 8, cellW: 128, cellH: 256, hebungen: [-20, 0, 40, 80], ringTeiler: 2 },
 };
 

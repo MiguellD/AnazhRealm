@@ -18,6 +18,8 @@ const GESETZE = [
     ["G2 EIN Wuchs: keine Inline-Rekursion grow(pos,dir,radius,length,depth) in foundry-core", null, /function grow\(pos, ?dir, ?radius, ?length, ?depth/, datei("foundry-core.js")],
     ["G3 kein Welt-RTT-Nachbau (_bakeImpostorAtlasRTT · _impostorBlitPixels · _impostorDilate · _foundryBakeLeaves)", null, /_bakeImpostorAtlasRTT|_impostorBlitPixels|_impostorDilate|_foundryBakeLeaves/],
     ["G3 kein asset-foundry-Bake-iframe", null, /iframe\.src\s*=\s*[^;]*asset-foundry/],
+    ["G3 EIN Bäcker der Karte (pipeline.K2): kein Studio-Bäcker in der Brücke (bakeImpostorAtlas · WebGLRenderTarget)", null, /bakeImpostorAtlas|WebGLRenderTarget/, datei("foundry-bruecke.js")],
+    ["G3 EIN Bäcker der Karte (pipeline.K2): das Labor backt keine Karte (bakeImpostorAtlas · _impRT · _impNrmOv · _impDilMat)", null, /bakeImpostorAtlas|_impRT\b|_impNrmOv|_impDilMat/, datei("worlds/terrain/phytogenesis.js")],
     ["G3 die iframe-Impostor-Methoden bleiben geschnitten", null, /_foundryEnsureBakeIframe|_foundryRequestImpostor|_foundryBuildImpostorRecord|_foundryBakeImpostorRequest|_applyStudioImpostorPayload|_foundryBaecker/],
     ["G6 keine Nischen-Formel-Kopie (wF/wT/wE)", null, /const wF = \(ss\(0\.4, 0\.8, clim\)/],
     ["G6 keine reverse-J-Größen-Kopie (0.55 + 1.45·ue^1.45)", null, /0\.55 \+ 1\.45 \* Math\.pow\(ue/],
