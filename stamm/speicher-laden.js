@@ -1423,7 +1423,7 @@ class AnazhRealm_speicher_laden {
         // Namen (gate:weltgrenze Weg „ersetzen": 74 Felder der alten Welt im Speicher der neuen, darunter ihr Erbgut und ein
         // Tier); eine Datei ohne worldId landete roh auf dem Platz der alten Welt, und beide waren fort.
         const neu = JSON.parse(JSON.stringify(parsed));
-        AnazhRealm._zeugnisEintragen(neu, "Eine fremde Welt hat mich ersetzt.");
+        AnazhRealm._zeugnisEintragen(neu, ["journal.ersetzt"]);
         this._closeWeltTorDialog();
         const r = this._weltBetreten(neu);
         if (chatOutput) {
@@ -1634,7 +1634,7 @@ class AnazhRealm_speicher_laden {
 
     // DAS ZEUGNIS DES EMPFANGS im Journal eines Snapshots, bevor er Welt wird (das Welt-Tor: daneben, ersetzen). Ohne
     // Journal (Legacy/Minimal-Snapshot) wird der Behälter angelegt — sonst fiele der Eintrag still weg.
-    static _zeugnisEintragen(snap, text, ctx) {
+    static _zeugnisEintragen(snap, zeile, ctx) {
         if (!snap.worldJournal || typeof snap.worldJournal !== "object") {
             snap.worldJournal = { entries: [], seen: {} };
         }
@@ -1644,8 +1644,10 @@ class AnazhRealm_speicher_laden {
         if (!snap.worldJournal.seen || typeof snap.worldJournal.seen !== "object") {
             snap.worldJournal.seen = {};
         }
-        text = String(text).replace(/[⁦-⁩]/g, ""); // der Spieler liest rein, `d: 0` macht ihn Datum
-        const eintrag = { id: snap.worldJournal.entries.length + 1, at: Date.now(), tick: 0, type: "witness", text };
+        // eine Zeile der Tafel `[schlüssel, werte]` (das Tagebuch liest sie in der Sprache von jetzt, `text` ist die de-Quelle)
+        const eintrag = { id: snap.worldJournal.entries.length + 1, at: Date.now(), tick: 0, type: "witness" };
+        eintrag.t = zeile;
+        eintrag.text = AnazhRealm._tIn("de", zeile[0], zeile[1]);
         if (ctx) eintrag.ctx = ctx;
         snap.worldJournal.entries.push(eintrag);
     }
@@ -1710,15 +1712,11 @@ class AnazhRealm_speicher_laden {
             schemaVersion: "9.0-tor-v1",
         };
         // Der Import hält seinen Empfang als Witness-Eintrag mit Provenienz fest.
-        AnazhRealm._zeugnisEintragen(
-            cloned,
-            AnazhRealm._datum`Ich wurde als „${slug}" neben einer fremden Welt empfangen.`,
-            {
-                fromWorldId: originalId,
-                asWorldId: newWorldId,
-                asSlug: slug,
-            }
-        );
+        AnazhRealm._zeugnisEintragen(cloned, ["journal.empfangen-neben", { welt: slug }], {
+            fromWorldId: originalId,
+            asWorldId: newWorldId,
+            asSlug: slug,
+        });
         // durch DIE TÜR: die Welt der Seite sichert sich, die fremde liegt mit Probe unter ihrer neuen Id; mit `reload` der
         // Welt-Wechsel (Zeiger, Sperre, Reload), sonst bleibt die aktive Welt.
         const ab = this._weltBetreten(cloned, null, { wechseln: reload, aktiv: reload });

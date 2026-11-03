@@ -56,13 +56,14 @@ class AnazhRealm_kreatur_verhalten {
     // jeder Ruf „folge mir" ist eine eigene Geste, das Journal trägt jede.
     _journalCreatureTask(creature, taskName, prevName) {
         if (typeof this.journalAppend !== "function") return;
+        // die Tat je Auftrag: eine Zeile der Tafel (`journal.tat.*`)
         const labels = {
-            wander: "streift wieder frei",
-            follow_player: "schließt sich an",
-            wait: "harrt",
-            gather: "sucht Material",
-            build: "wird zur Schöpferin",
-            drink: "sucht Wasser am Ufer",
+            wander: "journal.tat.wander",
+            follow_player: "journal.tat.folgen",
+            wait: "journal.tat.warten",
+            gather: "journal.tat.sammeln",
+            build: "journal.tat.bauen",
+            drink: "journal.tat.trinken",
         };
         this.journalAppend(
             "relationship",

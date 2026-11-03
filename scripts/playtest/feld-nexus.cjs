@@ -180,20 +180,14 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
             phase3Results.savedNoLegacyAbilitiesList
         );
         // Gesten: ✦-Abzeichen + 'vor Xs' (einmalige Tat, sichtbar WANN sie wirkte)
-        check(
-            "Gesten: ✦-Abzeichen + 'vor Xs'",
-            phase3Results.gestenKindBadge && phase3Results.gestenWhen
-        );
+        check("Gesten: ✦-Abzeichen + 'vor Xs'", phase3Results.gestenKindBadge && phase3Results.gestenWhen);
         // Gesten: jede Geste direkt vergessbar (✕) + die Liste hat 'leeren'
         check(
             "Gesten: jede Geste direkt vergessbar + die Liste hat 'leeren'",
             phase3Results.gestenHasForget && phase3Results.gestenClearBtn
         );
         // Gesten: Liste auf 6 gekappt + '+N ältere' (wächst nicht aus dem Bild)
-        check(
-            "Gesten: Liste auf 6 gekappt + '+N ältere'",
-            phase3Results.gestenCapped
-        );
+        check("Gesten: Liste auf 6 gekappt + '+N ältere'", phase3Results.gestenCapped);
         check("Gesten: ✕ vergisst eine Geste wirklich", phase3Results.gestenForgetWorks);
         check("Gesten: 'leeren' verwirft alle Nexus-Gesten", phase3Results.gestenClearWorks);
     }
@@ -417,7 +411,6 @@ async function checkBandWelle6HCreatureLlm({ page, check }) {
         if (!st.playerMesh) return null;
         const out = {};
 
-
         // 2. _findCreatureByName findet die Kreatur (case-insensitive)
         const player = pm.position;
         // die Kreatur-Liste ISOLIEREN — am vollen
@@ -478,7 +471,7 @@ async function checkBandWelle6HCreatureLlm({ page, check }) {
 
         // 6. maybeAnswerCreature ohne aktive LLM gibt Hinweis-Output
         let chatLines = [];
-        const append = (text) => chatLines.push(text);
+        const append = (z) => chatLines.push(Array.isArray(z) ? r._t(z[0], z[1]) : z);
         // synchron prüfen wir nur das Parse + LLM-Off-Branch
         // (await funktioniert in evaluate via async-IIFE — vereinfacht)
         return Promise.resolve()
@@ -522,15 +515,9 @@ async function checkBandWelle6HCreatureLlm({ page, check }) {
         // Welle 6.H P2E V1: Persona-Prompt enthält Stats-Schicht (HP/SPD)
         check("Persona-Prompt enthält Stats-Schicht", wave6hP2eV1Results.promptHasStats);
         // Welle 6.H P2E V1: Persona-Prompt enthält Specs-Schicht (Sammler von holz)
-        check(
-            "Persona-Prompt enthält Specs-Schicht",
-            wave6hP2eV1Results.promptHasSpecs
-        );
+        check("Persona-Prompt enthält Specs-Schicht", wave6hP2eV1Results.promptHasSpecs);
         // Welle 6.H P2E V1: Persona-Prompt enthält Equipped-Schicht (hammer)
-        check(
-            "Persona-Prompt enthält Equipped-Schicht",
-            wave6hP2eV1Results.promptHasEquipped
-        );
+        check("Persona-Prompt enthält Equipped-Schicht", wave6hP2eV1Results.promptHasEquipped);
         // Welle 6.H P2E V1: Persona-Prompt enthält Boost-Schicht (Test-Tonic)
         check("Persona-Prompt enthält Boost-Schicht", wave6hP2eV1Results.promptHasBoost);
         // Welle 6.H P2E V1: Persona-Prompt enthält Memory-Auszug
@@ -538,10 +525,7 @@ async function checkBandWelle6HCreatureLlm({ page, check }) {
         // Welle 6.H P2E V1: Persona-Prompt enthält Welt-Kontext (Wetter)
         check("Persona-Prompt enthält Welt-Kontext", wave6hP2eV1Results.promptHasWeather);
         // Welle 6.H P2E V1: Persona-Prompt instruiert JSON-Format (say + program)
-        check(
-            "Persona-Prompt instruiert JSON-Format",
-            wave6hP2eV1Results.promptInstructsJson
-        );
+        check("Persona-Prompt instruiert JSON-Format", wave6hP2eV1Results.promptInstructsJson);
         // Welle 6.H P2E V3: Persona-Prompt erlaubt program + nennt CREATURE_PROPOSED_OPS-Whitelist
         check(
             "Persona-Prompt erlaubt program + nennt CREATURE_PROPOSED_OPS-Whitelist",
@@ -553,10 +537,7 @@ async function checkBandWelle6HCreatureLlm({ page, check }) {
             wave6hP2eV1Results.llmOffPolite && wave6hP2eV1Results.llmOffNoCall
         );
         // Welle 6.H P2E V1: maybeAnswerCreature mit unbekanntem Namen → 'Niemand hört zu'
-        check(
-            "maybeAnswerCreature mit unbekanntem Namen → 'Niemand hört zu'",
-            wave6hP2eV1Results.unknownPolite
-        );
+        check("maybeAnswerCreature mit unbekanntem Namen → 'Niemand hört zu'", wave6hP2eV1Results.unknownPolite);
     }
 
     // ### Welle 6.H Phase 2E V1.1 — @-Adressen-Pattern + Soul-Farben ###
@@ -638,25 +619,16 @@ async function checkBandWelle6HCreatureLlm({ page, check }) {
 
     if (erreichbar(check, "Welle 6.H P2E V1.1", wave6hP2eV11Results)) {
         // Welle 6.H P2E V1.1: @Name text → erkannt als explizite Adresse (explicit=true)
-        check(
-            "@Name text → erkannt als explizite Adresse",
-            wave6hP2eV11Results.atPatternMatches
-        );
+        check("@Name text → erkannt als explizite Adresse", wave6hP2eV11Results.atPatternMatches);
         // Welle 6.H P2E V1.1: @Name, text + @Name: text Varianten unterstützt
         check(
             "@Name, text + @Name: text Varianten unterstützt",
             wave6hP2eV11Results.atPatternWithComma && wave6hP2eV11Results.atPatternWithColon
         );
         // Welle 6.H P2E V1.1: Name, text bleibt rückwärts-kompatibel (explicit=false)
-        check(
-            "Name, text bleibt rückwärts-kompatibel",
-            wave6hP2eV11Results.fallbackComma
-        );
+        check("Name, text bleibt rückwärts-kompatibel", wave6hP2eV11Results.fallbackComma);
         // Welle 6.H P2E V1.1: 'Bran wie gehts' (ohne Trenner) wird NICHT als Adresse missverstanden (Schöpfer-Bug-Fix)
-        check(
-            "'Bran wie gehts' wird NICHT als Adresse missverstanden",
-            wave6hP2eV11Results.noTrennerRejected
-        );
+        check("'Bran wie gehts' wird NICHT als Adresse missverstanden", wave6hP2eV11Results.noTrennerRejected);
         // Welle 6.H P2E V1.1: '@ hallo' ohne Name wird abgelehnt
         check("'@ hallo' ohne Name wird abgelehnt", wave6hP2eV11Results.atWithoutNameRejected);
         // Welle 6.H P2E V1.1: Liste rendert Soul-Klassen .soul-fuchs/.soul-wesen/.soul-baer auf creature-name
@@ -753,10 +725,9 @@ async function checkBandWelle6HCreatureLlm({ page, check }) {
         r._creatureSpeakProactive(cGeist, "level_up_gather", { material: "laub", level: 1 });
         const geistLine = chatOutput ? chatOutput.lastElementChild : null;
         const geistText = geistLine ? geistLine.textContent : "";
-        out.geistUsedGeistPool = pool.level_up_gather.default.some((tpl) => {
-            const filled = tpl.replace(/\$\{(\w+)\}/g, (m, k) => (k === "material" ? "laub" : k === "level" ? "1" : m));
-            return geistText.includes(filled);
-        });
+        out.geistUsedGeistPool = pool.level_up_gather.default.some((k) =>
+            geistText.includes(r._t(k, { material: "laub", level: 1 }))
+        );
 
         // 10. Hook _onCreatureLevelUp triggert proaktive Sprache
         //     (Memory pushen, dann _creatureRemember triggert
@@ -825,39 +796,21 @@ async function checkBandWelle6HCreatureLlm({ page, check }) {
                 wave6hP2eV2Results.templateReplaced
         );
         // Welle 6.H P2E V2: Per-Kreatur-Throttle (60s) lehnt sofortige Zweit-Aussage ab
-        check(
-            "Per-Kreatur-Throttle lehnt sofortige Zweit-Aussage ab",
-            wave6hP2eV2Results.perCreatureThrottle
-        );
+        check("Per-Kreatur-Throttle lehnt sofortige Zweit-Aussage ab", wave6hP2eV2Results.perCreatureThrottle);
         // Welle 6.H P2E V2: Global-Throttle (8s) lehnt andere Kreatur sofort nach erster Aussage ab
-        check(
-            "Global-Throttle lehnt andere Kreatur sofort nach erster Aussage ab",
-            wave6hP2eV2Results.globalThrottle
-        );
+        check("Global-Throttle lehnt andere Kreatur sofort nach erster Aussage ab", wave6hP2eV2Results.globalThrottle);
         // Welle 6.H P2E V2: Toggle OFF → keine proaktive Sprache (silent drop)
-        check(
-            "Toggle OFF → keine proaktive Sprache",
-            wave6hP2eV2Results.toggleOffSilent
-        );
+        check("Toggle OFF → keine proaktive Sprache", wave6hP2eV2Results.toggleOffSilent);
         // Welle 6.H P2E V2: Unbekannter Event-Typ → silent drop
         check("Unbekannter Event-Typ → silent drop", wave6hP2eV2Results.unknownEventRejected);
         // Welle 6.H P2E V2 (NULL): Gattung ohne eigene Stimme spricht den default-Pool
-        check(
-            "Gattung ohne eigene Stimme spricht den default-Pool",
-            wave6hP2eV2Results.geistUsedGeistPool
-        );
+        check("Gattung ohne eigene Stimme spricht den default-Pool", wave6hP2eV2Results.geistUsedGeistPool);
         // Welle 6.H P2E V2: Hook _onCreatureLevelUp triggert proaktive Sprache
-        check(
-            "Hook _onCreatureLevelUp triggert proaktive Sprache",
-            wave6hP2eV2Results.levelUpHookFired
-        );
+        check("Hook _onCreatureLevelUp triggert proaktive Sprache", wave6hP2eV2Results.levelUpHookFired);
         // Welle 6.H P2E V2: Hook applyCreatureBoost triggert bei NEUEM Boost
         check("Hook applyCreatureBoost triggert bei NEUEM Boost", wave6hP2eV2Results.boostHookFired);
         // Welle 6.H P2E V2: applyCreatureBoost mit SELBER Quelle (Verlängerung) → KEINE erneute Sprache (kein Flood)
-        check(
-            "applyCreatureBoost mit SELBER Quelle → KEINE erneute Sprache",
-            wave6hP2eV2Results.boostRefreshSilent
-        );
+        check("applyCreatureBoost mit SELBER Quelle → KEINE erneute Sprache", wave6hP2eV2Results.boostRefreshSilent);
     }
 
     // ### Welle 6.H Phase 2E V3 — Welt-Aktion-Vorschläge der Kreatur ###
@@ -1026,10 +979,7 @@ async function checkBandWelle6HCreatureLlm({ page, check }) {
             wave6hP2eV3Results.rejectsPlayerSpeed && wave6hP2eV3Results.rejectsDefine
         );
         // Welle 6.H P2E V3: Validator erkennt verbotene Op TIEF im Chain (Defense-Recursion)
-        check(
-            "Validator erkennt verbotene Op TIEF im Chain",
-            wave6hP2eV3Results.rejectsNestedForbidden
-        );
+        check("Validator erkennt verbotene Op TIEF im Chain", wave6hP2eV3Results.rejectsNestedForbidden);
         // Welle 6.H P2E V3: Persona-Prompt erlaubt program + nennt Op-Whitelist + erwähnt schöpfer-Modus
         check(
             "Persona-Prompt erlaubt program + nennt Op-Whitelist + erwähnt schöpfer-Modus",
@@ -1161,19 +1111,13 @@ async function checkBandWorkshopPolishAndLlm({ page, check }) {
             v805Results.modeBarInWrapper && v805Results.modeBarBeforeCanvas
         );
         // V8.05: Stats-Panel im DOM + NACH Canvas (schnelle Sicht auf emergente Werte)
-        check(
-            "V8.05: Stats-Panel im DOM + NACH Canvas",
-            v805Results.statsInDom && v805Results.statsAfterCanvas
-        );
+        check("V8.05: Stats-Panel im DOM + NACH Canvas", v805Results.statsInDom && v805Results.statsAfterCanvas);
         check(
             "V8.05: Werkzeug-Palette im DOM mit Cards für Spieler-Werkzeuge",
             v805Results.toolPaletteInDom && v805Results.toolPaletteHasCards
         );
         // V8.05 (V17.91): der alte Detail-Editor ist entfernt (#workshop-editor + Toggle weg)
-        check(
-            "V8.05: der alte Detail-Editor ist entfernt",
-            v805Results.editorRemoved
-        );
+        check("V8.05: der alte Detail-Editor ist entfernt", v805Results.editorRemoved);
         // V8.05 (V17.91): Undo/Redo + Löschen wohnen in der Top-Leiste
         check(
             "V8.05: Undo/Redo + Löschen wohnen in der Top-Leiste",
@@ -1245,10 +1189,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check }) {
             v806Results.cloneBtnInModeBar && v806Results.newBtnInModeBar && v806Results.dividerInModeBar
         );
         // V8.06/V17.91/V18.110/W-G: Mode-Bar hat 12 Buttons (4 Modi + Snap + Zentrieren + Undo + Redo + ▶ Gelenk-Probe + Klonen + Neu + Löschen)
-        check(
-            "V8.06/V17.91/V18.110/W-G: Mode-Bar hat 12 Buttons",
-            v806Results.sevenButtonsInBar
-        );
+        check("V8.06/V17.91/V18.110/W-G: Mode-Bar hat 12 Buttons", v806Results.sevenButtonsInBar);
         check(
             `V8.06: rechte Palette breiter (≥128px, gemessen: ${v806Results.rightPaletteWidth || 0}px)`,
             v806Results.rightPaletteWider
@@ -1339,10 +1280,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check }) {
         // Spec-Sheet: Qualitäts-Sterne sind ★/☆ (5 Zeichen)
         check("Spec-Sheet: Qualitäts-Sterne sind ★/☆", v807Results.starsAreGlyphs);
         // _workshopApplyDefaultSizeOnce räumt die stale Resize-Größe + Inline (CSS-Rahmen trägt jetzt)
-        check(
-            "_workshopApplyDefaultSizeOnce räumt die stale Resize-Größe + Inline",
-            v807Results.defaultOverridesStale
-        );
+        check("_workshopApplyDefaultSizeOnce räumt die stale Resize-Größe + Inline", v807Results.defaultOverridesStale);
         // idempotent — zweiter Apply lässt keine Inline-Größe zurück
         check("idempotent", v807Results.idempotentAfterApply);
     }
@@ -1399,10 +1337,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check }) {
         check("Schicht 2: Gemini-Response extrahiert candidates[0].parts", llmResults.geminiExtract);
         check("Schicht 2: OpenRouter-Response extrahiert choices[0].message", llmResults.openrouterExtract);
         // Schicht 2: Parser nutzt Plain-Text-Fallback bei Nicht-JSON (V7.98 — User sieht Antwort statt Error)
-        check(
-            "Schicht 2: Parser nutzt Plain-Text-Fallback bei Nicht-JSON",
-            llmResults.parserDetectsError
-        );
+        check("Schicht 2: Parser nutzt Plain-Text-Fallback bei Nicht-JSON", llmResults.parserDetectsError);
         check("Schicht 2: Disabled-LLM blockt Call sauber", llmResults.callBlockedWhenDisabled);
     }
 
@@ -1487,29 +1422,20 @@ async function checkBandWorkshopPolishAndLlm({ page, check }) {
 
     if (ohneWurf(check, "V7.95 Ollama-Cloud", v795Results)) {
         // V7.95 Ollama-Cloud: Endpoint respektiert volle URL mit /api/chat (kein doppeltes /api/chat/api/chat)
-        check(
-            "V7.95 Ollama-Cloud: Endpoint respektiert volle URL mit /api/chat",
-            v795Results.epRespectsApiPath
-        );
+        check("V7.95 Ollama-Cloud: Endpoint respektiert volle URL mit /api/chat", v795Results.epRespectsApiPath);
         check(
             "V7.95 Ollama-Cloud: Endpoint respektiert OpenAI-kompat-URL mit /v1/chat/completions",
             v795Results.epRespectsV1Path
         );
         // V7.95 Ollama-Cloud: extractText liest OpenAI-kompat Format (json.choices[0].message.content)
-        check(
-            "V7.95 Ollama-Cloud: extractText liest OpenAI-kompat Format",
-            v795Results.extractsOpenAi
-        );
+        check("V7.95 Ollama-Cloud: extractText liest OpenAI-kompat Format", v795Results.extractsOpenAi);
         // V7.95 Ollama-Cloud: extractText liest älteres Ollama-generate Format (json.response)
         check(
             "V7.95 Ollama-Cloud: extractText liest älteres Ollama-generate Format",
             v795Results.extractsOllamaGenerate
         );
         // V7.95 Ollama-Cloud: extractText defensive bei null/leeren Input → '' (kein Crash)
-        check(
-            "V7.95 Ollama-Cloud: extractText defensive bei null/leeren Input → ''",
-            v795Results.extractsEmpty
-        );
+        check("V7.95 Ollama-Cloud: extractText defensive bei null/leeren Input → ''", v795Results.extractsEmpty);
         // V7.95+V7.98 Ollama: buildBody Ollama-Native hat options.num_predict=800 (kein max_tokens)
         check(
             "V7.95+V7.98 Ollama: buildBody Ollama-Native hat options.num_predict=800",
@@ -1549,7 +1475,11 @@ async function checkBandWorkshopPolishAndLlm({ page, check }) {
         try {
             st.llm.provider = "ollama";
             st.llm.enabled = true;
-            Object.assign(st.llm.providerConfig.ollama, { endpoint: "https://ollama.com/api/chat", useProxy: true, model: "llama3.2" });
+            Object.assign(st.llm.providerConfig.ollama, {
+                endpoint: "https://ollama.com/api/chat",
+                useProxy: true,
+                model: "llama3.2",
+            });
             st.llm.inFlight = false;
             await r.llmCall("test");
             // Erwartung: fetch-URL ist die proxy-URL bei Cloud + useProxy
@@ -1591,10 +1521,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check }) {
 
     if (ohneWurf(check, "V7.97 Auto-Bypass", v797AutoResults)) {
         // V7.97 Auto-Bypass: Cloud-URL + useProxy=true → Proxy WIRD GENUTZT (durchgeschleust)
-        check(
-            "V7.97 Auto-Bypass: Cloud-URL + useProxy=true → Proxy WIRD GENUTZT",
-            v797AutoResults.proxyUsedForCloud
-        );
+        check("V7.97 Auto-Bypass: Cloud-URL + useProxy=true → Proxy WIRD GENUTZT", v797AutoResults.proxyUsedForCloud);
     }
     if (ohneWurf(check, "V7.97 Error-Hint", v797ErrorResults)) {
         check(
@@ -1653,10 +1580,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check }) {
         // V7.98 Parser: <thinking>-Variante wird auch erkannt (case-insensitive)
         check("V7.98 Parser: <thinking>-Variante wird auch erkannt", v798Results.thinkingStripped);
         // V7.98 Parser: Plain-Text ohne JSON → Plain-Text-Fallback (User sieht Antwort statt 'Leere Antwort')
-        check(
-            "V7.98 Parser: Plain-Text ohne JSON → Plain-Text-Fallback",
-            v798Results.plainTextFallback
-        );
+        check("V7.98 Parser: Plain-Text ohne JSON → Plain-Text-Fallback", v798Results.plainTextFallback);
         check(
             "V7.98 Parser: <think>-Block + Plain-Text danach → think gestrippt, Rest als say genutzt",
             v798Results.thinkPlusPlain
@@ -1673,5 +1597,8 @@ async function checkBandWorkshopPolishAndLlm({ page, check }) {
 }
 
 module.exports = {
-    checkBandRing2Extended, checkBandV1722NexusEyes, checkBandWelle6HCreatureLlm, checkBandWorkshopPolishAndLlm,
+    checkBandRing2Extended,
+    checkBandV1722NexusEyes,
+    checkBandWelle6HCreatureLlm,
+    checkBandWorkshopPolishAndLlm,
 };

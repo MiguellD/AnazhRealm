@@ -42,7 +42,7 @@ const SENKE_RUF =
     /^(_hudSchreib|_chatEcho|alert|confirm|prompt|_el|append|appendChatOutput|_spielerSagt|_ladeschirmStand|journalAppend|journalAppendOnce)$/;
 const SENKE_FELD = /^(textContent|innerText|innerHTML|title|placeholder)$/;
 const SENKE_ATTR = /^(title|placeholder|aria-label|alt)$/;
-const ETIKETT = /^(label|hint|lab|titel|title|tip|desc|beschreibung|text|name)$/;
+const ETIKETT = /^(label|hint|lab|titel|title|tip|desc|description|beschreibung|text|name)$/;
 const DATEN_ATTR = /^(value|class|className|klasse|sprecherKlasse|id|type|name|href|src|for|role|key|style)$/;
 const CHAT = /^(_chatEcho|appendChatOutput|_spielerSagt)$/;
 const nameVon = (c) =>
