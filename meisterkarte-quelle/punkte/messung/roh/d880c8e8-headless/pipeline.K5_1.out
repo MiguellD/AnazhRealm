@@ -1,0 +1,74 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node -e (async function foundryFadenLog(port, aus) {
+    const path = require("path");
+    const fs = require("fs");
+    const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const out = { weltRevision: null, faeden: [] };
+    const schreibe = () => {
+        fs.writeFileSync(aus, JSON.stringify(out));
+        console.log("FAEDEN " + JSON.stringify(out));
+    };
+    const server = WB.statikServer();
+    await server.lausche(Number(port));
+    const { browser, page } = await WB.nullSeite({ frist: 300000 });
+    try {
+        const cdp = await page.target().createCDPSession();
+        const namen = new Map();
+        const sitzungen = [];
+        cdp.on("Target.attachedToTarget", (e) => namen.set(e.sessionId, e.targetInfo.title || e.targetInfo.url));
+        cdp.on("sessionattached", async (s) => {
+            const f = { name: null, foundry: false, instrumentiert: false, threeBytes: 0, threeUrls: [], sync: [], revision: null, urls: {}, geparst: [] };
+            const req = new Map();
+            out.faeden.push(f);
+            sitzungen.push([s, f]);
+            s.on("Network.requestWillBeSent", (e) => req.set(e.requestId, e.request.url));
+            s.on("Network.loadingFinished", (e) => {
+                const u = req.get(e.requestId) || "?";
+                f.urls[u] = (f.urls[u] || 0) + Math.max(0, e.encodedDataLength || 0);
+            });
+            s.on("Debugger.scriptParsed", (e) => e.url && f.geparst.push(e.url));
+            try {
+                await s.send("Runtime.enable");
+                await s.send("Network.enable");
+                await s.send("Debugger.enable");
+                await s.send("Runtime.evaluate", {
+                    expression:
+                        "(() => { const L = (self.__punkteFaden = { sync: [] }); const o = XMLHttpRequest.prototype.open; " +
+                        "XMLHttpRequest.prototype.open = function (m, u, a) { if (a === false) L.sync.push(String(u)); return o.apply(this, arguments); }; return true; })()",
+                });
+                f.instrumentiert = true;
+            } catch (e) {
+                f.fehler = String(e.message).slice(0, 160);
+            }
+            await s.send("Runtime.runIfWaitingForDebugger").catch(() => {});
+        });
+        await cdp.send("Target.setAutoAttach", { autoAttach: true, waitForDebuggerOnStart: true, flatten: true });
+        await server.zeige(page, 120000);
+        await page.evaluate(() => window.__weltDa((r) => r._foundry && r._foundry.ready && r.state._weltbildDa > 0));
+        await WB.sleep(3000);
+        out.weltRevision = await page.evaluate(() => (typeof THREE !== "undefined" ? THREE.REVISION : null));
+        for (const [s, f] of sitzungen) {
+            f.name = namen.get(s.id()) || s.id();
+            const r = await s
+                .send("Runtime.evaluate", { expression: "JSON.stringify({ sync: (self.__punkteFaden || {}).sync || null, rev: typeof THREE !== 'undefined' && THREE ? String(THREE.REVISION) : null })", returnByValue: true })
+                .catch((e) => ({ result: { value: JSON.stringify({ fehler: e.message }) } }));
+            const v = JSON.parse(r.result.value || "{}");
+            if (v.sync) f.sync = v.sync.map((u) => u.replace(/^https?:\/\/[^/]+\//, "").split("?")[0]);
+            f.revision = v.rev;
+            f.foundry = f.geparst.some((u) => /\/foundry-bruecke\.js/.test(u));
+            const drei = (u) => /\/worlds\/[^/]+\/lib\/three[^/]*$/.test(u.split("?")[0]);
+            f.threeBytes = Object.entries(f.urls).filter(([u]) => drei(u)).reduce((a, [, b]) => a + b, 0);
+            f.threeUrls = [...new Set(f.geparst.filter(drei).map((u) => u.replace(/^https?:\/\/[^/]+\//, "").split("?")[0]))];
+            f.netz = Object.keys(f.urls).length;
+            f.geparst = f.geparst.length;
+            delete f.urls;
+        }
+    } catch (e) {
+        out.fehler = String(e.message).slice(0, 300);
+    } finally {
+        schreibe();
+        await browser.close().catch(() => {});
+        server.close();
+        process.exit(0);
+    }
+})(process.argv[1], process.argv[2]); 7704 /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/d880c8e8-headless/pipeline.K5_1.json
+FAEDEN {"weltRevision":"184","faeden":[{"name":"buch","foundry":true,"instrumentiert":true,"threeBytes":603610,"threeUrls":["worlds/terrain/lib/three-r128.min.js"],"sync":["cores.manifest.json"],"revision":"128","geparst":14,"netz":15},{"name":"voxel","foundry":false,"instrumentiert":true,"threeBytes":0,"threeUrls":[],"sync":[],"revision":null,"geparst":5,"netz":5},{"name":"speicher","foundry":false,"instrumentiert":true,"threeBytes":0,"threeUrls":[],"sync":[],"revision":null,"geparst":1,"netz":1}]}
