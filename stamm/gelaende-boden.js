@@ -1169,14 +1169,15 @@ class AnazhRealm_gelaende_boden {
         return true;
     }
 
-    // DAS ERBGUT der Welt (`worldMeta.erbgut`), validiert und gemerkt: { terme, wildnis, hash }. Fehlt es, ist die Welt
-    // [wildnis] (jeder heutige Save). Die Empfänger-Wand ist fail-closed und
+    // DAS ERBGUT der Welt — das Gelände ihres Gesetzes (`worldMeta.gesetz.gelaende`, `_weltGesetz`; ultiversum.K1), validiert und
+    // gemerkt: { terme, wildnis, hash }. Fehlt es, ist die Welt [wildnis] (jeder heutige Save). Die Empfänger-Wand ist fail-closed und
     // ohne stillen Ersatz: eine unbekannte Term-Art, eine fehlende Zahl oder eine Form außerhalb der Regeln WIRFT — die
     // Welt erwacht nicht und sagt es auf dem Ladeschirm (init), nie still Wildnis. `wildnis` ist das Gewicht des
     // Wildnis-Terms (1 = die Welt trägt ihn, 0 = nicht); `_wildnisTraegt` und die Spalte lesen es.
     _erbgut() {
         const wm = this.state.worldMeta;
-        const roh = wm ? wm.erbgut : undefined;
+        const gel = wm ? AnazhRealm._weltGesetz(wm).gelaende : null;
+        const roh = gel == null ? undefined : gel;
         if (this._erbgutCache && this._erbgutRoh === roh) return this._erbgutCache;
         const terme = globalThis.__gelaendeCore.erbgutNormal(roh);
         this._erbgutRoh = roh;

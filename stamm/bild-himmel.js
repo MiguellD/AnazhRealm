@@ -1293,8 +1293,16 @@ class AnazhRealm_bild_himmel {
     // dem Bezug der Luft (`waterLevel`). Bis D3 standen vier getunte Näherungen nebeneinander (die Luftmassen-Sonne, die
     // Nebel-Kuppel, die Horizont-Farbe der Luft, die CPU-gemalte Umgebung 128×64) — das Verhältnis Sonne : Himmel war gesetzt
     // (4,2), nicht gerechnet (gerechnet 5,1; `diag-atmo-hillaire`).
+    // DER HIMMEL DER WELT (ultiversum.K1): das Medium des Kerns mit der Rayleigh-Tiefe aus dem Gesetz DIESER Welt (`_weltGesetz`,
+    // `himmel.rayleighTiefe`) — die Erde trägt die des Kerns, die Ferne einen Himmel aus rotem Staub. Gemerkt je Kern und Gesetz.
     _atmoGesetz() {
-        return AnazhRealm.Gesetz("terrain:ATMO_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:ATMO_GESETZ");
+        const K = AnazhRealm.Gesetz("terrain:ATMO_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:ATMO_GESETZ");
+        const H = AnazhRealm._weltGesetz(this.state.worldMeta).himmel;
+        const m = this._atmoWelt;
+        if (m && m.K === K && m.H === H) return m.G;
+        const G = Object.freeze({ ...K, rayleighTiefe: Object.freeze(H.rayleighTiefe.slice()) });
+        this._atmoWelt = { K, H, G };
+        return G;
     }
 
     _atmoRechnung() {
@@ -1323,11 +1331,13 @@ class AnazhRealm_bild_himmel {
     // zur Nachbesserung zeichnete jedes Anwenden eines Übergangs Durchlass, Ψ_ms und Himmels-Sicht neu. Sonne und Tafeln
     // lesen dasselbe gestufte Medium.
     _atmoMediumJetzt() {
-        const klar = this._atmoRechnung().betaKlar(this._atmoGesetz());
+        const G = this._atmoGesetz();
+        const klar = this._atmoRechnung().betaKlar(G);
         const k = AnazhRealm.ATMO_LUT.mediumStufe;
         const b = klar * Math.exp(Math.round(Math.log(this._luftBeta() / klar) / k) * k);
-        if (this._atmoM && this._atmoMBeta === b) return this._atmoM;
+        if (this._atmoM && this._atmoMBeta === b && this._atmoMG === G) return this._atmoM;
         this._atmoMBeta = b;
+        this._atmoMG = G; // das Gesetz der Welt gehört zum Schlüssel: ein Welt-Wechsel rechnet das Medium neu
         return (this._atmoM = this._atmoMedium(b));
     }
 
@@ -1371,7 +1381,7 @@ class AnazhRealm_bild_himmel {
             throw new Error("Die Atmosphäre: THREE trägt TSL/MeshBasicNodeMaterial/RenderTarget nicht (Vendor)");
         const T = THREE.TSL;
         const { Fn, float, vec2, vec3, vec4, uv, texture, exp, sqrt, max, clamp, select, Loop, If, dot, length } = T;
-        const G = AnazhRealm.Gesetz("terrain:ATMO_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:ATMO_GESETZ");
+        const G = this._atmoGesetz();
         const Z = AnazhRealm.ATMO_LUT;
         const RG = G.erdeM / 1000,
             RT = G.randM / 1000;
@@ -1829,6 +1839,18 @@ class AnazhRealm_bild_himmel {
         const st = this.state;
         const A = this._atmoLutBau();
         const U = A.U;
+        // DER HIMMEL EINER ANDEREN WELT (ultiversum.K1): die Tafeln reisen mit der Seite (`WELT_GRENZE.seite`), das Gesetz des
+        // Himmels nicht — trägt die Welt ein anderes (`_atmoGesetz`), fallen Anker, Belichtung und Medium der Tafel und werden
+        // aus IHREM Gesetz neu gerechnet (sonst zeichnete die Ferne den Himmel der Erde, solange die Luft gleich blieb)
+        const G = this._atmoGesetz();
+        if (A.gesetz !== G) {
+            A.gesetz = G;
+            A.anker = null;
+            A.belichtung = null;
+            A.mediumBeta = null; // die Uniforms des Mediums und die Tafeln (Durchlass, Ψ_ms, Himmels-Sicht) zeichnen neu
+            A.tafelSchluessel = null; // die Bestrahlungs-Tafel derselben Luft unter dem anderen Gesetz
+            this._himmelFlug = null; // ihr Flug trug die Bestrahlung des alten Himmels
+        }
         // DER ANKER ZUERST (S7): bis die Tafel der klaren Luft am Boden einmal zurückkam (`anker`, der Himmel der Karte
         // unter der Zenit-Sonne), zeichnet der Takt sie — in jedem Wetter und jeder Höhe des Auges; danach das Medium jetzt.
         // Der Null-Renderer malt keinen Himmel (Lehre 16): dort trägt die Karte keinen.
@@ -2884,13 +2906,14 @@ class AnazhRealm_bild_himmel {
     }
 
     // DAS WETTER AM ORT (wetter.K1): das Wort der Front über (x, z) — der Kern (phyto-core `wetterAt` über die Saat der Welt,
-    // den Ort und die Zeit, ohne `t` die Welt-Uhr `spielZeit`) wählt die Zeile von WX_GESETZ, die Welt spricht ihr Wort
-    // (`WETTER_WORT`). Leser: der Wetter-Zug (`_loopWeatherAndGrowth`).
+    // den Ort und die Zeit, ohne `t` die Welt-Uhr `spielZeit`) wählt die Zeile von WX_GESETZ, die Welt spricht ihr Wort aus der
+    // Wetter-Tafel ihres Gesetzes (`worldMeta.gesetz.wetter`; die Erde: `WETTER_WORT`). Leser: der Wetter-Zug (`_loopWeatherAndGrowth`).
     _wetterAmOrt(x, z, t = this.state.spielZeit) {
         const wm = this.state.worldMeta || {};
         const zeile = globalThis.__phytoCore.wetterAt(wm.seed || "anazh-realm-seed", x, z, t).zeile;
-        const wort = AnazhRealm.WETTER_WORT[zeile];
-        if (!wort) throw new Error("_wetterAmOrt: die Zeile „" + zeile + "“ hat kein Wort der Welt (WETTER_ZEILE)");
+        const wort = AnazhRealm._weltGesetz(wm).wetter[zeile]; // die Wetter-Tafel des Gesetzes DIESER Welt (ultiversum.K1)
+        if (!wort)
+            throw new Error("_wetterAmOrt: die Zeile „" + zeile + "“ hat kein Wort der Welt (ihre Wetter-Tafel)");
         return wort;
     }
 

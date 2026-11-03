@@ -73,6 +73,55 @@ class AnazhRealm_speicher_welten {
                 [c.x, c.z] = [c.wx, c.wz];
                 if (c.ort === undefined) c.ort = AnazhRealm._ortSchluessel(c, c);
             }
+        AnazhRealm._weltGesetz(m);
+    }
+
+    // DAS GESETZ DER WELT (ultiversum.K1) — die EINE Quelle ihrer Konstanten, in ihrem Speicher (`worldMeta.gesetz`), nie als Flag:
+    // die Schwere (`state.gravity` liest und schreibt sie, ein Wort des Spielers über die DSL `gravity` ändert sie), der Himmel
+    // (`_atmoGesetz`: die Rayleigh-Tiefe des Mediums), die Wetter-Tafel (`_wetterAmOrt`: je Zeile der Front das Wort der Welt)
+    // und das Gelände (`_erbgut`: das Erbgut des Gelände-Kerns). Fehlt ein Teil, gilt der der Erde (`WELT_GESETZ_ERDE`); ein
+    // Erbgut von vor dem Gesetz (`worldMeta.erbgut`) zieht hier einmal hinein. Fail-closed: eine Zahl außerhalb ihres Bands, ein
+    // Wort, das die Welt nicht kennt, ein Erbgut, das der Kern ablehnt, WIRFT beim Namen. Die Normalform ist gemerkt (je Objekt);
+    // wer einen Teil ändert, geht durch `_weltGesetzSetzen`.
+    static _weltGesetz(meta) {
+        if (!meta || typeof meta !== "object") throw new Error("Das Gesetz der Welt: kein worldMeta");
+        const roh = meta.gesetz;
+        if (roh && AnazhRealm._GESETZ_NORMAL.has(roh)) return roh;
+        const E = AnazhRealm.WELT_GESETZ_ERDE;
+        const q = roh && typeof roh === "object" ? roh : {};
+        const nein = (grund) => {
+            throw new Error(`Das Gesetz der Welt abgelehnt: ${grund}`);
+        };
+        const schwere = q.schwere === undefined ? E.schwere : q.schwere;
+        if (!(typeof schwere === "number" && schwere >= -30 && schwere <= 0)) nein(`schwere ${schwere} (−30–0 m/s²)`);
+        const rt = q.himmel && q.himmel.rayleighTiefe !== undefined ? q.himmel.rayleighTiefe : E.himmel.rayleighTiefe;
+        if (!Array.isArray(rt) || rt.length !== 3 || !rt.every((v) => typeof v === "number" && v > 0 && v <= 1))
+            nein(`himmel.rayleighTiefe ${JSON.stringify(rt)} (drei Tiefen in (0, 1])`);
+        const wetter = {};
+        for (const zeile of Object.keys(E.wetter)) {
+            const wort = q.wetter && q.wetter[zeile] !== undefined ? q.wetter[zeile] : E.wetter[zeile];
+            if (!(wort in AnazhRealm.WETTER_ZEILE)) nein(`wetter.${zeile} „${wort}" ist kein Wort der Welt`);
+            wetter[zeile] = wort;
+        }
+        const gelaende = q.gelaende !== undefined ? q.gelaende : meta.erbgut !== undefined ? meta.erbgut : null;
+        globalThis.__gelaendeCore.erbgutNormal(gelaende == null ? undefined : gelaende);
+        delete meta.erbgut;
+        const n = {
+            schwere,
+            himmel: { rayleighTiefe: rt.slice() },
+            wetter,
+            gelaende: gelaende == null ? null : gelaende,
+        };
+        meta.gesetz = n;
+        AnazhRealm._GESETZ_NORMAL.add(n);
+        return n;
+    }
+
+    // Ein Teil des Gesetzes ändert sich (das Wort des Spielers): die neue Normalform durch dieselbe Wand. → das Gesetz
+    static _weltGesetzSetzen(meta, teil, wert) {
+        const alt = AnazhRealm._weltGesetz(meta);
+        meta.gesetz = { ...alt, [teil]: wert };
+        return AnazhRealm._weltGesetz(meta);
     }
 
     // DIE WELTGRENZE (Gegenprüfung Runde 2, 10.10.): eine geladene Welt ERSETZT das worldMeta der Seite — die Vorlage,
@@ -668,6 +717,7 @@ class AnazhRealm_speicher_welten {
             // W18-B — die Ko-Präsenz-Marke reist mit, sonst verlöre ein
             // Ko-Präsenz-Portal beim Reload die Pose-Injektion (V8.59-Lehre).
             if (bp.portalMeta.coPresence === true) out.portalMeta.coPresence = true;
+            if (typeof bp.portalMeta.gesetz === "string") out.portalMeta.gesetz = bp.portalMeta.gesetz; // ultiversum.K1
         }
         // JEDE deklarierte Rolle reist (roleManual = Intent: Werkstatt-Designation · armor · consumable ·
         // soul · vehicle). Fremde Artefakte bleiben gesiebt: _admitForeignArtifact löscht roleManual und
@@ -2856,6 +2906,8 @@ AnazhRealm.R5_STRUCTURE_TEXTURE = Object.freeze({
 //                an `atmoLut` und reist mit ihm — als Felder am Wirt fielen sie, ihr Schlüssel reiste, und das Licht des Orts
 //                stand nie
 // Was eine Welt in eine dieser Karten malt, malt die neue neu (ihr Abschied leert sie: `_horizontKarteLeeren`).
+// die Normalformen des Welt-Gesetzes (`_weltGesetz`): je Objekt einmal geprüft — der Leser der Schwere fragt je Teil-Schritt
+AnazhRealm._GESETZ_NORMAL = new WeakSet();
 AnazhRealm.WELT_GRENZE = Object.freeze({
     ankunft: Object.freeze([
         "playerMesh",
