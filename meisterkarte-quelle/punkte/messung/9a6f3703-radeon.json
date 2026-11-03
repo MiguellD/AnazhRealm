@@ -1,0 +1,59 @@
+{
+ "sha": "9a6f3703475e29ecfa80c73e6eba026fe9cca9c0",
+ "geraet": "radeon",
+ "zeit": "2026-11-03T16:07:23.892Z",
+ "host": "MiguellD",
+ "je": {
+  "haar.K5#1": {
+   "gruen": true,
+   "zahl": "Herde 8, Fell an je Abstand 1.3 m an · 5.2 m an · 14.7 m aus · 26.3 m aus · 41.7 m aus · 61.3 m aus · 89.5 m aus · 129.5 m aus · tier 1 Befehle (tier:wolf 1) (Soll nah an, fern aus, ≤ 30 Befehle)",
+   "exit": 0,
+   "minuten": 0.03,
+   "gpu": "amd/rdna-3",
+   "s": 1.8,
+   "zeit": "2026-11-03T16:07:23.892Z",
+   "abdruck": "fb4cdfb07fce",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-03T16:06:58.409Z",
+  "port": 7804,
+  "warten": 0.08,
+  "bootS": 5.8,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "haar.K5#1",
+    "s": 13.1,
+    "takte": 701,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 21,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 22.3,
+  "minuten": 0.5
+ }
+}

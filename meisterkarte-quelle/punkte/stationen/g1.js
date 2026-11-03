@@ -151,9 +151,14 @@ function weltGrund(r, T) {
             takt(3);
         }
     };
+    // DAS WETTER EINER PROBE über den EINEN Weg (`__wetterSetzen`, scripts/lib/ausgabe-aufnahme.cjs; der Lauf baut ihn in jede
+    // Welt): er taut den Mess-Halt für DIESES Wort und hält danach wieder — ein Wort, das nicht gilt, wirft beim Namen. Bis 03.11.
+    // setzte `trocken` selbst und fror den Halt dahinter (−1e9): jedes spätere Wort fiel still (der Regen der Alter-Spur)
+    const wetter = (wort, zug) => {
+        if (window.__wetterSetzen(wort, zug) !== wort) throw new Error("das Wetter der Probe gilt nicht: " + wort + " (es gilt " + s.weather + ")");
+    };
     const trocken = () => {
-        r._setWeather("sunny", "human");
-        s.weatherEffectTime = -1e9;
+        wetter("sunny");
         r._naesseTakt(1e6);
         r.setTimeOfDay(0.5, "regler");
         takt(2);
@@ -179,7 +184,7 @@ function weltGrund(r, T) {
             }
         return n;
     };
-    return { s, A, takt, y, stehen, tage, trocken, r3, streu };
+    return { s, A, takt, y, stehen, tage, wetter, trocken, r3, streu };
 }
 // DER LAUF (im Spiel-Baum, cwd; Node): argv {AUS} {PORT} und die Proben als JSON [[name, Seiten-Funktion, Optionen]]; die Optionen
 // tragen die Messorte des Haushalts (scripts/lib/welt-orte.cjs, `messort`). Ein Wurf einer Probe ist ihr Fehler beim Namen, nie
@@ -193,6 +198,7 @@ async function weltProbeLauf() {
     const path = require("path");
     const { statikServer, nullSeite, warteAufWelt } = require(path.resolve("scripts/lib/welt-boot.cjs"));
     const { messort, WELT_ORTE_INSTALL } = require(path.resolve("scripts/lib/welt-orte.cjs"));
+    const { AUSGABE_INSTALL } = require(path.resolve("scripts/lib/ausgabe-aufnahme.cjs"));
     const [aus, port, grund, probenText] = process.argv.slice(1);
     const orte = Object.fromEntries(["wiese", "dorf"].map((id) => [id, messort(id)]));
     const erg = { proben: {}, fehler: [] };
@@ -212,7 +218,7 @@ async function weltProbeLauf() {
                 await window.anazhRealm.erwacht;
                 window.anazhRealm.state.renderer.setAnimationLoop(null);
             });
-            await seite.evaluate(WELT_ORTE_INSTALL);
+            await seite.evaluate(WELT_ORTE_INSTALL + ";" + AUSGABE_INSTALL); // das Orts-Gesetz und der EINE Wetter-Weg (`__wetterSetzen`)
         };
         await server.zeige(seite, 240000, "index.html", "networkidle0");
         await erwacht();
@@ -687,7 +693,7 @@ function alterSpurMessen(r, T, G, plan) {
     return { albedo: aus, gras: plan.weg ? { weg: streifen(0), neben: streifen(4) } : null, hell: Object.fromEntries(Object.entries(aus).map(([k, e]) => [k, r3(Math.max(...Object.values(e).map(hell)))])) };
 }
 async function alterSpurProbe(r, T, o, G) {
-    const { s, A, takt, stehen, tage, trocken, r3 } = G;
+    const { s, A, takt, stehen, tage, wetter, trocken, r3 } = G;
     const W = o.orte.wiese;
     const H = (x, z) => r._voxelSurfaceY(x, z);
     s.autoSeason = false;
@@ -723,13 +729,13 @@ async function alterSpurProbe(r, T, o, G) {
     trocken();
     const zwei = alterSpurMessen(r, T, G, plan);
     // 30 Tage trocken (das Wort des Spielers „sunny“), dann 30 Tage im Regen („rainy“), gemessen je trocken zu Mittag
-    r._setWeather("sunny", "human");
+    wetter("sunny");
     tage(30);
     trocken();
     await stehen(ebene.x, ebene.z);
     const mitte = alterSpurMessen(r, T, G, plan);
     const tagMitte = (s.worldMeta && s.worldMeta.tag) || 0;
-    r._setWeather("rainy", "human");
+    wetter("rainy");
     tage(30);
     trocken();
     await stehen(ebene.x, ebene.z);
@@ -995,7 +1001,7 @@ const weltBefehl = (proben, helfer = []) => [
 const weltZeile = (j, lauf, name) => (j && j.proben && j.proben[name]) || jsonZeile(lauf.stdout, new RegExp("^WELTPROBE " + name + " "));
 const WELT_G1 = weltBefehl([["seil", seilProbe], ["stoss", stossProbe], ["feld", feldProbe], ["alter", alterProbe], ["schnee", schneeProbe]]);
 const ALTER_SPUR = weltBefehl([["alterspur", alterSpurProbe], ["alterspur-reload", alterSpurReload, { neuladen: true }]], [alterSpurMessen]);
-const WELT_PFAD = ["stamm/dirigent-*.js", "stamm/daten.js", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs", "spec/profiband/haushalt.json"];
+const WELT_PFAD = ["stamm/dirigent-*.js", "stamm/daten.js", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "spec/profiband/haushalt.json"];
 
 // DIE ROH-AUSGABE der Welt-Probe am main 25ac4c0c (01.11., Cloud, headless): die Proben jeder Station urteilen sie und ihre Mutanten
 const WELT_ROH = {"seil": {"klingen": 22, "seile": [], "je": {}, "namen": ["langschwert", "saebel", "degen", "grossschwert", "dolch", "messer", "langbogen", "kriegsbogen", "reiterbogen", "recurvebogen", "streitkolben", "kriegsaxt", "kriegshammer", "keule", "faellaxt", "spaltmaul", "vorschlaghammer", "beil", "spitzhacke", "spaten", "schaufel", "sichel"]}, "stoss": {"ort": [-280.4, -1045.6], "knoechel": 4, "echt": {"masse": 89.022, "ausfallM": 0.008, "querM": 0.008, "erholtS": 0.2, "sturz": false}, "gegen": {"masse": 89.022, "ausfallM": 0.008, "querM": 0.008, "erholtS": 0.2, "sturz": false}, "schwer": {"masse": 178.043, "ausfallM": 0.004, "querM": 0.004, "erholtS": 0.2, "sturz": false}}, "feld": {"zelleM": 16, "mitte": [-280, -1048], "nachbar": [-248, -1048], "vor": {"mitte": {"alle": 29, "blumen": 26}, "nachbar": {"alle": 30, "blumen": 24}, "feld": [0.855, 0.658]}, "ruhe": {"mitte": {"alle": 29, "blumen": 26}, "nachbar": {"alle": 30, "blumen": 24}, "feld": [0.855, 0.658]}, "nach": {"mitte": {"alle": 29, "blumen": 26}, "nachbar": {"alle": 30, "blumen": 24}, "feld": [1, 0.658]}, "akt": true}, "alter": {"dorf": [-841, -861], "tag": 30, "klassen": 14, "je": {"bodenSatz": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "formationenSatz": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "streuSatz": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "bauSatz": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "f:birke:L0": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "f:eiche:L0": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "f:fichte:L0": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "f:tanne:L0": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "f:birke:L1": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "f:eiche:L1": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "f:fichte:L1": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "f:weide:L1": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "f:strauch:L1": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}, "f:tanne:L1": {"nord": 0, "sued": 0, "oben": 0, "rausch": 0}}}, "schnee": {"ort": [-280.4, -1045.6], "hoeheM": 27.612, "versatz": -160, "tag": 40, "proben": 317, "deckung": 1, "fuss": {"tiefeM": -0.01, "schnee": 1}, "gegen": {"tiefeM": -0.01, "schnee": 0, "versatz": 0}}};
