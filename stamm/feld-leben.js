@@ -264,20 +264,15 @@ class AnazhRealm_feld_leben {
         return ["tat.wirkt", { op: String(op) }];
     }
 
-    // Der Ort eines Positions-Knotens als Zeile der Tafel (ein Wert der Tat-Zeile).
+    // Der Ort eines Positions-Knotens als Zeile der Tafel (ein Wert der Tat-Zeile): jeder Ort der DSL (`dslPositions`, aus
+    // derselben Tafel liest die KI ihre Orte) ist eine Zeile `tat.ort.<ort>` — gate:sprache F zählt sie aus `dslPositions`.
     _describeDslPosition(arg) {
-        const ORT = {
-            at_player: 1,
-            at_player_forward: 1,
-            near_player: 1,
-            random_position: 1,
-            near_water: 1,
-            far_player: 1,
-            at_field_need: 1,
-        };
         const head = Array.isArray(arg) ? arg[0] : null;
-        if (head === "at" && arg.length >= 4) return ["tat.ort.at", { x: arg[1], y: arg[2], z: arg[3] }];
-        return ORT[head] ? [`tat.ort.${head.replace(/_/g, "-")}`] : ["tat.ort.stelle"];
+        if (head === "at")
+            return arg.length >= 4 ? ["tat.ort.at", { x: arg[1], y: arg[2], z: arg[3] }] : ["tat.ort.stelle"];
+        return typeof head === "string" && Object.hasOwn(this.dslPositions, head)
+            ? [`tat.ort.${head.replace(/_/g, "-")}`]
+            : ["tat.ort.stelle"];
     }
 
     // Die Bedingung eines Gesetzes als Zeile der Tafel; ihre Achse (joy, lebendig …) und Zahl sind Werte.
@@ -305,14 +300,15 @@ class AnazhRealm_feld_leben {
         if (op === "and" || op === "or")
             return a
                 .map((c) => this._describeDslCondition(c))
-                .reduce((x, y) => [`tat.wenn.${op === "and" ? "und" : "oder"}`, { a: x, b: y }]);
+                .reduce((x, y) => [op === "and" ? "tat.wenn.und" : "tat.wenn.oder", { a: x, b: y }]);
         if (op === "not") return ["tat.wenn.nicht", { bedingung: this._describeDslCondition(a[0]) }];
         return ["tat.wenn.op", { op: String(op) }];
     }
 
-    // Das Wort des Wetters als Zeile der Tafel (`wetter.<wort>`); ein Wort, das die Welt nicht kennt, steht als Datum.
+    // Das Wort des Wetters als Zeile der Tafel (`wetter.<wort>`, je Wort der DSL: `WETTER_WOERTER`); ein Wort, das die Welt
+    // nicht kennt, steht als Datum.
     _wetterZeile(wort) {
-        return wort in AnazhRealm.WEATHER_INTENSITY || wort === "frei" ? [`wetter.${wort}`] : String(wort);
+        return AnazhRealm.WETTER_WOERTER.includes(wort) ? [`wetter.${wort}`] : String(wort);
     }
 
     _dslDescriptionTable() {
@@ -2716,7 +2712,9 @@ class AnazhRealm_feld_leben {
     // steht — gewollt, gesetzt, je gefallenem Wurf sein Grund (`SETZ_GRUND`: die Wand, das Budget, die Obergrenze, das Buch,
     // die Wurzel nennt ihren über `opts.absage`) —; ein Bau, der folgt (das Dorf), trägt seinen Satz (`folgt`) und meldet sein
     // Ergebnis selbst, wenn er steht. Der Satz des Spielers (`_ergebnisSatz`) liest nur das.
-    _setzErgebnis(ctx, op, gewollt, gesetzt, gruende, art, verb, folgt) {
+    _setzErgebnis(ctx, op, gewollt, gesetzt, gruende, art, verb = "gesetzt", folgt) {
+        if (!Object.hasOwn(AnazhRealm.SETZ_VERB, verb))
+            throw new Error(`_setzErgebnis: das Verb „${verb}“ fehlt in SETZ_VERB`);
         ctx.log.push({
             event: "ergebnis",
             op,
@@ -2724,7 +2722,7 @@ class AnazhRealm_feld_leben {
             gesetzt,
             gruende: Object.assign({}, gruende),
             art: art || null,
-            verb: verb || "gesetzt",
+            verb,
             folgt: folgt || null,
         });
     }
@@ -2754,7 +2752,6 @@ class AnazhRealm_feld_leben {
         // Verb und jeder Grund (`SETZ_GRUND`: Schlüssel der Tafel) sind Werte; `kern` trägt die Sätze ohne Punkt (die Stimme
         // des Felds setzt sie in Klammern), `satz` mit Punkt für den Chat
         const G = AnazhRealm.SETZ_GRUND;
-        const PRAESENS = { gewachsen: "waechst", gebaut: "steht", erschienen: "erscheint", gerufen: "erscheint" };
         const kette = (zeilen, k) => zeilen.reduce((x, y) => [k, { a: x, b: y }]);
         const saetze = liste.map((a) => {
             if (a.folgt) return a.folgt;
@@ -2783,7 +2780,7 @@ class AnazhRealm_feld_leben {
                     { n: String(a.gesetzt), von: String(a.gewollt), art, verb, fehl: String(fehl), gruende },
                 ];
             const weiter = a.gruende.lichtung || a.gruende.haus || a.gruende.bau || a.gruende.weg || a.gruende.wasser;
-            const praes = PRAESENS[a.verb] || "steht";
+            const praes = AnazhRealm.SETZ_VERB[a.verb];
             return liste.length > 1
                 ? ["ergebnis.mehrere", { art, nichts: [`ergebnis.art.${praes}`], gruende }]
                 : [
@@ -2910,6 +2907,17 @@ AnazhRealm.SETZ_GRUND = Object.freeze({
     vertrag: "grund.vertrag",
     regler: "grund.regler",
     unbenannt: "grund.unbenannt",
+});
+// DIE VERBEN DES ERGEBNIS-SATZES (`_setzErgebnis`): je Verb sein Präsens („hier wächst nichts"); Verb und Präsens sind Zeilen
+// der Tafel (`ergebnis.verb.<verb>`, `ergebnis.art.<präsens>`, `ergebnis.hier.<präsens>` — gate:sprache F zählt sie hier). Ein
+// Verb außerhalb der Tafel bricht laut am Setzer, nie erst im Satz.
+AnazhRealm.SETZ_VERB = Object.freeze({
+    gesetzt: "steht",
+    gebaut: "steht",
+    gepraegt: "steht",
+    gewachsen: "waechst",
+    erschienen: "erscheint",
+    gerufen: "erscheint",
 });
 // DER STUDIO-SATZ (Leser: die letzte Chat-Regel und `_studioSatzAbsage`): Verb · Zahl · Art (auch leer vor einem Hain) ·
 // Hain/Wald/Gruppe · am Wasser | hier/vor mir.

@@ -31,6 +31,11 @@ class AnazhRealm_daten {
             Object.freeze({ sunny: 0, foggy: 0.45, cloudy: 0.8, rainy: 1, stormy: 1.35 })
         );
     }
+    // DIE WORTE DER DSL-Op `weather`: die Achse und „frei" (der Spieler gibt sein Wort zurück, `_wetterFreigeben`). Leser: das
+    // Gesetz der Werte (`DSL_WERTE`), die Zeile des Worts (`_wetterZeile`: `wetter.<wort>`, gate:sprache F zählt sie hier).
+    static get WETTER_WOERTER() {
+        return this._einmal("WETTER_WOERTER", Object.freeze([...Object.keys(AnazhRealm.WEATHER_INTENSITY), "frei"]));
+    }
     // DIE WORTE DER WELT sind die Zeilen des Wetter-Gesetzes (phyto-core WX_GESETZ, wetter.K1): sunny = klar · cloudy =
     // bewoelkt · foggy = nebel · rainy = regen · stormy = sturm — alle fünf Zeilen, die das Labor kennt. Leser: WEATHER_FIELD,
     // die Front am Ort (`_wetterAmOrt` liest die Zeile des Kerns und spricht ihr Wort, `WETTER_WORT`).
@@ -2929,6 +2934,7 @@ class AnazhRealm_daten {
             "tat.ohne-werkzeug": ["nimmt Kreatur #{id} das Werkzeug ab", "takes the tool from creature #{id}"],
             "tat.ort.at": ["bei ({x}, {y}, {z})", "at ({x}, {y}, {z})"],
             "tat.ort.at-field-need": ["dorthin, wo es am meisten fehlt", "to where it is missing most"],
+            "tat.ort.at-origin": ["am Ursprung der Welt", "at the origin of the world"],
             "tat.ort.at-player": ["beim Spieler", "at the player"],
             "tat.ort.at-player-forward": ["vor dem Spieler", "in front of the player"],
             "tat.ort.far-player": ["in der Ferne", "in the distance"],

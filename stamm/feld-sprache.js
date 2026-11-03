@@ -1339,12 +1339,12 @@ class AnazhRealm_feld_sprache {
             const dx = e.x - pm.x;
             const dz = e.z - pm.z;
             const d = Math.round(Math.hypot(dx, dz));
-            const RICHTUNG = ["n", "no", "o", "so", "s", "sw", "w", "nw"];
-            const sektor = Math.round((Math.atan2(dx, -dz) / (2 * Math.PI)) * 8 + 8) % 8;
+            const R = AnazhRealm.FELDSTIMME_RICHTUNG;
+            const sektor = Math.round((Math.atan2(dx, -dz) / (2 * Math.PI)) * R.length + R.length) % R.length;
             wo =
                 d < 2
                     ? ["feldstimme.bei-dir"]
-                    : ["feldstimme.abstand", { d: String(d), richtung: [`feldstimme.richtung.${RICHTUNG[sektor]}`] }];
+                    : ["feldstimme.abstand", { d: String(d), richtung: [`feldstimme.richtung.${R[sektor]}`] }];
         }
         const weil = [
             e.bedingung && this._describeDslCondition(e.bedingung),
@@ -1379,10 +1379,12 @@ class AnazhRealm_feld_sprache {
     _wetterSchreiberZeile() {
         const q = this.state.wetterSchreiber;
         if (!q || q === "?") return ["wetter.schreiber.unbekannt"];
-        if (q === "front" || q === "laden") return [`wetter.schreiber.${q}`];
+        if (q === "front") return ["wetter.schreiber.front"];
+        if (q === "laden") return ["wetter.schreiber.laden"];
         if (/^(rule:)*llm:/.test(q)) return ["wetter.schreiber.ki"];
         const wer = this._himmelSchreiber(q, "wetter");
-        if (wer === "spieler" || wer === "gesetz") return [`wetter.schreiber.${wer}`];
+        if (wer === "spieler") return ["wetter.schreiber.spieler"];
+        if (wer === "gesetz") return ["wetter.schreiber.gesetz"];
         return ["wetter.schreiber.welt", { wer: this._tatSchreiber(q).nom }];
     }
 
@@ -1408,20 +1410,27 @@ class AnazhRealm_feld_sprache {
             q = q.slice(5);
             gesetz = true;
         }
-        let wer;
+        // je Schreiber zwei Zeilen [Nominativ, Genitiv] und seine Werte
+        let nom;
+        let gen;
         let werte;
-        if (q === "nexus") wer = "nexus";
-        else if (q.startsWith("llm")) wer = "ki";
-        else if (q.startsWith("emotion:")) [wer, werte] = ["stimmung", { q: q.slice(8) }];
-        else if (q.startsWith("creature:")) [wer, werte] = ["wesen", { q: q.slice(9) }];
-        else [wer, werte] = ["anderer", { q }];
-        const gen = [`feldstimme.gen.${wer}`, werte];
-        return { nom: gesetz ? ["feldstimme.wer.gesetz", { gen }] : [`feldstimme.wer.${wer}`, werte], gen };
+        if (q === "nexus") [nom, gen] = ["feldstimme.wer.nexus", "feldstimme.gen.nexus"];
+        else if (q.startsWith("llm")) [nom, gen] = ["feldstimme.wer.ki", "feldstimme.gen.ki"];
+        else if (q.startsWith("emotion:"))
+            [nom, gen, werte] = ["feldstimme.wer.stimmung", "feldstimme.gen.stimmung", { q: q.slice(8) }];
+        else if (q.startsWith("creature:"))
+            [nom, gen, werte] = ["feldstimme.wer.wesen", "feldstimme.gen.wesen", { q: q.slice(9) }];
+        else [nom, gen, werte] = ["feldstimme.wer.anderer", "feldstimme.gen.anderer", { q }];
+        gen = [gen, werte];
+        return { nom: gesetz ? ["feldstimme.wer.gesetz", { gen }] : [nom, werte], gen };
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_feld_sprache]);
 
 // ===== ATLAS · Feld/sprache — Außen-Konstanten =====
+// DIE ACHT RICHTUNGEN der Stimme des Felds (`_feldStimmeZeile`, ab Norden im Uhrzeigersinn): je Richtung eine Zeile der Tafel
+// `feldstimme.richtung.<r>` — gate:sprache F zählt sie hier.
+AnazhRealm.FELDSTIMME_RICHTUNG = Object.freeze(["n", "no", "o", "so", "s", "sw", "w", "nw"]);
 // LEBENDIGE WERTUNG (lesen → schreiben → WERTEN): gleitende Baseline (EMA-Tiefpass) + Differenz
 // δ = x − baseline — braucht nur Zeitkonstanten. Reaktiv (nicht persistiert, kein Worker-Mirror).
 //   cell        — Zell-Größe der Baseline-Map (= LIFE_FIELD.cell, 16 m)

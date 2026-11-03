@@ -2402,11 +2402,7 @@ AnazhRealm.DSL_WERTE = (() => {
             ),
     ];
     return Object.freeze({
-        weather: [
-            0,
-            (v) => v === "frei" || Object.hasOwn(AnazhRealm.WEATHER_INTENSITY, v),
-            () => [...Object.keys(AnazhRealm.WEATHER_INTENSITY), "frei"].join(" | "),
-        ],
+        weather: [0, (v) => AnazhRealm.WETTER_WOERTER.includes(v), () => AnazhRealm.WETTER_WOERTER.join(" | ")],
         set_time_of_day: [
             0,
             (v) => zahlIn(v, 0, 1),

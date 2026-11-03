@@ -18,8 +18,11 @@
 //      `[schlüssel, werte]`);
 //   F) ein Schlüssel einer FAMILIE (`` `präfix.${…}` ``, zur Laufzeit gesetzt) fehlt: je Familie zählt ihre Quelle jede id auf —
 //      die Bücher des Manifests (der Kanal get-book im vm: je Rezept `gestalt.<id>`, je Kern `studio.<kern>`, je Art
-//      `art.<art>`; ohne Zeile spräche es nur das deutsche Wort seines Buchs, `_buchWort`) und die Befund-Arten der
-//      Speicher-Kette (`art:` in `befund`); eine Familie ohne Quelle steht selbst beim Namen.
+//      `art.<art>`; ohne Zeile spräche es nur das deutsche Wort seines Buchs, `_buchWort`) und die Register der Klasse, aus
+//      denen der Stamm die id nimmt (`dslPositions` → `tat.ort.`, `WETTER_WOERTER` → `wetter.`, `SETZ_VERB` → `ergebnis.verb.`
+//      und sein Präsens → `ergebnis.art.`/`ergebnis.hier.`, `KI_BEISPIELE` → `ki.beispiel-satz.`/`-say.`, `FELDSTIMME_RICHTUNG`
+//      → `feldstimme.richtung.`); eine Familie ohne Quelle steht selbst beim Namen. Ein Zweig aus wenigen Fällen schreibt seine
+//      Schlüssel als Literale (K liest sie), ein freier Wert reist in den Werten, nie im Schlüssel.
 // DER WERT-TEXT (spielgang.K5#2): ein Satz, den der Spieler als WERT einer Zeile liest, ist selbst eine Senke — die Antwort des
 // Chat-Satzes (`describe:`), die Absage eines Gesetzes (`absage:`) und jede Rückgabe eines Satz-Bauers (SATZ: die Tat in Worten,
 // der Satz des Ergebnisses, die Stimme des Felds, die Absage, die Hilfe, die Antwort auf das Wetter). Bis w8-sprache sah die Wand
@@ -37,12 +40,27 @@
 const { ausDatei, stammLib, ROOT, SELBSTTEST, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
 const { kanalImVm } = require("./lib/asset-worker-harness.cjs");
 
-// F: die ids jeder Familie aus ihrer Quelle — das Buch der Kerne des Manifests (der Kanal im vm, ~0,2 s)
+// F: die ids jeder Familie aus ihrer EINEN Quelle — das Buch der Kerne des Manifests (der Kanal im vm, ~0,2 s) und die
+// Register der geladenen Klasse, aus denen der Stamm die id nimmt (die Orte der DSL, die Wetter-Worte, die Verben des
+// Ergebnisses, die Beispiele der KI, die Richtungen der Stimme)
 const { book, stammbaum } = kanalImVm()({ type: "get-book" });
-const QUELLE = {
-    "gestalt.": Object.keys(book).map((id) => id.replace(/_/g, "-")),
-    "studio.": stammbaum.kerne.map((k) => k.kern),
-    "art.": stammbaum.kerne.flatMap((k) => Object.keys(k.arten)),
+const kebab = (id) => id.replace(/_/g, "-");
+const quelle = (A) => {
+    const praesens = Object.values(A.SETZ_VERB);
+    const beispiele = A.KI_BEISPIELE.map(([k]) => k);
+    return {
+        "gestalt.": Object.keys(book).map(kebab),
+        "studio.": stammbaum.kerne.map((k) => k.kern),
+        "art.": stammbaum.kerne.flatMap((k) => Object.keys(k.arten)),
+        "tat.ort.": Object.keys(Reflect.get(A.prototype, "dslPositions", {})).map(kebab),
+        "wetter.": A.WETTER_WOERTER,
+        "ergebnis.verb.": Object.keys(A.SETZ_VERB),
+        "ergebnis.art.": praesens,
+        "ergebnis.hier.": praesens,
+        "ki.beispiel-satz.": beispiele,
+        "ki.beispiel-say.": beispiele,
+        "feldstimme.richtung.": A.FELDSTIMME_RICHTUNG,
+    };
 };
 
 const wort = (t) => {
@@ -87,7 +105,7 @@ function senke(n, ahnen) {
     return null;
 }
 
-function pruefe({ dateien, html, Z }) {
+function pruefe({ dateien, html, Z, Q }) {
     const rot = [];
     const genutzt = new Set();
     const familien = new Map();
@@ -117,7 +135,7 @@ function pruefe({ dateien, html, Z }) {
     // eine Familie liest genau die Zeilen ihrer Quelle (eine ohne Quelle nennt sich selbst: „präfix.…“)
     for (const [f, ort] of familien)
         if (SCHLUESSEL.test(f + "x"))
-            for (const id of QUELLE[f] || ["…"])
+            for (const id of Q[f] || ["…"])
                 if (genutzt.add(f + id) && !(f + id in Z)) rot.push(`F: ${ort} „${f + id}“ fehlt in der Tafel`);
     for (const k of Object.keys(Z)) if (!genutzt.has(k)) rot.push(`U: die Zeile „${k}“ trägt keinen Leser`);
     return rot;
@@ -127,7 +145,7 @@ function pruefe({ dateien, html, Z }) {
 function lies(dateien, html) {
     try {
         const { AnazhRealm } = stammLib.ladeKlasse(ROOT, { teile: dateien });
-        return { dateien, html, Z: { ...AnazhRealm.TEXTE.de } };
+        return { dateien, html, Z: { ...AnazhRealm.TEXTE.de }, Q: quelle(AnazhRealm) };
     } catch (e) {
         return { dateien, html, Z: {}, T: `T: die Tafel lädt nicht — ${String(e.message).split("\n")[0]}` };
     }
@@ -152,9 +170,21 @@ if (require.main !== module) {
         ["mehrzeiliger Ausdruck", "C", mit('function p(el, an) { el.innerHTML = an +\n    zeile("Impostor"); }')],
         ["harter Chat", "C", mit("function p(n) { this._chatEcho(`Die Welt hört dich, ${n}!`); }")],
         ["hartes _el", "C", mit('function p() { this._el("button", { text: "Speichern" }); }')],
-        ["harter Chat-Satz (describe)", "C", mit('function p() { return { program: [], describe: "Baum gepflanzt" }; }')],
-        ["harte Rückgabe eines Satz-Bauers", "C", mit("class X { describeProgram(a) { return `lässt das Wetter zu ${a} wechseln`; } }")],
-        ["harter Satz im Pfeil des Satz-Bauers", "C", mit('class X { _dslDescriptionTable() { return { abbau: () => "baut ein Bauwerk ab" }; } }')],
+        [
+            "harter Chat-Satz (describe)",
+            "C",
+            mit('function p() { return { program: [], describe: "Baum gepflanzt" }; }'),
+        ],
+        [
+            "harte Rückgabe eines Satz-Bauers",
+            "C",
+            mit("class X { describeProgram(a) { return `lässt das Wetter zu ${a} wechseln`; } }"),
+        ],
+        [
+            "harter Satz im Pfeil des Satz-Bauers",
+            "C",
+            mit('class X { _dslDescriptionTable() { return { abbau: () => "baut ein Bauwerk ab" }; } }'),
+        ],
         ["harter title", "C", mit('function p(el) { el.setAttribute("title", "Schließen"); }')],
         ["fremder Schlüssel", "K", mit('function p(el) { el.textContent = this._t("gibt.es.nicht"); }')],
         ["aufgelöste Chat-Zeile", "Z", mit('function p() { this._chatEcho(this._t("ui.abbrechen")); }')],
@@ -164,6 +194,8 @@ if (require.main !== module) {
         ["Wert nur in de", "T", daten(/("ui\.[^"]+": \["[^"]*)", /, '$1 {n}", ')],
         ["Rezept ohne Zeile", "F", daten('"gestalt.eiche": ["Eiche", "Oak"],', "")],
         ["Familie ohne Quelle", "F", mit("(x) => `hud.neu.${x}`")],
+        ["Ort der DSL ohne Zeile", "F", daten(/\n\s*"tat\.ort\.at-origin": .*/, "")],
+        ["Wetter-Wort ohne Zeile", "F", daten(/\n\s*"wetter\.foggy": .*/, "")],
     ];
     const fehler = [];
     for (const [name, klasse, mut] of FAELLE) {
