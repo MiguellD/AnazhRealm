@@ -452,21 +452,30 @@ function absorber() {
     });
     return a;
 }
-function kanalImVm(quellen = {}) {
-    const vm = require("vm");
-    const posts = [];
-    const ctx = vm.createContext({
+// DER KONTEXT EINES KERNS IM VM: stumm, die Uhr steht, `self` und `globalThis` sind er selbst — `mit` legt dazu, was der
+// Kern dort liest (ohne: THREE als Absorber). Bis streaming-k5 baute jede Linse ihn selbst (die Vertrags-Linse zweimal, die
+// Streu-Linse, dieser Kanal).
+function kernKontext(mit = { THREE: absorber() }) {
+    const ctx = require("vm").createContext({
         console: { log() {}, warn() {}, error() {} },
         performance: { now: () => 0 },
-        OffscreenCanvas: absorber(),
-        __anazhCores: CORES_MANIFEST,
-        postMessage: (p) => posts.push(p),
-        // DER START DES FADENS (studios.K1): die Brücke startet im vm wie im Foundry-Worker (`foundryModus`: die Stoffe, der
-        // Sommer, der Foundry-Modus) — ohne ihn backte der erste Baum den Blatt-Atlas in einen ungebauten Stoff und lieferte 0 Teile
-        __PHYTO_FOUNDRY_WORKER: true,
+        ...mit,
     });
     ctx.self = ctx;
     ctx.globalThis = ctx;
+    return ctx;
+}
+function kanalImVm(quellen = {}) {
+    const vm = require("vm");
+    const posts = [];
+    // DER START DES FADENS (studios.K1): die Brücke startet im vm wie im Foundry-Worker (`foundryModus`: die Stoffe, der Sommer,
+    // der Foundry-Modus) — ohne ihn backte der erste Baum den Blatt-Atlas in einen ungebauten Stoff und lieferte 0 Teile
+    const ctx = kernKontext({
+        OffscreenCanvas: absorber(),
+        __anazhCores: CORES_MANIFEST,
+        postMessage: (p) => posts.push(p),
+        __PHYTO_FOUNDRY_WORKER: true,
+    });
     for (const p of WORKER_SCRIPTS) {
         const f = p.replace(/^\//, "");
         const src = Object.prototype.hasOwnProperty.call(quellen, f)
@@ -509,7 +518,7 @@ module.exports = {
     fingerprintMeshes,
     DATEN_KANAELE,
     kanalImVm,
-    absorber,
+    kernKontext,
     bauAbdruck,
     bauBild,
     BAU_BILD_QUELLE,
