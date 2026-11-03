@@ -26,85 +26,98 @@ const sitzung = (sek, ...zeilen) => ({ sek, befehl: ["bash", "-c", [...KOPF, ...
 // (DER EIGENE BOOT von siedlung.K5 fiel am 29.10.: auch dort misst die Kälte der EINE Start der Sitzung — `dorfErwachen` unten.)
 const K = { K: "{KOORD}" }; // die Mess-Skripte der Berichte liegen im Koordinations-Baum (bericht/…)
 
-// ───────── DIE ZÄHLUNG HARTER STRINGS (spielgang.K5, p3-stationen-g456) — läuft als `node -e` im Spiel-Baum, Null-Renderer ─────────
-async function textZaehlung(port, aus) {
+// ───────── DIE LEBENDE SPRACH-ZÄHLUNG (spielgang.K5#1, w6-spielgang-decke) — läuft als `node -e` im Spiel-Baum, Null-Renderer ─────────
+// Den CODE zählt die EINE Wand des Baums (`scripts/diag-sprache.cjs`, per require `befund(baum())`: jede UI-Senke mit Wort-Text, jedes
+// Daten-Etikett, jeder fehlende oder ungelesene Schlüssel); das DOM zählt diese Probe (bis w6-spielgang-decke als `diag-sprache
+// --lebend` im Baum, dort ohne Leser in der CI — die Decke scripts/ zahlte +1895 Atome für Code, den nur die Station liest).
+async function sprachLauf(port, aus) {
     const path = require("path");
     const fs = require("fs");
     const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
-    let out = { glieder: 0 };
+    const S = require(path.resolve("scripts/diag-sprache.cjs")); // ohne Export (der Stand vor w6-spielgang-decke) endet hier der Lauf
+    // die Erzeuger-Wache (vor jedem Skript der Seite): je Schreiber von Sprache der erste Rahmen in stamm/ ohne die Helfer
+    function ZEUGE() {
+        const zeugen = (window.__sprachZeugen = new WeakMap());
+        const merke = (o, v) => {
+            if (!o || typeof v !== "string" || !/[A-Za-zÄÖÜäöüß]{2,}/.test(v)) return;
+            for (const z of String(new Error().stack).split("\n")) {
+                const m = /\/((?:stamm|worlds)\/[^\s:)?]+)[^:]*:(\d+)/.exec(z);
+                const fn = (/at (?:async )?([\w.$]+) \(/.exec(z) || [])[1] || "";
+                if (m && !/(^|\.)(_el|_elAppend|_tSetze|_chatEcho)$/.test(fn))
+                    return zeugen.set(o, `${m[1]}:${m[2]} ${fn.replace(/^AnazhRealm[\w$]*\./, "")}`.trim());
+            }
+        };
+        const haken = (proto, feld, ziel = (o) => o) => {
+            const d = Object.getOwnPropertyDescriptor(proto, feld);
+            Object.defineProperty(proto, feld, { ...d, set(v) { merke(ziel(this), v); d.set.call(this, v); } });
+        };
+        haken(Node.prototype, "textContent");
+        haken(Element.prototype, "innerHTML");
+        haken(CharacterData.prototype, "data", (n) => n.parentElement || n);
+        haken(HTMLElement.prototype, "title");
+        const [ctn, sa] = [Document.prototype.createTextNode, Element.prototype.setAttribute];
+        Document.prototype.createTextNode = function (v) { const n = ctn.call(this, v); merke(n, v); return n; };
+        Element.prototype.setAttribute = function (a, v) { merke(this, v); return sa.call(this, a, v); };
+    }
+    // die Zählung im Fenster: je Zeile Erzeuger · Ort · Text, Daten, Marke; `wechsel` gibt die stehenden
+    function ZAEHLE(wechsel) {
+        const zeugen = window.__sprachZeugen || new WeakMap();
+        const ort = (el) => (el.closest("[id]") ? "#" + el.closest("[id]").id + " " : "") + el.tagName.toLowerCase();
+        const zeilen = [];
+        const zeile = (n, el, wo, t) => {
+            t = String(t).replace(/\s+/g, " ").trim();
+            if (!/[A-Za-zÄÖÜäöüß]{2,}/.test(t)) return;
+            const name = `${zeugen.get(n) || zeugen.get(el) || "index.html"} · ${ort(el)}${wo}: ${t.slice(0, 90)}`;
+            const daten = !!el.closest('[translate="no"]');
+            const marke = t.includes("⟦");
+            zeilen.push({ name, daten, marke, hart: daten ? marke : /[A-Za-zÄÖÜäöüß]{2,}/.test(t.replace(/⟦[^⟧]*⟧|⁨[^⁩]*⁩/g, " ")) });
+        };
+        const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n = tw.nextNode(); n; n = tw.nextNode())
+            if (!/^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE)$/.test(n.parentElement.tagName)) zeile(n, n.parentElement, "", n.textContent);
+        zeile(document.documentElement, document.documentElement, " <title>", document.title);
+        for (const el of document.body.querySelectorAll("[title],[placeholder],[aria-label],[alt]"))
+            for (const a of ["title", "placeholder", "aria-label", "alt"]) if (el.hasAttribute(a)) zeile(el, el, " @" + a, el.getAttribute(a));
+        if (wechsel) return zeilen.filter((z) => z.marke && !z.daten).map((z) => z.name);
+        const C = window.anazhRealm.constructor;
+        const [de, en] = [C.TEXTE.de, C.TEXTE.en || {}];
+        return {
+            sprache: C._sprache(),
+            glieder: Object.getOwnPropertyNames(C.prototype).length,
+            zeilen: zeilen.length,
+            markiert: zeilen.filter((z) => z.marke && !z.hart).length,
+            hart: zeilen.filter((z) => z.hart).map((z) => z.name),
+            daten: zeilen.filter((z) => z.daten).length,
+            quelle: Object.keys(de).every((k) => k in en) && `AnazhRealm.TEXTE (de ${Object.keys(de).length}, en ${Object.keys(en).length})`,
+        };
+    }
+    const statisch = S.befund(S.baum());
+    const out = { glieder: 0, code: statisch.length, beispiele: statisch.slice(0, 3) };
     const server = WB.statikServer();
     await server.lausche(Number(port));
     const { browser, page } = await WB.nullSeite({ frist: 300000 });
     try {
-        await server.zeige(page, 120000);
+        await page.evaluateOnNewDocument(ZEUGE);
+        await server.zeige(page, 120000, "index.html?sprache=pseudo");
         await page.evaluate(() => window.__weltDa((r) => r.state._weltbildDa > 0));
-        out = await page.evaluate(() => {
-            const r = window.anazhRealm, C = r.constructor;
-            if (typeof window.__codeOf !== "function") return { glieder: 0, fehler: "die Seite trägt kein window.__codeOf" };
-            const SENKE = /\.(textContent|innerText|innerHTML|title|placeholder)\s*=(?!=)\s*|\b(_hudSchreib|_chatEcho|alert|confirm|prompt)\s*\(/g;
-            const LIT = /"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`/g;
-            // Wort-Text: nach Abzug von `${…}`, Markup und Entitäten ein Wort aus ≥ 2 Buchstaben UND ein Zeichen der Sprache (Großbuchstabe,
-            // Umlaut, Satzzeichen) — Bezeichner, CSS-Klassen, Attribut-Namen und Vergleichs-Wörter („width“, „stats-hud-hp-glow“, „third“) nie
-            const wort = (l) => {
-                const t = l.slice(1, -1).replace(/\$\{[^}]*\}/g, " ").replace(/<[^>]*>/g, " ").replace(/&\w+;/g, " ");
-                return /[A-Za-zÄÖÜäöüß]{2,}/.test(t) && /[A-ZÄÖÜäöüß…!?:]/.test(t);
-            };
-            // der Ausdruck hinter der Senke: bis zum Ende der Anweisung (Zuweisung) bzw. bis zur schließenden Klammer (Ruf)
-            const ausdruck = (code, i, ruf) => {
-                let tiefe = 0, q = null;
-                for (let k = i; k < code.length; k++) {
-                    const c = code[k];
-                    if (q) { if (c === "\\") k++; else if (c === q) q = null; continue; }
-                    if (c === '"' || c === "'" || c === "`") q = c;
-                    else if ("([{".includes(c)) tiefe++;
-                    else if (")]}".includes(c)) { if (tiefe === 0) return code.slice(i, k); tiefe--; }
-                    else if (!ruf && tiefe === 0 && (c === ";" || c === "\n")) return code.slice(i, k);
-                }
-                return code.slice(i);
-            };
-            const glieder = [];
-            for (const o of [C.prototype, C])
-                for (const k of Object.getOwnPropertyNames(o)) {
-                    const d = Object.getOwnPropertyDescriptor(o, k);
-                    if (k !== "constructor" && d && typeof d.value === "function") glieder.push([k, d.value]);
-                }
-            const senken = {}, beispiele = [], mit = new Set(), gesehen = new Set();
-            for (const [name, fn] of glieder) {
-                const code = window.__codeOf(fn);
-                for (const m of code.matchAll(SENKE)) {
-                    const s = m[1] || m[2];
-                    for (const l of (ausdruck(code, m.index + m[0].length, !!m[2]).match(LIT) || []).filter(wort)) {
-                        const key = name + "|" + l;
-                        if (gesehen.has(key)) continue;
-                        gesehen.add(key);
-                        mit.add(name);
-                        senken[s] = (senken[s] || 0) + 1;
-                        if (beispiele.length < 8) beispiele.push(name + " " + s + ": " + l.slice(0, 60));
-                    }
-                }
-            }
-            // das DOM aus index.html: jeder Text-Knoten mit Wort-Text (auch verborgene Tafeln — sie zeigen sich später)
-            const dom = new Set();
-            const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-            for (let n = tw.nextNode(); n; n = tw.nextNode()) {
-                const p = n.parentElement;
-                if (!p || /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE)$/.test(p.tagName)) continue;
-                const t = n.textContent.trim();
-                if (/[A-Za-zÄÖÜäöüß]{2,}/.test(t)) dom.add(t.slice(0, 80));
-            }
-            // die EINE Text-Quelle: eine Tafel mit de und en (je ≥ 10 Zeilen, dieselben Schlüssel) am Stamm oder am Fenster
-            let quelle = null;
-            const tafel = (v) => v && typeof v === "object" && v.de && v.en && typeof v.de === "object" && typeof v.en === "object" &&
-                Object.keys(v.de).length >= 10 && Object.keys(v.de).every((x) => x in v.en);
-            for (const [wo, o] of [["AnazhRealm", C], ["window", window], ["state", r.state]])
-                for (const k of Object.getOwnPropertyNames(o)) {
-                    let v;
-                    try { v = o[k]; } catch (_e) { continue; }
-                    if (tafel(v)) { quelle = wo + "." + k + " (de " + Object.keys(v.de).length + ", en " + Object.keys(v.en).length + ")"; break; }
-                }
-            if (dom.size) beispiele.push(...[...dom].slice(0, 3).map((t) => "DOM: " + t));
-            return { glieder: glieder.length, gliederMit: mit.size, code: gesehen.size, dom: dom.size, senken, quelle, beispiele };
-        });
+        Object.assign(out, await page.evaluate(ZAEHLE, false));
+        // der Selbsttest im Lauf: eine harte Zeile am Leib, eine Zeile der Tafel, die beim Wechsel niemand neu liest
+        const [mit, stehen] = await page.evaluate((f) => {
+            const C = window.anazhRealm.constructor;
+            const zeile = (id, t) => document.body.appendChild(Object.assign(document.createElement("i"), { id, hidden: true, textContent: t }));
+            zeile("sprach-mutante-hart", "Hallo Welt");
+            zeile("sprach-mutante-steht", C._t(Object.keys(C.TEXTE.de).find((k) => /^[A-Za-zÄÖÜäöüß ]{4,}$/.test(C.TEXTE.de[k]))));
+            const Z = new Function("return " + f)();
+            const mit = Z(false).hart;
+            document.getElementById("sprach-mutante-hart").remove();
+            window.anazhRealm._spracheSetzen("en");
+            return [mit, Z(true)];
+        }, String(ZAEHLE));
+        const muss = (liste, id) => liste.some((h) => h.includes("#" + id));
+        out.blind = ["sprach-mutante-hart", "sprach-mutante-steht"].filter((id, i) => !muss(i ? stehen : mit, id));
+        out.stehenNamen = stehen.filter((h) => !h.includes("#sprach-mutante-steht"));
+        out.stehen = out.stehenNamen.length;
+        out.dom = out.hart.length;
     } catch (e) {
         out.fehler = String(e.message).split("\n")[0].slice(0, 300);
     } finally {
@@ -3407,40 +3420,53 @@ const stationen = [
         quelle: "1 = HUD und Menü antworten INP ≤ 200 ms und das HUD deckt ≤ 5 % des Bilds, an einem Gerät",
     },
 
-    // ───────── spielgang.K5 — die Sprache des Spielers (p3-stationen-g456): die Zählung harter Strings ─────────
-    // `textZaehlung` (oben) bootet die Welt am Null-Renderer und zählt über `window.__codeOf` (der EINE Stripper: Code ohne Kommentare)
-    // jedes Glied des Stamms (Prototyp und Statik) — je UI-Senke (`.textContent`/`.innerText`/`.innerHTML`/`.title`/`.placeholder` =,
-    // `_hudSchreib(`, `_chatEcho(`, `alert(`/`confirm(`/`prompt(`) jedes String-Literal mit Wort-Text (nach Abzug von `${…}` und
-    // Markup) als harte Zeile; dazu jeder Text-Knoten des DOM aus index.html (HUD, Werkstatt, Menüs — auch die verborgenen). Die
-    // EINE Text-Quelle erkennt sie an ihrer Lage: eine Tafel mit `de` und `en` (je ≥ 10 Zeilen, dieselben Schlüssel) am Stamm oder
-    // am Fenster. Staffel 1: 0 harte Zeilen UND die Tafel. Das Schlupfloch (nur das Menü übersetzt) bleibt zu: HUD, Werkstatt und
-    // Chat-Antworten sind Senken der Zählung.
+    // ───────── spielgang.K5 — die Sprache des Spielers: die EINE Zählung (w5-spielgang-k5) ─────────
+    // Die Station und gate:sprache lesen DIESELBE Code-Zählung (`scripts/diag-sprache.cjs`, per require in `sprachLauf` oben), das DOM
+    // zählt `sprachLauf` (bis w6-spielgang-decke `diag-sprache.cjs --lebend` im Baum): bis w5-spielgang-k5 zählte die Station hier selbst jeden Text-Knoten des DOM als hart (707 an
+    // 5fba36ea, auch „Anazh Realm“ aus der Tafel), die Wand in pseudo 19 — zwei Zählungen derselben Wahrheit. DAS GESETZ
+    // (Pseudo-Lokalisierung): die Welt bootet am Null-Renderer in `?sprache=pseudo`, jedes Stück der Tafel trägt ⟦ ⟧, jeder
+    // eingesetzte Wert ⁨ ⁩; ein Wort aus ≥ 2 Buchstaben außerhalb jeder Marke ist hart — im Text-Knoten, im Titel, in den
+    // Text-Attributen (title · placeholder · aria-label · alt), auch eine Zeile der Tafel in einem Daten-Bereich (translate="no");
+    // jede harte Zeile steht beim Namen ihres Erzeugers (Datei:Zeile Glied, die Erzeuger-Wache vor dem Boot). Dazu der Code am AST
+    // (`code`: jede UI-Senke mit Wort-Text, jedes Daten-Etikett, jeder fehlende oder ungelesene Schlüssel). DER WECHSEL AM ORT:
+    // `_spracheSetzen("en")` — jede Zeile, die danach noch ⟦ trägt, wechselte nicht (`stehen`). DER SELBSTTEST IM LAUF: die Zählung
+    // pflanzt je Lauf eine harte und eine stehende Zeile und muss beide beim Namen nennen (`blind` leer), sonst ist sie blind.
+    // Staffel 1: 0 harte Zeilen (Code und DOM) · 0 stehende · nicht blind · die Tafel AnazhRealm.TEXTE mit de und en.
+    // Gemessen (headless, cloud): main 5fba36ea ROT (die alte Zählung 707 harte Zeilen; die neue findet dort keine TEXTE-Zeile) →
+    // w5-spielgang-k5 GRÜN: 0 hart (DOM 0 von 1602 Zeilen, 1436 aus der Tafel, 166 Daten), 0 stehend, beide Mutanten genannt.
     {
         kriterium: "spielgang.K5",
         staffel: 1,
         geraet: "headless",
-        befehl: ["node", "-e", "(" + textZaehlung + ")(process.argv[1], process.argv[2]);", "{PORT}", "{AUS}"],
+        befehl: ["node", "-e", "(" + sprachLauf + ")(process.argv[1], process.argv[2]);", "{PORT}", "{AUS}"],
         gpu: false,
         zeit: false,
         minuten: 4,
         urteil: (j, lauf) => {
             j = j || jsonZeile(lauf.stdout, /^TEXTE \{/);
             if (!j || !Number.isFinite(j.glieder) || !(j.glieder > 0)) return { gruen: false, zahl: "keine TEXTE-Zeile (Exit " + lauf.exit + ")" + (j && j.fehler ? ": " + j.fehler : "") };
+            if (j.sprache !== "pseudo" || !Number.isFinite(j.dom) || !Number.isFinite(j.stehen) || !Array.isArray(j.blind))
+                return { gruen: false, zahl: "die Zählung ist nicht die EINE (keine Pseudo-Sprache, kein Wechsel am Ort, kein Selbsttest im Lauf)" + (j.fehler ? ": " + j.fehler : "") };
             const hart = j.code + j.dom;
+            const namen = [...(j.hart || []).map((t) => "DOM " + t), ...(j.stehenNamen || []).map((t) => "STEHT " + t), ...(j.beispiele || []).filter((t) => /^[CKUHT]: /.test(t))];
             return {
-                gruen: hart === 0 && !!j.quelle,
+                gruen: hart === 0 && j.stehen === 0 && j.blind.length === 0 && !!j.quelle && j.zeilen > 0 && j.markiert > 0,
                 zahl:
-                    hart + " harte UI-Zeilen (Code " + j.code + " in " + j.gliederMit + " von " + j.glieder + " Gliedern · DOM " + j.dom + ") · je Senke " +
-                    Object.entries(j.senken || {}).map(([k, n]) => k + " " + n).join(" · ") + " · Text-Quelle DE/EN: " + (j.quelle || "keine") +
-                    (j.beispiele && j.beispiele.length ? " · z. B. " + j.beispiele.slice(0, 3).join(" | ") : ""),
+                    hart + " harte UI-Zeilen (Code " + j.code + " · DOM " + j.dom + " von " + j.zeilen + " Zeilen, " + j.markiert + " aus der Tafel, " + j.daten + " Daten) · beim Wechsel auf en stehen " + j.stehen +
+                    " · Selbsttest im Lauf " + (j.blind.length ? "BLIND: " + j.blind.join(" · ") : "nennt beide Mutanten") + " · Text-Quelle DE/EN: " + (j.quelle || "keine") +
+                    (namen.length ? " · beim Namen: " + namen.slice(0, 3).join(" | ") : ""),
             };
         },
         proben: [
-            { name: "jede Zeile aus der Tafel", stdout: 'TEXTE {"glieder":4100,"gliederMit":0,"code":0,"dom":0,"senken":{},"quelle":"AnazhRealm.TEXTE (de 412, en 412)","beispiele":[]}', gruen: true },
-            { name: "nur das Menü übersetzt, HUD und Chat hart", stdout: 'TEXTE {"glieder":4100,"gliederMit":31,"code":57,"dom":0,"senken":{"_hudSchreib":20,"_chatEcho":37},"quelle":"AnazhRealm.TEXTE (de 40, en 40)","beispiele":["_hudSchreib: Werkstatt"]}', gruen: false },
-            { name: "keine Tafel, aber 0 Treffer (die Zählung blind)", stdout: 'TEXTE {"glieder":4100,"gliederMit":0,"code":0,"dom":0,"senken":{},"quelle":null,"beispiele":[]}', gruen: false },
+            { name: "jede Zeile aus der Tafel, der Wechsel lässt keine stehen", stdout: 'TEXTE {"glieder":3600,"code":0,"sprache":"pseudo","zeilen":1602,"markiert":1436,"dom":0,"hart":[],"daten":166,"quelle":"AnazhRealm.TEXTE (de 1972, en 1972)","stehen":0,"stehenNamen":[],"blind":[]}', gruen: true },
+            { name: "eine harte Zeile im DOM (beim Namen ihres Erzeugers)", stdout: 'TEXTE {"glieder":3600,"code":0,"sprache":"pseudo","zeilen":1602,"markiert":1435,"dom":1,"hart":["stamm/werkstatt-bauen.js:1234 _renderHotbarInto · #hotbar>button.hotbar-slot>span.label: Drachentor"],"daten":166,"quelle":"AnazhRealm.TEXTE (de 1972, en 1972)","stehen":0,"stehenNamen":[],"blind":[]}', gruen: false },
+            { name: "eine Zeile wechselt nicht mit der Sprache", stdout: 'TEXTE {"glieder":3600,"code":0,"sprache":"pseudo","zeilen":1602,"markiert":1436,"dom":0,"hart":[],"daten":166,"quelle":"AnazhRealm.TEXTE (de 1972, en 1972)","stehen":1,"stehenNamen":["stamm/werkstatt-hof.js:360 _recipeRow · span.recipe-name: ⟦Laterne⟧"],"blind":[]}', gruen: false },
+            { name: "eine harte Senke im Code", stdout: 'TEXTE {"glieder":3600,"code":1,"beispiele":["C: stamm/probe.js:1 textContent: \\"Hallo Welt\\""],"sprache":"pseudo","zeilen":1602,"markiert":1436,"dom":0,"hart":[],"daten":166,"quelle":"AnazhRealm.TEXTE (de 1972, en 1972)","stehen":0,"stehenNamen":[],"blind":[]}', gruen: false },
+            { name: "die Zählung blind (die Mutanten im Lauf ungenannt)", stdout: 'TEXTE {"glieder":3600,"code":0,"sprache":"pseudo","zeilen":1602,"markiert":1436,"dom":0,"hart":[],"daten":166,"quelle":"AnazhRealm.TEXTE (de 1972, en 1972)","stehen":0,"stehenNamen":[],"blind":["die gepflanzte harte Zeile fehlt in der Zählung"]}', gruen: false },
+            { name: "die alte Zählung ohne Pseudo-Sprache und Wechsel", stdout: 'TEXTE {"glieder":4100,"gliederMit":0,"code":0,"dom":0,"senken":{},"quelle":"AnazhRealm.TEXTE (de 412, en 412)","beispiele":[]}', gruen: false },
+            { name: "keine Tafel", stdout: 'TEXTE {"glieder":3600,"code":0,"sprache":"pseudo","zeilen":1602,"markiert":1436,"dom":0,"hart":[],"daten":166,"quelle":null,"stehen":0,"stehenNamen":[],"blind":[]}', gruen: false },
         ],
-        pfad: ["stamm/", "index.html", "scripts/lib/welt-boot.cjs", "scripts/lib/stamm.cjs"],
+        pfad: ["stamm/", "index.html", "scripts/diag-sprache.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/stamm.cjs"],
         quelle: "1 = jede UI-Zeile aus EINER Text-Quelle in DE und EN (0 harte Strings, Zählung), an einem Gerät umgeschaltet",
     },
     // ───────── spielgang.K4 — Zugänglichkeit aus dem Gesetz: die Untertitel (Zweig hud-zugang) ─────────
