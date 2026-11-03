@@ -184,6 +184,21 @@ const SITZUNG_FEINDE = [
     [/--eigen\b/, "--eigen (eigene Welt)"],
 ];
 const sitzungsFeinde = (argv) => SITZUNG_FEINDE.filter(([re]) => re.test(argv.join("\n"))).map(([, n]) => n);
+// DIE FEINDE DES WETTERS (w6-musik-pm, 03.11.): eine Probe, die das Wetter unter dem Mess-Halt setzt (`weatherEffectTime` < 0,
+// stamm/feld-dsl.js `_messHalt`), misst ein Wort, das nie galt — `_setWeather` verweigert still. Befund w6-musik 6c4b8f35: affekt.K5#2
+// fror den Halt hinter dem ersten Wort (−1e9), ab dem zweiten Lauf lief der Sturm sonnig (Schicht-L1 0); derselbe Fund in `trocken`
+// der Welt-Probe (der Regen der Alter-Spur fiel still). Der EINE Weg einer Probe ist `window.__wetterSetzen(wort)`
+// (scripts/lib/ausgabe-aufnahme.cjs): er taut den Halt für dieses Wort und hält danach wieder. Beim Namen: (a) jeder Befehl, der den
+// Halt von Hand friert; (b) eine Probe der Sitzung (die Sitzung hält den Halt), die `_setWeather` ruft und den Halt nie taut. Grenze:
+// (b) liest den Befehl als Ganzes — ein Tauen irgendwo in ihm deckt ein Wort davor.
+const WETTER_FEINDE = [
+    [/\bweatherEffectTime\s*=\s*-/, () => true, "der Halt von Hand gefroren (weatherEffectTime = −…)"],
+    [/\._setWeather\(/, (t, probe) => probe && !/\bweatherEffectTime\s*=\s*0\b/.test(t), "_setWeather unter dem Halt der Sitzung (ohne Tauen)"],
+];
+const wetterFeinde = (argv, probe) => {
+    const t = argv.join("\n");
+    return WETTER_FEINDE.filter(([re, gilt]) => re.test(t) && gilt(t, probe)).map(([, , n]) => n);
+};
 
 // prüft die Stationen gegen die Karte; Rückgabe { stationen, fehler }
 function pruefeStationen(liste, karte) {
@@ -243,6 +258,10 @@ function pruefeStationen(liste, karte) {
         if (!Array.isArray(argv) || !argv.length || argv.some((a) => typeof a !== "string"))
             f.push((st.probe ? "probe." : "") + "befehl ist kein argv");
         else if (!["node", "bash"].includes(argv[0])) f.push((st.probe ? "probe." : "") + "befehl[0] nicht node|bash");
+        else {
+            const feind = wetterFeinde(argv, !!st.probe);
+            if (feind.length) f.push((st.probe ? "probe." : "") + "befehl setzt das Wetter unter dem Mess-Halt: " + feind.join(", ") + " — der EINE Weg ist `window.__wetterSetzen(wort)`");
+        }
         if (st.env && (typeof st.env !== "object" || Object.values(st.env).some((v) => typeof v !== "string")))
             f.push("env ungültig");
         if (typeof st.gpu !== "boolean") f.push("gpu nicht boolesch");
@@ -3660,6 +3679,17 @@ async function selbsttest(o = {}) {
         pruef("SITZUNG-FORMAT genau eines von befehl und probe · probe nur an einer GPU-Station · Deckel ≤ " + PROBE_AUSNAHME_S + " s · die Feinde der Welt beim Namen",
             /genau eines von befehl und probe/.test(f[0]) && /probe nur an einer GPU-Station/.test(f[1]) && /Deckel 5000 s über 90 s/.test(f[2]) &&
             /greift die Welt der Sitzung an: netstat \(räumt Ports\), werkbank start\|stop/.test(f[3]) && f[4] === "", f.join(" || "));
+        // DIE FEINDE DES WETTERS: die Mutante von affekt.K5#2 bis 03.11. (das Wort, dahinter der Halt gefroren) ist ROT beim Namen —
+        // headless und als Probe; ein Wort unter dem Halt der Sitzung ohne Tauen ebenso; der EINE Weg und ein getautes Wort sind frei
+        const mutK5 = "r._setWeather(L.wetter || \"sunny\", \"regler\");\n        st.weatherEffectTime = -1e9;";
+        const fh = (b) => pruefeStationen([{ ...st0, befehl: ["node", "-e", b] }], karte).fehler.join(" | ");
+        const fp = (b) => fe({ probe: { befehl: ["node", "-e", b], sek: 30 } });
+        const fw = [fh(mutK5), fp(mutK5), fp("r._setWeather(\"sunny\", \"human\")"), fh("r._setWeather(\"sunny\", \"human\")"),
+            fp("st.weatherEffectTime = 0; r._setWeather(\"rainy\", \"nexus\")"), fp("window.__wetterSetzen(\"stormy\")"), fh("window.__wetterSetzen(\"stormy\")")];
+        pruef("WETTER-FEINDE die Probe, die unter dem Mess-Halt setzt, beim Namen (der Halt von Hand gefroren · _setWeather unter dem Halt der Sitzung); der EINE Weg frei",
+            /befehl setzt das Wetter unter dem Mess-Halt: der Halt von Hand gefroren/.test(fw[0]) && !/ohne Tauen/.test(fw[0]) &&
+            /probe\.befehl setzt das Wetter unter dem Mess-Halt: der Halt von Hand gefroren \(weatherEffectTime = −…\), _setWeather unter dem Halt der Sitzung \(ohne Tauen\)/.test(fw[1]) &&
+            /_setWeather unter dem Halt der Sitzung \(ohne Tauen\)/.test(fw[2]) && fw[3] === "" && fw[4] === "" && fw[5] === "" && fw[6] === "", fw.join(" || "));
         const pb = (p) => fe({ probe: { befehl: ["node", "-e", "0"], sek: 30, ...p } });
         const f2 = [pb({ mutiert: "ja" }), pb({ stellung: "mitte" }), pb({ ausnahme: "weil" }), pb({ ausnahme: "der Grund beim Namen", sek: 91 }), pb({ wache: 1 }),
             pb({ mutiert: true, stellung: "ende", ausnahme: "der Grund beim Namen", sek: 90 })];
