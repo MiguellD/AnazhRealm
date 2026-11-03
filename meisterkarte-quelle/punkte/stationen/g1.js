@@ -2468,6 +2468,8 @@ module.exports = [
     // die Seiten-Proben und Urteile oben (weltProbeLauf). Gefahren 01.11. in der Cloud am main 25ac4c0c (headless, Null-Renderer):
     // der Boot 15 s, die Proben 0–20 s — jede ROT beim Namen dessen, was der Welt fehlt.
     // physik.K4 — an main 25ac4c0c ROT: 0 von 22 Gattungen der Schmiede tragen ein Seil (langschwert … sichel), kein Löser am Leib.
+    // Am Kopf w5-physik-k4 (03.11.) GRÜN: der Flegel (das Seil-Gesetz im Schmiede-Kern), Schwung 0,476 m, Länge längs 0,328–0,328 m,
+    // v² 3,183 → 0,257; die Länge misst seitdem längs des Seils vom Anker des Gesetzes (w5-physik-k4-pm, oben bei seilProbe).
     {
         kriterium: "physik.K4",
         staffel: 1,
@@ -2480,6 +2482,7 @@ module.exports = [
         proben: [
             { name: "die Messung am main 25ac4c0c", stdout: weltRoh("seil", (x) => x), gruen: false },
             { name: "ein Flegel schwingt, die Länge hält, die Energie fällt", stdout: weltRoh("seil", (x) => Object.assign(x, { seile: ["klinge_flegel"], je: { klinge_flegel: { teile: 9, anker: [0.545, 0, 0], schwungM: 0.31, laengeM: [1.18, 1.2], energie: [0.84, 0.12] } } })), gruen: true },
+            { name: "die Messung am Kopf w5-physik-k4 (03.11., Cloud, headless: der Flegel, 7 Glieder + Kopf)", stdout: weltRoh("seil", (x) => Object.assign(x, { klingen: 23, seile: ["klinge_flegel"], je: { klinge_flegel: { teile: 16, anker: [0.545, 0, 0], laengeArt: "längs", schwungM: 0.476, laengeM: [0.328, 0.328], energie: [3.183, 0.257] } } })), gruen: true },
             { name: "ein Seil der Welt ohne Gesetz im Buch (kein Anker: ein Zwilling)", stdout: weltRoh("seil", (x) => Object.assign(x, { seile: ["klinge_flegel"], je: { klinge_flegel: { teile: 9, anker: null, schwungM: 0.31, laengeM: [1.18, 1.2], energie: [0.84, 0.12] } } })), gruen: false },
             { name: "die Sehne vom Anker: die Kette hängt beim Halt durch (keine Länge)", stdout: weltRoh("seil", (x) => Object.assign(x, { seile: ["klinge_flegel"], je: { klinge_flegel: { teile: 16, anker: [0.545, 0, 0], laengeArt: "sehne vom Anker", schwungM: 0.487, laengeM: [0.245, 0.32], energie: [3.182, 0.25] } } })), gruen: false },
             { name: "der Hebel Griff → Kopf statt der Seil-Länge (Stiel + Kette atmen)", stdout: weltRoh("seil", (x) => Object.assign(x, { seile: ["klinge_flegel"], je: { klinge_flegel: { teile: 16, anker: [0.545, 0, 0], schwungM: 0.487, laengeM: [0.393, 0.826], energie: [3.184, 0.251] } } })), gruen: false },
