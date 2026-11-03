@@ -2489,7 +2489,7 @@ class AnazhRealm_vegetation_baum {
             const dz = entry.position.z - playerPos.z;
             const distSq = Math.min(dx * dx + dz * dz, (entry.position.x - vb.x) ** 2 + (entry.position.z - vb.z) ** 2);
             // die Reihe der Wartenden: die Zeit bis Bedarf (`_bedarfWeg`, in Metern zu Fuß), bis w7-rang der Abstand
-            const rang = this._bedarfWeg(entry.position.x, entry.position.z) ** 2;
+            const rang = this._spielerD2(entry.position.x, entry.position.z);
             // DIE FERNFORM DER KARTEN-DINGE (Studio-Vertrag B2c `fernform: "karte"`, `_archKartenPreset`): Baum und Strauch
             // tragen ihre Studio-Kette über die Mesh-Zone hinaus und SIND dort ihre Karte — dieselbe EINE Stufen-Wahl wie
             // nah (die Wahrnehmung legt jeden Baum jenseits seines L1↔Karte-Bands auf die Karte, einen Riesen erst dort;

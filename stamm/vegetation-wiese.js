@@ -2362,7 +2362,7 @@ class AnazhRealm_vegetation_wiese {
         return n;
     }
 
-    // Die offenen Zellen der Schlange nach dem EINEN Rang ([Zeit bis Bedarf in Metern zu Fuß zum Quadrat, `_bedarfWeg` — die Einheit des alten d², Schlüssel, [gx, gz]]): was das Gedächtnis schon trägt, fällt aus ihr;
+    // Die offenen Zellen der Schlange nach dem EINEN Rang ([Rang², `_spielerD2` — die Zeit bis Bedarf, im Stand der Abstand², Schlüssel, [gx, gz]]): was das Gedächtnis schon trägt, fällt aus ihr;
     // was im Flug ist (`flug`, optional), bleibt in ihr, aber nicht in der Liste.
     _waldPlanListe(flug) {
         const Q = this._waldPlanSchlange;
@@ -2371,7 +2371,7 @@ class AnazhRealm_vegetation_wiese {
         const liste = [];
         for (const [k, g] of Q) {
             if (memo.has(k)) Q.delete(k);
-            else if (!flug || !flug.has(k)) liste.push([this._bedarfWeg((g[0] + 0.5) * C, (g[1] + 0.5) * C) ** 2, k, g]);
+            else if (!flug || !flug.has(k)) liste.push([this._spielerD2((g[0] + 0.5) * C, (g[1] + 0.5) * C), k, g]);
         }
         liste.sort((a, b) => a[0] - b[0]);
         return liste;

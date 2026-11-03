@@ -2526,9 +2526,12 @@ class AnazhRealm_gelaende_chunks {
             const bild = !lade || mitte || this._rangImBild({ x, z }, halb);
             zellen.push([cx, cz, bild, mitte ? -1 : this._bedarfWeg(x, z)]);
         };
-        for (const [ax, az] of vcx !== pcx || vcz !== pcz ? [[pcx, pcz], [vcx, vcz]] : [[pcx, pcz]])
+        const anker = [[pcx, pcz]]; // der Ring des Spielers und, wo die Bahn die Zelle wechselt, der Ring ihres Orts
+        if (vcx !== pcx || vcz !== pcz) anker.push([vcx, vcz]);
+        for (const [ax, az] of anker)
             for (let dz = -ringRadius; dz <= ringRadius; dz++)
-                for (let dx = -ringRadius; dx <= ringRadius; dx++) nimm(ax + dx, az + dz, ax === pcx && az === pcz && !dx && !dz);
+                for (let dx = -ringRadius; dx <= ringRadius; dx++)
+                    nimm(ax + dx, az + dz, ax === pcx && az === pcz && !dx && !dz);
         // im Lade-Takt das Bild zuerst (B-Blick), je Hälfte nach der Zeit bis Bedarf; die Zelle des Spielers vorn
         zellen.sort((a, b) => (lade ? b[2] - a[2] : 0) || a[3] - b[3]);
         for (const [cx, cz, bild] of zellen) {
