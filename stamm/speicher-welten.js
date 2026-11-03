@@ -118,12 +118,12 @@ class AnazhRealm_speicher_welten {
         const warVoxel = m.voxelTerrain === true;
         AnazhRealm._weltMetaHeil(m);
         if (!warVoxel && !fresh && typeof this.journalAppend === "function") {
-            this.journalAppend("genesis", "Die Welt verdichtet sich zu Voxel-Boden.", {
+            this.journalAppend("genesis", ["journal.voxel-boden"], {
                 worldId: m.worldId,
             });
         }
         if (fresh) {
-            this.journalAppend("genesis", AnazhRealm._datum`Ich erwache als ${m.slug}.`, { worldId: m.worldId });
+            this.journalAppend("genesis", ["journal.erwache-als", { welt: m.slug }], { worldId: m.worldId });
             // Ring 8: frische Welt im Index registrieren. Reload-Migration
             // (legacy single-key) ruft ensureWorldMeta nach Pre-Load auf;
             // dort ist worldId schon gesetzt und dieser Pfad bleibt aus.
@@ -435,7 +435,8 @@ class AnazhRealm_speicher_welten {
                         at: Date.now(),
                         tick: 0,
                         type: "genesis",
-                        text: `Ich erwache als ${worldMeta.slug}.`,
+                        t: ["journal.erwache-als", { welt: worldMeta.slug }],
+                        text: AnazhRealm._tIn("de", "journal.erwache-als", { welt: worldMeta.slug }),
                         ctx: {
                             worldId: worldMeta.worldId,
                             seed: worldMeta.seed || null,
@@ -2000,8 +2001,13 @@ class AnazhRealm_speicher_welten {
     // (`name` / `desc`) in der Sprache des Spielers; eine empfangene, KI-übersetzte oder angedockte Welt trägt den Inhalt
     // ihres Autors — er bleibt, wie er geschrieben wurde. `label` bleibt die Identität (s. WORLD_REGISTRY).
     _weltName(w) {
+        const z = this._weltNameZeile(w);
+        return Array.isArray(z) ? this._t(z[0]) : z;
+    }
+    // derselbe Name als Wert einer Zeile: die eingebaute Welt als Schlüssel (er wechselt mit der Sprache), die fremde als Daten
+    _weltNameZeile(w) {
         const eingebaut = w && AnazhRealm.WORLD_REGISTRY[w.id] === w;
-        return eingebaut ? this._t(w.name) : (w && (w.label || w.id)) || "?";
+        return eingebaut ? [w.name] : (w && (w.label || w.id)) || "?";
     }
 
     _weltText(w) {
@@ -2249,13 +2255,9 @@ class AnazhRealm_speicher_welten {
         const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
         if (myKey) this._appendProvenance(manifest, myKey);
         this.triggerStateDownload(manifest, `anazh-welt-${entry.id}.json`);
-        this.journalAppend(
-            "share",
-            AnazhRealm._datum`Ich teilte die ${entry.label} — ihr signiertes Manifest ging hinaus.`,
-            {
-                world: entry.id,
-            }
-        );
+        this.journalAppend("share", ["journal.geteilt", { welt: this._weltNameZeile(entry) }], {
+            world: entry.id,
+        });
         return { ok: true, id: entry.id, manifest };
     }
 
@@ -2293,14 +2295,10 @@ class AnazhRealm_speicher_welten {
         if (!this.state.customWorlds) this.state.customWorlds = {};
         this.state.customWorlds[clean.id] = clean;
         this._saveCustomWorlds();
-        this.journalAppend(
-            "growth",
-            AnazhRealm._datum`Eine fremde Welt fand den Weg in deine Bibliothek: „${clean.label}".`,
-            {
-                world: clean.id,
-                signature: signatureStatus,
-            }
-        );
+        this.journalAppend("growth", ["journal.welt-fremd", { welt: clean.label }], {
+            world: clean.id,
+            signature: signatureStatus,
+        });
         return { ok: true, id: clean.id, signatureStatus, reachable };
     }
 
@@ -2390,13 +2388,9 @@ class AnazhRealm_speicher_welten {
         if (!this.state.customWorlds) this.state.customWorlds = {};
         this.state.customWorlds[clean.id] = clean;
         this._saveCustomWorlds();
-        this.journalAppend(
-            "growth",
-            AnazhRealm._datum`Der KI-Übersetzer trug eine Welt in deine Bibliothek: „${clean.label}".`,
-            {
-                world: clean.id,
-            }
-        );
+        this.journalAppend("growth", ["journal.ki-welt", { welt: clean.label }], {
+            world: clean.id,
+        });
         return { ok: true, id: clean.id, label: clean.label };
     }
 
@@ -2544,13 +2538,9 @@ class AnazhRealm_speicher_welten {
         w.world = AnazhRealm.PORTAL_TRANSLATED_WORLD;
         w.reachable = true;
         this._saveCustomWorlds();
-        this.journalAppend(
-            "growth",
-            AnazhRealm._datum`Der KI-Übersetzer gab „${w.label}" einen Körper — die Welt ist nun betretbar.`,
-            {
-                world: w.id,
-            }
-        );
+        this.journalAppend("growth", ["journal.ki-koerper", { welt: w.label }], {
+            world: w.id,
+        });
         return { ok: true, id: w.id, label: w.label };
     }
 
@@ -2691,13 +2681,9 @@ class AnazhRealm_speicher_welten {
         if (!this.state.customWorlds) this.state.customWorlds = {};
         this.state.customWorlds[entry.id] = entry;
         this._saveCustomWorlds();
-        this.journalAppend(
-            "growth",
-            AnazhRealm._datum`Eine fremde Welt dockte an deine Bibliothek an: „${entry.label}".`,
-            {
-                world: entry.id,
-            }
-        );
+        this.journalAppend("growth", ["journal.welt-dockt", { welt: entry.label }], {
+            world: entry.id,
+        });
         // Die Bibliothek wuchs: Welt-Katalog neu annoncieren (self-guarded — _p2pBroadcastSoul ruht ohne Mesh)
         // und den eigenen Katalog-Drawer auffrischen, damit Mitspieler die neue Welt als „✓ vorhanden" sehen.
         this._p2pBroadcastSoul();

@@ -1913,14 +1913,10 @@ class AnazhRealm_koerper_fahrt {
                     : this._t("welt.sonne-entzuendete", { linse: name(quelle), ding: name(t) })
             );
             if (this.journalAppend) {
-                this.journalAppend(
-                    "loss",
-                    AnazhRealm._datum`Die Sonne entzündete durch „${name(quelle)}" „${name(t)}".`,
-                    {
-                        type: t.type,
-                        linse: quelle.type,
-                    }
-                );
+                this.journalAppend("loss", ["journal.sonne-zuendet", { linse: name(quelle), ziel: name(t) }], {
+                    type: t.type,
+                    linse: quelle.type,
+                });
             }
             this._brandEntfachen(t.position.x, t.position.z); // das Feuer fängt das Feld unter dem Werk (feld.K3#2)
             this.removeArchitecture(t);
@@ -2078,12 +2074,10 @@ class AnazhRealm_koerper_fahrt {
             const step = baseStep * strengthOf(ra, "radiating");
             emo.awe = Math.max(0, Math.min(1, (emo.awe || 0) + step));
             emo.peace = Math.max(0, Math.min(1, (emo.peace || 0) + step));
-            this.journalAppendOnce(
-                `radiating:${ra.id}`,
-                "growth",
-                `Eine strahlende Form schwingt nahe — ihre Resonanz wärmt das Gemüt.`,
-                { architecture: ra.type, affordance: "radiating" }
-            );
+            this.journalAppendOnce(`radiating:${ra.id}`, "growth", ["journal.form-strahlt"], {
+                architecture: ra.type,
+                affordance: "radiating",
+            });
         }
     }
 
@@ -2112,12 +2106,10 @@ class AnazhRealm_koerper_fahrt {
             const s = ba.affordanceStrength && ba.affordanceStrength.balancing;
             const strength = typeof s === "number" ? s : 1;
             emo.chaos = Math.max(0, Math.min(1, (emo.chaos || 0) - baseStep * strength));
-            this.journalAppendOnce(
-                `balancing:${ba.id}`,
-                "growth",
-                `Eine gründende Form ruht nahe — der Aufruhr im Gemüt legt sich.`,
-                { architecture: ba.type, affordance: "balancing" }
-            );
+            this.journalAppendOnce(`balancing:${ba.id}`, "growth", ["journal.form-gruendet"], {
+                architecture: ba.type,
+                affordance: "balancing",
+            });
         }
     }
 

@@ -228,11 +228,7 @@ class AnazhRealm_feld_leben {
             } catch {
                 /* localStorage gesperrt — worldJournal trägt das Flag */
             }
-            this.journalAppendOnce(
-                "intro",
-                "ritual",
-                "Ich erwachte in dieser Welt, und sie wartete auf mein erstes Wort."
-            );
+            this.journalAppendOnce("intro", "ritual", ["journal.erstes-wort"]);
         };
         if (opts.immediate) invite();
         else if (typeof setTimeout === "function") setTimeout(invite, 1800);

@@ -346,9 +346,13 @@ class AnazhRealm_werkstatt_sozial {
             age.className = "journal-age";
             age.textContent = this._formatJournalAge(now - (e.at || now));
             const text = document.createElement("span");
-            text.textContent = e.text || "";
-            // der Eintrag ist gespeicherte Geschichte der Welt — er bleibt in der Sprache, in der er geschah
-            text.setAttribute("translate", "no");
+            // ein Satz der Welt ist eine Zeile der Tafel (er wechselt mit der Sprache); ein fremder Satz und ein Eintrag aus
+            // einem Stand vor der Tafel sind Daten, wie sie kamen
+            if (Array.isArray(e.t)) this._tSetze(text, e.t[0], e.t[1]);
+            else {
+                text.textContent = e.text || "";
+                text.setAttribute("translate", "no");
+            }
             row.appendChild(type);
             row.appendChild(age);
             row.appendChild(text);
@@ -736,13 +740,9 @@ class AnazhRealm_werkstatt_sozial {
         else delete this.state.feedFollows[key];
         this._saveFeedFollows();
         if (on && typeof this.journalAppend === "function") {
-            this.journalAppend(
-                "witness",
-                AnazhRealm._datum`Ich folge nun ${this._vibeFingerprint(key)} — seine Werke begleiten mich.`,
-                {
-                    follow: key,
-                }
-            );
+            this.journalAppend("witness", ["journal.folge", { wem: this._vibeFingerprint(key) }], {
+                follow: key,
+            });
         }
         return on;
     }
@@ -962,13 +962,9 @@ class AnazhRealm_werkstatt_sozial {
             this.p2pSend({ type: "social-comment", c });
         }
         if (typeof this.journalAppend === "function") {
-            this.journalAppend(
-                "share",
-                AnazhRealm._datum`Ich liess ein Wort bei „${id}" zurueck: „${x.slice(0, 60)}"`,
-                {
-                    comment: id,
-                }
-            );
+            this.journalAppend("share", ["journal.wort-zurueck", { wo: id, wort: x.slice(0, 60) }], {
+                comment: id,
+            });
         }
         return c;
     }

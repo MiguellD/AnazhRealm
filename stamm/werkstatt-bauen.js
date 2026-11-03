@@ -796,8 +796,8 @@ class AnazhRealm_werkstatt_bauen {
             this.journalAppend(
                 "growth",
                 grownProvenance
-                    ? AnazhRealm._datum`${harvester} erntete „${werk}" (aus Welt-Genese gewachsen) → ${matSummary}.`
-                    : AnazhRealm._datum`${harvester} erntete „${werk}" → ${matSummary}.`,
+                    ? ["journal.ernte-gewachsen", { wer: harvester, werk, ertrag: matSummary }]
+                    : ["journal.ernte", { wer: harvester, werk, ertrag: matSummary }],
                 journalDetails
             );
         }
@@ -874,7 +874,7 @@ class AnazhRealm_werkstatt_bauen {
         this._kronenStreuWeg("a:" + entry.id); // ein gefällter Baum nimmt seine Krone aus der Karte
         this._werkGesetzAus(entry); // ein Werk im Takt des Gesetzes (Sturz, Rollen, Schale) verlässt ihn
         if (!still && typeof this.journalAppend === "function") {
-            this.journalAppend("loss", AnazhRealm._datum`Eine ${entry.type}-Struktur wurde abgebaut.`, {
+            this.journalAppend("loss", ["journal.abgebaut", { art: entry.type }], {
                 type: entry.type,
                 id: entry.id,
             });

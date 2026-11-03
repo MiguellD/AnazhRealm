@@ -60,9 +60,16 @@ class AnazhRealm_dienst {
     }
     // Eine Erinnerung fürs Modell: ein Satz dieser Welt (`d`, nur journalAppend) trägt Namen isoliert in `ki`, jede andere ist Datum.
     _erinnerungFuerKi(e) {
+        const wert = (w) => (typeof w === "number" ? String(w) : AnazhRealm._datum(w));
+        const sp = AnazhRealm._sprache() === "pseudo" ? "de" : AnazhRealm._sprache();
+        const satz = Array.isArray(e.t)
+            ? AnazhRealm._tIn(sp, e.t[0], e.t[1], wert)
+            : e.d === 1
+              ? e.ki || e.text
+              : AnazhRealm._datum(e.text);
         return `[${String(e.type)
             .replace(/[^a-z]/gi, "")
-            .slice(0, 12)}] ${e.d === 1 ? e.ki || e.text : AnazhRealm._datum(e.text)}`;
+            .slice(0, 12)}] ${satz}`;
     }
 
     async llmCall(userText, systemPromptOverride = null, { hintergrund = false } = {}) {
@@ -246,9 +253,15 @@ class AnazhRealm_dienst {
     // Geordnete Erinnerungen; ein Auszug fließt in den LLM-System-Prompt, damit er aus der Geschichte
     // erzählt. `seen` hält One-Shot-Schlüssel (z. B. „firstDragon") — jede Erinnerung nur einmal.
 
-    journalAppend(type, text, ctx) {
+    // DIE ERINNERUNG (spielgang.K5): ein Satz dieser Welt ist eine Zeile der Tafel `[schlüssel, werte]` — `t` trägt sie, das
+    // Tagebuch liest sie in der Sprache von jetzt, die Tür zum Modell isoliert ihre Werte (`_erinnerungFuerKi`); `text` ist
+    // dieselbe Zeile in der Quell-Sprache (de: Suche, Speicher, ältere Leser). Ein Text ist ein fremder Satz (ein Portal, ein
+    // Mitspieler): Daten, wie er kam.
+    journalAppend(type, zeile, ctx) {
         const j = this.state.worldJournal;
         if (!j || !Array.isArray(j.entries)) return;
+        const welt = Array.isArray(zeile);
+        const text = welt ? AnazhRealm._tIn("de", zeile[0], zeile[1]) : zeile;
         if (typeof text !== "string" || text.length === 0) return;
         const entry = {
             id: j.entries.length + 1,
@@ -258,6 +271,7 @@ class AnazhRealm_dienst {
             text: text.slice(0, 240),
             d: 1,
         };
+        if (welt) entry.t = zeile[1] ? [zeile[0], zeile[1]] : [zeile[0]];
         // ein Schnitt mitten in einem Namen schließt seine Isolation; der Spieler liest den Satz rein, das Modell `ki` isoliert
         if (entry.text.lastIndexOf("⁨") > entry.text.lastIndexOf("⁩")) entry.text += "⁩";
         if (/[⁦-⁩]/.test(entry.text)) [entry.ki, entry.text] = [entry.text, entry.text.replace(/[⁦-⁩]/g, "")];
@@ -270,13 +284,13 @@ class AnazhRealm_dienst {
 
     // Idempotente Variante: nur schreiben, wenn der Schlüssel noch nie
     // gesehen wurde. Für „erstes Mal X"-Erinnerungen.
-    journalAppendOnce(key, type, text, ctx) {
+    journalAppendOnce(key, type, zeile, ctx) {
         const j = this.state.worldJournal;
         if (!j) return;
         if (!j.seen) j.seen = {};
         if (j.seen[key]) return;
         j.seen[key] = true;
-        this.journalAppend(type, text, ctx);
+        this.journalAppend(type, zeile, ctx);
     }
 
     // Frame-Hook alle 5 s (Throttle-Anker lastSelfAnalysis, Takt wie selfAwarenessAnalyze): schreibt
@@ -286,20 +300,19 @@ class AnazhRealm_dienst {
         if (!m || !m.worldId) return;
         // Erste Kreatur
         if (this.state.creatures.length > 0) {
-            this.journalAppendOnce("firstCreature", "creatures", "Die erste Kreatur regte sich.");
+            this.journalAppendOnce("firstCreature", "creatures", ["journal.erste-kreatur"]);
         }
         // Erstes Bauwerk
         if (Array.isArray(this.state.architectures) && this.state.architectures.length > 0) {
             const a = this.state.architectures[0];
-            this.journalAppendOnce(
-                "firstArchitecture",
-                "architecture",
-                AnazhRealm._datum`Das erste Bauwerk entstand: ${a.type || "Struktur"}.`
-            );
+            this.journalAppendOnce("firstArchitecture", "architecture", [
+                "journal.erstes-bauwerk",
+                { art: a.type || ["journal.struktur"] },
+            ]);
         }
         // Wetter-Wechsel: aus prevWeather merken, der nicht im Journal-State liegt
         if (this._weatherIsWet()) {
-            this.journalAppendOnce("firstRain", "weather", "Der erste Regen begann.");
+            this.journalAppendOnce("firstRain", "weather", ["journal.erster-regen"]);
         }
         // Hochfitness-Programm aus der History — wir wandern beim ersten
         // finalisierten Eintrag mit fitness >= 0.7 in eine Erinnerung.
@@ -312,7 +325,10 @@ class AnazhRealm_dienst {
                 this.journalAppendOnce(
                     `highFitness:${best.id}`,
                     "growth",
-                    AnazhRealm._datum`Etwas Wirkungsvolles ist mir gelungen: ${JSON.stringify(best.program).slice(0, 100)} (Fitness ${best.fitness.toFixed(2)}).`,
+                    [
+                        "journal.wirkung",
+                        { programm: JSON.stringify(best.program).slice(0, 100), fitness: best.fitness.toFixed(2) },
+                    ],
                     { programId: best.id, fitness: best.fitness }
                 );
             }
@@ -331,7 +347,13 @@ class AnazhRealm_dienst {
                     this.journalAppendOnce(
                         `emotionPeak:${axis}`,
                         "emotion",
-                        AnazhRealm._datum`Eine Welle ${axis} (${v.toFixed(2)}) durchzog uns.`,
+                        [
+                            "journal.gefuehl-welle",
+                            {
+                                achse: AnazhRealm.EMOTION_LABEL[axis] ? [AnazhRealm.EMOTION_LABEL[axis]] : axis,
+                                wert: v.toFixed(2),
+                            },
+                        ],
                         { axis, value: v }
                     );
                     this.state.worldJournal.seenLow[axis] = false;
@@ -1457,7 +1479,9 @@ class AnazhRealm_dienst {
                 const w = werte[m[1]];
                 if (Array.isArray(w) && Array.isArray(w[0]))
                     return w.map((z) => AnazhRealm._tIn(sp, z[0], z[1], wert)).join(", ");
-                return Array.isArray(w) ? AnazhRealm._tIn(sp, w[0], w[1], wert) : wert(w);
+                if (Array.isArray(w)) return AnazhRealm._tIn(sp, w[0], w[1], wert);
+                // in der Linsen-Sprache steht ein Wert (ein Name, eine Zahl: Daten) zwischen den Isolat-Zeichen U+2068 … U+2069
+                return sp === "pseudo" ? `⁨${wert(w)}⁩` : wert(w);
             })
             .join("");
     }

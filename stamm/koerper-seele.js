@@ -354,7 +354,7 @@ class AnazhRealm_koerper_seele {
         this.recomputePlayerStats({ voll: true });
         this.journalAppend(
             "loss",
-            AnazhRealm._datum`Der Körper fiel ${source ? `(${source}) ` : ""}— am Ursprung kehrt er wieder.`,
+            source ? ["journal.koerper-fiel-durch", { quelle: source }] : ["journal.koerper-fiel"],
             {
                 source: source || null,
                 at: now,
@@ -1406,7 +1406,7 @@ class AnazhRealm_koerper_seele {
         this.journalAppendOnce(
             `portalObtained:${entry.id}`,
             "growth",
-            AnazhRealm._datum`Ein Tor zur ${entry.label} fand den Weg in deine Sammlung.`,
+            ["journal.tor-gesammelt", { welt: this._weltNameZeile(entry) }],
             { world: entry.id }
         );
         this.saveState();

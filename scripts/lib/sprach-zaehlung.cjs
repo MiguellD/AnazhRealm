@@ -39,7 +39,7 @@ function ZEUGE() {
         const zeilen = String(new Error().stack || "").split("\n");
         for (const z of zeilen) {
             const m = /(?:at\s+(?:[\w.$<>]+\s+)?\(?)?[^\s(]*\/((?:stamm|worlds)\/[^\s:)?]+)(?:\?[^:)]*)?:(\d+)/.exec(z);
-            if (m && !/at\s+(?:async\s+)?(?:AnazhRealm[\w$]*\.)?(_el|_elAppend)\s/.test(z)) {
+            if (m && !/at\s+(?:async\s+)?(?:AnazhRealm[\w$]*\.)?(_el|_elAppend|_tSetze|_chatEcho)\s/.test(z)) {
                 const fn = /at\s+(?:async\s+)?([\w.$]+)\s+\(/.exec(z);
                 return m[1] + ":" + m[2] + (fn ? " " + fn[1].replace(/^AnazhRealm[\w$]*\./, "") : "");
             }
@@ -97,7 +97,8 @@ function ZEUGE() {
 // DIE ZÄHLUNG IM FENSTER — reine Funktion ohne freie Namen; `stufe` „zaehle“ (die Welt in pseudo) oder „wechsel“ (nach dem
 // Wechsel auf en: jede Zeile mit Marke steht)
 function ZAEHLE(stufe) {
-    const MARKE = /⟦[^⟧]*⟧/g;
+    // die Marke der Tafel ⟦ … ⟧ und der eingesetzte Wert ⁨ … ⁩ (Daten in einer Zeile der Tafel)
+    const MARKE = /⟦[^⟧]*⟧|⁨[^⁩]*⁩/g;
     const hartIn = (t) => /[A-Za-zÄÖÜäöüß]{2,}/.test(String(t).replace(MARKE, " "));
     const zeugen = window.__sprachZeugen || new WeakMap();
     const ort = (el) => {

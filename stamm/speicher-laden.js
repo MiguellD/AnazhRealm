@@ -1046,8 +1046,7 @@ class AnazhRealm_speicher_laden {
     _weltBetreten(snapshot, meta = null, { wechseln = true, aktiv = true, zeugnisA = null, p2pAuto = null } = {}) {
         if (!snapshot || typeof snapshot !== "object") return { ok: false, reason: "kein Snapshot" };
         if (!this._weltWechselSperre && this.state.worldMeta && this.state.worldMeta.worldId) {
-            if (zeugnisA)
-                this.journalAppendOnce(zeugnisA.key, zeugnisA.type || "portal", AnazhRealm._datum(zeugnisA.text));
+            if (zeugnisA) this.journalAppendOnce(zeugnisA.key, zeugnisA.type || "portal", zeugnisA.zeile);
             this.saveState();
         }
         const wm = snapshot.worldMeta && typeof snapshot.worldMeta === "object" ? snapshot.worldMeta : {};
@@ -1471,7 +1470,7 @@ class AnazhRealm_speicher_laden {
             chatOutput.scrollTop = chatOutput.scrollHeight;
         }
         if (result.ok) {
-            this.journalAppend("witness", AnazhRealm._datum`Eine andere Welt „${result.slug}" liegt nun neben mir.`);
+            this.journalAppend("witness", ["journal.welt-neben", { welt: result.slug }]);
             this.updateWorldInfo();
         }
         this._closeWeltTorDialog();
@@ -1977,7 +1976,15 @@ class AnazhRealm_speicher_laden {
         const total = addedBPs.length + addedMats.length + addedTools.length;
         this.journalAppend(
             "witness",
-            AnazhRealm._datum`Ich habe Rezepte aus „${sourceSlug}" empfangen: ${addedBPs.length} Baupläne, ${addedMats.length} Materialien, ${addedTools.length} Werkzeuge.`,
+            [
+                "journal.rezepte-empfangen",
+                {
+                    welt: sourceSlug,
+                    bauplaene: addedBPs.length,
+                    stoffe: addedMats.length,
+                    werkzeuge: addedTools.length,
+                },
+            ],
             {
                 fromWorldId: sourceWorldId,
                 fromSlug: sourceSlug,
@@ -2302,7 +2309,8 @@ class AnazhRealm_speicher_laden {
             at: identity.bornAt,
             tick: 0,
             type: "genesis",
-            text: `Ich erwache aus „${identity.slugA}" und „${identity.slugB}".`,
+            t: ["journal.erwache-aus", { a: identity.slugA, b: identity.slugB }],
+            text: AnazhRealm._tIn("de", "journal.erwache-aus", { a: identity.slugA, b: identity.slugB }),
             ctx: {
                 worldId: identity.newWorldId,
                 seed: identity.newSeed,

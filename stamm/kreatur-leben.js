@@ -855,14 +855,11 @@ class AnazhRealm_kreatur_leben {
                 Number.isFinite(lastHunt) &&
                 this.state.creatureAnimationTime - lastHunt < AnazhRealm._verhaltenGesetz().jagd.triumphWindowSec
             )
-                this.journalAppend(
-                    "relationship",
-                    AnazhRealm._datum`Du hast die Bedrohung bezwungen — ${name} jagt dich nie wieder.`
-                );
+                this.journalAppend("relationship", ["journal.bedrohung-bezwungen", { name }]);
         }
         if (typeof this.journalAppend === "function") {
             const lootSummary = lootParts.length > 0 ? ` → ${lootParts.join(", ")}` : "";
-            this.journalAppend("relationship", AnazhRealm._datum`${name} fiel im Kampf${lootSummary}.`, {
+            this.journalAppend("relationship", ["journal.fiel-im-kampf", { name, beute: lootSummary }], {
                 source,
                 loot,
             });
@@ -910,7 +907,7 @@ class AnazhRealm_kreatur_leben {
             if (zurueck.length)
                 this.journalAppend(
                     "loss",
-                    AnazhRealm._datum`${ud.name || "Ein Wesen"} fiel mit seiner Last — sie fällt an dich zurück: ${zurueck.join(", ")}.`,
+                    ["journal.last-zurueck", { name: ud.name || ["journal.ein-wesen"], last: zurueck.join(", ") }],
                     {
                         materials: last.materials,
                     }
@@ -1359,7 +1356,7 @@ class AnazhRealm_kreatur_leben {
             };
             const role = labels[kind] || `Spezialist von „${key}"`;
             const name = (creature.userData && creature.userData.name) || "Eine Kreatur";
-            this.journalAppend("growth", AnazhRealm._datum`${name} erreicht Stufe ${newLevel} als ${role}.`, {
+            this.journalAppend("growth", ["journal.stufe", { name, stufe: newLevel, rolle: role }], {
                 kind,
                 key,
                 level: newLevel,
@@ -1684,7 +1681,7 @@ class AnazhRealm_kreatur_leben {
         }
         // Journal-Eintrag
         if (typeof this.journalAppend === "function") {
-            this.journalAppend("loss", AnazhRealm._datum`${name} kehrt zur Erde zurück.`, {
+            this.journalAppend("loss", ["journal.zur-erde", { name }], {
                 creature: name,
                 soul,
                 ageSec,
@@ -1900,7 +1897,7 @@ class AnazhRealm_kreatur_leben {
             if (!frisch) continue;
             const name = this._bestandName(wurf[0]);
             const text = kopf > 1 ? `${name} und ${kopf - 1} weitere treten` : `${name} tritt`;
-            this.journalAppend("growth", AnazhRealm._datum`${text} in die Welt ein (${best.soul}).`, {
+            this.journalAppend("growth", ["journal.tritt-ein", { wer: text, seele: best.soul }], {
                 creature: name,
                 soul: best.soul,
                 gruppe: kopf,

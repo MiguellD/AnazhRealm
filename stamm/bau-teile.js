@@ -2592,7 +2592,7 @@ class AnazhRealm_bau_teile {
             return this._werkPoseZeigen(e);
         }
         this.removeArchitecture(e, { still: true });
-        this.journalAppend("loss", AnazhRealm._datum`${s.name} stürzte ein: ${s.text}.`, {
+        this.journalAppend("loss", ["journal.einsturz", { name: s.name, grund: s.text }], {
             type: e.type,
             id: e.id,
             grund: s.grund,

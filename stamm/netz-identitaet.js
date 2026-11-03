@@ -267,7 +267,7 @@ class AnazhRealm_netz_identitaet {
                 this.journalAppendOnce(
                     "vibepass:genesis",
                     "ritual",
-                    AnazhRealm._datum`Der Avatar empfing seinen Vibe-Pass — eine souveräne Identität, ein Schlüssel, der nur ihm gehört (${vp.fingerprint}).`,
+                    ["journal.vibepass-genesis", { abdruck: vp.fingerprint }],
                     { fingerprint: vp.fingerprint }
                 );
             }
@@ -332,7 +332,7 @@ class AnazhRealm_netz_identitaet {
         }
         const tag = (this.state.vibePass.publicKeyHex || "pass").slice(0, 12);
         this.triggerStateDownload(obj, `anazh-vibe-pass-${tag}.json`);
-        this.journalAppend("ritual", "Ich sicherte meinen Vibe-Pass — den Schlüssel meiner Identität.");
+        this.journalAppend("ritual", ["journal.vibepass-gesichert"]);
         return obj;
     }
 
@@ -377,10 +377,7 @@ class AnazhRealm_netz_identitaet {
         try {
             await this._adoptVibePassJwk(jwk, parsed.createdAt, false);
             this._persistVibePass();
-            this.journalAppend(
-                "ritual",
-                AnazhRealm._datum`Ein Vibe-Pass wurde wiederhergestellt — meine Identität ist nun ${this.state.vibePass.fingerprint}.`
-            );
+            this.journalAppend("ritual", ["journal.vibepass-wieder", { abdruck: this.state.vibePass.fingerprint }]);
             this._renderVibePassUI();
             this.log(`Vibe-Pass wiederhergestellt: ${this.vibePassId()}`, "INFO");
             return { ok: true, id: this.vibePassId() };
@@ -570,7 +567,7 @@ class AnazhRealm_netz_identitaet {
         // leer, sonst Überträger eines empfangenen + weiterveränderten Werks).
         this._appendProvenance(bp, vp.publicKeyHex);
         this.saveState();
-        this.journalAppend("ritual", AnazhRealm._datum`Ich versiegelte „${bp.label || name}" mit meinem Vibe-Pass.`, {
+        this.journalAppend("ritual", ["journal.versiegelt", { werk: bp.etikett || bp.label || name }], {
             blueprint: name,
         });
         return { ok: true, authorPubKey: bp.authorPubKey };
@@ -742,13 +739,9 @@ class AnazhRealm_netz_identitaet {
             .map((k) => k.replace(/[^\w-]/g, "?").slice(0, 24));
         if (fremd.length)
             this.log(`Geteiltes Werk: fremde Felder der Hülle ignoriert (must-ignore): ${fremd.join(", ")}`, "INFO");
-        this.journalAppend(
-            "witness",
-            AnazhRealm._datum`Ich empfing ein geteiltes Werk von ${this._vibeFingerprint(h.autor)}.`,
-            {
-                name: ziel,
-            }
-        );
+        this.journalAppend("witness", ["journal.werk-empfangen", { von: this._vibeFingerprint(h.autor) }], {
+            name: ziel,
+        });
         this._spielerSagt([
             "pass.werk.steht",
             {
@@ -2175,10 +2168,10 @@ class AnazhRealm_netz_identitaet {
         this._saveRevokedKeys();
         const purged = this._purgeRevokedArtifacts();
         if (!opts.silent && typeof this.journalAppend === "function") {
-            this.journalAppend(
-                "ritual",
-                AnazhRealm._datum`Ich rief einen Schlüssel zurück (${this._vibeFingerprint(norm)}) — ${purged} Artefakt(e) ausgestoßen.`
-            );
+            this.journalAppend("ritual", [
+                "journal.schluessel-zurueck",
+                { abdruck: this._vibeFingerprint(norm), n: purged },
+            ]);
         }
         return { ok: true, key: norm, purged };
     }
@@ -2342,7 +2335,7 @@ class AnazhRealm_netz_identitaet {
         };
         this._appendProvenance(this.state.signedWorlds[key], vp.publicKeyHex);
         this._saveSignedWorlds();
-        this.journalAppend("ritual", AnazhRealm._datum`Ich veröffentlichte die ${entry.label} mit meinem Vibe-Pass.`, {
+        this.journalAppend("ritual", ["journal.veroeffentlicht", { welt: this._weltNameZeile(entry) }], {
             world: key,
         });
         return { ok: true, authorPubKey: vp.publicKeyHex };
