@@ -34,7 +34,9 @@ class AnazhRealm_stoff_material {
         );
         mat.roughnessNode = T.mix(mat.roughnessNode || T.float(mat.roughness), T.float(1.0), dach);
         mat.colorNode = T.vec4(mat.colorNode.rgb.mul(PC.halmAder(A, uv.x, fw)), mat.colorNode.a);
-        mat.aoNode = PC.halmNarbe(A, uv.y, T.float(1.0)).himmel;
+        // die Narbe nimmt dem Halm den Himmel seines Fußes, die Kontakt-Verdeckung den der Dinge neben ihm (schatten.K3: das
+        // Band am Fuß und am Sockel liegt auf der Wiese im Halm, nicht auf dem Boden darunter)
+        mat.aoNode = PC.halmNarbe(A, uv.y, T.float(1.0)).himmel.mul(this._kontaktVerdeckung());
         mat.userData.halm = true;
         return mat;
     }

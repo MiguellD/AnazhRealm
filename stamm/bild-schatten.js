@@ -783,7 +783,8 @@ class AnazhRealm_bild_schatten {
     // nicht — die Wand 1 m vor dem Boden nimmt ihm nichts), das Integral der Sicht mit der projizierten Normale, geteilt durch das
     // Integral derselben Scheiben ohne Horizont (die freie Fläche liegt bei 1, ohne Rauschen der Scheiben-Wahl), hoch `potenz`.
     // Gerechnet an der analytischen Bühne der Station (Boden + Leib 0,45 × 1,75 × 0,3 + Block 4 × 3 × 4, die Kamera der Probe):
-    // das Integral 0,656 am Fuß und 0,598 am Sockel (frei 0,990 / 0,999), mit `potenz` 1,5 0,53 / 0,46. Das Ziel trägt (Sicht,
+    // das Integral 0,656 am Fuß und 0,598 am Sockel (frei 0,990 / 0,999), mit `potenz` 1,8 0,47 / 0,40; am echten Frame (swiftshader,
+    // gate:post-kette (k)) trägt das Ziel am Band 0,594 / 0,509 bei `potenz` 1,5 — die Rechnung des Passes. Das Ziel trägt (Sicht,
     // Sicht-Tiefe des Texels) — der Leser nimmt nur Texel seiner Tiefe (die Kante eines Leibs vor dem Boden reicht ihm nichts).
     _kontaktLeser() {
         const st = this.state;
@@ -1027,16 +1028,16 @@ AnazhRealm.BLENDE_RASTER = 256;
 // DIE KONTAKT-VERDECKUNG (`_kontaktPass`, schatten.K3): GTAO in halber Auflösung des Szenen-Ziels. `radiusM` = die Reichweite
 // der Horizont-Suche (Welt-m; die Wand 1 m vor dem Boden verdeckt nichts mehr, `saum` blendet die letzten 40 % aus), `scheiben`
 // × 2 Seiten × `schritte` Proben je Texel (24 Tiefen + 5 für Lage und Normale), `minPx` = unter so vielen Szenen-Texeln Radius
-// rechnet der Texel nicht (fern), `potenz` die Endpotenz der Sicht (XeGTAO „FinalValuePower"; an der Bühne der Station Fuß
-// 0,656 → 0,53, Sockel 0,598 → 0,46 — das Band 30–60 %), `tiefeRand` die relative Sicht-Tiefe, in der ein Texel dem
-// Leser gilt.
+// rechnet der Texel nicht (fern), `potenz` die Endpotenz der Sicht (XeGTAO „FinalValuePower", dort 2,2; an der Bühne der
+// Station in der Szenen-Auflösung der Radeon Fuß 0,656 → 0,47, Sockel 0,598 → 0,40 — die Mitte des Bands 30–60 %; am Bild ist
+// der schmale Fuß heller, gate:post-kette (k)), `tiefeRand` die relative Sicht-Tiefe, in der ein Texel dem Leser gilt.
 AnazhRealm.KONTAKT = Object.freeze({
     radiusM: 1.0,
     saum: 0.4,
     scheiben: 3,
     schritte: 4,
     minPx: 2,
-    potenz: 1.5,
+    potenz: 1.8,
     tiefeRand: 0.04,
 });
 // DIE KASKADEN-BOX (_kaskadenPassen): jede Kaskade misst die Frustum-Scheibe im Licht-Raum statt ihrer Diagonale.

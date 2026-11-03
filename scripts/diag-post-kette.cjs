@@ -619,11 +619,11 @@ function saumProbe(ort) {
 // DIE BÜHNE (Seiten-Kontext): die echte Welt-Szene, der echte Frame, eigene Gegenstände vor der Kamera.
 // (k) DIE KONTAKT-VERDECKUNG (schatten.K3) — die Mechanik der Station am echten Frame: auf dem Boden der Welt (die ebenste
 // Stelle um den Spieler) ein Leib 0,45 × 1,75 × 0,3 (der Fuß) und ein Block 4 × 3 × 4 (der Sockel), die Sonne aus (nur Himmel
-// und Umgebung — das indirekte Licht, das der aoNode trägt); die Kamera der Probe (4,5 m davor, 2,6 m hoch, Blick 1,2 m vor
-// die Flächen, 70°). Das Band 3–15 cm vor der Fläche gegen den freien Boden 1–2 m davor, je mit/ohne Körper (die Textur des
+// und Umgebung — das indirekte Licht, das der aoNode trägt); das Auge der Probe (4,5 m davor, 2,6 m hoch), je Körper ein
+// Blick auf sein Band und einer auf seinen freien Boden (die kleine Leinwand der Wand). Das Band 3–15 cm vor der Fläche gegen den freien Boden 1–2 m davor, je mit/ohne Körper (die Textur des
 // Bodens fällt heraus), linear (sRGB zurück, PBR Neutral zurück, durch die Belichtung). Dazu: der Pass lief (Zähler) und sein
 // Ziel trägt die halbe Auflösung des Szenen-Ziels.
-function kontaktProbe() {
+function kontaktProbe(bilder) {
     return (async () => {
         const T = window.THREE;
         const rend = st.renderer,
@@ -631,7 +631,7 @@ function kontaktProbe() {
             dl = st.directionalLight;
         rend.setAnimationLoop(null);
         window.__buehne();
-        const aus = {};
+        const aus = { bilder: bilder ? [] : null };
         const P0 = st.playerMesh.position.clone();
         const boden = (x, z) => r._voxelSurfaceY(x, z);
         // DER PLATZ: die ebenste Land-Stelle 0–60 m um den Spieler (Hang über ±5 m in vier Richtungen)
@@ -672,14 +672,22 @@ function kontaktProbe() {
             return {
                 band: [0.03, 0.07, 0.11, 0.15].flatMap((e) => us.map((u) => pt(e, u))),
                 frei: [1.0, 1.3, 1.6, 2.0].flatMap((e) => us.map((u) => pt(e, u))),
+                // je Körper EIN Blick vom Auge der Probe auf sein Band (25°) und auf seinen freien Boden (45°): die kleine
+                // Leinwand der Wand (320 × 240) trägt das 12-cm-Band so in so vielen Pixeln wie die Station (1920 × 1080, 70°)
+                blickBand: pt(0.09, 0),
+                blickFrei: pt(1.5, 0),
+                spanne: 0.4 * (w - 0.1) + 0.15,
             };
         };
         const merk = { pos: cam.position.clone(), quat: cam.quaternion.clone(), fov: cam.fov, I: dl.intensity };
+        let blick = null;
         const stell = () => {
-            cam.fov = 70;
-            cam.updateProjectionMatrix();
             cam.position.copy(Mv).addScaledVector(c, 4.5).setY(M.y + 2.6);
-            cam.lookAt(Mv.clone().addScaledVector(c, 1.2));
+            // die waagrechte Spanne der Punkte (mit Rand) füllt die Breite des Blicks, wenigstens 25°
+            const weit = cam.position.distanceTo(blick.ziel);
+            cam.fov = Math.max(blick.fov, (2 * Math.atan(blick.spanne / weit / cam.aspect) * 180) / Math.PI);
+            cam.updateProjectionMatrix();
+            cam.lookAt(blick.ziel);
             cam.updateMatrixWorld(true);
         };
         const LUT = Float32Array.from({ length: 256 }, (_, i) => (i / 255 <= 0.04045 ? i / 255 / 12.92 : Math.pow((i / 255 + 0.055) / 1.055, 2.4)));
@@ -726,24 +734,35 @@ function kontaktProbe() {
             [W, H] = [Math.round(d.x), Math.round(d.y)];
             stell();
             const u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+            if (aus.bilder) aus.bilder.push(window.__png(u8, W, H));
             return u8;
         };
         dl.intensity = 0;
         const lauf0 = st._kontaktLaeufe || 0;
         try {
             const D = [ding(0.45, 1.75, 0.3, -2.8), ding(4, 3, 4, 2.2)];
-            const mit = await schuss();
-            koerper.forEach((k) => (k.visible = false));
-            const ohne = await schuss();
-            aus.je = D.map((d, i) => {
-                const [bm, bo, fm, fo] = [probeL(mit, d.band), probeL(ohne, d.band), probeL(mit, d.frei), probeL(ohne, d.frei)];
-                return {
+            // je Blick ein Paar mit/ohne Körper; gemessen mit DERSELBEN Kamera (die Projektion der Punkte nach dem Schuss)
+            const paar = async (ziel, fov, spanne, pts) => {
+                blick = { ziel, fov, spanne };
+                koerper.forEach((k) => (k.visible = true));
+                const m = await schuss();
+                const a = probeL(m, pts);
+                koerper.forEach((k) => (k.visible = false));
+                const o = await schuss();
+                return [a, probeL(o, pts)];
+            };
+            aus.je = [];
+            for (let i = 0; i < D.length; i++) {
+                const d = D[i];
+                const [bm, bo] = await paar(d.blickBand, 25, d.spanne, d.band);
+                const [fm, fo] = await paar(d.blickFrei, 45, d.spanne, d.frei);
+                aus.je.push({
                     was: ["fuss", "sockel"][i],
                     band: bm.L > 0 && bo.L > 0 && fm.L > 0 && fo.L > 0 ? +(bm.L / bo.L / (fm.L / fo.L)).toFixed(4) : null,
                     frei: fm.L > 0 && fo.L > 0 ? +(fm.L / fo.L).toFixed(4) : null,
                     n: Math.min(bm.n, fm.n),
-                };
-            });
+                });
+            }
             const L = st.kontaktLeser;
             const sz = st.scenePass && st.scenePass.renderTarget;
             aus.pass = {
@@ -1138,8 +1157,24 @@ function buehne(nFrames, nachtLicht) {
         await page.evaluate(SK.SHADER_INSTALL);
         out = await page.evaluate(buehne, N_FRAMES, DUNKEL_NACHT_LICHT);
         if (out.abbruch) log(`ABBRUCH: ${out.abbruch}`);
+        // die Probe auf einer Leinwand, die das 12-cm-Band am Fuß in so vielen Pixeln trägt wie die Station (480 × 360, Blick 25°:
+        // der Leib ~80 px breit, in der Station 1920 × 1080 bei 70° ~74 px); danach wächst sie für (f) ohnehin neu
+        await page.setViewport({ width: 480, height: 360 });
+        await page.evaluate(async () => {
+            for (let i = 0; i < 6; i++) {
+                window.__loopBild();
+                await sleep(50);
+            }
+        });
         try {
-            out.kontakt = await page.evaluate(kontaktProbe);
+            // POST_KETTE_KONTAKT_BILD=<Verzeichnis>: die acht Aufnahmen der Probe als PNG (Band/frei × Fuß/Sockel × mit/ohne)
+            const bildDir = process.env.POST_KETTE_KONTAKT_BILD;
+            out.kontakt = await page.evaluate(kontaktProbe, !!bildDir);
+            if (bildDir && out.kontakt.bilder)
+                out.kontakt.bilder.forEach((d, i) =>
+                    fs.writeFileSync(`${bildDir}/kontakt-${i}.png`, Buffer.from(d.split(",")[1], "base64"))
+                );
+            if (out.kontakt) delete out.kontakt.bilder;
         } catch (e) {
             out.kontakt = { abbruch: fehlerText(e) };
         }
