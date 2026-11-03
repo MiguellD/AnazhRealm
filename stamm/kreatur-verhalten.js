@@ -3984,8 +3984,8 @@ AnazhRealm._fellHoehe = function (tB) {
         if (!A.aSchale || !A.aWurzel) continue;
         const [S, W, P, d] = [A.aSchale, A.aWurzel, A.position, []];
         let tMax = 0;
-        for (let i = 0; i < S.count; i++) tMax = Math.max(tMax, S.getX(i));
-        for (let i = 0; i < S.count && !(g.userData._fellHoehe > 0); i++)
+        for (let i = 0; i < S.count && !(g.userData._fellHoehe > 0); i++) tMax = Math.max(tMax, S.getX(i));
+        for (let i = 0; i < S.count && tMax > 0; i++)
             if (S.getX(i) >= tMax - 1e-4)
                 d.push(Math.hypot(P.getX(i) - W.getX(i), P.getY(i) - W.getY(i), P.getZ(i) - W.getZ(i)));
         if (d.length) g.userData._fellHoehe = d.sort((x, y) => x - y)[d.length >> 1];
