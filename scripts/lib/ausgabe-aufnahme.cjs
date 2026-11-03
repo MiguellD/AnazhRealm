@@ -1032,7 +1032,8 @@ function himmelUrteil(g) {
         );
     }
     const T = g.takt || {};
-    const schritt = Math.min(1, T.schrittSek) / (T.tagMin * 60);
+    // die Uhr geht mit der Welt-Uhr (feld.K2#2, `_weltTage`): je Takt sein Schritt, gedeckelt (`TAKT_DECKEL_S`)
+    const schritt = Math.min(T.deckel ?? 1, T.schrittSek) / (T.tagMin * 60);
     const soll = T.schritte * schritt;
     const gang = U.gang || { n: 0, weg: 0, max: 0 };
     if (!(Number.isFinite(soll) && Math.abs(gang.weg - soll) <= 1e-6 + 1e-9 * T.schritte))

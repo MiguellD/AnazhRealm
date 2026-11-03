@@ -436,14 +436,16 @@ function wasserSchmelze(r, x, z, P) {
         st.dirtyVoxelChunks = new Set([...alt, ...st.dirtyVoxelChunks]);
     };
     const lauf = () => {
-        const alt = [st.seasonPhase, st.autoSeason, st.seasonYearSeconds, (r._lastSeasonTime = 0)];
+        // das Jahr ist eine Funktion der Welt-Uhr (`_saisonDerUhr`): die Probe spult sie, 0,2 s je Woche
+        const alt = [st.seasonPhase, st.autoSeason, st.seasonYearSeconds, st.spielZeit, (st.saisonAnker = null)];
         Object.assign(st, { seasonPhase: 0.375, autoSeason: true, seasonYearSeconds: 10.4 });
         const w = [];
         let neuBau = 0;
         try {
             for (let k = 1; k <= 52; k++) {
                 const vor = st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0;
-                r._tickSeason(k * 200);
+                st.spielZeit = alt[3] + k * 0.2;
+                r._tickSeason();
                 neuBau += (st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0) - vor;
                 r._bodenFarbeAt(x, y, z, c);
                 const F = r._temperaturFeld(y, 0);
@@ -453,7 +455,7 @@ function wasserSchmelze(r, x, z, P) {
                 Object.assign(w[k - 1], { h: R(r._atlasWaterLevelAt(...P.see, g) - P.ruhe), a: a > 0, f: (r._hydroRiverAt(...P.fluss) || {}).surfaceY, s: st.seasonPhase });
             }
         } finally {
-            [st.seasonPhase, st.autoSeason, st.seasonYearSeconds, r._lastSeasonTime] = alt;
+            [st.seasonPhase, st.autoSeason, st.seasonYearSeconds, st.spielZeit, st.saisonAnker] = alt;
             r._tickSeason(0);
         }
         const n = (f) => w.filter((b, i) => i && f(w[i - 1], b)).length;
@@ -518,13 +520,14 @@ function wasserErstarrung(r, orte) {
     const st = r.state;
     const wm = st.worldMeta;
     const n = (wm.taten || []).length;
-    const alt = [st.timeOfDay, wm.tag, st.dayLengthMinutes, st._lastDayNightTick];
+    const alt = [st.timeOfDay, wm.tag, st.dayLengthMinutes, st.spielZeit];
     const aus = orte.map(([x, z]) => ({ x, z, y: r._voxelSurfaceY(x, z), frei: r.auraAt(x, z).glut, reihe: [] }));
     try {
         for (const o of aus) r.dslRun(["lava", o.x, o.y, o.z], { source: "human" });
-        Object.assign(st, { dayLengthMinutes: 1, _lastDayNightTick: 0 });
+        st.dayLengthMinutes = 1; // der Tag ist eine Funktion der Welt-Uhr (`_weltTage`): die Probe spult sie, 1 s je Takt
         for (let k = 0; k <= 15; k++) {
-            if (k) r.tickDayNight(k);
+            st.spielZeit = alt[3] + k;
+            r.tickDayNight(k);
             aus.forEach((o, i) => {
                 const d = r._lavaAt(o.x, o.z);
                 const licht = r._leuchtQuellen(o.x, o.y, o.z, 30).some((q) => q.id === wm.taten[n + i]);
@@ -534,7 +537,7 @@ function wasserErstarrung(r, orte) {
     } finally {
         wm.taten.splice(n);
         r._tatGen = (r._tatGen | 0) + 1;
-        [st.timeOfDay, wm.tag, st.dayLengthMinutes, st._lastDayNightTick] = alt;
+        [st.timeOfDay, wm.tag, st.dayLengthMinutes, st.spielZeit] = alt;
     }
     for (const o of aus) o.ab = o.reihe.findIndex((s) => s.erstarrt);
     return aus;

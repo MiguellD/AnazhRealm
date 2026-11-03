@@ -286,7 +286,8 @@ class AnazhRealm {
             // keine Stimme der Welt dreht das Wetter, bis der Spieler es freigibt („setze wetter frei"); persistiert.
             // Der WUNSCH der Welt (Nexus, seine Gesetze, die Emotion, die Wesen): das Wort, das der nächste Zug zieht.
             wetterWort: null,
-            wetterWunsch: null,
+            wetterWuensche: [],
+            wetterZugWunsch: null, // der Wunsch, den der laufende Zug zog (feld.K2#2: er reist im Stand)
             // Tag-Nacht: timeOfDay 0..1 (0=Mitternacht, 0.25=Aufgang, 0.5=Mittag, 0.75=Untergang), persistiert; ihn
             // schreibt nur der EINE Uhr-Schreiber `_uhrSetzen`. dayLengthMinutes = Echtzeit je Zyklus (Slider 1–60), die
             // Wahl des Spielers (localStorage, nie im Spielstand). Lichter + Skybox leiten sich pro Frame aus timeOfDay ab.

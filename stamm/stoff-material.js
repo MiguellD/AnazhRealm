@@ -3476,7 +3476,7 @@ AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, w
 // Ring hält die letzten `ringN` Schritte für den Leser einer früheren Uhr (der Brand in seinem Schritt, `_naesseUm`).
 AnazhRealm.NAESSE = Object.freeze({
     schrittS: 1,
-    ringN: 4096,
+    ringN: 16384,
     regenAb: 0.05,
     benetzenS: 150,
     trocknenS: 1500,

@@ -104,6 +104,14 @@ class AnazhRealm_speicher_laden {
             // stand die Leitung schon, nennt die Seele die Marken jetzt (der Mitspieler reicht nach)
             if (st.p2p && st.p2p.enabled && st.p2p.connected) this._p2pBroadcastSoul();
         }
+        // die Wünsche der Welt: die wartenden und der, den der laufende Zug zog — der erste Zug nach dem Laden zieht ihn wieder
+        if (Array.isArray(S.wuensche)) {
+            const wort = (w) =>
+                w && typeof w.wort === "string" && w.wort in AnazhRealm.WEATHER_INTENSITY && zahl(w.uhr);
+            st.wetterWuensche = (Array.isArray(S.wuensche[0]) ? S.wuensche[0] : []).filter(wort);
+            const z = S.wuensche[1];
+            st.wetterZugWunsch = z && zahl(z.zug) ? { zug: z.zug, wunsch: wort(z.wunsch) ? z.wunsch : null } : null;
+        }
         const u = anker(S.uhrAnker, tage);
         if (u) st.uhrAnker = u;
         if (st.autoSeason !== false) {
@@ -139,7 +147,7 @@ class AnazhRealm_speicher_laden {
             S.leben,
             (z) => {
                 const n = gaben(z[1]);
-                return n ? { n, t: z[2], a: this._feldGabe(n, 0, z[2], z[2], LF.decayPerSec) } : null;
+                return n ? { n, t: z[2], a: AnazhRealm._feldGabe(n, 0, z[2], z[2], LF.decayPerSec) } : null;
             },
             (c) => c.t + Math.max(0, Math.log(Math.abs(c.a) / LF.epsilon)) / LF.decayPerSec
         );
@@ -157,7 +165,7 @@ class AnazhRealm_speicher_laden {
                     const g = gaben(z[1][k]);
                     if (!g) continue;
                     n[k] = g;
-                    axes[k] = this._feldGabe(g, 0, z[2], z[2], EF.decayPerSec);
+                    axes[k] = AnazhRealm._feldGabe(g, 0, z[2], z[2], EF.decayPerSec);
                 }
                 return { axes, n, t: z[2] };
             },
@@ -398,7 +406,7 @@ class AnazhRealm_speicher_laden {
             typeof state.wetterWort === "string" && state.wetterWort in AnazhRealm.WEATHER_INTENSITY
                 ? state.wetterWort
                 : null;
-        this.state.wetterWunsch = null;
+        this.state.wetterWuensche = [];
         if (this.state.skybox) this.updateSkyboxWeather();
     }
 

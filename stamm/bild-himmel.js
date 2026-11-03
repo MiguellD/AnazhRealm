@@ -806,7 +806,12 @@ class AnazhRealm_bild_himmel {
     _tickSeason(_currentTime) {
         const st = this.state;
         if (typeof st.seasonPhase !== "number") st.seasonPhase = 0.375;
-        st.seasonPhase = this._saisonDerUhr();
+        // das Jahr hält (`autoSeason` false: es läuft an der Uhr weiter, zu der es wieder geht) — oder ein Schreiber neben dem Gang
+        // setzte die Phase (`_saisonGang`): der Anker setzt an ihr an
+        if (st.autoSeason === false || (this._saisonGang !== undefined && this._saisonGang !== st.seasonPhase))
+            st.saisonAnker = null;
+        if (st.autoSeason !== false) st.seasonPhase = this._saisonDerUhr();
+        this._saisonGang = st.seasonPhase;
         // DIE RUHE IST DER FIXPUNKT (feld.K3): Tönung und Name sind eine Funktion der Phase — steht sie (das Wort, die Bühne,
         // ein Lauf ohne Drift), schläft der Takt; jeder Schreiber der Phase weckt ihn, weil er sie ändert. Bis feld.K3 malte er
         // die Uniform in jedem Bild neu (gate:stand-takt RUHE-SIM, Mess-Wiese 60 s: 10 800 Rufe).
@@ -864,6 +869,7 @@ class AnazhRealm_bild_himmel {
             s: Number.isFinite(uhr) ? uhr : this.state.spielZeit,
             laenge: null,
         };
+        this._saisonGang = phaseFor[key];
         this.state.season = key;
         return true;
     }
@@ -2697,11 +2703,23 @@ class AnazhRealm_bild_himmel {
     // (`uhrAnker`) und der Tag-Länge des Spielers; der Tag der Welt (`worldMeta.tag`) ist ihr ganzer Teil. Bis feld.K2#2 trieb
     // die Wanduhr jeder Seite die Uhr (je Bild gekappt auf 1 s): zwei Peers an derselben Welt-Uhr standen 0,0024 Tage
     // auseinander (gate:mp-sync (f), 0,5090 ↔ 0,5114), und die Luft des Brands, die Stunde jeder Tat mit ihnen.
+    // Ein Schreiber neben dem Gang (eine Bühne, die die Zeit setzt) hält die Uhr an seinem Wert: der Anker setzt dort an (`_uhrGang`,
+    // der Stand des letzten Gangs; das Laden und ein Wort setzen ihn selbst).
     tickDayNight(currentTime) {
+        const st = this.state;
+        const wm = st.worldMeta;
+        const G = this._uhrGang;
+        if (G && (G[0] !== st.timeOfDay || G[1] !== ((wm && wm.tag) || 0)))
+            st.uhrAnker = {
+                wert: ((wm && wm.tag) || 0) + st.timeOfDay,
+                s: st.spielZeit,
+                laenge: st.uhrAnker ? st.uhrAnker.laenge : null,
+            };
         const tage = this._weltTage();
         const tag = Math.floor(tage);
-        if (this.state.worldMeta) this.state.worldMeta.tag = tag;
+        if (wm) wm.tag = tag;
         this._uhrSetzen(tage - tag, "uhr");
+        this._uhrGang = [st.timeOfDay, tag];
         // Läuft JEDEN Frame, kein Throttle: bei 10 Hz sprang die Beleuchtung in Stufen (ruckelnde Schatten);
         // die Funktion ist billig genug (Color-Lerps + Vector-Copies).
         this._applyDayNightToScene();
@@ -2804,6 +2822,7 @@ class AnazhRealm_bild_himmel {
         // schreibt Tag und Zeit aus ihm (`tickDayNight`), das Laden setzt beide aus dem Stand (der Tag reist im worldMeta)
         const d = v - this.state.timeOfDay;
         const wm = this.state.worldMeta;
+        if (quelle !== "uhr") this._uhrGang = null; // ein Wort oder das Laden setzt den Anker selbst
         if (quelle !== "laden" && quelle !== "uhr") {
             if (wm && Math.abs(d) > 0.5) wm.tag = (wm.tag || 0) + (d < 0 ? 1 : -1);
             const A = this.state.uhrAnker;
@@ -3171,14 +3190,16 @@ class AnazhRealm_bild_himmel {
     }
 
     // DIE NÄSSE ZUR WELT-UHR t (feld.K2#2): der Schritt des Rasters, in dem t liegt (der Brand liest sie in seinem Schritt, der der
-    // Uhr nachläuft); was das Raster nie rechnete (die Ruhe, vor dem Ring), trägt die Nässe der Welt.
+    // Uhr nachläuft — der Takt des Regens rechnet das Raster vor dem Takt des Brands, `_loopWeatherAndGrowth`); was das Raster
+    // nie rechnete (die Ruhe, vor dem Ring, nach seinem letzten Schritt), trägt die Nässe der Welt.
     _naesseUm(t) {
         const N = AnazhRealm.NAESSE;
-        const n = this._naesseRaster();
-        const k = Math.floor(t / N.schrittS);
         const R = this._naesseRing;
+        const n = Number.isFinite(this.state.naesse) ? this.state.naesse : 0;
+        if (!R || !Number.isFinite(t)) return n;
+        const k = Math.floor(t / N.schrittS);
         const i = ((k % N.ringN) + N.ringN) % N.ringN;
-        return Number.isFinite(t) && R.k[i] === k ? R.n[i] : n;
+        return R.k[i] === k ? R.n[i] : n;
     }
 
     // Der EINE Wetter-Schreiber: state.weather wird SOFORT gesetzt (weather_is + DSL reagieren instant),
@@ -3192,7 +3213,7 @@ class AnazhRealm_bild_himmel {
     // DAS GESETZ DER SCHREIBER (`_himmelSchreiber`, Leben-Schau 2): der SPIELER schreibt, und sein Wort steht
     // (`wetterWort`, bis „setze wetter frei"); ein Gesetz des Spielers schreibt wie er; solange das Wort steht, dreht
     // weder der Zug noch die Welt das Wetter (false). Ohne Wort schreibt die WELT (Nexus, seine Gesetze, die Emotion,
-    // die Wesen) nie selbst: sie WÜNSCHT das nächste Wort (`wetterWunsch`, Rückgabe "wunsch"), der Zug zieht es in seinem
+    // die Wesen) nie selbst: sie WÜNSCHT das nächste Wort (`wetterWuensche`, Rückgabe "wunsch"), der Zug zieht es in seinem
     // Takt (`WETTER_ZUG_SEK`). Vorher hielt „setze wetter sonnig" bis zum nächsten Nexus-Regen (alle 4,7 s).
     // `zug` ({ von, beginn }) trägt der Wetter-Zug: sein Übergang ist eine Funktion der Welt-Uhr — aus dem Wort der Front `von`,
     // ab `beginn`, über die Dauer des Gesetzes (nie die Laune einer Seite), gleich welcher Übergang lief.
@@ -3212,21 +3233,24 @@ class AnazhRealm_bild_himmel {
                 return false;
             }
             if (wer === "welt") {
-                // DER WUNSCH DER WELT IST EIN SCHREIB-AKT (feld.K2#2): er trägt die Uhr seines Moments; es gilt der späteste
-                // (bei gleicher Uhr das größere Wort), gleich in welcher Folge er ankommt — und was eine Seite wünscht (ihr Nexus,
-                // die Emotion, ein Wesen), reist als Gabe `wunsch` (`_feldAktSenden`) zu jedem Mitspieler. Bis feld.K2#2 zog
-                // jeder Zug den Wunsch seiner Seite: das Wetter zweier Peers ging auseinander, sobald eine Seite wünschte.
+                // DER WUNSCH DER WELT IST EIN SCHREIB-AKT (feld.K2#2): er trägt die Uhr seines Moments und wartet auf den Zug, der
+                // nach ihr zieht (`wetterWuensche`; der Zug nimmt den spätesten vor seiner Uhr, `_loopWeatherAndGrowth`) — gleich in
+                // welcher Folge die Wünsche ankommen; was eine Seite wünscht (ihr Nexus, die Emotion, ein Wesen), reist als Gabe
+                // `wunsch` (`_feldAktSenden`) zu jedem Mitspieler. Bis feld.K2#2 zog jeder Zug den Wunsch seiner Seite, und ein
+                // späterer Wunsch verdrängte den eines früheren Zugs: das Wetter zweier Peers ging auseinander (gate:mp-sync (f)).
                 const u = Number.isFinite(uhr) ? uhr : this.state.spielZeit;
-                const alt = this.state.wetterWunsch;
-                if (!alt || !(u <= alt.uhr) || (u === alt.uhr && name > alt.wort))
-                    this.state.wetterWunsch = { wort: name, quelle: quelle || "?", uhr: u };
+                (this.state.wetterWuensche || (this.state.wetterWuensche = [])).push({
+                    wort: name,
+                    quelle: quelle || "?",
+                    uhr: u,
+                });
                 if (!/remote:/.test(String(quelle))) this._feldAktSenden(["wunsch", 0, 0, name], u);
                 return "wunsch";
             }
         }
         if (wer === "spieler") {
             this.state.wetterWort = name;
-            this.state.wetterWunsch = null;
+            this.state.wetterWuensche = [];
         } else if (wer === "gesetz" && this.state.wetterWort) this.state.wetterWort = name;
         const oldWeather = this.state.weather;
         this.state.weather = name;
@@ -3249,7 +3273,7 @@ class AnazhRealm_bild_himmel {
         const wer = this._himmelSchreiber(quelle, "wetter");
         if (wer !== "spieler" && wer !== "gesetz") return false;
         this.state.wetterWort = null;
-        this.state.wetterWunsch = null;
+        this.state.wetterWuensche = [];
         this._wetterZug = Math.floor(this.state.spielZeit / AnazhRealm.WETTER_ZUG_SEK);
         return true;
     }

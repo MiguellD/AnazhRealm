@@ -853,11 +853,15 @@ class AnazhRealm_speicher_welten {
         const R = this._brandRest;
         return {
             uhrAnker: st.uhrAnker || null,
+            wuensche: [st.wetterWuensche || [], st.wetterZugWunsch || null],
             akte: st.aktGesehen || null,
             saisonAnker: st.saisonAnker || null,
             naesse: Number.isFinite(st.naesse) ? st.naesse : 0,
             naesseSchritt: Number.isFinite(st.naesseSchritt) ? st.naesseSchritt : null,
-            leben: zellen(st.lifeField, (e) => e.n || this._feldGabeAus(e.a, e.t, AnazhRealm.LIFE_FIELD.decayPerSec)),
+            leben: zellen(
+                st.lifeField,
+                (e) => e.n || AnazhRealm._feldGabeAus(e.a, e.t, AnazhRealm.LIFE_FIELD.decayPerSec)
+            ),
             gefuehl: zellen(st.emotionField, (e) => e.n || {}),
             brand:
                 (bf && bf.size) || R

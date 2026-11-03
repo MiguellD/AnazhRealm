@@ -71,17 +71,7 @@
 //
 //   node scripts/diag-mp-sync.cjs [--selftest]
 "use strict";
-const {
-    starteBrowser,
-    nullRenderer,
-    halteBis,
-    startProc,
-    eigenePorte,
-    sleep,
-    waitFor,
-    hauptLauf,
-    SELBSTTEST,
-} = require("./lib/welt-boot.cjs");
+const { starteBrowser, nullRenderer, halteBis, startProc, eigenePorte, sleep, waitFor, hauptLauf, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 // die eigenen Ports: MP_SYNC_PORT und MP_SYNC_SIGNAL_PORT, sonst freie des Systems (welt-boot `eigenePorte`) — nie 4312/4313, die Server des Schöpfers
 let PORT, SIGNAL_PORT, PAGE_URL, SIGNALING_URL;
@@ -181,137 +171,70 @@ function abdruck(bauten) {
     const boden = edits.map(([, , x, y, z]) => [r._terrainDensityAt(x, y, z), r._voxelSurfaceY(x, z)]);
     const wt = st.weatherTransition;
     const wetter = JSON.stringify([st.weather, wt && [wt.from, wt.to, wt.startedAt, wt.duration]]);
-    const leben = [...(st.lifeField || [])].map(([k, e]) => JSON.stringify([k, e.a, e.t]));
-    return { edits, bauten: B.sort(), boden, zug: r._wetterZug, wetter, leben };
+    return { edits, bauten: B.sort(), boden, zug: r._wetterZug, wetter };
 }
-// (f) DIE TEIL-SIMULATIONEN einer Seite an der Welt-Uhr T: je Karte des Felds ihre Zellen, die zu T leben (was die Welt liest:
-// über epsilon) — [Zelle, [Betrag, Gaben je Scheibe], Uhr], sortiert —, der
-// Brand je Schritt (`__mp.brand`, von `installiere` am Beginn jedes Schritts genommen) und seine Asche, die Nässe der 30 Schritte
-// des Rasters bis T, der Pegel und Tag und Jahr zu T — jede eine Funktion der Welt, die die Welt selbst liest
+// (f) DIE TEIL-SIMULATIONEN einer Seite an der Welt-Uhr T — jede, wie die Welt sie liest: je Karte des Felds die Zellen, die zu
+// T leben, als [Zelle, Uhr, Gaben je Scheibe] (ganze Zahlen, `_feldGabe` — der Betrag folgt aus ihnen), der Brand je Schritt
+// (`__mp.brand`, von `installiere` am Beginn jedes Schritts genommen) und seine Asche, die Nässe der Schritte ihres Rasters bis
+// T (nach einem Reload erst ab dem Stand), der Pegel und Tag und Jahr zu T
 function teilSims(T) {
-    const st = r.state;
-    const zellen = (M, w, lebt) =>
-        M
-            ? [...M]
-                  .filter(([k, e]) => lebt(k, e))
-                  .map(([k, e]) => JSON.stringify([k, w(e), e.t]))
-                  .sort()
-            : [];
-    const ordne = (o) => Object.fromEntries(Object.entries(o || {}).sort());
-    const cs = r.constructor.LIFE_FIELD.cell;
-    const ort = (k) => k.split(",").map((v) => (+v + 0.5) * cs);
-    const N = r.constructor.NAESSE;
+    const [st, N, cs, R] = [r.state, r.constructor.NAESSE, r.constructor.LIFE_FIELD.cell, r._naesseRing];
+    const karte = (M, lebt) =>
+        [...(M || [])]
+            .filter(([k]) => lebt(...k.split(",").map((v) => (+v + 0.5) * cs), T))
+            .map(([k, e]) => JSON.stringify([k, e.t, Object.entries(e.n || {}).sort()]))
+            .sort();
     const k1 = Math.floor(T / N.schrittS);
     return {
-        leben: zellen(
-            st.lifeField,
-            (e) => [e.a, ordne(e.n)],
-            (k) => r._lifeOverlayAt(...ort(k), T) !== 0
-        ),
-        gefuehl: zellen(
-            st.emotionField,
-            (e) => [
-                ordne(e.axes),
-                Object.fromEntries(
-                    Object.entries(e.n || {})
-                        .sort()
-                        .map(([a, n]) => [a, ordne(n)])
-                ),
-            ],
-            (k) => {
-                const p = ort(k);
-                const alt = st.spielZeit;
-                st.spielZeit = T; // das Gefühl liest zur Welt-Uhr (`_emotionOverlayAt`)
-                try {
-                    return !!r._emotionOverlayAt(...p);
-                } finally {
-                    st.spielZeit = alt;
-                }
-            }
-        ),
-        brand: [...((window.__mp && window.__mp.brand) || new Map())],
+        leben: karte(st.lifeField, (x, z) => r._lifeOverlayAt(x, z, T)),
+        gefuehl: karte(st.emotionField, (x, z) => r._emotionOverlayAt(x, z, T)),
+        brand: [...window.__mp.brand],
         asche: (st.worldMeta.taten || []).filter((a) => a.tat === "brand").map((a) => JSON.stringify(a)),
-        feuer: (st.brandFeld || new Map()).size,
-        // die Schritte, die das Raster dieser Seite rechnete (nach einem Reload erst ab dem Stand) — je [Schritt, Nässe]
-        naesse: Array.from({ length: 30 }, (_, i) => k1 - 29 + i)
-            .filter((k) => r._naesseRing && r._naesseRing.k[k % N.ringN] === k)
-            .map((k) => [k, r._naesseUm(k * N.schrittS)]),
+        feuer: st.brandFeld ? st.brandFeld.size : 0,
+        naesse: [...Array(30).keys()]
+            .map((i) => k1 - i)
+            .filter((k) => R && R.k[k % N.ringN] === k)
+            .map((k) => [k, R.n[k % N.ringN]]),
         pegel: JSON.stringify(r._pegelTafel(T)),
         uhr: JSON.stringify([r._weltTage(T), r._saisonDerUhr(T)]),
     };
 }
-// (f) das Urteil über zwei Sichten der Teil-Simulationen (A, B; je `teilSims` an derselben Uhr) und das Wetter der Abdrücke →
-// { ok, satz }: je Teil gleich oder VERSCHIEDEN mit Zahl, der Täter beim Namen; ein Brand, der nie brannte, ist ungemessen (ROT)
-function simsUrteil(A, B, wA, wB) {
-    const menge = (a, b) => {
-        const [x, y] = [new Set(a), new Set(b)];
-        const alle = new Set([...a, ...b]);
-        return { gleich: [...alle].filter((k) => x.has(k) && y.has(k)).length, alle: alle.size };
+// (f) der Täter je Teil, wenn er abweicht
+const TAETER = {
+    leben: "der Schreiber stempelt nicht die Uhr des Akts oder reist nicht (_depositLife, ctx.uhr, feld_akt)",
+    gefuehl: "die Prägung stempelt nicht die Uhr des Akts oder reist nicht (_depositEmotion, _gefuehlPraegen)",
+    asche: "die Asche trägt nicht die Stunde ihres Schritts (_brandArbeit)",
+    brand: "ein Leser des Brands liest nicht die Uhr seines Schritts (_brandSchritt, _brandZuenden)",
+    naesse: "die Nässe schreitet nicht auf dem Raster der Welt-Uhr (_naesseRaster)",
+    pegel: "der Tag des Jahrs oder der Regen nicht zur Uhr (_pegelTafel)",
+    uhr: "Tag oder Jahr an der Wanduhr einer Seite (_weltTage, _saisonDerUhr)",
+};
+// (f) das Urteil über zwei Sichten (A, B; `teilSims` an derselben Uhr) → { ok, leben, satz }: je Teil [gleich, alle]; gemessen
+// ist nur, was einen Gegenstand trägt — ein Brand, der in einem gemeinsamen Schritt brannte oder auf beiden Seiten erlosch und
+// Asche ließ, mindestens 5 gemeinsame Schritte der Nässe, eine Zelle Leben; sonst „ungemessen" (ROT)
+function simsUrteil(A, B) {
+    const paare = (a, b) => ((m) => a.filter(([k]) => m.has(k)).map(([k, v]) => [v, m.get(k)]))(new Map(b));
+    const menge = (a, b) => [a.filter((x) => b.includes(x)).length, new Set([...a, ...b]).size];
+    const gleich = (p) => [p.filter(([a, b]) => a === b).length, p.length, p.filter(([a]) => a !== "[]").length];
+    const z = {
+        leben: menge(A.leben, B.leben),
+        gefuehl: menge(A.gefuehl, B.gefuehl),
+        asche: menge(A.asche, B.asche),
+        brand: gleich(paare(A.brand, B.brand)),
+        naesse: gleich(paare(A.naesse, B.naesse)),
+        pegel: [+(A.pegel === B.pegel), 1],
+        uhr: [+(A.uhr === B.uhr), 1],
     };
-    // je Karte: welche Größe abweicht — dieselbe Zelle mit anderer Uhr (der Schreiber stempelt nicht die Uhr des Akts), anderem
-    // Wert, oder eine Zelle nur auf einer Seite (ein Schreiber, der nicht reist)
-    const karte = (name, a, b) => {
-        const m = menge(a, b);
-        const je = (L) => new Map(L.map((z) => JSON.parse(z)).map(([k, w, t]) => [k, [JSON.stringify(w), t]]));
-        const [x, y] = [je(a), je(b)];
-        let uhr = 0;
-        let wert = 0;
-        let einseitig = 0;
-        for (const k of new Set([...x.keys(), ...y.keys()])) {
-            const [p, q] = [x.get(k), y.get(k)];
-            if (!p || !q) einseitig++;
-            else if (p[1] !== q[1]) uhr++;
-            else if (p[0] !== q[0]) wert++;
-        }
-        const ok = m.gleich === m.alle;
-        const taeter = ok
-            ? ""
-            : ` (${[
-                  uhr &&
-                      `${uhr}× die Uhr der Zelle — Täter: der Schreiber stempelt nicht die Uhr des Akts (_depositLife/_depositEmotion, ctx.uhr)`,
-                  wert && `${wert}× der Betrag — Täter: ein Schreiber, der je Seite anders gibt`,
-                  einseitig && `${einseitig}× nur auf einer Seite — Täter: ein Schreiber, der nicht reist`,
-              ]
-                  .filter(Boolean)
-                  .join(" · ")})`;
-        return { ok, satz: `${name} ${m.gleich}/${m.alle} gleich${taeter}` };
+    const leer = {
+        brand: !z.brand[2] && !(z.asche[1] && !A.feuer && !B.feuer),
+        naesse: z.naesse[1] < 5,
+        leben: !z.leben[1],
     };
-    const L = karte("Leben", A.leben, B.leben);
-    const G = karte("Gefühl", A.gefuehl, B.gefuehl);
-    const [bA, bB] = [new Map(A.brand), new Map(B.brand)];
-    const gemein = [...bA.keys()].filter((t) => bB.has(t));
-    const brennt = gemein.filter((t) => bA.get(t) !== "[]");
-    const andersB = gemein.filter((t) => bA.get(t) !== bB.get(t));
-    const asche = menge(A.asche, B.asche);
-    // gemessen ist der Brand, wenn ein gemeinsamer Schritt brannte — oder er auf beiden Seiten erlosch und seine Asche liegt
-    const erloschen = !A.feuer && !B.feuer && asche.alle > 0;
-    const brandOk = (brennt.length > 0 || erloschen) && andersB.length === 0 && asche.gleich === asche.alle;
-    const brand =
-        `Brand ${gemein.length - andersB.length}/${gemein.length} Schritte gleich (${brennt.length} brennend` +
-        `${erloschen ? ", erloschen" : ""}), Asche ${asche.gleich}/${asche.alle} gleich` +
-        (brennt.length || erloschen ? "" : " — kein gemeinsamer Schritt brannte, keine Asche: ungemessen") +
-        (andersB.length
-            ? ` — erster anderer Schritt t=${andersB[0]}: Täter ein Leser des Brands, der nicht die Uhr seines Schritts liest (_brandSchritt/_brandZuenden)`
-            : "") +
-        (asche.gleich === asche.alle
-            ? ""
-            : " — Täter: die Asche trägt die Stunde des Bilds statt ihres Schritts (_brandArbeit)");
-    const nB = new Map(B.naesse);
-    const nGemein = A.naesse.filter(([k]) => nB.has(k));
-    const nGleich = nGemein.filter(([k, v]) => nB.get(k) === v).length;
-    const nOk = nGemein.length >= 5 && nGleich === nGemein.length;
-    const naesse =
-        `Nässe ${nGleich}/${nGemein.length} Schritte gleich (${(A.naesse.at(-1) || [0, NaN])[1].toFixed(4)})` +
-        (nOk
-            ? ""
-            : nGemein.length < 5
-              ? " — weniger als 5 gemeinsame Schritte: ungemessen"
-              : " — Täter: die Nässe schreitet nicht auf dem Raster der Welt-Uhr (_naesseRaster)");
-    const pegel = `Pegel ${A.pegel === B.pegel ? "gleich" : "VERSCHIEDEN — Täter: der Tag des Jahrs oder der Regen nicht zur Uhr (_pegelTafel)"}`;
-    const uhr = `Tag und Jahr ${A.uhr === B.uhr ? "gleich" : "VERSCHIEDEN — Täter: die Uhr läuft an der Wanduhr einer Seite (_weltTage, _saisonDerUhr)"}`;
-    const wetter = `Wetter ${wA === wB ? "gleich" : `VERSCHIEDEN (A ${wA}, B ${wB})`}`;
-    const ok = wA === wB && L.ok && G.ok && brandOk && nOk && A.pegel === B.pegel && A.uhr === B.uhr;
-    return { ok, leben: L.ok, satz: [wetter, L.satz, G.satz, brand, naesse, pegel, uhr].join(" · ") };
+    const teile = Object.entries(z).map(([k, [g, n, b]]) => [
+        g === n && !leer[k],
+        `${k} ${g}/${n}${b ? ` (${b} brennend)` : ""}${leer[k] ? " ungemessen" : g === n ? "" : " — Täter: " + TAETER[k]}`,
+    ]);
+    return { ok: teile.every((t) => t[0]), leben: teile[0][0], satz: teile.map((t) => t[1]).join(" · ") };
 }
 // (h) die Sicht einer Seite auf das Gesetz H (ohne H: das jüngste des Spielers): der Wurf der Scheiben k0 … k0+39 der Welt-Uhr,
 // ob es feuerte und seine Erzählung im Wissen steht, ob das Tagebuch das Gesetz eines Mitspielers erinnert (`_gesetzGeber`);
@@ -337,46 +260,33 @@ function gesetzSicht(H, k0) {
 }
 // Byte-gleich je Teil des Abdrucks (JSON-Text)
 const gleichIn = (A, B) => (k) => JSON.stringify(A[k]) === JSON.stringify(B[k]);
-// (f) DER SPRUNG: A springt in den Zug vor dem nächsten Sturm am Ort, `ab` Züge voraus (die Front einen Zug davor klar: der Sturm
-// beginnt auf trockenem Land) → [die Uhr nach dem Sprung, die Uhr im Sturm] in s
-function sturmSprung(ab) {
+// (f) DER SPRUNG: A springt in den Zug vor dem nächsten Zug k mit dem Wort `wort` am Ort, `ab` Züge voraus, dessen Vorgänger klar
+// ist (der Sturm beginnt auf trockenem Land) → [die Uhr nach dem Sprung, die Uhr in k] in s
+function sturmSprung([ab, wort = "stormy"]) {
     const [Z, p] = [r.constructor.WETTER_ZUG_SEK, r.state.playerMesh.position];
-    const wort = (k) => r._wetterAmOrt(p.x, p.z, k * Z);
+    const w = (k) => r._wetterAmOrt(p.x, p.z, k * Z);
     let k = Math.floor(r.state.spielZeit / Z) + ab;
-    while (wort(k) !== "stormy" || wort(k - 1) !== "sunny") k++;
+    while (w(k) !== wort || w(k - 1) !== "sunny") k++;
     return [(r.state.spielZeit = k * Z - Z + 1), k * Z + 1];
 }
-// (f) DIE TROCKENHEIT: der nächste Zug, `ab` Züge voraus, in dem es am Ort klar ist und klar war → die Uhr in ihm (s); A springt
-// dorthin, wenn `springe`
-function trockenZug(ab, springe) {
-    const [Z, p] = [r.constructor.WETTER_ZUG_SEK, r.state.playerMesh.position];
-    const klar = (k) => r._wetterAmOrt(p.x, p.z, k * Z) === "sunny";
-    let k = Math.floor(r.state.spielZeit / Z) + ab;
-    while (!klar(k) || !klar(k - 1)) k++;
-    return springe ? (r.state.spielZeit = k * Z + 1) : k * Z + 1;
-}
-// (f) DAS ENTFACHEN: A entfacht über den Akt `entfache` (dslRun als Mensch — er reist mit seiner Uhr) die nächste Zelle um ihn,
-// deren Bett jetzt brennt (`_brandStoff` + `_brandTempo`, bis 4 Zellen weit) → das Ereignis des Akts oder der Grund der Absage
+// (f) DAS ENTFACHEN: A entfacht über den Akt `entfache` (dslRun als Mensch — er reist mit seiner Uhr) die nächste Zelle um ihn
+// (bis 4 Zellen), deren Bett jetzt brennt (`_brandStoff` + `_brandTempo`) → der Satz, leer ohne Feuer
 function entfache() {
-    const cs = r.constructor.LIFE_FIELD.cell;
-    const p = r.state.playerMesh.position;
-    const [cx, cz] = [Math.floor(p.x / cs), Math.floor(p.z / cs)];
+    const [cs, p] = [r.constructor.LIFE_FIELD.cell, r.state.playerMesh.position];
     const orte = [];
-    for (let dx = -4; dx <= 4; dx++) for (let dz = -4; dz <= 4; dz++) orte.push([dx * dx + dz * dz, cx + dx, cz + dz]);
-    orte.sort((a, b) => a[0] - b[0]);
-    for (const [, x, z] of orte) {
+    for (let dx = -4; dx <= 4; dx++)
+        for (let dz = -4; dz <= 4; dz++)
+            orte.push([dx * dx + dz * dz, Math.floor(p.x / cs) + dx, Math.floor(p.z / cs) + dz]);
+    for (const [, x, z] of orte.sort((a, b) => a[0] - b[0])) {
         const f = r._brandStoff(x, z);
-        if (!f || !r._brandTempo(f, r.state.spielZeit)) continue;
-        const res = r.dslRun(["entfache", f.x, f.y, f.z], { source: "human" });
-        const e = res.log.find((l) => l.event === "entfacht");
-        if (e)
-            return {
-                ok: true,
-                satz: `entfacht ${e.x},${e.z} (${e.stoff}), Nässe ${r.state.naesse.toFixed(4)}`,
-                p: [p.x, p.z],
-            };
+        if (
+            f &&
+            r._brandTempo(f, r.state.spielZeit) &&
+            r.dslRun(["entfache", f.x, f.y, f.z], { source: "human" }).log.some((l) => l.event === "entfacht")
+        )
+            return `entfacht ${x},${z} (${f.zeile.name}), Nässe ${r.state.naesse.toFixed(4)}`;
     }
-    return { ok: false, satz: `kein Bett brennt in 4 Zellen um A (Nässe ${r.state.naesse.toFixed(4)})` };
+    return "";
 }
 
 // (d) DAS GESETZ JE TAKT, wie `_lockstepTickPeers` es trägt: ein Takt von dt ms (seit dem vorigen Verbrauchs-Takt) verbraucht
@@ -523,7 +433,10 @@ async function seite(browser, name, alteTuer) {
     await page.evaluateOnNewDocument(netzLog);
     await page.evaluateOnNewDocument(seitenPumpe);
     await page.goto(PAGE_URL, { waitUntil: "domcontentloaded", timeout: 60000 });
-    const da = () => !!r && typeof r._gameLoopTick === "function" && !!st.playerMesh;
+    const da = () =>
+        !!r &&
+        typeof r._gameLoopTick === "function" &&
+        !!st.playerMesh;
     await waitFor(page, da, `Seite ${name} bereit`);
     await page.evaluate(installiere, alteTuer);
     return page;
@@ -828,7 +741,9 @@ hauptLauf(async () => {
         const l0 = await laufUndSicht();
         check("A lief über die Tastatur (> 1 m)", l0.lauf > 1, `${l0.lauf.toFixed(2)} m nach ${l0.haltMs} ms W`);
         // (e) der Leib aus seinen Eingaben: B's Ghost rechnet jeden Schritt von A bit-gleich nach (je seq, die Spuren des Laufs)
-        const spurA = new Map((await pageA.evaluate(() => st.p2p._lockstepTrace || [])).map((q) => [q.q, q]));
+        const spurA = new Map(
+            (await pageA.evaluate(() => st.p2p._lockstepTrace || [])).map((q) => [q.q, q])
+        );
         const spurB = await pageB.evaluate((id) => st.p2p.peers.get(id)?.lockstep?.trace || [], idA);
         const geteilt = spurB.filter((g) => g.q >= anker && spurA.has(g.q));
         const dMax = Math.max(
@@ -993,25 +908,20 @@ hauptLauf(async () => {
                     "(f) ROT: B trägt die Welt-Uhr von A nicht — Täter: die Uhr je Seite (pos.w, _weltUhrNimm)"
                 );
             });
-        // die Trockenheit: ein klarer Zug, dann 60 Züge klar (die Nässe trocknet mit τ = 1 500 s) — erst dort brennt Gras
-        await folgt(await pageA.evaluate(trockenZug, 1, true));
-        await sleep(500); // der Zug zieht das klare Wort
-        await folgt(await pageA.evaluate(trockenZug, 60, true));
-        const [vorSturm, sturm] = await pageA.evaluate(sturmSprung, 10);
-        await folgt(vorSturm);
-        await pageA.evaluate((z) => (st.spielZeit = z), sturm);
-        await folgt(sturm);
+        // je Sprung: A springt in den Zug vor dem gesuchten, dann in ihn; B folgt beiden Uhren. Erst die Trockenheit (ein klarer
+        // Zug, dann 100 Züge weiter klar — die Nässe trocknet mit τ = 1 500 s bis an ihren Ruhe-Fixpunkt 0, auf den jede Seite
+        // gleich schnappt, gleich welche Nässe sie vor dem Beitritt trug; erst dort brennt Gras), dann der Sturm
+        for (const ziel of [[1, "sunny"], [100, "sunny"], [10]]) {
+            const [vor, in_] = await pageA.evaluate(sturmSprung, ziel);
+            await folgt(vor);
+            await pageA.evaluate((z) => (st.spielZeit = z), in_);
+            await folgt(in_);
+            await sleep(500); // der Zug zieht sein Wort
+        }
         // am Anfang des Sturms (sein Regen steigt über den Übergang) fängt das trockene Gras neben A Feuer
-        await sleep(300);
         const feuer = await pageA.evaluate(entfache);
-        const pB = await pageB.evaluate(() => [st.playerMesh.position.x, st.playerMesh.position.z]);
-        check(
-            "(f) A entfacht am Anfang des Sturms ein Feuer (der Akt entfache, mit seiner Uhr)",
-            feuer.ok,
-            feuer.satz +
-                ` · A bei ${feuer.p ? feuer.p.map((v) => v.toFixed(1)) : "?"}, B bei ${pB.map((v) => v.toFixed(1))}`
-        );
-        // (f) DAS URTEIL an EINER Welt-Uhr beider Seiten (der früheren, eine Sekunde zurück): jede Teil-Simulation gleich
+        check("(f) A entfacht am Anfang des Sturms ein Feuer (der Akt entfache, mit seiner Uhr)", !!feuer, feuer);
+        // (f) DAS URTEIL an EINER Welt-Uhr beider Seiten (der früheren, eine Sekunde zurück): jede Teil-Simulation gleich.
         // DIE RUHE DES DRAHTS: die Gaben einer Seite (Fraß, Tod, Riss — `feld_akt`) sind unterwegs, bis der Mitspieler sie trägt.
         // Geurteilt wird an einer stehenden Welt: beide Pumpen stehen (der Loop schreibt nichts mehr), jede Seite schickt ihren
         // Puffer, der Draht liefert 600 ms lang (der Empfang läuft weiter), dann die Sicht beider an derselben Welt-Uhr T
@@ -1022,15 +932,18 @@ hauptLauf(async () => {
             await sleep(600);
             const T =
                 Math.floor(Math.min(...(await Promise.all([pa, pb].map((p) => p.evaluate(() => st.spielZeit)))))) - 1;
-            const S = [await pa.evaluate(teilSims, T), await pb.evaluate(teilSims, T), T];
+            const S = simsUrteil(await pa.evaluate(teilSims, T), await pb.evaluate(teilSims, T));
             for (const p of [pa, pb]) await p.evaluate(() => (window.__pumpeSteht = false));
-            return S;
+            return Object.assign(S, { T });
         };
-        const sims = async (wann, pa, pb, wA, wB) => {
-            const [A, B, T] = await ruhig(pa, pb);
-            const u = simsUrteil(A, B, wA, wB);
-            check(`(f) ${wann}: Teil-Simulationen gleich an der Welt-Uhr ${T} s`, u.ok, u.satz);
-            return u;
+        // das Wetter (Wort, Übergang) aus den Abdrücken der Akte, jede andere Teil-Simulation an der stehenden Welt
+        const sims = async (wann, wA, wB) => {
+            const u = await ruhig(pageA, pageB);
+            check(
+                `(f) ${wann}: Teil-Simulationen gleich an der Welt-Uhr ${u.T} s`,
+                u.ok && wA === wB,
+                `wetter ${+(wA === wB)}/1 · ${u.satz}`
+            );
         };
 
         // ── (c)+(e) GLEICH FÜR ALLE (feld.K2): A gräbt, schüttet und baut im Gespräch (die Chat-Taste, der Spielpfad) ──
@@ -1113,44 +1026,7 @@ hauptLauf(async () => {
                     : ` — Bau bei A ${JSON.stringify(g.A.bauten)}, bei B ${JSON.stringify(g.B.bauten)}: die Kennung ist keine Funktion des Akts`) +
                 (g.gleich("zug") ? "" : " — Täter: die Welt-Uhr reist nicht (pos.w)")
         );
-        await sims("Peers", pageA, pageB, g.A.wetter, g.B.wetter);
-
-        // ── (h) DAS GESETZ DES SPIELERS: A schreibt es im Gespräch, B trägt es, beide würfeln gleich, die Wirkung steht bei beiden ──
-        await pageB.evaluate(() => (st.dsl.nextRuleId += 3)); // B's Nexus erprobte drei Regeln mehr
-        // die Seite trägt das Gesetz H (n = 0) oder es feuerte (n = 1) — oder die Welt-Uhr steht hinter der Scheibe `bis`
-        const traegt = (H, n, bis) =>
-            st.worldRules.some((x) => r._regelHash(x) === H && x.fires >= n) || st.spielZeit > bis * 3;
-        const gesetz = async (satz, reist) => {
-            const { vor } = await pageA.evaluate(gesetzSicht, "", 0);
-            await sage(satz);
-            const { H, k } = await pageA.evaluate(gesetzSicht, "", 0);
-            await (reist ? waitFor(pageB, traegt, "B trägt das Gesetz von A", H, 0) : sleep(GRABEN_NACHLAUF_MS));
-            const [A, B] = [await pageA.evaluate(gesetzSicht, H, k), await pageB.evaluate(gesetzSicht, H, k)];
-            const bis = k + 2 + A.wurf.split(",").indexOf("true");
-            return { H, bis, neu: !vor.includes(H), reist: B.H === H, wurf: B.wurf === A.wurf };
-        };
-        const h = await gesetz("wann immer es zufällig passt, dann erzähle Der Fluss singt im Takt der Sterne", true);
-        // die Wirkung bis zu ihrem Ereignis: das Gesetz feuert, spätestens in der Scheibe nach dem ersten wahren Wurf — die Frist
-        // ist die Welt-Uhr, nie die Wanduhr (mit der alten Saat aus Platz-Nummer und Feuern würfelte jede Seite stets denselben
-        // Wurf: fiel er daneben, feuerte das Gesetz nie, und die Probe wartete ohne Ende)
-        for (const p of [pageA, pageB]) await waitFor(p, traegt, "das Gesetz feuert", h.H, 1, h.bis);
-        const [A, B] = [await pageA.evaluate(gesetzSicht, h.H, 0), await pageB.evaluate(gesetzSicht, h.H, 0)];
-        check(
-            "(h) A schreibt ein neues Gesetz im Gespräch, B trägt es, beide würfeln gleich, es wirkt bei beiden",
-            h.neu && h.reist && h.wurf && A.wirkt && B.wirkt && B.erinnert,
-            `Hash ${h.H} neu ${h.neu} · bei B ${h.reist} · Wurf in 40 Scheiben gleich ${h.wurf}${h.wurf ? "" : " — Täter _worldRuleSeed"}` +
-                ` · wirkt bei A ${A.wirkt}, bei B ${B.wirkt} · B erinnert das Gesetz von A ${B.erinnert}`
-        );
-        // die Selbsttests: A sagt die Vorlage → nicht neu; B's dsl-Kanal taub → B ohne das Gesetz
-        const v = await gesetz(await pageA.evaluate(() => r.constructor.GESETZ_VORLAGEN[0]), true);
-        await pageB.evaluate(() => ((window.__dsl = r._p2pMsgDsl), (r._p2pMsgDsl = () => {})));
-        const t = await gesetz("wann immer es zufällig passt, dann erzähle Der Kanal ist taub", false);
-        await pageB.evaluate(() => (r._p2pMsgDsl = window.__dsl));
-        check(
-            "(h) Selbsttest: die Vorlage ist nicht neu, B mit taubem dsl-Kanal trägt das Gesetz nicht",
-            !v.neu && v.reist && t.neu && !t.reist,
-            `Vorlage neu ${v.neu} · taub bei B ${t.reist}`
-        );
+        await sims("Peers", g.A.wetter, g.B.wetter);
 
         // ── (a) URSPRUNG ── (vor dem Reload von B: seine Zähler leben in der Seite)
         const endA = await bericht(pageA);
@@ -1198,7 +1074,46 @@ hauptLauf(async () => {
             !!R && teile.every(rg),
             R ? satz(rg) : "B stand nach dem Reload nicht mit dem Bau"
         );
-        if (R) await sims("Reload mitten im Sturm", pageA, pageB, jetztA.wetter, R.wetter);
+        if (R) await sims("Reload mitten im Sturm", jetztA.wetter, R.wetter);
+        // ── (h) DAS GESETZ DES SPIELERS (nach dem Reload: ein Gesetz, das feuert, während B neu lädt, fehlt B — FUND feld.K2#2):
+        // A schreibt es im Gespräch, B trägt es, beide würfeln gleich, die Wirkung steht bei beiden ──
+        await pageB.evaluate(() => (st.dsl.nextRuleId += 3)); // B's Nexus erprobte drei Regeln mehr
+        // die Seite trägt das Gesetz H (n = 0) oder es feuerte (n = 1) — oder die Welt-Uhr steht hinter der Scheibe `bis`
+        const traegt = (H, n, bis) =>
+            st.worldRules.some((x) => r._regelHash(x) === H && x.fires >= n) ||
+            st.spielZeit > bis * 3;
+        const gesetz = async (satz, reist) => {
+            const { vor } = await pageA.evaluate(gesetzSicht, "", 0);
+            await sage(satz);
+            const { H, k } = await pageA.evaluate(gesetzSicht, "", 0);
+            await (reist ? waitFor(pageB, traegt, "B trägt das Gesetz von A", H, 0) : sleep(GRABEN_NACHLAUF_MS));
+            const [A, B] = [await pageA.evaluate(gesetzSicht, H, k), await pageB.evaluate(gesetzSicht, H, k)];
+            const bis = k + 2 + A.wurf.split(",").indexOf("true");
+            return { H, bis, neu: !vor.includes(H), reist: B.H === H, wurf: B.wurf === A.wurf };
+        };
+        const h = await gesetz("wann immer es zufällig passt, dann erzähle Der Fluss singt im Takt der Sterne", true);
+        // die Wirkung bis zu ihrem Ereignis: das Gesetz feuert, spätestens in der Scheibe nach dem ersten wahren Wurf — die Frist
+        // ist die Welt-Uhr, nie die Wanduhr (mit der alten Saat aus Platz-Nummer und Feuern würfelte jede Seite stets denselben
+        // Wurf: fiel er daneben, feuerte das Gesetz nie, und die Probe wartete ohne Ende)
+        for (const p of [pageA, pageB]) await waitFor(p, traegt, "das Gesetz feuert", h.H, 1, h.bis);
+        const [A, B] = [await pageA.evaluate(gesetzSicht, h.H, 0), await pageB.evaluate(gesetzSicht, h.H, 0)];
+        check(
+            "(h) A schreibt ein neues Gesetz im Gespräch, B trägt es, beide würfeln gleich, es wirkt bei beiden",
+            h.neu && h.reist && h.wurf && A.wirkt && B.wirkt && B.erinnert,
+            `Hash ${h.H} neu ${h.neu} · bei B ${h.reist} · Wurf in 40 Scheiben gleich ${h.wurf}${h.wurf ? "" : " — Täter _worldRuleSeed"}` +
+                ` · wirkt bei A ${A.wirkt}, bei B ${B.wirkt} · B erinnert das Gesetz von A ${B.erinnert}`
+        );
+        // die Selbsttests: A sagt die Vorlage → nicht neu; B's dsl-Kanal taub → B ohne das Gesetz
+        const v = await gesetz(await pageA.evaluate(() => r.constructor.GESETZ_VORLAGEN[0]), true);
+        await pageB.evaluate(() => ((window.__dsl = r._p2pMsgDsl), (r._p2pMsgDsl = () => {})));
+        const t = await gesetz("wann immer es zufällig passt, dann erzähle Der Kanal ist taub", false);
+        await pageB.evaluate(() => (r._p2pMsgDsl = window.__dsl));
+        check(
+            "(h) Selbsttest: die Vorlage ist nicht neu, B mit taubem dsl-Kanal trägt das Gesetz nicht",
+            !v.neu && v.reist && t.neu && !t.reist,
+            `Vorlage neu ${v.neu} · taub bei B ${t.reist}`
+        );
+
         // der Selbsttest: B wendet jede Akt-Nachricht doppelt an und nimmt den Samen des Baus um eins verschoben — die Edits UND die
         // Bauten des Abdrucks fallen ROT (die Probe sieht beide); (f) B nimmt keine Uhr mehr, A springt in den Zug vor einem Sturm
         // drei Züge voraus — nie in den von B, der Zug ROT. Bis ci-wackler-zensus einen voraus: lag der Sturm im nächsten Zug, landete
@@ -1221,7 +1136,7 @@ hauptLauf(async () => {
                 return echt.call(this, m, p2p);
             };
         });
-        await pageA.evaluate(sturmSprung, 3);
+        await pageA.evaluate(sturmSprung, [3]);
         const s = await akte();
         check(
             "(e)(f) Selbsttest: B wendet jede Akt-Nachricht doppelt an, verschiebt den Samen des Baus, trägt eigene Uhr → Edits, Bauten, Zug ROT",
@@ -1240,12 +1155,11 @@ hauptLauf(async () => {
         });
         await sage("pflege das land");
         await sleep(GRABEN_NACHLAUF_MS);
-        const [zA, zB] = await ruhig(pageA, pageB);
-        const zs = simsUrteil(zA, zB, "", "");
+        const zs = await ruhig(pageA, pageB);
         check(
             "(f) Selbsttest: ein Zufalls-Schreiber des Lebens bei B macht Leben ROT beim Namen",
-            !zs.leben && /Täter: der Schreiber stempelt nicht die Uhr des Akts/.test(zs.satz),
-            zs.satz.split(" · ")[1]
+            !zs.leben && zs.satz.includes(TAETER.leben),
+            zs.satz.split(" · ")[0]
         );
         // DAS NETZ-LOG beider Seiten (B vor und nach dem Reload): jede Art ist erlaubt, sonst eine Zustands-Nachricht
         const netz = async () => {

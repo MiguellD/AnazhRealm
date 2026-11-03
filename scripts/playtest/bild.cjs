@@ -72,8 +72,8 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         // tickDayNight schreitet voran
         r.setTimeOfDay(0.4, "human");
         const beforeT = st.timeOfDay;
-        st._lastDayNightTick = 0;
-        r.tickDayNight(0.5); // 0.5 s delta, dayLength=60min=3600s → +0.00014
+        st.spielZeit += 0.5; // die Uhr geht mit der Welt-Uhr (`_weltTage`): 0,5 s, dayLength=60min → +0.00014
+        r.tickDayNight(0.5);
         out.tickAdvances = st.timeOfDay > beforeT;
         // setDayLength clamped
         r.setDayLength(5);

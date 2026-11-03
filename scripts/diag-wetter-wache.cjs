@@ -339,7 +339,7 @@ function himmelProbe(o) {
         const g = U.gang;
         return {
             phase,
-            takt: { schritte: n, schrittSek: o.schrittSek, tagMin: st.dayLengthMinutes },
+            takt: { schritte: n, schrittSek: o.schrittSek, tagMin: st.dayLengthMinutes, deckel: AnazhRealm.TAKT_DECKEL_S },
             uhr: {
                 buch: U.buch.filter((e) => e.seq > sU),
                 gang: { n: g.n - g0.n, weg: g.weg - g0.weg, max: g.max },

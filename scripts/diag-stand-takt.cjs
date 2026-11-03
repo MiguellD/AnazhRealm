@@ -817,7 +817,7 @@ async function brandSeite(MESS) {
     const trocken = () => ((r._naesseTakt = () => (st.naesse = 0)), (st.naesse = 0));
     const brennen = (max) => {
         let i = 0;
-        for (; i < max && bf().size; i++) (st.spielZeit = r._brandUhr + B.schrittS), r._tickBrand();
+        for (; i < max && bf().size; i++) (st.spielZeit = r._brandUhr + B.schrittS + r.constructor.AKT_VORLAUF_S), r._tickBrand();
         return i;
     };
     const asche = () => L.slice(n0).filter((a) => a.tat === "brand");
@@ -991,9 +991,9 @@ async function brandSeite(MESS) {
             if (mutante) r._brandFeuchte = (b) => P._brandFeuchte.call(r, b) - B.feuchte.nass * (st.naesse || 0);
             else aus.leser = leser();
             delete r._naesseTakt;
-            r._naesseUhr = st.spielZeit;
+            st.naesseSchritt = null; // das Raster der Nässe setzt jetzt neu an (`_naesseRaster`)
             wort("rainy");
-            for (R.s = 0; R.s < 300 && bf().size; R.s++) (st.spielZeit = r._brandUhr + B.schrittS), takt();
+            for (R.s = 0; R.s < 300 && bf().size; R.s++) (st.spielZeit = r._brandUhr + B.schrittS + r.constructor.AKT_VORLAUF_S), takt();
             delete r._brandFeuchte;
             R.naesse = r3(st.naesse);
             wort("cloudy"), trocken();
@@ -2163,7 +2163,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                             S.frame();
                             for (let i = 0; i < n && bf.size; i++) {
                                 const vor = bf.size;
-                                st.spielZeit = r._brandUhr + B.schrittS;
+                                st.spielZeit = r._brandUhr + B.schrittS + r.constructor.AKT_VORLAUF_S;
                                 takt();
                                 Z.zellen.push(Math.max(vor, bf.size));
                                 Z.einheiten.push(S.frame().brand);
@@ -2191,9 +2191,9 @@ const BRANDLAUF = process.argv.includes("--brand");
                         const lebVor = +am().lebendig.toFixed(3);
                         const Z = (W.brand = Object.assign(await lauf(300), { ohneWind, lebVor, glut, licht }));
                         delete r._naesseTakt;
-                        r._naesseUhr = st.spielZeit;
+                        st.naesseSchritt = null; // das Raster der Nässe setzt jetzt neu an (`_naesseRaster`)
                         wort("rainy");
-                        for (Z.regenS = 0; Z.regenS < 600 && st.brandFeld.size; Z.regenS++) (st.spielZeit = r._brandUhr + B.schrittS), takt();
+                        for (Z.regenS = 0; Z.regenS < 600 && st.brandFeld.size; Z.regenS++) (st.spielZeit = r._brandUhr + B.schrittS + r.constructor.AKT_VORLAUF_S), takt();
                         Object.assign(Z, { brennt: st.brandFeld.size, lebNach: +am().lebendig.toFixed(3), asche: st.worldMeta.taten.length - n0 });
                         wort("sunny");
                         r._naesseTakt(1e6);

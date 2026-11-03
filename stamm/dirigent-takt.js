@@ -1207,7 +1207,7 @@ class AnazhRealm_dirigent_takt {
         this._bestaeuberTakt(delta); // die Bestäuber lesen Blüte, Wind, Feuchte und Tag (luftwasser.K4)
         this._perfSenseLap("creatures", _ct);
         // DER WETTER-ZUG AUF DER WELT-UHR (wetter.K1, feld.K2#2): je `WETTER_ZUG_SEK` (120 s) der Welt-Uhr (`spielZeit`) EIN Zug
-        // — er zieht das Wort, das die Welt sich wünscht (`wetterWunsch` — Nexus, seine Gesetze, die Emotion, die Wesen
+        // — er zieht das Wort, das die Welt sich wünscht (`wetterWuensche` — Nexus, seine Gesetze, die Emotion, die Wesen
         // schreiben nie selbst), sonst das Wort der Front am Ort zur Zeit des Zugs (`_wetterAmOrt`: phyto-core wetterAt über
         // Saat, Ort und Uhr), und geht ab DIESER Zeit 45 s über aus dem Wort, das die Front einen Zug vorher am Ort trug: Wetter
         // und Übergang sind eine Funktion von Saat, Ort und Welt-Uhr — zwei Seiten einer Uhr und ein Reload mitten im Sturm
@@ -1221,10 +1221,17 @@ class AnazhRealm_dirigent_takt {
         if (st.wetterWort || zug === this._wetterZug || !this._buehneSteht()) return;
         this._wetterZug = zug;
         if (this._messHalt()) return;
-        // der Wunsch gehört dem Zug, vor dessen Beginn er fiel (seine Uhr, feld.K2#2) — ein späterer wartet auf den nächsten
-        const w0 = st.wetterWunsch;
-        const wunsch = w0 && !(w0.uhr >= zug * Z) ? w0 : null;
-        if (wunsch) st.wetterWunsch = null;
+        // der Zug nimmt den spätesten Wunsch, der VOR dem vorigen Zug fiel (bei gleicher Uhr das größere Wort, feld.K2#2) — der
+        // VORLAUF eines Zugs (120 s Welt-Uhr) trägt jeden Wunsch zu jedem Mitspieler, ehe ein Zug ihn zieht; ein späterer wartet
+        // — zieht eine Seite denselben Zug neu (nach dem Reload), nimmt sie den Wunsch, den er schon trug (`wetterZugWunsch`, im Stand)
+        const Zw = st.wetterZugWunsch;
+        let wunsch = Zw && Zw.zug === zug ? Zw.wunsch : null;
+        const W = st.wetterWuensche || [];
+        for (const w of W)
+            if (w.uhr < (zug - 1) * Z && (!wunsch || w.uhr > wunsch.uhr || (w.uhr === wunsch.uhr && w.wort > wunsch.wort)))
+                wunsch = w;
+        st.wetterWuensche = W.filter((w) => w.uhr >= (zug - 1) * Z);
+        st.wetterZugWunsch = { zug, wunsch };
         const pm = st.playerMesh;
         const [x, z] = pm ? [pm.position.x, pm.position.z] : [0, 0];
         const next =
