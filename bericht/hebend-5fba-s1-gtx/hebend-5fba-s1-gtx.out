@@ -1,0 +1,27 @@
+Punkte-Maschine: 8 Station(en) in 7 Läufen auf gtx am 5fba36ea · Sitzung 7 Proben in EINER Welt (Deckel Σ 3 min) · Zeit 0 Läufe ~0 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~0 min (Soll-Minuten ohne Sitzung) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  SITZUNG gtx · die Welt steht nach 64.7 s (Schloss nach 0.02 min) · 7 Proben · Welt :27804
+  SITZUNG der Grund der Welt: 78 Größen in 0 s
+  SITZUNG Ort wiese vor licht.K2#2: 59.5 s (2074 Takte, 81 Chunks)
+  OFFEN licht.K2#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: setz-2 · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor licht.K3#1: 14.7 s (im Spiel 52.1 ms, durch die Tür)
+  SITZUNG Ort dorf vor licht.K3#1: 30.3 s (1208 Takte, 81 Chunks, nach der Tür)
+  OFFEN licht.K3#1 · Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 4 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.1 s · 23.6 s) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor leib.K1#2: 7.1 s (im Spiel 50.6 ms, durch die Tür)
+  SITZUNG Ort wiese vor leib.K1#2: 26 s (924 Takte, 81 Chunks, nach der Tür)
+  OFFEN leib.K1#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor studios.K2#2: 7.6 s (im Spiel 56.3 ms, durch die Tür)
+  SITZUNG die Welt vor studios.K2#2: 18.9 s (894 Takte, 81 Chunks, nach der Tür)
+  OFFEN studios.K2#2 · Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 0 ms –, Neubau höchstens 804 ms garage, je Studio null Griffe) · Neuladen 1/8 · A/B 1/8) · Täter: @@PUNKTE@@ FRIST 19 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN studios.K3#2 · Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 0/0 Orte im Quantum, ohne garage L0 GPU 0.0236 ms↔Bank 7.7667 (+1), schmiede (keine Zeile), portale (keine Zeile), fachwerk (keine Zeile), koerperstudio (keine Ze) · Täter: @@PUNKTE@@ FRIST 19 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor leib.K4#2: 3.8 s (im Spiel 47.8 ms, durch die Tür)
+  SITZUNG die Welt vor leib.K4#2: 17.3 s (905 Takte, 81 Chunks, nach der Tür)
+  OFFEN leib.K4#2 · Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Gang-Zeile — ROT: Staffel 1: Täter: Gang: Error: die Frist der Probe · Täter: Gang: Error: die Frist der Probe · kein Gang innen, innen-sprint, steil, steil-sprint) · Täter: @@PUNKTE@@ PROBE 27.3 s · Exit 1 · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor fahrzeug.K2#1: 5.2 s (im Spiel 50.9 ms, durch die Tür)
+  SITZUNG die Welt vor fahrzeug.K2#1: 17.5 s (892 Takte, 81 Chunks, nach der Tür)
+  OFFEN fahrzeug.K2#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor speicher.K4#2: 3.4 s (im Spiel 47.4 ms, durch die Tür)
+  SITZUNG die Welt vor speicher.K4#2: 18.3 s (923 Takte, 81 Chunks, nach der Tür)
+  OFFEN speicher.K4#2 · Deckel 15 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG DER ORT IM DECKEL (die Probe zog weiter als 250 m von dem Ort, an dem die Sitzung sie begann — ihr Deckel trug den Ring): leib.K4#2 1083 m (Ring 4 → -1), speicher.K4#2 970 m (Ring 4 → -1), licht.K3#1 590 m (Ring 4 → 1)
+  SITZUNG Fahrt 481.5 s (Soll ≤ 1800 s) · 7 Proben · Grundstellung 6×
+→ meisterkarte-quelle\punkte\messung\5fba36ea-gtx.json
