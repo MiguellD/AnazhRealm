@@ -217,3 +217,4 @@ z163-abab nicht-langsamer abab c5a9a2f5 gegen 10770eb5: w-ego 4+4 nicht-langsame
 takt-z164a-gtx gemessen punkte 95d7bba1 gtx: 0 grün / 1 rot
 takt-z165a-gtx gemessen punkte 5fba36ea gtx: 0 grün / 0 rot
 z164-abab nicht-langsamer abab 95d7bba1 gegen c5a9a2f5: w-ego 4+4 nicht-langsamer · stadt 4+4 nicht-langsamer
+z165-abab LANGSAMER abab 5fba36ea gegen 95d7bba1: w-ego 4+4 nicht-langsamer · stadt 4+4 LANGSAMER
