@@ -2237,7 +2237,7 @@
     // hintereinander (Typ, itemSize, normalized je Name gleich), der Index um die Ecken davor versetzt, `mergedUserData`
     // die userData der Teile. Ungleiche Teile (Index, Namen, Zahl) brechen laut beim Namen.
     function geoVerschmelzen(geos) {
-        const T = THREE;
+        const T = root.THREE;
         const mitIndex = geos[0].index !== null;
         const namen = Object.keys(geos[0].attributes);
         const aus = new T.BufferGeometry();
@@ -2246,8 +2246,11 @@
             const g = geos[i];
             const n = Object.keys(g.attributes);
             if ((g.index !== null) !== mitIndex || n.length !== namen.length || n.some((k) => !namen.includes(k)))
-                throw new Error("VERSCHMELZEN: Teil " + i + " trägt andere Attribute/Index als Teil 0 (" + n.join(",") + ")");
-            if (Object.keys(g.morphAttributes).length) throw new Error("VERSCHMELZEN: Teil " + i + " trägt Morph-Attribute");
+                throw new Error(
+                    "VERSCHMELZEN: Teil " + i + " trägt andere Attribute/Index als Teil 0 (" + n.join(",") + ")"
+                );
+            if (Object.keys(g.morphAttributes).length)
+                throw new Error("VERSCHMELZEN: Teil " + i + " trägt Morph-Attribute");
             ud.push(g.userData);
         }
         if (mitIndex) {
@@ -2265,7 +2268,12 @@
             let n = 0;
             for (const g of geos) {
                 const a = g.attributes[k];
-                if (a.isInterleavedBufferAttribute || a.array.constructor !== a0.array.constructor || a.itemSize !== a0.itemSize || a.normalized !== a0.normalized)
+                if (
+                    a.isInterleavedBufferAttribute ||
+                    a.array.constructor !== a0.array.constructor ||
+                    a.itemSize !== a0.itemSize ||
+                    a.normalized !== a0.normalized
+                )
                     throw new Error("VERSCHMELZEN: das Attribut " + k + " ist ungleich gebaut");
                 n += a.array.length;
             }
@@ -2283,7 +2291,7 @@
     // jedem Attribut-Wert × 10^log10(1/tol), ganzzahlig abgeschnitten (~~), die erste Ecke eines Schlüssels gewinnt; gelesen
     // wird das rohe Array (r184 `getX` entnormalisiert, r128 nie).
     function eckenVerschmelzen(geo, tol) {
-        const T = THREE;
+        const T = root.THREE;
         tol = Math.max(tol == null ? 1e-4 : tol, Number.EPSILON);
         const mul = Math.pow(10, Math.log10(1 / tol));
         const ix = geo.getIndex();
@@ -2292,7 +2300,8 @@
         const n = ix ? ix.count : geo.attributes.position.count;
         const neu = {};
         for (const k of namen) {
-            if (geo.attributes[k].isInterleavedBufferAttribute) throw new Error("VERSCHMELZEN: " + k + " ist verschränkt");
+            if (geo.attributes[k].isInterleavedBufferAttribute)
+                throw new Error("VERSCHMELZEN: " + k + " ist verschränkt");
             neu[k] = [];
         }
         const schluessel = {};

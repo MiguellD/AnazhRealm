@@ -331,13 +331,18 @@ const ROOT = path.resolve(__dirname, "..", "..");
 // (`ENGINE_MODUL`) und in Node als THREE der Kerne (`ENGINE_THREE`: require des ES-Moduls, eine veränderbare Kopie, ohne
 // ColorManagement wie im Faden — die Kerne rechnen ihre Farbe selbst). Ein Manifest ohne Engine oder eine Karte ohne ihr
 // Modul bricht laut.
+// die Import-Karte der Welt (index.html `<script type="importmap">`): { Name: Pfad }
+function IMPORT_KARTE() {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const m = html.match(/<script type="importmap">([\s\S]*?)<\/script>/);
+    if (!m) throw new Error("ENGINE: index.html trägt keine Import-Karte");
+    return JSON.parse(m[1]).imports || {};
+}
 function ENGINE_MODUL() {
     const mf = JSON.parse(fs.readFileSync(path.join(ROOT, "cores.manifest.json"), "utf8"));
     const namen = [...new Set(mf.map((c) => c && c.engine).filter(Boolean))];
     if (namen.length !== 1) throw new Error("ENGINE: das Kern-Manifest nennt " + namen.length + " Engines");
-    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-    const m = html.match(/<script type="importmap">([\s\S]*?)<\/script>/);
-    const u = m && (JSON.parse(m[1]).imports || {})[namen[0]];
+    const u = IMPORT_KARTE()[namen[0]];
     if (!u) throw new Error("ENGINE: die Import-Karte von index.html nennt kein Modul „" + namen[0] + "“");
     return "/" + u.replace(/^\.?\//, "");
 }
@@ -1542,6 +1547,7 @@ function frageJa() {
 
 module.exports = {
     ENGINE,
+    IMPORT_KARTE,
     ENGINE_MODUL,
     ENGINE_NAMENSRAUM,
     ENGINE_THREE,

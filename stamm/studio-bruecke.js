@@ -589,7 +589,10 @@ class AnazhRealm_studio_bruecke {
         const engine = (c) => {
             if (!c || !c.engine) return null;
             const u = b.module && b.module[c.engine];
-            if (!u) throw new Error("STOFF: die Foundry bootet nicht — die Import-Karte der Welt nennt kein Modul „" + c.engine + "“");
+            if (!u)
+                throw new Error(
+                    "STOFF: die Foundry bootet nicht — die Import-Karte der Welt nennt kein Modul „" + c.engine + "“"
+                );
             return u;
         };
         fetch(url("cores.manifest.json"))
@@ -604,16 +607,20 @@ class AnazhRealm_studio_bruecke {
                 // Engine im Faden — sie bricht beim Namen, nie still übergangen
                 const lib = manifest.filter((c) => c && c.lib).map((c) => c.id || c.ns);
                 if (lib.length)
-                    throw new Error("STOFF: die Foundry bootet nicht — das Kern-Manifest trägt lib (" + lib.join(", ") + ")");
+                    throw new Error(
+                        "STOFF: die Foundry bootet nicht — das Kern-Manifest trägt lib (" + lib.join(", ") + ")"
+                    );
                 const motoren = [...new Set(manifest.map(engine).filter(Boolean))];
-                if (motoren.length !== 1) throw new Error("STOFF: die Foundry bootet nicht — " + motoren.length + " Engines im Manifest");
+                if (motoren.length !== 1)
+                    throw new Error("STOFF: die Foundry bootet nicht — " + motoren.length + " Engines im Manifest");
                 return import(motoren[0]).then((T) => [manifest, T, motoren[0]]);
             })
             .then(([manifest, T, motor]) => {
                 const liste = (feld, kerne = manifest) => {
                     const out = [];
                     for (const core of kerne)
-                        for (const s of [].concat((core && core[feld]) || [])) if (typeof s === "string" && s) out.push(url(s));
+                        for (const s of [].concat((core && core[feld]) || []))
+                            if (typeof s === "string" && s) out.push(url(s));
                     return out;
                 };
                 const kerne = manifest.map((c) => ({
@@ -629,7 +636,7 @@ class AnazhRealm_studio_bruecke {
                 W.__anazhCores = manifest; // die Brücke liest die ns-Kerne generisch (vor den importScripts)
                 W.importScripts(...liste("scripts").concat(liste("bruecke"))); // die Brücke startet sich selbst
                 W.removeEventListener("message", halte);
-                for (const data of gehalten.splice(0)) W.dispatchEvent(new MessageEvent("message", { data }));
+                for (const data of gehalten.splice(0)) W.dispatchEvent(new W.MessageEvent("message", { data }));
             })
             .catch((e) =>
                 setTimeout(() => {

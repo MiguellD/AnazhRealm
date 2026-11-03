@@ -105,12 +105,12 @@ async function selftest() {
 // kommt aus dem echten Manifest und der Import-Karte von index.html; ohne Blob bei der Geburt nennt `fehler` den Täter.
 async function bootLauf(text) {
     const vm = require("vm");
-    const { ENGINE_MODUL, ENGINE_NAMENSRAUM } = require("./lib/welt-boot.cjs");
+    const { ENGINE_MODUL, ENGINE_NAMENSRAUM, IMPORT_KARTE } = require("./lib/welt-boot.cjs");
     const { AnazhRealm: A, ctx } = stammLib.ladeKlasse(PK.ROOT);
     const g = vm.runInContext("globalThis", ctx);
     const aus = { geburt: null, fehler: null, laden: null, stempel: null, wand: false, motor: null, sync: 0 };
     let blob = null;
-    const karte = ausDatei(path.join(PK.ROOT, "index.html")).match(/<script type="importmap">([\s\S]*?)<\/script>/)[1];
+    const karte = JSON.stringify({ imports: IMPORT_KARTE() });
     Object.assign(g, { indexedDB: {}, crypto: { subtle: {} }, location: { href: "http://wirt/index.html" } });
     g.document = { querySelector: () => ({ textContent: karte }), querySelectorAll: () => [] };
     g.Blob = function (teile) { blob = teile.join(""); }; // prettier-ignore
