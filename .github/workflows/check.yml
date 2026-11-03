@@ -356,7 +356,9 @@ jobs:
         # füllte — jeder Zug fiel, auch main selbst. Die echten Renderer laufen auf SwiftShader je Läufer bis 2,8× langsamer (Kamera-Leib-Linse
         # am selben Kopf 319 s und 841 s); G18 brach am 25.10. am alten Deckel (7 Läufe zu 20,3 min). Seit dem Urteil der Gruppe fährt
         # ein roter Lauf jeden Schritt wie ein grüner: er trägt denselben Plan (≤ 17,7 min p90 je Gruppe am 02.11.) unter demselben Deckel.
-        timeout-minutes: 25
+        # 30 seit 03.11. (z173): „voll 2/18 cpu“ lief im langsamen Lauf 21,3 min, 25 hielt 1,2 × davon nicht (25,6) — die Statik sperrte jeden
+        # Zug, auch main; 30 hält 1,2 × bis 25 min.
+        timeout-minutes: 30
         permissions:
             actions: read
             contents: read
