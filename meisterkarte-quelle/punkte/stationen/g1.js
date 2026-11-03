@@ -231,16 +231,30 @@ async function weltProbeLauf() {
 }
 
 // physik.K4 — DAS SEIL AM LEIB: die Schmiede der Welt (ihre Gattungen als Baupläne `klinge_<id>` im Buch) und das Seil darin
-// (Flegel, Kette, Morgenstern: ein Glied hängt am Griff). Gibt es eines, hält der Spieler es (`equipHeld`, die Studio-Gestalt in der
-// Hand), geht 1,5 s und bleibt stehen; 3 s lang je Takt die Lage jedes Teils im Rahmen der Hand: der Schwung (die größte Abweichung
-// eines Teils von seiner Lage beim Halt), die Länge Hand → fernstes Teil (ihr Band über die Takte) und die Energie des fernsten
-// Teils (mittleres v² in der ersten gegen die letzte Sekunde).
+// (Flegel, Kette, Morgenstern: ein Glied hängt am Griff; oder die Gattung trägt ihr Seil als Gesetz im Buch, `fx.seil`). Gibt es
+// eines, hält der Spieler es (`equipHeld`, die Studio-Gestalt in der Hand), geht 1,5 s und bleibt stehen; 3 s lang je Takt die Lage
+// jedes Teils im Rahmen der Hand: der Schwung (die größte Abweichung eines Teils von seiner Lage beim Halt), die Länge des Seils
+// (sein Anker → fernstes Teil, ihr Band über die Takte) und die Energie des fernsten Teils (mittleres v² in der ersten gegen die
+// letzte Sekunde). DIE SEIL-LÄNGE (w5-physik-k4-pm, 03.11.) der Messung (± 2 %) ist die Länge LÄNGS des Seils VOM ANKER, den das
+// Gesetz der Gattung im Buch nennt (`fx.seil.anker`, im Rahmen der Vorlage): der Weg Anker → Glied 0 → … → Kopf-Mitte über die
+// Enden jedes Teils (die Ruhe-Punkte des Gesetzes, `seilRuhe`, durch die Lage des Teils; die Teile tragen ihre Nummer
+// `userData.__seil`) — sie wächst um jede Lücke zwischen Gliedern (ein Seil, das sich dehnt oder reißt), nie, wenn das Seil
+// durchhängt. Vorher maß die Probe die Sehne vom Ursprung der Vorlage (dem Schaft-Ende): beim Flegel Stiel + Kette, ein Hebel, der
+// mit jedem Schwung atmet (gemessen am Kopf w5-physik-k4: 0,393–0,826 m bei 0,49 m Schwung); auch die Sehne vom Anker ist keine
+// Länge — fällt die Hand beim Halt schneller als die Schwere (0,11 m in 0,13 s an der Mess-Wiese), hängt jede echte Kette durch
+// (0,239–0,328 m bei 0,328 m Seil). Ohne Nummern an den Teilen gilt die Sehne vom Anker. Ein Seil ohne Gesetz im Buch (ein
+// Zwilling der Welt) trägt keinen Anker und ist ROT beim Namen.
 async function seilProbe(r, T, o, G) {
     const { s, takt, stehen, r3 } = G;
     const pm = s.playerMesh;
     for (let i = 0; i < 600 && !Object.keys(s.blueprints || {}).some((k) => /^klinge_/.test(k)); i++) takt(), await new Promise((ok) => setTimeout(ok, 10));
     const klingen = Object.keys(s.blueprints || {}).filter((k) => /^klinge_/.test(k));
-    const seile = klingen.filter((k) => /flegel|seil|kette|morgenstern|flail/i.test(k));
+    const f = r._foundry;
+    const gesetz = (k) => {
+        const rez = f && f.recipes && f.recipes[r._foundryPresetForEntry({ type: k })];
+        return (rez && rez.fx && rez.fx.seil) || null;
+    };
+    const seile = klingen.filter((k) => /flegel|seil|kette|morgenstern|flail/i.test(k) || gesetz(k));
     const aus = { klingen: klingen.length, seile, je: {} };
     if (!seile.length) return Object.assign(aus, { namen: klingen.map((k) => k.slice(7)) });
     await stehen(o.orte.wiese.x, o.orte.wiese.z);
@@ -264,6 +278,29 @@ async function seilProbe(r, T, o, G) {
         takt(90);
         s.keys.w = false;
         const L0 = lage();
+        const sg = gesetz(name);
+        const anker = sg && Array.isArray(sg.anker) && sg.anker.length === 3 ? new T.Vector3().fromArray(sg.anker) : null;
+        const C = window.__schmiedeCore;
+        const R = anker && C && typeof C.seilRuhe === "function" ? C.seilRuhe(sg, sg.anker, sg.unten, 1) : null;
+        const st = [];
+        h.traverse((m) => m.isMesh && m.userData && Number.isInteger(m.userData.__seil) && (st[m.userData.__seil] = m));
+        const bogen = !!R && st.length === sg.glieder + 1 && st.every(Boolean);
+        const P = (i) => new T.Vector3(R[3 * i], R[3 * i + 1], R[3 * i + 2]);
+        const M = new T.Matrix4();
+        // längs des Seils IN DER WELT (nach `lage()`, das die Matrizen frisch rechnet; der Rahmen der Hand ist nicht maßtreu —
+        // der Rig-Knochen skaliert ungleich, gemessen 0,979–1,038 mit Scherung bis 0,043): je Teil seine zwei Ruhe-Enden
+        const laengs = () => {
+            let l = 0,
+                vor = anker.clone().applyMatrix4(h.matrixWorld);
+            st.forEach((m, i) => {
+                M.copy(m.matrixWorld);
+                const a = P(i).applyMatrix4(M),
+                    b = P(i + 1).applyMatrix4(M);
+                l += vor.distanceTo(a) + a.distanceTo(b);
+                vor = b;
+            });
+            return l;
+        };
         const fern = L0.reduce((b, p, i) => (p.length() > L0[b].length() ? i : b), 0);
         let schwung = 0;
         const laengen = [];
@@ -273,13 +310,15 @@ async function seilProbe(r, T, o, G) {
             takt();
             const L = lage();
             L.forEach((p, i) => (schwung = Math.max(schwung, p.distanceTo(L0[i]))));
-            laengen.push(L[fern].length());
+            laengen.push(bogen ? laengs() : anker ? L[fern].distanceTo(anker) : L[fern].length());
             v2.push(L[fern].distanceToSquared(vor[fern]) * 3600);
             vor = L;
         }
         const mittel = (a) => a.reduce((x, y) => x + y, 0) / Math.max(1, a.length);
         aus.je[name] = {
             teile: teile.length,
+            anker: anker ? anker.toArray().map(r3) : null,
+            laengeArt: bogen ? "längs" : anker ? "sehne vom Anker" : "sehne vom Griff",
             schwungM: r3(schwung),
             laengeM: [r3(Math.min(...laengen)), r3(Math.max(...laengen))],
             energie: [r3(mittel(v2.slice(0, 60))), r3(mittel(v2.slice(120)))],
@@ -288,18 +327,18 @@ async function seilProbe(r, T, o, G) {
     }
     return aus;
 }
-// das Urteil (physik.K4#1): ein Seil der Schmiede am Leib — es schwingt (≥ 5 cm im Rahmen der Hand), die Länge hält ±2 %, die
-// Energie fällt (letzte Sekunde ≤ ½ der ersten, die erste > 0)
+// das Urteil (physik.K4#1): ein Seil der Schmiede am Leib — sein Gesetz steht im Buch (der Anker, `fx.seil`), es schwingt (≥ 5 cm im
+// Rahmen der Hand), die Länge längs des Seils vom Anker hält ±2 %, die Energie fällt (letzte Sekunde ≤ ½ der ersten, die erste > 0)
 function seilUrteil(e) {
     if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE seil" };
     if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler };
     if (!e.seile || !e.seile.length)
         return { gruen: false, zahl: "kein Seil am Leib: 0 von " + e.klingen + " Gattungen der Schmiede tragen ein Seil (" + (e.namen || []).join(", ") + ")" };
-    const ok = Object.entries(e.je).filter(([, x]) => !x.fehler && x.schwungM >= 0.05 && x.laengeM[1] <= 1.02 * x.laengeM[0] && x.energie[0] > 0 && x.energie[1] <= 0.5 * x.energie[0]);
+    const ok = Object.entries(e.je).filter(([, x]) => !x.fehler && Array.isArray(x.anker) && x.schwungM >= 0.05 && x.laengeM[1] <= 1.02 * x.laengeM[0] && x.energie[0] > 0 && x.energie[1] <= 0.5 * x.energie[0]);
     return {
         gruen: ok.length > 0,
-        zahl: Object.entries(e.je).map(([n, x]) => n + (x.fehler ? " " + x.fehler : " Schwung " + x.schwungM + " m, Länge " + x.laengeM.join("–") + " m, v² " + x.energie.join(" → "))).join(" · ") +
-            " (Soll: Schwung ≥ 0,05 m, Länge ±2 %, v² letzte ≤ ½ erste Sekunde)",
+        zahl: Object.entries(e.je).map(([n, x]) => n + (x.fehler ? " " + x.fehler : (Array.isArray(x.anker) ? "" : " ohne Gesetz im Buch (kein Anker, fx.seil)") + " Schwung " + x.schwungM + " m, Länge " + (x.laengeArt ? "(" + x.laengeArt + ") " : "") + x.laengeM.join("–") + " m, v² " + x.energie.join(" → "))).join(" · ") +
+            " (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde)",
     };
 }
 
@@ -2440,10 +2479,13 @@ module.exports = [
         urteil: (j, lauf) => seilUrteil(weltZeile(j, lauf, "seil")),
         proben: [
             { name: "die Messung am main 25ac4c0c", stdout: weltRoh("seil", (x) => x), gruen: false },
-            { name: "ein Flegel schwingt, die Länge hält, die Energie fällt", stdout: weltRoh("seil", (x) => Object.assign(x, { seile: ["klinge_flegel"], je: { klinge_flegel: { teile: 9, schwungM: 0.31, laengeM: [1.18, 1.2], energie: [0.84, 0.12] } } })), gruen: true },
-            { name: "das Seil starr am Griff (kein Löser)", stdout: weltRoh("seil", (x) => Object.assign(x, { seile: ["klinge_flegel"], je: { klinge_flegel: { teile: 9, schwungM: 0.004, laengeM: [1.2, 1.2], energie: [0, 0] } } })), gruen: false },
-            { name: "das Seil dehnt sich (ein Sinus ohne Länge)", stdout: weltRoh("seil", (x) => Object.assign(x, { seile: ["klinge_flegel"], je: { klinge_flegel: { teile: 9, schwungM: 0.3, laengeM: [1.0, 1.3], energie: [0.8, 0.1] } } })), gruen: false },
-            { name: "der Schwung bleibt (ohne Dämpfung)", stdout: weltRoh("seil", (x) => Object.assign(x, { seile: ["klinge_flegel"], je: { klinge_flegel: { teile: 9, schwungM: 0.3, laengeM: [1.19, 1.2], energie: [0.8, 0.79] } } })), gruen: false },
+            { name: "ein Flegel schwingt, die Länge hält, die Energie fällt", stdout: weltRoh("seil", (x) => Object.assign(x, { seile: ["klinge_flegel"], je: { klinge_flegel: { teile: 9, anker: [0.545, 0, 0], schwungM: 0.31, laengeM: [1.18, 1.2], energie: [0.84, 0.12] } } })), gruen: true },
+            { name: "ein Seil der Welt ohne Gesetz im Buch (kein Anker: ein Zwilling)", stdout: weltRoh("seil", (x) => Object.assign(x, { seile: ["klinge_flegel"], je: { klinge_flegel: { teile: 9, anker: null, schwungM: 0.31, laengeM: [1.18, 1.2], energie: [0.84, 0.12] } } })), gruen: false },
+            { name: "die Sehne vom Anker: die Kette hängt beim Halt durch (keine Länge)", stdout: weltRoh("seil", (x) => Object.assign(x, { seile: ["klinge_flegel"], je: { klinge_flegel: { teile: 16, anker: [0.545, 0, 0], laengeArt: "sehne vom Anker", schwungM: 0.487, laengeM: [0.245, 0.32], energie: [3.182, 0.25] } } })), gruen: false },
+            { name: "der Hebel Griff → Kopf statt der Seil-Länge (Stiel + Kette atmen)", stdout: weltRoh("seil", (x) => Object.assign(x, { seile: ["klinge_flegel"], je: { klinge_flegel: { teile: 16, anker: [0.545, 0, 0], schwungM: 0.487, laengeM: [0.393, 0.826], energie: [3.184, 0.251] } } })), gruen: false },
+            { name: "das Seil starr am Griff (kein Löser)", stdout: weltRoh("seil", (x) => Object.assign(x, { seile: ["klinge_flegel"], je: { klinge_flegel: { teile: 9, anker: [0.545, 0, 0], schwungM: 0.004, laengeM: [1.2, 1.2], energie: [0, 0] } } })), gruen: false },
+            { name: "das Seil dehnt sich (ein Sinus ohne Länge)", stdout: weltRoh("seil", (x) => Object.assign(x, { seile: ["klinge_flegel"], je: { klinge_flegel: { teile: 9, anker: [0.545, 0, 0], schwungM: 0.3, laengeM: [1.0, 1.3], energie: [0.8, 0.1] } } })), gruen: false },
+            { name: "der Schwung bleibt (ohne Dämpfung)", stdout: weltRoh("seil", (x) => Object.assign(x, { seile: ["klinge_flegel"], je: { klinge_flegel: { teile: 9, anker: [0.545, 0, 0], schwungM: 0.3, laengeM: [1.19, 1.2], energie: [0.8, 0.79] } } })), gruen: false },
         ],
         pfad: ["stamm/koerper-*.js", "stamm/bau-*.js", "stamm/studio-bruecke.js", "schmiede-core.js", "koerper-core.js", "foundry-core.js", ...WELT_PFAD],
         quelle: "1 = ein Leser (das Schmiede-Seil schwingt in der Welt am Leib)",
