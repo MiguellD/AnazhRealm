@@ -100,9 +100,7 @@ function staticLaws(garage) {
         /maxSteer\s*:|function\s+carPhys/,
         { datei: "worlds/garage/garage.js", wandel: garage }
     );
-    fehlt("A4: die Brücke kennt kein Namensraum-Literal self.__vehicleCore", null, /self\.__vehicleCore/, {
-        datei: "foundry-bruecke.js",
-    });
+    // A4 (kein Namensraum-Literal in der Brücke) hält die Verfassung (gate:constitution N2) — EINE Wand, kein Zwilling.
     // N6.4 — EIN Bewegungs-Pfad: die ride-Skalare liest NUR der Bewegungs-Schritt (_loopPlayerMovement).
     fehlt(
         "A5/N6.4: EIN Bewegungs-Pfad (ride.topSpeedMul/kAcc/kBrake nur in _loopPlayerMovement)",
