@@ -1660,7 +1660,9 @@ class AnazhRealm_vegetation_wiese {
         const s = (this._weltStunde() - a.h) / d;
         const J = S.jugend.length;
         let n = 1;
-        for (const [[lo, hi], m = S.stufen] of a.tat === "brand" ? [[S.asche], [S.busch], [S.wald, J]] : [[S.stubben, J]])
+        for (const [[lo, hi], m = S.stufen] of a.tat === "brand"
+            ? [[S.asche], [S.busch], [S.wald, J]]
+            : [[S.stubben, J]])
             for (let k = 0; k <= m; k++) {
                 const g = lo + ((hi - lo) * k) / m;
                 if (g > s + 1e-9 && g < n) n = g;
