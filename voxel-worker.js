@@ -4025,6 +4025,15 @@ function fernKrone(ax, az, rad, ang, ht, q, merk) {
 }
 
 function fernAuftrag(msg) {
+    // DAS GITTER DER HORIZONT-KARTE (ferne.K4, `_horizontGitterTakt`): nz Zeilen à nx Punkte ab (x0, z0) im Abstand d — die Höhe
+    // des Gesetzes ohne Detail (dieselbe Funktion wie `_terrainMacroSurfaceY(x, z, false)` im Main), per Transfer zurück.
+    if (msg.art === "gitter") {
+        const hoehen = new Float32Array(msg.nx * msg.nz);
+        for (let j = 0; j < msg.nz; j++)
+            for (let i = 0; i < msg.nx; i++)
+                hoehen[j * msg.nx + i] = G.hoehe(state, msg.x0 + i * msg.d, msg.z0 + j * msg.d, false);
+        return { antwort: { hoehen }, transfer: [hoehen.buffer] };
+    }
     fernLaub = msg.laub;
     fernWasser = msg.wasser;
     const p = msg.punkte;

@@ -1651,6 +1651,9 @@ class AnazhRealm_dirigent_takt {
         const bildZeit = this._bildZeit;
         if (this.state.skyboxUniforms && this.state.skyboxUniforms.time)
             this.state.skyboxUniforms.time.value = bildZeit;
+        // das Auge des Bilds: der Anker des Wolken-Felds in der Welt (Kuppel, Umgebung, Wurf der Wolke — `_wolkenMenge`)
+        if (this.state.skyboxUniforms && this.state.skyboxUniforms.auge && this.state.camera)
+            this.state.skyboxUniforms.auge.value.copy(this.state.camera.position);
         if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.time)
             this.state.hydroSurfaceUniforms.time.value = bildZeit;
         // DAS LICHT DER WELT am Bild (`_weltLicht`): Spiegel, Wasser, Feld und Panorama lesen die Lichter dieses Bilds
