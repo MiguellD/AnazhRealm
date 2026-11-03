@@ -1195,9 +1195,24 @@ function updateHUD(){const ro=document.getElementById('arena-readout');if(!ro)re
 // ════════════════════════════════════════════════════════════════════
 const clock=new THREE.Clock();
 let _lastT=0;
+// — DAS SEIL (physik.K4) — EIN Löser für Labor und Welt: der Kern rechnet Zustand, Schritt und die Pose jedes Teils (SC.seilZustand ·
+//   seilSchritt · seilPosen — die Hand der Welt ruft dieselben, `_seilTakt`). Je Gerät mit Seil-Teilen (userData.__seil, die Gestalt
+//   des Kerns) sein Zustand; der Anker (SC.seilAnker, am Ende des Schafts) folgt dem Gerät, die Schwere der Szene treibt; ein
+//   ruhendes Seil rechnet nicht. Ein neuer Bau (Regler, Gattung) ist ein neues Gerät, sein Seil beginnt in Ruhe. —
+const _seilZ=new WeakMap(),_sv={a:new THREE.Vector3(),s:new THREE.Vector3(),q:new THREE.Quaternion(),inv:new THREE.Matrix4(),W:new THREE.Matrix4()};
+function seilTakt(g,dt){if(!g||!g.parent||!P.seil||P.modus!=='wucht')return;let e=_seilZ.get(g);
+  if(!e){const teile=[];g.traverse(m=>{if(m.isMesh&&Number.isInteger(m.userData.__seil))teile[m.userData.__seil]=m;});
+    e={seil:Object.assign({},P.seil,SC.seilAnker(P,stations(P))),teile,z:null,posen:null};_seilZ.set(g,e);}
+  if(e.teile.length!==e.seil.glieder+1||!e.teile.every(Boolean))return;
+  g.updateWorldMatrix(true,true);const A=_sv.a.fromArray(e.seil.anker).applyMatrix4(g.matrixWorld),anker=[A.x,A.y,A.z];
+  if(!e.z){g.getWorldScale(_sv.s);e.skala=(Math.abs(_sv.s.x)+Math.abs(_sv.s.y)+Math.abs(_sv.s.z))/3;e.z=SC.seilZustand(e.seil,anker,[0,-1,0],e.skala);for(const m of e.teile)m.matrixAutoUpdate=false;}
+  else if(!SC.seilSchritt(e.z,anker,dt,[0,-SC.SEIL_GESETZ.schwere*e.skala,0]))return;
+  g.getWorldQuaternion(_sv.q);e.posen=SC.seilPosen(e.z,e.seil,[_sv.q.x,_sv.q.y,_sv.q.z,_sv.q.w],e.posen);
+  e.teile.forEach((m,i)=>{_sv.inv.copy(m.parent.matrixWorld).invert();m.matrix.multiplyMatrices(_sv.inv,_sv.W.fromArray(e.posen,16*i));m.matrixWorldNeedsUpdate=true;});}
 function animate(){requestAnimationFrame(animate);const t=clock.getElapsedTime();const dt=Math.min(0.05,t-_lastT);_lastT=t;
   if(!arena.active)controls.update();gradePass.uniforms.t.value=t;
   if(arena.active)arenaUpdate(dt);
+  seilTakt(gWeapon,dt);if(arena.active)seilTakt(arena.vmWeapon,dt);                                 // das Seil nach der Haltung dieses Bilds
   // Harmonik-Welle auf der Klinge (verlangsamt zur Sichtbarkeit)
   if(ring.active&&gBladeMesh){const dt=t-ring.t0, decay=Math.exp(-dt/1.7), w=2*Math.PI*5.5;
     if(decay<0.04){ring.active=false;document.getElementById('ring-info').style.display='none';}

@@ -2385,6 +2385,74 @@
         if (z.still >= G.ruheSchritte) z.ruht = true;
         return true;
     }
+    // DIE POSE DER TEILE (der Leser kopiert nur Matrizen — Labor und Welt legen die Kette gleich): je Teil (Glied 0 … n−1, Kopf n)
+    // seine Welt-Matrix, spaltenweise (16 Zahlen je Teil, das Matrix4-Format von three) in `out`. Die Teile sind in der Ruhe-Lage
+    // gebacken (`seilRuhe`, längs `unten` im Raum des Geräts); jedes dreht mit der Hand `qh` ([x, y, z, w], die Welt-Drehung des
+    // Geräts), dann im Rahmen der Hand die Ruhe-Richtung auf die Richtung seines Glieds, starr in der Skala des Zustands: Glied i
+    // von Punkt i nach i+1 (Mitte), der Kopf an seiner Mitte (Punkt n+1) längs des letzten Glieds.
+    function _qMul(a, b) {
+        return [
+            a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],
+            a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0],
+            a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3],
+            a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2],
+        ];
+    }
+    function _qDreh(q, v) {
+        var x = v[0], y = v[1], z = v[2], qx = q[0], qy = q[1], qz = q[2], qw = q[3];
+        var tx = 2 * (qy * z - qz * y), ty = 2 * (qz * x - qx * z), tz = 2 * (qx * y - qy * x);
+        return [x + qw * tx + qy * tz - qz * ty, y + qw * ty + qz * tx - qx * tz, z + qw * tz + qx * ty - qy * tx];
+    }
+    // die kürzeste Drehung von u nach v (Einheits-Vektoren; three `setFromUnitVectors`)
+    function _qVon(u, v) {
+        var r = u[0] * v[0] + u[1] * v[1] + u[2] * v[2] + 1, q;
+        if (r < 1e-8) q = Math.abs(u[0]) > Math.abs(u[2]) ? [-u[1], u[0], 0, 0] : [0, -u[2], u[1], 0];
+        else q = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0], r];
+        var l = Math.hypot(q[0], q[1], q[2], q[3]);
+        return [q[0] / l, q[1] / l, q[2] / l, q[3] / l];
+    }
+    function seilPosen(z, seil, qh, out) {
+        var n = seil.glieder,
+            s = z.skala,
+            p = z.p,
+            o = out || new Float64Array(16 * (n + 1)),
+            ul = Math.hypot(seil.unten[0], seil.unten[1], seil.unten[2]),
+            u = [seil.unten[0] / ul, seil.unten[1] / ul, seil.unten[2] / ul],
+            qi = [-qh[0], -qh[1], -qh[2], qh[3]];
+        for (var i = 0; i <= n; i++) {
+            var a = 3 * i,
+                b = a + 3,
+                dx = p[b] - p[a],
+                dy = p[b + 1] - p[a + 1],
+                dz = p[b + 2] - p[a + 2],
+                dl = Math.hypot(dx, dy, dz) || 1e-9,
+                d = _qDreh(qi, [dx / dl, dy / dl, dz / dl]),
+                q = _qMul(qh, _qVon(u, d)),
+                rm = (i < n ? (i + 0.5) * seil.gliedM : n * seil.gliedM + seil.kopfR) * s, // die Ruhe-Mitte längs unten
+                m = i < n ? [(p[a] + p[b]) / 2, (p[a + 1] + p[b + 1]) / 2, (p[a + 2] + p[b + 2]) / 2] : [p[b], p[b + 1], p[b + 2]],
+                c = _qDreh(q, [(seil.anker[0] * s + u[0] * rm), (seil.anker[1] * s + u[1] * rm), (seil.anker[2] * s + u[2] * rm)]),
+                x = q[0], y = q[1], w = q[3], zz = q[2],
+                k = 16 * i;
+            // die Rotation (three `compose`) × Skala, die Verschiebung: Mitte − q · (Skala · Ruhe-Mitte)
+            o[k] = (1 - 2 * (y * y + zz * zz)) * s;
+            o[k + 1] = 2 * (x * y + zz * w) * s;
+            o[k + 2] = 2 * (x * zz - y * w) * s;
+            o[k + 3] = 0;
+            o[k + 4] = 2 * (x * y - zz * w) * s;
+            o[k + 5] = (1 - 2 * (x * x + zz * zz)) * s;
+            o[k + 6] = 2 * (y * zz + x * w) * s;
+            o[k + 7] = 0;
+            o[k + 8] = 2 * (x * zz + y * w) * s;
+            o[k + 9] = 2 * (y * zz - x * w) * s;
+            o[k + 10] = (1 - 2 * (x * x + y * y)) * s;
+            o[k + 11] = 0;
+            o[k + 12] = m[0] - c[0];
+            o[k + 13] = m[1] - c[1];
+            o[k + 14] = m[2] - c[2];
+            o[k + 15] = 1;
+        }
+        return o;
+    }
     // Die GESTALT des Seils in der Ruhe-Lage (die Vorlage, im Raum des Geräts): je Glied ein ovaler Ring (abwechselnd um 90°
     // gedreht, ineinander greifend), der Kopf eine Stachelkugel — jedes Teil ein eigenes Mesh mit `userData.__seil` = seine
     // Nummer (Glieder 0 … n−1, der Kopf n): die Brücke reicht sie als `seil`, der Leser bewegt jedes Teil nach dem Zustand.
@@ -4978,6 +5046,8 @@
         seilRuhe: seilRuhe,
         seilZustand: seilZustand,
         seilSchritt: seilSchritt,
+        seilPosen: seilPosen,
+        seilAnker: seilAnker,
         bauSeil: bauSeil,
         arenaStrom: arenaStrom,
         arenaTeile: arenaTeile,

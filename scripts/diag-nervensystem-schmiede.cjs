@@ -47,6 +47,29 @@ function faustVerdict(h) {
     if (!(h.winkel >= FAUST.winkel[0] && h.winkel <= FAUST.winkel[1])) out.push(`winkel ${(h.winkel || 0).toFixed(1)}°`);
     return out;
 }
+// ── H-S (physik.K4) — DAS SEIL AM LEIB (pure Funktion; Browser-Probe UND Selbst-Test). Der Flegel der Schmiede in der Hand:
+// der Leib geht 0,5 s (der Anker folgt der Hand), dann steht er; je Takt ruft der Takt der Seile (`_seilTakt`, der benannte
+// Konsum-Leser) das EINE Gesetz des Kerns (`__schmiedeCore.seilSchritt`). Gemessen in der WELT: der Schwung des Kopfs um den
+// Anker nach dem Halt, die Länge längs des Seils (Anker → die Ruhe-Enden jedes Teils durch seine Welt-Matrix → Kopf-Mitte) als
+// Band, die Energie des Kopfs (mittleres v² der ersten gegen die dritte Sekunde), und nach 12 s Stille ruht das Seil (kein
+// Schritt des Gesetzes mehr: die Kosten gehören der Änderung). Steht das Auge ferner als `SEIL_NAH_M`, rechnet das Seil nicht
+// (die Kosten gehören dem Schirm): dieselbe Bewegung mit dem Auge in der Ferne macht 0 Schritte.
+//   teile   = Glieder + Kopf (das Gesetz nennt sie, die Gestalt trägt sie, `userData.__seil`)
+//   schwung ≥ 0,05 m · band ≤ 2 % · v² dritte ≤ ½ erste Sekunde (erste > 0) · ruht · schritte > 0 (der Leser ruft das Gesetz)
+//   · fern 0 Schritte (das Auge jenseits SEIL_NAH_M)
+const SEIL = { schwungM: 0.05, band: 0.02, energie: 0.5 };
+function seilVerdict(h) {
+    if (!h || !Number.isFinite(h.schwungM)) return ["probe"];
+    const out = [];
+    if (!(h.teile > 0 && h.teile === h.soll)) out.push(`teile ${h.teile} von ${h.soll}`);
+    if (!(h.schritte > 0)) out.push("kein Schritt des Gesetzes (_seilTakt ruft seilSchritt nicht)");
+    if (!(h.schwungM >= SEIL.schwungM)) out.push(`schwung ${h.schwungM.toFixed(3)} m`);
+    if (!(h.band <= SEIL.band)) out.push(`länge ±${(100 * h.band).toFixed(1)} %`);
+    if (!(h.energie[0] > 0 && h.energie[1] <= SEIL.energie * h.energie[0])) out.push(`v² ${h.energie.map((x) => x.toFixed(3)).join(" → ")}`);
+    if (!h.ruht) out.push("ruht nie");
+    if (h.fernSchritte !== 0) out.push(`fern ${h.fernSchritte} Schritte (die Kosten folgen der Welt, nicht dem Schirm)`);
+    return out;
+}
 const { errs, check } = pruefer();
 /// ===== TEIL S: die statischen Gesetze — die Absenzen über den EINEN Helfer `stammLib.fehlt` (kommentarfrei; ein totes
 // Glied wirft beim Namen). (S3, M8 — kein kind-String-Vergleich im Auto-Register-Chokepoint — hält gate:pipeline-
@@ -90,7 +113,24 @@ hauptLauf(async () => {
                 `Selbst-Test 5 (H-F): ‚${name}' → die Faust-Linse feuert`,
                 faustVerdict(Object.assign({}, gesund, bruch)).length === 1
             );
-        selbsttestEnde(errs, "die Linse feuert auf alle Verletzungs-Klassen (Faust).");
+        // V9 (H-S, physik.K4): das Seil-Verdikt feuert auf jeden Täter der Klasse „kein Seil am Leib" beim Namen.
+        const seil = { teile: 8, soll: 8, schritte: 600, fernSchritte: 0, schwungM: 0.3, band: 0.004, energie: [2.1, 0.2], ruht: true };
+        check("Selbst-Test 9 (H-S): gesundes Seil == 0 Verstoesse", seilVerdict(seil).length === 0, seilVerdict(seil).join(" · "));
+        for (const [name, bruch] of [
+            ["die Gestalt trägt keine Seil-Teile (die Brücke verliert `seil`)", { teile: 0 }],
+            ["der Takt ruft das Gesetz nicht (kein Leser)", { schritte: 0 }],
+            ["die Kette starr am Stiel", { schwungM: 0.002 }],
+            ["das Seil dehnt sich (Relaxation ohne harte Länge)", { band: 0.14 }],
+            ["der Schwung bleibt (ohne Dämpfung)", { energie: [2.1, 2.0] }],
+            ["das Seil ruht nie (der Leser rechnet die stille Kette)", { ruht: false }],
+            ["das ferne Seil rechnet (die Kosten an der Weltgröße)", { fernSchritte: 30 }],
+        ])
+            check(
+                `Selbst-Test 10 (H-S): ‚${name}' → die Seil-Linse feuert`,
+                seilVerdict(Object.assign({}, seil, bruch)).length === 1,
+                seilVerdict(Object.assign({}, seil, bruch)).join(" · ")
+            );
+        selbsttestEnde(errs, "die Linse feuert auf alle Verletzungs-Klassen (Faust, Seil).");
         process.exit(0);
     }
 
@@ -275,6 +315,111 @@ hauptLauf(async () => {
                     res.h.bboxSpitz = box3(probe);
                     r._disposeSoulGroup(probe); // Ref-Rueckgabe (die Probe haelt nichts fest)
                 }
+                // (5b) H-S (physik.K4): DAS SEIL AM LEIB — der Flegel in der Hand, der Leib geht 0,5 s und steht, je Takt der
+                // Takt der Seile (`_seilTakt`); der Spion zählt die Schritte des EINEN Gesetzes.
+                try {
+                    r.equipHeld("klinge_flegel");
+                    for (const weiter = __deckel("der Flegel der Schmiede", 300); weiter(); ) {
+                        const w = pm.userData && pm.userData.heldMesh;
+                        if (w && w.userData && w.userData.foundryHeld) break;
+                        await sleep(150);
+                    }
+                    const hf = pm.userData && pm.userData.heldMesh;
+                    const SC = window.__schmiedeCore;
+                    const e = r._seile && [...r._seile].find((x) => x.mesh === hf);
+                    const sg = e && e.seil;
+                    const st = [];
+                    if (hf) hf.traverse((m) => m.isMesh && Number.isInteger(m.userData.__seil) && (st[m.userData.__seil] = m));
+                    let wurzel = hf;
+                    while (wurzel && wurzel.parent) wurzel = wurzel.parent;
+                    res.h.seil = {
+                        teile: st.filter(Boolean).length,
+                        soll: sg ? sg.glieder + 1 : -1,
+                        schritte: 0,
+                        schwungM: NaN,
+                        inSzene: wurzel === r.state.scene,
+                        augeM: hf && r.state.camera ? r.state.camera.position.distanceTo(hf.getWorldPosition(new THREE.Vector3())) : null,
+                    };
+                    if (e && sg && st.length === sg.glieder + 1) {
+                        const R = SC.seilRuhe(sg, sg.anker, sg.unten, 1);
+                        const P = (i) => new THREE.Vector3(R[3 * i], R[3 * i + 1], R[3 * i + 2]);
+                        const echt = SC.seilSchritt;
+                        let schritte = 0;
+                        SC.seilSchritt = function () {
+                            const ok = echt.apply(this, arguments);
+                            if (ok) schritte++;
+                            return ok;
+                        };
+                        const lage = () => {
+                            pm.updateMatrixWorld(true);
+                            const a = new THREE.Vector3().fromArray(sg.anker).applyMatrix4(hf.matrixWorld);
+                            let l = 0,
+                                vor = a.clone();
+                            st.forEach((m, i) => {
+                                const p = P(i).applyMatrix4(m.matrixWorld),
+                                    q = P(i + 1).applyMatrix4(m.matrixWorld);
+                                l += vor.distanceTo(p) + p.distanceTo(q);
+                                vor = q;
+                            });
+                            return { a, kopf: P(sg.glieder + 1).applyMatrix4(st[sg.glieder].matrixWorld).sub(a), l };
+                        };
+                        const takt = () => r._seilTakt(1 / 60);
+                        const cam = r.state.camera;
+                        const camVor = cam.position.clone();
+                        try {
+                            // FERN: das Auge jenseits SEIL_NAH_M — der Leib geht, das Seil rechnet nicht
+                            const hand = hf.getWorldPosition(new THREE.Vector3());
+                            cam.position.copy(hand).add(new THREE.Vector3(0, 0, AnazhRealm.SEIL_NAH_M + 20));
+                            for (let k = 0; k < 30; k++) {
+                                pm.position.x += 0.01;
+                                takt();
+                            }
+                            res.h.seil.fernSchritte = schritte;
+                            pm.position.x -= 0.3;
+                            // NAH: das Auge 3 m vor dem Leib (wo die Kamera des Spiels steht)
+                            cam.position.copy(hand).add(new THREE.Vector3(0, 1, 3));
+                            takt();
+                            for (let k = 0; k < 30; k++) {
+                                pm.position.x += 0.05; // der Leib geht 3 m/s
+                                takt();
+                            }
+                            const k0 = lage().kopf;
+                            let schwung = 0,
+                                lmin = Infinity,
+                                lmax = 0,
+                                vor = k0;
+                            const v2 = [];
+                            for (let k = 0; k < 180; k++) {
+                                takt();
+                                const L = lage();
+                                schwung = Math.max(schwung, L.kopf.distanceTo(k0));
+                                lmin = Math.min(lmin, L.l);
+                                lmax = Math.max(lmax, L.l);
+                                v2.push(L.kopf.distanceToSquared(vor) * 3600);
+                                vor = L.kopf;
+                            }
+                            for (let k = 0; k < 720; k++) takt();
+                            const vorher = schritte;
+                            takt();
+                            const mittel = (x) => x.reduce((s, y) => s + y, 0) / Math.max(1, x.length);
+                            Object.assign(res.h.seil, {
+                                schritte: vorher - res.h.seil.fernSchritte,
+                                schwungM: schwung,
+                                band: lmax / lmin - 1,
+                                laengeM: [lmin, lmax],
+                                energie: [mittel(v2.slice(0, 60)), mittel(v2.slice(120))],
+                                ruht: !!e.z.ruht && schritte === vorher,
+                            });
+                        } finally {
+                            SC.seilSchritt = echt;
+                            pm.position.x -= 1.5;
+                            cam.position.copy(camVor);
+                        }
+                    }
+                    r.equipHeld(null);
+                } catch (e) {
+                    res.h.seilErr = fehlerText(e);
+                }
                 // (6) FOUNDRY-OFF — lokaler Hook, SICHERN + WIEDERHERSTELLEN (die Gate-Hook-Lehre).
                 const prevHook = window.__anazhGateNoFoundry;
                 window.__anazhGateNoFoundry = true;
@@ -351,6 +496,14 @@ hauptLauf(async () => {
         'H: Anker-Daten — handAxis "x" (KIND_POLICY-Daten), gripX == fx.held.gripX (langschwert 0.12 == griff 0.24/2)',
         out.h.axis === "x" && Math.abs((out.h.gripX || 0) - 0.12) < 1e-6,
         `gripX=${out.h.gripX}`
+    );
+    // H-S (physik.K4): das Seil am Leib — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test).
+    const sv = seilVerdict(out.h.seil);
+    console.log("  [H-S] Seil: " + JSON.stringify(out.h.seil) + (out.h.seilErr ? " FEHLER " + out.h.seilErr : ""));
+    check(
+        "H-S/physik.K4: DAS SEIL AM LEIB — der Flegel trägt sein Seil (Gesetz im Buch, Teile in der Gestalt), der Takt der Seile (`_seilTakt`) ruft das EINE Gesetz, die Kette schwingt nach dem Halt, hält ihre Länge, verliert Energie und ruht",
+        sv.length === 0,
+        sv.join(" · ") + (out.h.seilErr ? " · " + out.h.seilErr : "")
     );
     // H-F (W5): die Faust — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test).
     const fv = faustVerdict(out.h.faust);
