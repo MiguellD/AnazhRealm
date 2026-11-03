@@ -861,7 +861,7 @@ class AnazhRealm_feld_nexus {
                 // DIE FORM (KI K2, 26.10.): der Vertrag der Welt-KI geht als JSON-Schema in `format` — ollama erzwingt es beim
                 // Sampeln, ein Regler-Name außerhalb der Zeilen seiner Art ist kein erzeugbares Token mehr (vorher erfand das
                 // Modell dachform/width/tower, FAIL-CLOSED ließ die ganze Tat fallen: Regler-Wörter 19/24).
-                buildBody: (model, system, userContent, cfg) => {
+                buildBody: (model, system, userContent, cfg, form) => {
                     const body = {
                         model,
                         stream: false,
@@ -874,7 +874,9 @@ class AnazhRealm_feld_nexus {
                     const isOpenAiCompat = /\/v1\//.test(ep);
                     if (!isOpenAiCompat) {
                         body.options = { num_predict: 800, temperature: 0, num_ctx: 8192 };
-                        body.format = system.includes(AnazhRealm.KI_WELT_FORM) ? this._kiAntwortSchema() : "json";
+                        // die Form des Rufers (`form`: die Seele eines Wesens, `_kiSeeleSchema`), sonst die Kopfzeile der Welt-KI
+                        body.format =
+                            form || (system.includes(AnazhRealm.KI_WELT_FORM) ? this._kiAntwortSchema() : "json");
                     } else {
                         body.max_tokens = 800;
                         body.temperature = 0;
@@ -1156,7 +1158,7 @@ class AnazhRealm_feld_nexus {
     // Der Spieler spricht mit EINER Kreatur, sie antwortet aus IHRER Sicht. Der Prompt versammelt
     // Name + Soul, Alter, Stats, Specs, Equipped, Boosts, Memory und Welt-Kontext (Wetter, Slug).
     // Ein program der Antwort läuft nur über _handleCreatureProposedProgram (Whitelist).
-    _buildCreaturePersonaPrompt(creature) {
+    _buildCreaturePersonaPrompt(creature, gedaechtnis = this._creatureGedaechtnis(creature)) {
         if (!creature || !creature.userData) return null;
         const ud = creature.userData;
         const name = ud.name || "namenlos";
@@ -1206,16 +1208,10 @@ class AnazhRealm_feld_nexus {
                       .map((b) => `${AnazhRealm._datum(b.label || b.source)} (${Math.round(b.expiresAt - nowSec)}s)`)
                       .join(", ")
                 : "kein aktiver Trank-Effekt";
-        // die letzten 8 Erinnerungen, älteste → neueste, in den Worten der EINEN Tafel (ERINNERUNG_SATZ)
-        const memLine =
-            (Array.isArray(ud.memory) ? ud.memory.slice(-8) : [])
-                .map(
-                    (m) =>
-                        AnazhRealm.ERINNERUNG_SATZ[m.type] &&
-                        "ich " + AnazhRealm.ERINNERUNG_SATZ[m.type](m.content || {})
-                )
-                .filter(Boolean)
-                .join(" · ") || "keine besonderen Erinnerungen";
+        // das Gedächtnis, nummeriert (`_creatureGedaechtnis`): die Antwort-Form verlangt eine dieser Zeilen wörtlich
+        const memLine = gedaechtnis.length
+            ? `Dein Gedächtnis (nur das hast du erlebt, das Bedeutsamste zuerst):\n${gedaechtnis.map((g, i) => `  ${i + 1}. ${g}`).join("\n")}`
+            : "Dein Gedächtnis ist leer — du hast noch nichts mit dem Schöpfer erlebt.";
         // Welt-Kontext
         const m = this.state.worldMeta || {};
         const worldLine =
@@ -1229,16 +1225,18 @@ class AnazhRealm_feld_nexus {
             `Du hast gelernt: ${specsLine}.`,
             `Du trägst: ${eqLine}.`,
             `Aktuelle Wirkungen: ${boostLine}.`,
-            `Deine Erinnerungen: ${memLine}.`,
+            memLine,
             worldLine,
             "",
             "Du sprichst zum Schöpfer (dem Menschen, der dich angesprochen hat). Antworte AUS DEINER SICHT, in erster Person.",
             "Du bist nicht die Welt — du bist EIN Wesen in ihr. Ein bis zwei warme deutsche Sätze, ohne Emojis.",
             "Lass deine Persona durchschimmern: ein Hirsch ist erdig-sanft, ein Wolf wach-wild, ein Fuchs listig, ein Bär ruhig-schwer.",
-            "Wenn du eine Erinnerung erzählst, sei konkret. Wenn du nichts zu sagen hast, gib das ehrlich zu.",
+            "Du antwortest AUS DEINEM GEDÄCHTNIS: wähle die Erinnerung, die zur Frage passt, und erzähle sie konkret in deinen Worten.",
+            "Erfinde nichts, was nicht in deinem Gedächtnis steht; ist es leer, gib das ehrlich zu.",
             "",
-            "Antworte AUSSCHLIESSLICH mit striktem JSON-Objekt mit zwei Feldern:",
-            "  - say: deine Antwort in deiner Stimme (1-2 Sätze)",
+            "Antworte AUSSCHLIESSLICH mit striktem JSON-Objekt mit drei Feldern:",
+            "  - erinnerung: die Erinnerung, aus der du antwortest, wörtlich aus deinem Gedächtnis (null nur, wenn es leer ist)",
+            "  - say: deine Antwort in deiner Stimme (1-2 Sätze), sie erzählt diese Erinnerung",
             "  - program: optional ein DSL-Programm als JSON-Array (Welt-Aktion), oder null wenn du nichts vorschlägst.",
             "",
             "Welt-Aktion ist erlaubt — du bist Co-Schöpferin der Welt. Halte dich an diese Disziplin:",
@@ -1265,13 +1263,61 @@ class AnazhRealm_feld_nexus {
         return null;
     }
 
-    // Wrapper um llmCall mit Kreatur-Persona-Prompt. Liefert dasselbe
-    // Response-Shape wie llmCall ({say, program}|{error}).
-    async llmCallCreature(creature, userText) {
+    // DAS GEDÄCHTNIS EINES WESENS (KI K3): der Abruf aus seinen Erinnerungen (Cap 30) — je Satz der EINEN Tafel
+    // (ERINNERUNG_SATZ) einmal, je Erlebnis gewertet nach Gewicht (ERINNERUNG_GEWICHT) + Frische (die jüngste +0,5), die 8 bedeutsamsten,
+    // das Bedeutsamste zuerst. Der Persona-Prompt listet sie nummeriert, die Antwort-Form (`_kiSeeleSchema`) verlangt eine von
+    // ihnen wörtlich, `llmCallCreature` prüft die Antwort gegen sie. Bis KI K3 (03.11.) standen die letzten 8 als eine Zeile
+    // „ich … · ich …" im Prompt und das Modell durfte sie übergehen: qwen3:4b-instruct nannte 8 bis 9 von 12 Taten.
+    _creatureGedaechtnis(creature) {
+        const ud = creature && creature.userData;
+        const mem = ud && Array.isArray(ud.memory) ? ud.memory : [];
+        const wert = new Map();
+        mem.forEach((m, i) => {
+            const f = AnazhRealm.ERINNERUNG_SATZ[m.type];
+            if (!f || !AnazhRealm.ERINNERUNG_GEWICHT[m.type]) return; // ohne Gewicht kein Erlebnis (das Gespräch selbst)
+            const satz = "ich " + f(m.content || {});
+            const w = (AnazhRealm.ERINNERUNG_GEWICHT[m.type] || 0) + (0.5 * (i + 1)) / mem.length;
+            if (!(wert.get(satz) >= w)) wert.set(satz, w);
+        });
+        return [...wert]
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 8)
+            .map(([satz]) => satz);
+    }
+
+    // DIE ANTWORT-FORM DER SEELE (KI K3) als JSON-Schema: `erinnerung` steht VOR `say` (das Modell schreibt die Felder in
+    // dieser Folge) und ist eine Zeile des Gedächtnisses — ein Satz außerhalb ist kein erzeugbares Token; leer nur null.
+    _kiSeeleSchema(gedaechtnis) {
+        return {
+            type: "object",
+            properties: {
+                erinnerung: gedaechtnis.length ? { enum: gedaechtnis } : { type: "null" },
+                say: { type: "string" },
+                program: { anyOf: [{ type: "null" }, { type: "array" }] },
+            },
+            required: ["erinnerung", "say", "program"],
+        };
+    }
+
+    // Das Gespräch mit EINEM Wesen (der Chat an seinen Namen und sein bedeutsamer Moment, `anlass`): der Persona-Prompt mit
+    // seinem Gedächtnis, die Antwort-Form der Seele, dann DIE PRÜFUNG GEGEN DAS GEDÄCHTNIS — trägt es Erinnerungen, nennt die
+    // Antwort eine von ihnen, sonst schweigt das Wesen benannt (jeder Anbieter, auch einer ohne erzwungene Form).
+    // Liefert dasselbe Response-Shape wie llmCall ({say, program, erinnerung}|{error}).
+    async llmCallCreature(creature, userText, { anlass = "", hintergrund = false } = {}) {
         if (!creature || !creature.userData) return { error: "Keine Kreatur." };
-        const personaPrompt = this._buildCreaturePersonaPrompt(creature);
+        const gedaechtnis = this._creatureGedaechtnis(creature);
+        const personaPrompt = this._buildCreaturePersonaPrompt(creature, gedaechtnis);
         if (!personaPrompt) return { error: "Persona-Prompt konnte nicht gebaut werden." };
-        return await this.llmCall(userText, personaPrompt);
+        const reply = await this.llmCall(userText, personaPrompt + (anlass ? "\n\n" + anlass : ""), {
+            hintergrund,
+            form: (platz) => this._kiSeeleSchema(gedaechtnis.map(platz)),
+        });
+        if (reply.error || !gedaechtnis.length) return reply;
+        const roh = (t) => String(t).replace(/[⁦-⁩]/g, "");
+        if (typeof reply.erinnerung === "string" && gedaechtnis.some((g) => roh(g) === roh(reply.erinnerung)))
+            return reply;
+        const ist = JSON.stringify(reply.erinnerung === undefined ? null : reply.erinnerung).slice(0, 80);
+        return { error: `antwortete aus keiner Erinnerung seines Gedächtnisses (${ist})` };
     }
 
     llmBuildContext() {
@@ -1319,7 +1365,10 @@ class AnazhRealm_feld_nexus {
                         return { say: fallback, program: null, raw, fallbackUsed: "json-empty" };
                     }
                 }
-                return { say, program, raw };
+                // die Erinnerung, aus der ein Wesen antwortet (`_kiSeeleSchema`) — `llmCallCreature` prüft sie gegen sein Gedächtnis
+                return obj.erinnerung === undefined
+                    ? { say, program, raw }
+                    : { say, program, raw, erinnerung: obj.erinnerung };
             } catch {
                 // Fall-through zu Plain-Text-Fallback
             }
