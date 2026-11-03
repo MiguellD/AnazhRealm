@@ -183,12 +183,16 @@ function weltGrund(r, T) {
 }
 // DER LAUF (im Spiel-Baum, cwd; Node): argv {AUS} {PORT} und die Proben als JSON [[name, Seiten-Funktion, Optionen]]; die Optionen
 // tragen die Messorte des Haushalts (scripts/lib/welt-orte.cjs, `messort`). Ein Wurf einer Probe ist ihr Fehler beim Namen, nie
-// der Abbruch der übrigen.
+// der Abbruch der übrigen. Jede Welt (der Boot und jeder Reload) trägt das EINE Orts-Gesetz der Seite (`WELT_ORTE_INSTALL`:
+// `__weltOrt` — Höhle, Hang, Ufer … am Gesetz der Welt, w5-s2-g1). DER RELOAD (w5-s2-g1, stoffe.K4#2 „über den Reload“): eine Probe
+// mit der Option `neuladen` läuft in einer frisch geladenen Seite — der Lauf lädt sie neu (dieselbe Seite, derselbe Speicher:
+// IndexedDB des Browsers), bootet die Welt aus ihrem Stand und ruft erst dann die Probe; was die Probe davor sicherte
+// (`saveState`, `_speicherStill`), ist das einzige, was hinüber reist.
 async function weltProbeLauf() {
     const fs = require("fs");
     const path = require("path");
     const { statikServer, nullSeite, warteAufWelt } = require(path.resolve("scripts/lib/welt-boot.cjs"));
-    const { messort } = require(path.resolve("scripts/lib/welt-orte.cjs"));
+    const { messort, WELT_ORTE_INSTALL } = require(path.resolve("scripts/lib/welt-orte.cjs"));
     const [aus, port, grund, probenText] = process.argv.slice(1);
     const orte = Object.fromEntries(["wiese", "dorf"].map((id) => [id, messort(id)]));
     const erg = { proben: {}, fehler: [] };
@@ -201,17 +205,25 @@ async function weltProbeLauf() {
         const seite = ns.page;
         seite.setDefaultTimeout(1200000);
         seite.on("pageerror", (e) => erg.fehler.length < 8 && erg.fehler.push(String(e.message || e).split("\n")[0].slice(0, 200)));
+        const erwacht = async () => {
+            await warteAufWelt(seite, 300000);
+            await seite.evaluate(async () => {
+                while (!(window.anazhRealm && window.anazhRealm.erwacht)) await new Promise((ok) => setTimeout(ok, 50));
+                await window.anazhRealm.erwacht;
+                window.anazhRealm.state.renderer.setAnimationLoop(null);
+            });
+            await seite.evaluate(WELT_ORTE_INSTALL);
+        };
         await server.zeige(seite, 240000, "index.html", "networkidle0");
-        await warteAufWelt(seite, 300000);
-        await seite.evaluate(async () => {
-            while (!(window.anazhRealm && window.anazhRealm.erwacht)) await new Promise((ok) => setTimeout(ok, 50));
-            await window.anazhRealm.erwacht;
-            window.anazhRealm.state.renderer.setAnimationLoop(null);
-        });
+        await erwacht();
         for (const [name, fn, o] of JSON.parse(probenText)) {
             const t0 = Date.now();
             let e;
             try {
+                if (o && o.neuladen) {
+                    await seite.reload({ waitUntil: "networkidle0", timeout: 240000 });
+                    await erwacht();
+                }
                 e = await seite.evaluate("(" + fn + ")(window.anazhRealm, THREE, " + JSON.stringify(Object.assign({ orte }, o)) + ", (" + grund + ")(window.anazhRealm, THREE))");
             } catch (x) {
                 e = { fehler: String((x && x.message) || x).split("\n")[0].slice(0, 300) };
@@ -544,6 +556,324 @@ function alterUrteil(e) {
     };
 }
 
+// stoffe.K4 Staffel 2 — DIE VERWITTERUNG AM STOFF UND DER TRAMPELPFAD, ÜBER DEN RELOAD (w5-s2-g1). Zwei Proben derselben Welt:
+// `alterspur` baut auf ebenem Grund nahe der Mess-Wiese EIN Prüf-Werk (Bauplan `alterspur_werk` über `createBlueprint`, gesetzt mit
+// `spawnArchitecture` wie jeder Bau):
+// offen je ein Würfel Holz, Eisen, Stein (1 m; der Stein 1,5 m). Gelesen wird die Albedo, aus der die Welt ihr
+// Bild zeichnet (wie Staffel 1, Lehre 19: je Vertex die Vertex-Farbe × Stoff-Farbe × Farbe der Instanz) an den Flächen jedes
+// Würfels (die Vertices der Bau-Klasse `bau…` binnen ±6 cm seiner Hülle), je Lage (oben, nord −z, süd +z, west, ost) — zweimal vorher (das Rauschen),
+// dann 30 Tage mit dem Wort des Spielers „sunny“, dann 30 mit „rainy“ (der Gegenlauf der Nässe in der Zeit), je gemessen trocken zu
+// Mittag (die Nässe zählt wetter.K2, nie das Alter). Dann DER WEG: auf der Mess-Wiese geht der Spieler 100 × dieselbe Strecke von 8 m (die Taste w, der Takt des Spiels; die
+// Richtung, in die w ihn trägt); gezählt die Büschel der Nah-Wiese (`_nahWieseKachelBueschel`, die Liste, die die Wiese zeichnet)
+// im Streifen ±0,5 m um die Strecke und im Streifen 4 m daneben (nie gegangen), vorher und nachher. Am Ende `saveState` und der
+// Speicher still; das Notizbuch der Probe (Orte, Vorher-Werte) im localStorage. `alterspur-reload` (Option `neuladen`: der Lauf
+// lädt die Seite neu, die Welt bootet aus ihrem Stand) misst dasselbe noch einmal am Werk, das wiederkehren muss.
+function alterSpurMessen(r, T, G, plan) {
+    const { s, r3 } = G;
+    const n = new T.Vector3();
+    const p = new T.Vector3();
+    const nm = new T.Matrix3();
+    const im = new T.Matrix4();
+    const wm = new T.Matrix4();
+    const bb = new T.Box3();
+    const hell = (v) => Math.max(...v);
+    const aus = {};
+    const boxen = Object.entries(plan.bloecke);
+    const um = new T.Box3(
+        new T.Vector3(Math.min(...boxen.map(([, b]) => b[0])) - 0.1, Math.min(...boxen.map(([, b]) => b[2])) - 0.1, Math.min(...boxen.map(([, b]) => b[4])) - 0.1),
+        new T.Vector3(Math.max(...boxen.map(([, b]) => b[1])) + 0.1, Math.max(...boxen.map(([, b]) => b[3])) + 0.1, Math.max(...boxen.map(([, b]) => b[5])) + 0.1)
+    );
+    const E = 0.06;
+    s.scene.updateMatrixWorld(true);
+    s.scene.traverse((m) => {
+        if (!m.isMesh || !m.visible || !m.geometry || !m.geometry.attributes.normal) return;
+        if (!/^bau/.test(r._taeterKlasse(m))) return; // die Klasse der Bauten (bau:<Typ>, bauSatz, bauWurf), nie Boden, Fels, Streu
+        const g = m.geometry;
+        if (!g.boundingBox) g.computeBoundingBox();
+        const pos = g.attributes.position;
+        const nor = g.attributes.normal;
+        const col = g.attributes.color;
+        const mc = m.material && !Array.isArray(m.material) && m.material.color ? m.material.color : { r: 1, g: 1, b: 1 };
+        const inst = m.isInstancedMesh ? m.count : 1;
+        for (let i = 0; i < inst; i++) {
+            if (m.isInstancedMesh) m.getMatrixAt(i, im), wm.multiplyMatrices(m.matrixWorld, im);
+            else wm.copy(m.matrixWorld);
+            if (!bb.copy(g.boundingBox).applyMatrix4(wm).intersectsBox(um)) continue;
+            nm.getNormalMatrix(wm);
+            const ic = m.isInstancedMesh && m.instanceColor ? [m.instanceColor.getX(i), m.instanceColor.getY(i), m.instanceColor.getZ(i)] : [1, 1, 1];
+            for (let v = 0; v < pos.count; v++) {
+                p.fromBufferAttribute(pos, v).applyMatrix4(wm);
+                if (!um.containsPoint(p)) continue;
+                for (const [name, b] of boxen) {
+                    const drin = p.x >= b[0] - E && p.x <= b[1] + E && p.y >= b[2] - E && p.y <= b[3] + E && p.z >= b[4] - E && p.z <= b[5] + E;
+                    const kern = p.x > b[0] + E && p.x < b[1] - E && p.y > b[2] + E && p.y < b[3] - E && p.z > b[4] + E && p.z < b[5] - E;
+                    if (!drin || kern) continue;
+                    n.fromBufferAttribute(nor, v).applyMatrix3(nm).normalize();
+                    const lage = n.y > 0.7 ? "oben" : n.z < -0.7 ? "nord" : n.z > 0.7 ? "sued" : n.x < -0.7 ? "west" : n.x > 0.7 ? "ost" : null;
+                    if (!lage) continue;
+                    const vc = col ? [col.getX(v), col.getY(v), col.getZ(v)] : [1, 1, 1];
+                    const q = ((aus[name] ||= {})[lage] ||= [0, 0, 0, 0]);
+                    q[0] += vc[0] * mc.r * ic[0];
+                    q[1] += vc[1] * mc.g * ic[1];
+                    q[2] += vc[2] * mc.b * ic[2];
+                    q[3]++;
+                    break;
+                }
+            }
+        }
+    });
+    for (const e of Object.values(aus)) for (const [l, q] of Object.entries(e)) e[l] = [r3(q[0] / q[3]), r3(q[1] / q[3]), r3(q[2] / q[3]), q[3]];
+    // die Büschel der Nah-Wiese im Streifen ±0,5 m um die Strecke a → b, versetzt um `quer` m (die Liste, die die Wiese zeichnet)
+    const NW = r.constructor.NAH_WIESE.kachel;
+    const streifen = (quer) => {
+        const [a, b] = [plan.weg.a, plan.weg.b];
+        const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+        const [ux, uz] = [(b[0] - a[0]) / L, (b[1] - a[1]) / L];
+        const [qx, qz] = [-uz * quer, ux * quer];
+        const [x0, x1] = [Math.min(a[0], b[0]) + qx - 1, Math.max(a[0], b[0]) + qx + 1];
+        const [z0, z1] = [Math.min(a[1], b[1]) + qz - 1, Math.max(a[1], b[1]) + qz + 1];
+        let zahl = 0;
+        for (let tx = Math.floor(x0 / NW); tx <= Math.floor(x1 / NW); tx++)
+            for (let tz = Math.floor(z0 / NW); tz <= Math.floor(z1 / NW); tz++) {
+                const bu = r._nahWieseKachelBueschel(tx, tz);
+                if (!bu) return null;
+                for (const q of bu) {
+                    const [dx, dz] = [q.x - a[0] - qx, q.z - a[1] - qz];
+                    const t = dx * ux + dz * uz;
+                    if (t >= 0 && t <= L && Math.abs(dx * -uz + dz * ux) <= 0.5) zahl++;
+                }
+            }
+        return zahl;
+    };
+    return { albedo: aus, gras: plan.weg ? { weg: streifen(0), neben: streifen(4) } : null, hell: Object.fromEntries(Object.entries(aus).map(([k, e]) => [k, r3(Math.max(...Object.values(e).map(hell)))])) };
+}
+async function alterSpurProbe(r, T, o, G) {
+    const { s, A, takt, stehen, tage, trocken, r3 } = G;
+    const W = o.orte.wiese;
+    const H = (x, z) => r._voxelSurfaceY(x, z);
+    s.autoSeason = false;
+    r.setSeason("sommer");
+    const ebene = window.__weltOrt("eben", { mitte: [W.x - 60, W.z], r: 10, spanne: 1, rMax: 600 });
+    if (!ebene) return { fehler: "kein ebener Grund (10 m, Spanne ≤ 1 m) binnen 600 m an der Mess-Wiese" };
+    await stehen(ebene.x, ebene.z);
+    // DAS PRÜF-WERK: Teile [Stoff, Breite, Höhe, Tiefe, x, Mitte y, z] relativ zum Grund (ein Dach auf Pfosten kippt in der
+    // Welt binnen 2 s und verschwindet, w5-s2-g1 FUNDE — der Gegenlauf der Nässe läuft darum in der Zeit: 30 Tage trocken, dann 30 nass)
+    const teile = {
+        holzOffen: ["holz", 1, 1, 1, -3, 0.5, 0],
+        eisenOffen: ["eisen", 1, 1, 1, -1, 0.5, 0],
+        steinOffen: ["stein", 1.5, 1.5, 1.5, 1.5, 0.75, 0],
+    };
+    const dach = [];
+    const y0 = H(ebene.x, ebene.z);
+    // der Bauplan über den Weg des Spielers (`createBlueprint`: ein benannter, eigener Bauplan — der Stand trägt ihn)
+    const TYP = "alterspur_werk";
+    if (!s.blueprints[TYP]) r.createBlueprint(TYP, "Prüf-Werk der Verwitterung");
+    s.blueprints[TYP].parts = [...Object.values(teile), ...dach].map(([m, sx, sy, sz, px, py, pz]) => ({ shape: "box", material: m, size: { x: sx, y: sy, z: sz }, position: { x: px, y: py, z: pz } }));
+    const werk = r.spawnArchitecture(TYP, { x: ebene.x, y: y0, z: ebene.z }, { precise: true });
+    if (!werk) return { fehler: "das Prüf-Werk steht nicht (spawnArchitecture)" };
+    for (let i = 0; i < 30; i++) takt();
+    // die Würfel an ihren Hüllen (die Hülle je Teil, in der Reihe der Teile)
+    const hs = werk.blockerAABBs || [];
+    if (hs.length < Object.keys(teile).length) return { fehler: "das Werk trägt " + hs.length + " Hüllen für " + Object.keys(teile).length + " Würfel" };
+    const bloecke = Object.fromEntries(Object.keys(teile).map((k, i) => [k, [hs[i].minX, hs[i].maxX, hs[i].botY, hs[i].topY, hs[i].minZ, hs[i].maxZ].map(r3)]));
+    const [bx, bz] = [werk.position.x, werk.position.z];
+    const plan = { bloecke, werk: { typ: TYP, x: r3(bx), z: r3(bz) } };
+    const steht = () => (s.architectures || []).includes(werk) && Math.hypot(werk.position.x - bx, werk.position.z - bz) < 0.01;
+    trocken();
+    const vor = alterSpurMessen(r, T, G, plan);
+    trocken();
+    const zwei = alterSpurMessen(r, T, G, plan);
+    // 30 Tage trocken (das Wort des Spielers „sunny“), dann 30 Tage im Regen („rainy“), gemessen je trocken zu Mittag
+    r._setWeather("sunny", "human");
+    tage(30);
+    trocken();
+    await stehen(ebene.x, ebene.z);
+    const mitte = alterSpurMessen(r, T, G, plan);
+    const tagMitte = (s.worldMeta && s.worldMeta.tag) || 0;
+    r._setWeather("rainy", "human");
+    tage(30);
+    trocken();
+    await stehen(ebene.x, ebene.z);
+    const nach = alterSpurMessen(r, T, G, plan);
+    const tag = (s.worldMeta && s.worldMeta.tag) || 0;
+    if (!steht()) return { fehler: "das Prüf-Werk steht nach 60 Tagen nicht mehr an seinem Ort", tag, vor, zwei, mitte, nach, plan };
+    // DER WEG: die Richtung, in die w den Spieler trägt, an der Mess-Wiese
+    await stehen(W.x, W.z);
+    const pm = s.playerMesh;
+    const p0 = pm.position.clone();
+    s.yaw = 0;
+    s.keys.w = true;
+    takt(60);
+    s.keys.w = false;
+    const dw = [pm.position.x - p0.x, pm.position.z - p0.z];
+    const lw = Math.hypot(dw[0], dw[1]);
+    if (!(lw > 0.5)) return { fehler: "w trägt den Spieler nicht (" + r3(lw) + " m in 1 s)", tag, vor, zwei, mitte, nach, plan };
+    const a = [r3(W.x), r3(W.z)];
+    const b = [r3(W.x + (dw[0] / lw) * 8), r3(W.z + (dw[1] / lw) * 8)];
+    plan.weg = { a, b };
+    await stehen(a[0], a[1]);
+    for (let i = 0; i < 20 && alterSpurMessen(r, T, G, plan).gras.weg === null; i++) takt(30);
+    const grasVor = alterSpurMessen(r, T, G, plan).gras;
+    let gaenge = 0;
+    for (let k = 0; k < 100; k++) {
+        pm.position.set(a[0], H(a[0], a[1]) + A.PLAYER_FOOT_OFFSET, a[1]);
+        s.playerVel.setValue(0, 0, 0);
+        s.yaw = 0;
+        takt(2);
+        s.keys.w = true;
+        for (let i = 0; i < 1200 && Math.hypot(pm.position.x - a[0], pm.position.z - a[1]) < 8; i++) takt();
+        s.keys.w = false;
+        if (Math.hypot(pm.position.x - a[0], pm.position.z - a[1]) >= 7.9) gaenge++;
+    }
+    s.playerVel.setValue(0, 0, 0);
+    takt(30);
+    const grasNach = alterSpurMessen(r, T, G, plan).gras;
+    // DER STAND: gesichert, der Speicher still; das Notizbuch der Probe (nur Orte und Vorher-Werte) reist im localStorage
+    r.saveState();
+    await r._speicherStill();
+    const aus = { tag, tagMitte, gaenge, plan, vor, zwei, mitte, nach, gras: { vor: grasVor, nach: grasNach } };
+    localStorage.setItem("__alterSpur", JSON.stringify(aus));
+    return aus;
+}
+async function alterSpurReload(r, T, o, G) {
+    const { s, trocken, stehen } = G;
+    let alt = null;
+    try {
+        alt = JSON.parse(localStorage.getItem("__alterSpur"));
+    } catch (_e) {}
+    if (!alt || !alt.plan) return { fehler: "kein Notizbuch der Probe alterspur (sie lief nicht bis zum Stand)" };
+    const w = alt.plan.werk;
+    const da = (s.architectures || []).some((e) => e && e.type === w.typ && Math.hypot(e.position.x - w.x, e.position.z - w.z) < 0.05);
+    await stehen(w.x, w.z);
+    trocken();
+    const werk = alterSpurMessen(r, T, G, alt.plan);
+    let gras = null;
+    if (alt.plan.weg) {
+        await stehen(alt.plan.weg.a[0], alt.plan.weg.a[1]);
+        for (let i = 0; i < 20 && (gras = alterSpurMessen(r, T, G, alt.plan).gras).weg === null; i++) G.takt(30);
+    }
+    return { werkDa: da, tag: (s.worldMeta && s.worldMeta.tag) || 0, nach: werk, gras };
+}
+// DAS URTEIL (stoffe.K4#2) — je Teil die Zahl des Texts, nach 60 Tagen (30 trocken, 30 im Regen) UND nach dem Reload:
+//   Holz: die Sättigung (HSV im sRGB, Mittel der Lagen des Würfels) ≤ 0,7 × vorher (−30 %), vorher ≥ 0,05 (messbar)
+//   Eisen im Regen: Farbton 20–30° bei Sättigung ≥ 0,1 (ein Grau hat keinen Farbton); der Gegenlauf in der Zeit: in den 30
+//     trockenen Tagen ändert es sich höchstens halb so stark wie in den 30 nassen (größter Kanal) — ein Rost ohne Regen wäre ein
+//     Regler nach Spielzeit
+//   Moos: die Nordfläche des Steins ändert sich in den nassen Tagen ≥ 0,02 über dem Rauschen und GRÜNT (ΔG − (ΔR + ΔB)/2 ≥ 0,01); die
+//     Südfläche dort und die Nordfläche in den trockenen Tagen höchstens halb so stark (nass UND Nord)
+//   Weg: nach 100 Gängen die Büschel im Streifen ≤ 0,4 × vorher (−60 %), vorher ≥ 10; der Streifen daneben bleibt (0,85–1,15 ×)
+//   Reload: das Werk kehrt an seinen Ort wieder, Tag ≥ 60, und jedes Teil-Urteil hält an der Messung nach dem Reload
+function alterSpurUrteil(e, rl) {
+    if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE alterspur" };
+    if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler };
+    const lin = (c) => (c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055);
+    const hsv = (v) => {
+        const [r, g, b] = v.slice(0, 3).map((c) => lin(Math.max(0, Math.min(1, c))));
+        const mx = Math.max(r, g, b);
+        const d = mx - Math.min(r, g, b);
+        const h = d === 0 ? 0 : mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+        return { h: h * 60, s: mx ? d / mx : 0 };
+    };
+    const mittel = (b) => {
+        const w = Object.values(b || {});
+        const n = w.reduce((a, q) => a + q[3], 0);
+        return n ? [0, 1, 2].map((k) => w.reduce((a, q) => a + q[k] * q[3], 0) / n) : null;
+    };
+    const delta = (a, b) => (a && b ? Math.max(...[0, 1, 2].map((k) => Math.abs(b[k] - a[k]))) : null);
+    const f = (x, n = 2) => (x == null || !Number.isFinite(x) ? "—" : x.toFixed(n));
+    const teil = (nach, gras, wo) => {
+        const rot = [];
+        const z = [];
+        const V = e.vor.albedo;
+        const Z = e.zwei.albedo;
+        const M = (e.mitte && e.mitte.albedo) || {};
+        const N = nach.albedo;
+        // Holz
+        const hv = mittel(V.holzOffen);
+        const hn = mittel(N.holzOffen);
+        if (!hv || !hn) rot.push(wo + "kein Holz gelesen");
+        else {
+            const [sv, sn] = [hsv(hv).s, hsv(hn).s];
+            z.push("Holz S " + f(sv) + " → " + f(sn));
+            if (!(sv >= 0.05 && sn <= 0.7 * sv)) rot.push(wo + "Holz −" + f(100 * (1 - sn / sv), 0) + " % Sättigung < 30");
+        }
+        // Eisen
+        const ev = mittel(V.eisenOffen);
+        const em = mittel(M.eisenOffen);
+        const en = mittel(N.eisenOffen);
+        if (!ev || !em || !en) rot.push(wo + "kein Eisen gelesen");
+        else {
+            const he = hsv(en);
+            const [dTrocken, dNass] = [delta(ev, em), delta(em, en)];
+            z.push("Eisen im Regen " + f(he.h, 0) + "° S " + f(he.s) + " (Δ nass " + f(dNass, 3) + ", trocken " + f(dTrocken, 3) + ")");
+            if (!(he.s >= 0.1 && he.h >= 20 && he.h <= 30)) rot.push(wo + "kein Rost (Farbton " + f(he.h, 0) + "°, S " + f(he.s) + ")");
+            else if (!(dTrocken <= 0.5 * dNass)) rot.push(wo + "das Eisen rostet ohne Regen");
+        }
+        // Moos
+        const nv = V.steinOffen && V.steinOffen.nord;
+        const nm = M.steinOffen && M.steinOffen.nord;
+        const nn = N.steinOffen && N.steinOffen.nord;
+        if (!nv || !nm || !nn) rot.push(wo + "keine Nordfläche des Steins gelesen");
+        else {
+            const rausch = delta(nv, Z.steinOffen && Z.steinOffen.nord) || 0;
+            const d = delta(nm, nn);
+            const gruen = nn[1] - nm[1] - (nn[0] - nm[0] + nn[2] - nm[2]) / 2;
+            const sued = delta(M.steinOffen.sued, N.steinOffen.sued);
+            const trockenD = delta(nv, nm);
+            z.push("Stein nord Δ nass " + f(d, 3) + " (grünt " + f(gruen, 3) + "), süd Δ nass " + f(sued, 3) + ", nord Δ trocken " + f(trockenD, 3));
+            if (!(d >= 0.02 + rausch && gruen >= 0.01)) rot.push(wo + "kein Moos auf der nassen Nordfläche");
+            else if (!(sued != null && trockenD != null && sued <= 0.5 * d && trockenD <= 0.5 * d)) rot.push(wo + "das Moos folgt nicht Nord und Nässe");
+        }
+        // Weg
+        const gv = e.gras && e.gras.vor;
+        if (!gv || gv.weg == null || !gras || gras.weg == null) rot.push(wo + "kein Gras am Weg gezählt");
+        else {
+            z.push("Weg " + gv.weg + " → " + gras.weg + " Büschel, daneben " + gv.neben + " → " + gras.neben);
+            if (!(gv.weg >= 10 && gras.weg <= 0.4 * gv.weg)) rot.push(wo + "kein Pfad (" + gv.weg + " → " + gras.weg + ", Soll ≤ 40 %)");
+            if (!(gras.neben >= 0.85 * gv.neben && gras.neben <= 1.15 * gv.neben)) rot.push(wo + "der Streifen daneben ändert sich");
+        }
+        return { rot, z };
+    };
+    const a = teil(e.nach, e.gras && e.gras.nach, "");
+    const rot = [...a.rot];
+    if (!(e.tag >= 60)) rot.push("Tag " + e.tag + " < 60");
+    if (!(e.gaenge >= 100)) rot.push("nur " + e.gaenge + " von 100 Gängen");
+    let zr = "kein Reload gemessen";
+    if (!rl || rl.fehler) rot.push("Reload: " + ((rl && rl.fehler) || "keine Zeile WELTPROBE alterspur-reload"));
+    else {
+        if (!rl.werkDa) rot.push("Reload: das Werk kehrt nicht wieder");
+        const b = teil(rl.nach, rl.gras, "Reload: ");
+        rot.push(...b.rot);
+        zr = b.z.join(" · ");
+    }
+    return {
+        gruen: !rot.length,
+        zahl: "Tag " + e.tag + ", " + e.gaenge + " Gänge · " + a.z.join(" · ") + " · nach dem Reload: " + zr + (rot.length ? " · ROT " + rot.join(", ") : "") +
+            " (Soll Holz S −30 %, Rost 20–30°, Moos nass+nord, Weg −60 %, über den Reload)",
+    };
+}
+
+// DIE ROH-ZEILEN am main 5fba36ea (03.11., Cloud, headless, 173 s): das Werk steht und kehrt über den Reload wieder, aber nichts
+// verwittert (Holz S 0,72, Eisen 240°, Stein-Nordfläche Δ 0), und 100 Gänge lassen 13 von 13 Büscheln stehen
+const ALTER_SPUR_MAIN = {"tag":60,"tagMitte":30,"gaenge":100,"plan":{"bloecke":{"holzOffen":[-378.65,-377.65,34.217,35.217,-1022.511,-1021.511],"eisenOffen":[-376.65,-375.65,34.217,35.217,-1022.511,-1021.511],"steinOffen":[-374.4,-372.9,34.217,35.717,-1022.761,-1021.261]},"werk":{"typ":"alterspur_werk","x":-375.15,"z":-1022.011},"weg":{"a":[-280.4,-1045.6],"b":[-280.4,-1037.6]}},"vor":{"albedo":{"holzOffen":{"ost":[0.063,0.025,0.007,4],"west":[0.063,0.025,0.007,4],"oben":[0.063,0.025,0.007,4],"sued":[0.063,0.025,0.007,4],"nord":[0.063,0.025,0.007,4]},"eisenOffen":{"ost":[0.038,0.038,0.047,4],"west":[0.038,0.038,0.047,4],"oben":[0.038,0.038,0.047,4],"sued":[0.038,0.038,0.047,4],"nord":[0.038,0.038,0.047,4]},"steinOffen":{"ost":[0.109,0.109,0.109,4],"west":[0.109,0.109,0.109,4],"oben":[0.109,0.109,0.109,4],"sued":[0.109,0.109,0.109,4],"nord":[0.109,0.109,0.109,4]}},"gras":null},"zwei":{"albedo":{"holzOffen":{"ost":[0.063,0.025,0.007,4],"west":[0.063,0.025,0.007,4],"oben":[0.063,0.025,0.007,4],"sued":[0.063,0.025,0.007,4],"nord":[0.063,0.025,0.007,4]},"eisenOffen":{"ost":[0.038,0.038,0.047,4],"west":[0.038,0.038,0.047,4],"oben":[0.038,0.038,0.047,4],"sued":[0.038,0.038,0.047,4],"nord":[0.038,0.038,0.047,4]},"steinOffen":{"ost":[0.109,0.109,0.109,4],"west":[0.109,0.109,0.109,4],"oben":[0.109,0.109,0.109,4],"sued":[0.109,0.109,0.109,4],"nord":[0.109,0.109,0.109,4]}},"gras":null},"mitte":{"albedo":{"holzOffen":{"ost":[0.063,0.025,0.007,4],"west":[0.063,0.025,0.007,4],"oben":[0.063,0.025,0.007,4],"sued":[0.063,0.025,0.007,4],"nord":[0.063,0.025,0.007,4]},"eisenOffen":{"ost":[0.038,0.038,0.047,4],"west":[0.038,0.038,0.047,4],"oben":[0.038,0.038,0.047,4],"sued":[0.038,0.038,0.047,4],"nord":[0.038,0.038,0.047,4]},"steinOffen":{"ost":[0.109,0.109,0.109,4],"west":[0.109,0.109,0.109,4],"oben":[0.109,0.109,0.109,4],"sued":[0.109,0.109,0.109,4],"nord":[0.109,0.109,0.109,4]}},"gras":null},"nach":{"albedo":{"holzOffen":{"ost":[0.063,0.025,0.007,4],"west":[0.063,0.025,0.007,4],"oben":[0.063,0.025,0.007,4],"sued":[0.063,0.025,0.007,4],"nord":[0.063,0.025,0.007,4]},"eisenOffen":{"ost":[0.038,0.038,0.047,4],"west":[0.038,0.038,0.047,4],"oben":[0.038,0.038,0.047,4],"sued":[0.038,0.038,0.047,4],"nord":[0.038,0.038,0.047,4]},"steinOffen":{"ost":[0.109,0.109,0.109,4],"west":[0.109,0.109,0.109,4],"oben":[0.109,0.109,0.109,4],"sued":[0.109,0.109,0.109,4],"nord":[0.109,0.109,0.109,4]}},"gras":null},"gras":{"vor":{"weg":13,"neben":17},"nach":{"weg":13,"neben":17}}};
+const ALTER_SPUR_RELOAD_MAIN = {"werkDa":true,"tag":60,"nach":{"albedo":{"holzOffen":{"ost":[0.063,0.025,0.007,4],"west":[0.063,0.025,0.007,4],"oben":[0.063,0.025,0.007,4],"sued":[0.063,0.025,0.007,4],"nord":[0.063,0.025,0.007,4]},"eisenOffen":{"ost":[0.038,0.038,0.047,4],"west":[0.038,0.038,0.047,4],"oben":[0.038,0.038,0.047,4],"sued":[0.038,0.038,0.047,4],"nord":[0.038,0.038,0.047,4]},"steinOffen":{"ost":[0.109,0.109,0.109,4],"west":[0.109,0.109,0.109,4],"oben":[0.109,0.109,0.109,4],"sued":[0.109,0.109,0.109,4],"nord":[0.109,0.109,0.109,4]}},"gras":{"weg":13,"neben":17}},"gras":{"weg":13,"neben":17}};
+// die Roh-Ausgabe beider Zeilen nach der Mutation f(a, b)
+const alterSpurRoh = (f) => {
+    const [a, b] = [JSON.parse(JSON.stringify(ALTER_SPUR_MAIN)), JSON.parse(JSON.stringify(ALTER_SPUR_RELOAD_MAIN))];
+    f(a, b);
+    return "WELTPROBE alterspur " + JSON.stringify(a) + "\nWELTPROBE alterspur-reload " + JSON.stringify(b) + "\n";
+};
+// der GRÜNE Mutant: Holz vergraut (linear 0,06/0,045/0,035), Eisen rostet im Regen (sRGB 0,5/0,3/0,18: 22,5°), die nasse Nordfläche
+// des Steins grünt, der Weg trägt 4 von 13 Büscheln — nach 60 Tagen und nach dem Reload; die trockenen Tage ändern nichts
+const alterSpurGruen = (a, b) => {
+    for (const n of [a.nach.albedo, b.nach.albedo]) {
+        for (const l of Object.keys(n.holzOffen)) n.holzOffen[l] = [0.06, 0.045, 0.035, n.holzOffen[l][3]];
+        for (const l of Object.keys(n.eisenOffen)) n.eisenOffen[l] = [0.214, 0.073, 0.027, n.eisenOffen[l][3]];
+        n.steinOffen.nord = [0.085, 0.115, 0.07, n.steinOffen.nord[3]];
+    }
+    a.gras.nach.weg = 4;
+    b.gras.weg = 4;
+};
 // wetter.K4 — DIE SCHNEE-DECKE MIT TIEFE: die Saison als Wort des Spielers (winter), ein Spielzeit-Sprung von 10 Tagen, dann der
 // nächste Ort über der Schneegrenze der Saison (Ringe um die Mess-Wiese bis 3 km: das Schnee-Gesetz des Kerns an der Makro-Höhe
 // ≥ 0,95, Land); dort die Deckung (je 2 m im Kreis von 20 m der gezeichnete Boden `_bodenSichtAt` und sein Schnee — dasselbe
@@ -625,6 +955,7 @@ const weltBefehl = (proben, helfer = []) => [
 ];
 const weltZeile = (j, lauf, name) => (j && j.proben && j.proben[name]) || jsonZeile(lauf.stdout, new RegExp("^WELTPROBE " + name + " "));
 const WELT_G1 = weltBefehl([["seil", seilProbe], ["stoss", stossProbe], ["feld", feldProbe], ["alter", alterProbe], ["schnee", schneeProbe]]);
+const ALTER_SPUR = weltBefehl([["alterspur", alterSpurProbe], ["alterspur-reload", alterSpurReload, { neuladen: true }]], [alterSpurMessen]);
 const WELT_PFAD = ["stamm/dirigent-*.js", "stamm/daten.js", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs", "spec/profiband/haushalt.json"];
 
 // DIE ROH-AUSGABE der Welt-Probe am main 25ac4c0c (01.11., Cloud, headless): die Proben jeder Station urteilen sie und ihre Mutanten
@@ -2508,6 +2839,29 @@ module.exports = [
         pfad: ["stamm/stoff-*.js", "stamm/bau-*.js", "stamm/gelaende-*.js", "stamm/siedlung-*.js", "stamm/bild-himmel.js", "fachwerk-core.js", "gelaende-core.js", ...WELT_PFAD],
         quelle: "1 = nach einem Spielzeit-Sprung von 30 Tagen ändert sich ≥ 1 Stoff messbar im Bild, abhängig von Nässe oder Lage",
     },
+    // stoffe.K4#2 — die Verwitterung am Stoff (Holz, Rost, Moos) und der Trampelpfad, über den Reload (w5-s2-g1): die Proben
+    // `alterspur` und `alterspur-reload` (oben, alterSpurProbe) — EIN Lauf, die Seite dazwischen neu geladen
+    {
+        kriterium: "stoffe.K4",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ALTER_SPUR,
+        gpu: false,
+        zeit: false,
+        minuten: 15,
+        urteil: (j, lauf) => alterSpurUrteil(weltZeile(j, lauf, "alterspur"), weltZeile(j, lauf, "alterspur-reload")),
+        proben: [
+            { name: "die Messung am main 5fba36ea", stdout: alterSpurRoh(() => {}), gruen: false },
+            { name: "Holz vergraut, Eisen rostet im Regen, die nasse Nordfläche bemoost, der Weg wird Pfad — über den Reload", stdout: alterSpurRoh(alterSpurGruen), gruen: true },
+            { name: "ein Regler nach Spielzeit (die trockenen Tage altern wie die nassen)", stdout: alterSpurRoh((a, b) => (alterSpurGruen(a, b), (a.mitte = JSON.parse(JSON.stringify(a.nach))))), gruen: false },
+            { name: "Moos auf allen Seiten (die Südfläche grünt mit)", stdout: alterSpurRoh((a, b) => (alterSpurGruen(a, b), (a.nach.albedo.steinOffen.sued = a.nach.albedo.steinOffen.nord.slice()))), gruen: false },
+            { name: "Rost als Grau (kein Farbton)", stdout: alterSpurRoh((a, b) => (alterSpurGruen(a, b), [a, b].forEach((x) => Object.keys(x.nach.albedo.eisenOffen).forEach((l) => (x.nach.albedo.eisenOffen[l] = [0.02, 0.02, 0.02, 4]))))), gruen: false },
+            { name: "der Pfad wächst über den Reload zu", stdout: alterSpurRoh((a, b) => (alterSpurGruen(a, b), (b.gras.weg = 13))), gruen: false },
+            { name: "das Werk kehrt nicht wieder", stdout: alterSpurRoh((a, b) => (alterSpurGruen(a, b), (b.werkDa = false))), gruen: false },
+        ],
+        pfad: ["stamm/stoff-*.js", "stamm/bau-*.js", "stamm/gelaende-*.js", "stamm/siedlung-*.js", "stamm/vegetation-*.js", "stamm/koerper-*.js", "stamm/speicher-*.js", "stamm/dienst.js", "stamm/bild-himmel.js", "fachwerk-core.js", "gelaende-core.js", "phyto-core.js", ...WELT_PFAD],
+        quelle: "2 = Holz-Sättigung −30 %, Eisen im Regen Farbton 20–30° (Rost), Moos auf nassen Nordflächen, ein 100× gegangener Weg wird Pfad (Gras-Dichte −60 %), über den Reload",
+    },
     // wetter.K4 — an main 25ac4c0c ROT: der Winter (Tag 40, die Schneegrenze −160 m) deckt die Mess-Wiese ganz (Deckung 1 aus 317 Proben),
     // der Fuß steht 0,01 m ÜBER dem Boden — der Leib steht auf dem Gesetz, die Decke trägt keine Tiefe; im Sommer dort kein Schnee.
     {
@@ -2535,8 +2889,10 @@ module.exports = [
 module.exports.fehlt = [
     { kriterium: "gelaende.K3", staffel: 2, befehl: null, grund: "Werkzeug und Gesetz fehlen für die Fließ-Anisotropie: keine Linse misst die Normalen-Anisotropie längs/quer zum Lauf im Ausgabe-Bild, und die Strömung der Welt ist `WASSER_GESETZ.wellen.adv × centerness` (`_waterFlowAt`, stamm/wasser-hydro.js) — kein Gefälle, kein Einzugsgebiet, aus dem sie wüchse (25.10. gelesen an d43cb61c). Die 12 Posen allein (Ego/Third × Mittag/Nacht/Regen über `bild --uhr --wetter` wie Staffel 1) wären eine halbe Station" },
     { kriterium: "wetter.K2", staffel: 2, befehl: null, grund: "Werkzeug und Welt fehlen: werkbank licht --naesse misst nur Ego an Wiese und Dorf — keine Trocken-Kurve, kein Third; die Welt trägt keine Pfütze (stamm/ kennt kein Pfützen-Gesetz, 25.10. an d43cb61c), die Mulden-Korrelation r ≥ 0,5 hätte nichts zu messen" },
-    { kriterium: "stoffe.K1", staffel: 2, befehl: null, grund: "nicht gebaut: 7/7 verlangt je Stoff auch Albedo → Luma (das Ausgabe-Bild der echten GPU; headless zählt sie nie), T_zünd für Stein, Eisen, Erde und Wasser (sie brennen nicht), T_schmelz für jeden Stoff außer Wasser (kein Leser einer Phase: Esse, Lava) und μ des Wassers (eine Flüssigkeit trägt keinen Gleitenden); am Zweig stoffe-k1-tafel 4–5 von 7 je Stoff" },
-    { kriterium: "physik.K3", staffel: 2, befehl: null, grund: "nicht gebaut (w3t-koerper baute Staffel 1, den EINEN Löser `_freiSchritt`): der Lastpfad bleibt ein Urteil (`stamm/bau-buch.js` `_loadPath`, das Werk stürzt als Pendel um eine Kante, `_werkSturzSchritt`) — kein Teil eines Werks wird ein freier Körper, also kein Einsturz; Trümmer leben nicht über den Reload (der Stand trägt Lage und Gier, nie die Drehung des Körpers); 100 freie Körper wach kosten 9 ms je Sim-Schritt (Node, flacher Boden; Soll 1 ms an der GTX-CPU)" },
+    { kriterium: "stoffe.K1", staffel: 2, befehl: null, grund: "GPU-Station wartet auf die Prüfbühne: 7/7 verlangt je Stoff Albedo → Luma im Ausgabe-Bild (die Karte; headless zählt sie nie), die Fahrt der Karten steht bei Radeon 1 783 s, GTX 1 784 s von 1 800 s (03.11., w5-s2-g1) — 16 s frei, keine Probe dieser Staffel passt. Dazu nicht gebaut: 7/7 verlangt je Stoff auch Albedo → Luma (das Ausgabe-Bild der echten GPU; headless zählt sie nie), T_zünd für Stein, Eisen, Erde und Wasser (sie brennen nicht), T_schmelz für jeden Stoff außer Wasser (kein Leser einer Phase: Esse, Lava) und μ des Wassers (eine Flüssigkeit trägt keinen Gleitenden); am Zweig stoffe-k1-tafel 4–5 von 7 je Stoff" },
+    { kriterium: "wetter.K3", staffel: 2, befehl: null, grund: "GPU-Station wartet auf die Prüfbühne: „Bild am Bach auf beiden Geräten“ verlangt das Ausgabe-Bild beider Karten, die Fahrt der Karten steht bei Radeon 1 783 s, GTX 1 784 s von 1 800 s (03.11., w5-s2-g1) — 16 s frei, keine Probe dieser Staffel passt. Die Welt dazu (03.11. gelesen an 5fba36ea): der Regen ist ein linearer Speicher im Abfluss (gelaende-core `regenAbfluss`) — kein Lag aus dem Einzugsgebiet A gemessen, keine Volumen-Bilanz, keine Dürre-Probe über 14 Spieltage" },
+    { kriterium: "wetter.K4", staffel: 2, befehl: null, grund: "GPU-Station wartet auf die Prüfbühne: „Ego/Third, beide Geräte“ verlangt das Ausgabe-Bild beider Karten in beiden Sichten, die Fahrt der Karten steht bei Radeon 1 783 s, GTX 1 784 s von 1 800 s (03.11., w5-s2-g1) — 16 s frei, keine Probe dieser Staffel passt. Die Welt dazu (03.11. an 5fba36ea, Staffel 1 ROT): der Fuß steht 0,01 m ÜBER der Decke — keine Tiefe, also keine Spur, die bleiben könnte" },
+    { kriterium: "physik.K3", staffel: 2, befehl: null, grund: "GPU-Station wartet auf die Prüfbühne: „100 freie Körper ≤ 1 ms CPU an der GTX-CPU“ ist eine Zeit am Gerät, die Fahrt der Karten steht bei Radeon 1 783 s, GTX 1 784 s von 1 800 s (03.11., w5-s2-g1) — 16 s frei, keine Probe dieser Staffel passt. Dazu nicht gebaut (w3t-koerper baute Staffel 1, den EINEN Löser `_freiSchritt`): der Lastpfad bleibt ein Urteil (`stamm/bau-buch.js` `_loadPath`, das Werk stürzt als Pendel um eine Kante, `_werkSturzSchritt`) — kein Teil eines Werks wird ein freier Körper, also kein Einsturz; Trümmer leben nicht über den Reload (der Stand trägt Lage und Gier, nie die Drehung des Körpers); 100 freie Körper wach kosten 9 ms je Sim-Schritt (Node, flacher Boden; Soll 1 ms an der GTX-CPU)" },
 ];
 // DIE WELT-PROBE für die Gruppe II (stationen/g2.js: luftwasser.K3, luftwasser.K4): der Lauf, der Grund, der Befehl und der Leser der Zeile
 module.exports.weltProbe = { lauf: weltProbeLauf, grund: weltGrund, befehl: weltBefehl, zeile: weltZeile };

@@ -1712,6 +1712,352 @@ const PB_PROBE_GLAETTE = { sek: 29, stellung: "anfang", befehl: pbBefehl("glaett
 const PB_PROBE_GANG = { sek: 64, mutiert: true, ausnahme: PB_AUSNAHME_GANG, befehl: pbBefehl("gang") };
 const PB_PROBE_DAUER = { sek: 23, stellung: "ende", befehl: pbBefehl("dauer") };
 
+// ───────── klang.K3 Staffel 2 — DER RAUM AUS DER WELT (w5-s2-g1, Welt-Probe der Gruppe I: EIN Boot am Null-Renderer) ─────────
+// Gemessen wird, was das OHR hört, über den Weg des Spiels: je Messung ein Stereo-OfflineAudioContext, auf ihm der EINE Welt-Bus
+// des Spiels (`_umweltKlangBauen`: Bus, Graph, Klang-Werkstatt) — der Kontext und die Klang-Welt der Symphonie stehen für die
+// Messung auf ihm. Dann der Takt der Klang-Welt selbst: der Hör-Ring voll (`_umweltRingProbe`), drei Teile des EINEN Misch-Takts
+// (`_umweltKlangTick`: die Lage am Ohr, die Mischung, der Graph) — zwischen Mischung und Graph die Stimmen der Umwelt stumm (ihr
+// db −∞); was der Takt am Graph sonst anwendet, bleibt. Die Quelle ist ein Leib der Welt: sein Ruf (`_tierRuf`) geht an die Werkstatt, die ihn rechnet,
+// und gespielt wird ihre Antwort (`tierRufSpielen` am Bus, stamm/klang.js) — derselbe Weg wie jeder Ruf im Spiel; was die Welt
+// am Ruf trägt (Abstand, Richtung, Verdeckung, Raum), hört das Ohr. Der Hall eines Orts: derselbe Ruf als Impuls (die Werkstatt
+// schweigt, `tierRufSpielen` spielt einen Abtastwert über den Weg des Rufs), die Abkling-Kurve nach SCHROEDER (die rückwärts
+// integrierte Energie), RT60 = 3 × (t₋₂₅ − t₋₅) — ohne Hall fällt sie im ersten Abtastwert: RT60 0.
+//   VERDECKUNG: derselbe Ruf im selben Abstand, einmal frei, einmal hinter einem Haus (der Bauplan haus_alemannisch auf ebenem
+//   Grund nahe der Mess-Wiese, die Vereinigung seiner Hüllen ≥ 4 × 4 m, ≥ 2,5 m hoch; Ohr und Quelle 3 m vor seinen Wänden auf
+//   derselben Achse, die Linie durch ihn; frei: dieselbe Strecke vom Ohr vom Haus weg, die Linie durch keinen Bau) und
+//   hinter einem Hang (um die Mess-Wiese das erste Ohr, an dem in 40 m eine Richtung den Hang ≥ 3 m über die Sichtlinie Ohr 1,7 m →
+//   Quelle 0,8 m hebt und eine andere frei ist, ≥ 0,5 m darunter). Gemessen Pegel (dB, L + R) und Spektral-Schwerpunkt (Hz).
+//   RT60 an vier Orten: Feld (die Mess-Wiese), Wald (±240 m um sie die dichteste Kronen-Karte auf trockenem Land, `_kronenStreuAt`
+//   wie der Zensus — ≥ 0,5), Gasse (zwischen dem Haus und einem zweiten desselben Bauplans 4 m daneben),
+//   Höhle (das Orts-Gesetz `__weltOrt("hoehle")`: Fels ≥ 3 m über Luft ≥ 3 m, binnen 3 km um die Mitte der Welt); die Quelle 1,5 m
+//   neben dem Ohr.
+//   DIE MUTATION am Feld: Bau-Dichte 0 · 2 · 4 · 8 Steinblöcke (4 m, Bauplan des Spiels, `spawnArchitecture`) im Kreis von 8 m.
+async function klangRaumProbe(r, T, o, G) {
+    const { s, A, takt, stehen, r3 } = G;
+    const K = window.__klangCore;
+    const UM = A._umweltGesetz();
+    if (!r.initSymphony()) return { fehler: "die Symphonie startet nicht (kein Web Audio)" };
+    const sym = s.symphony;
+    const pm = s.playerMesh;
+    const SR = 48000;
+    const H = (x, z) => r.getTerrainHeightAt(x, z);
+    const warte = (ms) => new Promise((ok) => setTimeout(ok, ms));
+    // die Quelle: ein Leib der Welt (sonst ein Wolf, wie die Stoff-Tafel ihn setzt)
+    let tier = (s.creatures || []).find((c) => c && c.position && !(c.userData && c.userData.dying));
+    let gesetzt = null;
+    if (!tier) {
+        s.maxCreatures = (s.creatures || []).length + 1;
+        const W = o.orte.wiese;
+        tier = gesetzt = r.spawnCreatureAt(W.x, H(W.x, W.z), W.z, "calm", "wolf", { precise: true, bodySize: 1 });
+    }
+    if (!tier) return { fehler: "kein Leib der Welt, der rufen könnte" };
+    const t0 = tier.position.clone();
+    const alt = { ctx: sym.ctx, umwelt: sym.umwelt };
+    // der Leib lebt in der Welt, die um den Spieler streamt: fehlt er am Ort (fortgestreamt), ruft ein Wolf an der Quelle
+    const leib = (x, y, z) => {
+        if ((s.creatures || []).includes(tier)) return tier;
+        s.maxCreatures = Math.max(s.maxCreatures || 0, (s.creatures || []).length + 1);
+        const w = r.spawnCreatureAt(x, y, z, "calm", "wolf", { precise: true, bodySize: 1 });
+        if (!w) throw new Error("kein Leib an der Quelle (spawnCreatureAt)");
+        if (gesetzt && (s.creatures || []).includes(gesetzt)) r.removeCreature(gesetzt);
+        return (tier = gesetzt = w);
+    };
+    const hoeren = async (ohr, quelle, art) => {
+        leib(quelle[0], quelle[2] != null ? quelle[2] : H(quelle[0], quelle[1]), quelle[1]);
+        pm.position.set(ohr[0], (ohr[2] != null ? ohr[2] : H(ohr[0], ohr[1])) + A.PLAYER_FOOT_OFFSET, ohr[1]);
+        tier.position.set(quelle[0], quelle[2] != null ? quelle[2] : H(quelle[0], quelle[1]), quelle[1]);
+        const ctx = new OfflineAudioContext(2, SR * (art === "ruf" ? 4 : 6), SR);
+        const um = r._umweltKlangBauen(ctx, ctx.destination, UM);
+        try {
+            sym.ctx = ctx;
+            sym.umwelt = um;
+            r._umweltRingProbe(um, pm.position.x, pm.position.z, um.ring.punkte.length);
+            r._umweltKlangTick(); // Teil 0 des Misch-Takts: die Lage am Ohr
+            r._umweltKlangTick(); // Teil 1: die Mischung
+            for (const k in UM.UMWELT.stimmen) if (um.mix && um.mix[k]) um.mix[k].db = -Infinity;
+            r._umweltKlangTick(); // Teil 2: der Graph — und was der Takt dort sonst anwendet
+            if (um.folge !== 3) throw new Error("der Misch-Takt lief nicht durch Lage, Mischung und Graph (folge " + um.folge + ")");
+            if (art === "ruf") {
+                const n0 = um.rufeGespielt;
+                if (!r._tierRuf(tier, "ruhe")) throw new Error("der Ruf bleibt unter der Hörschwelle");
+                for (let i = 0; i < 600 && um.rufeGespielt === n0; i++) await warte(10);
+                if (um.rufeGespielt === n0) throw new Error("die Klang-Werkstatt spielte den Ruf nie");
+            } else {
+                um.werkstatt.terminate();
+                const ruf = r._tierRuf(tier, "ruhe");
+                if (!ruf) throw new Error("der Ruf bleibt unter der Hörschwelle");
+                const imp = new Float32Array(SR);
+                imp[0] = 1;
+                if (!um.kern.tierRufSpielen(ctx, um.bus, ruf, { sr: SR, daten: imp })) throw new Error("tierRufSpielen spielte nichts");
+            }
+            const buf = await ctx.startRendering();
+            const [L, R] = [buf.getChannelData(0), buf.getChannelData(1)];
+            const e = new Float64Array(L.length);
+            let sum = 0;
+            for (let i = 0; i < L.length; i++) sum += e[i] = L[i] * L[i] + R[i] * R[i];
+            if (!(sum > 0)) throw new Error("das Ohr hört nichts");
+            if (art === "ruf") {
+                const mono = new Float32Array(L.length);
+                for (let i = 0; i < L.length; i++) mono[i] = (L[i] + R[i]) / 2;
+                return { db: r3(10 * Math.log10(sum / L.length)), hz: Math.round(K.schwerpunkt(mono, SR)) };
+            }
+            // SCHROEDER: die rückwärts integrierte Energie in dB; −5 und −25 dB (läuft der Schwanz über den Puffer: die Steigung bis
+            // zu seinem Ende)
+            let rest = sum;
+            let t5 = null;
+            let t25 = null;
+            for (let i = 0; i < e.length && t25 === null; i++) {
+                const db = 10 * Math.log10(Math.max(rest, 1e-300) / sum);
+                if (t5 === null && db <= -5) t5 = i;
+                if (db <= -25) t25 = i;
+                rest -= e[i];
+            }
+            if (t25 === null) {
+                const dbEnde = 10 * Math.log10(Math.max(e[e.length - 1], 1e-300) / sum);
+                return { rt60: r3(t5 === null ? Infinity : (60 * (e.length - t5)) / SR / Math.max(1e-6, -dbEnde - 5)) };
+            }
+            return { rt60: r3((3 * (t25 - t5)) / SR) };
+        } finally {
+            sym.ctx = alt.ctx;
+            sym.umwelt = alt.umwelt;
+            try {
+                um.graph.stopAlle();
+                um.werkstatt && um.werkstatt.terminate();
+            } catch (_e) {}
+        }
+    };
+    const teil = async (fn) => {
+        try {
+            return await fn();
+        } catch (e) {
+            return { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 200) };
+        }
+    };
+    // ein Bau: die Vereinigung seiner Hüllen (minX…maxZ, top) und die Hüllen selbst (minX…maxZ, botY…topY)
+    const bauVon = (e) => {
+        const hs = (e && e.blockerAABBs ? e.blockerAABBs : []).filter((b) => b && Number.isFinite(b.minX));
+        if (!hs.length) return null;
+        const u = { huellen: hs, minX: Math.min(...hs.map((b) => b.minX)), maxX: Math.max(...hs.map((b) => b.maxX)), minZ: Math.min(...hs.map((b) => b.minZ)), maxZ: Math.max(...hs.map((b) => b.maxZ)), top: Math.max(...hs.map((b) => b.topY)) };
+        u.cx = (u.minX + u.maxX) / 2;
+        u.cz = (u.minZ + u.maxZ) / 2;
+        return u;
+    };
+    const inBau = (B, x, z, y) => B.some((b) => x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ && y >= b.botY && y <= b.topY);
+    const linieFrei = (B, a, b) => {
+        for (let k = 1; k < 40; k++) {
+            const t = k / 40;
+            const x = a[0] + (b[0] - a[0]) * t;
+            const z = a[1] + (b[1] - a[1]) * t;
+            if (inBau(B, x, z, H(x, z) + 1.2)) return false;
+        }
+        return true;
+    };
+    const W = o.orte.wiese;
+    const aus = { orte: {} };
+    const HAUS = "haus_alemannisch";
+    const gebaut = [];
+    try {
+        // ── das Haus und die Gasse: Häuser des Bauplans der Welt (`haus_alemannisch`, `spawnArchitecture` wie jeder Bau) auf ebenem
+        // Grund nahe der Mess-Wiese — das Dorf des Haushalts wächst in der Probe nicht (0 Häuser nach 9 000 Takten, w5-s2-g1)
+        const ebene = window.__weltOrt("eben", { mitte: [W.x + 60, W.z], r: 16, spanne: 2, rMax: 600 });
+        const uA = await (async () => {
+            if (!ebene) return null;
+            await stehen(ebene.x, ebene.z);
+            const e = r.spawnArchitecture(HAUS, { x: ebene.x, y: H(ebene.x, ebene.z), z: ebene.z }, { silent: true, precise: true });
+            if (e) gebaut.push(e);
+            return e && bauVon(e);
+        })();
+        aus.haus = await teil(async () => {
+            if (!ebene) throw new Error("kein ebener Grund (16 m, Spanne ≤ 2 m) binnen 600 m an der Mess-Wiese");
+            if (!uA) throw new Error("der Bauplan " + HAUS + " steht nicht (spawnArchitecture)");
+            if (!(uA.top - H(uA.cx, uA.cz) >= 2.5 && uA.maxX - uA.minX >= 4 && uA.maxZ - uA.minZ >= 4)) throw new Error("das Haus ist kein Haus (" + [uA.maxX - uA.minX, uA.maxZ - uA.minZ, uA.top - H(uA.cx, uA.cz)].map(r3).join(" × ") + " m)");
+            const B = uA.huellen;
+            for (const [ux, uz, h] of [[-1, 0, (uA.maxX - uA.minX) / 2], [0, 1, (uA.maxZ - uA.minZ) / 2], [0, -1, (uA.maxZ - uA.minZ) / 2], [1, 0, (uA.maxX - uA.minX) / 2]]) {
+                const ohr = [uA.cx + ux * (h + 3), uA.cz + uz * (h + 3)];
+                const hinter = [uA.cx - ux * (h + 3), uA.cz - uz * (h + 3)];
+                const d = 2 * (h + 3);
+                const frei = [ohr[0] + ux * d, ohr[1] + uz * d];
+                if (linieFrei(B, ohr, hinter) || !linieFrei(B, ohr, frei) || !r._landAt(frei[0], frei[1], 1) || !r._landAt(hinter[0], hinter[1], 1)) continue;
+                return { d: r3(d), ohr: ohr.map(r3), haus: [r3(uA.maxX - uA.minX), r3(uA.maxZ - uA.minZ), r3(uA.top - H(uA.cx, uA.cz))], frei: await hoeren(ohr, frei, "ruf"), hinter: await hoeren(ohr, hinter, "ruf") };
+            }
+            throw new Error("am Haus keine Achse, deren Linie durch es geht und deren Gegenrichtung frei ist");
+        });
+        // die Gasse: ein zweites Haus 4 m neben dem ersten (längs x), das Ohr in ihrer Mitte
+        if (uA) {
+            const bx = uA.maxX + 4 + (uA.cx - uA.minX);
+            const hausB = r.spawnArchitecture(HAUS, { x: bx, y: H(bx, uA.cz), z: uA.cz }, { silent: true, precise: true });
+            if (hausB) gebaut.push(hausB);
+            const uB = hausB && bauVon(hausB);
+            if (uB && uB.minX - uA.maxX >= 2 && uB.minX - uA.maxX <= 8) aus.orte.gasse = { x: r3((uA.maxX + uB.minX) / 2), z: r3(uA.cz), breite: r3(uB.minX - uA.maxX) };
+            else aus.gasseFehler = "das zweite Haus steht nicht 2–8 m neben dem ersten";
+        } else aus.gasseFehler = "kein Haus, keine Gasse";
+        // ── der Wald: die dichteste Kronen-Karte um die Mess-Wiese (der Leser der Kronen am Ohr, wie der Zensus)
+        await stehen(W.x, W.z);
+        aus.orte.feld = { x: W.x, z: W.z };
+        let wald = null;
+        for (let gx = -240; gx <= 240; gx += 12)
+            for (let gz = -240; gz <= 240; gz += 12) {
+                const x = W.x + gx;
+                const z = W.z + gz;
+                if (!r._landAt(x, z, 1) || r._nassAt(x, z)) continue;
+                const deck = r._kronenStreuAt(x, z);
+                if (!wald || deck > wald.deckung) wald = { x, z, deckung: r3(deck) };
+            }
+        aus.orte.wald = wald && wald.deckung >= 0.5 ? wald : null;
+        if (!aus.orte.wald) aus.waldFehler = "keine Kronen-Deckung ≥ 0,5 binnen 240 m (beste " + (wald && wald.deckung) + ")";
+        // ── der Hang: ein Ohr, an dem eine Richtung hinter dem Hang liegt und eine frei
+        aus.hang = await teil(async () => {
+            const linie = (ex, ez, ux, uz, d) => {
+                const ye = H(ex, ez) + 1.7;
+                const ys = H(ex + ux * d, ez + uz * d) + 0.8;
+                let m = -Infinity;
+                for (let k = 1; k < 40; k++) {
+                    const t = k / 40;
+                    m = Math.max(m, H(ex + ux * d * t, ez + uz * d * t) - (ye + (ys - ye) * t));
+                }
+                return m;
+            };
+            for (let ring = 0; ring <= 1200; ring += 60)
+                for (let k = 0; k < (ring ? 16 : 1); k++) {
+                    const ex = W.x + ring * Math.cos((k / 16) * 2 * Math.PI);
+                    const ez = W.z + ring * Math.sin((k / 16) * 2 * Math.PI);
+                    if (!r._landAt(ex, ez, 1) || r._nassAt(ex, ez)) continue;
+                    let verdeckt = null;
+                    let frei = null;
+                    for (let j = 0; j < 16; j++) {
+                        const ux = Math.cos((j / 16) * 2 * Math.PI);
+                        const uz = Math.sin((j / 16) * 2 * Math.PI);
+                        const sx = ex + ux * 40;
+                        const sz = ez + uz * 40;
+                        if (!r._landAt(sx, sz, 1) || r._nassAt(sx, sz)) continue;
+                        const m = linie(ex, ez, ux, uz, 40);
+                        if (m >= 3 && !verdeckt) verdeckt = [sx, sz, m];
+                        if (m <= -0.5 && !frei) frei = [sx, sz, m];
+                    }
+                    if (verdeckt && frei) {
+                        await stehen(ex, ez);
+                        return {
+                            ohr: [r3(ex), r3(ez)],
+                            ueberLinie: r3(verdeckt[2]),
+                            frei: await hoeren([ex, ez], frei.slice(0, 2), "ruf"),
+                            hinter: await hoeren([ex, ez], verdeckt.slice(0, 2), "ruf"),
+                        };
+                    }
+                }
+            throw new Error("binnen 1,2 km um die Mess-Wiese kein Ohr mit Hang und freier Richtung in 40 m");
+        });
+        // ── die Höhle (das Orts-Gesetz)
+        const hoehle = window.__weltOrt("hoehle", { fels: 3, luft: 3, R: 2.4, rMax: 3000, schritt: 12 });
+        aus.orte.hoehle = hoehle ? { x: r3(hoehle.x), z: r3(hoehle.z), grund: r3(hoehle.grund) } : null;
+        if (!hoehle) aus.hoehleFehler = "das Orts-Gesetz findet binnen 3 km um die Mitte der Welt keine Höhle";
+        // ── RT60 je Ort: die Quelle 1,5 m neben dem Ohr (in der Höhle auf ihrem Grund)
+        aus.rt60 = {};
+        for (const n of ["feld", "wald", "gasse", "hoehle"]) {
+            const p = aus.orte[n];
+            if (!p) continue;
+            const y = n === "hoehle" ? p.grund : null;
+            if (n !== "hoehle") await stehen(p.x, p.z);
+            else {
+                pm.position.set(p.x, y + A.PLAYER_FOOT_OFFSET + 0.05, p.z);
+                s.playerVel.setValue(0, 0, 0);
+                await window.__weltStehtNach(() => takt());
+            }
+            aus.rt60[n] = (await teil(() => hoeren([p.x, p.z, y], [p.x + 1.5, p.z, y], "hall"))).rt60 ?? null;
+        }
+        // ── die Mutation: Bau-Dichte am selben Ort (Feld)
+        aus.mutation = await teil(async () => {
+            const bauten = [];
+            s.blueprints._raumBlock = { parts: [{ shape: "box", material: "stein", size: { x: 4, y: 4, z: 4 }, position: { x: 0, y: 2, z: 0 } }] };
+            const reihe = [];
+            try {
+                for (const n of [0, 2, 4, 8]) {
+                    while (bauten.length < n) {
+                        const a = [0, 4, 2, 6, 1, 5, 3, 7][bauten.length] * (Math.PI / 4);
+                        const bx = W.x + 8 * Math.cos(a);
+                        const bz = W.z + 8 * Math.sin(a);
+                        bauten.push(r.spawnArchitecture("_raumBlock", { x: bx, y: H(bx, bz), z: bz }, { silent: true, precise: true }));
+                    }
+                    await stehen(W.x, W.z);
+                    reihe.push({ bauten: n, rt60: (await hoeren([W.x, W.z], [W.x + 1.5, W.z], "hall")).rt60 });
+                }
+            } finally {
+                for (const e of bauten) if (e && s.architectures.includes(e)) r.removeArchitecture(e);
+                delete s.blueprints._raumBlock;
+            }
+            return reihe;
+        });
+    } finally {
+        sym.ctx = alt.ctx;
+        sym.umwelt = alt.umwelt;
+        tier.position.copy(t0);
+        if (gesetzt && (s.creatures || []).includes(gesetzt)) r.removeCreature(gesetzt);
+        for (const e of gebaut) if (s.architectures.includes(e)) r.removeArchitecture(e);
+    }
+    return aus;
+}
+// DAS URTEIL (klang.K3#2): Verdeckung hinter Haus UND Hang je ≥ 6 dB unter der freien Linie gleichen Abstands plus Tiefpass (der
+// Schwerpunkt verdeckt ≤ 0,85 × frei); RT60 an Wald, Feld, Gasse und Höhle gemessen, jeder ≥ 0,1 s (ein Hall, kein trockenes Ohr), je Paar
+// das größere ≥ 1,3 × das kleinere; die Mutation am selben Ort: jede Stufe der Bau-Dichte ändert die RT60 in DIESELBE Richtung, je
+// Stufe ≥ 5 % — vier handgesetzte Voreinstellungen je Ort-Klasse (Schlupfloch der Staffel) bestünden die Paare, nie die Mutation.
+const RAUM_ORTE = ["feld", "wald", "gasse", "hoehle"];
+function klangRaumUrteil(e) {
+    if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE klangraum" };
+    if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler };
+    const rot = [];
+    const z = [];
+    for (const n of ["haus", "hang"]) {
+        const v = e[n] || {};
+        if (v.fehler || !v.frei || !v.hinter) {
+            rot.push(n + ": " + (v.fehler || "nicht gemessen"));
+            continue;
+        }
+        const dDb = v.frei.db - v.hinter.db;
+        const q = v.hinter.hz / v.frei.hz;
+        z.push(n + " −" + dDb.toFixed(1) + " dB, Schwerpunkt " + v.frei.hz + " → " + v.hinter.hz + " Hz");
+        if (!(dDb >= 6)) rot.push(n + " dämpft " + dDb.toFixed(1) + " dB < 6");
+        if (!(q <= 0.85)) rot.push(n + " ohne Tiefpass (" + q.toFixed(2) + " × Schwerpunkt)");
+    }
+    const rt = e.rt60 || {};
+    z.push("RT60 " + RAUM_ORTE.map((n) => n + " " + (rt[n] == null ? "—" : rt[n] + " s")).join(" · "));
+    const fehlt = RAUM_ORTE.filter((n) => !(rt[n] != null && Number.isFinite(rt[n]) && rt[n] >= 0.1));
+    if (fehlt.length) rot.push("kein Hall an " + fehlt.join(", ") + (e.gasseFehler ? " (" + e.gasseFehler + ")" : "") + (e.waldFehler ? " (" + e.waldFehler + ")" : "") + (e.hoehleFehler ? " (" + e.hoehleFehler + ")" : ""));
+    else
+        for (let i = 0; i < RAUM_ORTE.length; i++)
+            for (let j = i + 1; j < RAUM_ORTE.length; j++) {
+                const [a, b] = [rt[RAUM_ORTE[i]], rt[RAUM_ORTE[j]]];
+                if (Math.max(a, b) < 1.3 * Math.min(a, b)) rot.push(RAUM_ORTE[i] + "/" + RAUM_ORTE[j] + " nicht ≥ 30 % verschieden");
+            }
+    const m = Array.isArray(e.mutation) ? e.mutation : null;
+    if (!m || m.length !== 4 || m.some((x) => !Number.isFinite(x.rt60))) rot.push("Mutation: " + ((e.mutation && e.mutation.fehler) || "nicht gemessen"));
+    else {
+        z.push("Bau-Dichte " + m.map((x) => x.bauten + " → " + x.rt60 + " s").join(", "));
+        const d = m.slice(1).map((x, i) => x.rt60 - m[i].rt60);
+        const monoton = d.every((x) => Math.sign(x) === Math.sign(d[0]) && x !== 0) && d.every((x, i) => Math.abs(x) >= 0.05 * Math.min(m[i].rt60, m[i + 1].rt60));
+        if (!monoton) rot.push("die Bau-Dichte ändert die RT60 nicht monoton");
+    }
+    return { gruen: !rot.length, zahl: z.join(" · ") + (rot.length ? " · ROT " + rot.join(", ") : "") + " (Soll: Verdeckung ≥ 6 dB + Tiefpass ≤ 0,85, RT60 ≥ 0,1 s paarweise ≥ 1,3 ×, Mutation monoton ≥ 5 %/Stufe)" };
+}
+const KLANG_RAUM = require("./g1.js").weltProbe.befehl([["klangraum", klangRaumProbe]]);
+// der GRÜNE Mutant: was die Welt trägt, wenn der Raum aus ihr folgt (Haus −9 dB, Hang −7 dB mit Tiefpass, Feld 0,35 · Wald 0,6 ·
+// Gasse 1,1 · Höhle 2,4 s, die Bau-Dichte 0,35 → 0,5 → 0,7 → 1,0 s)
+const KLANG_RAUM_GRUEN = (x) =>
+    Object.assign(x, {
+        haus: { ...x.haus, hinter: { db: x.haus.frei.db - 9, hz: Math.round(x.haus.frei.hz * 0.6) } },
+        hang: { ...x.hang, hinter: { db: x.hang.frei.db - 7, hz: Math.round(x.hang.frei.hz * 0.7) } },
+        rt60: { feld: 0.35, wald: 0.6, gasse: 1.1, hoehle: 2.4 },
+        mutation: [0, 2, 4, 8].map((bauten, i) => ({ bauten, rt60: [0.35, 0.5, 0.7, 1.0][i] })),
+    });
+const klangGruenMit = (f) => (x) => (f((x = KLANG_RAUM_GRUEN(x))), x);
+const klangRaumRoh = (f) => {
+    const x = f(JSON.parse(JSON.stringify(KLANG_RAUM_MAIN)));
+    return "WELTPROBE klangraum " + JSON.stringify(x) + "\n";
+};
+// DIE ROH-ZEILE am main 5fba36ea (03.11., Cloud, headless, 28 s): kein Ruf wird verdeckt, kein Ort hallt — die Proben urteilen sie
+// und ihre Mutanten
+const KLANG_RAUM_MAIN = {"orte":{"gasse":{"x":-215.1,"z":-1045.6,"breite":4},"feld":{"x":-280.4,"z":-1045.6},"wald":{"x":-520.4,"z":-1273.6,"deckung":1},"hoehle":{"x":-58.696,"z":-12.44,"grund":60.432}},"haus":{"d":12.6,"ohr":[-226.7,-1045.6],"haus":[6.6,5.6,2.9],"frei":{"db":-38.434,"hz":1112},"hinter":{"db":-38.434,"hz":1112}},"hang":{"ohr":[-612.997,-907.834],"ueberLinie":4.117,"frei":{"db":-48.456,"hz":1043},"hinter":{"db":-48.456,"hz":1043}},"rt60":{"feld":0,"wald":0,"gasse":0,"hoehle":0},"mutation":[{"bauten":0,"rt60":0},{"bauten":2,"rt60":0},{"bauten":4,"rt60":0},{"bauten":8,"rt60":0}]};
+// die Zeile am Zweig w5-s2-g1 (Raum-Gesetz und Verdeckung im Klang-Kern, 03.11., Cloud, 28 s): GRÜN
+const KLANG_RAUM_ZWEIG = {"orte":{"gasse":{"x":-215.1,"z":-1045.6,"breite":4},"feld":{"x":-280.4,"z":-1045.6},"wald":{"x":-520.4,"z":-1273.6,"deckung":1},"hoehle":{"x":-58.696,"z":-12.44,"grund":60.432}},"haus":{"d":12.6,"ohr":[-226.7,-1045.6],"haus":[6.6,5.6,2.9],"frei":{"db":-37.3,"hz":1129},"hinter":{"db":-48.544,"hz":660}},"hang":{"ohr":[-612.997,-907.834],"ueberLinie":4.117,"frei":{"db":-47.318,"hz":1055},"hinter":{"db":-58.212,"hz":641}},"rt60":{"feld":0.283,"wald":0.649,"gasse":1.522,"hoehle":3.195},"mutation":[{"bauten":0,"rt60":0.283},{"bauten":2,"rt60":0.517},{"bauten":4,"rt60":0.687},{"bauten":8,"rt60":1.042}]};
+
 module.exports = [
     // ─────────────────────────────── Ankunft K2 · K3 (ankunft-aussen) ───────────────────────────────
     {
@@ -2508,6 +2854,44 @@ module.exports = [
             "scripts/lib/welt-orte.cjs",
         ],
         quelle: "1 = Richtung und Entfernung: links/rechts zu 100 % mit richtigem Vorzeichen (ILD/ITD am Stereo-Abgriff)",
+    },
+    {
+        kriterium: "klang.K3",
+        staffel: 2,
+        geraet: "headless",
+        // DER RAUM AUS DER WELT (w5-s2-g1): die Welt-Probe `klangraum` (oben, klangRaumProbe) — Verdeckung hinter Haus und Hang am
+        // Ruf eines Leibs über den Weg des Spiels, RT60 nach Schroeder an Feld, Wald, Gasse, Höhle, die Bau-Dichte am Feld.
+        befehl: KLANG_RAUM,
+        gpu: false,
+        zeit: false,
+        minuten: 10,
+        urteil: (j, lauf) => klangRaumUrteil(require("./g1.js").weltProbe.zeile(j, lauf, "klangraum")),
+        proben: [
+            { name: "die Messung am main 5fba36ea", stdout: klangRaumRoh((x) => x), gruen: false },
+            { name: "der Raum aus der Welt: Haus und Hang verdecken mit Tiefpass, vier Hallräume, die Bau-Dichte zieht", stdout: klangRaumRoh(KLANG_RAUM_GRUEN), gruen: true },
+            { name: "die Messung am Zweig w5-s2-g1 (Haus −11,2 dB, Hang −10,9 dB, RT60 0,28/0,65/1,52/3,20 s, Bau-Dichte 0,28 → 1,04 s)", stdout: "WELTPROBE klangraum " + JSON.stringify(KLANG_RAUM_ZWEIG) + "\n", gruen: true },
+            { name: "vier handgesetzte Hall-Voreinstellungen (die Bau-Dichte am selben Ort zieht nicht)", stdout: klangRaumRoh(klangGruenMit((x) => (x.mutation = x.mutation.map((m) => ({ ...m, rt60: 0.4 }))))), gruen: false },
+            { name: "die Verdeckung nur im Pegel (kein Tiefpass)", stdout: klangRaumRoh(klangGruenMit((x) => (x.haus.hinter.hz = x.haus.frei.hz))), gruen: false },
+            { name: "der Hang verdeckt nicht", stdout: klangRaumRoh(klangGruenMit((x) => (x.hang.hinter = { ...x.hang.frei }))), gruen: false },
+            { name: "Wald und Feld hallen gleich (< 30 %)", stdout: klangRaumRoh(klangGruenMit((x) => (x.rt60.wald = 0.45))), gruen: false },
+            { name: "keine Höhle in der Welt", stdout: klangRaumRoh(klangGruenMit((x) => ((x.rt60.hoehle = null), (x.orte.hoehle = null)))), gruen: false },
+        ],
+        pfad: [
+            "klang-core.js",
+            "tetrapoda-core.js",
+            "gelaende-core.js",
+            "stamm/klang.js",
+            "stamm/kreatur-*.js",
+            "stamm/siedlung-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/bau-*.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+            "spec/profiband/haushalt.json",
+        ],
+        quelle: "2 = Verdeckung hinter Haus und Hang ≥ 6 dB plus Tiefpass, RT60 von Wald, Feld, Gasse und Höhle paarweise ≥ 30 % verschieden, und die Mutation (mehr Kronen-Deckung oder Bau-Dichte am selben Ort) ändert die RT60 monoton",
     },
     {
         kriterium: "klang.K4",
