@@ -49,21 +49,7 @@
 //   node scripts/diag-werk-im-wasser.cjs [--selftest]
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const {
-    statikServer,
-    starteBrowser,
-    nullRenderer,
-    taeterFaelle,
-    selbsttestEnde,
-    argOpt,
-    ausDatei,
-    SELBSTTEST,
-    path,
-    stammLib,
-    weltTor,
-    jsonLesen,
-    jsonKlon,
-} = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, argOpt, ausDatei, SELBSTTEST, path, stammLib, weltTor, jsonLesen, jsonKlon } = require("./lib/welt-boot.cjs");
 const { messort } = require("./lib/welt-orte.cjs");
 
 const SCHWELLE = {
@@ -98,8 +84,7 @@ function urteil(b) {
     const m = (x) => (Number.isFinite(x) ? x.toFixed(2) : String(x));
     // K — der Konsum am Ruf: jeder Leser ruft sein Gesetz
     const KO = b.konsum;
-    if (!KO || KO.fehler || !Object.keys(KO).length)
-        v.push(`K LEER: der Konsum am Ruf wurde nicht gemessen (${KO?.fehler || "keine Probe"})`);
+    if (!KO || KO.fehler || !Object.keys(KO).length) v.push(`K LEER: der Konsum am Ruf wurde nicht gemessen (${KO?.fehler || "keine Probe"})`);
     else for (const [k, ok] of Object.entries(KO)) if (!ok) v.push(`KONSUM: ${k} — der Leser ruft sein Gesetz nicht`);
     // H
     const H = b.hain;
@@ -304,8 +289,7 @@ function urteil(b) {
             v.push(
                 `D: der Damm #${D.id} hebt ${D.hub} Spalten, das gezeichnete Wasser staut ${stau} nasse Punkte (ohne Damm ${D.w0}, mit ${D.w1})`
             );
-        else if (!(D.hub2 >= S.hubMin))
-            v.push(`D: nach dem Reload trägt der Stau kein Feld des Damms #${D.id} (${D.hub2} Spalten)`);
+        else if (!(D.hub2 >= S.hubMin)) v.push(`D: nach dem Reload trägt der Stau kein Feld des Damms #${D.id} (${D.hub2} Spalten)`);
         else if (!(Math.abs(D.w3 - D.w2) <= S.neubauTreue * D.w2))
             v.push(`D: ein Chunk am Damm #${D.id} trug den Stau erst nach seinem Neubau (${D.w2} → ${D.w3})`);
         else if (!(Math.abs(D.w2 - D.w1) <= S.stauTreue * stau))
@@ -329,22 +313,10 @@ function leserUrteil(w) {
     const v = [];
     const nicht = (glied, re, satz) => stammLib.fehlt(glied, re, w) || v.push(`${satz} (${stammLib.fehlt.wo})`);
     // `_waterLevelAt` nur als Bezug der Ufer-Bänder: jeder Aufruf trägt sein `aus` (drei Argumente)
-    nicht(
-        null,
-        /\b_waterLevelAt\((?![^(),]*,[^(),]*,[^(),]*\))[^()]*\)/,
-        "`_waterLevelAt` liest den Bezug der Ufer-Bänder als Wasser-Probe"
-    );
-    nicht(
-        "_forestGeborene",
-        /waterYAt:(?:(?!slopeAt:)[\s\S])*_waterLevelAt\(/,
-        "der Wald (`_forestGeborene` waterYAt) liest den Bezug `_waterLevelAt` als Wasser"
-    );
+    nicht(null, /\b_waterLevelAt\((?![^(),]*,[^(),]*,[^(),]*\))[^()]*\)/, "`_waterLevelAt` liest den Bezug der Ufer-Bänder als Wasser-Probe");
+    nicht("_forestGeborene", /waterYAt:(?:(?!slopeAt:)[\s\S])*_waterLevelAt\(/, "der Wald (`_forestGeborene` waterYAt) liest den Bezug `_waterLevelAt` als Wasser");
     // DER DAMM: der Automat wacht am Zell-Stempel, nie am Setz-Punkt; der Stempel läuft nur die Werke am Ort durch
-    nicht(
-        "spawnArchitecture",
-        /_invalidateWaterCapsAround\(/,
-        "ein Bau weckt den Wasser-Automaten am Setz-Punkt (`spawnArchitecture`) statt am Zell-Stempel"
-    );
+    nicht("spawnArchitecture", /_invalidateWaterCapsAround\(/, "ein Bau weckt den Wasser-Automaten am Setz-Punkt (`spawnArchitecture`) statt am Zell-Stempel");
     nicht(
         "_stampArchitectureSolidCellsInto",
         /for \(const \w+ of this\.state\.architectures\)/,
@@ -352,11 +324,7 @@ function leserUrteil(w) {
     );
     // jedes `return null` außer dem EINEN in `nein` (der Absage mit Grund)
     for (const wer of ["spawnArchitecture", "spawnCreatureAt"])
-        nicht(
-            wer,
-            /(?<!const nein = \(grund\) => \{[^}]*)return null;/,
-            `die Wurzel \`${wer}\` sagt still ab (\`return null\` ohne Grund über \`opts.absage\`)`
-        );
+        nicht(wer, /(?<!const nein = \(grund\) => \{[^}]*)return null;/, `die Wurzel \`${wer}\` sagt still ab (\`return null\` ohne Grund über \`opts.absage\`)`);
     nicht(null, /natur_weicht/, "das alte Protokoll `natur_weicht` lebt neben dem Ergebnis");
     return v;
 }
@@ -439,9 +407,7 @@ async function probe(A) {
     await window.__weltDa((w) => w.state.hydrosphere && w.state.hydrosphere.ready);
     const faden = st.voxelWorker;
     const f = r._ensureAssetFoundry();
-    await window.__weltDa(
-        () => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt
-    );
+    await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt);
     __bildAus();
     const MUSTER = __MUSTER;
     let tMs = performance.now();
@@ -470,16 +436,8 @@ async function probe(A) {
     const neueWerke = (vor, art = /./) => st.architectures.filter((e) => e && !vor.has(e) && art.test(e.type)); // seit `vor`
     const stelle = (x, z) => pm.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z); // der Spieler steht am Ort
     const fehlerZeile = (e) => String(e?.stack || e).split("\n")[0]; // der Wurf einer Probe, seine erste Zeile
-    const chatSeit = (t0, ab = 0) =>
-        // was der Chat seit dem Zeichen `t0` sagte, ab `ab`, gestaucht
-        ((el) =>
-            el
-                ? el.innerText
-                      .slice(t0)
-                      .replace(/\s+/g, " ")
-                      .trim()
-                      .slice(ab, ab + 300)
-                : "")(document.getElementById("chat-output"));
+    const chatSeit = (t0, ab = 0) => // was der Chat seit dem Zeichen `t0` sagte, ab `ab`, gestaucht
+        ((el) => (el ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(ab, ab + 300) : ""))(document.getElementById("chat-output"));
     // DER WAGEN AM ANLAUF: der Spieler ruht an (sx, sz), der GT steht dort längs der Fahrt (`fahrt`, Gier), alle Tasten los
     const gtAn = (sx, sz, fahrt) => {
         const h = r.getTerrainHeightAt(sx, sz);
@@ -605,7 +563,8 @@ async function probe(A) {
     const FCw = globalThis.__fachwerkCore;
     const anDerWand = (e) => {
         const bp = st.blueprints && st.blueprints[e.type];
-        const p = bp && typeof bp.studioGestalt === "string" && FCw?.PRESETS ? FCw.PRESETS[bp.studioGestalt] : null;
+        const p =
+            bp && typeof bp.studioGestalt === "string" && FCw?.PRESETS ? FCw.PRESETS[bp.studioGestalt] : null;
         return !!(p?.fx?.place && p.fx.place.siteTag === "wand");
     };
     const traegerHaus = (e) => {
@@ -640,7 +599,8 @@ async function probe(A) {
                   ? !!w.e._hausHuelle
                   : !!(w.e.blockerAABBs && w.e.blockerAABBs.length));
         // das EINE Warten auf den Bau (welt-boot `__gebautNach`): steht ein Werk nicht, nennt es der Zensus
-        for (const w of werke) await __gebautNach(w.e, { fertig: () => fertig(w), takt: takte30 }).catch(() => null);
+        for (const w of werke)
+            await __gebautNach(w.e, { fertig: () => fertig(w), takt: takte30 }).catch(() => null);
         for (const w of werke) {
             const e = w.e;
             if (w.done || !st.architectures.includes(e)) continue;
@@ -757,7 +717,7 @@ async function probe(A) {
         stelle(X, Z);
         let last = -1;
         let still = 0;
-        for (const weiter = __deckel("der Ring am Ort", 9000); weiter();) {
+        for (const weiter = __deckel("der Ring am Ort", 9000); weiter(); ) {
             stelle(X, Z);
             try {
                 frame();
@@ -1340,10 +1300,7 @@ async function probe(A) {
                 };
                 // die Gründe aus der EINEN Tafel des Stamms (fehlt sie, nennt der Satz keinen — das Urteil sagt es)
                 const T = r.constructor.SETZ_GRUND || {};
-                const G = new Proxy(
-                    {},
-                    { get: (_, k) => (T[k] ? r._t(T[k]) : `(kein Grund „${String(k)}" in SETZ_GRUND)`) }
-                );
+                const G = new Proxy({}, { get: (_, k) => (T[k] ? r._t(T[k]) : `(kein Grund „${String(k)}" in SETZ_GRUND)`) }); // je Grund ein Schlüssel der Tafel
                 stelle(cx + 40, cz + 40);
                 // E1 die Obergrenze der Kreaturen: noch 3 Plätze, dann keiner
                 const maxAlt = st.maxCreatures;
@@ -1406,7 +1363,7 @@ async function probe(A) {
                     const sofortGesetzt = neueWerke(vorA, /^haus_/).length;
                     // das Dorf meldet sich, wenn es steht (der Plan kommt aus dem Studio-Worker)
                     let echo = "";
-                    for (const weiter = __deckel("die Meldung des Dorfs", A.dorfMs / 50); weiter();) {
+                    for (const weiter = __deckel("die Meldung des Dorfs", A.dorfMs / 50); weiter(); ) {
                         for (let i = 0; i < 10; i++)
                             try {
                                 frame();
@@ -1604,7 +1561,9 @@ async function probe(A) {
                 const GK = window.__gelaendeCore;
                 const ZM = GK.ERDBAU.zelleM;
                 let nassImErdbau = 0;
-                const erdbauNeu = Object.keys(st.worldMeta?.erdbau || {}).filter((k) => !erdbauVor.has(k));
+                const erdbauNeu = Object.keys(st.worldMeta?.erdbau || {}).filter(
+                    (k) => !erdbauVor.has(k)
+                );
                 for (const key of erdbauNeu) {
                     const E = GK.erdbauNormal(st.worldMeta.erdbau[key]);
                     if (!E) continue;
@@ -1680,9 +1639,7 @@ async function probe(A) {
                             cz = Math.floor(Z / C) + j;
                         // die geborenen Darts der Zelle (w4-b-pflanzen: der Bestand urteilt über sie, sein Gedächtnis
                         // merkt sie) — gefragt ohne Gedächtnis, wie der Plan des Walds sie wirft
-                        wald =
-                            ruft(r, "_forestGeborene", "_atlasWaterLevelAt", [cx, cz, r._forestSeedInt(), true]) ||
-                            wald;
+                        wald = ruft(r, "_forestGeborene", "_atlasWaterLevelAt", [cx, cz, r._forestSeedInt(), true]) || wald;
                     }
                 const cfg = r._voxelChunkConfig(0);
                 const zellen = new Uint8Array(cfg.dim * cfg.dim * cfg.dimY);
@@ -1698,10 +1655,7 @@ async function probe(A) {
                         "_blockerNahe",
                         [zellen, ox, oy, oz, 0]
                     ),
-                    "spawn_temple → _werkOrtSuchen": ruft(r.dslEffects, "spawn_temple", "_werkOrtSuchen", [
-                        [at, 7],
-                        ctx(),
-                    ]),
+                    "spawn_temple → _werkOrtSuchen": ruft(r.dslEffects, "spawn_temple", "_werkOrtSuchen", [[at, 7], ctx()]),
                     "spawn_blueprint → _werkOrtSuchen": ruft(r.dslEffects, "spawn_blueprint", "_werkOrtSuchen", [
                         ["haus_alemannisch", at, 7],
                         ctx(),
@@ -1767,7 +1721,7 @@ async function dammProbe(A) {
     const stroemen = async (X, Z) => {
         let last = -1;
         let still = 0;
-        for (const weiter = __deckel("der Ring am Strom", 9000); weiter();) {
+        for (const weiter = __deckel("der Ring am Strom", 9000); weiter(); ) {
             pm.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
             frame();
             const n = st.voxelChunks ? st.voxelChunks.size : 0;
@@ -1790,11 +1744,7 @@ async function dammProbe(A) {
     };
     // `hub`: die Spalten der Stau-Felder des Gesetzes (`_stauFelder`), deren Fenster den Damm trägt, die der Pegel hebt
     const hub = (X, Z) =>
-        (r._gelaende().stau || [])
-            .filter(
-                (f) =>
-                    Math.abs(X / f.step - f.gx0 - f.w / 2) < f.w / 2 && Math.abs(Z / f.step - f.gz0 - f.h / 2) < f.h / 2
-            )
+        (r._gelaende().stau || []).filter((f) => Math.abs(X / f.step - f.gx0 - f.w / 2) < f.w / 2 && Math.abs(Z / f.step - f.gz0 - f.h / 2) < f.h / 2)
             .reduce((n, f) => n + f.fillY.filter((y) => y === y).length, 0);
     if (A.phase === "bau") {
         const [X, Z] = A.ort;
@@ -1999,11 +1949,7 @@ function selbsttest() {
         ["H Stamm im Wasser", (b) => (b.hain.staemme[3].tiefe = 2.4), /H: baum_eiche #3 .* steht 2\.40 m im Wasser/],
         ["H Automat geweckt", (b) => (b.hain.caChunks = 15), /H: die Bauten am Ufer weckten den Wasser-Automaten \(15/],
         ["H leer", (b) => (b.hain.satz = 2), /H LEER/],
-        [
-            "K ein Leser ruft sein Gesetz nicht",
-            (b) => (b.konsum["spawn_ufo → _setzErgebnis"] = false),
-            /KONSUM: spawn_ufo/,
-        ],
+        ["K ein Leser ruft sein Gesetz nicht", (b) => (b.konsum["spawn_ufo → _setzErgebnis"] = false), /KONSUM: spawn_ufo/],
         ["K nicht gemessen", (b) => delete b.konsum, /K LEER/],
         [
             "Z Fundament im Wasser",
@@ -2089,14 +2035,7 @@ function selbsttest() {
         ["A ohne Aussteigen", (b) => (b.ansaug.aussteigen = { fehler: "x" }), /A LEER: x/],
         [
             "A der geparkte Wagen ist ein Damm",
-            (b) =>
-                (b.ansaug.damm = {
-                    invalidierungen: 1,
-                    nass: true,
-                    caChunks: 15,
-                    tiefe: 0.14,
-                    wer: "AnazhRealm._stampArchitectureSolidCellsInto",
-                }),
+            (b) => (b.ansaug.damm = { invalidierungen: 1, nass: true, caChunks: 15, tiefe: 0.14, wer: "AnazhRealm._stampArchitectureSolidCellsInto" }),
             /A: der geparkte Wagen in 0\.14 m Wasser ist ein Damm .*1 Invalidierungen, 15 Chunks wach, Rufer AnazhRealm\._stamp/,
         ],
         ["A ohne Neu-Stempel", (b) => delete b.ansaug.damm, /A LEER: der geparkte Wagen wurde nicht neu gestempelt/],
@@ -2107,33 +2046,17 @@ function selbsttest() {
             /D: der Stausee des Damms #425 .* bildet sich nach dem Reload nicht neu — 2070 statt 2250/,
         ],
         // die Antwort des Fadens kommt verspätet (CI 40441173506): gezählt vor dem Stau ist ROT beim Namen dessen, was offen war
-        [
-            "D Stau-Antwort verspätet",
-            (b) => Object.assign(b.damm, { w2: 1, offen2: 1 }),
-            /#425 wurde gezählt, ehe der Stau stand \(offen 0 · 1\)/,
-        ],
+        ["D Stau-Antwort verspätet", (b) => Object.assign(b.damm, { w2: 1, offen2: 1 }), /#425 wurde gezählt, ehe der Stau stand \(offen 0 · 1\)/],
         ["D Stand ungemessen", (b) => delete b.damm.offen1, /ehe der Stau stand \(offen undefined · 0\)/],
-        [
-            "D Stau nach dem Reload nie bestellt",
-            (b) => (b.damm.hub2 = 0),
-            /D: nach dem Reload trägt der Stau kein Feld des Damms #425 \(0 Spalten\)/,
-        ],
+        ["D Stau nach dem Reload nie bestellt", (b) => (b.damm.hub2 = 0), /D: nach dem Reload trägt der Stau kein Feld des Damms #425 \(0 Spalten\)/],
         // der Chunk, der vor dem Stau gebaut ohne ihn eintrat (4× Drossel am Kopf 455e5be8: 1047 → 1142 nach dem Neubau)
-        [
-            "D Chunk vor dem Stau",
-            (b) => (b.damm.w3 = 2290),
-            /Damm #425 trug den Stau erst nach seinem Neubau \(2247 → 2290\)/,
-        ],
+        ["D Chunk vor dem Stau", (b) => (b.damm.w3 = 2290), /Damm #425 trug den Stau erst nach seinem Neubau \(2247 → 2290\)/],
         [
             "D Abbau weckt nicht",
             (b) => (b.damm.abriss = 0),
             /D: der Abbau des Damms #425 nach dem Reload weckt den Wasser-Automaten nicht \(0/,
         ],
-        [
-            "D Bild ohne Stau",
-            (b) => (b.damm.w1 = 2100),
-            /D: der Damm #425 hebt 51 Spalten, das gezeichnete Wasser staut 30 nasse Punkte/,
-        ],
+        ["D Bild ohne Stau", (b) => (b.damm.w1 = 2100), /D: der Damm #425 hebt 51 Spalten, das gezeichnete Wasser staut 30 nasse Punkte/],
         [
             "D Ort ohne Stau (die Furt −937/−1064)",
             // BÜHNE: Befund des Selbsttests (die Furt der alten Welt), kein gesetzter Ort
@@ -2234,9 +2157,7 @@ function selbsttest() {
             /am Setz-Punkt .* statt am Zell-Stempel/,
         ],
     ];
-    const giftFall =
-        (art) =>
-        ([name, z, muss]) => ({ name: `${art}: ${name}`, z, muss });
+    const giftFall = (art) => ([name, z, muss]) => ({ name: `${art}: ${name}`, z, muss });
     taeterFaelle([{ name: "der echte Stamm" }, ...gifte.map(giftFall("Leser"))], leserUrteil, { fehler });
     // die Kern-Linse gegen eingeschmuggelte Täter im echten Kern (vm, ohne Browser)
     const vm = require("vm");
@@ -2250,38 +2171,31 @@ function selbsttest() {
         vm.runInContext(s, ctx);
         return ctx.__vehicleCore;
     };
-    taeterFaelle(
+    taeterFaelle([{ name: "der echte Kern", z: (s) => s }, ...[
         [
-            { name: "der echte Kern", z: (s) => s },
-            ...[
-                [
-                    "Wasser-Term ohne Widerstand",
-                    (s) => s.replace("z.vlong = vL0 / (1 + Wg.kStirn * t * Math.abs(vL0) * dt);", "z.vlong = vL0;"),
-                    /K2 in 0\.61 m Wasser/,
-                ],
-                [
-                    "der Wasserschlag sperrt die Räder nicht",
-                    (s) =>
-                        s.replace(
-                            "else if (!motor && dt > 0) Fr -= Math.min(G.handDecel, Math.abs(vL) / dt) * m * sgn;",
-                            "else if (!motor && dt > 0) Fr -= 0;"
-                        ),
-                    /K6 über der Ansaugung am 11°-Hang rollt er unter Vollgas 3 s später mit 1\.33 m\/s weiter/,
-                ],
-                [
-                    "das Gas wirkt am stehenden Motor (keine Ruhe unter Vollgas)",
-                    (s) =>
-                        s.replace(
-                            "const thr = motor && e && e.throttle > 0 ? Math.min(1, e.throttle) : 0;",
-                            "const thr = e && e.throttle > 0 ? Math.min(1, e.throttle) : 0;"
-                        ),
-                    /K4 über der Ansaugung/,
-                ],
-            ].map(giftFall("Kern")),
+            "Wasser-Term ohne Widerstand",
+            (s) => s.replace("z.vlong = vL0 / (1 + Wg.kStirn * t * Math.abs(vL0) * dt);", "z.vlong = vL0;"),
+            /K2 in 0\.61 m Wasser/,
         ],
-        (gift) => kernUrteil(kernLaden(gift(kernSrc))),
-        { fehler }
-    );
+        [
+            "der Wasserschlag sperrt die Räder nicht",
+            (s) =>
+                s.replace(
+                    "else if (!motor && dt > 0) Fr -= Math.min(G.handDecel, Math.abs(vL) / dt) * m * sgn;",
+                    "else if (!motor && dt > 0) Fr -= 0;"
+                ),
+            /K6 über der Ansaugung am 11°-Hang rollt er unter Vollgas 3 s später mit 1\.33 m\/s weiter/,
+        ],
+        [
+            "das Gas wirkt am stehenden Motor (keine Ruhe unter Vollgas)",
+            (s) =>
+                s.replace(
+                    "const thr = motor && e && e.throttle > 0 ? Math.min(1, e.throttle) : 0;",
+                    "const thr = e && e.throttle > 0 ? Math.min(1, e.throttle) : 0;"
+                ),
+            /K4 über der Ansaugung/,
+        ],
+    ].map(giftFall("Kern"))], (gift) => kernUrteil(kernLaden(gift(kernSrc))), { fehler });
     selbsttestEnde(fehler, "Befund, Leser und Kern nennen jeden eingeschmuggelten Täter beim Namen.");
     process.exit(0);
 }

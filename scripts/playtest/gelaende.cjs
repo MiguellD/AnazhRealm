@@ -157,7 +157,10 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
             voxelV940cResults.drainRebuilt && voxelV940cResults.drainEmptiesSet,
             voxelV940cResults.telemetry
         );
-        check("_drainDirtyVoxelChunks liefert die Anzahl der rebuildeten Chunks", voxelV940cResults.drainReturnedCount);
+        check(
+            "_drainDirtyVoxelChunks liefert die Anzahl der rebuildeten Chunks",
+            voxelV940cResults.drainReturnedCount
+        );
         check(
             "der Game-Loop-Tick baut pro Frame max 1 Chunk ein, keinen synchron (K69-2)",
             voxelV940cResults.tickRebuildsOne
@@ -237,9 +240,15 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
             "bei Build-Fail wird der voxelRebuildAttempts-Counter gepflegt (1. Versuch)",
             voxelV940dResults.retryCounter1
         );
-        check("bei Build-Fail wird der Chunk wieder dirty markiert (Retry-Chance)", voxelV940dResults.dirtyAfterFail);
+        check(
+            "bei Build-Fail wird der Chunk wieder dirty markiert (Retry-Chance)",
+            voxelV940dResults.dirtyAfterFail
+        );
         check("Counter steigt bei wiederholten Fails (2. Versuch)", voxelV940dResults.retryCounter2);
-        check("nach 3 Fails wird der Chunk ehrlich als {empty:true} markiert", voxelV940dResults.giveUpAsEmpty);
+        check(
+            "nach 3 Fails wird der Chunk ehrlich als {empty:true} markiert",
+            voxelV940dResults.giveUpAsEmpty
+        );
         check(
             "nach dem give-up wird der Counter geräumt (für späteren neuen Versuch)",
             voxelV940dResults.counterClearedAfterGiveUp
@@ -306,7 +315,10 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         );
         check("_addVoxelEdit verwirft Edit weit unter dem Chunk-Boden", voxelV940eResults.farDownRejected);
         check("_addVoxelEdit akzeptiert Edit innerhalb des Chunk-Bands", voxelV940eResults.inBoundAccepted);
-        check("_addVoxelEdit clampt Edit knapp ÜBER der Decke (innerhalb Marge)", voxelV940eResults.nearEdgeAccepted);
+        check(
+            "_addVoxelEdit clampt Edit knapp ÜBER der Decke (innerhalb Marge)",
+            voxelV940eResults.nearEdgeAccepted
+        );
         check(
             "_disposeVoxelChunk räumt voxelRebuildAttempts (Memory-Hygiene)",
             voxelV940eResults.disposeClearsAttempts
@@ -315,7 +327,10 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
             "_ensureVoxelChunkAt-Streaming-Fail setzt KEINEN Map-Eintrag (Retry erlaubt)",
             voxelV940eResults.streamFail1NoEntry && voxelV940eResults.streamAttempt1
         );
-        check("Streaming-Retry-Counter steigt bei wiederholten Fails (2. Versuch)", voxelV940eResults.streamAttempt2);
+        check(
+            "Streaming-Retry-Counter steigt bei wiederholten Fails (2. Versuch)",
+            voxelV940eResults.streamAttempt2
+        );
         check(
             "nach 3 Streaming-Fails wird der Chunk ehrlich als {empty:true} markiert",
             voxelV940eResults.streamGiveUpAsEmpty
@@ -526,6 +541,7 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
             built2.program[0] === "set_mode" &&
             built2.program[1] === "schöpfer";
 
+
         // UI: Radio + Status-Bar
         out.radiosInDom = document.querySelectorAll('input[name="game-mode-radio"]').length === 3;
         out.statusModeInDom = !!document.getElementById("status-mode");
@@ -619,6 +635,7 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         // NON_BROADCASTABLE
         out.addToInventoryNonBroadcastable =
             AnazhRealm.NON_BROADCASTABLE_OPS && AnazhRealm.NON_BROADCASTABLE_OPS.has("add_to_inventory");
+
 
         // UI: Overlay-Element + Grid + Selected-Display
         out.overlayInDom = !!document.getElementById("inventory-overlay");
@@ -816,7 +833,10 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
             "Ich: das Spec-Sheet trägt Header (Name) + Zwei-Spalten-Body + WERTE-Balken (Werte führen)",
             wave6c1Results.ichSpecHeaderName && wave6c1Results.ichSpecBody2Col && wave6c1Results.ichWerteBars
         );
-        check("Ich: die reiche 6-Achsen-Emotion ist prominent (live, ≠ Kreatur binär)", wave6c1Results.ichEmotion6);
+        check(
+            "Ich: die reiche 6-Achsen-Emotion ist prominent (live, ≠ Kreatur binär)",
+            wave6c1Results.ichEmotion6
+        );
         check(
             "Ich-F: die Chronik/Reise wandert in den Hof (Welt-Stimme), das Ich trägt keine Reise mehr (H.1)",
             wave6c1Results.ichHasNoReise && wave6c1Results.hofChronikInDom && wave6c1Results.hofChronikRenders
@@ -825,7 +845,10 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
             "Ich-J6: SELF (Viewer+Worn) | HABE (Inventar zentral) | WERK (Rezepte) + STATSBAR (Spec+Emotion) unten",
             wave6c1Results.ichThreeZones
         );
-        check("Ich-J6: Was-du-trägst sitzt UNTER dem Viewer in der Selbst-Insel", wave6c1Results.ichWornUnderViewer);
+        check(
+            "Ich-J6: Was-du-trägst sitzt UNTER dem Viewer in der Selbst-Insel",
+            wave6c1Results.ichWornUnderViewer
+        );
         check(
             "Ich-J6: die STATSBAR (Verfassung·Werte·Natur·Emotion) liegt VOLLBREIT UNTER den Spalten (unten, nicht links gequetscht)",
             wave6c1Results.ichStatsbarBelowCols
@@ -1882,11 +1905,7 @@ async function checkBandPhaseAFundament({ page, check }) {
             cappedTotal = 0;
         out.t2ChunksWithMorph = 0;
         for (const [, entry] of st.voxelChunks) {
-            if (
-                entry.mesh &&
-                entry.mesh.geometry.attributes.aMorphWeight &&
-                entry.mesh.geometry.attributes.aMorphTarget
-            )
+            if (entry.mesh && entry.mesh.geometry.attributes.aMorphWeight && entry.mesh.geometry.attributes.aMorphTarget)
                 out.t2HasMorphAttrs = true;
             if (entry.hasMorph) out.t2ChunksWithMorph++;
             if (!entry.lodStitchMesh) continue;
@@ -2017,11 +2036,7 @@ async function checkBandCarveWorker({ page, check }) {
             },
         });
         try {
-            for (const [k, ueber, opts] of [
-                ["gesund", false, undefined],
-                ["ueber", true, undefined],
-                ["force", true, { forceSync: true }],
-            ]) {
+            for (const [k, ueber, opts] of [["gesund", false, undefined], ["ueber", true, undefined], ["force", true, { forceSync: true }]]) {
                 st._frameOverBudget = ueber;
                 lastForceSync = null;
                 r._rebuildVoxelChunk(pc.cx, pc.cz, null, opts);
@@ -2034,29 +2049,13 @@ async function checkBandCarveWorker({ page, check }) {
         return o;
     });
     const ok = !!out && !out.err;
-    check(
-        "Carve: gesunder Frame → der Neubau des Spieler-Chunks geht über den Worker (kein Sync-Trip im Takt)",
-        ok && out.gesund === false,
-        ok ? `forceSync=${out.gesund}` : out && out.err
-    );
-    check(
-        "Carve: Frame über Budget → der Neubau geht über den Worker (kein ~200-ms-Stall)",
-        ok && out.ueber === false,
-        ok ? `forceSync=${out.ueber}` : ""
-    );
-    check(
-        "Carve: ein ausdrückliches forceSync gewinnt IMMER (Test/Naht-Intent absolut)",
-        ok && out.force === true,
-        ok ? `forceSync=${out.force}` : ""
-    );
+    check("Carve: gesunder Frame → der Neubau des Spieler-Chunks geht über den Worker (kein Sync-Trip im Takt)", ok && out.gesund === false, ok ? `forceSync=${out.gesund}` : out && out.err);
+    check("Carve: Frame über Budget → der Neubau geht über den Worker (kein ~200-ms-Stall)", ok && out.ueber === false, ok ? `forceSync=${out.ueber}` : "");
+    check("Carve: ein ausdrückliches forceSync gewinnt IMMER (Test/Naht-Intent absolut)", ok && out.force === true, ok ? `forceSync=${out.force}` : "");
 }
 
 module.exports = {
-    checkBandVoxelP3AndInventory,
-    checkBandWelleC3CellularReaction,
-    checkBandWellePerf3cPhase2Async,
-    checkBandWellePerf3cPhase3FullMesh,
-    checkBandV17118WorkerEngaged,
-    checkBandPhaseAFundament,
-    checkBandCarveWorker,
+    checkBandVoxelP3AndInventory, checkBandWelleC3CellularReaction,
+    checkBandWellePerf3cPhase2Async, checkBandWellePerf3cPhase3FullMesh, checkBandV17118WorkerEngaged,
+    checkBandPhaseAFundament, checkBandCarveWorker,
 };
