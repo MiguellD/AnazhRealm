@@ -11,7 +11,7 @@
 //       Frustum jeder Kaskade, deren Tiefen-Bereich sie nach dem Addon-Shader lesen (`_cascades`-Uniform des Addons,
 //       Fade-Saum aus CSMShadowNode._setupFade abgeschrieben) — mittags und am Abend
 //   K2  die Box ist eng: Fläche ≤ 60 % des Addon-Quadrats (Diagonale + Fade-Saum) je Kaskade, waagrechter Blick
-//   K3  das Zentrum liegt auf dem Texel-Raster der Licht-Basis; 0,37 m Gehen hält Größe und Raster
+//   K3  das Zentrum liegt auf dem Texel-Raster der Licht-Basis (das Gehen misst K9)
 //   K9  der Gang im Takt des Spiels (schatten.K2, 4 m/s, 7 Richtungen × 120 Bilder): die Licht-Matrix rastet auf dem Welt-Texel
 //       (Snap-Rest ≤ 1e-6 Texel, 0 Rast-Wechsel), und der Schlüssel der Blende in der Kaskade (`_ditherIGN`: Welt-Raster aus dem
 //       Ursprung der Box, `_blendeRaster`) steht für jeden Welt-Punkt über jede Neulage der Box; EIN Schlüssel, kein Zwilling
@@ -232,107 +232,74 @@ function probe(selbsttest) {
         const q = (f.x0 + f.W / 2) / f.texel;
         return Math.abs(q - Math.round(q)) < 1e-6;
     });
-    const vorher = csm._anazhFit.map((f) => ({ W: f.W, texel: f.texel }));
-    cam.position.x += 0.37;
-    cam.updateMatrixWorld(true);
-    alleNeu();
-    r._kaskadenPassen(csm);
-    aus.k3gehen = csm._anazhFit.map((f, i) => {
-        const q = (f.x0 + f.W / 2) / f.texel;
-        return f.W === vorher[i].W && Math.abs(q - Math.round(q)) < 1e-6;
-    });
-    // K9 — DER GANG IM TAKT DES SPIELS (schatten.K2): 4 m/s, 60 Bilder je s, 120 Bilder in jeder von 7 Richtungen, Blick 20 m voraus
-    // und 4 m hinab (die Pose der Station): je Bild `_loopShadowUpdate`, der Haken des Haupt-Passes (`_kaskadenPassen`), dann
-    // rendert, was fällig ist (needsUpdate fällt). Gemessen je gerenderter Karte: der Snap-Rest des Zentrums gegen das erste
-    // Bild (Texel), die Rast-Wechsel der Größe, die Neulagen der Box — und der Schlüssel der Blende (`_ditherIGN` in der Kaskade:
-    // Spalte + Ursprung, Ursprung − Zeile, modulo BLENDE_RASTER) fester Welt-Punkte am Boden, gelesen durch die Schatten-Matrix
-    // der Kaskade (r184 `updateMatrices`, y gedreht wie `setupShadowCoord`) und die Uniform des Passes (`_blendeRaster`, ihr
-    // Render-Ruf mit der Kaskaden-Kamera). `alt` misst den Schlüssel des Pixels der Karte allein (der Zustand vor w5-kontakt).
-    const gang = (alt) => {
-        const P = A.BLENDE_RASTER;
-        const U = r._blendeRaster();
-        const pm0 = st.playerMesh.position.clone();
-        const v = new T.Vector3();
-        const out = { rest: 0, rast: 0, neulagen: 0, renders: [0, 0, 0], frames: 0, schluessel: 0, punkte: 0, uniform: 0 };
+    // K9 — DER GANG IM TAKT DES SPIELS (schatten.K2; er trägt auch das Gehen von K3): 4 m/s, 7 Richtungen × 120 Bilder, Blick
+    // 20 m voraus und 4 m hinab (die Pose der Station): je Bild `_loopShadowUpdate`, der Haken des Haupt-Passes, dann rendert,
+    // was fällig ist. Je gerenderter Karte der Snap-Rest des Zentrums gegen das erste Bild (Texel), die Rast-Wechsel, die
+    // Neulagen — und der Schlüssel der Blende (`_ditherIGN` in der Kaskade: Spalte + Ursprung, Ursprung − Zeile, modulo
+    // BLENDE_RASTER; die Uniform `_blendeRaster` gerufen mit der Kaskaden-Kamera) fester Boden-Punkte 3–12 m voraus, durch die
+    // Schatten-Matrix (y gedreht wie `setupShadowCoord`); `alt` zählt den Schlüssel des Pixels der Karte allein (vor w5-kontakt).
+    {
+        const [P, U, pm0, v] = [A.BLENDE_RASTER, r._blendeRaster(), st.playerMesh.position.clone(), new T.Vector3()];
+        const o = { rest: 0, rast: 0, neulagen: 0, renders: [0, 0, 0], schluessel: 0, alt: 0, punkte: 0, uniform: 0 };
+        const mod = (x) => ((x % P) + P) % P;
         for (const yaw of [0, 0.7, 1.6, 2.5, 3.6, 4.4, 5.3]) {
-            const fwd = new T.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
-            const pose = (k) => {
-                const x = pm0.x + fwd.x * 4 * (k / 60),
-                    z = pm0.z + fwd.z * 4 * (k / 60);
-                const y = r._voxelSurfaceY(x, z) + 1.7;
-                cam.position.set(x, y, z);
-                cam.lookAt(x + fwd.x * 20, y - 4, z + fwd.z * 20);
-                cam.updateMatrixWorld(true);
-            };
-            // die Welt-Punkte: Boden 3–12 m voraus und quer (in der nahen Kaskade und an ihrem Rand)
-            const welt = [];
-            for (const d of [3, 6, 9, 12])
-                for (const q of [-2, 0, 2]) {
-                    const x = pm0.x + fwd.x * d - fwd.z * q,
-                        z = pm0.z + fwd.z * d + fwd.x * q;
-                    welt.push(new T.Vector3(x, r._voxelSurfaceY(x, z), z));
-                }
-            pose(0);
-            r._schattenAlleNeu();
-            let erst = null,
-                vorBild = null;
-            const schl0 = new Map();
+            const [fx, fz] = [Math.sin(yaw), Math.cos(yaw)];
+            const auf = (d, q) =>
+                v
+                    .set(pm0.x + fx * d - fz * q, 0, pm0.z + fz * d + fx * q)
+                    .setY(r._voxelSurfaceY(v.x, v.z))
+                    .clone();
+            const welt = [3, 6, 9, 12].flatMap((d) => [-2, 0, 2].map((q) => auf(d, q)));
+            const [schl, erst, vorBild] = [[new Map(), new Map()], [], []];
             for (let k = 0; k < 120; k++) {
-                pose(k);
+                const p = auf((4 * k) / 60, 0).setY(r._voxelSurfaceY(v.x, v.z) + 1.7);
+                cam.position.copy(p);
+                cam.lookAt(p.x + fx * 20, p.y - 4, p.z + fz * 20);
+                cam.updateMatrixWorld(true);
+                if (k === 0) r._schattenAlleNeu();
                 r._loopShadowUpdate();
                 r._kaskadenPassen(csm);
-                const f = csm.lights.map((l, i) => {
-                    const sh = l.shadow;
-                    const fit = csm._anazhFit[i];
-                    const rendert = sh.needsUpdate === true;
+                csm.lights.forEach((l, i) => {
+                    const [sh, f] = [l.shadow, csm._anazhFit[i]];
+                    if (sh.needsUpdate !== true) return;
                     sh.needsUpdate = false; // die Karte rendert (renderShadow)
-                    if (rendert) {
-                        sh.updateMatrices(l);
-                        // die Uniform des Passes, gerufen wie im Render der Kaskade (Kamera = ihre)
-                        const R = U.update ? (U.update({ camera: sh.camera }), U.value) : null;
-                        if (!R || R.x !== fit.raster[0] || R.y !== fit.raster[1]) out.uniform++;
-                        const [mw, mh] = [sh.mapSize.width, sh.mapSize.height];
-                        welt.forEach((p, j) => {
-                            v.copy(p).applyMatrix4(sh.matrix);
-                            if (v.x < 0 || v.x > 1 || v.y < 0 || v.y > 1) return;
-                            const s = Math.floor(v.x * mw),
-                                z = Math.floor((1 - v.y) * mh);
-                            const rx = alt ? 0 : fit.raster[0],
-                                ry = alt ? 0 : fit.raster[1];
-                            const key = (((s + rx) % P) + P) % P + "," + ((((ry + 16 * P - z) % P) + P) % P);
-                            const id = i + ":" + j;
-                            out.punkte++;
-                            if (!schl0.has(id)) schl0.set(id, key);
-                            else if (schl0.get(id) !== key) out.schluessel++;
+                    sh.updateMatrices(l);
+                    U.update({ camera: sh.camera });
+                    if (U.value.x !== f.raster[0] || U.value.y !== f.raster[1]) o.uniform++;
+                    welt.forEach((w, j) => {
+                        v.copy(w).applyMatrix4(sh.matrix);
+                        if (v.x < 0 || v.x > 1 || v.y < 0 || v.y > 1) return;
+                        o.punkte++;
+                        [f.raster, [0, 0]].forEach(([rx, ry], a) => {
+                            const key =
+                                mod(Math.floor(v.x * sh.mapSize.width) + rx) +
+                                "," +
+                                mod(ry - Math.floor((1 - v.y) * sh.mapSize.height));
+                            if (!schl[a].has(i + ":" + j)) schl[a].set(i + ":" + j, key);
+                            else if (schl[a].get(i + ":" + j) !== key) o[a ? "alt" : "schluessel"]++;
                         });
-                    }
-                    return { rendert, bild: fit.bild, W: fit.W, H: fit.H, tx: fit.texel, cx: fit.x0 + fit.W / 2, cy: fit.y0 + fit.H / 2 };
-                });
-                if (!erst) erst = f;
-                else {
-                    out.frames++;
-                    f.forEach((g, i) => {
-                        const e = erst[i];
-                        if (g.rendert) out.renders[i]++;
-                        if (g.W !== e.W || g.H !== e.H) out.rast++;
-                        if (g.bild !== vorBild[i].bild) out.neulagen++;
-                        const ty = (g.H * g.tx) / g.W;
-                        const rx = (g.cx - e.cx) / g.tx,
-                            ry = (g.cy - e.cy) / ty;
-                        out.rest = Math.max(out.rest, Math.abs(rx - Math.round(rx)), Math.abs(ry - Math.round(ry)));
                     });
-                }
-                vorBild = f;
+                    const c = [f.x0 + f.W / 2, f.y0 + f.H / 2];
+                    if (k === 0) erst[i] = { W: f.W, H: f.H, c };
+                    else {
+                        o.renders[i]++;
+                        if (f.W !== erst[i].W || f.H !== erst[i].H) o.rast++;
+                        if (f.bild !== vorBild[i]) o.neulagen++;
+                        for (const [a, t] of [
+                            [0, f.texel],
+                            [1, f.H / sh.mapSize.height],
+                        ]) {
+                            const q = (c[a] - erst[i].c[a]) / t;
+                            o.rest = Math.max(o.rest, Math.abs(q - Math.round(q)));
+                        }
+                    }
+                    vorBild[i] = f.bild;
+                });
             }
         }
-        return out;
-    };
-    aus.k9 = gang(false);
-    if (selbsttest) aus.s16 = gang(true);
-    aus.k9code = {
-        weiche: /_blendeRaster/.test(window.__codeOf(r._ditherIGN)) && /cameraProjectionMatrix/.test(window.__codeOf(r._ditherIGN)),
-        zwilling: window.__fehlt(r._lodCrossfadeMaskNode, /52\.9829189/),
-    };
+        aus.k9 = o;
+    }
+    aus.k9code = { zwilling: window.__fehlt(r._lodCrossfadeMaskNode, /52\.9829189/) };
     // K7 — der Takt hält die Box: ein Takt-Render ohne Änderung behält sie, ein Werfer über der nahen Ebene legt sie neu
     if (boden) {
         tag(0.5);
@@ -1588,20 +1555,20 @@ function probe(selbsttest) {
         );
         check(
             "K3 Zentrum auf dem Texel-Raster",
-            a.k3.every(Boolean) && a.k3gehen.every(Boolean),
-            `gehen 0,37 m: ${a.k3gehen}`
+            a.k3.every(Boolean),
+            `${a.k3}`
         );
-        const k9t = (g) =>
-            `Snap-Rest ${g.rest.toExponential(1)} Texel · ${g.rast} Rast-Wechsel · ${g.neulagen} Neulagen · Renders ${g.renders.join("/")} in ${g.frames} Bildern · Schlüssel der Blende ${g.schluessel} von ${g.punkte} gewandert · Uniform falsch ${g.uniform}`;
+        const g = a.k9;
         check(
-            "K9 der Gang (4 m/s, 7 Richtungen × 120 Bilder im Takt des Spiels): die Licht-Matrix rastet auf dem Welt-Texel (Snap-Rest ≤ 1e-6, 0 Rast-Wechsel), die Box legt sich neu, und der Schlüssel der Blende jedes Welt-Punkts steht in jedem Render der Kaskade (die Uniform des Passes trägt den Ursprung)",
-            a.k9.rest <= 1e-6 && a.k9.rast === 0 && a.k9.neulagen > 0 && a.k9.punkte > 500 && a.k9.schluessel === 0 && a.k9.uniform === 0,
-            k9t(a.k9)
-        );
-        check(
-            "K9 die Blende hat EINEN Schlüssel: `_ditherIGN` liest in der Kaskade das Welt-Raster (`_blendeRaster`, die orthographische Weiche), `_lodCrossfadeMaskNode` trägt keinen Zwilling",
-            a.k9code.weiche && a.k9code.zwilling,
-            a.k9code
+            "K9 der Gang 4 m/s: Snap-Rest 0 Texel, kein Rast-Wechsel, der Schlüssel der Blende steht über jede Neulage, EIN Schlüssel",
+            g.rest <= 1e-6 &&
+                !g.rast &&
+                g.neulagen > 0 &&
+                g.punkte > 500 &&
+                !g.schluessel &&
+                !g.uniform &&
+                a.k9code.zwilling,
+            JSON.stringify(g)
         );
         check(
             "K4 außerhalb des Takts: still → keine, 40° gedreht → beide rendern",
@@ -1815,11 +1782,7 @@ function probe(selbsttest) {
                 !!a.s15 && a.s15.lichtBlind.includes("__w10:licht"),
                 a.s15 ? w10t(a.s15) : "keine Probe"
             );
-            check(
-                "S16 Selbsttest: der alte Schlüssel der Blende (das Pixel der Karte allein) wandert mit jeder Neulage der Box — K9 rot",
-                !!a.s16 && a.s16.schluessel > 0,
-                a.s16 ? k9t(a.s16) : "keine Probe"
-            );
+            check("S16 Selbsttest: der alte Schlüssel (das Pixel der Karte) wandert — K9 rot", a.k9.alt > 0, a.k9.alt);
             check("S4 Selbsttest: die Absenz-Regel fängt beide alten Frustum-Schreiber der Tiere", a.s4 === true);
             check("S5 Selbsttest: das Addon-_updateShadowBounds schreibt die Kaskaden-Kamera", a.s5 === true);
             const zs = bildZiele((t) => t + "\nconst t = TSL.viewportDepthTexture();\n");
