@@ -600,7 +600,8 @@ class AnazhRealm_kreatur_fauna {
     }
     // DIE BESTÄUBER (luftwasser.K4, tetrapoda BESTAEUBER_GESETZ): je Takt die Aktivität aus dem Feld am Auge — der Tag (Sonne),
     // der EINE Wind (`_windAt`), der Regen des Wetter-Felds — und je GEZEICHNETER Blüte (`_bestaeuberBlueten`) ihr Wurf im
-    // Fenster mit dem Nektar aus der Feuchte am Ort (`bestaeuberBesuch`), der Gast auf seiner Bahn gegen den Wind
+    // Fenster mit dem Nektar aus der Feuchte und dem Leben am Ort (`bestaeuberBesuch`; das Leben je Kachel und Takt aus `auraAt`:
+    // die Pflege-Geste zieht sie, luftwasser.K4#2), der Gast auf seiner Bahn gegen den Wind
     // (`bestaeuberBahn`). Die Kosten hängen an den Blüten im Ring der Nah-Streu, nie an der Welt; EIN Pool (tier:bestaeuber).
     _bestaeuberTakt(dt) {
         const st = this.state;
@@ -620,9 +621,11 @@ class AnazhRealm_kreatur_fauna {
             a0 === undefined ? soll : a0 + (soll - a0) * Math.min(1, Math.max(0, dt || 0) / B.traegS));
         let n = 0;
         if (aktiv > 0)
-            for (const e of this._bestaeuberBlueten())
+            for (const e of this._bestaeuberBlueten()) {
+                // das Leben des Orts je Kachel und Takt (die Pflege-Geste hebt es sofort, `auraAt` — der EINE Leser des Felds)
+                const leben = e.n ? this.auraAt(e.cx, e.cz).lebendig : 0;
                 for (let i = 0; i < e.n; i++) {
-                    const g = BG.besuch(e.h[i], t, aktiv, e.feuchte, B, o);
+                    const g = BG.besuch(e.h[i], t, aktiv, e.feuchte, B, o, leben);
                     const tp = o.tp;
                     for (let j = 0; j < g; j++) {
                         const h = (e.h[i] + Math.imul(j, 0x9e3779b9)) >>> 0; // der Platz des Gasts am Kopf
@@ -635,6 +638,7 @@ class AnazhRealm_kreatur_fauna {
                         n++;
                     }
                 }
+            }
         liste.length = n;
         this._kleintierZeichnen(liste, B.leib, "bestaeuberPool", "tier:bestaeuber");
     }
@@ -686,7 +690,7 @@ class AnazhRealm_kreatur_fauna {
                     for (let i = 0; i < n; i++)
                         p[3 * i + 1] = Math.max(p[3 * i + 1], M[16 * i + 13] + top * M[16 * i + 5]);
                 }
-                e = { n, h, p, feuchte: n ? this._feuchteAt(cx, cz) : 0 };
+                e = { n, h, p, cx, cz, feuchte: n ? this._feuchteAt(cx, cz) : 0 };
                 memo.set(L[1], e);
             }
             aus.push(e);

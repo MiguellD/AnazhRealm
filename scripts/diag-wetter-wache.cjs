@@ -27,6 +27,7 @@ const {
     wetterSelbsttest,
     himmelUrteil,
     himmelSelbsttest,
+    hm,
 } = require("./lib/ausgabe-aufnahme.cjs");
 
 const PORT = Number(process.env.WETTER_WACHE_PORT || 4602);
@@ -418,12 +419,6 @@ function himmelProbe(o) {
     window.__taktZeit = undefined;
     return aus;
 }
-
-const hm = (t) => {
-    const x = (((Number(t) % 1) + 1) % 1) * 24;
-    const h = Math.floor(x);
-    return `${String(h).padStart(2, "0")}:${String(Math.floor((x - h) * 60)).padStart(2, "0")}`;
-};
 
 // Die Täter eines Urteils je Tat gezählt: Uhrzeiten und Wetter-Worte fallen aus dem Schlüssel, das erste Beispiel bleibt.
 function taeterGezaehlt(liste) {

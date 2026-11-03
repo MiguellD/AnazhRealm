@@ -11,7 +11,8 @@
 // Konstante zwischen den Scopes (ein window/self-Leck), fällt die Linse. Dazu der P-Zwilling und das Skelett im Haupt-Thread
 // (unten). Das ist die Gesetz-#0-Wand: EINE Quelle, viele Leser, KEIN Mirror, der driften kann.
 "use strict";
-const { ausDatei, path, vm, kernKontext, ENGINE_THREE } = require("./lib/welt-boot.cjs");
+const { ausDatei, path, vm, ENGINE_THREE } = require("./lib/welt-boot.cjs");
+const { kernKontext } = require("./lib/asset-worker-harness.cjs");
 
 // Der geteilte Kern läuft im IIFE-Muster und exportiert auf `root` (self||globalThis) — in
 // node ist das globalThis. Ein simpler require() reicht (die Datei ist kein CommonJS-Modul,

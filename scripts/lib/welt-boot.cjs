@@ -356,13 +356,6 @@ function studioKern(datei, name, frisch) {
 // globale Objekt, Math das des Gates (die Plattform-Probe erreicht so den Guss) — darin die `quellen` (Pfade ab der Wurzel, je
 // Prozess einmal gelesen) der Reihe nach. Bis zur Decke w3s-sukzession baute jede Linse ihn selbst (vier Mal).
 const QUELL_TEXT = {};
-// EIN stiller Kern-Kontext im node-vm (self · globalThis sind er selbst); `mehr` legt Globale dazu (THREE, Math, …) — bis
-// w5-pipeline baute jede Linse ihn selbst (sechs Mal).
-function kernKontext(mehr) {
-    const ctx = require("vm").createContext({ console: { log() {}, warn() {}, error() {} }, performance: { now: () => 0 }, ...mehr }); // prettier-ignore
-    ctx.self = ctx.globalThis = ctx;
-    return ctx;
-}
 // die Kerne des Ofens (Tier und Mensch: foundry-core BAKERS_BY_KIND) in der Folge ihres Fadens
 const OFEN_KERNE = ["phyto-core.js", "koerper-core.js", "tetrapoda-core.js", "foundry-core.js"];
 // THREE ist die Engine des Fadens (`ENGINE_THREE`, je Scope eine eigene Kopie des Namensraums) — der Faden rechnet auf
@@ -1531,7 +1524,6 @@ function frageJa() {
 
 module.exports = {
     OFEN_KERNE,
-    kernKontext,
     ENGINE_MODUL,
     ENGINE_THREE,
     frageJa,

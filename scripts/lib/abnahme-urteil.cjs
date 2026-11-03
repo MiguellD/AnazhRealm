@@ -14,7 +14,7 @@
 // mit `wenn` gilt nur, wenn die Messung den Teil trägt (das Ziel ist benannt). Der Satz „messung" (ein Mess-Frame, kein
 // Beweisbild: 32×18 Takt-Bilder, Luma-Proben der Post-Kette) prüft nur Stand, Bühne und Gerät — er steht in der Zeile.
 "use strict";
-const { ausDatei, jsonLesen, jsonKlon, kernKontext } = require("./welt-boot.cjs");
+const { ausDatei, jsonLesen, jsonKlon } = require("./welt-boot.cjs");
 
 const zlib = require("zlib");
 
@@ -1599,7 +1599,7 @@ function standLeser(root) {
                 lesen: (d) => (fs.existsSync(path.join(root, d)) ? ausDatei(path.join(root, d)) : null),
                 kern: (d, sym) => {
                     if (!(d in kerne)) {
-                        const sb = kernKontext({ console, Math });
+                        const sb = require("./asset-worker-harness.cjs").kernKontext({ console, Math });
                         sb.window = sb;
                         try {
                             vm.runInContext(ausDatei(path.join(root, d)), sb, { filename: d });

@@ -7,7 +7,7 @@
 //
 // mint-asset-goldens.cjs (schreibt die eingefrorenen Goldens) UND diag-asset-contract.cjs (das
 // Dauer-Gate) LESEN diese eine Datei — kein zweiter Boot-Pfad, der driften kann.
-const { statikServer, starteBrowser, ausDatei, path, crypto, stammLib, jsonLesen, ROOT, ENGINE_THREE, ENGINE_MODUL, kernKontext } = require("./welt-boot.cjs");
+const { statikServer, starteBrowser, ausDatei, path, crypto, stammLib, jsonLesen, ROOT, ENGINE_THREE, ENGINE_MODUL } = require("./welt-boot.cjs");
 const { installiereDrift, FUNKTIONEN } = require("./plattform-probe.cjs");
 const { rasterDreieck } = require("./kronen-linse.cjs");
 const { luma709, linSrgb } = require("./abnahme-urteil.cjs");
@@ -441,6 +441,19 @@ function absorber() {
     });
     return a;
 }
+// DER KONTEXT EINES KERNS IM VM: stumm, die Uhr steht, `self` und `globalThis` sind er selbst — `mit` legt dazu, was der
+// Kern dort liest (ohne: THREE als Absorber). Bis streaming-k5 baute jede Linse ihn selbst (die Vertrags-Linse zweimal, die
+// Streu-Linse, dieser Kanal, die Daten-Linse zweimal, der Baum, das Abnahme-Urteil).
+function kernKontext(mit = { THREE: absorber() }) {
+    const ctx = require("vm").createContext({
+        console: { log() {}, warn() {}, error() {} },
+        performance: { now: () => 0 },
+        ...mit,
+    });
+    ctx.self = ctx;
+    ctx.globalThis = ctx;
+    return ctx;
+}
 function kanalImVm(quellen = {}) {
     const vm = require("vm");
     const posts = [];
@@ -486,7 +499,7 @@ module.exports = {
     fingerprintMeshes,
     DATEN_KANAELE,
     kanalImVm,
-    absorber,
+    kernKontext,
     bauAbdruck,
     bauBild,
     BAU_BILD_QUELLE,

@@ -142,6 +142,16 @@
       "vertices": 2414,
       "sha256": "16ff969532da14de4d37e2b9e8a8beafb946707ad9d40117bbf72dbfa9e5c4a0"
     },
+    "flegel-s7-L0": {
+      "objects": 16,
+      "vertices": 3367,
+      "sha256": "23887876258a41a8ccfba8757cf6dc21981c793c0a60a9771a1b715957d9c668"
+    },
+    "flegel-s12345-L0": {
+      "objects": 16,
+      "vertices": 3367,
+      "sha256": "23887876258a41a8ccfba8757cf6dc21981c793c0a60a9771a1b715957d9c668"
+    },
     "faellaxt-s7-L0": {
       "objects": 11,
       "vertices": 2809,

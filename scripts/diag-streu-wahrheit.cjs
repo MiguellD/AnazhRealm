@@ -31,7 +31,7 @@
 // Exit: 0 grün · 1 rot.
 // ============================================================================
 "use strict";
-const { ausDatei, SELBSTTEST, stammLib, vm, kernKontext } = require("./lib/welt-boot.cjs");
+const { ausDatei, SELBSTTEST, stammLib, vm } = require("./lib/welt-boot.cjs");
 
 const PHYTO = ausDatei("phyto-core.js");
 const KERN = ausDatei("foundry-core.js");
@@ -44,7 +44,7 @@ function codecAus(phytoSrc) {
 }
 // linear → sRGB nach IEC 61966-2-1: die Referenz der Linse (abnahme-urteil linSrgb), unabhängig vom Codec.
 const { linSrgb } = require("./lib/abnahme-urteil.cjs");
-const { absorber } = require("./lib/asset-worker-harness.cjs");
+const { kernKontext } = require("./lib/asset-worker-harness.cjs");
 const srgbSoll = (v) => Math.round(linSrgb(v) * 255);
 function kartenFarbe(core) {
     const fehler = [];
@@ -94,7 +94,7 @@ function kartenSaum(core, presets, ic) {
 // Die Daten des Pflanzen-Kerns (phyto-core + foundry-core, wie cores.manifest.json sie lädt): PRESETS und
 // PORTAL_RENDER_CONFIG. null, wenn der Kern nicht lädt.
 function kernDaten(phytoSrc, kernSrc) {
-    const ctx = kernKontext({ THREE: absorber() });
+    const ctx = kernKontext();
     try {
         vm.runInContext(
             phytoSrc +
