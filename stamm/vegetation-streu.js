@@ -1556,7 +1556,7 @@ class AnazhRealm_vegetation_streu {
         const _buchKalt = this._foundryEnabled() && !(_fb && _fb.ready && _fb.recipes);
         // DIE REIHE DER REGIONEN (der EINE Rang, w7-rang): die fehlenden in Reichweite der Bahn nach der Zeit bis Bedarf
         // (`_bedarfWeg` ihrer Mitte) — bis w7-rang in Ring-Reihe (dz, dx); beim GT-Tempo trat jede neue Region wartend in den
-        // Sichtkegel (streaming.K2, Null-Renderer an main 0e3eadad: Streu 0 von 15).
+        // Sichtkegel (streaming.K2, Null-Renderer an main 6eeeb856: Streu 0 von 15).
         const neu = [];
         for (let dz = -SC.ringRegions; dz <= SC.ringRegions && !_sliceFull && !_buchKalt; dz++)
             for (let dx = -SC.ringRegions; dx <= SC.ringRegions; dx++) {

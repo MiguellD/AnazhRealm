@@ -1312,8 +1312,9 @@ class AnazhRealm_studio_bruecke {
     // a ≥ b · v0 / w; sonst (seitab, dahinter, im Stand) T = d / v0. Gemessen wird in Metern zu Fuß (`v0 · T`): im Stand ist der
     // Rang der Abstand selbst (jeder Leser der alten Zahl d² liest dasselbe), voraus rückt ein Ding um s / v0 näher. Bis w7-rang
     // ordnete jede Schlange für sich: der Boden nach Chebyshev ohne Tempo, der Wuchs und die Foundry nach d², die Bauten nach d²,
-    // die Streu in Ring-Reihe — beim GT-Tempo (16 m/s) trat jeder Chunk und jede Streu-Region unfertig in den Sichtkegel
-    // (streaming.K2, Null-Renderer an main 0e3eadad: Boden 0 von 145, Streu 0 von 15).
+    // die Streu in Ring-Reihe — beim GT-Tempo (16 m/s) trat die Welt unfertig in den Sichtkegel
+    // (streaming.K2, Null-Renderer an main 6eeeb856: fertig beim Eintritt Boden 42,6 %, Bäume 11,1 %, Karten 7,7 %, Bauten
+    // 78,6 %, Streu 0 von 15; mit dem Rang 100 · 98,7 · 100 · 100 %, und 0 statt 1 627 Lücken-Bilder in Sprint und GT, streaming.K1).
     _bedarfWeg(x, z) {
         const e = this.state.playerMesh && this.state.playerMesh.position;
         if (!e) return Infinity;
