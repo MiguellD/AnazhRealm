@@ -1000,6 +1000,19 @@ class AnazhRealm_speicher_welten {
                             .filter(eigen)
                             .map((art) => [art, saat[art]])
                     );
+                    // DAS GESETZ REIST ALS ABWEICHUNG VON DER ERDE (ultiversum.K1): je Teil nur, was vom Gesetz der Erde abweicht —
+                    // eine Welt der Erde trägt kein Feld, `_weltGesetz` stellt die Normalform beim Laden wieder (die volle Form trug
+                    // je Stand 184 Bytes: das Abbild des Mitträgers riss seine Wand von 256 KiB)
+                    const G = AnazhRealm._weltGesetz(wm);
+                    const E = AnazhRealm.WELT_GESETZ_ERDE;
+                    const ab = {};
+                    if (G.schwere !== E.schwere) ab.schwere = G.schwere;
+                    if (G.himmel.rayleighTiefe.some((v, i) => v !== E.himmel.rayleighTiefe[i])) ab.himmel = G.himmel;
+                    const wetter = Object.keys(E.wetter).filter((z) => G.wetter[z] !== E.wetter[z]);
+                    if (wetter.length) ab.wetter = Object.fromEntries(wetter.map((z) => [z, G.wetter[z]]));
+                    if (G.gelaende != null) ab.gelaende = G.gelaende;
+                    if (Object.keys(ab).length) wm.gesetz = ab;
+                    else delete wm.gesetz;
                     if (stand) delete wm.voxelEdits;
                     return wm;
                 },
