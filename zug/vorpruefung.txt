@@ -19,3 +19,4 @@ w6-weiches f32add32 OFFEN Korrektur: playtest Φ5 Q14–Q18 = Φ5-Wand (pinCurre
 w5-studios-k1 d5aa0e1f GRÜN check+playtest-voll+haus-welt+koerper-kern+koerper-stand+regler-wirkt+werk-im-wasser (main 2d2a5f11)
 w5-studios-k1 d5aa0e1f GRÜN Nachtrag Φ5=261880B (Sonde 22:15, main 2d2a5f11 261952–261963 B: −~75 B)
 w7-rang 9910fb73 ROT merge KONFLIKT mit main 2d2a5f11: 
+w7-rang 9910fb73 OFFEN Korrektur: ROT merge 00:49 war Werkzeug (Neustart-Wettlauf mit den gefällten Prozessen, merge.log leer, keine Konflikt-Datei); Vorprüfung läuft neu nach begegnung
