@@ -1890,3 +1890,4 @@
 2026-11-04 19:27:30 23d19f6f-radeon halten.K5#2 GRÜN 0.1 · 48/117
 2026-11-04 19:27:57 23d19f6f-radeon halten.K1#2 GRÜN 0.3 · 49/117
 2026-11-04 19:28:24 23d19f6f-radeon fahrzeug.K5#1 GRÜN 0.4 · 50/117
+2026-11-04 19:34:06 23d19f6f-radeon profiband.K1#1 ROT 1.1 · 51/117
