@@ -415,8 +415,8 @@ const PORTAL_RENDER_CONFIG = {
         //   draws    = Obergrenze der Sippen je Instanz (Host-Verschmelz-Regel: Stoff × Attribut-Form × Index) =
         //              Draws je Instanz-Gruppe und Pass;
         //   schatten = die Stufe, deren Gestalt den Schatten wirft (L0-Baum wirft seine L1), oder false;
-        //   karte    = die Stufe IST die Studio-Karte (bakeImpostorAtlas aus L1, beim Host das Achsen-Quad mit
-        //              2 Dreiecken) — die L2-Geometrie wird dort nicht geliefert (gate:studio-vertrag haelt
+        //   karte    = die Stufe IST die Karte des EINEN Bäckers (die Welt backt sie aus L1, `_karteWeltBacken`; das
+        //              Labor zeigt ihre Bytes; beim Host das Gitter der Karte) — die L2-Geometrie wird dort nicht geliefert (gate:studio-vertrag haelt
         //              karte ⇔ KIND_POLICY.impostor des Hosts).
         // Herleitung aus dem Profi-Band (680k Dreiecke je Frame ueber alle Paesse, spec/profiband/haushalt.json
         // `band`; Mess-Wiese V18.526: 5,1 M, davon Pflanzen nah/mittel 3,3 M — Baum-L1 trug 39,5k bei
@@ -739,12 +739,12 @@ const PORTAL_RENDER_CONFIG = {
         },
     },
     // DER BÄCKER-SPEC („Drähte statt Kopien" 08.07., Studio-Vertrag B2): das Atlas-Rezept des
-    // 8-Winkel-Impostors als DATEN — Blickwinkel + Zell-Maße. Studio-Bäcker (bakeImpostorAtlas)
-    // UND AnazhRealms RTT-Bäcker lesen DIESELBEN Zahlen; wer die Fern-Karten-Auflösung ändert,
+    // 8-Winkel-Impostors als DATEN — Blickwinkel + Zell-Maße. Der EINE Bäcker (der Welt-Renderer,
+    // `_karteWeltBacken`, pipeline.K2) liest sie; wer die Fern-Karten-Auflösung ändert,
     // ändert sie HIER, nirgends sonst.
     // DIE HEBUNGS-RINGE (lod.K3, additiv): die Blick-Hebungen der Welt-Karte in Grad, aufsteigend — je Hebung ein Ring
     // der `views` Peilungen in derselben Schicht; der Ring 0° in voller Zelle, jeder andere in 1/ringTeiler je Achse
-    // (DIE ATLAS-DIÄT: ¼ der Zellfläche, ringTeiler Ansichten je Zeile). Der Studio-Bäcker liest nur den Ring 0°.
+    // (DIE ATLAS-DIÄT: ¼ der Zellfläche, ringTeiler Ansichten je Zeile). Das Labor zeigt den Ring 0°.
     impostor: { views: 8, cellW: 128, cellH: 256, hebungen: [-20, 0, 40, 80], ringTeiler: 2 },
 };
 
@@ -4905,7 +4905,7 @@ function __weltSkalaArt(id) {
     return sc === 1 ? 1 : sc < 1 ? sc : sc * PORTAL_RENDER_CONFIG.placement.treeScaleMul;
 }
 
-function deriveParamsPlant(pre) {
+function deriveParamsPlant(pre, alter) {
     // die Dials aus dem Dial-Kontext des Wirts (`__dials`): im Bau die Preset-Dials, im Labor das Regler-Objekt der Hülle (K47)
     const _D = __dials;
     const api = _D.api,
@@ -4960,7 +4960,7 @@ function deriveParamsPlant(pre) {
     const core = typeof self !== "undefined" && self.__phytoCore;
     if (!core || typeof core.treeParams !== "function")
         throw new Error("phyto-core fehlt — die Baum-Ableitung wohnt im Gesetzbuch (Ladereihenfolge)");
-    return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre, __weltSkalaArt(CURRENT));
+    return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre, __weltSkalaArt(CURRENT), alter);
 }
 
 // Die Regler des Waldbodens → die Gestalt-Parameter je Art (api · delta · slim · trop · leaf wie jede Pflanze).
@@ -5261,7 +5261,8 @@ function buildInstance(presetId, seed, lod, ov) {
             __rockKind = P.kind;
             emitRock(P);
         } else {
-            const P = deriveParamsPlant(pre);
+            // die Jugend-Gestalt (stoffe.K5#2) reist als Prägung `ov.alter` in die EINE Ableitung (phyto-core `treeParams`)
+            const P = deriveParamsPlant(pre, ov ? ov.alter : undefined);
             if (ov) Object.assign(P, ov); // Wald-Overrides (crownBase)
             if (P.kind === "flower") {
                 const zeile = (PORTAL_RENDER_CONFIG.lod.budget.flower[lod] || {}).tris;
@@ -5328,7 +5329,8 @@ function skelettDerGestalt(presetId, seed, lod, ov) {
         seed,
         lod,
         pre,
-        __weltSkalaArt(presetId)
+        __weltSkalaArt(presetId),
+        ov ? ov.alter : undefined
     );
     if (ov) Object.assign(P, ov);
     const nodes = __wuchsDerStufe(P, core.stufenRezept(P.kind, lod), mulberry32(Math.floor(seed) >>> 0));
@@ -7264,7 +7266,7 @@ function __feldVerdeckung(F, vox, x, y, z, V) {
 // Punkte, die schon TIEF innen liegen, kann kein weiteres smin mehr über Null heben, und ein Primitiv,
 // dessen Abstand (untere Schranke |p−c| − R) um blend über dem Feld liegt, ändert nichts — beide
 // überspringen die Abstands-Rechnung. Die Primitive werden __nichtGiessen (gegossen wird die Haut).
-function __tierFeld(prims, vox, blend) {
+function __tierFeld(prims, vox, blend, anker) {
     const lo = [1e9, 1e9, 1e9],
         hi = [-1e9, -1e9, -1e9];
     for (const p of prims)
@@ -7272,6 +7274,7 @@ function __tierFeld(prims, vox, blend) {
             lo[d] = Math.min(lo[d], p.c[d] - p.ext);
             hi[d] = Math.max(hi[d], p.c[d] + p.ext);
         }
+    if (anker) for (let d = 0; d < 3; d++) lo[d] = Math.floor(lo[d] / vox) * vox;
     const nx = Math.ceil((hi[0] - lo[0]) / vox) + 2,
         ny = Math.ceil((hi[1] - lo[1]) / vox) + 2,
         nz = Math.ceil((hi[2] - lo[2]) / vox) + 2;
@@ -8501,7 +8504,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             if (n.isMesh && n.material.userData.__klasse === "shadow" && !unterAuge(n)) n.userData.__nichtGiessen = true;
         });
         if (prims.length < 2) throw new Error("MENSCH-HAUT: der Kopf trägt keine Haut-Primitive");
-        const Fk = __tierFeld(prims, KH.vox, KH.blend);
+        const Fk = __tierFeld(prims, KH.vox, KH.blend, true);
         const geo = __huelleAusFeld(kern, Fk.f, Fk.nx, Fk.ny, Fk.nz, Fk.lo, KH.vox, 0, 0, null, null, 0);
         if (!geo) throw new Error("MENSCH-HAUT: die Kopf-Haut lieferte keine Fläche");
         // je Vertex die Farbe des nächsten Primitivs (normierter Abstand |Mi·p|/r − 1), linear wie das Material
@@ -8724,15 +8727,34 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         });
         const anteil = huelleD > 0 ? (ziel - festD) / huelleD : 1;
         if (!(anteil > 0)) throw new Error(`MENSCH-GUSS: die festen Teile (${festD} Dreiecke) tragen die Zeile ${ziel} allein`);
-        if (anteil < 1)
-            for (const h of huellen) {
-                const alt = h.geometry;
-                const neu = __huelleKollaps(alt, Math.floor((alt.index.count / 3) * anteil));
-                if (neu !== alt) {
-                    alt.dispose();
-                    h.geometry = neu;
-                }
+        const kollabiere = (h, ziel) => {
+            const alt = h.geometry;
+            const neu = __huelleKollaps(alt, ziel);
+            if (neu !== alt) {
+                alt.dispose();
+                h.geometry = neu;
             }
+        };
+        if (anteil < 1) for (const h of huellen) kollabiere(h, Math.floor((h.geometry.index.count / 3) * anteil));
+        // DER KOPF TRÄGT SEINE ZEILE (mensch.K4, KOPF_SOLL kopfDreiecke): in der nahen Stufe trägt der Kopf (Haut, Augen, Lider,
+        // Haar) höchstens kopfDreiecke[1] — was darüber liegt, nimmt seine Haut (die Kappe des großen Haars macht sie größer:
+        // afro, locken, lang trugen 12 146–12 440 über 12 000); jeder andere Stil bleibt byte-gleich
+        const kopfZeile = !fein && kern.KOPF_SOLL && kern.KOPF_SOLL.kopfDreiecke ? kern.KOPF_SOLL.kopfDreiecke[1] : null;
+        if (kopfZeile > 0) {
+            let kopfD = 0;
+            const kopfHuellen = [];
+            B.parts.head.traverse((node) => {
+                if (!node.isMesh || !node.geometry || node.userData.__nichtGiessen) return;
+                kopfD += (node.geometry.index ? node.geometry.index.count : node.geometry.attributes.position.count) / 3;
+                if (node.userData.__huelle) kopfHuellen.push(node);
+            });
+            const hautD = kopfHuellen.reduce((a, h) => a + h.geometry.index.count / 3, 0);
+            if (kopfD > kopfZeile && hautD > 0) {
+                const k = (kopfZeile - (kopfD - hautD)) / hautD;
+                if (!(k > 0)) throw new Error(`MENSCH-GUSS: Augen, Lider und Haar (${kopfD - hautD} Dreiecke) tragen die Kopf-Zeile ${kopfZeile} allein`);
+                for (const h of kopfHuellen) kollabiere(h, Math.floor((h.geometry.index.count / 3) * k));
+            }
+        }
     }
     // DAS VOLUMEN DES LEIBS (1310-15, physik K1): die Masse des Menschen liest das Volumen seines Leibs — die Vereinigung seiner
     // Teile unter der Haut (skin · shorts · joint, Kopf, Hände und Füße eingeschlossen) in der Ruhe-Pose, je Teil das Netz der

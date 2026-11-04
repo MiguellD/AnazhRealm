@@ -107,7 +107,7 @@ function nahDeckungInSeite(o) {
         if (art === "laub") return { klasse: "Laub", name: "Laub " + ((e && e.type) || nm || "Streu") };
         if (art === "rinde") return { klasse: "Rinde", name: "Rinde " + ((e && e.type) || nm || "Streu") };
         if (e && r._istNatur(e)) return { klasse: "Fels", name: "Natur " + e.type };
-        return { klasse: "Bau", name: (e && e.type) || nm || obj.type };
+        return { klasse: "Bau", name: (e && e.type) || nm || r._taeterKlasse(obj) };
     };
     const zaehlt = (obj) =>
         obj.isMesh &&

@@ -1,11 +1,10 @@
-// ci-zeiten.cjs — DIE ZEITEN DER CI: je Schritt von check.yml sein Gewicht aus den letzten 7 Läufen auf integ-probe (derselbe
-// run-Text, je Job-Art; jeder Versuch, grün und rot) — im Puls der Median, in der vollen Stufe der p90 (der langsame Läufer, den
+// ci-zeiten.cjs — DIE ZEITEN DER CI: je Schritt von check.yml sein Gewicht aus den letzten 7 Läufen auf integ-probe, deren Kopf
+// auf main gelandet ist (derselbe run-Text, je Job-Art; jeder Versuch, grün und rot) — im Puls der Median, in der vollen Stufe der p90 (der langsame Läufer, den
 // ihr Deckel hält) → spec/ci/ci-zeiten.json (die Waage von gate:ci-deckung); ohne Messung ROT, die Tafel bleibt. Er verteilt die
 // Voll-Gruppen je Klasse und je echt-Schritt die Frist timeout-minutes = max(5, ⌈3 × p90⌉, ⌈1,2 × größter Lauf⌉).
 //   node scripts/ci-zeiten.cjs                          misst und verteilt
-//   node scripts/ci-zeiten.cjs --tafel                  die Kennzahlen des Richters über 7 Tage (druckt, schreibt nichts)
 "use strict";
-const { execSync } = require("child_process");
+const { execSync, spawnSync } = require("child_process");
 const yaml = require("js-yaml");
 const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cjs");
 const { alleLaeufe, apiMit } = require("./ci-kopf.cjs");
@@ -29,6 +28,9 @@ const lauf = (s) =>
     String(s.run || "")
         .trim()
         .replace(/\s+/g, " ");
+// gelandet: der Kopf des Laufs steht in der Geschichte von origin/main (der angenommene Code). Ein Zug mit einem Täter-Zweig landet
+// nie — seine Zeiten wiegen nie (z184–z188: w6-weiches trug die Kreatur-Linse Teil 1 214 → 723 s, der p90 hob jede voll-Frist)
+const gelandetAmMain = (sha) => spawnSync("git", ["merge-base", "--is-ancestor", sha, "origin/main"], { cwd: root }).status === 0;
 const frist = (z) => Math.max(5, Math.ceil((3 * z.p90) / 60), Math.ceil((1.2 * z.max) / 60));
 
 // die Schritte einer check.yml: Name → { run-Text, Job-Art } (ohne Vorbereitung)
@@ -42,11 +44,11 @@ function schritteAus(doc) {
 
 // die Messung: je Schritt die ersten JE_SCHRITT Läufe, die ihr Urteil sprachen (grün oder rot: dieselbe Arbeit), aus jedem Versuch;
 // ein am Job-Deckel abgebrochener Schritt, der selbst die Hälfte des Deckels trug, zählt mit seiner Zeit als untere Grenze (er ist
-// der Täter des Abbruchs). Nur grün und nur der letzte Versuch gezählt, wog die Kamera-Leib-Linse 58 s, während sie auf G18 318–919 s
+// der Täter des Abbruchs; auch ein gelandeter Kopf trägt ihn, im Versuch vor dem grünen Wiederholungs-Versuch). Nur grün und nur der letzte Versuch gezählt, wog die Kamera-Leib-Linse 58 s, während sie auf G18 318–919 s
 // lief und sieben Läufe am Deckel brach (der langsame Läufer brach ab, der schnelle Wiederholungs-Versuch wurde gezählt).
-async function messe(api, jetzt, alt = {}, pause = 2000) {
+async function messe(api, jetzt, alt = {}, pause = 2000, gelandet = gelandetAmMain) {
     const soll = schritteAus(jetzt);
-    const nimm = (r) => r.head_branch === "integ-probe" && r.status === "completed";
+    const nimm = (r) => r.head_branch === "integ-probe" && r.status === "completed" && gelandet(r.head_sha);
     const neueste = await alleLaeufe(api, "/actions/workflows/check.yml/runs", { nimm, seit: Date.now() - 14 * 864e5, hoechstens: HOECHSTENS, pause });
     const proben = new Map([...soll.keys()].map((n) => [n, []]));
     const [vorb, ymlAm, ort, gesehen] = [{ echt: [], sonst: [] }, new Map(), new Map(), new Set()];
@@ -106,7 +108,7 @@ async function messe(api, jetzt, alt = {}, pause = 2000) {
             `ROT: die API lieferte ${neueste.length} Läufe, ${gemessen} Messungen, ${Object.keys(schritte).length} Schritte — ${AUS} bleibt, wie sie ist`
         );
     const out = {
-        quelle: "GitHub-API (s): je Schritt aus den letzten je_schritt Läufen mit Urteil auf integ-probe im Puls der Median, voll der p90, echt mit p90 und max — scripts/ci-zeiten.cjs, gelesen von gate:ci-deckung",
+        quelle: "GitHub-API (s): je Schritt aus den letzten je_schritt Läufen mit Urteil auf integ-probe, deren Kopf auf main landete, im Puls der Median, voll der p90, echt mit p90 und max — scripts/ci-zeiten.cjs, gelesen von gate:ci-deckung",
         erzeugt: new Date().toISOString().slice(0, 10),
         kopf,
         je_schritt: JE_SCHRITT,
@@ -199,9 +201,12 @@ function verteile(jetzt, out) {
     };
     let [von, bis] = block("voll");
     let zeile = 0;
+    // die Frist der voll-Gruppen: 1,2 × die schwerste Gruppe im Plan ((T) FRIST) — aus der gelandeten Tafel, nie von Hand
+    const vollFrist = Math.ceil((1.2 * Math.max(...best.g.map((g) => g.s))) / 60);
     const voll = yml
         .slice(von, bis)
         .replace(/(name: voll \$\{\{ matrix\.gruppe \}\}\/)\d+/, (m, x) => x + best.g.length)
+        .replace(/^( {8}timeout-minutes: )\d+$/m, (m, x) => x + vollFrist)
         .replace(/^( +gruppe: )\[[\d, ]*\]/m, (m, x) => `${x}[${best.g.map((g, k) => k + 1).join(", ")}]`)
         .replace(/^( +)- gruppe: \d+\n(?: +klasse: \w+\n| +- gruppe: \d+\n)*/m, (m, x) =>
             best.g.map((g, k) => `${x}- gruppe: ${k + 1}\n${x}  klasse: ${g.klasse}\n`).join("")
@@ -221,61 +226,25 @@ function verteile(jetzt, out) {
     if (von >= 0) yml = yml.slice(0, von) + echt + yml.slice(bis);
     fs.writeFileSync(path.join(root, WORKFLOW), yml);
     console.log(
-        `${WORKFLOW}: ${nr.size} Schritte in ${best.g.length} Voll-Gruppen, die schwerste mit Mitfahrern ${(best.max / 60).toFixed(1)} min · ${fristen} echt-Fristen — es wiegt npm run gate:ci-deckung`
+        `${WORKFLOW}: ${nr.size} Schritte in ${best.g.length} Voll-Gruppen, die schwerste mit Mitfahrern ${(best.max / 60).toFixed(1)} min, Frist ${vollFrist} min · ${fristen} echt-Fristen — es wiegt npm run gate:ci-deckung`
     );
-}
-
-// DIE RICHTER-TAFEL (7 Tage); ein Wackler: ein späterer Versuch grün, wo ein früherer rot war (≥ 2 Läufe = eine Karte)
-async function tafel(api) {
-    const seit = new Date(Date.now() - 7 * 864e5);
-    const runs = await alleLaeufe(api, "/actions/workflows/check.yml/runs", { seit });
-    const [J, wackler, min] = [new Map(), new Map(), (s) => (s / 60).toFixed(1).replace(".", ",")];
-    const jobsVon = async (r, a) => (await api(`/actions/runs/${r.id}/attempts/${a}/jobs?per_page=100`)).jobs;
-    const schritte = (js, wie) => new Set(js.flatMap((j) => (j.steps || []).filter((s) => s.conclusion === wie).map((s) => s.name)));
-    const auftrag = runs.filter((r) => r.status === "completed");
-    const holen = async () => {
-        for (let r; (r = auftrag.pop()); ) {
-            J.set(r, await jobsVon(r, r.run_attempt));
-            const gruen = schritte(J.get(r), "success");
-            for (let a = 1; a < r.run_attempt; a++)
-                for (const s of schritte(await jobsVon(r, a), "failure")) if (gruen.has(s)) wackler.set(s, (wackler.get(s) || new Set()).add(r.id));
-        }
-    };
-    await Promise.all(Array.from({ length: 8 }, holen));
-    const jobs = (r, re) => (J.get(r) || []).filter((j) => re.test(j.name) && j.conclusion !== "skipped");
-    const voll = (r) => jobs(r, /^voll\b/);
-    const gruenVoll = (r) => r.conclusion === "success" && voll(r).length && voll(r).every((j) => j.conclusion === "success");
-    const echt = runs.flatMap((r) => jobs(r, /^echt\b/)).filter((j) => j.conclusion === "success").map((j) => sek(j.started_at, j.completed_at));
-    const erst = (b) => new Map(runs.filter((r) => r.event === "push" && r.head_branch === b).map((r) => [r.head_sha, r.created_at]));
-    const [integ, main] = [erst("integ-probe"), erst("main")];
-    const weg = [...main].filter(([k]) => integ.has(k)).map(([k, t]) => sek(integ.get(k), t));
-    const bat = Object.values(runs.filter((r) => voll(r).length).reduce((m, r) => ((m[r.head_sha] = (m[r.head_sha] || 0) + 1), m), {}));
-    const nacht = runs.filter((r) => r.event === "schedule" && voll(r).length && runs.some((o) => o.head_sha === r.head_sha && o.created_at < r.created_at && gruenVoll(o)));
-    const karten = [...wackler].filter(([, l]) => l.size >= 2).sort((a, b) => b[1].size - a[1].size);
-    console.log(`DIE RICHTER-TAFEL seit ${seit.toISOString().slice(0, 10)}: ${runs.length} Läufe von check.yml
-  echt-Median der grünen Läufe: ${min(median(echt))} min (${echt.length} Läufe, p90 ${min(p90(echt) || 0)})
-  integ-probe-Push bis main-Push: Median ${min(median(weg))} min (${weg.length} main-Köpfe)
-  integ-probe-Köpfe je main-FF: ${integ.size} / ${main.size}
-  volle Batterien je Kopf: ${(bat.reduce(addiere, 0) / bat.length).toFixed(2)} (${bat.length} Köpfe, ${bat.filter((x) => x > 1).length} mit ≥ 2)
-  Wackler je Schritt (≥ 2 Läufe = Karte): ${karten.map(([n, l]) => `„${n}" ×${l.size}`).join(" · ") || "keiner"}
-  Nacht-Batterien auf grünem Kopf: ${nacht.length} (${nacht.map((r) => `${r.head_sha.slice(0, 8)} ${min(sek(r.run_started_at, r.updated_at))} min`).join(" · ")})`);
 }
 
 module.exports = { messe };
 
 if (require.main === module) {
-    const args = process.argv.slice(2);
     const token =
         process.env.GITHUB_TOKEN ||
         execSync("git credential fill", { input: "protocol=https\nhost=github.com\n\n" })
             .toString()
             .match(/^password=(.*)$/m)[1];
     hauptLauf(async () => {
-        if (args.includes("--tafel")) return tafel(apiMit(API, token));
         const jetzt = yaml.load(ausDatei(path.join(root, WORKFLOW)));
         const alt = fs.existsSync(path.join(root, AUS))
             ? jsonLesen(path.join(root, AUS))
             : {};
+        // die Geschichte von main frisch: ein eben gelandeter Kopf zählt
+        execSync('git fetch --quiet origin "+refs/heads/main:refs/remotes/origin/main"', { cwd: root, stdio: "pipe" });
         const { out, gelesen, ohne } = await messe(apiMit(API, token), jetzt, alt);
         const text = JSON.stringify(out, null, 2).replace(
             /([[{])\n\s+([^[\]{}]*?)\n\s+([\]}])/g,

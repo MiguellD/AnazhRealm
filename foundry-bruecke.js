@@ -1,8 +1,7 @@
 // AnazhRealm — foundry-bruecke.js: DIE FOUNDRY-BRÜCKE (Karte K42, synthese §0 Bruch 3 / §4 W2a).
 // Der Bau-Teil der Pflanzen-Shell als EIN Modul: die Wirts-Globalen, die foundry-core liest und schreibt (PRNG,
-// Vektor-Helfer, Simplex, Stoffe, Saison-Tint, Regler-Kontext, LOD-Band), der Studio-Bäcker `bakeImpostorAtlas` (nur das
-// Labor zeichnet ihn — die Welt backt ihre Karte seit S2 im Welt-Renderer, `_karteWeltBacken`) und die Asset-Kanäle
-// (build-asset · get-book · export-settlement). Klassisches Script
+// Vektor-Helfer, Simplex, Stoffe, Saison-Tint, Regler-Kontext, LOD-Band) und die Asset-Kanäle (build-asset · get-book ·
+// export-settlement). Eine Karte backt hier keiner: ihr EINER Bäcker ist der Welt-Renderer (`_karteWeltBacken`, pipeline.K2). Klassisches Script
 // (die Top-Level-Symbole bleiben global wie in foundry-core), geladen NACH den Kernen. ZWEI Leser, KEIN Zwilling:
 // der Foundry-Worker (cores.manifest.json `bruecke`, ?v=; er lädt keine Labor-Shell und keine Labor-Szene) und das
 // Pflanzen-Labor (worlds/terrain/index.html, vor phytogenesis.js). Der Stempel der Platte hasht diese Datei, nie die
@@ -198,7 +197,7 @@ let barkNormalTex = null,
     _terMat = null,
     _envMats = [];
 let _leafAtlas = null; // FIX v31: foliageMatTex = Multi-Blatt-Texturkarten (L1); _leafAtlas = zur Laufzeit GEMALTER Cluster-Atlas (Canvas-2D, deterministisch, kein GL-Risiko)
-/* ---------- Wirts-Handles, die der Kern und der Bäcker lesen (der Rest der Szene lebt im Labor) ---------- */
+/* ---------- Wirts-Handles, die der Kern und das Labor lesen (der Rest der Szene lebt im Labor) ---------- */
 let renderer, subject;
 let __lod = 0;
 let __rockKind = "boulder";
@@ -212,27 +211,6 @@ let __dials =
 /* ---------- Saison (Phaenologie) ------------------------------------------ */
 let curSeason = "summer";
 
-/* ---------- DER STUDIO-BÄCKER: die Fernstufe (8-Winkel-Karte + Normal-Atlas) — Labor-Wald UND Welt-Karte ---------- */
-let _impAtlas = null,
-    _impK = 0,
-    _impGeo = null,
-    _impRT = null,
-    _impNrmRT = null,
-    _impNrm = null,
-    _impNrmOv = null,
-    _impDilMat = null,
-    _impDilRT = null,
-    _impDilScene = null,
-    _impDilCam = null,
-    _impBakedSig = "",
-    _impT = 0,
-    _impMat = null,
-    _impSpecs = [],
-    _impCellOf = {},
-    _impWR = {},
-    _impFrame = {}; // W6: der Bake-Rahmen je (Art, Same) — das Payload der Welt-Karte trägt ihn (kein dritter L1-Bau)
-const _impV = (PORTAL_RENDER_CONFIG.impostor && PORTAL_RENDER_CONFIG.impostor.views) || 8, // Bäcker-Spec aus der EINEN Quelle (foundry-core, Studio-Vertrag B2)
-    _impYAxis = new THREE.Vector3(0, 1, 0); // 8 Blickwinkel je Baum im Atlas (Zeilen); _impNrm = Normal-Atlas; Atlas ist SAISONINVARIANT (einmal je Seed-Signatur); _impWR = Zell-Seitenverhaeltnis je Art (FIX v28)
 // EINE Quelle fuers LOD-Band (aus PORTAL_RENDER_CONFIG.lod): <D0 fein, D0..D1 mittel, >D1 Billboard;
 // KOMPLEMENTAERES Dither-Crossfade -- dieselbe Maske teilt die Pixel exakt (kein Pop, keine Luecke). FADE0
 // 4 = das nahe L0->L1-Band (fast identische Meshes) traegt ein schmaleres Dither-Feld; die Fern-Blende
@@ -243,198 +221,6 @@ const LOD_D0 = PORTAL_RENDER_CONFIG.lod.d0,
     LOD_FADE = PORTAL_RENDER_CONFIG.lod.fade,
     LOD_FADE0 = PORTAL_RENDER_CONFIG.lod.fade0;
 const _lodU = { uLodMaskOn: { value: 1 }, uLodRef: { value: PORTAL_RENDER_CONFIG.lod.ref }, uDitherT: { value: 0 } };
-function bakeImpostorAtlas() {
-    const _impSpec = PORTAL_RENDER_CONFIG.impostor || {};
-    const K = Math.max(1, _impSpecs.length),
-        V = _impV,
-        cw = _impSpec.cellW || 128,
-        ch = _impSpec.cellH || 256; // Spalten = (Art,Variante), Zeilen = 8 Blickwinkel um Y -> die Silhouette DREHT mit der Kamera (SpeedTree-Multi-View); Zell-Maße aus der EINEN Quelle (foundry-core)
-    const sig = _impSpecs.map((s) => s.sp + s.seed).join(","); // Signatur der Baubeschreibungen: neue Seeds (Rebuild) -> Atlas MUSS neu, sonst zeigt die Ferne alte Baeume
-    if (_impRT && _impK === K && _impBakedSig === sig) return; // EINMAL-BAKE: der Atlas ist SAISONINVARIANT (volle Krone gebacken; Praesenz+Tint macht der Shader) -> nach diesem Bake nie wieder, deterministischer Zyklus kostenlos
-    if (!_impRT || _impK !== K) {
-        if (_impRT) _impRT.dispose();
-        if (_impNrmRT) _impNrmRT.dispose();
-        _impRT = new THREE.WebGLRenderTarget(cw * K, ch * V, {
-            minFilter: THREE.LinearMipmapLinearFilter,
-            magFilter: THREE.LinearFilter,
-            format: THREE.RGBAFormat,
-            generateMipmaps: true,
-        });
-        _impAtlas = _impRT.texture;
-        _impNrmRT = new THREE.WebGLRenderTarget(cw * K, ch * V, {
-            minFilter: THREE.LinearMipmapLinearFilter,
-            magFilter: THREE.LinearFilter,
-            format: THREE.RGBAFormat,
-            generateMipmaps: true,
-        });
-        _impNrm = _impNrmRT.texture;
-        const _an =
-            renderer.capabilities && renderer.capabilities.getMaxAnisotropy
-                ? renderer.capabilities.getMaxAnisotropy()
-                : 1;
-        _impAtlas.anisotropy = Math.min(8, _an);
-        _impNrm.anisotropy = Math.min(8, _an); // flache Blickwinkel auf ferne Karten bleiben scharf (Einzeiler-Gewinn)   // NORMAL-ATLAS: gleiche Zellen, Normale in Zell-Raum (rechts,oben,zurKamera) -> per-Fragment-Licht in der Ferne
-        _impK = K;
-        if (_impMat) {
-            _impMat.uniforms.uK.value = K;
-            _impMat.uniforms.map.value = _impAtlas;
-            _impMat.uniforms.nmap.value = _impNrm;
-        }
-    }
-    if (!_impNrmOv) {
-        _impNrmOv = new THREE.MeshNormalMaterial({ side: THREE.DoubleSide }); // Override fuer den Normal-Pass (r128: packNormalToRGB(view-space n) -- an der three-Quelle verifiziert)
-        // DIE NORMALE DER KRONE FLIP-FREI (K68-N1): die Karte backt, was der Stoff der Welt lichtet — die Normale der Krone ohne
-        // Seite (foundry-core injectWind `krone`, Welt `_laubStoffNormale`); die doppelseitige Rueckseite kehrte sie nach innen.
-        // Die Rinde ist geschlossen (ihre Rueckseite liegt hinter der Tiefe).
-        _impNrmOv.onBeforeCompile = (sh) => {
-            sh.fragmentShader = sh.fragmentShader.replace(
-                "#include <normal_fragment_begin>",
-                "#include <normal_fragment_begin>\n#ifndef FLAT_SHADED\n normal = normalize( vNormal );\n#endif"
-            );
-        };
-        _impNrmOv.customProgramCacheKey = () => "impNrm_kroneFlipfrei";
-    }
-    const bs = new THREE.Scene();
-    const hl = new THREE.HemisphereLight(0xffffff, 0x8a8a8a, 1.05);
-    bs.add(hl); // FLACH backen (neutral, richtungslos): der Atlas ist Albedo -- die LICHTRICHTUNG kommt zur Laufzeit aus _wSunPos, sonst waere die Bake-Richtung fuer immer eingefroren
-    const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 500);
-    const pRT = renderer.getRenderTarget(),
-        pA = renderer.getClearAlpha(),
-        pT = WIND.uTime.value,
-        pPres = SEASON.uLeafPresence.value;
-    WIND.uTime.value = 0;
-    SEASON.uLeafPresence.value = 1.0; // ruhiger, aufrechter Bake mit VOLLER Krone (egal welche Saison gerade laeuft) -> fette Alpha, mip-stabil
-    renderer.setRenderTarget(_impNrmRT);
-    renderer.setClearColor(0x8080ff, 1);
-    renderer.clear(); // Normal-Atlas komplett auf neutral
-    renderer.setRenderTarget(_impRT);
-    renderer.setClearColor(0x2f4a22, 0);
-    renderer.clear(); // Clear = Laubgruen(alpha 0): Mip-Blending blutet Blattfarbe statt Schwarz. Zellen-Clipping laeuft ueber RT-eigene viewport/scissor-Props (r128 wendet sie beim Bind an; renderer.setViewport waere pixelRatio-skaliert und wuerde von setRenderTarget zurueckgesetzt -- UND autoClear wuerde ohne RT-scissorTest bei JEDEM View den GANZEN Atlas loeschen)
-    for (let i = 0; i < K; i++) {
-        const s = _impSpecs[i];
-        let tree;
-        try {
-            /* M2 (Bäcker-Vereinigung): trägt der Spec ein explizites ov (Welt-Anfrage über den
-               bake-impostor-Kanal), bäckt GENAU dieses — Karte==Welt-Baum (ov-frei = Preset-
-               Defaults). Der Studio-Wald-Pfad (specs mit crownBase) bleibt byte-identisch.
-               ZWEIT-KERN-BÄCKEREI (M1-Folgeschritt): trägt der Spec einen eigenen Bauer (`bau` —
-               das buildInstance eines Manifest-Kerns; bis S2 setzte ihn die Welt-Karte), baut DER das
-               Bake-Subjekt mit seinen kompletten Materialien; ohne `bau` läuft der Pflanzen-Pfad
-               unverändert (der Studio-Wald setzt nie `bau`). */
-            tree = (typeof s.bau === "function" ? s.bau : buildInstance)(
-                s.sp,
-                s.seed,
-                1,
-                s.ov !== undefined ? s.ov : { crownBase: s.crownBase }
-            );
-            if (!tree) continue; // fail-soft: ein Kern-Bauer darf null liefern (unbekanntes Rezept) — Zelle bleibt leer statt Wurf mit halb-gebundenem Renderer-State
-        } catch (e) {
-            continue;
-        }
-        const box = new THREE.Box3().setFromObject(tree);
-        /* FIX v36: ANKER = STAMMACHSE, NICHT Boxmitte. Der Laufzeit-Anker des Billboards ist die Instanzposition
-       (Stammbasis, lokales (0,0)). Die alte Box-Rezentrierung hing den Stamm konstant um (cxb,czb) neben die
-       Bildmitte — auf dem kamerafolgenden Quad wird ein konstanter BILDversatz zum ORBITIERENDEN Weltversatz:
-       beim Umrunden kreist der Karten-Stamm um den Anker und springt an der L1<->L2-Blende seitlich gegen den
-       3D-Stamm. (Der alte Kommentar behauptete Achsen-Zentrierung — die Mathematik lieferte Boxmitte.) */
-        bs.add(tree);
-        /* „Drähte statt Kopien" (08.07., wie P6 beim Wuchs): Rahmen-Formel + Radial-Scan leben
-       EINMAL in phyto-core (__phytoCore.impostorFrame/scanRadialXZ — dieselben liest AnazhRealms
-       Foundry-Bäcker; byte-gleich zur alten Inline-Form: halfH = max(0.5,maxY)·1.02·0.5,
-       halfW = max(halfH·(cw/ch=0.5), radial·1.04) — FIX v36/v28 unverändert: exakter
-       Radialabstand, rotationsinvariant, kein Seiten-Clip, per-Art-Rahmen). */
-        let _rad2 = 0;
-        tree.traverse((o) => {
-            if (o.isMesh && o.geometry && o.geometry.attributes.position) {
-                _rad2 = __phytoCore.scanRadialXZ(o.geometry.attributes.position.array, _rad2);
-            }
-        });
-        const _frame = __phytoCore.impostorFrame(box.max.y, Math.sqrt(_rad2)),
-            halfH = _frame.halfH,
-            halfW = _frame.halfW;
-        _impWR[s.sp + s.seed] = halfW / halfH; // Seitenverhaeltnis persistent (Objekt ueberlebt den Einmal-Bake-Fruehausstieg bei unveraenderter Signatur) -> Quad-Breite zieht in buildForest mit, Textur bleibt unverzerrt
-        _impFrame[s.sp + s.seed] = _frame; // W6: derselbe Rahmen reist im Welt-Payload (Quad = Bake-Kamera, keine Wurzel-Höhe)
-        cam.left = -halfW;
-        cam.right = halfW;
-        cam.top = halfH;
-        cam.bottom = -halfH;
-        cam.position.set(0, halfH, Math.max(halfW * 2.5, box.max.y) + 40);
-        cam.lookAt(0, halfH, 0);
-        cam.updateProjectionMatrix();
-        for (let v = 0; v < V; v++) {
-            tree.rotation.y = -v * ((Math.PI * 2) / V);
-            tree.updateMatrixWorld(true); // Ansicht v = Baum aus Peilung v*45 Grad gesehen (Kamera fix, Baum gegenrotiert)
-            _impRT.viewport.set(i * cw, v * ch, cw, ch);
-            _impRT.scissor.set(i * cw, v * ch, cw, ch);
-            _impRT.scissorTest = true; // Zelle als RT-Property: Bind wendet sie an, autoClear loescht NUR diese Zelle (nicht den Atlas), keine pixelRatio-Skalierung
-            renderer.setRenderTarget(_impRT);
-            renderer.setClearColor(0x2f4a22, 0);
-            renderer.render(bs, cam);
-            bs.overrideMaterial = _impNrmOv;
-            _impNrmRT.viewport.set(i * cw, v * ch, cw, ch);
-            _impNrmRT.scissor.set(i * cw, v * ch, cw, ch);
-            _impNrmRT.scissorTest = true;
-            renderer.setRenderTarget(_impNrmRT);
-            renderer.setClearColor(0x8080ff, 1); // Hintergrund-Normale = zur Kamera (neutral)
-            renderer.render(bs, cam);
-            bs.overrideMaterial = null;
-        }
-        bs.remove(tree);
-        tree.traverse((o) => {
-            if (o.isMesh && o.geometry.dispose) o.geometry.dispose();
-        });
-    }
-    _impRT.viewport.set(0, 0, cw * K, ch * V);
-    _impRT.scissor.set(0, 0, cw * K, ch * V);
-    _impRT.scissorTest = false; // RT-Props zurueck auf voll: naechster Bind (Re-Bake-Clear, Debug-Reads) sieht den ganzen Atlas
-    _impNrmRT.viewport.set(0, 0, cw * K, ch * V);
-    _impNrmRT.scissor.set(0, 0, cw * K, ch * V);
-    _impNrmRT.scissorTest = false;
-    /* DILATION (2px): Kronenfarbe in transparente Randtexel fluten, Alpha bleibt 0 -> Mips mischen Blattfarbe statt Clear-Gruen (kein dunkler Halo an fernen Karten). Zellgrenzen sicher: Rahmenraender sind leer. */
-    if (!_impDilMat) {
-        _impDilMat = new THREE.ShaderMaterial({
-            uniforms: { tSrc: { value: null }, uTexel: { value: new THREE.Vector2(1, 1) } },
-            vertexShader: "varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.0,1.0);}",
-            fragmentShader:
-                "uniform sampler2D tSrc;uniform vec2 uTexel;varying vec2 vUv;void main(){vec4 c=texture2D(tSrc,vUv);if(c.a>0.05){gl_FragColor=c;return;}float ba=0.0;vec3 bc=c.rgb;for(int dy=-1;dy<=1;dy++)for(int dx=-1;dx<=1;dx++){if(dx==0&&dy==0)continue;vec4 n=texture2D(tSrc,vUv+vec2(float(dx),float(dy))*uTexel);if(n.a>ba){ba=n.a;bc=n.rgb;}}gl_FragColor=vec4(ba>0.05?bc:c.rgb,0.0);}",
-            depthTest: false,
-            depthWrite: false,
-        });
-        _impDilScene = new THREE.Scene();
-        const _fq = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), _impDilMat);
-        _fq.frustumCulled = false;
-        _impDilScene.add(_fq);
-        _impDilCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    }
-    if (!_impDilRT || _impDilRT.width !== cw * K || _impDilRT.height !== ch * V) {
-        if (_impDilRT) _impDilRT.dispose();
-        _impDilRT = new THREE.WebGLRenderTarget(cw * K, ch * V, { format: THREE.RGBAFormat });
-    }
-    _impDilMat.uniforms.uTexel.value.set(1 / (cw * K), 1 / (ch * V));
-    const _pAC = renderer.autoClear;
-    renderer.autoClear = false;
-    _impDilMat.uniforms.tSrc.value = _impRT.texture;
-    renderer.setRenderTarget(_impDilRT);
-    renderer.render(_impDilScene, _impDilCam);
-    _impDilMat.uniforms.tSrc.value = _impDilRT.texture;
-    renderer.setRenderTarget(_impRT);
-    renderer.render(_impDilScene, _impDilCam);
-    renderer.autoClear = _pAC;
-    renderer.setScissorTest(false);
-    renderer.setRenderTarget(pRT);
-    // Der Fenster-Pfad (Studio/iframe) liest die echten Fenstermasse; ohne Fenster 256x256.
-    renderer.setViewport(
-        0,
-        0,
-        typeof innerWidth !== "undefined" ? innerWidth : 256,
-        typeof innerHeight !== "undefined" ? innerHeight : 256
-    );
-    renderer.setClearColor(0x000000, pA);
-    WIND.uTime.value = pT;
-    SEASON.uLeafPresence.value = pPres;
-    _impBakedSig = sig;
-}
-
 // DER FOUNDRY-MODUS: die Stoffe + der Sommer, ohne Renderer und ohne Szene — der Worker-Start unten UND das Labor im
 // Asset-Motor-Modus (?asset-foundry, phytogenesis init) rufen DIESE Funktion. Ein Bruch hier bricht laut (kein try).
 function foundryModus() {
@@ -572,8 +358,8 @@ const foundryKanal = (() => {
             // NERVENSYSTEM — die Platzierungs-Daten (Welt-Skalen je Preset + Baum-Mul + Streu-
             // Seltenheit) fliessen als reine Zahlen: AnazhRealm liest sie LIVE statt eines
             // hartkodierten Spiegels. Ein neues Asset = eine scale-Zeile in foundry-core.
-            // Der Bäcker-Spec (Studio-Vertrag B2): Blickwinkel + Zell-Maße des Impostor-Atlas —
-            // AnazhRealms RTT-Bäcker liest DIESELBEN Zahlen wie bakeImpostorAtlas hier.
+            // Der Bäcker-Spec (Studio-Vertrag B2): Blickwinkel, Zell-Maße und Hebungs-Ringe des Impostor-Atlas — der EINE
+            // Bäcker der Welt (`_karteWeltBacken`) liest sie hier.
             impostor: c.impostor
                 ? {
                       views: c.impostor.views,

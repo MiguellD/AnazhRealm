@@ -64,7 +64,7 @@ hauptLauf(async () => {
     // ===== (L) DIE BIBLIOTHEK (ultiversum.K3): je Art ein Eintrag — signiert, ≤ 8 KB, über den Code wieder; Fork mit Herkunft =====
     const L = await page.evaluate(async () => {
         const o = { skipConfirm: true };
-        for (const weiter = __deckel("der Vibe-Pass", 300); !st.vibePass?.ready && weiter(); ) await sleep(50);
+        await __weltDa(() => st.vibePass?.ready); // das EINE Warten auf die Welt (wie B unten), nie ein eigener Schlaf
         r._addVoxelEdit(8, st.terrainBaseHeight || 0, 8, 3, "carve"); // eine Akte der Welt
         r.dslRun(["rule", ["field_below", "lebendig", 0.3], ["deposit_life", ["at_field_need"]], { everySec: 30 }], { source: "human" });
         r.dslRun(["define_blueprint", "bib_bogen", [{ shape: "box", material: "stein", size: { x: 3, y: 1, z: 1 }, position: { x: 0, y: 3, z: 0 } }]], { source: "human" });
@@ -421,6 +421,11 @@ hauptLauf(async () => {
             });
             const teile = [box(-1, 1.5, 1, 3), box(1, 1.5, 1, 3), box(0, 3.5, 3, 1)];
             r.dslRun(["define_blueprint", "probe_bogen", teile], { source: "human" });
+            // DIE WELT ÜBER EINEN RAHMEN (Chrome teilt ab ~128 KB, die Fragmente setzt der signaling-server zusammen, Prüfung WELT
+            // unten): A's Welt trägt eigenes Werk, das reist — 15 Baupläne aus seiner Hand zu 30 Teilen (die Wand von
+            // `define_blueprint` ist 32). Bis w8-snapshot-schlank trugen die 125 Arten des Buchs die Welt über die Wand (249 KB);
+            // seit das Laden sie neu gebiert, wog sie 95 KB, und der Fragment-Pfad lief nie.
+            for (let i = 0; i < 15; i++) r.dslRun(["define_blueprint", "mauer" + i, Array(10).fill(teile).flat()], { source: "human" });
             // der Korpus, feindlich geschrieben und von A gültig signiert: die Wand ist der Vertrag, nie die Signatur allein
             const W = AnazhRealm.WERK_CODE;
             const huelle = (c) => JSON.parse(new TextDecoder().decode(r._vibeB64uToBytes(c.slice(W.praefix.length))));

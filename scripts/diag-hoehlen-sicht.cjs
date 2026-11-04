@@ -437,67 +437,66 @@ function selbsttest() {
     if (g.length) fehler.push("der grüne Befund fällt rot: " + g.join(" · "));
     const klon = () => jsonKlon(gruen);
     const faelle = [
-        ["Spiegel-Drift", (b) => (b.spiegel[0].felder.tri = false), /SPIEGEL: Chunk 0,0 .*tri weicht ab/],
-        ["kein Spiegel", (b) => (b.spiegel = []), /SPIEGEL: kein Chunk/],
+        ["Spiegel-Drift", ["spiegel.0.felder.tri=", false], /SPIEGEL: Chunk 0,0 .*tri weicht ab/],
+        ["kein Spiegel", ["spiegel=", []], /SPIEGEL: kein Chunk/],
         // (n) der Stand c8e46330: der Fels-Stoff rechnet je Worker-Bau im Haupt-Thread, der Worker reicht keinen Himmel
         [
             "Himmel nur im Haupt-Thread",
-            (b) => (b.spiegel[0].felder.himmel = false),
+            ["spiegel.0.felder.himmel=", false],
             /SPIEGEL: Chunk 0,0 .*himmel weicht ab/,
         ],
         [
             "Fels-Stoff im Haupt-Thread",
-            (b) => Object.assign(b.stoffWorker, { rufe: 4100, namen: ["felsFarbe", "felsKruemmung"], ms: 59.4 }),
+            ["stoffWorker", { rufe: 4100, namen: ["felsFarbe", "felsKruemmung"], ms: 59.4 }],
             /FELS-STOFF IM HAUPT-THREAD: 4100 Rufe des Fels-Gesetzes \(felsFarbe · felsKruemmung\) in 81 Worker-Bauten/,
         ],
-        ["Zählung blind", (b) => (b.stoffWorker.syncRufe = 0), /LINSE BLIND: \(n\) Stoff im Worker/],
-        ["kein Worker-Bau", (b) => (b.stoffWorker.bauten = 0), /LEER: \(n\) Stoff im Worker/],
+        ["Zählung blind", ["stoffWorker.syncRufe=", 0], /LINSE BLIND: \(n\) Stoff im Worker/],
+        ["kein Worker-Bau", ["stoffWorker.bauten=", 0], /LEER: \(n\) Stoff im Worker/],
         [
             "Höhle ohne Mündung",
-            (b) => (b.muendungen = { anzahl: 0, km2: 4, jeKm2: 0 }),
+            ["muendungen=", { anzahl: 0, km2: 4, jeKm2: 0 }],
             /KEINE MÜNDUNG: 0 natürliche Mündungen in 4 km²/,
         ],
-        ["Mündungs-Suche fehlt", (b) => (b.muendungen = null), /LEER: \(l\) Mündungen/],
+        ["Mündungs-Suche fehlt", ["muendungen=", null], /LEER: \(l\) Mündungen/],
         [
             "Loch an der Mündung",
-            (b) => (b.blicke[2].fehlend = [{ bereich: "-21,-20", knoten: 7, hoehle: true, punkt: [1, 2, 3] }]),
+            ["blicke.2.fehlend=", [{ bereich: "-21,-20", knoten: 7, hoehle: true, punkt: [1, 2, 3] }]],
             /LOCH: Blick muendung: 1 Zellen fehlen .*-21,-20#7 \(Höhle\)/,
         ],
         [
             "Licht-Leck",
-            (b) => (b.blicke[3].schatten.lecks = [{ empfaenger: [1, 2, 3], zelle: "-22,-20#4", hoehle: true }]),
+            ["blicke.3.schatten.lecks=", [{ empfaenger: [1, 2, 3], zelle: "-22,-20#4", hoehle: true }]],
             /LICHT-LECK: Blick hoehle: 1 Empfänger, .*-22,-20#4/,
         ],
-        ["leere Mündung", (b) => (b.blicke[2].hoehle = 0), /LEER: Blick muendung zeigt keine Höhlen-Fläche/],
+        ["leere Mündung", ["blicke.2.hoehle=", 0], /LEER: Blick muendung zeigt keine Höhlen-Fläche/],
         ["fehlender Blick", (b) => b.blicke.splice(1, 1), /LEER: Blick hang fehlt/],
-        ["blinde Linse", (b) => (b.blicke[3].blind = 0), /LINSE BLIND: Blick hoehle/],
-        ["toter Schnitt", (b) => (b.blicke[0].hoehleImAbschnitt = 100), /KEIN SCHNITT: die Wiese zeichnet 100 von 100/],
+        ["blinde Linse", ["blicke.3.blind=", 0], /LINSE BLIND: Blick hoehle/],
+        ["toter Schnitt", ["blicke.0.hoehleImAbschnitt=", 100], /KEIN SCHNITT: die Wiese zeichnet 100 von 100/],
         [
             "die alte Probe (Loch beim Blick hinaus)",
-            (b) =>
-                (b.blicke[4].fehlend = [
+            ["blicke.4.fehlend=", [
                     { bereich: "-24,-18", knoten: 64, hoehle: true, punkt: [-1021, 15.8, -734.5] },
-                ]),
+                ]],
             /LOCH: Blick hinaus: 1 Zellen fehlen .*-24,-18#64 \(Höhle\)/,
         ],
-        ["stumpfer Hinaus-Blick", (b) => (b.blicke[4].altFehlend = 0), /LINSE STUMPF: Blick hinaus/],
+        ["stumpfer Hinaus-Blick", ["blicke.4.altFehlend=", 0], /LINSE STUMPF: Blick hinaus/],
         [
             "Auge nicht in der Höhle",
-            (b) => (b.blicke[4].augeInHoehle = false),
+            ["blicke.4.augeInHoehle=", false],
             /LEER: Blick hinaus: das Auge steht nicht/,
         ],
-        ["Schatten prüft nichts", (b) => (b.blicke[1].schatten.empfaenger = 0), /LEER: Blick hang: kein Empfänger/],
+        ["Schatten prüft nichts", ["blicke.1.schatten.empfaenger=", 0], /LEER: Blick hang: kein Empfänger/],
         [
             "die Sperre überlebt den Boden",
-            (b) => (b.gedaechtnis.nach = 0),
+            ["gedaechtnis.nach=", 0],
             /GEDÄCHTNIS: 6 von 6 Mündungen im Bild behalten ihre Sperre/,
         ],
-        ["stumpfes Gedächtnis", (b) => (b.gedaechtnis.vor = 6), /LINSE STUMPF: \(h\) Gedächtnis/],
-        ["Gedächtnis ohne Mündung", (b) => (b.gedaechtnis = null), /LEER: \(h\) Gedächtnis/],
+        ["stumpfes Gedächtnis", ["gedaechtnis.vor=", 6], /LINSE STUMPF: \(h\) Gedächtnis/],
+        ["Gedächtnis ohne Mündung", ["gedaechtnis=", null], /LEER: \(h\) Gedächtnis/],
         // (i) der Befund von Auge 11: der Himmel liegt auf jeder Höhlen-Wand (der Stand vor K02a)
         [
             "Himmel in der Höhle",
-            (b) => Object.assign(b.himmel, { ohneAttribut: true }),
+            ["himmel", { ohneAttribut: true }],
             /HIMMELS-LICHT: der Boden-Satz trägt keine Himmels-Sicht — 900 Höhlen-Vertices/,
         ],
         [
@@ -507,45 +506,45 @@ function selbsttest() {
         ],
         [
             "schwarze Mündung",
-            (b) => (b.himmel.muendMittel = 0),
+            ["himmel.muendMittel=", 0],
             /SCHWARZE MÜNDUNG: 40 Höhlen-Vertices in den Mündungs-Boxen/,
         ],
-        ["Stoff ohne Himmels-Sicht", (b) => (b.code.himmelLiest = false), /CODE: `_getVoxelChunkMaterial` liest/],
-        ["Himmel ohne Höhle", (b) => (b.himmel.hoehle = 0), /LEER: \(i\) Himmels-Licht/],
+        ["Stoff ohne Himmels-Sicht", ["code.himmelLiest=", false], /CODE: `_getVoxelChunkMaterial` liest/],
+        ["Himmel ohne Höhle", ["himmel.hoehle=", 0], /LEER: \(i\) Himmels-Licht/],
         // (j) der Befund von Auge 11 nach (i): die Höhle schwarz, die Decke als Wiese gelichtet
-        ["flache Höhle", (b) => (b.code.normaleHoehle = false), /CODE: `_buildPbrNodeMaterial` flacht die Normale/],
+        ["flache Höhle", ["code.normaleHoehle=", false], /CODE: `_buildPbrNodeMaterial` flacht die Normale/],
         [
             "kein Licht des Auges",
-            (b) => (b.augenLicht.hoehle.I = null),
+            ["augenLicht.hoehle.I=", null],
             /LICHT DES AUGES: das Licht des Auges ist kein Platz des Licht-Pools .* in der Höhle \[-1041,9,-738\]/,
         ],
         [
             "Licht aus in der Höhle",
-            (b) => (b.augenLicht.hoehle.I = 0),
+            ["augenLicht.hoehle.I=", 0],
             /LICHT DES AUGES: das Auge in der Höhle .* Licht 0/,
         ],
         [
             "Licht ohne Gesetz",
-            (b) => (b.augenLicht.hoehle.I = 3),
+            ["augenLicht.hoehle.I=", 3],
             /LICHT DES AUGES: in der Höhle Stärke 3, das Gesetz verlangt 30/,
         ],
-        ["Licht im Freien", (b) => (b.augenLicht.frei.I = 5), /LICHT DES AUGES: unter freiem Himmel .* brennt es/],
+        ["Licht im Freien", ["augenLicht.frei.I=", 5], /LICHT DES AUGES: unter freiem Himmel .* brennt es/],
         [
             "Stoff ohne Himmels-Sicht im Pool",
-            (b) => (b.code.augenTerm = false),
+            ["code.augenTerm=", false],
             /CODE: der Boden-Stoff .* reicht dem Licht-Pool/,
         ],
         // (j) K11: das Licht des Auges und jede Leuchtquelle fallen nach EINEM Gesetz
-        ["zwei Punktlicht-Gesetze", (b) => (b.code.poolGesetz = false), /PUNKTLICHT-GESETZ: der Licht-Pool/],
+        ["zwei Punktlicht-Gesetze", ["code.poolGesetz=", false], /PUNKTLICHT-GESETZ: der Licht-Pool/],
         // die zwei Fallen der Werkbank (echte GPU): die Mündung schwarz
         [
             "Normale im Zweig",
-            (b) => (b.code.augenVorZweig = false),
+            ["code.augenVorZweig=", false],
             /CODE: der Licht-Pool .* liest `normalView`\/`positionView` nicht in der Bedingung seines Zweigs/,
         ],
         [
             "fremder TSL-Name",
-            (b) => (b.code.augenTslFremd = "diffuseContribution"),
+            ["code.augenTslFremd=", "diffuseContribution"],
             /CODE: der Licht-Pool liest `diffuseContribution` — `three\/tsl` der Seite kennt/,
         ],
         // (l) der Befund von OMEN 1110-3: das Punkt-Licht des Auges stand ab Boot auf 0 in der Szene
@@ -563,52 +562,51 @@ function selbsttest() {
         ],
         [
             "schwarzes Szenen-Licht",
-            (b) => (b.szenenLicht.frei[1].schwarz = true),
+            ["szenenLicht.frei.1.schwarz=", true],
             /SZENEN-LICHT: 1 von 1 direkten .*DirectionalLight, Stärke 1, schwarz/,
         ],
-        ["Szenen-Licht ungezählt", (b) => (b.szenenLicht = null), /LEER: \(l\) Szenen-Licht/],
-        ["Licht ohne Höhle", (b) => (b.augenLicht.augeInHoehle = false), /LEER: \(j\) Licht des Auges/],
+        ["Szenen-Licht ungezählt", ["szenenLicht=", null], /LEER: \(l\) Szenen-Licht/],
+        ["Licht ohne Höhle", ["augenLicht.augeInHoehle=", false], /LEER: \(j\) Licht des Auges/],
         // (j) die Falle der Werkbank: steil am Auge die Wand in 0,2 m weiß ohne Maserung
         [
             "geblendet",
-            (b) => Object.assign(b.augenLicht.hoehle, { abfall: 2, kern: 0.3, blendung: 23.6 }),
+            ["augenLicht.hoehle", { abfall: 2, kern: 0.3, blendung: 23.6 }],
             /BLENDUNG: das Licht des Auges fällt mit 1\/d\^2 bei Kern 0\.3 m — .* 23\.6×/,
         ],
         // (k) der Befund von Auge 11: der Höhlen-Boden 25 m unter der Wiese trug ihr Grün
         [
             "Wiese unter Fels",
-            (b) =>
-                Object.assign(b.wieseUnterFels, {
+            ["wieseUnterFels", {
                     fremd: 650,
                     gruen: 420,
                     erst: { p: [762, 9.4, -136], c: [0.05, 0.12, 0.03], fels: [0.14, 0.13, 0.12] },
-                }),
+                }],
             /WIESE UNTER FELS: 650 von 700 Höhlen-Vertices ohne Himmel .*420 davon grün/,
         ],
-        ["Fels ohne Höhle", (b) => (b.wieseUnterFels.ohneHimmel = 0), /LEER: \(k\) Wiese unter Fels/],
+        ["Fels ohne Höhle", ["wieseUnterFels.ohneHimmel=", 0], /LEER: \(k\) Wiese unter Fels/],
         // (k) K17: der Höhlen-Fels von Auge 11 (762/−138) war EINE graue Masse — jeder Vertex der Stein der Palette
         [
             "Masse",
-            (b) => (b.wieseUnterFels.streuung = 0),
+            ["wieseUnterFels.streuung=", 0],
             /MASSE: der Höhlen-Fels ist gleichförmig — Streuung .* 0 über 700/,
         ],
-        ["Fels zu hell", (b) => (b.wieseUnterFels.albedo = 0.5), /ALBEDO: der Höhlen-Fels liegt bei Y 0\.5/],
+        ["Fels zu hell", ["wieseUnterFels.albedo=", 0.5], /ALBEDO: der Höhlen-Fels liegt bei Y 0\.5/],
         [
             "Kliff ohne Stoff",
-            (b) => Object.assign(b.kliff, { fremd: 280, gruen: 90, erst: { p: [700, 30, -120] } }),
+            ["kliff", { fremd: 280, gruen: 90, erst: { p: [700, 30, -120] } }],
             /KLIFF OHNE STOFF: 280 von 300 steilen Vertices/,
         ],
-        ["Kein Kliff", (b) => (b.kliff.steil = 0), /LEER: \(k\) Kliff/],
+        ["Kein Kliff", ["kliff.steil=", 0], /LEER: \(k\) Kliff/],
         // (m) K17 Nachbesserung 1: das Höhlen-Bild las sich als Ziegelmauer
-        ["Ziegelmauer", (b) => (b.bankung.cv = 0.204), /MAUERWERK: die Bänke sind gleich hoch — .* 0\.204 über 2000/],
-        ["Gerade Fugen", (b) => (b.bankung.welligkeit = 0), /GERADE FUGEN: .* Eigen-Welligkeit 0 Bänke/],
-        ["Klüfte je Bank", (b) => (b.bankung.durchlauf = 0.13), /KLÜFTE SETZEN NEU AN: nur 0\.13/],
-        ["Ohne Bankung", (b) => delete b.bankung, /LEER: \(m\) Bankung/],
-        ["Graph bricht", (b) => (b.code.graphFehler = "x"), /CODE: der Boden-Stoff baut keinen Graph \(x\)/],
-        ["Eigene Ziehung", (b) => (b.code.feinEigenHash = true), /CODE: der Detail-Term .*\(eigene Ziehung/],
+        ["Ziegelmauer", ["bankung.cv=", 0.204], /MAUERWERK: die Bänke sind gleich hoch — .* 0\.204 über 2000/],
+        ["Gerade Fugen", ["bankung.welligkeit=", 0], /GERADE FUGEN: .* Eigen-Welligkeit 0 Bänke/],
+        ["Klüfte je Bank", ["bankung.durchlauf=", 0.13], /KLÜFTE SETZEN NEU AN: nur 0\.13/],
+        ["Ohne Bankung", ["bankung"], /LEER: \(m\) Bankung/],
+        ["Graph bricht", ["code.graphFehler=", "x"], /CODE: der Boden-Stoff baut keinen Graph \(x\)/],
+        ["Eigene Ziehung", ["code.feinEigenHash=", true], /CODE: der Detail-Term .*\(eigene Ziehung/],
         [
             "Rechenwerk falsch",
-            (b) => (b.code.feinRechenwerk = { maxDiff: 0.31, n: 400 }),
+            ["code.feinRechenwerk=", { maxDiff: 0.31, n: 400 }],
             /RECHENWERK: .* 0\.31 an 400/,
         ],
     ];
