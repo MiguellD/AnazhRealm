@@ -1,0 +1,158 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node -e (async function kiSpracheLauf(port, aus) {
+    const path = require("path");
+    const fs = require("fs");
+    const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const { AUSGABE_INSTALL } = require(path.resolve("scripts/lib/ausgabe-aufnahme.cjs"));
+    const K = JSON.parse(fs.readFileSync(path.resolve("spec/abnahme/ki-korpus.json"), "utf8"));
+    const R = JSON.parse(fs.readFileSync(path.resolve("spec/profiband/ratsche-ki-korpus.json"), "utf8"));
+    const TEIL = { de: Object.keys(K.saetze || {}), en: Object.keys((K.en && K.en.saetze) || {}) };
+    const soll = (sp, i) => (sp === "en" ? K.en.saetze : K.saetze)[TEIL[sp][i]];
+    const out = { saetze: { de: TEIL.de.length, en: TEIL.en.length }, gleich: TEIL.de.length === TEIL.en.length, laeufe: {}, mutanten: {}, schreiber: {}, modell: null };
+    out.gleich = out.gleich && TEIL.de.every((s, i) => JSON.stringify(soll("de", i)) === JSON.stringify(soll("en", i)));
+    let SAY = null;
+    const LEER = "(leer)";
+    const anfragen = [];
+    // der Prüf-Anbieter: die Sprache, die der Prompt verlangt, und das Programm des Mitschnitts
+    const pruefer = (req) =>
+        new Promise((ok) => {
+            let b = "";
+            req.on("data", (d) => (b += d));
+            req.on("end", () => {
+                const j = JSON.parse(b);
+                const sys = String(j.messages[0].content);
+                const u = String(j.messages[j.messages.length - 1].content);
+                const satz = u.slice(u.lastIndexOf("Spieler sagt: ") + 14);
+                const sp = SAY ? Object.keys(SAY).find((s) => sys.includes(SAY[s])) || null : null;
+                const i = Math.max(TEIL.de.indexOf(satz), TEIL.en.indexOf(satz));
+                const p = i >= 0 ? (R.mitschnitt || {})[TEIL.de[i]] : undefined;
+                anfragen.push({ satz, sp, kontext: u.slice(0, u.lastIndexOf("Spieler sagt: ")) });
+                // der Fehler-Fall: eine leere Antwort (die Tür der KI sagt es in der Sprache des Spielers)
+                if (satz === LEER) return ok(JSON.stringify({ message: { role: "assistant", content: "" } }));
+                const say = { de: "Ich höre dich, und die Welt antwortet dir.", en: "I hear you, and the world answers you." }[sp];
+                ok(JSON.stringify(say ? { message: { role: "assistant", content: JSON.stringify({ say, program: p || null }) } } : { error: "kein Prompt mit Sprache" }));
+            });
+        });
+    // das Modell der Sitzung (am Laptop): trägt der Anbieter es?
+    const ep = String(process.env.KI_ENDPUNKT || "").replace(/\/+$/, "");
+    const modell = process.env.KI_MODELL || "";
+    let modellDa = null;
+    if (ep && modell)
+        try {
+            const t = await fetch(ep + "/api/tags", { signal: AbortSignal.timeout(4000) }).then((x) => x.json());
+            modellDa = (t.models || []).some((m) => m.name === modell || m.name === modell + ":latest") ? true : "trägt " + modell + " nicht";
+        } catch (e) {
+            modellDa = ep + " antwortet nicht (" + String(e.message).slice(0, 60) + ")";
+        }
+    else modellDa = "kein KI_ENDPUNKT/KI_MODELL (der Läufer stellt kein Modell)";
+    const server = WB.statikServer({ seiten: { "/api/chat": pruefer } });
+    await server.lausche(Number(port));
+    const { browser, page } = await WB.nullSeite({ frist: 900000 });
+    // IN DER SEITE: die Stimme stellen (Anbieter, Modell, Endpunkt — wie der Spieler im Fenster der KI), die Mutanten
+    const STIMME = (a) => {
+        const r = window.anazhRealm;
+        const st = r.state;
+        if (!window.__kiStimme) {
+            const gr = r.grokRender;
+            window.__kiStimme = [];
+            r.grokRender = function (t) {
+                window.__kiStimme.push(String(t));
+                return gr.call(this, t);
+            };
+            window.__kiOrig = { t: r.constructor._t, ki: r.constructor._spracheKi, sch: r._wetterSchreiberZeile };
+        }
+        const C = r.constructor;
+        const O = window.__kiOrig;
+        [C._t, C._spracheKi, r._wetterSchreiberZeile] = [O.t, O.ki, O.sch];
+        if (a.mutante === "prompt-de") C._spracheKi = () => "de";
+        if (a.mutante === "tafel-de") C._t = (k, w) => C._tIn("de", k, w);
+        if (a.mutante === "schreiber") r._wetterSchreiberZeile = () => ["wetter.schreiber.front"];
+        if (a.sprache) r._spracheSetzen(a.sprache);
+        if (a.endpunkt) {
+            for (const [id, w] of [["llm-provider", "ollama"], ["llm-model", a.modell], ["llm-endpoint", a.endpunkt], ["llm-use-proxy", true]]) {
+                const el = document.getElementById(id);
+                el[w === true ? "checked" : "value"] = w;
+                el.dispatchEvent(new Event("change"));
+            }
+        }
+        if (!!st.llm.enabled !== !!a.ki) document.getElementById("llm-toggle").click();
+        return { sprache: C._sprache(), ki: !!st.llm.enabled, say: { de: C.TEXTE.de["ki.welt.say"], en: C.TEXTE.en["ki.welt.say"] }, schreiber: { de: { spieler: C.TEXTE.de["wetter.schreiber.spieler"], nexus: C.TEXTE.de["feldstimme.wer.nexus"] }, en: { spieler: C.TEXTE.en["wetter.schreiber.spieler"], nexus: C.TEXTE.en["feldstimme.wer.nexus"] } } };
+    };
+    // IN DER SEITE: ein Satz auf einem Weg — die neuen Zeilen des Chats (ohne das Echo des Satzes) und der Stimme
+    const SATZ = async (a) => {
+        const r = window.anazhRealm;
+        const st = r.state;
+        const box = document.getElementById("chat-output");
+        const [n0, s0] = [box.children.length, window.__kiStimme.length];
+        if (a.fall) {
+            st.weatherEffectTime = 0;
+            st.wetterWort = null;
+            st.wetterWunsch = null;
+            r._setWeather("sunny", "auto-zug");
+            if (a.fall === "spieler") r._setWeather("rainy", "human");
+            else r._setWeather("rainy", "nexus"), r._setWeather("rainy", "auto-zug");
+        }
+        const t0 = performance.now();
+        if (a.weg === "regel") r.processChatCommand(a.satz);
+        else await r.maybeAnswerWithLlm(a.satz, (z) => r._chatEcho(z));
+        const ms = Math.round(performance.now() - t0);
+        for (let i = 0; i < 6; i++) {
+            r._gameLoopTick(performance.now());
+            await new Promise((ok) => setTimeout(ok, 20));
+        }
+        const zeilen = [...box.children]
+            .slice(n0)
+            .map((el) => el.textContent.replace(/[⁦-⁩]/g, "").replace(/\s+/g, " ").trim())
+            .filter((t) => t && !t.startsWith("> "));
+        return { zeilen, stimme: window.__kiStimme.slice(s0), ms, schreiber: st.wetterSchreiber };
+    };
+    const lauf = async (sp, weg, opt = {}) => {
+        const satze = opt.saetze || [...TEIL[sp], ...(weg === "nexus" && !opt.endpunkt.includes(":11434") ? [LEER] : [])];
+        const a0 = anfragen.length;
+        const S = await page.evaluate(STIMME, { sprache: sp, ki: weg !== "regel", mutante: opt.mutante || null, endpunkt: opt.endpunkt || null, modell: opt.modell || "pruefer" });
+        if (S.sprache !== sp) throw new Error("die Welt spricht " + S.sprache + ", nicht " + sp);
+        const e = [];
+        for (const satz of satze) {
+            const i = TEIL[sp].indexOf(satz);
+            const faelle = soll(sp, i) && soll(sp, i).schreiber ? Object.keys(soll(sp, i).schreiber) : [null];
+            for (const fall of faelle) {
+                const n = anfragen.length;
+                const x = await page.evaluate(SATZ, { satz, weg: weg === "regel" ? "regel" : "ki", fall });
+                const q = anfragen.slice(n);
+                e.push({ satz, fall, ...x, prompt: q.map((z) => z.sp), kontext: q.map((z) => z.kontext.slice(0, 400)) });
+            }
+        }
+        return { sprache: sp, weg, mutante: opt.mutante || null, anfragen: anfragen.length - a0, saetze: e };
+    };
+    try {
+        await server.zeige(page, 120000);
+        await page.evaluate(() => window.__weltDa((r) => r.state && r.state.rendererReady && r.state.blueprints && r.nexus));
+        await page.evaluate(AUSGABE_INSTALL);
+        const S0 = await page.evaluate(STIMME, { ki: false });
+        SAY = S0.say;
+        out.schreiberNamen = S0.schreiber;
+        const pruef = "http://127.0.0.1:" + port + "/";
+        for (const sp of ["de", "en"]) {
+            out.laeufe[sp + ".regel"] = await lauf(sp, "regel");
+            out.laeufe[sp + ".nexus"] = await lauf(sp, "nexus", { endpunkt: pruef });
+        }
+        // DER SELBSTTEST IM LAUF (EN, je Mutante die ersten acht Sätze und „warum regnet es?")
+        const wenige = [...TEIL.en.slice(0, 8), TEIL.en[TEIL.en.length - 1]];
+        out.mutanten["prompt-de"] = await lauf("en", "nexus", { endpunkt: pruef, mutante: "prompt-de", saetze: wenige });
+        out.mutanten["tafel-de"] = await lauf("en", "regel", { mutante: "tafel-de", saetze: wenige });
+        out.mutanten["schreiber"] = await lauf("en", "nexus", { endpunkt: pruef, mutante: "schreiber", saetze: wenige.slice(-1) });
+        await page.evaluate(STIMME, { ki: false });
+        // DAS MODELL (am Laptop): jeder Satz in beiden Sprachen über den Weg der KI
+        if (modellDa === true) {
+            out.modell = { endpunkt: ep, name: modell, laeufe: {} };
+            for (const sp of ["de", "en"]) out.modell.laeufe[sp] = await lauf(sp, "modell", { endpunkt: ep + "/", modell });
+        } else out.modell = { grund: modellDa };
+    } catch (e) {
+        out.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 300);
+    } finally {
+        fs.writeFileSync(aus, JSON.stringify(out));
+        console.log("KISPRACHE " + JSON.stringify(out));
+        await browser.close().catch(() => {});
+        server.close();
+        process.exit(0);
+    }
+})(process.argv[1], process.argv[2]); 7704 /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/71ef6a0d-headless/spielgang.K5_2.json

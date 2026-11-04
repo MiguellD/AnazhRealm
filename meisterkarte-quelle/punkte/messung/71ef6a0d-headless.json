@@ -1,0 +1,55 @@
+{
+ "sha": "71ef6a0da8c1c3df64519e50c591010b7f561339",
+ "geraet": "headless",
+ "zeit": "2026-11-04T08:21:31.608Z",
+ "host": "farm:41798710117",
+ "je": {
+  "spielgang.K5#2": {
+   "gruen": false,
+   "zahl": "Deckel 2400 s überschritten — beendet",
+   "exit": null,
+   "minuten": 40,
+   "grund": "Deckel 2400 s überschritten — beendet",
+   "zeit": "2026-11-04T08:21:31.608Z",
+   "abdruck": "59af6c2932a2",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41798710117/1"
+  },
+  "physik.K5#1": {
+   "gruen": true,
+   "zahl": "200 N × 0,2 s quer im Gang (89.022 kg): Ausfall 0.195 m, Wurzel quer 0.184 m, erholt 0.883 s · Gegen-Richtung Ausfall 0.195 m, Wurzel quer 0.184 m, erholt 0.883 s · Masse ×2 Ausfall 0.077 m, Wurzel quer 0.07 m, erholt 0.617 s (Soll Ausfall ≥ 0,1 m, ≤ 1,5 s, kein Sturz)",
+   "exit": 0,
+   "minuten": 0.58,
+   "zeit": "2026-11-04T08:20:53.280Z",
+   "abdruck": "dcfb97f120c9",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41798710117/2"
+  },
+  "feld.K5#1": {
+   "gruen": true,
+   "zahl": "Feld der Mitte 0.855 → 1 · Streu der Mitte 29 → 35 (Blumen 26 → 32), Nachbarzelle 30 → 30 (Blumen 24 → 24), Rauschen ±0 (Soll: Blumen +≥ 3 oder alle +≥ 10 % am Ort, Nachbar im Rauschen)",
+   "exit": 0,
+   "minuten": 0.58,
+   "zeit": "2026-11-04T08:20:53.280Z",
+   "abdruck": "56e3c0f974a6",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41798710117/2",
+   "zwilling": "physik.K5#1"
+  },
+  "spielgang.K5#1": {
+   "gruen": false,
+   "zahl": "0 harte UI-Zeilen (Code 0 · DOM 0 von 1601 Zeilen, 1435 aus der Tafel, 166 Daten) · beim Wechsel auf en stehen 1 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2333, en 2333) · beim Namen: STEHT stamm/werkstatt-hud.js:55 grokRender · #dialogue-box div: ⟦Ich bin Eins. Diese Welt ist still — bis du sprichst. Sag, was werden soll.⟧",
+   "exit": 0,
+   "minuten": 0.07,
+   "grund": "ROT: 0 harte UI-Zeilen (Code 0 · DOM 0 von 1601 Zeilen, 1435 aus der Tafel, 166 Daten) · beim Wechsel auf en stehen 1 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2333, en 2333) · beim Namen: STEHT stamm/werkstatt-hud.js:55 grokRender · #dialogue-box div: ⟦Ich bin Eins. Diese Welt ist still — bis du sprichst. Sag, was werden soll.⟧",
+   "zeit": "2026-11-04T08:20:51.304Z",
+   "abdruck": "1436e3310de8",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41798710117/3"
+  }
+ }
+}
