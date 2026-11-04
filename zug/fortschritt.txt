@@ -1621,3 +1621,6 @@
 2026-11-04 18:17:37 omen-gtx-w10-figur-8955553c haar.K2#1 ROT 5 · 2/3
 2026-11-04 18:17:37 omen-gtx-w10-figur-8955553c mensch.K4#1 ROT 5 · 3/3
 2026-11-04 18:17:40 omen-gtx-main-b56e9b0e START 2 Proben (vegetation.K1#1,vegetation.K2#1, GTX am Zweig-Kopf)
+2026-11-04 18:22:43 omen-gtx-main-b56e9b0e vegetation.K1#1 ROT 5 · 1/2
+2026-11-04 18:22:44 omen-gtx-main-b56e9b0e vegetation.K2#1 GRÜN 5 · 2/2
+2026-11-04 18:22:46 omen-gtx-main-b56e9b0e START 4 Proben (lod.K1#1,lod.K2#1,lod.K3#1,lod.K5#1, GTX am Zweig-Kopf)
