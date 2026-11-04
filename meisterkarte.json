@@ -1,13 +1,13 @@
 {
   "stand": "2026-11-04",
-  "kopf": "f69a7305",
-  "version": "V18.546.175",
+  "kopf": "b1e4be21",
+  "version": "V18.546.176",
   "skala": "2.0",
   "summe": 190,
   "max": 330,
   "maschine": {
-    "kopf": "f69a7305",
-    "zeit": "2026-11-04T03:11:17.828Z",
+    "kopf": "b1e4be21",
+    "zeit": "2026-11-04T05:17:14.797Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -670,7 +670,7 @@
           "punkte": 1,
           "staffel": "1 = der Nachwuchs korreliert nach 1 Spieljahr mit Feuchte × Licht (r ≥ 0,5) · 2 = Stubben → Sämling, Brand → Gras → Busch → Wald, Ernte entnimmt Nährstoff, Asche und Leichnam geben ihn zurück",
           "messung": "werkbank eval + bild nach einem Spielzeit-Sprung von 1 Jahr; Gegenprobe mit zwei Zellen verschiedener Feuchte.",
-          "beleg": "Maschine: gehalten: Ufer -348/-662: nach 8767 h 138 von 138 Pflanzen wieder gezeichnet · r(Tempo, Feuchte × Licht) 0.826, im Offenen (16 Kacheln) 0.936, nass 1.258 × trocken · Mutante Feuchte gleich: offen r -0.517, nass 0.973 × trocken an 10770eb5 headless — offen: stoffe.K5#2 headless: ROT: Halme 477 → Asche 12 → Gras 491 · Kräuter 23 → Asche 0 → Gras 0 → Busch 21 · Ernte (15): Nährstoff 1 → 0.7, Wuchs 0.748 → 0.698 · Asche 1.4, Leichnam 1.2 · Sämling 0 → 0.06 → 0.18 → 0.7 → 1, Gestalt [[4,685],[8,958]] · Wald 16: Brand nimmt 16, Jungwuchs 14, heil 16 an f69a7305",
+          "beleg": "Maschine: gehalten: Ufer -348/-662: nach 8767 h 138 von 138 Pflanzen wieder gezeichnet · r(Tempo, Feuchte × Licht) 0.826, im Offenen (16 Kacheln) 0.936, nass 1.258 × trocken · Mutante Feuchte gleich: offen r -0.517, nass 0.973 × trocken an 10770eb5 headless — offen: stoffe.K5#2 headless: Linse seit der Messung geändert (R6: scripts/diag-stand-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +7)",
           "schlupfloch": "Ein Zeitgeber, der nach N Minuten einen Baum setzt, bestünde das Nachwachsen: Korrelation mit Feuchte und Licht und die Sukzessions-Reihe sind Pflicht.",
           "aenderung": "Wachstum zählte dreimal (Stoffe K5, Vegetation K5, Leben-Feld K1); EIN Heim hier, die Saison als Gestalt bleibt Vegetation K5 (B21, V-Wachstum). Die Synthese gab 1 für die statische Platzierung → 0.",
           "maschine": true
@@ -1003,7 +1003,7 @@
           "punkte": 1,
           "staffel": "1 = der Fuß steht (Schlupf ≤ 0,05) · 2 = Fußfolge aus Fr für alle 4 Gattungen, Tastgrad im Band, Querhang 20°, Labor = Welt über die Phasen, Third-Bild aus 10 m",
           "messung": "gate:tier-gang (Schlupf des Stand-Fußes ≤ 0,05; Gangart und Tastgrad je Gattung bei v̂ 0,3 · 0,74 · 1,2 · 3,5 in Welt UND Labor, REF Schritt 0,6–0,7, Trab 0,4–0,6, Galopp 0,25–0,35; Welt − Labor ≤ 0,05 Zyklus) + gate:kreatur-takt Teil querhang (Hang 20,8° und Rampe 29,9°: Bein-Lot ≤ 10°, Schlupf ≤ 0,05); Schritt → Trab bei Fr ≈ 0,5, Trab → Galopp bei 2–3; Kreuz-Probe Stimmung × Tempo; das Gang-Bild aus 10 m (`werkbank bild … --ziel gang` mit der Bühne `gang-buehne.js`, je Tier drei Füße am Boden).",
-          "beleg": "Maschine: gehalten: Schlupf des Stand-Fußes max 0.017 in 25 Läufen als Leib (4 Gattungen), max 0.048 in 16 im Satz (4 Gattungen) an 10770eb5 headless — offen: tiere.K3#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-tier-gang.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · tiere.K3#2 gtx: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: BUEHNE {\"tiere\":[{\"seele\":\"wolf\",\"x\":-5,\"art\":\"schritt\",\"amBoden\":3},{\"seele\":\"fuchs\",\"x\":-1.5,\"art\":\"schritt\",\"amBoden\":3},{\"seele\":\"baer\",\"x\":2.1",
+          "beleg": "Maschine: gehalten: Schlupf des Stand-Fußes max 0.017 in 25 Läufen als Leib (4 Gattungen), max 0.048 in 16 im Satz (4 Gattungen) an 10770eb5 headless — offen: tiere.K3#2 radeon: Linse seit der Messung geändert (R6: koerper-core.js, scripts/diag-tier-gang.cjs, scripts/lib/kamera-nah.cjs +3) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · tiere.K3#2 gtx: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: BUEHNE {\"tiere\":[{\"seele\":\"wolf\",\"x\":-5,\"art\":\"schritt\",\"amBoden\":3},{\"seele\":\"fuchs\",\"x\":-1.5,\"art\":\"schritt\",\"amBoden\":3},{\"seele\":\"baer\",\"x\":2.1",
           "schlupfloch": "Den Galopp an die Stimmung flee zu hängen bestünde beim Flucht-Tempo zufällig: die Kreuz-Probe Stimmung × Tempo zeigt, dass nur Fr entscheidet; Labor = Welt wird über die Phasen gemessen, nie über den Code-Text; der Tastgrad ist ein Band nach oben UND unten je Gangart, nie eine Zeile im Gesetz.",
           "aenderung": "Die 1 stand auf dem Schlupf; geschnitten 1 → 2 (tier-gang-k3, e5003509): der Tastgrad kommt aus dem Gesetz, beide Geräte im Bild.; nach R6 (tier-satz, `_tierSatzGang`) 23.10. 2 → 1.",
           "maschine": true
@@ -1218,7 +1218,7 @@
           "punkte": 0,
           "staffel": "1 = mensch-kopf GRÜN im Third an der Kamera des Spiels an einem Gerät, frisch am Kopf · 2 = 50 Bewohner aus 50 Seeds ohne zwei gleiche, Körperhöhe ±8 %, Gesichtsmaße in MENSCH_SOLL, ≤ 150k Dreiecke und ≤ 1 ms CPU, beide Geräte",
           "messung": "Soll-Tafel mensch-kopf (Third, Kamera aus `_loopCamera`), Gestalt-Distanz je Seed-Paar; Kosten über werkbank zaehlen und takt. Kleidung und Haar zählt der Bereich Haar, Fell, Kleidung.",
-          "beleg": "Maschine: 0 — offen: mensch.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1) · mensch.K4#1 gtx: Station seit der Messung geändert · mensch.K4#2 headless: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/diag-mensch-anatomie.cjs +7) — zuletzt an 5fba36ea: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: ohne Menge oder Gesicht (Exit 1)) · Täter: Node.js v22.23.4",
+          "beleg": "Maschine: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:52:4/7:38:4; 0 Paare unter 1 px) · Höhe 1.684–1.927 m um 1.816 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 1.084 ms für 1094 → 0.05 ms je 50 an b1e4be21 headless — offen: mensch.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1) · mensch.K4#1 gtx: Station seit der Messung geändert",
           "schlupfloch": "Ein einziger schöner Spieler-Kopf erfüllte die alte Messung: Vielfalt und Kosten an 50 Bewohnern machen sie zur Menge.",
           "aenderung": "Die 1 stand auf einer Tafel-Zeile ohne Ist → 0 (B03, B29).",
           "maschine": true
@@ -2482,7 +2482,7 @@
           "punkte": 2,
           "staffel": "1 = die Karte eines Baums aus Studio und Welt byte-gleich (EIN Bäcker) · 2 = jede Art mit Karte, aus derselben Bake-Rechnung wie L0 (der Ton L2/L0 misst Material K3, der Umriss LOD K1)",
           "messung": "Byte-Vergleich des Karten-Atlas je Art aus Studio-Bake und Welt-Bake bei gleicher Saat und gleichem Gesetz-SHA.",
-          "beleg": "Maschine: byte-gleich: Labor Labor-Fernstufe (three r128, 128×3584) eiche|1 3670016 B sha a9218749cd ⇄ Welt _karteWeltBacken (three r184) bc 128×3584 3670016 B sha a9218749cd an f69a7305 headless · 10/10 Arten mit Karte byte-gleich (Welt _karteWeltBacken (three r184) bc 128×3584 ⇄ Labor Labor-Fernstufe (three r128, 128×3584)): eiche ×3 8026d999 10,5 MB · fichte ×3 9ffd36e9 10,5 MB · birke ×3 9498101b 10,5 MB · weide ×1 24a7d4a4 3,5 MB · mammut ×1 e9deb4b9 3,5 MB · tanne ×3 dfbe9457 10,5 MB · strauch ×1 3c505c65 3,5 MB · buche ×3 cb995d5f 10,5 MB · karst ×1 6dfc1f2d 3,5 MB · totholz ×1 68570b57 3,5 MB an f69a7305 headless",
+          "beleg": "Maschine: gehalten: byte-gleich: Labor Labor-Fernstufe (three r128, 128×3584) eiche|1 3670016 B sha a9218749cd ⇄ Welt _karteWeltBacken (three r184) bc 128×3584 3670016 B sha a9218749cd an f69a7305 headless · gehalten: 10/10 Arten mit Karte byte-gleich (Welt _karteWeltBacken (three r184) bc 128×3584 ⇄ Labor Labor-Fernstufe (three r128, 128×3584)): eiche ×3 8026d999 10,5 MB · fichte ×3 9ffd36e9 10,5 MB · birke ×3 9498101b 10,5 MB · weide ×1 24a7d4a4 3,5 MB · mammut ×1 e9deb4b9 3,5 MB · tanne ×3 dfbe9457 10,5 MB · strauch ×1 3c505c65 3,5 MB · buche ×3 cb995d5f 10,5 MB · karst ×1 6dfc1f2d 3,5 MB · totholz ×1 68570b57 3,5 MB an f69a7305 headless",
           "schlupfloch": "Zwei Bäcker, die „dieselben Zahlen lesen“, sind ein Zwilling: die Probe verlangt Byte-Gleichheit der Ausgabe.",
           "aenderung": "Ersetzt „Stufen-Treue“: deren Ton zählt Material K3, deren Umriss LOD K1 (B47, V22).",
           "maschine": true
@@ -3317,7 +3317,7 @@
           "punkte": 1,
           "staffel": "1 = ≥ 3 von 5 Schritten in EINER Sitzung gemessen gehalten an einem Gerät · 2 = 5/5 an beiden Geräten, der Speicher-Rundlauf am Ende trägt alle Werke byte-gleich",
           "messung": "Ein Lauf ohne Neuladen und ohne Konsole, aus aufgenommenen Spieler-Eingaben: ankommen (Ankunft K1) → laufen und sehen (A-Spiegel am Gang-Bild) → bauen (Bauen K1) → mit der KI erschaffen (KI K1) → benutzen (Bauen K5, Fahrzeug, Halten) → teilen (Tore K5). Jede Zahl wohnt in ihrem Bereich; hier zählt, dass sie in EINER Sitzung zusammen halten.",
-          "beleg": "Maschine: 5/5 Schritte gehalten in EINER Sitzung (1× geladen, 93 Eingaben aus der Spur, 0 ohne Ziel): ankommen Kontrolle 643 ms, Zeiger gefangen · laufen 12.81 m, Blick 141°, Sicht first→third→first · bauen bank_sitzbank steht in schöpfer, 8 Eingaben · ki der Satz stellt 1 Studio-Werk (haus_alemannisch): „1× Alemannisch aus dem Studio vor dir gebaut“ · benutzen der Leib sitzt auf der gebauten Bank an f69a7305 headless",
+          "beleg": "Maschine: gehalten: 5/5 Schritte gehalten in EINER Sitzung (1× geladen, 93 Eingaben aus der Spur, 0 ohne Ziel): ankommen Kontrolle 643 ms, Zeiger gefangen · laufen 12.81 m, Blick 141°, Sicht first→third→first · bauen bank_sitzbank steht in schöpfer, 8 Eingaben · ki der Satz stellt 1 Studio-Werk (haus_alemannisch): „1× Alemannisch aus dem Studio vor dir gebaut“ · benutzen der Leib sitzt auf der gebauten Bank an f69a7305 headless",
           "schlupfloch": "Jeden Schritt in einem eigenen Boot prüfen, wo der Zustand des vorigen fehlt, oder eine Konsolen-Abkürzung: EINE Sitzung aus Spieler-Eingaben, Speicher-Rundlauf am Ende.",
           "aenderung": "Der Bau des Replay-Gangs (Synthese K1) ist Richter-Arbeit ohne Punkte (B62), die Spieler-Matrix ein Spiegel (B64), die Bildzeit Profiband K1 (B63), die KI-Station KI K1 (V29).",
           "maschine": true
@@ -3667,7 +3667,7 @@
           "punkte": 1,
           "staffel": "1 = 0 Lücken-Bilder in 60 s bei Sprint und GT-vmax auf fester Bahn an einem Gerät · 2 = Tempo-Decke ≥ vmax des schnellsten Rezepts × 1,2 am Boden und 30 m darüber, auf einer Bahn aus dem geladenen Ring heraus, beide Geräte",
           "messung": "Spielgang-Station fahrt (echter Renderer): je Bild die offenen Bedarfe im Sichtkegel bis 384 m (Boden, Wuchs, Bauten, Karten) + bild-diff gegen das eingeschwungene Bild derselben Pose; Regler des Spielers (R8); der Bedarf kommt aus dem Gesetz (Kegel 384 m, Fern-Ring 8 km), nie aus dem Regler; das Soll-Tempo steigt im selben Commit mit der vmax.",
-          "beleg": "Maschine: sprint 5.175 m/s 60.008 s: 0 von 4096 Bildern mit Lücke · gt 15.998 m/s 60.012 s: 0 von 3762 Bildern mit Lücke · Weg 1270 m, Ring 4, Takt p95 14.1 ms (Soll 0 Lücken-Bilder) an f69a7305 headless",
+          "beleg": "Maschine: gehalten: sprint 5.175 m/s 60.008 s: 0 von 4096 Bildern mit Lücke · gt 15.998 m/s 60.012 s: 0 von 3762 Bildern mit Lücke · Weg 1270 m, Ring 4, Takt p95 14.1 ms (Soll 0 Lücken-Bilder) an f69a7305 headless",
           "schlupfloch": "Langsam fahren, ins Offene legen, den Sichtradius per Regler schrumpfen: feste Bahn durch Wald und Dorf bei festem Tempo; „≥ 70 m/s“ war eine Pose, die kein Spiel-Fahrzeug hat (B67) — das Soll folgt der vmax des Gesetzes; eine Schleife im geladenen Ring: die Bahn führt heraus.",
           "aenderung": "Lücke und Tempo-Decke maßen dieselbe Linse über das Tempo → EIN Kriterium; Fahrzeug K2 zählt das Tempo nicht mehr (V27). Der Stufen-Pop zählt LOD K2 (V20).",
           "maschine": true
@@ -3677,7 +3677,7 @@
           "punkte": 1,
           "staffel": "1 = ≥ 95 % der Chunks, Bäume, Bauten und Karten in der verlangten Stufe fertig vor dem Eintritt in den Sichtkegel, an einem Gerät · 2 = ≥ 99 % bei GT-Vollgas an beiden Geräten",
           "messung": "Ereignis-Zählung am Spieler-Weg je Ding: Zeit zwischen „fertig in der verlangten Stufe“ und „tritt in den Sichtkegel“; K1 prüft am Bild, dass fertig sichtbar ist.",
-          "beleg": "Maschine: fertig beim Eintritt: boden 484/484 (100 %) · baum 698/708 (98.6 %, spät -1/-1/0.397 s) · karte 3529/3529 (100 %) · bau 318/318 (100 %) · wuchs 257/257 (100 %) · streu 15/15 (100 %) (Soll je Klasse ≥ 95 %) an f69a7305 headless",
+          "beleg": "Maschine: gehalten: fertig beim Eintritt: boden 484/484 (100 %) · baum 698/708 (98.6 %, spät -1/-1/0.397 s) · karte 3529/3529 (100 %) · bau 318/318 (100 %) · wuchs 257/257 (100 %) · streu 15/15 (100 %) (Soll je Klasse ≥ 95 %) an f69a7305 headless",
           "schlupfloch": "„Fertig“ melden, sobald ein Platzhalter steht, oder eine Grobstufe, die nie verfeinert: fertig heißt die Stufe, die die Distanz verlangt.",
           "maschine": true
         },
@@ -4556,7 +4556,7 @@
     },
     {
       "stand": "2026-11-04",
-      "kopf": "f69a7305",
+      "kopf": "b1e4be21",
       "summe": 190,
       "max": 330,
       "skala": "2.0",
@@ -4564,7 +4564,7 @@
     }
   ],
   "text": {
-    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 04.11.2026, Kopf main f69a7305 (V18.546.175)",
+    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 04.11.2026, Kopf main b1e4be21 (V18.546.176)",
     "einleitung": [
       "Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.",
       "",

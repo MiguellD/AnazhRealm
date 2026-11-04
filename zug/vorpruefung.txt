@@ -35,3 +35,5 @@ w8-sprache a5d6a7bd ROT merge KONFLIKT mit main f69a7305: scripts/lib/welt-boot.
 w8-lod-wechsel d2b8c66c GRÜN check+playtest-voll Φ5=67728B (main f69a7305+w8-v2-probe@91e4b661)
 w5-studios-k1 12cc6d3e GRÜN check+playtest-voll+praegung-welt Φ5=67760B (main f69a7305)
 w7-gesicht 0c105649 GRÜN check+playtest-voll+kamera-leib+werk-im-wasser Φ5=67682B (main f69a7305)
+w5-studios-k1 760f9e2f GRÜN check+playtest-voll+praegung-welt+studio-uebergabe+regler-wirkt+mensch-anatomie Φ5=67751B (main 8b2e94f2)
+w6-weiches 31b2519b ROT gate:kreatur-takt Φ5=67760B ❌ ROT — 1 Probe(n) verletzt: die Kreaturen tragen ihren Defekt.
