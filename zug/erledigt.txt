@@ -221,3 +221,4 @@ z165-abab LANGSAMER abab 5fba36ea gegen 95d7bba1: w-ego 4+4 nicht-langsamer · s
 omen-hw-z204 OFFEN kihain:phi5-main=GRÜN rz-w9-gruss=GRÜN rz-w6-alter=GRÜN rz-w6-weiches=GRÜN rz-w5-licht-sprung=GRÜN 
 vp-w6-alter-fb096ca8 OFFEN abgebrochen ohne Urteil: UMGESTELLT: alter fb096ca8 gelandet (z204), werk-im-wasser gestrichen - 7/8 GRÜN, keine Zeile
 omen-k5-bisekt OFFEN licht.K5#1 GTX: erster ROT 0e3eadad (letzter GRÜN 5fba36ea)
+omen-k5-affekt OFFEN licht.K5#1 GTX: erster ROT 511a4d50 (letzter GRÜN 5fba36ea)
