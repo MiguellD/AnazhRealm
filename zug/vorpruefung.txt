@@ -34,3 +34,4 @@ w5-physik-k5 b8a0f2bc ROT merge KONFLIKT im Bündel mit w6-spielgang-decke: scri
 w8-sprache a5d6a7bd ROT merge KONFLIKT mit main f69a7305: scripts/lib/welt-boot.cjs scripts/playtest/feld-leben.cjs stamm/speicher-laden.js stamm/studio-bruecke.js 
 w8-lod-wechsel d2b8c66c GRÜN check+playtest-voll Φ5=67728B (main f69a7305+w8-v2-probe@91e4b661)
 w5-studios-k1 12cc6d3e GRÜN check+playtest-voll+praegung-welt Φ5=67760B (main f69a7305)
+w7-gesicht 0c105649 GRÜN check+playtest-voll+kamera-leib+werk-im-wasser Φ5=67682B (main f69a7305)
