@@ -2205,6 +2205,7 @@ class AnazhRealm_bau_teile {
             }
             mesh.castShadow = true;
             mesh.receiveShadow = true;
+            if (partMatDef) mesh.userData.stoff = part.material; // die Zeile, aus der das Teil altert (`_werkAlterFaerbe`)
             group.add(mesh);
             if (part.animate === "water_wave") waveTargets.push(mesh);
         }

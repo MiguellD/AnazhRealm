@@ -1187,6 +1187,7 @@ class AnazhRealm_siedlung_instanz {
         if (Number.isFinite(entry.rotationY) && entry.rotationY !== 0) {
             group.rotation.y = entry.rotationY;
         }
+        this._werkAlterFaerbe(entry, group); // das Alter des Werks an seinen Stoffen (stoffe.K4), in der Lage der Welt
         this.state.scene.add(group);
         entry.mesh = group;
         this._cullWecken(entry);

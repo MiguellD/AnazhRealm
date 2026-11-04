@@ -1590,6 +1590,26 @@ class AnazhRealm_bau_vorlagen {
             glut: [0.9, 0], laub: [0.9, 0], erde: [0.755, 0], kraut: [0.9, 0], essenz: [0.76, 0], blech: [0.44, 1],
             gras: [0.9, 0], wasser: [0.72, 0], eis: [0.7, 0],
         };
+        // DIE ANTWORT AUF DAS ALTER (stoffe.K4, `_werkAlter` → `_werkAlterFaerbe`): je Stoff, der verwittert, das Ziel seiner
+        // Fläche (lineare Albedo), die Tage, in denen Zeit und Nässe-Dosis ihn 63 % dorthin tragen (null: die Achse wirkt nicht), und
+        // die Lage, an der er es zeigt. Holz vergraut zum Silber (Licht und Regen bauen das Lignin der Oberfläche ab — USDA Wood
+        // Handbook 2021 Kap. 16: bewittertes Holz in einem Jahr silbergrau, sRGB 0x6b665e) an jeder freien Fläche; Eisen rostet
+        // NUR nass (die Oxidation braucht den Wasserfilm; Rost FeO(OH) ockerbraun sRGB 0x8c5426, Farbton 25°) an jeder freien
+        // Fläche; Stein trägt das Moos des Fels-Gesetzes (gelaende-core `FELS.moos`) nur nass und nur an der Nordseite (schattig,
+        // lange nass). Leser: das Bau-Teil der Welt; ein eigener Stoff altert wie sein Verwandter (`_stoff`).
+        const MOOS = globalThis.__gelaendeCore && globalThis.__gelaendeCore.FELS && globalThis.__gelaendeCore.FELS.moos;
+        if (!MOOS) AnazhRealm._kernPflichtBruch("gelaende:FELS.moos");
+        const lin = (h) =>
+            [16, 8, 0].map((k) => {
+                const c = ((h >> k) & 0xff) / 255;
+                return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+            });
+        // prettier-ignore
+        const ALTER = {
+            holz: { ziel: lin(0x6b665e), zeitTage: 200, nassTage: 40, lage: "frei" },
+            eisen: { ziel: lin(0x8c5426), zeitTage: null, nassTage: 10, lage: "frei" },
+            stein: { ziel: MOOS.slice(0, 3), zeitTage: null, nassTage: 40, lage: "nord" },
+        };
         const welt = this;
         const TB = AnazhRealm._schrittTimbre().material;
         // Stahl, Blech und Leib sind Stoffe der Körper (die Klinge der Schmiede, die Hülle des Wagens, der Mensch), Gras, Wasser
@@ -1624,6 +1644,8 @@ class AnazhRealm_bau_vorlagen {
                 },
             });
             if (keinBauStoff.includes(name)) z.bauStoff = false;
+            if (ALTER[name])
+                z.alter = Object.freeze(Object.assign({}, ALTER[name], { ziel: Object.freeze(ALTER[name].ziel) }));
             const optik = OPTIK[name];
             if (!optik) AnazhRealm._kernPflichtBruch("STOFF-TAFEL " + name + ": die Optik (Rauheit, Metall)");
             ["rauheit", "metall"].forEach((k, i) =>

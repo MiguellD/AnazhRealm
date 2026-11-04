@@ -1696,6 +1696,7 @@ class AnazhRealm_siedlung_ort {
     // hob der Akt alle Slots in EINER Aufgabe (nH 120: 123 Häuser, 410 ms bis zum ersten Bild). Rückgabe: Promise der Bilanz.
     async _spawnSettlementFromExport(plan, origin, so) {
         if (!plan || !Array.isArray(plan.slots) || !origin) return { placed: 0, skipped: 0, mitte: null };
+        const welt = this.state; // der Zug baut nur in der Welt seines Akts (`_dorfWeltGing`)
         plan = this._ortPlanSetzen(plan, origin); // der Ort auf dem Gelände (K10): jeder Slot trägt seinen Boden
         // DIE EINE REIHE (`_dorfZug`): der Schirm zuerst, darin das nächste — bis siedlung-k5-nah hob der Akt in der Slot-Folge
         const q = Object.assign(this._dorfZug(plan, origin, null), { so: { autonomous: !!(so && so.autonomous) } });
@@ -1717,6 +1718,7 @@ class AnazhRealm_siedlung_ort {
             }
             if (q.idx >= plan.slots.length) break;
             await new Promise((weiter) => requestAnimationFrame(weiter)); // der nächste Schritt nach dem Bild, das ihn zeigt
+            if (this.state !== welt) break;
         }
         // die Mitte der gesetzten Häuser — dorthin schaut, wer das Dorf verlangt hat (`_nachDorfOrientieren`)
         const mitte = placed ? { x: mx / placed, z: mz / placed } : null;
@@ -1872,9 +1874,13 @@ class AnazhRealm_siedlung_ort {
     // DAS DORF IM FLUG (stand-treue): ein Akt — Chat, Feld, Nexus — ist offen vom Auftrag bis zum letzten Haus (Export, Ort-Wahl
     // im Faden, Zug über die Bilder); `_weltOffen` zählt ihn (`_dorfOffen`). Vorher „stand" die Welt während der Ort-Wahl, und
     // die Häuser des Nexus kamen in die Runde der Stufen-Wahl (CI 39767254768: archLod 2288 → 2294 mit den Tätern).
+    // Der Zähler gehört der Welt des Akts: ein Akt, dessen Welt ging (`_dorfAkt`), zählt in der nächsten nichts herunter.
     spawnSettlement(opts) {
         this._dorfImFlug = (this._dorfImFlug | 0) + 1;
-        const ende = () => this._dorfImFlug--;
+        const welt = this.state;
+        const ende = () => {
+            if (this.state === welt) this._dorfImFlug--;
+        };
         const akt = this._dorfAkt(opts);
         akt.then(ende, ende);
         return akt;
@@ -1897,7 +1903,18 @@ class AnazhRealm_siedlung_ort {
             (H ? H.size : 0)
         );
     }
+    // DIE WELT DES AKTS: ein Dorf gehört der Welt, in der es geworfen wurde. Der Welt-Wechsel tauscht den Zustand in der Seite
+    // (`_weltAbschied`: `this.state` ist danach die Ziel-Welt) — ein Akt, der über ihn hinweg wartet (Buch, Export, Ort-Wahl,
+    // der Zug über die Bilder), schrieb sein Gedächtnis (`settlementCells`) und seine Häuser in die NÄCHSTE Welt (gate:pruefbuehne
+    // 04.11.: die Zelle eines Wildnis-Dorfs „d:…" lag auf der Bühne, Zensus dorfZellen 1). Nach jedem Warten fragt er seine Welt;
+    // ging sie, fällt er mit ihr.
+    _dorfWeltGing(welt, wo) {
+        if (this.state === welt) return false;
+        this.log(`SIEDLUNG: die Welt des Akts ging (${wo}) — das Dorf fällt mit ihr, nie in die nächste.`, "INFO");
+        return true;
+    }
     async _dorfAkt(opts) {
+        const welt = this.state;
         const o = opts && typeof opts === "object" ? opts : {};
         let seed = Number.isFinite(o.seed) ? Number(o.seed) : NaN;
         if (!Number.isFinite(seed)) seed = this._bauSame("stadt");
@@ -1918,6 +1935,7 @@ class AnazhRealm_siedlung_ort {
         // autonome Akt (das Gesetz kommt im Buch, `_foundryIngestSiedlung`).
         if (!o.autonomous || o.nHAusGesetz) {
             const warm = await this._foundryAwaitBook(45000);
+            if (this._dorfWeltGing(welt, "Buch")) return null;
             if (!warm.ok) {
                 const msg = `FOUNDRY KALT: Siedlung/Dorf-Spawn BLOCKIERT (${warm.reason}; ready=${warm.ready} recipes=${warm.recipes}) — kein stilles Nichts.`;
                 this.log(msg, "ERROR");
@@ -1940,6 +1958,7 @@ class AnazhRealm_siedlung_ort {
         }
         const dp = { seed, nH, epoche: o.epoche, budget: o.budget };
         return this._foundryRequestSettlement(dp).then(async (plan) => {
+            if (this._dorfWeltGing(welt, "Export")) return null;
             if (!plan) {
                 this.log(
                     "FOUNDRY KALT: Siedlung — export-settlement leer/aus — Spawn BLOCKIERT (kein stilles Nichts).",
@@ -1954,12 +1973,13 @@ class AnazhRealm_siedlung_ort {
             // die Ort-Wahl rechnet im Ort-Faden (`_ortWahl`, Lehre 14), der Akt wartet auf sie. Seine Gassen folgen dem Grund
             // am Ort, an dem er steht (`_ortMitTrasse`, siedlung.K3): der Plan ohne Raster nennt nur den Anker.
             const b = await this._ortMitTrasse(dp, anchor);
-            if (!b || !b.plan) return null;
+            if (this._dorfWeltGing(welt, "Ort-Wahl") || !b || !b.plan) return null;
             anchor.mitte &&= { x: anchor.mitte.x + b.ort.x - anchor.x, z: anchor.mitte.z + b.ort.z - anchor.z };
             Object.assign(anchor, { x: b.ort.x, z: b.ort.z });
             const ort = AnazhRealm._ortSchluessel(b.plan, anchor); // der Schlüssel seines Erdbaus (`_ortPlanSetzen`)
             plan = this._ortPlanSetzen(b.plan, anchor);
             const res = await this._spawnSettlementFromExport(plan, anchor, { autonomous: !!o.autonomous });
+            if (this._dorfWeltGing(welt, "Zug")) return null;
             // DORF-ERLEBNIS — Wege/Platz/Brunnen + das Rebuild-Gedächtnis („d:<seed>"
             // im selben settlementCells-Pfad: die Wege-Streifen überleben den Reload).
             const wmD = this.state.worldMeta || (this.state.worldMeta = {});
@@ -2425,6 +2445,7 @@ class AnazhRealm_siedlung_ort {
         // unterwegs (der Zug beginnt keine zweite Zelle, die Messung schwingt nicht ein)
         this._autoSettlementPendingKey = key;
         return this._dorfBereiten(key, i2).then((b) => {
+            if (this._dorfWeltGing(st, "Zelle " + key)) return null; // die Zelle und ihr Zug gehören der Welt, die sie rief
             this._autoSettlementPendingKey = null;
             this._dorfVorraete.delete(key); // die Zelle ist erwacht: ihr Vorrat ist verbraucht
             if (!b) return null; // fail-closed (Foundry kalt)
