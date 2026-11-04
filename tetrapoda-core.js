@@ -3243,10 +3243,21 @@
                 // DIE GRENZE DES BEINS (K07, die hintere Extremlage): ein gehaltener Fuß — im Stand oder spät im Schwung
                 // wartend —, den die Kette nicht mehr erreicht, hebt ab: sein Schwung beginnt im nächsten Takt (die Phase
                 // springt auf den Schwung-Anfang, die Kopplung führt sie zurück), um den Weg des Leibs in einem Bild (1/60 s)
-                // vorausgedacht. Im STAND tritt er (K8 huf, Schritt 1), ohne auf eine andere Pfote zu warten.
-                if (dZiel > la + lb - (g.v || 0) * Math.min(dt, 1 / 60) && fl[i3].an && !(fl[i3].tritt >= 0)) {
+                // vorausgedacht — um das, was dieser Weg die Kette LÄNGT: seine Projektion auf das Bein (−tz/d, der Fuß hinter
+                // der Hüfte; ein Fuß vor ihr kommt näher). w11-leib: vorher galt der volle Weg v·dt als Längung, im Galopp
+                // (8,7 m/s, 14,5 cm je Bild) hob jeder Fuß zwei seiner sechs Stand-Bilder zu früh — der Tastgrad des Leibs
+                // 0,20 gegen 0,30 des Gesetzes (das Labor zeigt es, seit es den Leib der Welt geht). Endet der Stand des
+                // Gesetzes ohnehin in diesem Schritt und steht die Kette noch in der Marge der Senke (0,98 × Glied, Schritt 2),
+                // hält er bis dahin — die Vorausschau hob ihn sonst ein Bild davor (im Galopp ein Sechstel des Stands); jenseits
+                // der Marge, nahe der Streckung, dreht das Knie singulär schnell (der Satz mischt die Knochen-Matrizen: Bär-Galopp
+                // Schlupf 0,062 beim Halten bis zur Streckung). Im STAND tritt er (K8 huf, Schritt 1), ohne auf eine andere Pfote
+                // zu warten.
+                var laengt = ((g.v || 0) * Math.min(dt, 1 / 60) * Math.max(0, -tz)) / Math.max(1e-6, dZiel);
+                if (dZiel > la + lb - laengt && fl[i3].an && !(fl[i3].tritt >= 0)) {
                     var u3 = ((g.ph[i3] % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-                    if (!stand && u3 >= 0.7 * sw) g.ph[i3] += 2 * Math.PI - u3;
+                    var rate3 = dtTakt > 0 ? (g.ph[i3] - phAlt[i3]) / dtTakt : freq;
+                    var endet = u3 >= sw && u3 + rate3 * dt >= 2 * Math.PI && dZiel <= 0.98 * (la + lb);
+                    if (!stand && u3 >= 0.7 * sw && !endet) g.ph[i3] += 2 * Math.PI - u3;
                     else if (stand) {
                         var fx3 = fl[i3].x,
                             fz3 = fl[i3].z;
