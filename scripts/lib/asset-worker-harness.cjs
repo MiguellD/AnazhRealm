@@ -7,35 +7,24 @@
 //
 // mint-asset-goldens.cjs (schreibt die eingefrorenen Goldens) UND diag-asset-contract.cjs (das
 // Dauer-Gate) LESEN diese eine Datei — kein zweiter Boot-Pfad, der driften kann.
-const { statikServer, starteBrowser, ausDatei, path, crypto, stammLib, jsonLesen, ROOT } = require("./welt-boot.cjs");
+const { statikServer, starteBrowser, ausDatei, path, crypto, stammLib, jsonLesen, ROOT, ENGINE_THREE, ENGINE_MODUL } = require("./welt-boot.cjs");
 const { installiereDrift, FUNKTIONEN } = require("./plattform-probe.cjs");
 const { rasterDreieck } = require("./kronen-linse.cjs");
 const { luma709, linSrgb } = require("./abnahme-urteil.cjs");
 
 // der Boot ist MANIFEST-GETRIEBEN wie die Produktion
-// (anazhRealm._ensureAssetFoundry liest cores.manifest.json + injiziert
-// self.__anazhCores): die lib der Kerne → alle Kern-Skripte in Manifest-Reihenfolge
-// → die Foundry-Brücke zuletzt (K42: keine Labor-Shell, keine Labor-Szene) — ALLES
-// aus dem Manifest. So trägt das Harness-Buch ALLE Gattungen (tor/klinge/haus/
+// (anazhRealm._foundryStart liest cores.manifest.json + injiziert
+// self.__anazhCores): die Engine der Welt (Manifest `engine` → das Modul der Import-Karte von index.html, three r184,
+// per import()) → alle Kern-Skripte in Manifest-Reihenfolge → die Foundry-Brücke zuletzt (K42: keine Labor-Shell, keine
+// Labor-Szene) — ALLES aus dem Manifest. So trägt das Harness-Buch ALLE Gattungen (tor/klinge/haus/
 // kreatur …), nicht nur die Pflanzen — EINE Quelle, kein hartkodierter Zweitpfad.
 // (Die Pflanzen-Goldens bleiben byte-identisch — gate:asset-contract ist der stehende Beweis.)
 const CORES_MANIFEST = jsonLesen("cores.manifest.json");
-const WORKER_SCRIPTS = (() => {
-    const rel = [];
-    for (const core of CORES_MANIFEST) if (core && Array.isArray(core.lib)) for (const s of core.lib) rel.push("/" + s);
-    for (const core of CORES_MANIFEST) if (core && Array.isArray(core.scripts)) for (const s of core.scripts) rel.push("/" + s);
-    for (const core of CORES_MANIFEST) if (core && typeof core.bruecke === "string" && core.bruecke) rel.push("/" + core.bruecke);
-    return rel;
-})();
-// Der Boot-Quelltext des Foundry-Workers als JS-AUSDRUCK für den Seiten-Kontext (location.origin) — das Harness, der
-// Bäcker-Kanal und die Fahrzeug-Ferne setzen DIESEN ein (`const boot = ${WORKER_BOOT};`), kein zweiter Boot-Text. Die
-// Brücke startet sich selbst (Foundry-Modus, Kanal-Hörer, ready) — kein init() hinter den importScripts.
-const WORKER_BOOT =
-    '"self.__PHYTO_FOUNDRY_WORKER=true;" + "self.__anazhCores=" + JSON.stringify(' +
-    JSON.stringify(CORES_MANIFEST) +
-    ') + ";" + "importScripts(" + ' +
-    JSON.stringify(WORKER_SCRIPTS) +
-    '.map((p) => JSON.stringify(location.origin + p)).join(",") + ");"';
+const WORKER_SCRIPTS = ["scripts", "bruecke"].flatMap((f) => CORES_MANIFEST.flatMap((c) => [].concat(c[f] || [])));
+// Der Boot-Quelltext des Foundry-Workers als JS-AUSDRUCK für den Seiten-Kontext (location.origin): DERSELBE Start wie
+// die Welt (`_foundryStart` der echten Klasse — Manifest per fetch, die Engine der Import-Karte, Halten bis die Kerne
+// stehen), ohne Transport-Schale (das Harness liest den Bau roh). Die Brücke startet sich selbst (ready).
+const WORKER_BOOT = `"(function " + ${JSON.stringify(String(stammLib.ladeKlasse(ROOT).AnazhRealm._foundryStart))} + ")(" + JSON.stringify({ v: "", base: location.origin + "/", module: { three: location.origin + ${JSON.stringify(ENGINE_MODUL())} } }) + ", function () {});"`;
 
 // DER BAU-FINGERABDRUCK — die EINE Quelle für jeden Bau über die echte Brücke (die Seite per toString, Node direkt): die
 // Plattform-Probe (`__probeLauf`, kippt ein Byte unter ±1 ULP?) und gate:regler-wirkt (`__bauHashListe`, bewegt ein Regler den Bau?).
@@ -438,8 +427,8 @@ const DATEN_KANAELE = [
     ["renderConfig", "render-config"],
 ];
 
-// DER KANAL OHNE BROWSER: DIESELBEN Dateien wie der Worker (WORKER_SCRIPTS: lib, Kerne in Manifest-Reihenfolge, die
-// Brücke zuletzt) laufen in EINEM Node-vm, und DERSELBE Kanal (`foundryKanal`) antwortet je Frage — der Umschlag (get-book,
+// DER KANAL OHNE BROWSER: DIESELBEN Dateien wie der Worker (die Engine `ENGINE_THREE`, WORKER_SCRIPTS: Kerne in
+// Manifest-Reihenfolge, die Brücke zuletzt) laufen in EINEM Node-vm, und DERSELBE Kanal (`foundryKanal`) antwortet je Frage — der Umschlag (get-book,
 // gate:studio-vertrag U) und jeder Bau (build-asset, gate:studio-uebergabe), ~0,6 s statt eines Browser-Boots. Die Leinwand
 // des Blatt-Atlas (OffscreenCanvas) schluckt ein Absorber. `quellen`: { "<datei>": "<quelltext>" } ersetzt eine Datei.
 // DER ABSORBER: ein Wert, der jeden Zugriff, Ruf und Bau schluckt (als Zahl 0) — THREE und die Leinwand eines Kerns, der im vm
@@ -454,7 +443,7 @@ function absorber() {
 }
 // DER KONTEXT EINES KERNS IM VM: stumm, die Uhr steht, `self` und `globalThis` sind er selbst — `mit` legt dazu, was der
 // Kern dort liest (ohne: THREE als Absorber). Bis streaming-k5 baute jede Linse ihn selbst (die Vertrags-Linse zweimal, die
-// Streu-Linse, dieser Kanal).
+// Streu-Linse, dieser Kanal, die Daten-Linse zweimal, der Baum, das Abnahme-Urteil).
 function kernKontext(mit = { THREE: absorber() }) {
     const ctx = require("vm").createContext({
         console: { log() {}, warn() {}, error() {} },
@@ -468,16 +457,17 @@ function kernKontext(mit = { THREE: absorber() }) {
 function kanalImVm(quellen = {}) {
     const vm = require("vm");
     const posts = [];
-    // DER START DES FADENS (studios.K1): die Brücke startet im vm wie im Foundry-Worker (`foundryModus`: die Stoffe, der Sommer,
-    // der Foundry-Modus) — ohne ihn backte der erste Baum den Blatt-Atlas in einen ungebauten Stoff und lieferte 0 Teile
+    // DER START DES FADENS (studios.K1): die Brücke startet im vm wie im Foundry-Worker (`_foundryStart`: die Engine der Welt
+    // als THREE, `foundryModus`: die Stoffe, der Sommer, der Foundry-Modus) — ohne ihn backte der erste Baum den Blatt-Atlas in
+    // einen ungebauten Stoff und lieferte 0 Teile
     const ctx = kernKontext({
+        THREE: ENGINE_THREE(),
         OffscreenCanvas: absorber(),
         __anazhCores: CORES_MANIFEST,
         postMessage: (p) => posts.push(p),
         __PHYTO_FOUNDRY_WORKER: true,
     });
-    for (const p of WORKER_SCRIPTS) {
-        const f = p.replace(/^\//, "");
+    for (const f of WORKER_SCRIPTS) {
         const src = Object.prototype.hasOwnProperty.call(quellen, f)
             ? quellen[f]
             : ausDatei(path.join(ROOT, f));

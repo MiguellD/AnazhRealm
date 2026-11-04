@@ -1509,12 +1509,11 @@ jobs:
               # Fragment-WGSL des Bogens liest keine Variable, die nur ein Zweig rechnet (B7, das TSL-Leck).
               run: npm run gate:wasser-leben:bild
 
-            - name: Look-Golden-Linse (Selbst-Test der perzeptuellen MSSIM-Metrik)
+            - name: Studio-Blick (Selbsttest — ein uniformes Bild ist ein blinder Blick)
               if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 1
-              # Beweist die perzeptuelle Linse SELBST (MSSIM: identisch→1 · degradiert→<1), GPU-frei.
-              # Der gerenderte Golden-Vergleich (--render/--mint) gehört auf echte GPU + einen
-              # Schöpfer-Sign-off — hier läuft nur der gate-taugliche Linsen-Selbst-Test.
-              run: npm run look-golden
+              # GPU-frei: das Urteil des Blicks (scripts/diag-blick.cjs, die Welt und jedes Studio) an gepflanzten Bildern;
+              # der Schuss selbst (npm run blick:studio -- garage --paar) läuft im Agenten, nie in der Batterie.
+              run: npm run gate:studio-blick
 
             # DAS URTEIL DER GRUPPE: dieselbe Form wie im Puls (der Anker &urteil dort), gate:ci-deckung (U) URTEIL
             - *urteil

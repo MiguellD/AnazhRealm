@@ -330,6 +330,9 @@ function fingerabdruck(group, nurGeometrie, mitFern) {
 // DER ABDRUCK EINES OBJEKTS im Hash h: Typ, Welt-Matrix, die Stoff-Signatur von m (ohne m keine; `mehr` trägt eine Linse dazu —
 // der Ofen die userData des Stoffs), je Attribut Name, Größe und Bytes, der Index. Leser: `fingerabdruck` und gate:ofen-contract
 // (bis w3w trug der Ofen einen Zwilling dieser Zeilen).
+// Die Farbe im Abdruck als Hex der Golden-Stufen (je Kanal ×255 ganzzahlig ABGESCHNITTEN, die Arithmetik von three r128
+// `getHex`): engine-frei — r184 rundet in getHex, und der Abdruck misst die Komponente, nie die Engine (w5-pipeline).
+const abdruckHex = (c) => ((255 * c.r) << 16) ^ ((255 * c.g) << 8) ^ ((255 * c.b) << 0);
 function objektAbdruck(h, o, m, mehr) {
     const geo = o.geometry;
     h.update(String(o.type));
@@ -337,8 +340,8 @@ function objektAbdruck(h, o, m, mehr) {
     if (m)
         h.update(
             JSON.stringify({
-                c: m.color ? m.color.getHex() : null,
-                e: m.emissive ? m.emissive.getHex() : null,
+                c: m.color ? abdruckHex(m.color) : null,
+                e: m.emissive ? abdruckHex(m.emissive) : null,
                 r: typeof m.roughness === "number" ? m.roughness : null,
                 mt: typeof m.metalness === "number" ? m.metalness : null,
                 o: typeof m.opacity === "number" ? m.opacity : null,

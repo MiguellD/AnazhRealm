@@ -1944,6 +1944,7 @@ class AnazhRealm_bild_himmel {
             // Ort (`_weltAbschied`), die Tafel blieb mit ihrem Schlüssel und las nie neu: die Belichtung stand nie mehr, das erste
             // Weltbild jeder Ziel-Welt erst am Deckel (60 s, Radeon 30.10.)
             tafel: null,
+            tafelFlug: null,
             tafelNr: 0,
             anker: null,
             belichtung: null,
@@ -2012,7 +2013,7 @@ class AnazhRealm_bild_himmel {
             A.belichtung = null;
             A.mediumBeta = null; // die Uniforms des Mediums und die Tafeln (Durchlass, Ψ_ms, Himmels-Sicht) zeichnen neu
             A.tafelSchluessel = null; // die Bestrahlungs-Tafel derselben Luft unter dem anderen Gesetz
-            this._himmelFlug = null; // ihr Flug trug die Bestrahlung des alten Himmels
+            A.tafelFlug = null; // ihr Flug trug die Bestrahlung des alten Himmels
         }
         // DER ANKER ZUERST (S7): bis die Tafel der klaren Luft am Boden einmal zurückkam (`anker`, der Himmel der Karte
         // unter der Zenit-Sonne), zeichnet der Takt sie — in jedem Wetter und jeder Höhe des Auges; danach das Medium jetzt.
@@ -2100,6 +2101,9 @@ class AnazhRealm_bild_himmel {
             );
         const W = A.rtBS.width;
         const klar = A.mediumBeta === this._atmoRechnung().betaKlar(this._atmoGesetz()) && A.U.hKm.value < 0.05;
+        // die Lesung trägt die Luft, in der sie gezeichnet wurde (Medium und Höhen-Stufe) — der Flug misst an IHR, nie an der Luft,
+        // die gerade gilt, wenn ein Leser sie zum ersten Mal sieht
+        const [medium, stufe] = [A.mediumBeta, Math.round(A.U.hKm.value * 10)];
         const nr = ++A.tafelNr;
         return r.readRenderTargetPixelsAsync(A.rtBS, 0, 0, W, 1).then(
             (px) => {
@@ -2109,7 +2113,7 @@ class AnazhRealm_bild_himmel {
                 for (let i = 0; i < W; i++)
                     for (let c = 0; c < 3; c++)
                         w[i * 3 + c] = halb ? AnazhRealm._halbZuFloat(px[i * 4 + c]) : px[i * 4 + c];
-                A.tafel = { W, werte: w };
+                A.tafel = A.tafelFlug = { W, werte: w, medium, stufe };
                 if (klar && A.anker == null)
                     A.anker = 0.2126 * w[(W - 2) * 3] + 0.7152 * w[(W - 2) * 3 + 1] + 0.0722 * w[(W - 2) * 3 + 2];
                 return true;
@@ -2129,12 +2133,12 @@ class AnazhRealm_bild_himmel {
     // steht; die zurückgelesene Umgebung (`_himmelsIrradianz`) bleibt die Quelle des Feld-Passes, der dieselbe IBL zeigt wie die
     // Stoffe. Der Null-Renderer malt keinen Himmel (Lehre 16): dort 0. Bis die erste Tafel liegt (der erste Takt der
     // Atmosphäre unter dem Ladeschirm): null — kein Leser schreibt dann.
-    _himmelsBestrahlung(out) {
+    _himmelsBestrahlung(out, flug) {
         const st = this.state;
         out[0] = out[1] = out[2] = 0;
         if (st.renderer && st.renderer._isHeadlessNull) return out;
         const A = st.atmoLut;
-        const T = A && A.tafel;
+        const T = A && (flug ? A.tafelFlug : A.tafel);
         if (!T) return null;
         const U = A.U;
         const W = T.W,
@@ -2533,7 +2537,12 @@ class AnazhRealm_bild_himmel {
     // Stufe der Tafel blieb und das Medium höchstens `ATMO_LUT.flug` Stufen wanderte; jeder Sprung (Höhe, Ort, ein Wort ohne
     // Übergang) liest nie die Luft von vorher: null, die Belichtung hält. Bis licht.K5 hielt sie an JEDER Stufe — im Zug klar →
     // Regen stand sie in den Takten ohne Lesung (die Linse: 10 je Spiel-Sekunde) still, das Richtlicht sank weiter, und sie holte
-    // in einem Schlag auf (+0,109 EV in einer Sekunde, swiftshader).
+    // in einem Schlag auf (+0,109 EV in einer Sekunde, swiftshader). DER FLUG IST DIE LETZTE ANGEKOMMENE TAFEL (`tafelFlug`, mit
+    // der Luft, in der sie gezeichnet wurde), nie eine Erinnerung des Lesers: bis zur Nachbesserung merkte sich die Belichtung den
+    // Himmel nur, wenn sie die Tafel selbst gelesen hatte. Seit die Leine die Tafeln fragt (w4-affekt 511a4d50), zeichnet der
+    // freie Takt die gestaute Stufe neu, ehe die Belichtung liest — jede angekommene Lesung fiel ungelesen, der Flug riss nach
+    // 8 Stufen, die Belichtung stand den ganzen Übergang still und holte am Ende in einem Schlag auf (licht.K5#1, Radeon und GTX:
+    // 1,387 EV/s, Hub klar ↔ Regen 1,83 statt 0,79 EV).
     _waagrechtIrradianz(out) {
         const st = this.state;
         const dl = st.directionalLight;
@@ -2552,27 +2561,18 @@ class AnazhRealm_bild_himmel {
         // (`_horizontSichtImBild`, dieselbe Karte wie jeder Empfänger); den Wurf der Wolke trägt er im Mittel (lightMul im Richtlicht)
         const sicht = dy > 0 ? this._horizontSichtImBild(dir) : 1;
         add(dl.color, dl.intensity * dy * sicht);
-        let himmel = this._himmelsBestrahlung(this._himmelE || (this._himmelE = [0, 0, 0]));
+        const he = this._himmelE || (this._himmelE = [0, 0, 0]);
+        let himmel = this._himmelsBestrahlung(he);
         const A = st.atmoLut;
-        if (A) {
-            const U = A.U;
-            const k = [U.toenung.value.x, U.toenung.value.y, U.toenung.value.z].map((x) => x * U.licht.value);
-            const stufe = Math.round(U.hKm.value * 10);
-            const f = this._himmelFlug || (this._himmelFlug = { je: [0, 0, 0], medium: 0, stufe: NaN });
-            if (himmel) {
-                for (let c = 0; c < 3; c++) f.je[c] = himmel[c] / Math.max(k[c], 1e-9);
-                f.medium = A.mediumBeta;
-                f.stufe = stufe;
-            } else if (
-                f.stufe === stufe &&
-                f.medium > 0 &&
-                Math.abs(Math.log(A.mediumBeta / f.medium)) <=
-                    AnazhRealm.ATMO_LUT.flug * AnazhRealm.ATMO_LUT.mediumStufe + 1e-9
-            ) {
-                himmel = this._himmelE;
-                for (let c = 0; c < 3; c++) himmel[c] = f.je[c] * k[c];
-            }
-        }
+        const F = A && A.tafelFlug;
+        if (
+            !himmel &&
+            F &&
+            F.stufe === Math.round(A.U.hKm.value * 10) &&
+            Math.abs(Math.log(A.mediumBeta / F.medium)) <=
+                AnazhRealm.ATMO_LUT.flug * AnazhRealm.ATMO_LUT.mediumStufe + 1e-9
+        )
+            himmel = this._himmelsBestrahlung(he, true);
         if (!himmel) return null;
         out[0] += himmel[0];
         out[1] += himmel[1];

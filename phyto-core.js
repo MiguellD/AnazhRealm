@@ -1566,9 +1566,7 @@
             off = (P.seed || 0) * 13.7;
         const detail = Math.max(1, (P.detail || 4) - 1);
         let geo = THREE.IcosahedronGeometry ? new THREE.IcosahedronGeometry(1, detail) : null;
-        if (THREE.BufferGeometryUtils && THREE.BufferGeometryUtils.mergeVertices) {
-            geo = THREE.BufferGeometryUtils.mergeVertices(geo);
-        }
+        geo = eckenVerschmelzen(geo); // die Ecken teilen sich (w5-pipeline: das Gesetz, kein Addon — bis hier nur, wo eines geladen war)
         const pos = geo.attributes.position,
             n = pos.count;
         const idxAttr = geo.index;
@@ -2249,6 +2247,109 @@
             }
         }
         return m;
+    }
+
+    // DAS VERSCHMELZEN DER KERNE (w5-pipeline, pipeline.K5): die Kerne bauen auf der Engine der Welt (three r184 im
+    // Foundry-Faden wie im Haupt-Faden) und hängen an keinem Addon — r128 hieß es mergeBufferGeometries, r184
+    // mergeGeometries, und das Addon ist in keinem der beiden Fäden geladen. Das Gesetz ist die Rechnung, die jede
+    // Golden-Stufe trägt (spec/asset-contract/v1, gemünzt unter r128 BufferGeometryUtils): die Attribute Teil um Teil
+    // hintereinander (Typ, itemSize, normalized je Name gleich), der Index um die Ecken davor versetzt, `mergedUserData`
+    // die userData der Teile. Ungleiche Teile (Index, Namen, Zahl) brechen laut beim Namen.
+    function geoVerschmelzen(geos) {
+        const T = root.THREE;
+        const mitIndex = geos[0].index !== null;
+        const namen = Object.keys(geos[0].attributes);
+        const aus = new T.BufferGeometry();
+        const ud = (aus.userData.mergedUserData = []);
+        for (let i = 0; i < geos.length; i++) {
+            const g = geos[i];
+            const n = Object.keys(g.attributes);
+            if ((g.index !== null) !== mitIndex || n.length !== namen.length || n.some((k) => !namen.includes(k)))
+                throw new Error(
+                    "VERSCHMELZEN: Teil " + i + " trägt andere Attribute/Index als Teil 0 (" + n.join(",") + ")"
+                );
+            if (Object.keys(g.morphAttributes).length)
+                throw new Error("VERSCHMELZEN: Teil " + i + " trägt Morph-Attribute");
+            ud.push(g.userData);
+        }
+        if (mitIndex) {
+            const idx = [];
+            let vor = 0;
+            for (const g of geos) {
+                const a = g.index.array;
+                for (let j = 0; j < g.index.count; j++) idx.push(a[j] + vor);
+                vor += g.attributes.position.count;
+            }
+            aus.setIndex(idx);
+        }
+        for (const k of namen) {
+            const a0 = geos[0].attributes[k];
+            let n = 0;
+            for (const g of geos) {
+                const a = g.attributes[k];
+                if (
+                    a.isInterleavedBufferAttribute ||
+                    a.array.constructor !== a0.array.constructor ||
+                    a.itemSize !== a0.itemSize ||
+                    a.normalized !== a0.normalized
+                )
+                    throw new Error("VERSCHMELZEN: das Attribut " + k + " ist ungleich gebaut");
+                n += a.array.length;
+            }
+            const arr = new a0.array.constructor(n);
+            let o = 0;
+            for (const g of geos) {
+                arr.set(g.attributes[k].array, o);
+                o += g.attributes[k].array.length;
+            }
+            aus.setAttribute(k, new T.BufferAttribute(arr, a0.itemSize, a0.normalized));
+        }
+        return aus;
+    }
+    // Gleiche Ecken teilen einen Index (das Gesetz der Golden-Stufen, r128 mergeVertices): je Ecke ein Schlüssel aus
+    // jedem Attribut-Wert × 10^log10(1/tol), ganzzahlig abgeschnitten (~~), die erste Ecke eines Schlüssels gewinnt; gelesen
+    // wird das rohe Array (r184 `getX` entnormalisiert, r128 nie).
+    function eckenVerschmelzen(geo, tol) {
+        const T = root.THREE;
+        tol = Math.max(tol == null ? 1e-4 : tol, Number.EPSILON);
+        const mul = Math.pow(10, Math.log10(1 / tol));
+        const ix = geo.getIndex();
+        const namen = Object.keys(geo.attributes);
+        if (Object.keys(geo.morphAttributes).length) throw new Error("VERSCHMELZEN: Morph-Attribute an den Ecken");
+        const n = ix ? ix.count : geo.attributes.position.count;
+        const neu = {};
+        for (const k of namen) {
+            if (geo.attributes[k].isInterleavedBufferAttribute)
+                throw new Error("VERSCHMELZEN: " + k + " ist verschränkt");
+            neu[k] = [];
+        }
+        const schluessel = {};
+        const idx = [];
+        let naechste = 0;
+        for (let i = 0; i < n; i++) {
+            const e = ix ? ix.array[i] : i;
+            let h = "";
+            for (const k of namen) {
+                const a = geo.attributes[k];
+                for (let c = 0; c < a.itemSize; c++) h += `${~~(a.array[e * a.itemSize + c] * mul)},`;
+            }
+            if (h in schluessel) idx.push(schluessel[h]);
+            else {
+                for (const k of namen) {
+                    const a = geo.attributes[k];
+                    for (let c = 0; c < a.itemSize; c++) neu[k].push(a.array[e * a.itemSize + c]);
+                }
+                schluessel[h] = naechste;
+                idx.push(naechste++);
+            }
+        }
+        const aus = geo.clone();
+        for (const k of namen) {
+            const a = geo.attributes[k];
+            aus.setAttribute(k, new T.BufferAttribute(new a.array.constructor(neu[k]), a.itemSize, a.normalized));
+        }
+        aus.setIndex(idx);
+        return aus;
     }
 
     // ===================== DER WALD-PLAN (Vorlagen-Ökologie, „Drähte statt Kopien" 08.07.) =====================
@@ -5631,6 +5732,8 @@
         karteTiefe: karteTiefe, // w4-laub-karte — die Tiefe je Texel der Karte (vor/hinter der Mitte des Rahmens) über einer Algebra
         karteTiefeVersatz: karteTiefeVersatz, // ihr Rückweg: der Versatz in Metern der Vorlage
         scanRadialXZ: scanRadialXZ,
+        geoVerschmelzen: geoVerschmelzen, // w5-pipeline — die Teile hintereinander (das Gesetz der Golden-Stufen, kein Addon)
+        eckenVerschmelzen: eckenVerschmelzen, // w5-pipeline — gleiche Ecken teilen einen Index
         forestCellRng: forestCellRng,
         FOREST_STAND: FOREST_STAND,
         FREISTAND: FREISTAND,
