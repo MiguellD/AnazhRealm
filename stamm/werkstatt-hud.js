@@ -47,12 +47,20 @@ class AnazhRealm_werkstatt_hud {
 
     grokRender(text) {
         const grok = this.state.grok;
+        // eine Zeile der Tafel `[schlüssel, werte]` trägt ihren Schlüssel in den Knoten (`_tSetze`): ein Wechsel der Sprache füllt
+        // die Box neu (spielgang.K5#1: die Begrüßung blieb deutsch); ein freier Satz (die KI) löst den Schlüssel
+        const zeile = Array.isArray(text) ? text : null;
+        if (zeile) text = this._t(zeile[0], zeile[1]);
         // Ein leerer/fehlender Satz blankt den Dialog NIE: grokRender ist der EINE Sprech-Engpass, und
         // der Fade entfernt nur die visible-Klasse, nie den Text — ein geblankter Dialog bliebe leer.
         if (typeof text !== "string" || text === "") return;
         const box = grok.dialogueBox || document.getElementById("dialogue-box");
         if (box) {
-            box.textContent = text;
+            if (zeile) this._tSetze(box, zeile[0], zeile[1]);
+            else {
+                box.removeAttribute("data-t");
+                box.textContent = text;
+            }
             box.classList.add("visible");
             if (grok.fadeTimeout) clearTimeout(grok.fadeTimeout);
             grok.fadeTimeout = setTimeout(() => box.classList.remove("visible"), 8000);
