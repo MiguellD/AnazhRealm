@@ -71,7 +71,7 @@
 // save-server (`npm start`, :4312), ohne `--echt` headless an der Weiche des Start-Rezepts (`[linse-gpu]` nennt den Adapter);
 // Zeit-Urteile (band, gpu-bank) zählen nur mit `--echt` unter dem GPU-Schloss. `bild` nimmt py/ly mit `+` über dem Boden.
 "use strict";
-const { statikServer, werkbankRuf, werkbankTor, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt, pngDatei, WARTEN_SEITE, ausDatei, path, fs, stammLib, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, startePuppeteer, werkbankRuf, werkbankTor, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt, pngDatei, WARTEN_SEITE, ausDatei, path, fs, stammLib, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const { AUSGABE_INSTALL, wetterUrteil } = require("./lib/ausgabe-aufnahme.cjs");
 const LL = require("./lib/licht-linsen.cjs");
@@ -773,7 +773,6 @@ function bandProben(k) {
 
 // ── Server ──────────────────────────────────────────────────────────────────────────────────────
 async function starte() {
-    const puppeteer = require("puppeteer");
     const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
     const seiten = statikServer();
     if (ECHT) {
@@ -784,17 +783,16 @@ async function starte() {
         if (!da) throw new Error(`--echt braucht den save-server auf ${ECHT_SEITE} (npm start)`);
     } else await seiten.lausche(SEITEN_PORT);
     // DAS PROFIL DER MESS-SERIE: ohne eigenes Profil legte puppeteer je Start ein namenloses an — jede Zahl war eine
-    // Erst-Boot-Zahl („17 von 319 von der Platte"). Scratch je Start (beim `stop` gelöscht) oder benannt (`--serie`).
-    const profil = SERIE
-        ? ablage("profil-" + SERIE.replace(/[^a-z0-9_-]+/gi, "_"))
-        : path.join(require("os").tmpdir(), `werkbank-profil-${PORT}-${Date.now()}`);
-    const serieNeu = !fs.existsSync(profil);
-    fs.mkdirSync(profil, { recursive: true });
+    // Erst-Boot-Zahl („17 von 319 von der Platte"). Benannt (`--serie`) unter der Ablage, sonst das Scratch-Profil des EINEN
+    // Starters (welt-boot `startePuppeteer`: es stirbt mit dem Browser, am Prozess-Ende und am Signal, ein toter Lauf wird gefegt).
+    const profil = SERIE && ablage("profil-" + SERIE.replace(/[^a-z0-9_-]+/gi, "_"));
+    const serieNeu = !SERIE || !fs.existsSync(profil);
+    if (SERIE) fs.mkdirSync(profil, { recursive: true });
     const boot = { serie: SERIE || null, profil, serieNeu, ladungen: 0 };
     const bootArt = () => (boot.serieNeu && boot.ladungen <= 1 ? "erst" : "zweit");
     // die Boot-Zeile jeder Messung: Erst- oder Zweit-Boot, die Serie und die Ladungen der Seite
     const bootZeile = () => ({ art: bootArt(), serie: boot.serie, ladungen: boot.ladungen });
-    const browser = await puppeteer.launch({
+    const browser = await startePuppeteer({
         headless: !ECHT,
         userDataDir: profil,
         protocolTimeout: 10800000,
@@ -825,10 +823,10 @@ async function starte() {
     // Der Zeuge des vollen Stempel-Pools (r184 warnt nur EINMAL je Seite — warnOnce): die Zahl zählt
     // `__stempelWache` (scripts/lib/zerlege-linse.cjs), die Warnung belegt, dass es geschah.
     const stempelWarnung = { n: 0 };
-    page.on("pageerror", (e) => fehler.push((e.message || String(e)).split("\n")[0]));
+    page.on("pageerror", (e) => fehler.push(fehlerText(e).split("\n")[0]));
     // Der Tod der Seite beim NAMEN: jedes Ende (Absturz, Schließen, Navigation) landet mit Uhrzeit im Werkbank-Log.
     const tod = (was) => console.log(`[seite] ${new Date().toISOString()} ${was}`);
-    page.on("error", (e) => tod("ABSTURZ " + ((e && e.message) || e)));
+    page.on("error", (e) => tod("ABSTURZ " + (fehlerText(e))));
     page.on("close", () => tod("GESCHLOSSEN"));
     page.on("framenavigated", (f) => {
         if (f === page.mainFrame()) tod("navigiert " + f.url());
@@ -2982,21 +2980,15 @@ async function starte() {
                     steuer.close();
                     // Eine tote Seite lässt close() werfen — der catch unten sendete dann ein zweites Mal
                     // (ERR_HTTP_HEADERS_SENT) und riss den Prozess ohne Chrome-Abbau herunter.
-                    await browser.close().catch((e) => tod("close: " + ((e && e.message) || e)));
-                    // Das Scratch-Profil stirbt mit der Serie; ein benanntes (`--serie`) bleibt für den nächsten Start.
-                    if (!SERIE)
-                        try {
-                            fs.rmSync(profil, { recursive: true, force: true, maxRetries: 5 });
-                        } catch (e) {
-                            tod("Profil bleibt liegen: " + ((e && e.message) || e));
-                        }
+                    // das Scratch-Profil stirbt mit dem Browser (welt-boot `startePuppeteer`), ein benanntes (`--serie`) bleibt
+                    await browser.close().catch((e) => tod("close: " + (fehlerText(e))));
                     process.exit(0);
                 }
                 send({ fehler: "unbekannter Weg " + req.url });
             } catch (e) {
                 // der Fehler mit seinen ersten Rahmen (der Täter beim Namen, nicht nur die Meldung)
                 send({
-                    fehler: String((e && e.message) || e).split("\n")[0],
+                    fehler: fehlerText(e).split("\n")[0],
                     stapel: String((e && e.stack) || "")
                         .split("\n")
                         .slice(1, 5)

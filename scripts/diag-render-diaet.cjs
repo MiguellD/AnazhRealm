@@ -140,7 +140,7 @@ hauptLauf(async () => {
                     return { leckB: nach.b - vor.b, leckW: nach.w - vor.w };
                 };
             } catch (e) {
-                o.err = String((e && e.message) || e);
+                o.err = fehlerText(e);
             }
             return o;
         };
@@ -255,7 +255,7 @@ hauptLauf(async () => {
             farbe.glutGeteilt = !!(gb.instanceable && gb.leaves[0].mat === gm);
             res.farbe = farbe;
         } catch (e) {
-            res.farbe = { err: String((e && e.message) || e) };
+            res.farbe = { err: fehlerText(e) };
         }
         // ── Q am Ruf: die EINE Slot-Farb-Naht in beiden Slot-Schreibern, der Merge-Pfad zieht
         // das geteilte Material, der blockierte Pfad lässt es stehen (die Glüh-Antwort misst F am Slot)
@@ -312,7 +312,7 @@ hauptLauf(async () => {
                 wrappers: r.state.archInstanceGroups ? r.state.archInstanceGroups.size : 0,
             };
         } catch (e) {
-            res.welt = { err: String((e && e.message) || e) };
+            res.welt = { err: fehlerText(e) };
         }
 
         // Aufräumen: Hebel auf Produktion, Fixturen fallen (kein Debris im Baum).

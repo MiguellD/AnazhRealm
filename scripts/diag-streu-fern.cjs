@@ -325,14 +325,14 @@ hauptLauf(async () => {
                 B.rock.fernform = "boden";
                 res.flipBoden = felsFormen(neuBau(flipKey) || {});
             } catch (e) {
-                res.flipErr = String((e && e.message) || e);
+                res.flipErr = fehlerText(e);
             } finally {
                 B.rock.fernform = alt;
             }
             try {
                 res.flipZurueck = felsFormen(neuBau(flipKey) || {});
             } catch (e) {
-                res.flipErr = String((e && e.message) || e);
+                res.flipErr = fehlerText(e);
             }
         }
 
@@ -362,7 +362,7 @@ hauptLauf(async () => {
                 bf && bf.leaves && bf.leaves[0] && bf.leaves[0]._srcGroup ? bf.leaves[0]._srcGroup.children.length : 0;
             fit.leaves = bf && bf.leaves ? bf.leaves.length : 0;
         } catch (e) {
-            fit.err = String((e && e.message) || e);
+            fit.err = fehlerText(e);
         }
         res.f = fit;
 
@@ -395,7 +395,7 @@ hauptLauf(async () => {
                 st1.zurueck = absenz().n === vor;
             }
         } catch (e) {
-            st1.err = String((e && e.message) || e);
+            st1.err = fehlerText(e);
         }
         res.st1 = st1;
 
@@ -460,7 +460,7 @@ hauptLauf(async () => {
                 st2.tickZuege = zuege - zVor;
                 st2.tickFits = fits - fVor;
             } catch (e) {
-                st2.err = String((e && e.message) || e);
+                st2.err = fehlerText(e);
             } finally {
                 delete r._scatterInstanceAdd;
                 delete r._streuGesetzFit;

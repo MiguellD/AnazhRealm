@@ -19,7 +19,7 @@
 // `--selftest` setzt in der Kopie das direkte Schreiben wieder ein (`schreibeGanz` → fs.writeFile) und MUSS rot werden.
 // Ports: PERSISTENCE_PORT (Seite, Standard 4326), PERSISTENCE_SERVER_PORT (Sandbox-Server, Standard 4327).
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, nullRenderer, startProc, sleep, ROOT: root, nullSeite, urteilEnde, ausDatei, path, fs, os, SELBSTTEST, jsonLesen } = require("./lib/welt-boot.cjs");
+const { fehlerText, loesche, statikServer, starteBrowser, tempNeu, nullRenderer, startProc, sleep, ROOT: root, nullSeite, urteilEnde, ausDatei, path, fs, SELBSTTEST, jsonLesen } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const { spawnSync } = require("child_process");
 const zlib = require("zlib");
@@ -78,7 +78,7 @@ hakenP("rename", () => {});
 // Der save-server (Quelltext `quelle`) in einem frischen Sandbox-Ordner mit `dateien`; der Start urteilt am Ereignis (welt-boot
 // `startProc`: bereit oder beendet, nie eine Frist). `frage(weg, kopf, körper)` → {status, etag, cc, n}, abgerissen ohne Antwort.
 async function sandbox(quelle, dateien, env = {}) {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "k23-save-"));
+    const dir = tempNeu("k23-save");
     for (const [n, t] of Object.entries({ "save-server.js": quelle, ...dateien }))
         fs.writeFileSync(path.join(dir, n), t, "utf8");
     const vor = dateien["k23-haken.js"] ? ["-r", path.join(dir, "k23-haken.js")] : [];
@@ -120,7 +120,7 @@ async function sandbox(quelle, dateien, env = {}) {
         proc.kill("SIGKILL");
         await Promise.race([beendet, sleep(5000)]);
         const aus = lesen();
-        fs.rmSync(dir, { recursive: true, force: true });
+        loesche(dir);
         return aus;
     };
     return { dir, frage, zu };
@@ -299,7 +299,7 @@ function ttToeten(b) {
     } catch {}
 }
 async function tabTodProbe({ von, bis, selbst = false }) {
-    const profil = fs.mkdtempSync(path.join(os.tmpdir(), "k1-tabtod-"));
+    const profil = tempNeu(); // das Profil über alle Tode: mit Besitzer, ein abgebrochener Lauf wird gefegt (welt-boot)
     const alle = [];
     const zyklen = [];
     let vorher = null;
@@ -393,7 +393,7 @@ async function tabTodProbe({ von, bis, selbst = false }) {
             `  [T] ${z} Tod ${art} · geladen ${JSON.stringify(g)} · Alter ${zeile.alterS} s · ${zeile.befund.join(" | ")}`
         );
     }
-    fs.rmSync(profil, { recursive: true, force: true });
+    loesche(profil);
     const urteil = zyklen.filter((x) => x.tod);
     const zahl = (f) => zyklen.filter(f).length;
     return {
@@ -723,7 +723,7 @@ function korpusUrteil(z, selbst) {
                 verfaelscht(CK, `const kopf = { "Content-Type": contentType, "Access-Control-Allow-Origin": "*" };`)
             ));
     } catch (e) {
-        console.log(`⛔ (S)/(C) save-server-Probe fehlgeschlagen: ${(e && e.message) || e}`);
+        console.log(`⛔ (S)/(C) save-server-Probe fehlgeschlagen: ${fehlerText(e)}`);
         process.exit(2);
     }
     const sZeile = (p) =>

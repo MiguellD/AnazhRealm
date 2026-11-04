@@ -43,7 +43,7 @@
 //   node scripts/diag-studio-huelle.cjs --engine     DER GANG je Seite der Hülle: ihre Anfragen (H6), ihre Sitzung (H3),
 //                                                    die L0 eines Ofen-Labors (H4); Port STUDIO_HUELLE_PORT (8742)
 "use strict";
-const { statikServer, starteBrowser, ROOT, hauptLauf, sleep, waitFor, wandEnde, ausDatei, path, fs, stammLib, crypto, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, starteBrowser, ROOT, hauptLauf, sleep, waitFor, wandEnde, ausDatei, path, fs, stammLib, crypto, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 
 // Die Welten auf der Hülle (Studios mit Reglern + die Nebenwelten mit der Brücke allein) und das Gelände-Studio, das als
@@ -537,7 +537,7 @@ async function panoramaBacken(nur) {
                 console.log(`  ✅ ${id.padEnd(14)} ${panoDatei(id)} · ${((Date.now() - t0) / 1000).toFixed(1)} s · ${hell} Texel mit Licht`);
             } catch (e) {
                 rot++;
-                console.log(`  ❌ ${id.padEnd(14)} ${(e && e.message) || e} (die Seitenfehler nennt der Sammler der Weiche)`);
+                console.log(`  ❌ ${id.padEnd(14)} ${fehlerText(e)} (die Seitenfehler nennt der Sammler der Weiche)`);
             }
         }
     } finally {
