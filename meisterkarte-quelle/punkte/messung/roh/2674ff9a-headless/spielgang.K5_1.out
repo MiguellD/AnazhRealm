@@ -1,0 +1,99 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node -e (async function sprachLauf(port, aus) {
+    const path = require("path");
+    const fs = require("fs");
+    const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const S = require(path.resolve("scripts/diag-sprache.cjs")); // ohne Export (der Stand vor w6-spielgang-decke) endet hier der Lauf
+    // die Erzeuger-Wache (vor jedem Skript der Seite): je Schreiber von Sprache der erste Rahmen in stamm/ ohne die Helfer
+    function ZEUGE() {
+        const zeugen = (window.__sprachZeugen = new WeakMap());
+        const merke = (o, v) => {
+            if (!o || typeof v !== "string" || !/[A-Za-zÄÖÜäöüß]{2,}/.test(v)) return;
+            for (const z of String(new Error().stack).split("\n")) {
+                const m = /\/((?:stamm|worlds)\/[^\s:)?]+)[^:]*:(\d+)/.exec(z);
+                const fn = (/at (?:async )?([\w.$]+) \(/.exec(z) || [])[1] || "";
+                if (m && !/(^|\.)(_el|_elAppend|_tSetze|_chatEcho)$/.test(fn))
+                    return zeugen.set(o, `${m[1]}:${m[2]} ${fn.replace(/^AnazhRealm[\w$]*\./, "")}`.trim());
+            }
+        };
+        const haken = (proto, feld, ziel = (o) => o) => {
+            const d = Object.getOwnPropertyDescriptor(proto, feld);
+            Object.defineProperty(proto, feld, { ...d, set(v) { merke(ziel(this), v); d.set.call(this, v); } });
+        };
+        haken(Node.prototype, "textContent");
+        haken(Element.prototype, "innerHTML");
+        haken(CharacterData.prototype, "data", (n) => n.parentElement || n);
+        haken(HTMLElement.prototype, "title");
+        const [ctn, sa] = [Document.prototype.createTextNode, Element.prototype.setAttribute];
+        Document.prototype.createTextNode = function (v) { const n = ctn.call(this, v); merke(n, v); return n; };
+        Element.prototype.setAttribute = function (a, v) { merke(this, v); return sa.call(this, a, v); };
+    }
+    // die Zählung im Fenster: je Zeile Erzeuger · Ort · Text, Daten, Marke; `wechsel` gibt die stehenden
+    function ZAEHLE(wechsel) {
+        const zeugen = window.__sprachZeugen || new WeakMap();
+        const ort = (el) => (el.closest("[id]") ? "#" + el.closest("[id]").id + " " : "") + el.tagName.toLowerCase();
+        const zeilen = [];
+        const zeile = (n, el, wo, t) => {
+            t = String(t).replace(/\s+/g, " ").trim();
+            if (!/[A-Za-zÄÖÜäöüß]{2,}/.test(t)) return;
+            const name = `${zeugen.get(n) || zeugen.get(el) || "index.html"} · ${ort(el)}${wo}: ${t.slice(0, 90)}`;
+            const daten = !!el.closest('[translate="no"]');
+            const marke = t.includes("⟦");
+            zeilen.push({ name, daten, marke, hart: daten ? marke : /[A-Za-zÄÖÜäöüß]{2,}/.test(t.replace(/⟦[^⟧]*⟧|⁨[^⁩]*⁩/g, " ")) });
+        };
+        const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n = tw.nextNode(); n; n = tw.nextNode())
+            if (!/^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE)$/.test(n.parentElement.tagName)) zeile(n, n.parentElement, "", n.textContent);
+        zeile(document.documentElement, document.documentElement, " <title>", document.title);
+        for (const el of document.body.querySelectorAll("[title],[placeholder],[aria-label],[alt]"))
+            for (const a of ["title", "placeholder", "aria-label", "alt"]) if (el.hasAttribute(a)) zeile(el, el, " @" + a, el.getAttribute(a));
+        if (wechsel) return zeilen.filter((z) => z.marke && !z.daten).map((z) => z.name);
+        const C = window.anazhRealm.constructor;
+        const [de, en] = [C.TEXTE.de, C.TEXTE.en || {}];
+        return {
+            sprache: C._sprache(),
+            glieder: Object.getOwnPropertyNames(C.prototype).length,
+            zeilen: zeilen.length,
+            markiert: zeilen.filter((z) => z.marke && !z.hart).length,
+            hart: zeilen.filter((z) => z.hart).map((z) => z.name),
+            daten: zeilen.filter((z) => z.daten).length,
+            quelle: Object.keys(de).every((k) => k in en) && `AnazhRealm.TEXTE (de ${Object.keys(de).length}, en ${Object.keys(en).length})`,
+        };
+    }
+    const statisch = S.befund(S.baum());
+    const out = { glieder: 0, code: statisch.length, beispiele: statisch.slice(0, 3) };
+    const server = WB.statikServer();
+    await server.lausche(Number(port));
+    const { browser, page } = await WB.nullSeite({ frist: 300000 });
+    try {
+        await page.evaluateOnNewDocument(ZEUGE);
+        await server.zeige(page, 120000, "index.html?sprache=pseudo");
+        await page.evaluate(() => window.__weltDa((r) => r.state._weltbildDa > 0));
+        Object.assign(out, await page.evaluate(ZAEHLE, false));
+        // der Selbsttest im Lauf: eine harte Zeile am Leib, eine Zeile der Tafel, die beim Wechsel niemand neu liest
+        const [mit, stehen] = await page.evaluate((f) => {
+            const C = window.anazhRealm.constructor;
+            const zeile = (id, t) => document.body.appendChild(Object.assign(document.createElement("i"), { id, hidden: true, textContent: t }));
+            zeile("sprach-mutante-hart", "Hallo Welt");
+            zeile("sprach-mutante-steht", C._t(Object.keys(C.TEXTE.de).find((k) => /^[A-Za-zÄÖÜäöüß ]{4,}$/.test(C.TEXTE.de[k]))));
+            const Z = new Function("return " + f)();
+            const mit = Z(false).hart;
+            document.getElementById("sprach-mutante-hart").remove();
+            window.anazhRealm._spracheSetzen("en");
+            return [mit, Z(true)];
+        }, String(ZAEHLE));
+        const muss = (liste, id) => liste.some((h) => h.includes("#" + id));
+        out.blind = ["sprach-mutante-hart", "sprach-mutante-steht"].filter((id, i) => !muss(i ? stehen : mit, id));
+        out.stehenNamen = stehen.filter((h) => !h.includes("#sprach-mutante-steht"));
+        out.stehen = out.stehenNamen.length;
+        out.dom = out.hart.length;
+    } catch (e) {
+        out.fehler = String(e.message).split("\n")[0].slice(0, 300);
+    } finally {
+        fs.writeFileSync(aus, JSON.stringify(out));
+        console.log("TEXTE " + JSON.stringify(out));
+        await browser.close().catch(() => {});
+        server.close();
+        process.exit(0);
+    }
+})(process.argv[1], process.argv[2]); 7704 /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/2674ff9a-headless/spielgang.K5_1.json
+TEXTE {"glieder":3486,"code":0,"beispiele":[],"sprache":"pseudo","zeilen":1570,"markiert":1404,"hart":[],"daten":166,"quelle":"AnazhRealm.TEXTE (de 2333, en 2333)","blind":[],"stehenNamen":[],"stehen":0,"dom":0}

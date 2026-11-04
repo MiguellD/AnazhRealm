@@ -1,0 +1,31 @@
+{
+ "sha": "2674ff9a403d0de252b7610c15b971dc54c5281a",
+ "geraet": "headless",
+ "zeit": "2026-11-04T12:52:58.456Z",
+ "host": "farm:41832870279",
+ "je": {
+  "spielgang.K5#2": {
+   "gruen": false,
+   "zahl": "Deckel 2400 s überschritten — beendet",
+   "exit": null,
+   "minuten": 40,
+   "grund": "Deckel 2400 s überschritten — beendet",
+   "zeit": "2026-11-04T12:52:58.456Z",
+   "abdruck": "59af6c2932a2",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41832870279/1"
+  },
+  "spielgang.K5#1": {
+   "gruen": true,
+   "zahl": "0 harte UI-Zeilen (Code 0 · DOM 0 von 1570 Zeilen, 1404 aus der Tafel, 166 Daten) · beim Wechsel auf en stehen 0 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2333, en 2333)",
+   "exit": 0,
+   "minuten": 0.09,
+   "zeit": "2026-11-04T12:52:11.891Z",
+   "abdruck": "1436e3310de8",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41832870279/2"
+  }
+ }
+}
