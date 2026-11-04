@@ -468,7 +468,14 @@ function kernKontext(mit = { THREE: absorber() }) {
 function kanalImVm(quellen = {}) {
     const vm = require("vm");
     const posts = [];
-    const ctx = kernKontext({ OffscreenCanvas: absorber(), __anazhCores: CORES_MANIFEST, postMessage: (p) => posts.push(p) });
+    // DER START DES FADENS (studios.K1): die Brücke startet im vm wie im Foundry-Worker (`foundryModus`: die Stoffe, der Sommer,
+    // der Foundry-Modus) — ohne ihn backte der erste Baum den Blatt-Atlas in einen ungebauten Stoff und lieferte 0 Teile
+    const ctx = kernKontext({
+        OffscreenCanvas: absorber(),
+        __anazhCores: CORES_MANIFEST,
+        postMessage: (p) => posts.push(p),
+        __PHYTO_FOUNDRY_WORKER: true,
+    });
     for (const p of WORKER_SCRIPTS) {
         const f = p.replace(/^\//, "");
         const src = Object.prototype.hasOwnProperty.call(quellen, f)

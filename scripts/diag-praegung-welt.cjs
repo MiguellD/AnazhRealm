@@ -17,13 +17,16 @@ const kiUrteil = (m) => ["zwilling", "ohneWerk", "unbewegt", "ohneWort"].flatMap
 const { errs, check } = pruefer();
 
 // Die Probe beider Seiten: das Flat eines Eintrags, sobald die Foundry es trägt, und sein Abdruck (der EINE, welt-boot) — am Preset
-// des Eintrags selbst (bis w4-heil-tore fest „gt": B's Eiche hieß „ungeprägter GT").
+// des Eintrags selbst (bis w4-heil-tore fest „gt": B's Eiche hieß „ungeprägter GT"). Gewartet wird über das EINE Warten auf einen
+// Bau (`__gebautNach`): Takt um Takt der Welt, nie Schlaf allein — ein Baum mit Lage fragt die Gestalt seines Orts, und die steht
+// erst, wenn der Takt-Job `waldPlan` die Zellen um ihn plante. Bis w5-studios-k1 schlief die Probe 50 ms je Gang; mit der Art
+// tree in PARAMS_BY_KIND (studios.K1) wartete die geprägte Eiche abseits der Lichtung auf 81 Zellen, die kein Takt plante
+// („DIE WELT HÄNGT: das Flat der Gestalt … wald 81").
 function proben() {
     window.__flatFor = async (r, entry, preset = r._foundryPresetForEntry(entry)) => {
         let flat;
-        for (const weiter = __deckel("das Flat der Gestalt", 300); !(flat = r._foundryFlattenFor(entry, preset, 0))?.leaves && weiter(); )
-            await sleep(50);
-        return flat?.leaves ? flat : null;
+        await __gebautNach("das Flat der Gestalt", { fertig: () => !!(flat = r._foundryFlattenFor(entry, preset, 0))?.leaves, max: 300 });
+        return flat;
     };
     window.__flatFp = async (r, entry) => {
         const flat = await window.__flatFor(r, entry);
@@ -245,18 +248,20 @@ hauptLauf(async () => {
             }
             const [ws, cs] = [r._ensureWorkshopState().studioOv, () => st.creatures];
             const setze = (wort, ov) => {
-                const [va, vc] = [archs.length, cs().length];
+                // das neue Wesen ist, wer vorher nicht lebte (nie ein Index: an der vollen Kappe weicht ein gezeichneter Leib des
+                // Bestands, die Liste wird nicht länger — bis w5-studios-k1 las die Probe dort ins Leere)
+                const [va, vc] = [archs.length, new Set(cs())];
                 const lg = r.dslRun(["spawn_studio", wort, ["at", spot.x, pm.y, spot.z], 1, 7, ov], { source: "test" }).log;
-                return { e: archs[va], c: cs()[vc], lg, neu: [...archs.slice(va), ...cs().slice(vc)] };
+                const neu = [...archs.slice(va), ...cs().filter((c) => !vc.has(c))];
+                return { e: archs[va], c: neu.find((x) => x.isObject3D), lg, neu };
             };
-            const h = (s) => [...JSON.stringify(s)].reduce((x, c) => Math.imul(x ^ c.charCodeAt(0), 0x01000193), 0x811c9dc5) >>> 0;
             // ein Werk durch den Welt-Flatten bauen und abbauen: sein Abdruck über jedes Attribut und die Gesetze, die die Welt aus
-            // seinem Stempel liest (die Membran und die Hülle des Tors, das Fahr-Gesetz des Wagens)
+            // seinem Stempel liest (die Membran und die Hülle des Tors, das Fahr-Gesetz des Wagens: ihr JSON, kein Hash)
             const bau = async (e) => {
                 const [t, z] = [r._torGesetzFor(e), r._fahrzeugGesetzFor(e)];
                 const flat = await window.__flatFor(r, e);
                 r.removeArchitecture(e);
-                return flat && fp(flat, true) + "|" + h([t && [t.p, t.mu], z && z.drive]);
+                return flat && fp(flat, true) + "|" + JSON.stringify([t && [t.p, t.mu], z && z.drive]);
             };
             const presetVon = (wort) => r._foundryPresetForEntry({ type: r._studioBlueprintForWord(wort) });
             // was ein Programm in der Welt ließ, fällt: Bauten, Wesen, die Prägung (ihr Leser folgt der leeren)
@@ -271,7 +276,7 @@ hauptLauf(async () => {
                 const [kind, e] = [f.recipes[p].kind, s.e];
                 const aus = { p, kind, lg: s.lg, ov: e?.studioOv || s.c?.userData.gussDials || ws[p] };
                 if (e) aus.e = { type: e.type, pos: { ...e.position }, key: r._foundryKoerperKey(p, r._foundryGestaltFor(e, p), r._foundryServierStufe(p, 0), soll) };
-                const leser = r._studioWerkVerb(p) === "praegung" && (kind === "klang" ? h(r._klangStudioPreset()) : fp(st.playerMesh, true));
+                const leser = r._studioWerkVerb(p) === "praegung" && (kind === "klang" ? JSON.stringify(r._klangStudioPreset()) : fp(st.playerMesh, true));
                 aus.w = e ? await bau(e) : s.c ? fp(s.c, true) : leser;
                 raeume(s.neu.filter((x) => x !== e), p);
                 return aus;
@@ -295,8 +300,13 @@ hauptLauf(async () => {
                 }
                 return { ...aus, st: s === w ? "erreicht" : "zwilling" };
             };
-            // je sagbares Rezept der Art, bis eines sich bewegt (der Rand fern vom Rezept-Wert)
+            // je sagbares Rezept der Art, bis eines sich bewegt (der Rand fern vom Rezept-Wert). DIE VOLLE KAPPE: vor jeder Zeile der
+            // Art kreatur zeichnet die Welt so viele Tiere, wie die Kappe trägt (`spawnCreatures`, der Boot-Wurf: fern, außer Blick),
+            // und der Bestand nimmt sie an — die Gattung prägt ihr Werk auch dann (ein Akt lässt einen Leib weichen, `_bestandWeicht`).
+            // Bis w5-studios-k1 hing das am Tempo der Maschine: lokal zeichnete der Bestand 10 von 20, an der OMEN war die Kappe voll,
+            // und jede Gattung sagte „obergrenze" (kreatur 0/5, 147 von 152).
             const zeile = async (art, d) => {
+                if (art === "kreatur") r.spawnCreatures(r.state.maxCreatures), r._bestandAdoptieren();
                 const rez = Object.keys(f.recipes).filter((id) => {
                     const bp = f.recipes[id].kind === art && r._studioBlueprintForWord(id);
                     return bp && r._foundryPresetForEntry({ type: bp }) === id;
@@ -317,7 +327,8 @@ hauptLauf(async () => {
                     k.zeilen++;
                 }
             // SELBST-TEST: ein ov, das nicht ankommt — der Stempel verliert es (die alte Op), der Bau (angenommen, nie verbaut), das
-            // Gesetz des Tors liest das Rezept allein, die Gattung erscheint ohne ihren Guss, die Prägung erreicht ihren Leser nie
+            // Gesetz des Tors liest das Rezept allein, die Gattung erscheint ohne ihren Guss, die Prägung erreicht ihren Leser nie, an
+            // der vollen Kappe weicht kein Leib (die Obergrenze sagt den Akt ab — zugleich der Beweis, dass die Kappe voll stand)
             k.taeter = {};
             const zl = (art, id) => [art, PBK[art].find((d) => d.id === id)];
             for (const [nm, glied, falsch, [art, d]] of [
@@ -326,6 +337,7 @@ hauptLauf(async () => {
                 ["Gesetz", "_torGesetzFor", function (e) { return P._torGesetzFor.call(this, { ...e, studioOv: null }); }, zl("gate", "energy")],
                 ["Wesen", "_dslWesenSetzen", function (...a) { return P._dslWesenSetzen.call(this, ...a.slice(0, 5), null); }, zl("kreatur", "size")],
                 ["Prägung", "_praegungSetzen", () => {}, zl("klang", "bpm")],
+                ["Kappe", "_bestandWeicht", () => null, zl("kreatur", "size")],
             ]) {
                 r[glied] = falsch;
                 k.taeter[nm] = await zeile(art, d).finally(() => delete r[glied]);
@@ -617,8 +629,8 @@ hauptLauf(async () => {
     const K = out.k;
     const T = K.taeter || {};
     check(
-        "SELBST-TEST: ein ov, das nicht ankommt (Stempel · Bau · Gesetz · Wesen · Prägung), ist ROT",
-        ["Stempel", "Bau", "Gesetz", "Wesen", "Prägung"].every((n) => T[n] && T[n] !== "erreicht"), // die Probe-Zeilen leben
+        "SELBST-TEST: ein ov, das nicht ankommt (Stempel · Bau · Gesetz · Wesen · Prägung · Kappe), ist ROT",
+        Object.keys(T).length === 6 && !Object.values(T).includes("erreicht"), // die sechs Probe-Zeilen leben
         K.err || JSON.stringify(T)
     );
     const anteil = K.zeilen ? (100 * K.erreicht.length) / K.zeilen : 0;
