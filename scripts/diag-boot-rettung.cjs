@@ -89,7 +89,7 @@ async function bereit(page) {
                     zeiger: r.activeWorldGet(),
                     marken: (snap.match(/MARK-[A-Z0-9]+/g) || []).filter((x, i, a) => a.indexOf(x) === i),
                     index: r.worldsIndexLoad().map((e) => e.worldId),
-                    chat: chat ? chat.textContent.slice(-600) : "",
+                    chat: chat ? chat.innerHTML : "", // die Zeilen der Welt mit Schlüssel und Werten am Knoten, nie der Wortlaut
                 };
             }
         }
@@ -212,7 +212,7 @@ async function fahreForm(browser, form, schein) {
         if (v.leer) {
             // EINE NEUE WELT NUR, WENN ALLES LEER IST — UND DANN LAUT
             if (b1.welt === v.welt) befund(`Boot 1 erwachte unter der leeren Id ${v.welt}`);
-            if (!b1.chat.includes(v.welt))
+            if (!new RegExp('"rede.welt-fehlt"[^>]*' + v.welt).test(b1.chat))
                 befund("die frische Welt erwachte still (kein Satz im Chat, der die Welt nennt)");
         } else {
             const erwartet = v.welt || b1.zeiger;

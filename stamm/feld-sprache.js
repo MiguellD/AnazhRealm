@@ -38,8 +38,8 @@ class AnazhRealm_feld_sprache {
                         program: ["weather", word],
                         describe:
                             word === "frei"
-                                ? "Wetter frei: es zieht wieder mit der Welt"
-                                : `Wetter gesetzt auf ${word} — es bleibt, bis du „setze wetter frei" sagst`,
+                                ? ["chat.satz.wetter-frei"]
+                                : ["chat.satz.wetter", { wetter: this._wetterZeile(word) }],
                     };
                 },
             },
@@ -60,7 +60,7 @@ class AnazhRealm_feld_sprache {
                     const t = map[raw] !== undefined ? map[raw] : Math.max(0, Math.min(1, parseFloat(raw)));
                     return {
                         program: ["set_time_of_day", t],
-                        describe: `Uhrzeit gesetzt: ${raw} (${t})`,
+                        describe: ["chat.satz.uhr", { wort: raw, n: String(t) }],
                     };
                 },
             },
@@ -74,7 +74,7 @@ class AnazhRealm_feld_sprache {
                     const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
                     return {
                         program: ["repeat", count, ["spawn_creature", ["at", p.x, p.y, p.z], 1, "happy"]],
-                        describe: `${count} Kreaturen gespawnt (am Spieler)`,
+                        describe: ["chat.satz.kreaturen", { n: String(count) }],
                     };
                 },
             },
@@ -83,7 +83,7 @@ class AnazhRealm_feld_sprache {
                 re: /^(?:ändere|aendere)\s+sternenhimmel\s+(\S+)\s*$/i,
                 build: (m) => ({
                     program: ["skybox_color", m[1]],
-                    describe: `Sternenhimmel-Farbe gesetzt: ${m[1]}`,
+                    describe: ["chat.satz.sternenhimmel", { farbe: m[1] }],
                 }),
             },
             {
@@ -91,7 +91,7 @@ class AnazhRealm_feld_sprache {
                 re: /^setze\s+terrain\s+steilheit\s+(-?\d+(?:\.\d+)?)\s*$/i,
                 build: (m) => ({
                     program: ["terrain_steepness", num(m[1], 1.0)],
-                    describe: `Terrain-Steilheit gesetzt auf ${num(m[1], 1.0)} (wirkt mit nächstem Welt-Regen)`,
+                    describe: ["chat.satz.steilheit", { n: String(num(m[1], 1.0)) }],
                 }),
             },
             {
@@ -99,7 +99,7 @@ class AnazhRealm_feld_sprache {
                 re: /^setze\s+terrain\s+(?:basishöhe|basishoehe)\s+(-?\d+(?:\.\d+)?)\s*$/i,
                 build: (m) => ({
                     program: ["terrain_base_height", num(m[1], 0)],
-                    describe: `Terrain-Basishöhe gesetzt auf ${num(m[1], 0)} (wirkt mit nächstem Welt-Regen)`,
+                    describe: ["chat.satz.grundhoehe", { n: String(num(m[1], 0)) }],
                 }),
             },
             {
@@ -109,7 +109,7 @@ class AnazhRealm_feld_sprache {
                     const target = (this.state.jumpPower || 12) + num(m[1], 2);
                     return {
                         program: ["player_jump_power", target],
-                        describe: `Sprungkraft → ${target.toFixed(2)}`,
+                        describe: ["chat.satz.sprungkraft", { n: target.toFixed(2) }],
                     };
                 },
             },
@@ -118,7 +118,7 @@ class AnazhRealm_feld_sprache {
                 re: /^heile\s+welt\s*$/i,
                 build: () => ({
                     program: ["chain", ["weather", "sunny"], ["creatures_emotion", "happy"], ["gravity", -9.81]],
-                    describe: "Welt geheilt: sonnig, Kreaturen glücklich, Gravitation auf 1.5G zurück",
+                    describe: ["chat.satz.heile-welt"],
                 }),
             },
             {
@@ -126,7 +126,7 @@ class AnazhRealm_feld_sprache {
                 re: /^vereine\s+chaos\s+ordnung\s*$/i,
                 build: () => ({
                     program: ["chain", ["terrain_steepness", 1.0], ["creatures_color", "white"]],
-                    describe: "Chaos und Ordnung vereint: Steilheit 1.0, Kreaturen weiß",
+                    describe: ["chat.satz.chaos-ordnung"],
                 }),
             },
             {
@@ -134,7 +134,7 @@ class AnazhRealm_feld_sprache {
                 re: /^boden\s+aktivieren\s*$/i,
                 build: () => ({
                     program: ["set_visible", "terrain", true],
-                    describe: "Boden aktiviert",
+                    describe: ["chat.satz.boden-an"],
                 }),
             },
             {
@@ -142,7 +142,7 @@ class AnazhRealm_feld_sprache {
                 re: /^boden\s+deaktivieren\s*$/i,
                 build: () => ({
                     program: ["set_visible", "terrain", false],
-                    describe: "Boden deaktiviert",
+                    describe: ["chat.satz.boden-aus"],
                 }),
             },
             {
@@ -150,7 +150,7 @@ class AnazhRealm_feld_sprache {
                 re: /^kreaturen\s+aktivieren\s*$/i,
                 build: () => ({
                     program: ["set_visible", "creatures", true],
-                    describe: "Kreaturen aktiviert",
+                    describe: ["chat.satz.kreaturen-an"],
                 }),
             },
             {
@@ -158,7 +158,7 @@ class AnazhRealm_feld_sprache {
                 re: /^kreaturen\s+deaktivieren\s*$/i,
                 build: () => ({
                     program: ["set_visible", "creatures", false],
-                    describe: "Kreaturen deaktiviert",
+                    describe: ["chat.satz.kreaturen-aus"],
                 }),
             },
             {
@@ -171,7 +171,7 @@ class AnazhRealm_feld_sprache {
                     const raw = m[1].toLowerCase();
                     return {
                         program: ["player_soul", raw],
-                        describe: `Seele gewechselt: ${raw}`,
+                        describe: ["chat.satz.seele", { seele: raw }],
                     };
                 },
             },
@@ -209,7 +209,7 @@ class AnazhRealm_feld_sprache {
                               : ["spawn_blueprint", kind, ["at", fx, p.y, fz], seed];
                     return {
                         program,
-                        describe: `${kind} vor dir gebaut`,
+                        describe: ["chat.satz.vor-dir-gebaut", { was: kind }],
                     };
                 },
             },
@@ -224,7 +224,7 @@ class AnazhRealm_feld_sprache {
                     const seed = this._bauSame("fraktal"); // der Same aus dem Welt-Strom, nie Math.random (Befund D10)
                     return {
                         program: ["spawn_fractal", ["at", p.x, p.y, p.z], map[t], 2, 0.5, seed],
-                        describe: `Fraktal-${t} gebaut (depth 2, ratio 0.5)`,
+                        describe: ["chat.satz.fraktal", { was: t }],
                     };
                 },
             },
@@ -238,7 +238,7 @@ class AnazhRealm_feld_sprache {
                     const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
                     return {
                         program: ["spawn_tree", ["at", p.x, p.y, p.z], 1],
-                        describe: "Baum gepflanzt",
+                        describe: ["chat.satz.baum"],
                     };
                 },
             },
@@ -249,7 +249,7 @@ class AnazhRealm_feld_sprache {
                     const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
                     return {
                         program: ["spawn_tree", ["at", p.x, p.y, p.z], 5],
-                        describe: "Hain (5 Bäume) gepflanzt",
+                        describe: ["chat.satz.hain"],
                     };
                 },
             },
@@ -261,7 +261,7 @@ class AnazhRealm_feld_sprache {
                     const seed = this._bauSame("insel"); // der Same aus dem Welt-Strom, nie Math.random (Befund D10)
                     return {
                         program: ["spawn_island", ["at", p.x, p.y, p.z], 6, seed],
-                        describe: "Schwebende Insel gesetzt",
+                        describe: ["chat.satz.insel"],
                     };
                 },
             },
@@ -274,7 +274,7 @@ class AnazhRealm_feld_sprache {
                     const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
                     return {
                         program: ["deposit_life", ["at", p.x, p.y, p.z]],
-                        describe: "Du pflegst das Land — das Feld wird lebendiger",
+                        describe: ["chat.satz.pflege"],
                     };
                 },
             },
@@ -285,7 +285,7 @@ class AnazhRealm_feld_sprache {
                     const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
                     return {
                         program: ["spawn_ufo", ["at", p.x, p.y, p.z]],
-                        describe: "UFO gerufen",
+                        describe: ["chat.satz.ufo"],
                     };
                 },
             },
@@ -299,7 +299,7 @@ class AnazhRealm_feld_sprache {
                     const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 0, z: 0 };
                     return {
                         program: ["voxel_carve", p.x, p.y - 1.5, p.z, 5],
-                        describe: "Loch gegraben",
+                        describe: ["chat.satz.loch"],
                     };
                 },
             },
@@ -310,7 +310,7 @@ class AnazhRealm_feld_sprache {
                     const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 0, z: 0 };
                     return {
                         program: ["voxel_fill", p.x, p.y - 1.5, p.z, 5],
-                        describe: "Hügel gehoben",
+                        describe: ["chat.satz.huegel"],
                     };
                 },
             },
@@ -321,7 +321,7 @@ class AnazhRealm_feld_sprache {
                 re: /^erzähle[:\s]+(.+)$/i,
                 build: (m) => ({
                     program: ["record_narrative", m[1].trim()],
-                    describe: `Narrativ gespeichert: ${m[1].trim()}`,
+                    describe: ["chat.satz.narrativ", { text: m[1].trim() }],
                 }),
             },
             // Welle 6.D Etappe 3a — Schaden-Chat-Pattern. „schade mir 50" /
@@ -332,7 +332,7 @@ class AnazhRealm_feld_sprache {
                 re: /^(?:schade\s+mir|verletze\s+mich|damage)\s+(\d+(?:\.\d+)?)(?:\s+(.+))?$/i,
                 build: (m) => ({
                     program: ["damage", Number(m[1]), (m[2] || "chat").trim()],
-                    describe: `Schaden ${m[1]} (${(m[2] || "chat").trim()})`,
+                    describe: ["chat.satz.schaden", { n: m[1], quelle: (m[2] || "chat").trim() }],
                 }),
             },
             // Welle 6.D Etappe 3a — Konsumabel aktivieren via Chat.
@@ -342,7 +342,7 @@ class AnazhRealm_feld_sprache {
                 re: /^(?:trink|trinke|aktiviere\s+trank)\s+([a-z0-9_-]+)$/i,
                 build: (m) => ({
                     program: ["apply_boost", m[1]],
-                    describe: `Konsum: ${m[1]}`,
+                    describe: ["chat.satz.konsum", { was: m[1] }],
                 }),
             },
             // Welle 6.D Etappe 3b — Ausrüstung wechseln via Chat.
@@ -351,7 +351,7 @@ class AnazhRealm_feld_sprache {
                 re: /^rüste\s+werkzeug\s+([a-z0-9_-]+)$/i,
                 build: (m) => ({
                     program: ["equip_tool", m[1]],
-                    describe: `Werkzeug: ${m[1]}`,
+                    describe: ["chat.satz.werkzeug", { was: m[1] }],
                 }),
             },
             {
@@ -359,7 +359,7 @@ class AnazhRealm_feld_sprache {
                 re: /^rüste\s+rüstung\s+([a-z0-9_-]+)$/i,
                 build: (m) => ({
                     program: ["equip_armor", m[1]],
-                    describe: `Rüstung: ${m[1]}`,
+                    describe: ["chat.satz.ruestung", { was: m[1] }],
                 }),
             },
             // V17.52 Kampf Phase B — Waffe ausrüsten via Chat (Spiegel der Rüstung).
@@ -368,7 +368,7 @@ class AnazhRealm_feld_sprache {
                 re: /^rüste\s+waffe\s+([a-z0-9_-]+)$/i,
                 build: (m) => ({
                     program: ["equip_weapon", m[1]],
-                    describe: `Waffe: ${m[1]}`,
+                    describe: ["chat.satz.waffe", { was: m[1] }],
                 }),
             },
             {
@@ -378,7 +378,7 @@ class AnazhRealm_feld_sprache {
                     const slot = /werkzeug|tool/i.test(m[1]) ? "tool" : /waffe|weapon/i.test(m[1]) ? "weapon" : "armor";
                     return {
                         program: ["unequip", slot],
-                        describe: `Ausrüstung ab: ${slot}`,
+                        describe: ["chat.satz.ausruestung-ab", { slot }],
                     };
                 },
             },
@@ -401,7 +401,7 @@ class AnazhRealm_feld_sprache {
                     const mode = map[raw] || "frieden";
                     return {
                         program: ["set_mode", mode],
-                        describe: `Welt-Beziehung: ${mode}`,
+                        describe: ["chat.satz.modus", { modus: mode }],
                     };
                 },
             },
@@ -413,7 +413,7 @@ class AnazhRealm_feld_sprache {
                 re: /^(?:folge mir|folg mir|komm mit|begleite mich)$/i,
                 build: () => ({
                     program: ["creature_task_nearest", "follow_player"],
-                    describe: "die nächste Kreatur folgt mir",
+                    describe: ["chat.satz.folgt"],
                 }),
             },
             {
@@ -421,7 +421,7 @@ class AnazhRealm_feld_sprache {
                 re: /^(?:komm her|komm zu mir|her zu mir|näher)$/i,
                 build: () => ({
                     program: ["creature_task_nearest", "follow_player", 1.5],
-                    describe: "die nächste Kreatur kommt näher zu mir",
+                    describe: ["chat.satz.kommt"],
                 }),
             },
             {
@@ -429,7 +429,7 @@ class AnazhRealm_feld_sprache {
                 re: /^(?:warte|halt|bleib(?:\s+stehen)?|stillstehen)$/i,
                 build: () => ({
                     program: ["creature_task_nearest", "wait"],
-                    describe: "die nächste Kreatur hält inne",
+                    describe: ["chat.satz.wartet"],
                 }),
             },
             {
@@ -437,7 +437,7 @@ class AnazhRealm_feld_sprache {
                 re: /^(?:erkunde|streife|wandere(?:\s+frei)?|frei sein)$/i,
                 build: () => ({
                     program: ["creature_task_nearest", "wander"],
-                    describe: "die nächste Kreatur streift wieder frei",
+                    describe: ["chat.satz.streift"],
                 }),
             },
             {
@@ -445,7 +445,7 @@ class AnazhRealm_feld_sprache {
                 re: /^(?:alle\s+(?:folgt|kommt|begleitet)(?:\s+mir)?|alle\s+her)$/i,
                 build: () => ({
                     program: ["creature_task_all", "follow_player"],
-                    describe: "alle Kreaturen folgen mir",
+                    describe: ["chat.satz.alle-folgen"],
                 }),
             },
             {
@@ -453,7 +453,7 @@ class AnazhRealm_feld_sprache {
                 re: /^(?:trink|trinke|trink(?:\s+wasser)?|geh\s+(?:zum|zu)\s+wasser)$/i,
                 build: () => ({
                     program: ["creature_task_nearest", "drink"],
-                    describe: "die nächste Kreatur sucht Wasser und trinkt",
+                    describe: ["chat.satz.trinkt"],
                 }),
             },
             {
@@ -461,7 +461,7 @@ class AnazhRealm_feld_sprache {
                 re: /^(?:alle\s+trinken|alle\s+zum\s+wasser)$/i,
                 build: () => ({
                     program: ["creature_task_all", "drink"],
-                    describe: "alle Kreaturen trinken am nächsten Ufer",
+                    describe: ["chat.satz.alle-trinken"],
                 }),
             },
             {
@@ -469,7 +469,7 @@ class AnazhRealm_feld_sprache {
                 re: /^(?:alle\s+(?:warten|halten|stehen))$/i,
                 build: () => ({
                     program: ["creature_task_all", "wait"],
-                    describe: "alle Kreaturen halten inne",
+                    describe: ["chat.satz.alle-warten"],
                 }),
             },
             // "sammle <material>" routet gather auf die nächste Kreatur, "alle sammeln <material>" an alle.
@@ -479,7 +479,7 @@ class AnazhRealm_feld_sprache {
                 re: /^(?:sammle|bring|hol|gather)\s+([a-zäöüß_]+)$/i,
                 build: (m) => ({
                     program: ["creature_task_nearest", "gather", m[1].toLowerCase()],
-                    describe: `die nächste Kreatur sammelt „${m[1].toLowerCase()}"`,
+                    describe: ["chat.satz.sammelt", { was: m[1].toLowerCase() }],
                 }),
             },
             {
@@ -487,7 +487,7 @@ class AnazhRealm_feld_sprache {
                 re: /^(?:alle\s+(?:sammeln|sammelt|holen|bringen))\s+([a-zäöüß_]+)$/i,
                 build: (m) => ({
                     program: ["creature_task_all", "gather", m[1].toLowerCase()],
-                    describe: `alle Kreaturen sammeln „${m[1].toLowerCase()}"`,
+                    describe: ["chat.satz.alle-sammeln", { was: m[1].toLowerCase() }],
                 }),
             },
             // "baue <bauplan>": der Spieler ist Material-Quelle, die Kreatur baut daraus. pfad konsumiert aus
@@ -497,7 +497,7 @@ class AnazhRealm_feld_sprache {
                 re: /^(?:baue|errichte|erschaffe|construct)\s+([a-zäöüß0-9_-]+)$/i,
                 build: (m) => ({
                     program: ["creature_task_nearest", "build", m[1].toLowerCase()],
-                    describe: `die nächste Kreatur baut „${m[1].toLowerCase()}"`,
+                    describe: ["chat.satz.baut", { was: m[1].toLowerCase() }],
                 }),
             },
             {
@@ -505,7 +505,7 @@ class AnazhRealm_feld_sprache {
                 re: /^(?:alle\s+(?:bauen|baut|errichten|erschaffen))\s+([a-zäöüß0-9_-]+)$/i,
                 build: (m) => ({
                     program: ["creature_task_all", "build", m[1].toLowerCase()],
-                    describe: `alle Kreaturen bauen „${m[1].toLowerCase()}"`,
+                    describe: ["chat.satz.alle-bauen", { was: m[1].toLowerCase() }],
                 }),
             },
             // W12 Phase 2 — einen eigenen Bauplan auf eine registrierte Welt
@@ -515,7 +515,7 @@ class AnazhRealm_feld_sprache {
                 re: /^richte\s+portal\s+([a-zäöüß0-9_-]+)\s+auf\s+([a-zäöüß0-9_-]+)$/i,
                 build: (m) => ({
                     program: ["set_portal", m[1].toLowerCase(), m[2].toLowerCase()],
-                    describe: `richtet „${m[1].toLowerCase()}" als Portal auf „${m[2].toLowerCase()}"`,
+                    describe: ["chat.satz.portal", { was: m[1].toLowerCase(), welt: m[2].toLowerCase() }],
                 }),
             },
             // Satz → Studio (auch ohne KI-Schlüssel): "pflanz mir einen eichenhain am wasser", "bau ein haus".
@@ -548,14 +548,17 @@ class AnazhRealm_feld_sprache {
                     const pos = m[4] ? ["near_water", 80] : ["at_player_forward", m[5] ? 6 : 10];
                     // der Same aus dem Welt-Strom je Art (Befund D10: Math.random — kein Reload zog denselben Hain)
                     const seed = this._bauSame("studio:" + name);
-                    const wo = m[4] ? "am Wasser" : "vor dir";
+                    const wo = [m[4] ? "chat.satz.am-wasser" : "chat.satz.vor-dir"];
                     // Der Spieler liest das Label der Art („Eiche", „Alemannisch"), nie die interne id („baum_eiche", Befund
                     // V-D8) — und ein Haus wächst nicht, es wird gebaut (die Art aus dem Wort-Katalog).
                     const label = this._werkLabel(name);
                     const natur = this._istNatur({ type: name });
                     return {
                         program: ["spawn_studio", wort, pos, n, seed],
-                        describe: `${n}× ${label} aus dem Studio ${wo} ${natur ? "gewachsen" : "gebaut"}`,
+                        describe: [
+                            natur ? "chat.satz.studio-gewachsen" : "chat.satz.studio-gebaut",
+                            { n: String(n), was: label, wo },
+                        ],
                     };
                 },
             },
@@ -588,24 +591,16 @@ class AnazhRealm_feld_sprache {
     // und die Mehrspieler-Wand, die aus `GESETZ_VORLAGEN` die Hashes der Vorlagen baut.
     _regelAusSatz(satz) {
         const m = String(satz || "").match(
-            /^(?:wann\s+immer|immer\s+wenn|jedes\s*mal\s+wenn|sobald)\s+(.+?)(?:\s*,\s*(?:dann\s+|so\s+)?|\s+dann\s+)(.+?)\s*$/i
+            /^(?:wann\s+immer|immer\s+wenn|jedes\s*mal\s+wenn|sobald|whenever|every\s+time)\s+(.+?)(?:\s*,\s*(?:dann\s+|so\s+|then\s+)?|\s+(?:dann|then)\s+)(.+?)\s*$/i
         );
         if (!m) return null;
         const [condText, effText] = [m[1].trim(), m[2].trim()];
         const cond = this._parseChatCondition(condText);
-        if (!cond)
-            return {
-                absage: `Ich verstehe die Bedingung „${condText}" noch nicht. Versuch z. B. „es regnet", „du bist traurig", „wenig Leben hier".`,
-            };
+        // die Absage ist eine Zeile der Tafel (die Sprache des Spielers), der Satz des Spielers ein Wert
+        if (!cond) return { absage: ["regel.absage.bedingung", { text: condText }] };
         const effect = this._parseChatEffect(effText);
-        if (!effect)
-            return {
-                absage: `Ich verstehe die Reaktion „${effText}" noch nicht. Versuch z. B. „setze wetter sunny" oder „spawne kreaturen 3".`,
-            };
-        if (!this._isRuleEffectAllowed(effect))
-            return {
-                absage: `„${effText}" darf keine stehende Welt-Regel sein — eine Regel berührt nur die reaktive Welt (Wetter, Leben, Stimmung, Kreaturen), nicht das feste Gelände.`,
-            };
+        if (!effect) return { absage: ["regel.absage.reaktion", { text: effText }] };
+        if (!this._isRuleEffectAllowed(effect)) return { absage: ["regel.absage.fest", { text: effText }] };
         return { program: ["rule", cond, effect, { everySec: 3 }] };
     }
 
@@ -1243,7 +1238,7 @@ class AnazhRealm_feld_sprache {
             bedingung: ctx.regel ? ctx.regel.cond : null,
             weil: ctx.weil || null,
             wunsch: !!tat.wunsch,
-            ergebnis: (this._ergebnisSatz(setz) || {}).satz || null,
+            ergebnis: (this._ergebnisSatz(setz) || {}).kern || null,
             grund: ctx.grund || null,
             knoten: tat.knoten,
             x: null,
@@ -1321,7 +1316,8 @@ class AnazhRealm_feld_sprache {
         if (jetzt - S.t < AnazhRealm.WERTUNG.stimmeSek) return;
         const e = S.wartet;
         e.weitere = S.weitere;
-        e.zeile = this._feldStimmeZeile(e);
+        // die Zeile in der Sprache des Spielers zur Zeit der Tat (die Stimme spricht sie, das Buch hält sie als Text)
+        e.zeile = this._t(...this._feldStimmeZeile(e));
         e.gesprochen = jetzt;
         S.t = jetzt;
         S.wartet = null;
@@ -1332,50 +1328,81 @@ class AnazhRealm_feld_sprache {
     // Die Zeile einer Tat (Vorlage ohne Modell): WER · WAS (`describeProgram`, der Wunsch der Welt nach Wetter, und was davon
     // wirklich steht, `_ergebnisSatz`) · WO (Abstand und Himmelsrichtung vom Spieler, Norden = −z) · URSACHE (die Bedingung
     // ihres Gesetzes und die Bedingung, die ihren Zweig wählte, das Wort an die KI, der Auflöser ihres Orts) · GESETZ (Nummer
-    // der Regel oder Name des Programms) — alles so, wie es zur Zeit der Tat stand.
+    // der Regel oder Name des Programms) — alles so, wie es zur Zeit der Tat stand. Die Zeile ist eine Zeile der Tafel
+    // `[schlüssel, werte]` (spielgang.K5#2): die Stimme spricht die Sprache des Spielers, jede Angabe ist ein Wert.
     _feldStimmeZeile(e) {
         const wer = this._tatSchreiber(e.wer);
-        let wo = "überall";
+        let wo = ["feldstimme.ueberall"];
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (e.x != null && pm) {
             e.spieler = { x: pm.x, z: pm.z };
             const dx = e.x - pm.x;
             const dz = e.z - pm.z;
             const d = Math.round(Math.hypot(dx, dz));
-            const richtung = [
-                "nördlich",
-                "nordöstlich",
-                "östlich",
-                "südöstlich",
-                "südlich",
-                "südwestlich",
-                "westlich",
-                "nordwestlich",
-            ];
-            const sektor = Math.round((Math.atan2(dx, -dz) / (2 * Math.PI)) * 8 + 8) % 8;
-            wo = d < 2 ? "bei dir" : `${d} m ${richtung[sektor]} von dir`;
+            const R = AnazhRealm.FELDSTIMME_RICHTUNG;
+            const sektor = Math.round((Math.atan2(dx, -dz) / (2 * Math.PI)) * R.length + R.length) % R.length;
+            wo =
+                d < 2
+                    ? ["feldstimme.bei-dir"]
+                    : ["feldstimme.abstand", { d: String(d), richtung: [`feldstimme.richtung.${R[sektor]}`] }];
         }
         const weil = [
             e.bedingung && this._describeDslCondition(e.bedingung),
-            e.weil && (e.weil.ja ? "" : "nicht gilt, dass ") + this._describeDslCondition(e.weil.cond),
+            e.weil &&
+                (e.weil.ja
+                    ? this._describeDslCondition(e.weil.cond)
+                    : ["feldstimme.nicht-gilt", { bedingung: this._describeDslCondition(e.weil.cond) }]),
         ].filter(Boolean);
         let ursache;
-        if (weil.length) ursache = `weil ${weil.join(" und ")}`;
-        else if (e.grund) ursache = `auf dein Wort „${String(e.grund).slice(0, 60)}“`;
-        else if (e.knoten === "at_field_need") ursache = "weil das Feld dort am ärmsten war";
-        else ursache = "aus eigenem Antrieb";
-        const gesetz = e.regel != null ? `Gesetz Nr. ${e.regel}` : `Programm ${e.programm}`;
+        if (weil.length)
+            ursache = ["feldstimme.weil", { bedingung: weil.reduce((a, b) => ["tat.wenn.und", { a, b }]) }];
+        else if (e.grund) ursache = ["feldstimme.wort", { wort: String(e.grund).slice(0, 60) }];
+        else if (e.knoten === "at_field_need") ursache = ["feldstimme.feld-arm"];
+        else ursache = ["feldstimme.antrieb"];
+        const gesetz =
+            e.regel != null
+                ? ["feldstimme.gesetz", { n: String(e.regel), wer: wer.gen }]
+                : ["feldstimme.programm", { name: String(e.programm) }];
         const weitere = e.weitere
-            ? `; dazu ${e.weitere} weitere Tat${e.weitere > 1 ? "en" : ""} seit der letzten Zeile`
+            ? [e.weitere > 1 ? "feldstimme.weitere" : "feldstimme.weitere-eine", { n: String(e.weitere) }]
             : "";
         const was = e.wunsch
-            ? `wünscht sich das Wetter „${e.args[0]}“`
+            ? ["feldstimme.wunsch", { wetter: this._wetterZeile(e.args[0]) }]
             : this.describeProgram([e.op, ...(e.args || [])]);
-        const steht = e.ergebnis ? ` (${e.ergebnis.replace(/\.$/, "")})` : "";
-        return `${wer.nom} ${was}${steht} — ${wo}, ${ursache}. (${gesetz}${e.regel != null ? " " + wer.gen : ""}${weitere})`;
+        const steht = e.ergebnis ? ["feldstimme.steht", { ergebnis: e.ergebnis }] : "";
+        return ["feldstimme.zeile", { wer: wer.nom, was, steht, wo, ursache, gesetz, weitere }];
     }
 
-    // Der Name eines Schreibers (die DSL-Quelle): ein Gesetz trägt die Quelle seines Gebers („rule:nexus").
+    // DER SCHREIBER DES WETTERS (affekt.K4#2) als Zeile der Tafel: wer das Wetter, das gilt, schrieb (`wetterSchreiber`, gesetzt am
+    // EINEN Schreiber `_setWeather`) — der Spieler, sein Gesetz, die KI auf sein Wort, die Welt (Nexus, Emotion, Wesen: ihr
+    // Wunsch, den der Zug zog), die Front, das Laden. Leser: der Kontext der KI (`llmBuildContext`) und `_wetterWarum`.
+    _wetterSchreiberZeile() {
+        const q = this.state.wetterSchreiber;
+        if (!q || q === "?") return ["wetter.schreiber.unbekannt"];
+        if (q === "front") return ["wetter.schreiber.front"];
+        if (q === "laden") return ["wetter.schreiber.laden"];
+        if (/^(rule:)*llm:/.test(q)) return ["wetter.schreiber.ki"];
+        const wer = this._himmelSchreiber(q, "wetter");
+        if (wer === "spieler") return ["wetter.schreiber.spieler"];
+        if (wer === "gesetz") return ["wetter.schreiber.gesetz"];
+        return ["wetter.schreiber.welt", { wer: this._tatSchreiber(q).nom }];
+    }
+
+    // DIE FRAGE NACH DEM WETTER ohne KI (affekt.K4#2, die Vorlage der Welt): „warum regnet es?" · „why is it raining?" → das
+    // Wetter und sein Schreiber als Zeile der Tafel; jeder andere Satz → null. Mit der Stimme der KI antwortet das Modell (es
+    // liest denselben Schreiber im Kontext).
+    _wetterWarum(satz) {
+        const t = String(satz || "").trim();
+        const frage =
+            /^(?:warum|wieso|weshalb)\b.*\b(?:regn|regen|stürm|sturm|gewitter|nebel|neblig|wolkig|bewölkt|sonn|wetter)/i.test(
+                t
+            ) || /^why\b.*\b(?:rain|storm|thunder|fog|cloud|sun|weather)/i.test(t);
+        if (!frage) return null;
+        return ["wetter.warum", { wetter: this._wetterZeile(this.state.weather), wer: this._wetterSchreiberZeile() }];
+    }
+
+    // Der Name eines Schreibers (die DSL-Quelle) als zwei Zeilen der Tafel — Nominativ am Satzanfang, Genitiv hinter dem
+    // Gesetz: ein Gesetz trägt die Quelle seines Gebers („rule:nexus").
     _tatSchreiber(quelle) {
         let q = String(quelle || "?");
         let gesetz = false;
@@ -1383,21 +1410,27 @@ class AnazhRealm_feld_sprache {
             q = q.slice(5);
             gesetz = true;
         }
+        // je Schreiber zwei Zeilen [Nominativ, Genitiv] und seine Werte
         let nom;
         let gen;
-        if (q === "nexus") [nom, gen] = ["der Nexus", "des Nexus"];
-        else if (q.startsWith("llm")) [nom, gen] = ["die KI", "der KI"];
+        let werte;
+        if (q === "nexus") [nom, gen] = ["feldstimme.wer.nexus", "feldstimme.gen.nexus"];
+        else if (q.startsWith("llm")) [nom, gen] = ["feldstimme.wer.ki", "feldstimme.gen.ki"];
         else if (q.startsWith("emotion:"))
-            [nom, gen] = [`die Stimmung „${q.slice(8)}“`, `der Stimmung „${q.slice(8)}“`];
-        else if (q.startsWith("creature:")) [nom, gen] = [`das Wesen „${q.slice(9)}“`, `des Wesens „${q.slice(9)}“`];
-        else [nom, gen] = [`„${q}“`, `von „${q}“`];
-        if (gesetz) nom = `ein Gesetz ${gen}`;
-        return { nom: nom[0].toUpperCase() + nom.slice(1), gen };
+            [nom, gen, werte] = ["feldstimme.wer.stimmung", "feldstimme.gen.stimmung", { q: q.slice(8) }];
+        else if (q.startsWith("creature:"))
+            [nom, gen, werte] = ["feldstimme.wer.wesen", "feldstimme.gen.wesen", { q: q.slice(9) }];
+        else [nom, gen, werte] = ["feldstimme.wer.anderer", "feldstimme.gen.anderer", { q }];
+        gen = [gen, werte];
+        return { nom: gesetz ? ["feldstimme.wer.gesetz", { gen }] : [nom, werte], gen };
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_feld_sprache]);
 
 // ===== ATLAS · Feld/sprache — Außen-Konstanten =====
+// DIE ACHT RICHTUNGEN der Stimme des Felds (`_feldStimmeZeile`, ab Norden im Uhrzeigersinn): je Richtung eine Zeile der Tafel
+// `feldstimme.richtung.<r>` — gate:sprache F zählt sie hier.
+AnazhRealm.FELDSTIMME_RICHTUNG = Object.freeze(["n", "no", "o", "so", "s", "sw", "w", "nw"]);
 // LEBENDIGE WERTUNG (lesen → schreiben → WERTEN): gleitende Baseline (EMA-Tiefpass) + Differenz
 // δ = x − baseline — braucht nur Zeitkonstanten. Reaktiv (nicht persistiert, kein Worker-Mirror).
 //   cell        — Zell-Größe der Baseline-Map (= LIFE_FIELD.cell, 16 m)

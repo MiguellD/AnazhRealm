@@ -269,20 +269,20 @@ class AnazhRealm_werkstatt_sozial {
                 const result = this.importRecipesFromWorld(entry.worldId);
                 const chatOutput = document.getElementById("chat-output");
                 if (chatOutput) {
-                    const line = document.createElement("div");
-                    if (result.ok) {
-                        const c = result.counts;
-                        line.textContent = this._t("sozial.rezepte-empfangen", {
-                            welt: String(entry.slug),
-                            bauplaene: String(c.blueprints),
-                            materialien: String(c.materials),
-                            werkzeuge: String(c.tools),
-                        });
-                    } else {
-                        line.textContent = this._t("sozial.rezept-import-fehl", { grund: String(result.reason) });
-                    }
-                    chatOutput.appendChild(line);
-                    chatOutput.scrollTop = chatOutput.scrollHeight;
+                    const c = result.counts;
+                    this._chatEcho(
+                        result.ok
+                            ? [
+                                  "sozial.rezepte-empfangen",
+                                  {
+                                      welt: String(entry.slug),
+                                      bauplaene: String(c.blueprints),
+                                      materialien: String(c.materials),
+                                      werkzeuge: String(c.tools),
+                                  },
+                              ]
+                            : ["sozial.rezept-import-fehl", { grund: String(result.reason) }]
+                    );
                 }
             });
             const delBtn = document.createElement("button");
@@ -345,10 +345,7 @@ class AnazhRealm_werkstatt_sozial {
             const age = document.createElement("span");
             age.className = "journal-age";
             age.textContent = this._formatJournalAge(now - (e.at || now));
-            const text = document.createElement("span");
-            text.textContent = e.text || "";
-            // der Eintrag ist gespeicherte Geschichte der Welt — er bleibt in der Sprache, in der er geschah
-            text.setAttribute("translate", "no");
+            const text = this._journalSetze(document.createElement("span"), e);
             row.appendChild(type);
             row.appendChild(age);
             row.appendChild(text);
@@ -736,13 +733,9 @@ class AnazhRealm_werkstatt_sozial {
         else delete this.state.feedFollows[key];
         this._saveFeedFollows();
         if (on && typeof this.journalAppend === "function") {
-            this.journalAppend(
-                "witness",
-                AnazhRealm._datum`Ich folge nun ${this._vibeFingerprint(key)} — seine Werke begleiten mich.`,
-                {
-                    follow: key,
-                }
-            );
+            this.journalAppend("witness", ["journal.folge", { wem: this._vibeFingerprint(key) }], {
+                follow: key,
+            });
         }
         return on;
     }
@@ -962,13 +955,9 @@ class AnazhRealm_werkstatt_sozial {
             this.p2pSend({ type: "social-comment", c });
         }
         if (typeof this.journalAppend === "function") {
-            this.journalAppend(
-                "share",
-                AnazhRealm._datum`Ich liess ein Wort bei „${id}" zurueck: „${x.slice(0, 60)}"`,
-                {
-                    comment: id,
-                }
-            );
+            this.journalAppend("share", ["journal.wort-zurueck", { wo: id, wort: x.slice(0, 60) }], {
+                comment: id,
+            });
         }
         return c;
     }

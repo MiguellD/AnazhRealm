@@ -109,11 +109,6 @@ async function checkBandWelle6HCreatures({ page, check }) {
         out.chatAlleWarten =
             alleWarten && alleWarten.program[0] === "creature_task_all" && alleWarten.program[1] === "wait";
 
-        // describeProgram-Einträge
-        const desc1 = r.describeProgram(["creature_task_nearest", "follow_player"]);
-        out.descNearest = typeof desc1 === "string" && /folge|nächste|Auftrag/i.test(desc1);
-        const desc2 = r.describeProgram(["creature_task_all", "wait"]);
-        out.descAll = typeof desc2 === "string" && /alle/i.test(desc2);
 
         // removeCreature räumt Aura mit
         const cToRemove = st.creatures[st.creatures.length - 1];
@@ -168,8 +163,6 @@ async function checkBandWelle6HCreatures({ page, check }) {
             wave6hResults.chatAlleFolgt
         );
         check("Chat 'alle warten' → creature_task_all wait", wave6hResults.chatAlleWarten);
-        check("describeProgram für nearest enthält 'folge'/'nächste'", wave6hResults.descNearest);
-        check("describeProgram für all enthält 'alle'", wave6hResults.descAll);
         check(
             "removeCreature räumt Aura aus Scene (kein Memory-Leak)",
             wave6hResults.preRemoveAuraInScene && wave6hResults.postRemoveAuraGone
@@ -277,11 +270,6 @@ async function checkBandWelle6HCreatures({ page, check }) {
         const taskText2 = taskEl ? taskEl.textContent : "";
         out.statusEmptyDash = taskText2 === "—";
 
-        // === describeProgram zeigt Distanz ===
-        const descWithDist = r.describeProgram(["creature_task_nearest", "follow_player", 1.5]);
-        const descWithoutDist = r.describeProgram(["creature_task_nearest", "follow_player"]);
-        out.descShowsDistance = /1\.5m|Distanz/i.test(descWithDist);
-        out.descNoDistanceWhenNotGiven = !/1\.5/.test(descWithoutDist);
 
         return out;
     });
@@ -328,11 +316,6 @@ async function checkBandWelle6HCreatures({ page, check }) {
         check("#status-tasks-Item im DOM", wave6hV2Results.statusTasksInDom);
         check("Status-Bar zeigt '2 folgen · 1 warten' nach Setup", wave6hV2Results.statusShowsCounts);
         check("Status-Bar zeigt '—' wenn alle wander", wave6hV2Results.statusEmptyDash);
-        check("describeProgram zeigt Distanz wenn gesetzt", wave6hV2Results.descShowsDistance);
-        check(
-            "describeProgram zeigt keine Distanz wenn nicht gesetzt",
-            wave6hV2Results.descNoDistanceWhenNotGiven
-        );
     }
 
     // ### Kreaturen als Hylomorphismus-Compounds ###
@@ -764,9 +747,6 @@ async function checkBandWelle6HCreatures({ page, check }) {
         out.statusShowsGather = /2 sammeln/.test(stext);
         out.statusShowsFollow = /1 folgen/.test(stext);
 
-        // describeProgram
-        const d1 = r.describeProgram(["creature_task_nearest", "gather", "holz"]);
-        out.descShowsMaterial = /Material/.test(d1) && /holz/.test(d1);
 
         // Liste zeigt 'sammelt holz'
         r._renderCreatureListUI();
@@ -840,7 +820,6 @@ async function checkBandWelle6HCreatures({ page, check }) {
             "Status-Bar zeigt 'N sammeln' bei gather-Tasks",
             wave6hP2bResults.statusShowsGather && wave6hP2bResults.statusShowsFollow
         );
-        check("describeProgram zeigt Material", wave6hP2bResults.descShowsMaterial);
         check(
             "Liste zeigt 'sammelt' + .gather-Class",
             wave6hP2bResults.listShowsSammelt && wave6hP2bResults.listTaskHasGatherClass

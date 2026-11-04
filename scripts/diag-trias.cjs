@@ -38,13 +38,13 @@ const HAUS_L2_MAX_TRIS = 8000;
 // Die Judge-Substanz der fuenf gefallenen Donor-Blueprints lebt EINGEFROREN in
 // AnazhRealm.KIND_SUBSTANCE (je EINE Zeile `    <name>: {...json...},`). Die Muenzen
 // (sha256 ueber JSON.stringify der geparsten Zeile) machen jede
-// Drift der Substanz laut.
+// Drift der Substanz laut. Seit spielgang.K5 trägt die Zeile ihren Namen als Schlüssel (`etikett`), `label` liest ihn in de.
 const KIND_SUBSTANCE_MINT = {
-    geraet_schwert: "fbd9f91fa5f8e26c9dd99959ce99f0c8906cbe82662ee1f82035003529e4ff9b",
-    geraet_spitzhacke: "f9465bb4d29ee17d0145c2fec6eebad0581f05c17c6c54af675fa19cb326c7f6",
-    fahrzeug_wagen: "2850d66feda2a749e0df6d9726cfe23255afa205becbdfd893f7b95b31d5d3cd",
-    tor_basis: "3192e75d2f5e82ab941f1b2356de608d45824819d704779750163797732ecfb3",
-    haus_basis: "56b2a5e79068d1e21df40e1b77299e11b683f441d47c9bd427c9f7f69f6bc628",
+    geraet_schwert: "dd42640656a08e377e8ee08a73f47294ba49a4662608cd0a46b60c4e085d18d7",
+    geraet_spitzhacke: "5b2283dfd4d202d94871be351d41393a9741b405ede59c8066f4792e2d81508f",
+    fahrzeug_wagen: "8cedf2cf99284f8f5bd3ccb59afe1def28d16da4576304f5e5fb37a16af1ffba",
+    tor_basis: "36fbf762ea73a6bb17ea974cef6bbdcaa32a9dc4d7c4a865bb9b83ff494c02be",
+    haus_basis: "77372c6f0f294774743988462b078979a797ab9e40f15baa5d09470f54ba0f76",
 };
 // Die Substanz ist der WERT der geladenen Klasse (`stammLib.ladeKlasse`: Kerne wie index.html, dann der Stamm) — kein
 // Zeilen-Parser am Stamm-Text (ERFINDER-WELLE: er griff nach einem Prettier-Lauf ins Leere); JSON.stringify des Objekts

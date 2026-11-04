@@ -500,7 +500,7 @@ async function probeLeben(expected) {
         const el = document.getElementById("fahr-tacho");
         const sichtbar = () => el && !el.hidden && getComputedStyle(el).display !== "none";
         const tacho = { element: !!el, proben: 0, unsichtbar: 0, falsch: 0, maxKmh: 0 };
-        const out = { hilfe: { zeilen: r._hilfeZeilen() }, tacho };
+        const out = { hilfe: { zeilen: r._hilfeZeilen().map((z) => r._t(z[0], z[1])) }, tacho };
         r.initSymphony();
         const [stimmen, fx, hand] = [() => (st.symphony.fahrt || {}).size, [{}], [0, 0, 0, 0]];
         const akt = {

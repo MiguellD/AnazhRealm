@@ -688,11 +688,9 @@ class AnazhRealm_dirigent_ankunft {
             const b = this._bootLeer;
             // der Satz an den Spieler aus der Tafel; der Befund ist die Diagnose der Speicher-Kette (ihre Glieder, die Meldung
             // des Browsers) und steht, wie sie das Log trägt
-            const befund = this._befundText(b.befund);
-            const satz = b.id
-                ? this._t("rede.welt-fehlt", { welt: b.id, befund })
-                : this._t("rede.kein-stand", { befund });
-            this.log(satz, b.id ? "ERROR" : "INFO");
+            const befund = this._befundZeilen(b.befund);
+            const satz = b.id ? ["rede.welt-fehlt", { welt: b.id, befund }] : ["rede.kein-stand", { befund }];
+            this.log(AnazhRealm._tIn("de", satz[0], satz[1]), b.id ? "ERROR" : "INFO");
             this._chatEcho(satz);
         }
         // Die Empfänger-Wand des Erbguts (fail-closed): ein Erbgut, das dieser Build nicht trägt, lässt die Welt nicht
@@ -1583,11 +1581,19 @@ AnazhRealm._sprintMulGesetz = function () {
 // (`_hilfeZeilen`) und der Tacho (`_fahrAnzeige`) nennen. `tasten` = Namen in state.keys (event.key klein; die Pfeile schreiben
 // w/a/s/d über PFEIL_ALIAS), `code` = KeyboardEvent.code, `zeigen` = die Taste für den Spieler.
 AnazhRealm.FAHR_TASTEN = Object.freeze({
-    einsteigen: Object.freeze({ code: "KeyE", zeigen: "E", label: "einsteigen/aussteigen" }),
-    gas: Object.freeze({ tasten: Object.freeze(["w"]), zeigen: "W", label: "Gas" }),
-    bremse: Object.freeze({ tasten: Object.freeze(["s"]), zeigen: "S", label: "Bremse/rückwärts" }),
-    lenken: Object.freeze({ tasten: Object.freeze(["a", "d"]), zeigen: "A/D", label: "lenken" }),
-    handbremse: Object.freeze({ tasten: Object.freeze(["shift"]), zeigen: "Shift", label: "Handbremse" }),
+    einsteigen: Object.freeze(AnazhRealm._etikett({ code: "KeyE", zeigen: "E", etikett: ["fahrt.taste.einsteigen"] })),
+    gas: Object.freeze(
+        AnazhRealm._etikett({ tasten: Object.freeze(["w"]), zeigen: "W", etikett: ["fahrt.taste.gas"] })
+    ),
+    bremse: Object.freeze(
+        AnazhRealm._etikett({ tasten: Object.freeze(["s"]), zeigen: "S", etikett: ["fahrt.taste.bremse"] })
+    ),
+    lenken: Object.freeze(
+        AnazhRealm._etikett({ tasten: Object.freeze(["a", "d"]), zeigen: "A/D", etikett: ["fahrt.taste.lenken"] })
+    ),
+    handbremse: Object.freeze(
+        AnazhRealm._etikett({ tasten: Object.freeze(["shift"]), zeigen: "Shift", etikett: ["fahrt.taste.handbremse"] })
+    ),
 });
 // FAHR-ABSCHLUSS (19.07.) — die Pfeil-Tasten schreiben die kanonischen
 // Bewegungs-Tasten (die Studio-Eingabe-Wahrheit: KeyW||ArrowUp usw.); der

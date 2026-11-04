@@ -4402,7 +4402,7 @@
     // DAS BODEN-GESETZ (Waldboden 04.10.): das Gewicht einer Boden-Art an einem Ort aus den Bändern ihrer Zeile
     // (foundry-core PORTAL_RENDER_CONFIG.placement.boden) — EIN Auswerter für das Labor (buildForest) und die Welt
     // (die Nah-Streu). Ein Band ist ein Trapez [a, b, c, d]: 0 bis a, weich steigend bis b, voll bis c, weich
-    // fallend bis d. Umwelt u = { licht, feucht, ufer, fels, hang }: licht (Kronen-Licht 0..1) und feucht (0..1)
+    // fallend bis d. Umwelt u = { licht, feucht, ufer, fels, hang, leben }: licht (Kronen-Licht 0..1) und feucht (0..1)
     // wirken neutral, wo der Leser sie nicht misst (null); ufer (m über dem Wasser, negativ = Flachwasser) und fels
     // (Steinigkeit 0..1) sind Pflicht-Bänder — wer eines trägt, wächst nur, wo es gemessen ist. Eine Art ohne
     // Ufer-Band steht nie im Wasser (ufer < 0,1 m), hang ist die höchste Neigung |∇h|. feuchtLicht hebt die
@@ -4435,6 +4435,10 @@
             w *= bodenBand(u.licht - fl, zeile.licht);
         }
         if (zeile.feucht && da(u.feucht)) w *= bodenBand(u.feucht, zeile.feucht);
+        // DAS LEBEN AM ORT (feld.K5): `leben` ist der Gewinn je Einheit des Leben-Overlays `u.leben` (die Schreib-Seite des
+        // Felds über dem Substrat: die Pflege hebt, der Fraß senkt) — w · max(0, 1 + leben · u.leben); ohne Overlay (0) und
+        // ohne Leser (das Labor) wirkt es neutral.
+        if (zeile.leben && da(u.leben) && u.leben !== 0) w *= Math.max(0, 1 + zeile.leben * u.leben);
         return w;
     }
 
