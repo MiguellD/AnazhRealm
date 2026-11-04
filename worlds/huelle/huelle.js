@@ -31,6 +31,9 @@
  *                              ihrem eigenen Renderer, EINE CPU-Faltung für jede Engine — das Labor liest es selbst
  *                              (textur), die Brücke exportiert es (daten; unter r184 WebGPU ein Versprechen);
  *                              panoramaBild(maler) dasselbe für die flache Welt (sie malt ihr Equirekt selbst)
+ *   matrix(opt)                DIE MATRIX-TAFEL (w11-leib): der Kern-Zustand des gezeigten Leibs — Skelett, Gang-Phase je Fuß,
+ *                              der Schwerpunkt über der Stützfläche (der Stand aus tetrapoda `gangFuss`); Körper-Studio und
+ *                              Tetrapoda lesen sie, `stand()` hält den letzten Einblick für die Linsen
  *   toast(text, ms) · zufall(seed) · knopfMitText(wurzel, wort)
  *
  * Die Hülle ändert keine Bau-Bytes: sie reicht Werte durch, die Gesetzbücher bauen (gate:asset-contract unverändert).
@@ -1743,7 +1746,163 @@
         return false;
     }
 
+    // DIE MATRIX-TAFEL (w11-leib): der Einblick in den Zustand des Kerns, den das Studio zeigt — EINE Anzeige-Schicht für jeden
+    // Leib (das Körper-Studio und Tetrapoda lesen sie, beide gehen den Leib der Welt). Das Studio reicht `opt.lesen()` →
+    // {glieder (Gelenke des Skeletts), art (Gangart), S (Fußweg), tast (Tastgrad), phasen [rad, je Fuß die Phase des Gang-
+    // Gesetzes], fuesse [[x, z] Welt], namen, schwerpunkt [x, z], gier, meterJe} oder null (kein Kern-Gang). Ob ein Fuß steht,
+    // sagt das Gesetz selbst (tetrapoda `gangFuss`: kein Hub = Stand); die Stützfläche ist die Hülle der stehenden Füße, ihr
+    // Rand der kürzeste Abstand des Schwerpunkt-Lots zu ihr (+ innen, − außen). Die Tafel zeichnet im Rahmen des Leibs (vorn
+    // = oben) und hält ihren letzten Stand (`stand()`) für die Linsen.
+    function huelleKonvex(p) {
+        if (p.length < 3) return p.slice();
+        var q = p.slice().sort(function (a, b) {
+            return a[0] - b[0] || a[1] - b[1];
+        });
+        var x = function (o, a, b) {
+            return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+        };
+        var lo = [],
+            hi = [];
+        q.forEach(function (pt) {
+            while (lo.length >= 2 && x(lo[lo.length - 2], lo[lo.length - 1], pt) <= 0) lo.pop();
+            lo.push(pt);
+        });
+        q.slice().reverse().forEach(function (pt) {
+            while (hi.length >= 2 && x(hi[hi.length - 2], hi[hi.length - 1], pt) <= 0) hi.pop();
+            hi.push(pt);
+        });
+        return lo.slice(0, -1).concat(hi.slice(0, -1));
+    }
+    function stuetzRand(poly, c) {
+        if (!poly.length) return null;
+        var seg = function (a, b) {
+            var dx = b[0] - a[0],
+                dz = b[1] - a[1],
+                l2 = dx * dx + dz * dz,
+                u = l2 > 0 ? Math.max(0, Math.min(1, ((c[0] - a[0]) * dx + (c[1] - a[1]) * dz) / l2)) : 0;
+            return Math.hypot(c[0] - a[0] - u * dx, c[1] - a[1] - u * dz);
+        };
+        if (poly.length < 3) return -(poly.length === 1 ? Math.hypot(c[0] - poly[0][0], c[1] - poly[0][1]) : seg(poly[0], poly[1]));
+        var d = Infinity,
+            innen = true;
+        for (var i = 0; i < poly.length; i++) {
+            var a = poly[i],
+                b = poly[(i + 1) % poly.length];
+            d = Math.min(d, seg(a, b));
+            if ((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]) < 0) innen = false;
+        }
+        return innen ? d : -d;
+    }
+    function matrix(opt) {
+        opt = opt || {};
+        var box = el("div", "h-matrix");
+        box.appendChild(el("div", "h-gruppe", "MATRIX · DER KERN-ZUSTAND"));
+        var quelle = el("div", "h-matrix-quelle", opt.quelle || "");
+        box.appendChild(quelle);
+        var cv = doc.createElement("canvas");
+        cv.width = cv.height = 160;
+        cv.className = "h-matrix-bild";
+        box.appendChild(cv);
+        var text = el("div", "h-matrix-text", "…");
+        box.appendChild(text);
+        var letzter = null;
+        function zeichne() {
+            var z = opt.lesen ? opt.lesen() : null;
+            var c = cv.getContext && cv.getContext("2d");
+            if (c) c.clearRect(0, 0, cv.width, cv.height);
+            if (!z) {
+                letzter = null;
+                text.textContent = opt.ohne || "kein Kern-Gang";
+                return null;
+            }
+            var TC = wurzel.__tetrapodaCore;
+            var stehen = z.phasen.map(function (ph) {
+                return !(z.S > 0) || TC.gangFuss(ph, z.S, z.tast).hub === 0;
+            });
+            var poly = huelleKonvex(
+                z.fuesse.filter(function (f, i) {
+                    return stehen[i];
+                })
+            );
+            var rand = stuetzRand(poly, z.schwerpunkt);
+            var mj = z.meterJe > 0 ? z.meterJe : 1;
+            letzter = { stehen: stehen, rand: rand === null ? null : rand * mj, flaeche: poly.length, art: z.art, glieder: z.glieder };
+            if (c) {
+                // der Rahmen des Leibs: das Schwerpunkt-Lot in der Mitte, vorn oben
+                var g = z.gier || 0,
+                    sn = Math.sin(g),
+                    cs = Math.cos(g),
+                    s0 = z.schwerpunkt;
+                var rahmen = function (p) {
+                    var dx = p[0] - s0[0],
+                        dz = p[1] - s0[1];
+                    return [dx * cs - dz * sn, dx * sn + dz * cs];
+                };
+                var fr = z.fuesse.map(rahmen),
+                    weit = 1e-6;
+                fr.forEach(function (p) {
+                    weit = Math.max(weit, Math.abs(p[0]), Math.abs(p[1]));
+                });
+                var k = 62 / weit,
+                    M = cv.width / 2;
+                var px = function (p) {
+                    return [M - p[0] * k, M - p[1] * k];
+                };
+                if (poly.length) {
+                    c.beginPath();
+                    poly.map(rahmen).forEach(function (p, i) {
+                        var q = px(p);
+                        if (i) c.lineTo(q[0], q[1]);
+                        else c.moveTo(q[0], q[1]);
+                    });
+                    c.closePath();
+                    c.fillStyle = rand !== null && rand >= 0 ? "rgba(90,200,140,0.25)" : "rgba(220,110,80,0.25)";
+                    c.strokeStyle = rand !== null && rand >= 0 ? "#5ac88c" : "#dc6e50";
+                    c.fill();
+                    c.stroke();
+                }
+                fr.forEach(function (p, i) {
+                    var q = px(p);
+                    c.beginPath();
+                    c.arc(q[0], q[1], 5, 0, 2 * Math.PI);
+                    c.fillStyle = stehen[i] ? "#e8d8a8" : "rgba(232,216,168,0.25)";
+                    c.fill();
+                    // die Phase des Fußes als Zeiger (der Takt des Gesetzes)
+                    var ph = z.phasen[i];
+                    c.beginPath();
+                    c.moveTo(q[0], q[1]);
+                    c.lineTo(q[0] + 9 * Math.sin(ph), q[1] - 9 * Math.cos(ph));
+                    c.strokeStyle = "#e8d8a8";
+                    c.stroke();
+                    if (z.namen && z.namen[i]) {
+                        c.fillStyle = "#998866";
+                        c.fillText(z.namen[i], q[0] + 7, q[1] + 3);
+                    }
+                });
+                c.beginPath();
+                c.arc(M, M, 3.5, 0, 2 * Math.PI);
+                c.fillStyle = "#ffffff";
+                c.fill();
+            }
+            text.textContent =
+                "Skelett " + z.glieder + " Gelenke · " + (z.art || "stand") + " · Tastgrad " + (+z.tast).toFixed(2) + "\n" +
+                "Stand " + stehen.map(function (s) {
+                    return s ? "■" : "□";
+                }).join("") + " · Schwerpunkt " + (rand === null ? "ohne Stützfläche" : (rand >= 0 ? "+" : "") + (rand * mj * 100).toFixed(1) + " cm " + (rand >= 0 ? "innen" : "außen"));
+            return letzter;
+        }
+        if (opt.ziel) opt.ziel.appendChild(box);
+        return {
+            el: box,
+            zeichne: zeichne,
+            stand: function () {
+                return letzter;
+            },
+        };
+    }
+
     wurzel.AnazhHuelle = {
+        matrix: matrix,
         regler: regler,
         sitzung: sitzung,
         kosten: kosten,
