@@ -293,25 +293,37 @@ class AnazhRealm_studio_stoff {
                             const FS = tkC.FELL_SCHALE;
                             const t = aS.x;
                             const p = TSL.attribute("aWurzel", "vec3").mul(aS.z);
-                            const zelle = TSL.floor(p);
                             const hA = FS.hashA,
                                 hB = FS.hashB;
-                            const h1 = TSL.fract(TSL.sin(zelle.dot(TSL.vec3(hA[0], hA[1], hA[2]))).mul(hA[3]));
-                            const h2 = TSL.fract(TSL.sin(zelle.dot(TSL.vec3(hB[0], hB[1], hB[2]))).mul(hB[3]));
-                            const mitte = TSL.vec3(h1, h2, TSL.fract(h1.add(h2).mul(FS.hashC)))
-                                .sub(0.5)
-                                .mul(FS.mitte);
-                            // der Strich: die Locke längs des Kamms (Lage − Wurzel quer zur Normale) gestreckt, flächentreu
-                            const q = TSL.fract(p).sub(0.5).sub(mitte);
+                            // der Strich: die Locke längs des Kamms (Lage − Wurzel quer zur Normale) gestreckt, flächentreu;
+                            // die Zellen der `nachbarn` längs des Kamms reichen ihre Locke herüber (w10-figur: die Strähne
+                            // läuft über die Wand ihrer Zelle) — dieselbe Mathe wie die Referenz tetrapoda `fellLocke`
                             const kv = TSL.positionGeometry.sub(TSL.attribute("aWurzel", "vec3"));
                             const kq = kv.sub(TSL.normalGeometry.mul(kv.dot(TSL.normalGeometry)));
-                            const ql = q.dot(kq.div(kq.length().max(1e-6)));
-                            const dist = q.dot(q).sub(ql.mul(ql)).mul(FS.strich).add(ql.mul(ql).div(FS.strich)).sqrt();
+                            const kd = kq.div(kq.length().max(1e-6));
                             const radius = aS.y
                                 .sqrt()
                                 .mul(FS.radius)
                                 .mul(TSL.float(1.0).sub(t.mul(FS.zulauf)));
-                            const haar = TSL.step(dist, radius).mul(TSL.step(t, h1.mul(FS.endeSpanne).add(FS.ende)));
+                            let haar = null;
+                            for (let o = -FS.nachbarn; o <= FS.nachbarn; o++) {
+                                const zelle = TSL.floor(o === 0 ? p : p.add(kd.mul(o)));
+                                const h1 = TSL.fract(TSL.sin(zelle.dot(TSL.vec3(hA[0], hA[1], hA[2]))).mul(hA[3]));
+                                const h2 = TSL.fract(TSL.sin(zelle.dot(TSL.vec3(hB[0], hB[1], hB[2]))).mul(hB[3]));
+                                const mitte = TSL.vec3(h1, h2, TSL.fract(h1.add(h2).mul(FS.hashC)))
+                                    .sub(0.5)
+                                    .mul(FS.mitte);
+                                const q = p.sub(zelle).sub(0.5).sub(mitte);
+                                const ql = q.dot(kd);
+                                const dist = q
+                                    .dot(q)
+                                    .sub(ql.mul(ql))
+                                    .mul(FS.strich)
+                                    .add(ql.mul(ql).div(FS.strich))
+                                    .sqrt();
+                                const h = TSL.step(dist, radius).mul(TSL.step(t, h1.mul(FS.endeSpanne).add(FS.ende)));
+                                haar = haar ? TSL.max(haar, h) : h;
+                            }
                             const wolle = TSL.step(t, FS.wolle).mul(TSL.step(FS.wolleAb, aS.y));
                             // Der Ausschnitt lebt in colorNode.a wie jeder Ausschnitt (Lehre 26: der r184-Schattenpass liest
                             // colorNode.a, nie opacityNode) — kein Stoff schneidet über opacityNode, auch keiner, der heute

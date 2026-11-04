@@ -2732,6 +2732,12 @@
     // DER STRICH (haar.K1): das Haar liegt — die Locke ist flächentreu längs der Legerichtung gestreckt (√strich längs, 1/√strich
     // quer); die Legerichtung liest der Stoff aus der Schale selbst (der Teil von Lage − Wurzel quer zur Normale: der Kamm des
     // Ofens, Lean ∝ t²). Bis haar-fell-soll war die Locke rund: das Fell las als Filz, Strich-Kohärenz 0,28 gegen die REF 0,54.
+    // DIE LOCKE ÜBER IHRE ZELLE (w10-figur, haar.K1): die gestreckte Locke endete an der Wand ihrer Zelle — längs des Kamms
+    // trug sie höchstens eine Zelle, jede Strähne war ein Strich-Stück, und mehr Streckung half nicht mehr (Rechenmodell der
+    // Schale, `fellLocke` unten, Arm 0,7 m: Strich 4 → 0,501, 8 → 0,518, 12 → 0,507). Jetzt fragt das Fragment auch die
+    // Zellen seiner `nachbarn` längs des Kamms (der Punkt ± k Zellen auf dem Kamm): ihre Locke reicht herüber, die Strähne
+    // läuft über drei Zellen, flächentreu um `strich` 9 gestreckt (3× längs, ⅓ quer) — Modell 0,501 → 0,613 (×1,22; dasselbe
+    // Modell las rund → Strich 4 ×1,53 wie die Radeon 0,28 → 0,43: erwartet 0,425 → ~0,52, das Band [0,4358; 0,6538]).
     var FELL_SCHALE = Object.freeze({
         wurzel: 0.55,
         spitze: 1.1,
@@ -2745,8 +2751,37 @@
         endeSpanne: 0.45,
         wolle: 0.34,
         wolleAb: 0.05,
-        strich: 4,
+        strich: 9,
+        nachbarn: 1,
     });
+    // DIE LOCKE ALS FUNKTION (w10-figur): die Referenz der Schale, die beide Stoffe zeichnen (stamm/studio-stoff.js fellSchale,
+    // TSL; worlds/tetrapoda GLSL) — w = Wurzel × Zellen (aWurzel · aSchale.z), t = Schale (aSchale.x), dichte = aSchale.y,
+    // kamm = die Legerichtung (Einheit, tangential). true: das Fragment trägt Haar (Locke einer Zelle längs des Kamms oder Wolle).
+    // Leser: das Rechenmodell des Strichs (scripts/lib/fell-strich.cjs, Selbsttest K5 der Soll-Tafel); die Stoffe tragen dieselbe
+    // Mathe. `gesetz` (frei): ein anderes Raster derselben Form — der Mutant der Linse (die Locke, die an ihrer Zelle endet).
+    function fellLocke(w, t, dichte, kamm, gesetz) {
+        var FS = gesetz || FELL_SCHALE;
+        if (t <= FS.wolle && dichte >= FS.wolleAb) return true;
+        var fr = function (x) {
+            return x - Math.floor(x);
+        };
+        var r = Math.sqrt(dichte) * FS.radius * (1 - t * FS.zulauf);
+        for (var o = -FS.nachbarn; o <= FS.nachbarn; o++) {
+            var zx = Math.floor(w[0] + kamm[0] * o),
+                zy = Math.floor(w[1] + kamm[1] * o),
+                zz = Math.floor(w[2] + kamm[2] * o);
+            var h1 = fr(Math.sin(zx * FS.hashA[0] + zy * FS.hashA[1] + zz * FS.hashA[2]) * FS.hashA[3]);
+            var h2 = fr(Math.sin(zx * FS.hashB[0] + zy * FS.hashB[1] + zz * FS.hashB[2]) * FS.hashB[3]);
+            var h3 = fr((h1 + h2) * FS.hashC);
+            var qx = w[0] - zx - 0.5 - (h1 - 0.5) * FS.mitte,
+                qy = w[1] - zy - 0.5 - (h2 - 0.5) * FS.mitte,
+                qz = w[2] - zz - 0.5 - (h3 - 0.5) * FS.mitte;
+            var ql = qx * kamm[0] + qy * kamm[1] + qz * kamm[2];
+            var d = Math.sqrt((qx * qx + qy * qy + qz * qz - ql * ql) * FS.strich + (ql * ql) / FS.strich);
+            if (d <= r && t <= h1 * FS.endeSpanne + FS.ende) return true;
+        }
+        return false;
+    }
 
     // ════════════════════════════════════════════════════════════════════
     // DER MASSSTAB (Welle 5, die EINE Welt-Größe): eine Lab-Einheit ist ein Drittel Meter — der Wolf (Größe 2,4)
@@ -4122,6 +4157,7 @@
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,
         FELL_SCHALE: FELL_SCHALE,
+        fellLocke: fellLocke,
         DIAL_MAP: DIAL_MAP,
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         MESHFREI: MESHFREI,

@@ -1083,6 +1083,19 @@ hauptLauf(async () => {
         const sollQ = AU.standLeser(root).sollQuelle();
         const sollBrueche = AU.sollTafelSelbsttest(sollTafel, sollQ);
         check("K5 Selbst-Test: die Soll-Tafel ohne Bruch, Teilung und Maße geeicht, das Ist aus der Rohdatei, jeder Tafel-Bruch beim Namen", sollBrueche.length === 0, sollBrueche.join(" · "));
+        // K5 haar.K1 — DER STRICH DES FELLS AUS DER GEOMETRIE (w10-figur, scripts/lib/fell-strich.cjs): das Rechenmodell der
+        // Schale auf Armlänge, die Locke aus der Referenz des Kerns (tetrapoda `fellLocke`). Die Radeon liest ~0,85 × Modell; das
+        // Gesetz trägt das Band der REF [0,4358; 0,6538] / 0,85 = [0,513; 0,769], die Locke, die an ihrer Zelle endet (der Stand bis
+        // w10-figur: Strich 4, keine Nachbarn — Radeon 2674ff9a arm 0,4251), steht ROT darunter
+        {
+            const FSL = require("./lib/fell-strich.cjs");
+            const TK = require("./lib/welt-boot.cjs").fadenScope(["tetrapoda-core.js"]).__tetrapodaCore;
+            const [unten, oben] = [0.4358, 0.6538].map((x) => x / FSL.RADEON_JE_MODELL);
+            const gesetz = FSL.fellStrich({ K: TK, zellenJePx: FSL.ZELLEN_JE_PX.arm });
+            const zelle = FSL.fellStrich({ K: TK, zellenJePx: FSL.ZELLEN_JE_PX.arm, gesetz: Object.assign({}, TK.FELL_SCHALE, { strich: 4, nachbarn: 0 }) });
+            check(`K5 haar.K1: der Strich des Fells aus dem Gesetz (fellLocke, Arm) ${gesetz} im Band [${unten.toFixed(3)}; ${oben.toFixed(3)}]`, gesetz >= unten && gesetz <= oben, String(gesetz));
+            check(`K5 haar.K1 Selbst-Test: die Locke, die an ihrer Zelle endet → ROT (${zelle} < ${unten.toFixed(3)})`, zelle < unten, String(zelle));
+        }
         const sollU = AU.sollTafelUrteil(sollTafel, sollQ);
         console.log(`   SOLL-TAFEL: ${sollU.rot} von ${sollU.zeilen.length} Klassen ROT (nach Wirkung):`);
         for (const z of sollU.zeilen) console.log(`     ${AU.sollTafelZeile(z)}`);
