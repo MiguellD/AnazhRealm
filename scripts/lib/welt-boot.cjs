@@ -523,7 +523,7 @@ function fehlerSammler(page) {
 // Szenen-Pass in ihm zeichnet — fast der ganze Frame), verwarf die GPU seinen Submit: „Destroyed texture [Texture (unlabeled
 // 1280x720 px, TextureFormat::RGBA8Unorm)] used in a submit … renderContext_4" (CI voll 14/18 gate:kamera-leib, z200 und z203
 // je 2 von 2: jede Meldung 1–3 s nach einer Akte, deren Stapel in `updateForRender`/`renderObject` stand). Der Stich-Profiler
-// (`Profiler`, je PROFIL_US eine Probe) hält nichts an: die Leinwand lebt, bis ihr Frame eingereicht ist.
+// (`Profiler`, je 10 ms eine Probe) hält nichts an: die Leinwand lebt, bis ihr Frame eingereicht ist.
 const AKTE_SEITEN = new Set();
 const akten = [];
 let akteN = 0;
@@ -734,12 +734,9 @@ async function akteAnlegen(page, b) {
         await s.send("Runtime.addBinding", { name: "__weltPuls" });
         await page.evaluateOnNewDocument(pulsSeite);
         // der Stich-Profiler läuft vor der Lücke an: sein Start wartet auf einen freien Haupt-Thread, in der Lücke käme er zu spät
-        if (b.stapel) {
-            await s.send("Profiler.enable");
-            await s.send("Profiler.setSamplingInterval", { interval: PROFIL_US });
-            await s.send("Profiler.start");
-            A.profil = true;
-        }
+        if (b.stapel)
+            for (const [k, w] of [["enable"], ["setSamplingInterval", { interval: 1e4 }], ["start"]])
+                (await s.send("Profiler." + k, w), (A.profil = true));
     } catch (e) {
         if (!page.isClosed()) console.log(`[stall-akte] Seite #${A.id} ohne Puls: ${e?.message || e}`);
     }
@@ -780,42 +777,24 @@ function puls(A, payload) {
 const stapelText = (rahmen) =>
     rahmen
         .slice(0, 8)
-        .map((f) =>
-            f.url
-                ? `${f.functionName || "(anonym)"} ${String(f.url).split("/").pop().split("?")[0]}:${f.lineNumber + 1}`
-                : f.functionName
+        .map(
+            (f) => `${f.functionName || "(anonym)"} ${String(f.url).split("/").pop().split("?")[0]}:${f.lineNumber + 1}`
         )
         .join(" < ");
 
 // DER STAPEL DER LÜCKE aus dem Stich-Profiler (`Profiler.stop`, danach läuft er neu an): die Proben seit `ab` (der letzte Puls,
-// Wanduhr der Linse; das Ende des Profils ist die Antwort), ohne Leerlauf, Programm und Kehraus — die häufigste Spitze mit
-// ihren Rufern, innen zuerst. Der Stop wartet auf einen freien Haupt-Thread: er antwortet, wenn die Lücke endet.
-const PROFIL_US = 10000;
-const PROFIL_LEER = /^\((root|program|idle|garbage collector)\)$/;
+// Wanduhr der Linse; das Ende des Profils ist die Antwort) — die häufigste Spitze mit Skript-Rahmen, deren Skript-Rahmen innen
+// zuerst (eine native Spitze wie `writeBuffer` steht als ihr Rufer; Leerlauf, Programm und Kehraus tragen keinen). Der Stop
+// wartet auf einen freien Haupt-Thread: er antwortet, wenn die Lücke endet.
 async function profilStapel(A, ab) {
-    let p;
-    try {
-        p = (await A.s.send("Profiler.stop")).profile;
-    } finally {
-        A.s.send("Profiler.start").catch(() => {});
-    }
-    const von = p.endTime - (Date.now() - ab) * 1000;
-    const knoten = new Map(p.nodes.map((n) => [n.id, n]));
-    const eltern = new Map();
-    for (const n of p.nodes) for (const c of n.children || []) eltern.set(c, n.id);
-    const zahl = new Map();
-    let t = p.startTime;
-    p.samples.forEach((id, i) => {
-        t += p.timeDeltas[i];
-        if (t >= von && !PROFIL_LEER.test(knoten.get(id).callFrame.functionName))
-            zahl.set(id, (zahl.get(id) || 0) + 1);
-    });
-    const spitze = [...zahl].sort((x, y) => y[1] - x[1])[0];
-    if (!spitze) return null;
-    const rahmen = [];
-    for (let id = spitze[0]; knoten.has(id) && knoten.get(id).callFrame.functionName !== "(root)"; id = eltern.get(id))
-        rahmen.push(knoten.get(id).callFrame);
-    return rahmen;
+    const p = (await A.s.send("Profiler.stop").finally(() => A.s.send("Profiler.start").catch(() => {}))).profile;
+    const k = new Map(p.nodes.map((n) => [n.id, n]));
+    for (const n of p.nodes) for (const c of n.children || []) k.get(c).auf = n;
+    const kette = (n) => (n ? (n.callFrame.url ? [n.callFrame] : []).concat(kette(n.auf)) : []);
+    let [t, z, spitze] = [p.startTime - p.endTime + (Date.now() - ab) * 1e3, new Map(), []];
+    p.samples.forEach((id, i) => (t += p.timeDeltas[i]) >= 0 && z.set(id, (z.get(id) || 0) + 1));
+    for (const [id] of [...z].sort((x, y) => x[1] - y[1])) if (kette(k.get(id)).length) spitze = kette(k.get(id));
+    return spitze.length ? spitze : null;
 }
 
 // DIE FÄDEN DES GPU-PROZESSES (Linux, /proc/<pid>/task): wer dort rechnet, nach Faden-Namen (swiftshader `Thread<NN>`,
@@ -860,36 +839,6 @@ function faedenText(a, z, ms) {
         : null;
 }
 
-// CPU je Prozess: zwei Proben im Abstand `ms` am Browser (SystemInfo antwortet ohne den Haupt-Thread der Seite), unter Linux
-// dazu die Fäden des GPU-Prozesses.
-async function cpuDelta(b, ms) {
-    if (!b.cdp) return { text: "keine Browser-Sitzung", renderer: 0, gpu: 0, faeden: null };
-    const probe = async () => (await b.cdp.send("SystemInfo.getProcessInfo")).processInfo;
-    try {
-        const pa = await probe();
-        const gpuPid = (pa.find((p) => p.type === "GPU") || {}).id;
-        const fa = faedenProbe(gpuPid);
-        await sleep(ms);
-        const fz = faedenProbe(gpuPid);
-        const a = new Map(pa.map((p) => [`${p.type} ${p.id}`, p.cpuTime]));
-        const z = new Map((await probe()).map((p) => [`${p.type} ${p.id}`, p.cpuTime]));
-        const d = [...z].map(([k, v]) => [k, v - (a.get(k) || 0)]).sort((x, y) => y[1] - x[1]);
-        const anteil = (typ) => Math.max(0, ...d.filter(([k]) => k.startsWith(typ)).map(([, v]) => v)) / (ms / 1000);
-        return {
-            text:
-                d
-                    .filter(([k, v]) => v >= 0.02 || k.startsWith("GPU"))
-                    .map(([k, v]) => `${k} ${((v / (ms / 1000)) * 100).toFixed(0)} %`)
-                    .join(" · ") || "alles ruht",
-            renderer: anteil("renderer"),
-            gpu: anteil("GPU"),
-            faeden: faedenText(fa, fz, ms),
-        };
-    } catch (e) {
-        return { text: `SystemInfo: ${e?.message || e}`, renderer: 0, gpu: 0, faeden: null };
-    }
-}
-
 // DIE AKTE: was offen ist, der Puls, die Stempel, CPU, der Stapel, Konsole, Stderr — und das Urteil beim Namen.
 async function akte(page, grund) {
     const A = page.__akte;
@@ -897,14 +846,11 @@ async function akte(page, grund) {
     const schon = A.gemeldet;
     A.gemeldet = true;
     const luecke = A.puls ? Date.now() - A.puls.an : null;
-    const cpu = await cpuDelta(A.b, 2000);
+    const cpu = A.b.cpu || { text: "keine Probe", renderer: 0, gpu: 0, faeden: null };
     let stapel = null;
     const fragen = A.profil && !schon && luecke != null && luecke > 2000;
     if (fragen) {
-        const frage = profilStapel(A, A.puls.an).catch(() => null);
-        stapel = await Promise.race([frage, new Promise((r) => setTimeout(() => r(null), 6000))]);
-        if (!stapel)
-            frage.then((s) => s && console.log(`[stall-akte] Seite #${A.id}: der Stapel kam spät — ${stapelText(s)}`));
+        stapel = await Promise.race([profilStapel(A, A.puls.an).catch(() => null), sleep(8000)]);
     }
     const letzt = A.stempel.length ? A.stempel[A.stempel.length - 1] : "kein Stempel";
     let urteil;
@@ -913,7 +859,7 @@ async function akte(page, grund) {
         urteil = `AWAIT — der Haupt-Thread lebt (Puls vor ${sek(luecke)} s), ein Versprechen der Seite kehrt nie zurück; zuletzt ${letzt}`;
     else if (stapel) urteil = `JS-SCHLEIFE — der Haupt-Thread rechnet in ${stapelText(stapel).split(" < ")[0]}`;
     else if (cpu.renderer >= 0.5)
-        urteil = `RECHNET — der Haupt-Thread rechnet ohne Unterbrechung (${(cpu.renderer * 100).toFixed(0)} %, der Stapel kommt mit dem Ende der Lücke); zuletzt ${letzt}`;
+        urteil = `NATIV — der Haupt-Thread rechnet in einem nativen Aufruf (${(cpu.renderer * 100).toFixed(0)} %, kein JS-Stapel); zuletzt ${letzt}`;
     else if (cpu.gpu >= 0.5)
         urteil = `GPU-PROZESS — der Haupt-Thread wartet nativ, der GPU-Prozess rechnet (${(cpu.gpu * 100).toFixed(0)} %${cpu.faeden ? `: ${cpu.faeden.split(" · ").slice(0, 2).join(" · ")}` : ""}); zuletzt ${letzt}`;
     else urteil = `VERKLEMMUNG — der Haupt-Thread wartet nativ, kein Prozess rechnet; zuletzt ${letzt}`;
@@ -925,7 +871,7 @@ async function akte(page, grund) {
     if (cpu.faeden) z.push(`Fäden des GPU-Prozesses (2 s) ${cpu.faeden}`);
     if (A.b.last.length) z.push(`Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) ${A.b.last.join(" · ")}`);
     z.push(
-        `Stapel ${stapel ? stapelText(stapel) : fragen ? "keiner in 6 s — der Haupt-Thread ist nicht frei" : A.profil ? "(nicht gefragt: der Puls lebt oder die Akte fragte schon)" : "(kein Profiler: Zeit-Linse)"}`
+        `Stapel ${stapel ? stapelText(stapel) : fragen ? "kein Stapel in 8 s — der Haupt-Thread steht NATIV" : A.profil ? "(nicht gefragt: der Puls lebt oder die Akte fragte schon)" : "(kein Profiler: Zeit-Linse)"}`
     );
     for (const k of A.konsole) z.push(`Konsole ${k}`);
     for (const l of A.b.stderr.slice(-24)) z.push(`Stderr ${l}`);
@@ -968,7 +914,9 @@ async function starteBrowser(opts = {}) {
         .target()
         .createCDPSession()
         .catch(() => null);
-    // die LAST-SPUR: je 2 s die CPU des GPU-Prozesses und des stärksten Renderers (wann begann die Arbeit, auf die die Seite wartet)
+    // die LAST-SPUR: je 2 s die CPU je Prozess (`b.cpu`: die letzte Probe liest die Akte — bis w9-ziel-leben nahm sie eine eigene
+    // über 2 s, ein Zwilling dieser Uhr) und als Ring der GPU-Prozess und der stärkste Renderer (wann begann die Arbeit, auf die
+    // die Seite wartet)
     b.last = [];
     if (b.cdp) {
         let vor = null;
@@ -980,16 +928,20 @@ async function starteBrowser(opts = {}) {
                 const jetzt = new Map(info.map((p) => [`${p.type} ${p.id}`, p.cpuTime]));
                 const fJetzt = faedenProbe((info.find((p) => p.type === "GPU") || {}).id);
                 if (vor) {
-                    const d = (typ) =>
-                        Math.max(
-                            0,
-                            ...[...jetzt].filter(([k]) => k.startsWith(typ)).map(([k, v]) => v - (vor.get(k) || 0))
-                        );
+                    const d = [...jetzt].map(([k, v]) => [k, (v - (vor.get(k) || 0)) / 2]).sort((x, y) => y[1] - x[1]);
+                    const anteil = (typ) => Math.max(0, ...d.filter(([k]) => k.startsWith(typ)).map(([, v]) => v));
+                    const pz = (v) => (v * 100).toFixed(0);
                     // unter Linux der stärkste Faden des GPU-Prozesses dazu (wer die Last trägt)
                     const f = faedenText(fVor, fJetzt, 2000);
+                    b.cpu = { renderer: anteil("renderer"), gpu: anteil("GPU"), faeden: f };
+                    b.cpu.text =
+                        d
+                            .filter(([k, v]) => v >= 0.01 || k.startsWith("GPU"))
+                            .map(([k, v]) => `${k} ${pz(v)} %`)
+                            .join(" · ") || "alles ruht";
                     ring(
                         b.last,
-                        `${new Date().toISOString().slice(14, 19)} gpu ${((d("GPU") / 2) * 100).toFixed(0)}${f ? ` [${f.split(" · ")[0]}]` : ""}/r ${((d("renderer") / 2) * 100).toFixed(0)}`,
+                        `${new Date().toISOString().slice(14, 19)} gpu ${pz(b.cpu.gpu)}${f ? ` [${f.split(" · ")[0]}]` : ""}/r ${pz(b.cpu.renderer)}`,
                         30
                     );
                 }
@@ -1628,7 +1580,7 @@ async function selbsttest() {
         "/ruhig.html":
             "<!doctype html><script>setTimeout(function(){var e=performance.now()+800;while(performance.now()<e){}},300)</script>",
         "/schleife.html":
-            "<!doctype html><script>function __stallSchleife(){var e=performance.now()+9000;while(performance.now()<e){}}setTimeout(__stallSchleife,300)</script>",
+            "<!doctype html><script>function __stallSchleife(){var e=performance.now()+7000;while(performance.now()<e){}}setTimeout(__stallSchleife,300)</script>",
         "/haenger.html": "<!doctype html><script>window.__nie=function(){return new Promise(function(){})}</script>",
         "/wirft.html":
             "<!doctype html><script>setTimeout(function(){console.log('[ERROR] STOFF: die Post-Kette');throw new Error('__seitenWurf')},50)</script>",
@@ -1709,7 +1661,7 @@ async function selbsttest() {
         },
         async (page) => {
             const zeuge = await page.createCDPSession();
-            zeuge.on("Debugger.paused", () => (pausen++, zeuge.send("Debugger.resume").catch(() => {})));
+            zeuge.on("Debugger.paused", () => pausen++);
             await zeuge.send("Debugger.enable");
         }
     );
