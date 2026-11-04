@@ -2142,8 +2142,8 @@ function selbsttest() {
             "Wurzel sagt still ab (die Obergrenze)",
             (s) =>
                 s.replace(
-                    'if (this.state.creatures.length >= this.state.maxCreatures) return nein("obergrenze");',
-                    "if (this.state.creatures.length >= this.state.maxCreatures) return null;"
+                    '!(weicht = this._bestandWeicht()))\n            return nein("obergrenze");',
+                    "!(weicht = this._bestandWeicht()))\n            return null;"
                 ),
             /die Wurzel `spawnCreatureAt` sagt still ab/,
         ],
