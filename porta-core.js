@@ -1499,20 +1499,20 @@
         for (var i = 0; i < S.length; i++) if (S[i] <= L) st = S[i];
         return st;
     }
-    // DAS ANTEIL-GESETZ richtet die gezeigte Stufe: trägt ihr Bau mehr als `anteil` × die L0 an denselben Stellen (das Kosten-Buch), legt
-    // sie ihr Gesetz gröber — Sehnen-Fehler, Längs-Schritt und das Feine wachsen um die Wurzel des Überschusses (mindestens × 1,15: das Feine
-    // fällt ganz, die Dreiecke sinken schneller als der Schritt; die Mindest-Teilung von Ring und Scharnier sinkt bis 3, das Geflecht trägt
-    // jeden weiteren Strang) — und baut neu, höchstens achtmal. Alles wächst aus
-    // derselben Größe (der Fehler im Pixel der Stufe), nie aus einem Regler-Wert; ein Tor auf seinem Anteil baut EINMAL.
+    // DAS ANTEIL-GESETZ richtet die gezeigte Stufe: trägt ihr Bau mehr als ihr Haushalt — der größere Wert aus `anteil` × der L0 an denselben
+    // Stellen (das Kosten-Buch) und dem Band ihrer Budget-Zeile (`lod.budget.gate[Stufe].band`) —, legt sie ihre TEILUNG gröber: Sehnen-Fehler
+    // und Längs-Schritt wachsen um die Wurzel des Überschusses (mindestens × 1,15), die Mindest-Teilung von Ring und Scharnier sinkt bis 3 —
+    // und baut neu, höchstens achtmal. Was die Stufe LÖSCHT, wächst nie mit: das Feine (`feinM`) und das Geflecht (`straehnen`) sind das
+    // Pixel-Gesetz ihres Abstands (lod.K5, w10-lod: wuchs das Feine mit f, fiel an den leichten Toren der Umriss — die Spitze des Geisttors,
+    // die Saiten der Lyra —, Kanten-Versatz der Stufe 2 bei 12 m 1920 × 1080 Geisttor 7,85 px, Lyra 8,00, Ruine 3,23, Vitruv 2,78; ein Tor
+    // unter seinem Band vergröbert nicht: dieselben 0,25 · 0,37 · 0,46 · 0,68 px, jedes Tor ≤ 0,81 px). Ein Tor im Haushalt baut EINMAL.
     function vergroebert(D, f) {
         var V = {};
         for (var k in D) V[k] = D[k];
         V.sehneM = D.sehneM * f;
         V.laengsM = D.laengsM * f;
-        V.feinM = D.feinM * f;
         V.ringMin = Math.max(3, Math.round(D.ringMin / f));
         V.zylinder = Math.max(3, Math.round(D.zylinder / f));
-        if (D.straehnen) V.straehnen = Math.round(D.straehnen * f);
         return V;
     }
     // Der Bau einer GEZEIGTEN Stufe: die Stufe 0 unter ihrem Detail-Gesetz (TOR_DETAIL), die Stufen 1 und 2 unter TOR_DETAIL_1 / _2 und
@@ -1531,7 +1531,7 @@
                 R.gate.traverse(function (o) {
                     if (o.isMesh) alle += dreieckeVon(o.geometry);
                 });
-                if (_buch) ziel = D.anteil * (alle - _buch.stufe + _buch.l0);
+                if (_buch) ziel = Math.max(D.anteil * (alle - _buch.stufe + _buch.l0), (PORTAL_RENDER_CONFIG.lod.budget.gate[st] || {}).band || 0);
                 if (alle <= ziel || versuch >= 8) return R;
                 f *= Math.max(1.15, Math.sqrt(alle / ziel));
             }

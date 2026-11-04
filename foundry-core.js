@@ -430,11 +430,13 @@ const PORTAL_RENDER_CONFIG = {
         // (docs/PFLICHT-OFFEN.md E). Konsum: gate:asset-contract (die Wand baut jede Stufe — Goldens, Samen 7 und jede
         // Gestalt der Welt — und nennt den Taeter), gate:studio-vertrag B2c (Vollstaendigkeit, Monotonie: tris faellt
         // je Stufe streng, draws steigt nie). Die Kosten-Regler der Kronen wohnen in ihrer Zeile: blattKarte (Kante der
-        // Laub-Karte in Blatt-Groessen), lagen · quote · geruest · wedel (S3, docs/studio-vertrag.md B2c „Die Kronen-Kosten";
+        // Laub-Karte in Blatt-Groessen; nur tree[0] — w10-lod: die Laub-Krone der L1 IST die der L0, ihre Karte kostet 2
+        // Dreiecke; Wedel und Straehne tragen die Kosten ihrer Art und bleiben je Stufe), lagen · quote · geruest · wedel (S3, docs/studio-vertrag.md B2c „Die Kronen-Kosten";
         // wedel.holz und straehne.holz: der Holz-Anteil an der Farbe von Wedel und Straehne, geeicht an der Kronenfarbe der
         // Karten von V18.536; wedel.spalte: die groesste Breite einer Wedel-Karte in Stueck-Laengen, L2 15.10.), straehne (Trauer L0 und L1: Kartenbreite in Blattlaengen, Stuecke je Peitsche —
         // 05.10.: die schlanke Trauer-Klinge der L1 ist gefallen, sie las als Papier-Streifen), rinde (L0: ast/reisig in
-        // trunkR — darunter jeder 2./3. Ring, ohne Traeger faellt der Strang), boden (tree[0], die Trauer-L1 liest
+        // trunkR — darunter jeder 2./3. Ring, ohne Traeger faellt der Strang), vorhang (tree[1], w10-lod: das Geruest der
+        // Trauer-L1 in trunkR — es steht hinter dem Straehnen-Vorhang der L0), boden (tree[0], die Trauer-L1 liest
         // dieselbe Zahl: tiefstes Laub in Baumhoehen), deckung (tree[1]: das Band, in dem die gebaute L1-Krone die
         // L0-Krone desselben Baums bedeckt; gate:asset-contract misst es als BILD-Deckung an gebauten L0/L1-Paaren — 24
         // gerasterte Ansichten, kronen-linse —; dazu haelt jede Stufe und ihre Karte je Blick-Hebung das Bild von V18.536,
@@ -469,10 +471,9 @@ const PORTAL_RENDER_CONFIG = {
                     tris: 2900,
                     draws: 2,
                     schatten: 1,
-                    lagen: 13,
                     quote: 0.35,
-                    blattKarte: 2.2,
                     geruest: 0.25,
+                    vorhang: 0.6,
                     wedel: { ab: 0, teile: 2, breite: 2.03, nadel: 0.045, rand: 0.3, winkel: 40, spalte: 1.5, holz: 0.15 },
                     straehne: { teile: 1, breite: 0.95, holz: 0.06 },
                     deckung: [0.8, 1.15],
@@ -2027,8 +2028,8 @@ function emitTreeRezept(P, stufe) {
     const _b0 = PORTAL_RENDER_CONFIG.lod.budget.tree[0],
         _b1 = PORTAL_RENDER_CONFIG.lod.budget.tree[1];
     const _bz0 = _baumStufe ? (__lod === 0 ? _b0 : _b1) : null;
-    if (_baumStufe && !(_bz0.geruest > 0 && _bz0.geruest < 1 && _bz0.lagen > 0))
-        throw new Error("[phyto] lod.budget.tree[" + __lod + "].geruest/lagen fehlt (0 < geruest < 1, lagen > 0)");
+    if (_baumStufe && !(_bz0.geruest > 0 && _bz0.geruest < 1 && _b0.lagen > 0 && (__lod === 0 || (_b1.vorhang > 0 && _b1.vorhang < 1))))
+        throw new Error("[phyto] lod.budget.tree[" + __lod + "].geruest / tree[0].lagen fehlt (0 < geruest < 1, lagen > 0)");
     // DIE NADEL-ÄSTE ALS WEDEL (S3 S2, 09.10., tree[Stufe].wedel): ein Nadel-Ast der Konifere — jeder Seitenast des Stamm-
     // Leittriebs (Quirl) — IST sein Wedel. Befund (Späher S3, Kern 78d66a63): die Koniferen-L0 trug 78–80 % Rinde — jeder
     // Nadel-Ast eine Röhre, an jedem seiner Zweiglein eine Röhre (Tanne 413 Zweiglein × 12 Dreiecke) unter einer
@@ -2130,7 +2131,9 @@ function emitTreeRezept(P, stufe) {
                   : _baumStufe
                     ? P.tot
                         ? P.height / (2 * self.__phytoCore.STUFEN_BILD_PX[1]) / (P._trunkR || 0.1)
-                        : _b1.geruest
+                        : (P.trop || 0) >= 0.55
+                          ? _b1.vorhang // die Trauer-L1: ihr Gerüst steht hinter dem Strähnen-Vorhang der L0 (w10-lod)
+                          : _b1.geruest
                     : P.conifer || (P.trop || 0) >= 0.55
                       ? 0.08
                       : 0.05;
@@ -2177,10 +2180,10 @@ function emitTreeRezept(P, stufe) {
         )
             throw new Error("[phyto] lod.budget.tree[0].boden/straehne fehlt");
     }
-    // Die Straehnen-Zeile der Trauer-L1 (tree[1].straehne) und das tiefste Laub (tree[0].boden, EINE Zahl der Art).
-    const _st1 = _b1.straehne;
-    if (_trauerL1 && (!(_b0.boden > 0) || !_st1 || !(_st1.breite > 0) || !(_st1.teile >= 1) || !(_st1.holz >= 0 && _st1.holz < 1)))
-        throw new Error("[phyto] lod.budget.tree[1].straehne / tree[0].boden fehlt");
+    // DIE TRAUER-KRONE IST EINE (w10-lod): die L1 trägt die Strähnen der L0 (tree[0].straehne, die Peitschen-Wahl nach tree[0].lagen,
+    // die Breite im Blatt-Maß der L0) — bis hier eine eigene Zeile, die schmale Strähne der L1 auf eigener Wahl: lod.K5 Weide L1 3,64 px.
+    if (_trauerL1 && (!(_b0.boden > 0) || !_b0.straehne || !(_b0.straehne.breite > 0) || !(_b0.straehne.teile >= 1)))
+        throw new Error("[phyto] lod.budget.tree[0].straehne / tree[0].boden fehlt");
     // Die Trauer-L0 und -L1 bauen keine Einzel-Klinge: jede Peitsche (der Lauf, an dem growSkeleton ihre Blaetter
     // haengt — `run`) wird EINE Straehne entlang ihrer gewachsenen Bahn. Die Straehnen-Wahl ist die Peitschen-Wahl.
     const _peitschen = new Map();
@@ -2190,9 +2193,15 @@ function emitTreeRezept(P, stufe) {
             _peitschen.get(l.run).push(l);
         }
     }
+    // DIE LAUB-KRONE IST EINE (w10-lod): die L1 trägt die Krone der L0 Karte für Karte — dieselben Blattstellen im Maß der L0
+    // (das Blatt-Maß der Stufe `_ls` zurückgerechnet, der Wuchs ist derselbe Strom), dieselbe Lagen-Wahl und Kante aus tree[0],
+    // dieselbe Zelle und Farbe; sie dünnt nur ihr Holz (geruest). Die Karte kostet 2 Dreiecke (Eiche 147), das Holz trägt die
+    // Stufe. Bis hier wählte die L1 eigene, doppelt so große Karten auf 13 Lagen: ihr Umriss bestand aus ANDEREN Karten —
+    // lod.K5 headless (Bau-Fehler, 12 m, 1920 × 1080) Eiche 1,94 → 0,03 px, Birke, Buche ≤ 0,04, Karst 0,17.
     if (_laubKrone) {
-        if (!(_bz0.blattKarte > 0)) throw new Error("[phyto] lod.budget.tree[" + __lod + "].blattKarte fehlt");
-        nodes.leaves = __lagenWahl(nodes.leaves, _bz0.blattKarte, _bz0.lagen);
+        if (!(_b0.blattKarte > 0)) throw new Error("[phyto] lod.budget.tree[0].blattKarte fehlt");
+        const L0Mass = __lod === 1 ? nodes.leaves.map((l) => Object.assign({}, l, { scale: l.scale / P._ls })) : nodes.leaves;
+        nodes.leaves = __lagenWahl(L0Mass, _b0.blattKarte, _b0.lagen);
     } else if (_wedel) nodes.leaves = []; // die Nadeln reisen im Wedel (Farbe und Wind der Strähne)
     else {
         // Der Strauch traegt in seinen Gitter-Stufen nur den Anteil shrub[0].dichte.laub der Blattstellen als Karte
@@ -2217,7 +2226,8 @@ function emitTreeRezept(P, stufe) {
     // Abbruch-Schwelle des Wuchses), der nur sie traegt; seine Bahn ist der Anfang ihrer Straehne, eine Roehre baut er
     // nicht. Befund (Weide-L0, Kern V18.536): 187 Endzweige × 12 Dreiecke trugen je eine Straehne.
     const _peitschenBahn = new Map(),
-        _peitschenEltern = new Set();
+        _peitschenEltern = new Set(),
+        _wurfPeitschen = new Set();
     if ((_L0 || _trauerL1) && _trauer) {
         const segVonP = new Map(),
             eltern = new Map();
@@ -2238,10 +2248,10 @@ function emitTreeRezept(P, stufe) {
             if (!sg.length || !Lw.length) continue;
             let Lm = 0;
             for (const l of Lw) Lm += l.scale;
-            _peitschenBahn.set(w, { pts: [sg[0].p0].concat(sg.map((x) => x.p1)), Lm: Lm / Lw.length });
+            _peitschenBahn.set(w, { pts: [sg[0].p0].concat(sg.map((x) => x.p1)), Lm: Lm / Lw.length / P._ls }); // das Blatt-Maß der L0
         }
         if (_peitschenBahn.size > 3) {
-            const _st = _L0 ? _b0.straehne : _st1,
+            const _st = _b0.straehne,
                 PC = self.__phytoCore,
                 probe = [];
             for (const [w, B] of _peitschenBahn) {
@@ -2251,7 +2261,7 @@ function emitTreeRezept(P, stufe) {
             const pos = new Float32Array(probe.length * 12);
             probe.forEach((g, i) => pos.set(g.attributes.position.array, i * 12));
             const voll = PC.quadLagen(pos, probe.length, 64);
-            const f = voll > 0 ? Math.min(1, (LAGEN_RESERVE * _bz0.lagen) / voll) : 1;
+            const f = voll > 0 ? Math.min(1, (LAGEN_RESERVE * _b0.lagen) / voll) : 1; // EIN Lagen-Maß der Krone (w10-lod)
             if (f < 1) {
                 const W = Array.from(_peitschenBahn.keys()),
                     keep = Math.max(3, Math.round(W.length * f)),
@@ -2263,6 +2273,13 @@ function emitTreeRezept(P, stufe) {
         }
         for (const w of Array.from(_peitschen.keys())) if (!_peitschenBahn.has(w)) _peitschen.delete(w);
         for (const w of _peitschen.keys()) if (eltern.has(w)) _peitschenEltern.add(eltern.get(w));
+        // der Wurf der Trauer-L1 hält wurf.lagen wie die Karten der Laub-Krone (`_wurfBlatt`): der Anteil wurf.lagen/lagen der
+        // Peitschen mit der Reserve der Lagen-Wahl, im Index-Stride
+        if (_trauerL1) {
+            const W = Array.from(_peitschen.keys()),
+                n = Math.max(3, Math.round((W.length * LAGEN_RESERVE * _b1.wurf.lagen) / _b0.lagen));
+            for (let t = 0; t < n && t < W.length; t++) _wurfPeitschen.add(W[Math.floor((t * W.length) / n)]);
+        }
     }
     // DER TRAEGER (S7): jede gehaltene Karte bzw. Straehne haengt an ihrem Lauf — er und jeder Vorfahr bis zum Stamm
     // werden gebaut; ein duenner Strang ohne Traeger-Lauf faellt ganz (kein kahler Stock, keine schwebende Karte).
@@ -2507,9 +2524,9 @@ function emitTreeRezept(P, stufe) {
     // Kante und Zelle der Krone liest das BUDGET (PORTAL_RENDER_CONFIG.lod.budget.tree[Stufe] bzw. shrub[0]) und den
     // Atlas-Steckbrief des Kerns — fehlt eins, ist das ein Vertragsbruch, kein stiller Rueckfall auf ein Literal.
     const _atl = self.__phytoCore;
-    const _blattKarte = useTexL ? (_strauchKarte ? _bSK.blattKarte : _bz0.blattKarte) : 0;
+    const _blattKarte = useTexL ? (_strauchKarte ? _bSK.blattKarte : _b0.blattKarte) : 0;
     if (useTexL && !(_blattKarte > 0))
-        throw new Error("[phyto] lod.budget." + (_strauchKarte ? "shrub[0]" : "tree[" + __lod + "]") + ".blattKarte fehlt");
+        throw new Error("[phyto] lod.budget." + (_strauchKarte ? "shrub[0]" : "tree[0]") + ".blattKarte fehlt");
     // Die Schatten-Karten (L1, S4): eine Teilmenge der L1-Karten, die wurf.lagen Lagen haelt (dieselbe Lagen-Wahl).
     const _wurfBlatt = _wurf1 && _laubKrone ? new Set(__lagenWahl(nodes.leaves, _blattKarte, _wurf1.lagen)) : null;
     const _blattTint = (l) => {
@@ -2603,7 +2620,7 @@ function emitTreeRezept(P, stufe) {
     const _rindeMittel = _rn ? new THREE.Color(_rm[0] / _rn, _rm[1] / _rn, _rm[2] / _rn) : null;
     if ((_L0 || _trauerL1) && _trauer) {
         const _bodenY = nodes.height * _b0.boden;
-        const _st = _L0 ? _b0.straehne : _st1;
+        const _st = _b0.straehne;
         for (const [w, Lw] of _peitschen) {
             const { pts, Lm } = _peitschenBahn.get(w);
             const farben = Lw.map((l) => {
@@ -2614,7 +2631,7 @@ function emitTreeRezept(P, stufe) {
                     .lerp(vegFarbe(P.leafCol), 0.45);
                 return _rindeMittel ? c.lerp(_rindeMittel, _st.holz) : c;
             });
-            for (const ziel of _wurf1 ? [folGeosTex, wurfKarten] : [folGeosTex])
+            for (const ziel of _wurfPeitschen.has(w) ? [folGeosTex, wurfKarten] : [folGeosTex])
                 pushStraehne(
                     ziel,
                     pts,

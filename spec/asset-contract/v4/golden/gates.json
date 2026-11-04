@@ -133,9 +133,9 @@
       "sha256": "273016a3242ed67eda3e700faacd199041cc82e63c3a9edee6ede8f787dddb46"
     },
     "geisttor-s7-L1": {
-      "objects": 130,
-      "vertices": 3453,
-      "sha256": "54ee3ac34aea089ba512a722b0f35b220cf7807a4d6e08be32bbfaccfe9ee759"
+      "objects": 150,
+      "vertices": 3864,
+      "sha256": "44a884ddcb3cb07931b5fd42f93e5fc1b3b458ebf2e69bc65e494f2a5637d7c6"
     },
     "verkalkt-s7-L1": {
       "objects": 306,
@@ -158,34 +158,34 @@
       "sha256": "e3322c935b9faa70d0f0b028e52634087fa61b7b442fc21d685c3b3446ee921d"
     },
     "kathedrale-s7-L2": {
-      "objects": 132,
-      "vertices": 3948,
-      "sha256": "f531e1885f8ebb9a1dd11ab04357faebb4619dc44d0b0d25ff6f8e08a3be2e45"
+      "objects": 137,
+      "vertices": 4264,
+      "sha256": "7b125a55f22c5a454c53ddbea0d2e04e44637c11e8f48b3f576417c0133a5f6e"
     },
     "maschine-s7-L2": {
-      "objects": 121,
-      "vertices": 3935,
-      "sha256": "78357593e0a0ad2e3b00c09764f451bf73eafc310ed9d8e9552d6f4c8aa867bf"
+      "objects": 128,
+      "vertices": 4761,
+      "sha256": "fad1c40f3e2ba5f4a350f5e778b32e8f8eba756e33bc4260fa571d32176fdb52"
     },
     "geisttor-s7-L2": {
-      "objects": 35,
-      "vertices": 820,
-      "sha256": "a1f4d7f8b4ec7a334d1cf4f2f26a8364e7715663213b87b8f78a91b94b1b0058"
+      "objects": 130,
+      "vertices": 2991,
+      "sha256": "cfe7a4697e9e539a2f7ad3249b797882806ec3d452f56564b7505e84dfa97348"
     },
     "verkalkt-s7-L2": {
-      "objects": 135,
-      "vertices": 5456,
-      "sha256": "a0d23fefd785e2fa8c2a6bca043d645011e9758d0de270c5ff1382442bb697c5"
+      "objects": 142,
+      "vertices": 5920,
+      "sha256": "00abb96057a0768e95c6f292e798157c979c1fc52b0ae98cff52dad7b36e7a9f"
     },
     "ruine-s7-L2": {
-      "objects": 93,
-      "vertices": 2664,
-      "sha256": "0aa6e4bd7500a766c2143c134b5a7c77c935493089edceb8bd3fef0e9e32c4a2"
+      "objects": 134,
+      "vertices": 3636,
+      "sha256": "6739dc84099bf84d97ca45cf02bdab9a2e507f9f3bd5b015c92ed2c3c592b00f"
     },
     "maurentor-s7-L2": {
-      "objects": 145,
-      "vertices": 5160,
-      "sha256": "01c803bcc634b649661cdecf37721cd0dabe38b29b73a98966fad1114f3535c2"
+      "objects": 152,
+      "vertices": 5872,
+      "sha256": "c2b55b16e21854b988f4c60bd52cb495a9de9829ef5a708e2bfa5c1d8147f12d"
     },
     "lyra-s7-L0": {
       "objects": 39,
@@ -203,9 +203,9 @@
       "sha256": "5a2402846f7399acbc40c0e6c422145ffcda00728b9774b0a9ee6ef4d7167016"
     },
     "lyra-s7-L2": {
-      "objects": 16,
-      "vertices": 412,
-      "sha256": "d0a56451721e661fb3943cc6545819f4d16b6f3a5bee52f7c22b5d6d0a4b9376"
+      "objects": 39,
+      "vertices": 1044,
+      "sha256": "0d9b799daafacced4f422c5d3c2df89d4e4aa531d41e498213a977a8c87e27fa"
     },
     "lyra-s7-L3": {
       "objects": 1,
@@ -223,14 +223,14 @@
       "sha256": "94f1c1e2e36c0283d7069c0d51144750ba85189de5c821cbe39f7a0017972146"
     },
     "vitruv-s7-L1": {
-      "objects": 35,
-      "vertices": 1002,
-      "sha256": "452203b58df5c42414577250ee21ee512296524472e0f5afa82f69dd2ef4eb16"
+      "objects": 54,
+      "vertices": 1394,
+      "sha256": "02250ee9f095c58e3ff585ebfc1c1ccb101ed8b656249068ef16dd7b7b80a7db"
     },
     "vitruv-s7-L2": {
-      "objects": 16,
-      "vertices": 432,
-      "sha256": "0d85dba47452031fbc43b7bd44c7561041920e725747ba3d51be59ca2e6da177"
+      "objects": 35,
+      "vertices": 862,
+      "sha256": "586d187ea4240146460f5e61437c48795e62d6f024851d9405acfcdaf8e31041"
     },
     "vitruv-s7-L3": {
       "objects": 1,
@@ -253,9 +253,9 @@
       "sha256": "14c6788c9110e1f3df8371334566a7e46dcbcc0dc37bb81a2636de2d8fa3585d"
     },
     "tiertor-s7-L2": {
-      "objects": 29,
-      "vertices": 561,
-      "sha256": "c78631cb7d0bd1bfbc5cbe9152a0870f44eadc77f083f468ede60462dd478471"
+      "objects": 50,
+      "vertices": 1211,
+      "sha256": "b9fa046043354225a5057fc2fa81fd26b121e4a29c81ff0921d94c013a9f1b54"
     },
     "tiertor-s7-L3": {
       "objects": 1,
