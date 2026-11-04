@@ -75,6 +75,8 @@ const { statikServer, werkbankRuf, werkbankTor, ROOT: root, selbsttestEnde, slee
 const http = require("http");
 const { AUSGABE_INSTALL, wetterUrteil } = require("./lib/ausgabe-aufnahme.cjs");
 const LL = require("./lib/licht-linsen.cjs");
+// die Fälle eines Selbsttests [ist, soll] (soll: Wert oder Muster), die nicht treffen — Nässe und Laub-Licht
+const istSoll = (f) => f.filter(([ist, soll]) => (soll instanceof RegExp ? !soll.test(ist) : ist !== soll));
 const { ZAEHLER_INSTALL, FALTE_INSTALL, gangLauf } = require("./lib/draw-zaehler.cjs");
 const { FLUSS_INSTALL } = require("./lib/fluss-linse.cjs");
 const SICHT = require("./lib/sicht-linse.cjs");
@@ -343,11 +345,12 @@ function lauf(k) {
                     }
                     if (!kand.some((q) => q.neu)) continue;
                     naechst = s + 2;
-                    kreis.halt = ++kreis.schuesse;
+                    rend.setAnimationLoop(null);
+                    kreis.schuesse++;
                     const G = [await schuss(), await schuss()];
                     r.toggleCreatures(false);
                     const O = await schuss().finally(() => r.toggleCreatures(true));
-                    kreis.halt = 0;
+                    await wieder();
                     const [teil, auch] = G.map((g) => __klassenTeilung(g, [O], W, H, 18).teil);
                     for (let p = 0; p < W * H; p++) {
                         let q = null, e = 1;
@@ -361,9 +364,7 @@ function lauf(k) {
                 taste("keyup");
             }
         };
-        rend.setAnimationLoop((t) => {
-            // die Schüsse der Sichtung halten die Welt: kein Takt, die Spiel-Uhr steht, die Lücke ist kein Frame
-            if (kreis && kreis.halt) return void (tRenderVor = null);
+        const takt = (t) => {
             // DIE BELEGUNG: zwei Marken je Takt nennen den Rückruf, der ihn trägt (`belegungAuswerten`: der Takt ist seine Hülle).
             const spur = messen && k.spur;
             if (spur) performance.mark("anazh-takt");
@@ -435,7 +436,19 @@ function lauf(k) {
             }
             proben.push(p);
             if (spur) performance.mark(gerendert ? "anazh-bild" : "anazh-leer");
-        });
+        };
+        rend.setAnimationLoop(takt);
+        // DIE WELT RUHT, WÄHREND DAS INSTRUMENT ARBEITET (die Schüsse der Sichtung, der Anlauf der Spur): die Schleife steht
+        // (`setAnimationLoop(null)`), niemand zeichnet, und `wieder` nimmt sie wieder auf — die Lücke ist kein Frame, weder im Lauf
+        // (`tRenderVor`) noch im Strom der Sitzung (sein Haken beginnt mit jeder neuen Schleife neu). Bis w11-stoss hielt die
+        // Sichtung nur den Takt an (er kehrte ohne Bild zurück): der Strom zählte die Lücke ins nächste Bild. Hielt das Instrument
+        // den Faden, während ein Bild schon begonnen hatte, liegt dessen rAF-Stempel VOR der Lücke (Radeon: Bild-Beginn 51 164,
+        // Rückruf 51 921) — 50 ms ohne Schleife tragen ihn ab, erst danach zeichnet sie wieder.
+        const wieder = async () => {
+            await sleep(50);
+            tRenderVor = null;
+            rend.setAnimationLoop(takt);
+        };
         try {
             if (fahrt) {
                 const { x, z } = st.playerMesh.position;
@@ -480,7 +493,15 @@ function lauf(k) {
             const v0 = Object.assign({}, window.__vram);
             const wache = window.__stempelWache;
             const s0 = wache();
-            if (k.spur) await __spurAn();
+            // DAS INSTRUMENT LÄUFT AN (w11-stoss): `Tracing.start` mit dem Stich-Profiler (PROBEN, `disabled-by-default-v8.cpu_profiler`)
+            // schreibt beim Anlauf jeden übersetzten Code der Seite ins Profil — der Haupt-Faden stand dabei 343–502 ms (Radeon, 18 von
+            // 18 Fenstern der Sitzungen 10770eb5 … f69a7305; GTX bis 825 ms) im Takt, den der Strom der Sitzung als Bild zählt: das
+            // größte Bild jedes profiband.K4-Fensters war die Linse selbst. Ohne Schleife steht der Anlauf in keinem Bild.
+            if (k.spur) {
+                rend.setAnimationLoop(null);
+                await __spurAn();
+                await wieder();
+            }
             // die Erst-Zeichnung (der EINE Ort in _configureRenderer): ihre Zähler über den Lauf
             const ERST = ["verschoben", "pipeAsync", "neubauN"], E = r._erstZeichnung;
             const erst0 = ERST.map((x) => E[x] || 0), probe = [];
@@ -1176,7 +1197,6 @@ async function starte() {
             }
             // Die Welt RUHT zwischen den Befehlen (nur `umstellen` tickt): im Leerlauf fraß der Loop unter
             // swiftshader ~3 Kerne und verfälschte jede andere Messung.
-            window.__letzteAufnahme = auf.u8;
             // die Tiefe und Kamera des Schusses (A13, die Achse der Spiegel-Treue), ehe ein weiterer Schuss sie überschreibt
             const spiegel = (window.__letzteSpiegel = k.klasse ? await __spiegelDaten() : null);
             const u8 = auf.u8,
@@ -3275,7 +3295,7 @@ hauptLauf(async () => {
             [LL.naesseUrteil({ wiese: m(0.66, null, 0.7), dorf: m(0.62, 1.01, 0.7) }).urteil, "GRUEN"],
             [LL.naesseUrteil({}).urteil, "ROT"],
         ];
-        const fehl = f.filter(([ist, soll]) => (soll instanceof RegExp ? !soll.test(ist) : ist !== soll));
+        const fehl = istSoll(f);
         console.log(`NÄSSE Selbsttest: ${f.length - fehl.length}/${f.length}`);
         if (fehl.length || SELBST) process.exit(fehl.length ? 1 : 0);
         const halt = await eigeneWelt();
@@ -3313,7 +3333,6 @@ hauptLauf(async () => {
         // zu Mittag dazu vom Gipfel (das Höchste des Gesetzes binnen 3 km, Auge 40 m); das Urteil `luftTiefeUrteil` gegen die
         // externe Referenz spec/farbe/luft-referenz.json. `--wetter <wort>` misst nur vom Hügel die Sicht im Wetter (Ferne K5),
         // mit `--zug` den Wetter-Zug klar → Wort → klar, die Ausgabe-Luma je Sekunde (Licht K5); Urteil `wetterLuftUrteil`.
-        const LL = require("./lib/licht-linsen.cjs");
         const ref = jsonLesen(path.join(__dirname, "../spec/farbe/luft-referenz.json"));
         const fehl = LL.luftTiefeSelbsttest(ref);
         selbsttestEnde(fehl, "grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m und Sprung 0,5 EV/s beim Namen ROT");
@@ -3399,7 +3418,7 @@ hauptLauf(async () => {
                 [LL.kronenObenUrteil({}).urteil, "ROT"],
                 ...LL.tagKurveSelbsttest(),
             ];
-            const fehl = f.filter(([ist, soll]) => (soll instanceof RegExp ? !soll.test(ist) : ist !== soll));
+            const fehl = istSoll(f);
             endeMit(`LAUB-LICHT Selbsttest: ${f.length - fehl.length}/${f.length}`, !fehl.length);
         }
         const welt = {};
