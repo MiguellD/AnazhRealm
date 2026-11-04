@@ -1277,11 +1277,19 @@ class AnazhRealm_speicher_laden {
         if (!alt._weltbildDa && alt._weltbildWarten) neu._weltbildWarten = alt._weltbildWarten;
         const bleibtFeld = (k) => S.felder.has(k) || G.wirt.includes(k);
         // DIE KARTEN DER WELT (Texturen und Ziele in ihren Gliedern: Spiegel, March, Wege, Kronen) verlassen die GPU, wenn kein
-        // bleibendes Glied sie trägt (der Kehraus nimmt nur Puffer)
+        // bleibendes Glied sie trägt (der Kehraus nimmt nur Puffer). Ein Ziel trägt seine Texturen: bleibt es, bleiben sie — bis
+        // w5-kontakt hielt ein reisendes Ziel nur sich selbst, ein fallender Leser seiner Textur gab sie frei (der Boden band die
+        // zerstörte Kontakt-Verdeckung, gate:kamera-leib)
         const karten = (v, aus, tiefe = 0) => {
             if (!v || typeof v !== "object" || tiefe > 4 || v.isObject3D || v.isMaterial || ArrayBuffer.isView(v))
                 return;
-            if (v.isTexture || v.isRenderTarget) return void aus.add(v);
+            if (v.isRenderTarget) {
+                aus.add(v);
+                for (const t of v.textures) aus.add(t);
+                if (v.depthTexture) aus.add(v.depthTexture);
+                return;
+            }
+            if (v.isTexture) return void aus.add(v);
             for (const x of v instanceof Map || v instanceof Set ? v.values() : Object.values(v))
                 karten(x, aus, tiefe + 1);
         };

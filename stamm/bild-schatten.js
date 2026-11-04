@@ -820,11 +820,15 @@ class AnazhRealm_bild_schatten {
     // des geglätteten Ergebnisses (der räumliche Filter ist im Pass gerechnet — der Leser zahlt je Fragment eine Ladung), gewogen
     // mit dem Zelt seiner Sicht-Tiefe gegen die des Punkts (`tiefeRand` relativ: die Kante eines Leibs vor dem Boden reicht ihm
     // nichts); außerhalb des Ziels und ohne Lauf (`an` 0: Direktpfad, Bruch) 1.
+    // DER KNOTEN LEBT IM EINEN HALTER (`L.knoten`, er reist mit der Seite, `WELT_GRENZE.seite`): bis w5-kontakt lag er am Wirt
+    // (`this._kontaktK`) — der Abschied der Welt (`_weltAbschied`) zählte jedes Feld am Wirt als fallend, fand in ihm die
+    // Textur des Ziels und gab sie frei, der Boden der nächsten Welt band die zerstörte Textur (gate:kamera-leib am Tor der
+    // Prüfbühne: „Destroyed texture [kontakt:verdeckung] used in a submit", z191/z197).
     _kontaktVerdeckung() {
-        if (this._kontaktK) return this._kontaktK;
+        const L = this._kontaktLeser();
+        if (L.knoten) return L.knoten;
         const T = THREE.TSL;
         const K = AnazhRealm.KONTAKT;
-        const L = this._kontaktLeser();
         const tex = T.texture(L.rt.texture);
         const clip = L.vp.mul(T.vec4(T.positionWorld, 1));
         const w = T.max(clip.w, 1e-4);
@@ -837,8 +841,8 @@ class AnazhRealm_bild_schatten {
             .mul(T.step(0, uv.y))
             .mul(T.step(uv.y, 1))
             .mul(T.step(0, clip.w));
-        this._kontaktK = T.mix(T.float(1), t.x, gilt.mul(drin).mul(L.an));
-        return this._kontaktK;
+        L.knoten = T.mix(T.float(1), t.x, gilt.mul(drin).mul(L.an));
+        return L.knoten;
     }
 
     // DER PASS (je Texel des halben Szenen-Ziels): Tiefe → Lage → Normale → `scheiben` × 2 Seiten × `schritte` Horizont-Proben,
