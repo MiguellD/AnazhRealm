@@ -90,3 +90,33 @@
 17:27:34 fahrt-B4 start FP=31ffbd008d8c53d5 66 52 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
 17:29:45 fahrt-B4 ende gpu[81, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] lauf: fps 55.7 F95 25.2 C95 24.9 k0 0.25 |  auf[{"ergebnis":{"ok":true,"inst":true,"takte":8,"pos":[-251,-1057],"v":10.1,"sicht":"third"},"ms":4025}] pruef[{"ergebnis":{"geritten":true,"weg":142.1,"takte":1718,"v10":0.3,"v50":5.1,"v90":10,"anteil8bis12":0.409,"wechsel":8,"egoAnteil":0.581,"sicht":"third"},"ms":3}]
 17:30:11 SERIE ENDE A-status[0] B-status[0]
+15:41:42 SERIE START A=f7dd313c5[0] B=877d3e04e[0] Instrument=f7dd313c5 ZELLEN=w-ego
+15:41:42 w-ego-A1 steht schon
+15:41:42 w-ego-B1 steht schon
+15:41:42 w-ego-A2 steht schon
+15:41:42 w-ego-B2 steht schon
+15:41:43 SERIE ENDE A-status[0] B-status[0]
+15:41:51 SERIE START A=f7dd313c5[0] B=877d3e04e[0] Instrument=f7dd313c5 ZELLEN=g-third
+15:41:51 g-third-A1 steht schon
+15:41:52 g-third-B1 steht schon
+15:41:52 g-third-A2 steht schon
+15:41:52 g-third-B2 steht schon
+15:41:52 SERIE ENDE A-status[0] B-status[0]
+15:42:06 SERIE START A=f7dd313c5[0] B=877d3e04e[0] Instrument=f7dd313c5 ZELLEN=d-ego
+15:42:06 d-ego-A1 steht schon
+15:42:06 d-ego-B1 steht schon
+15:42:06 d-ego-A2 steht schon
+15:42:06 d-ego-B2 steht schon
+15:42:07 SERIE ENDE A-status[0] B-status[0]
+15:42:24 SERIE START A=f7dd313c5[0] B=877d3e04e[0] Instrument=f7dd313c5 ZELLEN=stadt
+15:42:25 stadt-A1 steht schon
+15:42:25 stadt-B1 steht schon
+15:42:26 stadt-A2 steht schon
+15:42:26 stadt-B2 steht schon
+15:42:26 SERIE ENDE A-status[0] B-status[0]
+15:42:53 SERIE START A=f7dd313c5[0] B=877d3e04e[0] Instrument=f7dd313c5 ZELLEN=fahrt
+15:42:54 fahrt-A1 steht schon
+15:42:54 fahrt-B1 steht schon
+15:42:54 fahrt-A2 steht schon
+15:42:55 fahrt-B2 steht schon
+15:42:57 SERIE ENDE A-status[0] B-status[0]

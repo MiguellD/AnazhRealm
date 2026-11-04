@@ -223,3 +223,4 @@ vp-w6-alter-fb096ca8 OFFEN abgebrochen ohne Urteil: UMGESTELLT: alter fb096ca8 g
 omen-k5-bisekt OFFEN licht.K5#1 GTX: erster ROT 0e3eadad (letzter GRÜN 5fba36ea)
 omen-k5-affekt OFFEN licht.K5#1 GTX: erster ROT 511a4d50 (letzter GRÜN 5fba36ea)
 omen-gtx-w10-figur-dc82a268 ROT haar.K1#1=GRÜN haar.K2#1=ROT mensch.K4#1=ROT 
+z7-abab LANGSAMER abab 877d3e04 gegen f7dd313c: w-ego 4+4 nicht-langsamer · g-third 4+4 nicht-langsamer · d-ego 4+4 LANGSAMER · stadt 4+4 nicht-langsamer · fahrt 4+4 nicht-langsamer

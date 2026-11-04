@@ -395,7 +395,7 @@
      "B": 79.35,
      "d": -0.6500000000000057,
      "zweiSigma": 1.1633285577743466,
-     "u": "nicht langsamer (1σ–2σ)"
+     "u": "nicht langsamer"
     },
     {
      "gang": "steht",
@@ -654,5 +654,6 @@
     }
    }
   }
- ]
+ ],
+ "instrument": {}
 }
