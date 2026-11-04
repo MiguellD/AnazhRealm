@@ -232,3 +232,4 @@ omen-gtx-w10-lod-4ca2059d ROT lod.K2#1=ROT "at=async ]= }= lod.K5#1=ROT "at=asyn
 omen-gtx-w10-wiese-0d88e8d2 ROT vegetation.K1#1=ROT vegetation.K2#1=GRÜN 
 omen-gtx-w10-figur-8955553c ROT haar.K1#1=GRÜN haar.K2#1=ROT mensch.K4#1=ROT 
 omen-gtx-main-b56e9b0e ROT vegetation.K1#1=ROT vegetation.K2#1=GRÜN 
+omen-gtx-main-b56e9b0e ROT lod.K2#1=ROT "at=async ]= }= lod.K5#1=ROT "at=async ]= }= lod.K1#1=UNGEMESSEN lod.K3#1=UNGEMESSEN 

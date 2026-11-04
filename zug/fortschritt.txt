@@ -1625,3 +1625,6 @@
 2026-11-04 18:22:44 omen-gtx-main-b56e9b0e vegetation.K2#1 GRÜN 5 · 2/2
 2026-11-04 18:22:46 omen-gtx-main-b56e9b0e START 4 Proben (lod.K1#1,lod.K2#1,lod.K3#1,lod.K5#1, GTX am Zweig-Kopf)
 2026-11-04 18:23:40 omen-k06-b56e9b0e START bis 12 Läufe gate:kamera-leib (GTX, main b56e9b0e), gesucht: K4 haus_alemannisch rot
+2026-11-04 18:27:50 omen-gtx-main-b56e9b0e lod.K2#1 ROT 5 · 4/4
+2026-11-04 18:27:50 omen-gtx-main-b56e9b0e lod.K5#1 ROT 5 · 8/4
+2026-11-04 18:28:16 omen-gtx-w10-takt-90be0117 START 2 Proben (leib.K1#1,profiband.K4#1, GTX am Zweig-Kopf)
