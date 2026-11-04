@@ -1557,7 +1557,11 @@ class AnazhRealm_stoff_material {
                     // Boden (Chunk, Insel, Voxel-Test, Bauplan-Verschmelzung), Rinde, Laub, Klinge, Kronen-Kern; die
                     // Karte ersetzt sie durch den Atlas und hat kein color-Attribut. Bis 06.10. schaltete nur der Boden ab:
                     // Grammatik-Rinde/-Laub und der Fels zeichneten Farbe², die Werkstatt-Vorschau desselben Baums Farbe¹.
-                    if (mat.colorNode) mat.vertexColors = false;
+                    // `eckeImKnoten` sagt es jedem späteren Schreiber der Ecke (das Alter, `_werkAlterFaerbe`).
+                    if (mat.colorNode) {
+                        mat.vertexColors = false;
+                        mat.userData.eckeImKnoten = true;
+                    }
                 } else if (isFlatStructure) {
                     // Flach-Farb-Werke (Tempel · Schwert · Rüstung · Esse · …) fließen durch den EINEN Substanz-
                     // Charakter-Kern (Korn · Kavität · Ton · Verwitterung · Moos · Counter-Shading · Roughness),
@@ -1893,6 +1897,25 @@ class AnazhRealm_stoff_material {
         return T.select(drin, T.float(1).sub(unter), T.float(1));
     }
 
+    // DIE DECKE ÜBER DEM AUGE (je Takt, einmal auf der CPU — Lehre 14): dieselbe Regel wie `_offenerHimmel`, am Ort des Auges aus
+    // den Werten des Dach-Pools (EIN Schreiber `_dachTakt`). Leser: der Rückstrahl (`_rueckstrahlZeichne`) — steht das Auge
+    // unter einer Decke, trägt keine Umgebung den Boden des offenen Himmels. Bis dahin fragte jedes Fragment des Boden-Stoffs
+    // den Pool ein zweites Mal (8 Plätze ausgeschrieben): die Prüfbühne S0 zählte 101 063 Zeichen WGSL > 100 000.
+    _augeUnterDach() {
+        const st = this.state;
+        const U = st.atmoUniforms;
+        const e = st.camera && st.camera.matrixWorld.elements;
+        if (!e || !U || !U.dachLage) return false;
+        const [x, y, z] = [e[12], e[13], e[14]];
+        const H = U.dachHuelle.value;
+        if (x < H.x || x > H.z || z < H.y || z > H.w || y > U.dachOben.value) return false;
+        return U.dachLage.some((L, i) => {
+            const [l, m] = [L.value, U.dachMass[i].value];
+            const [dx, dz] = [x - l.x, z - l.y];
+            return Math.abs(dx * l.z - dz * l.w) <= m.x && Math.abs(dx * l.w + dz * l.z) <= m.y && y <= m.z;
+        });
+    }
+
     // DER DACH-POOL (EIN Schreiber, aus `_naesseTakt`): die Decken der `NAESSE.dachPlaetze` Bauten, die dem Auge am nächsten
     // stehen (im `dachUmkreisM`), neu gewählt nach `dachSchrittM` Weg des Auges, einem neuen Stand der Grundrisse oder einer
     // neuen Decke (`_dachKastenSetzen`). Die Decke eines Hauses: die höchste Box seiner festen Hülle, deren Fläche mindestens
@@ -2009,7 +2032,13 @@ class AnazhRealm_stoff_material {
     // Boden-Fragment (`werkbank shader --stoff boden`) trägt je Platz `if (Bedingung) { Lambert + GGX } else { 0 }` und kein
     // `select(`. Jedes Fragment zahlt also die Bedingung je Platz (Ort in den Blick-Raum, Abstand, N·L); die BRDF zahlt eine
     // Welle der GPU nur, wenn eines ihrer Fragmente den Zweig nimmt.
+    // DER WURF (schatten.K5, `_lichtWurf`): der Platz `platz` trägt den Faktor seines Würfel-Schattens — EIN Faktor je Fragment,
+    // als Operand NACH dem Zweig jedes Platzes (`select(…) · mix(1, wurf, platz = k)`): r184 schreibt einen Knoten, wo er zuerst
+    // gebaut wird (Lehre 26) — im Zweig des ersten Platzes läse jeder spätere Platz die ungerechnete Variable; so steht er auf
+    // der obersten Ebene des Fragments, ohne Fn-Rumpf. Außerhalb der Reichweite des Wurfs rechnet r184s Würfel-Filter nur den
+    // Vergleich mit Nah- und Fern-Ebene, keine Abtastung.
     _lichtPoolTerm(Te, atmo, himmel) {
+        const W = this._lichtWurf();
         const N = Te.normalView;
         const P = Te.positionView;
         let summe = null;
@@ -2038,7 +2067,9 @@ class AnazhRealm_stoff_material {
             const beitrag = farbe.rgb
                 .mul(nl.mul(abst).mul(gewicht))
                 .mul(this._punktLichtBrdf(Te, N, L, P.negate().normalize(), nl));
-            const term = Te.select(bedingung, beitrag, Te.vec3(0));
+            const term = Te.select(bedingung, beitrag, Te.vec3(0)).mul(
+                Te.mix(Te.float(1), W.faktor, Te.float(W.platz.equal(k)))
+            );
             summe = summe ? summe.add(term) : term;
         }
         return summe;

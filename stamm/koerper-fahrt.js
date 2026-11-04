@@ -133,6 +133,176 @@ class AnazhRealm_koerper_fahrt {
                 rg._leibPoseAktiv = false;
             }
         }
+        // DAS TUCH folgt der Pose dieses Takts (haar.K4)
+        this._tuchTakt(group, t);
+    }
+
+    // DAS TUCH AM LEIB (haar.K4) — der Leser des EINEN weichen Lösers (koerper-core `tuchGitter` · `tuchZustand` · `tuchTakt`,
+    // dasselbe rechnet das Körper-Studio): nach der Pose des Leibs EIN Schritt seines Tuchs. DIE KOSTEN GEHÖREN DEM SCHIRM UND DER
+    // ÄNDERUNG (Gebot 7), nie der Zahl der Leiber und nie der Spielzeit: gerechnet wird nur, was das Auge nahe sieht — die feine
+    // Stufe steht (`_gelenk.istFern` falsch: die Stufe entscheidet), der Leib hängt in der Szene und ist sichtbar, im Kegel der
+    // Kamera und so nah, dass sein Schwung (`TUCH_GESETZ.webe._.freiM`) am EINEN Schirm (`_schirm().pxJeM`) mindestens
+    // `TUCH_GESETZ.px` Bildpunkte deckt, höchstens `nahM`; ohne Schirm (pxJeM null) rechnet kein Tuch. DIE UHR DES TUCHS ist die
+    // Echtzeit: läuft die Spielzeit des Leibs schneller als `raffer` mal die Wand (der Zeitraffer — ein Bündel Takte ohne Bild, die
+    // Probe des Bewohner-Tags), ruht das Tuch; ein Takt ohne Zeit rechnet nichts. Steht der Leib in seiner Pose (Atem und Wiegen
+    // beschleunigen sein Ziel unter `ruheA`, in m/s²), schläft der Löser selbst (`tuchTakt`). Sonst ruht das Tuch in der Pose
+    // (`tuchRuhe`: die Ruhe-Lage, der Zustand fällt). Bis w6-weiches rechnete jeder Takt der Bewohner sein Tuch nach der Spielzeit:
+    // die Probe des Bewohner-Tags (DT 0,1 s, 24 Spielstunden) trug ~9 min Tuch (Kreatur-Linse Teil 1 main 111 s, mit dem Tuch 643 s,
+    // jetzt 111 s), und der stehende Bewohner schlief nie (3,6 ms je Bild bei zwei nahen, jetzt 0,26). Das Gitter des Lösers ist das Tuch der Grobstufe, die feine Stufe folgt ihm; das Gitter (Kanten,
+    // Massen, Folger) entsteht je Vorlage EINMAL (`_tuchGitter`, die Leiber derselben Tracht teilen es). Jedes Tuch-Mesh trägt
+    // solange seine EIGENE Positions-Spalte (die übrigen Spalten und der Index bleiben die der Vorlage) — fällt der Zustand, kehrt
+    // die Geometrie der Vorlage zurück, die eigene Spalte nimmt der GPU-Kehraus.
+    _tuchTakt(group, t) {
+        const u = group.userData;
+        const G = u && u._gelenk;
+        if (!G || u._tuchKein) return;
+        // die Tuch-Meshes des Leibs: die Grobstufe ist das Gitter des Lösers, die feine folgt ihm (einmal gesucht; ein Leib ohne
+        // Tuch kostet ab hier nichts mehr)
+        if (!u._tuchTeile) {
+            const stoff = (wurzel) => {
+                const L = [];
+                if (wurzel) wurzel.traverse((n) => n.isSkinnedMesh && n.userData.__seh === "stoff" && L.push(n));
+                return L;
+            };
+            const fein = stoff(G.nah);
+            const grob = stoff(G.fern);
+            if (!fein.length && !grob.length) {
+                u._tuchKein = true;
+                return;
+            }
+            u._tuchTeile = { sim: grob.length ? grob : fein, folge: grob.length ? fein : [], auge: fein[0] || grob[0] };
+        }
+        const KC = globalThis.__koerperCore;
+        const TG = KC.TUCH_GESETZ;
+        const st = this.state;
+        // DIE UHR: Spielzeit gegen Echtzeit seit dem letzten Ruf dieses Leibs (ein Rücksprung oder ein Takt ohne Zeit rafft nie)
+        const jetzt = performance.now();
+        const uhr = u._tuchUhr || (u._tuchUhr = { t: null, w: 0 });
+        const dSpiel = uhr.t == null ? 0 : t - uhr.t;
+        const raffer = dSpiel > 0 && dSpiel > (TG.raffer * (jetzt - uhr.w)) / 1000;
+        uhr.t = t;
+        uhr.w = jetzt;
+        // das Auge sieht die feine Stufe (Ego nimmt den eigenen Leib aus seiner Ebene: dort rechnet kein Tuch)
+        const pxJeM = this._schirm().pxJeM;
+        let an =
+            !raffer &&
+            pxJeM != null &&
+            !G.istFern &&
+            group.visible &&
+            !!st.camera &&
+            st.camera.layers.test(u._tuchTeile.auge.layers);
+        let d2 = Infinity;
+        if (an) {
+            let root = group;
+            while (root.parent) root = root.parent;
+            an = root === st.scene;
+        }
+        if (an) {
+            const cam = st.camera;
+            const s = group.scale.y || 1;
+            // die Reichweite am Schirm: der Schwung deckt px Bildpunkte, höchstens nahM
+            const nah = s * Math.min(TG.nahM, (pxJeM * TG.webe._.freiM) / TG.px);
+            const v = this._tuchV || (this._tuchV = new THREE.Vector3());
+            v.set(group.position.x, group.position.y + 0.9 * s, group.position.z);
+            d2 = cam.position.distanceToSquared(v);
+            an = d2 < nah * nah;
+            if (an) {
+                const kegel =
+                    this._tuchKegel ||
+                    (this._tuchKegel = { f: new THREE.Frustum(), m: new THREE.Matrix4(), k: new THREE.Sphere() });
+                cam.updateMatrixWorld();
+                kegel.m.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+                kegel.f.setFromProjectionMatrix(kegel.m);
+                kegel.k.center.copy(v);
+                kegel.k.radius = 1.2 * s;
+                an = kegel.f.intersectsSphere(kegel.k);
+            }
+        }
+        // DIE NAH-WAHL DES TUCHS: höchstens TUCH_GESETZ.leiber Leiber rechnen, die dem Auge nächsten — ein näherer verdrängt den
+        // fernsten (der ruht ab da in der Pose); wer die Szene verließ, fällt aus der Wahl
+        const wahl = AnazhRealm._tuchWahl || (AnazhRealm._tuchWahl = new Map());
+        if (an && !wahl.has(group)) {
+            let fern = null;
+            for (const [g, w] of wahl) {
+                let r = g;
+                while (r.parent) r = r.parent;
+                if (r !== st.scene || !g.userData._tuch) {
+                    wahl.delete(g);
+                    continue;
+                }
+                if (!fern || w > wahl.get(fern)) fern = g;
+            }
+            if (wahl.size >= TG.leiber) {
+                if (fern && wahl.get(fern) > d2) this._tuchLoesen(fern);
+                else an = false;
+            }
+        }
+        if (!an) {
+            if (u._tuch) this._tuchLoesen(group);
+            return;
+        }
+        wahl.set(group, d2);
+        if (!u._tuch) {
+            const { sim, folge } = u._tuchTeile;
+            const haut = [];
+            group.traverse(
+                (n) => n.isSkinnedMesh && n.userData.__seh === "haut" && n.userData.__klasse === "haut" && haut.push(n)
+            );
+            const gitter = this._tuchGitter(sim, folge, haut);
+            // die eigene Positions-Spalte je Tuch-Mesh (die Vorlage bleibt unberührt)
+            for (const m of sim.concat(folge)) {
+                const g0 = m.geometry;
+                const g1 = new THREE.BufferGeometry();
+                for (const k in g0.attributes)
+                    g1.setAttribute(k, k === "position" ? g0.attributes.position.clone() : g0.attributes[k]);
+                g1.setIndex(g0.index);
+                for (const gr of g0.groups) g1.addGroup(gr.start, gr.count, gr.materialIndex);
+                if (g0.boundingSphere) g1.boundingSphere = g0.boundingSphere.clone();
+                if (g0.boundingBox) g1.boundingBox = g0.boundingBox.clone();
+                m.userData.__tuchVorlage = g0;
+                m.geometry = g1;
+            }
+            u._tuch = KC.tuchZustand(gitter, sim, folge, haut, 1);
+            u._tuchMeshes = sim.concat(folge);
+            u._tuchT = null;
+        }
+        // der Takt des Tuchs: höchstens alle TUCH_GESETZ.taktS Spielzeit (die Zeit sammelt sich; ein Rücksprung beginnt frisch); ein
+        // Takt ohne Zeit ändert nichts
+        const dt = u._tuchT == null ? 0 : t - u._tuchT;
+        if (dt === 0 && u._tuchT != null) return;
+        if (dt > 0 && dt < TG.taktS - 1e-6) return;
+        u._tuchT = t;
+        // die Welt-Matrizen dieses Takts (die Pose steht; der Löser liest die Knochen)
+        this._leibMatrix(group);
+        KC.tuchTakt(u._tuch, dt);
+    }
+    // Das Gitter einer Tracht: je Vorlage (die Geometrie des ersten sim-Meshes) EINMAL gebaut, geteilt von jedem Leib
+    _tuchGitter(sim, folge, haut) {
+        const memo = AnazhRealm._tuchGitterMemo || (AnazhRealm._tuchGitterMemo = new WeakMap());
+        const key = sim[0].userData.__tuchVorlage || sim[0].geometry;
+        let g = memo.get(key);
+        if (!g) {
+            // die Webung der Kleid-Zeile (der Stoff trägt sie in seinen Ofen-Werten, `foundryMp`)
+            const webe = sim.map((m) => {
+                const ud = (m.material && m.material.userData) || {};
+                return ud.__webe || (ud.foundryMp && ud.foundryMp.webe) || null;
+            });
+            g = globalThis.__koerperCore.tuchGitter(sim, folge, haut, webe);
+            memo.set(key, g);
+        }
+        return g;
+    }
+    // Das Tuch ruht in der Pose: die Ruhe-Lage, die Geometrie der Vorlage kehrt zurück, der Zustand fällt
+    _tuchLoesen(group) {
+        const u = group.userData;
+        globalThis.__koerperCore.tuchRuhe(u._tuch);
+        if (AnazhRealm._tuchWahl) AnazhRealm._tuchWahl.delete(group);
+        for (const m of u._tuchMeshes || []) {
+            if (m.userData.__tuchVorlage) m.geometry = m.userData.__tuchVorlage;
+            delete m.userData.__tuchVorlage;
+        }
+        u._tuch = null;
+        u._tuchMeshes = null;
     }
 
     // DIE POSE DES LÖSERS AN DAS RIG: die Wurzel (Welt-Lage, Meter) in den Rahmen ihres Eltern-Gelenks, die Glieder lokal — die
@@ -1901,7 +2071,7 @@ class AnazhRealm_koerper_fahrt {
             else N.warm.delete(target);
             if (!w.quelle) continue;
             if (vorher < w.zuend / 2 && w.dT >= w.zuend / 2 && w.dT < w.zuend)
-                this._spielerSagt(this._t("welt.brennpunkt-glimmt", { ding: name(target), linse: name(w.quelle) }));
+                this._spielerSagt(["welt.brennpunkt-glimmt", { ding: name(target), linse: name(w.quelle) }]);
             if (w.dT >= w.zuend) ignitions.push({ t: target, quelle: w.quelle });
         }
         const pm = this.state.playerMesh && this.state.playerMesh.position;
@@ -1909,18 +2079,14 @@ class AnazhRealm_koerper_fahrt {
             const d = pm ? Math.hypot(t.position.x - pm.x, t.position.z - pm.z) : null;
             this._spielerSagt(
                 d != null
-                    ? this._t("welt.sonne-entzuendete-weit", { linse: name(quelle), ding: name(t), m: Math.round(d) })
-                    : this._t("welt.sonne-entzuendete", { linse: name(quelle), ding: name(t) })
+                    ? ["welt.sonne-entzuendete-weit", { linse: name(quelle), ding: name(t), m: Math.round(d) }]
+                    : ["welt.sonne-entzuendete", { linse: name(quelle), ding: name(t) }]
             );
             if (this.journalAppend) {
-                this.journalAppend(
-                    "loss",
-                    AnazhRealm._datum`Die Sonne entzündete durch „${name(quelle)}" „${name(t)}".`,
-                    {
-                        type: t.type,
-                        linse: quelle.type,
-                    }
-                );
+                this.journalAppend("loss", ["journal.sonne-zuendet", { linse: name(quelle), ziel: name(t) }], {
+                    type: t.type,
+                    linse: quelle.type,
+                });
             }
             this._brandEntfachen(t.position.x, t.position.z); // das Feuer fängt das Feld unter dem Werk (feld.K3#2)
             this.removeArchitecture(t);
@@ -2078,12 +2244,10 @@ class AnazhRealm_koerper_fahrt {
             const step = baseStep * strengthOf(ra, "radiating");
             emo.awe = Math.max(0, Math.min(1, (emo.awe || 0) + step));
             emo.peace = Math.max(0, Math.min(1, (emo.peace || 0) + step));
-            this.journalAppendOnce(
-                `radiating:${ra.id}`,
-                "growth",
-                `Eine strahlende Form schwingt nahe — ihre Resonanz wärmt das Gemüt.`,
-                { architecture: ra.type, affordance: "radiating" }
-            );
+            this.journalAppendOnce(`radiating:${ra.id}`, "growth", ["journal.form-strahlt"], {
+                architecture: ra.type,
+                affordance: "radiating",
+            });
         }
     }
 
@@ -2112,12 +2276,10 @@ class AnazhRealm_koerper_fahrt {
             const s = ba.affordanceStrength && ba.affordanceStrength.balancing;
             const strength = typeof s === "number" ? s : 1;
             emo.chaos = Math.max(0, Math.min(1, (emo.chaos || 0) - baseStep * strength));
-            this.journalAppendOnce(
-                `balancing:${ba.id}`,
-                "growth",
-                `Eine gründende Form ruht nahe — der Aufruhr im Gemüt legt sich.`,
-                { architecture: ba.type, affordance: "balancing" }
-            );
+            this.journalAppendOnce(`balancing:${ba.id}`, "growth", ["journal.form-gruendet"], {
+                architecture: ba.type,
+                affordance: "balancing",
+            });
         }
     }
 
@@ -2400,7 +2562,7 @@ class AnazhRealm_koerper_fahrt {
         // IDEMPOTENT am Chokepoint: jeder erfolgreiche Seelen-Bau erfüllt den deferierten Boot-Avatar-Bau
         // mit — der Loop-Defer stapelt keinen zweiten Bau, egal welcher Pfad (Restore/DSL/UI) zuerst baute.
         this.state._deferredAvatarSoul = null;
-        this.log(`Seele gewechselt: ${def.label} (${canonical})`, "INFO");
+        this.log(`Seele gewechselt: ${AnazhRealm._etikettQuelle(def)} (${canonical})`, "INFO"); // das Log spricht die Quell-Sprache
         if (typeof document !== "undefined") {
             const select = document.getElementById("player-soul-select");
             if (select && select.value !== canonical) {
@@ -2413,7 +2575,8 @@ class AnazhRealm_koerper_fahrt {
                 }
             }
             const status = document.getElementById("status-soul");
-            if (status) status.textContent = def.label;
+            if (status && Array.isArray(def.etikett)) this._tSetze(status, def.etikett[0], def.etikett[1]);
+            else if (status) status.textContent = def.label;
         }
         // Stats neu berechnen: bei Seelen-Wechsel tauschen die Tag-Profile (HP-Max, Speed, Sprung, Ausdauer,
         // Resistenzen), die Wandlung füllt die Lebenswerte — nur sie: derselbe Leib neu gebaut (der Boot-Avatar, der Guss nach

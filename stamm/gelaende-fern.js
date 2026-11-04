@@ -266,14 +266,15 @@ class AnazhRealm_gelaende_fern {
         // unter das Gesetz, und das Gebaute deckte ihn per Tiefe: über jeder Höhlen-Mündung (der gebaute Boden 10–62 m unter dem
         // Gesetz) stand er als glatte Platte mit Sägezahn-Kante (Bild platte-ring-an/-aus, K16-nb3), und an der Naht stach
         // seine Sehne durch den Chunk (gate:fern-ring Band 9, voller 5 × 5-Satz 2,79 %).
+        // DIE MASKE IST EINE SCHICHT DER FERN-KARTE (`_fernKroneNahEnsure`, Schicht 1 neben der Krone des nahen Bodens): EIN
+        // Sampler für beide — als eigene Textur trug der Naht-Stoff mit dem Wurf des Feuers 17 Sampler-Einheiten > 16, und der
+        // WebGL2-Rückfall linkte ihn nie (gate:webgl-probe W6). `maskeDaten` bleibt die CPU-Wahrheit (n × n, R = gebaut,
+        // G = Kante × 10); die Schicht trägt sie im Raster der Karte, die Kante im Alpha (`_fernRingMaskeHoch`).
         const maskeN = 2 * Math.ceil(bauZoneRad / cfg.span) + 3;
+        const fernKarte = this._fernKroneNahEnsure();
+        if (maskeN > fernKarte.N)
+            throw new Error(`Fern-Ring: die Maske (${maskeN}²) passt nicht in die Fern-Karte (${fernKarte.N}²)`);
         const maskeDaten = new Uint8Array(maskeN * maskeN * 4);
-        const maskeTex = new THREE.DataTexture(maskeDaten, maskeN, maskeN, THREE.RGBAFormat, THREE.UnsignedByteType);
-        maskeTex.name = "fern-ring-maske";
-        maskeTex.magFilter = THREE.NearestFilter;
-        maskeTex.minFilter = THREE.NearestFilter;
-        maskeTex.generateMipmaps = false;
-        maskeTex.needsUpdate = true;
         const uMaskeZelle0 = TSL.uniform(new THREE.Vector2(0, 0)); // die Chunk-Zelle des Texels (0, 0)
         // der Anker des Rings (die Weiche liest den Durchmesser der Masche an ihrem Radius); der Re-Anker (`_tickFernRing`) setzt ihn
         const uAnker = TSL.uniform(
@@ -308,9 +309,13 @@ class AnazhRealm_gelaende_fern {
                     .and(z.y.greaterThanEqual(0))
                     .and(z.x.lessThan(maskeN))
                     .and(z.y.lessThan(maskeN));
-                const t = TSL.textureLoad(maskeTex, TSL.ivec2(TSL.clamp(z, TSL.vec2(0), TSL.vec2(maskeN - 1))));
+                // die Mitte des Texels (das Gewicht der linearen Filterung liegt dort ganz auf ihm), Stufe 0
+                const uv = TSL.clamp(z, TSL.vec2(0), TSL.vec2(maskeN - 1))
+                    .add(0.5)
+                    .div(fernKarte.N);
+                const t = TSL.texture(fernKarte.tex, uv).depth(TSL.int(1)).level(TSL.float(0));
                 const b = drin.and(t.x.greaterThan(0.5));
-                return { b, s: TSL.select(b, t.y.mul(25.5), TSL.float(0)) };
+                return { b, s: TSL.select(b, t.w.mul(25.5), TSL.float(0)) };
             };
             const N = {};
             let w = TSL.float(0);
@@ -430,7 +435,7 @@ class AnazhRealm_gelaende_fern {
             deckZoneRad: (targetRing + 0.5) * cfg.span,
             bauZoneRad, // die Bau-Zone (oben)
             // die Masken-Karte des Gebauten (`maskNode`, `_fernRingMaske`): je Texel 255 = ein gezeichneter Chunk
-            maske: { tex: maskeTex, daten: maskeDaten, n: maskeN, uZelle0: uMaskeZelle0, schluessel: "" },
+            maske: { daten: maskeDaten, n: maskeN, uZelle0: uMaskeZelle0, schluessel: "" },
             uAnker, // der Anker im Stoff der Naht (die Weiche, `_fernRingWeiche`)
             vollY: new Float32Array(off).fill(NaN),
             // die Fläche des FELDES am Rand der Naht (`_fernRingFeldY`): NaN = noch nicht gemessen
@@ -461,7 +466,27 @@ class AnazhRealm_gelaende_fern {
             refreshed: 0, // eingehängte Punkte (Linse)
             ready: false,
         };
+        // die Schicht der Maske trägt ab jetzt diesen Ring (leer, bis `_fernRingMaske` das Gebaute schreibt)
+        this._fernRingMaskeHoch(st.fernRing);
         return st.fernRing;
+    }
+
+    // DIE MASKE IN DIE FERN-KARTE (Schicht 1): die CPU-Wahrheit `maske.daten` (n × n) im Raster der Karte — R gebaut, die Kante
+    // im Alpha (die Karte ist sRGB-kodiert, ihr Alpha linear; R trägt nur 0 und 255). EIN Upload der Schicht.
+    _fernRingMaskeHoch(fr) {
+        const M = fr.maske;
+        const k = this._fernKroneNahEnsure();
+        const S = k.maske;
+        S.fill(0);
+        for (let b = 0; b < M.n; b++)
+            for (let a = 0; a < M.n; a++) {
+                const q = (b * M.n + a) * 4;
+                const z = (b * k.N + a) * 4;
+                S[z] = M.daten[q];
+                S[z + 3] = M.daten[q + 1];
+            }
+        k.tex.addLayerUpdate(1);
+        k.tex.needsUpdate = true;
     }
 
     // Die Studio-Laubfarbe der fünf Wald-Arten (Kiefer · Tanne · Eiche · Birke · Erle, die Folge von `forestNische`),
@@ -703,7 +728,7 @@ class AnazhRealm_gelaende_fern {
                   ? [Math.min(F[0], fa0), Math.min(F[1], fb0), Math.max(F[2], fa1), Math.max(F[3], fb1)]
                   : [fa0, fb0, fa1, fb1];
         M.uZelle0.value.set(i0, j0);
-        M.tex.needsUpdate = true;
+        this._fernRingMaskeHoch(fr);
         M.ver = (M.ver | 0) + 1; // die Teilung der Schale 0 folgt (`_fernRingTeilung`)
     }
 
@@ -1161,8 +1186,13 @@ class AnazhRealm_gelaende_fern {
         if (st.fernKroneNah) return st.fernKroneNah;
         const TSL = THREE.TSL;
         const K = AnazhRealm.FERN_KRONE_NAH;
-        const daten = new Uint8Array(K.N * K.N * 4);
-        const tex = new THREE.DataTexture(daten, K.N, K.N, THREE.RGBAFormat, THREE.UnsignedByteType);
+        // DIE FERN-KARTE: EINE Array-Textur, Schicht 0 die Krone des nahen Bodens, Schicht 1 die Maske des Fern-Rings
+        // (`_fernRingMaskeHoch`) — EIN Sampler für beide (gate:webgl-probe W6: ≤ 16 Einheiten je Stoff)
+        const lagen = new Uint8Array(K.N * K.N * 4 * 2);
+        const daten = lagen.subarray(0, K.N * K.N * 4);
+        const tex = new THREE.DataArrayTexture(lagen, K.N, K.N, 2);
+        tex.format = THREE.RGBAFormat;
+        tex.type = THREE.UnsignedByteType;
         tex.colorSpace = THREE.SRGBColorSpace;
         tex.minFilter = THREE.LinearFilter;
         tex.magFilter = THREE.LinearFilter;
@@ -1178,7 +1208,16 @@ class AnazhRealm_gelaende_fern {
             waldR: TSL.uniform(0),
             spieler: TSL.uniform(new THREE.Vector2(0, 0)),
         });
-        st.fernKroneNah = { N: K.N, tex, daten, puffer: new Uint8Array(K.N * K.N * 4), U, job: null, anker: null };
+        st.fernKroneNah = {
+            N: K.N,
+            tex,
+            daten,
+            maske: lagen.subarray(K.N * K.N * 4),
+            puffer: new Uint8Array(K.N * K.N * 4),
+            U,
+            job: null,
+            anker: null,
+        };
         return st.fernKroneNah;
     }
 
@@ -1213,6 +1252,7 @@ class AnazhRealm_gelaende_fern {
                 if (k.job === job) k.job = null;
                 if (st.fernKroneNah !== k) return;
                 k.daten.set(antwort.rgba);
+                k.tex.addLayerUpdate(0);
                 k.tex.needsUpdate = true;
                 k.U.mitte.value.set(mx, mz);
                 k.U.groesse.value = groesse;
@@ -1253,7 +1293,7 @@ class AnazhRealm_gelaende_fern {
             throw new Error("Fern-Krone (nah): der Boden-Stoff braucht Karte, Saison-Uniform und TSL");
         const xz = _T.positionWorld.xz;
         const uv = xz.sub(k.U.mitte).div(k.U.groesse).add(0.5);
-        const s = _T.texture(k.tex, uv);
+        const s = _T.texture(k.tex, uv).depth(_T.int(0));
         const innen = _T.step(_T.max(uv.x.sub(0.5).abs(), uv.y.sub(0.5).abs()), _T.float(0.5));
         const ohneWald = this._fernKroneOhneWald(_T);
         const karte = innen.mul(k.U.bereit);

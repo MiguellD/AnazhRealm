@@ -1183,8 +1183,8 @@ async function WELLE_L(ort) {
             const sagRoh = r._spielerSagt;
             const gesagt = [];
             r._spielerSagt = function (t) {
-                gesagt.push(String(t));
-                return sagRoh.call(this, t);
+                sagRoh.call(this, t);
+                gesagt.push(this._spielerSagtLetzte.t); // die Zeile, wie die Senke sie liest (de)
             };
             const klick = () => {
                 p._swing = null;
@@ -1238,8 +1238,8 @@ async function WELLE_L(ort) {
             const sagRoh = r._spielerSagt;
             const gesagt = [];
             r._spielerSagt = function (t) {
-                gesagt.push(String(t));
-                return sagRoh.call(this, t);
+                sagRoh.call(this, t);
+                gesagt.push(this._spielerSagtLetzte.t); // die Zeile, wie die Senke sie liest (de)
             };
             const horizont = (pt) => {
                 for (let it = 0; it < 20; it++) {

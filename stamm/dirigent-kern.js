@@ -286,6 +286,11 @@ class AnazhRealm {
             // Der WUNSCH der Welt (Nexus, seine Gesetze, die Emotion, die Wesen): das Wort, das der nächste Zug zieht.
             wetterWort: null,
             wetterWunsch: null,
+            // DER SCHREIBER DES WETTERS (affekt.K4#2): wer das Wetter, das gerade gilt, schrieb — die Quelle am EINEN Schreiber
+            // `_setWeather` (der Spieler, sein Gesetz, das Laden), beim Zug der Wunsch, den er zog (Nexus, seine Gesetze, die
+            // Emotion, die Wesen), ohne Wunsch die Front („front"); persistiert. Leser: der Kontext der KI (`llmBuildContext`),
+            // die Antwort auf „warum regnet es?" (`_wetterWarum`).
+            wetterSchreiber: null,
             // Tag-Nacht: timeOfDay 0..1 (0=Mitternacht, 0.25=Aufgang, 0.5=Mittag, 0.75=Untergang), persistiert; ihn
             // schreibt nur der EINE Uhr-Schreiber `_uhrSetzen`. dayLengthMinutes = Echtzeit je Zyklus (Slider 1–60), die
             // Wahl des Spielers (localStorage, nie im Spielstand). Lichter + Skybox leiten sich pro Frame aus timeOfDay ab.
@@ -1669,6 +1674,8 @@ class AnazhRealm {
                 blende: pool.blende[k],
             });
         }
+        // DER WURF (schatten.K5): die wichtigste Quelle im Blick wirft — derselbe Platz, seine Karte (`_lichtWurfTakt`)
+        this._lichtWurfTakt(pool, cam);
     }
 
     // DIE LICHTFARBE einer Quelle, linear, in die Farbe `c` (K11b): ein Wärmestrahler trägt seine Farbtemperatur (`kelvin`,
@@ -1855,7 +1862,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.175";
+AnazhRealm.VERSION = "18.546.179";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

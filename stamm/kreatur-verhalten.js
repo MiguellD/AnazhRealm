@@ -56,17 +56,18 @@ class AnazhRealm_kreatur_verhalten {
     // jeder Ruf „folge mir" ist eine eigene Geste, das Journal trägt jede.
     _journalCreatureTask(creature, taskName, prevName) {
         if (typeof this.journalAppend !== "function") return;
+        // die Tat je Auftrag: eine Zeile der Tafel (`journal.tat.*`)
         const labels = {
-            wander: "streift wieder frei",
-            follow_player: "schließt sich an",
-            wait: "harrt",
-            gather: "sucht Material",
-            build: "wird zur Schöpferin",
-            drink: "sucht Wasser am Ufer",
+            wander: "journal.tat.wander",
+            follow_player: "journal.tat.folgen",
+            wait: "journal.tat.warten",
+            gather: "journal.tat.sammeln",
+            build: "journal.tat.bauen",
+            drink: "journal.tat.trinken",
         };
         this.journalAppend(
             "relationship",
-            AnazhRealm._datum`Eine Kreatur ${labels[taskName] || "ändert ihren Auftrag"}.`,
+            ["journal.kreatur-auftrag", { tat: labels[taskName] ? [labels[taskName]] : ["journal.auftrag-aendert"] }],
             {
                 task: taskName,
                 from: prevName,
@@ -82,18 +83,14 @@ class AnazhRealm_kreatur_verhalten {
             if (typeof document !== "undefined") {
                 const chatOutput = document.getElementById("chat-output");
                 if (chatOutput) {
-                    const line = document.createElement("div");
-                    line.textContent = this._t("welt.keine-kreatur");
-                    line.style.opacity = "0.65";
-                    chatOutput.appendChild(line);
-                    chatOutput.scrollTop = chatOutput.scrollHeight;
+                    this._chatEcho(["welt.keine-kreatur"]).style.opacity = "0.65";
                 }
             }
             if (typeof this.log === "function") {
                 this.log("Keine Kreatur in Reichweite für Auftrag", "INFO");
             }
             if (typeof this.journalAppend === "function") {
-                this.journalAppend("reach", AnazhRealm._datum`Ein Auftrag „${taskName}" verhallte ohne Hörer.`, {
+                this.journalAppend("reach", ["journal.auftrag-verhallt", { auftrag: taskName }], {
                     task: taskName,
                     maxDist,
                 });
@@ -1203,13 +1200,16 @@ class AnazhRealm_kreatur_verhalten {
         this._leibPaar(a, this._leibTeil(pm, b), i + cr.length, nah);
     }
 
-    // DER STOSS AUF DEN SPIELER: dv (m/s) längs (nx, nz) in seine Geschwindigkeit — die Beschleunigungs- und Brems-Kurven
-    // des Gehens (`_loopPlayerMovement`) zehren ihn auf wie jede Fahrt. Im Sattel trägt ihn das Gefährt (kein Stoß).
+    // DER STOSS AUF DEN SPIELER: dv (m/s) längs (nx, nz) in seine Geschwindigkeit — zu Fuß trägt ihn der Schwerpunkt, bis die
+    // Balance des Leibs ihn mit dem Ausfallschritt abbaut (koerper-core `leibStossLesen`, physik.K5); gemeldet, weil er auch IM
+    // Kontakt-Schritt fällt (der Wagen, gegen den der Spieler läuft — `leibStossMerke`). Bis w5-physik-k5 zehrte der Antrieb des
+    // Gehens ihn in 25 ms auf. Im Sattel trägt ihn das Gefährt (kein Stoß).
     _spielerStoss(nx, nz, dv) {
         const st = this.state;
         if (!(dv > 0) || !st.playerVel || (st.player && st.player.mountedArch != null)) return;
         const v = st.playerVel;
         v.setValue(v.x() + nx * dv, v.y(), v.z() + nz * dv);
+        AnazhRealm._leibTakt().leibStossMerke(st, nx * dv, nz * dv);
     }
 
     // DER WEG DES LEIBS (kontakt-tempo, Lehre 13): EIN Weg für jeden Schritt, der ein Tier trägt — den Gang im Frame-Takt
@@ -1694,11 +1694,7 @@ class AnazhRealm_kreatur_verhalten {
         }
         this.log(`${name} jagt dich!`, "WARN");
         if (typeof this.journalAppendOnce === "function") {
-            this.journalAppendOnce(
-                `hunted:${name}`,
-                "relationship",
-                AnazhRealm._datum`${name} witterte dich als Beute — die Wildnis hat Zähne.`
-            );
+            this.journalAppendOnce(`hunted:${name}`, "relationship", ["journal.gewittert", { name }]);
         }
     }
 
@@ -1966,7 +1962,7 @@ class AnazhRealm_kreatur_verhalten {
             if (!water) {
                 this._creatureRemember(creature, "no_water", { searchedFrom: { x: cx, z: cz } });
                 if (typeof this.journalAppend === "function") {
-                    this.journalAppend("reach", "Eine Kreatur sucht Wasser — aber das nächste Ufer ist zu fern.", {
+                    this.journalAppend("reach", ["journal.wasser-fern"], {
                         creatures_total: this.state.creatures.length,
                     });
                 }
@@ -2007,11 +2003,9 @@ class AnazhRealm_kreatur_verhalten {
                 });
                 if (typeof this.journalAppend === "function") {
                     const cname = (creature.userData && creature.userData.name) || "Kreatur";
-                    this.journalAppend(
-                        "growth",
-                        AnazhRealm._datum`${cname} trank am Ufer — das Wasser nährte sie, sie fühlt sich erfrischt.`,
-                        { creatures_total: this.state.creatures.length }
-                    );
+                    this.journalAppend("growth", ["journal.getrunken", { name: cname }], {
+                        creatures_total: this.state.creatures.length,
+                    });
                 }
                 this.assignCreatureTask(creature, "wander", {}, { silent: true });
                 return null;
@@ -2106,14 +2100,10 @@ class AnazhRealm_kreatur_verhalten {
                     blueprint: carrying.blueprint,
                 });
                 if (typeof this.journalAppend === "function" && summary.length > 0) {
-                    this.journalAppend(
-                        "growth",
-                        AnazhRealm._datum`Eine Kreatur übergab dem Schöpfer: ${summary.join(", ")}.`,
-                        {
-                            materials: carrying.materials,
-                            blueprint: carrying.blueprint,
-                        }
-                    );
+                    this.journalAppend("growth", ["journal.uebergabe", { was: summary.join(", ") }], {
+                        materials: carrying.materials,
+                        blueprint: carrying.blueprint,
+                    });
                 }
                 creature.userData.carrying = null;
                 if (typeof this._refreshCreatureCarryingVisual === "function") {
@@ -2142,14 +2132,10 @@ class AnazhRealm_kreatur_verhalten {
                     this._creatureSpeakProactive(creature, "no_material_found", { material });
                 }
                 if (typeof this.journalAppend === "function") {
-                    this.journalAppend(
-                        "reach",
-                        AnazhRealm._datum`Eine Kreatur findet kein „${material}" in der Nähe.`,
-                        {
-                            material,
-                            creatures_total: this.state.creatures.length,
-                        }
-                    );
+                    this.journalAppend("reach", ["journal.kein-material-nah", { material }], {
+                        material,
+                        creatures_total: this.state.creatures.length,
+                    });
                 }
                 this.assignCreatureTask(creature, "wander", {}, { silent: true });
                 return null;
@@ -2206,7 +2192,7 @@ class AnazhRealm_kreatur_verhalten {
         if (!bp) {
             this._creatureRemember(creature, "no_blueprint", { blueprint });
             if (typeof this.journalAppend === "function") {
-                this.journalAppend("reach", AnazhRealm._datum`Eine Kreatur kennt den Bauplan „${blueprint}" nicht.`, {
+                this.journalAppend("reach", ["journal.bauplan-unbekannt", { bauplan: blueprint }], {
                     blueprint,
                 });
             }
@@ -2244,7 +2230,7 @@ class AnazhRealm_kreatur_verhalten {
                     if (typeof this.journalAppend === "function") {
                         this.journalAppend(
                             "reach",
-                            AnazhRealm._datum`Der Schöpfer hat kein Material für „${blueprint}" (fehlt: ${missingStr}).`,
+                            ["journal.material-fehlt", { bauplan: blueprint, fehlt: missingStr }],
                             { blueprint, missing: gate.missing }
                         );
                     }
@@ -2307,7 +2293,7 @@ class AnazhRealm_kreatur_verhalten {
             position: spawnPos,
         });
         if (typeof this.journalAppend === "function") {
-            this.journalAppend("growth", AnazhRealm._datum`Eine Kreatur erschuf „${blueprint}" für den Schöpfer.`, {
+            this.journalAppend("growth", ["journal.erschaffen", { bauplan: blueprint }], {
                 blueprint,
                 materials: carrying.materials,
             });

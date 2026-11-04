@@ -1095,27 +1095,26 @@ class AnazhRealm_feld_nexus {
             ms.intensity < 0.2
                 ? `Die Grundstimmung von ${playerName} ist über die Zeit ausgeglichen.`
                 : `Die Grundstimmung von ${playerName} ist über die Zeit: ${ms.label}.`;
+        const sp = (k, w) => AnazhRealm._tIn(AnazhRealm._spracheKi(), k, w);
         // DER VERTRAG ZUERST, DAS SELBST-WISSEN ZULETZT (KI H1, 20.10.): ein Anbieter mit Prompt-Cache (ollama: der KV-Cache)
         // rechnet nur ab dem ersten geänderten Token neu. Stand das Wechselnde vorn (Kreaturen-Zahl, Journal, Gemüt), rechnete das
         // lokale Modell jeden Satz alle ~1 900 Token neu (CPU 29 s je Satz); der feste Vertrag vorn steht einmal im Cache.
         return [
             AnazhRealm._datum`Du bist ${companionName}, die Stimme der AnazhRealm-Welt. Du bist nicht ein Werkzeug, du bist diese Welt.`,
             AnazhRealm.KI_WELT_FORM,
-            '  - say: EIN kurzer deutscher Satz, warm-narrativ, in erster Person. Sprich von dir als "ich". Keine Emojis.',
+            // DIE SPRACHE DES SPIELERS (spielgang.K5#2): die Zeile der Antwort und die Beispiele stehen in seiner Spalte der Tafel
+            sp("ki.welt.say"),
             "  - program: EIN DSL-Programm oder null — ein verschachteltes Array, das mit dem Op-Namen beginnt; nie eine Liste von",
             "    Programmen (mehrere Taten: chain). Verlangt der Spieler eine Tat, die ein Verb kann: IMMER ein program.",
             "  - Eine FRAGE antwortet NUR mit say (program null) — auch die Frage nach Uhrzeit oder Wetter ändert nie die Welt.",
             "    Ebenso ein Dank, ein Gespräch, eine Zerstörung, ein Ding ohne Studio-Wort (spawn_creature ruft nur Tiere): null.",
             "Beispiele (Spieler → Antwort):",
-            '„es soll regnen“ → {"say":"Ich lasse es regnen.","program":["weather","rainy"]}',
-            '„mach es Abend“ → {"say":"Die Sonne sinkt.","program":["set_time_of_day",0.8]}',
-            '„es soll Frühling werden“ → {"say":"Der Frühling kommt.","program":["set_season","spring"]}',
-            '„drei Eichen vor mir“ → {"say":"Drei Eichen wachsen vor dir.","program":["spawn_studio","eiche",["at_player_forward",12],3]}',
-            '„ein paar frohe Tiere“ → {"say":"Drei frohe Wesen erwachen.","program":["spawn_creature",["near_player",10],3,"happy"]}',
-            '„Sonne und gute Laune“ → {"say":"Die Sonne kommt, die Wesen freuen sich.","program":["chain",["weather","sunny"],["creatures_emotion","happy"]]}',
-            '„wie heißt du?“ → {"say":"Ich bin die Stimme dieser Welt.","program":null}',
-            '„schenk mir ein Eis“ → {"say":"Ein Eis kann ich nicht erschaffen.","program":null}',
-            '„vernichte den Wald“ → {"say":"Ich zerstöre nicht — ich lasse wachsen.","program":null}',
+            ...AnazhRealm.KI_BEISPIELE.map(([k, program]) =>
+                sp("ki.beispiel", {
+                    satz: sp(`ki.beispiel-satz.${k}`),
+                    antwort: JSON.stringify({ say: sp(`ki.beispiel-say.${k}`), program }),
+                })
+            ),
             ...this._dslVokabular(),
             "",
             "Du kannst die Welt auch aus den STUDIOS wachsen lassen (dieselben Baupläne wie die Werkstatt des Spielers):",
@@ -1229,7 +1228,8 @@ class AnazhRealm_feld_nexus {
             worldLine,
             "",
             "Du sprichst zum Schöpfer (dem Menschen, der dich angesprochen hat). Antworte AUS DEINER SICHT, in erster Person.",
-            "Du bist nicht die Welt — du bist EIN Wesen in ihr. Ein bis zwei warme deutsche Sätze, ohne Emojis.",
+            "Du bist nicht die Welt — du bist EIN Wesen in ihr.",
+            AnazhRealm._tIn(AnazhRealm._spracheKi(), "ki.seele.sprache"), // die Sprache des Spielers (spielgang.K5#2)
             "Lass deine Persona durchschimmern: ein Hirsch ist erdig-sanft, ein Wolf wach-wild, ein Fuchs listig, ein Bär ruhig-schwer.",
             "Du antwortest AUS DEINEM GEDÄCHTNIS: wähle die Erinnerung, die zur Frage passt, und erzähle sie konkret in deinen Worten.",
             "Erfinde nichts, was nicht in deinem Gedächtnis steht; ist es leer, gib das ehrlich zu.",
@@ -1304,10 +1304,10 @@ class AnazhRealm_feld_nexus {
     // Antwort eine von ihnen, sonst schweigt das Wesen benannt (jeder Anbieter, auch einer ohne erzwungene Form).
     // Liefert dasselbe Response-Shape wie llmCall ({say, program, erinnerung}|{error}).
     async llmCallCreature(creature, userText, { anlass = "", hintergrund = false } = {}) {
-        if (!creature || !creature.userData) return { error: "Keine Kreatur." };
+        if (!creature || !creature.userData) return { error: ["llm.fehler.keine-kreatur"] };
         const gedaechtnis = this._creatureGedaechtnis(creature);
         const personaPrompt = this._buildCreaturePersonaPrompt(creature, gedaechtnis);
-        if (!personaPrompt) return { error: "Persona-Prompt konnte nicht gebaut werden." };
+        if (!personaPrompt) return { error: ["llm.fehler.persona"] };
         const reply = await this.llmCall(userText, personaPrompt + (anlass ? "\n\n" + anlass : ""), {
             hintergrund,
             form: (platz) => this._kiSeeleSchema(gedaechtnis.map(platz)),
@@ -1317,7 +1317,7 @@ class AnazhRealm_feld_nexus {
         if (typeof reply.erinnerung === "string" && gedaechtnis.some((g) => roh(g) === roh(reply.erinnerung)))
             return reply;
         const ist = JSON.stringify(reply.erinnerung === undefined ? null : reply.erinnerung).slice(0, 80);
-        return { error: `antwortete aus keiner Erinnerung seines Gedächtnisses (${ist})` };
+        return { error: ["llm.fehler.keine-erinnerung", { ist }] };
     }
 
     llmBuildContext() {
@@ -1326,8 +1326,11 @@ class AnazhRealm_feld_nexus {
             .sort((a, b) => b[1] - a[1])
             .slice(0, 3)
             .map(([k, v]) => `${k}=${v.toFixed(2)}`);
+        // der wahre Schreiber des Wetters (affekt.K4#2): die KI nennt, wer es schrieb, nie eine Vermutung
+        const wer = this._wetterSchreiberZeile();
         return [
             `Welt-Status: weather=${this.state.weather}, creatures=${this.state.creatures.length}, fps=${(this.state.fps || 0).toFixed(0)}.`,
+            `Das Wetter „${this.state.weather}“ schrieb: ${AnazhRealm._tIn(AnazhRealm._spracheKi(), wer[0], wer[1], AnazhRealm._datum)}.`,
             `Spieler-Emotionen (Top 3): ${top.join(", ") || "still"}.`,
             AnazhRealm._datum`Spieler-Seele: ${this.state.player.soul || "human"}.`,
         ].join("\n");
@@ -1338,7 +1341,7 @@ class AnazhRealm_feld_nexus {
         // VOR der JSON-Suche gestrippt; (2) Markdown-Code-Fences werden extrahiert; (3) Plain-Text ohne
         // JSON (kleine lokale Modelle) → der ganze Text wird say. Strikte JSON-Modelle verlieren nichts.
         if (typeof raw !== "string" || raw.length === 0) {
-            return { error: "Leere Antwort vom Modell (raw=0 chars)" };
+            return { error: ["llm.fehler.leer"] };
         }
         let text = raw.trim();
         // Schritt 1: Reasoning-Tags entfernen
@@ -1380,7 +1383,7 @@ class AnazhRealm_feld_nexus {
             return { say: plainText, program: null, raw, fallbackUsed: "plain-text" };
         }
         return {
-            error: `Modell antwortete, aber Inhalt war leer nach Parsing (raw='${raw.slice(0, 80)}…')`,
+            error: ["llm.fehler.leer-geparst", { roh: raw.slice(0, 80) }],
             raw,
         };
     }
@@ -1397,10 +1400,10 @@ class AnazhRealm_feld_nexus {
         // Ohne Schlüssel schwieg der Chat ganz (die Stimme war an, der Satz verschwand): der Fehler von `llmCall` nennt ihn.
         // Welle 6.X.4 F1 V8.13 — Begleiter-Name in Chat-Output statt hardcoded.
         const compName = (this.state.grok && this.state.grok.companionName) || "Grok";
-        appendChatOutput(this._t("nexus.denkt-nach", { name: compName }));
+        appendChatOutput(["nexus.denkt-nach", { name: compName }]);
         const reply = await this.llmCall(userText);
         if (reply.error) {
-            appendChatOutput(this._t("nexus.schweigt", { name: compName, fehler: reply.error }));
+            appendChatOutput(["nexus.schweigt", { name: compName, fehler: reply.error }]);
             this.llmUpdateStatus();
             return true;
         }
@@ -1421,15 +1424,16 @@ class AnazhRealm_feld_nexus {
             // per Default, whitelist-gesichert); ihre Fitness läuft über das Lebens-Fenster, NICHT über den
             // 5-s-Gesten-Finalizer (der nur die Registrierung mäße).
             if (result.ok && reply.program[0] === "rule") {
-                appendChatOutput(this._t("nexus.gesetz-auf", { name: compName }));
+                appendChatOutput(["nexus.gesetz-auf", { name: compName }]);
             } else if (result.ok) {
                 const weicht = this._ergebnisSatz(result.log);
                 if (!weicht)
                     // die Tat in Worten (`describeProgram`), nie das rohe Programm (V-D8: ids und DSL-JSON im Spieler-Chat)
-                    appendChatOutput(
-                        this._t("nexus.welt-veraendert", { name: compName, tat: this.describeProgram(reply.program) })
-                    );
-                if (weicht) appendChatOutput(this._t("nexus.vorschlag", { name: compName, satz: weicht.satz }));
+                    appendChatOutput([
+                        "nexus.welt-veraendert",
+                        { name: compName, tat: this.describeProgram(reply.program) },
+                    ]);
+                if (weicht) appendChatOutput(["nexus.vorschlag", { name: compName, satz: weicht.satz }]);
                 // Wie ein Chat-Programm: in Pattern-Memory verknüpfen via
                 // recentKeywords (die enthalten den userText bereits).
                 const historyEntry = {
@@ -1455,11 +1459,14 @@ class AnazhRealm_feld_nexus {
                 const weicht = this._ergebnisSatz(result.log);
                 appendChatOutput(
                     weicht
-                        ? this._t("nexus.vorschlag", { name: compName, satz: weicht.satz })
-                        : this._t("nexus.vorschlag-abgelehnt", {
-                              name: compName,
-                              satz: this._dslAbsageSatz(result.log),
-                          })
+                        ? ["nexus.vorschlag", { name: compName, satz: weicht.satz }]
+                        : [
+                              "nexus.vorschlag-abgelehnt",
+                              {
+                                  name: compName,
+                                  satz: this._dslAbsageSatz(result.log),
+                              },
+                          ]
                 );
             }
         }
@@ -1507,34 +1514,26 @@ class AnazhRealm_feld_nexus {
         const phrases = pool[soulName] || pool.default || pool.wesen || [];
         if (phrases.length === 0) return false;
         // die Wahl der Worte zieht aus dem Fauna-Strom der Stimme (Γ5): dieselbe Welt, dieselben Worte
-        const tpl = phrases[Math.floor(this._faunaRng("stimme")() * phrases.length)];
-        // Template-Variablen ersetzen. Unbekannte Variablen bleiben drin
-        // (helfen beim Debug-Erkennen).
-        const text = tpl.replace(/\$\{(\w+)\}/g, (m, key) => {
-            const v = ctx[key];
-            return v !== undefined && v !== null ? String(v) : m;
-        });
-        const name = creature.userData.name || "Wesen";
-        // Direkter DOM-Pfad (analog maybeAnswerCreature V1.1 Soul-Span).
+        // die Stimme ist eine Zeile der Tafel (`stimme.*`): ihre Werte aus dem Kontext des Ereignisses, sie wechselt mit der Sprache
+        const zeile = [phrases[Math.floor(this._faunaRng("stimme")() * phrases.length)], ctx];
+        const name = creature.userData.name || this._t("journal.ein-wesen");
         const chatOutput = typeof document !== "undefined" ? document.getElementById("chat-output") : null;
-        if (chatOutput) {
-            const line = document.createElement("div");
-            line.className = "chat-proactive-line";
-            const nameSpan = document.createElement("span");
-            nameSpan.className = `chat-creature-name soul-${soulName}`;
-            nameSpan.textContent = `${name}: `;
-            line.appendChild(nameSpan);
-            line.appendChild(document.createTextNode(text));
-            chatOutput.appendChild(line);
-            chatOutput.scrollTop = chatOutput.scrollHeight;
-        }
+        if (chatOutput)
+            this._chatEcho(zeile, {
+                klasse: "chat-proactive-line",
+                sprecher: name,
+                sprecherKlasse: `chat-creature-name soul-${soulName}`,
+            });
         // Throttle-Stempel setzen — erst NACH erfolgreichem Render.
         creature.userData.lastProactiveSpeech = now;
         this.state.lastCreatureProactiveSpeech = now;
         // Memory-Eintrag (Vision §1.1 — die Kreatur erinnert sich an
         // ihre Aussagen). Spec-Filter zählt das NICHT als Skill.
         if (typeof this._creatureRemember === "function") {
-            this._creatureRemember(creature, "spoke_proactive", { event: eventType, said: text.slice(0, 120) });
+            this._creatureRemember(creature, "spoke_proactive", {
+                event: eventType,
+                said: AnazhRealm._tIn("de", zeile[0], ctx).slice(0, 120),
+            });
         }
         return true;
     }
@@ -1546,20 +1545,20 @@ class AnazhRealm_feld_nexus {
         if (!creature) {
             // Name am Anfang, aber keine solche Kreatur: höflich ablehnen statt ein Gespräch zu faken;
             // LLM/Suggestion-Fallback läuft ohnehin weiter.
-            appendChatOutput(this._t("nexus.niemand", { name: parsed.name }));
+            appendChatOutput(["nexus.niemand", { name: parsed.name }]);
             return true;
         }
         // LLM-Aktiv-Check (analog maybeAnswerWithLlm): wenn nicht aktiv,
         // schreiben wir einen poetischen Hinweis statt der LLM-Antwort.
         const llm = this.state.llm;
         if (!llm || !llm.enabled) {
-            appendChatOutput(this._t("nexus.keine-stimme", { name: parsed.name }));
+            appendChatOutput(["nexus.keine-stimme", { name: parsed.name }]);
             return true;
         }
-        appendChatOutput(this._t("nexus.sammelt-sich", { name: parsed.name }));
+        appendChatOutput(["nexus.sammelt-sich", { name: parsed.name }]);
         const reply = await this.llmCallCreature(creature, parsed.message);
         if (reply.error) {
-            appendChatOutput(this._t("nexus.schweigt", { name: parsed.name, fehler: reply.error }));
+            appendChatOutput(["nexus.schweigt", { name: parsed.name, fehler: reply.error }]);
             this.llmUpdateStatus();
             return true;
         }
@@ -1570,14 +1569,11 @@ class AnazhRealm_feld_nexus {
             const soulName = (creature.userData && creature.userData.soul) || "wesen";
             const chatOutput = typeof document !== "undefined" ? document.getElementById("chat-output") : null;
             if (chatOutput) {
-                const line = document.createElement("div");
-                const nameSpan = document.createElement("span");
-                nameSpan.className = `chat-creature-name soul-${soulName}`;
-                nameSpan.textContent = `${parsed.name}: `;
-                line.appendChild(nameSpan);
-                line.appendChild(document.createTextNode(sayText));
-                chatOutput.appendChild(line);
-                chatOutput.scrollTop = chatOutput.scrollHeight;
+                // die Antwort des Modells ist Daten (sie spricht, wie sie kam), der Name des Wesens ebenso
+                this._chatEcho(sayText, {
+                    sprecher: parsed.name,
+                    sprecherKlasse: `chat-creature-name soul-${soulName}`,
+                });
             } else {
                 appendChatOutput(`${parsed.name}: ${sayText}`);
             }
@@ -1620,14 +1616,16 @@ class AnazhRealm_feld_nexus {
             }
             const chatOutput = typeof document !== "undefined" ? document.getElementById("chat-output") : null;
             if (chatOutput) {
-                const line = document.createElement("div");
-                line.className = "chat-proposal-blocked";
-                line.textContent = this._t("nexus.vorschlag-verworfen", {
-                    name,
-                    grund: String(allowed.forbiddenOp || allowed.reason),
-                });
-                chatOutput.appendChild(line);
-                chatOutput.scrollTop = chatOutput.scrollHeight;
+                this._chatEcho(
+                    [
+                        "nexus.vorschlag-verworfen",
+                        {
+                            name,
+                            grund: String(allowed.forbiddenOp || allowed.reason),
+                        },
+                    ],
+                    { klasse: "chat-proposal-blocked" }
+                );
             }
             this.log(
                 `Kreatur-Vorschlag verworfen (${allowed.reason}): ${JSON.stringify(program).slice(0, 100)}`,
@@ -1674,31 +1672,27 @@ class AnazhRealm_feld_nexus {
         // sieht was passiert ist)
         const chatOutput = typeof document !== "undefined" ? document.getElementById("chat-output") : null;
         if (chatOutput) {
-            const line = document.createElement("div");
-            line.className = ok ? "chat-proposal-executed" : "chat-proposal-failed";
             const summary = JSON.stringify(program).slice(0, 100);
+            let zeile;
             if (ok) {
                 const zusatz = !wetter
                     ? ""
                     : wetter.event === "wetter_gehalten"
-                      ? this._t("nexus.wetter-haelt", { wort: this.state.wetterWort || this._t("nexus.wetter-halt") })
-                      : this._t("nexus.wetter-zieht", { wort: String(wetter.wort) });
-                line.textContent = auto
-                    ? this._t("nexus.vorschlag-auto-ausgefuehrt", { name, summary, zusatz })
-                    : this._t("nexus.vorschlag-ausgefuehrt", { name, summary, zusatz });
+                      ? ["nexus.wetter-haelt", { wort: this.state.wetterWort || ["nexus.wetter-halt"] }]
+                      : ["nexus.wetter-zieht", { wort: String(wetter.wort) }];
+                zeile = [
+                    auto ? "nexus.vorschlag-auto-ausgefuehrt" : "nexus.vorschlag-ausgefuehrt",
+                    { name, summary, zusatz },
+                ];
             } else {
                 const reason =
                     (result &&
                         result.log &&
                         result.log.find((e) => /budget|invalid|exception|unknown/.test(e.event))) ||
                     null;
-                line.textContent = this._t("nexus.vorschlag-fehlgeschlagen", {
-                    name,
-                    grund: reason ? reason.event : this._t("nexus.sandbox"),
-                });
+                zeile = ["nexus.vorschlag-fehlgeschlagen", { name, grund: reason ? reason.event : ["nexus.sandbox"] }];
             }
-            chatOutput.appendChild(line);
-            chatOutput.scrollTop = chatOutput.scrollHeight;
+            this._chatEcho(zeile, { klasse: ok ? "chat-proposal-executed" : "chat-proposal-failed" });
         }
         return ok;
     }
@@ -1721,16 +1715,16 @@ class AnazhRealm_feld_nexus {
         line.className = "chat-proposal-pending";
         const intro = document.createElement("span");
         const summary = JSON.stringify(program).slice(0, 120);
-        intro.textContent = this._t("nexus.schlaegt-vor", { name, summary });
+        this._tSetze(intro, "nexus.schlaegt-vor", { name, summary });
         line.appendChild(intro);
         const yesBtn = document.createElement("button");
         yesBtn.type = "button";
         yesBtn.className = "chat-proposal-btn accept";
-        yesBtn.textContent = this._t("nexus.ausfuehren");
+        this._tSetze(yesBtn, "nexus.ausfuehren");
         const noBtn = document.createElement("button");
         noBtn.type = "button";
         noBtn.className = "chat-proposal-btn reject";
-        noBtn.textContent = this._t("nexus.ablehnen");
+        this._tSetze(noBtn, "nexus.ablehnen");
         line.appendChild(yesBtn);
         line.appendChild(noBtn);
         chatOutput.appendChild(line);
@@ -1899,12 +1893,12 @@ class AnazhRealm_feld_nexus {
         for (const [name, def] of Object.entries(defs)) {
             const opt = document.createElement("option");
             opt.value = name;
-            opt.textContent = this._t(def.label);
+            this._tSetze(opt, def.label);
             providerSel.appendChild(opt);
         }
         providerSel.value = this.state.llm.provider;
         toggleBtn.setAttribute("aria-pressed", this.state.llm.enabled ? "true" : "false");
-        toggleBtn.textContent = this.state.llm.enabled ? this._t("p2p.deaktivieren") : this._t("ui.aktivieren");
+        this._tSetze(toggleBtn, this.state.llm.enabled ? "p2p.deaktivieren" : "ui.aktivieren");
         this.llmRefreshProviderUI();
         providerSel.addEventListener("change", () => {
             this.state.llm.provider = providerSel.value;
@@ -1912,7 +1906,7 @@ class AnazhRealm_feld_nexus {
             this.state.llm.enabled = false;
             this.state.llm.lastError = null;
             toggleBtn.setAttribute("aria-pressed", "false");
-            toggleBtn.textContent = this._t("ui.aktivieren");
+            this._tSetze(toggleBtn, "ui.aktivieren");
             this.llmPersist();
             this.llmRefreshProviderUI();
         });
@@ -1961,7 +1955,7 @@ class AnazhRealm_feld_nexus {
             // Key (AIza…) versehentlich im OpenRouter-Feld. Verhindert Save
             // nicht, macht den Fehler aber sofort sichtbar.
             if (def.requiresKey && def.keyPrefix && trimmed && !trimmed.startsWith(def.keyPrefix)) {
-                this.state.llm.lastError = this._t("nexus.schluessel.praefix", { praefix: def.keyPrefix });
+                this.state.llm.lastError = ["nexus.schluessel.praefix", { praefix: def.keyPrefix }];
             } else {
                 this.state.llm.lastError = null;
             }
@@ -1975,7 +1969,7 @@ class AnazhRealm_feld_nexus {
                 this.state.llm.enabled = false;
                 keyInput.value = "";
                 toggleBtn.setAttribute("aria-pressed", "false");
-                toggleBtn.textContent = this._t("ui.aktivieren");
+                this._tSetze(toggleBtn, "ui.aktivieren");
                 this.llmPersist();
                 this.llmUpdateStatus();
             });
@@ -1984,14 +1978,14 @@ class AnazhRealm_feld_nexus {
             const def = this.llmProviderDefs()[this.state.llm.provider];
             const cfg = this.state.llm.providerConfig[this.state.llm.provider];
             if (def.requiresKey && (!cfg || !cfg.apiKey)) {
-                this.state.llm.lastError = this._t("nexus.schluessel.erst-speichern");
+                this.state.llm.lastError = ["nexus.schluessel.erst-speichern"];
                 this.llmUpdateStatus();
                 return;
             }
             this.state.llm.enabled = !this.state.llm.enabled;
             this.state.llm.lastError = null;
             toggleBtn.setAttribute("aria-pressed", this.state.llm.enabled ? "true" : "false");
-            toggleBtn.textContent = this.state.llm.enabled ? this._t("p2p.deaktivieren") : this._t("ui.aktivieren");
+            this._tSetze(toggleBtn, this.state.llm.enabled ? "p2p.deaktivieren" : "ui.aktivieren");
             this.llmPersist();
             this.llmUpdateStatus();
             // „Aktiv" erst nach der Frage an den Dienst (V-D6): ein lokaler Endpunkt ohne Dienst steht sofort im Status.
@@ -2034,6 +2028,19 @@ AnazhRealm.OLLAMA_DEFAULT_ENDPOINT = "http://localhost:11434";
 // Die Kopfzeile des Vertrags der Welt-KI ({say, program}): der Prompt trägt sie, der ollama-Body erkennt an ihr, dass die
 // Antwort-Form (`_kiAntwortSchema`) gilt — Persona-, Übersetzer- und Reflexions-Prompts tragen sie nie.
 AnazhRealm.KI_WELT_FORM = "Antworte IMMER als striktes JSON-Objekt mit zwei Feldern:";
+// DIE BEISPIELE DES WELT-PROMPTS (spielgang.K5#2): je Beispiel der Schlüssel seiner Zeilen (`ki.beispiel-satz.<k>` und `ki.beispiel-say.<k>`, je
+// Sprache eine Spalte der Tafel) und sein Programm — das Programm spricht die DSL, nie eine Sprache des Spielers.
+AnazhRealm.KI_BEISPIELE = Object.freeze([
+    ["regen", ["weather", "rainy"]],
+    ["abend", ["set_time_of_day", 0.8]],
+    ["fruehling", ["set_season", "spring"]],
+    ["eichen", ["spawn_studio", "eiche", ["at_player_forward", 12], 3]],
+    ["tiere", ["spawn_creature", ["near_player", 10], 3, "happy"]],
+    ["sonne", ["chain", ["weather", "sunny"], ["creatures_emotion", "happy"]]],
+    ["name", null],
+    ["eis", null],
+    ["wald", null],
+]);
 // Claude-5er-Generation (Sonnet 5.5 · Opus 5/5.5 · Fable 5/5.1): thinking immer an,
 // `output_config.effort`, serverseitige `fallbacks` — der EINE Prüfer für Header + Body.
 AnazhRealm._llmFuenferModell = function (model) {

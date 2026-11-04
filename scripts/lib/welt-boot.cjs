@@ -231,6 +231,20 @@ async function weltDa(bed) {
     window.__weltDaWartet = null;
     return r;
 }
+// DIE FARBEN EINER GESTALT (`window.__farben(g)`): je Mesh die erste Vertex-Farbe auf drei Stellen; `window.__lin(hex)` schreibt
+// eine Farbe der Tafel (sRGB-Hex) linear in derselben Form. Bis w6-spielgang-decke trugen p2p-gestalt und studio-uebergabe je beide.
+function farben(g) {
+    const set = new Set();
+    g?.traverse((o) => {
+        const c = o.geometry?.attributes?.color?.array;
+        if (c?.length >= 3) set.add([c[0], c[1], c[2]].map((v) => v.toFixed(3)).join(","));
+    });
+    return set;
+}
+const lin = (hx) =>
+    [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255]
+        .map((c) => ((c /= 255) <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)).toFixed(3))
+        .join(",");
 // DER EINE ABDRUCK einer Gestalt (`window.__abdruck(x, alle)`): FNV-1a über die Puffer einer Gruppe (traverse), eines Flats (je
 // Geometrie seiner Blätter einmal, ohne Schatten-Zwilling) oder einer Geometrie — die Lage, mit `alle` jedes Attribut und der
 // Index (ein Farb-Regler bewegt die Vertex-Farbe, nie die Lage); „hash/Teile".
@@ -333,7 +347,7 @@ function png(u8, W, H) {
 // Bild neu (eine Linse blendet Klassen aus und ein, die Bühne wechselt)
 const bundlesNeu = () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
 const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
-const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
+const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -376,7 +390,10 @@ function fadenScope(quellen) {
     sb.self = sb.globalThis = sb.window = sb;
     sb.THREE = ENGINE_THREE();
     require("vm").createContext(sb);
-    for (const f of quellen) require("vm").runInContext((QUELL_TEXT[f] ||= fs.readFileSync(path.join(ROOT, f), "utf8")), sb, { filename: f });
+    for (const f of quellen)
+        require("vm").runInContext((QUELL_TEXT[f] ||= fs.readFileSync(path.join(ROOT, f), "utf8")), sb, {
+            filename: f,
+        });
     return sb;
 }
 
@@ -607,10 +624,7 @@ function pulsSeite() {
             const o = ro?.object;
             const p = ro?.pipeline;
             const len = (s) => (s && typeof s.code === "string" ? s.code.length : "?");
-            const lichter =
-                typeof ro?.lightsNode?.getLights === "function"
-                    ? ro.lightsNode.getLights().length
-                    : "?";
+            const lichter = typeof ro?.lightsNode?.getLights === "function" ? ro.lightsNode.getLights().length : "?";
             const name = `${m?.name || m?.type || "?"} · ${o?.name || o?.type || "?"}`;
             stempel(
                 `Pipeline ${name} · vs ${len(p?.vertexProgram)} fs ${len(p?.fragmentProgram)} Zeichen · ${lichter} Lichter`
@@ -991,11 +1005,13 @@ async function starteBrowser(opts = {}) {
     });
     // jede neue Seite — auch die eines eigenen Kontexts — trägt ihre Werkzeuge vor dem ersten Skript (bis w3u-nachfolge hängte
     // `targetcreated` sie an die Kontext-Seite erst nach dem Start ihres ersten Dokuments)
-    const angelegt = (neu) => async (...a) => {
-        const p = fehlerSammler(await neu(...a));
-        await akteAnSeite(p, b);
-        return p;
-    };
+    const angelegt =
+        (neu) =>
+        async (...a) => {
+            const p = fehlerSammler(await neu(...a));
+            await akteAnSeite(p, b);
+            return p;
+        };
     browser.newPage = angelegt(browser.newPage.bind(browser));
     const kontext = browser.createBrowserContext.bind(browser);
     browser.createBrowserContext = async (...a) => {
@@ -1474,10 +1490,7 @@ function scanWarteWand(dateien, rest = Object.assign({}, ...Object.values(requir
                         n.test,
                         (b) =>
                             b.operator === "!" &&
-                            hat(
-                                b.argument,
-                                (x) => x.object?.type === "Identifier" && BAU.test(x.property.name)
-                            )
+                            hat(b.argument, (x) => x.object?.type === "Identifier" && BAU.test(x.property.name))
                     );
                 if (bau && name !== "scripts/lib/welt-boot.cjs")
                     errs.push(
@@ -1492,15 +1505,10 @@ function scanWarteWand(dateien, rest = Object.assign({}, ...Object.values(requir
                 if (s) fristen.add(s);
             } else if (n.type === "CallExpression" && n.callee.property?.name === "catch") {
                 const w = n.callee.object;
-                const o =
-                    w.callee?.property?.name === "waitForFunction" && w.arguments[1];
+                const o = w.callee?.property?.name === "waitForFunction" && w.arguments[1];
                 const f = n.arguments[0];
                 const wirft = f && hat(f, (c) => c.type === "ThrowStatement");
-                if (
-                    o &&
-                    !wirft &&
-                    (o.properties || []).some((p) => p.key?.name === "timeout" && p.value.value !== 0)
-                )
+                if (o && !wirft && (o.properties || []).some((p) => p.key?.name === "timeout" && p.value.value !== 0))
                     fristen.add(n);
                 else if (
                     hat(w, (c) => (c.property || c).name === "__gebautNach") &&
@@ -1761,9 +1769,10 @@ async function selbsttest() {
         .map(([f]) => f)
         .join(", ");
     const DATENSCHICHT = "playtest/netz-p2p.cjs, playtest/speicher.cjs";
-    const gesetzt = ["r.importWorldBeside(j); r.activeWorldSet(id);", "window.anazhRealm.activeWorldSet(res.worldId);"].filter(
-        tuerZwilling
-    ).length;
+    const gesetzt = [
+        "r.importWorldBeside(j); r.activeWorldSet(id);",
+        "window.anazhRealm.activeWorldSet(res.worldId);",
+    ].filter(tuerZwilling).length;
     const sturzRuf = `require(${JSON.stringify(__filename)}).hauptLauf(async () => { throw new Error("__sturz"); }, () => console.error("__zuletzt"))`;
     const sturz = require("child_process").spawnSync(process.execPath, ["-e", sturzRuf], { encoding: "utf8" });
     await browser.close();
@@ -1788,7 +1797,8 @@ async function selbsttest() {
         [kette.length === 1, `Bruch der Post-Kette: ${kette[0] || "still grün"}`],
         [!zwillinge.length, `eigene pageerror-Sammler neben dem EINEN: ${zwillinge.join(", ") || "keiner"}`],
         [
-            !namen.length && `${vonHand("window.__deckel = 1; (window.__weltDa = r); window.sleep == r;")}` === "__deckel,__weltDa",
+            !namen.length &&
+                `${vonHand("window.__deckel = 1; (window.__weltDa = r); window.sleep == r;")}` === "__deckel,__weltDa",
             `Namen der ${seitenNamen.size} Seiten-Werkzeuge von Hand gesetzt: ${namen.join(", ") || "keiner"} · gepflanzt 2/2 gefasst`,
         ],
         [

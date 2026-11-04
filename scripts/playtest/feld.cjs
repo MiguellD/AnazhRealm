@@ -778,7 +778,7 @@ async function checkBandV1736HumanRules({ page, check }) {
         const out = {};
         const mkSink = () => {
             const msgs = [];
-            return { input: { value: "x" }, append: (s) => msgs.push(String(s)), msgs };
+            return { input: { value: "x" }, append: (s) => msgs.push(Array.isArray(s) ? r._t(s[0], s[1]) : String(s)), msgs };
         };
 
         // --- (2) _parseChatCondition: Sprache → DSL-Bedingung ---
@@ -833,7 +833,7 @@ async function checkBandV1736HumanRules({ page, check }) {
         // Gespräch feuert, seine Erzählung steht im Wissen); der Mock-Zwilling fiel mit ultiversum.K4
 
         // --- (7) describeProgram(rule) menschen-lesbar ---
-        const desc = r.describeProgram(["rule", ["weather_is", "rainy"], ["weather", "sunny"], { everySec: 3 }]);
+        const desc = r._t(...r.describeProgram(["rule", ["weather_is", "rainy"], ["weather", "sunny"], { everySec: 3 }]));
         out.describeReadable = /wann immer/i.test(desc) && /Wetter/i.test(desc);
         out.descSample = desc;
 

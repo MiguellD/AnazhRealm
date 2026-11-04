@@ -286,6 +286,8 @@ class AnazhRealm_speicher_laden {
                 ? state.wetterWort
                 : null;
         this.state.wetterWunsch = null;
+        this.state.wetterSchreiber =
+            typeof state.wetterSchreiber === "string" ? state.wetterSchreiber.slice(0, 80) : null;
         if (this.state.skybox) this.updateSkyboxWeather();
     }
 
@@ -829,6 +831,7 @@ class AnazhRealm_speicher_laden {
             werk: a.werk === true || (state.herkunft !== 1 && a.feldWurf !== true && !this._naturArt({ type: typ })),
             // die Geburt des Werks reist durch den Reload mit (stoffe.K4: sein Alter ist Spielzeit seit ihr)
             geburt: a.geburt,
+            geburtNass: +a.geburtNass || 0,
             // PRÄGUNG-WELT — der Guss-Stempel reist durch den Reload mit
             // (spawnArchitecture ist der EINE Sanitize-Chokepoint).
             studioOv: a.studioOv,
@@ -1038,7 +1041,12 @@ class AnazhRealm_speicher_laden {
             const j = state.worldJournal;
             if (Array.isArray(j.entries)) {
                 this.state.worldJournal.entries = j.entries
-                    .map((e) => (e && typeof e.ki === "string" ? { ...e, text: AnazhRealm._ohneIsolation(e.ki) } : e))
+                    // ein Satz mit Namen kam als `ki` (sein `text` reiste nicht), eine Zeile der Tafel als `t` (`text` ihre Lesart)
+                    .map((e) =>
+                        AnazhRealm._journalZeile(
+                            e && typeof e.ki === "string" ? { ...e, text: AnazhRealm._ohneIsolation(e.ki) } : e
+                        )
+                    )
                     .filter((e) => e && typeof e.text === "string")
                     .slice(-this.state.worldJournal.entryCap);
             }
@@ -1076,7 +1084,7 @@ class AnazhRealm_speicher_laden {
         if (!snapshot || typeof snapshot !== "object") return { ok: false, reason: "kein Snapshot" };
         if (!this._weltWechselSperre && this.state.worldMeta && this.state.worldMeta.worldId) {
             if (zeugnisA)
-                this.journalAppendOnce(zeugnisA.key, zeugnisA.type || "portal", AnazhRealm._datum(zeugnisA.text));
+                this.journalAppendOnce(zeugnisA.key, zeugnisA.type || "portal", [zeugnisA.schluessel, zeugnisA.werte]);
             this.saveState();
         }
         const wm = snapshot.worldMeta && typeof snapshot.worldMeta === "object" ? snapshot.worldMeta : {};
@@ -1332,10 +1340,7 @@ class AnazhRealm_speicher_laden {
                 this.log(`Import fehlgeschlagen (${file.name}): ${e.message}`, "ERROR");
                 const chatOutput = document.getElementById("chat-output");
                 if (chatOutput) {
-                    const line = document.createElement("div");
-                    line.textContent = this._t("speicher.import-fehl", { grund: String(e.message) });
-                    chatOutput.appendChild(line);
-                    chatOutput.scrollTop = chatOutput.scrollHeight;
+                    this._chatEcho(["speicher.import-fehl", { grund: String(e.message) }]);
                 }
             }
         };
@@ -1380,10 +1385,7 @@ class AnazhRealm_speicher_laden {
                 this.log(grund, "ERROR");
                 const chatOutput = typeof document !== "undefined" ? document.getElementById("chat-output") : null;
                 if (chatOutput) {
-                    const line = document.createElement("div");
-                    line.textContent = grund;
-                    chatOutput.appendChild(line);
-                    chatOutput.scrollTop = chatOutput.scrollHeight;
+                    this._chatEcho(grund);
                 }
                 return;
             }
@@ -1448,10 +1450,7 @@ class AnazhRealm_speicher_laden {
         const erbgutNein = AnazhRealm._erbgutEinlass(parsed);
         if (erbgutNein) {
             if (chatOutput) {
-                const line = document.createElement("div");
-                line.textContent = this._t("speicher.ersetzen-abgelehnt", { grund: erbgutNein });
-                chatOutput.appendChild(line);
-                chatOutput.scrollTop = chatOutput.scrollHeight;
+                this._chatEcho(["speicher.ersetzen-abgelehnt", { grund: erbgutNein }]);
             }
             this._closeWeltTorDialog();
             return;
@@ -1462,16 +1461,15 @@ class AnazhRealm_speicher_laden {
         // Namen (gate:weltgrenze Weg „ersetzen": 74 Felder der alten Welt im Speicher der neuen, darunter ihr Erbgut und ein
         // Tier); eine Datei ohne worldId landete roh auf dem Platz der alten Welt, und beide waren fort.
         const neu = JSON.parse(JSON.stringify(parsed));
-        AnazhRealm._zeugnisEintragen(neu, "Eine fremde Welt hat mich ersetzt.");
+        AnazhRealm._zeugnisEintragen(neu, ["journal.ersetzt"]);
         this._closeWeltTorDialog();
         const r = this._weltBetreten(neu);
         if (chatOutput) {
-            const line = document.createElement("div");
-            line.textContent = r.ok
-                ? this._t("speicher.ersetzen-ok", { datei: fileName })
-                : this._t("speicher.ersetzen-fehl", { datei: fileName, grund: String(r.reason) });
-            chatOutput.appendChild(line);
-            chatOutput.scrollTop = chatOutput.scrollHeight;
+            this._chatEcho(
+                r.ok
+                    ? ["speicher.ersetzen-ok", { datei: fileName }]
+                    : ["speicher.ersetzen-fehl", { datei: fileName, grund: String(r.reason) }]
+            );
         }
     }
 
@@ -1485,22 +1483,17 @@ class AnazhRealm_speicher_laden {
         const fileName = pending.fileName;
         const result = this.importWorldBeside(parsed);
         const chatOutput = document.getElementById("chat-output");
-        if (chatOutput) {
-            const line = document.createElement("div");
-            if (result.ok) {
-                line.textContent = this._t("speicher.daneben-ok", {
-                    datei: fileName,
-                    slug: String(result.slug),
-                    id: result.worldId.slice(0, 8),
-                });
-            } else {
-                line.textContent = this._t("speicher.daneben-fehl", { grund: String(result.reason) });
-            }
-            chatOutput.appendChild(line);
-            chatOutput.scrollTop = chatOutput.scrollHeight;
-        }
+        if (chatOutput)
+            this._chatEcho(
+                result.ok
+                    ? [
+                          "speicher.daneben-ok",
+                          { datei: fileName, slug: String(result.slug), id: result.worldId.slice(0, 8) },
+                      ]
+                    : ["speicher.daneben-fehl", { grund: String(result.reason) }]
+            );
         if (result.ok) {
-            this.journalAppend("witness", AnazhRealm._datum`Eine andere Welt „${result.slug}" liegt nun neben mir.`);
+            this.journalAppend("witness", ["journal.welt-neben", { welt: result.slug }]);
             this.updateWorldInfo();
         }
         this._closeWeltTorDialog();
@@ -1522,10 +1515,7 @@ class AnazhRealm_speicher_laden {
         } else {
             const chatOutput = document.getElementById("chat-output");
             if (chatOutput) {
-                const line = document.createElement("div");
-                line.textContent = this._t("speicher.fusion-vorbereitung-fehl", { grund: String(result.reason) });
-                chatOutput.appendChild(line);
-                chatOutput.scrollTop = chatOutput.scrollHeight;
+                this._chatEcho(["speicher.fusion-vorbereitung-fehl", { grund: String(result.reason) }]);
             }
         }
     }
@@ -1616,10 +1606,7 @@ class AnazhRealm_speicher_laden {
         const chatOutput = document.getElementById("chat-output");
         const speak = (text) => {
             if (chatOutput) {
-                const line = document.createElement("div");
-                line.textContent = text;
-                chatOutput.appendChild(line);
-                chatOutput.scrollTop = chatOutput.scrollHeight;
+                this._chatEcho(text);
             }
         };
         if (!activeId) {
@@ -1685,7 +1672,7 @@ class AnazhRealm_speicher_laden {
 
     // DAS ZEUGNIS DES EMPFANGS im Journal eines Snapshots, bevor er Welt wird (das Welt-Tor: daneben, ersetzen). Ohne
     // Journal (Legacy/Minimal-Snapshot) wird der Behälter angelegt — sonst fiele der Eintrag still weg.
-    static _zeugnisEintragen(snap, text, ctx) {
+    static _zeugnisEintragen(snap, zeile, ctx) {
         if (!snap.worldJournal || typeof snap.worldJournal !== "object") {
             snap.worldJournal = { entries: [], seen: {} };
         }
@@ -1695,8 +1682,10 @@ class AnazhRealm_speicher_laden {
         if (!snap.worldJournal.seen || typeof snap.worldJournal.seen !== "object") {
             snap.worldJournal.seen = {};
         }
-        text = AnazhRealm._ohneIsolation(text); // der Spieler liest rein, `d: 0` macht ihn Datum
-        const eintrag = { id: snap.worldJournal.entries.length + 1, at: Date.now(), type: "witness", text };
+        // eine Zeile der Tafel `[schlüssel, werte]` (das Tagebuch liest sie in der Sprache von jetzt, `text` ist die de-Quelle)
+        const eintrag = { id: snap.worldJournal.entries.length + 1, at: Date.now(), type: "witness" };
+        eintrag.t = zeile;
+        AnazhRealm._journalZeile(eintrag);
         if (ctx) eintrag.ctx = ctx;
         snap.worldJournal.entries.push(eintrag);
     }
@@ -1761,15 +1750,11 @@ class AnazhRealm_speicher_laden {
             schemaVersion: "9.0-tor-v1",
         };
         // Der Import hält seinen Empfang als Witness-Eintrag mit Provenienz fest.
-        AnazhRealm._zeugnisEintragen(
-            cloned,
-            AnazhRealm._datum`Ich wurde als „${slug}" neben einer fremden Welt empfangen.`,
-            {
-                fromWorldId: originalId,
-                asWorldId: newWorldId,
-                asSlug: slug,
-            }
-        );
+        AnazhRealm._zeugnisEintragen(cloned, ["journal.empfangen-neben", { welt: slug }], {
+            fromWorldId: originalId,
+            asWorldId: newWorldId,
+            asSlug: slug,
+        });
         // durch DIE TÜR: die Welt der Seite sichert sich, die fremde liegt mit Probe unter ihrer neuen Id; mit `reload` der
         // Welt-Wechsel (Zeiger, Sperre, Reload), sonst bleibt die aktive Welt.
         const ab = this._weltBetreten(cloned, null, { wechseln: reload, aktiv: reload });
@@ -2006,7 +1991,15 @@ class AnazhRealm_speicher_laden {
         const total = addedBPs.length + addedMats.length + addedTools.length;
         this.journalAppend(
             "witness",
-            AnazhRealm._datum`Ich habe Rezepte aus „${sourceSlug}" empfangen: ${addedBPs.length} Baupläne, ${addedMats.length} Materialien, ${addedTools.length} Werkzeuge.`,
+            [
+                "journal.rezepte-empfangen",
+                {
+                    welt: sourceSlug,
+                    bauplaene: addedBPs.length,
+                    stoffe: addedMats.length,
+                    werkzeuge: addedTools.length,
+                },
+            ],
             {
                 fromWorldId: sourceWorldId,
                 fromSlug: sourceSlug,
@@ -2332,7 +2325,7 @@ class AnazhRealm_speicher_laden {
             id: 1,
             at: identity.bornAt,
             type: "genesis",
-            text: `Ich erwache aus „${identity.slugA}" und „${identity.slugB}".`,
+            t: ["journal.erwache-aus", { a: identity.slugA, b: identity.slugB }],
             ctx: {
                 worldId: identity.newWorldId,
                 seed: identity.newSeed,
