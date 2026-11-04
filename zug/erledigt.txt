@@ -226,3 +226,4 @@ omen-gtx-w10-figur-dc82a268 ROT haar.K1#1=GRÜN haar.K2#1=ROT mensch.K4#1=ROT
 z7-abab LANGSAMER abab 877d3e04 gegen f7dd313c: w-ego 4+4 nicht-langsamer · g-third 4+4 nicht-langsamer · d-ego 4+4 LANGSAMER · stadt 4+4 nicht-langsamer · fahrt 4+4 nicht-langsamer
 omen-gtx-main-2674ff9a ROT haar.K1#1=ROT haar.K2#1=ROT mensch.K4#1=ROT 
 omen-gtx-main-2674ff9a ROT haar.K1#1=ROT haar.K2#1=ROT mensch.K4#1=ROT 
+omen-gtx-w10-wiese-0d88e8d2 OFFEN vegetation.K1#1=UNGEMESSEN vegetation.K2#1=UNGEMESSEN 
