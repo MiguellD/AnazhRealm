@@ -1625,6 +1625,216 @@ class AnazhRealm_koerper_leib {
         });
         return this._tonLeibKnoten;
     }
+    // DIE ACHSE DER STRÄHNE (haar.K3): je Ecke des nahen Haars ihr Platz auf ihrer Strähne — `aStraehne` 0 an der Wurzel, an der
+    // Spitze die Länge der Strähne (Raum der Gestalt). Das Gesetz der Ecken legt foundry-core `__streuGeo`: je Band vier Ecken,
+    // zwei an der Wurzel (Ton × HAAR_STRICH.wurzel), zwei an der Spitze (der Ton), die Kreuz-Karte zwei solche Bänder; die Braue
+    // im selben Teil trägt ihren eigenen Ton (koerper `menschTon`) und steht. Gelesen hier, am Bau jedes Teils
+    // (`_foundryBuildMesh`): ein Band, das dem Gesetz nicht folgt, meldet der EINE Melder beim Namen. Der Ofen-Guss bleibt
+    // byte-gleich (gate:ofen-contract); die Grobstufe (die Kappe ohne Strähnen, einfarbig) trägt keine Achse. Liefert die Zahl der
+    // Strähnen.
+    _haarAchse(mesh) {
+        const kl =
+            mesh &&
+            ((mesh.userData && mesh.userData.__klasse) ||
+                (mesh.material && mesh.material.userData && mesh.material.userData.__klasse));
+        const a = kl === "hair" && mesh.geometry ? mesh.geometry.attributes : null;
+        if (!a) return 0;
+        // der Versatz der Feder (Welt-Meter, `_haarFederTakt`): ein Klar-Wert am Teil — jeder Klon trägt seinen eigenen
+        mesh.userData.__haarFeder = { x: 0, y: 0, z: 0 };
+        if (!a.color || !a.aTon || a.aStraehne) return 0;
+        const KC = globalThis.__koerperCore;
+        const ton = KC.menschTon("hair");
+        const wz = KC.HAAR_STRICH.wurzel;
+        const [p, c, t] = [a.position, a.color, a.aTon];
+        const n = p.count;
+        const L = new Float32Array(n);
+        const gleich = (x, y) => Math.abs(x - y) <= 1e-5 + 2e-3 * Math.abs(y);
+        let [zahl, bruch] = [0, 0];
+        for (let i = 0; i + 3 < n; i += 4) {
+            let haar = true;
+            for (let k = 0; k < 4; k++) haar = haar && Math.round(t.getX(i + k)) === ton;
+            if (!haar) continue;
+            let [gesetz, flach] = [true, true];
+            for (const f of ["getX", "getY", "getZ"]) {
+                gesetz =
+                    gesetz &&
+                    gleich(c[f](i), c[f](i + 1)) &&
+                    gleich(c[f](i + 2), c[f](i + 3)) &&
+                    gleich(c[f](i), wz * c[f](i + 2));
+                for (let k = 1; k < 4; k++) flach = flach && gleich(c[f](i + k), c[f](i));
+            }
+            // EINE FLÄCHE, KEINE STRÄHNE: die Kappe der Grobstufe (foundry-core: das Haar-Volumen `haarKappe` als Kugel im Stoff
+            // des Haars, im Teil der Brauen) trägt den Ton des Haars in jeder Ecke einfarbig — die Strähne trägt immer ihren
+            // Verlauf (Wurzel = HAAR_STRICH.wurzel × Spitze). Bis hier las die Achse jede Vierergruppe der Kappe als gebrochenes
+            // Band: 15 Brüche je Grobstufe, ERROR in jeder Linse am Leib (gate:post-kette, CI 41622260772)
+            if (!gesetz && flach) continue;
+            if (!gesetz) {
+                bruch++;
+                continue;
+            }
+            const d = [0, 1, 2].map(
+                (k) =>
+                    (p.getComponent(i + 2, k) +
+                        p.getComponent(i + 3, k) -
+                        p.getComponent(i, k) -
+                        p.getComponent(i + 1, k)) /
+                    2
+            );
+            L[i + 2] = L[i + 3] = Math.hypot(d[0], d[1], d[2]);
+            zahl++;
+        }
+        if (bruch) {
+            this._bruchMelden(`HAAR-ACHSE: ${bruch} Bänder des Haars folgen nicht dem Gesetz der Ecken (__streuGeo)`);
+            return 0;
+        }
+        if (!zahl) return 0;
+        mesh.geometry.setAttribute("aStraehne", new THREE.BufferAttribute(L, 1));
+        return zahl;
+    }
+    // DAS HAAR IM EINEN WIND UND MIT DEM LEIB (haar.K3) — der Lage-Knoten jedes Haar-Stoffs: der Versatz der Ecke ist die
+    // Auslenkung der Feder ihres Teils (`userData.__haarFeder`, Welt-Meter, `_haarFederTakt`) × Länge der Strähne /
+    // HAAR_WIND.bezug, höchstens HAAR_WIND.reichweite × Länge (die Spitze bleibt an ihrer Strähne). Die Wurzel (Achse 0) steht;
+    // ohne Achse (die Grobstufe, die Kappe) steht das ganze Teil. Die Feder ist ein Objekt-Verweis: im Bündel lädt die Diät ihn,
+    // sobald er wechselt (`_diaetVerweisAnders`) — eine Objekt-Uniform stellte r184 dort nur bei der Aufnahme. Das Teil meldet sich
+    // beim Zeichnen (`_haarFeder`, die Eins). Ruht die Feder, ist der Versatz 0 und die Lage byte-gleich.
+    _haarWindKnoten(T) {
+        if (this._haarWindNode) return this._haarWindNode;
+        const H = AnazhRealm.HAAR_WIND;
+        const meldung = T.uniform(1).onObjectUpdate(({ object }) => (this._haarFeder(object), 1));
+        const feder = T.reference("userData.__haarFeder", "vec3");
+        const naht = this._weltNaht(T);
+        const achse = T.Fn((b) =>
+            b.geometry && b.geometry.hasAttribute("aStraehne") ? T.attribute("aStraehne", "float") : T.float(0)
+        )();
+        const zug = naht.vorlage(feder.mul(achse.mul(naht.skala).div(H.bezug)));
+        const deckel = achse.mul(H.reichweite).div(zug.length().max(1e-9)).min(1);
+        this._haarWindNode = T.positionLocal.add(zug.mul(deckel).mul(meldung));
+        return this._haarWindNode;
+    }
+    // Die Meldung eines gezeichneten Haar-Teils mit Achse: der Takt (`_haarFederTakt`) führt es, bis es die Szene verlässt.
+    _haarFeder(o) {
+        const g = o && o.geometry;
+        if (!g || !g.attributes.aStraehne || !o.userData.__haarFeder) return null;
+        let F = this._haarFedern;
+        if (!F) F = this._haarFedern = new Map();
+        let f = F.get(o);
+        if (!f) {
+            if (!g.boundingSphere) g.computeBoundingSphere();
+            F.set(
+                o,
+                (f = {
+                    w: new THREE.Vector3(),
+                    o: new THREE.Vector3(),
+                    v: new THREE.Vector3(),
+                    p: null,
+                    u: new THREE.Vector3(),
+                    t: null,
+                    mitte: g.boundingSphere.center.clone(),
+                })
+            );
+        }
+        return f;
+    }
+    // DIE FEDER DES HAARS (haar.K3: im EINEN Wind und mit dem Leib) — die Spitze einer Strähne der Länge HAAR_WIND.bezug in zwei
+    // Moden, gerechnet je Takt auf der WELT-Uhr (`spielZeit`, Lehre 13: der Löser geht im Takt der Welt, nie an der Bild-Uhr;
+    // die Bühne hält diese, das Portal friert jene). DER WIND: der Luft-Widerstand führt die leichte Strähne ihrem Ziel nach
+    // (erste Ordnung, HAAR_WIND.zug), dem EINEN Wind am Ort der Mitte des Haars (`_windAt`) — das Wiegen des Grases
+    // (`_windWiegen`, dieselbe Phase und Böe wie `_windSwayOffset`) mit der Höhe Länge × HAAR_WIND.hebel, darüber das Flattern
+    // der Strähne (HAAR_WIND.flattern: Teil-Frequenzen, je Achse um quer verstimmt, die Phase am Ort; die Weite staerke × die
+    // Wirkung des Winds); ohne Wind ist das Ziel 0 und die Strähne steht im nächsten Takt. DER LEIB: die Mitte des Haars (Lage
+    // des Objekts × Mitte seiner Gestalt) trägt Lauf, Sprung und Drehung, ihre Beschleunigung (das Tempo geglättet über glatt s)
+    // treibt die Feder (HAAR_WIND.feder, zweite Ordnung) mit der Schein-Kraft −a: die Spitze bleibt zurück und schwingt nach
+    // (Trägheit, Rückfedern). Beide zusammen höchstens feder.max. Gerechnet nur für gemeldetes, sichtbares Haar bis
+    // HAAR_WIND.nah vom Auge; fern, verborgen, nach einer Pause (> 0,25 s Takt) oder einem Sprung der Lage (> 2 m) ruht es bei
+    // 0, und im Stand ohne Wind klingt jede Mode auf genau 0 aus. Ein Teil, das die Szene verlässt, fällt aus dem Takt.
+    _haarFederTakt() {
+        const F = this._haarFedern;
+        if (!F || !F.size) return;
+        const H = AnazhRealm.HAAR_WIND;
+        const B = H.feder;
+        const FL = H.flattern;
+        const t = this.state.spielZeit;
+        const auge = this.state.camera ? this.state.camera.position : null;
+        const w = 2 * Math.PI * B.hz;
+        const p = new THREE.Vector3();
+        const a = new THREE.Vector3();
+        const ziel = new THREE.Vector3();
+        const szene = this.state.scene;
+        for (const [o, f] of F) {
+            const aus = o.userData.__haarFeder;
+            let sicht = o.visible;
+            let top = o;
+            for (; top.parent; top = top.parent) sicht = sicht && top.parent.visible;
+            if (top !== szene || !aus) {
+                F.delete(o);
+                continue;
+            }
+            p.copy(f.mitte).applyMatrix4(o.matrixWorld);
+            const dt = f.t === null ? null : t - f.t;
+            if (dt === 0) continue; // derselbe Takt
+            if (
+                !sicht ||
+                !auge ||
+                p.distanceTo(auge) > H.nah ||
+                f.p === null ||
+                !(dt > 0) ||
+                dt > 0.25 ||
+                p.distanceTo(f.p) > 2
+            ) {
+                f.w.set(0, 0, 0);
+                f.o.set(0, 0, 0);
+                f.v.set(0, 0, 0);
+                f.u.set(0, 0, 0);
+                f.p = p.clone();
+                f.t = t;
+                aus.x = aus.y = aus.z = 0;
+                continue;
+            }
+            // das geglättete Tempo der Mitte, seine Änderung die Beschleunigung
+            const k = 1 - Math.exp(-dt / B.glatt);
+            const u0 = f.u.clone();
+            f.u.lerp(p.clone().sub(f.p).divideScalar(dt), k);
+            a.copy(f.u).sub(u0).divideScalar(dt);
+            f.p.copy(p);
+            f.t = t;
+            // der Wind am Ort zur Uhr des Takts (Stärke, Richtung, Böe); die Phase läuft je Teil-Schritt
+            const wa = this._windAt(p.x, p.z, t);
+            const hoehe = H.bezug * H.hebel;
+            const eff = wa.staerke * AnazhRealm.WEATHER_WIND_AMP * wa.boe * hoehe * FL.staerke;
+            const ort = (p.x * wa.x + p.z * wa.z) * AnazhRealm.WIND_WIEGEN.raum;
+            const n = Math.ceil(dt * 240);
+            const h = dt / n;
+            const zug = 1 - Math.exp(-h / H.zug);
+            for (let i = 0; i < n; i++) {
+                const ti = t - dt + (i + 1) * h;
+                const [wx, wz] = this._windWiegen(wa, p.x, p.z, ti, hoehe);
+                let [fx, fz] = [0, 0];
+                FL.hz.forEach((hz, j) => {
+                    fx += Math.sin(2 * Math.PI * hz * ti + ort + 2.1 * j);
+                    fz += Math.cos(2 * Math.PI * hz * FL.quer * ti + ort + 1.3 * j);
+                });
+                const s = eff / Math.sqrt(FL.hz.length);
+                ziel.set(wx + fx * s, 0, wz + fz * s);
+                // der Wind trägt die Strähne über den Luft-Widerstand (erste Ordnung, Zeitkonstante HAAR_WIND.zug)
+                f.w.lerp(ziel, zug);
+                // der Leib schwingt sie über ihre Feder (zweite Ordnung) unter der Schein-Kraft −a
+                f.v
+                    .addScaledVector(f.o, -w * w * h)
+                    .addScaledVector(f.v, -2 * B.daempfung * w * h)
+                    .addScaledVector(a, -h);
+                f.o.addScaledVector(f.v, h);
+            }
+            if (!(Number.isFinite(f.w.x + f.w.z) && Number.isFinite(f.o.x + f.o.y + f.o.z + f.v.x + f.v.y + f.v.z)))
+                (f.w.set(0, 0, 0), f.o.set(0, 0, 0), f.v.set(0, 0, 0));
+            // im Stand klingt jede Mode auf genau 0 aus: ohne Wind der Wind-Mode, ohne Beschleunigung die Feder
+            if (eff === 0 && wa.staerke === 0 && f.w.length() < 1e-5) f.w.set(0, 0, 0);
+            if (f.o.length() < 1e-5 && f.v.length() < 1e-4 && a.length() < 1e-3) (f.o.set(0, 0, 0), f.v.set(0, 0, 0));
+            ziel.copy(f.w).add(f.o);
+            const l = ziel.length();
+            if (l > B.max) ziel.multiplyScalar(B.max / l);
+            [aus.x, aus.y, aus.z] = [ziel.x, ziel.y, ziel.z];
+        }
+    }
     // DIE FARBE EINES GLIEDS IM FELD (mensch.K4): die Töne seiner Kapsel (`_gliedKapselFit`: je Ton sein Anteil an der Farbe
     // der Gestalt) je Ton mit dem Verhältnis der Paletten [Leib, Gestalt] — der Bewohner trägt fern dieselben Farben wie nah.
     // Liefert die Farbe (linear) oder null.
@@ -1721,14 +1931,15 @@ class AnazhRealm_koerper_leib {
                     continue;
                 }
                 const nachBild = lodM === 0 && grob;
-                // die Stufen des ersten Bilds sind ein Kopf der Ankunft (`_foundryRang`: die Bahn ohne Arbeit, `_foundryPumpe`)
+                // die Stufen des ersten Bilds sind ein Kopf der Ankunft (`_foundryRang`: die Bahn ohne Arbeit, `_foundryPumpe`) —
+                // auch die feine, sobald das erste Bild sie wünscht (`_leibWunsch`)
                 const bestellen = () =>
                     this._foundryRequest(
                         "mensch",
                         0,
                         lodM,
                         { dials: dM, skinColor: fM.skin, hairColor: fM.hair },
-                        this._foundryRang(pm ? pm.position : undefined, !nachBild)
+                        this._foundryRang(pm ? pm.position : undefined, !nachBild || z.gewuenscht === true)
                     ).then((meshes) => {
                         // fail-LAUT (V18.462): ein toter Prefetch war von Erfolg
                         // nicht unterscheidbar — das eine Wort macht ihn sichtbar.
@@ -1739,9 +1950,16 @@ class AnazhRealm_koerper_leib {
                         }
                         this._ofenVorlage(keyM, false, () => this._ofenAssembleAsset(meshes), true);
                     });
+                // DER WUNSCH FOLGT DEM BLICK: die feine kommt mit dem Ereignis des Bilds — oder früher, wenn das erste Bild sie
+                // doch zeigt (`_leibWunsch`: die Sicht wechselt vor ihm auf Third)
+                const fein = () => {
+                    z.feinDa = true;
+                    z.steht = z.vorBildDa === true;
+                };
                 const auftrag = nachBild
-                    ? this._weltbildKommt()
+                    ? Promise.race([this._weltbildKommt(), new Promise((ja) => (z.wunsch = ja))])
                           .then(bestellen)
+                          .finally(fein)
                           .then(() => this._leibFeinTausch())
                     : bestellen();
                 if (!nachBild) vorBild.push(auftrag);
@@ -1749,7 +1967,8 @@ class AnazhRealm_koerper_leib {
             }
         }
         const steht = () => {
-            z.steht = true;
+            z.vorBildDa = true;
+            z.steht = z.gewuenscht !== true || z.feinDa === true;
         };
         Promise.all(vorBild).then(steht, steht);
         z.da = Promise.all(auftraege).then(
@@ -1774,6 +1993,21 @@ class AnazhRealm_koerper_leib {
         const st = this.state;
         const p = st.player;
         return st.cameraMode !== "third" && !(p && p.equipped && p.equipped.held);
+    }
+    // DER WUNSCH FOLGT DEM BLICK (B5): wartet die feine Stufe auf das erste Bild (`_ofenSpielerVorlagen`: der Boot sah nur
+    // den Wurf), und zeigt das erste Bild nun doch die Gestalt (`_leibGrobVorBild` falsch: die Sicht wechselt vor ihm auf Third),
+    // geht sie jetzt als Kopf der Ankunft — wie bei einem Boot in Third; ist der Leib noch nicht gegossen, wartet er auf sie
+    // (`_leibBereit`) und trägt nah die feine. Bis hier trug ein Leib, dessen Sicht vor dem ersten Bild auf Third ging, nah die
+    // Grobstufe (die Kappe ohne Strähnen), bis das Bild kam und die feine eintauschte (haar.K3: die Werkbank tauschte mitten in
+    // der Messung, Bild 0 bis 6).
+    _leibWunsch() {
+        const z = this._spielerVorlagen;
+        if (!z || !z.wunsch || this.state._weltbildDa || this._leibGrobVorBild()) return;
+        const ja = z.wunsch;
+        z.wunsch = null;
+        z.gewuenscht = true;
+        z.steht = z.vorBildDa === true && z.feinDa === true;
+        ja();
     }
     // DER TAUSCH DER FEINEN STUFE (B5): kam sie nach dem Bild, trägt der Leib des Spielers sie ab jetzt — derselbe Bau
     // (`applyPlayerSoul`, die Lage reist mit), die Grobstufe fällt mit dem alten Leib. Nur ein Leib, der nah die Grobstufe
@@ -3327,6 +3561,22 @@ AnazhRealm.KOPF_TEILUNG = Object.freeze({
     gelenk: /^(head|eye[LR]|iris[LR]|lid[TB][LR])$/,
     iris: /^iris[LR]$/,
     anteil: 0.3,
+});
+// DAS HAAR IM WIND UND AM LEIB (haar.K3, `_haarWindKnoten`, `_haarFederTakt`): hebel = die Höhe, mit der die Strähne den EINEN
+// Wind liest, je Meter ihrer Länge · reichweite = der Versatz der Spitze höchstens dieser Anteil der Länge · bezug = die Länge,
+// für die die Feder rechnet (längere Strähnen schwingen weiter) · nah = bis hierher (m vom Auge) rechnet die Feder · flattern =
+// die Anregung der Strähne über dem Wiegen: Weite (× die Wirkung des Winds), Teil-Frequenzen (Hz), Verstimmung der zweiten
+// Achse · zug = die Zeitkonstante (s), mit der der Luft-Widerstand die leichte Strähne dem Wind nachführt (überdämpft: ohne
+// Wind steht sie im nächsten Takt) · feder = der Schwinger der Spitze unter dem Leib: Eigenfrequenz hz, Dämpfung (Anteil der
+// kritischen), Glättung des Tempos glatt (s), Deckel max (m) der ganzen Auslenkung. Bei 5,5 m/s wiegt die Spitze ±1,8 cm und flattert ±1,3 cm, bei sonnigen 0,4 m/s je ±1,5 mm.
+AnazhRealm.HAAR_WIND = Object.freeze({
+    hebel: 2.5,
+    reichweite: 0.8,
+    bezug: 0.04,
+    nah: 30,
+    flattern: Object.freeze({ staerke: 1.5, hz: Object.freeze([1.9, 3.1, 4.7]), quer: 1.13 }),
+    zug: 0.02,
+    feder: Object.freeze({ hz: 2.5, daempfung: 0.35, glatt: 0.06, max: 0.03 }),
 });
 // DIE TON-TAFEL (mensch.K4, `_tonTafel`): so viele Paletten trägt sie — je Siedlung eine je Gestalt und je Kopf (die Metropole
 // am Messort stadt-voll 1 094 Köpfe), Zeile 0 die Eins; die Tafel lädt je Siedlung einmal
