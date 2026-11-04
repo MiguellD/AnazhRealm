@@ -443,14 +443,6 @@ class AnazhRealm_daten {
         return this._einmal("TERRAIN_AO", Object.freeze({ strength: 0.4, cap: 0.18 }));
     }
 
-    // Eingefrorener 2.5D-Lichtungs-Wert (der eine Tuning-Hebel). NUR die Shading-Normale (Material-
-    // normalNode + AO in _buildToonNodeMaterial), NIE die Geometrie. Der Schatten-Versatz liest dieselbe End-Normale:
-    // r184 schiebt die Probe um `normalWorld` × normalBias, und `normalWorld` IST die Normale dieses normalNode (setupNormal) —
-    // bei 1,0 zeigt der Versatz (`_schattenBias`, 0,5 Texel) auch am Hang senkrecht nach oben, nie entlang der Fläche.
-    static get TERRAIN_NORMAL_FLATTEN() {
-        return 1.0;
-    }
-
     // Die Boden-Karte (`_bodenKarteAusMesh`) teilt den Voxel-Schritt in so viele Gitter-Abstände (LOD 0: 1,8 m / 4 =
     // 0,45 m) — fein genug, dass die bilineare Lesung der Dreiecks-Fläche auf ≤ 2 cm folgt (Median).
     static get BODEN_KARTE_TEILUNG() {
@@ -627,9 +619,9 @@ class AnazhRealm_daten {
                 mikroHoehe: 0.75, // die Höhe der nächst gröberen Oktave je feinerer (`_mikroRelief`: das Spektrum β ≈ 1,2)
                 kavitaet: 0.7, // die Kavität je Höhe (`_mikroStoff`, aoNode): das Himmels-Licht der Mulde und der Erhebung
                 korn: 1.0, // das Korn je Höhe (`_mikroStoff`, colorNode): die Albedo der Mulde dunkler, der Erhebung heller, mittelfrei
-                // Kipp-Stärke subtil halten: da TERRAIN_NORMAL_FLATTEN=1.0 voll flacht, ist der Bump die EINZIGE
-                // Normal-Variation — zu stark (0.42 = 23°) gibt bimodales dot(N,L) = bolde Hell/Dunkel-Trapeze pro
-                // Makro-Facette. 0.24 = 13° moduliert echtes Mikro-Relief; das Albedo-Korn trägt die feine Textur.
+                // Kipp-Stärke subtil halten: der Bump kippt die wahre Normale des Bodens (ferne.K4: keine 2.5D-Lichtung mehr)
+                // — zu stark (0.42 = 23°) gibt bimodales dot(N,L) = bolde Hell/Dunkel-Trapeze. 0.24 = 13° moduliert echtes
+                // Mikro-Relief; das Albedo-Korn trägt die feine Textur.
                 strength: 0.24, // Kipp-Stärke der Normale (subtil — 13° statt 23°; der Haupt-Balance-Knopf)
                 strength2: 0.1, // Stärke der zweiten Oktave
                 // Die EINE Mikro-Detail-LOD-Quelle: Distanz-Fade von Bump UND feinem Korn; Terrain (`_lod`) und
