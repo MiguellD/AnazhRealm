@@ -26,3 +26,4 @@ w5-studios-k1 a213119b ROT gate:praegung-welt Φ5=261947B ❌ ROT — 1 Verletzu
 w8-snapshot-schlank c8de5648 ROT playtest-voll Φ5=67726B ❌ 1 Invariante(n) verletzt: Leistungs-Vertrag: 0 Stand-Churn (0), der Ingest-Takt 3/1 je Frame in Reihenfolge, die Gruppen klettern nicht (59 → 59), die Mess-Flächen im Trace, Szene 13.5 MB < 700, der Selbsttest feu
 w8-ultiversum-k1 1ef872c1 GRÜN check+playtest-voll Φ5=67741B (main 2d2a5f11+w8-snapshot-schlank@c8de5648)
 w8-snapshot-schlank c8de5648 GRÜN check+playtest-voll+praegung-welt+persistence+reload-treue Φ5=67815B (main 2d2a5f11+w8-v2-probe@91e4b661)
+w8-spielgang-k1 1695469a GRÜN check+playtest-voll+schirm-monotonie Φ5=262078B (main 2d2a5f11+w8-v2-probe@91e4b661)
