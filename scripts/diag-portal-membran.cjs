@@ -158,7 +158,7 @@ async function blickProbe(opts) {
     aus.huelle = recs.map((rec) => {
         const bs = rec.mesh.geometry.boundingSphere;
         const bb = rec.mesh.geometry.boundingBox;
-        const a = typeof KL._membranAmplitude === "function" ? KL._membranAmplitude(rec.tor) : null;
+        const a = KL._membranAmplitude(rec.tor);
         return {
             gestalt: rec.tor.gestalt,
             amplitude: a,

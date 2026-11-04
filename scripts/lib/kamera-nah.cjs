@@ -110,12 +110,7 @@ function nahDeckungInSeite(o) {
         return { klasse: "Bau", name: (e && e.type) || nm || r._taeterKlasse(obj) };
     };
     const zaehlt = (obj) =>
-        obj.isMesh &&
-        obj.geometry &&
-        obj.geometry.attributes.position &&
-        !(obj.material && obj.material.visible === false) &&
-        // was die Kamera zeichnet: der Schatten-Zwilling (SHADOW_TWIN_LAYER, Stoff „schatten") wirft nur in den Kaskaden
-        obj.layers.test(st.camera.layers) &&
+        window.__kameraZeichnet(obj, st.camera) &&
         !obj.isSkinnedMesh &&
         obj.name !== "himmel" &&
         !obj.userData.isHydrosphere &&
@@ -607,4 +602,13 @@ function nahDeckungInSeite(o) {
     };
 }
 
-module.exports = { KAMERA_NAH_INSTALL: `window.__nahDeckung = ${nahDeckungInSeite.toString()};` };
+// WAS DIE KAMERA ZEICHNET (rein; die EINE Frage jeder Fläche der Linse): ein Mesh mit Ecken, sichtbarem Stoff, in den Lagen
+// der Kamera (der Schatten-Zwilling, SHADOW_TWIN_LAYER, wirft nur in den Kaskaden) — und nie ein GAST DES VORBAUS
+// (`__vorbauGast`, `_vorbauBedienung`: der Geist eines Hotbar-Bauplans, der Leib einer Seele). Der Render-Pfad baut ihn ohne
+// Draw (`_renderObjectDirect`, stamm/bild-kosten.js: `gast` → `zeichne(…, nurBauen)`), und er steht am Ort des Spielers:
+// bis w10-figur zählte die Linse ihn als Fläche — haar.K2#1 Radeon 2674ff9a „Vordergrund 27,8 % näher als 0,35 m:
+// vorbau:fahrzeug_gt“ und „Ziel verdeckt von vorbau:fahrzeug_gt in 3,31 m“, ein Wagen, den kein Bild zeigt.
+const kameraZeichnet = (o, cam) =>
+    o.isMesh && o.geometry?.attributes.position && o.material?.visible !== false && !o.__vorbauGast && o.layers.test(cam.layers);
+
+module.exports = { kameraZeichnet, KAMERA_NAH_INSTALL: `window.__kameraZeichnet = ${kameraZeichnet}; window.__nahDeckung = ${nahDeckungInSeite};` };
