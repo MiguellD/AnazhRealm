@@ -599,7 +599,9 @@ async function stufenMessen(h, opts) {
     for (const pl of plan) {
         const t0 = je.get(pl.p + "|" + pl.r + "|0")?.tris;
         const q = arten[pl.art].quote;
-        if (pl.s in STUFEN_QUOTE && !pl.nurAbdruck && !pl.zeile.nurWurf && t0 > 0 && !(q[pl.s] && q[pl.s].q >= pl.k.tris / t0))
+        // DER HAUSHALT DER STUFE (w10-lod, das Gesetz des Kerns: porta `baueStufe`): unter ihrem Band (`lod.budget[art][stufe].band`)
+        // schuldet eine Stufe keine Reduktion — dort vergröbert der Kern nicht, das Löschen nahm den leichten Toren den Umriss (lod.K5)
+        if (pl.s in STUFEN_QUOTE && !pl.nurAbdruck && !pl.zeile.nurWurf && !(pl.k.tris <= pl.zeile.band) && t0 > 0 && !(q[pl.s]?.q >= pl.k.tris / t0))
             q[pl.s] = { q: pl.k.tris / t0, wo: pl.p + (pl.r ? " " + pl.r.join("=") : "") };
     }
     return { bruch, leer, arten, plan, je, builds: plan.length };
@@ -744,7 +746,7 @@ async function messenAlle() {
     }
 const name = (z) => z.kern + ":" + z.art + ":" + z.id;
 // Drei Urteile je Zeile: wirkt · bricht (ein Bau mit diesem Regler ist gebrochen — immer rot, nie Ratsche) · tot.
-const bricht = (z) => z.bricht.length > 0;
+const bricht = (z) => z.bricht.length;
 const tot = (z) => !z.wirkt && !bricht(z);
 // Das Urteil gegen die Ratsche (rein, ohne Browser): neu tot = rot, geheilt = rot bis die Zeile fällt.
 function vergleich(tot, ratsche) {
@@ -833,7 +835,7 @@ async function selbsttest() {
     const hTot = heil.zeilen.filter(tot).map(name);
     const ratsche = ratscheLesen();
     const vT = vergleich(tTot, { tot: Object.fromEntries(Object.keys(ratsche.tot).filter((n) => n.includes(":vehicle:")).map((n) => [n, ""])) });
-    const kanal = taeter.zeilen.length > 0 && tTot.length === taeter.zeilen.length && !vT.ok && hTot.length < tTot.length;
+    const kanal = taeter.zeilen.length && tTot.length === taeter.zeilen.length && !vT.ok && hTot.length < tTot.length;
     console.log(
         `${kanal ? "✅" : "❌"} SELBST-TEST Täter (ov erreicht die Brücke nicht): ${tTot.length}/${taeter.zeilen.length} Regler der Art vehicle tot → rot (neu tot: ${vT.neu.slice(0, 3).join(", ")}${vT.neu.length > 3 ? " …" : ""}) · ohne Täter ${hTot.length} tot`
     );
@@ -870,7 +872,7 @@ async function selbsttest() {
     const amBildTot = zH.filter((z) => tot(z) && z.byte && name(z) in ratsche.tot).length;
     const vO = vergleich(zO.filter(tot).map(name), ratsche);
     const neuO = zO.filter((z) => !(name(z) in ratsche.tot));
-    const ofenKanal = imOfen && zH.length > 0 && heilWirkt + amBildTot === zH.length && zO.filter(tot).length === zO.length && vO.neu.length === neuO.length && neuO.length > 0;
+    const ofenKanal = imOfen && zH.length && heilWirkt + amBildTot === zH.length && zO.filter(tot).length === zO.length && vO.neu.length === neuO.length && neuO.length;
     console.log(
         `${ofenKanal ? "✅" : "❌"} SELBST-TEST Ofen-Kanal (koerper ${imOfen ? "im Host-Ofen" : "NICHT im Ofen"}): heil ${heilWirkt}/${zH.length} wirken (${amBildTot} bewegen den Guss, nicht sein Bild — Ratsche) · Täter (der Ofen verliert den Wert) ${zO.filter(tot).length}/${zO.length} tot → rot (neu tot: ${vO.neu.slice(0, 3).join(", ")}${vO.neu.length > 3 ? " …" : ""})`
     );
@@ -899,14 +901,14 @@ async function selbsttest() {
     const qT = quoteUeber(sTaeter)["ausstattung:L1"];
     const leerOk = !sHeil.leer.length && sLeer.leer.includes("ausstattung brunnen L1");
     const stufenOk =
-        !sHeil.bruch["fachwerk:ausstattung:(Rezept)"] && !quoteUeber(sHeil)["ausstattung:L1"] && sT.length > 0 && !!qT && leerOk;
+        !sHeil.bruch["fachwerk:ausstattung:(Rezept)"] && !quoteUeber(sHeil)["ausstattung:L1"] && sT.length && !!qT && leerOk;
     console.log(
         `${stufenOk ? "✅" : "❌"} SELBST-TEST STUFEN (Täter: die Stufe reduziert nicht): ${sT.length} Rezepte über der Zeile L1 (${sT[0] || "—"}) · Quote ausstattung:L1 ${qT || "im Soll"} · ohne Täter ${Object.keys(sHeil.bruch).length} Regler über Budget, kein Rezept · Täter „die Stufe 1 liefert nichts" leer: ${sLeer.leer.slice(0, 2).join(", ") || "—"}`
     );
     const wTaeter = wurfRichten(wHeil.zeilen, { teilWirft: stammRegel().teilWirft, vonBilligerer: () => "zwilling" });
     const rotHeil = wurfUrteil(wHeil.zeilen);
     const rotTaeter = wurfUrteil(wTaeter);
-    const wurfOk = wHeil.zeilen.length > 0 && !rotHeil.length && rotTaeter.length > 0;
+    const wurfOk = wHeil.zeilen.length && !rotHeil.length && rotTaeter.length;
     console.log(
         `${wurfOk ? "✅" : "❌"} SELBST-TEST WURF (Täter: der Zwilling wirft immer): heil ${wHeil.zeilen.length} Paare, ${rotHeil.length} rot · Täter ${rotTaeter.length} rot (${rotTaeter.slice(0, 2).join(" · ")})`
     );

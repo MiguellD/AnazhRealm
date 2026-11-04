@@ -53,9 +53,9 @@
       "sha256": "65776523132b6ef81c0087bb4ed765180f3e7aee108e76eab69f3dea827bd7d8"
     },
     "kathedrale-s7-L2": {
-      "objects": 132,
-      "vertices": 3948,
-      "sha256": "f531e1885f8ebb9a1dd11ab04357faebb4619dc44d0b0d25ff6f8e08a3be2e45"
+      "objects": 137,
+      "vertices": 4264,
+      "sha256": "7b125a55f22c5a454c53ddbea0d2e04e44637c11e8f48b3f576417c0133a5f6e"
     },
     "kathedrale-s7-L3": {
       "objects": 1,
@@ -78,9 +78,9 @@
       "sha256": "273016a3242ed67eda3e700faacd199041cc82e63c3a9edee6ede8f787dddb46"
     },
     "maschine-s7-L2": {
-      "objects": 121,
-      "vertices": 3935,
-      "sha256": "78357593e0a0ad2e3b00c09764f451bf73eafc310ed9d8e9552d6f4c8aa867bf"
+      "objects": 128,
+      "vertices": 4761,
+      "sha256": "fad1c40f3e2ba5f4a350f5e778b32e8f8eba756e33bc4260fa571d32176fdb52"
     },
     "maschine-s7-L3": {
       "objects": 1,
@@ -98,14 +98,14 @@
       "sha256": "c12c61b33a625e8b5509042cfd8e1621aa85787bec400afc358a8243fd143f84"
     },
     "geisttor-s7-L1": {
-      "objects": 130,
-      "vertices": 3453,
-      "sha256": "54ee3ac34aea089ba512a722b0f35b220cf7807a4d6e08be32bbfaccfe9ee759"
+      "objects": 150,
+      "vertices": 3864,
+      "sha256": "44a884ddcb3cb07931b5fd42f93e5fc1b3b458ebf2e69bc65e494f2a5637d7c6"
     },
     "geisttor-s7-L2": {
-      "objects": 35,
-      "vertices": 820,
-      "sha256": "a1f4d7f8b4ec7a334d1cf4f2f26a8364e7715663213b87b8f78a91b94b1b0058"
+      "objects": 130,
+      "vertices": 2991,
+      "sha256": "cfe7a4697e9e539a2f7ad3249b797882806ec3d452f56564b7505e84dfa97348"
     },
     "geisttor-s7-L3": {
       "objects": 1,
@@ -128,9 +128,9 @@
       "sha256": "3ac6456ba8aee1d8da0145017ab2e0a0f90721f9367ef98af416f540212291d3"
     },
     "verkalkt-s7-L2": {
-      "objects": 135,
-      "vertices": 5456,
-      "sha256": "a0d23fefd785e2fa8c2a6bca043d645011e9758d0de270c5ff1382442bb697c5"
+      "objects": 142,
+      "vertices": 5920,
+      "sha256": "00abb96057a0768e95c6f292e798157c979c1fc52b0ae98cff52dad7b36e7a9f"
     },
     "verkalkt-s7-L3": {
       "objects": 1,
@@ -153,9 +153,9 @@
       "sha256": "8ca3f32d9c7cf4293d817ff8c34716866cc6a59850946a60214a73c68a6d8306"
     },
     "ruine-s7-L2": {
-      "objects": 93,
-      "vertices": 2664,
-      "sha256": "0aa6e4bd7500a766c2143c134b5a7c77c935493089edceb8bd3fef0e9e32c4a2"
+      "objects": 134,
+      "vertices": 3636,
+      "sha256": "6739dc84099bf84d97ca45cf02bdab9a2e507f9f3bd5b015c92ed2c3c592b00f"
     },
     "ruine-s7-L3": {
       "objects": 1,
@@ -178,9 +178,9 @@
       "sha256": "42a4f713104c3904ca0b83c2eae3535b325e9d0821fd045661f1b34f7c2aff75"
     },
     "maurentor-s7-L2": {
-      "objects": 145,
-      "vertices": 5160,
-      "sha256": "01c803bcc634b649661cdecf37721cd0dabe38b29b73a98966fad1114f3535c2"
+      "objects": 152,
+      "vertices": 5872,
+      "sha256": "c2b55b16e21854b988f4c60bd52cb495a9de9829ef5a708e2bfa5c1d8147f12d"
     },
     "maurentor-s7-L3": {
       "objects": 1,
@@ -203,9 +203,9 @@
       "sha256": "879ac917543f4b38c305bf06985ecdec3b98dd17d4a35200a35dcda9a2920cda"
     },
     "lyra-s7-L2": {
-      "objects": 16,
-      "vertices": 412,
-      "sha256": "d0a56451721e661fb3943cc6545819f4d16b6f3a5bee52f7c22b5d6d0a4b9376"
+      "objects": 39,
+      "vertices": 1044,
+      "sha256": "0d9b799daafacced4f422c5d3c2df89d4e4aa531d41e498213a977a8c87e27fa"
     },
     "lyra-s7-L3": {
       "objects": 1,
@@ -223,14 +223,14 @@
       "sha256": "6c967f1f5ce1b2ebc30a97aca01d7d27e7d1f5c110ca0c731266db67c028fad5"
     },
     "vitruv-s7-L1": {
-      "objects": 35,
-      "vertices": 1002,
-      "sha256": "957beb20d3b0a3b3f4b0afb05bbea732a26cffa7a219a93acf74778ef3629aaa"
+      "objects": 54,
+      "vertices": 1394,
+      "sha256": "f3f3a29153e686cb9ed842f1caf7ad27ce352659f9d6a3c4ec936a2b4243514f"
     },
     "vitruv-s7-L2": {
-      "objects": 16,
-      "vertices": 432,
-      "sha256": "6f5b91c4b442aa7cc9c288067f64133a8f0468c0df6e1c6ac15cf82304c74244"
+      "objects": 35,
+      "vertices": 862,
+      "sha256": "1cdb14f58970f9e1bd29b14d3de39bfcfad7ee8570ed4330fd2fb8ccd70c5acd"
     },
     "vitruv-s7-L3": {
       "objects": 1,
@@ -253,9 +253,9 @@
       "sha256": "14c6788c9110e1f3df8371334566a7e46dcbcc0dc37bb81a2636de2d8fa3585d"
     },
     "tiertor-s7-L2": {
-      "objects": 29,
-      "vertices": 561,
-      "sha256": "c78631cb7d0bd1bfbc5cbe9152a0870f44eadc77f083f468ede60462dd478471"
+      "objects": 50,
+      "vertices": 1211,
+      "sha256": "b9fa046043354225a5057fc2fa81fd26b121e4a29c81ff0921d94c013a9f1b54"
     },
     "tiertor-s7-L3": {
       "objects": 1,

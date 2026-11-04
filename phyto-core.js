@@ -2145,6 +2145,7 @@
             trop: trop + O(0.1),
             leafD: clamp(leaf * J(0.16), 0.05, 1),
             _lf: lf,
+            _ls: ls, // das Blatt-Maß der Stufe — die Laub-Krone der Baum-L1 rechnet es zurück (foundry-core, die Krone der L0)
             height: ph.height * J(0.16),
             conifer: ph.conifer,
             coniferDroop: ph.coniferDroop,
