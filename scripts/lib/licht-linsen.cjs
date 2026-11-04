@@ -2601,9 +2601,9 @@ function naesseSicht(o) {
         };
         const med = (l) => (l.length ? +l.sort((a, b) => a - b)[l.length >> 1].toFixed(3) : null);
         const A = { k: (n) => n, mul: (x, y) => x * y, sub: (x, y) => x - y, mix: (x, y, w) => x + (y - x) * w };
-        const dicht = typeof AnazhRealm._naesseGesetz === "function" ? AnazhRealm._naesseGesetz(A, 0.4, 0.3, 1, 1) : null;
+        const dicht = AnazhRealm._naesseGesetz(A, 0.4, 0.3, 1, 1);
         // der Glanz: die GGX-Spitze 1/α² (α = Rauheit²) des porösen Bodens (Rauheit 0,8) nass gegen trocken
-        const poroes = typeof AnazhRealm._naesseGesetz === "function" ? AnazhRealm._naesseGesetz(A, 0.4, 0.8, 0, 1) : null;
+        const poroes = AnazhRealm._naesseGesetz(A, 0.4, 0.8, 0, 1);
         return {
             ort: o.ort,
             haus: e && e.type,

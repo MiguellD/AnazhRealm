@@ -699,7 +699,7 @@ function __wasserKroneVon(r, p) {
     const A = r.constructor;
     const HC = A.HYDROSPHERE;
     const w = p.width;
-    const D = typeof A._flussTiefe === "function" ? A._flussTiefe(p) : HC.carveBedMin + HC.carveBedK * w;
+    const D = A._flussTiefe(p);
     if (!Number.isFinite(HC.bankNeigung)) throw new Error("HYDROSPHERE.bankNeigung fehlt (das Gesetz der Bank)");
     return w * 0.5 + D / HC.bankNeigung;
 }

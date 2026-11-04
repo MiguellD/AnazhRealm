@@ -608,22 +608,7 @@ function nahDeckungInSeite(o) {
 // Draw (`_renderObjectDirect`, stamm/bild-kosten.js: `gast` → `zeichne(…, nurBauen)`), und er steht am Ort des Spielers:
 // bis w10-figur zählte die Linse ihn als Fläche — haar.K2#1 Radeon 2674ff9a „Vordergrund 27,8 % näher als 0,35 m:
 // vorbau:fahrzeug_gt“ und „Ziel verdeckt von vorbau:fahrzeug_gt in 3,31 m“, ein Wagen, den kein Bild zeigt.
-function kameraZeichnet(obj, cam) {
-    return !!(
-        obj &&
-        obj.isMesh &&
-        obj.geometry &&
-        obj.geometry.attributes &&
-        obj.geometry.attributes.position &&
-        !(obj.material && obj.material.visible === false) &&
-        obj.__vorbauGast !== true &&
-        obj.layers.test(cam.layers)
-    );
-}
+const kameraZeichnet = (o, cam) =>
+    o.isMesh && o.geometry?.attributes.position && o.material?.visible !== false && !o.__vorbauGast && o.layers.test(cam.layers);
 
-module.exports = {
-    kameraZeichnet,
-    KAMERA_NAH_INSTALL:
-        `window.__kameraZeichnet = ${kameraZeichnet.toString()};\n` +
-        `window.__nahDeckung = ${nahDeckungInSeite.toString()};`,
-};
+module.exports = { kameraZeichnet, KAMERA_NAH_INSTALL: `window.__kameraZeichnet = ${kameraZeichnet}; window.__nahDeckung = ${nahDeckungInSeite};` };

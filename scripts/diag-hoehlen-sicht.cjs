@@ -1479,12 +1479,7 @@ const server = statikServer();
             aus.code.feinEigenHash = !__fehlt(r._terrainGeologyAlbedo, /43758|fract\([^;]*\bsin\(/);
             aus.code.feinRechenwerk = (() => {
                 const GKc = globalThis.__gelaendeCore;
-                if (
-                    !GKc ||
-                    typeof GKc.felsFein !== "function" ||
-                    typeof AnazhRealm._felsRechenwerkTSL !== "function"
-                )
-                    return null;
+                if (!GKc) return null;
                 const V = (x) => (typeof x === "number" ? x : x.v);
                 // die Knoten-Methoden lesen den Wert beim Aufruf (`this.v`): eine Variable (`toVar`, K17-3 `fest`/`falte`)
                 // ändert ihn mit `assign`, ein Lese-Glied eines vec4 (`.x` … `.w`) liest den Wert seiner Variable jetzt
