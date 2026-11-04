@@ -455,11 +455,12 @@ class AnazhRealm_gelaende_chunks {
     // Meeresspiegel. Die Antwort trägt die Zahlen per Transfer; ohne Faden gibt es keine Ferne (laut, kein Haupt-Faden-Weg).
     // DIE BAHN DES PANORAMAS (B4): das Feld („feld“: 9 216 Punkte von 8 bis 40 km, je Punkt das Gesetz mit dem Flussnetz der
     // fernen Kacheln) rechnet in seinem eigenen Faden neben dem Ring — im EINEN Fern-Faden stand jede Ring-Scheibe hinter ihm
-    // (Radeon kalt am Kopf 130ba565: der Fern-Faden 6,6 s belegt, das Feld allein ~4,9 s, der Horizont hing bei 11 %).
+    // (Radeon kalt am Kopf 130ba565: der Fern-Faden 6,6 s belegt, das Feld allein ~4,9 s, der Horizont hing bei 11 %). Das Gitter
+    // der Horizont-Karte („gitter“, 65 536 Rufe des Gesetzes nach dem ersten Weltbild) geht dieselbe Bahn — nie vor den Ring.
     _fernAuftrag(art, msg, transfer) {
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         return this._nebenAuftrag(
-            art === "feld" ? "feld" : "fern",
+            art === "feld" || art === "gitter" ? "feld" : "fern",
             Object.assign(
                 { type: "fern", art, wl, laub: this._fernLaubLinear(), wasser: this._fernWasserKoerper() },
                 msg
@@ -837,9 +838,14 @@ class AnazhRealm_gelaende_chunks {
         const { span } = this._voxelChunkConfig();
         const ccx = cx * span + span / 2,
             ccz = cz * span + span / 2;
+        // DER LAUB-RAND DER BAHN (der EINE Rang, w7-rang): der Chunk sät, wenn seine Mitte am Spieler ODER an seinem Ort am Ende des
+        // Vorlaufs (`_bedarfVoraus`) im Radius liegt — sein Wald steht, bevor die Bahn den Rand des Laubs über ihn schiebt. Bis
+        // w7-rang säte er erst am Spieler: jeder Baum am Rand trat ungesetzt in den Sichtkegel (streaming.K1, Null-Renderer).
+        const v = this._bedarfVoraus(pm.position);
+        const d = Math.hypot(ccx - pm.position.x, ccz - pm.position.z);
         // vor dem ersten Weltbild sät nur der Chunk im Blick (`_blickDerAnkunft`), die übrigen sät der Nachlauf
         return (
-            Math.hypot(ccx - pm.position.x, ccz - pm.position.z) <= fr &&
+            (d <= fr || (!!v && Math.hypot(ccx - v.x, ccz - v.z) <= fr)) &&
             this._blickDerAnkunft(ccx, ccz, span * Math.SQRT1_2)
         );
     }
@@ -1639,29 +1645,33 @@ class AnazhRealm_gelaende_chunks {
     // denen ein Dreieck gegen die vorige seine Lage ändert (`_bodenKarteAusMesh` mit `basis`); die Karte ist danach unveränderlich
     // und hält ihre Lage. `art` "lage": die gezeichnete Lage samt Grün (Bau und Naht-Morph, je Ruf ein neuer Puffer), "ziel": die
     // Morph-Ziele, nur die Höhe (`_bodenStufeMisch`; der Attribut-Puffer, darum eine Kopie).
-    // `ganz`: jede Ecke kann sich bewegt haben (die vorläufige Gestalt eines Edits, `_editGestaltVorlaeufig`), nicht nur der Saum.
-    _bodenKarteNaht(geom, cx, cz, lod, lage, art, ganz = false) {
+    // `bewegt` ({ rand, randTri }): die vorläufige Gestalt eines Edits (`_editGestaltVorlaeufig`) bewegte genau diese Ecken an
+    // Ort und Stelle in `lage` (sie ist die Lage der Karte, ohne Kopie) — gerastert wird unter ihren Dreiecken, nicht am Saum.
+    _bodenKarteNaht(geom, cx, cz, lod, lage, art, bewegt = null) {
         if (!geom.index) return null;
         const naht = this._bodenNaht(geom, cx, cz, lod);
         // DIE KARTE EINES FADEN-NETZES RASTERT DER FADEN (w4-b-boden): ihre erste Lage im Haupt-Faden ist ein Bau neben ihm —
         // er zählt an seiner Sync-Stelle oder bricht laut beim Namen (`_fadenUmgangen`, die Faden-Linse liest das Buch). Seit
         // w4-b-boden2 rastert der Faden auch jede weitere (der Naht-Morph, die Karte der Ziele): hier rastert nur die vorläufige
-        // Gestalt eines Edits (`ganz`) — jede andere Lage eines Faden-Netzes ist ein Bau neben ihm
+        // Gestalt eines Edits (`bewegt`) — jede andere Lage eines Faden-Netzes ist ein Bau neben ihm
         if (
-            (!naht[art] || !ganz) &&
+            (!naht[art] || !bewegt) &&
             geom.userData.ausFaden &&
             geom.index.array.length >= 3 &&
             (art === "lage" || (lod | 0) < 3)
         )
             this._fadenUmgangen(`Boden-Karte (${art}) eines Faden-Netzes`);
         const col = art === "lage" && geom.attributes.color ? geom.attributes.color.array : null;
-        const ref = art === "lage" ? lage : new Float32Array(lage);
+        // KEINE KOPIE EMPFANGENER BYTES (streaming.K5): die Lage einer vorläufigen Gestalt ist der Puffer, den sie an Ort und
+        // Stelle bewegte (der Neubau aus dem Faden ersetzt das Netz, kein Teil des Fadens legt sich bis dahin an,
+        // `_bodenTeilLegen`); nur die Karte der Ziele eines Sync-Baus hält ihre Lage als Kopie des Attributs
+        const ref = art === "lage" || bewegt ? lage : new Float32Array(lage);
         // DIE KARTE AN ORT UND STELLE (w4-b-boden): jede weitere Karte derselben Geometrie rastert in die Felder der vorigen —
         // keine Kopie je Naht-Morph (die Karte kommt aus dem Faden: der Haupt-Faden kopierte ihre Bytes, Fahrt 12,7 MB/min,
         // gate:worker-dichte K5). Der Stand der Karte zählt jede neue Lage, je Zelle der Stand ihres letzten Wechsels: der
         // Leser einer früheren Lage (`_bodenKartenStehen`) fragt ihn statt einer alten Kopie.
         const alt = naht[art];
-        const k = this._bodenKarteAusMesh(ref, geom.index.array, col, cx, cz, lod, alt, ganz ? null : naht, !!alt);
+        const k = this._bodenKarteAusMesh(ref, geom.index.array, col, cx, cz, lod, alt, bewegt || naht, !!alt);
         if (!k || !alt) return (naht[art] = k && Object.assign(k, { ref }));
         // dieselbe Karte (dieselben Felder, dasselbe Objekt): ihr Stand steigt, die gewechselten Zellen tragen ihn
         alt.stand = (alt.stand | 0) + 1;
@@ -2463,31 +2473,13 @@ class AnazhRealm_gelaende_chunks {
         const { ringRadius } = this._voxelChunkConfig();
         // DAS AUGE DER STUFEN (K51-2): derselbe Punkt wählt die Stufe jedes Chunks und treibt den Geomorph des Boden-Stoffs
         this._stufeAugeTakt(playerPos);
-        // Velocity-Prefetch: die 1–2 Chunks in Laufrichtung ZUERST in die Worker-Queue (der Ring läuft in
-        // fester dz/dx-Reihenfolge, der kommende Chunk käme sonst ~5.) → der Boden steht, bevor der Spieler
-        // ankommt. Billige Async-Anfrage (der Ring re-fragt als no-op); nur bei > 1 m/s.
-        if (this.state.playerVel) {
-            const v = this.state.playerVel;
-            const vx = v.x(),
-                vz = v.z();
-            const speedSq = vx * vx + vz * vz;
-            if (speedSq > 1) {
-                const inv = 1 / Math.sqrt(speedSq);
-                const dirX = vx * inv,
-                    dirZ = vz * inv;
-                for (let ahead = 1; ahead <= 2; ahead++) {
-                    const acx = pcx + Math.round(dirX * ahead);
-                    const acz = pcz + Math.round(dirZ * ahead);
-                    if (!this.state.voxelChunks.has(`${acx},${acz}`)) {
-                        this._ensureVoxelChunkAt(
-                            acx,
-                            acz,
-                            this._voxelChunkLodFor(acx, acz, playerPos.x, playerPos.z, null)
-                        );
-                    }
-                }
-            }
-        }
+        // DIE BAHN (der EINE Rang, w7-rang): der Ring um den Spieler UND der Ring um seinen Ort am Ende des Vorlaufs
+        // (`_bedarfVoraus`), geordnet nach der Zeit bis Bedarf (`_bedarfWeg`) — was die Bahn braucht, steht, bevor sie ankommt.
+        // Bis w7-rang ging der Ring in Chebyshev-Reihe um den Spieler, und ein Voraus fragte 1–2 Chunks in Laufrichtung an: beim
+        // GT-Tempo trat der Boden unfertig in den Sichtkegel (streaming.K2, Null-Renderer an main 6eeeb856: 206 von 484 je Stufe).
+        const voraus = this._bedarfVoraus(playerPos);
+        const vcx = voraus ? Math.floor(voraus.x / span) : pcx;
+        const vcz = voraus ? Math.floor(voraus.z / span) : pcz;
         let built = 0;
         // V18.263 — der PID-Regelkreis fährt diese zwei Stellgrößen (statt fix 4/6):
         // unter gemessener Last sinkt das Streaming-Budget → weniger Chunk-Builds pro
@@ -2503,7 +2495,8 @@ class AnazhRealm_gelaende_chunks {
         // DIE STAND-WACHE: steht der Ring (jede Zelle in ihrer Stufe, keiner wartet) und regt sich nichts, geht der Gang
         // nicht — Ring, Prune und Wasser-Weckruf lesen die Stufen-Zelle (`_stufenZelle`: die Spieler-Zelle und das Fach der
         // Lage zwischen den Stufen-Schwellen in Metern, K51-3) und die Chunk-Menge. Nachwuchs läuft weiter.
-        if (this._standRuht("strom", 1, this._stufenZelle(playerPos.x, playerPos.z), "boden")) {
+        const zelleVoraus = voraus ? this._stufenZelle(voraus.x, voraus.z) : "";
+        if (this._standRuht("strom", 1, this._stufenZelle(playerPos.x, playerPos.z) + "|" + zelleVoraus, "boden")) {
             this._tickFoliageGrowth();
             return 0;
         }
@@ -2529,15 +2522,23 @@ class AnazhRealm_gelaende_chunks {
         const leerlauf = lade && this._ringLeerlauf === true;
         this._ringLeerlauf = false;
         let draussen = 0;
-        for (let r = 0; r <= ringRadius; r++)
-            for (let dz = -r; dz <= r; dz++)
-                for (let dx = -r; dx <= r; dx++) {
-                    if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
-                    const [cx, cz] = [pcx + dx, pcz + dz];
-                    const bild = !lade || !r || this._rangImBild({ x: (cx + 0.5) * span, z: (cz + 0.5) * span }, halb);
-                    zellen.push([cx, cz, bild]);
-                }
-        if (lade) zellen.sort((a, b) => b[2] - a[2]); // stabil: im Bild zuerst, je Hälfte in Ring-Reihe
+        const gesehen = new Set();
+        const nimm = (cx, cz, mitte) => {
+            const key = `${cx},${cz}`;
+            if (gesehen.has(key)) return;
+            gesehen.add(key);
+            const [x, z] = [(cx + 0.5) * span, (cz + 0.5) * span];
+            const bild = !lade || mitte || this._rangImBild({ x, z }, halb);
+            zellen.push([cx, cz, bild, mitte ? -1 : this._bedarfWeg(x, z)]);
+        };
+        const anker = [[pcx, pcz]]; // der Ring des Spielers und, wo die Bahn die Zelle wechselt, der Ring ihres Orts
+        if (vcx !== pcx || vcz !== pcz) anker.push([vcx, vcz]);
+        for (const [ax, az] of anker)
+            for (let dz = -ringRadius; dz <= ringRadius; dz++)
+                for (let dx = -ringRadius; dx <= ringRadius; dx++)
+                    nimm(ax + dx, az + dz, ax === pcx && az === pcz && !dx && !dz);
+        // im Lade-Takt das Bild zuerst (B-Blick), je Hälfte nach der Zeit bis Bedarf; die Zelle des Spielers vorn
+        zellen.sort((a, b) => (lade ? b[2] - a[2] : 0) || a[3] - b[3]);
         for (const [cx, cz, bild] of zellen) {
             if (bild !== haelfte) [haelfte, n, t0, satt] = [bild, 0, performance.now(), false]; // die Hälfte beginnt ihre Kappe
             if (satt) continue;
@@ -2549,7 +2550,7 @@ class AnazhRealm_gelaende_chunks {
             // (Hysterese-Deadband am Grat); ein frischer Chunk (kein
             // `existing`) bekommt die reine Band-LOD.
             const existingLod = existing && Number.isFinite(existing.lod) ? existing.lod : null;
-            const desiredLod = this._voxelChunkLodFor(cx, cz, playerPos.x, playerPos.z, existingLod);
+            const desiredLod = this._voxelChunkLodFor(cx, cz, playerPos.x, playerPos.z, existingLod, voraus);
             if (existing) {
                 const currentLod = existingLod !== null ? existingLod : 0;
                 if (currentLod !== desiredLod && !existing.empty) {
@@ -2775,16 +2776,25 @@ class AnazhRealm_gelaende_chunks {
         if (!vc || !vc.size || !(ed.r > 0)) return 0;
         const { span, step } = this._voxelChunkConfig();
         const [y0, y1, rr, fill] = [ed.y - ed.r, ed.y + ed.r, ed.r * ed.r, ed.mode === "fill"];
-        // die Säule an der Lage A (Ecke v, ihre Normale in N): true, wo sie eine Ecke bewegt
+        // die Säule an der Lage A (Ecke v, ihre Normale in N), an Ort und Stelle → die Ecken, die sie bewegte
         const saeule = (A, N) => {
-            let bewegt = false;
+            const bewegt = [];
             for (let v = 0; v < A.length; v += 3) {
                 const [dx, y, dz] = [A[v] - ed.x, A[v + 1], A[v + 2] - ed.z];
                 if (dx * dx + dz * dz >= rr || !(y > y0 && y < y1)) continue;
                 A[v + 1] = N[v + 1] >= 0 === fill ? y1 : y0;
-                bewegt = true;
+                bewegt.push(v / 3);
             }
             return bewegt;
+        };
+        // der Saum der Karte (gelaende-core `bodenKarte`, `rand.bewegt`): die bewegten Ecken und je Dreieck mit einer von ihnen
+        // sein Index-Anfang
+        const saum = (I, ecken, nV) => {
+            const an = new Uint8Array(nV);
+            for (const v of ecken) an[v] = 1;
+            const randTri = [];
+            for (let t = 0; t + 2 < I.length; t += 3) if (an[I[t]] || an[I[t + 1]] || an[I[t + 2]]) randTri.push(t);
+            return { rand: ecken, randTri, bewegt: true };
         };
         // die Chunks, deren Netz (samt Saum, ein Schritt) in die Säule reicht
         const [a0, a1] = [Math.floor((ed.x - ed.r - step) / span), Math.floor((ed.x + ed.r + step) / span)];
@@ -2795,23 +2805,38 @@ class AnazhRealm_gelaende_chunks {
                 const E = vc.get(`${cx},${cz}`);
                 if (!E || E.empty || !E.mesh) continue;
                 const g = E.mesh.geometry;
-                const N = g.attributes.normal.array;
-                if (!saeule(g.attributes.position.array, N)) continue;
+                const [P, N, I] = [g.attributes.position.array, g.attributes.normal.array, g.index && g.index.array];
+                // die Lage der Karte (der Puffer des Fadens: die Lage selbst oder die gezeichnete samt Naht-Morph des Saums), ehe
+                // die Säule das Netz bewegt — ist sie die Lage selbst, bewegt die Säule sie mit dem Netz
+                const naht = this._bodenNaht(g, cx, cz, E.lod || 0);
+                const L = (naht.lage && naht.lage.ref) || P;
+                const bewegtP = saeule(P, N);
+                if (!bewegtP.length) continue;
                 // das Netz trägt jetzt eine Gestalt, die der Faden nicht kennt: bis sein Neubau kommt, legt der Takt keinen
                 // Morph des Fadens an (`_bodenTeilLegen`) — der Neubau trägt eine neue Bau-Nummer und morpht ganz
                 E.vorlaeufig = true;
-                saeule(g.attributes.aMorphTarget.array, N);
-                this._chunkSatzMarke("boden", `${cx},${cz}`, ["position", "aMorphTarget"]);
-                // die Karte aus der gezeichneten Lage (samt Naht-Morph des Saums), die Säule darin wie im Netz
-                const naht = this._bodenNaht(g, cx, cz, E.lod || 0);
-                const L = new Float32Array((naht.lage && naht.lage.ref) || g.attributes.position.array);
-                saeule(L, N);
-                const k = this._bodenKarteNaht(g, cx, cz, E.lod || 0, L, "lage", true);
-                // die Karte der Ziele trägt die Säule im Inneren (`ganz`, w4-b-boden): der Leser im Übergangs-Band rastert sonst
-                // nur, was am Saum zog — sie liegt seit dem Einbau (aus dem Faden), ein Neu-Raster der Lage allein ließe sie alt
                 const Z = g.attributes.aMorphTarget.array;
+                const bewegtZ = saeule(Z, N);
+                this._chunkSatzMarke("boden", `${cx},${cz}`, ["position", "aMorphTarget"]);
+                // die Karte aus der gezeichneten Lage, die Säule darin an Ort und Stelle wie im Netz (streaming.K5: bis hierher
+                // eine Kopie der Lage des Fadens je Chunk und Klick, 0,26 MB in der Minute Fahrt — und war die Lage das Netz
+                // selbst, verglich die Karte die bewegte Kopie mit der bewegten Lage und sah die Säule nie)
+                const nV = P.length / 3;
+                const k = this._bodenKarteNaht(
+                    g,
+                    cx,
+                    cz,
+                    E.lod || 0,
+                    L,
+                    "lage",
+                    saum(I, L === P ? bewegtP : saeule(L, N), nV)
+                );
+                // die Karte der Ziele trägt die Säule im Inneren (`bewegt`, w4-b-boden): der Leser im Übergangs-Band rastert sonst
+                // nur, was am Saum zog — sie liegt seit dem Einbau (aus dem Faden), ein Neu-Raster der Lage allein ließe sie alt
                 const kz =
-                    naht.ziel && (E.lod || 0) < 3 ? this._bodenKarteNaht(g, cx, cz, E.lod || 0, Z, "ziel", true) : null;
+                    naht.ziel && (E.lod || 0) < 3
+                        ? this._bodenKarteNaht(g, cx, cz, E.lod || 0, Z, "ziel", saum(I, bewegtZ, nV))
+                        : null;
                 [E.surfMap, E.gruenMap, E.surfMapZiel] = [k && k.hoehe, k && k.gruen, kz && kz.hoehe];
                 this._streuFussNeu(cx, cz);
                 n++;
@@ -2915,9 +2940,10 @@ class AnazhRealm_gelaende_chunks {
             const comma = key.indexOf(",");
             const cx = parseInt(key.slice(0, comma), 10);
             const cz = parseInt(key.slice(comma + 1), 10);
-            reihe.push({ key, cx, cz, d: Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz)) });
+            const rang = this._bedarfWeg((cx + 0.5) * span, (cz + 0.5) * span);
+            reihe.push({ key, cx, cz, d: Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz)), rang });
         }
-        reihe.sort((a, b) => a.d - b.d);
+        reihe.sort((a, b) => a.rang - b.rang); // der EINE Rang (w7-rang): die Zeit bis Bedarf, bis hier Chebyshev
         const st = this.state;
         const worker = this._voxelFadenTraegt();
         const imFlug = worker ? AnazhRealm.DIRTY_IM_FLUG : 1;

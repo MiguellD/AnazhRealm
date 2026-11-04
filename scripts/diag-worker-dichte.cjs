@@ -1138,7 +1138,8 @@ async function studioProbe(page) {
             const G = window.__gelaendeCore;
             const snap = r._weltAusPlan({ art: G.PLAN_ART, v: G.PLAN_VERSION, saat: "studio-probe-fremd", regler: {} });
             snap.terrainBaseHeight = 7;
-            snap.worldMeta.erbgut.terme.push({
+            // das Erbgut ist das Gelände des Welt-Gesetzes (ultiversum.K1)
+            snap.worldMeta.gesetz.gelaende.terme.push({
                 art: "rampe",
                 x: 60,
                 z: -40,
@@ -1326,7 +1327,7 @@ async function studioProbe(page) {
             const p = st.pendingImport;
             const ok = !!(p && p.parsed && p.parsed.worldMeta);
             r._weltTorImportReplace();
-            return { ok, erbgut: ok ? p.parsed.worldMeta.erbgut : null };
+            return { ok }; // das Erbgut der Tür las niemand (die Welt misst `weltMessen`)
         }, studio.text);
         if (!tor.ok) {
             befunde.push("die Welt-Tür liest den Plan nicht (das Welt-Tor macht aus ihm keine Welt)");
@@ -1662,8 +1663,8 @@ async function gebaut(page) {
 //     Tiefe, `da`: auch ihr Klon) und die Platte — je Minute im Kalt-Boot und in einer Minute Fahrt, Soll ≤ 5 MB/min.
 //   --faden [--echt] [--selftest]   ein injizierter Hydro-Bau, ein Fußabdruck an einer unbenannten Sync-Stelle, ein Guss, ein
 //                          Wuchs eines Spawn-Bauplans (w4-b-pflanzen), die Naht und der Satz eines Faden-Netzes im Haupt-Faden
-//                          (w4-b-boden2), ein Stau-Feld und Klon (3 MB tief in einer Nachricht, 3 MB in 300 Krumen, zwei Kopien)
-//                          fallen ROT beim Namen; `--echt` im Fenster an der echten GPU (`[linse-gpu]`), sonst am Null-Renderer.
+//                          (w4-b-boden2), ein Stau-Feld, Klon (3 MB tief in einer Nachricht, 3 MB in 300 Krumen, zwei Kopien)
+//                          und ein Glied des Stands (2 MB in worldMeta, die Zeile `speicher:stand:.worldMeta.k5Probe`) fallen ROT beim Namen; `--echt` im Fenster an der echten GPU (`[linse-gpu]`), sonst am Null-Renderer.
 const FADEN_SOLL = 5e6; // Bytes je Minute
 function klonBytes(v, frei, seen, da) {
     if (v === null || typeof v !== "object") return da ? 0 : typeof v === "string" ? v.length : 8;
@@ -1771,10 +1772,20 @@ function fadenSeite(bytesQ, huelleQ) {
     const post = Roh.prototype.postMessage;
     Roh.prototype.postMessage = function (m, tr) {
         const frei = new Set(Array.isArray(tr) ? tr : (tr && tr.transfer) || []);
-        const art = `${this.__faden}:${(m && m.type) || "?"}`;
+        const art = `${this.__faden}:${(m && (m.type || m.op)) || "?"}`;
         const k = klonBytes(m, frei, new Set(), da);
         if (k) zu("kopie", art, k); // der Klon empfangener Bytes zurück in einen Faden heißt nach seiner Nachricht (Lehre 24)
-        zu("gesendet", art, klonBytes(m, frei, new Set()) - k);
+        let rest = klonBytes(m, frei, new Set()) - k;
+        // DER STAND DES SPEICHERS JE TEIL (streaming-k5): die Stücke seiner Zeichenkette (`daten`, je Teil der Tafel, Kopf-Feld
+        // und Glied, Glied einer Liste) heißen nach ihrem Teil — bis streaming-k5 hieß jeder Stand „speicher:?", und der Täter
+        // (je Bau-Klick der ganze worldMeta) stand in keiner Zeile
+        const namen = m && m.daten && [...m.teile, ...Object.entries(m.listen).flatMap(([l, L]) => L.teile.map(() => l))];
+        if (namen)
+            m.daten.split("\u0001").forEach((x, i) => {
+                zu("gesendet", art + ":" + namen[i].replace(/\u0002/g, "."), x.length);
+                rest -= x.length;
+            });
+        zu("gesendet", art, rest);
         return post.call(this, m, tr);
     };
     // DIE PLATTE wie im Spiel: Put und Get klonen ihren Wert im Haupt-Faden — es zählt, wo der Wert Bytes trägt
@@ -1966,6 +1977,10 @@ async function faden(page, url) {
                 r._bodenNaht(mesh.geometry);
                 r._chunkSatzEin("boden", k, mesh.geometry, k);
             })();
+            // ein Glied des Kopfs mit 2 MB im Stand: die Zeile des Speichers nennt es beim Namen (.Feld.Glied)
+            st.worldMeta.k5Probe = "k".repeat(2e6);
+            r.saveState();
+            delete st.worldMeta.k5Probe;
             (function injizierterWuchs() {
                 // der Bauplan eines Spawns wächst im Haupt-Faden, obwohl der Wald-Faden lebt (w4-b-pflanzen, `_wuchsSkelett`)
                 r._growTreeBlueprint("busch_hazel", "selbsttest", { spawn: true });
@@ -2045,6 +2060,7 @@ async function faden(page, url) {
         const S = F.t.selbst || { empfang: {}, kopie: {} };
         const nennt = (n) => F.hydro.rot.concat(F.bau.rot, F.stau.rot).some((x) => x.includes(n));
         const krume = S.empfang["selbsttest:krume"] || 0;
+        const kopf = S.gesendet["speicher:stand:.worldMeta.k5Probe"];
         const klon = (S.empfang["selbsttest:klon"] || 0) + krume;
         const sieht =
             ["injizierteHydro", "injizierterFussabdruck", "injizierterGuss", "injizierterWuchs", "Boden-Naht", "Satz-Vorlage"].every(nennt) &&
@@ -2052,9 +2068,10 @@ async function faden(page, url) {
             klon >= 5.9e6 &&
             krume >= 2.9e6 &&
             summe(S.kopie) >= 5.9e6 &&
+            kopf >= 2e6 &&
             proMin.selbst > FADEN_SOLL;
         console.log(
-            `  SELBSTTEST: injizierter Hydro-Bau, synchroner Fußabdruck, Guss, Wuchs, Boden, Stau-Feld und Klon (${mb(klon)} MB, Kopie ${mb(summe(S.kopie))} MB) ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR"}`
+            `  SELBSTTEST: injizierter Hydro-Bau, synchroner Fußabdruck, Guss, Wuchs, Boden, Stau-Feld, Stand (${mb(kopf)} MB) und Klon (${mb(klon)} MB, Kopie ${mb(summe(S.kopie))} MB) ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR"}`
         );
         rot = rot || !sieht;
     }

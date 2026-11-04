@@ -275,6 +275,11 @@ function werkPutz() {
     st.yaw = 0;
     if (st.playerMesh) st.playerMesh.rotation.y = 0;
 }
+// DIE PEERS WEG (`window.__peersWeg()`): jeder Peer der Leitung fällt über `_p2pRemovePeer` — bis w8-snapshot-schlank elfmal
+// derselbe Zwilling in playtest/netz-p2p
+function peersWeg() {
+    for (const pid of Array.from(st.p2p.peers.keys())) r._p2pRemovePeer(pid);
+}
 // DIE BAUTEN LEER (`window.__bautenLeer()`): jedes Mesh der Architekturen aus der Szene und entsorgt, die Liste leer — bis
 // w4-verkehr-c2 sechsmal derselbe Zwilling in playtest/siedlung
 function bautenLeer() {
@@ -322,7 +327,7 @@ function png(u8, W, H) {
 // Bild neu (eine Linse blendet Klassen aus und ein, die Bühne wechselt)
 const bundlesNeu = () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
 const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
-const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__rufe = ${rufe};`;
+const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -444,6 +449,10 @@ function browserOptionen({ art, frist, zusatz = [], headless = true, viewport, p
 // headless-Kontext und was die Linse als `erwartet` nennt.
 const HARMLOS = /favicon|net::ERR|Failed to load resource|save-server|localhost:|127\.0\.0\.1:\d+\/api/i;
 const KOSTEN = /^\[budget\] |BUDGET-BRUCH /;
+// DIE POST-KETTE BRICHT NIE STILL: der EINE Melder (`_stoffBruch` → `_bruchMelden`) schreibt ihren Bruch — im Bau oder im
+// Render-Lauf, danach zeichnet der Schirm direkt — als ERROR-Zeile über console.log; bis hier sah der Sammler nur console.error,
+// und jede Linse außer gate:post-kette blieb über ihm grün (gate:fern-ring meldete auf main JEDEN Frame „STOFF: die Post-Kette
+// (Render-Lauf …)", CI 41622260772). Jetzt ist er in JEDER Linse, die hier bootet, ROT beim Namen (der Selbsttest: wirft.html).
 const sammlung = { fehler: [], erwartet: null, wache: false, selbsttest: null };
 
 function melde(art, text) {
@@ -477,8 +486,9 @@ function fehlerSammler(page) {
     page.on("pageerror", (e) => melde("pageerror", (e && (e.stack || e.message)) || e));
     page.on("error", (e) => melde("absturz", e?.message || e));
     page.on("console", (m) => {
-        if (m.type() !== "error") return;
         const t = m.text();
+        if (/\[ERROR\] STOFF: die Post-Kette/.test(t)) return melde("post-kette", t);
+        if (m.type() !== "error") return;
         if (HARMLOS.test(t)) return;
         // ein Budget-Bruch ist ein KOSTEN-Urteil mit eigenem Richter (gate:asset-contract, regler-wirkt), kein Absturz der Welt
         if (KOSTEN.test(t)) return console.log(`[welt-boot] KOSTEN (Richter gate:asset-contract): ${t.slice(0, 300)}`);
@@ -1148,11 +1158,19 @@ async function seiteZu(browser, server, out, kopf, feld = "error") {
 // DIE TÄTER-FÄLLE eines Selbsttests ohne Browser: je Fall `[name, tat, muss]` (die Tat an einem frischen `klon()`) oder
 // `{ name, z, muss }` das Urteil; jedes `muss` (ein Muster oder eine Liste) trifft einen Befund, `null` verlangt keinen — sonst steht
 // der Fall beim Namen in `fehler`. `selbsttestEnde` schließt: ROT mit Exit 1, sonst der Grün-Satz.
+// Der Täter eines Falls ist eine Funktion des Klons oder seine TAFEL `[pfad, wert]` („a.b.0"): „pfad=" setzt den Wert, sonst
+// mischt er sich in den Knoten, ohne Wert fällt der Pfad — bis w6-stoffe-k5 schrieb jede Wand je Täter ihre eigene Closure.
 function taeterFaelle(faelle, urteil, { fehler = [], klon } = {}) {
     for (const f of faelle) {
         const [name, tat, muss] = Array.isArray(f) ? f : [f.name, null, f.muss];
         const z = tat ? klon() : f.z;
-        if (tat) tat(z);
+        if (Array.isArray(tat)) {
+            const p = tat[0].replace(/=$/, "").split(".");
+            const o = p.slice(0, -1).reduce((x, k) => x[k], z);
+            if (tat.length < 2) delete o[p.at(-1)];
+            else if (tat[0].endsWith("=")) o[p.at(-1)] = tat[1];
+            else Object.assign(o[p.at(-1)], tat[1]);
+        } else if (tat) tat(z);
         const v = urteil(z);
         const fehlt =
             muss == null ? v.slice(0, v.length && 1) : [].concat(muss).filter((re) => !v.some((s) => re.test(s)));
@@ -1566,7 +1584,8 @@ async function selbsttest() {
         "/schleife.html":
             "<!doctype html><script>function __stallSchleife(){var e=performance.now()+9000;while(performance.now()<e){}}setTimeout(__stallSchleife,300)</script>",
         "/haenger.html": "<!doctype html><script>window.__nie=function(){return new Promise(function(){})}</script>",
-        "/wirft.html": "<!doctype html><script>setTimeout(function(){throw new Error('__seitenWurf')},50)</script>",
+        "/wirft.html":
+            "<!doctype html><script>setTimeout(function(){console.log('[ERROR] STOFF: die Post-Kette');throw new Error('__seitenWurf')},50)</script>",
     };
     const server = statikServer({ seiten });
     await server.lausche(0);
@@ -1643,7 +1662,8 @@ async function selbsttest() {
     await server.zeige(await kontext.newPage(), undefined, "wirft.html", "load");
     await sleep(400);
     const wurf = sammlung.fehler.filter((f) => f.includes("__seitenWurf"));
-    sammlung.fehler = sammlung.fehler.filter((f) => !wurf.includes(f));
+    const kette = sammlung.fehler.filter((f) => f.startsWith("post-kette: "));
+    sammlung.fehler = sammlung.fehler.filter((f) => !wurf.includes(f) && !kette.includes(f));
     const code = fs
         .readdirSync(path.join(ROOT, "scripts"), { recursive: true })
         .map((f) => f.replace(/\\/g, "/"))
@@ -1734,6 +1754,7 @@ async function selbsttest() {
             /^pageerror: Error: __seitenWurf/.test(wurf[0]),
             `Seiten-Wurf: ${wurf[0] || "KEIN Fehler gesammelt — still grün"}`,
         ],
+        [kette.length === 1, `Bruch der Post-Kette: ${kette[0] || "still grün"}`],
         [!zwillinge.length, `eigene pageerror-Sammler neben dem EINEN: ${zwillinge.join(", ") || "keiner"}`],
         [
             !namen.length && `${vonHand("window.__deckel = 1; (window.__weltDa = r); window.sleep == r;")}` === "__deckel,__weltDa",

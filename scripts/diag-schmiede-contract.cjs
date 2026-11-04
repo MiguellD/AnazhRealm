@@ -36,7 +36,7 @@ const { errs, check, wandEnde } = pruefer();
 const SC = studioKern("schmiede-core.js", "__schmiedeCore");
 
 // ── Die eingefrorenen Fälle: Gattungen × Seeds × LODs (+ ov-Override-Kanal) ──
-const GATTUNGEN = Object.keys(SC.REZEPT_ZU_GATTUNG); // alle 22 (Waffen UND Werkzeuge)
+const GATTUNGEN = Object.keys(SC.REZEPT_ZU_GATTUNG); // alle 23 (Waffen UND Werkzeuge; physik.K4: der Flegel kam additiv dazu)
 const SEEDS = [7, 12345];
 const LODS = [0]; // kindStages.weapon = [0] — die einzige getragene Stufe
 const CASES = [];
@@ -103,8 +103,8 @@ function arenaFall(c) {
     console.log("=== ASSET-VERTRAG v5 — Klingen & Werkzeuge (schmiede-core.js buildInstance) ===");
     check("schmiede-core geladen (__schmiedeCore + buildInstance)", !!SC && typeof SC.buildInstance === "function");
     check(
-        `alle 22 Gattungen im Rezept-Namensraum (PRESETS)`,
-        GATTUNGEN.length === 22 && GATTUNGEN.every((g) => /^[a-z0-9_-]+$/.test(g) && SC.PRESETS[g])
+        `alle 23 Gattungen im Rezept-Namensraum (PRESETS)`,
+        GATTUNGEN.length === 23 && GATTUNGEN.every((g) => /^[a-z0-9_-]+$/.test(g) && SC.PRESETS[g])
     );
 
     // ── ULTRAGUSS U6d — das Wirts-Schnitt-Gesetz wohnt im Kern (die EINE Formel-Quelle

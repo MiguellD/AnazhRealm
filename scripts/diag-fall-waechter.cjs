@@ -348,110 +348,110 @@ function selbsttest() {
         ["der grüne Befund", () => {}],
         // das Gegenstück: ein Tier am steilen Fuß der Höhlenwand steht auf der Ebene seiner Proben, 0,2 m unter dem Fels unter
         // seiner Wurzel (der Grund krümmt sich unter dem Leib) — im Höhlen-Band, grün
-        ["Tier im Höhlen-Band", (b) => Object.assign(b.proben[5], { tiefsteUnter: 0.2, yEnde: 30.2, grundEnde: 30.4 })],
+        ["Tier im Höhlen-Band", ["proben.5", { tiefsteUnter: 0.2, yEnde: 30.2, grundEnde: 30.4 }]],
         [
             "der Wagen der Schau fällt durch den Spaltgrund",
-            (b) => Object.assign(b.proben[0], { tiefsteUnter: 6444, yEnde: -6428, todesEbene: true, yMin: -6428 }),
+            ["proben.0", { tiefsteUnter: 6444, yEnde: -6428, todesEbene: true, yMin: -6428 }],
             /\(O\) DURCH DEN BODEN: O1 Wagen unter dem Überhang — Wagen fahrzeug_gt#9 bei -900\.6\/-976\.1 lag 6444\.00 m unter/,
         ],
         [
             "unendlicher Fall",
-            (b) => Object.assign(b.proben[1], { todesEbene: true, yMin: -900 }),
+            ["proben.1", { todesEbene: true, yMin: -900 }],
             /UNENDLICHER FALL: O2/,
         ],
         [
             "der Wolf auf dem Dach",
-            (b) => Object.assign(b.proben[3], { yEnde: 48.6, grundEnde: 30.0, dach: 48.6 }),
+            ["proben.3", { yEnde: 48.6, grundEnde: 30.0, dach: 48.6 }],
             /\(O\) AUF DEM DACH: O3 Wolf in der Höhle — Tier wolf#3 .* 18\.60 m über dem Grund/,
         ],
         [
             "der Wagen schwebt",
-            (b) => Object.assign(b.proben[2], { yEnde: 31.5, grundEnde: 30.0 }),
+            ["proben.2", { yEnde: 31.5, grundEnde: 30.0 }],
             /\(O\) STEHT NICHT: O3 Wagen in der Höhle — .* ruht 1\.50 m/,
         ],
         ["fehlende Probe", (b) => b.proben.splice(4, 1), /LEER: die Probe „O3 Spieler in der Höhle" fehlt/],
         [
             "der Wolf läuft durch die Wand aufs Dach",
-            (b) => Object.assign(b.proben[5], { yEnde: 42.28, grundEnde: 42.28, dach: 42.33, grundSoll: 30.4 }),
+            ["proben.5", { yEnde: 42.28, grundEnde: 42.28, dach: 42.33, grundSoll: 30.4 }],
             /\(O\) AUF DEM DACH: O3 Wolf läuft in die Wand — Tier wolf#4 \(läuft an die Wand 0\.4 m\) .* 11\.88 m über dem Grund/,
         ],
         [
             "ein Tier tiefer als sein Sicht-Band",
-            (b) => Object.assign(b.proben[5], { tiefsteUnter: 2.5, yEnde: 29.8, grundEnde: 32.3 }),
+            ["proben.5", { tiefsteUnter: 2.5, yEnde: 29.8, grundEnde: 32.3 }],
             /\(O\) DURCH DEN BODEN: O3 Wolf läuft in die Wand — .* lag 2\.50 m unter dem Fels/,
         ],
         [
             "das Sicht-Band trägt in der Höhle nicht",
-            (b) => Object.assign(b.proben[5], { tiefsteUnter: 0.55, yEnde: 29.85, grundEnde: 30.4 }),
+            ["proben.5", { tiefsteUnter: 0.55, yEnde: 29.85, grundEnde: 30.4 }],
             /\(O\) DURCH DEN BODEN: O3 Wolf läuft in die Wand — .* lag 0\.55 m unter dem Fels/,
         ],
         [
             "der laufende Wolf steigt die Höhlenwand hinauf",
-            (b) => Object.assign(b.proben[5].stirn, { hoch: 1.4 }),
+            ["proben.5.stirn", { hoch: 1.4 }],
             /\(O\) KLETTERWAND: O3 Wolf läuft in die Wand — Tier wolf#4 .* Stirn 1\.40 m über seinem Heck/,
         ],
         [
             "der laufende Wolf ohne Stirn",
-            (b) => (b.proben[5].stirn = null),
+            ["proben.5.stirn=", null],
             /LEER: O3 Wolf läuft in die Wand — keine Stirn gemessen/,
         ],
         [
             "der lebende Wolf steht am Wandfuß im Fels",
-            (b) => Object.assign(b.proben[6].tod, { stehtM: -0.46 }),
+            ["proben.6.tod", { stehtM: -0.46 }],
             /\(O\) STAND IM FELS: O3 Wolf stirbt in der Höhle — Tier wolf#5 .* Haut 0\.46 m im Fels/,
         ],
         [
             "der tote Wolf liegt im Grund",
-            (b) => Object.assign(b.proben[6].tod, { liegtM: -0.38, kippMin: -0.38 }),
+            ["proben.6.tod", { liegtM: -0.38, kippMin: -0.38 }],
             /\(O\) TOD-LAGE: O3 Wolf stirbt in der Höhle — Tier wolf#5 \(stirbt\) .* liegt 0\.38 m im Fels/,
         ],
         [
             "der tote Wolf liegt über dem Boden",
-            (b) => Object.assign(b.proben[6].tod, { liegtM: 0.62 }),
+            ["proben.6.tod", { liegtM: 0.62 }],
             /\(O\) TOD-LAGE: O3 Wolf stirbt in der Höhle — .* liegt 0\.62 m über dem Fels .* er schwebt/,
         ],
         [
             "der Stand im Hang ist kein Soll: er sinkt kippend tiefer",
-            (b) => Object.assign(b.proben[6].tod, { stehtM: -0.68, liegtM: -0.1, kippMin: -0.92 }),
+            ["proben.6.tod", { stehtM: -0.68, liegtM: -0.1, kippMin: -0.92 }],
             /\(O\) TOD-LAGE: O3 Wolf stirbt in der Höhle — .* sinkt im Kippen 0\.92 m in den Fels/,
         ],
         [
             "der tote Wolf schwebt im Kippen",
-            (b) => Object.assign(b.proben[6].tod, { kippMax: 0.9 }),
+            ["proben.6.tod", { kippMax: 0.9 }],
             /\(O\) TOD-LAGE: O3 Wolf stirbt in der Höhle — .* schwebt im Kippen 0\.90 m/,
         ],
         [
             "Tod ohne Haut",
-            (b) => (b.proben[6].tod.liegtM = null),
+            ["proben.6.tod.liegtM=", null],
             /LEER: O3 Wolf stirbt in der Höhle — keine Haut gemessen/,
         ],
-        ["leerer Zensus", (b) => (b.zensus.spalten = 0), /LEER: \(Z\) der Zensus fand keine/],
+        ["leerer Zensus", ["zensus.spalten=", 0], /LEER: \(Z\) der Zensus fand keine/],
         [
             "Zensus-Täter",
-            (b) => (b.zensus.proben[0].tiefsteUnter = 3.1),
+            ["zensus.proben.0.tiefsteUnter=", 3.1],
             /\(Z\) \(O\) DURCH DEN BODEN: Zensus — Tier wolf#6 bei -900\.6\/-976\.1 lag 3\.10 m/,
         ],
-        ["stumpfer Schmuggel", (b) => (b.schmuggel.tiefsteUnter = 0.1), /LINSE STUMPF: \(T\)/],
+        ["stumpfer Schmuggel", ["schmuggel.tiefsteUnter=", 0.1], /LINSE STUMPF: \(T\)/],
         [
             "Quelle",
             (b) => b.quelle.push("_fahrBoden Zeile 1 ruft getTerrainHeightAt"),
             /\(Q\) DACH-LESER: _fahrBoden Zeile 1/,
         ],
         // der additive Kegel der Stärke 48 (am Vorfahren e3dd2b67: 39,38 m, Hub 3,23 → 1,36 m, die Sohle bis 2,88 m)
-        ["der Kegel", (b) => (b.turm.bloecke[19] = [1.36, 2.88, 0]), /KEIN HUB: Block 20 hob 1\.36/],
-        ["die Sohle", (b) => (b.turm.bloecke[17][1] = 2.88), /SOHLE: Block 18 2\.88 m neben dem Mesh/],
-        ["zu niedrig", (b) => (b.turm.hoehe = 39.38), /ZU NIEDRIG: 39\.38 m/],
+        ["der Kegel", ["turm.bloecke.19=", [1.36, 2.88, 0]], /KEIN HUB: Block 20 hob 1\.36/],
+        ["die Sohle", ["turm.bloecke.17.1=", 2.88], /SOHLE: Block 18 2\.88 m neben dem Mesh/],
+        ["zu niedrig", ["turm.hoehe=", 39.38], /ZU NIEDRIG: 39\.38 m/],
         ["ein Block fehlt", (b) => b.turm.bloecke.pop(), /LEER: B Turm: 19 Blöcke/],
-        ["ein Loch", (b) => (b.turm.nach.loecher = 3), /RELOAD: 20 Edits, 3 Löcher/],
-        ["kein Reload", (b) => delete b.turm.nach, /LEER: B Turm: kein Reload/],
+        ["ein Loch", ["turm.nach.loecher=", 3], /RELOAD: 20 Edits, 3 Löcher/],
+        ["kein Reload", ["turm.nach"], /LEER: B Turm: kein Reload/],
         // B2 — der Fuß in der Luft: am Vorfahren schnitt der Grund des Hauses den Turm über dem Dach (Sohle 193,85 m); an e9ebd232
         // trug der erste Block auf dem Dachboden keine Gestalt (keine Ecke des Netzes in seiner Säule, das Haus schnitt den Boden
         // darunter): 11–12 Takte kein gezeichneter Boden unter dem Fuß in jedem Lauf, die Sohle sah es nur gedrosselt (198 m)
-        ["Block ohne Gestalt", (b) => (b.turm2[1].bloecke[0][2] = 11), /\(B2 Dach Third\) BLIND: Block 1 — 11 Takte/],
+        ["Block ohne Gestalt", ["turm2.1.bloecke.0.2=", 11], /\(B2 Dach Third\) BLIND: Block 1 — 11 Takte/],
         // der Ring ohne den Turm (am Vorfahren: 89,62 m an der Krone 160,38 m) und ohne den Edit
-        ["Ring ohne Turm", (b) => (b.turm2[2].ring.vor = 89.62), /\(B2 Fels Ego\) FERN-RING OHNE TURM: 89\.62/],
-        ["Ring ohne Edit", (b) => delete b.turm2[3].ring.takte, /\(B2 Fels Third\) FERN-RING OHNE EDIT/],
-        ["Ring zu spät", (b) => (b.turm2[5].ring.takte = 90), /\(B2 Brücke Third\) FERN-RING ZU SPÄT: 1\.50 s/],
+        ["Ring ohne Turm", ["turm2.2.ring.vor=", 89.62], /\(B2 Fels Ego\) FERN-RING OHNE TURM: 89\.62/],
+        ["Ring ohne Edit", ["turm2.3.ring.takte"], /\(B2 Fels Third\) FERN-RING OHNE EDIT/],
+        ["Ring zu spät", ["turm2.5.ring.takte=", 90], /\(B2 Brücke Third\) FERN-RING ZU SPÄT: 1\.50 s/],
     ];
     taeterFaelle(faelle, urteil, { fehler: errs, klon });
     // die Quellen-Wand am Stamm (grün), an einer Kopie mit dem alten Leser im Körper-Schritt, einem unbenannten Leser der

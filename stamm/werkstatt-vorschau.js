@@ -1042,6 +1042,8 @@ class AnazhRealm_werkstatt_vorschau {
             mesh.userData.sharedGeom = true;
             mesh.userData.sharedMat = true;
             mesh.userData.foundryPreview = true;
+            // das Seil-Teil behält seine Nummer (physik.K4): die Hand bewegt es nach dem Seil-Gesetz (`_seilAmLeib`)
+            if (Number.isInteger(ch.userData && ch.userData.__seil)) mesh.userData.__seil = ch.userData.__seil;
             out.add(mesh);
         }
         return out.children.length ? out : null;
@@ -2404,6 +2406,13 @@ class AnazhRealm_werkstatt_vorschau {
             const wOpt = document.createElement("option");
             wOpt.value = wid;
             wOpt.textContent = this._weltName(AnazhRealm.WORLD_REGISTRY[wid]);
+            portalSel.appendChild(wOpt);
+        }
+        // die Welten des Ultiversums (ultiversum.K1): ein Gesetz beim Namen — das Tor gebiert eine Welt dieses Gesetzes
+        for (const name of Object.keys(AnazhRealm.ULTIVERSUM)) {
+            const wOpt = document.createElement("option");
+            wOpt.value = name;
+            wOpt.textContent = this._t(`ultiversum.${name}`);
             portalSel.appendChild(wOpt);
         }
         mkBtn(this._t("vorschau.intent.portal"), this._t("vorschau.intent.portal.titel"), () =>

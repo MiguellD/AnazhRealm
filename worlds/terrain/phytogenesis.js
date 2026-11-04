@@ -1665,6 +1665,85 @@ function findClearing(trees, R, seedInt) {
 }
 /* =================== ENDE ECO-ENGINE =================== */
 let __forest = null;
+/* ---------- DIE FERNSTUFE DES LABOR-WALDS (pipeline.K2 — EIN Bäcker der Karten) ----------
+   Das Labor backt keine Karte: der Bäcker der Welt (`_karteWeltBacken`, three r184 — vier Hebungs-Ringe, Albedo vor jedem
+   Licht, die Normale oktaedrisch, die Tiefe je Texel, die Sonnen-Sicht der Krone) backt sie für jede Gestalt des Walds, und
+   das Labor zeigt ihre Bytes (die Heimat antwortet auf `karte-bitte` mit `karte-abzug`, stamm/netz-portal.js). Bis w8 backte
+   hier ein Zwilling auf three r128 (`bakeImpostorAtlas`, foundry-bruecke.js): ein Ring, Halbkugel-Licht, Normale aus
+   MeshNormalMaterial — die Karte aus Studio und Welt war nie byte-gleich. Ohne Heimat (das Labor allein geöffnet) trägt
+   der Wald keine Fernstufe, und das Labor sagt es laut: es gibt keinen zweiten Bäcker. */
+const KARTE_LABOR_MAX = 32; // Zellen (Art × Gestalt) je Atlas — die Gestalten des Budgets tragen heute 10
+let _impGeo = null,
+    _impMat = null,
+    _impSpecs = [],
+    _impCellOf = {};
+const _impYAxis = new THREE.Vector3(0, 1, 0);
+let _labHeimat = null; // die Portal-Brücke der Hülle (AnazhHuelle.bruecke) — null ohne Heimat
+let _karteLabor = null; // { gen, offen, karten: [abzug je Zelle], fehler }
+const _karteLaborVorrat = new Map(); // "art|gestalt" → der Abzug der Welt (ein Neu-Wald fragt nur, was ihm fehlt)
+function _karteLaborLeer() {
+    const t = new THREE.DataTexture2DArray(new Uint8Array(4), 1, 1, 1);
+    t.needsUpdate = true;
+    return t;
+}
+function _karteLaborFragen() {
+    if (_impSpecs.length > KARTE_LABOR_MAX) throw new Error("Labor-Karte: " + _impSpecs.length + " Zellen > " + KARTE_LABOR_MAX);
+    const gen = (_karteLabor ? _karteLabor.gen : 0) + 1;
+    _karteLabor = { gen, offen: _impSpecs.length, karten: new Array(_impSpecs.length).fill(null), fehler: null };
+    if (!_labHeimat) {
+        _karteLabor.fehler = "ohne Heimat: die Karte backt der Bäcker der Welt — das Labor zeigt sie nur im Tor";
+        console.error("Labor-Karte: " + _karteLabor.fehler);
+        return;
+    }
+    _impSpecs.forEach((sp, i) => {
+        const da = _karteLaborVorrat.get(sp.sp + "|" + sp.seed);
+        if (da) _karteLaborEmpfang(Object.assign({}, da, { reqId: gen + ":" + i }));
+        else _labHeimat.post({ type: "karte-bitte", reqId: gen + ":" + i, art: sp.sp, gestalt: sp.seed });
+    });
+}
+function _karteLaborEmpfang(m) {
+    const [gen, i] = String(m.reqId || "").split(":").map(Number);
+    const L = _karteLabor;
+    if (!L || gen !== L.gen || !(i >= 0 && i < L.karten.length) || L.karten[i]) return;
+    if (m.fehler || !m.albedo || !m.normale) {
+        L.fehler = (m.art || "?") + "|" + (m.gestalt || "?") + ": " + (m.fehler || "keine Bytes");
+        console.error("Labor-Karte: der Bäcker der Welt antwortet mit einem Bruch — " + L.fehler);
+        return;
+    }
+    L.karten[i] = m;
+    _karteLaborVorrat.set(m.art + "|" + m.gestalt, m);
+    if (--L.offen === 0) _karteLaborLegen(L);
+}
+// Alle Karten stehen: je Zelle die Schicht der Welt, Byte für Byte, in EIN Array (Albedo und Normale), dazu Ring und Rahmen.
+function _karteLaborLegen(L) {
+    const k0 = L.karten[0];
+    const ring = k0.ringe.find((r) => r.hebung === 0);
+    const K = L.karten.length,
+        n = k0.w * k0.h * 4;
+    const lege = (feld) => {
+        const d = new Uint8Array(n * K);
+        L.karten.forEach((k, i) => {
+            if (k.w !== k0.w || k.h !== k0.h || k[feld].length !== n) throw new Error("Labor-Karte: die Schichten tragen verschiedene Maße");
+            d.set(k[feld], i * n);
+        });
+        const t = new THREE.DataTexture2DArray(d, k0.w, k0.h, K);
+        t.minFilter = THREE.LinearMipmapLinearFilter;
+        t.magFilter = THREE.LinearFilter;
+        t.generateMipmaps = true;
+        t.needsUpdate = true;
+        return t;
+    };
+    const u = _impMat.uniforms;
+    for (const t of [u.map.value, u.nmap.value]) t.dispose();
+    u.map.value = lege("albedo");
+    u.nmap.value = lege("normale");
+    L.karten.forEach((k, i) => (u.uWR.value[i] = k.frame.halfW / k.frame.halfH));
+    u.uV.value = k0.V;
+    u.uRingY.value = ring.y;
+    u.uZellH.value = ring.h / (k0.V / ring.teiler);
+    u.uH.value = k0.h;
+    u.uOben.value = k0.oben ? 1 : 0;
+}
 function buildForest() {
     if (typeof _lvCache !== "undefined") _lvCache.clear(); // neue Kronen -> Zyklus-Speicher ungueltig
     forestGroup = new THREE.Group();
@@ -1973,48 +2052,45 @@ function buildForest() {
 
     // (Berg entfernt)
 
-    // 3) Templates: WENIGE pro Art (Batching). FLOD2 = leicht.
-    /* V18.491.237 — Lab Wald Astung/LOD ← WALD_GESETZ fail-soft; Host none (WALD_VIS). FIB not hoisted. */
-    const _WG = (typeof WALD_GESETZ !== "undefined" && WALD_GESETZ)
-      || (typeof __terrainCore !== "undefined" && __terrainCore && __terrainCore.WALD_GESETZ)
-      || null;
-    const _CB_FB = { eiche: 0.42, fichte: 0.3, birke: 0.42, weide: 0.4, tanne: 0.3, mammut: 0.46 };
-    const FLOD = (_WG && Number.isFinite(_WG.flod)) ? _WG.flod : 0; // feine Stufe -> saubere Baeume aus der Naehe (NICHT die grobe Fernsicht-LOD)
-    const CB = (_WG && _WG.crownBase) ? {
-      eiche: Number.isFinite(_WG.crownBase.eiche) ? _WG.crownBase.eiche : _CB_FB.eiche,
-      fichte: Number.isFinite(_WG.crownBase.fichte) ? _WG.crownBase.fichte : _CB_FB.fichte,
-      birke: Number.isFinite(_WG.crownBase.birke) ? _WG.crownBase.birke : _CB_FB.birke,
-      weide: Number.isFinite(_WG.crownBase.weide) ? _WG.crownBase.weide : _CB_FB.weide,
-      tanne: Number.isFinite(_WG.crownBase.tanne) ? _WG.crownBase.tanne : _CB_FB.tanne,
-      mammut: Number.isFinite(_WG.crownBase.mammut) ? _WG.crownBase.mammut : _CB_FB.mammut
-    } : _CB_FB; // Stamm freistellen (Selbstastung im Wald)
+    // 3) Templates: WENIGE pro Art (Batching) — DIE GESTALTEN DER WELT (pipeline.K2): je Art die Bestand-Gestalten 1..n der Welt
+    // (`_foundryVariantFor`: der Same IST die Gestalt), ohne Prägung — derselbe Körper, den der Ofen der Welt baut und dessen
+    // Karte ihr EINER Bäcker backt. Bis w8 pflanzte das Labor Zufalls-Samen mit eigener Kronen-Basis (crownBase).
     // Der Stamm des Studio-Walds ist der Stamm der Welt: seine Schlankheit traegt das Welt-Mass des Kerns (K20, ph.hd) —
     // der Wald-Faktor trunkMul 0,5, der die Vorlagen-Formel (H/D 13–18) schlanker zog, ist gefallen.
     const poolL = [{}, {}];
-    /* L2-Mesh-Pool gestrichen: Fernstufe IST das Billboard (tote Fracht seit der Impostor-Aera) */ const mp = (
-        sp,
-        n
-    ) => {
+    // L2-Mesh-Pool gestrichen: die Fernstufe IST die Karte der Welt. `wurf`: die Art trug im alten Wald je Gestalt einen
+    // RNG()-Wurf — er bleibt, der Wald würfelt seine Plätze unverändert (die neuen Karten-Arten werfen nicht).
+    const mp = (sp, n, wurf) => {
         const seeds = [];
-        for (let i = 0; i < n; i++) seeds.push(Math.floor(RNG() * 1e6));
+        for (let i = 0; i < n; i++) {
+            if (wurf) RNG();
+            seeds.push(i + 1);
+        }
+        // DER SOLITÄR (K20, phyto-core `solitaerGestalt`): eine Baum-Art mit V Bestand-Gestalten trägt DAZU die Gestalt V+1,
+        // gewachsen frei (`freistand`, growSkeleton liest P.freistand) — die Welt prägt sie ebenso (`_foundryGestaltOv`)
+        const T = self.__phytoCore.solitaerGestalt(PRESETS[sp].kind, n);
+        if (T) seeds.push(T);
         for (let L = 0; L < 2; L++)
             poolL[L][sp] = seeds.map((sd) => {
-                const g = buildInstance(sp, sd, L, { crownBase: CB[sp] });
+                const g = sd === T ? buildInstance(sp, sd, L, { freistand: 1 }) : buildInstance(sp, sd, L);
                 g.userData.seed = sd;
+                g.userData.solitaer = sd === T;
                 return g;
             });
     }; // 3 LOD-Stufen, gleiche Seeds -> selber Baum, andere Detailtiefe
     // DIE GESTALTEN je Art lesen das Studio-Budget (PORTAL_RENDER_CONFIG.lod.budget.gestalten) — dieselben Zahlen
     // waehlt die Welt (`_foundryVariantFor`). Reihenfolge + Zahl der RNG()-Wuerfe wie zuvor (2/2/2/2/1/1).
     const _GEST = PORTAL_RENDER_CONFIG.lod.budget.gestalten;
-    for (const sp of ["eiche", "fichte", "birke", "tanne", "weide", "mammut"]) mp(sp, _GEST[sp]);
+    for (const sp of ["eiche", "fichte", "birke", "tanne", "weide", "mammut"]) mp(sp, _GEST[sp], true);
+    mp("strauch", _GEST.strauch, true); // der Strauch an der Stelle seines alten Wurfs
+    for (const sp of ["buche", "karst", "totholz"]) mp(sp, _GEST[sp], false);
     // Impostor-Baubeschreibung fuer JEDE (Art,Variante)-Kombination sichern -> Fern-Billboard = derselbe Baum wie das 3D-LOD, kein generischer Ersatz
     _impSpecs = [];
     _impCellOf = {};
     for (const sp of Object.keys(poolL[0])) {
         poolL[0][sp].forEach((tmpl, v) => {
             _impCellOf[sp + "|" + v] = _impSpecs.length;
-            _impSpecs.push({ sp, seed: tmpl.userData.seed, crownBase: CB[sp] });
+            _impSpecs.push({ sp, seed: tmpl.userData.seed });
         });
     }
     // LOD-WURZEL (08.07.) — DIE STUFEN-WAHRHEIT JE ART AUS DEN VERTRAGS-DATEN
@@ -2028,10 +2104,6 @@ function buildForest() {
     const _KS = (PORTAL_RENDER_CONFIG.lod && PORTAL_RENDER_CONFIG.lod.kindStages) || {};
     const _ksN = (k, d) => (_KS[k] && _KS[k].length ? _KS[k][0] : d) | 0;
     const _ksF = (k, d) => (_KS[k] && _KS[k].length ? _KS[k][_KS[k].length - 1] : d) | 0;
-    const _shrubSeeds = [];
-    for (let i = 0; i < _GEST.strauch; i++) _shrubSeeds.push(Math.floor(RNG() * 1e6)); // Budget-Gestalten (1 = ein Wurf wie zuvor)
-    const shrubT = _shrubSeeds.map((sd) => buildInstance("strauch", sd, _ksN("shrub", 2)));
-    const shrubTF = _shrubSeeds.map((sd) => buildInstance("strauch", sd, _ksF("shrub", 2)));
     const _grasSeeds = [];
     for (let i = 0; i < _GEST.gras; i++) _grasSeeds.push(Math.floor(RNG() * 1e6)); // Budget-Gestalten (2 Wuerfe wie zuvor)
     const grassT = _grasSeeds.map((sd) => buildInstance("gras", sd, _ksN("grass", 2)));
@@ -2189,18 +2261,23 @@ function buildForest() {
         }
     };
 
-    // 5) IMPOSTOR-Material EINMAL — LOD2 jedes Baums ist sein kamerazugewandtes Billboard an SEINER festen Position (SpeedTree)
-    bakeImpostorAtlas();
+    // 5) IMPOSTOR-Material EINMAL — LOD2 jedes Baums ist sein kamerazugewandtes Billboard an SEINER festen Position (SpeedTree);
+    // seine Karte backt der EINE Bäcker der Welt (`_karteLaborFragen`, pipeline.K2)
+    _karteLaborFragen();
     if (!_impGeo) {
         _impGeo = new THREE.PlaneGeometry(1, 1);
         _impGeo.translate(0, 0.5, 0);
     }
     _impMat = new THREE.ShaderMaterial({
         uniforms: {
-            map: { value: _impAtlas },
-            nmap: { value: _impNrm },
-            uK: { value: _impK },
-            uV: { value: _impV },
+            map: { value: _karteLaborLeer() },
+            nmap: { value: _karteLaborLeer() },
+            uWR: { value: new Float32Array(KARTE_LABOR_MAX).fill(0.5) },
+            uV: { value: 8 },
+            uRingY: { value: 0 },
+            uZellH: { value: 1 },
+            uH: { value: 1 },
+            uOben: { value: 1 },
             uFogColor: { value: new THREE.Color(0xa6bcc6) },
             uFogNear: { value: 42.0 },
             uFogFar: { value: 120.0 },
@@ -2218,33 +2295,39 @@ function buildForest() {
             uLodRef: _lodU.uLodRef,
             uDitherT: _lodU.uDitherT,
         },
+        // DIE KARTE DER WELT (pipeline.K2): je Zelle eine Schicht, wie der Bäcker der Welt sie backte — der Ring 0° (die
+        // waagrechte Reihe, eine Ansicht je Zeile ab `uRingY`), Albedo sRGB, die Normale oktaedrisch im Sicht-Raum der
+        // Bake-Kamera (rechts, oben, zur Kamera); `uOben` nennt die Zeilen-Reihe des Renderers, der sie backte.
         vertexShader:
-            "uniform float uFogNear,uFogFar,uK,uTime,uWind,uLodRef;uniform vec3 uWindDir;attribute float aCell;attribute float aDepthBias;attribute float aOccl;varying float vOcc;varying vec2 vUv;varying float vFog;varying float vCD;varying float vView;varying vec3 vLk;varying vec3 vRt;varying vec3 vTintI;void main(){vOcc=aOccl;vUv=vec2((uv.x+aCell)/uK,uv.y);vec3 inst=instanceMatrix[3].xyz;float _th=fract(sin(dot(inst.xz,vec2(127.1,311.7)))*43758.5453);float _th2=fract(sin(dot(inst.xz,vec2(269.5,183.3)))*43758.5453);float _lu=(_th-0.5)*0.22,_hu=(_th2-0.5)*0.18;vTintI=vec3(_lu+_hu*0.6,_lu,_lu-_hu*0.6);float sx=length(instanceMatrix[0].xyz),sy=length(instanceMatrix[1].xyz);float aRot=atan(-instanceMatrix[0].z,instanceMatrix[0].x);vec3 up=vec3(0.0,1.0,0.0);vec3 look=cameraPosition-inst;look.y=0.0;float ll=length(look);float szV=length(instanceMatrix[2].xyz);vCD=ll*min(uLodRef/max(szV,0.001),1.0);look=(ll>1e-4)?look/ll:vec3(0.0,0.0,1.0);vLk=look;float ang=atan(look.x,look.z);vView=fract((ang-aRot)/6.2831853+1.0);vec3 right=normalize(cross(up,look));vRt=right;vec3 wp=inst+right*(position.x*sx)+up*(position.y*sy);float sway=sin(uTime*1.7+inst.x*0.35+inst.z*0.27)*position.y*position.y*sy*0.012*(0.4+1.2*uWind);wp.xz+=uWindDir.xz*sway;vec4 mv=viewMatrix*vec4(wp,1.0);mv.z-=aDepthBias;vFog=clamp((-mv.z-uFogNear)/(uFogFar-uFogNear),0.0,1.0);gl_Position=projectionMatrix*mv;}" /* aRot aus T*Ry*S dekodiert; sway: Kronenspitze (y^2) pendelt in Windrichtung; vRt/vLk = Zell-Rahmen; FIX v27 vTintI = derselbe Positions-Hash wie das 3D-Laub -> Kronenfarbe konstant ueber L0/L1/L2 */,
+            "uniform float uFogNear,uFogFar,uTime,uWind,uLodRef;uniform float uWR[" + KARTE_LABOR_MAX + "];uniform vec3 uWindDir;attribute float aCell;attribute float aDepthBias;attribute float aOccl;varying float vOcc;varying vec2 vUv;varying float vCell;varying float vFog;varying float vCD;varying float vView;varying vec3 vLk;varying vec3 vRt;varying vec3 vTintI;void main(){vOcc=aOccl;vUv=uv;vCell=aCell;vec3 inst=instanceMatrix[3].xyz;float _th=fract(sin(dot(inst.xz,vec2(127.1,311.7)))*43758.5453);float _th2=fract(sin(dot(inst.xz,vec2(269.5,183.3)))*43758.5453);float _lu=(_th-0.5)*0.22,_hu=(_th2-0.5)*0.18;vTintI=vec3(_lu+_hu*0.6,_lu,_lu-_hu*0.6);float sx=length(instanceMatrix[0].xyz)*uWR[int(aCell+0.5)],sy=length(instanceMatrix[1].xyz);float aRot=atan(-instanceMatrix[0].z,instanceMatrix[0].x);vec3 up=vec3(0.0,1.0,0.0);vec3 look=cameraPosition-inst;look.y=0.0;float ll=length(look);float szV=length(instanceMatrix[2].xyz);vCD=ll*min(uLodRef/max(szV,0.001),1.0);look=(ll>1e-4)?look/ll:vec3(0.0,0.0,1.0);vLk=look;float ang=atan(look.x,look.z);vView=fract((ang-aRot)/6.2831853+1.0);vec3 right=normalize(cross(up,look));vRt=right;vec3 wp=inst+right*(position.x*sx)+up*(position.y*sy);float sway=sin(uTime*1.7+inst.x*0.35+inst.z*0.27)*position.y*position.y*sy*0.012*(0.4+1.2*uWind);wp.xz+=uWindDir.xz*sway;vec4 mv=viewMatrix*vec4(wp,1.0);mv.z-=aDepthBias;vFog=clamp((-mv.z-uFogNear)/(uFogFar-uFogNear),0.0,1.0);gl_Position=projectionMatrix*mv;}" /* aRot aus T*Ry*S dekodiert; die Breite = Höhe × Rahmen der Zelle (uWR, halfW/halfH der Welt-Karte); sway: Kronenspitze (y^2) pendelt in Windrichtung; vRt/vLk = Zell-Rahmen; FIX v27 vTintI = derselbe Positions-Hash wie das 3D-Laub */,
         fragmentShader:
-            "uniform sampler2D map,nmap;uniform vec3 uFogColor,uSunDir,uSunCol,uHemiCol,uSeasonMul;uniform float uFade,uV,uD1,uPres,uLodMaskOn,uDitherT;varying vec2 vUv;varying float vFog;varying float vCD;varying float vView;varying vec3 vLk;varying vec3 vRt;varying vec3 vTintI;varying float vOcc;void main(){float fV=vView*uV;float v0=floor(fV);float fb=fract(fV);float v1=mod(v0+1.0,uV);vec2 uvA=vec2(vUv.x,(vUv.y+v0)/uV),uvB=vec2(vUv.x,(vUv.y+v1)/uV);vec4 t=mix(texture2D(map,uvA),texture2D(map,uvB),fb);float fin=clamp((vCD-(uD1-uFade))/uFade,0.0,1.0);float ath=0.34+(1.0-clamp(uPres,0.0,1.0))*" + SAISON_GESETZ.karteSchwelle.toFixed(1) + ";if(t.a<ath)discard;if(uLodMaskOn>0.5){float _dh=fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(0.06711056,0.00583715)))+uDitherT);if(max(min(fin*2.0,1.0),vOcc)<_dh)discard;}vec3 nc=mix(texture2D(nmap,uvA).xyz,texture2D(nmap,uvB).xyz,fb)*2.0-1.0;vec3 N=normalize(vRt*nc.x+vec3(0.0,1.0,0.0)*nc.y+vLk*nc.z);float lam=clamp((dot(N,uSunDir)+0.18)/1.18,0.0,1.0);float sunW=mix(0.34,1.0,lam);vec3 alb=t.rgb*mix(vec3(1.0),uSeasonMul," + SAISON_GESETZ.kartenGewicht.toFixed(1) + ")*clamp(vec3(1.0)+vTintI,0.0,2.0);vec3 lit=alb*(uHemiCol+uSunCol*sunW);vec3 c=mix(lit,uFogColor,vFog*0.9);gl_FragColor=vec4(c,1.0);}" /* SAISONINVARIANTER ATLAS + FIX v27 Per-Baum-Tint (gleicher Hash wie 3D) -> kein Hue-Pop beim L1->L2-Uebergang */,
+            "precision highp sampler2DArray;uniform sampler2DArray map,nmap;uniform vec3 uFogColor,uSunDir,uSunCol,uHemiCol,uSeasonMul;uniform float uFade,uV,uD1,uPres,uLodMaskOn,uDitherT,uRingY,uZellH,uH,uOben;varying vec2 vUv;varying float vCell;varying float vFog;varying float vCD;varying float vView;varying vec3 vLk;varying vec3 vRt;varying vec3 vTintI;varying float vOcc;vec3 kUv(float v){float t=(uRingY+(v+1.0-vUv.y)*uZellH)/uH;return vec3(vUv.x,uOben>0.5?t:1.0-t,vCell);}vec3 okt(vec2 e){vec3 n=vec3(e,1.0-abs(e.x)-abs(e.y));float q=max(-n.z,0.0);n.x+=n.x>=0.0?-q:q;n.y+=n.y>=0.0?-q:q;return normalize(n);}void main(){float fV=vView*uV;float v0=floor(fV);float fb=fract(fV);float v1=mod(v0+1.0,uV);vec3 uvA=kUv(v0),uvB=kUv(v1);vec4 t=mix(texture(map,uvA),texture(map,uvB),fb);float fin=clamp((vCD-(uD1-uFade))/uFade,0.0,1.0);float ath=0.34+(1.0-clamp(uPres,0.0,1.0))*" + SAISON_GESETZ.karteSchwelle.toFixed(1) + ";if(t.a<ath)discard;if(uLodMaskOn>0.5){float _dh=fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(0.06711056,0.00583715)))+uDitherT);if(max(min(fin*2.0,1.0),vOcc)<_dh)discard;}vec3 nA=okt(texture(nmap,uvA).xy*2.0-1.0),nB=okt(texture(nmap,uvB).xy*2.0-1.0);vec3 nc=normalize(mix(nA,nB,fb));vec3 N=normalize(vRt*nc.x+vec3(0.0,1.0,0.0)*nc.y+vLk*nc.z);float lam=clamp((dot(N,uSunDir)+0.18)/1.18,0.0,1.0);float sunW=mix(0.34,1.0,lam);vec3 alb=pow(t.rgb/max(t.a,1e-3),vec3(2.2))*mix(vec3(1.0),uSeasonMul," + SAISON_GESETZ.kartenGewicht.toFixed(1) + ")*clamp(vec3(1.0)+vTintI,0.0,2.0);vec3 lit=alb*(uHemiCol+uSunCol*sunW);vec3 c=mix(lit,uFogColor,vFog*0.9);gl_FragColor=vec4(c,1.0);}" /* die Albedo der Welt (sRGB, die Leere 0) entmischt durch ihre Deckung -> Mips mischen nie Schwarz in die Krone; SAISONINVARIANT + FIX v27 Per-Baum-Tint */,
         side: THREE.DoubleSide,
         transparent: false,
         depthTest: true,
         depthWrite: true,
     });
     // BAEUME, per-Baum-LOD: L0 <20m voll-3D, L1 20-40m mittel-3D, L2 >40m Impostor-Billboard AN DER BAUMPOSITION, Cross-Fade per Dither im Uebergangsband
-    for (const sp in poolL[0]) {
-        const nVar = poolL[0][sp].length;
+    // DIE LOD-KETTE EINER ART (Baum und Strauch, pipeline.K2: jede Art mit Karte): `liste` die Plätze {x,y,z,s,rotY,sp}, `mul`
+    // die Welt-Skala der Vorlage (Baum SCALE × TREE_SCALE_MUL, Strauch SCALE), `s` je Platz relativ dazu.
+    const lodArt = (sp, liste, mul) => {
+        const nVar = poolL[0][sp].length,
+            solo = poolL[0][sp][nVar - 1].userData.solitaer,
+            nB = solo ? nVar - 1 : nVar;
         const H0arr = poolL[1][sp].map((g) => {
             const b = new THREE.Box3().setFromObject(g);
             return Math.max(0.1, b.max.y - b.min.y);
-        }); // FIX v26: Hoehe aus L1 (dem LOD, aus dem bakeImpostorAtlas rastert), NICHT L0. Sonst bekommt das Billboard-Quad die L0-Hoehe, waehrend die Textur auf L1-Hoehe gerahmt wurde -> Vertikal-Stauchung um die L0/L1-Differenz, sichtbar als Hoehen-Pop im L1->L2-Crossfade bei 40m. bh, aH0 (Shader-LOD) und Atlas-Rahmen kommen jetzt aus DERSELBEN Quelle.
+        }); // FIX v26: Hoehe aus L1 (der Höhen-Stufe, aus der der Bäcker der Welt die Karte backt, `_karteStufe`), NICHT L0. Sonst bekommt das Billboard-Quad die L0-Hoehe, waehrend die Textur auf L1-Hoehe gerahmt wurde -> Vertikal-Stauchung um die L0/L1-Differenz, sichtbar als Hoehen-Pop im L1->L2-Crossfade bei 40m. bh, aH0 (Shader-LOD) und Atlas-Rahmen kommen jetzt aus DERSELBEN Quelle.
         const plByVar = Array.from({ length: nVar }, () => []);
-        for (let i = 0; i < trees.length; i++) {
-            const tr = trees[i];
+        for (let i = 0; i < liste.length; i++) {
+            const tr = liste[i];
             if (tr.sp !== sp) continue;
-            const vi = Math.floor(hash01(i * 2 + 1) * nVar);
-            const _ci = _impCellOf[sp + "|" + vi],
-                _isp = _ci !== undefined ? _impSpecs[_ci] : null;
-            const sc = SCALE[sp] * tr.s * TREE_SCALE_MUL,
+            // der Bestand wählt wie zuvor; jeder siebte Baum einer Art mit Solitär steht frei (die Gestalt V+1)
+            const vi = solo && hash01(i * 5 + 2) < 0.15 ? nVar - 1 : Math.floor(hash01(i * 2 + 1) * nB);
+            const sc = mul * tr.s,
                 bh = H0arr[vi] * sc,
-                bw = bh * ((_isp && _impWR[_isp.sp + _isp.seed]) || 0.5); // FIX v28: Quad-Seitenverhaeltnis = Zell-Rahmen der Art (Weide breiter) -> Silhouette unverzerrt und ungeclippt
-            const bhL = Math.min(H0arr[vi], PORTAL_RENDER_CONFIG.lod.blattKappe / (SCALE[sp] * TREE_SCALE_MUL)) * sc; // FIX v30: Blatt-Sichthoehe = aH0L * Instanzskala — EXAKT die Zahl, die der Shader bildet (CPU==GPU, kein Drift)
+                bw = bh; // die Breite × Rahmen der Zelle (halfW/halfH) trägt der Stoff (`uWR`): er kommt mit der Karte der Welt
+            const bhL = Math.min(H0arr[vi], PORTAL_RENDER_CONFIG.lod.blattKappe / mul) * sc; // FIX v30: Blatt-Sichthoehe = aH0L * Instanzskala — EXAKT die Zahl, die der Shader bildet (CPU==GPU, kein Drift)
             const bm = new THREE.Matrix4().compose(
                 new THREE.Vector3(tr.x, tr.y, tr.z),
                 new THREE.Quaternion().setFromAxisAngle(_impYAxis, tr.rotY),
@@ -2259,13 +2342,13 @@ function buildForest() {
             for (let L = 0; L < 2; L++) {
                 const tmpl = poolL[L][sp][v],
                     dy = tmpl.position.y,
-                    capU = PORTAL_RENDER_CONFIG.lod.blattKappe / (SCALE[sp] * TREE_SCALE_MUL); // L0,L1 = echtes 3D-Mesh; capU: 18m Blatt-Referenz in Template-Einheiten
+                    capU = PORTAL_RENDER_CONFIG.lod.blattKappe / mul; // L0,L1 = echtes 3D-Mesh; capU: 18m Blatt-Referenz in Template-Einheiten
                 tmpl.traverse((o) => {
                     if (o.isMesh) {
                         const geo = o.geometry.clone();
                         if (dy) geo.translate(0, dy, 0);
                         const isFol = o.material === foliageMat || o.material === foliageMatKrone || o.material === foliageMatTex; // FIX v31: Cluster-Quads sind Laub
-                        windStempel(geo, poolL[0][sp][v], SCALE[sp] * TREE_SCALE_MUL);
+                        windStempel(geo, poolL[0][sp][v], mul);
                         geo.setAttribute(
                             "aLodLevel",
                             new THREE.Float32BufferAttribute(
@@ -2308,7 +2391,7 @@ function buildForest() {
                     if (o.isMesh) {
                         const geo = o.geometry.clone();
                         if (dy) geo.translate(0, dy, 0);
-                        windStempel(geo, poolL[0][sp][v], SCALE[sp] * TREE_SCALE_MUL); // der Zwilling schwingt mit
+                        windStempel(geo, poolL[0][sp][v], mul); // der Zwilling schwingt mit
                         const im = new THREE.InstancedMesh(geo, o.material, placements.length);
                         for (let j = 0; j < placements.length; j++) im.setMatrixAt(j, placements[j].m);
                         im.instanceMatrix.needsUpdate = true;
@@ -2344,7 +2427,18 @@ function buildForest() {
             }
             _treeLOD.push({ placements, meshesByLod });
         }
+    };
+    // DIE KARTEN-ARTEN DER WELT IM LABOR-WALD: jede Art mit Karte (Baum und Strauch, KIND_POLICY impostor) wächst hier — die
+    // Buche teilt den Platz der Laubbäume (wie in der Welt, budget.gestalten: „buche 2 wie die Laubbäume, die sie ersetzt"),
+    // der Karst steht als Solitär, das Totholz unter den Lebenden. Der Hash-Strom der Plätze (`hash01`): der RNG()-Strom bleibt unberührt.
+    for (let i = 0; i < trees.length; i++) {
+        const t = trees[i],
+            h = hash01(i * 7 + 3);
+        if (h > 0.97) t.sp = "totholz";
+        else if (h > 0.94 && t.sp !== "mammut") t.sp = "karst";
+        else if ((t.sp === "eiche" || t.sp === "birke") && h < 0.35) t.sp = "buche";
     }
+    for (const sp in poolL[0]) if (sp !== "strauch") lodArt(sp, trees, SCALE[sp] * TREE_SCALE_MUL);
     const nT = trees.length;
     _occW = Math.ceil(192 / 3);
     _occG = new Float32Array(_occW * _occW); // FIX v31: OCCLUSION-GITTER — jede Krone traegt Dichte in ihre 3m-Zelle; updateTreeLOD marschiert Sichtlinien hindurch. Statische Baeume -> einmal fuellen genuegt.
@@ -2400,7 +2494,7 @@ function buildForest() {
     // 7) BODEN nach Gesetz: Teppich-Gras / Kies / Blumen / Straeucher (Licht x Feuchte x Substrat x Stoerung)
     const grassPl = grassT.map(() => []),
         flowerPl = flowerT.map(() => []),
-        shrubPl = shrubT.map(() => []),
+        shrubPl = [[]],
         pebblePl = pebbleT.map(() => []);
     let nG = 0,
         nF = 0,
@@ -2481,15 +2575,13 @@ function buildForest() {
     if (_twoG) addTiled(grassTF, grassPl, "grass", "far");
     addTiled(pebbleT, pebblePl, "pebble"); // ★ gekachelt + frustum-gecullt (der Dreiecks-Hebel)
     instAdd(flowerT, flowerPl, false);
-    const _twoS = _ksN("shrub", 2) !== _ksF("shrub", 2);
-    addTiled(shrubT, shrubPl, "shrub", _twoS ? "near" : "single");
-    if (_twoS)
-        addTiled(
-            shrubTF,
-            shrubPl,
-            "shrub",
-            "far"
-        ); /* Straeucher gekachelt wie Gras -> frustum-gecullt (der zweite Dreiecks-Hebel) */
+    // der Strauch ist eine Art mit Karte (KIND_POLICY shrub impostor): nah L0, mittel L1, fern die Karte der Welt — dieselbe
+    // LOD-Kette wie der Baum (`lodArt`); bis w8 zeichnete das Labor seine Fernstufe als Mesh der Stufe 2
+    for (const p of shrubPl[0]) {
+        p.sp = "strauch";
+        p.s /= SCALE.strauch;
+    }
+    lodArt("strauch", shrubPl[0], SCALE.strauch);
 
     // 8) DER WALDBODEN (04.10.) — Farn · Schilf · Gestruepp · liegendes Totholz · Stumpf · stehendes Totholz nach dem
     // EINEN Boden-Gesetz (PORTAL_RENDER_CONFIG.placement.boden, Auswerter __phytoCore.bodenGewicht): dieselben Zeilen,
@@ -3805,17 +3897,6 @@ function animate() {
         }
     } // pro Art statt pauschal 60m — UND nie jenseits der Nebelwand (FIX v30)
     if (_treeLOD.length) {
-        _impT += dt;
-        if (_impT > 0.3) {
-            _impT = 0;
-            if (_impRT) {
-                const _isig = _impSpecs.map((s) => s.sp + s.seed).join(",");
-                if (_isig !== _impBakedSig) {
-                    bakeImpostorAtlas();
-                    _heavyNow = true;
-                }
-            }
-        } // NUR bei neuen Seeds (Nutzeraktion). Saison kostet den Atlas NICHTS mehr: Praesenz-Erosion + Tint laufen als Uniform im Shader
         _lodT += dt;
         {
             const dx = camera.position.x - _lodCx,
@@ -4477,7 +4558,7 @@ init();
     // skybox_color-Fake: den Himmel führt hier das Tag/Nacht-System).
     const WX = { klar: 1, bewoelkt: 1, nebel: 1, sturm: 1 };
     const SEASONS = { fruehling: "spring", sommer: "summer", herbst: "autumn", winter: "winter" };
-    const B = AnazhHuelle.bruecke({
+    const B = (_labHeimat = AnazhHuelle.bruecke({
         welt: "terrain",
         // DAS ZIEL-BILD (D8): die Hülle rendert diese Welt als Panorama aus dem Blick ihrer Kamera — die Tor-Membran der Heimat zeigt es
         panorama: function () {
@@ -4518,7 +4599,7 @@ init();
         // Wald-Ausgang (kein Doppel-Sinn).
         esc: () => !(forestMode || document.pointerLockElement),
         // DIE ASSET-KANÄLE (build-asset · get-book · export-settlement)
-        sonst: (msg) => foundryKanal(msg),
+        sonst: (msg) => (msg && msg.type === "karte-abzug" ? _karteLaborEmpfang(msg) : foundryKanal(msg)),
         // DAS WERK DER BÜHNE (der EINE Übergabe-Kanal der Hülle): ein Rezept mit Regler-Zeilen des Vertrags (Blume, Gras), mit
         // dem Samen der Bühne und den Werten seiner Zeilen aus der Ableitung der Dials (`deriveParamsPlant`). Die Labor-Dials
         // selbst sind keine Zeilen (studio-vertrag B4, W4e): Baum, Strauch und Fels tragen kein Werk des Vertrags.
@@ -4531,5 +4612,6 @@ init();
             for (const z of zeilen) if (typeof P[z.id] === "number") ov[z.id] = P[z.id];
             return { kind: pre.kind, preset: CURRENT, seed: SEED, ov };
         },
-    });
+    }));
+    if (!window.parent || window.parent === window) _labHeimat = null; // ohne Heimat backt niemand (`_karteLaborFragen`)
 })();
