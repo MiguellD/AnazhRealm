@@ -765,6 +765,8 @@ class AnazhRealm_dirigent_ankunft {
         // W18-D — wohnt der Spieler in einer Fremd-Welt, kehrt der Boot
         // durch das Tor zurück (die Heimat trägt darunter eingefroren).
         this._portalDwellingBootReturn();
+        // eine Welt, die ein Welt-Tor gebar, trägt ihr Heimtor (ultiversum.K1)
+        this._heimTorSetzen();
         // der Leib steht, die Schleife beginnt: jetzt erst die Leitung (s. o., Auto-Connect)
         if (this.state.p2p.enabled || weltVerbunden) this.initP2PSync(null);
     }

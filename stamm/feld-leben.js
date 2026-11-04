@@ -1689,7 +1689,7 @@ class AnazhRealm_feld_leben {
         // DETERMINISMUS-BOGEN P3 — keine Ammo-Welt/Reibung/CCD mehr zu „optimieren".
         // Der Chat-Befehl setzt nur noch die Schwerkraft-Konstante zurück (die
         // `_stepCharacter` als Skalar liest).
-        this.state.gravity = -9.81;
+        this.state.gravity = AnazhRealm.WELT_GESETZ_ERDE.schwere; // das Wort schreibt das Gesetz der Welt (ultiversum.K1)
         this.log("Schwerkraft auf Standard zurückgesetzt (Feld-Physik — kein Ammo).");
     }
 

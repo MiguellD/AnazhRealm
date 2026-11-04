@@ -1409,6 +1409,9 @@ class AnazhRealm_koerper_seele {
         const key = String(worldId || "")
             .trim()
             .toLowerCase();
+        // DAS ULTIVERSUM (ultiversum.K1): ein Gesetz beim Namen — das Tor führt in eine Welt dieses Gesetzes (`_weltTorBetreten`)
+        if (Object.prototype.hasOwnProperty.call(AnazhRealm.ULTIVERSUM, key))
+            return this.setBlueprintAsPortal(blueprintName, { label: this._t(`ultiversum.${key}`), gesetz: key });
         // W14 Phase 3 — Built-in-Registry UND importierte Welten als Ziel.
         let entry = this._worldEntry(key);
         if (!entry) {
@@ -1453,8 +1456,12 @@ class AnazhRealm_koerper_seele {
         const key = String(worldId || "")
             .trim()
             .toLowerCase();
-        // W14 Phase 3 — Built-in-Registry UND importierte Welten.
-        const entry = this._worldEntry(key);
+        // W14 Phase 3 — Built-in-Registry UND importierte Welten; die Welten des Ultiversums beim Namen ihres Gesetzes (ultiversum.K1).
+        const entry =
+            this._worldEntry(key) ||
+            (Object.prototype.hasOwnProperty.call(AnazhRealm.ULTIVERSUM, key)
+                ? { id: key, label: this._t(`ultiversum.${key}`) }
+                : null);
         if (!entry) return { ok: false, reason: "world_unknown" };
         // Eine importierte Welt ohne erreichbare Dateien ergäbe ein Portal
         // ins Leere — kein Bauplan, ehrlicher Befund (der KI-Übersetzer

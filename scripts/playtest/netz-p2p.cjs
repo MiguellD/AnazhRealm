@@ -1861,7 +1861,7 @@ async function checkBandLateMultiUser({ page, check }) {
                 terme: [{ art: "insel", x: 0, z: 0, r: 420, plateau: 9, kuppel: 0.003, schelf: 60, grund: -15 }],
             };
             const echt = st.worldMeta;
-            st.worldMeta = Object.assign({}, echt, { erbgut: buehne });
+            st.worldMeta = Object.assign({}, echt, { gesetz: { gelaende: buehne } }); // das Erbgut im Welt-Gesetz (sonst die Erde)
             sentMsgs.length = 0;
             try {
                 r.p2pHandleMessage(JSON.stringify({ type: "world-request", peerId: "alt-build" }));

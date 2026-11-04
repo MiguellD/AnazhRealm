@@ -1717,7 +1717,7 @@ class AnazhRealm_speicher_laden {
         // der Varianten-Pool wächst je Art aus dieser Saat (`_variantSeedsFor`, K24) — die Meta trägt ihn leer
         meta.seed = plan.saat;
         const snap = this._buildEmptyWorldSnapshot(meta, false);
-        snap.worldMeta.erbgut = G.planErbgut(plan);
+        snap.worldMeta.gesetz = { gelaende: G.planErbgut(plan) }; // das Gelände ihres Gesetzes (`_weltGesetz`, sonst die Erde)
         snap.worldMeta.voxelTerrain = true;
         return snap;
     }
