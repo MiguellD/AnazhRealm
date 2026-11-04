@@ -1005,7 +1005,12 @@
             r = P.skullBaseR * 1.03,
             SH = MENSCH_GESTALT.schaedel.hoch;
         var sy = 1.12 + SH / (2 * r);
-        return [{ c: [0, P.skullCY + SH / 2 + t[1], -t[2]], r: r, sc: [1 + t[0], sy + t[0], 1 + t[0]] }];
+        var ansatz = gesichtWert(d, "haaransatz") || 0; // mensch.K4: der Haar-Ansatz aus dem Genom (GESICHT_GENOM)
+        // DIE KAPPE STEHT NIE VOR DEM SCHÄDEL (mensch.K4, die Menge trägt jeden Stil): ihre Front r·(1 + dicke) − zurueck liegt
+        // höchstens auf seiner Front r — afro (dicke 0,24, zurueck 0,05) stand 0,046 vor ihr, die Kopf-Haut wuchs über die Augen
+        // (augeFrei 0,40); jeder andere Stil liegt dahinter und bleibt byte-gleich
+        var z = Math.max(t[2], t[0] * r);
+        return [{ c: [0, P.skullCY + SH / 2 + t[1] + ansatz, -z], r: r, sc: [1 + t[0], sy + t[0], 1 + t[0]] }];
     }
 
     // DIE TÖNE DES MENSCHEN (mensch.K4, rein additiv) — DIE FARBE FOLGT DEM SAMEN. Jede Ecke eines gegossenen Menschen trägt
@@ -1459,7 +1464,52 @@
         const character = B.character, parts = B.parts, base = B.base;
         const M = labMorph(dials);
         character.scale.set(M.charScale.x,M.charScale.y,M.charScale.z);const MU=M.shell;function aply(m,sc){m.scale.set(sc.x,sc.y,sc.z);return sc;}if(parts.ribcage)parts.ribcage.userData.baseScaleY=aply(parts.ribcage,MU.ribcage(base.ribcage)).y;if(parts.pelvis)aply(parts.pelvis,MU.pelvis(base.pelvis));if(parts.waist)aply(parts.waist,MU.waist(base.waist));function pair(name,fn){[-1,1].forEach(sd=>{const k=name+(sd===1?'1':'-1');if(parts[k])fn(parts[k],base[k],sd);});}if(parts.abs)parts.abs.userData.baseScaleY=aply(parts.abs,MU.abs(base.abs)).y;pair('oblique',(m,b)=>aply(m,MU.oblique(b)));pair('glute',(m,b)=>aply(m,MU.glute(b)));pair('quad',(m,b)=>{m.userData.baseScaleY=aply(m,MU.quad(b)).y;});pair('hamstring',(m,b)=>aply(m,MU.hamstring(b)));pair('calf',(m,b)=>{m.userData.baseScaleY=aply(m,MU.calf(b)).y;});pair('bicep',(m,b)=>{m.userData.baseScaleY=aply(m,MU.bicep(b)).y;});pair('tricep',(m,b)=>aply(m,MU.tricep(b)));pair('uarm',(m,b)=>aply(m,MU.uarm(b)));pair('forearm',(m,b)=>aply(m,MU.forearm(b)));pair('deltoid',(m,b)=>aply(m,MU.deltoid(b)));pair('trap',(m,b)=>aply(m,MU.trap(b)));pair('lat',(m,b)=>aply(m,MU.lat(b)));if(parts.upperBack)aply(parts.upperBack,MU.upperBack(base.upperBack));if(parts.chest){var csc=aply(parts.chest,MU.chest(base.chest));parts.chest.userData.baseScaleX=csc.x;parts.chest.userData.baseScaleY=csc.y;parts.chest.userData.baseScaleZ=csc.z;}pair('pec',(m,b)=>aply(m,MU.pec(b)));pair('breast',(m,b)=>aply(m,MU.breast(b)));if(parts.neckMain)aply(parts.neckMain,MU.neck(base.neckMain));if(parts.neckBase)aply(parts.neckBase,MU.neck(base.neckBase));pair('scm',(m,b)=>aply(m,MU.neck(b)));pair('tneck',(m,b)=>aply(m,MU.neck(b)));if(parts.jaw)aply(parts.jaw,MU.jaw(base.jaw));if(parts.chin)aply(parts.chin,MU.chin(base.chin));pair('buccal',(m,b)=>aply(m,MU.buccal(b)));pair('cheekbone',(m,b)=>aply(m,MU.cheekbone(b)));pair('masseter',(m,b)=>aply(m,MU.masseter(b)));[-1,1].forEach(sd=>{const k='arm'+(sd===1?'1':'-1');if(parts[k]){parts[k].position.x=sd*baseArmX*M.armPose.xMul;const bz=sd*M.armPose.rotZ;const bx=M.armPose.rotX;parts[k].rotation.z=bz;parts[k].rotation.x=bx;parts[k].userData.baseRotZ=bz;parts[k].userData.baseRotX=bx;}});if(parts.head){parts.head.position.y=base.headPosY-trochanterY-M.headPose.ageDrop;parts.head.position.z=M.headPose.fwd;}
+        gesichtAuf(B, dials);
         return M;
+    }
+
+    // DAS GESICHT AUS DEM GENOM (mensch.K4, rein additiv — ohne seine Dials bleibt jeder Guss byte-gleich): vier Achsen in [0, 1],
+    // die der Genom-Roller des Wirts aus der Saat zieht (`_rollHumanoidGenome`), wie die Gesichts-Parameter eines MetaHuman — je
+    // Achse ihr Bereich: `auge` die Größe des Auges samt Iris, Pupille und Lidern (der Augapfel tiefer um sein Mehr: die Hornhaut
+    // bleibt, wo sie war, augenVorstand hält), `mund` die Breite der Lippen, `braue` die Höhe der Brauen über der Lidspalte (Kopf-
+    // Einheiten; den Ton der Braue liest der Ofen an ihren Haaren), `haaransatz` die Höhe der Haar-Kappe (`haarKappe`: die Stirn
+    // höher oder tiefer). Die Bereiche halten MENSCH_SOLL und KOPF_SOLL über jede Gestalt der Menge (augapfel, iris, mund ×
+    // Breite ±3 %; mundZuPupille ≥ 0,78). Leser: morphAuf (Lab, Ofen, Linse), haarKappe (Ofen L0–L3).
+    var GESICHT_GENOM = Object.freeze({
+        auge: Object.freeze([0.98, 1.08]),
+        mund: Object.freeze([0.97, 1.06]),
+        braue: Object.freeze([-0.012, 0.012]),
+        haaransatz: Object.freeze([-0.012, 0.008]),
+    });
+    function gesichtWert(dials, k) {
+        var v = dials ? dials[k] : null,
+            b = GESICHT_GENOM[k];
+        return typeof v === "number" && isFinite(v) ? b[0] + (b[1] - b[0]) * Math.max(0, Math.min(1, v)) : null;
+    }
+    // die Achsen am Baum (idempotent: jede Größe gegen ihre Basis, gemerkt beim ersten Ruf — die Regler des Labors rufen oft)
+    function gesichtAuf(B, dials) {
+        var A = B && B.augen;
+        if (!A) return;
+        var basis = function (n) {
+            return n.userData.__gesichtBasis || (n.userData.__gesichtBasis = { s: n.scale.clone(), p: n.position.clone() });
+        };
+        var fa = gesichtWert(dials, "auge"),
+            fm = gesichtWert(dials, "mund"),
+            db = gesichtWert(dials, "braue");
+        if (fa !== null)
+            [A.eyeL, A.eyeR].forEach(function (e) {
+                var b = basis(e);
+                e.scale.copy(b.s).multiplyScalar(fa);
+                e.position.z = b.p.z - 0.12 * b.s.z * (fa - 1);
+            });
+        if (fm !== null)
+            [A.upperLipRef, A.lowerLipRef].forEach(function (l) {
+                l.scale.x = basis(l).s.x * fm;
+            });
+        if (db !== null)
+            [A.browL, A.browR].forEach(function (g) {
+                g.position.y = basis(g).p.y + db;
+            });
     }
 
     // AUGEN_VIS — intentional dual iris (Feel-Entscheid .131). Do NOT merge.
@@ -4019,6 +4069,8 @@
         KOPF_SOLL: KOPF_SOLL,
         kopfToene: kopfToene,
         haarKappe: haarKappe,
+        // mensch.K4 — das Gesicht aus dem Genom: die Bereiche der vier Achsen (Leser: der Genom-Roller des Wirts, die Linsen)
+        GESICHT_GENOM: GESICHT_GENOM,
         // mensch.K4 — die Schnitte mit Volumen (je Stil die Kappe): die Gestalten einer Siedlung wählen aus ihnen
         HAAR_KAPPE: HAAR_KAPPE,
         // mensch.K4 — die Töne des Menschen: der Ton je Stoff-Klasse, die Braue, die Palette (Leser: der Ofen, der Wirt)

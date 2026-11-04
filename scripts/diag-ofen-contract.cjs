@@ -317,22 +317,8 @@ function taeterRinde(sb) {
         `Stoff-Klassen × Gelenk: Tier ${stoffTier} + Mensch ${stoffMensch} = ${stoffTier + stoffMensch} (der Handbeweis: 136 + 53 = 189)`,
         stoffTier + stoffMensch > 0
     );
-    // 3b) JEDER HAAR-STIL GIESST: das Golden bäckt den Menschen nur in seinem Stil (mittel), die Bewohner tragen jeden Stil der
-    // Kappen-Tafel — je Stil jede Zeile von haarStreu durch __streuGeo (mit der Zone, wie der Guss L0). Seit haar.K2 brach die
-    // Quaste (zopf: ohne Schale `sc`), der Bewohner mit Zopf fiel aus dem Dorf, und gate:licht-weg:echt lief in seine Frist.
-    {
-        const K = sb.__koerperCore;
-        const bruch = [];
-        for (const stil of Object.keys(K.HAAR_KAPPE))
-            K.haarStreu(Object.assign({}, K.START_PARAMS, { hairStyle: stil })).forEach((row, i) => {
-                try {
-                    sb.__streuGeo(row, 7118 + i, [0.1, 0.06, 0.03], () => true);
-                } catch (e) {
-                    bruch.push(`${stil}#${i} (${row.art || "streu"}): ${e.message}`);
-                }
-            });
-        check(`Haar-Stile: jede Zeile jedes Stils (${Object.keys(K.HAAR_KAPPE).length}) gießt ihre Strähnen ohne Bruch`, !bruch.length, bruch.join(" · "));
-    }
+    // 3b) JEDER HAAR-STIL GIESST — gewandert in gate:mensch-anatomie (w7-gesicht, `kopfJe`): dort gießt jeder Stil der
+    // Kappen-Tafel ganz (L0 samt jeder Zeile von haarStreu) und hält das Gesicht an beiden Rändern seines Genoms.
     // 4) Das Golden: einfrieren beim ersten Lauf, danach byte-exakt.
     if (!fs.existsSync(GOLDEN) || process.env.MINT_FORCE === "1") {
         fs.mkdirSync(GOLDEN_DIR, { recursive: true });

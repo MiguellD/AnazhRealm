@@ -18,8 +18,9 @@ class AnazhRealm_siedlung_bewohner {
     // Gestalt die Dials des Bauplans (`_koerperStudioDials` ohne die Übergabe des Spielers — der Sentinel des Mitspielers)
     // unter dem Genom, ihre Farben aus dem EINEN Farb-Münzer und die Ofen-Schlüssel beider Stufen — derselbe Merge wie der
     // Bau (`_buildHumanGroup` → `_buildHumanoidRig`), damit die Geburt das Memo warm trifft. DIE GESTALT IST DIE FORM (mensch.K4):
-    // Geschlecht, Bau, Muskel, der Schnitt des Haars, seine Länge und Fülle, das Alter (das Gesicht) — die Farben trägt jeder
-    // Bewohner aus seinem eigenen Samen (`_bewohnerGenome`, die Ton-Tafel); bis mensch.K4 vier Gestalten, ein Schnitt.
+    // Geschlecht, Bau, Muskel, der Schnitt des Haars, seine Länge und Fülle, das Alter, das Gesicht (Auge, Mund, Braue, Haar-Ansatz:
+    // koerper GESICHT_GENOM) — die Farben trägt jeder Bewohner aus seinem eigenen Samen (`_bewohnerGenome`, die Ton-Tafel); bis
+    // mensch.K4 vier Gestalten, ein Schnitt; bis w7-gesicht trug jede Gestalt dasselbe Gesicht (Iris 0,00621–0,00625 Hk).
     _bewohnerGestalten(S) {
         const kc = window.__koerperCore;
         if (!kc || !kc.START_PARAMS) return AnazhRealm._kernPflichtBruch("koerper:START_PARAMS");
@@ -46,6 +47,10 @@ class AnazhRealm_siedlung_bewohner {
                 hairLen: gen.haarLaenge,
                 hairVol: gen.haarFuelle,
                 age: gen.alter,
+                auge: gen.auge,
+                mund: gen.mund,
+                braue: gen.braue,
+                haaransatz: gen.haaransatz,
             });
             const dB = Object.assign({}, buch || {}, ov);
             const dK = Object.assign({}, kc.START_PARAMS, dB);
@@ -65,7 +70,7 @@ class AnazhRealm_siedlung_bewohner {
 
     // DAS GENOM JEDES BEWOHNERS (mensch.K4, die EINE Quelle seines Leibs): sein Same („Plan:Haus:Person") rollt sein Genom
     // (`_rollHumanoidGenome`); er trägt die Gestalt seiner Siedlung, deren FORM seinem Genom am nächsten ist (Geschlecht, Bau,
-    // Muskel, Kopf, der Schnitt des Haars, das Alter — die Typen backt der Ofen, Lehre 23: die Befehle hängen an den Typen, nie an
+    // Muskel, Kopf, der Schnitt des Haars, das Alter, das Gesicht — die Typen backt der Ofen, Lehre 23: die Befehle hängen an den Typen, nie an
     // der Kopfzahl), und seine eigenen Maße als Rest: die Höhe seines Genoms (`groesse` = seine Höhe ÷ die des Typs) und Breite
     // und Tiefe aus seinem Bau gegen den des Typs (`breite`, `tiefe`, je ±`restMax`). SEINE FARBEN sind seine eigenen: Haut, Haar
     // und die Farben seiner Tracht aus seinem Samen (`farben`), als Palette in der Ton-Tafel (`tonZeilen` [Kopf, Gestalt],
@@ -80,7 +85,8 @@ class AnazhRealm_siedlung_bewohner {
             Math.abs(a.muscle - t.muscle) +
             Math.abs(a.headRatio - t.headRatio) / 0.24 +
             Math.abs(a.alter - t.alter) +
-            (a.schnitt === t.schnitt ? 0 : 0.5);
+            (a.schnitt === t.schnitt ? 0 : 0.5) +
+            0.25 * (Math.abs(a.auge - t.auge) + Math.abs(a.mund - t.mund) + Math.abs(a.braue - t.braue) + Math.abs(a.haaransatz - t.haaransatz)); // prettier-ignore
         const rest = (x) => 1 + Math.max(-BW.restMax, Math.min(BW.restMax, x));
         const tuch = Object.keys(kc.CLOTH_COLORS);
         for (const G of S.gestalten)
