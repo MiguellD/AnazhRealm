@@ -2530,6 +2530,8 @@ module.exports = {
     sollIstAbweisung,
     abnahmeUrteil,
     pngLesen,
+    bildMasse,
+    bildRauschen,
     fixtureMessung,
     abnahmeSelbsttest,
     srgbLin,
