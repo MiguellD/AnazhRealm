@@ -18,9 +18,16 @@
 //      `[schlüssel, werte]`);
 //   F) ein Schlüssel einer FAMILIE (`` `präfix.${…}` ``, zur Laufzeit gesetzt) fehlt: je Familie zählt ihre Quelle jede id auf —
 //      die Bücher des Manifests (der Kanal get-book im vm: je Rezept `gestalt.<id>`, je Kern `studio.<kern>`, je Art
-//      `art.<art>`; ohne Zeile spräche es nur das deutsche Wort seines Buchs, `_buchWort`), die Register der Klasse, aus
-//      denen der Stamm die id nimmt (`ULTIVERSUM` → `ultiversum.`), und die Befund-Arten der Speicher-Kette (`art:` in
-//      `befund`); eine Familie ohne Quelle steht selbst beim Namen.
+//      `art.<art>`; ohne Zeile spräche es nur das deutsche Wort seines Buchs, `_buchWort`) und die Register der Klasse, aus
+//      denen der Stamm die id nimmt (`ULTIVERSUM` → `ultiversum.`, `dslPositions` → `tat.ort.`, `WETTER_WOERTER` → `wetter.`,
+//      `SETZ_VERB` → `ergebnis.verb.` und sein Präsens → `ergebnis.art.`/`ergebnis.hier.`, `KI_BEISPIELE` →
+//      `ki.beispiel-satz.`/`-say.`, `FELDSTIMME_RICHTUNG` → `feldstimme.richtung.`); eine Familie ohne Quelle steht selbst beim
+//      Namen. Ein Zweig aus wenigen Fällen schreibt seine Schlüssel als Literale (K liest sie), ein freier Wert reist in den
+//      Werten, nie im Schlüssel.
+// DER WERT-TEXT (spielgang.K5#2): ein Satz, den der Spieler als WERT einer Zeile liest, ist selbst eine Senke — die Antwort des
+// Chat-Satzes (`describe:`), die Absage eines Gesetzes (`absage:`) und jede Rückgabe eines Satz-Bauers (SATZ: die Tat in Worten,
+// der Satz des Ergebnisses, die Stimme des Felds, die Absage, die Hilfe, die Antwort auf das Wetter). Bis w8-sprache sah die Wand
+// sie nicht (der Wert reiste als Datum): die KI antwortete im englischen Chat „(World changed: Grok lässt das Wetter …)“.
 // Wort-Text: nach Abzug von `${…}`, Markup und Entitäten ein Wort aus ≥ 2 Buchstaben UND ein Zeichen der Sprache
 // (Großbuchstabe, Umlaut, …!?:) oder zwei kleine Wörter; ein Bezeichner ist ein Name.
 // DIE LEBENDE HÄLFTE ist die Station spielgang.K5#1 (punkte-maschine, stationen/g5.js `sprachLauf`): die Welt am Null-Renderer
@@ -35,14 +42,28 @@ const { ausDatei, stammLib, ROOT, SELBSTTEST, selbsttestEnde, wandEnde } = requi
 const { kanalImVm } = require("./lib/asset-worker-harness.cjs");
 
 // F: die ids jeder Familie aus ihrer EINEN Quelle — das Buch der Kerne des Manifests (der Kanal im vm, ~0,2 s) und die
-// Register der geladenen Klasse, aus denen der Stamm die id nimmt (die Welten des Ultiversums)
+// Register der geladenen Klasse, aus denen der Stamm die id nimmt (die Welten des Ultiversums, die Orte der DSL, die
+// Wetter-Worte, die Verben des Ergebnisses, die Beispiele der KI, die Richtungen der Stimme)
 const { book, stammbaum } = kanalImVm()({ type: "get-book" });
-const quelle = (A) => ({
-    "gestalt.": Object.keys(book).map((id) => id.replace(/_/g, "-")),
-    "studio.": stammbaum.kerne.map((k) => k.kern),
-    "art.": stammbaum.kerne.flatMap((k) => Object.keys(k.arten)),
-    "ultiversum.": Object.keys(A.ULTIVERSUM),
-});
+const kebab = (id) => id.replace(/_/g, "-");
+const quelle = (A) => {
+    const praesens = Object.values(A.SETZ_VERB);
+    const beispiele = A.KI_BEISPIELE.map(([k]) => k);
+    return {
+        "gestalt.": Object.keys(book).map(kebab),
+        "studio.": stammbaum.kerne.map((k) => k.kern),
+        "art.": stammbaum.kerne.flatMap((k) => Object.keys(k.arten)),
+        "ultiversum.": Object.keys(A.ULTIVERSUM),
+        "tat.ort.": Object.keys(Reflect.get(A.prototype, "dslPositions", {})).map(kebab),
+        "wetter.": A.WETTER_WOERTER,
+        "ergebnis.verb.": Object.keys(A.SETZ_VERB),
+        "ergebnis.art.": praesens,
+        "ergebnis.hier.": praesens,
+        "ki.beispiel-satz.": beispiele,
+        "ki.beispiel-say.": beispiele,
+        "feldstimme.richtung.": A.FELDSTIMME_RICHTUNG,
+    };
+};
 
 const wort = (t) => {
     t = String(t)
@@ -55,7 +76,9 @@ const SENKE_RUF =
     /^(_hudSchreib|_chatEcho|alert|confirm|prompt|_el|append|appendChatOutput|_spielerSagt|_ladeschirmStand|journalAppend|journalAppendOnce)$/;
 const SENKE_FELD = /^(textContent|innerText|innerHTML|title|placeholder)$/;
 const SENKE_ATTR = /^(title|placeholder|aria-label|alt)$/;
-const ETIKETT = /^(label|hint|lab|titel|title|tip|desc|description|beschreibung|text|name)$/;
+const ETIKETT = /^(label|hint|lab|titel|title|tip|desc|description|beschreibung|text|name|describe|absage)$/;
+const SATZ =
+    /^(describeProgram|_describeDslPosition|_describeDslCondition|_dslDescriptionTable|_describeCreatureTaskArg|_ergebnisSatz|_feldStimmeZeile|_tatSchreiber|_studioSatzAbsage|_regelAusSatz|_hilfeZeilen|_dslAbsageSatz|_wetterWarum|_wetterSchreiberZeile)$/;
 const DATEN_ATTR = /^(value|class|className|klasse|sprecherKlasse|id|type|name|href|src|for|role|key|style)$/;
 const CHAT = /^(_chatEcho|appendChatOutput|_spielerSagt)$/;
 const nameVon = (c) =>
@@ -64,8 +87,13 @@ const nameVon = (c) =>
 // die Senke, die einen Knoten trägt (am AST, die Ahnen von innen nach außen): eine Zuweisung an ein Text-Feld (rechts),
 // ein Senken-Ruf (in seinen Argumenten), setAttribute mit einem Text-Attribut (sein Wert); ein Daten-Attribut schweigt
 function senke(n, ahnen) {
+    let rueck = false;
     for (let i = ahnen.length - 1, kind = n; i >= 0; kind = ahnen[i--]) {
         const a = ahnen[i];
+        // die Rückgabe eines Satz-Bauers (ein `return`, der Leib eines Pfeils) — sein Name an der Methode, der Funktion, der Eigenschaft
+        if (a.type === "ReturnStatement" || (a.type === "ArrowFunctionExpression" && a.body === kind)) rueck = true;
+        if (rueck && /^(MethodDefinition|FunctionDeclaration)$/.test(a.type) && SATZ.test(nameVon(a.key || a.id || {})))
+            return "satz " + nameVon(a.key || a.id) + ":";
         if (a.type === "Property" && kind === a.value && DATEN_ATTR.test(nameVon(a))) return null;
         // das DATEN-ETIKETT (w5-spielgang-k5): ein Name oder Hinweis in einem Datensatz (`label:`, `hint:`, `lab:`, `title:`,
         // `text:` …) fließt später in eine Senke, die kein Literal mehr sieht (`bp.label`, `d.hint`) — er ist selbst die Senke
@@ -144,6 +172,21 @@ if (require.main !== module) {
         ["mehrzeiliger Ausdruck", "C", mit('function p(el, an) { el.innerHTML = an +\n    zeile("Impostor"); }')],
         ["harter Chat", "C", mit("function p(n) { this._chatEcho(`Die Welt hört dich, ${n}!`); }")],
         ["hartes _el", "C", mit('function p() { this._el("button", { text: "Speichern" }); }')],
+        [
+            "harter Chat-Satz (describe)",
+            "C",
+            mit('function p() { return { program: [], describe: "Baum gepflanzt" }; }'),
+        ],
+        [
+            "harte Rückgabe eines Satz-Bauers",
+            "C",
+            mit("class X { describeProgram(a) { return `lässt das Wetter zu ${a} wechseln`; } }"),
+        ],
+        [
+            "harter Satz im Pfeil des Satz-Bauers",
+            "C",
+            mit('class X { _dslDescriptionTable() { return { abbau: () => "baut ein Bauwerk ab" }; } }'),
+        ],
         ["harter title", "C", mit('function p(el) { el.setAttribute("title", "Schließen"); }')],
         ["fremder Schlüssel", "K", mit('function p(el) { el.textContent = this._t("gibt.es.nicht"); }')],
         ["aufgelöste Chat-Zeile", "Z", mit('function p() { this._chatEcho(this._t("ui.abbrechen")); }')],
@@ -153,6 +196,8 @@ if (require.main !== module) {
         ["Wert nur in de", "T", daten(/("ui\.[^"]+": \["[^"]*)", /, '$1 {n}", ')],
         ["Rezept ohne Zeile", "F", daten('"gestalt.eiche": ["Eiche", "Oak"],', "")],
         ["Familie ohne Quelle", "F", mit("(x) => `hud.neu.${x}`")],
+        ["Ort der DSL ohne Zeile", "F", daten(/\n\s*"tat\.ort\.at-origin": .*/, "")],
+        ["Wetter-Wort ohne Zeile", "F", daten(/\n\s*"wetter\.foggy": .*/, "")],
         ["Welt des Ultiversums ohne Zeile", "F", daten(/\n\s*"ultiversum\.ferne": .*/, "")],
     ];
     const fehler = [];

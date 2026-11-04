@@ -1227,6 +1227,8 @@ class AnazhRealm_speicher_welten {
             ["dayLengthMinutes", () => st().dayLengthMinutes],
             // Das Wort des Spielers über das Wetter reist mit (es steht, bis er es freigibt); der Wunsch der Welt nicht.
             ["wetterWort", () => st().wetterWort || null],
+            // und wer das Wetter schrieb (affekt.K4#2: die KI nennt ihn nach dem Laden wie davor)
+            ["wetterSchreiber", () => (typeof st().wetterSchreiber === "string" ? st().wetterSchreiber : null)],
             // ERFINDER-WELLE — die Welt-Klang-Wahl reist (V8.59-Klasse: sonst still zurückgesetzt).
             ["klangPreset", () => (typeof st().klangPreset === "string" ? st().klangPreset : null)],
             // DER PRÄGUNGS-SPEICHER (ws.studioOv: die Werke der Studios über den EINEN Übergabe-Kanal und die Werkstatt-Regler)

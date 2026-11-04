@@ -429,7 +429,7 @@ class AnazhRealm_werkstatt_bauen {
             ? this._naturSetzen(name, spawnPos, {}, setzen, (wo) => (wand = wo))
             : setzen();
         if (wand) {
-            this._spielerSagt(["bauen.sagt-natur-wand", { label, grund: String(AnazhRealm.NATUR_WAND_GRUND[wand]) }]);
+            this._spielerSagt(["bauen.sagt-natur-wand", { label, grund: [AnazhRealm.NATUR_WAND_GRUND[wand]] }]);
             return false;
         }
         if (gate && !gate.ok) {
@@ -1140,9 +1140,7 @@ class AnazhRealm_werkstatt_bauen {
             const rotLine = (t) => ` · <span style="color:#e57b6c">${t}</span>`;
             const grund = bm.phantomGrund || "";
             const wandLine = bm.phantomWand
-                ? rotLine(
-                      this._t("bauen.hud-natur-wand", { grund: String(AnazhRealm.NATUR_WAND_GRUND[bm.phantomWand]) })
-                  )
+                ? rotLine(this._t("bauen.hud-natur-wand", { grund: [AnazhRealm.NATUR_WAND_GRUND[bm.phantomWand]] }))
                 : grund.startsWith("werkstatt:")
                   ? rotLine(this._t("bauen.hud-werkstatt", { domaene: grund.slice(10) }))
                   : grund === "standort"

@@ -1217,19 +1217,16 @@ class AnazhRealm_kreatur_leben {
         return {};
     }
 
-    // describeProgram-Helper für Kreatur-Tasks. Liefert " (Distanz X)" /
-    // " (Material X)" / " (Bauplan X)" / "" — abhängig von Task + Arg-Typ.
+    // describeProgram-Helper für Kreatur-Tasks: der Zusatz des Auftrags als Zeile der Tafel (Material · Bauplan · Distanz) oder
+    // null — abhängig von Task + Arg-Typ.
     _describeCreatureTaskArg(taskName, paramArg) {
-        if (taskName === "gather" && typeof paramArg === "string" && paramArg.length > 0) {
-            return ` (Material „${paramArg}")`;
-        }
-        if (taskName === "build" && typeof paramArg === "string" && paramArg.length > 0) {
-            return ` (Bauplan „${paramArg}")`;
-        }
-        if (taskName === "follow_player" && Number.isFinite(paramArg)) {
-            return ` (Distanz ${paramArg}m)`;
-        }
-        return "";
+        if (taskName === "gather" && typeof paramArg === "string" && paramArg.length > 0)
+            return ["tat.auftrag.material", { was: paramArg }];
+        if (taskName === "build" && typeof paramArg === "string" && paramArg.length > 0)
+            return ["tat.auftrag.bauplan", { was: paramArg }];
+        if (taskName === "follow_player" && Number.isFinite(paramArg))
+            return ["tat.auftrag.distanz", { n: String(paramArg) }];
+        return null;
     }
 
     // === Kreatur-Erinnerung + Architektur-Lookup ===

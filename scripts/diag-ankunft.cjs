@@ -1545,7 +1545,7 @@ async function probe(arg) {
         llm.providerConfig.ollama.endpoint = "https://ollama.com";
         llm.providerConfig.ollama.useProxy = true;
         const ant = await r.llmCall("hallo welt");
-        m.proxyFehler = ant && ant.error ? String(ant.error) : "";
+        m.proxyFehler = ant && ant.error ? r.constructor._tIn("de", ...[].concat(ant.error)) : ""; // eine Zeile der Tafel (spielgang.K5#2)
         llm.enabled = alt.enabled;
         llm.provider = alt.provider;
         llm.providerConfig.ollama = alt.oll;

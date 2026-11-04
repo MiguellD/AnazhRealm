@@ -298,7 +298,7 @@ class AnazhRealm_feld_dsl {
                 event: "invalid_wert",
                 op: String(op),
                 wert: args[wert[0]],
-                grund: `das Gesetz von ${op}: ${wert[2](this)}`,
+                grund: ["dsl.grund.gesetz", { op: String(op), band: String(wert[2](this)) }],
             });
             return;
         }
@@ -363,24 +363,27 @@ class AnazhRealm_feld_dsl {
         let pos = null;
         let grund = null;
         if (node == null) pos = this._defaultSpawnPos();
-        else if (!Array.isArray(node)) grund = `„${this._dslZeig(node)}“ ist kein Ort-Knoten`;
-        else if (node.length === 0) grund = "leerer Ort-Knoten";
+        else if (!Array.isArray(node)) grund = ["dsl.grund.kein-knoten", { was: this._dslZeig(node) }];
+        else if (node.length === 0) grund = ["dsl.grund.leer"];
         else {
             op = String(node[0]);
             const fn = this.dslPositions[node[0]];
-            if (!fn) grund = `unbekannter Ort „${op}“`;
+            if (!fn) grund = ["dsl.grund.unbekannt", { op }];
             else {
                 try {
                     pos = fn.call(this, node.slice(1), ctx);
                 } catch (err) {
-                    grund = err && err.dslKeinOrt ? err.dslKeinOrt.grund : `${op} warf: ${(err && err.message) || err}`;
+                    grund =
+                        err && err.dslKeinOrt
+                            ? err.dslKeinOrt.grund
+                            : ["dsl.grund.warf", { op, fehler: String((err && err.message) || err) }];
                 }
                 if (!grund && !(pos && Number.isFinite(pos.x) && Number.isFinite(pos.y) && Number.isFinite(pos.z)))
-                    grund = `${op} fand keinen Ort`;
+                    grund = ["dsl.grund.kein-ort", { op }];
             }
         }
         if (!grund && this._feldHandelt(ctx) && !this._wildnisTraegt(pos.x, pos.z))
-            grund = `die Wildnis trägt (${Math.round(pos.x)}|${Math.round(pos.z)}) nicht — das Feld wirft hier nichts`;
+            grund = ["dsl.grund.wildnis", { x: Math.round(pos.x), z: Math.round(pos.z) }];
         if (grund) {
             const eintrag = { event: "invalid_position", op, grund, program_id: ctx.programId };
             ctx.log.push(eintrag);
@@ -400,9 +403,10 @@ class AnazhRealm_feld_dsl {
     }
 
     // Der EINE Fehler „verlangter Ort fehlt": ein Positions-Auflöser wirft ihn mit seinem Grund, `dslEvalPos` reicht ihn
-    // benannt weiter, `dslEval` bricht daran die Op ab.
+    // benannt weiter, `dslEval` bricht daran die Op ab. Der Grund ist eine Zeile der Tafel (der Spieler liest ihn in seiner
+    // Sprache, `_dslAbsageSatz`), die Meldung des Fehlers die Quell-Sprache.
     _dslKeinOrt(op, grund) {
-        const fehler = new Error(grund);
+        const fehler = new Error(AnazhRealm._tIn("de", grund[0], grund[1]));
         fehler.dslKeinOrt = { op, grund };
         return fehler;
     }
@@ -419,18 +423,19 @@ class AnazhRealm_feld_dsl {
     // „far_player" ohne Abstände setzte das Dorf neben den Spieler).
     _dslOrtZahl(op, was, v, lo, hi, def) {
         if (v == null) {
-            if (def == null) throw this._dslKeinOrt(op, `${op}: ${was} fehlt`);
+            if (def == null) throw this._dslKeinOrt(op, ["dsl.grund.fehlt", { op, was }]);
             return def;
         }
         const n = this._fremdeZahl(v);
-        if (!Number.isFinite(n)) throw this._dslKeinOrt(op, `${op}: ${was} „${this._dslZeig(v)}“ ist keine Zahl`);
+        if (!Number.isFinite(n))
+            throw this._dslKeinOrt(op, ["dsl.grund.keine-zahl", { op, was, wert: this._dslZeig(v) }]);
         return Math.min(hi, Math.max(lo, n));
     }
 
     // Der Spieler-Ort eines spieler-relativen Auflösers — ohne Spieler gibt es den Ort nicht (bis 07.10. der Ursprung).
     _dslSpielerOrt(op, ctx) {
         const pm = ctx.state.playerMesh;
-        if (!pm) throw this._dslKeinOrt(op, `${op}: kein Spieler in der Welt`);
+        if (!pm) throw this._dslKeinOrt(op, ["dsl.grund.kein-spieler", { op }]);
         return pm.position;
     }
 
@@ -846,12 +851,7 @@ class AnazhRealm_feld_dsl {
     // reist im Snapshot). NUR Spieler-Gesetze — Nexus/LLM-Experimente fluteten sonst das Tagebuch und
     // verdrängten die Genesis-Anker. Einziger Aufrufer: _tickWorldRules beim ersten Feuern.
     _journalRuleAwoke(rule) {
-        let desc;
-        try {
-            desc = this.describeProgram(["rule", rule.cond, rule.effect]);
-        } catch {
-            desc = "ein Gesetz";
-        }
+        const desc = this.describeProgram(["rule", rule.cond, rule.effect]);
         const wer = this._gesetzGeber(rule);
         this.journalAppendOnce(
             `ruleAwoke:${rule._sig || rule.id}`,
@@ -964,7 +964,15 @@ class AnazhRealm_feld_dsl {
                 const e = emotion || "happy"; // das Gesetz der Werte hält dslEval (`AnazhRealm.DSL_WERTE`)
                 const { spawned, gruende, lastBorn } = this._dslWesenSetzen(ctx, pos, n, e, null, null);
                 ctx.log.push({ event: "spawned_creature", count: spawned, emotion: e });
-                this._setzErgebnis(ctx, "spawn_creature", n, spawned, gruende, "Kreaturen", "erschienen");
+                this._setzErgebnis(
+                    ctx,
+                    "spawn_creature",
+                    n,
+                    spawned,
+                    gruende,
+                    ["ergebnis.ding.kreaturen"],
+                    "erschienen"
+                );
                 // Spawnt DER SPIELER Leben (source "human") → joy + peace; der autonome Nexus hebt die
                 // Spieler-Emotion nicht (seine Tat, nicht meine).
                 if (spawned > 0 && ctx.source === "human")
@@ -1030,7 +1038,7 @@ class AnazhRealm_feld_dsl {
                 const pos = this.dslEvalPos(positionNode, ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
-                    this._setzErgebnis(ctx, "spawn_island", 1, 0, { budget: 1 }, "Insel", "gesetzt");
+                    this._setzErgebnis(ctx, "spawn_island", 1, 0, { budget: 1 }, ["ergebnis.ding.insel"], "gesetzt");
                     return;
                 }
                 ctx.budget.spawnsLeft--;
@@ -1060,7 +1068,7 @@ class AnazhRealm_feld_dsl {
                     1,
                     island ? 1 : 0,
                     island ? {} : { buehne: 1 },
-                    "Insel",
+                    ["ergebnis.ding.insel"],
                     "gesetzt"
                 );
             },
@@ -1068,7 +1076,7 @@ class AnazhRealm_feld_dsl {
                 const pos = this.dslEvalPos(positionNode, ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
-                    this._setzErgebnis(ctx, "spawn_ufo", 1, 0, { budget: 1 }, "UFO", "gerufen");
+                    this._setzErgebnis(ctx, "spawn_ufo", 1, 0, { budget: 1 }, ["ergebnis.ding.ufo"], "gerufen");
                     return;
                 }
                 ctx.budget.spawnsLeft--;
@@ -1077,7 +1085,15 @@ class AnazhRealm_feld_dsl {
                     event: "spawned_ufo",
                     pos: ufo ? { x: ufo.position.x, y: ufo.position.y, z: ufo.position.z } : pos,
                 });
-                this._setzErgebnis(ctx, "spawn_ufo", 1, ufo ? 1 : 0, ufo ? {} : { buehne: 1 }, "UFO", "gerufen");
+                this._setzErgebnis(
+                    ctx,
+                    "spawn_ufo",
+                    1,
+                    ufo ? 1 : 0,
+                    ufo ? {} : { buehne: 1 },
+                    ["ergebnis.ding.ufo"],
+                    "gerufen"
+                );
             },
             // Bau-Primitive: Position über die Selektor-Form (at_player, at_origin, near_player N), jeder Bau
             // = 1 Spawn-Budget. Optionales Seed für deterministische Visuals; beim Broadcast bettet der Sender
@@ -1099,7 +1115,7 @@ class AnazhRealm_feld_dsl {
                         : null;
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
-                    this._setzErgebnis(ctx, "spawn_village", 1, 0, { budget: 1 }, "Dorf", "gebaut");
+                    this._setzErgebnis(ctx, "spawn_village", 1, 0, { budget: 1 }, ["ergebnis.ding.dorf"], "gebaut");
                     return;
                 }
                 ctx.budget.spawnsLeft--;
@@ -1120,16 +1136,9 @@ class AnazhRealm_feld_dsl {
                 ctx.log.push({ event: "spawned_village", id: null, pos, seed: s });
                 // DER BAU FOLGT (asynchron: das Buch, der Plan des Studios): jetzt steht nichts — der Satz sagt „wird gebaut",
                 // das Dorf meldet sein Ergebnis selbst, wenn es steht (`spawnSettlement` → `_chatEcho`, an den, der es verlangt)
-                this._setzErgebnis(
-                    ctx,
-                    "spawn_village",
-                    1,
-                    0,
-                    {},
-                    "Dorf",
-                    "gebaut",
-                    "Das Dorf wird gebaut — es meldet sich, wenn es steht."
-                );
+                this._setzErgebnis(ctx, "spawn_village", 1, 0, {}, ["ergebnis.ding.dorf"], "gebaut", [
+                    "ergebnis.dorf-folgt",
+                ]);
             },
             // AUSLÖSCHUNGS-WELLE — der TEMPEL ist die klassische PORTIKUS-Kultur des
             // fachwerk-Labs (haus_griechisch, KULTNAMES — der sakrale Klassik-Bau des
@@ -1139,7 +1148,7 @@ class AnazhRealm_feld_dsl {
                 const gruende = {};
                 const absage = (g) => (gruende[g] = (gruende[g] || 0) + 1);
                 const ergebnis = (gesetzt) =>
-                    this._setzErgebnis(ctx, "spawn_temple", 1, gesetzt, gruende, "Tempel", "gebaut");
+                    this._setzErgebnis(ctx, "spawn_temple", 1, gesetzt, gruende, ["ergebnis.ding.tempel"], "gebaut");
                 if (!this.state.blueprints || !this.state.blueprints[name]) {
                     ctx.log.push({ event: "skipped", reason: "studio_kalt", op: "spawn_temple" });
                     absage("buch");
@@ -1173,7 +1182,15 @@ class AnazhRealm_feld_dsl {
                 const absage = (g) => (gruende[g] = (gruende[g] || 0) + 1);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
-                    this._setzErgebnis(ctx, "spawn_waterfall", 1, 0, { budget: 1 }, "Wasserfall", "gebaut");
+                    this._setzErgebnis(
+                        ctx,
+                        "spawn_waterfall",
+                        1,
+                        0,
+                        { budget: 1 },
+                        ["ergebnis.ding.wasserfall"],
+                        "gebaut"
+                    );
                     return;
                 }
                 ctx.budget.spawnsLeft--;
@@ -1185,7 +1202,15 @@ class AnazhRealm_feld_dsl {
                     absage,
                 });
                 ctx.log.push({ event: "spawned_waterfall", id: entry ? entry.id : null, pos, seed: s });
-                this._setzErgebnis(ctx, "spawn_waterfall", 1, entry ? 1 : 0, gruende, "Wasserfall", "gebaut");
+                this._setzErgebnis(
+                    ctx,
+                    "spawn_waterfall",
+                    1,
+                    entry ? 1 : 0,
+                    gruende,
+                    ["ergebnis.ding.wasserfall"],
+                    "gebaut"
+                );
             },
             // Generischer Bauplan-Spawn für jeden Namen (built-in oder eigen), z. B. ["spawn_blueprint",
             // "mein-tempelplatz", ["at_player"]] — der universelle Pfad von Hotbar + Werkstatt. Slot 6
@@ -1195,7 +1220,7 @@ class AnazhRealm_feld_dsl {
             spawn_blueprint: ([name, positionNode, seed, archId, studioOv, drehung], ctx) => {
                 const gruende = {};
                 const absage = (g) => (gruende[g] = (gruende[g] || 0) + 1);
-                const art = typeof name === "string" ? this._werkLabel(name) : "Bauplan";
+                const art = typeof name === "string" ? this._werkLabel(name) : ["ergebnis.ding.bauplan"];
                 const ergebnis = (gesetzt) =>
                     this._setzErgebnis(ctx, "spawn_blueprint", 1, gesetzt, gruende, art, "gebaut");
                 if (typeof name !== "string") {
@@ -1712,7 +1737,7 @@ class AnazhRealm_feld_dsl {
                 for (let l = 0; l <= d; l++) gewollt += Math.pow(6, l);
                 const gruende = {};
                 const absage = (g) => (gruende[g] = (gruende[g] || 0) + 1);
-                const art = `Fraktal-${this._werkLabel(t)}`;
+                const art = ["ergebnis.ding.fraktal", { was: this._werkLabel(t) }];
                 if (!(this.state.blueprints && this.state.blueprints[t])) {
                     ctx.log.push({ event: "skipped", reason: "studio_kalt", op: "spawn_fractal" });
                     gruende.buch = gewollt;
@@ -2013,7 +2038,8 @@ class AnazhRealm_feld_dsl {
         const istBaum = name.startsWith("baum_");
         const natur = this._istNatur({ type: name });
         const werk = this._studioWerkVerb(name);
-        const verb = werk === "praegung" ? "geprägt" : werk === "wesen" ? "erschienen" : natur ? "gewachsen" : "gebaut";
+        const verb =
+            werk === "praegung" ? "gepraegt" : werk === "wesen" ? "erschienen" : natur ? "gewachsen" : "gebaut";
         if (befund.geklemmt && befund.geklemmt.length)
             ctx.log.push({ event: "studio_regler_geklemmt", kind: name, geklemmt: befund.geklemmt });
         if (stamp === false) {
@@ -2167,7 +2193,7 @@ class AnazhRealm_feld_dsl {
             // verstärken.
             at_field_need: ([radius], ctx) => {
                 const p = spieler("at_field_need", ctx);
-                const r = zahl("at_field_need", "Radius", radius, 10, 120, 50);
+                const r = zahl("at_field_need", ["dsl.was.radius"], radius, 10, 120, 50);
                 let best = null;
                 let bestLeb = Infinity;
                 for (let i = 0; i < 8; i++) {
@@ -2180,20 +2206,20 @@ class AnazhRealm_feld_dsl {
                         best = { x: sx, z: sz };
                     }
                 }
-                if (!best) throw this._dslKeinOrt("at_field_need", "at_field_need: das Feld kennt im Ring keinen Wert");
+                if (!best) throw this._dslKeinOrt("at_field_need", ["dsl.grund.feld-leer"]);
                 return { x: best.x, y: p.y, z: best.z };
             },
             // Spawn-Position VOR dem Spieler statt in ihm: yaw-Vektor × dist (Default 5 m; Chat-Patterns
             // nutzen 8 m, da Standard-Strukturen ~6–10 m groß sind).
             at_player_forward: ([dist], ctx) => {
-                const d = zahl("at_player_forward", "Abstand", dist, 1, 50, 5);
+                const d = zahl("at_player_forward", ["dsl.was.abstand"], dist, 1, 50, 5);
                 const p = spieler("at_player_forward", ctx);
                 // „vor dir" liest die EINE Vorwärts-Richtung (_blickVorn, waagrecht) — dieselbe wie Kamera und Phantom.
                 const v = this._blickVorn(ctx.state.yaw, 0);
                 return { x: p.x + v.x * d, y: p.y, z: p.z + v.z * d };
             },
             near_player: ([radius], ctx) => {
-                const r = zahl("near_player", "Radius", radius, 1, 100);
+                const r = zahl("near_player", ["dsl.was.radius"], radius, 1, 100);
                 const p = spieler("near_player", ctx);
                 const angle = ctx.rng() * Math.PI * 2;
                 const dist = ctx.rng() * r;
@@ -2204,7 +2230,7 @@ class AnazhRealm_feld_dsl {
             // an _defaultSpawnPos() wäre falsch, falls dieser je driftet.
             at_origin: () => ({ x: 0, y: 50, z: 0 }),
             random_position: ([range], ctx) => {
-                const r = zahl("random_position", "Spanne", range, 1, 500);
+                const r = zahl("random_position", ["dsl.was.spanne"], range, 1, 500);
                 return { x: (ctx.rng() - 0.5) * 2 * r, y: 50, z: (ctx.rng() - 0.5) * 2 * r };
             },
             // FERNE Schale (minR..maxR) um den Spieler, JENSEITS des Cull-Radius: der Nexus baut am
@@ -2212,8 +2238,8 @@ class AnazhRealm_feld_dsl {
             // Höhe aus getTerrainHeightAt (kennt den Boden auch ungestreamt). Ohne Mindest-Abstand gibt es die Schale nicht
             // (bis 07.10. 1–2 m: das Dorf „in der Ferne" stand beim Spieler); ohne Höchst-Abstand ist sie 1 m breit.
             far_player: ([minR, maxR], ctx) => {
-                const lo = zahl("far_player", "Mindest-Abstand", minR, 1, 1000);
-                const hi = Math.max(lo + 1, zahl("far_player", "Höchst-Abstand", maxR, 1, 1000, lo));
+                const lo = zahl("far_player", ["dsl.was.mindest"], minR, 1, 1000);
+                const hi = Math.max(lo + 1, zahl("far_player", ["dsl.was.hoechst"], maxR, 1, 1000, lo));
                 const p = spieler("far_player", ctx);
                 const angle = ctx.rng() * Math.PI * 2;
                 const dist = lo + ctx.rng() * (hi - lo);
@@ -2228,20 +2254,19 @@ class AnazhRealm_feld_dsl {
             // Op benannt ab, der Satz sagt es laut). Bis 06.10. fiel es still auf den Spieler-Ort — Befund V-k5: 6 Eichen
             // 3,3–7,4 m um den Spieler, der Fluss 85 m fort, der Chat „am Wasser".
             near_water: ([radius], ctx) => {
-                const r = zahl("near_water", "Radius", radius, 8, 200, 60);
+                const r = zahl("near_water", ["dsl.was.radius"], radius, 8, 200, 60);
                 const p = spieler("near_water", ctx);
                 // STEHT DER SPIELER IM WASSER (Schau-2: der Vorführ-Satz am Fluss −872/−1127), ist sein Ufer der nächste
                 // trockene Fleck — von ihm 2 m weiter landeinwärts (die Richtung vom Spieler weg). Bis V18.537 lief der Weg
                 // zurück zum Spieler durchs Wasser, und die Zwillings-Probe nannte den Rand des Flusses Land.
                 if (!this._landAt(p.x, p.z, 0.4)) {
                     const u = this._findNearestWaterPoint(p.x, p.z, r, true);
-                    if (!u)
-                        throw this._dslKeinOrt("near_water", `kein trockenes Ufer im Umkreis von ${Math.round(r)} m`);
+                    if (!u) throw this._dslKeinOrt("near_water", ["dsl.grund.kein-ufer", { r: Math.round(r) }]);
                     const L = Math.hypot(u.x - p.x, u.z - p.z) || 1;
                     return { x: u.x + ((u.x - p.x) / L) * 2, y: p.y, z: u.z + ((u.z - p.z) / L) * 2 };
                 }
                 const w = this._findNearestWaterPoint(p.x, p.z, r);
-                if (!w) throw this._dslKeinOrt("near_water", `kein Wasser im Umkreis von ${Math.round(r)} m`);
+                if (!w) throw this._dslKeinOrt("near_water", ["dsl.grund.kein-wasser", { r: Math.round(r) }]);
                 const dx = p.x - w.x,
                     dz = p.z - w.z;
                 const L = Math.hypot(dx, dz) || 1;
@@ -2258,7 +2283,7 @@ class AnazhRealm_feld_dsl {
                         return { x: x + (dx / L) * weiter, y: p.y, z: z + (dz / L) * weiter };
                     }
                 }
-                throw this._dslKeinOrt("near_water", "kein trockenes Ufer zwischen dem Wasser und dir");
+                throw this._dslKeinOrt("near_water", ["dsl.grund.kein-ufer-zwischen"]);
             },
             // Ein Ort in Koordinaten: x, y und z sind verlangt (jeder Erzeuger — Chat, Absender, Spieler-Wille — setzt alle
             // drei); bis 07.10. wurde eine fehlende oder ungültige zur 0 bzw. 50 (`Number(null) === 0`).
@@ -2377,11 +2402,7 @@ AnazhRealm.DSL_WERTE = (() => {
             ),
     ];
     return Object.freeze({
-        weather: [
-            0,
-            (v) => v === "frei" || Object.hasOwn(AnazhRealm.WEATHER_INTENSITY, v),
-            () => [...Object.keys(AnazhRealm.WEATHER_INTENSITY), "frei"].join(" | "),
-        ],
+        weather: [0, (v) => AnazhRealm.WETTER_WOERTER.includes(v), () => AnazhRealm.WETTER_WOERTER.join(" | ")],
         set_time_of_day: [
             0,
             (v) => zahlIn(v, 0, 1),

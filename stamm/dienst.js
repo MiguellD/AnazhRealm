@@ -65,7 +65,7 @@ class AnazhRealm_dienst {
     // Eine Erinnerung fürs Modell: ein Satz dieser Welt (`d`, nur journalAppend) trägt Namen isoliert in `ki`, jede andere ist Datum.
     _erinnerungFuerKi(e) {
         const wert = (w) => (typeof w === "number" ? String(w) : AnazhRealm._datum(w));
-        const sp = AnazhRealm._sprache() === "pseudo" ? "de" : AnazhRealm._sprache();
+        const sp = AnazhRealm._spracheKi();
         const satz = Array.isArray(e.t)
             ? AnazhRealm._tIn(sp, e.t[0], e.t[1], wert)
             : e.d === 1
@@ -82,21 +82,21 @@ class AnazhRealm_dienst {
         const llm = this.state.llm;
         const defs = this.llmProviderDefs();
         const def = defs[llm.provider];
-        if (!def) return { error: `Unbekannter Provider: ${llm.provider}` };
-        if (!llm.enabled) return { error: "LLM nicht aktiv" };
+        if (!def) return { error: ["llm.fehler.provider", { provider: String(llm.provider) }] };
+        if (!llm.enabled) return { error: ["llm.fehler.aus"] };
         const cfg = llm.providerConfig[llm.provider];
         if (def.requiresKey && (!cfg || !cfg.apiKey))
-            return {
-                error: `für ${this._t(def.label)} fehlt der Schlüssel — trage ihn unter Einstellungen → Begleiter-Stimme ein`,
-            };
+            return { error: ["llm.fehler.schluessel", { anbieter: [def.label] }] };
         while (llm.inFlight) {
-            if (hintergrund || !this._llmHintergrund) return { error: "Anfrage läuft bereits" };
+            if (hintergrund || !this._llmHintergrund) return { error: ["llm.fehler.laeuft"] };
             this._llmHintergrund.abort();
             await this._llmFrei;
         }
         const nowSec = performance.now() / 1000;
         if (hintergrund && nowSec - llm.lastResponseAt < llm.minGapSeconds) {
-            return { error: `Kurze Pause — ${(llm.minGapSeconds - (nowSec - llm.lastResponseAt)).toFixed(1)} s` };
+            return {
+                error: ["llm.fehler.pause", { s: (llm.minGapSeconds - (nowSec - llm.lastResponseAt)).toFixed(1) }],
+            };
         }
         llm.inFlight = true;
         const abbruch = new globalThis.AbortController();
@@ -149,10 +149,10 @@ class AnazhRealm_dienst {
                 if (useProxy && (res.status === 404 || res.status === 405) && !isModelMissing) {
                     // Der Proxy ist der save-server, der die Seite liefert: antwortet der Ursprung 404/405, läuft die
                     // Seite über einen anderen Server (die echte Ursache, nie „HTTP 404" ohne Wort).
-                    llm.lastError = `der Proxy fehlt: ${fetchUrl} antwortet ${res.status} — die Seite läuft nicht über den save-server (npm start)`;
+                    llm.lastError = ["llm.fehler.proxy-fehlt", { url: fetchUrl, status: res.status }];
                 } else if (isModelMissing && this.state.llm.provider === "ollama") {
                     const m = (cfg && cfg.model) || "?";
-                    llm.lastError = `Modell „${m}" nicht gefunden. Prüfe mit \`ollama list\` (lokal) oder im Provider-Dashboard (Cloud) welche Modelle verfügbar sind, und trage den exakten Namen ins Modell-Feld ein.`;
+                    llm.lastError = ["llm.fehler.modell-fehlt", { modell: m }];
                 } else {
                     llm.lastError = `HTTP ${res.status}: ${text.slice(0, 160)}`;
                 }
@@ -170,7 +170,7 @@ class AnazhRealm_dienst {
             if (typeof parsed.erinnerung === "string") parsed.erinnerung = zurueck(parsed.erinnerung);
             return parsed;
         } catch (err) {
-            if (abbruch.signal.aborted) return { error: "dem Satz des Spielers gewichen" };
+            if (abbruch.signal.aborted) return { error: ["llm.fehler.gewichen"] };
             // V7.96 — CORS- und Netzwerk-Fehler erkennen + dem Spieler einen
             // klaren Hinweis geben. „Failed to fetch" ist der typische
             // Browser-Fehler bei CORS-Block + Netzwerk-Down.
@@ -186,22 +186,19 @@ class AnazhRealm_dienst {
             } catch (_eU) {}
             if (isCorsLikely && zielLokal && !ueberProxy) {
                 const pv = this.state.llm.provider;
-                llm.lastError =
-                    `Keine Antwort von ${zielHost || "localhost"} — der lokale Dienst läuft nicht` +
-                    (pv === "ollama" ? " (starte ihn: `ollama serve`)." : ".");
+                llm.lastError = [
+                    pv === "ollama" ? "llm.fehler.lokal-ollama" : "llm.fehler.lokal",
+                    { host: zielHost || "localhost" },
+                ];
             } else if (isCorsLikely && ueberProxy) {
                 // Der Proxy ist der Ursprung der Seite (`_llmProxyUrl`): ohne Antwort läuft der save-server nicht.
-                llm.lastError = `Proxy nicht erreichbar: ${this._llmProxyUrl()} — läuft der save-server (npm start)?`;
+                llm.lastError = ["llm.fehler.proxy-still", { url: this._llmProxyUrl() }];
             } else if (isCorsLikely && typeof navigator !== "undefined" && navigator.onLine === false) {
-                llm.lastError = "kein Netz — der Browser ist offline.";
+                llm.lastError = ["llm.fehler.offline"];
             } else if (isCorsLikely && this.state.llm.provider === "ollama") {
-                llm.lastError =
-                    `${zielHost || "Die Cloud"} blockt den Browser-Direct-Call (CORS). Optionen: ` +
-                    "(a) lokales Ollama auf localhost:11434, " +
-                    "(b) aktiviere 'Proxy über save-server' im Einstellungen-Drawer (braucht `npm start`), " +
-                    "(c) Provider mit CORS-Header (Groq, Gemini, OpenRouter).";
+                llm.lastError = zielHost ? ["llm.fehler.cors-ollama", { host: zielHost }] : ["llm.fehler.cors-cloud"];
             } else if (isCorsLikely) {
-                llm.lastError = `${zielHost || "der Dienst"} ist nicht erreichbar oder blockt den Browser-Aufruf (CORS).`;
+                llm.lastError = zielHost ? ["llm.fehler.cors", { host: zielHost }] : ["llm.fehler.cors-dienst"];
             } else {
                 llm.lastError = rawMsg;
             }
@@ -234,20 +231,19 @@ class AnazhRealm_dienst {
             const res = await fetch(ep + "/api/tags", { signal: ctl ? ctl.signal : undefined });
             if (uhr) clearTimeout(uhr);
             if (!res.ok) {
-                fehler = `${host} antwortet ${res.status} auf /api/tags — ist das ein Ollama-Dienst?`;
+                fehler = ["llm.fehler.tags", { host, status: res.status }];
             } else {
                 const j = await res.json().catch(() => null);
                 const namen =
                     j && Array.isArray(j.models) ? j.models.map((m) => m && (m.name || m.model)).filter(Boolean) : [];
                 const m = String(cfg.model || "");
                 if (m && !namen.some((n) => n === m || n === m + ":latest"))
-                    fehler =
-                        `Modell „${m}" ist auf ${host} nicht installiert — ` +
-                        (namen.length ? `vorhanden: ${namen.slice(0, 4).join(", ")} ` : "keines vorhanden ") +
-                        `(ollama pull ${m}).`;
+                    fehler = namen.length
+                        ? ["llm.fehler.nicht-installiert", { modell: m, host, namen: namen.slice(0, 4).join(", ") }]
+                        : ["llm.fehler.keines-installiert", { modell: m, host }];
             }
         } catch (_e) {
-            fehler = `Keine Antwort von ${host} — der lokale Dienst läuft nicht (starte ihn: \`ollama serve\`).`;
+            fehler = ["llm.fehler.lokal-ollama", { host }];
         }
         if (llm.enabled && llm.provider === "ollama") {
             llm.lastError = fehler;
@@ -1583,6 +1579,14 @@ class AnazhRealm_dienst {
             throw new Error(`SPRACHE: die Tafel trägt keine Sprache „${sp}“`);
         AnazhRealm._spracheJetzt = sp;
         return sp;
+    }
+
+    // DIE SPRACHE DER KI (spielgang.K5#2) ist die Sprache des Spielers: die Spalte der Tafel, die er gewählt hat (die Linsen-
+    // Sprache `pseudo` spricht mit der KI in der Quell-Sprache). Leser: der System-Prompt der Welt (`llmBuildSystemPrompt`), der
+    // Prompt der Seele (`_buildCreaturePersonaPrompt`), die Erinnerung an das Modell (`_erinnerungFuerKi`), die Stimme (`grokRender`).
+    static _spracheKi() {
+        const sp = AnazhRealm._sprache();
+        return sp === "pseudo" ? "de" : sp;
     }
 
     // der Wechsel am Ort: das Wort auf dem Gerät, die Spalte neu gelesen, das DOM aus index.html neu gefüllt (`_sprachDom`) —
