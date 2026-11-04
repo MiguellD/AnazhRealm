@@ -236,3 +236,4 @@ omen-gtx-main-b56e9b0e ROT lod.K2#1=ROT "at=async ]= }= lod.K5#1=ROT "at=async ]
 omen-gtx-w10-takt-90be0117 ROT leib.K1#1=ROT profiband.K4#1=ROT 
 omen-gtx-w10-takt-90be0117 ROT leib.K1#1=ROT profiband.K4#1=ROT 
 omen-k06-b56e9b0e OFFEN 12 Läufe ohne haus_alemannisch-ROT
+omen-gtx-w10-takt-90be0117 ROT leib.K1#1=ROT profiband.K4#1=ROT 
