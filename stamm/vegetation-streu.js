@@ -585,8 +585,8 @@ class AnazhRealm_vegetation_streu {
 
     // DAS URTEIL EINES WURFS (der Wurf `i` der Schicht `layer`): seine Zelle (er steht) · null (er wartet: die Region schiebt sich
     // auf, `_streuZelleWartet`, sein Platz bleibt) · false (er fällt). Was der Zustand der Welt urteilt, urteilt der Haupt-Faden:
-    // die promotete Zelle dieser Schicht (ihre realen Bäume), die Tat, die den Baum der Zelle nahm (`_tatSperrt`, speicher.K3),
-    // das exakte Wasser-Verdikt (`_landAt`) — dann setzt die Zelle durch die EINE Natur-Wand (`_naturSetzen`, mit Art und Größe —
+    // die promotete Zelle dieser Schicht (ihre realen Bäume), die Tat, die den Baum der Zelle nahm (`_tatSperrt`, speicher.K3) oder
+    // ihn noch nicht wachsen ließ (das Alter des Orts, `_baumAlter`: die Narbe eines Brands, der Stubben), das exakte Wasser-Verdikt (`_landAt`) — dann setzt die Zelle durch die EINE Natur-Wand (`_naturSetzen`, mit Art und Größe —
     // ihre Krone: im Grundriss eines Hauses, über der Genesis-Lichtung, im Wagen und am Wasser wird sie nie Streu). Die Wand urteilt
     // VOR dem Warten: erst ihr `setzen` fragt die Höhe und baut die Instanz — ein Wurf, den die Wand nimmt, zählt keinen Wartenden
     // und hält keinen Platz. Am Chokepoint vorbei (das Urteil `_naturWand` beim Aufrufer) urteilten die Selbsttests der Wand
@@ -601,7 +601,7 @@ class AnazhRealm_vegetation_streu {
         ];
         const tf = { x: darts[i + 2], z: darts[i + 3], yaw: darts[i + 4], scale: darts[i + 5] };
         if (this._scatterIsCellPromoted(tf.x, tf.z, layer.name)) return false;
-        if (layer.promotable && this._tatSperrt(tf.x, tf.z)) return false;
+        if (layer.promotable && (this._tatSperrt(tf.x, tf.z) || this._baumAlter(tf.x, tf.z) < 1)) return false;
         if (!this._landAt(tf.x, tf.z, 0.4)) return false;
         const species = this._scatterSpeciesForLayer(layer.kind, lebendig, moisture, h);
         const variantIndex = h % AnazhRealm.VARIANTS_PER_SPECIES;

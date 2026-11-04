@@ -133,8 +133,8 @@
    ],
    [
     [
-     "if (opts.ausGesetz === true && position && this._tatSperrt(position.x, position.z)) return nein(\"tat\");",
-     "if (opts.ausGesetz === true && position && (this._tatSperrt(position.x, position.z) || opts.id === \"genesis:tor:3\")) return nein(\"tat\");"
+     "if (opts.ausGesetz === true && position && this._tatSperrt(position.x, position.z, opts.studioOv))\n            return nein(\"tat\");",
+     "if (opts.ausGesetz === true && position && (this._tatSperrt(position.x, position.z, opts.studioOv) || opts.id === \"genesis:tor:3\"))\n            return nein(\"tat\");"
     ]
    ]
   ],
