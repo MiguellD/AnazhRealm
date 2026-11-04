@@ -667,7 +667,7 @@ class AnazhRealm_bild_sicht {
         // selbst empfängt nichts von sich, die senkrechte Wand die Hälfte, die Unterseite alles. DIE BESTRAHLUNG ERKANNT: r184
         // reicht ihre Stufe als Variable über der Konstanten 1 (`float(1)` in einer VarNode, gelesen am Vendor 03.11.) — bis
         // dahin fragte der Zweig nur `isConstNode`, nahm nie, und jede Bestrahlung las den Spiegel mit dem Gewicht 0 (eine Abtastung je Fragment für nichts).
-        const halbraum = (n) => this._rueckstrahlHalbraum(himmel, n);
+        const halbraum = (n) => this._rueckstrahlHalbraum(himmel, n, T.positionWorld);
         const konstant = (n) => !!n && (n.isConstNode === true || (n.isVarNode === true && konstant(n.node)));
         class SpiegelUmgebung extends N {
             constructor() {
@@ -2767,7 +2767,6 @@ class AnazhRealm_bild_sicht {
         }
         // die volle Schale 0: der Träger der Attribute, die ihre zwei Teile teilen (sie zeichnet kein Mesh)
         if (fr.geos && fr.geos[0]) this._queueGeometryDispose(fr.geos[0]);
-        if (fr.maske && fr.maske.tex) fr.maske.tex.dispose(); // die Masken-Karte des Gebauten
         // die Kamera-Weitung zurücknehmen (die Klippe war der Ring-Besitz).
         if (Number.isFinite(this._fernRingCamFarAlt) && this.state.camera) {
             this.state.camera.far = this._fernRingCamFarAlt;
