@@ -219,6 +219,7 @@ if (SELBSTTEST) {
 }
 
 const { messort } = require("./lib/welt-orte.cjs");
+const { fehlerText } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.KOLLISION_BILD_PORT) || 4631;
 // `--bild`: die Welt zeichnet auf der Karte — das Linsen-Rezept von welt-boot (`linsenWebGpuArgs`, die Adapter-Zeile
@@ -742,7 +743,7 @@ async function tempo(K) {
                 if (steht) r.removeCreature(steht);
             }
     } catch (f) {
-        aus.fehler = String((f && f.message) || f);
+        aus.fehler = fehlerText(f);
     } finally {
         A._steuerGesetz = roh;
         delete r.tickFaunaLifecycle;
@@ -769,7 +770,7 @@ async function tempo(K) {
         befund = await page.evaluate(probe, Object.assign(K, { FALL_M, HINDERNISSE, TAKTE, UEBER_VMAX, SPALT_M, BILD }));
         befund.tempo = Object.assign(await page.evaluate(tempo, K), { karte: browser.adapter });
     } catch (e) {
-        befund = { fehler: String((e && e.message) || e) };
+        befund = { fehler: fehlerText(e) };
     }
     await browser.close();
     server.close();

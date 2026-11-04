@@ -65,7 +65,7 @@ function zielZensus(k) {
                 "der Zensus"
             );
         } catch (e) {
-            return { fehler: String((e && e.message) || e) };
+            return { fehler: fehlerText(e) };
         }
         const n = Math.max(3, Number(k && k.n) || 12);
         const uhr = window.__passUhr();
