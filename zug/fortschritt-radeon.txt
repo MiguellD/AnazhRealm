@@ -1797,3 +1797,4 @@
 2026-11-04 15:59:45 ba752b9e-radeon leib.K1#1 ROT 0.5 · 1/2
 2026-11-04 16:01:15 ba752b9e-radeon ENDE 0 grün / 1 rot · 3.0 min
 2026-11-04 16:02:31 ba752b9e-radeon START 2 Stationen
+2026-11-04 16:04:03 ba752b9e-radeon leib.K1#1 ROT 0.5 · 1/2
