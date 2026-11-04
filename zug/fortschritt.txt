@@ -1572,3 +1572,5 @@
 2026-11-04 13:22:52 omen-hw-z204 START 5 Proben (haus-welt --selftest --nur=kihain --phasen=lichtung an main, +gruss, +alter, +weiches, +licht-sprung)
 2026-11-04 13:24:31 omen-hw-z204 phi5-main GRÜN 1 · 1/5
 2026-11-04 13:24:32 omen-hw-z204 w9-gruss GRÜN 1 · 2/5
+2026-11-04 13:26:09 omen-hw-z204 w6-alter GRÜN 1 · 3/5
+2026-11-04 13:26:15 omen-hw-z204 w6-weiches GRÜN 1 · 4/5
