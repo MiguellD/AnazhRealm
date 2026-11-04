@@ -1747,3 +1747,44 @@
 2026-11-04 13:48:22 10770eb5-radeon profiband.K4#1 ROT 0.5 · 1/2
 2026-11-04 13:48:54 10770eb5-radeon licht.K5#1 GRÜN 0.5 · 2/2
 2026-11-04 13:50:24 10770eb5-radeon ENDE 1 grün / 1 rot · 2.9 min
+2026-11-04 13:52:21 2674ff9a-radeon START 117 Stationen
+2026-11-04 13:53:53 2674ff9a-radeon gelaende.K5#2 GRÜN 0.4 · 1/117
+2026-11-04 13:54:28 2674ff9a-radeon vegetation.K2#1 ROT 0.1 · 2/117
+2026-11-04 13:54:49 2674ff9a-radeon mensch.K4#1 ROT 0.3 · 3/117
+2026-11-04 13:55:04 2674ff9a-radeon haar.K2#1 ROT 0.3 · 4/117
+2026-11-04 13:55:26 2674ff9a-radeon vegetation.K1#1 ROT 0.4 · 5/117
+2026-11-04 13:55:44 2674ff9a-radeon vegetation.K5#1 GRÜN 0.3 · 6/117
+2026-11-04 13:56:22 2674ff9a-radeon licht.K2#1 GRÜN 0.1 · 7/117
+2026-11-04 13:57:05 2674ff9a-radeon licht.K2#2 ROT 0.7 · 8/117
+2026-11-04 13:58:15 2674ff9a-radeon lod.K1#1 ROT 0.7 · 9/117
+2026-11-04 13:58:40 2674ff9a-radeon lod.K5#1 ROT 0.4 · 10/117
+2026-11-04 13:59:20 2674ff9a-radeon leib.K1#1 ROT 0.6 · 11/117
+2026-11-04 13:59:32 2674ff9a-radeon spielgang.K3#1 ROT 0.2 · 12/117
+2026-11-04 14:00:27 2674ff9a-radeon klang.K2#1 ROT 0.4 · 13/117
+2026-11-04 14:01:39 2674ff9a-radeon licht.K5#1 ROT 0.5 · 14/117
+2026-11-04 14:02:39 2674ff9a-radeon schatten.K2#1 GRÜN 0.1 · 15/117
+2026-11-04 14:02:44 2674ff9a-radeon schatten.K3#1 ROT 0.1 · 16/117
+2026-11-04 14:02:52 2674ff9a-radeon schatten.K4#1 GRÜN 0.1 · 17/117
+2026-11-04 14:03:01 2674ff9a-radeon schatten.K5#1 GRÜN 0.1 · 18/117
+2026-11-04 14:03:07 2674ff9a-radeon licht.K4#1 GRÜN 0.1 · 19/117
+2026-11-04 14:03:13 2674ff9a-radeon ferne.K3#1 ROT 0.1 · 20/117
+2026-11-04 14:03:18 2674ff9a-radeon ferne.K4#1 ROT 0.1 · 21/117
+2026-11-04 14:03:24 2674ff9a-radeon lod.K4#1 ROT 0.1 · 22/117
+2026-11-04 14:03:29 2674ff9a-radeon vegetation.K3#1 ROT 0.1 · 23/117
+2026-11-04 14:03:34 2674ff9a-radeon affekt.K4#2 ROT 0.0 · 24/117
+2026-11-04 14:03:45 2674ff9a-radeon ferne.K5#1 GRÜN 0.4 · 25/117
+2026-11-04 14:04:05 2674ff9a-radeon material.K4#1 ROT 0.1 · 26/117
+2026-11-04 14:04:17 2674ff9a-radeon material.K5#1 GRÜN 0.2 · 27/117
+2026-11-04 14:04:35 2674ff9a-radeon profiband.K5#1 ROT 0.3 · 28/117
+2026-11-04 14:04:41 2674ff9a-radeon profiband.K5#2 ROT 0.3 · 29/117
+2026-11-04 14:05:59 2674ff9a-radeon affekt.K1#2 GRÜN 0.1 · 30/117
+2026-11-04 14:07:57 2674ff9a-radeon haar.K1#1 ROT 0.5 · 31/117
+2026-11-04 14:09:54 2674ff9a-radeon wetter.K2#1 GRÜN 0.2 · 32/117
+2026-11-04 14:10:42 2674ff9a-radeon licht.K3#1 ROT 0.5 · 33/117
+2026-11-04 14:12:28 2674ff9a-radeon mensch.K5#1 GRÜN 0.6 · 34/117
+2026-11-04 14:13:18 2674ff9a-radeon schatten.K1#1 GRÜN 0.3 · 35/117
+2026-11-04 14:14:10 2674ff9a-radeon tiere.K1#2 ROT 0.6 · 36/117
+2026-11-04 14:15:35 2674ff9a-radeon tiere.K2#2 GRÜN 0.4 · 37/117
+2026-11-04 14:15:42 2674ff9a-radeon luftwasser.K5#2 GRÜN 0.0 · 38/117
+2026-11-04 14:15:48 2674ff9a-radeon haar.K5#1 GRÜN 0.0 · 39/117
+2026-11-04 14:24:20 2674ff9a-radeon ENDE 16 grün / 24 rot · 32.1 min
