@@ -182,7 +182,13 @@ function messeKopf(sb, eingriff) {
     const yAuge = (eL.y + eR.y) / 2;
     // (2) der Ofen L0: die Hornhaut vor der Haut, die Töne, das Haar, die Dreiecke
     const kern = eingriff && eingriff.kern ? eingriff.kern(K) : K;
-    const g = sb.BAKERS_BY_KIND.koerper(kern, "mensch", 1, 0, eingriff && eingriff.dials ? { dials: eingriff.dials } : null);
+    const g = sb.BAKERS_BY_KIND.koerper(
+        kern,
+        "mensch",
+        1,
+        0,
+        eingriff && eingriff.dials ? { dials: eingriff.dials } : null
+    );
     g.updateMatrixWorld(true);
     const W = {};
     const sk = g.userData.__skelett;
@@ -244,27 +250,9 @@ function messeKopf(sb, eingriff) {
         vorstand = Math.max(vorstand, (sz.b - zMed) / bkH);
     }
     // das freie Auge: je Punkt der Iris-Vorderseite ein Strahl nach vorn (+z) gegen die Dreiecke der Kopf-Haut
-    const idx = hautK.geometry.index ? hautK.geometry.index.array : null;
-    const tri = [];
-    for (let t = 0; t < (idx ? idx.length : hp.length) / 3; t++)
-        tri.push(
-            idx ? [hp[idx[3 * t]], hp[idx[3 * t + 1]], hp[idx[3 * t + 2]]] : [hp[3 * t], hp[3 * t + 1], hp[3 * t + 2]]
-        );
-    const trifft = (o) => {
-        for (const [a, b, c] of tri) {
-            const e1 = [b[0] - a[0], b[1] - a[1]],
-                e2 = [c[0] - a[0], c[1] - a[1]];
-            const det = e1[0] * e2[1] - e1[1] * e2[0];
-            if (Math.abs(det) < 1e-12) continue;
-            const px = o[0] - a[0],
-                py = o[1] - a[1];
-            const u = (px * e2[1] - py * e2[0]) / det,
-                w = (e1[0] * py - e1[1] * px) / det;
-            if (u < 0 || w < 0 || u + w > 1) continue;
-            if (a[2] + u * (b[2] - a[2]) + w * (c[2] - a[2]) > o[2]) return true;
-        }
-        return false;
-    };
+    const strahl = new T.Raycaster(new T.Vector3(), new T.Vector3(0, 0, 1));
+    const huelle = new T.Mesh(new T.BufferGeometry().setAttribute("position", new T.Float32BufferAttribute(hp.flat(), 3)).setIndex(hautK.geometry.index), new T.MeshBasicMaterial({ side: T.DoubleSide })); // prettier-ignore
+    const trifft = (o) => (strahl.ray.origin.set(...o), strahl.intersectObject(huelle).length > 0);
     let irisN = 0,
         irisFrei = 0;
     for (const n of ms.filter((n) => kl(n) === "iris")) {
@@ -297,9 +285,7 @@ function messeKopf(sb, eingriff) {
     for (const n of ms)
         if (/^(head|eye[LR]|iris[LR]|lid[TB][LR])$/.test(jn(n)))
             tris += (n.geometry.index ? n.geometry.index.count : n.geometry.attributes.position.count) / 3;
-    const luma = Object.values(K.SKIN_TONES).map((t) => {
-        return luma709(linHex(t.hex));
-    });
+    const luma = Object.values(K.SKIN_TONES).map((t) => luma709(linHex(t.hex)));
     return {
         kopfAnteil: kH / Hk,
         augenLinie: (yAuge - yKinn) / kH,
@@ -330,7 +316,11 @@ function urteile(sb, m, soll = "MENSCH_SOLL") {
         const band = S[k.replace(/(Min|Max)$/, "")];
         if (!Array.isArray(band)) return [];
         if (!Number.isFinite(x)) return [`${k} nicht messbar`];
-        return x < band[0] ? [`${k} ${+x.toFixed(4)} < ${band[0]}`] : x > band[1] ? [`${k} ${+x.toFixed(4)} > ${band[1]}`] : [];
+        return x < band[0]
+            ? [`${k} ${+x.toFixed(4)} < ${band[0]}`]
+            : x > band[1]
+              ? [`${k} ${+x.toFixed(4)} > ${band[1]}`]
+              : [];
     });
 }
 const urteileKopf = (sb, m) => urteile(sb, m, "KOPF_SOLL");
@@ -396,101 +386,12 @@ const zeige = (m) =>
                 .join(" · ")
     );
 
-// DIE RUHE DER ARME (w11-koerper, koerper-core ARM_RUHE): in der Ruhe-Pose des Gusses (Ofen L0, die Bind-Pose, die Welt und
-// Labor zeichnen) liegt keine Arm-Ecke hinter der Rumpf-Hülle. Arm-Ecke = Gewicht an Schulter, Ellbogen oder Hand > 0,5 (die
-// Hände: ihre starren Meshes durch ihr Gelenk), jenseits der Naht des Gesetzes plus dem Saum der Hülle (`RUHE_SAUM`: der
-// Deltamuskel fließt über Feld-Unschärfe und Haut-Abstand ~0,06 E in den Rücken — dort ist die Hülle EINE Fläche). Rumpf-Hülle
-// = jede Ecke mit Gewicht an Rumpf und Wurzel > 0,5 (Haut und Stoff aus der Haut), mit ihrer Normale. Innen liegt eine Arm-Ecke,
-// wenn jede der vier nächsten Rumpf-Ecken (im Radius 0,1 E) sie hinter ihrer Halb-Ebene sieht (eine einzelne Ecke in einer Mulde
-// irrt). Am Labor-Kern (2674ff9a) lagen am Gitter aus mass × tone × age × gender 24 von 24 Körpern mit 284–529 Arm-Ecken bis
-// 71 mm im Rumpf. Täter (Selbsttest R1): der Körper ohne das Gesetz (morphAuf ohne Kugeln — der Labor-Winkel, der volle Brustkorb).
-const RUHE_SAUM = 0.05;
-const RUHE_KOERPER = [{}, { mass: 1, tone: 1, age: 0, gender: 0 }, { mass: 1, tone: 0, age: 1, gender: 1 }, { mass: 0, tone: 1, age: 0, gender: 0 }, { mass: 0, tone: 0, age: 1, gender: 1 }];
-const ARM_GELENKE = new Set(["arm1", "arm-1", "elbow1", "elbow-1", "hand1", "hand-1"]);
-function messeRuhe(sb, kernMut) {
-    const T = sb.THREE;
-    const K = sb.__koerperCore;
-    const R = K.ARM_RUHE;
-    if (!R || !(R.naht > 0)) return [{ fehler: "ruhe: koerper-core ohne ARM_RUHE (die Ruhe der Arme ist Gesetz)" }];
-    const kern = kernMut ? kernMut(K) : K;
-    return RUHE_KOERPER.map((dials) => {
-        const g = sb.BAKERS_BY_KIND.koerper(kern, "mensch", 1, 0, { dials });
-        const sk = g.userData.__skelett;
-        const W = {};
-        const welt = (name) => {
-            if (W[name]) return W[name];
-            const j = sk.joints.find((x) => x.name === name);
-            const L = new T.Matrix4().compose(new T.Vector3(...j.pos), new T.Quaternion(...j.quat), new T.Vector3(...j.scale));
-            return (W[name] = j.parent ? new T.Matrix4().multiplyMatrices(welt(j.parent), L) : L);
-        };
-        // die Gelenke im Raum der Gestalt (die Hüllen liegen in ihm: die Wurzel ohne ihre Skala)
-        const inv = new T.Matrix4().copy(welt(sk.root)).invert();
-        const lage = (name) => new T.Vector3().setFromMatrixPosition(new T.Matrix4().multiplyMatrices(inv, welt(name)));
-        const namen = sk.skinJoints || sk.joints.map((j) => j.name);
-        const rumpf = [],
-            arm = [];
-        const v = new T.Vector3();
-        g.traverse((o) => {
-            if (!o.isMesh) return;
-            const a = o.geometry.attributes;
-            if (a.skinIndex) {
-                for (let i = 0; i < a.position.count; i++) {
-                    let wa = 0,
-                        wr = 0;
-                    for (let k = 0; k < 4; k++) {
-                        const nm = namen[a.skinIndex.array[4 * i + k]],
-                            w = a.skinWeight.array[4 * i + k];
-                        if (ARM_GELENKE.has(nm)) wa += w;
-                        if (nm === "torso" || nm === sk.root) wr += w;
-                    }
-                    v.fromBufferAttribute(a.position, i);
-                    if (wr > 0.5) rumpf.push({ p: v.clone(), n: new T.Vector3().fromBufferAttribute(a.normal, i).normalize() });
-                    if (wa > 0.5) arm.push(v.clone());
-                }
-            } else if (ARM_GELENKE.has(o.userData.__assetJoint)) {
-                const M = new T.Matrix4().multiplyMatrices(inv, welt(o.userData.__assetJoint));
-                for (let i = 0; i < a.position.count; i++) arm.push(new T.Vector3().fromBufferAttribute(a.position, i).applyMatrix4(M));
-            }
-        });
-        const Z = 0.1,
-            fach = new Map(),
-            schl = (x, y, z) => `${Math.floor(x / Z)},${Math.floor(y / Z)},${Math.floor(z / Z)}`;
-        for (const r of rumpf) {
-            const k = schl(r.p.x, r.p.y, r.p.z);
-            (fach.get(k) || fach.set(k, []).get(k)).push(r);
-        }
-        const S = [lage("arm1"), lage("arm-1")],
-            E = [lage("elbow1"), lage("elbow-1")];
-        let innen = 0,
-            tief = 0,
-            gezaehlt = 0;
-        for (const p of arm) {
-            const s = p.x > 0 === S[0].x > 0 ? 0 : 1,
-                ax = E[s].clone().sub(S[s]);
-            if (p.clone().sub(S[s]).dot(ax) / ax.lengthSq() < R.naht + RUHE_SAUM) continue;
-            gezaehlt++;
-            const nah = [];
-            for (let dx = -1; dx <= 1; dx++)
-                for (let dy = -1; dy <= 1; dy++)
-                    for (let dz = -1; dz <= 1; dz++) {
-                        const L = fach.get(schl(p.x + dx * Z, p.y + dy * Z, p.z + dz * Z));
-                        if (L) for (const r of L) nah.push([r.p.distanceToSquared(p), r]);
-                    }
-            if (nah.length < 4) continue;
-            nah.sort((a, b) => a[0] - b[0]);
-            let h = -Infinity;
-            for (let k = 0; k < 4; k++) h = Math.max(h, p.clone().sub(nah[k][1].p).dot(nah[k][1].n));
-            if (h < 0) {
-                innen++;
-                tief = Math.max(tief, -h);
-            }
-        }
-        // in Metern: die Gestalt misst H = 6 E auf 1,80 m (labProportionen; die Höhe des Dials skaliert beide)
-        return { dials, innen, gezaehlt, tiefMm: (tief * 1800) / K.labProportionen().H, schulter: lage("arm1").x, winkel: sk.joints.find((j) => j.name === "arm1").quat[2] };
-    });
-}
-const urteileRuhe = (R) =>
-    R.map((r) => (r.fehler ? r.fehler : r.innen > 0 ? `ruhe ${JSON.stringify(r.dials)}: ${r.innen} von ${r.gezaehlt} Arm-Ecken hinter der Rumpf-Hülle, bis ${r.tiefMm.toFixed(1)} mm` : null)).filter(Boolean);
+// DIE RUHE DER ARME (w11-koerper, koerper-core ARM_RUHE · armRuheUrteil): in der Ruhe-Pose des Gusses (Ofen L0) liegt an keinem
+// Körper des Gesetzes (ARM_RUHE.koerper: der Start und die Ränder von mass, tone, age, gender) eine Arm-Ecke in der Rumpf-Hülle.
+// Am Labor-Kern (2674ff9a) lagen am Gitter aus mass × tone × age × gender 24 von 24 Körpern mit 284–526 Arm-Ecken bis 71 mm im
+// Rumpf. Täter (Selbsttest R1): der Körper ohne das Gesetz (morphAuf ohne Kugeln).
+const messeRuhe = (sb, kern = (K) => K, K = sb.__koerperCore) => K.ARM_RUHE.koerper.map((dials) => ({ dials, ...K.armRuheUrteil(sb.BAKERS_BY_KIND.koerper(kern(K), "mensch", 1, 0, { dials })) })); // prettier-ignore
+const urteileRuhe = (R) => R.filter((r) => r.innen).map((r) => `ruhe ${JSON.stringify(r.dials)}: ${r.innen} von ${r.arm} Arm-Ecken im Rumpf`); // prettier-ignore
 
 // DIE LESER DIESER LINSE als Modul: die Station mensch.K4#2 (Zweig punkte-maschine, meisterkarte-quelle/punkte/stationen/g2.js)
 // misst die Gesichter der Typen ihrer Menge mit `ladeWelt` und `messe` — sie lebt nicht in main: bis w7-gesicht strich
@@ -504,7 +405,7 @@ if (SELBSTTEST) {
     const pruefe = (name, verzerre, muster, kopf) => {
         const sb = kopf ? ladeOfen() : ladeWelt();
         const f =
-            kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
+            kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "ruhe" ? urteileRuhe(messeRuhe(sb, verzerre.kern)) : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
         const ok = f.some((x) => muster.test(x));
         console.log(`  ${ok ? "✅" : "❌"} ${name}${ok ? " — " + f.find((x) => muster.test(x)) : ""}`);
         if (!ok) rot++;
@@ -546,7 +447,7 @@ if (SELBSTTEST) {
     // DAS GESICHT AUF 6 m (mensch.K4): die Braue ohne ihren Ton (sie ist die Haut)
     pruefe(
         "B1 die Braue ohne Ton (der Ton der Haut) wird erkannt",
-        { kern: (K) => Object.assign({}, K, { brauTon: (haut) => haut }) },
+        { kern: (K) => ({ ...K, brauTon: (haut) => haut }) },
         /^brauKontrast/,
         true
     );
@@ -555,18 +456,18 @@ if (SELBSTTEST) {
     // DIE KAPPE VOR DEM SCHÄDEL (vor w7-gesicht: afro um sein zurueck 0,05 gesetzt, ohne die Dicke) begräbt sein Auge
     pruefe("K1 die Kappe vor dem Schädel (afro) wird erkannt", { kern: (K) => Object.assign({}, K, { haarKappe: (d) => K.haarKappe(d).map((k) => ({ ...k, c: [0, k.c[1], -0.05] })) }) }, /^afro\/rand\d augeFrei/, "schnitte"); // prettier-ignore
     pruefe("S5 der aufgesetzte Augapfel (eine Augapfel-Breite vor) wird erkannt", auge(0.12), /^augenVorstand/, true);
-    pruefe("S7 das begrabene Auge (eine Augapfel-Breite zurück) wird erkannt", auge(-0.12), /^(augeFrei|augenVorstand)/, true);
+    pruefe(
+        "S7 das begrabene Auge (eine Augapfel-Breite zurück) wird erkannt",
+        auge(-0.12),
+        /^(augeFrei|augenVorstand)/,
+        true
+    );
     // DIE RUHE DER ARME: der Körper ohne das Gesetz (morphAuf an einem Baum ohne Kugeln: der Labor-Winkel, der volle Brustkorb)
-    {
-        const f = urteileRuhe(messeRuhe(ladeOfen(), (K) => Object.assign({}, K, { morphAuf: (B, d) => K.morphAuf(Object.assign({}, B, { kugeln: [] }), d) })));
-        const ok = f.length === RUHE_KOERPER.length;
-        console.log(`  ${ok ? "✅" : "❌"} R1 der Arm im Rumpf (der Labor-Winkel, vor w11-koerper) wird erkannt — ${f.length} von ${RUHE_KOERPER.length}${f[0] ? ": " + f[0] : ""}`);
-        if (!ok) rot++;
-    }
+    pruefe("R1 der Arm im Rumpf (vor w11-koerper) wird erkannt", { kern: (K) => ({ ...K, morphAuf: (B, d) => K.morphAuf({ ...B, kugeln: [] }, d) }) }, /^ruhe \{\}/, "ruhe"); // prettier-ignore
     const rot0 = (K) => (h) => Object.assign({}, K.kopfToene(h), { lips: 0xaa5544 });
     pruefe(
         "S6 die rote Lippe (die alte Klassen-Farbe 0xaa5544) wird erkannt",
-        { kern: (K) => Object.assign({}, K, { kopfToene: rot0(K) }) },
+        { kern: (K) => ({ ...K, kopfToene: rot0(K) }) },
         /^lippe[LA]/,
         true
     );
@@ -583,7 +484,9 @@ const so = ladeOfen();
 const mk = messeKopf(so);
 zeige(mk);
 const mm = messeMenge();
-const mr = messeRuhe(so);
-console.log("  ruhe " + mr.map((r) => `${JSON.stringify(r.dials)} ${r.innen}/${r.gezaehlt} Arm-Ecken im Rumpf`).join(" · "));
-const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm), kopfJe(so), urteileRuhe(mr));
-urteilEnde(fehler.length, `\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "), "\n✅ GRÜN — der Mensch steht in seinen Anthropometrie-Bändern (Hand · Arm · Kopf · Gesicht · Fuß), die Arme hängen außerhalb des Rumpfs.");
+const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm), kopfJe(so), urteileRuhe(messeRuhe(so)));
+urteilEnde(
+    fehler.length,
+    `\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "),
+    "\n✅ GRÜN — der Mensch steht in seinen Anthropometrie-Bändern (Hand · Arm · Kopf · Gesicht · Fuß), die Arme hängen außerhalb des Rumpfs."
+);

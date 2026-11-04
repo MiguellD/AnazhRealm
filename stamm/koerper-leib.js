@@ -429,7 +429,8 @@ class AnazhRealm_koerper_leib {
             });
             if (!tuch.length || !haut.length || tuch[0].geometry.userData.__tuchDrapiert) continue;
             w.updateMatrixWorld(true);
-            if (KC.tuchDrapieren(tuch, haut, KC.leibMassstab()) > 0) for (const m of tuch) m.geometry.computeVertexNormals();
+            if (KC.tuchDrapieren(tuch, haut, KC.leibMassstab()) > 0)
+                for (const m of tuch) m.geometry.computeVertexNormals();
             for (const m of tuch) m.geometry.userData.__tuchDrapiert = true;
         }
     }

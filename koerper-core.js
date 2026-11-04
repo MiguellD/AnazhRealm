@@ -1491,7 +1491,7 @@
     // Bind-Pose), das Labor, die Linse (gate:koerper-kern Teil R).
     var ARM_RUHE = Object.freeze({
         naht: 0.25,
-        luft: 0.22,
+        luft: 0.24,
         bisRad: 1.2, // höchstens so weit (rad) spreizt die Schulter
         ellbogenRad: 0.3, // der Tragewinkel des Ellbogens höchstens (rad, ~17°)
         stellen: 14, // Halbierungen je Winkel und Breite
@@ -1499,6 +1499,10 @@
         // je Paar die rechte Seite (die linke folgt ihr): die Press-Grenze ihrer Breite
         weicht: Object.freeze({ ribcage: 0, chest: 0, upperBack: 0, lat1: 0, pec1: 0, trap1: 0, waist: 0.7, abs: 0.7, oblique1: 0.7, breast1: 0.5, pelvis: 0.7, glute1: 0.7 }),
         klassen: Object.freeze(["skin", "shorts", "joint"]),
+        // das Urteil am Guss (`armRuheUrteil`): der Saum der Hülle an der Naht (Teil des Oberarms: der Deltamuskel fließt über
+        // Feld-Unschärfe und Haut-Abstand ~0,06 E in den Rücken — dort ist die Hülle EINE Fläche) und die Körper, an denen es gilt
+        saum: 0.05,
+        koerper: Object.freeze([{}, { mass: 1, tone: 1, age: 0, gender: 0 }, { mass: 1, tone: 0, age: 1, gender: 1 }, { mass: 0, tone: 1, age: 0, gender: 0 }, { mass: 0, tone: 0, age: 1, gender: 1 }]),
     });
     // Die affine Lage eines Knotens in seinem Eltern (3×4 spaltenweise: drei Achsen, dann die Lage; Euler XYZ wie die Gelenke)
     function _affin(n) {
@@ -1676,6 +1680,52 @@
             }
             breite(nm, fLo);
         }
+    }
+
+    // DAS URTEIL DER RUHE (gate:mensch-anatomie RUHE): am Guss (Ofen L0, die Bind-Pose, die Welt und Labor zeichnen) liegt keine
+    // Arm-Ecke in der Rumpf-Hülle — gemessen mit dem Gesetz der Kleidung (`tuchDrapieren`: die Haut bleibt innen, eine Ecke unter
+    // `luftM` über der Halb-Ebene der nächsten Haut-Ecken wird gehoben): der Arm ist das Tuch, der Rumpf die Haut. Arm-Ecke =
+    // Gewicht an Schulter, Ellbogen oder Hand > 0,5, jenseits der Naht plus dem Saum der Hülle (ARM_RUHE.saum); Rumpf = Gewicht an Rumpf und Wurzel > 0,5
+    // (Haut und Stoff aus der Haut). Antwort: { innen, arm } (Ecken). Die Gelenke liegen im Raum der Gestalt (ohne die Wurzel).
+    function armRuheUrteil(g) {
+        var sk = g.userData.__skelett,
+            J = {};
+        sk.joints.forEach(function (j) {
+            J[j.name] = j;
+        });
+        var lage = function (n) {
+            var p = [0, 0, 0];
+            for (var j = J[n]; j && j.name !== sk.root; j = J[j.parent]) p = _add(_qRot(j.quat, [p[0] * j.scale[0], p[1] * j.scale[1], p[2] * j.scale[2]]), j.pos);
+            return p;
+        };
+        var arm = [],
+            rumpf = [],
+            nrm = [];
+        g.traverse(function (o) {
+            var a = o.isMesh && o.geometry.attributes;
+            for (var i = 0; a && a.skinIndex && i < a.position.count; i++) {
+                var wa = 0,
+                    wr = 0;
+                for (var k = 4 * i; k < 4 * i + 4; k++) {
+                    var nm = sk.skinJoints[a.skinIndex.array[k]];
+                    if (/^(arm|elbow|hand)/.test(nm)) wa += a.skinWeight.array[k];
+                    if (nm === "torso" || nm === sk.root) wr += a.skinWeight.array[k];
+                }
+                var p = [a.position.getX(i), a.position.getY(i), a.position.getZ(i)],
+                    sd = p[0] > 0 ? "1" : "-1",
+                    S = lage("arm" + sd),
+                    E = _sub(lage("elbow" + sd), S);
+                if (wa > 0.5 && _dot(_sub(p, S), E) / _dot(E, E) >= ARM_RUHE.naht + ARM_RUHE.saum) arm.push(p[0], p[1], p[2]);
+                if (wr > 0.5) {
+                    rumpf.push(p[0], p[1], p[2]);
+                    nrm.push(a.normal.getX(i), a.normal.getY(i), a.normal.getZ(i));
+                }
+            }
+        });
+        var netz = function (P, N) {
+            return { bindMatrix: { elements: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] }, geometry: { attributes: { position: { array: Float64Array.from(P), count: P.length / 3 }, normal: { array: Float64Array.from(N) } } } };
+        };
+        return { innen: tuchDrapieren([netz(arm, arm)], [netz(rumpf, nrm)], leibMassstab()), arm: arm.length / 3 };
     }
 
     // DAS GESICHT AUS DEM GENOM (mensch.K4, rein additiv — ohne seine Dials bleibt jeder Guss byte-gleich): vier Achsen in [0, 1],
@@ -5923,8 +5973,9 @@
         labLandmarks: labLandmarks,
         bauMensch: bauMensch,
         morphAuf: morphAuf,
-        // w11-koerper — die Ruhe der Arme (Leser: morphAuf; die Linse gate:mensch-anatomie RUHE liest Naht und Luft)
+        // w11-koerper — die Ruhe der Arme (Leser: morphAuf) und ihr Urteil am Guss (Leser: die Linse gate:mensch-anatomie RUHE)
         ARM_RUHE: ARM_RUHE,
+        armRuheUrteil: armRuheUrteil,
         MATERIAL_KLASSEN: MATERIAL_KLASSEN,
         HAUT_LOOK: HAUT_LOOK,
         HAAR_LOOK: HAAR_LOOK,
