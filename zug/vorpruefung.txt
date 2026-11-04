@@ -30,3 +30,4 @@ w8-spielgang-k1 1695469a GRÜN check+playtest-voll+schirm-monotonie Φ5=262078B 
 w8-ein-baecker ebd304f8 GRÜN check+playtest-voll+v1-pfad+foundry-impostor+studio-vertrag Φ5=262033B (main 2d2a5f11+w8-v2-probe@91e4b661)
 w6-spielgang-decke 58e619d6 ROT merge KONFLIKT mit main f69a7305: scripts/lib/welt-boot.cjs stamm/speicher-laden.js stamm/studio-bruecke.js 
 w6-alter 7385475b ROT merge KONFLIKT mit main f69a7305: stamm/speicher-welten.js 
+w5-physik-k5 b8a0f2bc ROT merge KONFLIKT im Bündel mit w6-spielgang-decke: scripts/lib/welt-boot.cjs stamm/speicher-laden.js stamm/studio-bruecke.js 
