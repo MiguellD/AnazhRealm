@@ -172,23 +172,8 @@ hauptLauf(async () => {
     console.log("=== N6/H7 — TEIL A: Formel + Paritaet + ein Pfad (Node) ===");
     for (const [name, ok, detail] of staticLaws()) check(name, ok, detail);
 
-    // A2 (Kriterium d) — FORMEL-PARITAET an 3 Presets: exportDrive == Hand-Ableitung aus den
-    // Primitiven, mit denen die Shell ihre Probefahrt faehrt (carPhys + FAHR + DEFAULT_P/BASE_P).
-    for (const id of ["gt", "supersport", "suv"]) {
-        const pre = VC.PRESETS[id];
-        const P = Object.assign({}, VC.DEFAULT_P, VC.BASE_P, pre.s, pre.fx);
-        const ph = VC.carPhys(P);
-        const hand = {
-            topSpeedMul: ph.vmax / 10,
-            kAcc: ph.aEngine / ph.vmax,
-            kBrake: (ph.aEngine + VC.FAHR.rollDecel) / ph.vmax,
-            mass: ph.mass,
-            vmax: ph.vmax,
-            spring: { k: P.springRate, c: P.damping },
-        };
-        const div = driveDiverges(expectedFor(id), hand);
-        check(`A2: Formel-Paritaet Kern==Probefahrt-Primitive @ ${id} (byte)`, div.length === 0, div.join(","));
-    }
+    // A2 (die Hand-Ableitung exportDrive == carPhys-Primitive) fiel in w11-fahrzeug: sie war ein Zwilling der Formel im Skript —
+    // die Probefahrt liest exportDrive selbst (Welle L), das Antriebs-Gesetz richtet gate:garage-labor G9 an der Fahrt.
     // A3 (H7 numerisch) — GT vs Supersport: mindestens zwei drive-Skalare verschieden.
     const gtExp = expectedFor("gt");
     const ssExp = expectedFor("supersport");

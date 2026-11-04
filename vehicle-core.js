@@ -3912,10 +3912,11 @@
         const kS = steerIn !== 0 ? G.steerK : G.steerZentrK;
         z.steer += (steerIn * G.maxSteer * sf - z.steer) * (1 - Math.pow(1 - kS, dt * 60));
         const cosN = Math.cos(z.steig || 0) * Math.cos(z.wank || 0); // der Normalkraft-Anteil am Hang
-        // DIE NORMALKRAFT JE MASSE (w11-fahrzeug): am Hang der Anteil g · cos, dazu drückt die Quer-Beschleunigung den Wagen in
-        // eine überhöhte Fahrbahn (wank < 0: die linke Seite tiefer, die Kurve nach links trägt) — N/m = g · cos − a_quer · sin(wank).
-        // Vorher trug die Kurve auf der Überhöhung nur g · cos θ: der Reifen griff schwächer als auf der Ebene.
-        const gN = Math.max(0, g * cosN - (z.aLat || 0) * Math.sin(z.wank || 0));
+        // DIE NORMALKRAFT JE MASSE (w11-fahrzeug): am Hang der Anteil g · cos; dazu drückt die Bahnkrümmung — die Zentripetal-
+        // Beschleunigung v · ω, waagrecht zur Mitte der Kurve — den Wagen in eine überhöhte Fahrbahn (wank < 0: die linke Seite
+        // tiefer, die Kurve nach links trägt): N/m = g · cos − v · ω · sin(wank). Fahrt und Rutschen in der Ebene des Hangs drücken
+        // nicht. Vorher trug die Kurve auf der Überhöhung nur g · cos θ: der Reifen griff schwächer als auf der Ebene.
+        const gN = Math.max(0, g * cosN - z.vlong * z.yawRate * Math.sin(z.wank || 0));
         // DER WIND (wetter.K5, rein additiv — ohne e.wind byte-gleich): die Anstroemung quer im Koerperframe (links =
         // (−sin, −cos) der Gier) minus die Fahrt quer, ihr Quadrat mit Vorzeichen auf die Flanke (G.luft). Am Boden zieht sie
         // wie der Quer-Hangabtrieb (unter Schritttempo haelt sie die Haftung bis zum Reibkreis), im Flug frei.

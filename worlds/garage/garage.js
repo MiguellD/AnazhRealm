@@ -631,7 +631,8 @@ let mode='werkstatt';const OVL='#brand,#lehren,#ctl,#leg,#hint';const hud=docume
 function enterDrive(mitFahrer){pruef=mitFahrer===true?{i:0}:null;
   // die Telemetrie der Prüffahrt: der Kern fährt zwei Runden mit festem Schritt (dieselbe Zahl richtet gate:garage-labor G11)
   const tele=document.getElementById('tele');if(tele)tele.textContent=pruef?(r=>r?`Prüffahrt · Runde ${r.zeit.toFixed(1)} s · Flug ${Math.max(0,...r.fluege.map(f=>f.weite))} m · Kontakt ${(r.kontakt*100).toFixed(1)} %`:'Prüffahrt · keine Runde')(VC.pruefFahrt(fahrGesetzLab(),bahn,bodenY,2,1/60).runden[1]):'';
-  mode='fahren';scene.fog.density=0.0035;   // in der Fahrt reicht der Blick über die Strecke (die Werkstatt liegt im dichten Grund)fahrSicht=true;applyVis();   // die Probefahrt fährt den gebauten Wagen (ERGEBNIS), nie die Lehren
+  mode='fahren';scene.fog.density=0.0035;   // in der Fahrt reicht der Blick über die Strecke (die Werkstatt liegt im dichten Grund)
+  fahrSicht=true;applyVis();   // die Probefahrt fährt den gebauten Wagen (ERGEBNIS), nie die Lehren
   document.querySelectorAll(OVL).forEach(el=>el.style.display='none');if(hud)hud.style.display='flex';  // Welle L: der HUD ist ein Flex-Band (block klebte die Einheit an die Tastenhilfe)
   ground.visible=true;oc.zug=-1;oc.vAz=oc.vEl=0;   // die Werkstatt-Kugel ruht, solange die Fahrt-Kamera führt
   buehne.visible=false;explosionAnwenden(0);   // gefahren wird der ganze Wagen auf dem Gelände — die Ansicht (Explosion, Teller) wartet in der Werkstatt

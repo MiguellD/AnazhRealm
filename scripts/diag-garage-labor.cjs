@@ -141,7 +141,7 @@ function streckeVerdict({ soll, r, gleich }) {
 }
 const STRECKE_MUTANTEN = [
     ["gelaende-core.js", "__gelaendeCore", "const BANK = mittel(mittel(ZIEL_BANK));", "const BANK = new Float64Array(N);", /^ueberhoehung/],
-    ["vehicle-core.js", "__vehicleCore", "const gN = Math.max(0, g * cosN - (z.aLat || 0) * Math.sin(z.wank || 0));", "const gN = g * cosN;", /^runde|^ablage|^kurve/],
+    ["vehicle-core.js", "__vehicleCore", "const gN = Math.max(0, g * cosN - z.vlong * z.yawRate * Math.sin(z.wank || 0));", "const gN = g * cosN;", /^runde|^ablage|^kurve/],
 ];
 
 const server = statikServer({ start: "/worlds/garage/index.html" });

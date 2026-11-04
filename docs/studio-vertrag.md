@@ -999,7 +999,8 @@ Rezept unter jedem Namen (ein Schlüssel aus `PRESET`/`REZEPT`/`RECIPE`, eine Li
 Dials `s`) beim Namen.
 
 **Stand der Gesetz-Kerne:** `gelaende-core.js` (`__gelaendeCore`) — DAS GESETZ: die EINE 2D-Höhe `hoehe(L, x, z, mitDetail)`
-(der Term-Auswerter des Erbguts `termY` samt seiner Normalform `erbgutNormal`, der Wildnis-Term `wildnisY` = die LANDFORM,
+(der Term-Auswerter des Erbguts `termY` samt seiner Normalform `erbgutNormal` — mit der Bahn, der Rennstrecke als Term, und ihrem
+Ort `bahnAm`, den der Fahrer der Linie und die Prüfstrecke der Garage lesen —, der Wildnis-Term `wildnisY` = die LANDFORM,
 K16: Großform-Splines `grossform` an den Knoten `OFFSET_KNOTEN`/`RELIEF_KNOTEN` mit den Reglern `LANDFORM_REGLER` — gelesen
 je Lage über `landformRegler` —, das Flussnetz mit den Kanten `NETZ_KANTE`, seinen Läufen `flussLaeufe` und seinen Senken als
 den benannten Seen `benannteSeen`, die Breite des Flusses `FLUSS_BREITE`/`flussBreite`, der Mäander `MAEANDER`, das

@@ -5,7 +5,7 @@
 //
 //   node scripts/diag-blick.cjs [--out DIR] [--zeit 10|22] [--blick wald|boden]            die Welt (npm run blick)
 //   node scripts/diag-blick.cjs --studio <name> [--ansicht a] [--sha <commit>] [--paar]   ein Studio (npm run blick:studio --)
-//     Studios und Ansichten: garage iso|seite|explosion|persp · koerperstudio front|seite|nah|iso (die erste ist die Vorgabe).
+//     Studios und Ansichten: garage iso|seite|explosion|persp|strecke [--epoche 0…5] · koerperstudio front|seite|nah|iso (die erste ist die Vorgabe).
 //     --sha fährt den Stand eines Commits aus einem temporären Worktree; --paar legt VORHER (--sha, sonst origin/main) und
 //     NACHHER (der Arbeitsbaum) nebeneinander in EIN PNG und nennt die Pixel, die sich unterscheiden.
 //     Je Bild: Anteil des Objekts (das Bild mit gegen ohne Objekt), Luma-Mittel/σ, Bounding-Box [x0,y0,x1,y1] in Pixeln.
@@ -61,9 +61,17 @@ function bildZahlen(u8, ohne) {
 // fest, Lehren aus; zurück kommen Renderer, Szene, das Objekt und der EINE Takt der Seite (ihr Bild).
 const STUDIOS = {
     garage: {
-        ansichten: ["iso", "seite", "explosion", "persp"],
-        bereit: () => typeof vehicle === "object" && R._initialized,
+        ansichten: ["iso", "seite", "explosion", "persp", "strecke"],
+        bereit: () => typeof vehicle === "object" && R._initialized && (typeof bahn === "undefined" || bahn),
+        // `--epoche e` stellt die Zeit-Achse (w11-fahrzeug); `strecke`: die Prüffahrt, der Fahrer der Linie bis in den Flug über dem
+        // Kicker (Punkt 668 der Bahn), gezeichnet aus der Kamera der Fahrt
         ruhe: (an) => {
+            if (window.__epoche !== "") (P.epoche = +window.__epoche), rebuild();
+            if (an === "strecke") {
+                enterDrive(true);
+                while (pruef.i < 668) updateVehicle(1 / 60, 0), updateChaseCam(1 / 60);
+                return { R, scene, objekt: vehicle, takt: () => (raederSetzen(), R.render(scene, cam)) };
+            }
             [simT, tAlt, ANS.explode] = [0, 0, +(an === "explosion")];
             projSetzen(an === "explosion" ? "iso" : an);
             explosionAnwenden((eZeig = ANS.explode));
@@ -148,6 +156,7 @@ async function studioLauf() {
             await page.evaluateOnNewDocument(HALT);
             await s.zeige(page, 120000, `worlds/${STUDIO}/index.html`, "networkidle0");
             await page.waitForFunction(A.bereit, { timeout: 120000 });
+            await page.evaluate((e) => (window.__epoche = e), argOpt("--epoche", ""));
             const r = await page.evaluate(`(${schuss})(${A.ruhe}, "${an}", ${W}, ${H})`),
                 mit = pixel(r.mit);
             bilder.push({
