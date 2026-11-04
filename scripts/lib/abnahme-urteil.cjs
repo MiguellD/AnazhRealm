@@ -1599,11 +1599,8 @@ function standLeser(root) {
                 lesen: (d) => (fs.existsSync(path.join(root, d)) ? ausDatei(path.join(root, d)) : null),
                 kern: (d, sym) => {
                     if (!(d in kerne)) {
-                        const sb = { console, Math };
-                        sb.self = sb;
+                        const sb = require("./asset-worker-harness.cjs").kernKontext({ console, Math });
                         sb.window = sb;
-                        sb.globalThis = sb;
-                        vm.createContext(sb);
                         try {
                             vm.runInContext(ausDatei(path.join(root, d)), sb, { filename: d });
                         } catch {}

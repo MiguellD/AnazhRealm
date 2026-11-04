@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // diag-tier-anatomie.cjs — DIE ANATOMIE-LINSE DER TIERE
 // (npm run gate:tier-anatomie). Sie misst die GEBACKENE Gestalt — denselben Bäcker, den Worker und Wirt rufen
-// (foundry-core BAKERS_BY_KIND.kreatur, three r128 im node-vm wie im Foundry-Worker) — an der Haut der Ruhe-Pose,
+// (foundry-core BAKERS_BY_KIND.kreatur, three r184 im node-vm wie im Foundry-Worker) — an der Haut der Ruhe-Pose,
 // normiert auf den Widerrist W, gegen das SOLL des Gesetzbuchs (tetrapoda-core ANATOMIE_SOLL, die Natur-Bänder je Art):
 //   widerristM · brustTiefe · aufzug · rumpf · unterarm · kopfHoehe · ohr · rute   (die Gestalt)
 //   kontrast (Bauch/Rücken) · lauf (Läufe/Flanke) · spitze (Rutenspitze/Flanke)    (das Fell-Muster am Vertex)
@@ -19,7 +19,7 @@
 // (aSchale.y < 0,05: dort deckt keine Unterwolle — Stamm, Klasse fellSchale). Rot über KAHL_MAX.
 //   node scripts/diag-tier-anatomie.cjs [--selftest] [--json]
 "use strict";
-const { urteilEnde, fadenScope, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { urteilEnde, fadenScope, SELBSTTEST, OFEN_KERNE } = require("./lib/welt-boot.cjs");
 
 const ARTEN = ["wolf", "fox", "bear", "deer"];
 const WOLLE_SCHWELLE = 0.05; // aSchale.y, ab der die inneren Schalen decken (Welt-Material fellSchale)
@@ -79,7 +79,7 @@ function kahlAnteile(g) {
     return out;
 }
 
-const ladeWelt = () => fadenScope(["worlds/terrain/lib/three-r128.min.js", "phyto-core.js", "koerper-core.js", "tetrapoda-core.js", "foundry-core.js"]);
+const ladeWelt = () => fadenScope(OFEN_KERNE);
 
 // DIE KOPF-SCHALEN: jede starre Kopf-Haut (Kopf und Kiefer — die Fell-Meshes an headGroup und jawGroup) trägt
 // Schalen im EINEN Stapel: Ecken mit Gewicht 1 an ihrem Gelenk, auf kopfSchalen − 1 Höhen (t = s / kopfSchalen), im Raster

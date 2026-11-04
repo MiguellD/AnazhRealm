@@ -294,6 +294,12 @@ function werkPutz() {
 function peersWeg() {
     for (const pid of Array.from(st.p2p.peers.keys())) r._p2pRemovePeer(pid);
 }
+// DIE BAUTEN SEIT JETZT (`window.__bautenSeit()`): merkt die Architekturen und gibt den Rückweg — sein Ruf reißt jede seither
+// gesetzte über `removeArchitecture` ab; bis w6-gesetzbuch fünfmal derselbe Zwilling (playtest/feld-leben viermal, koerper-seele)
+function bautenSeit() {
+    const vor = new Set(st.architectures);
+    return () => st.architectures.filter((x) => !vor.has(x)).forEach((e) => r.removeArchitecture(e));
+}
 // DIE BAUTEN LEER (`window.__bautenLeer()`): jedes Mesh der Architekturen aus der Szene und entsorgt, die Liste leer — bis
 // w4-verkehr-c2 sechsmal derselbe Zwilling in playtest/siedlung
 function bautenLeer() {
@@ -341,15 +347,32 @@ function png(u8, W, H) {
 // Bild neu (eine Linse blendet Klassen aus und ein, die Bühne wechselt)
 const bundlesNeu = () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
 const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
-const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
+const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
-// DER STUDIO-KERN in Node: three-r128 (einmal je Prozess — die Kerne bauen gegen das globale THREE) und der Kern `datei` (ab
+// DIE ENGINE DER KERNE (w5-pipeline, pipeline.K5): das Modul, das die Import-Karte von index.html für das Manifest-Feld
+// `engine` nennt (three r184 — dieselbe Datei wie Welt und Foundry-Faden, `_foundryStart`), als Pfad ab der Wurzel
+// (`ENGINE_MODUL`) und in Node als THREE der Kerne (`ENGINE_THREE`: require des ES-Moduls, eine veränderbare Kopie, ohne
+// ColorManagement wie im Faden — die Kerne rechnen ihre Farbe selbst). Ein Manifest ohne Engine oder eine Karte ohne ihr
+// Modul bricht laut.
+// das Modul der Import-Karte der Welt (index.html `<script type="importmap">`) für das Manifest-Feld `engine`, ab der
+// Wurzel; ENGINE_THREE schweigt die Warnung von require(esm) (Node liest die typlose .js als ES-Modul — der Weg, kein Befund)
+const ENGINE_MODUL = () =>
+    JSON.parse(fs.readFileSync(path.join(ROOT, "index.html"), "utf8").match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports[jsonLesen("cores.manifest.json").find((c) => c.engine).engine].slice(1); // prettier-ignore
+function ENGINE_THREE() {
+    const w = process.emitWarning;
+    process.emitWarning = () => {};
+    const T = require(ROOT + ENGINE_MODUL());
+    process.emitWarning = w;
+    T.ColorManagement.enabled = false;
+    return { ...T };
+}
+// DER STUDIO-KERN in Node: die Engine der Kerne (einmal je Prozess — die Kerne bauen gegen das globale THREE) und der Kern `datei` (ab
 // der Wurzel) → `globalThis[name]`; `frisch` lädt ihn neu (die Stoffe rechnen ihre Farbe beim ersten Bau). Bis zur Decke
 // w3s-sukzession lud jede Linse three und Kern in eigenen Zeilen (fünfzehn Mal).
 function studioKern(datei, name, frisch) {
-    global.THREE ||= require(path.join(ROOT, "worlds/terrain/lib/three-r128.min.js"));
+    global.THREE ||= ENGINE_THREE();
     if (frisch) delete require.cache[require.resolve(path.join(ROOT, datei))];
     require(path.join(ROOT, datei));
     return globalThis[name];
@@ -358,9 +381,14 @@ function studioKern(datei, name, frisch) {
 // globale Objekt, Math das des Gates (die Plattform-Probe erreicht so den Guss) — darin die `quellen` (Pfade ab der Wurzel, je
 // Prozess einmal gelesen) der Reihe nach. Bis zur Decke w3s-sukzession baute jede Linse ihn selbst (vier Mal).
 const QUELL_TEXT = {};
+// die Kerne des Ofens (Tier und Mensch: foundry-core BAKERS_BY_KIND) in der Folge ihres Fadens
+const OFEN_KERNE = ["phyto-core.js", "koerper-core.js", "tetrapoda-core.js", "foundry-core.js"];
+// THREE ist die Engine des Fadens (`ENGINE_THREE`, je Scope eine eigene Kopie des Namensraums) — der Faden rechnet auf
+// three r184, kein Linsen-Scope auf einer zweiten three.
 function fadenScope(quellen) {
     const sb = { console, Math, performance: { now: () => Date.now() }, setTimeout, clearTimeout };
     sb.self = sb.globalThis = sb.window = sb;
+    sb.THREE = ENGINE_THREE();
     require("vm").createContext(sb);
     for (const f of quellen)
         require("vm").runInContext((QUELL_TEXT[f] ||= fs.readFileSync(path.join(ROOT, f), "utf8")), sb, {
@@ -1527,6 +1555,9 @@ function frageJa() {
 }
 
 module.exports = {
+    OFEN_KERNE,
+    ENGINE_MODUL,
+    ENGINE_THREE,
     frageJa,
     fs,
     path,
