@@ -275,7 +275,7 @@ class AnazhRealm_stoff_karte {
     // `_foundryWecker` an; bis K38-N2 hörte niemand den Bake, und die Vorschau blieb „pending", bis der Spieler neu wählte.
     _karteEndet(z, ok) {
         if (ok) z.gebacken = true;
-        else (z.gescheitert = true), this._karteAbzugBruch(z, "gescheitert");
+        else ((z.gescheitert = true), this._karteAbzugBruch(z, "gescheitert"));
         if (z._endeLoes) z._endeLoes(!!ok);
     }
 
