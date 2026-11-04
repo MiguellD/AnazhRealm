@@ -1631,27 +1631,36 @@ function pbRoh({ zelle = () => {}, band = () => {}, adapter = "[linse-gpu] nvidi
     return adapter + "\nPROFIBAND " + JSON.stringify(zus);
 }
 const PB_MUTANTEN = [
-    ["Roh (die Zeile des Gangs, Zahlen im Band)", {}, "K1#1 K1#2 K2#1 K2#2 K3#1 K3#2"],
+    ["Roh (die Zeile des Gangs, Zahlen im Band)", {}, "K1#1 K1#2 K2#1 K2#2 K3#1 K3#2 E#1"],
     ["Mutante Regler herunter (frei und gedrosselt, das Band gedrosselt)",
         { zelle: (n, c, w) => (Object.assign(w, { regler: "frei", last: 0.62 }), (c.voll = 0)), band: (b, s) => (s.last = 0.62) }, ""],
     ["Mutante Tiere angehalten (in den Fenstern, im Band)", { zelle: (n, c, w) => (w.probe.gehalten = true), band: (b, s) => (s.probe.gehalten = true) }, ""],
     ["Mutante Skala unter 0,75", { zelle: (n, c, w) => ((w.skala = 0.5), (w.probe.skala = 0.5)), band: (b, s) => (s.probe.skala = 0.5) }, ""],
-    ["Mutante Stand statt Weg (der Sprint steht)", { zelle: (n, c, w) => n === "wiese-ego-sprint" && (w.weg = 2) }, "K2#1 K3#1"],
-    ["Mutante Fahrt Bild-p95 34 ms", { zelle: (n, c) => n === "wiese-fahrt" && (c.frame = 34) }, "K2#1 K2#2 K3#1 K3#2"],
-    ["Mutante bewegt Bild-p95 25 ms", { zelle: (n, c) => PB_BEWEGT.includes(n) && (c.frame = 25) }, "K1#1 K2#1 K2#2 K3#1 K3#2"],
-    ["Mutante Genesis Third steht Belegung 6,3 ms", { zelle: (n, c, w) => n === "genesis-third-steht" && (w.belegung = 6.3) }, "K1#1 K1#2 K3#1 K3#2"],
-    ["Mutante bewegt Belegung 8,6 ms", { zelle: (n, c, w) => PB_BEWEGT.includes(n) && (w.belegung = 8.6) }, "K1#1 K1#2 K2#1 K3#1 K3#2"],
-    ["Mutante VRAM in der Fahrt 118,8 MB", { zelle: (n, c) => n === "wiese-fahrt" && (c.vram = 118.8) }, "K1#1 K1#2 K2#1 K2#2 K3#1"],
-    ["Mutante gpu-bank Genesis Third 12,5 ms", { band: (b, s) => b === "genesis-third" && (s.gpu = 12.5) }, "K1#1 K1#2 K2#1 K2#2"],
+    ["Mutante Stand statt Weg (der Sprint steht)", { zelle: (n, c, w) => n === "wiese-ego-sprint" && (w.weg = 2) }, "K2#1 K3#1 E#1"],
+    ["Mutante Fahrt Bild-p95 34 ms", { zelle: (n, c) => n === "wiese-fahrt" && (c.frame = 34) }, "K2#1 K2#2 K3#1 K3#2 E#1"],
+    ["Mutante bewegt Bild-p95 25 ms", { zelle: (n, c) => PB_BEWEGT.includes(n) && (c.frame = 25) }, "K1#1 K2#1 K2#2 K3#1 K3#2 E#1"],
+    ["Mutante Genesis Third steht Belegung 6,3 ms", { zelle: (n, c, w) => n === "genesis-third-steht" && (w.belegung = 6.3) }, "K1#1 K1#2 K3#1 K3#2 E#1"],
+    ["Mutante bewegt Belegung 8,6 ms", { zelle: (n, c, w) => PB_BEWEGT.includes(n) && (w.belegung = 8.6) }, "K1#1 K1#2 K2#1 K3#1 K3#2 E#1"],
+    ["Mutante VRAM in der Fahrt 118,8 MB", { zelle: (n, c) => n === "wiese-fahrt" && (c.vram = 118.8) }, "K1#1 K1#2 K2#1 K2#2 K3#1 E#1"],
+    ["Mutante gpu-bank Genesis Third 12,5 ms", { band: (b, s) => b === "genesis-third" && (s.gpu = 12.5) }, "K1#1 K1#2 K2#1 K2#2 E#1"],
     ["Mutante Software-Adapter", { adapter: "[linse-gpu] google/swiftshader" }, ""],
-    ["Mutante die Stadt trug die Uhr nicht", { ohne: ["stadt-ego-geht"], offen: ["stadt-ego-geht"] }, "K2#1 K3#1"],
-    ["Mutante das Dorf trug die Uhr nicht", { ohne: ["band:dorf-ego", "band:dorf-third"], offen: ["band:dorf-ego", "band:dorf-third"] }, "K1#1 K1#2 K2#1 K2#2"],
+    ["Mutante die Stadt trug die Uhr nicht", { ohne: ["stadt-ego-geht"], offen: ["stadt-ego-geht"] }, "K2#1 K3#1 E#1"],
+    ["Mutante das Dorf trug die Uhr nicht", { ohne: ["band:dorf-ego", "band:dorf-third"], offen: ["band:dorf-ego", "band:dorf-third"] }, "K1#1 K1#2 K2#1 K2#2 E#1"],
     ["Mutante blind (10 Bilder in 2 s)", { zelle: (n, c) => (c.eigen = 10) }, "K3#1"],
     ["Mutante Sicht der Zelle gekippt (Third-Bilder in Wiese Ego)", { zelle: (n, c) => n === "wiese-ego-steht" && (c.sicht = [1, 2]) }, "K1#1 K3#1"],
-    ["Mutante Stand-Zelle nur aus fremden Bildern (kein Fenster)", { zelle: (n, c) => n === "genesis-ego-steht" && Object.assign(c, { fenster: null, eigen: 0, fremd: 240 }) }, "K1#1 K1#2 K3#1 K3#2"],
-    ["Mutante GPU-Stempel zu wenig (3 in der Zelle)", { zelle: (n, c) => n === "wiese-ego-geht" && (c.gpuN = 3) }, "K1#1 K1#2 K2#1 K2#2 K3#1"],
+    ["Mutante Stand-Zelle nur aus fremden Bildern (kein Fenster)", { zelle: (n, c) => n === "genesis-ego-steht" && Object.assign(c, { fenster: null, eigen: 0, fremd: 240 }) }, "K1#1 K1#2 K3#1 K3#2 E#1"],
+    ["Mutante GPU-Stempel zu wenig (3 in der Zelle)", { zelle: (n, c) => n === "wiese-ego-geht" && (c.gpuN = 3) }, "K1#1 K1#2 K2#1 K2#2 K3#1 E#1"],
 ];
 const pbProben = (id) => PB_MUTANTEN.map(([name, o, gruen]) => ({ name, stdout: pbRoh(o), gruen: gruen.split(" ").includes(id) }));
+// der Pflicht-Richter E (nur die Stand-Zellen, Bild-p95 ≤ 33): die Mutanten des Bands (E#1 in ihren Grün-Listen) und seine eigenen —
+// (b) eine Stand-Zelle 34 ms fällt beim Namen, (c) langsame Bewegung bei schnellem Stand bleibt grün (nur der Stand zählt),
+// (d) eine Stand-Zelle, die die Uhr nicht trug, ist nie grün
+const pflichtEProben = () => [
+    ...pbProben("E#1"),
+    { name: "Mutante Genesis Third steht Bild-p95 34 ms", stdout: pbRoh({ zelle: (n, c) => n === "genesis-third-steht" && (c.frame = 34) }), gruen: false },
+    { name: "Mutante bewegt 60 ms, Stand 20 ms", stdout: pbRoh({ zelle: (n, c) => (c.frame = PB_STEHT.includes(n) ? 20 : 60) }), gruen: true },
+    { name: "Mutante die Stand-Zelle Wiese Third trug die Uhr nicht", stdout: pbRoh({ ohne: ["wiese-third-steht"], offen: ["wiese-third-steht"] }), gruen: false },
+];
 // die Glätte: Gehen mit V und Fahrt mit E aus und ein
 function k4Roh(m = () => {}, adapter = "[linse-gpu] amd/rdna-3 (Probe)") {
     const fenster = (geh) => ({ n: 150, frame: 16.8, p99: 33.4, max: 50.1, ueber33: 1, ueber100: 0, takt: 4.4, vram: 108.2, gpu: 9.6, gpuN: 30, befehle: 140, dreiecke: 480000,
@@ -2804,6 +2813,24 @@ module.exports = [
         pfad: PB_PFAD,
         proben: pbProben("K1#2"),
         quelle: "2 = ≤ 16,7 ms in jeder Zelle",
+    },
+    {
+        // DER RICHTER VON PFLICHT-OFFEN E ohne Punkte (Koordinator 04.11.: die 330 bleiben): Frame p95 ≤ 33 ms in jeder Stand-Zelle
+        // (PB_STEHT = Wiese und Genesis × Ego und Third). Dieselbe Gang-Probe wie K1#1 — K1#1 urteilt die Bewegungszellen, dieser die
+        // stehenden; kein neuer Lauf. pflicht.json E nennt ihn, die Buchung führt ihn in pflichtJe, nie in je.
+        kriterium: "pflicht.E",
+        pflicht: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: PB_PROBE_GANG,
+        gpu: true,
+        zeit: true,
+        minuten: 1,
+        urteil: (j, lauf) => pbRichter(lauf, { regeln: [{ zellen: PB_STEHT, wort: "Bild-p95", soll: 33, feld: (z) => z.frame }] }),
+        pfad: PB_PFAD,
+        proben: pflichtEProben(),
+        quelle: "PFLICHT-OFFEN E = Frame p95 ≤ 33 ms in jeder Stand-Zelle (Wiese und Genesis × Ego und Third) an beiden Geräten",
     },
     {
         kriterium: "profiband.K2",

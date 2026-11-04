@@ -40,12 +40,11 @@
   {
    "id": "E",
    "titel": "Profi-Band",
-   "stationen": ["profiband.K1#1", "profiband.K2#1", "profiband.K3#1"],
+   "stationen": ["profiband.K1#1", "profiband.K2#1", "profiband.K3#1", "pflicht.E#1"],
    "ohneRichter": [
-    "Frame p95 ≤ 33 ms an den Stand-Zellen Wiese und Genesis × Ego und Third: profiband.K1#1 urteilt nur die Bewegungszellen (PB_BEWEGT), K3#1 den gpu-bank ≤ 12 ms, nie die Bild-Zeit",
     "das ABAB: die Sitzung misst jede Zelle einmal"
    ],
-   "geprueft": "stationen/g6.js pbRichter: K1#1 Bild-p95 ≤ 33 in PB_BEWEGT (beide); K2#1 Belegung p95 ≤ 5,8 in PB_STEHT = Wiese und Genesis × Ego und Third (je Gerät, hier an beiden verlangt); K3#1 das Band je Ort × Sicht (Befehle, Dreiecke, VRAM gegen spec/profiband/haushalt.json, gpu-bank ≤ 12 ms, Regler voll, beide)"
+   "geprueft": "stationen/g6.js pbRichter: K1#1 Bild-p95 ≤ 33 in PB_BEWEGT (beide); K2#1 Belegung p95 ≤ 5,8 in PB_STEHT = Wiese und Genesis × Ego und Third (je Gerät, hier an beiden verlangt); K3#1 das Band je Ort × Sicht (Befehle, Dreiecke, VRAM gegen spec/profiband/haushalt.json, gpu-bank ≤ 12 ms, Regler voll, beide); pflicht.E#1 (Pflicht-Richter ohne Punkte, stationen/g6.js): Bild-p95 ≤ 33 in PB_STEHT, Wiese und Genesis × Ego und Third (beide), dieselbe Gang-Probe wie K1#1"
   },
   {
    "id": "F",
