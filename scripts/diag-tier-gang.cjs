@@ -441,7 +441,6 @@ const TAKT_WELT = (arg) => {
         pm = st.playerMesh,
         F = AnazhRealm.PLAYER_FOOT_OFFSET,
         O = arg.ort;
-    r._loopRunning = false;
     const frames = (sk) => sk.flatMap(([n, T]) => Array.from({ length: n }, () => Object.assign({ dt: 1 / 60, yaw: 0, vor: 0, quer: 0 }, T)));
     const lauf = (sk, p, y, geraet) => {
         const rec = { start: { x: p[0], y, z: p[1], vx: 0, vy: 0, vz: 0, fieldVy: 0, yaw: 0 }, frames: frames(sk), spur: [], boden: y - F, geraet };
