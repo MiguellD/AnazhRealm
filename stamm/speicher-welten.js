@@ -73,6 +73,8 @@ class AnazhRealm_speicher_welten {
                 [c.x, c.z] = [c.wx, c.wz];
                 if (c.ort === undefined) c.ort = AnazhRealm._ortSchluessel(c, c);
             }
+        // der Trampelpfad reiste gepackt (`_trittPacken`): die Welt liest ihn als Zellen "i,j" → [n, t]
+        if (Array.isArray(m.tritt)) m.tritt = AnazhRealm._trittAuspacken(m.tritt);
         AnazhRealm._weltGesetz(m);
     }
 
@@ -167,12 +169,12 @@ class AnazhRealm_speicher_welten {
         const warVoxel = m.voxelTerrain === true;
         AnazhRealm._weltMetaHeil(m);
         if (!warVoxel && !fresh && typeof this.journalAppend === "function") {
-            this.journalAppend("genesis", "Die Welt verdichtet sich zu Voxel-Boden.", {
+            this.journalAppend("genesis", ["journal.voxel-boden"], {
                 worldId: m.worldId,
             });
         }
         if (fresh) {
-            this.journalAppend("genesis", AnazhRealm._datum`Ich erwache als ${m.slug}.`, { worldId: m.worldId });
+            this.journalAppend("genesis", ["journal.erwache-als", { welt: m.slug }], { worldId: m.worldId });
             // Ring 8: frische Welt im Index registrieren. Reload-Migration
             // (legacy single-key) ruft ensureWorldMeta nach Pre-Load auf;
             // dort ist worldId schon gesetzt und dieser Pfad bleibt aus.
@@ -351,12 +353,22 @@ class AnazhRealm_speicher_welten {
 
     // DER SATZ EINES BEFUNDS (spielgang.K5): die Glieder der Rettungs-Kette aus der Tafel; `fehler` ist die Meldung des Browsers
     _befundText(befund) {
-        const glied = (g) => (g === "platz" ? this._t("speicher.befund.platz") : g);
-        return befund
-            .map((b) =>
-                this._t(`speicher.befund.${b.art}`, { glied: glied(b.glied || ""), fehler: String(b.fehler || "") })
-            )
-            .join(", ");
+        return AnazhRealm._tIn("de", "speicher.befund.liste", { liste: this._befundZeilen(befund) });
+    }
+    // der Befund als Zeilen der Tafel (eine Liste: sie wechselt mit der Sprache, wo sie im Chat steht)
+    _befundZeilen(befund) {
+        const glied = (g) => (g === "platz" ? ["speicher.befund.platz"] : g);
+        // je Art des Befunds ihre Zeile als Schlüssel (die Arten sind eine geschlossene Menge — gate:sprache K liest jede)
+        const zeile = {
+            "kein-zeiger": "speicher.befund.kein-zeiger",
+            "kein-legacy": "speicher.befund.kein-legacy",
+            leer: "speicher.befund.leer",
+            unlesbar: "speicher.befund.unlesbar",
+            korrupt: "speicher.befund.korrupt",
+            "nicht-lesbar": "speicher.befund.nicht-lesbar",
+            bak: "speicher.befund.bak",
+        };
+        return befund.map((b) => [zeile[b.art], { glied: glied(b.glied || ""), fehler: String(b.fehler || "") }]);
     }
 
     // Der IndexedDB-Stand des Boot-Vorlaufs für die Welt `id` (nur lesen; loadState verbraucht ihn).
@@ -480,7 +492,7 @@ class AnazhRealm_speicher_welten {
                         id: 1,
                         at: Date.now(),
                         type: "genesis",
-                        text: `Ich erwache als ${worldMeta.slug}.`,
+                        t: ["journal.erwache-als", { welt: worldMeta.slug }],
                         ctx: {
                             worldId: worldMeta.worldId,
                             seed: worldMeta.seed || null,
@@ -744,9 +756,10 @@ class AnazhRealm_speicher_welten {
     // Transformation (liest nur bp.*); der Aufrufer filtert die Built-ins
     // (sie entstehen je Init aus _defaultBlueprints()).
     _serializeBlueprint(bp) {
+        // ein Name aus der Tafel reist als sein Schlüssel (`etikett`), nie zusätzlich als aufgelöster Text (spielgang.K5)
         const out = {
             name: bp.name,
-            label: bp.label || bp.name,
+            ...(Array.isArray(bp.etikett) ? { etikett: bp.etikett } : { label: bp.label || bp.name }),
             parts: Array.isArray(bp.parts)
                 ? JSON.parse(JSON.stringify(bp.parts.map((p) => this._teilMigriert(p))))
                 : [],
@@ -938,7 +951,7 @@ class AnazhRealm_speicher_welten {
         const stempel = AnazhRealm._stempelVon(data.studioOv);
         if (stempel) restored.studioOv = stempel;
         this._carryUnknown(data, restored, AnazhRealm.BLUEPRINT_KNOWN_KEYS);
-        return restored;
+        return AnazhRealm._etikett(restored); // der Name liest seinen Schlüssel in der Sprache von jetzt
     }
 
     // Der Stand als Objekt (Export, Fusion, Netz, Download): die Stand-Tafel ganz, `worldMeta.voxelEdits` als Liste.
@@ -1053,7 +1066,8 @@ class AnazhRealm_speicher_welten {
             // Das Gedächtnis selbst reist ohne sein Abgeleitetes (w4-heil-speicher, 5 km in 30 min: 3,4 kB in 20 Zellen, je Ort
             // der Anker doppelt und sein Erdbau-Schlüssel): der Anker einmal als Ort der Trasse (`wx`/`wz` — `x`/`z` sind derselbe
             // Punkt), `ort` nie, wo er `_ortSchluessel` aus Same und Anker ist; eine Zeile der Varianten-Saat nie, wo sie
-            // `_variantenSaat` gleicht. `_weltMetaHeil` stellt beides beim Laden wieder; was abweicht, reist ganz.
+            // `_variantenSaat` gleicht. `_weltMetaHeil` stellt beides beim Laden wieder; was abweicht, reist ganz. Der Trampelpfad reist
+            // gepackt (`_trittStand`: ~4 Bytes je Zelle statt ~24 im JSON-Paar; 1 km in 6 min am Dorf trug 6,1 kB).
             [
                 "worldMeta",
                 (stand) => {
@@ -1079,6 +1093,7 @@ class AnazhRealm_speicher_welten {
                             .filter(eigen)
                             .map((art) => [art, saat[art]])
                     );
+                    if (wm.tritt && !Array.isArray(wm.tritt)) wm.tritt = this._trittStand(wm.tritt);
                     // DAS GESETZ REIST ALS ABWEICHUNG VON DER ERDE (ultiversum.K1): je Teil nur, was vom Gesetz der Erde abweicht —
                     // eine Welt der Erde trägt kein Feld, `_weltGesetz` stellt die Normalform beim Laden wieder (die volle Form trug
                     // je Stand 184 Bytes: das Abbild des Mitträgers riss seine Wand von 256 KiB)
@@ -1216,6 +1231,8 @@ class AnazhRealm_speicher_welten {
             ["dayLengthMinutes", () => st().dayLengthMinutes],
             // Das Wort des Spielers über das Wetter reist mit (es steht, bis er es freigibt); der Wunsch der Welt nicht.
             ["wetterWort", () => st().wetterWort || null],
+            // und wer das Wetter schrieb (affekt.K4#2: die KI nennt ihn nach dem Laden wie davor)
+            ["wetterSchreiber", () => (typeof st().wetterSchreiber === "string" ? st().wetterSchreiber : null)],
             // ERFINDER-WELLE — die Welt-Klang-Wahl reist (V8.59-Klasse: sonst still zurückgesetzt).
             ["klangPreset", () => (typeof st().klangPreset === "string" ? st().klangPreset : null)],
             // DER PRÄGUNGS-SPEICHER (ws.studioOv: die Werke der Studios über den EINEN Übergabe-Kanal und die Werkstatt-Regler)
@@ -1333,6 +1350,7 @@ class AnazhRealm_speicher_welten {
                             a.feldWurf,
                             a.werk,
                             a.geburt,
+                            a.geburtNass,
                             a.studioOv,
                             a.fundament,
                             a.tuer,
@@ -1370,6 +1388,8 @@ class AnazhRealm_speicher_welten {
                         ...(a.werk === true ? { werk: true } : {}),
                         // die Geburt des Werks überlebt den Reload (stoffe.K4: sein Alter ist Spielzeit seit ihr)
                         ...(Number.isInteger(a.geburt) && a.geburt > 0 ? { geburt: a.geburt } : {}),
+                        // ebenso die Nässe-Dosis seiner Geburt (stoffe.K4, `_werkAlter`)
+                        ...(a.geburtNass > 0 ? { geburtNass: a.geburtNass } : {}),
                         // PRÄGUNG-WELT — der Guss-Stempel überlebt den Reload (sonst verlöre
                         // ein geprägtes Werk beim Restore seinen Charakter, V8.59-Klasse).
                         ...(a.studioOv && typeof a.studioOv === "object" ? { studioOv: a.studioOv } : {}),
@@ -2211,8 +2231,13 @@ class AnazhRealm_speicher_welten {
     // (`name` / `desc`) in der Sprache des Spielers; eine empfangene, KI-übersetzte oder angedockte Welt trägt den Inhalt
     // ihres Autors — er bleibt, wie er geschrieben wurde. `label` bleibt die Identität (s. WORLD_REGISTRY).
     _weltName(w) {
+        const z = this._weltNameZeile(w);
+        return Array.isArray(z) ? this._t(z[0]) : z;
+    }
+    // derselbe Name als Wert einer Zeile: die eingebaute Welt als Schlüssel (er wechselt mit der Sprache), die fremde als Daten
+    _weltNameZeile(w) {
         const eingebaut = w && AnazhRealm.WORLD_REGISTRY[w.id] === w;
-        return eingebaut ? this._t(w.name) : (w && (w.label || w.id)) || "?";
+        return eingebaut ? [w.name] : (w && (w.label || w.id)) || "?";
     }
 
     _weltText(w) {
@@ -2460,13 +2485,9 @@ class AnazhRealm_speicher_welten {
         const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
         if (myKey) this._appendProvenance(manifest, myKey);
         this.triggerStateDownload(manifest, `anazh-welt-${entry.id}.json`);
-        this.journalAppend(
-            "share",
-            AnazhRealm._datum`Ich teilte die ${entry.label} — ihr signiertes Manifest ging hinaus.`,
-            {
-                world: entry.id,
-            }
-        );
+        this.journalAppend("share", ["journal.geteilt", { welt: this._weltNameZeile(entry) }], {
+            world: entry.id,
+        });
         return { ok: true, id: entry.id, manifest };
     }
 
@@ -2504,14 +2525,10 @@ class AnazhRealm_speicher_welten {
         if (!this.state.customWorlds) this.state.customWorlds = {};
         this.state.customWorlds[clean.id] = clean;
         this._saveCustomWorlds();
-        this.journalAppend(
-            "growth",
-            AnazhRealm._datum`Eine fremde Welt fand den Weg in deine Bibliothek: „${clean.label}".`,
-            {
-                world: clean.id,
-                signature: signatureStatus,
-            }
-        );
+        this.journalAppend("growth", ["journal.welt-fremd", { welt: clean.label }], {
+            world: clean.id,
+            signature: signatureStatus,
+        });
         return { ok: true, id: clean.id, signatureStatus, reachable };
     }
 
@@ -2601,13 +2618,9 @@ class AnazhRealm_speicher_welten {
         if (!this.state.customWorlds) this.state.customWorlds = {};
         this.state.customWorlds[clean.id] = clean;
         this._saveCustomWorlds();
-        this.journalAppend(
-            "growth",
-            AnazhRealm._datum`Der KI-Übersetzer trug eine Welt in deine Bibliothek: „${clean.label}".`,
-            {
-                world: clean.id,
-            }
-        );
+        this.journalAppend("growth", ["journal.ki-welt", { welt: clean.label }], {
+            world: clean.id,
+        });
         return { ok: true, id: clean.id, label: clean.label };
     }
 
@@ -2755,13 +2768,9 @@ class AnazhRealm_speicher_welten {
         w.world = AnazhRealm.PORTAL_TRANSLATED_WORLD;
         w.reachable = true;
         this._saveCustomWorlds();
-        this.journalAppend(
-            "growth",
-            AnazhRealm._datum`Der KI-Übersetzer gab „${w.label}" einen Körper — die Welt ist nun betretbar.`,
-            {
-                world: w.id,
-            }
-        );
+        this.journalAppend("growth", ["journal.ki-koerper", { welt: w.label }], {
+            world: w.id,
+        });
         return { ok: true, id: w.id, label: w.label };
     }
 
@@ -2902,13 +2911,9 @@ class AnazhRealm_speicher_welten {
         if (!this.state.customWorlds) this.state.customWorlds = {};
         this.state.customWorlds[entry.id] = entry;
         this._saveCustomWorlds();
-        this.journalAppend(
-            "growth",
-            AnazhRealm._datum`Eine fremde Welt dockte an deine Bibliothek an: „${entry.label}".`,
-            {
-                world: entry.id,
-            }
-        );
+        this.journalAppend("growth", ["journal.welt-dockt", { welt: entry.label }], {
+            world: entry.id,
+        });
         // Die Bibliothek wuchs: Welt-Katalog neu annoncieren (self-guarded — _p2pBroadcastSoul ruht ohne Mesh)
         // und den eigenen Katalog-Drawer auffrischen, damit Mitspieler die neue Welt als „✓ vorhanden" sehen.
         this._p2pBroadcastSoul();
@@ -3272,13 +3277,16 @@ AnazhRealm.PORTAL_TRANSLATED_WORLD = "worlds/translated/index.html";
 // portalMeta hieraus; aimBlueprintAtWorld richtet eigene Magie-Ringe auf einen Eintrag.
 // DIE NAMEN (spielgang.K5): `label` ist die IDENTITÄT der Welt, kein Anzeige-Text — signierte Substanz
 // (`_canonicalManifest`, spec/golden/v1/world-manifest.json), Ziel-Wort von `aimBlueprintAtWorld`, portalMeta in jedem
-// Speicher, Mesh-Einladung, Wort-Katalog der Studio-Brücke; sie bleibt deutsch und byte-gleich der de-Zeile ihres
-// `name`. Angezeigt wird nur `name` (der Schlüssel der Tafel) und `desc` (der Schlüssel der Beschreibung) — über den EINEN
+// Speicher, Mesh-Einladung, Wort-Katalog der Studio-Brücke; sie IST die de-Zeile ihres `name` (ein Getter auf die Tafel —
+// bis w5-spielgang-k5 ein deutscher Zwilling der Zeile im Code). Angezeigt wird nur `name` (der Schlüssel der Tafel) und `desc` (der Schlüssel der Beschreibung) — über den EINEN
 // Name-Leser `_weltName` / `_weltText`.
 AnazhRealm.WORLD_REGISTRY = Object.freeze({
     skeleton: Object.freeze({
         id: "skeleton",
-        label: "Skelett-Welt",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.skeleton.name",
         world: AnazhRealm.PORTAL_SKELETON_WORLD,
         dsl: Object.freeze(["skybox_color"]),
@@ -3286,7 +3294,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     }),
     fluid: Object.freeze({
         id: "fluid",
-        label: "Strom-Welt",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.fluid.name",
         world: "worlds/fluid/index.html",
         dsl: Object.freeze(["weather", "skybox_color", "sturm", "ruhe", "set_turbulence"]),
@@ -3294,7 +3305,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     }),
     terrain: Object.freeze({
         id: "terrain",
-        label: "Phytogenesis & Lithos",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.terrain.name",
         world: "worlds/terrain/index.html",
         // Das Morphologie-Labor (phytogenesis). Die id "terrain" bleibt — load-bearing für
@@ -3336,7 +3350,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // probefahrt/werkstatt (Fahr-Modus rein/raus).
     garage: Object.freeze({
         id: "garage",
-        label: "Anatomie · Fahrzeug",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.garage.name",
         world: "worlds/garage/index.html",
         dsl: Object.freeze([
@@ -3359,7 +3376,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // Tiefe, begehbare Türen (E/R).
     portale: Object.freeze({
         id: "portale",
-        label: "Porta — Ordnungen & fraktale Tiefe",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.portale.name",
         world: "worlds/portale/index.html",
         dsl: Object.freeze([
@@ -3380,7 +3400,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // anschlagen + stahl.
     schmiede: Object.freeze({
         id: "schmiede",
-        label: "Anatomie · Klinge",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.schmiede.name",
         world: "worlds/schmiede/index.html",
         dsl: Object.freeze([
@@ -3420,7 +3443,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // Kulturen über #pK (change) + "dorf"/"haus" über #pDorf.
     fachwerk: Object.freeze({
         id: "fachwerk",
-        label: "Fachwerkhaus — parametrisch, begehbar",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.fachwerk.name",
         world: "worlds/fachwerk/index.html",
         dsl: Object.freeze([
@@ -3467,7 +3493,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // lowercase-Lab-Namen; die Buch-id-Ausnahmen modern-klang/barock-klang gelten nur dem Buch).
     klang: Object.freeze({
         id: "klang",
-        label: "Genesis — Generatives Musiksystem",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.klang.name",
         world: "worlds/klang/index.html",
         dsl: Object.freeze([
@@ -3501,7 +3530,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // DSL = #emotions-Buttons (data-e → emo.set) + zufall/zuruecksetzen (btnRandom/btnReset).
     koerperstudio: Object.freeze({
         id: "koerperstudio",
-        label: "Da Vinci Studio — Lebendiger Mensch",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.koerperstudio.name",
         world: "worlds/koerperstudio/index.html",
         dsl: Object.freeze([
@@ -3524,7 +3556,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // Profil-Buttons (#emotions, data-e); Wörter deutsch, ASCII-gefaltet (baer).
     tetrapoda: Object.freeze({
         id: "tetrapoda",
-        label: "Tetrapoda — Evolution Lab",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.tetrapoda.name",
         world: "worlds/tetrapoda/index.html",
         dsl: Object.freeze([
@@ -3545,7 +3580,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // Portal entzieht allow-same-origin: voller Lauf drinnen, null Reichweite raus.
     schwarm: Object.freeze({
         id: "schwarm",
-        label: "Schwarm-Welt",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.schwarm.name",
         world: "worlds/schwarm/index.html",
         dsl: Object.freeze(["sturm", "ruhe", "schwaermen", "skybox_color"]),
@@ -3557,7 +3595,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // selbst. Null-origin sandgesichert (das Protokoll quert die volle Wand).
     begegnung: Object.freeze({
         id: "begegnung",
-        label: "Begegnungs-Feld",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.begegnung.name",
         world: "worlds/begegnung/index.html",
         dsl: Object.freeze([]),
