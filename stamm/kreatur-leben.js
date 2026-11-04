@@ -87,7 +87,13 @@ class AnazhRealm_kreatur_leben {
             if (typeof opts.absage === "function") opts.absage(grund);
             return null;
         };
-        if (this.state.creatures.length >= this.state.maxCreatures) return nein("obergrenze");
+        // DIE KAPPE WÄHLT, WER GEZEICHNET WIRD — nie, ob ein Akt geschieht (oekologie.K2#2): ist sie voll, weicht ein gezeichnetes
+        // Tier des Bestands, das gehen darf (`_bestandWeicht`), als Zahl in sein Tier; die Obergrenze fällt nur, wenn keiner weichen
+        // darf. Bis w5-studios-k1 sagte spawn_studio „die Welt trägt nicht mehr Kreaturen", sobald der Bestand die Plätze gezeichnet
+        // hatte — an der OMEN prägte keine Gattung ein Werk (gate:praegung-welt (K): kreatur 0/5, Grund obergrenze, 147 von 152).
+        let weicht = null;
+        if (this.state.creatures.length >= this.state.maxCreatures && !(weicht = this._bestandWeicht()))
+            return nein("obergrenze");
         // SPIELER-KLEMME: kein Wesen materialisiert IM Spieler — näher als CREATURE_SPAWN_CLEAR_M wird
         // radial auf den Ring geschoben (deckungsgleich → Goldwinkel über netSeq, kein Math.random).
         // Opt-out `precise` für bit-treue Pfade (Restore/Peer-Sicht).
@@ -111,6 +117,7 @@ class AnazhRealm_kreatur_leben {
         const gussOv = opts.dialsOv && typeof opts.dialsOv === "object" ? opts.dialsOv : null;
         const group = this._buildCreatureGroup(chosenSoul, gussOv ? { dialsOv: gussOv } : undefined);
         if (!group) return nein("gestalt");
+        if (weicht) this._bestandEntkoerpern(weicht); // erst der gegossene Leib nimmt den Platz (eine Absage räumt keinen)
         group.position.set(x, y, z);
         // Die Gier ist die äußere Drehung (Q3): der Hang-Pitch (rotation.x) neigt den Leib um SEINE Querachse, auch wenn
         // er nicht längs Welt-z läuft (in der XYZ-Ordnung kippte er bei Gier ≠ 0 seitlich).
@@ -2362,19 +2369,8 @@ class AnazhRealm_kreatur_leben {
         const bleibt = new Set();
         // ein offener Riss hält Opfer UND Jäger am Leib (das Maul reißt den Körper; ein Jäger, der Zahl wird, ließe sein Opfer
         // ohne Maul fallen)
-        const jagen = new Set(st.creatures.map((c) => c.userData._rissVon).filter(Boolean));
-        for (const c of st.creatures) {
-            const ud = c.userData;
-            if (
-                !ud._bestand ||
-                ud._rissVon ||
-                jagen.has(c) ||
-                ud.bond > 0 ||
-                (ud.task && ud.task.name !== "wander") ||
-                this._kreaturNah(c)
-            )
-                bleibt.add(c);
-        }
+        const jagen = this._bestandJagen();
+        for (const c of st.creatures) if (this._bestandHaelt(c, jagen)) bleibt.add(c);
         let platz = st.maxCreatures - bleibt.size;
         const soll = new Set();
         for (const G of reihe) for (const t of G.tiere) if (!(t.leib && bleibt.has(t.leib)) && platz-- > 0) soll.add(t);
@@ -2391,6 +2387,39 @@ class AnazhRealm_kreatur_leben {
             fehlt[0]._ohneOrt = st.spielZeit + 6 * AnazhRealm._bestandGesetz().B.taktS;
         }
         for (const c of st.creatures) if (c.userData._bestand) c.userData.alterS = c.userData._bestand.alterS;
+    }
+    // WER BLEIBT GEZEICHNET (die EINE Frage der Zeichnung und des Weichens): ein Leib außerhalb des Bestands, einer im Riss (Opfer
+    // oder Jäger), gebunden, mit Auftrag oder im Nah-Kreis. `jagen` = die Jäger der offenen Risse (`_bestandJagen`).
+    _bestandJagen() {
+        return new Set(this.state.creatures.map((c) => c.userData._rissVon).filter(Boolean));
+    }
+    _bestandHaelt(c, jagen) {
+        const ud = c.userData;
+        return !!(
+            !ud._bestand ||
+            ud._rissVon ||
+            jagen.has(c) ||
+            ud.bond > 0 ||
+            (ud.task && ud.task.name !== "wander") ||
+            this._kreaturNah(c)
+        );
+    }
+    // DER PLATZ FÜR EINEN AKT (`spawnCreatureAt` an der vollen Kappe): der gezeichnete Leib des Bestands, der gehen darf, außer
+    // Blick (keiner verschwindet vor dem Auge, wie in der Zeichnung) und am fernsten vom Spieler (die Zeichnung hält die nahen
+    // Gruppen) — oder keiner.
+    _bestandWeicht() {
+        const st = this.state;
+        if (!st.playerMesh) return null; // ohne Spieler keine Zeichnung, kein Nah-Kreis
+        const p = st.playerMesh.position;
+        const jagen = this._bestandJagen();
+        let wer = null,
+            fern = -1;
+        for (const c of st.creatures) {
+            if (this._bestandHaelt(c, jagen) || this._kreaturImBlick(c.position.x, c.position.z)) continue;
+            const d = Math.hypot(c.position.x - p.x, c.position.z - p.z);
+            if (d > fern) [wer, fern] = [c, d];
+        }
+        return wer;
     }
     _bestandEntkoerpern(c) {
         const t = c.userData._bestand;
