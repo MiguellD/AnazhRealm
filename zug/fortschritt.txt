@@ -1594,3 +1594,6 @@
 2026-11-04 15:12:37 vp-w6-baecker-f5c061a7 gate:altlasten GRÜN 1 · 3/12
 2026-11-04 15:13:04 vp-w6-baecker-f5c061a7 gate:daten-contract GRÜN 0 · 4/12
 2026-11-04 15:32:58 omen-gtx-w10-figur-dc82a268 START 3 Proben (haar.K1#1,haar.K2#1,mensch.K4#1, GTX am Zweig-Kopf)
+2026-11-04 15:38:02 omen-gtx-w10-figur-dc82a268 haar.K1#1 GRÜN 5 · 1/3
+2026-11-04 15:38:03 omen-gtx-w10-figur-dc82a268 haar.K2#1 ROT 5 · 2/3
+2026-11-04 15:38:04 omen-gtx-w10-figur-dc82a268 mensch.K4#1 ROT 5 · 3/3
