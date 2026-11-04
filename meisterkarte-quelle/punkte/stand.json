@@ -3299,26 +3299,24 @@
    ]
   },
   "spielgang.K5": {
-   "punkte": 0,
-   "beleg": "Maschine: 0 — offen: spielgang.K5#1 headless: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs) — zuletzt an f69a7305: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine TEXTE-Zeile (Exit 0)) · Täter: ✅ GRÜN — gate:sprache — die Tafel trägt 1613 Zeilen, kein Text geht an ihr vorbei. · spielgang.K5#2 headless: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs)",
+   "punkte": 1,
+   "beleg": "Maschine: 0 harte UI-Zeilen (Code 0 · DOM 0 von 1570 Zeilen, 1404 aus der Tafel, 166 Daten) · beim Wechsel auf en stehen 0 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2333, en 2333) an 2674ff9a headless — offen: spielgang.K5#2 headless: Deckel 2400 s überschritten — beendet an 2674ff9a",
    "stationen": [
     {
      "id": "spielgang.K5#1",
      "geraet": "headless",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs) — zuletzt an f69a7305: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine TEXTE-Zeile (Exit 0)) · Täter: ✅ GRÜN — gate:sprache — die Tafel trägt 1613 Zeilen, kein Text geht an ihr vorbei.",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "0 harte UI-Zeilen (Code 0 · DOM 0 von 1570 Zeilen, 1404 aus der Tafel, 166 Daten) · beim Wechsel auf en stehen 0 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2333, en 2333)",
+     "sha": "2674ff9a403d0de252b7610c15b971dc54c5281a",
+     "grund": null
     },
     {
      "id": "spielgang.K5#2",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs)",
-     "ungemessen": true
+     "zahl": "Deckel 2400 s überschritten — beendet",
+     "sha": "2674ff9a403d0de252b7610c15b971dc54c5281a",
+     "grund": "Deckel 2400 s überschritten — beendet"
     }
    ]
   },
@@ -4249,12 +4247,8 @@
    ]
   }
  },
- "rueckfall": [
-  "klang.K2#1 radeon: r 0.58 bei Lag 0 (n 104), Spitze 0.60 bei -0.4 s, CV Bild 0.22 / Ohr 0.49, 57.9 fps, Klang an an 2674ff9a (grün gebucht an 71ef6a0d)",
-  "spielgang.K3#1 radeon: HUD deckt 2.54 % (1920×1080, im Spiel) · INP HUD 64 ms (50) · Menü 240 ms (20) an 2674ff9a (grün gebucht an 71ef6a0d)",
-  "vegetation.K2#1 radeon: ohne Zeit-Messung: ABNAHME ROT [Sicht verdeckt 14.4 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Rinde Streu 14.4 %] · beweis · Sicht 14.4 % (Rinde Streu 14.4 %) · Ziel Blickziel im Bild frei 10.1 m · Luma 57.4 σ 29.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.179 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 — die Aufnahme speichert nichts an 2674ff9a (grün gebucht an 71ef6a0d)"
- ],
+ "rueckfall": [],
  "kopfVoll": "2674ff9a403d0de252b7610c15b971dc54c5281a",
- "zeit": "2026-11-04T13:25:53.856Z",
- "vorher": "71ef6a0d"
+ "zeit": "2026-11-04T13:42:06.604Z",
+ "vorher": "2674ff9a"
 }

@@ -3,11 +3,11 @@
   "kopf": "2674ff9a",
   "version": "V18.546.179",
   "skala": "2.0",
-  "summe": 193,
+  "summe": 194,
   "max": 330,
   "maschine": {
     "kopf": "2674ff9a",
-    "zeit": "2026-11-04T13:25:53.856Z",
+    "zeit": "2026-11-04T13:42:06.604Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -232,7 +232,7 @@
     {
       "key": "wege",
       "titel": "V · WELTEN UND WEGE — Tore, Fahrt, Siedlung, Leib, Halten, der gespielte Pfad, das Ultiversum",
-      "summe": 45,
+      "summe": 46,
       "max": 70,
       "bereiche": [
         "tore",
@@ -3301,7 +3301,7 @@
       "key": "spielgang",
       "titel": "Der gespielte Pfad — EINE Sitzung, erster Eindruck, Bedienung, Zugänglichkeit, Sprache",
       "gruppe": "wege",
-      "punkte": 2,
+      "punkte": 3,
       "pfad": "v1 (die Ziellinie selbst)",
       "dateien": "`scripts/diag-v1-pfad.cjs` (Stationen) · HUD/UI im Stamm · `docs/abnahme-drehbuch.md` · `docs/roadmap.md` §0.v1",
       "aaaa": "Der v1-Pfad ist EIN gespielter Lauf: ankommen, laufen und sehen, in der Werkstatt bauen, mit der KI erschaffen, benutzen und teilen — in einer Sitzung, ohne Konsole, und jeder Schritt hält seine Zahl. Wer zum ersten Mal kommt, findet die Verben ohne Anleitung; das HUD antwortet in ≤ 200 ms und deckt ≤ 5 % des Bilds; Untertitel, Farb-Modus und Bewegungs-Komfort sind da; die Welt spricht Deutsch und Englisch. **Wo wir die Besten schlagen:** TLOU2 trägt über 60 Zugänglichkeits-Optionen, gebaut für ein Spiel; bei uns liest jede Option das EINE Gesetz (Untertitel aus dem Klang-Gesetz, Farb-Modus aus der Albedo-Tafel), und jede neue Gattung, jedes neue Studio ist ohne Zusatz zugänglich.",
@@ -3353,10 +3353,10 @@
         },
         {
           "name": "Die Welt spricht die Sprache des Spielers",
-          "punkte": 0,
+          "punkte": 1,
           "staffel": "1 = jede UI-Zeile aus EINER Text-Quelle in DE und EN (0 harte Strings, Zählung), an einem Gerät umgeschaltet · 2 = die KI antwortet in der Sprache des Spielers (Korpus-Teil EN aus KI K1)",
           "messung": "Zählung harter Strings über `window.__codeOf`; Schuss je Sprache.",
-          "beleg": "Maschine: 0 — offen: spielgang.K5#1 headless: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs) — zuletzt an f69a7305: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine TEXTE-Zeile (Exit 0)) · Täter: ✅ GRÜN — gate:sprache — die Tafel trägt 1613 Zeilen, kein Text geht an ihr vorbei. · spielgang.K5#2 headless: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs)",
+          "beleg": "Maschine: 0 harte UI-Zeilen (Code 0 · DOM 0 von 1570 Zeilen, 1404 aus der Tafel, 166 Daten) · beim Wechsel auf en stehen 0 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2333, en 2333) an 2674ff9a headless — offen: spielgang.K5#2 headless: Deckel 2400 s überschritten — beendet an 2674ff9a",
           "schlupfloch": "Eine Übersetzung des Menüs allein: die Zählung umfasst HUD, Werkstatt, Chat-Antworten.",
           "aenderung": "Neu (Fehlliste B: Sprache).",
           "maschine": true
@@ -4557,7 +4557,7 @@
     {
       "stand": "2026-11-04",
       "kopf": "2674ff9a",
-      "summe": 193,
+      "summe": 194,
       "max": 330,
       "skala": "2.0",
       "was": "Mess-Takt 3 an 8f1802b1 (Züge 29c und 30: Stoff-Tafel, Speicher-Weg, Tier-Gang, Halten K5, Kaskade, Siedlung-Trasse, Nässe unter Dach, GPU-Wand, Leib-Hieb, Kaskaden-Riss, Hänger; headless 66/2, Radeon 27/11, GTX gemessen): stoffe.K1, speicher.K3, halten.K5, siedlung.K3 je +1, leib.K1, oekologie.K1, tiere.K3 → 2; klang.K4 1 → 0 und klang.K5 2 → 1 (2 Stoffe mit ≥ 5 Schritten), siedlung.K5 2 → 0 (nH 300 erstes Haus 974 ms — der Rang des Dorf-Zugs; die Heilung siedlung-k5-erstes-haus fährt in Zug 32)."

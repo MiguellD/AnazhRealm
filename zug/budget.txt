@@ -200,3 +200,4 @@
 2026-11-04T10:03 karte=192 (gebucht am 71ef6a0d, buche.sh)
 2026-11-04T13:36 karte=192 (gebucht am 71ef6a0d, buche.sh)
 2026-11-04T14:25 karte=193 (gebucht am 2674ff9a, buche.sh)
+2026-11-04T14:42 karte=194 (gebucht am 2674ff9a, buche.sh)
