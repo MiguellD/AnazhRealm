@@ -1309,12 +1309,96 @@ class AnazhRealm_studio_bruecke {
             const A = AnazhRealm.ERSTER_BLICK.ausserD2;
             return !Number.isFinite(wo) ? Infinity : this.state._weltbildDa && wo >= A ? wo - A : wo;
         }
-        const pm = this.state.playerMesh && this.state.playerMesh.position;
-        if (!wo || !pm || !Number.isFinite(wo.x) || !Number.isFinite(wo.z)) return Infinity;
-        const dx = wo.x - pm.x,
-            dz = wo.z - pm.z;
-        // DER BLICK ZUERST (B3d): bis das erste Weltbild steht, ist der Rang (im Blick, d²) — `_blickRang`
-        return dx * dx + dz * dz + this._blickRang(wo.x, wo.z);
+        if (!wo || !Number.isFinite(wo.x) || !Number.isFinite(wo.z)) return Infinity;
+        const D = this._bedarfWeg(wo.x, wo.z);
+        if (!Number.isFinite(D)) return Infinity;
+        // DER BLICK ZUERST (B3d): bis das erste Weltbild steht, ist der Rang (im Blick, Bedarf²) — `_blickRang`
+        return D * D + this._blickRang(wo.x, wo.z);
+    }
+    // DER EINE RANG: ZEIT BIS BEDARF (w7-rang). Jede Schlange der Welt — Foundry, Wuchs, Saat, Karten, Bauten, Streu und Boden —
+    // ordnet nach der Zeit, bis der Spieler ein Ding braucht: die Bahn ist der Spieler (wo der Rang bis hier maß) mit seinem Tempo-Vektor
+    // (`_bedarfTakt`, je Bild aus seinem Weg geglättet), der Spieler fährt die Bahn mit dem Tempo s und geht den Rest zu
+    // Fuß (die Gier des Leibs, `state.speed`, v0). Die schnellste Ankunft fährt bis zum Punkt x der Bahn, an dem der Weg zu Fuß
+    // schneller schließt als die Fahrt — Abstand entlang der Bahn a, seitab b, w = √(s² − v0²): T = (a + b · w / v0) / s, solange
+    // a ≥ b · v0 / w; sonst (seitab, dahinter, im Stand) T = d / v0. Gemessen wird in Metern zu Fuß (`v0 · T`): im Stand ist der
+    // Rang der Abstand selbst (jeder Leser der alten Zahl d² liest dasselbe), voraus rückt ein Ding um s / v0 näher. Bis w7-rang
+    // ordnete jede Schlange für sich: der Boden nach Chebyshev ohne Tempo, der Wuchs und die Foundry nach d², die Bauten nach d²,
+    // die Streu in Ring-Reihe — beim GT-Tempo (16 m/s) trat die Welt unfertig in den Sichtkegel
+    // (streaming.K2, Null-Renderer an main 6eeeb856: fertig beim Eintritt Boden 42,6 %, Bäume 11,1 %, Karten 7,7 %, Bauten
+    // 78,6 %, Streu 0 von 15; mit dem Rang 100 · 98,7 · 100 · 100 %, und 0 statt 1 627 Lücken-Bilder in Sprint und GT, streaming.K1).
+    _bedarfWeg(x, z) {
+        const e = this.state.playerMesh && this.state.playerMesh.position;
+        if (!e) return Infinity;
+        const qx = x - e.x,
+            qz = z - e.z;
+        const d = Math.hypot(qx, qz);
+        const [vx, vz] = this._bedarfTempo();
+        const v0 = this._bedarfFuss();
+        const s = Math.hypot(vx, vz);
+        if (!(s > v0 * AnazhRealm.BEDARF.fahrtAb)) return d;
+        const a = (qx * vx + qz * vz) / s;
+        const b = Math.sqrt(Math.max(0, d * d - a * a));
+        const w = Math.sqrt(s * s - v0 * v0);
+        if (a < (b * v0) / w) return d;
+        return ((a + (b * w) / v0) / s) * v0;
+    }
+    // Die Gier zu Fuß (v0 des Rangs): das Gehen des Leibs (`state.speed`, aus dem Körper-Gesetz geeicht), vor der Eichung 1 m/s.
+    _bedarfFuss() {
+        const v = this.state.speed;
+        return v > 0 ? v : 1;
+    }
+    // DER TEMPO-VEKTOR DER BAHN (EIN Ruf je Bild, der Takt `_runFrameScheduler`): der Weg des Spielers je Sekunde der Spiel-Uhr
+    // (`state.spielZeit`, der gedeckelte Takt jeder Bewegung — nie die Wanduhr: eine Linse, die Takte dicht fährt, sähe sonst ein
+    // Tempo, das der Spieler nie hat), geglättet mit der Zeit-Konstante BEDARF.tauS. Ein Schritt schneller als BEDARF.tempoMax
+    // (Teleport, Tor, ein Sprung des Stands) oder eine Lücke über 1 s setzt ihn auf 0 — die Bahn beginnt neu, nie ein Tempo aus
+    // dem Sprung.
+    _bedarfTakt() {
+        const e = this.state.playerMesh && this.state.playerMesh.position;
+        if (!e) return;
+        const t = Number(this.state.spielZeit) || 0;
+        const B = this._bedarf || (this._bedarf = { x: e.x, z: e.z, t, vx: 0, vz: 0 });
+        const dt = t - B.t;
+        const dx = e.x - B.x,
+            dz = e.z - B.z;
+        if (!(dt > 0)) {
+            if (dx || dz) [B.x, B.z, B.vx, B.vz] = [e.x, e.z, 0, 0]; // gestellt ohne Takt: ein Sprung
+            return;
+        }
+        if (dt > 1 || Math.hypot(dx, dz) > AnazhRealm.BEDARF.tempoMax * dt) {
+            B.vx = B.vz = 0;
+        } else {
+            const k = 1 - Math.exp(-dt / AnazhRealm.BEDARF.tauS);
+            B.vx += (dx / dt - B.vx) * k;
+            B.vz += (dz / dt - B.vz) * k;
+        }
+        [B.x, B.z, B.t, B.wand] = [e.x, e.z, t, performance.now()];
+    }
+    // DAS TEMPO DER BAHN [vx, vz] — nur, solange ein Takt es erneuert (`_bedarfTakt`, je Bild): ruht der Loop länger als
+    // BEDARF.frischMs (eine Linse fährt den Strom von Hand, das Spiel steht), gilt es nicht mehr — ein stehengebliebenes Tempo
+    // schöbe die Vorausschau über eine Welt, die niemand fährt (gate:chunk-satz: die Stufen erreichten ihr Soll nie).
+    _bedarfTempo() {
+        const B = this._bedarf;
+        return B && performance.now() - B.wand <= AnazhRealm.BEDARF.frischMs ? [B.vx, B.vz] : [0, 0];
+    }
+    // DER ORT DER BAHN IN BEDARF.vorlaufS SEKUNDEN (die Vorausschau): wo `p` (der Ort eines Lesers — der Spieler, das Auge der Stufen;
+    // ohne Angabe der Spieler) mit dem Tempo-Vektor der Bahn sein wird. Jeder Leser, der Dinge NACH ABSTAND zulässt (der Ring des
+    // Bodens und seine Pflege, die Stufe eines Chunks, die Mesh-Zone der Bauten, die Reichweite der Streu, der Laub-Rand), lässt zu,
+    // was an `p` JETZT oder an diesem Punkt im Radius liegt: was die Bahn binnen des Vorlaufs braucht, steht. `weg` = der Weg dahin.
+    _bedarfVoraus(p) {
+        const e = p || (this.state.playerMesh && this.state.playerMesh.position);
+        if (!e) return null;
+        const T = AnazhRealm.BEDARF.vorlaufS;
+        const [vx, vz] = this._bedarfTempo();
+        return { x: e.x + vx * T, z: e.z + vz * T, weg: Math.hypot(vx, vz) * T }; // je Ruf ein eigener Ort: ein Leser hält ihn
+    }
+    // DER ABSTAND DER BAHN zu (x, z) von einem Auge `auge` (der Stufen, `_lodAuge`): der nähere des Auges jetzt und des Auges am
+    // Ende des Vorlaufs — die Stufen-Wahl der Einträge liest ihn (`_archStufeUrteil`, `_foundryLodForEntry`): die feine Stufe steht,
+    // bevor die Bahn ankommt.
+    _bedarfAbstand(x, z, auge) {
+        const d = Math.hypot(x - auge.x, z - auge.z);
+        const [vx, vz] = this._bedarfTempo();
+        const T = AnazhRealm.BEDARF.vorlaufS;
+        return vx || vz ? Math.min(d, Math.hypot(x - auge.x - vx * T, z - auge.z - vz * T)) : d;
     }
     // Die BAHN eines Auftrags (Präfix der Request-Nummer): ein Werk-Helfer (`_foundryHelfer`) trägt seinen Faden in der
     // Nummer (`w<k>_<n>`): seine Bahn ist "werk<k>", sonst das Werk.
@@ -3507,6 +3591,15 @@ AnazhRealm.INGEST_BURST_CAP = 8; // max Freigaben je EINZELFRAME (Anti-LongTask-
 // Der Horizont-Saum (m): über so viele Meter vor `SCATTER.outerM` liegen die Ränder der Karten-Dinge, je Eintrag aus
 // seinem Samen (Salz: der Hash-Kanal des Saums, `_pcg2d`) — der Wald dünnt aus, jeder Baum steht ganz oder gar nicht.
 AnazhRealm.KARTEN_HORIZONT_SAUM_M = 32;
+// DER EINE RANG, ZEIT BIS BEDARF (`_bedarfWeg`, w7-rang): `vorlaufS` — so weit voraus lässt jeder Leser nach Abstand zu, was
+// die Bahn braucht (`_bedarfVoraus`). Die Kette eines Walds am Rand des Rings — der Chunk im Faden (0,15–0,4 s), seine Saat,
+// der Plan seiner Zellen im Wald-Faden, die Pflanzung, die Karte — braucht beim GT-Tempo mehr als 1,5 s (Null-Renderer: Karten
+// 81,7 % fertig beim Eintritt bei 1,5 s, 100 % bei 3 s); die Bahn legt in 3 s 48 m zurück, ihr Ring hält die Pflege
+// (`_pruneDistantVoxelChunks`). `tauS` — die Zeit-Konstante, mit der das Tempo dem Weg folgt; `tempoMax` (m/s) — ein Schritt
+// schneller ist ein Sprung (Teleport, Tor, ein gestellter Stand), kein Tempo — über jedem Fahr-Gesetz der Welt (der GT 16 m/s),
+// so reicht der Vorlauf höchstens 180 m; `fahrtAb` — unter diesem Vielfachen des Gehens ist der Rang der Abstand (Stand, Gang).
+// `frischMs` — so lange gilt das Tempo nach seinem letzten Takt (TAKT_DECKEL_S 0,1 s ist der längste Schritt des Spiels, ein Bild unter Last 0,2–0,3 s).
+AnazhRealm.BEDARF = Object.freeze({ vorlaufS: 3, tauS: 0.3, tempoMax: 60, fahrtAb: 1.05, frischMs: 500 });
 AnazhRealm.KARTEN_HORIZONT_SALZ = 0x4b48;
 // DIE EINE WORKER-SCHLANGE (`_foundryAuftrag`): Aufträge gleichzeitig im Worker und das Alter, ab dem der Älteste jede
 // zweite Wahl bekommt. Jeder Nachschub braucht einen Haupt-Thread-Rundlauf; kleine Aufträge (Platte, Fels, Klinge) sind

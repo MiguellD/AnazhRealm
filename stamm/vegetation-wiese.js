@@ -2409,7 +2409,7 @@ class AnazhRealm_vegetation_wiese {
         return n;
     }
 
-    // Die offenen Zellen der Schlange nah zuerst ([d², Schlüssel, [gx, gz]]): was das Gedächtnis schon trägt, fällt aus ihr;
+    // Die offenen Zellen der Schlange nach dem EINEN Rang ([Rang², `_spielerD2` — die Zeit bis Bedarf, im Stand der Abstand², Schlüssel, [gx, gz]]): was das Gedächtnis schon trägt, fällt aus ihr;
     // was im Flug ist (`flug`, optional), bleibt in ihr, aber nicht in der Liste.
     _waldPlanListe(flug) {
         const Q = this._waldPlanSchlange;

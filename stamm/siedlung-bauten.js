@@ -204,9 +204,8 @@ class AnazhRealm_siedlung_bauten {
         // Stufen je Art bleiben kindStages in _foundryFlattenFor (kein kind-Literal).
         const treeLike = !!entry._lodSpecies && Number.isFinite(entry._lodVariantIndex);
         if (!treeLike && entry.instFoundry !== true) return;
-        const dx = entry.position.x - pm.x;
-        const dz = entry.position.z - pm.z;
-        const dist = Math.sqrt(dx * dx + dz * dz);
+        // der Abstand der Bahn (der EINE Rang, w7-rang): die Stufe, die die Bahn binnen des Vorlaufs verlangt, steht vor ihr
+        const dist = this._bedarfAbstand(entry.position.x, entry.position.z, pm);
         // V18.387 — Baum-Einträge reichen ihre Sichthöhe durch → Wahrnehmungs-
         // Distanz-LOD (größere Bäume schalten später, unter Last alle früher).
         const visH = this._lodTreeVisHeight(entry);

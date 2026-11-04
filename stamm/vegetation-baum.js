@@ -1180,7 +1180,14 @@ class AnazhRealm_vegetation_baum {
         const ck = cx + "," + cz;
         if (this._forestGesetzWahr() && !this._vegSpawnImmediate) {
             this._forestDartStand(seedInt);
-            if (!this._waldPlanKasten(...this._waldPflanzKasten(cx, cz))) {
+            // DER KASTEN DER GESTALT (w7-rang): mit dem Gang bestellt er die Zellen, die die Gestalt des Orts jedes seiner Bäume
+            // liest (±`WALD_PLAN.reich`, `_ortGestaltSame`) — er wartet nicht auf sie, aber sein Baum steht bei der Geburt in
+            // seiner Gestalt. Bis w7-rang bestellte sie erst der geborene Baum: jeder Karten-Baum am Rand des Rings trat 1–2
+            // Bilder ohne Bild in den Sichtkegel (streaming.K1, Null-Renderer: Karten in 186–246 m, `var` null).
+            const [ga, ha, gb, hb] = this._waldPflanzKasten(cx, cz);
+            const R = AnazhRealm.WALD_PLAN.reich;
+            this._waldPlanKasten(ga - R, ha - R, gb + R, hb + R);
+            if (!this._waldPlanKasten(ga, ha, gb, hb)) {
                 (this._waldPflanzWarten || (this._waldPflanzWarten = new Set())).add(ck);
                 return 0;
             }
@@ -2490,9 +2497,17 @@ class AnazhRealm_vegetation_baum {
         // Totband, ungezeichnete bis an ihren Rand, ein ferner Satz bis an den Radius; was sein Urteil liest (Stufe gezeichnet,
         // Typ, Lage, Satz, Buch), weckt ihn (`_cullWecken`). Bis pbk4-fahrt ging jeder Gang jeden Eintrag des Bestands, der mit
         // dem gefahrenen Weg wächst (Mess-Wiese, GT 20 m/s, 60 s: 868 → 3 859 Einträge, der Gang 2,9 ms bei 4 953, `werkbank takt`).
+        // DER ABSTAND DER BAHN (der EINE Rang, w7-rang): ein Eintrag gilt am näheren der zwei Orte — dem Spieler und seinem Ort am
+        // Ende des Vorlaufs (`_bedarfVoraus`); was die Bahn binnen des Vorlaufs in der Mesh-Zone oder diesseits des Karten-Horizonts
+        // braucht, steht, bevor sie ankommt. Der Weg der Wache zählt den weiteren der beiden Wege (ein Schlaf in Metern hält).
+        const vb = this._bedarfVoraus(playerPos) || playerPos;
         const K = this._cullWache();
-        K.odo += K.px === null ? 0 : Math.hypot(playerPos.x - K.px, playerPos.z - K.pz) + Math.max(0, radius - K.R);
-        [K.px, K.pz, K.R] = [playerPos.x, playerPos.z, radius];
+        K.odo +=
+            K.px === null
+                ? 0
+                : Math.max(Math.hypot(playerPos.x - K.px, playerPos.z - K.pz), Math.hypot(vb.x - K.vx, vb.z - K.vz)) +
+                  Math.max(0, radius - K.R);
+        [K.px, K.pz, K.vx, K.vz, K.R] = [playerPos.x, playerPos.z, vb.x, vb.z, radius];
         const Q = AnazhRealm.CULL_EIMER_M;
         const jetzt = Math.floor(K.odo / Q);
         const wecke = (b) => {
@@ -2543,7 +2558,9 @@ class AnazhRealm_vegetation_baum {
             }
             const dx = entry.position.x - playerPos.x;
             const dz = entry.position.z - playerPos.z;
-            const distSq = dx * dx + dz * dz;
+            const distSq = Math.min(dx * dx + dz * dz, (entry.position.x - vb.x) ** 2 + (entry.position.z - vb.z) ** 2);
+            // die Reihe der Wartenden: die Zeit bis Bedarf (`_bedarfWeg`, in Metern zu Fuß), bis w7-rang der Abstand
+            const rang = this._spielerD2(entry.position.x, entry.position.z);
             // DIE FERNFORM DER KARTEN-DINGE (Studio-Vertrag B2c `fernform: "karte"`, `_archKartenPreset`): Baum und Strauch
             // tragen ihre Studio-Kette über die Mesh-Zone hinaus und SIND dort ihre Karte — dieselbe EINE Stufen-Wahl wie
             // nah (die Wahrnehmung legt jeden Baum jenseits seines L1↔Karte-Bands auf die Karte, einen Riesen erst dort;
@@ -2562,7 +2579,7 @@ class AnazhRealm_vegetation_baum {
                 const h = distSq <= saumSq ? Infinity : this._archKartenHorizont(entry);
                 if (distSq <= h * h) {
                     if (!this._archIsRendered(entry)) {
-                        entry._nahD2 = distSq;
+                        entry._nahD2 = rang;
                         nahOffen.push(entry);
                         continue;
                     }
@@ -2598,11 +2615,11 @@ class AnazhRealm_vegetation_baum {
                 } else {
                     // Steht das Mesh schon, braucht der Bau keine Brücke: sein Satz bäckt NACH allen Bedürftigen
                     // vor (für den Rand der Mesh-Zone) und stiehlt ihnen nie den Takt.
-                    entry._ziegelD2 = echt ? distSq + AnazhRealm.ZIEGEL_VORBACK_D2 : distSq;
+                    entry._ziegelD2 = echt ? rang + AnazhRealm.ZIEGEL_VORBACK_D2 : rang;
                     ziegelOffen.push(entry);
                 }
                 if (!echt) {
-                    entry._nahD2 = distSq;
+                    entry._nahD2 = rang;
                     nahOffen.push(entry);
                 }
                 if (entry._ziegelSlot) this._weltFeldAktiv(entry._ziegelSlot, !echt);
@@ -2622,7 +2639,7 @@ class AnazhRealm_vegetation_baum {
                     if (this._archZiegelFern(entry)) regung++;
                     else if (!this._archIsRendered(entry)) schlaf(entry, Math.sqrt(distSq) - radius); // der Satz steht
                 } else {
-                    entry._ziegelD2 = distSq;
+                    entry._ziegelD2 = rang;
                     ziegelOffen.push(entry);
                 }
             }

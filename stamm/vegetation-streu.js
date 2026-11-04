@@ -1465,13 +1465,20 @@ class AnazhRealm_vegetation_streu {
     // Eine Streu-Region streamt nur, wenn ihre NÄCHSTE Kante im `foliageRadius` liegt (gekappt auf die gebaute Ring-Kante) —
     // kein Fern-Billboard vor dem Boden. Die Spieler-Region streamt immer; ferne holt der nächste Tick selbst-heilend nach.
     // Headless: foliageRadius = MAX. Die EINE Regel für den Streamer und das erste Weltbild (`_weltbildFehlt`).
-    _streuRegionInReichweite(rx, rz, p) {
+    // `bahn` (der Streamer, w7-rang): die Region gilt auch, wenn sie am Ort der Bahn am Ende des Vorlaufs in Reichweite liegt
+    // (`_bedarfVoraus`, der EINE Rang) — sie streut, bevor die Bahn ankommt.
+    _streuRegionInReichweite(rx, rz, p, bahn) {
         const SC = AnazhRealm.SCATTER;
         const st = this.state;
         const R = st.foliageRadius != null ? st.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
-        const nx = Math.max(rx * SC.regionM, Math.min(p.x, (rx + 1) * SC.regionM));
-        const nz = Math.max(rz * SC.regionM, Math.min(p.z, (rz + 1) * SC.regionM));
-        return Math.hypot(nx - p.x, nz - p.z) <= R;
+        const nah = (q) => {
+            const nx = Math.max(rx * SC.regionM, Math.min(q.x, (rx + 1) * SC.regionM));
+            const nz = Math.max(rz * SC.regionM, Math.min(q.z, (rz + 1) * SC.regionM));
+            return Math.hypot(nx - q.x, nz - q.z) <= R;
+        };
+        if (nah(p)) return true;
+        const v = bahn ? this._bedarfVoraus(p) : null;
+        return !!v && v.weg > 0 && nah(v);
     }
 
     // Steht die Streu? — die EINE Antwort (das erste Weltbild `_weltbildFehlt`, die Bühnen-Linse): wie viele Streu-Regionen
@@ -1547,30 +1554,30 @@ class AnazhRealm_vegetation_streu {
         // schob jede Zelle auf, und die Region streute ganz, nur um nach dem Buch neu zu streuen (Radeon kalt bis 8 s ab Navigation).
         const _fb = this._foundryEnabled() ? this._foundry : null;
         const _buchKalt = this._foundryEnabled() && !(_fb && _fb.ready && _fb.recipes);
-        for (
-            let dz = -SC.ringRegions;
-            dz <= SC.ringRegions && work < SC.maxRegionsPerFrame && !_sliceFull && !_buchKalt;
-            dz++
-        ) {
-            for (let dx = -SC.ringRegions; dx <= SC.ringRegions && work < SC.maxRegionsPerFrame; dx++) {
-                const rk = `${pRegX + dx},${pRegZ + dz}`;
+        // DIE REIHE DER REGIONEN (der EINE Rang, w7-rang): die fehlenden in Reichweite der Bahn nach der Zeit bis Bedarf
+        // (`_bedarfWeg` ihrer Mitte) — bis w7-rang in Ring-Reihe (dz, dx); beim GT-Tempo trat jede neue Region wartend in den
+        // Sichtkegel (streaming.K2, Null-Renderer an main 6eeeb856: Streu 0 von 15).
+        const neu = [];
+        for (let dz = -SC.ringRegions; dz <= SC.ringRegions && !_sliceFull && !_buchKalt; dz++)
+            for (let dx = -SC.ringRegions; dx <= SC.ringRegions; dx++) {
+                const [rx, rz] = [pRegX + dx, pRegZ + dz];
+                const [mx, mz] = [(rx + 0.5) * SC.regionM, (rz + 0.5) * SC.regionM];
                 // vor dem ersten Weltbild nur die Region im Blick (`_blickDerAnkunft`), die übrigen streut der Nachlauf
                 if (
-                    !map.has(rk) &&
-                    this._streuRegionInReichweite(pRegX + dx, pRegZ + dz, playerPos) &&
-                    this._blickDerAnkunft(
-                        (pRegX + dx + 0.5) * SC.regionM,
-                        (pRegZ + dz + 0.5) * SC.regionM,
-                        SC.regionM * Math.SQRT1_2
-                    )
-                ) {
-                    this._scatterRegion(pRegX + dx, pRegZ + dz, playerPos, deadlineMs);
-                    work++;
-                    if (Number.isFinite(deadlineMs) && performance.now() > deadlineMs) {
-                        _sliceFull = true;
-                        break;
-                    }
-                }
+                    !map.has(`${rx},${rz}`) &&
+                    this._streuRegionInReichweite(rx, rz, playerPos, true) &&
+                    this._blickDerAnkunft(mx, mz, SC.regionM * Math.SQRT1_2)
+                )
+                    neu.push([this._bedarfWeg(mx, mz), rx, rz]);
+            }
+        neu.sort((a, b) => a[0] - b[0]);
+        for (const [, rx, rz] of neu) {
+            if (work >= SC.maxRegionsPerFrame) break;
+            this._scatterRegion(rx, rz, playerPos, deadlineMs);
+            work++;
+            if (Number.isFinite(deadlineMs) && performance.now() > deadlineMs) {
+                _sliceFull = true;
+                break;
             }
         }
         // (2) ferne Regionen disposen (außerhalb ringRegions+1)
