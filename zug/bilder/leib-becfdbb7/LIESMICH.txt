@@ -1,0 +1,7 @@
+Leib-Nahbilder OMEN (GTX 1060), main becfdbb7, 04.11. ~23:42
+Werkzeug: p3/vorpruefung/leib-blick.cjs --nah (werkbank bild --spieler, fov 22, Kamera ~3 m vom Spieler, Blick auf +1,0 m)
+Welt: Messort wiese, Sicht third, Stand nach 5 s und nach 30 s (echter Loop via werkbank lauf)
+Leib: 14 Netze, alle sichtbar; Materialien MeshStandardNodeMaterial + MeshPhysicalNodeMaterial
+Befund: Haut scheint durch Löcher der Tunika — seitlich an Schulter/Hals und an der Hüfte, hinten großflächig am oberen Rücken
+unter den Haaren. Bei 5 s und 30 s gleich (kein Nachladen, kein Flackern, keine falsche Farbe). Die Vorn-Bilder lehnte die Abnahme
+der werkbank ab („Blickziel nicht im Bild“).
