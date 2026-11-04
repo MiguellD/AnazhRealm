@@ -1570,3 +1570,5 @@
 2026-11-04 12:50:56 vp-w6-alter-fb096ca8 gate:ego-schatten GRÜN 0 · 3/8
 2026-11-04 13:20:44 omen-hw-z204 START 5 Proben (haus-welt 1/2 an main, +gruss, +alter, +weiches, +licht-sprung)
 2026-11-04 13:22:52 omen-hw-z204 START 5 Proben (haus-welt --selftest --nur=kihain --phasen=lichtung an main, +gruss, +alter, +weiches, +licht-sprung)
+2026-11-04 13:24:31 omen-hw-z204 phi5-main GRÜN 1 · 1/5
+2026-11-04 13:24:32 omen-hw-z204 w9-gruss GRÜN 1 · 2/5
