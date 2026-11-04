@@ -1284,7 +1284,7 @@ async function proben(phasen) {
                 w8.chatGewachsen = neuC.length;
                 for (const e of neuC) r.removeArchitecture(e);
                 w8.chatSatz = el ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(0, 240) : null;
-                w8.lichtungGrund = A.NATUR_WAND_GRUND.lichtung; // der Grund der Natur-Wand im Satz (die EINE Quelle des Worts)
+                w8.lichtungGrund = r._t(A.NATUR_WAND_GRUND.lichtung); // der Grund der Natur-Wand im Satz (die EINE Quelle des Worts, eine Zeile der Tafel)
             }
             const h0 = H[0];
             if (h0) {

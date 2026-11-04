@@ -522,6 +522,8 @@ class AnazhRealm_koerper_leib {
             this._gaitBeinMass(rig).L
         );
         g.ik = opts && opts.ik ? this._gaitIKPrep(mesh, opts.soleY, opts.yaw, d) : null;
+        // der Stoß-Zustand des Leibs (physik.K5) reist mit dem Gang des lokalen Avatars zur Pose (der Ausfallschritt)
+        g.stossLeib = opts && opts.ik ? this.state : null;
         // ohne Boden-IK (Luft, Peer) löst jeder Fuß-Lock — die Landung friert die Stand-Füße frisch ein
         const ikC = !g.ik && mesh.userData && mesh.userData._gaitIK;
         if (ikC) ikC.lockL.on = ikC.lockR.on = false;
@@ -767,7 +769,7 @@ class AnazhRealm_koerper_leib {
         const vor =
             ((lock.x - hv.x) * Math.sin(ik.yaw) + (lock.z - hv.z) * Math.cos(ik.yaw)) * (ik.wpl / (ik.wz || ik.wpl)) +
             rx;
-        const unten = hv.y - (probe.g + ik.soleH) - ry;
+        const unten = (hv.y - (probe.g + ik.soleH) - ry) / Math.cos(leg.hip.userData.stossRoll || 0);
         const R = AnazhRealm._gaitReich(ik.l1 + ik.l2);
         if (!Number.isFinite(unten) || Math.abs(vor) >= R) return Infinity;
         return Math.max(0, unten - Math.sqrt(R * R - vor * vor));
@@ -778,7 +780,8 @@ class AnazhRealm_koerper_leib {
         foot.x = av.x;
         foot.z = av.z;
         const geht = w >= 0.35;
-        const stance = geht ? imStand : true; // Idle: beide Füße geplantet
+        // der Fuß im Ausfallschritt (physik.K5, `leibStossPose`) schwingt, gleich was der Gang sagt
+        const stance = (geht ? imStand : true) && !leg.hip.userData.stossSchwung; // Idle: beide Füße geplantet
         if (!stance) {
             lock.on = false;
             return; // Schwung-Bein: die Pose bleibt (nur die Stance ankert)
@@ -808,7 +811,8 @@ class AnazhRealm_koerper_leib {
         const [rx, ry] = this._gaitRollung(rollt && rolle, probe, ik);
         const vor =
             ((tx - hv.x) * Math.sin(ik.yaw) + (tz - hv.z) * Math.cos(ik.yaw)) * (ik.wpl / (ik.wz || ik.wpl)) + rx;
-        const unten = hv.y - (probe.g + ik.soleH) - ry;
+        // die quer gerollte Kette (der Ausfallschritt) reicht lotrecht nur um cos(Roll) — ihre Ebene trägt die längere Strecke
+        const unten = (hv.y - (probe.g + ik.soleH) - ry) / Math.cos(leg.hip.userData.stossRoll || 0);
         if (!(unten > 0.05)) {
             lock.on = false;
             return; // Boden über der Hüfte (Klippe/ungebaut) — NaN-Wand
@@ -823,7 +827,7 @@ class AnazhRealm_koerper_leib {
         // die Sohle liegt dem Boden an (der rollende Fuß kippt um seine Rolle darüber hinaus)
         const kipp = this._gaitSohlenKipp(tx, tz, ik.yaw, probe.g);
         leg.ankle.rotation.x = (rollt ? rolle.roll : 0) - (res.hip + res.knee) - probe.kipp;
-        leg.ankle.rotation.z = kipp.quer;
+        leg.ankle.rotation.z = kipp.quer - (leg.hip.userData.stossRoll || 0);
     }
     // DIE SOHLE AM HANG (Gelände H5): die Neigung des gezeichneten Bodens unter dem Fuß (der Stand-Leser je ± 0,12 m längs und
     // quer zur Blick-Achse), bis ± 0,45 rad (das Sprunggelenk) — die Sohle kippt mit. Bis H5 blieb sie waagrecht: am 25°-Hang
@@ -892,6 +896,10 @@ class AnazhRealm_koerper_leib {
             SB > 0 ? this._gangZeile(true) : null,
             window.__tetrapodaCore
         );
+        // DER AUSFALLSCHRITT (koerper-core `leibStossPose`, physik.K5 — dieselbe Funktion setzt das Körper-Studio): die Hüfte rollt
+        // jedes Bein quer zu seinem Fuß des Stoß-Zustands, im Schwung hebt das Knie ihn — vor der Fuß-IK, die den Stand hält
+        if (gait && gait.ik)
+            AnazhRealm._leibTakt().leibStossPose(r, gait.stossLeib, gait.ik.yaw, this._gaitBeinMass(r));
         // ═══ KÖRPER-BEWEGUNG (3) — Fuß-IK/Foot-Lock/Becken/Hang-Lehne (nur mit
         // gerüstetem Kontext = der lokale Avatar; s. _gaitTick Budget-Disziplin).
         if (gait && gait.ik) this._gaitApplyFussIK(r, walkPhase, wB, gait.ik);

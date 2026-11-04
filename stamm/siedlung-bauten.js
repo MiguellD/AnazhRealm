@@ -26,9 +26,9 @@ class AnazhRealm_siedlung_bauten {
         if (!seeds) return null;
         if (!Number.isFinite(variantIndex) || variantIndex < 0 || variantIndex >= N) return null;
         const variantSeed = seeds[variantIndex];
-        const speciesLabel = String(species || "Baum")
-            .replace(/^baum_/, "")
-            .replace(/^./, (c) => c.toUpperCase());
+        // der Name der Art: das Etikett ihres Bauplans (ein Schlüssel der Tafel), sonst ihr Name (Daten)
+        const artBp = this.state.blueprints[species];
+        const speciesLabel = (artBp && artBp.etikett) || artBp?.label || String(species);
         const genV = typeof this._genVersion === "function" ? this._genVersion() : 1;
         const isMerged = genV >= 6;
         const keys = {};
@@ -45,7 +45,10 @@ class AnazhRealm_siedlung_bauten {
                 genV >= 7 && this._lastTreeSkeleton && Array.isArray(this._lastTreeSkeleton.branches);
             this.state.blueprints[cacheKey] = {
                 name: cacheKey,
-                label: lod === 0 ? `${speciesLabel} (gewachsen)` : `${speciesLabel} (gewachsen, LOD${lod})`,
+                etikett:
+                    lod === 0
+                        ? ["bau.gewachsen", { name: speciesLabel }]
+                        : ["bau.gewachsen-lod", { name: speciesLabel, lod }],
                 builtIn: true,
                 _isGrown: true,
                 _grownSpecies: species,
@@ -57,6 +60,7 @@ class AnazhRealm_siedlung_bauten {
                 instanced: true,
                 parts,
             };
+            AnazhRealm._etikett(this.state.blueprints[cacheKey]);
             if (isSkeletonMeshed) this._lastTreeSkeleton = null;
             // LOD0 + LRU-Ring (eviction-bewusst wie V18.217-Pfad)
             if (lod === 0) {

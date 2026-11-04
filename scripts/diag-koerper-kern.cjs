@@ -9,8 +9,8 @@
 //
 //   (a) ALT = die hier EINGEFRORENEN Original-Formeln (byte-treu aus dem
 //       Lab-Stand vor der Wanderung kopiert, Quelle zitiert),
-//   (b) NEU = der Kern, konsumiert EXAKT wie die neue Shell es tut
-//       (labMorph-Closures auf base-Skalen, labLandmarks auf Messwerte),
+//   (b) NEU = der Kern, wie Shell und Stamm ihn rufen (morphAuf auf den
+//       Teile-Baum, labLandmarks auf Messwerte),
 //   verglichen auf dem Dial-Gitter: die 6 morph-wirksamen Dials
 //   (height/mass/tone/age/gender/arms) je min/def/max kombiniert = 729
 //   Gitter-Punkte (>=500; hairLen/hairVol wirken nicht auf morph — sie
@@ -66,10 +66,11 @@ function altLandmarks(mess) {
 // ────────────────────────────────────────────────────────────────────────────
 // NEU — der Kern, konsumiert exakt wie die neue Shell (morph()-Delegat).
 // ────────────────────────────────────────────────────────────────────────────
-function neuMorph(params, parts, base, PROP, labMorphFn) {
-    const baseArmX = PROP.baseArmX, trochanterY = PROP.trochanterY;
-    const M=labMorphFn(params);parts.__character.scale.set(M.charScale.x,M.charScale.y,M.charScale.z);const MU=M.shell;function aply(m,sc){m.scale.set(sc.x,sc.y,sc.z);return sc;}if(parts.ribcage)parts.ribcage.userData.baseScaleY=aply(parts.ribcage,MU.ribcage(base.ribcage)).y;if(parts.pelvis)aply(parts.pelvis,MU.pelvis(base.pelvis));if(parts.waist)aply(parts.waist,MU.waist(base.waist));function pair(name,fn){[-1,1].forEach(sd=>{const k=name+(sd===1?'1':'-1');if(parts[k])fn(parts[k],base[k],sd);});}if(parts.abs)parts.abs.userData.baseScaleY=aply(parts.abs,MU.abs(base.abs)).y;pair('oblique',(m,b)=>aply(m,MU.oblique(b)));pair('glute',(m,b)=>aply(m,MU.glute(b)));pair('quad',(m,b)=>{m.userData.baseScaleY=aply(m,MU.quad(b)).y;});pair('hamstring',(m,b)=>aply(m,MU.hamstring(b)));pair('calf',(m,b)=>{m.userData.baseScaleY=aply(m,MU.calf(b)).y;});pair('bicep',(m,b)=>{m.userData.baseScaleY=aply(m,MU.bicep(b)).y;});pair('tricep',(m,b)=>aply(m,MU.tricep(b)));pair('uarm',(m,b)=>aply(m,MU.uarm(b)));pair('forearm',(m,b)=>aply(m,MU.forearm(b)));pair('deltoid',(m,b)=>aply(m,MU.deltoid(b)));pair('trap',(m,b)=>aply(m,MU.trap(b)));pair('lat',(m,b)=>aply(m,MU.lat(b)));if(parts.upperBack)aply(parts.upperBack,MU.upperBack(base.upperBack));if(parts.chest){var csc=aply(parts.chest,MU.chest(base.chest));parts.chest.userData.baseScaleX=csc.x;parts.chest.userData.baseScaleY=csc.y;parts.chest.userData.baseScaleZ=csc.z;}pair('pec',(m,b)=>aply(m,MU.pec(b)));pair('breast',(m,b)=>aply(m,MU.breast(b)));if(parts.neckMain)aply(parts.neckMain,MU.neck(base.neckMain));if(parts.neckBase)aply(parts.neckBase,MU.neck(base.neckBase));pair('scm',(m,b)=>aply(m,MU.neck(b)));pair('tneck',(m,b)=>aply(m,MU.neck(b)));if(parts.jaw)aply(parts.jaw,MU.jaw(base.jaw));if(parts.chin)aply(parts.chin,MU.chin(base.chin));pair('buccal',(m,b)=>aply(m,MU.buccal(b)));pair('cheekbone',(m,b)=>aply(m,MU.cheekbone(b)));pair('masseter',(m,b)=>aply(m,MU.masseter(b)));[-1,1].forEach(sd=>{const k='arm'+(sd===1?'1':'-1');if(parts[k]){parts[k].position.x=sd*baseArmX*M.armPose.xMul;const bz=sd*M.armPose.rotZ;const bx=M.armPose.rotX;parts[k].rotation.z=bz;parts[k].rotation.x=bx;parts[k].userData.baseRotZ=bz;parts[k].userData.baseRotX=bx;}});if(parts.head){parts.head.position.y=base.headPosY-trochanterY-M.headPose.ageDrop;parts.head.position.z=M.headPose.fwd;}
-}
+// NEU — der Kern, wie BEIDE Leser ihn rufen (die Shell und der Stamm): `morphAuf` (koerper-core). Bis w5-physik-k5
+// trug die Linse hier eine Abschrift von dessen Rumpf (byte-gleich, 2 282 Zeichen) — ein Zwilling, der den echten Leser
+// nie las.
+// ────────────────────────────────────────────────────────────────────────────
+const neuMorph = (p, N) => core.morphAuf({ character: N.parts.__character, parts: N.parts, base: N.base }, p);
 
 // ────────────────────────────────────────────────────────────────────────────
 // Mock-Rig + deterministische base-Skalen (mulberry32 — der Test-Strom).
@@ -77,25 +78,22 @@ function neuMorph(params, parts, base, PROP, labMorphFn) {
 const SINGLES = ["ribcage","pelvis","waist","abs","upperBack","chest","neckMain","neckBase","jaw","chin","head"];
 const PAIRED = ["oblique","glute","quad","hamstring","calf","bicep","tricep","uarm","forearm","deltoid","trap","lat","pec","breast","scm","tneck","buccal","cheekbone","masseter","arm"];
 
-function partNames() {
-    const names = SINGLES.slice();
-    for (const n of PAIRED) { names.push(n + "1"); names.push(n + "-1"); }
-    return names;
-}
+const NAMEN = [...SINGLES, ...PAIRED.flatMap((n) => [n + "1", n + "-1"])];
+const skala = () => ({ x: 1, y: 1, z: 1, set(x, y, z) { [this.x, this.y, this.z] = [x, y, z]; } });
 
 function mkMock() {
     const rnd = mulberry32(18451);
     const parts = {}, base = {};
-    for (const n of partNames()) {
+    for (const n of NAMEN) {
         parts[n] = {
-            scale: { x: 1, y: 1, z: 1, set(x, y, z) { this.x = x; this.y = y; this.z = z; } },
+            scale: skala(),
             position: { x: 0, y: 0, z: 0 },
             rotation: { x: 0, y: 0, z: 0 },
             userData: {},
         };
         base[n] = { x: 0.5 + rnd(), y: 0.5 + rnd(), z: 0.5 + rnd() };
     }
-    parts.__character = { scale: { x: 1, y: 1, z: 1, set(x, y, z) { this.x = x; this.y = y; this.z = z; } } };
+    parts.__character = { scale: skala() };
     base.headPosY = 5.59752; // Lab Z.131: H-headSeg/2-headSeg*0.20*(1-0.92)
     return { parts, base };
 }
@@ -115,41 +113,28 @@ function snapshot(parts) {
 // ────────────────────────────────────────────────────────────────────────────
 // Der Vergleich (EXAKT — Object.is; 0 Abweichungen sind das Gesetz).
 // ────────────────────────────────────────────────────────────────────────────
-function gridValues(dial) { return [dial.min, dial.def, dial.max]; }
-
-function runVergleich(labMorphFn, labPropFn, labLandmarksFn) {
-    const P = core.PARAMS_BY_KIND.koerper;
-    const byId = {};
-    for (const d of P) byId[d.id] = d;
-    const dials = ["height", "mass", "tone", "age", "gender", "arms"].map((id) => byId[id]);
+function runVergleich(morphFn, labPropFn, labLandmarksFn) {
+    const dials = ["height", "mass", "tone", "age", "gender", "arms"].map((id) => core.PARAMS_BY_KIND.koerper.find((d) => d.id === id));
 
     let diffs = 0, values = 0, points = 0;
+    const vgl = (a, n, z) => (values++, !Object.is(a, n) && ++diffs < 5 && console.log(`  ⛔ ${z}: alt=${a} neu=${n}`));
 
     // (1) Proportionen — 28 Konstanten, alt vs neu.
     const ap = altProportionen(), np = labPropFn();
-    for (const k of Object.keys(ap)) {
-        values++;
-        if (!Object.is(ap[k], np[k])) { diffs++; if (diffs < 5) console.log(`  ⛔ Proportion ${k}: alt=${ap[k]} neu=${np[k]}`); }
-    }
+    for (const k of Object.keys(ap)) vgl(ap[k], np[k], "Proportion " + k);
 
     // (2) Morph — das Dial-Gitter (3^6 = 729 Punkte), alt vs neu auf dem Mock-Rig.
-    const [gh, gm, gt, ga, gg, gr] = dials.map(gridValues);
+    const [gh, gm, gt, ga, gg, gr] = dials.map((d) => [d.min, d.def, d.max]);
     for (const height of gh) for (const mass of gm) for (const tone of gt)
     for (const age of ga) for (const gender of gg) for (const arms of gr) {
         points++;
         const p = { height, mass, tone, age, gender, arms };
         const A = mkMock(), N = mkMock();
         altMorph(p, A.parts, A.base, ap);
-        neuMorph(p, N.parts, N.base, np, labMorphFn);
+        morphFn(p, N);
         const sa = snapshot(A.parts), sn = snapshot(N.parts);
         if (sa.length !== sn.length) { diffs++; continue; }
-        for (let i = 0; i < sa.length; i++) {
-            values++;
-            if (!Object.is(sa[i], sn[i])) {
-                diffs++;
-                if (diffs < 5) console.log(`  ⛔ Gitter ${JSON.stringify(p)} Wert[${i}] (${sa[i - (i % 1)]}): alt=${sa[i]} neu=${sn[i]}`);
-            }
-        }
+        for (let i = 0; i < sa.length; i++) vgl(sa[i], sn[i], `Gitter ${JSON.stringify(p)} Wert[${i}]`);
     }
 
     // (3) Landmarken — Mess-Fixtures (voll · leer · Rand), alt vs neu.
@@ -162,10 +147,7 @@ function runVergleich(labMorphFn, labPropFn, labLandmarksFn) {
     ];
     for (const mess of fixtures) {
         const la = altLandmarks(mess), ln = labLandmarksFn(mess);
-        for (const k of Object.keys(la)) {
-            values++;
-            if (!Object.is(la[k], ln[k])) { diffs++; if (diffs < 5) console.log(`  ⛔ Landmarke ${k}: alt=${la[k]} neu=${ln[k]}`); }
-        }
+        for (const k of Object.keys(la)) vgl(la[k], ln[k], "Landmarke " + k);
     }
 
     return { diffs, values, points };
@@ -185,28 +167,94 @@ const wacheLeer = (P, b = "nachtwaechter", a = "waechter", W = {}) => {
     return n;
 };
 
+// TEIL S — DER STOSS IM GANG (physik.K5, koerper-core `leibStossLesen` · `leibStossSchritt`): der Leib geht (vor, 4,5 m/s,
+// Bein 0,85 m) auf ebenem Grund im EINEN Bewegungs-Takt (`leibPlan` → Lage += v·dt → `leibLandung`, die Folge des Wirts), nach
+// 1,5 s wirken 200 N × 0,2 s quer (Δv = F·dt/m je Takt in die Geschwindigkeit, zwischen Kontakt und Plan — wie der Stoß eines
+// Tiers, `_spielerStoss`, oder die Probe der Station physik.K5#1). Gegen dieselbe Bahn ohne Stoß: S1 der Stoß kommt im
+// Schwerpunkt an (die Wurzel quer ≥ ½ Δv am Ende des Stoßes), S2 der Ausfallschritt (ein Fuß des Stoß-Zustands ≥ 0,1 m in
+// Stoß-Richtung, in beiden Richtungen), S3 die Erholung (die Wurzel quer ≤ 5 cm/s gegen die Bahn ab ≤ 1,5 s), S4 die doppelte
+// Masse halbiert den Schritt (≤ 0,8 ×), S5 ein Hauch (20 N) fängt der Knöchel (kein Schritt), S6 ein Versetzen des Leibs (Lage
+// springt, eine neue Geschwindigkeit) trägt keinen Stoß, S7 ein Halt am Ort (Geschwindigkeit 0, die Bühne, die den Leib stellt) auch
+// nicht: kein Stoß-Zustand, der Plan fährt den Gang wie ohne Stoß (an z171 ROT: der Halt galt als Stoß rückwärts, die
+// Gamepad-Verben gingen gebremst). Bis w5-physik-k5 zog der Antrieb (kAcc 40/s) jeden Stoß in 25 ms auf das Ziel
+// des Gangs: der Leib wich 0,008 m. Leser: der Wirt (`_loopPlayerMovement` → leibPlan, `_stepCharacter` → leibLandung) und das
+// Körper-Studio (playSchritt). Täter (Selbsttest): der Leib ohne Bein (der Antrieb schluckt den Stoß), kein Ausfallschritt, die
+// Wache des Versetzens blind, der Halt als Stoß gelesen.
+function stossLauf(C, { kraft = 200, richtung = 1, masse = 89, beinM = 0.85, eingriff = null, mutante = null } = {}) {
+    const L = C.leibZustand();
+    const K = { tempo: 4.5, gehTempo: 4.5, hang: 1, rittKAcc: null, rittKBrake: null, lage: [0, 0, 0], beinM, g: 9.81 };
+    const [p, v] = [K.lage, L.playerVel];
+    const bahn = [];
+    let ausfall = 0, schritte = 0, versetzt = false;
+    for (let k = 0; k < 270; k++) {
+        if (kraft && k >= 90 && k < 102) v.setValue(v.x() + (richtung * kraft) / 60 / masse, 0, v.z());
+        if (eingriff && k === 150) {
+            if (eingriff === "versetzen") p[0] += 40;
+            v.setValue(eingriff === "halt" ? +(mutante === "halt") / 1e3 : 0.7, 0, 0);
+            if (mutante === "versatz") L._stossLage = [p[0], p[2]];
+        }
+        C.leibRichtung(L, 0, 1, 0);
+        C.leibPlan(L, { vor: 1, quer: 0 }, K, k / 60, 1 / 60);
+        const B = L.leibStoss;
+        if (B && mutante === "ohneSchritt") B.naechster = Infinity;
+        if (B) for (const i of [0, 1]) ausfall = Math.max(ausfall, richtung * C.leibStossFuss(B, i)[0]);
+        if (B) [schritte, versetzt] = [Math.max(schritte, B.schritte), versetzt || (eingriff && k >= 150)];
+        p[0] += v.x() / 60;
+        p[2] += v.z() / 60;
+        C.leibLandung(L, true, false, k / 60);
+        bahn.push(richtung * p[0]);
+    }
+    return { bahn, ausfall, schritte, versetzt };
+}
+function stossUrteil(C, mutante = null) {
+    const beinM = mutante === "ohneBein" ? 0 : 0.85;
+    const lies = (o) => {
+        const [P, B] = [o, { kraft: 0, richtung: o.richtung }].map((x) => stossLauf(C, Object.assign({ beinM, mutante }, x)));
+        const q = P.bahn.map((x, k) => x - B.bahn[k]);
+        const vq = (k) => (q[k] - q[k - 1]) * 60;
+        let erholt = 1 / 0;
+        for (let k = q.length - 1; k > 102 && Math.abs(vq(k)) <= 0.05; k--) erholt = (k - 90) / 60;
+        return { ...P, vEnde: vq(101), erholt };
+    };
+    const [a, g, m, h] = [{}, { richtung: -1 }, { masse: 178 }, { kraft: 20 }].map(lies);
+    const rot = [
+        [a.vEnde >= 0.22, `S1 der Antrieb schluckt den Stoß (leibPlan): Wurzel ${a.vEnde.toFixed(3)} m/s`],
+        [a.ausfall >= 0.1 && g.ausfall >= 0.1, `S2 kein Ausfallschritt (leibStossSchritt): ${a.ausfall.toFixed(3)} / ${g.ausfall.toFixed(3)} m`],
+        [a.erholt <= 1.5, `S3 erholt ${a.erholt} s`],
+        [m.ausfall > 0 && m.ausfall <= 0.8 * a.ausfall, `S4 die Masse ×2 zieht nicht: ${m.ausfall.toFixed(3)} m`],
+        [!h.schritte, `S5 20 N: ${h.schritte} Schritte`],
+        [!stossLauf(C, { kraft: 0, beinM, eingriff: "versetzen", mutante }).versetzt, "S6 das Versetzen trägt einen Stoß (leibStossLesen)"],
+        [!stossLauf(C, { kraft: 0, beinM, eingriff: "halt", mutante }).versetzt, "S7 der Halt trägt einen Stoß (leibStossLesen)"],
+    ].filter(([ok]) => !ok).map(([, z]) => z);
+    return { rot, a, m };
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 const selftest = SELBSTTEST;
 
 if (selftest) {
     // Vier injizierte Abweichungen (Morph, Proportionen, Landmarken, die Wache ohne Versatz) — jede MUSS die Linse zuenden.
     let fails = 0;
-    const morphMut = (p) => { const M = core.labMorph(p); const q = M.shell.quad; M.shell.quad = (b) => { const s = q(b); s.x += 1e-9; return s; }; return M; };
+    const morphMut = (p, N) => { neuMorph(p, N); N.parts.quad1.scale.x += 1e-9; };
     const propMut = () => { const o = core.labProportionen(); o.acromionY += 1e-9; return o; };
     const lmMut = (m) => { const o = core.labLandmarks(m); o.wristFrac += 1e-9; return o; };
     const t1 = runVergleich(morphMut, core.labProportionen, core.labLandmarks);
-    const t2 = runVergleich(core.labMorph, propMut, core.labLandmarks);
-    const t3 = runVergleich(core.labMorph, core.labProportionen, lmMut);
+    const t2 = runVergleich(neuMorph, propMut, core.labLandmarks);
+    const t3 = runVergleich(neuMorph, core.labProportionen, lmMut);
     // die Wache ohne Versatz (der Täter) fällt ROT, das Gesetz hält
     const w = wacheLeer(core.tagesPlan, "waechter");
-    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"]])
+    // der Stoß im Gang: jeder Täter fällt ROT beim Namen, das Gesetz hält
+    const gut = !stossUrteil(core).rot.length;
+    const taeter = ["ohneBein S1", "ohneSchritt S2", "versatz S6", "halt S7"].map((m) => [gut && stossUrteil(core, m.split(" ")[0]).rot.some((z) => z.startsWith(m.split(" ")[1])), m]);
+    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"], ...taeter])
         if (!x) {
             console.log(`⛔ Selbsttest: ${n}-Injektion NICHT erkannt`);
             fails++;
         }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle vier injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer).`);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle acht injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer, die Wache, vier Täter des Stoßes).`);
 }
 
-const r = runVergleich(core.labMorph, core.labProportionen, core.labLandmarks);
+const r = runVergleich(neuMorph, core.labProportionen, core.labLandmarks);
 const leer = wacheLeer(core.tagesPlan);
-urteilEnde(r.points < 500 || r.diffs || leer, `❌ ROT — Gitter ${r.points} Punkte, ${r.diffs} Abweichungen alt↔neu, ${leer} Proben ohne Wache`, `✅ DER MENSCH IST EINER — Dial-Gitter ${r.points} Punkte, ${r.values} Werte alt==neu exakt (0 Abweichungen); Proportionen + Landmarken-Urteil identisch; DIE WACHE STEHT zu jeder Stunde.`);
+const st = stossUrteil(core);
+urteilEnde(r.points < 500 || r.diffs || leer || st.rot.length, `❌ ROT — Gitter ${r.points} Punkte, ${r.diffs} Abweichungen alt↔neu, ${leer} Proben ohne Wache${st.rot.length ? " · " + st.rot.join(" · ") : ""}`, `✅ DER MENSCH IST EINER — Dial-Gitter ${r.points} Punkte, ${r.values} Werte alt==neu exakt (0 Abweichungen); Proportionen + Landmarken-Urteil identisch; DIE WACHE STEHT zu jeder Stunde; DER STOSS IM GANG: Ausfall ${st.a.ausfall.toFixed(3)} m (Masse ×2 ${st.m.ausfall.toFixed(3)}), erholt ${st.a.erholt.toFixed(3)} s.`);

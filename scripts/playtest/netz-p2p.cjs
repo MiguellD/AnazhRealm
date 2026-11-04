@@ -52,12 +52,6 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
         r.setGameMode(oldMode);
         st.worldMeta.voxelEdits = [];
 
-        // (5) describeProgram kennt die neuen Ops.
-        const dCarve = r.describeProgram(["voxel_carve", 1, 2, 3, 4]);
-        const dFill = r.describeProgram(["voxel_fill", 1, 2, 3, 4]);
-        out.describeCarve = typeof dCarve === "string" && /schnitzt|Voxel/i.test(dCarve);
-        out.describeFill = typeof dFill === "string" && /schüttet|auf/i.test(dFill);
-
         // (6) CREATURE_PROPOSED_OPS-Whitelist trägt voxel_carve+
         // voxel_fill statt modify_terrain.
         const proposed = AnazhRealm.CREATURE_PROPOSED_OPS;
@@ -85,8 +79,6 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
             "Voxel V9.36: voxel_carve mit NaN-Position wird abgelehnt + geloggt",
             voxelV936Results.voxelCarveRejectsInvalidPos
         );
-        check("Voxel V9.36: describeProgram kennt voxel_carve", voxelV936Results.describeCarve);
-        check("Voxel V9.36: describeProgram kennt voxel_fill", voxelV936Results.describeFill);
         check(
             "Voxel V9.36: CREATURE_PROPOSED_OPS trägt voxel_carve + voxel_fill (statt modify_terrain)",
             voxelV936Results.creatureProposedHasVoxelOps
@@ -1126,9 +1118,6 @@ async function checkBandLateMultiUser({ page, check }) {
         r.dslRun(["remove_architecture", eLocal.id], { source: "remote:peer-unit" });
         out.removeArchitectureSafe = st.architectures.length === cnt;
 
-        // describeProgram kennt remove_architecture.
-        out.describeRemove = /ab/i.test(r.describeProgram(["remove_architecture", "a-x"]) || "");
-
         // spawn_blueprint + remove_architecture MÜSSEN broadcasten
         // (nicht in NON_BROADCASTABLE_OPS).
         const nb = window.AnazhRealm ? window.AnazhRealm.NON_BROADCASTABLE_OPS : AnazhRealm.NON_BROADCASTABLE_OPS;
@@ -1156,7 +1145,6 @@ async function checkBandLateMultiUser({ page, check }) {
             "Bau-Sync: remove_architecture ist defensiv (unbekannt; Zahl-Id vom Mitspieler)",
             buildSyncResults.removeArchitectureSafe
         );
-        check("Bau-Sync: describeProgram kennt remove_architecture", buildSyncResults.describeRemove);
         check("Bau-Sync: spawn_blueprint + remove_architecture broadcasten", buildSyncResults.opsAreBroadcastable);
         check("Bau-Sync: buildStateSnapshot persistiert die arch-id", buildSyncResults.snapshotKeepsArchId);
     }

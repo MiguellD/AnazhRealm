@@ -187,7 +187,7 @@ const ORT_OPS = [
 function ortVerdict(m) {
     if (!m || m.gestartet !== true) return ["start"];
     const out = [];
-    const soll = new RegExp(`kein Wasser im Umkreis von ${m.radius} m`);
+    const soll = new RegExp(`kein Wasser im Umkreis von ${m.radius} m`, "i");
     for (const op of ORT_OPS) {
         const e = m.ops && m.ops[op];
         if (!e) {
@@ -332,7 +332,7 @@ function knotenEintragOk(e, soll, effekt) {
         !e.fehler &&
         !(e.akte && e.akte.length) &&
         !e.ok &&
-        new RegExp(soll).test(e.grund || "") &&
+        new RegExp(soll, "i").test(e.grund || "") &&
         e.effekt === effekt
     );
 }
@@ -350,12 +350,12 @@ function knotenVerdict(m) {
             out.push(
                 `${name}: wirkt ohne Ort (${e.akte.map((a) => `${a.nm} ${a.abstand == null ? "ohne Ort" : a.abstand + " m vom Spieler"}`).join(", ")})`
             );
-        if (!(new RegExp(soll).test(e.grund || "") && e.effekt === effekt))
+        if (!(new RegExp(soll, "i").test(e.grund || "") && e.effekt === effekt))
             out.push(`${name}: scheitert nicht benannt (${e.grund ? `„${e.grund}“ an ${e.effekt}` : "kein Grund"})`);
         if (e.ok) out.push(`${name}: meldet Erfolg`);
     }
     const d = m.defaults || {};
-    if (d.near_water !== `kein Wasser im Umkreis von ${KNOTEN_DEFAULT.near_water} m`)
+    if (String(d.near_water).toLowerCase() !== `kein wasser im umkreis von ${KNOTEN_DEFAULT.near_water} m`)
         out.push(`near_water ohne Radius: „${d.near_water}“ (Soll ${KNOTEN_DEFAULT.near_water} m)`);
     for (const k of ["at_player_forward", "at_field_need"])
         if (!(Math.abs((d[k] == null ? NaN : d[k]) - KNOTEN_DEFAULT[k]) < 0.05))
@@ -1186,7 +1186,7 @@ async function probe(arg) {
             llm.providerConfig.ollama.endpoint = alt.ep;
             llm.providerConfig.ollama.useProxy = alt.px;
         }
-        m.fehler = antwort && antwort.error ? String(antwort.error) : null;
+        m.fehler = antwort && antwort.error ? r.constructor._tIn("de", ...[].concat(antwort.error)) : null; // eine Zeile der Tafel
         m.host = "127.0.0.1:" + kiPort;
         m.gestartet = true;
     } catch (e) {
@@ -1356,7 +1356,8 @@ async function probe(arg) {
             const wurf = res.log.find((e) => /exception/.test(e.event));
             return {
                 ok: res.ok,
-                grund: ohne ? ohne.grund || null : null,
+                // der Grund ist eine Zeile der Tafel (spielgang.K5#2) — gelesen in der Quell-Sprache
+                grund: ohne && ohne.grund ? r.constructor._tIn("de", ...[].concat(ohne.grund)) : null,
                 effekt: ohne ? ohne.effekt || null : null,
                 fehler: wurf ? `${wurf.event}: ${wurf.message}` : null,
                 kalt: res.log.some((e) => e.event === "skipped"),
@@ -1386,7 +1387,7 @@ async function probe(arg) {
                         r.dslEvalPos(node, r.dslCtx({ source: "test" }));
                         return null;
                     } catch (e) {
-                        return e && e.dslKeinOrt ? e.dslKeinOrt.grund : String(e);
+                        return e && e.dslKeinOrt ? r.constructor._tIn("de", ...e.dslKeinOrt.grund) : String(e);
                     }
                 };
                 const abstandVon = (node) => {
@@ -2253,6 +2254,9 @@ function erinnerungsWand(t) {
         (a.type === "TemplateLiteral" && !a.expressions.length) ||
         (a.type === "TaggedTemplateExpression" && datum(a.tag)) ||
         (a.type === "CallExpression" && datum(a.callee)) ||
+        // eine Zeile der Tafel `[schlüssel, werte]` (w5-spielgang-k5): die Tür der KI isoliert jeden Wert (`_erinnerungFuerKi`), ein
+        // Schlüssel außerhalb der Tafel bricht laut (`_tIn`)
+        a.type === "ArrayExpression" ||
         (a.type === "ConditionalExpression" && ok(a.consequent) && ok(a.alternate));
     stammLib.wandere(stammLib.ast(t), (n, ahnen) => {
         const k = n.type === "CallExpression" && n.callee.type === "MemberExpression" && n.callee.property.name;

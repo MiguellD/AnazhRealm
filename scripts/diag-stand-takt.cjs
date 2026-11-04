@@ -166,7 +166,7 @@ function selbsttest() {
             regen: { wach: simPh(6, 5), nachher: simPh(0, 60) },
             wuchs: { offen: 2, wach: simPh(9, 5), nachher: simPh(0, 60) },
             nachwuchs: { wach: simPh(2, 1), nachgewachsen: true, nachher: simPh(0, 60) },
-            feld: { geschrieben: 2160, wellen: [0, 1, 2, 3].map(() => ({ groesse: 540, tote: 0 })), welle: Object.assign(simPh(0, 1), { akt: 2200 }) },
+            feld: { geschrieben: 2160, wellen: [0, 1, 2, 3].map(() => ({ groesse: 540, tote: 0 })), welle: Object.assign(simPh(0, 1), { akt: 2200 }), ueber: 0 }, // prettier-ignore
             brand: {
                 start: true,
                 ...{ zellen: [1, 1, 2, 3, 2, 1], einheiten: [9, 9, 30, 41, 20, 12], brennt: 0, asche: 4, mit: 0.9, gegen: 0.03, ohneWind: 0.04 },
@@ -505,6 +505,7 @@ function selbsttest() {
             ["simWecken.feld.welle", { akt: 2211, aktAlle: { _feldTod: 2160, "·lifeField.tod": 51 } }],
             /FELD-BESUCH: die Wellen kosteten 2211 Einheiten für 2160 geschriebene Zellen, die Räumung ging über die ganze Karte oder ihr Rad \(·lifeField.tod 51\)/,
         ],
+        ["die Tat legt je Zelle neu an (eb875cf4)", ["simWecken.feld.ueber=", 916], /HALDE: 916 Plätze über/],
         ["kein Brand fängt (die Basis: kein Takt im Stamm)", ["simWecken.brand.start=", false], /LEER: an der Mess-Wiese fing kein Brand/],
         ["der Brand ohne Takt", (b) => b.simWecken.brand.einheiten.fill(0), /STUMPF: der Brand brennt, die Sim-Linse sieht keinen Takt/],
         ["der Brand fegt die Welt", ["simWecken.brand.einheiten.3=", 4000], /BRAND-ZELLEN: Schritt 4 kostete 4000 Einheiten bei 3 brennenden/],
@@ -2211,6 +2212,10 @@ const BRANDLAUF = process.argv.includes("--brand");
                             F.wellen.push({ groesse: alle.length, tote: alle.filter((e) => !lebt(e)).length });
                         }
                         F.welle = window.__simPhase([S.frame()], 0);
+                        // die Halde der Leben-Stufen (feld.K5): derselbe Fraß 100-mal an EINEM Ort (der Zeitraffer der Kaskade, je Tier und
+                        // Takt) — die Halde (`_lebenWecker`) trägt jede Zelle des Stands (`_lebenStand`) höchstens einmal, kein Platz darüber
+                        for (let i = 0; i < 100; i++) r._depositLife(MESS.x + 4000, MESS.z + 4400, -0.01);
+                        F.ueber = r._lebenWecker.length - r._lebenStand.size;
                         // der Brand (stoffe.K2 · feld.K3#2): an der Mess-Wiese über das Wort bewölkt (Wind 0,3; die Bühne hält die Nässe
                         // trocken wie die W-Kette ihren Vorgänger) gezündet (der Weg des Brennglases), je Bild genau EIN Schritt. Je Sprung
                         // der Front (die Zelle, von der sie kam → der Punkt, an dem sie ankam, brennend oder unterwegs) sein Tempo und sein
@@ -2400,10 +2405,7 @@ const BRANDLAUF = process.argv.includes("--brand");
         );
         if (W.treue) console.log(zeile("treue", W.treue));
         rundeZeile("Treue nach dem Bau", W.treue);
-        if (W.phase) console.log(zeile("wecken", W.phase));
-        if (W.nachher) console.log(zeile("nachher", W.nachher));
-        if (W.regler) console.log(zeile("regler", W.regler));
-        if (W.wahrnehmung) console.log(zeile("wahrn.", W.wahrnehmung));
+        for (const [n, k] of [["wecken", "phase"], ["nachher"], ["regler"], ["wahrn.", "wahrnehmung"]]) if (W[k || n]) console.log(zeile(n, W[k || n]));
     }
     // Stufe, Ort und Strom: je Befund EINE Zeile, wie die Seite sie maß
     for (const n of ["stufe", "ort", "strom"]) if (befund[n]) console.log(`  ${n}: ${JSON.stringify(befund[n])}`);

@@ -541,9 +541,6 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
             built2.program[0] === "set_mode" &&
             built2.program[1] === "schöpfer";
 
-        // describeProgram-Eintrag
-        const desc = r.describeProgram(["set_mode", "pfad"]);
-        out.describeWorks = typeof desc === "string" && /Welt-Beziehung|pfad/.test(desc);
 
         // UI: Radio + Status-Bar
         out.radiosInDom = document.querySelectorAll('input[name="game-mode-radio"]').length === 3;
@@ -591,7 +588,6 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         );
         check("Welle 6.C2: Chat 'setze modus pfad' → set_mode-Programm", wave6c2Results.chatPfad);
         check("Welle 6.C2: Chat 'modus schöpfer' → set_mode-Programm", wave6c2Results.chatSchoepfer);
-        check("Welle 6.C2: describeProgram nennt 'Welt-Beziehung' oder Modus", wave6c2Results.describeWorks);
         check("Welle 6.C2: 3 Radio-Buttons im DOM", wave6c2Results.radiosInDom);
         check("Welle 6.C2: #status-mode im DOM", wave6c2Results.statusModeInDom);
         check("Welle 6.C2: #game-mode-section im DOM", wave6c2Results.gameModeSectionInDom);
@@ -640,9 +636,6 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         out.addToInventoryNonBroadcastable =
             AnazhRealm.NON_BROADCASTABLE_OPS && AnazhRealm.NON_BROADCASTABLE_OPS.has("add_to_inventory");
 
-        // describeProgram-Eintrag
-        const d = r.describeProgram(["add_to_inventory", "baum_eiche", 5]);
-        out.describeWorks = typeof d === "string" && /Inventar|baum_eiche|5/.test(d);
 
         // UI: Overlay-Element + Grid + Selected-Display
         out.overlayInDom = !!document.getElementById("inventory-overlay");
@@ -895,7 +888,6 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         check("Welle 6.C1: removeFromInventory(>count) clear Slot zu null", wave6c1Results.fullRemoveClearsSlot);
         check("Welle 6.C1: DSL-Op add_to_inventory funktioniert", wave6c1Results.dslOpWorks);
         check("Welle 6.C1: add_to_inventory in NON_BROADCASTABLE_OPS", wave6c1Results.addToInventoryNonBroadcastable);
-        check("Welle 6.C1: describeProgram nennt Inventar/Bauplan/Count", wave6c1Results.describeWorks);
         check("Welle 6.C1: #inventory-overlay im DOM", wave6c1Results.overlayInDom);
         check("Welle 6.C1: #inventory-grid im DOM", wave6c1Results.gridInDom);
         check("Welle 6.C1: #inventory-selected im DOM", wave6c1Results.selectedInDom);

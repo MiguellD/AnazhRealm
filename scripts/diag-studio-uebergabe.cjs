@@ -290,19 +290,7 @@ async function weltPruefen() {
         const f = r._ensureAssetFoundry();
         await __weltDa(() => f && f.ready && f.recipes && f.recipes.mensch && f.recipes.wolf && !f._vorrat);
         const KC = window.__koerperCore;
-        const lin = (hx) =>
-            [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255]
-                .map((c) => ((c /= 255) <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)).toFixed(3))
-                .join(",");
-        const farben = (g) => {
-            const set = new Set();
-            g.traverse((o) => {
-                const c = o.geometry && o.geometry.attributes && o.geometry.attributes.color;
-                if (c && c.array && c.array.length >= 3)
-                    set.add([c.array[0], c.array[1], c.array[2]].map((v) => v.toFixed(3)).join(","));
-            });
-            return set;
-        };
+        const [lin, farben] = [__lin, __farben]; // die Farben der Gestalt und der Tafel (welt-boot)
         const hoehe = (g) => {
             const bb = new THREE.Box3().setFromObject(g);
             return bb.max.y - bb.min.y;

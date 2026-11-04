@@ -177,20 +177,12 @@ class AnazhRealm_feld_leben {
             return false;
         }
         const existingIdx = this.state.dsl.abilities.findIndex((a) => a.name === name);
-        // Welle 6.E1 — Beschreibung beim Anlegen einmal berechnen + speichern.
-        // Bei Restore aus alten Saves übernimmt renderAbilitiesList das Nachholen.
-        const description = (() => {
-            try {
-                return this.describeProgram(program);
-            } catch {
-                return "wirkt auf die Welt";
-            }
-        })();
+        // die Beschreibung liest die Liste je Zeichnen aus dem Programm (`describeProgram`, in der Sprache von jetzt) — sie
+        // reist nie im Stand (bis spielgang.K5#2 stand sie deutsch im Eintrag)
         const entry = {
             name,
             program,
             source,
-            description,
             createdAt: performance.now() / 1000,
         };
         if (existingIdx >= 0) this.state.dsl.abilities[existingIdx] = entry;
@@ -228,11 +220,7 @@ class AnazhRealm_feld_leben {
             } catch {
                 /* localStorage gesperrt — worldJournal trägt das Flag */
             }
-            this.journalAppendOnce(
-                "intro",
-                "ritual",
-                "Ich erwachte in dieser Welt, und sie wartete auf mein erstes Wort."
-            );
+            this.journalAppendOnce("intro", "ritual", ["journal.erstes-wort"]);
         };
         if (opts.immediate) invite();
         else if (typeof setTimeout === "function") setTimeout(invite, 1800);
@@ -246,146 +234,160 @@ class AnazhRealm_feld_leben {
         return this._t("rede.eins-gruss");
     }
 
-    // DSL-Programm → deutsche Beschreibung: bekannte Ops per Vorlage, sonst generischer Fallback;
-    // chain/when/repeat/delay rekursieren, Position-Nodes inline. Gespeichert in `ability.description`
-    // (alte Saves on-the-fly), max ~120 Zeichen, eine Zeile.
+    // DIE TAT IN WORTEN (spielgang.K5#2): ein DSL-Programm als EINE Zeile der Tafel `[schlüssel, werte]` — jede Sprache liest
+    // sie in ihrer Spalte, ein Wert ist selbst eine Zeile (der Ort, die Bedingung, das Wetter, die Teil-Tat einer Kette); ein
+    // Leser, der Text braucht, liest sie über `_t`. chain/when/repeat/delay rekursieren. Bis spielgang.K5#2 schrieb diese
+    // Methode deutschen Text, und die Antwort der KI stand im englischen Chat halb deutsch („The world changed: lässt …").
     describeProgram(node) {
-        if (!Array.isArray(node) || node.length === 0) return "tut nichts";
+        if (!Array.isArray(node) || node.length === 0) return ["tat.nichts"];
         const op = node[0];
         const args = node.slice(1);
         if (op === "chain") {
             const parts = args.filter((a) => Array.isArray(a)).map((a) => this.describeProgram(a));
-            if (parts.length === 0) return "tut nichts";
-            if (parts.length === 1) return parts[0];
-            return parts.join(" und ");
+            if (parts.length === 0) return ["tat.nichts"];
+            return parts.reduce((a, b) => ["tat.und", { a, b }]);
         }
-        if (op === "when") {
-            return `wenn ${this._describeDslCondition(args[0])}, dann ${this.describeProgram(args[1])}`;
-        }
+        if (op === "when")
+            return ["tat.wenn", { bedingung: this._describeDslCondition(args[0]), tat: this.describeProgram(args[1]) }];
         // V17.36 Phase D — eine stehende Welt-Regel menschen-lesbar.
         if (op === "rule") {
             const opts = args[2] && typeof args[2] === "object" && !Array.isArray(args[2]) ? args[2] : {};
-            const every = opts.everySec ? ` (alle ${opts.everySec} s)` : "";
-            return `wann immer ${this._describeDslCondition(args[0])}, dann ${this.describeProgram(args[1])}${every}`;
+            const werte = { bedingung: this._describeDslCondition(args[0]), tat: this.describeProgram(args[1]) };
+            return opts.everySec ? ["tat.regel-takt", { ...werte, s: opts.everySec }] : ["tat.regel", werte];
         }
-        if (op === "repeat") return `${args[0]}× ${this.describeProgram(args[1])}`;
-        if (op === "delay") return `nach ${args[0]} s ${this.describeProgram(args[1])}`;
-        if (op === "say") return `sagt „${args[0]}"`;
-        if (op === "record_narrative") return `vermerkt eine Erinnerung`;
+        if (op === "repeat") return ["tat.mal", { n: String(args[0]), tat: this.describeProgram(args[1]) }];
+        if (op === "delay") return ["tat.nach", { s: String(args[0]), tat: this.describeProgram(args[1]) }];
+        if (op === "say") return ["tat.sagt", { text: String(args[0]) }];
+        if (op === "record_narrative") return ["tat.vermerkt"];
         const t = this._dslDescriptionTable();
         if (t[op]) return t[op](args);
-        return `wirkt: ${op}`;
+        return ["tat.wirkt", { op: String(op) }];
     }
 
-    // Position-Knoten oder skalare Werte in deutscher Form. Wird von describeProgram
-    // genutzt, lebt als eigene Methode damit auch Tests sie inspizieren können.
+    // Der Ort eines Positions-Knotens als Zeile der Tafel (ein Wert der Tat-Zeile): jeder Ort der DSL (`dslPositions`, aus
+    // derselben Tafel liest die KI ihre Orte) ist eine Zeile `tat.ort.<ort>` — gate:sprache F zählt sie aus `dslPositions`.
     _describeDslPosition(arg) {
-        if (!Array.isArray(arg)) return "an einer Stelle";
-        const head = arg[0];
-        if (head === "at_player") return "beim Spieler";
-        if (head === "near_player") return "in der Nähe des Spielers";
-        if (head === "random_position") return "an einem zufälligen Ort";
-        if (head === "near_water") return "am nächsten Wasser";
-        if (head === "far_player") return "in der Ferne";
-        if (head === "at" && arg.length >= 4) return `bei (${arg[1]}, ${arg[2]}, ${arg[3]})`;
-        return "an einer Stelle";
+        const head = Array.isArray(arg) ? arg[0] : null;
+        if (head === "at")
+            return arg.length >= 4 ? ["tat.ort.at", { x: arg[1], y: arg[2], z: arg[3] }] : ["tat.ort.stelle"];
+        return typeof head === "string" && Object.hasOwn(this.dslPositions, head)
+            ? [`tat.ort.${head.replace(/_/g, "-")}`]
+            : ["tat.ort.stelle"];
     }
 
+    // Die Bedingung eines Gesetzes als Zeile der Tafel; ihre Achse (joy, lebendig …) und Zahl sind Werte.
     _describeDslCondition(node) {
-        if (!Array.isArray(node)) return "etwas";
+        if (!Array.isArray(node)) return ["tat.wenn.etwas"];
         const op = node[0];
         const a = node.slice(1);
-        if (op === "emotion_above") return `${a[0]} hoch ist (>${a[1] ?? "deiner Schwelle"})`;
-        if (op === "fps_below") return `die FPS unter ${a[0]} fallen`;
-        if (op === "player_y_below") return `der Spieler unter Höhe ${a[0]} ist`;
-        if (op === "weather_is") return `das Wetter „${a[0]}" ist`;
-        if (op === "random_chance") return `Zufall ≤ ${a[0]}`;
-        if (op === "time_passed") return `${a[0]} s vergangen sind`;
-        if (op === "near_player") return `etwas nahe ist`;
-        if (op === "creatures_count_above") return `mehr als ${a[0]} Kreaturen da sind`;
-        if (op === "compound_has_tag") return `„${a[0]}" das Tag ${a[1]} ≥ ${a[2]} hat`;
-        if (op === "compound_has_spatial_tag") return `„${a[0]}" räumlich ${a[1]} ≥ ${a[2]} hat`;
+        const w = (i) => String(a[i]);
+        if (op === "emotion_above")
+            return a[1] == null
+                ? ["tat.wenn.emotion", { achse: w(0) }]
+                : ["tat.wenn.emotion-ueber", { achse: w(0), n: w(1) }];
+        if (op === "fps_below") return ["tat.wenn.fps", { n: w(0) }];
+        if (op === "player_y_below") return ["tat.wenn.hoehe", { n: w(0) }];
+        if (op === "weather_is") return ["tat.wenn.wetter", { wetter: this._wetterZeile(a[0]) }];
+        if (op === "random_chance") return ["tat.wenn.zufall", { n: w(0) }];
+        if (op === "time_passed") return ["tat.wenn.zeit", { n: w(0) }];
+        if (op === "near_player") return ["tat.wenn.nahe"];
+        if (op === "creatures_count_above") return ["tat.wenn.kreaturen", { n: w(0) }];
+        if (op === "compound_has_tag") return ["tat.wenn.tag", { was: w(0), tag: w(1), n: w(2) }];
+        if (op === "compound_has_spatial_tag") return ["tat.wenn.raum-tag", { was: w(0), tag: w(1), n: w(2) }];
         // V17.34/.36 — die Feld-Bedingungen (Regeln lesen das lebendige Feld am Ort)
-        if (op === "field_above") return `${a[0]} am Ort hoch ist (>${a[1]})`;
-        if (op === "field_below") return `${a[0]} am Ort niedrig ist (<${a[1]})`;
-        if (op === "and") return a.map((c) => this._describeDslCondition(c)).join(" und ");
-        if (op === "or") return a.map((c) => this._describeDslCondition(c)).join(" oder ");
-        if (op === "not") return `nicht (${this._describeDslCondition(a[0])})`;
-        return `etwas (${op})`;
+        if (op === "field_above") return ["tat.wenn.feld-hoch", { achse: w(0), n: w(1) }];
+        if (op === "field_below") return ["tat.wenn.feld-niedrig", { achse: w(0), n: w(1) }];
+        if (op === "and" || op === "or")
+            return a
+                .map((c) => this._describeDslCondition(c))
+                .reduce((x, y) => [op === "and" ? "tat.wenn.und" : "tat.wenn.oder", { a: x, b: y }]);
+        if (op === "not") return ["tat.wenn.nicht", { bedingung: this._describeDslCondition(a[0]) }];
+        return ["tat.wenn.op", { op: String(op) }];
+    }
+
+    // Das Wort des Wetters als Zeile der Tafel (`wetter.<wort>`, je Wort der DSL: `WETTER_WOERTER`); ein Wort, das die Welt
+    // nicht kennt, steht als Datum.
+    _wetterZeile(wort) {
+        return AnazhRealm.WETTER_WOERTER.includes(wort) ? [`wetter.${wort}`] : String(wort);
     }
 
     _dslDescriptionTable() {
         const pos = (a) => this._describeDslPosition(a);
+        const s = (x) => String(x);
+        const n = (x) => String(x || 1);
+        const kreatur = (k, kMit, a) => {
+            const extra = this._describeCreatureTaskArg(a[1], a[2]);
+            const werte = { id: s(a[0]), auftrag: s(a[1]) };
+            return extra ? [kMit, { ...werte, extra }] : [k, werte];
+        };
         return {
-            weather: (a) => (a[0] === "frei" ? "gibt das Wetter frei" : `lässt das Wetter zu „${a[0]}" wechseln`),
-            gravity: (a) => `setzt die Schwerkraft auf ${a[0]}`,
-            terrain_steepness: (a) => `regelt die Hang-Steilheit auf ${a[0]}`,
-            terrain_base_height: (a) => `hebt die Welt-Grundhöhe auf ${a[0]}`,
-            voxel_carve: (a) => `schnitzt das Voxel-Terrain bei (${a[0]}, ${a[1]}, ${a[2]}) im Radius ${a[3]}`,
-            voxel_fill: (a) => `schüttet das Voxel-Terrain bei (${a[0]}, ${a[1]}, ${a[2]}) im Radius ${a[3]} auf`,
-            lava: (a) => `gießt Lava bei (${a[0]}, ${a[2]})`,
-            set_time_of_day: (a) => `stellt die Uhr auf ${a[0]}`,
-            skybox_color: () => `färbt den Himmel`,
-            deposit_life: (a) => `trägt Leben ins Feld ${pos(a[0])}`,
-            deposit_emotion: (a) => `prägt „${a[0]}" ins Feld ${pos(a[2])}`,
+            weather: (a) =>
+                a[0] === "frei" ? ["tat.wetter-frei"] : ["tat.wetter", { wetter: this._wetterZeile(a[0]) }],
+            gravity: (a) => ["tat.schwere", { n: s(a[0]) }],
+            terrain_steepness: (a) => ["tat.steilheit", { n: s(a[0]) }],
+            terrain_base_height: (a) => ["tat.grundhoehe", { n: s(a[0]) }],
+            voxel_carve: (a) => ["tat.schnitzt", { x: s(a[0]), y: s(a[1]), z: s(a[2]), r: s(a[3]) }],
+            voxel_fill: (a) => ["tat.schuettet", { x: s(a[0]), y: s(a[1]), z: s(a[2]), r: s(a[3]) }],
+            lava: (a) => ["tat.lava", { x: s(a[0]), z: s(a[2]) }],
+            set_time_of_day: (a) => ["tat.uhr", { n: s(a[0]) }],
+            set_season: (a) => ["tat.saison", { saison: s(a[0]) }],
+            skybox_color: () => ["tat.himmel"],
+            deposit_life: (a) => ["tat.leben", { ort: pos(a[0]) }],
+            deposit_emotion: (a) => ["tat.praegt-feld", { achse: s(a[0]), ort: pos(a[2]) }],
             spawn_creature: (a) =>
-                `ruft ${a[1] || 1} ${a[2] ? a[2] + " " : ""}Kreatur${(a[1] || 1) !== 1 ? "en" : ""} herbei ${pos(a[0])}`,
-            spawn_tree: (a) => `pflanzt ${a[1] || 1} ${(a[1] || 1) !== 1 ? "Bäume" : "Baum"} ${pos(a[0])}`,
+                a[2]
+                    ? [
+                          (a[1] || 1) !== 1 ? "tat.kreaturen-gemuet" : "tat.kreatur-gemuet",
+                          { n: n(a[1]), gemuet: s(a[2]), ort: pos(a[0]) },
+                      ]
+                    : [(a[1] || 1) !== 1 ? "tat.kreaturen" : "tat.kreatur", { n: n(a[1]), ort: pos(a[0]) }],
+            spawn_tree: (a) => [(a[1] || 1) !== 1 ? "tat.baeume" : "tat.baum", { n: n(a[1]), ort: pos(a[0]) }],
             spawn_studio: (a) => {
-                const n = typeof a[0] === "string" ? this._studioBlueprintForWord(a[0].toLowerCase()) : null;
-                const bp = n && this.state.blueprints ? this.state.blueprints[n] : null;
-                const was = (bp && bp.label) || (n && this._werkLabel(n)) || a[0];
-                if (n && this._studioWerkVerb(n) === "praegung") return `prägt „${was}" in die Welt`;
-                return `lässt ${a[2] || 1}× „${was}" aus dem Studio wachsen ${pos(a[1])}`;
+                const name = typeof a[0] === "string" ? this._studioBlueprintForWord(a[0].toLowerCase()) : null;
+                const bp = name && this.state.blueprints ? this.state.blueprints[name] : null;
+                const was = (bp && bp.label) || (name && this._werkLabel(name)) || s(a[0]);
+                if (name && this._studioWerkVerb(name) === "praegung") return ["tat.praegt", { was }];
+                return ["tat.studio", { n: n(a[2]), was, ort: pos(a[1]) }];
             },
-            spawn_island: (a) => `setzt eine schwebende Insel ${pos(a[0])}`,
-            spawn_ufo: (a) => `ruft ein UFO ${pos(a[0])}`,
-            spawn_village: (a) => `errichtet ein Dorf ${pos(a[0])}`,
-            spawn_temple: (a) => `errichtet einen Tempel ${pos(a[0])}`,
-            spawn_waterfall: (a) => `formt einen Wasserfall ${pos(a[0])}`,
+            spawn_island: (a) => ["tat.insel", { ort: pos(a[0]) }],
+            spawn_ufo: (a) => ["tat.ufo", { ort: pos(a[0]) }],
+            spawn_village: (a) => ["tat.dorf", { ort: pos(a[0]) }],
+            spawn_temple: (a) => ["tat.tempel", { ort: pos(a[0]) }],
+            spawn_waterfall: (a) => ["tat.wasserfall", { ort: pos(a[0]) }],
             spawn_blueprint: (a) => {
                 const bp = this.state.blueprints && this.state.blueprints[a[0]];
-                return `baut „${(bp && bp.label) || a[0]}" ${pos(a[1])}`; // das Label, nie die id (V-D8)
+                return ["tat.baut", { was: (bp && bp.label) || s(a[0]), ort: pos(a[1]) }]; // das Label, nie die id (V-D8)
             },
-            remove_architecture: () => `baut ein Bauwerk ab`,
-            spawn_fractal: (a) => `lässt „${a[1]}" fraktal in Tiefe ${a[2]} wachsen ${pos(a[0])}`,
-            define_blueprint: (a) => `legt einen neuen Bauplan „${a[0]}" an`,
-            define_material: (a) => `definiert ein neues Material „${a[0]}"`,
-            define_ability: (a) => `lernt eine neue Fähigkeit „${a[0]}"`,
-            set_tool_meta: (a) => `gibt „${a[0]}" eine Werkzeug-Identität (${a[1]})`,
-            register_tool: (a) => `registriert „${a[0]}" als Werkzeug`,
-            apply_connection: (a) => `verbindet Teile von „${a[0]}" mit „${a[1]}"`,
-            apply_op: (a) => `bearbeitet Teil ${a[1]} von „${a[0]}" mit „${a[2]}"`,
-            set_mode: (a) => `wechselt die Welt-Beziehung auf „${a[0]}"`,
-            set_portal: (a) => `richtet „${a[0]}" als Portal auf die Welt „${a[1]}"`,
-            add_to_inventory: (a) => `legt ${a[1] || 1}× „${a[0]}" ins Inventar`,
-            creature_task: (a) => {
-                const extra = this._describeCreatureTaskArg(a[1], a[2]);
-                return `gibt Kreatur #${a[0]} den Auftrag „${a[1]}"${extra}`;
-            },
-            creature_task_nearest: (a) => {
-                const extra = this._describeCreatureTaskArg(a[0], a[1]);
-                return `gibt der nächsten Kreatur den Auftrag „${a[0]}"${extra}`;
-            },
-            creature_task_all: (a) => {
-                const extra = this._describeCreatureTaskArg(a[0], a[1]);
-                return `gibt allen Kreaturen den Auftrag „${a[0]}"${extra}`;
-            },
+            remove_architecture: () => ["tat.abbau"],
+            spawn_fractal: (a) => ["tat.fraktal", { was: s(a[1]), tiefe: s(a[2]), ort: pos(a[0]) }],
+            define_blueprint: (a) => ["tat.bauplan", { was: s(a[0]) }],
+            define_material: (a) => ["tat.material", { was: s(a[0]) }],
+            define_ability: (a) => ["tat.faehigkeit", { was: s(a[0]) }],
+            set_tool_meta: (a) => ["tat.werkzeug-meta", { was: s(a[0]), art: s(a[1]) }],
+            register_tool: (a) => ["tat.werkzeug", { was: s(a[0]) }],
+            apply_connection: (a) => ["tat.verbindet", { was: s(a[0]), mit: s(a[1]) }],
+            apply_op: (a) => ["tat.bearbeitet", { was: s(a[0]), teil: s(a[1]), mit: s(a[2]) }],
+            set_mode: (a) => ["tat.modus", { modus: s(a[0]) }],
+            set_portal: (a) => ["tat.portal", { was: s(a[0]), welt: s(a[1]) }],
+            add_to_inventory: (a) => ["tat.inventar", { n: n(a[1]), was: s(a[0]) }],
+            creature_task: (a) => kreatur("tat.auftrag", "tat.auftrag-mit", a),
+            creature_task_nearest: (a) => kreatur("tat.auftrag-naechste", "tat.auftrag-naechste-mit", [0, ...a]),
+            creature_task_all: (a) => kreatur("tat.auftrag-alle", "tat.auftrag-alle-mit", [0, ...a]),
             creature_equip_tool: (a) =>
-                a[1] ? `rüstet Kreatur #${a[0]} mit Werkzeug „${a[1]}" aus` : `nimmt Kreatur #${a[0]} das Werkzeug ab`,
+                a[1] ? ["tat.ruestet-werkzeug", { id: s(a[0]), was: s(a[1]) }] : ["tat.ohne-werkzeug", { id: s(a[0]) }],
             creature_equip_armor: (a) =>
-                a[1] ? `rüstet Kreatur #${a[0]} mit Rüstung „${a[1]}" aus` : `nimmt Kreatur #${a[0]} die Rüstung ab`,
-            creature_unequip: (a) => `nimmt Kreatur #${a[0]} den Slot „${a[1]}" ab`,
-            damage_creature: (a) => `fügt Kreatur #${a[0]} ${a[1]} Schaden zu`,
-            creature_apply_boost: (a) => `gibt Kreatur #${a[0]} den Trank „${a[1]}"`,
-            creatures_color: () => `färbt alle Kreaturen`,
-            creatures_emotion: (a) => `setzt die Kreaturen-Stimmung auf „${a[0]}"`,
-            creatures_speed_mul: (a) => `wiegt das Kreaturen-Tempo um ${a[0]} (im Wander-Band)`,
-            creatures_size_mul: (a) => `wiegt die Kreaturen-Größe um ${a[0]} (die bodySize-Achse, im Größen-Band)`,
-            player_jump_power: (a) => `wiegt die Sprungkraft auf ${a[0]} (im Gesetz-Band deines Körpers)`,
-            player_speed: (a) => `wiegt die Lauf-Geschwindigkeit auf ${a[0]} (im Gesetz-Band deines Körpers)`,
-            player_soul: (a) => `wandelt dich zur Seele „${a[0]}"`,
-            set_visible: (a) => `macht „${a[0]}" ${a[1] ? "sichtbar" : "unsichtbar"}`,
+                a[1] ? ["tat.ruestet-ruestung", { id: s(a[0]), was: s(a[1]) }] : ["tat.ohne-ruestung", { id: s(a[0]) }],
+            creature_unequip: (a) => ["tat.ohne-slot", { id: s(a[0]), slot: s(a[1]) }],
+            damage_creature: (a) => ["tat.schaden", { id: s(a[0]), n: s(a[1]) }],
+            creature_apply_boost: (a) => ["tat.trank", { id: s(a[0]), was: s(a[1]) }],
+            creatures_color: () => ["tat.kreaturen-farbe"],
+            creatures_emotion: (a) => ["tat.kreaturen-gemuet-setzt", { gemuet: s(a[0]) }],
+            creatures_speed_mul: (a) => ["tat.kreaturen-tempo", { n: s(a[0]) }],
+            creatures_size_mul: (a) => ["tat.kreaturen-groesse", { n: s(a[0]) }],
+            player_jump_power: (a) => ["tat.sprungkraft", { n: s(a[0]) }],
+            player_speed: (a) => ["tat.tempo", { n: s(a[0]) }],
+            player_soul: (a) => ["tat.seele", { seele: s(a[0]) }],
+            set_visible: (a) => [a[1] ? "tat.sichtbar" : "tat.unsichtbar", { was: s(a[0]) }],
         };
     }
 
@@ -677,15 +679,32 @@ class AnazhRealm_feld_leben {
         }
         return parts.length ? `vehicle ${parts.join(" ")}` : null;
     }
-    _chatEcho(message) {
-        try {
-            const chatOutput = document.getElementById("chat-output");
-            if (!chatOutput) return;
-            const line = document.createElement("div");
-            line.textContent = String(message || "");
-            chatOutput.appendChild(line);
-            chatOutput.scrollTop = chatOutput.scrollHeight;
-        } catch (_) {}
+    // DIE EINE CHAT-ZEILE (spielgang.K5): jede Zeile in #chat-output entsteht hier. Spricht die Welt, ist sie eine Zeile der
+    // Tafel `[schlüssel, werte]` und trägt ihren Schlüssel am Knoten (`_tSetze`: der Wechsel der Sprache liest sie neu);
+    // ein Text (das Wort des Spielers, der KI, eines Mitspielers) ist Daten (`translate="no"`). `sprecher` setzt den Namen
+    // davor (Daten), `klasse` die Art der Zeile.
+    _chatEcho(zeile, { klasse = null, sprecher = null, sprecherKlasse = null } = {}) {
+        const chatOutput = typeof document !== "undefined" && document.getElementById("chat-output");
+        if (!chatOutput) return null;
+        const line = document.createElement("div");
+        if (klasse) line.className = klasse;
+        if (sprecher != null) {
+            const nameSpan = document.createElement("span");
+            nameSpan.className = sprecherKlasse || "chat-creature-name";
+            nameSpan.translate = false;
+            nameSpan.textContent = `${sprecher}: `;
+            line.appendChild(nameSpan);
+        }
+        const text = document.createElement("span");
+        if (Array.isArray(zeile)) this._tSetze(text, zeile[0], zeile[1]);
+        else {
+            text.textContent = String(zeile == null ? "" : zeile);
+            text.translate = false;
+        }
+        line.appendChild(text);
+        chatOutput.appendChild(line);
+        chatOutput.scrollTop = chatOutput.scrollHeight;
+        return line;
     }
     processChatCommand(command) {
         // Chat-Naht: ZWSP/BOM/Weird-Spaces killen sonst exakte Patterns
@@ -699,13 +718,7 @@ class AnazhRealm_feld_leben {
             .trim();
         const parts = command.toLowerCase().split(" ");
         const chatInput = document.getElementById("chat-input");
-        const chatOutput = document.getElementById("chat-output");
-        const appendChatOutput = (message) => {
-            const line = document.createElement("div");
-            line.textContent = message;
-            chatOutput.appendChild(line);
-            chatOutput.scrollTop = chatOutput.scrollHeight;
-        };
+        const appendChatOutput = (zeile) => this._chatEcho(zeile);
         appendChatOutput(`> ${command}`);
         this._chatRecordInputForLearning(command);
         // Voxel-Debug bricht früh ab OHNE chatInput-Cleanup (Original-Verhalten).
@@ -870,7 +883,7 @@ class AnazhRealm_feld_leben {
         if (program) {
             this._portalRouteDsl(program, inWorld ? inWorld.describe : command, appendChatOutput);
         } else {
-            appendChatOutput(this._t("chat.portal.kein-befehl", { befehl: command }));
+            appendChatOutput(["chat.portal.kein-befehl", { befehl: command }]);
         }
         chatInput.value = "";
         return true;
@@ -886,8 +899,8 @@ class AnazhRealm_feld_leben {
             const result = this.dslRun(g.program, { source: "human" });
             appendChatOutput(
                 result.ok
-                    ? this._t("chat.gesetz.aufgestellt", { tat: this.describeProgram(g.program) })
-                    : this._t("chat.gesetz.nicht-aufgestellt")
+                    ? ["chat.gesetz.aufgestellt", { tat: this.describeProgram(g.program) }]
+                    : ["chat.gesetz.nicht-aufgestellt"]
             );
         } else appendChatOutput(g.absage);
         chatInput.value = "";
@@ -902,14 +915,14 @@ class AnazhRealm_feld_leben {
         if (/^(?:zeige|welche|liste|welt[-\s]*)?\s*(?:welt[-\s]*)?(?:regeln|gesetze)\??\s*$/i.test(c)) {
             const rules = this.state.worldRules || [];
             if (rules.length === 0) {
-                appendChatOutput(this._t("chat.regeln.keine", { vorlage: AnazhRealm.GESETZ_VORLAGEN[0] }));
+                appendChatOutput(["chat.regeln.keine", { vorlage: AnazhRealm.GESETZ_VORLAGEN[0] }]);
                 chatInput.value = "";
                 return true;
             }
             appendChatOutput(
                 rules.length === 1
-                    ? this._t("chat.regeln.eine", { n: rules.length })
-                    : this._t("chat.regeln.viele", { n: rules.length })
+                    ? ["chat.regeln.eine", { n: rules.length }]
+                    : ["chat.regeln.viele", { n: rules.length }]
             );
             for (const r of rules) {
                 const who =
@@ -919,12 +932,13 @@ class AnazhRealm_feld_leben {
                         : r.source && r.source.startsWith("llm")
                           ? "Grok"
                           : r.source);
-                appendChatOutput(
-                    this._t("chat.regeln.zeile", {
+                appendChatOutput([
+                    "chat.regeln.zeile",
+                    {
                         regel: this.describeProgram(["rule", r.cond, r.effect]),
                         wer: String(who),
-                    })
-                );
+                    },
+                ]);
             }
             chatInput.value = "";
             return true;
@@ -941,9 +955,9 @@ class AnazhRealm_feld_leben {
             appendChatOutput(
                 removed > 0
                     ? removed === 1
-                        ? this._t("chat.gesetze.eins-vergessen", { n: removed })
-                        : this._t("chat.gesetze.vergessen", { n: removed })
-                    : this._t("chat.gesetze.keine-eigenen")
+                        ? ["chat.gesetze.eins-vergessen", { n: removed }]
+                        : ["chat.gesetze.vergessen", { n: removed }]
+                    : ["chat.gesetze.keine-eigenen"]
             );
             chatInput.value = "";
             return true;
@@ -965,7 +979,7 @@ class AnazhRealm_feld_leben {
                 const p = this.state.player;
                 if (typeof p.mana !== "number") p.mana = p.manaMax || 40;
                 if (p.mana < manaCost) {
-                    appendChatOutput(this._t("chat.mana.erschoepft", { mana: p.mana | 0, kosten: manaCost }));
+                    appendChatOutput(["chat.mana.erschoepft", { mana: p.mana | 0, kosten: manaCost }]);
                     chatInput.value = "";
                     return true;
                 }
@@ -987,12 +1001,9 @@ class AnazhRealm_feld_leben {
         if (weicht) appendChatOutput(weicht.satz);
         else if (result.ok) appendChatOutput(parsed.describe);
         else if (ohneOrt) {
-            const grund = String(ohneOrt.grund || this._t("chat.ort.kein-ort"));
-            const satz = grund.charAt(0).toUpperCase() + grund.slice(1);
+            const satz = ohneOrt.grund || ["chat.ort.kein-ort"];
             appendChatOutput(
-                ohneOrt.op === "near_water"
-                    ? this._t("chat.ort.kein-wasser", { satz })
-                    : this._t("chat.ort.nichts-geschah", { satz })
+                ohneOrt.op === "near_water" ? ["chat.ort.kein-wasser", { satz }] : ["chat.ort.nichts-geschah", { satz }]
             );
         } else {
             appendChatOutput(this._dslAbsageSatz(result.log));
@@ -1006,13 +1017,16 @@ class AnazhRealm_feld_leben {
     // Ereignis-Name im Chat („Befehl lief, aber mit Auffälligkeit: op_exception").
     _dslAbsageSatz(log) {
         const e = (log || []).find((x) => x && /budget|unknown|invalid|exception/.test(x.event));
-        if (e) this.log(`Programm-Absage: ${e.event}${e.grund ? " — " + e.grund : ""}`, "INFO");
-        if (!e) return this._t("chat.absage.nicht-ganz");
-        if (/budget/.test(e.event)) return this._t("chat.absage.erschoepft");
-        if (/unknown/.test(e.event)) return this._t("chat.absage.unbekannt");
-        if (e.grund) return String(e.grund).charAt(0).toUpperCase() + String(e.grund).slice(1) + ".";
-        if (/invalid/.test(e.event)) return this._t("chat.absage.passt-nicht");
-        return this._t("chat.absage.zerbrochen");
+        // der Grund ist eine Zeile der Tafel (die DSL: `dslEvalPos`, das Band eines Werts) oder ein Text des Fremden
+        const grund = e && e.grund ? (Array.isArray(e.grund) ? e.grund : String(e.grund)) : null;
+        const zeile = (g) => (Array.isArray(g) ? AnazhRealm._tIn("de", g[0], g[1]) : g);
+        if (e) this.log(`Programm-Absage: ${e.event}${grund ? " — " + zeile(grund) : ""}`, "INFO");
+        if (!e) return ["chat.absage.nicht-ganz"];
+        if (/budget/.test(e.event)) return ["chat.absage.erschoepft"];
+        if (/unknown/.test(e.event)) return ["chat.absage.unbekannt"];
+        if (grund) return ["ergebnis.punkt", { s: grund }];
+        if (/invalid/.test(e.event)) return ["chat.absage.passt-nicht"];
+        return ["chat.absage.zerbrochen"];
     }
 
     // Das EINE Dispatch-Tor: Legacy-Befehle als DATEN-Tabelle ({example, re, run}, dieselbe Sprache wie
@@ -1028,7 +1042,7 @@ class AnazhRealm_feld_leben {
             try {
                 this._chatBefehlLauf(p, p.run(m, appendChatOutput));
             } catch (err) {
-                appendChatOutput(this._t("chat.fehler.system", { fehler: err.message || err }));
+                appendChatOutput(["chat.fehler.system", { fehler: err.message || err }]);
             }
             return;
         }
@@ -1492,9 +1506,7 @@ class AnazhRealm_feld_leben {
             .match(AnazhRealm.STUDIO_SATZ);
         if (!m || !m[2] || m[2].toLowerCase() === "hier" || this._studioBlueprintForWord(m[2])) return null;
         const kennt = this._studioWordsForPrompt(true);
-        return kennt
-            ? `„${m[2]}" kennt kein Studio. Die Studios bauen — ${kennt}.`
-            : `„${m[2]}" kennt kein Studio — das Studio-Buch lädt noch.`;
+        return kennt ? ["studio.absage.wort", { wort: m[2], kennt }] : ["studio.absage.buch", { wort: m[2] }];
     }
 
     // Conversational-Fallback: Kreatur-Konversation (Welle 6.H Phase 2E V1),
@@ -1505,7 +1517,7 @@ class AnazhRealm_feld_leben {
             // „Name, text" oder „Name: text" geht an die Kreatur (nicht an Grok).
             this.maybeAnswerCreature(command, appendChatOutput).catch((err) => {
                 this._bruchMelden("Kreatur-Antwort: " + (err.message || err));
-                appendChatOutput(this._t("chat.fehler.kreatur", { fehler: err.message || err }));
+                appendChatOutput(["chat.fehler.kreatur", { fehler: err.message || err }]);
             });
             return;
         }
@@ -1514,7 +1526,7 @@ class AnazhRealm_feld_leben {
             // an Claude; Antwort kommt narrativ + optional als DSL-Programm.
             this.maybeAnswerWithLlm(command, appendChatOutput).catch((err) => {
                 const compName = (this.state.grok && this.state.grok.companionName) || "Grok";
-                appendChatOutput(this._t("chat.fehler.begleiter", { name: compName, fehler: err.message || err }));
+                appendChatOutput(["chat.fehler.begleiter", { name: compName, fehler: err.message || err }]);
             });
             return;
         }
@@ -1523,6 +1535,12 @@ class AnazhRealm_feld_leben {
             // seine Stimme: die Anfrage läuft über ihn, das DSL-Programm der
             // Antwort durch meine eigene Sandbox.
             this._p2pRequestSharedVoice(command, appendChatOutput);
+            return;
+        }
+        // die Frage nach dem Wetter beantwortet die Welt selbst: das Wetter und wer es schrieb (affekt.K4#2)
+        const warum = this._wetterWarum(command);
+        if (warum) {
+            appendChatOutput(warum);
             return;
         }
         const studioAbsage = this._studioSatzAbsage(command);
@@ -1542,7 +1560,7 @@ class AnazhRealm_feld_leben {
                     try {
                         this._chatBefehlLauf(p, p.run(m, appendChatOutput));
                     } catch (err) {
-                        appendChatOutput(this._t("chat.fehler.befehl", { fehler: String(err && err.message) }));
+                        appendChatOutput(["chat.fehler.befehl", { fehler: String(err && err.message) }]);
                     }
                     return;
                 }
@@ -1551,14 +1569,14 @@ class AnazhRealm_feld_leben {
             // jeder Zeile „Verb + Wort" ohne KI den Vorschlag, „mach licht" hörte nur den Katalog).
             appendChatOutput(
                 studioAbsage
-                    ? this._t("chat.vorschlag.oder", { absage: studioAbsage, vorschlag: suggestion })
-                    : this._t("chat.vorschlag.unbekannt", { vorschlag: suggestion })
+                    ? ["chat.vorschlag.oder", { absage: studioAbsage, vorschlag: suggestion }]
+                    : ["chat.vorschlag.unbekannt", { vorschlag: suggestion }]
             );
         } else if (studioAbsage) {
             appendChatOutput(studioAbsage);
         } else {
             // Keine zweite Liste: die Hilfe liest die EINEN Tafeln (`_hilfeZeilen`), hier steht nur der Weg dorthin.
-            appendChatOutput(this._t("chat.unbekannt"));
+            appendChatOutput(["chat.unbekannt"]);
         }
     }
 
@@ -1581,18 +1599,19 @@ class AnazhRealm_feld_leben {
         const tasten = AnazhRealm.KEYBINDING_ACTIONS.map(
             (a) => `${fmt(kb[a] || AnazhRealm.DEFAULT_KEYBINDINGS[a])} ${name(a)}`
         );
+        // je Zeile eine Zeile der Tafel (spielgang.K5#2): die Sätze der Welt sind Daten (die DSL spricht Deutsch), der Rahmen die
+        // Sprache des Spielers
+        const pad = Object.entries(this.state.padBelegung || AnazhRealm.PAD_BELEGUNG).map(
+            ([a, c]) => `${fmt(c)} ${name(a)}`
+        );
         return [
-            `Sprich mit der Welt: ${fmt(kb.chat || AnazhRealm.DEFAULT_KEYBINDINGS.chat)} öffnet das Gespräch, Enter sendet, Esc gibt die Welt zurück.`,
-            `Probier: ${probier.map(q).join(" · ")}`,
-            `Die Welt versteht: ${dsl.map((p) => q(p.example)).join(" · ")}`,
-            `System: ${this.chatSystemPatterns.map((p) => q(p.example)).join(" · ")}`,
-            `Tasten: WASD laufen · 1–9 Hotbar · ${tasten.join(" · ")}`,
-            `Fahren: ${this._fahrTastenZeile()}`,
-            `Gamepad: linker Stick laufen · rechter Stick blicken · RT/LT Gas/Bremse · ${Object.entries(
-                this.state.padBelegung || AnazhRealm.PAD_BELEGUNG
-            )
-                .map(([a, c]) => `${fmt(c)} ${name(a)}`)
-                .join(" · ")}`,
+            ["hilfe.zeile.sprich", { taste: fmt(kb.chat || AnazhRealm.DEFAULT_KEYBINDINGS.chat) }],
+            ["hilfe.zeile.probier", { liste: probier.map(q).join(" · ") }],
+            ["hilfe.zeile.versteht", { liste: dsl.map((p) => q(p.example)).join(" · ") }],
+            ["hilfe.zeile.system", { liste: this.chatSystemPatterns.map((p) => q(p.example)).join(" · ") }],
+            ["hilfe.zeile.tasten", { liste: tasten.join(" · ") }],
+            ["hilfe.zeile.fahren", { liste: this._fahrTastenZeile() }],
+            ["hilfe.zeile.gamepad", { liste: pad.join(" · ") }],
         ];
     }
 
@@ -1644,20 +1663,16 @@ class AnazhRealm_feld_leben {
     }
     proactiveSuggestions() {
         const suggestions = [
-            this._t("chat.ki-vorschlag.faehigkeit"),
-            this._t("chat.ki-vorschlag.physik"),
-            this._t("chat.ki-vorschlag.sternenhimmel"),
-            this._t("chat.ki-vorschlag.kreaturen"),
-            this._t("chat.ki-vorschlag.terrain"),
-            this._t("chat.ki-vorschlag.welt"),
-            this._t("chat.ki-vorschlag.steuerung"),
+            ["chat.ki-vorschlag.faehigkeit"],
+            ["chat.ki-vorschlag.physik"],
+            ["chat.ki-vorschlag.sternenhimmel"],
+            ["chat.ki-vorschlag.kreaturen"],
+            ["chat.ki-vorschlag.terrain"],
+            ["chat.ki-vorschlag.welt"],
+            ["chat.ki-vorschlag.steuerung"],
         ];
         const randomSuggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
-        const chatOutput = document.getElementById("chat-output");
-        const line = document.createElement("div");
-        line.textContent = this._t("chat.ki-vorschlag", { vorschlag: randomSuggestion });
-        chatOutput.appendChild(line);
-        chatOutput.scrollTop = chatOutput.scrollHeight;
+        this._chatEcho(["chat.ki-vorschlag", { vorschlag: randomSuggestion }]);
     }
     updateCreatureEmotions() {
         // Wetter = ambienter Achsen-Impuls auf das 6-Achsen-Innenleben (kein Binär-Würfel), das Etikett
@@ -1992,7 +2007,86 @@ class AnazhRealm_feld_leben {
                     now + Math.max(0, Math.log(Math.abs(a) / cfg.epsilon)) / cfg.decayPerSec,
                     now
                 );
+                // der Ort sieht den Akt (feld.K5): die Zelle wird JETZT fällig — der Wecker der Stufen (`_tickLebenStufen`) malt
+                // sie im nächsten Takt, nur wo ihre Stufe springt; die Tat trägt nur ihre Zelle (gate:stand-takt RUHE-TAT, FELD-BESUCH)
+                AnazhRealm._lebenWecken(this, key, now);
             }
+        }
+    }
+
+    // DIE LEBEN-STUFE am Ort (feld.K5): das Leben-Overlay in Stufen (`LIFE_FIELD.stufen` je Einheit) — die Nah-Streu liest sie
+    // (`_nahStreuKachel`, das Boden-Gesetz `leben`: die gepflegte Wiese blüht), nie den stetigen Zerfall; so baut sie nur, wo
+    // eine Stufe springt. Ohne Overlay 0: die Streu steht byte-gleich.
+    _lebenStufe(x, z) {
+        const S = AnazhRealm.LIFE_FIELD.stufen;
+        return Math.round(this._lifeOverlayAt(x, z) * S) / S;
+    }
+
+    // Die Stufe der Zelle (cx, cz) malen: springt sie gegen die zuletzt gemalte (`_lebenStand`), wächst die Nah-Streu darüber neu
+    // (`_nahStreuNeuIn`, nur die Kacheln dieser Zelle). Die Zelle wacht zum nächsten Sprung ihres Zerfalls (|a| fällt unter die
+    // halbe Stufe darunter, `_lebenWecken`); auf Stufe 0 schläft sie — die Kosten tragen die Sprünge, nie das Feld.
+    _lebenStufeMalen(cx, cz) {
+        const L = AnazhRealm.LIFE_FIELD;
+        const st = this._lebenStand || (this._lebenStand = new Map());
+        const key = cx + "," + cz;
+        const [x, z] = [(cx + 0.5) * L.cell, (cz + 0.5) * L.cell];
+        const a = this._lifeOverlayAt(x, z);
+        const k = Math.round(a * L.stufen);
+        const alt = st.get(key);
+        if ((alt ? alt.k : 0) !== k)
+            this._nahStreuNeuIn(cx * L.cell, cz * L.cell, (cx + 1) * L.cell, (cz + 1) * L.cell);
+        if (k === 0) return void st.delete(key); // gemalt heißt aus der Halde genommen (`_tickLebenStufen`): kein Platz bleibt
+        if (alt) alt.k = k;
+        else st.set(key, { key, k, wach: Infinity, i: -1 });
+        AnazhRealm._lebenWecken(
+            this,
+            key,
+            this.state.spielZeit + Math.log(Math.abs(a) / ((Math.abs(k) - 0.5) / L.stufen)) / L.decayPerSec + 1e-6
+        );
+    }
+
+    // DER WECKER DER LEBEN-STUFEN (feld.K5, Ereignis statt Takt): die Zelle `key` wird um Spielzeit `wach` fällig — ihr Eintrag
+    // im Stand (`_lebenStand`, mit Stufe 0 angelegt, wo die Tat eine neue Zelle schreibt) trägt die Zeit und seinen Platz `i`
+    // in der Halde (`_lebenWecker`, Min-Heap der Stand-Einträge nach `wach`, -1 = nicht darin). JEDE ZELLE STEHT HÖCHSTENS
+    // EINMAL in der Halde: ein neu geplanter Eintrag rückt an seinem Platz auf oder ab — die Halde ist nie länger als der Stand,
+    // der Stand nie größer als die berührten Zellen (Gebot 7). Bis zum Schnitt legte jede Tat je Zelle einen NEUEN Platz an
+    // (der alte blieb stumm liegen): im Zeitraffer der Kaskade (Fraß je Tier und Takt, 9 Zellen je Tat, ohne Takt der Stufen)
+    // wuchs sie ohne Schranke, bis die Seite abstürzte (voll 2/18, z170/z174: „Page crashed!“; gate:stand-takt HALDE).
+    // Statisch: die Tat ruft ihn je geschriebener Zelle, er besucht nie eine andere.
+    static _lebenWecken(welt, key, wach) {
+        const st = welt._lebenStand || (welt._lebenStand = new Map());
+        const H = welt._lebenWecker || (welt._lebenWecker = []);
+        let e = st.get(key);
+        if (!e) st.set(key, (e = { key, k: 0, wach, i: -1 }));
+        e.wach = wach;
+        if (e.i < 0) e.i = H.push(e) - 1;
+        AnazhRealm._lebenHaldeRueck(H, e.i);
+    }
+
+    // Den Eintrag an Platz `i` der Halde an seinen Ort rücken (auf, sonst ab) — jeder Eintrag kennt seinen Platz (`e.i`)
+    static _lebenHaldeRueck(H, i) {
+        const e = H[i];
+        for (let p; i > 0 && H[(p = (i - 1) >> 1)].wach > e.wach; i = p) (H[i] = H[p]).i = i;
+        for (let c; (c = 2 * i + 1) < H.length; i = c) {
+            if (c + 1 < H.length && H[c + 1].wach < H[c].wach) c++;
+            if (H[c].wach >= e.wach) break;
+            (H[i] = H[c]).i = i;
+        }
+        (H[i] = e).i = i;
+    }
+
+    // Der Zerfall der Leben-Stufen (je Takt, scatterDeco): schläft, bis die Halde ihre früheste Zelle fällig nennt — dann nimmt er
+    // nur die fälligen heraus und malt sie (`_lebenStufeMalen`), jede plant ihren nächsten Sprung neu. Im Stand ohne Tat: ein
+    // Vergleich je Takt.
+    _tickLebenStufen() {
+        const H = this._lebenWecker;
+        while (H && H.length && H[0].wach <= this.state.spielZeit) {
+            const e = H[0];
+            const letzt = H.pop();
+            e.i = -1;
+            if (H.length) ((H[0] = letzt), AnazhRealm._lebenHaldeRueck(H, 0));
+            const [cx, cz] = e.key.split(",").map(Number);
+            this._lebenStufeMalen(cx, cz);
         }
     }
 
@@ -2701,7 +2795,9 @@ class AnazhRealm_feld_leben {
     // steht — gewollt, gesetzt, je gefallenem Wurf sein Grund (`SETZ_GRUND`: die Wand, das Budget, die Obergrenze, das Buch,
     // die Wurzel nennt ihren über `opts.absage`) —; ein Bau, der folgt (das Dorf), trägt seinen Satz (`folgt`) und meldet sein
     // Ergebnis selbst, wenn er steht. Der Satz des Spielers (`_ergebnisSatz`) liest nur das.
-    _setzErgebnis(ctx, op, gewollt, gesetzt, gruende, art, verb, folgt) {
+    _setzErgebnis(ctx, op, gewollt, gesetzt, gruende, art, verb = "gesetzt", folgt) {
+        if (!Object.hasOwn(AnazhRealm.SETZ_VERB, verb))
+            throw new Error(`_setzErgebnis: das Verb „${verb}“ fehlt in SETZ_VERB`);
         ctx.log.push({
             event: "ergebnis",
             op,
@@ -2709,7 +2805,7 @@ class AnazhRealm_feld_leben {
             gesetzt,
             gruende: Object.assign({}, gruende),
             art: art || null,
-            verb: verb || "gesetzt",
+            verb,
             folgt: folgt || null,
         });
     }
@@ -2735,32 +2831,53 @@ class AnazhRealm_feld_leben {
         }
         const liste = [...ops.values()];
         if (!liste.some((a) => a.folgt || a.gesetzt < a.gewollt)) return null;
+        // jeder Satz ist eine Zeile der Tafel (spielgang.K5#2): die Art (ein Etikett der Sprache von jetzt oder eine Zeile), das
+        // Verb und jeder Grund (`SETZ_GRUND`: Schlüssel der Tafel) sind Werte; `kern` trägt die Sätze ohne Punkt (die Stimme
+        // des Felds setzt sie in Klammern), `satz` mit Punkt für den Chat
         const G = AnazhRealm.SETZ_GRUND;
-        const PRAESENS = { gewachsen: "wächst", gebaut: "steht", erschienen: "erscheint", gerufen: "erscheint" };
+        const kette = (zeilen, k) => zeilen.reduce((x, y) => [k, { a: x, b: y }]);
         const saetze = liste.map((a) => {
             if (a.folgt) return a.folgt;
             const fehl = a.gewollt - a.gesetzt;
-            if (!(fehl > 0)) return `${a.gesetzt} ${a.art || ""} ${a.verb}.`.replace(/\s+/g, " ");
+            const art = a.art || ["ergebnis.ding.werke"];
+            const verb = [`ergebnis.verb.${a.verb}`];
+            if (!(fehl > 0)) return ["ergebnis.alle", { n: String(a.gesetzt), art, verb }];
             let benannt = 0;
             for (const k of Object.keys(a.gruende)) benannt += a.gruende[k];
             if (benannt < fehl) a.gruende.unbenannt = fehl - benannt;
-            const g = Object.keys(a.gruende)
-                .filter((k) => a.gruende[k] > 0)
-                .map((k) => (k === "obergrenze" ? `${G.obergrenze} (höchstens ${this.state.maxCreatures})` : G[k] || k))
-                .join("; ");
+            const gruende = kette(
+                Object.keys(a.gruende)
+                    .filter((k) => a.gruende[k] > 0)
+                    .map((k) =>
+                        k === "obergrenze"
+                            ? ["grund.obergrenze-zahl", { n: String(this.state.maxCreatures) }]
+                            : G[k]
+                              ? [G[k]]
+                              : k
+                    ),
+                "ergebnis.und"
+            );
             if (a.gesetzt)
-                return `${a.gesetzt} von ${a.gewollt} ${a.art || ""} ${a.verb} — ${fehl} nicht: ${g}.`.replace(
-                    / {2,}/g,
-                    " "
-                );
-            const ort =
-                a.gruende.lichtung || a.gruende.haus || a.gruende.bau || a.gruende.weg || a.gruende.wasser
-                    ? " — geh ein paar Schritte weiter"
-                    : "";
-            const praes = PRAESENS[a.verb] || "steht";
-            return liste.length > 1 ? `${a.art}: hier ${praes} nichts — ${g}.` : `Hier ${praes} nichts: ${g}${ort}.`;
+                return [
+                    "ergebnis.teil",
+                    { n: String(a.gesetzt), von: String(a.gewollt), art, verb, fehl: String(fehl), gruende },
+                ];
+            const weiter = a.gruende.lichtung || a.gruende.haus || a.gruende.bau || a.gruende.weg || a.gruende.wasser;
+            const praes = AnazhRealm.SETZ_VERB[a.verb];
+            return liste.length > 1
+                ? ["ergebnis.mehrere", { art, nichts: [`ergebnis.art.${praes}`], gruende }]
+                : [
+                      weiter ? "ergebnis.einzeln-weiter" : "ergebnis.einzeln",
+                      { nichts: [`ergebnis.hier.${praes}`], gruende },
+                  ];
         });
-        return { satz: saetze.join(" ") };
+        return {
+            satz: kette(
+                saetze.map((z) => ["ergebnis.punkt", { s: z }]),
+                "ergebnis.folge"
+            ),
+            kern: kette(saetze, "ergebnis.und"),
+        };
     }
 
     // Das Wort des Spielers für ein Werk (Leben-Schau 07.10., V-D8): das Label seines Bauplans bis zum ersten Zusatz („Eiche",
@@ -2847,31 +2964,43 @@ AnazhRealm.KEYBINDING_LABELS = Object.freeze({
 });
 // Der Grund der Natur-Wand im Satz des Spielers (Leser: `SETZ_GRUND` des Ergebnis-Satzes, `confirmBuild` und das Bau-HUD).
 AnazhRealm.NATUR_WAND_GRUND = Object.freeze({
-    lichtung: "die Flächen des Genesis-Orts bleiben frei, keine Krone steht über dem Rund der Tore",
-    haus: "im Grundriss eines Hauses wächst nichts",
-    bau: "im Grundriss eines Baus wächst nichts",
-    weg: "auf Weg, Platz und Acker eines Dorfs wächst nichts",
-    wagen: "in einem Wagen wächst nichts",
-    wasser: "im Wasser steht nichts, am Ufer schon",
+    lichtung: "grund.lichtung",
+    haus: "grund.haus",
+    bau: "grund.bau",
+    weg: "grund.weg",
+    wagen: "grund.wagen",
+    wasser: "grund.wasser",
 });
 // DIE GRÜNDE DES ERGEBNIS-SATZES (`_ergebnisSatz`, Schau-2 Runde 3): jeder Wurf, der nicht steht, trägt einen — die Wand
 // (`NATUR_WAND_GRUND`), das Budget des Programms, die Obergrenze der Kreaturen (die Zahl liest der Satz aus dem Zustand), das
 // Buch des Studios, ein unbekannter Bauplan, eine unbekannte Seele, eine Gestalt, die nicht gegossen wurde, die fehlende
 // Bühne — jeder benannt von der Stelle, die absagt (die Wurzel über `opts.absage`). „unbenannt" sagt ehrlich, dass eine
-// Absage ihren Grund nicht nannte (die Linse verbietet ihn).
+// Absage ihren Grund nicht nannte (die Linse verbietet ihn). Jeder Grund ist ein Schlüssel der Tafel (spielgang.K5#2: die
+// Sprache des Spielers liest ihn, das Log die Quell-Sprache).
 AnazhRealm.SETZ_GRUND = Object.freeze({
     ...AnazhRealm.NATUR_WAND_GRUND,
-    budget: "das Werk-Budget dieses Satzes ist aufgebraucht",
-    obergrenze: "die Welt trägt nicht mehr Kreaturen",
-    buch: "das Studio-Buch ist noch nicht geladen",
-    unbekannt: "die Welt kennt diesen Bauplan nicht",
-    seele: "die Welt kennt diese Seele nicht",
-    gestalt: "die Gestalt ließ sich nicht gießen",
-    buehne: "die Welt hat noch keine Bühne",
-    platz: "kein fahrbarer Grund in Reichweite, die Welt stellt den Wagen nicht hin",
-    vertrag: "der Stempel trägt einen Regler, den das Studio nicht ausweist",
-    regler: "das Werk kennt diesen Regler nicht (das Log nennt ihn und die Regler seiner Art)",
-    unbenannt: "ohne benannten Grund (das Log der Welt nennt ihn)",
+    budget: "grund.budget",
+    obergrenze: "grund.obergrenze",
+    buch: "grund.buch",
+    unbekannt: "grund.unbekannt",
+    seele: "grund.seele",
+    gestalt: "grund.gestalt",
+    buehne: "grund.buehne",
+    platz: "grund.platz",
+    vertrag: "grund.vertrag",
+    regler: "grund.regler",
+    unbenannt: "grund.unbenannt",
+});
+// DIE VERBEN DES ERGEBNIS-SATZES (`_setzErgebnis`): je Verb sein Präsens („hier wächst nichts"); Verb und Präsens sind Zeilen
+// der Tafel (`ergebnis.verb.<verb>`, `ergebnis.art.<präsens>`, `ergebnis.hier.<präsens>` — gate:sprache F zählt sie hier). Ein
+// Verb außerhalb der Tafel bricht laut am Setzer, nie erst im Satz.
+AnazhRealm.SETZ_VERB = Object.freeze({
+    gesetzt: "steht",
+    gebaut: "steht",
+    gepraegt: "steht",
+    gewachsen: "waechst",
+    erschienen: "erscheint",
+    gerufen: "erscheint",
 });
 // DER STUDIO-SATZ (Leser: die letzte Chat-Regel und `_studioSatzAbsage`): Verb · Zahl · Art (auch leer vor einem Hain) ·
 // Hain/Wald/Gruppe · am Wasser | hier/vor mir.
@@ -2891,6 +3020,7 @@ AnazhRealm.LIFE_FIELD = Object.freeze({
     max: 0.7, // Sättigung pro Zelle (frozen+overlay → ~1; Wiederhol-Pulse sättigen → Nexus zieht weiter)
     kahl: -1, // der Boden des Fraßes: eine abgeäste Zelle trägt lebendig 0, nie weniger (auraAt klemmt)
     epsilon: 0.004, // darunter wird eine Zelle gepruned (die Map bleibt bounded)
+    stufen: 8, // je Einheit: so fein liest die Nah-Streu das Overlay (`_lebenStufe`) — sie baut nur, wo eine Stufe springt
     // Kreatur-Trickle: nur Nexus/Spieler-getragene Kreaturen (tendsLife) träufeln Leben, wo sie wohnen —
     // die ambiente Fauna ist die FOLGE des Feldes (kein Runaway). Sanft + rate-limitiert; wandernde
     // Kreaturen ziehen einen zarten Lebens-Pfad.
