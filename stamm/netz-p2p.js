@@ -2878,6 +2878,9 @@ class AnazhRealm_netz_p2p {
         s.sprint = st.sprintSpeed;
         s.jp = st.jumpPower;
         s.kg = st._geistKg;
+        // der Stoß-Zustand (physik.K5) gehört dem Leib, der ihn erfuhr: der Geist fährt seinen eigenen
+        const SF = AnazhRealm._leibTakt().LEIB_STOSS_FELDER;
+        s.stoss = SF.map((k) => st[k]);
         // --- Ghost laden ---
         mesh.position.set(ls.x, ls.y, ls.z);
         st.playerVel = ls.vel;
@@ -2906,6 +2909,7 @@ class AnazhRealm_netz_p2p {
         if (Number.isFinite(ls.sprintSpeed)) st.sprintSpeed = ls.sprintSpeed;
         if (Number.isFinite(ls.jumpPower)) st.jumpPower = ls.jumpPower;
         st._geistKg = ls.leibKg;
+        SF.forEach((k, i) => (st[k] = ls.stoss ? ls.stoss[i] : null));
         // --- der EINE Sim-Schritt (exakt die _stepFixedSim-Ordnung, ohne Captures) ---
         this._loopPlayerMovement(ls.simT, FIXED_DT);
         this._stepCharacter(FIXED_DT, ls.simT);
@@ -2931,6 +2935,7 @@ class AnazhRealm_netz_p2p {
         ls.spaceWasDown = st._spaceWasDown;
         ls.jumpPressedAt = st._jumpPressedAt;
         ls.yaw = yaw;
+        ls.stoss = SF.map((k) => st[k]);
         // --- Spieler exakt wiederherstellen ---
         mesh.position.set(s.px, s.py, s.pz);
         st.playerVel = s.vel;
@@ -2959,6 +2964,7 @@ class AnazhRealm_netz_p2p {
         st.sprintSpeed = s.sprint;
         st.jumpPower = s.jp;
         st._geistKg = s.kg;
+        SF.forEach((k, i) => (st[k] = s.stoss[i]));
     }
 
     // GHOST-TICK: Anker anwenden (seed/re-seed), anschlussfähige Frames verbrauchen (2-Frame-Reserve

@@ -369,7 +369,7 @@ function _poseGuard(){
 // Hocke-Tunnel, der kurze Sprung beim Loslassen und die Feel-Schichten (Anlauf-Neigung, Kurven-Lage) fielen: die Welt kennt sie nicht.
 var FC = window.__fachwerkCore;
 if (!FC || !FC.GERAETE || typeof FC.geraetAngebotIn !== 'function' || typeof FC.buildInstance !== 'function') throw new Error('Kern-Pflicht: fachwerk GERAETE/geraetAngebotIn/buildInstance (das Labor stellt die Werke der Welt auf)');
-['leibPlan','leibSitz','leibGlieder','leibSchwenk','leibSchwenkPunkt','leibImpuls','leibFall','leibLandung','leibRichtung','leibZustand','leibKette','leibMasse','leibWerte','leibAbdruck','leibSprungKraft','leibGangTakt','leibRigPose','leibLuftPose','leibVerbPose','leibGeraetAusschwingen','leibMassstab','leibSohle','leibPoseWinkel','leibSollUrteil'].forEach(function(f){if(typeof KC[f]!=='function')throw new Error('Kern-Pflicht: koerper '+f);});
+['leibPlan','leibSitz','leibGlieder','leibSchwenk','leibSchwenkPunkt','leibImpuls','leibFall','leibLandung','leibRichtung','leibZustand','leibKette','leibMasse','leibWerte','leibAbdruck','leibSprungKraft','leibGangTakt','leibRigPose','leibLuftPose','leibVerbPose','leibGeraetAusschwingen','leibMassstab','leibSohle','leibPoseWinkel','leibSollUrteil','leibStossPose'].forEach(function(f){if(typeof KC[f]!=='function')throw new Error('Kern-Pflicht: koerper '+f);});
 var M_E = KC.leibMassstab();                 // Meter je Gelenk-Einheit: die Bühne in Metern, der Leib im Maß des Gusses
 var G_WELT = KC.LEIB.sprung.refG;            // die Erd-Schwere (m/s²), dieselbe wie die Welt bei Spiel-Beginn
 var KAPSEL = KC.LEIB.kapsel;                 // die Kapsel des Leibs (Sohle, Stufe, Haftung, Wand-Radius) — die der Welt
@@ -483,7 +483,7 @@ document.getElementById('btnPlay').addEventListener('click', enterPlay);
 function _playOrt(T) {
   var W = play.werte, L = play.L;
   return { tempo: T.sprint ? W.sprintSpeed : W.speed, gehTempo: W.speed, hang: 1, ritt: null, rittKAcc: null, rittKBrake: null, reitet: false, fahr: null, wasser: false, wasserKBrake: 0,
-    leben: play.leben, angebote: parkAngebote, lage: play.p, mass: play.kette.mass, masse: play.masse, g: G_WELT,
+    leben: play.leben, angebote: parkAngebote, lage: play.p, beinM: play.M.L, mass: play.kette.mass, masse: play.masse, g: G_WELT,
     amBoden: function () { return play.amBoden; }, hangSprung: function () { return false; },
     abdruck: function () { return KC.leibAbdruck(KC.leibSprungKraft(W.jumpPower), play.masse, G_WELT); }, kopfraum: function () { return _kopfraum(); } };
 }
@@ -594,6 +594,7 @@ function playPose(dt) {
   var gs = _TC.gangSchritt(tempo, play.M.L, play.Z);
   var gait = KC.leibGangTakt(_TC, play.halter, gs, tempo, dt, 1, Math.max(1, play.werte.speed), play.M.L);
   KC.leibRigPose(r, play.t, play.halter.walkPhase, tempo > 0.05, gait, KC.MOTION.idle, KC.MOTION.idle, play.M, play.Z, _TC);
+  KC.leibStossPose(r, L, play.faceYaw, play.M); // der Ausfallschritt (physik.K5), wie die Welt
   var lehne = KC.leibLuftPose(r, L, play.t);
   // die Gier des Leibs: im Verb die des Geräts, frei längs der Fahrt (gleitend), im Stand der Blick
   var ziel = V && V.gier != null ? V.gier : (sp > 0.3 ? Math.atan2(v.x(), v.z()) : null);

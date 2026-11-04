@@ -86,6 +86,7 @@ class AnazhRealm_koerper_bewegung {
             leben: null,
             angebote: null,
             lage: [0, 0, 0],
+            beinM: 0,
             mass: null,
             masse: 0,
             g: 9.81,
@@ -1467,6 +1468,9 @@ class AnazhRealm_koerper_bewegung {
             K.lage[0] = pmL ? pmL.position.x : 0;
             K.lage[1] = pmL ? pmL.position.y - AnazhRealm.PLAYER_FOOT_OFFSET : 0;
             K.lage[2] = pmL ? pmL.position.z : 0;
+            // das Bein des Leibs (m, die Länge des Pendels der Balance, physik.K5): ohne Rig setzt kein Fuß
+            const rigL = pmL && pmL.userData && pmL.userData.rig;
+            K.beinM = rigL ? this._gaitBeinMass(rigL).L : 0;
             K.angebote = this._leibAngebote();
             if (K.angebote.length) {
                 const kt = this._leibKette();
@@ -3285,6 +3289,8 @@ AnazhRealm._leibTakt = function () {
     const KC = globalThis.__koerperCore;
     if (!KC || typeof KC.leibPlan !== "function" || typeof KC.leibGesetz !== "function")
         return AnazhRealm._kernPflichtBruch("koerper:leibPlan (der EINE Bewegungs-Takt)");
+    if (typeof KC.leibStossPose !== "function" || typeof KC.leibStossMerke !== "function")
+        return AnazhRealm._kernPflichtBruch("koerper:leibStossPose (der Stoß im Gang, physik.K5)");
     KC.leibGesetz();
     AnazhRealm._leibTaktMemo = KC;
     return KC;
