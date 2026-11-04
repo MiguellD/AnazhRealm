@@ -7,7 +7,7 @@
 "use strict";
 const { execSync } = require("child_process");
 const yaml = require("js-yaml");
-const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cjs");
+const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE, PULS_S, ueber } = require("./lib/ci-klasse.cjs");
 const { schluessel } = require("./ci-schluessel.cjs");
 const { kopfUrteil } = require("./ci-kopf.cjs");
 const { messe } = require("./ci-zeiten.cjs");
@@ -97,7 +97,7 @@ const imVollenLauf = (doc, job) =>
 // Die Deckel der Waage: der Puls 2 min je Push, die volle Stufe das Mittel ihrer Klasse plus RAND_S (die Streuung einer
 // Gruppe um ihren Plan, CW2). Die volle Stufe wiegt je Schritt den p90 (ci-zeiten.cjs: der langsame Läufer — die echten Renderer
 // laufen auf SwiftShader bis 2,8× langsamer, die Kamera-Leib-Linse am selben Kopf 319 s und 841 s), ihr Deckel hält 1,2 × die Gruppe (T).
-const [PULS_S, RAND_S] = [120, 30];
+const RAND_S = 30;
 const DECKEL_MIN = 45;
 const VORBEREITUNG = [
     ["checkout", (s) => String(s.uses).startsWith("actions/checkout@")],
@@ -706,8 +706,6 @@ function selbsttestKlasse() {
 // (T) FRIST, wo timeout-minutes den Plan nicht 1,2-fach hält. Die Wanduhr (der längste Weg im Plan) steht als Zahl und sperrt nie;
 // die grün gezählte Job-Dauer je Gruppe fiel (sie nannte G18 8,5 min, während die Gruppe am 20-min-Deckel brach).
 const minuten = (s) => (s / 60).toFixed(1).replace(".", ",");
-// die Waage wiegt in Zehntel-Minuten, der Einheit ihrer Anzeige (ein Job-Median streut über die Läufe ±10 s)
-const ueber = (s, deckel) => Math.round(s / 6) > Math.round(deckel / 6);
 // die Merges auf dem ersten Eltern-Weg seit dem Kopf der Quelle (der Puls holt die Geschichte ganz, fetch-depth 0)
 const seitKopf = (kopf) =>
     /^[0-9a-f]{40}$/.test(String(kopf))
@@ -735,6 +733,11 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
                 `Lauf, sie misst je Schritt ${zeiten.je_schritt} — älter als ihre Läufe (node scripts/ci-zeiten.cjs)`
         );
     const [imLauf, gruppen, deckel, schwerste, gross] = [[], [], new Map(), new Map(), new Set()];
+    // das Gewicht eines Schritts, ohne Zeit ROT beim Namen (null)
+    const gewicht = (s, job) =>
+        Z[name(s)]?.s >= 0
+            ? Z[name(s)].s
+            : v.push(`(T) UNGEMESSEN: „${name(s)}" (${job}) trägt keine Zeit in ${ZEITEN} — messen (node scripts/ci-zeiten.cjs)`) && null;
     for (const [job, J] of Object.entries(jobsVon(doc))) {
         const art = J.if === undefined && !needsVon(J).length ? "push" : imVollenLauf(doc, job) ? "voll" : null;
         if (!art) continue; // eine andere Bedingung urteilt (V)/(S)
@@ -747,14 +750,11 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
             let summe = vorb;
             let groesster = null;
             for (const s of mein) {
-                const z = Z[name(s)];
-                if (!z || !(Number(z.s) >= 0)) {
-                    v.push(`(T) UNGEMESSEN: „${name(s)}" (${job}) trägt keine Zeit in ${ZEITEN} — messen (node scripts/ci-zeiten.cjs)`);
-                    continue;
-                }
-                summe += z.s;
-                if (z.s > GROSS_S) gross.add(`„${name(s)}" ${minuten(z.s)}`);
-                if (!groesster || z.s > groesster[1]) groesster = [name(s), z.s];
+                const z = gewicht(s, job);
+                if (z === null) continue;
+                summe += z;
+                if (z > GROSS_S) gross.add(`„${name(s)}" ${minuten(z)}`);
+                if (!groesster || z > groesster[1]) groesster = [name(s), z];
             }
             const kl = (M.include || []).find((e) => e && e.gruppe === g);
             const klasse = job + (kl && kl.klasse ? ` ${kl.klasse}` : "");
@@ -782,7 +782,7 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
             v.push(
                 `(T) WAAGE: „${wer}" trägt ${minuten(plan)} min (Deckel ${minuten(d)} min ${wie})` +
                     (groesster ? ` — der größte Schritt „${groesster[0]}" ${minuten(groesster[1])} min` : "") +
-                    (art === "push" ? "" : " — die Verteilung senkt sie: node scripts/ci-zeiten.cjs")
+                    " — die Verteilung senkt sie: node scripts/ci-zeiten.cjs"
             );
     }
     // (E) der Plan der Echt-Gruppe: ihre Vorbereitung und die Mediane ihrer Schritte auf der Karte, höchstens ECHT_PLAN_S
@@ -790,14 +790,7 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
     if (E) {
         const ze = (zeiten && zeiten.echt) || {};
         let plan = Number(ze.vorbereitung_s) || 0;
-        for (const s of gates(E)) {
-            const z = Z[name(s)];
-            if (z && Number(z.s) >= 0) plan += z.s;
-            else
-                v.push(
-                    `(T) UNGEMESSEN: „${name(s)}" (${ECHT_JOB}) trägt keine Zeit in ${ZEITEN} — messen (node scripts/ci-zeiten.cjs)`
-                );
-        }
+        for (const s of gates(E)) plan += gewicht(s, ECHT_JOB) || 0;
         zeilen.push(`${ECHT_JOB} ${minuten(plan)}`);
         if (ueber(plan, ECHT_PLAN_S))
             v.push(
@@ -1187,7 +1180,7 @@ function selbsttestWaage() {
             if: ECHT_WENN,
             steps: prep({ name: "W", run: "npm run gate:w:echt" }),
         };
-        [z.echt, z.schritte.W] = [{ vorbereitung_s: 100 }, { s, gruppe: "echt" }];
+        [z.echt, z.schritte.W] = [{ vorbereitung_s: 100 }, { s }];
     };
     // [Name, Tat an Lage und Zeiten, Soll (Regex · null: grün · Prüfung am Ergebnis), Alter der Quelle in Merges oder „wurf"]
     const B100 = (d, z) => (z.schritte.B.s = 100);
@@ -1198,7 +1191,7 @@ function selbsttestWaage() {
         ["ein Deckel, der den langsamen Läufer nicht hält", (d, z) => Object.assign(d.jobs.voll, { "timeout-minutes": 20 }) && Object.assign(z.schritte, { A: { s: 898 }, C: { s: 287 } }), /\(T\) FRIST: „voll 1\/2" trägt im langsamen Lauf 20,1 min, timeout-minutes 20 hält nicht 1,2 × davon/],
         ["eine Voll-Gruppe über dem Mittel ihrer Klasse", B100, /\(T\) WAAGE: „voll 1\/2" trägt 6,2 min \(Deckel 4,6 min = Mittel der Klasse 4,1 \+ Rand 0,5\) — der größte Schritt „A" 3,3 min — die Verteilung senkt sie/],
         ["dieselbe Last, je Klasse eine Gruppe (die Verteilung senkt nichts: grün)", (d, z) => B100(d, z) && (d.jobs.voll.strategy.matrix.include = [{ gruppe: 1, klasse: "cpu" }, { gruppe: 2, klasse: "gpu" }]), null],
-        ["der Puls über 2 min", (d, z) => d.jobs.puls.steps.push(schritt("Format", 1)) && Object.assign(z.schritte, { Lint: { s: 90 }, Format: { s: 20 } }), /\(T\) WAAGE: „puls 1\/1" trägt 2,2 min \(Deckel 2,0 min je Push\) — der größte Schritt „Lint" 1,5 min$/],
+        ["der Puls über 2 min", (d, z) => d.jobs.puls.steps.push(schritt("Format", 1)) && Object.assign(z.schritte, { Lint: { s: 90 }, Format: { s: 20 } }), /\(T\) WAAGE: „puls 1\/1" trägt 2,2 min \(Deckel 2,0 min je Push\) — der größte Schritt „Lint" 1,5 min — die Verteilung senkt sie/],
         ["ein Schritt ohne Zeit", (d, z) => delete z.schritte.B, /\(T\) UNGEMESSEN: „B" \(voll\)/],
         ["die Zeiten ohne Vorbereitung", (d, z) => delete z.vorbereitung_s, /\(T\) ZEITEN/],
         ["ein Schritt aus voll in den Puls gezogen (allein über dem Deckel, mit Mitfahrer)", (d) => d.jobs.puls.steps.push(Object.assign(d.jobs.voll.steps.splice(5, 1)[0], { if: "matrix.gruppe == 1" })), /\(T\) ALLEIN: „B" trägt allein 5,3 min, über dem Deckel von „puls 1\/1" \(2,0 min\) — 1 Schritte fahren mit/],
