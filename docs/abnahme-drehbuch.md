@@ -37,5 +37,5 @@ Studio-Gestalt (fachwerk-Ausstattung; die Wirts-Teile sind unsichtbare Substanz,
 eine Fremd-Silhouette) · fliegende Inseln = Welt-Substanz (die Stein-Scheibe des Genesis-Orts fiel mit dem Schöpfer-Wort vom
 31.10.: der Platz ist EIN Plan des Ort-Gesetzes).
 
-**Abschluss:** 19 ✔ = das Wort des Schöpfers über Scope/Ship (Schritt 15 zuletzt: sein Trace ist der FPS-Boden-Beweis, p95 ≤ 33 ms). Optional danach:
-`npm run look-golden -- --mint` auf dem Schöpfer-Holz — das Golden bewacht ab dann jeden Push.
+**Abschluss:** 19 ✔ = das Wort des Schöpfers über Scope/Ship (Schritt 15 zuletzt: sein Trace ist der FPS-Boden-Beweis, p95 ≤ 33 ms). Das Bild-Paar
+vorher↔nachher eines Studios liefert `npm run blick:studio -- <studio> --paar` (das Look-Golden fiel am 04.11. ungemintet).
