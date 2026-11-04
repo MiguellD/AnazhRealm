@@ -22,9 +22,11 @@
 //       `_zeichenFolge`) Bau · Boden · Fern · Himmel, gleich wer beim Boot zuerst ankam (Objekt-id: der Bau-Satz nach dem
 //       Boden, gpu-bank +1,4–1,55 ms); im Bündel L0 zuerst, in der Stufe vorn zuerst, neu nur beim Anker-Wechsel
 //   P   DIE PROJEKTION (S3): Σ Zensus der Mess-Wiese (spec/profiband/zensus-wiese.json) × Golden-Dreiecke je Art × Stufe ×
-//       Pass ≤ Haushalt der Klasse baum — die Studio-Ausgänge gegen das Band, ohne GPU (Pflicht ab dem Vertrags-Akt);
+//       Pass ≤ Haushalt der Klasse baum — die Studio-Ausgänge gegen das Band, ohne GPU (Pflicht seit dem Vertrags-Akt);
 //       die Zeile nahWiese: Σ Büschel je Gestalt × Stufe × Golden-Dreiecke IHRER Gestalt ≤ Ratsche der Klasse am Ort
 //       (haupt) und ≤ Haushalt
+//   P-Ferne DIE DECKUNG DER FERNE (vegetation.K1) an der echten Klasse: das Gesetz der Ferne der Nah-Wiese (`WIESE_FERN_TAFEL`)
+//       im Modell der Station — je fester Ring 2–40 m LAI ≥ 1,7, kein Sprung > 15 %, die Büschel je Pixel ≤ 2× der Übergabe
 //
 // Die Absenz der gefallenen Band-Täter prüft gate:altlasten — die EINE Rückkehr-Wand.
 //
@@ -170,23 +172,19 @@ function wieseAmGesetz(haushalt) {
 
 const ZENSUS = path.join(root, "spec", "profiband", "zensus-wiese.json");
 const GOLDEN = path.join(root, "spec", "asset-contract", "v1", "golden");
+// je Golden die Dreiecke [Bild, Wurf]: der Studio-Index reist als Uint32, ohne Index je drei Vertices (Float32 × 3); der
+// Schatten-Teil (S3, teil "schatten") zeichnet nur in den Kaskaden — er ist der Wurf, nicht das Bild
+function dreiecke(g) {
+    const tw = [0, 0];
+    for (const x of g.meshes || []) if (x.attrs && x.attrs.position) tw[+(x.teil === "schatten")] += x.index ? x.index.bytes / 12 : x.attrs.position.bytes / 36;
+    return tw;
+}
 function goldenDreiecke(arten) {
-    const haupt = {},
-        wurf = {};
+    const [haupt, wurf] = [{}, {}];
     for (const f of fs.readdirSync(GOLDEN)) {
         const m = /^(.+)-s(-?\d+)-L([01])-summer\.json$/.exec(f);
         if (!m || !arten.has(m[1])) continue;
-        const g = jsonLesen(path.join(GOLDEN, f));
-        let t = 0,
-            w = 0;
-        for (const x of g.meshes || []) {
-            if (!x.attrs || !x.attrs.position) continue;
-            // der Studio-Index reist als Uint32, ohne Index je drei Vertices (Float32 × 3); der Schatten-Teil (S3, teil
-            // "schatten") zeichnet nur in den Kaskaden — er ist der Wurf, nicht das Bild
-            const n = x.index ? x.index.bytes / 12 : x.attrs.position.bytes / 36;
-            if (x.teil === "schatten") w += n;
-            else t += n;
-        }
+        const [t, w] = dreiecke(jsonLesen(path.join(GOLDEN, f)));
         const k = m[1] + "|" + m[3];
         haupt[k] = Math.max(haupt[k] || 0, t);
         if (m[3] === "1") wurf[m[1]] = Math.max(wurf[m[1]] || 0, w);
@@ -194,18 +192,12 @@ function goldenDreiecke(arten) {
     return { haupt, wurf };
 }
 function projektion(zensus, tris) {
-    const jePass = {};
+    const [jePass, fehlt] = [{}, []];
     let summe = 0;
-    const fehlt = [];
     for (const z of zensus.zeilen) {
         const t = z.pass === "haupt" ? tris.haupt[z.art + "|" + z.stufe] : tris.wurf[z.art];
-        if (!Number.isFinite(t)) {
-            fehlt.push(`${z.art} L${z.stufe} ${z.pass}`);
-            continue;
-        }
-        const d = z.inst * t;
-        jePass[z.pass] = (jePass[z.pass] || 0) + d;
-        summe += d;
+        if (!Number.isFinite(t)) fehlt.push(`${z.art} L${z.stufe} ${z.pass}`);
+        else [jePass[z.pass], summe] = [(jePass[z.pass] || 0) + z.inst * t, summe + z.inst * t];
     }
     return { summe, jePass, fehlt };
 }
@@ -219,12 +211,6 @@ function projektionsWand(haushalt, zensus, tris) {
         errs.push(`P: ${zensus.klasse} projiziert ${Math.round(p.summe)} Dreiecke > Haushalt ${k.dreiecke} (${zensus.ort})`);
     return { p, errs, soll: k ? k.dreiecke : null };
 }
-function projektionPflicht() {
-    const rc = jsonLesen(path.join(GOLDEN, "render-config.json"));
-    const t0 = rc && rc.lod && rc.lod.budget && rc.lod.budget.tree && rc.lod.budget.tree[0];
-    return !!(t0 && t0.lagen != null);
-}
-
 // P — DIE ZEILE nahWiese (S3 wiese-gestalten × pflanzen): die Nah-Wiese zeichnet genau ihre Gestalten
 // (je Vorlage × Stufe × Teil EINE Senke `nahWiese:L<stufe>:<v>:<teil>`), die Golden-Samen des Grases SIND diese Gestalten —
 // die Zeile nimmt je Zensus-Zeile die Golden-Dreiecke IHRER Gestalt (das Maximum über die Samen, wie beim Baum, hätte an der
@@ -234,14 +220,7 @@ function gestaltDreiecke(art, zeilen) {
     const out = {};
     for (const z of zeilen) {
         const f = path.join(GOLDEN, `${art}-s${z.gestalt}-L${z.stufe}-summer.json`);
-        if (!fs.existsSync(f)) continue;
-        const g = jsonLesen(f);
-        let t = 0;
-        for (const x of g.meshes || []) {
-            if (!x.attrs || !x.attrs.position || x.teil === "schatten") continue;
-            t += x.index ? x.index.bytes / 12 : x.attrs.position.bytes / 36;
-        }
-        out[z.gestalt + "|" + z.stufe] = t;
+        if (fs.existsSync(f)) out[z.gestalt + "|" + z.stufe] = dreiecke(jsonLesen(f))[0];
     }
     return out;
 }
@@ -276,6 +255,26 @@ function gestaltWand(haushalt, ratsche, block, ort, tris) {
     return { summe, jePass, jeStufe, soll, haushalt: k ? k.dreiecke : null, errs };
 }
 
+// P — DIE DECKUNG DER FERNE (w10-wiese, vegetation.K1) an der echten Klasse: das Gesetz der Ferne der Nah-Wiese (`_wieseFern`,
+// in Zahlen die Tafel `WIESE_FERN_TAFEL`, die Sicht-Satz und Takt lesen; der Stoff `_halmFerne` rechnet denselben Term). DIE
+// DECKUNG: Anteil × Streckung (ein Büschel trägt die Fläche von s² Zellen mit s-fach breiten Halmen) hält 1 — die Wiese der
+// Nähe — über die festen Ringe der Meisterkarte bis 40 m; DER SCHIRM: die Büschel je Pixel (∝ Anteil × d³: ein Meter Abstand
+// deckt am Schirm ∝ 1/d², ein Ring ∝ d) übersteigen jenseits der Übergabe nie das Doppelte der Übergabe. Bis w10-wiese
+// (voll 21, fall 1,5) fiel die Deckung ab 21 m (bei 40 m 0,38; gemessen 10–20 m LAI 1,87 · 20–40 m 1,07, Radeon 2674ff9a,
+// im Modell der Station — flache Wiese, Third 2,43 m, Nilson je Ring — 1,82 · 1,29, jetzt 1,82 · 1,73), und die Ferne
+// zeichnete bei 180 m 6× so viele Büschel je Pixel wie an der Übergabe (jetzt ≤ 1,67×).
+function ferneWand(A) {
+    const [R, F, T] = [A.NAH_WIESE.radius, A.NAH_WIESE.fern, A.WIESE_FERN_TAFEL];
+    let [deckung, schirm] = [1, 0];
+    for (let j = R * T.je; j < (F.bis - F.saum) * T.je; j++)
+        [deckung, schirm] = [j > 40 * T.je ? deckung : Math.min(deckung, T.anteil[j] * T.streck[j]), Math.max(schirm, T.anteil[j] * (j / T.je / R) ** 3)];
+    const zeile = `Deckung bis 40 m ${deckung.toFixed(2)} · Schirm ${schirm.toFixed(2)}×`;
+    return { errs: deckung < 0.99 || schirm > 2 ? [`P-Ferne: ${zeile} (Soll 1 · ≤ 2×)`] : [], deckung, schirm };
+}
+
+// eine Zensus-Zeile der Selbsttests (je Klasse Befehle und Dreiecke des Haupt-Passes)
+const zensusZeile = (klasse, haupt, tris, stufe = null, art = null) => ({ klasse, stufe, art, je: { haupt }, jeTris: { haupt: tris } });
+
 function selbsttest() {
     const { haushalt, ratsche } = BAND.ladeSpec("wiese", { geraet: "radeon", sicht: "ego" });
     const A = klasseVon();
@@ -303,7 +302,7 @@ function selbsttest() {
     const nackt = { type: "Mesh", name: "", userData: {}, parent: scene };
     const streu = { type: "Mesh", name: "", userData: { inventar: "streu-klein" }, parent: scene };
     const kl = S.klasse(nackt, st);
-    const u1 = urteil([{ klasse: kl, stufe: null, art: null, je: { haupt: 1 }, jeTris: { haupt: 12 } }]);
+    const u1 = urteil([zensusZeile(kl, 1, 12)]);
     t(
         "unbenanntes Mesh → UNBENANNT:Mesh, LINSE rot",
         kl === "UNBENANNT:Mesh" && hatRot(u1, "unbenannt") && u1.linse === "ROT" && S.klasse(streu, st) === "streu-klein"
@@ -361,8 +360,8 @@ function selbsttest() {
     // S5 — ein benannter Täter, den keine Regel nimmt (eine neue Klasse einer Welle): rot `haushalt`, nie still in eine
     // Sammelzeile; `g:torus` fällt nicht unter `g:tor`.
     const u5 = urteil([
-        { klasse: "neuerSatz", stufe: null, art: null, je: { haupt: 3 }, jeTris: { haupt: 9 } },
-        { klasse: "g:torus:L0", stufe: 0, art: null, je: { haupt: 1 }, jeTris: { haupt: 9 } },
+        zensusZeile("neuerSatz", 3, 9),
+        zensusZeile("g:torus:L0", 1, 9, 0),
     ]);
     t(
         "neuerSatz und g:torus:L0 ohne Regel → rot `haushalt` (2 Befunde)",
@@ -430,8 +429,8 @@ function selbsttest() {
     r10.klassen.bau.haupt.befehle = 3;
     const u10 = urteil(
         [
-            { klasse: "bodenSatz", stufe: null, art: null, je: { haupt: 7 }, jeTris: { haupt: 7000 } },
-            { klasse: "g:tor:L0", stufe: 0, art: null, je: { haupt: 5 }, jeTris: { haupt: 900 } },
+            zensusZeile("bodenSatz", 7, 7000),
+            zensusZeile("g:tor:L0", 5, 900, 0),
         ],
         r10
     );
@@ -546,7 +545,7 @@ function selbsttest() {
     r14.frei = { tier: "Weltzustand — Kosten je Tier hält gate:kreatur-kosten" };
     r14.gesamt.befehle = 4;
     const z14 = [
-        { klasse: "bodenSatz", stufe: null, art: null, je: { haupt: 4 }, jeTris: { haupt: 40 } },
+        zensusZeile("bodenSatz", 4, 40),
         { klasse: "tier:baer", stufe: null, art: null, je: { haupt: 40, k0: 40 }, jeTris: { haupt: 9e4 } },
     ];
     const u14 = urteil(z14, r14);
@@ -571,11 +570,11 @@ function selbsttest() {
     // (die Ratsche nimmt nie einen Lauf: ein Bau an der Cull-Kante zählt in einem Lauf 42 Befehle, im nächsten 0).
     const hl = BAND.bandHuelle([
         {
-            zensus: [{ klasse: "f:griechisch:L2", stufe: 2, art: "haus", je: { haupt: 42 }, jeTris: { haupt: 900 } }],
+            zensus: [zensusZeile("f:griechisch:L2", 42, 900, 2, "haus")],
             vram: { mb: 230, liste: [{ k: "tex:output rgba16float 1920x1080x1", mb: 15.8, n: 1 }] },
         },
         {
-            zensus: [{ klasse: "bodenSatz", stufe: null, art: null, je: { haupt: 6 }, jeTris: { haupt: 760 } }],
+            zensus: [zensusZeile("bodenSatz", 6, 760)],
             vram: { mb: 227, liste: [{ k: "buf:?", mb: 60, n: 1500 }] },
         },
     ]);
@@ -703,7 +702,7 @@ function selbsttest() {
     r18b.klassen.boden.haupt.befehle = 10;
     r18b.gemessen = { datum: "klassen-serie", eingeschwungen: true };
     const u18b = urteil(
-        [{ klasse: "bodenSatz", stufe: null, art: null, je: { haupt: 7 }, jeTris: { haupt: 7000 } }],
+        [zensusZeile("bodenSatz", 7, 7000)],
         r18b,
         { mb: 100, liste: [{ k: "buf:szene:bodenSatz", mb: 21, n: 6 }] }
     );
@@ -778,7 +777,7 @@ function selbsttest() {
     const gen = BAND.ladeSpec("genesis", { geraet: "radeon", sicht: "ego" });
     const r21 = jsonKlon(rt);
     r21.klassen.bau.haupt.befehle = 20;
-    const bauGenesis = [{ klasse: "f:kathedrale:L0", stufe: 0, art: "gate", je: { haupt: 30 }, jeTris: { haupt: 9000 } }];
+    const bauGenesis = [zensusZeile("f:kathedrale:L0", 30, 9000, 0, "gate")];
     const u21 = BAND.bandUrteil({ zensus: { klassen: bauGenesis }, haushalt, ratsche: r21, ort: gen.ort });
     const u21b = BAND.bandUrteil({ zensus: { klassen: bauGenesis }, haushalt, ratsche: rt, ort: BAND.ortOf(haushalt) });
     t(
@@ -1076,6 +1075,10 @@ function selbsttest() {
                 (still.length ? " — still: " + still.map(([n]) => n).join(", ") : ""),
             buendelReiheWand(A).errs.length === 0 && !still.length
         );
+        // S31 — DIE DECKUNG DER FERNE (P-Ferne): das Gesetz hält Deckung und Schirm, das vor w10-wiese (die Deckung fällt ab
+        // 21 m mit d^−1,5) reißt beide — der veränderte Stamm als Klasse geladen
+        const alt = ferneWand(klasseVon(stammLib.ersetze(st, [["NAH_WIESE", "voll: 40,", "voll: 21,"], ["NAH_WIESE", "fall: 3.25,", "fall: 1.5,"]])));
+        t(`Deckung der Ferne: das Gesetz hält, das vor w10-wiese reißt (${alt.errs})`, !ferneWand(A).errs.length && alt.deckung < 0.99 && alt.schirm > 2);
     }
 
     // S31 — H2b DIE FRISCHE an der Gegenprobe 1110-12 (spec/profiband/probe-1110-12.json): die Ratsche der Mess-Wiese,
@@ -1130,7 +1133,7 @@ function selbsttest() {
         const r31 = jsonKlon(rt);
         r31.gemessen = { datum: "selbsttest", eingeschwungen: true };
         r31.klassen.boden.haupt = { befehle: 7, dreiecke: 70000 };
-        const boden9 = [{ klasse: "bodenSatz", stufe: 0, art: null, je: { haupt: 10 }, jeTris: { haupt: 7000 } }];
+        const boden9 = [zensusZeile("bodenSatz", 10, 7000, 0)];
         const u31 = BAND.bandUrteil({ zensus: { klassen: boden9 }, haushalt, ratsche: r31 });
         const nach31 = BAND.ratscheNachziehen(r31, u31, { datum: "x" }).ratsche;
         const neu31 = BAND.ratscheNachziehen(BAND.ratscheNeu(r31), u31, { datum: "x" }).ratsche;
@@ -1226,19 +1229,19 @@ function main() {
     for (const f of tw.errs) errs.push("H4 " + f);
     const br = buendelReiheWand(A);
     for (const f of br.errs) errs.push("H7 " + f);
-    // P — die Projektion der Studio-Ausgänge an der Mess-Wiese (Pflicht ab dem Vertrags-Akt).
+    // P — die Projektion der Studio-Ausgänge an der Mess-Wiese (Pflicht seit dem Vertrags-Akt: die render-config trägt tree[0].lagen).
     const zs = jsonLesen(ZENSUS);
     const pw = projektionsWand(haushalt, zs, goldenDreiecke(new Set(zs.zeilen.map((z) => z.art))));
-    const pflicht = projektionPflicht();
-    if (pflicht) for (const f of pw.errs) errs.push(f);
+    errs.push(...pw.errs);
     console.log(
         `P Projektion ${zs.ort}/${zs.klasse}: ${Math.round(pw.p.summe)} Dreiecke (Haushalt ${pw.soll}; ` +
             Object.entries(pw.p.jePass)
                 .map(([p, d]) => `${p} ${Math.round(d)}`)
                 .join(" · ") +
-            `)` +
-            (pflicht ? "" : pw.errs.length ? ` — noch keine Pflicht (render-config ohne tree[0].lagen): ${pw.errs.join("; ")}` : "")
+            `)`
     );
+    // P-Ferne — die Deckung der Ferne der Nah-Wiese über die festen Ringe und der Schirm (vegetation.K1)
+    errs.push(...ferneWand(A).errs);
     // Die Zeile nahWiese (Pflicht seit der Integration V18.538: Gras-Zeile und Gestalten der Nah-Wiese stehen im Kern).
     const nwB = zs.nahWiese;
     if (!nwB || !Array.isArray(nwB.zeilen) || !nwB.zeilen.length)
@@ -1273,15 +1276,8 @@ function main() {
     }
     const paesse = haushalt.paesse;
     const gemessenAn = (r) => {
-        let g = 0,
-            f = 0;
-        for (const id of Object.keys(r.klassen))
-            for (const p of paesse)
-                for (const x of ["befehle", "dreiecke"]) {
-                    f++;
-                    if (r.klassen[id][p][x] != null) g++;
-                }
-        return { g, f };
+        const z = Object.values(r.klassen).flatMap((k) => paesse.flatMap((p) => [k[p].befehle, k[p].dreiecke]));
+        return { g: z.filter((v) => v != null).length, f: z.length };
     };
     const ortZeile = ratschen
         .map((e) => {
