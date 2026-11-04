@@ -1668,7 +1668,7 @@ async function checkBandWelle6DSoul({ page, check }) {
         out.magicResistIncreased = aweBoost ? st.player.stats.magicResist > baselineStats.magicResist : false;
 
         // Welt-Resonanz-Trigger: spawne Bauplan mit hoher Resonanz nahe Spieler
-        const vorArch = new Set(st.architectures);
+        const bautenZurueck = __bautenSeit();
         const savedPos = {
             x: st.playerMesh.position.x,
             y: st.playerMesh.position.y,
@@ -1713,7 +1713,7 @@ async function checkBandWelle6DSoul({ page, check }) {
         out.resonanceNotTriggeredFar = !resBoost2;
 
         // Cleanup
-        for (const e of st.architectures.filter((x) => !vorArch.has(x))) r.removeArchitecture(e);
+        bautenZurueck();
         delete st.blueprints.wave6d2_resonator;
         st.playerMesh.position.set(savedPos.x, savedPos.y, savedPos.z);
         st.player.boosts = [];

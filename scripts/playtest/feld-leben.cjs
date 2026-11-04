@@ -589,7 +589,7 @@ async function checkBandWelle6APolish({ page, check }) {
         const archX = savedX + 20;
         const archZ = savedZ + 20;
         const archY = r._terrainMacroSurfaceY(archX, archZ);
-        const vorArch = new Set(st.architectures);
+        const bautenZurueck = __bautenSeit();
         // AUSLÖSCHUNGS-WELLE — temple fiel; die begehbare haus_basis-Substanz (KIND_SUBSTANCE)
         // trägt die Erdungs-Probe als Test-Blueprint (flaches Dach, solide blockerAABBs).
         const KS6a = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
@@ -659,7 +659,7 @@ async function checkBandWelle6APolish({ page, check }) {
         }
         // Cleanup nach Identität über den EINEN Abbau-Pfad (jedes Aufräumen der Bänder): ein Bau lässt Feld-Würfe
         // weichen (`_weichtDemBau`) — die Kürzung auf die alte Länge ließ ihn dann als Waise ohne Bauplan in der Welt
-        for (const e of st.architectures.filter((x) => !vorArch.has(x))) r.removeArchitecture(e);
+        bautenZurueck();
         delete st.blueprints._t_w6a_haus;
 
         // Kein per-Frame-Pfad ruft optimizePhysics/processOptimization (leckte WASM, flutete die Konsole).
@@ -722,7 +722,7 @@ async function checkBandWelle6APolish({ page, check }) {
         // `spawnArchitecture` baut den Mesh nur im architectureCullingRadius (XZ) um den SPIELER; stünde
         // er noch bei (0,5000,0), bliebe der Spawn cold (mesh=null) und der Test mäße nichts.
         st.playerMesh.position.set(_savedX, _savedY, _savedZ);
-        const vorArch = new Set(st.architectures);
+        const bautenZurueck = __bautenSeit();
         let _entryA3 = null;
         let _spawnErrA3 = null;
         try {
@@ -779,7 +779,7 @@ async function checkBandWelle6APolish({ page, check }) {
             out.archTopOnSteepSlope = st.onSteepSlope;
         }
         out.flatBlueprintNotSteep = flatBlueprintNotSteep;
-        for (const e of st.architectures.filter((x) => !vorArch.has(x))) r.removeArchitecture(e);
+        bautenZurueck();
         delete st.blueprints._t_w6a3_haus;
         st.playerMesh.position.set(_savedX, _savedY, _savedZ);
 
@@ -825,7 +825,7 @@ async function checkBandWelle6APolish({ page, check }) {
         const _spawnArchX = 60;
         const _spawnArchZ = 60;
         const _spawnArchY = 200;
-        const vorArch = new Set(st.architectures);
+        const bautenZurueck = __bautenSeit();
         // AUSLÖSCHUNGS-WELLE — temple fiel; das flache haus_basis-Dach (KIND_SUBSTANCE)
         // liefert die garantiert-flache Raycast-Fläche als Test-Blueprint.
         const KSa45 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
@@ -871,7 +871,7 @@ async function checkBandWelle6APolish({ page, check }) {
 
         // Cleanup
         r._clearBuildMode();
-        for (const e of st.architectures.filter((x) => !vorArch.has(x))) r.removeArchitecture(e);
+        bautenZurueck();
         delete st.blueprints._t_w6a45_haus;
         if (savedCamPos) st.camera.position.copy(savedCamPos);
         if (savedCamQuat) st.camera.quaternion.copy(savedCamQuat);
@@ -1095,7 +1095,7 @@ async function checkBandWelle6APolish({ page, check }) {
             st.worldJournal && st.worldJournal.seen
                 ? Object.keys(st.worldJournal.seen).filter((k) => k.startsWith("weak_connection:")).length
                 : 0;
-        const vorArch = new Set(st.architectures);
+        const bautenZurueck = __bautenSeit();
         r.spawnArchitecture(weakName, { x: 250, y: 0, z: 250 }, { seed: 1 });
         const afterSeenKeys =
             st.worldJournal && st.worldJournal.seen
@@ -1150,7 +1150,7 @@ async function checkBandWelle6APolish({ page, check }) {
         out.strongNoWarning = seenAfter3 === seenBefore3;
 
         // Cleanup
-        for (const e of st.architectures.filter((x) => !vorArch.has(x))) r.removeArchitecture(e);
+        bautenZurueck();
         delete st.blueprints[testName];
         delete st.blueprints[weakName];
         delete st.blueprints[strongName];
