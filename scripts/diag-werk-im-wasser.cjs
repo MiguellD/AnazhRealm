@@ -43,7 +43,7 @@
 //       Seite bis 4 m über dem Spiegel + 1 m.
 //   K — DER KERN (Node, vehicle-core fahrKraefte): ohne Tiefe byte-gleich (das Labor kennt kein Wasser, Labor = Welt an
 //       Land); in 0,61 m aus 12 m/s nach 1 s ≤ 6 m/s; Vollgas im Wasser endet im Gleichgewicht des Gesetzes
-//       √((aEngine − rollDecel) / (kStirn·Tiefe + dragK)) ± 5 %; steht das Wasser an der Ansaugung (Gürtellinie), fährt er
+//       √((aEngine − Reibung der Zeit G.reibung) / (kStirn·Tiefe + dragK)) ± 5 %; steht das Wasser an der Ansaugung (Gürtellinie), fährt er
 //       aus dem Stand keine 5 cm (seine Masse: gate:fahr-leben --koerper).
 //
 //   node scripts/diag-werk-im-wasser.cjs [--selftest]
@@ -374,7 +374,7 @@ function kernUrteil(VC) {
     if (!(k2.vlong <= 6)) v.push(`K2 in ${t} m Wasser aus 12 m/s nach 1 s noch ${k2.vlong.toFixed(2)} m/s (Soll ≤ 6)`);
     // K3 Gleichgewicht
     const k3 = lauf(t, 0, 12, 1).z;
-    const soll = Math.sqrt((G.aEngine - VC.FAHR.rollDecel) / (G.wasser.kStirn * t + G.dragK));
+    const soll = Math.sqrt((G.aEngine - G.reibung) / (G.wasser.kStirn * t + G.dragK));
     if (!(Math.abs(k3.vlong - soll) <= 0.05 * soll))
         v.push(
             `K3 Vollgas in ${t} m: ${k3.vlong.toFixed(2)} m/s, das Gleichgewicht des Gesetzes ${soll.toFixed(2)} m/s`

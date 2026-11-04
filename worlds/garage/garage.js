@@ -13,7 +13,11 @@ const CAM_FOV=34,cam=new THREE.PerspectiveCamera(CAM_FOV,innerWidth/innerHeight,
 // DIE EINE ENGINE (18.10.): die Werkstatt rendert auf der Engine der Welt — three r184 WebGPU (vendor/three-bootstrap.js),
 // Ausgabe sRGB mit der Tonkurve der Welt (BELICHTUNG.kurve, Khronos PBR Neutral); die Farben sind sRGB-Absichten
 // (ColorManagement an, Lehre 21), die Lichter physikalisch: r128 trug π im Legacy-Modus selbst, jetzt tragen es die Stärken.
-const R=new THREE.WebGPURenderer({antialias:true});R.setSize(innerWidth,innerHeight);R.setPixelRatio(Math.min(devicePixelRatio,2));
+// DER LEICHT-MODUS (w11-fahrzeug, `?leicht` oder der Knopf „Leicht"): die Werkstatt für Agenten ohne GPU (swiftshader) — halbe
+// Auflösung, der Schatten-Pass ruht (er rechnet nur, wenn Bau, Licht oder eine Bewegung ihn ändern), ohne Vielfach-Abtastung ab
+// dem ersten Bild. Gemessen (Isometrie 1280×720, swiftshader): 185 → 54 ms je Bild.
+const LEICHT=new URLSearchParams(location.search).has('leicht');
+const R=new THREE.WebGPURenderer({antialias:!LEICHT});R.setSize(innerWidth,innerHeight);R.setPixelRatio(Math.min(devicePixelRatio,2));
 R.toneMapping=THREE.NeutralToneMapping;R.toneMappingExposure=1.04;
 R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFShadowMap;   // PCF statt PCF-weich: swiftshader Iso 105 → 90 ms (02.11.)
 document.body.appendChild(R.domElement);
@@ -194,7 +198,7 @@ function buildNeg(H,P){const g=new THREE.Group();const hz=P.spur/2;const bw=hz+0
 // ZUSTAND + AUFBAU
 // ════════════════════════════════════════════════════════════════════
 const P=Object.assign({},VC.DEFAULT_P);   // Regler-Zustand — Grundwerte aus der EINEN Kern-Quelle
-const show={frame:false,joints:false,cal:true,pkg:false,wheels:true,body:true,neg:false};
+const show={frame:false,joints:false,cal:false,pkg:false,wheels:true,body:true,neg:false};   // das Bild des Wagens: die Lehren auf Knopfdruck
 // Die EINE Sicht des gebauten Wagens (Haut + Räder + Zelle/Sitze, ohne Hilfsgeometrie und Notizen): der Ergebnis-Knopf zeigt
 // sie, die Probefahrt fährt in ihr — Lehren, Gelenke und Negativraum gehören der Werkstatt (Befund 0710-2: RADSTAND, ÜH-H …
 // lagen in der Fahrt über dem Wagen, die Probefahrt erbte die Werkstatt-Ebenen).
@@ -235,7 +239,7 @@ function falten(wurzel,gelenke){wurzel.updateMatrixWorld(true);const inv=wurzel.
     const ge=new THREE.BufferGeometry();for(const n of namen)ge.setAttribute(n,new THREE.BufferAttribute(feld[n],A0[n].itemSize));
     ge.setIndex(new THREE.BufferAttribute(new Uint32Array(ix),1));
     const me=new THREE.Mesh(ge,teile[0].material);me.castShadow=teile[0].castShadow;me.receiveShadow=teile[0].receiveShadow;me.renderOrder=teile[0].renderOrder;wurzel.add(me);}}
-function rebuild(){_wecke();RAEDER.length=0;
+function rebuild(){_wecke();RAEDER.length=0;key.shadow.needsUpdate=true;
   clear(gFrame);clear(gJoints);clear(gBody);clear(gCal);clear(gNeg);clear(gPackage);clear(gWheels);doors.length=0;
   const PE=VC.epocheForm(P);   // die Zeit-Achse (vehicle-core EPOCHE_GESETZ): EIN geformtes P für den Bau UND die Ebenen
   const H=hardpoints(PE);const res=evalLehren(PE);
@@ -273,9 +277,19 @@ function renderTafel(res){
       <div class="lr-h"><span class="lr-lab">${L.lab}</span><span class="lr-val">${v.toFixed(3)}${L.unit}</span></div>
       <div class="lr-bar"><div class="lr-band" style="left:${lo}%;width:${hi-lo}%"></div><div class="lr-mark" style="left:${p}%"></div></div>
       <div class="lr-hint">${L.hint}</div></div>`;}
-  list.innerHTML=html;
+  list.innerHTML=html+zeitTafel();
   document.getElementById('score').innerHTML=`<b>${ok}</b> / ${res.length} in Toleranz`;
 }
+// DIE ZEIT · TEMPO DER TECHNIK (w11-fahrzeug): je Epoche das Tempo und die Zeit 0 → 50 km/h dieser Gattung mit diesen Reglern,
+// gefahren vom EINEN Fahr-Schritt des Kerns (VC.fahrLeistung) — nur, wenn die Lehren offen sind, je Stand einmal gerechnet.
+// Ein Regler-Zug rechnet sie 250 ms nach seinem letzten Bild (der Zug bleibt flüssig).
+let _zeitSchl='',_zeitHtml='',_zeitUhr=0;
+function zeitTafel(){if(!document.body.classList.contains('lehren'))return '';const schl=JSON.stringify(P);
+  if(schl!==_zeitSchl){_zeitSchl=schl;clearTimeout(_zeitUhr);_zeitUhr=setTimeout(()=>{
+    _zeitHtml='<div class="lr"><div class="lr-h"><span class="lr-lab">Die Zeit · Tempo der Technik</span><span class="lr-val">km/h · 0–50</span></div>'+
+      VC.EPOCHE_GESETZ.map((E,i)=>{const l=VC.fahrLeistung(Object.assign({},P,{epoche:i}));return `<div class="lr-hint"${Math.round(+P.epoche)===i?' style="color:var(--steel-bright)"':''}>${E.lab}: ${l.kmh} km/h · ${l.t50===null?'—':l.t50+' s'}</div>`;}).join('')+'</div>';
+    renderTafel(evalLehren(VC.epocheForm(P)));},250);}
+  return _zeitHtml;}
 
 // ════════════════════════════════════════════════════════════════════
 // UI
@@ -303,6 +317,7 @@ for(const pid in PRESETS){const b=document.createElement('button');b.className='
   b.onclick=()=>{[...pdiv.children].forEach(c=>c.classList.remove('on'));b.classList.add('on');sitz.schritt(()=>presetSetzen(pid));};pdiv.appendChild(b);}
 // Kultur-Selektor (orthogonal zum Typ)
 const cdiv=document.createElement('div');cdiv.style.cssText='margin-top:8px';pdiv.parentNode.insertBefore(cdiv,pdiv.nextSibling);
+document.getElementById('kulturOrt').appendChild(cdiv);   // die Kultur gehört dem Werkzeug
 {const cl=document.createElement('div');cl.textContent='KULTUR';cl.style.cssText='font-size:10px;letter-spacing:1px;opacity:.55;margin:4px 0 2px';cdiv.appendChild(cl);}
 for(const cid in CULTURES){const b=document.createElement('button');b.className='btn';b.textContent=CULTURES[cid].lab;
   b.onclick=()=>{const ab=kulturId===cid;[...cdiv.querySelectorAll('button')].forEach(c=>c.classList.remove('on'));if(!ab)b.classList.add('on');
@@ -311,7 +326,18 @@ for(const cid in CULTURES){const b=document.createElement('button');b.className=
 const ldiv=document.getElementById('layers');
 const LY=[['frame','Rahmen','gFrame'],['joints','Gelenke','gJoints'],['cal','Lehren','gCal'],['pkg','Baukörper','gPackage'],['wheels','Räder','gWheels'],['body','Haut','gBody'],['neg','Negativ','gNeg']];
 LY.forEach(([key,lab])=>{const b=document.createElement('button');b.className='btn'+(show[key]?' on':'');b.textContent=lab;
-  b.onclick=()=>{show[key]=!show[key];b.classList.toggle('on');applyVis();};ldiv.appendChild(b);});
+  b.onclick=()=>{if(key==='cal')return lehrenSetzen(!show.cal);show[key]=!show[key];b.classList.toggle('on');applyVis();};ldiv.appendChild(b);});
+// DIE SCHALTER DER LEISTE: Lehren (Tafel + Maß-Schilder + Legende, EIN Zustand mit der Ebene „Lehren"), Werkzeug, Leicht
+const lehrenB=document.getElementById('lehrenB'),werkzeugB=document.getElementById('werkzeugB'),leichtB=document.getElementById('leichtB');
+function lehrenSetzen(an){show.cal=an;document.body.classList.toggle('lehren',an);if(an)renderTafel(evalLehren(VC.epocheForm(P)));lehrenB.classList.toggle('on',an);applyVis();syncLayerButtons();if(mode!=='fahren'&&proj!=='persp')einpassen();_wecke();}
+lehrenB.onclick=()=>lehrenSetzen(!show.cal);
+werkzeugB.onclick=()=>{werkzeugB.classList.toggle('on',document.body.classList.toggle('werkzeug'));};
+// Der Werfer bleibt (r184 entsorgt beim Abschalten von castShadow die Schatten-Karte, und ein Stoff, der in der Zeit nicht
+// zeichnete, hält den toten Knoten: „depthTexture of null"); es ruht nur sein Pass (`shadow.autoUpdate`, vendor ShadowNode.updateBefore).
+function leichtSetzen(an){leicht=an;R.setPixelRatio(an?0.5:Math.min(devicePixelRatio,2));R.setSize(innerWidth,innerHeight);
+  key.shadow.autoUpdate=!an;key.shadow.needsUpdate=true;
+  leichtB.classList.toggle('on',an);document.body.classList.toggle('leicht',an);_wecke();}
+let leicht=false;leichtB.onclick=()=>leichtSetzen(!leicht);
 function applyVis(){const V=sicht();if(gFrame)gFrame.visible=V.frame;if(gJoints)gJoints.visible=V.joints;
   if(gCal)gCal.visible=V.cal;if(gPackage)gPackage.visible=V.pkg;if(gWheels)gWheels.visible=V.wheels;if(gBody)gBody.visible=V.body;if(gNeg)gNeg.visible=V.neg;}
 function syncLayerButtons(){LY.forEach(([key],i)=>ldiv.children[i].classList.toggle('on',!!show[key]));}
@@ -337,7 +363,7 @@ PAINTS.forEach((pt,li)=>{const sw=document.createElement('button');sw.className=
 const ergB=document.getElementById('ergebnis');let ergOn=false;
 ergB.onclick=()=>{ergOn=!ergOn;ergB.classList.toggle('on',ergOn);
   if(ergOn)Object.assign(show,ERGEBNIS);
-  else     Object.assign(show,{frame:false,joints:false,cal:true, pkg:false,wheels:true,body:true,neg:false});
+  else     Object.assign(show,{frame:false,joints:false,cal:document.body.classList.contains('lehren'),pkg:false,wheels:true,body:true,neg:false});
   applyVis();syncLayerButtons();};
 // Regler — die Hülle (K41): der EINE Generator aus PARAMS_BY_KIND.vehicle schreibt P in place; ein Aufbau je Bild
 // (ruheMs 0, der Zug bleibt flüssig), die Dynamik-Regler (dyn) wirken live ohne Neubau.
@@ -467,21 +493,33 @@ function ansichtSchritt(dt,t){
 // Forciertes Feder-Dämpfer-Modell je Freiheitsgrad:  x'' = (Moment − k·x − c·x')  →  Steady-State x = Moment/k.
 // Steifigkeit k aus der Federrate, Dämpfung c aus dem Regler — beide wirken jetzt ECHT auf den Winkel, nicht nur aufs Tempo.
 
-// Boden + Raster (nur im Fahrmodus sichtbar)
-const ground=new THREE.Group();ground.visible=false;scene.add(ground);scene.add(key.target);
-{const gp=new THREE.Mesh(new THREE.PlaneGeometry(800,800),new THREE.MeshStandardMaterial({color:0x1c222a,roughness:1,metalness:0}));
- gp.rotation.x=-Math.PI/2;gp.position.y=-0.004;gp.receiveShadow=true;ground.add(gp);
- const grid=new THREE.GridHelper(800,400,0x33485a,0x192833);grid.material.transparent=true;grid.material.opacity=0.5;ground.add(grid);}
-// ════════ STEIGUNGS-HÜGEL (17.07. — die Strecke war Glas): ein cos²-Hügel HINTER dem
-// Ziel-Cluster (x≈70, r 22, h 3.5) macht Steigung sicht- und tunbar; die EBENE bleibt
-// byte-alt (bodenY=0 überall sonst — Slalom/Tor/Cluster enden bei x≈48). DIESELBE
-// Funktion trägt Hügel-Mesh UND Fahrt (updateVehicle liest sie: Höhe·Hangabtrieb·Nick).
-function bodenY(x,z){const dx=x-70,dz=z,r=Math.hypot(dx,dz);if(r>=22)return 0;const u=Math.cos((r/22)*Math.PI*0.5);return 3.5*u*u;}
-{const hg=new THREE.PlaneGeometry(46,46,46,46);hg.rotateX(-Math.PI/2);
- const hp=hg.attributes.position;for(let i=0;i<hp.count;i++){hp.setY(i,bodenY(hp.getX(i)+70,hp.getZ(i)));}
- hg.computeVertexNormals();
- const hm=new THREE.Mesh(hg,new THREE.MeshStandardMaterial({color:0x24303c,roughness:0.95,metalness:0}));
- hm.position.set(70,0.002,0);hm.receiveShadow=true;ground.add(hm);}
+// ════════ DIE PRÜFSTRECKE (w11-fahrzeug): der Boden der Probefahrt IST das Gelände-Gesetz der Welt — die Insel und der Term
+// `bahn` (gelaende-core: Kurven R 70 überhöht · R 30 · R 70 eben · R 45 überhöht, Kuppe, Kicker · Lücke · Tisch · Landung) aus
+// spec/pruefbuehne/strecke.json; jeder Leser (Fahrt, Kamera, Spuren, Netz) fragt `GC.hoehe`. Vorher fuhr die Probefahrt auf einer
+// Ebene mit einem eigenen cos²-Hügel (ein Sonder-Gelände, das keine Welt kannte). Das Netz: das Gelände je 4 m (eine Spanne
+// tiefer gezeichnet, nie über der Bahn) und darüber die Bahn mit ihren Böschungen je Meter der Linie; die Probefahrt startet,
+// sobald die Strecke geladen ist (die Knöpfe warten).
+const GC=window.__gelaendeCore,ground=new THREE.Group();ground.visible=false;scene.add(ground);scene.add(key.target);
+let bodenL=null,bahn=null,strecke=null;
+function bodenY(x,z){return GC.hoehe(bodenL,x,z,false);}
+fetch('../../spec/pruefbuehne/strecke.json').then(r=>r.json()).then(S=>{strecke=S;const T=GC.erbgutNormal(S.erbgut);bodenL={erbgut:{terme:T},baseHeight:0,erdbau:null};
+  bahn=Object.assign({},T[1],{am:(x,z,ab)=>GC.bahnAm(T[1],x,z,ab)});streckeBauen();[startB,pruefB].forEach(b=>b&&(b.disabled=false));});
+function streckeBauen(){const B=bahn,netz=(nx,nz,pos,farbe)=>{const ge=new THREE.BufferGeometry(),ix=[];
+    for(let i=0;i<nx-1;i++)for(let k=0;k<nz-1;k++){const a=i*nz+k;ix.push(a,a+1,a+nz,a+1,a+nz+1,a+nz);}
+    ge.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));ge.setAttribute('color',new THREE.Float32BufferAttribute(farbe,3));ge.setIndex(ix);ge.computeVertexNormals();
+    const me=new THREE.Mesh(ge,new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.95,metalness:0}));me.receiveShadow=true;ground.add(me);};
+  // das Gelände (900 m im Quadrat um die Bahn, je 4 m), eine Spanne unter dem Gesetz gezeichnet — die Bahn liegt darüber
+  let x0=Infinity,x1=-Infinity,z0=Infinity,z1=-Infinity;for(let i=0;i<B.N;i++){x0=Math.min(x0,B.X[i]);x1=Math.max(x1,B.X[i]);z0=Math.min(z0,B.Z[i]);z1=Math.max(z1,B.Z[i]);}
+  const mx=(x0+x1)/2,mz=(z0+z1)/2,n=226,pos=[],farbe=[];
+  for(let i=0;i<n;i++)for(let k=0;k<n;k++){const x=mx-450+i*4,z=mz-450+k*4;pos.push(x,bodenY(x,z)-0.15,z);farbe.push(0.035,0.05,0.04);}
+  netz(n,n,pos,farbe);
+  // die Bahn je Meter der Linie, quer von Böschung zu Böschung: Asphalt, an den Kurven die Kerbs, am Start die Linie
+  // quer von links nach rechts (die Fläche sieht nach oben), je Bandgrenze zwei Spalten 2 cm auseinander (harte Kanten)
+  const h=B.halb,Q=[B.reich,h+2,h+0.02,h,h-0.7,h-0.72,0.17,0.15,-0.15,-0.17,-h+0.72,-h+0.7,-h,-h-0.02,-h-2,-B.reich],p2=[],f2=[];
+  for(let i=0;i<=B.N;i++){const j=i%B.N,nx=-Math.sin(B.PHI[j]),nz=-Math.cos(B.PHI[j]),kerb=Math.floor(i/3)%2?[0.55,0.04,0.03]:[0.8,0.8,0.8];
+    for(const q of Q){const x=B.X[j]+nx*q,z=B.Z[j]+nz*q,a=Math.abs(q);p2.push(x,bodenY(x,z)+0.02,z);
+      f2.push(...(a>h+0.01?[0.04,0.07,0.035]:i<2||(a<0.16&&i%12<6)?[0.75,0.75,0.75]:a>h-0.71?(B.KAPPA[j]?kerb:[0.75,0.75,0.75]):[0.025,0.028,0.032]));}}
+  netz(B.N+1,Q.length,p2,f2);}
 // ════════ FAHRSTRECKE: Pylonen-Slalom (umwerfbar) + echte Reifen-/Bremsspuren ════════
 const track={cones:[],skidGeo:null,skidIdx:0,SKMAX:2600,wheel:[]};
 function makeCone(sc){sc=sc||1;const g=new THREE.Group();
@@ -495,11 +533,12 @@ CONE_POS.push([16,7.5,1.9]);CONE_POS.push([28,-7.5,1.9]);             // 2 RIESE
 CONE_POS.push([11,6.2,0.5]);CONE_POS.push([12.4,6.6,0.5]);CONE_POS.push([10.6,7.0,0.5]); // Mini-Cluster (fliegen weit)
 CONE_POS.push([33,7.2,0.55]);CONE_POS.push([34.5,6.8,0.55]);          // mehr Minis
 CONE_POS.push([46,0,1]);CONE_POS.push([44,2.4,1]);CONE_POS.push([44,-2.4,1]);CONE_POS.push([48,1.5,1]);CONE_POS.push([48,-1.5,1]); // Ziel-Cluster
+for(const cp of CONE_POS)cp[1]+=30;   // das Slalom-Feld liegt 30 m neben der Start-Ziel-Geraden (die Bahn läuft auf z = 0)
 for(const cp of CONE_POS){const sc=cp[2]||1,c=makeCone(sc);c.position.set(cp[0],0,cp[1]);ground.add(c);track.cones.push({g:c,sc:sc,hx:cp[0],hz:cp[1],x:cp[0],z:cp[1],y:0,vx:0,vz:0,vy:0,ax:[1,0,0],q:new THREE.Quaternion(),live:false});}
 // Start-Banner (Landmark)
 {const pm=new THREE.MeshStandardMaterial({color:0x2a3038,roughness:0.6,metalness:0.35});
- for(const zz of[-3.4,3.4]){const pl=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.06,2.5,12),pm);pl.position.set(1.5,1.25,zz);pl.castShadow=true;ground.add(pl);}
- const bar=new THREE.Mesh(new THREE.BoxGeometry(0.28,0.42,7.0),new THREE.MeshStandardMaterial({color:0x6fd0e8,roughness:0.4,metalness:0.3,emissive:0x12333d,emissiveIntensity:0.6}));bar.position.set(1.5,2.6,0);bar.castShadow=true;ground.add(bar);}
+ for(const zz of[-6.8,6.8]){const pl=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.06,2.5,12),pm);pl.position.set(1.5,1.25,zz);pl.castShadow=true;ground.add(pl);}
+ const bar=new THREE.Mesh(new THREE.BoxGeometry(0.28,0.42,13.8),new THREE.MeshStandardMaterial({color:0x6fd0e8,roughness:0.4,metalness:0.3,emissive:0x12333d,emissiveIntensity:0.6}));bar.position.set(1.5,2.6,0);bar.castShadow=true;ground.add(bar);}
 {const N=track.SKMAX,pos=new Float32Array(N*12),col=new Float32Array(N*12),idx=[];
  for(let i=0;i<N;i++){const b=i*4;idx.push(b,b+1,b+2,b,b+2,b+3);}
  const ge=new THREE.BufferGeometry();ge.setAttribute('position',new THREE.BufferAttribute(pos,3));ge.setAttribute('color',new THREE.BufferAttribute(col,3));ge.setIndex(idx);
@@ -518,7 +557,7 @@ function updateSmoke(dt){for(const p of smoke.pool){if(p.life<=0)continue;p.life
   const f=p.life/p.max;p.sp.position.x+=p.vx*dt;p.sp.position.y+=p.vy*dt;p.sp.position.z+=p.vz*dt;p.vy*=0.95;p.vx*=0.97;p.vz*=0.97;
   const sz=p.s0*(1+(1-f)*2.4);p.sp.scale.set(sz,sz,1);p.sp.material.opacity=(0.30+0.4*1)*f*0.8;}}
 function emitSkid(ax,az,bx,bz,w,dark){const i=track.skidIdx;track.skidIdx=(i+1)%track.SKMAX;
-  const dx=bx-ax,dz=bz-az,len=Math.hypot(dx,dz)||1e-4,nx=-dz/len*w,nz=dx/len*w,y=0.013,o=i*12;
+  const dx=bx-ax,dz=bz-az,len=Math.hypot(dx,dz)||1e-4,nx=-dz/len*w,nz=dx/len*w,y=bodenY((ax+bx)/2,(az+bz)/2)+0.035,o=i*12;
   const P=track.skidGeo.attributes.position.array,C=track.skidGeo.attributes.color.array;
   const q=[ax+nx,y,az+nz, ax-nx,y,az-nz, bx-nx,y,bz-nz, bx+nx,y,bz+nz];
   for(let k=0;k<12;k++)P[o+k]=q[k];
@@ -529,8 +568,8 @@ function resetTrack(){for(const c of track.cones){c.x=c.hx;c.z=c.hz;c.y=0;c.vx=c
 function updateTrack(dt){const cy=Math.cos(car.yaw),sy=Math.sin(car.yaw);
   corners.forEach((cc,wi)=>{const lx=cc.grp.position.x,lz=cc.grp.position.z, wx=car.x+lx*cy+lz*sy, wz=car.z-lx*sy+lz*cy;
     const slip=Math.abs(cc.front?(car.slipF||0):(car.slipR||0)); let inten=Math.max(0,(slip-0.11)/0.34);
-    if(input.hand&&!cc.front)inten=Math.max(inten,0.85);
-    if(input.brake>0&&car.speed>3.2)inten=Math.max(inten,(car.speed-3.2)/13);
+    if(ein.hand&&!cc.front)inten=Math.max(inten,0.85);
+    if(ein.brake>0&&car.speed>3.2)inten=Math.max(inten,(car.speed-3.2)/13);
     inten=Math.min(1,inten);const w=track.wheel[wi];
     if(inten>0.16&&car.speed>0.8){if(w.had)emitSkid(w.px,w.pz,wx,wz,0.085+inten*0.03,0.09-inten*0.045);w.px=wx;w.pz=wz;w.had=true;}else w.had=false;});
   for(const c of track.cones){
@@ -550,8 +589,12 @@ const car=VC.fahrZustand(0,0,0);
 const input={throttle:0,brake:0,steer:0,hand:0};
 const FAHR=VC.FAHR;  // N6.1 — die Fahr-Konstanten leben im KERN: EINE Quelle fuer Probefahrt UND exportDrive
 function fahrGesetzLab(){return VC.fahrGesetz(VC.exportDrive(P));}   // die Regler wirken live (P je Frame)
+// DIE PRÜFFAHRT: der Fahrer der Linie (VC.fahrerLinie) steuert; eine Taste (W A S D, Pfeile) nimmt ihm das Steuer
+let pruef=null,ein=input;
 function updateVehicle(dt,t){
-  VC.fahrSchritt(car,input,fahrGesetzLab(),bodenY,dt);
+  if(pruef&&(input.throttle||input.brake||input.steer))pruef=null;
+  ein=pruef?VC.fahrerLinie(car,fahrGesetzLab(),bahn,pruef):input;
+  VC.fahrSchritt(car,ein,fahrGesetzLab(),bodenY,dt);
   const idle=(car.speed<0.05)?(Math.sin(t*42)*0.0014+Math.sin(t*26)*0.0009):0;
   // Die Federn drehen den AUFBAU (gSprung); die Ebene der Räder trägt Aufbau UND Räder (vorher kippte nur der Aufbau in
   // den Hang, die Räder standen waagrecht, und der Gelände-Wank drehte gegen den Hang).
@@ -585,14 +628,17 @@ function updateChaseCam(dt,snap){
 
 // Modus-Wechsel: Werkstatt ⇄ Fahren
 let mode='werkstatt';const OVL='#brand,#lehren,#ctl,#leg,#hint';const hud=document.getElementById('hud');
-function enterDrive(){mode='fahren';fahrSicht=true;applyVis();   // die Probefahrt fährt den gebauten Wagen (ERGEBNIS), nie die Lehren
+function enterDrive(mitFahrer){pruef=mitFahrer===true?{i:0}:null;
+  // die Telemetrie der Prüffahrt: der Kern fährt zwei Runden mit festem Schritt (dieselbe Zahl richtet gate:garage-labor G11)
+  const tele=document.getElementById('tele');if(tele)tele.textContent=pruef?(r=>r?`Prüffahrt · Runde ${r.zeit.toFixed(1)} s · Flug ${Math.max(0,...r.fluege.map(f=>f.weite))} m · Kontakt ${(r.kontakt*100).toFixed(1)} %`:'Prüffahrt · keine Runde')(VC.pruefFahrt(fahrGesetzLab(),bahn,bodenY,2,1/60).runden[1]):'';
+  mode='fahren';scene.fog.density=0.0035;   // in der Fahrt reicht der Blick über die Strecke (die Werkstatt liegt im dichten Grund)fahrSicht=true;applyVis();   // die Probefahrt fährt den gebauten Wagen (ERGEBNIS), nie die Lehren
   document.querySelectorAll(OVL).forEach(el=>el.style.display='none');if(hud)hud.style.display='flex';  // Welle L: der HUD ist ein Flex-Band (block klebte die Einheit an die Tastenhilfe)
   ground.visible=true;oc.zug=-1;oc.vAz=oc.vEl=0;   // die Werkstatt-Kugel ruht, solange die Fahrt-Kamera führt
   buehne.visible=false;explosionAnwenden(0);   // gefahren wird der ganze Wagen auf dem Gelände — die Ansicht (Explosion, Teller) wartet in der Werkstatt
   Object.assign(car,VC.fahrZustand(0,0,0));VC.fahrStand(car,fahrGesetzLab(),bodenY,0);   // frischer Fahrzustand auf dem Boden
   input.throttle=input.brake=input.steer=input.hand=0;
   vehicle.position.set(0,0,0);vehicle.rotation.set(0,0,0);camOrb.follow=true;dragging=false;resetTrack();updateChaseCam(0,true);}
-function exitDrive(){mode='werkstatt';fahrSicht=false;applyVis();
+function exitDrive(){mode='werkstatt';scene.fog.density=0.020;fahrSicht=false;applyVis();
   document.querySelectorAll(OVL).forEach(el=>el.style.display='');if(hud)hud.style.display='none';
   ground.visible=false;
   vehicle.position.set(0,0,0);vehicle.rotation.set(0,0,0);gSprung.position.set(0,0,0);gSprung.rotation.set(0,0,0);
@@ -607,11 +653,13 @@ addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('keydown',e=>{keys[e.code]=true;
   if(mode==='fahren'&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
   if(e.code==='Escape'){if(mode==='fahren'){exitDrive();e.stopImmediatePropagation();}return;}   // der Fahr-Exit hält Esc an: die Brücke dahinter sieht ihn nicht (vorher stand mode schon auf werkstatt — die Heimkehr folgte)
-  if(e.code==='KeyK'){kinB.click();return;}                          // Türen — in beiden Modi (auch beim Fahren)
+  if(e.code==='KeyK'){kinB.click();return;}
+  if(e.code==='KeyF'&&mode==='fahren'){pruef=pruef?null:{i:0};return;}   // F: der Fahrer der Linie übernimmt / gibt ab                          // Türen — in beiden Modi (auch beim Fahren)
   if(mode!=='werkstatt')return;
   const order=['frame','joints','cal','pkg','wheels','body','neg'];
   const map={Digit1:'frame',Digit2:'joints',Digit3:'cal',Digit4:'pkg',Digit5:'wheels',Digit6:'body',Digit7:'neg'};
-  if(map[e.code]){show[map[e.code]]=!show[map[e.code]];applyVis();const i=order.indexOf(map[e.code]);ldiv.children[i].classList.toggle('on');}
+  if(map[e.code]==='cal')lehrenSetzen(!show.cal);
+  else if(map[e.code]){show[map[e.code]]=!show[map[e.code]];applyVis();const i=order.indexOf(map[e.code]);ldiv.children[i].classList.toggle('on');}
   const pk={Digit8:'persp',Digit9:'iso',Digit0:'seite'}[e.code];if(pk)projSetzen(pk);
   const ak={KeyX:'explode',KeyN:'anim',KeyT:'dreh'}[e.code];   // X Explosion ganz/zu · N Animation · T Drehteller — über den Regler der Hülle
   if(ak){const inp=ansichtRegler.eingabe(ak);if(inp.type==='checkbox')inp.click();else{inp.value=String(ANS.explode>0.5?0:1);inp.dispatchEvent(new Event('input',{bubbles:true}));}}
@@ -623,7 +671,7 @@ function readKeys(){
   input.brake=(keys['KeyS']||keys['ArrowDown'])?1:0;
   input.steer=((keys['KeyA']||keys['ArrowLeft'])?1:0)-((keys['KeyD']||keys['ArrowRight'])?1:0);
   input.hand=keys['Space']?1:0;}
-const startB=document.getElementById('start');if(startB)startB.onclick=enterDrive;
+const startB=document.getElementById('start'),pruefB=document.getElementById('pruefB');if(startB)startB.onclick=()=>enterDrive(false);if(pruefB)pruefB.onclick=()=>enterDrive(true);
 // DIE WERKSTATT-KUGEL (18.10., r184): az · el · dist um ein Ziel wie die Fahrt-Kamera camOrb, gedämpft wie der alte Orbit
 // (Zug 2π je Bildhöhe, 5 % je Bild, Rad ×0,95 in 3,5–16 m, rechts schieben) — vendor/ trägt die Engine, kein Addon
 const oc={ziel:new THREE.Vector3(0,0.55,0),az:0,el:0,dist:1,vAz:0,vEl:0,zug:-1},_cr=new THREE.Vector3();
@@ -686,14 +734,17 @@ function animate(zeit){const dt=tAlt?Math.min(1/30,(zeit-tAlt)/1000):0;tAlt=zeit
   doors.forEach(d=>{const tgt=(d.sd<0?-open:open);d.pv.rotation.y+=(tgt-d.pv.rotation.y)*0.08;if(Math.abs(tgt-d.pv.rotation.y)>1e-3)tuerZieht=true;});
   const K=kamera();K.updateMatrixWorld();
   if(mode!=='fahren'&&!tuerZieht&&!ansichtLebt()&&performance.now()>wachBis&&_camGleich(K))return;
+  // im Leicht-Modus rechnet der Schatten nur, wenn er sich ändert: Fahrt, Ansicht in Bewegung, Tür, gewandertes Licht (rebuild markiert selbst)
+  if(leicht&&(mode==='fahren'||ansichtLebt()||tuerZieht||!key.position.equals(_keyAlt))){key.shadow.needsUpdate=true;_keyAlt.copy(key.position);}
   _kamAlt=K;_camAlt.copy(K.matrixWorld);_projAlt.copy(K.projectionMatrix);raederSetzen();R.render(scene,K);}
+const _keyAlt=new THREE.Vector3();
 // DAS CPU-RASTER ZEICHNET OHNE VIELFACH-ABTASTUNG: liefert der Adapter Software (swiftshader, llvmpipe, lavapipe), fällt das
 // MSAA vor dem ersten Bild — wie three es im Kompatibilitäts-Modus selbst tut (backend.init: _samples = 0); die Karte behält es.
 // Gemessen (Isometrie 1280×720, swiftshader): 196 → 86 ms je Bild.
 const _softwareRaster=i=>!!i&&/swiftshader|llvmpipe|lavapipe|software|subzero/i.test([i.vendor,i.architecture,i.device,i.description].join(' '));
 R.init().then(()=>{const d=R.backend&&R.backend.device;if(d&&_softwareRaster(d.adapterInfo))R._samples=0;});
-presetSetzen('gt');werkOrbit();R.setAnimationLoop(animate);   // Welle L: das erste Laden geht denselben Weg (der Federraten-Regler zeigte 95 bei Zustand 100)
-addEventListener('resize',()=>{_wecke();cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();R.setSize(innerWidth,innerHeight);if(mode!=='fahren')werkOrbit();});
+presetSetzen('gt');if(LEICHT)leichtSetzen(true);werkOrbit();R.setAnimationLoop(animate);   // Welle L: das erste Laden geht denselben Weg (der Federraten-Regler zeigte 95 bei Zustand 100)
+addEventListener('resize',()=>{_wecke();cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();R.setSize(innerWidth,innerHeight);if(leicht)R.setPixelRatio(0.5);if(mode!=='fahren')werkOrbit();});
 
 /* ==================== DIE BRÜCKE ZUR HEIMAT (die Hülle, K41) ==================== */
 /* EINE Brücke für alle Welten (../huelle/huelle.js): ready einmal, die DSL spricht über die ECHTEN UI-Pfade (Button-click

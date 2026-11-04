@@ -101,7 +101,7 @@ function wechselVerdict(m) {
 
 // DAS FAHR-GESETZ EINES REZEPTS (der Satz, den Probefahrt und Welt fahren): exportDrive über die Vorgabe und den Patch des Rezepts.
 const gesetzVon = (VC, pid) => VC.fahrGesetz(VC.exportDrive(Object.assign({}, VC.DEFAULT_P, VC.presetPatch(pid))));
-// ── K2–K5 — DER FAHR-SCHRITT AM KERN SELBST (Node; dieselbe Funktion, die Probefahrt und Welt rufen). ──
+// ── K2–K4, K6–K8 — DER FAHR-SCHRITT AM KERN SELBST (Node; dieselbe Funktion, die Probefahrt und Welt rufen). ──
 function kernProbe(VC) {
     if (!VC || typeof VC.fahrSchritt !== "function" || typeof VC.fahrGesetz !== "function")
         return [["K2 der Kern trägt den Fahr-Schritt", false, "vehicle-core ohne fahrSchritt/fahrGesetz"]];
@@ -174,24 +174,8 @@ function kernProbe(VC) {
         q35.z.z > 0.3 && Math.abs(q30.z.z) <= 0.01 && q50.z.z > 1,
         `35° Fahrt ${q35.z.z.toFixed(2)} m · 30° Stand ${q30.z.z.toFixed(3)} m · 50° Stand ${q50.z.z.toFixed(2)} m`,
     ]);
-    // K5 — die Vertikale: Kuppe (R 12 m hebt bei Vollgas ab, R 40 m nicht), Klippe 7 m (ballistisch, landet).
-    const kuppe = (R) => (x) => {
-        const x1 = R * 0.3;
-        return Math.abs(x) < x1 ? -(x * x) / (2 * R) : -(x1 * x1) / (2 * R) - (Math.abs(x) - x1) * 0.3;
-    };
-    const k12 = lauf("gt", kuppe(12), 600, () => ({ throttle: 1 }), -60);
-    const k40 = lauf("gt", kuppe(40), 600, () => ({ throttle: 1 }), -60);
-    const kl = lauf(
-        "gt",
-        (x) => (x < 10 ? 0 : -7),
-        240,
-        () => ({ throttle: 1 })
-    );
-    out.push([
-        "K5 Vertikale: Kuppe R 12 m hebt ab, R 40 m nicht; die 7-m-Klippe ohne Höhen-Sprung > 0,5 m je Schritt, gelandet",
-        k12.luft > 0 && k40.luft === 0 && kl.luft > 0 && kl.sprung <= 0.5 && !kl.z.luft && Math.abs(kl.z.y + 7) <= 0.05,
-        `Kuppe R12 Luft ${k12.luft} · R40 Luft ${k40.luft} · Klippe Luft ${kl.luft}, größter Sprung ${kl.sprung.toFixed(2)} m, Ende y ${kl.z.y.toFixed(2)}`,
-    ]);
+    // K5 (die Vertikale: Kuppe, Klippe) richtet seit w11-fahrzeug die Prüfstrecke der Garage — Kuppe, Kicker, Lücke, Tisch und
+    // Landung im Gelände-Gesetz, gefahren vom Fahrer der Linie (gate:garage-labor G11: Flug, Landestoß, Bodenkontakt, Federweg).
     // K7 — DIE WAND IST EIN SPRUNG DES BODENS: der GT steht auf ebenem Boden, dann liegt der Boden
     // unter ihm auf einmal 0,35 m höher (der Schub des Wirts quer auf höheren Grund). Die Wand hält EINEN Schritt (der Wirt
     // schiebt heraus), dann steigt der Wagen auf sein Gesetz, je Schritt höchstens eine Stufe.

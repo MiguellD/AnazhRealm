@@ -344,9 +344,15 @@
         // tragen den Stoff ihrer Zeit, damit die Achse sich auf einen Blick liest (am 02.11. waren heute und Zukunft im selben
         // Azurblau kaum zu trennen): der Motorwagen das Wagengrün der Karosseriebauer (Uni, kein Metallic), die Zukunft eine
         // perlgraue Keramik, die das Bernstein des Hauptlichts warm färbt (die Wärme der Antike über dem Graphit des Unterbaus und dem Licht der Kanten)
-        wagengruen: { color: 0x1f3d2e, roughness: 0.28, metalness: 0, stoff: "lack", seh: "stoff" },
-        keramik: { color: 0xbcbfbe, roughness: 0.24, metalness: 0, stoff: "lack", seh: "stoff" },
+        // DIE LASUR (w11-fahrzeug, 04.11.): der Lack der Leiste (bzw. des Samens) färbt den Körper JEDER Zeit — über den Stoff der
+        // Zeit gelegt mit ihrem Gewicht `lasur` (linear gemischt, Rauheit und Glanz bleiben die der Zeit): das Holz nimmt die
+        // Beize (0,45), das Lackholz der Kutsche und das Wagengrün tragen die Farbe des Stellmachers, die Keramik der Zukunft
+        // ihre Tönung. Vorher ersetzte `koerper` die Wahl: in der Zukunft (und jeder Stufe vor heute) war die Farbe nicht änderbar.
+        wagengruen: { color: 0x1f3d2e, roughness: 0.28, metalness: 0, stoff: "lack", seh: "stoff", lasur: 0.9 },
+        keramik: { color: 0xbcbfbe, roughness: 0.24, metalness: 0, stoff: "lack", seh: "stoff", lasur: 0.75 },
     };
+    EPOCHE_STOFF_ART.holz.lasur = 0.45;
+    EPOCHE_STOFF_ART.lackholz.lasur = 0.85;
     const EPOCHE_STOFF_GEBAUT = {};
     function epocheStoff(art) {
         if (EPOCHE_STOFF_GEBAUT[art]) return EPOCHE_STOFF_GEBAUT[art];
@@ -363,6 +369,21 @@
         stoffFarbe(m);
         EPOCHE_STOFF_GEBAUT[art] = m;
         return m;
+    }
+    // Der Körper der Zeit im Lack `lack` (ein Stoff des LACK_GESETZ): je Paar EIN geteilter Stoff. Ein Lack der Zeit (Wagengrün,
+    // Keramik) trägt die Lackschicht des Lacks (Klarlack, gate:gegenstand-stoff), Rauheit und Metall der Zeit; Holz bleibt Holz.
+    const EPOCHE_KOERPER = {};
+    function epocheKoerper(art, lack) {
+        const k = art + "|" + lack.uuid;
+        if (EPOCHE_KOERPER[k]) return EPOCHE_KOERPER[k];
+        const a = EPOCHE_STOFF_ART[art],
+            basis = epocheStoff(art);
+        const m = a.stoff === "lack" ? lack.clone() : basis.clone();
+        m.color.copy(basis.color).lerp(lack.color, a.lasur || 0);
+        m.roughness = a.roughness;
+        m.metalness = a.metalness;
+        m.userData = Object.assign({}, basis.userData, { __lack: lack.userData.__lack });
+        return (EPOCHE_KOERPER[k] = m);
     }
     const EPOCHE_TAFELN = new Map(); // je Stufe (das Objekt der Tafel, nie ihr Name) EINE Tafel
     function epocheTafel(E) {
@@ -946,7 +967,9 @@
     //   Breitester Punkt an der Gürtellinie (Schulter). Darunter Einzug (Taille),
     //   darüber Dach-Einzug der Seitenscheibe (Tumblehome). Quadratisch → volle Schulter, Verjüngung erst zu den Enden.
     function crossSection(y, x, S, P) {
-        const { ySill, yBelt, yRoof, bw, noseX, tailX, fAx, rAx } = S;
+        const { ySill, yRoof, bw, noseX, tailX, fAx, rAx } = S;
+        // die offene Haut (Schlitten, Karren) trägt kein Glashaus: ihr Bord teilt sich — unten die Taille, oben das Tumblehome
+        const yBelt = P.haut === "offen" ? (ySill + S.yBelt) / 2 : S.yBelt;
         // ── VERTIKAL zy ── Schulter am Gürtel = breitester Punkt; darunter Unterschnitt (Tuck), darüber Tumblehome.
         let zy;
         if (y >= yBelt) {
@@ -989,7 +1012,7 @@
     // Verjüngt eine Aufbau-Gruppe: skaliert jeden Vertex in z nach seiner Höhe (im Gruppen-Frame, egal wo das Fahrzeug steht).
     // Greift Meshes UND Linien (der Frame ist aus Liniensegmenten).
     function taperBody(group, S, P) {
-        if (P.taille <= 0 && P.tumblehome <= 0 && !(P.coke > 0)) return;
+        if (!P.taille && !P.tumblehome && !(P.coke > 0)) return; // eine Ausstellung (< 0) ist auch ein Schnitt
         group.updateMatrixWorld(true);
         const gInv = new THREE.Matrix4().copy(group.matrixWorld).invert();
         const v = new THREE.Vector3(),
@@ -3116,6 +3139,10 @@
         //    Dichte der geschlossenen Huelle (Blech, Motor, Kabine voll Luft): ein GT mit 9,6 m³ wiegt 1,4 t. Der Wirt
         //    liest sie fuer jeden Stoss (vorher hielt er die Zahl selbst: STOSS.dichteWagen — eine Studio-Groesse im Wirt). ──
         masseDichte: 150,
+        // ── w11-fahrzeug (rein additive DATEN-Zeile — Praezedenz: masseDichte) — DAS ANTRIEBS-GESETZ (carPhys): Luftdichte,
+        //    Wirkungsgrad des Triebstrangs, das Tempo, ab dem der Motor seine volle Leistung trägt (darunter das Moment), die
+        //    Rollreibung des Gummis auf Asphalt (cr) und das Halten des Gespanns ohne Peitsche (m/s²). ──
+        antrieb: { rho: 1.2, eta: 0.85, vKnick: 12, reibung: 0.013, zugHalt: 1.5 },
         // ── 0710-4 Klasse 4 (rein additive DATEN-Zeilen — Praezedenz: masseDichte) — DER REITER IM WAGEN: die Lehne des
         //    Fahrersitzes (rad nach hinten; der Bau der Sitzreihe liest sie, der Wirt neigt den Rumpf des Reiters mindestens
         //    so weit), der Kopf-Freiraum unter der Dachlinie (m: Dachhaut + Luft ueber dem Scheitel) und die steilste
@@ -3352,17 +3379,47 @@
         const inb = (front ? R * Math.sin(steer) : 0) + hw * Math.cos(front ? steer : 0); // inboard-Rand des gelenkten Reifens ab Radmitte
         return { pitch, roll, heave, vert, inb, gap: Math.min(0.3, Math.max(0.045, vert + 0.025)) }; // +25 mm Reserve, gedeckelt
     }
-    // Antriebsphysik AUS DER FORM abgeleitet:
-    //   Masse ∝ Länge·Breite·Höhe (Bounding-Volumen) → a = F/m: schwerer = träger.
-    //   Stirnfläche ∝ Breite·Höhe → Luftwiderstand → Tempo am Limit (Schub = Widerstand, Masse kürzt sich raus).
-    //   F0 (Motorschub) + Beiwert sind konstant (Antrieb, keine Geometrie); auf GT geeicht → a≈9, vmax≈16.
+    // DAS ANTRIEBS-GESETZ (w11-fahrzeug, 04.11. — vorher EIN Schub F0 für jeden Wagen jeder Zeit, vmax nur aus der Stirnfläche:
+    // der Schlitten fuhr 79 km/h, der GT 54, alle zwischen 40 und 80). Jetzt folgt das Tempo der Technik seiner Zeit:
+    //   Masse      = Volumen (Länge · Spur · Dach, m³ — die Größe, auf die Izz und die Wirts-Masse geeicht sind) × FAHR.masseDichte
+    //   Luft       = ½ ρ · cw · Spur · Dach / Masse (cw der Gattung; vor heute und in der Zukunft der Zeit — der offene Karren 1,1)
+    //   Reibung    = cr · g (die Kufe gleitet mit 0,2, das Vollrad rollt mit 0,06, der Gummi mit 0,013)
+    //   Leistung   = das Zugtier (Zahl × Watt, Zugkraft am Stand, gedeckelt bei seiner Gangart) oder der Motor (kW/t der Gattung ×
+    //                der Stufe, Wirkungsgrad η, die volle Leistung ab vKnick, darunter das Moment: a = min(aEngine, aLeist / v))
+    //   vmax       = das Gleichgewicht aLeist / v = Reibung + Luft · v² (das Zugtier höchstens in seiner Gangart).
+    // Ohne Gas zieht der Motor (Schleppmoment) bzw. hält das Gespann (`schlepp`); das Ausrollen von heute bleibt FAHR.rollDecel.
     function carPhys(P) {
+        const A = FAHR.antrieb,
+            E = epocheStufe(P),
+            Z = (E && E.antrieb) || {};
         const len = P.radstand + P.ueberhangV + P.ueberhangH,
             mass = len * P.spur * P.dach,
-            front = P.spur * P.dach,
-            F0 = 80.5,
-            dragC = 0.1618;
-        return { aEngine: F0 / mass, dragK: (dragC * front) / mass, vmax: Math.sqrt(F0 / (dragC * front)), mass: mass };
+            kg = mass * FAHR.masseDichte,
+            cw = Z.cw != null ? Z.cw : P.cw,
+            reibung = (Z.reibung != null ? Z.reibung : A.reibung) * FAHR.G,
+            dragK = (0.5 * A.rho * cw * P.spur * P.dach) / kg;
+        let aEngine, aLeist, vGang, schlepp;
+        if (Z.zug) {
+            aEngine = (Z.zug.tiere * Z.zug.kraftN) / kg;
+            aLeist = (Z.zug.tiere * Z.zug.leistungW) / kg;
+            vGang = Z.zug.vGang;
+            schlepp = A.zugHalt;
+        } else {
+            aLeist = P.leistung * (Z.leistung != null ? Z.leistung : 1) * A.eta; // kW/t = W/kg
+            aEngine = aLeist / A.vKnick;
+            vGang = Infinity;
+            schlepp = Math.max(0, FAHR.rollDecel - reibung);
+        }
+        // das Gleichgewicht min(aEngine, aLeist / v) = Reibung + Luft · v² (fallend in v: Bisektion)
+        const ueber = (v) => Math.min(aEngine, aLeist / v) - reibung - dragK * v * v;
+        let lo = 0.01,
+            hi = 200;
+        for (let k = 0; k < 60; k++) {
+            const mi = (lo + hi) / 2;
+            if (ueber(mi) > 0) lo = mi;
+            else hi = mi;
+        }
+        return { aEngine, dragK, vmax: Math.min(vGang, lo), mass, kg, aLeist, reibung, schlepp };
     }
     // ── N6.1 (Nervensystem Phase δ, Wörterbuch v1 `drive`) — DIE EINE FAHR-FORMEL ALS EXPORT:
     // exportDrive(P) leitet die Host-Fahr-Skalare aus DENSELBEN Gesetzen ab, die die Probefahrt
@@ -3483,6 +3540,11 @@
                 CA_R: FAHR.CA_R,
                 maxGrip: FAHR.maxGrip,
                 G: FAHR.G, // V18.491.150 G_VIS.fahr=g-9.8 — leave 9.8; not ARENA.g
+                // w11-fahrzeug — das Antriebs-Gesetz (carPhys): Leistung je Masse, Luft, Reibung und Schleppmoment reisen mit
+                aLeist: ph.aLeist,
+                dragK: ph.dragK,
+                reibung: ph.reibung,
+                schlepp: ph.schlepp,
                 steerK: FAHR.zweispur.steerK,
                 steerZentrK: FAHR.zweispur.steerZentrK,
                 slipEps: FAHR.zweispur.slipEps,
@@ -3573,6 +3635,8 @@
         // radR traegt die Rolle (Weg/radR) und die Stufe — ohne ihn kein Fahr-Satz (kein stiller Ersatz-Radius).
         if (!zs || !lk || !(d.vmax > 0) || !(d.kAcc > 0) || !(zs.mass > 0) || !(zs.Izz > 0) || !(d.radR > 0))
             return null;
+        // das Antriebs-Gesetz (carPhys) ist Pflicht des Fahr-Satzes — kein stiller Schub von gestern
+        if (!(zs.aLeist > 0) || !(zs.dragK > 0) || !(zs.reibung >= 0) || !(zs.schlepp >= 0)) return null;
         const a = auf || fahrAufstand(d.huelle, 1);
         if (!a || !(a.vorn > a.hinten) || !(a.quer > 0)) return null;
         const aEngine = d.kAcc * d.vmax;
@@ -3592,7 +3656,10 @@
             CA_R: zs.CA_R,
             maxGrip: zs.maxGrip,
             aEngine: aEngine,
-            dragK: aEngine / (d.vmax * d.vmax), // das Gleichgewicht dragK·vmax² = aEngine (carPhys)
+            aLeist: zs.aLeist, // die Leistung je Masse: a = min(aEngine, aLeist / v) (carPhys)
+            dragK: zs.dragK, // die Luft: ½ ρ cw A / m
+            reibung: zs.reibung, // Roll- bzw. Gleitreibung der Räder (Kufe) der Zeit
+            schlepp: zs.schlepp, // ohne Gas: Schleppmoment des Motors bzw. das haltende Gespann
             vmax: d.vmax,
             maxSteer: lk.maxSteer,
             sfK: lk.sfK,
@@ -3845,6 +3912,10 @@
         const kS = steerIn !== 0 ? G.steerK : G.steerZentrK;
         z.steer += (steerIn * G.maxSteer * sf - z.steer) * (1 - Math.pow(1 - kS, dt * 60));
         const cosN = Math.cos(z.steig || 0) * Math.cos(z.wank || 0); // der Normalkraft-Anteil am Hang
+        // DIE NORMALKRAFT JE MASSE (w11-fahrzeug): am Hang der Anteil g · cos, dazu drückt die Quer-Beschleunigung den Wagen in
+        // eine überhöhte Fahrbahn (wank < 0: die linke Seite tiefer, die Kurve nach links trägt) — N/m = g · cos − a_quer · sin(wank).
+        // Vorher trug die Kurve auf der Überhöhung nur g · cos θ: der Reifen griff schwächer als auf der Ebene.
+        const gN = Math.max(0, g * cosN - (z.aLat || 0) * Math.sin(z.wank || 0));
         // DER WIND (wetter.K5, rein additiv — ohne e.wind byte-gleich): die Anstroemung quer im Koerperframe (links =
         // (−sin, −cos) der Gier) minus die Fahrt quer, ihr Quadrat mit Vorzeichen auf die Flanke (G.luft). Am Boden zieht sie
         // wie der Quer-Hangabtrieb (unter Schritttempo haelt sie die Haftung bis zum Reibkreis), im Flug frei.
@@ -3874,7 +3945,7 @@
             z.slipF = slipF;
             z.slipR = slipR;
             // ── Achslasten mit Laengs-Lastverlagerung; am Hang traegt nur der Normal-Anteil ──
-            const Wt = m * g * cosN,
+            const Wt = m * gN,
                 dW = (((z.aLong || 0) * G.cgH) / L) * m;
             const Wf = Math.max(0, Wt * (c / L) - dW),
                 Wr = Math.max(0, Wt * (b / L) + dW);
@@ -3896,16 +3967,18 @@
             //    GT nicht ueber 35 km/h). Jetzt zieht er ueber die Raeder: die Spitze bleibt auf jedem Boden dieselbe, der
             //    Bremsweg ist v² / 2 (μ·g + Rollwiderstand). Gas, Ausrollen und Lenken auf μ 1 byte-gleich. ──
             let aDrive = 0;
-            if (thr > 0) aDrive += G.aEngine * thr;
+            if (thr > 0) aDrive += Math.min(G.aEngine, G.aLeist / Math.max(0.1, Math.abs(vL))) * thr;
             if (brk > 0) aDrive -= vL > S.bremsV ? G.brakeDecel : motor ? G.aEngine * S.rueckAntrieb : 0;
             let Fr = aDrive * m - G.dragK * m * vL * Math.abs(vL);
             if (hand) Fr -= G.handDecel * m * sgn;
             // der Wasserschlag sperrt die Antriebsraeder: Haftung wie die Handbremse, nie ueber den Stand hinaus (sie haelt,
             // sie schiebt nicht zurueck)
             else if (!motor && dt > 0) Fr -= Math.min(G.handDecel, Math.abs(vL) / dt) * m * sgn;
-            const capL = cap * m * g * cosN;
+            const capL = cap * m * gN;
             let Fx = Math.max(-capL, Math.min(capL, Fr));
-            if (Math.abs(vL) > 0.02) Fx -= FAHR.rollDecel * m * sgn; // Rollwiderstand
+            // Rollwiderstand (die Reibung der Zeit) und ohne Gas, Bremse und Handbremse das Schleppmoment (heute zusammen
+            // FAHR.rollDecel: das Ausrollen von gestern bleibt)
+            if (Math.abs(vL) > 0.02) Fx -= (G.reibung + (thr === 0 && brk === 0 && !hand ? G.schlepp : 0)) * m * sgn;
             // SCHAU 2 (10.10., fahr-bahn) — UNTER SCHRITTTEMPO ROLLT DAS GELENKTE RAD KINEMATISCH: die Gier ist dort
             // kinematisch geblendet (lowBlendV, unten), der Schlupf im Nenner gedaempft (slipEps) — er meldet am Stand den
             // vollen Einschlag als Schlupf, und die gesaettigte Seitenkraft des Vorderrads bremste mit ihrem Laengsanteil
@@ -3976,6 +4049,126 @@
         fahrKraefte(z, e, G, dt);
         return fahrStand(z, G, boden, dt);
     }
+    // DIE LEISTUNG EINES WAGENS (w11-fahrzeug, rein additiv): das Tempo nach 90 s Vollgas auf der Ebene (km/h) und die Zeit
+    // 0 → 50 km/h (s, null: nie), gefahren vom EINEN Fahr-Schritt — die Lehren-Tafel der Garage zeigt sie je Epoche, die
+    // Labor-Linse (G9) richtet die Ordnung der Zeit an ihr.
+    function fahrLeistung(P) {
+        const G = fahrGesetz(exportDrive(P));
+        if (!G) return null;
+        const z = fahrZustand(0, 0, 0),
+            eben = () => 0,
+            e = { throttle: 1 };
+        fahrStand(z, G, eben, 0);
+        let t50 = null,
+            v1 = -1;
+        for (let i = 1; i <= 5400; i++) {
+            fahrSchritt(z, e, G, eben, 1 / 60);
+            if (t50 === null && z.speed * FAHR.kmh >= 50) t50 = i / 60;
+            if (i % 60 === 0) {
+                if (z.speed - v1 < 0.005) break; // das Tempo steht (< 0,005 m/s je Sekunde)
+                v1 = z.speed;
+            }
+        }
+        return { kmh: Math.round(z.speed * FAHR.kmh * 10) / 10, t50: t50 === null ? null : Math.round(t50 * 10) / 10 };
+    }
+    // ══ DER FAHRER DER LINIE UND DIE PRÜFFAHRT (w11-fahrzeug, rein additiv) ══
+    // Die Linie ist der Vertrag des Gelände-Kerns (gelaende-core `bahnNormal`: je `ds` X, Z, PHI, KAPPA, BANK, VZIEL; `stuecke`;
+    // `bahnAm(t, x, z, ab)` den Ort darauf) — gereicht als `bahn` mit ihrem `am`. Der Fahrer plant EINMAL das Tempo je Punkt: in
+    // der Kurve v² · κ ≤ g · (μ + tan θ) / (1 − μ · tan θ) · FAHRER.reserve (die Überhöhung θ trägt mit), am Kicker das Tempo der
+    // Bühne, rückwärts die Bremse (FAHRER.bremse · μ · g) — und lenkt nach dem Punkt voraus (Pure Pursuit, Vorschau
+    // FAHRER.vorschau + v · FAHRER.vorschauT); er bremst nur im Rest des Reibkreises neben der Querlast. Rein, ohne Zufall: dieselbe Bahn und derselbe Wagen fahren dieselbe Spur.
+    const FAHRER = { reserve: 0.85, bremse: 0.75, vorschau: 6, vorschauT: 0.55, gasK: 0.6, bremsK: 0.35 };
+    function fahrerPlan(G, b) {
+        const mu = G.maxGrip * G.grip,
+            V = new Float64Array(b.N);
+        for (let i = 0; i < b.N; i++) {
+            const tb = Math.tan(Math.abs(b.BANK[i])),
+                k = Math.abs(b.KAPPA[i]);
+            V[i] = Math.min(G.vmax, b.VZIEL[i], k > 0 ? Math.sqrt((G.g * FAHRER.reserve * (mu + tb)) / Math.max(0.05, 1 - mu * tb) / k) : Infinity);
+        }
+        const ab = FAHRER.bremse * mu * G.g;
+        for (let r = 0; r < 2; r++)
+            for (let i = b.N - 1; i >= 0; i--) {
+                const j = i + 1 < b.N ? i + 1 : b.geschlossen ? 0 : i;
+                V[i] = Math.min(V[i], Math.sqrt(V[j] * V[j] + 2 * ab * b.ds));
+            }
+        return V;
+    }
+    function fahrerLinie(z, G, b, m) {
+        if (!m.plan) m.plan = fahrerPlan(G, b);
+        const o = b.am(z.x, z.z, m.i >= 0 ? m.i : -1);
+        if (!o) return { throttle: 0, brake: 1, steer: 0 };
+        m.i = o.i;
+        const v = z.speed,
+            ld = FAHRER.vorschau + v * FAHRER.vorschauT,
+            j = (o.i + Math.round(ld / b.ds)) % b.N,
+            alpha = Math.atan2(-(b.Z[j] - z.z), b.X[j] - z.x) - z.yaw,
+            a = Math.atan2(Math.sin(alpha), Math.cos(alpha)),
+            delta = Math.atan((2 * G.L * Math.sin(a)) / ld),
+            soll = m.plan[(o.i + 2) % b.N],
+            rest = Math.sqrt(Math.max(0, 1 - Math.pow(Math.abs(z.aLat || 0) / (G.maxGrip * G.grip * G.g), 2))); // der Reibkreis neben der Querlast
+        return {
+            steer: Math.max(-1, Math.min(1, (delta * (1 + v * G.sfK)) / G.maxSteer)),
+            throttle: v < soll ? Math.min(1, (soll - v) * FAHRER.gasK + 0.15) : 0,
+            brake: v > soll + 0.3 ? Math.min(rest, (v - soll) * FAHRER.bremsK) : 0,
+        };
+    }
+    // DIE PRÜFFAHRT: `runden` Runden aus dem Stand auf der Bahn `b` über dem Boden `boden` (dt fest) — die Telemetrie je Runde:
+    // die Zeit, je Kurve (Stück mit Radius) die größte Querbeschleunigung am Boden und das Tempo im Scheitel, je Flug die Weite und
+    // der Landestoß (der Sprung der Vertikalen beim Aufsetzen, m/s), der Federweg (das tiefste Einfedern, die Schritte am Anschlag
+    // der Hub-Feder, der größte Nick und Wank),
+    // der Anteil der Schritte mit Rädern am Boden, die größte Ablage quer zur Linie und die Spur (ein Abdruck der Lage je 0,5 s —
+    // die Wiederholung ist gleich, wenn er gleich ist). Leser: die Garage (die Prüffahrt zeigt sie), die Labor-Linse G11.
+    function pruefFahrt(G, b, boden, runden, dt) {
+        const z = fahrZustand(b.X[0], b.Z[0], b.PHI[0]),
+            m = { i: 0 },
+            T = [];
+        fahrStand(z, G, boden, 0);
+        let t = 0,
+            schritt = 0,
+            r = null,
+            iAlt = 0,
+            ab = null,
+            spur = 2166136261;
+        const neu = () => ({ t0: t, kurven: b.stuecke.filter((st) => st.R < Infinity).map((st) => ({ R: st.R, bank: Math.round((st.bank * 1800) / Math.PI) / 10, aQ: 0, vScheitel: 0 })), fluege: [], hubMin: 0, anschlag: 0, nick: 0, wank: 0, boden: 0, schritte: 0, ablage: 0 });
+        r = neu();
+        while (T.length < runden && t < 600) {
+            const e = fahrerLinie(z, G, b, m),
+                warLuft = z.luft === true,
+                vy0 = z.vy;
+            fahrSchritt(z, e, G, boden, dt);
+            t += dt;
+            schritt++;
+            const o = b.am(z.x, z.z, m.i);
+            r.schritte++;
+            if (!z.luft) r.boden++;
+            r.hubMin = Math.min(r.hubMin, z.fHub || 0);
+            if (z.fHub <= 1e-4 - FAHR.schritt.hubMax) r.anschlag++; // die Hub-Feder am Anschlag
+            r.nick = Math.max(r.nick, Math.abs(z.fNick || 0));
+            r.wank = Math.max(r.wank, Math.abs(z.fWank || 0));
+            if (o) r.ablage = Math.max(r.ablage, Math.abs(o.q));
+            let k = -1;
+            b.stuecke.filter((st) => st.R < Infinity).forEach((st, n) => o && o.i >= st.i0 && o.i < st.i1 && (k = n));
+            if (k >= 0 && !z.luft) {
+                const K = r.kurven[k],
+                    st = b.stuecke.filter((q) => q.R < Infinity)[k];
+                K.aQ = Math.max(K.aQ, Math.abs(z.aLat || 0) / G.g);
+                if (Math.abs(o.i - (st.i0 + st.i1) / 2) < 1) K.vScheitel = Math.round(z.speed * 10) / 10;
+            }
+            if (!warLuft && z.luft) ab = [z.x, z.z];
+            if (warLuft && !z.luft && ab) r.fluege.push({ weite: Math.round(Math.hypot(z.x - ab[0], z.z - ab[1]) * 10) / 10, stoss: Math.round((z.vy - vy0) * 100) / 100 });
+            if (schritt % Math.round(0.5 / dt) === 0) for (const w of [z.x, z.y, z.z]) spur = Math.imul(spur ^ Math.round(w * 1000), 16777619) >>> 0;
+            if (o && iAlt > b.N * 0.9 && o.i < b.N * 0.1) {
+                r.zeit = Math.round((t - r.t0) * 100) / 100;
+                r.kurven.forEach((K) => (K.aQ = Math.round(K.aQ * 100) / 100));
+                Object.assign(r, { kontakt: Math.round((r.boden / r.schritte) * 1000) / 1000, hubMin: Math.round(r.hubMin * 1000) / 1000, ablage: Math.round(r.ablage * 100) / 100 });
+                T.push(r);
+                r = neu();
+            }
+            if (o) iAlt = o.i;
+        }
+        return { runden: T, spur };
+    }
     // SCHAU 2 (rein additiv) — DER PLATZ (FAHR.platz): traegt die Ebene der vier Raeder den Wagen bei (x, z, yaw), und
     // faehrt er von dort an? Die Anfahrt ist die Laengskraft am Reibkreis (Antrieb min(aEngine · Gang, μ·g·cos θ)) gegen
     // Rollwiderstand und Hangabtrieb g·sin θ, θ die Fallinie der Ebene (steig und wank zusammen); der schwaechere Gang
@@ -3987,7 +4180,7 @@
         const mu = G.maxGrip * G.grip;
         const antrieb = G.aEngine * Math.min(1, FAHR.schritt.rueckAntrieb);
         return function (t) {
-            return Math.min(antrieb, mu * G.g * Math.cos(t)) - FAHR.rollDecel - G.g * Math.sin(t);
+            return Math.min(antrieb, mu * G.g * Math.cos(t)) - G.reibung - G.g * Math.sin(t);
         };
     }
     function fahrPlatzGrenze(G) {
@@ -4333,6 +4526,8 @@
             kind: "vehicle",
             lab: "Supersport",
             s: {
+                leistung: 140, // kW/t (das Antriebs-Gesetz, carPhys)
+                cw: 0.35,
                 radstand: 2.7,
                 spur: 1.66,
                 ueberhangV: 0.6,
@@ -4365,6 +4560,8 @@
             kind: "vehicle",
             lab: "Limousine",
             s: {
+                leistung: 57, // kW/t (das Antriebs-Gesetz, carPhys)
+                cw: 0.27,
                 radstand: 3.05,
                 spur: 1.6,
                 ueberhangV: 0.88,
@@ -4397,6 +4594,8 @@
             kind: "vehicle",
             lab: "Kompakt-FWD",
             s: {
+                leistung: 31, // kW/t (das Antriebs-Gesetz, carPhys)
+                cw: 0.31,
                 radstand: 2.6,
                 spur: 1.55,
                 ueberhangV: 0.72,
@@ -4429,6 +4628,8 @@
             kind: "vehicle",
             lab: "SUV",
             s: {
+                leistung: 52, // kW/t (das Antriebs-Gesetz, carPhys)
+                cw: 0.37,
                 radstand: 2.85,
                 spur: 1.64,
                 ueberhangV: 0.82,
@@ -4461,6 +4662,8 @@
     // Der Regler-Grundzustand (Original garage.js Z.712–714) + die Preset-Klick-Basis
     // (Z.816: heck/windshieldRake reset) — die Shell UND buildInstance mergen identisch.
     const DEFAULT_P = {
+        leistung: 92, // kW/t der Gattung (das Antriebs-Gesetz, carPhys) — der GT
+        cw: 0.31, // Luftwiderstands-Beiwert der Gattung
         radstand: 2.9,
         spur: 1.62,
         ueberhangV: 0.78,
@@ -4501,6 +4704,8 @@
             koerper: "holz",
             s: { radstand: 2.0, spur: 1.0, ueberhangV: 0.55, ueberhangH: 0.25, taille: 0, radR: 0.2, fahrhoehe: 0.22, guertel: 0.6, dach: 1.0, kabineMitte: -0.1, kabineLaenge: 1.2, tumblehome: 0, windshieldRake: 0.3 },
             gestuft: { rad: "kufe", radFrei: true, antrieb: "zugtier", haut: "offen", heck: "steil", tueren: 2 },
+            // die Schleife: zwei Ochsen ziehen Kufen über die Erde (Gleitreibung 0,2) — die Zugkraft trägt kaum mehr als die Reibung
+            antrieb: { zug: { tiere: 2, kraftN: 700, leistungW: 450, vGang: 1.6 }, cw: 1.1, reibung: 0.2 },
             stoffe: { rimM: "holz", rimD: "holzDunkel", tire: "eisen", steel: "holzDunkel", seat: "leder", trim: "holz", pillar: "holzDunkel", housing: "holzDunkel", grille: "holz", liner: "holzDunkel", drl: "holzDunkel", lensW: "holzDunkel", lensR: "holzDunkel", lensA: "holzDunkel" },
         },
         {
@@ -4511,6 +4716,8 @@
             koerper: "holz",
             s: { radstand: 2.1, spur: 1.2, ueberhangV: 0.5, ueberhangH: 0.4, taille: 0, radR: 0.42, fahrhoehe: 0.42, guertel: 0.92, dach: 1.3, kabineMitte: -0.1, kabineLaenge: 1.4, tumblehome: 0, windshieldRake: 0.3 },
             gestuft: { rad: "voll", radFrei: true, antrieb: "zugtier", haut: "offen", heck: "steil", tueren: 2 },
+            // das Vollrad rollt (0,06), die Ochsen gehen ihren Schritt (2,3 m/s)
+            antrieb: { zug: { tiere: 2, kraftN: 700, leistungW: 550, vGang: 2.3 }, cw: 1.1, reibung: 0.06 },
             stoffe: { rimM: "holz", rimD: "bronze", tire: "eisen", steel: "holzDunkel", seat: "leder", trim: "holz", pillar: "holzDunkel", housing: "bronze", grille: "holz", liner: "holzDunkel", drl: "holzDunkel", lensW: "holzDunkel", lensR: "holzDunkel", lensA: "holzDunkel" },
         },
         {
@@ -4521,6 +4728,8 @@
             koerper: "lackholz",
             s: { radstand: 2.5, spur: 1.36, ueberhangV: 0.3, ueberhangH: 0.66, taille: 0, radR: 0.66, radVorn: 0.72, fahrhoehe: 0.55, guertel: 1.55, dach: 2.3, kabineMitte: -0.25, kabineLaenge: 1.5, tumblehome: 0, windshieldRake: 0.08, verdeck: 1 },
             gestuft: { rad: "speiche", radFrei: true, antrieb: "zugtier", topo: "kutsche" },
+            // vier Pferde im Trab und Galopp (7 m/s), das Speichenrad mit Eisenreif (0,035)
+            antrieb: { zug: { tiere: 4, kraftN: 800, leistungW: 1100, vGang: 7 }, cw: 0.95, reibung: 0.035 },
             gestalt: ["kasten", "bock", "bank", "verdeck", "laterne", "unterwagen"],
             stoffe: { rimM: "holz", rimD: "messing", tire: "eisen" },
         },
@@ -4532,6 +4741,8 @@
             koerper: "wagengruen",
             s: { radstand: 2.55, spur: 1.42, ueberhangV: 0.35, ueberhangH: 0.55, taille: 0, radR: 0.41, radVorn: 1, fahrhoehe: 0.34, guertel: 1.12, dach: 1.95, kabineMitte: -0.6, kabineLaenge: 1.7, tumblehome: 0, windshieldRake: 0.05, verdeck: 0 },
             gestuft: { rad: "speiche", radFrei: true, antrieb: "motor", topo: "motorwagen" },
+            // der frühe Motor: 0,15 der Leistung von heute je Tonne, das aufrechte Blech (cw 0,8), Vollgummi (0,02)
+            antrieb: { leistung: 0.15, cw: 0.8, reibung: 0.02 },
             gestalt: ["kuehler", "haube", "kotfluegel", "trittbrett", "scheinwerfer", "windschutz", "lenkrad", "rahmen"],
             stoffe: { rimM: "holz", rimD: "messing" },
         },
@@ -4544,6 +4755,8 @@
             koerper: "keramik",
             s: { radstand: 3.0, spur: 1.66, ueberhangV: 0.62, ueberhangH: 1.2, taille: 0, radR: 0.35, fahrhoehe: 0.12, guertel: 0.8, dach: 1.22, kabineMitte: 0.35, kabineLaenge: 1.9, tumblehome: 0.2, windshieldRake: 0.9 },
             gestuft: { rad: "aero", radInnen: 0.08, antrieb: "leise", topo: "kanzel" },
+            // der leise Antrieb: anderthalbfache Leistung je Tonne, die Kanzel (cw 0,2), der Leichtlauf-Reifen (0,009)
+            antrieb: { leistung: 1.5, cw: 0.2, reibung: 0.009 },
             gestalt: ["monocoque", "kanzel", "lichtKante", "radVerkleidung"],
         },
     ];
@@ -4643,8 +4856,8 @@
         const E = epocheStufe(P);
         const mats = epocheTafel(E);
         const w = werk || {};
-        const bodyMat =
-            E && E.koerper && w.bodyMat !== materials().clay ? epocheStoff(E.koerper) : w.bodyMat || lackStoff(lackIndex(seed));
+        const lack = w.bodyMat || lackStoff(lackIndex(seed));
+        const bodyMat = E && E.koerper && lack !== materials().clay ? epocheKoerper(E.koerper, lack) : lack;
         const ctx = { M: mats, bodyMat: bodyMat, doors: w.doors || [], corners: w.corners || [] };
         const H = hardpoints(P);
         const g = new THREE.Group();
@@ -4657,6 +4870,9 @@
         g.add(pkg);
         g.add(body);
         g.add(wheels);
+        // DER SCHNITT DER FLANKE gilt jeder Gestalt (w11-fahrzeug): Taille und Tumblehome formen auch Kutschkasten, Motorwagen
+        // und Kanzel (vorher waren beide Regler dort tot); die Coke-Linie bleibt die Haut von heute.
+        if (topo) taperBody(body, scal(H, P), Object.assign({}, P, { coke: 0 }));
         if (!topo) {
             const S = scal(H, P);
             taperBody(pkg, S, P);
@@ -4718,6 +4934,9 @@
         fahrStand: fahrStand,
         fahrKraefte: fahrKraefte,
         fahrSchritt: fahrSchritt,
+        fahrLeistung: fahrLeistung, // w11-fahrzeug (rein additiv)
+        fahrerLinie: fahrerLinie, // w11-fahrzeug (rein additiv): der Fahrer einer Linie des Gelände-Kerns
+        pruefFahrt: pruefFahrt, // w11-fahrzeug (rein additiv): die Prüffahrt mit ihrer Telemetrie
         // F1 (rein additiv) — die EINE Chase-Cam (Probefahrt UND Welt-Ritt)
         chaseKamera: chaseKamera,
         chaseGreif: chaseGreif,
