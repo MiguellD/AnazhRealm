@@ -1906,3 +1906,4 @@
 2026-11-04 20:07:07 3acaac9e-radeon ferne.K3#1 GRÜN 0.2 · 1/1
 2026-11-04 20:08:37 3acaac9e-radeon ENDE 1 grün / 0 rot · 3.1 min
 2026-11-04 20:26:57 becfdbb7-radeon START 5 Stationen
+2026-11-04 20:28:20 becfdbb7-radeon mensch.K4#1 ROT 0.5 · 1/5
