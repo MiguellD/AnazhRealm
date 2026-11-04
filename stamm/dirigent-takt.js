@@ -2071,6 +2071,8 @@ class AnazhRealm_dirigent_takt {
         }
         // DER SPIEGEL DES GESETZES (D10): nach dem Bild der Post-Kette, aus ihrer Tiefe — das Wasser des nächsten liest ihn
         if (!direkt) this._spiegelPassZeichne();
+        // DIE KONTAKT-VERDECKUNG (schatten.K3): nach dem Bild, aus seiner Tiefe — der Boden des nächsten liest sie
+        this._kontaktPassZeichne(direkt);
         // DER RÜCKSTRAHL DES BODENS (schatten.K4): aus dem Szenen-Pass dieses Bilds — die Umgebung des nächsten liest ihn
         if (!direkt) this._rueckstrahlZeichne();
         else this._rueckstrahlLeser().an.value = 0;

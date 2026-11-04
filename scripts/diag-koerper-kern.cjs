@@ -113,11 +113,13 @@ function snapshot(parts) {
 // ────────────────────────────────────────────────────────────────────────────
 // Der Vergleich (EXAKT — Object.is; 0 Abweichungen sind das Gesetz).
 // ────────────────────────────────────────────────────────────────────────────
+// Der Selbsttest zählt seine Injektionen, ohne „⛔“ zu drucken (w10-figur: der Puls von dc82a268 las die Mutante quad1 +1e-9,
+// „Gitter … Wert[401]“, als gekippten Byte-Vertrag) — jede „⛔“-Zeile ist ein echter Bruch.
 function runVergleich(morphFn, labPropFn, labLandmarksFn) {
     const dials = ["height", "mass", "tone", "age", "gender", "arms"].map((id) => core.PARAMS_BY_KIND.koerper.find((d) => d.id === id));
 
     let diffs = 0, values = 0, points = 0;
-    const vgl = (a, n, z) => (values++, !Object.is(a, n) && ++diffs < 5 && console.log(`  ⛔ ${z}: alt=${a} neu=${n}`));
+    const vgl = (a, n, z) => (values++, !Object.is(a, n) && ++diffs < 5 && !SELBSTTEST && console.log(`  ⛔ ${z}: alt=${a} neu=${n}`));
 
     // (1) Proportionen — 28 Konstanten, alt vs neu.
     const ap = altProportionen(), np = labPropFn();
@@ -230,9 +232,7 @@ function stossUrteil(C, mutante = null) {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-const selftest = SELBSTTEST;
-
-if (selftest) {
+if (SELBSTTEST) {
     // Vier injizierte Abweichungen (Morph, Proportionen, Landmarken, die Wache ohne Versatz) — jede MUSS die Linse zuenden.
     let fails = 0;
     const morphMut = (p, N) => { neuMorph(p, N); N.parts.quad1.scale.x += 1e-9; };

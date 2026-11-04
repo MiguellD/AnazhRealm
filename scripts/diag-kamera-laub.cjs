@@ -16,7 +16,7 @@
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf, wandEnde, selbsttestEnde, weltTor, jsonLesen, fehlerStapel, SELBSTTEST, path, stammLib, argOpt } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf, wandEnde, selbsttestEnde, weltTor, jsonLesen, fadenScope, fehlerStapel, SELBSTTEST, path, stammLib, argOpt } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 
@@ -988,6 +988,11 @@ hauptLauf(async () => {
         const ort = (max, taeter) => ({
             modi: Object.fromEntries(MODI.map((k) => [k, { n: 64, max, mittel: max / 4, schlimmste: { taeter } }])),
         });
+        // DIE FLÄCHE DER LINSE IST, WAS DIE KAMERA ZEICHNET (kamera-nah `kameraZeichnet`, w10-figur): der Gast des Vorbaus
+        // (`__vorbauGast`, gebaut ohne Draw am Ort des Spielers) zählt nie — bis dahin stand der Geist des GT als Vordergrund vor
+        // jedem Gesicht (haar.K2#1 Radeon 2674ff9a: „vorbau:fahrzeug_gt 27,8 %“); das gezeichnete Mesh daneben zählt
+        const [kz, o1] = [require("./lib/kamera-nah.cjs").kameraZeichnet, { isMesh: 1, geometry: { attributes: { position: 1 } }, layers: { test: () => 1 } }];
+        check("Selbst-Test: der Gast des Vorbaus zählt nie", kz(o1, 0) && !kz({ ...o1, __vorbauGast: 1 }, 0));
         // DER LEIB (K2): gesund und je ein Bruch beim Namen
         const pose = (id, taeter) => ({ id, anker: "haus_basis", x: 0, z: 0, c: [0, 0, 0], arm: 4, taeter });
         const posenN = (n, kaputt) => Array.from({ length: n }, (_, i) => pose(`pose-${i}`, i === 0 && kaputt ? kaputt : []));
@@ -1052,8 +1057,6 @@ hauptLauf(async () => {
         const fdir = path.join(root, "spec", "abnahme");
         const abnahmeBrueche = AU.abnahmeSelbsttest(fdir);
         check("K4 Selbst-Test: die Abnahme-Zeile nennt jeden eingeschmuggelten Fall und jede Fixture beim Namen", abnahmeBrueche.length === 0, abnahmeBrueche.join(" · "));
-        for (const f of jsonLesen(path.join(fdir, "faelle.json")).faelle)
-            console.log(`   Fixture ${f.name}: ${AU.abnahmeUrteil(AU.fixtureMessung(f, fdir), AU.SCHWELLEN).zeile}`);
         // K5 — DIE SOLL-TAFEL (K63, spec/abnahme/soll-tafel.json, AAAA Schritt 0): je sichtbarer Klasse das Soll (eigen,
         // gerechnet oder GELESEN — KOPF_SOLL aus dem Kern, die Toleranz der Albedo-Tafel), das Budget je LOD-Stufe aus dem
         // Haushalt und EIN Maß, dessen Ist die Linse aus der Rohdatei rechnet (die Messung der Werkbank in der Tafel, die Zeile der
@@ -1065,6 +1068,12 @@ hauptLauf(async () => {
         const sollQ = AU.standLeser(root).sollQuelle();
         const sollBrueche = AU.sollTafelSelbsttest(sollTafel, sollQ);
         check("K5 Selbst-Test: die Soll-Tafel ohne Bruch, Teilung und Maße geeicht, das Ist aus der Rohdatei, jeder Tafel-Bruch beim Namen", sollBrueche.length === 0, sollBrueche.join(" · "));
+        // K5 haar.K1 — DER STRICH DES FELLS AUS DER GEOMETRIE (w10-figur): das Rechenmodell der Schale (tetrapoda `fellSchaleBild`,
+        // die Locke aus `fellLocke`) auf Armlänge über vier Kamm-Richtungen, gemessen mit `klassenMasse`. Die Radeon liest ~0,85 ×
+        // Modell: das Gesetz trägt das Band der REF [0,4358; 0,6538] / 0,85, die Locke, die an ihrer Zelle endet (der Stand bis
+        // w10-figur, Strich 4 ohne Nachbarn — Radeon 2674ff9a arm 0,4251), fällt darunter ROT
+        const f1 = fadenScope(["tetrapoda-core.js"]).__tetrapodaCore.fellStrichProbe((u8, m, n) => AU.klassenMasse(u8, m, n, n).strich);
+        check("K5 haar.K1: Strich des Fells im Band, die Zellwand-Locke darunter", f1.gesetz >= 0.513 && f1.gesetz <= 0.769 && f1.zelle < 0.513, JSON.stringify(f1));
         const sollU = AU.sollTafelUrteil(sollTafel, sollQ);
         console.log(`   SOLL-TAFEL: ${sollU.rot} von ${sollU.zeilen.length} Klassen ROT (nach Wirkung):`);
         for (const z of sollU.zeilen) console.log(`     ${AU.sollTafelZeile(z)}`);

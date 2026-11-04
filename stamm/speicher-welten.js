@@ -3016,6 +3016,11 @@ AnazhRealm.R5_STRUCTURE_TEXTURE = Object.freeze({
 //                an `atmoLut` und reist mit ihm — als Felder am Wirt fielen sie, ihr Schlüssel reiste, und das Licht des Orts
 //                stand nie
 // Was eine Welt in eine dieser Karten malt, malt die neue neu (ihr Abschied leert sie: `_horizontKarteLeeren`).
+// DER WURF DES FEUERS (`_lichtWurfK`, schatten.K5) ist ein Knoten jedes beleuchteten Programms und reist am Wirt: als Feld der
+// Welt fiel er, `karten` gab seine Würfel-Tiefe frei, und jeder bleibende Stoff band die zerstörte Textur (swiftshader
+// „Destroyed texture [PointShadowDepthTexture] used in a submit“ — jedes Bild schwarz, gate:schatten-terminator); der
+// Abschied lässt ihn ruhen (`_lichtWurfRuht`), die neue Welt wählt ihre Quelle selbst. Ebenso das Welt-Raster der Blende
+// (`_blendeRasterU`, schatten.K2).
 // die Normalformen des Welt-Gesetzes (`_weltGesetz`): je Objekt einmal geprüft — der Leser der Schwere fragt je Teil-Schritt
 AnazhRealm._GESETZ_NORMAL = new WeakSet();
 AnazhRealm.WELT_GRENZE = Object.freeze({
@@ -3070,6 +3075,7 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "hydroSurfaceUniforms",
         "weltLicht",
         "spiegelLeser",
+        "kontaktLeser",
         "horizontKarte",
         "_skyPmrem",
         "_skyEnvRT",
@@ -3151,6 +3157,8 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "_membranGraphen",
         "_kaskadenS",
         "_blendeK",
+        "_blendeRasterU",
+        "_lichtWurfK",
         "_feldPanoWgslText",
         "_feldPanoPipe",
         "_feldPanoPipeDev",

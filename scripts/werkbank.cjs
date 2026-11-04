@@ -1312,8 +1312,6 @@ async function starte() {
                     // — rang-treu über Belichtung, Tonkurve und sRGB. Die Welle (≤ Amplitude) und die Brechung des Films sind nicht gerechnet.
                     const zielTreue = (m) => {
                         const T = THREE;
-                        if (typeof r._torZielDaten !== "function")
-                            return { r: null, pixel: 0, grund: "die Welt hält kein Ziel-Panorama (kein Studio-Export)" };
                         const cam = r.state.camera;
                         cam.updateMatrixWorld(true);
                         const recs = [];

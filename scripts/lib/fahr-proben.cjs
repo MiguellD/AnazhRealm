@@ -993,7 +993,7 @@ async function probeLeben(expected) {
         // DIE VERTIKALE SIEHT IHRE TÄTER (am lebenden Ritt): (a) der Reiter 0,3 m über dem Sitz, (b) der geerdete Wagen
         // 0,3 m über seinem Boden (im Stand, der Kern nennt ihn geerdet) — je 10 Frames mit einem Eingriff nach dem
         // Ritt-Schritt; die Zählung muss feuern.
-        if (gt && typeof P._rittSchritt === "function") {
+        if (gt) {
             const eingriff = (fn, w) => {
                 r._rittSchritt = function (dt) {
                     P._rittSchritt.call(this, dt);
