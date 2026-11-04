@@ -579,7 +579,7 @@ class AnazhRealm_studio_bruecke {
     // zuerst) und lädt die lib der Kerne (three r128 + die Geometrie-Helfer, keine Labor-Szene) → die Kerne in Manifest-Folge
     // (phyto- VOR foundry-core) → die Brücke ZULETZT (K42: keine Labor-Shell im Faden); importScripts braucht ABSOLUTE URLs
     // (die Blob-URL hat keine Basis). Die Platte stempelt jede Lieferung mit dem Gesetz-SHA ihrer Kerne: je Kern seine
-    // Quellen (scripts · lib · bruecke — die Brücke trägt `__extractAssetMesh`, `bakeImpostorAtlas`), nie die Labor-Shell;
+    // Quellen (scripts · lib · bruecke — die Brücke trägt `__extractAssetMesh`), nie die Labor-Shell;
     // die Basis ist der Kern der Brücke. Ein Manifest ohne Kern bricht laut (`worker.onerror`).
     static _foundryStart(b, schale) {
         const W = globalThis;

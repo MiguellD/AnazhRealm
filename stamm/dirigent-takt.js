@@ -29,7 +29,16 @@ class AnazhRealm_dirigent_takt {
             // dessen Zurück-Knopf es verlässt (`_eingabeTakt`)
             if (this._spur) this._spurTakt(false); // die fällige Spur zuerst (spielgang.K1): sie IST die Eingabe dieses Takts
             this._eingabeTakt(delta);
-            if (this._portalOverlay) return;
+            // die gefrorene Heimat backt nur, was das Labor im Tor erfragt (`_tickKarteAbzug`, pipeline.K2): ihr Takt treibt den
+            // Bäcker; ein Bruch geht an die Fehler-Grenze des Loops, die Frist des Abzugs nennt ihn dem Labor
+            if (this._portalOverlay) {
+                try {
+                    this._tickKarteAbzug();
+                } catch (err) {
+                    this._loopErrorBoundary(err);
+                }
+                return;
+            }
             this.state.spielZeit += delta; // DIE WELT-UHR: nur Takte der Heimat-Welt zählen (das Portal friert sie ein)
             // DIE BILD-UHR (A9, Gesetz #0): die EINE Shader-Zeit der Welt in Sekunden, hier EINMAL je Takt geschrieben — Himmel,
             // Wasser, Wind und Böe, Tor, Regen, Flackern, Chaos-Flimmern und die TSL-`time` (`_loopRender`) lesen nur sie
@@ -354,6 +363,9 @@ class AnazhRealm_dirigent_takt {
     // eines Körpers platziert nichts von selbst (`_foundryRewarmColdTrees`) — die ruhende Welt ändert sich nur, wo einer fragt.
     // Der Null-Renderer kennt keinen Loop: headless ruht er nie (der Wächter lässt dort ohnehin alles durch).
     _loopRuht() {
+        // das Portal friert die Heimat ein (der Takt kehrt vor jedem Tick um): sie ruht wie ohne Bild-Schleife — der Wächter
+        // hält nichts, das Bäcker-Bild baut am Stück (der Abzug der Karte für das Labor, pipeline.K2)
+        if (this._portalOverlay) return true;
         const r = this.state.renderer;
         return !!r && typeof r.getAnimationLoop === "function" && !r.getAnimationLoop();
     }
