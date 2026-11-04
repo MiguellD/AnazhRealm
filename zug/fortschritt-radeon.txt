@@ -1738,3 +1738,4 @@
 2026-11-04 13:39:19 f69a7305-radeon START 2 Stationen
 2026-11-04 13:40:06 f69a7305-radeon profiband.K4#1 ROT 0.5 · 1/2
 2026-11-04 13:40:39 f69a7305-radeon licht.K5#1 ROT 0.5 · 2/2
+2026-11-04 13:42:09 f69a7305-radeon ENDE 0 grün / 2 rot · 2.8 min
