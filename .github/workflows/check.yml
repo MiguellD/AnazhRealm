@@ -342,8 +342,9 @@ jobs:
         # ein roter Lauf jeden Schritt wie ein grüner: er trägt denselben Plan (≤ 17,7 min p90 je Gruppe am 02.11.) unter demselben Deckel.
         # 30 seit 03.11. (z173): „voll 2/18 cpu“ lief im langsamen Lauf 21,3 min, 25 hielt 1,2 × davon nicht (25,6) — die Statik sperrte jeden
         # Zug, auch main; 30 hält 1,2 × bis 25 min. 35 seit 03.11. 23:40 (z185): „voll 2/18 cpu“ (allein „Die Kreatur-Linse Teil 1“)
-        # lief 26,4 min, 30 hielt 1,2 × nicht (31,7); die Linse wuchs an einem Tag 21,3 → 25,9 min — ihr Teilen ist die Wurzel (FUND-REGISTER).
-        timeout-minutes: 35
+        # lief 26,4 min, 30 hielt 1,2 × nicht (31,7); die Linse wuchs an einem Tag 21,3 → 25,9 min — ihr Teilen ist die Wurzel (FUND-REGISTER). 40 seit 04.11. 03:00 (z189): der p90 aus
+        # spec/ci/ci-zeiten.json zählt auch rote Läufe — z188 trug mit w6-weiches 30,7 min (1,2 × = 36,8); die Frist lernt aus Täter-Läufen (FUND).
+        timeout-minutes: 40
         permissions:
             actions: read
             contents: read
