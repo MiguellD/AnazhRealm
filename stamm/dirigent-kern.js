@@ -1674,6 +1674,8 @@ class AnazhRealm {
                 blende: pool.blende[k],
             });
         }
+        // DER WURF (schatten.K5): die wichtigste Quelle im Blick wirft — derselbe Platz, seine Karte (`_lichtWurfTakt`)
+        this._lichtWurfTakt(pool, cam);
     }
 
     // DIE LICHTFARBE einer Quelle, linear, in die Farbe `c` (K11b): ein Wärmestrahler trägt seine Farbtemperatur (`kelvin`,
