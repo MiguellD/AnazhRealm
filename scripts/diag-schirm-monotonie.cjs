@@ -45,6 +45,7 @@ const ERLAUBT = {
     init: "Erzeuger: Canvas, Kamera-Seitenverhältnis, resize-Handler",
     _installHelpPopovers: "UI-Lage (Hilfe-Popover im Fenster)",
     _installResizeHandle: "UI-Lage (Panel-Griff)",
+    _spurAnlegen: "UI-Lage (die Spur nimmt Zeiger in Fenster-Pixeln auf)",
 };
 // Block-Kommentare behalten ihre Zeilenumbrüche (die Zeilennummern der Befunde bleiben die der Datei).
 const ohneKommentare = stammLib.ohneKommentare;
