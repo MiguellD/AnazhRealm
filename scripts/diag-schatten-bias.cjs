@@ -194,24 +194,24 @@ if (SELBSTTEST) {
         return s;
     };
     const faelle = [
-        ["ein leerer Wolf-Schatten", (s) => (s.werfer[0].iouSaum = 0.02), /wolf @0\.32: Boden-IoU \(Saum 9 px\) 0\.02/],
-        ["ein vakuöser Fuchs in der seitlichen Sonne", (s) => (s.werfer[1].erwartet = 4), /fuchs @0\.32: .*vakuös/],
+        ["ein leerer Wolf-Schatten", ["werfer.0.iouSaum=", 0.02], /wolf @0\.32: Boden-IoU \(Saum 9 px\) 0\.02/],
+        ["ein vakuöser Fuchs in der seitlichen Sonne", ["werfer.1.erwartet=", 4], /fuchs @0\.32: .*vakuös/],
         [
             "ein Werfer fehlt seitlich",
             (s) => (s.werfer = s.werfer.filter((w) => !(w.name === "busch" && w.seitlich))),
             /busch: in der seitlichen Sonne nicht gemessen/,
         ],
-        ["Akne auf der ebenen Platte", (s) => (s.akne[0].anteil = 0.2), /AKNE eben@0\.28: 20\.00 %/],
-        ["eine blinde Akne-Probe", (s) => (s.akne[4].maske = 30), /streif@0\.32: nur 30 ruhende/],
-        ["die Zähne sehen keine Akne", (s) => (s.zaehne.anteil = 0), /ZÄHNE: .*sieht keine/],
+        ["Akne auf der ebenen Platte", ["akne.0.anteil=", 0.2], /AKNE eben@0\.28: 20\.00 %/],
+        ["eine blinde Akne-Probe", ["akne.4.maske=", 30], /streif@0\.32: nur 30 ruhende/],
+        ["die Zähne sehen keine Akne", ["zaehne.anteil=", 0], /ZÄHNE: .*sieht keine/],
         [
             "ein Werfer bricht ab",
-            (s) => (s.werfer[3].fehler = "Werfer nicht gesetzt"),
+            ["werfer.3.fehler=", "Werfer nicht gesetzt"],
             /pfosten @0\.32: Werfer nicht gesetzt/,
         ],
         [
             "Fremde derselben Art stehen im Mit-Schuss wieder",
-            (s) => (s.werfer[2].nachgezogen = 3),
+            ["werfer.2.nachgezogen=", 3],
             /busch @0\.32: 3 Fremde derselben Art standen im Mit-Schuss wieder/,
         ],
     ];

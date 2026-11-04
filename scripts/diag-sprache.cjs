@@ -18,8 +18,9 @@
 //      `[schlüssel, werte]`);
 //   F) ein Schlüssel einer FAMILIE (`` `präfix.${…}` ``, zur Laufzeit gesetzt) fehlt: je Familie zählt ihre Quelle jede id auf —
 //      die Bücher des Manifests (der Kanal get-book im vm: je Rezept `gestalt.<id>`, je Kern `studio.<kern>`, je Art
-//      `art.<art>`; ohne Zeile spräche es nur das deutsche Wort seines Buchs, `_buchWort`) und die Befund-Arten der
-//      Speicher-Kette (`art:` in `befund`); eine Familie ohne Quelle steht selbst beim Namen.
+//      `art.<art>`; ohne Zeile spräche es nur das deutsche Wort seines Buchs, `_buchWort`), die Register der Klasse, aus
+//      denen der Stamm die id nimmt (`ULTIVERSUM` → `ultiversum.`), und die Befund-Arten der Speicher-Kette (`art:` in
+//      `befund`); eine Familie ohne Quelle steht selbst beim Namen.
 // Wort-Text: nach Abzug von `${…}`, Markup und Entitäten ein Wort aus ≥ 2 Buchstaben UND ein Zeichen der Sprache
 // (Großbuchstabe, Umlaut, …!?:) oder zwei kleine Wörter; ein Bezeichner ist ein Name.
 // DIE LEBENDE HÄLFTE ist die Station spielgang.K5#1 (punkte-maschine, stationen/g5.js `sprachLauf`): die Welt am Null-Renderer
@@ -33,13 +34,15 @@
 const { ausDatei, stammLib, ROOT, SELBSTTEST, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
 const { kanalImVm } = require("./lib/asset-worker-harness.cjs");
 
-// F: die ids jeder Familie aus ihrer Quelle — das Buch der Kerne des Manifests (der Kanal im vm, ~0,2 s)
+// F: die ids jeder Familie aus ihrer EINEN Quelle — das Buch der Kerne des Manifests (der Kanal im vm, ~0,2 s) und die
+// Register der geladenen Klasse, aus denen der Stamm die id nimmt (die Welten des Ultiversums)
 const { book, stammbaum } = kanalImVm()({ type: "get-book" });
-const QUELLE = {
+const quelle = (A) => ({
     "gestalt.": Object.keys(book).map((id) => id.replace(/_/g, "-")),
     "studio.": stammbaum.kerne.map((k) => k.kern),
     "art.": stammbaum.kerne.flatMap((k) => Object.keys(k.arten)),
-};
+    "ultiversum.": Object.keys(A.ULTIVERSUM),
+});
 
 const wort = (t) => {
     t = String(t)
@@ -76,7 +79,7 @@ function senke(n, ahnen) {
     return null;
 }
 
-function pruefe({ dateien, html, Z }) {
+function pruefe({ dateien, html, Z, Q }) {
     const rot = [];
     const genutzt = new Set();
     const familien = new Map();
@@ -106,7 +109,7 @@ function pruefe({ dateien, html, Z }) {
     // eine Familie liest genau die Zeilen ihrer Quelle (eine ohne Quelle nennt sich selbst: „präfix.…“)
     for (const [f, ort] of familien)
         if (SCHLUESSEL.test(f + "x"))
-            for (const id of QUELLE[f] || ["…"])
+            for (const id of Q[f] || ["…"])
                 if (genutzt.add(f + id) && !(f + id in Z)) rot.push(`F: ${ort} „${f + id}“ fehlt in der Tafel`);
     for (const k of Object.keys(Z)) if (!genutzt.has(k)) rot.push(`U: die Zeile „${k}“ trägt keinen Leser`);
     return rot;
@@ -116,7 +119,7 @@ function pruefe({ dateien, html, Z }) {
 function lies(dateien, html) {
     try {
         const { AnazhRealm } = stammLib.ladeKlasse(ROOT, { teile: dateien });
-        return { dateien, html, Z: { ...AnazhRealm.TEXTE.de } };
+        return { dateien, html, Z: { ...AnazhRealm.TEXTE.de }, Q: quelle(AnazhRealm) };
     } catch (e) {
         return { dateien, html, Z: {}, T: `T: die Tafel lädt nicht — ${String(e.message).split("\n")[0]}` };
     }
@@ -150,6 +153,7 @@ if (require.main !== module) {
         ["Wert nur in de", "T", daten(/("ui\.[^"]+": \["[^"]*)", /, '$1 {n}", ')],
         ["Rezept ohne Zeile", "F", daten('"gestalt.eiche": ["Eiche", "Oak"],', "")],
         ["Familie ohne Quelle", "F", mit("(x) => `hud.neu.${x}`")],
+        ["Welt des Ultiversums ohne Zeile", "F", daten(/\n\s*"ultiversum\.ferne": .*/, "")],
     ];
     const fehler = [];
     for (const [name, klasse, mut] of FAELLE) {

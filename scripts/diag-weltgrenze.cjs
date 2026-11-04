@@ -292,7 +292,8 @@ function seitenPruefer() {
                 if (ok.has(pfad) || wm[k] !== A_STUFEN[k]) continue;
                 out.push(`Speicher.${pfad} (= ${JSON.stringify(A_STUFEN[k])} von A)`);
             }
-            if (wm.erbgut != null) out.push("Speicher.worldMeta.erbgut");
+            // das Erbgut wohnt im Gesetz der Welt (ultiversum.K1, `worldMeta.gesetz.gelaende`)
+            if (wm.gesetz?.gelaende != null) out.push("Speicher.worldMeta.gesetz.gelaende");
             return out;
         },
         VORLAGE,

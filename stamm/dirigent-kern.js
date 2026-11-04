@@ -225,7 +225,6 @@ class AnazhRealm {
             playerVel: null,
             tmpTransform: null,
             scaleFactor: 1,
-            gravity: -9.81,
             // Der feld-native Kapsel-Controller (_stepCharacter) treibt den Spieler aus dem Dichtefeld: kein
             // per-Chunk-BVH-Build, deterministisch, ein gecarvter Tunnel ist SOFORT begehbar. Die EINZIGE Physik.
             fieldPhysics: true,
@@ -882,6 +881,19 @@ class AnazhRealm {
                 phantomOnGround: false,
             },
         };
+        // DIE SCHWERE IST DAS GESETZ DER WELT (ultiversum.K1): kein eigener Wert — sie steht in ihrem Speicher
+        // (`worldMeta.gesetz.schwere`, `_weltGesetz`), jeder Leser (Leib, Sprung, Pfeil, Hüpfer) und jedes Wort (die DSL `gravity`)
+        // geht durch dieses Paar. Nicht aufzählbar: sie ist kein Glied des Zustands, das ein Welt-Tausch trüge (`_seite`) — sie
+        // reist mit dem worldMeta ihrer Welt.
+        Object.defineProperty(this.state, "gravity", {
+            enumerable: false,
+            get() {
+                return AnazhRealm._weltGesetz(this.worldMeta).schwere;
+            },
+            set(v) {
+                AnazhRealm._weltGesetzSetzen(this.worldMeta, "schwere", v);
+            },
+        });
         this.core = {
             initPhysics: this.initPhysics.bind(this),
             startEternalLoop: this.startEternalLoop.bind(this),
@@ -1843,7 +1855,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.174";
+AnazhRealm.VERSION = "18.546.175";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

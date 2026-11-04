@@ -41,8 +41,12 @@ class AnazhRealm_dienst {
     // DER NAME IST DATUM, NIE ANWEISUNG (ultiversum K5): jeder Name und fremde Text in Erinnerung oder Prompt reist isoliert
     // (U+2068 … U+2069, unsichtbar) als Tag `_datum\`… ${x}\``, Zahlen bleiben Zahlen; die Tür macht Platzhalter daraus — das Modell
     // liest nie, was ein Fremder schrieb (der gehorsame Feind von gate:v1-pfad --feind tat 2 von 6), die Antwort bekommt die Namen.
+    // der Text ohne jede Isolations-Marke (U+2066 … U+2069): was der Spieler liest — der Satz einer Erinnerung ist `ki` ohne sie
+    static _ohneIsolation(s) {
+        return String(s == null ? "" : s).replace(/[⁦-⁩]/g, "");
+    }
     static _datum(teile, ...werte) {
-        const iso = (s) => "⁨" + String(s == null ? "" : s).replace(/[⁦-⁩]/g, "") + "⁩";
+        const iso = (s) => "⁨" + AnazhRealm._ohneIsolation(s) + "⁩";
         if (!Array.isArray(teile) || !teile.raw) return iso(teile);
         let t = teile[0];
         for (let i = 0; i < werte.length; i++)
@@ -51,12 +55,12 @@ class AnazhRealm_dienst {
     }
     // jeder isolierte Text (bis zum Zeilenende, wenn ein Schnitt ihn kappte) wird «N1», «N2» … — derselbe Text dieselbe Marke
     static _kiPlatzhalter(text, karte) {
-        return String(text == null ? "" : text)
-            .replace(/⁨([^⁩\n]*)⁩?/g, (_, s) => {
+        return AnazhRealm._ohneIsolation(
+            String(text == null ? "" : text).replace(/⁨([^⁩\n]*)⁩?/g, (_, s) => {
                 if (!karte.has(s)) karte.set(s, `«N${karte.size + 1}»`);
                 return karte.get(s);
             })
-            .replace(/[⁦-⁩]/g, "");
+        );
     }
     // Eine Erinnerung fürs Modell: ein Satz dieser Welt (`d`, nur journalAppend) trägt Namen isoliert in `ki`, jede andere ist Datum.
     _erinnerungFuerKi(e) {
@@ -266,7 +270,6 @@ class AnazhRealm_dienst {
         const entry = {
             id: j.entries.length + 1,
             at: Date.now(),
-            tick: performance.now() / 1000,
             type: String(type || "note"),
             d: 1,
         };
@@ -282,7 +285,7 @@ class AnazhRealm_dienst {
         entry.text = zeile.slice(0, 240);
         // ein Schnitt mitten in einem Namen schließt seine Isolation; der Spieler liest den Satz rein, das Modell `ki` isoliert
         if (entry.text.lastIndexOf("⁨") > entry.text.lastIndexOf("⁩")) entry.text += "⁩";
-        if (/[⁦-⁩]/.test(entry.text)) [entry.ki, entry.text] = [entry.text, entry.text.replace(/[⁦-⁩]/g, "")];
+        if (/[⁦-⁩]/.test(entry.text)) [entry.ki, entry.text] = [entry.text, AnazhRealm._ohneIsolation(entry.text)];
         if (ctx && typeof ctx === "object") entry.ctx = ctx;
         j.entries.push(entry);
         if (j.entries.length > (j.entryCap || 200)) {
@@ -577,13 +580,13 @@ class AnazhRealm_dienst {
         return f + (dt < 500 ? 0 : dt <= 1000 ? 500 : 1000);
     }
 
-    // Distanz² eines Welt-Punkts zum Spieler (für den Bake-Takt; ohne Spieler: vorne).
+    // Der Rang eines Welt-Punkts² (für den Bake-Takt und jede Schlange, die nach ihm reiht; ohne Spieler: vorne): DER EINE RANG,
+    // die Zeit bis Bedarf in Metern zu Fuß (`_bedarfWeg`, w7-rang) — im Stand der Abstand², voraus rückt ein Ding um s / v0 näher.
+    // Leser: der Bake-Takt (`_weltBakeErlaubt` über `_archZiegelD2`, die Gesetz-Kapsel `_streuGesetzSpawn`), die Raten des
+    // Bau-Satzes, die Glieder der Kreaturen, die Schlange des Walds (`_waldPlanListe`). Bis w7-rang der Abstand² allein.
     _spielerD2(x, z) {
-        const pm = this.state.playerMesh && this.state.playerMesh.position;
-        if (!pm) return 0;
-        const dx = x - pm.x,
-            dz = z - pm.z;
-        return dx * dx + dz * dz;
+        if (!(this.state.playerMesh && this.state.playerMesh.position)) return 0;
+        return this._bedarfWeg(x, z) ** 2;
     }
     // Die Takt-Distanz eines Baus: der Schlangen-Rang (`_ziegelD2`, gebaute Meshes backen nur vor) oder seine Lage.
     _archZiegelD2(entry) {
