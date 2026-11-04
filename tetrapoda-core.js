@@ -2666,6 +2666,670 @@
         return phases;
     }
 
+    // ── DER LEIB DES VIERBEINERS IN DER POSE (w11-leib, das EINE Bewegungs-Gesetz des Tiers — Welt UND Labor) ──
+    // DIE AUDIT-TAFEL (04.11., Quelle gelesen; M = Mensch, T = Tier; „EINS" = beide lesen dasselbe Gesetz):
+    //  (a) Skelett + Proportion — M koerper-core `labProportionen`/`bauMensch`/`leibKette` · T `buildSkeleton`/`bauTier`
+    //      (hier) + foundry BAKERS_BY_KIND.kreatur; Studio und Welt gießen je denselben Ofen. Zwei Körperbau-Gesetze für
+    //      zwei Baupläne (Biped, Quadruped) — Daten, kein Zwilling; EIN gemeinsames Muskel-Skelett-Gesetz gibt es nicht.
+    //  (b) Gang + Rhythmus — EINS: `gangSchritt` (Takt, Fußweg, Tastgrad aus der Froude-Zahl) · `gangFuss` · `cpgStep`
+    //      (T: stamm `_animateTierBaum` → hier `tierPose`; M: koerper-core `leibGangTakt`/`leibRigPose`, das Becken
+    //      `gangBecken`). ZWILLING bis w11-leib: das Labor worlds/tetrapoda ging die Gelenke mit EIGENEN PD-Federn
+    //      (`PD`, `updateBodyPhysics`: Rumpf-Feder aus der Zahl stehender Füße, die Pfote gesenkt auf den tiefsten
+    //      Punkt), die Welt mit Pfoten-IK, weltfestem Anker und Senke — fiel, beide gehen `tierPose`.
+    //  (c) Gleichgewicht + Reflexe — M koerper-core `leibStossLesen`/`leibStossSchritt` (Capture-Point, Ausfallschritt,
+    //      Hof 2010) · T stamm kreatur-verhalten `_kreaturStoss`/`_kreaturStossSchritt` (der Stoß gleitet auf μ·g aus,
+    //      kein Schritt). ZWILLING (offen): zwei Antworten auf denselben Stoß. Hang: EINS (`_gaitSohlenKipp`, stamm).
+    //  (d) Blick + Kopf — M stamm koerper-bewegung `_blickZiel`/`_blickVorn` (Kamera-Blick) · T `tierPose` (MOTION.headX/
+    //      headY, das Scan-Pendel, die Haltung des Bisses); getrennt, kein gemeinsames Blick-Gesetz (offen).
+    //  (e) Entscheidung + Antrieb — M koerper-core `tagesPlan` (Bewohner) + Eingabe · T stamm `_tickKreaturVerhalten`
+    //      (Stimmung) + hier FURCHT_/JAGD_/ETHOGRAMM_GESETZ; die Wahl der Aktion `verhaltenWahl` (hier, Welt UND Labor —
+    //      vorher würfelte das Labor `Math.random` über eigene Aktionen `getBeh`). Zwei Seelen, je ihr Gesetzbuch.
+    // DER WIRT W (die Welt: stamm `_tierWirt`; das Labor: tetrapoda.js `wirt`): {M3 die THREE-Mathe des Wirts (Vector3 ·
+    // Matrix4 · Quaternion · Euler — der Kern bleibt THREE-frei, er rechnet in den Objekten seines Halters), nowS() die
+    // Kreatur-Uhr, boden(group, x, z) der Boden unter der Pfote, kipp(x, z, gier, y, group) die Neigung dort {laengs, quer},
+    // zeile() die Gang-Zeile der Welt-Schwere, bruch(name) der laute Bruch, tmp der Zwischenspeicher}.
+
+    // DER SPRUNG DER LAGE IST KEIN LAUF (GANG_GESETZ.vMax, EINE Regel): das Tempo eines Leibs aus der Änderung seiner Lage
+    // in dt — über vMax (Spawn, Teleport, Peer-Schnapp, ein Ruf an einen fernen Ort) null.
+    function lageTempo(dx, dz, dt) {
+        var v = Math.hypot(dx, dz) / dt;
+        return v <= GANG_GESETZ.vMax ? v : null;
+    }
+    // DIE WAHL DES GANGS — EINE für jedes Tier, ob Leib (`tierPose`) oder Satz (stamm `_tierSatzSchritt`): das Tempo des
+    // Wegs geglättet (8/s, ein Takt zählt höchstens 0,1 s; ohne neue Lage `vLage` undefined bleibt es) und die Gangart des
+    // Gesetzes über die Hysterese der Gangart des Vor-Takts, auch des Stands (wer stand, läuft im Schritt an). `g` trägt
+    // beides (v, art); zurück kommt der Schritt des Gesetzes (über den Namensraum: ein Selbsttest tauscht das Gesetz dort).
+    function gangWahl(g, vLage, dt, laeuft, L, Z) {
+        if (vLage !== undefined)
+            g.v = (g.v || 0) + ((vLage || 0) - (g.v || 0)) * (1 - Math.exp(-8 * Math.max(0, Math.min(0.1, dt))));
+        var gs = root.__tetrapodaCore.gangSchritt(laeuft ? g.v || 0 : 0, L, Z, g.art);
+        g.art = gs.art;
+        return gs;
+    }
+    // DIE BEIN-MASSE DER GESTALT (einmal je Vorlage t0 = {teile, root, minY}; f = Meter je Einheit): je Bein die Hüfte im
+    // Rumpf (p0), die Glieder a (Hüfte → Gelenk über der Pfote) und b (→ Pfote) in der Ebene des Beins, die Sohle c unter
+    // der Pfote (die tiefste Ecke der Haut, die die Pfote trägt — nie das Fell), der Knick phi0, der Versatz zr und die
+    // Hüft-Höhe h.
+    function tierBeinMass(M3, t0, f) {
+        if (t0._beinMass) return t0._beinMass;
+        var T = t0.teile;
+        var ketten = [
+            [T.legFL, T.flU, T.flL, T.flP],
+            [T.legFR, T.frU, T.frL, T.frP],
+            [T.legHL, T.hlT, T.hlC, T.hlP],
+            [T.legHR, T.hrT, T.hrC, T.hrP],
+        ];
+        t0.root.updateMatrixWorld(true);
+        var lage = function (o) {
+            return new M3.Vector3().setFromMatrixPosition(o.matrixWorld);
+        };
+        var sohle = ketten.map(function () {
+            return Infinity;
+        });
+        var v = new M3.Vector3();
+        t0.root.traverse(function (n) {
+            var A = n.isSkinnedMesh && n.geometry.attributes;
+            if (!A || A.aSchale) return; // die Haut, nie das Fell (wie minY)
+            var bi = ketten.map(function (K) {
+                return n.skeleton.bones.indexOf(K[3]);
+            });
+            // die Bindung je Ecke: über getComponent (die Welt, r184 — gepackt oder nicht); r128 im Labor kennt den Ruf nicht und
+            // liest das Feld roh — dort steht die Bindung ungepackt und unnormiert, wie der Bäcker sie schreibt (foundry-core), eine
+            // gepackte bricht laut
+            var SI = A.skinIndex,
+                SW = A.skinWeight;
+            var roh = typeof SI.getComponent !== "function";
+            if (roh && (SI.normalized || SW.normalized || SI.isInterleavedBufferAttribute || SW.isInterleavedBufferAttribute))
+                throw new Error("tierBeinMass: die Bindung der Haut ist gepackt und der Wirt liest keine Komponente (fail-closed)");
+            var komp = roh
+                ? function (a, i, k) {
+                      return a.array[i * a.itemSize + k];
+                  }
+                : function (a, i, k) {
+                      return a.getComponent(i, k);
+                  };
+            for (var i = 0; i < SI.count; i++)
+                for (var k = 0; k < 4; k++) {
+                    var j = bi.indexOf(komp(SI, i, k));
+                    if (j < 0 || !(komp(SW, i, k) > 0.5)) continue;
+                    sohle[j] = Math.min(sohle[j], v.fromBufferAttribute(A.position, i).applyMatrix4(n.matrixWorld).y);
+                }
+        });
+        var mass = ketten.map(function (K, j) {
+            var p0 = lage(K[0]),
+                p1 = lage(K[2]),
+                p2 = lage(K[3]);
+            var ay = (p1.y - p0.y) * f,
+                az = (p1.z - p0.z) * f,
+                by = (p2.y - p1.y) * f,
+                bz = (p2.z - p1.z) * f;
+            var p0w = T.wolf.worldToLocal(p0.clone());
+            return {
+                p0: [p0w.x * f, p0w.y * f, p0w.z * f],
+                a: [ay, az],
+                b: [by, bz],
+                c: [((Number.isFinite(sohle[j]) ? sohle[j] : t0.minY) - p2.y) * f, 0],
+                phi0: Math.atan2(ay * bz - az * by, ay * by + az * bz),
+                zr: (p2.z - p0.z) * f,
+                h: (p0.y - t0.minY) * f,
+            };
+        });
+        t0._beinMass = mass;
+        return mass;
+    }
+    // DER VERHALTENS-HASH (FNV-1a über zwei Zahlen; kein Math.random — dieselbe Kreatur würfelt reproduzierbar)
+    function verhaltenHash(a, b) {
+        var h = 2166136261 >>> 0;
+        h ^= a >>> 0;
+        h = Math.imul(h, 16777619) >>> 0;
+        h ^= b >>> 0;
+        h = Math.imul(h, 16777619) >>> 0;
+        return h >>> 0;
+    }
+    // DIE WAHL DER AKTION (der Takt des Verhaltens, Welt UND Labor): je Stimmung `mood` im deterministischen Takt
+    // (alle = [min, max] s, der Hash aus Index i + Zeit-Bucket) eine AKTION aus dem Buch V an ud._verhaltenAktion; `fort`:
+    // eine Tätigkeit mit Aktion (ruhen, äsen) trägt sie ohne Pause. Zurück kommt die neue Aktion (ihre Zeile), sonst null —
+    // ihr Sprung (hop) ist Sache des Leibs (der Wirt).
+    function verhaltenWahl(V, mood, ud, i, nowS, fort) {
+        var A = ud._verhaltenAktion;
+        if (A && nowS < A.bis) return null; // die laufende Aktion spielt zu Ende
+        var row = V.stimmung[mood] || V.stimmung.idle;
+        if (!row || !Array.isArray(row.aktionen) || !row.aktionen.length) return null;
+        var alle = Array.isArray(row.alle) && row.alle.length === 2 ? row.alle : [6, 12];
+        if (ud._verhaltenMood !== mood || !Number.isFinite(ud._verhaltenNext)) {
+            // Stimmungs-Wechsel: neuen Takt würfeln (deterministisch), noch keine Aktion — die einer Tätigkeit beginnt sofort.
+            ud._verhaltenMood = mood;
+            var h0 = verhaltenHash(i + 1, (nowS * 10) | 0);
+            ud._verhaltenNext = nowS + (fort ? 0 : alle[0] + ((h0 % 1000) / 1000) * (alle[1] - alle[0]));
+            if (!fort) return null;
+        }
+        if (nowS < ud._verhaltenNext) return null;
+        var h = verhaltenHash((i + 1) * 2654435761, nowS | 0);
+        // BEH_PICK.host — Feel .119; picks V.aktionen[name] (aktionen.profil world).
+        var name = row.aktionen[h % row.aktionen.length];
+        var def = V.aktionen[name];
+        if (!def) return null;
+        var dauer = Number.isFinite(def.dauer) ? def.dauer : 1;
+        ud._verhaltenAktion = { name: name, def: def, start: nowS, bis: nowS + dauer };
+        ud._verhaltenNext = nowS + dauer + (fort ? 0 : alle[0] + ((h % 977) / 977) * (alle[1] - alle[0]));
+        return def;
+    }
+    // DIE POSE DES LEIBS je Takt (vorher stamm `_animateTierBaum`, gezogen w11-leib byte-gleich — die Welt-Sonde: 4 Gattungen
+    // × 12 Szenen, jedes Glied je Takt): der Baum-GANG konsumiert das EINE Gang-Gesetz — gangWahl + cpgStep + gangFuss +
+    // MOTION-Profil P (der Wirt wählt es: Zustand vor Stimmung) treiben die vier Bein-KETTEN des bauTier-Baums tb
+    // ({teile, bein, beinL, f, tailSegs}) mit Pfoten-IK auf dem Boden des Wirts. Deterministisch (Stand-Unruhe aus t-Sinus);
+    // der CPG-Zustand wohnt an tb._gang, walkPhase ist nur der Phasen-Seed. zust = der Körper-Zustand (schwimmen paddelt).
+    function tierPose(W, group, tb, t, walkPhase, moving, P, zust) {
+        var core = root.__tetrapodaCore;
+        var M3 = W.M3;
+        var tmp = W.tmp || (W.tmp = {});
+        var T = tb.teile;
+        var nowS = W.nowS();
+        // Verhaltens-AKTION als transienter Profil-Overlay (VERHALTEN.aktionen, der Wirt stempelt ud._verhaltenAktion):
+        // profil-Felder überlagern P, die Sonder-Kanäle dreh/kopfSweep/rollAmp/rollRate wirken an Rumpf/Kopf.
+        // Abgelaufene Aktion fällt HIER (EIN Verfalls-Ort für beide Leser).
+        var VA = group.userData && group.userData._verhaltenAktion;
+        if (VA) {
+            // (ein Biss, der noch nicht geschnappt hat, fällt erst im Schnappen — die Landung trägt den Kopf: _kreaturBissTakt)
+            if ((nowS >= VA.bis && !VA.biss) || !VA.def) {
+                group.userData._verhaltenAktion = null;
+                VA = null;
+            } else if (VA.def.profil) {
+                if (!VA._P || VA._Pbase !== P) {
+                    VA._P = Object.assign({}, P, VA.def.profil);
+                    VA._Pbase = P;
+                }
+                P = VA._P;
+            }
+        }
+        // AUSKLINGE-SAUM: vor der Stufen-Grenze (`ab` × Größe) schreibt der Wirt ud._animFade (1→0); Schritt/Sway/
+        // Schwanz/Kopf klingen in die Stand-Pose aus, damit der Stufen-Schalter (`_gelenkStufe`) eine STEHENDE Gestalt
+        // trifft. Aufrufer ohne _animFade → fadeMul 1.
+        var fade = group.userData._animFade;
+        var fadeMul = fade !== undefined && fade < 1 ? (fade > 0 ? fade : 0) : 1;
+        // DIE FUSSFOLGE AUS DEM TEMPO (Meisterkarte Tiere H3, GANG_FOLGE): der Gang trägt das Muster, das das Gang-Gesetz
+        // zum Tempo wählt (gs.folge, unten — Schritt lateral, Trab, Galopp nach der Froude-Zahl; im Wasser die Paddel-Folge)
+        // und das Netz zieht die Beine hinein (cpgStep mit folge). Gesetzt wird es beim ersten Takt (der walkPhase-Versatz
+        // desynchronisiert die Kreaturen); der Takt des Leibs liest es am Gang (g.off).
+        var g = tb._gang || (tb._gang = { ph: [0, 0, 0, 0], lastT: t });
+        // dtWeg = die echte Uhr-Spanne seit der letzten Auswertung (die Raten-Leiter wertet ferne Wesen nur jeden 2./4.
+        // Takt aus) — der Weg teilt sich durch sie, nie durch den gedeckelten Animations-Schritt. Der TAKT rückt um
+        // dieselbe Spanne vor (dtTakt, in Schritten ≤ 0,1 s — die Kopplung bleibt stabil; eine Pause über 1 s ist kein
+        // Gang): mit dem gedeckelten Schritt blieb die Phase bei 30 fps und Raten-Leiter 1/4 25 % hinter dem Weg.
+        var dtWeg = t - g.lastT;
+        var dt = Math.max(0, Math.min(0.1, dtWeg));
+        var dtTakt = Math.max(0, Math.min(1, dtWeg));
+        g.lastT = t;
+        // DAS GANG-GESETZ (Welle 5, gangSchritt): Takt und Hüft-Auslenkung folgen dem WEG des Leibs — die Geschwindigkeit
+        // misst der Chokepoint selbst (Lage-Änderung je Uhr-Schritt, geglättet; jeder Halter — Welt, Peer, Werkstatt,
+        // Labor — läuft durch ihn), die Bein-Länge trägt der Guss (tb.beinL × Körpergröße). Ein SPRUNG der Lage ist kein
+        // Lauf (`lageTempo`): die Pfoten setzen am neuen Ort (gate:koerper-stand K5).
+        var lage = group.position;
+        var vLage;
+        if (dtWeg > 0 && Number.isFinite(g.lageX)) {
+            vLage = core.lageTempo(lage.x - g.lageX, lage.z - g.lageZ, dtWeg);
+            if (vLage === null) g.fuss = null;
+        }
+        g.lageX = lage.x;
+        g.lageZ = lage.z;
+        var skala = group.scale.x || 1;
+        var gs = core.gangWahl(g, vLage, dt, moving, tb.beinL * skala, W.zeile());
+        // die Länge des Schwungs im Takt (rad): der Stand füllt den Tastgrad des Gesetzes (im Galopp kürzer, gs.tast)
+        var sw = 2 * Math.PI * (1 - gs.tast);
+        var folge = zust === "schwimmen" ? core.GANG_FOLGE.paddeln : gs.folge;
+        if (!Array.isArray(folge) || folge.length !== 4) return W.bruch("tetrapoda:GANG_FOLGE");
+        if (!g.off) for (var pi0 = 0; pi0 < 4; pi0++) g.ph[pi0] = walkPhase + folge[pi0];
+        g.off = folge;
+        g.omega = gs.omega; // der Takt des Gangs — die Raten-Leiter tastet ihn nie gröber als ein Viertel ab
+        var st = gs.S * fadeMul;
+        // was ein Fenster vom Gang zeigt (das Labor, die Matrix-Tafel): der Fußweg dieses Takts und der Tastgrad
+        g.S = st;
+        g.tast = gs.tast;
+        var freq = st > 0 ? gs.omega : Number(P.freq) || 0.25;
+        var phAlt = g.ph.slice();
+        if (dtTakt > 0) {
+            // der Schritt des Netzes trägt seinen Zug (GANG_FOLGE.kopplung × Takt, vier Beine): höchstens 1/(4·kopplung·Takt)
+            var nT = Math.ceil(dtTakt / Math.min(0.1, 1 / (4 * core.GANG_FOLGE.kopplung * Math.max(1e-6, freq))));
+            for (var kT = 0; kT < nT; kT++) core.cpgStep(g.ph, freq, dtTakt / nT, folge);
+        }
+        // DER LEIB WIEGT SICH IM SCHRITT, NIE IM STAND (Welle LF, die Pfoten-IK): Wiegen (sway) und Federn (bob) sind die
+        // Gewichts-Verlagerung von Tritt zu Tritt — ihr Anteil folgt dem Schritt des Gang-Gesetzes (eingeblendet in ~0,25 s).
+        g.schritt = (g.schritt || 0) + ((st > 0.002 ? 1 : 0) - (g.schritt || 0)) * (dt > 0 ? 1 - Math.exp(-4 * dt) : 1);
+        // DER TAKT DES LEIBS (K07): der Kreis-Mittelwert der vier Bein-Phasen, je um ihren Versatz im Muster (im doppelten
+        // Takt: Wiegen und Federn schwingen je Tritt); ein Bein, das an der Grenze seiner Kette abhebt, schüttelt den Rumpf
+        // nicht. Der Versatz ist das Muster, mit dem die Beine gesetzt wurden (g.off).
+        var offL = g.off;
+        var cL = 0,
+            sL = 0;
+        for (var kL = 0; kL < 4; kL++) {
+            cL += Math.cos(2 * (g.ph[kL] - offL[kL]));
+            sL += Math.sin(2 * (g.ph[kL] - offL[kL]));
+        }
+        // DER TAKT ZIEHT NACH (der Wechsel der Gangart): das Muster springt auf die neue Folge, die Beine folgen in etwa
+        // einem Schritt — der Takt des Leibs läuft mit dem doppelten Takt der Beine weiter und zieht den Rest binnen eines
+        // Schritts nach (sprang er mit, ruckte der Rumpf: Roll je Takt bis 2,9 × des ruhigen Gangs)
+        var takt2Roh = Math.atan2(sL, cL) + 2 * offL[0];
+        if (!Number.isFinite(g.leib)) g.leib = takt2Roh;
+        else {
+            var vor0 = g.leib + 2 * freq * dtTakt;
+            var dL = takt2Roh - vor0;
+            g.leib =
+                vor0 + (dL - 2 * Math.PI * Math.round(dL / (2 * Math.PI))) * (1 - Math.exp((-freq * dtTakt) / Math.PI));
+        }
+        var takt2 = g.leib;
+        var roll = Math.sin(takt2) * (Number(P.sway) || 0) * fadeMul * g.schritt;
+        // bodyZ reist im MOTION-Preset (Roll additiv neben sway·sin); ohne Feld 0
+        roll += (Number(P.bodyZ) || 0) * fadeMul;
+        // die Sonder-Kanäle der Aktion: Schüttel-Rolle, Ganzkörper-Drehung (linear über die Dauer — endet bei dreh=2π
+        // nahtlos), Kopf-Pendel (Scan). Ohne Aktion alles 0.
+        var drehY = 0;
+        var sweepY = 0;
+        if (VA && VA.def) {
+            var d = VA.def;
+            if (Number.isFinite(d.rollAmp)) roll += Math.sin(nowS * (d.rollRate || 10)) * d.rollAmp * fadeMul;
+            if (Number.isFinite(d.dreh)) {
+                var frac = Math.max(0, Math.min(1, (nowS - VA.start) / Math.max(0.001, VA.bis - VA.start)));
+                drehY = d.dreh * frac;
+            }
+            if (Number.isFinite(d.kopfSweep)) sweepY = Math.sin(nowS * 1.3) * d.kopfSweep * fadeMul;
+        }
+        // DIE HALTUNG DES BISSES (Welle LF kampf, Posten 5): im Ansprung neigen sich Rumpf und Kopf auf den Leib des Ziels
+        // (VA.rumpfZiel · VA.kopfZiel, _kreaturBissKopf) — mit der Folge-Rate der Glieder (ihr Boden 18/s, legA); endet der
+        // Ansprung, löst sich die Haltung ebenso.
+        {
+            var BZ = VA && VA.bissAkt ? VA : null;
+            var haltA = dt > 0 ? 1 - Math.exp(-18 * dt) : 1;
+            g.bissRumpf = (g.bissRumpf || 0) + (((BZ && BZ.rumpfZiel) || 0) - (g.bissRumpf || 0)) * haltA;
+            g.bissKopf = (g.bissKopf || 0) + (((BZ && BZ.kopfZiel) || 0) - (g.bissKopf || 0)) * haltA;
+        }
+        if (T.wolf) {
+            T.wolf.rotation.z = roll;
+            // bodyX-Konsum: die Rumpf-Neigung der Profile (hunt duckt, playbow verbeugt); der Hang-Pitch lebt getrennt am
+            // Kreatur-ROOT (creature.rotation.x). bob (Galopp-Federn) wird auf wolf.rotation.x verdichtet.
+            var bob = (Number(P.bob) || 0) * fadeMul;
+            T.wolf.rotation.x = (Number(P.bodyX) || 0) * fadeMul + Math.sin(takt2) * bob * g.schritt + g.bissRumpf;
+            T.wolf.rotation.y = drehY;
+        }
+        // die Kanäle aus dem MOTION-Preset: tension → Stand-Unruhe + Rumpf-Plant-Pitch; kpMul → einpolige Bein-Näherung.
+        // Fehlend → 1.0 (idle).
+        var tension = Number.isFinite(Number(P.tension)) ? Number(P.tension) : 1.0;
+        var kpMul = Number.isFinite(Number(P.kpMul)) ? Number(P.kpMul) : 1.0;
+        if (!g.prevSt) g.prevSt = [0, 0, 0, 0];
+        if (!Number.isFinite(g.plantX)) g.plantX = 0;
+        if (dt > 0) g.plantX *= Math.exp(-14 * dt);
+        if (st > 0.002) {
+            for (var pi1 = 0; pi1 < 4; pi1++) {
+                var ns = Math.max(0, -Math.sin(g.ph[pi1]));
+                if (g.prevSt[pi1] < 0.05 && ns > 0.15) g.plantX -= 0.012 * tension;
+                g.prevSt[pi1] = ns;
+            }
+        } else {
+            for (var pi2 = 0; pi2 < 4; pi2++) g.prevSt[pi2] = Math.max(0, -Math.sin(g.ph[pi2]));
+        }
+        if (T.wolf) T.wolf.rotation.x += g.plantX * fadeMul;
+        // die Ohren: earL.z = +ear, earR.z = −ear (MOTION.ear)
+        var ear = (Number(P.ear) || 0) * fadeMul;
+        if (T.earL) T.earL.rotation.z = ear;
+        if (T.earR) T.earR.rotation.z = -ear;
+        var ketten = [
+            [T.legFL, T.flU, T.flL, T.flP],
+            [T.legFR, T.frU, T.frL, T.frP],
+            [T.legHL, T.hlT, T.hlC, T.hlP],
+            [T.legHR, T.hrT, T.hrC, T.hrP],
+        ];
+        var seiten = [-1, 1, -1, 1];
+        // kpMul: einpolige Ziel-Näherung (höher → knackiger). State an tb._gang; NeutralStance nullt den Gang.
+        if (!g.legCur)
+            g.legCur = [
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+            ];
+        // die Glieder folgen ihrem Ziel im Gang ohne Nachlauf (die Ziele sind stetig: der Schwung kam mit dem alten Faktor
+        // 2,5 um bis zu 5 cm hinter seinem Ziel auf und strich dabei über den Boden)
+        var legA = dt > 0 ? 1 - Math.exp(-Math.max(18, 55 * kpMul) * (st > 0 ? 6 : 1) * dt) : 1;
+        // DIE PFOTE STEHT AUF DEM BODEN UNTER IHR, DAS BEIN IM LOT (Welle LF, Leben-Schau 07.10.: am Querhang standen die
+        // Beine 20–31° aus dem Lot). Drei Schritte je Takt: das Fuß-Ziel in der WELT (Schritt 1, mit dem Halt des stehenden
+        // Fußes), die Senke des Rumpfs auf die Reichweite der Beine (Schritt 2), die Pfote auf ihr Ziel per Abspreizen und
+        // ebener Zwei-Knochen-IK im Rumpf-Raum (Schritt 3). Der Boden unter der Pfote ist W.boden (die Welt: der Stand-Leser
+        // der Sicht um den Träger des Leibs; wer schwimmt oder springt, hält die Pfote an seiner Ebene; das Labor: sein Boden).
+        var GG = core.GANG_GESETZ;
+        var LANDUNG = 0.85; // der Anteil seines Wegs, ab dem ein sinkender Fuß den Punkt hält, an dem er aufsetzt
+        var fLab = tb.f || 1;
+        var vZiel = tmp.gangV || (tmp.gangV = new M3.Vector3());
+        var vHuefte = tmp.gangH || (tmp.gangH = new M3.Vector3());
+        // der Rumpf in seiner Ruhe-Lage (die Senke dieses Takts folgt aus den Zielen, Schritt 2)
+        var ruhe = T.wolf ? tb._rumpfRuhe || (tb._rumpfRuhe = T.wolf.position.clone()) : null;
+        if (T.wolf) {
+            T.wolf.position.copy(ruhe);
+            T.wolf.updateWorldMatrix(true, false);
+        }
+        // die Hüften im Leib (Gruppen-Raum) in der RUHE des Rumpfs, einmal je Tier: das Federn und Wiegen des Rumpfs dreht
+        // die Hüfte um seinen Drehpunkt — folgte das Fuß-Ziel ihm, glitte der Fuß im Stand mit
+        if (!tb._huefteLeib && T.wolf && T.wolf.parent) {
+            var Mh = new M3.Matrix4().copy(group.matrixWorld).invert();
+            Mh.multiply(T.wolf.parent.matrixWorld).multiply(
+                new M3.Matrix4().compose(T.wolf.position, new M3.Quaternion(), T.wolf.scale)
+            );
+            tb._huefteLeib = tb.bein.map(function (B) {
+                return new M3.Vector3(B.p0[0] / fLab, B.p0[1] / fLab, B.p0[2] / fLab).applyMatrix4(Mh);
+            });
+        }
+        var gier = group.rotation.y || 0;
+        var vorX = Math.sin(gier),
+            vorZ = Math.cos(gier);
+        var stand = st < 0.002;
+        var fl = g.fuss || (g.fuss = [{ an: false }, { an: false }, { an: false }, { an: false }]);
+        var ziele =
+            g.ziele ||
+            (g.ziele = [
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ]);
+        var glied = function (B) {
+            return (Math.hypot(B.a[0], B.a[1]) + Math.hypot(B.b[0], B.b[1])) * skala;
+        };
+        // wo die Pfote JETZT steht: ihre Sohle (das Ende des Pfoten-Glieds c — der Punkt, den die IK auf den Boden stellt;
+        // das Gelenk darüber liegt am Hang um |c|·sin(Neigung) längs der Normale des Bodens versetzt)
+        var pfoteHier = function (K, L, fx, fz, BM) {
+            if (K[3] && g.legInit) {
+                K[3].updateWorldMatrix(true, false);
+                vZiel.set(0, BM.c[0] / fLab, BM.c[1] / fLab).applyMatrix4(K[3].matrixWorld);
+                L.x = vZiel.x;
+                L.z = vZiel.z;
+            } else {
+                L.x = fx;
+                L.z = fz;
+            }
+            L.an = true;
+        };
+        // SCHRITT 1 — DAS FUSS-ZIEL IN DER WELT je Bein: unter der Hüfte in der Ruhe des Rumpfs (die Lage des Leibs mit
+        // Gier, Nick und Wank — ohne sein Federn und Wiegen), längs der Blickrichtung um die Ruhe-Lage und den Schritt des
+        // Gang-Gesetzes versetzt, auf dem Boden dort. Ein Fuß, der steht, GLEITET NIE: im Stand des Beins beim Gehen (Phase
+        // π … 2π) bleibt er, wo er aufsetzte; er hebt erst im frühen Schwung ab und führt vom Abhebe-Punkt auf das Ziel des
+        // Gesetzes. Ein STEHENDES Tier lässt die Pfoten, wo sie stehen. Wo eine stehende Pfote fern ihrer Lage ist — im
+        // Stand fern dem Lot, im Gehen von der Hüfte nicht mehr erreichbar —, TRITT sie dorthin: gehoben, in einer
+        // Viertel-Sekunde, eine nach der anderen.
+        var tritt = false;
+        for (var i0 = 0; i0 < 4; i0++) if (fl[i0].tritt >= 0) tritt = true;
+        for (var i = 0; i < 4; i++) {
+            var ph = g.ph[i];
+            var K = ketten[i];
+            var BM = tb.bein[i];
+            var L = fl[i];
+            // der Fußweg dieses Beins folgt SEINER Phasen-Rate (die Kopplung beschleunigt/bremst einzelne Beine): im Stand
+            // wandert der Fuß mit genau der Geschwindigkeit des Leibs zurück
+            var rate = dtTakt > 0 ? (g.ph[i] - phAlt[i]) / dtTakt : freq;
+            var F = stand ? null : core.gangFuss(ph, st * (freq / Math.max(0.25 * freq, rate)), gs.tast);
+            var hub = F ? F.hub : 0;
+            if (tb._huefteLeib) vHuefte.copy(tb._huefteLeib[i]).applyMatrix4(group.matrixWorld);
+            else vHuefte.copy(group.position);
+            var vor = BM.zr * skala + (F ? F.dz : 0);
+            var fx = vHuefte.x + vorX * vor,
+                fz = vHuefte.z + vorZ * vor;
+            var u = ((ph % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+            var imStand = stand || u >= sw;
+            // der WELTFESTE ANKER (K07): ein gehender Fuß setzt auf, wo das Gesetz ihn hinstellt — sein Ziel am Ende des
+            // Schwungs ist in der Welt stetig. Ein stehendes Tier lässt die Pfote, wo sie steht.
+            if (imStand && !L.an && !(L.tritt >= 0)) {
+                if (stand || !g.legInit) pfoteHier(K, L, fx, fz, BM);
+                else {
+                    // die Pfote setzt, wo die Landung in der Welt stand (unten), sonst auf das Ziel des Gesetzes
+                    L.x = L.land ? L.lx : fx;
+                    L.z = L.land ? L.lz : fz;
+                    L.an = true;
+                }
+                L.land = false;
+            }
+            if (imStand && L.an && !(L.tritt >= 0) && !tritt) {
+                var fern = stand
+                    ? Math.hypot(fx - L.x, fz - L.z) > 0.15 * BM.h * skala
+                    : Math.hypot(vHuefte.x - L.x, vHuefte.z - L.z) > glied(BM) - BM.c[0] * skala;
+                if (fern) {
+                    L.tritt = 0;
+                    L.ax = L.x;
+                    L.az = L.z;
+                    tritt = true;
+                }
+            }
+            // der freie Fuß (Tritt oder Schwung) und ob er schon sinkt (DIE LANDUNG, unten)
+            var frei = true,
+                sinkt = false;
+            if (L.tritt >= 0) {
+                L.tritt = Math.min(1, L.tritt + dt / 0.25);
+                var wT = L.tritt * L.tritt * (3 - 2 * L.tritt);
+                fx = L.ax + (fx - L.ax) * wT;
+                fz = L.az + (fz - L.az) * wT;
+                hub = Math.pow(Math.sin(Math.PI * L.tritt), GG.hubForm);
+                sinkt = L.tritt >= LANDUNG;
+            } else if (imStand) {
+                frei = false;
+                fx = L.x;
+                fz = L.z;
+            } else {
+                if (L.an && u < 0.7 * sw) {
+                    L.ax = L.x;
+                    L.az = L.z;
+                    L.au = u;
+                    L.an = false;
+                }
+                if (L.an) {
+                    // der Gang beginnt spät im Schwung: der Fuß bleibt stehen bis zum nächsten
+                    fx = L.x;
+                    fz = L.z;
+                    hub = 0;
+                } else if (Number.isFinite(L.ax)) {
+                    var w0 = Math.max(0, Math.min(1, (u - L.au) / Math.max(0.2 * sw, 0.8 * sw - L.au)));
+                    var wS = w0 * w0 * (3 - 2 * w0);
+                    fx = L.ax + (fx - L.ax) * wS;
+                    fz = L.az + (fz - L.az) * wS;
+                }
+                sinkt = !L.an && u >= LANDUNG * sw;
+            }
+            // DIE LANDUNG STEHT IN DER WELT (K07) — EIN Halt für jeden sinkenden Fuß: ab LANDUNG seines Wegs (der Schwung ab
+            // 0,85 π, der Tritt ab 0,85 seiner Viertel-Sekunde) hält die Pfote den Punkt, an dem sie aufsetzt.
+            if (sinkt) {
+                if (!L.land) {
+                    L.land = true;
+                    L.lx = fx;
+                    L.lz = fz;
+                }
+                fx = L.lx;
+                fz = L.lz;
+            } else if (frei) L.land = false;
+            if (L.tritt >= 0) {
+                L.x = fx;
+                L.z = fz;
+                L.an = true;
+                if (L.tritt >= 1) {
+                    L.tritt = -1;
+                    L.land = false;
+                }
+            }
+            var Z = ziele[i];
+            Z[0] = fx;
+            Z[1] = W.boden(group, fx, fz);
+            Z[2] = fz;
+            Z[3] = hub;
+            // DIE SOHLE AM HANG (Gelände H5, das Gesetz des Menschen-Fußes): Z[4..6] = die Normale des Bodens unter dem Ziel
+            // aus W.kipp — die Pfote legt ihre Sohle darauf, ihr Gelenk steht um c längs dieser Normale über ihr.
+            var kp = W.kipp(fx, fz, gier, Z[1], group);
+            var tl = Math.tan(kp.laengs),
+                tq = Math.tan(kp.quer);
+            var nl = Math.sqrt(1 + tl * tl + tq * tq);
+            Z[4] = -(tl * vorX + tq * vorZ) / nl;
+            Z[5] = 1 / nl;
+            Z[6] = (tq * vorX - tl * vorZ) / nl;
+        }
+        // SCHRITT 2 — DIE SENKE (die Reichweite der Beine): der Rumpf senkt sich LOTRECHT (die Hüften sinken auf ihr Lot,
+        // die Fuß-Ziele bleiben), bis jede Pfote ihren Boden erreicht: je Bein das Gelenk über der Pfote höchstens
+        // √(Glied² − seitlich² − Schritt-Ende²) unter der Hüfte; gedeckelt auf ein Drittel der Hüft-Höhe (ein Rumpf kriecht
+        // nicht).
+        var senke = 0;
+        var vHw = tmp.gangHW || (tmp.gangHW = new M3.Vector3());
+        if (T.wolf) {
+            for (var i2 = 0; i2 < 4; i2++) {
+                var B2 = tb.bein[i2],
+                    Z2 = ziele[i2];
+                vHw.set(B2.p0[0] / fLab, B2.p0[1] / fLab, B2.p0[2] / fLab);
+                vHw.applyMatrix4(T.wolf.matrixWorld);
+                var cN = -B2.c[0] * skala; // das Pfoten-Gelenk über der Sohle längs der Normale (Z[4..6])
+                var dx2 = Z2[0] + cN * Z2[4] - vHw.x,
+                    dz2 = Z2[2] + cN * Z2[6] - vHw.z;
+                var quer = dx2 * vorZ - dz2 * vorX;
+                var weit = Math.max(Math.abs(dx2 * vorX + dz2 * vorZ), Math.abs(B2.zr) * skala + st / 2);
+                var lg = glied(B2) * 0.98;
+                var ueber = vHw.y - (Z2[1] + cN * Z2[5]); // die Hüfte über dem Pfoten-Gelenk auf dem Boden
+                var noetig = ueber - Math.sqrt(Math.max(0, lg * lg - quer * quer - weit * weit));
+                if (noetig > senke) senke = Math.min(noetig, (B2.h * skala) / 3);
+            }
+        }
+        g.senke = (g.senke || 0) + (senke - (g.senke || 0)) * (dt > 0 ? 1 - Math.exp(-6 * dt) : 1);
+        if (T.wolf && T.wolf.parent) {
+            // das Lot im Raum des Rumpf-Halters: die Senke wirkt längs der Welt-Senkrechten, nie längs des geneigten Leibs
+            var Pinv = (tmp.gangM || (tmp.gangM = new M3.Matrix4())).copy(T.wolf.parent.matrixWorld).invert();
+            var vA = vHw.copy(group.position).applyMatrix4(Pinv);
+            var ax = vA.x,
+                ay0 = vA.y,
+                az0 = vA.z;
+            vHw.copy(group.position);
+            vHw.y -= g.senke;
+            vHw.applyMatrix4(Pinv);
+            T.wolf.position.set(ruhe.x + vHw.x - ax, ruhe.y + vHw.y - ay0, ruhe.z + vHw.z - az0);
+            T.wolf.updateMatrix();
+            T.wolf.matrixWorld.multiplyMatrices(T.wolf.parent.matrixWorld, T.wolf.matrix);
+        }
+        var Rinv = T.wolf ? (tmp.gangR || (tmp.gangR = new M3.Matrix4())).copy(T.wolf.matrixWorld).invert() : null;
+        // SCHRITT 3 — DIE PFOTE AUF DEM ZIEL: in den Rumpf-Raum gerechnet (er neigt, rollt, federt) stellt die Hüfte das Bein
+        // erst seitlich in die Ebene des Pfoten-Gelenks (Abspreizen um die Längs-Achse: der Leib rollt, das Bein bleibt im
+        // Lot), dann die ebene Zwei-Knochen-IK; die Pfote legt ihre Sohle auf die Normale des Bodens (Z[4..6], unten).
+        // Dieselbe IK trägt den Stand mit seiner Gewichts-Unruhe.
+        var vN = tmp.sohleN || (tmp.sohleN = new M3.Vector3());
+        var qA = tmp.sohleQA || (tmp.sohleQA = new M3.Quaternion());
+        var qN = tmp.sohleQN || (tmp.sohleQN = new M3.Quaternion());
+        var eA = tmp.sohleE || (tmp.sohleE = new M3.Euler());
+        for (var i3 = 0; i3 < 4; i3++) {
+            var K3 = ketten[i3];
+            var BM3 = tb.bein[i3];
+            var Z3 = ziele[i3];
+            var hub3 = Z3[3];
+            var p0x = BM3.p0[0] * skala,
+                p0y = BM3.p0[1] * skala,
+                p0z = BM3.p0[2] * skala;
+            vN.set(Z3[4], Z3[5], Z3[6]);
+            vZiel.set(Z3[0], Z3[1] + hub3 * GG.hub * BM3.h * skala, Z3[2]).addScaledVector(vN, -BM3.c[0] * skala);
+            if (Rinv) {
+                vZiel.applyMatrix4(Rinv).multiplyScalar(fLab * skala);
+                vN.transformDirection(Rinv);
+            }
+            // das Abspreizen: die Hüfte dreht die Bein-Ebene um die Längs-Achse durch das Pfoten-Gelenk
+            var lx = vZiel.x - p0x,
+                ly = vZiel.y - p0y;
+            var ab = Math.atan2(lx, -ly);
+            var ty = -Math.hypot(lx, ly),
+                tz = vZiel.z - p0z;
+            var z0, z1, z2, z3;
+            {
+                var ay = BM3.a[0] * skala,
+                    az = BM3.a[1] * skala,
+                    by = BM3.b[0] * skala,
+                    bz = BM3.b[1] * skala;
+                var la = Math.hypot(ay, az),
+                    lb = Math.hypot(by, bz);
+                var dZiel = Math.hypot(ty, tz);
+                // DIE GRENZE DES BEINS (K07, die hintere Extremlage): ein gehaltener Fuß — im Stand oder spät im Schwung
+                // wartend —, den die Kette nicht mehr erreicht, hebt ab: sein Schwung beginnt im nächsten Takt (die Phase
+                // springt auf den Schwung-Anfang, die Kopplung führt sie zurück), um den Weg des Leibs in einem Bild (1/60 s)
+                // vorausgedacht. Im STAND tritt er (K8 huf, Schritt 1), ohne auf eine andere Pfote zu warten.
+                if (dZiel > la + lb - (g.v || 0) * Math.min(dt, 1 / 60) && fl[i3].an && !(fl[i3].tritt >= 0)) {
+                    var u3 = ((g.ph[i3] % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+                    if (!stand && u3 >= 0.7 * sw) g.ph[i3] += 2 * Math.PI - u3;
+                    else if (stand) {
+                        var fx3 = fl[i3].x,
+                            fz3 = fl[i3].z;
+                        fl[i3].tritt = 0;
+                        fl[i3].ax = fx3;
+                        fl[i3].az = fz3;
+                        tritt = true;
+                    }
+                }
+                var dK = Math.min(la + lb - 1e-4, Math.max(Math.abs(la - lb) + 1e-4, dZiel));
+                var gam = Math.acos(Math.max(-1, Math.min(1, (dK * dK - la * la - lb * lb) / (2 * la * lb))));
+                var thK = (BM3.phi0 < 0 ? -gam : gam) - BM3.phi0;
+                var cK = Math.cos(thK),
+                    sK = Math.sin(thK);
+                var sy = ay + (by * cK - bz * sK),
+                    sz = az + (by * sK + bz * cK);
+                // der Winkel-Unterschied auf (−π, π] (beide Richtungen zeigen nach unten: atan2 springt dort um 2π)
+                var thH = Math.atan2(tz, ty) - Math.atan2(sz, sy);
+                thH -= 2 * Math.PI * Math.round(thH / (2 * Math.PI));
+                z0 = thH;
+                z1 = 0;
+                z2 = thK;
+                // die Pfote faltet im Schwung und streckt sich, bevor sie den Boden erreicht (K07: hub⁴ — mit hub² drehte
+                // die Pfote in den untersten 3 cm noch 0,05–0,09 rad je Takt um die Handwurzel)
+                var h2 = hub3 * hub3;
+                z3 = -(thH + thK) + h2 * h2 * GG.falte;
+                if (stand) {
+                    // die Gewichts-Unruhe des Stands (t-Sinus; tension skaliert sie) auf der IK
+                    var wn = (Math.sin(t * 2.5 + i3 * 1.7) * 0.004 + Math.sin(t * 1.3 + i3 * 2.3) * 0.003) * tension;
+                    var wShift = roll * seiten[i3] * 0.025;
+                    z0 += wn + wShift;
+                    z1 += wn * 0.5 + wShift * 0.3;
+                    z2 += wn * 0.3 - wShift * 0.2;
+                    z3 += wn * 0.2;
+                }
+            }
+            var cur = g.legCur[i3];
+            // DER GEHALTENE FUSS STEHT IN DEN GELENKEN (K16-Q): die einpolige Näherung (legA, kpMul) glättet nur den freien
+            // Fuß — Schwung und Tritt. Ein Fuß, den das Gesetz in der Welt hält (an, kein Tritt), steht in der Lösung der IK
+            // selbst (am Querhang drehte sonst der stehende Wolf 4,15° je Takt).
+            if (!g.legInit || (fl[i3].an && !(fl[i3].tritt >= 0))) {
+                cur[0] = z0;
+                cur[1] = z1;
+                cur[2] = z2;
+                cur[3] = z3;
+                cur[4] = ab;
+            } else {
+                cur[0] += (z0 - cur[0]) * legA;
+                cur[1] += (z1 - cur[1]) * legA;
+                cur[2] += (z2 - cur[2]) * legA;
+                cur[3] += (z3 - cur[3]) * legA;
+                cur[4] += (ab - cur[4]) * legA;
+            }
+            if (K3[0]) {
+                // erst abspreizen (um die Längs-Achse des Rumpfs), dann schwingen: Rz · Rx
+                K3[0].rotation.order = "ZXY";
+                K3[0].rotation.z = cur[4];
+                K3[0].rotation.x = cur[0];
+            }
+            if (K3[1]) K3[1].rotation.x = cur[1];
+            if (K3[2]) K3[2].rotation.x = cur[2];
+            // die Sohle auf dem Boden: die Glieder darüber tragen die Pfote im Rumpf-Raum als Rz(ab)·Rx(Σ), ihre Ruhe-Lage
+            // (die Sohle waagrecht zur Bein-Ebene, Rz(ab)) dreht der kürzeste Weg auf die Normale; die Falte des Schwungs bleibt
+            if (K3[3] && Rinv) {
+                qA.setFromEuler(eA.set(cur[0] + cur[1] + cur[2], 0, cur[4], "ZXY"));
+                qN.setFromUnitVectors(vZiel.set(-Math.sin(cur[4]), Math.cos(cur[4]), 0), vN).multiply(qA);
+                qN.premultiply(qA.invert());
+                K3[3].quaternion.setFromAxisAngle(vN.set(1, 0, 0), cur[3]).premultiply(qN);
+            } else if (K3[3]) K3[3].rotation.x = cur[3];
+        }
+        g.legInit = true;
+        if (T.headGroup) {
+            // im Ansprung eines Bisses zielt der Kopf auf den Leib des Ziels (die Haltung des Bisses, g.bissKopf)
+            T.headGroup.rotation.x = ((Number(P.headX) || 0) + 0.04 * Math.sin(t * 1.7)) * fadeMul + g.bissKopf;
+            // das Scan-Pendel (kopfSweep) + headY aus dem MOTION-Preset additiv
+            T.headGroup.rotation.y = sweepY + (Number(P.headY) || 0) * fadeMul;
+        }
+        var amp = (Number(P.tailAmp) || 0.1) * fadeMul;
+        var tRate = Math.max(0.4, Number(P.tailRate) || 0.5);
+        var ts = tb.tailSegs || [];
+        for (var iS = 0; iS < ts.length; iS++) ts[iS].rotation.y = Math.sin(t * tRate - iS * 0.5) * amp;
+    }
+
     // KONVERGENZ III — die Tier-Materialfarben (verbatim aus buildAnimal Z.137):
     // `seh` (Integration W8, additiv): die Seh-Klasse des Stoffs (phyto-core BUDGET_GESETZ.seh) — das Budget-Gesetz
     // faltet nur innerhalb EINER (das Auge nie in die Nase, die Nase nie ins Fell); Fell · Strähne · Schale sind haar.
@@ -4065,6 +4729,12 @@
         gangBecken: gangBecken,
         gangReich: gangReich,
         gangPhaseHaelt: gangPhaseHaelt,
+        lageTempo: lageTempo,
+        gangWahl: gangWahl,
+        tierBeinMass: tierBeinMass,
+        tierPose: tierPose,
+        verhaltenHash: verhaltenHash,
+        verhaltenWahl: verhaltenWahl,
         STEUER_GESETZ: STEUER_GESETZ,
         tempoEinheit: tempoEinheit,
         sprintTempo: sprintTempo,
