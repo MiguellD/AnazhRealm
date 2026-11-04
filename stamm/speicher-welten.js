@@ -73,6 +73,8 @@ class AnazhRealm_speicher_welten {
                 [c.x, c.z] = [c.wx, c.wz];
                 if (c.ort === undefined) c.ort = AnazhRealm._ortSchluessel(c, c);
             }
+        // der Trampelpfad reiste gepackt (`_trittPacken`): die Welt liest ihn als Zellen "i,j" → [n, t]
+        if (Array.isArray(m.tritt)) m.tritt = AnazhRealm._trittAuspacken(m.tritt);
         AnazhRealm._weltGesetz(m);
     }
 
@@ -1064,7 +1066,8 @@ class AnazhRealm_speicher_welten {
             // Das Gedächtnis selbst reist ohne sein Abgeleitetes (w4-heil-speicher, 5 km in 30 min: 3,4 kB in 20 Zellen, je Ort
             // der Anker doppelt und sein Erdbau-Schlüssel): der Anker einmal als Ort der Trasse (`wx`/`wz` — `x`/`z` sind derselbe
             // Punkt), `ort` nie, wo er `_ortSchluessel` aus Same und Anker ist; eine Zeile der Varianten-Saat nie, wo sie
-            // `_variantenSaat` gleicht. `_weltMetaHeil` stellt beides beim Laden wieder; was abweicht, reist ganz.
+            // `_variantenSaat` gleicht. `_weltMetaHeil` stellt beides beim Laden wieder; was abweicht, reist ganz. Der Trampelpfad reist
+            // gepackt (`_trittStand`: ~4 Bytes je Zelle statt ~24 im JSON-Paar; 1 km in 6 min am Dorf trug 6,1 kB).
             [
                 "worldMeta",
                 (stand) => {
@@ -1090,6 +1093,7 @@ class AnazhRealm_speicher_welten {
                             .filter(eigen)
                             .map((art) => [art, saat[art]])
                     );
+                    if (wm.tritt && !Array.isArray(wm.tritt)) wm.tritt = this._trittStand(wm.tritt);
                     // DAS GESETZ REIST ALS ABWEICHUNG VON DER ERDE (ultiversum.K1): je Teil nur, was vom Gesetz der Erde abweicht —
                     // eine Welt der Erde trägt kein Feld, `_weltGesetz` stellt die Normalform beim Laden wieder (die volle Form trug
                     // je Stand 184 Bytes: das Abbild des Mitträgers riss seine Wand von 256 KiB)
@@ -1346,6 +1350,7 @@ class AnazhRealm_speicher_welten {
                             a.feldWurf,
                             a.werk,
                             a.geburt,
+                            a.geburtNass,
                             a.studioOv,
                             a.fundament,
                             a.tuer,
@@ -1383,6 +1388,8 @@ class AnazhRealm_speicher_welten {
                         ...(a.werk === true ? { werk: true } : {}),
                         // die Geburt des Werks überlebt den Reload (stoffe.K4: sein Alter ist Spielzeit seit ihr)
                         ...(Number.isInteger(a.geburt) && a.geburt > 0 ? { geburt: a.geburt } : {}),
+                        // ebenso die Nässe-Dosis seiner Geburt (stoffe.K4, `_werkAlter`)
+                        ...(a.geburtNass > 0 ? { geburtNass: a.geburtNass } : {}),
                         // PRÄGUNG-WELT — der Guss-Stempel überlebt den Reload (sonst verlöre
                         // ein geprägtes Werk beim Restore seinen Charakter, V8.59-Klasse).
                         ...(a.studioOv && typeof a.studioOv === "object" ? { studioOv: a.studioOv } : {}),

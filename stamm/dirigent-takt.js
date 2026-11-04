@@ -944,6 +944,7 @@ class AnazhRealm_dirigent_takt {
         this._verkehrSchritt(dt); // die Wagen der Städte mit ihren Fahrern (PFLICHT-OFFEN C)
         // DER GESTOSSENE LEIB und LEIB AN LEIB im Sim-Schritt (0710-5): was einen Körper bewegt, läuft im festen Schritt.
         this._kreaturStossSchritt(dt);
+        this._trittDerLeiber(); // der Gang der Leiber tritt den Pfad (stoffe.K4), an ihrer Lage vor dem Leib-Löser
         this._leibKontakte();
         this._freiSchritt(dt); // DER FREIE KÖRPER (physik.K3): Kiste, Fass — fallen, stapeln, gestoßen kippen
         if (this.state._replayRec) this._replayCaptureFrame(dt);
