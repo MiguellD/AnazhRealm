@@ -585,8 +585,8 @@ class AnazhRealm_vegetation_streu {
 
     // DAS URTEIL EINES WURFS (der Wurf `i` der Schicht `layer`): seine Zelle (er steht) · null (er wartet: die Region schiebt sich
     // auf, `_streuZelleWartet`, sein Platz bleibt) · false (er fällt). Was der Zustand der Welt urteilt, urteilt der Haupt-Faden:
-    // die promotete Zelle dieser Schicht (ihre realen Bäume), die Tat, die den Baum der Zelle nahm (`_tatSperrt`, speicher.K3),
-    // das exakte Wasser-Verdikt (`_landAt`) — dann setzt die Zelle durch die EINE Natur-Wand (`_naturSetzen`, mit Art und Größe —
+    // die promotete Zelle dieser Schicht (ihre realen Bäume), die Tat, die den Baum der Zelle nahm (`_tatSperrt`, speicher.K3) oder
+    // ihn noch nicht wachsen ließ (das Alter des Orts, `_baumAlter`: die Narbe eines Brands, der Stubben), das exakte Wasser-Verdikt (`_landAt`) — dann setzt die Zelle durch die EINE Natur-Wand (`_naturSetzen`, mit Art und Größe —
     // ihre Krone: im Grundriss eines Hauses, über der Genesis-Lichtung, im Wagen und am Wasser wird sie nie Streu). Die Wand urteilt
     // VOR dem Warten: erst ihr `setzen` fragt die Höhe und baut die Instanz — ein Wurf, den die Wand nimmt, zählt keinen Wartenden
     // und hält keinen Platz. Am Chokepoint vorbei (das Urteil `_naturWand` beim Aufrufer) urteilten die Selbsttests der Wand
@@ -601,7 +601,7 @@ class AnazhRealm_vegetation_streu {
         ];
         const tf = { x: darts[i + 2], z: darts[i + 3], yaw: darts[i + 4], scale: darts[i + 5] };
         if (this._scatterIsCellPromoted(tf.x, tf.z, layer.name)) return false;
-        if (layer.promotable && this._tatSperrt(tf.x, tf.z)) return false;
+        if (layer.promotable && (this._tatSperrt(tf.x, tf.z) || this._baumAlter(tf.x, tf.z) < 1)) return false;
         if (!this._landAt(tf.x, tf.z, 0.4)) return false;
         const species = this._scatterSpeciesForLayer(layer.kind, lebendig, moisture, h);
         const variantIndex = h % AnazhRealm.VARIANTS_PER_SPECIES;
@@ -1465,13 +1465,20 @@ class AnazhRealm_vegetation_streu {
     // Eine Streu-Region streamt nur, wenn ihre NÄCHSTE Kante im `foliageRadius` liegt (gekappt auf die gebaute Ring-Kante) —
     // kein Fern-Billboard vor dem Boden. Die Spieler-Region streamt immer; ferne holt der nächste Tick selbst-heilend nach.
     // Headless: foliageRadius = MAX. Die EINE Regel für den Streamer und das erste Weltbild (`_weltbildFehlt`).
-    _streuRegionInReichweite(rx, rz, p) {
+    // `bahn` (der Streamer, w7-rang): die Region gilt auch, wenn sie am Ort der Bahn am Ende des Vorlaufs in Reichweite liegt
+    // (`_bedarfVoraus`, der EINE Rang) — sie streut, bevor die Bahn ankommt.
+    _streuRegionInReichweite(rx, rz, p, bahn) {
         const SC = AnazhRealm.SCATTER;
         const st = this.state;
         const R = st.foliageRadius != null ? st.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
-        const nx = Math.max(rx * SC.regionM, Math.min(p.x, (rx + 1) * SC.regionM));
-        const nz = Math.max(rz * SC.regionM, Math.min(p.z, (rz + 1) * SC.regionM));
-        return Math.hypot(nx - p.x, nz - p.z) <= R;
+        const nah = (q) => {
+            const nx = Math.max(rx * SC.regionM, Math.min(q.x, (rx + 1) * SC.regionM));
+            const nz = Math.max(rz * SC.regionM, Math.min(q.z, (rz + 1) * SC.regionM));
+            return Math.hypot(nx - q.x, nz - q.z) <= R;
+        };
+        if (nah(p)) return true;
+        const v = bahn ? this._bedarfVoraus(p) : null;
+        return !!v && v.weg > 0 && nah(v);
     }
 
     // Steht die Streu? — die EINE Antwort (das erste Weltbild `_weltbildFehlt`, die Bühnen-Linse): wie viele Streu-Regionen
@@ -1547,30 +1554,30 @@ class AnazhRealm_vegetation_streu {
         // schob jede Zelle auf, und die Region streute ganz, nur um nach dem Buch neu zu streuen (Radeon kalt bis 8 s ab Navigation).
         const _fb = this._foundryEnabled() ? this._foundry : null;
         const _buchKalt = this._foundryEnabled() && !(_fb && _fb.ready && _fb.recipes);
-        for (
-            let dz = -SC.ringRegions;
-            dz <= SC.ringRegions && work < SC.maxRegionsPerFrame && !_sliceFull && !_buchKalt;
-            dz++
-        ) {
-            for (let dx = -SC.ringRegions; dx <= SC.ringRegions && work < SC.maxRegionsPerFrame; dx++) {
-                const rk = `${pRegX + dx},${pRegZ + dz}`;
+        // DIE REIHE DER REGIONEN (der EINE Rang, w7-rang): die fehlenden in Reichweite der Bahn nach der Zeit bis Bedarf
+        // (`_bedarfWeg` ihrer Mitte) — bis w7-rang in Ring-Reihe (dz, dx); beim GT-Tempo trat jede neue Region wartend in den
+        // Sichtkegel (streaming.K2, Null-Renderer an main 6eeeb856: Streu 0 von 15).
+        const neu = [];
+        for (let dz = -SC.ringRegions; dz <= SC.ringRegions && !_sliceFull && !_buchKalt; dz++)
+            for (let dx = -SC.ringRegions; dx <= SC.ringRegions; dx++) {
+                const [rx, rz] = [pRegX + dx, pRegZ + dz];
+                const [mx, mz] = [(rx + 0.5) * SC.regionM, (rz + 0.5) * SC.regionM];
                 // vor dem ersten Weltbild nur die Region im Blick (`_blickDerAnkunft`), die übrigen streut der Nachlauf
                 if (
-                    !map.has(rk) &&
-                    this._streuRegionInReichweite(pRegX + dx, pRegZ + dz, playerPos) &&
-                    this._blickDerAnkunft(
-                        (pRegX + dx + 0.5) * SC.regionM,
-                        (pRegZ + dz + 0.5) * SC.regionM,
-                        SC.regionM * Math.SQRT1_2
-                    )
-                ) {
-                    this._scatterRegion(pRegX + dx, pRegZ + dz, playerPos, deadlineMs);
-                    work++;
-                    if (Number.isFinite(deadlineMs) && performance.now() > deadlineMs) {
-                        _sliceFull = true;
-                        break;
-                    }
-                }
+                    !map.has(`${rx},${rz}`) &&
+                    this._streuRegionInReichweite(rx, rz, playerPos, true) &&
+                    this._blickDerAnkunft(mx, mz, SC.regionM * Math.SQRT1_2)
+                )
+                    neu.push([this._bedarfWeg(mx, mz), rx, rz]);
+            }
+        neu.sort((a, b) => a[0] - b[0]);
+        for (const [, rx, rz] of neu) {
+            if (work >= SC.maxRegionsPerFrame) break;
+            this._scatterRegion(rx, rz, playerPos, deadlineMs);
+            work++;
+            if (Number.isFinite(deadlineMs) && performance.now() > deadlineMs) {
+                _sliceFull = true;
+                break;
             }
         }
         // (2) ferne Regionen disposen (außerhalb ringRegions+1)
@@ -1793,12 +1800,22 @@ class AnazhRealm_vegetation_streu {
         const ref = this.state && this.state.lodRef > 0 ? this.state.lodRef : D.lodRef;
         const h = this._schirm().hoehe;
         const M = D.hysteresis;
-        if (h === this._stufenSchirmH && ref === this._stufenSchirmRef && M === this._stufenSchirmM) return;
-        [this._stufenSchirmH, this._stufenSchirmRef, this._stufenSchirmM] = [h, ref, M];
-        D.thresh01 = this._wechselAbstand("tree", 1, ref);
-        D.thresh12 = this._wechselAbstand("tree", 2, ref);
+        if (!(h === this._stufenSchirmH && ref === this._stufenSchirmRef && M === this._stufenSchirmM)) {
+            [this._stufenSchirmH, this._stufenSchirmRef, this._stufenSchirmM] = [h, ref, M];
+            D.thresh01 = this._wechselAbstand("tree", 1, ref);
+            D.thresh12 = this._wechselAbstand("tree", 2, ref);
+        }
+        // die Grenzen der Wahl folgen den Schwellen (EINE Quelle): wer sie stellt — das Gesetz des Schirms oder die Linse der Karte
+        // (`werkbank licht --laub --karte`, die Stufen jedes Baums auf die Karte) —, stellt die Wahl; bis w8-linsen-blick hielt die Wahl
+        // die Grenzen des letzten Schirms, und die Karte des Exemplars erschien nie (licht.K3: Karte und Gestalt 0 Pixel)
+        const B = this._baumGrenzen;
+        if (B && B.M === M && B.grenzen[0].ab === D.thresh01 && B.grenzen[1].ab === D.thresh12) return;
+        // EINE NEUE EPOCHE: die Hysterese der alten Grenzen gilt nicht mehr — die nahen Bäume wählen im nächsten Gang am Abstand
+        // (`_tickArchitectureLOD`); bis dahin hielt sie die Fichte aus 8 m auf L0 (die Hysterese 3,4 m über der Schwelle 0,6)
+        this._baumEpoche = !!B;
         this._baumGrenzen = {
             erste: 0,
+            M,
             grenzen: [D.thresh01, D.thresh12].map((ab, i) => ({ stufe: i + 1, ab, h: M / ab })),
         };
     }

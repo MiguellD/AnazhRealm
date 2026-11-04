@@ -275,6 +275,11 @@ function werkPutz() {
     st.yaw = 0;
     if (st.playerMesh) st.playerMesh.rotation.y = 0;
 }
+// DIE PEERS WEG (`window.__peersWeg()`): jeder Peer der Leitung fällt über `_p2pRemovePeer` — bis w8-snapshot-schlank elfmal
+// derselbe Zwilling in playtest/netz-p2p
+function peersWeg() {
+    for (const pid of Array.from(st.p2p.peers.keys())) r._p2pRemovePeer(pid);
+}
 // DIE BAUTEN LEER (`window.__bautenLeer()`): jedes Mesh der Architekturen aus der Szene und entsorgt, die Liste leer — bis
 // w4-verkehr-c2 sechsmal derselbe Zwilling in playtest/siedlung
 function bautenLeer() {
@@ -322,7 +327,7 @@ function png(u8, W, H) {
 // Bild neu (eine Linse blendet Klassen aus und ein, die Bühne wechselt)
 const bundlesNeu = () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
 const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
-const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__rufe = ${rufe};`;
+const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -1153,11 +1158,19 @@ async function seiteZu(browser, server, out, kopf, feld = "error") {
 // DIE TÄTER-FÄLLE eines Selbsttests ohne Browser: je Fall `[name, tat, muss]` (die Tat an einem frischen `klon()`) oder
 // `{ name, z, muss }` das Urteil; jedes `muss` (ein Muster oder eine Liste) trifft einen Befund, `null` verlangt keinen — sonst steht
 // der Fall beim Namen in `fehler`. `selbsttestEnde` schließt: ROT mit Exit 1, sonst der Grün-Satz.
+// Der Täter eines Falls ist eine Funktion des Klons oder seine TAFEL `[pfad, wert]` („a.b.0"): „pfad=" setzt den Wert, sonst
+// mischt er sich in den Knoten, ohne Wert fällt der Pfad — bis w6-stoffe-k5 schrieb jede Wand je Täter ihre eigene Closure.
 function taeterFaelle(faelle, urteil, { fehler = [], klon } = {}) {
     for (const f of faelle) {
         const [name, tat, muss] = Array.isArray(f) ? f : [f.name, null, f.muss];
         const z = tat ? klon() : f.z;
-        if (tat) tat(z);
+        if (Array.isArray(tat)) {
+            const p = tat[0].replace(/=$/, "").split(".");
+            const o = p.slice(0, -1).reduce((x, k) => x[k], z);
+            if (tat.length < 2) delete o[p.at(-1)];
+            else if (tat[0].endsWith("=")) o[p.at(-1)] = tat[1];
+            else Object.assign(o[p.at(-1)], tat[1]);
+        } else if (tat) tat(z);
         const v = urteil(z);
         const fehlt =
             muss == null ? v.slice(0, v.length && 1) : [].concat(muss).filter((re) => !v.some((s) => re.test(s)));

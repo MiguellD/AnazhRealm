@@ -2408,6 +2408,13 @@ class AnazhRealm_werkstatt_vorschau {
             wOpt.textContent = this._weltName(AnazhRealm.WORLD_REGISTRY[wid]);
             portalSel.appendChild(wOpt);
         }
+        // die Welten des Ultiversums (ultiversum.K1): ein Gesetz beim Namen — das Tor gebiert eine Welt dieses Gesetzes
+        for (const name of Object.keys(AnazhRealm.ULTIVERSUM)) {
+            const wOpt = document.createElement("option");
+            wOpt.value = name;
+            wOpt.textContent = this._t(`ultiversum.${name}`);
+            portalSel.appendChild(wOpt);
+        }
         mkBtn(this._t("vorschau.intent.portal"), this._t("vorschau.intent.portal.titel"), () =>
             this.aimBlueprintAtWorld(bp.name, portalSel.value)
         );

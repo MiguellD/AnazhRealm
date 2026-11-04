@@ -3001,121 +3001,104 @@ class AnazhRealm_bild_kosten {
         return this._schirmWert || this._schirmMessen();
     }
 
-    // DER TAKT DER HORIZONT-KARTE (aus `_atmoTakt`): die Reichweite der Kaskaden je Takt; neu gezeichnet, wenn der Ring voll ist
-    // und das Licht sich um einen Texel über die Karte gedreht hat oder der Anker wandert — Kosten an Änderung (Gebot 7), der
-    // Null-Renderer zeichnet nichts.
+    // DER TAKT DER HORIZONT-KARTE (je Bild aus `_weltLichtTakt`, wo das Richtlicht dieses Bilds steht; dazu aus `_atmoTakt`): das
+    // Gitter des Gesetzes folgt dem Anker (`_horizontGitterTakt`), die Karte wird neu gemalt, wenn das Licht sich um `lichtRad`
+    // gedreht hat oder ein Gitter kam — Kosten an Änderung (Gebot 7), der Null-Renderer zeichnet nichts. Unter dem Horizont, vor
+    // dem ersten Gitter, nach einem Bruch des Fadens und ohne Wurf des Lichts (`castShadow`: die Sonnen-Sicht ist ein Schatten wie
+    // die Kaskaden jedes Stoffs) ruht die Sicht (1).
     _horizontKarteTakt() {
         const st = this.state;
         const K = st.horizontKarte;
         if (!K) return null;
-        const H = AnazhRealm.HORIZONT_KARTE;
-        const csm = st.csmNode;
-        const cam = st.camera;
-        K.U.ab.value = csm && cam ? Math.min(csm.maxFar, cam.far) : 0;
-        const fr = st.fernRing;
         const dl = st.directionalLight;
         const rend = st.renderer;
-        if (!fr || !fr.ready || fr.cursor < fr.totalVerts || !dl || !rend || rend._isHeadlessNull || !st.rendererReady)
-            return K;
+        if (!dl || !rend || rend._isHeadlessNull || !st.rendererReady) return K;
+        const H = AnazhRealm.HORIZONT_KARTE;
+        this._horizontGitterTakt(K);
         const L = this._horizontLicht || (this._horizontLicht = new THREE.Vector3());
         L.copy(dl.position);
         if (dl.target) L.sub(dl.target.position);
-        if (!(L.lengthSq() > 0) || !(L.normalize().y > 0)) {
+        if (!K.bereit || !dl.castShadow || !(L.lengthSq() > 0) || !(L.normalize().y > 0)) {
             K.U.aktiv.value = 0;
             return K;
         }
-        const texelM = (2 * H.randM) / H.texel;
-        const gleich =
-            K.anker &&
-            K.anker[0] === fr.anchorX &&
-            K.anker[1] === fr.anchorZ &&
-            K.geos === fr.geos &&
-            K.licht.dot(L) >= Math.cos(texelM / H.randM);
-        if (gleich) {
-            K.U.aktiv.value = 1;
-            return K;
+        if (K.gemalt !== K.stand || K.licht.dot(L) < Math.cos(H.lichtRad)) {
+            K.U.licht.value.copy(L);
+            this._atmoZeichne(K.pass, K.rt);
+            K.licht.copy(L);
+            K.gemalt = K.stand;
+            K.malZahl++;
         }
-        if (K.geos !== fr.geos) {
-            this._horizontKarteLeeren();
-            for (const geo of fr.geos) {
-                const m = new THREE.Mesh(geo, K.stoff);
-                m.matrixAutoUpdate = false;
-                m.frustumCulled = false;
-                K.szene.add(m);
-                K.meshes.push(m);
-            }
-            K.geos = fr.geos;
-        }
-        const wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
-        const c = this._horizontMitte || (this._horizontMitte = new THREE.Vector3());
-        c.set(fr.anchorX, wl, fr.anchorZ);
-        const kam = K.kamera;
-        kam.position.copy(c).addScaledVector(L, H.hoeheM);
-        if (Math.abs(L.y) > 0.99) kam.up.set(0, 0, 1);
-        else kam.up.set(0, 1, 0);
-        kam.lookAt(c);
-        kam.updateMatrixWorld(true);
-        // DIE BREITE DER KARTE quer zum Licht: der Ring (Radius randM, Höhen bis hMax über dem Bezug) liegt im Bild des Lichts in
-        // ±randM waagrecht und ±(randM·sin h + hMax·cos h) senkrecht — die Karte nimmt genau das (am Abend 6,8 statt 32,8 m je
-        // Texel), sonst trüge ein Texel auf ebenem Boden texelM / tan h Licht-Tiefe und der Bias äße jeden Schatten unter 280 m.
-        let hMax = 0;
-        for (const geo of fr.geos) {
-            const a = geo.attributes.position.array;
-            for (let i = 1; i < a.length; i += 3) hMax = Math.max(hMax, Math.abs(a[i] - wl));
-        }
-        const sinH = L.y;
-        const cosH = Math.sqrt(Math.max(0, 1 - sinH * sinH));
-        const randV = Math.min(H.randM, H.randM * sinH + hMax * cosH);
-        kam.top = randV;
-        kam.bottom = -randV;
-        kam.updateProjectionMatrix();
-        // die Karte: u, v aus den Achsen der Kamera, die Licht-Tiefe längs L. Die Zeilen des Ziels liegen im WebGPU-Raum von oben
-        // (NDC +1 in Zeile 0, die Rücklesung 15.10.: 279 von 355 Ring-Ecken treffen ihre Tiefe nur mit 1 − v), und r184 dreht die
-        // Abtastung unter `level()` nicht — v dreht hier, im WebGL2-Raum nicht.
-        const e = kam.matrixWorld.elements;
-        const k = 1 / (2 * H.randM);
-        const kV = 1 / (2 * randV);
-        const dreh = rend.coordinateSystem === THREE.WebGPUCoordinateSystem ? -1 : 1;
-        const X = [e[0], e[1], e[2]];
-        const Y = [e[4] * dreh, e[5] * dreh, e[6] * dreh];
-        const pc = (a) => a[0] * c.x + a[1] * c.y + a[2] * c.z;
-        K.U.karte.value.set(
-            X[0] * k,
-            X[1] * k,
-            X[2] * k,
-            0.5 - k * pc(X),
-            Y[0] * kV,
-            Y[1] * kV,
-            Y[2] * kV,
-            0.5 - kV * pc(Y),
-            L.x,
-            L.y,
-            L.z,
-            H.versatzM - (L.x * c.x + L.y * c.y + L.z * c.z),
-            0,
-            0,
-            0,
-            1
-        );
-        // der Bias: ein Texel deckt auf ebenem Boden seine senkrechte Kante / tan h Licht-Tiefe, am Hang quer bis die halbe waagrechte
-        const texelV = (2 * randV) / H.texel;
-        K.U.bias.value = H.biasTexel * (texelV / Math.max(H.hoeheMin, sinH / Math.max(1e-3, cosH)) + 0.5 * texelM);
-        this._atmoZeichne(K.szene, K.rt, true);
-        K.licht.copy(L);
-        K.anker = [fr.anchorX, fr.anchorZ];
-        K.malZahl++;
         K.U.aktiv.value = 1;
         return K;
     }
 
-    // Die Zeichen-Meshes der Karte fallen (Ring-Abschied, neue Geometrien); die Geometrien gehören dem Ring.
+    // DAS GITTER DES GESETZES (`HORIZONT_KARTE`): erst nach dem ersten Weltbild, um den Anker des Rings (ohne Ring der Spieler) auf
+    // das Raster `zelleM` gelegt; neu, wenn der Anker `nachM` von der Mitte gewandert ist. Der Feld-Faden rechnet die Höhe
+    // (`gitter` im voxel-worker, `gelaende-core` `hoehe` ohne Detail) in Aufträgen à `zeilenJeAuftrag` Zeilen nacheinander; das alte
+    // Gitter trägt, bis das neue ganz da ist. Eine Welt, die geht (`_horizontKarteLeeren`), lässt den Auftrag fallen (`gen`);
+    // ein Bruch des Fadens meldet sich EINMAL laut und hält die Karte an (`gebrochen`).
+    _horizontGitterTakt(K) {
+        const st = this.state;
+        if (K.flug || K.gebrochen || !st._weltbildDa) return;
+        const H = AnazhRealm.HORIZONT_KARTE;
+        const fr = st.fernRing;
+        const pm = st.playerMesh;
+        const ax = fr ? fr.anchorX : pm ? pm.position.x : NaN;
+        const az = fr ? fr.anchorZ : pm ? pm.position.z : NaN;
+        if (!Number.isFinite(ax) || !Number.isFinite(az)) return;
+        if (K.mitte && Math.hypot(ax - K.mitte[0], az - K.mitte[1]) <= H.nachM) return;
+        const [n, d] = [H.gitter, H.zelleM];
+        const [cx, cz] = [Math.round(ax / d) * d, Math.round(az / d) * d];
+        const [x0, z0] = [cx - (n / 2) * d, cz - (n / 2) * d];
+        const wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
+        const neu = new Uint16Array(n * n);
+        const gen = K.gen;
+        const halb = THREE.DataUtils.toHalfFloat;
+        K.flug = true;
+        const zeilen = (j0) => {
+            if (K.gen !== gen) return;
+            if (j0 >= n) {
+                K.hoehen.image.data.set(neu);
+                K.hoehen.needsUpdate = true;
+                K.U.ursprung.value.set(x0, z0);
+                K.U.bezug.value = wl;
+                K.mitte = [cx, cz];
+                K.stand++;
+                K.bereit = true;
+                K.flug = false;
+                return;
+            }
+            const nz = Math.min(H.zeilenJeAuftrag, n - j0);
+            this._fernAuftrag("gitter", { x0, z0: z0 + j0 * d, d, nx: n, nz })
+                .then((a) => {
+                    if (K.gen !== gen) return;
+                    const h = a && a.hoehen;
+                    if (!h || h.length !== n * nz)
+                        throw new Error(`die Antwort trägt ${h ? h.length : 0} statt ${n * nz} Höhen`);
+                    for (let k = 0; k < h.length; k++) {
+                        if (!Number.isFinite(h[k])) throw new Error(`die Höhe ${h[k]} am Gitter-Punkt ${j0 * n + k}`);
+                        neu[j0 * n + k] = halb(h[k] - wl);
+                    }
+                    zeilen(j0 + nz);
+                })
+                .catch((e) => {
+                    if (K.gen === gen) [K.flug, K.gebrochen] = [false, true];
+                    this._stoffBruch("die Horizont-Karte (das Gitter im Feld-Faden)", e);
+                });
+        };
+        zeilen(0);
+    }
+
+    // Eine Welt geht (Ring-Abschied: Saat, Welt-Wechsel, Sicht-Regler): ihr Gitter gilt nicht mehr, ein Auftrag im Flug fällt.
     _horizontKarteLeeren() {
         const K = this.state.horizontKarte;
         if (!K) return;
-        for (const m of K.meshes) K.szene.remove(m);
-        K.meshes = [];
-        K.geos = null;
-        K.anker = null;
+        K.gen++;
+        K.flug = false;
+        K.gebrochen = false;
+        K.mitte = null;
+        K.bereit = false;
         K.U.aktiv.value = 0;
     }
 }

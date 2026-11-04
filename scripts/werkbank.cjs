@@ -1541,9 +1541,10 @@ async function starte() {
                     let abstand = null;
                     if (k.abstand) {
                         const T = THREE;
-                        // die Bänder: der Ring der Nah-Wiese (ihr Radius in DIESER Welt) ist eine Kante
+                        // die Bänder: die festen Ringe des Gesetzes (vegetation.K1: 2–5 · 5–10 · 10–20 · 20–40 m) und der Ring der Nah-Wiese
+                        // (ihr Radius in DIESER Welt) sind Kanten
                         const ring = r.constructor.NAH_WIESE ? r.constructor.NAH_WIESE.radius : null;
-                        const baender = [...new Set([0, 2, 5, 10, ring, 30, 80, 200].filter((x) => x != null))].sort(
+                        const baender = [...new Set([0, 2, 5, 10, 20, 40, ring, 80, 200].filter((x) => x != null))].sort(
                             (a, b2) => a - b2
                         );
                         const zahl = {},
@@ -3464,6 +3465,8 @@ hauptLauf(async () => {
                 // in L0 (`t01`: beide Schwellen über dem Auge), Schuss 2 in L2 (`stufe`, sonst urteilt die Linse laut)
                 const stufen = async (t12, t01) => {
                     const D = "const D = r.constructor.LOD_DISTANCES; window.__karteD = window.__karteD || [D.thresh01, D.thresh12];";
+                    // die nahen Bäume wählen sofort neu, am Abstand ohne Zustand: die neuen Schwellen sind eine neue Epoche der Grenzen
+                    // (`_stufenSchirm` → `_tickArchitectureLOD`, w8-linsen-blick — bis dahin stand das Exemplar im Karten-Schuss auf L0)
                     await evalRuf(t12 == null ? `${D} [D.thresh01, D.thresh12] = window.__karteD; window.__karteD = null; return 1;` : `${D} D.thresh01 = ${t01 == null ? `Math.min(window.__karteD[0], ${t12} / 2)` : t01}; D.thresh12 = ${t12}; return 1;`);
                     await ein();
                 };
