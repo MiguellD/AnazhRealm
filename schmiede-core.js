@@ -2237,15 +2237,16 @@
     ];
 
     // ════════════════════════════════════════════════════════════════════
-    // DAS SEIL-GESETZ (physik.K4) — EIN Löser für jedes Seil der Schmiede; Labor und Welt rufen DIESELBE Funktion
-    //   (Gebot 4). Eine Kette von Punkt-Massen, Verlet-integriert, jedes Glied eine Abstands-Bedingung, gelöst durch
-    //   Relaxation (Jakobsen 2001, „Advanced Character Physics", GDC: Verlet ohne Tempo-Zustand, die Bedingungen der
-    //   Reihe nach projiziert); die Korrektur teilt sich nach den inversen Massen — der schwere Kopf zieht die leichte
-    //   Kette gerade, die Länge hält. Punkt 0 ist der Anker am Gerät und folgt der Hand (im Teil-Schritt linear
-    //   geführt); Schwere und die Bewegung des Leibs treiben, die Dämpfung (Luft + Reibung der Glieder) nimmt die
-    //   Energie. Steht der Anker und steht die Kette, RUHT das Seil: kein Schritt, keine Kosten, bis der Anker sich
-    //   regt. Welche Gattung welches Seil trägt, sagt ihr Eintrag `seil` in der Gattungs-Tafel; die Vorlage baut die
-    //   Glieder in der Ruhe-Lage (`seilRuhe`), der Leser bewegt sie nach dem Zustand (`seilZustand` · `seilSchritt`).
+    // DAS SEIL-GESETZ (physik.K4) — die GANGART jedes Seils der Schmiede; gerechnet wird es vom EINEN weichen Löser des
+    //   Körper-Kerns (koerper-core `xpbdSchritt`, XPBD: Seil, Tuch und Weiches — Labor und Welt rufen DIESELBE Funktion,
+    //   Gebot 4). Das Seil ist eine Kette von Punkt-Massen, Verlet-integriert, jedes Glied eine starre Abstands-Bedingung
+    //   (α 0: XPBD fällt auf die Relaxation von Jakobsen 2001, „Advanced Character Physics", GDC); die Korrektur teilt sich
+    //   nach den inversen Massen — der schwere Kopf zieht die leichte Kette gerade, die Länge hält. Punkt 0 ist der Anker
+    //   am Gerät und folgt der Hand (im Teil-Schritt linear geführt); Schwere und die Bewegung des Leibs treiben, die
+    //   Dämpfung (Luft + Reibung der Glieder) nimmt die Energie. Steht der Anker und steht die Kette, RUHT das Seil: kein
+    //   Schritt, keine Kosten, bis der Anker sich regt. Welche Gattung welches Seil trägt, sagt ihr Eintrag `seil` in der
+    //   Gattungs-Tafel; die Vorlage baut die Glieder in der Ruhe-Lage (`seilRuhe`), der Leser bewegt sie nach dem Zustand
+    //   (`seilZustand` · `seilSchritt`).
     // ════════════════════════════════════════════════════════════════════
     var SEIL_GESETZ = Object.freeze({
         schrittS: 1 / 240, // der Teil-Schritt (wie das Gerät)
@@ -2289,112 +2290,45 @@
         }
         return out;
     }
-    // DER ZUSTAND: die Punkte in der Ruhe-Lage längs `unten` (im Raum des Lesers, Skala `skala` je Meter), alle in Ruhe.
+    // DER ZUSTAND: die Punkte in der Ruhe-Lage längs `unten` (im Raum des Lesers, Skala `skala` je Meter), alle in Ruhe — eine
+    // KETTE des EINEN weichen Lösers (koerper-core `xpbdKette`: Seil, Tuch und Weiches rechnet derselbe XPBD-Schritt, Gebot 4).
+    // Der Anker trägt keine Masse (er folgt der Hand), die Glieder und der Kopf ihre Masse aus dem Werkstoff (`seilMasse`).
+    function _weich() {
+        var K = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
+        if (!K || typeof K.xpbdSchritt !== "function") throw new Error("Kern-Pflicht: koerper xpbdSchritt (das Seil rechnet der EINE weiche Löser)");
+        return K;
+    }
     function seilZustand(seil, anker, unten, skala) {
         var s = skala || 1,
             ms = seilMasse(seil),
             n = seil.glieder,
-            N = n + 2,
+            G = SEIL_GESETZ,
             rest = [],
             w = [0];
         for (var i = 0; i < n; i++) rest.push(seil.gliedM * s);
         rest.push(seil.kopfR * s);
         for (var j = 1; j <= n; j++) w.push(1 / ms.glied);
         w.push(1 / ms.kopf);
-        var p = new Float64Array(seilRuhe(seil, anker, unten, s));
-        return { n: n, N: N, rest: rest, w: w, p: p, q: new Float64Array(p), a: [anker[0], anker[1], anker[2]], skala: s, ruht: false, still: 0 };
+        var z = _weich().xpbdKette(seilRuhe(seil, anker, unten, s), rest, w, {
+            schrittS: G.schrittS,
+            iter: G.iter,
+            daempfungS: G.daempfungS,
+            maxSchritte: G.maxSchritte,
+            ruheM: G.ruheM * s,
+            ruheSchritte: G.ruheSchritte,
+        });
+        z.N = n + 2;
+        z.skala = s;
+        return z;
     }
     // DER SCHRITT um dt (s): der Anker steht danach bei `anker`, die Schwere `g` ([x,y,z] je Meter des Lesers, ohne Angabe
-    // −9,81 längs y × Skala). Antwort: true, wenn das Seil rechnete; false, wenn es ruhte.
+    // −9,81 längs y × Skala) — der Schritt des EINEN Lösers (koerper-core `xpbdSchritt`: Verlet, jedes Glied eine starre
+    // Abstands-Bedingung, die Länge danach hart). Antwort: true, wenn das Seil rechnete; false, wenn es ruhte.
     function seilSchritt(z, anker, dt, g) {
-        var G = SEIL_GESETZ,
-            s = z.skala,
-            p = z.p,
-            q = z.q,
-            N = z.N;
-        var dA = Math.hypot(anker[0] - z.a[0], anker[1] - z.a[1], anker[2] - z.a[2]);
-        if (z.ruht) {
-            if (dA < G.ruheM * s) return false;
-            z.ruht = false;
-            z.still = 0;
-        }
-        if (!(dt > 0)) return false;
-        var gx = g ? g[0] : 0,
-            gy = g ? g[1] : -G.schwere * s,
-            gz = g ? g[2] : 0;
-        var k = Math.min(G.maxSchritte, Math.max(1, Math.ceil(dt / G.schrittS - 1e-9))),
-            h = Math.min(dt, G.maxSchritte * G.schrittS) / k,
-            keep = Math.exp(-G.daempfungS * h),
-            h2 = h * h,
-            a0x = z.a[0],
-            a0y = z.a[1],
-            a0z = z.a[2],
-            bewegt = 0;
-        for (var st = 1; st <= k; st++) {
-            var t = st / k;
-            // Verlet: x' = x + (x − x_alt) · keep + g · h²
-            for (var i = 1; i < N; i++) {
-                var o = 3 * i,
-                    vx = (p[o] - q[o]) * keep,
-                    vy = (p[o + 1] - q[o + 1]) * keep,
-                    vz = (p[o + 2] - q[o + 2]) * keep;
-                q[o] = p[o];
-                q[o + 1] = p[o + 1];
-                q[o + 2] = p[o + 2];
-                p[o] += vx + gx * h2;
-                p[o + 1] += vy + gy * h2;
-                p[o + 2] += vz + gz * h2;
-            }
-            q[0] = p[0];
-            q[1] = p[1];
-            q[2] = p[2];
-            p[0] = a0x + (anker[0] - a0x) * t;
-            p[1] = a0y + (anker[1] - a0y) * t;
-            p[2] = a0z + (anker[2] - a0z) * t;
-            // die Glieder: |p_j+1 − p_j| = rest_j, die Korrektur nach den inversen Massen (der Anker trägt w 0)
-            for (var it = 0; it < G.iter; it++)
-                for (var j = 0; j < N - 1; j++) {
-                    var a = 3 * j,
-                        b = a + 3,
-                        dx = p[b] - p[a],
-                        dy = p[b + 1] - p[a + 1],
-                        dz = p[b + 2] - p[a + 2],
-                        d = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-9,
-                        wa = z.w[j],
-                        wb = z.w[j + 1],
-                        f = (d - z.rest[j]) / (d * (wa + wb));
-                    p[a] += dx * f * wa;
-                    p[a + 1] += dy * f * wa;
-                    p[a + 2] += dz * f * wa;
-                    p[b] -= dx * f * wb;
-                    p[b + 1] -= dy * f * wb;
-                    p[b + 2] -= dz * f * wb;
-                }
-            // die Länge HART (Müller et al. 2012, „Fast Simulation of Inextensible Hair and Fur", follow the leader): nach der
-            // Relaxation trägt jedes Glied vom Anker aus genau seine Teilung — das Seil dehnt sich nie, es biegt nur
-            for (var jf = 0; jf < N - 1; jf++) {
-                var fa = 3 * jf,
-                    fb = fa + 3,
-                    ex = p[fb] - p[fa],
-                    ey = p[fb + 1] - p[fa + 1],
-                    ez = p[fb + 2] - p[fa + 2],
-                    el = Math.sqrt(ex * ex + ey * ey + ez * ez) || 1e-9,
-                    fk = z.rest[jf] / el;
-                p[fb] = p[fa] + ex * fk;
-                p[fb + 1] = p[fa + 1] + ey * fk;
-                p[fb + 2] = p[fa + 2] + ez * fk;
-            }
-            var mx = 0;
-            for (var m = 3; m < 3 * N; m++) mx = Math.max(mx, Math.abs(p[m] - q[m]));
-            bewegt = Math.max(bewegt, mx);
-        }
-        z.a[0] = anker[0];
-        z.a[1] = anker[1];
-        z.a[2] = anker[2];
-        if (bewegt < G.ruheM * s && dA < G.ruheM * s * k) z.still += k;
-        else z.still = 0;
-        if (z.still >= G.ruheSchritte) z.ruht = true;
-        return true;
+        z.ziel[0] = anker[0];
+        z.ziel[1] = anker[1];
+        z.ziel[2] = anker[2];
+        return _weich().xpbdSchritt(z, dt, g || [0, -SEIL_GESETZ.schwere * z.skala, 0]);
     }
     // DIE POSE DER TEILE (der Leser kopiert nur Matrizen — Labor und Welt legen die Kette gleich): je Teil (Glied 0 … n−1, Kopf n)
     // seine Welt-Matrix, spaltenweise (16 Zahlen je Teil, das Matrix4-Format von three) in `out`. Die Teile sind in der Ruhe-Lage

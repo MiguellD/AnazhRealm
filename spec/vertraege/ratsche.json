@@ -18,7 +18,6 @@
         "soll": 0,
         "sollQuelle": "Synthese §4 W1 „tote Regler beim Namen“, W4 „Regler-wirkt-Probe grün“ (Regler-Generator mit fest/festText, N2)",
         "tot": {
-            "koerper:koerper:mass": "Bild höchstens 0,65 % (Haut in Knochen-Lage): die Haut folgt fatScale 1 → 1,7 nicht, ihre Rahmen wandern ≤ 7 mm",
             "koerper:koerper:hairVol": "Bild höchstens 0,61 %: die Strähnen-Dicke 0,5 → 2 verschiebt die Haar-Hülle kaum"
         }
     },
