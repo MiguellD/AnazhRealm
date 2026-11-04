@@ -1,7 +1,7 @@
 // AnazhRealm — foundry-bruecke.js: DIE FOUNDRY-BRÜCKE (Karte K42, synthese §0 Bruch 3 / §4 W2a).
 // Der Bau-Teil der Pflanzen-Shell als EIN Modul: die Wirts-Globalen, die foundry-core liest und schreibt (PRNG,
 // Vektor-Helfer, Simplex, Stoffe, Saison-Tint, Regler-Kontext, LOD-Band) und die Asset-Kanäle (build-asset · get-book ·
-// export-settlement); die Karte backt allein die Welt (`_karteWeltBacken`, auch für das Labor). Klassisches Script
+// export-settlement). Eine Karte backt hier keiner: ihr EINER Bäcker ist der Welt-Renderer (`_karteWeltBacken`, pipeline.K2). Klassisches Script
 // (die Top-Level-Symbole bleiben global wie in foundry-core), geladen NACH den Kernen. ZWEI Leser, KEIN Zwilling:
 // der Foundry-Worker (cores.manifest.json `bruecke`, ?v=; er lädt keine Labor-Shell und keine Labor-Szene) und das
 // Pflanzen-Labor (worlds/terrain/index.html, vor phytogenesis.js). Der Stempel der Platte hasht diese Datei, nie die
@@ -197,7 +197,7 @@ let barkNormalTex = null,
     _terMat = null,
     _envMats = [];
 let _leafAtlas = null; // FIX v31: foliageMatTex = Multi-Blatt-Texturkarten (L1); _leafAtlas = zur Laufzeit GEMALTER Cluster-Atlas (Canvas-2D, deterministisch, kein GL-Risiko)
-/* ---------- Wirts-Handles, die der Kern und der Bäcker lesen (der Rest der Szene lebt im Labor) ---------- */
+/* ---------- Wirts-Handles, die der Kern und das Labor lesen (der Rest der Szene lebt im Labor) ---------- */
 let renderer, subject;
 let __lod = 0;
 let __rockKind = "boulder";
@@ -358,8 +358,8 @@ const foundryKanal = (() => {
             // NERVENSYSTEM — die Platzierungs-Daten (Welt-Skalen je Preset + Baum-Mul + Streu-
             // Seltenheit) fliessen als reine Zahlen: AnazhRealm liest sie LIVE statt eines
             // hartkodierten Spiegels. Ein neues Asset = eine scale-Zeile in foundry-core.
-            // Der Bäcker-Spec (Studio-Vertrag B2): Blickwinkel + Zell-Maße des Impostor-Atlas —
-            // der EINE Bäcker der Welt (`_karteWeltBacken`) liest DIESE Zahlen.
+            // Der Bäcker-Spec (Studio-Vertrag B2): Blickwinkel, Zell-Maße und Hebungs-Ringe des Impostor-Atlas — der EINE
+            // Bäcker der Welt (`_karteWeltBacken`) liest sie hier.
             impostor: c.impostor
                 ? {
                       views: c.impostor.views,

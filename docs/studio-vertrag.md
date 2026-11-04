@@ -125,7 +125,7 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   Wirt-Stufen-Tafel `_WIRT_WURF` ist gefallen, `gate:altlasten`). Ein Zwilling wirft selbst (der Validator hält
   es: kein Zwillings-Kreis).
 - **Monoton:** `tris` fällt je Stufe streng, `draws` steigt nie.
-- `karte: true` (nur die letzte Stufe, wirft nicht): die Stufe IST die Karte des EINEN Bäckers (`_karteWeltBacken`),
+- `karte: true` (nur die letzte Stufe, wirft nicht): die Stufe IST die Karte des EINEN Bäckers (`_karteWeltBacken`; das Labor zeigt ihre Bytes, pipeline.K2),
   ihre Gitter-Geometrie wird nicht geliefert; sie gilt genau dort, wo der Wirt die Art als Impostor führt
   (`KIND_POLICY[kind].impostor` — die Karten-Linse in `gate:studio-vertrag`).
 - DARF-Regler einer Stufe (Form geprüft): `blattKarte` (Kartenkante in Blatt-Größen, endlich > 0) · `dichte` (je

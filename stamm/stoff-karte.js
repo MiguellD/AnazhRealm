@@ -275,7 +275,7 @@ class AnazhRealm_stoff_karte {
     // `_foundryWecker` an; bis K38-N2 hörte niemand den Bake, und die Vorschau blieb „pending", bis der Spieler neu wählte.
     _karteEndet(z, ok) {
         if (ok) z.gebacken = true;
-        else z.gescheitert = true;
+        else ((z.gescheitert = true), this._karteAbzugBruch(z, "gescheitert"));
         if (z._endeLoes) z._endeLoes(!!ok);
     }
 
@@ -483,7 +483,8 @@ class AnazhRealm_stoff_karte {
         if (nurHalbe && !(at.offen && !at.offen.frage)) return 0;
         const d2 = (k) => {
             const z = at.zellen.get(k);
-            return z && Number.isFinite(z._bedarfD2) ? z._bedarfD2 : 1e30;
+            // ein wartender Abzug (das Labor im Tor, `_karteAbzug`) zuerst
+            return z && z._abzug ? -1 : z && Number.isFinite(z._bedarfD2) ? z._bedarfD2 : 1e30;
         };
         q.sort((a, b) => d2(a) - d2(b));
         // die halbe Karte zuerst
@@ -692,6 +693,8 @@ class AnazhRealm_stoff_karte {
     _karteWeltBacken(at, z) {
         const rend = this.state.renderer;
         const bc = at.fmt === "bc";
+        // ein Abzug liest die Bühne: die Platte trägt nur BC-Bytes, die Karte backt
+        if (z._abzug) z._platte = null;
         if (bc && z._platte !== null) {
             if (z._platte === undefined) {
                 z._platte = false;
@@ -814,12 +817,17 @@ class AnazhRealm_stoff_karte {
             setze(u.value, u);
         };
         still(wu && wu.uWindStrength, (w, u) => (u.value = 0));
-        // die Karte ist Golden-Sommer gebacken (volle Krone, Tönung ×1): das Jahr der Welt hält still — die Präsenz
-        // (`uLaubPraesenz`) UND die Tönung (`uSeasonMul`; der Kartenstoff tönt sie zur Laufzeit, `kartenGewicht`). Bis w6 fuhr
-        // die Tönung mit: die Karte trug die Saison ihres Backens (zwei Welten, dieselbe Saat: ±1 LSB auf 41 % der Texel).
+        // die Karte ist Sommer gebacken (volle Krone, wie der Studio-Bäcker): das Jahr der Welt (`uLaubPraesenz`) hält still
         const su = this.state.seasonUniforms;
         still(su && su.uLaubPraesenz, (w) => w.set(1, 1));
+        // … und seine Farbe (`uSeasonMul`, der Laub-Stoff multipliziert sie): die Karte backt Golden-Sommer (×1), ihr Stoff
+        // färbt sie beim Zeichnen (`kartenGewicht`). Bis w8 backte sie die driftende Tönung ein — zwei Bakes derselben Zelle
+        // wichen in 128 581 Albedo-Bytes um bis zu 5 Stufen ab, und das Jahr lag doppelt auf der Karte
         still(su && su.uSeasonMul, (w) => w.setRGB(1, 1, 1));
+        // … und trocken: die Nässe der Welt (`atmoUniforms.naesse`, wetter.K2) dunkelt die Albedo jedes Foundry-Stoffs — Regen
+        // backte sonst in die Karte (Nässe 1 und Winter-Tönung bewegten 320 085 Albedo-Bytes der Fichte, gehalten 0)
+        const au = this.state.atmoUniforms;
+        still(au && au.naesse, (w, u) => (u.value = 0));
         still(lu && lu.uLaubKante, (w) => (w.y = 0));
         still(lu && lu.uKamNah, (w) => w.setScalar(-AnazhRealm.KAMERA_DURCHSICHT.saumM));
         still(lu && lu.uKamZiel, (w) => w.set(lu.uKamAuge.value.x, lu.uKamAuge.value.y, lu.uKamAuge.value.z, 0));
@@ -928,14 +936,13 @@ class AnazhRealm_stoff_karte {
             return 0;
         }
         at.offen = null;
-        // die Karte des Labors (`_karteFuerLabor`): die Bühne geht zurück, bevor sie die nächste Karte trägt — die Kopie der GPU
-        // reiht sich im selben Takt ein (copyTextureToBuffer vor dem ersten await)
-        if (z._laborLeser) this._karteLaborLesen(at, z, B, fr, bc ? 0 : z.idx);
         const platte = z._liefer && {
             preset: z.preset,
             rest: z._liefer.rest,
             frame: { halfW: fr.halfW, halfH: fr.halfH },
         };
+        // der Abzug des Labors liest die Schicht, bevor die nächste Karte die Bühne trägt (`_karteAbzug`)
+        if (z._abzug) this._karteAbzugLesen(z, bc ? B.ziel : at.rt, bc ? 0 : z.idx, fr, at);
         if (bc) this._karteAblage(at, z.idx, B, platte, this._karteSaumVon(at, z, fr, B.laub));
         B.zuletzt = performance.now();
         this._foundryLiefer(this._foundry, "haupt", "karte", z._liefer, summe + B.zuletzt - t0);
@@ -945,98 +952,101 @@ class AnazhRealm_stoff_karte {
         return true;
     }
 
-    // DER BÄCKER DES LABORS (pipeline.K2, EIN Bäcker — der Editor backt mit dem Code der Laufzeit): ein Studio fragt die Karte
-    // einer Gestalt (Art, Gestalt) über EINE Nachricht `anazh-karte` — das Pflanzen-Labor als Portal der Welt (`window.parent`)
-    // oder die Welt verborgen im Labor (sein iframe). Die Welt backt sie mit `_karteWeltBacken`: dieselben Zellen, Ringe, Stoffe
-    // und Formate wie jede ihrer Karten; die Antwort trägt die Bühne nach dem letzten Ring (Albedo, Normale und Sonnen-Sicht je
-    // Texel, rgba8, Zeile 0 oben) samt Rahmen und Ringen. Bis w6 backte das Labor mit einem zweiten Bäcker (`bakeImpostorAtlas`, three r128).
-    _karteDienst() {
-        if (this._karteDienstAn || typeof window === "undefined" || !window.addEventListener) return;
-        this._karteDienstAn = true;
-        window.addEventListener("message", (e) => {
-            const m = e.data;
-            if (!m || m.type !== "anazh-karte" || !e.source || e.origin !== window.location.origin) return;
-            const an = e.source;
-            this._karteFuerLabor(String(m.art), m.gestalt | 0).then(
-                (k) =>
-                    an.postMessage(Object.assign({ type: "anazh-karte-da", reqId: m.reqId }, k), e.origin, [
-                        k.albedo,
-                        k.normal,
-                        k.sicht,
-                    ]),
-                (f) =>
-                    an.postMessage(
-                        { type: "anazh-karte-da", reqId: m.reqId, fehler: String((f && f.message) || f) },
-                        e.origin
-                    )
-            );
-        });
-    }
-
-    // Die Karte einer Gestalt für das Labor: eine frische Zelle des EINEN Atlas (nie die Platte — das Labor liest die Bühne), nah
-    // zuerst in der Schlange; dieser Ruf treibt ihre Ringe selbst (die verborgene Welt zeichnet ein Bild von 1 px), der Takt
-    // der Welt darf dieselbe Zelle weiterbacken. Die Bytes liest `_karteLaborLesen` am letzten Ring.
-    async _karteFuerLabor(art, gestalt) {
-        const bereit = () => this._foundry && this._foundry.ready && this.state.rendererReady;
-        for (const t0 = performance.now(); !bereit(); await new Promise((f) => setTimeout(f, 100)))
-            if (performance.now() - t0 > 180000)
-                throw this._stoffBruch("die Karte des Labors: die Welt wurde nicht bereit");
-        if (!Object.prototype.hasOwnProperty.call(this._foundry.recipes || {}, art))
-            throw this._stoffBruch(`die Karte des Labors: die Welt kennt die Art „${art}" nicht`);
-        const at = this._impostorAtlas();
-        if (this._impostorAtlasFormat() === "rgba8" && !(this.state.renderer.backend || {}).isWebGPUBackend)
-            throw this._stoffBruch("die Karte des Labors: WebGL2 liest keine Schicht des Array-Ziels zurück");
-        this._karteLaborN = (this._karteLaborN | 0) + 1;
-        const z = this._impostorZelleNeu(at, `labor:${art}|${gestalt}#${this._karteLaborN}`, art, gestalt, null);
-        if (!this._impostorAtlasTexturen(at, z.idx + 1))
-            throw this._stoffBruch("die Karte des Labors: der Atlas hat keine Texturen");
-        z._platte = null;
-        z._bedarfD2 = 0;
-        z._weltNeu = true;
-        const da = new Promise((ok, nein) => (z._laborLeser = { ok, nein }));
-        for (let e = null; e !== true; await new Promise((f) => setTimeout(f, e === 0 ? 0 : 50))) {
-            e = z.gebacken && !z._weltNeu ? true : this._karteWeltBacken(at, z);
-            if (e === false || z.gescheitert) throw this._stoffBruch(`die Karte des Labors: ${z.key} backte nicht`);
-        }
-        return da;
-    }
-
-    // Die Bühne der fertigen Karte zurück an das Labor: Albedo (Ziel 0), Normale (Ziel 1) und Sonnen-Sicht (Ziel 2) der Schicht, dazu
-    // die Lage der Karte
-    // (Zellen, Peilungen, Ringe mit ihrer halben Bild-Höhe `karteRingHalbe`) und ihr Rahmen.
-    _karteLaborLesen(at, z, B, fr, schicht) {
-        const L = z._laborLeser;
-        z._laborLeser = null;
+    // DER ABZUG DER KARTE (pipeline.K2 — EIN Bäcker): das Labor der Bäume (worlds/terrain, three r128) backt nie selbst; seine
+    // Fernstufe trägt die Karte, die DIESER Bäcker für dieselbe Gestalt backt (Art, Gestalt g der Welt, ohne Prägung — der Wald
+    // des Labors pflanzt die Gestalten der Welt). Bis w8 backte das Labor mit `bakeImpostorAtlas` (r128, ein Ring, Albedo aus
+    // einem Halbkugel-Licht, Normale aus MeshNormalMaterial) einen Zwilling: die Karte aus Studio und Welt war nie byte-gleich.
+    // Die Zelle der Welt backt neu (`_weltNeu`, an der Platte vorbei: sie trägt nur BC); nach ihrem letzten Ring liest die
+    // Bühne die Schicht (`_karteAbzugLesen`). Rückgabe: { art, gestalt, frame, w, h, V, ringe, oben, albedo, normale } — die
+    // Bytes der Schicht wie gebacken (rgba8, Zeilen in der Reihe des Renderers: `oben` = Zeile 0 oben).
+    _karteAbzug(preset, gestalt) {
         const rend = this.state.renderer;
-        const rt = B.ziel;
-        const core = globalThis.__phytoCore;
-        const lies = (i) => rend.readRenderTargetPixelsAsync(rt, 0, 0, rt.width, rt.height, i, schicht);
-        Promise.all([lies(0), lies(1), lies(2)]).then(
-            ([a, n, l]) =>
-                L.ok({
+        if (!rend || rend._isHeadlessNull || !this.state.rendererReady)
+            return Promise.reject(this._stoffBruch("die Karte: der Abzug braucht den Welt-Renderer"));
+        const at = this._impostorAtlas();
+        const z = this._foundryEnsureImpostorRecord(preset, gestalt, null);
+        if (!z) return Promise.reject(this._stoffBruch(`die Karte ${preset}|${gestalt}: keine Zelle`));
+        if (z.gescheitert) return Promise.reject(this._stoffBruch(`die Karte ${z.key}: gescheitert`));
+        const zusage = new Promise((ja, nein) => (z._abzug || (z._abzug = [])).push({ ja, nein }));
+        const q = this._impostorBakeQueue || (this._impostorBakeQueue = []);
+        z._weltNeu = true;
+        if (!q.includes(z.key)) q.push(z.key);
+        // der Bäcker der Welt backt sie (`_tickKarteWelt`, wartende Abzüge zuerst); friert das Portal die Heimat ein, treibt ihn
+        // ihr Render-Takt über `_tickKarteAbzug` — kein eigener Zeitgeber (gate:v1-pfad W7)
+        const offen = this._karteAbzugOffen || (this._karteAbzugOffen = new Set());
+        if (!offen.size) this._karteAbzugFrist = { ringe: -1, seit: 0 };
+        offen.add(z);
+        return zusage;
+    }
+    // DER TAKT DES ABZUGS (W7: der Foundry-Pfad pollt nicht): friert das Portal die Heimat ein, kehrt ihr Render-Takt vor jedem
+    // Tick um (`dirigent-takt`) und ruft nur diesen — solange ein Abzug wartet, treibt er den EINEN Bäcker der Welt
+    // (`_tickImpostorBake`: dieselbe Leine, dasselbe Budget je Takt wie im Spiel), sonst bleibt die Heimat gefroren. Bis w8
+    // trieb der Abzug den Bäcker mit eigenem Zeitgeber, der sich je Ring neu ansetzte (ein Zeit-Kreis neben dem Takt). Die
+    // Frist zählt den Stillstand der Bühne (kein Ring irgendeiner Karte in 120 s), nie das Warten: die Karten backen nacheinander.
+    _tickKarteAbzug() {
+        const offen = this._karteAbzugOffen;
+        if (!offen || !offen.size) return 0;
+        for (const z of offen) if (!z._abzug) offen.delete(z);
+        if (!offen.size) return 0;
+        const at = this._impostorAtlas();
+        const n = at && at.schrittMs ? at.schrittMs.length : 0;
+        const F = this._karteAbzugFrist;
+        const jetzt = performance.now();
+        if (n !== F.ringe) [F.ringe, F.seit] = [n, jetzt];
+        if (jetzt - F.seit <= 120000) return this._tickImpostorBake();
+        for (const z of offen) this._karteAbzugBruch(z, "die Bühne stand 120 s ohne Ring");
+        offen.clear();
+        return 0;
+    }
+    // Jeder Wartende der Zelle erfährt den Bruch laut (das Labor zeigt ihn als `fehler`).
+    _karteAbzugBruch(z, grund) {
+        if (!z._abzug) return;
+        for (const w of z._abzug.splice(0)) w.nein(this._stoffBruch(`die Karte ${z.key}: ${grund}`));
+        z._abzug = null;
+    }
+    // Die Schicht `schicht` des Ziels `rt` lesen (Albedo und Normale, Stufe 0) und jeden Wartenden der Zelle lösen. WebGPU liest
+    // je Schicht (`readRenderTargetPixelsAsync`, die Kopie geht beim Ruf in die Schlange — vor jeder späteren Karte); das
+    // WebGL2-Rückend von r184 liest nur TEXTURE_2D — eine Schicht des Array-Ziels liest `framebufferTextureLayer`.
+    _karteAbzugLesen(z, rt, schicht, fr, at) {
+        const rend = this.state.renderer;
+        const wer = z._abzug;
+        z._abzug = null;
+        const w = rt.width,
+            h = rt.height;
+        const lies = (i) => {
+            if (rend.backend.isWebGPUBackend) return rend.readRenderTargetPixelsAsync(rt, 0, 0, w, h, i, schicht);
+            const be = rend.backend,
+                gl = be.gl,
+                fb = gl.createFramebuffer(),
+                tg = be.get(rt.textures[i]).textureGPU,
+                px = new Uint8Array(w * h * 4);
+            be.state.bindFramebuffer(gl.READ_FRAMEBUFFER, fb);
+            if (rt.depth > 1) gl.framebufferTextureLayer(gl.READ_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, tg, 0, schicht);
+            else gl.framebufferTexture2D(gl.READ_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tg, 0);
+            gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
+            be.state.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+            gl.deleteFramebuffer(fb);
+            return Promise.resolve(px);
+        };
+        Promise.all([lies(0), lies(1)]).then(
+            ([a, n]) => {
+                const aus = {
                     art: z.preset,
                     gestalt: z.variant,
-                    w: rt.width,
-                    h: rt.height,
-                    cw: at.cw,
-                    ch: at.ch,
-                    V: at.V,
-                    ringe: at.ringe.ringe.map((r) =>
-                        Object.assign({}, r, {
-                            halbe: core.karteRingHalbe(
-                                core.WIND_ZAHLEN,
-                                fr.halfH,
-                                fr.halfW,
-                                (r.hebung * Math.PI) / 180
-                            ),
-                        })
-                    ),
                     frame: { halfW: fr.halfW, halfH: fr.halfH },
-                    albedo: new Uint8Array(a).buffer,
-                    normal: new Uint8Array(n).buffer,
-                    sicht: new Uint8Array(l).buffer,
-                }),
-            L.nein
+                    w,
+                    h,
+                    V: at.V,
+                    ringe: at.ringe.ringe.map((r) => ({ hebung: r.hebung, teiler: r.teiler, y: r.y, h: r.h })),
+                    oben: rend.backend.isWebGPUBackend === true,
+                    albedo: new Uint8Array(a.buffer, a.byteOffset, a.byteLength),
+                    normale: new Uint8Array(n.buffer, n.byteOffset, n.byteLength),
+                };
+                for (const x of wer) x.ja(aus);
+            },
+            (e) => {
+                for (const x of wer) x.nein(this._stoffBruch(`die Karte ${z.key}: der Abzug liest nicht`, e));
+            }
         );
     }
 

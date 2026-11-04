@@ -411,15 +411,16 @@ class AnazhRealm_dirigent_ankunft {
                 });
                 csm.fade = true;
                 csm._init = (builder) => this._kaskadenGeburt(csm, builder);
-                // DIE HORIZONT-KARTE (D3) jenseits der Kaskaden: dort gibt die CSM 1 zurück (ihre Kaskaden enden bei maxFar) —
-                // ihr EINER Knoten (einmal je Instanz gebaut, der Eingriff in 07.js) trägt die Sicht der Karte für jeden
-                // Empfänger (Boden, Ring, Baum, Haus); `receivedShadowNode` eines Stoffs wirkt nur je Kaskade.
+                // DIE SONNEN-SICHT über den Kaskaden (`_sonnenSicht`: der Horizont des Gelände-Gesetzes × der Wurf der Wolke):
+                // die Kaskaden enden bei maxFar und sehen keinen fernen Grat, keine Wolke — der EINE Knoten der CSM (einmal je
+                // Instanz gebaut, der Eingriff in 07.js) trägt die Sicht für jeden Empfänger (Boden, Ring, Gras, Baum, Haus),
+                // nah wie fern; `receivedShadowNode` eines Stoffs wirkt nur je Kaskade.
                 const aufbauEin = csm.setup;
                 const welt = this;
-                let mitHorizont = null;
+                let mitSonne = null;
                 csm.setup = function (builder) {
-                    if (mitHorizont === null) mitHorizont = aufbauEin.call(this, builder).mul(welt._horizontSicht());
-                    return mitHorizont;
+                    if (mitSonne === null) mitSonne = aufbauEin.call(this, builder).mul(welt._sonnenSicht());
+                    return mitSonne;
                 };
                 // Die Lichter stellt der Haupt-Pass VOR jeder Karte (`_passSicht` → `_kaskadenPassen`). Das Addon
                 // stellte sie im Knoten-updateBefore — r184 ruft es NACH den Kaskaden-Pässen (gemessen 04.10.: k0 · k1
@@ -474,6 +475,9 @@ class AnazhRealm_dirigent_ankunft {
         this.log("Kamera initialisiert", "INFO");
         this.state.selfAwareness.components.push("camera");
 
+        // DIE SPUR (spielgang.K1): ihre Aufnahme hört vor jedem Hörer der Seite, ihr Abspieler liegt bereit, bevor die Welt kommt —
+        // sie gehört der Seite
+        await this._spurAnlegen();
         // DIE SEITE (`_weltAbschied`): was init bis hier schrieb, trägt jeder Welt-Wechsel am Ort — die Felder am Wirt, die
         // Glieder des Zustands, die init neu setzte (Renderer, Szene, Himmel, Licht, Uniformen, Eingabe, Einstellungen), und
         // die Gestalten der Szene; was ab hier entsteht, gehört der Welt (Leib, Stand, Gelände, Leben) und fällt mit ihr
@@ -765,6 +769,8 @@ class AnazhRealm_dirigent_ankunft {
         // W18-D — wohnt der Spieler in einer Fremd-Welt, kehrt der Boot
         // durch das Tor zurück (die Heimat trägt darunter eingefroren).
         this._portalDwellingBootReturn();
+        // eine Welt, die ein Welt-Tor gebar, trägt ihr Heimtor (ultiversum.K1)
+        this._heimTorSetzen();
         // der Leib steht, die Schleife beginnt: jetzt erst die Leitung (s. o., Auto-Connect)
         if (this.state.p2p.enabled || weltVerbunden) this.initP2PSync(null);
     }
@@ -1329,22 +1335,43 @@ class AnazhRealm_dirigent_ankunft {
         });
     }
 
-    // DIE HORIZONT-KARTE (D3, `HORIZONT_KARTE`): der Schatten JENSEITS der Kaskaden. Die Kaskaden tragen bis zu ihrer Reichweite
-    // (an der Mess-Wiese 270 m); dahinter warf bis D3 nichts — kein Grat beschattete am Abend das Tal hinter ihm, der Boden der
-    // Chunks bis 540 m und der Fern-Ring bis 8 km lagen im vollen Licht. Das Licht sieht die drei Schalen des Rings (ihre
-    // Geometrien, ein eigener Stoff) orthografisch; je Texel bleibt die Fläche, die ihm am nächsten liegt (Max-Blende auf r16f,
-    // ohne Tiefen-Puffer). Die Karte ist EINE Größe: `U.karte` bildet die Welt auf (u, v, Licht-Tiefe) ab — der Zeichner schreibt
-    // mit ihr, jeder Empfänger liest mit ihr (`_horizontSicht`). Ohne Vendor-Symbol bricht sie laut.
+    // DIE HORIZONT-KARTE (ferne.K4, `HORIZONT_KARTE` — Horizon Mapping nach Max 1988, die Gelände-Selbstbeschattung von Far Cry 5
+    // und Ghost of Tsushima): der Schatten, den das Gelände-Gesetz selbst wirft, für jeden Empfänger nah und fern. Die Kaskaden
+    // tragen bis zu ihrer Reichweite (an der Mess-Wiese 270 m) und sehen keinen Grat dahinter. Zwei Teile, EINE Größe:
+    //   DAS GITTER — die Höhe des Gesetzes (`gelaende-core` `hoehe`, ohne Detail: dieselbe Funktion wie `_terrainMacroSurfaceY`
+    //     (x, z, false)) auf `gitter`² Punkten im Abstand `zelleM` um den Anker des Rings, gerechnet im Feld-Faden
+    //     (`_fernAuftrag("gitter")`, `_horizontGitterTakt`), über dem Bezug (Meeresspiegel) als r16f;
+    //   DIE KARTE — je Texel die SCHATTEN-HÖHE zur Sonne: H = max_s (h(x + â·s) − s · tan h☉) über den Marsch s = 60 … 3 000 m
+    //     (`schrittM` × `schritte`, dieselbe Bahn wie die Station), dazu der Weg s* des Grats (rg16f) — ein Schirm-Pass über das
+    //     Gitter (`pass`), neu gemalt, wenn das Licht sich um `lichtRad` dreht oder ein Gitter kommt (`_horizontKarteTakt`).
+    // Ein Empfänger in der Höhe y liegt im Licht, wenn y über H steht — der Halbschatten so breit, wie die Sonne (`sonneTan`) ihn
+    // über s* zieht (`_horizontSicht`). Die Höhe des Empfängers ist seine eigene (Boden, Dach, Krone), nie die des Gitters.
+    // Bis ferne.K4 sah das Licht die drei Schalen des Rings orthografisch (Licht-Tiefe, Max-Blende, Bias 105–210 m am Abend):
+    // der Grat der Ferne war die Masche des Rings (164 m quer bei 5 km), der Schatten hinter ihm Zufall der Masche (Radeon
+    // 5fba36ea: Schatten-/Lichthang 0,4766).
     _horizontKarte() {
         const st = this.state;
         if (st.horizontKarte) return st.horizontKarte;
         const T = typeof THREE !== "undefined" ? THREE.TSL : null;
-        if (!T || !THREE.RenderTarget || !THREE.MeshBasicNodeMaterial || !THREE.OrthographicCamera)
-            throw new Error("Die Horizont-Karte: THREE trägt TSL/RenderTarget/MeshBasicNodeMaterial nicht (Vendor)");
+        if (!T || !THREE.RenderTarget || !THREE.DataTexture || !THREE.DataUtils)
+            throw new Error("Die Horizont-Karte: THREE trägt TSL/RenderTarget/DataTexture/DataUtils nicht (Vendor)");
         const H = AnazhRealm.HORIZONT_KARTE;
-        const rt = new THREE.RenderTarget(H.texel, H.texel, {
+        const n = H.gitter;
+        const hoehen = new THREE.DataTexture(
+            new Uint16Array(n * n).fill(THREE.DataUtils.toHalfFloat(-H.leerM)),
+            n,
+            n,
+            THREE.RedFormat,
+            THREE.HalfFloatType
+        );
+        hoehen.name = "horizont-karte";
+        hoehen.minFilter = THREE.LinearFilter;
+        hoehen.magFilter = THREE.LinearFilter;
+        hoehen.generateMipmaps = false;
+        hoehen.needsUpdate = true;
+        const rt = new THREE.RenderTarget(n, n, {
             type: THREE.HalfFloatType,
-            format: THREE.RedFormat,
+            format: THREE.RGFormat,
             depthBuffer: false,
             generateMipmaps: false,
             minFilter: THREE.LinearFilter,
@@ -1353,64 +1380,179 @@ class AnazhRealm_dirigent_ankunft {
         rt.name = "horizont-karte";
         rt.texture.name = "horizont-karte";
         const U = this._uniformHeimatTeilen({
-            karte: T.uniform(new THREE.Matrix4()),
+            ursprung: T.uniform(new THREE.Vector2()),
+            bezug: T.uniform(0),
+            licht: T.uniform(new THREE.Vector3(0, 1, 0)),
             aktiv: T.uniform(0),
-            ab: T.uniform(0),
-            bias: T.uniform(100),
         });
-        const stoff = new THREE.MeshBasicNodeMaterial();
-        stoff.name = "horizont-karte";
-        stoff.colorNode = T.vec4(U.karte.mul(T.vec4(T.positionWorld, 1)).z, 0, 0, 1);
-        stoff.blending = THREE.CustomBlending;
-        stoff.blendEquation = THREE.MaxEquation;
-        stoff.blendSrc = THREE.OneFactor;
-        stoff.blendDst = THREE.OneFactor;
-        stoff.transparent = true;
-        stoff.depthTest = false;
-        stoff.depthWrite = false;
-        stoff.side = THREE.DoubleSide;
-        stoff.fog = false;
-        stoff.toneMapped = false;
-        const szene = new THREE.Scene();
-        szene.name = "horizont-karte";
-        const kamera = new THREE.OrthographicCamera(-H.randM, H.randM, H.randM, -H.randM, 0, 2 * H.hoeheM);
-        szene.userData.kamera = kamera;
+        const zuUv = (xz) => xz.sub(U.ursprung).div(H.zelleM).add(0.5).div(n);
+        const pass = AnazhRealm._schirmDreieck(
+            () =>
+                T.Fn(() => {
+                    const xz = U.ursprung.add(T.uv().mul(n).sub(0.5).mul(H.zelleM));
+                    const flach = T.max(T.length(U.licht.xz), 1e-4);
+                    const a = U.licht.xz.div(flach);
+                    const tanH = U.licht.y.div(flach);
+                    const best = T.float(-H.leerM).toVar();
+                    const weg = T.float(0).toVar();
+                    for (let k = 1; k <= H.schritte; k++) {
+                        const s = k * H.schrittM;
+                        const q = zuUv(xz.add(a.mul(s)));
+                        const z = T.mix(
+                            T.float(-H.leerM),
+                            T.texture(hoehen, q).level(0).r.sub(tanH.mul(s)),
+                            AnazhRealm._imEinheitsQuadrat(q)
+                        );
+                        weg.assign(T.select(z.greaterThan(best), T.float(s), weg));
+                        best.assign(T.max(best, z));
+                    }
+                    return T.vec4(best, weg, 0, 1);
+                })(),
+            "horizont-karte"
+        );
         st.horizontKarte = {
             rt,
+            hoehen,
             U,
-            stoff,
-            szene,
-            kamera,
-            meshes: [],
-            geos: null,
+            pass,
+            zuUv,
             licht: new THREE.Vector3(),
-            anker: null,
+            mitte: null,
+            stand: 0,
+            gemalt: -1,
+            bereit: false,
+            flug: false,
+            gen: 0,
+            gebrochen: false,
             malZahl: 0,
         };
         return st.horizontKarte;
     }
 
-    // DIE SICHT DES LICHTS jenseits der Kaskaden (0 Schatten … 1 Licht) am Fragment: die Karte über ihm minus seine Licht-Tiefe
-    // gegen den Bias, weich über einen Bias; außerhalb der Karte und diesseits der Kaskaden-Reichweite 1 (über `blende` der
-    // Reichweite eingeblendet). Die Abtastung steht im Zweig (`level(0)`, ohne Ableitung) — der nahe Boden zahlt sie nicht.
-    _horizontSicht() {
+    // DIE SICHT DES GELÄNDES zum Licht am Welt-Punkt `p` (0 Schatten … 1 Licht): die Schatten-Höhe der Karte über ihm gegen seine
+    // eigene Höhe, weich über den halben Halbschatten der Sonnen-Scheibe am Weg des Grats (mindestens `bandM`); außerhalb der Karte
+    // und vor dem ersten Gitter 1. Ohne Zweig (eine Abtastung je Fragment, `level(0)`): kein Knoten entsteht in einem `If`
+    // (Lehre 26, B7 in gate:wasser-leben:bild).
+    _horizontSicht(p) {
         const T = THREE.TSL;
         const K = this._horizontKarte();
         const H = AnazhRealm.HORIZONT_KARTE;
-        const U = K.U;
-        return T.Fn(() => {
-            const sicht = T.float(1).toVar();
-            const tiefe = T.positionView.z.negate();
-            const fern = T.smoothstep(U.ab.mul(1 - H.blende), U.ab, tiefe).mul(U.aktiv);
-            T.If(fern.greaterThan(0), () => {
-                const q = U.karte.mul(T.vec4(T.positionWorld, 1));
-                const innen = T.step(0, q.x).mul(T.step(q.x, 1)).mul(T.step(0, q.y)).mul(T.step(q.y, 1));
-                const naeher = T.texture(K.rt.texture, q.xy).level(0).r.sub(q.z);
-                const licht = T.float(1).sub(T.smoothstep(U.bias, U.bias.mul(2), naeher));
-                sicht.assign(T.mix(T.float(1), licht, fern.mul(innen)));
-            });
-            return sicht;
-        })();
+        const q = K.zuUv(p.xz);
+        const t = T.texture(K.rt.texture, q).level(0);
+        const band = T.max(T.float(H.bandM), t.g.mul(AnazhRealm.SCHATTEN_KASKADE.sonneTan * 0.5));
+        const licht = T.smoothstep(t.r.sub(band), t.r.add(band), p.y.sub(K.U.bezug));
+        return T.mix(T.float(1), licht, AnazhRealm._imEinheitsQuadrat(q).mul(K.U.aktiv));
+    }
+
+    // DIE SICHT DES GELÄNDES AUF DER CPU am Punkt (x, y, z) zum Licht `L` (normiert): der Lichtmesser des Orts
+    // (`_waagrechtIrradianz`, die Kamera) liest DIESELBE Karte wie jeder Empfänger — das Gitter des Passes (r16f, `hoehen`), derselbe
+    // Marsch je Texel-Mitte (`schritte` × `schrittM`, außerhalb `leerM`), bilinear zwischen den vier Mitten wie die Abtastung von
+    // `_horizontSicht`, derselbe Halbschatten. 1, wo die Karte ruht (`_horizontKarteTakt`: ohne Gitter, ohne Wurf des Lichts, unter
+    // dem Horizont, am Null-Renderer). Bis dahin maß die Kamera am Abend die Sonne, die der Grat dem Ort schon nahm: das Bild der
+    // Mess-Wiese fiel in 0,002 der Uhr um 0,29 EV (Tag-Achse, Radeon; der Grat 660 m vor ihr, die Sonne 7,35° → 6,68°).
+    _horizontSichtAm(x, y, z, L) {
+        const st = this.state;
+        const K = st.horizontKarte;
+        const rend = st.renderer;
+        const dl = st.directionalLight;
+        if (
+            !K ||
+            !K.bereit ||
+            !rend ||
+            rend._isHeadlessNull ||
+            !st.rendererReady ||
+            !dl ||
+            !dl.castShadow ||
+            !(L.y > 0)
+        )
+            return 1;
+        const H = AnazhRealm.HORIZONT_KARTE;
+        const [n, d] = [H.gitter, H.zelleM];
+        const [ox, oz] = [K.U.ursprung.value.x, K.U.ursprung.value.y];
+        // die Höhen des Gitters als Zahlen, EINMAL je Gitter (der Pass liest dieselben Halb-Floats)
+        if (!this._horizontHoehen || this._horizontHoehen.stand !== K.stand)
+            this._horizontHoehen = {
+                stand: K.stand,
+                g: Float32Array.from(K.hoehen.image.data, (w) => THREE.DataUtils.fromHalfFloat(w)),
+            };
+        const g = this._horizontHoehen.g;
+        const drin = (u, v) => u >= -0.5 && u <= n - 0.5 && v >= -0.5 && v <= n - 0.5;
+        // bilinear über die Texel-Mitten (Rand geklemmt), wie die Abtastung des Passes und des Empfängers
+        const bilinear = (u, v, f) => {
+            const [i, j] = [Math.floor(u), Math.floor(v)];
+            const [fu, fv] = [u - i, v - j];
+            const c = (a, b) => f(Math.min(n - 1, Math.max(0, a)), Math.min(n - 1, Math.max(0, b)));
+            const [a, b, e, h] = [c(i, j), c(i + 1, j), c(i, j + 1), c(i + 1, j + 1)];
+            return a.map((w, k) => (w * (1 - fu) + b[k] * fu) * (1 - fv) + (e[k] * (1 - fu) + h[k] * fu) * fv);
+        };
+        const hoehe = (wx, wz) => {
+            const [u, v] = [(wx - ox) / d, (wz - oz) / d];
+            return drin(u, v) ? bilinear(u, v, (i, j) => [g[j * n + i]])[0] : -H.leerM;
+        };
+        const flach = Math.max(Math.hypot(L.x, L.z), 1e-4);
+        const [ax, az, tanH] = [L.x / flach, L.z / flach, L.y / flach];
+        // je Licht und Gitter EIN Marsch je Texel-Mitte (die Strahlen des Bild-Messers teilen ihre Texel)
+        const merk = `${K.stand}|${L.x}|${L.y}|${L.z}`;
+        if (!this._horizontMerk || this._horizontMerk.merk !== merk) this._horizontMerk = { merk, texel: new Map() };
+        const memo = this._horizontMerk.texel;
+        const texel = (i, j) => {
+            const alt = memo.get(j * n + i);
+            if (alt) return alt;
+            const [cx, cz] = [ox + i * d, oz + j * d];
+            let [best, weg] = [-H.leerM, 0];
+            for (let k = 1; k <= H.schritte; k++) {
+                const s = k * H.schrittM;
+                const h = hoehe(cx + ax * s, cz + az * s) - tanH * s;
+                if (h > best) [best, weg] = [h, s];
+            }
+            memo.set(j * n + i, [best, weg]);
+            return [best, weg];
+        };
+        const [u, v] = [(x - ox) / d, (z - oz) / d];
+        if (!drin(u, v)) return 1;
+        const [schatten, weg] = bilinear(u, v, texel);
+        const band = Math.max(H.bandM, weg * AnazhRealm.SCHATTEN_KASKADE.sonneTan * 0.5);
+        const t = Math.max(0, Math.min(1, (y - K.U.bezug.value - (schatten - band)) / (2 * band)));
+        return t * t * (3 - 2 * t);
+    }
+
+    // DER LICHTMESSER IM BILD (`_waagrechtIrradianz`, die Kamera): die Sicht des Geländes gemittelt über den Boden, den das Bild
+    // zeigt — die Strahlen der unteren Bildhälfte (`messer`: spalten × zeilen, gleich im Schirm verteilt wie die Pixel, die die
+    // Belichtung trägt), je Strahl der Boden des Gesetzes, wo er die Ebene unter dem Auge trifft (höchstens `weitM`). Bis dahin
+    // mass er am Punkt des Spielers: der Grat nahm ihm die Sonne in einem Schritt der Uhr ganz, dem Bild nur den nahen Boden
+    // (die fernen besonnten Flecken blieben) — die Belichtung überholte das Bild um 0,10 EV (Wiese 0,728 → 0,73, Radeon und GTX).
+    // Ohne Strahl auf den Boden (das Auge blickt in den Himmel, steht unter dem Gelände) misst er am Auge; ohne Auge 1.
+    _horizontSichtImBild(L) {
+        const st = this.state;
+        const cam = st.camera;
+        const K = st.horizontKarte;
+        if (!cam || !K || !K.bereit || !(L.y > 0)) return 1;
+        const M = AnazhRealm.HORIZONT_KARTE.messer;
+        const p = cam.position;
+        const ebene = this._terrainMacroSurfaceY(p.x, p.z, true);
+        const r = this._messerStrahl || (this._messerStrahl = new THREE.Vector3());
+        let [summe, zahl] = [0, 0];
+        for (let i = 0; i < M.spalten; i++)
+            for (let j = 0; j < M.zeilen; j++) {
+                r.set(((i + 0.5) / M.spalten) * 2 - 1, -(j + 0.5) / M.zeilen, 0.5)
+                    .unproject(cam)
+                    .sub(p)
+                    .normalize();
+                const s = r.y < 0 ? Math.min(M.weitM, (p.y - ebene) / -r.y) : 0;
+                if (!(s > 0)) continue;
+                const [x, z] = [p.x + r.x * s, p.z + r.z * s];
+                summe += this._horizontSichtAm(x, this._terrainMacroSurfaceY(x, z, true), z, L);
+                zahl++;
+            }
+        return zahl ? summe / zahl : this._horizontSichtAm(p.x, p.y, p.z, L);
+    }
+
+    // DIE SONNEN-SICHT am Welt-Punkt `p` (Vorgabe `positionWorld`): was das direkte Licht von Sonne oder Mond jenseits der Kaskaden
+    // trifft — der Horizont des Gelände-Gesetzes (`_horizontSicht`, ferne.K4) × der Wurf der Wolke (`_wolkenSchatten`, licht.K4).
+    // Leser: der EINE Knoten der Kaskaden (jeder Empfänger der Welt) und der Licht-Baustein von Feld und Panorama (`_weltLicht`).
+    _sonnenSicht(p) {
+        const w = p || THREE.TSL.positionWorld;
+        return this._horizontSicht(w).mul(this._wolkenSchatten(w));
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_dirigent_ankunft]);
@@ -1478,23 +1620,34 @@ AnazhRealm.RUNDBLICK_BILDER = 120;
 // Der Takt der Stufen-Wahl in der Ankunft (`_tickArchitectureLOD`, `_tickScatterLod`): Wechsel der Bauten, Wechsel und
 // Scan der Streu je Bild — die Wahl hält mit der gleitenden Maske Schritt (sonst 5 · 4 · 160).
 AnazhRealm.ANKUNFT_TAKT = Object.freeze({ bau: 32, streu: 16, streuScan: 640 });
-// DIE HORIZONT-KARTE (D3, `_horizontKarte`): der Schatten JENSEITS der Kaskaden. Das Licht sieht die drei Schalen des Fern-Rings
-// (dieselben Geometrien, ein eigener Stoff) orthografisch auf `texel`² Texel über ±`randM` um den Anker; je Texel bleibt die
-// Fläche, die dem Licht am nächsten liegt (r16f, Max-Blende, ohne Tiefen-Puffer: 0,5 MB). Ein Empfänger liegt im Schatten,
-// wenn die Karte über ihm mehr als den Bias näher am Licht trägt. Quer zum Licht nimmt die Karte nur das Bild des Rings
-// (±randM · sin h + Höhe · cos h); der Bias ist `biasTexel` × (senkrechte Texel-Kante / tan h, ab `hoeheMin`, + die halbe waagrechte). `versatzM` hält jede Licht-Tiefe positiv (r16f: ≤ 16 m Stufe), die
-// Kamera steht `hoeheM` vor dem Anker. Neu gezeichnet wird, wenn das Licht sich um einen Texel über die Karte gedreht hat
-// (`texelM / randM`), der Anker wandert oder der Ring voll ist — nie je Frame. Die Kaskaden tragen bis `SCHATTEN_FERN_FAKTOR`
-// × Reichweite; die Karte blendet über `blende` dieser Reichweite ein.
+// DIE HORIZONT-KARTE (ferne.K4, `_horizontKarte`): das Gitter des Gesetzes und die Schatten-Höhe zur Sonne, je `gitter`² Texel
+// im Abstand `zelleM` — ±12,3 km um die Mitte: der Ring (8 km), sein Anker-Weg (`nachM`) und der Marsch (3 km) liegen darin.
+// Der Marsch zur Sonne geht `schritte` × `schrittM` (60 … 3 000 m, die Bahn der Station). Das Gitter kommt aus dem Feld-Faden
+// in Aufträgen à `zeilenJeAuftrag` Zeilen (8 192 Rufe des Gesetzes, ~0,4 s: das Feld drängt dazwischen), erst nach dem ersten
+// Weltbild (die Ankunft trägt es nie) und neu, wenn der Anker `nachM` gewandert ist. Neu gemalt wird die Karte, wenn das Licht
+// sich um `lichtRad` dreht (0,05°: am Grat in 3 km 2,6 m Schatten-Höhe) oder ein Gitter kommt — nie je Frame. `bandM` ist der
+// halbe Halbschatten mindestens (Gitter und r16f), `leerM` die Höhe, die kein Gelände trägt (außerhalb, vor der ersten Antwort).
+// Speicher: Gitter r16f 128 KB + Karte rg16f 256 KB (vorher die Licht-Tiefe 512² r16f, 512 KB). `messer` der Lichtmesser der Kamera
+// (`_horizontSichtImBild`): `spalten` × `zeilen` Strahlen der unteren Bildhälfte, je bis `weitM` — an der Wiese 9 Texel, 0,2 ms
+// je neuem Licht, 0,1 ms je Ruf (Radeon); die Höhen des Gitters liegen dazu einmal je Gitter als Float32 (256 KB) im Main.
 AnazhRealm.HORIZONT_KARTE = Object.freeze({
-    texel: 512,
-    randM: 8400,
-    versatzM: 16384,
-    hoeheM: 30000,
-    biasTexel: 1.5,
-    hoeheMin: 0.08,
-    blende: 0.2,
+    messer: Object.freeze({ spalten: 4, zeilen: 8, weitM: 3000 }),
+    gitter: 256,
+    zelleM: 96,
+    schrittM: 60,
+    schritte: 50,
+    nachM: 1000,
+    zeilenJeAuftrag: 32,
+    lichtRad: (0.05 * Math.PI) / 180,
+    bandM: 1.5,
+    leerM: 10000,
 });
+
+// 1 im Einheits-Quadrat [0, 1]², sonst 0 (ein TSL-vec2): die Karte gilt nur über ihrem Gitter.
+AnazhRealm._imEinheitsQuadrat = function (q) {
+    const T = THREE.TSL;
+    return T.step(0, q.x).mul(T.step(q.x, 1)).mul(T.step(0, q.y)).mul(T.step(q.y, 1));
+};
 // Three.js lädt als ESM über das Bootstrap-Module; dieses defer-Script kann trotz document order vor
 // ihm laufen (großer Addon-Graph). Der AnazhRealm-Constructor nutzt `new THREE.Vector3()` → auf
 // `window.THREE` warten, BEVOR er gerufen wird (Polling alle 10 ms).
@@ -1510,8 +1663,6 @@ function _bootAnazhRealm() {
     }
     // die Wahl der Sprache in den Einstellungen (spielgang.K5) hört ab dem ersten Bild
     anazhRealm._sprachWahlInit();
-    // der EINE Bäcker dient dem Labor (pipeline.K2): die Nachricht `anazh-karte` hört ab dem Boot
-    anazhRealm._karteDienst();
     // DAS ERWACHEN: das Versprechen des Boots samt der Heimat aus dem Faden (true: die Welt steht, false: der Boot brach) —
     // die Welt-Warte jeder Linse (`__weltDa`) taktet erst danach; bis dahin taktet sie nur die Schleife des Boots.
     const erwachen = Promise.resolve(anazhRealm.init());

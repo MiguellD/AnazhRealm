@@ -571,7 +571,7 @@ async function checkBandRing9to10({ page, check }) {
                 schemaVersion: "8.0-multiworld-v1",
             },
             worldJournal: {
-                entries: [{ id: 1, at: Date.now() - 86400000 * 3, tick: 0, type: "genesis", text: "Original" }],
+                entries: [{ id: 1, at: Date.now() - 86400000 * 3, type: "genesis", text: "Original" }],
                 seen: { genesis: true },
             },
             architectures: [],

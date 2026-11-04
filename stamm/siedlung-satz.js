@@ -920,7 +920,8 @@ class AnazhRealm_siedlung_satz {
         }
         if (!this.state.scene) return nein("buehne");
         // DIE TAT BLEIBT, WO DAS GESETZ NEU SETZT (speicher.K3): ein Wurf des Gesetzes fällt, wo eine Tat ihn nahm (`_tatSperrt`)
-        if (opts.ausGesetz === true && position && this._tatSperrt(position.x, position.z)) return nein("tat");
+        if (opts.ausGesetz === true && position && this._tatSperrt(position.x, position.z, opts.studioOv))
+            return nein("tat");
         // Der Same eines Werks ohne eigenen (Bau einer Kreatur, Plattform, Portal) kommt aus dem Welt-Strom seiner Art (Γ5,
         // Lehre 7) — nie Math.random: der Mitspieler und der Reload sähen ein anderes Werk.
         const seed = Number.isFinite(opts.seed) ? opts.seed : this._bauSame("bau:" + type);

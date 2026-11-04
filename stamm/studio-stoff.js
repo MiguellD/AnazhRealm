@@ -379,6 +379,8 @@ class AnazhRealm_studio_stoff {
             } catch (_eL) {
                 throw this._stoffBruch("die Look-Addition (Haut · Fell · Haar)", _eL);
             }
+            // DAS HAAR WEHT IM EINEN WIND UND SCHWINGT MIT DEM LEIB (haar.K3, `_haarWindKnoten`)
+            if (kind === "hair") mat.positionNode = this._haarWindKnoten(TSL);
         } else if (mp && mp.webe) {
             // Stoff-Webung (Studio-getCloth): feine Mikro-Struktur moduliert die Stoff-Farbe (Strick grob, Denim/
             // Baumwolle fein, Leder/Gummi glatt-marmoriert) — additiv, nur wenn die Gesetz-Zeile Webung trägt. Frequenz und

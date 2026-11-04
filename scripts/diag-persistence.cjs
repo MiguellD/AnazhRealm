@@ -446,6 +446,12 @@ async function wegSeite(km, min, edits) {
         S.push([json, (await r._idbGetWorld(st.worldMeta.worldId + ".bak")).json]);
     };
     await takt(200);
+    // DER EINTRITT (w8-snapshot-schlank): eine Art des Buchs, die als Geburt nicht reist, tritt in den Gurt, aus ihm und zurück —
+    // jeder Stand bleibt die volle Serialisierung (ein Glied, das in die Ordnung des Fadens zurückkehrt, reist; vorher `},,{`)
+    await __weltDa((x) => x._foundry && x._foundry.recipes);
+    const art = Object.values(st.blueprints).find((b) => r._bauplanAusBuch(b)).name;
+    for (const a of [art, null, art, null]) (st.hotbar[8] = a), await stand();
+    S.length = 0;
     await stand();
     const [p, n] = [pm.position.clone(), min * 600];
     await takt(n, (i) => {
