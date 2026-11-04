@@ -43,6 +43,8 @@ function bauen() {
   const j = {
     stand: meta.stand, kopf: meta.kopf, version: meta.version, skala: "2.0", summe, max: bereiche.length * 10,
     ...(stand ? { maschine: { kopf: stand.kopf, zeit: stand.zeit || null, kriterien: Object.keys(stand.je) } } : {}),
+    // DAS PFLICHT-BAND (punkte.cjs pflichtBand, stand.json pflicht): je Eintrag von docs/PFLICHT-OFFEN.md seine Stationen — oben auf der Karte
+    ...(stand && stand.pflicht ? { pflicht: stand.pflicht } : {}),
     gruppen: gr.map((g) => ({ key: g.key, titel: g.titel, summe: bereiche.filter((b) => b.gruppe === g.key).reduce((s, b) => s + b.punkte, 0), max: g.bereiche.length * 10, bereiche: g.bereiche, intro: g.intro })),
     bereiche,
     buergschaft: meta.buergschaft,
@@ -111,6 +113,8 @@ function pruefen(j) {
     f.push(...PM.standPruefen({ kopf: j.maschine.kopf, je: Object.fromEntries(j.maschine.kriterien.map((k) => [k, 1])) }, j.kopf, bekannt));
     if (masch.length !== j.maschine.kriterien.length) f.push("Maschine: " + masch.length + " Kriterien tragen die Marke, stand.json bucht " + j.maschine.kriterien.length);
   } else if (masch.length) f.push("Maschinen-Marke ohne stand.json: " + masch.join(", "));
+  // das Pflicht-Band: trägt die Punkte-Maschine eine Zuordnung, steht das Band auf der Karte — sonst ist die Buchung alt
+  if (PM.liesPflicht() && !(j.pflicht && Array.isArray(j.pflicht.eintraege) && j.pflicht.eintraege.length)) f.push("Pflicht-Band fehlt: punkte/pflicht.json steht, stand.json trägt kein pflicht — punkte.cjs buchen --kopf " + j.kopf);
   return { fehler: f, delta, maschine: masch.length, hand: bekannt.size - masch.length };
 }
 
@@ -137,6 +141,21 @@ function render(j) {
   const a = alt[alt.length - 1];
   const neu = j.verlauf.filter((v) => v.skala === "2.0");
   const tag = (v) => v.stand.slice(8, 10) + "." + v.stand.slice(5, 7) + ".";
+  if (j.pflicht) {
+    P("## PFLICHT-OFFEN — das Band (der EINE Scope, docs/PFLICHT-OFFEN.md)"); P();
+    P("Je Eintrag die Stationen der Punkte-Maschine, die ihn messen: Paare (Station × Gerät) grün/gesamt und die Punkte ihrer Kriterien aus den " + j.max + ". Ein Eintrag fällt nur, wenn jedes Paar grün ist und kein Teil ohne Richter steht.");
+    P();
+    P("| Eintrag | Status | Paare grün | Punkte | Kriterien |");
+    P("|---|---|---|---|---|");
+    for (const e of j.pflicht.eintraege) P("| **" + e.id + "** " + esc(e.titel) + " | " + (e.status === "ohne Richter" ? "**ohne Richter**" : e.status) + " | " + e.gruen + "/" + e.gesamt + " (" + e.prozent + " %) | " + e.punkte + "/" + e.max + " | " + (e.kriterien.join(" · ") || "—") + " |");
+    P();
+    for (const e of j.pflicht.eintraege) {
+      if (!e.ohneRichter.length && !e.offen.length) continue;
+      P("- **" + e.id + " " + e.titel + ".** " + (e.ohneRichter.length ? "*Ohne Richter:* " + e.ohneRichter.join(" · ") + ". " : "") + (e.offen.length ? "*Offen:* " + e.offen.map((o) => "`" + o.station + " " + o.geraet + "` " + o.zeile).join(" · ") : ""));
+    }
+    if (j.pflicht.gefallen.length) P("- *Gefallen (nicht mehr im Dokument):* " + j.pflicht.gefallen.join(", "));
+    P(); P("---"); P();
+  }
   P("## Punktestand: " + j.summe + " / " + j.max); P();
   P("Verlauf — alte Skala (9 Bereiche, max 90): " + alt.map((v) => tag(v) + " " + v.summe).join(" · ") + " (letzter Stand " + a.summe + "/90 an " + a.kopf + "). Neue Skala (" + j.bereiche.length + " Bereiche, max " + j.max + "): " + neu.map((v, i) => (i === neu.length - 1 ? tag(v) + " **" + v.summe + "/" + v.max + "** an " + v.kopf : tag(v) + " " + v.summe + " an " + v.kopf)).join(" · ") + ". " + T.messschuldErwartung);
   P();

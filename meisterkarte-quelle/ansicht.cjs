@@ -86,6 +86,33 @@ ${top.map((e) => `      <li class="flaeche"><div class="kopf"><strong>${esc(e.ke
   </section>`;
 };
 
+// DAS PFLICHT-BAND (punkte.cjs pflichtBand → stand.json pflicht → meisterkarte.json pflicht): GANZ OBEN, vor der Summe — je Eintrag von
+// docs/PFLICHT-OFFEN.md ein Balken der grünen Paare (Station × Gerät), die Punkte seiner Kriterien aus den 330, was ohne Richter steht
+// und jedes offene Paar mit seiner letzten Zeile. Kein eigener Topf: das Band zeigt nur, welche der Punkte die Pflicht tragen.
+const pflichtSektion = () => {
+    if (!m.pflicht) return "";
+    const p = m.pflicht;
+    const rot = p.eintraege.filter((e) => e.status === "ohne Richter").length;
+    const liste = (cls, xs) => (xs.length ? [`        <ul class="${cls}">`, ...xs.map((x) => "          <li>" + x + "</li>"), "        </ul>"] : []);
+    const karte = (e) => [
+        `      <article class="flaeche pf" aria-labelledby="pf-${e.id}">`,
+        `        <div class="kopf"><h3 id="pf-${e.id}">${esc(e.id)} · ${esc(e.titel)}</h3><span class="status${e.status === "grün" ? "" : " rot"}">${esc(e.status)}</span></div>`,
+        `        <div class="kopf"><span class="meta" style="margin:0">Paare grün ${e.gruen}/${e.gesamt} · Punkte ${e.punkte}/${e.max}${e.kriterien.length ? " · " + esc(e.kriterien.join(" · ")) : ""}</span><span class="rate">${e.prozent} %</span></div>`,
+        "        " + (e.gesamt ? balken(e.gruen, e.gesamt) : '<div class="bar" role="img" aria-label="keine Station"><span style="width:0%"></span></div>'),
+        ...(e.kriterium ? [`        <p class="krit-satz">${md(e.kriterium)}</p>`] : []),
+        ...liste("ohne", e.ohneRichter.map(md)),
+        ...liste("offen", e.offen.map((o) => `<code>${esc(o.station)} ${esc(o.geraet)}</code> ${esc(o.zeile)}`)),
+        "      </article>",
+    ].join("\n");
+    return `    <section class="pflicht" aria-labelledby="h-pflicht" style="margin-top:16px">
+      <div class="gkopf"><h2 id="h-pflicht">Pflicht-Offen — der EINE Scope</h2><span class="punkte">${p.eintraege.length} offen · ${rot} ohne Richter</span></div>
+      <p class="sub">Je Eintrag von ${esc(p.dokument)} die Stationen, die ihn messen: der Balken zählt die grünen Paare (Station × Gerät), die Punkte gehören zu den ${m.max}. Ein Eintrag fällt nur, wenn jedes Paar grün ist und kein Teil ohne Richter steht.${p.gefallen.length ? " Nicht mehr im Dokument: " + esc(p.gefallen.join(", ")) + "." : ""}</p>
+      <div class="grid">
+${p.eintraege.map(karte).join("\n")}
+      </div>
+    </section>`;
+};
+
 const altSkala = m.verlauf.filter((v) => v.skala !== "2.0");
 const neuSkala = m.verlauf.filter((v) => v.skala === "2.0");
 const verlaufText = `Alte Skala (9 Bereiche, max 90): ${altSkala.map((v) => `${v.stand.slice(8, 10)}.${v.stand.slice(5, 7)}. ${v.summe}`).join(" · ")}. Neue Skala (33 Bereiche, max 330): ${neuSkala.map((v) => `${v.stand.slice(8, 10)}.${v.stand.slice(5, 7)}. ${v.summe}`).join(" · ")}.`;
@@ -126,20 +153,20 @@ const html = `<title>Meisterkarte</title>
   /* Ein Prüfbogen: eine Summe oben, dann Gruppen von Bereichskarten; Grün nur für erreichte Punkte. */
   :root {
     --bg: #f5f4ef; --fg: #1c1e20; --muted: #5c6166; --card: #ffffff; --line: #e2dfd6; --track: #e9e6dd;
-    --fill: #2f6f5e; --fill-strong: #245a4c; --dot-off: #d3cfc4; --chip: #e6efea; --chip-fg: #245a4c; --code: #efece4;
+    --fill: #2f6f5e; --fill-strong: #245a4c; --dot-off: #d3cfc4; --chip: #e6efea; --chip-fg: #245a4c; --code: #efece4; --rot: #9b3a26; --rot-chip: #f5e3dd;
     /* der Weg zu 330: EINE Grün-Rampe nach Nähe zum Punkt (gebucht am dunkelsten), ordinal validiert gegen die Fläche */
     --w0: #0f3029; --w1: #1b4a3e; --w2: #286253; --w3: #377a68; --w4: #49917d; --w5: #5ea692; --w6: #77b8a4; --w7: #d3cfc4;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       color-scheme: dark; --bg: #111315; --fg: #e7e5e0; --muted: #9ba1a7; --card: #1a1d20; --line: #2a2e32; --track: #2a2e33;
-      --fill: #5fb497; --fill-strong: #8fd3bc; --dot-off: #3a4045; --chip: #1f2a26; --chip-fg: #8fd3bc; --code: #22262a;
+      --fill: #5fb497; --fill-strong: #8fd3bc; --dot-off: #3a4045; --chip: #1f2a26; --chip-fg: #8fd3bc; --code: #22262a; --rot: #e8957f; --rot-chip: #33211c;
       --w0: #b5e8d8; --w1: #94d4c0; --w2: #76bea7; --w3: #5da68f; --w4: #4a8e78; --w5: #3b7764; --w6: #306253; --w7: #3a4045;
     }
   }
   :root[data-theme="dark"] {
     color-scheme: dark; --bg: #111315; --fg: #e7e5e0; --muted: #9ba1a7; --card: #1a1d20; --line: #2a2e32; --track: #2a2e33;
-    --fill: #5fb497; --fill-strong: #8fd3bc; --dot-off: #3a4045; --chip: #1f2a26; --chip-fg: #8fd3bc; --code: #22262a;
+    --fill: #5fb497; --fill-strong: #8fd3bc; --dot-off: #3a4045; --chip: #1f2a26; --chip-fg: #8fd3bc; --code: #22262a; --rot: #e8957f; --rot-chip: #33211c;
     --w0: #b5e8d8; --w1: #94d4c0; --w2: #76bea7; --w3: #5da68f; --w4: #4a8e78; --w5: #3b7764; --w6: #306253; --w7: #3a4045;
   }
   * { box-sizing: border-box; }
@@ -197,6 +224,18 @@ const html = `<title>Meisterkarte</title>
   .weg-tafel .z { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .weg-tafel td i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 8px; vertical-align: baseline; }
   @media (max-width: 560px) { .weg-tafel .meta { display: none; } }
+  .pflicht .grid { margin-top: 10px; }
+  .pf { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .pf .kopf h3 { font-size: 1rem; }
+  .pf .rate { color: var(--fg); }
+  .status { display: inline-block; font-size: 0.78rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--chip); color: var(--chip-fg); white-space: nowrap; }
+  .status.rot { background: var(--rot-chip); color: var(--rot); }
+  .pf ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 0.82rem; }
+  .pf .ohne li { color: var(--rot); }
+  .pf .ohne li::before { content: "ohne Richter · "; font-weight: 600; }
+  .pf .offen li { color: var(--muted); }
+  .pf .offen code { color: var(--fg); }
+  .pf .krit-satz { color: var(--muted); font-size: 0.8rem; margin: 0; }
   footer { color: var(--muted); font-size: 0.85rem; margin-top: 32px; }
   footer p { margin: 0 0 4px; }
 </style>
@@ -204,6 +243,7 @@ const html = `<title>Meisterkarte</title>
   <header>
     <h1>Meisterkarte 2.0</h1>
     <p class="sub">Ultiversum · Stand ${esc(m.stand.slice(8, 10))}.${esc(m.stand.slice(5, 7))}.${esc(m.stand.slice(0, 4))} · main ${esc(m.kopf)} (${esc(m.version)}) · ${m.bereiche.length} Bereiche × 5 Kriterien × 2 Punkte</p>
+${pflichtSektion()}
     <section class="flaeche summe" aria-label="Gesamtstand" style="margin-top:12px">
       <div class="zahl">${m.summe}<small>/ ${m.max}</small></div>
       ${balken(m.summe, m.max, true)}

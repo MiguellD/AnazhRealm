@@ -1,0 +1,60 @@
+{
+ "zweck": "DAS PFLICHT-BAND der Meisterkarte (Schöpfer 04.11.: „diese PFLICHT-OFFEN müssten Teil der Meisterkarte sein, sonst wird es nie erledigt, es besteht kein Anreiz“): je Eintrag von docs/PFLICHT-OFFEN.md (am Kopf der Buchung gelesen) die Stationen der Punkte-Maschine, die ihn messen. `punkte.cjs buchen` schreibt je Eintrag Paare (Station × Gerät) grün/gesamt, die Punkte der tragenden Kriterien (aus den 330, kein eigener Topf) und die offenen Paare mit ihrer letzten Zeile nach stand.json `pflicht`. Ein Teil des Kriteriums, den keine Station misst, steht in `ohneRichter` beim Namen — der Eintrag ist dann ROT „ohne Richter“, auch wenn jede seiner Stationen grün ist. Ein Eintrag des Dokuments ohne Zeile hier, eine Klasse der Soll-Tafel ohne Station (A) und eine Station, die nicht registriert ist, stehen ebenso ROT beim Namen. Ein Eintrag fällt nur, wenn alle seine Paare grün sind und kein Teil ohne Richter steht.",
+ "dokument": "docs/PFLICHT-OFFEN.md",
+ "eintraege": [
+  {
+   "id": "A",
+   "titel": "AAAA je Klasse",
+   "tafel": "spec/abnahme/soll-tafel.json",
+   "klassen": {
+    "laub-kante": ["lod.K1#1"],
+    "mensch-kopf": ["mensch.K4#1"],
+    "fell": ["haar.K1#1"],
+    "haar": ["haar.K2#1"]
+   },
+   "stationen": [],
+   "ohneRichter": [
+    "jede Klasse aus jeder Perspektive über die Uhr: keine Station misst Uhr × Sicht (Ego und Third, nah und fern) — die Klassen-Stationen messen je eine Pose (lod.K1#1 Tafel-Pose und Spielgang, mensch.K4#1 Third, haar.K1#1 und haar.K2#1 Armlänge und Third)",
+    "der erste Blick am Spawn je Klasse: ankunft.K4 ohne Werkzeug (stationen/g6.js `fehlt`)"
+   ],
+   "geprueft": "lod.K1#1 laubKanteUrteil (stationen/g3.js): Kante ≤ 0,22 der Laub-Klassen samt Karte fimp an Tafel-Pose und Spielgang — das Soll von laub-kante; mensch.K4#1, haar.K1#1, haar.K2#1 (stationen/g2.js): `werkbank bild --ist <klasse>` und `sollTafelUrteil(...).zeilen.find(id)` je Klasse; material.K1/K3 urteilen die Albedo-Tafel, keine Zeile der Soll-Tafel"
+  },
+  {
+   "id": "B",
+   "titel": "Ankunft ≤ 5 s kalt",
+   "stationen": ["ankunft.K1#1", "ankunft.K1#2"],
+   "ohneRichter": [],
+   "geprueft": "ankunft.K1 (stationen/g6.js, Probe ANKUNFT_KALT, kaltKontrolle): t(Kontrolle) von außen nach dem kalten Laden mit leerer Herkunft (IDB, Cache, Shader-Speicher, HTTP-Cache, Stände des save-servers), ROT bei halbem Bild (Lücke > 2 %); #2 ≤ 5 s an jeder Karte"
+  },
+  {
+   "id": "C",
+   "titel": "Verkehr",
+   "stationen": ["fahrzeug.K2#2"],
+   "ohneRichter": [
+    "10 min je Stunde: die Station fährt 12 s Spielzeit je Stunde (`PW.torBefehl(PW.fahrVerkehr, \"12\")`), das Gesetz VERKEHR in scripts/diag-fahr-leben.cjs verlangt 600 s",
+    "das Urteil der Station wird nie grün, solange 25°-Hang, Furt, Ego und Third ohne Probe stehen — C steht nur in ihrer Zahl („C GRÜN/ROT“)",
+    "das Profi-Band (E) im Verkehr: keine Zelle des Bands fährt in der belebten Stadt nH 300 mit Wagen"
+   ],
+   "geprueft": "fahrzeug.K2#2 (stationen/g5.js): die VK-Zeilen „PFLICHT-OFFEN C“ um 10 und 23 Uhr — Wagen ≥ 20 mit Fahrer, Ziel erreicht, 0 Berührung mit Leib, Wagen, Bau (diag-fahr-leben VERKEHR)"
+  },
+  {
+   "id": "E",
+   "titel": "Profi-Band",
+   "stationen": ["profiband.K1#1", "profiband.K2#1", "profiband.K3#1"],
+   "ohneRichter": [
+    "Frame p95 ≤ 33 ms an den Stand-Zellen Wiese und Genesis × Ego und Third: profiband.K1#1 urteilt nur die Bewegungszellen (PB_BEWEGT), K3#1 den gpu-bank ≤ 12 ms, nie die Bild-Zeit",
+    "das ABAB: die Sitzung misst jede Zelle einmal"
+   ],
+   "geprueft": "stationen/g6.js pbRichter: K1#1 Bild-p95 ≤ 33 in PB_BEWEGT (beide); K2#1 Belegung p95 ≤ 5,8 in PB_STEHT = Wiese und Genesis × Ego und Third (je Gerät, hier an beiden verlangt); K3#1 das Band je Ort × Sicht (Befehle, Dreiecke, VRAM gegen spec/profiband/haushalt.json, gpu-bank ≤ 12 ms, Regler voll, beide)"
+  },
+  {
+   "id": "F",
+   "titel": "Prüfplatz",
+   "stationen": [],
+   "ohneRichter": [
+    "keine Station misst eine Zone des Prüfplatzes: Schaukel (Pendel des Leib-Lösers), Arena (der EINE Stoß der Schmiede), Strecke (Runde 55–65 s, Flug 18–22 m am Kicker), vier Wagen mit Bewohnern × 10 Runden ohne Berührung, Silhouette der Stadt vom Platz"
+   ],
+   "geprueft": "grep schaukel|arena|rennstrecke|kicker|rondell|prüfplatz über stationen/*.js und proben-welt.cjs: 0 Treffer (04.11.)"
+  }
+ ]
+}

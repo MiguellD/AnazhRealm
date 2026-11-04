@@ -4,20 +4,20 @@
   /* Ein Prüfbogen: eine Summe oben, dann Gruppen von Bereichskarten; Grün nur für erreichte Punkte. */
   :root {
     --bg: #f5f4ef; --fg: #1c1e20; --muted: #5c6166; --card: #ffffff; --line: #e2dfd6; --track: #e9e6dd;
-    --fill: #2f6f5e; --fill-strong: #245a4c; --dot-off: #d3cfc4; --chip: #e6efea; --chip-fg: #245a4c; --code: #efece4;
+    --fill: #2f6f5e; --fill-strong: #245a4c; --dot-off: #d3cfc4; --chip: #e6efea; --chip-fg: #245a4c; --code: #efece4; --rot: #9b3a26; --rot-chip: #f5e3dd;
     /* der Weg zu 330: EINE Grün-Rampe nach Nähe zum Punkt (gebucht am dunkelsten), ordinal validiert gegen die Fläche */
     --w0: #0f3029; --w1: #1b4a3e; --w2: #286253; --w3: #377a68; --w4: #49917d; --w5: #5ea692; --w6: #77b8a4; --w7: #d3cfc4;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       color-scheme: dark; --bg: #111315; --fg: #e7e5e0; --muted: #9ba1a7; --card: #1a1d20; --line: #2a2e32; --track: #2a2e33;
-      --fill: #5fb497; --fill-strong: #8fd3bc; --dot-off: #3a4045; --chip: #1f2a26; --chip-fg: #8fd3bc; --code: #22262a;
+      --fill: #5fb497; --fill-strong: #8fd3bc; --dot-off: #3a4045; --chip: #1f2a26; --chip-fg: #8fd3bc; --code: #22262a; --rot: #e8957f; --rot-chip: #33211c;
       --w0: #b5e8d8; --w1: #94d4c0; --w2: #76bea7; --w3: #5da68f; --w4: #4a8e78; --w5: #3b7764; --w6: #306253; --w7: #3a4045;
     }
   }
   :root[data-theme="dark"] {
     color-scheme: dark; --bg: #111315; --fg: #e7e5e0; --muted: #9ba1a7; --card: #1a1d20; --line: #2a2e32; --track: #2a2e33;
-    --fill: #5fb497; --fill-strong: #8fd3bc; --dot-off: #3a4045; --chip: #1f2a26; --chip-fg: #8fd3bc; --code: #22262a;
+    --fill: #5fb497; --fill-strong: #8fd3bc; --dot-off: #3a4045; --chip: #1f2a26; --chip-fg: #8fd3bc; --code: #22262a; --rot: #e8957f; --rot-chip: #33211c;
     --w0: #b5e8d8; --w1: #94d4c0; --w2: #76bea7; --w3: #5da68f; --w4: #4a8e78; --w5: #3b7764; --w6: #306253; --w7: #3a4045;
   }
   * { box-sizing: border-box; }
@@ -75,6 +75,18 @@
   .weg-tafel .z { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .weg-tafel td i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 8px; vertical-align: baseline; }
   @media (max-width: 560px) { .weg-tafel .meta { display: none; } }
+  .pflicht .grid { margin-top: 10px; }
+  .pf { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .pf .kopf h3 { font-size: 1rem; }
+  .pf .rate { color: var(--fg); }
+  .status { display: inline-block; font-size: 0.78rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--chip); color: var(--chip-fg); white-space: nowrap; }
+  .status.rot { background: var(--rot-chip); color: var(--rot); }
+  .pf ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 0.82rem; }
+  .pf .ohne li { color: var(--rot); }
+  .pf .ohne li::before { content: "ohne Richter · "; font-weight: 600; }
+  .pf .offen li { color: var(--muted); }
+  .pf .offen code { color: var(--fg); }
+  .pf .krit-satz { color: var(--muted); font-size: 0.8rem; margin: 0; }
   footer { color: var(--muted); font-size: 0.85rem; margin-top: 32px; }
   footer p { margin: 0 0 4px; }
 </style>
@@ -82,6 +94,85 @@
   <header>
     <h1>Meisterkarte 2.0</h1>
     <p class="sub">Ultiversum · Stand 04.11.2026 · main 2674ff9a (V18.546.179) · 33 Bereiche × 5 Kriterien × 2 Punkte</p>
+    <section class="pflicht" aria-labelledby="h-pflicht" style="margin-top:16px">
+      <div class="gkopf"><h2 id="h-pflicht">Pflicht-Offen — der EINE Scope</h2><span class="punkte">5 offen · 4 ohne Richter</span></div>
+      <p class="sub">Je Eintrag von docs/PFLICHT-OFFEN.md die Stationen, die ihn messen: der Balken zählt die grünen Paare (Station × Gerät), die Punkte gehören zu den 330. Ein Eintrag fällt nur, wenn jedes Paar grün ist und kein Teil ohne Richter steht.</p>
+      <div class="grid">
+      <article class="flaeche pf" aria-labelledby="pf-A">
+        <div class="kopf"><h3 id="pf-A">A · AAAA je Klasse</h3><span class="status rot">ohne Richter</span></div>
+        <div class="kopf"><span class="meta" style="margin:0">Paare grün 2/8 · Punkte 2/8 · haar.K1 · haar.K2 · lod.K1 · mensch.K4</span><span class="rate">25 %</span></div>
+        <div class="bar" role="img" aria-label="2 von 8"><span style="width:25%"></span></div>
+        <p class="krit-satz">A fällt, wenn K5 jede Klasse GRÜN nennt und E dabei an beiden Messplätzen hält.</p>
+        <ul class="ohne">
+          <li>10 von 14 Klassen der Tafel ohne Station: boden-nah, himmel-licht, laub, haus, wasser, tor-fern, tor-bunt, tor-ziel, fels, boden-nah-farbe</li>
+          <li>jede Klasse aus jeder Perspektive über die Uhr: keine Station misst Uhr × Sicht (Ego und Third, nah und fern) — die Klassen-Stationen messen je eine Pose (lod.K1#1 Tafel-Pose und Spielgang, mensch.K4#1 Third, haar.K1#1 und haar.K2#1 Armlänge und Third)</li>
+          <li>der erste Blick am Spawn je Klasse: ankunft.K4 ohne Werkzeug (stationen/g6.js <code>fehlt</code>)</li>
+        </ul>
+        <ul class="offen">
+          <li><code>lod.K1#1 radeon</code> ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.4448 · Karte fimp:birke:L2 0.3374 (35915 px), fimp:eiche:L2 0.2483 (88061 px), fimp:fichte:L2 0.2104 (38581 px), fimp:strauch:L2 0.4448 (21992 px), fimp:tanne:L2 0.2295 (120732 px) · zweiton ≠ </li>
+          <li><code>lod.K1#1 gtx</code> Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: fenster · Exit 0)</li>
+          <li><code>mensch.K4#1 radeon</code> ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third ROT strich 0.333 Soll [1,1] — gesicht 0.333 &lt; 1 · der Mangel „Augen, Mund, Haar-Fleck&quot; heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.135 [0.9, 1] ·</li>
+          <li><code>mensch.K4#1 gtx</code> Station seit der Messung geändert</li>
+          <li><code>haar.K1#1 radeon</code> ROT: arm ROT strich 0.4251 Soll [0.4358,0.6538] — strich 0.4251 &lt; 0.4358 · third ROT strich 0.4177 Soll [0.4358,0.6538] — strich 0.4177 &lt; 0.4358 an 2674ff9a</li>
+          <li><code>haar.K2#1 radeon</code> ROT: arm ROT Bild: ABNAHME ROT [Vordergrund 27.8 % näher als 0.35 m (der halbe Ziel-Abstand): vorbau:fahrzeug_gt 27.8 %] · beweis · Sicht 0.7 % (vorbau:fahrzeug_gt 0.7 %) · Ziel Blickziel im Bild frei 0.7 m · Luma 46 σ 32.6 schwarz 0.0 % we</li>
+        </ul>
+      </article>
+      <article class="flaeche pf" aria-labelledby="pf-B">
+        <div class="kopf"><h3 id="pf-B">B · Ankunft ≤ 5 s kalt</h3><span class="status rot">offen</span></div>
+        <div class="kopf"><span class="meta" style="margin:0">Paare grün 0/4 · Punkte 0/2 · ankunft.K1</span><span class="rate">0 %</span></div>
+        <div class="bar" role="img" aria-label="0 von 4"><span style="width:0%"></span></div>
+        <p class="krit-satz">B fällt, wenn die Kalt-Zeile an beiden Geräten ≤ 5 s ganz hält.</p>
+        <ul class="offen">
+          <li><code>ankunft.K1#1 radeon</code> ungemessen (R10) — zuletzt an 2674ff9a: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 14.53 s von außen (Eigenmeldung 13.67 s), Bild 3.03 % Lücke OHNE Ruhe der Foundry, offen im Bild 4 Wald-Stücke</li>
+          <li><code>ankunft.K1#1 gtx</code> ungemessen (R10) — zuletzt an 5fba36ea: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) 0, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {&quot;stand&quot;:&quot;gemessen&quot;,&quot;kontrolle</li>
+          <li><code>ankunft.K1#2 radeon</code> ungemessen (R10) — zuletzt an 2674ff9a: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 14.53 s von außen (Eigenmeldung 13.67 s), Bild 3.03 % Lücke OHNE Ruhe der Foundry, offen im Bild 4 Wald-Stücke</li>
+          <li><code>ankunft.K1#2 gtx</code> ungemessen (R10) — zuletzt an 5fba36ea: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN</li>
+        </ul>
+      </article>
+      <article class="flaeche pf" aria-labelledby="pf-C">
+        <div class="kopf"><h3 id="pf-C">C · Verkehr</h3><span class="status rot">ohne Richter</span></div>
+        <div class="kopf"><span class="meta" style="margin:0">Paare grün 0/2 · Punkte 0/2 · fahrzeug.K2</span><span class="rate">0 %</span></div>
+        <div class="bar" role="img" aria-label="0 von 2"><span style="width:0%"></span></div>
+        <p class="krit-satz">C fällt, wenn in der Stadt nH 300 bei Tag und bei Nacht mindestens 20 Wagen mit Bewohnern am Steuer 10 min lang auf den Trassen fahren — 0 Berührungen mit Leibern, Bauten und anderen Wagen, jeder Wagen erreicht sein Ziel — und dabei das Profi-Band (E) an beiden Messplätzen in Ego und Third hält.</p>
+        <ul class="ohne">
+          <li>10 min je Stunde: die Station fährt 12 s Spielzeit je Stunde (<code>PW.torBefehl(PW.fahrVerkehr, &quot;12&quot;)</code>), das Gesetz VERKEHR in scripts/diag-fahr-leben.cjs verlangt 600 s</li>
+          <li>das Urteil der Station wird nie grün, solange 25°-Hang, Furt, Ego und Third ohne Probe stehen — C steht nur in ihrer Zahl („C GRÜN/ROT“)</li>
+          <li>das Profi-Band (E) im Verkehr: keine Zelle des Bands fährt in der belebten Stadt nH 300 mit Wagen</li>
+        </ul>
+        <ul class="offen">
+          <li><code>fahrzeug.K2#2 radeon</code> Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/fahr-proben.cjs) — zuletzt an 2674ff9a: die Fahrt riss 1800 s (vor halten.K5#1) — offen, UNGEMESSEN</li>
+          <li><code>fahrzeug.K2#2 gtx</code> ungemessen (R10) — zuletzt an 5fba36ea: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN</li>
+        </ul>
+      </article>
+      <article class="flaeche pf" aria-labelledby="pf-E">
+        <div class="kopf"><h3 id="pf-E">E · Profi-Band</h3><span class="status rot">ohne Richter</span></div>
+        <div class="kopf"><span class="meta" style="margin:0">Paare grün 0/6 · Punkte 0/6 · profiband.K1 · profiband.K2 · profiband.K3</span><span class="rate">0 %</span></div>
+        <div class="bar" role="img" aria-label="0 von 6"><span style="width:0%"></span></div>
+        <p class="krit-satz">E fällt, wenn an beiden Messplätzen — Radeon 890M (iGPU) und GTX 1060 (alte dGPU) — an den Messorten Wiese UND Genesis (spec/profiband/haushalt.json), in BEIDEN Sichten (Ego und Third-Person, je Ort × Sicht), im ABAB unter Regler voll gilt: Frame p95 ≤ 33 ms, ≤ 208 Befehle, ≤ 680k Dreiecke, ≤ 118 MB VRAM, CPU-Takt p95 ≤ 5,8 ms.</p>
+        <ul class="ohne">
+          <li>Frame p95 ≤ 33 ms an den Stand-Zellen Wiese und Genesis × Ego und Third: profiband.K1#1 urteilt nur die Bewegungszellen (PB_BEWEGT), K3#1 den gpu-bank ≤ 12 ms, nie die Bild-Zeit</li>
+          <li>das ABAB: die Sitzung misst jede Zelle einmal</li>
+        </ul>
+        <ul class="offen">
+          <li><code>profiband.K1#1 radeon</code> Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 2674ff9a: die Fahrt riss 1800 s (vor halten.K5#1) — offen, UNGEMESSEN</li>
+          <li><code>profiband.K1#1 gtx</code> Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3)</li>
+          <li><code>profiband.K2#1 radeon</code> Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 2674ff9a: die Fahrt riss 1800 s (vor halten.K5#1) — offen, UNGEMESSEN</li>
+          <li><code>profiband.K2#1 gtx</code> Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3)</li>
+          <li><code>profiband.K3#1 radeon</code> Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 2674ff9a: die Fahrt riss 1800 s (vor halten.K5#1) — offen, UNGEMESSEN</li>
+          <li><code>profiband.K3#1 gtx</code> Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3)</li>
+        </ul>
+      </article>
+      <article class="flaeche pf" aria-labelledby="pf-F">
+        <div class="kopf"><h3 id="pf-F">F · Prüfplatz</h3><span class="status rot">ohne Richter</span></div>
+        <div class="kopf"><span class="meta" style="margin:0">Paare grün 0/0 · Punkte 0/0</span><span class="rate">0 %</span></div>
+        <div class="bar" role="img" aria-label="keine Station"><span style="width:0%"></span></div>
+        <p class="krit-satz">F fällt, wenn jede Zone im Spielpfad benutzt wird — das Kind schaukelt nach dem Pendel des EINEN Leib-Lösers, die Arena antwortet dem Treffer über den EINEN Stoß mit allen Geräten der Schmiede, ein Wagen fährt die Runde in 55–65 s mit 18–22 m Flug am Kicker, vier Wagen mit Bewohnern am Steuer fahren 10 Runden ohne Berührung, die Silhouette der Stadt steht vom Platz aus —, jede Zone an ihrer Station das Profi-Band (E) an beiden Messplätzen hält und die Kalt-Zeile (B) dabei nicht langsamer wird.</p>
+        <ul class="ohne">
+          <li>keine Station misst eine Zone des Prüfplatzes: Schaukel (Pendel des Leib-Lösers), Arena (der EINE Stoß der Schmiede), Strecke (Runde 55–65 s, Flug 18–22 m am Kicker), vier Wagen mit Bewohnern × 10 Runden ohne Berührung, Silhouette der Stadt vom Platz</li>
+        </ul>
+      </article>
+      </div>
+    </section>
     <section class="flaeche summe" aria-label="Gesamtstand" style="margin-top:12px">
       <div class="zahl">194<small>/ 330</small></div>
       <div class="bar gross" role="img" aria-label="194 von 330"><span style="width:59%"></span></div>

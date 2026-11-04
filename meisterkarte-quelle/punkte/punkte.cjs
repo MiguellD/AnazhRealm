@@ -3029,6 +3029,13 @@ function buchenCli(opt) {
     s.kopfVoll = kopfVoll;
     s.zeit = new Date().toISOString();
     if (vorher) s.vorher = vorher.kopf;
+    // DAS PFLICHT-BAND am Kopf: das Dokument und die Tafeln aus dem Spiel-Baum des Kopfs — unlesbar ist ROT, nie ein Band ohne Quelle
+    const zu = liesPflicht();
+    if (zu) {
+        const tafeln = {};
+        for (const e of zu.eintraege || []) if (e.tafel && !tafeln[e.tafel]) tafeln[e.tafel] = JSON.parse(git(["show", kopfVoll + ":" + e.tafel], repo));
+        s.pflicht = pflichtBand(s.je, zu, git(["show", kopfVoll + ":" + zu.dokument], repo), tafeln);
+    }
     if (opt.trocken) return s;
     fs.writeFileSync(path.join(DIR, "stand.json"), JSON.stringify(s, null, 1) + "\n");
     buchungZeigen(s, "→ stand.json");
@@ -3038,6 +3045,7 @@ function buchenCli(opt) {
 function buchungZeigen(s, wohin) {
     for (const [k, e] of Object.entries(s.je)) console.log("  " + k + " " + e.punkte + " · " + e.beleg);
     for (const r of s.rueckfall) console.log("  RÜCKFALL " + r);
+    if (s.pflicht) for (const z of pflichtZeilen(s.pflicht)) console.log(z);
     const gehalten = Object.values(s.je).reduce((a, e) => a + e.stationen.filter((x) => x.gehalten).length, 0);
     console.log("Kopf " + s.kopf + " · Maschine " + Object.keys(s.je).length + " Kriterien · Σ " + Object.values(s.je).reduce((a, e) => a + e.punkte, 0) +
         (s.vorher ? " · Ratsche gegen " + s.vorher + ": gehalten " + gehalten + ", Rückfall " + s.rueckfall.length : " · ohne Ratsche") + " " + wohin);
@@ -3060,6 +3068,76 @@ function standPruefen(stand, kopfKarte, bekannt) {
     if (stand.kopf !== String(kopfKarte).slice(0, 8)) f.push("stand.json am Kopf " + stand.kopf + ", die Karte am Kopf " + kopfKarte + " — punkte.cjs buchen --kopf " + kopfKarte);
     for (const id of Object.keys(stand.je)) if (!bekannt.has(id)) f.push("stand.json bucht " + id + ", die Karte kennt es nicht");
     return f;
+}
+
+// ───────────────────────────────── DAS PFLICHT-BAND ─────────────────────────────────
+// Schöpfer 04.11.: „diese PFLICHT-OFFEN müssten Teil der Meisterkarte sein, sonst wird es nie erledigt, es besteht kein Anreiz“.
+// pflicht.json ordnet jedem Eintrag von docs/PFLICHT-OFFEN.md (am Kopf gelesen — das Dokument ist die EINE Liste der Einträge) die
+// Stationen zu, die ihn messen. Je Eintrag: Paare (Station × Gerät) grün/gesamt aus der Buchung, die Punkte der tragenden Kriterien
+// (aus den 330, kein eigener Topf), die offenen Paare mit ihrer letzten Zeile. ROT „ohne Richter“ beim Namen: ein Teil des Kriteriums,
+// den keine Station misst (`ohneRichter`), ein Eintrag ohne jede Station, ein Eintrag des Dokuments ohne Zeile in pflicht.json, eine
+// Klasse der Soll-Tafel am Kopf ohne Station (A, `klassen`), eine Station, die die Buchung nicht kennt. Ein Eintrag fällt nur, wenn
+// jedes Paar grün ist und kein Teil ohne Richter steht. Zeilen von pflicht.json, die das Dokument nicht mehr trägt, nennt `gefallen`.
+const PFLICHT_DATEI = path.join(DIR, "pflicht.json");
+function liesPflicht(datei = PFLICHT_DATEI) {
+    return fs.existsSync(datei) ? JSON.parse(fs.readFileSync(datei, "utf8")) : null;
+}
+// die Einträge des Dokuments: je Zeile „X) …“ der Buchstabe und der Satz „X fällt, wenn …“ (das Kriterium, wörtlich)
+function pflichtEintraegeAus(md) {
+    const out = [];
+    for (const z of String(md || "").split(/\r?\n/)) {
+        const m = /^([A-Z])\) /.exec(z);
+        if (!m) continue;
+        const k = new RegExp("\\b" + m[1] + " fällt, wenn (.+?)\\.(?=\\s+[A-ZÄÖÜ]|\\*\\*|$)").exec(z);
+        out.push({ id: m[1], kriterium: k ? m[1] + " fällt, wenn " + k[1] + "." : null });
+    }
+    return out;
+}
+function pflichtBand(je, zuordnung, md, tafeln = {}) {
+    const doc = pflichtEintraegeAus(md);
+    if (!doc.length) throw new Error("Pflicht-Band: " + zuordnung.dokument + " trägt keinen Eintrag „X) …“ — das Band hat keine Quelle");
+    const zeile = (s) => String(s || "").replace(/\s+/g, " ").trim().slice(0, 240);
+    const stationIn = (id) => {
+        const k = id.split("#")[0];
+        return ((je[k] && je[k].stationen) || []).filter((x) => x.id === id);
+    };
+    const eintraege = doc.map((d) => {
+        const z = (zuordnung.eintraege || []).find((e) => e.id === d.id);
+        const ohne = [];
+        if (!z) ohne.push("keine Zeile in pflicht.json — keine Station ist ihm zugeordnet");
+        const ids = new Set((z && z.stationen) || []);
+        if (z && z.klassen) {
+            const tafel = tafeln[z.tafel];
+            if (!tafel || !Array.isArray(tafel.klassen)) throw new Error("Pflicht-Band " + d.id + ": die Tafel " + z.tafel + " ist am Kopf unlesbar");
+            const ohneSt = tafel.klassen.map((k) => k.id).filter((id) => !(z.klassen[id] || []).length);
+            for (const sts of Object.values(z.klassen)) for (const id of sts) ids.add(id);
+            if (ohneSt.length) ohne.push(ohneSt.length + " von " + tafel.klassen.length + " Klassen der Tafel ohne Station: " + ohneSt.join(", "));
+        }
+        if (z) ohne.push(...(z.ohneRichter || []));
+        if (z && !ids.size && !ohne.length) ohne.push("keine Station misst ihn");
+        const paare = [];
+        for (const id of ids) {
+            const xs = stationIn(id);
+            if (!xs.length) ohne.push(id + ": die Buchung kennt die Station nicht");
+            paare.push(...xs);
+        }
+        const kriterien = [...new Set([...ids].map((id) => id.split("#")[0]))].sort();
+        const gruen = paare.filter((x) => x.gruen).length;
+        return {
+            id: d.id, titel: (z && z.titel) || d.id, kriterium: d.kriterium,
+            status: ohne.length ? "ohne Richter" : gruen === paare.length ? "grün" : "offen",
+            gruen, gesamt: paare.length, prozent: paare.length ? Math.round((100 * gruen) / paare.length) : 0,
+            punkte: kriterien.reduce((a, k) => a + ((je[k] && je[k].punkte) || 0), 0), max: 2 * kriterien.length, kriterien,
+            offen: paare.filter((x) => !x.gruen).map((x) => ({ station: x.id, geraet: x.geraet, zeile: zeile((x.ungemessen ? x.grund : "ROT: " + (x.zahl || x.grund)) + (x.sha ? " an " + String(x.sha).slice(0, 8) : "")) })),
+            ohneRichter: ohne,
+        };
+    });
+    const gefallen = (zuordnung.eintraege || []).map((e) => e.id).filter((id) => !doc.some((d) => d.id === id));
+    return { dokument: zuordnung.dokument, eintraege, gefallen };
+}
+function pflichtZeilen(p) {
+    return p.eintraege.map((e) => "  PFLICHT " + e.id + " " + e.titel + " · " + e.status + " · Paare " + e.gruen + "/" + e.gesamt + " (" + e.prozent + " %) · Punkte " + e.punkte + "/" + e.max +
+        (e.ohneRichter.length ? " · ohne Richter: " + e.ohneRichter.length : "")).concat(p.gefallen.length ? ["  PFLICHT gefallen (nicht mehr im Dokument, Zeile streichen): " + p.gefallen.join(", ")] : []);
 }
 
 // ───────────────────────────────── Selbsttest ─────────────────────────────────
@@ -3517,6 +3595,26 @@ async function selbsttest(o = {}) {
         pruef("RATSCHE die Wand PFAD hält nie → 0", r.je["gelaende.K4"].punkte === 0, r.je["gelaende.K4"].beleg);
         r = buchen("kopf", [s1, s2], m2, alt6, h);
         pruef("RATSCHE ohne Vorbuchung ist ungemessen 0", r.je["gelaende.K4"].punkte === 0, r.je["gelaende.K4"].beleg);
+    }
+    // (5p) DAS PFLICHT-BAND: grün nur, wenn jedes Paar grün ist und kein Teil ohne Richter steht; die Klasse der Tafel ohne Station, der
+    // Eintrag des Dokuments ohne Zeile, die unbekannte Station und der Teil ohne Richter stehen ROT beim Namen; die gefallene Zeile genannt
+    {
+        const md = "X) DAS ERSTE — **Status: offen. X fällt, wenn a hält.**\nY) DAS ZWEITE — **Y fällt, wenn b hält. Offen benannt: c.**\nZ) DAS DRITTE";
+        const jeP = { "a.K1": { punkte: 2, stationen: [{ id: "a.K1#1", geraet: "radeon", gruen: true }, { id: "a.K1#2", geraet: "gtx", gruen: true }] },
+            "b.K2": { punkte: 0, stationen: [{ id: "b.K2#1", geraet: "gtx", gruen: false, ungemessen: true, grund: "ungemessen (R10)" }] } };
+        const zu = { dokument: "d.md", eintraege: [{ id: "X", titel: "x", stationen: ["a.K1#1", "a.K1#2"] },
+            { id: "Y", titel: "y", tafel: "t.json", klassen: { k1: ["b.K2#1"], k2: [] }, stationen: ["q.K9#1"], ohneRichter: ["die Uhr"] }, { id: "W", stationen: [] }] };
+        const pb = pflichtBand(jeP, zu, md, { "t.json": { klassen: [{ id: "k1" }, { id: "k2" }] } });
+        const [X, Y, Z] = pb.eintraege;
+        pruef("PFLICHT jedes Paar grün, kein Teil ohne Richter → grün, Punkte aus den 330", X.status === "grün" && X.gruen === 2 && X.punkte === 2 && X.max === 2 && X.kriterium === "X fällt, wenn a hält.", JSON.stringify(X));
+        pruef("PFLICHT ohne Richter beim Namen: Klasse ohne Station, Teil, unbekannte Station; das offene Paar mit seiner Zeile",
+            Y.status === "ohne Richter" && /1 von 2 Klassen der Tafel ohne Station: k2/.test(Y.ohneRichter.join("|")) && Y.ohneRichter.includes("die Uhr") &&
+            /q\.K9#1: die Buchung kennt die Station nicht/.test(Y.ohneRichter.join("|")) && Y.offen.length === 1 && Y.offen[0].zeile === "ungemessen (R10)" && Y.kriterium === "Y fällt, wenn b hält.", JSON.stringify(Y));
+        pruef("PFLICHT Eintrag des Dokuments ohne Zeile → ohne Richter; die Zeile ohne Eintrag → gefallen",
+            Z.status === "ohne Richter" && /keine Zeile in pflicht\.json/.test(Z.ohneRichter[0]) && pb.gefallen.join() === "W", JSON.stringify(Z) + " " + pb.gefallen);
+        let wirft = false;
+        try { pflichtBand(jeP, zu, "kein Eintrag", {}); } catch (_e) { wirft = true; }
+        pruef("PFLICHT ein Dokument ohne Eintrag ist ROT, nie ein leeres Band", wirft);
     }
     // (5c) KEIN URTEIL IST KEIN ROT (w4-sitzung-urteil, keinUrteil in fahreGruppe): die Attrappe ohne Zeile, die vor ihrer Zeile abstürzt
     // und die, deren eigene Frist riss (die Marke ihres Läufers), sind UNGEMESSEN beim Namen; die mit rotem Maß bleibt ROT, die mit
@@ -4358,7 +4456,7 @@ if (require.main === module) {
     });
 }
 
-module.exports = { liesStand, maschinenKriterium, standPruefen, buchen, pruefeStationen, trifftPfad, toteGlobs, gpuZeuge, gpuWand, abdruck, fahreStation,
+module.exports = { liesStand, maschinenKriterium, standPruefen, buchen, liesPflicht, pflichtBand, pflichtEintraegeAus, pruefeStationen, trifftPfad, toteGlobs, gpuZeuge, gpuWand, abdruck, fahreStation,
     frischUrteil, stempelDateien, linsenVon, linsenAm, ladeGeprueft, ladeMessungen, spielRepo, voll, git, schluessel, geraeteVon, hilfeText,
     // DER STROM für die Probe der Sitzung (require(process.env.PUNKTE_MASCHINE)): EIN Zapfen, EINE Marke, EIN Leser, der Ruf mit Frist
     stromZapfen, stromMarke, stromLesen, rufFrist, STROM_SPALTEN };

@@ -4249,6 +4249,202 @@
  },
  "rueckfall": [],
  "kopfVoll": "2674ff9a403d0de252b7610c15b971dc54c5281a",
- "zeit": "2026-11-04T13:42:06.604Z",
- "vorher": "2674ff9a"
+ "zeit": "2026-11-04T15:35:04.831Z",
+ "vorher": "2674ff9a",
+ "pflicht": {
+  "dokument": "docs/PFLICHT-OFFEN.md",
+  "eintraege": [
+   {
+    "id": "A",
+    "titel": "AAAA je Klasse",
+    "kriterium": "A fällt, wenn K5 jede Klasse GRÜN nennt und E dabei an beiden Messplätzen hält.",
+    "status": "ohne Richter",
+    "gruen": 2,
+    "gesamt": 8,
+    "prozent": 25,
+    "punkte": 2,
+    "max": 8,
+    "kriterien": [
+     "haar.K1",
+     "haar.K2",
+     "lod.K1",
+     "mensch.K4"
+    ],
+    "offen": [
+     {
+      "station": "lod.K1#1",
+      "geraet": "radeon",
+      "zeile": "ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.4448 · Karte fimp:birke:L2 0.3374 (35915 px), fimp:eiche:L2 0.2483 (88061 px), fimp:fichte:L2 0.2104 (38581 px), fimp:strauch:L2 0.4448 (21992 px), fimp:tanne:L2 0.2295 (120732 px) · zweiton ≠ "
+     },
+     {
+      "station": "lod.K1#1",
+      "geraet": "gtx",
+      "zeile": "Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: fenster · Exit 0)"
+     },
+     {
+      "station": "mensch.K4#1",
+      "geraet": "radeon",
+      "zeile": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third ROT strich 0.333 Soll [1,1] — gesicht 0.333 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.135 [0.9, 1] ·"
+     },
+     {
+      "station": "mensch.K4#1",
+      "geraet": "gtx",
+      "zeile": "Station seit der Messung geändert"
+     },
+     {
+      "station": "haar.K1#1",
+      "geraet": "radeon",
+      "zeile": "ROT: arm ROT strich 0.4251 Soll [0.4358,0.6538] — strich 0.4251 < 0.4358 · third ROT strich 0.4177 Soll [0.4358,0.6538] — strich 0.4177 < 0.4358 an 2674ff9a"
+     },
+     {
+      "station": "haar.K2#1",
+      "geraet": "radeon",
+      "zeile": "ROT: arm ROT Bild: ABNAHME ROT [Vordergrund 27.8 % näher als 0.35 m (der halbe Ziel-Abstand): vorbau:fahrzeug_gt 27.8 %] · beweis · Sicht 0.7 % (vorbau:fahrzeug_gt 0.7 %) · Ziel Blickziel im Bild frei 0.7 m · Luma 46 σ 32.6 schwarz 0.0 % we"
+     }
+    ],
+    "ohneRichter": [
+     "10 von 14 Klassen der Tafel ohne Station: boden-nah, himmel-licht, laub, haus, wasser, tor-fern, tor-bunt, tor-ziel, fels, boden-nah-farbe",
+     "jede Klasse aus jeder Perspektive über die Uhr: keine Station misst Uhr × Sicht (Ego und Third, nah und fern) — die Klassen-Stationen messen je eine Pose (lod.K1#1 Tafel-Pose und Spielgang, mensch.K4#1 Third, haar.K1#1 und haar.K2#1 Armlänge und Third)",
+     "der erste Blick am Spawn je Klasse: ankunft.K4 ohne Werkzeug (stationen/g6.js `fehlt`)"
+    ]
+   },
+   {
+    "id": "B",
+    "titel": "Ankunft ≤ 5 s kalt",
+    "kriterium": "B fällt, wenn die Kalt-Zeile an beiden Geräten ≤ 5 s ganz hält.",
+    "status": "offen",
+    "gruen": 0,
+    "gesamt": 4,
+    "prozent": 0,
+    "punkte": 0,
+    "max": 2,
+    "kriterien": [
+     "ankunft.K1"
+    ],
+    "offen": [
+     {
+      "station": "ankunft.K1#1",
+      "geraet": "radeon",
+      "zeile": "ungemessen (R10) — zuletzt an 2674ff9a: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 14.53 s von außen (Eigenmeldung 13.67 s), Bild 3.03 % Lücke OHNE Ruhe der Foundry, offen im Bild 4 Wald-Stücke"
+     },
+     {
+      "station": "ankunft.K1#1",
+      "geraet": "gtx",
+      "zeile": "ungemessen (R10) — zuletzt an 5fba36ea: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) 0, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolle"
+     },
+     {
+      "station": "ankunft.K1#2",
+      "geraet": "radeon",
+      "zeile": "ungemessen (R10) — zuletzt an 2674ff9a: Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 14.53 s von außen (Eigenmeldung 13.67 s), Bild 3.03 % Lücke OHNE Ruhe der Foundry, offen im Bild 4 Wald-Stücke"
+     },
+     {
+      "station": "ankunft.K1#2",
+      "geraet": "gtx",
+      "zeile": "ungemessen (R10) — zuletzt an 5fba36ea: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN"
+     }
+    ],
+    "ohneRichter": []
+   },
+   {
+    "id": "C",
+    "titel": "Verkehr",
+    "kriterium": "C fällt, wenn in der Stadt nH 300 bei Tag und bei Nacht mindestens 20 Wagen mit Bewohnern am Steuer 10 min lang auf den Trassen fahren — 0 Berührungen mit Leibern, Bauten und anderen Wagen, jeder Wagen erreicht sein Ziel — und dabei das Profi-Band (E) an beiden Messplätzen in Ego und Third hält.",
+    "status": "ohne Richter",
+    "gruen": 0,
+    "gesamt": 2,
+    "prozent": 0,
+    "punkte": 0,
+    "max": 2,
+    "kriterien": [
+     "fahrzeug.K2"
+    ],
+    "offen": [
+     {
+      "station": "fahrzeug.K2#2",
+      "geraet": "radeon",
+      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/fahr-proben.cjs) — zuletzt an 2674ff9a: die Fahrt riss 1800 s (vor halten.K5#1) — offen, UNGEMESSEN"
+     },
+     {
+      "station": "fahrzeug.K2#2",
+      "geraet": "gtx",
+      "zeile": "ungemessen (R10) — zuletzt an 5fba36ea: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN"
+     }
+    ],
+    "ohneRichter": [
+     "10 min je Stunde: die Station fährt 12 s Spielzeit je Stunde (`PW.torBefehl(PW.fahrVerkehr, \"12\")`), das Gesetz VERKEHR in scripts/diag-fahr-leben.cjs verlangt 600 s",
+     "das Urteil der Station wird nie grün, solange 25°-Hang, Furt, Ego und Third ohne Probe stehen — C steht nur in ihrer Zahl („C GRÜN/ROT“)",
+     "das Profi-Band (E) im Verkehr: keine Zelle des Bands fährt in der belebten Stadt nH 300 mit Wagen"
+    ]
+   },
+   {
+    "id": "E",
+    "titel": "Profi-Band",
+    "kriterium": "E fällt, wenn an beiden Messplätzen — Radeon 890M (iGPU) und GTX 1060 (alte dGPU) — an den Messorten Wiese UND Genesis (spec/profiband/haushalt.json), in BEIDEN Sichten (Ego und Third-Person, je Ort × Sicht), im ABAB unter Regler voll gilt: Frame p95 ≤ 33 ms, ≤ 208 Befehle, ≤ 680k Dreiecke, ≤ 118 MB VRAM, CPU-Takt p95 ≤ 5,8 ms.",
+    "status": "ohne Richter",
+    "gruen": 0,
+    "gesamt": 6,
+    "prozent": 0,
+    "punkte": 0,
+    "max": 6,
+    "kriterien": [
+     "profiband.K1",
+     "profiband.K2",
+     "profiband.K3"
+    ],
+    "offen": [
+     {
+      "station": "profiband.K1#1",
+      "geraet": "radeon",
+      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 2674ff9a: die Fahrt riss 1800 s (vor halten.K5#1) — offen, UNGEMESSEN"
+     },
+     {
+      "station": "profiband.K1#1",
+      "geraet": "gtx",
+      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3)"
+     },
+     {
+      "station": "profiband.K2#1",
+      "geraet": "radeon",
+      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 2674ff9a: die Fahrt riss 1800 s (vor halten.K5#1) — offen, UNGEMESSEN"
+     },
+     {
+      "station": "profiband.K2#1",
+      "geraet": "gtx",
+      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3)"
+     },
+     {
+      "station": "profiband.K3#1",
+      "geraet": "radeon",
+      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 2674ff9a: die Fahrt riss 1800 s (vor halten.K5#1) — offen, UNGEMESSEN"
+     },
+     {
+      "station": "profiband.K3#1",
+      "geraet": "gtx",
+      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3)"
+     }
+    ],
+    "ohneRichter": [
+     "Frame p95 ≤ 33 ms an den Stand-Zellen Wiese und Genesis × Ego und Third: profiband.K1#1 urteilt nur die Bewegungszellen (PB_BEWEGT), K3#1 den gpu-bank ≤ 12 ms, nie die Bild-Zeit",
+     "das ABAB: die Sitzung misst jede Zelle einmal"
+    ]
+   },
+   {
+    "id": "F",
+    "titel": "Prüfplatz",
+    "kriterium": "F fällt, wenn jede Zone im Spielpfad benutzt wird — das Kind schaukelt nach dem Pendel des EINEN Leib-Lösers, die Arena antwortet dem Treffer über den EINEN Stoß mit allen Geräten der Schmiede, ein Wagen fährt die Runde in 55–65 s mit 18–22 m Flug am Kicker, vier Wagen mit Bewohnern am Steuer fahren 10 Runden ohne Berührung, die Silhouette der Stadt steht vom Platz aus —, jede Zone an ihrer Station das Profi-Band (E) an beiden Messplätzen hält und die Kalt-Zeile (B) dabei nicht langsamer wird.",
+    "status": "ohne Richter",
+    "gruen": 0,
+    "gesamt": 0,
+    "prozent": 0,
+    "punkte": 0,
+    "max": 0,
+    "kriterien": [],
+    "offen": [],
+    "ohneRichter": [
+     "keine Station misst eine Zone des Prüfplatzes: Schaukel (Pendel des Leib-Lösers), Arena (der EINE Stoß der Schmiede), Strecke (Runde 55–65 s, Flug 18–22 m am Kicker), vier Wagen mit Bewohnern × 10 Runden ohne Berührung, Silhouette der Stadt vom Platz"
+    ]
+   }
+  ],
+  "gefallen": []
+ }
 }
