@@ -1847,10 +1847,10 @@ async function selbsttest() {
     // das Kind nennt sein Profil an der Marke, nie als erste Zeile: sein Feger schreibt vorher „bleibt liegen" für ein gehaltenes
     // Alt-Profil (Vollprobe 04.11. 20:06, ~2000 Alt-Profile im Temp: die Linse las die Feger-Zeile als Pfad — ROT ohne Täter)
     const [mutante, ...kinder] = ['require("fs").rmSync = () => {}; await b.close()', "throw 0", 'process.emit("SIGTERM", "SIGTERM")'].map(
-        (c) => (kind(`const b = await w.starteBrowser({ art: "null" }); require("fs").writeSync(1, "PROFIL " + b.profil + "\\n"); ${c}`).stdout.match(/^PROFIL (.+)$/m) || [])[1] || ""
+        (c) => kind(`const b = await w.starteBrowser({ art: "null" }); require("fs").writeSync(1, "PROFIL " + b.profil + "\\n"); ${c}`).stdout.match(/^PROFIL (.+)$/m)?.[1]
     );
     const liegen = [mutante, ...kinder].map((d) => !/anazh-/.test(d) || fs.existsSync(d));
-    if (mutante) loesche(mutante);
+    loesche(mutante);
     const [tot, lebend, jung] = [tempNeu("profil", 2147483600), tempNeu(), tempNeu("profil", 2147483600)];
     const alt = new Date(Date.now() - 66e4);
     for (const d of [tot, lebend]) fs.utimesSync(d, alt, alt);
