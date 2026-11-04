@@ -1211,9 +1211,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         out.worldgenTreesInArchitectures = archTrees.length;
         // Mindestens ein gerenderter Baum (instanced, kein a.mesh) muss Kollision tragen — feld-nativ via
         // blockerAABBs (beim Spawn gefüllt, render-unabhängig), kein Ammo-Body.
-        const renderedTree = archTrees.find(
-            (a) => (a.mesh || a.instanced) && Array.isArray(a.blockerAABBs) && a.blockerAABBs.length > 0
-        );
+        const renderedTree = archTrees.find((a) => (a.mesh || a.instanced) && a.blockerAABBs?.length > 0);
         out.treeHasCompoundCollision = !!renderedTree;
 
         // DSL-Op-Tests: spawn_tree → erzeugt Architektur.
@@ -1251,10 +1249,8 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         // Band läuft den Takt, bis er steht (höchstens 900 Takte), und nennt, wie lange er wartete.
         out.newTreeWaldWartet = !!(newTreeArch && !r._waldPlanSteht(newTreeArch.position.x, newTreeArch.position.z));
         out.newTreeTakte = 0;
-        const steht = () =>
-            !!(newTreeArch && (newTreeArch.mesh || newTreeArch.instanced)) &&
-            Array.isArray(newTreeArch.blockerAABBs) &&
-            newTreeArch.blockerAABBs.length > 0;
+        const hatMesh = () => !!(newTreeArch?.mesh || newTreeArch?.instanced);
+        const steht = () => hatMesh() && newTreeArch.blockerAABBs?.length > 0;
         while (newTreeArch && !steht() && out.newTreeTakte < 900) {
             r._gameLoopTick();
             out.newTreeTakte++;
@@ -1262,14 +1258,10 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         }
         // instancierter Baum: gerendert via Instance-Slot
         // (entry.instanced), nicht via entry.mesh.
-        out.newTreeHasMesh = !!(newTreeArch && (newTreeArch.mesh || newTreeArch.instanced));
+        out.newTreeHasMesh = hatMesh();
         // DETERMINISMUS-BOGEN P3 — Baum-Kollision ist feld-nativ via blockerAABBs
         // (der solide Holz-Stamm, dichte ≥ 0.3), kein Ammo-Compound mehr.
-        out.newTreeHasCollision = !!(
-            newTreeArch &&
-            Array.isArray(newTreeArch.blockerAABBs) &&
-            newTreeArch.blockerAABBs.length > 0
-        );
+        out.newTreeHasCollision = newTreeArch?.blockerAABBs?.length > 0;
         // Compound-Tags müssen Holz+Laub spiegeln (lebendig+brennbar).
         if (newTreeArch) {
             const bp = st.blueprints[newTreeArch.type];
@@ -1293,7 +1285,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
                 if (pa[i] < minY) minY = pa[i];
                 if (pa[i] > maxY) maxY = pa[i];
             }
-            out.islandHasUnderside = isFinite(minY) && isFinite(maxY) && maxY - minY > 0.5;
+            out.islandHasUnderside = maxY - minY > 0.5;
         }
 
         // Diskrimination: derselbe Seed → dieselben Vertices.
@@ -1313,25 +1305,14 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         }
 
         // Chat-Pattern-Tests bleiben — die Patterns selbst sind gleich.
-        const treeBuilt = r.parseChatToDsl("pflanze baum hier");
-        const treeProg = treeBuilt && treeBuilt.program;
-        out.chatTreeProg =
-            Array.isArray(treeProg) &&
-            treeProg[0] === "spawn_tree" &&
-            Array.isArray(treeProg[1]) &&
-            treeProg[1][0] === "at";
-        const islandBuilt = r.parseChatToDsl("setze insel hier");
-        const islandProg = islandBuilt && islandBuilt.program;
-        out.chatIslandProg =
-            Array.isArray(islandProg) &&
-            islandProg[0] === "spawn_island" &&
-            Array.isArray(islandProg[1]) &&
-            islandProg[1][0] === "at" &&
-            Number.isFinite(islandProg[3]);
-        const ufoBuilt = r.parseChatToDsl("rufe ufo hier");
-        const ufoProg = ufoBuilt && ufoBuilt.program;
-        out.chatUfoProg =
-            Array.isArray(ufoProg) && ufoProg[0] === "spawn_ufo" && Array.isArray(ufoProg[1]) && ufoProg[1][0] === "at";
+        // je Satz das Programm: [Op, ["at", …], …]
+        const prog = (satz, op) => {
+            const p = r.parseChatToDsl(satz)?.program;
+            return Array.isArray(p) && p[0] === op && Array.isArray(p[1]) && p[1][0] === "at" && p;
+        };
+        out.chatTreeProg = !!prog("pflanze baum hier", "spawn_tree");
+        out.chatIslandProg = Number.isFinite(prog("setze insel hier", "spawn_island")[3]);
+        out.chatUfoProg = !!prog("rufe ufo hier", "spawn_ufo");
 
         return out;
     });
@@ -1366,29 +1347,51 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         check("_islandDensityAt liefert Luft außerhalb des Radius", r42a.airFarAway);
         check("_islandDensityAt liefert Luft weit über der Insel", r42a.airAbove);
         check("_voxelChunkGeometry akzeptiert densityFn-Callback", !!r42a.mesherAcceptsDensity);
-        // Skirt-Disziplin im Smooth-Pass: Naht-Vertices (Rand-Zellen i==0/dimX-1, k==0/dimZ-1) bleiben
-        // unverschoben, sonst zerstört Laplacian die Skirt-Überlappung der Nachbar-Chunks. Probe: zwei
-        // benachbarte Chunks bauen — an der gemeinsamen Naht teilen >50 % der Vertices die Position
-        // (ohne die Disziplin ~0).
-        const r42bSkirt = await page.evaluate(() => {
-            const chunks = [...st.voxelChunks.values()].filter((c) => c && c.mesh && c.mesh.geometry).slice(0, 9);
-            if (chunks.length < 2) return { err: "weniger als 2 Voxel-Chunks" };
-            const seen = new Map();
-            let dup = 0;
-            for (const c of chunks) {
-                const pa = c.mesh.geometry.getAttribute("position").array;
-                for (let i = 0; i < pa.length; i += 3) {
-                    const key = `${pa[i].toFixed(2)}|${pa[i + 1].toFixed(2)}|${pa[i + 2].toFixed(2)}`;
-                    if (seen.has(key)) dup++;
-                    else seen.set(key, true);
-                }
-            }
-            return { chunks: chunks.length, unique: seen.size, duplicates: dup };
+        // Skirt-Disziplin im Smooth-Pass: N Glätt-Gänge brauchen N Zellen Pad + Crop, sonst wandern die Naht-Vertices und die
+        // Skirt-Überlappung der Nachbar-Chunks reißt. Probe an BENANNTEN Chunks: die vier, die sich am Ursprung (der Ankunft)
+        // treffen — (-1,-1) (0,-1) (-1,0) (0,0), der Spieler auf dem Ursprung hält sie in Stufe 0 —, gewartet, bis genau diese
+        // in Stufe 0 stehen und keiner im Neubau ist; an ihren Nähten teilen sie Vertices (die Positionen über alle vier, 1 cm).
+        // Bis w11-wackler zählte die Linse „die ersten 9 gebauten Chunks“ der Map — welche das waren (und in welcher Stufe),
+        // hing vom Tempo ab (lokal 266, unter Last 324/499, CI 190 bei Schwelle 200). Selbsttest im selben Boot: dieselben vier
+        // über den Mesher geglättet ohne Pad und Crop (die echte Naht-Verletzung: die Rand-Vertices glätten einseitig) fallen unter
+        // die Schwelle (am Ursprung 367 gegen 52).
+        const r42bSkirt = await safeEvaluate(page, async () => {
+            const NAHT = ["-1,-1", "0,-1", "-1,0", "0,0"];
+            const { dim, step, span, dimY, floorDrop } = r._voxelChunkConfig(0);
+            // die Vertices, die ihre Position (1 cm) mit einem früheren teilen
+            const zaehl = (lagen) => {
+                const seen = new Set();
+                let n = 0;
+                for (const pa of lagen)
+                    for (let i = 0; i < pa.length; i += 3, n++)
+                        seen.add(Array.from(pa.slice(i, i + 3), (v) => v.toFixed(2)) + "");
+                return n - seen.size;
+            };
+            const vorher = st.playerMesh.position.clone();
+            st.playerMesh.position.set(0, r.getTerrainHeightAt(0, 0) + 1, 0);
+            await __gebautNach("die vier Chunks am Ursprung in Stufe 0", {
+                fertig: () => NAHT.every((k) => st.voxelChunks.get(k)?.lod === 0 && !st.dirtyVoxelChunks?.has(k)),
+                takt: () => __takte(1, 6),
+            });
+            st.playerMesh.position.copy(vorher);
+            return {
+                gesund: zaehl(NAHT.map((k) => st.voxelChunks.get(k).mesh.geometry.attributes.position.array)),
+                // die Mutante: derselbe Mesher ohne Pad und Crop — die Naht-Vertices glätten einseitig
+                mutante: zaehl(
+                    NAHT.map((k) => {
+                        const [cx, cz] = k.split(",");
+                        const oy = (st.terrainBaseHeight || 0) - floorDrop;
+                        return r._voxelChunkGeometry(cx * span, oy, cz * span, dim + 1, dimY, dim + 1, step).attributes
+                            .position.array;
+                    })
+                ),
+            };
         });
-        check(
-            `Skirt-Naht — ${r42bSkirt.duplicates || 0} Vertices teilen identische Position zwischen ${r42bSkirt.chunks || 0} Nachbar-Chunks (Smooth respektiert Naht)`,
-            (r42bSkirt.duplicates || 0) >= 200
-        );
+        if (erreichbar(check, "Skirt-Naht am Ursprung", r42bSkirt))
+            check(
+                `Skirt-Naht — ${r42bSkirt.gesund} Vertices teilen ihre Position zwischen den 4 Chunks am Ursprung (Stufe 0), ohne Pad ${r42bSkirt.mutante}`,
+                r42bSkirt.gesund >= 200 && r42bSkirt.mutante < 200
+            );
         // Insel-Höhen-Amplitude skaliert mit `height`.
         const r42bIslandAmp = await page.evaluate(() => {
             const noise = { noise2D: () => 0.5 };
