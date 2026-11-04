@@ -1,0 +1,111 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node -e (async function weltProbeLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const { statikServer, nullSeite, warteAufWelt } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const { messort, WELT_ORTE_INSTALL } = require(path.resolve("scripts/lib/welt-orte.cjs"));
+    const { AUSGABE_INSTALL } = require(path.resolve("scripts/lib/ausgabe-aufnahme.cjs"));
+    const [aus, port, grund, probenText] = process.argv.slice(1);
+    const orte = Object.fromEntries(["wiese", "dorf"].map((id) => [id, messort(id)]));
+    const erg = { proben: {}, fehler: [] };
+    const server = statikServer();
+    let browser = null;
+    try {
+        await server.lausche(Number(port));
+        const ns = await nullSeite({ frist: 1800000 });
+        browser = ns.browser;
+        const seite = ns.page;
+        seite.setDefaultTimeout(1200000);
+        seite.on("pageerror", (e) => erg.fehler.length < 8 && erg.fehler.push(String(e.message || e).split("\n")[0].slice(0, 200)));
+        const erwacht = async () => {
+            await warteAufWelt(seite, 300000);
+            await seite.evaluate(async () => {
+                while (!(window.anazhRealm && window.anazhRealm.erwacht)) await new Promise((ok) => setTimeout(ok, 50));
+                await window.anazhRealm.erwacht;
+                window.anazhRealm.state.renderer.setAnimationLoop(null);
+            });
+            await seite.evaluate(WELT_ORTE_INSTALL + ";" + AUSGABE_INSTALL); // das Orts-Gesetz und der EINE Wetter-Weg (`__wetterSetzen`)
+        };
+        await server.zeige(seite, 240000, "index.html", "networkidle0");
+        await erwacht();
+        for (const [name, fn, o] of JSON.parse(probenText)) {
+            const t0 = Date.now();
+            let e;
+            try {
+                if (o && o.neuladen) {
+                    await seite.reload({ waitUntil: "networkidle0", timeout: 240000 });
+                    await erwacht();
+                }
+                e = await seite.evaluate("(" + fn + ")(window.anazhRealm, THREE, " + JSON.stringify(Object.assign({ orte }, o)) + ", (" + grund + ")(window.anazhRealm, THREE))");
+            } catch (x) {
+                e = { fehler: String((x && x.message) || x).split("\n")[0].slice(0, 300) };
+            }
+            e = Object.assign({}, e || { fehler: "die Probe gab nichts zurück" }, { sek: Math.round((Date.now() - t0) / 100) / 10 });
+            erg.proben[name] = e;
+            console.log("WELTPROBE " + name + " " + JSON.stringify(e));
+        }
+    } catch (x) {
+        erg.fehler.push(String((x && x.message) || x).split("\n")[0].slice(0, 300));
+    } finally {
+        if (browser) await browser.close().catch(() => {});
+        server.close();
+    }
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+    console.log("WELTPROBE-ENDE " + JSON.stringify({ proben: Object.keys(erg.proben), fehler: erg.fehler }));
+})() /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/f69a7305-headless/streaming.K1_1.json 7704 function weltGrund(r, T) {
+    const s = r.state;
+    const A = r.constructor;
+    let t = performance.now();
+    s.perfRegulator = false;
+    const takt = (n = 1) => {
+        for (let i = 0; i < n; i++) r._gameLoopTick((t += 1000 / 60));
+    };
+    const y = (x, z) => r._voxelSurfaceY(x, z);
+    const stehen = async (x, z) => {
+        s.playerMesh.position.set(x, y(x, z) + A.PLAYER_FOOT_OFFSET, z);
+        s.playerVel.setValue(0, 0, 0);
+        await window.__weltStehtNach(() => takt());
+        takt(30);
+    };
+    const tage = (n) => {
+        for (let k = 0; k < n * 4; k++) {
+            r.setTimeOfDay((s.timeOfDay + 0.25) % 1, "regler");
+            takt(3);
+        }
+    };
+    // DAS WETTER EINER PROBE über den EINEN Weg (`__wetterSetzen`, scripts/lib/ausgabe-aufnahme.cjs; der Lauf baut ihn in jede
+    // Welt): er taut den Mess-Halt für DIESES Wort und hält danach wieder — ein Wort, das nicht gilt, wirft beim Namen. Bis 03.11.
+    // setzte `trocken` selbst und fror den Halt dahinter (−1e9): jedes spätere Wort fiel still (der Regen der Alter-Spur)
+    const wetter = (wort, zug) => {
+        if (window.__wetterSetzen(wort, zug) !== wort) throw new Error("das Wetter der Probe gilt nicht: " + wort + " (es gilt " + s.weather + ")");
+    };
+    const trocken = () => {
+        wetter("sunny");
+        r._naesseTakt(1e6);
+        r.setTimeOfDay(0.5, "regler");
+        takt(2);
+    };
+    const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+    // DIE GEZEICHNETE NAH-STREU (feld.K5, luftwasser.K4): je Senke ihre gezeichneten Glieder (`bloecke[].ids` über den Kacheln
+    // `kacheln.items` — dieselbe Zählung wie feld.K4, diag-stand-takt) am Ort `drin(x, z)`; Blumen = Senken der Art `blume*` (die
+    // Streu wählt sie auf lebendigem Boden, stamm/vegetation-streu.js)
+    const streu = (drin) => {
+        const ns = s.nahStreu;
+        const n = { alle: 0, blumen: 0 };
+        if (!ns) return n;
+        for (const a of ns.senken.values())
+            for (const [key, b] of a.bloecke) {
+                const k = ns.kacheln.get(key);
+                if (!k) continue;
+                const ids = new Set(b.ids);
+                for (const it of k.items)
+                    if (ids.has(it.id) && drin(it.x, it.z)) {
+                        n.alle++;
+                        if (/^blume/.test(a.preset || "")) n.blumen++;
+                    }
+            }
+        return n;
+    };
+    return { s, A, takt, y, stehen, tage, wetter, trocken, r3, streu };
+} [["fahrt","async (r, T, o, G) => {\n\nreturn await (async function fahrtProbe(r, T, o, G) {\n    const { s, takt, r3 } = G;\n    const A = r.constructor;\n    const W = o.orte.wiese,\n        D = o.orte.dorf;\n    const L = Math.hypot(D.x - W.x, D.z - W.z);\n    const u = { x: (D.x - W.x) / L, z: (D.z - W.z) / L };\n    const gier = Math.atan2(u.x, u.z);\n    const VC = window.__vehicleCore;\n    const gt = VC && VC.exportDrive && VC.presetPatch ? VC.exportDrive(VC.presetPatch(\"gt\")).vmax : null;\n    const KEGEL = 384;\n    const SC = A.SCATTER;\n    const pm = s.playerMesh;\n    const stell = (x, z) => {\n        const y = r._voxelSurfaceY(x, z);\n        pm.position.set(x, (Number.isFinite(y) ? y : r._terrainMacroSurfaceY(x, z)) + A.PLAYER_FOOT_OFFSET, z);\n    };\n    s.chunkRingRadius = A.HOLZ_PROFILE.voll.ring;\n    r._applyHolzProfil(\"voll\");\n    s.yaw = gier;\n    stell(W.x, W.z);\n    s.playerVel.setValue(0, 0, 0);\n    await window.__weltStehtNach(() => takt());\n    takt(30);\n    const { span } = r._voxelChunkConfig();\n    const imKegel = (x, z, rr, p) => Math.hypot(x - p.x, z - p.z) <= KEGEL + rr && r._imErstenBlick(x, z, rr, true);\n    const ding = A.ERSTER_BLICK.dingM;\n    const ort = (x, z) => \"a:\" + Math.round(x * 10) + \",\" + Math.round(z * 10);\n    const ST = A.BODEN_STUFEN.stufen;\n    // die Stufe, die der Abstand verlangt: Boden am Kasten-Abstand (BODEN_STUFEN `bis`), Eintrag am Wahrnehmungs-Gesetz\n    const bodenSoll = (cx, cz, p) => {\n        const d = Math.max(Math.max(cx * span - p.x, 0, p.x - (cx + 1) * span), Math.max(cz * span - p.z, 0, p.z - (cz + 1) * span));\n        return (ST.find((x) => d < x.bis) || ST[ST.length - 1]).lod;\n    };\n    const eintragSoll = (e, auge, ferne) => {\n        const dist = Math.hypot(e.position.x - auge.x, e.position.z - auge.z);\n        const baum = !!e._lodSpecies && Number.isFinite(e._lodVariantIndex);\n        if (!baum && e.instFoundry !== true) return null; // keine Stufen-Kette (Grammatik-Bau): da ist fertig\n        // die Hysterese ist Gesetz (`_stufeNachGrenzen`: wer eine Stufe trägt, hält sie bis (1 − h)·ab) — wie die Wahl selbst, nur am\n        // Abstand JETZT (nie an der Vorausschau des Spiels)\n        const zustand = e._lodAmAbstand === true ? e._lodLevel : undefined;\n        if (baum) {\n            const h = r._lodTreeVisHeight(e);\n            return h === null ? undefined : r._chooseLODForDistance(dist, e._bruecke ? undefined : zustand, h);\n        }\n        const gr = r._archStufenGrenzen(e);\n        return gr ? A._stufeNachGrenzen(dist * ferne, zustand, gr, Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1) : null;\n    };\n    // je Ding [Schlüssel, Klasse, da (K1), fertig in der verlangten Stufe (K2)]\n    const bedarf = () => {\n        const p = pm.position;\n        const out = [];\n        const { ringRadius } = r._voxelChunkConfig();\n        const pcx = Math.floor(p.x / span),\n            pcz = Math.floor(p.z / span);\n        const fern = r._fernRingGilt() ? !!(s.fernRing && s.fernRing.ready) : true;\n        for (let dz = -ringRadius; dz <= ringRadius; dz++)\n            for (let dx = -ringRadius; dx <= ringRadius; dx++) {\n                const [cx, cz] = [pcx + dx, pcz + dz];\n                if ((dx || dz) && !imKegel((cx + 0.5) * span, (cz + 0.5) * span, span * Math.SQRT1_2, p)) continue;\n                const e = s.voxelChunks && s.voxelChunks.get(cx + \",\" + cz);\n                const netz = !!(e && (e.mesh || e.empty));\n                const fertig = netz && (e.empty || (Number.isFinite(e.lod) ? e.lod : 0) <= bodenSoll(cx, cz, p));\n                const deckt = Math.max(Math.abs(dx), Math.abs(dz)) > A.RING_EXIST_FLOOR && fern;\n                out.push([\"b:\" + cx + \",\" + cz + \":\" + bodenSoll(cx, cz, p), \"boden\", netz || deckt, fertig]);\n            }\n        if (r._fernRingGilt()) out.push([\"h\", \"horizont\", fern, fern]);\n        const R = Number.isFinite(s.architectureCullingRadius) ? s.architectureCullingRadius : 150;\n        // ein Ding steht auf seinem Boden: sein Bedarf beginnt, wenn sein Chunk im Ring liegt (derselbe Ring wie der Boden-Bedarf)\n        const imRing = (x, z) => Math.max(Math.abs(Math.floor(x / span) - pcx), Math.abs(Math.floor(z / span) - pcz)) <= ringRadius;\n        // der Wald wächst auf seinem Chunk bis zum Rand des Laubs (das Gesetz PERF_FOLIAGE_RADIUS_MAX an der Mitte des Chunks, nie\n        // der Regler `foliageRadius`): ein Baum ist Bedarf, sobald sein Chunk diesseits liegt\n        const LAUB = A.PERF_FOLIAGE_RADIUS_MAX;\n        const imLaub = (x, z) => Math.hypot((Math.floor(x / span) + 0.5) * span - p.x, (Math.floor(z / span) + 0.5) * span - p.z) <= LAUB;\n        const auge = r._lodAuge() || p;\n        const ferne = r._ankunftsFerne();\n        for (const e of s.architectures || []) {\n            if (!e || !e.position) continue;\n            const d = Math.hypot(e.position.x - p.x, e.position.z - p.z);\n            if (d > KEGEL + ding) continue;\n            const karte = !!r._archKartenPreset(e);\n            const rand = !karte ? R : d <= SC.outerM - A.KARTEN_HORIZONT_SAUM_M ? KEGEL : Math.min(KEGEL, r._archKartenHorizont(e));\n            const baum = !!e._lodSpecies || karte;\n            if (d > rand || !imRing(e.position.x, e.position.z) || (baum && !imLaub(e.position.x, e.position.z))) continue;\n            if (!r._imErstenBlick(e.position.x, e.position.z, ding, true)) continue;\n            const da = r._archIsRendered(e);\n            const soll = eintragSoll(e, auge, ferne);\n            const kl = !baum ? \"bau\" : soll === 2 || (soll === undefined && d > R) ? \"karte\" : \"baum\";\n            const fertig = da && (soll === null || (soll !== undefined && e.instanced && Number.isFinite(e._lodLevel) && e._lodLevel <= soll) || (!e.instanced && soll !== undefined));\n            out.push([ort(e.position.x, e.position.z) + \":\" + kl, kl, da, fertig]);\n        }\n        // die Pflanz-Schlange: ein gepflanzter Baum ist Bedarf wie sein Eintrag (in der Mesh-Zone ein Baum, dahinter bis 384 m eine Karte)\n        for (const t of s.pendingVegSpawns || []) {\n            const q = t && t.position;\n            if (!q) continue;\n            const d = Math.hypot(q.x - p.x, q.z - p.z);\n            if (d <= KEGEL && imRing(q.x, q.z) && imLaub(q.x, q.z) && r._imErstenBlick(q.x, q.z, ding, true)) {\n                const kl = d <= R ? \"baum\" : \"karte\";\n                out.push([ort(q.x, q.z) + \":\" + kl, kl, false, false]);\n            }\n        }\n        const q = r._autoSettlementQueue;\n        if (q && q.plan && Array.isArray(q.plan.slots) && q.origin)\n            for (let i = q.idx; i < q.plan.slots.length; i++) {\n                const sl = q.plan.slots[q.reihe[i]];\n                if (!sl) continue;\n                const [hx, hz] = [q.origin.x + sl.x, q.origin.z + sl.z];\n                if (Math.hypot(hx - p.x, hz - p.z) <= R && imRing(hx, hz) && r._imErstenBlick(hx, hz, ding, true)) out.push([ort(hx, hz) + \":bau\", \"bau\", false, false]);\n            }\n        const offen = new Set();\n        for (const P of [s.pendingFoliageChunks, r._waldPflanzWarten, r._saatOffen && r._saatOffen.keys()]) if (P) for (const k of P) offen.add(k);\n        for (const [k, e] of s.voxelChunks || []) {\n            if (!e || e.empty || !e.mesh) continue;\n            const i = k.indexOf(\",\");\n            const [x, z] = [(+k.slice(0, i) + 0.5) * span, (+k.slice(i + 1) + 0.5) * span];\n            if (Math.hypot(x - p.x, z - p.z) > LAUB || !r._imErstenBlick(x, z, span * Math.SQRT1_2, true)) continue;\n            out.push([\"s:\" + k, \"wuchs\", !offen.has(k), !offen.has(k)]);\n        }\n        const [rx0, rz0] = [Math.floor(p.x / SC.regionM), Math.floor(p.z / SC.regionM)];\n        for (let dz = -SC.ringRegions; dz <= SC.ringRegions; dz++)\n            for (let dx = -SC.ringRegions; dx <= SC.ringRegions; dx++) {\n                const [rx, rz] = [rx0 + dx, rz0 + dz];\n                if (!r._streuRegionInReichweite(rx, rz, p)) continue;\n                if (!imKegel((rx + 0.5) * SC.regionM, (rz + 0.5) * SC.regionM, SC.regionM * Math.SQRT1_2, p)) continue;\n                const da = !r._streuRegionWartet(rx + \",\" + rz);\n                out.push([\"r:\" + rx + \",\" + rz, \"streu\", da, da]);\n            }\n        return out;\n    };\n    const vorher = new Set(bedarf().map((b) => b[0]));\n    const ein = new Map();\n    const je = {};\n    const takte = [];\n    let [weg, bilder] = [0, 0];\n    const t0 = performance.now();\n    for (const [name, v, sek] of [[\"sprint\", s.sprintSpeed, o.sek], [\"gt\", gt, o.sek]]) {\n        const P = (je[name] = { v: r3(v), bilder: 0, luecke: 0, je: {}, zeugen: [] });\n        if (!(v > 0)) continue;\n        const tp = performance.now();\n        let t = tp;\n        for (;;) {\n            await new Promise((ok) => setTimeout(ok, 0));\n            const jetzt = performance.now();\n            if (jetzt - tp >= sek * 1000) break;\n            weg += v * Math.min(0.1, (jetzt - t) / 1000);\n            t = jetzt;\n            const [x, z] = [W.x + u.x * weg, W.z + u.z * weg];\n            s.yaw = gier;\n            stell(x, z);\n            s.playerVel.setValue(u.x * v, 0, u.z * v);\n            const a = performance.now();\n            r._gameLoopTick(jetzt);\n            takte.push(performance.now() - a);\n            stell(x, z);\n            bilder++;\n            P.bilder++;\n            let fehlt = 0;\n            for (const [key, k, da, fertig] of bedarf()) {\n                if (!da) {\n                    fehlt++;\n                    P.je[k] = (P.je[k] || 0) + 1;\n                    if (P.zeugen.length < 6 && !P.zeugen.some((zz) => zz.startsWith(key + \" \"))) {\n                        const c = key.slice(2).split(\":\")[0].split(\",\").map(Number);\n                        const w = key[0] === \"a\" ? Math.round(Math.hypot(c[0] / 10 - x, c[1] / 10 - z)) : null;\n                        P.zeugen.push(key + \" \" + k + (w != null ? \" \" + w + \" m\" : \"\"));\n                    }\n                }\n                if (vorher.has(key)) continue;\n                const ev = ein.get(key);\n                if (!ev) ein.set(key, { k, ok: !!fertig, t: jetzt, spaet: fertig ? 0 : null });\n                else if (ev.spaet === null && fertig) ev.spaet = (jetzt - ev.t) / 1000;\n            }\n            if (fehlt) P.luecke++;\n        }\n        P.sek = r3((performance.now() - tp) / 1000);\n        P.wegM = Math.round(weg);\n    }\n    s.playerVel.setValue(0, 0, 0);\n    const eintritt = {};\n    for (const ev of ein.values()) {\n        const z = (eintritt[ev.k] = eintritt[ev.k] || { n: 0, ok: 0, spaet: [] });\n        z.n++;\n        if (ev.ok) z.ok++;\n        else z.spaet.push(ev.spaet === null ? -1 : r3(ev.spaet));\n    }\n    const lang = (x) => (x < 0 ? 1e9 : x);\n    for (const z of Object.values(eintritt)) z.spaet = z.spaet.sort((a, b) => lang(b) - lang(a)).slice(0, 6);\n    takte.sort((a, b) => a - b);\n    return {\n        von: [W.x, W.z],\n        richtung: [r3(u.x), r3(u.z)],\n        ring: r._voxelChunkConfig().ringRadius,\n        holz: s._holzProfil,\n        bilder,\n        sek: r3((performance.now() - t0) / 1000),\n        taktMs: { p50: r3(takte[takte.length >> 1]), p95: r3(takte[Math.floor(takte.length * 0.95)]) },\n        je,\n        eintritt,\n    };\n})(r, T, o, G);\n}",{"sek":60}]]
+WELTPROBE fahrt {"von":[-280.4,-1045.6],"richtung":[-0.95,0.313],"ring":4,"holz":"voll","bilder":7858,"sek":133.7,"taktMs":{"p50":6.7,"p95":14.1},"je":{"sprint":{"v":5.175,"bilder":4096,"luecke":0,"je":{},"zeugen":[],"sek":60.008,"wegM":310},"gt":{"v":15.998,"bilder":3762,"luecke":0,"je":{},"zeugen":[],"sek":60.012,"wegM":1270}},"eintritt":{"baum":{"n":708,"ok":698,"spaet":[-1,-1,0.397,0.235,0.194,0.133]},"wuchs":{"n":257,"ok":257,"spaet":[]},"boden":{"n":484,"ok":484,"spaet":[]},"karte":{"n":3529,"ok":3529,"spaet":[]},"bau":{"n":318,"ok":318,"spaet":[]},"streu":{"n":15,"ok":15,"spaet":[]}}}
+WELTPROBE-ENDE {"proben":["fahrt"],"fehler":[]}

@@ -1,0 +1,200 @@
+{
+ "a": {
+  "welt": "b285e6fa-4748-4cf1-bcf4-df55fd3587c5",
+  "slug": "wache-aue",
+  "gesetz": {
+   "schwere": -9.81,
+   "rayleighTiefe": [
+    0.044,
+    0.1,
+    0.23
+   ],
+   "wetter": {
+    "klar": "sunny",
+    "bewoelkt": "cloudy",
+    "nebel": "foggy",
+    "regen": "rainy",
+    "sturm": "stormy"
+   },
+   "hoeheRegler": null
+  },
+  "g": -9.81,
+  "sprung": {
+   "y0": 90.805,
+   "hoehe": 0.323,
+   "abdruck": 2.599,
+   "sprang": true
+  },
+  "himmel": {
+   "betaR": [
+    0.0055,
+    0.0125,
+    0.02875
+   ],
+   "blauRot": 5.2273,
+   "sonne": [
+    1,
+    0.8107,
+    0.6063
+   ]
+  },
+  "wetter": {
+   "je": {
+    "nebel>foggy": 29,
+    "regen>rainy": 55,
+    "klar>sunny": 69,
+    "sturm>stormy": 32,
+    "bewoelkt>cloudy": 55
+   },
+   "worte": {
+    "foggy": 29,
+    "rainy": 55,
+    "sunny": 69,
+    "stormy": 32,
+    "cloudy": 55
+   },
+   "gegenTafel": 0
+  },
+  "gelaende": {
+   "relief": 27.02,
+   "reliefErde": 27.02,
+   "verhaeltnis": 1,
+   "leserRegler": null
+  }
+ },
+ "tor": {
+  "ok": true,
+  "a": "b285e6fa-4748-4cf1-bcf4-df55fd3587c5",
+  "b": "550c87ef-225d-47f8-834e-ed897aa06e42",
+  "merkt": true
+ },
+ "b": {
+  "welt": "550c87ef-225d-47f8-834e-ed897aa06e42",
+  "slug": "ferne",
+  "gesetz": {
+   "schwere": -3.71,
+   "rayleighTiefe": [
+    0.13,
+    0.085,
+    0.05
+   ],
+   "wetter": {
+    "klar": "sunny",
+    "bewoelkt": "foggy",
+    "nebel": "foggy",
+    "regen": "cloudy",
+    "sturm": "stormy"
+   },
+   "hoeheRegler": 1.6
+  },
+  "g": -3.71,
+  "sprung": {
+   "y0": 180.63,
+   "hoehe": 1.54,
+   "abdruck": 3.411,
+   "sprang": true
+  },
+  "himmel": {
+   "betaR": [
+    0.01625,
+    0.01063,
+    0.00625
+   ],
+   "blauRot": 0.3846,
+   "sonne": [
+    1,
+    0.7157,
+    0.4718
+   ]
+  },
+  "wetter": {
+   "je": {
+    "sturm>stormy": 38,
+    "klar>sunny": 65,
+    "bewoelkt>foggy": 44,
+    "regen>cloudy": 57,
+    "nebel>foggy": 36
+   },
+   "worte": {
+    "stormy": 38,
+    "sunny": 65,
+    "foggy": 80,
+    "cloudy": 57
+   },
+   "gegenTafel": 0
+  },
+  "gelaende": {
+   "relief": 61.239,
+   "reliefErde": 38.746,
+   "verhaeltnis": 1.5805,
+   "leserRegler": 1.6
+  }
+ },
+ "heim": {
+  "ok": true,
+  "hier": "b285e6fa-4748-4cf1-bcf4-df55fd3587c5"
+ },
+ "a2": {
+  "welt": "b285e6fa-4748-4cf1-bcf4-df55fd3587c5",
+  "slug": "wache-aue",
+  "gesetz": {
+   "schwere": -9.81,
+   "rayleighTiefe": [
+    0.044,
+    0.1,
+    0.23
+   ],
+   "wetter": {
+    "klar": "sunny",
+    "bewoelkt": "cloudy",
+    "nebel": "foggy",
+    "regen": "rainy",
+    "sturm": "stormy"
+   },
+   "hoeheRegler": null
+  },
+  "g": -9.81,
+  "sprung": {
+   "y0": 90.805,
+   "hoehe": 0.323,
+   "abdruck": 2.599,
+   "sprang": true
+  },
+  "himmel": {
+   "betaR": [
+    0.0055,
+    0.0125,
+    0.02875
+   ],
+   "blauRot": 5.2273,
+   "sonne": [
+    1,
+    0.8107,
+    0.6063
+   ]
+  },
+  "wetter": {
+   "je": {
+    "nebel>foggy": 29,
+    "regen>rainy": 55,
+    "klar>sunny": 69,
+    "sturm>stormy": 32,
+    "bewoelkt>cloudy": 55
+   },
+   "worte": {
+    "foggy": 29,
+    "rainy": 55,
+    "sunny": 69,
+    "stormy": 32,
+    "cloudy": 55
+   },
+   "gegenTafel": 0
+  },
+  "gelaende": {
+   "relief": 27.02,
+   "reliefErde": 27.02,
+   "verhaeltnis": 1,
+   "leserRegler": null
+  }
+ }
+}
