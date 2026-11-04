@@ -1,0 +1,6 @@
+Leib-Nahbilder OMEN (GTX 1060), 2674ff9a (V18.546.179, VOR z207/w10-takt), 04.11. ~23:50
+Werkzeug und Aufbau wie zug/bilder/leib-becfdbb7/ (leib-blick.cjs --nah, wiese, third, fov 22, ~3 m), Stand 30 s.
+Befund: derselbe Bruch wie an becfdbb7 — Haut durch die Tunika an Schulter/Hals, am oberen Rücken und ein Schlitz an der Hüfte.
+Der Bruch ist also ÄLTER als der Tuch-Vorbau von w10-takt.
+Nebenbefund: bei 5 s lehnte die Abnahme alle drei Schüsse ab — „Blickziel verdeckt von vorbau:fahrzeug_gt in 2.3 m“ (der Vorbau-
+Geist des GT steht nach dem Umstellen kurz zwischen Kamera und Leib); bei 30 s frei.
