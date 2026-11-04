@@ -79,20 +79,10 @@ class AnazhRealm_bild_schatten {
     // DIE UNTERE HEMISPHÄRE DER BESTRAHLUNG (rgb, TSL) — das EINE Gesetz für die Umgebung der Stoffe (`_spiegelUmgebung`) und das
     // Licht der Welt (`_weltLicht`: Feld, Panorama, Spiegel, Wasser): der Himmel der Normale `n` plus der gezeichnete Boden
     // anstelle des Bodens der Atmosphäre, gewichtet mit dem Anteil des Halbraums unter dem Horizont, den die Fläche sieht.
-    // DIE DECKE VERDECKT IHN (`_offenerHimmel`, der Dach-Pool der Nässe): der Rückstrahl ist das Licht des Bodens unter dem
-    // offenen Himmel — eine Fläche, deren Halbraum unter einer Decke liegt (Wände, Boden und Dinge des Innenraums), trägt die
-    // Umgebung wie bisher. Gefragt wird der Ort `vorM` VOR der Fläche (`p` + n · vorM): die Innenseite einer Wand liegt auf
-    // der Kante der Decke (am Ort selbst trugen die Wand-Felder des Dorf-Hauses den Boden, die Balken davor nicht), vor ihr im
-    // Raum; die Außenseite schaut hinaus. Bis dahin nahm der Innenraum den gemessenen Boden: im Regen heller als in der Sonne
-    // (gate:naesse:echt Regenbild 1,065 > 1, GTX), und jede neue Lesung des Bodens zwischen zwei Schüssen derselben Szene
-    // zählte 8 861 Regen-Punkte innen. Ohne `p` (Spiegel-Pass, Wasser, Feld: ihre Empfänger stehen unter dem offenen Himmel)
-    // gilt er ganz.
-    _rueckstrahlHalbraum(himmel, n, p) {
+    _rueckstrahlHalbraum(himmel, n) {
         const T = THREE.TSL;
         const unten = this._rueckstrahlLeser().unten;
-        const anteil = T.float(1).sub(n.y).mul(0.5);
-        const offen = p ? this._offenerHimmel(T, p.add(n.mul(AnazhRealm.RUECKSTRAHL.vorM))) : null;
-        return T.max(himmel.add(unten.mul(offen ? anteil.mul(offen) : anteil)), T.vec3(0));
+        return T.max(himmel.add(unten.mul(T.float(1).sub(n.y).mul(0.5))), T.vec3(0));
     }
 
     _rueckstrahlPass() {
@@ -174,7 +164,10 @@ class AnazhRealm_bild_schatten {
             L.an.value = 0;
             return;
         }
-        L.an.value = L.gelesen ? 1 : 0;
+        // DIE DECKE ÜBER DEM AUGE (`_augeUnterDach`, je Takt): der Rückstrahl ist das Licht des Bodens unter dem offenen Himmel —
+        // steht das Auge unter einer Decke, ruht er. Bis dahin nahm der Innenraum des Dorf-Hauses den gemessenen Boden: im Regen
+        // heller als in der Sonne (gate:naesse:echt Regenbild 1,065 > 1, GTX), 8 861 Regen-Punkte innen
+        L.an.value = L.gelesen && !this._augeUnterDach() ? 1 : 0;
         try {
             const P = this._rueckstrahlPass();
             const cam = st.camera;
@@ -1195,16 +1188,8 @@ AnazhRealm.SCHATTEN_TAKT = Object.freeze({ nahMax: 2, fernFaktor: 3 });
 // vorigen Frame (Meter bzw. Drehung) — darüber gilt die Kamera als bewegt, die nahe Kaskade folgt jedem Frame.
 AnazhRealm.SCHATTEN_RUHE_EPS = 1e-4;
 // DER RÜCKSTRAHL DES BODENS (schatten.K4, `_rueckstrahlPass`): ein Raster `raster`² über das Bild; Boden ist, was `unterAugeM`
-// unter dem Auge und im `umkreisM` liegt und waagrecht ist (|n.y| > `normalY`); der Messwert folgt je Bild mit `folge`; die
-// Decke über einer Fläche fragt der Empfänger `vorM` vor ihr (`_rueckstrahlHalbraum`).
-AnazhRealm.RUECKSTRAHL = Object.freeze({
-    raster: 12,
-    unterAugeM: 0.5,
-    umkreisM: 16,
-    normalY: 0.7,
-    folge: 0.5,
-    vorM: 0.25,
-});
+// unter dem Auge und im `umkreisM` liegt und waagrecht ist (|n.y| > `normalY`); der Messwert folgt je Bild mit `folge`.
+AnazhRealm.RUECKSTRAHL = Object.freeze({ raster: 12, unterAugeM: 0.5, umkreisM: 16, normalY: 0.7, folge: 0.5 });
 // DER WURF DES FEUERS (schatten.K5, `_lichtWurf` · `_lichtWurfTakt`): EIN Platz des Licht-Pools wirft — die Würfel-Karte je
 // Seite `kartePx` (256: 2,3 cm je Texel in 3 m), die nahe Ebene mindestens `nahM`, sonst `kernAnteil` × der Kern der Quelle (der
 // Leib der Flamme wirft nicht); den Bias schreibt das Gesetz der Kaskade (`_schattenBias`, die Texel-Kante an der Reichweite);

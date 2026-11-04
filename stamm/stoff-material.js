@@ -1893,6 +1893,25 @@ class AnazhRealm_stoff_material {
         return T.select(drin, T.float(1).sub(unter), T.float(1));
     }
 
+    // DIE DECKE ÜBER DEM AUGE (je Takt, einmal auf der CPU — Lehre 14): dieselbe Regel wie `_offenerHimmel`, am Ort des Auges aus
+    // den Werten des Dach-Pools (EIN Schreiber `_dachTakt`). Leser: der Rückstrahl (`_rueckstrahlZeichne`) — steht das Auge
+    // unter einer Decke, trägt keine Umgebung den Boden des offenen Himmels. Bis dahin fragte jedes Fragment des Boden-Stoffs
+    // den Pool ein zweites Mal (8 Plätze ausgeschrieben): die Prüfbühne S0 zählte 101 063 Zeichen WGSL > 100 000.
+    _augeUnterDach() {
+        const st = this.state;
+        const U = st.atmoUniforms;
+        const e = st.camera && st.camera.matrixWorld.elements;
+        if (!e || !U || !U.dachLage) return false;
+        const [x, y, z] = [e[12], e[13], e[14]];
+        const H = U.dachHuelle.value;
+        if (x < H.x || x > H.z || z < H.y || z > H.w || y > U.dachOben.value) return false;
+        return U.dachLage.some((L, i) => {
+            const [l, m] = [L.value, U.dachMass[i].value];
+            const [dx, dz] = [x - l.x, z - l.y];
+            return Math.abs(dx * l.z - dz * l.w) <= m.x && Math.abs(dx * l.w + dz * l.z) <= m.y && y <= m.z;
+        });
+    }
+
     // DER DACH-POOL (EIN Schreiber, aus `_naesseTakt`): die Decken der `NAESSE.dachPlaetze` Bauten, die dem Auge am nächsten
     // stehen (im `dachUmkreisM`), neu gewählt nach `dachSchrittM` Weg des Auges, einem neuen Stand der Grundrisse oder einer
     // neuen Decke (`_dachKastenSetzen`). Die Decke eines Hauses: die höchste Box seiner festen Hülle, deren Fläche mindestens

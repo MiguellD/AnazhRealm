@@ -667,7 +667,7 @@ class AnazhRealm_bild_sicht {
         // selbst empfängt nichts von sich, die senkrechte Wand die Hälfte, die Unterseite alles. DIE BESTRAHLUNG ERKANNT: r184
         // reicht ihre Stufe als Variable über der Konstanten 1 (`float(1)` in einer VarNode, gelesen am Vendor 03.11.) — bis
         // dahin fragte der Zweig nur `isConstNode`, nahm nie, und jede Bestrahlung las den Spiegel mit dem Gewicht 0 (eine Abtastung je Fragment für nichts).
-        const halbraum = (n) => this._rueckstrahlHalbraum(himmel, n, T.positionWorld);
+        const halbraum = (n) => this._rueckstrahlHalbraum(himmel, n);
         const konstant = (n) => !!n && (n.isConstNode === true || (n.isVarNode === true && konstant(n.node)));
         class SpiegelUmgebung extends N {
             constructor() {
