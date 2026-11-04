@@ -139,7 +139,7 @@
     "Ziel-Zensus (echter Renderer — jedes GPU-Ziel hat einen Leser, die Schatten-Karte zeichnet ohne Farbe)": {"s": 228, "n": 7, "gruppe": "voll 17"},
     "Verdeckungs-Abfrage (echter Renderer — der Aussteige-Ablauf am Bach, jede WebGPU-Validierung beim Namen)": {"s": 242, "n": 7, "gruppe": "voll 18"},
     "Wasser-Bild (echter Renderer — das Wasser-Material und der Regen)": {"s": 48, "n": 7, "gruppe": "voll 17"},
-    "Look-Golden-Linse (Selbst-Test der perzeptuellen MSSIM-Metrik)": {"s": 1, "n": 7, "gruppe": "voll 5"},
+    "Studio-Blick (Selbsttest — ein uniformes Bild ist ein blinder Blick)": {"s": 1, "n": 7, "gruppe": "voll 5"},
     "Fern-Ring auf der Karte (jenseits des Streaming-Rings zeichnet das EINE Höhen-Gesetz)": {"s": 87, "n": 7, "gruppe": "echt", "p90": 175, "max": 175},
     "Schatten-Bias auf der Karte (das Gesetz der Kaskade)": {"s": 2, "n": 7, "gruppe": "echt", "p90": 8, "max": 8},
     "Ziel-Zensus auf der Karte (jedes GPU-Ziel hat einen Leser, die Schatten-Karte zeichnet ohne Farbe)": {"s": 33, "n": 7, "gruppe": "echt", "p90": 92, "max": 92},
