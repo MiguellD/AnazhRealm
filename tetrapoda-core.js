@@ -2738,6 +2738,8 @@
     // Zellen seiner `nachbarn` längs des Kamms (der Punkt ± k Zellen auf dem Kamm): ihre Locke reicht herüber, die Strähne
     // läuft über drei Zellen, flächentreu um `strich` 9 gestreckt (3× längs, ⅓ quer) — Modell 0,501 → 0,613 (×1,22; dasselbe
     // Modell las rund → Strich 4 ×1,53 wie die Radeon 0,28 → 0,43: erwartet 0,425 → ~0,52, das Band [0,4358; 0,6538]).
+    // Strich 9 → 14 (w10-figur, Luft über dem Band): GTX 8955553c arm 0,4369 knapp über 0,4358, third 0,5214; das Modell 0,6145 →
+    // 0,6394 (×1,04, Deckung gleich: Luma 102,8 → 102,6), erwartet GTX arm ~0,455, third ~0,54.
     var FELL_SCHALE = Object.freeze({
         wurzel: 0.55,
         spitze: 1.1,
@@ -2751,7 +2753,7 @@
         endeSpanne: 0.45,
         wolle: 0.34,
         wolleAb: 0.05,
-        strich: 9,
+        strich: 14,
         nachbarn: 1,
     });
     // DIE LOCKE ALS FUNKTION (w10-figur): die Referenz der Schale, die beide Stoffe zeichnen (stamm/studio-stoff.js fellSchale,
