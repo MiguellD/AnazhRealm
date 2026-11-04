@@ -1614,3 +1614,6 @@
 2026-11-04 17:57:13 omen-gtx-w10-lod-4ca2059d lod.K2#1 ROT 5 · 4/4
 2026-11-04 17:57:14 omen-gtx-w10-lod-4ca2059d lod.K5#1 ROT 5 · 8/4
 2026-11-04 18:07:22 omen-gtx-w10-wiese-0d88e8d2 START 2 Proben (vegetation.K1#1,vegetation.K2#1, GTX am Zweig-Kopf)
+2026-11-04 18:12:26 omen-gtx-w10-wiese-0d88e8d2 vegetation.K1#1 ROT 5 · 1/2
+2026-11-04 18:12:26 omen-gtx-w10-wiese-0d88e8d2 vegetation.K2#1 GRÜN 5 · 2/2
+2026-11-04 18:12:33 omen-gtx-w10-figur-8955553c START 3 Proben (haar.K1#1,haar.K2#1,mensch.K4#1, GTX am Zweig-Kopf)
