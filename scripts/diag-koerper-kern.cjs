@@ -113,11 +113,13 @@ function snapshot(parts) {
 // ────────────────────────────────────────────────────────────────────────────
 // Der Vergleich (EXAKT — Object.is; 0 Abweichungen sind das Gesetz).
 // ────────────────────────────────────────────────────────────────────────────
-function runVergleich(morphFn, labPropFn, labLandmarksFn) {
+// `stumm` (der Selbsttest): die injizierten Abweichungen zählen, ohne „⛔“ zu drucken — w10-figur: der Puls von dc82a268 las
+// die erste „⛔“-Zeile des Logs, die Mutante des Selbsttests (Wert[401] +1e-9), als Bruch eines Byte-Vertrags
+function runVergleich(morphFn, labPropFn, labLandmarksFn, stumm) {
     const dials = ["height", "mass", "tone", "age", "gender", "arms"].map((id) => core.PARAMS_BY_KIND.koerper.find((d) => d.id === id));
 
     let diffs = 0, values = 0, points = 0;
-    const vgl = (a, n, z) => (values++, !Object.is(a, n) && ++diffs < 5 && console.log(`  ⛔ ${z}: alt=${a} neu=${n}`));
+    const vgl = (a, n, z) => (values++, !Object.is(a, n) && ++diffs < 5 && !stumm && console.log(`  ⛔ ${z}: alt=${a} neu=${n}`));
 
     // (1) Proportionen — 28 Konstanten, alt vs neu.
     const ap = altProportionen(), np = labPropFn();
@@ -238,9 +240,9 @@ if (selftest) {
     const morphMut = (p, N) => { neuMorph(p, N); N.parts.quad1.scale.x += 1e-9; };
     const propMut = () => { const o = core.labProportionen(); o.acromionY += 1e-9; return o; };
     const lmMut = (m) => { const o = core.labLandmarks(m); o.wristFrac += 1e-9; return o; };
-    const t1 = runVergleich(morphMut, core.labProportionen, core.labLandmarks);
-    const t2 = runVergleich(neuMorph, propMut, core.labLandmarks);
-    const t3 = runVergleich(neuMorph, core.labProportionen, lmMut);
+    const t1 = runVergleich(morphMut, core.labProportionen, core.labLandmarks, true);
+    const t2 = runVergleich(neuMorph, propMut, core.labLandmarks, true);
+    const t3 = runVergleich(neuMorph, core.labProportionen, lmMut, true);
     // die Wache ohne Versatz (der Täter) fällt ROT, das Gesetz hält
     const w = wacheLeer(core.tagesPlan, "waechter");
     // der Stoß im Gang: jeder Täter fällt ROT beim Namen, das Gesetz hält
