@@ -412,24 +412,26 @@ class AnazhRealm_koerper_leib {
         return fern;
     }
 
-    // Das Tuch einer Vorlage (beide Stufen) über die Haut beider Stufen: die Ruhe-Lage des Tuchs ist frei von der Haut (die Achsel,
-    // die Hand an der Hüfte, der Versatz der Stufen) — und damit das Ziel jedes Takts (`_tuchTakt`). Meter je Einheit der Bindung:
+    // Das Tuch einer Vorlage über die Haut: JEDE STUFE ÜBER IHRER HAUT (die feine zeichnet nah, die grobe fern — keine zeichnet
+    // über der Haut der anderen): die Ruhe-Lage des Tuchs ist frei von der Haut (die Achsel, die Hand an der Hüfte, der Kragen) —
+    // und damit das Ziel jedes Takts (`_tuchTakt`). Bis w11-koerper prüfte jede Stufe gegen die Haut beider: am Hals lag die grobe
+    // Haut innen, die feine außen, und der Kragen der feinen blieb 22–24 mm in ihrem Hals stecken. Meter je Einheit der Bindung:
     // der Maßstab des Leibs (koerper `leibMassstab`).
     _tuchVorlageDrapieren(...stufen) {
-        const tuch = [];
-        const haut = [];
-        for (const w of stufen)
+        const KC = globalThis.__koerperCore;
+        for (const w of stufen) {
+            const tuch = [];
+            const haut = [];
             w.traverse((n) => {
                 if (!n.isSkinnedMesh) return;
                 if (n.userData.__seh === "stoff") tuch.push(n);
                 else if (n.userData.__seh === "haut" && n.userData.__klasse === "haut") haut.push(n);
             });
-        if (!tuch.length || !haut.length || tuch[0].geometry.userData.__tuchDrapiert) return;
-        const KC = globalThis.__koerperCore;
-        stufen.forEach((w) => w.updateMatrixWorld(true));
-        if (KC.tuchDrapieren(tuch, haut, KC.leibMassstab()) > 0)
-            for (const m of tuch) m.geometry.computeVertexNormals();
-        for (const m of tuch) m.geometry.userData.__tuchDrapiert = true;
+            if (!tuch.length || !haut.length || tuch[0].geometry.userData.__tuchDrapiert) continue;
+            w.updateMatrixWorld(true);
+            if (KC.tuchDrapieren(tuch, haut, KC.leibMassstab()) > 0) for (const m of tuch) m.geometry.computeVertexNormals();
+            for (const m of tuch) m.geometry.userData.__tuchDrapiert = true;
+        }
     }
 
     // DIE RUHE der Gelenk-Gestalt (S3): die Grobstufe hängt an den Knochen der feinen — wo der Gang ruht, stünde sie sonst
