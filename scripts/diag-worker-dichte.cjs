@@ -1138,7 +1138,8 @@ async function studioProbe(page) {
             const G = window.__gelaendeCore;
             const snap = r._weltAusPlan({ art: G.PLAN_ART, v: G.PLAN_VERSION, saat: "studio-probe-fremd", regler: {} });
             snap.terrainBaseHeight = 7;
-            snap.worldMeta.erbgut.terme.push({
+            // das Erbgut ist das Gelände des Welt-Gesetzes (ultiversum.K1)
+            snap.worldMeta.gesetz.gelaende.terme.push({
                 art: "rampe",
                 x: 60,
                 z: -40,
@@ -1326,7 +1327,7 @@ async function studioProbe(page) {
             const p = st.pendingImport;
             const ok = !!(p && p.parsed && p.parsed.worldMeta);
             r._weltTorImportReplace();
-            return { ok, erbgut: ok ? p.parsed.worldMeta.erbgut : null };
+            return { ok }; // das Erbgut der Tür las niemand (die Welt misst `weltMessen`)
         }, studio.text);
         if (!tor.ok) {
             befunde.push("die Welt-Tür liest den Plan nicht (das Welt-Tor macht aus ihm keine Welt)");

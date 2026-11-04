@@ -2040,9 +2040,10 @@ class AnazhRealm_bild_sicht {
         );
         const fern4 = U.invVP.mul(TSL.vec4(ndcNode, 1.0, 1.0));
         const dirN = fern4.xyz.div(fern4.w).sub(U.camPos).normalize();
+        const punktVon = (t) => U.camPos.add(dirN.mul(t));
         const imDunst = (ruf) => {
             const t = ruf.a;
-            const punkt = U.camPos.add(dirN.mul(t));
+            const punkt = punktVon(t);
             return TSL.Fn(() => {
                 TSL.Discard(t.lessThan(0.25)); // 0-Sentinel: kein Treffer bzw. Himmel
                 return TSL.vec4(luft.mische(ruf.rgb, U.camPos, punkt), 1.0);
@@ -2082,8 +2083,11 @@ class AnazhRealm_bild_sicht {
             liste: TSL.texture(wm.liste),
             kapseln: TSL.texture(wm.kapseln),
         });
-        // DAS LICHT DER WELT am Treffer (`_weltLicht`, die Normale des Felds), ohne Ton-Klemme: die Belichtung macht die Ausgabe-Kette
-        matMarch.outputNode = imDunst(TSL.vec4(feldAlbedo(rufMarch).mul(WL.at(feldNormale(rufMarch))), rufMarch.a));
+        // DAS LICHT DER WELT am Treffer (`_weltLicht`, die Normale des Felds, die Sonnen-Sicht am Treffer-Punkt), ohne Ton-Klemme:
+        // die Belichtung macht die Ausgabe-Kette
+        matMarch.outputNode = imDunst(
+            TSL.vec4(feldAlbedo(rufMarch).mul(WL.at(feldNormale(rufMarch), punktVon(rufMarch.a))), rufMarch.a)
+        );
         // Die March-Tiefe IST die Fragment-Tiefe (Feld ↔ Mesh komponieren): View-Z aus der Strahl-Länge.
         const vzStrahl = rufMarch.a.mul(TSL.max(TSL.dot(dirN, U.fwd), 1e-4));
         matMarch.depthNode = TSL.clamp(
@@ -2123,7 +2127,7 @@ class AnazhRealm_bild_sicht {
             elevMax: U.elevMax,
             pano: TSL.texture(panoTex),
         });
-        mat.outputNode = imDunst(TSL.vec4(pano.rgb.mul(WL.at(TSL.vec3(0.0, 1.0, 0.0))), pano.a));
+        mat.outputNode = imDunst(TSL.vec4(pano.rgb.mul(WL.at(TSL.vec3(0.0, 1.0, 0.0), punktVon(pano.a))), pano.a));
         const geo = new THREE.BufferGeometry();
         geo.setAttribute(
             "position",
@@ -2519,17 +2523,21 @@ class AnazhRealm_bild_sicht {
         const sonde = TSL.texture(himmel.texture);
         // die Sonde liest die Umgebung je Einheit des Lichts — das Licht jetzt wie jeder Stoff (`_umgebungLicht`)
         const licht = this._umgebungLicht();
-        const fn = TSL.Fn(([n]) => {
-            const direkt = U.l0c.mul(TSL.max(TSL.dot(n, U.l0d), 0.0));
-            const hemi = TSL.mix(U.hemiUnten, U.hemiOben, n.y.mul(0.5).add(0.5));
-            const umgebung = sonde.sample(TSL.equirectUV(n)).level(0).rgb.mul(U.ei).mul(licht);
-            return direkt
+        // `sicht` (optional): die Sonnen-Sicht am Punkt des Lesers (`_sonnenSicht`: Horizont des Gesetzes × Wurf der Wolke) auf
+        // dem direkten Licht — wie jeder Empfänger der Kaskaden; Feld und Panorama reichen ihren Treffer (`at(n, p)`).
+        const baue = (sicht) => {
+            const direkt = U.l0c.mul(TSL.max(TSL.dot(sicht.n, U.l0d), 0.0));
+            const hemi = TSL.mix(U.hemiUnten, U.hemiOben, sicht.n.y.mul(0.5).add(0.5));
+            const umgebung = sonde.sample(TSL.equirectUV(sicht.n)).level(0).rgb.mul(U.ei).mul(licht);
+            return (sicht.s ? direkt.mul(sicht.s) : direkt)
                 .add(U.ambientFarbe)
                 .add(hemi)
                 .mul(1 / Math.PI)
                 .add(umgebung);
-        });
-        st.weltLicht = { U, himmel, stand: 0, at: (n) => fn(n) };
+        };
+        const fn = TSL.Fn(([n]) => baue({ n }));
+        const fnOrt = TSL.Fn(([n, s]) => baue({ n, s }));
+        st.weltLicht = { U, himmel, stand: 0, at: (n, p) => (p ? fnOrt(n, this._sonnenSicht(p)) : fn(n)) };
         this._weltLichtTakt();
         return st.weltLicht;
     }
@@ -2587,6 +2595,10 @@ class AnazhRealm_bild_sicht {
         );
         const sc = st.scene;
         U.ei.value = sc && Number.isFinite(sc.environmentIntensity) ? sc.environmentIntensity : 1;
+        // die Horizont-Karte und die Karte des Wolken-Wurfs an das Licht und die Uhr DIESES Bilds (die Sonnen-Sicht jedes
+        // Empfängers liest sie)
+        this._horizontKarteTakt();
+        this._wolkenKarteTakt();
     }
 
     // DIE HIMMELS-IRRADIANZ auf der CPU (E/π) für zwei Normalen (oben · waagrecht) aus der Umgebung der EINEN Atmosphäre, wie die
@@ -2729,7 +2741,7 @@ class AnazhRealm_bild_sicht {
         this._fernMemoGen = (this._fernMemoGen | 0) + 1; // die Fern-Farben gehören der Welt, die den Ring trug (das Gedächtnis des Fern-Fadens)
         const fr = this.state.fernRing;
         if (!fr) return;
-        this._horizontKarteLeeren(); // die Zeichen-Meshes der Horizont-Karte lesen die Geometrien des Rings — sie fallen zuerst
+        this._horizontKarteLeeren(); // das Gitter der Horizont-Karte gehört der Welt, die den Ring trug
         // je gezeichnetes Mesh seine Geometrie (Schale 1, Schale 2, die zwei Teile der Schale 0) und sein Stoff (die zwei
         // Stoffe, frei und Naht, geteilt — ein zweites dispose ist ohne Hörer leer)
         for (const m of fr.meshes || []) {

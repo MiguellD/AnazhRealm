@@ -1803,8 +1803,13 @@ async function checkBandPhiArchipelV2({ page, check }) {
         out.pinnedMap = st.p2p && st.p2p.pinnedWorlds instanceof Map;
         const startPinned = st.p2p.pinnedWorlds.size;
 
+        // (Q15c) die Mutante der Waage: jede Art des Buchs reist wieder (`_bauplanAusBuch` aus) — der Pin danach überschreibt sie
+        r._bauplanAusBuch = () => false;
+        out.mutante = r.pinCurrentWorld({ silent: true });
+        delete r._bauplanAusBuch;
         // (Q15) pinCurrentWorld pinnt + hash + bytes — und schreibt persistiert.
         const pinRes = r.pinCurrentWorld({ silent: true });
+        out.pin = [pinRes, AR.PIN_WAND];
         out.pinOk = !!(pinRes && pinRes.ok && pinRes.worldId && pinRes.hash && pinRes.bytes > 0);
         out.pinInMap = st.p2p.pinnedWorlds.has(pinRes.worldId);
         const lsManifest = localStorage.getItem("anazh.pinnedManifest");
@@ -1910,6 +1915,14 @@ async function checkBandPhiArchipelV2({ page, check }) {
     check(
         "Φ5 (Q14+Q15): pinnedWorlds-Map existiert + pinCurrentWorld erzeugt hash/bytes/persistiert (Manifest UND Snapshot)",
         res.pinnedMap && res.pinOk && res.pinInMap && res.pinPersisted && res.pinSnapshotPersisted
+    );
+    // (Q15b) DIE WAAGE: der Stand der Playtest-Welt hält 30 % Luft unter der Pin-Wand und nennt seinen größten Schlüssel
+    const [pin, wand] = res.pin;
+    const waage = (p) => `${p.bytes} von ${wand} B, größter Schlüssel ${p.groesster}`;
+    check(`Φ5 (Q15b): der Stand hält 30 % Luft — ${waage(pin)}`, pin.bytes <= 0.7 * wand);
+    check(
+        `Φ5 (Q15c): die Mutante (jede Art des Buchs reist) reißt sie beim Namen — ${waage(res.mutante)}`,
+        res.mutante.bytes > 0.7 * wand && res.mutante.groesster[0] === "blueprints"
     );
     check(
         "Φ5 (Q16): listPinnedWorlds liefert das volle Eintragsschema (worldId · hash · bytes)",

@@ -253,9 +253,6 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
     const w7Results = await safeEvaluate(page, () => {
         const out = {};
         const p2p = st.p2p;
-        const leer = () => {
-            for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
-        };
 
         out.w7StateFields =
             p2p.rtcPeers instanceof Map &&
@@ -266,7 +263,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
         // sauberer Ausgangszustand
         p2p.peerId = "self-test";
         p2p.ws = null;
-        leer();
+        __peersWeg();
         p2p.rtcPeers.clear();
 
         // Mesh ist NICHT bereit ohne Peers.
@@ -305,7 +302,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
 
         // Kanal-Empfang: die peerId wird aus der Kanal-Identität
         // gestempelt — anti-spoof.
-        leer();
+        __peersWeg();
         r._p2pHandleChannelMessage(
             "realPeer",
             JSON.stringify({ type: "pos", peerId: "SPOOFED", x: 7, y: 8, z: 9, yaw: 0 })
@@ -320,7 +317,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
 
         // p2pSend-Transport: bei komplettem Mesh geht der Broadcast
         // über den DataChannel, nicht über den WS.
-        leer();
+        __peersWeg();
         p2p.rtcPeers.clear();
         r._p2pEnsurePeerEntry("meshPeer");
         let channelPayload = null;
@@ -372,7 +369,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
         p2p.connected = true;
         p2p.lastError = null;
         p2p.room = "ui-test-room";
-        leer();
+        __peersWeg();
         r._p2pEnsurePeerEntry("uiPeer");
         p2p.meshActive = true;
         r.p2pUpdateStatus();
@@ -383,7 +380,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
         out.uiShowsRelay = !!statusEl && /Server-Relay/.test(statusEl.textContent);
 
         // Cleanup
-        leer();
+        __peersWeg();
         p2p.rtcPeers.clear();
         p2p.enabled = false;
         p2p.connected = false;
@@ -425,9 +422,6 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
     const w7p2Results = await safeEvaluate(page, () => {
         const out = {};
         const p2p = st.p2p;
-        const leer = () => {
-            for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
-        };
 
         out.w7p2StateFields =
             p2p.worldXfers instanceof Map &&
@@ -455,7 +449,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
 
         // soul-Empfang speichert worldRole am Peer-Eintrag.
         p2p.peerId = "self-test";
-        leer();
+        __peersWeg();
         r.p2pHandleMessage(JSON.stringify({ type: "soul", peerId: "hostPeer", soulName: "human", worldRole: "host" }));
         const hp = p2p.peers.get("hostPeer");
         out.soulStoresWorldRole = !!hp && hp.worldRole === "host";
@@ -522,7 +516,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
         r._p2pApplyWorldSnapshot = origApply;
 
         // Resync-Fehlerpfade: kein Mesh → no_mesh.
-        leer();
+        __peersWeg();
         p2p.rtcPeers.clear();
         const noMesh = r._p2pRequestWorldResync();
         out.resyncNoMesh = noMesh.ok === false && noMesh.reason === "no_mesh";
@@ -574,7 +568,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
         out.resyncButtonExists = !!document.getElementById("p2p-resync");
 
         // Cleanup
-        leer();
+        __peersWeg();
         p2p.rtcPeers.clear();
         p2p.worldXfers.clear();
         p2p.pendingWorldSnapshot = false;
@@ -739,36 +733,14 @@ async function checkBandW16Distribution({ page, check }) {
         p2p.pendingBundlePull = { peerId: "w16peer", worldId: "mesh-rx-w16" };
         p2p.bundleXfers.clear();
         const bxid = "bx-test-1";
-        r._p2pHandleWorldBundleChunk("w16peer", {
-            type: "world-bundle-chunk",
-            xferId: bxid,
-            seq: 0,
-            total: 3,
-            data: pa,
-        });
+        const stueck = (xferId, seq, total, data) =>
+            r._p2pHandleWorldBundleChunk("w16peer", { type: "world-bundle-chunk", xferId, seq, total, data });
+        stueck(bxid, 0, 3, pa);
         out.chunkIncompleteAfterOne = p2p.bundleXfers.has(bxid) && vendored === null;
-        r._p2pHandleWorldBundleChunk("w16peer", {
-            type: "world-bundle-chunk",
-            xferId: bxid,
-            seq: 2,
-            total: 3,
-            data: pc,
-        });
-        r._p2pHandleWorldBundleChunk("w16peer", {
-            type: "world-bundle-chunk",
-            xferId: bxid,
-            seq: 0,
-            total: 3,
-            data: pa,
-        });
+        stueck(bxid, 2, 3, pc);
+        stueck(bxid, 0, 3, pa);
         out.chunkDuplicateIgnored = p2p.bundleXfers.get(bxid).received === 2;
-        r._p2pHandleWorldBundleChunk("w16peer", {
-            type: "world-bundle-chunk",
-            xferId: bxid,
-            seq: 1,
-            total: 3,
-            data: pb,
-        });
+        stueck(bxid, 1, 3, pb);
         out.chunkReassemblyVendors =
             vendored !== null &&
             vendored.worldId === "mesh-rx-w16" &&
@@ -791,13 +763,7 @@ async function checkBandW16Distribution({ page, check }) {
         // Annahme-Wand: ein Stück ohne laufenden Pull wird verworfen.
         p2p.pendingBundlePull = null;
         p2p.bundleXfers.clear();
-        r._p2pHandleWorldBundleChunk("w16peer", {
-            type: "world-bundle-chunk",
-            xferId: "bx-nopend",
-            seq: 0,
-            total: 1,
-            data: "{}",
-        });
+        stueck("bx-nopend", 0, 1, "{}");
         out.chunkRejectsWhenNotPending = !p2p.bundleXfers.has("bx-nopend");
 
         // Eine falsche worldId im Bündel wird verworfen (ein Peer
@@ -806,13 +772,7 @@ async function checkBandW16Distribution({ page, check }) {
         p2p.pendingBundlePull = { peerId: "w16peer", worldId: "asked-w16" };
         p2p.bundleXfers.clear();
         const wrongPayload = JSON.stringify({ worldId: "smuggled-w16", files: [] });
-        r._p2pHandleWorldBundleChunk("w16peer", {
-            type: "world-bundle-chunk",
-            xferId: "bx-wrong",
-            seq: 0,
-            total: 1,
-            data: wrongPayload,
-        });
+        stueck("bx-wrong", 0, 1, wrongPayload);
         out.chunkRejectsWrongWorldId = vendored === null;
         r.vendorWorldBundle = origVendor;
 
@@ -1208,9 +1168,6 @@ async function checkBandLateMultiUser({ page, check }) {
     const w7p3Results = await safeEvaluate(page, async () => {
         const out = {};
         const p2p = st.p2p;
-        const leer = () => {
-            for (const pid of Array.from(p2p.peers.keys())) r._p2pRemovePeer(pid);
-        };
         const K = AnazhRealm;
 
         out.stateFields =
@@ -1242,7 +1199,7 @@ async function checkBandLateMultiUser({ page, check }) {
         p2p.voiceShared = false;
 
         p2p.peerId = "self-w7p3";
-        leer();
+        __peersWeg();
         r.p2pHandleMessage(JSON.stringify({ type: "soul", peerId: "voicePeer", soulName: "human", voiceShared: true }));
         const vp = p2p.peers.get("voicePeer");
         out.soulStoresVoiceShared = !!vp && vp.voiceShared === true;
@@ -1318,7 +1275,7 @@ async function checkBandLateMultiUser({ page, check }) {
         r.dslRun(["weather", weatherBefore || "sunny"], { source: "test" });
 
         // _p2pRequestSharedVoice ohne Voice-Peer → no_voice.
-        leer();
+        __peersWeg();
         p2p.rtcPeers.clear();
         const noVoice = r._p2pRequestSharedVoice("frage", null);
         out.requestNoVoice = noVoice.ok === false && noVoice.reason === "no_voice";
@@ -1337,7 +1294,7 @@ async function checkBandLateMultiUser({ page, check }) {
         out.voiceButtonExists = !!document.getElementById("p2p-voice-share");
 
         // Cleanup
-        leer();
+        __peersWeg();
         p2p.rtcPeers.clear();
         p2p._voiceRequests.clear();
         p2p._voiceServedAt.clear();
@@ -1904,7 +1861,7 @@ async function checkBandLateMultiUser({ page, check }) {
                 terme: [{ art: "insel", x: 0, z: 0, r: 420, plateau: 9, kuppel: 0.003, schelf: 60, grund: -15 }],
             };
             const echt = st.worldMeta;
-            st.worldMeta = Object.assign({}, echt, { erbgut: buehne });
+            st.worldMeta = Object.assign({}, echt, { gesetz: { gelaende: buehne } }); // das Erbgut im Welt-Gesetz (sonst die Erde)
             sentMsgs.length = 0;
             try {
                 r.p2pHandleMessage(JSON.stringify({ type: "world-request", peerId: "alt-build" }));

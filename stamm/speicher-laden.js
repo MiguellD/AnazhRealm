@@ -123,7 +123,13 @@ class AnazhRealm_speicher_laden {
         for (const k of ["blueprints", "materials", "tools"]) {
             const live = new Map((jetzt[k] || []).map((e) => [e.name, J(e)]));
             const soll = new Set((S[k] || []).map((e) => e && e.name));
-            for (const n of live.keys()) if (!soll.has(n)) delete this.state[k][n];
+            // eine Art des Buchs, die der Grund als Geburt trug (`_bauplaeneDesStands`), kehrt zu ihr zurück, statt zu fallen
+            for (const n of live.keys())
+                if (!soll.has(n)) {
+                    const geburt = k === "blueprints" && this._bauplanGeburt(this.state.blueprints[n]);
+                    if (geburt) this.state.blueprints[n] = geburt;
+                    else delete this.state[k][n];
+                }
             S[k] = (S[k] || []).filter((e) => !e || live.get(e.name) !== J(e));
         }
         this._ladeOrt = { weltGleich: J({ ...S.worldMeta, voxelEdits: null }) === J({ ...wm, voxelEdits: null }) };
@@ -375,8 +381,19 @@ class AnazhRealm_speicher_laden {
             const restored = {};
             for (const key of Object.keys(state.customSouls)) {
                 const entry = state.customSouls[key];
-                if (!entry || !Array.isArray(entry.bodyParts)) continue;
                 if (this.playerSoulDefs[key]) continue; // Built-in geschützt
+                // die Seele eines Built-in-Bauplans schreibt das Laden aus dem Gesetz ab (`_seelenGesetz`), wie die Verkörperung
+                const gesetz = this._seelenGesetz(key);
+                if (gesetz) {
+                    restored[key] = {
+                        name: key,
+                        label: gesetz.label || key.slice(3),
+                        bodyParts: JSON.parse(JSON.stringify(gesetz.parts)),
+                        createdAt: 0,
+                    };
+                    continue;
+                }
+                if (!entry || !Array.isArray(entry.bodyParts)) continue;
                 const valid = this.validateBlueprintParts(entry.bodyParts);
                 if (!valid.ok) continue;
                 restored[key] = {
@@ -916,6 +933,10 @@ class AnazhRealm_speicher_laden {
     // Welt-Regeln wiederherstellen: jede FRISCH registriert (born=jetzt, fires=0, _sig neu), das
     // ttl-Fenster einer Nexus-Regel startet neu. Dedup über die Signatur (wie _registerWorldRule) + Cap.
     // Mutiert `state.worldRules` feldweise (kein Wholesale-Replace); ohne Feld bleibt das leere [].
+    // DIE SPERRLISTE GILT AUCH HIER (ultiversum.K2 Staffel 2): ein Stand ist fremde Bytes — eine Fusion, ein Welt-Bündel, ein alter
+    // Platz —, und eine Regel, deren Wirkung den frozen Worldgen pflügt (`RULE_FORBIDDEN_EFFECT_OPS`), fällt am Eingang wie an der
+    // Registrierung (`_isRuleEffectAllowed`), laut beim Namen. Bis w5-s2-g5 übergingen Laden und Fusion die Liste: B's Pflug-Regel
+    // feuerte in der fusionierten Welt (30 s Takt: carveVoxel 30, terrainSteepness 30, 30 Akten).
     _loadStateRestoreWorldRules(state) {
         if (!Array.isArray(state.worldRules)) return;
         const cfg = AnazhRealm.WORLD_RULES;
@@ -930,6 +951,13 @@ class AnazhRealm_speicher_laden {
                 s.effect.length === 0
             )
                 continue;
+            if (!this._isRuleEffectAllowed(s.effect)) {
+                this.log(
+                    `Welt-Regel verworfen: ihre Wirkung ${JSON.stringify(s.effect).slice(0, 80)} schreibt den frozen Worldgen`,
+                    "WARN"
+                );
+                continue;
+            }
             if (restored.length >= cfg.cap) break;
             const source = typeof s.source === "string" ? s.source : "unknown";
             const everySec = this.dslClamp(s.everySec, cfg.minEverySec, 600) || cfg.defaultEverySec;
@@ -1010,6 +1038,7 @@ class AnazhRealm_speicher_laden {
             const j = state.worldJournal;
             if (Array.isArray(j.entries)) {
                 this.state.worldJournal.entries = j.entries
+                    .map((e) => (e && typeof e.ki === "string" ? { ...e, text: AnazhRealm._ohneIsolation(e.ki) } : e))
                     .filter((e) => e && typeof e.text === "string")
                     .slice(-this.state.worldJournal.entryCap);
             }
@@ -1666,8 +1695,8 @@ class AnazhRealm_speicher_laden {
         if (!snap.worldJournal.seen || typeof snap.worldJournal.seen !== "object") {
             snap.worldJournal.seen = {};
         }
-        text = String(text).replace(/[⁦-⁩]/g, ""); // der Spieler liest rein, `d: 0` macht ihn Datum
-        const eintrag = { id: snap.worldJournal.entries.length + 1, at: Date.now(), tick: 0, type: "witness", text };
+        text = AnazhRealm._ohneIsolation(text); // der Spieler liest rein, `d: 0` macht ihn Datum
+        const eintrag = { id: snap.worldJournal.entries.length + 1, at: Date.now(), type: "witness", text };
         if (ctx) eintrag.ctx = ctx;
         snap.worldJournal.entries.push(eintrag);
     }
@@ -1688,7 +1717,7 @@ class AnazhRealm_speicher_laden {
         // der Varianten-Pool wächst je Art aus dieser Saat (`_variantSeedsFor`, K24) — die Meta trägt ihn leer
         meta.seed = plan.saat;
         const snap = this._buildEmptyWorldSnapshot(meta, false);
-        snap.worldMeta.erbgut = G.planErbgut(plan);
+        snap.worldMeta.gesetz = { gelaende: G.planErbgut(plan) }; // das Gelände ihres Gesetzes (`_weltGesetz`, sonst die Erde)
         snap.worldMeta.voxelTerrain = true;
         return snap;
     }
@@ -2255,7 +2284,8 @@ class AnazhRealm_speicher_laden {
     }
 
     // Regel-Sätze vereinigen: Union + Dedup über die Signatur Quelle|cond|effect (wie _registerWorldRule),
-    // nur die definierenden Felder (Laufzeit-Akkus setzt der Restore), Cap.
+    // nur die definierenden Felder (Laufzeit-Akkus setzt der Restore), Cap; eine Regel, die den frozen Worldgen schreibt, reist nie in die
+    // neue Welt (die Sperrliste der Registrierung, `_isRuleEffectAllowed` — die Welt eines Elternteils kann sie in ihrem Stand tragen).
     _fusionMergeWorldRules(saveA, saveB) {
         const rulesA = Array.isArray(saveA.worldRules) ? saveA.worldRules : [];
         const rulesB = Array.isArray(saveB.worldRules) ? saveB.worldRules : [];
@@ -2264,7 +2294,8 @@ class AnazhRealm_speicher_laden {
         const cap = AnazhRealm.WORLD_RULES.cap;
         for (const list of [rulesA, rulesB]) {
             for (const r of list) {
-                if (!r || !Array.isArray(r.cond) || !Array.isArray(r.effect)) continue;
+                if (!r || !Array.isArray(r.cond) || !Array.isArray(r.effect) || !this._isRuleEffectAllowed(r.effect))
+                    continue;
                 const source = typeof r.source === "string" ? r.source : "unknown";
                 const sig = source + "|" + JSON.stringify(r.cond) + "|" + JSON.stringify(r.effect);
                 if (seen.has(sig)) continue;
@@ -2300,7 +2331,6 @@ class AnazhRealm_speicher_laden {
         const genesisEntry = {
             id: 1,
             at: identity.bornAt,
-            tick: 0,
             type: "genesis",
             text: `Ich erwache aus „${identity.slugA}" und „${identity.slugB}".`,
             ctx: {
