@@ -515,8 +515,15 @@ function fehlerSammler(page) {
 }
 
 // ── DIE STALL-AKTE: ein Hänger der Seite hat einen Namen — der PULS (ein Binding, je Sekunde mit der Phase) zeigt, ob der
-// Haupt-Thread lebt; die STEMPEL gehen hinaus, bevor ein Aufruf blockiert; Debugger.pause liefert den Stapel einer JS-Schleife
-// (ein nativer Block antwortet nicht — dann sprechen CPU je Prozess, Stempel und Stderr).
+// Haupt-Thread lebt; die STEMPEL gehen hinaus, bevor ein Aufruf blockiert; der Stich-Profiler der Seite liefert den Stapel der
+// Lücke (antwortet er nicht, sprechen CPU je Prozess, Stempel und Stderr).
+// DIE AKTE HÄLT DIE SEITE NIE AN (w9-ziel-leben): bis hier fragte sie den Stapel mit `Debugger.pause`. Die Pause dreht die
+// Nachrichten-Schleife der Seite verschachtelt, und Chrome legt darin das Bild der WebGPU-Leinwand vor — ihre aktuelle Textur
+// stirbt mitten im Frame. Hielt der Frame da einen Pass in sie (r184: der Ausgabe-Pass der Post-Kette ist offen, während der
+// Szenen-Pass in ihm zeichnet — fast der ganze Frame), verwarf die GPU seinen Submit: „Destroyed texture [Texture (unlabeled
+// 1280x720 px, TextureFormat::RGBA8Unorm)] used in a submit … renderContext_4" (CI voll 14/18 gate:kamera-leib, z200 und z203
+// je 2 von 2: jede Meldung 1–3 s nach einer Akte, deren Stapel in `updateForRender`/`renderObject` stand). Der Stich-Profiler
+// (`Profiler`, je PROFIL_US eine Probe) hält nichts an: die Leinwand lebt, bis ihr Frame eingereicht ist.
 const AKTE_SEITEN = new Set();
 const akten = [];
 let akteN = 0;
@@ -664,7 +671,7 @@ async function weicheUrteil(browser, art) {
     if (!GPU_REZEPTE.includes(art) || !welt.length || (await Promise.all(welt.map(genutzt))).some(Boolean)) return null;
     return `${path.basename(process.argv[1] || "?")} startet „${art}" und zeichnet nie (keine seiner ${welt.length} Seiten arbeitet auf der GPU): das Rezept ist „null"`;
 }
-// Je Seite: Ringe, Puls-Binding, Debugger (nur ohne Zeit-Urteil: ein Debugger färbt keine ms), umhüllte Aufrufe.
+// Je Seite: Ringe, Puls-Binding, Stich-Profiler (nur ohne Zeit-Urteil: ein Profiler färbt keine ms), umhüllte Aufrufe.
 function akteAnSeite(page, b) {
     if (!page.__akteBereit)
         page.__akteBereit = Promise.all([
@@ -685,8 +692,7 @@ async function akteAnlegen(page, b) {
         offen: new Map(),
         gemeldet: false,
         s: null,
-        dbg: false,
-        warte: null,
+        profil: false,
     });
     AKTE_SEITEN.add(page);
     page.on("close", () => AKTE_SEITEN.delete(page));
@@ -724,16 +730,16 @@ async function akteAnlegen(page, b) {
     try {
         const s = (A.s = await page.createCDPSession());
         s.on("Runtime.bindingCalled", (e) => e.name === "__weltPuls" && puls(A, e.payload));
-        // jede Pause wird gelöst — die eigene (der Stapel) und jede fremde (ein `debugger;`), nie bleibt eine Seite stehen
-        s.on("Debugger.paused", (e) => {
-            if (A.warte) A.warte(e);
-            else if (A.gemeldet) console.log(`[stall-akte] Seite #${A.id}: der Stapel kam spät — ${stapelText(e)}`);
-            s.send("Debugger.resume").catch(() => {});
-        });
         await s.send("Runtime.enable");
         await s.send("Runtime.addBinding", { name: "__weltPuls" });
         await page.evaluateOnNewDocument(pulsSeite);
-        if (b.stapel) (await s.send("Debugger.enable"), (A.dbg = true));
+        // der Stich-Profiler läuft vor der Lücke an: sein Start wartet auf einen freien Haupt-Thread, in der Lücke käme er zu spät
+        if (b.stapel) {
+            await s.send("Profiler.enable");
+            await s.send("Profiler.setSamplingInterval", { interval: PROFIL_US });
+            await s.send("Profiler.start");
+            A.profil = true;
+        }
     } catch (e) {
         if (!page.isClosed()) console.log(`[stall-akte] Seite #${A.id} ohne Puls: ${e?.message || e}`);
     }
@@ -771,14 +777,46 @@ function puls(A, payload) {
     A.pulsN++;
 }
 
-const stapelText = (e) =>
-    e.callFrames
+const stapelText = (rahmen) =>
+    rahmen
         .slice(0, 8)
-        .map(
-            (f) =>
-                `${f.functionName || "(anonym)"} ${String(f.url).split("/").pop().split("?")[0]}:${f.location.lineNumber + 1}`
+        .map((f) =>
+            f.url
+                ? `${f.functionName || "(anonym)"} ${String(f.url).split("/").pop().split("?")[0]}:${f.lineNumber + 1}`
+                : f.functionName
         )
         .join(" < ");
+
+// DER STAPEL DER LÜCKE aus dem Stich-Profiler (`Profiler.stop`, danach läuft er neu an): die Proben seit `ab` (der letzte Puls,
+// Wanduhr der Linse; das Ende des Profils ist die Antwort), ohne Leerlauf, Programm und Kehraus — die häufigste Spitze mit
+// ihren Rufern, innen zuerst. Der Stop wartet auf einen freien Haupt-Thread: er antwortet, wenn die Lücke endet.
+const PROFIL_US = 10000;
+const PROFIL_LEER = /^\((root|program|idle|garbage collector)\)$/;
+async function profilStapel(A, ab) {
+    let p;
+    try {
+        p = (await A.s.send("Profiler.stop")).profile;
+    } finally {
+        A.s.send("Profiler.start").catch(() => {});
+    }
+    const von = p.endTime - (Date.now() - ab) * 1000;
+    const knoten = new Map(p.nodes.map((n) => [n.id, n]));
+    const eltern = new Map();
+    for (const n of p.nodes) for (const c of n.children || []) eltern.set(c, n.id);
+    const zahl = new Map();
+    let t = p.startTime;
+    p.samples.forEach((id, i) => {
+        t += p.timeDeltas[i];
+        if (t >= von && !PROFIL_LEER.test(knoten.get(id).callFrame.functionName))
+            zahl.set(id, (zahl.get(id) || 0) + 1);
+    });
+    const spitze = [...zahl].sort((x, y) => y[1] - x[1])[0];
+    if (!spitze) return null;
+    const rahmen = [];
+    for (let id = spitze[0]; knoten.has(id) && knoten.get(id).callFrame.functionName !== "(root)"; id = eltern.get(id))
+        rahmen.push(knoten.get(id).callFrame);
+    return rahmen;
+}
 
 // DIE FÄDEN DES GPU-PROZESSES (Linux, /proc/<pid>/task): wer dort rechnet, nach Faden-Namen (swiftshader `Thread<NN>`,
 // `CrGpuMain`, ANGLE, Compositor); Ticks = utime + stime (Felder 14 und 15).
@@ -861,12 +899,12 @@ async function akte(page, grund) {
     const luecke = A.puls ? Date.now() - A.puls.an : null;
     const cpu = await cpuDelta(A.b, 2000);
     let stapel = null;
-    const fragen = A.dbg && !schon && luecke != null && luecke > 2000;
+    const fragen = A.profil && !schon && luecke != null && luecke > 2000;
     if (fragen) {
-        const pausiert = new Promise((r) => (A.warte = r));
-        A.s.send("Debugger.pause").catch(() => {});
-        stapel = await Promise.race([pausiert, new Promise((r) => setTimeout(() => r(null), 6000))]);
-        A.warte = null;
+        const frage = profilStapel(A, A.puls.an).catch(() => null);
+        stapel = await Promise.race([frage, new Promise((r) => setTimeout(() => r(null), 6000))]);
+        if (!stapel)
+            frage.then((s) => s && console.log(`[stall-akte] Seite #${A.id}: der Stapel kam spät — ${stapelText(s)}`));
     }
     const letzt = A.stempel.length ? A.stempel[A.stempel.length - 1] : "kein Stempel";
     let urteil;
@@ -875,7 +913,7 @@ async function akte(page, grund) {
         urteil = `AWAIT — der Haupt-Thread lebt (Puls vor ${sek(luecke)} s), ein Versprechen der Seite kehrt nie zurück; zuletzt ${letzt}`;
     else if (stapel) urteil = `JS-SCHLEIFE — der Haupt-Thread rechnet in ${stapelText(stapel).split(" < ")[0]}`;
     else if (cpu.renderer >= 0.5)
-        urteil = `NATIV — der Haupt-Thread rechnet in einem nativen Aufruf (${(cpu.renderer * 100).toFixed(0)} %, kein JS-Stapel); zuletzt ${letzt}`;
+        urteil = `RECHNET — der Haupt-Thread rechnet ohne Unterbrechung (${(cpu.renderer * 100).toFixed(0)} %, der Stapel kommt mit dem Ende der Lücke); zuletzt ${letzt}`;
     else if (cpu.gpu >= 0.5)
         urteil = `GPU-PROZESS — der Haupt-Thread wartet nativ, der GPU-Prozess rechnet (${(cpu.gpu * 100).toFixed(0)} %${cpu.faeden ? `: ${cpu.faeden.split(" · ").slice(0, 2).join(" · ")}` : ""}); zuletzt ${letzt}`;
     else urteil = `VERKLEMMUNG — der Haupt-Thread wartet nativ, kein Prozess rechnet; zuletzt ${letzt}`;
@@ -887,7 +925,7 @@ async function akte(page, grund) {
     if (cpu.faeden) z.push(`Fäden des GPU-Prozesses (2 s) ${cpu.faeden}`);
     if (A.b.last.length) z.push(`Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) ${A.b.last.join(" · ")}`);
     z.push(
-        `Stapel ${stapel ? stapelText(stapel) : fragen ? "keine Pause in 6 s — der Haupt-Thread steht NATIV" : A.dbg ? "(nicht gefragt: der Puls lebt oder die Akte fragte schon)" : "(kein Debugger: Zeit-Linse)"}`
+        `Stapel ${stapel ? stapelText(stapel) : fragen ? "keiner in 6 s — der Haupt-Thread ist nicht frei" : A.profil ? "(nicht gefragt: der Puls lebt oder die Akte fragte schon)" : "(kein Profiler: Zeit-Linse)"}`
     );
     for (const k of A.konsole) z.push(`Konsole ${k}`);
     for (const l of A.b.stderr.slice(-24)) z.push(`Stderr ${l}`);
@@ -1598,8 +1636,9 @@ async function selbsttest() {
     const server = statikServer({ seiten });
     await server.lausche(0);
     const browser = await starteBrowser({ art: "null", frist: 7000, stallMs: 3000 });
-    const fall = async (pfad, tu) => {
+    const fall = async (pfad, tu, vor) => {
         const page = await browser.newPage();
+        if (vor) await vor(page);
         await server.zeige(page, undefined, pfad.slice(1), "load");
         await tu(page);
         const id = page.__akte.id;
@@ -1659,10 +1698,21 @@ async function selbsttest() {
         await p.evaluate(() => WebGL2RenderingContext.prototype.drawArrays.call(null)).catch(() => {});
         weiche.push(await weicheUrteil(browser, "echt"));
     });
-    const schleife = await fall("/schleife.html", async () => {
-        for (let i = 0; i < 30 && !akten.some((a) => a.urteil); i++) await sleep(500);
-        await sleep(500);
-    });
+    // DIE AKTE HÄLT DIE SEITE NIE AN: ein Zeuge mit eigenem Debugger zählt jede Pause der Seite (eine Pause im Frame tötet die
+    // Leinwand, die er noch einreicht — „Destroyed texture … used in a submit", w9-ziel-leben); der Stapel kommt ohne sie
+    let pausen = 0;
+    const schleife = await fall(
+        "/schleife.html",
+        async () => {
+            for (let i = 0; i < 30 && !akten.some((a) => a.urteil); i++) await sleep(500);
+            await sleep(500);
+        },
+        async (page) => {
+            const zeuge = await page.createCDPSession();
+            zeuge.on("Debugger.paused", () => (pausen++, zeuge.send("Debugger.resume").catch(() => {})));
+            await zeuge.send("Debugger.enable");
+        }
+    );
     const haenger = await fall("/haenger.html", (p) => p.evaluate(() => window.__nie()).catch(() => {}));
     // DER EINE SAMMLER: der Wurf einer Seite (auch in einem eigenen Kontext) steht beim Namen in der Liste und macht das
     // Prozess-Ende ROT — ein eigener pageerror-Sammler einer Linse daneben ist ein Zwilling (werkbank.cjs startet sein Fenster selbst)
@@ -1802,8 +1852,9 @@ async function selbsttest() {
         [
             schleife.length > 0 &&
                 /^JS-SCHLEIFE/.test(schleife[0].urteil) &&
-                /__stallSchleife/.test(schleife[0].stapel || ""),
-            `Schleife: ${schleife.length ? `${schleife[0].urteil} · Stapel ${schleife[0].stapel}` : "KEINE Akte"}`,
+                /__stallSchleife/.test(schleife[0].stapel || "") &&
+                pausen === 0,
+            `Schleife: ${schleife.length ? `${schleife[0].urteil} · Stapel ${schleife[0].stapel}` : "KEINE Akte"} · Pausen der Seite ${pausen} (Soll 0)`,
         ],
         [
             haenger.length > 0 && /^AWAIT/.test(haenger[haenger.length - 1].urteil),
