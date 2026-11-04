@@ -41,8 +41,12 @@ class AnazhRealm_dienst {
     // DER NAME IST DATUM, NIE ANWEISUNG (ultiversum K5): jeder Name und fremde Text in Erinnerung oder Prompt reist isoliert
     // (U+2068 … U+2069, unsichtbar) als Tag `_datum\`… ${x}\``, Zahlen bleiben Zahlen; die Tür macht Platzhalter daraus — das Modell
     // liest nie, was ein Fremder schrieb (der gehorsame Feind von gate:v1-pfad --feind tat 2 von 6), die Antwort bekommt die Namen.
+    // der Text ohne jede Isolations-Marke (U+2066 … U+2069): was der Spieler liest — der Satz einer Erinnerung ist `ki` ohne sie
+    static _ohneIsolation(s) {
+        return String(s == null ? "" : s).replace(/[⁦-⁩]/g, "");
+    }
     static _datum(teile, ...werte) {
-        const iso = (s) => "⁨" + String(s == null ? "" : s).replace(/[⁦-⁩]/g, "") + "⁩";
+        const iso = (s) => "⁨" + AnazhRealm._ohneIsolation(s) + "⁩";
         if (!Array.isArray(teile) || !teile.raw) return iso(teile);
         let t = teile[0];
         for (let i = 0; i < werte.length; i++)
@@ -51,12 +55,12 @@ class AnazhRealm_dienst {
     }
     // jeder isolierte Text (bis zum Zeilenende, wenn ein Schnitt ihn kappte) wird «N1», «N2» … — derselbe Text dieselbe Marke
     static _kiPlatzhalter(text, karte) {
-        return String(text == null ? "" : text)
-            .replace(/⁨([^⁩\n]*)⁩?/g, (_, s) => {
+        return AnazhRealm._ohneIsolation(
+            String(text == null ? "" : text).replace(/⁨([^⁩\n]*)⁩?/g, (_, s) => {
                 if (!karte.has(s)) karte.set(s, `«N${karte.size + 1}»`);
                 return karte.get(s);
             })
-            .replace(/[⁦-⁩]/g, "");
+        );
     }
     // Eine Erinnerung fürs Modell: ein Satz dieser Welt (`d`, nur journalAppend) trägt Namen isoliert in `ki`, jede andere ist Datum.
     _erinnerungFuerKi(e) {
@@ -65,7 +69,9 @@ class AnazhRealm_dienst {
             .slice(0, 12)}] ${e.d === 1 ? e.ki || e.text : AnazhRealm._datum(e.text)}`;
     }
 
-    async llmCall(userText, systemPromptOverride = null, { hintergrund = false } = {}) {
+    // `form`: die Antwort-Form des Rufers als JSON-Schema über die Platzhalter DIESER Anfrage (`form(platz)`; die Seele eines
+    // Wesens, `_kiSeeleSchema`) — ein Anbieter, der eine Form erzwingt (ollama `format`), sampelt nur sie.
+    async llmCall(userText, systemPromptOverride = null, { hintergrund = false, form = null } = {}) {
         const llm = this.state.llm;
         const defs = this.llmProviderDefs();
         const def = defs[llm.provider];
@@ -110,7 +116,7 @@ class AnazhRealm_dienst {
             const headers = def.buildHeaders(cfg.apiKey, cfg);
             // V7.95 — cfg als 4. Argument für Provider die OpenAI-kompat-
             // Detection brauchen (Ollama Cloud). Andere Provider ignorieren es.
-            const body = def.buildBody(cfg.model, system, userContent, cfg);
+            const body = def.buildBody(cfg.model, system, userContent, cfg, form && form(platz));
             // useProxy (Ollama Cloud): Request über localhost:4312/api/proxy/llm, damit der Browser nicht an
             // CORS scheitert (der save-server setzt CORS-Header). Bei localhost/127.0.0.1-URLs automatisch
             // umgangen — kein CORS-Problem, und der Proxy scheiterte am https-only-Check.
@@ -152,8 +158,9 @@ class AnazhRealm_dienst {
             llm.lastError = parsed.error || null;
             // die Antwort bekommt die Namen zurück (isoliert, wie sie kamen) — der Spieler liest den Namen, nie den Platzhalter
             const name = new Map([...karte].map(([s, h]) => [h, s]));
-            if (parsed.say)
-                parsed.say = parsed.say.replace(/«N\d+»/g, (h) => (name.has(h) ? AnazhRealm._datum(name.get(h)) : h));
+            const zurueck = (t) => t.replace(/«N\d+»/g, (h) => (name.has(h) ? AnazhRealm._datum(name.get(h)) : h));
+            if (parsed.say) parsed.say = zurueck(parsed.say);
+            if (typeof parsed.erinnerung === "string") parsed.erinnerung = zurueck(parsed.erinnerung);
             return parsed;
         } catch (err) {
             if (abbruch.signal.aborted) return { error: "dem Satz des Spielers gewichen" };
@@ -253,14 +260,13 @@ class AnazhRealm_dienst {
         const entry = {
             id: j.entries.length + 1,
             at: Date.now(),
-            tick: performance.now() / 1000,
             type: String(type || "note"),
             text: text.slice(0, 240),
             d: 1,
         };
         // ein Schnitt mitten in einem Namen schließt seine Isolation; der Spieler liest den Satz rein, das Modell `ki` isoliert
         if (entry.text.lastIndexOf("⁨") > entry.text.lastIndexOf("⁩")) entry.text += "⁩";
-        if (/[⁦-⁩]/.test(entry.text)) [entry.ki, entry.text] = [entry.text, entry.text.replace(/[⁦-⁩]/g, "")];
+        if (/[⁦-⁩]/.test(entry.text)) [entry.ki, entry.text] = [entry.text, AnazhRealm._ohneIsolation(entry.text)];
         if (ctx && typeof ctx === "object") entry.ctx = ctx;
         j.entries.push(entry);
         if (j.entries.length > (j.entryCap || 200)) {
@@ -525,13 +531,13 @@ class AnazhRealm_dienst {
         return f + (dt < 500 ? 0 : dt <= 1000 ? 500 : 1000);
     }
 
-    // Distanz² eines Welt-Punkts zum Spieler (für den Bake-Takt; ohne Spieler: vorne).
+    // Der Rang eines Welt-Punkts² (für den Bake-Takt und jede Schlange, die nach ihm reiht; ohne Spieler: vorne): DER EINE RANG,
+    // die Zeit bis Bedarf in Metern zu Fuß (`_bedarfWeg`, w7-rang) — im Stand der Abstand², voraus rückt ein Ding um s / v0 näher.
+    // Leser: der Bake-Takt (`_weltBakeErlaubt` über `_archZiegelD2`, die Gesetz-Kapsel `_streuGesetzSpawn`), die Raten des
+    // Bau-Satzes, die Glieder der Kreaturen, die Schlange des Walds (`_waldPlanListe`). Bis w7-rang der Abstand² allein.
     _spielerD2(x, z) {
-        const pm = this.state.playerMesh && this.state.playerMesh.position;
-        if (!pm) return 0;
-        const dx = x - pm.x,
-            dz = z - pm.z;
-        return dx * dx + dz * dz;
+        if (!(this.state.playerMesh && this.state.playerMesh.position)) return 0;
+        return this._bedarfWeg(x, z) ** 2;
     }
     // Die Takt-Distanz eines Baus: der Schlangen-Rang (`_ziegelD2`, gebaute Meshes backen nur vor) oder seine Lage.
     _archZiegelD2(entry) {

@@ -170,6 +170,12 @@ function buehne(arg) {
         const pm = st.playerMesh;
         const kam = st.camera;
         const modusAlt = st.cameraMode;
+        // DER WUNSCH DES BLICKS RUHT AUF DER BÜHNE (B5, `_leibWunsch`): ihr 3rd-Bezug ist ein Messgerät, kein Blick des Spielers —
+        // vor dem Bild bestellte der Schalter auf Third sonst die feine Stufe, und der Tausch goss den gemessenen Leib mitten in
+        // der Bühne neu (CI 41622260772). Nach der Bühne liegt der Wunsch wieder, wie der Spieler ihn hinterließ.
+        const vz = r._spielerVorlagen || {};
+        const wunsch = vz.wunsch;
+        vz.wunsch = null;
         const yawAlt = st.yaw,
             pitchAlt = st.pitch;
         const schattenAlt = rend.shadowMap.enabled;
@@ -483,6 +489,7 @@ function buehne(arg) {
             st.yaw = yawAlt;
             st.pitch = pitchAlt;
             r.setCameraMode(modusAlt);
+            if (!vz.gewuenscht) vz.wunsch = wunsch;
             if (elternAlt) elternAlt.add(pm);
             pm.visible = true;
             rend.shadowMap.enabled = schattenAlt;

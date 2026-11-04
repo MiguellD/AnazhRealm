@@ -665,7 +665,9 @@ function albedoSicht(opts) {
 // Senken an. So zeichneten die Büschel der Wiesen-Ferne im Schuss jeder Linse mit eigenem Auge: seit w4-gras-l2 deckt die
 // gestreckte Ferne aus 420 m den Grund, Boden-Satz und Fern-Ring lasen dieselbe Wiese (Y −11 … −19 % gegen das Gesetz, z116), und
 // das Urteil nannte den Boden-Satz. Nach dem Haken fällt darum jedes Mesh ohne die Wahl, auch in den Kaskaden desselben Renders;
-// was der Pass verbirgt, zeigt der Halter nie.
+// was der Pass verbirgt, zeigt der Halter nie. Eine Geometrie-Arena fällt nie an der Wahl (w8-linsen-blick): sie zieht beim Zeichnen nur
+// ihre sichtbaren Glieder (`_arenaZug` → `_sichtbar`), die Wahl ihrer Glieder trägt sie — mit ihr fiel jede Krone (licht.K3: Karte und
+// Gestalt 0 Pixel seit dd2ec8f6, ohne den Filter 35 955); nur die Arena der GPU-Wahl legt ihren Zug im Haken und fällt mit der Wahl.
 function linsenZiel(W, H) {
     const T = window.THREE,
         { renderer: rend, scene: sc } = st,
@@ -677,7 +679,7 @@ function linsenZiel(W, H) {
         rend.setClearColor(0x000000, 0);
         rend.clear();
         const haken = sc.onBeforeRender;
-        sc.onBeforeRender = (...a) => (haken.apply(sc, a), wahl && sc.traverse((o) => o.isMesh && !wahl.has(o) && (o.visible = false)));
+        sc.onBeforeRender = (...a) => (haken.apply(sc, a), wahl && sc.traverse((o) => o.isMesh && !wahl.has(o) && !(o.isGeometrieArena && !o._wahl) && (o.visible = false)));
         try {
             rend.render(sc, cam);
         } finally {
@@ -1404,7 +1406,7 @@ function laubGegenlicht(opts) {
         sc.traverse((o) => {
             if (!(o.isMesh || o.isSprite || o.isPoints)) return;
             alle.push(o);
-            const k = o.material && o.material.userData && o.material.userData.foundryKind;
+            const k = o.material?.userData?.foundryKind;
             // DAS HAUS und DER BODEN (F6): der Bau-Satz zeichnet jede Gruppe der gesetzten Studio-Architektur, der Boden-Satz den Boden
             if (opts.haus || opts.boden ? o.name === (opts.haus ? "bauSatz" : "bodenSatz") : (k === "foliage" || k === "foliageTex") && art.test(r._taeterKlasse(o))) laub.push(o);
         });
@@ -1624,7 +1626,7 @@ function laubGegenlicht(opts) {
                 const naht = fr ? fr.meshes.find((m) => m.geometry === fr.teilung.naht) : null;
                 if (frei && fr.geos[0].index.array.length === frei.array.length) (freiAlt = [frei, frei.array.slice()]), frei.array.set(fr.geos[0].index.array), (frei.needsUpdate = true);
                 for (const m of alle)
-                    m.visible = opts.boden ? (fr ? m !== naht && m.userData.inventar === "fern-ring" : laub.includes(m)) : opts.haus ? laub.includes(m) || m.name === "bauWurf" : /^fimp:/.test(r._taeterKlasse(m)) || (/^f:/.test(r._taeterKlasse(m)) && /^(bark|foliage|foliageTex|schatten)$/.test(m.material && m.material.userData && m.material.userData.foundryKind));
+                    m.visible = opts.boden ? (fr ? m !== naht && m.userData.inventar === "fern-ring" : laub.includes(m)) : opts.haus ? laub.includes(m) || m.name === "bauWurf" : /^fimp:/.test(r._taeterKlasse(m)) || (/^f:/.test(r._taeterKlasse(m)) && /^(bark|foliage|foliageTex|schatten)$/.test(m.material?.userData?.foundryKind));
                 bundles();
                 const fovAlt = cam.fov,
                     rad = ziel.box.min.distanceTo(ziel.box.max) / 2;
@@ -1851,7 +1853,6 @@ function lichtWeg(opts) {
         window.__buehne({ uhr: opts.uhr });
         await r._himmelFrisch();
         if (!fp) return { fehler: "kein Feld-Pass" };
-        r._weltLichtTakt();
         const pp = st.playerMesh.position, o = new T.Vector3(pp.x, r._voxelSurfaceY(pp.x, pp.z) + 45, pp.z), unten = new T.Vector3(0.001, -1, 0);
         const W = 32, zl = window.__linsenZiel(W, W), rt = zl.rt, alle = [], dl = st.directionalLight, wurf = dl.castShadow;
         // die Normale der senkrechten Fläche: waagrecht, `grad` Grad neben dem Azimut der Sonne — das Auge blickt gegen sie
@@ -1890,6 +1891,8 @@ function lichtWeg(opts) {
         const panoAlt = fp.panoDaten.slice(), WL = Object.values(r._weltLicht().U), wlAlt = WL.map((u) => (u.value.clone ? u.value.clone() : u.value));
         try {
             dl.castShadow = false;
+            // das Licht dieser Uhr, ohne Wurf: die Sonnen-Sicht von Feld und Panorama ruht wie die Kaskaden der Karte (`_sonnenSicht`)
+            r._weltLichtTakt();
             luftZurueck = zl.ohneLuft();
             let welt = await lies(karte, senkrecht ? nh.clone().multiplyScalar(-3) : unten, senkrecht);
             let weg;

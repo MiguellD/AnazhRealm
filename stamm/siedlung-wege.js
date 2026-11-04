@@ -832,6 +832,18 @@ class AnazhRealm_siedlung_wege {
     // (`tritt`: "i,j" → [n, t]) und reisen gepackt (`_trittPacken`): der Reload und der Mitspieler (sein Geist geht durch denselben
     // Schritt) sehen denselben Pfad. Die Zahl liegt auf dem Raster des Stands (`TRITT.standN` je Tritt, `TRITT.standT` je Tag) —
     // was der Stand trägt, IST der Zustand, der Reload kehrt Bit für Bit wieder.
+    // DER GANG DER LEIBER im Sim-Schritt: jedes Tier und der Spieler zu Fuß (dieselben Leiber wie im Leib-Löser
+    // `_leibKontakte`, an ihrer Lage vor ihm) treten den Pfad; der Spieler tritt, wo er steht, ein Tier geht am Boden. Bis zum
+    // Merge von main f69a7305 lag dieser Schreib-Akt im Leib-Löser (stamm/kreatur-verhalten.js riss die Decke von 4 000 Zeilen).
+    _trittDerLeiber() {
+        const st = this.state;
+        for (const c of st.creatures || AnazhRealm.STAND_LEER)
+            if (c && c.position && c.userData) this._tritt(c, c.position.x, c.position.z, true, false);
+        const pm = st.playerMesh;
+        if (!pm || !pm.position || (st.player && st.player.mountedArch != null)) return;
+        const K = this._spielerKapsel(this._trittKapsel || (this._trittKapsel = {}));
+        this._tritt(pm, K.x, K.z, st.isInAir !== true && st.playerUnderwater !== true, true);
+    }
     _tritt(leib, x, z, steht, spieler) {
         const T = AnazhRealm.TRITT;
         const i = Math.floor(x / T.zelleM);

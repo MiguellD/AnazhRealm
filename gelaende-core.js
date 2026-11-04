@@ -3953,7 +3953,8 @@
     // über der FERTIGEN Vertex-Farbe). `cfg` { step, dim, span } die Stufe des Netzes · `basis` die vorige Karte derselben
     // Geometrie (`hoehe`, `gruen`, ihre Lage `ref`, je Dreieck sein Zellen-Rechteck `zellen`): neu gerastert werden nur die
     // Zellen unter den Dreiecken, die gegen `ref` ihre Lage ändern — byte-gleich mit der ganzen Karte · `rand` (`rand` die
-    // Vertices, `randTri` ihre Dreiecke): bewegen kann nur der Saum. `anOrt` (mit `basis`): die Karte schreibt in die Felder
+    // Vertices, `randTri` ihre Dreiecke): bewegen kann nur der Saum (mit `bewegt`: genau diese Ecken SIND bewegt, `pos` ist
+    // `ref` an Ort und Stelle). `anOrt` (mit `basis`): die Karte schreibt in die Felder
     // der Basis statt in ihre Kopie, und `geaendert` nennt danach jede Zelle, deren Höhe wechselte (der Leser einer früheren
     // Lage fragt sie statt einer alten Kopie). → { hoehe, gruen, zellen, geaendert } oder null.
     function bodenKarte(pos, idx, col, cx, cz, cfg, T, gs, basis, rand, anOrt) {
@@ -4000,7 +4001,10 @@
                     pos[v * 3] !== ref[v * 3] ||
                     pos[v * 3 + 1] !== ref[v * 3 + 1] ||
                     pos[v * 3 + 2] !== ref[v * 3 + 2]);
-            if (rand) for (const v of rand.rand) bewegt1(v);
+            // `rand.bewegt`: der Rufer bewegte genau die Ecken in `rand.rand` an Ort und Stelle (`pos` ist `ref`, die vorläufige
+            // Gestalt eines Edits) — sie sind bewegt, ohne Vergleich gegen eine Kopie
+            if (rand && rand.bewegt) for (const v of rand.rand) neu[v] = 1;
+            else if (rand) for (const v of rand.rand) bewegt1(v);
             else for (let v = 0; v < neu.length; v++) bewegt1(v);
             maske = new Uint8Array(M * M);
             const markiere = (o) => {
