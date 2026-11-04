@@ -555,84 +555,81 @@ function selbsttest() {
     const faelle = [
         [
             "Stand-Churn ohne Ursache in Ruhe (der Täter der Gegenprüfung)",
-            (b) => (b.ruhe = churnPhase()),
+            ["ruhe=", churnPhase()],
             /RUHE: Satz-Arbeit ohne Ursache in 5 von 5 Frames — streuSatz stand:ohne ×25/,
         ],
         [
             "Stand-Churn ohne Ursache: die Arbeit ist Arbeit ohne Änderung",
-            (b) => (b.ruhe = churnPhase()),
+            ["ruhe=", churnPhase()],
             /RUHE: die Sicht-Kette arbeitet in Ruhe ohne Änderung \(Median 15072, max 15072 Prüfungen, in 5 von 5 Frames/,
         ],
         [
             "stumpfe Stand-Linse (der Stand-Bruch heißt Änderung)",
-            (b) => (b.standBruch = Object.assign(phase(0, 0, 0), { aenderungFrames: 10 })),
+            ["standBruch=", Object.assign(phase(0, 0, 0), { aenderungFrames: 10 })],
             /LINSE STUMPF: ein eingeschmuggelter Stand-Bruch/,
         ],
         [
             "stumpfe Stand-Linse (der Stand-Bruch steht ohne Namen)",
-            (b) => (b.standBruch = Object.assign(phase(15072, 0, 0), { inhaltOhneFrames: 0, inhaltOhneJe: {} })),
+            ["standBruch=", Object.assign(phase(15072, 0, 0), { inhaltOhneFrames: 0, inhaltOhneJe: {} })],
             /LINSE STUMPF: ein eingeschmuggelter Stand-Bruch/,
         ],
-        ["kein Stand-Bruch", (b) => delete b.standBruch, /LEER: kein Stand-Bruch gemessen/],
+        ["kein Stand-Bruch", ["standBruch"], /LEER: kein Stand-Bruch gemessen/],
         [
             "das atmende Auge arbeitet (der Täter der zweiten Gegenprüfung)",
-            (b) =>
-                (b.auge = Object.assign(phase(14999, 0, 0), {
+            ["auge=", Object.assign(phase(14999, 0, 0), {
                     frames: 5,
                     kameraFrames: 0,
                     blendeFrames: 0,
                     arbeitOhne: { frames: 5, median: 14999, max: 14999 },
                     taeter: ["satz streuSatz|haupt ×5", "gruppe f:eiche|2|1:0#S ×2"],
-                })),
+                })],
             /AUGE: das Auge atmet unter dem Halt, doch die Sicht-Kette arbeitet ohne Änderung in 5 von 5 Frames \(Median 14999/,
         ],
         [
             "die Linse nennt das atmende Auge Blende",
-            (b) =>
-                (b.auge = Object.assign(phase(14999, 0, 0), {
+            ["auge=", Object.assign(phase(14999, 0, 0), {
                     frames: 5,
                     kameraFrames: 0,
                     blendeFrames: 5,
                     aenderungFrames: 5,
                     arbeitOhne: { frames: 0, median: 0, max: 0 },
-                })),
+                })],
             /LINSE STUMPF: das atmende Auge \(±1 mm, unter dem Halt\) heißt Bewegung — Kamera in 0, Blende in 5 von 5/,
         ],
-        ["kein atmendes Auge", (b) => delete b.auge, /LEER: keine Phase mit atmendem Auge/],
-        ["die Maske ist aus", (b) => (b.augeAn = false), /LEER: die Maske ist aus/],
+        ["kein atmendes Auge", ["auge"], /LEER: keine Phase mit atmendem Auge/],
+        ["die Maske ist aus", ["augeAn=", false], /LEER: die Maske ist aus/],
         [
             "Loch an der Kante des Fensters",
-            (b) => Object.assign(b.blendeTreue, { loecher: 1, namen: ["f:eiche|2|1:0 Slot 3"] }),
+            ["blendeTreue", { loecher: 1, namen: ["f:eiche|2|1:0 Slot 3"] }],
             /BLENDE-TREUE: 1 Löcher — .*f:eiche\|2\|1:0 Slot 3/,
         ],
         [
             "die Lage hält das Auge nicht",
-            (b) => (b.blendeTreue.gehalten = false),
+            ["blendeTreue.gehalten=", false],
             /BLENDE-TREUE VAKUÖS: die Lage hielt/,
         ],
         [
             "die Maske behält die Kante nicht",
-            (b) => (b.blendeTreue.traegt = false),
+            ["blendeTreue.traegt=", false],
             /BLENDE-TREUE VAKUÖS: die Maske behält/,
         ],
-        ["keine Instanz an einer Kante", (b) => (b.blendeTreue.fall = null), /LEER: Blende-Treue ohne Instanz/],
+        ["keine Instanz an einer Kante", ["blendeTreue.fall=", null], /LEER: Blende-Treue ohne Instanz/],
         [
             "ohne Rand fehlt nichts (die Probe ist stumpf)",
-            (b) => (b.blendeTreueOhneRand.loecher = 0),
+            ["blendeTreueOhneRand.loecher=", 0],
             /LINSE STUMPF: ohne den Halt als Rand des Fensters fehlt der gehaltenen Wahl nichts/,
         ],
         [
             "der Inhalt ändert sich in der eingefrorenen Welt",
-            (b) =>
-                Object.assign(b.ruhe, {
+            ["ruhe", {
                     inhaltFrames: 2,
                     inhaltJe: { boden: { frames: 2, aenderung: 2, bereiche: 2, keys: ["+-901,-850", "-899,-850"] } },
-                }),
+                }],
             /RUHE: die Welt ist eingefroren, doch ihr Inhalt änderte sich in 2 von 10 Frames \(boden \+-901,-850/,
         ],
         [
             "Arbeit in Ruhe (die Basis)",
-            (b) => (b.ruhe = phase(5200, 0, 0)),
+            ["ruhe=", phase(5200, 0, 0)],
             /RUHE: die Sicht-Kette arbeitet in Ruhe ohne Änderung \(Median 5200/,
         ],
         [
@@ -646,96 +643,92 @@ function selbsttest() {
         ],
         [
             "Bytes in Ruhe",
-            (b) =>
-                Object.assign(b.ruhe, {
+            ["ruhe", {
                     bytes: werte(96, 0, 960),
                     schreibFrames: 1,
                     bytesOhne: werte(96, 0, 960),
                     ohneFrames: 1,
                     bytesOhneJe: { "bauSatz dicht?": 960 },
-                }),
+                }],
             /RUHE: 96 Index-Bytes je Frame ohne Änderung .*bauSatz dicht\? 960 B/,
         ],
         [
             "Neulegen in Ruhe (K71: 0 Bytes, der Gang über die Zellen)",
-            (b) =>
-                Object.assign(b.ruhe, {
+            ["ruhe", {
                     legeOhne: werte(48, 0, 480),
                     legeOhneFrames: 1,
                     legeOhneJe: { "bauSatz dicht:ohne k0": 480 },
-                }),
+                }],
             /RUHE: 48 Indizes je Frame neu gelegt ohne Änderung .*bauSatz dicht:ohne k0 480/,
         ],
-        ["kein Treffer", (b) => (b.ruhe.treffer = werte(0)), /LINSE BLIND: kein Pass traf/],
-        ["starres Drehen", (b) => (b.drehen.arbeit = werte(0)), /STARR: beim Drehen/],
-        ["starres Gehen", (b) => (b.gehen.arbeit = werte(1, 0, 3)), /STARR: beim Gehen/],
+        ["kein Treffer", ["ruhe.treffer=", werte(0)], /LINSE BLIND: kein Pass traf/],
+        ["starres Drehen", ["drehen.arbeit=", werte(0)], /STARR: beim Drehen/],
+        ["starres Gehen", ["gehen.arbeit=", werte(1, 0, 3)], /STARR: beim Gehen/],
         [
             "untreue Wahl",
             (b) => b.treue.abweichung.push("boden|haupt: 41 statt 43 Zellen"),
             /TREUE: boden\|haupt: 41 statt 43 Zellen/,
         ],
-        ["Treue ohne Vergleich", (b) => (b.treue.geprueft = 0), /LEER: Treue ohne Vergleich/],
-        ["stumpfe Linse", (b) => (b.bruch = phase(0, 0, 9)), /LINSE STUMPF/],
+        ["Treue ohne Vergleich", ["treue.geprueft=", 0], /LEER: Treue ohne Vergleich/],
+        ["stumpfe Linse", ["bruch=", phase(0, 0, 9)], /LINSE STUMPF/],
         [
             "stumpfe Lege-Linse (der Lege-Bruch legt nichts — K71: er lädt 0 Bytes)",
-            (b) => (b.legeBruch = phase(0, 0, 9)),
+            ["legeBruch=", phase(0, 0, 9)],
             /LINSE STUMPF: ein eingeschmuggelter Lege-Bruch/,
         ],
         [
             "stumpfe Lege-Linse (der Lege-Bruch steht unter fremdem Grund)",
-            (b) =>
-                (b.legeBruch = Object.assign(phase(0, 0, 9), {
+            ["legeBruch=", Object.assign(phase(0, 0, 9), {
                     legeOhne: werte(2400),
                     legeOhneFrames: 10,
                     legeOhneJe: { "boden umlegen:ohne haupt": 24000 },
-                })),
+                })],
             /LINSE STUMPF: ein eingeschmuggelter Lege-Bruch/,
         ],
-        ["kein Lege-Bruch", (b) => delete b.legeBruch, /LEER: kein Lege-Bruch gemessen/],
+        ["kein Lege-Bruch", ["legeBruch"], /LEER: kein Lege-Bruch gemessen/],
         [
             "das Licht dreht je Frame (die Basis)",
-            (b) => (b.sonne = sonne(120, 120, null)),
+            ["sonne=", sonne(120, 120, null)],
             /SONNE: das Licht hat keine Stufe — es dreht in 120 von 120 Frames/,
         ],
-        ["Arbeit zwischen den Stufen", (b) => (b.sonne = sonne(40, 6, 1 / 255)), /Arbeit zwischen den Stufen/],
-        ["Stufe ohne Halt", (b) => (b.sonne = sonne(12, 120, 1 / 255)), /SONNE: das Licht dreht in 120 von 120 Frames/],
-        ["Kaskaden ohne Licht-Rand", (b) => (b.sonne = randSonne(40, 0)), /SONNE: die Kaskaden wählen ohne Licht-Rand/],
+        ["Arbeit zwischen den Stufen", ["sonne=", sonne(40, 6, 1 / 255)], /Arbeit zwischen den Stufen/],
+        ["Stufe ohne Halt", ["sonne=", sonne(12, 120, 1 / 255)], /SONNE: das Licht dreht in 120 von 120 Frames/],
+        ["Kaskaden ohne Licht-Rand", ["sonne=", randSonne(40, 0)], /SONNE: die Kaskaden wählen ohne Licht-Rand/],
         [
             "Arbeit über den Licht-Rand hinaus",
-            (b) => (b.sonne = randSonne(199, 32)),
+            ["sonne=", randSonne(199, 32)],
             /der Licht-Rand \(32 Texel\) erlaubt etwa 61 neue Wahlen/,
         ],
         [
             "Sonne ohne Lauf",
-            (b) => (b.sonne.sonneRad = 0),
+            ["sonne.sonneRad=", 0],
             /LEER: in der Phase mit laufender Sonne lief die Sonne nicht/,
         ],
-        ["keine Sonne", (b) => delete b.sonne, /LEER: keine Phase mit laufender Sonne/],
-        ["keine Ruhe", (b) => delete b.ruhe, /LEER: keine Ruhe-Phase/],
+        ["keine Sonne", ["sonne"], /LEER: keine Phase mit laufender Sonne/],
+        ["keine Ruhe", ["ruhe"], /LEER: keine Ruhe-Phase/],
         [
             "ein Leser fehlt der Welt (die Linse hüllt ihn nicht)",
-            (b) => (b.ruhe.fehlt = ["_hoehlenSichtLicht"]),
+            ["ruhe.fehlt=", ["_hoehlenSichtLicht"]],
             /LINSE BLIND: die Welt trägt die Leser _hoehlenSichtLicht nicht/,
         ],
         [
             "Loch nach der Neu-Wahl in der Drehung",
-            (b) => Object.assign(b.drehTreue, { loecher: 7, namen: ["boden Zelle"] }),
+            ["drehTreue", { loecher: 7, namen: ["boden Zelle"] }],
             /DREH-TREUE: 7 Löcher/,
         ],
-        ["Drehfolge ohne Halt", (b) => (b.drehTreue.gehalten = false), /DREH-TREUE VAKUÖS/],
-        ["keine Dreh-Treue", (b) => delete b.drehTreue, /LEER: keine Dreh-Treue/],
+        ["Drehfolge ohne Halt", ["drehTreue.gehalten=", false], /DREH-TREUE VAKUÖS/],
+        ["keine Dreh-Treue", ["drehTreue"], /LEER: keine Dreh-Treue/],
         [
             "die zweite Kaskade hält eine tote Marke",
-            (b) =>
-                Object.assign(b.instanzTreue, {
+            ["instanzTreue", {
                     wuerfe: 1,
                     nan: 1,
                     tot: 1,
                     namen: ["Wurf: Cannot set properties of undefined (setting 'slot')"],
-                }),
+                }],
             /INSTANZ: .*1 Würfe, 1 NaN-Slots, 1 tote Marken/,
         ],
-        ["ein Werfer fehlt der Kaskade", (b) => (b.instanzTreue.fehlen = 2), /INSTANZ: .*2 fehlende Werfer/],
+        ["ein Werfer fehlt der Kaskade", ["instanzTreue.fehlen=", 2], /INSTANZ: .*2 fehlende Werfer/],
         [
             "Instanz-Treue ohne den echten Weg",
             (b) => b.instanzTreue.faelle.pop(),
@@ -749,8 +742,8 @@ function selbsttest() {
             },
             /LEER: Instanz-Treue ohne beide Fälle .* — ohne Prüfung: Stufen-Wechsel f:weide\|1\|1:0#S 1→0 leerte die Gruppe/,
         ],
-        ["Wiese liest nicht", (b) => (b.code.wieseLiest = false), /WIESE: `_nahWieseSicht` prüft/],
-        ["Wiese leer", (b) => (b.code.wieseLiest = "leer"), /LEER: die Nah-Wiese trägt keine Kachel/],
+        ["Wiese liest nicht", ["code.wieseLiest=", false], /WIESE: `_nahWieseSicht` prüft/],
+        ["Wiese leer", ["code.wieseLiest=", "leer"], /LEER: die Nah-Wiese trägt keine Kachel/],
     ];
     taeterFaelle(faelle, urteil, { fehler, klon });
     selbsttestEnde(fehler);

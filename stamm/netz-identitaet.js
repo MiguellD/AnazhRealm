@@ -267,7 +267,7 @@ class AnazhRealm_netz_identitaet {
                 this.journalAppendOnce(
                     "vibepass:genesis",
                     "ritual",
-                    AnazhRealm._datum`Der Avatar empfing seinen Vibe-Pass — eine souveräne Identität, ein Schlüssel, der nur ihm gehört (${vp.fingerprint}).`,
+                    ["journal.vibepass-genesis", { abdruck: vp.fingerprint }],
                     { fingerprint: vp.fingerprint }
                 );
             }
@@ -332,7 +332,7 @@ class AnazhRealm_netz_identitaet {
         }
         const tag = (this.state.vibePass.publicKeyHex || "pass").slice(0, 12);
         this.triggerStateDownload(obj, `anazh-vibe-pass-${tag}.json`);
-        this.journalAppend("ritual", "Ich sicherte meinen Vibe-Pass — den Schlüssel meiner Identität.");
+        this.journalAppend("ritual", ["journal.vibepass-gesichert"]);
         return obj;
     }
 
@@ -377,10 +377,7 @@ class AnazhRealm_netz_identitaet {
         try {
             await this._adoptVibePassJwk(jwk, parsed.createdAt, false);
             this._persistVibePass();
-            this.journalAppend(
-                "ritual",
-                AnazhRealm._datum`Ein Vibe-Pass wurde wiederhergestellt — meine Identität ist nun ${this.state.vibePass.fingerprint}.`
-            );
+            this.journalAppend("ritual", ["journal.vibepass-wieder", { abdruck: this.state.vibePass.fingerprint }]);
             this._renderVibePassUI();
             this.log(`Vibe-Pass wiederhergestellt: ${this.vibePassId()}`, "INFO");
             return { ok: true, id: this.vibePassId() };
@@ -455,13 +452,13 @@ class AnazhRealm_netz_identitaet {
         fp.className = "vibe-pass-fingerprint";
         fp.setAttribute("translate", "no");
         fp.textContent = vp.fingerprint;
-        fp.title = this._t("pass.schluessel-id", { hex: vp.publicKeyHex });
+        fp.title = `ed25519:${vp.publicKeyHex}`;
         body.appendChild(fp);
 
         const idEl = document.createElement("div");
         idEl.className = "vibe-pass-id";
         idEl.setAttribute("translate", "no");
-        idEl.textContent = this._t("pass.schluessel-id", { hex: vp.publicKeyHex });
+        idEl.textContent = `ed25519:${vp.publicKeyHex}`;
         body.appendChild(idEl);
 
         if (vp.createdAt) {
@@ -570,7 +567,7 @@ class AnazhRealm_netz_identitaet {
         // leer, sonst Überträger eines empfangenen + weiterveränderten Werks).
         this._appendProvenance(bp, vp.publicKeyHex);
         this.saveState();
-        this.journalAppend("ritual", AnazhRealm._datum`Ich versiegelte „${bp.label || name}" mit meinem Vibe-Pass.`, {
+        this.journalAppend("ritual", ["journal.versiegelt", { werk: bp.etikett || bp.label || name }], {
             blueprint: name,
         });
         return { ok: true, authorPubKey: bp.authorPubKey };
@@ -678,9 +675,7 @@ class AnazhRealm_netz_identitaet {
     async empfangeWerk(code, opts = {}) {
         const W = AnazhRealm.WERK_CODE;
         const ab = (grund) => {
-            this._spielerSagt(
-                this._t("pass.werk.abgewiesen", { grund: String(W.grund[grund.split(":")[0]]), code: grund })
-            );
+            this._spielerSagt(["pass.werk.abgewiesen", { grund: String(W.grund[grund.split(":")[0]]), code: grund }]);
             return { ok: false, grund };
         };
         if (typeof code !== "string" || !code.startsWith(W.praefix)) return ab("kein_code");
@@ -744,19 +739,16 @@ class AnazhRealm_netz_identitaet {
             .map((k) => k.replace(/[^\w-]/g, "?").slice(0, 24));
         if (fremd.length)
             this.log(`Geteiltes Werk: fremde Felder der Hülle ignoriert (must-ignore): ${fremd.join(", ")}`, "INFO");
-        this.journalAppend(
-            "witness",
-            AnazhRealm._datum`Ich empfing ein geteiltes Werk von ${this._vibeFingerprint(h.autor)}.`,
+        this.journalAppend("witness", ["journal.werk-empfangen", { von: this._vibeFingerprint(h.autor) }], {
+            name: ziel,
+        });
+        this._spielerSagt([
+            "pass.werk.steht",
             {
-                name: ziel,
-            }
-        );
-        this._spielerSagt(
-            this._t("pass.werk.steht", {
                 werk: String(this._werkLabel(ziel)),
                 autor: String(this._vibeFingerprint(h.autor)),
-            })
-        );
+            },
+        ]);
         return { ok: true, id: steht.id, name: ziel, autor: h.autor, fremd };
     }
 
@@ -768,12 +760,13 @@ class AnazhRealm_netz_identitaet {
         if (!addr) return ab("adresse");
         if (!addr.sig) return ab("unsigniert");
         if ((await this.verifyWorldAddress(addr)) !== "valid") return ab("signatur");
-        this._spielerSagt(
-            this._t("pass.welt.trete-bei", {
+        this._spielerSagt([
+            "pass.welt.trete-bei",
+            {
                 welt: String(addr.label),
                 autor: String(this._vibeFingerprint(addr.authorPubKey)),
-            })
-        );
+            },
+        ]);
         const res = await this._weltBeitritt(addr, { slugHint: opts.slugHint || addr.label });
         return res.ok ? { ok: true, welt: res.worldId, autor: addr.authorPubKey } : ab("beitritt:" + res.reason);
     }
@@ -1205,15 +1198,21 @@ class AnazhRealm_netz_identitaet {
 
     // Den letzten Snapshot der AKTIVEN Welt lokal pinnen (kein DSL-Op): Hash + Speichern, ein bestehender
     // Pin wird aktualisiert; persistiert über _savePinnedManifest ("anazh.pinnedManifest", global).
-    // Größen-Wand: ein Snapshot-JSON über 256 KiB fällt (bounded Speicher; typisch 20-50 KiB).
+    // Größen-Wand (`PIN_WAND`): ein Snapshot-JSON über 256 KiB fällt (bounded Speicher). DIE WAAGE (Gebot 10): der Pin nennt den
+    // größten Schlüssel seines Stands beim Namen — im Log, in der Absage der Wand, in der Antwort. Gemessen an der Playtest-Welt
+    // (Playtest Φ5): bis w8-snapshot-schlank 262 028 B, 116 B unter der Wand (die Arten des Buchs 154 082 B, die Abschrift der
+    // Tier-Seelen, der Journal-Zwilling `text`/`ki`), danach ~68 kB (größter Schlüssel worldJournal).
     pinCurrentWorld(opts) {
         const wm = this.state.worldMeta;
         if (!wm || !wm.worldId) return { ok: false, reason: "no_world" };
         const worldId = wm.worldId;
         const snapshot = this.buildStateSnapshot();
         const json = JSON.stringify(snapshot);
-        if (json.length > 256 * 1024) {
-            return { ok: false, reason: "snapshot_too_large", bytes: json.length };
+        const groesster = Object.keys(snapshot)
+            .map((k) => [k, (JSON.stringify(snapshot[k]) || "").length])
+            .reduce((a, b) => (b[1] > a[1] ? b : a));
+        if (json.length > AnazhRealm.PIN_WAND) {
+            return { ok: false, reason: "snapshot_too_large", bytes: json.length, groesster };
         }
         const hash = this._fastHash(json);
         const entry = {
@@ -1228,9 +1227,12 @@ class AnazhRealm_netz_identitaet {
         this.state.p2p.pinnedWorlds.set(worldId, entry);
         this._savePinnedManifest();
         if (!opts || !opts.silent) {
-            this.log(`Φ5 Welt „${entry.label}" mitgetragen (Snapshot ${(json.length / 1024).toFixed(1)} KiB)`, "INFO");
+            this.log(
+                `Φ5 Welt „${entry.label}" mitgetragen (Snapshot ${(json.length / 1024).toFixed(1)} KiB, größter Schlüssel ${groesster[0]})`,
+                "INFO"
+            );
         }
-        return { ok: true, worldId, hash, bytes: json.length };
+        return { ok: true, worldId, hash, bytes: json.length, groesster };
     }
 
     // Φ5 — eine getragene Welt loslassen. Idempotent. Persistiert.
@@ -2175,10 +2177,10 @@ class AnazhRealm_netz_identitaet {
         this._saveRevokedKeys();
         const purged = this._purgeRevokedArtifacts();
         if (!opts.silent && typeof this.journalAppend === "function") {
-            this.journalAppend(
-                "ritual",
-                AnazhRealm._datum`Ich rief einen Schlüssel zurück (${this._vibeFingerprint(norm)}) — ${purged} Artefakt(e) ausgestoßen.`
-            );
+            this.journalAppend("ritual", [
+                "journal.schluessel-zurueck",
+                { abdruck: this._vibeFingerprint(norm), n: purged },
+            ]);
         }
         return { ok: true, key: norm, purged };
     }
@@ -2342,7 +2344,7 @@ class AnazhRealm_netz_identitaet {
         };
         this._appendProvenance(this.state.signedWorlds[key], vp.publicKeyHex);
         this._saveSignedWorlds();
-        this.journalAppend("ritual", AnazhRealm._datum`Ich veröffentlichte die ${entry.label} mit meinem Vibe-Pass.`, {
+        this.journalAppend("ritual", ["journal.veroeffentlicht", { welt: this._weltNameZeile(entry) }], {
             world: key,
         });
         return { ok: true, authorPubKey: vp.publicKeyHex };
@@ -2413,6 +2415,8 @@ AnazhRealm.WORLD_GUEST_RIGHTS_STAGES = Object.freeze(["frieden", "pfad", "mitsch
 // Voxel-Chunk-Span ist FROZEN (43.2 m, _voxelChunkConfig); Region = 8×43.2 = 345.6 m.
 AnazhRealm.REGION_SPAN_M = 345.6;
 AnazhRealm.REGION_HYSTERESIS_M = 10;
+// DIE WAND DES MITTRAGENS (`pinCurrentWorld`): ein Stand über 256 KiB fällt; die Waage der Playtest-Welt (Playtest Φ5 Q15b) hält 30 % Luft
+AnazhRealm.PIN_WAND = 256 * 1024;
 // DIE BIBLIOTHEK: die Decke je Eintrag (Bytes der Hülle — ein Gesetz wiegt Kilobytes, ein Mesh nie) und ihr Speicher-Schlüssel.
 AnazhRealm.BIBLIOTHEK = Object.freeze({ max: 8192, speicher: "anazh.bibliothek" });
 // DER WERK-CODE (Teilen in EINER Geste, Werk und Welt): Präfix, Decke (ein Werk reist in ≤ 4 KB), Abstand vor der Pose des

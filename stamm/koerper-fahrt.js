@@ -2071,7 +2071,7 @@ class AnazhRealm_koerper_fahrt {
             else N.warm.delete(target);
             if (!w.quelle) continue;
             if (vorher < w.zuend / 2 && w.dT >= w.zuend / 2 && w.dT < w.zuend)
-                this._spielerSagt(this._t("welt.brennpunkt-glimmt", { ding: name(target), linse: name(w.quelle) }));
+                this._spielerSagt(["welt.brennpunkt-glimmt", { ding: name(target), linse: name(w.quelle) }]);
             if (w.dT >= w.zuend) ignitions.push({ t: target, quelle: w.quelle });
         }
         const pm = this.state.playerMesh && this.state.playerMesh.position;
@@ -2079,18 +2079,14 @@ class AnazhRealm_koerper_fahrt {
             const d = pm ? Math.hypot(t.position.x - pm.x, t.position.z - pm.z) : null;
             this._spielerSagt(
                 d != null
-                    ? this._t("welt.sonne-entzuendete-weit", { linse: name(quelle), ding: name(t), m: Math.round(d) })
-                    : this._t("welt.sonne-entzuendete", { linse: name(quelle), ding: name(t) })
+                    ? ["welt.sonne-entzuendete-weit", { linse: name(quelle), ding: name(t), m: Math.round(d) }]
+                    : ["welt.sonne-entzuendete", { linse: name(quelle), ding: name(t) }]
             );
             if (this.journalAppend) {
-                this.journalAppend(
-                    "loss",
-                    AnazhRealm._datum`Die Sonne entzündete durch „${name(quelle)}" „${name(t)}".`,
-                    {
-                        type: t.type,
-                        linse: quelle.type,
-                    }
-                );
+                this.journalAppend("loss", ["journal.sonne-zuendet", { linse: name(quelle), ziel: name(t) }], {
+                    type: t.type,
+                    linse: quelle.type,
+                });
             }
             this._brandEntfachen(t.position.x, t.position.z); // das Feuer fängt das Feld unter dem Werk (feld.K3#2)
             this.removeArchitecture(t);
@@ -2248,12 +2244,10 @@ class AnazhRealm_koerper_fahrt {
             const step = baseStep * strengthOf(ra, "radiating");
             emo.awe = Math.max(0, Math.min(1, (emo.awe || 0) + step));
             emo.peace = Math.max(0, Math.min(1, (emo.peace || 0) + step));
-            this.journalAppendOnce(
-                `radiating:${ra.id}`,
-                "growth",
-                `Eine strahlende Form schwingt nahe — ihre Resonanz wärmt das Gemüt.`,
-                { architecture: ra.type, affordance: "radiating" }
-            );
+            this.journalAppendOnce(`radiating:${ra.id}`, "growth", ["journal.form-strahlt"], {
+                architecture: ra.type,
+                affordance: "radiating",
+            });
         }
     }
 
@@ -2282,12 +2276,10 @@ class AnazhRealm_koerper_fahrt {
             const s = ba.affordanceStrength && ba.affordanceStrength.balancing;
             const strength = typeof s === "number" ? s : 1;
             emo.chaos = Math.max(0, Math.min(1, (emo.chaos || 0) - baseStep * strength));
-            this.journalAppendOnce(
-                `balancing:${ba.id}`,
-                "growth",
-                `Eine gründende Form ruht nahe — der Aufruhr im Gemüt legt sich.`,
-                { architecture: ba.type, affordance: "balancing" }
-            );
+            this.journalAppendOnce(`balancing:${ba.id}`, "growth", ["journal.form-gruendet"], {
+                architecture: ba.type,
+                affordance: "balancing",
+            });
         }
     }
 
@@ -2570,7 +2562,7 @@ class AnazhRealm_koerper_fahrt {
         // IDEMPOTENT am Chokepoint: jeder erfolgreiche Seelen-Bau erfüllt den deferierten Boot-Avatar-Bau
         // mit — der Loop-Defer stapelt keinen zweiten Bau, egal welcher Pfad (Restore/DSL/UI) zuerst baute.
         this.state._deferredAvatarSoul = null;
-        this.log(`Seele gewechselt: ${def.label} (${canonical})`, "INFO");
+        this.log(`Seele gewechselt: ${AnazhRealm._etikettQuelle(def)} (${canonical})`, "INFO"); // das Log spricht die Quell-Sprache
         if (typeof document !== "undefined") {
             const select = document.getElementById("player-soul-select");
             if (select && select.value !== canonical) {
@@ -2583,7 +2575,8 @@ class AnazhRealm_koerper_fahrt {
                 }
             }
             const status = document.getElementById("status-soul");
-            if (status) status.textContent = def.label;
+            if (status && Array.isArray(def.etikett)) this._tSetze(status, def.etikett[0], def.etikett[1]);
+            else if (status) status.textContent = def.label;
         }
         // Stats neu berechnen: bei Seelen-Wechsel tauschen die Tag-Profile (HP-Max, Speed, Sprung, Ausdauer,
         // Resistenzen), die Wandlung füllt die Lebenswerte — nur sie: derselbe Leib neu gebaut (der Boot-Avatar, der Guss nach

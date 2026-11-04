@@ -1057,7 +1057,7 @@ class AnazhRealm_studio_gestalt {
         if (!(Number.isFinite(lodOverride) && this._foundryNurWurf(preset, lodOverride))) {
             if (lod < 0) lod = 0;
             if (lod > 2) lod = 2;
-            // L2 für BÄUME = das Studio-Billboard (bakeImpostorAtlas), nie die schwere L2-Geometrie (~15k Verts ×
+            // L2 für BÄUME = die Karte des EINEN Bäckers (`_karteWeltBacken`), nie die schwere L2-Geometrie (~15k Verts ×
             // Fernwald = Overdraw); Fels/Kristall/Blume bleiben L2-Geometrie. Der fimp-Key trägt den ov-Hash: ein
             // gestempelter Eintrag zieht seine EIGENE Karte, bis dahin geprägte Geometrie (nie die ungeprägte).
             if (lod >= 2 && this._foundryPresetIsTree(preset)) return this._foundryBuildImpostorFlat(entry, preset);

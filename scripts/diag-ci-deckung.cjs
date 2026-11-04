@@ -1070,7 +1070,7 @@ function selbsttest() {
         ["npm ci fehlt", (d) => V(d).steps.splice(3, 1), /\(V\) VORBEREITUNG: „voll" Schritt 4 ist nicht „npm ci"/],
         [
             "Vorbereitung nur in Gruppe 1",
-            (d) => (d.jobs.puls.steps[2].if = "matrix.gruppe == 1"),
+            ["jobs.puls.steps.2.if=", "matrix.gruppe == 1"],
             /\(V\) VORBEREITUNG: „puls" „System-Libs" trägt eine Bedingung/,
         ],
         ["keine Matrix", (d) => delete V(d).strategy.matrix, /\(V\) MATRIX: „voll"/],
@@ -1081,7 +1081,7 @@ function selbsttest() {
         // die zwei Stufen: genau puls und voll, der Puls ohne Bedingung, voll unter der EINEN Bedingung
         [
             "ein dritter Job neben puls und voll",
-            (d) => (d.jobs.check = { steps: [{ name: "X", run: "npm run gate:x" }] }),
+            ["jobs.check=", { steps: [{ name: "X", run: "npm run gate:x" }] }],
             /\(V\) JOB: „check" steht außerhalb von puls und voll/,
         ],
         [
@@ -1091,12 +1091,12 @@ function selbsttest() {
         ],
         [
             "der Puls unter einer Bedingung",
-            (d) => (d.jobs.puls.if = "github.ref == 'refs/heads/main'"),
+            ["jobs.puls.if=", "github.ref == 'refs/heads/main'"],
             /\(V\) PULS: „puls" trägt die Bedingung/,
         ],
-        ["kein Job voll", (d) => delete d.jobs.voll, /\(V\) LEER: kein Job „voll"/],
+        ["kein Job voll", ["jobs.voll"], /\(V\) LEER: kein Job „voll"/],
         // EIN URTEIL JE KOPF: der Kopf-Richter vor der Batterie, nie stumm, EIN Schritt
-        ["kein Kopf-Richter", (d) => delete d.jobs.kopf, /\(V\) KOPF: kein Job „kopf"/],
+        ["kein Kopf-Richter", ["jobs.kopf"], /\(V\) KOPF: kein Job „kopf"/],
         [
             "die Batterie ohne den Kopf-Richter",
             (d) => {
@@ -1107,7 +1107,7 @@ function selbsttest() {
         ],
         [
             "der Kopf-Richter unter einer anderen Bedingung",
-            (d) => (d.jobs.kopf.if = "github.ref == 'refs/heads/main'"),
+            ["jobs.kopf.if=", "github.ref == 'refs/heads/main'"],
             /\(V\) KOPF: „kopf" läuft unter „github\.ref == 'refs\/heads\/main'"/,
         ],
         [
@@ -1120,8 +1120,8 @@ function selbsttest() {
             (d) => d.jobs.kopf.steps.push({ name: "X", run: "npm run gate:x" }),
             /\(V\) KOPF: „kopf" trägt 2 Schritte neben checkout/,
         ],
-        ["die Ausgabe nicht weitergereicht", (d) => delete d.jobs.kopf.outputs, /\(V\) KOPF: „kopf" reicht outputs\.voll nicht/],
-        ["der Puls wartet auf den Kopf", (d) => (d.jobs.puls.needs = KOPF_JOB), /\(V\) PULS: „puls" .*wartet auf kopf/],
+        ["die Ausgabe nicht weitergereicht", ["jobs.kopf.outputs"], /\(V\) KOPF: „kopf" reicht outputs\.voll nicht/],
+        ["der Puls wartet auf den Kopf", ["jobs.puls.needs=", KOPF_JOB], /\(V\) PULS: „puls" .*wartet auf kopf/],
         // die Caches: der Schlüssel vor dem Cache, der Cache vor npm ci
         [
             "ein Cache nach npm ci",
@@ -1488,7 +1488,23 @@ async function selbsttestZeiten() {
     );
     const ok = u === "ROT: /actions/workflows/check.yml/runs Seite 1 trägt 0 Läufe von 0 nach 3 Versuchen";
     console.log(`  ${ok ? "✅" : "❌"} Selbsttest „ci-zeiten an einer leeren API" → ${u}`);
-    return ok ? [] : [`ci-zeiten an einer leeren API: ${u}`];
+    // ein roter, nie gelandeter Lauf (z188: w6-weiches, die Kreatur-Linse 214 → 723 s) verändert die Tafel nicht
+    const [T, G] = ["t".repeat(40), "a".repeat(40)];
+    const jetzt = { jobs: { voll: { steps: [{ name: "A", run: "npm run gate:a" }] } } };
+    const zeit = (s) => new Date(Date.UTC(2026, 10, 4) + s * 1000).toISOString();
+    const job = (s, wie) => ({ name: "voll 1/2 cpu", started_at: zeit(0), completed_at: zeit(s + 20), conclusion: wie, steps: [{ name: "A", started_at: zeit(10), completed_at: zeit(10 + s), conclusion: wie }] });
+    const laeufe = [[1, T, 723, "failure"], [2, G, 214, "success"]];
+    const api = async (p) =>
+        p.includes("/runs?per_page")
+            ? { total_count: 2, workflow_runs: laeufe.map(([id, sha]) => ({ id, head_sha: sha, head_branch: "integ-probe", status: "completed", run_attempt: 1, created_at: new Date().toISOString() })) }
+            : p.startsWith("/contents/")
+              ? { content: Buffer.from(yaml.dump(jetzt)).toString("base64") }
+              : { jobs: laeufe.filter(([id]) => p === `/actions/runs/${id}/attempts/1/jobs?per_page=100`).map(([, , s, wie]) => job(s, wie)) };
+    const t = await messe(api, jetzt, {}, 0, (sha) => sha === G).then((x) => x.out, (e) => ({ schritte: {}, e }));
+    const gut = t.kopf === G && t.schritte.A && t.schritte.A.s === 214;
+    const w = `A ${t.schritte.A ? t.schritte.A.s : "—"} s, Kopf ${String(t.kopf).slice(0, 8)}`;
+    console.log(`  ${gut ? "✅" : "❌"} Selbsttest „ein roter, nie gelandeter Lauf mit 723 s" → ${w}`);
+    return (ok ? [] : [`ci-zeiten an einer leeren API: ${u}`]).concat(gut ? [] : [`der Täter-Lauf ${T.slice(0, 8)} vergiftet die Tafel: ${w}`]);
 }
 async function selbsttestLauf() {
     console.log("=== CI-DECKUNG — Selbsttest (ohne Datei) ===");

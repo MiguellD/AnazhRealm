@@ -41,8 +41,12 @@ class AnazhRealm_dienst {
     // DER NAME IST DATUM, NIE ANWEISUNG (ultiversum K5): jeder Name und fremde Text in Erinnerung oder Prompt reist isoliert
     // (U+2068 … U+2069, unsichtbar) als Tag `_datum\`… ${x}\``, Zahlen bleiben Zahlen; die Tür macht Platzhalter daraus — das Modell
     // liest nie, was ein Fremder schrieb (der gehorsame Feind von gate:v1-pfad --feind tat 2 von 6), die Antwort bekommt die Namen.
+    // der Text ohne jede Isolations-Marke (U+2066 … U+2069): was der Spieler liest — der Satz einer Erinnerung ist `ki` ohne sie
+    static _ohneIsolation(s) {
+        return String(s == null ? "" : s).replace(/[⁦-⁩]/g, "");
+    }
     static _datum(teile, ...werte) {
-        const iso = (s) => "⁨" + String(s == null ? "" : s).replace(/[⁦-⁩]/g, "") + "⁩";
+        const iso = (s) => "⁨" + AnazhRealm._ohneIsolation(s) + "⁩";
         if (!Array.isArray(teile) || !teile.raw) return iso(teile);
         let t = teile[0];
         for (let i = 0; i < werte.length; i++)
@@ -51,18 +55,25 @@ class AnazhRealm_dienst {
     }
     // jeder isolierte Text (bis zum Zeilenende, wenn ein Schnitt ihn kappte) wird «N1», «N2» … — derselbe Text dieselbe Marke
     static _kiPlatzhalter(text, karte) {
-        return String(text == null ? "" : text)
-            .replace(/⁨([^⁩\n]*)⁩?/g, (_, s) => {
+        return AnazhRealm._ohneIsolation(
+            String(text == null ? "" : text).replace(/⁨([^⁩\n]*)⁩?/g, (_, s) => {
                 if (!karte.has(s)) karte.set(s, `«N${karte.size + 1}»`);
                 return karte.get(s);
             })
-            .replace(/[⁦-⁩]/g, "");
+        );
     }
     // Eine Erinnerung fürs Modell: ein Satz dieser Welt (`d`, nur journalAppend) trägt Namen isoliert in `ki`, jede andere ist Datum.
     _erinnerungFuerKi(e) {
+        const wert = (w) => (typeof w === "number" ? String(w) : AnazhRealm._datum(w));
+        const sp = AnazhRealm._spracheKi();
+        const satz = Array.isArray(e.t)
+            ? AnazhRealm._tIn(sp, e.t[0], e.t[1], wert)
+            : e.d === 1
+              ? e.ki || e.text
+              : AnazhRealm._datum(e.text);
         return `[${String(e.type)
             .replace(/[^a-z]/gi, "")
-            .slice(0, 12)}] ${e.d === 1 ? e.ki || e.text : AnazhRealm._datum(e.text)}`;
+            .slice(0, 12)}] ${satz}`;
     }
 
     // `form`: die Antwort-Form des Rufers als JSON-Schema über die Platzhalter DIESER Anfrage (`form(platz)`; die Seele eines
@@ -71,21 +82,21 @@ class AnazhRealm_dienst {
         const llm = this.state.llm;
         const defs = this.llmProviderDefs();
         const def = defs[llm.provider];
-        if (!def) return { error: `Unbekannter Provider: ${llm.provider}` };
-        if (!llm.enabled) return { error: "LLM nicht aktiv" };
+        if (!def) return { error: ["llm.fehler.provider", { provider: String(llm.provider) }] };
+        if (!llm.enabled) return { error: ["llm.fehler.aus"] };
         const cfg = llm.providerConfig[llm.provider];
         if (def.requiresKey && (!cfg || !cfg.apiKey))
-            return {
-                error: `für ${this._t(def.label)} fehlt der Schlüssel — trage ihn unter Einstellungen → Begleiter-Stimme ein`,
-            };
+            return { error: ["llm.fehler.schluessel", { anbieter: [def.label] }] };
         while (llm.inFlight) {
-            if (hintergrund || !this._llmHintergrund) return { error: "Anfrage läuft bereits" };
+            if (hintergrund || !this._llmHintergrund) return { error: ["llm.fehler.laeuft"] };
             this._llmHintergrund.abort();
             await this._llmFrei;
         }
         const nowSec = performance.now() / 1000;
         if (hintergrund && nowSec - llm.lastResponseAt < llm.minGapSeconds) {
-            return { error: `Kurze Pause — ${(llm.minGapSeconds - (nowSec - llm.lastResponseAt)).toFixed(1)} s` };
+            return {
+                error: ["llm.fehler.pause", { s: (llm.minGapSeconds - (nowSec - llm.lastResponseAt)).toFixed(1) }],
+            };
         }
         llm.inFlight = true;
         const abbruch = new globalThis.AbortController();
@@ -138,10 +149,10 @@ class AnazhRealm_dienst {
                 if (useProxy && (res.status === 404 || res.status === 405) && !isModelMissing) {
                     // Der Proxy ist der save-server, der die Seite liefert: antwortet der Ursprung 404/405, läuft die
                     // Seite über einen anderen Server (die echte Ursache, nie „HTTP 404" ohne Wort).
-                    llm.lastError = `der Proxy fehlt: ${fetchUrl} antwortet ${res.status} — die Seite läuft nicht über den save-server (npm start)`;
+                    llm.lastError = ["llm.fehler.proxy-fehlt", { url: fetchUrl, status: res.status }];
                 } else if (isModelMissing && this.state.llm.provider === "ollama") {
                     const m = (cfg && cfg.model) || "?";
-                    llm.lastError = `Modell „${m}" nicht gefunden. Prüfe mit \`ollama list\` (lokal) oder im Provider-Dashboard (Cloud) welche Modelle verfügbar sind, und trage den exakten Namen ins Modell-Feld ein.`;
+                    llm.lastError = ["llm.fehler.modell-fehlt", { modell: m }];
                 } else {
                     llm.lastError = `HTTP ${res.status}: ${text.slice(0, 160)}`;
                 }
@@ -159,7 +170,7 @@ class AnazhRealm_dienst {
             if (typeof parsed.erinnerung === "string") parsed.erinnerung = zurueck(parsed.erinnerung);
             return parsed;
         } catch (err) {
-            if (abbruch.signal.aborted) return { error: "dem Satz des Spielers gewichen" };
+            if (abbruch.signal.aborted) return { error: ["llm.fehler.gewichen"] };
             // V7.96 — CORS- und Netzwerk-Fehler erkennen + dem Spieler einen
             // klaren Hinweis geben. „Failed to fetch" ist der typische
             // Browser-Fehler bei CORS-Block + Netzwerk-Down.
@@ -175,22 +186,19 @@ class AnazhRealm_dienst {
             } catch (_eU) {}
             if (isCorsLikely && zielLokal && !ueberProxy) {
                 const pv = this.state.llm.provider;
-                llm.lastError =
-                    `Keine Antwort von ${zielHost || "localhost"} — der lokale Dienst läuft nicht` +
-                    (pv === "ollama" ? " (starte ihn: `ollama serve`)." : ".");
+                llm.lastError = [
+                    pv === "ollama" ? "llm.fehler.lokal-ollama" : "llm.fehler.lokal",
+                    { host: zielHost || "localhost" },
+                ];
             } else if (isCorsLikely && ueberProxy) {
                 // Der Proxy ist der Ursprung der Seite (`_llmProxyUrl`): ohne Antwort läuft der save-server nicht.
-                llm.lastError = `Proxy nicht erreichbar: ${this._llmProxyUrl()} — läuft der save-server (npm start)?`;
+                llm.lastError = ["llm.fehler.proxy-still", { url: this._llmProxyUrl() }];
             } else if (isCorsLikely && typeof navigator !== "undefined" && navigator.onLine === false) {
-                llm.lastError = "kein Netz — der Browser ist offline.";
+                llm.lastError = ["llm.fehler.offline"];
             } else if (isCorsLikely && this.state.llm.provider === "ollama") {
-                llm.lastError =
-                    `${zielHost || "Die Cloud"} blockt den Browser-Direct-Call (CORS). Optionen: ` +
-                    "(a) lokales Ollama auf localhost:11434, " +
-                    "(b) aktiviere 'Proxy über save-server' im Einstellungen-Drawer (braucht `npm start`), " +
-                    "(c) Provider mit CORS-Header (Groq, Gemini, OpenRouter).";
+                llm.lastError = zielHost ? ["llm.fehler.cors-ollama", { host: zielHost }] : ["llm.fehler.cors-cloud"];
             } else if (isCorsLikely) {
-                llm.lastError = `${zielHost || "der Dienst"} ist nicht erreichbar oder blockt den Browser-Aufruf (CORS).`;
+                llm.lastError = zielHost ? ["llm.fehler.cors", { host: zielHost }] : ["llm.fehler.cors-dienst"];
             } else {
                 llm.lastError = rawMsg;
             }
@@ -223,20 +231,19 @@ class AnazhRealm_dienst {
             const res = await fetch(ep + "/api/tags", { signal: ctl ? ctl.signal : undefined });
             if (uhr) clearTimeout(uhr);
             if (!res.ok) {
-                fehler = `${host} antwortet ${res.status} auf /api/tags — ist das ein Ollama-Dienst?`;
+                fehler = ["llm.fehler.tags", { host, status: res.status }];
             } else {
                 const j = await res.json().catch(() => null);
                 const namen =
                     j && Array.isArray(j.models) ? j.models.map((m) => m && (m.name || m.model)).filter(Boolean) : [];
                 const m = String(cfg.model || "");
                 if (m && !namen.some((n) => n === m || n === m + ":latest"))
-                    fehler =
-                        `Modell „${m}" ist auf ${host} nicht installiert — ` +
-                        (namen.length ? `vorhanden: ${namen.slice(0, 4).join(", ")} ` : "keines vorhanden ") +
-                        `(ollama pull ${m}).`;
+                    fehler = namen.length
+                        ? ["llm.fehler.nicht-installiert", { modell: m, host, namen: namen.slice(0, 4).join(", ") }]
+                        : ["llm.fehler.keines-installiert", { modell: m, host }];
             }
         } catch (_e) {
-            fehler = `Keine Antwort von ${host} — der lokale Dienst läuft nicht (starte ihn: \`ollama serve\`).`;
+            fehler = ["llm.fehler.lokal-ollama", { host }];
         }
         if (llm.enabled && llm.provider === "ollama") {
             llm.lastError = fehler;
@@ -249,21 +256,32 @@ class AnazhRealm_dienst {
     // Geordnete Erinnerungen; ein Auszug fließt in den LLM-System-Prompt, damit er aus der Geschichte
     // erzählt. `seen` hält One-Shot-Schlüssel (z. B. „firstDragon") — jede Erinnerung nur einmal.
 
-    journalAppend(type, text, ctx) {
+    // DIE ERINNERUNG (spielgang.K5): ein Satz dieser Welt ist eine Zeile der Tafel `[schlüssel, werte]` — `t` trägt sie, das
+    // Tagebuch liest sie in der Sprache von jetzt, die Tür zum Modell isoliert ihre Werte (`_erinnerungFuerKi`); `text` ist
+    // dieselbe Zeile in der Quell-Sprache (de: Suche, Speicher, ältere Leser). Ein Text ist ein fremder Satz (ein Portal, ein
+    // Mitspieler): Daten, wie er kam.
+    journalAppend(type, zeile, ctx) {
         const j = this.state.worldJournal;
         if (!j || !Array.isArray(j.entries)) return;
-        if (typeof text !== "string" || text.length === 0) return;
         const entry = {
             id: j.entries.length + 1,
             at: Date.now(),
-            tick: performance.now() / 1000,
             type: String(type || "note"),
-            text: text.slice(0, 240),
             d: 1,
         };
+        if (Array.isArray(zeile)) {
+            entry.t = zeile[1] ? [zeile[0], zeile[1]] : [zeile[0]];
+            AnazhRealm._journalZeile(entry);
+            if (ctx && typeof ctx === "object") entry.ctx = ctx;
+            j.entries.push(entry);
+            if (j.entries.length > (j.entryCap || 200)) j.entries = j.entries.slice(-j.entryCap);
+            return;
+        }
+        if (typeof zeile !== "string" || zeile.length === 0) return;
+        entry.text = zeile.slice(0, 240);
         // ein Schnitt mitten in einem Namen schließt seine Isolation; der Spieler liest den Satz rein, das Modell `ki` isoliert
         if (entry.text.lastIndexOf("⁨") > entry.text.lastIndexOf("⁩")) entry.text += "⁩";
-        if (/[⁦-⁩]/.test(entry.text)) [entry.ki, entry.text] = [entry.text, entry.text.replace(/[⁦-⁩]/g, "")];
+        if (/[⁦-⁩]/.test(entry.text)) [entry.ki, entry.text] = [entry.text, AnazhRealm._ohneIsolation(entry.text)];
         if (ctx && typeof ctx === "object") entry.ctx = ctx;
         j.entries.push(entry);
         if (j.entries.length > (j.entryCap || 200)) {
@@ -271,15 +289,35 @@ class AnazhRealm_dienst {
         }
     }
 
+    // die Zeile einer Erinnerung: `t` ist die EINE Quelle, `text` ihre Lesart in der Quell-Sprache (de) — nie gespeichert
+    // (nicht aufzählbar: der Stand trägt jeden Satz einmal), jeder Leser (Suche, Proben, Mesh) liest sie wie ein Feld
+    static _journalZeile(e) {
+        if (e && Array.isArray(e.t) && !Object.getOwnPropertyDescriptor(e, "text"))
+            Object.defineProperty(e, "text", {
+                configurable: true,
+                get: () => AnazhRealm._tIn("de", e.t[0], e.t[1]),
+            });
+        return e;
+    }
+
+    // die Erinnerung am Knoten (Tagebuch, Chronik): ein Satz der Welt ist eine Zeile der Tafel (er wechselt mit der Sprache);
+    // ein fremder Satz und ein Eintrag aus einem Stand vor der Tafel sind Daten, wie sie kamen
+    _journalSetze(el, e) {
+        if (Array.isArray(e.t)) return this._tSetze(el, e.t[0], e.t[1]);
+        el.textContent = e.text || "—";
+        el.setAttribute("translate", "no");
+        return el;
+    }
+
     // Idempotente Variante: nur schreiben, wenn der Schlüssel noch nie
     // gesehen wurde. Für „erstes Mal X"-Erinnerungen.
-    journalAppendOnce(key, type, text, ctx) {
+    journalAppendOnce(key, type, zeile, ctx) {
         const j = this.state.worldJournal;
         if (!j) return;
         if (!j.seen) j.seen = {};
         if (j.seen[key]) return;
         j.seen[key] = true;
-        this.journalAppend(type, text, ctx);
+        this.journalAppend(type, zeile, ctx);
     }
 
     // Frame-Hook alle 5 s (Throttle-Anker lastSelfAnalysis, Takt wie selfAwarenessAnalyze): schreibt
@@ -289,20 +327,19 @@ class AnazhRealm_dienst {
         if (!m || !m.worldId) return;
         // Erste Kreatur
         if (this.state.creatures.length > 0) {
-            this.journalAppendOnce("firstCreature", "creatures", "Die erste Kreatur regte sich.");
+            this.journalAppendOnce("firstCreature", "creatures", ["journal.erste-kreatur"]);
         }
         // Erstes Bauwerk
         if (Array.isArray(this.state.architectures) && this.state.architectures.length > 0) {
             const a = this.state.architectures[0];
-            this.journalAppendOnce(
-                "firstArchitecture",
-                "architecture",
-                AnazhRealm._datum`Das erste Bauwerk entstand: ${a.type || "Struktur"}.`
-            );
+            this.journalAppendOnce("firstArchitecture", "architecture", [
+                "journal.erstes-bauwerk",
+                { art: a.type || ["journal.struktur"] },
+            ]);
         }
         // Wetter-Wechsel: aus prevWeather merken, der nicht im Journal-State liegt
         if (this._weatherIsWet()) {
-            this.journalAppendOnce("firstRain", "weather", "Der erste Regen begann.");
+            this.journalAppendOnce("firstRain", "weather", ["journal.erster-regen"]);
         }
         // Hochfitness-Programm aus der History — wir wandern beim ersten
         // finalisierten Eintrag mit fitness >= 0.7 in eine Erinnerung.
@@ -315,7 +352,10 @@ class AnazhRealm_dienst {
                 this.journalAppendOnce(
                     `highFitness:${best.id}`,
                     "growth",
-                    AnazhRealm._datum`Etwas Wirkungsvolles ist mir gelungen: ${JSON.stringify(best.program).slice(0, 100)} (Fitness ${best.fitness.toFixed(2)}).`,
+                    [
+                        "journal.wirkung",
+                        { programm: JSON.stringify(best.program).slice(0, 100), fitness: best.fitness.toFixed(2) },
+                    ],
                     { programId: best.id, fitness: best.fitness }
                 );
             }
@@ -334,7 +374,13 @@ class AnazhRealm_dienst {
                     this.journalAppendOnce(
                         `emotionPeak:${axis}`,
                         "emotion",
-                        AnazhRealm._datum`Eine Welle ${axis} (${v.toFixed(2)}) durchzog uns.`,
+                        [
+                            "journal.gefuehl-welle",
+                            {
+                                achse: AnazhRealm.EMOTION_LABEL[axis] ? [AnazhRealm.EMOTION_LABEL[axis]] : axis,
+                                wert: v.toFixed(2),
+                            },
+                        ],
                         { axis, value: v }
                     );
                     this.state.worldJournal.seenLow[axis] = false;
@@ -378,15 +424,17 @@ class AnazhRealm_dienst {
     // einmal (ein gehaltener Rechtsklick spammt nicht). Befund: „Bauen: nicht genug Material", „Sonnen-Brennglas entzündete"
     // standen nur im eingeklappten Log. Leser: jede Absage des Bau-Flusses (FERTIGEN, Bau-Modus, Setzen) und jede
     // Zerstörung, die die Welt selbst wirkt.
-    _spielerSagt(text) {
-        const t = String(text || "");
+    _spielerSagt(zeile) {
+        // eine Zeile der Tafel `[schlüssel, werte]` (sie wechselt mit der Sprache) oder ein Text (Daten); das Log liest die
+        // Quell-Sprache, die Drossel den Text
+        const t = Array.isArray(zeile) ? AnazhRealm._tIn("de", zeile[0], zeile[1]) : String(zeile || "");
         if (!t) return;
         this.log(t, "INFO");
         const jetzt = performance.now();
         const alt = this._spielerSagtLetzte;
         if (alt && alt.t === t && jetzt - alt.ms < 2000) return;
         this._spielerSagtLetzte = { t, ms: jetzt };
-        this._chatEcho(t);
+        this._chatEcho(zeile);
     }
 
     // DER EINE MELDER (K22 Nachbesserung 3): jeder Bruch meldet ERROR — eine NEUE Meldung sofort, dieselbe wieder (ein
@@ -528,13 +576,13 @@ class AnazhRealm_dienst {
         return f + (dt < 500 ? 0 : dt <= 1000 ? 500 : 1000);
     }
 
-    // Distanz² eines Welt-Punkts zum Spieler (für den Bake-Takt; ohne Spieler: vorne).
+    // Der Rang eines Welt-Punkts² (für den Bake-Takt und jede Schlange, die nach ihm reiht; ohne Spieler: vorne): DER EINE RANG,
+    // die Zeit bis Bedarf in Metern zu Fuß (`_bedarfWeg`, w7-rang) — im Stand der Abstand², voraus rückt ein Ding um s / v0 näher.
+    // Leser: der Bake-Takt (`_weltBakeErlaubt` über `_archZiegelD2`, die Gesetz-Kapsel `_streuGesetzSpawn`), die Raten des
+    // Bau-Satzes, die Glieder der Kreaturen, die Schlange des Walds (`_waldPlanListe`). Bis w7-rang der Abstand² allein.
     _spielerD2(x, z) {
-        const pm = this.state.playerMesh && this.state.playerMesh.position;
-        if (!pm) return 0;
-        const dx = x - pm.x,
-            dz = z - pm.z;
-        return dx * dx + dz * dz;
+        if (!(this.state.playerMesh && this.state.playerMesh.position)) return 0;
+        return this._bedarfWeg(x, z) ** 2;
     }
     // Die Takt-Distanz eines Baus: der Schlangen-Rang (`_ziegelD2`, gebaute Meshes backen nur vor) oder seine Lage.
     _archZiegelD2(entry) {
@@ -1437,7 +1485,12 @@ class AnazhRealm_dienst {
     // Sprache ist ein Wort des Spielers je Gerät (`anazh.sprache`, die Wahl in den Einstellungen; `?sprache=` übersteuert).
     // `pseudo` ist die Sprache der Linse (diag-sprache): jedes Stück der Tafel steht in ⟦ ⟧ — Wort-Text außerhalb ist hart.
     static _t(schluessel, werte) {
-        const sp = AnazhRealm._sprache();
+        return AnazhRealm._tIn(AnazhRealm._sprache(), schluessel, werte);
+    }
+
+    // die Zeile in einer bestimmten Sprache (`de` ist die Quell-Sprache des Gesetzes: DSL-Wörter, Log, Journal-Quelle);
+    // `wert` formt jeden einfachen Wert (die Tür der KI isoliert damit Namen, `_datum`)
+    static _tIn(sp, schluessel, werte, wert = String) {
         const tafel = AnazhRealm.TEXTE;
         const zeile = tafel[sp === "pseudo" ? "de" : sp][schluessel];
         if (typeof zeile !== "string") throw new Error(`SPRACHE: die Tafel trägt keinen Text „${schluessel}“`);
@@ -1448,9 +1501,58 @@ class AnazhRealm_dienst {
                 if (!m) return sp === "pseudo" && stueck ? `⟦${stueck}⟧` : stueck;
                 if (!werte || werte[m[1]] == null)
                     throw new Error(`SPRACHE: „${schluessel}“ verlangt den Wert ${m[1]}`);
-                return String(werte[m[1]]);
+                // ein Wert als `[schlüssel, werte]` ist selbst eine Zeile der Tafel (gelesen in derselben Sprache), eine Liste
+                // solcher Zeilen `[[schlüssel, werte], …]` steht mit Komma
+                const w = werte[m[1]];
+                if (Array.isArray(w) && Array.isArray(w[0]))
+                    return w.map((z) => AnazhRealm._tIn(sp, z[0], z[1], wert)).join(", ");
+                if (Array.isArray(w)) return AnazhRealm._tIn(sp, w[0], w[1], wert);
+                // in der Linsen-Sprache steht ein Wert (ein Name, eine Zahl: Daten) zwischen den Isolat-Zeichen U+2068 … U+2069
+                return sp === "pseudo" ? `⁨${wert(w)}⁩` : wert(w);
             })
             .join("");
+    }
+
+    // DAS ETIKETT (spielgang.K5): ein Ding der Welt (Bauplan, Stoff, Werkzeug, Studio-Werk) trägt seinen Namen als SCHLÜSSEL
+    // `etikett: [schlüssel, werte]`, nie als aufgelösten Text — `label` liest ihn bei jedem Zugriff in der Sprache von jetzt,
+    // so wechselt jeder Leser (Hotbar, Katalog, Inventar, Tooltip) mit der Sprache, ohne dass er es weiß. Wer `label`
+    // schreibt (der Spieler benennt um), macht es zu Daten: der Schlüssel fällt.
+    static _etikett(o) {
+        if (!o) return o;
+        for (const feld of ["parts", "bodyParts"])
+            if (Array.isArray(o[feld])) for (const p of o[feld]) AnazhRealm._etikett(p);
+        const e = o.etikett;
+        if (!e || typeof e !== "object") return o;
+        // `etikett: [schlüssel, werte]` trägt `label`; `etikett: { feld: [schlüssel, werte], … }` je Feld eine Zeile
+        for (const feld of Array.isArray(e) ? ["label"] : Object.keys(e))
+            Object.defineProperty(o, feld, {
+                configurable: true,
+                enumerable: true,
+                get() {
+                    const z = Array.isArray(this.etikett)
+                        ? feld === "label"
+                            ? this.etikett
+                            : null
+                        : this.etikett?.[feld];
+                    return z ? AnazhRealm._t(z[0], z[1]) : undefined;
+                },
+                set(v) {
+                    if (Array.isArray(this.etikett) || !this.etikett) delete this.etikett;
+                    else delete this.etikett[feld];
+                    Object.defineProperty(this, feld, {
+                        value: v,
+                        writable: true,
+                        enumerable: true,
+                        configurable: true,
+                    });
+                },
+            });
+        return o;
+    }
+    // der Name in der Quell-Sprache des Gesetzes (de) — für die Wörter der DSL, die nie mit der Sprache des Spielers wechseln
+    static _etikettQuelle(o) {
+        if (!o) return undefined;
+        return Array.isArray(o.etikett) ? AnazhRealm._tIn("de", o.etikett[0], o.etikett[1]) : o.label;
     }
 
     _t(schluessel, werte) {
@@ -1479,6 +1581,14 @@ class AnazhRealm_dienst {
         return sp;
     }
 
+    // DIE SPRACHE DER KI (spielgang.K5#2) ist die Sprache des Spielers: die Spalte der Tafel, die er gewählt hat (die Linsen-
+    // Sprache `pseudo` spricht mit der KI in der Quell-Sprache). Leser: der System-Prompt der Welt (`llmBuildSystemPrompt`), der
+    // Prompt der Seele (`_buildCreaturePersonaPrompt`), die Erinnerung an das Modell (`_erinnerungFuerKi`), die Stimme (`grokRender`).
+    static _spracheKi() {
+        const sp = AnazhRealm._sprache();
+        return sp === "pseudo" ? "de" : sp;
+    }
+
     // der Wechsel am Ort: das Wort auf dem Gerät, die Spalte neu gelesen, das DOM aus index.html neu gefüllt (`_sprachDom`) —
     // jede Zeile, die danach entsteht, liest die neue Spalte; die Seite lädt nie neu (gate:weltgrenze: `location.reload`
     // steht nur im lauten Rückfall des Welt-Wechsels)
@@ -1488,6 +1598,22 @@ class AnazhRealm_dienst {
         localStorage.setItem("anazh.sprache", sp);
         AnazhRealm._spracheJetzt = sp;
         AnazhRealm._sprachDom(document);
+        // die Zeichner der Oberfläche zeichnen neu (jeder liest die Tafel und die Etiketten in der neuen Spalte); die Linse
+        // (gate:sprache --lebend, der Wechsel am Ort) nennt jede Zeile, die danach noch in der alten Sprache steht, beim Erzeuger
+        for (const z of AnazhRealm.SPRACH_ZEICHNER) this[z]();
+    }
+
+    // DIE ZEILE AM KNOTEN (spielgang.K5): ein Knoten, den ein Bauer EINMAL füllt, trägt seinen Schlüssel (`data-t`, je Attribut
+    // `data-t-<attribut>`, die Werte als JSON daneben) — `_sprachDom` füllt ihn bei jedem Wechsel neu
+    _tSetze(el, schluessel, werte, attr) {
+        const name = attr ? "data-t-" + attr : "data-t";
+        el.setAttribute(name, schluessel);
+        if (werte) el.setAttribute(name + "-werte", JSON.stringify(werte));
+        else el.removeAttribute(name + "-werte");
+        const text = AnazhRealm._t(schluessel, werte);
+        if (attr) el.setAttribute(attr, text);
+        else el.textContent = text;
+        return el;
     }
 
     // die Wahl in den Einstellungen (#sprache-wahl): sie zeigt die Sprache des Geräts, ein Wechsel ruft `_spracheSetzen`
@@ -1550,10 +1676,12 @@ class AnazhRealm_dienst {
         if (!wurzel || typeof wurzel.querySelectorAll !== "function") return;
         const t = AnazhRealm._t;
         if (wurzel.documentElement) wurzel.documentElement.lang = AnazhRealm._sprache() === "en" ? "en" : "de";
-        for (const el of wurzel.querySelectorAll("[data-t]")) el.textContent = t(el.dataset.t);
+        const werte = (el, name) => (el.hasAttribute(name) ? JSON.parse(el.getAttribute(name)) : undefined);
+        for (const el of wurzel.querySelectorAll("[data-t]"))
+            el.textContent = t(el.dataset.t, werte(el, "data-t-werte"));
         for (const a of AnazhRealm.SPRACH_ATTRIBUTE)
             for (const el of wurzel.querySelectorAll(`[data-t-${a}]`))
-                el.setAttribute(a, t(el.getAttribute(`data-t-${a}`)));
+                el.setAttribute(a, t(el.getAttribute(`data-t-${a}`), werte(el, `data-t-${a}-werte`)));
     }
 
     // ═══ DIE STAND-WACHE (Welle K, Lehre 25, Gebot 7) ═══
@@ -1782,3 +1910,20 @@ AnazhRealm.WELT_SCHWUND_MS = 500;
 // DIE ATTRIBUTE DER SPRACHE (`_sprachDom`): je Name trägt `data-t-<name>` den Schlüssel seiner Zeile in der Tafel
 // (`data-hud-zeigen` liest das CSS: der Wink `body.hud-hidden::after`).
 AnazhRealm.SPRACH_ATTRIBUTE = Object.freeze(["title", "placeholder", "aria-label", "alt", "data-hud-zeigen"]);
+// DIE ZEICHNER DER OBERFLÄCHE (spielgang.K5, der Wechsel am Ort): jeder baut sein Stück aus Tafel und Etiketten neu und ist
+// wiederholbar; was ein Bauer EINMAL baut, trägt seine Schlüssel am Knoten (`_tSetze`) und füllt `_sprachDom`
+AnazhRealm.SPRACH_ZEICHNER = Object.freeze([
+    "renderInventoryUI",
+    "_renderHotbarDOM",
+    "_renderWorkshopDOM",
+    "renderLibraryUI",
+    "_renderKeybindingsUI",
+    "updateWorldInfo",
+    "_refreshSoulSelect",
+    "_renderCreatureListUI",
+    "_renderVibePassUI",
+    "_renderMeshWorldCatalog",
+    "_renderLobbyUI",
+    "llmRefreshProviderUI",
+    "_populateCompanionVoiceSelect",
+]);

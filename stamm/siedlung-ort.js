@@ -420,6 +420,7 @@ class AnazhRealm_siedlung_ort {
         const bp = this.state.blueprints && entry ? this.state.blueprints[entry.type] : null;
         const roh = (entry && entry.portalMeta) || (bp && bp.portalMeta) || null;
         if (roh && roh.worldAddress) return null;
+        if (roh && (roh.gesetz || roh.weltId)) return null; // ein Welt-Tor des Ultiversums führt in eine Welt, kein Studio-Fenster
         return this._sanitizePortalMeta(roh, entry ? entry.type : "Portal");
     }
 
@@ -1908,7 +1909,7 @@ class AnazhRealm_siedlung_ort {
         // Akt beim Spieler (Chat „dorf"), mit `position` nur dort — eine leere oder unendliche ist eine laute Absage.
         if ("position" in o && !(o.position && Number.isFinite(o.position.x) && Number.isFinite(o.position.z))) {
             this.log("Siedlung ohne Ort: der verlangte Ort fehlt — keine Gründung (nie still beim Spieler).", "ERROR");
-            this._chatEcho?.(this._t("chat.befehl.dorf.ort-fehlt"));
+            this._chatEcho?.(["chat.befehl.dorf.ort-fehlt"]);
             return null;
         }
         // FOUNDRY-WARM — Dorf braucht export-settlement. Kaltes Buch → LAUT blockieren
@@ -1995,11 +1996,14 @@ class AnazhRealm_siedlung_ort {
             if (this._spielerVerlangt(o.verlangt))
                 this._chatEcho?.(
                     res.placed > 0
-                        ? this._t(res.placed === 1 ? "chat.befehl.dorf.steht-eins" : "chat.befehl.dorf.steht", {
-                              name: res.name || this._t("chat.befehl.dorf.name-leer"),
-                              n: res.placed,
-                          })
-                        : this._t("chat.befehl.dorf.kein-grund")
+                        ? [
+                              res.placed === 1 ? "chat.befehl.dorf.steht-eins" : "chat.befehl.dorf.steht",
+                              {
+                                  name: res.name || ["chat.befehl.dorf.name-leer"],
+                                  n: res.placed,
+                              },
+                          ]
+                        : ["chat.befehl.dorf.kein-grund"]
                 );
             // Konsum: Blick (nur für den, der das Dorf verlangt hat) + Locator automatisch
             this._nachDorfOrientieren(res, o.verlangt);
@@ -2778,7 +2782,7 @@ class AnazhRealm_siedlung_ort {
             if (z !== "steht" && z !== "gesetzt") {
                 abgesagt.set(w.id, z);
                 this._bruchMelden(
-                    `GENESIS-ORT: ${w.id} (${w.typ}) steht nicht — die Wurzel sagte ab: ${z} (${AnazhRealm.SETZ_GRUND[z] || AnazhRealm.SETZ_GRUND.unbenannt}); ${abgesagt.size} Elemente des Plans abgesagt`
+                    `GENESIS-ORT: ${w.id} (${w.typ}) steht nicht — die Wurzel sagte ab: ${z} (${AnazhRealm._tIn("de", AnazhRealm.SETZ_GRUND[z] || AnazhRealm.SETZ_GRUND.unbenannt)}); ${abgesagt.size} Elemente des Plans abgesagt`
                 );
                 continue;
             }
@@ -3832,4 +3836,4 @@ AnazhRealm.SPIELER_QUELLEN = Object.freeze(["llm:", "ability:", "capability:", "
 AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN = 3.5; // m über den Footprint hinaus
 // Der Satz der Welt, wenn ein Dorf nicht entstehen kann, weil das Studio-Buch noch nicht da ist (V-D8: das Log nennt den
 // Grund mit Worker-Zustand, der Spieler hört Worte).
-AnazhRealm.SIEDLUNG_KALT_SATZ = "Die Werkstatt der Welt erwacht noch — versuch es gleich noch einmal.";
+AnazhRealm.SIEDLUNG_KALT_SATZ = Object.freeze(["chat.befehl.dorf.kalt"]); // eine Zeile der Tafel, keine aufgelöste

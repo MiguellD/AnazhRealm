@@ -174,7 +174,7 @@ async function checkBandV18493CoSchoepferStudio({ page, check }) {
             try {
                 nw = r.dslEvalPos(["near_water", 160], nwCtx);
             } catch (e) {
-                nwFehler = e && e.dslKeinOrt ? e.dslKeinOrt.grund : String(e);
+                nwFehler = e && e.dslKeinOrt ? r._t(...e.dslKeinOrt.grund) : String(e);
             }
             const amWasser =
                 !!nw &&
@@ -182,7 +182,7 @@ async function checkBandV18493CoSchoepferStudio({ page, check }) {
                 Number.isFinite(nw.z) &&
                 Math.hypot(nw.x - pm0.x, nw.z - pm0.z) > 0.5 &&
                 nassPunkte.some(([x, z]) => Math.hypot(x - nw.x, z - nw.z) <= 8);
-            const benannt = nwFehler === "kein Wasser im Umkreis von 160 m";
+            const benannt = nwFehler === "Kein Wasser im Umkreis von 160 m";
             out.nearWater = nassNah ? amWasser : !nassFern ? benannt : amWasser || benannt;
             out.nearWaterBefund = { nassNah, nassFern, nw, nwFehler };
             out.nearWaterTrocken = nw ? r._landAt(nw.x, nw.z, 0.3) : benannt;
@@ -448,7 +448,6 @@ async function checkBandLeistungsVertrag({ page, check }) {
                     });
                 o.wartendListe = [];
                 o.wartendNachBoot = wartend(o.wartendListe) + (vorrat() ? 1 : 0);
-                o.vorratPhase = vorrat();
             }
             const _oH0 = st.renderer._isHeadlessNull;
             const _oRS = r._applyRenderScale,
@@ -550,7 +549,6 @@ async function checkBandLeistungsVertrag({ page, check }) {
                     });
                 o.quieszent = ruhigeBatches >= 2;
                 o.ringOffen = ringWartet();
-                o.baut = baut();
                 o.weltOffen = offen();
             }
             // GOLD 4 — V5: DAS SZENE-SPEICHER-BAND. Der Live-Set-Zensus
@@ -575,7 +573,6 @@ async function checkBandLeistungsVertrag({ page, check }) {
             o.standMints = (r._archGruppenMints || 0) - mints0;
             o.groups0 = groups0;
             o.groupsMax = groupsMax;
-            o.groupsEnde = st.archInstanceGroups ? st.archInstanceGroups.size : 0;
             o.v1ChurnNull = o.standMints === 0;
             o.v3Stabil = groupsMax <= groups0; // stehen: nichts klettert (Reaper darf senken)
             // Regime zurück (die Gate-Hook-Lehre: sichern + wiederherstellen):
@@ -605,34 +602,41 @@ async function checkBandLeistungsVertrag({ page, check }) {
                 o.selbsttestChurn = (r._archGruppenMints || 0) > mintsVor;
             } else o.selbsttestChurn = false;
             // ── V2: DER INGEST-TAKT (headless gelüftet = echte Takt-Semantik) ──
-            const _oH = st.renderer._isHeadlessNull;
+            // DAS FENSTER MISST BEI STILLER FOUNDRY: kein Auftrag wartet, fliegt oder liegt am Wächter (`foundry*` der EINEN
+            // Liste des Einschwingens, `einschwingOffen`), gewartet OHNE Takt — nur ein Takt bestellt Neues. Bis w8-v2-probe
+            // lüftete die Probe mitten im Flug: eine echte Antwort (`_foundryRequest` → `_foundryIngestTakt`) landete im
+            // `sleep(0)` am Wächter, die EINE Wahl gab sie nah zuerst vor den Nutzlasten frei (nachTick1=2/3, überBudget1=false;
+            // main 1 von 5 vollen Playtests). Was trotzdem hinter den Nutzlasten am Wächter steht, steht beim Namen (sein Rang, `_foundryRang`).
+            const fOffen = () => Object.keys(window.__einschwingOffen(r)).filter((k) => k.startsWith("foundry"));
+            await window.__gebautNach("die stille Foundry vor dem Ingest-Takt", {
+                fertig: () => !fOffen().length,
+                takt: () => sleep(30),
+                max: 1000,
+                offen: false,
+                warum: fOffen,
+            });
+            const fremd = (n) =>
+                (o.v2Fremd = (o.v2Fremd || "") + r._foundryIngestQueue.slice(n).map((e) => JSON.stringify(e.rang)));
             st.renderer._isHeadlessNull = false;
             const reihenfolge = [];
-            const fertig = [];
-            for (let i = 0; i < 8; i++) {
-                fertig.push(false);
-                r._foundryIngestTakt(["payload" + i]).then(
-                    ((idx) => () => {
-                        fertig[idx] = true;
-                        reihenfolge.push(idx);
-                    })(i)
-                );
-            }
+            for (let i = 0; i < 8; i++) r._foundryIngestTakt(["payload" + i]).then(() => reihenfolge.push(i));
             await sleep(0); // Microtasks leeren — NICHTS darf schon durch sein
-            o.v2KeineSofort = fertig.every((x) => x === false);
+            o.v2KeineSofort = !reihenfolge.length;
+            fremd(8);
             st._frameOverBudget = false; // 3 Freigaben je Tick
             r._tickFoundryIngest();
             await sleep(0);
-            o.v2NachTick1 = fertig.filter(Boolean).length; // erwartet 3
+            o.v2NachTick1 = reihenfolge.length; // erwartet 3
             r._tickFoundryIngest();
             r._tickFoundryIngest();
             await sleep(0);
-            o.v2Alle = fertig.every(Boolean);
+            o.v2Alle = reihenfolge.length === 8;
             o.v2Reihenfolge = reihenfolge.join(",") === "0,1,2,3,4,5,6,7";
             // Über-Budget-Frame: nur 1 Freigabe.
             r._foundryIngestTakt(["extra0"]).then(() => reihenfolge.push("e0"));
             r._foundryIngestTakt(["extra1"]).then(() => reihenfolge.push("e1"));
             await sleep(0);
+            fremd(2);
             st._frameOverBudget = true;
             r._tickFoundryIngest();
             await sleep(0);
@@ -646,7 +650,7 @@ async function checkBandLeistungsVertrag({ page, check }) {
             r._foundryIngestTakt(["hl"]).then(() => (hlSofort = true));
             await sleep(0);
             o.v2HeadlessSofort = hlSofort;
-            st.renderer._isHeadlessNull = _oH;
+            st.renderer._isHeadlessNull = _oH0;
             r._foundryTreeMaterial = _oTM;
             // ── V4: LINSEN-KONSUM im gebauten Trace ──
             const trace = r._flightRecorderBuildTrace();
@@ -660,7 +664,6 @@ async function checkBandLeistungsVertrag({ page, check }) {
                 ss.gruppenChurn &&
                 Number.isFinite(ss.gruppenChurn.mints)
             );
-            o.deckungPct = ss && ss.bundleDeckung ? ss.bundleDeckung.deckungPct : null;
         } catch (e) {
             o.err = fehlerText(e);
         }
@@ -673,7 +676,7 @@ async function checkBandLeistungsVertrag({ page, check }) {
     if (!out.v1ChurnNull) errs.push(`V1: ${out.standMints} Gruppen-Mints im Stand (Vertrag: 0)`);
     if (!out.v3Stabil) errs.push(`V3: archInstanceGroups kletterte im Stand (${out.groups0} → ${out.groupsMax})`);
     if (!(out.v2KeineSofort && out.v2NachTick1 === 3 && out.v2Alle && out.v2Reihenfolge && out.v2UeberBudgetEins && out.v2HeadlessSofort))
-        errs.push(`V2: keineSofort=${out.v2KeineSofort} nachTick1=${out.v2NachTick1}/3 alle=${out.v2Alle} reihenfolge=${out.v2Reihenfolge} überBudget1=${out.v2UeberBudgetEins} headlessSofort=${out.v2HeadlessSofort}`);
+        errs.push(`V2: keineSofort=${out.v2KeineSofort} nachTick1=${out.v2NachTick1}/3 alle=${out.v2Alle} reihenfolge=${out.v2Reihenfolge} überBudget1=${out.v2UeberBudgetEins} headlessSofort=${out.v2HeadlessSofort} fremd am Wächter=${out.v2Fremd || 0}`);
     if (!out.v4Linsen) errs.push("V4: die Mess-Flächen (bundleDeckung/ingestTakt/gruppenChurn) fehlen im Trace");
     if (!(Number.isFinite(out.szeneMB) && out.szeneMB < 700)) errs.push(`V5: Szene-Live-Set ${out.szeneMB} MB ≥ 700`);
     if (!out.selbsttestChurn) errs.push("SELBSTTEST: die Churn-Linse zählte einen echten Mint NICHT (blind)");

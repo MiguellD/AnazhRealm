@@ -2359,7 +2359,7 @@ class AnazhRealm_stoff_instanz {
         const p = auge || this._lodAuge(); // vom Auge der Maske (K36), wie der LOD-Tick
         if (!p || !entry || !entry.position) return 1;
         if (this._imStufenVorlauf(entry)) return 1; // der Stufen-Vorlauf der Ankunft, wie der LOD-Tick
-        const d = Math.hypot(entry.position.x - p.x, entry.position.z - p.z);
+        const d = this._bedarfAbstand(entry.position.x, entry.position.z, p); // der Abstand der Bahn (w7-rang)
         // DIE EINE STUFEN-WAHL: der Kalt-Schätzer fragt dieselbe Wahl wie der LOD-Tick — Wahrnehmungs-Distanz aus der
         // Sichthöhe (`_lodTreeVisHeight`, 0 = roh für Nicht-Bäume), ohne Hysterese-Zustand. Vorher las er nur die rohe
         // Distanz: die Rampe setzte einen großen Baum in 40 m auf die Karte (dithernd, grau), und der LOD-Tick holte

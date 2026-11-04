@@ -1134,7 +1134,7 @@ class AnazhRealm_netz_p2p {
         if (!withWorlds.length) {
             const empty = document.createElement("div");
             empty.className = "drawer-hint";
-            empty.textContent = this._t("p2p.katalog.leer");
+            this._tSetze(empty, "p2p.katalog.leer");
             host.appendChild(empty);
             return;
         }
@@ -1321,7 +1321,7 @@ class AnazhRealm_netz_p2p {
         const p2p = this.state.p2p;
         const peerId = this._p2pFindVoicePeer();
         if (!peerId) {
-            if (appendChatOutput) appendChatOutput(this._t("p2p.stimme.keine"));
+            if (appendChatOutput) appendChatOutput(["p2p.stimme.keine"]);
             return { ok: false, reason: "no_voice" };
         }
         const reqId = "v-" + p2p.peerId + "-" + p2p._voiceReqSeq++;
@@ -1331,7 +1331,7 @@ class AnazhRealm_netz_p2p {
             prompt: String(prompt || "").slice(0, AnazhRealm.P2P_VOICE_PROMPT_MAX),
         });
         if (!sent) {
-            if (appendChatOutput) appendChatOutput(this._t("p2p.stimme.unerreichbar"));
+            if (appendChatOutput) appendChatOutput(["p2p.stimme.unerreichbar"]);
             return { ok: false, reason: "send_failed" };
         }
         const timeout = setTimeout(() => {
@@ -1341,7 +1341,7 @@ class AnazhRealm_netz_p2p {
             if (pending.cb) pending.cb(this._t("p2p.stimme.schweigt"));
         }, AnazhRealm.P2P_VOICE_TIMEOUT_MS);
         p2p._voiceRequests.set(reqId, { cb: appendChatOutput, timeout, peerId });
-        if (appendChatOutput) appendChatOutput(this._t("p2p.stimme.denkt"));
+        if (appendChatOutput) appendChatOutput(["p2p.stimme.denkt"]);
         return { ok: true, reqId, peerId };
     }
 
@@ -2878,6 +2878,9 @@ class AnazhRealm_netz_p2p {
         s.sprint = st.sprintSpeed;
         s.jp = st.jumpPower;
         s.kg = st._geistKg;
+        // der Stoß-Zustand (physik.K5) gehört dem Leib, der ihn erfuhr: der Geist fährt seinen eigenen
+        const SF = AnazhRealm._leibTakt().LEIB_STOSS_FELDER;
+        s.stoss = SF.map((k) => st[k]);
         // --- Ghost laden ---
         mesh.position.set(ls.x, ls.y, ls.z);
         st.playerVel = ls.vel;
@@ -2906,6 +2909,7 @@ class AnazhRealm_netz_p2p {
         if (Number.isFinite(ls.sprintSpeed)) st.sprintSpeed = ls.sprintSpeed;
         if (Number.isFinite(ls.jumpPower)) st.jumpPower = ls.jumpPower;
         st._geistKg = ls.leibKg;
+        SF.forEach((k, i) => (st[k] = ls.stoss ? ls.stoss[i] : null));
         // --- der EINE Sim-Schritt (exakt die _stepFixedSim-Ordnung, ohne Captures) ---
         this._loopPlayerMovement(ls.simT, FIXED_DT);
         this._stepCharacter(FIXED_DT, ls.simT);
@@ -2931,6 +2935,7 @@ class AnazhRealm_netz_p2p {
         ls.spaceWasDown = st._spaceWasDown;
         ls.jumpPressedAt = st._jumpPressedAt;
         ls.yaw = yaw;
+        ls.stoss = SF.map((k) => st[k]);
         // --- Spieler exakt wiederherstellen ---
         mesh.position.set(s.px, s.py, s.pz);
         st.playerVel = s.vel;
@@ -2959,6 +2964,7 @@ class AnazhRealm_netz_p2p {
         st.sprintSpeed = s.sprint;
         st.jumpPower = s.jp;
         st._geistKg = s.kg;
+        SF.forEach((k, i) => (st[k] = s.stoss[i]));
     }
 
     // GHOST-TICK: Anker anwenden (seed/re-seed), anschlussfähige Frames verbrauchen (2-Frame-Reserve
@@ -3301,7 +3307,8 @@ class AnazhRealm_netz_p2p {
     static _erbgutEinlass(snapshot) {
         const meta = snapshot && typeof snapshot === "object" ? snapshot.worldMeta : null;
         try {
-            globalThis.__gelaendeCore.erbgutNormal(meta && typeof meta === "object" ? meta.erbgut : undefined);
+            // das Gesetz der fremden Welt durch dieselbe Wand wie beim Erwachen (`_weltGesetz`: Schwere, Himmel, Wetter, Erbgut)
+            if (meta && typeof meta === "object") AnazhRealm._weltGesetz(meta);
             return null;
         } catch (e) {
             return String((e && e.message) || e);
@@ -3315,20 +3322,27 @@ class AnazhRealm_netz_p2p {
     // (`_p2pMsgWorldRequest`), der Mitträger (`_p2pMaybeServeAsCarrier`), der Mesh-Resync (`_p2pHandleWorldPull`).
     // Liefert den Grund der Absage oder null.
     static _erbgutTeilbar(meta, msg) {
-        let terme;
+        let terme, G;
         try {
-            terme = globalThis.__gelaendeCore.erbgutNormal(meta && typeof meta === "object" ? meta.erbgut : undefined);
+            G = AnazhRealm._weltGesetz(meta && typeof meta === "object" ? meta : {});
+            terme = globalThis.__gelaendeCore.erbgutNormal(G.gelaende == null ? undefined : G.gelaende);
         } catch (e) {
             return String((e && e.message) || e);
         }
-        // Die Wildnis allein OHNE Regler reist zu jedem; trägt der Wildnis-Term Regler des Gelände-Studios (eine Plan-Welt),
-        // zeichnete ein Build vor ihnen die Standard-Landform darunter — sie reist nur zur Stufe 2.
-        if (terme.length === 1 && terme[0].art === "wildnis" && Object.keys(terme[0]).length === 1) return null;
+        // Die Wildnis allein OHNE Regler unter dem Gesetz der Erde reist zu jedem; trägt der Wildnis-Term Regler des
+        // Gelände-Studios (eine Plan-Welt) oder weicht das Gesetz der Welt von der Erde ab (Schwere, Himmel, Wetter —
+        // ultiversum.K1), zeichnete ein Build davor die Erde darunter — sie reist nur zur Stufe 3 (das Gesetz in `worldMeta.gesetz`).
+        const E = AnazhRealm.WELT_GESETZ_ERDE;
+        const erde =
+            G.schwere === E.schwere &&
+            G.himmel.rayleighTiefe.every((v, i) => v === E.himmel.rayleighTiefe[i]) &&
+            Object.keys(E.wetter).every((z) => G.wetter[z] === E.wetter[z]);
+        if (erde && terme.length === 1 && terme[0].art === "wildnis" && Object.keys(terme[0]).length === 1) return null;
         const kann = msg && typeof msg.erbgut === "number" && Number.isFinite(msg.erbgut) ? msg.erbgut : 0;
         if (kann >= AnazhRealm.ERBGUT_PROTOKOLL) return null;
         return `der Empfänger liest kein Erbgut (Protokoll ${kann} < ${AnazhRealm.ERBGUT_PROTOKOLL}) — die Welt [${terme
             .map((t) => t.art)
-            .join(", ")}] reist nicht`;
+            .join(", ")}]${erde ? "" : " unter eigenem Gesetz"} reist nicht`;
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_netz_p2p]);
@@ -3367,8 +3381,9 @@ AnazhRealm.P2P_PULL_COOLDOWN_MS = 5000;
 // `worldMeta.erbgut` liest und eine unbekannte Term-Art ablehnt (`_erbgutEinlass`). Ein Sender reicht eine Welt, deren
 // Erbgut nicht die Wildnis allein ist, nur einem Empfänger mit dieser Stufe (`_erbgutTeilbar`) — ein Build davor
 // zeichnete sie still als Wildnis. Stufe 2 (K16b): der Empfänger liest auch die Regler im Wildnis-Term (eine Welt aus
-// einem Plan des Gelände-Studios).
-AnazhRealm.ERBGUT_PROTOKOLL = 2;
+// einem Plan des Gelände-Studios). Stufe 3 (ultiversum.K1): das Erbgut ist das Gelände des Welt-Gesetzes
+// (`worldMeta.gesetz`), neben ihm Schwere, Himmel und Wetter-Tafel.
+AnazhRealm.ERBGUT_PROTOKOLL = 3;
 
 // Mesh-Welt-Verteilung: ein vendortes Welt-Bündel reist in P2P_WORLD_CHUNK_SIZE-Stücken über den
 // DataChannel. Mindestabstand zwischen zwei bundle-pull-Antworten an denselben Peer — Read + Versand

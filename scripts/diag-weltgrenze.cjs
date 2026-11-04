@@ -292,7 +292,8 @@ function seitenPruefer() {
                 if (ok.has(pfad) || wm[k] !== A_STUFEN[k]) continue;
                 out.push(`Speicher.${pfad} (= ${JSON.stringify(A_STUFEN[k])} von A)`);
             }
-            if (wm.erbgut != null) out.push("Speicher.worldMeta.erbgut");
+            // das Erbgut wohnt im Gesetz der Welt (ultiversum.K1, `worldMeta.gesetz.gelaende`)
+            if (wm.gesetz?.gelaende != null) out.push("Speicher.worldMeta.gesetz.gelaende");
             return out;
         },
         VORLAGE,
@@ -424,7 +425,7 @@ async function fahreWeg(browser, weg, schein) {
                         r._weltTorImportReplace();
                         const out = ablage(r.activeWorldGet());
                         const chat = document.getElementById("chat-output");
-                        out.chat = chat ? chat.textContent.slice(-400) : "";
+                        out.chat = chat ? chat.innerHTML : ""; // die Schlüssel der Zeilen am Knoten, nie der Wortlaut
                         out.liveWelt = st.worldMeta.worldId;
                         g.fensterNach();
                         return out;
@@ -539,7 +540,7 @@ async function fahreWeg(browser, weg, schein) {
             }));
             if (z.zeiger !== aId) rep.befunde.push(`der Aktiv-Zeiger zeigt nach der gescheiterten Ablage auf ${z.zeiger}`);
             if (z.welt !== aId) rep.befunde.push(`die Seite trägt nach der gescheiterten Ablage die Welt ${z.welt}`);
-            if (!/fehlgeschlagen/.test(lauf.chat || "")) rep.befunde.push("die gescheiterte Ablage blieb still (kein Satz im Chat)");
+            if (!/"speicher\.ersetzen-fehl"/.test(lauf.chat || "")) rep.befunde.push("die gescheiterte Ablage blieb still (kein Satz im Chat)");
             rep.befunde.push(...(await lege((id) => window.__grenze.befundeA(id, true), aId)));
             return rep;
         }

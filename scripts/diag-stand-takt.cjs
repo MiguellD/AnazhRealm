@@ -166,7 +166,7 @@ function selbsttest() {
             regen: { wach: simPh(6, 5), nachher: simPh(0, 60) },
             wuchs: { offen: 2, wach: simPh(9, 5), nachher: simPh(0, 60) },
             nachwuchs: { wach: simPh(2, 1), nachgewachsen: true, nachher: simPh(0, 60) },
-            feld: { geschrieben: 2160, wellen: [0, 1, 2, 3].map(() => ({ groesse: 540, tote: 0 })), welle: Object.assign(simPh(0, 1), { akt: 2200 }) },
+            feld: { geschrieben: 2160, wellen: [0, 1, 2, 3].map(() => ({ groesse: 540, tote: 0 })), welle: Object.assign(simPh(0, 1), { akt: 2200 }), ueber: 0 }, // prettier-ignore
             brand: {
                 start: true,
                 ...{ zellen: [1, 1, 2, 3, 2, 1], einheiten: [9, 9, 30, 41, 20, 12], brennt: 0, asche: 4, mit: 0.9, gegen: 0.03, ohneWind: 0.04 },
@@ -191,207 +191,206 @@ function selbsttest() {
     const faelle = [
         [
             "der Cull-Gang in Ruhe (die Basis)",
-            (b) => Object.assign(b.ruhe.takte.archCull, { summe: 105360, mittel: 3512, max: 3512, mitArbeit: 30 }),
+            ["ruhe.takte.archCull", { summe: 105360, mittel: 3512, max: 3512, mitArbeit: 30 }],
             /RUHE: archCull \(tickArchitectureCulling\) arbeitet im Stand — 105360 Einheiten in 30 von 30 Frames/,
         ],
         [
             "ein Ausreißer der Saum-Wache in Ruhe",
-            (b) => Object.assign(b.ruhe.takte.deckWache, { summe: 128, mittel: 4.27, max: 128, mitArbeit: 1 }),
+            ["ruhe.takte.deckWache", { summe: 128, mittel: 4.27, max: 128, mitArbeit: 1 }],
             /RUHE: deckWache .* 128 Einheiten in 1 von 30 Frames/,
         ],
         [
             "stumpfe Linse (die Nah-Wiese zählt nichts)",
-            (b) => Object.assign(b.bruch.takte.nahWiese, { summe: 0, mittel: 0, max: 0, mitArbeit: 0 }),
+            ["bruch.takte.nahWiese", { summe: 0, mittel: 0, max: 0, mitArbeit: 0 }],
             /STUMPF: .* für nahWiese keine Arbeit/,
         ],
         [
             "die Wache verschlief einen Wechsel",
-            (b) => (b.bruch.takte.archLod.wirkt = 3),
+            ["bruch.takte.archLod.wirkt=", 3],
             /TREUE: archLod \(_tickArchitectureLOD\) änderte mit gebrochener Wache nach der Ruhe die Welt in 3 Gängen/,
         ],
         [
             "ein Bau weckt den Cull nicht",
-            (b) => Object.assign(b.wecken.phase.takte.archCull, { summe: 0, mitArbeit: 0 }),
+            ["wecken.phase.takte.archCull", { summe: 0, mitArbeit: 0 }],
             /WECKEN: ein Bau im Stand weckt archCull nicht/,
         ],
-        ["der Bau bleibt ohne Stufe", (b) => (b.wecken.versorgt = false), /WECKEN: der neue Bau trägt/],
+        ["der Bau bleibt ohne Stufe", ["wecken.versorgt=", false], /WECKEN: der neue Bau trägt/],
         [
             "die Wache verschlief die Stufe des neuen Baums",
-            (b) => (b.wecken.treue.takte.archLod.wirkt = 1),
+            ["wecken.treue.takte.archLod.wirkt=", 1],
             /TREUE: archLod .* nach dem Bau die Welt in 1 Gängen/,
         ],
         [
             "ein Regler-Schritt weckt den Cull nicht",
-            (b) => Object.assign(b.wecken.regler.takte.archCull, { summe: 0, mitArbeit: 0 }),
+            ["wecken.regler.takte.archCull", { summe: 0, mitArbeit: 0 }],
             /WECKEN: ein Regler-Schritt \(der Cull-Radius\) weckt archCull nicht/,
         ],
         [
             "nach dem Bau schläft die Wache nicht",
-            (b) => (b.wecken.nachher = Object.assign(phase(0, 20), { summe: 7020 })),
+            ["wecken.nachher=", Object.assign(phase(0, 20), { summe: 7020 })],
             /WECKEN: nach dem Bau schläft die Wache nicht wieder \(7020/,
         ],
         [
             "starres Gehen (der Cull hält)",
-            (b) => Object.assign(b.gehen.takte.archCull, { summe: 0, mitArbeit: 0 }),
+            ["gehen.takte.archCull", { summe: 0, mitArbeit: 0 }],
             /STARR: beim Gehen arbeitet archCull nicht/,
         ],
         [
             "der Ring geht beim Gehen in derselben Zelle",
-            (b) => Object.assign(b.gehen.takte.strom, { summe: 2490, mitArbeit: 30 }),
+            ["gehen.takte.strom", { summe: 2490, mitArbeit: 30 }],
             /GEHEN: der Ring geht ohne Zellen-Wechsel \(2490 Einheiten\)/,
         ],
         [
             "der Saum geht beim Gehen ohne neuen Anker",
-            (b) => Object.assign(b.gehen.takte.deckWache, { summe: 3840, mitArbeit: 30 }),
+            ["gehen.takte.deckWache", { summe: 3840, mitArbeit: 30 }],
             /GEHEN: der Saum geht ohne neuen Anker \(3840 Einheiten\)/,
         ],
-        ["der Gang verlässt seine Zelle", (b) => (b.gehen.zelleGleich = false), /LEER: der Gang verließ seine Zelle/],
-        ["Gehen ohne Weg", (b) => (b.gehen.weg = 0.2), /BEWEGUNG: beim Gehen kam der Spieler 0.2 m voran/],
+        ["der Gang verlässt seine Zelle", ["gehen.zelleGleich=", false], /LEER: der Gang verließ seine Zelle/],
+        ["Gehen ohne Weg", ["gehen.weg=", 0.2], /BEWEGUNG: beim Gehen kam der Spieler 0.2 m voran/],
         [
             "ein Stufen-Wechsel weckt die Stufen-Wahl",
-            (b) => Object.assign(b.stufe, { takte: { archLod: 1638 }, rufe: { _lodTreeVisHeight: 1638 } }),
+            ["stufe", { takte: { archLod: 1638 }, rufe: { _lodTreeVisHeight: 1638 } }],
             /STUFE: 2 Stufen-Wechsel ohne Form-Änderung wecken archLod \(1638 Einheiten\)/,
         ],
-        ["die Stufen-Probe ist stumpf", (b) => (b.stufe.wechsel = 0), /STUFE: kein Stufen-Wechsel geschah/],
+        ["die Stufen-Probe ist stumpf", ["stufe.wechsel=", 0], /STUFE: kein Stufen-Wechsel geschah/],
         [
             "das Streaming verhungert nach der Ruhe",
-            (b) => (b.strom.spielerChunk = false),
+            ["strom.spielerChunk=", false],
             /STROM: nach dem Sprung an \(-300, -850\) steht der Spieler-Chunk nach 40 Takten nicht/,
         ],
         [
             "die Treue-Phase geht 6 Frames (die Streu 960 von 1 845 Zellen)",
-            (b) => Object.assign(b.bruch.takte.streuLod, { gang: 960 }),
+            ["bruch.takte.streuLod", { gang: 960 }],
             /TREUE-LÜCKE: streuLod \(_tickScatterLod\) ging nach der Ruhe 960 von 1845 Einheiten/,
         ],
         [
             "die Treue nach dem Bau geht 6 Frames (der Saum 768 von 1 728 Punkten)",
-            (b) => Object.assign(b.wecken.treue.takte.deckWache, { gang: 768 }),
+            ["wecken.treue.takte.deckWache", { gang: 768 }],
             /TREUE-LÜCKE: deckWache \(_fernRingDeckWache\) ging nach dem Bau 768 von 1728 Einheiten/,
         ],
         [
             "die Treue nach dem Bau nennt die Runde nicht",
-            (b) => delete b.wecken.treue.takte.archLod.runde,
+            ["wecken.treue.takte.archLod.runde"],
             /LEER: die Treue-Phase nach dem Bau nennt die Runde von archLod nicht/,
         ],
         [
             "der Täter der Streu in der zweiten Rundenhälfte bleibt ungesehen (6 Frames)",
-            (b) => Object.assign(b.taeter.phase.takte.streuLod, { wirkt: 0, gang: 960 }),
+            ["taeter.phase.takte.streuLod", { wirkt: 0, gang: 960 }],
             /TREUE-TÄTER: .* von streuLod \(_tickScatterLod\) an Stelle 1734 von 1845 nicht \(gegangen 960\)/,
         ],
         [
             "der Täter des Saums bleibt ungesehen",
-            (b) => (b.taeter.phase.takte.deckWache.wirkt = 0),
+            ["taeter.phase.takte.deckWache.wirkt=", 0],
             /TREUE-TÄTER: .* von deckWache \(_fernRingDeckWache\) an Stelle 1727 von 1728 nicht/,
         ],
         [
             "der Täter steht in der ersten Rundenhälfte",
-            (b) => (b.taeter.je.streuLod.stelle = 400),
+            ["taeter.je.streuLod.stelle=", 400],
             /LEER: der Täter von streuLod steht an Stelle 400 von 1845/,
         ],
         [
             "die Stufen-Wahl trägt keinen Täter (ihre Runde braucht mehrere Gänge)",
-            (b) => delete b.taeter.je.archLod,
+            ["taeter.je.archLod"],
             /LEER: kein Täter für archLod \(_tickArchitectureLOD\) — seine Runde \(1638 Einheiten\) braucht mehrere Gänge/,
         ],
         [
             "der Täter weckt einen fremden Takt",
-            (b) => (b.taeter.phase.takte.archCull.wirkt = 2),
+            ["taeter.phase.takte.archCull.wirkt=", 2],
             /TREUE: archCull .* mit den Tätern die Welt in 2 Gängen/,
         ],
-        ["keine Täter-Probe", (b) => delete b.taeter, /LEER: keine Täter-Probe der Treue/],
+        ["keine Täter-Probe", ["taeter"], /LEER: keine Täter-Probe der Treue/],
         [
             "die Runde der Stufen-Wahl wächst während der Treue-Phase",
-            (b) => Object.assign(b.bruch.takte.archLod, { rundeVon: 1638, runde: 1702, gang: 3584 }),
+            ["bruch.takte.archLod", { rundeVon: 1638, runde: 1702, gang: 3584 }],
             /TREUE-LÜCKE: archLod \(_tickArchitectureLOD\) änderte nach der Ruhe seine Runde \(1638 → 1702 Einheiten\)/,
         ],
         [
             // z154: der Schritt der Schneegrenze bestellte den Ring in der Täter-Phase neu, der Saum ruhte 165 Frames, der neue
             // Ring überschrieb den Saum-Täter
             "der Ring wird in der Täter-Phase neu bestellt",
-            (b) => Object.assign(b.taeter.phase.takte.deckWache, { wirkt: 0, ortWechsel: "0 → 1048576" }),
+            ["taeter.phase.takte.deckWache", { wirkt: 0, ortWechsel: "0 → 1048576" }],
             [/TREUE-TÄTER: .* von deckWache .* nicht/, /TREUE-EINGABE: deckWache .* seinen Ort \(0 → 1048576\)/],
         ],
         [
             "ein Wahrnehmungs-Schritt weckt die Streu nicht (der Stempel liest die LOD-Distanzen nicht)",
-            (b) => Object.assign(b.wecken.wahrnehmung.takte.streuLod, { summe: 0, mitArbeit: 0 }),
+            ["wecken.wahrnehmung.takte.streuLod", { summe: 0, mitArbeit: 0 }],
             /WECKEN: ein Wahrnehmungs-Schritt \(LOD_DISTANCES, ohne Weckruf\) weckt streuLod nicht/,
         ],
         [
             "der Erdbau wirft das Dart-Gedächtnis der Welt",
-            (b) =>
-                Object.assign(b.ort, {
+            ["ort", {
                     standNach: 3,
                     darts: { fern: 812, gehalten: 0 },
                     plan: 2579,
                     maxTaktMs: 880,
-                }),
+                }],
             /ORT: der Erdbau bei \(-182,-1038\) warf das Dart-Gedächtnis der Welt \(Stand des Walds 2 → 3.*2579 Wald-Zellen neu .*planForestCell.*880 ms/,
         ],
         [
             "ferne Wald-Zellen fallen (der Stand bleibt)",
-            (b) => (b.ort.darts.gehalten = 700),
+            ["ort.darts.gehalten=", 700],
             /ORT: der Erdbau bei \(-182,-1038\) warf 112 von 812 fernen Wald-Zellen/,
         ],
         [
             "ein fernes Chunk-Gedächtnis fällt",
-            (b) => (b.ort.chunks.basis.gehalten = 0),
+            ["ort.chunks.basis.gehalten=", 0],
             /ORT: der Erdbau bei \(-182,-1038\) warf 6 von 6 fernen Chunk-Gedächtnissen \(basis/,
         ],
         [
             "der Stand eines fernen Chunks springt",
-            (b) => Object.assign(b.ort.stand, { nach: "4|0", gleich: false }),
+            ["ort.stand", { nach: "4|0", gleich: false }],
             /ORT: der Erdbau bei \(-182,-1038\) verwarf die Worker-Antworten des fernen Chunks -11,-27 \(Stand 3\|0 → 4\|0\)/,
         ],
         [
             "jeder Abbau speichert die Welt synchron",
-            (b) => Object.assign(b.ort.raeumung, { saves: 5, saveMs: 420 }),
+            ["ort.raeumung", { saves: 5, saveMs: 420 }],
             /ORT: der Abbau von 5 Natur-Stücken speicherte die Welt 5× synchron \(`removeArchitecture › saveState`, Σ 420 ms\)/,
         ],
-        ["die Ort-Phase räumt nichts", (b) => (b.ort.raeumung.abbau = 0), /LEER: die Ort-Phase räumte keine Natur/],
+        ["die Ort-Phase räumt nichts", ["ort.raeumung.abbau=", 0], /LEER: die Ort-Phase räumte keine Natur/],
         [
             "die Ort-Phase sieht keine fernen Zellen",
-            (b) => (b.ort.darts.fern = 0),
+            ["ort.darts.fern=", 0],
             /LEER: die Ort-Phase sah keine fernen/,
         ],
-        ["die Ort-Phase legt keinen Erdbau", (b) => (b.ort.gelegt = false), /LEER: die Ort-Phase legte keinen Erdbau/],
+        ["die Ort-Phase legt keinen Erdbau", ["ort.gelegt=", false], /LEER: die Ort-Phase legte keinen Erdbau/],
         [
             "das Solo-Haus baut seinen Kern im Haupt-Faden (bis B3c)",
-            (b) => Object.assign(b.ort.kamin, { bau: 1, ms: 52.4 }),
+            ["ort.kamin", { bau: 1, ms: 52.4 }],
             /ORT: das Solo-Haus \(alemannisch\) baute seinen Kern 1× im Haupt-Faden .*chimneyTipFromParams.*52\.4 ms/,
         ],
         [
             "die Ort-Phase setzt kein Solo-Haus",
-            (b) => (b.ort.kamin.gesetzt = false),
+            ["ort.kamin.gesetzt=", false],
             /LEER: die Ort-Phase setzte kein Solo-Haus/,
         ],
         [
             "der Satz-Block legt die Ecken eines Hauses frisch an",
-            (b) => Object.assign(b.ort.satzHaus, { frischKB: 2048 }),
+            ["ort.satzHaus", { frischKB: 2048 }],
             /ORT: das Haus im Satz \(alemannisch, 26800 Ecken in 7 Gruppen\) legte beim Wieder-Eintritt 2\.0 MB frisch an .*_tickBauSatz › _bauSatzBlock › _satzBlock/,
         ],
         [
             "die Ort-Phase bringt kein Haus in den Bau-Satz",
-            (b) => Object.assign(b.ort.satzHaus, { gruppen: 0, ecken: 0, bloecke: 0, takte: 600 }),
+            ["ort.satzHaus", { gruppen: 0, ecken: 0, bloecke: 0, takte: 600 }],
             /LEER: die Ort-Phase brachte kein Haus in den Bau-Satz \(alemannisch, 0 Gruppen, 0 Ecken nach 600 Takten\)/,
         ],
         [
             "der Baum in frischem Wald plant seine Zellen synchron",
-            (b) => Object.assign(b.ort.wald, { synchron: 169, ms: 271.4, takte: 0, imTakt: 0, maxTaktZellen: 0 }),
+            ["ort.wald", { synchron: 169, ms: 271.4, takte: 0, imTakt: 0, maxTaktZellen: 0 }],
             /ORT: der Baum in frischem Wald bei \(-182,-618\) plante 169 Wald-Zellen synchron .*_ortGestaltSame.*planForestCell.*271\.4 ms/,
         ],
         [
             "die Gestalt des Baums in frischem Wald steht nie",
-            (b) => Object.assign(b.ort.wald, { gestalt: null, takte: 600 }),
+            ["ort.wald", { gestalt: null, takte: 600 }],
             /ORT: die Gestalt des Baums in frischem Wald steht nach 600 Takten nicht/,
         ],
         [
             "die Schlange des Walds plant am Stück",
-            (b) => Object.assign(b.ort.wald, { maxTaktMs: 271.4, maxTaktZellen: 169 }),
+            ["ort.wald", { maxTaktMs: 271.4, maxTaktZellen: 169 }],
             /ORT: die Schlange des Walds plante in EINEM Takt 271\.4 ms \(169 Zellen\)/,
         ],
         [
             "die Ort-Phase setzt keinen Baum in frischem Wald",
-            (b) => (b.ort.wald.gesetzt = false),
+            ["ort.wald.gesetzt=", false],
             /LEER: die Ort-Phase setzte keinen Baum in frischem Wald/,
         ],
         [
@@ -411,127 +410,126 @@ function selbsttest() {
         ],
         [
             "der Boden unter dem Spieler heilt nicht (der Neubau verhungert)",
-            (b) => Object.assign(b.ort.amSpieler, { heil: false, takte: 600 }),
+            ["ort.amSpieler", { heil: false, takte: 600 }],
             /ORT: der Erdbau unter dem Spieler bei \(-293,-1071\) heilt nicht — nach 600 Takten warten noch Chunks/,
         ],
         [
             "der Erdbau unter dem Spieler markiert nichts",
-            (b) => (b.ort.amSpieler.dirty = 0),
+            ["ort.amSpieler.dirty=", 0],
             /LEER: der Erdbau unter dem Spieler markierte keinen Chunk zum Neubau/,
         ],
         [
             "die Ort-Phase legt keinen Erdbau unter dem Spieler",
-            (b) => delete b.ort.amSpieler,
+            ["ort.amSpieler"],
             /LEER: die Ort-Phase legte keinen Erdbau unter dem Spieler/,
         ],
         [
             "der Pflanz-Gang plant frische Zellen am Stück",
-            (b) =>
-                Object.assign(b.strom.wald, {
+            ["strom.wald", {
                     aussen: 96,
                     ms: 131.2,
                     maxTakt: 41,
                     taeter: "_forestCellDarts › _forestPlantChunk › _populateVoxelChunkVegetation › _finalizeVoxelChunkBuild",
-                }),
+                }],
             /STROM: 96 frische Wald-Zellen plante nicht die Schlange des Walds, sondern `_forestCellDarts › _forestPlantChunk.*131\.2 ms, bis 41 in EINEM Takt/,
         ],
         [
             "die Strom-Phase sieht keinen frischen Wald",
-            (b) => (b.strom.wald.imJob = 0),
+            ["strom.wald.imJob=", 0],
             /LEER: die Strom-Phase sah keinen frischen Wald/,
         ],
-        ["keine Ort-Phase", (b) => delete b.ort, /LEER: keine Ort-Phase/],
-        ["keine Ruhe", (b) => delete b.ruhe, /LEER: keine Ruhe-Phase/],
-        ["keine Bruch-Phase", (b) => delete b.bruch, /LEER: keine Bruch-Phase/],
+        ["keine Ort-Phase", ["ort"], /LEER: keine Ort-Phase/],
+        ["keine Ruhe", ["ruhe"], /LEER: keine Ruhe-Phase/],
+        ["keine Bruch-Phase", ["bruch"], /LEER: keine Bruch-Phase/],
         ["Page-Error", (b) => b.pageErrors.push("TypeError: x"), /PAGE-ERROR: TypeError: x/],
         [
             "die Streu wartet nach geleerter Schlange des Walds",
-            (b) => (b.nachschub.warten = ["-3,-5 wartet auf ihr Asset"]),
+            ["nachschub.warten=", ["-3,-5 wartet auf ihr Asset"]],
             /NACHSCHUB: 1 Streu-Regionen warten, obwohl die Schlange des Walds leer ist/,
         ],
-        ["keine Nachschub-Probe", (b) => delete b.nachschub, /LEER: keine Nachschub-Probe/],
+        ["keine Nachschub-Probe", ["nachschub"], /LEER: keine Nachschub-Probe/],
         [
             "die Nah-Wiese wartet jenseits des Rings auf Boden, den niemand baut",
-            (b) =>
-                Object.assign(b.fuehrung, { steht: false, takte: 400, grund: "Fege-Takt nahWiese wartet, nahStreu wartet" }),
+            ["fuehrung", { steht: false, takte: 400, grund: "Fege-Takt nahWiese wartet, nahStreu wartet" }],
             /FÜHRUNG: die Kamera bei \(700, -800\), 1044 m neben dem Spieler — die Welt steht nach 400 Takten nicht: Fege-Takt nahWiese wartet/,
         ],
-        ["keine Führungs-Phase", (b) => delete b.fuehrung, /LEER: keine Führungs-Phase/],
-        ["das Dorf fliegt (die Basis)", (b) => delete b.dorf.placed, /DORF: die Welt stand nach 41 Takten mit dem Dorf im Flug/],
-        ["ein wartender Fege-Takt hält die Welt nicht wach", (b) => (b.wach = "steht nach 31 Takten"), /WACH: ein Fege-Takt mit Offenem hält die Welt nicht wach/],
-        ["die Welt steht, während die Bake-Uhr abweist (die Basis)", (b) => Object.assign(b.schuld, { grund: "Welt-Regung", takte: 1, rest: 8 }), /BAKE-SCHULD: steht nach 1 Takten mit 8 offenen Fits \(40 abgewiesen, Welt-Regung\)/],
+        ["keine Führungs-Phase", ["fuehrung"], /LEER: keine Führungs-Phase/],
+        ["das Dorf fliegt (die Basis)", ["dorf.placed"], /DORF: die Welt stand nach 41 Takten mit dem Dorf im Flug/],
+        ["ein wartender Fege-Takt hält die Welt nicht wach", ["wach=", "steht nach 31 Takten"], /WACH: ein Fege-Takt mit Offenem hält die Welt nicht wach/],
+        ["die Welt steht, während die Bake-Uhr abweist (die Basis)", ["schuld", { grund: "Welt-Regung", takte: 1, rest: 8 }], /BAKE-SCHULD: steht nach 1 Takten mit 8 offenen Fits \(40 abgewiesen, Welt-Regung\)/],
         [
             "die Welt steht mitten in der Runde der Stufen-Wahl",
-            (b) => Object.assign(b.fix[1], { takte: 1, nach: { frames: 150, summe: 2048, takte: { archLod: { summe: 2048, mitArbeit: 8, wirkt: 4 } } } }),
+            ["fix.1", { takte: 1, nach: { frames: 150, summe: 2048, takte: { archLod: { summe: 2048, mitArbeit: 8, wirkt: 4 } } } }],
             /FIXPUNKT: die Welt stand nach 1 Takten, danach ging archLod \(_tickArchitectureLOD\) ohne Eingabe noch 2048 Einheiten/,
         ],
         ["der Regler-Schritt wirkt nicht", (b) => b.fix.forEach((f) => (f.wirkte = 0)), /LEER: der Regler-Schritt wirkte nicht/],
-        ["keine Fixpunkt-Phase", (b) => delete b.fix, /LEER: keine Fixpunkt-Phase/],
+        ["keine Fixpunkt-Phase", ["fix"], /LEER: keine Fixpunkt-Phase/],
         [
             "der Wuchs prüft in Ruhe je Frame die wartenden Chunks (die Basis)",
-            (b) => (b.simRuhe.sims.wuchs = simPh(9, 3600).sims.wuchs),
+            ["simRuhe.sims.wuchs=", simPh(9, 3600).sims.wuchs],
             /RUHE-SIM: wuchs \(_tickFoliageGrowth\) arbeitet in Ruhe nach einer Tat — 32400 Einheiten in 3600 von 3600 Frames \(60 s; _x 9\)/,
         ],
         [
             "ein Takt, der in Ruhe einmal zählt (der Nachwuchs über die Wanduhr)",
-            (b) => Object.assign(b.simRuhe.sims.nachwuchs, { summe: 1, mitArbeit: 1 }),
+            ["simRuhe.sims.nachwuchs", { summe: 1, mitArbeit: 1 }],
             /RUHE-SIM: nachwuchs \(_tickScatterRegrow\) arbeitet in Ruhe .* 1 Einheiten in 1 von 3600/,
         ],
-        ["die Sim-Ruhe geht 20 s", (b) => (b.simRuhe.spielS = 20), /LEER: die Sim-Ruhe ging 20 s/],
-        ["vor der Sim-Ruhe keine Ernte", (b) => (b.simRuhe.vorher.ernte = null), /LEER: vor der Sim-Ruhe fehlt die Tat/],
-        ["keine Sim-Ruhe", (b) => delete b.simRuhe, /LEER: keine Sim-Ruhe/],
+        ["die Sim-Ruhe geht 20 s", ["simRuhe.spielS=", 20], /LEER: die Sim-Ruhe ging 20 s/],
+        ["vor der Sim-Ruhe keine Ernte", ["simRuhe.vorher.ernte=", null], /LEER: vor der Sim-Ruhe fehlt die Tat/],
+        ["keine Sim-Ruhe", ["simRuhe"], /LEER: keine Sim-Ruhe/],
         [
             "nach dem Saison-Wort malt die Jahres-Uhr weiter (die Basis)",
-            (b) => (b.simWecken.saison.nachher = simPh(3, 60)),
+            ["simWecken.saison.nachher=", simPh(3, 60)],
             /WECKEN-SIM: nach dem Ereignis schläft saison nicht wieder — 180 Einheiten \(_x 3\)/,
         ],
-        ["das Wort Regen weckt den Regen nicht", (b) => (b.simWecken.regen.wach = simPh(0, 5)), /STUMPF: das Wort Regen weckt regen/],
-        ["kein Chunk wartet auf seinen Wuchs", (b) => (b.simWecken.wuchs.offen = 0), /LEER: keine Weck-Probe für wuchs/],
-        ["die Ernte wächst nicht nach", (b) => (b.simWecken.nachwuchs.nachgewachsen = false), /NACHWUCHS: die Ernte wuchs/],
+        ["das Wort Regen weckt den Regen nicht", ["simWecken.regen.wach=", simPh(0, 5)], /STUMPF: das Wort Regen weckt regen/],
+        ["kein Chunk wartet auf seinen Wuchs", ["simWecken.wuchs.offen=", 0], /LEER: keine Weck-Probe für wuchs/],
+        ["die Ernte wächst nicht nach", ["simWecken.nachwuchs.nachgewachsen=", false], /NACHWUCHS: die Ernte wuchs/],
         [
             "der Blick des Spielers je Bild (die Basis)",
-            (b) => Object.assign(b.simRuhe, { akt: 46802, aktJe: [["auraAt", 3600]] }),
+            ["simRuhe", { akt: 46802, aktJe: [["auraAt", 3600]] }],
             /RUHE-TAT: die Akte .* arbeiten in Ruhe nach einer Tat über ihre Zellen hinaus — 46802 Einheiten für 0 geschriebene \(auraAt 3600\)/,
         ],
         [
             "die Räumung wartet auf die Schwelle (die Basis)",
-            (b) => Object.assign(b.simWecken.feld.wellen[1], { groesse: 1110, tote: 537 }),
+            ["simWecken.feld.wellen.1", { groesse: 1110, tote: 537 }],
             /FELD-TOTE: nach den Wellen trägt die Karte 0 von 540 · 537 von 1110/,
         ],
         [
             "die Räumung geht jede Zelle durch (die Basis)",
-            (b) => Object.assign(b.simWecken.feld.welle, { akt: 1680, aktAlle: { "·lifeField": 1670 } }),
+            ["simWecken.feld.welle", { akt: 1680, aktAlle: { "·lifeField": 1670 } }],
             /FELD-BESUCH: die Wellen kosteten 1680 Einheiten für 2160 geschriebene Zellen, die Räumung ging über die ganze Karte oder ihr Rad \(·lifeField 1670\)/,
         ],
         [
             "die Räumung geht jeden Eimer des Rads durch (bis w3u-nachfolge)",
-            (b) => Object.assign(b.simWecken.feld.welle, { akt: 2211, aktAlle: { _feldTod: 2160, "·lifeField.tod": 51 } }),
+            ["simWecken.feld.welle", { akt: 2211, aktAlle: { _feldTod: 2160, "·lifeField.tod": 51 } }],
             /FELD-BESUCH: die Wellen kosteten 2211 Einheiten für 2160 geschriebene Zellen, die Räumung ging über die ganze Karte oder ihr Rad \(·lifeField.tod 51\)/,
         ],
-        ["kein Brand fängt (die Basis: kein Takt im Stamm)", (b) => (b.simWecken.brand.start = false), /LEER: an der Mess-Wiese fing kein Brand/],
+        ["die Tat legt je Zelle neu an (eb875cf4)", ["simWecken.feld.ueber=", 916], /HALDE: 916 Plätze über/],
+        ["kein Brand fängt (die Basis: kein Takt im Stamm)", ["simWecken.brand.start=", false], /LEER: an der Mess-Wiese fing kein Brand/],
         ["der Brand ohne Takt", (b) => b.simWecken.brand.einheiten.fill(0), /STUMPF: der Brand brennt, die Sim-Linse sieht keinen Takt/],
-        ["der Brand fegt die Welt", (b) => (b.simWecken.brand.einheiten[3] = 4000), /BRAND-ZELLEN: Schritt 4 kostete 4000 Einheiten bei 3 brennenden/],
-        ["der Brand erlischt im Regen nicht", (b) => (b.simWecken.brand.brennt = 7), /BRAND-ERLISCHT: im Regen brennen noch 7/],
-        ["die Front kriecht mit dem Wind", (b) => (b.simWecken.brand.mit = 0.3), /FRONT-MIT: .* 0.3 m\/s/],
-        ["die Front läuft gegen den Wind", (b) => (b.simWecken.brand.gegen = 0.3), /FRONT-GEGEN: .* 0.3 m\/s/],
-        ["ohne Wind läuft die Front", (b) => (b.simWecken.brand.ohneWind = 0.9), /BRAND-BLIND: .* 0.9 m\/s/],
-        ["der Brand hinterlässt keine Asche", (b) => (b.simWecken.brand.lebNach = 0.62), /BRAND-ASCHE: 4 Aschen, lebendig am Herd 0.62 → 0.62/],
-        ["der Brand leuchtet nicht", (b) => (b.simWecken.brand.licht = false), /BRAND-LESER: glut am Herd \+1, Leuchtquelle fehlt/],
-        ["der Brand schläft nicht", (b) => (b.simWecken.brand.nachher = simPh(2, 60, "brand")), /BRAND-RUHE: .* 120 Einheiten/],
+        ["der Brand fegt die Welt", ["simWecken.brand.einheiten.3=", 4000], /BRAND-ZELLEN: Schritt 4 kostete 4000 Einheiten bei 3 brennenden/],
+        ["der Brand erlischt im Regen nicht", ["simWecken.brand.brennt=", 7], /BRAND-ERLISCHT: im Regen brennen noch 7/],
+        ["die Front kriecht mit dem Wind", ["simWecken.brand.mit=", 0.3], /FRONT-MIT: .* 0.3 m\/s/],
+        ["die Front läuft gegen den Wind", ["simWecken.brand.gegen=", 0.3], /FRONT-GEGEN: .* 0.3 m\/s/],
+        ["ohne Wind läuft die Front", ["simWecken.brand.ohneWind=", 0.9], /BRAND-BLIND: .* 0.9 m\/s/],
+        ["der Brand hinterlässt keine Asche", ["simWecken.brand.lebNach=", 0.62], /BRAND-ASCHE: 4 Aschen, lebendig am Herd 0.62 → 0.62/],
+        ["der Brand leuchtet nicht", ["simWecken.brand.licht=", false], /BRAND-LESER: glut am Herd \+1, Leuchtquelle fehlt/],
+        ["der Brand schläft nicht", ["simWecken.brand.nachher=", simPh(2, 60, "brand")], /BRAND-RUHE: .* 120 Einheiten/],
         [
             "der Automat geht am Fixpunkt 4 Takte (die Basis)",
-            (b) => Object.assign(b.simWecken.wasser, { takte: [1, 4], gehalten: [0, 9] }),
+            ["simWecken.wasser", { takte: [1, 4], gehalten: [0, 9] }],
             /FIXPUNKT-WASSER: am Fluss \(-396,-878\), Wecken 2 ging der Automat 4 Takte, 9 Chunks blieben ohne Bewegung wach/,
         ],
-        ["am Fluss kein Chunk", (b) => (b.simWecken.wasser.chunks = 0), /LEER: am Fluss weckt die Werk-Setzung keinen Chunk/],
-        ["das Wasser bewegt sich", (b) => (b.simWecken.wasser.bewegt = [0, 3.2]), /LEER: am Fluss .* bewegte der Automat 3.2/],
+        ["am Fluss kein Chunk", ["simWecken.wasser.chunks=", 0], /LEER: am Fluss weckt die Werk-Setzung keinen Chunk/],
+        ["das Wasser bewegt sich", ["simWecken.wasser.bewegt=", [0, 3.2]], /LEER: am Fluss .* bewegte der Automat 3.2/],
         [
             "ein Sprung des Auges (40 m, ohne Takt) lässt die Welt stehen (die Basis)",
-            (b) => (b.fixWach = "Sprung"),
+            ["fixWach=", "Sprung"],
             /FIXPUNKT: die Welt hieß stehend — Sprung/,
         ],
-        ["die Ankunft gleitet, die Welt steht (die Basis)", (b) => (b.fixWach = "Gleite"), /stehend — Gleite/],
-        ["die Sonde ohne Bestand", (b) => (b.sonde.vor = "Rinde baum_tanne"), /SONDE: .* trifft Rinde/],
+        ["die Ankunft gleitet, die Welt steht (die Basis)", ["fixWach=", "Gleite"], /stehend — Gleite/],
+        ["die Sonde ohne Bestand", ["sonde.vor=", "Rinde baum_tanne"], /SONDE: .* trifft Rinde/],
     ];
     taeterFaelle(faelle, urteil, { fehler, klon });
     selbsttestEnde(fehler);
@@ -764,11 +762,15 @@ function brandUrteil(b) {
 
 // Die Folge (stoffe.K5#2): auf der Asche kein Halm und kein Kraut, nach der Stufe Gras die Halme (≥ 80 %) vor den Kräutern (≤ 30 %),
 // nach der Stufe Busch die Kräuter (≥ 80 %); die Ernte nimmt Nährstoff und Wuchs, Asche und Leichnam geben ihn zurück, die Mutante
-// lässt den Wuchs gleich; der Jungwuchs (Stubben → Sämling, der Wald nach dem Busch) ist nicht gebaut — SÄMLING nennt ihn.
+// lässt den Wuchs gleich. Der SÄMLING: am Stubben erst kein Baum, dann der Jungwuchs älter je Stufe in seiner Größe (Skala =
+// Alter), nach der Heilung der gewachsene; seine GESTALT trägt weniger Ordnungen und Glieder (die Mutante ohne `alter` dieselben).
+// Der WALD: der Brand nimmt jeden Baum seiner Zellen (≥ 3), der Wald kehrt als Jungwuchs (≥ 60 %) und geheilt (≥ 90 %) zurück.
 function sukzessionUrteil(s) {
-    const [a, n] = [s && s.asche, s && s.naehr];
-    if (!a || !a.asche || !n || !(a.vor.halme >= 20) || !(a.vor.kraut >= 3)) return ["LEER: " + JSON.stringify(a && a.vor)];
-    const [v, g, e] = [a.vor, a.gras, n.ernte];
+    const [a, n, S, W] = [s && s.asche, s && s.naehr, s && s.saemling, s && s.wald];
+    if (!a || !a.asche || !n || !S || !W || !(a.vor.halme >= 20) || !(a.vor.kraut >= 3)) return ["LEER: " + JSON.stringify(a && a.vor)];
+    const [v, g, e, J] = [a.vor, a.gras, n.ernte, S.stufen || []];
+    const jung = J.slice(1, -1);
+    const waechst = jung.every((q, i) => q.alter > 0 && q.alter < 1 && Math.abs(q.skala - q.alter) < 0.01 && (!i || q.alter >= jung[i - 1].alter));
     return rot([
         ["ASCHE", a.asche.halme <= 0.05 * v.halme && a.asche.kraut === 0, a.asche],
         ["GRAS", g && g.halme >= 0.8 * v.halme && g.kraut <= 0.3 * v.kraut, g],
@@ -776,7 +778,10 @@ function sukzessionUrteil(s) {
         ["ERNTE", e.n >= 3 && e.N < e.N0 - 0.04 && e.W < e.W0, e],
         ["RÜCKGABE", n.asche >= 1.2 && n.leichnam >= 1.1, n],
         ["MUTANTE-NÄHRSTOFF", n.mutante.W === n.mutante.W0, n.mutante],
-        ["SÄMLING", s.saemling, "kein Jungwuchs aus dem Stubben, der Wald wirft den gewachsenen Baum (treeParams(alter))"],
+        ["SÄMLING", J.length === 5 && J[0].alter === 0 && waechst && jung.at(-1).alter > jung[0].alter && J[4].alter === 1 && J[4].skala === 1, J],
+        ["GESTALT", S.gestalt && S.gestalt[0][0] < S.gestalt[1][0] && S.gestalt[0][1] < S.gestalt[1][1], S.gestalt],
+        ["MUTANTE-GESTALT", S.mutante && S.mutante[0][1] === S.mutante[1][1], S.mutante],
+        ["WALD", W.vor >= 3 && W.brand === 0 && W.jung >= 0.6 * W.vor && W.heil >= 0.9 * W.vor, W],
     ]);
 }
 
@@ -1002,6 +1007,12 @@ async function brandSeite(MESS) {
         aus.regenM = regen(true);
         aus.regen = regen(false);
         N.asche = r3(r._naehrstoffAt(MESS.x, MESS.z)); // die Asche des Herds, frisch
+        // die Welt-Stunde bis `h` (die Uhr in Schritten ≤ 4 h, je Schritt ein Takt: der Nachwuchs wacht), dann steht die Welt
+        const reif = async (h) => {
+            for (let n = 0; n < 400 && r._weltStunde() < h; n++)
+                r.setTimeOfDay((st.timeOfDay + Math.min(4, h - r._weltStunde() + 1e-3) / 24) % 1, "regler"), takt();
+            await stehen(MESS);
+        };
         // ASCHE: die Zelle des Herds (verbrannt, im Regen erloschen) auf der Asche, nach der Stufe Gras, nach der Stufe Busch
         const a = asche().find((q) => zelle(q.x, q.z).join(",") === hx + "," + hz);
         const F = (aus.asche = { vor, zelle: [hx, hz], tat: !!a });
@@ -1012,14 +1023,7 @@ async function brandSeite(MESS) {
             F.mutante = folge(hx, hz);
             delete r._ascheAt;
             const dauer = r._tatIndex().dauer.get(a);
-            const bis = async (s) => {
-                for (let n = 0; n < 400 && r._weltStunde() < a.h + s * dauer; n++) {
-                    r.setTimeOfDay((st.timeOfDay + Math.min(4, a.h + s * dauer - r._weltStunde() + 1e-3) / 24) % 1, "regler");
-                    takt();
-                }
-                await stehen(MESS);
-                return Object.assign(folge(hx, hz), { s: r3(r._sukzession(a).s) });
-            };
+            const bis = async (s) => (await reif(a.h + s * dauer), Object.assign(folge(hx, hz), { s: r3(r._sukzession(a).s) }));
             F.dauer = r3(dauer);
             F.gras = await bis(0.31);
             F.busch = await bis(0.61);
@@ -1030,6 +1034,64 @@ async function brandSeite(MESS) {
         const tier = r.spawnCreatureAt(Dx, y(Dx, Dz), Dz, "calm", "wolf", { precise: true, bodySize: 1 });
         if (tier) r._creatureCombatDeath(tier, "player");
         N.leichnam = r3(r._naehrstoffAt(Dx, Dz));
+        // DER SÄMLING (stoffe.K5#2): der nächste Baum des Walds fällt (`harvestArchitecture`) — an seinem Ort steht bis zum Austrieb
+        // des Stubbens kein Baum, dann sein Jungwuchs (`studioOv.alter` in `alter` × seiner Größe), Stufe um Stufe älter, nach der
+        // Heilung der gewachsene; die Gestalt der Jugend liest der gefühlte Baum (das Skelett der Prägung, `skelettDerGestalt`), die
+        // Mutante (treeParams ohne `alter`) wächst ihn als den alten. DER WALD NACH DEM BRAND: der nächste Baum zündet; die Bäume in
+        // den Zellen der Asche nimmt der Brand, mit dem Wald der Sukzession kehrt ihr Jungwuchs zurück, nach der Heilung gewachsen.
+        leer(), trocken(), wort("cloudy");
+        r._vegSpawnImmediate = true;
+        const dart = (p, W = C.FOREST.cell) => r._forestCellDarts(Math.floor(p.x / W), Math.floor(p.z / W), r._forestSeedInt()).some((q) => Math.hypot(q.x - p.x, q.z - p.z) < 0.05);
+        const baeume = () => st.architectures.filter((e) => e && e.position && /^baum_/.test(e._lodSpecies || "") && dart(e.position));
+        const am = (p) => baeume().find((e) => Math.hypot(e.position.x - p.x, e.position.z - p.z) < 0.05);
+        const alter = (p) => ((e) => (e ? (e.studioOv && e.studioOv.alter) || 1 : 0))(am(p));
+        // der nächste GEWACHSENE Baum (die Zellen der Asche oben tragen den Jungwuchs ihres Walds)
+        const naechster = () => baeume().filter((e) => !(e.studioOv && e.studioOv.alter)).sort((u, v) => d(u.position) - d(v.position))[0];
+        const gestalt = (e, pr = r._foundryPresetForEntry(e), g = r._foundryGestaltFor(e, pr) ?? 1) =>
+            [e.studioOv, null].map((ov) => ((k) => [k.P.maxDepth, k.nodes.segs.length])(globalThis.__terrainCore.skelettDerGestalt(pr, g, 0, r._foundryGestaltOv(pr, g, ov))));
+        const S = (aus.saemling = { stufen: [] });
+        const B0 = naechster();
+        if (B0) {
+            const [p, s0] = [{ x: B0.position.x, z: B0.position.z }, B0.scale];
+            r.harvestArchitecture(B0, "welt");
+            const a = L.find((q) => q.tat === "faellen" && Math.hypot(q.x - p.x, q.z - p.z) < 0.05);
+            const h = (s) => a.h + s * r._tatIndex().dauer.get(a);
+            for (const s of [0.1, 0.35, 0.6, 0.85, 1.02]) {
+                await reif(s > 1 ? h(1) + 0.1 : h(s));
+                const e = am(p);
+                S.stufen.push({ alter: alter(p), skala: e ? r3(e.scale / s0) : 0 });
+                if (!e || !e.studioOv || S.gestalt) continue;
+                const PC = globalThis.__phytoCore;
+                const tp = PC.treeParams;
+                S.gestalt = gestalt(e);
+                PC.treeParams = (dl, sd, sf, art, w) => tp(dl, sd, sf, art, w);
+                S.mutante = gestalt(e);
+                PC.treeParams = tp;
+            }
+        }
+        leer(), trocken();
+        const B1 = naechster();
+        const W = (aus.wald = {});
+        if (B1) {
+            const orte = baeume().filter((e) => Math.hypot(e.position.x - B1.position.x, e.position.z - B1.position.z) < 96).map((e) => ({ x: e.position.x, z: e.position.z }));
+            r._brandEntfachen(B1.position.x, B1.position.z);
+            brennen(900), await stehen(MESS);
+            const T = r._tatIndex();
+            const N = orte.filter((o) => (T.je.get(r._lifeCellKey(o.x, o.z)) || []).some((q) => q.tat === "brand"));
+            const zaehl = (f) => N.filter((o) => f(alter(o))).length;
+            Object.assign(W, { vor: N.length, brand: zaehl((v) => v > 0) });
+            // der Jungwuchs je Baum, solange seine Zelle im Wald der Sukzession steht: gesehen an sechs Stunden (die Zellen heilen
+            // nach ihrem Wuchs verschieden schnell)
+            const [Q, jung] = [asche().map((q) => q.h + 0.8 * T.dauer.get(q)).sort((u, v) => u - v), new Set()];
+            for (let k = 0; k < 6 && Q.length; k++) {
+                await reif(Q[Math.floor(((Q.length - 1) * k) / 5)]);
+                N.forEach((o, i) => ((v) => v > 0 && v < 1 && jung.add(i))(alter(o)));
+            }
+            W.jung = jung.size;
+            await reif(Math.max(...asche().map((q) => q.h + T.dauer.get(q))) + 0.1);
+            W.heil = zaehl((v) => v === 1);
+        }
+        r._vegSpawnImmediate = false;
         // ZEIT: jede Zelle mit Bett im geladenen Ring um die Mess-Wiese fängt (eine Spirale); trägt die Welt dort weniger als
         // 2 000 Zellen Bett (das Bett der Wiese liest die Boden-Karte gebauter Chunks), füllen Abzüge der brennenden Zellen den
         leer(), trocken(), wort("cloudy");
@@ -1065,10 +1127,9 @@ async function brandSeite(MESS) {
         const p95 = (v) => r3(v.sort(aufsteigend)[Math.floor(v.length * 0.95)]);
         aus.zeit = { brennend: zn, echt: echt.length, bildMs: p95(ms), leserMs: p95(lms), verzugS: r3(verzug) };
         leer();
-        aus.saemling = null; // der Jungwuchs ist nicht gebaut (treeParams(alter))
         return aus;
     } finally {
-        for (const k of ["_brandZuenden", "_naesseTakt", "_feuchteAt", "_brandFeuchte", "_ascheAt", "_naehrstoffAt"]) delete r[k];
+        for (const k of ["_brandZuenden", "_naesseTakt", "_feuchteAt", "_brandFeuchte", "_ascheAt", "_naehrstoffAt", "_vegSpawnImmediate"]) delete r[k];
         st.weatherEffectTime = uhr;
         st.autoSeason = jahr;
     }
@@ -1111,9 +1172,14 @@ if (SELBSTTEST) {
                 {
                     asche: { vor: { halme: 40, kraut: 6 }, asche: { halme: 0, kraut: 0 }, gras: { halme: 38, kraut: 1 }, busch: { kraut: 6 } },
                     naehr: { ernte: { n: 5, N0: 1, N: 0.9, W0: 0.8, W: 0.78 }, asche: 1.4, leichnam: 1.2, mutante: { W0: 0.8, W: 0.8 } },
-                    saemling: true,
+                    saemling: {
+                        stufen: [{ alter: 0, skala: 0 }, { alter: 0.06, skala: 0.06 }, { alter: 0.18, skala: 0.18 }, { alter: 0.7, skala: 0.7 }, { alter: 1, skala: 1 }],
+                        gestalt: [[5, 1461], [9, 2933]],
+                        mutante: [[5, 2933], [9, 2933]],
+                    },
+                    wald: { vor: 6, brand: 0, jung: 5, heil: 6 },
                 },
-                [["ASCHE", "asche.asche.halme", 30], ["GRAS", "asche.gras.kraut", 6], ["BUSCH", "asche.busch.kraut", 1], ["ERNTE", "naehr.ernte.N", 1], ["RÜCKGABE", "naehr.asche", 1], ["MUTANTE-NÄHRSTOFF", "naehr.mutante.W", 0.7], ["SÄMLING", "saemling", null]]
+                [["ASCHE", "asche.asche.halme", 30], ["GRAS", "asche.gras.kraut", 6], ["BUSCH", "asche.busch.kraut", 1], ["ERNTE", "naehr.ernte.N", 1], ["RÜCKGABE", "naehr.asche", 1], ["MUTANTE-NÄHRSTOFF", "naehr.mutante.W", 0.7], ["SÄMLING", "saemling.stufen.0.alter", 0.5], ["SÄMLING", "saemling.stufen.2.skala", 1], ["GESTALT", "saemling.gestalt.0.0", 9], ["MUTANTE-GESTALT", "saemling.mutante.0.1", 600], ["WALD", "wald.brand", 2], ["WALD", "wald.heil", 1]]
             ),
         ],
         "die Tat-, Nachwuchs-, Brand- und Sukzessions-Linse nennen jeden Täter."
@@ -2146,6 +2212,10 @@ const BRANDLAUF = process.argv.includes("--brand");
                             F.wellen.push({ groesse: alle.length, tote: alle.filter((e) => !lebt(e)).length });
                         }
                         F.welle = window.__simPhase([S.frame()], 0);
+                        // die Halde der Leben-Stufen (feld.K5): derselbe Fraß 100-mal an EINEM Ort (der Zeitraffer der Kaskade, je Tier und
+                        // Takt) — die Halde (`_lebenWecker`) trägt jede Zelle des Stands (`_lebenStand`) höchstens einmal, kein Platz darüber
+                        for (let i = 0; i < 100; i++) r._depositLife(MESS.x + 4000, MESS.z + 4400, -0.01);
+                        F.ueber = r._lebenWecker.length - r._lebenStand.size;
                         // der Brand (stoffe.K2 · feld.K3#2): an der Mess-Wiese über das Wort bewölkt (Wind 0,3; die Bühne hält die Nässe
                         // trocken wie die W-Kette ihren Vorgänger) gezündet (der Weg des Brennglases), je Bild genau EIN Schritt. Je Sprung
                         // der Front (die Zelle, von der sie kam → der Punkt, an dem sie ankam, brennend oder unterwegs) sein Tempo und sein
@@ -2286,11 +2356,11 @@ const BRANDLAUF = process.argv.includes("--brand");
         // je Staffel EINE Zeile und ihr Urteil (stoffe.K2#2 BRAND, stoffe.K5#2 SUKZESSION), das Ende trägt beide
         const vb = brandUrteil(befund);
         const vs = sukzessionUrteil(befund);
-        const { asche, naehr, saemling, ...brand } = befund;
+        const { asche, naehr, saemling, wald, ...brand } = befund;
         console.log("BRAND " + JSON.stringify(Object.assign(brand, { asche: asche && { vor: asche.vor, asche: asche.asche, gras: asche.gras, mutante: asche.mutante } })));
-        console.log("SUKZESSION " + JSON.stringify({ asche, naehr, saemling }));
+        console.log("SUKZESSION " + JSON.stringify({ asche, naehr, saemling, wald }));
         console.log(vb.length ? "❌ BRAND ROT — " + vb.join(" | ") : "✅ BRAND GRÜN — die Front hält an Wasser, Fels und nassem Gras, der Regen löscht, die Asche liegt im Boden-Stoff und grünt nach, Licht, Rauch und Knistern lesen den Brand");
-        console.log(vs.length ? "❌ SUKZESSION ROT — " + vs.join(" | ") : "✅ SUKZESSION GRÜN — Asche → Gras → Busch, der Nährstoff geht mit der Ernte und kehrt mit Asche und Leichnam zurück");
+        console.log(vs.length ? "❌ SUKZESSION ROT — " + vs.join(" | ") : "✅ SUKZESSION GRÜN — Asche → Gras → Busch → Wald, der Stubben treibt den Sämling, der Nährstoff geht mit der Ernte und kehrt mit Asche und Leichnam zurück");
         urteilEnde(vb.length + vs.length, "❌ BRAND · SUKZESSION ROT", "✅ BRAND · SUKZESSION GRÜN");
     }
     befund.pageErrors = befund.taktFehler || [];
@@ -2335,10 +2405,7 @@ const BRANDLAUF = process.argv.includes("--brand");
         );
         if (W.treue) console.log(zeile("treue", W.treue));
         rundeZeile("Treue nach dem Bau", W.treue);
-        if (W.phase) console.log(zeile("wecken", W.phase));
-        if (W.nachher) console.log(zeile("nachher", W.nachher));
-        if (W.regler) console.log(zeile("regler", W.regler));
-        if (W.wahrnehmung) console.log(zeile("wahrn.", W.wahrnehmung));
+        for (const [n, k] of [["wecken", "phase"], ["nachher"], ["regler"], ["wahrn.", "wahrnehmung"]]) if (W[k || n]) console.log(zeile(n, W[k || n]));
     }
     // Stufe, Ort und Strom: je Befund EINE Zeile, wie die Seite sie maß
     for (const n of ["stufe", "ort", "strom"]) if (befund[n]) console.log(`  ${n}: ${JSON.stringify(befund[n])}`);

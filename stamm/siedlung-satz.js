@@ -920,7 +920,8 @@ class AnazhRealm_siedlung_satz {
         }
         if (!this.state.scene) return nein("buehne");
         // DIE TAT BLEIBT, WO DAS GESETZ NEU SETZT (speicher.K3): ein Wurf des Gesetzes fällt, wo eine Tat ihn nahm (`_tatSperrt`)
-        if (opts.ausGesetz === true && position && this._tatSperrt(position.x, position.z)) return nein("tat");
+        if (opts.ausGesetz === true && position && this._tatSperrt(position.x, position.z, opts.studioOv))
+            return nein("tat");
         // Der Same eines Werks ohne eigenen (Bau einer Kreatur, Plattform, Portal) kommt aus dem Welt-Strom seiner Art (Γ5,
         // Lehre 7) — nie Math.random: der Mitspieler und der Reload sähen ein anderes Werk.
         const seed = Number.isFinite(opts.seed) ? opts.seed : this._bauSame("bau:" + type);
@@ -1241,7 +1242,7 @@ AnazhRealm.BAU_WURF_ATTR = Object.freeze([
 ]);
 AnazhRealm.KIND_SUBSTANCE = Object.freeze({
     geraet_schwert: {
-        label: "Schwert",
+        etikett: ["substanz.schwert"],
         parts: [
             {
                 shape: "octahedron",
@@ -1282,7 +1283,7 @@ AnazhRealm.KIND_SUBSTANCE = Object.freeze({
         ],
     },
     geraet_spitzhacke: {
-        label: "Spitzhacke",
+        etikett: ["substanz.spitzhacke"],
         parts: [
             {
                 shape: "cylinder",
@@ -1305,7 +1306,7 @@ AnazhRealm.KIND_SUBSTANCE = Object.freeze({
         ],
     },
     fahrzeug_wagen: {
-        label: "Wagen",
+        etikett: ["substanz.wagen"],
         parts: [
             {
                 shape: "box",
@@ -1453,7 +1454,7 @@ AnazhRealm.KIND_SUBSTANCE = Object.freeze({
         ],
     },
     tor_basis: {
-        label: "Torbogen",
+        etikett: ["substanz.torbogen"],
         parts: [
             {
                 shape: "box",
@@ -1486,7 +1487,7 @@ AnazhRealm.KIND_SUBSTANCE = Object.freeze({
         ],
     },
     haus_basis: {
-        label: "Haus",
+        etikett: ["substanz.haus"],
         parts: [
             {
                 shape: "box",
@@ -1533,6 +1534,7 @@ AnazhRealm.KIND_SUBSTANCE = Object.freeze({
         ],
     },
 });
+for (const z of Object.values(AnazhRealm.KIND_SUBSTANCE)) AnazhRealm._etikett(z); // der Name liest seinen Schlüssel
 // DIE WÜRFE DES FELDS (K10-6) — die Arten, die das Affinitäts-Feld wirft (`_vegetationSampleSpawn`: der Sieger der Affinität
 // je Sample): die Baumarten, der Fels, die Geode und die Feuerstelle des Glut-Felds. Was das Feld wirft, trägt die Marke des
 // Wurfs (`feldWurf`, `_enqueueVegetationSpawn`) und weicht dem Bau wie die Natur (`_weichtDemBau`): es sperrt keinem Ort den

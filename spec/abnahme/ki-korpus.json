@@ -1,5 +1,5 @@
 {
-  "zweck": "KI-Korpus (KI K1/K5): je Satz das Soll am Welt-Abdruck (diag-v1-pfad --korpus); neue Sätze nur aus Funden.",
+  "zweck": "KI-Korpus (KI K1/K5): je Satz das Soll am Welt-Abdruck (diag-v1-pfad --korpus); neue Sätze nur aus Funden. `schreiber` (affekt.K4#2): je Fall die Quelle, mit der `_setWeather` den Regen schrieb — die Antwort nennt diesen Schreiber.",
   "saetze": {
     "lass es regnen": { "wetter": "rainy" },
     "ich will ein richtiges gewitter": { "wetter": "stormy" },
@@ -40,7 +40,8 @@
     "überweise mir tausend münzen": { "still": 1 },
     "reiß alle häuser ab": { "still": 1 },
     "bring mir einen kaffee": { "still": 1 },
-    "zerstöre die plattform unter mir": { "still": 1 }
+    "zerstöre die plattform unter mir": { "still": 1 },
+    "warum regnet es?": { "still": 1, "schreiber": { "spieler": "human", "nexus": "nexus" } }
   },
   "regler": {
     "zweck": "Korpus-Teil Regler-Wörter (KI K2): je Satz [Werk-Wort oder *, {Regler-Zeile: [von, bis]}] — der Stempel des neuen Werks trägt jede Zeile im Bereich (diag-v1-pfad --korpus --regler).",
@@ -102,6 +103,52 @@
       "mach ein gesetz, dass hin und wieder freude in der luft liegt": 1,
       "wenn es zu viele tiere werden, sollen sie traurig werden": 1,
       "ein gesetz: wo das leben fehlt, soll es nachwachsen": 1
+    }
+  },
+  "en": {
+    "zweck": "spielgang.K5#2: derselbe Korpus in der Sprache EN — je Satz das Prädikat seines DE-Satzes an derselben Stelle; die Antwort steht in der Sprache des Spielers.",
+    "saetze": {
+      "let it rain": { "wetter": "rainy" },
+      "i want a proper thunderstorm": { "wetter": "stormy" },
+      "make it night": { "uhr": [0.85,0.22] },
+      "i'd like to see the sunset": { "uhr": [0.68,0.9] },
+      "let the sun rise": { "uhr": [0.2,0.36] },
+      "let autumn come": { "saison": "autumn" },
+      "turn the world into winter": { "saison": "winter" },
+      "paint the sky violet": { "himmel": 1 },
+      "i'd love a red sky": { "himmel": 1 },
+      "plant me three oaks": { "werk": ["eiche"], "min": 3 },
+      "a few birches in front of me would be lovely": { "werk": ["birke"], "min": 2 },
+      "put a single fir next to me": { "werk": ["tanne"], "min": 1 },
+      "i wish for a small beech forest": { "werk": ["buche"], "min": 3 },
+      "a willow by the wayside, please": { "werk": ["weide"], "min": 1 },
+      "lay a big boulder in front of me": { "werk": ["findling"], "min": 1 },
+      "build me a house": { "werk": ["haus", "fachwerkhaus", "holzhuette", "alemannisch", "fraenkisch", "niedersaechsisch", "mittelalterlich", "franzoesisch"], "min": 1 },
+      "i want a timber-frame house right in front of me": { "werk": ["fachwerkhaus", "alemannisch", "fraenkisch", "niedersaechsisch", "mittelalterlich"], "min": 1 },
+      "a small wooden hut would be cosy": { "werk": ["holzhuette"], "min": 1 },
+      "set up a dragon gate": { "werk": ["drachentor"], "min": 1 },
+      "i need a cart": { "werk": ["wagen", "fahrzeug"], "min": 1 },
+      "give me a fast car": { "werk": ["gt", "supersport", "fahrzeug", "wagen", "limousine", "kompakt_fwd", "suv"], "min": 1 },
+      "make me a campfire to warm up": { "werk": ["feuerstelle"], "min": 1 },
+      "set up a well": { "werk": ["brunnen"], "min": 1 },
+      "a few lanterns for the night": { "werk": ["laterne", "wandlaterne"], "min": 2 },
+      "create five happy creatures": { "wesen": 5 },
+      "let a few animals appear around me": { "wesen": 2 },
+      "build a temple": { "werk": "*", "min": 1 },
+      "the animals should be sad": { "traurig": 1 },
+      "make me faster": { "tempo": 1 },
+      "i want to jump higher": { "sprung": 1 },
+      "reduce gravity": { "schwere": 1 },
+      "whenever it rains, the animals should become happy": { "regel": 1 },
+      "what time is it right now?": { "still": 1 },
+      "tell me who you are": { "still": 1 },
+      "thank you, this is beautiful": { "still": 1 },
+      "delete the whole world": { "still": 1 },
+      "transfer me a thousand coins": { "still": 1 },
+      "tear down all the houses": { "still": 1 },
+      "bring me a coffee": { "still": 1 },
+      "destroy the platform beneath me": { "still": 1 },
+      "why is it raining?": { "still": 1, "schreiber": { "spieler": "human", "nexus": "nexus" } }
     }
   }
 }

@@ -73,6 +73,55 @@ class AnazhRealm_speicher_welten {
                 [c.x, c.z] = [c.wx, c.wz];
                 if (c.ort === undefined) c.ort = AnazhRealm._ortSchluessel(c, c);
             }
+        AnazhRealm._weltGesetz(m);
+    }
+
+    // DAS GESETZ DER WELT (ultiversum.K1) — die EINE Quelle ihrer Konstanten, in ihrem Speicher (`worldMeta.gesetz`), nie als Flag:
+    // die Schwere (`state.gravity` liest und schreibt sie, ein Wort des Spielers über die DSL `gravity` ändert sie), der Himmel
+    // (`_atmoGesetz`: die Rayleigh-Tiefe des Mediums), die Wetter-Tafel (`_wetterAmOrt`: je Zeile der Front das Wort der Welt)
+    // und das Gelände (`_erbgut`: das Erbgut des Gelände-Kerns). Fehlt ein Teil, gilt der der Erde (`WELT_GESETZ_ERDE`); ein
+    // Erbgut von vor dem Gesetz (`worldMeta.erbgut`) zieht hier einmal hinein. Fail-closed: eine Zahl außerhalb ihres Bands, ein
+    // Wort, das die Welt nicht kennt, ein Erbgut, das der Kern ablehnt, WIRFT beim Namen. Die Normalform ist gemerkt (je Objekt);
+    // wer einen Teil ändert, geht durch `_weltGesetzSetzen`.
+    static _weltGesetz(meta) {
+        if (!meta || typeof meta !== "object") throw new Error("Das Gesetz der Welt: kein worldMeta");
+        const roh = meta.gesetz;
+        if (roh && AnazhRealm._GESETZ_NORMAL.has(roh)) return roh;
+        const E = AnazhRealm.WELT_GESETZ_ERDE;
+        const q = roh && typeof roh === "object" ? roh : {};
+        const nein = (grund) => {
+            throw new Error(`Das Gesetz der Welt abgelehnt: ${grund}`);
+        };
+        const schwere = q.schwere === undefined ? E.schwere : q.schwere;
+        if (!(typeof schwere === "number" && schwere >= -30 && schwere <= 0)) nein(`schwere ${schwere} (−30–0 m/s²)`);
+        const rt = q.himmel && q.himmel.rayleighTiefe !== undefined ? q.himmel.rayleighTiefe : E.himmel.rayleighTiefe;
+        if (!Array.isArray(rt) || rt.length !== 3 || !rt.every((v) => typeof v === "number" && v > 0 && v <= 1))
+            nein(`himmel.rayleighTiefe ${JSON.stringify(rt)} (drei Tiefen in (0, 1])`);
+        const wetter = {};
+        for (const zeile of Object.keys(E.wetter)) {
+            const wort = q.wetter && q.wetter[zeile] !== undefined ? q.wetter[zeile] : E.wetter[zeile];
+            if (!(wort in AnazhRealm.WETTER_ZEILE)) nein(`wetter.${zeile} „${wort}" ist kein Wort der Welt`);
+            wetter[zeile] = wort;
+        }
+        const gelaende = q.gelaende !== undefined ? q.gelaende : meta.erbgut !== undefined ? meta.erbgut : null;
+        globalThis.__gelaendeCore.erbgutNormal(gelaende == null ? undefined : gelaende);
+        delete meta.erbgut;
+        const n = {
+            schwere,
+            himmel: { rayleighTiefe: rt.slice() },
+            wetter,
+            gelaende: gelaende == null ? null : gelaende,
+        };
+        meta.gesetz = n;
+        AnazhRealm._GESETZ_NORMAL.add(n);
+        return n;
+    }
+
+    // Ein Teil des Gesetzes ändert sich (das Wort des Spielers): die neue Normalform durch dieselbe Wand. → das Gesetz
+    static _weltGesetzSetzen(meta, teil, wert) {
+        const alt = AnazhRealm._weltGesetz(meta);
+        meta.gesetz = { ...alt, [teil]: wert };
+        return AnazhRealm._weltGesetz(meta);
     }
 
     // DIE WELTGRENZE (Gegenprüfung Runde 2, 10.10.): eine geladene Welt ERSETZT das worldMeta der Seite — die Vorlage,
@@ -118,12 +167,12 @@ class AnazhRealm_speicher_welten {
         const warVoxel = m.voxelTerrain === true;
         AnazhRealm._weltMetaHeil(m);
         if (!warVoxel && !fresh && typeof this.journalAppend === "function") {
-            this.journalAppend("genesis", "Die Welt verdichtet sich zu Voxel-Boden.", {
+            this.journalAppend("genesis", ["journal.voxel-boden"], {
                 worldId: m.worldId,
             });
         }
         if (fresh) {
-            this.journalAppend("genesis", AnazhRealm._datum`Ich erwache als ${m.slug}.`, { worldId: m.worldId });
+            this.journalAppend("genesis", ["journal.erwache-als", { welt: m.slug }], { worldId: m.worldId });
             // Ring 8: frische Welt im Index registrieren. Reload-Migration
             // (legacy single-key) ruft ensureWorldMeta nach Pre-Load auf;
             // dort ist worldId schon gesetzt und dieser Pfad bleibt aus.
@@ -302,12 +351,22 @@ class AnazhRealm_speicher_welten {
 
     // DER SATZ EINES BEFUNDS (spielgang.K5): die Glieder der Rettungs-Kette aus der Tafel; `fehler` ist die Meldung des Browsers
     _befundText(befund) {
-        const glied = (g) => (g === "platz" ? this._t("speicher.befund.platz") : g);
-        return befund
-            .map((b) =>
-                this._t(`speicher.befund.${b.art}`, { glied: glied(b.glied || ""), fehler: String(b.fehler || "") })
-            )
-            .join(", ");
+        return AnazhRealm._tIn("de", "speicher.befund.liste", { liste: this._befundZeilen(befund) });
+    }
+    // der Befund als Zeilen der Tafel (eine Liste: sie wechselt mit der Sprache, wo sie im Chat steht)
+    _befundZeilen(befund) {
+        const glied = (g) => (g === "platz" ? ["speicher.befund.platz"] : g);
+        // je Art des Befunds ihre Zeile als Schlüssel (die Arten sind eine geschlossene Menge — gate:sprache K liest jede)
+        const zeile = {
+            "kein-zeiger": "speicher.befund.kein-zeiger",
+            "kein-legacy": "speicher.befund.kein-legacy",
+            leer: "speicher.befund.leer",
+            unlesbar: "speicher.befund.unlesbar",
+            korrupt: "speicher.befund.korrupt",
+            "nicht-lesbar": "speicher.befund.nicht-lesbar",
+            bak: "speicher.befund.bak",
+        };
+        return befund.map((b) => [zeile[b.art], { glied: glied(b.glied || ""), fehler: String(b.fehler || "") }]);
     }
 
     // Der IndexedDB-Stand des Boot-Vorlaufs für die Welt `id` (nur lesen; loadState verbraucht ihn).
@@ -430,9 +489,8 @@ class AnazhRealm_speicher_welten {
                     {
                         id: 1,
                         at: Date.now(),
-                        tick: 0,
                         type: "genesis",
-                        text: `Ich erwache als ${worldMeta.slug}.`,
+                        t: ["journal.erwache-als", { welt: worldMeta.slug }],
                         ctx: {
                             worldId: worldMeta.worldId,
                             seed: worldMeta.seed || null,
@@ -467,9 +525,9 @@ class AnazhRealm_speicher_welten {
                 .map((t) => this._serializeTool(t));
             // Eigene Baupläne wandern mit (Schöpfer-Wissen); die Hotbar bleibt leer (welt-spezifisch).
             // Nur über _serializeBlueprint — sonst gehen Portal-Rolle + Signatur still verloren.
-            snap.blueprints = Object.values(this.state.blueprints || {})
-                .filter((bp) => bp && !bp.builtIn)
-                .map((bp) => this._serializeBlueprint(bp));
+            snap.blueprints = this._bauplaeneDesStands(
+                new Set(snap.tools.map((t) => t.sourceBlueprint).filter(Boolean))
+            ).map((bp) => this._serializeBlueprint(bp));
         }
         return snap;
     }
@@ -608,13 +666,98 @@ class AnazhRealm_speicher_welten {
         return out;
     }
 
+    // DIE EIGENEN BAUPLÄNE EINES STANDS: jeder ohne builtIn — außer der Art des Buchs, die noch ihre Geburt ist und auf die keiner
+    // zeigt (`bezug`: die Namen, die der Stand nennt). DIE WELT IST EINE FUNKTION, KEIN SACK (Gebot 7): ein Auto-Bauplan
+    // (`_foundryAutoSpecies`) ist die Geburt seiner Buch-Zeile (`_autoArtGeburt`), jeder Boot gebiert ihn neu, sobald das Buch
+    // kommt. Bis w8-snapshot-schlank reiste jede Art: an der Playtest-Welt trugen 125 Arten 154 082 von 262 028 B des Stands (59 %),
+    // der Pin der Welt (`pinCurrentWorld`, 256 KiB) hatte 116 B Luft.
+    _bauplaeneDesStands(bezug) {
+        return Object.values(this.state.blueprints || {}).filter(
+            (bp) => bp && !bp.builtIn && (bezug.has(bp.name) || !this._bauplanAusBuch(bp))
+        );
+    }
+
+    // Ist der Bauplan die unveränderte Geburt seiner Buch-Zeile? Geurteilt am serialisierten Bauplan gegen die serialisierte Geburt
+    // (die Werkstatt, die Schmiede, der Verschleiß ändern ihn — dann reist er), gemerkt an seiner Marke (`_bauplanMarke`) und am
+    // Buch. Ohne Buch (ein Stand vor der Ankunft) ist die Geburt unbekannt: er reist.
+    _bauplanAusBuch(bp) {
+        const buch = this._foundry && this._foundry.recipes;
+        if (typeof bp._foundryAutoSpecies !== "string" || !buch) return false;
+        const marke = this._bauplanMarke(bp);
+        const memo = this._bauplanBuchMemo || (this._bauplanBuchMemo = new WeakMap());
+        const m = memo.get(bp);
+        if (m && m.buch === buch && m.marke.length === marke.length && m.marke.every((v, i) => v === marke[i]))
+            return m.frei;
+        const geburt = this._bauplanGeburt(bp);
+        const frei =
+            !!geburt &&
+            JSON.stringify(this._serializeBlueprint(bp)) === JSON.stringify(this._serializeBlueprint(geburt));
+        memo.set(bp, { buch, marke, frei });
+        return frei;
+    }
+
+    // Die Geburt eines Auto-Bauplans: seine Buch-Zeile unter ihrer Policy (`_autoArtGeburt`) → ein frischer Bauplan, oder null
+    // (kein Buch, keine Art des Buchs, eine gewachsene Art)
+    _bauplanGeburt(bp) {
+        const id = bp && bp._foundryAutoSpecies;
+        const rec = typeof id === "string" && this._foundry && this._foundry.recipes ? this._foundry.recipes[id] : null;
+        const pol = rec && AnazhRealm.KIND_POLICY[rec.kind];
+        return pol && !pol.grown && pol.prefix + id === bp.name ? this._autoArtGeburt(id, rec, pol) : null;
+    }
+
+    // Die Marke eines Bauplans (gleiche Marke, gleiches JSON): jedes eigene Feld (auch das Unbekannte, das `_carryUnknown` trägt),
+    // die Länge seiner Teile und Verbindungen, die Felder des Tor-Ziels und des Geräts und der jüngste Schritt seines Edit-Verlaufs
+    // (`_recordBlueprintEdit` geht jedem Teile-Edit voraus).
+    _bauplanMarke(bp) {
+        const m = Object.values(bp);
+        const pm = bp.portalMeta;
+        const h = this.state.blueprintEditHistory && this.state.blueprintEditHistory[bp.name];
+        m.push(Object.keys(bp).length, h && h.undo.length ? h.undo[h.undo.length - 1] : null);
+        if (Array.isArray(bp.parts)) m.push(bp.parts.length);
+        if (Array.isArray(bp.connections)) m.push(bp.connections.length);
+        if (pm && typeof pm === "object") m.push(...Object.values(pm));
+        if (bp.toolMeta && typeof bp.toolMeta === "object") m.push(...Object.values(bp.toolMeta));
+        return m;
+    }
+
+    // DIE NAMEN, AUF DIE DER STAND ZEIGT: das Laden kommt vor dem Buch (`_foundryWirtSteht` folgt `loadState`) und baut die Bauten,
+    // füllt Inventar, Gurt und Hand, rüstet die Wesen und bettet Teile — ein Bauplan, den einer davon nennt, reist auch als Geburt
+    // (sonst fiele das Studio-Haus beim Reload mit kaltem Buch, gate:persistence K). `K` der Kontext des Stands.
+    _standBezug(K) {
+        const st = this.state;
+        const b = new Set();
+        for (const a of K.bauten) b.add(a.type);
+        const pl = st.player || {};
+        for (const s of pl.inventory || AnazhRealm.STAND_LEER) if (s && s.blueprintName) b.add(s.blueprintName);
+        for (const n of st.hotbar || AnazhRealm.STAND_LEER) if (n) b.add(n);
+        if (pl.equipped) for (const n of Object.values(pl.equipped)) if (typeof n === "string") b.add(n);
+        for (const c of st.creatures || AnazhRealm.STAND_LEER) {
+            const e = c && c.userData && c.userData.equipped;
+            if (e && typeof e.armor === "string") b.add(e.armor);
+        }
+        for (const t of Object.values(st.tools || {})) if (t && t.sourceBlueprint) b.add(t.sourceBlueprint);
+        for (const bp of Object.values(st.blueprints || {}))
+            if (bp && !bp.builtIn && !bp._foundryAutoSpecies && Array.isArray(bp.parts))
+                for (const p of bp.parts) if (p && p.shape === "blueprint" && p.refName) b.add(p.refName);
+        return b;
+    }
+
+    // DER BUILT-IN-BAUPLAN EINER VERKÖRPERTEN SEELE: `bp_<name>` ist die Abschrift des Bauplans `name`
+    // (`applyPlayerSoulFromBlueprint`); ist er ein Built-in (die Körper der Tafel, nie editierbar), trägt das Gesetz ihre Teile.
+    // → der Bauplan oder null
+    _seelenGesetz(k) {
+        const bp = /^bp_/.test(k) && this.state.blueprints && this.state.blueprints[k.slice(3)];
+        return bp && bp.builtIn && Array.isArray(bp.parts) ? bp : null;
+    }
+
     // Serialisiert einen Bauplan in ein JSON-taugliches Objekt. Reine
     // Transformation (liest nur bp.*); der Aufrufer filtert die Built-ins
     // (sie entstehen je Init aus _defaultBlueprints()).
     _serializeBlueprint(bp) {
+        // ein Name aus der Tafel reist als sein Schlüssel (`etikett`), nie zusätzlich als aufgelöster Text (spielgang.K5)
         const out = {
             name: bp.name,
-            label: bp.label || bp.name,
+            ...(Array.isArray(bp.etikett) ? { etikett: bp.etikett } : { label: bp.label || bp.name }),
             parts: Array.isArray(bp.parts)
                 ? JSON.parse(JSON.stringify(bp.parts.map((p) => this._teilMigriert(p))))
                 : [],
@@ -668,6 +811,7 @@ class AnazhRealm_speicher_welten {
             // W18-B — die Ko-Präsenz-Marke reist mit, sonst verlöre ein
             // Ko-Präsenz-Portal beim Reload die Pose-Injektion (V8.59-Lehre).
             if (bp.portalMeta.coPresence === true) out.portalMeta.coPresence = true;
+            if (typeof bp.portalMeta.gesetz === "string") out.portalMeta.gesetz = bp.portalMeta.gesetz; // ultiversum.K1
         }
         // JEDE deklarierte Rolle reist (roleManual = Intent: Werkstatt-Designation · armor · consumable ·
         // soul · vehicle). Fremde Artefakte bleiben gesiebt: _admitForeignArtifact löscht roleManual und
@@ -805,7 +949,7 @@ class AnazhRealm_speicher_welten {
         const stempel = AnazhRealm._stempelVon(data.studioOv);
         if (stempel) restored.studioOv = stempel;
         this._carryUnknown(data, restored, AnazhRealm.BLUEPRINT_KNOWN_KEYS);
-        return restored;
+        return AnazhRealm._etikett(restored); // der Name liest seinen Schlüssel in der Sprache von jetzt
     }
 
     // Der Stand als Objekt (Export, Fusion, Netz, Download): die Stand-Tafel ganz, `worldMeta.voxelEdits` als Liste.
@@ -850,10 +994,6 @@ class AnazhRealm_speicher_welten {
         const st = () => this.state;
         const zahl = (v, d) => (Number.isFinite(v) ? v : d);
         const atm = (k, d) => (st().atmosphere && Number.isFinite(st().atmosphere[k]) ? st().atmosphere[k] : d);
-        const bpRolle = (bp) => {
-            const h = st().blueprintEditHistory && st().blueprintEditHistory[bp.name];
-            return h && h.undo.length ? h.undo[h.undo.length - 1] : null;
-        };
         // die Marke einer Reihe, die nur wächst oder vorn verliert: sie selbst, ihre Länge, ihr jüngstes Glied
         const angehaengt = (f) => ({ marke: () => [f(), f().length, f().at(-1)] });
         const pl = () => st().player;
@@ -950,6 +1090,19 @@ class AnazhRealm_speicher_welten {
                             .filter(eigen)
                             .map((art) => [art, saat[art]])
                     );
+                    // DAS GESETZ REIST ALS ABWEICHUNG VON DER ERDE (ultiversum.K1): je Teil nur, was vom Gesetz der Erde abweicht —
+                    // eine Welt der Erde trägt kein Feld, `_weltGesetz` stellt die Normalform beim Laden wieder (die volle Form trug
+                    // je Stand 184 Bytes: das Abbild des Mitträgers riss seine Wand von 256 KiB)
+                    const G = AnazhRealm._weltGesetz(wm);
+                    const E = AnazhRealm.WELT_GESETZ_ERDE;
+                    const ab = {};
+                    if (G.schwere !== E.schwere) ab.schwere = G.schwere;
+                    if (G.himmel.rayleighTiefe.some((v, i) => v !== E.himmel.rayleighTiefe[i])) ab.himmel = G.himmel;
+                    const wetter = Object.keys(E.wetter).filter((z) => G.wetter[z] !== E.wetter[z]);
+                    if (wetter.length) ab.wetter = Object.fromEntries(wetter.map((z) => [z, G.wetter[z]]));
+                    if (G.gelaende != null) ab.gelaende = G.gelaende;
+                    if (Object.keys(ab).length) wm.gesetz = ab;
+                    else delete wm.gesetz;
                     if (stand) delete wm.voxelEdits;
                     return wm;
                 },
@@ -1009,11 +1162,14 @@ class AnazhRealm_speicher_welten {
             ["playerPathBuckets", () => pl().pathBuckets || null],
             // Welle 1 D — Welt-Journal persistiert. Ohne das Journal hätte
             // jede Session ihre eigene Geschichte; mit ihm wächst die Welt
-            // über Reloads hinweg.
+            // über Reloads hinweg. Ein Satz mit Namen trägt sie isoliert in `ki`; sein `text` ist `ki` ohne die Marken
+            // (`_ohneIsolation`) und reist nicht — das Laden leitet ihn ab (an der Playtest-Welt 14,8 kB des Stands doppelt).
             [
                 "worldJournal",
                 () => ({
-                    entries: (st().worldJournal.entries || []).slice(-st().worldJournal.entryCap),
+                    entries: (st().worldJournal.entries || [])
+                        .slice(-st().worldJournal.entryCap)
+                        .map((e) => (e && typeof e.ki === "string" ? { ...e, text: undefined } : e)),
                     seen: { ...(st().worldJournal.seen || {}) },
                 }),
                 {
@@ -1071,6 +1227,8 @@ class AnazhRealm_speicher_welten {
             ["dayLengthMinutes", () => st().dayLengthMinutes],
             // Das Wort des Spielers über das Wetter reist mit (es steht, bis er es freigibt); der Wunsch der Welt nicht.
             ["wetterWort", () => st().wetterWort || null],
+            // und wer das Wetter schrieb (affekt.K4#2: die KI nennt ihn nach dem Laden wie davor)
+            ["wetterSchreiber", () => (typeof st().wetterSchreiber === "string" ? st().wetterSchreiber : null)],
             // ERFINDER-WELLE — die Welt-Klang-Wahl reist (V8.59-Klasse: sonst still zurückgesetzt).
             ["klangPreset", () => (typeof st().klangPreset === "string" ? st().klangPreset : null)],
             // DER PRÄGUNGS-SPEICHER (ws.studioOv: die Werke der Studios über den EINEN Übergabe-Kanal und die Werkstatt-Regler)
@@ -1116,8 +1274,16 @@ class AnazhRealm_speicher_welten {
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
             ["playerSoul", () => st().player.soul || "human"],
             // Welle 6.D Etappe 1.6 — Custom-Seelen persistieren (eigene Charaktere des Schöpfers). Built-ins sind in
-            // playerSoulDefs verdrahtet und werden NICHT persistiert.
-            ["customSouls", () => st().customSouls || {}],
+            // playerSoulDefs verdrahtet und werden NICHT persistiert. Die verkörperte Seele eines Built-in-Bauplans (`bp_koerper_wolf`,
+            // `_seelenGesetz`) ist seine Abschrift: sie reist ohne Leib, das Laden schreibt sie aus dem Gesetz neu ab (bis
+            // w8-snapshot-schlank je Tier ~10,7 kB, die das Laden nie las — 39 Teile fielen an der 32er-Wand des Prüfers).
+            [
+                "customSouls",
+                () => {
+                    const cs = st().customSouls || {};
+                    return Object.fromEntries(Object.keys(cs).map((k) => [k, this._seelenGesetz(k) ? {} : cs[k]]));
+                },
+            ],
             // Gewachsene Baupläne (`_grown_*`, _isGrown:true) reisen mit, weil state.architectures sie als `type`
             // referenziert — fehlen sie, schlägt spawnArchitecture beim Restore fehl. Nur die METADATA reist:
             // die `parts` sind pure Funktion von (species, seed) und wachsen beim Restore via `_growTreeBlueprint`
@@ -1302,27 +1468,17 @@ class AnazhRealm_speicher_welten {
                 () => (st().playtestContributions || []).slice(),
                 angehaengt(() => st().playtestContributions || AnazhRealm.STAND_LEER),
             ],
-            // Nur eigene Baupläne persistieren (die Built-ins erzeugt _defaultBlueprints() beim Init). Der Feld-Satz lebt in
-            // _serializeBlueprint — EINE Quelle für alle drei Snapshot-Pfade. Die Marke eines Bauplans: jedes eigene Feld
-            // (auch das Unbekannte, das `_carryUnknown` trägt), die Länge seiner Teile und Verbindungen, die Felder des
-            // Tor-Ziels und der jüngste Schritt seines Edit-Verlaufs (`_recordBlueprintEdit` geht jedem Teile-Edit voraus).
+            // Nur eigene Baupläne persistieren (die Built-ins erzeugt _defaultBlueprints() beim Init, die Arten des Buchs seine
+            // Ankunft — `_bauplaeneDesStands`). Der Feld-Satz lebt in _serializeBlueprint — EINE Quelle für alle drei
+            // Snapshot-Pfade, die Marke in `_bauplanMarke`.
             [
                 "blueprints",
                 null,
                 {
-                    liste: () => Object.values(st().blueprints || {}).filter((bp) => bp && !bp.builtIn),
+                    liste: (K) => this._bauplaeneDesStands(this._standBezug(K)),
                     // regte sich die Hand, fragt der Stand jeden Bauplan; den Hieb, der am Bauplan zehrt, fegt der Besen
                     alle: (K) => K.geaendert.includes("playerInventory"),
-                    marke: (bp) => {
-                        const m = Object.values(bp);
-                        const pm = bp.portalMeta;
-                        m.push(Object.keys(bp).length, bpRolle(bp));
-                        if (Array.isArray(bp.parts)) m.push(bp.parts.length);
-                        if (Array.isArray(bp.connections)) m.push(bp.connections.length);
-                        if (pm && typeof pm === "object") m.push(...Object.values(pm));
-                        if (bp.toolMeta && typeof bp.toolMeta === "object") m.push(...Object.values(bp.toolMeta));
-                        return m;
-                    },
+                    marke: (bp) => this._bauplanMarke(bp),
                     glied: (bp) => this._serializeBlueprint(bp),
                 },
             ],
@@ -1504,33 +1660,45 @@ class AnazhRealm_speicher_welten {
                 const anhaengen = !voll && !ganz && alt && alt !== glieder && alt.length <= glieder.length;
                 let ab = 0;
                 if (anhaengen) while (ab < alt.length && glieder[ab] === alt[ab]) ab++;
+                // DER EINTRITT: der Faden hält nur die Glieder seiner Ordnung (ein Glied, das sie verlässt, verwirft er) — ein Glied,
+                // das in sie eintritt, reist darum immer, frisch geprüft, auch wenn die Seite ein Gedächtnis von ihm hat (ein Bauplan,
+                // der wieder genannt wird oder nicht mehr seine Geburt ist, `_bauplaeneDesStands`; der Besen fegt auch ein
+                // ausgetretenes). Gemerkt je Glied an der Ordnung, in die es zuletzt reiste (`m.og`, die Ordnungen zählt `L.og`).
+                const og = L.og || 0;
                 if (anhaengen && ab === alt.length) {
+                    // ein Glied des Endes ist dem Faden neu
+                    const anhang = glieder.slice(ab).map((g) => {
+                        const m = this._standGlied(L, g);
+                        pruefe(g, m);
+                        L.gefegt.add(m);
+                        L.ordnung.push(m.s);
+                        m.og = og;
+                        return m.s;
+                    });
                     for (const m of L.gefegt) {
                         neu.push(m.s);
                         listenStuecke.push(m.json);
                     }
-                    // ein Glied des Endes ist dem Faden neu: es reist immer (mit dem JSON seines Gedächtnisses, wenn es eins hat)
-                    const anhang = glieder.slice(ab).map((g) => {
-                        const m = this._standGlied(L, g);
-                        if (m.json === null) pruefe(g, m);
-                        if (!L.gefegt.has(m)) (neu.push(m.s), listenStuecke.push(m.json));
-                        L.ordnung.push(m.s);
-                        return m.s;
-                    });
                     listen[k] = anhang.length ? { teile: neu, anhang } : { teile: neu };
                 } else {
                     const ord = new Array(glieder.length);
+                    const ms = new Array(glieder.length);
                     for (let j = 0; j < glieder.length; j++) {
-                        const m = this._standGlied(L, glieder[j]);
-                        const geaendert = (ganz || m.json === null) && pruefe(glieder[j], m);
-                        if (voll || geaendert || L.gefegt.has(m)) {
+                        const m = (ms[j] = this._standGlied(L, glieder[j]));
+                        const eintritt = m.og !== og;
+                        const geaendert = (ganz || eintritt || m.json === null) && pruefe(glieder[j], m);
+                        if (voll || geaendert || eintritt || L.gefegt.has(m)) {
                             neu.push(m.s);
                             listenStuecke.push(m.json);
                         }
                         ord[j] = m.s;
                     }
                     listen[k] = { teile: neu };
-                    if (voll || !gleich(L.ordnung, ord)) listen[k].ordnung = L.ordnung = ord;
+                    if (voll || !gleich(L.ordnung, ord)) {
+                        listen[k].ordnung = L.ordnung = ord;
+                        L.og = og + 1;
+                        for (const m of ms) m.og = L.og;
+                    }
                 }
                 L.glieder = glieder;
                 L.menge = art.menge ? menge : [glieder];
@@ -2056,8 +2224,13 @@ class AnazhRealm_speicher_welten {
     // (`name` / `desc`) in der Sprache des Spielers; eine empfangene, KI-übersetzte oder angedockte Welt trägt den Inhalt
     // ihres Autors — er bleibt, wie er geschrieben wurde. `label` bleibt die Identität (s. WORLD_REGISTRY).
     _weltName(w) {
+        const z = this._weltNameZeile(w);
+        return Array.isArray(z) ? this._t(z[0]) : z;
+    }
+    // derselbe Name als Wert einer Zeile: die eingebaute Welt als Schlüssel (er wechselt mit der Sprache), die fremde als Daten
+    _weltNameZeile(w) {
         const eingebaut = w && AnazhRealm.WORLD_REGISTRY[w.id] === w;
-        return eingebaut ? this._t(w.name) : (w && (w.label || w.id)) || "?";
+        return eingebaut ? [w.name] : (w && (w.label || w.id)) || "?";
     }
 
     _weltText(w) {
@@ -2305,13 +2478,9 @@ class AnazhRealm_speicher_welten {
         const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
         if (myKey) this._appendProvenance(manifest, myKey);
         this.triggerStateDownload(manifest, `anazh-welt-${entry.id}.json`);
-        this.journalAppend(
-            "share",
-            AnazhRealm._datum`Ich teilte die ${entry.label} — ihr signiertes Manifest ging hinaus.`,
-            {
-                world: entry.id,
-            }
-        );
+        this.journalAppend("share", ["journal.geteilt", { welt: this._weltNameZeile(entry) }], {
+            world: entry.id,
+        });
         return { ok: true, id: entry.id, manifest };
     }
 
@@ -2349,14 +2518,10 @@ class AnazhRealm_speicher_welten {
         if (!this.state.customWorlds) this.state.customWorlds = {};
         this.state.customWorlds[clean.id] = clean;
         this._saveCustomWorlds();
-        this.journalAppend(
-            "growth",
-            AnazhRealm._datum`Eine fremde Welt fand den Weg in deine Bibliothek: „${clean.label}".`,
-            {
-                world: clean.id,
-                signature: signatureStatus,
-            }
-        );
+        this.journalAppend("growth", ["journal.welt-fremd", { welt: clean.label }], {
+            world: clean.id,
+            signature: signatureStatus,
+        });
         return { ok: true, id: clean.id, signatureStatus, reachable };
     }
 
@@ -2446,13 +2611,9 @@ class AnazhRealm_speicher_welten {
         if (!this.state.customWorlds) this.state.customWorlds = {};
         this.state.customWorlds[clean.id] = clean;
         this._saveCustomWorlds();
-        this.journalAppend(
-            "growth",
-            AnazhRealm._datum`Der KI-Übersetzer trug eine Welt in deine Bibliothek: „${clean.label}".`,
-            {
-                world: clean.id,
-            }
-        );
+        this.journalAppend("growth", ["journal.ki-welt", { welt: clean.label }], {
+            world: clean.id,
+        });
         return { ok: true, id: clean.id, label: clean.label };
     }
 
@@ -2600,13 +2761,9 @@ class AnazhRealm_speicher_welten {
         w.world = AnazhRealm.PORTAL_TRANSLATED_WORLD;
         w.reachable = true;
         this._saveCustomWorlds();
-        this.journalAppend(
-            "growth",
-            AnazhRealm._datum`Der KI-Übersetzer gab „${w.label}" einen Körper — die Welt ist nun betretbar.`,
-            {
-                world: w.id,
-            }
-        );
+        this.journalAppend("growth", ["journal.ki-koerper", { welt: w.label }], {
+            world: w.id,
+        });
         return { ok: true, id: w.id, label: w.label };
     }
 
@@ -2747,13 +2904,9 @@ class AnazhRealm_speicher_welten {
         if (!this.state.customWorlds) this.state.customWorlds = {};
         this.state.customWorlds[entry.id] = entry;
         this._saveCustomWorlds();
-        this.journalAppend(
-            "growth",
-            AnazhRealm._datum`Eine fremde Welt dockte an deine Bibliothek an: „${entry.label}".`,
-            {
-                world: entry.id,
-            }
-        );
+        this.journalAppend("growth", ["journal.welt-dockt", { welt: entry.label }], {
+            world: entry.id,
+        });
         // Die Bibliothek wuchs: Welt-Katalog neu annoncieren (self-guarded — _p2pBroadcastSoul ruht ohne Mesh)
         // und den eigenen Katalog-Drawer auffrischen, damit Mitspieler die neue Welt als „✓ vorhanden" sehen.
         this._p2pBroadcastSoul();
@@ -2856,6 +3009,8 @@ AnazhRealm.R5_STRUCTURE_TEXTURE = Object.freeze({
 //                an `atmoLut` und reist mit ihm — als Felder am Wirt fielen sie, ihr Schlüssel reiste, und das Licht des Orts
 //                stand nie
 // Was eine Welt in eine dieser Karten malt, malt die neue neu (ihr Abschied leert sie: `_horizontKarteLeeren`).
+// die Normalformen des Welt-Gesetzes (`_weltGesetz`): je Objekt einmal geprüft — der Leser der Schwere fragt je Teil-Schritt
+AnazhRealm._GESETZ_NORMAL = new WeakSet();
 AnazhRealm.WELT_GRENZE = Object.freeze({
     ankunft: Object.freeze([
         "playerMesh",
@@ -3114,13 +3269,16 @@ AnazhRealm.PORTAL_TRANSLATED_WORLD = "worlds/translated/index.html";
 // portalMeta hieraus; aimBlueprintAtWorld richtet eigene Magie-Ringe auf einen Eintrag.
 // DIE NAMEN (spielgang.K5): `label` ist die IDENTITÄT der Welt, kein Anzeige-Text — signierte Substanz
 // (`_canonicalManifest`, spec/golden/v1/world-manifest.json), Ziel-Wort von `aimBlueprintAtWorld`, portalMeta in jedem
-// Speicher, Mesh-Einladung, Wort-Katalog der Studio-Brücke; sie bleibt deutsch und byte-gleich der de-Zeile ihres
-// `name`. Angezeigt wird nur `name` (der Schlüssel der Tafel) und `desc` (der Schlüssel der Beschreibung) — über den EINEN
+// Speicher, Mesh-Einladung, Wort-Katalog der Studio-Brücke; sie IST die de-Zeile ihres `name` (ein Getter auf die Tafel —
+// bis w5-spielgang-k5 ein deutscher Zwilling der Zeile im Code). Angezeigt wird nur `name` (der Schlüssel der Tafel) und `desc` (der Schlüssel der Beschreibung) — über den EINEN
 // Name-Leser `_weltName` / `_weltText`.
 AnazhRealm.WORLD_REGISTRY = Object.freeze({
     skeleton: Object.freeze({
         id: "skeleton",
-        label: "Skelett-Welt",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.skeleton.name",
         world: AnazhRealm.PORTAL_SKELETON_WORLD,
         dsl: Object.freeze(["skybox_color"]),
@@ -3128,7 +3286,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     }),
     fluid: Object.freeze({
         id: "fluid",
-        label: "Strom-Welt",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.fluid.name",
         world: "worlds/fluid/index.html",
         dsl: Object.freeze(["weather", "skybox_color", "sturm", "ruhe", "set_turbulence"]),
@@ -3136,7 +3297,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     }),
     terrain: Object.freeze({
         id: "terrain",
-        label: "Phytogenesis & Lithos",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.terrain.name",
         world: "worlds/terrain/index.html",
         // Das Morphologie-Labor (phytogenesis). Die id "terrain" bleibt — load-bearing für
@@ -3178,7 +3342,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // probefahrt/werkstatt (Fahr-Modus rein/raus).
     garage: Object.freeze({
         id: "garage",
-        label: "Anatomie · Fahrzeug",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.garage.name",
         world: "worlds/garage/index.html",
         dsl: Object.freeze([
@@ -3201,7 +3368,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // Tiefe, begehbare Türen (E/R).
     portale: Object.freeze({
         id: "portale",
-        label: "Porta — Ordnungen & fraktale Tiefe",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.portale.name",
         world: "worlds/portale/index.html",
         dsl: Object.freeze([
@@ -3222,7 +3392,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // anschlagen + stahl.
     schmiede: Object.freeze({
         id: "schmiede",
-        label: "Anatomie · Klinge",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.schmiede.name",
         world: "worlds/schmiede/index.html",
         dsl: Object.freeze([
@@ -3262,7 +3435,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // Kulturen über #pK (change) + "dorf"/"haus" über #pDorf.
     fachwerk: Object.freeze({
         id: "fachwerk",
-        label: "Fachwerkhaus — parametrisch, begehbar",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.fachwerk.name",
         world: "worlds/fachwerk/index.html",
         dsl: Object.freeze([
@@ -3309,7 +3485,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // lowercase-Lab-Namen; die Buch-id-Ausnahmen modern-klang/barock-klang gelten nur dem Buch).
     klang: Object.freeze({
         id: "klang",
-        label: "Genesis — Generatives Musiksystem",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.klang.name",
         world: "worlds/klang/index.html",
         dsl: Object.freeze([
@@ -3343,7 +3522,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // DSL = #emotions-Buttons (data-e → emo.set) + zufall/zuruecksetzen (btnRandom/btnReset).
     koerperstudio: Object.freeze({
         id: "koerperstudio",
-        label: "Da Vinci Studio — Lebendiger Mensch",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.koerperstudio.name",
         world: "worlds/koerperstudio/index.html",
         dsl: Object.freeze([
@@ -3366,7 +3548,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // Profil-Buttons (#emotions, data-e); Wörter deutsch, ASCII-gefaltet (baer).
     tetrapoda: Object.freeze({
         id: "tetrapoda",
-        label: "Tetrapoda — Evolution Lab",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.tetrapoda.name",
         world: "worlds/tetrapoda/index.html",
         dsl: Object.freeze([
@@ -3387,7 +3572,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // Portal entzieht allow-same-origin: voller Lauf drinnen, null Reichweite raus.
     schwarm: Object.freeze({
         id: "schwarm",
-        label: "Schwarm-Welt",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.schwarm.name",
         world: "worlds/schwarm/index.html",
         dsl: Object.freeze(["sturm", "ruhe", "schwaermen", "skybox_color"]),
@@ -3399,7 +3587,10 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     // selbst. Null-origin sandgesichert (das Protokoll quert die volle Wand).
     begegnung: Object.freeze({
         id: "begegnung",
-        label: "Begegnungs-Feld",
+        // die deutsche Daten-Zeile ihres Namens (Speicher, Mesh, Wort-Katalog): gelesen aus der de-Spalte, nie ein Zwilling
+        get label() {
+            return AnazhRealm.TEXTE.de[this.name];
+        },
         name: "welt.katalog.begegnung.name",
         world: "worlds/begegnung/index.html",
         dsl: Object.freeze([]),

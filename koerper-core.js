@@ -1005,7 +1005,12 @@
             r = P.skullBaseR * 1.03,
             SH = MENSCH_GESTALT.schaedel.hoch;
         var sy = 1.12 + SH / (2 * r);
-        return [{ c: [0, P.skullCY + SH / 2 + t[1], -t[2]], r: r, sc: [1 + t[0], sy + t[0], 1 + t[0]] }];
+        var ansatz = gesichtWert(d, "haaransatz") || 0; // mensch.K4: der Haar-Ansatz aus dem Genom (GESICHT_GENOM)
+        // DIE KAPPE STEHT NIE VOR DEM SCHÄDEL (mensch.K4, die Menge trägt jeden Stil): ihre Front r·(1 + dicke) − zurueck liegt
+        // höchstens auf seiner Front r — afro (dicke 0,24, zurueck 0,05) stand 0,046 vor ihr, die Kopf-Haut wuchs über die Augen
+        // (augeFrei 0,40); jeder andere Stil liegt dahinter und bleibt byte-gleich
+        var z = Math.max(t[2], t[0] * r);
+        return [{ c: [0, P.skullCY + SH / 2 + t[1] + ansatz, -z], r: r, sc: [1 + t[0], sy + t[0], 1 + t[0]] }];
     }
 
     // DIE TÖNE DES MENSCHEN (mensch.K4, rein additiv) — DIE FARBE FOLGT DEM SAMEN. Jede Ecke eines gegossenen Menschen trägt
@@ -1459,7 +1464,52 @@
         const character = B.character, parts = B.parts, base = B.base;
         const M = labMorph(dials);
         character.scale.set(M.charScale.x,M.charScale.y,M.charScale.z);const MU=M.shell;function aply(m,sc){m.scale.set(sc.x,sc.y,sc.z);return sc;}if(parts.ribcage)parts.ribcage.userData.baseScaleY=aply(parts.ribcage,MU.ribcage(base.ribcage)).y;if(parts.pelvis)aply(parts.pelvis,MU.pelvis(base.pelvis));if(parts.waist)aply(parts.waist,MU.waist(base.waist));function pair(name,fn){[-1,1].forEach(sd=>{const k=name+(sd===1?'1':'-1');if(parts[k])fn(parts[k],base[k],sd);});}if(parts.abs)parts.abs.userData.baseScaleY=aply(parts.abs,MU.abs(base.abs)).y;pair('oblique',(m,b)=>aply(m,MU.oblique(b)));pair('glute',(m,b)=>aply(m,MU.glute(b)));pair('quad',(m,b)=>{m.userData.baseScaleY=aply(m,MU.quad(b)).y;});pair('hamstring',(m,b)=>aply(m,MU.hamstring(b)));pair('calf',(m,b)=>{m.userData.baseScaleY=aply(m,MU.calf(b)).y;});pair('bicep',(m,b)=>{m.userData.baseScaleY=aply(m,MU.bicep(b)).y;});pair('tricep',(m,b)=>aply(m,MU.tricep(b)));pair('uarm',(m,b)=>aply(m,MU.uarm(b)));pair('forearm',(m,b)=>aply(m,MU.forearm(b)));pair('deltoid',(m,b)=>aply(m,MU.deltoid(b)));pair('trap',(m,b)=>aply(m,MU.trap(b)));pair('lat',(m,b)=>aply(m,MU.lat(b)));if(parts.upperBack)aply(parts.upperBack,MU.upperBack(base.upperBack));if(parts.chest){var csc=aply(parts.chest,MU.chest(base.chest));parts.chest.userData.baseScaleX=csc.x;parts.chest.userData.baseScaleY=csc.y;parts.chest.userData.baseScaleZ=csc.z;}pair('pec',(m,b)=>aply(m,MU.pec(b)));pair('breast',(m,b)=>aply(m,MU.breast(b)));if(parts.neckMain)aply(parts.neckMain,MU.neck(base.neckMain));if(parts.neckBase)aply(parts.neckBase,MU.neck(base.neckBase));pair('scm',(m,b)=>aply(m,MU.neck(b)));pair('tneck',(m,b)=>aply(m,MU.neck(b)));if(parts.jaw)aply(parts.jaw,MU.jaw(base.jaw));if(parts.chin)aply(parts.chin,MU.chin(base.chin));pair('buccal',(m,b)=>aply(m,MU.buccal(b)));pair('cheekbone',(m,b)=>aply(m,MU.cheekbone(b)));pair('masseter',(m,b)=>aply(m,MU.masseter(b)));[-1,1].forEach(sd=>{const k='arm'+(sd===1?'1':'-1');if(parts[k]){parts[k].position.x=sd*baseArmX*M.armPose.xMul;const bz=sd*M.armPose.rotZ;const bx=M.armPose.rotX;parts[k].rotation.z=bz;parts[k].rotation.x=bx;parts[k].userData.baseRotZ=bz;parts[k].userData.baseRotX=bx;}});if(parts.head){parts.head.position.y=base.headPosY-trochanterY-M.headPose.ageDrop;parts.head.position.z=M.headPose.fwd;}
+        gesichtAuf(B, dials);
         return M;
+    }
+
+    // DAS GESICHT AUS DEM GENOM (mensch.K4, rein additiv — ohne seine Dials bleibt jeder Guss byte-gleich): vier Achsen in [0, 1],
+    // die der Genom-Roller des Wirts aus der Saat zieht (`_rollHumanoidGenome`), wie die Gesichts-Parameter eines MetaHuman — je
+    // Achse ihr Bereich: `auge` die Größe des Auges samt Iris, Pupille und Lidern (der Augapfel tiefer um sein Mehr: die Hornhaut
+    // bleibt, wo sie war, augenVorstand hält), `mund` die Breite der Lippen, `braue` die Höhe der Brauen über der Lidspalte (Kopf-
+    // Einheiten; den Ton der Braue liest der Ofen an ihren Haaren), `haaransatz` die Höhe der Haar-Kappe (`haarKappe`: die Stirn
+    // höher oder tiefer). Die Bereiche halten MENSCH_SOLL und KOPF_SOLL über jede Gestalt der Menge (augapfel, iris, mund ×
+    // Breite ±3 %; mundZuPupille ≥ 0,78). Leser: morphAuf (Lab, Ofen, Linse), haarKappe (Ofen L0–L3).
+    var GESICHT_GENOM = Object.freeze({
+        auge: Object.freeze([0.98, 1.08]),
+        mund: Object.freeze([0.97, 1.06]),
+        braue: Object.freeze([-0.012, 0.012]),
+        haaransatz: Object.freeze([-0.012, 0.008]),
+    });
+    function gesichtWert(dials, k) {
+        var v = dials ? dials[k] : null,
+            b = GESICHT_GENOM[k];
+        return typeof v === "number" && isFinite(v) ? b[0] + (b[1] - b[0]) * Math.max(0, Math.min(1, v)) : null;
+    }
+    // die Achsen am Baum (idempotent: jede Größe gegen ihre Basis, gemerkt beim ersten Ruf — die Regler des Labors rufen oft)
+    function gesichtAuf(B, dials) {
+        var A = B && B.augen;
+        if (!A) return;
+        var basis = function (n) {
+            return n.userData.__gesichtBasis || (n.userData.__gesichtBasis = { s: n.scale.clone(), p: n.position.clone() });
+        };
+        var fa = gesichtWert(dials, "auge"),
+            fm = gesichtWert(dials, "mund"),
+            db = gesichtWert(dials, "braue");
+        if (fa !== null)
+            [A.eyeL, A.eyeR].forEach(function (e) {
+                var b = basis(e);
+                e.scale.copy(b.s).multiplyScalar(fa);
+                e.position.z = b.p.z - 0.12 * b.s.z * (fa - 1);
+            });
+        if (fm !== null)
+            [A.upperLipRef, A.lowerLipRef].forEach(function (l) {
+                l.scale.x = basis(l).s.x * fm;
+            });
+        if (db !== null)
+            [A.browL, A.browR].forEach(function (g) {
+                g.position.y = basis(g).p.y + db;
+            });
     }
 
     // AUGEN_VIS — intentional dual iris (Feel-Entscheid .131). Do NOT merge.
@@ -1779,6 +1829,7 @@
             right: { x: 1, y: 0, z: 0 },
             moveDirection: { x: 0, y: 0, z: 0 },
             leibVerb: null,
+            leibStoss: null,
         };
     }
     // DIE RICHTUNG DES SCHRITTS aus Blick und Tafel: vorwärts (sin yaw, 0, cos yaw), rechts (cos yaw, 0, −sin yaw) — die
@@ -1881,10 +1932,194 @@
     // fahr (der Fahr-Schritt des Gefährts oder null), wasser (der Leib schwimmt) und wasserKBrake, leben ({stamina}),
     // angebote und lage (die Geräte in Reichweite und der Fuß-Punkt, Welt-Rahmen), mass und masse (die Maße und die Masse des
     // Leibs), die Rückrufe amBoden · hangSprung · abdruck · kopfraum (· gesprungen) und g (die Schwere, positiv).
+    // ── physik.K5 (rein additiv) — DER STOSS IM GANG: ein Impuls von außen (ein Stoß, ein Tier, ein Wagen) ist Geschwindigkeit,
+    //    die der Gang NICHT erzeugt hat — der Antrieb (kAcc, 25 ms) zieht nur die eigene Geschwindigkeit des Gangs auf sein Ziel,
+    //    den Rest d trägt der Schwerpunkt, bis die Balance ihn abbaut. Die Balance ist das lineare inverse Pendel (Kajita 2001)
+    //    um den Druckpunkt p unter dem Fuß: e'' = ω²(e − p), ω = √(g/Bein), e der Weg des Schwerpunkts aus der Bahn des Gangs;
+    //    der Capture-Point ξ = e + d/ω (Pratt 2006) ist der Ort, an dem ein Fuß den Leib fängt. Bis fussM neben dem Fuß fängt ihn
+    //    der Knöchel (der Druckpunkt wandert im Fuß, kein Schritt); weiter draußen setzt der Leib nach reaktionS + schwungS
+    //    (Reflex und schneller Schwung, Hof 2010) den Fuß der Stoß-Seite AN den Capture-Point (der Ausfallschritt, bis
+    //    schrittBein × Bein vom Schwerpunkt — wer weiter fällt, setzt alle schrittS nach), das andere Bein schließt nach schrittS
+    //    auf, und der Schwerpunkt kommt über dem neuen Fuß zur Ruhe (d → 0 mit der Rate ω): er geht auf der versetzten Bahn
+    //    weiter. Doppelte Masse heißt halber Impuls-Sprung, halber Schritt. Erkannt wird der Stoß am Leib selbst: der Kontakt
+    //    des Wirts hinterlegt in `leibLandung` die Geschwindigkeit, die er dem Schritt ließ (Wand, Hang, Strömung sind sein
+    //    Gesetz), was sie bis zum nächsten Plan ändert, ist Stoß (ein Stoß IM Kontakt-Schritt meldet sich über
+    //    `leibStossMerke`); ein Versetzen des Leibs (Spawn, Rettung, Halt) und jeder Plan nicht zu Fuß (Luft, Sattel, Wasser,
+    //    Verb, Rutsch) tragen keinen. ──
+    var LEIB_STOSS = Object.freeze({
+        reaktionS: 0.15,
+        schwungS: 0.15,
+        schrittS: 0.3,
+        fussM: 0.04,
+        schrittBein: 0.6,
+        ruheMs: 0.02,
+        merkMs: 1e-6,
+        versetztM: 0.5,
+        hebKnieRad: 0.8,
+    });
+    // DER STOSS-ZUSTAND AM LEIB (die Felder, die ein Wirt mit dem Leib tauscht, wenn er einen fremden Schritt auf demselben
+    // Zustand fährt — das Replay, der Geist des Lockstep): der Stoß, die Geschwindigkeit nach dem Kontakt, die Lage des letzten
+    // Plans, der Plan zu Fuß, der gemeldete Stoß im Kontakt
+    var LEIB_STOSS_FELDER = Object.freeze(["leibStoss", "_leibNach", "_stossLage", "_stossFrei", "_stossOffen"]);
+    // ein Stoß, den der Wirt IM Kontakt-Schritt in die Geschwindigkeit schrieb (der Wagen, die Kiste, gegen die er prallt)
+    function leibStossMerke(L, dvx, dvz) {
+        var o = L._stossOffen || (L._stossOffen = [0, 0]);
+        o[0] += dvx;
+        o[1] += dvz;
+    }
+    // der Fuß i (0 = die Seite „1“, +x des Leibs) des Stoß-Zustands zur Zeit B.t: vom alten Ort zum gesetzten im Schwung
+    function leibStossFuss(B, i) {
+        var f = B.fuss[i],
+            u = f[4] < 0 ? 1 : Math.max(0, Math.min(1, (B.t - f[4]) / LEIB_STOSS.schwungS));
+        u = u * u * (3 - 2 * u);
+        return [f[2] + (f[0] - f[2]) * u, f[3] + (f[1] - f[3]) * u, f[4] >= 0 && B.t - f[4] < LEIB_STOSS.schwungS ? (B.t - f[4]) / LEIB_STOSS.schwungS : -1];
+    }
+    function _stossSetze(B, i, x, z) {
+        var j = leibStossFuss(B, i),
+            f = B.fuss[i];
+        f[2] = j[0];
+        f[3] = j[1];
+        f[0] = x;
+        f[1] = z;
+        f[4] = B.t;
+        B.zuletzt = i;
+        B.schritte++;
+    }
+    // DER STOSS AM LEIB LESEN (zu Beginn des Plans): die Abweichung der Geschwindigkeit von der, die der Kontakt dem letzten
+    // Schritt ließ — nur, wenn der letzte Plan zu Fuß ging, der Kontakt eben lief (seine Uhr ein Schritt zurück) und der Leib
+    // nicht versetzt wurde (der Weg seit dem letzten Plan ≤ Tempo × dt + versetztM). null: kein Stoß im Leib.
+    function leibStossLesen(L, K, t, dt) {
+        var S = LEIB_STOSS,
+            v = L.playerVel,
+            n = L._leibNach,
+            vor = L._stossLage,
+            lage = K.lage;
+        // DER HALT: wer die Geschwindigkeit auf Ruhe setzt (die Rettung, das Aufschütten, der Ladestand, das Absteigen, eine Bühne,
+        // die den Leib stellt), hält ihn an — er stößt nicht; die Kraft, die einen gehenden Leib genau auf 0 brächte, gibt es nicht.
+        // Bis w6-physik-k5 las der Plan den Halt als Stoß gegen die Laufrichtung, der Leib fiel rückwärts und der nächste Gang
+        // ging gebremst (Gamepad-Verben leib.K5 an z171: 0,431 statt 0,628 m/s bei 0,6 Auslenkung).
+        var dx = 0,
+            dz = 0,
+            versetzt = !vor || !lage || (v.x() === 0 && v.z() === 0);
+        if (!versetzt) {
+            var weg = Math.hypot(lage[0] - vor[0], lage[2] - vor[1]);
+            versetzt = weg > (n ? Math.hypot(n[0], n[1]) : 0) * dt + Math.hypot(v.x(), v.z()) * dt + S.versetztM;
+        }
+        if (!versetzt && n && L._stossFrei && t - n[2] >= -1e-9 && t - n[2] <= 1.5 * dt + 1e-9) {
+            dx = v.x() - n[0];
+            dz = v.z() - n[1];
+        }
+        if (L._stossOffen) L._stossOffen[0] = L._stossOffen[1] = 0;
+        L._leibNach = null;
+        L._stossLage = lage ? [lage[0], lage[2]] : null;
+        if (versetzt) L.leibStoss = null;
+        var B = L.leibStoss || null;
+        if (Math.abs(dx) > S.merkMs || Math.abs(dz) > S.merkMs) {
+            if (!B)
+                B = L.leibStoss = {
+                    d: [0, 0],
+                    e: [0, 0],
+                    p: [0, 0],
+                    t: 0,
+                    naechster: S.reaktionS + S.schwungS,
+                    schritte: 0,
+                    zuletzt: -1,
+                    fuss: [
+                        [0, 0, 0, 0, -1],
+                        [0, 0, 0, 0, -1],
+                    ],
+                };
+            B.d[0] += dx;
+            B.d[1] += dz;
+        }
+        return B;
+    }
+    // DER SCHRITT DER BALANCE (dt): der Ausfallschritt an den Capture-Point, der Druckpunkt im Fuß, das Pendel; true = der Stoß
+    // ist abgebaut (nach dem Moment des ersten Schritts ruht der Schwerpunkt über dem Fuß, beide Füße auf der neuen Bahn)
+    function leibStossSchritt(L, B, K, dt) {
+        var S = LEIB_STOSS,
+            w = Math.sqrt(K.g / K.beinM);
+        B.t += dt;
+        var xi = [B.e[0] + B.d[0] / w, B.e[1] + B.d[1] / w];
+        if (B.t >= B.naechster) {
+            var rx = xi[0] - B.p[0],
+                rz = xi[1] - B.p[1];
+            if (Math.hypot(rx, rz) > S.fussM) {
+                // der Ausfallschritt: der Fuß der Seite, zu der der Leib fällt (zuerst), dann im Wechsel — an den Capture-Point,
+                // höchstens schrittBein × Bein vom Schwerpunkt
+                var cx = xi[0] - B.e[0],
+                    cz = xi[1] - B.e[1],
+                    cl = Math.hypot(cx, cz),
+                    weit = S.schrittBein * K.beinM,
+                    k = cl > weit ? weit / cl : 1;
+                var i = B.zuletzt < 0 ? (rx * L.right.x + rz * L.right.z >= 0 ? 0 : 1) : 1 - B.zuletzt;
+                B.p[0] = B.e[0] + cx * k;
+                B.p[1] = B.e[1] + cz * k;
+                _stossSetze(B, i, B.p[0], B.p[1]);
+                B.naechster = B.t + S.schrittS;
+            } else if (B.schritte % 2 === 1) {
+                // das andere Bein schließt auf die neue Bahn auf
+                _stossSetze(B, 1 - B.zuletzt, B.p[0], B.p[1]);
+                B.naechster = B.t + S.schrittS;
+            }
+        }
+        // der Druckpunkt: der Fuß (vor dem ersten Schritt der stehende an der Bahn), im Fuß bis fussM zum Capture-Point hin
+        var qx = xi[0] - B.p[0],
+            qz = xi[1] - B.p[1],
+            ql = Math.hypot(qx, qz),
+            kq = ql > S.fussM ? S.fussM / ql : 1;
+        var px = B.p[0] + qx * kq,
+            pz = B.p[1] + qz * kq;
+        B.d[0] += w * w * (B.e[0] - px) * dt;
+        B.d[1] += w * w * (B.e[1] - pz) * dt;
+        B.e[0] += B.d[0] * dt;
+        B.e[1] += B.d[1] * dt;
+        // abgebaut erst nach dem Moment des ersten Schritts (bis dahin läuft der Stoß noch ein), dann ruhend über dem Fuß
+        return B.t >= S.reaktionS + S.schwungS && Math.hypot(B.d[0], B.d[1]) < S.ruheMs && B.schritte % 2 === 0 && ql <= S.fussM;
+    }
+    // DIE POSE DES AUSFALLSCHRITTS (nach `leibRigPose`, vor der Fuß-IK des Wirts): jedes Bein rollt in der Hüfte quer zu seinem
+    // Fuß (der Ort des Stoß-Zustands gegen den Schwerpunkt, quer zur Gier `gier`), die Sohle bleibt waagrecht; im Schwung hebt
+    // das Knie den Fuß (hip.userData.stossSchwung: die Fuß-IK des Wirts lässt ihn los; stossRoll: der Roll). M = die Bein-Maße
+    // (L, Meter).
+    function leibStossPose(r, L, gier, M) {
+        if (!r || !r.legL || !r.legR) return;
+        var B = L && L.leibStoss,
+            legs = [r.legL, r.legR],
+            qx = Math.cos(gier),
+            qz = -Math.sin(gier);
+        for (var i = 0; i < 2; i++) {
+            var leg = legs[i],
+                th = 0,
+                schwung = -1;
+            if (B && M && M.L > 0) {
+                var f = leibStossFuss(B, i),
+                    q = (f[0] - B.e[0]) * qx + (f[1] - B.e[1]) * qz;
+                th = Math.asin(Math.max(-0.6, Math.min(0.6, q / M.L)));
+                schwung = f[2];
+            }
+            if (!leg.hip) continue;
+            // am Gelenk (userData), nie am Bein-Objekt: dessen Schlüssel sind die Gelenke, die der Wirt je Pose zurücksetzt
+            leg.hip.userData.stossRoll = th;
+            leg.hip.userData.stossSchwung = schwung >= 0;
+            if (th) leg.hip.rotation.z += th;
+            if (th && leg.ankle) leg.ankle.rotation.z -= th;
+            if (schwung >= 0 && leg.knee && leg.hip) {
+                var heb = Math.sin(Math.PI * schwung) * LEIB_STOSS.hebKnieRad;
+                leg.knee.rotation.x += heb;
+                leg.hip.rotation.x -= heb / 2;
+            }
+        }
+    }
     function leibPlan(L, T, K, t, dt) {
         var G = leibGesetz();
+        // DER STOSS IM LEIB (physik.K5): was seit dem Kontakt von außen in die Geschwindigkeit kam
+        var Bs = leibStossLesen(L, K, t, dt);
+        L._stossFrei = false;
         // DIE VERBEN AN DEN GERÄTEN führen, solange eines trägt (das Gerät hält den Leib — kein freier Antrieb)
-        if (leibVerbTakt(L, T, K, t, dt)) return;
+        if (leibVerbTakt(L, T, K, t, dt)) {
+            L.leibStoss = null;
+            return;
+        }
         var parkG = !K.ritt && !K.wasser ? G.parkour : null;
         var slide = L._parkourSlide || null;
         if (slide && (t >= slide.bis || L.isInAir || !parkG)) {
@@ -1906,6 +2141,12 @@
             L._cWasDown = false;
         }
         var md = L.moveDirection;
+        // zu Fuß trägt die Balance den Stoß; in der Luft, im Sattel, im Wasser und im Rutsch bleibt er Fahrt des Leibs (die
+        // Geschwindigkeit behält ihn), ein Leib ohne Beine (kein Bein-Maß) setzt keinen Fuß
+        var zuFuss = !K.fahr && !slide && !L.isInAir && !K.ritt && !K.reitet && !K.wasser && K.beinM > 0 && K.g > 0;
+        L._stossFrei = zuFuss;
+        if (Bs && !zuFuss) Bs = L.leibStoss = null;
+        if (Bs) L.playerVel.setValue(L.playerVel.x() - Bs.d[0], L.playerVel.y(), L.playerVel.z() - Bs.d[1]);
         if (K.fahr) {
             K.fahr();
         } else if (slide) {
@@ -1933,6 +2174,12 @@
             var kBrake = K.rittKBrake !== null ? K.rittKBrake : K.wasser ? K.wasserKBrake : L.isInAir ? LB.kBrakeLuft : LB.kBrake;
             var fb = 1 - Math.exp(-kBrake * dt);
             L.playerVel.setValue(vb.x() * (1 - fb), vb.y(), vb.z() * (1 - fb));
+        }
+        // die Balance baut den Stoß ab; die Geschwindigkeit des Leibs ist die des Gangs plus der Rest des Stoßes
+        if (Bs) {
+            var ruht = leibStossSchritt(L, Bs, K, dt);
+            L.playerVel.setValue(L.playerVel.x() + Bs.d[0], L.playerVel.y(), L.playerVel.z() + Bs.d[1]);
+            if (ruht) L.leibStoss = null;
         }
         // DAS SPRUNG-FENSTER: ein Druck kurz VOR der Landung wird gemerkt (bufferSec) und feuert beim Aufsetzen; der Sprung
         // läuft durch den Boden-Sprung (Coyote, Steilhang, Decke) — in der Luft der frische Druck durch den Luft-Sprung
@@ -1984,6 +2231,12 @@
     // DIE ERDUNG nach dem Kontakt: geerdet füllt die Landung die Luft-Sprünge auf und beendet den Sprung; in der Luft, wer nicht
     // schwimmt
     function leibLandung(L, amBoden, schwimmt, t) {
+        // die Geschwindigkeit, die der Kontakt dem Schritt ließ (ohne den Stoß, den er selbst meldete) — der Plan liest an ihr
+        // den Stoß von außen (`leibStossLesen`)
+        var vN = L.playerVel,
+            oN = L._stossOffen;
+        if (vN) L._leibNach = [vN.x() - (oN ? oN[0] : 0), vN.z() - (oN ? oN[1] : 0), t];
+        if (oN) oN[0] = oN[1] = 0;
         if (amBoden) {
             L.lastGroundedTime = t;
             L.isInAir = false;
@@ -5169,6 +5422,8 @@
         KOPF_SOLL: KOPF_SOLL,
         kopfToene: kopfToene,
         haarKappe: haarKappe,
+        // mensch.K4 — das Gesicht aus dem Genom: die Bereiche der vier Achsen (Leser: der Genom-Roller des Wirts, die Linsen)
+        GESICHT_GENOM: GESICHT_GENOM,
         // mensch.K4 — die Schnitte mit Volumen (je Stil die Kappe): die Gestalten einer Siedlung wählen aus ihnen
         HAAR_KAPPE: HAAR_KAPPE,
         // mensch.K4 — die Töne des Menschen: der Ton je Stoff-Klasse, die Braue, die Palette (Leser: der Ofen, der Wirt)
@@ -5235,6 +5490,13 @@
         leibImpuls: leibImpuls,
         leibFall: leibFall,
         leibLandung: leibLandung,
+        LEIB_STOSS: LEIB_STOSS,
+        LEIB_STOSS_FELDER: LEIB_STOSS_FELDER,
+        leibStossMerke: leibStossMerke,
+        leibStossLesen: leibStossLesen,
+        leibStossSchritt: leibStossSchritt,
+        leibStossFuss: leibStossFuss,
+        leibStossPose: leibStossPose,
         leibVerbTakt: leibVerbTakt,
         leibSchaukelSchritt: leibSchaukelSchritt,
         leibWippeSchritt: leibWippeSchritt,
