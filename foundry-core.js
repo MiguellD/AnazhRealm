@@ -671,7 +671,8 @@ const PORTAL_RENDER_CONFIG = {
         // (negativ = Flachwasser — der Schilfgürtel steht im Wasser), fels = Steinigkeit 0..1. feuchtLicht = wie weit
         // Feuchte die Licht-Grenze einer Schatten-Art hebt (der Farn steht im feuchten Saum auch heller); weite = wie
         // weit die Nah-Streu der Welt die Art trägt (m, kleine Arten enden früher; ohne Zeile der ganze Nah-Ring).
-        // labor: false = das Labor trägt die Art mit seinen eigenen Boden-Schichten (Blumen · Kies).
+        // labor: false = das Labor trägt die Art mit seinen eigenen Boden-Schichten (Blumen · Kies). leben = der Gewinn je
+        // Einheit des Leben-Overlays am Ort (feld.K5: die gepflegte Wiese blüht auf, die abgeäste verliert ihre Blumen).
         boden: {
             farn: {
                 ring: "nah",
@@ -696,6 +697,7 @@ const PORTAL_RENDER_CONFIG = {
                 hang: 0.8,
                 weite: 18,
                 licht: [0.4, 0.7, 1.5, 2],
+                leben: 2,
                 labor: false,
             },
             schilf: {

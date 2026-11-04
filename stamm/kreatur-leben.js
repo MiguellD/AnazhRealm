@@ -862,14 +862,11 @@ class AnazhRealm_kreatur_leben {
                 Number.isFinite(lastHunt) &&
                 this.state.creatureAnimationTime - lastHunt < AnazhRealm._verhaltenGesetz().jagd.triumphWindowSec
             )
-                this.journalAppend(
-                    "relationship",
-                    AnazhRealm._datum`Du hast die Bedrohung bezwungen — ${name} jagt dich nie wieder.`
-                );
+                this.journalAppend("relationship", ["journal.bedrohung-bezwungen", { name }]);
         }
         if (typeof this.journalAppend === "function") {
             const lootSummary = lootParts.length > 0 ? ` → ${lootParts.join(", ")}` : "";
-            this.journalAppend("relationship", AnazhRealm._datum`${name} fiel im Kampf${lootSummary}.`, {
+            this.journalAppend("relationship", ["journal.fiel-im-kampf", { name, beute: lootSummary }], {
                 source,
                 loot,
             });
@@ -917,7 +914,7 @@ class AnazhRealm_kreatur_leben {
             if (zurueck.length)
                 this.journalAppend(
                     "loss",
-                    AnazhRealm._datum`${ud.name || "Ein Wesen"} fiel mit seiner Last — sie fällt an dich zurück: ${zurueck.join(", ")}.`,
+                    ["journal.last-zurueck", { name: ud.name || ["journal.ein-wesen"], last: zurueck.join(", ") }],
                     {
                         materials: last.materials,
                     }
@@ -1227,19 +1224,16 @@ class AnazhRealm_kreatur_leben {
         return {};
     }
 
-    // describeProgram-Helper für Kreatur-Tasks. Liefert " (Distanz X)" /
-    // " (Material X)" / " (Bauplan X)" / "" — abhängig von Task + Arg-Typ.
+    // describeProgram-Helper für Kreatur-Tasks: der Zusatz des Auftrags als Zeile der Tafel (Material · Bauplan · Distanz) oder
+    // null — abhängig von Task + Arg-Typ.
     _describeCreatureTaskArg(taskName, paramArg) {
-        if (taskName === "gather" && typeof paramArg === "string" && paramArg.length > 0) {
-            return ` (Material „${paramArg}")`;
-        }
-        if (taskName === "build" && typeof paramArg === "string" && paramArg.length > 0) {
-            return ` (Bauplan „${paramArg}")`;
-        }
-        if (taskName === "follow_player" && Number.isFinite(paramArg)) {
-            return ` (Distanz ${paramArg}m)`;
-        }
-        return "";
+        if (taskName === "gather" && typeof paramArg === "string" && paramArg.length > 0)
+            return ["tat.auftrag.material", { was: paramArg }];
+        if (taskName === "build" && typeof paramArg === "string" && paramArg.length > 0)
+            return ["tat.auftrag.bauplan", { was: paramArg }];
+        if (taskName === "follow_player" && Number.isFinite(paramArg))
+            return ["tat.auftrag.distanz", { n: String(paramArg) }];
+        return null;
     }
 
     // === Kreatur-Erinnerung + Architektur-Lookup ===
@@ -1366,7 +1360,7 @@ class AnazhRealm_kreatur_leben {
             };
             const role = labels[kind] || `Spezialist von „${key}"`;
             const name = (creature.userData && creature.userData.name) || "Eine Kreatur";
-            this.journalAppend("growth", AnazhRealm._datum`${name} erreicht Stufe ${newLevel} als ${role}.`, {
+            this.journalAppend("growth", ["journal.stufe", { name, stufe: newLevel, rolle: role }], {
                 kind,
                 key,
                 level: newLevel,
@@ -1429,17 +1423,12 @@ class AnazhRealm_kreatur_leben {
                     const sayText = String(reply.say).slice(0, 400);
                     const soulName = creature.userData.soul || "wesen";
                     const chatOutput = typeof document !== "undefined" ? document.getElementById("chat-output") : null;
-                    if (chatOutput) {
-                        const line = document.createElement("div");
-                        line.className = "chat-rare-event-line";
-                        const nameSpan = document.createElement("span");
-                        nameSpan.className = `chat-creature-name soul-${soulName}`;
-                        nameSpan.textContent = `${name}: `;
-                        line.appendChild(nameSpan);
-                        line.appendChild(document.createTextNode(sayText));
-                        chatOutput.appendChild(line);
-                        chatOutput.scrollTop = chatOutput.scrollHeight;
-                    }
+                    if (chatOutput)
+                        this._chatEcho(sayText, {
+                            klasse: "chat-rare-event-line",
+                            sprecher: name,
+                            sprecherKlasse: `chat-creature-name soul-${soulName}`,
+                        });
                     if (typeof this._creatureRemember === "function") {
                         this._creatureRemember(creature, "spoken_rare_event", {
                             said: sayText.slice(0, 120),
@@ -1692,7 +1681,7 @@ class AnazhRealm_kreatur_leben {
         }
         // Journal-Eintrag
         if (typeof this.journalAppend === "function") {
-            this.journalAppend("loss", AnazhRealm._datum`${name} kehrt zur Erde zurück.`, {
+            this.journalAppend("loss", ["journal.zur-erde", { name }], {
                 creature: name,
                 soul,
                 ageSec,
@@ -1946,7 +1935,7 @@ class AnazhRealm_kreatur_leben {
             if (!frisch) continue;
             const name = this._bestandName(wurf[0]);
             const text = kopf > 1 ? `${name} und ${kopf - 1} weitere treten` : `${name} tritt`;
-            this.journalAppend("growth", AnazhRealm._datum`${text} in die Welt ein (${best.soul}).`, {
+            this.journalAppend("growth", ["journal.tritt-ein", { wer: text, seele: best.soul }], {
                 creature: name,
                 soul: best.soul,
                 gruppe: kopf,

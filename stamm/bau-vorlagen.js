@@ -805,7 +805,7 @@ class AnazhRealm_bau_vorlagen {
                 const name = `koerper_${key}`;
                 builtinBodyBlueprints[name] = {
                     name,
-                    label: this._t("wesen.koerper", { name: def.label || key }),
+                    etikett: ["wesen.koerper", { name: def.etikett || def.label || key }],
                     builtIn: true,
                     role: "soul",
                     roleManual: true,
@@ -828,7 +828,7 @@ class AnazhRealm_bau_vorlagen {
                 if (builtinBodyBlueprints[name]) continue;
                 builtinBodyBlueprints[name] = {
                     name,
-                    label: this._t("wesen.koerper", { name: this._t(cs.label) }),
+                    etikett: ["wesen.koerper", { name: [cs.label] }],
                     builtIn: true,
                     role: "soul",
                     roleManual: true,
@@ -858,7 +858,7 @@ class AnazhRealm_bau_vorlagen {
             const parts = this._rockVariant(`${felsWorldSeed}-fels-${i}`);
             landmarkVariants[key] = {
                 name: key,
-                label: this._t("bau.felsformation"),
+                etikett: ["bau.felsformation"],
                 builtIn: true,
                 instanced: true,
                 // ABSCHIED DER ALT-DOPPEL — Studio-Pendant sediment/findling/zacken/geroell
@@ -877,7 +877,7 @@ class AnazhRealm_bau_vorlagen {
             const parts = this._crystalVariant(`${felsWorldSeed}-kristall-${i}`);
             landmarkVariants[key] = {
                 name: key,
-                label: this._t("bau.kristall-formation"),
+                etikett: ["bau.kristall-formation"],
                 builtIn: true,
                 instanced: true,
                 // ABSCHIED DER ALT-DOPPEL — Studio-Pendant: das EINE kristalle-Rezept.
@@ -922,7 +922,7 @@ class AnazhRealm_bau_vorlagen {
             if (!Array.isArray(parts) || parts.length < 2) continue;
             treeSpeciesBlueprints[species] = {
                 name: species,
-                label: this._t(label),
+                etikett: [label],
                 builtIn: true,
                 instanced: true,
                 // KEIN roleManual-Pflaster: das geschärfte Seelen-Gesetz (livingBody liest
@@ -938,27 +938,27 @@ class AnazhRealm_bau_vorlagen {
         const defaults = {
             ...landmarkVariants,
             ...treeSpeciesBlueprints,
-            waterfall: { name: "waterfall", label: this._t("bau.wasserfall"), builtIn: true, parts: waterfallParts },
+            waterfall: { name: "waterfall", etikett: ["bau.wasserfall"], builtIn: true, parts: waterfallParts },
             // `instanced: true` = Render-Absicht für Massen-Spawns (Wald/Kristallfeld) → HISM statt einer Group
             // je Spawn; einzeln platzierte Strukturen tragen es NICHT (Group-Pfad, Interaktion via entry.mesh).
             // stamm_gefallen: Sub-Spawn nach dem Baum (_vegetationSampleSpawn), nicht im Affinitäts-Wettstreit
             // (verdrängte sonst Bäume); tag-neutral (holz+cylinder).
             stamm_gefallen: {
                 name: "stamm_gefallen",
-                label: this._t("bau.gefallener-stamm"),
+                etikett: ["bau.gefallener-stamm"],
                 builtIn: true,
                 instanced: true,
                 parts: stammGefallenParts,
             },
             stein_block: {
                 name: "stein_block",
-                label: this._t("bau.felsblock"),
+                etikett: ["bau.felsblock"],
                 builtIn: true,
                 parts: steinBlockParts,
             },
             kiesel: {
                 name: "kiesel",
-                label: this._t("bau.kiesel"),
+                etikett: ["bau.kiesel"],
                 builtIn: true,
                 instanced: true,
                 parts: kieselParts,
@@ -967,7 +967,7 @@ class AnazhRealm_bau_vorlagen {
             // Holz mit 3 cm Wand (`wand`): die Kiste 0,6 m wiegt 42 kg, das Fass ⌀ 0,6 × 0,9 m 45 kg (ρ 720 der Stoff-Zeile).
             kiste: {
                 name: "kiste",
-                label: this._t("bau.kiste"),
+                etikett: ["bau.kiste"],
                 builtIn: true,
                 frei: true,
                 parts: [
@@ -982,7 +982,7 @@ class AnazhRealm_bau_vorlagen {
             },
             fass: {
                 name: "fass",
-                label: this._t("bau.fass"),
+                etikett: ["bau.fass"],
                 builtIn: true,
                 frei: true,
                 parts: [
@@ -998,23 +998,23 @@ class AnazhRealm_bau_vorlagen {
             },
             felsbrocken: {
                 name: "felsbrocken",
-                label: this._t("bau.felsbrocken"),
+                etikett: ["bau.felsbrocken"],
                 builtIn: true,
                 instanced: true,
                 parts: felsbrockenParts,
             },
             // V9.64 (Welle A.1) — Damm-Bauplan, Vision-Pfeiler Wasser↔Wille
-            damm: { name: "damm", label: this._t("bau.damm"), builtIn: true, parts: dammParts },
+            damm: { name: "damm", etikett: ["bau.damm"], builtIn: true, parts: dammParts },
             kristall_geode: {
                 name: "kristall_geode",
-                label: this._t("bau.kristall-geode"),
+                etikett: ["bau.kristall-geode"],
                 builtIn: true,
                 instanced: true,
                 parts: kristallGeodeParts,
             },
             glutbrunnen: {
                 name: "glutbrunnen",
-                label: this._t("bau.feuerstelle"),
+                etikett: ["bau.feuerstelle"],
                 builtIn: true,
                 instanced: true,
                 studioGestalt: "feuerstelle",
@@ -1027,7 +1027,7 @@ class AnazhRealm_bau_vorlagen {
             // ihr (stein/holz dicht → solide).
             brunnen_dorf: {
                 name: "brunnen_dorf",
-                label: this._t("bau.ziehbrunnen"),
+                etikett: ["bau.ziehbrunnen"],
                 builtIn: true,
                 instanced: true,
                 studioGestalt: "brunnen",
@@ -1090,7 +1090,7 @@ class AnazhRealm_bau_vorlagen {
             // 0,9 m auf 0,86 m, Pfosten vorn 2,25 m · hinten 1,95 m, Plane mit Gefälle nach hinten).
             marktstand_dorf: {
                 name: "marktstand_dorf",
-                label: this._t("bau.marktstand"),
+                etikett: ["bau.marktstand"],
                 builtIn: true,
                 instanced: true,
                 studioGestalt: "marktstand",
@@ -1141,7 +1141,7 @@ class AnazhRealm_bau_vorlagen {
             // unsichtbare Substanz in ihren Maßen (Fuß Ø 0,24 m bis 0,55 m, Mast bis 3,4 m): eisen dicht → solide.
             laterne_dorf: {
                 name: "laterne_dorf",
-                label: this._t("bau.laterne"),
+                etikett: ["bau.laterne"],
                 builtIn: true,
                 instanced: true,
                 studioGestalt: "laterne",
@@ -1168,7 +1168,7 @@ class AnazhRealm_bau_vorlagen {
             // (armM 0,4 m); die Parts sind ihre Substanz über dem Kopf des Spielers: Kopf, Arm, Wandplatte.
             wandlaterne_dorf: {
                 name: "wandlaterne_dorf",
-                label: this._t("bau.wandlaterne"),
+                etikett: ["bau.wandlaterne"],
                 builtIn: true,
                 instanced: true,
                 studioGestalt: "wandlaterne",
@@ -1196,14 +1196,14 @@ class AnazhRealm_bau_vorlagen {
             // W6.G P3 Phase 1 — Felsformationen (emergente Welt-Bürger)
             felsbogen: {
                 name: "felsbogen",
-                label: this._t("bau.felsbogen"),
+                etikett: ["bau.felsbogen"],
                 builtIn: true,
                 instanced: true,
                 parts: felsbogenParts,
             },
             felsturm: {
                 name: "felsturm",
-                label: this._t("bau.felsturm"),
+                etikett: ["bau.felsturm"],
                 builtIn: true,
                 instanced: true,
                 parts: felsturmParts,
@@ -1212,7 +1212,7 @@ class AnazhRealm_bau_vorlagen {
             // Substanz (_computeWorkshopDomain), nicht aus einem Feld; `role` bleibt als Built-in-Saat deklariert.
             esse: {
                 name: "esse",
-                label: this._t("bau.esse"),
+                etikett: ["bau.esse"],
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
@@ -1222,7 +1222,7 @@ class AnazhRealm_bau_vorlagen {
             // Die „bessere Esse", die der Schöpfer suchte; sie lehrt das Prinzip (besseres Material → feiner).
             esse_meister: {
                 name: "esse_meister",
-                label: this._t("bau.meister-esse"),
+                etikett: ["bau.meister-esse"],
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
@@ -1230,7 +1230,7 @@ class AnazhRealm_bau_vorlagen {
             },
             brennkolben: {
                 name: "brennkolben",
-                label: this._t("bau.brennkolben"),
+                etikett: ["bau.brennkolben"],
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
@@ -1238,7 +1238,7 @@ class AnazhRealm_bau_vorlagen {
             },
             webstuhl: {
                 name: "webstuhl",
-                label: this._t("bau.webstuhl"),
+                etikett: ["bau.webstuhl"],
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
@@ -1246,7 +1246,7 @@ class AnazhRealm_bau_vorlagen {
             },
             seelenstein_altar: {
                 name: "seelenstein_altar",
-                label: this._t("bau.seelenstein-altar"),
+                etikett: ["bau.seelenstein-altar"],
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
@@ -1254,7 +1254,7 @@ class AnazhRealm_bau_vorlagen {
             },
             drehbank: {
                 name: "drehbank",
-                label: this._t("bau.drehbank"),
+                etikett: ["bau.drehbank"],
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
@@ -1264,7 +1264,7 @@ class AnazhRealm_bau_vorlagen {
             // als Built-in deklariert; portalMeta nennt das Ziel (Skelett-Welt).
             welt_portal: {
                 name: "welt_portal",
-                label: this._t("bau.welt-portal"),
+                etikett: ["bau.welt-portal"],
                 builtIn: true,
                 role: "portal",
                 roleManual: true,
@@ -1279,7 +1279,7 @@ class AnazhRealm_bau_vorlagen {
             // dsl = Manifest: Kern-Ops (weather/skybox_color) + welt-eigene Wörter (sturm/ruhe/set_turbulence).
             welt_strom: {
                 name: "welt_strom",
-                label: this._t(AnazhRealm.WORLD_REGISTRY.fluid.name), // ein Tor trägt den Namen seiner Welt
+                etikett: [AnazhRealm.WORLD_REGISTRY.fluid.name], // ein Tor trägt den Namen seiner Welt
                 builtIn: true,
                 role: "portal",
                 roleManual: true,
@@ -1295,7 +1295,7 @@ class AnazhRealm_bau_vorlagen {
             // Wetter/Jahreszeit/Tageszeit.
             welt_terrain: {
                 name: "welt_terrain",
-                label: this._t(AnazhRealm.WORLD_REGISTRY.terrain.name),
+                etikett: [AnazhRealm.WORLD_REGISTRY.terrain.name],
                 builtIn: true,
                 role: "portal",
                 roleManual: true,
@@ -1311,7 +1311,7 @@ class AnazhRealm_bau_vorlagen {
             // Dasselbe W12-Muster: Registry trägt Pfad + DSL-Manifest.
             welt_garage: {
                 name: "welt_garage",
-                label: this._t(AnazhRealm.WORLD_REGISTRY.garage.name),
+                etikett: [AnazhRealm.WORLD_REGISTRY.garage.name],
                 builtIn: true,
                 role: "portal",
                 roleManual: true,
@@ -1326,7 +1326,7 @@ class AnazhRealm_bau_vorlagen {
             // (Portal.txt: sieben Ordnungen · Stich→Schub→Dicke · Türen E/R).
             welt_portale: {
                 name: "welt_portale",
-                label: this._t(AnazhRealm.WORLD_REGISTRY.portale.name),
+                etikett: [AnazhRealm.WORLD_REGISTRY.portale.name],
                 builtIn: true,
                 role: "portal",
                 roleManual: true,
@@ -1341,7 +1341,7 @@ class AnazhRealm_bau_vorlagen {
             // Wie alle welt_*: die Registry trägt Pfad + DSL-Manifest.
             welt_schmiede: {
                 name: "welt_schmiede",
-                label: this._t(AnazhRealm.WORLD_REGISTRY.schmiede.name),
+                etikett: [AnazhRealm.WORLD_REGISTRY.schmiede.name],
                 builtIn: true,
                 role: "portal",
                 roleManual: true,
@@ -1356,7 +1356,7 @@ class AnazhRealm_bau_vorlagen {
             // Dorf (exportSettlement). Die Registry trägt Pfad + DSL-Manifest.
             welt_fachwerk: {
                 name: "welt_fachwerk",
-                label: this._t(AnazhRealm.WORLD_REGISTRY.fachwerk.name),
+                etikett: [AnazhRealm.WORLD_REGISTRY.fachwerk.name],
                 builtIn: true,
                 role: "portal",
                 roleManual: true,
@@ -1370,7 +1370,7 @@ class AnazhRealm_bau_vorlagen {
             // Host-Lofi liest Tempo + Skala). Die Render-Gestalt ist die porta-Leier (w4-tore-teile), die Parts bleiben Substanz.
             welt_klang: {
                 name: "welt_klang",
-                label: this._t(AnazhRealm.WORLD_REGISTRY.klang.name),
+                etikett: [AnazhRealm.WORLD_REGISTRY.klang.name],
                 builtIn: true,
                 role: "portal",
                 roleManual: true,
@@ -1382,7 +1382,7 @@ class AnazhRealm_bau_vorlagen {
             // Gestalt-/Motion-Quelle, der Host bleibt der OFEN. Die Render-Gestalt ist das porta-Vitruv-Tor (w4-tore-teile).
             welt_koerperstudio: {
                 name: "welt_koerperstudio",
-                label: this._t(AnazhRealm.WORLD_REGISTRY.koerperstudio.name),
+                etikett: [AnazhRealm.WORLD_REGISTRY.koerperstudio.name],
                 builtIn: true,
                 role: "portal",
                 roleManual: true,
@@ -1394,7 +1394,7 @@ class AnazhRealm_bau_vorlagen {
             // Gestalt-/Motion-Quelle. Die Render-Gestalt ist das porta-Tier-Tor (w4-tore-teile).
             welt_tetrapoda: {
                 name: "welt_tetrapoda",
-                label: this._t(AnazhRealm.WORLD_REGISTRY.tetrapoda.name),
+                etikett: [AnazhRealm.WORLD_REGISTRY.tetrapoda.name],
                 builtIn: true,
                 role: "portal",
                 roleManual: true,
@@ -1407,7 +1407,7 @@ class AnazhRealm_bau_vorlagen {
             // klinge_-Gattungen (Substanz in KIND_SUBSTANCE).
             ruestung_brustpanzer: {
                 name: "ruestung_brustpanzer",
-                label: this._t("bau.brustpanzer"),
+                etikett: ["bau.brustpanzer"],
                 builtIn: true,
                 role: "armor",
                 roleManual: true,
@@ -1417,7 +1417,7 @@ class AnazhRealm_bau_vorlagen {
             },
             trank_lebenssaft: {
                 name: "trank_lebenssaft",
-                label: this._t("bau.lebenssaft"),
+                etikett: ["bau.lebenssaft"],
                 builtIn: true,
                 role: "consumable",
                 roleManual: true,
@@ -1429,7 +1429,7 @@ class AnazhRealm_bau_vorlagen {
             // Schlüssel `reittier_holzross` bleibt load-bearing (Saves · Hotbar · platzierte Einträge).
             reittier_holzross: {
                 name: "reittier_holzross",
-                label: this._t("bau.pferd"),
+                etikett: ["bau.pferd"],
                 builtIn: true,
                 parts: this._holzrossParts(),
                 connections: [{ type: "sitz", partA: 0, partB: -1 }],
@@ -1448,6 +1448,7 @@ class AnazhRealm_bau_vorlagen {
                 defaults[n]._altDoppel = AnazhRealm.ALT_DOPPEL[n]; // Provenienz: das Studio-Pendant
             }
         }
+        for (const n in defaults) AnazhRealm._etikett(defaults[n]); // der Name liest seinen Schlüssel (spielgang.K5)
         return defaults;
     }
 
@@ -1589,6 +1590,26 @@ class AnazhRealm_bau_vorlagen {
             glut: [0.9, 0], laub: [0.9, 0], erde: [0.755, 0], kraut: [0.9, 0], essenz: [0.76, 0], blech: [0.44, 1],
             gras: [0.9, 0], wasser: [0.72, 0], eis: [0.7, 0],
         };
+        // DIE ANTWORT AUF DAS ALTER (stoffe.K4, `_werkAlter` → `_werkAlterFaerbe`): je Stoff, der verwittert, das Ziel seiner
+        // Fläche (lineare Albedo), die Tage, in denen Zeit und Nässe-Dosis ihn 63 % dorthin tragen (null: die Achse wirkt nicht), und
+        // die Lage, an der er es zeigt. Holz vergraut zum Silber (Licht und Regen bauen das Lignin der Oberfläche ab — USDA Wood
+        // Handbook 2021 Kap. 16: bewittertes Holz in einem Jahr silbergrau, sRGB 0x6b665e) an jeder freien Fläche; Eisen rostet
+        // NUR nass (die Oxidation braucht den Wasserfilm; Rost FeO(OH) ockerbraun sRGB 0x8c5426, Farbton 25°) an jeder freien
+        // Fläche; Stein trägt das Moos des Fels-Gesetzes (gelaende-core `FELS.moos`) nur nass und nur an der Nordseite (schattig,
+        // lange nass). Leser: das Bau-Teil der Welt; ein eigener Stoff altert wie sein Verwandter (`_stoff`).
+        const MOOS = globalThis.__gelaendeCore && globalThis.__gelaendeCore.FELS && globalThis.__gelaendeCore.FELS.moos;
+        if (!MOOS) AnazhRealm._kernPflichtBruch("gelaende:FELS.moos");
+        const lin = (h) =>
+            [16, 8, 0].map((k) => {
+                const c = ((h >> k) & 0xff) / 255;
+                return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+            });
+        // prettier-ignore
+        const ALTER = {
+            holz: { ziel: lin(0x6b665e), zeitTage: 200, nassTage: 40, lage: "frei" },
+            eisen: { ziel: lin(0x8c5426), zeitTage: null, nassTage: 10, lage: "frei" },
+            stein: { ziel: MOOS.slice(0, 3), zeitTage: null, nassTage: 40, lage: "nord" },
+        };
         const welt = this;
         const TB = AnazhRealm._schrittTimbre().material;
         // Stahl, Blech und Leib sind Stoffe der Körper (die Klinge der Schmiede, die Hülle des Wagens, der Mensch), Gras, Wasser
@@ -1601,7 +1622,7 @@ class AnazhRealm_bau_vorlagen {
                 AnazhRealm._kernPflichtBruch("STOFF-TAFEL " + name + ": SI-Zeile und klang:SCHRITT_TIMBRE");
             const z = {
                 name,
-                label: this._t(label),
+                etikett: [label],
                 builtIn: true,
                 color,
                 tags: { ...AnazhRealm.MATERIAL_TAG_DEFAULTS, ...tags },
@@ -1623,6 +1644,8 @@ class AnazhRealm_bau_vorlagen {
                 },
             });
             if (keinBauStoff.includes(name)) z.bauStoff = false;
+            if (ALTER[name])
+                z.alter = Object.freeze(Object.assign({}, ALTER[name], { ziel: Object.freeze(ALTER[name].ziel) }));
             const optik = OPTIK[name];
             if (!optik) AnazhRealm._kernPflichtBruch("STOFF-TAFEL " + name + ": die Optik (Rauheit, Metall)");
             ["rauheit", "metall"].forEach((k, i) =>
@@ -1848,7 +1871,7 @@ class AnazhRealm_bau_vorlagen {
             }),
         ];
         const out = {};
-        for (const m of list) out[m.name] = m;
+        for (const m of list) out[m.name] = AnazhRealm._etikett(m);
         Object.defineProperty(out.eis, "tSchmelz", {
             enumerable: true,
             get: () => out.wasser.tSchmelz,
@@ -1867,7 +1890,7 @@ class AnazhRealm_bau_vorlagen {
         const list = [
             {
                 name: "hände",
-                label: this._t("werk.werkzeug.haende"),
+                etikett: ["werk.werkzeug.haende"],
                 opClass: "subtractive",
                 opName: "hand_knap",
                 precisionCap: 0.4,
@@ -1882,7 +1905,7 @@ class AnazhRealm_bau_vorlagen {
             // orthogonal — dieselbe opClass in mehreren Domains, eine domain mit mehreren opClasses.
             {
                 name: "schmiede-hammer",
-                label: this._t("werk.werkzeug.schmiede-hammer"),
+                etikett: ["werk.werkzeug.schmiede-hammer"],
                 opClass: "plastic",
                 opName: "forge_shape",
                 precisionCap: 0.75,
@@ -1894,7 +1917,7 @@ class AnazhRealm_bau_vorlagen {
             },
             {
                 name: "mörser",
-                label: this._t("werk.werkzeug.moerser"),
+                etikett: ["werk.werkzeug.moerser"],
                 opClass: "additive",
                 opName: "brew",
                 precisionCap: 0.7,
@@ -1904,7 +1927,7 @@ class AnazhRealm_bau_vorlagen {
             },
             {
                 name: "webstuhl-schiffchen",
-                label: this._t("werk.werkzeug.webstuhl-schiffchen"),
+                etikett: ["werk.werkzeug.webstuhl-schiffchen"],
                 opClass: "additive",
                 opName: "weave",
                 precisionCap: 0.7,
@@ -1914,7 +1937,7 @@ class AnazhRealm_bau_vorlagen {
             },
             {
                 name: "ritueller-stab",
-                label: this._t("werk.werkzeug.ritueller-stab"),
+                etikett: ["werk.werkzeug.ritueller-stab"],
                 opClass: "phaseChange",
                 opName: "imbue",
                 precisionCap: 0.85,
@@ -1924,7 +1947,7 @@ class AnazhRealm_bau_vorlagen {
             },
             {
                 name: "drehbank-meißel",
-                label: this._t("werk.werkzeug.drehbank-meissel"),
+                etikett: ["werk.werkzeug.drehbank-meissel"],
                 opClass: "subtractive",
                 opName: "turn",
                 precisionCap: 0.9,
@@ -1934,7 +1957,7 @@ class AnazhRealm_bau_vorlagen {
             },
         ];
         const out = {};
-        for (const t of list) out[t.name] = t;
+        for (const t of list) out[t.name] = AnazhRealm._etikett(t);
         return out;
     }
 

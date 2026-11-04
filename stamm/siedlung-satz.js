@@ -818,16 +818,29 @@ class AnazhRealm_siedlung_satz {
     }
     // Der Stempel eines Werks mit seinem Alter (`ov` = der eigene Stempel oder null); je Eintrag gemerkt, solange Stufe und
     // Stempel gleich sind (derselbe Gegenstand: der ov-Hash merkt sich ihn).
-    _werkAlterOv(entry, ov) {
-        const z = this._werkAlterZeile(this._foundryPresetForEntry(entry));
-        if (!z) return ov;
+    // DAS ALTER (stoffe.K4) — EINE Funktion je Werk, jeder Stoff liest sie: { zeit, nass } in Tagen, beide × die Lage des Orts
+    // (`_feuchteAt`: am Ufer altert es schneller, nassMin + Feuchte). zeit = die Spielzeit seit dem Bau-Akt (Welt-Tag seit
+    // `entry.geburt`), nass = die Nässe-Dosis seither (das Wetter-Feld, integriert über die Spielzeit am Uhr-Schreiber,
+    // `worldMeta.nassTage` − `entry.geburtNass`; Regen-Tage × Stärke). Beide reisen im Stand: das Alter nach dem Reload ist
+    // dasselbe. Leser: der Studio-Regler `verwitterung` (`_werkAlterOv`) und die Stoff-Zeile jedes Bau-Teils (`_werkAlterFaerbe`).
+    _werkAlter(entry) {
         const A = AnazhRealm.WERK_ALTER;
         if (!Number.isFinite(entry._nass)) {
             const p = entry.position;
             entry._nass = A.nassMin + Math.max(0, Math.min(1, +this._feuchteAt(p.x, p.z, p.y) || 0));
         }
-        const wm = this.state.worldMeta;
-        const tage = Math.max(0, ((wm && wm.tag) || 0) - (entry.geburt || 0)) * entry._nass;
+        const wm = this.state.worldMeta || {};
+        const zeit = Math.max(0, (wm.tag || 0) - (entry.geburt || 0));
+        const nass = Math.max(0, (+wm.nassTage || 0) - (+entry.geburtNass || 0));
+        return { zeit: zeit * entry._nass, nass: nass * entry._nass };
+    }
+    _werkAlterOv(entry, ov) {
+        const z = this._werkAlterZeile(this._foundryPresetForEntry(entry));
+        if (!z) return ov;
+        const A = AnazhRealm.WERK_ALTER;
+        const alter = this._werkAlter(entry);
+        // der EINE Regler des Studios trägt beide Achsen: ein Regen-Tag altert das Werk um `regen` Tage mehr
+        const tage = alter.zeit + alter.nass * A.regen;
         const w0 = ov && Number.isFinite(ov.verwitterung) ? ov.verwitterung : z.def;
         const schritt = z.step > 0 ? z.step : 0.05;
         const k = Math.floor(((Math.min(1, z.max) - w0) * (1 - Math.exp(-tage / A.tauTage))) / schritt + 1e-9);
@@ -843,8 +856,99 @@ class AnazhRealm_siedlung_satz {
         entry._alter = { k, quelle: ov, ov: Object.freeze(Object.assign({}, ov, { verwitterung: w, nord })) };
         return entry._alter.ov;
     }
+    // DIE STUFE EINES STOFFS im Alter `alter` (`_werkAlter`): die Antwort seiner Zeile (`zeile.alter`, die Stoff-Tafel) —
+    // P = 1 − e^−(zeit/zeitTage + nass/nassTage), gerastert auf `WERK_ALTER.stufen` (ein Körper baut nur beim Sprung neu).
+    // Ein Stoff ohne Zeit-Achse (Eisen, Moos: `zeitTage` null) altert nur in der Nässe — ein trockener Monat lässt ihn, wie er ist.
+    static _werkAlterStufe(a, alter) {
+        const e = (a.zeitTage > 0 ? alter.zeit / a.zeitTage : 0) + (a.nassTage > 0 ? alter.nass / a.nassTage : 0);
+        const n = AnazhRealm.WERK_ALTER.stufen;
+        return Math.floor((1 - Math.exp(-e)) * n + 1e-9) / n;
+    }
+    // Die Stufen der alternden Stoffe eines gebauten Werks (die Namen merkt der Bau, `_werkAlterFaerbe`) als EIN Schlüssel.
+    _werkAlterSchluessel(entry, stoffe) {
+        const alter = this._werkAlter(entry);
+        return stoffe.map((n) => AnazhRealm._werkAlterStufe(this._stoff(n).alter, alter)).join(",");
+    }
+    // DIE STOFF-ANTWORT AUF DAS ALTER am gebauten Körper eines Werks (`_rebuildArchitectureMesh`, der Bau-Teil-Pfad): je Teil
+    // liest sein Stoff (`userData.stoff`, die Zeile der Stoff-Tafel `_stoff`) seine Stufe P und zieht die Albedo jeder Ecke zum
+    // Ziel seiner Zeile (`alter.ziel`, linear) um P × die Lage der Fläche in der Welt: `frei` (Holz vergraut, Eisen rostet — die
+    // freie Fläche, oben am meisten: `WERK_ALTER.frei`, frei[0] + frei[1]·n_y) oder `nord` (das Moos des Steins: die Fläche,
+    // die nach Norden −z schaut, max(0, −n_z) — schattig, lange nass). Die Welt liest Vertex-Farbe × Stoff-Farbe (Lehre 19):
+    // die Ecke trägt (1 − p)·vc + p·Ziel/Stoff-Farbe. Alter 0 trägt keinen Kanal (die Bytes byte-alt).
+    _werkAlterFaerbe(entry, group) {
+        if (!group || !entry || !entry.position) return;
+        const alter = this._werkAlter(entry);
+        const frei = AnazhRealm.WERK_ALTER.frei;
+        const stufen = new Map();
+        const n = new THREE.Vector3();
+        const nm = new THREE.Matrix3();
+        group.updateMatrixWorld(true);
+        group.traverse((m) => {
+            const name = m.isMesh && m.geometry && m.userData ? m.userData.stoff : null;
+            if (!name) return;
+            const zeile = this._stoff(name, "das Bau-Teil aus „" + name + "“ altert ohne Zeile");
+            const a = zeile && zeile.alter;
+            if (!a) return;
+            if (!stufen.has(name)) stufen.set(name, AnazhRealm._werkAlterStufe(a, alter));
+            const P = stufen.get(name);
+            const g = m.geometry;
+            const nor = g.attributes.normal;
+            if (!(P > 0) || !nor || !m.material || Array.isArray(m.material)) return;
+            const mc = m.material.color || { r: 1, g: 1, b: 1 };
+            const ziel = [
+                a.ziel[0] / Math.max(1e-4, mc.r),
+                a.ziel[1] / Math.max(1e-4, mc.g),
+                a.ziel[2] / Math.max(1e-4, mc.b),
+            ];
+            const alt = g.attributes.color;
+            const N = nor.count;
+            const c = new Float32Array(N * 3);
+            nm.getNormalMatrix(m.matrixWorld);
+            for (let i = 0; i < N; i++) {
+                n.fromBufferAttribute(nor, i).applyMatrix3(nm).normalize();
+                const w = a.lage === "nord" ? Math.max(0, -n.z) : frei[0] + frei[1] * Math.max(0, n.y);
+                const p = P * w;
+                for (let k = 0; k < 3; k++) {
+                    const v = alt ? alt.array[i * alt.itemSize + k] : 1;
+                    c[i * 3 + k] = v * (1 - p) + ziel[k] * p;
+                }
+            }
+            g.setAttribute("color", new THREE.BufferAttribute(c, 3));
+            // DIE ECKE EINMAL (Farbe einmal G1/G2): ein Stoff, dessen colorNode die Ecke schon liest (`eckeImKnoten`: der
+            // verschmolzene Bau teilt `_sharedFoliageMaterial`, das Teil mit Vertex-Farbe), liest das neue Attribut — er
+            // bleibt, wie er ist (bis hier schaltete das Alter vertexColors an: Farbe² und der geteilte Stoff kippte für jeden
+            // Bau). Ein flacher Werk-Stoff (colorNode ohne Ecke) trägt sie IN seinem colorNode (`_eckeFarbe`, EIN Knoten je
+            // Quell-Knoten, die Gestalt teilt ihr Programm weiter); ein Stoff ohne colorNode liest sie über vertexColors.
+            const mat = m.material;
+            if (mat.colorNode) {
+                if (!mat.userData.eckeImKnoten) {
+                    mat.colorNode = this._eckeFarbe(mat.colorNode);
+                    mat.userData.eckeImKnoten = true;
+                    mat.needsUpdate = true;
+                }
+            } else if (!mat.vertexColors) {
+                mat.vertexColors = true; // der Teil-Stoff ist sein eigener (`_buildFromBlueprint`); r184 liest Farbe × Ecke
+                mat.needsUpdate = true;
+            }
+        });
+        entry._alterStoffe = stufen.size ? [...stufen.keys()] : null;
+        entry._alterStufe = stufen.size ? [...stufen.values()].join(",") : null;
+    }
+    // Der Farb-Knoten `farbe` × die Ecke (`vertexColor`: ohne color-Attribut 1) — EINER je Quell-Knoten (r184 schlüsselt das
+    // Programm nach Knoten-Identität; der Leser: `_werkAlterFaerbe`)
+    _eckeFarbe(farbe) {
+        const E = this._eckeFarbeCache || (this._eckeFarbeCache = new WeakMap());
+        let f = E.get(farbe);
+        if (!f) {
+            const TSL = THREE.TSL;
+            const c = TSL.vec4(farbe);
+            E.set(farbe, (f = TSL.vec4(c.rgb.mul(TSL.vertexColor().rgb), c.a)));
+        }
+        return f;
+    }
     // Der Tag der Welt sprang (der Takt: EIN Vergleich): die gezeichneten Werke einer alternden Art, deren Stufe sprang, warten
-    // auf ihren neuen Körper. Die kalten lesen ihr Alter, wenn sie das nächste Mal gebaut werden.
+    // auf ihren neuen Körper — die Studio-Werke (der Regler `verwitterung`) und die Werke aus Bau-Teilen (die Stoff-Zeile,
+    // `_werkAlterFaerbe`). Die kalten lesen ihr Alter, wenn sie das nächste Mal gebaut werden.
     _werkeAltern() {
         const wm = this.state.worldMeta;
         const tag = (wm && wm.tag) || 0;
@@ -852,17 +956,30 @@ class AnazhRealm_siedlung_satz {
         this._werkAlterTag = tag;
         const offen = this._werkAltertOffen || (this._werkAltertOffen = new Set());
         for (const e of this.state.architectures) {
-            if (!e.instanced || e.instFoundry !== true || !e.position) continue;
+            if (!e.position) continue;
+            if (!e.instanced && e.mesh && e._alterStoffe) {
+                if (this._werkAlterSchluessel(e, e._alterStoffe) !== e._alterStufe) offen.add(e);
+                continue;
+            }
+            if (!e.instanced || e.instFoundry !== true) continue;
             const vor = e._alter ? e._alter.ov : this._artifactStudioOv({ studioOv: e.studioOv });
             if (this._artifactStudioOv(e) !== vor) offen.add(e);
         }
     }
-    // Der neue Körper eines alternden Werks tritt ein, sobald er da ist (dieselbe Stufe, der Stempel mit dem Alter).
+    // Der neue Körper eines alternden Werks tritt ein, sobald er da ist (dieselbe Stufe, der Stempel mit dem Alter); ein Werk aus
+    // Bau-Teilen baut seinen Körper im selben Takt neu.
     _tickWerkAlter() {
         this._werkeAltern();
         const offen = this._werkAltertOffen;
         if (!offen || !offen.size) return;
         for (const e of offen) {
+            if (!e.instanced) {
+                offen.delete(e);
+                if (!e.mesh || !this.state.architectures.includes(e)) continue;
+                this._cullArchitectureMesh(e);
+                this._rebuildArchitectureMesh(e);
+                continue;
+            }
             const preset = e.instanced && this.state.architectures.includes(e) ? this._foundryPresetForEntry(e) : null;
             const flat = preset ? this._foundryFlattenFor(e, preset, e._lodLevel) : false;
             if (flat === null) continue; // lädt
@@ -1002,6 +1119,10 @@ class AnazhRealm_siedlung_satz {
         // nimmt den Tag der Welt; ohne Zeile (Feld, Gesetz, Tag 0) der erste Tag. Sie reist durch den Save.
         const geburt = "geburt" in opts ? opts.geburt : entry.werk ? (this.state.worldMeta || {}).tag : null;
         if (Number.isInteger(geburt) && geburt > 0) entry.geburt = geburt;
+        // ebenso die Nässe-Dosis der Welt bei seinem Akt (`_werkAlter`: die Nässe zählt ab hier)
+        const geburtNass =
+            "geburtNass" in opts ? +opts.geburtNass : entry.werk ? +(this.state.worldMeta || {}).nassTage : 0;
+        if (geburtNass > 0) entry.geburtNass = geburtNass;
         // Der Guss-Stempel reist am Eintrag (Snapshot + P2P): NUR ein non-leeres plain object, tief
         // JSON-kopiert, max 8 KiB (dieselbe Taille-Wand wie _carryUnknown — ein Riesenstempel wäre ein
         // Quota-DoS). _foundryFlattenFor liest ihn als Unikat-ov.
@@ -1242,7 +1363,7 @@ AnazhRealm.BAU_WURF_ATTR = Object.freeze([
 ]);
 AnazhRealm.KIND_SUBSTANCE = Object.freeze({
     geraet_schwert: {
-        label: "Schwert",
+        etikett: ["substanz.schwert"],
         parts: [
             {
                 shape: "octahedron",
@@ -1283,7 +1404,7 @@ AnazhRealm.KIND_SUBSTANCE = Object.freeze({
         ],
     },
     geraet_spitzhacke: {
-        label: "Spitzhacke",
+        etikett: ["substanz.spitzhacke"],
         parts: [
             {
                 shape: "cylinder",
@@ -1306,7 +1427,7 @@ AnazhRealm.KIND_SUBSTANCE = Object.freeze({
         ],
     },
     fahrzeug_wagen: {
-        label: "Wagen",
+        etikett: ["substanz.wagen"],
         parts: [
             {
                 shape: "box",
@@ -1454,7 +1575,7 @@ AnazhRealm.KIND_SUBSTANCE = Object.freeze({
         ],
     },
     tor_basis: {
-        label: "Torbogen",
+        etikett: ["substanz.torbogen"],
         parts: [
             {
                 shape: "box",
@@ -1487,7 +1608,7 @@ AnazhRealm.KIND_SUBSTANCE = Object.freeze({
         ],
     },
     haus_basis: {
-        label: "Haus",
+        etikett: ["substanz.haus"],
         parts: [
             {
                 shape: "box",
@@ -1534,6 +1655,7 @@ AnazhRealm.KIND_SUBSTANCE = Object.freeze({
         ],
     },
 });
+for (const z of Object.values(AnazhRealm.KIND_SUBSTANCE)) AnazhRealm._etikett(z); // der Name liest seinen Schlüssel
 // DIE WÜRFE DES FELDS (K10-6) — die Arten, die das Affinitäts-Feld wirft (`_vegetationSampleSpawn`: der Sieger der Affinität
 // je Sample): die Baumarten, der Fels, die Geode und die Feuerstelle des Glut-Felds. Was das Feld wirft, trägt die Marke des
 // Wurfs (`feldWurf`, `_enqueueVegetationSpawn`) und weicht dem Bau wie die Natur (`_weichtDemBau`): es sperrt keinem Ort den
@@ -1557,4 +1679,14 @@ AnazhRealm.STRUCTURE_CLEAR_MIN_FOOTPRINT = 3.0; // darunter = klein/intentional 
 // DAS ALTER EINES WERKS (stoffe.K4, `_werkAlterOv`): τ die Tage, in denen der Regler `verwitterung` 63 % seines Wegs zu 1 geht;
 // die Nässe des Orts (`_feuchteAt` 0..1) dehnt die Zeit von nassMin (trocken: das Tempo der Referenz) bis nassMin + 1 (am
 // Wasser doppelt). Geeicht an der Staffel (stoffe.K4#2): nach 30 Tagen am trockenen Ort W 0,75 — Holz −35 % Sättigung.
-AnazhRealm.WERK_ALTER = Object.freeze({ tauTage: 40, nassMin: 1 });
+// `regen`: die Tage, um die ein voller Regen-Tag (Regen-Stärke × Tag, `worldMeta.nassTage`) den Studio-Regler weiter altern lässt.
+// `stufen`: das Raster der Stoff-Antwort der Bau-Teile (`_werkAlterFaerbe`) — ein Körper baut neu nur beim Sprung einer Stufe.
+// `frei`: die Lage der Fläche im Alter der Bau-Teile (`_werkAlterFaerbe`) — Sockel und Gewicht der Oberseite (die freie Fläche
+// trägt Licht und Regen, die oben liegende am meisten, die Unterseite den Sockel).
+AnazhRealm.WERK_ALTER = Object.freeze({
+    tauTage: 40,
+    nassMin: 1,
+    regen: 1,
+    stufen: 32,
+    frei: Object.freeze([0.7, 0.3]),
+});

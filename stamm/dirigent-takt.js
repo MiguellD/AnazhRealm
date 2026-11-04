@@ -944,6 +944,7 @@ class AnazhRealm_dirigent_takt {
         this._verkehrSchritt(dt); // die Wagen der Städte mit ihren Fahrern (PFLICHT-OFFEN C)
         // DER GESTOSSENE LEIB und LEIB AN LEIB im Sim-Schritt (0710-5): was einen Körper bewegt, läuft im festen Schritt.
         this._kreaturStossSchritt(dt);
+        this._trittDerLeiber(); // der Gang der Leiber tritt den Pfad (stoffe.K4), an ihrer Lage vor dem Leib-Löser
         this._leibKontakte();
         this._freiSchritt(dt); // DER FREIE KÖRPER (physik.K3): Kiste, Fass — fallen, stapeln, gestoßen kippen
         if (this.state._replayRec) this._replayCaptureFrame(dt);
@@ -1123,6 +1124,8 @@ class AnazhRealm_dirigent_takt {
             _groundedCache: undefined,
             _groundedCachedAt: undefined,
         };
+        // der Stoß-Zustand des Leibs (physik.K5): das Replay beginnt ohne Stoß, der des Spiels kehrt danach zurück
+        for (const k of AnazhRealm._leibTakt().LEIB_STOSS_FELDER) frisch[k] = null;
         const gerettet = {};
         for (const k in frisch) ((gerettet[k] = s[k]), (s[k] = frisch[k]));
         let t = 0;
@@ -1478,7 +1481,6 @@ class AnazhRealm_dirigent_takt {
         this._wetterZug = zug;
         if (this._messHalt()) return;
         const wunsch = st.wetterWunsch;
-        st.wetterWunsch = null;
         const pm = st.playerMesh;
         const [x, z] = pm ? [pm.position.x, pm.position.z] : [0, 0];
         const next =
@@ -1487,7 +1489,9 @@ class AnazhRealm_dirigent_takt {
         if (next !== st.weather)
             this.log(`Das Wetter zieht zu ${next}${wunsch ? ` (Wunsch: ${wunsch.quelle})` : ""}`, "INFO");
         else if (wunsch) this.log(`Das Wetter bleibt ${next} (Wunsch: ${wunsch.quelle})`, "INFO");
+        // der Zug zieht den Wunsch: `_setWeather` liest ihn als Schreiber (`wetterSchreiber`); danach ist er verbraucht
         if (next !== st.weather || von !== next) this._setWeather(next, "auto-zug", { von, beginn: zug * Z });
+        if (st.wetterWunsch === wunsch) st.wetterWunsch = null;
     }
 
     // DIE EINE REGEL DER WELT-UHR (feld.K2#2): eine Uhr von außen — der Stand beim Laden, der Mitspieler in jedem Ort (`pos.w`) —
@@ -1701,6 +1705,7 @@ class AnazhRealm_dirigent_takt {
                     this._tickScatterStreaming(playerPos, _dl);
                     this._tickPendingGrass(lade ? Infinity : 1, lade ? _dl : undefined);
                     this._tickScatterRegrow(this._weltStunde());
+                    this._tickLebenStufen();
                     this._tickNahWiese(_dl);
                     this._tickNahStreu(_dl);
                     this._perfSenseLap("scatter", _sct);
@@ -2066,6 +2071,9 @@ class AnazhRealm_dirigent_takt {
         }
         // DER SPIEGEL DES GESETZES (D10): nach dem Bild der Post-Kette, aus ihrer Tiefe — das Wasser des nächsten liest ihn
         if (!direkt) this._spiegelPassZeichne();
+        // DER RÜCKSTRAHL DES BODENS (schatten.K4): aus dem Szenen-Pass dieses Bilds — die Umgebung des nächsten liest ihn
+        if (!direkt) this._rueckstrahlZeichne();
+        else this._rueckstrahlLeser().an.value = 0;
         // Das erste fertige Weltbild nimmt den Ladeschirm weg (L2: nie die schwarze Leinwand).
         if (!this.state._weltbildDa || this.state._nachlauf != null) this._ankunftsBild();
         // GPU-Last in den perfSense-Frame-Akku (Draw-Calls + Dreiecke, alle Pässe). Im r184-WebGPU-Info ist

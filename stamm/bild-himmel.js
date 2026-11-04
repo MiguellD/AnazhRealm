@@ -2992,7 +2992,16 @@ class AnazhRealm_bild_himmel {
         // zurück; das Laden setzt nur die Uhr — der Tag reist im worldMeta
         const d = v - this.state.timeOfDay;
         const wm = this.state.worldMeta;
+        const tag0 = wm ? wm.tag || 0 : 0;
         if (quelle !== "laden" && wm && Math.abs(d) > 0.5) wm.tag = (wm.tag || 0) + (d < 0 ? 1 : -1);
+        // DIE NÄSSE-DOSIS DER WELT (stoffe.K4, `_werkAlter`): je Spielzeit, die die Uhr vorwärts geht, der Regen des Wetter-Felds
+        // des Worts (`WEATHER_FIELD[weather].rain` — der Übergang ist Bild, das Wort ist das Wetter) × die Tage, aufsummiert im
+        // worldMeta (`nassTage`, reist im Stand) — ein Schreib-Akt der Uhr, nie Wanduhr; der Sprung zurück und das Laden zählen nicht
+        if (quelle !== "laden" && wm) {
+            const vor = (wm.tag || 0) + v - tag0 - this.state.timeOfDay;
+            const f = AnazhRealm.WEATHER_FIELD[this.state.weather];
+            if (vor > 0 && f && f.rain > 0) wm.nassTage = (+wm.nassTage || 0) + vor * f.rain;
+        }
         this.state.timeOfDay = v;
         return true;
     }
@@ -3354,6 +3363,11 @@ class AnazhRealm_bild_himmel {
         } else if (wer === "gesetz" && this.state.wetterWort) this.state.wetterWort = name;
         const oldWeather = this.state.weather;
         this.state.weather = name;
+        // der wahre Schreiber (affekt.K4#2): der Zug zieht den Wunsch der Welt (er ist verbraucht, sein Wünscher schrieb) oder die Front
+        const wunsch = quelle === "auto-zug" && this.state.wetterWunsch;
+        if (wunsch && wunsch.wort === name) this.state.wetterWunsch = null;
+        this.state.wetterSchreiber =
+            quelle !== "auto-zug" ? quelle || "?" : wunsch && wunsch.wort === name ? wunsch.quelle : "front";
         if (zug) {
             this.state.weatherTransition = null;
             this.requestWeatherTransition(name, this.constructor.WEATHER_TRANSITION_DURATION_MS, zug.von, zug.beginn);

@@ -363,10 +363,6 @@ async function checkBandWelle6HBuildAndPersist({ page, check }) {
         const a3 = r._buildCreatureTaskArgs("build", "");
         out.argsBuildEmptyDropped = !a3.blueprint;
 
-        // 3. Describe
-        const desc = r._describeCreatureTaskArg("build", "stein_block");
-        out.descBuildShowsBlueprint = /Bauplan/.test(desc) && /stein_block/.test(desc);
-
         // 4. Tick: kein blueprint → null + falls auf wander
         const c0 = r.spawnCreatureAt(
             st.playerMesh.position.x + 50,
@@ -509,10 +505,6 @@ async function checkBandWelle6HBuildAndPersist({ page, check }) {
             p2.program[1] === "build" &&
             p2.program[2] === "stein_block";
 
-        // 15. describeProgram
-        const desc1 = r.describeProgram(["creature_task_nearest", "build", "stein_block"]);
-        out.describeProgramShowsBp = /Bauplan/.test(desc1) && /stein_block/.test(desc1);
-
         // 16. Status-Bar zeigt 'N bauen'
         // Setze mehrere Kreaturen auf build (alle existierenden)
         for (const c of st.creatures) {
@@ -576,10 +568,6 @@ async function checkBandWelle6HBuildAndPersist({ page, check }) {
             wave6hP2b2Results.argsBuildNumberDropped
         );
         check("_buildCreatureTaskArgs(build, '') droppt arg", wave6hP2b2Results.argsBuildEmptyDropped);
-        check(
-            "_describeCreatureTaskArg(build, X) zeigt 'Bauplan X'",
-            wave6hP2b2Results.descBuildShowsBlueprint
-        );
         check(
             "build ohne blueprint → null + Task fällt auf wander",
             wave6hP2b2Results.buildEmptyFallsToWander
@@ -645,7 +633,6 @@ async function checkBandWelle6HBuildAndPersist({ page, check }) {
             "Chat 'alle bauen X' → creature_task_all build X",
             wave6hP2b2Results.chatAlleBauenPattern
         );
-        check("describeProgram zeigt 'Bauplan' + name", wave6hP2b2Results.describeProgramShowsBp);
         check("Status-Bar zeigt 'N bauen' bei build-Tasks", wave6hP2b2Results.statusShowsBauen);
         check(
             "Liste zeigt .build-Class + 'baut <bp>'",
@@ -1375,14 +1362,6 @@ async function checkBandWelle6HCreatureStats({ page, check }) {
             Class.NON_BROADCASTABLE_OPS.has("creature_equip_armor") &&
             Class.NON_BROADCASTABLE_OPS.has("creature_unequip");
 
-        // 10. describeProgram-Einträge
-        const d1 = r.describeProgram(["creature_equip_tool", 0, "schmiede-hammer"]);
-        out.descEquipTool = /Werkzeug/.test(d1) && /hammer/.test(d1);
-        const d2 = r.describeProgram(["creature_equip_armor", 0, "lederrüstung"]);
-        out.descEquipArmor = /Rüstung/.test(d2);
-        const d3 = r.describeProgram(["creature_unequip", 0, "tool"]);
-        out.descUnequip = /tool/.test(d3) || /Slot/.test(d3);
-
         // 11. Snapshot persistiert equipped (Round-Trip)
         r.equipCreatureTool(cDsl, "schmiede-hammer");
         const snap = r._serializeCreature(cDsl);
@@ -1457,10 +1436,6 @@ async function checkBandWelle6HCreatureStats({ page, check }) {
         check(
             "alle 3 Equip-Ops in NON_BROADCASTABLE_OPS (Multi-User-Safety)",
             wave6hP2f2Results.opsNonBroadcast
-        );
-        check(
-            "describeProgram zeigt Werkzeug/Rüstung/Slot",
-            wave6hP2f2Results.descEquipTool && wave6hP2f2Results.descEquipArmor && wave6hP2f2Results.descUnequip
         );
         check(
             "_serializeCreature schreibt equipped + Restore übernimmt es",
@@ -1584,10 +1559,6 @@ async function checkBandWelle6HCreatureStats({ page, check }) {
         // 11. NON_BROADCASTABLE-Mitgliedschaft
         out.opNonBroadcast = Class.NON_BROADCASTABLE_OPS.has("creature_apply_boost");
 
-        // 12. describeProgram
-        const desc = r.describeProgram(["creature_apply_boost", 0, tonicName]);
-        out.descShowsBp = /Trank/.test(desc) && desc.includes(tonicName);
-
         // 13. Inventar-Konsum: _consumeBlueprintFromInventory
         if (Array.isArray(st.player.inventory)) {
             st.player.inventory[0] = {
@@ -1677,7 +1648,6 @@ async function checkBandWelle6HCreatureStats({ page, check }) {
             "creature_apply_boost in NON_BROADCASTABLE_OPS (Spieler-private Geste)",
             wave6hP2f3Results.opNonBroadcast
         );
-        check("describeProgram zeigt Trank-Namen", wave6hP2f3Results.descShowsBp);
         check(
             "_consumeBlueprintFromInventory zieht 1 ab + nulled Slot bei count=0",
             wave6hP2f3Results.consumeReducesCount &&

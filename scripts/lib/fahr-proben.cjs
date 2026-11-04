@@ -500,7 +500,7 @@ async function probeLeben(expected) {
         const el = document.getElementById("fahr-tacho");
         const sichtbar = () => el && !el.hidden && getComputedStyle(el).display !== "none";
         const tacho = { element: !!el, proben: 0, unsichtbar: 0, falsch: 0, maxKmh: 0 };
-        const out = { hilfe: { zeilen: r._hilfeZeilen() }, tacho };
+        const out = { hilfe: { zeilen: r._hilfeZeilen().map((z) => r._t(z[0], z[1])) }, tacho };
         r.initSymphony();
         const [stimmen, fx, hand] = [() => (st.symphony.fahrt || {}).size, [{}], [0, 0, 0, 0]];
         const akt = {
@@ -2274,7 +2274,16 @@ async function probeLeben(expected) {
             try {
                 const { ux, uz } = gasse;
                 let simUhr;
+                // DER GLEICHE PFAD: der Gang der Leiber tritt im Sim-Schritt den Pfad (`_trittDerLeiber`, stoffe.K4), und der
+                // Reifen greift auf ihm wie auf Erde (`_fahrHaft` über `_pfadFeldAt`) — eine Welt mit Gedächtnis. Der zweite Lauf
+                // begann auf dem Pfad, den der Bär im ersten trat (eine Zelle unter ihrer ersten Stufe reist im flüchtigen
+                // Gedächtnis, ihr nächster Tritt malt sie): ab Schritt 155 griff der Reifen mit μ 0,424 statt 0,4, Wagen 0,065 m
+                // daneben — kein Bruch der Bildrate, ein anderer Start. Beide Läufe beginnen am Pfad vor dem ersten: die Zellen des
+                // Stands, das flüchtige Gedächtnis und die Nah-Stufe, neu gemalt aus ihnen (`_wegeStufeMalen` → `_trittMalen`).
+                const pfadVor = structuredClone([st.worldMeta.tritt, r._trittSchwach]);
                 const lockProbe = async (muster) => {
+                    [st.worldMeta.tritt, r._trittSchwach] = structuredClone(pfadVor);
+                    r._wegeStufeMalen(st.wegeKarte.stufen[0]);
                     const gS = await setzen("fahrzeug_gt", gasse.x, gasse.z, gasse.fahrt);
                     if (!gS) return null;
                     const bx = gasse.x + ux * 9;
@@ -2299,7 +2308,7 @@ async function probeLeben(expected) {
                         const jetzt = fz ? [fz.x, fz.z, fz.y, fz.vy, fz.speed, fz.yaw, fz.steig, fz.wank] : null;
                         const d = jetzt && stand ? Math.max(...jetzt.map((v, k) => Math.abs(v - stand[k]))) : Infinity;
                         ruhe = d <= 1e-9 ? ruhe + 1 : 0;
-                        if (d > 1e-9 && jetzt && stand) {
+                        if (!ruhe && d < Infinity) {
                             const k = jetzt.findIndex((v, j) => Math.abs(v - stand[j]) === d);
                             unruhe = namen[k] + " " + d.toExponential(2);
                         }
@@ -2323,24 +2332,21 @@ async function probeLeben(expected) {
                     const spur = [];
                     const abF = nachSchritt(() => {
                         schritte++;
-                        {
-                            const sv = b.userData._stossV;
-                            const pmT = st.playerMesh.position;
-                            // zuerst: lebt der Bär? Fällt er in einem der Läufe (der Bestand, ein Treffer), kippt der Leichnam
-                            // (Bär y) und der Wagen fährt durch — die Linse nennt den Fall, nie erst seine Folge
-                            spur.push([
-                                st.leichname.includes(b),
-                                pmT.x,
-                                pmT.z,
-                                b.position.x,
-                                b.position.z,
-                                b.position.y,
-                                sv ? Math.hypot(sv.x, sv.z) : 0,
-                            ]);
-                        }
+                        const sv = b.userData._stossV;
                         // die Sim-Lage des Reiters (im Schritt die Wahrheit; die Lage des Werks folgt ihr je Frame)
-                        const pmS = st.playerMesh.position;
-                        if (schritte === 200) lage = { x: pmS.x, z: pmS.z, bx: b.position.x, bz: b.position.z };
+                        const pm = st.playerMesh.position;
+                        // zuerst: lebt der Bär? Fällt er in einem der Läufe (der Bestand, ein Treffer), kippt der Leichnam
+                        // (Bär y) und der Wagen fährt durch — die Linse nennt den Fall, nie erst seine Folge
+                        spur.push([
+                            st.leichname.includes(b),
+                            pm.x,
+                            pm.z,
+                            b.position.x,
+                            b.position.z,
+                            b.position.y,
+                            sv ? Math.hypot(sv.x, sv.z) : 0,
+                        ]);
+                        if (schritte === 200) lage = { x: pm.x, z: pm.z, bx: b.position.x, bz: b.position.z };
                     });
                     tasten(true);
                     try {
@@ -2352,19 +2358,16 @@ async function probeLeben(expected) {
                     }
                     weg(gS);
                     r.removeCreature(b);
-                    if (lage) {
-                        lage.spur = spur;
-                        lage.start = stand;
-                        lage.ruhe = ruhe >= 3;
-                        lage.bilder = bilder;
-                        lage.unruhe = unruhe;
-                    }
-                    return lage;
+                    return lage && Object.assign(lage, { spur, start: stand, ruhe: ruhe >= 3, bilder, unruhe });
                 };
                 const l60 = await lockProbe(KADENZ[60]);
                 const lMix = await lockProbe(KADENZ.gemischt);
                 // der erste Schritt, in dem die Läufe auseinandergehen, und die Größe, die zuerst abweicht (die Linse nennt sie)
                 let erst = null;
+                const startAbw =
+                    l60 && lMix && l60.start && lMix.start
+                        ? Math.max(...l60.start.map((v, k) => Math.abs(v - lMix.start[k])))
+                        : null;
                 if (l60 && lMix) {
                     const namen = ["Bär gefallen", "Wagen x", "Wagen z", "Bär x", "Bär z", "Bär y", "Bär Stoß"];
                     for (let i = 0; i < Math.min(l60.spur.length, lMix.spur.length) && !erst; i++)
@@ -2386,13 +2389,8 @@ async function probeLeben(expected) {
                               ruhe: l60.ruhe && lMix.ruhe,
                               ruheBilder: [l60.bilder, lMix.bilder],
                               unruhe: [l60.unruhe, lMix.unruhe],
-                              startAbw:
-                                  l60.start && lMix.start
-                                      ? Math.max(...l60.start.map((v, k) => Math.abs(v - lMix.start[k])))
-                                      : null,
-                              gleicherStart:
-                                  !!(l60.start && lMix.start) &&
-                                  Math.max(...l60.start.map((v, k) => Math.abs(v - lMix.start[k]))) <= 1e-7,
+                              startAbw,
+                              gleicherStart: startAbw !== null && startAbw <= 1e-7,
                               erst,
                           }
                         : null;

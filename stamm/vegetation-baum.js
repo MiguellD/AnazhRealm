@@ -2383,7 +2383,7 @@ class AnazhRealm_vegetation_baum {
             this.journalAppendOnce(
                 `singing:${blueprintName}`,
                 "growth",
-                AnazhRealm._datum`Eine Form singt: ${bp.label || blueprintName} schwingt rein im Klang.`,
+                ["journal.form-singt", { werk: bp.etikett || bp.label || blueprintName }],
                 { blueprint: blueprintName, resonance: tags.resoniert, precision: avgPrec }
             );
             // Die Form singt: eine reine Sinus-Welle, die Tonhöhe folgt der Resonanz (klang:SUBSTANZ.singen) — am
@@ -2397,7 +2397,7 @@ class AnazhRealm_vegetation_baum {
             this.journalAppendOnce(
                 `magic_compound:${blueprintName}`,
                 "growth",
-                AnazhRealm._datum`Etwas Magisches in der Luft, als ${bp.label || blueprintName} entstand.`,
+                ["journal.magisch", { werk: bp.etikett || bp.label || blueprintName }],
                 { blueprint: blueprintName, magic: tags.magieleitung }
             );
         }
@@ -2418,7 +2418,16 @@ class AnazhRealm_vegetation_baum {
                 this.journalAppendOnce(
                     `weak_connection:${blueprintName}`,
                     "weakness",
-                    AnazhRealm._datum`Eine ${weakestType}-Verbindung in „${bp.label || blueprintName}" trägt knapp (Last ${weakest.toFixed(2)}).`,
+                    [
+                        "journal.verbindung-knapp",
+                        {
+                            art: AnazhRealm.CONNECTION_TYPES[weakestType]
+                                ? AnazhRealm.CONNECTION_TYPES[weakestType].etikett.label
+                                : weakestType,
+                            werk: bp.etikett || bp.label || blueprintName,
+                            last: weakest.toFixed(2),
+                        },
+                    ],
                     { blueprint: blueprintName, weakest: weakest, type: weakestType }
                 );
             }
