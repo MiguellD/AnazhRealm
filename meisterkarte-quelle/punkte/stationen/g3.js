@@ -359,7 +359,10 @@ return [U, W];`,
 // Normale (|N·up| ≤ 0,25), die zum Azimut der Sonne zeigt (N·a ≥ 0,85) bzw. von ihm weg (N·a ≤ −0,85) — das senkrechte
 // Kugel-Paar; linear zurück wie kugel.js (sRGB, PBR Neutral invertiert, ÷ Belichtung). Der Ort: voraus im Blick des Messorts die
 // erste Stelle, an der kein Werfer (SHADOW_TWIN_LAYER) die Strahlen über den Azimuten ±a (je ±45°) bei 20° und 45° Höhe in 60 m
-// kreuzt (ein Wald auf einer Seite machte das Verhältnis zum Ort).
+// kreuzt (ein Wald auf einer Seite machte das Verhältnis zum Ort). ÜBER DEM KRONENDACH (w8-linsen-blick): an der Mess-Wiese, an Genesis
+// und am Dorf ist keine Stelle 10–70 m um den Spieler am Boden frei (144 je Ort, Radeon 8e6262cc — Tanne, Fichte, Eiche, Birke im Strahl,
+// der Wald wuchs seit w4-b-pflanzen) — dieselben Stellen, je Stufe höher (0 · 10 · 20 · 30 · 45 · 60 m über dem Boden), die erste freie;
+// der Himmel ist die EINE Umgebung der Welt, die Höhe ändert ihn nicht, die Prüfung der Strahlen bleibt dieselbe.
 async function himmelZurSonne(r, T) {
     const st = r.state;
     const rend = st.renderer;
@@ -394,13 +397,15 @@ async function himmelZurSonne(r, T) {
             )
         );
     let mitte = null;
-    for (const d of [10, 14, 18, 22, 27, 33, 40])
-        for (const s of [0, 5, -5, 10, -10]) {
-            if (mitte) break;
-            const m = P0.clone().addScaledVector(fwd, d).addScaledVector(quer, s);
-            m.y = r._voxelSurfaceY(m.x, m.z) + R;
-            if (frei(m)) mitte = m;
-        }
+    let ueber = null;
+    for (const hoch of [0, 10, 20, 30, 45, 60])
+        for (const d of [10, 14, 18, 22, 27, 33, 40])
+            for (const s of [0, 5, -5, 10, -10]) {
+                if (mitte) break;
+                const m = P0.clone().addScaledVector(fwd, d).addScaledVector(quer, s);
+                m.y = r._voxelSurfaceY(m.x, m.z) + R + hoch;
+                if (frei(m)) (mitte = m), (ueber = hoch);
+            }
     if (!mitte) return { ende: "kein freier Himmel", stand: { uhr: st.timeOfDay, wetter: st.weather } };
     const geo = new T.SphereGeometry(R, 96, 64);
     const kugel = new T.Mesh(geo, r._buildToonNodeMaterial({ color: new T.Color(0.18, 0.18, 0.18) }));
@@ -497,6 +502,7 @@ async function himmelZurSonne(r, T) {
         stand: { uhr: st.timeOfDay, wetter: st.weather },
         sonneGrad: +((Math.asin(S.y) * 180) / Math.PI).toFixed(1),
         ort: mitte.toArray().map((q) => +q.toFixed(1)),
+        ueberBoden: ueber,
         seiten,
         himmelZurSonne: z.Y && w.Y ? +(z.Y / w.Y).toFixed(3) : null,
     };
@@ -706,7 +712,7 @@ const TAG_LINSE = {
 const TAG_PROBE = { sek: 40, befehl: PW.torBefehl(PW.werkbankLinse, JSON.stringify(TAG_LINSE)) };
 const LAUB_LINSE = {
     vorher: ["umstellen", "--ort", "dorf", "--sicht", "ego"],
-    args: ["licht", "--laub", "ring,feld,feld0,feld90,feld180,panorama,spiegel,spiegel180,wasser,fichte,tanne", "--karte", "--uhr", "0.5,0.27,0.05"],
+    args: ["licht", "--laub", "ring,feld,feld0,feld90,feld180,panorama,spiegel,spiegel180,wasser,fichte,tanne", "--karte", "--uhr", "0.5,0.27,0.05", "--ort", "dorf"],
     fenster: [640, 360],
     ruheMax: 600,
 };
@@ -721,11 +727,13 @@ const LAUB_PROBE = { sek: 10, befehl: PW.torBefehl(PW.werkbankLinse, JSON.string
 // Sie ändert die Welt (der Gang ans Dorf und zur Fichte legt Orte und Wege an, Sitzung 00d3f283): mutiert. DIE ZAHL (Radeon 7521ca51, der
 // Plan je Art im Spiel-Zweig, unter fremder Last): der Ring am Dorf mit drei Uhren bis 28 s — davon der Gang ans Auge des Rings 17,3 s
 // (57 m im lebenden Dorf) —, dann der Gang zur Mess-Wiese (600 m, kalt) für Fichte und Tanne, am 45-s-Deckel gerissen. Offen beim Namen:
-// zwei Orte in EINER Probe; der Deckel bleibt 45 s (das Gesetz ohne Ausnahme)
+// zwei Orte in EINER Probe; der Deckel bleibt 45 s (das Gesetz ohne Ausnahme). EIN ORT (w8-linsen-blick): Fichte und Tanne am Exemplar nächst
+// dem Dorf (`--ort dorf`) — der Gang zur Mess-Wiese trug 18,1 s kalt im Deckel (Radeon 98a813b2, gerissen bei 45,1 s, als die Gestalt
+// wieder zeichnete); dasselbe Gesetz, der Ort der Sitzung
 const LAUB_PROBE_1 = {
     sek: 45,
     mutiert: true,
-    befehl: PW.torBefehl(PW.werkbankLinse, JSON.stringify({ ...LAUB_LINSE, args: ["licht", "--laub", "ring,fichte,tanne", "--karte", "--uhr", "0.5,0.27,0.05"] })),
+    befehl: PW.torBefehl(PW.werkbankLinse, JSON.stringify({ ...LAUB_LINSE, args: ["licht", "--laub", "ring,fichte,tanne", "--karte", "--uhr", "0.5,0.27,0.05", "--ort", "dorf"] })),
 };
 // DER WETTER-ZUG IN DER SITZUNG (licht.K5#1, w4-stationen-schnell-b; GTX b4bcf19c 69 s, am Gesetz 45 s gerissen): derselbe Befehl der
 // Linse (`licht --luft --wetter rainy --zug`, `wetterZug` in licht-linsen.cjs) durch den Spiegel der Licht-Linsen. Zwei Täter beim Namen:
@@ -1977,7 +1985,7 @@ const stationen = [
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
                 { name: "umstellen", args: ["umstellen", "--ort", "wiese"], muss: true },
-                { name: "kugel", probe: "@KOORD@/bericht/2110-messschuld2/kugel.js", blob: "3d42b5fefd53dafb551534e030bdc5c7c958e842", muss: true },
+                { name: "kugel", probe: "@KOORD@/bericht/2110-messschuld2/kugel.js", blob: "2f71153039543f9f842d56ad19ad5dc0a1fed3ef", muss: true },
             ],
         }) },
         env: envDer,
@@ -2031,7 +2039,7 @@ const stationen = [
                 { name: "umstellen", args: ["umstellen", "--ort", "wiese"], muss: true },
                 ...LICHT_SPALTEN.flatMap(([u, w], i) => [
                     { name: "setz-" + i, args: ["eval", `const U = ${u}, W = "${w}";@T:SETZ@`], muss: true },
-                    { name: "kugel-" + i, probe: "@KOORD@/bericht/2110-messschuld2/kugel.js", blob: "3d42b5fefd53dafb551534e030bdc5c7c958e842" },
+                    { name: "kugel-" + i, probe: "@KOORD@/bericht/2110-messschuld2/kugel.js", blob: "2f71153039543f9f842d56ad19ad5dc0a1fed3ef" },
                     { name: "los-" + i, args: ["eval", "@T:LOS@"], muss: true },
                 ]),
                 { name: "himmel", probe: "@DIR@/himmel.js", blob: HIMMEL_BLOB },
@@ -2086,7 +2094,7 @@ const stationen = [
             if (!hok) gruen = false;
             teile.push(
                 "Himmel zur Sonne " +
-                    (!h ? "ungemessen" : h.ende !== "ok" ? h.ende : h.himmelZurSonne + " (" + hs.zur.n + "/" + hs.weg.n + " px, Belichtung " + hs.zur.belicht + "/" + hs.weg.belicht + ")")
+                    (!h ? "ungemessen" : h.ende !== "ok" ? h.ende : h.himmelZurSonne + " (" + hs.zur.n + "/" + hs.weg.n + " px, Belichtung " + hs.zur.belicht + "/" + hs.weg.belicht + (h.ueberBoden ? ", " + h.ueberBoden + " m über dem Boden" : "") + ")")
             );
             return {
                 gruen,

@@ -6,6 +6,9 @@
 // { satz: "messung" })`. Auswertung je Pixel: Strahl → Kugel → Normale N; das Ausgabe-Pixel zurück durch sRGB und die Tonkurve
 // (Khronos PBR Neutral, r184 NeutralToneMapping; Entsättigung der Schulter nicht invertiert) ÷ Belichtung → linear.
 // Klassen je Kugel: oben (N·up ≥ 0,94, die waagrechte Karte) · sonne (N·S ≥ 0,94) · abgewandt (N·S ≤ −0,3, N·up ≥ 0).
+// DIE REIHE QUER ZUR SONNE (w8-linsen-blick, licht.K2#2): die Kugeln stehen 2 m auseinander quer zum Azimut der Sonne — längs lag die
+// Scheibe der Schatten-Kugel (6 m zur Sonne, 0,8 m) bei tiefer Sonne (7°) im Strahl der Sonnen-Kugeln davor (A/B 0,76 an Uhr 0,27),
+// quer liegt jeder Sonnen-Strahl 2 m neben jeder Scheibe; das Auge steht 5,5 m auf der Seite fern der Sonne.
 const st = r.state, rend = st.renderer, cam = st.camera, sc = st.scene, dl = st.directionalLight;
 const warte = (ms) => new Promise((ok) => setTimeout(ok, ms));
 rend.setAnimationLoop(null);
@@ -37,8 +40,8 @@ for (const d of [10, 14, 18, 22, 27, 33, 40])
     for (const s of [0, 5, -5, 10, -10]) {
         if (mitte) break;
         const m = P0.clone().addScaledVector(fwd, d).addScaledVector(b, s);
-        const ok = [1.3, 0, -2.6, -3.9].every((tt) => {
-            const p = m.clone().addScaledVector(a, tt);
+        const ok = [3, 1, -1, -3].every((tt) => {
+            const p = m.clone().addScaledVector(b, tt);
             p.y = boden(p.x, p.z) + 2 * R;
             return frei(p);
         });
@@ -47,15 +50,15 @@ for (const d of [10, 14, 18, 22, 27, 33, 40])
     }
 if (!mitte) return { fehler: "kein freier Ort", ortSuche };
 const kugeln = [
-    { name: "W-sonne", alb: 0.8, t: 1.3, schatten: false },
-    { name: "G-sonne", alb: 0.18, t: 0, schatten: false },
-    { name: "G-schatten", alb: 0.18, t: -2.6, schatten: true },
-    { name: "W-schatten", alb: 0.8, t: -3.9, schatten: true },
+    { name: "W-sonne", alb: 0.8, t: 3, schatten: false },
+    { name: "G-sonne", alb: 0.18, t: 1, schatten: false },
+    { name: "G-schatten", alb: 0.18, t: -1, schatten: true },
+    { name: "W-schatten", alb: 0.8, t: -3, schatten: true },
 ];
 const neu = [];
 const geo = new T.SphereGeometry(R, 96, 64), scheibe = new T.CircleGeometry(RS, 48);
 for (const k of kugeln) {
-    const p = mitte.clone().addScaledVector(a, k.t);
+    const p = mitte.clone().addScaledVector(b, k.t);
     p.y = boden(p.x, p.z) + R;
     k.c = p;
     const m = new T.Mesh(geo, stoff(k.alb));
@@ -76,9 +79,9 @@ for (const k of kugeln) {
         k.scheibe = s.position.toArray().map((v) => +v.toFixed(2));
     }
 }
-// das Auge: 5,5 m quer zur Reihe (die Sonne steht seitlich), 6 m über dem Boden (Blick ~47° hinab: Kappe oben und die Sonnen-Normale liegen mitten in der Kugel, nicht am Rand), Blick auf die Mitte der Reihe
-const mr = mitte.clone().addScaledVector(a, -1.3);
-const auge = mr.clone().addScaledVector(b, 5.5);
+// das Auge: 5,5 m quer zur Reihe auf der Seite fern der Sonne, 6 m über dem Boden (Blick ~47° hinab: die Kappe oben liegt mitten in der Kugel, nicht am Rand), Blick auf die Mitte der Reihe
+const mr = mitte.clone();
+const auge = mr.clone().addScaledVector(a, -5.5);
 auge.y = Math.max(boden(auge.x, auge.z), boden(mr.x, mr.z)) + 6;
 const ziel = mr.clone();
 ziel.y = boden(mr.x, mr.z) + 0.5;

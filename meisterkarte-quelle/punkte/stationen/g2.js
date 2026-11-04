@@ -1159,7 +1159,9 @@ async function stimmeGang(o) {
         const [dx, dz] = w.ort ? [w.ort.x - o.x, w.ort.z - o.z] : [0, 0];
         const d = Math.round(Math.hypot(dx, dz));
         const wo = !w.ort ? " — überall, " : d < 2 ? " — bei dir, " : ` — ${d} m ${RI[Math.round((Math.atan2(dx, -dz) / Math.PI) * 4 + 8) % 8]} von dir, `;
-        const weil = [w.regel, w.weil].filter(Boolean).map((x) => r._describeDslCondition(x.cond)).concat(w.weil && !w.weil.ja ? ["nicht gilt, dass"] : []);
+        // die Bedingung in Worten: eine Zeile der Tafel (w8-sprache, spielgang.K5#2) — gelesen in der Sprache der Seite
+        const wenn = (c) => ((d) => (Array.isArray(d) ? r._t(d[0], d[1]) : d))(r._describeDslCondition(c));
+        const weil = [w.regel, w.weil].filter(Boolean).map((x) => wenn(x.cond)).concat(w.weil && !w.weil.ja ? ["nicht gilt, dass"] : []);
         const ursache = w.regel || w.weil ? "weil " : w.grund ? `auf dein Wort „${w.grund}“` : w.ort && w.ort.k === "at_field_need" ? "weil das Feld dort am ärmsten war" : "aus eigenem Antrieb";
         const was = w.op === "weather" && w.wunsch ? `wünscht sich das Wetter „` : "";
         const soll = [nom + " ", was, wo, ...weil, ursache, w.regel ? `(Gesetz Nr. ${w.regel.id} ${gen}` : `(Programm ${w.prog}`, seit.length > 1 ? `dazu ${seit.length - 1} weitere Tat` : ""];
@@ -1270,7 +1272,8 @@ async function warumSzene(r, T, o) {
             r.llmCall = async (...a) => (antwort = await alt.llm.apply(r, a));
             const t0 = performance.now();
             await r.maybeAnswerWithLlm(o.satz, () => {});
-            faelle.push({ fall, wahr, llm: !!st.llm.enabled, ms: Math.round(performance.now() - t0), fehler: antwort && antwort.error ? String(antwort.error).slice(0, 160) : null,
+            const fehler = antwort && antwort.error ? (Array.isArray(antwort.error) ? r._t(...antwort.error) : String(antwort.error)) : null; // eine Zeile der Tafel (w8-sprache)
+            faelle.push({ fall, wahr, llm: !!st.llm.enabled, ms: Math.round(performance.now() - t0), fehler: fehler && fehler.slice(0, 160),
                 say: antwort && typeof antwort.say === "string" ? antwort.say.slice(0, 400) : null });
             r.llmCall = alt.llm;
         }
@@ -1629,14 +1632,27 @@ async function vegetationLauf() {
 // bodenSatz). Ein Ring mit Halmen und OHNE Grund-Pixel ist geschlossen („satt“): die Lücke 0 misst Nilson nur als untere Schranke
 // (−ln(0,5/n) · cos θ / G, unter flachem Blick klein) — er zählt als dicht; sein Sprung zum Nachbarn ist ungemessen, den Nachbarn
 // hält dort sein eigenes LAI ≥ 1,7.
+// DAS LINEAL (w8-linsen-blick): die Ringe sind die des GESETZES, nie die Bänder der Werkbank — der Ring a–b summiert jedes Band, das
+// in ihm liegt (cos θ nach Pixeln gewichtet: je Band zählt die Werkbank jedes Pixel einer Klasse EINMAL in cos und in klassen); trägt
+// die Werkbank seine Kanten nicht (die Bänder 0 · 2 · 5 · 10 · 14 · 30 · 80 · 200 bis 8e6262cc: der Radius der gemessenen Welt, das
+// Schlupfloch der Staffel), ist er UNGEMESSEN — nie ein Nachbar-Band an seiner Stelle (bis hierher urteilte die Station 10–14 · 14–30
+// · 30–80 · 80–200 m, der Saum jenseits 40 m riss sie ROT).
+const WIESE_RINGE = [2, 5, 10, 20, 40];
 const wieseRinge = (s) =>
-    s.baender.slice(1, -1).map((von, i) => {
-        let h = 0, g = 0; // prettier-ignore
-        for (const [n, z] of Object.entries(s.klassen || {}))
-            if (/^(nahWiese:.*|streuSatz)$/.test(n)) h += z[i + 1] || 0;
-            else if (n === "bodenSatz") g += z[i + 1] || 0;
-        const lai = h + g && s.cos[i + 1] > 0 ? (-Math.log(Math.max(g, 0.5) / (h + g)) * s.cos[i + 1]) / 0.5 : null;
-        return { ring: von + "–" + s.baender[i + 2], h, g, lai, satt: h > 0 && g === 0 };
+    WIESE_RINGE.slice(0, -1).map((von, i) => {
+        const bis = WIESE_RINGE[i + 1], b = s.baender || [], js = b.slice(0, -1).map((_, j) => j).filter((j) => b[j] >= von && b[j + 1] <= bis); // prettier-ignore
+        const ganz = js.length > 0 && b[js[0]] === von && b[js[js.length - 1] + 1] === bis && js.every((j, k) => !k || j === js[k - 1] + 1);
+        let h = 0, g = 0, n = 0, c = 0; // prettier-ignore
+        for (const j of js)
+            for (const [nm, z] of Object.entries(s.klassen || {})) {
+                const v = z[j] || 0;
+                if (/^(nahWiese:.*|streuSatz)$/.test(nm)) h += v;
+                else if (nm === "bodenSatz") g += v;
+                (n += v), (c += v * ((s.cos || [])[j] || 0));
+            }
+        const cos = n ? c / n : 0;
+        const lai = ganz && h + g && cos > 0 ? (-Math.log(Math.max(g, 0.5) / (h + g)) * cos) / 0.5 : null;
+        return { ring: von + "–" + bis, h, g, lai, satt: ganz && h > 0 && g === 0, ganz };
     });
 // die Farbton-Streuung 2–5 m wie abnahme-urteil `farbtonStreuung` (σh je 2-m-Kachel ab 400 Proben, gewichtet nach Proben)
 const wieseFarbton = (s) => {
@@ -1664,7 +1680,8 @@ function wieseUrteil(s) {
     return {
         gruen: dicht && saum && ft != null && ft >= 10.7 && budget && bild,
         zahl:
-            s.n + ": LAI " + R.map((x) => x.ring + " " + (x.satt ? "satt" : x.lai == null ? "—" : x.lai.toFixed(2))).join(" · ") + (saum ? "" : " (Saum springt > 15 %)") +
+            s.n + ": LAI " + R.map((x) => x.ring + " " + (x.satt ? "satt" : x.lai == null ? (x.ganz ? "—" : "UNGEMESSEN") : x.lai.toFixed(2))).join(" · ") + (saum ? "" : " (Saum springt > 15 %)") +
+            (R.every((x) => x.ganz) ? "" : " (die Bänder " + (s.baender || []).join("/") + " tragen die festen Ringe nicht)") +
             ", Farbton 2–5 m " + (ft == null ? "ungemessen" : ft.toFixed(2) + "°") + ", nahWiese " + (s.budget ? s.budget[0] + " Befehle / " + s.budget[1] + " Dreiecke" : "ungezählt") +
             (bild ? "" : ", Bild/Pose WEICHT AB (" + s.leinwand.join("×") + ", ok " + s.ok + ", Pose " + posePasst(s) + ")"),
     };
@@ -1729,6 +1746,10 @@ function wieseProben(posen) {
         { name: "5 Befehle", stdout: zeile({ budget: [5, 52000] }), gruen: false },
         { name: "Pose verschoben", stdout: zeile({ kamera: [0.5, 1.7, 0, 100, 1.7, 0] }), gruen: false },
         { name: "ein Schuss fehlt", stdout: zeile({}, posen.length - 1), gruen: false },
+        // das Lineal der Werkbank bis 8e6262cc: die Bänder des Radius (14, 30, 80, 200 m) — satt bis 200 m und doch ungemessen
+        { name: "die Bänder des Radius statt der festen Ringe", stdout: zeile({ baender: [0, 2, 5, 10, 14, 30, 80, 200], cos: [0.9, 0.5, 0.3, 0.2, 0.15, 0.08, 0.03], klassen: { "nahWiese:L1:0:0": [9, 9, 9, 9, 9, 9, 9], bodenSatz: [9, 1, 0, 0, 0, 0, 0] } }), gruen: false },
+        // die festen Kanten zwischen fremden Bändern (der Radius 14 m im Ring 10–20): das Lineal summiert, die Wiese bleibt GRÜN
+        { name: "der Radius im Ring 10–20 m", stdout: zeile({ baender: [0, 2, 5, 10, 14, 20, 40, 80, 200], cos: [0.9, 0.5, 0.3, 0.2, 0.15, 0.08, 0.03, 0.01], klassen: { "nahWiese:L1:0:0": [9, 20000, 20000, 9000, 11000, 20000, 0, 0], bodenSatz: [9, 400, 0, 0, 0, 0, 0, 0] } }), gruen: true },
     ];
 }
 // das Jahr (K5): je Saison die Pixel der Laub-Maske an DERSELBEN Pose; Winter ≤ 0,3 × Sommer, der Frühling dazwischen (der
@@ -5591,7 +5612,7 @@ const fehlt = [
         kriterium: "vegetation.K1",
         staffel: 2,
         befehl: null,
-        grund: "nicht in der Fahrt (w4-fehlt-acht, 30.10.): DER TÄTER BEIM NAMEN — ein Wiesen-Schuss (`/bild` mit abstand und klasse, scripts/werkbank.cjs) trägt ≈ 18–29 s, die meiste Zeit in der CPU der Seite: der Abstands-Marsch (je 2×2-Block ein Strahl bis 200 m, ~20 Mio. Rufe `_bodenSichtAt`, 6–11 s), die Klassen-Maße der vier Teil-Klassen samt Spiegel-Partner (5–8 s, `wieseUrteil` liest sie nicht), acht Aufnahmen zu 33 Bildern (≈ 4–7 s GPU), je Schuss 20 × 50 ms am Licht-Pool — der Plan (acht Schüsse, vier Stände) ≈ 155–250 s, das Deckel-Modell rechnete 10 s je Schuss. Die Schnitte liegen im Spiel-Baum (der EINE Boden-Leser schneller, die Bild-Pässe der Maße einmal je Bild, der Pool zum Fixpunkt in `/bild`) — mit ihnen ≈ 85–145 s, über dem Deckel der Fahrt (≤ 90 s). DAS LINEAL: `ringe` liest die Werkbank nirgends, die Bänder stehen fest auf 0 · 2 · 5 · 10 · 14 (NAH_WIESE.radius) · 30 · 80 · 200 m — `wieseRinge` urteilt über 10–14 · 14–30 · 30–80 · 80–200 statt 10–20 · 20–40 (Staffel 1 ebenso, ihr 15-s-Deckel reißt am ersten echten Wiesen-Bild). Die Fahrt trägt sie nicht: jede Karte steht bei 1 800 von 1 800 s. Die Probe (vegetationLauf, wieseUrteil) misst heute Staffel 1",
+        grund: "nicht in der Fahrt (w4-fehlt-acht, 30.10.): DER TÄTER BEIM NAMEN — ein Wiesen-Schuss (`/bild` mit abstand und klasse, scripts/werkbank.cjs) trägt ≈ 18–29 s, die meiste Zeit in der CPU der Seite: der Abstands-Marsch (je 2×2-Block ein Strahl bis 200 m, ~20 Mio. Rufe `_bodenSichtAt`, 6–11 s), die Klassen-Maße der vier Teil-Klassen samt Spiegel-Partner (5–8 s, `wieseUrteil` liest sie nicht), acht Aufnahmen zu 33 Bildern (≈ 4–7 s GPU), je Schuss 20 × 50 ms am Licht-Pool — der Plan (acht Schüsse, vier Stände) ≈ 155–250 s, das Deckel-Modell rechnete 10 s je Schuss. Die Schnitte liegen im Spiel-Baum (der EINE Boden-Leser schneller, die Bild-Pässe der Maße einmal je Bild, der Pool zum Fixpunkt in `/bild`) — mit ihnen ≈ 85–145 s, über dem Deckel der Fahrt (≤ 90 s). DAS LINEAL (geheilt in w8-linsen-blick): die Bänder der Werkbank tragen die festen Ringe 2 · 5 · 10 · 20 · 40 m als Kanten, `wieseRinge` summiert je Ring des Gesetzes und nennt einen Ring ohne seine Kanten UNGEMESSEN. Die Fahrt trägt sie nicht: jede Karte steht bei 1 800 von 1 800 s. Die Probe (vegetationLauf, wieseUrteil) misst heute Staffel 1",
     },
     // DIE ZAHL ERSETZT DIE SCHÄTZUNG (w4-sitzung-reif, 30.10.; punkte.cjs DIE DECKEL: „die GPU-Fahrt nennt, wer warm am Deckel fällt“):
     // zwei Proben rissen in JEDER GPU-Fahrt ihren Deckel — am 90-s-Deckel des Gegenlaufs b3f9ae95 und an 99/100 s in den Eichläufen 1–6

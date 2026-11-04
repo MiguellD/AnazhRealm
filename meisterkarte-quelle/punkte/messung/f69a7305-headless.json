@@ -1,0 +1,115 @@
+{
+ "sha": "f69a73052f55019a5cf75f1265ea0401d4c8bbdf",
+ "geraet": "headless",
+ "zeit": "2026-11-04T03:01:12.906Z",
+ "host": "farm:41764348073",
+ "je": {
+  "streaming.K1#1": {
+   "gruen": true,
+   "zahl": "sprint 5.175 m/s 60.008 s: 0 von 4096 Bildern mit Lücke · gt 15.998 m/s 60.012 s: 0 von 3762 Bildern mit Lücke · Weg 1270 m, Ring 4, Takt p95 14.1 ms (Soll 0 Lücken-Bilder)",
+   "exit": 0,
+   "minuten": 2.34,
+   "zeit": "2026-11-04T03:01:12.906Z",
+   "abdruck": "5e56bc199613",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "farm:41764348073/1"
+  },
+  "streaming.K2#1": {
+   "gruen": true,
+   "zahl": "fertig beim Eintritt: boden 484/484 (100 %) · baum 698/708 (98.6 %, spät -1/-1/0.397 s) · karte 3529/3529 (100 %) · bau 318/318 (100 %) · wuchs 257/257 (100 %) · streu 15/15 (100 %) (Soll je Klasse ≥ 95 %)",
+   "exit": 0,
+   "minuten": 2.34,
+   "zeit": "2026-11-04T03:01:12.906Z",
+   "abdruck": "5b6040338300",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "farm:41764348073/1",
+   "zwilling": "streaming.K1#1"
+  },
+  "spielgang.K1#1": {
+   "gruen": true,
+   "zahl": "5/5 Schritte gehalten in EINER Sitzung (1× geladen, 93 Eingaben aus der Spur, 0 ohne Ziel): ankommen Kontrolle 643 ms, Zeiger gefangen · laufen 12.81 m, Blick 141°, Sicht first→third→first · bauen bank_sitzbank steht in schöpfer, 8 Eingaben · ki der Satz stellt 1 Studio-Werk (haus_alemannisch): „1× Alemannisch aus dem Studio vor dir gebaut“ · benutzen der Leib sitzt auf der gebauten Bank",
+   "exit": 0,
+   "minuten": 0.27,
+   "zeit": "2026-11-04T03:01:09.050Z",
+   "abdruck": "5a6afbe92d79",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41764348073/2"
+  },
+  "ultiversum.K1#1": {
+   "gruen": true,
+   "zahl": "A g -9.81 Sprung 0.323 m · Blau÷Rot 5.2273 · Wetter foggy 29/rainy 55/sunny 69/stormy 32/cloudy 55 · Relief ×1 | B g -3.71 Sprung 1.54 m · Blau÷Rot 0.3846 · Wetter stormy 38/sunny 65/foggy 80/cloudy 57 · Relief ×1.5805 | A2 = A · Exit 0",
+   "exit": 0,
+   "minuten": 0.12,
+   "zeit": "2026-11-04T03:01:04.173Z",
+   "abdruck": "8f3da136a292",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41764348073/3"
+  },
+  "pipeline.K2#1": {
+   "gruen": true,
+   "zahl": "byte-gleich: Labor Labor-Fernstufe (three r128, 128×3584) eiche|1 3670016 B sha a9218749cd ⇄ Welt _karteWeltBacken (three r184) bc 128×3584 3670016 B sha a9218749cd",
+   "exit": 0,
+   "minuten": 3.78,
+   "zeit": "2026-11-04T03:01:11.439Z",
+   "abdruck": "a6874e84b9e4",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41764348073/4"
+  },
+  "pipeline.K2#2": {
+   "gruen": true,
+   "zahl": "10/10 Arten mit Karte byte-gleich (Welt _karteWeltBacken (three r184) bc 128×3584 ⇄ Labor Labor-Fernstufe (three r128, 128×3584)): eiche ×3 8026d999 10,5 MB · fichte ×3 9ffd36e9 10,5 MB · birke ×3 9498101b 10,5 MB · weide ×1 24a7d4a4 3,5 MB · mammut ×1 e9deb4b9 3,5 MB · tanne ×3 dfbe9457 10,5 MB · strauch ×1 3c505c65 3,5 MB · buche ×3 cb995d5f 10,5 MB · karst ×1 6dfc1f2d 3,5 MB · totholz ×1 68570b57 3,5 MB",
+   "exit": 0,
+   "minuten": 3.78,
+   "zeit": "2026-11-04T03:01:11.439Z",
+   "abdruck": "aad2dfa92696",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41764348073/4",
+   "zwilling": "pipeline.K2#1"
+  },
+  "stoffe.K5#2": {
+   "gruen": false,
+   "zahl": "Halme 477 → Asche 12 → Gras 491 · Kräuter 23 → Asche 0 → Gras 0 → Busch 21 · Ernte (15): Nährstoff 1 → 0.7, Wuchs 0.748 → 0.698 · Asche 1.4, Leichnam 1.2 · Sämling 0 → 0.06 → 0.18 → 0.7 → 1, Gestalt [[4,685],[8,958]] · Wald 16: Brand nimmt 16, Jungwuchs 14, heil 16",
+   "exit": 1,
+   "minuten": 0.76,
+   "grund": "ROT: Halme 477 → Asche 12 → Gras 491 · Kräuter 23 → Asche 0 → Gras 0 → Busch 21 · Ernte (15): Nährstoff 1 → 0.7, Wuchs 0.748 → 0.698 · Asche 1.4, Leichnam 1.2 · Sämling 0 → 0.06 → 0.18 → 0.7 → 1, Gestalt [[4,685],[8,958]] · Wald 16: Brand nimmt 16, Jungwuchs 14, heil 16",
+   "zeit": "2026-11-04T03:01:10.340Z",
+   "abdruck": "a52baba2f15f",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41764348073/5"
+  },
+  "pipeline.K5#1": {
+   "gruen": false,
+   "zahl": "1 Foundry-Fäden (buch): worlds/*/lib/three* 603610 B über das Netz, geparst worlds/terrain/lib/three-r128.min.js · synchrones XHR 1 (cores.manifest.json) · THREE im Faden r128 gegen die Welt r184",
+   "exit": 0,
+   "minuten": 0.11,
+   "grund": "ROT: 1 Foundry-Fäden (buch): worlds/*/lib/three* 603610 B über das Netz, geparst worlds/terrain/lib/three-r128.min.js · synchrones XHR 1 (cores.manifest.json) · THREE im Faden r128 gegen die Welt r184",
+   "zeit": "2026-11-04T03:01:05.031Z",
+   "abdruck": "48b6aeb89343",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41764348073/6"
+  }
+ },
+ "ungemessen": {
+  "spielgang.K5#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine TEXTE-Zeile (Exit 0)) · Täter: ✅ GRÜN — gate:sprache — die Tafel trägt 1613 Zeilen, kein Text geht an ihr vorbei.",
+   "exit": 0,
+   "minuten": 0.02,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine TEXTE-Zeile (Exit 0)) · Täter: ✅ GRÜN — gate:sprache — die Tafel trägt 1613 Zeilen, kein Text geht an ihr vorbei.",
+   "ungemessen": true,
+   "zeit": "2026-11-04T03:01:06.126Z",
+   "abdruck": "1436e3310de8",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:41764348073/7"
+  }
+ }
+}
