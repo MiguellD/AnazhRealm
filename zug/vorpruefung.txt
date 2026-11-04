@@ -28,3 +28,4 @@ w8-ultiversum-k1 1ef872c1 GRÜN check+playtest-voll Φ5=67741B (main 2d2a5f11+w8
 w8-snapshot-schlank c8de5648 GRÜN check+playtest-voll+praegung-welt+persistence+reload-treue Φ5=67815B (main 2d2a5f11+w8-v2-probe@91e4b661)
 w8-spielgang-k1 1695469a GRÜN check+playtest-voll+schirm-monotonie Φ5=262078B (main 2d2a5f11+w8-v2-probe@91e4b661)
 w8-ein-baecker ebd304f8 GRÜN check+playtest-voll+v1-pfad+foundry-impostor+studio-vertrag Φ5=262033B (main 2d2a5f11+w8-v2-probe@91e4b661)
+w6-spielgang-decke 58e619d6 ROT merge KONFLIKT mit main f69a7305: scripts/lib/welt-boot.cjs stamm/speicher-laden.js stamm/studio-bruecke.js 
