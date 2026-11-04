@@ -584,12 +584,7 @@ function erstRuhe(frame, opt, wer) {
             // von 0 ms schob Frames schneller in den GPU-Prozess, als swiftshader sie rastert — die Rückmeldung jedes
             // asynchronen Pipeline-Baus wartete hinter dem Rückstau (Erst-Zeichnungs-Wand: Rückstau bis 63 s, ein unbeleuchteter
             // Würfel 46 s; mit Gegendruck Rückstau ≤ 3,8 s, die Probe 68 → 4 s)
-            const dev =
-                st.renderer &&
-                st.renderer.backend &&
-                st.renderer.backend.device;
-            if (dev && dev.queue && typeof dev.queue.onSubmittedWorkDone === "function")
-                await dev.queue.onSubmittedWorkDone();
+            await st.renderer?.backend?.device?.queue?.onSubmittedWorkDone?.();
             await sleep(0);
             // der Blick steht, wenn ein Frame nichts baut, nichts verschiebt, kein Draw auf seine Pipeline wartet
             // und kein Bundle ohne einen Bürger versiegelt ist (der wartende Draw zählt auf jedem Backend)
@@ -828,6 +823,9 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // einer kurzen Frist) oder fünfmal so lange insgesamt, bricht die Aufnahme LAUT ab und nennt jede offene
             // Pipeline beim Namen — ein Bild mit einem unsichtbaren Bürger ist kein Beweis.
             const erst = await window.__erstRuhe(frame, opt, "die Aufnahme");
+            // DER RÜCKSTRAHL DIESER SZENE (schatten.K4, `_rueckstrahlJetzt`): seine Lesung kommt ein Bild nach der Messung zurück —
+            // der Schuss wartet auf sie, sonst trüge er den Boden des vorigen Schusses (vor dem Neubeginn der Geschichte unten)
+            await r._rueckstrahlJetzt(frame);
             // DIE ZEITLICHE AUFLÖSUNG (TRAA) zeigt ein ruhendes Bild erst nach ihrer Geschichte: die Halton-Folge
             // läuft 31 Versätze, die Dither-Blende rotiert je Frame — die Aufnahme zeigt, was der Spieler nach einer
             // halben Sekunde Stillstand sieht (32 Frames), nie den ersten, ungemittelten Frame nach dem Kamera-Sprung.

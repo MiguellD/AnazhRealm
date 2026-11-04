@@ -2205,6 +2205,7 @@ class AnazhRealm_bau_teile {
             }
             mesh.castShadow = true;
             mesh.receiveShadow = true;
+            if (partMatDef) mesh.userData.stoff = part.material; // die Zeile, aus der das Teil altert (`_werkAlterFaerbe`)
             group.add(mesh);
             if (part.animate === "water_wave") waveTargets.push(mesh);
         }
@@ -2527,9 +2528,7 @@ class AnazhRealm_bau_teile {
                 });
                 g.pose.um = { x: kante.x, y: poly.boden, z: kante.z };
             }
-            this._spielerSagt(
-                this._t(faellt ? "bauen.sagt-sturz-faellt" : "bauen.sagt-sturz-einsturz", { name, text })
-            );
+            this._spielerSagt([faellt ? "bauen.sagt-sturz-faellt" : "bauen.sagt-sturz-einsturz", { name, text }]);
         } else {
             const rollen = [];
             if (!(entry.affordances && entry.affordances.moveable) && this._rollableFraction(bp, rollen) >= 1) {
@@ -2594,7 +2593,7 @@ class AnazhRealm_bau_teile {
             return this._werkPoseZeigen(e);
         }
         this.removeArchitecture(e, { still: true });
-        this.journalAppend("loss", AnazhRealm._datum`${s.name} stürzte ein: ${s.text}.`, {
+        this.journalAppend("loss", ["journal.einsturz", { name: s.name, grund: s.text }], {
             type: e.type,
             id: e.id,
             grund: s.grund,

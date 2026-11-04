@@ -654,8 +654,12 @@ class AnazhRealm_dirigent_regler {
                 max: `<span style="color:${fmCol}">${fm.toFixed(0)}</span>`,
                 soll: targetMs,
             }),
-            `stream ${ph("streaming")}  water ${ph("waterIso")}  arch ${ph("archCulling")}`,
-            `creat  ${ph("creatures")}  phys  ${ph("physics")}  rend ${ph("render")} ms`,
+            this._t("kern.perf-phasen-welt", {
+                stream: ph("streaming"),
+                wasser: ph("waterIso"),
+                bau: ph("archCulling"),
+            }),
+            this._t("kern.perf-phasen-leben", { wesen: ph("creatures"), physik: ph("physics"), bild: ph("render") }),
             this._t(s.gpuQuelle === "echt" ? "kern.perf-gpu-echt" : "kern.perf-gpu-proxy", { ms: gpuMs }),
             this._t("kern.perf-rload", {
                 dc: `<span style="color:${rcCol}">${rc.toFixed(0)}</span>`,
@@ -820,15 +824,15 @@ class AnazhRealm_dirigent_regler {
             const ltSec = fr && fr._ltSec ? fr._ltSec : null;
             const upMBs = ((s.uploadBytesEwma || 0) * (s.frameMs > 0 ? 1000 / s.frameMs : 0)) / 1048576;
             grid.innerHTML =
-                row("frame ø", (+s.frameMs).toFixed(1) + " ms") +
+                row(this._t("kern.perf-frame-mittel"), (+s.frameMs).toFixed(1) + " ms") +
                 row(
-                    "frame max",
+                    this._t("kern.perf-frame-max"),
                     fr ? fr.maxFrameMs.toFixed(0) + " ms" : "—",
                     fr && fr.maxFrameMs > 100 ? "#ff8a8a" : undefined
                 ) +
-                row("draw-calls", Math.round(s.renderCalls || 0)) +
-                row("tris", Math.round((s.renderTris || 0) / 1000) + "k") +
-                row("heap", heap) +
+                row(this._t("kern.perf-draw-calls"), Math.round(s.renderCalls || 0)) +
+                row(this._t("kern.perf-tris"), Math.round((s.renderTris || 0) / 1000) + "k") +
+                row(this._t("kern.perf-heap"), heap) +
                 row(
                     this._t("kern.perf-gpu", { quelle: gpuQ }),
                     gpuMs != null ? gpuMs.toFixed(1) + " ms" : "—",

@@ -650,8 +650,8 @@ class AnazhRealm_bild_sicht {
     // Welt-Punkt des Fragments in der Ansicht seines Laufs, wo er die Fläche deckte, sonst der Himmel der EINEN Atmosphäre
     // (die PMREM-Umgebung, `_skyEnvRT`) in Richtung und Stufe, die r184s Umgebungs-Licht reicht (`getUV`, `getTextureLevel`).
     // Der Spiegel trägt nur die glatte Fläche (Gewicht 1 − smoothstep(`glanzRauheit`) der Stufe, wie sein Glanz-Ziel); das
-    // Umgebungs-Licht (Stufe 1, die Bestrahlung) liest den Himmel allein. Bis material.K4 spiegelte jeder Stoff außer dem
-    // Wasser den Himmel ohne Szene (die IBL des PMREM).
+    // Umgebungs-Licht (Stufe 1, die Bestrahlung) liest den Himmel und unten den gezeichneten Boden (schatten.K4). Bis
+    // material.K4 spiegelte jeder Stoff außer dem Wasser den Himmel ohne Szene (die IBL des PMREM).
     _spiegelUmgebung(quelle) {
         if (this._spiegelUmgebungK) return this._spiegelUmgebungK;
         const T = THREE.TSL;
@@ -661,13 +661,24 @@ class AnazhRealm_bild_sicht {
         const himmel = T.pmremTexture(quelle).mul(this._umgebungLicht());
         const [a, b] = AnazhRealm.SPIEGEL.glanzRauheit;
         const N = Object.getPrototypeOf(THREE.InstanceNode);
+        // DIE UNTERE HEMISPHÄRE (schatten.K4, `_rueckstrahlHalbraum`, dasselbe Gesetz wie das Licht der Welt): in der Bestrahlung
+        // (r184 reicht die Stufe als Konstante, die Richtung ist die Normale) ersetzt der gezeichnete Boden den Boden der
+        // Atmosphäre — gewichtet mit dem Anteil des Halbraums unter dem Horizont, den die Fläche sieht, (1 − n.y)/2: der Boden
+        // selbst empfängt nichts von sich, die senkrechte Wand die Hälfte, die Unterseite alles. DIE BESTRAHLUNG ERKANNT: r184
+        // reicht ihre Stufe als Variable über der Konstanten 1 (`float(1)` in einer VarNode, gelesen am Vendor 03.11.) — bis
+        // dahin fragte der Zweig nur `isConstNode`, nahm nie, und jede Bestrahlung las den Spiegel mit dem Gewicht 0 (eine Abtastung je Fragment für nichts).
+        const halbraum = (n) => this._rueckstrahlHalbraum(himmel, n);
+        const konstant = (n) => !!n && (n.isConstNode === true || (n.isVarNode === true && konstant(n.node)));
         class SpiegelUmgebung extends N {
             constructor() {
                 super("vec3");
             }
             setup(builder) {
                 const stufe = builder.context.getTextureLevel ? builder.context.getTextureLevel(this, builder) : null;
-                if (!stufe || stufe.isConstNode === true) return himmel;
+                if (!stufe) return himmel;
+                if (konstant(stufe)) {
+                    return halbraum(builder.context.getUV(this, builder));
+                }
                 const clip = L.vp.mul(T.vec4(T.positionWorld, 1));
                 const w = T.max(clip.w, 1e-4);
                 const uv = T.vec2(clip.x.div(w).mul(0.5).add(0.5), T.float(0.5).sub(clip.y.div(w).mul(0.5)));
@@ -2528,7 +2539,11 @@ class AnazhRealm_bild_sicht {
         const baue = (sicht) => {
             const direkt = U.l0c.mul(TSL.max(TSL.dot(sicht.n, U.l0d), 0.0));
             const hemi = TSL.mix(U.hemiUnten, U.hemiOben, sicht.n.y.mul(0.5).add(0.5));
-            const umgebung = sonde.sample(TSL.equirectUV(sicht.n)).level(0).rgb.mul(U.ei).mul(licht);
+            // der Boden um das Auge in der unteren Hemisphäre — dasselbe Gesetz wie die Umgebung der Stoffe (schatten.K4)
+            const umgebung = this._rueckstrahlHalbraum(
+                sonde.sample(TSL.equirectUV(sicht.n)).level(0).rgb.mul(licht),
+                sicht.n
+            ).mul(U.ei);
             return (sicht.s ? direkt.mul(sicht.s) : direkt)
                 .add(U.ambientFarbe)
                 .add(hemi)
@@ -2752,7 +2767,6 @@ class AnazhRealm_bild_sicht {
         }
         // die volle Schale 0: der Träger der Attribute, die ihre zwei Teile teilen (sie zeichnet kein Mesh)
         if (fr.geos && fr.geos[0]) this._queueGeometryDispose(fr.geos[0]);
-        if (fr.maske && fr.maske.tex) fr.maske.tex.dispose(); // die Masken-Karte des Gebauten
         // die Kamera-Weitung zurücknehmen (die Klippe war der Ring-Besitz).
         if (Number.isFinite(this._fernRingCamFarAlt) && this.state.camera) {
             this.state.camera.far = this._fernRingCamFarAlt;

@@ -150,12 +150,25 @@ function stufeAnlegen(lod,ov,baum,cache){
   g.children.slice().forEach(function(m0){var geo=m0.geometry,skin=!!geo.attributes.skinIndex,mat=laborStoff(m0.material,geo,skin,cache);
     var n=skin?new THREE.SkinnedMesh(geo,mat):new THREE.Mesh(geo,mat),j=baum.teile[m0.userData.__assetJoint];
     if(!j)throw new Error('Labor: das Gelenk '+m0.userData.__assetJoint+' fehlt dem Baum (fail-closed)');
-    n.userData.__seh=m0.material.userData.__seh;n.userData.__klasse=m0.material.userData.__klasse;n.receiveShadow=true;j.add(n);liste.push(n);});
+    n.userData.__seh=m0.material.userData.__seh;n.userData.__klasse=m0.material.userData.__klasse;n.userData.__webe=m0.material.userData.__webe||null;n.receiveShadow=true;j.add(n);liste.push(n);});
   baum.root.updateMatrixWorld(true);
   var namen=Array.isArray(sk.skinJoints)?sk.skinJoints:[],bones=namen.map(function(nm){if(!baum.teile[nm])throw new Error('Labor: der Knochen '+nm+' der Stufe '+lod+' fehlt der feinen (fail-closed)');return baum.teile[nm];});
   liste.forEach(function(n){if(n.isSkinnedMesh)n.bind(new THREE.Skeleton(bones),n.matrixWorld.clone());});
   return {baum:baum,sk:sk,liste:liste};
 }
+// DAS TUCH (haar.K4, Labor = Welt): derselbe weiche Löser des Körper-Kerns wie der Leib der Welt (`_tuchTakt`): das Gitter ist das
+// Tuch der Grobstufe (L1), das Tuch der feinen (L0) folgt ihm, die Haut beider Stufen bleibt innen; je Bild EIN Schritt nach der
+// Pose (die Welt-Matrizen stehen), solange L0 das Bild trägt — jenseits ruht das Tuch in der Pose (`tuchRuhe`).
+function tuchAnlegen(s0,s1){var stoff=function(L){return L.filter(function(n){return n.isSkinnedMesh&&n.userData.__seh==='stoff';});},
+  haut=s0.liste.concat(s1.liste).filter(function(n){return n.isSkinnedMesh&&n.userData.__seh==='haut'&&n.userData.__klasse==='haut';}),
+  fein=stoff(s0.liste),grob=stoff(s1.liste),sim=grob.length?grob:fein,folge=grob.length?fein:[];
+  if(!sim.length)return null;
+  // die Ruhe-Lage beider Stufen über der Haut beider (wie der Wirt `_tuchVorlageDrapieren`); das Labor rechnet in Einheiten des Leibs
+  s0.baum.root.updateMatrixWorld(true);if(KC.tuchDrapieren(fein.concat(grob),haut,KC.leibMassstab())>0)fein.concat(grob).forEach(function(n){n.geometry.computeVertexNormals();});
+  return KC.tuchZustand(KC.tuchGitter(sim,folge,haut,sim.map(function(n){return n.userData.__webe;})),sim,folge,haut,KC.leibMassstab());}
+function tuchTakt(dt){if(!gestalt||!gestalt.tuch)return;
+  if(gestalt.istFern){if(!gestalt.tuchRuht){KC.tuchRuhe(gestalt.tuch);gestalt.tuchRuht=true;}return;}
+  gestalt.tuchRuht=false;gestalt.root.updateMatrixWorld(true);KC.tuchTakt(gestalt.tuch,dt);}
 function gestaltFort(){if(!gestalt)return;scene.remove(gestalt.root);gestalt.root.traverse(function(o){if(o.isMesh){o.geometry.dispose();o.material.dispose();}});gestalt=null;}
 // DER STUFEN-SCHALTER (die Welt-Regel `_gelenkStufe`): jenseits ab × (1 ± hyst) trägt L1 das Bild, diesseits L0 — und L1 wirft
 // immer als Zwilling (r128: der Zwilling zeichnet nah ohne Farbe und Tiefe, sein Tiefen-Stoff wirft). Wählbar: auto · L0 · L1.
@@ -197,6 +210,7 @@ function gestaltNeu(){
   s0.liste.forEach(function(n){if(!n.geometry.boundingBox)n.geometry.computeBoundingBox();bb.copy(n.geometry.boundingBox).applyMatrix4(n.matrixWorld);if(bb.min.y<sohle)sohle=bb.min.y;});
   character.position.copy(pAlt);character.rotation.copy(rAlt);s0.baum.root.updateMatrixWorld(true);
   gestalt={root:s0.baum.root,l0:s0.liste,l1:s1.liste,m1:s1.liste.map(function(n){return n.material;}).filter(function(mt,i,a){return a.indexOf(mt)===i;}),ab:z1.ab,hyst:BZ.hyst,istFern:null,sk:s0.sk,sohleY:sohle};
+  gestalt.tuch=tuchAnlegen(s0,s1);
   if(kosten){kosten.messen({traverse:function(f){s0.liste.forEach(f);}},STUFEN[0]);kosten.messen({traverse:function(f){s1.liste.forEach(f);}},STUFEN[1]);
     /* die Fern-Stufen zeigt das Labor nicht — die Leiste misst sie am Welt-Guss derselben Dials (eine Wegwerf-Gestalt) */
     STUFEN.slice(2).forEach(function(s){var g=BAKERS_BY_KIND.koerper(KC,'mensch',0,s,ov);g.traverse(function(n){if(n.isMesh)n.castShadow=BZ[s].schatten===s;});kosten.messen(g,s,true);});}
@@ -261,7 +275,7 @@ const clock=new THREE.Clock(); var blinkTimer=0;
 // der Brust, Muskel-Spannung, Finger-Faust, Brauen, Lippen), bewegt auch das Labor nicht mehr.
 function animate(){requestAnimationFrame(animate);var dt=1/60,t=clock.getElapsedTime();uZeit.value=t;cinePass.uniforms.time.value=t;controls.autoRotate=(emoMode==='showcase');if(!character){composer.render();return;}
 // DAS SPIEL FÜHRT ALLEIN (Labor = Welt): der Schritt des EINEN Gesetzes, die Pose der Welt, die Kamera — das PD-Rig des Studios ruht
-if(play.on){playTakt(dt);stufeSchalten();composer.render();return;}
+if(play.on){playTakt(dt);stufeSchalten();tuchTakt(dt);composer.render();return;}
 emo.update(dt,t);var bm=emo.getBeh(t);var e=emo.cur;
 var targetY=bm.jumpY||0;var dy=targetY-bodyPhys.y;bodyPhys.vy+=dy*300*dt;bodyPhys.vy-=25*dt;bodyPhys.vy*=0.88;bodyPhys.y+=bodyPhys.vy*dt;if(bodyPhys.y<0){bodyPhys.y=0;if(bodyPhys.vy<0)bodyPhys.vy*=-0.15;}
 // V18.491.141 KPMUL_VIS.lab=pd-gain
@@ -312,7 +326,7 @@ if(_blkPh<0.09){_blkPh+=dt;var _bf=Math.min(1,_blkPh/0.09);blink=_bf<0.45?1.0-(_
 if(lidTL)lidTL.scale.y=0.35*blink;if(lidTR)lidTR.scale.y=0.35*blink;
 var irisX=_gz.x*0.016+_pn(t,2.0+e.irisSpeed*2.0,22)*0.003;var irisY=_gz.y*0.010+_pn(t,1.6+e.irisSpeed*1.6,23)*0.002;if(irisL)irisL.position.set(irisX,irisY,0.08);if(irisR)irisR.position.set(irisX,irisY,0.08);
 if(contactShadow){var bh=bodyPhys.y+groundSmooth;contactShadow.material.opacity=0.35*Math.max(0.1,1-bh*2);contactShadow.scale.setScalar(3.0*Math.max(0.3,1+bh*0.5));}
-fxaa.uniforms['resolution'].value.set(1/innerWidth,1/innerHeight);controls.update();_poseGuard();stufeSchalten();composer.render();}
+fxaa.uniforms['resolution'].value.set(1/innerWidth,1/innerHeight);controls.update();_poseGuard();stufeSchalten();tuchTakt(dt);composer.render();}
 
 // GELENK-LIMITS (profi-rigging: "careful rigging"/joint limits): laeuft NACH jeder posen-quelle
 // (emotion, kampf-combo, ninja-modus) und erzwingt anatomische envelopes -> der arm kann nicht
@@ -369,7 +383,7 @@ function _poseGuard(){
 // Hocke-Tunnel, der kurze Sprung beim Loslassen und die Feel-Schichten (Anlauf-Neigung, Kurven-Lage) fielen: die Welt kennt sie nicht.
 var FC = window.__fachwerkCore;
 if (!FC || !FC.GERAETE || typeof FC.geraetAngebotIn !== 'function' || typeof FC.buildInstance !== 'function') throw new Error('Kern-Pflicht: fachwerk GERAETE/geraetAngebotIn/buildInstance (das Labor stellt die Werke der Welt auf)');
-['leibPlan','leibSitz','leibGlieder','leibSchwenk','leibSchwenkPunkt','leibImpuls','leibFall','leibLandung','leibRichtung','leibZustand','leibKette','leibMasse','leibWerte','leibAbdruck','leibSprungKraft','leibGangTakt','leibRigPose','leibLuftPose','leibVerbPose','leibGeraetAusschwingen','leibMassstab','leibSohle','leibPoseWinkel','leibSollUrteil'].forEach(function(f){if(typeof KC[f]!=='function')throw new Error('Kern-Pflicht: koerper '+f);});
+['leibPlan','leibSitz','leibGlieder','leibSchwenk','leibSchwenkPunkt','leibImpuls','leibFall','leibLandung','leibRichtung','leibZustand','leibKette','leibMasse','leibWerte','leibAbdruck','leibSprungKraft','leibGangTakt','leibRigPose','leibLuftPose','leibVerbPose','leibGeraetAusschwingen','leibMassstab','leibSohle','leibGussLage','leibStossPose','leibPoseWinkel','leibSollUrteil'].forEach(function(f){if(typeof KC[f]!=='function')throw new Error('Kern-Pflicht: koerper '+f);});
 var M_E = KC.leibMassstab();                 // Meter je Gelenk-Einheit: die Bühne in Metern, der Leib im Maß des Gusses
 var G_WELT = KC.LEIB.sprung.refG;            // die Erd-Schwere (m/s²), dieselbe wie die Welt bei Spiel-Beginn
 var KAPSEL = KC.LEIB.kapsel;                 // die Kapsel des Leibs (Sohle, Stufe, Haftung, Wand-Radius) — die der Welt
@@ -483,7 +497,7 @@ document.getElementById('btnPlay').addEventListener('click', enterPlay);
 function _playOrt(T) {
   var W = play.werte, L = play.L;
   return { tempo: T.sprint ? W.sprintSpeed : W.speed, gehTempo: W.speed, hang: 1, ritt: null, rittKAcc: null, rittKBrake: null, reitet: false, fahr: null, wasser: false, wasserKBrake: 0,
-    leben: play.leben, angebote: parkAngebote, lage: play.p, mass: play.kette.mass, masse: play.masse, g: G_WELT,
+    leben: play.leben, angebote: parkAngebote, lage: play.p, beinM: play.M.L, mass: play.kette.mass, masse: play.masse, g: G_WELT,
     amBoden: function () { return play.amBoden; }, hangSprung: function () { return false; },
     abdruck: function () { return KC.leibAbdruck(KC.leibSprungKraft(W.jumpPower), play.masse, G_WELT); }, kopfraum: function () { return _kopfraum(); } };
 }
@@ -594,6 +608,7 @@ function playPose(dt) {
   var gs = _TC.gangSchritt(tempo, play.M.L, play.Z);
   var gait = KC.leibGangTakt(_TC, play.halter, gs, tempo, dt, 1, Math.max(1, play.werte.speed), play.M.L);
   KC.leibRigPose(r, play.t, play.halter.walkPhase, tempo > 0.05, gait, KC.MOTION.idle, KC.MOTION.idle, play.M, play.Z, _TC);
+  KC.leibStossPose(r, L, play.faceYaw, play.M); // der Ausfallschritt (physik.K5), wie die Welt
   var lehne = KC.leibLuftPose(r, L, play.t);
   // die Gier des Leibs: im Verb die des Geräts, frei längs der Fahrt (gleitend), im Stand der Blick
   var ziel = V && V.gier != null ? V.gier : (sp > 0.3 ? Math.atan2(v.x(), v.z()) : null);
@@ -666,7 +681,8 @@ function _hautProben() {
   var vox = 0.02 / M_E, liste = [], _bv = new THREE.Vector3();
   gestalt.l0.forEach(function (n) {
     if (/eye|iris|pupil/.test(n.userData.__klasse || '')) return;
-    var pa = n.geometry.attributes.position, si = n.geometry.attributes.skinIndex, sw = n.geometry.attributes.skinWeight, zellen = {};
+    // die Guss-Lage (koerper `leibGussLage`): das Tuch, das der weiche Löser im Bild bewegt, misst in seiner Ruhe — wie die Welt
+    var pa = KC.leibGussLage(n), si = n.geometry.attributes.skinIndex, sw = n.geometry.attributes.skinWeight, zellen = {};
     for (var i = 0; i < pa.count; i++) {
       var key = Math.round(pa.getX(i) / vox) + ',' + Math.round(pa.getY(i) / vox) + ',' + Math.round(pa.getZ(i) / vox);
       if (zellen[key]) continue; zellen[key] = 1;

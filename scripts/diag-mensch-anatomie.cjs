@@ -10,7 +10,7 @@
 // Rot nennt den Täter: `handL 0.151 > 0.115`.
 //   --selftest: (S1) die Hand 1,5× → handL rot · (S2) die Augäpfel 2× → augapfel rot · (S3) der Pupillen-Abstand
 //   doppelt → augenAbstand rot. Die Linse feuert, sonst ist sie vakuös.
-//   node scripts/diag-mensch-anatomie.cjs [--selftest] [--json]
+//   node scripts/diag-mensch-anatomie.cjs [--selftest]
 "use strict";
 const { urteilEnde, fadenScope, SELBSTTEST, OFEN_KERNE } = require("./lib/welt-boot.cjs");
 
@@ -154,7 +154,7 @@ function messeKopf(sb, eingriff) {
     const K = sb.__koerperCore;
     const S = K.KOPF_SOLL || {};
     // (1) das Gesetz: die Lage-Verhältnisse
-    const { B } = baue(sb, eingriff && eingriff.gesetz);
+    const { B } = baue(sb, eingriff && eingriff.gesetz, eingriff && eingriff.dials);
     const P = B.parts;
     const lage = (n) => new T.Vector3().setFromMatrixPosition(n.matrixWorld);
     const Hk = spanne(punkte(T, B.character), 1).l;
@@ -175,7 +175,7 @@ function messeKopf(sb, eingriff) {
     const yAuge = (eL.y + eR.y) / 2;
     // (2) der Ofen L0: die Hornhaut vor der Haut, die Töne, das Haar, die Dreiecke
     const kern = eingriff && eingriff.kern ? eingriff.kern(K) : K;
-    const g = sb.BAKERS_BY_KIND.koerper(kern, "mensch", 1, 0, null);
+    const g = sb.BAKERS_BY_KIND.koerper(kern, "mensch", 1, 0, eingriff && eingriff.dials ? { dials: eingriff.dials } : null);
     g.updateMatrixWorld(true);
     const W = {};
     const sk = g.userData.__skelett;
@@ -327,6 +327,25 @@ function urteile(sb, m, soll = "MENSCH_SOLL") {
     });
 }
 const urteileKopf = (sb, m) => urteile(sb, m, "KOPF_SOLL");
+// DER KOPF JEDES SCHNITTS (mensch.K4): die Menge trägt jeden Stil der Haar-Kappe (koerper HAAR_KAPPE) und jedes Gesicht ihres
+// Genoms — KOPF_SOLL und MENSCH_SOLL gelten an jedem Stil, je an beiden Rändern von GESICHT_GENOM (Auge, Mund, Braue groß, der
+// Haar-Ansatz tief — und umgekehrt). Bis w7-gesicht maß die Linse nur den Start-Stil mittel: afro begrub das Auge (augeFrei
+// 0,40), afro, locken und lang trugen 12 146–12 440 Kopf-Dreiecke, kurz, zopf und dutt augenVorstand 0,0357. Jeder Stil GIESST
+// dabei ganz (L0: Kopf-Haut, Kappe, jede Zeile von haarStreu mit ihrer Zone) — bis w7-gesicht goss gate:ofen-contract (3b) je Stil
+// nur die Strähnen: seit haar.K2 brach die Quaste (zopf: ohne Schale `sc`), der Bewohner mit Zopf fiel aus dem Dorf.
+const kopfJe = (so, kern) =>
+    Object.keys(so.__koerperCore.HAAR_KAPPE).flatMap((st) =>
+        [0, 1].flatMap((g) => {
+            const d = { hairStyle: st, auge: g, mund: g, braue: g, haaransatz: 1 - g };
+            let f;
+            try {
+                f = urteileKopf(so, messeKopf(so, { dials: d, kern })).concat(urteile(so, messe(so, null, d)));
+            } catch (e) {
+                f = [`Guss bricht: ${e.message}`];
+            }
+            return f.map((x) => `${st}/rand${g} ${x}`);
+        })
+    );
 
 // DIE MENGE (mensch.K4 Staffel 2): 50 Bewohner aus 50 Samen je Siedlung, gerechnet von DENSELBEN Gliedern wie in der Welt
 // (`_bewohnerGestalten`, `_bewohnerGenome`; der Stamm im vm, stamm.cjs `ladeKlasse`), je Plan des Fachwerk-Kerns seine Tracht.
@@ -370,6 +389,10 @@ const zeige = (m) =>
                 .join(" · ")
     );
 
+// DIE LESER DIESER LINSE als Modul: die Station mensch.K4#2 (Zweig punkte-maschine, meisterkarte-quelle/punkte/stationen/g2.js)
+// misst die Gesichter der Typen ihrer Menge mit `ladeWelt` und `messe` — sie lebt nicht in main: bis w7-gesicht strich
+// w4-stufen-gesetz (98177d01) den Export „ohne Leser“ (git grep in main), und die Station endete „ohne Menge oder Gesicht“.
+module.exports = { ladeWelt, messe };
 if (require.main !== module) return;
 if (SELBSTTEST) {
     console.log("=== SELBST-TEST: die Mensch-Anatomie-Linse feuert ===");
@@ -378,7 +401,7 @@ if (SELBSTTEST) {
     const pruefe = (name, verzerre, muster, kopf) => {
         const sb = kopf ? ladeOfen() : ladeWelt();
         const f =
-            kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
+            kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
         const ok = f.some((x) => muster.test(x));
         console.log(`  ${ok ? "✅" : "❌"} ${name}${ok ? " — " + f.find((x) => muster.test(x)) : ""}`);
         if (!ok) rot++;
@@ -426,6 +449,8 @@ if (SELBSTTEST) {
     );
     // DIE MENGE (mensch.K4): die Farben der Gestalt statt der eigenen (der Stand vor mensch.K4)
     pruefe("M1 die Farben der Gestalt (vor mensch.K4) werden erkannt", (A, roh = A.prototype._bewohnerGenome) => (A.prototype._bewohnerGenome = function (S) { roh.call(this, S); S.liste.forEach((b) => (b.farben = null)); }), /^menge\.gleich/, "menge"); // prettier-ignore
+    // DIE KAPPE VOR DEM SCHÄDEL (vor w7-gesicht: afro um sein zurueck 0,05 gesetzt, ohne die Dicke) begräbt sein Auge
+    pruefe("K1 die Kappe vor dem Schädel (afro) wird erkannt", { kern: (K) => Object.assign({}, K, { haarKappe: (d) => K.haarKappe(d).map((k) => ({ ...k, c: [0, k.c[1], -0.05] })) }) }, /^afro\/rand\d augeFrei/, "schnitte"); // prettier-ignore
     pruefe("S5 der aufgesetzte Augapfel (eine Augapfel-Breite vor) wird erkannt", auge(0.12), /^augenVorstand/, true);
     pruefe("S7 das begrabene Auge (eine Augapfel-Breite zurück) wird erkannt", auge(-0.12), /^(augeFrei|augenVorstand)/, true);
     const rot0 = (K) => (h) => Object.assign({}, K.kopfToene(h), { lips: 0xaa5544 });
@@ -446,14 +471,7 @@ const m = messe(sb);
 zeige(m);
 const so = ladeOfen();
 const mk = messeKopf(so);
-console.log(
-    "  KOPF: " +
-        Object.entries(mk)
-            .map(([k, x]) => `${k} ${+x.toFixed(4)}`)
-            .join(" · ")
-);
+zeige(mk);
 const mm = messeMenge();
-console.log(`  MENGE: ${mm.gleich} gleiche Paare · Gestalt-Distanz min ${mm.min} px ${mm.paar}`);
-if (process.argv.includes("--json")) console.log(JSON.stringify(Object.assign({}, m, mk, { menge: mm }), null, 1));
-const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm));
+const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm), kopfJe(so));
 urteilEnde(fehler.length, `\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "), "\n✅ GRÜN — der Mensch steht in seinen Anthropometrie-Bändern (Hand · Arm · Kopf · Gesicht · Fuß).");
