@@ -1611,3 +1611,5 @@
 2026-11-04 17:11:02 omen-gtx-w10-wiese-0d88e8d2 START 2 Proben (vegetation.K1#1,vegetation.K2#1, GTX am Zweig-Kopf)
 2026-11-04 17:26:14 omen-gtx-main-b56e9b0e START 2 Proben (vegetation.K1#1,vegetation.K2#1, GTX am Zweig-Kopf)
 2026-11-04 17:36:48 omen-gtx-w10-lod-4ca2059d START 4 Proben (lod.K1#1,lod.K2#1,lod.K3#1,lod.K5#1, GTX am Zweig-Kopf)
+2026-11-04 17:57:13 omen-gtx-w10-lod-4ca2059d lod.K2#1 ROT 5 · 4/4
+2026-11-04 17:57:14 omen-gtx-w10-lod-4ca2059d lod.K5#1 ROT 5 · 8/4
