@@ -31,3 +31,4 @@ w8-ein-baecker ebd304f8 GRÜN check+playtest-voll+v1-pfad+foundry-impostor+studi
 w6-spielgang-decke 58e619d6 ROT merge KONFLIKT mit main f69a7305: scripts/lib/welt-boot.cjs stamm/speicher-laden.js stamm/studio-bruecke.js 
 w6-alter 7385475b ROT merge KONFLIKT mit main f69a7305: stamm/speicher-welten.js 
 w5-physik-k5 b8a0f2bc ROT merge KONFLIKT im Bündel mit w6-spielgang-decke: scripts/lib/welt-boot.cjs stamm/speicher-laden.js stamm/studio-bruecke.js 
+w8-sprache a5d6a7bd ROT merge KONFLIKT mit main f69a7305: scripts/lib/welt-boot.cjs scripts/playtest/feld-leben.cjs stamm/speicher-laden.js stamm/studio-bruecke.js 
