@@ -3982,6 +3982,13 @@ async function selbsttest(o = {}) {
         JSON.stringify(b.pflichtJe));
     const pbE = pflichtBand({ ...b.je, ...b.pflichtJe }, { dokument: "d.md", eintraege: [{ id: "E", titel: "e", stationen: ["pflicht.E#1"] }] }, "E) DAS BAND — **E fällt, wenn p95 hält.**");
     pruef("PFLICHT das Band liest den Pflicht-Richter aus pflichtJe (E grün, 2/2 Paare, 0 Punkte)", pbE.eintraege[0].status === "grün" && pbE.eintraege[0].gesamt === 2 && pbE.eintraege[0].punkte === 0, JSON.stringify(pbE.eintraege[0]));
+    // DIE UHR DES GANGS (stationen/g6.js pbSchrittTraegt, 04.11.): ein Schritt mit einer Stand-Zelle von PFLICHT E läuft immer, die
+    // übrigen nur im Budget — an der GTX schnitt die feste Uhr 58 s wiese-third-steht in jedem Lauf weg
+    {
+        const t = require(path.join(DIR, "stationen", "g6.js")).pbSchrittTraegt;
+        pruef("UHR DES GANGS die Stand-Zelle läuft über dem Budget, die Bewegung nicht, im Budget beide",
+            t(["band:wiese-third", "wiese-third-steht"], 80, 8, 84) && !t(["wiese-fahrt"], 80, 8, 84) && t(["wiese-fahrt"], 70, 8, 84) && !t(["band:dorf-ego"], 84, 1, 84));
+    }
     b = buchen("kopf", [s1, s2], m2, (sha) => (sha === "b2" ? ["stamm/wasser-hydro.js"] : ["docs/x.md"]), h);
     pruef("BUCHUNG R6 Pfad geändert → GTX alt → 1", b.je["gelaende.K4"].punkte === 1 && /R6/.test(b.je["gelaende.K4"].beleg), b.je["gelaende.K4"].beleg);
     // DIE RATSCHE: das GRÜN der letzten Buchung hält ohne frische Messung, ein frisches ROT nimmt es beim Namen, die Wand PFAD hält nie

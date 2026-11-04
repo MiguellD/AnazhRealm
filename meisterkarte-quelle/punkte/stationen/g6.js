@@ -1072,8 +1072,16 @@ const PB_BEWEGT = ["wiese-ego-geht", "wiese-ego-sprint", "wiese-fahrt", "genesis
 const PB_BAND = ["wiese-ego", "wiese-third", "genesis-ego", "genesis-third", "dorf-ego", "dorf-third"];
 // die Uhr des Gangs, die Fenster (s), der Ort einer Stand-Zelle (m), die Bilder je s eines gültigen Fensters, die GPU-Stempel je Zelle,
 // das Mindestmaß einer Stand-Zelle nur aus fremden Bildern, die Dauer am Stück (min)
+// DIE UHR DES GANGS (04.11., Koordinator: „die Uhr folgt dem Gang statt einer festen Zahl“): ein Schritt, der eine Stand-Zelle von
+// PFLICHT E trägt, läuft immer — die Uhr kürzt nur die übrigen, und ihr Budget folgt dem Deckel des Gangs (PB_GANG_SEK, 6 s Nachlauf).
+// Bis hier fest 58 s: an der GTX brauchten Genesis Ego, Genesis Third und Wiese Ego schon 18,8 + 12 + 31,6 s, wiese-third-steht stand in
+// jedem Lauf „ungemessen (die Uhr 58 s trug den Schritt nicht)“ und pflicht.E#1 konnte nie grün werden.
+const PB_GANG_SEK = 90;
+function pbSchrittTraegt(zellen, uhrS, estS, budgetS) {
+    return zellen.some((z) => /-steht$/.test(z)) || uhrS + estS <= budgetS;
+}
 const PB_KONST = {
-    budget: 58,
+    budget: PB_GANG_SEK - 6,
     steht: { sek: 2, ein: 0.3 },
     geht: { sek: 2, ein: 0.5 },
     anker: { sek: 2, ein: 0.3 },
@@ -1231,7 +1239,7 @@ async function pbProbe(art, aus) {
     };
     // ein Schritt unter der Uhr: trägt die Uhr ihn nicht mehr, stehen seine Zellen ungemessen beim Namen
     const schritt = async (name, est, f, zellen) => {
-        if (art === "gang" && uhr() + est > K.budget) return void (offen.push(...zellen), schritte.push([name, "Uhr"]));
+        if (art === "gang" && !PB_TRAEGT(zellen, uhr(), est, K.budget)) return void (offen.push(...zellen), schritte.push([name, "Uhr"]));
         const a = uhr();
         try {
             await f();
@@ -1269,18 +1277,18 @@ async function pbProbe(art, aus) {
             await B("genesis", "ego");
             await Z("genesis-ego-steht", S);
         }, ["band:genesis-ego", "genesis-ego-steht"]);
-        await schritt("genesis-third", 11, async () => {
+        await schritt("genesis-third", 8, async () => {
             await U("genesis", "third");
             await B("genesis", "third");
             await Z("genesis-third-steht", S);
-            await Z("genesis-third-geht", { ...G, wandern: "bahn" });
-        }, ["band:genesis-third", "genesis-third-steht", "genesis-third-geht"]);
-        await schritt("wiese-ego", 15, async () => {
+        }, ["band:genesis-third", "genesis-third-steht"]);
+        await schritt("genesis-third-geht", 3, () => Z("genesis-third-geht", { ...G, wandern: "bahn" }), ["genesis-third-geht"]);
+        await schritt("wiese-ego", 12, async () => {
             await U("wiese", "ego");
             await B("wiese", "ego");
             await Z("wiese-ego-steht", S);
-            await Z("wiese-ego-geht", { ...G, wandern: "bahn" });
-        }, ["band:wiese-ego", "wiese-ego-steht", "wiese-ego-geht"]);
+        }, ["band:wiese-ego", "wiese-ego-steht"]);
+        await schritt("wiese-ego-geht", 3, () => Z("wiese-ego-geht", { ...G, wandern: "bahn" }), ["wiese-ego-geht"]);
         await schritt("wiese-third", 8, async () => {
             await U("wiese", "third");
             await B("wiese", "third");
@@ -1588,7 +1596,7 @@ function k5Richter(lauf) {
 // Konstanten ändert, macht die Messungen alt, wie es die Änderung eines Urteils täte (ohne CR: ein Windows-Klon hasht dasselbe)
 const PB_MARKE = require("crypto")
     .createHash("sha1")
-    .update([pbZus, pbFehl, pbRichter, k4Richter, k5Richter, HW, PB_STEHT, PB_BEWEGT, PB_BAND, JSON.stringify(PB_KONST)].join("|").replace(/\r/g, ""))
+    .update([pbZus, pbFehl, pbRichter, k4Richter, k5Richter, HW, pbSchrittTraegt, PB_STEHT, PB_BEWEGT, PB_BAND, JSON.stringify(PB_KONST)].join("|").replace(/\r/g, ""))
     .digest("hex")
     .slice(0, 10);
 // DER BEFEHL einer Probe: das Programm samt Konstanten und Seiten-Code im Befehl (der Abdruck liest es ganz), die Art als Wort
@@ -1596,7 +1604,7 @@ const pbBefehl = (art) => [
     "node",
     "-e",
     "/* richter " + PB_MARKE + " */ const K = " + JSON.stringify(PB_KONST) + "; const SEITE = " + JSON.stringify(PB_SEITE) + "; const PB_ZELLEN = " +
-        JSON.stringify(PB_ZELLEN) + "; (" + pbProbe.toString().replace(/\r/g, "") + ")(process.argv[1], process.argv[2]).catch((e) => { console.log(\"PROBE ROT: \" + " +
+        JSON.stringify(PB_ZELLEN) + "; const PB_TRAEGT = " + pbSchrittTraegt.toString().replace(/\r/g, "") + "; (" + pbProbe.toString().replace(/\r/g, "") + ")(process.argv[1], process.argv[2]).catch((e) => { console.log(\"PROBE ROT: \" + " +
         "String((e && e.stack) || e).split(\"\\n\").slice(0, 3).join(\" | \")); process.exitCode = 1; });",
     art,
     "{AUS}",
@@ -1718,7 +1726,7 @@ const PB_PROBEN_DAUER = [
 // → 29 s, dauer 36,0 · 22,8 · 29,4 · 30,6 s → 37 s (die Messung trägt Minuten auf zwei Stellen: 36,0 heißt bis 36,3 s; vorher je
 // 45 s); gang ungemessen (die Fahrt kam nie zu ihm) — 64 s
 const PB_PROBE_GLAETTE = { sek: 29, stellung: "anfang", befehl: pbBefehl("glaette") };
-const PB_PROBE_GANG = { sek: 64, mutiert: true, ausnahme: PB_AUSNAHME_GANG, befehl: pbBefehl("gang") };
+const PB_PROBE_GANG = { sek: PB_GANG_SEK, mutiert: true, ausnahme: PB_AUSNAHME_GANG, befehl: pbBefehl("gang") };
 const PB_PROBE_DAUER = { sek: 23, stellung: "ende", befehl: pbBefehl("dauer") };
 
 // ───────── klang.K3 Staffel 2 — DER RAUM AUS DER WELT (w5-s2-g1, Welt-Probe der Gruppe I: EIN Boot am Null-Renderer) ─────────
@@ -3803,6 +3811,7 @@ module.exports = [
 
 // die EINE Probe der Ankunft für ihre Zwillinge in stationen/g4.js (pipeline.K4#1/#2)
 module.exports.ANKUNFT_KALT = ANKUNFT_KALT;
+module.exports.pbSchrittTraegt = pbSchrittTraegt;
 
 // Nicht fassbar: das Werkzeug fehlt. Je Eintrag der Grund beim Namen; diese Staffeln zählen 0, bis eine Linse sie misst.
 // DIE FAHRT (p3-stationen-g456, 01.11.): die Summe der Deckel steht Radeon 1 790 / GTX 1 785 von 1 800 s (FAHRT_MAX_S, samt Boot) —
