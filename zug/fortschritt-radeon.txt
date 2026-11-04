@@ -1838,3 +1838,4 @@
 2026-11-04 18:36:36 dc28be42-radeon START 4 Stationen
 2026-11-04 18:39:27 dc28be42-radeon vegetation.K2#1 GRÜN 0.3 · 1/4
 2026-11-04 18:40:46 dc28be42-radeon vegetation.K1#1 ROT 0.3 · 2/4
+2026-11-04 18:43:02 dc28be42-radeon ENDE 1 grün / 1 rot · 8.5 min
