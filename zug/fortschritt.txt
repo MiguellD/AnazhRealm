@@ -1568,3 +1568,4 @@
 2026-11-04 12:50:56 vp-w6-alter-fb096ca8 check GRÜN 6 · 1/8
 2026-11-04 12:50:56 vp-w6-alter-fb096ca8 playtest GRÜN 3 · 2/8
 2026-11-04 12:50:56 vp-w6-alter-fb096ca8 gate:ego-schatten GRÜN 0 · 3/8
+2026-11-04 13:20:44 omen-hw-z204 START 5 Proben (haus-welt 1/2 an main, +gruss, +alter, +weiches, +licht-sprung)
