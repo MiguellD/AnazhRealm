@@ -336,7 +336,7 @@ async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
                 const nach = await f[1](X);
                 aus[X][w] = { vor, nach, ok: !!f[2](X, vor, nach) };
             } catch (e) {
-                aus[X][w] = { ok: false, fehler: String(e.message || e).slice(0, 140) };
+                aus[X][w] = { ok: false, fehler: fehlerText(e).slice(0, 140) };
             } finally {
                 if (z) z[w] = alt;
                 r._stoff = leser;

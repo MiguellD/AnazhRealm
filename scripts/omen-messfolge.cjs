@@ -42,7 +42,7 @@
 // Der save-server läuft vorher (`npm start`, :4312 — am OMEN der Mess-Klon); die Werkbank startet und stoppt die Folge selbst
 // (ein Boot je Aufruf; `--serie` hält das Profil für den Zweit-Boot).
 "use strict";
-const { werkbankRuf, hauptLauf, sleep, selbsttestEnde, argOpt: opt, path, fs, os, jsonLesen, jsonSchreiben, ROOT: root } = require("./lib/welt-boot.cjs");
+const { fehlerText, loesche, werkbankRuf, lebt, hauptLauf, sleep, selbsttestEnde, argOpt: opt, path, fs, os, jsonLesen, jsonSchreiben, ROOT: root } = require("./lib/welt-boot.cjs");
 const { spawn, execSync } = require("child_process");
 const BAND = require("./lib/band-urteil.cjs");
 const { wetterUrteil, weltaktUrteil } = require("./lib/ausgabe-aufnahme.cjs");
@@ -591,7 +591,7 @@ async function folgeMitNeulauf() {
         console.log(
             `[folge] Lauf ${v} NICHT eingeschwungen (offen ${JSON.stringify(r.einschwung.offen)}) — Neulauf ${v + 1} von höchstens ${NEULAUF_MAX + 1}`
         );
-        if (r.profilFrisch) fs.rmSync(r.profilFrisch, { recursive: true, force: true });
+        if (r.profilFrisch) loesche(r.profilFrisch);
     }
 }
 
@@ -895,7 +895,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
                 aus.befunde.push(...prof.wetterHalt.taeter.map((t) => `WETTER profil (Lauf): ${t}`));
         }
     } catch (e) {
-        abbruch = String((e && e.message) || e);
+        abbruch = fehlerText(e);
         aus.abbruch = abbruch;
     } finally {
         aus.befunde.push(...folgeUrteil(gefahren, FOLGE).filter(() => !abbruch));
@@ -1291,14 +1291,6 @@ async function selbsttest() {
             setTimeout(() => res(null), 10000);
         });
         const ende = await beendeBaum(werkbank, 300);
-        const lebt = (pid) => {
-            try {
-                process.kill(pid, 0);
-                return true;
-            } catch {
-                return false;
-            }
-        };
         let kindLebt = kindPid ? lebt(kindPid) : true;
         for (let i = 0; i < 20 && kindLebt; i++) {
             await sleep(100);
