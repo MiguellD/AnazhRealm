@@ -1737,6 +1737,40 @@ class AnazhRealm_kreatur_leben {
         const v = this._geburtsOrtV || (this._geburtsOrtV = new THREE.Vector3());
         return fr.containsPoint(v.set(x, this.getTerrainHeightAt(x, z) + 1, z));
     }
+    // Stünde der LEIB einer Gattung `g` der Größe `bs` an (x, z) im Blick? Seine Körper-Kugel wie `_kreaturAusserBlick`
+    // (Reichweite + halbe Höhe um die halbe Höhe über dem Fuß, dazu der Saum) samt dem RAND DES BLICKS der Ruhe
+    // (`_kreaturBlickRand`: das Frustum ist das des Vor-Takts, die Kamera dreht weiter) — dieselbe Frage, die die Ruhe an einen
+    // Leib stellt; die Geburt fragt sie (`_kreaturWurf`, `_bestandLeibOrt`). Bis w7-begegnung fragte jede Geburt den Punkt
+    // ohne Rand: ein Leib am Rand des Blicks, dessen Fuß-Punkt draußen lag, ragte bei der Geburt ins Bild (Kreis-Sonde der
+    // Mess-Wiese, 400 s ein + 600 Spiel-s, Null-Renderer: am main 2d2a5f11 Ego 3, Third 5 im Blick erschienen, hier 0 und 0).
+    _kreaturLeibImBlick(x, z, g, bs) {
+        const fr = this._frustumCache;
+        if (!fr) return false;
+        const rand = this._kreaturBlickRand();
+        if (rand < 0) return true; // die Kamera dreht schneller, als der Rand trägt: keine Geburt in diesem Takt
+        // der Leib, der dort erst stünde: ein Stellvertreter ohne Gier trägt seine Hüfte (`_kreaturLeib` liest nur die Gier)
+        const stell = this._geburtsStell || (this._geburtsStell = { rotation: { y: 0 } });
+        const leib = this._kreaturLeib(
+            stell,
+            this._gattungLeib(g).beinL * bs,
+            this._geburtsLeib || (this._geburtsLeib = {})
+        );
+        const s = this._geburtsKugel || (this._geburtsKugel = new THREE.Sphere(new THREE.Vector3(), 0));
+        s.center.set(x, this.getTerrainHeightAt(x, z) + 0.5 * leib.hoehe, z);
+        s.radius =
+            leib.reichweite +
+            0.5 * leib.hoehe +
+            AnazhRealm.KREATUR_RUHE.saumM +
+            s.center.distanceTo(this.state.camera.position) * rand;
+        return fr.intersectsSphere(s);
+    }
+    // DER RAND DES BLICKS im Takt (`_tickKreaturRuhe`: tan(randGrad + doppelte Drehung des Vor-Frames), −1 bei zu schneller
+    // Drehung); vor dem ersten Kreatur-Takt der Grund-Rand `KREATUR_RUHE.randGrad`.
+    _kreaturBlickRand() {
+        return Number.isFinite(this._blickRand)
+            ? this._blickRand
+            : Math.tan((AnazhRealm.KREATUR_RUHE.randGrad * Math.PI) / 180);
+    }
 
     // TRÄGT DER GRUND EIN GEBORENES TIER? Die Geburt ist ein Wurf des Felds (`_wildnisTraegt`) und weicht dem Bau wie jeder
     // Wurf (`_weichtDemBau`): nie im Grundriss eines Baus und nie auf der Lichtung des Genesis-Platzes (`_imGrundriss`),
@@ -1784,16 +1818,20 @@ class AnazhRealm_kreatur_leben {
         const imRaum = lebt(ort.x, ort.z);
         // das Fenster der Herde (herde.fensterRaum Paar-Räume): jeder Geworfene steht in ihm zu einem, der schon steht
         const fenster = AnazhRealm._verhaltenGesetz().herde.fensterRaum / W.abstandRaum;
+        const gattung = AnazhRealm.TETRAPODA_SOUL_MAP[soul];
         for (let k = 0; geboren.length < n && k < 3 * n; k++) {
             // der Abstand wächst mit den Geworfenen, nicht mit den Würfen: ein Platz, der nicht trägt, gibt seinen Ring dem
             // nächsten Winkel
             const a = dreh + k * 2.39996;
             const x = ort.x + Math.cos(a) * abstand * Math.sqrt(geboren.length);
             const z = ort.z + Math.sin(a) * abstand * Math.sqrt(geboren.length);
+            // außer Blick ist der LEIB, der dort stünde (seine Kugel, `_kreaturLeibImBlick`; ein Tier ohne
+            // Bestand würfelt seine Größe erst im Guss — gefragt wird die größte des Gesetzes) — auch der erste
+            const bs = tiere ? tiere[geboren.length].bs : AnazhRealm._verhaltenGesetz().groessen.at(-1).max;
+            if (gattung && this._kreaturLeibImBlick(x, z, gattung, bs)) continue;
             if (k > 0) {
                 const fern = Math.hypot(x - p.x, z - p.z) >= AnazhRealm.CREATURE_SPAWN_FAR_MIN;
-                if (!fern || this._kreaturImBlick(x, z) || !this._kreaturGrundFrei(x, z) || (imRaum && !lebt(x, z)))
-                    continue;
+                if (!fern || !this._kreaturGrundFrei(x, z) || (imRaum && !lebt(x, z))) continue;
                 if (!geboren.some((g) => Math.hypot(g.position.x - x, g.position.z - z) <= fenster * abstand)) continue;
             }
             const gY = this.getTerrainHeightAt(x, z);
@@ -2175,9 +2213,9 @@ class AnazhRealm_kreatur_leben {
     }
 
     // DIE MASSE EINES TIERS DES BESTANDS (kg — die EINE Masse des Leibs, `_leibMasse`, ohne Leib): das Volumen der Gestalt seiner
-    // Gattung bei Größe 1 (`_gattungLeibV`) × Größe³ × ρ; sein Temperament daraus wie am Leib (`_creatureTemperament`).
+    // Gattung bei Größe 1 (`_gattungLeib`) × Größe³ × ρ; sein Temperament daraus wie am Leib (`_creatureTemperament`).
     _bestandKg(t) {
-        return t.kg || (t.kg = this._gattungLeibV(t.g) * t.bs ** 3 * this._leibRho(false));
+        return t.kg || (t.kg = this._gattungLeib(t.g).v * t.bs ** 3 * this._leibRho(false));
     }
     _bestandWild(t) {
         if (t.wild === undefined) {
@@ -2187,16 +2225,20 @@ class AnazhRealm_kreatur_leben {
         }
         return t.wild;
     }
-    // DAS VOLUMEN DER GESTALT EINER GATTUNG bei Größe 1 (m³, `_tierBaum.leibV`): einmal je Gattung aus dem Ofen gegossen und
-    // gemessen, der Guss danach frei — fail-closed ohne Gestalt.
-    _gattungLeibV(g) {
-        const M = this._gattungLeibVMemo || (this._gattungLeibVMemo = {});
-        if (M[g] > 0) return M[g];
+    // DIE GESTALT EINER GATTUNG bei Größe 1 (`_tierBaum`): ihr Volumen (m³, `leibV` — die Masse liest es) und ihre Hüft-Höhe
+    // (m, `beinL` — der Leib, `_kreaturLeib`, und mit ihm die Frage der Geburt an den Blick); einmal je Gattung aus dem Ofen
+    // gegossen und gemessen, der Guss danach frei — fail-closed ohne Gestalt.
+    _gattungLeib(g) {
+        const M = this._gattungLeibMemo || (this._gattungLeibMemo = {});
+        if (M[g]) return M[g];
         const soul = AnazhRealm.CREATURE_SOUL_NAMES.find((n) => AnazhRealm.TETRAPODA_SOUL_MAP[n] === g);
         const leib = soul && this._buildCreatureGroup(soul);
-        const v = leib && leib.userData._tierBaum ? leib.userData._tierBaum.leibV : 0;
+        const tb = leib && leib.userData._tierBaum;
+        const o = { v: tb ? tb.leibV : 0, beinL: tb ? tb.beinL : 0 };
         if (leib) this._disposeSoulGroup(leib);
-        return v > 0 ? (M[g] = v) : AnazhRealm._kernPflichtBruch("leib:Gestalt der Gattung " + g + " ohne Volumen");
+        return o.v > 0 && o.beinL > 0
+            ? (M[g] = o)
+            : AnazhRealm._kernPflichtBruch("leib:Gestalt der Gattung " + g + " ohne Volumen oder Hüfte");
     }
     // Das älteste Tier (das größte Alter in Spiel-Zeit, bei Gleichstand das frühere im Verzeichnis), mit g nur seiner Gattung,
     // mit nur (Map/Set) nur unter ihm — wer am längsten da ist, geht zuerst.
@@ -2229,8 +2271,7 @@ class AnazhRealm_kreatur_leben {
             const opfer = riss > 0 && rng() < riss && this._bestandAeltester(R.tiere, g, beute);
             if (opfer) this._bestandStirbt(R, opfer, "jagd", tode, beute.get(opfer));
         }
-        // die Geburt folgt der EINEN Regel der Kreaturen (`_kreaturenBereit`, K60)
-        if (this._kreaturenBereit()) this._creatureNaturalBirth(bestand, key, rng, !still);
+        this._creatureNaturalBirth(bestand, key, rng, !still);
         const alt = R.tiere.length > 2 && this._bestandAeltester(R.tiere);
         if (alt && alt.alterS * 1000 > AnazhRealm.FAUNA_MAX_AGE_MS) this._bestandStirbt(R, alt, "alter", tode);
     }
@@ -2368,8 +2409,16 @@ class AnazhRealm_kreatur_leben {
         const soll = new Set();
         for (const G of reihe) for (const t of G.tiere) if (!(t.leib && bleibt.has(t.leib)) && platz-- > 0) soll.add(t);
         // wer gehen soll, bleibt, solange er im Blick steht (sein Platz wartet, die Kappe hält: gezeichnet wird nur in freien Platz)
+        // (der Leib selbst, seine Kugel samt dem Rand des Blicks: `_kreaturAusserBlick`, `_kreaturBlickRand` — ohne Frustum fragt
+        // keiner)
+        const fr = this._frustumCache;
+        const rand = this._kreaturBlickRand();
         for (const c of st.creatures.slice())
-            if (!bleibt.has(c) && !soll.has(c.userData._bestand) && !this._kreaturImBlick(c.position.x, c.position.z))
+            if (
+                !bleibt.has(c) &&
+                !soll.has(c.userData._bestand) &&
+                (!fr || (rand >= 0 && this._kreaturAusserBlick(c, fr, rand)))
+            )
                 this._bestandEntkoerpern(c);
         // je Takt höchstens drei Orts-Suchen; eine Gruppe ohne Ort (fern, außer Blick, frei) fragt erst sechs Takte später wieder
         let suchen = 3;
@@ -2389,8 +2438,8 @@ class AnazhRealm_kreatur_leben {
     }
 
     // DIE GRUPPE WIRD GEZEICHNET: ihr erster Leib steht am nächsten Ort der Spirale um den Anker, der fern vom Spieler, außer
-    // Blick, auf freiem Grund und im Lebensraum liegt (`_bestandLeibOrt`), die übrigen im Wurf um ihn (`_kreaturWurf` mit den
-    // Tieren — Raum, Fenster, Lebensraum der Herde); der Verband bindet alle gezeichneten Glieder. Liefert die neuen Leiber.
+    // Blick (der Leib als Kugel, `_kreaturLeibImBlick`), auf freiem Grund und im Lebensraum liegt (`_bestandLeibOrt`), die übrigen im Wurf um ihn (`_kreaturWurf` mit den Tieren — Raum, Fenster, Lebensraum
+    // der Herde); der Verband bindet alle gezeichneten Glieder. Liefert die neuen Leiber.
     _bestandLeiber(fehlt, gruppe = fehlt) {
         const ort = this._bestandLeibOrt(fehlt[0]);
         if (!ort) return [];
@@ -2410,7 +2459,10 @@ class AnazhRealm_kreatur_leben {
         for (let k = 0; k < 64; k++) {
             const x = t.x + Math.cos(k * 2.39996) * 25 * Math.sqrt(k);
             const z = t.z + Math.sin(k * 2.39996) * 25 * Math.sqrt(k);
-            if (Math.hypot(x - p.x, z - p.z) < AnazhRealm.CREATURE_SPAWN_FAR_MIN || this._kreaturImBlick(x, z))
+            if (
+                Math.hypot(x - p.x, z - p.z) < AnazhRealm.CREATURE_SPAWN_FAR_MIN ||
+                this._kreaturLeibImBlick(x, z, t.g, t.bs)
+            )
                 continue;
             if (this._kreaturGrundFrei(x, z) && (!imRaum || lebt(x, z))) return { x, z };
         }
@@ -2437,11 +2489,15 @@ class AnazhRealm_kreatur_leben {
     // Wanduhr); bis oekologie.K2#2 war er die Liste der Körper um den Spieler, und die Kappe hielt die Geburt an. Die Marke des
     // letzten Takts reist nicht mit der Uhr: das Laden setzt sie an die Uhr des Stands (halten.K5,
     // `_loadStateRestoreSoulAndAtmosphere`).
+    // DER BESTAND LEBT, WENN DIE KREATUREN BEREIT SIND (die EINE Regel der Kreaturen, `_kreaturenBereit`, K60): vorher steht
+    // seine Uhr. Bis w7-begegnung lief der Takt schon unter dem Ladeschirm und fragte die Regel erst an der Geburt — die Regionen
+    // holten ihre Stunde ohne eine Geburt nach, und die Stunde war verbraucht (Mess-Wiese: vier Regionen leer bis auf einen Bären).
+    // Das Aufholen geht NAH zuerst (Lehre 25): die Region des Spielers vor ihren Nachbarn.
     tickFaunaLifecycle() {
         const st = this.state;
         const L = st.faunaLifecycle;
         const B = AnazhRealm._bestandGesetz().B;
-        if (st.spielZeit - (L.lastTick || 0) < B.taktS) return;
+        if (!this._kreaturenBereit() || st.spielZeit - (L.lastTick || 0) < B.taktS) return;
         L.lastTick = st.spielZeit;
         this._bestandAdoptieren();
         // DIE OFFENEN RISSE (oekologie.K2): ein Leib, den ein Riss im Nah-Kreis seinem Jäger nannte (sein Tier starb im Gesetz),
@@ -2458,7 +2514,13 @@ class AnazhRealm_kreatur_leben {
         // je nahe Region ihre versäumten Takte (aus EINEM Budget je Takt), dann der Takt des Spielers
         const tode = [];
         let budget = AnazhRealm.BESTAND_REGION.aufholJeTakt;
-        for (const key of this._bestandNah()) {
+        const S = this._bestandSeite();
+        const p = st.playerMesh ? st.playerMesh.position : { x: 0, z: 0 };
+        const abstand = (key) => {
+            const [ix, iz] = key.split(",").map(Number);
+            return Math.hypot((ix + 0.5) * S - p.x, (iz + 0.5) * S - p.z);
+        };
+        for (const key of this._bestandNah().sort((a, b) => abstand(a) - abstand(b))) {
             const vor = this._bestandRegion(key, false).t;
             const R = this._bestandRegion(key, true, 1, budget, tode);
             budget -= Math.round((R.t - vor) / B.taktS);

@@ -1198,15 +1198,21 @@ class AnazhRealm_netz_identitaet {
 
     // Den letzten Snapshot der AKTIVEN Welt lokal pinnen (kein DSL-Op): Hash + Speichern, ein bestehender
     // Pin wird aktualisiert; persistiert über _savePinnedManifest ("anazh.pinnedManifest", global).
-    // Größen-Wand: ein Snapshot-JSON über 256 KiB fällt (bounded Speicher; typisch 20-50 KiB).
+    // Größen-Wand (`PIN_WAND`): ein Snapshot-JSON über 256 KiB fällt (bounded Speicher). DIE WAAGE (Gebot 10): der Pin nennt den
+    // größten Schlüssel seines Stands beim Namen — im Log, in der Absage der Wand, in der Antwort. Gemessen an der Playtest-Welt
+    // (Playtest Φ5): bis w8-snapshot-schlank 262 028 B, 116 B unter der Wand (die Arten des Buchs 154 082 B, die Abschrift der
+    // Tier-Seelen, der Journal-Zwilling `text`/`ki`), danach ~68 kB (größter Schlüssel worldJournal).
     pinCurrentWorld(opts) {
         const wm = this.state.worldMeta;
         if (!wm || !wm.worldId) return { ok: false, reason: "no_world" };
         const worldId = wm.worldId;
         const snapshot = this.buildStateSnapshot();
         const json = JSON.stringify(snapshot);
-        if (json.length > 256 * 1024) {
-            return { ok: false, reason: "snapshot_too_large", bytes: json.length };
+        const groesster = Object.keys(snapshot)
+            .map((k) => [k, (JSON.stringify(snapshot[k]) || "").length])
+            .reduce((a, b) => (b[1] > a[1] ? b : a));
+        if (json.length > AnazhRealm.PIN_WAND) {
+            return { ok: false, reason: "snapshot_too_large", bytes: json.length, groesster };
         }
         const hash = this._fastHash(json);
         const entry = {
@@ -1221,9 +1227,12 @@ class AnazhRealm_netz_identitaet {
         this.state.p2p.pinnedWorlds.set(worldId, entry);
         this._savePinnedManifest();
         if (!opts || !opts.silent) {
-            this.log(`Φ5 Welt „${entry.label}" mitgetragen (Snapshot ${(json.length / 1024).toFixed(1)} KiB)`, "INFO");
+            this.log(
+                `Φ5 Welt „${entry.label}" mitgetragen (Snapshot ${(json.length / 1024).toFixed(1)} KiB, größter Schlüssel ${groesster[0]})`,
+                "INFO"
+            );
         }
-        return { ok: true, worldId, hash, bytes: json.length };
+        return { ok: true, worldId, hash, bytes: json.length, groesster };
     }
 
     // Φ5 — eine getragene Welt loslassen. Idempotent. Persistiert.
@@ -2406,6 +2415,8 @@ AnazhRealm.WORLD_GUEST_RIGHTS_STAGES = Object.freeze(["frieden", "pfad", "mitsch
 // Voxel-Chunk-Span ist FROZEN (43.2 m, _voxelChunkConfig); Region = 8×43.2 = 345.6 m.
 AnazhRealm.REGION_SPAN_M = 345.6;
 AnazhRealm.REGION_HYSTERESIS_M = 10;
+// DIE WAND DES MITTRAGENS (`pinCurrentWorld`): ein Stand über 256 KiB fällt; die Waage der Playtest-Welt (Playtest Φ5 Q15b) hält 30 % Luft
+AnazhRealm.PIN_WAND = 256 * 1024;
 // DIE BIBLIOTHEK: die Decke je Eintrag (Bytes der Hülle — ein Gesetz wiegt Kilobytes, ein Mesh nie) und ihr Speicher-Schlüssel.
 AnazhRealm.BIBLIOTHEK = Object.freeze({ max: 8192, speicher: "anazh.bibliothek" });
 // DER WERK-CODE (Teilen in EINER Geste, Werk und Welt): Präfix, Decke (ein Werk reist in ≤ 4 KB), Abstand vor der Pose des

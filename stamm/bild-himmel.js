@@ -71,6 +71,15 @@ class AnazhRealm_bild_himmel {
             // speist (`_dayNightApplyDirectionalLight`); W9 — ihr Farbton, der Durchlass der EINEN Atmosphäre (`_atmoSonne`)
             sunDir: uniform(new THREE.Vector3(0.4, 0.8, 0.3).normalize()),
             sunCol: uniform(new THREE.Color(1, 0.95, 0.85)),
+            // licht.K4 — das Auge des Bilds (die Kamera, je Bild neben der Bild-Uhr geschrieben, `_loopRender`): der Ort der
+            // Kuppel auf der Schicht (`_wolkenMenge`) — die Kamera eines Passes (Umgebungs-Bake, Spiegel) ist es nie
+            auge: uniform(new THREE.Vector3()),
+            // licht.K4 — DER ZUG DER LUFT je Sekunde der Bild-Uhr in Einheiten der Schicht (`_wolkenFeld`): der EINE Wind
+            // der Fronten (`_dayNightApplySkybox`)
+            zug: uniform(new THREE.Vector2()),
+            // licht.K4 — die klare Sonne gegen die Sonne des Wetters (1 / lightMul, `_dayNightApplySkybox`): mehr trägt eine Lücke
+            // zwischen den Wolken nie (`_wolkenSchatten`)
+            sonneKlar: uniform(1),
         });
         return st.skyboxUniforms;
     }
@@ -78,78 +87,232 @@ class AnazhRealm_bild_himmel {
     // DIE HIMMELS-SICHT in Richtung `vDir` (normiert, ein TSL-Knoten): die EINE Atmosphäre und die Wolken des HIMMEL_GESETZ —
     // die Kuppel zeichnet sie (vDir = normalize(positionLocal), V8.26), das Wasser spiegelt sie (`_wasserBlick`, A1: bis dahin
     // las der Spiegel die Umgebung von 128 × 64 ohne Wolken — wo das Bild den Himmel nicht trug, ein Verlauf).
+    // DAS WOLKEN-FELD (licht.K4): die Menge der Wolke (0 … 1) am Punkt `sp` der Schicht (ein TSL-vec2, in Einheiten
+    // (1 + projY) · hoeheM) — EINE Funktion für die Kuppel (`_wolkenMenge`) und die Karte des Wurfs (`_wolkenKarte`). Sie folgt
+    // HIMMEL_GESETZ (foundry-core — dieselben Zahlen injiziert das Studio in sein GLSL): zwei fbm-Abtastungen (h21/vn verbatim),
+    // Deckungs-smoothstep aus uCloudCover, weiche Ränder. DIE BEWEGUNG hat EINE Quelle, den Wind (`zug`, `_dayNightApplySkybox`):
+    // die Fronten ziehen mit `WIND_FELD.front.zugMS` (850 hPa) längs der Grundrichtung der Saat (phyto-core `windGrund`), die
+    // Luft trägt beide Felder — das Muster wandert in der Welt über den Boden, zur Bild-Uhr (`time`). `drift`/`drift2` des
+    // Gesetzes bewegen den Himmel des Studios, der keinen Wind kennt; in der Welt zogen sie das feine Feld 24 m/s gegen das
+    // grobe, das Muster verformte sich statt zu wandern (licht.K4: der Wurf stand bei r0 0,90).
+    // Fail-closed: das Gesetz lebt NUR in foundry-core (__terrainCore); unlesbar → Bruch, der schreit. Die Bausteine
+    // (h21 · vn2 · fbm2) entstehen einmal je Welt.
+    _wolkenFeld(sp) {
+        const TSL = THREE.TSL;
+        const { vec2, float, dot, floor, fract, mix, smoothstep, clamp, Fn } = TSL;
+        const HG =
+            AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
+        if (!this._wolkenBau || this._wolkenBau.HG !== HG) {
+            const h21 = Fn(([q]) => {
+                const p = fract(q.mul(vec2(123.34, 345.45)));
+                const p2 = p.add(dot(p, p.add(34.345)));
+                return fract(p2.x.mul(p2.y));
+            });
+            const vn2 = Fn(([q]) => {
+                const i = floor(q);
+                const f0 = fract(q);
+                const f = f0.mul(f0).mul(float(3.0).sub(f0.mul(2.0)));
+                return mix(
+                    mix(h21(i), h21(i.add(vec2(1.0, 0.0))), f.x),
+                    mix(h21(i.add(vec2(0.0, 1.0))), h21(i.add(vec2(1.0, 1.0))), f.x),
+                    f.y
+                );
+            });
+            const fbm2 = Fn(([q]) => {
+                let s = float(0.0);
+                let p = q;
+                let a = 0.5;
+                for (let o = 0; o < HG.fbm.okt; o++) {
+                    s = s.add(vn2(p).mul(a));
+                    p = p.mul(HG.fbm.lac).add(HG.fbm.off);
+                    a *= 0.5;
+                }
+                return s;
+            });
+            this._wolkenBau = { HG, fbm2 };
+        }
+        const { fbm2 } = this._wolkenBau;
+        const { time: uTime, cloudCover: cov, zug } = this._himmelUniformen();
+        const luft = sp.add(zug.mul(uTime));
+        const nA = fbm2(luft.mul(HG.s1));
+        const nB = fbm2(luft.mul(HG.s2));
+        const dens = smoothstep(
+            float(HG.dens[0]).sub(cov.mul(HG.dens[1])),
+            float(HG.dens[2]).sub(cov.mul(HG.dens[3])),
+            nA.mul(HG.mixN[0]).add(nB.mul(HG.mixN[1]))
+        );
+        const edgeW = smoothstep(float(0.0), float(HG.edge[0]), nB).mul(HG.edge[1]).add(HG.edge[2]);
+        return clamp(dens.mul(edgeW).mul(HG.deck), float(0.0), float(1.0));
+    }
+
+    // DIE WOLKE DER KUPPEL in Richtung `dir` (normiert) vom Auge: Himmelsebenen-Projektion sp = dir.xz/(dir.y+projY) plus der Ort
+    // des Auges auf der Schicht (`auge.xz / ((1 + projY) · hoeheM)`, im Zenit genau die Lage über ihm) — die Kuppel zeigt das Feld
+    // der Welt, das die Karte des Wurfs trägt; Horizont-Ausklang; max(y, hor0) klemmt den Nenner unter dem Horizont (TSL brancht
+    // nicht wie das Studio) — sonst NaN.
+    _wolkenMenge(dir) {
+        const T = THREE.TSL;
+        const HG =
+            AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
+        const { auge } = this._himmelUniformen();
+        const anker = auge.xz.mul(1 / ((1 + HG.projY) * AnazhRealm.WOLKEN_SCHICHT.hoeheM));
+        const sp = dir.xz.div(T.max(dir.y, T.float(HG.hor[0])).add(HG.projY)).add(anker);
+        return this._wolkenFeld(sp).mul(T.smoothstep(T.float(HG.hor[0]), T.float(HG.hor[1]), dir.y));
+    }
+
+    // DIE KARTE DES WURFS (licht.K4, die Cloud-Shadow-Map von Horizon/MSFS): je Texel die Menge der Wolke an EINEM Punkt der
+    // Schicht in Welt-Koordinaten (`_wolkenFeld`, Zelle `zelleM`, `karte`² um den Punkt, an dem das Licht über dem Spieler die
+    // Schicht quert) als Deckung der Sonne: die Menge, die die Kuppel als Deckkraft der Wolke zeichnet, gewogen mit dem Wetter
+    // (`_wolkenGewicht`: klar 0). EIN Schirm-Pass, neu gemalt, wenn die Bild-Uhr `zugS` weiter ist, die Deckung oder die Mitte
+    // wechselt (`_wolkenKarteTakt`) — nie je Fragment; die Mip-Kette trägt das Mittel der Karte für jeden Empfänger jenseits ihres
+    // Rands und für das Wetter (`_wolkenSchatten`). r8: 0,34 MB mit Mips.
+    _wolkenKarte() {
+        const st = this.state;
+        if (st.wolkenKarte) return st.wolkenKarte;
+        const T = THREE.TSL;
+        const W = AnazhRealm.WOLKEN_SCHICHT;
+        const HG =
+            AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
+        const n = W.karte;
+        const rt = new THREE.RenderTarget(n, n, {
+            type: THREE.UnsignedByteType,
+            format: THREE.RedFormat,
+            depthBuffer: false,
+            generateMipmaps: true,
+            minFilter: THREE.LinearMipmapLinearFilter,
+            magFilter: THREE.LinearFilter,
+        });
+        rt.name = "wolken-karte";
+        rt.texture.name = "wolken-karte";
+        const U = this._uniformHeimatTeilen({
+            ursprung: T.uniform(new THREE.Vector2()),
+            schicht: T.uniform(0),
+            aktiv: T.uniform(0),
+        });
+        const cov = this._himmelUniformen().cloudCover;
+        const pass = AnazhRealm._schirmDreieck(
+            () =>
+                T.Fn(() => {
+                    const u = U.ursprung.add(T.uv().mul(n).sub(0.5).mul(W.zelleM));
+                    const sp = u.mul(1 / ((1 + HG.projY) * W.hoeheM));
+                    return T.vec4(this._wolkenFeld(sp).mul(this._wolkenGewicht(cov)), 0, 0, 1);
+                })(),
+            "wolken-karte"
+        );
+        st.wolkenKarte = { rt, U, pass, mitte: null, zeit: NaN, deckung: NaN, malZahl: 0, stufen: Math.log2(n) };
+        return st.wolkenKarte;
+    }
+
+    // DAS GEWICHT DES WETTERS am Wurf (0 klar … 1 Regen) aus der Deckung (`cov`, ein TSL-Knoten): die Achse des Wetters selbst
+    // (`WOLKEN_SCHICHT.deckung`, dieselben Zahlen, mit denen `_dayNightApplySkybox` die Deckung schreibt) — bei klarem Himmel
+    // wirft keine Wolke, die verstreuten Spitzen der Kuppel bleiben Licht.
+    _wolkenGewicht(cov) {
+        const [klar, regen] = AnazhRealm.WOLKEN_SCHICHT.deckung;
+        return THREE.TSL.clamp(cov.sub(klar).mul(1 / (regen - klar)), 0, 1);
+    }
+
+    // DER TAKT DER KARTE (je Bild aus `_weltLichtTakt`, nach der Bild-Uhr): die Mitte ist der Punkt, an dem das Licht über dem
+    // Spieler die Schicht quert, auf die Zelle gelegt (dasselbe Gitter der Welt — kein Schwimmen); neu gemalt, wenn die Bild-Uhr
+    // `zugS` weiter ist (der Zug 11 m/s: 1,1 m bei 16 m Zelle), die Deckung oder die Mitte wechselt. Der Null-Renderer malt nichts;
+    // ohne Wurf des Lichts (`castShadow`) ruht der Wurf (1) wie der Horizont (`_horizontKarteTakt`).
+    _wolkenKarteTakt() {
+        const st = this.state;
+        const rend = st.renderer;
+        const u = st.skyboxUniforms;
+        if (!u || !rend || rend._isHeadlessNull || !st.rendererReady || !st.weltLicht) return;
+        const pm = st.playerMesh || st.camera;
+        if (!pm) return;
+        const K = this._wolkenKarte();
+        if (!st.directionalLight || !st.directionalLight.castShadow) {
+            K.U.aktiv.value = 0;
+            return;
+        }
+        const W = AnazhRealm.WOLKEN_SCHICHT;
+        const L = st.weltLicht.U.l0d.value;
+        const wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
+        const schicht = wl + W.hoeheM;
+        const s = (schicht - pm.position.y) / Math.max(L.y, W.steilMin);
+        const halb = (W.karte / 2) * W.zelleM;
+        const mx = Math.round((pm.position.x + L.x * s) / W.zelleM) * W.zelleM - halb;
+        const mz = Math.round((pm.position.z + L.z * s) / W.zelleM) * W.zelleM - halb;
+        const t = u.time.value;
+        const c = u.cloudCover.value;
+        const gleich =
+            K.mitte && K.mitte[0] === mx && K.mitte[1] === mz && K.deckung === c && Math.abs(t - K.zeit) < W.zugS;
+        if (!gleich) {
+            K.U.ursprung.value.set(mx, mz);
+            this._atmoZeichne(K.pass, K.rt);
+            K.mitte = [mx, mz];
+            K.zeit = t;
+            K.deckung = c;
+            K.malZahl++;
+        }
+        K.U.schicht.value = schicht;
+        K.U.aktiv.value = 1;
+    }
+
+    // DER WURF DER WOLKE am Welt-Punkt `p` (der Faktor der direkten Sonne): der Strahl des Lichts (`_weltLicht` `l0d`, Sonne oder
+    // Mond) quert die Schicht (`schicht` = Meeresspiegel + hoeheM) über `p` — dort liest er die Karte, bilinear. Zum Rand der Karte
+    // steigt die Stufe in ihre Mip-Kette bis zum Mittel (`rand`); unter `steilMin` klemmt der Strahl, über der Schicht wirft keine
+    // Wolke. DAS MITTEL TRÄGT DAS WETTER: wie viel Sonne im Mittel durchkommt, sagt schon das Richtlicht (lightMul der Wetter-Zeile) —
+    // die Karte sagt nur, WO: der Durchlass (1 − Deckung) je Mittel der Karte (ihre letzte Mip-Stufe, `mittelMin` als Boden),
+    // eine Lücke höchstens die klare Sonne (`sonneKlar`). Bis dahin nahm die Karte das Mittel ein zweites Mal: bewölkt lag die
+    // Wiese unter 1,5 % der Sonne. Vor der ersten Karte 1. Leser: jeder Empfänger der Sonne (`_sonnenSicht` → die Kaskade,
+    // der Licht-Baustein von Feld und Panorama).
+    _wolkenSchatten(p) {
+        const T = THREE.TSL;
+        const W = AnazhRealm.WOLKEN_SCHICHT;
+        const K = this._wolkenKarte();
+        const L = this._weltLicht().U.l0d;
+        const s = K.U.schicht.sub(p.y).div(T.max(L.y, W.steilMin));
+        const q = p.xz.add(L.xz.mul(s)).sub(K.U.ursprung).div(W.zelleM).add(0.5).div(W.karte);
+        const r = T.max(T.abs(q.x.sub(0.5)), T.abs(q.y.sub(0.5))).mul(2);
+        const menge = T.texture(K.rt.texture, q)
+            .level(T.smoothstep(W.rand, 1, r).mul(K.stufen))
+            .r.mul(K.U.aktiv);
+        const mittel = T.texture(K.rt.texture, T.vec2(0.5)).level(K.stufen).r.mul(K.U.aktiv);
+        const durch = T.min(
+            T.float(1)
+                .sub(menge)
+                .div(T.max(T.float(1).sub(mittel), W.mittelMin)),
+            this._himmelUniformen().sonneKlar
+        );
+        return T.mix(durch, T.float(1), T.step(K.U.schicht, p.y));
+    }
+
     _himmelSicht(vDir) {
         const TSL = THREE.TSL;
-        const { vec2, vec3, float, normalize, dot, floor, fract, mix, smoothstep, clamp, max, Fn } = TSL;
+        const { vec3, float, normalize, dot, mix, clamp, max, Fn } = TSL;
         // DER HIMMEL IST DIE ATMOSPHÄRE (D3): die Kuppel liest die Himmels-Sicht der EINEN Atmosphäre (`_atmoLutBau`,
         // Hillaire) — Rayleigh-Blau, Mie-Hof um die Sonne, Dämmerung und Mondnacht aus dem Medium; bis D3 eine Nebel-Kuppel
         // (Indigo-Noise × Tint-Farbe, Horizont-Dunst, drei Halo-Schichten), getunt statt gerechnet. Die Scheibe der Sonne
         // trägt ihr Körper (`sunMesh`), den Hof die Mie-Phase der Tafel.
         const A = this._atmoLutBau();
-        const { time: uTime, cloudCover: uCloudCover, sunDir: uSunDir, sunCol: uSunCol } = this._himmelUniformen();
-        // Das Wolken-Feld folgt HIMMEL_GESETZ (foundry-core — dieselben Zahlen injiziert das Studio in sein
-        // GLSL): Himmelsebenen-Projektion sp=dir.xz/(dir.y+projY), zwei fbm-Abtastungen (h21/vn verbatim),
-        // Deckungs-smoothstep aus uCloudCover, Horizont-Ausklang, Farbton uSunCol (_atmoSonne).
-        // max(y,hor0) klemmt den Nenner unter dem Horizont (TSL brancht nicht wie das Studio) — sonst NaN.
-        // Fail-closed: das Gesetz lebt NUR in foundry-core (__terrainCore); unlesbar → Bruch, der schreit.
+        const { cloudCover: uCloudCover, sunDir: uSunDir, sunCol: uSunCol } = this._himmelUniformen();
+        // Das Wolken-Feld ist die EINE Funktion `_wolkenMenge` (HIMMEL_GESETZ); hier Farbe und Licht der Wolke, Farbton uSunCol
+        // (_atmoSonne).
         const HG =
             AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
-        const h21 = Fn(([q]) => {
-            const p = fract(q.mul(vec2(123.34, 345.45)));
-            const p2 = p.add(dot(p, p.add(34.345)));
-            return fract(p2.x.mul(p2.y));
-        });
-        const vn2 = Fn(([q]) => {
-            const i = floor(q);
-            const f0 = fract(q);
-            const f = f0.mul(f0).mul(float(3.0).sub(f0.mul(2.0)));
-            return mix(
-                mix(h21(i), h21(i.add(vec2(1.0, 0.0))), f.x),
-                mix(h21(i.add(vec2(0.0, 1.0))), h21(i.add(vec2(1.0, 1.0))), f.x),
-                f.y
-            );
-        });
-        const fbm2 = Fn(([q]) => {
-            let s = float(0.0);
-            let p = q;
-            let a = 0.5;
-            for (let o = 0; o < HG.fbm.okt; o++) {
-                s = s.add(vn2(p).mul(a));
-                p = p.mul(HG.fbm.lac).add(HG.fbm.off);
-                a *= 0.5;
-            }
-            return s;
-        });
         // DIE WOLKE NUR, WO SIE IST (A1-n1, Gebot 7): unter `hor[0]` klingt sie auf null aus — dort rechnet die Sicht die
         // Atmosphäre allein (exakt dasselbe Bild); der Spiegel des fernen Wassers liegt ganz darunter (2,6 m Auge, 170 m weit).
         return Fn(() => {
             const sicht = A.himmelFarbe(vDir).toVar();
             TSL.If(vDir.y.greaterThan(HG.hor[0]), () => {
-                const sp = vDir.xz.div(max(vDir.y, float(HG.hor[0])).add(HG.projY));
-                const dr = vec2(uTime.mul(HG.drift[0]), uTime.mul(HG.drift[1]));
-                const nA = fbm2(sp.mul(HG.s1).add(dr));
-                const nB = fbm2(sp.mul(HG.s2).sub(dr.mul(HG.drift2)));
                 const cov = uCloudCover;
-                const dens = smoothstep(
-                    float(HG.dens[0]).sub(cov.mul(HG.dens[1])),
-                    float(HG.dens[2]).sub(cov.mul(HG.dens[3])),
-                    nA.mul(HG.mixN[0]).add(nB.mul(HG.mixN[1]))
-                ).mul(smoothstep(float(HG.hor[0]), float(HG.hor[1]), vDir.y));
                 const saW = clamp(dot(vDir, normalize(uSunDir)).mul(0.5).add(0.5), float(0.0), float(1.0));
                 const litW = mix(
                     vec3(HG.litGrau[0], HG.litGrau[1], HG.litGrau[2]),
                     uSunCol.mul(HG.litSonne[0]).add(HG.litSonne[1]),
                     saW.mul(HG.litSa)
                 );
-                const edgeW = smoothstep(float(0.0), float(HG.edge[0]), nB).mul(HG.edge[1]).add(HG.edge[2]);
-                const cloudAmt = clamp(dens.mul(edgeW).mul(HG.deck), float(0.0), float(1.0));
+                const cloudAmt = this._wolkenMenge(vDir);
                 // Wolken-Farbe = Studio-Gesetz: grau → sonnenbeschienen (litW), bedeckt → dunkler (HG.bedeckt).
                 const cloudColor = mix(litW, vec3(HG.bedeckt[0], HG.bedeckt[1], HG.bedeckt[2]), cov.mul(HG.bedecktK));
-                // DAS LICHT DER WOLKE aus den Tafeln: Sonne und Mond durch die Atmosphäre bis zur Wolken-Ebene (2 km über dem
-                // Auge) auf ihre Oberseite, dazu der Himmel von oben (der Zenit der Himmels-Sicht, E/π) — Lambert. So ist die
-                // Mittags-Wolke weiß über dem Blau und die Nacht-Wolke dunkler als die 18-%-Karte im Mondlicht.
+                // DAS LICHT DER WOLKE aus den Tafeln: Sonne und Mond durch die Atmosphäre bis zur Wolken-Ebene (`WOLKEN_SCHICHT`
+                // über dem Auge — dieselbe Schicht, die ihren Schatten wirft) auf ihre Oberseite, dazu der Himmel von oben (der
+                // Zenit der Himmels-Sicht, E/π) — Lambert. So ist die Mittags-Wolke weiß über dem Blau und die Nacht-Wolke dunkler
+                // als die 18-%-Karte im Mondlicht.
                 const U = A.U;
-                const rW = U.hKm.add(A.RG + 2);
+                const rW = U.hKm.add(A.RG + AnazhRealm.WOLKEN_SCHICHT.hoeheM / 1000);
                 const lichtWolke = A.durchlass(rW, U.sonne.y)
                     .mul(max(U.sonne.y, 0))
                     .add(U.mondE.mul(A.durchlass(rW, U.mond.y)).mul(max(U.mond.y, 0)))
@@ -1293,8 +1456,16 @@ class AnazhRealm_bild_himmel {
     // dem Bezug der Luft (`waterLevel`). Bis D3 standen vier getunte Näherungen nebeneinander (die Luftmassen-Sonne, die
     // Nebel-Kuppel, die Horizont-Farbe der Luft, die CPU-gemalte Umgebung 128×64) — das Verhältnis Sonne : Himmel war gesetzt
     // (4,2), nicht gerechnet (gerechnet 5,1; `diag-atmo-hillaire`).
+    // DER HIMMEL DER WELT (ultiversum.K1): das Medium des Kerns mit der Rayleigh-Tiefe aus dem Gesetz DIESER Welt (`_weltGesetz`,
+    // `himmel.rayleighTiefe`) — die Erde trägt die des Kerns, die Ferne einen Himmel aus rotem Staub. Gemerkt je Kern und Gesetz.
     _atmoGesetz() {
-        return AnazhRealm.Gesetz("terrain:ATMO_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:ATMO_GESETZ");
+        const K = AnazhRealm.Gesetz("terrain:ATMO_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:ATMO_GESETZ");
+        const H = AnazhRealm._weltGesetz(this.state.worldMeta).himmel;
+        const m = this._atmoWelt;
+        if (m && m.K === K && m.H === H) return m.G;
+        const G = Object.freeze({ ...K, rayleighTiefe: Object.freeze(H.rayleighTiefe.slice()) });
+        this._atmoWelt = { K, H, G };
+        return G;
     }
 
     _atmoRechnung() {
@@ -1323,11 +1494,13 @@ class AnazhRealm_bild_himmel {
     // zur Nachbesserung zeichnete jedes Anwenden eines Übergangs Durchlass, Ψ_ms und Himmels-Sicht neu. Sonne und Tafeln
     // lesen dasselbe gestufte Medium.
     _atmoMediumJetzt() {
-        const klar = this._atmoRechnung().betaKlar(this._atmoGesetz());
+        const G = this._atmoGesetz();
+        const klar = this._atmoRechnung().betaKlar(G);
         const k = AnazhRealm.ATMO_LUT.mediumStufe;
         const b = klar * Math.exp(Math.round(Math.log(this._luftBeta() / klar) / k) * k);
-        if (this._atmoM && this._atmoMBeta === b) return this._atmoM;
+        if (this._atmoM && this._atmoMBeta === b && this._atmoMG === G) return this._atmoM;
         this._atmoMBeta = b;
+        this._atmoMG = G; // das Gesetz der Welt gehört zum Schlüssel: ein Welt-Wechsel rechnet das Medium neu
         return (this._atmoM = this._atmoMedium(b));
     }
 
@@ -1371,7 +1544,7 @@ class AnazhRealm_bild_himmel {
             throw new Error("Die Atmosphäre: THREE trägt TSL/MeshBasicNodeMaterial/RenderTarget nicht (Vendor)");
         const T = THREE.TSL;
         const { Fn, float, vec2, vec3, vec4, uv, texture, exp, sqrt, max, clamp, select, Loop, If, dot, length } = T;
-        const G = AnazhRealm.Gesetz("terrain:ATMO_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:ATMO_GESETZ");
+        const G = this._atmoGesetz();
         const Z = AnazhRealm.ATMO_LUT;
         const RG = G.erdeM / 1000,
             RT = G.randM / 1000;
@@ -1829,6 +2002,18 @@ class AnazhRealm_bild_himmel {
         const st = this.state;
         const A = this._atmoLutBau();
         const U = A.U;
+        // DER HIMMEL EINER ANDEREN WELT (ultiversum.K1): die Tafeln reisen mit der Seite (`WELT_GRENZE.seite`), das Gesetz des
+        // Himmels nicht — trägt die Welt ein anderes (`_atmoGesetz`), fallen Anker, Belichtung und Medium der Tafel und werden
+        // aus IHREM Gesetz neu gerechnet (sonst zeichnete die Ferne den Himmel der Erde, solange die Luft gleich blieb)
+        const G = this._atmoGesetz();
+        if (A.gesetz !== G) {
+            A.gesetz = G;
+            A.anker = null;
+            A.belichtung = null;
+            A.mediumBeta = null; // die Uniforms des Mediums und die Tafeln (Durchlass, Ψ_ms, Himmels-Sicht) zeichnen neu
+            A.tafelSchluessel = null; // die Bestrahlungs-Tafel derselben Luft unter dem anderen Gesetz
+            this._himmelFlug = null; // ihr Flug trug die Bestrahlung des alten Himmels
+        }
         // DER ANKER ZUERST (S7): bis die Tafel der klaren Luft am Boden einmal zurückkam (`anker`, der Himmel der Karte
         // unter der Zenit-Sonne), zeichnet der Takt sie — in jedem Wetter und jeder Höhe des Auges; danach das Medium jetzt.
         // Der Null-Renderer malt keinen Himmel (Lehre 16): dort trägt die Karte keinen.
@@ -2007,9 +2192,22 @@ class AnazhRealm_bild_himmel {
         }
         if (u.cloudCover) {
             // Wolken-Deckung: klar 0.12 (thr~0.62 = blauer Himmel mit verstreuten Spitzen; 0.32 las schon als
-            // bewölkt), Regen 0.9 (Overcast). Der FBM-Wolken-Layer liest sie als Schwellen-Senker.
-            u.cloudCover.value = Math.min(1, this._weatherBlendedValue(0.12, 0.9)); // D5a: [0,1]-Konsument clampt lokal
+            // bewölkt), Regen 0.9 (Overcast) — `WOLKEN_SCHICHT.deckung`. Der FBM-Wolken-Layer liest sie als Schwellen-Senker.
+            const [klar, regen] = AnazhRealm.WOLKEN_SCHICHT.deckung;
+            u.cloudCover.value = Math.min(1, this._weatherBlendedValue(klar, regen)); // D5a: [0,1]-Konsument clampt lokal
         }
+        if (u.zug) {
+            // DER ZUG DER WOLKE (licht.K4): die Fronten ziehen mit `zugMS` längs der Grundrichtung der Saat (phyto-core
+            // `windGrund`, der EINE Wind) — in Einheiten der Schicht je Sekunde; das Feld wandert mit (f(u − v·t))
+            const P = globalThis.__phytoCore;
+            const g = P.windGrund((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed");
+            const HG =
+                AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) ||
+                AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
+            const k = -P.WIND_FELD.front.zugMS / ((1 + HG.projY) * AnazhRealm.WOLKEN_SCHICHT.hoeheM);
+            u.zug.value.set(g.x * k, g.z * k);
+        }
+        if (u.sonneKlar) u.sonneKlar.value = 1 / Math.max(tint.lightMul, 1e-3);
     }
 
     // Stern-Feld: die Dämmerung setzt die Grenzgröße (Physik der Sichtbarkeit, nie ein Nacht-Faktor; der Kanal `grenze` der
@@ -2350,7 +2548,10 @@ class AnazhRealm_bild_himmel {
             out[1] += c.g * k;
             out[2] += c.b * k;
         };
-        add(dl.color, dl.intensity * dy);
+        // der Lichtmesser misst den Boden im Bild: die Sonne, die der Horizont des Gesetzes ihm nimmt, misst er nicht
+        // (`_horizontSichtImBild`, dieselbe Karte wie jeder Empfänger); den Wurf der Wolke trägt er im Mittel (lightMul im Richtlicht)
+        const sicht = dy > 0 ? this._horizontSichtImBild(dir) : 1;
+        add(dl.color, dl.intensity * dy * sicht);
         let himmel = this._himmelsBestrahlung(this._himmelE || (this._himmelE = [0, 0, 0]));
         const A = st.atmoLut;
         if (A) {
@@ -2884,13 +3085,14 @@ class AnazhRealm_bild_himmel {
     }
 
     // DAS WETTER AM ORT (wetter.K1): das Wort der Front über (x, z) — der Kern (phyto-core `wetterAt` über die Saat der Welt,
-    // den Ort und die Zeit, ohne `t` die Welt-Uhr `spielZeit`) wählt die Zeile von WX_GESETZ, die Welt spricht ihr Wort
-    // (`WETTER_WORT`). Leser: der Wetter-Zug (`_loopWeatherAndGrowth`).
+    // den Ort und die Zeit, ohne `t` die Welt-Uhr `spielZeit`) wählt die Zeile von WX_GESETZ, die Welt spricht ihr Wort aus der
+    // Wetter-Tafel ihres Gesetzes (`worldMeta.gesetz.wetter`; die Erde: `WETTER_WORT`). Leser: der Wetter-Zug (`_loopWeatherAndGrowth`).
     _wetterAmOrt(x, z, t = this.state.spielZeit) {
         const wm = this.state.worldMeta || {};
         const zeile = globalThis.__phytoCore.wetterAt(wm.seed || "anazh-realm-seed", x, z, t).zeile;
-        const wort = AnazhRealm.WETTER_WORT[zeile];
-        if (!wort) throw new Error("_wetterAmOrt: die Zeile „" + zeile + "“ hat kein Wort der Welt (WETTER_ZEILE)");
+        const wort = AnazhRealm._weltGesetz(wm).wetter[zeile]; // die Wetter-Tafel des Gesetzes DIESER Welt (ultiversum.K1)
+        if (!wort)
+            throw new Error("_wetterAmOrt: die Zeile „" + zeile + "“ hat kein Wort der Welt (ihre Wetter-Tafel)");
         return wort;
     }
 
@@ -3291,6 +3493,23 @@ AnazhRealm._saisonLage = function (phase) {
     return { SG, a: SG.stuetzen[i], b: SG.stuetzen[(i + 1) % 4], k: f - Math.floor(f) };
 };
 AnazhRealm.LUFT = Object.freeze(Object.assign({}, AnazhRealm._atmoKern().luft, { unterwasserM: 30 }));
+// DIE WOLKEN-SCHICHT (licht.K4, `_wolkenFeld` · `_wolkenKarte` · `_wolkenSchatten`): die Höhe der Wolke `hoeheM` — über dem
+// Auge für die Kuppel, über dem Meeresspiegel für den Wurf — die Basis des Schönwetter-Kumulus (0,6–1,5 km); 1 Einheit des groben
+// fbm ≈ 0,73 · hoeheM (580 m). Dieselbe Schicht trägt das Licht der Wolke (`_himmelSicht`). Die Karte des Wurfs: `karte`² Texel
+// à `zelleM` (±4,1 km), neu nach `zugS` Sekunden der Bild-Uhr; die Mip-Stufe steigt ab `rand` (Anteil des halben Rands) bis
+// zum Mittel. `steilMin` klemmt den Sonnen-Strahl über dem Horizont (sin der Sonnenhöhe). `deckung` die Achse des Wetters [klar,
+// Regen]: die Deckung, die `_dayNightApplySkybox` schreibt, und der Nullpunkt des Wurfs (`_wolkenGewicht`). `mittelMin` der Boden
+// des mittleren Durchlasses, gegen den der Wurf misst (im Regen ist die Karte fast ganz Wolke).
+AnazhRealm.WOLKEN_SCHICHT = Object.freeze({
+    hoeheM: 800,
+    steilMin: 0.05,
+    karte: 512,
+    zelleM: 16,
+    zugS: 0.1,
+    rand: 0.8,
+    mittelMin: 0.05,
+    deckung: Object.freeze([0.12, 0.9]),
+});
 // DAS SCHIRM-DREIECK: EIN Dreieck über den ganzen Schirm in der Form von r184 `QuadMesh` (Lage [-1,3 · -1,-1 · 3,-1], uv
 // [0,-1 · 0,1 · 2,1], Ortho-Kamera ±1 in `userData.kamera`), sein Fragment aus `fn()` — die Pässe der Atmosphäre und das
 // Ausgabe-Dreieck jeder Bühne (`_buehneRender`) teilen Geometrie und Kamera.

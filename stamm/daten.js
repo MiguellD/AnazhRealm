@@ -49,6 +49,49 @@ class AnazhRealm_daten {
         const Z = AnazhRealm.WETTER_ZEILE;
         return this._einmal("WETTER_WORT", Object.freeze(Object.fromEntries(Object.keys(Z).map((w) => [Z[w], w]))));
     }
+    // DAS GESETZ DER ERDE (ultiversum.K1): die Konstanten einer Welt, wie die Kerne sie tragen — die Schwere (m/s², die Vorgabe
+    // jeder Welt), der Himmel (die Rayleigh-Tiefe je Kanal, foundry-core `ATMO_GESETZ.rayleighTiefe`), die Wetter-Tafel (je Zeile
+    // der Front, phyto-core `wetterAt`, das Wort der Welt: `WETTER_WORT`) und das Gelände (das Erbgut, null = die Wildnis des
+    // Gelände-Kerns). Jede Welt trägt ihr Gesetz in ihrem Speicher (`worldMeta.gesetz`, `_weltGesetz`); fehlt es, ist sie die Erde.
+    static get WELT_GESETZ_ERDE() {
+        const A = AnazhRealm.Gesetz("terrain:ATMO_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:ATMO_GESETZ");
+        return this._einmal(
+            "WELT_GESETZ_ERDE",
+            Object.freeze({
+                schwere: -9.81,
+                himmel: Object.freeze({ rayleighTiefe: Object.freeze(A.rayleighTiefe.slice()) }),
+                wetter: AnazhRealm.WETTER_WORT,
+                gelaende: null,
+            })
+        );
+    }
+    // DIE WELTEN DES ULTIVERSUMS (ultiversum.K1): je Name EIN Gesetz, das ein Welt-Tor (`portalMeta.gesetz`) bei der Geburt seiner
+    // Welt in deren Speicher legt (`_weltTorBetreten`). Die Ferne: die Schwere des Mars (3,71 m/s² — der Abdruck gegen die kleinere
+    // Schwere wächst mit, ein Sprung trägt fast fünfmal so hoch), ein Himmel aus rotem Staub (die Rayleigh-Tiefe kippt zum Rot: der Zenit wird rostig, nie blau), ein trockenes Klima
+    // (Regen fällt als Wolke, die Bewölkung als Dunst; nur der Sturm bleibt) und ein Hochland (Relief 1,6, Land 0,6 —
+    // `LANDFORM_REGLER` im Wildnis-Term). Ein neues Gesetz ist EINE Zeile hier.
+    static get ULTIVERSUM() {
+        return this._einmal(
+            "ULTIVERSUM",
+            Object.freeze({
+                erde: AnazhRealm.WELT_GESETZ_ERDE,
+                ferne: Object.freeze({
+                    schwere: -3.71,
+                    himmel: Object.freeze({ rayleighTiefe: Object.freeze([0.13, 0.085, 0.05]) }),
+                    wetter: Object.freeze({
+                        klar: "sunny",
+                        bewoelkt: "foggy",
+                        nebel: "foggy",
+                        regen: "cloudy",
+                        sturm: "stormy",
+                    }),
+                    gelaende: Object.freeze({
+                        terme: Object.freeze([Object.freeze({ art: "wildnis", hoehe: 1.6, land: 0.6 })]),
+                    }),
+                }),
+            })
+        );
+    }
     // Wetter als 5-Kanal-Feld {fog,sun,grey,wind,rain} je Wort; der EINE LOOK-Leser `_weatherFieldFor(w)`
     // interpoliert transition-aware (wie `_weatherBlendedValue`). grey entsättigt NUR das Licht, nie den
     // Himmel; wind = Böen-Amplitude; fog multipliziert fogMult; rain/sun Reserve.
@@ -1367,6 +1410,7 @@ class AnazhRealm_daten {
             "portal.einladung": ["{wer} öffnete ein Tor nach „{welt}\"", "{wer} opened a gate to “{welt}”"],
             "portal.geste.faehigkeit.was": ["Fähigkeit „{key}\" gewähren (von „{von}\")", "Grant ability “{key}” (from “{von}”)"],
             "portal.geste.faehigkeit.wem": ["deiner Welt", "your world"],
+            "portal.heimtor": ["Heimtor nach „{welt}\"", "Home gate to “{welt}”"],
             "portal.hinweis.esc-heimat": ["Esc — zurück zur Heimat-Welt", "Esc — back to your home world"],
             "portal.hinweis.esc-konsole": ["Esc — Heimkehr · Konsole — Befehle an diese Welt", "Esc — return home · Console — commands for this world"],
             "portal.hinweis.esc-wohnen": ["Esc — kurz heim (du wohnst hier · „ziehe heim\" beendet das Wohnen)", "Esc — quick trip home (you live here · “ziehe heim” ends your stay)"],
@@ -1378,6 +1422,8 @@ class AnazhRealm_daten {
             "portal.reise.karte-verweigert": ["Portal-Reise zur Welt „{welt}\":\n\nBROKER:  {broker}\nRAUM:    {raum}\nAUTOR:   {autor}\nSTATUS:  {status}\n\nDiese Adresse trägt eine kaputte Signatur — Reise wird verweigert.", "Portal journey to the world “{welt}”:\n\nBROKER:  {broker}\nROOM:    {raum}\nAUTHOR:  {autor}\nSTATUS:  {status}\n\nThis address carries a broken signature — the journey is refused."],
             "portal.reise.ungueltig": ["Signatur UNGÜLTIG — Warnung, das Portal könnte lügen", "Signature INVALID — warning, the portal may be lying"],
             "portal.reise.unsigniert": ["unsigniert (anonyme Adresse)", "unsigned (anonymous address)"],
+            "portal.ultiversum.geboren": ["Du tratst durch das Tor in eine Welt eines anderen Gesetzes: „{welt}\".", "You stepped through the gate into a world of another law: “{welt}”."],
+            "portal.ultiversum.zurueck": ["Du kehrtest durch das Tor heim nach „{welt}\".", "You returned home through the gate to “{welt}”."],
             "portal.server-kontext": ["Server-Kontext", "Server context"],
             "portal.signatur-ungueltig": ["⚠ Signatur dieser Welt ungültig", "⚠ This world's signature is invalid"],
             "portal.signiert.von-dir": ["✓ signiert von dir", "✓ signed by you"],
@@ -2072,6 +2118,8 @@ class AnazhRealm_daten {
             "ui.zufaellig": ["Zufällig", "Random"],
             "ui.zufalls-mix": ["Zufalls-Mix", "Random mix"],
             "ui.zylinder": ["Zylinder", "Cylinder"],
+            "ultiversum.erde": ["Die Erde", "The Earth"],
+            "ultiversum.ferne": ["Die Ferne", "The Far World"],
             "vorschau.badge.eigen": ["eigen", "yours"],
             "vorschau.badge.fest": ["fest", "built-in"],
             "vorschau.badge.praegung": ["Prägung", "Imprint"],

@@ -19,10 +19,11 @@
 //   F) ein Schlüssel einer FAMILIE (`` `präfix.${…}` ``, zur Laufzeit gesetzt) fehlt: je Familie zählt ihre Quelle jede id auf —
 //      die Bücher des Manifests (der Kanal get-book im vm: je Rezept `gestalt.<id>`, je Kern `studio.<kern>`, je Art
 //      `art.<art>`; ohne Zeile spräche es nur das deutsche Wort seines Buchs, `_buchWort`) und die Register der Klasse, aus
-//      denen der Stamm die id nimmt (`dslPositions` → `tat.ort.`, `WETTER_WOERTER` → `wetter.`, `SETZ_VERB` → `ergebnis.verb.`
-//      und sein Präsens → `ergebnis.art.`/`ergebnis.hier.`, `KI_BEISPIELE` → `ki.beispiel-satz.`/`-say.`, `FELDSTIMME_RICHTUNG`
-//      → `feldstimme.richtung.`); eine Familie ohne Quelle steht selbst beim Namen. Ein Zweig aus wenigen Fällen schreibt seine
-//      Schlüssel als Literale (K liest sie), ein freier Wert reist in den Werten, nie im Schlüssel.
+//      denen der Stamm die id nimmt (`ULTIVERSUM` → `ultiversum.`, `dslPositions` → `tat.ort.`, `WETTER_WOERTER` → `wetter.`,
+//      `SETZ_VERB` → `ergebnis.verb.` und sein Präsens → `ergebnis.art.`/`ergebnis.hier.`, `KI_BEISPIELE` →
+//      `ki.beispiel-satz.`/`-say.`, `FELDSTIMME_RICHTUNG` → `feldstimme.richtung.`); eine Familie ohne Quelle steht selbst beim
+//      Namen. Ein Zweig aus wenigen Fällen schreibt seine Schlüssel als Literale (K liest sie), ein freier Wert reist in den
+//      Werten, nie im Schlüssel.
 // DER WERT-TEXT (spielgang.K5#2): ein Satz, den der Spieler als WERT einer Zeile liest, ist selbst eine Senke — die Antwort des
 // Chat-Satzes (`describe:`), die Absage eines Gesetzes (`absage:`) und jede Rückgabe eines Satz-Bauers (SATZ: die Tat in Worten,
 // der Satz des Ergebnisses, die Stimme des Felds, die Absage, die Hilfe, die Antwort auf das Wetter). Bis w8-sprache sah die Wand
@@ -41,8 +42,8 @@ const { ausDatei, stammLib, ROOT, SELBSTTEST, selbsttestEnde, wandEnde } = requi
 const { kanalImVm } = require("./lib/asset-worker-harness.cjs");
 
 // F: die ids jeder Familie aus ihrer EINEN Quelle — das Buch der Kerne des Manifests (der Kanal im vm, ~0,2 s) und die
-// Register der geladenen Klasse, aus denen der Stamm die id nimmt (die Orte der DSL, die Wetter-Worte, die Verben des
-// Ergebnisses, die Beispiele der KI, die Richtungen der Stimme)
+// Register der geladenen Klasse, aus denen der Stamm die id nimmt (die Welten des Ultiversums, die Orte der DSL, die
+// Wetter-Worte, die Verben des Ergebnisses, die Beispiele der KI, die Richtungen der Stimme)
 const { book, stammbaum } = kanalImVm()({ type: "get-book" });
 const kebab = (id) => id.replace(/_/g, "-");
 const quelle = (A) => {
@@ -52,6 +53,7 @@ const quelle = (A) => {
         "gestalt.": Object.keys(book).map(kebab),
         "studio.": stammbaum.kerne.map((k) => k.kern),
         "art.": stammbaum.kerne.flatMap((k) => Object.keys(k.arten)),
+        "ultiversum.": Object.keys(A.ULTIVERSUM),
         "tat.ort.": Object.keys(Reflect.get(A.prototype, "dslPositions", {})).map(kebab),
         "wetter.": A.WETTER_WOERTER,
         "ergebnis.verb.": Object.keys(A.SETZ_VERB),
@@ -196,6 +198,7 @@ if (require.main !== module) {
         ["Familie ohne Quelle", "F", mit("(x) => `hud.neu.${x}`")],
         ["Ort der DSL ohne Zeile", "F", daten(/\n\s*"tat\.ort\.at-origin": .*/, "")],
         ["Wetter-Wort ohne Zeile", "F", daten(/\n\s*"wetter\.foggy": .*/, "")],
+        ["Welt des Ultiversums ohne Zeile", "F", daten(/\n\s*"ultiversum\.ferne": .*/, "")],
     ];
     const fehler = [];
     for (const [name, klasse, mut] of FAELLE) {

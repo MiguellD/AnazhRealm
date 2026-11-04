@@ -38,6 +38,10 @@ class AnazhRealm_netz_portal {
         // Mesh trägt Posen, die Welt rendert die Avatare in IHRER Engine. Vom Registry-/Bauplan-Autor
         // gesetzt oder im ready-Handshake selbst gemeldet (po.coPresence, dieselbe Hebung wie das Manifest).
         meta.coPresence = src.coPresence === true;
+        // DAS WELT-TOR DES ULTIVERSUMS (ultiversum.K1): der Name eines Gesetzes (`AnazhRealm.ULTIVERSUM`) — das Tor führt in eine
+        // Welt dieses Gesetzes (`_weltTorBetreten`), nie in ein Fenster
+        if (typeof src.gesetz === "string" && Object.prototype.hasOwnProperty.call(AnazhRealm.ULTIVERSUM, src.gesetz))
+            meta.gesetz = src.gesetz;
         return meta;
     }
 
@@ -223,6 +227,20 @@ class AnazhRealm_netz_portal {
             // DER EINE ÜBERGABE-KANAL: die Hülle eines Studios reicht sein Werk (Art · Rezept · Same · Prägung) an die Welt. Nur
             // TRUSTED Welten; fail-closed am EINEN Empfänger _studioUebergabeEmpfang (Kern-Klemme · Taille-Cap · must-ignore).
             else if (msg.type === "uebergabe" && po.trust !== "sandboxed") this._studioUebergabeEmpfang(msg);
+            // DER EINE BÄCKER DER KARTE (pipeline.K2): das Labor der Bäume fragt die Karte einer Gestalt der Welt — sie backt hier
+            // (`_karteAbzug`), das Labor zeigt ihre Bytes. Nur TRUSTED Welten; ein Bruch reist laut als `fehler` zurück.
+            else if (msg.type === "karte-bitte" && po.trust !== "sandboxed") {
+                const ziel = po.iframe.contentWindow;
+                const antwort = (m) =>
+                    ziel &&
+                    ziel.postMessage(
+                        Object.assign({ type: "karte-abzug", reqId: msg.reqId }, m),
+                        window.location.origin
+                    );
+                this._karteAbzug(String(msg.art), msg.gestalt | 0).then(antwort, (e) =>
+                    antwort({ art: msg.art, gestalt: msg.gestalt, fehler: String((e && e.message) || e) })
+                );
+            }
             // W17 Phase A — der Transport-Shim einer Multiplayer-Welt postet
             // ihren Netz-Verkehr (`__anazhNet`-Envelope, kein `type`-Feld).
             else if (msg.__anazhNet === true) this._portalNetReceive(msg);
@@ -537,6 +555,8 @@ class AnazhRealm_netz_portal {
         // ENTRY-portalMeta gewinnt vor Blueprint-portalMeta — sonst trügen N Hallen-Slots dieselbe Welt.
         const entryPortalMeta = entry.portalMeta || null;
         const portalMeta = entryPortalMeta || bpPortalMeta;
+        // Ein Welt-Tor des Ultiversums (ein Gesetz oder eine Welt dieses Bodens) führt durch DIE TÜR, nie in ein Fenster
+        if (portalMeta && (portalMeta.gesetz || portalMeta.weltId)) return this._weltTorBetreten(entry, portalMeta);
         if (portalMeta && portalMeta.worldAddress) {
             return this._enterPortalToAddress(entry, portalMeta.worldAddress);
         }
@@ -563,6 +583,78 @@ class AnazhRealm_netz_portal {
         // _resolvePortalWorldId null).
         this._p2pBroadcastPortalInvite();
         return { ok: true };
+    }
+
+    // DAS WELT-TOR DES ULTIVERSUMS (ultiversum.K1): ein Tor, dessen portalMeta eine Welt dieses Bodens nennt — `weltId` (die Welt,
+    // in die es führt) oder `gesetz` (der Name eines Gesetzes in `AnazhRealm.ULTIVERSUM`) —, führt durch DIE TÜR (`_weltBetreten`
+    // → `_weltWechsel`, der Tausch am Ort) in sie. Beim ersten Schritt wird sie geboren: eine frische Welt mit dem Gesetz des
+    // Namens in ihrem Speicher (`worldMeta.gesetz`, durch die Wand `_weltGesetz` vor der Geburt) und dem Heimtor
+    // (`worldMeta.heimTor`, `_heimTorSetzen`); das Tor merkt sich ihre Id am Eintrag (er reist im Stand der Welt), jeder weitere
+    // Schritt wechselt in dieselbe Welt. Durch das Heimtor erwacht die erste Welt mit IHREM Gesetz. → {ok, worldId, geboren}
+    _weltTorBetreten(entry, portalMeta) {
+        const hier = this.state.worldMeta || {};
+        const ziel = (entry.portalMeta && entry.portalMeta.weltId) || portalMeta.weltId || null;
+        if (ziel && ziel === hier.worldId) return { ok: false, reason: "dieselbe_welt" };
+        if (ziel && localStorage.getItem(this.worldStorageKey(ziel))) {
+            const ht = hier.heimTor;
+            if (ht && ht.weltId === ziel)
+                this.journalAppendOnce(
+                    `weltTorHeim:${ziel}`,
+                    "portal",
+                    AnazhRealm._datum(this._t("portal.ultiversum.zurueck", { welt: String(ht.label || ziel) }))
+                );
+            this.saveState();
+            this.log(`Welt-Tor: zurück in die Welt ${ziel.slice(0, 8)}…`, "INFO");
+            this._weltWechsel(ziel);
+            return { ok: true, worldId: ziel, geboren: false };
+        }
+        const name = portalMeta.gesetz;
+        const roh = name ? AnazhRealm.ULTIVERSUM[name] : null;
+        if (!roh) return { ok: false, reason: ziel ? "welt_fehlt" : "gesetz_unbekannt" };
+        const meta = this._generateFreshWorldMeta(name);
+        const snap = this._buildEmptyWorldSnapshot(meta, true);
+        snap.worldMeta.voxelTerrain = true;
+        snap.worldMeta.gesetz = JSON.parse(JSON.stringify(roh));
+        AnazhRealm._weltGesetz(snap.worldMeta);
+        snap.worldMeta.heimTor = { weltId: hier.worldId, label: hier.slug || "" };
+        entry.portalMeta = { ...(entry.portalMeta || portalMeta), weltId: meta.worldId };
+        const welt = this._t(`ultiversum.${name}`);
+        this.log(`Welt-Tor: „${welt}" wird geboren (${meta.worldId.slice(0, 8)}…)`, "INFO");
+        const ab = this._weltBetreten(snap, null, {
+            zeugnisA: {
+                key: `weltTor:${meta.worldId}`,
+                type: "portal",
+                text: this._t("portal.ultiversum.geboren", { welt }),
+            },
+        });
+        return { ...ab, geboren: true };
+    }
+
+    // DAS HEIMTOR (ultiversum.K1): eine Welt, die ein Welt-Tor gebar (`worldMeta.heimTor`), trägt nach ihrer Ankunft ein Tor in
+    // die Welt, aus der es kam — sechs Meter vor dem Spieler auf dem Boden, das Welt-Portal mit der Kennung seiner Herkunft
+    // (`heimtor-<id>`: einmal, der Stand trägt es weiter). Leser: der Anschluss jeder Welt (`_weltAnschluss`).
+    _heimTorSetzen() {
+        const st = this.state;
+        const ht = st.worldMeta && st.worldMeta.heimTor;
+        if (!ht || typeof ht.weltId !== "string" || !st.playerMesh) return null;
+        const id = `heimtor-${ht.weltId}`;
+        const da = (st.architectures || []).find((a) => a && a.id === id);
+        if (da) return da;
+        const p = st.playerMesh.position;
+        const gier = Number.isFinite(st.yaw) ? st.yaw : 0;
+        const x = p.x - Math.sin(gier) * 6;
+        const z = p.z - Math.cos(gier) * 6;
+        const y = this.getTerrainHeightAt(x, z);
+        const e = this.spawnArchitecture("welt_portal", { x, y, z }, { id, precise: true, rotationY: gier });
+        if (!e) {
+            this.log(`Das Heimtor nach ${ht.weltId.slice(0, 8)}… steht nicht (der Bau sagte nein).`, "ERROR");
+            return null;
+        }
+        e.portalMeta = {
+            label: this._t("portal.heimtor", { welt: String(ht.label || ht.weltId.slice(0, 8)) }),
+            weltId: ht.weltId,
+        };
+        return e;
     }
 
     // Durchs Portal in eine ADRESSIERTE Welt:
@@ -1790,7 +1882,8 @@ class AnazhRealm_netz_portal {
         const entry = this._findNearestAffordanceEntry("isPortal", AnazhRealm.PORTAL_REACH_M);
         if (entry) {
             const bp = this.state.blueprints && this.state.blueprints[entry.type];
-            const label = (bp && bp.portalMeta && bp.portalMeta.label) || entry.type;
+            const pm = entry.portalMeta || (bp && bp.portalMeta); // der Eintrag vor dem Bauplan, wie beim Betreten
+            const label = (pm && pm.label) || entry.type;
             prompt.textContent = this._t("portal.betreten", { label: String(label) });
             prompt.hidden = false;
         } else if (!prompt.hidden) {

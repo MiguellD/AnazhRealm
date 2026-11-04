@@ -420,6 +420,7 @@ class AnazhRealm_siedlung_ort {
         const bp = this.state.blueprints && entry ? this.state.blueprints[entry.type] : null;
         const roh = (entry && entry.portalMeta) || (bp && bp.portalMeta) || null;
         if (roh && roh.worldAddress) return null;
+        if (roh && (roh.gesetz || roh.weltId)) return null; // ein Welt-Tor des Ultiversums führt in eine Welt, kein Studio-Fenster
         return this._sanitizePortalMeta(roh, entry ? entry.type : "Portal");
     }
 

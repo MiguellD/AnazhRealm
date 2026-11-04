@@ -40,12 +40,7 @@ function staticLaws(q) {
             stammLib.fehlt(null, /zusatzKindStages|zusatzBudget/, q) && stammLib.fehlt({ ausser: "_foundryIngestRenderConfig" }, /kerneVereinen\(/, q),
             stammLib.fehlt.wo,
         ],
-        // A5: die Brücke greift auf keinen Kern per ns-Literal zu (die Brücke, K42).
-        [
-            "A5: die Bruecke kennt kein self.__vehicleCore-Literal",
-            stammLib.fehlt(null, /self\.__vehicleCore/, { datei: "foundry-bruecke.js" }),
-            stammLib.fehlt.wo,
-        ],
+        // A5 (kein ns-Literal in der Brücke) hält die Verfassung (gate:constitution N2) — EINE Wand, kein Zwilling.
     ];
 }
 

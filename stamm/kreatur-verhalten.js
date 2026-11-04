@@ -2973,13 +2973,13 @@ class AnazhRealm_kreatur_verhalten {
         const cam = st.camera;
         // DER RAND DES BLICKS: der Frustum ist der des Vor-Frames, die Kamera dreht bis zum Render dieses Frames weiter —
         // der Rand wächst um die doppelte Drehung des Vor-Frames; dreht sie schneller als ~69°, ruht in diesem Frame keiner.
-        let rand = -1;
+        let rand = (this._blickRand = -1); // die Geburt und das Entkörpern fragen denselben Rand (`_kreaturBlickRand`)
         if (fr && cam && auge) {
             const q = this._ruheKamQ || (this._ruheKamQ = cam.quaternion.clone());
             const dreh = 2 * Math.acos(Math.min(1, Math.abs(q.dot(cam.quaternion))));
             q.copy(cam.quaternion);
             const winkel = R.randGrad * (Math.PI / 180) + 2 * dreh;
-            if (winkel < 1.2) rand = Math.tan(winkel);
+            if (winkel < 1.2) rand = this._blickRand = Math.tan(winkel);
         }
         for (let i = 0; i < W.length; i++) {
             const c = W[i];
