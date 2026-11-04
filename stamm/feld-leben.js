@@ -214,7 +214,7 @@ class AnazhRealm_feld_leben {
         // Die Welt zuerst atmen lassen (der WOW), DANN die sanfte Einladung des
         // Begleiters — diegetisch in der Dialog-Box, kein Modal verdeckt die Sicht.
         const invite = () => {
-            this.grokRender(this._firstWelcomeMessage());
+            this.grokRender(this._firstWelcomeZeile());
             try {
                 if (typeof localStorage !== "undefined") localStorage.setItem("anazh.ui.skipIntro", "true");
             } catch {
@@ -230,8 +230,11 @@ class AnazhRealm_feld_leben {
     // Die EINE Begrüssung des Begleiters — eine Einladung, keine Anleitung. Sie
     // erklärt nichts (kein WASD/Hotbar-Dump), sie öffnet die Tür: die Welt wächst
     // aus dem ersten Wort. Das ist der WOW — die Welt antwortet auf deine Stimme.
+    _firstWelcomeZeile() {
+        return ["rede.eins-gruss"];
+    }
     _firstWelcomeMessage() {
-        return this._t("rede.eins-gruss");
+        return this._t(...this._firstWelcomeZeile());
     }
 
     // DIE TAT IN WORTEN (spielgang.K5#2): ein DSL-Programm als EINE Zeile der Tafel `[schlüssel, werte]` — jede Sprache liest
