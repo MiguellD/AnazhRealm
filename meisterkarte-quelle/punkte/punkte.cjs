@@ -118,6 +118,11 @@ function kriterienDerKarte(srcDir = path.join(QUELLE, "src")) {
 
 const geraeteVon = (st) => (Array.isArray(st.geraet) ? st.geraet : [st.geraet]);
 const schluessel = (st) => st.kriterium + "#" + st.staffel;
+// DER PFLICHT-RICHTER (04.11., Koordinator: „die 330 bleiben“): eine Station mit pflicht: true und kriterium "pflicht.<Eintrag>" misst
+// einen Teil von PFLICHT-OFFEN, den kein Kriterium der Karte trägt. Sie fährt und urteilt wie jede Station, trägt aber keine Punkte:
+// die Buchung führt sie in pflichtJe (nie in je, also nie in Σ und nie in gen.cjs), das Pflicht-Band liest sie dort.
+const PFLICHT_KRITERIUM = /^pflicht\.[A-Z]$/;
+const istPflicht = (st) => !!st && st.pflicht === true && PFLICHT_KRITERIUM.test(st.kriterium);
 
 function hilfeText() {
     return fs.readFileSync(path.join(DIR, "hilfe.cjs"), "utf8");
@@ -211,8 +216,10 @@ function pruefeStationen(liste, karte) {
     for (const st of liste) {
         const wer = (st && st.kriterium) + "#" + (st && st.staffel);
         const f = [];
-        const k = st && karte.get(st.kriterium);
+        const k = st && (istPflicht(st) || karte.get(st.kriterium));
         if (!k) f.push("Kriterium unbekannt");
+        if (st && (st.pflicht !== undefined || PFLICHT_KRITERIUM.test(st.kriterium || "")) && !istPflicht(st))
+            f.push("ein Pflicht-Richter trägt pflicht: true UND kriterium pflicht.<Eintrag>");
         if (![1, 2].includes(st.staffel)) f.push("staffel nicht 1|2");
         if (st && st.befehl === null) {
             fehler.push(wer + ": befehl null gehört in module.exports.fehlt (mit grund), nie in die fahrbare Liste");
@@ -274,6 +281,8 @@ function pruefeStationen(liste, karte) {
         if (!Array.isArray(st.pfad) || !st.pfad.length || st.pfad.some((p) => typeof p !== "string" || !p))
             f.push("pfad leer (R6 könnte nie fallen)");
         if (typeof st.quelle !== "string" || st.quelle.length < 8) f.push("quelle fehlt");
+        // der Pflicht-Richter hat keine Staffel der Karte: seine quelle nennt den Eintrag („PFLICHT-OFFEN E = …“)
+        else if (istPflicht(st)) { if (!st.quelle.startsWith("PFLICHT-OFFEN " + st.kriterium.slice(-1) + " = ")) f.push("quelle nennt nicht „PFLICHT-OFFEN " + st.kriterium.slice(-1) + " = …“"); }
         else if (k && !String(k.staffel).includes(st.quelle)) f.push("quelle steht nicht wörtlich in der Staffel");
         else if (k && !new RegExp("(^|\\s)" + st.staffel + " =").test(st.quelle)) f.push("quelle nennt nicht die Stufe " + st.staffel + " =");
         if (gesehen.has(wer)) f.push("doppelt");
@@ -3015,7 +3024,7 @@ function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehl
     const frisch = frischUrteil(messungen, geaendert, hilfe, opt);
     // DIE RATSCHE: das GRÜN der letzten Buchung je Station und Gerät (opt.vorher = stand.json der letzten Buchung)
     const vorher = new Map();
-    for (const e of Object.values((opt.vorher && opt.vorher.je) || {}))
+    for (const e of [...Object.values((opt.vorher && opt.vorher.je) || {}), ...Object.values((opt.vorher && opt.vorher.pflichtJe) || {})])
         for (const x of e.stationen || []) if (x.gruen && x.sha) vorher.set(x.id + "|" + x.geraet, x);
     const rueckfall = [];
     const stand = (st, g) => {
@@ -3028,8 +3037,10 @@ function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehl
         return { gruen: true, zahl: v.zahl, sha: v.sha, gehalten: true, grund: e.grund };
     };
     const je = {};
+    const pflichtJe = {};
     const kriterien = [...new Set(stationen.map((s) => s.kriterium))].sort();
     for (const k of kriterien) {
+        const pflicht = stationen.some((s) => s.kriterium === k && istPflicht(s));
         const { s1, s2, punkte } = stufen(stationen.filter((s) => s.kriterium === k), stand);
         const teile = [];
         const offen = [];
@@ -3042,8 +3053,8 @@ function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehl
                 }
         // eine Staffel ohne Werkzeug (fehlt) nennt sich im Beleg — die Maschine bucht sie nie
         if (s1.ok) for (const f of fehlt) if (f.kriterium === k && f.staffel === 2) offen.push(k + "#2: kein Werkzeug (fehlt)");
-        je[k] = {
-            punkte,
+        (pflicht ? pflichtJe : je)[k] = {
+            punkte: pflicht ? 0 : punkte,
             beleg: "Maschine: " + (teile.length ? teile.join(" · ") : "0") + (offen.length ? " — offen: " + offen.join(" · ") : ""),
             // ungemessen/tot: das Frische-Urteil selbst — keine frische Messung am Kopf (tot: die Wand PFAD, eine Messung heilt sie nie)
             stationen: [s1, s2].flatMap((s) => s.r.flatMap((x) => x.je.map((y) => ({ id: schluessel(x.s), geraet: y.g, gruen: !!y.e.gruen, zahl: y.e.zahl || null, sha: y.e.sha || null, grund: y.e.grund || null,
@@ -3051,7 +3062,7 @@ function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehl
                 ...(x.s.beide ? { beide: true } : {}) })))),
         };
     }
-    return { kopf, je, rueckfall };
+    return { kopf, je, pflichtJe, rueckfall };
 }
 
 function ladeMessungen(mdir = path.join(DIR, "messung")) {
@@ -3323,7 +3334,7 @@ function buchenCli(opt) {
     if (zu) {
         const tafeln = {};
         for (const e of zu.eintraege || []) if (e.tafel && !tafeln[e.tafel]) tafeln[e.tafel] = JSON.parse(git(["show", kopfVoll + ":" + e.tafel], repo));
-        s.pflicht = pflichtBand(s.je, zu, git(["show", kopfVoll + ":" + zu.dokument], repo), tafeln);
+        s.pflicht = pflichtBand({ ...s.je, ...s.pflichtJe }, zu, git(["show", kopfVoll + ":" + zu.dokument], repo), tafeln);
     }
     if (opt.trocken) return s;
     fs.writeFileSync(path.join(DIR, "stand.json"), JSON.stringify(s, null, 1) + "\n");
@@ -3333,6 +3344,7 @@ function buchenCli(opt) {
 // die Zeilen einer Buchung — `buchen` nach dem Schreiben, `buchen --trocken` ohne (stand.json bleibt unberührt)
 function buchungZeigen(s, wohin) {
     for (const [k, e] of Object.entries(s.je)) console.log("  " + k + " " + e.punkte + " · " + e.beleg);
+    for (const [k, e] of Object.entries(s.pflichtJe || {})) console.log("  " + k + " (Pflicht-Richter, ohne Punkte) · " + e.beleg);
     for (const r of s.rueckfall) console.log("  RÜCKFALL " + r);
     if (s.pflicht) for (const z of pflichtZeilen(s.pflicht)) console.log(z);
     const gehalten = Object.values(s.je).reduce((a, e) => a + e.stationen.filter((x) => x.gehalten).length, 0);
@@ -3481,6 +3493,9 @@ async function selbsttest(o = {}) {
         urteil: () => ({ gruen: true, zahl: "x" }), pfad: ["stamm/wasser-*.js"], quelle: "1 = alle Leser folgen der 50-Punkte-Kern-Mutation an einem Ort" };
     const fv = [
         ["FORMAT-ROT Kriterium unbekannt", { kriterium: "gelaende.K9" }, /Kriterium unbekannt/],
+        ["FORMAT-ROT Pflicht-Kriterium ohne pflicht: true", { kriterium: "pflicht.E" }, /Pflicht-Richter trägt pflicht: true/],
+        ["FORMAT-ROT pflicht: true an einem Kriterium der Karte", { pflicht: true }, /Pflicht-Richter trägt pflicht: true/],
+        ["FORMAT-ROT Pflicht-Richter ohne „PFLICHT-OFFEN E = …“", { kriterium: "pflicht.E", pflicht: true }, /quelle nennt nicht „PFLICHT-OFFEN E = …“/],
         ["FORMAT-ROT Quelle nicht wörtlich", { quelle: "1 = alle Leser folgen irgendwie" }, /nicht wörtlich/],
         ["FORMAT-ROT Quelle andere Stufe", { staffel: 2, quelle: "1 = alle Leser folgen der 50-Punkte-Kern-Mutation an einem Ort" }, /Stufe 2/],
         ["FORMAT-ROT Pfad leer", { pfad: [] }, /pfad leer/],
@@ -3501,6 +3516,8 @@ async function selbsttest(o = {}) {
         const d = pruefeStationen([st0, st0], karte);
         pruef("FORMAT-ROT doppelte Station", d.fehler.some((f) => /doppelt/.test(f)), d.fehler.join(" | "));
         const n = pruefeStationen([st0, { kriterium: "gelaende.K4", staffel: 2, befehl: null, grund: "kein Werkzeug" }], karte);
+        const pf = pruefeStationen([{ ...st0, kriterium: "pflicht.E", pflicht: true, quelle: "PFLICHT-OFFEN E = Frame p95 ≤ 33 ms in jeder Stand-Zelle" }], karte);
+        pruef("FORMAT der Pflicht-Richter (pflicht: true, pflicht.E, „PFLICHT-OFFEN E = …“) ist fahrbar ohne Kriterium der Karte", !pf.fehler.length && pf.stationen.length === 1, pf.fehler.join(" | "));
         pruef("FORMAT-ROT befehl null in der fahrbaren Liste", n.fehler.some((f) => /gehört in module.exports.fehlt/.test(f)) && n.stationen.length === 1, n.fehler.join(" | "));
         const fl = pruefeFehlt([{ kriterium: "gelaende.K4", staffel: 2, befehl: null }, { kriterium: "gelaende.K4", staffel: 1, befehl: null, grund: "kein Werkzeug" }], karte, [st0]);
         pruef("FORMAT-ROT fehlt ohne Grund · fehlt zugleich fahrbar", fl.length === 2 && /grund fehlt/.test(fl[0]) && /zugleich fahrbare/.test(fl[1]), fl.join(" | "));
@@ -3957,6 +3974,14 @@ async function selbsttest(o = {}) {
     const m2 = [M("a1", "radeon", "gelaende.K4#1", s1, true), M("a1", "radeon", "gelaende.K4#2", s2, true), M("b2", "gtx", "gelaende.K4#2", s2, true)];
     b = buchen("kopf", [s1, s2], m2, keine, h);
     pruef("BUCHUNG 2 Geräte → 2", b.je["gelaende.K4"].punkte === 2, b.je["gelaende.K4"].beleg);
+    // der Pflicht-Richter: grün an beiden Geräten, aber ohne Punkte — nur in pflichtJe, nie in je (Σ und gen.cjs bleiben bei den 330)
+    const sp = { ...s1, kriterium: "pflicht.E", pflicht: true, beide: true, quelle: "PFLICHT-OFFEN E = Frame p95 ≤ 33 ms in jeder Stand-Zelle an beiden Geräten" };
+    b = buchen("kopf", [s1, s2, sp], [...m2, M("a1", "radeon", "pflicht.E#1", sp, true), M("a1", "gtx", "pflicht.E#1", sp, true)], keine, h);
+    pruef("BUCHUNG Pflicht-Richter in pflichtJe mit 0 Punkten, nie in je",
+        !b.je["pflicht.E"] && !!b.pflichtJe["pflicht.E"] && b.pflichtJe["pflicht.E"].punkte === 0 && b.pflichtJe["pflicht.E"].stationen.filter((x) => x.gruen).length === 2 && b.je["gelaende.K4"].punkte === 2,
+        JSON.stringify(b.pflichtJe));
+    const pbE = pflichtBand({ ...b.je, ...b.pflichtJe }, { dokument: "d.md", eintraege: [{ id: "E", titel: "e", stationen: ["pflicht.E#1"] }] }, "E) DAS BAND — **E fällt, wenn p95 hält.**");
+    pruef("PFLICHT das Band liest den Pflicht-Richter aus pflichtJe (E grün, 2/2 Paare, 0 Punkte)", pbE.eintraege[0].status === "grün" && pbE.eintraege[0].gesamt === 2 && pbE.eintraege[0].punkte === 0, JSON.stringify(pbE.eintraege[0]));
     b = buchen("kopf", [s1, s2], m2, (sha) => (sha === "b2" ? ["stamm/wasser-hydro.js"] : ["docs/x.md"]), h);
     pruef("BUCHUNG R6 Pfad geändert → GTX alt → 1", b.je["gelaende.K4"].punkte === 1 && /R6/.test(b.je["gelaende.K4"].beleg), b.je["gelaende.K4"].beleg);
     // DIE RATSCHE: das GRÜN der letzten Buchung hält ohne frische Messung, ein frisches ROT nimmt es beim Namen, die Wand PFAD hält nie
