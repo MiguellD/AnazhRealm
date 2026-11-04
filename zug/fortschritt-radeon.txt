@@ -1745,3 +1745,4 @@
 2026-11-04 13:46:13 6eeeb856-radeon ENDE 0 grün / 2 rot · 2.8 min
 2026-11-04 13:47:34 10770eb5-radeon START 2 Stationen
 2026-11-04 13:48:22 10770eb5-radeon profiband.K4#1 ROT 0.5 · 1/2
+2026-11-04 13:48:54 10770eb5-radeon licht.K5#1 GRÜN 0.5 · 2/2
