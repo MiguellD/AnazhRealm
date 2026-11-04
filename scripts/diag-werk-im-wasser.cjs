@@ -1291,10 +1291,10 @@ async function probe(A) {
                 };
                 const fall = (name, satz, gewollt, wunsch, grund, setzen) => {
                     const vorA = new Set(st.architectures);
-                    const vorK = st.creatures.length;
+                    const vorK = new Set(st.creatures); // je Leib: weicht an der Kappe ein Tier des Bestands, bleibt die Zahl gleich
                     const chat = sprich(satz);
                     const neuA = neueWerke(vorA);
-                    const gesetzt = setzen === "kreatur" ? st.creatures.length - vorK : neuA.length;
+                    const gesetzt = setzen === "kreatur" ? st.creatures.filter((c) => !vorK.has(c)).length : neuA.length;
                     E.faelle.push({ name, satz, gewollt, gesetzt, wunsch, grund, chat });
                     for (const e of neuA) r.removeArchitecture(e);
                 };
