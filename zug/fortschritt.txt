@@ -1669,3 +1669,4 @@
 2026-11-04 20:13:33 omen-gtx-main-becfdbb7 START 3 Proben (vegetation.K1#1,haar.K1#1,haar.K2#1, GTX am Zweig-Kopf)
 2026-11-04 20:13:52 omen-gtx-w10-treue-37f0dacc START 3 Proben (lod.K2#1,lod.K5#1,lod.K3#1, GTX am Zweig-Kopf)
 2026-11-04 20:14:01 omen-speicher ALARM Commit 16.2/18.2 GB - 9xchrome 2.5G, 12xclaude 2.0G, 1xOneDrive 0.7G, 1xMsMpEng 0.6G, 86xsvchost 0.6G, 4xpowershell 0.3G
+2026-11-04 20:16:01 omen-speicher ENTWARNUNG Commit 13.0/18.2 GB
