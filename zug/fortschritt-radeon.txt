@@ -1808,3 +1808,4 @@
 2026-11-04 16:50:51 3acaac9e-radeon ENDE 0 grün / 2 rot · 2.9 min
 2026-11-04 17:10:57 0d88e8d2-radeon START 2 Stationen
 2026-11-04 17:12:05 0d88e8d2-radeon vegetation.K2#1 ROT 0.1 · 1/2
+2026-11-04 17:14:27 0d88e8d2-radeon ENDE 0 grün / 1 rot · 3.5 min
