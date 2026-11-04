@@ -20,3 +20,4 @@ w5-studios-k1 d5aa0e1f GRÜN check+playtest-voll+haus-welt+koerper-kern+koerper-
 w5-studios-k1 d5aa0e1f GRÜN Nachtrag Φ5=261880B (Sonde 22:15, main 2d2a5f11 261952–261963 B: −~75 B)
 w7-rang 9910fb73 ROT merge KONFLIKT mit main 2d2a5f11: 
 w7-rang 9910fb73 OFFEN Korrektur: ROT merge 00:49 war Werkzeug (Neustart-Wettlauf mit den gefällten Prozessen, merge.log leer, keine Konflikt-Datei); Vorprüfung läuft neu nach begegnung
+w5-studios-k1 a213119b ROT playtest-voll Φ5=261942B ❌ 1 Invariante(n) verletzt: Leistungs-Vertrag: 0 Stand-Churn (0), der Ingest-Takt 3/1 je Frame in Reihenfolge, die Gruppen klettern nicht (59 → 59), die Mess-Flächen im Trace, Szene 13.4 MB < 700, der Selbsttest feu
