@@ -1576,10 +1576,7 @@ function entsorgungen(srcRoh) {
         materials: "material",
         stoffe: "material",
     };
-    const traeger = (n) =>
-        n && n.type === "MemberExpression" && !n.computed && n.property && TRAEGER_ART[n.property.name]
-            ? TRAEGER_ART[n.property.name]
-            : null;
+    const traeger = (n) => TRAEGER_ART[gliedName(n)] || null;
     const artVon = (e, bind) => {
         if (!e) return null;
         if (e.type === "Identifier") return bind.get(e.name) || (/Memo$/.test(e.name) ? "memo" : null);
@@ -1925,6 +1922,9 @@ const GEO_SCHREIBEN = /^(setAttribute|setIndex|addGroup|setDrawRange|computeVert
 const GEO_TRAEGER = /geo/i;
 // DER GLIED-RUF: `e` ruft ein Glied mit festem Namen (`objekt.name(…)`, nicht berechnet) — `name` ein Wort, ein Muster
 // oder null (jeder Name), `dies`: das Objekt ist `this`. Die EINE Prüfung, die bis hier jede Fang-Regel selbst ausschrieb.
+// DER GLIED-NAME: `k` ist ein festes Glied (`objekt.name`, nicht berechnet) → sein Name, sonst null — die Glied-Prüfung, die
+// bis w6-baecker jede Fang-Regel (Träger, TSL, Bau, needsUpdate, onmessage, Fehler-Hörer, …) selbst ausschrieb.
+const gliedName = (k) => (k && k.type === "MemberExpression" && !k.computed ? k.property.name : null);
 const gliedRuf = (e, name, dies) =>
     e.type === "CallExpression" &&
     e.callee.type === "MemberExpression" &&
@@ -1932,8 +1932,7 @@ const gliedRuf = (e, name, dies) =>
     (!dies || e.callee.object.type === "ThisExpression") &&
     (name == null || (name.test ? name.test(e.callee.property.name) : e.callee.property.name === name));
 // DER NAME EINES KNOTENS: ein Bezeichner (`geo`) oder sein letztes Glied (`this.geo`), sonst ""
-const knotenName = (k) =>
-    k.type === "Identifier" ? k.name : k.type === "MemberExpression" && !k.computed ? k.property.name : "";
+const knotenName = (k) => (k.type === "Identifier" ? k.name : gliedName(k) || "");
 function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
     const acorn = require("acorn");
     const kommentare = [];
@@ -2047,29 +2046,17 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
         geheVersuch(n, (e) => {
             if (hit) return;
             if (istThreeTsl(e)) hit = "liest THREE.TSL";
-            else if (
-                e.type === "MemberExpression" &&
-                !e.computed &&
-                e.object.type === "Identifier" &&
-                al.has(e.object.name)
-            )
+            else if (gliedName(e) && e.object.type === "Identifier" && al.has(e.object.name))
                 hit = "liest TSL (" + e.object.name + ")";
             else if (e.type === "CallExpression" && e.callee.type === "Identifier" && gl.has(e.callee.name))
                 hit = "ruft das TSL-Glied " + e.callee.name;
             else if (
                 e.type === "NewExpression" &&
-                e.callee.type === "MemberExpression" &&
-                !e.callee.computed &&
-                e.callee.object.type === "Identifier" &&
-                RENDER_KLASSE.test(e.callee.property.name)
+                RENDER_KLASSE.test(gliedName(e.callee)) &&
+                e.callee.object.type === "Identifier"
             )
                 hit = "baut " + e.callee.property.name;
-            else if (
-                e.type === "AssignmentExpression" &&
-                e.left.type === "MemberExpression" &&
-                !e.left.computed &&
-                e.left.property.name === "needsUpdate"
-            )
+            else if (e.type === "AssignmentExpression" && gliedName(e.left) === "needsUpdate")
                 hit = "lädt hoch (needsUpdate)";
             else if (gliedRuf(e, GEO_SCHREIBEN) && GEO_TRAEGER.test(knotenName(e.callee.object)))
                 hit = "schreibt die Geometrie (" + e.callee.property.name + ")";
@@ -2105,13 +2092,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
         const s = new Set();
         if (!startetFaden(n)) return s;
         gehe(n, (e) => {
-            if (
-                e.type === "AssignmentExpression" &&
-                e.left.type === "MemberExpression" &&
-                !e.left.computed &&
-                e.left.property.name === "onmessage" &&
-                /Function/.test(e.right.type)
-            )
+            if (e.type === "AssignmentExpression" && gliedName(e.left) === "onmessage" && /Function/.test(e.right.type))
                 gehe(e.right, (c) => {
                     if (gliedRuf(c, null, true)) s.add(c.callee.property.name);
                 });
@@ -2175,12 +2156,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
             let ziel = null;
             let fn = null;
             let art = null;
-            if (
-                e.type === "AssignmentExpression" &&
-                e.left.type === "MemberExpression" &&
-                !e.left.computed &&
-                /Function/.test(e.right.type)
-            ) {
+            if (e.type === "AssignmentExpression" && gliedName(e.left) && /Function/.test(e.right.type)) {
                 ziel = text(e.left.object);
                 fn = e.right;
                 art = e.left.property.name;
@@ -2292,9 +2268,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
                 e.operator === "===" &&
                 e.right.type === "Literal" &&
                 e.right.value === true &&
-                e.left.type === "MemberExpression" &&
-                !e.left.computed &&
-                e.left.property.name === "stoff" &&
+                gliedName(e.left) === "stoff" &&
                 e.left.object.type === "Identifier"
             )
                 aus.add(e.left.object.name);
@@ -2570,11 +2544,9 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
         gehe(m.value, (n) => {
             if (
                 n.type === "AssignmentExpression" &&
-                n.left.type === "MemberExpression" &&
-                !n.left.computed &&
+                /^__\w*(Error|Fehler)/.test(gliedName(n.left)) &&
                 n.left.object.type === "Identifier" &&
-                n.left.object.name === "window" &&
-                /^__\w*(Error|Fehler)/.test(n.left.property.name)
+                n.left.object.name === "window"
             )
                 fund("Fehler-Variable", name, n, `window.${n.left.property.name} (kein Spiel-Leser)`);
         });
@@ -3612,9 +3584,7 @@ function main() {
                     ort = n.arguments[0];
                 } else if (
                     n.type === "AssignmentExpression" &&
-                    n.left.type === "MemberExpression" &&
-                    !n.left.computed &&
-                    /^(onerror|onmessageerror)$/.test(n.left.property.name) &&
+                    /^(onerror|onmessageerror)$/.test(gliedName(n.left)) &&
                     /Function/.test(n.right.type)
                 ) {
                     // der Fehler-Hörer eines Fadens (Fortsetzung der Nachbesserung 2): sein Fang ist sein Rumpf
