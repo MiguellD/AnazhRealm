@@ -27,6 +27,7 @@ class AnazhRealm_dirigent_takt {
             // gesetzt und bleibt frisch → kein Delta-Sprung beim Verlassen.
             // DIE EINGABE je Bild (leib.K5): das Gamepad in die Verb-Tafel, der Blick in die Kamera-Kugel — auch bei offenem Portal,
             // dessen Zurück-Knopf es verlässt (`_eingabeTakt`)
+            if (this._spur) this._spurTakt(false); // die fällige Spur zuerst (spielgang.K1): sie IST die Eingabe dieses Takts
             this._eingabeTakt(delta);
             if (this._portalOverlay) return;
             this.state.spielZeit += delta; // DIE WELT-UHR: nur Takte der Heimat-Welt zählen (das Portal friert sie ein)
@@ -911,6 +912,7 @@ class AnazhRealm_dirigent_takt {
     // Physik integriert sie im SELBEN Schritt (leib.K1: die Ordnung Physik → Bewegung trug die Taste erst einen Schritt später
     // in die Lage — 16,7 ms jeder Anfahrt; die Folge der Schritte ist dieselbe, die Eingabe greift einen Schritt früher).
     _stepFixedSim(simTime, dt) {
+        if (this._spur) this._spurTakt(true); // die Spur dieses Schritts (spielgang.K1), vor dem Sammler
         this._verbTafelSammeln(); // die Eingabe dieses Schritts: Tastatur und Pad → die Verb-Tafel (leib.K5)
         // die Gier des gerittenen Werks VOR dem Schritt: das Bild dreht den Wagen zwischen ihr und der neuen (`_tickMountedMovement`)
         if (this._mountedEntry) this._mountedEntry._gierVor = this._mountedEntry._rideYaw;
@@ -1140,6 +1142,239 @@ class AnazhRealm_dirigent_takt {
         const end = this._replaySnapshotState();
         Object.assign(s, gerettet);
         return end;
+    }
+
+    // ═══ DIE SPUR (spielgang.K1) — die Aufnahme der Spieler-Eingaben und ihr Abspieler ═══
+    // Die Spur steht am Rand des Geräts: was der Browser der Seite liefert — jedes Tasten-, Zeiger- und Rad-Ereignis, die
+    // Eingabe in ein Feld, der Fokus, der gefangene Zeiger und das Gamepad —, gestempelt mit dem Sim-Schritt der Welt-Uhr seit
+    // der Kontrolle (der Ladeschirm weicht; was er hält, gehört keinem). Der Abspieler liefert dasselbe zurück: er wirft jedes
+    // Ereignis an sein Ziel (dieselben Hörer, derselbe Pfad — kein Zwilling der Eingabe), steht für den gefangenen Zeiger und
+    // das Gamepad ein wie das Gerät und wirft am Kopf jedes Takts und jedes Sim-Schritts, was fällig ist: der Schritt n sieht,
+    // was der Aufnahme vor dem Schritt n ankam. `?spur=aufnahme` nimmt ab dem Boot auf (`_spurText`), `?spur=<pfad>` spielt die
+    // Datei ab dem Boot. Eine Zeile: `<schritt> <art> <ziel> <felder …>` (die Felder je Familie nennt `AnazhRealm.SPUR`).
+    async _spurAnlegen() {
+        const quelle = typeof location !== "undefined" ? new URLSearchParams(location.search).get("spur") : null;
+        if (!quelle) return;
+        const S = AnazhRealm.SPUR;
+        const sp = (this._spur = {
+            quelle,
+            schritt: 0,
+            zeilen: [],
+            marken: {},
+            i: 0,
+            verfehlt: [],
+            zeiger: null,
+            pad: null,
+        });
+        const padLesen = navigator.getGamepads ? navigator.getGamepads.bind(navigator) : () => [];
+        if (quelle === "aufnahme") {
+            sp.auf = true;
+            const g = this._schirm(); // der Kopf der Spur nennt den Schirm aus der EINEN Quelle (gate:schirm-monotonie Q)
+            sp.schirm = [g.breite, g.hoehe];
+            for (const art of Object.values(S.arten).flat())
+                window.addEventListener(art, (e) => this._spurNimm(e), { capture: true, passive: true });
+            // das Gamepad, wie das Spiel es liest (`_eingabeTakt`): jeder Wechsel seines Stands ist eine Zeile
+            Object.defineProperty(navigator, "getGamepads", {
+                configurable: true,
+                value: () => {
+                    const liste = padLesen();
+                    if (!this._ladeschirmSteht()) this._spurPadNimm(liste);
+                    return liste;
+                },
+            });
+            this.log("Spur: die Aufnahme läuft ab der Kontrolle", "INFO");
+            return;
+        }
+        try {
+            const datei = await (await fetch(quelle)).json();
+            if (datei.art !== S.art || datei.fassung !== S.fassung)
+                throw new Error(`keine Spur der Fassung ${S.fassung}`);
+            Object.assign(sp, {
+                zeilen: datei.zeilen.map((z) => z.split(" ")),
+                marken: datei.marken,
+                ende: datei.schritte,
+            });
+        } catch (err) {
+            sp.fehler = String(err && err.message ? err.message : err);
+            this._bruchMelden(`Spur ${quelle}: ${sp.fehler}`);
+            return;
+        }
+        // DAS GERÄT steht ein: der gefangene Zeiger und das Gamepad sind der Stand der Spur
+        Object.defineProperty(document, "pointerLockElement", { configurable: true, get: () => sp.zeiger });
+        Object.defineProperty(navigator, "getGamepads", { configurable: true, value: () => [sp.pad] });
+        this.log(`Spur: ${sp.zeilen.length} Eingaben über ${sp.ende} Schritte aus ${quelle}`, "INFO");
+    }
+
+    // Der Name eines Ziels: das Fenster `w`, das Dokument `d`, der Leib `b`, eine Kennung `#id`, sonst die Kette der Kinder-Plätze
+    // ab der nächsten Kennung (`#workshop-list/6/1`: das erste Kind des sechsten Kinds).
+    _spurZiel(el) {
+        if (el === window) return "w";
+        if (el === document) return "d";
+        if (el === document.body) return "b";
+        if (!el || !el.tagName) return null;
+        if (el.id) return "#" + window.CSS.escape(el.id);
+        const p = el.parentElement;
+        return p && `${this._spurZiel(p)}/${[...p.children].indexOf(el) + 1}`;
+    }
+
+    _spurZielVon(name) {
+        const [kopf, ...kette] = name.split("/");
+        let el = { w: window, d: document, b: document.body }[kopf] || document.querySelector(kopf);
+        for (const i of kette) el = el && el.children[i - 1];
+        return el || null;
+    }
+
+    // DIE AUFNAHME: ein Ereignis am Rand des Geräts → eine Zeile (ab der Kontrolle), die Felder ohne die Nullen am Ende. Die Bewegung
+    // des Zeigers verschmilzt je Schritt und Ziel (die Summe der Wege, die letzte Lage); ein getipptes Zeichen geht als Einfügung
+    // (`+`), jeder andere Wechsel eines Felds als sein Wert (`=`).
+    _spurNimm(e) {
+        const sp = this._spur;
+        // nur, was das Gerät lieferte (isTrusted): ein Ereignis, das die Seite selbst wirft, ist keine Eingabe; der Stand eines
+        // Knopfs (Radio, Haken) folgt seinem Klick, das Fenster verliert den Fokus nur als Fenster
+        if (!e.isTrusted || this._ladeschirmSteht() || (e.type === "blur" && e.target !== window)) return;
+        if (e.type === "input" && /^(checkbox|radio)$/.test(e.target.type)) return;
+        const [S, enc, n] = [AnazhRealm.SPUR, AnazhRealm._spurKodiere, (x) => Math.round(x * 1000) / 1000];
+        const ziel =
+            e.type === "pointerlockchange"
+                ? this._spurZiel(document.pointerLockElement) || "-"
+                : this._spurZiel(e.target);
+        if (!ziel) return;
+        const mods =
+            (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | (e.metaKey ? 8 : 0) | (e.repeat ? 16 : 0);
+        const fam = S.familie[e.type];
+        const t = e.target;
+        let f = [];
+        if (fam === "taste") f = [enc(e.key), e.code || "-", mods];
+        else if (fam === "zeiger")
+            f = [n(e.clientX), n(e.clientY), n(e.movementX || 0), n(e.movementY || 0), e.button, e.buttons, mods];
+        else if (fam === "rad") f = [n(e.clientX), n(e.clientY), n(e.deltaX), n(e.deltaY), e.deltaMode, mods];
+        else if (fam === "feld")
+            f =
+                e.inputType === "insertText" && e.data
+                    ? ["+", enc(e.data)]
+                    : ["=", enc(t.isContentEditable ? t.textContent : t.value)];
+        const letzte = sp.zeilen[sp.zeilen.length - 1];
+        if (
+            e.type === "mousemove" &&
+            letzte &&
+            letzte[0] === sp.schritt &&
+            letzte[1] === "mousemove" &&
+            letzte[2] === ziel
+        ) {
+            const [, , , , , mx = 0, my = 0] = letzte;
+            f[2] = n(mx + f[2]);
+            f[3] = n(my + f[3]);
+            sp.zeilen.pop();
+        }
+        while (f.length && f[f.length - 1] === 0) f.pop();
+        sp.zeilen.push([sp.schritt, e.type, ziel, ...f]);
+    }
+
+    // Das Gamepad der Aufnahme: das erste verbundene, Achsen und Knopf-Werte; jede Änderung eine Zeile, `-` getrennt.
+    _spurPadNimm(liste) {
+        const sp = this._spur;
+        let gp = null;
+        for (const g of liste || []) if (!gp && g && g.connected) gp = g;
+        const r = (x) => Math.round(x * 1000) / 1000;
+        const stand = gp ? [gp.axes.map(r).join(","), gp.buttons.map((b) => r(b.value)).join(",")] : ["-", "-"];
+        if (stand.join(" ") === (sp.padStand || "- -")) return;
+        sp.padStand = stand.join(" ");
+        sp.zeilen.push([sp.schritt, "pad", "-", ...stand]);
+    }
+
+    // Die Marke eines Spielgang-Schritts (ankommen · laufen · bauen …) am Schritt der Aufnahme.
+    _spurMarke(name) {
+        if (this._spur && this._spur.auf) this._spur.marken[name] = this._spur.schritt;
+    }
+
+    // Die Spur als Datei (spec/): Kopf, Marken und je Eingabe eine Zeile.
+    _spurText() {
+        const sp = this._spur;
+        const S = AnazhRealm.SPUR;
+        const kopf = {
+            art: S.art,
+            fassung: S.fassung,
+            schritt_s: AnazhRealm.FIXED_DT,
+            schirm: sp.schirm,
+            schritte: sp.schritt,
+        };
+        return JSON.stringify(
+            Object.assign(kopf, { marken: sp.marken, zeilen: sp.zeilen.map((z) => z.join(" ")) }),
+            null,
+            1
+        );
+    }
+
+    // DER ABSPIELER am Kopf jedes Takts (vor `_eingabeTakt`) und jedes Sim-Schritts (`_stepFixedSim`, `schritt` true: danach
+    // zählt der Schritt): jede fällige Zeile an ihr Ziel. Die Aufnahme zählt dieselben Schritte.
+    _spurTakt(schritt) {
+        const sp = this._spur;
+        if (sp.fehler || this._ladeschirmSteht()) return;
+        if (!sp.auf)
+            while (sp.i < sp.zeilen.length && +sp.zeilen[sp.i][0] <= sp.schritt) this._spurWirf(sp.zeilen[sp.i++]);
+        if (!schritt) return;
+        sp.schritt++;
+        if (!sp.auf && sp.schritt === sp.ende)
+            this.log(
+                `Spur: abgespielt, ${sp.zeilen.length} Eingaben, ${sp.verfehlt.length} ohne Ziel`,
+                sp.verfehlt.length ? "WARN" : "INFO"
+            );
+    }
+
+    _spurWirf(z) {
+        const [sp, S, dec] = [this._spur, AnazhRealm.SPUR, decodeURIComponent];
+        const [, art, name, ...f] = z;
+        const ziel = art === "pad" || art === "pointerlockchange" ? document : this._spurZielVon(name);
+        if (!ziel) return void sp.verfehlt.push(z.join(" "));
+        const fam = S.familie[art];
+        const zahl = (i) => +(f[i] || 0);
+        const m = (b) => ({ shiftKey: !!(b & 1), ctrlKey: !!(b & 2), altKey: !!(b & 4), metaKey: !!(b & 8) });
+        const o = { bubbles: true, cancelable: true, composed: true };
+        if (art === "pad") {
+            const [ax, kn] = f.map((x) => (x === "-" ? null : x ? x.split(",").map(Number) : []));
+            sp.pad = ax && {
+                connected: true,
+                axes: ax,
+                buttons: (kn || []).map((v) => ({ value: v, pressed: v > S.padDruck })),
+            };
+        } else if (art === "pointerlockchange") {
+            sp.zeiger = name === "-" ? null : this._spurZielVon(name);
+            document.dispatchEvent(new window.Event(art));
+        } else if (art === "focusin") {
+            if (document.activeElement !== ziel && ziel.focus) ziel.focus();
+        } else if (fam === "taste")
+            ziel.dispatchEvent(
+                new window.KeyboardEvent(
+                    art,
+                    Object.assign(o, m(zahl(2)), { key: dec(f[0]), code: f[1], repeat: !!(zahl(2) & 16) })
+                )
+            );
+        else if (fam === "zeiger") {
+            const [clientX, clientY, movementX, movementY, button, buttons, b] = [0, 1, 2, 3, 4, 5, 6].map(zahl);
+            ziel.dispatchEvent(
+                new window.MouseEvent(
+                    art,
+                    Object.assign(o, m(b), { clientX, clientY, movementX, movementY, button, buttons, view: window })
+                )
+            );
+        } else if (fam === "rad") {
+            const [clientX, clientY, deltaX, deltaY, deltaMode, b] = [0, 1, 2, 3, 4, 5].map(zahl);
+            ziel.dispatchEvent(
+                new window.WheelEvent(art, Object.assign(o, m(b), { clientX, clientY, deltaX, deltaY, deltaMode }))
+            );
+        } else if (fam === "feld") {
+            const [wie, wert] = [f[0], dec(f[1] || "")];
+            if (ziel.isContentEditable) ziel.textContent = wie === "+" ? ziel.textContent + wert : wert;
+            else if (wie === "+") ziel.setRangeText(wert, ziel.selectionStart, ziel.selectionEnd, "end");
+            else ziel.value = wert;
+            ziel.dispatchEvent(
+                new window.InputEvent(art, {
+                    bubbles: true,
+                    inputType: wie === "+" ? "insertText" : "",
+                    data: wie === "+" ? wert : null,
+                })
+            );
+        } else ziel.dispatchEvent(new window.FocusEvent(art));
     }
 
     _loopSelfAnalysis(currentTime) {
@@ -1902,3 +2137,21 @@ AnazhRealm.PLAYER_VOID_Y = -120;
 // Determinismus-Bogen P4 (Stufe 1) — Sicherheits-Cap für die Replay-Aufnahme (Frames).
 // 18000 ≈ 5 min bei 60 fps — genug für eine echte Spiel-Sequenz, gedeckelt gegen Runaway.
 AnazhRealm.REPLAY_MAX_FRAMES = 18000;
+
+// DIE SPUR (spielgang.K1, `_spurAnlegen`): die Ereignisse, die sie am Rand des Geräts nimmt, je Familie ihre Felder
+// (taste: Taste · Code · Umschalter; zeiger: Lage · Weg · Knopf · Knöpfe · Umschalter; rad: Lage · Weg · Modus · Umschalter;
+// feld: `+` Zeichen oder `=` Wert; die übrigen tragen nur ihr Ziel; fehlt ein Feld am Ende, ist es 0), je Ereignis seine Familie
+// (eingefroren wie die Tafel) und der Druck, ab dem ein Knopf des Gamepads gedrückt ist.
+AnazhRealm.SPUR = (() => {
+    const arten = {
+        taste: ["keydown", "keyup"],
+        zeiger: ["mousedown", "mouseup", "click", "mousemove"],
+        rad: ["wheel"],
+        feld: ["input"],
+        rest: ["focusin", "pointerlockchange", "blur"],
+    };
+    const familie = Object.freeze(Object.fromEntries(Object.entries(arten).flatMap(([f, l]) => l.map((a) => [a, f]))));
+    return Object.freeze({ art: "anazh-spur", fassung: 1, arten: Object.freeze(arten), familie, padDruck: 0.5 });
+})();
+// Ein Wort der Zeile trägt kein Leerzeichen: `%` und ` ` gehen als URI-Zeichen.
+AnazhRealm._spurKodiere = (s) => String(s).replace(/%/g, "%25").replace(/ /g, "%20");
