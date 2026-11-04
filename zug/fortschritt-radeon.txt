@@ -1921,3 +1921,4 @@
 2026-11-05 00:44:28 2b8d37f3-radeon ferne.K3#1 GRÜN 0.2 · 1/1
 2026-11-05 00:45:58 2b8d37f3-radeon ENDE 1 grün / 0 rot · 3.0 min
 2026-11-05 00:52:01 079843cf-radeon START 4 Stationen
+2026-11-05 00:54:27 079843cf-radeon lod.K1#1 ROT 0.7 · 1/4
