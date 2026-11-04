@@ -1,5 +1,5 @@
 {
- "kopf": "b1e4be21",
+ "kopf": "71ef6a0d",
  "je": {
   "affekt.K1": {
    "punkte": 2,
@@ -20,7 +20,7 @@
      "gruen": true,
      "zahl": "Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25)",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3)",
      "gehalten": true
     },
     {
@@ -442,7 +442,7 @@
      "gruen": true,
      "zahl": "Garage FOV +9.07° Arm +18.1 % bei 15.21/16.00 m/s · Welt FOV +9.47° Arm +18.4 % bei 15.18 m/s (Ende ok)",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/fahr-proben.cjs, scripts/lib/kamera-nah.cjs +4)",
      "gehalten": true
     },
     {
@@ -526,7 +526,7 @@
      "gruen": true,
      "zahl": "Federung im Bild: Drift-Wank 8.416 gegen Glatt 0.541 mm, Stoß-Antwort Glatt/Hang 7.239/22.042 mm (Mutante 3.235/0.592) · Rumble Drift 1 gegen Glatt 0.004, Summen 0.594/0.565 (Mutante 0, 0.119) · Motor 66.7 Hz je 1000 Upm (klang-zensus F) · RM1–3 ✅✅✅",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/fahr-proben.cjs, scripts/lib/kamera-nah.cjs +4) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -637,17 +637,16 @@
    ]
   },
   "feld.K5": {
-   "punkte": 0,
-   "beleg": "Maschine: 0 — offen: feld.K5#1 headless: Station seit der Messung geändert",
+   "punkte": 1,
+   "beleg": "Maschine: Feld der Mitte 0.855 → 1 · Streu der Mitte 29 → 35 (Blumen 26 → 32), Nachbarzelle 30 → 30 (Blumen 24 → 24), Rauschen ±0 (Soll: Blumen +≥ 3 oder alle +≥ 10 % am Ort, Nachbar im Rauschen) an 71ef6a0d headless",
    "stationen": [
     {
      "id": "feld.K5#1",
      "geraet": "headless",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Feld der Mitte 0.855 → 1 · Streu der Mitte 29 → 35 (Blumen 26 → 32), Nachbarzelle 30 → 30 (Blumen 24 → 24), Rauschen ±0 (Soll: Blumen +≥ 3 oder alle +≥ 10 % am Ort, Nachbar im Rauschen)",
+     "sha": "71ef6a0da8c1c3df64519e50c591010b7f561339",
+     "grund": null
     }
    ]
   },
@@ -737,7 +736,7 @@
   },
   "ferne.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ferne.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1)",
+   "beleg": "Maschine: 0 — offen: ferne.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2)",
    "stationen": [
     {
      "id": "ferne.K3#1",
@@ -745,14 +744,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2)",
      "ungemessen": true
     }
    ]
   },
   "ferne.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ferne.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1)",
+   "beleg": "Maschine: 0 — offen: ferne.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2)",
    "stationen": [
     {
      "id": "ferne.K4#1",
@@ -760,7 +759,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2)",
      "ungemessen": true
     }
    ]
@@ -775,7 +774,7 @@
      "gruen": true,
      "zahl": "Sicht im Sturm 1503 m (Azimute 1449/1490/1503/1516, Soll 1 500 m ±15 %), [linse-gpu] amd/rdna-3",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) — zuletzt an 6a571e3b: Deckel 28 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ SELBSTTEST GRÜN — grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m und Sprung 0,5 EV/s beim Namen ROT)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 6a571e3b: Deckel 28 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ SELBSTTEST GRÜN — grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m und Sprung 0,5 EV/s beim Namen ROT)",
      "gehalten": true
     },
     {
@@ -865,7 +864,7 @@
      "gruen": true,
      "zahl": "spiegelTreue 0.9317 (wasserSatz 26433 px, spiegelEbene 0.878) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 101.8 σ 41.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.158 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) — zuletzt an 6a571e3b: Deckel 25 s gerissen — beendet, UNGEMESSEN (zuletzt: KAMERA 1866.6 3.928 -6193.9 1770.007 3.928 -6168.018)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 6a571e3b: Deckel 25 s gerissen — beendet, UNGEMESSEN (zuletzt: KAMERA 1866.6 3.928 -6193.9 1770.007 3.928 -6168.018)",
      "gehalten": true
     },
     {
@@ -922,7 +921,7 @@
      "gruen": true,
      "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) — zuletzt an 25ac4c0c: Deckel 24 s gerissen — beendet, UNGEMESSEN (zuletzt: == hang · SICHT first (8.9 s): fein 4.3/200 · streu 0.9/711 · huf 0.8/201 · rad 1.2/200 (p95 cm / Kontakte))",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 25ac4c0c: Deckel 24 s gerissen — beendet, UNGEMESSEN (zuletzt: == hang · SICHT first (8.9 s): fein 4.3/200 · streu 0.9/711 · huf 0.8/201 · rad 1.2/200 (p95 cm / Kontakte))",
      "gehalten": true
     },
     {
@@ -946,7 +945,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) — zuletzt an 6a571e3b: Deckel 30 s gerissen — beendet, UNGEMESSEN (zuletzt: ARM {\"urteil\":\"GRÜN\",\"ist\":0.5386,\"band\":[0.4358,0.6538],\"grund\":null,\"taeter\":null,\"teile\":null,\"stand\":\"2026-11-02 6a571e3b amd rdna-3\"})",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 6a571e3b: Deckel 30 s gerissen — beendet, UNGEMESSEN (zuletzt: ARM {\"urteil\":\"GRÜN\",\"ist\":0.5386,\"band\":[0.4358,0.6538],\"grund\":null,\"taeter\":null,\"teile\":null,\"stand\":\"2026-11-02 6a571e3b amd rdna-3\"})",
      "ungemessen": true
     },
     {
@@ -970,7 +969,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +4)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +5)",
      "ungemessen": true
     },
     {
@@ -994,7 +993,7 @@
      "gruen": true,
      "zahl": "Haar 2412 px, 20 Bilder: Bewegung im Wind 21.412 gegen ohne Wind 5.336 Luma-Stufen je Bild (Rauschen 0), r(Wind, Bewegung) 0.721 (Soll r ≥ 0,6, ≥ 0,5 Stufen und ≥ 2 × ohne Wind)",
      "sha": "d880c8e86310a0d180b67d2099be0c6247e9bf9f",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2)",
      "gehalten": true
     }
    ]
@@ -1033,7 +1032,7 @@
      "gruen": true,
      "zahl": "Herde 8, Fell an je Abstand 1.3 m an · 5.2 m an · 14.7 m aus · 26.3 m aus · 41.7 m aus · 61.3 m aus · 89.5 m aus · 129.5 m aus · tier 1 Befehle (tier:wolf 1) (Soll nah an, fern aus, ≤ 30 Befehle)",
      "sha": "9a6f3703475e29ecfa80c73e6eba026fe9cca9c0",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
      "gehalten": true
     }
    ]
@@ -1162,7 +1161,7 @@
      "gruen": true,
      "zahl": "Sturz 2 · 4 · 8 · 12 m · Wurf: 0.0 · 10.7 · 57.0 · 101.7 · 47.7 hp (Aufprall 6.2 · 8.8 · 12.6 · 15.4 · 11.9 m/s) · Tod-Lage 60 / 15 Hz 29.2° 1.5 cm / 29.2° 1.5 cm · Tod jagd, Anker 0.0 m · Abdruck 1566c4d6e4ba → 1566c4d6e4ba",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/kampf-proben.cjs +4) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -1180,7 +1179,7 @@
      "gruen": true,
      "zahl": "hpMax/staminaMax/manaMax/defense leer 116.0/158.0/80.0/10.4 · Werk eisen 154.9/129.8/80.0/15.9 · bronze 152.7/131.0/80.0/15.5 · holz 131.9/144.5/80.0/12.6 · Nahrung kraut 125.9/151.5/93.1/11.8 · fleisch 127.2/150.2/92.9/11.9 · Stand 184.0/104.5/92.9/19.8 → 184.0/104.5/92.9/19.8 · Nahrung im Stand [[\"consume:_k5\"],[\"consume:_k5\"]]",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/kampf-proben.cjs +4) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -1274,7 +1273,7 @@
   },
   "ki.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ki.K5#1 headless: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/welt-boot.cjs)",
+   "beleg": "Maschine: 0 — offen: ki.K5#1 headless: Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/welt-boot.cjs +1)",
    "stationen": [
     {
      "id": "ki.K5#1",
@@ -1282,7 +1281,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/welt-boot.cjs +1)",
      "ungemessen": true
     }
    ]
@@ -1321,7 +1320,7 @@
      "gruen": true,
      "zahl": "r 0.63 bei Lag 0 (n 102), Spitze 0.63 bei -0.2 s, CV Bild 0.23 / Ohr 0.51, 56.2 fps, Klang an",
      "sha": "6a571e3b98934cbc73b85e217f7fa69b080d415a",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3)",
      "gehalten": true
     },
     {
@@ -1412,7 +1411,7 @@
   },
   "klang.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":173.38} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 10770eb5 headless · gehalten: Klang-Takt p95 gehen 0.13 · fahrt 0.14 · nacht 0.14 ms · Aussetzer 0 in 602 s Wiedergabe (0 s still) (Exit 0) an b3f9ae95 gtx — offen: klang.K5#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1) — zuletzt an 5fba36ea: die Fahrt riss 1800 s (in profiband.K1#1) — offen, UNGEMESSEN",
+   "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":173.38} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 10770eb5 headless · gehalten: Klang-Takt p95 gehen 0.13 · fahrt 0.14 · nacht 0.14 ms · Aussetzer 0 in 602 s Wiedergabe (0 s still) (Exit 0) an b3f9ae95 gtx — offen: klang.K5#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2) — zuletzt an 5fba36ea: die Fahrt riss 1800 s (in profiband.K1#1) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "klang.K5#1",
@@ -1429,7 +1428,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1) — zuletzt an 5fba36ea: die Fahrt riss 1800 s (in profiband.K1#1) — offen, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2) — zuletzt an 5fba36ea: die Fahrt riss 1800 s (in profiband.K1#1) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -1438,7 +1437,7 @@
      "gruen": true,
      "zahl": "Klang-Takt p95 gehen 0.13 · fahrt 0.14 · nacht 0.14 ms · Aussetzer 0 in 602 s Wiedergabe (0 s still) (Exit 0)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3)",
      "gehalten": true
     }
    ]
@@ -1453,7 +1452,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3)",
      "ungemessen": true
     },
     {
@@ -1709,7 +1708,7 @@
   },
   "licht.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: licht.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1)",
+   "beleg": "Maschine: 0 — offen: licht.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2)",
    "stationen": [
     {
      "id": "licht.K4#1",
@@ -1717,7 +1716,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2)",
      "ungemessen": true
     }
    ]
@@ -1732,7 +1731,7 @@
      "gruen": true,
      "zahl": "größter Sprung 0.056 EV/s (Soll ≤ 0,1) · Hub klar ↔ Regen 0.93 EV · 127 s, Wörter standen · [linse-gpu] amd/rdna-3",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3)",
      "gehalten": true
     },
     {
@@ -1748,7 +1747,7 @@
   },
   "lod.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1) · lod.K1#1 gtx: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: fenster · Exit 0)",
+   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2) · lod.K1#1 gtx: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: fenster · Exit 0)",
    "stationen": [
     {
      "id": "lod.K1#1",
@@ -1756,7 +1755,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2)",
      "ungemessen": true
     },
     {
@@ -1772,7 +1771,7 @@
   },
   "lod.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: lod.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1) · lod.K2#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: lod.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2) · lod.K2#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "lod.K2#1",
@@ -1780,7 +1779,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2)",
      "ungemessen": true
     },
     {
@@ -1811,7 +1810,7 @@
   },
   "lod.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: lod.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1)",
+   "beleg": "Maschine: 0 — offen: lod.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2)",
    "stationen": [
     {
      "id": "lod.K4#1",
@@ -1819,14 +1818,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2)",
      "ungemessen": true
     }
    ]
   },
   "lod.K5": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 10770eb5 headless — offen: lod.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1) · lod.K5#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2)",
+   "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 10770eb5 headless — offen: lod.K5#1 radeon: Station seit der Messung geändert · lod.K5#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "lod.K5#1",
@@ -1834,7 +1833,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     },
     {
@@ -1843,7 +1842,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     },
     {
@@ -1972,7 +1971,7 @@
      "gruen": true,
      "zahl": "Klasse vogel 2 Befehle {\"haupt\":2}, 585 Instanzen (500 des Schwarms, 5 Teile je Glied), 100 Glieder im Blick je Reihe (Soll ≤ 10 Befehle)",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -2104,7 +2103,7 @@
      "gruen": true,
      "zahl": "lack spiegelTreue 0.6948 (60337 px in der Ebene, 28 Blöcke, Einfall 49.9°, Normale [0.098,0.989,-0.111]) · glas spiegelTreue -0.1858 (7475 px in der Ebene, 41 Blöcke, Einfall 69.6°, Normale [0.003,0.999,0.035]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5007318611111113 sunny · [linse-gpu] amd/rdna-3",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3)",
      "gehalten": true
     },
     {
@@ -2128,7 +2127,7 @@
      "gruen": true,
      "zahl": "3 von 4 Klassen im Band (Soll ≥ 3): eisen θ50 10.297° NEBEN dem Band, ρ 7.08 im Band — black-oxidized-steel · bronze θ50 3.519° im Band, ρ 76.7 im Band — alum-bronze 7,79°/51,4, brass 1,31°/471,3 · quarz θ50 1.42° im Band, ρ 407.85 im Band — black-obsidian 0,63°/698,5, aventurnine 1,45°/437,3 · stahl θ50 0.484° im Band, ρ 843.39 im Band — steel, ss440, chrome-steel · Sonne 74.2°, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) — zuletzt an 6a571e3b: Deckel 16 s gerissen — beendet, UNGEMESSEN (zuletzt: fenster · Exit 0)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 6a571e3b: Deckel 16 s gerissen — beendet, UNGEMESSEN (zuletzt: fenster · Exit 0)",
      "gehalten": true
     },
     {
@@ -2225,7 +2224,7 @@
   },
   "mensch.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:52:4/7:38:4; 0 Paare unter 1 px) · Höhe 1.684–1.927 m um 1.816 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 1.084 ms für 1094 → 0.05 ms je 50 an b1e4be21 headless — offen: mensch.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1) · mensch.K4#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:52:4/7:38:4; 0 Paare unter 1 px) · Höhe 1.684–1.927 m um 1.816 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 1.084 ms für 1094 → 0.05 ms je 50 an b1e4be21 headless — offen: mensch.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2) · mensch.K4#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "mensch.K4#1",
@@ -2233,7 +2232,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2)",
      "ungemessen": true
     },
     {
@@ -2251,7 +2250,8 @@
      "gruen": true,
      "zahl": "50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:52:4/7:38:4; 0 Paare unter 1 px) · Höhe 1.684–1.927 m um 1.816 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 1.084 ms für 1094 → 0.05 ms je 50",
      "sha": "b1e4be211523d110e2e9cf85ef8e145a09b70494",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)",
+     "gehalten": true
     }
    ]
   },
@@ -2265,7 +2265,7 @@
      "gruen": true,
      "zahl": "gasthaus/gasthaus #419347: Kopf-Zuwendung ab 3 m 0.267 / 0 / 0 / 0 s (Vorbeigang ab 71°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.499 / 1.499 / 2.099 m (Radien 0,7) · ohne Erinnerung 1.499, Gegenprobe 1.499, nach der Gewalt 2.099 m (Furcht 1)",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) — zuletzt an 6a571e3b: Deckel 44 s gerissen — beendet, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 6a571e3b: Deckel 44 s gerissen — beendet, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -2370,7 +2370,7 @@
      "gruen": true,
      "zahl": "first GRÜN: Wurf 6 Wölfe, umstellt 18.07 s, Furcht chaos 0.906 (Gegenlauf 0), 4 Jäger fallen, Triumph joy+hope 0.628 (Gegenlauf 0)",
      "sha": "d880c8e86310a0d180b67d2099be0c6247e9bf9f",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2)",
      "gehalten": true
     },
     {
@@ -2379,7 +2379,7 @@
      "gruen": true,
      "zahl": "first GRÜN: Wurf 6 Wölfe, umstellt 16.85 s, Furcht chaos 0.908 (Gegenlauf 0), 4 Jäger fallen, Triumph joy+hope 0.42 (Gegenlauf 0)",
      "sha": "eeb5d2bfbcdae181388a990d13c434cd67b923a0",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3)",
      "gehalten": true
     }
    ]
@@ -2434,7 +2434,7 @@
   },
   "physik.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: (V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 16.37 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m an 10770eb5 headless — offen: physik.K2#2 radeon: Station seit der Messung geändert — zuletzt an d880c8e8: Deckel 11 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · physik.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2)",
+   "beleg": "Maschine: gehalten: (V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 16.37 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m an 10770eb5 headless — offen: physik.K2#2 radeon: Station seit der Messung geändert — zuletzt an d880c8e8: Deckel 11 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · physik.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3)",
    "stationen": [
     {
      "id": "physik.K2#1",
@@ -2460,7 +2460,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3)",
      "ungemessen": true
     }
    ]
@@ -2496,17 +2496,16 @@
    ]
   },
   "physik.K5": {
-   "punkte": 0,
-   "beleg": "Maschine: 0 — offen: physik.K5#1 headless: Station seit der Messung geändert",
+   "punkte": 1,
+   "beleg": "Maschine: 200 N × 0,2 s quer im Gang (89.022 kg): Ausfall 0.195 m, Wurzel quer 0.184 m, erholt 0.883 s · Gegen-Richtung Ausfall 0.195 m, Wurzel quer 0.184 m, erholt 0.883 s · Masse ×2 Ausfall 0.077 m, Wurzel quer 0.07 m, erholt 0.617 s (Soll Ausfall ≥ 0,1 m, ≤ 1,5 s, kein Sturz) an 71ef6a0d headless",
    "stationen": [
     {
      "id": "physik.K5#1",
      "geraet": "headless",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "200 N × 0,2 s quer im Gang (89.022 kg): Ausfall 0.195 m, Wurzel quer 0.184 m, erholt 0.883 s · Gegen-Richtung Ausfall 0.195 m, Wurzel quer 0.184 m, erholt 0.883 s · Masse ×2 Ausfall 0.077 m, Wurzel quer 0.07 m, erholt 0.617 s (Soll Ausfall ≥ 0,1 m, ≤ 1,5 s, kein Sturz)",
+     "sha": "71ef6a0da8c1c3df64519e50c591010b7f561339",
+     "grund": null
     }
    ]
   },
@@ -2544,7 +2543,7 @@
      "gruen": true,
      "zahl": "byte-gleich: Labor Labor-Fernstufe (three r128, 128×3584) eiche|1 3670016 B sha a9218749cd ⇄ Welt _karteWeltBacken (three r184) bc 128×3584 3670016 B sha a9218749cd",
      "sha": "f69a73052f55019a5cf75f1265ea0401d4c8bbdf",
-     "grund": "Pfad seit der Messung geändert (R6: foundry-core.js)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)",
      "gehalten": true
     },
     {
@@ -2553,7 +2552,7 @@
      "gruen": true,
      "zahl": "10/10 Arten mit Karte byte-gleich (Welt _karteWeltBacken (three r184) bc 128×3584 ⇄ Labor Labor-Fernstufe (three r128, 128×3584)): eiche ×3 8026d999 10,5 MB · fichte ×3 9ffd36e9 10,5 MB · birke ×3 9498101b 10,5 MB · weide ×1 24a7d4a4 3,5 MB · mammut ×1 e9deb4b9 3,5 MB · tanne ×3 dfbe9457 10,5 MB · strauch ×1 3c505c65 3,5 MB · buche ×3 cb995d5f 10,5 MB · karst ×1 6dfc1f2d 3,5 MB · totholz ×1 68570b57 3,5 MB",
      "sha": "f69a73052f55019a5cf75f1265ea0401d4c8bbdf",
-     "grund": "Pfad seit der Messung geändert (R6: foundry-core.js)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)",
      "gehalten": true
     }
    ]
@@ -2626,21 +2625,22 @@
   },
   "pipeline.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: pipeline.K5#1 headless: ROT: 1 Foundry-Fäden (buch): worlds/*/lib/three* 603610 B über das Netz, geparst worlds/terrain/lib/three-r128.min.js · synchrones XHR 1 (cores.manifest.json) · THREE im Faden r128 gegen die Welt r184 an f69a7305",
+   "beleg": "Maschine: 0 — offen: pipeline.K5#1 headless: Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)",
    "stationen": [
     {
      "id": "pipeline.K5#1",
      "geraet": "headless",
      "gruen": false,
-     "zahl": "1 Foundry-Fäden (buch): worlds/*/lib/three* 603610 B über das Netz, geparst worlds/terrain/lib/three-r128.min.js · synchrones XHR 1 (cores.manifest.json) · THREE im Faden r128 gegen die Welt r184",
-     "sha": "f69a73052f55019a5cf75f1265ea0401d4c8bbdf",
-     "grund": "ROT: 1 Foundry-Fäden (buch): worlds/*/lib/three* 603610 B über das Netz, geparst worlds/terrain/lib/three-r128.min.js · synchrones XHR 1 (cores.manifest.json) · THREE im Faden r128 gegen die Welt r184"
+     "zahl": null,
+     "sha": null,
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)",
+     "ungemessen": true
     }
    ]
   },
   "profiband.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) · profiband.K1#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K1#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) · profiband.K1#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K1#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K1#1",
@@ -2648,7 +2648,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
      "ungemessen": true,
      "beide": true
     },
@@ -2658,7 +2658,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3)",
      "ungemessen": true,
      "beide": true
     },
@@ -2684,7 +2684,7 @@
   },
   "profiband.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) · profiband.K2#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K2#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) · profiband.K2#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K2#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K2#1",
@@ -2692,7 +2692,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
      "ungemessen": true
     },
     {
@@ -2701,7 +2701,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3)",
      "ungemessen": true
     },
     {
@@ -2726,7 +2726,7 @@
   },
   "profiband.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K3#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) · profiband.K3#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K3#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K3#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) · profiband.K3#2 radeon: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K3#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K3#1",
@@ -2734,7 +2734,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2) — zuletzt an 5fba36ea: Deckel der Fahrt 1800 s gerissen nach 6 s der Probe — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
      "ungemessen": true,
      "beide": true
     },
@@ -2744,7 +2744,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3)",
      "ungemessen": true,
      "beide": true
     },
@@ -2770,7 +2770,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 4 von 4 Sitzungen ohne Frame > 100 ms (max 67.2 · 50.2 · 50.2 · 50 ms; Hänger 0/0/0/0) an b3f9ae95 radeon — offen: profiband.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1) — zuletzt an d880c8e8: Deckel 29 s gerissen — beendet, UNGEMESSEN (zuletzt: PROFIBAND {\"art\":\"glaette\",\"sekunden\":29,\"schritte\":[[\"anfang\",19.3],[\"k4-geh\",4.3],[\"k4-fahrt\",5.4]],\"offen\":[],\"fehler\":{},\"strom\":{\"bloecke\":40, · profiband.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: 4 von 4 Sitzungen ohne Frame > 100 ms (max 67.2 · 50.2 · 50.2 · 50 ms; Hänger 0/0/0/0) an b3f9ae95 radeon — offen: profiband.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2) — zuletzt an d880c8e8: Deckel 29 s gerissen — beendet, UNGEMESSEN (zuletzt: PROFIBAND {\"art\":\"glaette\",\"sekunden\":29,\"schritte\":[[\"anfang\",19.3],[\"k4-geh\",4.3],[\"k4-fahrt\",5.4]],\"offen\":[],\"fehler\":{},\"strom\":{\"bloecke\":40, · profiband.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -2778,7 +2778,7 @@
      "gruen": true,
      "zahl": "4 von 4 Sitzungen ohne Frame > 100 ms (max 67.2 · 50.2 · 50.2 · 50 ms; Hänger 0/0/0/0)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1) — zuletzt an d880c8e8: Deckel 29 s gerissen — beendet, UNGEMESSEN (zuletzt: PROFIBAND {\"art\":\"glaette\",\"sekunden\":29,\"schritte\":[[\"anfang\",19.3],[\"k4-geh\",4.3],[\"k4-fahrt\",5.4]],\"offen\":[],\"fehler\":{},\"strom\":{\"bloecke\":40,",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2) — zuletzt an d880c8e8: Deckel 29 s gerissen — beendet, UNGEMESSEN (zuletzt: PROFIBAND {\"art\":\"glaette\",\"sekunden\":29,\"schritte\":[[\"anfang\",19.3],[\"k4-geh\",4.3],[\"k4-fahrt\",5.4]],\"offen\":[],\"fehler\":{},\"strom\":{\"bloecke\":40,",
      "gehalten": true
     },
     {
@@ -2787,7 +2787,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3)",
      "ungemessen": true
     },
     {
@@ -2796,7 +2796,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1) — zuletzt an d880c8e8: Deckel 29 s gerissen — beendet, UNGEMESSEN (zuletzt: PROFIBAND {\"art\":\"glaette\",\"sekunden\":29,\"schritte\":[[\"anfang\",19.3],[\"k4-geh\",4.3],[\"k4-fahrt\",5.4]],\"offen\":[],\"fehler\":{},\"strom\":{\"bloecke\":40,",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2) — zuletzt an d880c8e8: Deckel 29 s gerissen — beendet, UNGEMESSEN (zuletzt: PROFIBAND {\"art\":\"glaette\",\"sekunden\":29,\"schritte\":[[\"anfang\",19.3],[\"k4-geh\",4.3],[\"k4-fahrt\",5.4]],\"offen\":[],\"fehler\":{},\"strom\":{\"bloecke\":40,",
      "ungemessen": true
     },
     {
@@ -2812,7 +2812,7 @@
   },
   "profiband.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1) — zuletzt an 6a571e3b: Deckel 25 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K5#1 gtx: Station seit der Messung geändert · profiband.K5#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) — zuletzt an 6a571e3b: Deckel 25 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K5#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2) — zuletzt an 6a571e3b: Deckel 25 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K5#1 gtx: Station seit der Messung geändert · profiband.K5#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 6a571e3b: Deckel 25 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · profiband.K5#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K5#1",
@@ -2820,7 +2820,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1) — zuletzt an 6a571e3b: Deckel 25 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2) — zuletzt an 6a571e3b: Deckel 25 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
      "ungemessen": true
     },
     {
@@ -2838,7 +2838,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) — zuletzt an 6a571e3b: Deckel 25 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 6a571e3b: Deckel 25 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
      "ungemessen": true
     },
     {
@@ -2862,7 +2862,7 @@
      "gruen": true,
      "zahl": "Uhr 0.5 ego 1.8 cm (10 Kanten) · Uhr 0.5 third 1.8 cm (10 Kanten), [linse-gpu] amd/rdna-3",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) — zuletzt an 6a571e3b: Deckel 21 s gerissen — beendet, UNGEMESSEN (zuletzt: buehne · Exit 0)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 6a571e3b: Deckel 21 s gerissen — beendet, UNGEMESSEN (zuletzt: buehne · Exit 0)",
      "gehalten": true
     },
     {
@@ -2886,14 +2886,14 @@
      "gruen": true,
      "zahl": "Maß reprojektion: unerklärt je Bild max 0.12 %, Mittel 0.07 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.0087) über 15 Bilder Gang 4 m/s, Schatten im Bild 51.1 % (≥ 1 %) · Ort [-841,-861] · 0.77 s · [linse-gpu] amd/rdna-3",
      "sha": "6eeeb856589d2e571e7ef015a82b008c0c8545c2",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2)",
      "gehalten": true
     }
    ]
   },
   "schatten.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: schatten.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1)",
+   "beleg": "Maschine: 0 — offen: schatten.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2)",
    "stationen": [
     {
      "id": "schatten.K3#1",
@@ -2901,14 +2901,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2)",
      "ungemessen": true
     }
    ]
   },
   "schatten.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: schatten.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1)",
+   "beleg": "Maschine: 0 — offen: schatten.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2)",
    "stationen": [
     {
      "id": "schatten.K4#1",
@@ -2916,14 +2916,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2)",
      "ungemessen": true
     }
    ]
   },
   "schatten.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: schatten.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1)",
+   "beleg": "Maschine: 0 — offen: schatten.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2)",
    "stationen": [
     {
      "id": "schatten.K5#1",
@@ -2931,7 +2931,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2)",
      "ungemessen": true
     }
    ]
@@ -2979,7 +2979,7 @@
      "gruen": true,
      "zahl": "Z1 7/8 Saaten · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 1424 m vom Genesis-Ort · Mauer 21 Segmente/3 Türme, Pool 48 · Schuss vom acker 103 m vor der Mitte, 3.4 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 103.23 m · Luma 35.7 σ 15.9 schwarz 0.0 % weiß 0.0 % ·",
      "sha": "5fba36ea44a6e80bb9bd645900a9584c1fcce0b9",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -2997,7 +2997,7 @@
      "gruen": true,
      "zahl": "ZIPF ζ 1.022 [0.956; 1.158] über 8 Saaten, Mauer und Graph 7/7 · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 · Mauer 21 Segmente, Pool 48 · mittags ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.5 · Dämmerung ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.25 (Exit 0)",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -3154,7 +3154,7 @@
   },
   "speicher.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 97 Rufe in 7713 Bildern; aufgefüllt je Bild p95 0, blind) an b3f9ae95 radeon · gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 100 Rufe in 4733 Bildern; aufgefüllt je Bild p95 0, blind) an 715754fc gtx — offen: speicher.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1) — zuletzt an 5fba36ea: die Fahrt riss 1800 s (in profiband.K1#1) — offen, UNGEMESSEN · speicher.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) — zuletzt an 5fba36ea: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "beleg": "Maschine: gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 97 Rufe in 7713 Bildern; aufgefüllt je Bild p95 0, blind) an b3f9ae95 radeon · gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 100 Rufe in 4733 Bildern; aufgefüllt je Bild p95 0, blind) an 715754fc gtx — offen: speicher.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2) — zuletzt an 5fba36ea: die Fahrt riss 1800 s (in profiband.K1#1) — offen, UNGEMESSEN · speicher.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 5fba36ea: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
    "stationen": [
     {
      "id": "speicher.K2#1",
@@ -3180,7 +3180,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1) — zuletzt an 5fba36ea: die Fahrt riss 1800 s (in profiband.K1#1) — offen, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2) — zuletzt an 5fba36ea: die Fahrt riss 1800 s (in profiband.K1#1) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -3189,7 +3189,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) — zuletzt an 5fba36ea: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 5fba36ea: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
      "ungemessen": true
     }
    ]
@@ -3228,7 +3228,7 @@
      "gruen": true,
      "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 102/102 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 102/102 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 102/102 | ✅ Dichte über den Reload: Linie 364 Löcher, 0 korrupt",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +66)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +68)",
      "gehalten": true
     },
     {
@@ -3261,7 +3261,7 @@
      "gruen": true,
      "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 95/95",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +66)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +68)",
      "gehalten": true
     },
     {
@@ -3270,7 +3270,7 @@
      "gruen": true,
      "zahl": "✅ (V) Korpus: 101 Stände 18.530.0 … 18.546.165 und 1 Kopf laden am Kopf — Bauten 510/510 · Gruben 306/306 · Inventar 291/291 · ganz 102/102 | ✅ (V) Versions-Stufe 18.546.165: ihr Stand steht im Korpus (bump-version.cjs)",
      "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +66)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +68)",
      "gehalten": true
     }
    ]
@@ -3285,7 +3285,7 @@
      "gruen": true,
      "zahl": "5/5 Schritte gehalten in EINER Sitzung (1× geladen, 93 Eingaben aus der Spur, 0 ohne Ziel): ankommen Kontrolle 643 ms, Zeiger gefangen · laufen 12.81 m, Blick 141°, Sicht first→third→first · bauen bank_sitzbank steht in schöpfer, 8 Eingaben · ki der Satz stellt 1 Studio-Werk (haus_alemannisch): „1× Alemannisch aus dem Studio vor dir gebaut“ · benutzen der Leib sitzt auf der gebauten Bank",
      "sha": "f69a73052f55019a5cf75f1265ea0401d4c8bbdf",
-     "grund": "Pfad seit der Messung geändert (R6: stamm/koerper-leib.js, stamm/siedlung-bewohner.js)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)",
      "gehalten": true
     }
    ]
@@ -3300,7 +3300,7 @@
      "gruen": true,
      "zahl": "HUD deckt 3.94 % (1920×1080, im Spiel) · INP HUD 112 ms (50) · Menü 184 ms (20)",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3)",
      "gehalten": true
     },
     {
@@ -3331,25 +3331,23 @@
   },
   "spielgang.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: spielgang.K5#1 headless: Station seit der Messung geändert — zuletzt an f69a7305: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine TEXTE-Zeile (Exit 0)) · Täter: ✅ GRÜN — gate:sprache — die Tafel trägt 1613 Zeilen, kein Text geht an ihr vorbei. · spielgang.K5#2 headless: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: spielgang.K5#1 headless: ROT: 0 harte UI-Zeilen (Code 0 · DOM 0 von 1601 Zeilen, 1435 aus der Tafel, 166 Daten) · beim Wechsel auf en stehen 1 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2333, en 2333) · beim Namen: STEHT stamm/werkstatt-hud.js:55 grokRender · #dialogue-box div: ⟦Ich bin Eins. Diese Welt ist still — bis du sprichst. Sag, was werden soll.⟧ an 71ef6a0d · spielgang.K5#2 headless: Deckel 2400 s überschritten — beendet an 71ef6a0d",
    "stationen": [
     {
      "id": "spielgang.K5#1",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an f69a7305: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine TEXTE-Zeile (Exit 0)) · Täter: ✅ GRÜN — gate:sprache — die Tafel trägt 1613 Zeilen, kein Text geht an ihr vorbei.",
-     "ungemessen": true
+     "zahl": "0 harte UI-Zeilen (Code 0 · DOM 0 von 1601 Zeilen, 1435 aus der Tafel, 166 Daten) · beim Wechsel auf en stehen 1 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2333, en 2333) · beim Namen: STEHT stamm/werkstatt-hud.js:55 grokRender · #dialogue-box div: ⟦Ich bin Eins. Diese Welt ist still — bis du sprichst. Sag, was werden soll.⟧",
+     "sha": "71ef6a0da8c1c3df64519e50c591010b7f561339",
+     "grund": "ROT: 0 harte UI-Zeilen (Code 0 · DOM 0 von 1601 Zeilen, 1435 aus der Tafel, 166 Daten) · beim Wechsel auf en stehen 1 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2333, en 2333) · beim Namen: STEHT stamm/werkstatt-hud.js:55 grokRender · #dialogue-box div: ⟦Ich bin Eins. Diese Welt ist still — bis du sprichst. Sag, was werden soll.⟧"
     },
     {
      "id": "spielgang.K5#2",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "Deckel 2400 s überschritten — beendet",
+     "sha": "71ef6a0da8c1c3df64519e50c591010b7f561339",
+     "grund": "Deckel 2400 s überschritten — beendet"
     }
    ]
   },
@@ -3442,7 +3440,7 @@
   },
   "stoffe.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Ufer -348/-662: nach 8767 h 138 von 138 Pflanzen wieder gezeichnet · r(Tempo, Feuchte × Licht) 0.826, im Offenen (16 Kacheln) 0.936, nass 1.258 × trocken · Mutante Feuchte gleich: offen r -0.517, nass 0.973 × trocken an 10770eb5 headless — offen: stoffe.K5#2 headless: Linse seit der Messung geändert (R6: scripts/diag-stand-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +7)",
+   "beleg": "Maschine: gehalten: Ufer -348/-662: nach 8767 h 138 von 138 Pflanzen wieder gezeichnet · r(Tempo, Feuchte × Licht) 0.826, im Offenen (16 Kacheln) 0.936, nass 1.258 × trocken · Mutante Feuchte gleich: offen r -0.517, nass 0.973 × trocken an 10770eb5 headless — offen: stoffe.K5#2 headless: Linse seit der Messung geändert (R6: scripts/diag-stand-takt.cjs, scripts/lib/stand-linse.cjs, scripts/lib/welt-boot.cjs)",
    "stationen": [
     {
      "id": "stoffe.K5#1",
@@ -3459,7 +3457,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-stand-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +7)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-stand-takt.cjs, scripts/lib/stand-linse.cjs, scripts/lib/welt-boot.cjs)",
      "ungemessen": true
     }
    ]
@@ -3474,7 +3472,7 @@
      "gruen": true,
      "zahl": "sprint 5.175 m/s 60.008 s: 0 von 4096 Bildern mit Lücke · gt 15.998 m/s 60.012 s: 0 von 3762 Bildern mit Lücke · Weg 1270 m, Ring 4, Takt p95 14.1 ms (Soll 0 Lücken-Bilder)",
      "sha": "f69a73052f55019a5cf75f1265ea0401d4c8bbdf",
-     "grund": "Pfad seit der Messung geändert (R6: foundry-core.js, koerper-core.js, stamm/koerper-leib.js +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)",
      "gehalten": true
     }
    ]
@@ -3489,7 +3487,7 @@
      "gruen": true,
      "zahl": "fertig beim Eintritt: boden 484/484 (100 %) · baum 698/708 (98.6 %, spät -1/-1/0.397 s) · karte 3529/3529 (100 %) · bau 318/318 (100 %) · wuchs 257/257 (100 %) · streu 15/15 (100 %) (Soll je Klasse ≥ 95 %)",
      "sha": "f69a73052f55019a5cf75f1265ea0401d4c8bbdf",
-     "grund": "Pfad seit der Messung geändert (R6: foundry-core.js, koerper-core.js, stamm/koerper-leib.js +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)",
      "gehalten": true
     }
    ]
@@ -3733,7 +3731,7 @@
   },
   "tiere.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.323) an 10770eb5 headless — offen: tiere.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · tiere.K1#2 gtx: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.323) an 10770eb5 headless — offen: tiere.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · tiere.K1#2 gtx: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
    "stationen": [
     {
      "id": "tiere.K1#1",
@@ -3750,7 +3748,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -3783,7 +3781,7 @@
      "gruen": true,
      "zahl": "Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 11.8 s, 3 fressen: tier:wolf 8845 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.31 m · Luma 75.5 σ 33.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -3799,7 +3797,7 @@
   },
   "tiere.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Schlupf des Stand-Fußes max 0.017 in 25 Läufen als Leib (4 Gattungen), max 0.048 in 16 im Satz (4 Gattungen) an 10770eb5 headless — offen: tiere.K3#2 radeon: Linse seit der Messung geändert (R6: koerper-core.js, scripts/diag-tier-gang.cjs, scripts/lib/kamera-nah.cjs +3) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · tiere.K3#2 gtx: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: BUEHNE {\"tiere\":[{\"seele\":\"wolf\",\"x\":-5,\"art\":\"schritt\",\"amBoden\":3},{\"seele\":\"fuchs\",\"x\":-1.5,\"art\":\"schritt\",\"amBoden\":3},{\"seele\":\"baer\",\"x\":2.1",
+   "beleg": "Maschine: gehalten: Schlupf des Stand-Fußes max 0.017 in 25 Läufen als Leib (4 Gattungen), max 0.048 in 16 im Satz (4 Gattungen) an 10770eb5 headless — offen: tiere.K3#2 radeon: Linse seit der Messung geändert (R6: koerper-core.js, scripts/diag-tier-gang.cjs, scripts/lib/kamera-nah.cjs +4) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · tiere.K3#2 gtx: Station seit der Messung geändert — zuletzt an 5fba36ea: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: BUEHNE {\"tiere\":[{\"seele\":\"wolf\",\"x\":-5,\"art\":\"schritt\",\"amBoden\":3},{\"seele\":\"fuchs\",\"x\":-1.5,\"art\":\"schritt\",\"amBoden\":3},{\"seele\":\"baer\",\"x\":2.1",
    "stationen": [
     {
      "id": "tiere.K3#1",
@@ -3816,7 +3814,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: koerper-core.js, scripts/diag-tier-gang.cjs, scripts/lib/kamera-nah.cjs +3) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: koerper-core.js, scripts/diag-tier-gang.cjs, scripts/lib/kamera-nah.cjs +4) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -3928,7 +3926,7 @@
   },
   "ultiversum.K1": {
    "punkte": 1,
-   "beleg": "Maschine: A g -9.81 Sprung 0.323 m · Blau÷Rot 5.2273 · Wetter foggy 29/rainy 55/sunny 69/stormy 32/cloudy 55 · Relief ×1 | B g -3.71 Sprung 1.54 m · Blau÷Rot 0.3846 · Wetter stormy 38/sunny 65/foggy 80/cloudy 57 · Relief ×1.5805 | A2 = A · Exit 0 an f69a7305 headless",
+   "beleg": "Maschine: gehalten: A g -9.81 Sprung 0.323 m · Blau÷Rot 5.2273 · Wetter foggy 29/rainy 55/sunny 69/stormy 32/cloudy 55 · Relief ×1 | B g -3.71 Sprung 1.54 m · Blau÷Rot 0.3846 · Wetter stormy 38/sunny 65/foggy 80/cloudy 57 · Relief ×1.5805 | A2 = A · Exit 0 an f69a7305 headless",
    "stationen": [
     {
      "id": "ultiversum.K1#1",
@@ -3936,7 +3934,8 @@
      "gruen": true,
      "zahl": "A g -9.81 Sprung 0.323 m · Blau÷Rot 5.2273 · Wetter foggy 29/rainy 55/sunny 69/stormy 32/cloudy 55 · Relief ×1 | B g -3.71 Sprung 1.54 m · Blau÷Rot 0.3846 · Wetter stormy 38/sunny 65/foggy 80/cloudy 57 · Relief ×1.5805 | A2 = A · Exit 0",
      "sha": "f69a73052f55019a5cf75f1265ea0401d4c8bbdf",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)",
+     "gehalten": true
     }
    ]
   },
@@ -4038,7 +4037,7 @@
   },
   "vegetation.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1) · vegetation.K1#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2) · vegetation.K1#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "vegetation.K1#1",
@@ -4046,7 +4045,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2)",
      "ungemessen": true
     },
     {
@@ -4070,7 +4069,7 @@
      "gruen": true,
      "zahl": "Kamm 228.1 über Rausch-Boden 0.000 (×228.1), Tal 43.2 — Kamm/Tal 5.28 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 54.2 % in 0–15 m, Δt 0.25 s",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3)",
      "gehalten": true
     },
     {
@@ -4086,7 +4085,7 @@
   },
   "vegetation.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1)",
+   "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2)",
    "stationen": [
     {
      "id": "vegetation.K3#1",
@@ -4094,7 +4093,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/welt-boot.cjs +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs, scripts/lib/stand-linse.cjs +2)",
      "ungemessen": true
     }
    ]
@@ -4143,7 +4142,7 @@
   },
   "vegetation.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Krone sommer 192366 px · winter 20106 px → Winter 0.105 × Sommer an 25ac4c0c radeon · gehalten: Krone sommer 193187 px · winter 21705 px → Winter 0.112 × Sommer an b4bcf19c gtx — offen: vegetation.K5#2 radeon: ungemessen (R10) — zuletzt an d880c8e8: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s) · vegetation.K5#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2)",
+   "beleg": "Maschine: gehalten: Krone sommer 192366 px · winter 20106 px → Winter 0.105 × Sommer an 25ac4c0c radeon · gehalten: Krone sommer 193187 px · winter 21705 px → Winter 0.112 × Sommer an b4bcf19c gtx — offen: vegetation.K5#2 radeon: ungemessen (R10) — zuletzt an d880c8e8: Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s) · vegetation.K5#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3)",
    "stationen": [
     {
      "id": "vegetation.K5#1",
@@ -4151,7 +4150,7 @@
      "gruen": true,
      "zahl": "Krone sommer 192366 px · winter 20106 px → Winter 0.105 × Sommer",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3)",
      "gehalten": true
     },
     {
@@ -4178,7 +4177,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3)",
      "ungemessen": true
     }
    ]
@@ -4217,7 +4216,7 @@
      "gruen": true,
      "zahl": "Dorf porös draußen 0.71 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 4 (n 5949/13809)",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) — zuletzt an 6a571e3b: Deckel 23 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +3) — zuletzt an 6a571e3b: Deckel 23 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
      "gehalten": true
     },
     {
@@ -4287,7 +4286,7 @@
   }
  },
  "rueckfall": [],
- "kopfVoll": "b1e4be211523d110e2e9cf85ef8e145a09b70494",
- "zeit": "2026-11-04T05:17:14.797Z",
- "vorher": "f69a7305"
+ "kopfVoll": "71ef6a0da8c1c3df64519e50c591010b7f561339",
+ "zeit": "2026-11-04T09:03:42.120Z",
+ "vorher": "b1e4be21"
 }
