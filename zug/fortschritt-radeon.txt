@@ -1865,3 +1865,4 @@
 2026-11-04 19:01:42 23d19f6f-radeon lod.K4#1 ROT 0.1 · 23/117
 2026-11-04 19:01:48 23d19f6f-radeon vegetation.K3#1 ROT 0.1 · 24/117
 2026-11-04 19:01:53 23d19f6f-radeon gelaende.K3#1 GRÜN 0.5 · 25/117
+2026-11-04 19:01:59 23d19f6f-radeon affekt.K4#2 ROT 0.0 · 26/117
