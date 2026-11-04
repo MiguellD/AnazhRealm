@@ -210,7 +210,7 @@ function selbsttest() {
     selbsttestEnde(fehler);
 }
 
-const { fehlerText, statikServer, warteAufWelt, nullSeite, pngDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, nullSeite, pngDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 if (SELBSTTEST) {
     console.log("=== KOLLISION = BILD — Selbsttest (ohne Browser) ===");
@@ -219,6 +219,7 @@ if (SELBSTTEST) {
 }
 
 const { messort } = require("./lib/welt-orte.cjs");
+const { fehlerText } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.KOLLISION_BILD_PORT) || 4631;
 // `--bild`: die Welt zeichnet auf der Karte — das Linsen-Rezept von welt-boot (`linsenWebGpuArgs`, die Adapter-Zeile

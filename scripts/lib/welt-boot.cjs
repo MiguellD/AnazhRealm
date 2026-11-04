@@ -948,7 +948,9 @@ function profileFegen(tmp = os.tmpdir()) {
     for (const n of fs.readdirSync(tmp)) {
         const [d, m] = [path.join(tmp, n), /^(?:anazh-(\d+)-|werkbank-profil-|puppeteer_dev_)/.exec(n)];
         try {
-            if (m && !lebt(+m[1]) && Date.now() - fs.statSync(d).mtimeMs > 6e5 && !haelt(d)) loesche(d);
+            // EIN Versuch ohne Geduld: der Chrome eines toten Laufs ist seit 10 min tot — was dann noch hält (Virenscanner, ein
+            // fremder Griff), hielt mit Geduld JEDEN Start 5 s je Profil an und steht hier beim Namen im Log
+            if (m && !lebt(+m[1]) && Date.now() - fs.statSync(d).mtimeMs > 6e5 && !haelt(d)) loesche(d, 0);
         } catch {
             // ein Profil, das ein zweiter Starter im selben Augenblick fegt, oder eine Datei, die der Virenscanner hält: der nächste Start
         }
@@ -1842,11 +1844,13 @@ async function selbsttest() {
     const eigen = browser.profil;
     await browser.close();
     server.close();
+    // das Kind nennt sein Profil an der Marke, nie als erste Zeile: sein Feger schreibt vorher „bleibt liegen" für ein gehaltenes
+    // Alt-Profil (Vollprobe 04.11. 20:06, ~2000 Alt-Profile im Temp: die Linse las die Feger-Zeile als Pfad — ROT ohne Täter)
     const [mutante, ...kinder] = ['require("fs").rmSync = () => {}; await b.close()', "throw 0", 'process.emit("SIGTERM", "SIGTERM")'].map(
-        (c) => kind(`const b = await w.starteBrowser({ art: "null" }); require("fs").writeSync(1, b.profil + "\\n"); ${c}`).stdout.split("\n")[0]
+        (c) => (kind(`const b = await w.starteBrowser({ art: "null" }); require("fs").writeSync(1, "PROFIL " + b.profil + "\\n"); ${c}`).stdout.match(/^PROFIL (.+)$/m) || [])[1] || ""
     );
     const liegen = [mutante, ...kinder].map((d) => !/anazh-/.test(d) || fs.existsSync(d));
-    loesche(mutante);
+    if (mutante) loesche(mutante);
     const [tot, lebend, jung] = [tempNeu("profil", 2147483600), tempNeu(), tempNeu("profil", 2147483600)];
     const alt = new Date(Date.now() - 66e4);
     for (const d of [tot, lebend]) fs.utimesSync(d, alt, alt);
