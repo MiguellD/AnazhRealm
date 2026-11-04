@@ -1,7 +1,7 @@
 {
   "quelle": "GitHub-API (s): je Schritt aus den letzten je_schritt Läufen mit Urteil auf integ-probe, deren Kopf auf main landete, im Puls der Median, voll der p90, echt mit p90 und max — scripts/ci-zeiten.cjs, gelesen von gate:ci-deckung",
   "erzeugt": "2026-11-04",
-  "kopf": "2d2a5f1100df8a53f28acae9f1a4bbd1837a5448",
+  "kopf": "eee0ec3e3602e951b6b077fdf9f94abfc32a4617",
   "je_schritt": 7,
   "vorbereitung_s": 28,
   "echt": {"vorbereitung_s": 76},
