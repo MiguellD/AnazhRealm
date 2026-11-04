@@ -1714,3 +1714,4 @@
 2026-11-04 13:18:23 71ef6a0d-radeon halten.K5#2 GRÜN 0.1 · 10/76
 2026-11-04 13:18:42 71ef6a0d-radeon halten.K1#2 GRÜN 0.2 · 11/76
 2026-11-04 13:19:00 71ef6a0d-radeon fahrzeug.K5#1 GRÜN 0.3 · 12/76
+2026-11-04 13:20:41 71ef6a0d-radeon fahrzeug.K2#2 ROT 0.8 · 13/76
