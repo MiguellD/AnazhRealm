@@ -1613,3 +1613,22 @@
 2026-11-04 17:36:48 omen-gtx-w10-lod-4ca2059d START 4 Proben (lod.K1#1,lod.K2#1,lod.K3#1,lod.K5#1, GTX am Zweig-Kopf)
 2026-11-04 17:57:13 omen-gtx-w10-lod-4ca2059d lod.K2#1 ROT 5 · 4/4
 2026-11-04 17:57:14 omen-gtx-w10-lod-4ca2059d lod.K5#1 ROT 5 · 8/4
+2026-11-04 18:07:22 omen-gtx-w10-wiese-0d88e8d2 START 2 Proben (vegetation.K1#1,vegetation.K2#1, GTX am Zweig-Kopf)
+2026-11-04 18:12:26 omen-gtx-w10-wiese-0d88e8d2 vegetation.K1#1 ROT 5 · 1/2
+2026-11-04 18:12:26 omen-gtx-w10-wiese-0d88e8d2 vegetation.K2#1 GRÜN 5 · 2/2
+2026-11-04 18:12:33 omen-gtx-w10-figur-8955553c START 3 Proben (haar.K1#1,haar.K2#1,mensch.K4#1, GTX am Zweig-Kopf)
+2026-11-04 18:17:36 omen-gtx-w10-figur-8955553c haar.K1#1 GRÜN 5 · 1/3
+2026-11-04 18:17:37 omen-gtx-w10-figur-8955553c haar.K2#1 ROT 5 · 2/3
+2026-11-04 18:17:37 omen-gtx-w10-figur-8955553c mensch.K4#1 ROT 5 · 3/3
+2026-11-04 18:17:40 omen-gtx-main-b56e9b0e START 2 Proben (vegetation.K1#1,vegetation.K2#1, GTX am Zweig-Kopf)
+2026-11-04 18:22:43 omen-gtx-main-b56e9b0e vegetation.K1#1 ROT 5 · 1/2
+2026-11-04 18:22:44 omen-gtx-main-b56e9b0e vegetation.K2#1 GRÜN 5 · 2/2
+2026-11-04 18:22:46 omen-gtx-main-b56e9b0e START 4 Proben (lod.K1#1,lod.K2#1,lod.K3#1,lod.K5#1, GTX am Zweig-Kopf)
+2026-11-04 18:23:40 omen-k06-b56e9b0e START bis 12 Läufe gate:kamera-leib (GTX, main b56e9b0e), gesucht: K4 haus_alemannisch rot
+2026-11-04 18:27:50 omen-gtx-main-b56e9b0e lod.K2#1 ROT 5 · 4/4
+2026-11-04 18:27:50 omen-gtx-main-b56e9b0e lod.K5#1 ROT 5 · 8/4
+2026-11-04 18:28:16 omen-gtx-w10-takt-90be0117 START 2 Proben (leib.K1#1,profiband.K4#1, GTX am Zweig-Kopf)
+2026-11-04 18:37:03 omen-gtx-w10-takt-90be0117 START 2 Proben (leib.K1#1,profiband.K4#1, GTX am Zweig-Kopf)
+2026-11-04 18:43:21 omen-k06-b56e9b0e lauf1 ROT 19 · 1/12
+2026-11-04 18:45:24 omen-speicher ALARM Commit 16.3/18.2 GB - 9xchrome 2.9G, 12xclaude 1.9G, 1xOneDrive 0.7G, 1xMsMpEng 0.6G, 85xsvchost 0.6G, 90xbash 0.4G
+2026-11-04 18:47:30 omen-k06-b56e9b0e lauf2 GRÜN 4 · 2/12

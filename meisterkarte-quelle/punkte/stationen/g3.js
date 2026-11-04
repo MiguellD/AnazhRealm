@@ -765,7 +765,8 @@ const ZUG_PROBE = {
 //              je Spalte bis 8 km; Spalten, in denen ein naher Körper den Kamm deckt, fallen unten); der Himmel ist, was ein Schuss nur mit dem Himmel gleich zeigt; Kohärenz des
 //              Struktur-Tensors am Umriss gegen den Himmel (`__klassenMasse` kante — dieselbe Funktion wie die REF 0,160) über den
 //              Spalten mit Kamm in 0,4–4 km, die Umriss-Schwankung (RMS gegen den Median über 7 Spalten, in m am Kamm) über 1,5–2,5 km.
-//              Spalten, deren Umriss > 12 px über dem Gesetz steht, trägt ein naher Körper (fallen).
+//              Spalten, deren Umriss höher über dem Kamm des Gesetzes steht als die höchste Krone des Pflanz-Gesetzes (in METERN am
+//              Kamm, `kammSaum`), trägt ein naher Körper (fallen).
 //   schatten.K4  eine weiße Wand 4 × 3 m (Albedo 0,8) auf freiem, ebenem Boden, die Fläche von der Sonne weg (Eigenschatten, N·L < 0),
 //              Uhr 0,5: Luma der Fläche mit dem besonnten Boden davor gegen den Gegenschuss mit einer Platte Albedo 0 (16 × 16 m) davor.
 //   schatten.K3  ohne Sonne (nur Himmel und Umgebung — die Himmels-Sicht allein): ein Körper wie ein stehender Mensch (0,45 × 1,75 × 0,3,
@@ -794,7 +795,20 @@ const ZUG_PROBE = {
 //   vegetation.K3  der Boden unter Kronen (ein Strahl nach oben trifft einen Werfer) gegen offenen Boden, Uhr 0,5 und 0,56: die Flecken
 //              (Variationskoeffizient der Block-Luma) und ihr Wandern mit der Sonne (Korrelation der zwei Uhren). Das Band der REF
 //              real-mischwald für Stämme und Unterholz steht nirgends (nicht im Spiel-Baum, nicht in der Soll-Tafel): ROT beim Namen.
-async function neunSeite(r, T, C) {
+// DER SAUM AM KAMM (ferne.K3, 04.11.): die Spalten mit Kamm im Band 0,4–4 km (der Umriss im Bild, unter ihm nicht der Rand), deren Umriss
+// höchstens C.kammKroneM METER über dem Kamm des Gesetzes steht — gemessen am Kamm (`mpp(d)`: Meter je Pixel im Abstand d). Der Zweck:
+// den nahen Körper ausschließen, der vor dem Kamm in den Himmel ragt (eine Krone, ein Dach, eine Kuppe 30–300 m vor dem Auge) — er
+// steht, auf den Abstand des Kamms gerechnet, um Höhe × d / Abstand über ihm (Radeon 04.11., Dorf, Auge 25 m: ein Haufen 113–344 m), nie
+// den Wald AUF dem Kamm, dessen Saum die Linse misst. Die Grenze ist die höchste Krone, die das Pflanz-Gesetz wachsen lässt: die
+// Weißtanne 26,9 m in Größe 1 (foundry-core PRESETS tanne ph.hoeheM) × die größte Größe des Walds 1,95 (phyto-core forestTreeSize,
+// clamp) = 52,5 m (der Mammut 39,9 × 1,25 bleibt darunter). Bis 04.11. hieß die Grenze 12 PIXEL: auf 2,3 km nur 15,5 m — Kiefer und
+// Tanne stehen im Mittel 26 m, die Linse warf an der Radeon 210 von 276 Spalten mit Kamm weg (66 blieben, Soll 100), 94 % ihrer Kronen
+// im echten Waldplan, und mit Kronen × 0,55 sprang K3 grün: die Pixel-Grenze bestrafte die echte Baumhöhe. Mit der Grenze in Metern
+// bleiben dort 187 (der Haufen der nahen Körper fällt ganz).
+function kammSaum(spalten, mpp, H, C) {
+    return spalten.filter((s) => s.d >= 400 && s.d <= 4000 && s.y > 0 && s.y < H - 3 && s.gy != null && (s.gy - s.y) * mpp(s.d) <= C.kammKroneM);
+}
+async function neunSeite(r, T, C, kammSaum) {
     const st = r.state, rend = st.renderer, cam = st.camera, sc = st.scene, dl = st.directionalLight, A = r.constructor;
     const t0 = performance.now();
     const sek = () => (performance.now() - t0) / 1000;
@@ -1007,7 +1021,7 @@ async function neunSeite(r, T, C) {
                     const g = bp(E.clone().add(new T.Vector3(Math.sin(Math.atan2(v.x, v.z)), Math.tan(q.w), Math.cos(Math.atan2(v.x, v.z))).multiplyScalar(q.d)));
                     spalten.push({ x, y, d: q.d, gy: g ? g[1] : null });
                 }
-                const kammS = spalten.filter((s) => s.d >= 400 && s.d <= 4000 && s.y > 0 && s.y < H - 3 && s.gy != null && s.gy - s.y <= 12);
+                const kammS = kammSaum(spalten, mpp, H, C);
                 const m = new Uint8Array(W * H), aussen = new Uint8Array(W * H);
                 for (const s of kammS)
                     for (let dx = 0; dx < C.kammSchritt && s.x + dx < W; dx++)
@@ -1757,6 +1771,7 @@ const NEUN_C = {
     kammStand: [[0, 0]],
     kammFov: 60,
     kammSchritt: 3,
+    kammKroneM: 52.5, // die höchste Krone des Pflanz-Gesetzes: Weißtanne 26,9 m × Größe 1,95 (`kammSaum`)
     lodVersatz: [4, -4],
     lodPixelMin: 1500,
     wolkeDeckung: 0.4,
@@ -1785,7 +1800,8 @@ const NEUN_C = {
     k3Feld: 150,
     k3Schritt: 6,
 };
-const NEUN_SEITE = kompakt(neunSeite.toString());
+// die Seite samt dem Saum am Kamm (EINE Funktion: die Seite ruft sie, der Selbsttest urteilt sie, punkte.cjs `kammSaum`)
+const NEUN_SEITE = kompakt("async (r, T, C) => (" + neunSeite + ")(r, T, C, " + kammSaum + ")");
 const NEUN_ABDRUCK = require("crypto").createHash("sha1").update(NEUN_SEITE).digest("hex").slice(0, 16);
 const NEUN_PROBE = {
     sek: 10,
@@ -3102,13 +3118,27 @@ const stationen = [
         staffel: 1,
         // EIN Gerät (die Staffel: „an einem Gerät"; w4-fehlt-acht): die GTX — die Fahrt der Radeon trägt die Laub-Probe und tiere.K5#1
         geraet: "gtx",
-        // IN DER SITZUNG (w4-fehlt-acht, proben-welt.cjs `karteHebung`): Teil C der Linse in der Seite der Welt, mit drei Ankern auf C6
-        // gekürzt (C6 Byte für Byte), je Format ein frischer Probe-Renderer und Probe-Atlas, gedruckt mit dem Block der Linse; die Welt
-        // bekommt Atlas, Bühne, Rechner, Stoffe, Wind und Foundry zurück (`leihe`), die Ziele des Probe-Renderers fallen vor ihm (die
-        // Bühne ruht sofort), der VRAM-Rest nach dem GC ≤ 1 MB, sonst keine Zeile (headless swiftshader: beide Zeilen, Rest +0 MB).
-        // FIMP_PORT las im Spiel-Baum niemand (die Linse lauschte auf Port 0). DER DECKEL DER ARBEIT (geschätzt): zwei Formate × (2 Bakes
-        // × 4 Ringe, 15 Renders 128²) und der Pipeline-Bau des frischen Geräts — 15 s
-        probe: { befehl: PW.torBefehl(PW.karteHebung), sek: 10, mutiert: false },
+        // IN DER SITZUNG (w4-fehlt-acht, proben-welt.cjs `karteHebung`): Teil C der Linse in der Seite der Welt, auf C6 geschnitten nach
+        // dem Fluss der Namen (`hebungScheiben`, seit 04.11. statt dreier Text-Anker — „ANKER fehlt … const kr = [“ hielt die Station
+        // seit 6df5c040 an jedem GTX-Kopf UNGEMESSEN), C6 Byte für Byte, je Format ein frischer Probe-Renderer und Probe-Atlas, gedruckt
+        // mit der Scheibe der Linse auf `C.oben`; die Welt bekommt Atlas, Bühne, Rechner, Stoffe, Wind, Foundry und `__fimpProbe` zurück
+        // (`leihe`), die Ziele des Probe-Renderers fallen in seinem `dispose` vor ihm (die Bühne ruht sofort), der VRAM-Rest nach dem GC
+        // ≤ 1 MB, sonst keine Zeile. `griff` urteilt die Scheiben am Kopf ohne Gerät (Wand ANKER, `liste`). FIMP_PORT las im Spiel-Baum
+        // niemand (die Linse lauschte auf Port 0). DER DECKEL DER ARBEIT (geschätzt): zwei Formate × (2 Bakes × 4 Ringe, 15 Renders 256²)
+        // und der Pipeline-Bau des frischen Geräts — 15 s
+        probe: { befehl: PW.torBefehl(PW.karteHebung, String(PW.hebungScheiben)), sek: 10, mutiert: false },
+        griff: (lies, acorn) => {
+            const t = lies("scripts/diag-foundry-impostor.cjs");
+            if (t == null) return ["scripts/diag-foundry-impostor.cjs fehlt"];
+            try {
+                const S = PW.hebungScheiben(acorn, t);
+                new Function("return (" + S.kleber + ");");
+                new Function("C", "errs", S.drucke);
+                return [];
+            } catch (e) {
+                return ["die Scheiben der Linse C6: " + String((e && e.message) || e).split("\n")[0]];
+            }
+        },
         gpu: true,
         zeit: false,
         minuten: 4,
@@ -3183,3 +3213,6 @@ stationen.fehlt = [
 module.exports = stationen;
 // die Seite der NEUN-Probe (die Probe lädt sie, `neunProbe`), nicht aufzählbar: die Liste bleibt die Liste der Stationen
 Object.defineProperty(stationen, "neunSeite", { value: NEUN_SEITE, enumerable: false });
+// der Saum am Kamm und seine Grenze (ferne.K3), nicht aufzählbar: der Selbsttest urteilt dieselbe Funktion (punkte.cjs SAUM)
+Object.defineProperty(stationen, "kammSaum", { value: kammSaum, enumerable: false });
+Object.defineProperty(stationen, "kammKroneM", { value: NEUN_C.kammKroneM, enumerable: false });

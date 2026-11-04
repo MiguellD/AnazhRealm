@@ -1050,12 +1050,14 @@ async function werkbankLinse(tor) {
 // ───────── lod.K3#1 — die Karte aus jeder Blick-Hebung (gate:foundry-impostor C6, w4-hebungsringe) in der Welt der Sitzung ─────────
 // Die Linse startete einen eigenen Browser (WebGL2, Null-Renderer-Welt, FIMP_PORT las niemand). Hier ihr Teil C in der Seite der
 // Sitzung: `installiereBacke` (die Bake-Bühne `__fimpBacke`, `__fimpKarte`), `weltRuht` (die EINE Ruhe vor Teil C) und `kleberProbe`,
-// mit drei Ankern auf C6 gekürzt — (1) Layout und (2) Kleber-Wand ein toter Block, C5 fällt, C6 Byte für Byte, der Probe-Renderer geht
-// wie in der Linse (`ren.dispose()`), vorher alles, was er für die Probe anlegte: die Bühne ruht sofort (`_karteBuehneRuhe`, die Ruhe
-// der Welt — sie kam erst nach 3 s Stille, die Bühne des Probe-Renderers hielt ihre Ziele: +28 MB VRAM nach dem GC, swiftshader), das
-// Array-Ziel des rgba8-Atlas samt Tiefe, die Texturen des Probe-Atlas (sonst trüge der VRAM-Abgriff ihre Bytes bis zum GC). Je
-// Format (bc, rgba8) ein frischer Probe-Renderer, ein Probe-Atlas; gedruckt wird mit dem Druck-Block der Linse selbst (zwischen
-// seinen Ankern), nie mit einem Zwilling des Formats. DIE RÜCKGABE (die Probe misst in der Welt, die sie danach lässt): `leihe`
+// auf C6 geschnitten nach dem Fluss ihrer Namen (`hebungScheiben`, unten: kein Text-Anker) — (1) Layout, (2) Kleber-Wand, C5 und C7
+// fallen, C6 Byte für Byte. Der Probe-Renderer geht wie in der Linse (`ren.dispose()`), vorher alles, was er für die Probe anlegte —
+// über die API der Linse, nie über ihren Text: die Station hüllt `__fimpProbe` (installiereBacke), und der Renderer, den sie liefert,
+// räumt in seinem `dispose` zuerst die Bühne (`_karteBuehneRuhe` sofort, die Ruhe der Welt — sie kam erst nach 3 s Stille, die Bühne
+// des Probe-Renderers hielt ihre Ziele: +28 MB VRAM nach dem GC, swiftshader), das Array-Ziel des rgba8-Atlas samt Tiefe und jede
+// Schicht-Textur des Probe-Atlas, wie die Welt sie zählt (`_karteTexturen`: seit w4-laub-karte samt der BC-Tiefe `tmap`; sonst trüge
+// der VRAM-Abgriff ihre Bytes bis zum GC). Je Format (bc, rgba8) ein frischer Probe-Renderer, ein Probe-Atlas; gedruckt wird mit dem
+// Druck-Block der Linse selbst (die Scheibe auf `C.oben`), nie mit einem Zwilling des Formats. DIE RÜCKGABE (die Probe misst in der Welt, die sie danach lässt): `leihe`
 // (welt-boot) merkt und gibt zurück — den Karten-Atlas der Welt (Teil C setzt `_kartenAtlas` neu), Bühne und Rechner des Bakes
 // (sie gehörten danach dem Probe-Gerät), den Stoff-Cache (Teil C löscht die Karten-Stoffe), den Wind (C6 setzt ihn 0), die Grenzen
 // der Foundry (kein ruhender Welt-Körper fällt den zwei Probe-Körpern zum Opfer, die danach selbst fallen). Ohne Karte (kein
@@ -1063,17 +1065,13 @@ async function werkbankLinse(tor) {
 // 1 MB stehen, druckt sie keine C6-Zeile, sondern den Rest beim Namen (die Proben danach urteilen über VRAM).
 async function karteHebung(tor) {
     const fs = require("fs");
+    const path = require("path");
     const L = "scripts/diag-foundry-impostor.cjs";
-    const fn = (name, anker) => new Function("return (" + tor.quelle(L, name, anker) + ");")();
-    const kleber = fn("kleberProbe", [
-        ["const H0 = 8;", "if (0) { const H0 = 8;"],
-        ["const kr = [", "} const kr = ["],
-        ["rtO.dispose();", "rtO.dispose(); const buehne = r._karteBuehneSatz; if (buehne && buehne.rend === ren) (buehne.zuletzt = -Infinity), r._karteBuehneRuhe(); for (const t of [at.rt, at.map, at.nmap, at.lmap]) if (t && t.dispose) t.dispose(); return (ren.dispose(), out);"],
-    ]);
-    const text = fs.readFileSync(L, "utf8");
-    const [a, e] = ["const O = C.oben || { je: {} };", "die waagrecht gebackene Karte besteht von oben — die Linse ist blind`);"];
-    if (text.split(a).length !== 2 || text.split(e).length !== 2) throw new Error("ANKER des Druck-Blocks C6 nicht genau einmal in " + L);
-    const drucke = new Function("C", "F", "errs", text.slice(text.indexOf(a), text.indexOf(e) + e.length));
+    // die Scheiben der Linse (`hebungScheiben` als Text in argv: dieselbe Funktion urteilt die Wand ANKER am Kopf, ohne Gerät)
+    const S = new Function("return (" + tor.arg[0] + ");")()(require(path.resolve("node_modules/acorn")), fs.readFileSync(L, "utf8"));
+    console.log("  SCHEIBEN " + L + ": kleberProbe " + S.teile.kleber.join(" von ") + " Anweisungen · Druck-Block " + S.teile.drucke.join(" von "));
+    const kleber = new Function("return (" + S.kleber + ");")();
+    const drucke = new Function("C", "errs", S.drucke);
     const page = await tor.seite();
     const karte = tor.karte();
     if (!karte) throw new Error("ohne Karte keine Zeile (die Ersatz-Zeile hielte das Urteil für Hardware)");
@@ -1085,8 +1083,8 @@ async function karteHebung(tor) {
         return page.evaluate(() => (window.__vram ? +((window.__vram.puffer + window.__vram.texturen) / 1048576).toFixed(1) : null));
     };
     const v0 = await vram();
-    await fn("installiereBacke")(page);
-    const ruhe = await fn("weltRuht")(page);
+    await new Function("return (" + tor.quelle(L, "installiereBacke") + ");")()(page);
+    const ruhe = await new Function("return (" + tor.quelle(L, "weltRuht") + ");")()(page);
     console.log("  RUHE VOR TEIL C: die Welt steht nach " + ruhe.takte + " Takten · mit einer wartenden Karte: " + ruhe.karte);
     await page.evaluate(() => {
         const A = r.constructor, st = r.state, w = st.windUniforms && st.windUniforms.uWindStrength;
@@ -1096,7 +1094,23 @@ async function karteHebung(tor) {
             leihe(st, { _foliageMatCache: new Map(st._foliageMatCache || []), foundryCrossfade: st.foundryCrossfade }),
             ...(w ? [leihe(w, { value: w.value })] : []),
             leihe(A, { FOUNDRY_RUHE_BYTES: Infinity, FOUNDRY_CACHE_BYTES: Infinity, FOUNDRY_CACHE_CAP: Infinity }),
+            leihe(window, { __fimpProbe: window.__fimpProbe }),
         ];
+        // DAS ENDE DES PROBE-RENDERERS (die API der Linse statt eines Ankers): sein `dispose` räumt zuerst, was er für die Probe anlegte
+        const probe = window.__fimpProbe;
+        window.__fimpProbe = async (...a) => {
+            const pr = await probe(...a);
+            if (pr && pr.ren) {
+                const { ren, at } = pr, ende = ren.dispose;
+                ren.dispose = function () {
+                    const b = r._karteBuehneSatz;
+                    if (b && b.rend === ren) (b.zuletzt = -Infinity), r._karteBuehneRuhe();
+                    for (const t of new Set([at.rt, ...r._karteTexturen(at)])) if (t && t.dispose) t.dispose();
+                    return ende.apply(this, arguments);
+                };
+            }
+            return pr;
+        };
         window.__hebungKoerper = keys.map((k) => [k, r._foundryCacheGet(k)]);
         window.__hebungRend = [st.renderer, st.renderer.setAnimationLoop];
         return 1;
@@ -1143,11 +1157,118 @@ async function karteHebung(tor) {
             continue;
         }
         if ((C.fremd || []).length) errs.push(`${F}: die Welt lieferte in den Probe-Atlas (${C.fremd.join(", ")}) — Teil C begann vor der Ruhe`);
-        if (!rueck) drucke(C, F, errs);
+        if (!rueck) drucke(C, errs);
     }
     for (const x of errs) console.log("  ROT " + x);
     fs.writeFileSync(tor.aus, JSON.stringify({ ruhe, C: Cs.map((C) => ({ fmt: C.fmt, ohneFeature: !!C.ohneFeature, err: C.err || null, fremd: C.fremd, oben: C.oben || null })), vram: [v0, v1], rend }, null, 1));
     process.exitCode = errs.length ? 1 : 0;
 }
 
-module.exports = { sitzungTor, torBefehl, kollisionTempo, bodenRollen, tierKreis, sprungKadenz, fadenZaehler, fahrWelt, fahrRueck, fahrWegenetz, fahrVerkehr, wasserGraben, naesseDorf, werkbankLinse, karteHebung };
+// DIE SCHEIBEN DER LINSE (lod.K3#1, 04.11.): aus scripts/diag-foundry-impostor.cjs am Stand die zwei Teile, die C6 braucht — geschnitten
+// nach dem Fluss der Namen (acorn), nie nach Text. (1) `kleberProbe`, der try-Block ihrer Seiten-Funktion auf die Anweisungen gekürzt,
+// aus denen `out.oben` fließt: die Anweisungen, die `out.oben` nennen, rückwärts jede Deklaration, deren Namen sie lesen, und jede
+// Anweisung ohne eigene Deklaration, deren Namen schon alle stehen (die Regeln der Welt am Probe-Renderer, die Wache des Stoffs, der
+// ruhende Wind, das Ende des Renderers) — bis sich nichts mehr ändert. (2) Der Druck-Block: in der Schleife `for (const C of Cs)` des
+// Haupt-Laufs die Anweisungen, die `C.oben` lesen, vorwärts jede, die ihre Namen liest, rückwärts die Deklarationen, die sie brauchen.
+// Bis 04.11. hielten drei Text-Anker C6 (`const H0 = 8;` · `const kr = [` · `rtO.dispose();`) und zwei den Druck-Block: w4-laub-karte
+// (6df5c040, 31.10.) baute die Probe-Gestalt mit `__fimpTeile` statt `kr`, und die Station stand an jedem Kopf danach UNGEMESSEN (GTX
+// 10770eb5 · 1e90e7cd · 5fba36ea · 6a571e3b · 6d6a8336: „ANKER fehlt … const kr = [“) — gesehen erst am Gerät. Die Scheiben folgen jeder
+// Umbenennung und jedem neuen Teil (C7 fällt von selbst); fehlt der Teil selbst, wirft sie beim Namen. Die Wand ANKER (punkte.cjs) ruft
+// dieselbe Funktion am Kopf. Rückgabe { kleber, drucke, teile: { kleber: [behalten, von], drucke: [behalten, von] } } (Quelltexte).
+function hebungScheiben(acorn, text) {
+    const L = "scripts/diag-foundry-impostor.cjs";
+    const ast = acorn.parse(text, { ecmaVersion: "latest", sourceType: "script", allowHashBang: true, allowReturnOutsideFunction: true });
+    const kinder = (n) =>
+        Object.keys(n)
+            .filter((k) => k !== "type" && k !== "start" && k !== "end")
+            .flatMap((k) => (Array.isArray(n[k]) ? n[k] : [n[k]]))
+            .filter((c) => c && typeof c.type === "string");
+    const finde = (n, ja) => {
+        if (ja(n)) return n;
+        for (const c of kinder(n)) {
+            const f = finde(c, ja);
+            if (f) return f;
+        }
+        return null;
+    };
+    // die gelesenen Namen (über-genähert: jeder Bezeichner außer Schlüsseln und den Namen, die ein Muster deklariert)
+    const muster = (p, aus) => {
+        if (!p) return aus;
+        if (p.type === "AssignmentPattern") muster(p.left, aus), lies(p.right, aus);
+        else if (p.type === "ObjectPattern") for (const q of p.properties) q.type === "RestElement" ? muster(q.argument, aus) : (q.computed && lies(q.key, aus), muster(q.value, aus));
+        else if (p.type === "ArrayPattern") for (const q of p.elements) muster(q, aus);
+        else if (p.type === "RestElement") muster(p.argument, aus);
+        else if (p.type !== "Identifier") lies(p, aus);
+        return aus;
+    };
+    const lies = (n, aus) => {
+        if (!n || typeof n.type !== "string") return aus;
+        if (n.type === "Identifier") aus.add(n.name);
+        else if (n.type === "MemberExpression") lies(n.object, aus), n.computed && lies(n.property, aus);
+        else if (n.type === "Property" || n.type === "MethodDefinition" || n.type === "PropertyDefinition") n.computed && lies(n.key, aus), lies(n.value, aus);
+        else if (n.type === "VariableDeclarator") muster(n.id, aus), lies(n.init, aus);
+        else if (/Function/.test(n.type)) n.params.forEach((p) => muster(p, aus)), lies(n.body, aus);
+        else if (n.type === "CatchClause") muster(n.param, aus), lies(n.body, aus);
+        else if (n.type === "LabeledStatement") lies(n.body, aus);
+        else if (n.type !== "BreakStatement" && n.type !== "ContinueStatement") for (const c of kinder(n)) lies(c, aus);
+        return aus;
+    };
+    const namen = (p, aus = []) => {
+        if (!p) return aus;
+        if (p.type === "Identifier") aus.push(p.name);
+        else if (p.type === "AssignmentPattern") namen(p.left, aus);
+        else if (p.type === "ObjectPattern") for (const q of p.properties) namen(q.type === "RestElement" ? q.argument : q.value, aus);
+        else if (p.type === "ArrayPattern") for (const q of p.elements) namen(q, aus);
+        else if (p.type === "RestElement") namen(p.argument, aus);
+        return aus;
+    };
+    const dekl = (s) => (s.type === "VariableDeclaration" ? s.declarations.flatMap((d) => namen(d.id)) : /Declaration$/.test(s.type) && s.id ? [s.id.name] : []);
+    const nennt = (s, o, p) => !!finde(s, (x) => x.type === "MemberExpression" && !x.computed && x.object.type === "Identifier" && x.object.name === o && x.property.name === p);
+    // der Schnitt einer Anweisungs-Liste: Samen (nennen o.p), vorwärts (lesen einen Namen der Samen), rückwärts (deklarieren, was sie lesen),
+    // `frei` — Anweisungen ohne Deklaration, deren lokale Namen alle schon stehen
+    const schnitt = (S, o, p, frei) => {
+        const D = S.map(dekl);
+        const lokal = new Set(D.flat());
+        const R = S.map((s) => [...lies(s, new Set())].filter((x) => lokal.has(x)));
+        const K = new Set(S.map((_s, i) => i).filter((i) => nennt(S[i], o, p)));
+        if (!K.size) return K;
+        const vor = new Set([...K].flatMap((i) => D[i]));
+        for (let mehr = !frei; mehr; ) {
+            mehr = false;
+            S.forEach((_s, i) => !K.has(i) && R[i].some((x) => vor.has(x)) && (K.add(i), D[i].forEach((x) => vor.add(x)), (mehr = true)));
+        }
+        for (let mehr = true; mehr; ) {
+            mehr = false;
+            const steht = new Set([...K].flatMap((i) => D[i]));
+            const braucht = new Set([...K].flatMap((i) => R[i]));
+            S.forEach((_s, i) => {
+                if (K.has(i)) return;
+                if (D[i].some((x) => braucht.has(x)) || (frei && !D[i].length && R[i].every((x) => steht.has(x)))) (K.add(i), (mehr = true));
+            });
+        }
+        return K;
+    };
+    const quelle = (S, K) => S.filter((_s, i) => K.has(i)).map((s) => text.slice(s.start, s.end)).join("\n");
+    // (1) kleberProbe
+    const kp = ast.body.find((n) => n.type === "FunctionDeclaration" && n.id && n.id.name === "kleberProbe");
+    if (!kp) throw new Error(L + ": keine Funktion kleberProbe auf oberster Ebene");
+    const ev = finde(kp.body, (n) => n.type === "CallExpression" && n.callee.type === "MemberExpression" && !n.callee.computed && n.callee.property.name === "evaluate" && /Function/.test((n.arguments[0] || {}).type));
+    const seite = ev && ev.arguments[0];
+    const versuch = seite && seite.body.type === "BlockStatement" && seite.body.body.find((n) => n.type === "TryStatement");
+    if (!versuch) throw new Error(L + " kleberProbe: keine Seiten-Funktion mit try-Block (page.evaluate)");
+    const S1 = versuch.block.body;
+    const K1 = schnitt(S1, "out", "oben", true);
+    if (!K1.size) throw new Error(L + " kleberProbe: keine Anweisung schreibt out.oben (C6)");
+    const kleber = text.slice(kp.start, versuch.block.start) + "{\n" + quelle(S1, K1) + "\n}" + text.slice(versuch.block.end, kp.end);
+    // (2) der Druck-Block
+    const haupt = finde(ast, (n) => n.type === "CallExpression" && n.callee.type === "Identifier" && n.callee.name === "hauptLauf");
+    const ist = (n, name) => n && n.type === "Identifier" && n.name === name;
+    const schleife = haupt && finde(haupt, (n) => n.type === "ForOfStatement" && n.left.type === "VariableDeclaration" && ist(n.left.declarations[0].id, "C") && ist(n.right, "Cs"));
+    if (!schleife || schleife.body.type !== "BlockStatement") throw new Error(L + ": keine Schleife for (const C of Cs) im Haupt-Lauf");
+    const S2 = schleife.body.body;
+    const K2 = schnitt(S2, "C", "oben", false);
+    if (!K2.size) throw new Error(L + ": der Haupt-Lauf liest C.oben nicht (kein Druck-Block C6)");
+    return { kleber, drucke: quelle(S2, K2), teile: { kleber: [K1.size, S1.length], drucke: [K2.size, S2.length] } };
+}
+
+module.exports = { sitzungTor, torBefehl, kollisionTempo, bodenRollen, tierKreis, sprungKadenz, fadenZaehler, fahrWelt, fahrRueck, fahrWegenetz, fahrVerkehr, wasserGraben, naesseDorf, werkbankLinse, karteHebung, hebungScheiben };

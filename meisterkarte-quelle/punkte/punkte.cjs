@@ -526,6 +526,212 @@ function hakenAm(repo, kopf) {
     return hakenGesetzt([spiel, ...verzeichnis, ...eigen, ...skripte]);
 }
 
+// ───────────────────────────────── Griffe (die Wand ANKER) ─────────────────────────────────
+// DIE WAND ANKER (04.11.): eine Station greift in ein Werkzeug des Spiels — eine Deklaration der obersten Ebene (`tor.quelle`, `tor.dekl`,
+// `H.quelle`, die Linse als Bibliothek `H.linse`, das JSON `seite` von werkbankLinse) und Text-Anker darin ([alt, neu], jeder genau
+// einmal; dazu der Text einer Datei, `fs.readFileSync("scripts/…")`, an `split`/`replace`). Befund GTX 10770eb5 · 1e90e7cd · 5fba36ea ·
+// 6a571e3b · 6d6a8336: lod.K3#1 stand seit w4-laub-karte (6df5c040, 31.10.) an jedem Kopf UNGEMESSEN — „ANKER fehlt in
+// scripts/diag-foundry-impostor.cjs kleberProbe: const kr = [“, gesehen erst am Gerät, fünf Mess-Fahrten lang. Die Wand liest jeden
+// Griff statisch aus dem Befehl der Station (acorn: Literale, Konstanten der umgebenden Rümpfe, ein Parameter von `.map` oder `for … of`
+// über eine Liste, das Objekt `H.seite`) und urteilt ihn am Kopf; einen Griff, den sie nicht lesen kann, nennt sie beim Namen (blind
+// ist nie still grün). Eine Station mit eigenem Griff trägt `griff(lies, acorn)` → [Fehler] (lod.K3#1: die Scheiben statt Anker).
+const ACORN_O = { ecmaVersion: "latest", sourceType: "script", allowHashBang: true, allowReturnOutsideFunction: true };
+const astKinder = (n) =>
+    Object.keys(n)
+        .filter((k) => k !== "type" && k !== "start" && k !== "end")
+        .flatMap((k) => (Array.isArray(n[k]) ? n[k] : [n[k]]))
+        .filter((c) => c && typeof c.type === "string");
+const GRIFF_OBJEKTE = new Set(["tor", "H"]);
+const musterNamen = (p) =>
+    !p ? [] : p.type === "Identifier" ? [p.name] : p.type === "AssignmentPattern" ? musterNamen(p.left) : p.type === "RestElement" ? musterNamen(p.argument)
+        : p.type === "ArrayPattern" ? p.elements.flatMap(musterNamen) : p.type === "ObjectPattern" ? p.properties.flatMap((q) => musterNamen(q.type === "RestElement" ? q.argument : q.value)) : [];
+class GriffBlind extends Error {}
+function griffeVon(st, acorn) {
+    const griffe = [], blind = [];
+    for (const a of befehlVon(st).filter((x) => typeof x === "string")) {
+        let j;
+        try {
+            j = JSON.parse(a);
+        } catch (_e) {
+            j = undefined;
+        }
+        if (j !== undefined) {
+            if (j && typeof j === "object" && j.seite && typeof j.seite === "object")
+                for (const [k, v] of Object.entries(j.seite))
+                    if (Array.isArray(v) && typeof v[0] === "string" && typeof v[1] === "string") griffe.push({ art: "dekl", datei: v[0], namen: [v[1]], anker: v[2] || [], wo: "seite." + k });
+                    else blind.push("seite." + k + " ist kein [datei, name, anker]");
+            continue;
+        }
+        let ast = null;
+        for (const t of [a, "(" + a + ")"])
+            try {
+                ast = acorn.parse(t, ACORN_O);
+                break;
+            } catch (_e) {}
+        if (!ast) continue;
+        const eltern = new Map();
+        const alle = [];
+        (function geh(n, p) {
+            eltern.set(n, p);
+            alle.push(n);
+            for (const c of astKinder(n)) geh(c, n);
+        })(ast, null);
+        const pfad = (n) => (n.type === "Identifier" ? n.name : n.type === "MemberExpression" && !n.computed ? (pfad(n.object) || "?") + "." + n.property.name : null);
+        // die Zuweisungen `X.y = { … }` (H.seite)
+        const zugewiesen = new Map(alle.filter((n) => n.type === "AssignmentExpression" && n.right.type === "ObjectExpression" && n.left.type === "MemberExpression").map((n) => [pfad(n.left), n.right]));
+        const VIELE = Symbol("viele");
+        const wert = (n) => {
+            if (n.type === "Literal") return n.value;
+            if (n.type === "TemplateLiteral" && !n.expressions.length) return n.quasis[0].value.cooked;
+            if (n.type === "ArrayExpression") return n.elements.flatMap((e) => (e && e.type === "SpreadElement" ? wert(e.argument) : [wert(e)]));
+            if (n.type === "BinaryExpression" && n.operator === "+") return wert(n.left) + wert(n.right);
+            if (n.type === "Identifier") return name(n);
+            if (n.type === "MemberExpression" && !n.computed) {
+                const o = zugewiesen.get(pfad(n.object));
+                const p = o && o.properties.find((q) => q.type === "Property" && !q.computed && (q.key.name || q.key.value) === n.property.name);
+                if (p) return wert(p.value);
+            }
+            throw new GriffBlind(n.type + " „" + (pfad(n) || n.type) + "“");
+        };
+        const name = (n) => {
+            for (let p = eltern.get(n), vor = n; p; vor = p, p = eltern.get(p)) {
+                if (/Function/.test(p.type) && p.params.some((q) => q.type === "Identifier" && q.name === n.name)) {
+                    const ruf = eltern.get(p);
+                    if (ruf && ruf.type === "CallExpression" && ruf.arguments[0] === p && ruf.callee.type === "MemberExpression" && ruf.callee.property.name === "map" && p.params[0].name === n.name)
+                        return { [VIELE]: wert(ruf.callee.object) };
+                    throw new GriffBlind("Parameter „" + n.name + "“");
+                }
+                if (p.type === "ForOfStatement" && vor === p.body && p.left.type === "VariableDeclaration" && p.left.declarations[0].id.name === n.name) return { [VIELE]: wert(p.right) };
+                const body = Array.isArray(p.body) ? p.body : null;
+                if (body) {
+                    const d = body
+                        .filter((s) => s.type === "VariableDeclaration")
+                        .flatMap((s) => s.declarations)
+                        .filter((d) => d.id.type === "Identifier" && d.id.name === n.name && d.init);
+                    const vorher = d.filter((x) => x.start < n.start);
+                    if (d.length) return wert((vorher.length ? vorher : d)[(vorher.length ? vorher : d).length - 1].init);
+                }
+            }
+            throw new GriffBlind("Name „" + n.name + "“");
+        };
+        const viele = (v) => (v && typeof v === "object" && VIELE in v ? v[VIELE] : [v]);
+        const datei = (n) => {
+            const d = wert(n);
+            if (typeof d !== "string") throw new GriffBlind("die Datei ist kein Text");
+            return d;
+        };
+        const ankerListe = (v) => {
+            if (!Array.isArray(v) || !v.every((x) => Array.isArray(x) && x.length === 2 && typeof x[0] === "string" && typeof x[1] === "string")) throw new GriffBlind("die Anker sind keine Liste [alt, neu]");
+            return v;
+        };
+        const texte = new Map(); // Name → Datei: `const X = fs.readFileSync("scripts/…")`
+        for (const n of alle)
+            if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && n.init && n.init.type === "CallExpression" && n.init.callee.type === "MemberExpression" && n.init.callee.property.name === "readFileSync" && n.init.arguments[0])
+                try {
+                    const d = wert(n.init.arguments[0]);
+                    if (typeof d === "string" && /^scripts\//.test(d)) texte.set(n.id.name, d);
+                } catch (_e) {}
+        for (const n of alle) {
+            if (n.type !== "CallExpression" || n.callee.type !== "MemberExpression" || n.callee.computed) continue;
+            const was = n.callee.property.name, wem = n.callee.object;
+            const wo = (pfad(n.callee) || was) + " @" + n.start;
+            try {
+                if (wem.type === "Identifier" && texte.has(wem.name) && (was === "split" || was === "replace") && n.arguments[0]) {
+                    const a = wert(n.arguments[0]);
+                    if (typeof a === "string") griffe.push({ art: "roh", datei: texte.get(wem.name), anker: [[a, a]], wo });
+                    continue;
+                }
+                if (!(wem.type === "Identifier" && GRIFF_OBJEKTE.has(wem.name) && ["quelle", "dekl", "linse"].includes(was))) continue;
+                if (n.arguments.length < 2 || n.arguments[0].type === "SpreadElement") continue; // `tor.quelle(...L.seite[k])`: das JSON `seite`
+                const d = datei(n.arguments[0]);
+                const nm = viele(wert(n.arguments[1])).flatMap((x) => (Array.isArray(x) ? x : [x]));
+                if (!nm.length || nm.some((x) => typeof x !== "string")) throw new GriffBlind("die Namen sind kein Text");
+                if (was === "linse") {
+                    const o = n.arguments[2];
+                    if (o && o.type !== "ObjectExpression") throw new GriffBlind("die Optionen der Linse sind kein Objekt");
+                    const e = o && o.properties.find((q) => q.type === "Property" && !q.computed && (q.key.name || q.key.value) === "ersetze");
+                    griffe.push({ art: "datei", datei: d, namen: nm, anker: e ? ankerListe(wert(e.value)) : [], wo });
+                } else griffe.push({ art: "dekl", datei: d, namen: nm, anker: was === "quelle" && n.arguments[2] && typeof wert(n.arguments[1]) === "string" ? ankerListe(wert(n.arguments[2])) : [], wo });
+            } catch (e) {
+                if (!(e instanceof GriffBlind)) throw e;
+                blind.push(wo + ": " + e.message);
+            }
+        }
+    }
+    return { griffe, blind };
+}
+// je Station die Griffe, die am Kopf nicht stehen: ["<id>: <Grund>", …]; lies(datei) → Text am Kopf oder null
+function toteAnker(stationen, lies, acorn) {
+    const memo = new Map();
+    const oben = (d) => {
+        if (!memo.has(d)) {
+            const t = lies(d);
+            let top = null, fehler = null;
+            if (t != null)
+                try {
+                    top = new Map();
+                    for (const n of acorn.parse(t, ACORN_O).body) {
+                        if (/Declaration$/.test(n.type) && n.id && n.type !== "VariableDeclaration") top.set(n.id.name, [n.start, n.end]);
+                        if (n.type === "VariableDeclaration")
+                            for (const x of n.declarations)
+                                if (x.id.type === "Identifier") top.set(x.id.name, x.init ? [x.init.start, x.init.end] : [x.start, x.end]);
+                                else for (const m of musterNamen(x.id)) top.set(m, [x.start, x.end]); // `const { a, b } = require(…)`
+                    }
+                } catch (e) {
+                    fehler = e.message;
+                }
+            memo.set(d, { t, top, fehler });
+        }
+        return memo.get(d);
+    };
+    const zaehle = (src, anker, wo, fe) => {
+        for (const [a, b] of anker) {
+            const n = src.split(a).length - 1;
+            if (n !== 1) return void fe.add("Anker „" + a.slice(0, 70) + "“ steht " + n + "× in " + wo + " (Soll 1)");
+            src = src.replace(a, () => b);
+        }
+    };
+    const aus = [];
+    for (const st of stationen) {
+        const fe = new Set();
+        let g;
+        try {
+            g = griffeVon(st, acorn);
+        } catch (e) {
+            g = { griffe: [], blind: ["unlesbar: " + e.message] };
+        }
+        for (const b of g.blind) fe.add("Griff nicht statisch lesbar (" + b + ") — die Wand ist dort blind");
+        for (const x of g.griffe) {
+            const d = oben(x.datei);
+            if (d.t == null) fe.add(x.datei + " fehlt");
+            else if (d.fehler) fe.add(x.datei + " unlesbar: " + d.fehler);
+            else if (x.art === "roh") zaehle(d.t, x.anker, x.datei, fe);
+            else {
+                for (const n of x.namen) if (!d.top.has(n)) fe.add("liest " + n + " aus " + x.datei + " — keine Deklaration auf oberster Ebene");
+                if (x.art === "datei") zaehle(d.t.replace(/\r\n/g, "\n"), x.anker, x.datei, fe);
+                else if (x.anker.length && d.top.has(x.namen[0])) zaehle(d.t.slice(...d.top.get(x.namen[0])), x.anker, x.datei + " " + x.namen[0], fe);
+            }
+        }
+        if (typeof st.griff === "function") for (const f of st.griff(lies, acorn) || []) fe.add(f);
+        for (const f of fe) aus.push(schluessel(st) + ": " + f);
+    }
+    return aus;
+}
+function ankerLeser(repo, kopf) {
+    const memo = new Map();
+    return (datei) => {
+        if (!memo.has(datei)) {
+            let t = null;
+            try {
+                t = git(["show", kopf + ":" + datei], repo);
+            } catch (_e) {}
+            memo.set(datei, t);
+        }
+        return memo.get(datei);
+    };
+}
+const acornVon = (repo) => require(require.resolve("acorn", { paths: [repo] }));
+
 // ───────────────────────────────── Zeuge der Karte (Wand GPU) ─────────────────────────────────
 const ZEUGE_DATEI = path.join(DIR, "gpu-zeuge.cjs");
 const KARTE = /^\[linse-gpu\] ((?:amd|nvidia|intel|apple|qualcomm|arm)\/\S+)/i;
@@ -3670,6 +3876,87 @@ async function selbsttest(o = {}) {
         const ex = { "scripts/diag-mensch-anatomie.cjs": exportVon("const x = 1;\nmodule.exports = { messe };"), "scripts/lib/y.cjs": exportVon("module.exports.z = 1;"), "scripts/w.cjs": exportVon("module.exports = baue();") }; // prettier-ignore
         const te = toteExporte([{ kriterium: "mensch.K4", staffel: 2, t: JSON.stringify(["node -e 'const A = require(\"./scripts/diag-mensch-anatomie.cjs\"), sb = A.ladeWelt(); A.messe(sb); const Y = require(\"./scripts/lib/y.cjs\"); Y.z; const W = require(\"./scripts/w.cjs\"); W.q'"]) }], (d) => ex[d], (st) => st.t); // prettier-ignore
         pruef("WAND EXPORT der gestrichene Export beim Namen, jeder exportierte still", te.join() === "mensch.K4#2 liest A.ladeWelt aus scripts/diag-mensch-anatomie.cjs", te.join());
+        // DIE WAND ANKER: jeder Griff in ein Werkzeug des Spiels am Kopf — der fehlende Anker, der doppelte, die fehlende Deklaration, der
+        // Griff, den die Wand nicht lesen kann, je beim Namen; die stehenden still (Konstante, `.map`, `for … of`, `H.seite`, JSON `seite`)
+        {
+            const acorn = acornVon(spielRepo());
+            const code = [
+                "async function a(tor) { const L = \"scripts/a.cjs\";",
+                "  tor.quelle(L, \"f\", [[\"x = 1;\", \"x = 2;\"]]); tor.quelle(L, \"f\", [[\"const kr = [\", \"y\"]]);",
+                "  [\"g\", \"h\"].map((n) => tor.quelle(L, n)); for (const k of [\"f\"]) tor.quelle(L, k); tor.dekl(\"scripts/a.cjs\", [\"f\", \"WEG\"]);",
+                "  const q = require(\"fs\").readFileSync(\"scripts/b.cjs\", \"utf8\"); q.split(\"doppelt\");",
+                "  const blind = (x) => tor.quelle(L, x); }",
+                "H.seite = { MK: [[\"eins\", \"zwei\"]] }; H.linse(\"scripts/b.cjs\", [\"B\"], { ersetze: H.seite.MK, stumm: { f: () => 1 } });",
+            ].join("\n");
+            const texte = { "scripts/a.cjs": "function f() { const x = 1; }\nconst g = 2;\n", "scripts/b.cjs": "const B = 1; // eins\n// doppelt doppelt\n" };
+            const lies = (d) => (d in texte ? texte[d] : null);
+            const sa = { kriterium: "lod.K3", staffel: 1, probe: { befehl: ["node", "-e", code, "{AUS}", JSON.stringify({ seite: { __s: ["scripts/a.cjs", "f", [["fehlt", "x"]]] } })] } };
+            const ta = toteAnker([sa], lies, acorn);
+            const soll = [/Griff nicht statisch lesbar \(tor\.quelle @\d+: Parameter „x“\)/, /Anker „const kr = \[“ steht 0× in scripts\/a\.cjs f /, /liest h aus scripts\/a\.cjs — keine Deklaration/,
+                /liest WEG aus scripts\/a\.cjs/, /Anker „doppelt“ steht 2× in scripts\/b\.cjs /, /Anker „fehlt“ steht 0× in scripts\/a\.cjs f /];
+            const gut = toteAnker([{ ...sa, probe: { befehl: ["node", "-e", "async function a(tor) { const L = \"scripts/a.cjs\"; tor.quelle(L, \"f\", [[\"x = 1;\", \"x = 2;\"]]); [\"f\", \"g\"].map((n) => tor.quelle(L, n)); }"] } }], lies, acorn);
+            pruef("WAND ANKER der fehlende und der doppelte Anker, die fehlende Deklaration, der blinde Griff je beim Namen (6), die stehenden Griffe still",
+                ta.length === soll.length && soll.every((re) => ta.some((x) => re.test(x) && x.startsWith("lod.K3#1: "))) && gut.length === 0, JSON.stringify(ta) + " · " + JSON.stringify(gut));
+            // lod.K3#1 am Kopf des Spiel-Klons (origin/main): die Scheiben der Linse statt Anker — sie stehen, sie folgen einer Umbenennung, sie
+            // fallen beim Namen, wenn C6 nicht mehr in out.oben schreibt; die alten Anker (bis 04.11.) nennt die Wand am Täter von 6df5c040
+            const repo = spielRepo(), L = "scripts/diag-foundry-impostor.cjs";
+            const kopfText = git(["show", "origin/main:" + L], repo);
+            const lk = ladeStationen().find((s) => schluessel(s) === "lod.K3#1");
+            const am = (t) => toteAnker([lk], (d) => (d === L ? t : null), acorn);
+            const altAnker = { ...lk, griff: undefined, probe: { befehl: ["node", "-e", "async function k(tor) { tor.quelle(\"" + L + "\", \"kleberProbe\", [[\"const H0 = 8;\", \"if (0) { const H0 = 8;\"], [\"const kr = [\", \"} const kr = [\"], [\"rtO.dispose();\", \"x\"]]); }"] } };
+            const ka = [am(kopfText), am(kopfText.replace(/\bgO\b/g, "gestaltOben").replace(/\bdeckt\b/g, "deckung")), am(kopfText.replace(/out\.oben\b/g, "out.hoch")), am(kopfText.replace(/C\.oben\b/g, "C.hoch")),
+                toteAnker([altAnker], (d) => (d === L ? kopfText : null), acorn)];
+            pruef("WAND ANKER lod.K3#1 am Kopf origin/main: die Scheiben stehen und folgen einer Umbenennung; ohne out.oben bzw. C.oben ROT beim Namen; die drei Anker bis 04.11. dort ROT (const kr = [)",
+                ka[0].length === 0 && ka[1].length === 0 && /keine Anweisung schreibt out\.oben/.test(ka[2].join()) && /liest C\.oben nicht/.test(ka[3].join()) && /Anker „const kr = \[“ steht 0×/.test(ka[4].join()),
+                JSON.stringify(ka));
+            // DAS URTEIL OHNE GERÄT: die Scheibe des Druck-Blocks am Kopf druckt aus einem C der Probe die C6-Zeile, die die Station liest —
+            // die Ringe an der Karte GRÜN, die waagrecht gebackene Karte (main 715754fc) ROT; die Scheibe der Probe kompiliert
+            const PW = require("./stationen/proben-welt.cjs");
+            const S = PW.hebungScheiben(acorn, kopfText);
+            const drucke = new Function("C", "errs", S.drucke);
+            new Function("return (" + S.kleber + ");")();
+            const je = (k) => Object.fromEntries(k.map(([p, d, i]) => [p, { karte: { deckung: d, iou: i }, selbst: { deckung: 0.341, iou: 0.237 } }]));
+            const zeile = (k) => {
+                const z = [], errs = [], log = console.log;
+                console.log = (...a) => z.push(a.join(" "));
+                try {
+                    drucke({ fmt: "bc", oben: { hebungen: [-20, 0, 40, 80], schichtB: 515200, je: je(k) } }, errs);
+                } finally {
+                    console.log = log;
+                }
+                return { z: z.join("\n"), errs };
+            };
+            const ringe = zeile([[-20, 1.004, 0.966], [0, 1.064, 0.894], [40, 1.003, 0.983], [60, 0.882, 0.745], [80, 0.97, 0.97]]);
+            const waag = zeile([[-20, 0.493, 0.432], [0, 1.065, 0.894], [40, 0.294, 0.272], [60, 0.182, 0.179], [80, 0.064, 0.064]]);
+            const radeon = "[linse-gpu] webgl2/ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)\n";
+            const u = [lk.urteil(null, { exit: 0, stdout: radeon + ringe.z }), lk.urteil(null, { exit: 1, stdout: radeon + waag.z })];
+            pruef("lod.K3#1 OHNE GERÄT: die Scheiben am Kopf (kleberProbe " + S.teile.kleber.join(" von ") + ", Druck-Block " + S.teile.drucke.join(" von ") + " Anweisungen) — die Ringe drucken die C6-Zeile, das Urteil GRÜN; die waagrechte Karte ROT",
+                u[0].gruen === true && ringe.errs.length === 0 && u[1].gruen === false && waag.errs.length > 0, JSON.stringify([u, ringe.errs, waag.errs]));
+        }
+        // DER SAUM AM KAMM (ferne.K3, `kammSaum` der Station): die Grenze in Metern am Kamm. An den Spalten der Radeon 04.11. (Kronen wie
+        // gewachsen) stehen ≥ 100 Kamm-Spalten, das Urteil GRÜN; die Mutante (12 PIXEL bis 04.11.) wirft sie unter 100 (ROT); ein naher Körper
+        // vor dem Auge (6 m über der Sichtlinie, 40 m fern, über das ganze Band) fällt ganz — mit und ohne Mutante ROT; die höchste Krone
+        // des Gesetzes am Kamm bleibt, 10 % darüber fällt
+        {
+            const g3 = require("./stationen/g3.js");
+            const fk = ladeStationen().find((s) => schluessel(s) === "ferne.K3#1");
+            const R = JSON.parse(fs.readFileSync(path.join(DIR, "stationen", "ferne-k3-radeon-0411.json"), "utf8"));
+            const [W, H] = R.leinwand, fov = R.kammFov / (W / H);
+            const mpp = (d) => (d * 2 * Math.tan((fov * Math.PI) / 360)) / H;
+            const C = { kammKroneM: g3.kammKroneM };
+            const sp = R.spalten.map(([x, y, d, gy]) => ({ x, y, d, gy }));
+            const pixel = (s) => s.filter((q) => q.d >= 400 && q.d <= 4000 && q.y > 0 && q.y < H - 3 && q.gy != null && q.gy - q.y <= 12);
+            const nah = sp.map((q) => (q.gy == null ? q : { ...q, y: Math.round(q.gy - 6 / mpp(40)) }));
+            const soll = JSON.parse(/^NEUN ferne\.K3 (\{.*\})$/m.exec(fk.proben[0].stdout)[1]);
+            const urteil = (k) => fk.urteil(null, { exit: 0, stdout: "[linse-gpu] webgl2/ANGLE (AMD, AMD Radeon(TM) 890M Graphics)\nNEUN ferne.K3 " +
+                JSON.stringify({ ...soll, kamm: k.length, zweiKm: k.filter((q) => q.d >= 1500 && q.d <= 2500).length }) }).gruen;
+            const n = [g3.kammSaum(sp, mpp, H, C), pixel(sp), g3.kammSaum(nah, mpp, H, C), pixel(nah)];
+            const krone = (m) => g3.kammSaum([{ x: 0, y: 500 - m / mpp(2295), d: 2295, gy: 500 }], mpp, H, C).length;
+            pruef("SAUM ferne.K3 in Metern am Kamm (Grenze " + C.kammKroneM + " m): Radeon 04.11. " + n[0].length + " Kamm-Spalten GRÜN, die Mutante 12 px " + n[1].length + " ROT; ein naher Körper 40 m vor dem Auge " +
+                n[2].length + " (Mutante " + n[3].length + ") ROT; die höchste Krone am Kamm bleibt, 10 % darüber fällt",
+                n[0].length >= 100 && urteil(n[0]) && n[1].length < 100 && !urteil(n[1]) && n[2].length === 0 && !urteil(n[2]) && n[3].length === 0 && !urteil(n[3]) &&
+                krone(C.kammKroneM * 0.99) === 1 && krone(C.kammKroneM * 1.1) === 0, JSON.stringify(n.map((x) => x.length)));
+        }
         let w = buchen("kopf", [s1], [M("a1", "radeon", "gelaende.K4#1", s1, true)], keine, h, [], { tot: () => ["worlds/schmiede/schmiede-core.js"] });
         pruef("WAND PFAD toter Glob am Kopf → 0", w.je["gelaende.K4"].punkte === 0 && /trifft am Kopf keine Datei \(R6 blind\): worlds\/schmiede/.test(w.je["gelaende.K4"].beleg), w.je["gelaende.K4"].beleg);
         const alt = [M("a1", "radeon", "gelaende.K4#1", s1, true, undefined, {})];
@@ -4609,6 +4896,8 @@ if (require.main === module) {
             for (const h of toteHaken(stationen, hakenAm(repo, kopf), stationText)) fehler.push(h + " — niemand setzt ihn am Kopf " + kopf.slice(0, 8) + " (Wand HAKEN)");
             // DIE WAND EXPORT am Kopf: jedes Glied, das eine Station aus einem Werkzeug des Spiels liest, exportiert es
             for (const x of toteExporte(stationen, exporteAm(repo, kopf), stationText)) fehler.push(x + " — der Kopf " + kopf.slice(0, 8) + " exportiert es nicht (Wand EXPORT)");
+            // DIE WAND ANKER am Kopf: jede Deklaration und jeder Text-Anker, den eine Station aus einem Werkzeug des Spiels liest, steht dort
+            for (const x of toteAnker(stationen, ankerLeser(repo, kopf), acornVon(repo))) fehler.push(x + " — am Kopf " + kopf.slice(0, 8) + " (Wand ANKER)");
             for (const st of stationen) console.log("  " + schluessel(st) + " · " + geraeteVon(st).join("+") + (st.gpu ? " · GPU" : "") + (st.zeit ? " · Zeit" : " · Bild") + (st.probe ? " · Sitzung ≤ " + probeSek(st) + " s" : "") + " · " + st.minuten + " min · " + befehlVon(st).join(" ") + " · " + abdruck(st));
             for (const e of fehlt) console.log("  FEHLT " + e.kriterium + "#" + e.staffel + " · " + String(e.grund).slice(0, 140));
             for (const f of fehler) console.log("  ROT " + f);
@@ -4627,5 +4916,6 @@ if (require.main === module) {
 
 module.exports = { liesStand, maschinenKriterium, standPruefen, buchen, liesPflicht, pflichtBand, pflichtEintraegeAus, pruefeStationen, trifftPfad, toteGlobs, gpuZeuge, gpuWand, abdruck, fahreStation,
     frischUrteil, stempelDateien, linsenVon, linsenAm, ladeGeprueft, ladeMessungen, spielRepo, voll, git, schluessel, geraeteVon, hilfeText,
+    griffeVon, toteAnker, ankerLeser, acornVon,
     // DER STROM für die Probe der Sitzung (require(process.env.PUNKTE_MASCHINE)): EIN Zapfen, EINE Marke, EIN Leser, der Ruf mit Frist
     stromZapfen, stromMarke, stromLesen, rufFrist, STROM_SPALTEN };
