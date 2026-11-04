@@ -1730,3 +1730,4 @@
 2026-11-04 13:28:36 71ef6a0d-radeon START 7 Stationen
 2026-11-04 13:29:28 71ef6a0d-radeon profiband.K4#1 ROT 0.5 · 1/7
 2026-11-04 13:30:02 71ef6a0d-radeon gelaende.K5#2 GRÜN 0.3 · 2/7
+2026-11-04 13:30:23 71ef6a0d-radeon vegetation.K2#1 GRÜN 0.4 · 3/7
