@@ -37,7 +37,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, fs, SELBSTTEST, jsonKlon, fehlerText, seiteZu, rotListe } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, postKetteBereit, laufUhr, taeterFaelle, selbsttestEnde, fs, SELBSTTEST, jsonKlon, fehlerText, seiteZu, rotListe } = require("./lib/welt-boot.cjs");
 // der Bruch, den die Wand selbst in die Kette wirft (Schritt „Render-Fehler") — der EINE Fehler-Sammler (welt-boot) nennt jeden
 // anderen Bruch der Post-Kette ROT beim Namen, diesen erwartet die Linse und zählt ihn selbst (GENAU einmal, `urteil`)
 const ERZWUNGEN = /\[ERROR\] STOFF: die Post-Kette .*gate:post-kette — erzwungener Render-Fehler der Kette/;
@@ -911,17 +911,7 @@ function buehne(nFrames, nachtLicht) {
     try {
         await server.zeige(page, 60000, "index.html?holz=kienspan");
         // Die Kette steht erst nach dem ersten Frame mit bereitem Renderer (`_ensurePostProcessing` im Loop).
-        const bereit = await page.evaluate(async () => {
-            const t0 = performance.now();
-            await __weltDa((r) => {
-                const st = r.state;
-                return !!(st?.rendererReady && st.renderer?.backend && st.postProcessing && st.camera);
-            });
-            return { ok: true, ms: Math.round(performance.now() - t0), webgpu: st.renderer.backend.isWebGPUBackend === true };
-        });
-        if (!bereit.webgpu)
-            throw new Error("kein WebGPU-Backend — die Leinwand-Tiefe lebt nur dort, die Wand wäre blind");
-        log(`Renderer und Post-Kette bereit nach ${Math.round(bereit.ms / 1000)} s`);
+        await postKetteBereit(page, log, "die Leinwand-Tiefe lebt nur dort, die Wand wäre blind");
         await page.evaluate(AUSGABE_INSTALL);
         await page.evaluate(SK.SHADER_INSTALL);
         out = await page.evaluate(buehne, N_FRAMES, DUNKEL_NACHT_LICHT);
