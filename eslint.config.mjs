@@ -62,6 +62,9 @@ export default [
                 btoa: "readonly",
                 TextEncoder: "readonly",
                 TextDecoder: "readonly",
+                CompressionStream: "readonly", // das Gesetzbuch der Bibliothek reist gepackt (`_buchPacke`, ultiversum.K4)
+                DecompressionStream: "readonly",
+                Response: "readonly",
                 indexedDB: "readonly", // V18.151 IndexedDB-Spiegel (vorbestehender Lint-Riss, M2-Beifang)
                 AnazhHuelle: "readonly", // die Studio-Hülle (worlds/huelle/huelle.js, K41): die Werkstatt ruft DENSELBEN Regler-Generator
                 // CDN-Libs

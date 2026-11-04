@@ -77,6 +77,10 @@ class AnazhRealm_studio_bruecke {
                 format: AnazhRealm.FOUNDRY_PLATTE_FORMAT,
                 platte: f.platte,
                 module,
+                // DIE BÜCHER DES SPIELERS (ultiversum.K4): die Gesetzbücher der Bibliothek, gesiebt an der Sperrliste — der
+                // Faden prüft ihre Signatur selbst und hängt sie an die EINE Liste der Kerne (`_foundryStart`)
+                buecher: this._bibliothekBuecher(),
+                buchMax: AnazhRealm.BIBLIOTHEK.buch,
                 wirt: karte
                     ? [...document.querySelectorAll("script[src]")]
                           .map((s) => s.src)
@@ -84,13 +88,21 @@ class AnazhRealm_studio_bruecke {
                           .concat(Object.values(module))
                     : [],
             };
+            // die Helfer des Fadens reisen als Quelltext (die Schale, die EINE Signatur-Prüfung, das Auspacken eines Buchs)
+            const fn = (m) => {
+                const q = m.toString();
+                return q.startsWith("async ") ? "async function " + q.slice(6) : "function " + q;
+            };
             const boot =
-                "(function " +
-                AnazhRealm._foundryStart.toString() +
+                "(" +
+                fn(AnazhRealm._foundryStart) +
                 ")(" +
-                JSON.stringify(start) +
-                ",function " +
-                AnazhRealm._foundrySchale.toString() +
+                [
+                    JSON.stringify(start),
+                    fn(AnazhRealm._foundrySchale),
+                    fn(AnazhRealm._ed25519Pruefe),
+                    fn(AnazhRealm._buchAuspacke),
+                ].join(",") +
                 ");"; // die Brücke startet sich selbst (Foundry-Modus, Kanal-Hörer, ready)
             f.bootUrl = URL.createObjectURL(new Blob([boot], { type: "text/javascript" }));
             // DER FADEN WARTET NIE AUF DEN HAUPT-FADEN (K60-2, B3a): die Buch-Frage reist IN der Geburt — der Faden
@@ -144,7 +156,10 @@ class AnazhRealm_studio_bruecke {
     // der Karte an die Platte (karte; sie backt seit S2 im Welt-Renderer, `_karteWeltBacken`) — EINE pending-Map, die reqIds
     // sind disjunkt.
     _foundryAntwort(f, m) {
-        if (m.type === "asset") {
+        // ein Gesetzbuch der Bibliothek fällt im Faden beim Namen (Signatur, Auspacken, Namensraum, Laden) — laut, je Faden
+        if (m.type === "buch-abgewiesen")
+            this.log(`GESETZBUCH ${String(m.code).slice(0, 16)} abgewiesen: ${m.grund}`, "ERROR");
+        else if (m.type === "asset") {
             // Das Budget-Gesetz am Studio-Ausgang (W8) meldet einen Bruch LAUT — nie still.
             if (Array.isArray(m.budgetBruch) && m.budgetBruch.length)
                 this.log("BUDGET-BRUCH " + m.presetId + " L" + m.lod + ": " + JSON.stringify(m.budgetBruch), "ERROR");
@@ -598,11 +613,19 @@ class AnazhRealm_studio_bruecke {
     // kommt per fetch (ALLES aus cores.manifest.json, EINE Quelle, ?v= Pflicht; kein synchrones XHR). Bis Engine und
     // Kerne stehen, HÄLT der Faden jede Nachricht (der erste Hörer, `halte`) und reicht sie danach in ihrer Folge weiter —
     // dann steht die Transport-Schale VOR dem Studio (ihr Kanal-Hörer zuerst) und die Kerne laden in Manifest-Folge
-    // (phyto- VOR foundry-core) → die Brücke ZULETZT (K42: keine Labor-Shell im Faden); importScripts braucht ABSOLUTE URLs
+    // (phyto- VOR foundry-core), danach die Bücher des Spielers → die Brücke ZULETZT (K42: keine Labor-Shell im Faden); importScripts braucht ABSOLUTE URLs
     // (die Blob-URL hat keine Basis). Die Platte stempelt jede Lieferung mit dem Gesetz-SHA ihrer Kerne: je Kern seine
     // Quellen (scripts · engine · bruecke — die Brücke trägt `__extractAssetMesh`), nie die Labor-Shell; die Basis ist der
     // Kern der Brücke. Ein Manifest ohne Kern, eine Engine ohne Modul der Karte, ein Ladefehler brechen laut (`worker.onerror`).
-    static _foundryStart(b, schale) {
+    // DIE EINE LISTE DER KERNE (ultiversum.K4): das Manifest des Servers ⊕ die Gesetzbücher des Spielers (`b.buecher`, aus der
+    // Bibliothek, gesiebt an der Sperrliste) — je Buch prüft der Faden die Signatur über die signierten Bytes (`pruefe`, die
+    // EINE Ed25519-Prüfung des Wirts), packt es aus (`auspacken`, gedeckelt `b.buchMax`) und lädt es nach den Kernen des
+    // Servers als Blob; sein Namensraum ist der EINE `__<art>Core` seines Quelltexts, den kein Kern des Servers trägt — der
+    // Lauf bestätigt ihn, kein Kern des Servers darf sich dabei ändern. Seine Zeile (id · ns · scripts) steht in der Liste
+    // wie jede des Servers, VOR der Schale: die Schale stempelt es,
+    // die Brücke liest es als Zweit-Kern (Rezepte, Stufen, Budget, Regler, KIND_POLICY). Ein Buch, das fällt, fällt beim
+    // Namen (`buch-abgewiesen`, der Wirt meldet es laut), nie die Welt.
+    static _foundryStart(b, schale, pruefe, auspacken) {
         const W = globalThis;
         const url = (p) => new URL(p + b.v, b.base).href;
         const gehalten = [];
@@ -640,7 +663,18 @@ class AnazhRealm_studio_bruecke {
                     throw new Error("STOFF: die Foundry bootet nicht — " + motoren.length + " Engines im Manifest");
                 return import(motoren[0]).then((T) => [manifest, T, motoren[0]]);
             })
-            .then(([manifest, T, motor]) => {
+            .then(([manifest, T, motor]) =>
+                Promise.all(
+                    (b.buecher || []).map((e) =>
+                        pruefe(e.kanon, e.sig, e.autor)
+                            .then((ok) => (ok ? auspacken(JSON.parse(e.kanon).buch, b.buchMax) : false))
+                            .catch(() => null)
+                            .then((quelle) => [e, quelle])
+                    )
+                ).then((buecher) => [manifest, T, motor, buecher])
+            )
+            .then(([server, T, motor, buecher]) => {
+                const manifest = server.slice();
                 const liste = (feld, kerne = manifest) => {
                     const out = [];
                     for (const core of kerne)
@@ -648,18 +682,66 @@ class AnazhRealm_studio_bruecke {
                             if (typeof s === "string" && s) out.push(url(s));
                     return out;
                 };
+                // DIE BÜCHER DES SPIELERS in die EINE Liste: ein Buch nennt seinen Namensraum selbst — der EINE `__<art>Core`
+                // seines Quelltexts, den kein Kern des Servers trägt; seine Zeile steht VOR der Schale (ihr Stempel liest sie)
+                const ab = (e, grund) => W.postMessage({ type: "buch-abgewiesen", code: e.code, grund });
+                const vergeben = new Set(manifest.flatMap((c) => [c.id, c.ns]).filter(Boolean));
+                const zeilen = [];
+                for (const [e, quelle] of buecher) {
+                    if (typeof quelle !== "string") {
+                        ab(e, quelle === false ? "signatur" : "auspacken");
+                        continue;
+                    }
+                    const ns = [...new Set(quelle.match(/\b__[A-Za-z]\w*Core\b/g) || [])].filter(
+                        (n) => !vergeben.has(n)
+                    );
+                    const id = ns.length === 1 ? ns[0].slice(2, -4) : null;
+                    if (!id || vergeben.has(id)) {
+                        ab(e, "namensraum (" + ns.length + " freie __…Core)");
+                        continue;
+                    }
+                    [id, ns[0]].forEach((n) => vergeben.add(n));
+                    const u = URL.createObjectURL(new Blob([quelle], { type: "text/javascript" }));
+                    zeilen.push([e, { id, ns: ns[0], scripts: [u], buch: e.code }]);
+                    manifest.push(zeilen[zeilen.length - 1][1]);
+                }
                 const kerne = manifest.map((c) => ({
                     id: c.id || c.ns,
                     ns: c.ns || null,
                     basis: !!c.bruecke,
-                    urls: liste("scripts", [c]).concat(c.engine ? [motor] : [], liste("bruecke", [c])),
+                    urls: c.buch
+                        ? c.scripts.slice()
+                        : liste("scripts", [c]).concat(c.engine ? [motor] : [], liste("bruecke", [c])),
                 }));
                 schale({ lesen: b.lesen, jahr: b.jahr, format: b.format, platte: b.platte, kerne, wirt: b.wirt || [] });
                 T.ColorManagement.enabled = false;
                 W.THREE = Object.assign({}, T);
                 W.__PHYTO_FOUNDRY_WORKER = true;
                 W.__anazhCores = manifest; // die Brücke liest die ns-Kerne generisch (vor den importScripts)
-                W.importScripts(...liste("scripts").concat(liste("bruecke"))); // die Brücke startet sich selbst
+                W.importScripts(...liste("scripts", server));
+                // je Buch der Lauf als Richter: es lädt, setzt seinen Namensraum und lässt jeden stehenden Kern, wie er war —
+                // sonst fällt es beim Namen, seine Zeile verlässt die Liste, der Kern steht wieder
+                for (const [e, zeile] of zeilen) {
+                    const vorher = Object.keys(W)
+                        .filter((k) => /^__\w+Core$/.test(k))
+                        .map((k) => [k, W[k]]);
+                    let grund = null;
+                    try {
+                        W.importScripts(zeile.scripts[0]);
+                    } catch (err) {
+                        grund = "laden: " + String((err && err.message) || err).slice(0, 120);
+                    }
+                    const fremd = vorher.filter(([k, v]) => W[k] !== v);
+                    if (!grund && fremd.length) grund = "überschreibt " + fremd.map(([k]) => k).join(", ");
+                    if (!grund && (!W[zeile.ns] || typeof W[zeile.ns] !== "object"))
+                        grund = "namensraum (" + zeile.ns + " steht nicht)";
+                    if (!grund) continue;
+                    for (const [k, v] of fremd) W[k] = v;
+                    delete W[zeile.ns];
+                    manifest.splice(manifest.indexOf(zeile), 1);
+                    ab(e, grund);
+                }
+                W.importScripts(...liste("bruecke")); // die Brücke startet sich selbst
                 W.removeEventListener("message", halte);
                 for (const data of gehalten.splice(0)) W.dispatchEvent(new W.MessageEvent("message", { data }));
             })
