@@ -383,7 +383,7 @@ function _poseGuard(){
 // Hocke-Tunnel, der kurze Sprung beim Loslassen und die Feel-Schichten (Anlauf-Neigung, Kurven-Lage) fielen: die Welt kennt sie nicht.
 var FC = window.__fachwerkCore;
 if (!FC || !FC.GERAETE || typeof FC.geraetAngebotIn !== 'function' || typeof FC.buildInstance !== 'function') throw new Error('Kern-Pflicht: fachwerk GERAETE/geraetAngebotIn/buildInstance (das Labor stellt die Werke der Welt auf)');
-['leibPlan','leibSitz','leibGlieder','leibSchwenk','leibSchwenkPunkt','leibImpuls','leibFall','leibLandung','leibRichtung','leibZustand','leibKette','leibMasse','leibWerte','leibAbdruck','leibSprungKraft','leibGangTakt','leibRigPose','leibLuftPose','leibVerbPose','leibGeraetAusschwingen','leibMassstab','leibSohle','leibPoseWinkel','leibSollUrteil'].forEach(function(f){if(typeof KC[f]!=='function')throw new Error('Kern-Pflicht: koerper '+f);});
+['leibPlan','leibSitz','leibGlieder','leibSchwenk','leibSchwenkPunkt','leibImpuls','leibFall','leibLandung','leibRichtung','leibZustand','leibKette','leibMasse','leibWerte','leibAbdruck','leibSprungKraft','leibGangTakt','leibRigPose','leibLuftPose','leibVerbPose','leibGeraetAusschwingen','leibMassstab','leibSohle','leibGussLage','leibPoseWinkel','leibSollUrteil'].forEach(function(f){if(typeof KC[f]!=='function')throw new Error('Kern-Pflicht: koerper '+f);});
 var M_E = KC.leibMassstab();                 // Meter je Gelenk-Einheit: die Bühne in Metern, der Leib im Maß des Gusses
 var G_WELT = KC.LEIB.sprung.refG;            // die Erd-Schwere (m/s²), dieselbe wie die Welt bei Spiel-Beginn
 var KAPSEL = KC.LEIB.kapsel;                 // die Kapsel des Leibs (Sohle, Stufe, Haftung, Wand-Radius) — die der Welt
@@ -680,7 +680,8 @@ function _hautProben() {
   var vox = 0.02 / M_E, liste = [], _bv = new THREE.Vector3();
   gestalt.l0.forEach(function (n) {
     if (/eye|iris|pupil/.test(n.userData.__klasse || '')) return;
-    var pa = n.geometry.attributes.position, si = n.geometry.attributes.skinIndex, sw = n.geometry.attributes.skinWeight, zellen = {};
+    // die Guss-Lage (koerper `leibGussLage`): das Tuch, das der weiche Löser im Bild bewegt, misst in seiner Ruhe — wie die Welt
+    var pa = KC.leibGussLage(n), si = n.geometry.attributes.skinIndex, sw = n.geometry.attributes.skinWeight, zellen = {};
     for (var i = 0; i < pa.count; i++) {
       var key = Math.round(pa.getX(i) / vox) + ',' + Math.round(pa.getY(i) / vox) + ',' + Math.round(pa.getZ(i) / vox);
       if (zellen[key]) continue; zellen[key] = 1;

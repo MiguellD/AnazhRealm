@@ -3171,6 +3171,28 @@
     // die vorderste Stelle der Unterkante (≤ 0,02 Maß über der tiefsten), die tiefste, die hinterste. Ein Fuß ohne Zehen-Gelenk
     // rollt über die Spitze seiner Sohle (die Welt: `_gaitRollung`). Die Rechnung ist die der THREE-Matrix (Spalten-Ordnung,
     // dieselbe Folge der Summen), ohne THREE: der Knöchel-Raum = boneInverse × bindMatrix × Ecke. null: keine Haut am Knöchel.
+    // DIE GUSS-LAGE eines Meshes (haar.K4 — die Leser der gegossenen Haut: leibSohle · leibSitz · leibGlieder, die Haut-Proben des
+    // Labors): ein Tuch, das der weiche Löser bewegt, trägt in seinem Positions-Puffer den Takt (`tuchTakt` schreibt ihn, im Labor in
+    // die Geometrie selbst, in der Welt in die eigene Spalte) — gemessen wird der Guss, nie ein Takt des Tuchs: der Puffer eines
+    // Zustands (`tuchZustand` trägt ihn hier ein) liest seine Ruhe-Lage (die drapierte Ecke des Gitters), jeder andere sich selbst.
+    var _TUCH_RUHE = typeof WeakMap === "function" ? new WeakMap() : null;
+    function leibGussLage(o) {
+        var pa = o.geometry.attributes.position,
+            r = _TUCH_RUHE && _TUCH_RUHE.get(pa);
+        if (!r) return pa;
+        return {
+            count: pa.count,
+            getX: function (i) {
+                return r[3 * i];
+            },
+            getY: function (i) {
+                return r[3 * i + 1];
+            },
+            getZ: function (i) {
+                return r[3 * i + 2];
+            },
+        };
+    }
     function leibSohle(mesh, knoechel) {
         var p = [];
         var komp = function (a, i, k) {
@@ -3182,7 +3204,7 @@
             var A = o.geometry.attributes,
                 si = A.skinIndex,
                 sw = A.skinWeight,
-                pa = A.position;
+                pa = leibGussLage(o);
             var ae = o.skeleton.boneInverses[b].elements,
                 be = o.bindMatrix.elements,
                 e = new Array(16),
@@ -3237,7 +3259,7 @@
             var A = o.geometry.attributes,
                 si = A.skinIndex,
                 sw = A.skinWeight,
-                pa = A.position,
+                pa = leibGussLage(o),
                 be = o.bindMatrix.elements,
                 E = {};
             var komp = function (a, n, k) {
@@ -3304,7 +3326,7 @@
             var A = o.geometry.attributes,
                 si = A.skinIndex,
                 sw = A.skinWeight,
-                pa = A.position,
+                pa = leibGussLage(o),
                 be = o.bindMatrix.elements;
             var E = idx.map(function (b) {
                 if (b < 0) return null;
@@ -4627,6 +4649,11 @@
             frisch: true,
             ms: 0,
         };
+        // die Guss-Lage der Puffer, in die der Takt schreibt (`leibGussLage`): die Ruhe des Gitters
+        if (_TUCH_RUHE) {
+            z.simPos.forEach(function (pa, i) { _TUCH_RUHE.set(pa, Q.teile[i].ruhe); });
+            z.folgePos.forEach(function (pa, i) { _TUCH_RUHE.set(pa, Q.folger[i].ruhe); });
+        }
         z.skelB = skel.map(function (sk) { return new Float64Array(16 * sk.bones.length); });
         z.skelAlt = z.skelB.map(function (b) { return new Float64Array(b.length); });
         return z;
@@ -5193,6 +5220,7 @@
         leibRigPose: leibRigPose,
         leibKette: leibKette,
         leibSohle: leibSohle,
+        leibGussLage: leibGussLage,
         leibSitz: leibSitz,
         leibGlieder: leibGlieder,
         leibPose: leibPose,
