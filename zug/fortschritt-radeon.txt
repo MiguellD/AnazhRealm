@@ -1835,3 +1835,4 @@
 2026-11-04 18:34:22 a835e5a1-radeon haar.K2#1 GRÜN 0.4 · 2/3
 2026-11-04 18:34:46 a835e5a1-radeon haar.K1#1 ROT 0.4 · 3/3
 2026-11-04 18:36:16 a835e5a1-radeon ENDE 1 grün / 2 rot · 5.7 min
+2026-11-04 18:36:36 dc28be42-radeon START 4 Stationen
