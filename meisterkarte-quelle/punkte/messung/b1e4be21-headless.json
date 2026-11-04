@@ -1,0 +1,19 @@
+{
+ "sha": "b1e4be211523d110e2e9cf85ef8e145a09b70494",
+ "geraet": "headless",
+ "zeit": "2026-11-04T05:00:19.649Z",
+ "host": "farm:41776489341",
+ "je": {
+  "mensch.K4#2": {
+   "gruen": true,
+   "zahl": "50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:52:4/7:38:4; 0 Paare unter 1 px) · Höhe 1.684–1.927 m um 1.816 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 1.084 ms für 1094 → 0.05 ms je 50",
+   "exit": 0,
+   "minuten": 1.44,
+   "zeit": "2026-11-04T05:00:19.649Z",
+   "abdruck": "ea5fc9f1e1f0",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "farm:41776489341/1"
+  }
+ }
+}
