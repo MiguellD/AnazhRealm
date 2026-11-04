@@ -14,3 +14,16 @@ w6-alter a7827678 ROT check   ✗ R2 DECKE: stamm/kreatur-verhalten.js trägt 40
 w5-physik-k5 b8a0f2bc ROT check   ✗ R2 DECKE: stamm/kreatur-verhalten.js trägt 4003 Zeilen > 4000 — die Karte teilt ihr Modul (Modul/teil, ein Name der Domäne), dann node scripts/stamm-umzug.cjs --nach-karte
 w6-alter a7827678 OFFEN Korrektur: R2 DECKE kreatur-verhalten.js 4002 ist Reihenfolge (main 4000); Vorprüfung neu gegen main nach z185 spielgang-decke
 w5-physik-k5 b8a0f2bc OFFEN Korrektur: R2 DECKE kreatur-verhalten.js 4003 ist Reihenfolge (main 4000); Vorprüfung neu gegen main nach z185 spielgang-decke
+w6-weiches f32add32 ROT playtest-voll ❌ 4 Invariante(n) verletzt: Φ5 (Q14+Q15): pinnedWorlds-Map existiert + pinCurrentWorld erzeugt hash/bytes/persistiert (Manifest UND Snapshot), Φ5 (Q16): listPinnedWorlds liefert das volle Eintragsschema (worldId · h
+w6-weiches f32add32 OFFEN Korrektur: playtest Φ5 Q14–Q18 = Φ5-Wand (pinCurrentWorld Snapshot > 262144 B), kein Zweig-Fehler im engeren Sinn; Sonde: main 2d2a5f11 261952/261963 B, Zweig 262045/262065 B (+~100 B), beide Läufe grün; der ROT-Lauf 20:34 lag über der Wand
+w5-studios-k1 d5aa0e1f GRÜN check+playtest-voll+haus-welt+koerper-kern+koerper-stand+regler-wirkt+werk-im-wasser (main 2d2a5f11)
+w5-studios-k1 d5aa0e1f GRÜN Nachtrag Φ5=261880B (Sonde 22:15, main 2d2a5f11 261952–261963 B: −~75 B)
+w7-rang 9910fb73 ROT merge KONFLIKT mit main 2d2a5f11: 
+w7-rang 9910fb73 OFFEN Korrektur: ROT merge 00:49 war Werkzeug (Neustart-Wettlauf mit den gefällten Prozessen, merge.log leer, keine Konflikt-Datei); Vorprüfung läuft neu nach begegnung
+w5-studios-k1 a213119b ROT playtest-voll Φ5=261942B ❌ 1 Invariante(n) verletzt: Leistungs-Vertrag: 0 Stand-Churn (0), der Ingest-Takt 3/1 je Frame in Reihenfolge, die Gruppen klettern nicht (59 → 59), die Mess-Flächen im Trace, Szene 13.4 MB < 700, der Selbsttest feu
+w8-spielgang-k1 cd86fba7 ROT check ❌ ROT — 1 Verletzung(en): DECKE (Merge-Basis mit origin/integ-probe): scripts/ wuchs um 19 Atome / 0 Dateien, scripts/diag-schirm-monotonie.cjs +19 — sie sinkt nur, Kommentare und Pressen zahlen nichts
+w5-studios-k1 a213119b ROT gate:praegung-welt Φ5=261947B ❌ ROT — 1 Verletzung(en): ERREICHT: 147 von 152 Zeilen von PARAMS_BY_KIND (96.7 %) erreicht
+w8-snapshot-schlank c8de5648 ROT playtest-voll Φ5=67726B ❌ 1 Invariante(n) verletzt: Leistungs-Vertrag: 0 Stand-Churn (0), der Ingest-Takt 3/1 je Frame in Reihenfolge, die Gruppen klettern nicht (59 → 59), die Mess-Flächen im Trace, Szene 13.5 MB < 700, der Selbsttest feu
+w8-ultiversum-k1 1ef872c1 GRÜN check+playtest-voll Φ5=67741B (main 2d2a5f11+w8-snapshot-schlank@c8de5648)
+w8-snapshot-schlank c8de5648 GRÜN check+playtest-voll+praegung-welt+persistence+reload-treue Φ5=67815B (main 2d2a5f11+w8-v2-probe@91e4b661)
+w8-spielgang-k1 1695469a GRÜN check+playtest-voll+schirm-monotonie Φ5=262078B (main 2d2a5f11+w8-v2-probe@91e4b661)
