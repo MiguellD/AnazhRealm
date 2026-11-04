@@ -1689,7 +1689,7 @@ class AnazhRealm_feld_leben {
         // DETERMINISMUS-BOGEN P3 — keine Ammo-Welt/Reibung/CCD mehr zu „optimieren".
         // Der Chat-Befehl setzt nur noch die Schwerkraft-Konstante zurück (die
         // `_stepCharacter` als Skalar liest).
-        this.state.gravity = -9.81;
+        this.state.gravity = AnazhRealm.WELT_GESETZ_ERDE.schwere; // das Wort schreibt das Gesetz der Welt (ultiversum.K1)
         this.log("Schwerkraft auf Standard zurückgesetzt (Feld-Physik — kein Ammo).");
     }
 
@@ -2529,8 +2529,8 @@ class AnazhRealm_feld_leben {
     }
 
     // Die Tat schreibt: an ihren Ort, zur Welt-Stunde; `mehr` trägt, was ihre Klasse braucht (die Ernte ihre Kachel und Kennung,
-    // das Fällen die Größe des Baums für den Stumpf). Der Nachwuchs wacht zu ihrem Ende (die Asche zur nächsten Stufe ihrer
-    // Sukzession, `_sukzessionNaechste`), die nächste Sicherung trägt sie.
+    // das Fällen die Größe des Baums für den Stumpf). Der Nachwuchs wacht zu ihrem Ende (die Asche und der Stubben zur nächsten
+    // Stufe ihrer Sukzession, `_sukzessionNaechste`), die nächste Sicherung trägt sie.
     _tatSchreiben(tat, x, z, mehr) {
         const wm = this.state.worldMeta;
         if (!Array.isArray(wm.taten)) wm.taten = [];
@@ -2538,10 +2538,12 @@ class AnazhRealm_feld_leben {
         const a = Object.assign({ tat, x: r2(x, 100), z: r2(z, 100), h: r2(this._weltStunde(), 1e4) }, mehr);
         this._weltRegt(); // der Weckruf vor jedem Schreiben
         wm.taten.push(a);
-        const ende = tat === "brand" ? this._sukzessionNaechste(a) : a.h + this._tatIndex().dauer.get(a);
+        const folge = tat === "brand" || tat === "faellen";
+        const ende = folge ? this._sukzessionNaechste(a) : a.h + this._tatIndex().dauer.get(a);
         if (!(this._nachwuchsFaellig <= ende)) this._nachwuchsFaellig = ende;
         if (tat === "faellen") this._nahStreuTat(a);
-        if (tat === "brand") this._sukzessionMalen(a); // die Asche liegt (stoffe.K2#2): Boden-Decke, Wiese und Streu der Zelle
+        // die Asche liegt (stoffe.K2#2): Boden-Decke, Wiese, Streu und Wald der Zelle; der Stubben steht ohne Baum (stoffe.K5#2)
+        if (folge) this._sukzessionMalen(a);
         if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
         return a;
     }
@@ -2610,9 +2612,11 @@ class AnazhRealm_feld_leben {
     }
 
     // Sperrt eine Tat den Wurf des Gesetzes an (x,z)? Der Boot wirft die Welt neu (speicher.K3) — wo ein Baum fiel, bis die Narbe
-    // heilt, wo ein Wurf abgebaut wurde, für immer: die Promotion, die Streu und jeder Wurf durch `_naturSetzen` fragen hier.
-    _tatSperrt(x, z) {
-        return this._tatAm("faellen", x, z) || this._tatAm("abbauen", x, z);
+    // heilt (sein Jungwuchs, der Wurf in der Prägung `ov` mit dem Alter des Orts, `_baumAlter`, steht), wo ein Wurf abgebaut
+    // wurde, für immer: die Promotion, die Streu und jeder Wurf durch `_naturSetzen` fragen hier.
+    _tatSperrt(x, z, ov) {
+        if (this._tatAm("abbauen", x, z)) return true;
+        return this._tatAm("faellen", x, z) && !(ov && ov.alter > 0 && ov.alter === this._baumAlter(x, z));
     }
 
     // === die SCHREIB-Seite der emotion-Achse (das räumliche Gedächtnis) ===

@@ -701,7 +701,6 @@ async function checkBandWelle6APolish({ page, check }) {
         // lesen das Steilhang-Gesetz (hang.maxSlopeY) fail-closed direkt.
         const hangMax = AnazhRealm._bewegungsBlock("hang", ["maxSlopeY", "malus"]).maxSlopeY;
         out.hasHangMaxSlopeY = typeof hangMax === "number";
-        out.hangMaxSlopeYValue = hangMax;
         out.hangMaxSlopeYIs05 = Math.abs(hangMax - 0.5) < 0.001;
 
         // Diskriminations-Test onSteepSlope (= isGrounded && bestNormalY<0.5) in zwei Setups:
@@ -718,7 +717,6 @@ async function checkBandWelle6APolish({ page, check }) {
         st._groundedCachedAt = 0;
         r.isPlayerGrounded();
         out.skyOnSteepSlope = st.onSteepSlope;
-        out.skyGroundNormalY = st.groundNormalY;
 
         // (b) Flaches Bauwerks-Dach: separater Tempel-Spawn. Spieler-Position VOR dem Spawn restoren —
         // `spawnArchitecture` baut den Mesh nur im architectureCullingRadius (XZ) um den SPIELER; stünde
@@ -841,7 +839,6 @@ async function checkBandWelle6APolish({ page, check }) {
             { x: _spawnArchX, y: _spawnArchY, z: _spawnArchZ },
             { seed: 4711 }
         );
-        out.testArchSpawned = !!_archEntry;
         let _archTopY = 0;
         if (_archEntry && _archEntry.mesh) {
             const _box = new THREE.Box3().setFromObject(_archEntry.mesh);
@@ -854,7 +851,6 @@ async function checkBandWelle6APolish({ page, check }) {
         // Build-Modus auf Slot 0 (stein_block, gesetzt — der Start-Gurt liest den Katalog)
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
-        out.buildModeActive = st.buildMode.active;
         out.phantomExists = !!st.buildMode.phantomMesh;
         if (st.buildMode.phantomMesh) {
             r.tickBuildMode();
@@ -923,7 +919,6 @@ async function checkBandWelle6APolish({ page, check }) {
         const beforeCount = st.dsl.abilities.length;
         r.addNewAbility("test_desc_e1", ["weather", "rainy"], "test");
         const added = st.dsl.abilities.find((a) => a.name === "test_desc_e1");
-        out.persistedDescription = added ? added.description : null;
         out.persistedOk = !!(added && added.description && /Wetter/.test(added.description));
         st.dsl.abilities = st.dsl.abilities.slice(0, beforeCount);
         delete st.abilities.test_desc_e1;
@@ -1051,7 +1046,6 @@ async function checkBandWelle6APolish({ page, check }) {
                 if (node.material && node.material.color) lineColor = node.material.color.getHex();
             }
         });
-        out.lineCount = connLineCount;
         out.lineExists = connLineCount === 1 && connMarkerCount === 1;
         out.lineHasUserDataFlag = connLineCount === 1;
         out.lineColor = lineColor;
@@ -1236,11 +1230,6 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         );
         out.treeHasCompoundCollision = !!renderedTree;
 
-        // DETERMINISMUS-BOGEN P3 — Inseln tragen kein per-Objekt-Kollisions-Artefakt
-        // mehr (Ammo entfernt); der Boden lebt feld-nativ.
-        const initIslands = Array.isArray(st.floatingIslands) ? st.floatingIslands : [];
-        out.initIslandsCount = initIslands.length;
-
         // DSL-Op-Tests: spawn_tree → erzeugt Architektur.
         const archsBefore = st.architectures.length;
         const islandsBefore = st.floatingIslands.length;
@@ -1251,7 +1240,6 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         let tx = playerPos.x + 50;
         const ty = playerPos.y;
         let tz = playerPos.z + 50;
-        out.treeOrtWasser = !r._landAt(tx, tz, 0.4);
         for (let k = 0; k < 64 && !r._landAt(tx, tz, 0.4); k++) {
             tx = playerPos.x + 50 + Math.cos(k * 0.9) * (4 + k);
             tz = playerPos.z + 50 + Math.sin(k * 0.9) * (4 + k);
@@ -1607,7 +1595,6 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         out.archCount = archs.length;
         const typeCounts = {};
         for (const a of archs) typeCounts[a.type] = (typeCounts[a.type] || 0) + 1;
-        out.affinitySpawnTypes = typeCounts;
         out.hasInitialTrees = (typeCounts.baum_eiche || 0) + (typeCounts.baum_kiefer || 0) > 0;
         // Das Welt-Affinitäts-Feld treibt die Vegetation idempotent über `_populateVoxelChunkVegetation`
         // (am Voxel-Chunk-Lifecycle); geprüft wird dessen Idempotenz-Cache `voxelPopulatedChunks`, den

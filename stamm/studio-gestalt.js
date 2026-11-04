@@ -233,6 +233,8 @@ class AnazhRealm_studio_gestalt {
         // DER SCHATTEN-TEIL (S3, Umschlag out.teil, additiv): die Baum-L1 liefert ihren Wurf als eigenes Teil
         // (`teil: "schatten"`, Attribut aDeckt) — der Flatten legt es als Schatten-Zwilling in die Kaskaden.
         if (typeof m.teil === "string") mesh.userData.__teil = m.teil;
+        // DIE ACHSE DER STRÄHNE und der Verweis ihrer Feder (haar.K3, `_haarAchse`): jedes Haar-Teil trägt sie ab dem Bau
+        this._haarAchse(mesh);
         // DAS SEIL (physik.K4, Umschlag out.seil, additiv): die Nummer des Seil-Teils (Glied 0 … n−1, Kopf n) — die Hand bewegt
         // es nach dem Seil-Gesetz (`_seilAmLeib`)
         if (Number.isInteger(m.seil)) mesh.userData.__seil = m.seil;
@@ -1055,7 +1057,7 @@ class AnazhRealm_studio_gestalt {
         if (!(Number.isFinite(lodOverride) && this._foundryNurWurf(preset, lodOverride))) {
             if (lod < 0) lod = 0;
             if (lod > 2) lod = 2;
-            // L2 für BÄUME = das Studio-Billboard (bakeImpostorAtlas), nie die schwere L2-Geometrie (~15k Verts ×
+            // L2 für BÄUME = die Karte des EINEN Bäckers (`_karteWeltBacken`), nie die schwere L2-Geometrie (~15k Verts ×
             // Fernwald = Overdraw); Fels/Kristall/Blume bleiben L2-Geometrie. Der fimp-Key trägt den ov-Hash: ein
             // gestempelter Eintrag zieht seine EIGENE Karte, bis dahin geprägte Geometrie (nie die ungeprägte).
             if (lod >= 2 && this._foundryPresetIsTree(preset)) return this._foundryBuildImpostorFlat(entry, preset);

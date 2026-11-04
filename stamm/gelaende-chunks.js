@@ -455,11 +455,12 @@ class AnazhRealm_gelaende_chunks {
     // Meeresspiegel. Die Antwort trägt die Zahlen per Transfer; ohne Faden gibt es keine Ferne (laut, kein Haupt-Faden-Weg).
     // DIE BAHN DES PANORAMAS (B4): das Feld („feld“: 9 216 Punkte von 8 bis 40 km, je Punkt das Gesetz mit dem Flussnetz der
     // fernen Kacheln) rechnet in seinem eigenen Faden neben dem Ring — im EINEN Fern-Faden stand jede Ring-Scheibe hinter ihm
-    // (Radeon kalt am Kopf 130ba565: der Fern-Faden 6,6 s belegt, das Feld allein ~4,9 s, der Horizont hing bei 11 %).
+    // (Radeon kalt am Kopf 130ba565: der Fern-Faden 6,6 s belegt, das Feld allein ~4,9 s, der Horizont hing bei 11 %). Das Gitter
+    // der Horizont-Karte („gitter“, 65 536 Rufe des Gesetzes nach dem ersten Weltbild) geht dieselbe Bahn — nie vor den Ring.
     _fernAuftrag(art, msg, transfer) {
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         return this._nebenAuftrag(
-            art === "feld" ? "feld" : "fern",
+            art === "feld" || art === "gitter" ? "feld" : "fern",
             Object.assign(
                 { type: "fern", art, wl, laub: this._fernLaubLinear(), wasser: this._fernWasserKoerper() },
                 msg
@@ -837,9 +838,14 @@ class AnazhRealm_gelaende_chunks {
         const { span } = this._voxelChunkConfig();
         const ccx = cx * span + span / 2,
             ccz = cz * span + span / 2;
+        // DER LAUB-RAND DER BAHN (der EINE Rang, w7-rang): der Chunk sät, wenn seine Mitte am Spieler ODER an seinem Ort am Ende des
+        // Vorlaufs (`_bedarfVoraus`) im Radius liegt — sein Wald steht, bevor die Bahn den Rand des Laubs über ihn schiebt. Bis
+        // w7-rang säte er erst am Spieler: jeder Baum am Rand trat ungesetzt in den Sichtkegel (streaming.K1, Null-Renderer).
+        const v = this._bedarfVoraus(pm.position);
+        const d = Math.hypot(ccx - pm.position.x, ccz - pm.position.z);
         // vor dem ersten Weltbild sät nur der Chunk im Blick (`_blickDerAnkunft`), die übrigen sät der Nachlauf
         return (
-            Math.hypot(ccx - pm.position.x, ccz - pm.position.z) <= fr &&
+            (d <= fr || (!!v && Math.hypot(ccx - v.x, ccz - v.z) <= fr)) &&
             this._blickDerAnkunft(ccx, ccz, span * Math.SQRT1_2)
         );
     }
@@ -2467,31 +2473,13 @@ class AnazhRealm_gelaende_chunks {
         const { ringRadius } = this._voxelChunkConfig();
         // DAS AUGE DER STUFEN (K51-2): derselbe Punkt wählt die Stufe jedes Chunks und treibt den Geomorph des Boden-Stoffs
         this._stufeAugeTakt(playerPos);
-        // Velocity-Prefetch: die 1–2 Chunks in Laufrichtung ZUERST in die Worker-Queue (der Ring läuft in
-        // fester dz/dx-Reihenfolge, der kommende Chunk käme sonst ~5.) → der Boden steht, bevor der Spieler
-        // ankommt. Billige Async-Anfrage (der Ring re-fragt als no-op); nur bei > 1 m/s.
-        if (this.state.playerVel) {
-            const v = this.state.playerVel;
-            const vx = v.x(),
-                vz = v.z();
-            const speedSq = vx * vx + vz * vz;
-            if (speedSq > 1) {
-                const inv = 1 / Math.sqrt(speedSq);
-                const dirX = vx * inv,
-                    dirZ = vz * inv;
-                for (let ahead = 1; ahead <= 2; ahead++) {
-                    const acx = pcx + Math.round(dirX * ahead);
-                    const acz = pcz + Math.round(dirZ * ahead);
-                    if (!this.state.voxelChunks.has(`${acx},${acz}`)) {
-                        this._ensureVoxelChunkAt(
-                            acx,
-                            acz,
-                            this._voxelChunkLodFor(acx, acz, playerPos.x, playerPos.z, null)
-                        );
-                    }
-                }
-            }
-        }
+        // DIE BAHN (der EINE Rang, w7-rang): der Ring um den Spieler UND der Ring um seinen Ort am Ende des Vorlaufs
+        // (`_bedarfVoraus`), geordnet nach der Zeit bis Bedarf (`_bedarfWeg`) — was die Bahn braucht, steht, bevor sie ankommt.
+        // Bis w7-rang ging der Ring in Chebyshev-Reihe um den Spieler, und ein Voraus fragte 1–2 Chunks in Laufrichtung an: beim
+        // GT-Tempo trat der Boden unfertig in den Sichtkegel (streaming.K2, Null-Renderer an main 6eeeb856: 206 von 484 je Stufe).
+        const voraus = this._bedarfVoraus(playerPos);
+        const vcx = voraus ? Math.floor(voraus.x / span) : pcx;
+        const vcz = voraus ? Math.floor(voraus.z / span) : pcz;
         let built = 0;
         // V18.263 — der PID-Regelkreis fährt diese zwei Stellgrößen (statt fix 4/6):
         // unter gemessener Last sinkt das Streaming-Budget → weniger Chunk-Builds pro
@@ -2507,7 +2495,8 @@ class AnazhRealm_gelaende_chunks {
         // DIE STAND-WACHE: steht der Ring (jede Zelle in ihrer Stufe, keiner wartet) und regt sich nichts, geht der Gang
         // nicht — Ring, Prune und Wasser-Weckruf lesen die Stufen-Zelle (`_stufenZelle`: die Spieler-Zelle und das Fach der
         // Lage zwischen den Stufen-Schwellen in Metern, K51-3) und die Chunk-Menge. Nachwuchs läuft weiter.
-        if (this._standRuht("strom", 1, this._stufenZelle(playerPos.x, playerPos.z), "boden")) {
+        const zelleVoraus = voraus ? this._stufenZelle(voraus.x, voraus.z) : "";
+        if (this._standRuht("strom", 1, this._stufenZelle(playerPos.x, playerPos.z) + "|" + zelleVoraus, "boden")) {
             this._tickFoliageGrowth();
             return 0;
         }
@@ -2533,15 +2522,23 @@ class AnazhRealm_gelaende_chunks {
         const leerlauf = lade && this._ringLeerlauf === true;
         this._ringLeerlauf = false;
         let draussen = 0;
-        for (let r = 0; r <= ringRadius; r++)
-            for (let dz = -r; dz <= r; dz++)
-                for (let dx = -r; dx <= r; dx++) {
-                    if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
-                    const [cx, cz] = [pcx + dx, pcz + dz];
-                    const bild = !lade || !r || this._rangImBild({ x: (cx + 0.5) * span, z: (cz + 0.5) * span }, halb);
-                    zellen.push([cx, cz, bild]);
-                }
-        if (lade) zellen.sort((a, b) => b[2] - a[2]); // stabil: im Bild zuerst, je Hälfte in Ring-Reihe
+        const gesehen = new Set();
+        const nimm = (cx, cz, mitte) => {
+            const key = `${cx},${cz}`;
+            if (gesehen.has(key)) return;
+            gesehen.add(key);
+            const [x, z] = [(cx + 0.5) * span, (cz + 0.5) * span];
+            const bild = !lade || mitte || this._rangImBild({ x, z }, halb);
+            zellen.push([cx, cz, bild, mitte ? -1 : this._bedarfWeg(x, z)]);
+        };
+        const anker = [[pcx, pcz]]; // der Ring des Spielers und, wo die Bahn die Zelle wechselt, der Ring ihres Orts
+        if (vcx !== pcx || vcz !== pcz) anker.push([vcx, vcz]);
+        for (const [ax, az] of anker)
+            for (let dz = -ringRadius; dz <= ringRadius; dz++)
+                for (let dx = -ringRadius; dx <= ringRadius; dx++)
+                    nimm(ax + dx, az + dz, ax === pcx && az === pcz && !dx && !dz);
+        // im Lade-Takt das Bild zuerst (B-Blick), je Hälfte nach der Zeit bis Bedarf; die Zelle des Spielers vorn
+        zellen.sort((a, b) => (lade ? b[2] - a[2] : 0) || a[3] - b[3]);
         for (const [cx, cz, bild] of zellen) {
             if (bild !== haelfte) [haelfte, n, t0, satt] = [bild, 0, performance.now(), false]; // die Hälfte beginnt ihre Kappe
             if (satt) continue;
@@ -2553,7 +2550,7 @@ class AnazhRealm_gelaende_chunks {
             // (Hysterese-Deadband am Grat); ein frischer Chunk (kein
             // `existing`) bekommt die reine Band-LOD.
             const existingLod = existing && Number.isFinite(existing.lod) ? existing.lod : null;
-            const desiredLod = this._voxelChunkLodFor(cx, cz, playerPos.x, playerPos.z, existingLod);
+            const desiredLod = this._voxelChunkLodFor(cx, cz, playerPos.x, playerPos.z, existingLod, voraus);
             if (existing) {
                 const currentLod = existingLod !== null ? existingLod : 0;
                 if (currentLod !== desiredLod && !existing.empty) {
@@ -2943,9 +2940,10 @@ class AnazhRealm_gelaende_chunks {
             const comma = key.indexOf(",");
             const cx = parseInt(key.slice(0, comma), 10);
             const cz = parseInt(key.slice(comma + 1), 10);
-            reihe.push({ key, cx, cz, d: Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz)) });
+            const rang = this._bedarfWeg((cx + 0.5) * span, (cz + 0.5) * span);
+            reihe.push({ key, cx, cz, d: Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz)), rang });
         }
-        reihe.sort((a, b) => a.d - b.d);
+        reihe.sort((a, b) => a.rang - b.rang); // der EINE Rang (w7-rang): die Zeit bis Bedarf, bis hier Chebyshev
         const st = this.state;
         const worker = this._voxelFadenTraegt();
         const imFlug = worker ? AnazhRealm.DIRTY_IM_FLUG : 1;
