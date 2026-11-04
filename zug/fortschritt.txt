@@ -1657,3 +1657,4 @@
 2026-11-04 19:36:34 omen-pflicht-e-23d19f6f START 1 Proben (pflicht.E#1 GTX, Selbsttest 151/151)
 2026-11-04 19:41:10 omen-gtx-w11-vorbau-frei-dc28be42 haar.K1#1 ROT 8 · 1/3
 2026-11-04 19:41:10 omen-gtx-w11-vorbau-frei-dc28be42 haar.K2#1 ROT 8 · 2/3
+2026-11-04 19:47:26 omen-gtx-main-23d19f6f START 2 Proben (leib.K1#1,profiband.K4#1, GTX am Zweig-Kopf)
