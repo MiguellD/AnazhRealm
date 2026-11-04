@@ -825,6 +825,10 @@ class AnazhRealm_dirigent_takt {
             this._frustumCache = new THREE.Frustum();
             this._frustumMatrixCache = new THREE.Matrix4();
         }
+        // die Kamera, wie sie STEHT, nicht wie sie zuletzt gezeichnet wurde: ihre Matrizen zieht sonst erst das Rendern nach —
+        // unter der GPU-Leine (und im Zeitraffer der Kreis-Station, 10 Takte je Bild) war das Frustum bis 1 Spiel-s alt, und
+        // eine Geburt „außer Blick" (`_kreaturLeibImBlick`) prüfte gegen den Blick von gestern (w7-begegnung)
+        this.state.camera.updateMatrixWorld();
         this._frustumMatrixCache.multiplyMatrices(
             this.state.camera.projectionMatrix,
             this.state.camera.matrixWorldInverse
