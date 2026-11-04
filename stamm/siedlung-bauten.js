@@ -1113,7 +1113,8 @@ class AnazhRealm_siedlung_bauten {
     }
 
     // DER VORBAU DER BEDIENUNG (Lehre 14: im Leerlauf vorgebacken, nie synchron auf dem Interaktions-Pfad) — der EINE Planer
-    // dessen, was die nächste Eingabe zeigt, das Nächste zuerst: der Geist jedes Hotbar-Bauplans (die Auswahl, `_geistVorbau`),
+    // dessen, was die nächste Eingabe zeigt, das Nächste zuerst: das Gitter des eigenen Tuchs (V, `_tuchVorbau`), der Geist jedes
+    // Hotbar-Bauplans (die Auswahl, `_geistVorbau`),
     // die Ich-Bühne (Tab, `_ichVorbau`), das Ich mit jeder Schublade (`_uiVorbau`) und die Leiber jeder annehmbaren Seele (der
     // Wechsel, `_leibVorwaermen`), je Takt ein Schritt. Ein Geist und ein Leib gehen als GAST in die Szene (`__vorbauGast`):
     // die Erst-Zeichnung baut Knoten und Pipeline ohne Draw — nach dem Bild, unter der Frist des Render-Aufrufs —, bis jedes
@@ -1124,7 +1125,8 @@ class AnazhRealm_siedlung_bauten {
         const st = this.state;
         const R = st.renderer;
         if (!st._weltbildDa || st._holzProfil === "kienspan" || !R || !R.__anazhErstZeichnung) return;
-        if (!this._eingabeRuht() || !this._weltSteht()) return;
+        // das eigene Tuch wartet nur auf die ruhende Eingabe, nie auf die stehende Welt: es liest keinen Auftrag der Welt
+        if (!this._eingabeRuht() || !this._tuchVorbau() || !this._weltSteht()) return;
         if (this._geistVorbau() && this._ichVorbau() && this._uiVorbau()) this._leibVorwaermen();
     }
 

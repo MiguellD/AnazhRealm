@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.546.179",
+    "version": "18.546.180",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "engines": {
@@ -25,8 +25,8 @@
         "playtest": "node scripts/playtest.cjs",
         "playtest:fast": "node scripts/playtest-fast.cjs",
         "gpu-lens": "node scripts/diag-idle-gpu-churn.cjs",
-        "look-golden": "node scripts/diag-look-golden.cjs",
         "blick": "node scripts/diag-blick.cjs",
+        "blick:studio": "node scripts/diag-blick.cjs --studio",
         "gate:fenster-wechsel": "node scripts/diag-fenster-wechsel.cjs",
         "gate:schirm-monotonie": "node scripts/diag-schirm-monotonie.cjs --selftest",
         "gate:schatten-werfer": "node scripts/diag-schatten-werfer.cjs --selftest",
@@ -143,6 +143,7 @@
         "gate:place-policy": "node scripts/diag-place-policy.cjs --selftest",
         "gate:vehicle-drive": "node scripts/diag-vehicle-drive.cjs --selftest && node scripts/diag-vehicle-drive.cjs",
         "gate:fahr-leben": "node scripts/diag-fahr-leben.cjs --selftest && node scripts/diag-fahr-leben.cjs && node scripts/diag-fahr-leben.cjs --verkehr",
+        "gate:studio-blick": "node scripts/diag-blick.cjs --selftest",
         "gate:garage-labor": "node scripts/diag-garage-labor.cjs --selftest && node scripts/diag-garage-labor.cjs",
         "gate:studio-vertrag": "node scripts/diag-studio-vertrag.cjs",
         "gate:studio-huelle": "node scripts/diag-studio-huelle.cjs --selftest && node scripts/diag-studio-huelle.cjs && node scripts/diag-studio-huelle.cjs --engine",
