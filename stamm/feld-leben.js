@@ -2007,7 +2007,86 @@ class AnazhRealm_feld_leben {
                     now + Math.max(0, Math.log(Math.abs(a) / cfg.epsilon)) / cfg.decayPerSec,
                     now
                 );
+                // der Ort sieht den Akt (feld.K5): die Zelle wird JETZT fällig — der Wecker der Stufen (`_tickLebenStufen`) malt
+                // sie im nächsten Takt, nur wo ihre Stufe springt; die Tat trägt nur ihre Zelle (gate:stand-takt RUHE-TAT, FELD-BESUCH)
+                AnazhRealm._lebenWecken(this, key, now);
             }
+        }
+    }
+
+    // DIE LEBEN-STUFE am Ort (feld.K5): das Leben-Overlay in Stufen (`LIFE_FIELD.stufen` je Einheit) — die Nah-Streu liest sie
+    // (`_nahStreuKachel`, das Boden-Gesetz `leben`: die gepflegte Wiese blüht), nie den stetigen Zerfall; so baut sie nur, wo
+    // eine Stufe springt. Ohne Overlay 0: die Streu steht byte-gleich.
+    _lebenStufe(x, z) {
+        const S = AnazhRealm.LIFE_FIELD.stufen;
+        return Math.round(this._lifeOverlayAt(x, z) * S) / S;
+    }
+
+    // Die Stufe der Zelle (cx, cz) malen: springt sie gegen die zuletzt gemalte (`_lebenStand`), wächst die Nah-Streu darüber neu
+    // (`_nahStreuNeuIn`, nur die Kacheln dieser Zelle). Die Zelle wacht zum nächsten Sprung ihres Zerfalls (|a| fällt unter die
+    // halbe Stufe darunter, `_lebenWecken`); auf Stufe 0 schläft sie — die Kosten tragen die Sprünge, nie das Feld.
+    _lebenStufeMalen(cx, cz) {
+        const L = AnazhRealm.LIFE_FIELD;
+        const st = this._lebenStand || (this._lebenStand = new Map());
+        const key = cx + "," + cz;
+        const [x, z] = [(cx + 0.5) * L.cell, (cz + 0.5) * L.cell];
+        const a = this._lifeOverlayAt(x, z);
+        const k = Math.round(a * L.stufen);
+        const alt = st.get(key);
+        if ((alt ? alt.k : 0) !== k)
+            this._nahStreuNeuIn(cx * L.cell, cz * L.cell, (cx + 1) * L.cell, (cz + 1) * L.cell);
+        if (k === 0) return void st.delete(key); // gemalt heißt aus der Halde genommen (`_tickLebenStufen`): kein Platz bleibt
+        if (alt) alt.k = k;
+        else st.set(key, { key, k, wach: Infinity, i: -1 });
+        AnazhRealm._lebenWecken(
+            this,
+            key,
+            this.state.spielZeit + Math.log(Math.abs(a) / ((Math.abs(k) - 0.5) / L.stufen)) / L.decayPerSec + 1e-6
+        );
+    }
+
+    // DER WECKER DER LEBEN-STUFEN (feld.K5, Ereignis statt Takt): die Zelle `key` wird um Spielzeit `wach` fällig — ihr Eintrag
+    // im Stand (`_lebenStand`, mit Stufe 0 angelegt, wo die Tat eine neue Zelle schreibt) trägt die Zeit und seinen Platz `i`
+    // in der Halde (`_lebenWecker`, Min-Heap der Stand-Einträge nach `wach`, -1 = nicht darin). JEDE ZELLE STEHT HÖCHSTENS
+    // EINMAL in der Halde: ein neu geplanter Eintrag rückt an seinem Platz auf oder ab — die Halde ist nie länger als der Stand,
+    // der Stand nie größer als die berührten Zellen (Gebot 7). Bis zum Schnitt legte jede Tat je Zelle einen NEUEN Platz an
+    // (der alte blieb stumm liegen): im Zeitraffer der Kaskade (Fraß je Tier und Takt, 9 Zellen je Tat, ohne Takt der Stufen)
+    // wuchs sie ohne Schranke, bis die Seite abstürzte (voll 2/18, z170/z174: „Page crashed!“; gate:stand-takt HALDE).
+    // Statisch: die Tat ruft ihn je geschriebener Zelle, er besucht nie eine andere.
+    static _lebenWecken(welt, key, wach) {
+        const st = welt._lebenStand || (welt._lebenStand = new Map());
+        const H = welt._lebenWecker || (welt._lebenWecker = []);
+        let e = st.get(key);
+        if (!e) st.set(key, (e = { key, k: 0, wach, i: -1 }));
+        e.wach = wach;
+        if (e.i < 0) e.i = H.push(e) - 1;
+        AnazhRealm._lebenHaldeRueck(H, e.i);
+    }
+
+    // Den Eintrag an Platz `i` der Halde an seinen Ort rücken (auf, sonst ab) — jeder Eintrag kennt seinen Platz (`e.i`)
+    static _lebenHaldeRueck(H, i) {
+        const e = H[i];
+        for (let p; i > 0 && H[(p = (i - 1) >> 1)].wach > e.wach; i = p) (H[i] = H[p]).i = i;
+        for (let c; (c = 2 * i + 1) < H.length; i = c) {
+            if (c + 1 < H.length && H[c + 1].wach < H[c].wach) c++;
+            if (H[c].wach >= e.wach) break;
+            (H[i] = H[c]).i = i;
+        }
+        (H[i] = e).i = i;
+    }
+
+    // Der Zerfall der Leben-Stufen (je Takt, scatterDeco): schläft, bis die Halde ihre früheste Zelle fällig nennt — dann nimmt er
+    // nur die fälligen heraus und malt sie (`_lebenStufeMalen`), jede plant ihren nächsten Sprung neu. Im Stand ohne Tat: ein
+    // Vergleich je Takt.
+    _tickLebenStufen() {
+        const H = this._lebenWecker;
+        while (H && H.length && H[0].wach <= this.state.spielZeit) {
+            const e = H[0];
+            const letzt = H.pop();
+            e.i = -1;
+            if (H.length) ((H[0] = letzt), AnazhRealm._lebenHaldeRueck(H, 0));
+            const [cx, cz] = e.key.split(",").map(Number);
+            this._lebenStufeMalen(cx, cz);
         }
     }
 
@@ -2941,6 +3020,7 @@ AnazhRealm.LIFE_FIELD = Object.freeze({
     max: 0.7, // Sättigung pro Zelle (frozen+overlay → ~1; Wiederhol-Pulse sättigen → Nexus zieht weiter)
     kahl: -1, // der Boden des Fraßes: eine abgeäste Zelle trägt lebendig 0, nie weniger (auraAt klemmt)
     epsilon: 0.004, // darunter wird eine Zelle gepruned (die Map bleibt bounded)
+    stufen: 8, // je Einheit: so fein liest die Nah-Streu das Overlay (`_lebenStufe`) — sie baut nur, wo eine Stufe springt
     // Kreatur-Trickle: nur Nexus/Spieler-getragene Kreaturen (tendsLife) träufeln Leben, wo sie wohnen —
     // die ambiente Fauna ist die FOLGE des Feldes (kein Runaway). Sanft + rate-limitiert; wandernde
     // Kreaturen ziehen einen zarten Lebens-Pfad.
