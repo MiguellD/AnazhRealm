@@ -1648,3 +1648,6 @@
 2026-11-04 19:11:14 omen-k06-b56e9b0e lauf9 GRÜN 3 · 9/12
 2026-11-04 19:14:20 omen-k06-b56e9b0e lauf10 GRÜN 3 · 10/12
 2026-11-04 19:17:26 omen-k06-b56e9b0e lauf11 GRÜN 3 · 11/12
+2026-11-04 19:20:29 omen-k06-b56e9b0e lauf12 GRÜN 3 · 12/12
+2026-11-04 19:20:38 omen-gtx-w10-takt-90be0117 START 2 Proben (leib.K1#1,profiband.K4#1, GTX am Zweig-Kopf)
+2026-11-04 19:20:44 omen-pflicht-e-23d19f6f START 1 Proben (pflicht.E#1 GTX, Selbsttest 151/151)
