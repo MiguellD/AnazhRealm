@@ -5230,6 +5230,23 @@ var PARAMS_BY_KIND = {
         { id: "density", lab: "Dichte", min: 0.06, max: 1, step: 0.01, def: 0.7, grp: "Halm" },
         { id: "droop", lab: "Neigung", min: 0.04, max: 1.35, step: 0.01, def: 0.5, grp: "Halm" },
     ],
+    // DER BAUM (studios.K1, „EINE Regler-Tafel für alle Studios"): die Gesetz-Felder des Skeletts, wie die Ableitung `treeParams`
+    // (phyto-core) sie aus Reglern, Saat und Phänotyp der Art setzt — der Wert ersetzt das Feld NACH der Ableitung (der ov-Kanal von
+    // buildInstance), gelesen von `growSkeleton` und den Bau-Stufen; jedes Feld ist stufen-gleich (Blatt-Maß `leafSize` und
+    // Wurzeln `roots` tragen den Faktor ihrer Stufe und sind darum keine Zeile). Die Ränder halten die Budget-Zeile jeder Stufe
+    // (lod.budget.tree: L0 ≤ 12 000, L1 ≤ 2 900, L1/L0 ≤ 0,5 — gate:regler-wirkt STUFEN, Saat 1): darüber reißt delta 1,8 die L0
+    // (19 100), crownBase 0,3 die Mammut-L0 (13 120), trop ab 0,3 die Quote des Totholzes (0,51). Höhe und Stammzahl sind keine
+    // Zeile: das Welt-Maß (hoeheM, hd) trägt die Höhe, eine zweite Stammachse verdoppelt den Baum (32 780).
+    tree: [
+        { id: "apical", lab: "Apikaldominanz", min: 0, max: 1, step: 0.01, def: 0.5, law: "Leittrieb gegen Verzweigung — über 0,62 Quirle und Leittrieb (Nadelbaum), darunter die Laubkrone", grp: "Wuchs" },
+        { id: "slim", lab: "Schlankheit", min: 0, max: 1, step: 0.01, def: 0.5, law: "H = k·D^(2/3) — McMahon, die elastische Knickgrenze (k 13 → 22)", grp: "Wuchs" },
+        { id: "delta", lab: "Verästelung Δ", min: 2, max: 2.3, step: 0.01, def: 2.2, law: "r_Stamm^Δ = Σ r_Ast^Δ — da Vinci / Pipe-Modell", grp: "Wuchs" },
+        { id: "trop", lab: "Gravitropismus", min: -0.5, max: 0.2, step: 0.01, def: -0.14, law: "Sollwinkel zur Vertikalen — aufrecht (−) bis überhängend (+)", grp: "Wuchs" },
+        { id: "crownBase", lab: "Kronenansatz", min: 0.35, max: 0.7, step: 0.01, def: 0.45, law: "Selbst-Astung: unter diesem Anteil der Höhe sterben die Schattenäste", grp: "Krone" },
+        { id: "leafD", lab: "Belaubung", min: 0.05, max: 1, step: 0.01, def: 0.6, law: "Blattdichte je Trieb (Corner-Regel: Axialkonformität)", grp: "Krone" },
+        { id: "whorlSpacing", lab: "Quirl-Abstand", min: 0.09, max: 0.16, step: 0.005, def: 0.12, law: "Abstand der Astquirle als Anteil der Höhe (Nadelbaum: ein Quirl je Jahrestrieb)", grp: "Krone" },
+        { id: "flare", lab: "Stammfuß", min: 0, max: 1.2, step: 0.01, def: 0.3, law: "Wurzelanlauf: der Stamm weitet sich zum Boden (Strebepfeiler)", grp: "Stamm" },
+    ],
 };
 function buildInstance(presetId, seed, lod, ov) {
     const sS = subject,
@@ -5825,6 +5842,31 @@ function __huelleAusFeld(hk, f, nx, ny, nz, lo, vox, level, clr, zentren, skinJo
     geo.setIndex(new THREE.BufferAttribute(idx, 1));
     geo.computeVertexNormals();
     return geo;
+}
+
+// DAS FETT-DEPOT (studios.K1, koerper `fettDepot`): jede Ecke einer Hülle des Menschen um Σ Gewicht × Dicke ihres Gelenks
+// (koerper MENSCH_FETT) × die Abweichung des Fetts vom Mittel entlang ihrer Normale — Rumpf und Becken vorn × (1 + bauch · n_z).
+// Die Normalen danach frisch (der Stoff aus der Haut hebt entlang ihrer). Ohne Depot (das Mittel) rührt sie nichts an.
+function __fettDepot(geo, depot, skinJoints) {
+    const pa = geo && geo.attributes.position,
+        na = geo && geo.attributes.normal,
+        si = geo && geo.attributes.skinIndex,
+        sw = geo && geo.attributes.skinWeight;
+    if (!depot) return;
+    if (!pa || !na || !si || !sw) throw new Error("FETT-DEPOT: die Hülle trägt keine Normale oder keine Gelenk-Gewichte (fail-closed)");
+    for (let i = 0; i < pa.count; i++) {
+        let dk = 0;
+        for (let k = 0; k < 4; k++) {
+            const w = sw.array[i * 4 + k];
+            if (!w) continue;
+            const j = skinJoints[si.array[i * 4 + k]];
+            const g = depot.gelenk[j] || 0;
+            dk += w * g * (depot.vorn.includes(j) ? 1 + depot.bauch * Math.max(0, na.getZ(i)) : 1);
+        }
+        const s = dk * depot.d;
+        if (s) pa.setXYZ(i, pa.getX(i) + na.getX(i) * s, pa.getY(i) + na.getY(i) * s, pa.getZ(i) + na.getZ(i) * s);
+    }
+    geo.computeVertexNormals();
 }
 
 // Gewichte: 1/d⁴ über Teil-Zentren (Lab-Bindung), aggregiert je Gelenk, Top-4 — je Ecke [x, y, z] (die Hüllen-Maschine; der
@@ -8002,6 +8044,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         throw new Error("MENSCH-GUSS: koerper-Kern ohne menschTon/brauTon — die Farbe folgt dem Samen (fail-closed)");
     const tonStempel = (geo, t) => geo.setAttribute("aTon", new THREE.BufferAttribute(new Float32Array(geo.attributes.position.count).fill(t), 1));
     let mengenLeib = null;
+    // DIE FÜLLE DES LEIBS (studios.K1): das Unterhaut-Fett je Gelenk aus dem Gesetz (koerper `fettDepot`, null im Mittel)
+    if (typeof kern.fettDepot !== "function") throw new Error("MENSCH-GUSS: koerper-Kern ohne fettDepot — die Fülle folgt dem Gesetz (fail-closed)");
+    const fett = kern.fettDepot(dials);
     if (typeof kern.surfaceNets === "function" && typeof kern.kleidZonen === "function") {
         B.character.updateMatrixWorld(true);
         const invChar = new THREE.Matrix4().copy(B.character.matrixWorld).invert();
@@ -8073,6 +8118,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             // die Grobstufe liegt auf dem Gesetz wie die des Tiers (__aufsNiveau): ihre Hüllen werfen für die feine
             const geo = __huelleAusFeld(kern, f, nx, ny, nz, lo, vox, level, clr, zentren, skinJoints, 0.04, undefined, fein);
             if (!geo) return null;
+            // die Fülle (studios.K1): das Fett-Depot liegt unter allem, was eine Hülle trägt — Haut und Stoff gleich
+            __fettDepot(geo, fett, skinJoints);
             const mesh = new THREE.Mesh(geo, matFuer(klasse));
             mesh.userData.__skinned = true;
             mesh.userData.__huelle = true; // die Band-Zeile vereinfacht sie (1310-15)
@@ -8162,6 +8209,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         // DER LEIB DER MENGE (mensch.K4): EINE Hülle; seine Sohle ist die Unterkante der Füße, beschuht oder bloß (Gelände H5)
         if (menge) {
             mengenLeib = __mengenLeib(kern, B, dials, matFuer, animAhnH, skinJoints, fern, zeilenZiel);
+            __fettDepot(mengenLeib.mesh.geometry, fett, skinJoints);
             gebauteHuellen.push(mengenLeib.mesh);
             const fuss = [];
             for (const an of ["ankle1", "ankle-1"])
