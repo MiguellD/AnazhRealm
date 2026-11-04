@@ -1675,3 +1675,4 @@
 2026-11-04 20:23:47 omen-ruhig-becfdbb7 pflicht.E#1#1 ROT 10 · CPU 5 %
 2026-11-04 20:29:36 omen-speicher ALARM Commit 16.0/18.2 GB - 10xchrome 2.4G, 12xclaude 1.9G, 1xOneDrive 0.7G, 1xMsMpEng 0.6G, 86xsvchost 0.6G, 79xbash 0.3G
 2026-11-04 20:33:37 omen-speicher ENTWARNUNG Commit 14.7/18.2 GB
+2026-11-04 20:34:08 omen-speicher ALARM Commit 16.1/18.2 GB - 9xchrome 2.7G, 12xclaude 1.9G, 1xOneDrive 0.7G, 86xsvchost 0.6G, 1xMsMpEng 0.6G, 5xpowershell 0.4G
