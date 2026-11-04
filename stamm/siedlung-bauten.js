@@ -1129,7 +1129,7 @@ class AnazhRealm_siedlung_bauten {
     }
 
     // DIE GEISTER IM VORBAU (ein Schritt von `_vorbauBedienung`): je Hotbar-Bauplan EIN Geist — seine Studio-Gestalt am Ort
-    // des Spielers, sonst der Spender —, und er geht, sobald er steht; der Knoten-Bau bleibt seinem Schlüssel
+    // des Spielers, sonst der Spender, als Gast ohne Raum (`_vorbauGast`) —, und er geht, sobald er steht; der Knoten-Bau bleibt seinem Schlüssel
     // (`_renderObjekteLoesen`), die Pipeline im Cache, die Auswahl zeichnet im nächsten Bild. Gemessen (Radeon echt, werkbank
     // bedienung, kalt): der erste Klick auf das Haus hielt das Bild 239 ms (zwei Knoten-Bauten seines Geists zu 153 und 147
     // ms), der Wagen in der zweiten Runde 141 ms. Ein lädendes Studio fragt der Vorbau alle VORBAU_FRAGE_MS. true: jeder steht.
@@ -1168,20 +1168,36 @@ class AnazhRealm_siedlung_bauten {
                 continue;
             }
             if (!gruppe) gruppe = this._buildPlacementGhost(bp, { donorOnly: true });
-            gruppe.name = "vorbau:" + name;
             gruppe.traverse((o) => {
-                if (!o.isMesh) return;
-                o.__vorbauGast = true;
-                o.frustumCulled = false; // der Gast muss in die Liste des Bilds, gleich wohin der Blick geht
-                o.castShadow = false;
-                o.raycast = () => {}; // kein Strahl trifft ihn
+                if (o.isMesh) o.castShadow = false; // der Geist wirft nie (der Schatten-Pass gehört ihm nicht)
             });
             if (pm) gruppe.position.copy(pm);
-            st.scene.add(gruppe);
-            V.gast = { gruppe, name, takte: 0 };
+            V.gast = { gruppe: this._vorbauGast(gruppe, "vorbau:" + name), name, takte: 0 };
             return false;
         }
         return !offen;
+    }
+
+    // DER GAST DES VORBAUS (die EINE Prägung: der Geist aus `_geistVorbau`, der Leib aus `_leibVorwaermen`): er geht in die
+    // Welt-Szene, damit die Erst-Zeichnung seine Knoten und Pipelines in jedem Pass ohne Draw baut (`__vorbauGast`, in jeder Liste
+    // des Bilds: frustumCulled aus), kein Strahl trifft ihn — und er NIMMT KEINEN RAUM: Maßstab 0, die Welt hat keinen Ort für
+    // ihn. Bis w11-vorbau-frei stand der Geist in voller Größe am Spieler (`position.copy(pm)`, der Leib schon auf Maßstab 0):
+    // nie gezeichnet (die Erst-Zeichnung baut ihn nur), aber in der Szene ein Drachentor, ein GT, eine Eiche um Leib und Auge —
+    // jeder Leser der Szene an diesem Ort sah ihn als Vordergrund (haar.K1#1 GTX „vorbau:tor_drachentor 20,1 %", haar.K2#1 Radeon
+    // „vorbau:fahrzeug_gt 27,8 %", vegetation.K2#1 „vorbau:baum_eiche 14,4 %"), je Lauf der Gast, der zur Zeit des Schusses eben
+    // baute; headless 39 Teile von 8 Hotbar-Gästen im Freiraum der Pose (gate:werkstatt-weg). Der Maßstab ändert keinen Schlüssel:
+    // r184 `getRenderCacheKey` schlüsselt die Händigkeit nur bei det < 0, und kein Teil der 8 Geister ist gespiegelt.
+    _vorbauGast(gruppe, name) {
+        gruppe.name = name;
+        gruppe.scale.setScalar(0);
+        gruppe.traverse((o) => {
+            o.frustumCulled = false;
+            if (!o.isMesh) return;
+            o.__vorbauGast = true;
+            o.raycast = () => {};
+        });
+        this.state.scene.add(gruppe);
+        return gruppe;
     }
 
     // WAS EINEM GAST DES VORBAUS FEHLT (0: er steht): je sichtbarem Teil die Pässe, in die er gehört (das Auge und, wirft er,

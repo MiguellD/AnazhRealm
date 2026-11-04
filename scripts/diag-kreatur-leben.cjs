@@ -466,16 +466,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
             if (e && teil)
                 r._hausHuelleSetzen(e, { stufe: 0, teile: [Object.assign({ art: "box", rolle: "fest" }, teil)] });
             const b = e && (e.blockerAABBs || []).find((q) => h.art !== "haus" || q.obb);
-            const o =
-                b &&
-                (b.obb || {
-                    cx: (b.minX + b.maxX) / 2,
-                    cz: (b.minZ + b.maxZ) / 2,
-                    c: 1,
-                    s: 0,
-                    hx: (b.maxX - b.minX) / 2,
-                    hz: (b.maxZ - b.minZ) / 2,
-                });
+            const o = b && rahmen(b);
             Object.assign(h, { box: b, F: o });
             return e;
         });

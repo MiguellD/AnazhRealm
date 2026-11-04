@@ -341,7 +341,18 @@ function png(u8, W, H) {
 // Bild neu (eine Linse blendet Klassen aus und ein, die Bühne wechselt)
 const bundlesNeu = () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
 const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
-const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
+// DER RAHMEN EINER BOX (`rahmen(b)`, in jeder Seite als `window.rahmen`, `WARTEN_SEITE`): ihre OBB, sonst die achsgleiche im
+// selben Maß wie `_boxAbstand2` (Mitte, Achsen c/s, Halb-Maße) — die Linsen der Blocker (kollision-bild, kreatur-leben, werk-im-wasser)
+const rahmen = (b) =>
+    b.obb || {
+        cx: (b.minX + b.maxX) / 2,
+        cz: (b.minZ + b.maxZ) / 2,
+        c: 1,
+        s: 0,
+        hx: (b.maxX - b.minX) / 2,
+        hz: (b.maxZ - b.minZ) / 2,
+    };
+const WARTEN_SEITE = `${weltR} window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -1053,6 +1064,16 @@ async function halteBis(seite, { taste, druck, los, ziel, args = [], frist = 300
 
 // DER LESER IM BLICK (Seite): der Spieler am Bach der Mess-Wiese, zurück, sobald das Wasser ZEICHNET, das Tiefen-Abbild gezogen
 // ist und das Weltbild steht (`welt`: nur diese Terme); `kappe`: die Pixel-Kappe des Holzes.
+// DIE POST-KETTE STEHT (diag-post-kette, diag-ziel-zensus): der erste Frame mit bereitem Renderer und Kette; ohne
+// WebGPU-Backend wirft sie mit dem Grund der Linse (`blind`), sonst nennt sie die Wartezeit im Lauf-Log
+async function postKetteBereit(page, log, blind) {
+    const ms = await page.evaluate(async (t0 = performance.now()) => {
+        await __weltDa((w, s = w.state) => !!(s?.rendererReady && s.renderer?.backend && s.postProcessing && s.camera));
+        return st.renderer.backend.isWebGPUBackend === true ? performance.now() - t0 : -1;
+    });
+    if (ms < 0) throw new Error("kein WebGPU-Backend — " + blind);
+    log(`Renderer und Post-Kette bereit nach ${Math.round(ms / 1000)} s`);
+}
 async function uferStellen(opts) {
     await window.__weltDa(
         (w) =>
@@ -1552,6 +1573,8 @@ module.exports = {
     halteBis,
     buehne,
     uferStellen,
+    postKetteBereit,
+    rahmen,
     pruefer,
     taeterFaelle,
     abwandlung,
