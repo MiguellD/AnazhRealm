@@ -1169,7 +1169,8 @@ class AnazhRealm_dirigent_takt {
         const padLesen = navigator.getGamepads ? navigator.getGamepads.bind(navigator) : () => [];
         if (quelle === "aufnahme") {
             sp.auf = true;
-            sp.schirm = [window.innerWidth, window.innerHeight];
+            const g = this._schirm(); // der Kopf der Spur nennt den Schirm aus der EINEN Quelle (gate:schirm-monotonie Q)
+            sp.schirm = [g.breite, g.hoehe];
             for (const art of Object.values(S.arten).flat())
                 window.addEventListener(art, (e) => this._spurNimm(e), { capture: true, passive: true });
             // das Gamepad, wie das Spiel es liest (`_eingabeTakt`): jeder Wechsel seines Stands ist eine Zeile
