@@ -218,3 +218,4 @@ takt-z164a-gtx gemessen punkte 95d7bba1 gtx: 0 grün / 1 rot
 takt-z165a-gtx gemessen punkte 5fba36ea gtx: 0 grün / 0 rot
 z164-abab nicht-langsamer abab 95d7bba1 gegen c5a9a2f5: w-ego 4+4 nicht-langsamer · stadt 4+4 nicht-langsamer
 z165-abab LANGSAMER abab 5fba36ea gegen 95d7bba1: w-ego 4+4 nicht-langsamer · stadt 4+4 LANGSAMER
+omen-hw-z204 OFFEN kihain:phi5-main=GRÜN rz-w9-gruss=GRÜN rz-w6-alter=GRÜN rz-w6-weiches=GRÜN rz-w5-licht-sprung=GRÜN 
