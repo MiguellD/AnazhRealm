@@ -17,13 +17,16 @@ const kiUrteil = (m) => ["zwilling", "ohneWerk", "unbewegt", "ohneWort"].flatMap
 const { errs, check } = pruefer();
 
 // Die Probe beider Seiten: das Flat eines Eintrags, sobald die Foundry es trägt, und sein Abdruck (der EINE, welt-boot) — am Preset
-// des Eintrags selbst (bis w4-heil-tore fest „gt": B's Eiche hieß „ungeprägter GT").
+// des Eintrags selbst (bis w4-heil-tore fest „gt": B's Eiche hieß „ungeprägter GT"). Gewartet wird über das EINE Warten auf einen
+// Bau (`__gebautNach`): Takt um Takt der Welt, nie Schlaf allein — ein Baum mit Lage fragt die Gestalt seines Orts, und die steht
+// erst, wenn der Takt-Job `waldPlan` die Zellen um ihn plante. Bis w5-studios-k1 schlief die Probe 50 ms je Gang; mit der Art
+// tree in PARAMS_BY_KIND (studios.K1) wartete die geprägte Eiche abseits der Lichtung auf 81 Zellen, die kein Takt plante
+// („DIE WELT HÄNGT: das Flat der Gestalt … wald 81").
 function proben() {
     window.__flatFor = async (r, entry, preset = r._foundryPresetForEntry(entry)) => {
         let flat;
-        for (const weiter = __deckel("das Flat der Gestalt", 300); !(flat = r._foundryFlattenFor(entry, preset, 0))?.leaves && weiter(); )
-            await sleep(50);
-        return flat?.leaves ? flat : null;
+        await __gebautNach("das Flat der Gestalt", { fertig: () => !!(flat = r._foundryFlattenFor(entry, preset, 0))?.leaves, max: 300 });
+        return flat;
     };
     window.__flatFp = async (r, entry) => {
         const flat = await window.__flatFor(r, entry);
