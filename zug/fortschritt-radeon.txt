@@ -1806,3 +1806,4 @@
 2026-11-04 16:49:21 3acaac9e-radeon ferne.K3#1 ROT 0.1 · 1/2
 2026-11-04 16:49:26 3acaac9e-radeon ferne.K4#1 ROT 0.1 · 2/2
 2026-11-04 16:50:51 3acaac9e-radeon ENDE 0 grün / 2 rot · 2.9 min
+2026-11-04 17:10:57 0d88e8d2-radeon START 2 Stationen
