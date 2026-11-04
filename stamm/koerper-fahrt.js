@@ -138,13 +138,20 @@ class AnazhRealm_koerper_fahrt {
     }
 
     // DAS TUCH AM LEIB (haar.K4) — der Leser des EINEN weichen Lösers (koerper-core `tuchGitter` · `tuchZustand` · `tuchTakt`,
-    // dasselbe rechnet das Körper-Studio): nach der Pose des Leibs EIN Schritt seines Tuchs. Die Kosten gehören dem Schirm:
-    // gerechnet wird nur, was das Auge nahe sieht — die feine Stufe steht (`_gelenk.istFern` falsch: die Stufe entscheidet), der
-    // Leib hängt in der Szene und ist sichtbar, näher als TUCH_GESETZ.nahM am Auge und im Kegel der Kamera; sonst ruht das Tuch
-    // in der Pose (`tuchRuhe`: die Ruhe-Lage, der Zustand fällt). Das Gitter des Lösers ist das Tuch der Grobstufe, die feine
-    // Stufe folgt ihm; das Gitter (Kanten, Massen, Folger) entsteht je Vorlage EINMAL (`_tuchGitter`, die Leiber derselben
-    // Tracht teilen es). Jedes Tuch-Mesh trägt solange seine EIGENE Positions-Spalte (die übrigen Spalten und der Index bleiben
-    // die der Vorlage) — fällt der Zustand, kehrt die Geometrie der Vorlage zurück, die eigene Spalte nimmt der GPU-Kehraus.
+    // dasselbe rechnet das Körper-Studio): nach der Pose des Leibs EIN Schritt seines Tuchs. DIE KOSTEN GEHÖREN DEM SCHIRM UND DER
+    // ÄNDERUNG (Gebot 7), nie der Zahl der Leiber und nie der Spielzeit: gerechnet wird nur, was das Auge nahe sieht — die feine
+    // Stufe steht (`_gelenk.istFern` falsch: die Stufe entscheidet), der Leib hängt in der Szene und ist sichtbar, im Kegel der
+    // Kamera und so nah, dass sein Schwung (`TUCH_GESETZ.webe._.freiM`) am EINEN Schirm (`_schirm().pxJeM`) mindestens
+    // `TUCH_GESETZ.px` Bildpunkte deckt, höchstens `nahM`; ohne Schirm (pxJeM null) rechnet kein Tuch. DIE UHR DES TUCHS ist die
+    // Echtzeit: läuft die Spielzeit des Leibs schneller als `raffer` mal die Wand (der Zeitraffer — ein Bündel Takte ohne Bild, die
+    // Probe des Bewohner-Tags), ruht das Tuch; ein Takt ohne Zeit rechnet nichts. Steht der Leib in seiner Pose (Atem und Wiegen
+    // beschleunigen sein Ziel unter `ruheA`, in m/s²), schläft der Löser selbst (`tuchTakt`). Sonst ruht das Tuch in der Pose
+    // (`tuchRuhe`: die Ruhe-Lage, der Zustand fällt). Bis w6-weiches rechnete jeder Takt der Bewohner sein Tuch nach der Spielzeit:
+    // die Probe des Bewohner-Tags (DT 0,1 s, 24 Spielstunden) trug ~9 min Tuch (Kreatur-Linse Teil 1 main 111 s, mit dem Tuch 643 s,
+    // jetzt 111 s), und der stehende Bewohner schlief nie (3,6 ms je Bild bei zwei nahen, jetzt 0,26). Das Gitter des Lösers ist das Tuch der Grobstufe, die feine Stufe folgt ihm; das Gitter (Kanten,
+    // Massen, Folger) entsteht je Vorlage EINMAL (`_tuchGitter`, die Leiber derselben Tracht teilen es). Jedes Tuch-Mesh trägt
+    // solange seine EIGENE Positions-Spalte (die übrigen Spalten und der Index bleiben die der Vorlage) — fällt der Zustand, kehrt
+    // die Geometrie der Vorlage zurück, die eigene Spalte nimmt der GPU-Kehraus.
     _tuchTakt(group, t) {
         const u = group.userData;
         const G = u && u._gelenk;
@@ -166,9 +173,24 @@ class AnazhRealm_koerper_fahrt {
             u._tuchTeile = { sim: grob.length ? grob : fein, folge: grob.length ? fein : [], auge: fein[0] || grob[0] };
         }
         const KC = globalThis.__koerperCore;
+        const TG = KC.TUCH_GESETZ;
         const st = this.state;
+        // DIE UHR: Spielzeit gegen Echtzeit seit dem letzten Ruf dieses Leibs (ein Rücksprung oder ein Takt ohne Zeit rafft nie)
+        const jetzt = performance.now();
+        const uhr = u._tuchUhr || (u._tuchUhr = { t: null, w: 0 });
+        const dSpiel = uhr.t == null ? 0 : t - uhr.t;
+        const raffer = dSpiel > 0 && dSpiel > (TG.raffer * (jetzt - uhr.w)) / 1000;
+        uhr.t = t;
+        uhr.w = jetzt;
         // das Auge sieht die feine Stufe (Ego nimmt den eigenen Leib aus seiner Ebene: dort rechnet kein Tuch)
-        let an = !G.istFern && group.visible && !!st.camera && st.camera.layers.test(u._tuchTeile.auge.layers);
+        const pxJeM = this._schirm().pxJeM;
+        let an =
+            !raffer &&
+            pxJeM != null &&
+            !G.istFern &&
+            group.visible &&
+            !!st.camera &&
+            st.camera.layers.test(u._tuchTeile.auge.layers);
         let d2 = Infinity;
         if (an) {
             let root = group;
@@ -178,7 +200,8 @@ class AnazhRealm_koerper_fahrt {
         if (an) {
             const cam = st.camera;
             const s = group.scale.y || 1;
-            const nah = KC.TUCH_GESETZ.nahM;
+            // die Reichweite am Schirm: der Schwung deckt px Bildpunkte, höchstens nahM
+            const nah = s * Math.min(TG.nahM, (pxJeM * TG.webe._.freiM) / TG.px);
             const v = this._tuchV || (this._tuchV = new THREE.Vector3());
             v.set(group.position.x, group.position.y + 0.9 * s, group.position.z);
             d2 = cam.position.distanceToSquared(v);
@@ -209,7 +232,7 @@ class AnazhRealm_koerper_fahrt {
                 }
                 if (!fern || w > wahl.get(fern)) fern = g;
             }
-            if (wahl.size >= KC.TUCH_GESETZ.leiber) {
+            if (wahl.size >= TG.leiber) {
                 if (fern && wahl.get(fern) > d2) this._tuchLoesen(fern);
                 else an = false;
             }
@@ -243,9 +266,11 @@ class AnazhRealm_koerper_fahrt {
             u._tuchMeshes = sim.concat(folge);
             u._tuchT = null;
         }
-        // der Takt des Tuchs: höchstens alle TUCH_GESETZ.taktS Spielzeit (die Zeit sammelt sich; ein Rücksprung beginnt frisch)
+        // der Takt des Tuchs: höchstens alle TUCH_GESETZ.taktS Spielzeit (die Zeit sammelt sich; ein Rücksprung beginnt frisch); ein
+        // Takt ohne Zeit ändert nichts
         const dt = u._tuchT == null ? 0 : t - u._tuchT;
-        if (dt > 0 && dt < KC.TUCH_GESETZ.taktS - 1e-6) return;
+        if (dt === 0 && u._tuchT != null) return;
+        if (dt > 0 && dt < TG.taktS - 1e-6) return;
         u._tuchT = t;
         // die Welt-Matrizen dieses Takts (die Pose steht; der Löser liest die Knochen)
         this._leibMatrix(group);

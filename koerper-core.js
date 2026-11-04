@@ -4052,17 +4052,17 @@
         if (z.zielAlle) {
             // das Gitter am Leib: was das Tuch bewegt, ist die BESCHLEUNIGUNG seines Ziels (die Trägheit) — gleitet der Leib
             // gleichmäßig (das Wiegen im Stand, der Atem), trägt das Tuch seine Abweichung starr mit (`_zielRuht`)
-            dZ = _zielBeschleunigung(z);
+            dZ = _zielBeschleunigung(z, dt);
             if (z.ruht) {
                 if (dZ < z.ruheA) {
-                    _zielWeiter(z);
+                    _zielWeiter(z, dt);
                     return false;
                 }
                 // es regt sich: das Tuch steht, wo es ruhte (das Ziel + seine Abweichung), und geht mit dem Ziel
                 var kw = Math.max(1, Math.ceil(dt / z.schrittS - 1e-9));
                 for (i = 0; i < 3 * n; i++) {
                     p[i] = za[i] + z.abw[i];
-                    q[i] = p[i] - z.zielD[i] / kw;
+                    q[i] = p[i] - (z.dtAlt > 0 ? (z.zielD[i] * dt) / z.dtAlt : 0) / kw;
                 }
                 z.ruht = false;
                 z.still = 0;
@@ -4232,7 +4232,7 @@
                 z.abw[o3 + 1] = ay;
                 z.abw[o3 + 2] = az;
             }
-            _zielWeiter(z);
+            _zielWeiter(z, dt);
             z.regung = dv / Math.max(1, nf);
             z.beschl = dZ;
             if (z.regung < z.ruheM && dZ < z.ruheA) z.still += k;
@@ -4245,20 +4245,24 @@
         if (z.still >= z.ruheSchritte) z.ruht = true;
         return true;
     }
-    // Die Beschleunigung des Ziels je Bild (m): die größte Änderung seines Schritts gegen den letzten (|Δziel − Δziel_alt|)
-    function _zielBeschleunigung(z) {
+    // Die Beschleunigung des Ziels (m/s²) über den Takt dt: die größte Änderung seines Tempos gegen das des letzten Takts
+    // (|Δziel/dt − Δziel_alt/dt_alt| / dt) — in Sekunden, nie je Bild: der Wirt rechnet sein Tuch höchstens im Takt taktS, das Labor
+    // je Bild, und beide ruhen bei derselben Regung
+    function _zielBeschleunigung(z, dt) {
+        if (!(dt > 0)) return 0;
         var ziel = z.ziel,
             za = z.zielAlt,
             D = z.zielD,
+            vA = z.dtAlt > 0 ? 1 / z.dtAlt : 0,
             a = 0;
         for (var i = 0; i < ziel.length; i++) {
-            var e = Math.abs(ziel[i] - za[i] - D[i]);
+            var e = Math.abs((ziel[i] - za[i]) / dt - D[i] * vA);
             if (e > a) a = e;
         }
-        return a;
+        return a / dt;
     }
-    // Das Ziel geht weiter: sein Schritt dieses Bilds wird der alte, seine Lage die alte
-    function _zielWeiter(z) {
+    // Das Ziel geht weiter: sein Schritt dieses Takts (dt) wird der alte, seine Lage die alte
+    function _zielWeiter(z, dt) {
         var ziel = z.ziel,
             za = z.zielAlt,
             D = z.zielD;
@@ -4266,6 +4270,7 @@
             D[i] = ziel[i] - za[i];
             za[i] = ziel[i];
         }
+        z.dtAlt = dt > 0 ? dt : 0;
     }
     // DIE KETTE (das Seil, 1D): Punkte p (flach [x,y,z,…], Punkt 0 der Anker, geführt), je Glied j die Länge l[j] zwischen j und
     // j+1, die inversen Massen w (w[0] = 0); starr (α 0), `iter` Runden je Teil-Schritt, die Länge danach hart. `g` = die
@@ -4328,11 +4333,15 @@
         tiefeM: 0.004,
         ruheM: 2e-3, // m je Schritt: so wenig ändert sich die Abweichung eines ruhenden Tuchs von seinem Ziel (im Mittel der freien
         // Punkte; gemessen im Stand 0,8 mm — das Zittern der Falten —, ein schwingendes Tuch nach dem Gang zentimeterweit)
-        ruheA: 1e-4, // m je Bild²: so wenig beschleunigt das Ziel eines ruhenden Tuchs (das Wiegen, der Atem — der Gang 0,8 mm)
+        ruheA: 0.4, // m/s²: so wenig beschleunigt das Ziel eines ruhenden Tuchs (der Stand der Welt mit Atem und Wiegen 0,24–0,27, der Gang
+        // ≥ 0,7; bis w6-weiches 1e-4 m je Bild² — am 30-Hz-Takt der Welt 0,09 m/s²: der stehende Bewohner schlief nie)
         ruheSchritte: 30,
         nahM: 14, // nur so nahe Leiber rechnen ihr Tuch (vom Auge, m) — ferner ruht es in der Pose
+        px: 1, // und nur, wo sein Schwung (webe._.freiM) am Schirm so viele Bildpunkte deckt (der Wirt: pxJeM · freiM / px)
         taktS: 1 / 30, // so oft rechnet ein Tuch höchstens (Spielzeit; dazwischen trägt es seine Abweichung starr mit der Haut)
         leiber: 2, // höchstens so viele (die dem Auge nächsten sichtbaren): die Kosten gehören dem Schirm, nie der Zahl der Leiber
+        raffer: 2, // läuft die Spielzeit eines Leibs schneller als so oft die Echtzeit (der Zeitraffer, Takte ohne Bild), ruht sein Tuch
+        sprungS: 0.25, // ein Takt nach mehr Spielzeit ist ein Sprung (Pause, Teleport): das Tuch steht in der Haut-Pose
         webe: {
             wool: { hz: 2.2, freiM: 0.045 },
             knit: { hz: 3.0, freiM: 0.03 },
@@ -4772,11 +4781,20 @@
             b = -1,
             bd = G.hautM * G.hautM,
             r2 = bd;
-        for (var dz = iz > 0 ? -1 : 0, ez = iz < nz - 1 ? 1 : 0; dz <= ez; dz++)
-            for (var dy = iy > 0 ? -1 : 0, ey = iy < ny - 1 ? 1 : 0; dy <= ey; dy++) {
-                var zeile = nx * (iy + dy + ny * (iz + dz));
-                for (var dx = ix > 0 ? -1 : 0, ex = ix < nx - 1 ? 1 : 0; dx <= ex; dx++) {
-                    var c = zeile + ix + dx;
+        // nur die Zellen, die den Radius berühren (die Kante ist der Radius: je Achse zwei, nie drei — dieselben Kandidaten in
+        // derselben Folge wie die 27 Nachbarn, ein Drittel der Zellen)
+        var r = G.hautM,
+            ax0 = Math.max(0, Math.floor((x - r) * ic) - z.gx0),
+            ax1 = Math.min(nx - 1, Math.floor((x + r) * ic) - z.gx0),
+            ay0 = Math.max(0, Math.floor((y - r) * ic) - z.gy0),
+            ay1 = Math.min(ny - 1, Math.floor((y + r) * ic) - z.gy0),
+            az0 = Math.max(0, Math.floor((zz - r) * ic) - z.gz0),
+            az1 = Math.min(nz - 1, Math.floor((zz + r) * ic) - z.gz0);
+        for (var cz = az0; cz <= az1; cz++)
+            for (var cy = ay0; cy <= ay1; cy++) {
+                var zeile = nx * (cy + ny * cz);
+                for (var cx = ax0; cx <= ax1; cx++) {
+                    var c = zeile + cx;
                     for (var s = S[c], e = S[c + 1]; s < e; s++) {
                         var j = 3 * L[s],
                             ax = hP[j] - x,
@@ -4847,16 +4865,25 @@
                 hob = true;
             }
             if (rueckfall && !ok && !(_hautPruefen(z, p[o], p[o + 1], p[o + 2], q) < 0 || q[1] < 0)) {
-                // der Rückfall der Falte: die Kandidaten der letzten Prüfung nach Abstand
+                // der Rückfall der Falte: die Kandidaten der letzten Prüfung nach Abstand (die 16 nächsten, ohne Müll: in festen Puffern
+                // des Zustands, gereiht nach Abstand, dann Index)
                 var cd = z._cd,
-                    ord = [];
-                for (var a = 0; a < z._cn; a += 2) ord.push(cd[a], cd[a + 1]);
-                var idx = [];
-                for (a = 0; a < ord.length; a += 2) idx.push(a);
-                idx.sort(function (A, B) { return ord[A] - ord[B] || ord[A + 1] - ord[B + 1]; });
+                    ord = z._rOrd || (z._rOrd = new Float64Array(1024)),
+                    idx = z._rIdx || (z._rIdx = new Int32Array(512)),
+                    nIdx = 0;
+                for (var a = 0; a < z._cn; a += 2) {
+                    ord[a] = cd[a];
+                    ord[a + 1] = cd[a + 1];
+                    var e = nIdx++;
+                    while (e > 0 && (ord[idx[e - 1]] > cd[a] || (ord[idx[e - 1]] === cd[a] && ord[idx[e - 1] + 1] > cd[a + 1]))) {
+                        idx[e] = idx[e - 1];
+                        e--;
+                    }
+                    idx[e] = a;
+                }
                 var fertig = false;
                 for (var hoch = 1.5; hoch <= 6 && !fertig; hoch *= 2)
-                    for (var t = 0; t < idx.length && t < 16; t++) {
+                    for (var t = 0; t < nIdx && t < 16; t++) {
                         var jj = ord[idx[t] + 1],
                             px = hP[jj] + hoch * luft * hN[jj],
                             py = hP[jj + 1] + hoch * luft * hN[jj + 1],
@@ -4931,7 +4958,7 @@
     // DER TAKT DES TUCHS: die Knochen des Bilds (die Welt-Matrizen müssen stehen), daraus je Punkt seine Haut-Pose (das Ziel),
     // die Haut des Bilds in ihrem Gitter (`_hautGitter`), EIN Löser-Schritt um dt — dann die Abweichung jedes Punkts zurück in den Raum der
     // Bindung (die Inverse seiner Blend-Matrix) in die Positionen der sim-Meshes und, über die Eltern, der Folger. dt ≤ 0
-    // oder ein Sprung (> 0,25 s) setzt das Tuch in die Haut-Pose. Stehen alle Knochen und ruht das Tuch, rechnet nichts.
+    // oder ein Sprung (> sprungS) setzt das Tuch in die Haut-Pose. Stehen alle Knochen und ruht das Tuch, rechnet nichts.
     // Antwort: true, wenn Positionen neu sind (der Wirt lädt sie hoch).
     function tuchTakt(z, dt) {
         if (!z || z.art !== "tuch") return false;
@@ -4980,8 +5007,8 @@
         }
         // ruht das Tuch und beschleunigt sein Ziel kaum (das Wiegen, der Atem des stehenden Leibs), trägt es seine Abweichung starr
         // mit: keine Haut, kein Schritt, nichts hochzuladen
-        if (z.ruht && !z.frisch && dt > 0 && dt <= 0.25 && _zielBeschleunigung(z) < z.ruheA) {
-            _zielWeiter(z);
+        if (z.ruht && !z.frisch && dt > 0 && dt <= TUCH_GESETZ.sprungS && _zielBeschleunigung(z, dt) < z.ruheA) {
+            _zielWeiter(z, dt);
             return false;
         }
         // die Haut des Bilds: jede Ecke durch ihre Knochen, ins Gitter der Haut
@@ -5012,11 +5039,12 @@
         }
         _hautGitter(z, nh);
         // der Sprung (der erste Takt, eine Pause, ein Teleport): das Tuch steht in der Haut-Pose, der Löser beginnt in Ruhe
-        if (z.frisch || !(dt > 0) || dt > 0.25) {
+        if (z.frisch || !(dt > 0) || dt > TUCH_GESETZ.sprungS) {
             p.set(ziel);
             z.q.set(ziel);
             z.zielAlt.set(ziel);
             z.zielD.fill(0);
+            z.dtAlt = 0;
             z.frisch = false;
             for (var pj = 0, pa = z.paare; pj < z.laenge.length; pj++) {
                 var ia = 3 * pa[2 * pj],
