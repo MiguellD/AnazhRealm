@@ -153,7 +153,7 @@ class AnazhRealm_siedlung_bauten {
             const z0 = this._archStufeZaehler();
             for (const e of archs || [])
                 if (e && e._lodSpecies && Math.abs(e.position.x - pm.x) + Math.abs(e.position.z - pm.z) < 60)
-                    (e._lodAmAbstand = false), this._archStufeUrteil(e, pm, occlOn, z0);
+                    ((e._lodAmAbstand = false), this._archStufeUrteil(e, pm, occlOn, z0));
         }
         // DIE BEWEGTEN (das EINE Stufen-Gesetz: Bewegte prüfen) urteilen vor der Wache — ihre Kosten tragen sie selbst
         const bewegt = this._archBewegteUrteilen(pm, occlOn);
