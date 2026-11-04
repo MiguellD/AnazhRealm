@@ -828,8 +828,10 @@ class AnazhRealm_siedlung_wege {
     // schwimmt, tritt nichts —, nie ein Leser des gezeichneten Bodens: jeder Peer zählt dieselben Tritte). Die Zahl erholt sich in der
     // Spielzeit (n · e^(−Δt/erholTage) — eine Funktion der Uhr, kein Takt), ihre Stufe (1 − e^(−n/tritte), gerastert auf
     // `stufen`) ist getretene Erde in der EINEN Wege-Karte (Kanal Erde): der Boden zeigt den Pfad, Wiese und Nah-Streu lesen ihn
-    // über `_pfadFeldAt` — Kosten nur am Schritt in eine neue Zelle und am Sprung einer Stufe. Die Zellen reisen im worldMeta
-    // (`tritt`: "i,j" → [n, t]): der Reload und der Mitspieler (sein Geist geht durch denselben Schritt) sehen denselben Pfad.
+    // über `_pfadFeldAt` — Kosten nur am Schritt in eine neue Zelle und am Sprung einer Stufe. Die Zellen leben im worldMeta
+    // (`tritt`: "i,j" → [n, t]) und reisen gepackt (`_trittPacken`): der Reload und der Mitspieler (sein Geist geht durch denselben
+    // Schritt) sehen denselben Pfad. Die Zahl liegt auf dem Raster des Stands (`TRITT.standN` je Tritt, `TRITT.standT` je Tag) —
+    // was der Stand trägt, IST der Zustand, der Reload kehrt Bit für Bit wieder.
     _tritt(leib, x, z, steht, spieler) {
         const T = AnazhRealm.TRITT;
         const i = Math.floor(x / T.zelleM);
@@ -850,11 +852,13 @@ class AnazhRealm_siedlung_wege {
         const key = i + "," + j;
         const jetzt = this._trittJetzt();
         const alt = F[key] || schwach.get(key);
-        const n = Math.round(((alt ? alt[0] * Math.exp(-(jetzt - alt[1]) / T.erholTage) : 0) + 1) * 1000) / 1000;
-        const zeile = [n, Math.round(jetzt * 1e4) / 1e4];
+        const n =
+            Math.round(((alt ? alt[0] * Math.exp(-(jetzt - alt[1]) / T.erholTage) : 0) + 1) * T.standN) / T.standN;
+        const zeile = [n, Math.floor(jetzt * T.standT) / T.standT];
         const stufe = AnazhRealm._trittStufe(n);
         if (stufe > 0) {
             F[key] = zeile;
+            this._trittSchrieb = (this._trittSchrieb || 0) + 1;
             schwach.delete(key);
         } else schwach.set(key, zeile);
         const wk = this.state.wegeKarte;
@@ -923,7 +927,10 @@ class AnazhRealm_siedlung_wege {
         for (const key of Object.keys(wm.tritt)) {
             const [n, t] = wm.tritt[key];
             const st = AnazhRealm._trittStufe(n * Math.exp(-(jetzt - t) / T.erholTage));
-            if (!(st > 0)) delete wm.tritt[key];
+            if (!(st > 0)) {
+                delete wm.tritt[key];
+                this._trittSchrieb = (this._trittSchrieb || 0) + 1;
+            }
             if (st >= (wk.trittGemalt.get(key) || 0)) continue;
             neu = true;
             wk.trittOffen.add(key);
@@ -935,6 +942,76 @@ class AnazhRealm_siedlung_wege {
         for (const key of wk.trittOffen) this._trittWiese(key);
         wk.trittOffen.clear();
         if (neu) wk.stufen[0].grundNeu = true;
+    }
+
+    // DER PFAD IM STAND (gate:persistence D, Gebot 7: die Kosten an der Änderung): die Zellen reisen als [tMax, base64] — je Zelle,
+    // geordnet nach (j, i), vier Varints: der Zeilen-Sprung dj und der Spalten-Sprung (in derselben Zeile hinter der vorigen Zelle,
+    // sonst gegen ihre Spalte; beide im Zickzack), die Zahl n · standN und das Alter tMax − t · standT (die jüngste Zelle 0).
+    // Ein Pfad liegt dicht: eine Zelle kostet ~4 Bytes statt ~24 im JSON-Paar "i,j":[n,t]. Gemerkt am Feld und seinem Schreib-Zähler
+    // (`_trittSchrieb`: `_tritt` und `_trittErholen`) — der Stand ohne neuen Tritt packt nichts. Leser: die Stand-Zeile worldMeta.
+    _trittStand(F) {
+        const m = this._trittStandMemo;
+        if (m && m.feld === F && m.schrieb === this._trittSchrieb) return m.stand;
+        const stand = AnazhRealm._trittPacken(F);
+        this._trittStandMemo = { feld: F, schrieb: this._trittSchrieb, stand };
+        return stand;
+    }
+    static _trittPacken(F) {
+        const T = AnazhRealm.TRITT;
+        const zellen = Object.entries(F).map(([key, [n, t]]) => {
+            const [i, j] = key.split(",").map(Number);
+            return [j, i, Math.round(n * T.standN), Math.round(t * T.standT)];
+        });
+        zellen.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+        let tMax = -Infinity;
+        for (const z of zellen) if (z[3] > tMax) tMax = z[3];
+        const b = [];
+        const vari = (v) => {
+            if (!(Number.isSafeInteger(v) && v >= 0)) throw new Error(`Trampelpfad: ${v} ist kein Varint`);
+            for (; v >= 0x80; v = Math.floor(v / 0x80)) b.push((v % 0x80) | 0x80);
+            b.push(v);
+        };
+        const zz = (v) => (v < 0 ? -2 * v - 1 : 2 * v);
+        let [pj, pi] = [0, 0];
+        for (const [j, i, n, t] of zellen) {
+            vari(zz(j - pj));
+            vari(zz(j === pj ? i - pi - 1 : i - pi));
+            vari(n);
+            vari(tMax - t);
+            [pj, pi] = [j, i];
+        }
+        let bin = "";
+        for (let k = 0; k < b.length; k += 0x2000) bin += String.fromCharCode.apply(null, b.slice(k, k + 0x2000));
+        return [zellen.length ? tMax : 0, btoa(bin)];
+    }
+    // Die Umkehr (das Heil jeder geladenen Welt, `_weltMetaHeil`): [tMax, base64] → "i,j" → [n, t]
+    static _trittAuspacken([tMax, b64]) {
+        const T = AnazhRealm.TRITT;
+        const bin = atob(b64);
+        let k = 0;
+        const vari = () => {
+            let [v, f] = [0, 1];
+            for (;;) {
+                if (k >= bin.length) throw new Error("Trampelpfad: der Stand bricht mitten in einer Zelle ab");
+                const c = bin.charCodeAt(k++);
+                v += (c & 0x7f) * f;
+                if (c < 0x80) return v;
+                f *= 0x80;
+            }
+        };
+        const unzz = (v) => (v % 2 ? -(v + 1) / 2 : v / 2);
+        const F = {};
+        let [pj, pi] = [0, 0];
+        while (k < bin.length) {
+            const dj = unzz(vari());
+            const di = unzz(vari());
+            const j = pj + dj;
+            const i = dj === 0 ? pi + di + 1 : pi + di;
+            const n = vari() / T.standN;
+            F[i + "," + j] = [n, (tMax - vari()) / T.standT];
+            [pj, pi] = [j, i];
+        }
+        return F;
     }
 
     // DIE TRITTFLÄCHE (Architektur-Welle 05.10.): um eine Feuerstelle, einen Brunnen, einen Marktstand ist der Boden
@@ -1537,7 +1614,8 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_wege]);
 // Rasen-Keil grenzen ohne Naht aneinander; nur Erde und Rasen teilen den Kanal (der Rand des Wegs läuft über den Grund aus).
 // DER TRAMPELPFAD (`_tritt`): die Zelle (m), die Halbbreite der getretenen Spur (der Leib, m) und ihr weicher Rand, die Tritte, mit
 // denen 63 % der Erde stehen (ein Pfad nach einigen Dutzend Gängen), die Tage, in denen der Halm 63 % zurückholt, das Raster der
-// Stufen, der Versatz, der kein Schritt ist (m), und der Takt der Uploads (ms).
+// Stufen, der Versatz, der kein Schritt ist (m), der Takt der Uploads (ms) und das Raster des Stands: die Zahl je Achtel-Tritt
+// (die erste Stufe liegt bei 2,7 Tritten), die Zeit je Spiel-Stunde (die Erholung verschiebt sich um ≤ 2,1 ‰ der Zahl).
 AnazhRealm.TRITT = Object.freeze({
     zelleM: 0.5,
     halbM: 0.55,
@@ -1547,6 +1625,8 @@ AnazhRealm.TRITT = Object.freeze({
     stufen: 8,
     sprungM: 1.5,
     uploadMs: 250,
+    standN: 8,
+    standT: 24,
 });
 AnazhRealm.WEGE_KARTE = Object.freeze({
     stufen: Object.freeze([
