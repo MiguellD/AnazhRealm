@@ -2159,11 +2159,8 @@ function selbsttest() {
     const vm = require("vm");
     const kernSrc = ausDatei("vehicle-core.js");
     const kernLaden = (s) => {
-        const ctx = { console, Math, Object, Array, Number, JSON, Map, Set, isFinite, isNaN, Infinity, NaN };
-        for (const T of [Float32Array, Float64Array, Uint8Array, Uint16Array, Uint32Array, Int32Array]) ctx[T.name] = T;
-        ctx.globalThis = ctx;
+        const ctx = require("./lib/asset-worker-harness.cjs").kernKontext({ console, Math, Object, Array, Number, JSON, Map, Set, isFinite, isNaN, Infinity, NaN, Float32Array, Float64Array, Uint8Array, Uint16Array, Uint32Array, Int32Array }); // prettier-ignore
         ctx.window = ctx;
-        vm.createContext(ctx);
         vm.runInContext(s, ctx);
         return ctx.__vehicleCore;
     };

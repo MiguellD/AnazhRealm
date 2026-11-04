@@ -14,7 +14,7 @@
 // verlustfrei, nicht nur „gleicher String rein/raus".
 "use strict";
 
-const { statikServer, nullSeite, ausDatei, path, fs, stammLib, jsonLesen, ROOT } = require("./welt-boot.cjs");
+const { statikServer, nullSeite, ausDatei, path, fs, stammLib, jsonLesen, ROOT, ENGINE_MODUL } = require("./welt-boot.cjs");
 
 // ---------------------------------------------------------------------------
 // Kommentar-Stripper (die Falle: der Code darf das Wort im KOMMENTAR tragen,
@@ -25,12 +25,14 @@ const stripComments = require("./stamm.cjs").ohneKommentare;
 
 // ---------------------------------------------------------------------------
 // Der Generator-Quellen-Stempel — EXAKT die Formel der Transport-Schale (`_foundrySchale`, ihr `__stamp`), in Node
-// nachgerechnet: je Kern SHA-256 über seine Quellen (scripts · lib · bruecke, UTF-8, mit "\n" verbunden), die ersten 16 Hex,
+// nachgerechnet: je Kern SHA-256 über seine Quellen (scripts · engine · bruecke, UTF-8, mit "\n" verbunden), die ersten 16 Hex,
 // als `<kern>:<sha>` in Manifest-Folge mit "," verbunden. Die Platte stellt `f<FOUNDRY_PLATTE_FORMAT>|` voran — der
 // Pack-Index trägt den reinen Generator-Stempel (den Stempel des echten Boots misst gate:pack-contract `bootLauf`).
 function computeStamp(root) {
     const lese = (rel) => ausDatei(path.join(root || ROOT, rel));
-    const quellen = (k) => ["scripts", "lib", "bruecke"].flatMap((f) => [].concat(k[f] || [])).map(lese);
+    // die Engine (Manifest `engine`) ist die Datei, die die Import-Karte der Welt für ihren Namen nennt (`ENGINE_MODUL`)
+    const quellen = (k) =>
+        [].concat(k.scripts || [], k.engine ? [ENGINE_MODUL().slice(1)] : [], k.bruecke || []).map(lese);
     return JSON.parse(lese("cores.manifest.json"))
         .map((k) => (k.id || k.ns) + ":" + stammLib.sha(Buffer.from(quellen(k).join("\n"), "utf8")).slice(0, 16))
         .join(",");

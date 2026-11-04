@@ -4,8 +4,8 @@
 // Welt-Werk (ein Bau samt seinen Gesetzen, ein Wesen, eine Prägung an ihrem Leser) ≠ ohne ov und = das Studio-Werk; der
 // Korpus-Teil Regler-Wörter sagbar · (T) Teilen in EINER Geste an ein ANDERES Gerät (eigener Browser-Prozess, eigenes Profil,
 // über signaling-server + WebRTC mit A verbunden) · (F) Korpus fremder Codes, jeder fällt beim Namen · (L) die Bibliothek: je Art
-// (Welt, Regel, Bauplan) ein signierter Eintrag ≤ 8 KB, über den Code wieder, Byte-, Code- und Mesh-Mutante ROT, Fork mit Kette
-// (`--bibliothek` endet nach (L), ohne Gerät B); jede Wand mit ihrer Täter-Probe.
+// (Welt, Regel, Bauplan, Gesetzbuch) ein signierter Eintrag ≤ 8 KB, über den Code wieder, Byte-, Code- und Mesh-Mutante ROT, Fork
+// mit Kette, das Buch im Foundry-Faden (`--bibliothek` endet danach, ohne Gerät B); jede Wand mit ihrer Täter-Probe.
 "use strict";
 const { frageJa, statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE, hauptLauf, startProc, eigenePorte, pruefer, halteBis, wandEnde, jsonKlon, fehlerStapel } = require("./lib/welt-boot.cjs");
 
@@ -62,14 +62,15 @@ hauptLauf(async () => {
     await welt(page);
 
     // ===== (L) DIE BIBLIOTHEK (ultiversum.K3): je Art ein Eintrag — signiert, ≤ 8 KB, über den Code wieder; Fork mit Herkunft =====
-    const L = await page.evaluate(async () => {
+    const buch = (n) => `self.__${n}Core = { PRESETS: { ${n}_stein: { kind: "${n}" } } };`;
+    const L = await page.evaluate(async (BUCH) => {
         const o = { skipConfirm: true };
         await __weltDa(() => st.vibePass?.ready); // das EINE Warten auf die Welt (wie B unten), nie ein eigener Schlaf
         r._addVoxelEdit(8, st.terrainBaseHeight || 0, 8, 3, "carve"); // eine Akte der Welt
         r.dslRun(["rule", ["field_below", "lebendig", 0.3], ["deposit_life", ["at_field_need"]], { everySec: 30 }], { source: "human" });
         r.dslRun(["define_blueprint", "bib_bogen", [{ shape: "box", material: "stein", size: { x: 3, y: 1, z: 1 }, position: { x: 0, y: 3, z: 0 } }]], { source: "human" });
         const L = { je: {} };
-        for (const [art, q] of [["welt"], ["regel", st.worldRules.at(-1).id], ["bauplan", "bib_bogen"]]) {
+        for (const [art, q] of [["welt"], ["regel", st.worldRules.at(-1).id], ["bauplan", "bib_bogen"], ["gesetzbuch", BUCH]]) {
             const e = (L.je[art] = await r.bibliothekLege(art, q, o));
             const fund = await r.bibliothekFinde(e.code);
             [e.wieder, e.gesetz] = [fund.art === art, fund.eintrag?.gesetz];
@@ -89,7 +90,7 @@ hauptLauf(async () => {
         const ich = st.vibePass.publicKeyHex;
         L.fork = e2 && e2.gesetz.wetter === "storm" && JSON.stringify(e2.provenance.map((g) => [g.by, g.code])) === JSON.stringify([[ich, L.je.welt.code], [ich, f1.code]]);
         return L;
-    });
+    }, buch("bibecht"));
     console.log("\n=== (L) BIBLIOTHEK — signierte Gesetze ≤ 8 KB, über den Code wieder ===");
     for (const [art, e] of Object.entries(L.je))
         check(`BIBLIOTHEK ${art}: signiert, ≤ 8 KB, über den Code wieder`, e.ok && e.bytes <= 8192 && e.wieder, `${e.grund || e.bytes + " B"} · ${e.code?.slice(0, 16)}${e.gesetz ? ` · Akten ${e.gesetz.akten.length}, Regeln ${e.gesetz.regeln.length}` : ""}`);
@@ -98,7 +99,18 @@ hauptLauf(async () => {
     check("MUTANTE Code: ein Eintrag unter fremdem Code fällt", L.fremd === "code", L.fremd);
     check("MUTANTE Mesh: ein Mesh im Eintrag fällt an der Größe", L.mesh.grund === "gross", `${L.mesh.grund} ${L.mesh.bytes} B`);
     check("FORK: Herkunfts-Kette (Autor und Code je Vorgänger), eigene Signatur, das Gesetz verändert", L.fork);
-    if (process.argv.includes("--bibliothek")) return browser.close().then(() => (signal.kill(), server.close(), process.exit(errs.length ? 1 : 0)));
+    // (L') DAS BUCH IM FADEN (ultiversum.K4): ein Buch, umgeschrieben OHNE neue Signatur, am Eingang vorbei auf die Platte — nach
+    // dem Neuladen dockt das signierte, das umgeschriebene fällt im Foundry-Faden an der Signatur (`_foundryStart` prüft selbst)
+    if (process.argv.includes("--bibliothek")) {
+        await page.evaluate(async (code, falsch) => {
+            const h = { ...JSON.parse(r._bibliothek()[code]), buch: await AnazhRealm._buchPacke(falsch) };
+            localStorage.setItem(AnazhRealm.BIBLIOTHEK.speicher, JSON.stringify({ ...r._bibliothek(), ["f".repeat(64)]: JSON.stringify(h) }));
+        }, L.je.gesetzbuch.code, buch("bibfalsch"));
+        await page.reload();
+        const da = await page.evaluate(() => __weltDa((x) => x._foundry?.ready && x._foundry.recipes).then((x) => ["bibecht_stein", "bibfalsch_stein"].map((k) => !!x._foundry.recipes[k])));
+        check("BUCH im Faden: das signierte dockt, das umgeschriebene fällt an der Signatur", da + "" === "true,false", da);
+        return browser.close().then(() => (signal.kill(), server.close(), process.exit(errs.length ? 1 : 0)));
+    }
 
     const out = await page.evaluate(async (REGLER) => {
         const res = { s: {}, n: {}, g: {}, r: {}, b: {} };

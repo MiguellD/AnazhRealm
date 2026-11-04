@@ -143,13 +143,18 @@ function laborStoff(m0,geo,skin,cache){
       sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\n'+vk).replace('#include <begin_vertex>','#include <begin_vertex>\nvGeo=position;'+(schale?'\nvSchale=aSchale;\nvWurzel=aWurzel;\nvKamm=position-aWurzel;vKamm-=normal*dot(vKamm,normal);':''));
       if(koerper)sh.vertexShader=sh.vertexShader.replace('#include <skinning_vertex>','#include <skinning_vertex>\ntransformed+=objectNormal*snoise(transformed*'+gf(L.atem.freq)+'+uZeit*'+gf(L.atem.t)+')*'+gf(L.atem.amp)+';');
       var fk='varying vec3 vGeo;\n'+(schale?'varying vec3 vSchale;\nvarying vec3 vWurzel;\nvarying vec3 vKamm;\n':'');
-      var raster=schale?'\nfloat tS=vSchale.x;vec3 pS=vWurzel*vSchale.z;vec3 zS=floor(pS);'+
-        'float h1=fract(sin(dot(zS,vec3('+gf(FS.hashA[0])+','+gf(FS.hashA[1])+','+gf(FS.hashA[2])+')))*'+gf(FS.hashA[3])+');'+
-        'float h2=fract(sin(dot(zS,vec3('+gf(FS.hashB[0])+','+gf(FS.hashB[1])+','+gf(FS.hashB[2])+')))*'+gf(FS.hashB[3])+');'+
-        'vec3 mS=(vec3(h1,h2,fract((h1+h2)*'+gf(FS.hashC)+'))-0.5)*'+gf(FS.mitte)+';vec3 qS=fract(pS)-0.5-mS;float lS=dot(qS,vKamm/max(length(vKamm),1e-6));float dS=sqrt((dot(qS,qS)-lS*lS)*'+gf(FS.strich)+'+lS*lS/'+gf(FS.strich)+');'+
-        'float rS=sqrt(vSchale.y)*'+gf(FS.radius)+'*(1.0-tS*'+gf(FS.zulauf)+');'+
-        'float haarS=step(dS,rS)*step(tS,h1*'+gf(FS.endeSpanne)+'+'+gf(FS.ende)+');float wolleS=step(tS,'+gf(FS.wolle)+')*step('+gf(FS.wolleAb)+',vSchale.y);'+
-        'diffuseColor.rgb*=mix('+gf(FS.wurzel)+','+gf(FS.spitze)+',tS);diffuseColor.a=max(haarS,wolleS);':'';
+      // die Locke über ihre Zelle (w10-figur): die Zellen der FS.nachbarn längs des Kamms reichen ihre Locke herüber — dieselbe Mathe wie
+      // die Welt (stamm/studio-stoff.js fellSchale) und die Referenz tetrapoda `fellLocke`
+      var lockeS=function(o){var z='floor(pS+kS*'+gf(o)+')';return 'zS='+z+';'+
+        'h1=fract(sin(dot(zS,vec3('+gf(FS.hashA[0])+','+gf(FS.hashA[1])+','+gf(FS.hashA[2])+')))*'+gf(FS.hashA[3])+');'+
+        'h2=fract(sin(dot(zS,vec3('+gf(FS.hashB[0])+','+gf(FS.hashB[1])+','+gf(FS.hashB[2])+')))*'+gf(FS.hashB[3])+');'+
+        'mS=(vec3(h1,h2,fract((h1+h2)*'+gf(FS.hashC)+'))-0.5)*'+gf(FS.mitte)+';qS=pS-zS-0.5-mS;lS=dot(qS,kS);dS=sqrt((dot(qS,qS)-lS*lS)*'+gf(FS.strich)+'+lS*lS/'+gf(FS.strich)+');'+
+        'haarS=max(haarS,step(dS,rS)*step(tS,h1*'+gf(FS.endeSpanne)+'+'+gf(FS.ende)+'));';};
+      var lockenS='';for(var oS=-FS.nachbarn;oS<=FS.nachbarn;oS++)lockenS+=lockeS(oS);
+      var raster=schale?'\nfloat tS=vSchale.x;vec3 pS=vWurzel*vSchale.z;vec3 kS=vKamm/max(length(vKamm),1e-6);vec3 zS;float h1;float h2;vec3 mS;vec3 qS;float lS;float dS;float haarS=0.0;'+
+        'float rS=sqrt(vSchale.y)*'+gf(FS.radius)+'*(1.0-tS*'+gf(FS.zulauf)+');'+lockenS+
+        'float wolleS=step(tS,'+gf(FS.wolle)+')*step('+gf(FS.wolleAb)+',vSchale.y);'+
+'diffuseColor.rgb*=mix('+gf(FS.wurzel)+','+gf(FS.spitze)+',tS);diffuseColor.a=max(haarS,wolleS);':'';
       var look='\nvec3 vdL=normalize(-vViewPosition);float ndvL=clamp(dot(normal,vdL),-1.0,1.0);float rimL=clamp(1.0-abs(ndvL),0.0,1.0);';
       if(koerper){var mf=L.microFur;look+='totalEmissiveRadiance+='+gv(L.rimFarbe)+'*pow(rimL,'+gf(L.rimPow)+')*'+gf(L.rimAmt)+'+'+gv(L.sheenFarbe)+'*pow(max(ndvL,0.0),'+gf(L.sheenPow)+')*'+gf(L.sheenAmt)+
         '+'+gv(mf.farbe)+'*pow(rimL,3.0)*step('+gf(mf.schwelle)+',fract(sin(dot(floor(vGeo.xz*'+gf(mf.dichte)+'),vec2('+gf(FS.hashA[0])+','+gf(FS.hashA[1])+')))*'+gf(FS.hashA[3])+'))*'+gf(mf.amt)+';';}

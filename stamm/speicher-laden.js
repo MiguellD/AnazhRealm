@@ -1268,6 +1268,8 @@ class AnazhRealm_speicher_laden {
             });
         }
         for (const n of this._nebenFaeden ? this._nebenFaeden.values() : []) n.pending = new Map();
+        // der Wurf reist (`WELT_GRENZE.wirt`), seine Quelle nicht: er ruht, bis der Licht-Takt der neuen Welt wählt
+        if (this._lichtWurfK) this._lichtWurfRuht(this._lichtWurfK);
         const neu = new AnazhRealm().state;
         const reist = new Set([...S.zustand, ...G.seite]);
         for (const k of reist) {

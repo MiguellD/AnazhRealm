@@ -57,8 +57,8 @@ ihre Hashes unterscheiden sich in der Material-Signatur, die Geometrie nicht.
 
 ## Laufzeit des Gates
 
-Node-DIREKT (Gesetzbuch-Gate ohne Browser): `global.THREE = require(worlds/
-terrain/lib/three-r128.min.js)` (das vendorte UMD lädt in Node), dann
+Node-DIREKT (Gesetzbuch-Gate ohne Browser): `global.THREE` = die Engine des
+Foundry-Fadens (welt-boot `ENGINE_THREE`, three r184 der Import-Karte), dann
 `require(vehicle-core.js)` — kein Browser, keine swiftshader-Fragilität. Der
 Selbst-Test (korrumpiertes Golden → rot) beweist bei jedem Lauf, dass die Linse
 feuert.
