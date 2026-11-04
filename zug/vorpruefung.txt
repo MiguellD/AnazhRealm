@@ -21,3 +21,4 @@ w5-studios-k1 d5aa0e1f GRÜN Nachtrag Φ5=261880B (Sonde 22:15, main 2d2a5f11 26
 w7-rang 9910fb73 ROT merge KONFLIKT mit main 2d2a5f11: 
 w7-rang 9910fb73 OFFEN Korrektur: ROT merge 00:49 war Werkzeug (Neustart-Wettlauf mit den gefällten Prozessen, merge.log leer, keine Konflikt-Datei); Vorprüfung läuft neu nach begegnung
 w5-studios-k1 a213119b ROT playtest-voll Φ5=261942B ❌ 1 Invariante(n) verletzt: Leistungs-Vertrag: 0 Stand-Churn (0), der Ingest-Takt 3/1 je Frame in Reihenfolge, die Gruppen klettern nicht (59 → 59), die Mess-Flächen im Trace, Szene 13.4 MB < 700, der Selbsttest feu
+w8-spielgang-k1 cd86fba7 ROT check ❌ ROT — 1 Verletzung(en): DECKE (Merge-Basis mit origin/integ-probe): scripts/ wuchs um 19 Atome / 0 Dateien, scripts/diag-schirm-monotonie.cjs +19 — sie sinkt nur, Kommentare und Pressen zahlen nichts
