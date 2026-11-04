@@ -1628,3 +1628,4 @@
 2026-11-04 18:27:50 omen-gtx-main-b56e9b0e lod.K2#1 ROT 5 · 4/4
 2026-11-04 18:27:50 omen-gtx-main-b56e9b0e lod.K5#1 ROT 5 · 8/4
 2026-11-04 18:28:16 omen-gtx-w10-takt-90be0117 START 2 Proben (leib.K1#1,profiband.K4#1, GTX am Zweig-Kopf)
+2026-11-04 18:37:03 omen-gtx-w10-takt-90be0117 START 2 Proben (leib.K1#1,profiband.K4#1, GTX am Zweig-Kopf)
