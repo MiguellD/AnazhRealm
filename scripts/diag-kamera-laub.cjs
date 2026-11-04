@@ -988,6 +988,24 @@ hauptLauf(async () => {
         const ort = (max, taeter) => ({
             modi: Object.fromEntries(MODI.map((k) => [k, { n: 64, max, mittel: max / 4, schlimmste: { taeter } }])),
         });
+        // DIE FLÄCHE DER LINSE IST, WAS DIE KAMERA ZEICHNET (kamera-nah `kameraZeichnet`, w10-figur): der Gast des Vorbaus
+        // (`__vorbauGast`, gebaut ohne Draw am Ort des Spielers) zählt nie — bis dahin stand der Geist des GT als Vordergrund vor
+        // jedem Gesicht (haar.K2#1 Radeon 2674ff9a: „vorbau:fahrzeug_gt 27,8 %“); das gezeichnete Mesh, der Schatten-Zwilling
+        // außerhalb der Lagen der Kamera und der unsichtbare Stoff stehen daneben
+        {
+            const { kameraZeichnet } = require("./lib/kamera-nah.cjs");
+            const cam = { layers: { mask: 1 } };
+            const lage = (mask) => ({ mask, test: (l) => (mask & l.mask) !== 0 });
+            const mesh = (k) => Object.assign({ isMesh: true, geometry: { attributes: { position: {} } }, material: {}, layers: lage(1) }, k);
+            for (const [name, o, soll] of [
+                ["das gezeichnete Mesh", mesh(), true],
+                ["der Gast des Vorbaus (vorbau:fahrzeug_gt)", mesh({ __vorbauGast: true, name: "vorbau:fahrzeug_gt" }), false],
+                ["der Schatten-Zwilling (nur in den Kaskaden)", mesh({ layers: lage(2) }), false],
+                ["der unsichtbare Stoff", mesh({ material: { visible: false } }), false],
+                ["ohne Ecken", mesh({ geometry: { attributes: {} } }), false],
+            ])
+                check(`Selbst-Test Fläche der Linse: ‚${name}' → ${soll ? "zählt" : "zählt nie"}`, kameraZeichnet(o, cam) === soll, String(kameraZeichnet(o, cam)));
+        }
         // DER LEIB (K2): gesund und je ein Bruch beim Namen
         const pose = (id, taeter) => ({ id, anker: "haus_basis", x: 0, z: 0, c: [0, 0, 0], arm: 4, taeter });
         const posenN = (n, kaputt) => Array.from({ length: n }, (_, i) => pose(`pose-${i}`, i === 0 && kaputt ? kaputt : []));
