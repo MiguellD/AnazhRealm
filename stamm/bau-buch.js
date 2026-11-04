@@ -2278,7 +2278,7 @@ class AnazhRealm_bau_buch {
         }
         this.state.blueprints[cleanNew] = {
             name: cleanNew,
-            label: source.label ? `${source.label} (Kopie)` : cleanNew,
+            label: source.label ? this._t("bau.kopie", { name: source.label }) : cleanNew,
             builtIn: false,
             parts: JSON.parse(JSON.stringify(source.parts || [])),
         };

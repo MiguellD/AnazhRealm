@@ -14,26 +14,50 @@
 //      ihrem Ausdruck, ein Daten-Attribut (`class:`, `value:` …) schweigt;
 //   K) ein Schlüssel (ein Literal mit dem Präfix einer Tafel-Zeile, `_t("…")`, `data-t…="…"`) in der Tafel fehlt;
 //   U) eine Zeile der Tafel keinen Leser hat (kein Literal, keine Familie `` `präfix.${…}` ``);
-//   H) index.html im <body> oder <title> einen Text-Knoten oder ein Attribut (title · placeholder · aria-label · alt) mit
-//      Wort-Text trägt.
-// Wort-Text heißt, was die Station zählt: nach Abzug von `${…}`, Markup und Entitäten ein Wort aus ≥ 2 Buchstaben UND ein
-// Zeichen der Sprache (Großbuchstabe, Umlaut, …!?:); im DOM jedes Wort aus ≥ 2 Buchstaben. Die lebende Hälfte (das DOM nach
-// dem Boot) misst die Station spielgang.K5#1 in der Linsen-Sprache `?sprache=pseudo` (jedes Stück der Tafel steht in ⟦ ⟧,
-// Wort-Text außerhalb ist hart; `translate="no"` trägt nur Spieler-Inhalt, Befehls-Wörter und das Logbuch).
+//   Z) eine aufgelöste Zeile `_t(…)` an einer Chat-Senke steht (sie wechselt nie mit der Sprache: die Senke nimmt
+//      `[schlüssel, werte]`);
+//   F) ein Schlüssel einer FAMILIE (`` `präfix.${…}` ``, zur Laufzeit gesetzt) fehlt: je Familie zählt ihre Quelle jede id auf —
+//      die Bücher des Manifests (der Kanal get-book im vm: je Rezept `gestalt.<id>`, je Kern `studio.<kern>`, je Art
+//      `art.<art>`; ohne Zeile spräche es nur das deutsche Wort seines Buchs, `_buchWort`), die Register der Klasse, aus
+//      denen der Stamm die id nimmt (`ULTIVERSUM` → `ultiversum.`), und die Befund-Arten der Speicher-Kette (`art:` in
+//      `befund`); eine Familie ohne Quelle steht selbst beim Namen.
+// Wort-Text: nach Abzug von `${…}`, Markup und Entitäten ein Wort aus ≥ 2 Buchstaben UND ein Zeichen der Sprache
+// (Großbuchstabe, Umlaut, …!?:) oder zwei kleine Wörter; ein Bezeichner ist ein Name.
+// DIE LEBENDE HÄLFTE ist die Station spielgang.K5#1 (punkte-maschine, stationen/g5.js `sprachLauf`): die Welt am Null-Renderer
+// in `?sprache=pseudo`, jedes Wort außerhalb der Marken ⟦ ⟧ ⁨ ⁩ im DOM hart beim Namen seines Erzeugers, der Wechsel am Ort auf en
+// (jede Zeile mit ⟦ steht), der Selbsttest im Lauf; den Code zählt sie mit DIESER Wand (`befund(baum())`, per require) — EINE
+// Zählung je Hälfte. Bis w5-spielgang-k5 zählte die Station Code und DOM selbst (707 an 5fba36ea); die Wand hier zählte
+// index.html statisch (H) — das fiel an die lebende Hälfte, die das DOM nach dem Boot sieht.
 // Selbst-Test: --selftest injiziert je Klasse einen Täter in eine Kopie und beweist, dass die Wand ihn beim Namen nennt.
 // ============================================================================
 "use strict";
 const { ausDatei, stammLib, ROOT, SELBSTTEST, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
+const { kanalImVm } = require("./lib/asset-worker-harness.cjs");
+
+// F: die ids jeder Familie aus ihrer EINEN Quelle — das Buch der Kerne des Manifests (der Kanal im vm, ~0,2 s) und die
+// Register der geladenen Klasse, aus denen der Stamm die id nimmt (die Welten des Ultiversums)
+const { book, stammbaum } = kanalImVm()({ type: "get-book" });
+const quelle = (A) => ({
+    "gestalt.": Object.keys(book).map((id) => id.replace(/_/g, "-")),
+    "studio.": stammbaum.kerne.map((k) => k.kern),
+    "art.": stammbaum.kerne.flatMap((k) => Object.keys(k.arten)),
+    "ultiversum.": Object.keys(A.ULTIVERSUM),
+});
 
 const wort = (t) => {
-    t = t.replace(/<[^>]*>|&\w+;/g, " ");
-    return /[A-Za-zÄÖÜäöüß]{2,}/.test(t) && /[A-ZÄÖÜäöüß…!?:]/.test(t) && !/^[a-z]+[A-Z]\w*$/.test(t); // camelCase: ein Name
+    t = String(t)
+        .replace(/<[^>]*>|&\w+;/g, " ")
+        .trim();
+    const satz = /[A-ZÄÖÜäöüß…!?:]/.test(t) || /[a-zäöüß]{2,}[\s(),↔·–—/]+\S*[a-zäöüß]{2,}/.test(t);
+    return /[A-Za-zÄÖÜäöüß]{2,}/.test(t) && satz && !/^[a-z]+[A-Z]\w*$/.test(t) && !/^[a-z][\w.:/-]*$/.test(t);
 };
 const SENKE_RUF =
-    /^(_hudSchreib|_chatEcho|alert|confirm|prompt|_el|append|appendChatOutput|_spielerSagt|_ladeschirmStand)$/;
+    /^(_hudSchreib|_chatEcho|alert|confirm|prompt|_el|append|appendChatOutput|_spielerSagt|_ladeschirmStand|journalAppend|journalAppendOnce)$/;
 const SENKE_FELD = /^(textContent|innerText|innerHTML|title|placeholder)$/;
 const SENKE_ATTR = /^(title|placeholder|aria-label|alt)$/;
-const DATEN_ATTR = /^(value|class|className|id|type|name|href|src|for|role|key|style)$/;
+const ETIKETT = /^(label|hint|lab|titel|title|tip|desc|description|beschreibung|text|name)$/;
+const DATEN_ATTR = /^(value|class|className|klasse|sprecherKlasse|id|type|name|href|src|for|role|key|style)$/;
+const CHAT = /^(_chatEcho|appendChatOutput|_spielerSagt)$/;
 const nameVon = (c) =>
     c.type === "MemberExpression" ? !c.computed && c.property.name : c.key ? c.key.name || c.key.value : c.name;
 
@@ -43,6 +67,9 @@ function senke(n, ahnen) {
     for (let i = ahnen.length - 1, kind = n; i >= 0; kind = ahnen[i--]) {
         const a = ahnen[i];
         if (a.type === "Property" && kind === a.value && DATEN_ATTR.test(nameVon(a))) return null;
+        // das DATEN-ETIKETT (w5-spielgang-k5): ein Name oder Hinweis in einem Datensatz (`label:`, `hint:`, `lab:`, `title:`,
+        // `text:` …) fließt später in eine Senke, die kein Literal mehr sieht (`bp.label`, `d.hint`) — er ist selbst die Senke
+        if (a.type === "Property" && kind === a.value && ETIKETT.test(nameVon(a))) return nameVon(a) + ":";
         const feld = a.type === "AssignmentExpression" && kind === a.right && nameVon(a.left);
         if (a.left?.type === "MemberExpression" && SENKE_FELD.test(feld)) return feld;
         const ruf = a.type === "CallExpression" && kind !== a.callee && nameVon(a.callee);
@@ -52,52 +79,39 @@ function senke(n, ahnen) {
     return null;
 }
 
-function pruefe({ dateien, html, Z }) {
+function pruefe({ dateien, html, Z, Q }) {
     const rot = [];
     const genutzt = new Set();
-    const familien = new Set();
+    const familien = new Map();
     const praefix = [...new Set(Object.keys(Z).map((k) => k.split(".")[0]))].join("|") || "ui";
     const SCHLUESSEL = new RegExp(`^(?:${praefix})\\.[a-z0-9][a-z0-9.-]*$`);
     for (const { pfad, text } of dateien)
         stammLib.wandere(stammLib.ast(text), (n, ahnen) => {
             const vater = ahnen[ahnen.length - 1];
+            const chat = nameVon(n.callee || {}) === "_t" && ahnen.findLast((a) => CHAT.test(nameVon(a.callee || {})));
+            if (chat && chat.arguments[0]?.start <= n.start && n.end <= chat.arguments[0].end)
+                rot.push(`Z: ${pfad}:${stammLib.zeileVon(text, n.start)} ${text.slice(n.start, n.end).slice(0, 90)}`);
             const quasi = n.type === "TemplateLiteral" && n.quasis.map((q) => q.value.cooked);
             const s = quasi ? quasi.join(" ") : n.type === "Literal" && typeof n.value === "string" && n.value;
             if (s === false || (vater.type === "Property" && vater.key === n)) return;
             const ort = `${pfad}:${stammLib.zeileVon(text, n.start)}`;
             const wo = wort(s) && senke(n, ahnen);
             if (wo) rot.push(`C: ${ort} ${wo}: ${text.slice(n.start, n.end).slice(0, 90)}`);
-            if (quasi && quasi.length > 1 && /^[a-z0-9]+(\.[a-z0-9-]+)*\.$/.test(quasi[0])) familien.add(quasi[0]);
+            if (quasi && quasi.length > 1 && /^[a-z0-9]+(\.[a-z0-9-]+)*\.$/.test(quasi[0])) familien.set(quasi[0], ort);
             if (quasi || !(SCHLUESSEL.test(s) || (nameVon(vater.callee || {}) === "_t" && vater.arguments[0] === n)))
                 return;
             genutzt.add(s);
             if (!(s in Z)) rot.push(`K: ${ort} der Schlüssel „${s}“ fehlt in der Tafel`);
         });
-    // index.html: der Inhalt der Roh-Blöcke und die Kommentare fallen (Zeilen und die öffnenden Tags bleiben)
-    const leer = (t) => t.replace(/[^\n]/g, " ");
-    const ROH = /(<(script|style|textarea)\b[^>]*>)([\s\S]*?)(<\/\2>)|<!--[\s\S]*?-->/g;
-    const flach = html.replace(ROH, (s, auf, _n, innen, zu) => (auf ? auf + leer(innen) + zu : leer(s)));
-    const zeile = (i) => flach.slice(0, i).split("\n").length;
-    const body = flach.indexOf("<body");
-    const titel = [flach.indexOf("<title"), flach.indexOf("</title>")];
-    let vor = 0;
-    for (const m of [...flach.matchAll(/<\/?[a-zA-Z][^>]*>/g), { index: flach.length, 0: "" }]) {
-        const t = flach.slice(vor, m.index).replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
-        if ((vor > body || (vor > titel[0] && vor < titel[1])) && /[A-Za-zÄÖÜäöüß]{2,}/.test(t))
-            rot.push(`H: index.html:${zeile(vor)} Text-Knoten „${t.slice(0, 80)}“`);
-        vor = m.index + m[0].length;
-        const attr =
-            m.index > body
-                ? m[0].matchAll(/\s(title|placeholder|aria-label|alt)="([^"]*[A-Za-zÄÖÜäöüß]{2,}[^"]*)"/g)
-                : [];
-        for (const x of attr) rot.push(`H: index.html:${zeile(m.index)} Attribut ${x[1]}="${x[2].slice(0, 60)}"`);
-        for (const k of m[0].matchAll(/\sdata-t(?:-[a-z-]+)?="([^"]*)"/g))
-            if (k[1] in Z) genutzt.add(k[1]);
-            else rot.push(`K: index.html:${zeile(m.index)} der Schlüssel „${k[1]}“ fehlt in der Tafel`);
-    }
-    const inFamilie = (k) => [...familien].some((f) => k.startsWith(f) && k.split(".").length === f.split(".").length);
-    for (const k of Object.keys(Z))
-        if (!genutzt.has(k) && !inFamilie(k)) rot.push(`U: die Zeile „${k}“ trägt keinen Leser`);
+    for (const k of html.matchAll(/\sdata-t(?:-[a-z-]+)?="([^"]*)"/g))
+        if (k[1] in Z) genutzt.add(k[1]);
+        else rot.push(`K: index.html:${html.slice(0, k.index).split("\n").length} der Schlüssel „${k[1]}“ fehlt`);
+    // eine Familie liest genau die Zeilen ihrer Quelle (eine ohne Quelle nennt sich selbst: „präfix.…“)
+    for (const [f, ort] of familien)
+        if (SCHLUESSEL.test(f + "x"))
+            for (const id of Q[f] || ["…"])
+                if (genutzt.add(f + id) && !(f + id in Z)) rot.push(`F: ${ort} „${f + id}“ fehlt in der Tafel`);
+    for (const k of Object.keys(Z)) if (!genutzt.has(k)) rot.push(`U: die Zeile „${k}“ trägt keinen Leser`);
     return rot;
 }
 
@@ -105,7 +119,7 @@ function pruefe({ dateien, html, Z }) {
 function lies(dateien, html) {
     try {
         const { AnazhRealm } = stammLib.ladeKlasse(ROOT, { teile: dateien });
-        return { dateien, html, Z: { ...AnazhRealm.TEXTE.de } };
+        return { dateien, html, Z: { ...AnazhRealm.TEXTE.de }, Q: quelle(AnazhRealm) };
     } catch (e) {
         return { dateien, html, Z: {}, T: `T: die Tafel lädt nicht — ${String(e.message).split("\n")[0]}` };
     }
@@ -113,7 +127,9 @@ function lies(dateien, html) {
 const baum = () => lies(stammLib.teileVon(ROOT), ausDatei("index.html"));
 const befund = (b) => (b.T ? [b.T] : pruefe(b)); // ohne Tafel ist nur T der Befund
 
-if (SELBSTTEST) {
+if (require.main !== module) {
+    module.exports = { befund, baum }; // die lebende Hälfte (die Station spielgang.K5#1) zählt den Code mit DIESER Wand
+} else if (SELBSTTEST) {
     const echt = baum();
     const basis = new Set(befund(echt));
     const mit = (zeile) => (b) => lies([...b.dateien, { pfad: "stamm/probe.js", text: zeile }], b.html);
@@ -130,18 +146,21 @@ if (SELBSTTEST) {
         ["hartes _el", "C", mit('function p() { this._el("button", { text: "Speichern" }); }')],
         ["harter title", "C", mit('function p(el) { el.setAttribute("title", "Schließen"); }')],
         ["fremder Schlüssel", "K", mit('function p(el) { el.textContent = this._t("gibt.es.nicht"); }')],
-        ["harter DOM-Text", "H", html("<body><p>Hallo Welt</p")],
-        ["hartes Attribut", "H", html('<body><i title="Schließen"></i')],
+        ["aufgelöste Chat-Zeile", "Z", mit('function p() { this._chatEcho(this._t("ui.abbrechen")); }')],
+        ["fremder Schlüssel im DOM", "K", html('<body data-t="gibt.es.nicht"')],
         ["Zeile ohne Leser", "U", daten("const Z = {\n", 'const Z = {\n"ui.niemand-liest": ["Niemand", "Nobody"],\n')],
         ["Zeile ohne en", "T", daten(/("ui\.[^"]+": \["[^"]*"), "[^"]*"\]/, "$1]")],
         ["Wert nur in de", "T", daten(/("ui\.[^"]+": \["[^"]*)", /, '$1 {n}", ')],
+        ["Rezept ohne Zeile", "F", daten('"gestalt.eiche": ["Eiche", "Oak"],', "")],
+        ["Familie ohne Quelle", "F", mit("(x) => `hud.neu.${x}`")],
+        ["Welt des Ultiversums ohne Zeile", "F", daten(/\n\s*"ultiversum\.ferne": .*/, "")],
     ];
     const fehler = [];
     for (const [name, klasse, mut] of FAELLE) {
         const neu = befund(mut(echt)).filter((x) => !basis.has(x));
         if (!neu.length || !neu.every((x) => x.startsWith(klasse))) fehler.push(`${name} → ${neu[0] || "stumm"}`);
     }
-    selbsttestEnde(fehler, `gate:sprache nennt ${FAELLE.length} Mutanten beim Namen (C · K · U · H · T).`);
+    selbsttestEnde(fehler, `gate:sprache nennt ${FAELLE.length} Mutanten beim Namen (C · K · U · Z · T · F).`);
 } else {
     const b = baum();
     wandEnde(

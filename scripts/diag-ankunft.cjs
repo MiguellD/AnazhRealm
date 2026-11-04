@@ -411,7 +411,9 @@ async function probe(arg) {
     // eine Taste an `ziel` (keydown · keyup · keypress) und der Fokus beim Namen
     const taste = (ziel, typ, key, code = key, mehr) => ziel.dispatchEvent(new KeyboardEvent(typ, { key, code, bubbles: true, ...mehr }));
     const fokus = (a = document.activeElement) => (a ? a.id || a.tagName : null);
-    const zeilen = () => Array.from(document.querySelectorAll("#chat-output > div")).map((d) => d.textContent);
+    // die Zeilen des Chats — mit `k` ihre Schlüssel (die Welt spricht aus der Tafel, `_chatEcho` trägt ihn am Knoten): die Linse
+    // liest den Schlüssel, nie den Wortlaut
+    const zeilen = (k) => Array.from(document.querySelectorAll("#chat-output > div")).map((d) => (k ? d.querySelector("[data-t]")?.dataset.t : d.textContent));
     const buch = await r._foundryAwaitBook(45000);
     await __takte(30, 30);
     // ── L2a: das erste Weltbild ──
@@ -1534,7 +1536,7 @@ async function probe(arg) {
         const n0 = zeilen().length;
         r.processChatCommand("lass mir ein paar birken und ein fachwerkhaus wachsen");
         await sleep(600);
-        m.ohneSchluessel = zeilen().slice(n0 + 1).find((z) => /schweigt|Fehler/.test(z)) || null;
+        m.ohneSchluessel = zeilen()[zeilen(1).indexOf("nexus.schweigt", n0 + 1)] || null;
         // (c) der Proxy: der Ursprung der Seite (der Linsen-Server kennt /api/proxy/llm nicht → 404)
         m.ursprung = location.origin;
         m.proxyUrl = r._llmProxyUrl();
@@ -1589,7 +1591,7 @@ async function probe(arg) {
         const vor = new Set(st.architectures);
         const z0 = zeilen().length;
         r.processChatCommand("dorf 7 18");
-        for (const weiter = __deckel("die Antwort auf das Dorf", 300); weiter() && !zeilen().slice(z0).some((z) => /steht vor dir|Häuser platziert|kein Haus|Werkstatt der Welt|FOUNDRY/.test(z)); ) await sleep(200);
+        for (const weiter = __deckel("die Antwort auf das Dorf", 300); weiter() && !zeilen(1).slice(z0).some((k) => /^chat\.befehl\.dorf\./.test(k)); ) await sleep(200);
         const neu = st.architectures.filter((a) => !vor.has(a) && /^haus_/.test(a.type || ""));
         const fx = Math.sin(best.yaw);
         const fz = Math.cos(best.yaw);
@@ -1608,7 +1610,7 @@ async function probe(arg) {
         const logNeu = st.logBuffer.filter((z) => /Siedlung „/.test(z)).slice(-1).join("\n");
         k.siedlungImLog = /Siedlung „[^"]*" \([^)]*Seed 7\)/.test(logNeu);
         k.zeilen = zeilen().slice(z0);
-        m.dorfZeile = (k.zeilen.find((z) => /vor dir|platziert/.test(z)) || "").slice(0, 120);
+        m.dorfZeile = (k.zeilen[zeilen(1).slice(z0).findIndex((s) => /^chat\.befehl\.dorf\.steht/.test(s))] || "").slice(0, 120);
         // die Mitte des Plans aus dem Log (platziert / übersprungen)
         const mz = /(\d+) Häuser platziert, (\d+) Slots übersprungen/.exec(logNeu);
         if (mz) {

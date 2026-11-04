@@ -33,24 +33,8 @@ hauptLauf(async () => {
 
     const out = await page.evaluate(async () => {
         const res = { s: {}, n: {}, w: {}, m: {}, e: {}, k: {} };
-        // Farb-Set eines Peer-Meshes (Vertex-color-Attribut, Render-Diät-Muster).
-        const colorsOf = (g) => {
-            const set = new Set();
-            if (!g) return set;
-            g.traverse((o) => {
-                const c = o.geometry && o.geometry.attributes && o.geometry.attributes.color;
-                if (c && c.array && c.array.length >= 3)
-                    set.add([c.array[0], c.array[1], c.array[2]].map((v) => v.toFixed(3)).join(","));
-            });
-            return set;
-        };
+        // Farb-Set eines Peer-Meshes und die lineare Tafel-Farbe: `__farben` · `__lin` (welt-boot)
         const fpGroup = window.__abdruck; // der EINE Abdruck (welt-boot)
-        const lin = (hx) => {
-            const f = (v) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
-            return [f(((hx >> 16) & 255) / 255), f(((hx >> 8) & 255) / 255), f((hx & 255) / 255)]
-                .map((v) => v.toFixed(3))
-                .join(",");
-        };
 
         // ── Warm-Anker: Boot → f.ready → mensch-Rezept ──
         const r = await window.__weltDa();
@@ -60,7 +44,7 @@ hauptLauf(async () => {
         if (!(f && f.ready && f.recipes && f.recipes.mensch)) return { fatal: "mensch-Rezept kam nie" };
         const kc = window.__koerperCore;
         if (!kc) return { fatal: "koerper-Core fehlt" };
-        const porzellanLin = lin(kc.SKIN_TONES.porzellan.hex >>> 0);
+        const porzellanLin = __lin(kc.SKIN_TONES.porzellan.hex >>> 0);
 
         // Minimales P2P-Bett (kein echtes Netz — der Empfangs-Chokepoint direkt).
         r.state.p2p = r.state.p2p || {};
@@ -81,10 +65,10 @@ hauptLauf(async () => {
 
         // ── (S) DEFAULT-PEER: soul human OHNE uebergabe ⇒ Default-Gestalt ──
         r._p2pMsgSoul({ peerId: "D", soulName: "human" }, r.state.p2p);
-        const cD = colorsOf(peerMesh("D"));
+        const cD = __farben(peerMesh("D"));
         res.s.defaultBuilt = cD.size > 0;
         // der lokale Default (kein Übergabe-State) — dieselbe Gestalt wie der Default-Peer.
-        const cLocal = colorsOf(r.state.playerMesh);
+        const cLocal = __farben(r.state.playerMesh);
         res.s.defaultGleichtLokal = [...cD].some((x) => cLocal.has(x)) && cD.size === cLocal.size;
 
         // ── (N) ÜBERGABE-PEER: fremde Gestalt reist im soul-Payload ──
@@ -96,7 +80,7 @@ hauptLauf(async () => {
             },
             r.state.p2p
         );
-        const cA = colorsOf(peerMesh("A"));
+        const cA = __farben(peerMesh("A"));
         res.n.built = cA.size > 0;
         res.n.traegtFremdHaut = cA.has(porzellanLin);
         res.n.verschiedenVomDefault = [...cA].some((x) => !cD.has(x)) || cA.size !== cD.size;
@@ -113,7 +97,7 @@ hauptLauf(async () => {
             },
             r.state.p2p
         );
-        const cW = colorsOf(peerMesh("W"));
+        const cW = __farben(peerMesh("W"));
         res.w.faelltAufDefault = [...cW].every((x) => cD.has(x)) && cW.size === cD.size;
         res.w.keineFremdHaut = !cW.has(porzellanLin);
         res.w.entryLeer = !(r.state.p2p.peers.get("W") && r.state.p2p.peers.get("W").uebergabe);
@@ -148,7 +132,7 @@ hauptLauf(async () => {
         const keysNach = memo ? [...memo.keys()].filter((k) => k.indexOf("mensch|") === 0) : [];
         res.m.distinkteKeys = new Set(keysNach).size >= 3; // Default + porzellan + sand
         res.m.peerBFremd = (() => {
-            const cB = colorsOf(peerMesh("B"));
+            const cB = __farben(peerMesh("B"));
             return [...cB].some((x) => !cA.has(x)) && cB.size > 0;
         })();
         res.m.keysVor = keysMit.length;
@@ -161,7 +145,7 @@ hauptLauf(async () => {
         try {
             r.applyPlayerSoul("human");
         } catch {}
-        const cLocalNach = colorsOf(r.state.playerMesh);
+        const cLocalNach = __farben(r.state.playerMesh);
         res.e.eigenKeineFremdHaut = !cLocalNach.has(porzellanLin);
 
         // ── (K) DIE NAHT AM VERHALTEN: der Broadcast trägt nur koerper (ohne den Samen), der Peer führt vor der eigenen

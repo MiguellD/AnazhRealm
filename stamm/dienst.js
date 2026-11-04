@@ -64,9 +64,16 @@ class AnazhRealm_dienst {
     }
     // Eine Erinnerung fürs Modell: ein Satz dieser Welt (`d`, nur journalAppend) trägt Namen isoliert in `ki`, jede andere ist Datum.
     _erinnerungFuerKi(e) {
+        const wert = (w) => (typeof w === "number" ? String(w) : AnazhRealm._datum(w));
+        const sp = AnazhRealm._sprache() === "pseudo" ? "de" : AnazhRealm._sprache();
+        const satz = Array.isArray(e.t)
+            ? AnazhRealm._tIn(sp, e.t[0], e.t[1], wert)
+            : e.d === 1
+              ? e.ki || e.text
+              : AnazhRealm._datum(e.text);
         return `[${String(e.type)
             .replace(/[^a-z]/gi, "")
-            .slice(0, 12)}] ${e.d === 1 ? e.ki || e.text : AnazhRealm._datum(e.text)}`;
+            .slice(0, 12)}] ${satz}`;
     }
 
     // `form`: die Antwort-Form des Rufers als JSON-Schema über die Platzhalter DIESER Anfrage (`form(platz)`; die Seele eines
@@ -253,17 +260,29 @@ class AnazhRealm_dienst {
     // Geordnete Erinnerungen; ein Auszug fließt in den LLM-System-Prompt, damit er aus der Geschichte
     // erzählt. `seen` hält One-Shot-Schlüssel (z. B. „firstDragon") — jede Erinnerung nur einmal.
 
-    journalAppend(type, text, ctx) {
+    // DIE ERINNERUNG (spielgang.K5): ein Satz dieser Welt ist eine Zeile der Tafel `[schlüssel, werte]` — `t` trägt sie, das
+    // Tagebuch liest sie in der Sprache von jetzt, die Tür zum Modell isoliert ihre Werte (`_erinnerungFuerKi`); `text` ist
+    // dieselbe Zeile in der Quell-Sprache (de: Suche, Speicher, ältere Leser). Ein Text ist ein fremder Satz (ein Portal, ein
+    // Mitspieler): Daten, wie er kam.
+    journalAppend(type, zeile, ctx) {
         const j = this.state.worldJournal;
         if (!j || !Array.isArray(j.entries)) return;
-        if (typeof text !== "string" || text.length === 0) return;
         const entry = {
             id: j.entries.length + 1,
             at: Date.now(),
             type: String(type || "note"),
-            text: text.slice(0, 240),
             d: 1,
         };
+        if (Array.isArray(zeile)) {
+            entry.t = zeile[1] ? [zeile[0], zeile[1]] : [zeile[0]];
+            AnazhRealm._journalZeile(entry);
+            if (ctx && typeof ctx === "object") entry.ctx = ctx;
+            j.entries.push(entry);
+            if (j.entries.length > (j.entryCap || 200)) j.entries = j.entries.slice(-j.entryCap);
+            return;
+        }
+        if (typeof zeile !== "string" || zeile.length === 0) return;
+        entry.text = zeile.slice(0, 240);
         // ein Schnitt mitten in einem Namen schließt seine Isolation; der Spieler liest den Satz rein, das Modell `ki` isoliert
         if (entry.text.lastIndexOf("⁨") > entry.text.lastIndexOf("⁩")) entry.text += "⁩";
         if (/[⁦-⁩]/.test(entry.text)) [entry.ki, entry.text] = [entry.text, AnazhRealm._ohneIsolation(entry.text)];
@@ -274,15 +293,35 @@ class AnazhRealm_dienst {
         }
     }
 
+    // die Zeile einer Erinnerung: `t` ist die EINE Quelle, `text` ihre Lesart in der Quell-Sprache (de) — nie gespeichert
+    // (nicht aufzählbar: der Stand trägt jeden Satz einmal), jeder Leser (Suche, Proben, Mesh) liest sie wie ein Feld
+    static _journalZeile(e) {
+        if (e && Array.isArray(e.t) && !Object.getOwnPropertyDescriptor(e, "text"))
+            Object.defineProperty(e, "text", {
+                configurable: true,
+                get: () => AnazhRealm._tIn("de", e.t[0], e.t[1]),
+            });
+        return e;
+    }
+
+    // die Erinnerung am Knoten (Tagebuch, Chronik): ein Satz der Welt ist eine Zeile der Tafel (er wechselt mit der Sprache);
+    // ein fremder Satz und ein Eintrag aus einem Stand vor der Tafel sind Daten, wie sie kamen
+    _journalSetze(el, e) {
+        if (Array.isArray(e.t)) return this._tSetze(el, e.t[0], e.t[1]);
+        el.textContent = e.text || "—";
+        el.setAttribute("translate", "no");
+        return el;
+    }
+
     // Idempotente Variante: nur schreiben, wenn der Schlüssel noch nie
     // gesehen wurde. Für „erstes Mal X"-Erinnerungen.
-    journalAppendOnce(key, type, text, ctx) {
+    journalAppendOnce(key, type, zeile, ctx) {
         const j = this.state.worldJournal;
         if (!j) return;
         if (!j.seen) j.seen = {};
         if (j.seen[key]) return;
         j.seen[key] = true;
-        this.journalAppend(type, text, ctx);
+        this.journalAppend(type, zeile, ctx);
     }
 
     // Frame-Hook alle 5 s (Throttle-Anker lastSelfAnalysis, Takt wie selfAwarenessAnalyze): schreibt
@@ -292,20 +331,19 @@ class AnazhRealm_dienst {
         if (!m || !m.worldId) return;
         // Erste Kreatur
         if (this.state.creatures.length > 0) {
-            this.journalAppendOnce("firstCreature", "creatures", "Die erste Kreatur regte sich.");
+            this.journalAppendOnce("firstCreature", "creatures", ["journal.erste-kreatur"]);
         }
         // Erstes Bauwerk
         if (Array.isArray(this.state.architectures) && this.state.architectures.length > 0) {
             const a = this.state.architectures[0];
-            this.journalAppendOnce(
-                "firstArchitecture",
-                "architecture",
-                AnazhRealm._datum`Das erste Bauwerk entstand: ${a.type || "Struktur"}.`
-            );
+            this.journalAppendOnce("firstArchitecture", "architecture", [
+                "journal.erstes-bauwerk",
+                { art: a.type || ["journal.struktur"] },
+            ]);
         }
         // Wetter-Wechsel: aus prevWeather merken, der nicht im Journal-State liegt
         if (this._weatherIsWet()) {
-            this.journalAppendOnce("firstRain", "weather", "Der erste Regen begann.");
+            this.journalAppendOnce("firstRain", "weather", ["journal.erster-regen"]);
         }
         // Hochfitness-Programm aus der History — wir wandern beim ersten
         // finalisierten Eintrag mit fitness >= 0.7 in eine Erinnerung.
@@ -318,7 +356,10 @@ class AnazhRealm_dienst {
                 this.journalAppendOnce(
                     `highFitness:${best.id}`,
                     "growth",
-                    AnazhRealm._datum`Etwas Wirkungsvolles ist mir gelungen: ${JSON.stringify(best.program).slice(0, 100)} (Fitness ${best.fitness.toFixed(2)}).`,
+                    [
+                        "journal.wirkung",
+                        { programm: JSON.stringify(best.program).slice(0, 100), fitness: best.fitness.toFixed(2) },
+                    ],
                     { programId: best.id, fitness: best.fitness }
                 );
             }
@@ -337,7 +378,13 @@ class AnazhRealm_dienst {
                     this.journalAppendOnce(
                         `emotionPeak:${axis}`,
                         "emotion",
-                        AnazhRealm._datum`Eine Welle ${axis} (${v.toFixed(2)}) durchzog uns.`,
+                        [
+                            "journal.gefuehl-welle",
+                            {
+                                achse: AnazhRealm.EMOTION_LABEL[axis] ? [AnazhRealm.EMOTION_LABEL[axis]] : axis,
+                                wert: v.toFixed(2),
+                            },
+                        ],
                         { axis, value: v }
                     );
                     this.state.worldJournal.seenLow[axis] = false;
@@ -381,15 +428,17 @@ class AnazhRealm_dienst {
     // einmal (ein gehaltener Rechtsklick spammt nicht). Befund: „Bauen: nicht genug Material", „Sonnen-Brennglas entzündete"
     // standen nur im eingeklappten Log. Leser: jede Absage des Bau-Flusses (FERTIGEN, Bau-Modus, Setzen) und jede
     // Zerstörung, die die Welt selbst wirkt.
-    _spielerSagt(text) {
-        const t = String(text || "");
+    _spielerSagt(zeile) {
+        // eine Zeile der Tafel `[schlüssel, werte]` (sie wechselt mit der Sprache) oder ein Text (Daten); das Log liest die
+        // Quell-Sprache, die Drossel den Text
+        const t = Array.isArray(zeile) ? AnazhRealm._tIn("de", zeile[0], zeile[1]) : String(zeile || "");
         if (!t) return;
         this.log(t, "INFO");
         const jetzt = performance.now();
         const alt = this._spielerSagtLetzte;
         if (alt && alt.t === t && jetzt - alt.ms < 2000) return;
         this._spielerSagtLetzte = { t, ms: jetzt };
-        this._chatEcho(t);
+        this._chatEcho(zeile);
     }
 
     // DER EINE MELDER (K22 Nachbesserung 3): jeder Bruch meldet ERROR — eine NEUE Meldung sofort, dieselbe wieder (ein
@@ -1440,7 +1489,12 @@ class AnazhRealm_dienst {
     // Sprache ist ein Wort des Spielers je Gerät (`anazh.sprache`, die Wahl in den Einstellungen; `?sprache=` übersteuert).
     // `pseudo` ist die Sprache der Linse (diag-sprache): jedes Stück der Tafel steht in ⟦ ⟧ — Wort-Text außerhalb ist hart.
     static _t(schluessel, werte) {
-        const sp = AnazhRealm._sprache();
+        return AnazhRealm._tIn(AnazhRealm._sprache(), schluessel, werte);
+    }
+
+    // die Zeile in einer bestimmten Sprache (`de` ist die Quell-Sprache des Gesetzes: DSL-Wörter, Log, Journal-Quelle);
+    // `wert` formt jeden einfachen Wert (die Tür der KI isoliert damit Namen, `_datum`)
+    static _tIn(sp, schluessel, werte, wert = String) {
         const tafel = AnazhRealm.TEXTE;
         const zeile = tafel[sp === "pseudo" ? "de" : sp][schluessel];
         if (typeof zeile !== "string") throw new Error(`SPRACHE: die Tafel trägt keinen Text „${schluessel}“`);
@@ -1451,9 +1505,58 @@ class AnazhRealm_dienst {
                 if (!m) return sp === "pseudo" && stueck ? `⟦${stueck}⟧` : stueck;
                 if (!werte || werte[m[1]] == null)
                     throw new Error(`SPRACHE: „${schluessel}“ verlangt den Wert ${m[1]}`);
-                return String(werte[m[1]]);
+                // ein Wert als `[schlüssel, werte]` ist selbst eine Zeile der Tafel (gelesen in derselben Sprache), eine Liste
+                // solcher Zeilen `[[schlüssel, werte], …]` steht mit Komma
+                const w = werte[m[1]];
+                if (Array.isArray(w) && Array.isArray(w[0]))
+                    return w.map((z) => AnazhRealm._tIn(sp, z[0], z[1], wert)).join(", ");
+                if (Array.isArray(w)) return AnazhRealm._tIn(sp, w[0], w[1], wert);
+                // in der Linsen-Sprache steht ein Wert (ein Name, eine Zahl: Daten) zwischen den Isolat-Zeichen U+2068 … U+2069
+                return sp === "pseudo" ? `⁨${wert(w)}⁩` : wert(w);
             })
             .join("");
+    }
+
+    // DAS ETIKETT (spielgang.K5): ein Ding der Welt (Bauplan, Stoff, Werkzeug, Studio-Werk) trägt seinen Namen als SCHLÜSSEL
+    // `etikett: [schlüssel, werte]`, nie als aufgelösten Text — `label` liest ihn bei jedem Zugriff in der Sprache von jetzt,
+    // so wechselt jeder Leser (Hotbar, Katalog, Inventar, Tooltip) mit der Sprache, ohne dass er es weiß. Wer `label`
+    // schreibt (der Spieler benennt um), macht es zu Daten: der Schlüssel fällt.
+    static _etikett(o) {
+        if (!o) return o;
+        for (const feld of ["parts", "bodyParts"])
+            if (Array.isArray(o[feld])) for (const p of o[feld]) AnazhRealm._etikett(p);
+        const e = o.etikett;
+        if (!e || typeof e !== "object") return o;
+        // `etikett: [schlüssel, werte]` trägt `label`; `etikett: { feld: [schlüssel, werte], … }` je Feld eine Zeile
+        for (const feld of Array.isArray(e) ? ["label"] : Object.keys(e))
+            Object.defineProperty(o, feld, {
+                configurable: true,
+                enumerable: true,
+                get() {
+                    const z = Array.isArray(this.etikett)
+                        ? feld === "label"
+                            ? this.etikett
+                            : null
+                        : this.etikett?.[feld];
+                    return z ? AnazhRealm._t(z[0], z[1]) : undefined;
+                },
+                set(v) {
+                    if (Array.isArray(this.etikett) || !this.etikett) delete this.etikett;
+                    else delete this.etikett[feld];
+                    Object.defineProperty(this, feld, {
+                        value: v,
+                        writable: true,
+                        enumerable: true,
+                        configurable: true,
+                    });
+                },
+            });
+        return o;
+    }
+    // der Name in der Quell-Sprache des Gesetzes (de) — für die Wörter der DSL, die nie mit der Sprache des Spielers wechseln
+    static _etikettQuelle(o) {
+        if (!o) return undefined;
+        return Array.isArray(o.etikett) ? AnazhRealm._tIn("de", o.etikett[0], o.etikett[1]) : o.label;
     }
 
     _t(schluessel, werte) {
@@ -1491,6 +1594,22 @@ class AnazhRealm_dienst {
         localStorage.setItem("anazh.sprache", sp);
         AnazhRealm._spracheJetzt = sp;
         AnazhRealm._sprachDom(document);
+        // die Zeichner der Oberfläche zeichnen neu (jeder liest die Tafel und die Etiketten in der neuen Spalte); die Linse
+        // (gate:sprache --lebend, der Wechsel am Ort) nennt jede Zeile, die danach noch in der alten Sprache steht, beim Erzeuger
+        for (const z of AnazhRealm.SPRACH_ZEICHNER) this[z]();
+    }
+
+    // DIE ZEILE AM KNOTEN (spielgang.K5): ein Knoten, den ein Bauer EINMAL füllt, trägt seinen Schlüssel (`data-t`, je Attribut
+    // `data-t-<attribut>`, die Werte als JSON daneben) — `_sprachDom` füllt ihn bei jedem Wechsel neu
+    _tSetze(el, schluessel, werte, attr) {
+        const name = attr ? "data-t-" + attr : "data-t";
+        el.setAttribute(name, schluessel);
+        if (werte) el.setAttribute(name + "-werte", JSON.stringify(werte));
+        else el.removeAttribute(name + "-werte");
+        const text = AnazhRealm._t(schluessel, werte);
+        if (attr) el.setAttribute(attr, text);
+        else el.textContent = text;
+        return el;
     }
 
     // die Wahl in den Einstellungen (#sprache-wahl): sie zeigt die Sprache des Geräts, ein Wechsel ruft `_spracheSetzen`
@@ -1553,10 +1672,12 @@ class AnazhRealm_dienst {
         if (!wurzel || typeof wurzel.querySelectorAll !== "function") return;
         const t = AnazhRealm._t;
         if (wurzel.documentElement) wurzel.documentElement.lang = AnazhRealm._sprache() === "en" ? "en" : "de";
-        for (const el of wurzel.querySelectorAll("[data-t]")) el.textContent = t(el.dataset.t);
+        const werte = (el, name) => (el.hasAttribute(name) ? JSON.parse(el.getAttribute(name)) : undefined);
+        for (const el of wurzel.querySelectorAll("[data-t]"))
+            el.textContent = t(el.dataset.t, werte(el, "data-t-werte"));
         for (const a of AnazhRealm.SPRACH_ATTRIBUTE)
             for (const el of wurzel.querySelectorAll(`[data-t-${a}]`))
-                el.setAttribute(a, t(el.getAttribute(`data-t-${a}`)));
+                el.setAttribute(a, t(el.getAttribute(`data-t-${a}`), werte(el, `data-t-${a}-werte`)));
     }
 
     // ═══ DIE STAND-WACHE (Welle K, Lehre 25, Gebot 7) ═══
@@ -1785,3 +1906,20 @@ AnazhRealm.WELT_SCHWUND_MS = 500;
 // DIE ATTRIBUTE DER SPRACHE (`_sprachDom`): je Name trägt `data-t-<name>` den Schlüssel seiner Zeile in der Tafel
 // (`data-hud-zeigen` liest das CSS: der Wink `body.hud-hidden::after`).
 AnazhRealm.SPRACH_ATTRIBUTE = Object.freeze(["title", "placeholder", "aria-label", "alt", "data-hud-zeigen"]);
+// DIE ZEICHNER DER OBERFLÄCHE (spielgang.K5, der Wechsel am Ort): jeder baut sein Stück aus Tafel und Etiketten neu und ist
+// wiederholbar; was ein Bauer EINMAL baut, trägt seine Schlüssel am Knoten (`_tSetze`) und füllt `_sprachDom`
+AnazhRealm.SPRACH_ZEICHNER = Object.freeze([
+    "renderInventoryUI",
+    "_renderHotbarDOM",
+    "_renderWorkshopDOM",
+    "renderLibraryUI",
+    "_renderKeybindingsUI",
+    "updateWorldInfo",
+    "_refreshSoulSelect",
+    "_renderCreatureListUI",
+    "_renderVibePassUI",
+    "_renderMeshWorldCatalog",
+    "_renderLobbyUI",
+    "llmRefreshProviderUI",
+    "_populateCompanionVoiceSelect",
+]);

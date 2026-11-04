@@ -489,7 +489,7 @@ hauptLauf(async () => {
         if (a.fehler) return { ...res, nullSchreibe: zustand() === vor };
         const sagt = [];
         const s0 = r._spielerSagt;
-        r._spielerSagt = (t) => (sagt.push(String(t)), s0.call(r, t));
+        r._spielerSagt = (t) => (s0.call(r, t), sagt.push(r._spielerSagtLetzte.t)); // die Zeile, wie die Senke sie liest
         const lauf = (window.__lauf = async (code) => {
             const n = sagt.length;
             return { ...(await r.empfangeWerk(code)), laut: sagt.slice(n).join(" | ") };

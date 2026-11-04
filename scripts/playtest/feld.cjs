@@ -778,7 +778,7 @@ async function checkBandV1736HumanRules({ page, check }) {
         const out = {};
         const mkSink = () => {
             const msgs = [];
-            return { input: { value: "x" }, append: (s) => msgs.push(String(s)), msgs };
+            return { input: { value: "x" }, append: (s) => msgs.push(Array.isArray(s) ? r._t(s[0], s[1]) : String(s)), msgs };
         };
 
         // --- (2) _parseChatCondition: Sprache → DSL-Bedingung ---

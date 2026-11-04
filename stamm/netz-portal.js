@@ -110,7 +110,7 @@ class AnazhRealm_netz_portal {
         if (typeof this._sanitizeImportedManifest === "function") {
             const m = this._sanitizeImportedManifest({
                 id: "g8r3_probe",
-                label: "Probe",
+                label: "g8r3_probe",
                 world: "worlds/g8r3_probe/index.html",
                 vendored: true,
                 trust: "trusted",
@@ -577,11 +577,7 @@ class AnazhRealm_netz_portal {
         // Erste Reise durch ein Tor → Journal via journalAppendOnce (Schlüssel = Welt-Pfad), damit
         // wiederholtes Betreten nicht flutet. Ereignisse drinnen kommen über _portalReceiveEvent.
         const worldKey = (portalMeta && portalMeta.world) || AnazhRealm.PORTAL_SKELETON_WORLD;
-        this.journalAppendOnce(
-            `portalVisit:${worldKey}`,
-            "portal",
-            AnazhRealm._datum`Du tratst zum ersten Mal durch das Tor „${worldLabel}".`
-        );
+        this.journalAppendOnce(`portalVisit:${worldKey}`, "portal", ["journal.tor-erstmals", { welt: worldLabel }]);
         // Gruppen-Portal: Mitspieler bekommen eine „mitkommen?"-Einladung — nur bei Multiplayer-Portal (nur
         // dort verbindet B-Relay die Gruppe) und library-bekannter Welt (sonst liefert
         // _resolvePortalWorldId null).
@@ -709,7 +705,7 @@ class AnazhRealm_netz_portal {
             zeugnisA: {
                 key: `portalAddress:${addr.worldId}`,
                 type: "portal",
-                text: `Du tratst zum ersten Mal durch das Tor zur Welt „${addr.label}".`,
+                zeile: ["journal.tor-welt-erstmals", { welt: addr.label }],
             },
         });
     }
@@ -896,7 +892,7 @@ class AnazhRealm_netz_portal {
         if (po.eventWindowCount >= AnazhRealm.PORTAL_EVENT_RATE_MAX) return false;
         po.eventWindowCount++;
         this.journalAppend("portal", AnazhRealm._datum(text.slice(0, 160)), {
-            world: po.label || po.world || "Portal-Welt",
+            world: po.label || po.world || null,
         });
         return true;
     }
@@ -1167,7 +1163,7 @@ class AnazhRealm_netz_portal {
         this._savePortalDwelling({ worldId, label, at: Date.now() });
         this._portalRefreshHint(po);
         this._p2pBroadcastSoul();
-        this.journalAppendOnce(`portalDwell:${worldId}`, "portal", AnazhRealm._datum`Du wohnst jetzt in „${label}".`);
+        this.journalAppendOnce(`portalDwell:${worldId}`, "portal", ["journal.wohnt", { welt: label }]);
         this.log(
             `Du wohnst jetzt in „${label}" — der nächste Aufbruch bringt dich HIERHER zurück („ziehe heim" beendet das Wohnen).`,
             "INFO"
@@ -1416,13 +1412,9 @@ class AnazhRealm_netz_portal {
         this.state.grantedCapabilities[key] = { ...prop, grantedAt: Date.now() };
         q.delete(key);
         if (typeof this.journalAppend === "function") {
-            this.journalAppend(
-                "growth",
-                AnazhRealm._datum`Eine fremde Fähigkeit wurde Teil deiner Welt: „${key}" (von „${prop.fromLabel}").`,
-                {
-                    capability: key,
-                }
-            );
+            this.journalAppend("growth", ["journal.faehigkeit-fremd", { name: key, von: prop.fromLabel }], {
+                capability: key,
+            });
         }
         this.log(`Fähigkeit „${key}" gewährt — „wirke ${key}" führt sie aus.`, "INFO");
         return { ok: true };
@@ -1803,11 +1795,10 @@ class AnazhRealm_netz_portal {
         // Öffner = Host, Beitretender = Gast. Für ein Relay-Portal ist die Rolle folgenlos.
         this._buildPortalOverlay(meta, { computeRole: "guest", hostPeerId: inv.peerId });
         this.log(`Du folgst der Einladung in „${inv.label}".`, "INFO");
-        this.journalAppendOnce(
-            `portalVisit:${(bp.portalMeta && bp.portalMeta.world) || inv.worldId}`,
-            "portal",
-            AnazhRealm._datum`Du tratst zum ersten Mal durch das Tor „${inv.label}".`
-        );
+        this.journalAppendOnce(`portalVisit:${(bp.portalMeta && bp.portalMeta.world) || inv.worldId}`, "portal", [
+            "journal.tor-erstmals",
+            { welt: inv.label },
+        ]);
         return { ok: true };
     }
 
