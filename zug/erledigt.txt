@@ -239,3 +239,4 @@ omen-k06-b56e9b0e OFFEN 12 Läufe ohne haus_alemannisch-ROT
 omen-gtx-w10-takt-90be0117 ROT leib.K1#1=ROT profiband.K4#1=ROT 
 omen-pflicht-e-23d19f6f ROT   ROT  pflicht.E#1 · Bild-p95 ≤ 33: wiese-ego-steht 41.6 · wiese-third-steht ? · genesis-ego-steht 108.2 · genesis-third-steht 25.1 · Gang 60.9 s · [linse-gpu] nvidia/pascal — ROT 3: wiese-e
 omen-gtx-w11-vorbau-frei-dc28be42 ROT haar.K1#1=ROT haar.K2#1=ROT vegetation.K1#1=UNGEMESSEN (Deckel 45 s 2×, dritter Versuch abgebrochen)
+omen-gtx-main-23d19f6f ROT leib.K1#1=ROT profiband.K4#1=ROT 
