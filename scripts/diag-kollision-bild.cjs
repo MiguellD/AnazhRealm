@@ -210,7 +210,7 @@ function selbsttest() {
     selbsttestEnde(fehler);
 }
 
-const { statikServer, warteAufWelt, nullSeite, pngDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, nullSeite, pngDatei, SELBSTTEST, rahmen } = require("./lib/welt-boot.cjs");
 
 if (SELBSTTEST) {
     console.log("=== KOLLISION = BILD — Selbsttest (ohne Browser) ===");
@@ -230,10 +230,8 @@ const bildSeite = async (o) => {
     return { browser, page: await browser.newPage() };
 };
 const server = statikServer();
-// DIE GEOMETRIE, eigen (nie der Löser, den sie richtet; in der Seite global): eine Box im eigenen Rahmen wie `_boxAbstand2`
-// (Mitte, Achsen c/s, Halb-Maße), ein Punkt (u, w) längs ihrer Achsen
-const rahmen = (b) =>
-    b.obb || { cx: (b.minX + b.maxX) / 2, cz: (b.minZ + b.maxZ) / 2, c: 1, s: 0, hx: (b.maxX - b.minX) / 2, hz: (b.maxZ - b.minZ) / 2 };
+// DIE GEOMETRIE, eigen (nie der Löser, den sie richtet; in der Seite global): eine Box im eigenen Rahmen (`rahmen`, welt-boot),
+// ein Punkt (u, w) längs ihrer Achsen
 const lok = (R, x, z) => [(x - R.cx) * R.c - (z - R.cz) * R.s, (x - R.cx) * R.s + (z - R.cz) * R.c];
 // der Abstand aus den Abständen je Achse (außen die Länge, innen der größte, negativ) und der Abstand zur Box im eigenen Rahmen
 const aussen = (a) => (Math.max(...a) > 0 ? Math.hypot(...a.map((x) => Math.max(x, 0))) : Math.max(...a));
@@ -764,7 +762,7 @@ async function tempo(K) {
         await warteAufWelt(page, 180000);
         // die Welt zeichnet: der Renderer steht, die Aufnahme ist eingebaut, der eigene Loop der Seite ruht (die Probe taktet)
         if (BILD) await page.evaluate(AUSGABE_INSTALL + ";__weltDa((r) => r.state.rendererReady).then((r) => r.state.renderer.setAnimationLoop(null))");
-        await page.evaluate(`window.rahmen = ${rahmen}; window.lok = ${lok}; window.aussen = ${aussen}; window.zuBox = ${zuBox};`);
+        await page.evaluate(`window.lok = ${lok}; window.aussen = ${aussen}; window.zuBox = ${zuBox};`);
         const K = { mess: messort("wiese"), R: 150, SEITE_M, OBEN_ANTEIL, KOERPER_BAND_M, FEST, STRENG, exemplare: PFLICHT_EXEMPLARE };
         befund = await page.evaluate(probe, Object.assign(K, { FALL_M, HINDERNISSE, TAKTE, UEBER_VMAX, SPALT_M, BILD }));
         befund.tempo = Object.assign(await page.evaluate(tempo, K), { karte: browser.adapter });

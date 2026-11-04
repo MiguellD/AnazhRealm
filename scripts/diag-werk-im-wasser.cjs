@@ -572,14 +572,7 @@ async function probe(A) {
             if (!/^haus_/.test(h.type) || !h._hausHuelle) continue;
             for (const b of h.blockerAABBs || []) {
                 if (!b || !Number.isFinite(b.botY) || b.botY > h.position.y - 0.5 + 0.6) continue;
-                const o = b.obb || {
-                    cx: (b.minX + b.maxX) / 2,
-                    cz: (b.minZ + b.maxZ) / 2,
-                    c: 1,
-                    s: 0,
-                    hx: (b.maxX - b.minX) / 2,
-                    hz: (b.maxZ - b.minZ) / 2,
-                };
+                const o = rahmen(b);
                 const dx = e.position.x - o.cx;
                 const dz = e.position.z - o.cz;
                 const lx = Math.abs(dx * o.c - dz * o.s) - o.hx;
@@ -622,14 +615,7 @@ async function probe(A) {
             let nass = 0;
             let n = 0;
             for (const b of boxen) {
-                const o = b.obb || {
-                    cx: (b.minX + b.maxX) / 2,
-                    cz: (b.minZ + b.maxZ) / 2,
-                    c: 1,
-                    s: 0,
-                    hx: (b.maxX - b.minX) / 2,
-                    hz: (b.maxZ - b.minZ) / 2,
-                };
+                const o = rahmen(b);
                 const ni = Math.max(1, Math.ceil(2 * o.hx));
                 const nj = Math.max(1, Math.ceil(2 * o.hz));
                 for (let i = 0; i <= ni; i++)
