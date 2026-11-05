@@ -807,9 +807,8 @@ async function starte() {
     // Erst-Boot-Zahl („17 von 319 von der Platte"). Benannt (`--serie`) unter der Ablage, sonst das Scratch-Profil des EINEN
     // Starters (welt-boot `startePuppeteer`: es stirbt mit dem Browser, am Prozess-Ende und am Signal, ein toter Lauf wird gefegt).
     const profil = SERIE && ablage("profil-" + SERIE.replace(/[^a-z0-9_-]+/gi, "_"));
-    const serieNeu = !SERIE || !fs.existsSync(profil);
+    const serieNeu = !fs.existsSync(profil); // ohne --serie ist profil "" (existsSync: false) — jeder Start ist neu
     if (SERIE) fs.mkdirSync(profil, { recursive: true });
-    const boot = { serie: SERIE || null, profil, serieNeu, ladungen: 0 };
     const bootArt = () => (boot.serieNeu && boot.ladungen <= 1 ? "erst" : "zweit");
     // die Boot-Zeile jeder Messung: Erst- oder Zweit-Boot, die Serie und die Ladungen der Seite
     const bootZeile = () => ({ art: bootArt(), serie: boot.serie, ladungen: boot.ladungen });
@@ -817,11 +816,15 @@ async function starte() {
         headless: !ECHT,
         userDataDir: profil,
         protocolTimeout: 10800000,
-        defaultViewport: ECHT ? { width: 1920, height: 1080, deviceScaleFactor: 1 } : null,
+        defaultViewport: ECHT ? { width: 1920, height: 1080 } : null, // deviceScaleFactor: puppeteers Vorgabe 1
         // Echt: der Hardware-Adapter im Fenster; sonst die Weiche (lokal der Hardware-Adapter headless, in der CI swiftshader)
         // — die Schalter je Plattform trägt das EINE Rezept.
         args: ECHT ? [...echteWebGpuArgs(), "--window-size=1940,1200"] : linsenWebGpuArgs(),
     });
+    // /status NENNT DAS PROFIL IMMER (`boot.profil`): die Proben der Punkte-Maschine hängen sich über sein DevToolsActivePort an
+    // den Browser der Sitzung — die Serie ihr benanntes, sonst das Scratch-Profil des Starters (`browser.profil`). Bis hier nannte
+    // /status ohne --serie keins (z216, w11-profil-leck): neun Stationen der Sitzung blieben an jedem Kopf UNGEMESSEN.
+    const boot = { serie: SERIE || null, profil: profil || browser.profil, serieNeu, ladungen: 0 };
     await adapterZeile(browser);
     const page = await browser.newPage();
     const loopAus = () => page.evaluate("__loop()"); // die Welt steht zwischen den Befehlen

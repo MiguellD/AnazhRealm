@@ -150,6 +150,7 @@
     "Post-Kette auf der Karte (jede Nachbild-Stufe kostet nur, wenn sie zeigt)": {"s": 15, "n": 7, "p90": 32, "max": 32},
     "Portal-Membran auf der Karte (die Passage zeichnet nur im Blick)": {"s": 65, "n": 7, "p90": 97, "max": 97},
     "Ego-Schatten auf der Karte (in der Ego-Sicht wirft der Leib seinen Schatten, das Auge sieht ihn nicht)": {"s": 28, "n": 7, "p90": 39, "max": 39},
+    "Kamera-Leib auf der Karte (K6 - am Pruefplatz wird der Leib beim Seitwaertsgehen nie durchsichtig)": {"s": 50, "n": 1, "p90": 60, "max": 60, "quelle": "lokal Radeon 890M 05.11. (46,3 s samt Boot) bis zur ersten Messung auf der Karte"},
     "Verdeckungs-Abfrage auf der Karte (der Aussteige-Ablauf am Bach, jede WebGPU-Validierung beim Namen)": {"s": 28, "n": 7, "p90": 39, "max": 39},
     "Frost-Wand auf der Karte (das Weltbild folgt der Kamera vom Ankommen bis zur Hof-Bühne, nie der Ladeschirm)": {"s": 149, "n": 7, "p90": 173, "max": 173},
     "Tag-Achse auf der Karte (die Belichtung folgt dem Licht stetig und gegen es, kein Einbruch, Spawn und Mess-Wiese)": {"s": 68, "n": 7, "p90": 87, "max": 87},
