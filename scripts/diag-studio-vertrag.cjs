@@ -1,4 +1,14 @@
-const { fehlerText, ausDatei, path, fs, stammLib, vm, jsonLesen, ROOT: root, jsonKlon } = require("./lib/welt-boot.cjs");
+const {
+    fehlerText,
+    ausDatei,
+    path,
+    fs,
+    stammLib,
+    vm,
+    jsonLesen,
+    ROOT: root,
+    jsonKlon,
+} = require("./lib/welt-boot.cjs");
 // diag-studio-vertrag.cjs — DER MANIFEST-VALIDATOR (docs/studio-vertrag.md).
 // Die USD-/Schema-Lehre: ein Kern, der den Vertrag verletzt, wird ROT beim
 // Andocken — nicht stumm kaputt in der Welt. Statisch + vm (kein Browser, im
@@ -274,9 +284,7 @@ function gesetzKernErklaert(doc) {
 // B4 `uniform: true` — DER GESETZ-WERT (studios.K2: ein Griff zeigt ihn ≤ 200 ms, ohne Neubau): nur `true`, und der Byte-Beweis
 // steht in der Ratsche — die Zeile bewegt an keinem Rezept ihrer Art ein Bau-Byte (spec/vertraege/ratsche.json reglerGesetz, gemessen
 // von gate:regler-wirkt, das dort auch ihren Leser der Welt misst). Eine Zeile, die Bytes bewegt, braucht den Neubau und trägt die Schranke von 1 s.
-const REGLER_OHNE_BYTE = new Set(
-    Object.keys(jsonLesen("spec/vertraege/ratsche.json").reglerGesetz.zeilen)
-);
+const REGLER_OHNE_BYTE = new Set(Object.keys(jsonLesen("spec/vertraege/ratsche.json").reglerGesetz.zeilen));
 function validateManifest(m, kern) {
     const v = [];
     if (m.vertrag !== 1) v.push(`G4.3: STUDIO_VERTRAG fehlt oder != 1 (ist: ${m.vertrag})`);
@@ -1332,69 +1340,89 @@ function validateManifest(m, kern) {
         fahr: { lenkung: { sfK: 0.05 } },
         verhalten: { aktionen: { a: {} }, stimmung: { x: { aktionen: ["fremd"], alle: [1, 2] } } },
     });
+    // trifft jedes Wort eine Verletzung der Liste
+    const traf = (l, ...w) => w.every((x) => l.some((s) => s.includes(x)));
     check(
         "SELBST-TEST: injizierte Verletzungen werden erkannt (kein-kind · Namensraum · rarity · Boden-Gesetz · kindStages · Budget · Fernform · NUR-WURF-Stufe · Gelenk-Gestalt ab/hyst/wurf.seh · Version · MESHFREI-Widerspruch · Gefühls-Blöcke)",
-        bv.some((s) => s.includes("kein kind")) &&
-            bv.some((s) => s.includes("Namensraum")) &&
-            bv.some((s) => s.includes("rarity")) &&
-            bv.some((s) => s.includes("kindStages.kaputt")) &&
-            bv.some((s) => s.includes("kindStages.falschrum")) &&
-            bv.some((s) => s.includes("budget.geist")) &&
-            bv.some((s) => s.includes("budget.tree[3] — keine gelieferte Stufe")) &&
-            bv.some((s) => s.includes("budget.tree[2] fehlt")) &&
-            bv.some((s) => s.includes("tris fällt nicht streng")) &&
-            bv.some((s) => s.includes("tree[1].draws muss")) &&
-            bv.some((s) => s.includes("tree[1].schatten muss")) &&
-            bv.some((s) => s.includes("tree[1].karte — nur die letzte Stufe")) &&
-            bv.some((s) => s.includes("blattKarte muss")) &&
-            bv.some((s) => s.includes("deckung muss")) &&
-            bv.some((s) => s.includes("gestalten trägt keine")) &&
-            bv.some((s) => s.includes("gestalten.eiche muss")) &&
-            bv.some((s) => s.includes("placement.boden.geist — kein Preset")) &&
-            bv.some((s) => s.includes("placement.boden.BÖSE ID — keine eigene Gestalten-Zeile")) &&
-            bv.some((s) => s.includes("placement.boden.BÖSE ID.ring muss")) &&
-            bv.some((s) => s.includes("placement.boden.BÖSE ID.dichte muss")) &&
-            bv.some((s) => s.includes("placement.boden.BÖSE ID.skala muss")) &&
-            bv.some((s) => s.includes("placement.boden.BÖSE ID.licht muss ein Trapez")) &&
-            bv.some((s) => s.includes("placement.boden.BÖSE ID.weite muss")) &&
-            bvB.some((s) => s.includes("shrub[1].blattKarte muss")) &&
-            bvB.some((s) => s.includes("lagen muss")) &&
-            bvB.some((s) => s.includes("quote muss")) &&
-            bvB.some((s) => s.includes("geruest muss")) &&
-            bvB.some((s) => s.includes("wedel muss")) &&
-            bvB.some((s) => s.includes("dichte.laub muss")) &&
-            bvB.some((s) => s.includes("rinde muss")) &&
-            bvB.some((s) => s.includes("straehne muss")) &&
-            bvB.some((s) => s.includes("aehre muss")) &&
-            bvB.some((s) => s.includes("schnitt < rute")) &&
-            bvB.some((s) => s.includes("boden muss")) &&
-            bvB.some((s) => s.includes("draws steigt")) &&
-            bv.some((s) => s.includes("tree.fernform muss")) &&
-            bvB.some((s) => s.includes('shrub.fernform — "karte" genau dann')) &&
-            bvB.some((s) => s.includes("rock.fernform muss")) &&
-            bvB.some((s) => s.includes("rock[0].schatten — der Zwilling (Stufe 1) wirft nicht selbst")) &&
-            bvB.some((s) => s.includes("shrub[1].band muss")) &&
-            bvB.some((s) => s.includes("gestalten.a muss")) &&
-            bvB.some((s) => s.includes("gestalten.geist — kein Rezept")) &&
-            bvB.some((s) => s.includes("gestalten.* — kein Rezept")) &&
-            bvB.some((s) => s.includes("gestalten.b fehlt")) &&
-            bvS3h.some((s) => s.includes("kindStages.haus — die Stufe 3 trägt nurWurf")) &&
-            bvS3h.some((s) => s.includes('aus.fernform — "huelle" genau dann')) &&
-            bvS3h.some((s) => s.includes("karto[3].nurWurf mit karte")) &&
-            bvS3h.some((s) => s.includes("lod.budget.gate trägt die Stufen-Kette nicht")) &&
-            bvS3.some((s) => s.includes("kreatur.hyst muss in (0, 0,5)")) &&
-            bvS3.some((s) => s.includes("kreatur[0].ab — die erste Stufe beginnt bei 0")) &&
-            bvS3.some((s) => s.includes("kreatur[2].ab steigt nicht streng")) &&
-            bvS3.some((s) => s.includes("kreatur[1].wurf.seh muss eine Teilmenge")) &&
-            bvS3.some((s) => s.includes("kreatur[2].wurf — nur eine Stufe, die selbst wirft")) &&
-            !bvS3.some((s) => s.includes("kreatur[1].wurf — nur eine Stufe")) &&
-            bvVer.some((s) => s.includes("G4.3")) &&
-            bvMesh.some((s) => s.includes("MESHFREI")) &&
-            bvFx.some((s) => s.includes("schwimmen unvollständig")) &&
-            bvFx.some((s) => s.includes("parkour unvollständig")) &&
-            bvFx.some((s) => s.includes("ARENA unvollständig")) &&
-            bvFx.some((s) => s.includes("FAHR.lenkung unvollständig")) &&
-            bvFx.some((s) => s.includes("VERHALTEN unvollständig")),
+        traf(
+            bv,
+            "kein kind",
+            "Namensraum",
+            "rarity",
+            "kindStages.kaputt",
+            "kindStages.falschrum",
+            "budget.geist",
+            "budget.tree[3] — keine gelieferte Stufe",
+            "budget.tree[2] fehlt",
+            "tris fällt nicht streng",
+            "tree[1].draws muss",
+            "tree[1].schatten muss",
+            "tree[1].karte — nur die letzte Stufe",
+            "blattKarte muss",
+            "deckung muss",
+            "gestalten trägt keine",
+            "gestalten.eiche muss",
+            "placement.boden.geist — kein Preset",
+            "placement.boden.BÖSE ID — keine eigene Gestalten-Zeile",
+            "placement.boden.BÖSE ID.ring muss",
+            "placement.boden.BÖSE ID.dichte muss",
+            "placement.boden.BÖSE ID.skala muss",
+            "placement.boden.BÖSE ID.licht muss ein Trapez",
+            "placement.boden.BÖSE ID.weite muss"
+        ) &&
+            traf(
+                bvB,
+                "shrub[1].blattKarte muss",
+                "lagen muss",
+                "quote muss",
+                "geruest muss",
+                "wedel muss",
+                "dichte.laub muss",
+                "rinde muss",
+                "straehne muss",
+                "aehre muss",
+                "schnitt < rute",
+                "boden muss",
+                "draws steigt"
+            ) &&
+            traf(bv, "tree.fernform muss") &&
+            traf(
+                bvB,
+                'shrub.fernform — "karte" genau dann',
+                "rock.fernform muss",
+                "rock[0].schatten — der Zwilling (Stufe 1) wirft nicht selbst",
+                "shrub[1].band muss",
+                "gestalten.a muss",
+                "gestalten.geist — kein Rezept",
+                "gestalten.* — kein Rezept",
+                "gestalten.b fehlt"
+            ) &&
+            traf(
+                bvS3h,
+                "kindStages.haus — die Stufe 3 trägt nurWurf",
+                'aus.fernform — "huelle" genau dann',
+                "karto[3].nurWurf mit karte",
+                "lod.budget.gate trägt die Stufen-Kette nicht"
+            ) &&
+            traf(
+                bvS3,
+                "kreatur.hyst muss in (0, 0,5)",
+                "kreatur[0].ab — die erste Stufe beginnt bei 0",
+                "kreatur[2].ab steigt nicht streng",
+                "kreatur[1].wurf.seh muss eine Teilmenge",
+                "kreatur[2].wurf — nur eine Stufe, die selbst wirft"
+            ) &&
+            !traf(bvS3, "kreatur[1].wurf — nur eine Stufe") &&
+            traf(bvVer, "G4.3") &&
+            traf(bvMesh, "MESHFREI") &&
+            traf(
+                bvFx,
+                "schwimmen unvollständig",
+                "parkour unvollständig",
+                "ARENA unvollständig",
+                "FAHR.lenkung unvollständig",
+                "VERHALTEN unvollständig"
+            ),
         `${bv.length + bvS3.length + bvVer.length + bvMesh.length + bvFx.length} erkannt`
     );
     // DAS SPRUNG-GESETZ: der echte tetrapoda-Kern, einmal mit dem Abflug in m/s einer
@@ -1507,5 +1535,8 @@ function validateManifest(m, kern) {
         );
     }
 
-    wandEnde(errs, "der Studio-Vertrag steht als Struktur: jeder registrierte Kern erfüllt die MUSS-Blöcke, die SOLL-Blöcke validieren wo vorhanden, und der Selbst-Test beweist die Linse feuert.");
+    wandEnde(
+        errs,
+        "der Studio-Vertrag steht als Struktur: jeder registrierte Kern erfüllt die MUSS-Blöcke, die SOLL-Blöcke validieren wo vorhanden, und der Selbst-Test beweist die Linse feuert."
+    );
 })();

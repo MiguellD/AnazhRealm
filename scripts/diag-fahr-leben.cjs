@@ -2447,7 +2447,7 @@ hauptLauf(async () => {
                 /Fahrt 752 s/.test(alt[2]) &&
                 /Wagen in Wagen 15/.test(alt[3]);
             check(
-                "Selbst-Test VK: der Verkehr nennt jeden Bruch beim Namen (alt ROT an Laterne, Ziel, Fahrt und Wagen; die Radeon an Soll, Minute, Sitz und Karosserie; neu GRÜN)",
+                "Selbst-Test VK: der Verkehr nennt jeden Bruch beim Namen (alt ROT an Laterne, Ziel, Fahrt und Wagen, neu GRÜN)",
                 !verkehrVerdict(g).length && !brueche.length && altRot,
                 JSON.stringify(brueche) + (altRot ? "" : " alt: " + alt.join(" · "))
             );
@@ -2545,14 +2545,14 @@ hauptLauf(async () => {
         [
             schalter("--verkehr"),
             probeLeben,
-            // `--taeter` (pflicht.C#1): um 10 Uhr 70 s, Wagen 0 ohne Fahrer, Wagen 1 neben der Trasse, Wagen 2 in Wagen 3, der Fahrer
-            // von Wagen 4 auf dem Dach — jeder beim Namen
+            // `--taeter` (pflicht.C#1): um 10 Uhr 70 s, Wagen 0 ohne Fahrer, Wagen 1 neben der Trasse, Wagen 2 in Wagen 3, der erste
+            // gemessene Fahrer auf dem Dach — jeder beim Namen
             { verkehr: { ...VERKEHR, ...(TAETER && { stunden: [10], sek: 70, taeter: 1 }) } },
             (o) => {
                 for (const h of TAETER ? [10] : VERKEHR.stunden) {
                     const m = o.verkehr && o.verkehr[h];
                     const v = (m ? verkehrVerdict(m) : [o.err]).join(" · ");
-                    check(`VK (PFLICHT-OFFEN C) der Verkehr der Stadt um ${h} Uhr${TAETER ? " — TÄTER" : ""}`, TAETER ? [/am Steuer \[19,\d+,\[0,/, /Trasse \[\d+,[1-9]\d*,\[\[1,/, /Wagen in Wagen \d+× tiefste \[[\d.]+,"2\|3"/, /nicht im Sitz \[\d+,\d+,\[4,/].every((x) => x.test(v)) : !v, v); // prettier-ignore
+                    check(`VK (PFLICHT-OFFEN C) der Verkehr der Stadt um ${h} Uhr${TAETER ? " — TÄTER" : ""}`, TAETER ? [/am Steuer \[19,\d+,\[0,/, /Trasse \[\d+,[1-9]\d*,\[\[1,/, /Wagen in Wagen \d+× tiefste \[[\d.]+,"2\|3"/, /nicht im Sitz \[\d+,1,\[/].every((x) => x.test(v)) : !v, v); // prettier-ignore
                 }
                 console.log(`VERKEHR ${JSON.stringify(o.verkehr)}`);
             },
