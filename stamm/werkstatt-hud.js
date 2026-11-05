@@ -2763,7 +2763,8 @@ class AnazhRealm_werkstatt_hud {
     // das Bild ist der Schirm der Welt (`_schirm`, die EINE Quelle jeder Schirm-Größe; gate:schirm-monotonie Q), in dem der
     // Spieler die Schrift liest.
     // DER TEXT IN SEINEM KASTEN (`ueber`, w12-menue): die 16-px-Schrift schnitt in ihren alten Kästen 32 Texte ab (Radeon
-    // 155a934f: „KNOCH“, „AUFTRAC“, „Verschmelzen“ in „Empfangen“). Jeder gezählte Text steht beim Namen, wenn eines seiner
+    // 155a934f: „KNOCH“, „AUFTRAC“, „Verschmelzen“ in „Empfangen“); diese Linse nannte headless 1280 x 720 dort 84 Texte an 66
+    // Orten (main 5, nach dem Layout aus der Schrift 0). Jeder gezählte Text steht beim Namen, wenn eines seiner
     // Rechtecke aus einem Kasten der Kette ragt — sein eigener (der nächste Vorfahr, der kein Inline ist), dann jeder Vorfahr bis
     // zur Seite oder bis zum ersten, der außer Fluss liegt (absolute, fixed): quer sein Rechteck, längs sein Geviert (1 em um
     // die Mitte — das Rechteck einer Zeile trägt den Raum ihrer Schrift, Cinzel 22 px bei 16 px), je um 1 px. Ein Roll-Kasten
