@@ -1958,7 +1958,12 @@ async function unterwasserSeite(o) {
                 cam.position.copy(pm.position).add(d);
                 cam.quaternion.copy(q);
                 cam.updateMatrixWorld(true);
+                const vor = [cam.position.x, cam.position.y, cam.position.z].map((v) => R(v, 2));
                 const p = cam.position, b = await schuss(name + "-" + z, sicht === "third");
+                const mw = new window.THREE.Vector3().setFromMatrixPosition(cam.matrixWorld);
+                b.diag = { vor, nach: [p.x, p.y, p.z].map((v) => R(v, 2)), welt: [mw.x, mw.y, mw.z].map((v) => R(v, 2)), pm: [pm.position.x, pm.position.y, pm.position.z].map((v) => R(v, 2)),
+                    camIst: cam === s.camera, passCam: !!(s.scenePass && s.scenePass.camera === cam), passCamPos: s.scenePass && s.scenePass.camera ? [s.scenePass.camera.position.x, s.scenePass.camera.position.y].map((v) => R(v, 2)) : null,
+                    loop: !!s.renderer.getAnimationLoop(), modus: s.cameraMode, eltern: !!cam.parent, auto: cam.matrixAutoUpdate, imSchuss: window.__imSchuss, halten: typeof window.__halten };
                 je.push(Object.assign({ z, tiefe: R(r._koerperWasser(p.x, p.z, p.y) - p.y, 3), unter: !!s.kameraUnterWasser, fest: r._fieldDensityAt(p.x, p.y, p.z) > 0 }, b));
             }
             return je;
