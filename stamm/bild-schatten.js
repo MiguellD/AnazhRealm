@@ -70,7 +70,7 @@ class AnazhRealm_bild_schatten {
             boden: T.uniform(new THREE.Vector3()),
             atmo: T.uniform(new THREE.Vector3()),
         });
-        st.rueckstrahlLeser = Object.assign({ rt, lesung: null, gelesen: false }, U);
+        st.rueckstrahlLeser = Object.assign({ rt, lesung: null, gelesen: false, licht: 0 }, U);
         // die Strahldichte, die die untere Hemisphäre ändert — EIN Knoten für jeden Leser
         st.rueckstrahlLeser.unten = U.boden.sub(U.atmo).mul(U.an);
         return st.rueckstrahlLeser;
@@ -184,9 +184,11 @@ class AnazhRealm_bild_schatten {
             const folge = P.sprung ? 1 : AnazhRealm.RUECKSTRAHL.folge;
             P.sprung = false;
             P.laeufe++;
+            const licht = L.licht; // das Licht dieser Messung: springt der Himmel, bis sie zurück ist, verfällt sie
             L.lesung = rend.readRenderTargetPixelsAsync(L.rt, 0, 0, 2, 1).then(
                 (px) => {
                     L.lesung = null;
+                    if (L.licht !== licht) return;
                     const w = (i) => (px instanceof Uint16Array ? AnazhRealm._halbZuFloat(px[i]) : px[i]);
                     L.atmo.value.set(w(4), w(5), w(6));
                     if (!(w(0) >= 0)) return;
@@ -251,6 +253,22 @@ class AnazhRealm_bild_schatten {
         const st = this.state;
         if (!st.scenePass || !st._skyEnvRT || st.rueckstrahlBruch) return 0;
         return L.gelesen && !this._augeUnterDach() ? 1 : 0;
+    }
+
+    // DER SPRUNG DES LICHTS (w12-karte-licht): der gemessene Boden ist Sonne × cos × Albedo und Himmel × Albedo DES LICHTS, unter
+    // dem er gemessen wurde — springt der Himmel (`_himmelSprung`: der Uhr-Schreiber, die Bühne), verfallen er und jede Lesung
+    // unterwegs; bis die erste Lesung des neuen Lichts zurück ist (ganz, ohne `folge`), trägt der Boden der Atmosphäre den
+    // Halbraum (`an` 0). Bis dahin trug jeder Schuss nach einem Sprung den Boden der Stunde davor: die Bühne der Linsen ruht am
+    // Mittag, ihr Schuss steht in der Dämmerung — der Mittags-Boden minus die Atmosphäre der Dämmerung lag unter jeder
+    // abwärts gewandten Normale, geklemmt je Kanal (`_rueckstrahlHalbraum`), und hob die Karte gegen ihre Gestalt (licht.K3#1,
+    // Radeon, Dorf, Fichte aus 8 m, Uhr 0,27 · 0,05: 1,217 · 1,594 → 1,001 · 1,064, ΔC* 3,2–6,9 → 0,0–0,7).
+    _rueckstrahlSprung() {
+        const L = this.state.rueckstrahlLeser;
+        if (!L) return;
+        L.licht++;
+        L.gelesen = false;
+        L.an.value = 0;
+        if (this.state.rueckstrahlPass) this.state.rueckstrahlPass.sprung = true;
     }
 
     // DIE RUHE DES RÜCKSTRAHLS: er misst neu, wenn das Auge weiter als `ruheM` wandert oder der Blick weiter als `ruheRad` dreht (die

@@ -1214,9 +1214,10 @@ class AnazhRealm_bild_himmel {
         // Änderung (Medium, Stufe der Sonne, Mond, Auge) — Kuppel, Umgebung und Luft lesen dieselbe Himmels-Sicht.
         const atm = this._atmoSonne(sunDir.y);
         // Ein Sprung des Himmels (`_himmelSprung`, gesetzt vom Uhr-Schreiber) zeichnet Tafeln und Umgebung EINMAL sofort — an
-        // der Raten-Drossel und an der Leine vorbei.
+        // der Raten-Drossel und an der Leine vorbei — und verwirft den Boden, den der Rückstrahl unter dem alten Licht maß.
         const sprung = this._himmelSprung === true;
         this._himmelSprung = false;
+        if (sprung) this._rueckstrahlSprung();
         this._atmoTakt(sunDir, moonDir, tint, sprung);
         this._dayNightApplySkybox(tint);
         this._dayNightApplyStarField(achse, tint.skyMul);
