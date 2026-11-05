@@ -210,12 +210,27 @@ function herdeSzene(r, T, o) {
     // die Alarm-Kette läuft (≤ 1 s), dann eine halbe Sekunde Flucht: jedes Glied flieht im ersten Schuss
     for (let k = 0; k < 120 && lebend().some((c) => !flieht(c)); k++) takt();
     for (let k = 0; k < 30; k++) takt();
-    // DER STANDORT des Blicks: 43 m quer zur Fall-Linie (der Flucht) auf der tieferen Seite, das Auge Ego — der Hang zeigt die
-    // Herde im Profil; die Blick-Wahl dreht von dort, bis jedes Glied frei steht
+    // DER STANDORT des Blicks: 43 m quer zur Fall-Linie (der Flucht), das Auge Ego — der Hang zeigt die Herde im Profil; die
+    // Blick-Wahl dreht von dort, bis jedes Glied frei steht. Die tiefere Seite zuerst, wenn das Gelände von ihr jedes Glied zeigt
+    // (der Strahl des Auges zum Rumpf — halbwegs zwischen Fuß und Leib-Mitte — bleibt über dem Gesetz der Höhe), sonst die höhere.
+    // Radeon b62542c9 (w12-proben-s) am gewölbten Hang 21,8° −522/−848: von der tieferen Seite verdeckte die Kuppe zwei Rümpfe
+    // (je 12 px, nur Kopf und Geweih über ihr), die Blick-Wahl prüft je Glied nur die Leib-Mitte und nahm die Pose
     const m = mitte(lebend());
-    const seiten = [1, -1].map((s) => ({ x: m.x - s * hang.uz * 43, z: m.z + s * hang.ux * 43 }));
-    Z.auge = seiten.sort((a, b) => H(a.x, a.z) - H(b.x, b.z))[0];
-    return Object.assign(pose(), { hang: lage, wurf: Z.glieder.length, fluchtBei: +d.toFixed(1) });
+    const seiten = [1, -1].map((s) => ({ x: m.x - s * hang.uz * 43, z: m.z + s * hang.ux * 43 })).sort((a, b) => H(a.x, a.z) - H(b.x, b.z));
+    const zeigt = (a) => {
+        const ey = H(a.x, a.z) + A.EGO_AUGE_M;
+        return lebend().every((c) => {
+            const [x, y, z] = leibMitte(c);
+            const ty = (y + c.position.y) / 2;
+            const n = Math.ceil(Math.hypot(x - a.x, z - a.z));
+            for (let i = 1; i < n; i++) if (H(a.x + ((x - a.x) * i) / n, a.z + ((z - a.z) * i) / n) > ey + ((ty - ey) * i) / n) return false;
+            return true;
+        });
+    };
+    const sicht = seiten.map(zeigt);
+    Z.auge = seiten[sicht[0] || !sicht[1] ? 0 : 1];
+    const standort = { seite: Z.auge === seiten[0] ? "tiefer" : "höher", zeigt: sicht };
+    return Object.assign(pose(), { hang: lage, wurf: Z.glieder.length, fluchtBei: +d.toFixed(1), standort });
 }
 // DER PULK IM BILD (in der Seite, nach `bild --klasse ^tier`): die Teilung des Schusses (`__letzteTeilung`, werkbank) gegen die
 // Glieder der Herde. Je Glied die Tier-Pixel im Kreis seines Leibs am Schirm (Mitte über der Lage um die halbe Höhe seiner Box,
