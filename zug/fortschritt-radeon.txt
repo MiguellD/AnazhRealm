@@ -2102,3 +2102,4 @@
 2026-11-05 15:32:42 vp-ankunft-merge-1 ankunft.K5#1 ROT 0.9 · 3/3
 2026-11-05 15:34:01 vp-ankunft-merge-1 ENDE 0 grün / 3 rot · 3.3 min
 2026-11-05 15:34:07 b62542c9-radeon START 3 Stationen
+2026-11-05 15:35:30 b62542c9-radeon ankunft.K2#1 ROT 0.8 · 1/3
