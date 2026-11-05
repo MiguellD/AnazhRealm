@@ -1,0 +1,122 @@
+{
+ "sha": "c8292dd3ec1eb8cb4ecdb9da30f88ab679a4903c",
+ "geraet": "gtx",
+ "zeit": "2026-11-05T14:14:43.200Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "vegetation.K5#1": {
+   "gruen": true,
+   "zahl": "Krone sommer 192358 px · winter 20800 px → Winter 0.108 × Sommer",
+   "exit": 0,
+   "minuten": 0.32,
+   "gpu": "nvidia/pascal",
+   "s": 19.3,
+   "zeit": "2026-11-05T14:11:10.899Z",
+   "abdruck": "94c6e9a3bdbe",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K2#1": {
+   "gruen": false,
+   "zahl": "0.19 % Lücke nach 4.8 s bis zur Ruhe der Foundry · offen im Bild 2 Wald-Böden werden bepflanzt · t(Kontrolle) kalt 14.61 s von außen (Eigenmeldung 13.48 s) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.05,
+   "grund": "ROT: 0.19 % Lücke nach 4.8 s bis zur Ruhe der Foundry · offen im Bild 2 Wald-Böden werden bepflanzt · t(Kontrolle) kalt 14.61 s von außen (Eigenmeldung 13.48 s) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 62.7,
+   "zeit": "2026-11-05T14:14:43.200Z",
+   "abdruck": "e92126269d70",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "vegetation.K5#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /bild 10.8 s)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /bild 10.8 s)",
+   "s": 90.2,
+   "zeit": "2026-11-05T14:11:30.366Z",
+   "abdruck": "3b5d6b96f324",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K5#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 44 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.74,
+   "grund": "Deckel 44 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 44.3,
+   "zeit": "2026-11-05T14:13:32.902Z",
+   "abdruck": "d6f1d538e012",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-05T14:10:24.246Z",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 11.5,
+  "grundstellungS": [
+   6,
+   6.4
+  ],
+  "proben": 4,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K5#1",
+    "s": 33.3,
+    "takte": 921,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "klang.K5#2",
+    "s": 26.2,
+    "takte": 992,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "ankunft.K2#1",
+    "s": 19.4,
+    "takte": 930,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 5,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 1788,
+   "frameP95": 133.36,
+   "taktP95": 75.4,
+   "vramMax": 139.3,
+   "seiten": 7,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 270,
+   "luecken": 8,
+   "letzteLuecke": "THREE is not defined"
+  },
+  "fahrtS": 320.8,
+  "minuten": 5.42
+ }
+}

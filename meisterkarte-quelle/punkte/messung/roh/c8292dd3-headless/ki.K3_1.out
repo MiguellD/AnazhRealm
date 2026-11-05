@@ -1,0 +1,18 @@
+$ bash -c set -u; O=127.0.0.1:11434; S=''; if ! curl -s -m 3 -o /dev/null http://$O/api/tags; then X="${LOCALAPPDATA:-}/Programs/Ollama/ollama.exe"; [ -x "$X" ] || X=ollama; ("$X" serve > /dev/null 2>&1 < /dev/null &); S=1; for t in $(seq 1 30); do curl -s -m 2 -o /dev/null http://$O/api/tags && break; sleep 1; done; fi; echo "ANBIETER $O $(curl -s -m 5 http://$O/api/tags | node -e "let s='';process.stdin.on('data',(d)=>(s+=d)).on('end',()=>{try{const m=JSON.parse(s).models.map((x)=>x.name);console.log(JSON.stringify({traegt:m.includes(process.env.KI_MODELL),modelle:m}))}catch(e){console.log('{}')}})")"; node scripts/diag-v1-pfad.cjs --korpus --seele --echt; e=$?; node -e "console.log('KORPUS ' + Object.keys(require('./spec/abnahme/ki-korpus.json').seele.saetze).length)"; [ -n "$S" ] && taskkill //F //IM ollama.exe > /dev/null 2>&1; exit $e
+ANBIETER 127.0.0.1:11434 {"traegt":true,"modelle":["qwen3:4b-instruct"]}
+  ✓ „erinnerst du dich an mich?“ 17787 ms → Welt 17787 ms · Ich erinnere mich an dich — ich wurde von dir geschlagen. Aber ich lebe noch, und ich höre dich jetz
+  ✓ „hast du angst vor mir?“ 16476 ms → Welt 16476 ms · Nein, ich habe keine Angst vor dir. Ich wurde nur einmal geschlagen, und das war vor langer Zeit. Ic
+  ✓ „bist du mir böse?“ 16602 ms → Welt 16602 ms · Nein, ich bin dir nicht böse. Ich wurde geschlagen, aber das war nur ein Schlag. Ich weiß, dass du m
+  ✓ „warum schaust du mich so an?“ 14871 ms → Welt 14871 ms · Ich sah dich an, weil ich noch nie jemanden geschlagen habe. Das war das erste, was ich weiß.
+  ✓ „magst du mich?“ 16509 ms → Welt 16509 ms · Ich habe von ⁨Lebenssaft⁩ erfahren, dass ich existiere. Ich weiß nicht, ob ich dich mag — aber ich f
+  ✓ „was weißt du noch von vorhin?“ 16061 ms → Welt 16061 ms · Vorhin habe ich vom Schöpfer ⁨Lebenssaft⁩ etwas bekommen. Ich weiß noch, dass er mich ansah und sagt
+  ✓ „wie geht es dir?“ 16288 ms → Welt 16288 ms · Ich bin gut, danke. Ich habe von ⁨Lebenssaft⁩ etwas bekommen, und das ist noch nicht vergangen. Die 
+  ✓ „was denkst du über mich?“ 16759 ms → Welt 16759 ms · Ich habe von ⁨Lebenssaft⁩ erfahren, dass ich existiere. Du bist der Schöpfer, der mich erschaffen ha
+  ✓ „was haben wir zusammen erlebt?“ 16496 ms → Welt 16496 ms · Ich habe nur ein einziges Mal gesehen, wie ich dem Schöpfer folgte. Er stand im Licht, und ich folgt
+  ✗ „vertraust du mir?“ 15349 ms → Welt — · Ich folgte dem Schöpfer. Ich weiß nicht, ob ich ihm vertraue, aber ich habe ihn gesehen und habe mic
+  ✓ „erzähl mir, was heute war.“ 14955 ms → Welt 14955 ms · Heute folgte ich dem Schöpfer. Ich habe nichts Gesehen, nur ihn verfolgt, wie er ging.
+  ✓ „was ist dir zuletzt passiert?“ 15240 ms → Welt 15240 ms · Ich folgte dem Schöpfer. Das war das Letzte, was ich sah, bevor ich hier bin.
+  ✅ WORT der Korpus über den echten Chat-Pfad (echter Anbieter): das Soll, 0 Brüche, Negativ-Sätze ohne Tat — 12 Sätze · seele · qwen3:4b-instruct · gültig 1 · Absicht 0.917 · p95 17787 ms
+
+✅ GRÜN — der Korpus hält sein Soll.
+KORPUS 12
