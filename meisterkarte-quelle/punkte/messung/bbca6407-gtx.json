@@ -1,7 +1,7 @@
 {
  "sha": "bbca6407aa49bf5551e6216dac77a33d59d7ecbf",
  "geraet": "gtx",
- "zeit": "2026-11-05T16:56:07.896Z",
+ "zeit": "2026-11-05T17:14:30.899Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "lod.K5#1": {
@@ -116,6 +116,209 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "ankunft.K3#1",
+   "modus": "session"
+  },
+  "profiband.K4#1": {
+   "gruen": false,
+   "zahl": "Gehen 51 Bilder · max 108.25 ms · 56.86 % > 33 ms · Fahrt 33 Bilder · max 133.36 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 2 Bild(er) > 100 ms (max 108.25), 56.86 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 133.36), 100.00 % > 33 ms",
+   "exit": 0,
+   "minuten": 0.66,
+   "grund": "ROT: Gehen 51 Bilder · max 108.25 ms · 56.86 % > 33 ms · Fahrt 33 Bilder · max 133.36 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 2 Bild(er) > 100 ms (max 108.25), 56.86 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 133.36), 100.00 % > 33 ms",
+   "gpu": "nvidia/pascal",
+   "s": 39.4,
+   "zeit": "2026-11-05T17:02:48.091Z",
+   "abdruck": "3fd9f4bf2400",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K4#2": {
+   "gruen": false,
+   "zahl": "Gehen 51 Bilder · max 108.25 ms · 56.86 % > 33 ms · Fahrt 33 Bilder · max 133.36 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 2 Bild(er) > 100 ms (max 108.25), 56.86 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 133.36), 100.00 % > 33 ms",
+   "exit": 0,
+   "minuten": 0.66,
+   "grund": "ROT: Gehen 51 Bilder · max 108.25 ms · 56.86 % > 33 ms · Fahrt 33 Bilder · max 133.36 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 2 Bild(er) > 100 ms (max 108.25), 56.86 % > 33 ms | Fahrt: 4 Bild(er) > 100 ms (max 133.36), 100.00 % > 33 ms",
+   "gpu": "nvidia/pascal",
+   "s": 39.4,
+   "zeit": "2026-11-05T17:02:48.091Z",
+   "abdruck": "5d16596d62f0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K4#1",
+   "modus": "session"
+  },
+  "mensch.K4#1": {
+   "gruen": false,
+   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third ROT strich 0.333 Soll [1,1] — gesicht 0.333 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL — · lippeA — · hoehleL — · hoehleA — · haarDeckung 1 [0.9, 1]",
+   "exit": 0,
+   "minuten": 0.49,
+   "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third ROT strich 0.333 Soll [1,1] — gesicht 0.333 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL — · lippeA — · hoehleL — · hoehleA — · haarDeckung 1 [0.9, 1]",
+   "gpu": "nvidia/pascal",
+   "s": 29.2,
+   "zeit": "2026-11-05T17:03:46.201Z",
+   "abdruck": "2b95be34eb33",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K2#1": {
+   "gruen": false,
+   "zahl": "boden 0.5 m glatt 0.1891 nyquist 0.1594 (Arm 0.498), 1 m glatt 0.3634 nyquist 0.1729 (Arm 0.998), 2 m glatt 0.2353 nyquist 0.1733 (Arm 1.996) · fels 0.5 m glatt 0.9292 nyquist 0.1833 (Arm 0.494), 1 m glatt 0.7514 nyquist 0.1348 (Arm 0.99), 2 m glatt 0.3601 nyquist 0.1768 (Arm 1.984) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.06,
+   "grund": "ROT: boden 0.5 m glatt 0.1891 nyquist 0.1594 (Arm 0.498), 1 m glatt 0.3634 nyquist 0.1729 (Arm 0.998), 2 m glatt 0.2353 nyquist 0.1733 (Arm 1.996) · fels 0.5 m glatt 0.9292 nyquist 0.1833 (Arm 0.494), 1 m glatt 0.7514 nyquist 0.1348 (Arm 0.99), 2 m glatt 0.3601 nyquist 0.1768 (Arm 1.984) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 63.9,
+   "zeit": "2026-11-05T17:04:15.400Z",
+   "abdruck": "ef028f1cb201",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K5#1": {
+   "gruen": false,
+   "zahl": "Dauer 4.55 min in 2 Seite(n), 2 Proben: Dauerlast 340 Bilder · Bild-p95 91.65 (p99 108.35, max 691.75) ms · Takt-p95 83 ms · VRAM-p95 144.8 MB · Anker Bild-p95 58.31 → 49.99 ms · Heap 276.9 → 365.7 MB · VRAM nach GC 128.1 → 122.4 MB · Weg 0.1 km (gegangen/gefahren 0.1) · [linse-gpu] nvidia/pascal — ROT 4: 2 Seiten zwischen Anfang und Ende (neu geladen — nie am Stück) | 4.55 min am Stück < 20 | Gang: heap: +19.5 MB/min > 5 — Halter: r._foundry.cache[].children[].geometry.attributes +12.1 MB · r.state.chunkSaetze[].mesh.__renderObjekte[].attributes +10.2 MB · r.state.chunkSaetze[].mesh.__renderObjekte[]._anazhIx +5.3 MB | Weg 139 m < 5 km",
+   "exit": 0,
+   "minuten": 0.42,
+   "grund": "ROT: Dauer 4.55 min in 2 Seite(n), 2 Proben: Dauerlast 340 Bilder · Bild-p95 91.65 (p99 108.35, max 691.75) ms · Takt-p95 83 ms · VRAM-p95 144.8 MB · Anker Bild-p95 58.31 → 49.99 ms · Heap 276.9 → 365.7 MB · VRAM nach GC 128.1 → 122.4 MB · Weg 0.1 km (gegangen/gefahren 0.1) · [linse-gpu] nvidia/pascal — ROT 4: 2 Seiten zwischen Anfang und Ende (neu geladen — nie am Stück) | 4.55 min am Stück < 20 | Gang: heap: +19.5 MB/min > 5 — Halter: r._foundry.cache[].children[].geometry.attributes +12.1 MB · r.state.chunkSaetze[].mesh.__renderObjekte[].attributes +10.2 MB · r.state.chunkSaetze[].mesh.__renderObjekte[]._anazhIx +5.3 MB | Weg 139 m < 5 km",
+   "gpu": "nvidia/pascal",
+   "s": 25.1,
+   "zeit": "2026-11-05T17:07:18.999Z",
+   "abdruck": "6c22c6593987",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K5#2": {
+   "gruen": false,
+   "zahl": "Dauer 4.55 min in 2 Seite(n), 2 Proben: Dauerlast 340 Bilder · Bild-p95 91.65 (p99 108.35, max 691.75) ms · Takt-p95 83 ms · VRAM-p95 144.8 MB · Anker Bild-p95 58.31 → 49.99 ms · Heap 276.9 → 365.7 MB · VRAM nach GC 128.1 → 122.4 MB · Weg 0.1 km (gegangen/gefahren 0.1) · [linse-gpu] nvidia/pascal — ROT 4: 2 Seiten zwischen Anfang und Ende (neu geladen — nie am Stück) | 4.55 min am Stück < 20 | Gang: heap: +19.5 MB/min > 5 — Halter: r._foundry.cache[].children[].geometry.attributes +12.1 MB · r.state.chunkSaetze[].mesh.__renderObjekte[].attributes +10.2 MB · r.state.chunkSaetze[].mesh.__renderObjekte[]._anazhIx +5.3 MB | Weg 139 m < 5 km",
+   "exit": 0,
+   "minuten": 0.42,
+   "grund": "ROT: Dauer 4.55 min in 2 Seite(n), 2 Proben: Dauerlast 340 Bilder · Bild-p95 91.65 (p99 108.35, max 691.75) ms · Takt-p95 83 ms · VRAM-p95 144.8 MB · Anker Bild-p95 58.31 → 49.99 ms · Heap 276.9 → 365.7 MB · VRAM nach GC 128.1 → 122.4 MB · Weg 0.1 km (gegangen/gefahren 0.1) · [linse-gpu] nvidia/pascal — ROT 4: 2 Seiten zwischen Anfang und Ende (neu geladen — nie am Stück) | 4.55 min am Stück < 20 | Gang: heap: +19.5 MB/min > 5 — Halter: r._foundry.cache[].children[].geometry.attributes +12.1 MB · r.state.chunkSaetze[].mesh.__renderObjekte[].attributes +10.2 MB · r.state.chunkSaetze[].mesh.__renderObjekte[]._anazhIx +5.3 MB | Weg 139 m < 5 km",
+   "gpu": "nvidia/pascal",
+   "s": 25.1,
+   "zeit": "2026-11-05T17:07:18.999Z",
+   "abdruck": "9cb0be8108f4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K5#1",
+   "modus": "session"
+  },
+  "physik.K2#2": {
+   "gruen": false,
+   "zahl": "Wagen fahrzeug_supersport 19.63 m/s (vmax 16.36 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 16.37 m/s · im Bild an der Mauer: Wagen Spalt max 0.085 m, Eindringen max 0.027 m; Bär Spalt max 0 m, Eindringen max 0.17 m · 6 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 19.63 m/s @144 → _t_kontakt_mauer#3326 — im Bild Spalt 0)",
+   "exit": 0,
+   "minuten": 0.68,
+   "grund": "ROT: Wagen fahrzeug_supersport 19.63 m/s (vmax 16.36 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 16.37 m/s · im Bild an der Mauer: Wagen Spalt max 0.085 m, Eindringen max 0.027 m; Bär Spalt max 0 m, Eindringen max 0.17 m · 6 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 19.63 m/s @144 → _t_kontakt_mauer#3326 — im Bild Spalt 0)",
+   "gpu": "nvidia/pascal",
+   "s": 40.6,
+   "zeit": "2026-11-05T17:07:59.510Z",
+   "abdruck": "1d825ee274e2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K4#2": {
+   "gruen": false,
+   "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1744, Häuser 12 → 20/21, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 59 m vom Ort · Schuss vom Hügel 210 m, 11.7 m höher · ohne Abnahme (Exit 0)",
+   "exit": 0,
+   "minuten": 1.35,
+   "grund": "ROT: W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1744, Häuser 12 → 20/21, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 59 m vom Ort · Schuss vom Hügel 210 m, 11.7 m höher · ohne Abnahme (Exit 0)",
+   "gpu": "nvidia/pascal",
+   "s": 81.2,
+   "zeit": "2026-11-05T17:12:47.861Z",
+   "abdruck": "28b7d8f6616a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K1#1": {
+   "gruen": false,
+   "zahl": "Bild-p95 ≤ 33: wiese-ego-geht 50.03 · wiese-ego-sprint 41.67 · wiese-fahrt ? · genesis-third-geht 66.63 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 80.1 s · [linse-gpu] nvidia/pascal — ROT 6: wiese-ego-geht Bild-p95 50.03 > 33 | wiese-ego-sprint Bild-p95 41.67 > 33 | wiese-fahrt: ungemessen (die Uhr 84 s trug den Schritt nicht) | genesis-third-geht Bild-p95 66.63 > 33 | stadt-ego-geht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+   "exit": 0,
+   "minuten": 1.34,
+   "grund": "ROT: Bild-p95 ≤ 33: wiese-ego-geht 50.03 · wiese-ego-sprint 41.67 · wiese-fahrt ? · genesis-third-geht 66.63 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 80.1 s · [linse-gpu] nvidia/pascal — ROT 6: wiese-ego-geht Bild-p95 50.03 > 33 | wiese-ego-sprint Bild-p95 41.67 > 33 | wiese-fahrt: ungemessen (die Uhr 84 s trug den Schritt nicht) | genesis-third-geht Bild-p95 66.63 > 33 | stadt-ego-geht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+   "gpu": "nvidia/pascal",
+   "s": 80.4,
+   "zeit": "2026-11-05T17:14:30.899Z",
+   "abdruck": "d99cb8f5d547",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K1#2": {
+   "gruen": false,
+   "zahl": "Bild-p95 ≤ 16.7: wiese-ego-steht 25.09 · wiese-third-steht ? · genesis-ego-steht 66.65 · genesis-third-steht 25.06 · wiese-ego-geht 50.03 · wiese-ego-sprint 41.67 · wiese-fahrt ? · genesis-third-geht 66.63 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 80.1 s · [linse-gpu] nvidia/pascal — ROT 10: wiese-ego-steht Bild-p95 25.09 > 16.7 | wiese-third-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | genesis-ego-steht Bild-p95 66.65 > 16.7 | genesis-third-steht Bild-p95 25.06 > 16.7 | wiese-ego-geht Bild-p95 50.03 > 16.7 | wiese-ego-sprint Bild-p95 41.67 > 16.7",
+   "exit": 0,
+   "minuten": 1.34,
+   "grund": "ROT: Bild-p95 ≤ 16.7: wiese-ego-steht 25.09 · wiese-third-steht ? · genesis-ego-steht 66.65 · genesis-third-steht 25.06 · wiese-ego-geht 50.03 · wiese-ego-sprint 41.67 · wiese-fahrt ? · genesis-third-geht 66.63 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 80.1 s · [linse-gpu] nvidia/pascal — ROT 10: wiese-ego-steht Bild-p95 25.09 > 16.7 | wiese-third-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | genesis-ego-steht Bild-p95 66.65 > 16.7 | genesis-third-steht Bild-p95 25.06 > 16.7 | wiese-ego-geht Bild-p95 50.03 > 16.7 | wiese-ego-sprint Bild-p95 41.67 > 16.7",
+   "gpu": "nvidia/pascal",
+   "s": 80.4,
+   "zeit": "2026-11-05T17:14:30.899Z",
+   "abdruck": "cf1ffc5a5e15",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K2#1": {
+   "gruen": false,
+   "zahl": "Belegung p95 ≤ 5.8: wiese-ego-steht 13.27 · wiese-third-steht ? · genesis-ego-steht 58.02 · genesis-third-steht 17.98 · Gang 80.1 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht Belegung p95 13.27 > 5.8 | wiese-third-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | genesis-ego-steht Belegung p95 58.02 > 5.8 | genesis-third-steht Belegung p95 17.98 > 5.8",
+   "exit": 0,
+   "minuten": 1.34,
+   "grund": "ROT: Belegung p95 ≤ 5.8: wiese-ego-steht 13.27 · wiese-third-steht ? · genesis-ego-steht 58.02 · genesis-third-steht 17.98 · Gang 80.1 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht Belegung p95 13.27 > 5.8 | wiese-third-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | genesis-ego-steht Belegung p95 58.02 > 5.8 | genesis-third-steht Belegung p95 17.98 > 5.8",
+   "gpu": "nvidia/pascal",
+   "s": 80.4,
+   "zeit": "2026-11-05T17:14:30.899Z",
+   "abdruck": "c1988d88f42c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K2#2": {
+   "gruen": false,
+   "zahl": "Belegung p95 ≤ 5.8: wiese-ego-steht 13.27 · wiese-third-steht ? · genesis-ego-steht 58.02 · genesis-third-steht 17.98 ‖ Belegung p95 ≤ 8: wiese-ego-geht 50.43 · wiese-ego-sprint 40.31 · wiese-fahrt ? · genesis-third-geht 61.16 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 80.1 s · [linse-gpu] nvidia/pascal — ROT 10: wiese-ego-steht Belegung p95 13.27 > 5.8 | wiese-third-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | genesis-ego-steht Belegung p95 58.02 > 5.8 | genesis-third-steht Belegung p95 17.98 > 5.8 | wiese-ego-geht Belegung p95 50.43 > 8 | wiese-ego-sprint Belegung p95 40.31 > 8",
+   "exit": 0,
+   "minuten": 1.34,
+   "grund": "ROT: Belegung p95 ≤ 5.8: wiese-ego-steht 13.27 · wiese-third-steht ? · genesis-ego-steht 58.02 · genesis-third-steht 17.98 ‖ Belegung p95 ≤ 8: wiese-ego-geht 50.43 · wiese-ego-sprint 40.31 · wiese-fahrt ? · genesis-third-geht 61.16 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 80.1 s · [linse-gpu] nvidia/pascal — ROT 10: wiese-ego-steht Belegung p95 13.27 > 5.8 | wiese-third-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | genesis-ego-steht Belegung p95 58.02 > 5.8 | genesis-third-steht Belegung p95 17.98 > 5.8 | wiese-ego-geht Belegung p95 50.43 > 8 | wiese-ego-sprint Belegung p95 40.31 > 8",
+   "gpu": "nvidia/pascal",
+   "s": 80.4,
+   "zeit": "2026-11-05T17:14:30.899Z",
+   "abdruck": "0a6126d9fbfe",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K3#1": {
+   "gruen": false,
+   "zahl": "Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 113 · 483k · 127.4 MB · 17.77 ms | wiese-third ? | genesis-ego 104 · 457k · 120.6 MB · 12.97 ms | genesis-third 110 · 551k · 125.6 MB · 12.34 ms | dorf-ego ? | dorf-third ? · Gang 80.1 s · [linse-gpu] nvidia/pascal — ROT 6: Band wiese-ego: Band ROT kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · streu haupt: 7 befehle über der Ratsche 4 (Täter: streuSatz, f:blume:L2), gpu-bank 17.77 ms > 12, nicht eingeschwungen | Band wiese-third: ungemessen (die Uhr 84 s trug den Schritt nicht) | Band genesis-ego: Band ROT vorbau:fahrzeug_gt: 25 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · f:sitzbank:L0: 4 Befehle, keine Haushalt-Klasse nimmt den Täter, gpu-bank 12.97 ms > 12, nicht eingeschwungen | Band genesis-third: Band ROT f:sitzbank:L0: 6 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · fscatter:geroell:L0: L0 bis 69 m im Hauptbild (Wand 64 m) — Der still, gpu-bank 12.34 ms > 12 | Band dorf-ego: ungemessen (die Uhr 84 s trug den Schritt nicht) | Band dorf-third: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+   "exit": 0,
+   "minuten": 1.34,
+   "grund": "ROT: Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 113 · 483k · 127.4 MB · 17.77 ms | wiese-third ? | genesis-ego 104 · 457k · 120.6 MB · 12.97 ms | genesis-third 110 · 551k · 125.6 MB · 12.34 ms | dorf-ego ? | dorf-third ? · Gang 80.1 s · [linse-gpu] nvidia/pascal — ROT 6: Band wiese-ego: Band ROT kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · streu haupt: 7 befehle über der Ratsche 4 (Täter: streuSatz, f:blume:L2), gpu-bank 17.77 ms > 12, nicht eingeschwungen | Band wiese-third: ungemessen (die Uhr 84 s trug den Schritt nicht) | Band genesis-ego: Band ROT vorbau:fahrzeug_gt: 25 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · f:sitzbank:L0: 4 Befehle, keine Haushalt-Klasse nimmt den Täter, gpu-bank 12.97 ms > 12, nicht eingeschwungen | Band genesis-third: Band ROT f:sitzbank:L0: 6 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · fscatter:geroell:L0: L0 bis 69 m im Hauptbild (Wand 64 m) — Der still, gpu-bank 12.34 ms > 12 | Band dorf-ego: ungemessen (die Uhr 84 s trug den Schritt nicht) | Band dorf-third: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+   "gpu": "nvidia/pascal",
+   "s": 80.4,
+   "zeit": "2026-11-05T17:14:30.899Z",
+   "abdruck": "34ac4a105f22",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K3#2": {
+   "gruen": false,
+   "zahl": "Befehle p95 ≤ 208: wiese-ego-steht 51 · wiese-third-steht ? · genesis-ego-steht 51 · genesis-third-steht 67 · wiese-ego-geht 114 · wiese-ego-sprint 121 · wiese-fahrt ? · genesis-third-geht 91 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Dreiecke p95 ≤ 680000: wiese-ego-steht 389537 · wiese-third-steht ? · genesis-ego-steht 339126 · genesis-third-steht 385166 · wiese-ego-geht 507386 · wiese-ego-sprint 524377 · wiese-fahrt ? · genesis-third-geht 503755 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ VRAM MB ≤ 118: wiese-ego-steht 127.4 · wiese-third-steht ? · genesis-ego-steht 129 · genesis-third-steht 126.6 · wiese-ego-geht 130.8 · wiese-ego-sprint 131.6 · wiese-fahrt ? · genesis-third-geht 126.8 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ GPU p95 ≤ 12: wiese-ego-steht NaN · wiese-third-steht ? · genesis-ego-steht NaN · genesis-third-steht 2.53 · wiese-ego-geht 3.05 · wiese-ego-sprint 3.03 · wiese-fahrt ? · genesis-third-geht 2.58 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 113 · 483k · 127.4 MB · 17.77 ms | wiese-third ? | genesis-ego 104 · 457k · 120.6 MB · 12.97 ms | genesis-third 110 · 551k · 125.6 MB · 12.34 ms | dorf-ego ? | dorf-third ? · Gang 80.1 s · [linse-gpu] nvidia/pascal — ROT 30: wiese-third-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-fahrt: ungemessen (die Uhr 84 s trug den Schritt nicht) | stadt-ego-geht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-third-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-fahrt: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+   "exit": 0,
+   "minuten": 1.34,
+   "grund": "ROT: Befehle p95 ≤ 208: wiese-ego-steht 51 · wiese-third-steht ? · genesis-ego-steht 51 · genesis-third-steht 67 · wiese-ego-geht 114 · wiese-ego-sprint 121 · wiese-fahrt ? · genesis-third-geht 91 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Dreiecke p95 ≤ 680000: wiese-ego-steht 389537 · wiese-third-steht ? · genesis-ego-steht 339126 · genesis-third-steht 385166 · wiese-ego-geht 507386 · wiese-ego-sprint 524377 · wiese-fahrt ? · genesis-third-geht 503755 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ VRAM MB ≤ 118: wiese-ego-steht 127.4 · wiese-third-steht ? · genesis-ego-steht 129 · genesis-third-steht 126.6 · wiese-ego-geht 130.8 · wiese-ego-sprint 131.6 · wiese-fahrt ? · genesis-third-geht 126.8 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ GPU p95 ≤ 12: wiese-ego-steht NaN · wiese-third-steht ? · genesis-ego-steht NaN · genesis-third-steht 2.53 · wiese-ego-geht 3.05 · wiese-ego-sprint 3.03 · wiese-fahrt ? · genesis-third-geht 2.58 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 113 · 483k · 127.4 MB · 17.77 ms | wiese-third ? | genesis-ego 104 · 457k · 120.6 MB · 12.97 ms | genesis-third 110 · 551k · 125.6 MB · 12.34 ms | dorf-ego ? | dorf-third ? · Gang 80.1 s · [linse-gpu] nvidia/pascal — ROT 30: wiese-third-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-fahrt: ungemessen (die Uhr 84 s trug den Schritt nicht) | stadt-ego-geht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-third-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-fahrt: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+   "gpu": "nvidia/pascal",
+   "s": 80.4,
+   "zeit": "2026-11-05T17:14:30.899Z",
+   "abdruck": "4cc877868786",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
    "modus": "session"
   }
  },
@@ -292,225 +495,233 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "material.K3#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: haus@0.5 l1 1.004/l2 0.995 · birke@0.5 l1 0.994/karte 0.936 · fichte@0.5 l1 0.823/karte 1.172 · haus@0.27 l1 0.569/l2 0.564 · birke@0.27 l1 0.994/karte 0.935 · fichte@0.27 l1 0.993/karte 1.118 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] nv) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.evaluate): Target closed",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: haus@0.5 l1 1.004/l2 0.995 · birke@0.5 l1 0.994/karte 0.936 · fichte@0.5 l1 0.823/karte 1.172 · haus@0.27 l1 0.569/l2 0.564 · birke@0.27 l1 0.994/karte 0.935 · fichte@0.27 l1 0.993/karte 1.118 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] nv) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.evaluate): Target closed",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.3,
+   "zeit": "2026-11-05T17:05:25.446Z",
+   "abdruck": "0b25f5edced7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "schatten.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: buehne · Exit 0)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: buehne · Exit 0)",
+   "s": 45.3,
+   "zeit": "2026-11-05T17:08:53.903Z",
+   "abdruck": "8b9afa6bfd7d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 8 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch undefined/undefined (Frist d) · Täter: haus_skandinavisch · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe",
+   "exit": 0,
+   "minuten": 0.6,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 8 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch undefined/undefined (Frist d) · Täter: haus_skandinavisch · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 36.1,
+   "zeit": "2026-11-05T17:10:01.856Z",
+   "abdruck": "a78f56e3db67",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K2#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 16 ms portale, Neubau höchstens 1658 ms fachwerk, je Studio null Griffe) · Neuladen 5/8 · A/B 5/8) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 16 ms portale, Neubau höchstens 1658 ms fachwerk, je Studio null Griffe) · Neuladen 5/8 · A/B 5/8) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.2,
+   "zeit": "2026-11-05T17:11:02.106Z",
+   "abdruck": "ff8c83dddc70",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K3#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.105 ms), ohne garage L0 GPU 0.0236 ms↔Bank 8.4238 (+1), schmiede L0 GPU 0.0031 ms↔Bank 0.2429, portale L0 Bank 2.6663) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.105 ms), ohne garage L0 GPU 0.0236 ms↔Bank 8.4238 (+1), schmiede L0 GPU 0.0031 ms↔Bank 0.2429, portale L0 Bank 2.6663) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.2,
+   "zeit": "2026-11-05T17:11:02.106Z",
+   "abdruck": "3dfe8c4ace65",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "studios.K2#2",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-05T16:34:17.694Z",
+  "start": "2026-11-05T17:02:38.849Z",
   "port": 7804,
-  "warten": 1.1,
-  "bootS": 6.9,
+  "warten": 0.02,
+  "bootS": 7.3,
   "grundstellungS": [
-   4.4,
-   4.9,
-   6.6,
-   3.7,
-   5.1,
-   4.1,
-   6.9,
+   7.7,
    0.1,
-   4.4,
-   7.5,
-   7.1,
+   4.1,
+   5.2,
    4.3,
-   4.1
+   4.4
   ],
-  "proben": 17,
+  "proben": 11,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "licht.K2#2",
-    "s": 27.4,
-    "takte": 779,
-    "chunks": 81,
-    "nach": null
-   },
-   {
-    "ort": "wiese",
-    "vor": "lod.K1#1",
-    "s": 20.1,
-    "takte": 743,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "lod.K5#1",
-    "s": 20.9,
-    "takte": 758,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "genesis",
-    "vor": "ferne.K1#2",
-    "s": 13.4,
-    "takte": 603,
+    "vor": "mensch.K4#1",
+    "s": 18.6,
+    "takte": 839,
     "chunks": 81,
     "nach": null
    },
    {
     "ort": "genesis",
-    "vor": "material.K1#1",
-    "s": 19.9,
-    "takte": 645,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "genesis",
-    "vor": "licht.K1#1",
-    "s": 18.9,
-    "takte": 774,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "dorf",
-    "vor": "licht.K3#2",
-    "s": 36.8,
-    "takte": 1669,
-    "chunks": 81,
-    "nach": "der Tür"
+    "vor": "material.K3#2",
+    "s": 6,
+    "takte": 335,
+    "chunks": 95,
+    "nach": null
    },
    {
     "ort": null,
-    "vor": "affekt.K4#2",
-    "s": 17.4,
-    "takte": 924,
+    "vor": "profiband.K5#1",
+    "s": 21.5,
+    "takte": 581,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "wiese",
-    "vor": "gelaende.K2#2",
-    "s": 12.2,
-    "takte": 610,
+    "vor": "physik.K2#2",
+    "s": 15.3,
+    "takte": 705,
     "chunks": 81,
     "nach": null
    },
    {
-    "ort": "wiese",
-    "vor": "leib.K1#2",
-    "s": 19.6,
-    "takte": 717,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "leib.K4#2",
-    "s": 0.9,
-    "takte": 70,
-    "chunks": 81,
+    "ort": "buehne",
+    "vor": "schatten.K1#2",
+    "s": 13.6,
+    "takte": 594,
+    "chunks": 84,
     "nach": "der Grundstellung"
    },
    {
-    "ort": "wiese",
-    "vor": "fahrzeug.K2#1",
-    "s": 19.7,
-    "takte": 689,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "fahrzeug.K2#2",
-    "s": 21.4,
-    "takte": 742,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "dorf",
-    "vor": "licht.K3#1",
-    "s": 24.5,
-    "takte": 855,
+    "ort": "genesis",
+    "vor": "siedlung.K1#2",
+    "s": 18.6,
+    "takte": 637,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": null,
-    "vor": "bauen.K1#2",
-    "s": 16.2,
-    "takte": 854,
+    "vor": "studios.K2#2",
+    "s": 18.9,
+    "takte": 690,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": null,
-    "vor": "ankunft.K3#1",
-    "s": 17.7,
-    "takte": 963,
+    "vor": "siedlung.K4#2",
+    "s": 17.2,
+    "takte": 700,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "profiband.K1#1",
+    "s": 17.4,
+    "takte": 751,
     "chunks": 81,
     "nach": "der Tür"
    }
   ],
   "wegeTueren": [
    {
-    "vor": "bauen.K1#2",
-    "wege": "wege +6 [-119.1,-274.9,279.2,201/272] [-748.3,-821.3,-615.9,-784.1/28] [-784.3,-952.2,-631.7,-806.5/4] …",
-    "s": 4.3
+    "vor": "profiband.K1#1",
+    "wege": "wege +6 [152.6,505.5,647.4,926.8/347] [234.5,504.5,580.5,843.3/335] [239.3,559.1,507,832.5/12] …",
+    "s": 4.4
+   }
+  ],
+  "haenger": [
+   {
+    "probe": "profiband.K4#1",
+    "zurueck": 10
    }
   ],
   "unerklaert": [
    {
-    "probe": "material.K1#1",
+    "probe": "material.K3#2",
     "wie": "werke +6 (−0)"
-   },
-   {
-    "probe": "licht.K3#2",
-    "wie": "orte +-3,-3 · wege +3 [-748.3,-821.3,-615.9,-784.1/28] [-805.3,-801.4,-689.5,-574/6] [-833.8,-834.7,-648.1,-574.2/76] (-3,-3, netz:-3,-3, netz:-3,-3|-4,-4)"
    }
   ],
-  "ciBlicke": 18,
+  "ciBlicke": 12,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 6595,
+   "bilder": 985,
    "frameP95": 66.68,
-   "taktP95": 64.51,
-   "vramMax": 140.5,
-   "seiten": 17,
-   "marken": 0,
+   "taktP95": 63.56,
+   "vramMax": 159.7,
+   "seiten": 6,
+   "marken": 2,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "ferne.K1#2",
-     "m": 3592,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "fahrzeug.K2#2",
-     "m": 1863,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "gelaende.K2#2",
-     "m": 1718,
+     "probe": "profiband.K1#1",
+     "m": 1112,
      "ringVor": 4,
      "ringMin": 0
     },
     {
-     "probe": "fahrzeug.K2#1",
-     "m": 1215,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "licht.K1#1",
+     "probe": "material.K2#1",
      "m": 1083,
      "ringVor": 4,
      "ringMin": 0
+    },
+    {
+     "probe": "siedlung.K4#2",
+     "m": 590,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "schatten.K1#2",
+     "m": 459,
+     "ringVor": 4,
+     "ringMin": 1
     }
    ],
-   "zapfen": 1217,
-   "luecken": 6,
-   "letzteLuecke": "Execution context was destroyed, most likely because of a navigation."
+   "zapfen": 727,
+   "luecken": 2,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 1303.8,
-  "minuten": 22.87
+  "fahrtS": 791.2,
+  "minuten": 13.26
  }
 }
