@@ -1460,7 +1460,8 @@ class AnazhRealm_siedlung_verkehr {
             (z.Z.art === "enge" && z.Z.richtung === z.dir);
         // der Kopf der Reihe: der erste Wartende, vor dem keiner in seiner Spur auf denselben Ort wartet (bis hier stand an der
         // Spitze, wer zuerst fragte — auch hinter einem, der nach ihm kam: beide warteten aufeinander) und dessen Kette frei ist
-        // (`gesperrt`: ein Ort dahinter hält ein anderer) — bis w12-verkehr hielt der Kopf die Reihe auch, wenn er selbst nicht
+        // (`gesperrt`: einen Ort hinter dem gefragten hält ein anderer; wer nur auf den gefragten wartet, bleibt Kopf — sonst
+        // führe der Durchgang der Wende ewig vor dem Ausparkenden vorbei) — bis w12-verkehr hielt der Kopf die Reihe auch, wenn er selbst nicht
         // konnte: um 23 Uhr wartete Wagen 5 an der Enge vor der Wende, die Wagen 18 hielt, 18 stand hinter 13, 13 hinter 15, und 15
         // durfte nicht an der Enge an 5 vorbei — ab Minute 5 fuhr keiner der 20 Wagen der Stadt des Worts
         const kopf = Z.warte.find((o) => o === W || (!o.gesperrt && !(o.vorne && Z.warte.includes(o.vorne.O))));
@@ -1476,7 +1477,7 @@ class AnazhRealm_siedlung_verkehr {
             W.gesperrt = false;
             return Infinity;
         }
-        W.gesperrt = !kette.every(darf);
+        W.gesperrt = !kette.slice(1).every(darf); // ein Ort HINTER dem gefragten gehört einem anderen
         if (!Z.warte.includes(W)) Z.warte.push(W);
         return halt;
     }
