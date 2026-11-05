@@ -479,9 +479,9 @@ class AnazhRealm_feld_leben {
     evolveNexus(currentTime) {
         // ### Nexus-Evolution ###
         // Zweck: Erhöht Autonomie und schlägt neue Funktionen vor
-        // DER TAKT DES NEXUS RUHT IN DER MESS-WELT (Gate-Treue, das EINE Urteil des Dorf-Zugs `_dorfTaktLebt`): headless und
-        // unter dem Haken `__anazhAutoSettlement = false` wirft er nichts nach der Wanduhr — sein Dorf landete, je nachdem wie
-        // viele Takte die Welt bis zum Stehen brauchte, 180–380 m vom Spieler, in der CI am 25°-Hang der Stand-Linse (K8 fein
+        // DER TAKT DES NEXUS RUHT IN DER MESS-WELT (das EINE Urteil des Dorf-Zugs `_dorfTaktLebt`): unter dem Haken des Orts
+        // `__anazhAutoSettlement = false` (jede Linse an der Ankunft, `server.zeige`) wirft er nichts nach der Wanduhr — sein Dorf
+        // landete, je nachdem wie viele Takte die Welt bis zum Stehen brauchte, 180–380 m vom Spieler, in der CI am 25°-Hang der Stand-Linse (K8 fein
         // 30,8 und 31,4 cm statt 4,3). Ein Treiber (Linse, Akt) ruft `generateEvolution`.
         if (!this._dorfTaktLebt()) {
             this.state.nexusLastEvolution = currentTime;
