@@ -2249,12 +2249,31 @@ class AnazhRealm_vegetation_wiese {
             out.vorlaeufig = true;
             return out;
         }
-        if (memo.size > 8192) {
-            memo.clear(); // bounded — die Front ist lokal, ein Clear kostet nur Re-Compute
-            this._forestDartFall = (this._forestDartFall | 0) + 1;
-        }
+        this._forestDartRaum(memo, 1);
         memo.set(memoKey, out);
         return out;
+    }
+
+    // DIE SCHRANKE DES DART-GEDÄCHTNISSES räumt die FERNSTEN Zellen (Gebot 7, w12-dorf-strom): fasst das Gedächtnis `dazu`
+    // weitere Zellen nicht mehr (`WALD_PLAN.zellen`), fallen die Zellen mit dem größten Rang (`_spielerD2`, die Zeit bis
+    // Bedarf) bis auf drei Viertel; der Plan um den Spieler bleibt. Die Darts einer Zelle sind eine reine Funktion des Stands
+    // — kein Stand fällt, nur die stehenden Kästen (`_waldPlanVoll`) fragen neu. Bis w12-dorf-strom warf die Schranke das
+    // ganze Gedächtnis (`memo.clear()`): die Fahrt ins Dorf lud 11 108 Zellen, jeder Überlauf nahm den Plan aller Bäume vor
+    // dem Spieler, die Schlange stieg auf 1 330 Zellen, und 572 von 578 Bäumen traten ohne Gestalt in den Sichtkegel.
+    _forestDartRaum(memo, dazu) {
+        const N = AnazhRealm.WALD_PLAN.zellen;
+        if (memo.size + dazu <= N) return 0;
+        const C = AnazhRealm.FOREST.cell;
+        const rang = [];
+        for (const k of memo.keys()) {
+            const i = k.indexOf(",");
+            rang.push([this._spielerD2((Number(k.slice(0, i)) + 0.5) * C, (Number(k.slice(i + 1)) + 0.5) * C), k]);
+        }
+        rang.sort((a, b) => b[0] - a[0]);
+        const weg = Math.min(rang.length, memo.size + dazu - ((N * 3) >> 2));
+        for (let i = 0; i < weg; i++) memo.delete(rang[i][1]);
+        this._waldPlanVoll = null;
+        return weg;
     }
 
     // Das Gedächtnis der GEBORENEN Darts am Stand des Dart-Gedächtnisses (`_forestDartMemo`, `_forestDartFall`, `_erdbauStand`
@@ -2569,10 +2588,7 @@ class AnazhRealm_vegetation_wiese {
         const Q = this._waldPlanSchlange;
         let n = 0;
         if (r && this._forestDartMemo === memo && (this._erdbauStand | 0) === erd) {
-            if (memo.size + zellen.length / 2 > 8192) {
-                memo.clear(); // bounded wie `_forestCellDarts`
-                this._forestDartFall = (this._forestDartFall | 0) + 1;
-            }
+            this._forestDartRaum(memo, zellen.length / 2);
             const alle = this._waldDartsEntpacken(r, zellen.length / 2);
             for (let i = 0; i < alle.length; i++) {
                 const k = zellen[i * 2] + "," + zellen[i * 2 + 1];
@@ -2770,4 +2786,5 @@ AnazhRealm.WALD_PLAN = Object.freeze({
     urteil: Math.max(...globalThis.__phytoCore.FOREST_URTEIL_REIHE.map(Math.abs)),
     ms: 3,
     faden: 64,
+    zellen: 8192,
 });
