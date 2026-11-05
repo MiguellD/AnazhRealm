@@ -35,13 +35,16 @@ class AnazhRealm_werkstatt_hud {
         // V9.95-e (Schöpfer-Browser-Audit-Folge): Defensive — wenn `text`
         // undefined ist (pool hat sparse-Array-Holes oder corrupted state),
         // den Sprech-Slot überspringen statt „Grok: undefined" zu loggen.
-        if (typeof text !== "string" || text.length === 0) return false;
+        // eine Zeile der Tafel (`[schlüssel]`, die Sätze des Begleiters: die Sprache des Spielers, spielgang.K5) oder ein freier Satz
+        // (dslSay, die KI: Daten, wie er kam)
+        const zeile = Array.isArray(text) && typeof text[0] === "string";
+        if (!zeile && (typeof text !== "string" || text.length === 0)) return false;
         grok.poolIndex[key] = (idx + 1) % pool.length;
         grok.lastSpoke = now;
         if (cfg) cfg.lastFired = now;
         this.grokRender(text);
         // Welle 6.X.4 F1 V8.13 — Begleiter-Name durchziehen statt hardcoded.
-        this.log(`${grok.companionName || "Grok"}: ${text}`, "INFO");
+        this.log(`${grok.companionName || "Grok"}: ${zeile ? AnazhRealm._tIn("de", text[0], text[1]) : text}`, "INFO");
         return true;
     }
 
