@@ -1098,8 +1098,9 @@ class AnazhRealm_gelaende_kollision {
     }
 
     // Die Namen eines Eintrags im Verzeichnis: jeder wahre Schlüssel seiner Affordanzen, „rauch", wenn er einen Kamin trägt,
-    // „glut", wenn er eine Brenn-Fläche trägt (`_glutFlaeche`; Leser: der Klang), und „licht", wenn er eine Leuchtquelle ist
-    // (`_lichtDatum`; Leser: der Licht-Takt `_leuchtTakt`).
+    // „glut", wenn er eine Brenn-Fläche trägt (`_glutFlaeche`; Leser: der Klang), „licht", wenn er eine Leuchtquelle ist
+    // (`_lichtDatum`; Leser: der Licht-Takt `_leuchtTakt`), und „geraet", wenn er ein Gerät des Fachwerks ist (fachwerk
+    // `GERAETE`, Art_Rezept; Leser: die Angebote des Leibs `_leibAngebote`).
     _blockerNamen(entry) {
         const out = [];
         const a = entry.affordances;
@@ -1107,6 +1108,11 @@ class AnazhRealm_gelaende_kollision {
         if ((entry.userData && entry.userData.rauchQuelle) || entry.chimney) out.push("rauch");
         if (this._glutFlaeche(entry) > 0) out.push("glut");
         if (this._lichtDatum(entry)) out.push("licht");
+        const typ = entry.type;
+        const k = typeof typ === "string" ? typ.indexOf("_") : -1;
+        const G = k >= 0 && globalThis.__fachwerkCore ? globalThis.__fachwerkCore.GERAETE : null;
+        const g = G ? G[typ.slice(k + 1)] : null;
+        if (g && g.kind === typ.slice(0, k)) out.push("geraet");
         return out;
     }
 
