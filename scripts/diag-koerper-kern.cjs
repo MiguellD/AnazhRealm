@@ -70,7 +70,9 @@ function altLandmarks(mess) {
 // trug die Linse hier eine Abschrift von dessen Rumpf (byte-gleich, 2 282 Zeichen) — ein Zwilling, der den echten Leser
 // nie las.
 // ────────────────────────────────────────────────────────────────────────────
-const neuMorph = (p, N) => core.morphAuf({ character: N.parts.__character, parts: N.parts, base: N.base }, p);
+// Der Mock trägt keine Gestalt (`kugeln: []`): die Ruhe der Arme (w11-koerper, `_armRuhe`) misst an den Kugeln des Baums und
+// läuft hier leer — ihren Kontakt misst gate:mensch-anatomie RUHE am Guss.
+const neuMorph = (p, { parts, base }) => core.morphAuf({ character: parts.__character, parts, base, kugeln: [] }, p);
 
 // ────────────────────────────────────────────────────────────────────────────
 // Mock-Rig + deterministische base-Skalen (mulberry32 — der Test-Strom).

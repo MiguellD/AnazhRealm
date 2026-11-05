@@ -368,13 +368,15 @@ const cielab = (c) => {
 // Dither-Phase je Schuss; `werkbank bild --klasse`): G die Szene, die gemessenen Klassen ohne Schattenwurf; O_k dieselbe ohne
 // die Klasse k. Ein Pixel gehört der Klasse, deren Fehlen es am stärksten ändert (Summe der Kanal-Beträge 0–765), über der
 // Schwelle: das Pixel ZEIGT sie — ihr Schatten fehlt in G wie in O_k, eine Wurzel unter dem Boden zeigt in keinem der beiden.
-// Ein Misch-Pixel (zwei Klassen über der Schwelle, der Halm vor dem Grund) zählt EINMAL, bei der stärkeren; `misch` zählt sie.
+// Ein Misch-Pixel (zwei Klassen über der Schwelle, der Halm vor dem Grund) zählt EINMAL, bei der stärkeren; `misch` zählt sie,
+// `gemischt` nennt sie je Pixel (1: mehr als eine Klasse ändert es — die Farbe des Pixels ist keine Farbe EINER Fläche).
 // Die Schwelle hält das GEMESSENE Rauschen: je Aufruf zwei gleiche Schüsse G und G2 (`bildRauschen`), die Tafel bricht über
 // RAUSCHEN_MAX.
 const RAUSCHEN_MAX = 0.002;
 function klassenTeilung(G, Os, W, H, schwelle) {
     const t = schwelle == null ? 18 : schwelle;
     const teil = new Uint8Array(W * H);
+    const gemischt = new Uint8Array(W * H);
     let misch = 0;
     for (let p = 0; p < W * H; p++) {
         const i = p * 4;
@@ -393,9 +395,9 @@ function klassenTeilung(G, Os, W, H, schwelle) {
             }
         }
         teil[p] = best;
-        if (n > 1) misch++;
+        if (n > 1) misch++, (gemischt[p] = 1);
     }
-    return { teil, misch };
+    return { teil, misch, gemischt };
 }
 // Das Rauschen zweier gleicher Schüsse (rein, in der Seite als `__bildRauschen`): Anteil der Pixel über der Schwelle, größter
 // Unterschied.
@@ -750,91 +752,6 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
         glatt: mk[0] ? r4(mk[1] / mk[0]) : null,
         nyquist: mk[2] + mk[3] > 0 ? r4(mk[2] / (mk[2] + mk[3])) : null,
         beta: mk[4] > 0 && mk[6] > 0 ? r4(2 + Math.log2(mk[6] / mk[4]) / 2) : null,
-    };
-}
-
-// DAS GESICHT IM BILD (rein, in der Seite als `__gesichtMasse`; K63-n2, `werkbank bild --gesicht`): die Züge, die KOPF_SOLL
-// nennt, wie die AUSGABE sie zeigt (Prüfer K63 R2: Augen, Mund und Haar-Fleck maß nichts). `proben` sind die Vertices des Kopfs,
-// projiziert: { z: iris|lippe|hoehle|haut|kappe, x, y, k (Teil der Teilung + 1), vorn, kalotte }; eine Probe ist SICHTBAR, wenn
-// die Teilung an ihrem Pixel ihren eigenen Teil zeigt. Farben in CIELAB (D65) aus dem Mittel der linearisierten sRGB-Pixel (je
-// Pixel einmal):
-//   augeFrei     sichtbare vordere Iris-Proben / vordere Iris-Proben (Lider und Haut davor verdecken)
-//   lippeL/A     ΔL*, Δa* der sichtbaren Lippe gegen die Wange (sichtbare Haut-Proben zwischen Augen- und Mund-Zeile, ohne
-//                ihre Ränder) · hoehleL/A dasselbe für die Augenhöhle
-//   haarDeckung  Anteil der vorderen Kalotten-Proben (über der Haarlinie KOPF_SOLL haarLinie), die als Haar lesen: dort zeigt
-//                die Teilung eine Strähne (`haarK`), oder die Haut zeigt einen Ton näher am Haar als an der Wange
-function gesichtMasse(F, teil, W, H, proben, haarK) {
-    const lab = cielab;
-    const px = (x, y) => y * W + x;
-    const sicht = (p) => teil[px(p.x, p.y)] === p.k;
-    const farbMittel = (liste) => {
-        const seen = new Set(),
-            c = [0, 0, 0];
-        for (const p of liste) {
-            const i = px(p.x, p.y);
-            if (seen.has(i)) continue;
-            seen.add(i);
-            for (let ch = 0; ch < 3; ch++) c[ch] += srgbLin(F[i * 4 + ch]);
-        }
-        return seen.size ? { lab: lab(c.map((v) => v / seen.size)), n: seen.size } : null;
-    };
-    const von = (z, f) => proben.filter((p) => p.z === z && (!f || f(p)));
-    const r = (x, d) => (x == null || !Number.isFinite(x) ? null : +x.toFixed(d));
-    const irisV = von("iris", (p) => p.vorn);
-    const irisS = irisV.filter(sicht);
-    const mittelY = (l) => (l.length ? l.reduce((a, p) => a + p.y, 0) / l.length : null);
-    const yAuge = mittelY(irisV),
-        lippeS = von("lippe", sicht),
-        yMund = mittelY(von("lippe", (p) => p.vorn));
-    let wange = null;
-    if (yAuge != null && yMund != null && yMund > yAuge) {
-        const a = yAuge + 0.15 * (yMund - yAuge),
-            b = yMund - 0.15 * (yMund - yAuge);
-        wange = farbMittel(von("haut", (p) => p.vorn && sicht(p) && p.y >= a && p.y <= b));
-    }
-    const lippe = farbMittel(lippeS),
-        hoehle = farbMittel(von("hoehle", sicht));
-    const hk = new Set(haarK || []);
-    const haarPx = [];
-    for (let i = 0; i < W * H; i++) if (hk.has(teil[i])) haarPx.push({ x: i % W, y: Math.floor(i / W) });
-    const haar = farbMittel(haarPx.length ? haarPx : von("kappe", sicht));
-    let haarDeckung = null,
-        kal = 0;
-    if (wange && haar) {
-        let h = 0;
-        const d2 = (u, v) => (u[0] - v[0]) ** 2 + (u[1] - v[1]) ** 2 + (u[2] - v[2]) ** 2;
-        for (const p of proben) {
-            if (!p.kalotte || !p.vorn) continue;
-            const t = teil[px(p.x, p.y)];
-            if (hk.has(t)) {
-                kal++;
-                h++;
-            } else if (t === p.k) {
-                kal++;
-                const i = px(p.x, p.y);
-                const c = lab([srgbLin(F[i * 4]), srgbLin(F[i * 4 + 1]), srgbLin(F[i * 4 + 2])]);
-                if (d2(c, haar.lab) < d2(c, wange.lab)) h++;
-            }
-        }
-        haarDeckung = kal ? h / kal : null;
-    }
-    const d = (a, b, ch) => (a && b ? r(a.lab[ch] - b.lab[ch], 2) : null);
-    return {
-        augeFrei: irisV.length ? r(irisS.length / irisV.length, 3) : null,
-        lippeL: d(lippe, wange, 0),
-        lippeA: d(lippe, wange, 1),
-        hoehleL: d(hoehle, wange, 0),
-        hoehleA: d(hoehle, wange, 1),
-        haarDeckung: r(haarDeckung, 3),
-        proben: {
-            iris: irisV.length,
-            irisSicht: irisS.length,
-            lippe: lippeS.length,
-            wange: wange ? wange.n : 0,
-            kalotte: kal,
-            haarPixel: haarPx.length,
-        },
-        zeilen: { auge: r(yAuge, 1), mund: r(yMund, 1) },
     };
 }
 
@@ -2548,6 +2465,5 @@ module.exports = {
         `window.spiegelPartner = ${spiegelPartner.toString()};` +
         `window.__spiegelDaten = ${spiegelDaten.toString()};` +
         `window.__klassenMasse = ${klassenMasse.toString()};` +
-        `window.__gesichtMasse = ${gesichtMasse.toString()};` +
         `window.__farbtonProbe = ${farbtonProbe.toString()};`,
 };
