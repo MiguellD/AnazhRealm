@@ -589,8 +589,10 @@ class AnazhRealm_bild_kosten {
                 // ERST_BAU_MS, unter dem Ladeschirm unter der EINEN Frist des Lade-Frames, die im Lade-Bild dem Bild gehört
                 // (`_ladeFrist`); wer seinen noch nicht hat, wartet wie ein verschobener, nur der ruhende Loop baut am Stück. Bis
                 // w12-ankunft-faden baute ein Lade-Bild je Render-Aufruf am Stück bis LADE_TAKT_MS (ein Stoff 60–180 ms, swiftshader
-                // Holz voll: die erste Aufgabe des Boots 1 703 ms, darin der Szenen-Pass 522 ms)
-                if (ungebaut && !welt._loopRuht() && (welt.state._weltbildDa || welt._ladeTakt())) {
+                // Holz voll: die erste Aufgabe des Boots 1 703 ms, darin der Szenen-Pass 522 ms). DIE BÜHNE DER KARTE baut unter dem
+                // Ladeschirm am Stück unter der Frist ihres Versuchs (`B.versuch`, unten): ihr Versuch ist ganz oder nichts — in Raten
+                // zeichnete jeder Takt Sonnen-Kacheln, Leere und alle Ansichten neu für EINEN Schritt eines Graphen (Arbeit verteilt)
+                if (ungebaut && !welt._loopRuht() && (welt.state._weltbildDa || (welt._ladeTakt() && !buehne))) {
                     if (!welt._knotenRate(N, ro, E)) {
                         E.verschoben++;
                         if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);

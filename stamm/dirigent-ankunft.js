@@ -1325,9 +1325,16 @@ class AnazhRealm_dirigent_ankunft {
     }
 
     // RUHT DIE EINGABE? (spielgang.K3) — seit VORBAU_RUHE_MS keine Taste, kein Zeiger-Druck (der Stempel der Capture-Hörer):
-    // dann darf der Vorbau der Bedienung bauen; ein Bau mitten in der Eingabe hielte ihr nächstes Bild.
+    // dann darf der Vorbau der Bedienung bauen; ein Bau mitten in der Eingabe hielte ihr nächstes Bild. DIE KONTROLLE ZUERST
+    // (w12-ankunft-faden, PFLICHT B): was der Vorbau baut, steht im ersten Weltbild nicht — nach der Ankunft ruht die Eingabe
+    // erst, wenn der Spieler sie hatte (eine Taste, ein Druck nach `_weltbildDa`; unter dem Ladeschirm hält der Hörer davor jede
+    // Taste, kein Stempel), ohne sie, sobald die Welt steht (`_weltSteht`). Bis hier ruhte sie im Takt des Weltbilds schon: das
+    // Tuch-Gitter (`_tuchVorbau`) hielt den Haupt-Faden am Stück vor dem ersten Schritt (headless kalt 274–677 ms je Lauf, Radeon
+    // 226 ms), auch nach 300 ms ohne Taste zwischen zwei Drücken.
     _eingabeRuht() {
         const t = this._eingabeT;
+        const da = this.state._weltbildDa;
+        if (da && !(t >= da)) return this._weltSteht();
         return t === undefined || performance.now() - t >= AnazhRealm.VORBAU_RUHE_MS;
     }
 

@@ -748,6 +748,13 @@ class AnazhRealm_stoff_karte {
         if (at.offen && at.offen.z !== z) return null; // die Bühne trägt die halbe Karte einer anderen Zelle
         // fiel die Bühne zwischen zwei Ringen (Ruhe, ein anderer Renderer), beginnt die Karte beim ersten
         if (at.offen && (at.offen.B !== B || !B.bereit)) at.offen = null;
+        // DER VERSUCH WARTET AUF SEINE PIPELINES (w12-ankunft-faden, Gebot 7): scheiterte der letzte nur, weil Bürger auf ihre
+        // Pipeline warteten (kein Knoten-Bau verschoben), zeichnet der nächste erst, wenn seit ihm eine Pipeline stand oder
+        // abgesagt wurde (`bereitN`, `absagenN` der Erst-Zeichnung, die Ereignisse des Vendors) — bis hier zeichnete jeder Takt
+        // Sonnen-Kacheln, Leere und alle Ansichten neu, solange der GPU-Prozess übersetzte
+        const E = this._erstZeichnungStand();
+        if (z._pipeWarten === E.bereitN + E.absagenN) return null;
+        z._pipeWarten = undefined;
         const iR = at.offen ? at.offen.r : 0; // der Ring dieses Schritts
         const ringe = at.ringe.ringe;
         const ring = ringe[iR];
@@ -851,8 +858,8 @@ class AnazhRealm_stoff_karte {
         // wie die Welt — ein Bürger, dessen Knoten die Bau-Frist verschob oder dessen Pipeline noch im Bau steht, zeichnet
         // nicht. Dann ist die Karte nicht ganz: sie wird nicht abgelegt und backt im nächsten Takt neu (null) — der
         // Haupt-Faden kompiliert nie synchron, keine Karte steht halb.
-        const E = this._erstZeichnungStand();
         const offen = E.wartetN + E.verschoben;
+        const verschoben = E.verschoben;
         B.versuch = "karte|" + ++B.versuchN;
         let ganz = false;
         try {
@@ -927,6 +934,9 @@ class AnazhRealm_stoff_karte {
         }
         if (!ganz) {
             if (at.offen) at.offen.frage = true; // ihr nächster Ring fragt wieder die Leine (`_tickKarteWelt`)
+            // nur Pipelines fehlten: der nächste Versuch wartet auf ihr Ereignis (oben) — die Erst-Zeichnung meldet es nur an WebGPU
+            if (E.verschoben === verschoben && rend.backend && rend.backend.isWebGPUBackend === true)
+                z._pipeWarten = E.bereitN + E.absagenN;
             return null;
         }
         const summe = at.offen ? at.offen.ms : 0;

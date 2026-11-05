@@ -58,9 +58,10 @@ class AnazhRealm_dirigent_takt {
                 // Leib, Strom und Takt-Planer, den Genesis-Ort, Körper und Kamera, den Bau-Gang — und das Netz, das dem
                 // Mitspieler gehört (K60). Radeon kalt am Kopf 210fe8a7 rief jeder der 224–256 Takte unter dem Ladeschirm jedes
                 // Spiel-Glied (515–1 007 ms); mit der Phase ruft es jedes Lade-Bild (24 von 210 Takten, 281 ms), das Netz
-                // jeder Takt.
+                // jeder Takt. DAS BAU-BILD (`nurBau`, `_ladeBildFaellig`) ruht wie ein Takt ohne Bild: es kommt nur, weil ein
+                // Knoten-Bau wartet, und zeigt keinem etwas — das Spiel trägt das nächste fällige Lade-Bild (w12-ankunft-faden).
                 const bild = this._gpuLeineFrei();
-                const ruht = !bild && this._ladeTakt();
+                const ruht = this._ladeTakt() && (!bild || this._gpuLeine.nurBau === true);
                 // das Lade-Bild: seine Frist gehört dem Bild (`_ladeFrist`), bis zum Ende dieses Takts
                 this._ladeBildTakt = bild && this._ladeTakt();
                 // DER SCHIRM einmal je Takt (die EINE Quelle jeder Schirm-Größe, `_schirm`) — und mit ihm die Schwellen der Stufen
@@ -633,8 +634,13 @@ class AnazhRealm_dirigent_takt {
         const E = this._erstZeichnung;
         const wartet = L.ladeBild !== undefined && !!E && E.verschoben > L.bauVerschoben;
         const bau = wartet && L.ladeAus > L.ladeAusBild;
+        const zeit = jetzt - L.ladeBild >= AnazhRealm.LADE_BILD_MS;
         if (L.ladeBild === undefined) L.ladeBild = jetzt - AnazhRealm.LADE_BILD_MS;
-        else if (bau || jetzt - L.ladeBild >= AnazhRealm.LADE_BILD_MS || this._weltbildLuecken().length === 0) {
+        else if (bau || zeit || this._weltbildLuecken().length === 0) {
+            // DAS BAU-BILD (`nurBau`): fällig allein, weil ein Bau wartet (vor LADE_BILD_MS, eine Lücke offen) — es trägt den Bau,
+            // nie das Spiel (die Phase des Takts ruht, `ruht` im Loop): bis hier trug jedes das ganze Spiel, an schneller GPU jeder
+            // zweite Takt (Radeon kalt 410c3ffd: Haupt-Faden bis zur Kontrolle 7,87 → 9,54 s)
+            L.nurBau = bau && !zeit && this._weltbildLuecken().length > 0;
             L.bauLuecke = wartet ? jetzt - L.ladeBild : 0;
             [L.ladeBild, L.bauVerschoben, L.ladeAusBild] = [jetzt, E ? E.verschoben : 0, L.ladeAus || 0];
             return true;
