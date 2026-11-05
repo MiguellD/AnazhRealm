@@ -1635,13 +1635,16 @@ async function starte() {
                         // gezeichneten Boden, nie an Saison, Uhr oder Klasse — ein Schuss an derselben Kamera über demselben Boden (das
                         // Jahr der Vegetation: drei Jahreszeiten an EINER Pose, vegetation.K5) liest den Treffer des vorigen
                         // (`window.__abstandSpeicher`); ein Block, den der vorige nicht marschierte, marschiert jetzt. Die Matrizen der
-                        // Kamera und der Abdruck des Bodens (je Chunk Eintrag, Karte, Ziel-Karte, Stufe, Geometrie und der Stand ihrer
-                        // Lage; das Auge der Stufen, der Geomorph, die vorläufigen Säulen — alles, was `_bodenSichtAt` liest) fallen
-                        // den Speicher bei jeder Änderung. Bis dahin rief jeder Wiesen-Schuss `_bodenSichtAt` ~20,8 Mio.-mal (≈ 1 µs je
-                        // Ruf, die Mess-Wiese in der Null-Welt 20,5 s; GTX b4bcf19c je Wiesen-Schuss 30 s, die Krone 6–8 s)
+                        // Kamera und der Abdruck des Bodens (je Chunk Stufe, Netz und der INHALT seiner Karte und seiner Ziel-Karte; das
+                        // Auge der Stufen, der Geomorph, die vorläufigen Säulen — alles, was `_bodenSichtAt` liest) fallen den Speicher
+                        // bei jeder Änderung. Bis dahin rief jeder Wiesen-Schuss `_bodenSichtAt` ~20,8 Mio.-mal (≈ 1 µs je Ruf, die
+                        // Mess-Wiese in der Null-Welt 20,5 s; GTX b4bcf19c je Wiesen-Schuss 30 s, die Krone 6–8 s). DER INHALT, NIE DIE
+                        // IDENTITÄT (w12-wintergras): die Saison baut die Chunks im Band der Schneegrenze und am Pegel neu (`_schneeTakt`,
+                        // `_pegelTakt`: neue Farbe, dieselben Höhen) — der Abdruck aus Eintrag, Karte und Netz fiel mit jedem Neubau, die
+                        // Wiese des Jahrs marschierte an EINER Kamera dreimal (Radeon 79595d21: 19,2 · 17,4 · 16,4 s)
                         const abdruck = () => {
                             const a = [...cam.matrixWorld.elements, ...cam.projectionMatrix.elements, W, H, st.stufeAuge?.x, st.stufeAuge?.z];
-                            for (const e of st.voxelChunks.values()) a.push(e, e.surfMap, e.surfMapZiel, e.lod, e.mesh, e.mesh?.geometry.userData.naht?.lage?.stand);
+                            for (const [k, e] of st.voxelChunks) a.push(k, e.lod, !e.mesh, e.surfMap?.join(), e.surfMapZiel?.join());
                             for (const s of st.saeulenVorlaeufig?.values() || []) a.push(s.x, s.z, s.rr, s.krone);
                             return a.concat(st.atmoUniforms?.geomorph?.value);
                         };
