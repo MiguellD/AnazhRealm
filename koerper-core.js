@@ -1497,7 +1497,7 @@
         const character = B.character, parts = B.parts, base = B.base;
         const M = labMorph(dials);
         character.scale.set(M.charScale.x,M.charScale.y,M.charScale.z);const MU=M.shell;function aply(m,sc){m.scale.set(sc.x,sc.y,sc.z);return sc;}if(parts.ribcage)parts.ribcage.userData.baseScaleY=aply(parts.ribcage,MU.ribcage(base.ribcage)).y;if(parts.pelvis)aply(parts.pelvis,MU.pelvis(base.pelvis));if(parts.waist)aply(parts.waist,MU.waist(base.waist));function pair(name,fn){[-1,1].forEach(sd=>{const k=name+(sd===1?'1':'-1');if(parts[k])fn(parts[k],base[k],sd);});}if(parts.abs)parts.abs.userData.baseScaleY=aply(parts.abs,MU.abs(base.abs)).y;pair('oblique',(m,b)=>aply(m,MU.oblique(b)));pair('glute',(m,b)=>aply(m,MU.glute(b)));pair('quad',(m,b)=>{m.userData.baseScaleY=aply(m,MU.quad(b)).y;});pair('hamstring',(m,b)=>aply(m,MU.hamstring(b)));pair('calf',(m,b)=>{m.userData.baseScaleY=aply(m,MU.calf(b)).y;});pair('bicep',(m,b)=>{m.userData.baseScaleY=aply(m,MU.bicep(b)).y;});pair('tricep',(m,b)=>aply(m,MU.tricep(b)));pair('uarm',(m,b)=>aply(m,MU.uarm(b)));pair('forearm',(m,b)=>aply(m,MU.forearm(b)));pair('deltoid',(m,b)=>aply(m,MU.deltoid(b)));pair('trap',(m,b)=>aply(m,MU.trap(b)));pair('lat',(m,b)=>aply(m,MU.lat(b)));if(parts.upperBack)aply(parts.upperBack,MU.upperBack(base.upperBack));if(parts.chest){var csc=aply(parts.chest,MU.chest(base.chest));parts.chest.userData.baseScaleX=csc.x;parts.chest.userData.baseScaleY=csc.y;parts.chest.userData.baseScaleZ=csc.z;}pair('pec',(m,b)=>aply(m,MU.pec(b)));pair('breast',(m,b)=>aply(m,MU.breast(b)));if(parts.neckMain)aply(parts.neckMain,MU.neck(base.neckMain));if(parts.neckBase)aply(parts.neckBase,MU.neck(base.neckBase));pair('scm',(m,b)=>aply(m,MU.neck(b)));pair('tneck',(m,b)=>aply(m,MU.neck(b)));if(parts.jaw)aply(parts.jaw,MU.jaw(base.jaw));if(parts.chin)aply(parts.chin,MU.chin(base.chin));pair('buccal',(m,b)=>aply(m,MU.buccal(b)));pair('cheekbone',(m,b)=>aply(m,MU.cheekbone(b)));pair('masseter',(m,b)=>aply(m,MU.masseter(b)));[-1,1].forEach(sd=>{const k='arm'+(sd===1?'1':'-1');if(parts[k]){parts[k].position.x=sd*baseArmX*M.armPose.xMul;const bz=sd*M.armPose.rotZ;const bx=M.armPose.rotX;parts[k].rotation.z=bz;parts[k].rotation.x=bx;parts[k].userData.baseRotZ=bz;parts[k].userData.baseRotX=bx;}});if(parts.head){parts.head.position.y=base.headPosY-trochanterY-M.headPose.ageDrop;parts.head.position.z=M.headPose.fwd;}
-        _armRuhe(B);
+        _armRuhe(B, dials);
         gesichtAuf(B, dials);
         return M;
     }
@@ -1514,6 +1514,13 @@
     // der Brustkorb war so breit wie die Schultern: kein Winkel unter 60° zog den Arm heraus, und der Bauch bei mass 1 spreizte
     // ihn ungepresst auf 51°. `luft` = die Hüllen beider
     // Seiten (Haut und Stoff aus der Haut über ihren Kugeln; am Guss gemessen, bis keine Arm-Ecke hinter der Rumpf-Hülle liegt).
+    // DAS FETT-DEPOT (studios.K1) gehört zur gezeichneten Gestalt: jede Kugel trägt die Dicke ihres Gelenks (`fettDepot`, dieselbe,
+    // die der Ofen jeder Ecke entlang ihrer Normale gibt — Rumpf und Becken vorn × 1 + bauch · n_z), Arm wie Rumpf, bei jeder
+    // Masse (vorher rechnete die Ruhe ohne Depot: bei mass 1 lagen 15 und 206 Arm-Ecken im Rumpf). Zwei Gesetze des Gewebes
+    // tragen es: das Fett weicht zuerst (die Press-Grenze gilt dem Gewebe UNTER dem Depot — ein weiches Teil presst um sein
+    // Depot weiter, bis die gezeichnete Fläche dort liegt, wo das gepresste Gewebe ohne Fett läge; ein dünneres Depot unter dem
+    // Mittel lässt die Grenze), und im Saum an der Naht (naht bis naht + saum, wo die Hülle EINE Fläche ist) verdickt das Depot
+    // die eine Fläche, ohne einen Spalt zu verlangen — dort gilt die Luft allein.
     // Der Abstand je Punkt ist die erste Ordnung des Ellipsoids (f/|∇f|). Leser: der Ofen (bakeMenschInstance: Guss, Gelenke,
     // Bind-Pose), das Labor, die Linse (gate:koerper-kern Teil R).
     var ARM_RUHE = Object.freeze({
@@ -1556,13 +1563,26 @@
         return M;
     }
     var _ARM_RICHTUNG = null;
-    function _armRuhe(B) {
+    function _armRuhe(B, dials) {
         if (!B || !Array.isArray(B.kugeln)) throw new Error("morphAuf: der Baum trägt keine Kugeln (bauMensch) — die Ruhe der Arme folgt dem Gesetz");
         if (!B.kugeln.length) return; // ein Baum ohne Gestalt (die Morph-Probe der Linse): kein Kontakt
         var A = ARM_RUHE,
             P = B.parts,
             W = B.character,
+            FD = fettDepot(dials),
+            DEP = new Map(),
             i;
+        // das Fett-Depot einer Kugel: die Dicke ihres Gelenks (das nächste Gelenk der Kette über ihr, sonst die Wurzel) × die
+        // Abweichung des Fetts, und ob es vorn wächst (der Ofen gibt sie jeder Ecke, die an diesem Gelenk hängt)
+        var depot = function (kg) {
+            if (DEP.has(kg)) return DEP.get(kg);
+            var j = "mensch";
+            for (var n = kg.n; n && n !== W && j === "mensch"; n = n.parent)
+                for (var q = 0; q < KETTE_GELENKE.length; q++) if (P[KETTE_GELENKE[q]] === n) j = KETTE_GELENKE[q];
+            var dp = FD ? { f: FD.d * (FD.gelenk[j] || 0), v: FD.vorn.indexOf(j) >= 0 ? FD.bauch : 0 } : { f: 0, v: 0 };
+            DEP.set(kg, dp);
+            return dp;
+        };
         ["arm1", "arm-1", "elbow1", "elbow-1", "deltoid1"].forEach(function (nm) {
             if (!P[nm]) throw new Error("morphAuf: der Arm ohne " + nm + " — die Ruhe der Arme braucht Schulter, Ellbogen und Naht");
         });
@@ -1601,41 +1621,54 @@
             }
             rumpf.push(kg);
         });
-        // ein Ellipsoid: die Inverse seiner Achsen (zeilenweise) und seine Lage; der Abstand eines Punkts in erster Ordnung
+        // ein Ellipsoid: die Inverse seiner Achsen (zeilenweise), seine Lage und sein Depot; die Hüllkugel trägt Luft und Depot
         var ellipsoid = function (kg) {
             var M = _affVon(kg.n, W),
-                R = kg.r * Math.max(Math.hypot(M[0], M[1], M[2]), Math.hypot(M[3], M[4], M[5]), Math.hypot(M[6], M[7], M[8]));
-            return { li: _m3inv(M, 0, new Float64Array(9)), t: [M[9], M[10], M[11]], r: kg.r, R2: (R + A.luft) * (R + A.luft) };
+                R = kg.r * Math.max(Math.hypot(M[0], M[1], M[2]), Math.hypot(M[3], M[4], M[5]), Math.hypot(M[6], M[7], M[8])),
+                dp = depot(kg);
+            return { li: _m3inv(M, 0, new Float64Array(9)), t: [M[9], M[10], M[11]], r: kg.r, f: dp.f, v: dp.v, R: R + A.luft + Math.max(0, dp.f * (1 + dp.v)) };
         };
-        var abstand = function (e, x, y, z) {
+        // der Abstand eines Punkts in erster Ordnung, weniger der Luft und der Depots beider Seiten (des Ellipsoids entlang seiner
+        // Normale, vorn × 1 + bauch · n_z, und `fp` des Punkts; im Saum an der Naht, sm = 0, keins): < 0 heißt, die gezeichneten
+        // Hüllen berühren sich
+        var luecke = function (e, x, y, z, fp, sm) {
             var dx = x - e.t[0], dy = y - e.t[1], dz = z - e.t[2], L = e.li;
             var qx = L[0] * dx + L[1] * dy + L[2] * dz, qy = L[3] * dx + L[4] * dy + L[5] * dz, qz = L[6] * dx + L[7] * dy + L[8] * dz;
             var l = Math.sqrt(qx * qx + qy * qy + qz * qz) || 1e-9;
             var gx = (L[0] * qx + L[3] * qy + L[6] * qz) / l, gy = (L[1] * qx + L[4] * qy + L[7] * qz) / l, gz = (L[2] * qx + L[5] * qy + L[8] * qz) / l;
-            return (l - e.r) / (Math.sqrt(gx * gx + gy * gy + gz * gz) || 1e-9);
+            var g = Math.sqrt(gx * gx + gy * gy + gz * gz) || 1e-9;
+            return (l - e.r) / g - A.luft - sm * e.f * (1 + e.v * Math.max(0, gz / g)) - fp;
         };
-        // die Punkte der Kugeln eines Glieds jenseits der Naht (in der Lage, die der Arm gerade trägt)
+        // die Punkte der Kugeln eines Glieds jenseits der Naht (in der Lage, die der Arm gerade trägt): je Punkt die Lage (xyz), sein
+        // Depot und ob er jenseits des Saums liegt (im Saum: kein Depot), dazu das größte Depot (die Hüllkugel der Vorprüfung)
         var punkte = function (glied) {
             var S = _affVon(P.arm1, W), E = _affVon(P.elbow1, W),
                 ax = E[9] - S[9], ay = E[10] - S[10], az = E[11] - S[11], l2 = ax * ax + ay * ay + az * az,
-                out = [];
+                out = { xyz: [], f: [], s: [], fMax: 0 };
             glied.forEach(function (kg) {
-                var M = _affVon(kg.n, W);
+                var M = _affVon(kg.n, W),
+                    fp = depot(kg).f;
                 for (var j = 0; j < _ARM_RICHTUNG.length; j++) {
                     var d = _ARM_RICHTUNG[j], ux = d[0] * kg.r, uy = d[1] * kg.r, uz = d[2] * kg.r,
                         x = M[0] * ux + M[3] * uy + M[6] * uz + M[9], y = M[1] * ux + M[4] * uy + M[7] * uz + M[10], z = M[2] * ux + M[5] * uy + M[8] * uz + M[11];
-                    if (((x - S[9]) * ax + (y - S[10]) * ay + (z - S[11]) * az) / l2 >= A.naht) out.push(x, y, z);
+                    var t = ((x - S[9]) * ax + (y - S[10]) * ay + (z - S[11]) * az) / l2, sm = t >= A.naht + A.saum ? 1 : 0;
+                    if (t < A.naht) continue;
+                    out.xyz.push(x, y, z);
+                    out.f.push(sm ? fp : 0);
+                    out.s.push(sm);
+                    if (sm && fp > out.fMax) out.fMax = fp;
                 }
             });
             return out;
         };
-        // hält jeder Punkt die Luft zu jedem Ellipsoid? (ein Punkt außerhalb der Hüllkugel + Luft hält sie ohne Rechnung)
+        // hält jeder Punkt Luft und Depots zu jedem Ellipsoid? (ein Punkt außerhalb der Hüllkugel samt beider Depots hält ohne Rechnung)
         var haelt = function (pkt, E) {
+            var X = pkt.xyz;
             for (var k = 0; k < E.length; k++) {
-                var e = E[k];
-                for (var p = 0; p < pkt.length; p += 3) {
-                    var dx = pkt[p] - e.t[0], dy = pkt[p + 1] - e.t[1], dz = pkt[p + 2] - e.t[2];
-                    if (dx * dx + dy * dy + dz * dz < e.R2 && abstand(e, pkt[p], pkt[p + 1], pkt[p + 2]) < A.luft) return false;
+                var e = E[k], R2 = (e.R + pkt.fMax) * (e.R + pkt.fMax);
+                for (var p = 0, q = 0; p < X.length; p += 3, q++) {
+                    var dx = X[p] - e.t[0], dy = X[p + 1] - e.t[1], dz = X[p + 2] - e.t[2];
+                    if (dx * dx + dy * dy + dz * dz < R2 && luecke(e, X[p], X[p + 1], X[p + 2], pkt.f[q], pkt.s[q]) < 0) return false;
                 }
             }
             return true;
@@ -1675,11 +1708,21 @@
                 if (t.userData && t.userData.baseScaleX != null) t.userData.baseScaleX = t.scale.x;
             });
         };
-        // 0) das Gewebe gepresst: die Winkel gelten dem Rumpf an seiner Press-Grenze (ein Teil, das ganz weicht, ist kein Hindernis)
+        // 0) das Gewebe gepresst: die Winkel gelten dem Rumpf an seiner Press-Grenze (ein Teil, das ganz weicht, ist kein Hindernis);
+        // das Fett weicht zuerst: die Grenze fällt um das Depot, gemessen an der schmalsten Kugel des Teils (ihre halbe Breite)
+        var grenze = {};
+        for (var gn in weich) {
+            var dg = 0;
+            weich[gn].forEach(function (kg) {
+                var M = _affVon(kg.n, W);
+                dg = Math.max(dg, Math.max(0, depot(kg).f) / (kg.r * Math.hypot(M[0], M[1], M[2])));
+            });
+            grenze[gn] = Math.max(0, A.weicht[gn] - dg);
+        }
         var hindernis = rumpf.slice();
         for (var pn in weich)
-            if (A.weicht[pn] > 0) {
-                breite(pn, A.weicht[pn]);
+            if (grenze[pn] > 0) {
+                breite(pn, grenze[pn]);
                 hindernis = hindernis.concat(weich[pn]);
             }
         var rE = hindernis.map(ellipsoid),
@@ -1691,11 +1734,11 @@
             ellbogen(A.ellbogenRad);
             gelenk(schulter, ths, A.bisRad, ober.concat(unten), rE);
         } else ellbogen(phe);
-        // 3) das Gewebe gibt nur so weit nach, wie der hängende Arm es verlangt (je Teil die größte Breite in [Press-Grenze, 1])
+        // 3) das Gewebe gibt nur so weit nach, wie der hängende Arm es verlangt (je Teil die größte Breite in [Grenze, 1], samt Depot)
         var pkt = punkte(ober.concat(unten));
         for (var nm in weich) {
             var K = weich[nm],
-                fLo = A.weicht[nm],
+                fLo = grenze[nm],
                 fHi = 1;
             breite(nm, 1);
             if (!K.length || haelt(pkt, K.map(ellipsoid))) continue;
