@@ -63,8 +63,8 @@ class AnazhRealm_dirigent_takt {
                 const ruht = !bild && this._ladeTakt();
                 // DER ZWISCHEN-TAKT (profiband.K2, Gebot 7): ein gespielter Takt OHNE Bild (die Leine ist gespannt) rechnet, was
                 // nicht warten darf — Eingabe, Netz, Gesetz und Plan der Welt, Sim, Strom, Kamera —, nie, was nur das Bild zeigt:
-                // das Leben (Tiere, Bewohner, Verkehr, Vögel, Fische, Bestäuber), die Haltung des Leibs, das Licht des Tags, die Sicht
-                // und die Anzeige. Die Spiel-Zeit, die er dafür nicht rechnete, rechnet der nächste Takt mit Bild (`deltaBild`: die
+                // das Leben (Tiere, Bewohner, Verkehr, Vögel, Fische, Bestäuber), die Haltung des Leibs, das Licht des Tags und die
+                // Sicht (die Anzeige ist DOM, gedrosselt, und geht weiter). Die Spiel-Zeit, die er dafür nicht rechnete, rechnet der nächste Takt mit Bild (`deltaBild`: die
                 // Zeit seit dem letzten Bild, höchstens EIN Deckel `TAKT_DECKEL_S` — wie eine Pause); Haltung und Licht lesen ihre
                 // eigene Uhr. Die Kosten folgen dem Bild, nie dem rAF: GTX an 8ef49bef, Stand-Zellen, 2–16 Takte zu 8,33 ms je Bild
                 // trugen je Takt das ganze Spiel (Wiese Ego headless 3,7 ms je Takt ohne Bild). Der Null-Renderer zeichnet jeden Takt.
@@ -117,7 +117,7 @@ class AnazhRealm_dirigent_takt {
 
                     // ### Stats-HUD (Welle 6.X.4 B3) ###
                     // HP/Stamina-Bars über der Hotbar, throttled auf 10 Hz.
-                    if (!zwischen) this.tickStatsHud(currentTime);
+                    this.tickStatsHud(currentTime);
 
                     // ### Tag-Nacht-Zyklus ###
                     // timeOfDay läuft jedes Bild (seine Uhr: `_lastDayNightTick`); Lights + Skybox folgen.
@@ -143,11 +143,12 @@ class AnazhRealm_dirigent_takt {
                     // ### Symphonie (Ring 4): Lofi + Klang-Welt ###
                     this.symphonyTick();
 
+                    // ### Status-Panel (UI V1) ###
+                    this.updateStatusPanel(currentTime);
+
                     // ### Bodenprüfung / Frustum-Culling / UFOs ### (V9.44-f)
                     this._loopGroundCheck(currentTime);
                     if (!zwischen) {
-                        // ### Status-Panel (UI V1) ###
-                        this.updateStatusPanel(currentTime);
                         this._loopFrustumCulling();
                         this._loopAnimateUfos(currentTime);
                     }
