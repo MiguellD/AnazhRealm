@@ -33,7 +33,15 @@ Log: /tmp/claude/w3/offen-w6.txt Einträge 119–164.
 - **leib.K3#2 ROT** an der Radeon f5db8d90: Der Sicht-Abfall unter Wasser misst 0 /m (L auf 0,5/1,5/2,5 m gleich 0,1788), der Leib-Kontrast 0,01.
   - Die Probe zog 6430 m vom Sitzungs-Ort, der Ring fiel 4 → 0. Wahrscheinlich steht die Kamera in einer Welt ohne geladenes Wasser.
   - Das ist zuerst eine Frage der Probe, dann des Spiels.
+  - **Probe-Zweig w12-unterwasser-probe 45e044c3** (nicht gemergt):
+    - Die 40 Takte der Probe laufen über `__werkTakt` statt über die eigene, voreilende Uhr. Die Höhle steigt damit von 0,03 auf 0,14 und liegt im Band.
+    - Am See zeigt der Schuss weiter den alten Blick über dem Wasser (L 0,1764 auf allen Tiefen), obwohl Medium und Kamera richtig stehen.
+    - Verdacht: TRAA (`st._traaR`/`_traaReprojektion`) behält das Bild über `neubeginn()` (scripts/lib/ausgabe-aufnahme.cjs) hinweg.
+    - Die Diagnose-Schüsse `diag-ohne-flaeche`/`diag-ueber` müssen vor dem Merge fallen.
+  - Auch die GTX misst leib.K3#2 ROT, mit demselben Muster.
 - material.K3#2 ROT: Karte zu L1 bei Birke 0,939 und Fichte 1,12–1,17 (Soll 0,95–1,05).
+- material.K1#2/K3#2 bleiben auf der GTX ohne Urteil: Welt 81 s und Labor laufen parallel, das reißt die Frist von 84 s (FUND).
+- Die OMEN misst profiband.K2#1/#2 am f5db8d90 (Test, ob takt-band die Belegung senkt). Ergebnis abholen.
 
 ## Stationen in koordination
 - Heute gemergt: g2-proben, kontakt, pegel, dorf-probe, albedo, unterwasser, kronen (Nadel-Band 0,08–0,15), laub-kante (nennt den Verdecker), brand-halt (Kommentare).
