@@ -4917,6 +4917,12 @@ function __weltSkalaArt(id) {
     const sc = PORTAL_RENDER_CONFIG.placement.scale[id];
     return sc === 1 ? 1 : sc < 1 ? sc : sc * PORTAL_RENDER_CONFIG.placement.treeScaleMul;
 }
+// DIE BESTAND-GESTALTEN EINER ART (lod.budget.gestalten: die Zeile der Art, sonst '*', wie der Wirt sie zählt) — die Ableitung
+// liest daraus ihren Solitär (phyto-core `treeParams`, `solitaerGestalt`: der Same V+1 wächst frei).
+function __gestaltenArt(id) {
+    const G = PORTAL_RENDER_CONFIG.lod.budget.gestalten;
+    return Number.isInteger(G[id]) && G[id] >= 1 ? G[id] : G["*"];
+}
 
 function deriveParamsPlant(pre, alter) {
     // die Dials aus dem Dial-Kontext des Wirts (`__dials`): im Bau die Preset-Dials, im Labor das Regler-Objekt der Hülle (K47)
@@ -4973,7 +4979,7 @@ function deriveParamsPlant(pre, alter) {
     const core = typeof self !== "undefined" && self.__phytoCore;
     if (!core || typeof core.treeParams !== "function")
         throw new Error("phyto-core fehlt — die Baum-Ableitung wohnt im Gesetzbuch (Ladereihenfolge)");
-    return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre, __weltSkalaArt(CURRENT), alter);
+    return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre, __weltSkalaArt(CURRENT), alter, __gestaltenArt(CURRENT));
 }
 
 // Die Regler des Waldbodens → die Gestalt-Parameter je Art (api · delta · slim · trop · leaf wie jede Pflanze).
@@ -5353,7 +5359,8 @@ function skelettDerGestalt(presetId, seed, lod, ov) {
         lod,
         pre,
         __weltSkalaArt(presetId),
-        ov ? ov.alter : undefined
+        ov ? ov.alter : undefined,
+        __gestaltenArt(presetId)
     );
     if (ov) Object.assign(P, ov);
     const nodes = __wuchsDerStufe(P, core.stufenRezept(P.kind, lod), mulberry32(Math.floor(seed) >>> 0));
