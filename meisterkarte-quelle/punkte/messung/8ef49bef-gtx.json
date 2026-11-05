@@ -1,7 +1,7 @@
 {
  "sha": "8ef49bef479165fec47c92ff3cd4ef9c32e60931",
  "geraet": "gtx",
- "zeit": "2026-11-05T05:10:51.007Z",
+ "zeit": "2026-11-05T05:37:20.974Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "mensch.K4#1": {
@@ -169,6 +169,79 @@
    "s": 42.5,
    "zeit": "2026-11-05T04:59:33.333Z",
    "abdruck": "80efd4461b53",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K2#1": {
+   "gruen": false,
+   "zahl": "Belegung p95 ≤ 5.8: wiese-ego-steht 14.51 · wiese-third-steht 37.5 · genesis-ego-steht 36.69 · genesis-third-steht 30.51 · Gang 87 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht Belegung p95 14.51 > 5.8 | wiese-third-steht Belegung p95 37.5 > 5.8 | genesis-ego-steht Belegung p95 36.69 > 5.8 | genesis-third-steht Belegung p95 30.51 > 5.8",
+   "exit": 0,
+   "minuten": 1.45,
+   "grund": "ROT: Belegung p95 ≤ 5.8: wiese-ego-steht 14.51 · wiese-third-steht 37.5 · genesis-ego-steht 36.69 · genesis-third-steht 30.51 · Gang 87 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht Belegung p95 14.51 > 5.8 | wiese-third-steht Belegung p95 37.5 > 5.8 | genesis-ego-steht Belegung p95 36.69 > 5.8 | genesis-third-steht Belegung p95 30.51 > 5.8",
+   "gpu": "nvidia/pascal",
+   "s": 87.2,
+   "zeit": "2026-11-05T05:34:40.121Z",
+   "abdruck": "4a135d3aec71",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K2#2": {
+   "gruen": false,
+   "zahl": "Belegung p95 ≤ 5.8: wiese-ego-steht 14.51 · wiese-third-steht 37.5 · genesis-ego-steht 36.69 · genesis-third-steht 30.51 ‖ Belegung p95 ≤ 8: wiese-ego-geht 96 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 44.62 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 87 s · [linse-gpu] nvidia/pascal — ROT 10: wiese-ego-steht Belegung p95 14.51 > 5.8 | wiese-third-steht Belegung p95 37.5 > 5.8 | genesis-ego-steht Belegung p95 36.69 > 5.8 | genesis-third-steht Belegung p95 30.51 > 5.8 | wiese-ego-geht Belegung p95 96 > 8 | wiese-ego-sprint: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+   "exit": 0,
+   "minuten": 1.45,
+   "grund": "ROT: Belegung p95 ≤ 5.8: wiese-ego-steht 14.51 · wiese-third-steht 37.5 · genesis-ego-steht 36.69 · genesis-third-steht 30.51 ‖ Belegung p95 ≤ 8: wiese-ego-geht 96 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 44.62 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 87 s · [linse-gpu] nvidia/pascal — ROT 10: wiese-ego-steht Belegung p95 14.51 > 5.8 | wiese-third-steht Belegung p95 37.5 > 5.8 | genesis-ego-steht Belegung p95 36.69 > 5.8 | genesis-third-steht Belegung p95 30.51 > 5.8 | wiese-ego-geht Belegung p95 96 > 8 | wiese-ego-sprint: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+   "gpu": "nvidia/pascal",
+   "s": 87.2,
+   "zeit": "2026-11-05T05:34:40.121Z",
+   "abdruck": "6c6b41efcdbc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K2#1",
+   "modus": "session"
+  },
+  "profiband.K3#1": {
+   "gruen": false,
+   "zahl": "Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 113 · 476k · 126.6 MB · 18.28 ms | wiese-third 125 · 557k · 130.3 MB · 17.42 ms | genesis-ego 92 · 433k · 124.4 MB · 12.13 ms | genesis-third 105 · 397k · 120.7 MB · 11.98 ms | dorf-ego ? | dorf-third ? · Gang 87 s · [linse-gpu] nvidia/pascal — ROT 6: Band wiese-ego: Band ROT kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · streu haupt: 7 befehle über der Ratsche 4 (Täter: streuSatz, f:blume:L2), gpu-bank 18.28 ms > 12, nicht eingeschwungen | Band wiese-third: Band ROT kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · streu haupt: 10 befehle über der Ratsche 7 (Täter: streuSatz, fscatter:g, gpu-bank 17.42 ms > 12, nicht eingeschwungen | Band genesis-ego: Band ROT vorbau:haus_alemannisch: 17 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · f:sitzbank:L0: 4 Befehle, keine Haushalt-Klasse nimmt den , gpu-bank 12.13 ms > 12, nicht eingeschwungen | Band genesis-third: Band ROT f:sitzbank:L0: 6 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel i | Band dorf-ego: ungemessen (die Uhr 84 s trug den Schritt nicht) | Band dorf-third: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+   "exit": 0,
+   "minuten": 1.45,
+   "grund": "ROT: Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 113 · 476k · 126.6 MB · 18.28 ms | wiese-third 125 · 557k · 130.3 MB · 17.42 ms | genesis-ego 92 · 433k · 124.4 MB · 12.13 ms | genesis-third 105 · 397k · 120.7 MB · 11.98 ms | dorf-ego ? | dorf-third ? · Gang 87 s · [linse-gpu] nvidia/pascal — ROT 6: Band wiese-ego: Band ROT kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · streu haupt: 7 befehle über der Ratsche 4 (Täter: streuSatz, f:blume:L2), gpu-bank 18.28 ms > 12, nicht eingeschwungen | Band wiese-third: Band ROT kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · streu haupt: 10 befehle über der Ratsche 7 (Täter: streuSatz, fscatter:g, gpu-bank 17.42 ms > 12, nicht eingeschwungen | Band genesis-ego: Band ROT vorbau:haus_alemannisch: 17 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · f:sitzbank:L0: 4 Befehle, keine Haushalt-Klasse nimmt den , gpu-bank 12.13 ms > 12, nicht eingeschwungen | Band genesis-third: Band ROT f:sitzbank:L0: 6 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel i | Band dorf-ego: ungemessen (die Uhr 84 s trug den Schritt nicht) | Band dorf-third: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+   "gpu": "nvidia/pascal",
+   "s": 87.2,
+   "zeit": "2026-11-05T05:34:40.121Z",
+   "abdruck": "7650ede48ce8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K2#1",
+   "modus": "session"
+  },
+  "profiband.K3#2": {
+   "gruen": false,
+   "zahl": "Befehle p95 ≤ 208: wiese-ego-steht 51 · wiese-third-steht 62 · genesis-ego-steht 51 · genesis-third-steht 60 · wiese-ego-geht 118 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 88 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Dreiecke p95 ≤ 680000: wiese-ego-steht 387265 · wiese-third-steht 461466 · genesis-ego-steht 294468 · genesis-third-steht 342525 · wiese-ego-geht 506873 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 420038 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ VRAM MB ≤ 118: wiese-ego-steht 126.8 · wiese-third-steht 131.8 · genesis-ego-steht 124.6 · genesis-third-steht 121.4 · wiese-ego-geht 130.1 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 121.7 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ GPU p95 ≤ 12: wiese-ego-steht 2.61 · wiese-third-steht 2.73 · genesis-ego-steht 2.47 · genesis-third-steht 2.27 · wiese-ego-geht 2.8 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 2.48 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 113 · 476k · 126.6 MB · 18.28 ms | wiese-third 125 · 557k · 130.3 MB · 17.42 ms | genesis-ego 92 · 433k · 124.4 MB · 12.13 ms | genesis-third 105 · 397k · 120.7 MB · 11.98 ms | dorf-ego ? | dorf-third ? · Gang 87 s · [linse-gpu] nvidia/pascal — ROT 28: wiese-ego-sprint: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-fahrt: ungemessen (die Uhr 84 s trug den Schritt nicht) | stadt-ego-geht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-ego-sprint: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-fahrt: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+   "exit": 0,
+   "minuten": 1.45,
+   "grund": "ROT: Befehle p95 ≤ 208: wiese-ego-steht 51 · wiese-third-steht 62 · genesis-ego-steht 51 · genesis-third-steht 60 · wiese-ego-geht 118 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 88 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Dreiecke p95 ≤ 680000: wiese-ego-steht 387265 · wiese-third-steht 461466 · genesis-ego-steht 294468 · genesis-third-steht 342525 · wiese-ego-geht 506873 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 420038 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ VRAM MB ≤ 118: wiese-ego-steht 126.8 · wiese-third-steht 131.8 · genesis-ego-steht 124.6 · genesis-third-steht 121.4 · wiese-ego-geht 130.1 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 121.7 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ GPU p95 ≤ 12: wiese-ego-steht 2.61 · wiese-third-steht 2.73 · genesis-ego-steht 2.47 · genesis-third-steht 2.27 · wiese-ego-geht 2.8 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 2.48 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 113 · 476k · 126.6 MB · 18.28 ms | wiese-third 125 · 557k · 130.3 MB · 17.42 ms | genesis-ego 92 · 433k · 124.4 MB · 12.13 ms | genesis-third 105 · 397k · 120.7 MB · 11.98 ms | dorf-ego ? | dorf-third ? · Gang 87 s · [linse-gpu] nvidia/pascal — ROT 28: wiese-ego-sprint: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-fahrt: ungemessen (die Uhr 84 s trug den Schritt nicht) | stadt-ego-geht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-ego-sprint: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-fahrt: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+   "gpu": "nvidia/pascal",
+   "s": 87.2,
+   "zeit": "2026-11-05T05:34:40.121Z",
+   "abdruck": "893394b727a3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K2#1",
+   "modus": "session"
+  },
+  "speicher.K2#2": {
+   "gruen": false,
+   "zahl": "Speicher-Bild frisch p50 0.1 / p95 0.5 / max 1.1 ms (253 Bilder), 0 von 122 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0.1 / p95 0.4 / max 0.8 ms (204 Bilder), 0 von 47 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ 0,1)",
+   "exit": 0,
+   "minuten": 0.71,
+   "grund": "ROT: Speicher-Bild frisch p50 0.1 / p95 0.5 / max 1.1 ms (253 Bilder), 0 von 122 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0.1 / p95 0.4 / max 0.8 ms (204 Bilder), 0 von 47 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ 0,1)",
+   "gpu": "nvidia/pascal",
+   "s": 42.4,
+   "zeit": "2026-11-05T05:36:31.216Z",
+   "abdruck": "fbf83198af64",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -557,14 +630,14 @@
   },
   "studios.K2#2": {
    "gruen": false,
-   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: die Zeit ungeurteilt (kein Hardware-Adapter) · p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 0 ms –, Neubau höchstens 0 ms –, je Studio null Griffe) · Neuladen 0/8 · A/B 0/8) · Täter: @@ PROBE-FEHLER Error: kein Browser der Sitzung an :27804 (/status nennt kein Profil der Werkbank) |     at H.verbinde ([eval]:102:15) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async probeStudios ([eval]:200:31)",
-   "exit": 2,
-   "minuten": 0.03,
-   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: die Zeit ungeurteilt (kein Hardware-Adapter) · p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 0 ms –, Neubau höchstens 0 ms –, je Studio null Griffe) · Neuladen 0/8 · A/B 0/8) · Täter: @@ PROBE-FEHLER Error: kein Browser der Sitzung an :27804 (/status nennt kein Profil der Werkbank) |     at H.verbinde ([eval]:102:15) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async probeStudios ([eval]:200:31)",
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 17 ms portale, Neubau höchstens 669 ms portale, je Studio null Griffe) · Neuladen 4/8 · A/B 4/8) · Täter: @@ PROBE-FEHLER Error: Waiting failed |     at <instance_members_initializer> (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\common\\WaitTask.js:24:21) |     at new WaitTask (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\pup",
+   "exit": 3,
+   "minuten": 0.65,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 17 ms portale, Neubau höchstens 669 ms portale, je Studio null Griffe) · Neuladen 4/8 · A/B 4/8) · Täter: @@ PROBE-FEHLER Error: Waiting failed |     at <instance_members_initializer> (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\common\\WaitTask.js:24:21) |     at new WaitTask (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\pup",
    "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "s": 2,
-   "zeit": "2026-11-05T05:00:18.424Z",
+   "s": 39.2,
+   "zeit": "2026-11-05T05:31:36.597Z",
    "abdruck": "3eb525cdb54b",
    "port": 7804,
    "bahn": "sitzung",
@@ -572,14 +645,14 @@
   },
   "studios.K3#2": {
    "gruen": false,
-   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Kosten-Zeile des Gangs (Exit 2)) · Täter: @@ PROBE-FEHLER Error: kein Browser der Sitzung an :27804 (/status nennt kein Profil der Werkbank) |     at H.verbinde ([eval]:102:15) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async probeStudios ([eval]:200:31)",
-   "exit": 2,
-   "minuten": 0.03,
-   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Kosten-Zeile des Gangs (Exit 2)) · Täter: @@ PROBE-FEHLER Error: kein Browser der Sitzung an :27804 (/status nennt kein Profil der Werkbank) |     at H.verbinde ([eval]:102:15) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async probeStudios ([eval]:200:31)",
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.162 ms), ohne garage L0 GPU 0.0225 ms↔Bank 7.0417 (+1), schmiede L0 GPU 0.0041 ms↔Bank 0.375, portale L0 Bank 2.9917 ) · Täter: @@ PROBE-FEHLER Error: Waiting failed |     at <instance_members_initializer> (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\common\\WaitTask.js:24:21) |     at new WaitTask (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\pup",
+   "exit": 3,
+   "minuten": 0.65,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.162 ms), ohne garage L0 GPU 0.0225 ms↔Bank 7.0417 (+1), schmiede L0 GPU 0.0041 ms↔Bank 0.375, portale L0 Bank 2.9917 ) · Täter: @@ PROBE-FEHLER Error: Waiting failed |     at <instance_members_initializer> (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\common\\WaitTask.js:24:21) |     at new WaitTask (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\pup",
    "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "s": 2,
-   "zeit": "2026-11-05T05:00:18.424Z",
+   "s": 39.2,
+   "zeit": "2026-11-05T05:31:36.597Z",
    "abdruck": "e438f5bb3b9b",
    "port": 7804,
    "bahn": "sitzung",
@@ -588,12 +661,14 @@
   },
   "studios.K4#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten) — ungemessen",
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 83.5 %/– [Differenz 0.8347 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.7 %/– [Differenz 0.9471 > 0.021 A) · Täter: K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (37.2 s)",
+   "exit": 0,
+   "minuten": 0.64,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 83.5 %/– [Differenz 0.8347 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.7 %/– [Differenz 0.9471 > 0.021 A) · Täter: K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (37.2 s)",
+   "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "zeit": "2026-11-05T05:10:51.000Z",
+   "s": 38.2,
+   "zeit": "2026-11-05T05:32:35.057Z",
    "abdruck": "22c16242690e",
    "port": 7804,
    "bahn": "sitzung",
@@ -601,12 +676,14 @@
   },
   "studios.K4#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten) — ungemessen",
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 83.5 %/– [Differenz 0.8347 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.7 %/– [Differenz 0.9471 > 0.021 A) · Täter: K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (37.2 s)",
+   "exit": 0,
+   "minuten": 0.64,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 83.5 %/– [Differenz 0.8347 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.7 %/– [Differenz 0.9471 > 0.021 A) · Täter: K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (37.2 s)",
+   "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "zeit": "2026-11-05T05:10:51.000Z",
+   "s": 38.2,
+   "zeit": "2026-11-05T05:32:35.057Z",
    "abdruck": "395e9d4d3e3a",
    "port": 7804,
    "bahn": "sitzung",
@@ -615,224 +692,163 @@
   },
   "siedlung.K4#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-05T05:10:51.002Z",
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: })",
+   "exit": 1,
+   "minuten": 0.76,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: })",
+   "s": 45.5,
+   "zeit": "2026-11-05T05:33:33.409Z",
    "abdruck": "6438d9b935d6",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "profiband.K2#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-11-05T05:10:51.003Z",
-   "abdruck": "4a135d3aec71",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "profiband.K2#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-11-05T05:10:51.003Z",
-   "abdruck": "6c6b41efcdbc",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "profiband.K2#1",
-   "modus": "session"
-  },
-  "profiband.K3#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-11-05T05:10:51.003Z",
-   "abdruck": "7650ede48ce8",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "profiband.K2#1",
-   "modus": "session"
-  },
-  "profiband.K3#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-11-05T05:10:51.003Z",
-   "abdruck": "893394b727a3",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "profiband.K2#1",
-   "modus": "session"
-  },
-  "speicher.K2#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-11-05T05:10:51.005Z",
-   "abdruck": "fbf83198af64",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
   },
   "speicher.K4#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-05T05:10:51.007Z",
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.76,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 45.5,
+   "zeit": "2026-11-05T05:37:20.974Z",
    "abdruck": "ba78d526ca22",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K3#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 72.5 σ 35 schwarz 0.0 % weiß 0.0 % · Stand 18.546.185 · Bühne summe)",
+   "exit": 1,
+   "minuten": 0.76,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 72.5 σ 35 schwarz 0.0 % weiß 0.0 % · Stand 18.546.185 · Bühne summe)",
+   "s": 45.3,
+   "zeit": "2026-11-05T05:30:31.863Z",
+   "abdruck": "80efd4461b53",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-05T04:51:02.649Z",
+  "start": "2026-11-05T05:30:01.131Z",
   "port": 7804,
   "warten": 0.02,
-  "bootS": 6.9,
+  "bootS": 8.4,
   "grundstellungS": [
-   9.3,
-   6.7,
-   8.3,
-   6.3,
-   5.7,
-   0.1
+   3.2,
+   3,
+   3.3,
+   4,
+   6.9,
+   0.2
   ],
-  "proben": 10,
-  "freigaben": [
-   {
-    "vor": "studios.K4#1",
-    "s": 630.6
-   }
-  ],
+  "proben": 7,
+  "freigaben": [],
   "orte": [
-   {
-    "ort": "wiese",
-    "vor": "vegetation.K1#1",
-    "s": 20.3,
-    "takte": 769,
-    "chunks": 81,
-    "nach": null
-   },
-   {
-    "ort": "wiese",
-    "vor": "vegetation.K5#2",
-    "s": 25.6,
-    "takte": 822,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "spielgang.K3#1",
-    "s": 24.5,
-    "takte": 871,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "genesis",
-    "vor": "vegetation.K4#2",
-    "s": 2.2,
-    "takte": 140,
-    "chunks": 90,
-    "nach": null
-   },
-   {
-    "ort": "genesis",
-    "vor": "siedlung.K1#2",
-    "s": 20,
-    "takte": 590,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "tiere.K1#2",
-    "s": 20.1,
-    "takte": 691,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
    {
     "ort": null,
     "vor": "tiere.K3#2",
-    "s": 22.6,
-    "takte": 639,
+    "s": 20.9,
+    "takte": 785,
     "chunks": 81,
-    "nach": "der Tür"
+    "nach": null
    },
    {
     "ort": null,
     "vor": "studios.K2#2",
-    "s": 2.3,
-    "takte": 160,
+    "s": 16.1,
+    "takte": 856,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "studios.K4#1",
+    "s": 16.2,
+    "takte": 901,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "siedlung.K4#2",
+    "s": 16.8,
+    "takte": 856,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "profiband.K2#1",
+    "s": 17.1,
+    "takte": 864,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "speicher.K2#2",
+    "s": 16.9,
+    "takte": 890,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "speicher.K4#2",
+    "s": 7.1,
+    "takte": 602,
     "chunks": 81,
     "nach": "der Grundstellung"
    }
   ],
-  "wegeTueren": [],
-  "haenger": [
+  "wegeTueren": [
    {
-    "probe": "profiband.K4#1",
-    "zurueck": 10
+    "vor": "speicher.K2#2",
+    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
+    "s": 6.9
    }
   ],
-  "zeichnerBlind": [
-   {
-    "probe": "studios.K2#2",
-    "wann": "nach",
-    "fehler": "Attempted to use detached Frame '91C28058D28F0EBF13996296BE9E6897'."
-   }
-  ],
-  "grund": "die Sitzung trägt nicht mehr vor studios.K4#1: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-  "ciBlicke": 12,
+  "ciBlicke": 8,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 621,
-   "frameP95": 91.7,
-   "taktP95": 75.9,
-   "vramMax": 164.4,
-   "seiten": 6,
-   "marken": 2,
+   "bilder": 940,
+   "frameP95": 91.6,
+   "taktP95": 77.5,
+   "vramMax": 133.7,
+   "seiten": 7,
+   "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "profiband.K5#1",
-     "m": 1083,
+     "probe": "speicher.K4#2",
+     "m": 1147,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "profiband.K2#1",
+     "m": 1092,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "siedlung.K4#2",
+     "m": 639,
      "ringVor": 4,
      "ringMin": 0
     }
    ],
-   "zapfen": 431,
-   "luecken": 10,
-   "letzteLuecke": "connect ECONNREFUSED 127.0.0.1:27804"
+   "zapfen": 466,
+   "luecken": 1,
+   "letzteLuecke": "THREE is not defined"
   },
-  "fahrtS": 556.6,
-  "minuten": 19.81
+  "fahrtS": 484.7,
+  "minuten": 8.17
  }
 }
