@@ -157,18 +157,22 @@ function stufeAnlegen(lod,ov,baum,cache){
   return {baum:baum,sk:sk,liste:liste};
 }
 // DAS TUCH (haar.K4, Labor = Welt): derselbe weiche Löser des Körper-Kerns wie der Leib der Welt (`_tuchTakt`): das Gitter ist das
-// Tuch der Grobstufe (L1), das Tuch der feinen (L0) folgt ihm, die Haut beider Stufen bleibt innen; je Bild EIN Schritt nach der
+// Tuch der feinen Stufe (L0, die das Bild trägt; seine Stufe wählt der Schirm), das der Grobstufe (L1) folgt ihm, die Haut der
+// feinen bleibt innen; je Bild EIN Schritt nach der
 // Pose (die Welt-Matrizen stehen), solange L0 das Bild trägt — jenseits ruht das Tuch in der Pose (`tuchRuhe`).
 function tuchAnlegen(s0,s1){var stoff=function(L){return L.filter(function(n){return n.isSkinnedMesh&&n.userData.__seh==='stoff';});},
-  haut=s0.liste.concat(s1.liste).filter(function(n){return n.isSkinnedMesh&&n.userData.__seh==='haut'&&n.userData.__klasse==='haut';}),
-  fein=stoff(s0.liste),grob=stoff(s1.liste),sim=grob.length?grob:fein,folge=grob.length?fein:[];
+  hautVon=function(L){return L.filter(function(n){return n.isSkinnedMesh&&n.userData.__seh==='haut'&&n.userData.__klasse==='haut';});},
+  haut=hautVon(s0.liste),fein=stoff(s0.liste),grob=stoff(s1.liste),sim=fein.length?fein:grob,folge=fein.length?grob:[];
   if(!sim.length)return null;
-  // die Ruhe-Lage beider Stufen über der Haut beider (wie der Wirt `_tuchVorlageDrapieren`); das Labor rechnet in Einheiten des Leibs
-  s0.baum.root.updateMatrixWorld(true);if(KC.tuchDrapieren(fein.concat(grob),haut,KC.leibMassstab())>0)fein.concat(grob).forEach(function(n){n.geometry.computeVertexNormals();});
+  // jede Stufe über IHRER Haut (wie der Wirt `_tuchVorlageDrapieren`); der Löser prüft die Haut der feinen (er rechnet nur, solange
+  // sie das Bild trägt); das Labor rechnet in Einheiten des Leibs
+  s0.baum.root.updateMatrixWorld(true);[[fein,haut],[grob,hautVon(s1.liste)]].forEach(function(st){if(st[0].length&&st[1].length&&KC.tuchDrapieren(st[0],st[1],KC.leibMassstab())>0)st[0].forEach(function(n){n.geometry.computeVertexNormals();});});
   return KC.tuchZustand(KC.tuchGitter(sim,folge,haut,sim.map(function(n){return n.userData.__webe;})),sim,folge,haut,KC.leibMassstab());}
 function tuchTakt(dt){if(!gestalt||!gestalt.tuch)return;
   if(gestalt.istFern){if(!gestalt.tuchRuht){KC.tuchRuhe(gestalt.tuch);gestalt.tuchRuht=true;}return;}
-  gestalt.tuchRuht=false;gestalt.root.updateMatrixWorld(true);KC.tuchTakt(gestalt.tuch,dt);}
+  // die Stufe des Gitters am Schirm wie in der Welt: Bildpunkte je Meter am Leib (das Labor misst in Einheiten des Leibs)
+  (headGroup||character).getWorldPosition(_sp);var pxM=innerHeight/(2*Math.tan(camera.fov*Math.PI/360))/Math.max(1e-3,camera.position.distanceTo(_sp))/KC.leibMassstab();
+  gestalt.tuchRuht=false;gestalt.root.updateMatrixWorld(true);KC.tuchTakt(gestalt.tuch,dt,pxM);}
 function gestaltFort(){if(!gestalt)return;scene.remove(gestalt.root);gestalt.root.traverse(function(o){if(o.isMesh){o.geometry.dispose();o.material.dispose();}});gestalt=null;}
 // DER STUFEN-SCHALTER (die Welt-Regel `_gelenkStufe`): jenseits ab × (1 ± hyst) trägt L1 das Bild, diesseits L0 — und L1 wirft
 // immer als Zwilling (r128: der Zwilling zeichnet nah ohne Farbe und Tiefe, sein Tiefen-Stoff wirft). Wählbar: auto · L0 · L1.
