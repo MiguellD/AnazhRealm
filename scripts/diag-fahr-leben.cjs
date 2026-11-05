@@ -2393,19 +2393,20 @@ hauptLauf(async () => {
             const brueche = [
                 [{ wenden: 3 }, /Wenden 3/],
                 [{ stufen: [{ x: 1 }] }, /Stufen/],
-                [{ wagen: 19 }, /Wagen 19 von 20/],
+                [{ wagen: 7, ohnePlatz: 13 }, /Wagen 7 von 20 \(Soll ≥ 20; ohne Platz 13/], // die Radeon 05.11.: die Stadt des Worts
                 [{ soll: 18, wagen: 18 }, /Wagen 18 von 18 \(Soll ≥ 20/],
                 [{ ohneNacht: 2 }, /ohne Nachtfahrer 2/],
-                [{ amSteuer: [12, 8, [1, "steht"]] }, /am Steuer \[12,8,\[1,"steht"/],
+                [{ amSteuer: [7, 8, [1, "steht"]] }, /am Steuer \[7,8,\[1,"steht"\]\] von 20/],
                 [{ trasse: [9e4, 3, [[1, 905, 300]]] }, /Trasse \[90000,3,\[\[1,905/],
-                [{ weg60: [19, 7, 4, 3] }, /je Minute \[19,7,4,3\] von 20/],
+                [{ weg60: [0, 1, 0, 1] }, /je Minute \[0,1,0,1\] von 20/],
                 [{ sitz: [0, 0] }, /nicht im Sitz \[0,0\]/],
+                [{ sitz: [500, 120, [1, 4, 1.94, 1.44]] }, /nicht im Sitz \[500,120,\[1,4,1.94,1.44/], // auf dem Dach (23 Uhr)
                 [{ ziele: { erreicht: 150, ohne: [], laengsteS: 410, wer: 4 } }, /Fahrt 410 s > 300 s \(Wagen 4/],
                 [{ fest: [{ nr: 4 }] }, /steckt/],
                 [{ beruehrt: { leib: 3, wagen: 0 } }, /Bewohner 3/],
                 [
-                    { beruehrt: { leib: 0, wagen: 2, tief: [0.05, "3|9", 7, 700, 400] } },
-                    /Wagen in Wagen 2× tiefste \[0.05,"3\|9"/,
+                    { beruehrt: { leib: 0, wagen: 40, tief: [0.22, "1|2", 0, 828, 441] } },
+                    /Wagen in Wagen 40× tiefste \[0.22,"1\|2",0,828,441/,
                 ],
                 [{ ankunft: { d: 1.1, K: 0.71, wagen: 3 } }, /Ankunft sieht die Hülle des Wagens nicht/],
                 [{ ankunft: { d: null, K: 0.71 } }, /Ankunft sieht die Hülle des Wagens nicht/],
@@ -2445,16 +2446,10 @@ hauptLauf(async () => {
                 /ohne Ziel erreicht: Wagen 0, 1, 3/.test(alt[1]) &&
                 /Fahrt 752 s/.test(alt[2]) &&
                 /Wagen in Wagen 15/.test(alt[3]);
-            // DIE STADT DES WORTS an der Radeon (05.11., 782ce8a3, 23 Uhr): 7 von 20 Wagen gestellt und am Steuer, keiner fährt
-            // seine Minute, Wagen 1 und 2 stecken bei 828/441 0,22 m ineinander, der Nachtfahrer von Wagen 1 sitzt auf dem Dach
-            const radeon = verkehrVerdict({ ...g, wagen: 7, ohnePlatz: 13, amSteuer: [7, 0], weg60: [0, 1, 0, 1], beruehrt: { leib: 0, wagen: 40, bau: 0, tief: [0.22, "1|2", 0, 828, 441] }, sitz: [500, 120, [1, 4, 1.94, 1.44]] }).join(" · "); // prettier-ignore
-            const radeonRot = [/am Steuer \[7,0\] von 20/, /je Minute \[0,1,0,1\]/, /Sitz \[500,120,\[1,4,1.94,1.44/, /Wagen 7 von 20 .*ohne Platz 13/, /Wagen in Wagen 40× tiefste \[0.22,"1\|2",0,828,441/].every((x) => x.test(radeon)); // prettier-ignore
             check(
                 "Selbst-Test VK: der Verkehr nennt jeden Bruch beim Namen (alt ROT an Laterne, Ziel, Fahrt und Wagen; die Radeon an Soll, Minute, Sitz und Karosserie; neu GRÜN)",
-                !verkehrVerdict(g).length && !brueche.length && altRot && radeonRot,
-                JSON.stringify(brueche) +
-                    (altRot ? "" : " alt: " + alt.join(" · ")) +
-                    (radeonRot ? "" : " radeon: " + radeon)
+                !verkehrVerdict(g).length && !brueche.length && altRot,
+                JSON.stringify(brueche) + (altRot ? "" : " alt: " + alt.join(" · "))
             );
         }
         {

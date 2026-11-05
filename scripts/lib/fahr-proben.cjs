@@ -664,13 +664,10 @@ async function probeLeben(expected) {
             [...(r._bewohnerSiedlungen || new Map()).values()].find(
                 (q) => q.plan.seed === seed && Math.hypot(q.ox - ax, q.oz - az) < 200
             );
-        // DIE STADT, DIE DAS WORT GRÜNDET (`__gruenden`, wie werkbank `umstellen --ort`): am Anlauf mit dem Blick des Orts, der
-        // Dorf-Zug wie am Ort; dann erwacht sie, wenn der Spieler naht
-        [window.__anazhAutoSettlement, st.yaw] = [ort.dorfZug, Math.atan2(ort.blick[0] - ort.spieler[0], ort.blick[1] - ort.spieler[1])]; // prettier-ignore
-        stelle(ort.anlauf[0], ort.anlauf[1], 2);
-        await __gruenden(ort.gruendung, () => window.sleep(250));
-        stelle(ax, az, 2);
-        for (const weiter = __deckel("verkehr: die Stadt erwacht", 8000); weiter() && !S0(); i++) frame(i), i % 8 || (await window.sleep()); // prettier-ignore
+        // DIE STADT DES WORTS: die Spec trägt den Ort, an dem „dorf 7 300“ sie gründet (werkbank `umstellen --ort`, auf 1 mm; der
+        // Anker folgt dem Bildwinkel des Sprechers, `_siedlungsAnker` — die Null-Seite sähe einen anderen), und dort steht sie hier.
+        // Bis w12-verkehr stand sie 0,28 m daneben: 295 statt 300 Häuser, vier statt einer Wende, 20/20 statt der 7/20 der Radeon
+        if (!S0()) await r.spawnSettlement({ seed, nH: 300, position: { x: ax, y: 0, z: az } });
         const S = S0();
         if (!S) throw new Error("keine Stadt am Messort stadt-voll");
         const R = A.PLAYER_WALL_RADIUS;

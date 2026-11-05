@@ -1004,11 +1004,25 @@ async function starte() {
                 // kein Haus auf ihm, eine Stadt erwacht erst, wenn er naht —, dann steht er am Ort: am Boden oder auf dem Dach (`dach`, m)
                 const a = (o && o.anlauf) || [x, z];
                 r.state.playerMesh.position.set(a[0], r._voxelSurfaceY(a[0], a[1]) + 1.8, a[1]);
-                // DIE GRÜNDUNG (haushalt.json `gruendung`, die Stadt, `__gruenden`): das Wort am Anlauf mit dem Blick des Orts. Die Bahn
-                // des Orts (`bahn`, die Hauptgasse) liegt Meter für Meter auf ihrem Weg (`_aufWeg`).
+                // DIE GRÜNDUNG (haushalt.json `gruendung`, die Stadt): der Spieler sagt sein Wort am Anlauf mit dem Blick des Orts, wie im
+                // Spiel (Chat) — die Siedlung steht danach am Anker der Spec (±1 mm, sonst laut: die Ort-Wahl wanderte mit der Welt; der
+                // Richter des Verkehrs stellt die Stadt genau dorthin — bis w12-verkehr ±1 m, und 0,28 m daneben stand eine andere
+                // Stadt: 295 statt 300 Häuser, vier statt einer Wende, gate:fahr-leben --verkehr GRÜN, die Radeon 7 von 20); eine Welt,
+                // die sie trägt, gründet nicht neu. Die Bahn des Orts (`bahn`, die Hauptgasse) liegt Meter für Meter auf ihrem Weg (`_aufWeg`).
                 const g = o && o.gruendung;
                 window.__ortBahn = (o && o.bahn) || null;
-                if (g) await __gruenden(g, () => sleep(250)).catch((f) => Promise.reject(new Error(`Messort ${o.ort}: ${f.message}`)));
+                if (g) {
+                    const same = g.wort.split(" ")[1];
+                    const zellen = () => Object.values(r.state.worldMeta.settlementCells || {});
+                    const steht = () =>
+                        zellen().find((c) => String(c.seed) === same && Math.hypot(c.x - g.anker[0], c.z - g.anker[1]) <= 1e-3);
+                    if (!steht()) {
+                        r._chatDispatchLegacyCommand(g.wort, [], () => {});
+                        for (const weiter = __deckel(`die Gründung „${g.wort}"`); !steht() && weiter(); ) await sleep(250);
+                    }
+                    if (!steht())
+                        throw new Error(`Messort ${o.ort}: „${g.wort}" steht nicht am Anker ${g.anker} (${JSON.stringify(zellen())})`);
+                }
                 if (o && o.dorfZug === false) window.__anazhAutoSettlement = false;
                 else if (o && o.dorfZug === true) delete window.__anazhAutoSettlement;
                 if (o && o.kamera) r.setCameraMode(o.kamera);
