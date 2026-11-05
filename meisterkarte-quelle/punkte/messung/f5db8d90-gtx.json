@@ -1,7 +1,7 @@
 {
  "sha": "f5db8d904ae0f50187c9b3e2e37de3fa38da73e0",
  "geraet": "gtx",
- "zeit": "2026-11-05T20:04:05.733Z",
+ "zeit": "2026-11-05T20:10:07.034Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "leib.K3#2": {
@@ -39,78 +39,60 @@
    "gruen": false,
    "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.evaluate): Target closed",
    "exit": 3,
-   "minuten": 1.41,
+   "minuten": 1.4,
    "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.evaluate): Target closed",
    "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "s": 84.4,
-   "zeit": "2026-11-05T20:02:20.577Z",
+   "s": 84.2,
+   "zeit": "2026-11-05T20:10:07.034Z",
    "abdruck": "66b88461512c",
    "port": 7804,
    "bahn": "sitzung",
-   "zwilling": "material.K3#2",
    "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-05T20:01:46.766Z",
+  "start": "2026-11-05T20:09:35.057Z",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 9,
-  "grundstellungS": [
-   4
-  ],
-  "proben": 2,
+  "warten": 0.01,
+  "bootS": 7.4,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "genesis",
-    "vor": "material.K3#2",
-    "s": 23.4,
-    "takte": 651,
+    "vor": "material.K1#2",
+    "s": 23.1,
+    "takte": 648,
     "chunks": 81,
     "nach": null
-   },
-   {
-    "ort": null,
-    "vor": "leib.K3#2",
-    "s": 16.7,
-    "takte": 923,
-    "chunks": 81,
-    "nach": "der Tür"
    }
   ],
   "wegeTueren": [],
   "unerklaert": [
    {
-    "probe": "material.K3#2",
+    "probe": "material.K1#2",
     "wie": "werke +6 (−0)"
    }
   ],
-  "ciBlicke": 3,
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
    "bilder": 0,
    "frameP95": null,
    "taktP95": null,
    "vramMax": null,
-   "seiten": 2,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "leib.K3#2",
-     "m": 6430,
-     "ringVor": 4,
-     "ringMin": 0
-    }
-   ],
-   "zapfen": 161,
+   "ortImDeckel": [],
+   "zapfen": 106,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 171.8,
-  "minuten": 2.93
+  "fahrtS": 115.3,
+  "minuten": 1.97
  }
 }
