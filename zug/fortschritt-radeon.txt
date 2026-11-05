@@ -1947,3 +1947,4 @@
 2026-11-05 01:25:59 95d7bba1-radeon siedlung.K5#1 GRÜN 0.4 · 1/1
 2026-11-05 01:27:29 95d7bba1-radeon ENDE 1 grün / 0 rot · 2.9 min
 2026-11-05 01:27:58 2d6439c1-radeon START 4 Stationen
+2026-11-05 01:30:50 2d6439c1-radeon lod.K5#1 ROT 0.5 · 1/4
