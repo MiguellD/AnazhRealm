@@ -2735,9 +2735,10 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // mutiert (w4-linsen-a): die Probe hebt das Start-Dorf (`__anazhAutoSettlement` an, bis seine Zelle steht) — der Bau der Welt
         // nannte sie (Radeon 379e5f56: werke +14 · orte +start · wege +53)
-        // DIE AUSNAHME (w12-proben-frist): 18 Häuser des Start-Dorfs, je der Gang Tür → Keller → Dachboden im Sim-Takt und je ein Innen-Bild —
-        // Radeon 8ef49bef (nach dem Heil des Wandkontakt-Fensters): der Gang aller 18 an der Frist 39 s ganz, dann 18 von 18 Innen-Bildern ausgelassen
-        probe: { ...START_DORF_PROBE, mutiert: true, sek: 33, ausnahme: "18 Häuser des Start-Dorfs, je der Gang Tür → Keller → Dachboden im Sim-Takt und ein Innen-Bild" },
+        // DER DECKEL 45 s BLEIBT (w12-proben-frist, Radeon 8ef49bef): nach dem Heil des Wandkontakt-Fensters gehen alle 18 Häuser ihren Gang
+        // in der Frist 39 s; die 18 Innen-Bilder kosten je ≈ 6 s — mit 90 s Deckel standen 8 von 18 (Median 0,098), 18 Gänge und 18 Bilder
+        // brauchen ≈ 143 s, über dem Gesetz von 90 s: ungemessen beim Namen, bis ein Bild weniger kostet
+        probe: { ...START_DORF_PROBE, mutiert: true, sek: 33 },
         gpu: true,
         zeit: false,
         minuten: 1,
