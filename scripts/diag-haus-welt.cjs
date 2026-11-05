@@ -697,7 +697,6 @@ async function proben(phasen) {
             if (innen.length) s.nahWiese.neu = true;
             r._tickNahWiese = aus.length || innen.length ? () => 0 : tick;
             window.__bundlesNeu();
-            r._schattenAlleNeu();
             try {
                 return (await window.__ausgabeAufnahme(WB, HB, 1, { satz: "messung" })).u8;
             } finally {

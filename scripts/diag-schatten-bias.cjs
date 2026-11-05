@@ -351,7 +351,6 @@ async function probe(cfg) {
             wieseAus();
             kamSetzen(k);
             biasAnwenden();
-            r._schattenAlleNeu();
             u8 = (await window.__ausgabeAufnahme(W, H, 1)).u8;
         }
         return u8;

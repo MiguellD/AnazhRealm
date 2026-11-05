@@ -61,7 +61,6 @@ const schuss = async (staerke) => {
   if (st.playerMesh) st.playerMesh.visible = false;
   // EINE Aufnahme: sie schaltet die Erst-Zeichnung zur Ruhe und wärmt die zeitliche Auflösung mit 32 Frames, in denen die
   // Karten neu werfen (drei Aufnahmen kosteten im Software-Holz 80 s je Sonne)
-  r._schattenAlleNeu();
   return (await window.__ausgabeAufnahme(W, H, 1)).u8;
 };
 // nur der Boden-Satz zeichnet und wirft (die Rampe ist kahl; das Tor-Rund am Ursprung und die Hindernisse kosteten im Software-Holz

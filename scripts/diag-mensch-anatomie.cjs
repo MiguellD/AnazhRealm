@@ -90,53 +90,32 @@ function messe(sb, verzerre, dials) {
     const { B, T } = baue(sb, verzerre, dials);
     const P = B.parts;
     const lage = (n) => new T.Vector3().setFromMatrixPosition(n.matrixWorld);
-    const alle = punkte(T, B.character);
-    const Hk = spanne(alle, 1).l;
-    // die rechte Hand (hand1) und der rechte Arm
-    const hand = P.hand1;
-    const daumen = new Set([P["tA_1"]].filter(Boolean));
-    const handP = punkte(T, hand);
-    const handOhneDaumen = punkte(T, hand, daumen);
-    const handL = spanne(handP, 1).l;
-    const handB = spanne(handOhneDaumen, 0).l;
+    const Hk = spanne(punkte(T, B.character), 1).l;
+    // die rechte Hand (hand1, ohne den Daumen tA_1 ihre Breite) und der rechte Arm
     const ellG = P.elbow1;
-    const unterP = punkte(T, ellG, new Set([hand]));
+    const unterP = punkte(T, ellG, new Set([P.hand1]));
     const yE = lage(ellG).y;
     // Handgelenk: das untere Ende des Unterarms (ohne Hand) — die Scheibe 3–10 % der Unterarm-Länge darüber
     const yW = spanne(unterP, 1).a,
         lU = yE - yW;
-    const wrist = maxBreite(unterP, yW + 0.03 * lU, yW + 0.1 * lU, 1);
-    const unterarm = maxBreite(unterP, yE - lU * 0.2, yE - lU * 0.7, 10);
     const armP = punkte(T, P.arm1, new Set([ellG]));
     const yS = lage(P.arm1).y;
-    const oberarm = maxBreite(armP, yS - (yS - yE) * 0.4, yS - (yS - yE) * 0.85, 10);
     // der Kopf: Höhe des Teilbaums; Breite ohne die Ohren (Gruppen-Kinder seitlich jenseits 0,8 Schädel-Radius)
-    const kopf = P.head;
-    const kopfP = punkte(T, kopf);
-    const kopfOhneOhren = punkte(T, kopf, new Set(ohrenVon(kopf)));
-    const kopfH = spanne(kopfP, 1).l;
-    const kopfB = spanne(kopfOhneOhren, 0).l;
     const aug = B.augen;
-    const augenAbstand = lage(aug.eyeL).distanceTo(lage(aug.eyeR));
     const ball = aug.eyeL.children.find((c) => c.isMesh && c.material.userData.__klasse === "eye");
-    const augapfel = spanne(punkte(T, ball), 0).l;
-    const iris = spanne(punkte(T, aug.irisL), 0).l;
-    const lippen = punkte(T, aug.upperLipRef).concat(punkte(T, aug.lowerLipRef));
-    const mund = spanne(lippen, 0).l;
-    const fuss = spanne(punkte(T, P.ankle1), 2).l;
     return {
         Hk,
-        handL: handL / Hk,
-        handB: handB / Hk,
-        handgelenk: wrist / Hk,
-        unterarm: unterarm / Math.max(1e-6, oberarm),
-        kopfH: kopfH / Hk,
-        kopfB: kopfB / Hk,
-        augenAbstand: augenAbstand / Hk,
-        augapfel: augapfel / Hk,
-        iris: iris / Hk,
-        mund: mund / Hk,
-        fuss: fuss / Hk,
+        handL: spanne(punkte(T, P.hand1), 1).l / Hk,
+        handB: spanne(punkte(T, P.hand1, new Set([P["tA_1"]].filter(Boolean))), 0).l / Hk,
+        handgelenk: maxBreite(unterP, yW + 0.03 * lU, yW + 0.1 * lU, 1) / Hk,
+        unterarm: maxBreite(unterP, yE - lU * 0.2, yE - lU * 0.7, 10) / Math.max(1e-6, maxBreite(armP, yS - (yS - yE) * 0.4, yS - (yS - yE) * 0.85, 10)), // prettier-ignore
+        kopfH: spanne(punkte(T, P.head), 1).l / Hk,
+        kopfB: spanne(punkte(T, P.head, new Set(ohrenVon(P.head))), 0).l / Hk,
+        augenAbstand: lage(aug.eyeL).distanceTo(lage(aug.eyeR)) / Hk,
+        augapfel: spanne(punkte(T, ball), 0).l / Hk,
+        iris: spanne(punkte(T, aug.irisL), 0).l / Hk,
+        mund: spanne(punkte(T, aug.upperLipRef).concat(punkte(T, aug.lowerLipRef)), 0).l / Hk,
+        fuss: spanne(punkte(T, P.ankle1), 2).l / Hk,
     };
 }
 
@@ -382,9 +361,12 @@ const zeige = (m) =>
 // DIE RUHE DER ARME (w11-koerper, koerper-core ARM_RUHE · armRuheUrteil): in der Ruhe-Pose des Gusses (Ofen L0) liegt an keinem
 // Körper des Gesetzes (ARM_RUHE.koerper: der Start und die Ränder von mass, tone, age, gender) eine Arm-Ecke in der Rumpf-Hülle.
 // Am Labor-Kern (2674ff9a) lagen am Gitter aus mass × tone × age × gender 24 von 24 Körpern mit 284–526 Arm-Ecken bis 71 mm im
-// Rumpf. Täter (Selbsttest R1): der Körper ohne das Gesetz (morphAuf ohne Kugeln).
+// Rumpf. Täter (Selbsttest R1): der Guss ohne die Anlage (`armAnlage`, die Rumpf-Hülle weicht dem Arm nicht). Und der Arm HÄNGT (w12-arme): seine
+// Abspreizung in Ruhe (Schulter → Ellbogen gegen das Lot, Grad) hält ihr Band ARM_RUHE.spreizGrad — bis w12-arme hielt die
+// Ruhe die Hüllen beider Seiten und das Fett-Depot, der muskulöse Mann bei mass 1 stand mit 54° fast in T-Pose (9ab928c6).
+// Täter (R2): der um 0,6 rad gespreizte Arm. Die Bänder (innen, spreizGrad) urteilt `urteile` wie MENSCH_SOLL.
 const messeRuhe = (sb, kern = (K) => K, K = sb.__koerperCore) => K.ARM_RUHE.koerper.map((dials) => ({ dials, ...K.armRuheUrteil(sb.BAKERS_BY_KIND.koerper(kern(K), "mensch", 1, 0, { dials })) })); // prettier-ignore
-const urteileRuhe = (R) => R.filter((r) => r.innen).map((r) => `ruhe ${JSON.stringify(r.dials)}: ${r.innen} von ${r.arm} Arm-Ecken im Rumpf`); // prettier-ignore
+const urteileRuhe = (so, R) => R.flatMap((r) => urteile(so, r, "ARM_RUHE").map((x) => `ruhe ${JSON.stringify(r.dials)}: ${x}`)); // prettier-ignore
 
 // DIE LESER DIESER LINSE als Modul: die Station mensch.K4#2 (Zweig punkte-maschine, meisterkarte-quelle/punkte/stationen/g2.js)
 // misst die Gesichter der Typen ihrer Menge mit `ladeWelt` und `messe` — sie lebt nicht in main: bis w7-gesicht strich
@@ -398,7 +380,7 @@ if (SELBSTTEST) {
     const pruefe = (name, verzerre, muster, kopf) => {
         const sb = kopf ? ladeOfen() : ladeWelt();
         const f =
-            kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "ruhe" ? urteileRuhe(messeRuhe(sb, verzerre.kern)) : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
+            kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "ruhe" ? urteileRuhe(sb, messeRuhe(sb, verzerre.kern)) : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
         const ok = f.some((x) => muster.test(x));
         console.log(`  ${ok ? "✅" : "❌"} ${name}${ok ? " — " + f.find((x) => muster.test(x)) : ""}`);
         if (!ok) rot++;
@@ -428,14 +410,14 @@ if (SELBSTTEST) {
     );
     // der Augapfel eine Augapfel-Breite vor (dz +0,12) oder zurück (−0,12) — im Kern, den der Ofen liest
     const auge = (dz) => ({
-        kern: (K) =>
-            Object.assign({}, K, {
-                bauMensch: (F) => {
-                    const B = K.bauMensch(F);
-                    for (const e of [B.augen.eyeL, B.augen.eyeR]) e.position.z += dz;
-                    return B;
-                },
-            }),
+        kern: (K) => ({
+            ...K,
+            bauMensch: (F) => {
+                const B = K.bauMensch(F);
+                for (const e of [B.augen.eyeL, B.augen.eyeR]) e.position.z += dz;
+                return B;
+            },
+        }),
     });
     // DAS GESICHT AUF 6 m (mensch.K4): die Braue ohne ihren Ton (sie ist die Haut)
     pruefe(
@@ -447,7 +429,7 @@ if (SELBSTTEST) {
     // DIE MENGE (mensch.K4): die Farben der Gestalt statt der eigenen (der Stand vor mensch.K4)
     pruefe("M1 die Farben der Gestalt (vor mensch.K4) werden erkannt", (A, roh = A.prototype._bewohnerGenome) => (A.prototype._bewohnerGenome = function (S) { roh.call(this, S); S.liste.forEach((b) => (b.farben = null)); }), /^menge\.gleich/, "menge"); // prettier-ignore
     // DIE KAPPE VOR DEM SCHÄDEL (vor w7-gesicht: afro um sein zurueck 0,05 gesetzt, ohne die Dicke) begräbt sein Auge
-    pruefe("K1 die Kappe vor dem Schädel (afro) wird erkannt", { kern: (K) => Object.assign({}, K, { haarKappe: (d) => K.haarKappe(d).map((k) => ({ ...k, c: [0, k.c[1], -0.05] })) }) }, /^afro\/rand\d augeFrei/, "schnitte"); // prettier-ignore
+    pruefe("K1 die Kappe vor dem Schädel (afro) wird erkannt", { kern: (K) => ({ ...K, haarKappe: (d) => K.haarKappe(d).map((k) => ({ ...k, c: [0, k.c[1], -0.05] })) }) }, /^afro\/rand\d augeFrei/, "schnitte"); // prettier-ignore
     pruefe("S5 der aufgesetzte Augapfel (eine Augapfel-Breite vor) wird erkannt", auge(0.12), /^augenVorstand/, true);
     pruefe(
         "S7 das begrabene Auge (eine Augapfel-Breite zurück) wird erkannt",
@@ -455,9 +437,10 @@ if (SELBSTTEST) {
         /^(augeFrei|augenVorstand)/,
         true
     );
-    // DIE RUHE DER ARME: der Körper ohne das Gesetz (morphAuf an einem Baum ohne Kugeln: der Labor-Winkel, der volle Brustkorb)
-    pruefe("R1 der Arm im Rumpf (vor w11-koerper) wird erkannt", { kern: (K) => ({ ...K, morphAuf: (B, d) => K.morphAuf({ ...B, kugeln: [] }, d) }) }, /^ruhe \{\}/, "ruhe"); // prettier-ignore
-    const rot0 = (K) => (h) => Object.assign({}, K.kopfToene(h), { lips: 0xaa5544 });
+    // DIE RUHE DER ARME: der Guss ohne die Anlage (der Arm im Rumpf) und der gespreizte Arm (der Regler arms 0,5: +0,65 rad)
+    pruefe("R1 der Arm im Rumpf", { kern: (K) => ({ ...K, armAnlage: () => 0 }) }, /innen/, "ruhe");
+    pruefe("R2 der gespreizte Arm", { kern: (K) => ({ ...K, morphAuf: (B, d) => K.morphAuf(B, { ...d, arms: 0.5 }) }) }, /spreizGrad/, "ruhe"); // prettier-ignore
+    const rot0 = (K) => (h) => ({ ...K.kopfToene(h), lips: 0xaa5544 });
     pruefe(
         "S6 die rote Lippe (die alte Klassen-Farbe 0xaa5544) wird erkannt",
         { kern: (K) => ({ ...K, kopfToene: rot0(K) }) },
@@ -477,7 +460,9 @@ const so = ladeOfen();
 const mk = messeKopf(so);
 zeige(mk);
 const mm = messeMenge();
-const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm), kopfJe(so), urteileRuhe(messeRuhe(so)));
+const mr = messeRuhe(so);
+zeige(Object.fromEntries(mr.map((r, i) => ["spreizGrad" + i, r.spreizGrad])));
+const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm), kopfJe(so), urteileRuhe(so, mr));
 urteilEnde(
     fehler.length,
     `\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "),
