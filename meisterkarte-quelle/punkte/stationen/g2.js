@@ -995,7 +995,20 @@ function nexusZeitraffer(r, T, o) {
             rule.value = v + B * ((zufall() < 0.5 ? -ertrag : ertrag) - v);
         };
     const wert = (x) => (o.mutante === "gemischt" ? x._wahr || 0 : x.value || 0);
+    const messe = r._measureRuleReward;
+    r._measureRuleReward = function (rule, now) {
+        if (rule._vPending && rule._vPos) rule._gemessen = true;
+        return messe.call(this, rule, now);
+    };
     const proben = [];
+    const fit = r._worldRuleFitness;
+    const offen = [];
+    const enden = [];
+    r._worldRuleFitness = function (rule) {
+        const f = fit.call(this, rule);
+        if (rule.source === "nexus") offen.push({ rule, born: rule.born, k: proben.length, w: wert(rule), v: rule.value || 0, f, gem: !!rule._gemessen });
+        return f;
+    };
     let evo = u / 1000;
     try {
         for (let k = 0; k < 18000; k++) {
@@ -1003,19 +1016,31 @@ function nexusZeitraffer(r, T, o) {
             s.nexusLastEvolution = Infinity;
             if (u / 1000 >= evo) (s.nexusEvolutionQueue.push(r.generateEvolution()), (evo = u / 1000 + s.nexusEvolutionInterval));
             r._gameLoopTick((window.__gangUhr = u += 100));
+            for (const e of offen.splice(0)) enden.push([e.k, +e.w.toFixed(3), +e.v.toFixed(3), e.f, e.rule.born !== e.born ? 1 : 0, e.gem ? 1 : 0]);
             if (k % 300 === 0) {
                 const R = s.worldRules.filter((x) => x && x.source === "nexus");
-                proben.push([R.filter((x) => wert(x) > 0).length, R.length]);
+                const G = R.filter((x) => x._gemessen);
+                proben.push([R.filter((x) => wert(x) > 0).length, R.length, R.filter((x) => wert(x) === 0).length, R.filter((x) => wert(x) < 0).length,
+                    G.filter((x) => wert(x) > 0).length, G.length]);
             }
         }
     } finally {
         r._measureRuleReward = echt;
+        delete r._worldRuleFitness;
     }
     const drittel = (a) => a.reduce(([g, n], [x, y]) => [g + x, n + y], [0, 0]);
     const L = proben.length;
+    const dritteln = [0, 1, 2].map((d) => proben.slice((d * L) / 3, ((d + 1) * L) / 3).reduce((a, p) => [a[0] + p[0], a[1] + p[2], a[2] + p[3], a[3] + p[4], a[4] + p[5]], [0, 0, 0, 0, 0]));
+    const endeDrittel = [0, 1, 2].map((d) => {
+        const E = enden.filter(([k]) => k >= (d * L) / 3 && k < ((d + 1) * L) / 3);
+        const n = (f) => E.filter(f).length;
+        return { n: E.length, erneuert: n((e) => e[4]), plusErneuert: n((e) => e[1] > 0 && e[4]), plus: n((e) => e[1] > 0), minusErneuert: n((e) => e[1] <= 0 && e[4]), minus: n((e) => e[1] <= 0),
+            ungemessen: n((e) => !e[5]), fitness: E.length ? +(E.reduce((a, e) => a + e[3], 0) / E.length).toFixed(3) : null };
+    });
     const taten = s.taten.filter((e) => /^(rule:)*nexus$/.test(String(e.wer)));
     return {
         mutante: o.mutante || null, saat: o.saat || 0, erstes: drittel(proben.slice(0, L / 3)), letztes: drittel(proben.slice((2 * L) / 3)),
+        dritteln, endeDrittel,
         verlauf: proben.map(([g, n]) => g + "/" + n).join(" "), taten: taten.length,
         gesprochen: taten.filter((e) => e.zeile).length,
         zeilen: taten.filter((e) => e.zeile && e.regel != null).map((e) => e.zeile).slice(-2),
@@ -1024,7 +1049,7 @@ function nexusZeitraffer(r, T, o) {
 
 // Der Lauf (im Spiel-Baum, cwd): EINE Werkbank an der Weiche (`[linse-gpu]` nennt die Karte) an der Mess-Wiese, Port {PORT}+20000;
 // das Weltbild ist da und die Bühne steht (der Wetter-Zug und der Nexus warten auf sie: höchstens 9 000 Takte der Seite), dann je Mutante der Lauf
-// „art" — „gemuet": echt · starr · gesetz-aus, „nexus": je Saat 0, 1, 2 echt · gemischt · aus. Je Lauf eine Zeile „AFFEKT-<art> {…}", alle in {AUS}.
+// „art" — „gemuet": echt · starr · gesetz-aus, „nexus": je Saat 0 … 5 echt · gemischt · aus. Je Lauf eine Zeile „AFFEKT-<art> {…}", alle in {AUS}.
 async function affektLauf() {
     const fs = require("fs");
     const path = require("path");
@@ -1039,7 +1064,7 @@ async function affektLauf() {
         for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
         const b = await werkbankRuf(W, "/eval", { code: "const da = () => !!r.state._weltbildDa && r._buehneSteht(); for (let i = 0; i < 9000 && !da(); i++) await window.__seitenTakt(); return da();" });
         if (!b || b.ergebnis !== true) throw new Error("die Bühne steht nicht: " + JSON.stringify(b).slice(0, 200));
-        const plan = art === "gemuet" ? [null, "starr", "gesetz-aus"].map((m) => [m, 0]) : [0, 1, 2].flatMap((n) => [null, "gemischt", "aus"].map((m) => [m, n]));
+        const plan = art === "gemuet" ? [null, "starr", "gesetz-aus"].map((m) => [m, 0]) : [0, 1, 2, 3, 4, 5].flatMap((n) => [null, "gemischt", "aus"].map((m) => [m, n]));
         for (const [mutante, saat] of plan) {
             const a = await werkbankRuf(W, "/eval", { code: "return (" + szene + ")(r, T, " + JSON.stringify({ x: M.x, z: M.z, mutante, saat }) + ");" });
             if (!a || a.ergebnis === undefined) throw new Error("eval: " + JSON.stringify(a).slice(0, 300));
@@ -1054,6 +1079,28 @@ async function affektLauf() {
     }
     fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
 }
+// DIE ROH-AUSGABE von affekt.K3#1 am main b62542c9 (w12-g2-proben, headless): je Lauf [Mutante, Saat, erstes, letztes Drittel
+// (value > 0, Regeln)] — die Proben urteilen sie, die Wertung, die nicht wählt (echt = gemischt), die stumme (echt = aus) und die
+// alte Station über drei Saaten
+const NEXUS_ROH = [[null, 0, [13, 29], [10, 20]], ["gemischt", 0, [2, 9], [6, 7]], ["aus", 0, [0, 8], [0, 0]], [null, 1, [0, 17], [8, 10]], ["gemischt", 1, [0, 18], [7, 10]],
+    ["aus", 1, [0, 17], [0, 4]], [null, 2, [26, 39], [20, 22]], ["gemischt", 2, [9, 17], [0, 4]], ["aus", 2, [0, 7], [0, 4]], [null, 3, [4, 13], [4, 5]], ["gemischt", 3, [3, 11], [4, 5]],
+    ["aus", 3, [0, 13], [0, 5]], [null, 4, [2, 9], [19, 19]], ["gemischt", 4, [2, 9], [6, 8]], ["aus", 4, [0, 14], [0, 4]], [null, 5, [4, 9], [38, 40]], ["gemischt", 5, [4, 9], [6, 10]],
+    ["aus", 5, [0, 9], [0, 4]]];
+// `als`: die Läufe „echt" tragen die Zahlen der Mutante derselben Saat
+const nexusRoh = (als = null, saaten = 6) => {
+    const R = NEXUS_ROH.filter(([, n]) => n < saaten);
+    return R.map(([mutante, saat, erstes, letztes]) => {
+        const q = mutante === null && als ? R.find(([m, n]) => m === als && n === saat) : null;
+        const zeilen = ["Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 43 m südöstlich von dir, weil Zufall ≤ 0.63. (Gesetz Nr. 29 des Nexus)"];
+        return "AFFEKT-nexus " + JSON.stringify({ mutante, saat, erstes: q ? q[2] : erstes, letztes: q ? q[3] : letztes, zeilen });
+    }).join("\n");
+};
+const NEXUS_PROBEN = [
+    { name: "die Messung am main b62542c9 (sechs Saaten)", stdout: nexusRoh(), gruen: true },
+    { name: "die Wertung wählt nicht (echt = gemischt)", stdout: nexusRoh("gemischt"), gruen: false },
+    { name: "die Wertung schweigt (echt = aus)", stdout: nexusRoh("aus"), gruen: false },
+    { name: "die alte Station über drei Saaten", stdout: nexusRoh(null, 3), gruen: false },
+];
 
 // ───────── DIE SICHTBARE BÖE (vegetation.K2#1; Zweig boe-zeit): EIN Lauf (`boeLauf`) ─────────
 // Der Lauf (im Spiel-Baum, cwd): EINE Werkbank an der Weiche (`[linse-gpu]` nennt die Karte) an der Mess-Wiese, Port {PORT}+20000;
@@ -1094,9 +1141,10 @@ async function boeLauf() {
 // (seine Evolution je `nexusEvolutionInterval` — der Treiber ruft `generateEvolution` wie `evolveNexus` außerhalb der Mess-Welt —,
 // seine Gesetze, sein Wirk-Budget), die KI handelt auf vier Worte (ohne Modell: die Antwort steht fest), der Spieler pflegt einmal
 // selbst. Die WAHRHEIT hört an der Effekt-Tafel mit (jeder Welt-Akt und das Wetter: Schreiber `ctx.source`, Gesetz, die Bedingung
-// des Zweigs, Wort, Programm, der erste Ort und sein Blick in der Kamera, ob die Tat wirkte: neue Wesen, ein geändertes Wetter oder
-// Wort oder ein neuer Wunsch), nie am Buch der Stimme; jede Zeile der Dialog-Box steht gegen sie in der Folge der Ereignisse
-// (die letzte wirkende Tat der Welt oder KI im Blick vor ihr, die übrigen sind „weitere"): Schreiber beim Namen (ein Gesetz mit
+// des Zweigs, Wort, Programm, der erste Ort und sein Blick in der Kamera, ob die Tat wirkte: ein NEUES Wesen nach Identität gegen die
+// Menge vor dem Akt — an der vollen Kappe weicht ein Bestand-Tier dem Akt (`_bestandWeicht`), die Zahl bleibt —, ein geändertes Wetter
+// oder Wort oder ein neuer Wunsch; was nicht wirkte, steht als `verworfen` je Op, Kappe, Schreiber und Wurf), nie am Buch der Stimme;
+// jede Zeile der Dialog-Box steht gegen sie in der Folge der Ereignisse (die letzte wirkende Tat der Welt oder KI im Blick vor ihr, die übrigen sind „weitere"): Schreiber beim Namen (ein Gesetz mit
 // dem seines Gebers), Ort in Abstand und Richtung, Ursache, Gesetz oder Programm, die Zahl der übrigen. Mutanten: „schreiber"
 // (jede Zeile nennt den Nexus), „takt" (die Pause der Stimme fällt).
 async function stimmeGang(o) {
@@ -1121,11 +1169,16 @@ async function stimmeGang(o) {
         const f = tafel[op];
         tafel[op] = (a, ctx) => {
             const w = { op, wer: ctx.source, regel: ctx.regel, weil: ctx.weil, grund: ctx.grund, prog: ctx.programId, t: st.spielZeit - t0, n: st.creatures.length, vor: wetter(), aussen: jetzt };
+            const vorher = new Set(st.creatures);
+            w.kappe = st.creatures.length >= st.maxCreatures;
             jetzt = w;
             try {
                 const x = f(a, ctx);
-                w.ok = op !== "spawn_creature" || st.creatures.length > w.n;
+                w.ok = op !== "spawn_creature" || st.creatures.some((c) => !vorher.has(c));
                 return x;
+            } catch (e) {
+                w.fehler = String((e && e.message) || e).slice(0, 40);
+                throw e;
             } finally {
                 [jetzt, w.seq, w.wunsch] = [w.aussen, ++seq, st.wetterWunsch !== w.vor[2]];
                 w.ok = !!w.ok && (op !== "weather" || wetter().some((x, k) => x !== w.vor[k]));
@@ -1217,6 +1270,9 @@ async function stimmeGang(o) {
             fern: n(/^(rule:)*(nexus|llm:)/, (w) => w.ort && !w.ort.blick),
         },
         beispiele: zeilen.filter((z, i) => i % 12 === 0).map((z) => "[" + z.t + " s] " + z.text),
+        verworfen: W.filter((w) => !w.ok)
+            .map((w) => w.op + (w.kappe ? "@kappe" : "") + " " + w.wer.replace(/:.*/, "") + (w.fehler ? " " + w.fehler : ""))
+            .reduce((a, k) => ((a[k] = (a[k] || 0) + 1), a), {}),
     };
 }
 
@@ -2848,16 +2904,21 @@ const BESTAEUBER_ZWEIG = {"zelleM": 16, "mitte": [-248, -1048], "nachbar": [-280
 const WELT_ROH3 = {"bestaeuber2": {"zelleM": 16, "mitte": [-248, -1048], "nachbar": [-280, -1048], "traegS": 90, "akt": true, "geste": [1, 361.465, 541.966], "vor": {"mitte": 7.7, "nachbar": 7.014, "feld": [0.658, 0.855], "aktiv": 1}, "ruhe": {"mitte": 7.657, "nachbar": 7.857, "feld": [0.658, 0.855], "aktiv": 1}, "nach": {"mitte": 8.271, "nachbar": 7.957, "feld": [0.823, 0.855], "aktiv": 1}, "nacht": {"mitte": 0.229, "nachbar": 0, "feld": [0.664, 0.855], "aktiv": 0.01}, "tag": {"mitte": 8.129, "nachbar": 7.943, "feld": [0.658, 0.855], "aktiv": 0.99}}, "fische2": {"bach": [-309.768, -822.525], "gesetz": {"tiefe": 0.4, "fluchtM": 4.5, "wegM": 10, "ruheS": 8}, "fische": 27, "meiden": {"stand": [-300.436, -817.36], "vorher": 13, "spielerAmStand": 0, "naechsterM": 4.739, "heim": 12}, "pegel": {"sekunden": 3, "spur": [[0, 0.046, 25.823]], "spiegel": [25.823, 26.022], "vor": {"n": 27, "y": 25.167, "spiegel": 25.508, "anteil": 0.355}, "nach": {"n": 27, "y": 25.243, "spiegel": 25.708, "anteil": 0.353, "ueber": 0}}, "sicht": {"kamera": [-298.872, 25.406, -813.812], "saeule": 0.833, "unterWasser": true, "sichtM": 30, "trupp": 12, "binnen15": 16, "imBild": 9, "naechsterM": 4.01}}};
 const weltRoh3 = (name, aendern) => "WELTPROBE " + name + " " + JSON.stringify(aendern(JSON.parse(JSON.stringify(WELT_ROH3[name]))));
 
-// haar.K4 #2 (w5-s2-g2, 03.11.): DAS TUCH AM LEIB IM GANG. Am Null-Renderer (Welt-Probe der Gruppe I, `weltProbe`): ein Bewohner aus dem
-// Ofen der Welt — der Plan des Dorfs (`_foundryRequestSettlement`, Epoche der Tracht), seine Gestalt (`_bewohnerGestalten`), sein Leib
-// (`_buildHumanGroup`) —, 2 s Gang im Leib-Gesetz des Spiels (`_animateHuman`, je Bild 1/20 s). Je Bild jede Ecke von Haut (die Teile
-// mit dem Seh-Stoff „haut") und Tuch (Seh-Stoff „stoff") in Welt-Lage, durch das Skelett gerechnet (`getVertexPosition`, die CPU-Haut).
-// (a) DER EINE LÖSER: die Funktionen des Körper-Kerns, deren Name einen XPBD- oder Tuch-Löser nennt (xpbd · tuch · cloth), ihre Rufe im
-// Gang; derselbe Gang mit stillgelegtem Löser (die Mutante: er gibt zurück, was er bekam) — was er trägt, ist die größte Lage-Differenz
-// einer Tuch-Ecke zwischen beiden (ein Tuch, das nur der Haut folgt, liegt gleich). (b) DIE DURCHDRINGUNG: je Bild die Tuch-Ecken, die
-// hinter der Haut liegen (der Versatz zur nächsten Haut-Ecke des Bilds gegen deren Normale, durch dieselben Knochen gedreht, < −2 mm) und
-// es in der Ruhe-Pose des Ofens nicht taten — was der GANG hineindrückt (die Ruhe-Zahl steht offen daneben: der geglättete Saum). (c) LABOR = WELT: das Körper-Studio
-// (worlds/koerperstudio) als Rahmen derselben Seite, 4 s seiner Schleife — ruft es denselben Löser des Kerns?
+// haar.K4 #2 (w5-s2-g2, 03.11.; je Stufe w12-g2-proben, 05.11.): DAS TUCH AM LEIB IM GANG. Am Null-Renderer (Welt-Probe der Gruppe I,
+// `weltProbe`): ein Bewohner aus dem Ofen der Welt — der Plan des Dorfs (`_foundryRequestSettlement`, Epoche der Tracht), seine Gestalt
+// (`_bewohnerGestalten`), sein Leib (`_buildHumanGroup`) —, je Stufe 2 s Gang im Leib-Gesetz des Spiels (`_animateHuman`, je Bild 1/20 s)
+// in dem Zustand, in dem das Spiel sie zeichnet (`_gelenkStufe`): die feine nah (der Löser rechnet ihr Tuch, `_tuchTakt`), die grobe
+// fern (ihr Tuch ruht in der Pose, `_tuchLoesen`). Je Bild jede Ecke von Haut (die Teile mit dem Seh-Stoff „haut") und Tuch (Seh-Stoff
+// „stoff") der Stufe in Welt-Lage, durch das Skelett gerechnet (`getVertexPosition`, die CPU-Haut) — JEDE STUFE ÜBER IHRER HAUT wie im
+// Spiel (`_tuchVorlageDrapieren`); quer (das Tuch der Stufe gegen die Haut der anderen) steht als Zahl daneben. (a) DER EINE LÖSER: die
+// Funktionen des Körper-Kerns, deren Name einen XPBD- oder Tuch-Löser nennt (xpbd · tuch · cloth), ihre Rufe im Gang. DIE MUTANTE
+// „stillgelegt": jede dieser Funktionen gibt zurück, was sie bekam — ein zweiter Leib derselben Gestalt aus einem eigenen Guss (`eigen`,
+// vor dem Leib der Welt gegossen: nie aus dem Memo), dessen Tuch weder drapiert noch gerechnet wird, geht dieselben Gänge; was der Löser
+// trägt, ist je Stufe die größte Lage-Differenz einer Tuch-Ecke zwischen beiden Leibern. (b) DIE DURCHDRINGUNG: je Bild die Tuch-Ecken
+// der Stufe, die hinter ihrer Haut liegen (der Versatz zur nächsten Haut-Ecke des Bilds gegen deren Normale, durch dieselben Knochen
+// gedreht, < −2 mm) und es in der Ruhe-Pose des Ofens am Leib der Welt nicht taten (die Ruhe-Zahl steht offen daneben). Bis
+// w12-g2-proben mischte die Probe Haut und Tuch beider Stufen in EINEM Gang (an b62542c9 4 319 Durchdringungen; das Tuch der groben
+// Stufe folgte dort dem Löser der feinen, ohne Kollision — das Spiel zeichnet es nah nie). (c) LABOR = WELT: `tuchLauf` (unten).
 async function tuchProbe(r, T, o, G) {
     const s = r.state;
     const A = r.constructor;
@@ -2865,11 +2926,16 @@ async function tuchProbe(r, T, o, G) {
     const loeser = Object.keys(kc || {}).filter((k) => typeof kc[k] === "function" && /xpbd|tuch|cloth/i.test(k));
     const rufe = Object.fromEntries(loeser.map((k) => [k, 0]));
     const echt = Object.fromEntries(loeser.map((k) => [k, kc[k]]));
-    for (const k of loeser)
-        kc[k] = function (...a) {
-            rufe[k]++;
-            return echt[k].apply(this, a);
-        };
+    const zaehlen = () => {
+        for (const k of loeser)
+            kc[k] = function (...a) {
+                rufe[k]++;
+                return echt[k].apply(this, a);
+            };
+    };
+    const stilllegen = () => {
+        for (const k of loeser) kc[k] = (x) => x;
+    };
     const aus = { loeser, rufe };
     const W = o.orte.wiese;
     await G.stehen(W.x, W.z);
@@ -2877,25 +2943,45 @@ async function tuchProbe(r, T, o, G) {
     const plan = await r._foundryRequestSettlement({ seed: 7, epoche: ep });
     if (!plan || !plan.kleidung) return Object.assign(aus, { fehler: "der Plan trägt keine Tracht" });
     const Gs = r._bewohnerGestalten({ plan, key: "haar-k4-2" })[0];
-    const g = r._buildHumanGroup(Gs.ov);
-    g.position.set(W.x, G.y(W.x, W.z) + A.PLAYER_FOOT_OFFSET, W.z);
-    s.scene.add(g);
-    const haut = [];
-    const tuch = [];
-    const namen = new Set();
-    g.traverse((n) => {
-        if (!n.isMesh || !n.geometry || !n.geometry.attributes.position) return;
-        const seh = String((n.userData && n.userData.__seh) || "");
-        namen.add(seh + (n.isSkinnedMesh ? "*" : ""));
-        // die Haut, aus der der Ofen das Tuch hebt (`__stoffAusHaut`): die Hüllen der Klasse „haut“ (die Klasse „skin“ trägt Kopf und Lider)
-        if (seh === "haut" && n.userData.__klasse === "haut") haut.push(n);
-        else if (seh === "stoff") tuch.push(n);
-    });
-    aus.teile = [...namen].slice(0, 24);
     aus.kleidung = plan.kleidung;
-    if (!haut.length || !tuch.length) {
-        s.scene.remove(g);
-        return Object.assign(aus, { fehler: "am Leib fehlt " + (!haut.length ? "die Haut" : "das Tuch") });
+    const namen = new Set();
+    // ein Leib an der Mess-Wiese, je Stufe (`_gelenk.nah` die feine, `_gelenk.fern` die grobe) seine Haut und sein Tuch
+    const leib = (eigen) => {
+        const g = r._buildHumanGroup(Gs.ov, eigen ? { eigen: true } : undefined);
+        g.position.set(W.x, G.y(W.x, W.z) + A.PLAYER_FOOT_OFFSET, W.z);
+        s.scene.add(g);
+        const gl = g.userData._gelenk;
+        const stufeVon = (n) => {
+            for (let p = n; p && gl; p = p.parent) {
+                if (p === gl.nah) return "fein";
+                if (p === gl.fern) return "grob";
+            }
+            return null;
+        };
+        const ST = { fein: { haut: [], tuch: [] }, grob: { haut: [], tuch: [] } };
+        g.traverse((n) => {
+            if (!n.isMesh || !n.geometry || !n.geometry.attributes.position) return;
+            const seh = String((n.userData && n.userData.__seh) || "");
+            const sf = stufeVon(n);
+            namen.add((sf ? sf + ":" : "") + seh + (n.isSkinnedMesh ? "*" : ""));
+            if (!sf) return;
+            // die Haut, aus der der Ofen das Tuch hebt (`__stoffAusHaut`): die Hüllen der Klasse „haut“ (die Klasse „skin“ trägt Kopf und Lider)
+            if (seh === "haut" && n.userData.__klasse === "haut") ST[sf].haut.push(n);
+            else if (seh === "stoff") ST[sf].tuch.push(n);
+        });
+        return { g, ST };
+    };
+    stilllegen();
+    const M = leib(true);
+    zaehlen();
+    const L = leib(false);
+    aus.teile = [...namen].slice(0, 24);
+    const fehlt = ["fein", "grob"].flatMap((sf) => ["haut", "tuch"].filter((k) => !L.ST[sf][k].length).map((k) => (k === "haut" ? "die Haut" : "das Tuch") + " der " + sf + "en Stufe"));
+    const gemeinsam = M.ST.fein.tuch.some((m, i) => L.ST.fein.tuch[i] && m.geometry === L.ST.fein.tuch[i].geometry);
+    if (fehlt.length || gemeinsam) {
+        for (const x of [M, L]) s.scene.remove(x.g);
+        for (const k of loeser) kc[k] = echt[k];
+        return Object.assign(aus, { fehler: fehlt.length ? "am Leib fehlt " + fehlt.join(", ") : "die Mutante trägt die Vorlage der Welt (der eigene Guss kam aus dem Memo)" });
     }
     const v = new T.Vector3();
     const nv = new T.Vector3();
@@ -2941,7 +3027,7 @@ async function tuchProbe(r, T, o, G) {
     };
     // je Tuch-Ecke die nächste Haut-Ecke DES BILDS (Gitter 4 cm, ±8 cm), gezählt nur in Berührung (≤ 3 cm: unter dem Tuch fällt die
     // Haut, `__stoffAusHaut` — über dem Loch wäre die nächste Ecke ein ferner Rand): liegt sie hinter der Haut (Versatz gegen die
-    // Haut-Normale < −2 mm), durchdringt sie
+    // Haut-Normale < −2 mm), durchdringt sie; `ruhe` = die Ecken, die es schon in der Ruhe-Pose taten (nicht gezählt)
     const hinter = (H, U, ruhe) => {
         const Z = 0.04;
         const zelle = new Map();
@@ -2966,131 +3052,189 @@ async function tuchProbe(r, T, o, G) {
                 if (!(ruhe && ruhe[j])) n++;
             }
         }
-        hinter.flag = flag;
-        return n;
+        return { n, flag };
     };
-    let ruheFlag = null;
-    const gang = (bilder) => {
-        const dt = 1 / 20;
-        const spur = [];
-        let durch = 0;
-        let durchBilder = 0;
-        let ecken = 0;
-        for (let b = 0; b < bilder; b++) {
-            r._animateHuman(g, b * dt, b * dt * 2 * Math.PI * 1.6, true, false, s.player.emotions, null);
-            g.updateMatrixWorld(true);
-            const [H, U] = [lage(haut, true), lage(tuch, false).P];
-            ecken = U.length / 3;
-            spur.push(U);
-            const hier = hinter(H, U, ruheFlag);
-            durch += hier;
-            if (hier) durchBilder++;
+    const STUFEN = ["fein", "grob"];
+    const andere = { fein: "grob", grob: "fein" };
+    // die Ruhe (die Pose des Ofens, ohne Leib-Gesetz) am Leib der Welt: was dort schon hinter der Haut liegt, zählt kein Gang
+    const ruhe = {};
+    aus.ruhe = {};
+    L.g.updateMatrixWorld(true);
+    for (const sf of STUFEN)
+        for (const [k, h] of [[sf, sf], ["quer" + sf, andere[sf]]]) {
+            const x = hinter(lage(L.ST[h].haut, true), lage(L.ST[sf].tuch, false).P, null);
+            aus.ruhe[k] = x.n;
+            ruhe[k] = x.flag;
         }
-        return { ecken, durchdringung: durch, bilderMitDurchdringung: durchBilder, spur };
+    // der Gang einer Stufe in ihrem Zustand: die feine nah, die grobe fern (die Wahl des Spiels, `_gelenkStufe` mit erzwungenem Abstand²)
+    const gang = (X, sf, bilder) => {
+        const dt = 1 / 20;
+        const fern = sf === "grob";
+        r._gelenkStufe(X.g, fern ? 1e12 : 0);
+        const je = { durchdringung: 0, bilderMitDurchdringung: 0, quer: 0, ecken: 0 };
+        const spur = [];
+        let ms = 0;
+        for (let b = 0; b < bilder; b++) {
+            r._animateHuman(X.g, b * dt, b * dt * 2 * Math.PI * 1.6, true, false, s.player.emotions, null);
+            X.g.updateMatrixWorld(true);
+            const U = lage(X.ST[sf].tuch, false).P;
+            spur.push(U);
+            const n = hinter(lage(X.ST[sf].haut, true), U, ruhe[sf]).n;
+            je.durchdringung += n;
+            if (n) je.bilderMitDurchdringung++;
+            je.quer += hinter(lage(X.ST[andere[sf]].haut, true), U, ruhe["quer" + sf]).n;
+            const z = X.g.userData._tuch;
+            ms += (z && z.art === "tuch" && z.ms) || 0;
+        }
+        je.ecken = spur[0].length / 3;
+        const z = X.g.userData._tuch;
+        if (!fern && z && z.art === "tuch") je.gitter = { stufe: z.stufe, msMittel: +(ms / bilder).toFixed(2) };
+        return { je, spur };
     };
     try {
-        // die Ruhe vor dem Gang (die Pose des Ofens, ohne Leib-Gesetz): die Kontrolle der Linse — hier liegt jedes Tuch außen
-        g.updateMatrixWorld(true);
-        aus.ruhe = { durchdringung: hinter(lage(haut, true), lage(tuch, false).P) };
-        ruheFlag = hinter.flag;
-        const echtG = gang(40);
+        const echtG = Object.fromEntries(STUFEN.map((sf) => [sf, gang(L, sf, 40)]));
         aus.rufeImGang = Object.assign({}, rufe);
-        for (const k of loeser) kc[k] = (x) => x;
-        const still = gang(40);
-        // was der Löser am Tuch trägt: die größte Lage-Differenz einer Tuch-Ecke zwischen dem Gang und dem Gang mit stillgelegtem Löser
-        let diff = 0;
-        echtG.spur.forEach((U, b) => {
-            const V = still.spur[b];
-            for (let k = 0; k + 2 < U.length && k + 2 < V.length; k += 3) diff = Math.max(diff, Math.hypot(U[k] - V[k], U[k + 1] - V[k + 1], U[k + 2] - V[k + 2]));
-        });
-        delete echtG.spur;
-        delete still.spur;
-        aus.gang = Object.assign(echtG, { loeserTraegtM: +diff.toFixed(4) });
-        aus.stillgelegt = still;
+        stilllegen();
+        const still = Object.fromEntries(STUFEN.map((sf) => [sf, gang(M, sf, 40)]));
+        // was der Löser am Tuch der Stufe trägt: die größte Lage-Differenz einer Tuch-Ecke zwischen dem Leib der Welt und der Mutante
+        const traegt = (sf) => {
+            let d = 0;
+            echtG[sf].spur.forEach((U, b) => {
+                const V = still[sf].spur[b];
+                for (let k = 0; k + 2 < U.length && k + 2 < V.length; k += 3) d = Math.max(d, Math.hypot(U[k] - V[k], U[k + 1] - V[k + 1], U[k + 2] - V[k + 2]));
+            });
+            return +d.toFixed(4);
+        };
+        aus.gang = {};
+        aus.stillgelegt = {};
+        for (const sf of STUFEN) {
+            aus.gang[sf] = Object.assign(echtG[sf].je, { loeserTraegtM: traegt(sf) });
+            aus.stillgelegt[sf] = still[sf].je;
+        }
     } finally {
         for (const k of loeser) kc[k] = echt[k];
-        s.scene.remove(g);
+        for (const x of [M, L]) s.scene.remove(x.g);
     }
-    aus.labor = await tuchLabor();
     return aus;
 }
-// (c) DAS LABOR: das Körper-Studio als Rahmen derselben Seite (derselbe Ursprung), 4 s seiner Schleife; die Löser seines Kerns
-// (dieselben Namen wie in der Welt) gezählt — Labor = Welt heißt: es ruft denselben Löser, nie einen eigenen
-async function tuchLabor() {
-    const f = document.createElement("iframe");
-    f.style.cssText = "position:fixed;left:0;top:0;width:640px;height:360px;border:0";
-    const da = new Promise((ok) => (f.onload = ok));
-    f.src = "worlds/koerperstudio/index.html";
-    document.body.appendChild(f);
+// (c) DAS LABOR IN SEINER EIGENEN SEITE (w12-g2-proben; das Muster von haar.K4#1 `trachtLauf`: der Lauf öffnet die Seite, die zeichnet):
+// erst die Welt-Probe (`weltProbeLauf` als eigener Prozess, die Null-Seite), dann das Körper-Studio (worlds/koerperstudio) in einer
+// eigenen Seite mit WebGL an der Weiche (Rezept webgl; headless LINSE_GPU=software: swiftshader). Die Löser seines Kerns (dieselben
+// Namen wie in der Welt) gezählt, geurteilt am EREIGNIS — `tuchTakt` drei Mal gerufen (je Bild ein Schritt, koerperstudio.js
+// `tuchTakt`) —, nie nach einer Wanduhr; eine Seite ohne WebGL-Kontext heißt beim Namen „Labor ohne WebGL“. Bis w12-g2-proben lief das
+// Labor als Rahmen der Null-Seite (Rezept null, `--disable-gpu`): `new THREE.WebGLRenderer` warf, das Labor rief nie (0 Rufe nach 4 s).
+// Die Zeile „WELTPROBE tuch {…}“ und {AUS} tragen das Maß samt `labor`.
+async function tuchLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const { spawnSync } = require("child_process");
+    const { statikServer, starteBrowser } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const [welt, aus, port, grund, proben] = process.argv.slice(1);
+    spawnSync(process.execPath, ["-e", welt, aus, port, grund, proben], { stdio: "inherit" });
+    const erg = fs.existsSync(aus) ? JSON.parse(fs.readFileSync(aus, "utf8")) : { proben: {}, fehler: ["die Welt-Probe schrieb nichts"] };
+    const L = { kern: false, webgl: null, rufe: {}, fehler: null };
+    const server = statikServer();
+    let browser = null;
+    const t0 = Date.now();
     try {
-        await Promise.race([da, new Promise((ok) => setTimeout(ok, 60000))]);
-        const w = f.contentWindow;
-        const kc = w && w.__koerperCore;
-        if (!kc) return { kern: false };
-        const rufe = {};
-        for (const k of Object.keys(kc))
-            if (typeof kc[k] === "function" && /xpbd|tuch|cloth/i.test(k)) {
-                const g = kc[k];
-                rufe[k] = 0;
-                kc[k] = function (...a) {
-                    rufe[k]++;
-                    return g.apply(this, a);
-                };
-            }
-        await new Promise((ok) => setTimeout(ok, 4000));
-        return { kern: true, rufe, fehler: w.__fehler || null };
+        await server.lausche(0);
+        browser = await starteBrowser({ art: "webgl", frist: 300000, viewport: { width: 640, height: 360 } });
+        const seite = await browser.newPage();
+        const fehler = [];
+        seite.on("pageerror", (e) => fehler.push(String((e && e.message) || e).split("\n")[0].slice(0, 160)));
+        await server.zeige(seite, 120000, "worlds/koerperstudio/index.html", "load");
+        Object.assign(
+            L,
+            await seite.evaluate(() => {
+                const c = document.createElement("canvas");
+                const webgl = !!(c.getContext("webgl2") || c.getContext("webgl"));
+                const kc = window.__koerperCore;
+                if (!kc) return { kern: false, webgl };
+                const rufe = (window.__laborRufe = {});
+                for (const k of Object.keys(kc))
+                    if (typeof kc[k] === "function" && /xpbd|tuch|cloth/i.test(k)) {
+                        const f = kc[k];
+                        rufe[k] = 0;
+                        kc[k] = function (...a) {
+                            rufe[k]++;
+                            return f.apply(this, a);
+                        };
+                    }
+                return { kern: true, webgl };
+            })
+        );
+        if (!L.webgl) L.fehler = "Labor ohne WebGL";
+        else if (L.kern) {
+            await seite.waitForFunction(() => (window.__laborRufe.tuchTakt || 0) >= 3, { timeout: 120000, polling: 100 }).catch(() => {});
+            L.rufe = await seite.evaluate(() => window.__laborRufe);
+        }
+        if (fehler.length) L.fehler = L.fehler || fehler[0];
     } catch (e) {
-        return { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 200) };
+        L.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 300);
     } finally {
-        f.remove();
+        if (browser) await browser.close().catch(() => {});
+        server.close();
     }
+    L.sek = Math.round((Date.now() - t0) / 100) / 10;
+    erg.proben.tuch = Object.assign(erg.proben.tuch || { fehler: "die Welt-Probe trug keine Zeile tuch" }, { labor: L });
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+    console.log("WELTPROBE tuch " + JSON.stringify(erg.proben.tuch));
 }
-// das Urteil (haar.K4#2): (a) der Kern trägt einen Tuch-Löser, die Welt ruft ihn im Gang, und er trägt das Tuch (stillgelegt liegt eine
-// Tuch-Ecke ≥ 1 cm anders — sonst folgt es nur der Haut); (b) der Gang drückt in keinem Bild eine Tuch-Ecke hinter die Haut;
-// (c) das Labor ruft denselben Löser
+// das Urteil (haar.K4#2): (a) der Kern trägt einen Tuch-Löser, die Welt ruft ihn im Gang, und er trägt das Tuch JEDER Stufe (die Mutante
+// liegt mit einer Tuch-Ecke ≥ 1 cm anders — sonst folgt es nur der Haut); (b) der Gang drückt in keinem Bild eine Tuch-Ecke einer Stufe
+// hinter IHRE Haut (quer steht daneben, nie im Urteil: das Spiel zeichnet keine Stufe über der Haut der anderen); (c) das Labor ruft den
+// Schritt desselben Lösers (`tuchTakt` ≥ 3). Die Mutante ist je Stufe ROT: ihr Leib trägt dieselben Klauseln nicht (die Proben unten)
+const TUCH_STUFEN = ["fein", "grob"];
 function tuchUrteil(e) {
     if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE tuch" };
     if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler + (e.teile ? " (Teile " + e.teile.join(", ") + ")" : "") };
-    const [g, L] = [e.gang || {}, e.labor || {}];
+    const [g, L, M] = [e.gang || {}, e.labor || {}, e.stillgelegt || {}];
     const rot = [];
     const imGang = Object.values(e.rufeImGang || {}).reduce((a, b) => a + b, 0);
     if (!e.loeser.length) rot.push("kein Tuch-Löser im Körper-Kern (xpbd · tuch · cloth)");
     else if (!imGang) rot.push("die Welt ruft den Löser im Gang nicht");
-    if (!(g.loeserTraegtM >= 0.01)) rot.push("der Löser trägt das Tuch nicht (stillgelegt weicht es " + g.loeserTraegtM + " m ab: es folgt nur der Haut)");
-    if (!(g.ecken > 0 && e.ruhe && g.durchdringung === 0)) rot.push("der Gang drückt " + g.durchdringung + " Tuch-Ecken hinter die Haut (in " + g.bilderMitDurchdringung + " von 40 Bildern)");
-    const lr = Object.values(L.rufe || {}).reduce((a, b) => a + b, 0);
-    if (L.fehler && !L.kern) rot.push("das Labor: " + L.fehler);
-    else if (!L.kern) rot.push("das Labor lädt den Körper-Kern nicht");
-    else if (!(e.loeser.length && lr > 0)) rot.push("das Labor ruft den Löser nicht (Labor ≠ Welt)");
+    for (const sf of TUCH_STUFEN) {
+        const x = g[sf] || {};
+        if (!(x.loeserTraegtM >= 0.01)) rot.push("der Löser trägt das Tuch der " + sf + "en Stufe nicht (die Mutante weicht " + x.loeserTraegtM + " m ab: es folgt nur der Haut)");
+        if (!(x.ecken > 0 && e.ruhe && x.durchdringung === 0))
+            rot.push("der Gang drückt " + x.durchdringung + " Tuch-Ecken der " + sf + "en Stufe hinter ihre Haut (in " + x.bilderMitDurchdringung + " von 40 Bildern)");
+    }
+    const takte = (L.rufe && L.rufe.tuchTakt) || 0;
+    if (L.fehler === "Labor ohne WebGL") rot.push("Labor ohne WebGL");
+    else if (!L.kern) rot.push("das Labor lädt den Körper-Kern nicht" + (L.fehler ? ": " + L.fehler : ""));
+    else if (!(takte >= 3)) rot.push("das Labor ruft tuchTakt " + takte + "× (Labor ≠ Welt)" + (L.fehler ? ": " + L.fehler : ""));
+    const stufe = (sf) => {
+        const x = g[sf] || {};
+        return sf + "/" + sf + " " + x.durchdringung + " (" + x.bilderMitDurchdringung + " Bilder, Ruhe " + (e.ruhe ? e.ruhe[sf] : "—") + ", trägt " + x.loeserTraegtM +
+            " m, Mutante " + (M[sf] || {}).durchdringung + ", quer " + x.quer + ")";
+    };
+    const gi = (g.fein || {}).gitter;
     return {
         gruen: !rot.length,
-        zahl: "Tracht " + [e.kleidung && e.kleidung.top, e.kleidung && e.kleidung.bottom].join("/") + ", " + g.ecken + " Tuch-Ecken · Löser [" + e.loeser.join(", ") + "] " + imGang +
-            " Rufe im Gang · was der Löser trägt " + g.loeserTraegtM + " m · Durchdringung im Gang " + g.durchdringung + " (" + g.bilderMitDurchdringung +
-            " von 40 Bildern; in Ruhe " + (e.ruhe ? e.ruhe.durchdringung : "—") + ", nicht gezählt) · Labor " + (L.kern ? lr + " Rufe" : "—") + (rot.length ? " · ROT " + rot.join("; ") : ""),
+        zahl: "Tracht " + [e.kleidung && e.kleidung.top, e.kleidung && e.kleidung.bottom].join("/") + ", " + TUCH_STUFEN.map((sf) => (g[sf] || {}).ecken).join("/") + " Tuch-Ecken · Löser [" +
+            e.loeser.join(", ") + "] " + imGang + " Rufe im Gang" + (gi ? " (Gitter-Stufe " + gi.stufe + ", " + gi.msMittel + " ms je Takt)" : "") + " · Durchdringung " +
+            TUCH_STUFEN.map(stufe).join(" · ") + " · Labor " + (L.kern && L.webgl !== false ? "tuchTakt " + takte + "× in " + L.sek + " s" : L.fehler || "—") + (rot.length ? " · ROT " + rot.join("; ") : ""),
     };
 }
-const WELT_TUCH = WP.befehl([["tuch", tuchProbe]], [tuchLabor]);
-// DIE ROH-AUSGABE am main 5fba36ea (03.11., Cloud, headless): die Proben der Station urteilen sie und ihre Mutanten
-const TUCH_ROH = {"loeser": [], "rufe": {}, "teile": ["haar", "haut*", "stoff*", "*", "auge*", "haar*"], "kleidung": {"top": "poncho", "bottom": "pants", "shoes": "boot", "farben": ["sand", "olive", "grey", "mustard", "burgundy"]}, "ruhe": {"durchdringung": 544}, "rufeImGang": {}, "gang": {"ecken": 9950, "durchdringung": 9905, "bilderMitDurchdringung": 40, "loeserTraegtM": 0}, "stillgelegt": {"ecken": 9950, "durchdringung": 9905, "bilderMitDurchdringung": 40}, "labor": {"kern": true, "rufe": {}, "fehler": null}};
+const WELT_TUCH = ["node", "-e", "(" + knapp(tuchLauf) + ")()", ...WP.befehl([["tuch", tuchProbe]]).slice(2)];
+// DIE ROH-AUSGABE am Kopf von w12-g2-spiel 2042ef47 (05.11., headless; die feine Stufe 0, die grobe in der Ferne 543 — am main b62542c9
+// trug die feine 3 057): die Proben der Station urteilen sie und ihre Mutanten
+const TUCH_ROH = {"loeser": ["xpbdSchritt", "xpbdKette", "tuchGitter", "tuchZustand", "tuchTakt", "tuchRuhe", "tuchDrapieren"], "rufe": {"xpbdSchritt": 0, "xpbdKette": 0, "tuchGitter": 1, "tuchZustand": 1, "tuchTakt": 40, "tuchRuhe": 1, "tuchDrapieren": 2}, "kleidung": {"top": "poncho", "bottom": "pants", "shoes": "boot", "farben": ["sand", "olive", "grey", "mustard", "burgundy"]}, "teile": ["fein:haar", "fein:haut*", "fein:stoff*", "fein:*", "grob:haut*", "grob:auge*", "grob:haar*", "grob:stoff*"], "ruhe": {"fein": 12, "querfein": 89, "grob": 6, "quergrob": 35}, "rufeImGang": {"xpbdSchritt": 0, "xpbdKette": 0, "tuchGitter": 1, "tuchZustand": 1, "tuchTakt": 40, "tuchRuhe": 1, "tuchDrapieren": 2}, "gang": {"fein": {"durchdringung": 0, "bilderMitDurchdringung": 0, "quer": 2177, "ecken": 8245, "gitter": {"stufe": 0, "msMittel": 15.82}, "loeserTraegtM": 0.1036}, "grob": {"durchdringung": 543, "bilderMitDurchdringung": 40, "quer": 835, "ecken": 2877, "loeserTraegtM": 0.0381}}, "stillgelegt": {"fein": {"durchdringung": 7339, "bilderMitDurchdringung": 40, "quer": 5093, "ecken": 8245}, "grob": {"durchdringung": 2396, "bilderMitDurchdringung": 40, "quer": 1882, "ecken": 2877}}, "labor": {"kern": true, "webgl": true, "rufe": {"xpbdSchritt": 0, "xpbdKette": 0, "tuchGitter": 0, "tuchZustand": 0, "tuchTakt": 4, "tuchRuhe": 0, "tuchDrapieren": 0}, "fehler": null, "sek": 16.7}};
 const tuchRoh = (aendern) => "WELTPROBE tuch " + JSON.stringify(aendern(JSON.parse(JSON.stringify(TUCH_ROH))));
-// der Lauf, der jede Klausel hält: der Löser des Kerns, gerufen in Welt und Labor, trägt das Tuch, der Gang drückt nichts hinein
-const tuchGut = (x) => {
-    x.loeser = ["tuchXpbdSchritt"];
-    x.rufe = x.rufeImGang = { tuchXpbdSchritt: 40 };
-    x.gang.loeserTraegtM = 0.034;
-    x.gang.durchdringung = 0;
-    x.gang.bilderMitDurchdringung = 0;
-    x.labor.rufe = { tuchXpbdSchritt: 212 };
-    return x;
-};
+// der Lauf, der jede Klausel hält: dazu liegt das ruhende Tuch der groben Stufe in der Ferne über seiner Haut
+const tuchGut = (x) => ((x.gang.grob.durchdringung = 0), (x.gang.grob.bilderMitDurchdringung = 0), x);
+// die Mutante als Leib der Welt: die Stufe trägt die Zahlen des Leibs ohne Löser, und er weicht nicht von ihr ab
+const tuchStill = (sf) => (x) => ((x = tuchGut(x)), (x.gang[sf] = Object.assign({}, x.stillgelegt[sf], { loeserTraegtM: 0 })), x);
 const TUCH_PROBEN = [
-    { name: "die Messung am main 5fba36ea (kein Löser, der Gang drückt 9 905 Tuch-Ecken hinter die Haut)", stdout: tuchRoh((x) => x), gruen: false },
-    { name: "jede Klausel hält", stdout: tuchRoh(tuchGut), gruen: true },
-    { name: "der Löser steht im Kern, die Welt ruft ihn nie", stdout: tuchRoh((x) => ((x = tuchGut(x)), (x.rufeImGang = { tuchXpbdSchritt: 0 }), x)), gruen: false },
-    { name: "der Löser läuft, das Tuch folgt nur der Haut (stillgelegt gleich)", stdout: tuchRoh((x) => ((x = tuchGut(x)), (x.gang.loeserTraegtM = 0), x)), gruen: false },
-    { name: "das Tuch durchdringt den Leib im Gang", stdout: tuchRoh((x) => ((x = tuchGut(x)), (x.gang.durchdringung = 12), (x.gang.bilderMitDurchdringung = 3), x)), gruen: false },
-    { name: "das Labor rechnet sein eigenes Tuch (Labor ≠ Welt)", stdout: tuchRoh((x) => ((x = tuchGut(x)), (x.labor.rufe = { tuchXpbdSchritt: 0 }), x)), gruen: false },
-    { name: "das Labor lädt den Kern nicht", stdout: tuchRoh((x) => ((x = tuchGut(x)), (x.labor = { kern: false }), x)), gruen: false },
+    { name: "der Kopf von w12-g2-spiel (die feine Stufe 0, die grobe in der Ferne 543 hinter ihrer Haut)", stdout: tuchRoh((x) => x), gruen: false },
+    { name: "die Messung am main b62542c9 (die feine Stufe 3 057 hinter ihrer Haut)", stdout: tuchRoh((x) => ((x.gang.fein.durchdringung = 3057), (x.gang.fein.bilderMitDurchdringung = 40), x)), gruen: false },
+    { name: "jede Klausel hält (quer bleibt ungeurteilt)", stdout: tuchRoh(tuchGut), gruen: true },
+    { name: "die Mutante an der feinen Stufe (kein Löser)", stdout: tuchRoh(tuchStill("fein")), gruen: false },
+    { name: "die Mutante an der groben Stufe (keine Drapierung)", stdout: tuchRoh(tuchStill("grob")), gruen: false },
+    { name: "der Löser steht im Kern, die Welt ruft ihn nie", stdout: tuchRoh((x) => ((x = tuchGut(x)), (x.rufeImGang = { tuchTakt: 0 }), x)), gruen: false },
+    { name: "Labor ohne WebGL", stdout: tuchRoh((x) => ((x = tuchGut(x)), (x.labor = { kern: true, webgl: false, rufe: {}, fehler: "Labor ohne WebGL" }), x)), gruen: false },
+    { name: "das Labor ruft tuchTakt nur zweimal", stdout: tuchRoh((x) => ((x = tuchGut(x)), (x.labor.rufe.tuchTakt = 2), x)), gruen: false },
+    { name: "das Labor lädt den Kern nicht", stdout: tuchRoh((x) => ((x = tuchGut(x)), (x.labor = { kern: false, webgl: true, rufe: {} }), x)), gruen: false },
     { name: "der Plan trägt keine Tracht", stdout: "WELTPROBE tuch " + JSON.stringify({ loeser: [], rufe: {}, fehler: "der Plan trägt keine Tracht" }), gruen: false },
 ];
 
@@ -4281,6 +4425,11 @@ const stationen = [
     // 86 — GRÜN; Mutante „schreiber" ROT (jede Gesetzes-Zeile „Der Nexus"), Mutante „takt" ROT (243 Zeilen, Abstand 0 s). Vorher
     // (main 557d4aad, derselbe Gang): der Nexus würfelte `say` aus dem Pool (Zeile ohne Tat), sein Wetter war keine Tat (ohne Zeile),
     // die Ursache einer Tat im Zweig eines `when` hieß „aus eigenem Antrieb".
+    // DIE WAHRHEIT DES WESENS (w12-g2-proben): seit 12cc6d3e9 weicht an der vollen Kappe ein Bestand-Tier dem Akt (`_bestandWeicht`) —
+    // die Zahl der Wesen bleibt, die Tat wirkt; die Probe zählte spawn_creature nur bei wachsender Zahl. Verworfen am main b62542c9 nach
+    // der alten Regel 15 spawn_creature an der Kappe (12 davon mit neuem Wesen), dazu Wetter ohne Wechsel, Würfe „Unbekannter Ort“ und
+    // zwei Akte an der Kappe ohne Weichenden. Jetzt wirkt ein Akt mit mindestens einem NEUEN Wesen nach Identität: am main b62542c9 57
+    // Zeilen, 5 falsch (Farm 4) → 55–57 Zeilen, 0 falsch in drei Gängen; die Mutanten bleiben ROT (schreiber 38 falsch, takt Abstand 0 s).
     {
         kriterium: "affekt.K4",
         staffel: 1,
@@ -4296,7 +4445,8 @@ const stationen = [
             return {
                 gruen: rot.length === 0,
                 zahl: g.minuten + " Spielminuten, " + g.zeilen + " Zeilen, " + g.falschN + " falsch, Abstand " + g.abstand + " s, offen " + g.offen +
-                    " s, ohne Tat " + g.ohneTat.length + ", Klassen " + JSON.stringify(g.klassen) + (rot.length ? " · " + rot.slice(0, 3).join(" · ") : ""),
+                    " s, ohne Tat " + g.ohneTat.length + ", Klassen " + JSON.stringify(g.klassen) + ", verworfen " + Object.values(g.verworfen || {}).reduce((a, b) => a + b, 0) +
+                    (rot.length ? " · " + rot.slice(0, 3).join(" · ") : ""),
             };
         },
         pfad: ["stamm/feld-sprache.js", "stamm/feld-dsl.js", "stamm/feld-nexus.js", "stamm/feld-leben.js", "stamm/werkstatt-hud.js",
@@ -4422,6 +4572,12 @@ const stationen = [
     // des Nexus …)". Vorher (main a03b7b06): unter dem Takt der Szene verfiel jede Nexus-Regel im
     // ersten Takt (die Geburt auf der Wanduhr), und mit der Uhr des Takts erneuerte die Fitness-Summe jede feuernde Regel bis
     // value −0,67 (echt 0,80 → 0,75, gemischt 0,59 → 0,52) — ROT.
+    // SECHS SAATEN (w12-g2-proben): an b62542c9 über drei Saaten echt 0,604 < gemischt 0,643, 3 von 8 Läufen GRÜN. Im selben Lauf je
+    // Lebens-Fenster gezählt: echt erneuert 98/110 Regeln mit value > 0 und 0/52 ohne, gemischt 12/23 und 0/43 — die Wertung wählt, das
+    // gemischte δ würfelt. Nur gemessene Regeln zu zählen trüge kein Urteil: δ < 0 kam in 162 Enden nie vor, beide Läufe stehen im
+    // letzten Drittel bei 0,99–1,00 (Gemessen-Anteil in `dritteln`); die Wahl zeigt sich im Überleben (der Anteil über ALLE Regeln).
+    // Über sechs Saaten (18 Läufe): echt 0,422 → 0,853, gemischt 0,274 → 0,659, stumm 0 → 0 — GRÜN; die Proben halten die Wertung, die
+    // nicht wählt, und die stumme ROT.
     {
         kriterium: "affekt.K3",
         staffel: 1,
@@ -4429,10 +4585,10 @@ const stationen = [
         befehl: ["node", "-e", "(" + knapp(affektLauf) + ")()", "{AUS}", "{PORT}", "nexus", knapp(nexusZeitraffer)],
         gpu: false,
         zeit: false,
-        minuten: 30,
+        minuten: 35, // 18 Läufe: allein ~31 min (die Farm trug 9 in 15,4 min), unter Last 53–59 min
         urteil: (j, lauf) => {
             const L = zeilenVon(lauf, "AFFEKT-nexus");
-            if (L.length !== 9) return { gruen: false, zahl: "Läufe " + L.length + "/9 (Exit " + lauf.exit + ")" };
+            if (L.length !== 18) return { gruen: false, zahl: "Läufe " + L.length + "/18 (Exit " + lauf.exit + ")" };
             const pool = (m) => {
                 const q = L.filter((x) => x.mutante === m);
                 const s = (k, i) => q.reduce((a, x) => a + x[k][i], 0);
@@ -4441,13 +4597,19 @@ const stationen = [
             const [e, g, a] = [pool(null), pool("gemischt"), pool("aus")];
             const zeile = e.q.flatMap((x) => x.zeilen).find((z) => /Gesetz Nr\. \d+ des Nexus/.test(z));
             const f = (x) => x.toFixed(3);
+            // die Wahl am Ende der Lebens-Fenster (`endeDrittel`): erneuert nach dem Wert — die Zahl daneben
+            const wahl = (q) => {
+                const n = (k) => q.reduce((t, x) => t + (x.endeDrittel || []).reduce((u, d) => u + (d[k] || 0), 0), 0);
+                return n("plusErneuert") + "/" + n("plus") + " mit value > 0, " + n("minusErneuert") + "/" + n("minus") + " ohne";
+            };
             return {
                 gruen: e.l > e.e && e.l > g.l && !(a.l > a.e) && !!zeile,
                 zahl:
                     "value > 0 echt " + f(e.e) + " → " + f(e.l) + " · gemischt " + f(g.e) + " → " + f(g.l) + " · stumm " + f(a.e) + " → " +
-                    f(a.l) + " · Stimme: " + (zeile ? zeile.slice(0, 120) : "keine Zeile eines Nexus-Gesetzes"),
+                    f(a.l) + " · erneuert echt " + wahl(e.q) + ", gemischt " + wahl(g.q) + " · Stimme: " + (zeile ? zeile.slice(0, 120) : "keine Zeile eines Nexus-Gesetzes"),
             };
         },
+        proben: NEXUS_PROBEN,
         pfad: ["stamm/feld-dsl.js", "stamm/feld-nexus.js", "stamm/feld-leben.js", "stamm/feld-sprache.js", "stamm/dirigent-takt.js",
             "stamm/speicher-laden.js", "scripts/werkbank.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"],
         quelle: "1 = Selektion gemessen: der Anteil der Regeln mit value > 0 steigt vom ersten zum letzten Drittel UND schlägt den Gegenlauf mit gemischtem δ",
@@ -5488,8 +5650,11 @@ const stationen = [
         ],
         quelle: "1 = Bewohner tragen Kleidung aus der Epoche ihres Hauses (zwei Epochen im Bild unterscheidbar)",
     },
-    // haar.K4 Staffel 2 (w5-s2-g2): das Tuch am Leib im Gang (tuchProbe, tuchLabor, tuchUrteil oben). Die Staffel nennt kein Gerät: headless
-    // (Null-Renderer, die CPU-Haut von three).
+    // haar.K4 Staffel 2 (w5-s2-g2): das Tuch am Leib im Gang (tuchProbe, tuchLauf, tuchUrteil oben). Die Staffel nennt kein Gerät: headless
+    // (Null-Renderer, die CPU-Haut von three; das Labor in eigener Seite, swiftshader). JE STUFE (w12-g2-proben): am main b62542c9 die feine
+    // Stufe 3 057 Tuch-Ecken hinter ihrer Haut (der Mischwert beider Stufen hieß 4 319), die grobe in der Ferne 543, das Labor 3× tuchTakt
+    // in 17 s (vorher 0 Rufe: ohne WebGL); am Kopf von w12-g2-spiel (die Freiheit der Ruhe fällt im Kern) die feine 0, die grobe 543 — ROT
+    // bleibt die grobe Stufe in der Ferne (ihr Tuch ruht in der Pose, die Mischung der Knochen drückt es in die Haut).
     {
         kriterium: "haar.K4",
         staffel: 2,
