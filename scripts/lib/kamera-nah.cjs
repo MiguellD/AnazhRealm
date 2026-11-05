@@ -255,9 +255,16 @@ function nahDeckungInSeite(o) {
     // Instanz-Gruppe, der kommt oder geht (der Stufen-Wechsel eines Hauses, `slotStand`), legt ihn neu. Vorher hielt der Gang
     // die Dreiecke seines ersten Bilds: das Haus in 12 m stand dort auf Stufe 1, ging nah auf Stufe 0, und die Linse zählte die
     // nicht mehr gezeichnete Stufe 1 vor der Hülle der Stufe 0 (Bild 1032, Bau 0,9 % — je nach Lade-Takt rot oder grün).
-    let stand = 0;
-    for (const g of (st.archInstanceGroups || new Map()).values()) stand += g.slotStand | 0;
-    if (o.neu || !C || !o.ort || C.id !== o.ort.id || C.stand !== stand) {
+    // DER BESTAND DES FELDS (w12-proben-tempo): der Stand zählte JEDEN Slot jeder Gruppe der Welt (die Summe der `slotStand`) — jeder
+    // Wechsel einer Streu oder eines Baums 200 m fern legte den Speicher neu: leib.K4 headless b62542c9 in 204 von 224 Fragen, je
+    // Frage ~240 ms, ≈ 70 % des Gangs, und das Urteil hing am Takt der Neulagen (innen „Bau 1“ in der einen Welt, „{}“ in der anderen,
+    // derselbe Code). Jetzt gilt der Speicher, solange die Kugel der Frage in SEINEM Feld liegt (`innen`) und dort derselbe Bestand
+    // gezeichnet steht: je Satz-Zelle im Feld ihr Block, ihr Platz und ihr Index, je ruhender Instanz im Feld ihr Mesh, ihr Slot und
+    // ihre Lage — der Stufen-Wechsel des Hauses im Feld (Mesh und Slot wechseln) legt weiter neu, ein Wechsel draußen nie.
+    const feld = (cx, cz, R) => (s) => Math.abs(s.center.x - cx) <= R + s.radius && Math.abs(s.center.z - cz) <= R + s.radius;
+    const durchs = (region, fn) => st.scene.traverseVisible((obj) => zaehlt(obj) && jeInstanz(obj, region, (ob, i) => dynamisch(ob, i) || fn(ob, i)));
+    const bestand = (region, a = []) => (durchs(region, (ob, i) => (satzVon.has(ob) ? satzVon.get(ob).bloecke.forEach((b, k) => b.zellen.forEach((z, j) => region(z.huelle.getBoundingSphere(zs)) && a.push(k, j, z.idx.length))) : a.push(ob.id, i, ...m4.elements))), a.join()); // prettier-ignore
+    if (o.neu || !C || !o.ort || C.id !== o.ort.id || !C.innen({ center: E, radius: D }) || C.bestand !== bestand(C.region)) {
         const tris = [];
         const uvs = [];
         const metas = [];
@@ -265,19 +272,14 @@ function nahDeckungInSeite(o) {
         const cx = o.ort ? o.ort.x : E.x;
         const cz = o.ort ? o.ort.z : E.z;
         // die Hülle in x/z gegen das Feld
-        const region = (s) => Math.abs(s.center.x - cx) <= R + s.radius && Math.abs(s.center.z - cz) <= R + s.radius;
+        const region = feld(cx, cz, R);
         const imFeld = (a, b, c) =>
             Math.max(a.x, b.x, c.x) >= cx - R &&
             Math.min(a.x, b.x, c.x) <= cx + R &&
             Math.max(a.z, b.z, c.z) >= cz - R &&
             Math.min(a.z, b.z, c.z) <= cz + R;
         const sammle = sammler(tris, uvs, metas);
-        st.scene.traverseVisible((obj) => {
-            if (!zaehlt(obj)) return;
-            jeInstanz(obj, region, (ob, i) => {
-                if (!dynamisch(ob, i)) legeDreiecke(ob, i, imFeld, sammle, region);
-            });
-        });
+        durchs(region, (ob, i) => legeDreiecke(ob, i, imFeld, sammle, region));
         const n = metas.length;
         const ft = new Float32Array(tris);
         const zellen = new Map();
@@ -297,7 +299,9 @@ function nahDeckungInSeite(o) {
         }
         C = window.__nahSpeicher = {
             id: o.ort ? o.ort.id : "?",
-            stand,
+            innen: feld(cx, cz, R - 2 * D),
+            region,
+            bestand: bestand(region),
             tris: ft,
             uvs: new Float32Array(uvs),
             metas,
@@ -310,12 +314,9 @@ function nahDeckungInSeite(o) {
     const tri = [];
     const uvt = [];
     const meta = [];
-    const inKugel = (a, b, c) => {
-        const qx = Math.max(Math.min(a.x, b.x, c.x), Math.min(E.x, Math.max(a.x, b.x, c.x)));
-        const qy = Math.max(Math.min(a.y, b.y, c.y), Math.min(E.y, Math.max(a.y, b.y, c.y)));
-        const qz = Math.max(Math.min(a.z, b.z, c.z), Math.min(E.z, Math.max(a.z, b.z, c.z)));
-        return (qx - E.x) ** 2 + (qy - E.y) ** 2 + (qz - E.z) ** 2 <= D2;
-    };
+    // je Achse der Punkt der Dreiecks-Hülle, der dem Auge am nächsten liegt (geklemmt), sein Abstand gegen die Kugel
+    const inKugel = (a, b, c) =>
+        ["x", "y", "z"].reduce((s, k) => s + (Math.max(Math.min(a[k], b[k], c[k]), Math.min(E[k], Math.max(a[k], b[k], c[k]))) - E[k]) ** 2, 0) <= D2;
     C.lauf++;
     {
         const ft = C.tris;
@@ -327,12 +328,9 @@ function nahDeckungInSeite(o) {
                     if (C.stempel[t] === C.lauf) continue;
                     C.stempel[t] = C.lauf;
                     const b = t * 9;
-                    va.set(ft[b], ft[b + 1], ft[b + 2]);
-                    vb.set(ft[b + 3], ft[b + 4], ft[b + 5]);
-                    vc.set(ft[b + 6], ft[b + 7], ft[b + 8]);
-                    if (!inKugel(va, vb, vc)) continue;
-                    for (let k = 0; k < 9; k++) tri.push(ft[b + k]);
-                    for (let k = 0; k < 6; k++) uvt.push(C.uvs[t * 6 + k]);
+                    if (!inKugel(va.fromArray(ft, b), vb.fromArray(ft, b + 3), vc.fromArray(ft, b + 6))) continue;
+                    tri.push(...ft.subarray(b, b + 9));
+                    uvt.push(...C.uvs.subarray(t * 6, t * 6 + 6));
                     meta.push(C.metas[t]);
                 }
             }
@@ -381,15 +379,9 @@ function nahDeckungInSeite(o) {
     const poly = [];
     for (let t = 0; t < nT; t++) {
         const b = t * 9;
-        G[b] = tri[b];
-        G[b + 1] = tri[b + 1];
-        G[b + 2] = tri[b + 2];
-        for (let k = 0; k < 3; k++) G[b + 3 + k] = tri[b + 3 + k] - tri[b + k];
-        for (let k = 0; k < 3; k++) G[b + 6 + k] = tri[b + 6 + k] - tri[b + k];
         for (let k = 0; k < 3; k++) {
-            const x = tri[b + k * 3];
-            const y = tri[b + k * 3 + 1];
-            const z = tri[b + k * 3 + 2];
+            [G[b + k], G[b + 3 + k], G[b + 6 + k]] = [tri[b + k], tri[b + 3 + k] - tri[b + k], tri[b + 6 + k] - tri[b + k]];
+            const [x, y, z] = tri.slice(b + k * 3, b + k * 3 + 3);
             vx[k] = V[0] * x + V[4] * y + V[8] * z + V[12];
             vy[k] = V[1] * x + V[5] * y + V[9] * z + V[13];
             vz[k] = V[2] * x + V[6] * y + V[10] * z + V[14];
