@@ -2166,3 +2166,6 @@
 2026-11-05 21:49:22 uw-diag3 START 1 Stationen
 2026-11-05 21:50:24 uw-diag3 leib.K3#2 ROT 0.5 · 1/1
 2026-11-05 21:51:54 uw-diag3 ENDE 0 grün / 1 rot · 2.5 min
+2026-11-05 21:52:58 uw-diag4 START 1 Stationen
+2026-11-05 21:53:56 uw-diag4 leib.K3#2 ROT 0.4 · 1/1
+2026-11-05 21:55:26 uw-diag4 ENDE 0 grün / 1 rot · 2.5 min
