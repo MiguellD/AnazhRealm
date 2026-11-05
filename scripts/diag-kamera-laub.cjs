@@ -12,11 +12,17 @@
 // Linse — die Linse muss beide beim Namen nennen, sonst ist sie vakuös. `--selftest` (ohne Welt): das Urteil über
 // synthetische Messungen nennt jeden Täter, die statische Wand fällt am Vor-Stand.
 //
-//   node scripts/diag-kamera-laub.cjs [--selftest] [--teile laub,leib,gang,gang2]   Port: KAMERA_LAUB_PORT (Standard 4611)
+// K6 DER LEIB IM SEITWÄRTSGANG (`--teile strafe`, nur mit zeitlicher Auflösung: gate:kamera-leib:echt auf der Karte): am Prüfplatz
+// geht der Spieler in Third seitwärts, links und rechts, im Takt des Spiels; je Probe das Bild des Spiels (Ausgabe-Pfad mit seiner
+// Geschichte) gegen dieselbe Pose stehend und ohne Leib — gezählt wird jedes Bild mit durchsichtigem oder unsichtbarem Leib
+// (`strafeMass`). Der Schmuggel in derselben Welt: das Feld der Bewegung ohne den getragenen Leib (`_traegerTeile` leer, der
+// Stand vor w12-leib-sicht) muss Bilder nennen.
+//
+//   node scripts/diag-kamera-laub.cjs [--selftest] [--teile laub,leib,gang,gang2,strafe]   Port: KAMERA_LAUB_PORT (Standard 4611)
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf, wandEnde, selbsttestEnde, weltTor, jsonLesen, fadenScope, fehlerStapel, SELBSTTEST, path, stammLib, argOpt } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf, wandEnde, selbsttestEnde, weltTor, jsonLesen, fadenScope, fehlerStapel, SELBSTTEST, path, stammLib, argOpt, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 
@@ -136,6 +142,16 @@ const SPRUENGE_MAX = 4;
 // (`senk`), muss die Linse beim Namen nennen.
 const GANG = Object.freeze({ R: 0.25, nahJe: 6, gw: 32, gh: 18, stammDickM: 0.15, startM: 8, orbitMs: 6000, heranM: 6, ruckM: 0.02, nahRadien: { Fels: 0.25, Bau: 0.25, Rinde: 0.25, Gelände: 0.25 }, hang: { ...ORTE.find((o) => o.id === "hang").such, bergab: [8, 20], rMax: 600 } });
 const GANG_ARTEN = { 1: ["stamm", "fels", "haus"], 2: ["innen", "steil", "innen-sprint", "steil-sprint"] };
+// K6 DER LEIB IM SEITWÄRTSGANG (w12-leib-sicht, Befund des Schöpfers 05.11.: am Prüfplatz wurde der eigene Leib beim Strafe
+// durchsichtig — die zeitliche Auflösung holte seine Geschichte vom Grund, den die Kamera-Bewegung an seine Stelle rechnete). Der
+// Spieler am Messort genesis (der Prüfplatz, spec/profiband/haushalt.json), Third, Blick zu den Toren; je Seite (A, D) `warm` Takte
+// zu `dt` ms (60 Hz, der Takt des Spiels), dann `je` Proben im Abstand von `zwischen` Takten. Ein Bild ist durchsichtig, wenn im Kopf
+// (die oberen `kopfAnteil` des Leibs) mehr als `kopfMax` oder im ganzen Leib mehr als `leibMax` seiner Pixel den Grund zu mindestens
+// `halb` zeigen, oder wenn weniger als `leibMinPx` Pixel Leib sind (unsichtbar). Geeicht an der Radeon (Prüfplatz, je Stand 8 Proben,
+// 05.11.): mit dem getragenen Leib Kopf 0,7–2,6 %, Leib 0,9–3,0 %; ohne ihn (der Schmuggel = der Stand vor w12-leib-sicht) Kopf
+// 12,4–41,6 %, Leib 4,6–7,4 % (die Werkbank am Platz: Kopf 0–2,2 % gegen 9,7–43 %). Der Kopf trennt, der Leib-Deckel hält das Rauschen
+// der Kanten (Tuch und Gelenk-Mischung folgen ihrem Knochen nur auf Zentimeter).
+const STRAFE = Object.freeze({ dt: 1000 / 60, warm: 40, zwischen: 30, je: 4, kontrast: 60, halb: 0.5, kopfAnteil: 0.15, kopfMax: 0.05, leibMax: 0.05, leibMinPx: 500 });
 const WIESE = require("./lib/welt-orte.cjs").messort("wiese"); // der EINE Leser des Haushalts
 const HANG = jsonLesen("spec/pruefbuehne/stationen.json").stationen.find(
     (o) => o.id === "s2-hang30"
@@ -202,6 +218,87 @@ function urteilGang(G, stufe = 1) {
         }
     }
     if (!((stufe === 1 ? G.schmuggel : G.senk) > 0)) out.push(stufe === 1 ? "Schmuggel: ein Arm ohne Flügel-Leib bleibt ungenannt" : "Schmuggel: die Kamera im Hang bleibt ungenannt");
+    return out;
+}
+
+// K6 — DIE DURCHSICHT EINES BILDS (rein: die Seite ruft sie über ihren Text, der Selbsttest direkt). Leib sind die Pixel, an
+// denen das stehende Bild (`still`: dieselbe Pose, eingeschwungen) und dasselbe ohne Leib (`ohne`) um mindestens `kontrast`
+// (Summe |ΔRGB|) abweichen, ohne die Kante (ein Nachbar ist Grund: sie trägt die Kantenglättung); je Pixel zeigt das Bild des
+// Spiels (`bew`) den Grund zum Anteil t = (bew − still)·(ohne − still) / |ohne − still|² — 0 der Leib, 1 der Grund hinter ihm.
+// Gezählt wird der Anteil mit t ≥ `halb` im ganzen Leib und im Kopf (die oberen `kopfAnteil` seiner Höhe).
+function strafeMass(bew, still, ohne, W, H, k) {
+    const d = (p, c) => ohne[4 * p + c] - still[4 * p + c];
+    const leib = (p) => Math.abs(d(p, 0)) + Math.abs(d(p, 1)) + Math.abs(d(p, 2)) >= k.kontrast;
+    const y = [];
+    for (let p = 0; p < W * H; p++) if (leib(p)) y.push(p / W);
+    const z = { leibPx: 0, leib: 0, kopfPx: 0, kopf: 0 };
+    for (let p = W; p < W * (H - 1); p++)
+        if ([p, p - 1, p + 1, p - W, p + W].every(leib)) {
+            let [dd, de] = [0, 0];
+            for (let c = 0; c < 3; c++) (dd += d(p, c) ** 2), (de += d(p, c) * (bew[4 * p + c] - still[4 * p + c]));
+            const kopf = p / W < y[0] + k.kopfAnteil * (y.at(-1) - y[0]);
+            z.leibPx++, (z.leib += de >= k.halb * dd), (z.kopfPx += kopf), (z.kopf += kopf && de >= k.halb * dd);
+        }
+    return { ...z, leib: z.leib / (z.leibPx || 1), kopf: z.kopf / (z.kopfPx || 1) };
+}
+// ein Bild mit durchsichtigem (Kopf oder Leib über dem Deckel) oder unsichtbarem Leib
+const strafeDurch = (b) => !(b.leibPx >= STRAFE.leibMinPx) || b.kopf > STRAFE.kopfMax || b.leib > STRAFE.leibMax;
+const strafeZeile = (b) => `${b.seite}${b.probe} Kopf ${pct(b.kopf)} Leib ${pct(b.leib)} (${b.leibPx} px)`;
+function urteilStrafe(S) {
+    if (!S || S.err || !S.traa) return [`Strafe: ${S ? S.err || "ohne zeitliche Auflösung" : "nicht gemessen"}`];
+    const an = S.an.filter(strafeDurch);
+    return [
+        ...(an.length ? [`Strafe: ${an.length} von ${S.an.length} Bildern durchsichtig — ${an.map(strafeZeile).join(" · ")}`] : []),
+        ...(S.aus.some(strafeDurch) ? [] : [`Schmuggel ungenannt — ${S.aus.map(strafeZeile).join(" · ")}`]),
+    ];
+}
+
+// ── K6 DER LEIB IM SEITWÄRTSGANG IN DER SEITE ── der Spieler am Prüfplatz, Third, der Blick des Messorts; der Platz steht über den
+// Ort-Takt (`_genesisOrt`: der Dorf-Zug ruht in der Linse, dasselbe Glied wie Spiel-Takt und Werkbank), der Leib in seiner feinen
+// Stufe (das Buch der Foundry trägt seinen Guss). Je Stand (`an`: das Spiel, `aus`: der Schmuggel ohne getragenen Leib) und Seite
+// die Takte des Spiels mit gedrückter Taste; je Probe das Bild des Spiels (der nächste gerenderte Takt in ein Ausgabe-Ziel, mit
+// seiner Geschichte), dann dieselbe Pose stehend und ohne Leib (die Aufnahme; die Haupt-Kamera ohne seine Ebene 0, der Schatten bleibt).
+async function leibStrafe(k) {
+    const [st, mass] = [r.state, (0, eval)(`(${k.mass})`)];
+    const rend = st.renderer;
+    await r._foundryAwaitBook(45000);
+    if (r._weltOffen().ankunft) st._ankunftGleit = r.constructor.ANKUNFT_GLEIT_BILDER;
+    r.setCameraMode("third");
+    [st.yaw, st.pitch] = [Math.atan2(k.blick.x - k.x, k.blick.z - k.z), 0];
+    let t = performance.now();
+    const bild = (dt) => new Promise(requestAnimationFrame).then(() => (r._genesisOrt(st.playerMesh.position), r._gameLoopTick(dt ? (t += dt) : (t = performance.now()))));
+    const steht = (g = st.playerMesh.userData._gelenk) => st.worldMeta.genesisOrt?.steht && g && !g.istFern && g.nahStufe !== 1;
+    for (let i = 0; i < 1800 && !steht(); i++) await bild();
+    if (!steht()) throw new Error("Prüfplatz/Leib steht nicht");
+    await __weltStehtNach(() => r._gameLoopTick(performance.now()));
+    if (!st.traaNode) return { traa: false };
+    __buehne();
+    const [W, H] = rend.getDrawingBufferSize(new THREE.Vector2()).toArray();
+    const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+    const out = { traa: true, an: [], aus: [] };
+    for (const stand of ["an", "aus"])
+        for (const seite of ["KeyA", "KeyD"]) {
+            if (stand === "aus") r._traegerTeile = (o) => ((o.length = 0), o);
+            const taste = (art) => dispatchEvent(new KeyboardEvent(art, { bubbles: true, code: seite, key: seite[3].toLowerCase() }));
+            taste("keydown");
+            for (let j = 0; j < k.je; j++) {
+                for (let i = 0; i < (j ? k.zwischen : k.warm); i++) await bild(k.dt);
+                const rt = new THREE.RenderTarget(W, H);
+                rend.setOutputRenderTarget(rt);
+                for (let i = 0, g0 = r._gpuLeine.gerendert; i < 20 && r._gpuLeine.gerendert === g0; i++) await bild(k.dt);
+                rend.setOutputRenderTarget(null);
+                rend.setRenderTarget(null);
+                const [bew, still, weg] = [await __zielLesen(rt, W, H), await schuss(), []];
+                rt.dispose();
+                st.playerMesh.traverse((n) => n.isMesh && n.layers.mask & 1 && weg.push(n) && (n.layers.mask ^= 1));
+                const ohne = await schuss();
+                for (const n of weg) n.layers.mask ^= 1;
+                st._traaR.neu = true; // die Geschichte ohne Leib aus dem Schuss fällt
+                out[stand].push({ seite: seite[3], probe: j, ...mass(bew, still, ohne, W, H, k) });
+            }
+            taste("keyup");
+            delete r._traegerTeile;
+        }
     return out;
 }
 
@@ -434,13 +531,11 @@ async function leibWiese(arg) {
         // DIE ANKER je Art: Bau (größte, ggf. gedrehte Box; Hülle ≥ 2 m), Fels (Natur ohne Pflanzen-Box: die Hülle aller Boxen),
         // Baum (Pflanzen-Boxen: ihre Hülle, ≥ 2 m)
         const je = { haus: [], fels: [], baum: [] };
-        const typen = {};
         for (const a of st.architectures || []) {
             if (!a || !a.position) continue;
             const d = Math.hypot(a.position.x - arg.x, a.position.z - arg.z);
             if (d > 45) continue;
             const boxen = Array.isArray(a.blockerAABBs) ? a.blockerAABBs.filter((b) => b && Number.isFinite(b.minX)) : [];
-            typen[a.type] = (typen[a.type] || 0) + 1;
             if (!boxen.length) continue;
             const art = boxen.every((b) => b.pflanze === true) ? "baum" : r._istNatur(a) ? "fels" : "haus";
             let b = null;
@@ -463,7 +558,6 @@ async function leibWiese(arg) {
         for (const k of Object.keys(je)) je[k].sort((u, v) => u.d - v.d || String(u.id).localeCompare(String(v.id)));
         L.je = je; // die Anker des Gangs (K4)
         out.anker = Object.fromEntries(Object.entries(je).map(([k, v]) => [k, v.length]));
-        out.typen = typen;
         const posen = [];
         for (const art of ["haus", "fels", "baum"]) {
             const A = je[art];
@@ -538,7 +632,6 @@ async function leibWiese(arg) {
                 vor = { x: c.x, y: c.y, z: c.z };
             }
             out.spruenge = spr;
-            out.rundgang = h.typ;
         }
         // DER VERFOLGER-RITT: dieselben Posen, der GT 3,2 m vor der Box, sein Heck zu ihr
         L.rittPosen(out, L.gtHolen(arg.x + 30, arg.z), posen, (p) => L.vor(p.b, p.seite, 3.2));
@@ -706,12 +799,10 @@ async function probe(arg) {
     const nahDeckung = window.__nahDeckung;
     // der Takt, das Warten auf das Weltbild, die ruhige Kamera und der Ritt: die EINEN Helfer des Leibs (`leibInstall`)
     const { tick, steht, ruhig, ritt, hin, gtHolen } = window.__kamLeib;
-    const out = { orte: {}, zeiten: {} };
-    const t0 = performance.now();
+    const out = { orte: {} };
     await r._foundryAwaitBook(45000);
     const hh = (x, z) => r.getTerrainHeightAt(x, z);
     await steht(90000); // die Welt wächst, bis ihr Bild steht (`_weltbildFehlt` leer)
-    out.zeiten.boot = Math.round(performance.now() - t0);
     // DIE ANKER: die Stämme der Mesh-Zone (Rinde-Instanzen jeder Quelle: gesetzte und gestreute Bäume, Büsche) und die
     // belaubten Pflanzen der Nah-Streu (Gestrüpp, Farn — der Strauch vor dem Ich-Auge, C 12)
     const v = new THREE.Vector3();
@@ -835,7 +926,6 @@ async function probe(arg) {
         return { Laub: frei, Rinde: frei, Streu: nah, Fels: nah, Wagen: nah };
     };
     for (const ort of arg.orte) {
-        const tO = performance.now();
         const z = (out.orte[ort.id] = { bild: ort.bild, modi: {} });
         try {
             if (ort.art) {
@@ -846,7 +936,6 @@ async function probe(arg) {
                 z.ortAusWelt = [O.x, O.z];
                 z.fehlt = await hin(O.x, O.z, 45000);
             }
-            z.ms = { boden: Math.round(performance.now() - tO) };
             const P = pm.position.clone();
             // der Orts-Speicher der Linse (scripts/lib/kamera-nah.cjs): die Region um den Ort, neu je Ort
             speicherOrt = { id: ort.id, x: P.x, z: P.z, r: 60 };
@@ -862,17 +951,13 @@ async function probe(arg) {
                     vorN = n;
                 }
                 z.staemme = vorN;
-                z.ms.staemme = Math.round(performance.now() - tO);
             }
-            z.P = [+P.x.toFixed(1), +P.z.toFixed(1)];
             let hain = [];
             if (ort.satz) {
                 const vor = new Set(st.architectures);
                 r.processChatCommand(ort.satz);
                 await steht(30000);
                 hain = st.architectures.filter((a) => a && !vor.has(a) && a.type === ort.satzWerk);
-                z.satz = hain.map((a) => a.type);
-                z.ms.satz = Math.round(performance.now() - tO);
             }
             // die nahen Stämme (der Hain des Satzes zuerst) und Sträucher der Streu, je 1,5 m einer
             const anker = [];
@@ -889,9 +974,8 @@ async function probe(arg) {
             for (const s of streuLaub()
                 .filter((s2) => Math.hypot(s2.x - P.x, s2.z - P.z) < 25)
                 .sort(nach)) nimm(s, grenzeStreu);
-            z.anker = anker.map((a) => `${a.werk}@${a.x.toFixed(0)}/${a.z.toFixed(0)}`);
             const messe = (modus, stelle, abstand, gieren, nicken) => {
-                const m = { n: 0, max: 0, summe: 0, jeKlasse: {}, taeter: {}, schlimmste: null, dichteste: null };
+                const m = { n: 0, max: 0, summe: 0, taeter: {}, schlimmste: null, dichteste: null };
                 let dicht = -1;
                 for (const a of anker)
                     for (let k = 0; k < 8; k++) {
@@ -913,7 +997,6 @@ async function probe(arg) {
                                 const d = nahDeckung({ radien, gw: arg.gw, gh: arg.gh, ort: speicherOrt, dyn: gt ? gt.id : null });
                                 m.n++;
                                 m.summe += d.deckung;
-                                for (const [kk, vv] of Object.entries(d.jeKlasse)) m.jeKlasse[kk] = +((m.jeKlasse[kk] || 0) + vv).toFixed(4);
                                 for (const [kk, vv] of Object.entries(d.taeter)) m.taeter[kk] = +((m.taeter[kk] || 0) + vv).toFixed(4);
                                 if (d.fremd) m.fremd = true;
                                 const stellung = { anker: a.werk, x: +x.toFixed(3), z: +zz.toFixed(3), gier: +(g + dg).toFixed(4), pitch, auge: d.auge, radien, taeter: d.taeter };
@@ -969,7 +1052,6 @@ async function probe(arg) {
         } catch (e) {
             z.err = fehlerStapel(e);
         }
-        out.zeiten[ort.id] = Math.round(performance.now() - tO);
     }
     if (gt) r.removeArchitecture(gt);
     return out;
@@ -1010,7 +1092,7 @@ hauptLauf(async () => {
             ["der Hang fehlt", Object.assign(leibGesund(), { hang: null }), "Leib hang: nicht gemessen"],
             ["der Streu-Pick ohne Durchsicht", (() => { const g = leibGesund(); g.wiese.w1Streu = false; return g; })(), "Leib W1: der Streu-Pick"],
             ["kein Zähler der Feld-Proben", Object.assign(leibGesund(), { proben: null }), "Leib: 0 Bilder gezählt"],
-            ["die Eckstrahlen marschieren ohne Treffer (Prüfung 1: 35 → 156)", Object.assign(leibGesund(), { proben: Array(LEIB_N + 241).fill(156) }), "Leib: Feld-Proben je 3rd-Bild Mittel 156"],
+            ["die Eckstrahlen marschieren ohne Treffer", Object.assign(leibGesund(), { proben: Array(LEIB_N + 241).fill(156) }), "Leib: Feld-Proben je 3rd-Bild Mittel 156"],
             ["ein Bild sucht ohne Ende (höchstens über 2 × Vor-Stand)", Object.assign(leibGesund(), { proben: Array.from({ length: LEIB_N + 241 }, (_, i) => (i === 7 ? 101 : 30)) }), "Leib: Feld-Proben je 3rd-Bild Mittel 30.2 · Median 30 · höchstens 101"],
             ["mehr Sprünge als vorher", Object.assign(leibGesund(), { spruenge: SPRUENGE_MAX + 1 }), "Leib: " + (SPRUENGE_MAX + 1) + " Kamera-Sprünge"],
         ]);
@@ -1033,6 +1115,26 @@ hauptLauf(async () => {
             ["nicht im Haus", { "innen-sprint": { drinnen: false } }, "Gang innen-sprint: der Spieler kommt nicht ins Haus"],
             ["Ruck im Sprint", { "innen-sprint": { ruck: Array(300).fill(0.03) } }, "Gang innen-sprint: Ruck p95 0.030 m"],
             ["blind für die Kamera im Hang", { G: { senk: 0 } }, "Schmuggel: die Kamera im Hang bleibt ungenannt"],
+        ]);
+        // K6 DER LEIB IM SEITWÄRTSGANG: das Maß an einem gemalten Bild 40 × 60 (Grund grün, Leib blau in x 10–29, y 10–57, sein Kopf
+        // die Zeilen bis 17 zu `kopf` Grund; -1 ohne Leib) — der zu 60 % durchsichtige Kopf und der unsichtbare Leib fallen ganz, der
+        // stehende nie; das Urteil nennt jeden Bruch
+        const malen = (kopf) =>
+            Uint8Array.from({ length: 9600 }, (_, i) => {
+                const [x, y, c] = [(i >> 2) % 40, Math.floor(i / 160), i % 4];
+                return [60, 160, 60, 255][c] + (kopf < 0 || x < 10 || x >= 30 || y < 10 || y >= 58 ? 0 : y < 18 ? 1 - kopf : 1) * [-30, -130, 30, 0][c];
+            });
+        const ms = (kopf) => strafeMass(malen(kopf), malen(0), malen(-1), 40, 60, STRAFE);
+        check("K6 Selbst-Test: das Maß", ms(0).leib + ms(0).kopf === 0 && ms(0.6).kopf === 1 && ms(-1).leib === 1, JSON.stringify([ms(0), ms(0.6), ms(-1)]));
+        const reihe = (k = {}) => Array.from({ length: 2 * STRAFE.je }, (_, j) => ({ seite: "A", probe: j, leibPx: 3000, leib: 0.01, kopf: 0.01, ...(j ? {} : k) }));
+        const fall = (an, aus = reihe().map((b) => ({ ...b, kopf: 0.3 }))) => ({ traa: true, an, aus });
+        faelle("K6", urteilStrafe, [
+            ["gesund", fall(reihe()), null],
+            ["Kopf", fall(reihe({ kopf: 0.3 })), "Strafe: 1 von 8"],
+            ["Rand", fall(reihe({ leib: 0.06 })), "Strafe: 1 von 8"],
+            ["unsichtbar", fall(reihe({ leibPx: 0 })), "Strafe: 1 von 8"],
+            ["blind", fall(reihe(), reihe()), "Schmuggel"],
+            ["kein TRAA", { traa: false }, "Strafe: ohne"],
         ]);
         const gesund = {
             orte: { ankunft: ort(0, {}), ufer: ort(0.004, {}), lichtung: ort(0, {}), hang: ort(0, {}) },
@@ -1107,94 +1209,51 @@ hauptLauf(async () => {
         await buehne(page);
     };
     await bereit();
-    const zeiten = {};
     let m = null;
+    // K6 zuerst: der Prüfplatz ist der Ort der Ankunft (die übrigen Teile ziehen um)
+    const strafe =
+        TEILE.includes("strafe") &&
+        (await page
+            .evaluate(leibStrafe, { ...STRAFE, ...require("./lib/welt-orte.cjs").messort("genesis"), mass: `${strafeMass}` })
+            .catch((e) => ({ err: fehlerStapel(e) })));
     if (TEILE.includes("laub")) {
-        const tL = Date.now();
         await page.evaluate(WASSER_INSTALL); // __wasserOrte + __weltOrt: die Orte aus der Welt
         await page.evaluate(leibInstall, { R: LEIB_R }); // der Wagen des Ritts (`gtHolen`)
         m = await page.evaluate(probe, { orte: ORTE, radius: RADIUS, saum: SAUM, nahMax: NAH_DECKUNG_MAX, hubMax: SCHMUGGEL_HUB_M, jeOrt: 5, jeStreu: 2, gw: 48, gh: 27 });
-        zeiten.laub = Date.now() - tL;
     }
     let gang = null;
     let leib = null;
     if (TEILE.includes("leib")) {
-        const tW = Date.now();
         await page.evaluate(leibInstall, { R: LEIB_R });
         leib = { wiese: await page.evaluate(leibWiese, { x: WIESE.x, z: WIESE.z, quote: LEIB_WIESE }) };
-        zeiten.wiese = Date.now() - tW;
         if (TEILE.includes("gang")) {
-            const tG = Date.now();
             await page.evaluate(WASSER_INSTALL); // __weltOrt: der Steilhang aus der Welt
             gang = await page.evaluate(leibGang, { ...GANG, zwei: TEILE.includes("gang2") });
-            zeiten.gang = Date.now() - tG;
         }
         // die Prüfbühne, geboren wie im Spiel durch die Tür (`weltTor`)
-        const tH = Date.now();
         await bereit(adresse, jsonLesen("spec/pruefbuehne/welt.json"));
         await page.evaluate(leibInstall, { R: LEIB_R });
         leib.hang = await page.evaluate(leibHang, { hang: HANG, n: LEIB_HANG_N });
-        zeiten.hang = Date.now() - tH;
         leib.proben = [...(leib.wiese.proben || []), ...(leib.hang.proben || [])];
         leib.spruenge = leib.wiese.spruenge;
     }
     await browser.close();
     server.close();
 
+    // DIE MESSUNG ALS AKTE (statt dreier Druck-Tafeln, w12-leib-sicht): jede Zahl je Ort, Sicht, Pose und Gang steht roh in
+    // kamera-laub.json im Temp-Ordner — das Urteil je Teil nennt seine Täter beim Namen in seiner Zeile
+    const akte = path.join(require("os").tmpdir(), "kamera-laub.json");
+    jsonSchreiben(akte, { laub: m, leib, gang, strafe });
+    console.log(`  die Akte: ${akte}`);
     if (m) {
-        console.log(`=== K1 DIE DECKUNG IM FREIRAUM DER KAMERA JE ORT UND SICHT (3rd/Ritt: Laub und Rinde bis vor die Ebene des Ziels, Streu · Fels · Wagen bis ${RADIUS.third}/${RADIUS.ritt} m; Ich: Laub und Streu bis ${RADIUS.first} m) ===`);
-        for (const ort of ORTE) {
-            const o = m.orte[ort.id] || {};
-            console.log(`  ${ort.id} (${ort.bild}) bei ${(o.P || []).join("/")} · Anker ${(o.anker || []).join(", ")}${o.satz ? ` · Satz: ${o.satz.length} Werke` : ""}`);
-            for (const modus of MODI) {
-                const z = (o.modi || {})[modus] || {};
-                const kl = Object.entries(z.jeKlasse || {})
-                    .map(([k, v]) => `${k} ${pct(v / Math.max(1, z.n))}`)
-                    .join(", ");
-                console.log(`    ${modus.padEnd(5)} ${String(z.n || 0).padStart(3)} Stellungen · Mittel ${pct(z.mittel)} · max ${pct(z.max)}${kl ? ` · je Klasse (Mittel) ${kl}` : ""}${z.schlimmste && z.max > 0 ? ` · schlimmste ${z.schlimmste.anker} (${z.schlimmste.x}/${z.schlimmste.z}): ${Object.entries(z.schlimmste.taeter || {}).map(([k, v]) => `${k} ${pct(v)}`).join(", ")}` : ""}`);
-            }
-        }
-        const s = m.schmuggel || {};
-        console.log(`  Schmuggel: Laub ohne Durchsicht → ${pct(s.laub && s.laub.max)} (${Object.keys((s.laub && s.laub.taeter) || {}).join(", ")}) · Fels vor der Linse → ${pct(s.fels && s.fels.max)} (${Object.keys((s.fels && s.fels.taeter) || {}).join(", ")})`);
-        console.log(`  Kronen-Stellung: +${s.laub && s.laub.hub != null ? s.laub.hub : "—"} m am Stamm · mit Durchsicht → ${pct(s.krone && s.krone.max)} (${Object.keys((s.krone && s.krone.taeter) || {}).join(", ")})`);
-        console.log(`  Zeiten (ms): ${JSON.stringify(m.zeiten)}`);
         const v = urteil(m);
-        check("K1 keine Stellung mit Laub, Strauch, Ast oder Fels vor der Linse (Deckung im Freiraum ≤ 2 %), die Linse nennt den eingeschmuggelten Täter", v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
+        check("K1 kein Laub, Strauch oder Fels vor der Linse (Deckung ≤ 2 %), der Schmuggel fällt", v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
     }
     if (TEILE.includes("leib")) {
-        console.log(`=== K2 DER LEIB DER KAMERA (Kugel der Linse ${LEIB_R} m): Mess-Wiese ${WIESE.x}/${WIESE.z} und Prüfbühne ${HANG.id} ===`);
-        for (const ort of ["wiese", "hang"]) {
-            const o = (leib && leib[ort]) || {};
-            if (o.err) console.log(`  ${ort}: Ausnahme ${String(o.err).split("\n")[0]}`);
-            for (const [k, was] of [["anker", "Anker je Art"], ["typen", "Werke in 45 m"], ["haeuser", "gesetzte Häuser"]]) if (o[k]) console.log(`  ${ort}: ${was} ${JSON.stringify(o[k])}`);
-            if (o.fehlt && o.fehlt.length) console.log(`  ${ort}: Weltbild fehlt ${o.fehlt.length}`);
-            for (const modus of ["fuss", "ritt"]) {
-                const z = o[modus] || {};
-                const posen = z.posen || [];
-                const fehl = posen.filter((q) => q.taeter.length);
-                const hist = {};
-                for (const q of fehl)
-                    for (const t of q.taeter) {
-                        const k = t.replace(/ \(.*\)$/, "");
-                        hist[k] = (hist[k] || 0) + 1;
-                    }
-                console.log(`    ${ort} ${modus.padEnd(4)} ${fehl.length}/${posen.length} Posen mit Täter${z.grund ? ` (${z.grund})` : ""} · ${JSON.stringify(hist)}`);
-                for (const q of fehl.slice(0, 3)) console.log(`      ${q.id} ${q.anker} @${q.x}/${q.z}: ${q.taeter.join(", ")} · Kamera ${q.c.join("/")} · Arm ${q.arm} m`);
-            }
-        }
-        const pr = (leib && leib.proben) || [];
-        console.log(`  Feld-Proben je 3rd-Bild (${pr.length} Bilder): Mittel ${pr.length ? (pr.reduce(addiere, 0) / pr.length).toFixed(1) : "-"} · Median ${pr.length ? quantil(pr, 0.5) : "-"} · p95 ${pr.length ? quantil(pr, 0.95) : "-"} · höchstens ${pr.length ? Math.max(...pr) : "-"} (Vor-Stand Mittel ${PROBEN_VORSTAND.mittel} · Median ${PROBEN_VORSTAND.median} · höchstens ${PROBEN_VORSTAND.hoechstens}) · Kamera-Sprünge > 2 m im Rundgang ${leib && leib.spruenge} (${leib && leib.wiese && leib.wiese.rundgang})`);
         const v = urteilLeib(leib);
-        check(`K2 die Linse steht nie im Fels, nie unter dem sichtbaren Boden, nie in einer Box, nichts zwischen Ziel und Linse — 0 von ${LEIB_N} zu Fuß und im Verfolger-Ritt, Feld-Proben je 3rd-Bild und Sprünge ≤ Vor-Stand`, v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
+        check(`K2 die Linse nie in Fels, Boden oder Box — 0 von ${LEIB_N} Posen, Proben und Sprünge ≤ Vor-Stand`, v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
     }
     if (TEILE.includes("gang")) {
-        console.log(`=== K4 DER GANG DER KAMERA (Third zu Fuß im echten Takt, Kugel ${GANG.R} m): Mess-Wiese ${WIESE.x}/${WIESE.z} ===`);
-        for (const g of (gang && gang.gaenge) || []) {
-            const n = (a) => JSON.stringify(a.reduce((h, k) => ((h[k] = (h[k] || 0) + 1), h), {}));
-            console.log(`  ${g.art.padEnd(5)} ${g.typ}: ${g.bilder} Bilder · heran ${g.heran.d0} → ${g.heran.d1} m${g.drinnen == null ? "" : ` · im Haus ${g.drinnen}`} · Kugel ${n(g.taeter.flatMap((t) => t.taeter.map((x) => t.phase + ": " + x)))} · Nah-Pixel ${n(g.nah.flatMap((t) => Object.keys(t.jeKlasse).map((x) => t.phase + ": " + x)))} · Ruck p95 ${quantil(g.ruck, 0.95).toFixed(4)} höchstens ${Math.max(...g.ruck).toFixed(3)} m`);
-        }
-        console.log(`  der Arm ohne Flügel-Leib: ${gang && gang.schmuggel} Proben mit Bau`);
-        if (gang && gang.hang) console.log(`  Steilhang ${JSON.stringify(gang.hang)} (Weltbild fehlt ${gang.fehlt}) · die Kamera im Hang: ${gang.senk} von 10 Bildern mit Täter`);
         for (const [stufe, name] of [
             [1, "K4 der Gang in Third: die Kugel der Linse nie in Fels oder Bau, 0 Nah-Pixel von Fels, Gelände, Rinde und Bau, Ruck p95 ≤ 0,02 m, die Linse nennt den Arm ohne Flügel-Leib"],
             [2, "K4 Staffel 2: der Gang auch im Haus, am Steilhang, beim Sprint"],
@@ -1203,6 +1262,10 @@ hauptLauf(async () => {
             check(name, v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
         }
     }
-    console.log(`  Zeiten (ms): ${JSON.stringify(zeiten)} · Lauf ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+    if (strafe) {
+        const v = urteilStrafe(strafe);
+        check(`K6 Strafe am Prüfplatz — ${(strafe.an || []).map(strafeZeile)}`, !v.length, v.join(" · "));
+    }
+    console.log(`  Lauf ${((Date.now() - t0) / 1000).toFixed(1)} s`);
     wandEnde(errs, "die Kamera steckt nie in Laub, Strauch, Fels oder Boden.");
 });

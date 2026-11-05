@@ -1614,6 +1614,14 @@ jobs:
               if: ${{ !cancelled() }}
               run: npm run gate:ego-schatten
 
+            - name: Kamera-Leib auf der Karte (K6 - am Pruefplatz wird der Leib beim Seitwaertsgehen nie durchsichtig)
+              timeout-minutes: 5
+              if: ${{ !cancelled() }}
+              # Third am Pruefplatz, Strafe A/D im Takt des Spiels: je Probe das Bild des Spiels gegen dieselbe Pose stehend und ohne
+              # Leib (Kopf und Leib, wie viel Grund durch ihn scheint); der Schmuggel ohne getragenen Leib (das Bewegungsfeld der
+              # Kamera allein) muss Bilder nennen. Braucht die zeitliche Aufloesung (das Holz der Karte), lokal 46 s samt Boot (Radeon).
+              run: npm run gate:kamera-leib:echt
+
             - name: Verdeckungs-Abfrage auf der Karte (der Aussteige-Ablauf am Bach, jede WebGPU-Validierung beim Namen)
               timeout-minutes: 5
               if: ${{ !cancelled() }}
