@@ -827,7 +827,8 @@ class AnazhRealm_dirigent_ankunft {
             // DAS BILD AUS DER FERNE STEHT (B2, `_fernbildDa`): jedes Ding im Blick trägt seine billigste ganze Stufe — der
             // Schirm bleibt, ab jetzt wählt jedes seine Stufe am Abstand und die Lücken zählen sie (`_stufeOffen`). Bis hier
             // wich er hier, und die Kronen glitten über 90 Bilder unter der Hand des Spielers von der Karte zu ihrer Stufe
-            // (ankunft.K2, Radeon kalt 8ef49bef: 2,86 % Lücke, 85 % davon in den Kronen der drei nahen Laubbäume).
+            // (ankunft.K2, Radeon kalt 8ef49bef: 2,86 % Lücke, 85 % davon in den Kronen der drei nahen Laubbäume). Radeon kalt
+            // ABAB je 3 Läufe: Lücke 1,17–3,03 → 0,02–0,04 %, t(Kontrolle) kalt 11,6–15,6 → 11,8–12,5 s (5322b4d2).
             st._fernbildDa = performance.now();
             return false;
         }
