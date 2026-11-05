@@ -1,0 +1,31 @@
+{
+ "sha": "ed4ed1a628b18a2a01eb55f8ca765bf6c1f7e95c",
+ "geraet": "headless",
+ "zeit": "2026-11-05T19:18:31.488Z",
+ "host": "laptop",
+ "je": {
+  "stoffe.K2#2": {
+   "gruen": true,
+   "zahl": "Halt: 99 Zellen brannten, die Front hielt 3× am nassen Gras (ohne die Feuchte des Orts brannten 7 nasse, sie hielt 4× am Wasser) · Fels 10× gehalten · Regen löscht nach 7 s (Mutante 300 s) · Asche 1 (voll 0.809) → nach der Stufe Gras 0 · Kante Achse 0.263, Linie 1.543 m (Mutante 0.944, 0) · Licht 3, Flammen 22 bis 2.931 m, Fahne 356 Ballen, Deckung 0.91, Glut am Ohr 256 m² · 2000 brennende Zellen (451 der Welt): je Bild p95 0.3 ms (Leser 0.3), Schirm 0.8 ms, der Schritt bis 0.983 s hinter der Uhr",
+   "exit": 0,
+   "minuten": 1.07,
+   "zeit": "2026-11-05T19:18:31.488Z",
+   "abdruck": "0e550814be7b",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "laptop"
+  },
+  "stoffe.K5#2": {
+   "gruen": true,
+   "zahl": "Halme 477 → Asche 70 → Gras 491 · Kräuter 23 → Asche 3 → Gras 3 → Busch 21 · Ernte (15): Nährstoff 1 → 0.7, Wuchs 0.748 → 0.698 · Asche 1.4, Leichnam 1.2 · Sämling 0 → 0.06 → 0.18 → 0.7 → 1, Gestalt [[5,1461],[9,2933]] · Wald 71: Brand nimmt 71, Jungwuchs 71, heil 71",
+   "exit": 0,
+   "minuten": 1.07,
+   "zeit": "2026-11-05T19:18:31.488Z",
+   "abdruck": "a52baba2f15f",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "laptop",
+   "zwilling": "stoffe.K2#2"
+  }
+ }
+}
