@@ -970,11 +970,11 @@ function wegHelfer(arg) {
     const klassisch = (o, a = []) => (o.traverse((m) => m.isMesh && a.push([{ mesh: m, geom: m.geometry }, 0])), a);
     // je Gestalt einmal (Slots einer Gruppe teilen ihre Geometrie: die vier Räder des Wagens)
     const bauVon = (teile) => [...new Set(teile.map((g) => __abdruck({ attributes: Object.fromEntries([["position", g.position], ["normal", g.normal]].filter(([, a]) => a)), index: g.index && { array: g.index.array || g.index } }, true)))].sort().join(" ");
-    // DAS SOLL eines Studio-Werks: dieselbe Anfrage frisch im Werk (mit der Prägung der Gestalt, `_foundryGestaltOv`, ohne
+    // DAS SOLL eines Studio-Werks: dieselbe Anfrage frisch im Werk (mit der Prägung des Bestellers, `_foundryGestaltOv`, ohne
     // Platte), durch den Weg der Welt (`_foundryBuildGroup`, dann
     // `_foundryFlattenFor`: die Sichthöhe der Stufen, das Verschmelzen) — der Cache-Platz trägt dafür kurz den frischen Bau
     const frisch = async (e, p, [f, v, ov] = [r._foundry, r._foundryGestaltFor(e, p), r._artifactStudioOv(e)], key = r._foundryKoerperKey(p, v, 0, ov), alt = f.cache.get(key)) => {
-        f.cache.set(key, r._foundryBuildGroup((await r._foundryWorkerRequest(p, v, 0, r._foundryGestaltOv(p, v, ov), null, false, 0)) || [], { lod: 0, preset: p }));
+        f.cache.set(key, r._foundryBuildGroup((await r._foundryWorkerRequest(p, v, 0, r._foundryGestaltOv(ov), null, false, 0)) || [], { lod: 0, preset: p }));
         try {
             return r._foundryFlattenFor(e, p, 0).leaves.filter((l) => !l.shadowTwin).map((l) => ({ ...l.geom.attributes, index: l.geom.index }));
         } finally {

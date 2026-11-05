@@ -4,8 +4,9 @@
 //   (K) im vm (`npm run check`): je Art aus PARAMS_BY_KIND ein Rezept, Same und jede Regler-Zeile zufällig (`--saat N`
 //       wiederholt), der Leser der Welt bis an den Bäcker (`_studioStampFor` → `_foundryRequest` · `_buildHumanGroup` ·
 //       `_ofenKreaturDials`), der Bau-Hash (`bauAbdruck`, Kanal build-asset) gleicht dem des Studio-Baus; Klang: jede Zeile
-//       im Genre der Welt (`_klangStudioPreset`). (S) nur die Hülle postet eine Übergabe, EIN Empfänger. (W) kaputte Werke
-//       fallen, der Kern klemmt. SELBSTTEST: ein Empfänger mit Sonderweg und ein Studio, das selbst postet, sind ROT.
+//       im Genre der Welt (`_klangStudioPreset`); jede Art dazu an ihrer Rand-Same (`werkDerArt` mit `rand`). (S) nur die Hülle
+//       postet eine Übergabe, EIN Empfänger. (W) kaputte Werke fallen, der Kern klemmt. SELBSTTEST: ein Empfänger mit
+//       Sonderweg, ein Wirt, der die Rand-Same selbst prägt, und ein Studio, das selbst postet, sind ROT.
 //   --welt (Browser): der lebende Avatar gießt neu, ein Kreatur-Spawn trägt die Größe, der Snapshot trägt den Speicher.
 "use strict";
 const { kanalImVm, bauAbdruck } = require("./lib/asset-worker-harness.cjs");
@@ -26,7 +27,6 @@ const wahl = (liste) => liste[Math.floor(zufall() * liste.length)];
 function huelleSendet(werk) {
     const { B, gepostet } = studioSeite();
     if (typeof B.werk !== "function") return { fehlt: "die Hülle trägt keinen werk-Kanal (bruecke().werk)" };
-    gepostet.length = 0;
     B.werk(werk.kind, werk.preset, werk.seed, werk.ov);
     const msg = gepostet.filter((m) => m && m.type === "uebergabe");
     return msg.length === 1 ? { msg: msg[0] } : { fehlt: `die Hülle postet ${msg.length} Übergaben statt einer` };
@@ -52,7 +52,7 @@ function weltBau({ r, AnazhRealm }, kind, preset, weltSame) {
     if (kind === "koerper") {
         let fang = null;
         r._ofenMenschTemplate = (dials, skinColor, hairColor, lod) => (
-            (fang = fang || { dials, skinColor, hairColor, lod }),
+            (fang = fang || { presetId: preset, seed: 0, lod, ov: { dials, skinColor, hairColor } }),
             null
         );
         try {
@@ -60,14 +60,7 @@ function weltBau({ r, AnazhRealm }, kind, preset, weltSame) {
         } catch {
             /* der Not-Körper hinter dem Ofen braucht eine Szene — der Fang steht davor */
         }
-        return (
-            fang && {
-                presetId: preset,
-                seed: 0,
-                lod: fang.lod,
-                ov: { dials: fang.dials, skinColor: fang.skinColor, hairColor: fang.hairColor },
-            }
-        );
+        return fang;
     }
     if (kind === "kreatur") {
         const d = r._ofenKreaturDials(preset, null);
@@ -94,13 +87,15 @@ function studioBau(kind, werk, KC) {
         };
         return { presetId: werk.preset, seed: 0, lod: 0, ov };
     }
-    if (kind === "kreatur") return { presetId: werk.preset, seed: 0, lod: 0, ov: Object.assign({}, werk.ov) };
+    if (kind === "kreatur") return { presetId: werk.preset, seed: 0, lod: 0, ov: { ...werk.ov } };
     return { presetId: werk.preset, seed: werk.seed, lod: 0, ov: werk.ov };
 }
 
 // Ein zufälliges Werk der Art: das erste Rezept, ein Same 1..64, jede Regler-Zeile auf ihrem Raster, ein Charakter der Art
-// (KIND_CHARAKTER: Tradition, Kultur) und beim Körper jede Farbe aus den Kern-Tafeln.
-function werkDerArt(kind, buch, KC, w) {
+// (KIND_CHARAKTER: Tradition, Kultur) und beim Körper jede Farbe aus den Kern-Tafeln. `rand`: der Same ist die RAND-SAME, die
+// letzte Gestalt der Welt (`_foundryGestalten` — die einer Baum-Art ist ihr Solitär): der Zufall traf sie 1-mal in 64, und
+// bis w12-eiche-same baute die Welt dort die Eiche Same 3 als Solitär, das Studio als Bestand.
+function werkDerArt(kind, buch, KC, w, rand) {
     const preset = Object.keys(buch.book).find((id) => buch.book[id].kind === kind);
     const ov = {};
     for (const z of buch.paramsByKind[kind]) {
@@ -116,7 +111,7 @@ function werkDerArt(kind, buch, KC, w) {
         ov.hairColor = wahl(Object.keys(KC.HAIR_COLORS));
         for (const k of ["topColor", "bottomColor", "shoeColor"]) ov[k] = wahl(Object.keys(KC.CLOTH_COLORS));
     }
-    return { kind, preset, seed: 1 + Math.floor(zufall() * 64), ov };
+    return { kind, preset, seed: rand ? w.r._foundryGestalten(preset) : 1 + Math.floor(zufall() * 64), ov };
 }
 
 // Der Bau-Auftrag als Text mit geordneten Schlüsseln (die Reihenfolge eines Objekts ist kein Bau-Parameter).
@@ -131,9 +126,9 @@ const kanonisch = (v) =>
         : JSON.stringify(v);
 
 // Eine Art durch den Kanal: Hülle → Empfang → Leser → Bau-Hash. Rückgabe { ok, info }.
-async function artDurchKanal(kind, ctxK) {
+async function artDurchKanal(kind, ctxK, rand) {
     const { kanal, buch, KC, w } = ctxK;
-    const werk = werkDerArt(kind, buch, KC, w);
+    const werk = werkDerArt(kind, buch, KC, w, rand);
     const h = huelleSendet(werk);
     if (h.fehlt) return { ok: false, info: h.fehlt };
     if (w.r._studioUebergabeEmpfang(h.msg) !== true)
@@ -157,10 +152,11 @@ async function artDurchKanal(kind, ctxK) {
     if (!aW) return { ok: false, info: `der Leser der Welt bestellt keinen Bau (${werk.preset})` };
     const aS = studioBau(kind, werk, KC);
     // derselbe Auftrag baut dasselbe (G2.3, gate:asset-contract): gleicht der Auftrag der Welt dem des Studios kanonisch, trägt
-    // EIN Bau beide Hashes — sonst baut jede Seite ihren
+    // EIN Bau beide Hashes — sonst baut jede Seite ihren; an der Rand-Same baut nur ein abweichender (die Teile zählt der Zufall)
     const bau = async (a) => bauAbdruck((kanal(Object.assign({ type: "build-asset" }, a)) || {}).meshes);
-    const hS = await bau(aS);
     const gleich = kanonisch(aS) === kanonisch(aW);
+    if (gleich && rand) return { ok: true, info: "derselbe Auftrag" };
+    const hS = await bau(aS);
     const hW = gleich ? hS : await bau(aW);
     const ok = hS.teile > 0 && hS.hash === hW.hash;
     return {
@@ -201,12 +197,14 @@ async function kanalPruefen() {
     const ctxK = { kanal, buch, KC, w };
     console.log(`\n=== (K) KANAL — Saat ${SAAT}, ${arten.length} Arten aus PARAMS_BY_KIND ===`);
     let tragen = 0;
-    for (const kind of arten) {
-        const e = await artDurchKanal(kind, ctxK);
-        if (e.ok) tragen++;
-        check(`${kind}: das Werk des Studios steht byte-gleich in der Welt`, e.ok, e.info);
-    }
-    console.log(`      ${tragen}/${arten.length} Arten über den EINEN Kanal`);
+    // zweimal je Art: der Same des Zufalls, dann die Rand-Same (`werkDerArt` mit `rand`)
+    for (const rand of [false, true])
+        for (const kind of arten) {
+            const e = await artDurchKanal(kind, ctxK, rand);
+            if (e.ok) tragen++;
+            check(`${kind}: das Werk des Studios steht byte-gleich in der Welt`, e.ok, e.info);
+        }
+    console.log(`      ${tragen}/${arten.length * 2} Werke über den EINEN Kanal`);
 
     console.log("\n=== (S) SONDERWEG-WAND ===");
     const sw = sonderwege(studioDateien());
@@ -257,15 +255,20 @@ async function kanalPruefen() {
     const teile = stammLib.teileVon(ROOT);
     const kopf = /\n {4}_studioUebergabeEmpfang\([^)]*\) \{/;
     const np = teile.find((t) => kopf.test(t.text));
-    let stRot = false;
+    let stRot = false,
+        randRot = false;
     if (np) {
         const umweg =
             '\n        const m = arguments[0];\n        if (m && m.kind === "flower") return (this.state.blumenSpeicher = m), true;';
         np.text = np.text.replace(kopf, (k) => k + umweg);
-        const e = await artDurchKanal("flower", Object.assign({}, ctxK, { w: welt(buch, teile) }));
-        stRot = !e.ok;
+        // dazu der Wirt, der die Rand-Same selbst prägt (der Zwilling bis w12-eiche-same): der Baum ROT an ihr
+        for (const t of teile) t.text = t.text.replace("ov = this._foundryGestaltOv(ov);", "$&if (seed === this._foundryGestalten(presetId)) ov = { freistand: 0 };");
+        ctxK.w = welt(buch, teile);
+        stRot = !(await artDurchKanal("flower", ctxK)).ok;
+        randRot = !(await artDurchKanal("tree", ctxK, true)).ok;
     }
     check("SELBST-TEST: der Empfänger leitet die Blume in einen eigenen Speicher → die Blume ist ROT", stRot);
+    check("SELBST-TEST: der Wirt prägt die Rand-Same → der Baum ist ROT", randRot);
     const stS = sonderwege([
         { pfad: "worlds/probe/probe.js", text: 'B.post({ type: "uebergabe", kind: "koerper", s: {} });' },
     ]);

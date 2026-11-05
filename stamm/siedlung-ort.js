@@ -2574,6 +2574,8 @@ class AnazhRealm_siedlung_ort {
     async _ortMitTrasse(dp, wunsch, frei, kopf) {
         const mass = (this._ortTrasseMass = { runden: 0, versatzM: [] });
         let ort = { x: wunsch.x, z: wunsch.z };
+        // die Wahl ist unberührt, wenn es jede ihrer Runden war (`_ortWahlUnberuehrt`, `_ortReistNicht`)
+        let unberuehrt = true;
         for (; mass.runden < AnazhRealm.ORT_WAHL.trasseRunden;) {
             const plan = await this._foundryRequestSettlement(Object.assign({}, dp, { ort }), kopf);
             if (!plan || !Array.isArray(plan.slots)) return null;
@@ -2588,7 +2590,13 @@ class AnazhRealm_siedlung_ort {
             if (wm && wm.erdbau && wm.erdbau[AnazhRealm._ortSchluessel(plan, ort)] && this._ortPlaene)
                 this._ortPlaene.delete(AnazhRealm._ortSchluessel(plan, ort));
             await this._ortWahl(plan, o, false, frei);
-            if (o.x === ort.x && o.z === ort.z) return { plan, ort };
+            const U = this._ortWahlUnberuehrt;
+            const v2 = this._ortPlaene.get(AnazhRealm._ortSchluessel(plan, ort));
+            unberuehrt = unberuehrt && !!U && U.has(v2);
+            if (o.x === ort.x && o.z === ort.z) {
+                if (!unberuehrt && U) U.delete(v2);
+                return { plan, ort };
+            }
             mass.versatzM.push(+Math.hypot(o.x - ort.x, o.z - ort.z).toFixed(1));
             this._ortPlaene.delete(AnazhRealm._ortSchluessel(plan, ort)); // ihr Plan v2 wird nie Welt
             ort = o;
@@ -3292,6 +3300,44 @@ class AnazhRealm_siedlung_ort {
             kern: c.kern,
             ort: Number.isFinite(c.wx) && Number.isFinite(c.wz) ? { x: c.wx, z: c.wz } : undefined,
         };
+    }
+    // DER ORT OHNE ÄNDERUNG IST EINE FUNKTION (speicher.K3, Gebot 7: die Datei wächst mit den Änderungen, nie mit dem Weg): das
+    // Gedächtnis `c` einer Zelle der Welt `k` ("cx,cz") reist nicht, wenn es nur trägt, was ihr Gesetz ihr gibt — Same und Zahl
+    // der Zelle (`_autoSettlementCellInfo`) und den Anker einer UNBERÜHRTEN Wahl (`_ortWahlUnberuehrt`: kein Spieler, kein
+    // Fremd-Slot, kein Kandidat vom Wirt abgewiesen, in jeder Runde der Trasse — dann wählt jedes Erwachen denselben Ort, in
+    // jeder Folge der Orte), kein Wachstum, keine Akte —, wenn seither nichts Reisendes in das Reich der Wahl kam (ein Bau des
+    // Stands `bauten`, ein Erdbau außer dem der Orte, ein Edit, eine Tat: Plan + 16 m + die Ringe der Wahl + die Probe der Zelle,
+    // um Wunsch und Anker) und wenn der Spieler nicht im Vorlauf des Orts steht (die Ankunft wartet auf den Ort, der wiederkehrt).
+    // Er erwacht beim nächsten Nahen wie beim ersten. Ohne Wahl in der Sitzung (ein Ort, der aus dem Stand wiederkam) oder bei
+    // kaltem Buch reist er. Leser: die Stand-Zeile worldMeta.
+    _ortReistNicht(k, c, bauten) {
+        if (!/^-?\d+,-?\d+$/.test(k) || !c || typeof c !== "object") return false;
+        for (const f in c)
+            if (c[f] !== undefined && !["seed", "nH", "x", "z", "wx", "wz", "ort"].includes(f)) return false;
+        const [cx, cz] = k.split(",").map(Number);
+        const [info, SG] = [this._autoSettlementCellInfo(cx, cz), AnazhRealm._siedlungGesetz()];
+        const v2 = this._ortPlaene && this._ortPlaene.get(c.ort);
+        const U = this._ortWahlUnberuehrt;
+        if (!info || !SG || !v2 || !Array.isArray(v2.slots) || !U || !U.has(v2)) return false;
+        if (info.seed !== c.seed || info.nH !== c.nH) return false;
+        if (!(c.x === c.wx && c.z === c.wz && c.ort === AnazhRealm._ortSchluessel(c, c))) return false;
+        const [A, W, wm] = [AnazhRealm.AUTO_SETTLEMENT, AnazhRealm.ORT_WAHL, this.state.worldMeta || {}];
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        const vor = A.nearM + info.mehrM + A.vorlaufM;
+        if (pm && (pm.x - c.x) ** 2 + (pm.z - c.z) ** 2 <= vor * vor) return false;
+        let reich = 0;
+        for (const s of v2.slots) reich = Math.max(reich, Math.hypot(s.x || 0, s.z || 0) + 16);
+        const R = reich + W.ringe * W.schrittM + SG.cellM * Math.max(...A.siteProbeR);
+        const [x0, x1] = [Math.min(c.x, info.x) - R, Math.max(c.x, info.x) + R];
+        const [z0, z1] = [Math.min(c.z, info.z) - R, Math.max(c.z, info.z) + R];
+        const drin = (x, z) => x >= x0 && x <= x1 && z >= z0 && z <= z1;
+        for (const e of bauten || AnazhRealm.STAND_LEER)
+            if (e && e.position && drin(e.position.x, e.position.z)) return false;
+        for (const key in wm.erdbau || {})
+            if (!key.startsWith("ort:") && [].concat(wm.erdbau[key] || []).some((p) => p && drin(p.cx, p.cz)))
+                return false;
+        for (const a of wm.taten || AnazhRealm.STAND_LEER) if (a && drin(a.x, a.z)) return false;
+        return !this._voxelEditsImKasten(x0, x1, z0, z1).length;
     }
     // DAS HAUS WIRD KERN EINES RINGS (siedlung.K4 Staffel 2): legt ein gesetztes Haus seinen Grund (die Platte p, `haus:`) im Reich
     // eines wachsenden Orts (`reich`: seine Slots + 16 m wie die Ort-Wahl), trägt dessen Gedächtnis die Akte `kern` — die Platte
