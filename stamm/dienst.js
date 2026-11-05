@@ -273,7 +273,9 @@ class AnazhRealm_dienst {
             // DIE WAND AM SCHREIBER: eine Zeile ohne Schlüssel der Tafel bräche erst beim Lesen (`_tIn`), in einer anderen Welt,
             // beim Tausch am Ort (w12-heimtor, ultiversum.K1) — sie wirft hier, beim Namen des Rufers im Stapel
             if (typeof zeile[0] !== "string" || !AnazhRealm.TEXTE.de[zeile[0]])
-                throw new Error(`TAGEBUCH: die Zeile trägt keinen Schlüssel der Tafel (${JSON.stringify(zeile[0])}, Typ ${type})`);
+                throw new Error(
+                    `TAGEBUCH: die Zeile trägt keinen Schlüssel der Tafel (${JSON.stringify(zeile[0])}, Typ ${type})`
+                );
             entry.t = zeile[1] ? [zeile[0], zeile[1]] : [zeile[0]];
             AnazhRealm._journalZeile(entry);
             if (ctx && typeof ctx === "object") entry.ctx = ctx;
