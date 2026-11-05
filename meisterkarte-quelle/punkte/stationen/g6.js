@@ -786,7 +786,13 @@ async function speicherTaktLauf(h) {
     return { ...j, grundstellung: !frisch };
 }
 // EINE Probe für beide Staffeln (Zwillinge); die Welt danach: 10 000 Gruben
-const SPEICHER_TAKT_PROBE = { sek: 33, befehl: sitzungBefehl(speicherTaktLauf, [speicherTaktSeite]) };
+// DIE AUSNAHME (w12-proben-frist): zwei Speicher-Bilder zu je 20 Ständen im Takt 0,2 s und dazwischen 10 000 Gruben, die das zweite
+// trägt — GTX 50,4 s gemessen (eichtafel), Radeon 8ef49bef riss 45 s ohne Zeile
+const SPEICHER_TAKT_PROBE = {
+    sek: 33,
+    befehl: sitzungBefehl(speicherTaktLauf, [speicherTaktSeite]),
+    ausnahme: "zwei Speicher-Bilder zu je 20 Ständen und 10 000 Gruben dazwischen: GTX 50,4 s",
+};
 // ─────────────────── speicher.K4#2: die Wiederkehr zeigt dieselbe Welt ───────────────────
 // bildSeite der Mess-Bahn speicher-zwei in der Welt der Sitzung: am Bach der Mess-Wiese (welt-boot `uferStellen` am SHA, der Loop
 // läuft, bis das Wasser zeichnet) setzt der Spieler einen Stein-Block 6 m vor sich und gräbt eine Grube (r 2 m) 9 m vor sich ans
@@ -1020,7 +1026,16 @@ async function probeAnkunftKalt(H) {
     j.spur = spur;
     return j;
 }
-const ANKUNFT_KALT = { ...probeBefehl(probeAnkunftKalt, 90, { ankunft: probeAnkunft }), mutiert: true, sek: 10 };
+// DIE AUSNAHME (w12-proben-frist): vier Boots sind das Maß der Zwillinge — der kalte (ankunft.K1/K2/K5) samt Ruhe der Foundry und
+// Schuss, zwei Zweit-Boots (der Median von ankunft.K3) und der Kern-Wechsel (pipeline.K4). Gemessen am Kopf 8ef49bef: Radeon t(Kontrolle)
+// kalt 14,6 s, warm 6,8 s, an 39 s gerissen nach dem ersten Zweit-Boot (die Ruhe des Kalt-Boots bekam 0 von 40 s: die Probe hält ihr
+// 40 s für die Zweit-Boots frei); GTX p90 46,7 s aus 8 (kalt 16,1 s). Der Deckel je Karte in deckel.json.
+const ANKUNFT_KALT = {
+    ...probeBefehl(probeAnkunftKalt, 90, { ankunft: probeAnkunft }),
+    mutiert: true,
+    sek: 10,
+    ausnahme: "vier Boots in EINER Probe: kalt mit leerer Herkunft (14,6 s Radeon, 16,1 s GTX) samt Ruhe und Schuss, zwei Zweit-Boots, der Kern-Wechsel",
+};
 // die Spur des Kalt-Boots aus der Ausgabe EINES Laufs: j.spur, sonst die Zeile „SPUR kalt {…}“
 const spurVon = (j, lauf) => (j && j.spur) || jsonZeile(lauf.stdout, /^SPUR kalt \{/);
 // die Kontrolle kalt (ankunft.K1): t(Kontrolle) von außen zählt erst, wenn das Bild in ihr ganz ist (ankunft.K2: ≤ 2 % Lücke gegen
@@ -1076,9 +1091,13 @@ const PB_BAND = ["wiese-ego", "wiese-third", "genesis-ego", "genesis-third", "do
 // PFLICHT E trägt, läuft immer — die Uhr kürzt nur die übrigen, und ihr Budget folgt dem Deckel des Gangs (PB_GANG_SEK, 6 s Nachlauf).
 // Bis hier fest 58 s: an der GTX brauchten Genesis Ego, Genesis Third und Wiese Ego schon 18,8 + 12 + 31,6 s, wiese-third-steht stand in
 // jedem Lauf „ungemessen (die Uhr 58 s trug den Schritt nicht)“ und pflicht.E#1 konnte nie grün werden.
+// DER DECKEL TRÄGT AUCH DIE STAND-ZELLEN (w12-proben-frist; Radeon 8ef49bef: Genesis Ego 17 s, Genesis Third 14 s, Wiese Ego samt Ring
+// 39 s, dann begann Wiese Third bei 76 s und riss den Deckel 90 s — sieben Stationen UNGEMESSEN, auch die gemessenen Zellen): ein
+// Schritt einer Stand-Zelle läuft, solange der Deckel des Gangs ihn trägt (bis 3 s davor), mit der Dauer, die derselbe Schritt an
+// einem anderen Ort schon brauchte (`estS` gelernt); trägt er ihn nicht, steht er ungemessen beim Namen — ein Urteil, nie ein Riss.
 const PB_GANG_SEK = 90;
 function pbSchrittTraegt(zellen, uhrS, estS, budgetS) {
-    return zellen.some((z) => /-steht$/.test(z)) || uhrS + estS <= budgetS;
+    return uhrS + estS <= budgetS || (zellen.some((z) => /-steht$/.test(z)) && uhrS + estS <= budgetS + 3);
 }
 const PB_KONST = {
     budget: PB_GANG_SEK - 6,
@@ -1238,11 +1257,15 @@ async function pbProbe(art, aus) {
         return w;
     };
     // ein Schritt unter der Uhr: trägt die Uhr ihn nicht mehr, stehen seine Zellen ungemessen beim Namen
+    // die Dauer je Art des Schritts (der Name ohne seinen Ort: „ego“, „third“, „third-geht“ …), gelernt am ersten Ort, der sie maß
+    const gelernt = {};
     const schritt = async (name, est, f, zellen) => {
-        if (art === "gang" && !PB_TRAEGT(zellen, uhr(), est, K.budget)) return void (offen.push(...zellen), schritte.push([name, "Uhr"]));
+        const sorte = name.replace(/^[a-z]+-/, "");
+        if (art === "gang" && !PB_TRAEGT(zellen, uhr(), Math.max(est, gelernt[sorte] || 0), K.budget)) return void (offen.push(...zellen), schritte.push([name, "Uhr"]));
         const a = uhr();
         try {
             await f();
+            gelernt[sorte] = gelernt[sorte] || uhr() - a;
             schritte.push([name, +(uhr() - a).toFixed(1)]);
         } catch (e) {
             for (const z of zellen) fehler[z] = String((e && e.message) || e).split("\n")[0].slice(0, 200);

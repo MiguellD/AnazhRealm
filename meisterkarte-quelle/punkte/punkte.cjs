@@ -2010,8 +2010,12 @@ const mutiertVon = (g) => g.some((st) => !!(st.probe && st.probe.mutiert));
 // { ort: "X" }` des Tors), aus dem Befehl selbst gelesen — nie eine zweite Liste; null: sie nennt keinen (Koordinaten, ein Ort aus einer
 // Variablen). In der Gruppe stehen die Proben eines Orts beieinander (die Reihe ihres ersten Auftritts), die ohne Ort zuletzt
 // (der vierte: der Plan eines Vegetations-Laufs, `[[Ort, Sicht, …], …]` als letztes Argument — sein erster Stand, w4-sitzung-reif)
+// (der fünfte, w12-proben-frist: der Messort aus der EINEN Quelle der Orte — `messort("X")` von welt-orte, `ladeSpec("X")` von
+// band-urteil, beide lesen spec/profiband/haushalt.json `spieler` wie `umstellen --ort X` — an den die Probe den Leib selbst setzt;
+// Radeon 8ef49bef: leib.K4#2 1103 m, klang.K5#2 1110 m, speicher.K4#2 1166 m, fahrzeug.K2#1 2014 m im eigenen Deckel gezogen, je
+// Ankunft ein kalter Ring von 11–20 s nach der Tür; jetzt stellt die Sitzung sie vor dem Deckel an die Wiese)
 const ORT_MUSTER = [/umstellen\\?",\\?"--ort\\?",\\?"([a-z0-9_-]+)/, /umstellen\\?", \{ ort: \\?"([a-z0-9_-]+)/, /umstellen --ort ([a-z0-9_-]+)/,
-    / \[\["([a-z0-9_-]+)","(?:ego|third)",/];
+    / \[\["([a-z0-9_-]+)","(?:ego|third)",/, /\b(?:messort|ladeSpec)\(\\?"([a-z0-9_-]+)\\?"\)/];
 const probeOrt = (st) => {
     const text = [].concat((st.probe && st.probe.befehl) || []).map(String).join(" ");
     for (const re of ORT_MUSTER) {
@@ -3983,11 +3987,13 @@ async function selbsttest(o = {}) {
     const pbE = pflichtBand({ ...b.je, ...b.pflichtJe }, { dokument: "d.md", eintraege: [{ id: "E", titel: "e", stationen: ["pflicht.E#1"] }] }, "E) DAS BAND — **E fällt, wenn p95 hält.**");
     pruef("PFLICHT das Band liest den Pflicht-Richter aus pflichtJe (E grün, 2/2 Paare, 0 Punkte)", pbE.eintraege[0].status === "grün" && pbE.eintraege[0].gesamt === 2 && pbE.eintraege[0].punkte === 0, JSON.stringify(pbE.eintraege[0]));
     // DIE UHR DES GANGS (stationen/g6.js pbSchrittTraegt, 04.11.): ein Schritt mit einer Stand-Zelle von PFLICHT E läuft immer, die
-    // übrigen nur im Budget — an der GTX schnitt die feste Uhr 58 s wiese-third-steht in jedem Lauf weg
+    // übrigen nur im Budget — an der GTX schnitt die feste Uhr 58 s wiese-third-steht in jedem Lauf weg; seit w12-proben-frist nur, solange
+    // der Deckel sie trägt (Budget + 3 s): an der Radeon 8ef49bef riss Wiese Third bei 76 s + 18 s den Deckel 90 s, sieben Stationen UNGEMESSEN
     {
         const t = require(path.join(DIR, "stationen", "g6.js")).pbSchrittTraegt;
-        pruef("UHR DES GANGS die Stand-Zelle läuft über dem Budget, die Bewegung nicht, im Budget beide",
-            t(["band:wiese-third", "wiese-third-steht"], 80, 8, 84) && !t(["wiese-fahrt"], 80, 8, 84) && t(["wiese-fahrt"], 70, 8, 84) && !t(["band:dorf-ego"], 84, 1, 84));
+        pruef("UHR DES GANGS die Stand-Zelle läuft über dem Budget, solange der Deckel sie trägt, die Bewegung nicht, im Budget beide",
+            t(["band:wiese-third", "wiese-third-steht"], 80, 6, 84) && !t(["band:wiese-third", "wiese-third-steht"], 76, 18, 84) && !t(["wiese-fahrt"], 80, 8, 84) &&
+                t(["wiese-fahrt"], 70, 8, 84) && !t(["band:dorf-ego"], 84, 1, 84));
     }
     b = buchen("kopf", [s1, s2], m2, (sha) => (sha === "b2" ? ["stamm/wasser-hydro.js"] : ["docs/x.md"]), h);
     pruef("BUCHUNG R6 Pfad geändert → GTX alt → 1", b.je["gelaende.K4"].punkte === 1 && /R6/.test(b.je["gelaende.K4"].beleg), b.je["gelaende.K4"].beleg);
@@ -4529,6 +4535,13 @@ async function selbsttest(o = {}) {
         const vo = [plan(["wiese", "third", 0.5, null, "wiese"]), plan(["genesis", "ego", 0.5, null, "wiese"], ["wiese", "ego", 0.3, null, "wiese"]), plan()].map(probeOrt);
         pruef("SITZUNG DER ORT eines Vegetations-Laufs: der erste Stand seines Plans (wiese, genesis), ohne Plan keiner",
             vo.join(",") === "wiese,genesis," && vo[2] === null, JSON.stringify(vo));
+        // der Messort aus der Quelle der Orte (w12-proben-frist): `messort("X")` · `ladeSpec("X")` nennen den Ort; ein `umstellen` gewinnt
+        const lib = (code) => ({ probe: { befehl: ["node", "-e", code, "{AUS}"] } });
+        const vl = [lib('const M = require("scripts/lib/welt-orte.cjs").messort("wiese"); go(M.x, M.z);'),
+            lib('const mo = require("scripts/lib/band-urteil.cjs").ladeSpec("dorf").ort.spieler;'),
+            lib('await tor.ruf("/umstellen", { ort: "genesis" }); const M = messort("wiese");'), lib("const M = { x: 1, z: 2 };")].map(probeOrt);
+        pruef("SITZUNG DER ORT aus der Quelle der Orte: messort(\"wiese\") → wiese, ladeSpec(\"dorf\") → dorf, ein umstellen davor gewinnt, Koordinaten keiner",
+            vl.join(",") === "wiese,dorf,genesis," && vl[3] === null, JSON.stringify(vl));
         // DIE GRUNDSTELLUNG, DIE NICHT TRÄGT: weicht nach dem Rückspielen eine Größe vom Grund ab, geht sie durch die Tür; weicht sie auch
         // danach ab, sind die übrigen Proben UNGEMESSEN beim Namen der Größe (nie ROT)
         const r7 = await lauf([[S("m.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)]], "anders", null);

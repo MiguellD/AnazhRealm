@@ -112,11 +112,14 @@ const KETTE_PFAD = [
 ];
 
 // DIE PROBEN IN DER SITZUNG (29.10., stationen/proben-welt.cjs): gelaende.K2 #1 und #2 teilen EINE Probe (gräbt und schüttet: mutiert)
+// DIE AUSNAHME (w12-proben-frist): zwei Orte in EINER Probe — (b)(d) der Damm 60 m stromab des Fluss-Orts der Mess-Wiese, (a) der
+// Graben an den Ufer-Punkten des Flusses nächst Genesis (1 718 m weiter, der Ring kalt im Deckel), je Sicht und Abstand — GTX p90 71,1 s
+// aus 10 (eichtafel), Radeon 8ef49bef riss 45 s nach (b)(d) in 9,7 s
 const K2_PROBE = {
     befehl: PW.torBefehl(PW.wasserGraben, "{KOORD}"),
     sek: 10,
     mutiert: true,
-    
+    ausnahme: "zwei Orte: der Damm an der Mess-Wiese, der Graben am Fluss nächst Genesis (1,7 km, der Ring kalt) — GTX p90 71,1 s",
 };
 
 // ───────── DIE WELT-PROBE (p3-stationen-g12, 01.11.): sieben Kriterien ohne Station in EINER Welt am Null-Renderer ─────────

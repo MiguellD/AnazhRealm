@@ -447,6 +447,10 @@ const K4_BEFEHL = [
 ];
 // DIE FAHRT (29.10., ≤ 30 min je Gerät): 90 s statt 900 s — sieben Studios in EINER Probe; die Welt trägt danach ihre Werke (mutiert)
 const K4_STUDIOS = ["garage", "portale", "schmiede", "fachwerk", "terrain", "koerperstudio", "tetrapoda"];
+// DIE AUSNAHME (w12-proben-frist): sieben Studios je mit eigener Seite und eigenem Renderer (die Bühne steht in 0,6–3,1 s) und je ein
+// Abnahme-Bild der Welt (`/bild` 4,3–9,7 s, das erste kompiliert) — Radeon 8ef49bef: fünf Studios in 34,9 s (7,0 s je Studio), an der
+// Frist 39 s fielen koerperstudio und tetrapoda aus; sieben ≈ 52 s Radeon, ≈ 68 s GTX (Faktor 1,3). Der Deckel je Karte in deckel.json.
+const K4_AUSNAHME = "sieben Studio-Seiten mit eigenem Renderer und je ein Abnahme-Bild der Welt: Radeon 7,0 s je Studio, sieben ≈ 52 s";
 const k4Zahl = (j) => {
     const s = (j && j.studios) || {};
     const gruen = K4_STUDIOS.filter((id) => s[id] && s[id].gruen === true);
@@ -550,7 +554,12 @@ async function probeStudios(H) {
     await L.gang();
     return { griffe: L.GRIFFE, adapter };
 }
-const STUDIO_PROBE = probeBefehl(probeStudios, 75);
+// DIE AUSNAHME (w12-proben-frist): acht Studios je zwei Seiten mit eigenem Renderer (der Besuch, das Neuladen) und 5 Griffe je Seite —
+// Radeon 8ef49bef: fünf Studios in 39 s an der Frist (fachwerk allein 16 s), acht ≈ 62 s; GTX mit Faktor 1,3 ≈ 81 s
+const STUDIO_PROBE = {
+    ...probeBefehl(probeStudios, 75),
+    ausnahme: "acht Studios je zwei Seiten mit eigenem Renderer (Besuch und Neuladen), 5 Griffe je Seite: Radeon fünf in 39 s",
+};
 // DER BILD-WEG (bauen.K1#2): die Linse diag-werkstatt-weg mit `--echt` (`wegHelfer` mit dem Haken am Render des Takts, `wegLauf` über
 // echte Eingaben) in der warmen Welt der Sitzung — die Bühne (Mittag · Sonne · Sommer), dann 8 Läufe: jedes Werk zweimal (kalt, warm),
 // jeder Weg mit kalt und warm, Lage und Sicht im Wechsel. KALT räumt die Linse selbst (`wegHelfer`: der erste Lauf eines Werks nimmt
@@ -2081,7 +2090,7 @@ const alle = [
         kriterium: "studios.K4",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 33, mutiert: true,  befehl: K4_BEFEHL },
+        probe: { sek: 33, mutiert: true, befehl: K4_BEFEHL, ausnahme: K4_AUSNAHME },
         gpu: true,
         zeit: false,
         minuten: 15,
@@ -2097,7 +2106,7 @@ const alle = [
         kriterium: "studios.K4",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 33, mutiert: true,  befehl: K4_BEFEHL },
+        probe: { sek: 33, mutiert: true, befehl: K4_BEFEHL, ausnahme: K4_AUSNAHME },
         gpu: true,
         zeit: false,
         minuten: 15,

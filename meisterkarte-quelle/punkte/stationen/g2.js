@@ -5492,7 +5492,9 @@ const stationen = [
     // PNG ohne Rückruf je Byte) 20,4 s GRÜN, Winter 0,111 × Sommer — unter fremder Last (eine Werkbank swiftshader auf ~10 Kernen) —, die
     // GTX geschätzt × 1,3: ⌈1,5 × 26,5⌉ = 40 s
     jahrStation(1, JAHR_KRONEN, JAHR_KRONEN, ["sommer", "winter"], "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose", 23),
-    jahrStation(2, JAHR_LAUF, JAHR_LAUF, ["sommer", "winter", "fruehling"], "2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte", 10),
+    // der Deckel 90 s (w12-proben-frist): sechs Bilder an einem Stand, je Krone 7,5–7,7 s, die Wiese 16,9 s (Radeon 8ef49bef: vier Bilder in
+    // 40 s, dann der Deckel 45 s; die Eich-Fahrt ≥ 65,3 s) — die Ausnahme des Plans (vegetationProbe) trägt sie
+    jahrStation(2, JAHR_LAUF, JAHR_LAUF, ["sommer", "winter", "fruehling"], "2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte", 90),
 
     // ───────── DIE WELT-PROBE der Gruppe II (p3-stationen-g12): luftwasser.K3 · luftwasser.K4 — EIN Lauf (Zwillinge), die Proben und
     // Urteile oben (fischeProbe, bestaeuberProbe; Lauf und Grund stationen/g1.js). Gefahren 01.11. in der Cloud am main 25ac4c0c

@@ -318,7 +318,13 @@ const FELS_STUFEN =
     'const f = r._foundry, o = {}; for (const [k, v] of Object.entries((f && f.recipes) || {})) if (v && v.kind === "rock") o[k] = r._foundryKindStages(k); return o;';
 // EINE Probe für vier Stationen (material.K1#1 · K1#2 · K3#1 · K3#2, Zwillinge): die Welt-Seite der Tafel in der Sitzung, das Labor
 // daneben im Browser der Sitzung
-const ALBEDO_SITZUNG = probeBefehl(probeAlbedo, 10, { BAENDER: JSON.stringify(BAENDER), FELS: JSON.stringify(FELS_STUFEN) });
+// DIE AUSNAHME (w12-proben-frist): die Tafel misst beide Seiten in EINER Probe — die Welt in neun Gängen (Uhr 0,5 und 0,27, je
+// Stufen-Zeile ein Gang) und daneben das Labor, sieben Studio-Seiten mit eigenem Renderer (wie studios.K4). Am Kopf 8ef49bef stand an
+// der Frist 39 s an Radeon und GTX keine Seite fertig (die Welt nach 1,5 s am Ort, dann 37,5 s ohne Antwort von `/albedo` und Labor).
+const ALBEDO_SITZUNG = {
+    ...probeBefehl(probeAlbedo, 10, { BAENDER: JSON.stringify(BAENDER), FELS: JSON.stringify(FELS_STUFEN) }),
+    ausnahme: "die Albedo-Tafel beider Seiten: neun Gänge der Welt und sieben Studio-Seiten des Labors mit eigenem Renderer",
+};
 const ALBEDO_PFAD = [
     ...BILD,
     "*-core.js",
@@ -633,16 +639,22 @@ function laubKanteProben() {
 // 18,2 → 10,4 Mio. Rufe des Gesetzes); das Band schwingt im Takt der Werkbank und seinem Bild statt 50 ms Schlaf je Takt ein, und ein
 // ruhender Dorf-Plan (`_dorfTaktLebt` false am Messort genesis) hält es nicht mehr bis zum Deckel 240 s offen (Radeon a03b7b06:
 // „dorfWaechst 0/18“, 4 007 Takte) — Befehl und Urteile unberührt.
+// DER WEG DER FAHRT (w12-proben-frist; Radeon 8ef49bef: in 45 s kein luft.json, der Spieler zog 3 592 m im Deckel, Ring 4 → −1): die
+// Luft-Linse endet am Gipfel (bis 3 km weit, der Ring kalt), und das Band kehrte danach nach Genesis zurück — ein zweiter kalter Ring
+// für denselben Ort. Jetzt das Band zuerst am Ort, an dem die Sitzung die Probe beginnt (Genesis), dann die Luft: EIN Weg Genesis →
+// Gipfel. Dieselben Schritte, dieselben Dateien, dieselben Urteile. Dazu DIE AUSNAHME: drei Messorte der Luft-Linse (Genesis-Hügel ×
+// 2 Uhren × 4 Azimute, der Gipfel × 4 Azimute) und das Band — GTX ≥ 90 s mit dem Rückweg (eichtafel).
 const FERNE_SITZUNG = {
     sek: 10,
     befehl: befehlDer({
         name: "ferne",
         schritte: [
-            { name: "luft", args: ["licht", "--luft", "--datei", "@DIR@/luft.json"], datei: "@DIR@/luft.json" },
             { name: "genesis", args: ["umstellen", "--ort", "genesis", "--sicht", "ego"], muss: true },
             { name: "band", args: ["band", "--ort", "genesis", "--datei", "@DIR@/band.json"], datei: "@DIR@/band.json" },
+            { name: "luft", args: ["licht", "--luft", "--datei", "@DIR@/luft.json"], datei: "@DIR@/luft.json" },
         ],
     }),
+    ausnahme: "die Luft-Linse vom Genesis-Hügel (2 Uhren × 4 Azimute) und vom Gipfel bis 3 km (der Ring kalt), dazu das Band an Genesis",
 };
 // die Luft des Laufs: die LUFT-Zeile (Rest des Schritts luft), die Messung, der Adapter der Sitzung
 const luftDer = (j) => {
@@ -2350,6 +2362,8 @@ const stationen = [
         // Genesis kalt 18,6 s, ab040980), dazu den Gang an den Fels; sechs Klassen-Bilder 1920×1080 zu je vier Aufnahmen à 33 Bildern.
         // Im Ring der Wiese trug lokal die höchste Formation 0,47 m (≤ 111 m) — der Fels der Staffel steht an Genesis. Den Weg je Fahrt
         // nennt DER ORT IM DECKEL (punkte.cjs)
+        // DIE AUSNAHME (w12-proben-frist): die zwei Orte sind das Maß der Staffel, der Ring an Genesis ist ihr Preis — Radeon 8ef49bef riss
+        // 45 s nach fels-stand-1 (16 von 21 Schritten, Boden in 15 s, Genesis samt Gang an den Fels 28 s); der Deckel je Karte in deckel.json
         probe: { sek: 33, befehl: befehlDer({
             name: "material.K2#1",
             texte: { FELS_ZIEL, EIN: EIN_TAKT },
@@ -2370,7 +2384,7 @@ const stationen = [
                     { name: "fels-" + d, args: ["bild", "0", "0", "0", "0", "0", "0", "--arm", d, "--wahl", "0", "--klasse", "^formationenSatz$", "--datei", "@DIR@/fels-" + d + ".png"] },
                 ]),
             ],
-        }), },
+        }), ausnahme: "zwei Messorte in EINER Probe — Boden an der Mess-Wiese, Fels an der höchsten Formation um Genesis: der zweite Ring kalt im Deckel (Radeon 8ef49bef 45 s bis fels-stand-1 von 21 Schritten, GTX 63,7 s)" },
         env: envDer,
         gpu: true,
         zeit: false,

@@ -146,7 +146,13 @@ async function kollisionTempo(tor) {
     await tor.ruf("/umstellen", { ort: "wiese", sicht: "ego" }, 1000 * Math.max(30, Number(process.env.PUNKTE_PROBE_DECKEL_S) || 90));
     const page = await tor.seite();
     const karte = tor.karte();
-    await page.evaluate(["rahmen", "lok", "aussen", "zuBox"].map((n) => "window." + n + " = " + tor.quelle(L, n) + ";").join("\n"));
+    // DIE GEOMETRIE DER LINSE, wie sie heute ist (w12-proben-frist; Radeon 8ef49bef „keine Deklaration rahmen auf oberster Ebene“): die
+    // Linse liest `rahmen` aus welt-boot (dort `window.rahmen` jeder Seite) und trägt selbst nur lok · aussen · zuBox — die Probe nimmt
+    // `rahmen` von dort, wo die Linse ihn nimmt (ein Stand, der ihn noch oben trägt, aus der Linse)
+    const WBr = require(path.resolve("scripts/lib/welt-boot.cjs")).rahmen;
+    await page.evaluate(
+        ["window.rahmen = " + (typeof WBr === "function" ? String(WBr) : tor.quelle(L, "rahmen")) + ";", ...["lok", "aussen", "zuBox"].map((n) => "window." + n + " = " + tor.quelle(L, n) + ";")].join("\n")
+    );
     const { messort } = require(path.resolve("scripts/lib/welt-orte.cjs"));
     const K = { mess: messort("wiese"), HINDERNISSE: U.HINDERNISSE, TAKTE: U.TAKTE, UEBER_VMAX: U.UEBER_VMAX, SPALT_M: U.SPALT_M, FALL_M: U.FALL_M, BILD: true };
     const t0 = Date.now();

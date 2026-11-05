@@ -1095,6 +1095,10 @@ const LATENZ_HALT_SITZUNG = sitzung(33,
         "teil SPIEL{N} $W eval '" + HIT_LESEN + "'"
     )
 );
+// DIE AUSNAHME (w12-proben-frist): acht Reihen zu LATENZ_PROBEN (zwei Sichten × vier Verben, 120 Proben), je Probe die Taste bis zum
+// bewegten Ausgabe-Bild an der Wanduhr — doppelt so viele wie leib.K1#1 (60 Proben: Radeon p90 36,7 s, GTX 26,3 s); Radeon 8ef49bef
+// riss 45 s in LATENZ1
+LATENZ_HALT_SITZUNG.ausnahme = "acht Latenz-Reihen zu 15 Proben (Ego und Third × gehen, springen, einsteigen, hieb): 120 Tasten bis zum Bild";
 // DIE FAHRT IN EINEM LAUF (fahrzeug.K3#2, fahrzeug.K4#1, fahrzeug.K4#2, Zwillinge, 29.10.): der Ritt (tempo4.js auf dem Weg der Probe,
 // WELT — w4-heil-fahrzeug 30.10.), T5, der Blick am Steilhang (blick.js, BLICK) und T4 von gate:fahr-leben (FAHR) — alle in der EINEN
 // Welt der Sitzung (proben-welt.cjs `fahrWelt`; bis w4-ssa-E lief die Linse ganz in einer eigenen Null-Welt daneben, und `wait` hielt
