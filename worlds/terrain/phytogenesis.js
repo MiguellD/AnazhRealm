@@ -3520,12 +3520,14 @@ function updateWorld(dt) {
         _camUnder = _ws !== null && camera.position.y < _ws - 0.12;
         if (_camUnder) {
             const dl = 0.2 + 0.8 * atm.lum; // Tageslicht dringt ein: nachts fast schwarz, mittags tuerkis
-            const _uwK = WASSER_GESETZ.wK; // W10: die EINE Absorption (Gesetzbuch) — Shader und Unterwasser-Nebel lesen dieselbe Zeile
-            _w3.setRGB(Math.exp(-_uwK[0] * 0.3), Math.exp(-_uwK[1] * 0.3), Math.exp(-_uwK[2] * 0.3)).multiplyScalar(dl);
+            // W10 + w12-unterwasser: die EINE Wasser-Wahrheit (WASSER_GESETZ, dieselbe Zeile wie die Welt, stamm/bild-himmel.js): die Farbe ist das Licht in der Tiefe der Kamera unter dem Spiegel (Beer-Lambert exp(-wK*Tiefe)), die Sicht endet am 550-nm-Kanal der Extinktion des Wasser-Koerpers (wK + koerperStreu) nach Koschmieder (ATMO_GESETZ.luft.kontrast) — bis dahin die festen ersten 0,3 m und ein Nebel 0,3–7,5 m, die Welt sah 30 m
+            const _uw = WASSER_GESETZ,
+                _uwT = _ws - camera.position.y;
+            _w3.setRGB(Math.exp(-_uw.wK[0] * _uwT), Math.exp(-_uw.wK[1] * _uwT), Math.exp(-_uw.wK[2] * _uwT)).multiplyScalar(dl);
             scene.fog.color.copy(_w3);
             if (scene.background && scene.background.isColor) scene.background.copy(_w3);
-            scene.fog.near = 0.3;
-            scene.fog.far = 7.5;
+            scene.fog.near = 0;
+            scene.fog.far = -Math.log(ATMO_GESETZ.luft.kontrast) / (_uw.wK[1] + _uw.koerperStreu);
         } else {
             scene.fog.near = _sightDist * 0.35;
             scene.fog.far = _sightDist;
