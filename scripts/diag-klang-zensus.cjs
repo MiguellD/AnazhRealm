@@ -587,14 +587,14 @@ async function messeOrt(page, name, ort, stubs) {
             if (stubs?.ohneLeib || stubs?.stehend) {
                 // der Leib weg: das Revier-Gesetz trägt kein Revier — oder er steht (Selbst-Test S12): die Bahn des Gesetzes
                 // auf der Uhr dieses Takts; die Vogel-Karte neu — der Phantom-Vogel (Selbst-Test) singt in der Lage am Ohr
-                // ohne einen Leib
-                [alt.vogel, alt.lage] = [AnazhRealm._vogelGesetzMemo, P._umweltLage];
+                // ohne einen Leib: an der Hälfte, die sie schließt (`_umweltLageZwei`, der Takt und `_umweltLage` rufen sie)
+                [alt.vogel, alt.lage] = [AnazhRealm._vogelGesetzMemo, P._umweltLageZwei];
                 const T = st.spielZeit;
                 const mut = stubs.stehend ? { bahn: (w, a, _t, ...x) => alt.vogel.bahn(w, a, T, ...x) } : { revier: () => false };
                 [AnazhRealm._vogelGesetzMemo, r._vogelKarte] = [{ ...alt.vogel, ...mut }, null];
                 if (stubs.phantom)
-                    P._umweltLage = function () {
-                        return Object.assign(alt.lage.call(this), { voegel: [{ d: 20 }] });
+                    P._umweltLageZwei = function () {
+                        return Object.assign(alt.lage.apply(this, arguments), { voegel: [{ d: 20 }] });
                     };
             }
             const um0 = st.symphony.umwelt;
@@ -653,7 +653,7 @@ async function messeOrt(page, name, ort, stubs) {
                 st.keys.w = st.keys.s = W.szene = false;
                 if (alt.luft) P._temperaturAt = alt.luft;
                 if (alt.lage)
-                    [AnazhRealm._vogelGesetzMemo, r._vogelKarte, P._umweltLage] = [alt.vogel, null, alt.lage];
+                    [AnazhRealm._vogelGesetzMemo, r._vogelKarte, P._umweltLageZwei] = [alt.vogel, null, alt.lage];
                 for (const k of ["_koerperWasser", "_untertitelZeile"]) if (alt[k]) P[k] = alt[k];
                 if (alt.graph) {
                     um0.graph.stopAlle();
@@ -1488,9 +1488,9 @@ async function gesehenSeite(m) {
     // der Täter des Selbsttests: das Ohr hört Fluss, Ufer und Regen, wie sie beim Pflanzen klangen — das Bild geht weiter
     G.taeter = () => {
         const Pr = Object.getPrototypeOf(r);
-        const alt = Pr._umweltLage;
+        const alt = Pr._umweltLageZwei; // die Hälfte, die die Lage schließt (der Takt und `_umweltLage` rufen sie)
         let fest;
-        Pr._umweltLage = function () {
+        Pr._umweltLageZwei = function () {
             const l = alt.apply(this, arguments);
             return l && Object.assign(l, (fest ||= { fluss: l.fluss, ufer: l.ufer, regen: l.regen }));
         };
