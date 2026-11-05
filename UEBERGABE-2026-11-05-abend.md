@@ -14,6 +14,7 @@ Log: /tmp/claude/w3/offen-w6.txt Einträge 119–164.
 
 ## Züge
 - **z240 ROT** (22:54, voll 10/18 Werkstatt-Weg-Linse: „L-Verben … Täter: ki · Third · Wagen × drive: kein Fahren“). main aec13cb4 allein war GRÜN, z239 fuhr leer (kein Puls). Brand-Halt fällt damit zum zweiten Mal an einem CPU-Rot. Verdacht: `_brandBild(delta)` je Takt (dirigent-takt.js:253). Der Brand-Champion arbeitet daran, Stand im Zweig w12-brand-halt.
+- **z241** = w12-brand-halt 505d2704 (main aec13cb4 gemergt, `_brandBild` nur bei Feuer, Flamme oder Rauch; lokal Werkstatt-Weg 36/36 und Werk im Wasser GRÜN). Nach der Landung bringt er stoffe.K2#2 (+1). stoffe.K5#2 bleibt ROT, bis die Jugend-Gestalt aus riesenhalm geheilt ist (Mutante 2928 statt 2933 Glieder, FUND).
 - **z238 GELANDET** aec13cb4 (22:09): w12-tuch-grob (haar.K4#2 headless messen).
 - **z237 GELANDET** b01cc8b8 (21:43): w12-dorf-probe, w12-proben-tempo-spiel, w12-riesenhalm. Noch nicht gemessen — nach z238/z239 die Farm `bash /tmp/claude/w3/farm-lauf.sh <main>` (CPU-Last nicht während eines echt-Jobs auf dem Radeon-Läufer), dann Radeon für die sichtbaren (riesenhalm: Jungwuchs-Gestalt), dann buchen; streaming.K1/K2 fallen dabei ehrlich (−2), stoffe.K4#1 misst jetzt ein echtes Dorf.
 - **z235 GELANDET** f5db8d90: w12-unterwasser, w12-kronen-albedo (mit w12-albedo-tafel), w12-takt-band (K06-Wurzel, Bild je Frame im Null-Renderer Wiese Ego 13,9/17,9 → 4,0/6,3 ms).
