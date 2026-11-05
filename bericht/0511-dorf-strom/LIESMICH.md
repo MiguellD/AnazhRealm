@@ -24,3 +24,15 @@ Gestartet im Spiel-Baum (Checkout von main f5db8d90): `node <diag>.cjs <name> <p
 - Im Zweig bleibt nur `_forestDartRaum` (bei Überlauf fallen die fernsten Zellen statt `memo.clear()`). Wirkung, 1 Lauf mit eigener Probe: K1 GT 157–195 → 42 Lücken, K2 baum 47–48 → 52 %.
 - Ohne Wirkung zurückgenommen: das Neu-Bestellen nach dem Erdbau und der Dorf-Vorlauf nach Rang.
 - Bau bleibt bei 95,1–95,7 %, die Zeugen stehen fest bei 103/112/112 m.
+
+## Stand 23:20 (w12-dorf-strom b625de5b, Code 8613fd46)
+- Im Zweig:
+  - der Grund des Dorf-Vorrats liegt schon im Vorlauf (`_dorfVorratGrundFaellt`, `_tickAutoSettlement`)
+  - der zweite Ring bereitet Dörfer vor, er sperrt nur noch das Erwachen (`_autoSettlementZelle`)
+  - die Räumung des Wald-Gedächtnisses (`_forestDartRaum`)
+- Gemessen (2 Paare, Probe d9/d13): K2#1 baum 47–50 % → 86–87 %, bau ~95 %.
+- K1#1 GT streut auf main zwischen 31 und 232 Lücken-Bildern (8 Läufe, Median ~160), am Kopf zwischen 23 und 260. Diese Linse braucht ≥ 4 Läufe je Seite.
+- Ohne Wirkung zurückgenommen: Export nach Bedarf, Zell-Reichweite 420 m, Häuser-Aufbau.
+- Nächster Verdacht, erschlossen und ungemessen: Der Vorlauf misst am Zellpunkt `info.x/z` (`_autoSettlementZelle`, siedlung-ort.js ~3393), nicht am Ort, den `_autoSettlementFindSite` wählt. −4,−4 beginnt dadurch erst bei 343 m statt 420 m.
+- Erster Schritt: den Abstand Zellpunkt ↔ gewählter Ort messen (d16.cjs). Dann Vorlauf und Erwachen am gewählten Ort messen.
+- d15.cjs hält je Erdbau-Fall den Aufrufer fest. d16.cjs misst die Zeiten je Vorrat.
