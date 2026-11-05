@@ -5698,7 +5698,9 @@ const stationen = [
     // GTX geschätzt × 1,3: ⌈1,5 × 26,5⌉ = 40 s
     jahrStation(1, JAHR_KRONEN, JAHR_KRONEN, ["sommer", "winter"], "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose", 23),
     // der Deckel 90 s (w12-proben-frist): sechs Bilder an einem Stand, je Krone 7,5–7,7 s, die Wiese 16,9 s (Radeon 8ef49bef: vier Bilder in
-    // 40 s, dann der Deckel 45 s; die Eich-Fahrt ≥ 65,3 s) — die Ausnahme des Plans (vegetationProbe) trägt sie
+    // 40 s, dann der Deckel 45 s; die Eich-Fahrt ≥ 65,3 s) — die Ausnahme des Plans (vegetationProbe) trägt sie. Seit w12-wintergras
+    // marschiert nur die erste Wiese (EINE Kamera je Stand, der Abdruck nach dem Inhalt des Bodens): Radeon e1a34d42 die Wiesen
+    // 19,4 · 9,3 · 9,5 s, die Station 64,5 s (vorher 76 s, 8ef49bef)
     jahrStation(2, JAHR_LAUF, JAHR_LAUF, ["sommer", "winter", "fruehling"], "2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte", 90),
 
     // ───────── DIE WELT-PROBE der Gruppe II (p3-stationen-g12): luftwasser.K3 · luftwasser.K4 — EIN Lauf (Zwillinge), die Proben und
