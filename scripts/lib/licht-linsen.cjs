@@ -99,13 +99,12 @@ const TAFEL_BLICKE = [
 
 function albedoSicht(opts) {
     return (async () => {
-        opts = opts || {};
         const T = window.THREE;
         const sc = st.scene,
             rend = st.renderer;
         rend.setAnimationLoop(null);
-        const W = opts.w || 320,
-            H = opts.h || 200;
+        const W = opts.w,
+            H = opts.h;
         // Die Klasse ist die Täter-Klasse des Stamms (`_taeterKlasse` — dieselbe wie Draw-Zähler, Puffer-Zensus und
         // Flugschreiber). Keinen Schuss bekommen das Wasser (es spiegelt), der Himmel und der Mensch (Spieler, Peers).
         const klasse = (o) => {
@@ -119,9 +118,18 @@ function albedoSicht(opts) {
         if (opts.zeilen) {
             // DER TAKT DER TAFEL ist der Takt der Werkbank und sein Bild (`__werkTakt`; die Tafel misst nur in ihr): bis 31.10. schlief
             // ein eigener Zwilling je Takt 50 ms — an Genesis trugen die rund 680 Takte einer Tafel (die gesetzten Exemplare, das Auge
-            // der Stufen je Zeile und Uhr) 34 s Schlaf, nie das Werk; Bedingung und Zahl der Takte bleiben
+            // der Stufen je Zeile und Uhr) 34 s Schlaf, nie das Werk; Bedingung und Zahl der Takte bleiben.
+            // DER SATZ STEHT (ein Bau-Ereignis, nie eine Zahl von Takten): ein Bau-Bereich über BAU_SATZ_ECKEN_JE_TAKT tritt in Raten
+            // in seinen Satz (`_bauSatzRateNeu`) und zeichnet erst nach der letzten — offen steht er im EINEN Wort der Welt
+            // (`_weltOffen().bau`). Mit dem Takt der Werkbank (w4-stationen-schnell-a2, 007ec392) legt nur jeder zweite bis dritte Takt
+            // der Tafel den Satz (der Takt rendert nicht jedes Mal): die 20 gezählten Takte nach der Stufe trugen vom Haus L0 (drei
+            // Bereiche, 185k Ecken) nur den ersten — Dach und Gebälk fehlten im Schuss (Radeon, Genesis: Haus 0,2677 statt 0,1592,
+            // L1/L0 0,569; an 6dcad1b0 0,1592, an 91cf1ea3 kein Pixel). Jedes Warten der Tafel endet erst, wenn der Satz steht; steht
+            // er nach 600 Takten nicht, bricht die Tafel beim Namen (`__deckel`), nie mit einem halben Haus
             const ticke = async (n, fertig) => {
                 for (let i = 0; i < n && !fertig(); i++) await window.__werkTakt();
+                for (const weiter = window.__deckel("Bau-Satz", 600, false); r._weltOffen().bau && weiter(); )
+                    await window.__werkTakt();
             };
             for (const z of opts.zeilen) {
                 const ex = (z.welt && z.welt.exemplar) || {};
@@ -189,7 +197,12 @@ function albedoSicht(opts) {
                     if (c) {
                         await ticke(gesetzt ? 120 : 0, () => false);
                         window.__halten?.();
-                        pos = new T.Vector3(c.position.x, c.position.y, c.position.z);
+                        // DAS FELL IM BLICK DER TAFEL: die Schalen sind eine Stufe der Gestalt am Schirm (`_fellBildschirmGesetz`),
+                        // gesetzt in DEM Frame, in dem der Leib in den Blick kommt (`_leibSicht`, die EINE Stelle) — der Schuss tickt
+                        // nicht, und der Wolf außer Blick des Spielers trug seine Schalen aus (Radeon, Genesis: Fell 0,1846 ohne,
+                        // 0,1659 mit; das Labor zeigt sie: 0,1620). Das Auge der Tafel: 3,5 m schräg über dem Leib, wie ihre Blicke
+                        r._leibSicht(c, true, c.position.clone().addScalar(2));
+                        pos = c.position.clone();
                         kreatur = c;
                     }
                 } else if (ex.typ === "mensch") {
@@ -202,6 +215,7 @@ function albedoSicht(opts) {
                     gesetzt = true;
                     await ticke(20, () => false);
                     pos = g.position.clone();
+                    kreatur = g; // der Leib der Zeile (der Schuss zeichnet nur ihn, s. u.)
                 }
                 else if (ex.typ === "boden" && ex.wald) {
                     // DER WALD-BODEN AN SEINER STELLE (A5, Radeon): der Boden ist ein Feld, die Ratsche misst ihn an
@@ -261,7 +275,7 @@ function albedoSicht(opts) {
             // DIE UHR DER TAFEL (`uhr` 0..1, material.K3 Staffel 2): nach den Takten steht die Bühne zu ihr (ihr Wort `uhr`, wie
             // `__laubGegenlicht`; bis w4-himmel-uhr sprang der Uhr-Schreiber hinter der Bühne des Mittags) — eine Stufe, deren Ton an
             // einer Hand-Konstante hinge, bräche an der zweiten Uhr; Emission fällt in hell − dunkel heraus. Die Schüsse ticken nicht mehr.
-            if (opts.uhr != null) window.__buehne({ uhr: opts.uhr });
+            window.__buehne({ uhr: opts.uhr });
         }
         const karte = new T.Mesh(
             new T.PlaneGeometry(2, 2),
@@ -307,13 +321,8 @@ function albedoSicht(opts) {
         sc.traverse((o) => {
             if (o.isLight) lichtAlt.push([o, o.intensity, o.color.clone()]);
         });
-        const amb = st.ambientLight || lichtAlt.map((e) => e[0]).find((l) => l.isAmbientLight);
-        let ambEigen = null;
-        if (!amb) {
-            ambEigen = new T.AmbientLight(0xffffff, 0);
-            sc.add(ambEigen);
-        }
-        const A = amb || ambEigen;
+        // das EINE Umgebungslicht der Welt (dirigent-ankunft: `state.ambientLight`, je Boot) — ohne es bricht die Linse laut
+        const A = st.ambientLight;
         const envAlt = sc.environment;
         const kamAlt = {
             p: st.camera.position.clone(),
@@ -321,7 +330,6 @@ function albedoSicht(opts) {
             nf: [st.camera.near, st.camera.far],
             fov: st.camera.fov,
             aspect: st.camera.aspect,
-            layers: st.camera.layers.mask,
         };
         // der Schuss sieht die Schichten des Auges, nie den Wurf-Zwilling (material.K1: Grobstufe L1 über der feinen L0)
         const { rt, lies, bundles, ruhe, ohneLuft } = window.__linsenZiel(W, H);
@@ -498,6 +506,11 @@ function albedoSicht(opts) {
                         ex.kreatur.updateMatrixWorld(true);
                     }
                     let sel = meshes.filter((m) => visAlt.get(m) && passt(m));
+                    // DER LEIB DER ZEILE ALLEIN (Mensch, Tier): nur die Züge SEINES Leibs — Haut und Haar setzen je einen Menschen an
+                    // dieselbe Stelle (Spieler + (4, −4)), und die Haut-Zeile zog den Karamell-Menschen der Haar-Zeile mit: der Mahagoni-
+                    // Mensch trug nur Mahagoni (t:0.144,0.054,0.030), die Kette koerper-fahrt → koerper-leib → foundry reicht den Ton
+                    // richtig (Radeon, Genesis: Haut 0,2386 statt 0,0609, W/L 4,03)
+                    if (ex.kreatur) sel = sel.filter((m) => ex.kreatur.getObjectById(m.id));
                     if (ex.eintrag)
                         sel = sel
                             .map((m) => (m.isInstancedMesh ? m : satzAusschnitt(m, ex.eintrag, z.basis !== false)))
@@ -638,7 +651,6 @@ function albedoSicht(opts) {
                 l.intensity = i;
                 l.color.copy(c);
             }
-            if (ambEigen) sc.remove(ambEigen);
             luftZurueck();
             sc.environment = envAlt;
             sc.remove(karte);
@@ -647,11 +659,10 @@ function albedoSicht(opts) {
             cam.fov = kamAlt.fov;
             [cam.near, cam.far] = kamAlt.nf;
             cam.aspect = kamAlt.aspect;
-            cam.layers.mask = kamAlt.layers;
             cam.updateProjectionMatrix();
             cam.updateMatrixWorld(true);
             rt.dispose();
-            if (r._applyDayNightToScene) r._applyDayNightToScene();
+            r._applyDayNightToScene();
         }
         return ergebnisse;
     })();
