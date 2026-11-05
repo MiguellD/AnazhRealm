@@ -691,7 +691,6 @@ async function tempo(K) {
             st.camera.position.set(q.x - 6, hh(q.x - 6, q.z + 4) + 2.5, q.z + 4);
             const schuss = async (opt) => {
                 __bundlesNeu();
-                r._schattenAlleNeu();
                 return __ausgabeAufnahme(W, HO, 1, opt);
             };
             try {
