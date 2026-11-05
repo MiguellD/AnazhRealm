@@ -1,7 +1,7 @@
 {
  "sha": "f5db8d904ae0f50187c9b3e2e37de3fa38da73e0",
  "geraet": "radeon",
- "zeit": "2026-11-05T20:53:30.747Z",
+ "zeit": "2026-11-05T19:35:20.628Z",
  "host": "MiguellD",
  "je": {
   "material.K3#1": {
@@ -62,46 +62,68 @@
   },
   "leib.K3#2": {
    "gruen": false,
-   "zahl": "ego L 0.2771717/0.2180978/0.179019 · K 0.24, 0.22 /m · 2,5÷0,5 m 0.65 · third L 0.2747011/0.2193984/0.1840168 · K 0.22, 0.2 /m · 2,5÷0,5 m 0.67 · Leib Third 0,5 m Kontrast 0.11 · Mutante K 0.12 (erkannt) · Höhle 0.0043634 ÷ hinaus 0.1444148 = 0.03 · ROT: Höhle: Abfall 0.03 außerhalb [0.06; 0.25] (Himmel am Auge 0) · Exit 0",
+   "zahl": "ego L 0.1788523/0.1788355/0.1788186 · K 0, 0 /m · 2,5÷0,5 m 1 · third L 0.1789466/0.1789298/0.1789129 · K 0, 0 /m · 2,5÷0,5 m 1 · Leib Third 0,5 m Kontrast 0.01 · Mutante K 0 (UNERKANNT) · Höhle 0.0049469 ÷ hinaus 0.1510478 = 0.03 · ROT: ego 1.5 m: Abfall 0 /m außerhalb der REF [0.17; 0.57], ego 2.5 m: Abfall 0 /m außerhalb der REF [0.17; 0.57], third 1.5 m: Abfall 0 /m außerhalb der REF [0.17; 0.57], third 2.5 m: Abfall 0 /m außerhalb der REF [0.17; 0.57], Third 0,5 m: der eigene Leib hebt sich nur um 0.01 vom Wasser ab (Soll ≥ 0.05), die Mutante kd halbiert verschiebt den Abfall nicht (0 gegen 0 /m) — das Bild liest das Gesetz des Wassers nicht, Höhle: Abfall 0.03 außerhalb [0.06; 0.25] (Himmel am Auge 0) · Exit 0",
    "exit": 0,
-   "minuten": 0.43,
-   "grund": "ROT: ego L 0.2771717/0.2180978/0.179019 · K 0.24, 0.22 /m · 2,5÷0,5 m 0.65 · third L 0.2747011/0.2193984/0.1840168 · K 0.22, 0.2 /m · 2,5÷0,5 m 0.67 · Leib Third 0,5 m Kontrast 0.11 · Mutante K 0.12 (erkannt) · Höhle 0.0043634 ÷ hinaus 0.1444148 = 0.03 · ROT: Höhle: Abfall 0.03 außerhalb [0.06; 0.25] (Himmel am Auge 0) · Exit 0",
+   "minuten": 0.4,
+   "grund": "ROT: ego L 0.1788523/0.1788355/0.1788186 · K 0, 0 /m · 2,5÷0,5 m 1 · third L 0.1789466/0.1789298/0.1789129 · K 0, 0 /m · 2,5÷0,5 m 1 · Leib Third 0,5 m Kontrast 0.01 · Mutante K 0 (UNERKANNT) · Höhle 0.0049469 ÷ hinaus 0.1510478 = 0.03 · ROT: ego 1.5 m: Abfall 0 /m außerhalb der REF [0.17; 0.57], ego 2.5 m: Abfall 0 /m außerhalb der REF [0.17; 0.57], third 1.5 m: Abfall 0 /m außerhalb der REF [0.17; 0.57], third 2.5 m: Abfall 0 /m außerhalb der REF [0.17; 0.57], Third 0,5 m: der eigene Leib hebt sich nur um 0.01 vom Wasser ab (Soll ≥ 0.05), die Mutante kd halbiert verschiebt den Abfall nicht (0 gegen 0 /m) — das Bild liest das Gesetz des Wassers nicht, Höhle: Abfall 0.03 außerhalb [0.06; 0.25] (Himmel am Auge 0) · Exit 0",
    "gpu": "amd/rdna-3",
-   "s": 25.6,
-   "zeit": "2026-11-05T20:53:30.747Z",
-   "abdruck": "c8b0903ffd54",
+   "s": 23.8,
+   "zeit": "2026-11-05T19:35:20.628Z",
+   "abdruck": "becb8e259f5a",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-05T20:52:58.679Z",
+  "start": "2026-11-05T19:33:23.792Z",
   "port": 7804,
-  "warten": 0.13,
-  "bootS": 5.8,
-  "grundstellungS": [],
-  "proben": 1,
+  "warten": 0.12,
+  "bootS": 6.3,
+  "grundstellungS": [
+   3
+  ],
+  "proben": 2,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "leib.K3#2",
-    "s": 15.8,
-    "takte": 735,
+    "ort": "genesis",
+    "vor": "material.K3#1",
+    "s": 18,
+    "takte": 710,
     "chunks": 81,
     "nach": null
+   },
+   {
+    "ort": null,
+    "vor": "leib.K3#2",
+    "s": 13.7,
+    "takte": 816,
+    "chunks": 81,
+    "nach": "der Tür"
    }
   ],
-  "wegeTueren": [],
-  "ciBlicke": 2,
+  "wegeTueren": [
+   {
+    "vor": "leib.K3#2",
+    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
+    "s": 3
+   }
+  ],
+  "unerklaert": [
+   {
+    "probe": "material.K3#1",
+    "wie": "werke +6 (−0)"
+   }
+  ],
+  "ciBlicke": 3,
   "strom": {
    "datei": "strom.ndjson",
    "bilder": 0,
    "frameP95": null,
    "taktP95": null,
    "vramMax": null,
-   "seiten": 1,
+   "seiten": 2,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
@@ -113,11 +135,11 @@
      "ringMin": 0
     }
    ],
-   "zapfen": 48,
+   "zapfen": 131,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 49.9,
-  "minuten": 1.03
+  "fahrtS": 133.7,
+  "minuten": 2.42
  }
 }
