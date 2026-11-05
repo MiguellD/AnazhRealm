@@ -1957,3 +1957,4 @@
 2026-11-05 01:38:13 f833ae88-radeon START 2 Stationen
 2026-11-05 01:38:29 f833ae88-radeon gelaende.K2#2 ROT 0.0 · 1/2
 2026-11-05 01:38:33 f833ae88-radeon ankunft.K2#1 ROT 0.0 · 2/2
+2026-11-05 01:38:52 f833ae88-radeon ENDE 0 grün / 2 rot · 0.7 min
