@@ -82,8 +82,14 @@ const SCHWARM = [
 // ───────── DIE HERDE AM HANG (tiere.K1 Staffel 2): drei Funktionen, ihr Text geht in den Befehl (und in den Abdruck) ─────────
 // In der Seite der Werkbank (`werkbank eval`, r = Welt, T = THREE): o.phase "start" stellt die Bühne (Mittag, Sonne, Sommer), den
 // Frieden und das Ego, nimmt jedes Tier der Welt und setzt den Wurf scheuer Hirsche (`_kreaturWurf`, wie die Probe herde) an
-// den nächsten trockenen Hang 15–30° um den Spieler (das Gesetz über ±4 m; die Fall-Linie 50 m bergab bis 60 m bergauf trocken,
-// kein Werk in 70 m); der Spieler geht 60 m über ihr bergab mit 1,4 m/s im Kreatur-Takt der Probe herde (Stoß-Schritt,
+// den nächsten trockenen Hang 15–30° um die Mitte o.mitte (der Messort der Probe, die Sitzung stellt ihn vor dem Deckel; das Gesetz
+// über ±4 m; die Fall-Linie 50 m bergab bis 60 m bergauf trocken, kein Werk in 70 m), an dem der Wurf seine Glieder trägt: DAS
+// GEBURTS-PRÄDIKAT DES SPIELS (w12-proben-s) — jedes Glied nach dem ersten steht nur auf freiem Grund (`_kreaturGrundFrei`: Wildnis,
+// kein Grundriss, keine Hülle eines Dorfs) und, liegt der Wurf-Ort im Lebensraum der Gattung, in ihm (`_kreaturWurf`); die Mitte
+// und zwei Kreise je acht Orte (8 und 16 m, die Spirale der Geworfenen) tragen beides, die Fall-Linie den freien Grund. Bis hier
+// wählte die Szene ohne es: Radeon 8ef49bef der Hang -66,7/115,4 in der Hülle des Start-Dorfs, der Wurf trug 1 Glied von 3–7,
+// die Serie fiel an glieder ≥ 3 ohne den Grund. Trägt der Wurf weniger als 3 Glieder, steht das ROT beim Namen (kein Schuss);
+// der Spieler geht 60 m über ihr bergab mit 1,4 m/s im Kreatur-Takt der Probe herde (Stoß-Schritt,
 // Leib-Kontakte, `updateCreatures`), bis ein Glied flieht, und bleibt stehen; die Alarm-Kette läuft, bis jedes Glied flieht,
 // dann eine halbe Sekunde. Der Standort des Blicks steht 43 m quer zur Fall-Linie auf ihrer tieferen Seite (der Hang zeigt die
 // Herde im Profil; von oben sah das Ego aus 40 m nur ihr Heck, 4–15 px breit zwischen den Stämmen). "weiter" schreitet o.takte
@@ -144,13 +150,20 @@ function herdeSzene(r, T, o) {
     r.setCameraMode("first");
     for (const c of s.creatures.slice()) r.removeCreature(c);
     const trocken = (x, z) => r._landAt(x, z) && !r._nassAt(x, z);
+    // das Geburts-Prädikat des Wurfs (`_kreaturWurf`, kreatur-leben): der freie Grund und der Lebensraum der Gattung des Wurfs
+    const gattung = A.TETRAPODA_SOUL_MAP.wesen;
+    const LG = A._lebensraumGesetz();
+    const lebt = (x, z) => LG.lebensraum(gattung, r._bodenKlasseAt(x, z), LG.L) > 0;
+    const traegt = (x, z, imRaum) => trocken(x, z) && r._kreaturGrundFrei(x, z) && (!imRaum || lebt(x, z));
+    const wurfOrte = (x, z) => [[x, z], ...[8, 16].flatMap((R) => [...Array(8)].map((_, q) => [x + Math.cos((q * Math.PI) / 4) * R, z + Math.sin((q * Math.PI) / 4) * R]))];
+    const M = o.mitte ? { x: o.mitte[0], z: o.mitte[1] } : { x: pm.x, z: pm.z };
     let hang = null;
     for (let ring = 0; ring < 50 && !hang; ring++)
         for (let q = 0, n = Math.max(1, ring * 6); q < n && !hang; q++) {
             const a = (q / n) * 2 * Math.PI;
-            const x = pm.x + Math.cos(a) * ring * 12;
-            const z = pm.z + Math.sin(a) * ring * 12;
-            if (!trocken(x, z)) continue;
+            const x = M.x + Math.cos(a) * ring * 12;
+            const z = M.z + Math.sin(a) * ring * 12;
+            if (!trocken(x, z) || !r._kreaturGrundFrei(x, z)) continue;
             const gx = (H(x + 4, z) - H(x - 4, z)) / 8;
             const gz = (H(x, z + 4) - H(x, z - 4)) / 8;
             const t = Math.hypot(gx, gz);
@@ -158,11 +171,12 @@ function herdeSzene(r, T, o) {
             if (!(grad >= 15 && grad <= 30)) continue;
             const [ux, uz] = [gx / t, gz / t];
             let frei = true;
-            for (let d = -50; d <= 60 && frei; d += 5) frei = trocken(x + ux * d, z + uz * d);
-            if (frei && !(s.architectures || []).some((e) => e && e.position && Math.hypot(e.position.x - x, e.position.z - z) < 70))
-                hang = { x, z, ux, uz, neigung: +grad.toFixed(1) };
+            for (let d = -50; d <= 60 && frei; d += 5) frei = trocken(x + ux * d, z + uz * d) && r._kreaturGrundFrei(x + ux * d, z + uz * d);
+            if (!frei || (s.architectures || []).some((e) => e && e.position && Math.hypot(e.position.x - x, e.position.z - z) < 70)) continue;
+            const imRaum = lebt(x, z);
+            if (wurfOrte(x, z).every(([px, pz]) => traegt(px, pz, imRaum))) hang = { x, z, ux, uz, neigung: +grad.toFixed(1), lebensraum: imRaum };
         }
-    if (!hang) return { fehler: "kein trockener Hang 15–30° in 600 m um den Spieler" };
+    if (!hang) return { fehler: "kein trockener Hang 15–30° in 600 m um " + M.x.toFixed(0) + "/" + M.z.toFixed(0) + ", an dem der Wurf trägt (freier Grund, Lebensraum " + gattung + ")" };
     // der Wurf wie in der Probe herde: der Spieler 140 m fort, sein Blick von ihm weg (der Wurf wirft nur fern und außer Blick)
     pm.set(hang.x + 140, H(hang.x + 140, hang.z) + 0.5, hang.z);
     s.camera.position.set(pm.x, pm.y + 1.6, pm.z);
@@ -173,6 +187,9 @@ function herdeSzene(r, T, o) {
     Object.assign(s, { maxCreatures: 64, creatureAnimationTime: 100 });
     r._faunaStroeme = null;
     Z.glieder = r._kreaturWurf({ x: hang.x, z: hang.z }, "wesen", "happy", r._faunaRng("verband"), 7);
+    const lage = { x: +hang.x.toFixed(1), z: +hang.z.toFixed(1), neigung: hang.neigung, lebensraum: hang.lebensraum };
+    if (Z.glieder.length < 3)
+        return { fehler: "der Wurf trägt " + Z.glieder.length + " Glied(er) am Hang " + lage.neigung + "° " + lage.x + "/" + lage.z + " — die Serie verlangt ≥ 3", hang: lage, wurf: Z.glieder.length };
     // kein Tier der Welt wächst in das Bild nach
     s.maxCreatures = s.creatures.length;
     // DER SCHUSS HÄLT DIE HERDE (wie `__tiereHalten`): die Aufnahme wartet im Takt der Seite, bis die Welt steht — dort steht
@@ -198,7 +215,7 @@ function herdeSzene(r, T, o) {
     const m = mitte(lebend());
     const seiten = [1, -1].map((s) => ({ x: m.x - s * hang.uz * 43, z: m.z + s * hang.ux * 43 }));
     Z.auge = seiten.sort((a, b) => H(a.x, a.z) - H(b.x, b.z))[0];
-    return Object.assign(pose(), { hang: { x: +hang.x.toFixed(1), z: +hang.z.toFixed(1), neigung: hang.neigung }, wurf: Z.glieder.length, fluchtBei: +d.toFixed(1) });
+    return Object.assign(pose(), { hang: lage, wurf: Z.glieder.length, fluchtBei: +d.toFixed(1) });
 }
 // DER PULK IM BILD (in der Seite, nach `bild --klasse ^tier`): die Teilung des Schusses (`__letzteTeilung`, werkbank) gegen die
 // Glieder der Herde. Je Glied die Tier-Pixel im Kreis seines Leibs am Schirm (Mitte über der Lage um die halbe Höhe seiner Box,
@@ -294,6 +311,7 @@ async function herdeHang() {
     const W = Number(port) + 20000;
     const B = aus.replace(/\.json$/, "");
     const erg = { serie: [] };
+    const t0 = Date.now();
     const ruf = async (src, o) => {
         const a = await werkbankRuf(W, "/eval", { code: "return (" + src + ")(r, T, " + JSON.stringify(o || {}) + ");" });
         if (!a || a.ergebnis === undefined) throw new Error("eval: " + JSON.stringify(a).slice(0, 300));
@@ -313,7 +331,13 @@ async function herdeHang() {
         // DER SCHIRM DER SITZUNG (w4-stationen-schnell-b): jeder Schuss `bild --klasse` stellt die Leinwand der Soll-Tafel (1920×1080) und
         // danach das Fenster zurück — der Schirm 1280×720 davor kostete je Schuss zwei Fenster-Wechsel und wirkte nirgends (die Szene
         // tickt ohne Bild, der Pulk liest die Teilung des Schusses, 16:9 bleibt das Frustum des Wurfs)
-        erg.szene = await ruf(szene, { phase: "start" });
+        // DER ORT VOR DEM DECKEL (w12-proben-s; GTX 8ef49bef riss 45,3 s): die Mitte der Hang-Suche ist der Messort der Mess-Wiese aus
+        // der EINEN Quelle der Orte — die Sitzung stellt den Spieler vor dem Deckel dorthin (punkte.cjs `probeOrt`), der Ring steht,
+        // wenn die Szene sucht; bis hier suchte sie um den Ort, an dem die Probe davor den Spieler ließ (der Ring dort kalt oder warm)
+        const M = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+        erg.zeiten = { herdeS: +((Date.now() - t0) / 1000).toFixed(1) };
+        erg.szene = await ruf(szene, { phase: "start", mitte: [M.x, M.z] });
+        erg.zeiten.szeneS = +((Date.now() - t0) / 1000).toFixed(1);
         let auge = null;
         for (let i = 0; i < 3 && !erg.szene.fehler; i++) {
             const q = i ? await ruf(szene, { phase: "weiter", takte: 30 }) : erg.szene;
@@ -338,6 +362,7 @@ async function herdeHang() {
                 klassen: kl,
                 pulk: kl ? await ruf(pulk, { kamera: kam }) : null,
                 datei,
+                bisS: +((Date.now() - t0) / 1000).toFixed(1),
             });
         }
     } catch (e) {
@@ -348,8 +373,8 @@ async function herdeHang() {
         tor.stop();
     }
     fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
-    const kurz = erg.serie.map((x) => [x.abstand, x.fliehen + "/" + x.glieder, x.pulk, x.fehler]);
-    console.log("HERDE AM HANG " + JSON.stringify({ szene: erg.szene, fehler: erg.fehler || null, serie: kurz }));
+    const kurz = erg.serie.map((x) => [x.abstand, x.fliehen + "/" + x.glieder, x.pulk, x.fehler, x.bisS]);
+    console.log("HERDE AM HANG " + JSON.stringify({ szene: erg.szene, fehler: erg.fehler || null, serie: kurz, zeiten: erg.zeiten || null }));
 }
 
 // der Text einer Funktion ohne Einzug und Kommentar-Zeilen (ein Argument des Befehls, s. herdeHang)
@@ -3480,7 +3505,11 @@ const stationen = [
         // DER DECKEL (w4-proben-tempo2): GTX takt27b 94c079cb riss 33 s nach der Probe herde (15 s), Radeon 3ef20f9f 34,2 s; die drei
         // Schüsse jetzt mit `nurPixel` und dem PNG ohne Rückruf je Byte — Radeon 7521ca51 unter fremder Last riss 43 s nach der herde
         // (16 s). 41 s, über dem Gesetz der Zahl, bis die Schüsse der Herde fallen
-        probe: { sek: 41, befehl: [
+        // DIE AUSNAHME (w12-proben-s): der Hang, an dem der Wurf trägt (das Geburts-Prädikat, `herdeSzene`), liegt an keinem Messort im
+        // warmen Ring — die Suche in der Welt b62542c9: Wiese 312 m (6 757 von 7 351 Orten ohne 15–30°), Genesis 252 m, Dorf 264 m; die
+        // drei Schüsse stehen dort im kalten Ring (Radeon b62542c9 je Schuss 16–21 s, riss 45 s vor dem dritten). Der Deckel je Karte in
+        // deckel.json
+        probe: { sek: 41, ausnahme: "die Herde am Hang 300 m von der Mess-Wiese (der nächste, an dem der Wurf trägt) mit drei Schüssen im kalten Ring", befehl: [
             "node",
             "-e",
             "(" + knapp(herdeHang) + ")()",
