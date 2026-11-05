@@ -1879,6 +1879,224 @@ const LEIB_K3_PROBEN = (() => {
     ];
 })();
 
+// leib.K3 #2 (w12-unterwasser): DAS UNTERWASSER-BILD AUS DER EINEN WASSER-WAHRHEIT UND DIE HÖHLE MIT LICHT-ABFALL — EINE Probe der
+// Sitzung an zwei Orten, Radeon und GTX. (1) DER SEE nächst der Mess-Wiese aus der Welt (`__wasserOrte` wie `leibK3Lauf`, heute
+// 1816/−6168, 3,4 m tief), die Welt dort eingeschwungen (`/umstellen`); je Sicht (Ego, Third) stellt der echte Takt (`_gameLoopTick`,
+// der Leib gehalten) die Kamera der Sicht zum Leib, dann stehen Leib und Kamera gemeinsam 0,5 · 1,5 · 2,5 m unter dem örtlichen Spiegel
+// (`_koerperWasser` an der Kamera; ein Leib am Grund des Sees reicht mit dem Auge nur bis ~2 m), das Medium rechnet der Chokepoint der
+// Kamera (`_applyDayNightToScene`), das Bild der Ausgabe-Pfad (Mittag der Bühne). Gemessen wird die SZENE: der Median der Luma des
+// Ausgabe-Bilds zurück durch sRGB, die Tonkurve (Khronos PBR Neutral, unter ihrer Schulter umkehrbar) und die Belichtung. Die REF ist
+// Beer-Lambert der EINEN Absorption (WASSER_GESETZ.wK, in der Seite gelesen): L(z) ∝ Σ Y·exp(−wK·z) (Rec.-709). Verglichen wird der
+// ABFALL K(z) = −ln(L(z) ÷ L(0,5 m)) ÷ (z − 0,5 m) in 1,5 und 2,5 m gegen den der REF an denselben Tiefen, im Band der Soll-Tafel
+// (spec/abnahme/soll-tafel.json, Klasse wasser, `sichtAbfall`, gelesen im Spiel-Baum am SHA) — der Abfall, nicht das Verhältnis: in
+// 2,5 m trägt Grün 3–4 Stufen des 8-bit-Bilds, eine Stufe ist ±15 % von L, ±4 % von K. Im selben Lauf die MUTANTE „wK halbiert“ (das
+// Gesetz des Wassers in der Seite, Ego 0,5 und 2,5 m): ihr Abfall muss unter ¾ des gemessenen fallen, sonst liest das Bild das Gesetz
+// nicht (ROT). (2) DIE HÖHLE am Ort von gate:hoehlen-sicht (−1041/−738, die Welt dort eingeschwungen): im Umkreis ±40 m die höchste
+// Luft unter Fels (das Feld `_fieldDensityAt` auf dem Gitter der Stufe 0), das Auge in ihrer Mitte, der Blick in ihren längsten freien
+// Weg; HINAUS das Auge 1,7 m über der Oberfläche derselben Spalte unter freiem Himmel, derselbe Blick. Der Licht-Abfall L(Höhle) ÷
+// L(hinaus) bei derselben Belichtung liegt mindestens zwei Blenden unter dem Himmel — das Auge gleicht wie die Kamera nur 1 − s des
+// fehlenden Lichts aus, eine Höhle ohne Himmel fällt auf ihre Nacht (BELICHTUNG.stufen[−1], 2,17 Stufen), Fels und Weite tragen dazu —
+// und höchstens zwei Blenden unter der Nacht der Kamera (das Licht des Auges hält sie lesbar, K02a). Vorher (main bf55b24a, Radeon 05.11.,
+// diese Probe): die Farbe des Mediums trug die festen ersten 0,3 m, β eine Sichtweite von 30 m — Ego L 0,172/0,184/0,214 in 0,5/1,5/
+// 2,5 m (2,5 ÷ 0,5 m = 1,24, Third 1,26: ein blauer Filter vor klarer Sicht auf Berge, Himmel und den sonnigen Grund), die Mutante
+// unerkannt; die Höhle 0,075 gegen hinaus 0,157 (0,48: das Auge glich das Fehlende ganz aus, die 18-%-Karte im Mittags-Grau).
+// Nachher (w12-unterwasser 7e9c22fa, Radeon, 27,7 s): Ego L 0,0987/0,0149/0,00283, K 1,89 und 1,78 /m gegen die REF 1,88 und 1,80
+// (1,00 · 0,99), Third gleich, 2,5 ÷ 0,5 m 0,029 (REF 0,027), die Mutante K 0,99 (erkannt); die Höhle 0,020 ÷ 0,157 = 0,13.
+async function unterwasserSeite(o) {
+    const s = r.state, cam = s.camera, pm = s.playerMesh, A = r.constructor, ende = performance.now() + o.fristMs;
+    if (A.BELICHTUNG.kurve !== "NeutralToneMapping") return { fehler: "die Tonkurve ist " + A.BELICHTUNG.kurve + ", die Umkehr kennt nur Khronos PBR Neutral" };
+    if (typeof window.__ausgabeAufnahme !== "function") return { fehler: "der Ausgabe-Pfad fehlt in der Seite" };
+    window.__buehne();
+    s.renderer.setAnimationLoop(null);
+    const [W, H] = [o.W, o.H], aus = { bilder: {} }, R = (v, n = 5) => +(+v).toFixed(n);
+    const lin = Array.from({ length: 256 }, (_, i) => (i <= 10 ? i / 3294.6 : ((i / 255 + 0.055) / 1.055) ** 2.4));
+    const schuss = async (name) => {
+        r._applyDayNightToScene();
+        const u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8, k = s.renderer.toneMappingExposure, l = [];
+        for (let i = 0; i < W * H * 4; i += 4) {
+            const c = [lin[u8[i]], lin[u8[i + 1]], lin[u8[i + 2]]];
+            if (Math.max(c[0], c[1], c[2]) >= 0.76) continue;
+            const y = Math.min(c[0], c[1], c[2]), x = y < 0.04 ? Math.sqrt(y / 6.25) : y + 0.04;
+            l.push((0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] + x - y) / k);
+        }
+        if (o.bilder) aus.bilder[name] = window.__png(u8, W, H);
+        l.sort((a, b) => a - b);
+        return { L: l.length > (W * H) / 2 ? R(l[l.length >> 1], 7) : null, k: R(k, 4) };
+    };
+    if (o.teil === "wasser") {
+        const WG = AnazhRealm.Gesetz("terrain:WASSER_GESETZ"), wK = (aus.wK = WG.wK.slice());
+        const sp0 = r._koerperWasser(o.see.x, o.see.z, -Infinity);
+        const reihe = async (sicht, tiefen, name) => {
+            r.setCameraMode(sicht);
+            let t = performance.now();
+            for (let i = 0; i < 40; i++) {
+                pm.position.set(o.see.x, sp0 - 2.2, o.see.z);
+                if (s._fixedSimPos) s._fixedSimPos.copy(pm.position);
+                [s.yaw, s.pitch, s.keys] = [-Math.PI / 2, 0, {}];
+                r._gameLoopTick((t += 16.7));
+            }
+            const d = cam.position.clone().sub(pm.position), q = cam.quaternion.clone(), je = [];
+            for (const z of tiefen) {
+                if (performance.now() > ende) return ((aus.frist = name + " " + z + " m"), je);
+                const sp = r._koerperWasser(o.see.x + d.x, o.see.z + d.z, -Infinity);
+                pm.position.set(o.see.x, sp - z - d.y, o.see.z);
+                pm.updateMatrixWorld(true);
+                cam.position.copy(pm.position).add(d);
+                cam.quaternion.copy(q);
+                cam.updateMatrixWorld(true);
+                const p = cam.position, b = await schuss(name + "-" + z);
+                je.push({ z, tiefe: R(r._koerperWasser(p.x, p.z, p.y) - p.y, 3), unter: !!s.kameraUnterWasser, fest: r._fieldDensityAt(p.x, p.y, p.z) > 0, L: b.L, k: b.k });
+            }
+            return je;
+        };
+        aus.ego = await reihe("first", o.tiefen, "ego");
+        aus.third = await reihe("third", o.tiefen, "third");
+        const memo = AnazhRealm._gesetzStromMemo, key = "terrain:WASSER_GESETZ";
+        memo.set(key, Object.assign({}, WG, { wK: wK.map((v) => v / 2) }));
+        try {
+            aus.mutante = await reihe("first", [o.tiefen[0], o.tiefen[o.tiefen.length - 1]], "mutante");
+        } finally {
+            memo.set(key, WG);
+            r.setCameraMode("first");
+            r._applyDayNightToScene();
+        }
+        return aus;
+    }
+    const [x0, z0] = o.ort, G0 = r._voxelChunkConfig(0), st = G0.step, gy0 = (s.terrainBaseHeight || 0) - G0.floorDrop;
+    const gitter = (v) => Math.round(v / st) * st, fest = (x, y, z) => r._fieldDensityAt(x, y, z) > 0;
+    let raum = null;
+    for (let dz = -40; dz <= 40; dz += 2 * st)
+        for (let dx = -40; dx <= 40; dx += 2 * st) {
+            const x = gitter(x0 + dx), z = gitter(z0 + dz), S = r._voxelSurfaceY(x, z);
+            if (S == null) continue;
+            for (let j = Math.floor((S - 2 - gy0) / st), fels = false; gy0 + j * st > S - 50; j--) {
+                const y = gy0 + j * st;
+                if (fest(x, y, z)) fels = true;
+                else if (fels) {
+                    let luft = 0;
+                    while (luft < 20 && !fest(x, y - luft - st, z)) luft += st;
+                    if (!raum || luft > raum.luft) raum = { x, z, y, luft, S };
+                    break;
+                }
+            }
+        }
+    if (!raum) return { fehler: "keine Höhlen-Luft unter Fels um " + x0 + "/" + z0 };
+    const auge = [raum.x, raum.y - raum.luft / 2, raum.z];
+    let weg = null;
+    for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * Math.PI * 2;
+        let d = 0;
+        while (d < 40 && !fest(auge[0] + Math.cos(a) * d, auge[1], auge[2] + Math.sin(a) * d)) d += 0.5;
+        if (!weg || d > weg.d) weg = { a, d };
+    }
+    const blick = async (name, p) => {
+        cam.position.set(p[0], p[1], p[2]);
+        cam.lookAt(p[0] + Math.cos(weg.a) * 10, p[1] - 1.5, p[2] + Math.sin(weg.a) * 10);
+        cam.updateMatrixWorld(true);
+        const b = await schuss(name);
+        return { auge: p.map((v) => R(v, 1)), h: R(s.himmelAmAuge, 3), L: b.L, k: b.k };
+    };
+    aus.hoehle = await blick("hoehle", auge);
+    aus.hinaus = await blick("hinaus", [raum.x, raum.S + 1.7, raum.z]);
+    aus.weg = R(weg.d, 1);
+    aus.nacht = A.BELICHTUNG.stufen[A.BELICHTUNG.stufen.length - 1][1];
+    return aus;
+}
+async function probeUnterwasser(H) {
+    const { fs, path } = H;
+    const tafel = JSON.parse(fs.readFileSync("spec/abnahme/soll-tafel.json", "utf8"));
+    const e = (((tafel.klassen.find((k) => k.id === "wasser") || {}).soll || {}).eigenschaften || []).find((x) => x.groesse === "sichtAbfall");
+    const j = (H.teil = { band: e ? e.band : null });
+    await H.wb("/fenster", { w: 640, h: 360 }, 30000);
+    const da = await H.evalWelt("return [typeof window.__ausgabeAufnahme, typeof window.__wasserOrte];", 30000);
+    if (da[0] !== "function") await H.evalWelt(require(path.resolve("scripts/lib/ausgabe-aufnahme.cjs")).AUSGABE_INSTALL + "\nreturn 1;", 30000);
+    if (da[1] !== "function") await H.evalWelt(require(path.resolve("scripts/lib/wasser-linse.cjs")).WASSER_INSTALL + "\nreturn 1;", 30000);
+    const frist = () => Math.max(5, H.rest() - 1) * 1000;
+    const see = (j.see = await H.evalWelt("const o = await window.__wasserOrte({}); return o.see && { x: o.see.x, z: o.see.z, level: o.see.level, tiefe: o.see.tiefe };", frist()));
+    if (!see) throw new Error("kein See nächst der Mess-Wiese (__wasserOrte)");
+    const um = async (x, z) => {
+        const u = await H.wb("/umstellen", { x, z }, frist());
+        if (!u || u.fehler) throw new Error("umstellen " + x + "/" + z + ": " + JSON.stringify(u).slice(0, 200));
+        H.zeile("umgestellt " + x + "/" + z + " in " + u.ms + " ms");
+    };
+    const seite = (o) => H.evalWelt("return await (" + H.seite.UNTER + ")(" + JSON.stringify(Object.assign({ W: 480, H: 270, bilder: true, fristMs: Math.max(1, H.rest() - 3) * 1000 }, o)) + ");", frist());
+    await um(see.x, see.z);
+    j.wasser = await seite({ teil: "wasser", see, tiefen: [0.5, 1.5, 2.5] });
+    await um(-1041, -738);
+    j.hoehle = await seite({ teil: "hoehle", ort: [-1041, -738] });
+    for (const t of [j.wasser, j.hoehle])
+        for (const [n, url] of Object.entries((t && t.bilder) || {})) fs.writeFileSync(H.AUS.replace(/\.json$/, "") + "-" + n + ".png", Buffer.from(url.split(",")[1], "base64"));
+    for (const t of [j.wasser, j.hoehle]) if (t) delete t.bilder;
+    if (j.wasser && j.wasser.frist) H.fristRiss("das Wasser bis " + j.wasser.frist);
+    console.log("LEIB_K3_BILD " + JSON.stringify(j));
+    return j;
+}
+const UNTERWASSER_PROBE = probeBefehl(probeUnterwasser, 45, { UNTER: unterwasserSeite });
+// die Mutante „wK halbiert“ verschiebt den Abfall unter ¾ des gemessenen (Soll ½); die Höhle mindestens eine Blende unter dem Himmel
+const UNTERWASSER_MUTANTE = 0.75;
+const HOEHLE_BLENDEN = 2;
+// das Urteil über die Zeile `LEIB_K3_BILD {…}`: je Sicht der Abfall in 1,5 und 2,5 m gegen die REF (Beer-Lambert der Absorption, die
+// die Seite las) an den gemessenen Tiefen, im Band der Soll-Tafel; die Mutante; die Höhle zwei Blenden um ihre Nacht
+function unterwasserUrteil(lauf) {
+    const t = String(lauf.stdout || "");
+    const j = jsonZeile(t, /^LEIB_K3_BILD \{/);
+    const fehler = (/^@@ PROBE-FEHLER (.*)$/m.exec(t) || [])[1];
+    if (!j) return { gruen: false, zahl: "keine Zeile LEIB_K3_BILD" + (fehler ? " — " + fehler.slice(0, 200) : "") + " (Exit " + lauf.exit + ")" };
+    const rot = [], w = j.wasser || {}, h = j.hoehle || {}, f2 = (x) => (Number.isFinite(x) ? +x.toFixed(2) : x);
+    const band = Array.isArray(j.band) && j.band.length === 2 ? j.band : [NaN, NaN];
+    if (!(band[0] > 0)) rot.push("keine REF: die Soll-Tafel trägt in der Klasse wasser kein Band sichtAbfall");
+    const wK = Array.isArray(w.wK) && w.wK.length === 3 ? w.wK : null;
+    const ref = (z) => 0.2126 * Math.exp(-wK[0] * z) + 0.7152 * Math.exp(-wK[1] * z) + 0.0722 * Math.exp(-wK[2] * z);
+    const K = (a, b, za, zb) => (a > 0 && b > 0 && zb > za ? Math.log(a / b) / (zb - za) : null);
+    const zeile = (n, soll) => {
+        const r = w[n];
+        if (!Array.isArray(r) || r.length !== soll.length || !wK) {
+            rot.push(n + ": keine Reihe" + (w.fehler ? " — " + w.fehler : ""));
+            return n + " —";
+        }
+        for (const x of r) if (!x.unter || x.fest || !(Math.abs(x.tiefe - x.z) <= 0.1)) rot.push(n + " " + x.z + " m: die Kamera steht nicht im Wasser (Tiefe " + x.tiefe + ", fest " + x.fest + ")");
+        const q = r.slice(1).map((x) => [K(r[0].L, x.L, r[0].tiefe, x.tiefe), K(ref(r[0].tiefe), ref(x.tiefe), r[0].tiefe, x.tiefe)]);
+        return { r, q };
+    };
+    const teile = [];
+    for (const n of ["ego", "third"]) {
+        const z = zeile(n, [0.5, 1.5, 2.5]);
+        if (typeof z === "string") { teile.push(z); continue; }
+        const qs = z.q.map(([ist, soll]) => (ist === null ? null : ist / soll));
+        z.r.slice(1).forEach((x, i) => { if (!(qs[i] >= band[0] && qs[i] <= band[1])) rot.push(n + " " + x.z + " m: Abfall " + f2(z.q[i][0]) + " gegen REF " + f2(z.q[i][1]) + " /m (" + f2(qs[i]) + ")"); });
+        teile.push(n + " L " + z.r.map((x) => x.L).join("/") + " · K " + z.q.map(([a, b]) => f2(a) + "÷" + f2(b)).join(", ") + " · 2,5÷0,5 m " + f2(z.r[2].L / z.r[0].L));
+    }
+    const eg = Array.isArray(w.ego) && w.ego.length === 3 ? K(w.ego[0].L, w.ego[2].L, w.ego[0].tiefe, w.ego[2].tiefe) : null;
+    const mu = Array.isArray(w.mutante) && w.mutante.length === 2 ? K(w.mutante[0].L, w.mutante[1].L, w.mutante[0].tiefe, w.mutante[1].tiefe) : null;
+    const sieht = eg > 0 && mu !== null && mu / eg <= UNTERWASSER_MUTANTE;
+    if (!sieht) rot.push("die Mutante wK halbiert verschiebt den Abfall nicht (" + f2(mu) + " gegen " + f2(eg) + " /m) — das Bild liest das Gesetz des Wassers nicht");
+    teile.push("Mutante K " + f2(mu) + " (" + (sieht ? "erkannt" : "UNERKANNT") + ")");
+    const a = h.hoehle && h.hinaus && h.hinaus.L > 0 ? h.hoehle.L / h.hinaus.L : null, nacht = Number.isFinite(h.nacht) ? 2 ** (h.nacht - HOEHLE_BLENDEN) : null;
+    if (!(a !== null && nacht !== null && a >= nacht && a <= 2 ** -HOEHLE_BLENDEN && h.hoehle.h < 1))
+        rot.push("Höhle: Abfall " + f2(a) + " außerhalb [" + f2(nacht) + "; " + 2 ** -HOEHLE_BLENDEN + "] (Himmel am Auge " + (h.hoehle && h.hoehle.h) + ")" + (h.fehler ? " — " + h.fehler : ""));
+    teile.push("Höhle " + (h.hoehle ? h.hoehle.L : "—") + " ÷ hinaus " + (h.hinaus ? h.hinaus.L : "—") + " = " + f2(a));
+    return { gruen: !rot.length && lauf.exit === 0, zahl: teile.join(" · ") + (rot.length ? " · ROT: " + rot.join(", ") : "") + " · Exit " + lauf.exit };
+}
+const UNTERWASSER_PROBEN = (() => {
+    const wK = [6.5, 2, 1.2], Y = (z) => 0.2126 * Math.exp(-wK[0] * z) + 0.7152 * Math.exp(-wK[1] * z) + 0.0722 * Math.exp(-wK[2] * z);
+    const reihe = (f = (z) => 0.317 * Y(z), tiefen = [0.5, 1.5, 2.5]) => tiefen.map((z) => ({ z, tiefe: z, unter: true, fest: false, L: +f(z).toFixed(7), k: 0.512 }));
+    const wasser = (o = {}) => Object.assign({ wK, ego: reihe(), third: reihe(), mutante: reihe((z) => 0.317 * Y(z / 2), [0.5, 2.5]) }, o);
+    const hoehle = (o = {}) => Object.assign({ hoehle: { auge: [-1020.6, 91.8, -720], h: 0, L: 0.017, k: 0.51 }, hinaus: { auge: [-1020.6, 123.8, -720], h: 1, L: 0.157, k: 0.51 }, weg: 15.5, nacht: -2.17 }, o);
+    const z = (j) => "@@ 31.2 s · umgestellt -1041/-738 in 10355 ms\nLEIB_K3_BILD " + JSON.stringify(Object.assign({ band: [0.9, 1.1], see: { x: 1816, z: -6168, level: 0.93, tiefe: 3.4 }, wasser: wasser(), hoehle: hoehle() }, j));
+    const flach = reihe((z) => 0.062 + 0.004 * z);
+    return [
+        { name: "Abfall nach Beer-Lambert in Ego und Third, die Mutante erkannt, die Höhle drei Blenden dunkler", stdout: z({}), gruen: true },
+        { name: "vorher: ein blauer Filter, in jeder Tiefe dasselbe Bild", stdout: z({ wasser: wasser({ ego: flach, third: flach, mutante: reihe((z) => 0.062 + 0.004 * z, [0.5, 2.5]) }) }), gruen: false },
+        { name: "die Mutante wK halbiert ändert das Bild nicht (blind)", stdout: z({ wasser: wasser({ mutante: reihe(undefined, [0.5, 2.5]) }) }), gruen: false },
+        { name: "Third: der Grund im vollen Mittag hebt 2,5 m um 50 %", stdout: z({ wasser: wasser({ third: reihe((z) => 0.317 * Y(z) * (z > 2 ? 1.5 : 1)) }) }), gruen: false },
+        { name: "die Kamera steckt im Grund", stdout: z({ wasser: wasser({ ego: reihe().map((x, i) => (i === 2 ? Object.assign(x, { fest: true }) : x)) }) }), gruen: false },
+        { name: "vorher: das Auge gleicht das Fehlende ganz aus (eine Blende)", stdout: z({ hoehle: hoehle({ hoehle: { auge: [-1020.6, 91.8, -720], h: 0, L: 0.075, k: 0.51 } }) }), gruen: false },
+        { name: "die Höhle schwarz (kein Licht des Auges)", stdout: z({ hoehle: hoehle({ hoehle: { auge: [-1020.6, 91.8, -720], h: 0, L: 0.006, k: 0.51 } }) }), gruen: false },
+        { name: "die Soll-Tafel trägt keine REF", stdout: z({ band: null }), gruen: false },
+        { name: "die Probe warf vor der Zeile", stdout: "@@ PROBE-FEHLER Error: kein See nächst der Mess-Wiese (__wasserOrte)", gruen: false },
+    ];
+})();
+
 // ultiversum.K1 #1 (w8-ultiversum-k1): ZWEI PER TOR ERREICHBARE WELTEN MIT VERSCHIEDENEN KONSTANTEN, JE KONSTANTE EIN LESER. Null-Renderer,
 // EINE Seite, der echte Weg: A ist die Welt der Seite (das Gesetz der Erde, `worldMeta.gesetz`); der Spieler holt ein Tor in die Ferne
 // (`obtainPortalForWorld("ferne")` → `portal_ferne`, portalMeta.gesetz), setzt es und geht hindurch (`enterPortal` → `_weltTorBetreten`:
@@ -3380,7 +3598,7 @@ const stationen = [
     // ───────── leib.K3 — Ufer → Schwimmen → Tauchen ohne Sprung (w4-stationen-b-koord) ─────────
     // Die Probe `leibK3Lauf` (oben): Lage und Kamera je Bild im echten Takt am See nächst der Mess-Wiese, Ego und Third, die Mutante
     // im selben Lauf. Headless: Lage und Kamera sind Mechanik (die Staffel 1 verlangt EIN Gerät; das Unterwasser-Bild und die Höhle
-    // mit Licht-Abfall sind Staffel 2, beide Geräte — ohne Station).
+    // mit Licht-Abfall sind Staffel 2, beide Geräte — die Station darunter).
     {
         kriterium: "leib.K3",
         staffel: 1,
@@ -3403,6 +3621,36 @@ const stationen = [
             "scripts/lib/wasser-linse.cjs",
         ],
         quelle: "1 = Ufer → Schwimmen → Tauchen ohne Sprung (Lage, Kamera) an einem Gerät",
+    },
+    // leib.K3 Staffel 2 (w12-unterwasser): das Unterwasser-Bild aus der EINEN Wasser-Wahrheit gegen die REF und die Höhle mit
+    // Licht-Abfall — die Probe `probeUnterwasser` (oben) in der Welt der Sitzung, See und Höhle in EINEM Lauf. mutiert: sie hält den
+    // Takt an (Bühne), stellt Leib und Kamera unter den Spiegel und leiht das Gesetz des Wassers für die Mutante — die Sitzung setzt danach zurück.
+    {
+        kriterium: "leib.K3",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        probe: { ...UNTERWASSER_PROBE, mutiert: true },
+        gpu: true,
+        zeit: false,
+        minuten: 1,
+        urteil: (j, lauf) => unterwasserUrteil(lauf),
+        proben: UNTERWASSER_PROBEN,
+        pfad: [
+            "stamm/bild-*.js",
+            "stamm/wasser-*.js",
+            "stamm/koerper-bewegung.js",
+            "stamm/dirigent-*.js",
+            "stamm/dienst.js",
+            "foundry-core.js",
+            "fachwerk-core.js",
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "spec/abnahme/soll-tafel.json",
+            "scripts/lib/wasser-linse.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "2 = Unterwasser-Bild aus der EINEN Wasser-Wahrheit (Sicht-Abfall nach Tiefe gegen REF), Höhle mit Licht-Abfall, beide Geräte",
     },
 
     // ───────── halten.K1 — der Treffer aus dem Gesetz ─────────
@@ -4602,7 +4850,6 @@ module.exports.fehlt = [
     { kriterium: "tore.K5", staffel: 2, befehl: null, grund: "nicht als Probe der Sitzung gebaut: das Kriterium verlangt B als eigenen Browser-Prozess mit frischem Profil (das andere Gerät) neben A, und der Teil (T) samt WELT lebt inline im hauptLauf von scripts/diag-praegung-welt.cjs (686 Z., L S N G R B K T F U in EINEM Lauf mit eigener Welt A) — ohne Seiten-Funktion des Teils (T) im Spiel-Baum misst keine Probe A in der Welt der Sitzung; der eigene Boot je Station ist auf radeon|gtx gefallen (die Fahrt ≤ 30 min). Letzte Messung: Radeon b3f9ae95 ROT (Kontrolle 7 699 ms > 5 s), GTX 98ef98bb ROT. GPU-Station wartet auf die Prüfbühne (w5-s2-g5, 03.11.): „beide Flüsse an beiden Geräten“ — die Fahrt hat Radeon 17 / GTX 16 s frei, zwei Browser-Prozesse mit eigenem Boot passen nie in sie" },
     // w5-s2-g5 (03.11.): GPU-STATIONEN, DIE AUF DIE PRÜFBÜHNE WARTEN — die Staffel verlangt ein Bild auf der Karte und beide Geräte; die
     // Fahrt steht Radeon 1 783 / GTX 1 784 von 1 800 s (Σ Deckel + Boot, punkte.cjs fahrtSumme), frei sind 16–17 s
-    { kriterium: "leib.K3", staffel: 2, befehl: null, grund: "GPU-Station wartet auf die Prüfbühne (w5-s2-g5): Unterwasser-Luma gegen Tiefe aus der EINEN Wasser-Wahrheit gegen REF und die Höhle mit Licht-Abfall sind zwei Ausgabe-Bilder an zwei Orten (See 1816/−6168 und eine Höhle), beide Geräte — eine Probe der Sitzung mit zwei Ortswechseln und je einer Bild-Reihe passt nicht in die 16 s, die die Fahrt frei hat; eine REF für die Sicht unter Wasser trägt die Soll-Tafel nicht" },
     { kriterium: "spielgang.K4", staffel: 2, befehl: null, grund: "GPU-Station wartet auf die Prüfbühne (w5-s2-g5): „beides“ verlangt den Farb-Modus — jede Klassen-Grenze des AUSGABE-Bilds unter Deuteranopie-Simulation ΔE ≥ 10 (Klassen-Masken, ein Bild der Karte) — neben den Untertiteln, deren Wand (Ü) nur gate:klang-zensus mit eigenem Boot misst (ein Sitzungs-Feind); am main 5fba36ea gibt es weder Farb-Modus (deuteran|farbseh|colorblind: 0 Treffer im Stamm) noch einen Schalter für FOV, Kopfwackeln oder Unschärfe (KAM_FOV_GRAD fest, `_kamFov`)" },
     // p3-stationen-g456 (01.11.): DIE FAHRT trägt keine neue Probe — die Summe der Deckel steht Radeon 1 790 / GTX 1 785 von 1 800 s
     // (FAHRT_MAX_S samt Boot); was hier steht, braucht einen eigenen Lauf mit Sekunden, die erst die Eich-Fahrt freigibt, oder ein
