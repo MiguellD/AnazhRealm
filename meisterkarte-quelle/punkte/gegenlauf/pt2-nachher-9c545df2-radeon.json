@@ -1,0 +1,212 @@
+{
+ "sha": "9c545df2234c42baabd752c88c3ba39a3512090d",
+ "geraet": "radeon",
+ "art": "nachher: Stationen von w12-proben-tempo2 8497ca1c (zug.sh punkte, ZUG_PUNKTE pt2-mess)",
+ "stationen": "w12-proben-tempo2",
+ "sitzung": {
+  "start": "2026-11-05T19:05:11.067Z",
+  "port": 7804,
+  "warten": 0.21,
+  "bootS": 7.5,
+  "grundstellungS": [
+   3.9,
+   6.6,
+   7.1,
+   3.8
+  ],
+  "proben": 7,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "tiere.K5#1",
+    "s": 18.8,
+    "takte": 683,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K2#1",
+    "s": 13.3,
+    "takte": 657,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "fahrzeug.K2#1",
+    "s": 15.1,
+    "takte": 701,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "fahrzeug.K2#2",
+    "s": 13.8,
+    "takte": 709,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "klang.K4#1",
+    "s": 14.6,
+    "takte": 663,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 8,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 1465,
+   "frameP95": 58.61,
+   "taktP95": 42.74,
+   "vramMax": 137.4,
+   "seiten": 5,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "streaming.K3#1",
+     "m": 2000,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "fahrzeug.K2#2",
+     "m": 1863,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "fahrzeug.K2#1",
+     "m": 1618,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 446,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 462.1,
+  "minuten": 8
+ },
+ "je": {
+  "tiere.K5#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: FORTSCHRITT des Kreises ego nach 80.2 s Wanduhr: {\"spielS\":296,\"schuesse\":28,\"gesehen\":1,\"imBlick\":0})",
+   "exit": 1,
+   "minuten": 1.51,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: FORTSCHRITT des Kreises ego nach 80.2 s Wanduhr: {\"spielS\":296,\"schuesse\":28,\"gesehen\":1,\"imBlick\":0})",
+   "s": 90.6,
+   "zeit": "2026-11-05T19:05:57.492Z",
+   "abdruck": "4304ed4a34b9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K2#1": {
+   "gruen": true,
+   "zahl": "Kamm 237.0 über Rausch-Boden 0.000 (×237.0), Tal 44.7 — Kamm/Tal 5.30 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 54.2 % in 0–15 m, Δt 0.25 s",
+   "exit": 0,
+   "minuten": 0.26,
+   "gpu": "amd/rdna-3",
+   "s": 15.5,
+   "zeit": "2026-11-05T19:07:45.840Z",
+   "abdruck": "e70ca47e767e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K4#1": {
+   "gruen": false,
+   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.14 m · third ROT strich 0.333 Soll [1,1] — gesicht 0.333 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL — · lippeA — · hoehleL — · hoehleA — · haarDeckung 1 [0.9, 1]",
+   "exit": 0,
+   "minuten": 0.53,
+   "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.14 m · third ROT strich 0.333 Soll [1,1] — gesicht 0.333 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL — · lippeA — · hoehleL — · hoehleA — · haarDeckung 1 [0.9, 1]",
+   "gpu": "amd/rdna-3",
+   "s": 32,
+   "zeit": "2026-11-05T19:08:01.387Z",
+   "abdruck": "0f25f0326aa7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "streaming.K3#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: SPRUNG 1 EXIT=0 {\"m\":1000,\"stehtS\":23.1,\"bau\":0,\"frames\":642,\"frameMs\":{\"p50\":33.71,\"p95\":58.61,\"p99\":75.16,\"max\":100.46},\"taktMs\":{\"p50\":16.75,\"p95\":40.73,\"p99)",
+   "exit": 1,
+   "minuten": 0.76,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: SPRUNG 1 EXIT=0 {\"m\":1000,\"stehtS\":23.1,\"bau\":0,\"frames\":642,\"frameMs\":{\"p50\":33.71,\"p95\":58.61,\"p99\":75.16,\"max\":100.46},\"taktMs\":{\"p50\":16.75,\"p95\":40.73,\"p99)",
+   "s": 45.7,
+   "zeit": "2026-11-05T19:08:33.473Z",
+   "abdruck": "c23c31e3951e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "exit": 1,
+   "minuten": 0.76,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "s": 45.6,
+   "zeit": "2026-11-05T19:09:41.150Z",
+   "abdruck": "f73df7c8403b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "exit": 1,
+   "minuten": 1.51,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "s": 90.6,
+   "zeit": "2026-11-05T19:10:48.142Z",
+   "abdruck": "d7df70707493",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K4#1": {
+   "gruen": true,
+   "zahl": "gras 5483 Hz (n 9) · laub 6312 Hz (n 11) · glut 1882 Hz (n 6) — kleinster Abstand 829 Hz",
+   "exit": 0,
+   "minuten": 0.48,
+   "gpu": "amd/rdna-3",
+   "s": 28.5,
+   "zeit": "2026-11-05T19:12:37.342Z",
+   "abdruck": "afd4cba1236c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K4#2": {
+   "gruen": true,
+   "zahl": "✅ Schritte gras 5483 Hz (n 9) · laub 6312 Hz (n 11) · glut 1882 Hz (n 6), kleinster Abstand 829 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.51 dB je m/s, r 0.9958 (1 m 4.4 m/s -52.8 dB · 2 m 6.2 m/s -51.6 dB · 4 m 8.8 m/s -50.1 dB · 8 m 12.6 m/s -48.3 dB · 12 m 15.4 m/s -47.2 dB) · ✅ Doppler Steigung 1.0000 r 1.0000 (-9 m 13.3 m/s 1.0404/1.0404 · -4.5 m 9.6 m/s 1.0289/1.0289 · -2 m 5.0 m/s 1.0147/1.0147 · 2 m -5.2 m/s 0.9850/0.9850 · 4.5 m -7.3 m/s 0.9792/0.9792 · 9 m -6.5 m/s 0.9814/0.9814)",
+   "exit": 0,
+   "minuten": 0.48,
+   "gpu": "amd/rdna-3",
+   "s": 28.5,
+   "zeit": "2026-11-05T19:12:37.342Z",
+   "abdruck": "765329f5a5d3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "klang.K4#1",
+   "modus": "session"
+  }
+ }
+}
