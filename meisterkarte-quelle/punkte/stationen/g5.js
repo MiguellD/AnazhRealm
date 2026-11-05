@@ -1958,36 +1958,32 @@ async function unterwasserSeite(o) {
                 cam.position.copy(pm.position).add(d);
                 cam.quaternion.copy(q);
                 cam.updateMatrixWorld(true);
-                const vor = [cam.position.x, cam.position.y, cam.position.z].map((v) => R(v, 2));
                 const p = cam.position, b = await schuss(name + "-" + z, sicht === "third");
-                const mw = new window.THREE.Vector3().setFromMatrixPosition(cam.matrixWorld);
-                b.diag = { vor, nach: [p.x, p.y, p.z].map((v) => R(v, 2)), welt: [mw.x, mw.y, mw.z].map((v) => R(v, 2)), pm: [pm.position.x, pm.position.y, pm.position.z].map((v) => R(v, 2)),
-                    camIst: cam === s.camera, passCam: !!(s.scenePass && s.scenePass.camera === cam), passCamPos: s.scenePass && s.scenePass.camera ? [s.scenePass.camera.position.x, s.scenePass.camera.position.y].map((v) => R(v, 2)) : null,
-                    loop: !!s.renderer.getAnimationLoop(), modus: s.cameraMode, eltern: !!cam.parent, auto: cam.matrixAutoUpdate, imSchuss: window.__imSchuss, halten: typeof window.__halten };
                 je.push(Object.assign({ z, tiefe: R(r._koerperWasser(p.x, p.z, p.y) - p.y, 3), unter: !!s.kameraUnterWasser, fest: r._fieldDensityAt(p.x, p.y, p.z) > 0 }, b));
             }
             return je;
         };
         aus.ego = await reihe("first", o.tiefen, "ego");
         {
-            const lu = s.luft && s.luft.U, uw = () => lu && { u: lu.unterWasser.value, beta: R(lu.beta.value, 4), farbe: lu.farbe.value.toArray().map((v) => R(v, 4)), spY: R(lu.spiegelY.value, 2), fog: !!s.scene.fogNode, kuw: !!s.kameraUnterWasser };
-            const flaechen = [];
-            s.scene.traverse((m) => { if (m.material && m.material === s.hydroSurfaceMaterial && m.visible) flaechen.push(m); });
-            aus.diag = { vorher: uw(), flaechen: flaechen.length, wasserMeshes: [] };
-            s.scene.traverse((m) => { if (m.isMesh && m.visible && /wasser|water|hydro|see|lake|ocean|meer/i.test((m.name || "") + " " + ((m.material && m.material.name) || ""))) aus.diag.wasserMeshes.push((m.name || "?") + "|" + ((m.material && m.material.name) || "") + "|" + R(m.position.y, 2)); });
-            aus.diag.wasserMeshes = aus.diag.wasserMeshes.slice(0, 20);
-            for (const m of flaechen) m.visible = false;
-            try {
-                const b1 = await schuss("diag-ohne-flaeche", false);
-                aus.diag.ohneFlaeche = { L: b1.L, m: uw() };
-            } finally {
-                for (const m of flaechen) m.visible = true;
-            }
-            const y0 = cam.position.y;
+            const sp = s.scenePass, nf = s.renderer._nodes && s.renderer._nodes.nodeFrame, tn = s.traaNode, fehl = [];
+            let nSp = 0, nTn = 0, lrN = 0, lrF = null;
+            const spU = sp.updateBefore, tnU = tn && tn.updateBefore, eb = r._loopErrorBoundary, lr = r._loopRender;
+            sp.updateBefore = function (f) { nSp++; return spU.call(this, f); };
+            if (tn) tn.updateBefore = function (f) { nTn++; return tnU.call(this, f); };
+            r._loopErrorBoundary = function (e) { fehl.push(String((e && e.message) || e).slice(0, 200)); return eb.call(this, e); };
+            r._loopRender = function () { lrN++; try { return lr.call(this); } catch (e) { lrF = String((e && e.stack) || e).slice(0, 400); throw e; } };
+            const f0 = nf && nf.frameId, y0 = cam.position.y;
             cam.position.y = sp0 + 3;
             cam.updateMatrixWorld(true);
-            const b2 = await schuss("diag-ueber", false);
-            aus.diag.ueber = { L: b2.L, m: uw() };
+            let b2 = null, err = null;
+            try { b2 = await schuss("diag-ueber", false); } catch (e) { err = String((e && e.stack) || e).slice(0, 400); }
+            aus.diag = { nSp, nTn, lrN, lrF, fehl: fehl.slice(0, 5), f0, f1: nf && nf.frameId, err, L: b2 && b2.L, ppFail: s.postProcessingFailed, lost: s._deviceLost, ready: s.rendererReady,
+                anlauf: tn && tn._anlauf && tn._anlauf.value, neustart: tn && tn._neustart && tn._neustart.value, sprung: s._traaR && s._traaR.sprung, skala: sp.getResolutionScale(),
+                spRT: sp.renderTarget && [sp.renderTarget.width, sp.renderTarget.height], leine: s._gpuLeine ? JSON.stringify(s._gpuLeine).slice(0, 120) : null };
+            sp.updateBefore = spU;
+            if (tn) tn.updateBefore = tnU;
+            delete r._loopErrorBoundary;
+            delete r._loopRender;
             cam.position.y = y0;
             cam.updateMatrixWorld(true);
         }
