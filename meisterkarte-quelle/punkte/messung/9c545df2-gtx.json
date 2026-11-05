@@ -1,0 +1,66 @@
+{
+ "sha": "9c545df2234c42baabd752c88c3ba39a3512090d",
+ "geraet": "gtx",
+ "zeit": "2026-11-05T17:49:30.585Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "schatten.K1#2": {
+   "gruen": true,
+   "zahl": "Uhr 0.5 ego 0.945 cm/m (44/44 Kanten, Fuß 2.1 cm) · Uhr 0.5 third 0.798 cm/m (44/44 Kanten, Fuß 2.1 cm) · Uhr 0.3 ego 0.93 cm/m (44/44 Kanten, Fuß 1.8 cm) · Uhr 0.3 third 0.875 cm/m (44/44 Kanten, Fuß 2.1 cm) · Treue 0/0 Bytes · Kontakt-Kaskade k0 0 ms (GTX ≤ 0,3), [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.52,
+   "gpu": "nvidia/pascal",
+   "s": 31.3,
+   "zeit": "2026-11-05T17:49:30.585Z",
+   "abdruck": "8b9afa6bfd7d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-05T17:49:05.509Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 6.5,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "buehne",
+    "vor": "schatten.K1#2",
+    "s": 17.3,
+    "takte": 662,
+    "chunks": 82,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 1,
+   "frameP95": 1016.7,
+   "taktP95": 466.59,
+   "vramMax": 94.6,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "schatten.K1#2",
+     "m": 459,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 53,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 55.5,
+  "minuten": 0.99
+ }
+}
