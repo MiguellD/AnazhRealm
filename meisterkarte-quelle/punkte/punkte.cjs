@@ -71,7 +71,9 @@
 //   Läufer die Wache (fahreSitzung): reißt eine Probe ihren Deckel, fällt sie und ist UNGEMESSEN beim Namen, reißt die Fahrt
 //   FAHRT_MAX_S, endet die Sitzung und nennt die offenen Proben (m.sitzung.offen) — die Fortsetzung (fahreFortsetzung) misst sie in
 //   einer neuen Sitzung (m.fortsetzung), nie bleiben sie still bis zum nächsten `run --offen` liegen.
-// Je Kriterium und Staffel EINE Station (Schlüssel "<kriterium>#<staffel>"); ein Kriterium ohne Staffel-1-Station ist ROT.
+// Je Kriterium, Staffel und Gerät EINE Station (Schlüssel "<kriterium>#<staffel>"): verlangt eine Staffel Mechanik und Bild, trägt
+// sie eine headless-Hälfte (befehl) und eine Karten-Hälfte (probe) unter demselben Schlüssel — die Buchung zählt sie erst, wenn
+// jede auf jedem ihrer Geräte grün ist (stufen). Ein Kriterium ohne Staffel-1-Station ist ROT.
 //
 // BUCHUNG (R2 · R6 · R10): je Station und Gerät zählt die JÜNGSTE Messung, deren Abdruck (Befehl, Urteil, Pfad, Hilfen)
 // der Station gleicht und deren Pfad und Linse zwischen Mess-SHA und Kopf ohne Stempel unberührt sind (stempelDateien, linsenVon). 1 = jede
@@ -285,8 +287,11 @@ function pruefeStationen(liste, karte) {
         else if (istPflicht(st)) { if (!st.quelle.startsWith("PFLICHT-OFFEN " + st.kriterium.slice(-1) + " = ")) f.push("quelle nennt nicht „PFLICHT-OFFEN " + st.kriterium.slice(-1) + " = …“"); }
         else if (k && !String(k.staffel).includes(st.quelle)) f.push("quelle steht nicht wörtlich in der Staffel");
         else if (k && !new RegExp("(^|\\s)" + st.staffel + " =").test(st.quelle)) f.push("quelle nennt nicht die Stufe " + st.staffel + " =");
-        if (gesehen.has(wer)) f.push("doppelt");
-        gesehen.add(wer);
+        // EINE Station je Staffel und Gerät: eine Staffel trägt eine headless-Hälfte (befehl) und eine Karten-Hälfte (probe) —
+        // die Buchung verlangt jede auf jedem ihrer Geräte (stufen); zwei auf demselben Gerät sind doppelt
+        const doppelt = ge.filter((g) => gesehen.has(wer + "|" + g));
+        if (doppelt.length) f.push("doppelt (auf " + doppelt.join("+") + ")");
+        for (const g of ge) gesehen.add(wer + "|" + g);
         if (f.length) fehler.push(wer + ": " + f.join(" · "));
         else ok.push(st);
     }
@@ -3274,11 +3279,13 @@ function planCli(opt) {
             const w = id + "|" + m.geraet;
             if (!juengste[w] || String(e.zeit) > String(juengste[w].zeit)) juengste[w] = e;
         }
-    const st0 = Object.fromEntries(stationen.map((st) => [schluessel(st), st])), hilfe = hilfeText(), abJe = new Map();
-    const ab = (id, g) => abJe.get(id + "|" + g) || abJe.set(id + "|" + g, abdruck(st0[id], hilfe, g)).get(id + "|" + g);
+    // die Station eines Schlüssels AUF dem Gerät (eine Staffel kann eine headless- und eine Karten-Hälfte tragen)
+    const st0 = (id, g) => stationen.find((st) => schluessel(st) === id && geraeteVon(st).includes(g));
+    const hilfe = hilfeText(), abJe = new Map();
+    const ab = (id, g) => abJe.get(id + "|" + g) || abJe.set(id + "|" + g, abdruck(st0(id, g), hilfe, g)).get(id + "|" + g);
     const da = (id, g) => {
         const e = juengste[id + "|" + g];
-        return e && (!e.abdruck || !st0[id] || e.abdruck === ab(id, g)) ? e : null;
+        return e && (!e.abdruck || !st0(id, g) || e.abdruck === ab(id, g)) ? e : null;
     };
     // ein Heil-Versuch ist jedes Kriterium, das ein Commit beim Namen nennt, UND jedes, dessen Zweig laut weg.json (wellen: Staffel →
     // Zweig) im Zug landete — 28.10.: „Merge siedlung-k1-innen in integ-probe" nennt kein Kriterium, der Plan übersprang siedlung.K1#2,
@@ -3519,6 +3526,13 @@ async function selbsttest(o = {}) {
         pruef("FORMAT-ROT Staffel 2 ohne Staffel 1", r.fehler.some((f) => /keine Staffel-1-Station/.test(f)), r.fehler.join(" | "));
         const d = pruefeStationen([st0, st0], karte);
         pruef("FORMAT-ROT doppelte Station", d.fehler.some((f) => /doppelt/.test(f)), d.fehler.join(" | "));
+        // eine Staffel mit headless-Hälfte und Karten-Hälfte ist EINE Staffel auf drei Geräten, nie doppelt — ihre zweite headless-Hälfte schon
+        const halb = { ...st0, staffel: 2, quelle: "2 = überall, dazu endet jeder Lauf in See oder Meer" };
+        const karteHalb = { ...halb, geraet: ["radeon", "gtx"], gpu: true, befehl: undefined, probe: { befehl: ["node", "-e", "0"], sek: 30 } };
+        const h2 = pruefeStationen([st0, halb, karteHalb], karte);
+        const h3 = pruefeStationen([st0, halb, karteHalb, halb], karte);
+        pruef("FORMAT eine Staffel trägt eine headless- und eine Karten-Hälfte, eine zweite headless-Hälfte ist doppelt",
+            !h2.fehler.some((f) => /doppelt/.test(f)) && h2.stationen.length === 3 && h3.fehler.some((f) => /doppelt \(auf headless\)/.test(f)), h2.fehler.concat(h3.fehler).join(" | "));
         const n = pruefeStationen([st0, { kriterium: "gelaende.K4", staffel: 2, befehl: null, grund: "kein Werkzeug" }], karte);
         const pf = pruefeStationen([{ ...st0, kriterium: "pflicht.E", pflicht: true, quelle: "PFLICHT-OFFEN E = Frame p95 ≤ 33 ms in jeder Stand-Zelle" }], karte);
         pruef("FORMAT der Pflicht-Richter (pflicht: true, pflicht.E, „PFLICHT-OFFEN E = …“) ist fahrbar ohne Kriterium der Karte", !pf.fehler.length && pf.stationen.length === 1, pf.fehler.join(" | "));
