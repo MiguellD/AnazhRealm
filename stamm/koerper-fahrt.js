@@ -270,7 +270,12 @@ class AnazhRealm_koerper_fahrt {
         const grob = stoff(G.fern);
         if (!fein.length && !grob.length) return !(u._tuchKein = true);
         u._tuchTeile = {
-            nah: { sim: fein.length ? fein : grob, folge: fein.length ? grob : [], auge: fein[0] || grob[0], wurzel: G.nah },
+            nah: {
+                sim: fein.length ? fein : grob,
+                folge: fein.length ? grob : [],
+                auge: fein[0] || grob[0],
+                wurzel: G.nah,
+            },
             fern: grob.length ? { sim: grob, folge: [], auge: grob[0], wurzel: G.fern } : null,
         };
         return true;
