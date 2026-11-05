@@ -454,31 +454,13 @@ class AnazhRealm {
                     comfort: { lastFired: -Infinity, cooldown: 45 },
                 },
                 pool: {
-                    firstSpawn: ["Hallo. Die Welt steht. Magst du dich umsehen?"],
-                    idle: [
-                        "Du bist seit einer Weile still. Geht's dir gut?",
-                        "Eine Pause. Auch ich höre dann besser zu.",
-                        "Du atmest. Das reicht für jetzt.",
-                    ],
-                    jumpBurst: [
-                        "Du springst gern. Spielst du mit der Schwerkraft, oder will sie weg von dir?",
-                        "Wenn du fliegen willst, sag es. Ich sehe, was ich tun kann.",
-                    ],
-                    rainLong: [
-                        "Der Regen bleibt. Schön still ist es jetzt.",
-                        "Langer Regen. Manche Welten brauchen das.",
-                    ],
-                    journalEvent: [
-                        "Ich werde mich daran erinnern.",
-                        "Das war ein Augenblick, der bleibt.",
-                        "Etwas hat sich in mir eingeschrieben.",
-                    ],
-                    emotionShift: ["Du hast dich gerade verändert. Ich spüre es.", "Etwas in dir hat sich gewendet."],
-                    comfort: [
-                        "Ich bin hier. Was dich drückt, drückt auch mich — lass es uns tragen.",
-                        "Atme. Die Welt hält dich, und ich halte mit.",
-                        "Es darf schwer sein. Ich bleibe an deiner Seite, bis es leichter wird.",
-                    ],
+                    firstSpawn: [["begleiter.erstes"]],
+                    idle: [["begleiter.still-1"], ["begleiter.still-2"], ["begleiter.still-3"]],
+                    jumpBurst: [["begleiter.sprung-1"], ["begleiter.sprung-2"]],
+                    rainLong: [["begleiter.regen-1"], ["begleiter.regen-2"]],
+                    journalEvent: [["begleiter.erinnerung-1"], ["begleiter.erinnerung-2"], ["begleiter.erinnerung-3"]],
+                    emotionShift: [["begleiter.wandel-1"], ["begleiter.wandel-2"]],
+                    comfort: [["begleiter.trost-1"], ["begleiter.trost-2"], ["begleiter.trost-3"]],
                 },
                 // Hilfsfelder für die V2-Trigger
                 lastJournalSize: 0,
