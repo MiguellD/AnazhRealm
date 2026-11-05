@@ -1,7 +1,7 @@
 {
  "sha": "f5db8d904ae0f50187c9b3e2e37de3fa38da73e0",
  "geraet": "gtx",
- "zeit": "2026-11-05T20:10:07.034Z",
+ "zeit": "2026-11-05T20:34:52.048Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "leib.K3#2": {
@@ -16,6 +16,35 @@
    "abdruck": "becb8e259f5a",
    "port": 7804,
    "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K2#1": {
+   "gruen": false,
+   "zahl": "Belegung p95 ≤ 5.8: wiese-ego-steht 33.32 · wiese-third-steht 13.97 · genesis-ego-steht 108.33 · genesis-third-steht 12.52 · Gang 80.1 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht Belegung p95 33.32 > 5.8 | wiese-third-steht Belegung p95 13.97 > 5.8 | genesis-ego-steht Belegung p95 108.33 > 5.8 | genesis-third-steht Belegung p95 12.52 > 5.8",
+   "exit": 0,
+   "minuten": 1.34,
+   "grund": "ROT: Belegung p95 ≤ 5.8: wiese-ego-steht 33.32 · wiese-third-steht 13.97 · genesis-ego-steht 108.33 · genesis-third-steht 12.52 · Gang 80.1 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht Belegung p95 33.32 > 5.8 | wiese-third-steht Belegung p95 13.97 > 5.8 | genesis-ego-steht Belegung p95 108.33 > 5.8 | genesis-third-steht Belegung p95 12.52 > 5.8",
+   "gpu": "nvidia/pascal",
+   "s": 80.3,
+   "zeit": "2026-11-05T20:34:52.048Z",
+   "abdruck": "c1988d88f42c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K2#2": {
+   "gruen": false,
+   "zahl": "Belegung p95 ≤ 5.8: wiese-ego-steht 33.32 · wiese-third-steht 13.97 · genesis-ego-steht 108.33 · genesis-third-steht 12.52 ‖ Belegung p95 ≤ 8: wiese-ego-geht 36.32 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 34.4 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 80.1 s · [linse-gpu] nvidia/pascal — ROT 10: wiese-ego-steht Belegung p95 33.32 > 5.8 | wiese-third-steht Belegung p95 13.97 > 5.8 | genesis-ego-steht Belegung p95 108.33 > 5.8 | genesis-third-steht Belegung p95 12.52 > 5.8 | wiese-ego-geht Belegung p95 36.32 > 8 | wiese-ego-sprint: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+   "exit": 0,
+   "minuten": 1.34,
+   "grund": "ROT: Belegung p95 ≤ 5.8: wiese-ego-steht 33.32 · wiese-third-steht 13.97 · genesis-ego-steht 108.33 · genesis-third-steht 12.52 ‖ Belegung p95 ≤ 8: wiese-ego-geht 36.32 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 34.4 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 80.1 s · [linse-gpu] nvidia/pascal — ROT 10: wiese-ego-steht Belegung p95 33.32 > 5.8 | wiese-third-steht Belegung p95 13.97 > 5.8 | genesis-ego-steht Belegung p95 108.33 > 5.8 | genesis-third-steht Belegung p95 12.52 > 5.8 | wiese-ego-geht Belegung p95 36.32 > 8 | wiese-ego-sprint: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+   "gpu": "nvidia/pascal",
+   "s": 80.3,
+   "zeit": "2026-11-05T20:34:52.048Z",
+   "abdruck": "0a6126d9fbfe",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K2#1",
    "modus": "session"
   }
  },
@@ -52,47 +81,48 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-05T20:09:35.057Z",
+  "start": "2026-11-05T20:31:42.672Z",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 7.4,
+  "warten": 2.71,
+  "bootS": 6.4,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "material.K1#2",
-    "s": 23.1,
-    "takte": 648,
+    "ort": null,
+    "vor": "profiband.K2#1",
+    "s": 20,
+    "takte": 726,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
-  "unerklaert": [
-   {
-    "probe": "material.K1#2",
-    "wie": "werke +6 (−0)"
-   }
-  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
+   "bilder": 693,
+   "frameP95": 33.39,
+   "taktP95": 32.44,
+   "vramMax": 134.1,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 106,
+   "ortImDeckel": [
+    {
+     "probe": "profiband.K2#1",
+     "m": 1089,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 104,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 115.3,
-  "minuten": 1.97
+  "fahrtS": 107.3,
+  "minuten": 4.57
  }
 }
