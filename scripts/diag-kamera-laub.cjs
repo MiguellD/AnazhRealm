@@ -262,7 +262,6 @@ async function leibStrafe(k) {
     const [st, mass] = [r.state, (0, eval)(`(${k.mass})`)];
     const rend = st.renderer;
     await r._foundryAwaitBook(45000);
-    if (r._weltOffen().ankunft) st._ankunftGleit = r.constructor.ANKUNFT_GLEIT_BILDER;
     r.setCameraMode("third");
     [st.yaw, st.pitch] = [Math.atan2(k.blick.x - k.x, k.blick.z - k.z), 0];
     let t = performance.now();
@@ -511,12 +510,8 @@ async function leibWiese(arg) {
     try {
         await r._foundryAwaitBook(45000);
         out.fehlt = await L.hin(arg.x, arg.z, 60000);
-        // DIE ANKUNFT HERGESTELLT (B2): die Linse taktet als Gerät mit 8–33 ms je Bild (MUSTER) — dort sind die 90 Bilder der
-        // Ankunft in < 3 s gezeichnet; unter swiftshader kostet jedes 1,8–3,3 s, die Linse zeichnet ohne Animations-Schleife
-        // unter der GPU-Leine (29.10.: 4 Bilder in 4 400 Takten, Ferne 43,5, seit lod.K5 das Haus des Gangs auf L2 ohne Flügel,
-        // der Schmuggel blind; das Abwarten riss an der Frist der Seite, 900 s). Ab hier wählt der Stamm jede Stufe am Abstand
-        // (`_ankunftsFerne` 1): die Häuser der Wiese und der Gang (K4) messen die angekommene Welt.
-        if (r._weltOffen().ankunft) st._ankunftGleit = r.constructor.ANKUNFT_GLEIT_BILDER;
+        // ab dem Weltbild wählt der Stamm jede Stufe am Abstand (`_ankunftsFerne` 1): die Häuser der Wiese und der Gang (K4)
+        // messen die angekommene Welt
         out.haeuser = [];
         for (const [typ, dx, dz] of [
             ["haus_alemannisch", 16, 6],

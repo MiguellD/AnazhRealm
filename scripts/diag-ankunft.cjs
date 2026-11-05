@@ -557,7 +557,7 @@ async function probe(arg) {
             // (4) die Karte eines fernen Baums ist offen: ihr Leser steht 60 m vor bzw. hinter dem Spieler (sein Rang, B3d)
             const [zellen, K] = [r._impostorAtlas().zellen, "linse:karte"];
             for (const [k, s] of [["karteOffen", 60], ["karteHinten", -60]])
-                fall(k, () => zellen.set(K, { key: K, _bedarfD2: r._foundryAuftragD2(vorn(s)) }) && (r._impostorBakeQueue = (r._impostorBakeQueue || []).concat([K])), () => zellen.delete(K) && (r._impostorBakeQueue = r._impostorBakeQueue.filter((q) => q !== K)));
+                fall(k, () => zellen.set(K, { key: K, _imBlick: r._rangImBlick(vorn(s)) }) && (r._impostorBakeQueue = (r._impostorBakeQueue || []).concat([K])), () => zellen.delete(K) && (r._impostorBakeQueue = r._impostorBakeQueue.filter((q) => q !== K)));
             // (4b) die Welt fehlt (noch kein Spieler)
             const merkPm = st.playerMesh;
             fall("weltFehlt", () => (st.playerMesh = null), () => (st.playerMesh = merkPm));
