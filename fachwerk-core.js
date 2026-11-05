@@ -9199,12 +9199,12 @@
     // ── KAMIN-RAUCH (.105/.106) — Partikel-Feel als DATEN: Host + Lab lesen
     //    denselben Block (worlds/fachwerk frame fail-soft; residual = rich VFX).
     // DIE FLAMME (Architektur-Welle 05.10.; geteilt seit stoffe.K2#2): die Zunge der Feuerstelle und der Flammen des Brands der
-    // Welt — ihr Profil [Radius, Höhe] je Einheit der Flammen-Höhe, ihr Ton (linear) je Kanal [Wurzel, Abfall bis zur Spitze]
-    // und die Stärke ihres Leuchtens (LEUCHT_FEUER: Leuchtdichte = Ton × leucht). Labor und Welt lesen dasselbe Datum.
+    // Welt — ihr Profil [Radius, Höhe] je Einheit der Flammen-Höhe (Labor und Welt lesen dasselbe Datum) und der Ton der
+    // Feuerstelle (linear) je Kanal [Wurzel, Abfall bis zur Spitze]; die Flammen des Brands tönt ihre Temperatur (die Welt,
+    // BRAND.bild.flamme über `lichtFarbe`).
     var FLAMME = {
         zunge: [[0, 0], [0.5, 0.06], [0.56, 0.2], [0.44, 0.42], [0.26, 0.64], [0.1, 0.86], [0, 1]],
         ton: [[0.55, 0.1], [0.3, 0.16], [0.08, 0.045]],
-        leucht: LEUCHT_FEUER,
     };
 
     var RAUCH_GESETZ = {
@@ -9221,12 +9221,12 @@
         scaleMul: 1.006,
     };
 
-    // RAUCH_VIS — intentional box-feel (Feel-Entscheid .125). Do NOT Fake-full-VFX.
-    // lab+host "box-lambert" = RAUCH_GESETZ BoxGeometry + MeshLambert. Sprites/noise/wind = Redesign.
-    // Like STEER_VIS .124 / ZONE_PICK .117: naming the Feel, not Fake-zu.
+    // RAUCH_VIS — das Bild des Rauchs je Seite: das Labor (r128) zeichnet RAUCH_GESETZ als Box + MeshLambert (Feel-Entscheid .125);
+    // die Welt zeichnet ihn seit w12-brand-rauch "weich" — das EINE Rauch-Bild der Welt für Kamin und Brand (weiche Teilchen quer
+    // zur Sicht, Beer-Lambert-Dicke, Saum gegen die Tiefe, das Licht der Welt; `_rauchZeichnen`).
     var RAUCH_VIS = {
         lab: "box-lambert",
-        host: "box-lambert",
+        host: "weich",
     };
 
 

@@ -950,14 +950,15 @@ async function brandSeite(MESS) {
         leer();
         delete r._brandZuenden;
         // REGEN und LESER am Herd der Mess-Wiese: Licht, Ohr und das Bild (15 s zu 0,1 s, `_brandBild`: die Fahne steht) — die Flammen der Front,
-        // die Fahne und ihre DECKUNG: der dichteste Strahl quer zum Wind durch ihre Ballen 8 m über den Flammen, 1 − Π(1 − Deckung)
+        // die Fahne und ihre DECKUNG: der dichteste Strahl quer zum Wind durch ihre Ballen 8 m über den Flammen, 1 − Π(1 − Deckung)^g,
+        // g = (1 − ρ²)^profil die Dicke, die das Rauch-Bild im Abstand ρ (je Radius) zeichnet (RAUCH_BILD, Beer-Lambert)
         const leser = () => {
             st.brandRauch.teilchen.length = 0;
             for (let i = 0; i < 150; i++) r._brandBild(0.1);
             const [g, T, F, w] = [r._glutAmOhr(pm.x, pm.z, () => 0), st.brandRauch.teilchen, r._brandFlammen, r._windAt(pm.x, pm.z, st.spielZeit)];
             const h = F.reduce((u, f) => u + f.y / F.length, 0) + 8;
             const band = T.filter((p) => Math.abs(p.y - h) < p.s);
-            const durch = (c) => band.reduce((d, p) => (Math.hypot((p.x - c.x) * w.x + (p.z - c.z) * w.z, p.y - h) < p.s ? d * (1 - p.a) : d), 1);
+            const durch = (c) => band.reduce((d, p) => d * (1 - p.a) ** Math.max(0, 1 - (Math.hypot((p.x - c.x) * w.x + (p.z - c.z) * w.z, p.y - h) / p.s) ** 2) ** C.RAUCH_BILD.profil, 1);
             return {
                 licht: r._leuchtQuellen(pm.x, pm.y, pm.z, 64).filter((q) => q.quelle === "brand").length,
                 rauch: T.length,

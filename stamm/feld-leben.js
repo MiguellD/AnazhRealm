@@ -2636,6 +2636,7 @@ class AnazhRealm_feld_leben {
                     w: Math.min(R.wMax, Math.cbrt((9.81 * f.I * 1000) / (1.2 * 1005 * 300))),
                     a: R.a0,
                     alt: 0,
+                    saat: (h >>> 8) / 16777216, // das Muster des Ballens (`_rauchZeichnen`), aus demselben Samen
                 });
             }
         }
@@ -2653,37 +2654,90 @@ class AnazhRealm_feld_leben {
         this._rauchZeichnen(R, T, "brandRauchSatz");
     }
 
-    // Die Flammen des Bilds (`_brandBild`) als EIN Satz: die Zunge des Flammen-Gesetzes (fachwerk `FLAMME`) als Drehkörper mit
-    // dem Ton von der Wurzel zur Spitze, leuchtend (Ton × leucht, additiv, die Spitze verlischt), je Flamme ihre Matrix (Ort,
-    // Neigung in den Wind, Drehung, Länge; Breite `bild.breite` × Länge).
+    // Die Flammen des Bilds (`_brandBild`) als EIN Satz. DIE ZUNGE IST DER DREHKÖRPER des Flammen-Gesetzes (fachwerk `FLAMME`),
+    // gezeichnet als sein Abbild: je Flamme eine Fläche längs ihrer Achse (Länge, Neigung in den Wind), quer zur Sicht gedreht
+    // (`cameraWorldMatrix`; blickt das Auge längs der Achse, steht sie in der Rechten der Kamera), Breite `breite` × Länge × größter
+    // Radius. Je Höhe h liest sie die Tafel der Zunge (`bild.flamme.tafel` Texel): ihren Radius r(h) und ihren TON aus der
+    // TEMPERATUR — von der Wurzel zur Spitze fällt sie von kelvin[0] auf kelvin[1], die Farbe ist ihr Planck-Ort (fachwerk
+    // `lichtFarbe`, dasselbe Gesetz wie das Feuer-Licht), die Strahlung fällt mit (T/T0)⁴ (Stefan–Boltzmann): der Kern gelb-orange,
+    // die Spitze dunkel-rot. DIE ZUNGE IST EIN MEDIUM, das strahlt und schluckt: ihre Dicke im Abstand ξ = |x|/r(h) von der Achse ist
+    // (1 − ξ²)^`rand` (der Rand weich, ohne Kante), × (1 − h)^spitze; Rand und Dichte zerreißen im Rausch-Gesetz, das mit `zug`
+    // Längen je Sekunde steigt (`rausch`: Skala quer, hoch, Hub zur Spitze hin; zwei Lagen des EINEN Rausch-Atlas); die Deckung
+    // 1 − exp(−`dicke` · Dicke), gemischt vormultipliert (Licht × Deckung + Grund × (1 − Deckung)): wie viele Zungen sich auch decken,
+    // keine strahlt heller als ihr Ton. Der Ton steht im Bild bei `ziel` vor der Tonkurve (÷ Belichtung): die Kurve rollt ihn nie ins
+    // Weiß. Gegen Gras und Boden läuft sie über `saumM` aus (`_tiefenSaum`). Bis w12-brand-rauch: der Drehkörper selbst (6 Kanten),
+    // Ton × LEUCHT_FEUER additiv — gedeckte Zungen sättigten weiß, jede Kante stand hart.
     _brandFlammenZeichnen(fl) {
         const st = this.state;
         let S = st.brandFlammenSatz;
         if ((!S && !fl.length) || typeof THREE === "undefined" || !st.scene) return;
         const B = AnazhRealm.BRAND.bild;
+        const BF = B.flamme;
+        const [sq, sh, hub] = BF.rausch;
+        const weit = 1 + 1.25 * hub; // so weit weitet das Rauschen den Radius höchstens: die Fläche trägt den Rand ganz
         if (!S) {
-            const F = globalThis.__fachwerkCore.FLAMME;
-            const geo = new THREE.LatheGeometry(
-                F.zunge.map(([r, y]) => new THREE.Vector2(r, y)),
-                B.zungeSegmente
-            );
-            const P = geo.attributes.position;
-            const [ton, deck] = [new Float32Array(P.count * 3), new Float32Array(P.count)];
-            for (let i = 0; i < P.count; i++) {
-                const y = P.getY(i);
-                for (let c = 0; c < 3; c++) ton[3 * i + c] = (F.ton[c][0] - F.ton[c][1] * y) * F.leucht;
-                deck[i] = Math.pow(1 - y, B.spitze);
+            const FW = globalThis.__fachwerkCore;
+            const Z = FW.FLAMME.zunge;
+            const rMax = Math.max(...Z.map((p) => p[0]));
+            const [N, [K0, K1]] = [BF.tafel, BF.kelvin];
+            const daten = new Uint8Array(4 * N);
+            for (let i = 0; i < N; i++) {
+                const h = i / (N - 1);
+                let j = 1;
+                while (j < Z.length - 1 && Z[j][1] < h) j++;
+                const [a, b] = [Z[j - 1], Z[j]];
+                const r = a[0] + ((b[0] - a[0]) * (h - a[1])) / Math.max(1e-6, b[1] - a[1]);
+                const K = K0 + (K1 - K0) * h;
+                const [c, w] = [FW.lichtFarbe(K), Math.pow(K / K0, 4)];
+                for (let k = 0; k < 3; k++) daten[4 * i + k] = Math.round(255 * c[k] * w);
+                daten[4 * i + 3] = Math.round((255 * Math.max(0, r)) / rMax);
             }
-            geo.setAttribute("aTon", new THREE.BufferAttribute(ton, 3));
-            geo.setAttribute("aDeck", new THREE.BufferAttribute(deck, 1));
+            const tafel = new THREE.DataTexture(daten, N, 1, THREE.RGBAFormat, THREE.UnsignedByteType);
+            tafel.name = "brand-flamme:tafel";
+            tafel.magFilter = tafel.minFilter = THREE.LinearFilter;
+            tafel.generateMipmaps = false;
+            tafel.needsUpdate = true;
+            const geo = new THREE.PlaneGeometry(2, 1);
+            geo.translate(0, 0.5, 0);
+            const achse = new THREE.InstancedBufferAttribute(new Float32Array(4 * B.flammenMax), 4);
+            const phase = new THREE.InstancedBufferAttribute(new Float32Array(B.flammenMax), 1);
+            geo.setAttribute("aAchse", achse);
+            geo.setAttribute("aFlamme", phase);
             const T = THREE.TSL;
             const mat = new THREE.MeshBasicNodeMaterial({
                 transparent: true,
                 depthWrite: false,
-                blending: THREE.AdditiveBlending,
-                side: THREE.DoubleSide,
+                premultipliedAlpha: true,
             });
-            mat.colorNode = T.vec4(T.attribute("aTon", "vec3"), T.attribute("aDeck", "float"));
+            // die Fläche: längs der Achse (aAchse.xyz = Achse × Länge), quer zu ihr und zur Sicht (halbe Breite aAchse.w × weit)
+            const A = T.attribute("aAchse", "vec4");
+            const quer = T.cross(A.xyz, T.cameraWorldMatrix.mul(T.vec4(0, 0, 1, 0)).xyz);
+            const seite = T.select(
+                quer.length().greaterThan(A.xyz.length().mul(0.05)),
+                quer.normalize(),
+                T.cameraWorldMatrix.mul(T.vec4(1, 0, 0, 0)).xyz
+            );
+            const g = T.positionGeometry;
+            mat.positionNode = A.xyz.mul(g.y).add(seite.mul(g.x.mul(A.w).mul(weit)));
+            const uZeit = T.uniform(0);
+            const [q, ra, ph] = [T.uv(), this._rauschAtlas(), T.attribute("aFlamme", "float")];
+            const [h, x] = [q.y, q.x.mul(2).sub(1).mul(weit)];
+            const z = T.texture(tafel, T.vec2(h, 0.5));
+            const p = T.vec3(x.mul(sq), h.mul(sh).sub(uZeit.mul(BF.zug)), ph.mul(7.9)).add(T.vec3(ph.mul(31.7), ph.mul(17.3), 0)); // prettier-ignore
+            const rausch = ra.raum(p).add(ra.raum(p.mul(2.07)).mul(0.5));
+            const r = z.a.mul(T.float(1).add(rausch.mul(h.add(0.25).mul(hub)))).max(1e-3);
+            const dicke = T.float(1)
+                .sub(x.div(r).pow2())
+                .max(0)
+                .pow(BF.rand)
+                .mul(T.float(1).sub(h).pow(B.spitze))
+                .mul(T.float(1).add(rausch.mul(0.5)).max(0));
+            mat.colorNode = T.vec4(
+                z.rgb.mul(T.float(BF.ziel).div(T.toneMappingExposure)),
+                T.float(1)
+                    .sub(T.exp(dicke.mul(BF.dicke).negate()))
+                    .mul(this._tiefenSaum(BF.saumM))
+            );
             const mesh = AnazhRealm._instanzMesh(geo, mat, B.flammenMax);
             mesh.name = "brand-flammen";
             mesh.userData.inventar = "brand"; // Identitäts-Stempel (gate:asset-inventory: Welt-Substanz)
@@ -2692,38 +2746,27 @@ class AnazhRealm_feld_leben {
             mesh.frustumCulled = false;
             AnazhRealm._instanzZahl(mesh, 0);
             st.scene.add(mesh);
-            S = st.brandFlammenSatz = { mesh };
+            S = st.brandFlammenSatz = { mesh, achse, phase, uZeit, tafel, rMax };
         }
+        S.uZeit.value = this._bildZeit || 0;
         const n = Math.min(fl.length, B.flammenMax);
-        const M = S.mesh.instanceMatrix.array;
+        const [M, Ac] = [S.mesh.instanceMatrix.array, S.achse.array];
         for (let k = 0; k < n; k++) {
             const f = fl[k];
-            // die Matrix der Flamme, gerechnet statt komponiert: R = Neigung um die Achse quer zum Wind (Rodrigues, a = hoch ×
-            // Wind) · die eigene Drehung der Zunge um die Hochachse, die Spalten × Breite, Länge, Breite, dann der Ort
-            const wl = Math.hypot(f.wx, f.wz) || 1;
-            const [ax, az, cp, sp, cd, sd] = [f.wz / wl, -f.wx / wl, Math.cos(f.kipp), Math.sin(f.kipp), Math.cos(f.dreh), Math.sin(f.dreh)]; // prettier-ignore
-            const v = 1 - cp;
-            const T = [
-                cp + v * ax * ax,
-                -sp * az,
-                v * ax * az,
-                sp * az,
-                cp,
-                -sp * ax,
-                v * ax * az,
-                sp * ax,
-                cp + v * az * az,
-            ];
-            const [b, l, o] = [B.breite * f.lang, f.lang, 16 * k];
-            for (let r = 0; r < 3; r++) {
-                M[o + r] = (T[3 * r] * cd - T[3 * r + 2] * sd) * b;
-                M[o + 4 + r] = T[3 * r + 1] * l;
-                M[o + 8 + r] = (T[3 * r] * sd + T[3 * r + 2] * cd) * b;
-            }
-            [M[o + 3], M[o + 7], M[o + 11], M[o + 12], M[o + 13], M[o + 14], M[o + 15]] = [0, 0, 0, f.x, f.y, f.z, 1];
+            // die Achse der Flamme: hoch, um `kipp` in den Wind geneigt, × Länge; die halbe Breite; der Ort in ihrer Matrix (die
+            // übrigen Glieder bleiben die der Einheit)
+            const [wl, sp, l, o, i] = [Math.hypot(f.wx, f.wz) || 1, Math.sin(f.kipp), f.lang, 16 * k, 4 * k];
+            Ac[i] = (sp * f.wx * l) / wl;
+            Ac[i + 1] = Math.cos(f.kipp) * l;
+            Ac[i + 2] = (sp * f.wz * l) / wl;
+            Ac[i + 3] = B.breite * l * S.rMax;
+            M[o + 12] = f.x;
+            M[o + 13] = f.y;
+            M[o + 14] = f.z;
+            S.phase.array[k] = f.dreh / 6.2832;
         }
         AnazhRealm._instanzZahl(S.mesh, n);
-        if (n > 0) S.mesh.instanceMatrix.needsUpdate = true;
+        if (n > 0) S.mesh.instanceMatrix.needsUpdate = S.achse.needsUpdate = S.phase.needsUpdate = true;
     }
 
     // === DIE LAVA (stoffe.K3-2): geschmolzener Stein auf der glut-Achse, der zu Stein erstarrt ===
@@ -3399,10 +3442,13 @@ AnazhRealm.BRAND = Object.freeze({
     // Abstand gröber, nie unter `winkelMin`), je Flamme ein Abstand von
     // `abstand` × ihrer Länge (mindestens `abstandMinM`), höchstens `flammenMax` je Bild aus höchstens `zellenMax` Zellen, die
     // nächsten zuerst (ein Brand von 2 000 Zellen kostet das Bild, nie die Welt); das Flackern in `flackerPhasen`; `flammenWind` der Wind auf Flammenhöhe je Wind
-    // in 10 m (Albini–Baughman 1979, offenes Gras); die Zunge in `zungeSegmente` Kanten, `breite` × Länge breit, ihre Deckung
-    // fällt zur Spitze mit (1 − h)^spitze. Der Rauch: `jeS` Ballen je Zelle und Sekunde bei voller Glut, höchstens `max` (ein
+    // in 10 m (Albini–Baughman 1979, offenes Gras); die Zunge `breite` × Länge breit, ihre Deckung
+    // fällt zur Spitze mit (1 − h)^spitze; ihr Bild `flamme` (`_brandFlammenZeichnen`): die Temperatur `kelvin` [Wurzel, Spitze], `ziel` ihr Ton vor der
+    // Tonkurve, die Dicke `dicke`, ihr Fall zum Rand (1 − ξ²)^`rand`, die Tafel der Zunge in `tafel` Texeln, das Rausch-Gesetz `rausch` [Skala quer, hoch, Hub], steigend mit `zug` Längen je
+    // Sekunde, der Saum gegen die Tiefe `saumM`. Der Rauch: `jeS` Ballen je Zelle und Sekunde bei voller Glut, höchstens `max` (ein
     // großer Brand je Zelle seltener, bis `kMax` × größer), die Ballen beginnen mit `b0` × Flammen-Länge, wachsen um `alpha` je Meter Steigen, decken anfangs `a0` und fallen unter
-    // `aKill` oder nach `lebenS`; Steigen höchstens `wMax` m/s; der Satz (Ballen, Stoff `color`, Kante `size`, Gestalt `form`)
+    // `aKill` oder nach `lebenS`; Steigen höchstens `wMax` m/s; der Satz (Ballen, Stoff `color`, Radius je Einheit `size`) zeichnet das
+    // EINE Rauch-Bild der Welt (`_rauchZeichnen`, RAUCH_BILD)
     bild: Object.freeze({
         weiteM: 160,
         winkel: 96,
@@ -3414,22 +3460,30 @@ AnazhRealm.BRAND = Object.freeze({
         zellenMax: 32,
         flackerPhasen: 8,
         flammenWind: 0.4,
-        zungeSegmente: 6,
         breite: 0.42,
         spitze: 0.8,
+        flamme: Object.freeze({
+            kelvin: Object.freeze([3000, 1700]),
+            ziel: 1.6,
+            dicke: 6,
+            rand: 1.5,
+            rausch: Object.freeze([1.6, 2.5, 0.8]),
+            tafel: 32,
+            zug: 3,
+            saumM: 0.15,
+        }),
         rauch: Object.freeze({
-            jeS: 8,
+            jeS: 12,
             max: 600,
-            b0: 0.6,
+            b0: 1.2,
             alpha: 0.16,
-            a0: 0.82,
+            a0: 0.5,
             aKill: 0.08,
             lebenS: 25,
             kMax: 3,
             wMax: 7,
             color: 0x8d8881,
             size: 1,
-            form: "ballen",
             maxTeilchen: 600,
             name: "brand-rauch",
             inventar: "brand",
