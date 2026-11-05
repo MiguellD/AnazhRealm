@@ -109,12 +109,18 @@ async function seitenTakt() {
 // Konstruktor liest: `_loadKeybindings`). Vorher die Schrift (das HUD mit einem gepflanzten 14-px-Text, das Ich und jede Schublade
 // über den EINEN Schalter, je `_schriftZensus`) und die Umbelegung (der Knopf „vor“ der Belegung, dann KeyO als KeyboardEvent);
 // nachher die Belegung, der Weg des Leibs je Taste (KeyO, KeyW und KeyW mit einem festverdrahteten Mutanten), die Standard-
-// Belegung zurück. `taeter` nennt jeden Bruch, `blind` jeden Mutanten, den die Probe nicht sah.
+// Belegung zurück. `taeter` nennt jeden Bruch, `blind` jeden Mutanten, den die Probe nicht sah. Ein Bild ist am Gerät ein Bild
+// des laufenden Loops, am Null-Renderer EIN Sim-Schritt des Leibs (`_loopFixedStep`: Sammler, Bewegung, Physik) — die Probe
+// streamt dort keine Welt weiter, die nach ihr misst (w12-menue: 4 × 32 Hand-Takte legten im Playtest die veralteten
+// Wasser-Zellen des Genesis-Chunks −1,−1 frei, drift 489 auch am main ba87b158).
 async function bedienung2(vor) {
     const taste = (code, art) =>
         window.dispatchEvent(new KeyboardEvent(art, { code, key: code.slice(3).toLowerCase() }));
+    let t = performance.now() / 1000;
     const bilder = async (n) => {
-        for (let i = 0; i < n; i++) await __seitenTakt();
+        for (let i = 0; i < n; i++)
+            if (st.renderer._isHeadlessNull) r._loopFixedStep(1 / 60, (t += 1 / 60));
+            else await new Promise(requestAnimationFrame);
     };
     const taeter = (o) => [
         ...Object.entries(o.schrift).flatMap(([t, z]) =>
