@@ -1798,3 +1798,12 @@
 2026-11-05 05:15:19 omen-speicher ALARM Commit 18.8/20.5 GB - 11xchrome 3.3G, 12xclaude 2.0G, 1xOneDrive 0.6G, 87xsvchost 0.6G, 128xgrep 0.6G, 120xtail 0.5G
 2026-11-05 05:20:22 omen-speicher ALARM Commit 18.9/20.5 GB - 11xchrome 3.4G, 12xclaude 2.1G, 1xOneDrive 0.6G, 130xgrep 0.6G, 86xsvchost 0.6G, 122xtail 0.6G
 2026-11-05 05:25:24 omen-speicher ALARM Commit 18.7/21.5 GB - 11xchrome 3.2G, 12xclaude 2.1G, 1xOneDrive 0.6G, 131xgrep 0.6G, 86xsvchost 0.6G, 123xtail 0.6G
+2026-11-05 05:30:27 omen-speicher ALARM Commit 18.3/20.3 GB - 10xchrome 2.9G, 12xclaude 2.1G, 1xOneDrive 0.6G, 131xgrep 0.6G, 87xsvchost 0.6G, 123xtail 0.6G
+2026-11-05 05:32:28 omen-speicher ENTWARNUNG Commit 14.9/18.8 GB
+2026-11-05 05:35:19 omen-kopf-8ef49bef Scheibe 1/2 ROT mensch.K4#1,lod.K5#1,lod.K2#1,affekt.K4#2,physik.K2#2,licht.K3#1 · OFFEN licht.K2#2,material.K2#1,lod.K1#1,ferne.K1#2,material.K3#2,material.K1#1,material.K1#2,licht.K1#1,licht.K3#2,gelaende.K2#2,leib.K1#2,bauen.K1#2,leib.K4#2,fahrzeug.K2#1,fahrzeug.K2#2,ankunft.K2#1,ankunft.K3#1,ankunft.K1#1,ankunft.K1#2,profiband.K1#1,profiband.K1#2 · 25 min · gepusht 878ac2138
+2026-11-05 05:51:34 omen-speicher ALARM Commit 18.2/18.8 GB - 8xchrome 2.6G, 12xclaude 2.1G, 1xOneDrive 0.6G, 133xgrep 0.6G, 86xsvchost 0.6G, 125xtail 0.6G
+2026-11-05 05:56:36 omen-speicher ALARM Commit 19.5/20.8 GB - 10xchrome 3.8G, 12xclaude 2.1G, 1xOneDrive 0.6G, 134xgrep 0.6G, 87xsvchost 0.6G, 126xtail 0.6G
+2026-11-05 06:02:09 omen-speicher ALARM Commit 17.4/19.3 GB - 12xclaude 2.1G, 9xchrome 1.9G, 1xOneDrive 0.6G, 134xgrep 0.6G, 86xsvchost 0.6G, 126xtail 0.6G
+2026-11-05 06:07:11 omen-speicher ALARM Commit 16.1/19.2 GB - 12xclaude 2.1G, 9xchrome 0.7G, 1xOneDrive 0.6G, 134xgrep 0.6G, 86xsvchost 0.6G, 126xtail 0.6G
+2026-11-05 06:12:16 omen-speicher ALARM Commit 18.7/19.4 GB - 9xchrome 3.2G, 12xclaude 2.1G, 1xOneDrive 0.6G, 134xgrep 0.6G, 87xsvchost 0.6G, 126xtail 0.6G
+2026-11-05 06:12:37 omen-kopf-8ef49bef Scheibe 2/2 ROT profiband.K4#1,profiband.K4#2,profiband.K5#1,profiband.K5#2,tiere.K3#2 · GRÜN spielgang.K3#1 · OFFEN vegetation.K1#1,vegetation.K5#2,vegetation.K4#2,siedlung.K1#2,tiere.K1#2,studios.K2#2,studios.K3#2,studios.K4#1,studios.K4#2,siedlung.K4#2,profiband.K2#1,profiband.K2#2,profiband.K3#1,profiband.K3#2,speicher.K2#2,speicher.K4#2 · 21 min · gepusht cabb3fd82
