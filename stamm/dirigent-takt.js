@@ -62,13 +62,18 @@ class AnazhRealm_dirigent_takt {
                 const bild = this._gpuLeineFrei();
                 const ruht = !bild && this._ladeTakt();
                 // DER ZWISCHEN-TAKT (profiband.K2, Gebot 7): ein gespielter Takt OHNE Bild (die Leine ist gespannt) rechnet, was
-                // nicht warten darf — Eingabe, Netz, Gesetz und Plan der Welt, Sim, Strom, Kamera —, nie, was nur das Bild zeigt:
-                // das Leben (Tiere, Bewohner, Verkehr, Vögel, Fische, Bestäuber), die Haltung des Leibs, das Licht des Tags und die
+                // nicht warten darf — Eingabe, Netz, Gesetz und Plan der Welt, Sim, Strom —, nie, was nur das Bild zeigt: das Leben
+                // (Tiere, Bewohner, Verkehr, Vögel, Fische, Bestäuber), die Haltung des Leibs, die Kamera, das Licht des Tags und die
                 // Sicht (die Anzeige ist DOM, gedrosselt, und geht weiter). Die Spiel-Zeit, die er dafür nicht rechnete, rechnet der nächste Takt mit Bild (`deltaBild`: die
-                // Zeit seit dem letzten Bild, höchstens EIN Deckel `TAKT_DECKEL_S` — wie eine Pause); Haltung und Licht lesen ihre
-                // eigene Uhr. Die Kosten folgen dem Bild, nie dem rAF: GTX an 8ef49bef, Stand-Zellen, 2–16 Takte zu 8,33 ms je Bild
+                // Zeit seit dem letzten Bild, höchstens EIN Deckel `TAKT_DECKEL_S` — wie eine Pause); Haltung, Kamera und Licht lesen
+                // ihre eigene Uhr. Die Kosten folgen dem Bild, nie dem rAF: GTX an 8ef49bef, Stand-Zellen, 2–16 Takte zu 8,33 ms je Bild
                 // trugen je Takt das ganze Spiel (Wiese Ego headless 3,7 ms je Takt ohne Bild). Der Null-Renderer zeichnet jeden Takt.
-                const zwischen = !bild && !ruht;
+                // DER RUHENDE LOOP KENNT IHN NICHT (`_loopRuht`: wer dann tickt, ruft `_gameLoopTick` selbst — Linse, Werkbank, Bühne):
+                // sein Takt ist eine Frage, die Antwort die ganze Welt dieses Takts; die Leine hält nur sein Bild. Sonst hinge, was eine
+                // Sonde misst, an der Wanduhr der GPU — unter swiftshader gab die Leine im Gang der Kamera-Leib-Linse (20 Takte je
+                // Atem) ein bis zwei Bilder frei, die Kamera stand in 952 von 1 092 Takten still (Ruck 0), der Arm ohne Flügel-Leib
+                // blieb ungenannt (K4).
+                const zwischen = !bild && !ruht && !this._loopRuht();
                 let deltaBild = delta;
                 if (zwischen) this._bildSchuld = Math.min(AnazhRealm.TAKT_DECKEL_S, (this._bildSchuld || 0) + delta);
                 else if (this._bildSchuld) {
