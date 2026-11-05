@@ -1005,23 +1005,15 @@ function drucke(zeilen, kostenErg) {
 // (T) DER KLANG-TAKT IN BEWEGUNG (`--takt [--echt]`, klang.K5): je präsentiertem Bild die Haupt-Faden-ms der Klang-Arbeit
 // (symphonyTick + _schrittKlangTick + _tierRuf, der äußere Aufruf) im echten Spiel, Klang über den Knopf — gehen, Fahrt
 // (GT, Gas und rückwärts im Wechsel), nachts gehen; p95 ≤ TAKT_SOLL_MS je Phase, der Träger der Bilder über dem Soll beim
-// Namen; über den Gang 0 Aussetzer am Ausgang. Die Seite ist isoliert (COOP + COEP: 5 µs statt des 100-µs-Rasters).
+// Namen (die Teile: die Folge der Musik, die zwei Hälften der Lage, der Schwenk des Raums `_raumStrahlen` — bis w12-klang-lage
+// fehlte er, und die Sichtung nannte die Lage, wo der Schwenk trug); über den Gang 0 Aussetzer am Ausgang. Die Seite ist
+// isoliert (COOP + COEP: 5 µs statt des 100-µs-Rasters).
 // `--echt`: Fenster, echte GPU und Audio-Gerät. `--minuten`: der Spielgang, gehen · Fahrt · nachts zu 4 : 3 : 3.
 // `--selftest`: Phase „selbst", der Takt fragt je Bild 300 Rufer → ROT, eine stotternde Stimme → Aussetzer gezählt.
 const TAKT_SOLL_MS = 0.2;
 const MINUTEN = Number(argOpt("--minuten")) || 0;
-const TAKT_TEILE = [
-    "_lofiPlayChord",
-    "_lofiPlayMelody",
-    "_lofiPlayGroove",
-    "_lofiPlayBass",
-    "_lofiRaum",
-    "_umweltLage",
-    "_tierRufTakt",
-    "_fahrtKlangTick",
-    "_schrittMaterialAt",
-    "_playSchrittOneShot",
-];
+const TAKT_TEILE = ("_lofiPlayChord _lofiPlayMelody _lofiPlayGroove _lofiPlayBass _lofiRaum _umweltLageEins _umweltLageZwei " +
+    "_raumStrahlen _tierRufTakt _fahrtKlangTick _schrittMaterialAt _playSchrittOneShot").split(" ");
 function taktSeite(m, echt, namen) {
     const P = Object.getPrototypeOf(r);
     const T = (window.__klangTakt = { phase: "", bilder: [], weg: 0, m });
