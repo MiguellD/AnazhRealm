@@ -1,0 +1,94 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node -e (async function ultiversumK4Lauf() {
+const fs = require("fs");
+const path = require("path");
+const crypto = require("crypto");
+const [aus, port] = process.argv.slice(1);
+const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+const lies = (f) => fs.readFileSync(path.resolve(f), "utf8");
+const MANIFEST = JSON.parse(lies("cores.manifest.json"));
+const NEUN = "worlds/neuntes-buch/stele-core.js";
+let einschleusen = true;
+const server = WB.statikServer({
+seiten: { "/cores.manifest.json": () => JSON.stringify(einschleusen ? [...MANIFEST, { id: "stele", scripts: [NEUN], vertrag: NEUN, ns: "__steleCore" }] : MANIFEST) },
+});
+await server.lausche(Number(port));
+const NAMEN = { stele: "quaxmal", Stele: "Quaxmal", meilenstein: "quaxstein", grenzstein: "quaxpfahl", obelisk: "quaxturm" };
+const buch = lies(NEUN).split("\n").filter((l) => !/^\s*\/\//.test(l)).map((l) => l.trim()).filter(Boolean).join("\n").replace(/stele|Stele|meilenstein|grenzstein|obelisk/g, (w) => NAMEN[w]);
+const sha = (t) => crypto.createHash("sha256").update(t).digest("hex");
+const kerne = [...MANIFEST.flatMap((k) => [].concat(k.scripts || [], k.lib || [], k.bruecke || [])), NEUN].filter((f) => fs.existsSync(path.resolve(f)));
+const out = { neu: !kerne.some((f) => sha(lies(f)) === sha(buch)), bytes: Buffer.byteLength(buch) };
+const wirt = ["index.html", "cores.manifest.json", ...MANIFEST.flatMap((k) => [].concat(k.scripts || [], k.bruecke || []))]
+.filter((f) => fs.existsSync(path.resolve(f))).map(lies);
+const stamm = fs.readdirSync(path.resolve("stamm")).filter((f) => f.endsWith(".js")).map((f) => lies("stamm/" + f));
+out.nennt = (wirt.concat(stamm).join("\n").match(/quaxmal|quaxstein|quaxpfahl|quaxturm/gi) || []).length;
+let code = 2;
+const browser = await WB.starteBrowser({ art: "null", frist: 300000 });
+const seite = async () => {
+const k = await browser.createBrowserContext();
+const page = await k.newPage();
+await WB.nullRenderer(page);
+await server.zeige(page, 60000);
+return page;
+};
+const buchDa = (page) => page.evaluate(() => window.__weltDa((x) => x._foundry && x._foundry.ready && x._foundry.recipes && x.state._weltbildDa > 0));
+const dock = (page, art, rezepte) =>
+page.evaluate(async (art, rezepte) => {
+const r = window.anazhRealm, st = r.state, f = r._foundry;
+const d = { rezepte: rezepte.filter((x) => f.recipes && f.recipes[x]).length, bauplaene: rezepte.filter((x) => (st.blueprints[art + "_" + x] || {}).studioGestalt === x).length, steht: false, tris: 0 };
+if (d.rezepte < rezepte.length) return d;
+const p = st.playerMesh.position;
+const x = p.x + 6;
+r.dslRun(["spawn_studio", rezepte[0], ["at", x, r._voxelSurfaceY(x, p.z), p.z], 1, 4711, {}], { source: "human" });
+const w = () => st.architectures.find((a) => a.type === art + "_" + rezepte[0]);
+const takt = async () => r._gameLoopTick(performance.now());
+d.steht = await window.__gebautNach("das Werk " + art, { fertig: () => w() && w()._servedLod === 0 && w().instSlots.length, takt }).then(() => true, (e) => String(e.message || e).slice(0, 160));
+if (d.steht === true) d.tris = [...new Set(w().instSlots.map((s) => st.archInstanceGroups.get(s.key).mesh.geometry))].reduce((n, g) => n + g.index.count / 3, 0);
+if (d.steht === true) r.saveState();
+return d;
+}, art, rezepte);
+const geladen = async (page, art, rezept) => {
+await new Promise((ok) => setTimeout(ok, 1500));
+await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
+await buchDa(page);
+return page.evaluate(async (art, rezept) => {
+const r = window.anazhRealm;
+const w = () => r.state.architectures.find((a) => a.type === art + "_" + rezept);
+return window.__gebautNach("das Werk nach dem Laden", { fertig: () => w() && w().instSlots && w().instSlots.length, takt: async () => r._gameLoopTick(performance.now()) }).then(() => true, (e) => String(e.message || e).slice(0, 160));
+}, art, rezept);
+};
+try {
+const G = await seite();
+await buchDa(G);
+out.gegenlauf = await dock(G, "stele", ["meilenstein", "grenzstein", "obelisk"]);
+out.gegenlauf.geladen = out.gegenlauf.steht === true ? await geladen(G, "stele", "meilenstein") : false;
+console.log("ULTI_K4 gegenlauf " + JSON.stringify(out.gegenlauf));
+einschleusen = false;
+const S = await seite();
+await buchDa(S);
+out.bibliothek = await S.evaluate(async (q) => {
+const r = window.anazhRealm;
+for (let i = 0; i < 300 && !(r.state.vibePass && r.state.vibePass.ready); i++) await new Promise((ok) => setTimeout(ok, 50));
+const a = await r.bibliothekLege("gesetzbuch", q, { skipConfirm: true });
+return { ok: !!(a && a.ok), art: a && a.art, code: a && a.code ? String(a.code).slice(0, 16) : null, grund: a && a.grund, bytes: a && a.bytes };
+}, buch);
+console.log("ULTI_K4 bibliothek " + JSON.stringify(out.bibliothek));
+await new Promise((ok) => setTimeout(ok, 1500));
+await S.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
+await buchDa(S);
+out.spieler = await dock(S, "quaxmal", ["quaxstein", "quaxpfahl", "quaxturm"]);
+out.spieler.geladen = out.spieler.steht === true ? await geladen(S, "quaxmal", "quaxstein") : false;
+console.log("ULTI_K4 spieler " + JSON.stringify({ ...out.spieler, neu: out.neu, nennt: out.nennt, bytes: out.bytes }));
+code = 0;
+} catch (e) {
+out.fehler = String((e && e.message) || e).split("\n")[0];
+console.log("ULTI_K4 FEHLER " + out.fehler);
+} finally {
+fs.writeFileSync(aus, JSON.stringify(out, null, 1));
+await browser.close().catch(() => {});
+server.close();
+process.exit(code);
+}
+})() /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/2b8d37f3-headless/ultiversum.K4_2.json 7704
+ULTI_K4 gegenlauf {"rezepte":3,"bauplaene":3,"steht":true,"tris":160,"geladen":true}
+ULTI_K4 bibliothek {"ok":true,"art":"gesetzbuch","code":"dc1e2a111cf7616f","bytes":4209}
+ULTI_K4 spieler {"rezepte":3,"bauplaene":3,"steht":true,"tris":160,"geladen":true,"neu":true,"nennt":0,"bytes":7822}
