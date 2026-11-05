@@ -3,11 +3,11 @@
   "kopf": "bf55b24a",
   "version": "V18.546.188",
   "skala": "2.0",
-  "summe": 202,
+  "summe": 204,
   "max": 330,
   "maschine": {
     "kopf": "bf55b24a",
-    "zeit": "2026-11-05T14:33:05.818Z",
+    "zeit": "2026-11-05T15:49:33.602Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -388,7 +388,7 @@
     {
       "key": "leben",
       "titel": "II · LEBEN — Pflanze, Tier, Ökologie, Mensch, Affekt, Haar und Fell, Luft und Wasser",
-      "summe": 47,
+      "summe": 48,
       "max": 70,
       "bereiche": [
         "vegetation",
@@ -447,7 +447,7 @@
     {
       "key": "fundament",
       "titel": "VI · FUNDAMENT — Ankunft, Streaming und Fäden, Profi-Band, Klang, Speicher",
-      "summe": 24,
+      "summe": 25,
       "max": 50,
       "bereiche": [
         "ankunft",
@@ -1047,7 +1047,7 @@
       "key": "vegetation",
       "titel": "Vegetation — Wiese, Böe, Wald von innen, Natur-Wand, Jahreszeit",
       "gruppe": "leben",
-      "punkte": 3,
+      "punkte": 4,
       "pfad": "v1 (laufen und sehen) · A (boden-nah) · E (nahWiese)",
       "dateien": "`phyto-core.js` (treeParams, planForestCell) · `stamm/vegetation-*.js` · `stamm/stoff-material.js` (Halm, Wind) · `stamm/daten.js` NAH_WIESE",
       "aaaa": "Vom Halm am Stiefel bis zum Wald am Hang ist jede Pflanze EINE Funktion von Ort und Zeit. Die Wiese steht in jedem Ring von 0 bis 40 m mit LAI ≥ 1,7 und einer Farbton-Streuung ≥ 10,7°, ohne Saum bei 14–18 m. Jede Böe wandert sichtbar über Gras und Kronen. Im Wald steht der Spieler zwischen Stämmen mit Unterholz, und die Sonne fällt in Flecken durch die Kronen, im Gegenlicht in Strahlen. Kein Halm steht im Haus oder im Wasser. Das Jahr ändert die Gestalt, nicht nur die Farbe: Laubkronen tragen im Winter ≤ 30 % Deckung, die Wiese ist niedriger. Alles im Profi-Band (nahWiese ≤ 4 Befehle / 80k Dreiecke, baum ≤ 40 / 150k). **Wo wir die Besten schlagen:** Tsushima und Horizon malen Dichte-Karten, Forza Horizon 4 baut vier Saison-Fassungen, Nanite verlangt Asset-Ketten; bei uns lesen Stufe, Saison und Wuchs dieselbe Ableitung (treeParams · planForestCell · wiesenTint) — der Setzling vor der Nase und der Baum am Hang sind dieselbe Zahl, im Browser auf einer iGPU.",
@@ -1101,10 +1101,10 @@
         },
         {
           "name": "Die Jahreszeit als Gestalt: Laub und Wiese",
-          "punkte": 1,
+          "punkte": 2,
           "staffel": "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose · 2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte",
           "messung": "Zeitraffer-Linse an der Mess-Wiese: werkbank bild mit Saison-Phase 0,375 / 0,625 / 0,875 über das Spieler-Wort (steht seit wetter-saat, 428fb6fe). Schnee-Decke zählt Wetter K4, Wachstum Stoffe K5, die Spur der Tat Feld K4.",
-          "beleg": "Maschine: gehalten: Krone sommer 191410 px · winter 20532 px → Winter 0.107 × Sommer an c8292dd3 radeon · gehalten: Krone sommer 193187 px · winter 21705 px → Winter 0.112 × Sommer an b4bcf19c gtx · gehalten: Krone sommer 191410 px · winter 20533 px · fruehling 148957 px → Winter 0.107 × Sommer, Wiese LAI 2–10 m sommer 2.46 · winter 1.05 · fruehling 1.89 → Winter 0.426 × Sommer an c8292dd3 radeon — offen: vegetation.K5#2 gtx: Station seit der Messung geändert — zuletzt an c8292dd3: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /bild 10.8 s)",
+          "beleg": "Maschine: gehalten: Krone sommer 191410 px · winter 20532 px → Winter 0.107 × Sommer an c8292dd3 radeon · gehalten: Krone sommer 193187 px · winter 21705 px → Winter 0.112 × Sommer an b4bcf19c gtx · gehalten: Krone sommer 191410 px · winter 20533 px · fruehling 148957 px → Winter 0.107 × Sommer, Wiese LAI 2–10 m sommer 2.46 · winter 1.05 · fruehling 1.89 → Winter 0.426 × Sommer an c8292dd3 radeon · Krone sommer 192360 px · winter 20796 px · fruehling 148693 px → Winter 0.108 × Sommer, Wiese LAI 2–10 m sommer 2.46 · winter 1.05 · fruehling 1.89 → Winter 0.426 × Sommer an bf55b24a gtx",
           "schlupfloch": "Den Winter grau-braun zu färben (heute) erfüllt die Farbe, nicht die Gestalt: gezählt wird die Deckung (Pixel-Anteil der Krone).",
           "aenderung": "Wachstum und Spur wanderten in ihre Heime (Stoffe K5, Feld K4; V-Wachstum).",
           "maschine": true
@@ -4189,7 +4189,7 @@
       "key": "speicher",
       "titel": "Speicher und Persistenz",
       "gruppe": "fundament",
-      "punkte": 7,
+      "punkte": 8,
       "pfad": "v1 (nichts geht verloren) · E (kein Frame)",
       "dateien": "`stamm/dienst.js` (saveState) · `stamm/speicher-*.js` (Snapshot, Laden, Welten, Migration) · `save-server.js` · `scripts/diag-persistence.cjs`",
       "aaaa": "Nichts geht verloren: ein Absturz an jedem beliebigen Punkt kostet höchstens 10 s Spiel, und kein Stand ist je halb. Speichern kostet keinen Frame (≤ 0,1 ms je Bild, die Arbeit läuft im Worker). Die Datei wächst mit den Änderungen, nie mit dem Weg (Welt = Seed + Edits + Leben). Nach dem Neuladen steht dasselbe Bild (≤ 1 % Diff), und ein Stand von vor 10 Versionen lädt ohne Verlust. **Wo wir die Besten schlagen:** Minecraft speichert jeden besuchten Chunk, Bethesda schleppt ChangeForms mit; bei uns ist alles Unberührte das Gesetz selbst — eine Welt ohne Edit ist nach 100 km Wanderung so groß wie am ersten Tag.",
@@ -4212,10 +4212,10 @@
         },
         {
           "name": "Speichern kostet keinen Frame",
-          "punkte": 1,
+          "punkte": 2,
           "staffel": "1 = ≤ 0,3 ms je Bild (p95) in einer frischen Welt, auf dem Pfad des Spielers · 2 = ≤ 0,1 ms in der frischen Welt UND nach 2 h mit 10 000 Edits, kein Frame > 16,7 ms wegen des Speicherns, beide Geräte",
           "messung": "Trace im Spiel: Haupt-Faden-ms des Speicher-Bilds (saveState, Edit-Timer); saveToProjectFolder zählt nur auf dem lokalen Host.",
-          "beleg": "Maschine: gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 100 Rufe in 4733 Bildern; aufgefüllt je Bild p95 0, blind) an 715754fc gtx · Speicher-Bild frisch p50 0.03 / p95 0.095 / max 0.465 ms (498 Bilder), 0 von 160 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0.025 / p95 0.075 / max 0.565 ms (420 Bilder), 0 von 72 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ 0,1) an bf55b24a radeon — offen: speicher.K2#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 100 Rufe in 4733 Bildern; aufgefüllt je Bild p95 0, blind) an 715754fc gtx · Speicher-Bild frisch p50 0.03 / p95 0.095 / max 0.465 ms (498 Bilder), 0 von 160 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0.025 / p95 0.075 / max 0.565 ms (420 Bilder), 0 von 72 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ 0,1) an bf55b24a radeon · Speicher-Bild frisch p50 0.02 / p95 0.05 / max 0.18 ms (562 Bilder), 0 von 39 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0.015 / p95 0.045 / max 0.375 ms (667 Bilder), 0 von 90 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ 0,1) an bf55b24a gtx",
           "schlupfloch": "Das Intervall strecken, also seltener speichern: K1 verlangt höchstens 10 s Verlust.",
           "aenderung": "Teilweise verworfen (B71): der Punkt bleibt, weil der Teil, den der Spieler zahlt (saveState 0,12 ms), gemessen ist; die Neumessung auf einem Host ohne save-server (M16, 21.10.) bestätigt die 1; nach R6 (speicher-h1) 1 → 0, am neuen Pfad gemessen 22.10. 0 → 1; nach R6 (fahrt-takt 36ef06e6) 22.10. 1 → 0; an 6cfce28a gemessen (M35) 22.10. 0 → 1.; nach R6 (stadt-erwachen be20b0153, 16dd81d0 `_imLeerlauf`) 23.10. 1 → 0.",
           "maschine": true
@@ -4756,7 +4756,7 @@
     {
       "stand": "2026-11-05",
       "kopf": "bf55b24a",
-      "summe": 202,
+      "summe": 204,
       "max": 330,
       "skala": "2.0",
       "was": "Mess-Takt 3 an 8f1802b1 (Züge 29c und 30: Stoff-Tafel, Speicher-Weg, Tier-Gang, Halten K5, Kaskade, Siedlung-Trasse, Nässe unter Dach, GPU-Wand, Leib-Hieb, Kaskaden-Riss, Hänger; headless 66/2, Radeon 27/11, GTX gemessen): stoffe.K1, speicher.K3, halten.K5, siedlung.K3 je +1, leib.K1, oekologie.K1, tiere.K3 → 2; klang.K4 1 → 0 und klang.K5 2 → 1 (2 Stoffe mit ≥ 5 Schritten), siedlung.K5 2 → 0 (nH 300 erstes Haus 974 ms — der Rang des Dorf-Zugs; die Heilung siedlung-k5-erstes-haus fährt in Zug 32)."

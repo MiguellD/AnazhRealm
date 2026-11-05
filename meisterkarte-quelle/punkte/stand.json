@@ -3159,8 +3159,8 @@
    ]
   },
   "speicher.K2": {
-   "punkte": 1,
-   "beleg": "Maschine: gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 100 Rufe in 4733 Bildern; aufgefüllt je Bild p95 0, blind) an 715754fc gtx · Speicher-Bild frisch p50 0.03 / p95 0.095 / max 0.465 ms (498 Bilder), 0 von 160 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0.025 / p95 0.075 / max 0.565 ms (420 Bilder), 0 von 72 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ 0,1) an bf55b24a radeon — offen: speicher.K2#2 gtx: Station seit der Messung geändert",
+   "punkte": 2,
+   "beleg": "Maschine: gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 100 Rufe in 4733 Bildern; aufgefüllt je Bild p95 0, blind) an 715754fc gtx · Speicher-Bild frisch p50 0.03 / p95 0.095 / max 0.465 ms (498 Bilder), 0 von 160 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0.025 / p95 0.075 / max 0.565 ms (420 Bilder), 0 von 72 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ 0,1) an bf55b24a radeon · Speicher-Bild frisch p50 0.02 / p95 0.05 / max 0.18 ms (562 Bilder), 0 von 39 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0.015 / p95 0.045 / max 0.375 ms (667 Bilder), 0 von 90 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ 0,1) an bf55b24a gtx",
    "stationen": [
     {
      "id": "speicher.K2#1",
@@ -3191,11 +3191,10 @@
     {
      "id": "speicher.K2#2",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Speicher-Bild frisch p50 0.02 / p95 0.05 / max 0.18 ms (562 Bilder), 0 von 39 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0.015 / p95 0.045 / max 0.375 ms (667 Bilder), 0 von 90 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ 0,1)",
+     "sha": "bf55b24a80ced839fd30293942ff2cb27dbddcc2",
+     "grund": null
     }
    ]
   },
@@ -4146,8 +4145,8 @@
    ]
   },
   "vegetation.K5": {
-   "punkte": 1,
-   "beleg": "Maschine: gehalten: Krone sommer 191410 px · winter 20532 px → Winter 0.107 × Sommer an c8292dd3 radeon · gehalten: Krone sommer 193187 px · winter 21705 px → Winter 0.112 × Sommer an b4bcf19c gtx · gehalten: Krone sommer 191410 px · winter 20533 px · fruehling 148957 px → Winter 0.107 × Sommer, Wiese LAI 2–10 m sommer 2.46 · winter 1.05 · fruehling 1.89 → Winter 0.426 × Sommer an c8292dd3 radeon — offen: vegetation.K5#2 gtx: Station seit der Messung geändert — zuletzt an c8292dd3: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /bild 10.8 s)",
+   "punkte": 2,
+   "beleg": "Maschine: gehalten: Krone sommer 191410 px · winter 20532 px → Winter 0.107 × Sommer an c8292dd3 radeon · gehalten: Krone sommer 193187 px · winter 21705 px → Winter 0.112 × Sommer an b4bcf19c gtx · gehalten: Krone sommer 191410 px · winter 20533 px · fruehling 148957 px → Winter 0.107 × Sommer, Wiese LAI 2–10 m sommer 2.46 · winter 1.05 · fruehling 1.89 → Winter 0.426 × Sommer an c8292dd3 radeon · Krone sommer 192360 px · winter 20796 px · fruehling 148693 px → Winter 0.108 × Sommer, Wiese LAI 2–10 m sommer 2.46 · winter 1.05 · fruehling 1.89 → Winter 0.426 × Sommer an bf55b24a gtx",
    "stationen": [
     {
      "id": "vegetation.K5#1",
@@ -4179,11 +4178,10 @@
     {
      "id": "vegetation.K5#2",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an c8292dd3: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /bild 10.8 s)",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Krone sommer 192360 px · winter 20796 px · fruehling 148693 px → Winter 0.108 × Sommer, Wiese LAI 2–10 m sommer 2.46 · winter 1.05 · fruehling 1.89 → Winter 0.426 × Sommer",
+     "sha": "bf55b24a80ced839fd30293942ff2cb27dbddcc2",
+     "grund": null
     }
    ]
   },
@@ -4332,7 +4330,7 @@
  },
  "rueckfall": [],
  "kopfVoll": "bf55b24a80ced839fd30293942ff2cb27dbddcc2",
- "zeit": "2026-11-05T14:33:05.818Z",
+ "zeit": "2026-11-05T15:49:33.602Z",
  "vorher": "bf55b24a",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
