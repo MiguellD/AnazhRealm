@@ -662,7 +662,9 @@ async function leibK2Seite(H) {
 // 395–410 s, davon ≈ 70 % in der Nah-Linse — ihr Orts-Speicher legte in 204 von 224 Fragen neu (der Stand war die Summe der `slotStand`
 // ALLER Gruppen der Welt), und das Urteil hing am Takt der Neulagen (innen „Bau 1“ ↔ „{}“ bei demselben Code). Geschnitten an der
 // Wurzel, in der Linse des Spiels (scripts/lib/kamera-nah.cjs, Zweig w12-proben-tempo-spiel): der Speicher gilt, solange die Quellen
-// in den Zellen DIESER Frage dieselben sind wie beim Legen, und was wandert (die Vögel, jede Schar ohne Gruppe) liegt je Frage frisch.
+// in den Zellen DIESER Frage dieselben sind wie beim Legen, und was wandert (die Vögel, jede Schar ohne Gruppe) liegt je Frage frisch;
+// das Feld liegt um das Auge, der Gang fragt mit 4 m. Headless b62542c9 A/B unter gleicher Last: 748,5 → 574,4 s (die Nah-Linse
+// 319 → 106 s, Neulagen 805/1387 → 484/1292), Urteil gleich (K4#1 GRÜN, K4#2 ROT: innen-sprint Ruck p95 0,064 ↔ 0,059 m)
 async function leibK4Seite(H) {
     const D = H.quelle("scripts/diag-kamera-laub.cjs", ["ORTE", "LEIB_R", "pct", "quantil", "GANG", "GANG_ARTEN", "urteilGang", "leibInstall", "leibWiese", "leibGang"]);
     const M = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");

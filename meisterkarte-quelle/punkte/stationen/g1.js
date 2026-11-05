@@ -1135,6 +1135,9 @@ module.exports = [
     // DER GRABEN-FLUSS (w12-proben-tempo): die Gräben liegen am Fluss der Wiese, 35 Punkte hinter ihrem Fluss-Ort (≥ 120 m hinter dem
     // Damm von (b)) statt 500–780 m stromab des Punkts nächst Genesis (≥ 1,3 km von der Wiese) — dort stand die Welt der Sitzung nie, und
     // die Radeon riss den Deckel 90 s an jedem Kopf ohne eine GRABEN-Zeile (8ef49bef nach „(b)(d) 8.5 s"). Urteil und Schwellen gleich.
+    // Headless b62542c9 A/B: (b)(d) vorher wie nachher dieselben Zahlen (Krone 27,79, 21 Säulen, stromauf/stromab gleich); (a) ist
+    // unter swiftshader nicht messbar — der erste Graben wartete vorher wie nachher > 900 s auf die Ankunft (die CDP-Frist). Ob (a) am
+    // neuen Ort dasselbe Urteil trägt (GTX e0139769 am alten: Third 3 von 4 über das Verb, 1 m und 3 m gefüllt), sagt erst die Karte.
     {
         kriterium: "gelaende.K2",
         staffel: 1,
