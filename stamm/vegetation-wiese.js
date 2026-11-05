@@ -2199,19 +2199,9 @@ class AnazhRealm_vegetation_wiese {
         const gb = Math.floor((x1 + R) / C);
         const ha = Math.floor((z0 - R) / C);
         const hb = Math.floor((z1 + R) / C);
-        // DER GEFALLENE PLAN WIRD NEU BESTELLT (w12-dorf-strom): eine Zelle, die das Gedächtnis trug, hatte ein Leser bestellt
-        // (der Pflanz-Gang samt dem Kasten seiner Gestalten, eine Gestalt) — sie reist sofort wieder in die Schlange des Walds,
-        // nach dem EINEN Rang (`_waldPlanListe`), und steht am neuen Grund, bevor ihr Baum in den Sichtkegel tritt. Bis
-        // w12-dorf-strom bestellte sie erst die nächste Frage nach der Gestalt: das erwachende Dorf fällte den Plan um seine
-        // Bäume, und sie traten ohne Gestalt in den Kegel (Fahrt-Probe dorf: K2#1 baum 47 %).
-        const Q = this._waldPlanSchlange || (this._waldPlanSchlange = new Map());
         let n = 0;
         for (let gx = ga - U; gx <= gb + U; gx++)
-            for (let gz = ha - U; gz <= hb + U; gz++)
-                if (memo.delete(gx + "," + gz)) {
-                    n++;
-                    if (!Q.has(gx + "," + gz)) Q.set(gx + "," + gz, [gx, gz]);
-                }
+            for (let gz = ha - U; gz <= hb + U; gz++) if (memo.delete(gx + "," + gz)) n++;
         if (n) this._forestDartFall = (this._forestDartFall | 0) + 1; // kein stehender Kasten gilt mehr (`_waldPlanSteht`)
         const fm = this._freistandMemo;
         if (fm && fm.size && this._freistandMemoVon === memo)
