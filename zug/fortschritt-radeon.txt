@@ -2154,3 +2154,12 @@
 2026-11-05 20:35:24 f5db8d90-radeon material.K1#2 GRÜN 1.1 · 4/5
 2026-11-05 20:35:44 f5db8d90-radeon leib.K3#2 ROT 0.4 · 5/5
 2026-11-05 20:37:14 f5db8d90-radeon ENDE 3 grün / 2 rot · 3.9 min
+2026-11-05 21:18:51 uw-diag1 START 1 Stationen
+2026-11-05 21:19:56 uw-diag1 leib.K3#2 ROT 0.5 · 1/1
+2026-11-05 21:21:26 uw-diag1 ENDE 0 grün / 1 rot · 2.6 min
+2026-11-05 21:23:57 uw-diag2 START 1 Stationen
+2026-11-05 21:25:02 uw-diag2 leib.K3#2 ROT 0.5 · 1/1
+2026-11-05 21:26:32 uw-diag2 ENDE 0 grün / 1 rot · 2.6 min
+2026-11-05 21:27:39 uw-heil1 START 1 Stationen
+2026-11-05 21:28:43 uw-heil1 leib.K3#2 ROT 0.5 · 1/1
+2026-11-05 21:30:13 uw-heil1 ENDE 0 grün / 1 rot · 2.6 min
