@@ -3524,7 +3524,8 @@ AnazhRealm.STAND_LEER = Object.freeze([]);
 // DER STAND DES TAKTS im Leerlauf (`_standSichern`): begonnen im nächsten Fenster mit Platz, spätestens `fristMs` nach dem Ruf;
 // der Besen schläft, bis ein Glied fällig ist, mindestens `schlafMs`, und geht je Fenster — im Gang des Stands wie beim Fegen —
 // höchstens `werk` (der Glied-Zähler: je Schritt ein Werk, dazu je Frage, je Marke, je Byte JSON; kalt ≈ 10 µs je Werk headless,
-// gemessen am Gang: 4 Werk p95 0,19, 2 Werk p95 0,13 je Speicher-Bild — nie an der Uhr, die ohne Cross-Origin-Isolation 100 µs
+// gemessen am Gang: 4 Werk p95 0,19, 2 Werk p95 0,13 je Speicher-Bild; mit Schritt-Tasks im Fenster je Speicher-Bild frisch
+// p50 0,025 / p95 0,105–0,125, nach 10 000 Edits p95 0,09–0,095 ms — nie an der Uhr, die ohne Cross-Origin-Isolation 100 µs
 // grob ist); ein begonnener Gang geht spätestens je `schrittMs` einen Schritt, auch ohne Leerlauf (ein Schritt ist klein — mit
 // der Frist eines Stands bekam er unter Last ein Fenster je Sekunde, gate:persistence (T): Stände 12 s alt), und im Fenster je
 // Schritt ein Task, solange es mehr als `restMs` Platz hat
