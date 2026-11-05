@@ -5055,6 +5055,23 @@
             tf = z.tiefe,
             kA = z.kontaktAlt || null,
             gA = z.gAbw || null; // die Schwere je Punkt, über g hinaus (das Tuch: seine Abweichung von der Lotrechten der Ruhe)
+        // je Paar seine Nachgiebigkeit im Teil-Schritt (α / h²) und der Kehrwert seines Nenners (w_a + w_b + α / h²; 0: das Paar
+        // hängt zwischen zwei geführten Punkten), je Punkt der Anteil der weichen Bindung (w / (w + α_Ziel / h²)) — EINMAL je
+        // Aufruf, die Runden teilen nicht mehr (w12-tuch-grob: am Poncho, Gitter-Stufe 0, drei Teil-Schritte je Takt: der Schritt
+        // ohne Kollision 10,6 → 7,7 ms)
+        var xA = z._xA && z._xA.length >= np ? z._xA : (z._xA = new Float64Array(np)),
+            xD = z._xD && z._xD.length >= np ? z._xD : (z._xD = new Float64Array(np)),
+            xK = null;
+        for (var jx = 0; jx < np; jx++) {
+            var wJ = w[pa[2 * jx]] + w[pa[2 * jx + 1]],
+                aJ = al[jx] / h2;
+            xA[jx] = aJ;
+            xD[jx] = wJ === 0 ? 0 : 1 / (wJ + aJ);
+        }
+        if (z.zielAlle && zA > 0) {
+            xK = z._xK && z._xK.length >= n ? z._xK : (z._xK = new Float64Array(n));
+            for (i = 0; i < n; i++) xK[i] = w[i] / (w[i] + zA);
+        }
         for (var st = 1; st <= k; st++) {
             var t = st / k;
             // Verlet: x' = x + (x − x_alt) · keep + g · h²; geführte Punkte gleiten zum Ziel
@@ -5083,17 +5100,19 @@
             for (var it = 0; it < z.iter; it++) {
                 // der Abstand je Paar: C = |x_b − x_a| − l, die Korrektur nach den inversen Massen
                 for (var j = 0; j < np; j++) {
-                    var a = 3 * pa[2 * j],
-                        b = 3 * pa[2 * j + 1],
-                        wa = w[pa[2 * j]],
-                        wb = w[pa[2 * j + 1]];
-                    if (wa + wb === 0) continue;
-                    var dx = p[b] - p[a],
+                    var dn = xD[j];
+                    if (dn === 0) continue;
+                    var ia = pa[2 * j],
+                        ib = pa[2 * j + 1],
+                        a = 3 * ia,
+                        b = 3 * ib,
+                        wa = w[ia],
+                        wb = w[ib],
+                        dx = p[b] - p[a],
                         dy = p[b + 1] - p[a + 1],
                         dzz = p[b + 2] - p[a + 2],
                         d = Math.sqrt(dx * dx + dy * dy + dzz * dzz) || 1e-9,
-                        at = al[j] / h2,
-                        dl = (rl[j] - d - at * lam[j]) / (wa + wb + at),
+                        dl = (rl[j] - d - xA[j] * lam[j]) * dn,
                         f = -dl / d;
                     lam[j] += dl;
                     p[a] += dx * f * wa;
@@ -5117,7 +5136,7 @@
                         ez = p[o2 + 2] - tz,
                         el = Math.sqrt(ex * ex + ey * ey + ez * ez);
                     if (zA > 0 && el > 1e-9) {
-                        var kz = w[i] / (w[i] + zA);
+                        var kz = xK[i];
                         ex -= ex * kz;
                         ey -= ey * kz;
                         ez -= ez * kz;
@@ -5504,30 +5523,13 @@
             for (var v = 0; v < k; v++) o[v] = hautFach.nahe(r[3 * v], r[3 * v + 1], r[3 * v + 2]) ? 1 : 0;
             return o;
         };
-        // die Freiheit der Ruhe je Ecke, die der Haut nahe liegt (Meter; die Haut in der Ruhe in ihrem Gitter)
-        var zr = { hP: new Float64Array(3 * Math.max(1, nh)), hN: new Float64Array(3 * Math.max(1, nh)) },
-            o2 = 0;
-        hautT.forEach(function (H) {
-            for (var hk = 0; hk < H.nah.length; hk++, o2 += 3) {
-                var v = H.nah[hk];
-                zr.hP[o2] = H.r[3 * v] * mE;
-                zr.hP[o2 + 1] = H.r[3 * v + 1] * mE;
-                zr.hP[o2 + 2] = H.r[3 * v + 2] * mE;
-                zr.hN[o2] = H.nrm[3 * v];
-                zr.hN[o2 + 1] = H.nrm[3 * v + 1];
-                zr.hN[o2 + 2] = H.nrm[3 * v + 2];
-            }
-        });
-        _hautGitter(zr, nh);
         teile.forEach(function (T) {
             T.nahe = naheHaut(T.r, T.n);
-            T.frei = new Float64Array(T.n).fill(Infinity);
-            for (var v = 0; v < T.n; v++) if (T.nahe[v]) T.frei[v] = _hautFrei(zr, T.r[3 * v] * mE, T.r[3 * v + 1] * mE, T.r[3 * v + 2] * mE);
         });
         folgeT.forEach(function (F) {
-            F.nahe = new Uint8Array(F.n); // die andere Stufe folgt ohne Kollision (sie wird nah nicht gezeichnet)
+            F.nahe = new Uint8Array(F.n); // die andere Stufe folgt ohne Kollision (sie trägt das Bild nicht, nur ihren Wurf)
         });
-        var Q = { n: n, nh: nh, teile: teile, folge: folgeT, haut: hautT, teilVon: teilVon, mE: mE };
+        var Q = { n: n, nh: nh, teile: teile, folge: folgeT, haut: hautT, teilVon: teilVon };
         Q.stufen = G.gitterM.map(function (zm) {
             return _tuchGitterStufe(Q, P0, masse, zm / mE);
         });
@@ -5618,12 +5620,10 @@
             ruheP = new Float64Array(3 * np),
             hzS = 0,
             mM = 0;
-        var frei = new Float64Array(np);
         for (j = 0; j < np; j++) {
             var g = idx[j],
                 Tg = teile[Q.teilVon[g]],
                 art = Tg.art;
-            frei[j] = Tg.frei[g - Tg.off];
             w[j] = 1 / mS[j];
             zMax[j] = art.freiM;
             hzS += art.hz;
@@ -5743,7 +5743,6 @@
             zielMax: zMax,
             tiefe: new Float64Array(np).fill(G.tiefeM),
             ruheP: ruheP,
-            frei: frei,
             simF: teile.map(function (T, ti) {
                 return zE > 0 ? folger(T.r, T.n, ti) : null;
             }),
@@ -5935,53 +5934,19 @@
         z.gny = ny;
         z.gnz = nz;
     }
-    // DIE HAUT BLEIBT INNEN: je Punkt die nächste Haut-Ecke im Radius hautM (die Haut dieses Bilds, beide Stufen); liegt er
-    // weniger als luftM über ihr (längs ihrer Normale), hebt er sich auf luftM — die Haut bewegt sich nie (sie ist der Leib).
-    // DIE FREIHEIT DER RUHE (w11-koerper): Tuch und Haut tragen dieselben Haut-Gewichte (der Stoff aus der Haut erbt sie) — was
-    // die Ruhe-Lage über der Haut liegt (`frei`, je Punkt, in der Ruhe gemessen: die tiefste Halb-Ebene der nächsten Haut-Ecken,
-    // ohne Haut in hautM die volle Reichweite), trägt jede Pose mit; nur die Abweichung des Lösers trägt das Tuch zur Haut. Ein
-    // Punkt, dessen Abweichung kleiner bleibt als seine Freiheit über der Luft (in einer Falte der Ruhe: als die Luft), prüft die
-    // Haut nicht. Bis hier prüfte jeder Punkt
-    // nahe der Haut sie je Takt (am Start-Leib im Gang 1 237 Prüfungen im Löser, 1 600 der Folger).
+    // DIE HAUT BLEIBT INNEN: je Punkt die nächste Haut-Ecke im Radius hautM (die Haut der Stufe, die das Bild trägt); liegt er
+    // weniger als luftM über ihr (längs ihrer Normale), hebt er sich auf luftM — die Haut bewegt sich nie (sie ist der Leib). JEDER
+    // Punkt prüft sie in JEDEM Takt (wo keine Haut nah ist, liest er eine Zelle der Nähe, `_hautGitter`). Gefallen ist DIE FREIHEIT
+    // DER RUHE (w11-koerper, gefallen in w12-tuch-grob): wer weniger abwich als seine in der Ruhe gemessene Höhe über der Haut,
+    // prüfte nie — „Tuch und Haut tragen dieselben Haut-Gewichte, jede Pose trägt die Freiheit mit". Die Pose trägt sie nicht: die
+    // Mischung der Knochen staucht Achsel, Ellbogen und Hüfte, und der schwingende Unterarm geht durch den Poncho an der Hüfte
+    // (haar.K4#2 an b62542c9: die feine Stufe im Gang 3 057 Tuch-Ecken hinter ihrer Haut in 40 von 40 Bildern, die grobe 543). Eine
+    // Freiheit, die die Pose misst (die Regung der Haut gegen den Punkt im Rahmen der Wurzel, oder je Takt gegen den letzten), hielt
+    // im Gang nie: ~2 200–2 750 der ~3 500 Prüfungen blieben, und ihr Messen kostete mehr, als es sparte. Die Kosten der vollen
+    // Prüfung (Kollision 1,1 → 3,3 ms je Takt am Poncho, Gitter-Stufe 0) trägt der Takt selbst: der Schritt teilt nicht mehr je
+    // Paar und Runde (`xpbdSchritt`), die Ziele messen ihre Längen ohne `Math.hypot` (`tuchTakt`).
     function _tuchKollision(z) {
-        var S = z.S,
-            fr = S.frei,
-            p = z.p,
-            ziel = z.ziel,
-            ue = z._ueber || (z._ueber = new Uint8Array(z.n)),
-            luft = TUCH_GESETZ.luftM;
-        if (ue.length < z.n) ue = z._ueber = new Uint8Array(z.n);
-        for (var i = 0; i < z.n; i++) {
-            var o = 3 * i,
-                dx = p[o] - ziel[o],
-                dy = p[o + 1] - ziel[o + 1],
-                dz = p[o + 2] - ziel[o + 2];
-            // liegt schon die Ruhe in einer Falte (frei ≤ luft: die Drapierung fand keine freie Lage), hält der Punkt sie, solange
-            // er kaum abweicht — der Löser kämpft nicht je Takt gegen seine eigene Ruhe
-            var fi = fr[i] > luft ? fr[i] - luft : luft;
-            ue[i] = dx * dx + dy * dy + dz * dz < fi * fi ? 1 : 0;
-        }
-        _hautHeben(z, p, z.n, z.kontakt, z.q, true, ue);
-    }
-    // Die Freiheit einer Lage über der Haut (im Gitter z): die tiefste Halb-Ebene des Bands der nächsten Haut-Ecke, ohne Deckel;
-    // ohne Haut in hautM die volle Reichweite hautM
-    function _hautFrei(z, x, y, zz) {
-        var G = TUCH_GESETZ,
-            q = z._q || (z._q = new Float64Array(3));
-        if (_hautPruefen(z, x, y, zz, q) < 0) return G.hautM;
-        var b = q[0],
-            hP = z.hP,
-            hN = z.hN,
-            cd = z._cd,
-            rb = Math.hypot(hP[b] - x, hP[b + 1] - y, hP[b + 2] - zz) + G.bandM,
-            m = Infinity;
-        for (var t = 0; t < z._cn; t += 2) {
-            if (cd[t] > rb * rb) continue;
-            var j = cd[t + 1],
-                h = (x - hP[j]) * hN[j] + (y - hP[j + 1]) * hN[j + 1] + (zz - hP[j + 2]) * hN[j + 2];
-            if (h < m) m = h;
-        }
-        return m;
+        _hautHeben(z, z.p, z.n, z.kontakt, z.q, true);
     }
     // DIE PRÜFUNG einer Lage (x, y, zz) gegen die Haut: die nächste Haut-Ecke im Radius hautM und jede im Band um sie (`bandM`:
     // Gleichstände — die Haut beider Stufen liegt oft deckungsgleich, mit anderen Normalen); `q` erhält [nächste, tiefste,
@@ -6064,8 +6029,8 @@
     // nächsten Schritt — das Tuch pendelte zwischen Ziel und Haut). Die Ruhe (`rueckfall`): pendelt sie in einer Falte (Achsel,
     // Schritt — zwei Häute, deren Halb-Ebenen einander ausschließen), setzt sie sich auf die nächste Haut-Ecke, über der sie
     // selbst die Prüfung hält (deren Lage + 1,5 · luftM längs ihrer Normale, sonst 3 und 6 ·; die nächsten zuerst, höchstens
-    // 16). `ueber` (optional): je Punkt 1, wenn er die Haut nicht prüft. Antwort: die Zahl der gehobenen Punkte.
-    function _hautHeben(z, p, n, kontakt, q0, rueckfall, ueber) {
+    // 16). Antwort: die Zahl der gehobenen Punkte.
+    function _hautHeben(z, p, n, kontakt, q0, rueckfall) {
         var G = TUCH_GESETZ,
             luft = G.luftM,
             hP = z.hP,
@@ -6073,7 +6038,6 @@
             q = z._q || (z._q = new Float64Array(3)),
             gehoben = 0;
         for (var i = 0; i < n; i++) {
-            if (ueber && ueber[i]) continue; // frei genug (die Freiheit der Ruhe, `_tuchKollision`)
             var o = 3 * i,
                 hob = false,
                 ok = false;
@@ -6243,13 +6207,13 @@
                     ax = M[o] * nx + M[o + 3] * ny + M[o + 6] * nz,
                     ay = M[o + 1] * nx + M[o + 4] * ny + M[o + 7] * nz,
                     az = M[o + 2] * nx + M[o + 5] * ny + M[o + 8] * nz,
-                    al = Math.hypot(ax, ay, az) || 1;
+                    al = Math.sqrt(ax * ax + ay * ay + az * az) || 1;
                 zN[3 * j] = ax / al;
                 zN[3 * j + 1] = ay / al;
                 zN[3 * j + 2] = az / al;
             }
             // die Lotrechte der Ruhe (−y der Bindung) in der Pose: −(Spalte y der Blend-Matrix), normiert
-            var ul = Math.hypot(M[o + 3], M[o + 4], M[o + 5]) || 1;
+            var ul = Math.sqrt(M[o + 3] * M[o + 3] + M[o + 4] * M[o + 4] + M[o + 5] * M[o + 5]) || 1;
             gA[3 * j] = (gS * M[o + 3]) / ul;
             gA[3 * j + 1] = -gS + (gS * M[o + 4]) / ul;
             gA[3 * j + 2] = (gS * M[o + 5]) / ul;
@@ -6281,7 +6245,7 @@
                     bx = mF[0] * hx + mF[3] * hy + mF[6] * hz,
                     by = mF[1] * hx + mF[4] * hy + mF[7] * hz,
                     bz = mF[2] * hx + mF[5] * hy + mF[8] * hz,
-                    bl = Math.hypot(bx, by, bz) || 1;
+                    bl = Math.sqrt(bx * bx + by * by + bz * bz) || 1;
                 hN[jh] = bx / bl;
                 hN[jh + 1] = by / bl;
                 hN[jh + 2] = bz / bl;
@@ -6347,8 +6311,7 @@
     }
     // Ein Mesh schreibt seine Ecken: ohne Folger (`F` null: das sim-Mesh der Stufe 0) trägt Ecke i den Punkt off + i
     function _tuchFolgen(z, D, F, pos, Bk, off) {
-        var mE2 = z.gitter.mE * z.gitter.mE, // Meter je Einheit der Bindung (die Freiheit misst in Metern)
-            a = pos.array,
+        var a = pos.array,
             fI = D.bInv,
             dB = z._dB,
             mF = z.mF,
@@ -6370,10 +6333,8 @@
                 ux = g0 * dB[e0] + g1 * dB[e1] + g2 * dB[e2];
                 uy = g0 * dB[e0 + 1] + g1 * dB[e1 + 1] + g2 * dB[e2 + 1];
                 uz = g0 * dB[e0 + 2] + g1 * dB[e1 + 2] + g2 * dB[e2 + 2];
-                // die Ecke selbst gegen die Haut, wenn ihre Abweichung ihre Freiheit über der Luft aufzehrt: in die Welt durch ihre
-                // Knochen, gehoben, zurück
-                var fr = D.frei ? D.frei[i] - TUCH_GESETZ.luftM : -1;
-                if (D.nahe[i] && !(fr > 0 && (ux * ux + uy * uy + uz * uz) * mE2 < fr * fr)) {
+                // die Ecke selbst gegen die Haut, wenn sie ihr in der Ruhe nahe liegt: in die Welt durch ihre Knochen, gehoben, zurück
+                if (D.nahe[i]) {
                     _tuchBlend(Bk, D.bi, D.bw, i, mF, 0);
                     var rx = D.r[o] + ux, ry = D.r[o + 1] + uy, rz = D.r[o + 2] + uz;
                     pt[0] = mF[0] * rx + mF[3] * ry + mF[6] * rz + mF[9];
