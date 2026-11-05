@@ -18,10 +18,10 @@ Log: /tmp/claude/w3/offen-w6.txt Einträge 119–164.
   - w12-brand-halt bringt w12-brand-bild endlich nach main. Der Zweig war in z232 an einem Konflikt in diag-stand-takt gefallen.
   - Der Herd ist deterministisch, stoffe.K2#2/K5#2 headless GRÜN am Zweig. Die Bilder habe ich gesehen: Der Rauch ist jetzt eine Fahne statt einer Kugelkette.
   - Nach der Landung: Farm, dann buchen (+2).
-- **z233-Jagd (OMEN)**:
-  - 4adff50e dorf-probe ist UNSCHULDIG (werk-im-wasser GRÜN 4 min).
-  - Es folgen pegel-lauf 43584419, proben-tempo-spiel e47e2714, riesenhalm c1667e94.
-  - Den Täter in seinen Briefkasten melden. Die Unschuldigen fahren als z237 hinter z236.
+- **z233-Jagd (OMEN), beendet**:
+  - **Täter w12-pegel-lauf 43584419**: Kreaturen-Obergrenze, „setzte 10 von 10 — der Fehl-Grund griff nicht“. Die Post steht in cloud-post/w12-pegel-lauf.md, der Zweig fährt erst nach der Heilung.
+  - dorf-probe ist unschuldig.
+  - **z237 hinter z236**: w12-dorf-probe 4adff50e, w12-proben-tempo-spiel e47e2714, w12-riesenhalm c1667e94. Die letzten beiden hat die Jagd nicht mehr gefahren, der Zug urteilt.
 - **z234 ROT** war Wackeln: Fenster-Wand E Lauf, am Ufer kein Wasser gezeichnet (wie z225, FUND). Die Zweige fuhren in z235/z236 weiter.
 
 ## Ausstehende Messungen
