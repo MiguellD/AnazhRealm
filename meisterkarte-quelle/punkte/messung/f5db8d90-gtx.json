@@ -1,0 +1,116 @@
+{
+ "sha": "f5db8d904ae0f50187c9b3e2e37de3fa38da73e0",
+ "geraet": "gtx",
+ "zeit": "2026-11-05T20:04:05.733Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "leib.K3#2": {
+   "gruen": false,
+   "zahl": "ego L 0.1676687/0.1676529/0.1676371 · K 0, 0 /m · 2,5÷0,5 m 1 · third L 0.167793/0.1677772/0.1677599 · K 0, 0 /m · 2,5÷0,5 m 1 · Leib Third 0,5 m Kontrast 0.01 · Mutante K 0 (UNERKANNT) · Höhle 0.0197632 ÷ hinaus 0.1508131 = 0.13 · ROT: ego 1.5 m: Abfall 0 /m außerhalb der REF [0.17; 0.57], ego 2.5 m: Abfall 0 /m außerhalb der REF [0.17; 0.57], third 1.5 m: Abfall 0 /m außerhalb der REF [0.17; 0.57], third 2.5 m: Abfall 0 /m außerhalb der REF [0.17; 0.57], Third 0,5 m: der eigene Leib hebt sich nur um 0.01 vom Wasser ab (Soll ≥ 0.05), die Mutante kd halbiert verschiebt den Abfall nicht (0 gegen 0 /m) — das Bild liest das Gesetz des Wassers nicht · Exit 0",
+   "exit": 0,
+   "minuten": 0.56,
+   "grund": "ROT: ego L 0.1676687/0.1676529/0.1676371 · K 0, 0 /m · 2,5÷0,5 m 1 · third L 0.167793/0.1677772/0.1677599 · K 0, 0 /m · 2,5÷0,5 m 1 · Leib Third 0,5 m Kontrast 0.01 · Mutante K 0 (UNERKANNT) · Höhle 0.0197632 ÷ hinaus 0.1508131 = 0.13 · ROT: ego 1.5 m: Abfall 0 /m außerhalb der REF [0.17; 0.57], ego 2.5 m: Abfall 0 /m außerhalb der REF [0.17; 0.57], third 1.5 m: Abfall 0 /m außerhalb der REF [0.17; 0.57], third 2.5 m: Abfall 0 /m außerhalb der REF [0.17; 0.57], Third 0,5 m: der eigene Leib hebt sich nur um 0.01 vom Wasser ab (Soll ≥ 0.05), die Mutante kd halbiert verschiebt den Abfall nicht (0 gegen 0 /m) — das Bild liest das Gesetz des Wassers nicht · Exit 0",
+   "gpu": "nvidia/pascal",
+   "s": 33.9,
+   "zeit": "2026-11-05T20:04:05.733Z",
+   "abdruck": "becb8e259f5a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "material.K3#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: haus@0.5 l1 1.004/l2 0.995 · birke@0.5 l1 1.086/karte 0.944 · fichte@0.5 l1 1.003/karte 1.172 · haus@0.27 l1 1.004/l2 0.995 · birke@0.27 l1 0.986/karte 0.944 · fichte@0.27 l1 0.993/karte 1.119 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] nv) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.evaluate): Target closed",
+   "exit": 3,
+   "minuten": 1.41,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: haus@0.5 l1 1.004/l2 0.995 · birke@0.5 l1 1.086/karte 0.944 · fichte@0.5 l1 1.003/karte 1.172 · haus@0.27 l1 1.004/l2 0.995 · birke@0.27 l1 0.986/karte 0.944 · fichte@0.27 l1 0.993/karte 1.119 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] nv) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.evaluate): Target closed",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.4,
+   "zeit": "2026-11-05T20:02:20.577Z",
+   "abdruck": "b64e0211e9fc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K1#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.evaluate): Target closed",
+   "exit": 3,
+   "minuten": 1.41,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.evaluate): Target closed",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.4,
+   "zeit": "2026-11-05T20:02:20.577Z",
+   "abdruck": "66b88461512c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "material.K3#2",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-05T20:01:46.766Z",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 9,
+  "grundstellungS": [
+   4
+  ],
+  "proben": 2,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "material.K3#2",
+    "s": 23.4,
+    "takte": 651,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": null,
+    "vor": "leib.K3#2",
+    "s": 16.7,
+    "takte": 923,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [],
+  "unerklaert": [
+   {
+    "probe": "material.K3#2",
+    "wie": "werke +6 (−0)"
+   }
+  ],
+  "ciBlicke": 3,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 2,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "leib.K3#2",
+     "m": 6430,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 161,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 171.8,
+  "minuten": 2.93
+ }
+}
