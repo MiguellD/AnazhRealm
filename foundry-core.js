@@ -8768,6 +8768,22 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             }
         }
     }
+    // DIE ANLAGE (w11-koerper, koerper `armAnlage`): in der Ruhe-Pose, an der Gestalt, die die Stufe trägt (nach dem Schnitt der
+    // Haut unter dem Stoff und dem Kollaps auf die Zeile), weicht die Hülle des Rumpfs — Haut, Stoff und Fett-Depot — dem
+    // aufliegenden Arm; der Arm ruht mit seiner Hülle am Kern (`_armRuhe`). Ohne das Gesetz kein Mensch (fail-closed).
+    {
+        if (typeof kern.armAnlage !== "function") throw new Error("MENSCH-GUSS: koerper-Kern ohne armAnlage — die Rumpf-Hülle weicht dem Arm (fail-closed)");
+        const anlage = [];
+        B.character.traverse((m) => {
+            const a = m.isMesh && !m.userData.__nichtGiessen && m.userData.__huelle && m.geometry.attributes;
+            if (a && a.skinIndex) anlage.push({ m, pos: a.position.array, idx: m.geometry.index.array, si: a.skinIndex.array, sw: a.skinWeight.array, n: a.position.count });
+        });
+        if (kern.armAnlage(B, anlage, skinJoints))
+            for (const h of anlage) {
+                h.m.geometry.attributes.position.needsUpdate = true;
+                h.m.geometry.computeVertexNormals();
+            }
+    }
     // DAS VOLUMEN DES LEIBS (1310-15, physik K1): die Masse des Menschen liest das Volumen seines Leibs — die Vereinigung seiner
     // Teile unter der Haut (skin · shorts · joint, Kopf, Hände und Füße eingeschlossen) in der Ruhe-Pose, je Teil das Netz der
     // Nah-Stufe (20 × 14 Segmente, in jeder Stufe dasselbe), im Raster gezählt (`__vereinigungsVolumen`: was zwei Teile decken,

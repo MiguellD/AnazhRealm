@@ -1497,7 +1497,7 @@
         const character = B.character, parts = B.parts, base = B.base;
         const M = labMorph(dials);
         character.scale.set(M.charScale.x,M.charScale.y,M.charScale.z);const MU=M.shell;function aply(m,sc){m.scale.set(sc.x,sc.y,sc.z);return sc;}if(parts.ribcage)parts.ribcage.userData.baseScaleY=aply(parts.ribcage,MU.ribcage(base.ribcage)).y;if(parts.pelvis)aply(parts.pelvis,MU.pelvis(base.pelvis));if(parts.waist)aply(parts.waist,MU.waist(base.waist));function pair(name,fn){[-1,1].forEach(sd=>{const k=name+(sd===1?'1':'-1');if(parts[k])fn(parts[k],base[k],sd);});}if(parts.abs)parts.abs.userData.baseScaleY=aply(parts.abs,MU.abs(base.abs)).y;pair('oblique',(m,b)=>aply(m,MU.oblique(b)));pair('glute',(m,b)=>aply(m,MU.glute(b)));pair('quad',(m,b)=>{m.userData.baseScaleY=aply(m,MU.quad(b)).y;});pair('hamstring',(m,b)=>aply(m,MU.hamstring(b)));pair('calf',(m,b)=>{m.userData.baseScaleY=aply(m,MU.calf(b)).y;});pair('bicep',(m,b)=>{m.userData.baseScaleY=aply(m,MU.bicep(b)).y;});pair('tricep',(m,b)=>aply(m,MU.tricep(b)));pair('uarm',(m,b)=>aply(m,MU.uarm(b)));pair('forearm',(m,b)=>aply(m,MU.forearm(b)));pair('deltoid',(m,b)=>aply(m,MU.deltoid(b)));pair('trap',(m,b)=>aply(m,MU.trap(b)));pair('lat',(m,b)=>aply(m,MU.lat(b)));if(parts.upperBack)aply(parts.upperBack,MU.upperBack(base.upperBack));if(parts.chest){var csc=aply(parts.chest,MU.chest(base.chest));parts.chest.userData.baseScaleX=csc.x;parts.chest.userData.baseScaleY=csc.y;parts.chest.userData.baseScaleZ=csc.z;}pair('pec',(m,b)=>aply(m,MU.pec(b)));pair('breast',(m,b)=>aply(m,MU.breast(b)));if(parts.neckMain)aply(parts.neckMain,MU.neck(base.neckMain));if(parts.neckBase)aply(parts.neckBase,MU.neck(base.neckBase));pair('scm',(m,b)=>aply(m,MU.neck(b)));pair('tneck',(m,b)=>aply(m,MU.neck(b)));if(parts.jaw)aply(parts.jaw,MU.jaw(base.jaw));if(parts.chin)aply(parts.chin,MU.chin(base.chin));pair('buccal',(m,b)=>aply(m,MU.buccal(b)));pair('cheekbone',(m,b)=>aply(m,MU.cheekbone(b)));pair('masseter',(m,b)=>aply(m,MU.masseter(b)));[-1,1].forEach(sd=>{const k='arm'+(sd===1?'1':'-1');if(parts[k]){parts[k].position.x=sd*baseArmX*M.armPose.xMul;const bz=sd*M.armPose.rotZ;const bx=M.armPose.rotX;parts[k].rotation.z=bz;parts[k].rotation.x=bx;parts[k].userData.baseRotZ=bz;parts[k].userData.baseRotX=bx;}});if(parts.head){parts.head.position.y=base.headPosY-trochanterY-M.headPose.ageDrop;parts.head.position.z=M.headPose.fwd;}
-        _armRuhe(B, dials);
+        _armRuhe(B);
         gesichtAuf(B, dials);
         return M;
     }
@@ -1509,26 +1509,26 @@
     // (`naht` des Oberarms, Gelenk → Ellbogen; der Deltamuskel IST die Naht) `luft` Abstand zu jeder Kugel von Becken, Bauch und
     // Brust hält. Das weiche Gewebe (`weicht`, je Teil seine Press-Grenze: der Muskel des Brustkorbs — Brustkorb, Brust, Rücken,
     // Latissimus, Trapez — bis 0,5 seiner Breite, das Fett von Bauch und Flanke bis 0,8; das Becken ist Knochen) gibt unter dem
-    // Arm nach, bevor das Gelenk spreizt: die Winkel gelten dem gepressten Rumpf, danach fällt die Breite (scale.x) jedes weichen
-    // Teils nur so weit, wie der hängende Arm es verlangt — der Latissimus reichte am Labor-Kern 0,27 E über das Gelenk hinaus,
-    // der Brustkorb war so breit wie die Schultern: kein Winkel unter 60° zog den Arm heraus, und der Bauch bei mass 1 spreizte
-    // ihn ungepresst auf 51°. `luft` = die Hüllen beider
-    // Seiten (Haut und Stoff aus der Haut über ihren Kugeln; am Guss gemessen, bis keine Arm-Ecke hinter der Rumpf-Hülle liegt).
-    // DAS FETT-DEPOT (studios.K1) gehört zur gezeichneten Gestalt: jede Kugel trägt die Dicke ihres Gelenks (`fettDepot`, dieselbe,
-    // die der Ofen jeder Ecke entlang ihrer Normale gibt — Rumpf und Becken vorn × 1 + bauch · n_z), Arm wie Rumpf, bei jeder
-    // Masse (vorher rechnete die Ruhe ohne Depot: bei mass 1 lagen 15 und 206 Arm-Ecken im Rumpf). Zwei Gesetze des Gewebes
-    // tragen es: das Fett weicht zuerst (die Press-Grenze gilt dem Gewebe UNTER dem Depot — ein weiches Teil presst um sein
-    // Depot weiter, bis die gezeichnete Fläche dort liegt, wo das gepresste Gewebe ohne Fett läge; ein dünneres Depot unter dem
-    // Mittel lässt die Grenze), und im Saum an der Naht (naht bis naht + saum, wo die Hülle EINE Fläche ist) verdickt das Depot
-    // die eine Fläche, ohne einen Spalt zu verlangen — dort gilt die Luft allein.
-    // Der Abstand je Punkt ist die erste Ordnung des Ellipsoids (f/|∇f|). Leser: der Ofen (bakeMenschInstance: Guss, Gelenke,
-    // Bind-Pose), das Labor, die Linse (gate:koerper-kern Teil R).
+    // Arm nach, bevor das Gelenk spreizt: die Winkel gelten dem gepressten Rumpf (der KERN) — der Latissimus reichte am
+    // Labor-Kern 0,27 E über das Gelenk hinaus, der Brustkorb war so breit wie die Schultern: kein Winkel unter 60° zog den Arm
+    // heraus, und der Bauch bei mass 1 spreizte ihn ungepresst auf 51°. Danach behält das Gewebe seine Breite: es weicht nur
+    // dort, wo der Arm aufliegt (`armAnlage`, im Ofen) — bis w12-arme schmälerte die Ruhe jedes weiche Teil im Ganzen (scale.x),
+    // der Bauch verlor vorn sein Volumen, die Kugeln darunter zeichneten sich ab. `luft` = die Hülle des ARMS (Haut und Stoff
+    // aus der Haut über seinen Kugeln, am Guss jenseits des Saums gemessen: START p90 0,11 E, höchstens 0,13): der Arm ruht mit
+    // seiner Hülle am Kern des Rumpfs. Was der Rumpf darüber trägt — Haut, Stoff, das Fett-Depot (studios.K1) — und das Depot
+    // des Arms halten ihn nicht, sie weichen dem aufliegenden Arm: bis w12-arme hielt die Ruhe die Hüllen BEIDER Seiten (0,24) und
+    // das Depot obendrauf — die muskulöse Frau bei mass 1 (tone 1, gender 0) spreizte 43° (ohne Depot) bis 54° (mit), am Gitter
+    // mass × tone × age × gender höchstens 21° mit der Hülle des Arms allein. Der Abstand je Punkt ist die erste Ordnung des Ellipsoids (f/|∇f|). Leser: der
+    // Ofen (bakeMenschInstance: Guss, Gelenke, Bind-Pose), das Labor, die Linse (gate:koerper-kern Teil R).
     var ARM_RUHE = Object.freeze({
         naht: 0.25,
-        luft: 0.24,
+        luft: 0.12,
+        spalt: 0.02, // die Anlage: so weit (E, ~6 mm, zwei Luft-Breiten des Tuch-Gesetzes) liegt die gewichene Rumpf-Hülle über dem Arm
+        rand: 0.3, // so weit (E, ~8,5 cm, längs der Fläche) entspannt sich das Gewebe um die gewichenen Ecken
+        entspannen: 16, // Runden der Entspannung
         bisRad: 1.2, // höchstens so weit (rad) spreizt die Schulter
         ellbogenRad: 0.3, // der Tragewinkel des Ellbogens höchstens (rad, ~17°)
-        stellen: 14, // Halbierungen je Winkel und Breite
+        stellen: 14, // Halbierungen je Winkel
         proben: 160, // Punkte je Kugel (Fibonacci-Kugel; der Oberarm ist ein langes Ellipsoid)
         // je Paar die rechte Seite (die linke folgt ihr): die Press-Grenze ihrer Breite
         weicht: Object.freeze({ ribcage: 0, chest: 0, upperBack: 0, lat1: 0, pec1: 0, trap1: 0, waist: 0.7, abs: 0.7, oblique1: 0.7, breast1: 0.5, pelvis: 0.7, glute1: 0.7 }),
@@ -1536,6 +1536,9 @@
         // das Urteil am Guss (`armRuheUrteil`): der Saum der Hülle an der Naht (Teil des Oberarms: der Deltamuskel fließt über
         // Feld-Unschärfe und Haut-Abstand ~0,06 E in den Rücken — dort ist die Hülle EINE Fläche) und die Körper, an denen es gilt
         saum: 0.05,
+        // die Bänder des Urteils (gate:mensch-anatomie RUHE): keine Arm-Ecke im Rumpf, die Abspreizung der Ruhe höchstens 25°
+        innen: Object.freeze([0, 0]),
+        spreizGrad: Object.freeze([0, 25]),
         koerper: Object.freeze([{}, { mass: 1, tone: 1, age: 0, gender: 0 }, { mass: 1, tone: 0, age: 1, gender: 1 }, { mass: 0, tone: 1, age: 0, gender: 0 }, { mass: 0, tone: 0, age: 1, gender: 1 }]),
     });
     // Die affine Lage eines Knotens in seinem Eltern (3×4 spaltenweise: drei Achsen, dann die Lage; Euler XYZ wie die Gelenke)
@@ -1563,26 +1566,13 @@
         return M;
     }
     var _ARM_RICHTUNG = null;
-    function _armRuhe(B, dials) {
+    function _armRuhe(B) {
         if (!B || !Array.isArray(B.kugeln)) throw new Error("morphAuf: der Baum trägt keine Kugeln (bauMensch) — die Ruhe der Arme folgt dem Gesetz");
         if (!B.kugeln.length) return; // ein Baum ohne Gestalt (die Morph-Probe der Linse): kein Kontakt
         var A = ARM_RUHE,
             P = B.parts,
             W = B.character,
-            FD = fettDepot(dials),
-            DEP = new Map(),
             i;
-        // das Fett-Depot einer Kugel: die Dicke ihres Gelenks (das nächste Gelenk der Kette über ihr, sonst die Wurzel) × die
-        // Abweichung des Fetts, und ob es vorn wächst (der Ofen gibt sie jeder Ecke, die an diesem Gelenk hängt)
-        var depot = function (kg) {
-            if (DEP.has(kg)) return DEP.get(kg);
-            var j = "mensch";
-            for (var n = kg.n; n && n !== W && j === "mensch"; n = n.parent)
-                for (var q = 0; q < KETTE_GELENKE.length; q++) if (P[KETTE_GELENKE[q]] === n) j = KETTE_GELENKE[q];
-            var dp = FD ? { f: FD.d * (FD.gelenk[j] || 0), v: FD.vorn.indexOf(j) >= 0 ? FD.bauch : 0 } : { f: 0, v: 0 };
-            DEP.set(kg, dp);
-            return dp;
-        };
         ["arm1", "arm-1", "elbow1", "elbow-1", "deltoid1"].forEach(function (nm) {
             if (!P[nm]) throw new Error("morphAuf: der Arm ohne " + nm + " — die Ruhe der Arme braucht Schulter, Ellbogen und Naht");
         });
@@ -1621,54 +1611,41 @@
             }
             rumpf.push(kg);
         });
-        // ein Ellipsoid: die Inverse seiner Achsen (zeilenweise), seine Lage und sein Depot; die Hüllkugel trägt Luft und Depot
+        // ein Ellipsoid: die Inverse seiner Achsen (zeilenweise) und seine Lage; der Abstand eines Punkts in erster Ordnung
         var ellipsoid = function (kg) {
             var M = _affVon(kg.n, W),
-                R = kg.r * Math.max(Math.hypot(M[0], M[1], M[2]), Math.hypot(M[3], M[4], M[5]), Math.hypot(M[6], M[7], M[8])),
-                dp = depot(kg);
-            return { li: _m3inv(M, 0, new Float64Array(9)), t: [M[9], M[10], M[11]], r: kg.r, f: dp.f, v: dp.v, R: R + A.luft + Math.max(0, dp.f * (1 + dp.v)) };
+                R = kg.r * Math.max(Math.hypot(M[0], M[1], M[2]), Math.hypot(M[3], M[4], M[5]), Math.hypot(M[6], M[7], M[8]));
+            return { li: _m3inv(M, 0, new Float64Array(9)), t: [M[9], M[10], M[11]], r: kg.r, R2: (R + A.luft) * (R + A.luft) };
         };
-        // der Abstand eines Punkts in erster Ordnung, weniger der Luft und der Depots beider Seiten (des Ellipsoids entlang seiner
-        // Normale, vorn × 1 + bauch · n_z, und `fp` des Punkts; im Saum an der Naht, sm = 0, keins): < 0 heißt, die gezeichneten
-        // Hüllen berühren sich
-        var luecke = function (e, x, y, z, fp, sm) {
+        var abstand = function (e, x, y, z) {
             var dx = x - e.t[0], dy = y - e.t[1], dz = z - e.t[2], L = e.li;
             var qx = L[0] * dx + L[1] * dy + L[2] * dz, qy = L[3] * dx + L[4] * dy + L[5] * dz, qz = L[6] * dx + L[7] * dy + L[8] * dz;
             var l = Math.sqrt(qx * qx + qy * qy + qz * qz) || 1e-9;
             var gx = (L[0] * qx + L[3] * qy + L[6] * qz) / l, gy = (L[1] * qx + L[4] * qy + L[7] * qz) / l, gz = (L[2] * qx + L[5] * qy + L[8] * qz) / l;
-            var g = Math.sqrt(gx * gx + gy * gy + gz * gz) || 1e-9;
-            return (l - e.r) / g - A.luft - sm * e.f * (1 + e.v * Math.max(0, gz / g)) - fp;
+            return (l - e.r) / (Math.sqrt(gx * gx + gy * gy + gz * gz) || 1e-9);
         };
-        // die Punkte der Kugeln eines Glieds jenseits der Naht (in der Lage, die der Arm gerade trägt): je Punkt die Lage (xyz), sein
-        // Depot und ob er jenseits des Saums liegt (im Saum: kein Depot), dazu das größte Depot (die Hüllkugel der Vorprüfung)
+        // die Punkte der Kugeln eines Glieds jenseits der Naht (in der Lage, die der Arm gerade trägt)
         var punkte = function (glied) {
             var S = _affVon(P.arm1, W), E = _affVon(P.elbow1, W),
                 ax = E[9] - S[9], ay = E[10] - S[10], az = E[11] - S[11], l2 = ax * ax + ay * ay + az * az,
-                out = { xyz: [], f: [], s: [], fMax: 0 };
+                out = [];
             glied.forEach(function (kg) {
-                var M = _affVon(kg.n, W),
-                    fp = depot(kg).f;
+                var M = _affVon(kg.n, W);
                 for (var j = 0; j < _ARM_RICHTUNG.length; j++) {
                     var d = _ARM_RICHTUNG[j], ux = d[0] * kg.r, uy = d[1] * kg.r, uz = d[2] * kg.r,
                         x = M[0] * ux + M[3] * uy + M[6] * uz + M[9], y = M[1] * ux + M[4] * uy + M[7] * uz + M[10], z = M[2] * ux + M[5] * uy + M[8] * uz + M[11];
-                    var t = ((x - S[9]) * ax + (y - S[10]) * ay + (z - S[11]) * az) / l2, sm = t >= A.naht + A.saum ? 1 : 0;
-                    if (t < A.naht) continue;
-                    out.xyz.push(x, y, z);
-                    out.f.push(sm ? fp : 0);
-                    out.s.push(sm);
-                    if (sm && fp > out.fMax) out.fMax = fp;
+                    if (((x - S[9]) * ax + (y - S[10]) * ay + (z - S[11]) * az) / l2 >= A.naht) out.push(x, y, z);
                 }
             });
             return out;
         };
-        // hält jeder Punkt Luft und Depots zu jedem Ellipsoid? (ein Punkt außerhalb der Hüllkugel samt beider Depots hält ohne Rechnung)
+        // hält jeder Punkt die Luft zu jedem Ellipsoid? (ein Punkt außerhalb der Hüllkugel + Luft hält sie ohne Rechnung)
         var haelt = function (pkt, E) {
-            var X = pkt.xyz;
             for (var k = 0; k < E.length; k++) {
-                var e = E[k], R2 = (e.R + pkt.fMax) * (e.R + pkt.fMax);
-                for (var p = 0, q = 0; p < X.length; p += 3, q++) {
-                    var dx = X[p] - e.t[0], dy = X[p + 1] - e.t[1], dz = X[p + 2] - e.t[2];
-                    if (dx * dx + dy * dy + dz * dz < R2 && luecke(e, X[p], X[p + 1], X[p + 2], pkt.f[q], pkt.s[q]) < 0) return false;
+                var e = E[k];
+                for (var p = 0; p < pkt.length; p += 3) {
+                    var dx = pkt[p] - e.t[0], dy = pkt[p + 1] - e.t[1], dz = pkt[p + 2] - e.t[2];
+                    if (dx * dx + dy * dy + dz * dz < e.R2 && abstand(e, pkt[p], pkt[p + 1], pkt[p + 2]) < A.luft) return false;
                 }
             }
             return true;
@@ -1708,21 +1685,11 @@
                 if (t.userData && t.userData.baseScaleX != null) t.userData.baseScaleX = t.scale.x;
             });
         };
-        // 0) das Gewebe gepresst: die Winkel gelten dem Rumpf an seiner Press-Grenze (ein Teil, das ganz weicht, ist kein Hindernis);
-        // das Fett weicht zuerst: die Grenze fällt um das Depot, gemessen an der schmalsten Kugel des Teils (ihre halbe Breite)
-        var grenze = {};
-        for (var gn in weich) {
-            var dg = 0;
-            weich[gn].forEach(function (kg) {
-                var M = _affVon(kg.n, W);
-                dg = Math.max(dg, Math.max(0, depot(kg).f) / (kg.r * Math.hypot(M[0], M[1], M[2])));
-            });
-            grenze[gn] = Math.max(0, A.weicht[gn] - dg);
-        }
+        // 0) das Gewebe gepresst: die Winkel gelten dem Rumpf an seiner Press-Grenze (ein Teil, das ganz weicht, ist kein Hindernis)
         var hindernis = rumpf.slice();
         for (var pn in weich)
-            if (grenze[pn] > 0) {
-                breite(pn, grenze[pn]);
+            if (A.weicht[pn] > 0) {
+                breite(pn, A.weicht[pn]);
                 hindernis = hindernis.concat(weich[pn]);
             }
         var rE = hindernis.map(ellipsoid),
@@ -1734,29 +1701,16 @@
             ellbogen(A.ellbogenRad);
             gelenk(schulter, ths, A.bisRad, ober.concat(unten), rE);
         } else ellbogen(phe);
-        // 3) das Gewebe gibt nur so weit nach, wie der hängende Arm es verlangt (je Teil die größte Breite in [Grenze, 1], samt Depot)
-        var pkt = punkte(ober.concat(unten));
-        for (var nm in weich) {
-            var K = weich[nm],
-                fLo = grenze[nm],
-                fHi = 1;
-            breite(nm, 1);
-            if (!K.length || haelt(pkt, K.map(ellipsoid))) continue;
-            for (i = 0; i < A.stellen; i++) {
-                var f = 0.5 * (fLo + fHi);
-                breite(nm, f);
-                if (haelt(pkt, K.map(ellipsoid))) fLo = f;
-                else fHi = f;
-            }
-            breite(nm, fLo);
-        }
+        // 3) das Gewebe behält seine Breite: es weicht dem hängenden Arm nur dort, wo er aufliegt (die Anlage im Ofen, `armAnlage`)
+        for (var nm in weich) breite(nm, 1);
     }
 
     // DAS URTEIL DER RUHE (gate:mensch-anatomie RUHE): am Guss (Ofen L0, die Bind-Pose, die Welt und Labor zeichnen) liegt keine
     // Arm-Ecke in der Rumpf-Hülle — gemessen mit dem Gesetz der Kleidung (`tuchDrapieren`: die Haut bleibt innen, eine Ecke unter
     // `luftM` über der Halb-Ebene der nächsten Haut-Ecken wird gehoben): der Arm ist das Tuch, der Rumpf die Haut. Arm-Ecke =
     // Gewicht an Schulter, Ellbogen oder Hand > 0,5, jenseits der Naht plus dem Saum der Hülle (ARM_RUHE.saum); Rumpf = Gewicht an Rumpf und Wurzel > 0,5
-    // (Haut und Stoff aus der Haut). Antwort: { innen, arm } (Ecken). Die Gelenke liegen im Raum der Gestalt (ohne die Wurzel).
+    // (Haut und Stoff aus der Haut). Antwort: { innen, arm } (Ecken) und `spreizGrad`, die Abspreizung der Ruhe (Schulter → Ellbogen
+    // gegen das Lot, die größere Seite; Band ARM_RUHE.spreizGrad). Die Gelenke liegen im Raum der Gestalt (ohne die Wurzel).
     function armRuheUrteil(g) {
         var sk = g.userData.__skelett,
             J = {};
@@ -1795,7 +1749,245 @@
         var netz = function (P, N) {
             return { bindMatrix: { elements: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] }, geometry: { attributes: { position: { array: Float64Array.from(P), count: P.length / 3 }, normal: { array: Float64Array.from(N) } } } };
         };
-        return { innen: tuchDrapieren([netz(arm, arm)], [netz(rumpf, nrm)], leibMassstab()), arm: arm.length / 3 };
+        var grad = Math.max.apply(null, ["1", "-1"].map(function (sd) {
+            var d = _sub(lage("elbow" + sd), lage("arm" + sd));
+            return (Math.atan2(Math.abs(d[0]), -d[1]) * 180) / Math.PI;
+        }));
+        return { innen: tuchDrapieren([netz(arm, arm)], [netz(rumpf, nrm)], leibMassstab()), arm: arm.length / 3, spreizGrad: Math.round(grad * 10) / 10 };
+    }
+
+    // DIE ANLAGE (w11-koerper): die Hülle des Rumpfs weicht dem ruhenden Arm. Der Arm ruht mit SEINER Hülle am Kern des Rumpfs
+    // (`_armRuhe`, ARM_RUHE.luft); was der Rumpf darüber trägt — Haut, Stoff, das Fett-Depot (studios.K1) — und das Depot des
+    // Arms schiebt er beiseite, in drei Schritten an der Gestalt der Stufe (Rumpf-Ecke = Gewicht an Rumpf und Wurzel > 0,5):
+    //   1) WEICHEN: je Seite die gezeichnete Hülle des Arms (die größte Höhe seiner Ecken jenseits des Saums über seinen Kugeln,
+    //      erste Ordnung des Ellipsoids wie `_armRuhe`); jede Rumpf-Ecke, die tiefer liegt als diese Hülle plus `spalt`, weicht
+    //      waagrecht zur Mitte des Leibs (nie durch den Arm hindurch), bis sie die Höhe hält — im Saum der Naht (naht ± saum)
+    //      eingeblendet;
+    //   2) ENTSPANNEN: `entspannen` Runden lang rückt jede Rumpf-Ecke im Umkreis `rand` (längs der Fläche) der gewichenen zur
+    //      Mitte ihrer Rumpf-Nachbarn und weicht wieder — die Mulde läuft weich aus, eine gestauchte Falte glättet sich;
+    //   3) DAS GESETZ DES STOFFS (TUCH_GESETZ, die Haut unter dem Tuch): keine Ecke des Arms jenseits des Saums liegt weniger als
+    //      zwei Luft-Breiten über der Halb-Ebene ihrer nächsten Rumpf-Ecken (im Radius hautM über alle Hüllen, jede im Band
+    //      bandM um die nächste) — sonst sinkt die verletzte längs ihrer Normale (frisch aus den Dreiecken), bis zu acht Runden.
+    // `huellen`: je Hülle die Lagen (xyz im Raum der Gestalt, Ruhe-Pose — sie werden verschoben), skinIndex, skinWeight und der
+    // Index der Dreiecke; `gelenke` die Namen der Gelenk-Indizes. Antwort: die Zahl der Verschiebungen. Leser: der Ofen
+    // (bakeMenschInstance, nach dem Kollaps auf die Zeile); das Urteil `armRuheUrteil` (gate:mensch-anatomie RUHE).
+    function armAnlage(B, huellen, gelenke) {
+        var A = ARM_RUHE,
+            P = B.parts,
+            W = B.character,
+            q = [0, 0, 0],
+            seiten = [],
+            bewegt = 0;
+        var unter = function (n, t) {
+            for (; n; n = n.parent) if (n === t) return true;
+            return false;
+        };
+        // je Gelenk-Index seine Klasse (1 Rumpf · 2 rechter Arm · 3 linker Arm), je Hülle und Ecke die Klasse über 0,5 Gewicht
+        var klasse = gelenke.map(function (g) {
+            return g === "torso" || g === "mensch" ? 1 : /^(arm|elbow|hand)1$/.test(g) ? 2 : /^(arm|elbow|hand)-1$/.test(g) ? 3 : 0;
+        });
+        huellen.forEach(function (h) {
+            h.kl = new Uint8Array(h.n);
+            for (var i = 0; i < h.n; i++) {
+                var w = [0, 0, 0, 0];
+                for (var k = 4 * i; k < 4 * i + 4; k++) w[klasse[h.si[k]]] += h.sw[k];
+                h.kl[i] = w[1] > 0.5 ? 1 : w[2] > 0.5 ? 2 : w[3] > 0.5 ? 3 : 0;
+            }
+        });
+        var laenge = function (x, y, z) {
+            return Math.sqrt(x * x + y * y + z * z);
+        };
+        // die Höhe eines Punkts über dem nächsten Ellipsoid (q: dessen Normale)
+        var hoehe = function (E, x, y, z, R) {
+            var best = Infinity;
+            for (var k = 0; k < E.length; k++) {
+                var e = E[k], dx = x - e.t[0], dy = y - e.t[1], dz = z - e.t[2], L = e.li;
+                if (dx * dx + dy * dy + dz * dz > (e.R + R) * (e.R + R)) continue;
+                var qx = L[0] * dx + L[1] * dy + L[2] * dz, qy = L[3] * dx + L[4] * dy + L[5] * dz, qz = L[6] * dx + L[7] * dy + L[8] * dz;
+                var l = laenge(qx, qy, qz) || 1e-9;
+                var gx = (L[0] * qx + L[3] * qy + L[6] * qz) / l, gy = (L[1] * qx + L[4] * qy + L[7] * qz) / l, gz = (L[2] * qx + L[5] * qy + L[8] * qz) / l;
+                var g = laenge(gx, gy, gz) || 1e-9, d = (l - e.r) / g;
+                if (d < best) {
+                    best = d;
+                    q[0] = gx / g;
+                    q[1] = gy / g;
+                    q[2] = gz / g;
+                }
+            }
+            return best;
+        };
+        ["1", "-1"].forEach(function (sd, si) {
+            var E = [];
+            B.kugeln.forEach(function (kg) {
+                if (A.klassen.indexOf(kg.k) < 0 || !unter(kg.n, P["arm" + sd]) || unter(kg.n, P["deltoid" + sd])) return;
+                var M = _affVon(kg.n, W);
+                E.push({ li: _m3inv(M, 0, new Float64Array(9)), t: [M[9], M[10], M[11]], r: kg.r, R: kg.r * Math.max(laenge(M[0], M[1], M[2]), laenge(M[3], M[4], M[5]), laenge(M[6], M[7], M[8])) });
+            });
+            var S = _affVon(P["arm" + sd], W), El = _affVon(P["elbow" + sd], W), H = _affVon(P["hand" + sd], W),
+                ax = El[9] - S[9], ay = El[10] - S[10], az = El[11] - S[11], l2 = ax * ax + ay * ay + az * az;
+            var Z = {
+                E: E,
+                kl: 2 + si,
+                // die Mitte des Leibs von der Achse des Arms aus (Schulter → Ellbogen → Hand, ihr nächster Punkt), waagrecht
+                mitte: function (x, y, z) {
+                    var best = null, bd = Infinity;
+                    [[S, El], [El, H]].forEach(function (g) {
+                        var u = [g[1][9] - g[0][9], g[1][10] - g[0][10], g[1][11] - g[0][11]], uu = u[0] * u[0] + u[1] * u[1] + u[2] * u[2] || 1e-9,
+                            s = Math.max(0, Math.min(1, ((x - g[0][9]) * u[0] + (y - g[0][10]) * u[1] + (z - g[0][11]) * u[2]) / uu)),
+                            c = [g[0][9] + s * u[0], g[0][10] + s * u[1], g[0][11] + s * u[2]], d = (x - c[0]) * (x - c[0]) + (y - c[1]) * (y - c[1]) + (z - c[2]) * (z - c[2]);
+                        if (d < bd) {
+                            bd = d;
+                            best = c;
+                        }
+                    });
+                    return [-best[0], -best[2]];
+                },
+                // der Anteil im Saum: 0 über naht − saum, 1 ab naht + saum (die Arm-Ecken des Urteils)
+                f: function (p, i) {
+                    return Math.min(1, (((p[i] - S[9]) * ax + (p[i + 1] - S[10]) * ay + (p[i + 2] - S[11]) * az) / l2 - A.naht + A.saum) / (2 * A.saum));
+                },
+            };
+            var huelle = 0;
+            huellen.forEach(function (h) {
+                for (var i = 0; i < h.n; i++) if (h.kl[i] === Z.kl && Z.f(h.pos, 3 * i) >= 1) huelle = Math.max(huelle, hoehe(E, h.pos[3 * i], h.pos[3 * i + 1], h.pos[3 * i + 2], 1));
+            });
+            Z.soll = huelle + A.spalt;
+            seiten.push(Z);
+        });
+        // 1) eine Rumpf-Ecke weicht beiden Armen (bis zu vier Runden) waagrecht zur Mitte des Leibs, je Runde um das Fehlende durch
+        // die Steigung der Höhe in dieser Richtung (mindestens 0,3), im Saum um den Anteil f; Antwort: ob sie wich
+        var weiche = function (h, o) {
+            var hob = false;
+            for (var s = 0; s < seiten.length; s++) {
+                var Z = seiten[s], f = Z.f(h.pos, o);
+                if (f <= 0) continue;
+                for (var runde = 0; runde < 4; runde++) {
+                    var d = hoehe(Z.E, h.pos[o], h.pos[o + 1], h.pos[o + 2], Z.soll);
+                    if (d >= Z.soll) break;
+                    var u = Z.mitte(h.pos[o], h.pos[o + 1], h.pos[o + 2]), ul = Math.sqrt(u[0] * u[0] + u[1] * u[1]) || 1e-9,
+                        k = (f * (Z.soll - d)) / ul / Math.max(0.3, (u[0] * q[0] + u[1] * q[2]) / ul);
+                    h.pos[o] += k * u[0];
+                    h.pos[o + 2] += k * u[1];
+                    hob = true;
+                    if (f < 1) break;
+                }
+            }
+            return hob;
+        };
+        huellen.forEach(function (h) {
+            var gewichen = [], i, c, k;
+            for (i = 0; i < h.n; i++) if (h.kl[i] === 1 && weiche(h, 3 * i)) gewichen.push(i);
+            if (!gewichen.length) return;
+            bewegt += gewichen.length;
+            // 2) die Nachbarn aus den Dreiecken, der Umkreis `rand` längs der Fläche (nur Rumpf-Ecken), die Entspannung
+            var nb = [];
+            for (i = 0; i < h.n; i++) nb.push([]);
+            for (var t = 0; t < h.idx.length; t += 3)
+                for (var e = 0; e < 3; e++) {
+                    var a = h.idx[t + e], b = h.idx[t + ((e + 1) % 3)];
+                    if (nb[a].indexOf(b) < 0) nb[a].push(b);
+                    if (nb[b].indexOf(a) < 0) nb[b].push(a);
+                }
+            var weit = new Float64Array(h.n).fill(Infinity), frei = gewichen.slice();
+            for (i = 0; i < frei.length; i++) weit[frei[i]] = 0;
+            for (var z = 0; z < frei.length; z++) {
+                var v = frei[z];
+                for (k = 0; k < nb[v].length; k++) {
+                    var w = nb[v][k], dw = weit[v] + laenge(h.pos[3 * w] - h.pos[3 * v], h.pos[3 * w + 1] - h.pos[3 * v + 1], h.pos[3 * w + 2] - h.pos[3 * v + 2]);
+                    if (h.kl[w] !== 1 || dw > A.rand || dw >= weit[w]) continue;
+                    if (weit[w] === Infinity) frei.push(w);
+                    weit[w] = dw;
+                }
+            }
+            var neu = new Float64Array(3 * h.n);
+            for (var r = 0; r < A.entspannen; r++) {
+                for (z = 0; z < frei.length; z++) {
+                    var m = [0, 0, 0], n = 0, L = nb[(v = frei[z])];
+                    for (k = 0; k < L.length; k++) {
+                        if (h.kl[L[k]] !== 1) continue;
+                        n++;
+                        for (c = 0; c < 3; c++) m[c] += h.pos[3 * L[k] + c];
+                    }
+                    for (c = 0; c < 3; c++) neu[3 * v + c] = n ? 0.5 * (h.pos[3 * v + c] + m[c] / n) : h.pos[3 * v + c];
+                }
+                for (z = 0; z < frei.length; z++) {
+                    for (c = 0; c < 3; c++) h.pos[3 * frei[z] + c] = neu[3 * frei[z] + c];
+                    weiche(h, 3 * frei[z]);
+                }
+            }
+        });
+        // 3) das Gesetz des Stoffs: je Runde die Normalen frisch, ein Gitter der Rumpf-Ecken (Kante hautM), je Arm-Ecke die Probe
+        var me = leibMassstab(), luft = (2 * TUCH_GESETZ.luftM) / me, rad = TUCH_GESETZ.hautM / me, band = TUCH_GESETZ.bandM / me;
+        var schluessel = function (x, y, z) {
+            return (Math.floor(x / rad) + 512) * 1048576 + (Math.floor(y / rad) + 512) * 1024 + (Math.floor(z / rad) + 512);
+        };
+        for (var runde = 0; runde < 8; runde++) {
+            var zellen = new Map(), verletzt = 0;
+            huellen.forEach(function (h) {
+                h.N = _flaechenNormalen(h.pos, h.idx, h.n);
+                for (var i = 0; i < h.n; i++) {
+                    if (h.kl[i] !== 1) continue;
+                    var s = schluessel(h.pos[3 * i], h.pos[3 * i + 1], h.pos[3 * i + 2]);
+                    if (!zellen.has(s)) zellen.set(s, []);
+                    zellen.get(s).push(h, 3 * i);
+                }
+            });
+            seiten.forEach(function (Z) {
+                huellen.forEach(function (ha) {
+                    for (var j = 0; j < ha.n; j++) {
+                        var o = 3 * j;
+                        if (ha.kl[j] !== Z.kl || Z.f(ha.pos, o) < 1) continue;
+                        var x = ha.pos[o], y = ha.pos[o + 1], z = ha.pos[o + 2], bd = rad * rad, kand = [], s0 = schluessel(x, y, z);
+                        for (var a = -1; a <= 1; a++)
+                            for (var b = -1; b <= 1; b++)
+                                for (var c = -1; c <= 1; c++) {
+                                    var L = zellen.get(s0 + a * 1048576 + b * 1024 + c);
+                                    for (var k = 0; L && k < L.length; k += 2) {
+                                        var hh = L[k], ii = L[k + 1], d2 = (x - hh.pos[ii]) * (x - hh.pos[ii]) + (y - hh.pos[ii + 1]) * (y - hh.pos[ii + 1]) + (z - hh.pos[ii + 2]) * (z - hh.pos[ii + 2]);
+                                        if (d2 >= rad * rad) continue;
+                                        kand.push(hh, ii, d2);
+                                        if (d2 < bd) bd = d2;
+                                    }
+                                }
+                        var rb = (Math.sqrt(bd) + band) * (Math.sqrt(bd) + band);
+                        for (k = 0; k < kand.length; k += 3) {
+                            var bh = kand[k], bi = kand[k + 1];
+                            if (kand[k + 2] > rb) continue;
+                            var hoch = (x - bh.pos[bi]) * bh.N[bi] + (y - bh.pos[bi + 1]) * bh.N[bi + 1] + (z - bh.pos[bi + 2]) * bh.N[bi + 2];
+                            if (hoch >= luft) continue;
+                            for (c = 0; c < 3; c++) bh.pos[bi + c] -= (luft - hoch) * bh.N[bi + c];
+                            verletzt++;
+                        }
+                    }
+                });
+            });
+            bewegt += verletzt;
+            if (!verletzt) break;
+        }
+        return bewegt;
+    }
+    // die Normalen einer Fläche je Ecke (die Summe der Dreiecks-Kreuzprodukte, flächengewichtet wie computeVertexNormals), Einheit
+    function _flaechenNormalen(pos, idx, n) {
+        var N = new Float64Array(3 * n);
+        for (var t = 0; t < idx.length; t += 3) {
+            var a = 3 * idx[t], b = 3 * idx[t + 1], c = 3 * idx[t + 2],
+                ux = pos[b] - pos[a], uy = pos[b + 1] - pos[a + 1], uz = pos[b + 2] - pos[a + 2],
+                vx = pos[c] - pos[a], vy = pos[c + 1] - pos[a + 1], vz = pos[c + 2] - pos[a + 2],
+                nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+            for (var e = 0; e < 3; e++) {
+                var v = 3 * idx[t + e];
+                N[v] += nx;
+                N[v + 1] += ny;
+                N[v + 2] += nz;
+            }
+        }
+        for (var i = 0; i < 3 * n; i += 3) {
+            var l = Math.sqrt(N[i] * N[i] + N[i + 1] * N[i + 1] + N[i + 2] * N[i + 2]) || 1;
+            N[i] /= l;
+            N[i + 1] /= l;
+            N[i + 2] /= l;
+        }
+        return N;
     }
 
     // DAS GESICHT AUS DEM GENOM (mensch.K4, rein additiv — ohne seine Dials bleibt jeder Guss byte-gleich): vier Achsen in [0, 1],
@@ -6043,9 +6235,11 @@
         labLandmarks: labLandmarks,
         bauMensch: bauMensch,
         morphAuf: morphAuf,
-        // w11-koerper — die Ruhe der Arme (Leser: morphAuf) und ihr Urteil am Guss (Leser: die Linse gate:mensch-anatomie RUHE)
+        // w11-koerper — die Ruhe der Arme (Leser: morphAuf), ihr Urteil am Guss (Leser: die Linse gate:mensch-anatomie RUHE) und die
+        // Anlage, mit der die Rumpf-Hülle dem ruhenden Arm weicht (Leser: der Mensch-Guss)
         ARM_RUHE: ARM_RUHE,
         armRuheUrteil: armRuheUrteil,
+        armAnlage: armAnlage,
         MATERIAL_KLASSEN: MATERIAL_KLASSEN,
         HAUT_LOOK: HAUT_LOOK,
         HAAR_LOOK: HAAR_LOOK,
