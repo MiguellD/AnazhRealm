@@ -33,7 +33,7 @@ const TAFEL_PFAD = path.join(ROOT, "spec", "farbe", "albedo-tafel.json");
 // Die acht Klassen des Studio-Befunds (Synthese §4 W1e) — jede trägt mindestens eine Zeile.
 const PFLICHT_GRUPPEN = ["Rinde", "Laub", "Baum", "Fels", "Boden", "Haus", "Metall/Lack", "Haut/Fell", "Klinge"];
 
-// DIE STUDIOS des Labors (r128): Seite, die globalen Namen ihrer Szene, ihres Renderers, ihres Ausgabe-Wegs (der
+// DIE STUDIOS des Labors (r128; garage und schmiede auf der Engine und Bühne der Welt, r184): Seite, die globalen Namen ihrer Szene, ihres Renderers, ihres Ausgabe-Wegs (der
 // Composer oder der Renderer selbst) und die Bereitschaft. Jede Shell legt diese Namen als klassische Globale ab.
 const STUDIOS = {
     terrain: {
@@ -55,7 +55,7 @@ const STUDIOS = {
         pfad: "worlds/schmiede/index.html",
         szene: "scene",
         renderer: "R",
-        ausgabe: "composer",
+        ausgabe: null,
         wurzel: "weapon",
     },
     fachwerk: {

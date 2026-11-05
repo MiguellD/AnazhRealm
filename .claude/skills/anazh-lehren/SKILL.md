@@ -21,9 +21,10 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   (`docs/studio-vertrag.md`); der Host ist der OFEN (bauMensch-/bauTier-Guss + Lofi).
 - **Studios** `worlds/` (14 Verzeichnisse + die Hülle): die Gesetzbücher und Nebenwelten. Die EINE Hülle `worlds/huelle` ist NUR UI
   (Regler · Sitzung · Kosten-Leiste · Portal-Brücke, 12 von 12 trusted Studios). Die Bühne der Welt ist EIN Baustein (`welt-licht.js`
-  `buehne`: Tafeln der EINEN Atmosphäre, Sonne, Umgebung, Belichtung, Tonkurve — derselbe, den der Stamm ruft); auf ihr zeichnet die
-  garage, `gelaende` fährt die Welt selbst (`index.html?studio=gelaende`). Heute zeichnen portale · schmiede · fachwerk · terrain ·
-  koerperstudio · tetrapoda mit eigenem r128-`WebGLRenderer` und eigenem Licht — Labor = Welt ist dort Gesetz, nicht Stand.
+  `buehne`: Tafeln der EINEN Atmosphäre, Sonne, Umgebung, Belichtung, Tonkurve — derselbe, den der Stamm ruft; der Orbit ist die
+  Kugel der Hülle, `AnazhHuelle.kugel`); auf ihr zeichnen garage und schmiede, `gelaende` fährt die Welt selbst
+  (`index.html?studio=gelaende`). Heute zeichnen portale · fachwerk · terrain · koerperstudio · tetrapoda mit eigenem
+  r128-`WebGLRenderer` und eigenem Licht — Labor = Welt ist dort Gesetz, nicht Stand.
 - **Worker:** Foundry lädt die EINE Brücke `foundry-bruecke.js` auf der Engine der Welt (three r184 per `import()` aus ihrer
   Import-Karte, Manifest `engine`; kein ColorManagement, die Kerne rechnen ihr FARB-GESETZ selbst; Manifest per fetch) (`get-book` 1×Boot · `build-asset(id,seed,lod,ov)` ·
   `export-settlement`; die IDB-Platte der Schale trägt jede Lieferung — build-asset · Dorf-Export · Blatt-Atlas · Karte —

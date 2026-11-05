@@ -66,7 +66,7 @@ const PORT = Number(process.env.STUDIO_HUELLE_PORT || 8742); // der Gang und das
 const ENGINE_FREMD = /^\/(?:worlds\/[^/]+\/lib\/[^/]+|vendor\/three\.min\.js)$/;
 const ENGINE_EINE = "/vendor/three.webgpu.min.js";
 const WELT_GELADEN = /^\/(?:index\.html)?$|^\/stamm\//;
-const ENGINE_RATSCHE = { schmiede: "r128", portale: "r128", fachwerk: "r128", koerperstudio: "r128", tetrapoda: "r128", terrain: "r128", fluid: "r183", translated: "r130" };
+const ENGINE_RATSCHE = { portale: "r128", fachwerk: "r128", koerperstudio: "r128", tetrapoda: "r128", terrain: "r128", fluid: "r183", translated: "r130" };
 // H3 — DER EINE VERLAUF der Hülle am ersten Hüllen-Schieber: der Zug an seinen Rand, dann im selben Atemzug (der Zug ist noch
 // offen) die Tasten; die Folge [vor, Zug, je Taste] liest der Gang, sie wechselt ganz (vor, Zug, vor, Zug …) oder ist ROT.
 const VERLAUF = ["Strg+Z", "Strg+Umschalt+Z", "Strg+Z", "Strg+Y", "A", "B"]; // A/B (studios.K2): A zeigt den Stand der Öffnung, B den Zug
@@ -317,7 +317,7 @@ function selbsttest() {
         ["H6 die garage auf r184 ohne WebGPU", { garage: ["/vendor/three.module.min.js"] }, /^H6 garage: three aus vendor\/ ohne/],
         ["H6 die klang lädt das r160-UMD", { klang: ["/vendor/three.min.js"] }, /^H6 klang: die Seite lädt eine fremde Engine \(\/vendor\/three\.min\.js/],
         ["H6 die garage aufgelöst in die Welt (index.html?studio=garage)", { garage: ["/index.html", "/stamm/dirigent-kern.js", ...eine] }, /^H6 garage: die Seite lädt die Welt/],
-        ["H6 die schmiede lädt keine Kopie mehr (die Ratsche zieht an)", { schmiede: eine }, /^H6 schmiede: lädt keine fremde Engine mehr/],
+        ["H6 die portale lädt keine Kopie mehr (die Ratsche zieht an)", { portale: eine }, /^H6 portale: lädt keine fremde Engine mehr/],
         ["H3 die garage schreibt den offenen Zug nicht (Strg+Z stumm, 83df2052)", {}, /^H3 garage: Strg\+Z wirkt nicht/, { garage: { folge: [..."122222"] } }],
         ["H3 das Strg+Umschalt+Z der portale wiederholt nicht", {}, /^H3 portale: Strg\+Umschalt\+Z wirkt/, { portale: { folge: [..."121111"] } }],
         ["H3 das Strg+Y der klang wiederholt nicht", {}, /^H3 klang: Strg\+Y wirkt nicht/, { klang: { folge: [..."121211"] } }],
