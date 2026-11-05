@@ -2128,3 +2128,4 @@
 2026-11-05 16:09:49 vp-main-3 ankunft.K1#1 ROT 0.7 · 2/3
 2026-11-05 16:09:54 vp-main-3 ankunft.K5#1 ROT 0.7 · 3/3
 2026-11-05 16:11:14 vp-main-3 ENDE 0 grün / 3 rot · 3.4 min
+2026-11-05 17:00:55 bf55b24a-radeon START 1 Stationen
