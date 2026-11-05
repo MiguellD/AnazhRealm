@@ -1,8 +1,8 @@
 {
  "sha": "3f1d4a5b83de5665ccb2c4ba038385bf9a2473e6",
  "geraet": "headless",
- "zeit": "2026-11-05T22:59:23.511Z",
- "host": "farm:42122898801",
+ "zeit": "2026-11-05T23:47:41.228Z",
+ "host": "laptop",
  "je": {
   "affekt.K3#1": {
    "gruen": true,
@@ -867,17 +867,15 @@
    "host": "farm:42122898801/5"
   },
   "feld.K3#2": {
-   "gruen": false,
-   "zahl": "Ruhe 60 s: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 7195 · Feld: 2160 Zellen geschrieben, tote/Zellen nach den Wellen 0/540 · 0/540 · 0/540 · 0/540 · Brand: {\"zellen\":56,\"einheiten\":19.5,\"start\":true,\"mit\":0.875,\"koepfe\":18,\"gegen\":0.026,\"alle\":1.05,\"ohneWind\":0.041,\"lebVor\":0.839,\"glut\":0.68,\"licht\":true,\"regenS\":20,\"brennt\":0,\"lebNach\":0.82,\"asche\":42}",
-   "exit": 1,
-   "minuten": 1.82,
-   "grund": "ROT: Ruhe 60 s: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 7195 · Feld: 2160 Zellen geschrieben, tote/Zellen nach den Wellen 0/540 · 0/540 · 0/540 · 0/540 · Brand: {\"zellen\":56,\"einheiten\":19.5,\"start\":true,\"mit\":0.875,\"koepfe\":18,\"gegen\":0.026,\"alle\":1.05,\"ohneWind\":0.041,\"lebVor\":0.839,\"glut\":0.68,\"licht\":true,\"regenS\":20,\"brennt\":0,\"lebNach\":0.82,\"asche\":42}",
-   "zeit": "2026-11-05T22:47:52.530Z",
+   "gruen": true,
+   "zahl": "Ruhe 60 s: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 3449 · Feld: 2160 Zellen geschrieben, tote/Zellen nach den Wellen 0/540 · 0/540 · 0/540 · 0/540 · Brand: {\"zellen\":58,\"einheiten\":20.1,\"start\":true,\"mit\":0.789,\"koepfe\":21,\"gegen\":0.027,\"alle\":1.05,\"ohneWind\":0.041,\"lebVor\":0.839,\"glut\":0.68,\"licht\":true,\"regenS\":20,\"brennt\":0,\"lebNach\":0.539,\"asche\":43}",
+   "exit": 0,
+   "minuten": 1.42,
+   "zeit": "2026-11-05T23:47:41.228Z",
    "abdruck": "a58b1433c7c1",
-   "port": 7704,
+   "port": 7804,
    "bahn": "1/1",
-   "host": "farm:42122898801/5",
-   "zwilling": "feld.K3#1"
+   "host": "laptop"
   },
   "stoffe.K2#1": {
    "gruen": true,
