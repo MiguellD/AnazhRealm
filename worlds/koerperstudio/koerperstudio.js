@@ -471,8 +471,23 @@ function playLeib() {
   play.sohle = { 1: KC.leibSohle(gestalt.root, t.ankle1), '-1': KC.leibSohle(gestalt.root, t['ankle-1']) };
   if (!play.sohle[1] || !play.sohle['-1']) throw new Error('Labor: der Guss trägt keine Haut am Knöchel (leibSohle)');
 }
+// DAS FENSTER IN DEN KERN (die EINE Matrix-Tafel der Hülle, dieselbe in Tetrapoda): im Spiel geht der Leib der Welt (leibPlan ·
+// leibGangTakt · leibRigPose) — die Tafel zeigt die Phasen der beiden Beine (walkPhase, das zweite um π, wie tetrapoda gangBecken),
+// die Knöchel und das Lot des Beckens über der Stützfläche der stehenden Füße; außerhalb des Spiels ruht sie
+var matrixGlieder = { von: null, n: 0 };
+var matrixTafel = AnazhHuelle.matrix({ ziel: document.body, quelle: 'koerper leibGangTakt · leibRigPose — der Leib der Welt', lesen: function () {
+  if (!play.on || !play.rig || !play.gait) return null;
+  var r = play.rig, v = new THREE.Vector3(), f = [], w = play.halter.walkPhase || 0;
+  [r.legL.ankle, r.legR.ankle].forEach(function (a) { a.getWorldPosition(v); f.push([v.x, v.z]); });
+  r.hips.getWorldPosition(v);
+  if (matrixGlieder.von !== character) { matrixGlieder.von = character; matrixGlieder.n = 0; character.traverse(function (o) { if (o.isBone || (o.isGroup && o.name)) matrixGlieder.n++; }); }
+  var n = matrixGlieder.n;
+  return { glieder: n, art: play.gs ? play.gs.art : 'stand', S: play.gait.w > 0.05 ? play.gait.S : 0, tast: play.gait.tast, phasen: [w, w + Math.PI], fuesse: f, namen: ['L', 'R'], schwerpunkt: [v.x, v.z], gier: play.faceYaw, meterJe: M_E };
+} });
+matrixTafel.el.style.display = 'none';
 function enterPlay() {
   play.on = true; controls.enabled = false; parkGroup.visible = true; emoMode = 'play';
+  if (matrixTafel) matrixTafel.el.style.display = '';
   playLeib();
   // der Leib zieht in die Gruppe des Spiels (die Lage in Metern über ihr), der Baum der Gestalt hängt unter ihr
   leibGruppe.add(gestalt.root); gestalt.root.position.set(0, -play.sohleY, 0);
@@ -482,6 +497,7 @@ function enterPlay() {
 }
 function exitPlay() {
   play.on = false; controls.enabled = true; parkGroup.visible = false;
+  if (matrixTafel) matrixTafel.el.style.display = 'none';
   scene.add(gestalt.root); gestalt.root.position.set(0, 0, 0); leibGruppe.position.set(0, 0, 0); leibGruppe.rotation.set(0, 0, 0);
   if (headGroup) headGroup.visible = true; if (typeof hairGroup !== 'undefined' && hairGroup) hairGroup.visible = true;
   character.position.set(0, 0, 0); character.rotation.set(0, 0, 0);
@@ -611,6 +627,7 @@ function playPose(dt) {
   var amGang = !V || V.verb === 'balancieren', tempo = amGang && !L.isInAir ? sp : 0;
   var gs = _TC.gangSchritt(tempo, play.M.L, play.Z);
   var gait = KC.leibGangTakt(_TC, play.halter, gs, tempo, dt, 1, Math.max(1, play.werte.speed), play.M.L);
+  play.gs = gs; play.gait = gait; // was die Matrix-Tafel vom Gang liest
   KC.leibRigPose(r, play.t, play.halter.walkPhase, tempo > 0.05, gait, KC.MOTION.idle, KC.MOTION.idle, play.M, play.Z, _TC);
   KC.leibStossPose(r, L, play.faceYaw, play.M); // der Ausfallschritt (physik.K5), wie die Welt
   var lehne = KC.leibLuftPose(r, L, play.t);
@@ -655,6 +672,7 @@ function playTakt(dt) {
   if (messung) playMessen(P);
   playKamera(dt);
   playHud();
+  if (matrixTafel) matrixTafel.zeichne();
   if (vorf) vorfWeiter();
 }
 // ===================== DAS INSTRUMENT DER BEWEGUNG (w4-koerper-park: das Labor misst den Leib) =====================
