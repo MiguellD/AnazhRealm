@@ -4691,6 +4691,10 @@ const stationen = [
     // gespannten Leine (`ohneBild`, das Argument des Befehls) — 12 936 Takte, keiner zeichnet (die Leine löste vorher an jedem `sleep`
     // der Probe). Headless b62542c9, A/B unter gleicher Last: 861,2 → 522,4 s, Urteil gleich (ROT Tempo 72,4 ↔ 72,5 %, 12 414 ↔ 12 405
     // Sim-Schritte, Route 2579 m, Steckenbleiber 0) — der Rest ist der Takt des Spiels selbst (headless allein 257 s)
+    // DIE KARTE (w12-proben-tempo2, Radeon 9c545df2, dieselbe Sitzung A ohne ↔ B mit Leine, gegenlauf/roh/pt2-{A,B}-9c545df2-radeon): nach
+    // 40 s A 5 Orte erwacht, die Fahrt nicht begonnen ↔ B alle 7 Orte nach ~30 s, der Fahrer 36 von 2579 m nach 467 Sim-Takten —
+    // beide am Deckel 45 s. Hochgerechnet trägt die Fahrt ~12 400 Sim-Takte zu ~21 ms ohne Bild (die Welt mit 7 wachen Orten): ~290 s,
+    // über jeder Ausnahme; die Zeile FORTSCHRITT der Probe nennt am Deckel, wo die Fahrt stand
     {
         kriterium: "fahrzeug.K2", staffel: 1, geraet: ["radeon", "gtx"],
         probe: {
@@ -4736,6 +4740,8 @@ const stationen = [
     // und Stadt (w3w-verkehr fcfd85d7); hier die Gründung ~20 s und 2 × 12 s Spielzeit zu ~25 ms je Bild — die GPU-Fahrt nennt die Zahl.
     // OHNE BILD wie K2#1 (w12-proben-tempo; Radeon 71ef6a0d/25ac4c0c 49,4/55,6 s, GTX 8ef49bef am Deckel 90 s): die Stadt gründet und
     // fährt unter der gespannten Leine. Headless b62542c9 A/B unter gleicher Last 241,9 → 229,7 s, Urteil gleich (C ROT: ohne Ziel erreicht)
+    // DIE KARTE (w12-proben-tempo2, Radeon 9c545df2, A ohne ↔ B mit Leine): nach 80 s 145 ↔ 179 Spiel-s (+23 %), beide noch in der
+    // ersten Stunde (Uhr 10,89 ↔ 11,11: die Metropole gründet und belebt sich) — beide am Deckel 90 s
     {
         kriterium: "fahrzeug.K2", staffel: 2, geraet: ["radeon", "gtx"],
         probe: {
