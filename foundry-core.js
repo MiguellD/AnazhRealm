@@ -73,6 +73,7 @@ const SEASON = {
     uLeafPresence: { value: 1.0 },
     uBloom: { value: 1.0 },
     uSeasonMul: { value: new THREE.Color(1, 1, 1) },
+    uHalm: { value: 1.0 }, // die Gestalt des Halms im Jahr (SAISON_GESETZ `ha`)
 };
 
 // DIE BODEN-PALETTE des Terrain-Studios — die EINE Boden-Farbe von Labor UND Welt. Jeder Wert ist eine
@@ -225,18 +226,24 @@ var KACHEL_VIS = { lab: "tile-12", host: "none" };
 // prettier-ignore
 var SAISON_GESETZ = {
     stuetzen: [
-        { ti: 0x6a9a3e, ac: 0x88b450, pr: 0.72, bl: 0.85 },
-        { ti: 0x4f7a30, ac: 0x6f9a3a, pr: 1.0, bl: 0.12 },
-        { ti: 0xb0702a, ac: 0xd2922f, pr: 0.55, bl: 0.0 },
-        { ti: 0x6e6650, ac: 0x847c64, pr: 0.06, bl: 0.0 },
+        { ti: 0x6a9a3e, ac: 0x88b450, pr: 0.72, bl: 0.85, ha: 0.7 },
+        { ti: 0x4f7a30, ac: 0x6f9a3a, pr: 1.0, bl: 0.12, ha: 1.0 },
+        { ti: 0xb0702a, ac: 0xd2922f, pr: 0.55, bl: 0.0, ha: 0.8 },
+        { ti: 0x6e6650, ac: 0x847c64, pr: 0.06, bl: 0.0, ha: 0.35 },
     ],
     bau: 0x4f7a30,       // die Toenung, mit der ein Koerper gebacken ist (Sommer, setSeasonColors("summer"))
     mulMin: 0.25, mulMax: 4.0,
     kartenGewicht: 0.8,  // die Karte folgt der Saison zu 80 % (Impostor-Shader mix(1, uSeasonMul, 0.8))
     // vegetation.K5 (30.10., additiv) — DIE PRAESENZ DES JAHRS: `pr` zieht jedes Blatt (aType typ.laub), `bl` jede Bluete
     // (typ.bluete) auf seine Mitte (injectWind: transformed = mix(aCenter, transformed, pres)), Labor UND Welt (`_jahrLage`);
-    // alles andere (Rinde 0, Nadel 2, Halm 4) steht. Die Karte hebt ihre Alpha-Schwelle um (1 - pr) * karteSchwelle (der
-    // Studio-Impostor, die Welt-Karte) — die gebackene Karte ist Sommer (volle Krone).
+    // Rinde 0, Nadel 2 und der Halm ausserhalb des Gras-Stoffs (Schilf) stehen. Die Karte hebt ihre Alpha-Schwelle um
+    // (1 - pr) * karteSchwelle (der Studio-Impostor, die Welt-Karte) — die gebackene Karte ist Sommer (volle Krone).
+    // vegetation.K5#2 (05.11., additiv) — DIE GESTALT DES HALMS: `ha` staucht jeden Halm des Grases (der Gras-Stoff, Halm 4)
+    // ueber seiner Wurzel auf diesen Anteil seiner Hoehe, VOR dem Wind (injectWind: transformed.y *= uHalm; die Welt:
+    // der Gras-Stoff und `_halmFerne` ueber `_saisonPraesenz` z). Die Wiese waechst im Fruehling nach (0,7 der Sommer-
+    // Hoehe), steht im Sommer ganz (1 — jeder Koerper bleibt byte-gleich), ist im Herbst gemaeht und vergilbt (0,8) und
+    // liegt im Winter abgestorben und vom Schnee gedrueckt (0,35): die Halm-Flaeche und mit ihr der LAI fallen etwa linear
+    // mit der Hoehe. Bis dahin stand die Winter-Wiese so hoch wie im Sommer (LAI 2–10 m Winter 1,058 × Sommer, Radeon 8ef49bef).
     typ: { laub: 1, bluete: 3 },
     karteSchwelle: 0.5,
 };
@@ -818,6 +825,7 @@ function injectWind(mat, foliage, isGrass, baum, krone) {
         sh.uniforms.uLeafPresence = SEASON.uLeafPresence;
         sh.uniforms.uBloom = SEASON.uBloom;
         sh.uniforms.uSeasonMul = SEASON.uSeasonMul;
+        if (isGrass) sh.uniforms.uHalm = SEASON.uHalm;
         sh.uniforms.uLodMaskOn = _lodU.uLodMaskOn;
         sh.uniforms.uLodRef = _lodU.uLodRef;
         sh.uniforms.uDitherT = _lodU.uDitherT;
@@ -828,13 +836,16 @@ function injectWind(mat, foliage, isGrass, baum, krone) {
                 (foliage
                     ? "\nvarying float vSeasW;\nvarying vec3 vTintI;" +
                       (isGrass ? "\nattribute vec3 aTintI;\nvarying vec2 vHalmUv;" : "")
-                    : "")
+                    : "") +
+                (isGrass ? "\nuniform float uHalm;" : "")
         ); // FIX v27: vTintI = Per-Instanz-Farbvarianz. FIX v30: aH0L = BLATT-Sichthoehe (bei grossen Baeumen gekappt) -> Laub-LOD folgt der ABSOLUTEN Distanz, Skelett-LOD weiter der Baumgroesse. Ein 30cm-Blatt ist bei 80m unsichtbar klein, egal wie gross sein Baum ist.
         sh.vertexShader = sh.vertexShader.replace(
             "#include <begin_vertex>",
             "#include <begin_vertex>\nfloat wT=aType;\n" +
                 (foliage ? "vSeasW=(wT==" + SAISON_GESETZ.typ.laub.toFixed(1) + "||wT==" + SAISON_GESETZ.typ.bluete.toFixed(1) + ")?1.0:0.0;\n" : "") +
                 "float pres=(wT==" + SAISON_GESETZ.typ.laub.toFixed(1) + ")?uLeafPresence:(wT==" + SAISON_GESETZ.typ.bluete.toFixed(1) + "?uBloom:1.0);\ntransformed=mix(aCenter,transformed,clamp(pres,0.0,1.0));\nfloat _sw=aWind.x,_ph=aWind.y,_om=aWind.z;\n" +
+                // die Gestalt des Halms im Jahr (SAISON_GESETZ `ha`): der Halm staucht sich ueber seiner Wurzel (y 0), VOR dem Wind
+                (isGrass ? "transformed.y*=clamp(uHalm,0.0,1.0);\n" : "") +
                 "#ifdef USE_INSTANCING\n vec2 _iw=instanceMatrix[3].xz;\n#else\n vec2 _iw=vec2(0.0);\n#endif\n" +
                 "vLod=aLodLevel;\n#ifdef USE_INSTANCING\n float _isy=length(instanceMatrix[1].xyz); float _cd=length(cameraPosition.xz-_iw); float _lk=(aH0>0.001)?min(uLodRef/(aH0*_isy),1.0):1.0; vLodD=_cd*_lk; float _lkL=(aH0L>0.001)?min(uLodRef/(aH0L*_isy),1.0):1.0; vLodDL=_cd*_lkL;\n#else\n vLodD=length(cameraPosition.xz-_iw); vLodDL=vLodD;\n#endif\n" +
                 (foliage

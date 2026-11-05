@@ -3274,6 +3274,7 @@ const _rN = new THREE.Vector3(0, 1, 0),
 // Sonne folgt einem echten Bogen (Auf-/Untergang aus Tageslaenge je Jahreszeit), Himmel/Licht/Dunst/Laub leiten sich ab.
 let WTIME = 10.0; // Tageszeit 0..24 h
 let WSEASON = 0.28; // 0 Fruehling · .25 Sommer · .5 Herbst · .75 Winter (kontinuierlich)
+let halmTarget = 1; // die Gestalt des Halms im Jahr (SAISON_GESETZ `ha`, seasonColors) — die Welt liest dieselbe Zeile
 let WWEATHER = "klar"; // klar | bewoelkt | nebel | regen | sturm — die Zeilen von WX_GESETZ
 let WPLAY = false,
     WSPEED = 1.2; // Zeit-Autoplay (Stunden pro Sekunde)
@@ -3367,6 +3368,7 @@ function seasonColors(t) {
     seasonAccent.set(seq[i].ac).lerp(_w1.set(seq[j].ac), k);
     presenceTarget = lerp(seq[i].pr, seq[j].pr, k);
     bloomTarget = lerp(seq[i].bl, seq[j].bl, k);
+    halmTarget = lerp(seq[i].ha, seq[j].ha, k);
 }
 function worldRebuild() {
     if (forestMode) {
@@ -3835,6 +3837,7 @@ function animate() {
     WIND.uWindStrength.value += (Math.max(windTarget, wxWind) - WIND.uWindStrength.value) * 0.04;
     SEASON.uLeafPresence.value += (presenceTarget - SEASON.uLeafPresence.value) * 0.06;
     SEASON.uBloom.value += (bloomTarget - SEASON.uBloom.value) * 0.06;
+    SEASON.uHalm.value += (halmTarget - SEASON.uHalm.value) * 0.06;
     if (_rain) {
         const rm = _rain.material,
             top = clamp(wxRain * REGEN_GESETZ.deckung, 0, REGEN_GESETZ.deckung);

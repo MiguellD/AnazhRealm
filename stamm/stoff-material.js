@@ -88,10 +88,11 @@ class AnazhRealm_stoff_material {
             const s = G.streck;
             const quer = T.mix(s, T.float(1), T.step(1e-4, c.y));
             const sk = this._foundryWorldScaleMatrix("gras").elements[0];
-            const sway = this._windSwayOffset(T, { ampX: 1.5, hoehe: T.positionGeometry.y.mul(sk) });
+            const ha = this._ensureSeasonUniforms().uLaubPraesenz.z; // die Gestalt des Halms im Jahr, wie die Nähe (vegetation.K5#2)
+            const sway = this._windSwayOffset(T, { ampX: 1.5, hoehe: T.positionGeometry.y.mul(sk).mul(ha) });
             this._halmFerneKnoten = T.vec3(
                 c.x.mul(s).add(rel.x.mul(quer)),
-                c.y.add(rel.y),
+                c.y.add(rel.y).mul(ha),
                 c.z.mul(s).add(rel.z.mul(quer))
             )
                 .mul(v)

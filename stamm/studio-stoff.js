@@ -499,11 +499,15 @@ class AnazhRealm_studio_stoff {
         // (`_windSwayOffset`, Gleichtakt) mit der Halm-Höhe in Metern (Vorlage × Studio-Skala `gras`), und
         // der Spieler biegt die Halme (uBend). Gemessen W7 (WGSL der Senke): r184 rechnet den Versatz VOR der
         // Instanzierung — Phase und Biegung lesen den Vorlagen-Raum, der Versatz dreht und skaliert mit der Instanz.
+        // DIE GESTALT DES JAHRS IM HALM (vegetation.K5#2, SAISON_GESETZ `ha` über `_saisonPraesenz` z): jeder Halm staucht sich
+        // über seiner Wurzel (die Vorlage, y 0 am Fuß) VOR dem Wind, und der Wind wiegt die gestauchte Höhe — im Winter liegt
+        // die Wiese bei 0,35 ihrer Höhe, im Sommer steht sie ganz (×1, byte-gleich). Bis dahin trug das Jahr dem Gras nur Farbe.
         if (kind === "grass") {
             this._windUniformsEnsure();
             const _sk = this._foundryWorldScaleMatrix("gras").elements[0];
-            const _sway = this._windSwayOffset(TSL, { ampX: 1.5, hoehe: TSL.positionGeometry.y.mul(_sk) });
-            mat.positionNode = TSL.positionLocal.add(_sway);
+            const _ha = _suF.uLaubPraesenz.z;
+            const _sway = this._windSwayOffset(TSL, { ampX: 1.5, hoehe: TSL.positionGeometry.y.mul(_sk).mul(_ha) });
+            mat.positionNode = TSL.positionLocal.mul(TSL.vec3(1, _ha, 1)).add(_sway);
         } else if (wiegen === true) {
             // DIE NAH-STREU WIEGT (Integration 05.10.): die weichen Boden-Arten (Farn · Schilf · Gestrüpp · Blume)
             // lesen dieselbe Böen-Welle wie Gras und Baum aus der EINEN Quelle (`_windSwayOffset`: uWindTime ·

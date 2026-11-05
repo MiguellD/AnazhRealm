@@ -819,7 +819,7 @@ class AnazhRealm_stoff_karte {
         still(wu && wu.uWindStrength, (w, u) => (u.value = 0));
         // die Karte ist Sommer gebacken (volle Krone, wie der Studio-Bäcker): das Jahr der Welt (`uLaubPraesenz`) hält still
         const su = this.state.seasonUniforms;
-        still(su && su.uLaubPraesenz, (w) => w.set(1, 1));
+        still(su && su.uLaubPraesenz, (w) => w.set(1, 1, 1));
         // … und seine Farbe (`uSeasonMul`, der Laub-Stoff multipliziert sie): die Karte backt Golden-Sommer (×1), ihr Stoff
         // färbt sie beim Zeichnen (`kartenGewicht`). Bis w8 backte sie die driftende Tönung ein — zwei Bakes derselben Zelle
         // wichen in 128 581 Albedo-Bytes um bis zu 5 Stufen ab, und das Jahr lag doppelt auf der Karte
