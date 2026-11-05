@@ -23,6 +23,9 @@ document.body.appendChild(R.domElement);
 // DIE UMGEBUNG IST DER HIMMEL DER WELT (w12-studio-buehne): die PMREM-Lage der Equirekt-Tafel der EINEN Atmosphäre × das Licht
 // jetzt, wie die Welt sie jedem Stoff reicht — der Lack spiegelt den Himmel, den er in der Welt spiegelt. Die gemalte
 // Grauverlauf-Env fiel am 01.11. (swiftshader 262 → 86 ms je Bild), die drei Studio-Lichter fallen hier.
+// GEMESSEN (05.11., swiftshader, Lack-Pixel linear): die Spiegelung des Himmels trägt in der Isometrie 33 % des Lack-Lichts, im
+// Riss 65 %; die Umgebung insgesamt 47 %. Dieselbe Lack-Kugel aus demselben Blick (35° von oben, 7 m): Welt Luma 45,3, Bühne
+// 48,2. Der „Glanz" der Matrix-Antike (Isometrie 80 % gespiegelt, Luma 91) waren die drei Lichter am Blick — die Welt hat keine.
 
 // ── DIE BÜHNE (Boden · Raster · Zifferblatt) — das Möbel der Werkstatt, die Probefahrt fährt auf ihrem Gelände ──
 // DER BODEN IST DER BODEN DER ATMOSPHÄRE (w12-studio-buehne): die gemessene Welt-Albedo (`ATMO_BODEN`, linear — dieselbe, die die

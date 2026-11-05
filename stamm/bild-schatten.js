@@ -99,7 +99,12 @@ class AnazhRealm_bild_schatten {
             auge: uniform(new THREE.Vector3()),
         });
         // der Boden der Atmosphäre: dieselbe PMREM-Stufe und dasselbe Licht wie der Himmel jedes Stoffs (`_spiegelUmgebung`)
-        const atmoBoden = T.pmremTexture(st._skyEnvRT.texture, vec3(0, -1, 0), float(1)).mul(this._umgebungLicht());
+        const atmoBoden = __weltLicht.himmelDerStoffe(
+            st._skyEnvRT.texture,
+            this._atmoLutBau().U,
+            vec3(0, -1, 0),
+            float(1)
+        );
         const mat = new THREE.MeshBasicNodeMaterial();
         mat.name = "rueckstrahl:boden";
         mat.fog = false;

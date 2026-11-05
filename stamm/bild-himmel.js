@@ -792,9 +792,10 @@ class AnazhRealm_bild_himmel {
             if (!A.tafelnFrisch) return false; // die Himmels-Sicht steht noch nicht (der erste Takt der Atmosphäre)
             this._atmoZeichne(A.qEq, A.rtEq);
             // PMREM per `fromEquirectangular` (WebGPU-tauglich, anders als `fromScene`) in das BESTEHENDE Target (zweites
-            // Argument): stabile Texture-Identität, scene.environment nur beim Erst-Aufruf gesetzt (kein Recompile-Kaskade).
+            // Argument): stabile Texture-Identität, scene.environment nur beim Erst-Aufruf gesetzt (kein Recompile-Kaskade) —
+            // das EINE Gesetz der Umgebung (welt-licht.js `umgebungZeichnen`, die Bühne der Studios zeichnet dieselbe).
             if (!st._skyPmrem) st._skyPmrem = new THREE.PMREMGenerator(st.renderer);
-            const rt = st._skyPmrem.fromEquirectangular(A.rtEq.texture, st._skyEnvRT || null);
+            const rt = __weltLicht.umgebungZeichnen(st._skyPmrem, A, st._skyEnvRT);
             st._skyEnvRT = rt;
             if (st.scene.environment !== rt.texture) st.scene.environment = rt.texture;
             // was jeder Stoff spiegelt, ist die EINE Umgebung (material.K4): der Spiegel-Pass vor diesem Himmel
@@ -883,10 +884,10 @@ class AnazhRealm_bild_himmel {
     // Tafeln; E0 (`U.licht`) und die Tönung (`U.toenung`) nimmt jeder Leser je Bild aus denselben geteilten Uniforms wie die
     // Kuppel und die Bestrahlung der Belichtung — die Stoffe (`_spiegelUmgebung`), das Licht der Welt (`_weltLicht`), der Film
     // des Tors; die CPU (`_himmelsIrradianz`) ihre Werte. Bis licht.K5 backte die Neuzeichnung beide ein, höchstens je 6 s
-    // Wanduhr: im Wetter-Zug sprang das Bild, sobald die Umgebung nachzog (GTX 0,230 EV/s, takt24c).
+    // Wanduhr: im Wetter-Zug sprang das Bild, sobald die Umgebung nachzog (GTX 0,230 EV/s, takt24c). Das Gesetz lebt EINMAL im
+    // Baustein der Engine (welt-licht.js `umgebungLicht`, die Bühne der Studios liest dasselbe).
     _umgebungLicht() {
-        const U = this._atmoLutBau().U;
-        return U.toenung.mul(U.licht);
+        return __weltLicht.umgebungLicht(this._atmoLutBau().U);
     }
 
     // DIE KRONE EINES BAUM-KÖRPERS (D10) aus dem Kronen-Buch (`_foundryCacheSet`, Beipack `__krone` der Höhen-Stufe): die

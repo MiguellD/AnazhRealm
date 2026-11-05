@@ -683,11 +683,30 @@ var __weltLicht = (function () {
         return out;
     }
 
+    // DIE UMGEBUNG DER STOFFE (material.K4) — EIN Gesetz der Welt und der Bühne: der Himmel, den jeder Standard- und Physical-Stoff
+    // spiegelt und aus dem er Licht empfängt, ist die PMREM-Lage der Equirekt-Tafel (`rtEq`, der Himmel JE EINHEIT DES LICHTS)
+    // × das Licht jetzt (`umgebungLicht`: E0 · Tönung aus den Uniforms `U` der Tafeln, je Bild gelesen, nie eingebacken).
+    // `umgebungZeichnen` filtert die Tafel (PMREM per `fromEquirectangular`, WebGPU-tauglich, in das BESTEHENDE Ziel `ziel`:
+    // stabile Textur-Identität über jede Neuzeichnung), `himmelDerStoffe` ist der Knoten jedes Lesers — `richtung`/`stufe` fest
+    // für eine Sonde (der Boden der Atmosphäre im Rückstrahl), sonst reicht r184 sie je Stoff (Spiegelung: die Rauheit als Stufe,
+    // Bestrahlung: Stufe 1). Die Welt legt darüber ihren Spiegel-Pass und den Rückstrahl des gezeichneten Bodens
+    // (`_spiegelUmgebung`, stamm/bild-sicht.js), die Bühne trägt ihn bloß (kein Feld; ihr Boden ist der Boden der Atmosphäre).
+    // Bis w12-studio-buehne schrieben Welt und Bühne diesen Knoten je eigen (`_umgebungLicht` im Stamm, `buehne` hier).
+    function umgebungLicht(U) {
+        return U.toenung.mul(U.licht);
+    }
+    function umgebungZeichnen(gen, A, ziel) {
+        return gen.fromEquirectangular(A.rtEq.texture, ziel || null);
+    }
+    function himmelDerStoffe(quelle, U, richtung, stufe) {
+        return globalThis.THREE.TSL.pmremTexture(quelle, richtung, stufe).mul(umgebungLicht(U));
+    }
+
     // DIE BÜHNE DER WELT (studios.K4, w12-studio-buehne — Studio = Modus der Welt-Engine): ein Studio zeichnet sein Werk im Licht
     // der Welt. Dieselbe Luft (der Kern: `ATMO_GESETZ`, klares Medium über dem Boden `ATMO_BODEN`), dieselben Tafeln
-    // (`atmoTafeln`), dieselbe Sonne (E0 · Durchlass, `ATMO_RECHNUNG.sonne`), dieselbe Umgebung (die PMREM-Lage der
-    // Equirekt-Tafel × das Licht jetzt — der Himmel, den `_spiegelUmgebung` der Welt jedem Stoff reicht; den Spiegel des Schirms
-    // trägt die Bühne nicht, sie hat kein Feld), derselbe Himmel als Grund (die Equirekt-Tafel), dieselbe Belichtung (Anker und Stufen
+    // (`atmoTafeln`), dieselbe Sonne (E0 · Durchlass, `ATMO_RECHNUNG.sonne`), dieselbe Umgebung (`umgebungZeichnen` und
+    // `himmelDerStoffe` — die Knoten, die `_spiegelUmgebung` der Welt jedem Stoff reicht; den Spiegel des Schirms trägt die Bühne
+    // nicht, sie hat kein Feld), derselbe Himmel als Grund (die Equirekt-Tafel), dieselbe Belichtung (Anker und Stufen
     // der Kamera aus der Bestrahlungs-Tafel, `belichtung`) und dieselbe Tonkurve (`BELICHTUNG.kurve`). Die Bühne steht im TAG der
     // Welt (`o.uhr`, Vorgabe Mittag — das Wort jeder Sonde: Mittag · Sonne · Sommer): wo die Tag-Achse Ersatz-Lichter der Nacht
     // (Hemi, Ambient, Sterne) trüge, bricht sie laut, sie trägt die Nacht nicht. Das Auge steht am Bezug der Luft (1 m, die Höhe
@@ -742,9 +761,9 @@ var __weltLicht = (function () {
         R.setRenderTarget(vor);
         A.mediumBeta = AR.betaKlar(G);
         A.tafelnFrisch = true;
-        const umgebung = new THREE.PMREMGenerator(R).fromEquirectangular(A.rtEq.texture);
+        const umgebung = umgebungZeichnen(new THREE.PMREMGenerator(R), A);
         szene.environment = umgebung.texture;
-        szene.environmentNode = T.pmremTexture(umgebung.texture).mul(U.toenung.mul(U.licht));
+        szene.environmentNode = himmelDerStoffe(umgebung.texture, U);
         // der Grund ist der Himmel: die Equirekt-Tafel (je Einheit des Lichts) × E0 — als `background` (eine Textur, kein Knoten:
         // die Sonden schwärzen für ihre Masken `background`, ein `backgroundNode` hätte Vorrang und malte den Himmel in die Maske)
         szene.background = A.rtEq.texture;
@@ -799,6 +818,9 @@ var __weltLicht = (function () {
         tafelAusPixeln,
         tafelAnker,
         bestrahlung,
+        umgebungLicht,
+        umgebungZeichnen,
+        himmelDerStoffe,
         buehne,
     });
 })();

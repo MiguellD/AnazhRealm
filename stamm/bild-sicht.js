@@ -657,8 +657,9 @@ class AnazhRealm_bild_sicht {
         const T = THREE.TSL;
         const L = this._spiegelLeser();
         // EIN Knoten des Himmels für jeden Stoff (wie r184s Umgebung): er frischt seine PMREM-Stufen einmal je Render; die
-        // Umgebung trägt den Himmel je Einheit des Lichts, das Licht jetzt reist in der geteilten Gruppe (`_umgebungLicht`)
-        const himmel = T.pmremTexture(quelle).mul(this._umgebungLicht());
+        // Umgebung trägt den Himmel je Einheit des Lichts, das Licht jetzt reist in der geteilten Gruppe — das EINE Gesetz der
+        // Umgebung der Stoffe (welt-licht.js `himmelDerStoffe`), dasselbe, das die Bühne der Studios jedem Stoff reicht
+        const himmel = __weltLicht.himmelDerStoffe(quelle, this._atmoLutBau().U);
         const [a, b] = AnazhRealm.SPIEGEL.glanzRauheit;
         const N = Object.getPrototypeOf(THREE.InstanceNode);
         // DIE UNTERE HEMISPHÄRE (schatten.K4, `_rueckstrahlHalbraum`, dasselbe Gesetz wie das Licht der Welt): in der Bestrahlung
