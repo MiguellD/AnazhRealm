@@ -22,7 +22,7 @@
 //   node scripts/diag-raum-tags.cjs [--selftest]   (npm run gate:raum-tags)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde, wandEnde, jsonKlon, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullProbe, selbsttestEnde, wandEnde, jsonKlon, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 
 // DIE QUELL-WAND: der Aufrufbaum von `_raumTagsRechnen` (über `this.<methode>(`), seine Eingänge und seine Tabellen.
@@ -497,15 +497,7 @@ function urteil(S, Q) {
 
 hauptLauf(async () => {
     const Q = quellWand(stammLib.text(root));
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 300000 });
-    await server.zeige(page, 60000);
-    await page.evaluate(async () => {
-        await __weltDa((r) => r.state && r.state.player);
-    });
-    const S = await page.evaluate(probe);
-    await browser.close();
-    server.close();
+    const S = await nullProbe(server, probe);
     console.log(
         "=== DAS GEDÄCHTNIS DER RAUM-TAGS — der Schlüssel sieht jeden Schreiber (Null-Renderer, eine echte Welt) ==="
     );

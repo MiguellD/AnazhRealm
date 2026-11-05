@@ -200,8 +200,7 @@ hauptLauf(async () => {
     );
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 180000 });
+    const { browser, page } = await nullSeite({ frist: 180000 }, server);
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs)
     await server.zeige(page, 30000);
 

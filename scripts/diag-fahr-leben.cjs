@@ -19,6 +19,7 @@ const {
 
 const PORT = Number(process.env.FAHR_LEBEN_PORT || 4413);
 const schalter = (f) => process.argv.includes(f);
+const TAETER = schalter("--taeter");
 
 const { errs, check } = pruefer();
 const taeter = (v, trenner = " · ") => (v.length ? " — Täter: " + v.join(trenner) : "");
@@ -777,9 +778,16 @@ const wegenetzVerdict = (m) =>
 // der Spuren springt (`stufen`), keiner steckt, keiner berührt einen Bewohner oder einen anderen Wagen, keiner ist ohne
 // Schlüssel im Ort (Kreuzung, Enge, fahrend in der Wende — der Täter beim Namen), keiner stößt an einen Bau, keiner verlässt seine Spur, der Takt bleibt billig, und die Gehenden
 // teilen die Straße nach dem EINEN Gesetz: höchstens `fahrbahn` ihrer Schritte auf der Fahrbahn (die Querungen). ════
-const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, fristS: 300, fahrbahn: 0.05 };
+const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, fristS: 300, fahrbahn: 0.05, weg60M: 30 };
 const verkehrVerdict = (m) =>
     [
+        // DER RICHTER VON PFLICHT-OFFEN C (pflicht.C#1): in jeder Probe fährt jeder gestellte Wagen mit einem Bewohner am Steuer
+        // [die wenigsten, Probe, wer nicht: Nr. und Zustand] (bis hier: fahrend am Ende und ohne Fahrer je Probe), jede Probe
+        // eines Fahrenden auf der Trasse der Wege-Karte [Proben, ab, Orte], je Wagen und voller Minute ≥ `weg60M` m [m, Wagen,
+        // Minute]
+        [m.amSteuer[0] >= m.wagen, `am Steuer ${JSON.stringify(m.amSteuer)}`],
+        [!m.trasse[1], `abseits der Trasse ${JSON.stringify(m.trasse)}`],
+        [!m.weg60[2] || m.weg60[0] >= VERKEHR.weg60M, `in 60 s ${JSON.stringify(m.weg60)}`],
         [m.enden >= 1 && m.wenden === m.enden, `Wenden ${m.wenden} an ${m.enden} Enden`],
         [!m.stufen.length, `Stufen der Spuren ${JSON.stringify(m.stufen)}`],
         // DAS NETZ IN SEINER RICHTUNG (w4-verkehr-c2): kein Abbieger verboten durch den Plan (eine Sperre an der Sehne, die Stufe
@@ -795,8 +803,6 @@ const verkehrVerdict = (m) =>
             m.soll >= VERKEHR.wagen && m.wagen === m.soll && !m.ohneNacht,
             `Wagen ${m.wagen} von ${m.soll} (Soll ≥ ${VERKEHR.wagen}; ohne Platz ${m.ohnePlatz}, ohne Fahrer ${m.ohneFahrer}, ohne Nachtfahrer ${m.ohneNacht})`,
         ],
-        [m.fahrend === m.wagen, `fahrend ${m.fahrend} von ${m.wagen}`],
-        [!m.steuerlos, `ohne Bewohner am Steuer ${m.steuerlos}×`],
         [!m.ziele.ohne.length, `ohne Ziel erreicht: Wagen ${m.ziele.ohne.join(", ")} (${m.ziele.erreicht} Ankünfte)`],
         [
             m.ziele.laengsteS <= VERKEHR.fristS,
@@ -2363,10 +2369,11 @@ hauptLauf(async () => {
         {
             // VK: ein gesunder Lauf ohne Täter, jeder Bruch beim Namen
             const g = {
-                ...{ soll: 20, wagen: 20, ohnePlatz: 0, ohneFahrer: 0, ohneNacht: 0, fahrend: 20, wenden: 4, enden: 4 },
+                ...{ soll: 20, wagen: 20, ohnePlatz: 0, ohneFahrer: 0, ohneNacht: 0, wenden: 4, enden: 4 },
                 ...{ stufen: [], fest: [], beruehrt: { leib: 0, wagen: 0, bau: 0 }, ohneSchluessel: 0, ohneOrte: [] },
                 ...{ ankunft: { d: 0.14, K: 0.71, wagen: 3 } },
-                ...{ stoss: { wagen: 0, bau: 0, leib: 0 }, querMax: 0.35, msJeSchritt: 0.82, sek: 600, steuerlos: 0 },
+                ...{ stoss: { wagen: 0, bau: 0, leib: 0 }, querMax: 0.35, msJeSchritt: 0.82, sek: 600 },
+                ...{ amSteuer: [20, 0], trasse: [9e4, 0, []], weg60: [210, 3, 4] },
                 ...{
                     ziele: { erreicht: 160, ohne: [], laengsteS: 120 },
                     fahrbahn: { geh: 9e4, auf: 1500, anteil: 0.017 },
@@ -2379,11 +2386,12 @@ hauptLauf(async () => {
             const brueche = [
                 [{ wenden: 3 }, /Wenden 3/],
                 [{ stufen: [{ x: 1 }] }, /Stufen/],
-                [{ wagen: 19, fahrend: 19 }, /Wagen 19 von 20/],
-                [{ soll: 18, wagen: 18, fahrend: 18 }, /Wagen 18 von 18 \(Soll ≥ 20/],
+                [{ wagen: 19 }, /Wagen 19 von 20/],
+                [{ soll: 18, wagen: 18 }, /Wagen 18 von 18 \(Soll ≥ 20/],
                 [{ ohneNacht: 2 }, /ohne Nachtfahrer 2/],
-                [{ fahrend: 12 }, /fahrend 12/],
-                [{ steuerlos: 3 }, /ohne Bewohner am Steuer 3/],
+                [{ amSteuer: [12, 8, [1, "steht"]] }, /am Steuer \[12,8,\[1,"steht"/],
+                [{ trasse: [9e4, 3, [[1, 905, 300]]] }, /Trasse \[90000,3,\[\[1,905/],
+                [{ weg60: [4, 7, 3] }, /60 s \[4,7,3\]/],
                 [{ ziele: { erreicht: 150, ohne: [], laengsteS: 410, wer: 4 } }, /Fahrt 410 s > 300 s \(Wagen 4/],
                 [{ fest: [{ nr: 4 }] }, /steckt/],
                 [{ beruehrt: { leib: 3, wagen: 0 } }, /Bewohner 3/],
@@ -2525,12 +2533,13 @@ hauptLauf(async () => {
         [
             schalter("--verkehr"),
             probeLeben,
-            { verkehr: VERKEHR },
+            // `--taeter` (pflicht.C#1): um 10 Uhr 70 s, Wagen 0 ohne Fahrer und Wagen 1 neben der Trasse — beide beim Namen
+            { verkehr: { ...VERKEHR, ...(TAETER && { stunden: [10], sek: 70, taeter: 1 }) } },
             (o) => {
-                for (const h of VERKEHR.stunden) {
+                for (const h of TAETER ? [10] : VERKEHR.stunden) {
                     const m = o.verkehr && o.verkehr[h];
-                    const v = m ? verkehrVerdict(m) : [o.err];
-                    check(`VK (PFLICHT-OFFEN C) der Verkehr der Stadt um ${h} Uhr`, !v.length, v.join(" · "));
+                    const v = (m ? verkehrVerdict(m) : [o.err]).join(" · ");
+                    check(`VK (PFLICHT-OFFEN C) der Verkehr der Stadt um ${h} Uhr${TAETER ? " — TÄTER" : ""}`, TAETER ? /am Steuer \[19,\d+,\[0,/.test(v) && /Trasse \[\d+,[1-9]\d*,\[\[1,/.test(v) : !v, v); // prettier-ignore
                 }
                 console.log(`VERKEHR ${JSON.stringify(o.verkehr)}`);
             },

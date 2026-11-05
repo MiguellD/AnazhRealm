@@ -20,8 +20,7 @@ const server = statikServer();
 const { errs, check } = pruefer();
 
 hauptLauf(async () => {
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 900000 });
+    const { browser, page } = await nullSeite({ frist: 900000 }, server);
     const t0 = Date.now();
     await server.zeige(page, 30000);
 

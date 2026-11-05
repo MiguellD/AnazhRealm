@@ -8,8 +8,7 @@ const { statikServer, hauptLauf, nullSeite, fehlerText } = require("./lib/welt-b
 const server = statikServer();
 
 hauptLauf(async () => {
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 180000 }); // die Foundry baut auch ohne Bild (die echte Pipeline)
+    const { browser, page } = await nullSeite({ frist: 180000 }, server); // die Foundry baut auch ohne Bild (die echte Pipeline)
     await server.zeige(page, 30000);
     await page.evaluate(async () => {
         await __weltDa((r) => r.state && r.state.blueprints);

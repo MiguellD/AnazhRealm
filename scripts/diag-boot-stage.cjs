@@ -405,8 +405,7 @@ hauptLauf(async () => {
         const { spur, seite } = jsonLesen(OPT("--spur-lesen"));
         return console.log(halterZeilen(HL.ankunftsHalter(spur, seite)));
     }
-    await server.lausche(PORT);
-    const { browser, page } = await nullSeite({ frist: 300000 });
+    const { browser, page } = await nullSeite({ frist: 300000 }, server, PORT);
     if (SELBSTTEST) await page.evaluateOnNewDocument(SCHLUCK);
     await server.zeige(page, 120000, "index.html", "networkidle0");
     // das erste Weltbild (der Null-Renderer setzt es beim Renderer-Bau; eine Zeit trägt nur die Kalt-Zeile, von außen)

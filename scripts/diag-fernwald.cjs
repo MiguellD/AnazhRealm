@@ -39,8 +39,7 @@ const server = statikServer();
 const { errs, check } = pruefer();
 
 hauptLauf(async () => {
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 900000 });
+    const { browser, page } = await nullSeite({ frist: 900000 }, server);
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
     // das Holz der Mess-Wiese ist „voll" (Ring 4): seit die Holz-Wahl auf dem WebGL2-Rückfall den GL-Renderer fragt,
     // wählt swiftshader kienspan (Ring 2) — die Karten-Zone trüge dann 18 statt ≥ 100 Bäume, A wäre vakuös. Der Null-

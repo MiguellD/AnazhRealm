@@ -47,8 +47,7 @@ const server = statikServer();
 
 hauptLauf(async () => {
     console.log("=== FERN-RING (STUFE 2) — Browser, Null-Renderer + Hook ===");
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ art: "linse", frist: 240000 });
+    const { browser, page } = await nullSeite({ art: "linse", frist: 240000 }, server);
     await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {

@@ -50,8 +50,7 @@ const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
 const server = statikServer();
 hauptLauf(async () => {
     const selftest = SELBSTTEST;
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 240000 });
+    const { browser, page } = await nullSeite({ frist: 240000 }, server);
     await page.evaluateOnNewDocument(installWieseSicht);
     await server.zeige(page, 30000);
     const out = await page.evaluate(async (doSelftest) => {

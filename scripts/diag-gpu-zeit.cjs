@@ -47,8 +47,7 @@ const server = statikServer();
 const { errs, check } = pruefer();
 
 (async () => {
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 300000 }); // GPU-frei ⇒ der Proxy-Pfad ist die Wahrheit
+    const { browser, page } = await nullSeite({ frist: 300000 }, server); // GPU-frei ⇒ der Proxy-Pfad ist die Wahrheit
     page.setDefaultTimeout(280000);
     let out = null;
     try {

@@ -296,8 +296,7 @@ function mitTaeter(glied, taeter) {
 // ===== TEIL (b) — W5.4: die CPU-Doppel-Mitgliedschaft im lebenden System (headless) =====
 async function runPartB() {
     const server = statikServer();
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 240000 });
+    const { browser, page } = await nullSeite({ frist: 240000 }, server);
     await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {

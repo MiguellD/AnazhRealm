@@ -473,8 +473,7 @@ function urteil(S) {
 }
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
-    const { browser, page } = await nullSeite({ frist: 180000 });
+    const { browser, page } = await nullSeite({ frist: 180000 }, server, PORT);
     await server.zeige(page, 60000);
     await page.evaluate(() => __weltDa((r) => r.state && r.state.player && r.nexus));
     await page.evaluate(AUSGABE_INSTALL);

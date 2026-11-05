@@ -34,8 +34,7 @@ const { errs, check } = pruefer();
 
 hauptLauf(async () => {
     console.log("\n=== TEIL A-F: der lebende Draht (Browser, foundry-ON, Null-Renderer) ===");
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 300000 });
+    const { browser, page } = await nullSeite({ frist: 300000 }, server);
     await server.zeige(page, 30000);
 
     // ===== EVAL 1: Boot + Buch warm + (A) Daten-Zeilen + (B) Resolver =====

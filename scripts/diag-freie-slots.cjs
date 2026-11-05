@@ -50,8 +50,7 @@ function quellBefunde(q) {
 
 async function welt() {
     const server = statikServer();
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 600000 });
+    const { browser, page } = await nullSeite({ frist: 600000 }, server);
     await page.evaluateOnNewDocument(installWieseSicht);
     await server.zeige(page, 60000);
     const out = await page.evaluate(async (selbst) => {

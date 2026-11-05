@@ -40,8 +40,7 @@ const server = statikServer();
 const { errs, check } = pruefer();
 
 (async () => {
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 300000 }); // GPU-frei; Foundry bleibt AN (Produktions-Pfad)
+    const { browser, page } = await nullSeite({ frist: 300000 }, server); // GPU-frei; Foundry bleibt AN (Produktions-Pfad)
     page.setDefaultTimeout(280000);
     let out = null;
     try {

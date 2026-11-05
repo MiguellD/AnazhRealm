@@ -387,8 +387,7 @@ const { errs, check } = pruefer();
 
 (async () => {
     console.log("=== CHUNK-SATZ (Welle B) — Null-Renderer, die Render-Bürger je Klasse ===");
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 300000 });
+    const { browser, page } = await nullSeite({ frist: 300000 }, server);
     page.setDefaultTimeout(280000);
     let out = null;
     try {

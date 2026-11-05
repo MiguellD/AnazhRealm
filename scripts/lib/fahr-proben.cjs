@@ -699,8 +699,12 @@ async function probeLeben(expected) {
         for (const stunde of o.stunden) {
             stelle(S.ox, S.oz, 2);
             r._uhrSetzen(stunde / 24, "regler");
+            // DER SPRUNG GEHT IM TAKT (`_tickBewohner`): erst ein Bild, dann die Frage — und keiner kommt mehr an. Bis pflicht.C#1 hieß
+            // die Stadt vor dem ersten Bild nach dem Sprung bereit (jeder Fahrer der Stunde davor saß noch am Steuer): um 23 Uhr stand
+            // Wagen 19 in Probe 132, bis sein Nachtfahrer ankam
+            frame(i++);
             const bereit = () =>
-                S.liste && S.liste.every((b) => b.leib) && S.verkehr && S.verkehr.wagen.every((W) => W.b.amSteuer);
+                S.liste && S.liste.every((b) => b.leib && !b.ankunft) && S.verkehr && S.verkehr.wagen.every((W) => W.b.amSteuer); // prettier-ignore
             // der Spieler steht am Markt neben der Trasse (nie in ihr): der erste freie Punkt der Ringe, 4 m und mehr von jeder Mitte
             // — sobald die Stadt ihr Netz trägt, auch solange sie noch ankommt. Bis w4-verkehr-c3 trat er erst zur Messung dorthin und
             // stand davor in der Mitte der Stadt auf ihrer einzigen Kreuzung: der Wagen vor ihm wartete die ganze Ankunft (123 s) mit
@@ -745,7 +749,7 @@ async function probeLeben(expected) {
                 querOrt: null,
                 takte: 0,
                 ms: 0,
-                ...{ steuerlos: 0, fahrt: 0, fahrtWer: null, geh: 0, fahrbahn: 0, bau: 0, bauOrte: [] },
+                ...{ fahrt: 0, fahrtWer: null, geh: 0, fahrbahn: 0, bau: 0, bauOrte: [] },
             };
             // DAS NETZ IN SEINER RICHTUNG (`VK.folge`): jeder verbotene Abbieger einer Kreuzung samt dem Täter — die Sperre des Plans
             // (fachwerk `planSperren`), die der Sehne von Spur zu Spur am nächsten liegt, oder die Stufe des Bodens (`zahl.stufen`)
@@ -822,25 +826,39 @@ async function probeLeben(expected) {
             // Eintrag mit veralteter Stufe" [Nr., Probe, m, Stufe, Soll]; der Bewegte urteilt im Takt seines Schritts, jede Probe
             // gilt. `nah`: Proben diesseits der Karten-Grenze (thresh12 − Hysterese); ohne sie misst die Probe nichts.
             const [LD, SK] = [A.LOD_DISTANCES, { nah: 0, ohneBild: 0, ohneBildOrte: [], ohneFahrer: 0, ohneFahrerOrte: [], veraltet: 0, veraltetOrte: [] }]; // prettier-ignore
+            // DER RICHTER VON PFLICHT-OFFEN C (pflicht.C#1): DER BEWOHNER AM STEUER — die wenigsten fahrenden Wagen mit einem
+            // Bewohner am Steuer in einer Probe [Zahl, Probe, wer nicht fuhr]; DIE WEGE-KARTE — je fahrendem Wagen, ob seine Mitte auf
+            // dem Boden liegt, den die Stadt als Weg malt (Straße samt Gehweg, Abbieger, Wende, Platz: der EINE Leser ihrer Formen,
+            // `_aufWeg`, den die Natur-Wand liest) [Proben, ab, Orte]; DIE BEWEGUNG — je Wagen der Weg in jeder vollen Minute der Uhr
+            // der Bilder [kürzester, Wagen, Minute]. Die Täter (`o.taeter`): Wagen 0 fährt ohne Fahrer, Wagen 1 steht für die Linse
+            // 20 m neben seiner Lage
+            const T = { tr: [0, 0, []], st: [Infinity], weg: new Map(VK.wagen.map((W) => [W, W.weg])), t0: tMs, w60: [Infinity, 0, 0] }; // prettier-ignore
+            if (o.taeter) VK.wagen[0].b.amSteuer = false;
             for (let k = 0; k < Math.round(o.sek * 60); k++, i++) {
                 frame(i);
                 if (i % 8 === 7) await window.sleep();
+                if (tMs - T.t0 >= 60000 * (T.w60[2] + 1) && ++T.w60[2])
+                    for (const W of VK.wagen) {
+                        if (W.weg - T.weg.get(W) < T.w60[0]) T.w60 = [W.weg - T.weg.get(W), W.nr, T.w60[2]];
+                        T.weg.set(W, W.weg);
+                    }
                 if (k % 4) continue;
                 const fahrend = VK.wagen.filter((W) => W.zustand === "faehrt" && W.entry);
                 const L = fahrend.map(lage);
+                const nicht = VK.wagen.filter((W) => !fahrend.includes(W) || !W.b.amSteuer || !W.b.leib);
+                if (VK.wagen.length - nicht.length < T.st[0]) T.st = [VK.wagen.length - nicht.length, k, ...nicht.map((W) => [W.nr, W.zustand])]; // prettier-ignore
                 // DER BEWOHNER AM STEUER je fahrendem Wagen; die längste Fahrt zu einem Ziel (die Uhr des Wagens seit dem Anfang der
                 // Fahrt, `_verkehrAngekommen`); DIE FAHRBAHN: je Gehenden, ob seine Mitte in der Bahn eines Wagens liegt (das EINE
                 // Gesetz der Straße, `_verkehrAufSpur` mit dem halben Wagen)
-                for (const W of fahrend) {
-                    m.steuerlos += !W.b.amSteuer;
-                    if (W.uhr - W.fahrtAb > m.fahrt) [m.fahrt, m.fahrtWer] = [W.uhr - W.fahrtAb, W];
-                }
+                for (const W of fahrend) if (W.uhr - W.fahrtAb > m.fahrt) [m.fahrt, m.fahrtWer] = [W.uhr - W.fahrtAb, W];
                 for (const b of S.liste)
                     if (b.leib && b.weg && !b.drinnen && !b.amSteuer)
                         [m.geh, m.fahrbahn] = [m.geh + 1, m.fahrbahn + r._verkehrAufSpur(S, b.leib.position.x, b.leib.position.z, -R)]; // prettier-ignore
                 const [a, sp] = [r._lodAuge(), st.playerMesh.position];
                 for (const [n, W] of fahrend.entries()) {
                     const [e, d] = [W.entry, Math.hypot(L[n].x - a.x, L[n].z - a.z)];
+                    const x = L[n].x + (o.taeter && W.nr === 1 ? 20 : 0);
+                    if (T.tr[0]++ >= 0 && !r._aufWeg(x, L[n].z, 0)) T.tr[1]++ < 6 && T.tr[2].push([W.nr, ...ort2({ x, z: L[n].z }), k]); // prettier-ignore
                     const sv = r._archIsRendered(e) ? e._servedLod : 9;
                     SK.nah += d < LD.thresh12 - LD.hysteresis;
                     if (W.b.amSteuer && W.b.leib.visible && !(sv < 2))
@@ -942,7 +960,6 @@ async function probeLeben(expected) {
                 ohnePlatz: VK.zahl.ohnePlatz,
                 ohneFahrer: VK.zahl.ohneFahrer,
                 ohneNacht: VK.zahl.ohneNacht,
-                fahrend: VK.wagen.filter((W) => W.zustand === "faehrt").length,
                 netzM: Math.round(VK.zahl.laengeM),
                 wenden: VK.wenden.size,
                 enden: VK.kp.filter((K) => K.ende).length,
@@ -962,7 +979,6 @@ async function probeLeben(expected) {
                 msJeBild: +(m.bildMs / Math.max(1, Math.round(o.sek * 60))).toFixed(3),
                 stufe: SK,
                 sek: o.sek,
-                steuerlos: m.steuerlos,
                 ziele: {
                     erreicht: VK.wagen.reduce((s, W) => s + W.ziele - ziele0.get(W), 0),
                     ohne: VK.wagen.filter((W) => W.ziele === ziele0.get(W)).map((W) => W.nr),
@@ -970,6 +986,7 @@ async function probeLeben(expected) {
                     wer,
                 },
                 fahrbahn: { geh: m.geh, auf: m.fahrbahn, anteil: +(m.fahrbahn / Math.max(1, m.geh)).toFixed(4) },
+                ...{ amSteuer: T.st, trasse: T.tr, weg60: T.w60.map(Math.round) },
             };
         }
         return aus;

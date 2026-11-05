@@ -447,8 +447,7 @@ async function blickStufe(check) {
 }
 
 hauptLauf(async () => {
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 300000 });
+    const { browser, page } = await nullSeite({ frist: 300000 }, server);
     await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {

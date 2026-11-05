@@ -102,8 +102,7 @@ function kernVonArt() {
 const OFEN_PORT = Number(process.env.REGLER_WIRKT_OFEN_PORT || PORT + 1);
 async function imStamm(cb) {
     const server = statikServer();
-    await server.lausche(OFEN_PORT);
-    const { browser, page } = await nullSeite({ frist: 300000 });
+    const { browser, page } = await nullSeite({ frist: 300000 }, server, OFEN_PORT);
     try {
         await server.zeige(page, 60000);
         // Warm: die Heimat steht, die Foundry ist bereit, das Buch (Rezepte + PARAMS) ist da, die Kerne der Öfen sind

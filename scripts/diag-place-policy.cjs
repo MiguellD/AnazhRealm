@@ -23,8 +23,7 @@ const { errs, check } = pruefer();
 
 hauptLauf(async () => {
     console.log(`=== N5 PLACE-POLICY (H8) — foundry-ON, Null-Renderer${SELFTEST ? " · mit Selbst-Test" : ""} ===`);
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 180000 });
+    const { browser, page } = await nullSeite({ frist: 180000 }, server);
     await server.zeige(page, 30000);
 
     const out = await page.evaluate(async (selftest) => {

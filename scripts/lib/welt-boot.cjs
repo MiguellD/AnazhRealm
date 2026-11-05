@@ -1112,12 +1112,28 @@ async function nullRenderer(page) {
     });
 }
 // DIE NULL-SEITE: der Browser im Rezept null und seine erste Seite mit dem Null-Renderer — der Start jeder Linse ohne Bild
-// (`opts` wie `starteBrowser`), EINMAL hier statt in jeder Linse.
-async function nullSeite(opts) {
+// (`opts` wie `starteBrowser`), EINMAL hier statt in jeder Linse; mit `server` lauscht zuerst der Statik-Server (an `port`,
+// sonst frei) — bis w12-verkehr trug jede von 38 Linsen ihr eigenes `await server.lausche(…)` davor.
+async function nullSeite(opts, server, port = 0) {
+    if (server) await server.lausche(port);
     const browser = await starteBrowser(Object.assign({ art: "null" }, opts));
     const page = await browser.newPage();
     await nullRenderer(page);
     return { browser, page };
+}
+// DIE NULL-PROBE: die Null-Seite der Welt, bis ihr Spieler steht, dann jeder Quelltext `vor` und die Seiten-Funktion `probe` —
+// ihr Ergebnis; Browser und Server gehen zu (bis w12-verkehr trugen blocker-netz, brennglas-takt und raum-tags je denselben Block)
+async function nullProbe(server, probe, ...vor) {
+    const { browser, page } = await nullSeite({ frist: 300000 }, server);
+    await server.zeige(page, 60000);
+    await page.evaluate(async () => {
+        await __weltDa((r) => r.state && r.state.player);
+    });
+    for (const v of vor) await page.evaluate(v);
+    const S = await page.evaluate(probe);
+    await browser.close();
+    server.close();
+    return S;
 }
 async function warteAufWelt(page, frist = 120000) {
     await page.waitForFunction(() => r && typeof r._gameLoopTick === "function", {
@@ -1658,6 +1674,7 @@ module.exports = {
     warteAufWelt,
     nullRenderer,
     nullSeite,
+    nullProbe,
     halteBis,
     buehne,
     uferStellen,

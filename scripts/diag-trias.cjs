@@ -147,8 +147,7 @@ hauptLauf(async () => {
     // ===== Teil B: das Sticky-Experiment als Invariante (Browser) =====
     console.log("\n=== TEIL B: die LOD-Geschichte lebt (Browser, foundry-ON, Null-Renderer) ===");
     const server = statikServer();
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 480000, zusatz: ["--disable-setuid-sandbox"] });
+    const { browser, page } = await nullSeite({ frist: 480000, zusatz: ["--disable-setuid-sandbox"] }, server);
     await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {

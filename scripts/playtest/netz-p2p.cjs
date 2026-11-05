@@ -3,7 +3,7 @@
 // 6 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate, erreichbar } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar, FLUEGEL } = require("../playtest.cjs");
 
 async function checkBandRing11AndW7Mesh({ page, check }) {
     // ### modify_terrain stirbt, voxel_carve/_fill leben ###
@@ -1915,7 +1915,7 @@ async function checkBandLateMultiUser({ page, check }) {
 
 async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
     // ### Soul-Sync (Peer-Avatar = echte Seele) ###
-    const v834Results = await safeEvaluate(page, () => {
+    const v834Results = await safeEvaluate(page, (FLUEGEL) => {
         const out = {};
         const p2p = st.p2p;
         p2p.peerId = "self-v834";
@@ -1931,27 +1931,12 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
 
         // soul-Nachricht (geflügelte Compound-Seele) → echte Seele + Name-Schild. Peers reisen als
         // Compound-Seelen aus bodyParts; benannte Anker (leftWing) kommen aus der EINEN Rollen-Quelle.
-        const WING_PARTS = [
-            { shape: "box", material: "federn", size: { x: 0.5, y: 0.55, z: 0.4 }, position: { x: 0, y: 0.5, z: 0 } },
-            {
-                shape: "plane",
-                material: "federn",
-                size: { x: 0.9, y: 0.04, z: 0.5 },
-                position: { x: 0.62, y: 0.55, z: 0 },
-            },
-            {
-                shape: "plane",
-                material: "federn",
-                size: { x: 0.9, y: 0.04, z: 0.5 },
-                position: { x: -0.62, y: 0.55, z: 0 },
-            },
-        ];
         r.p2pHandleMessage(
             JSON.stringify({
                 type: "soul",
                 peerId: "pv1",
                 soulName: "fluegel-probe",
-                bodyParts: WING_PARTS,
+                bodyParts: FLUEGEL,
                 name: "Aria",
             })
         );
@@ -2079,7 +2064,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
 
         p2p.enabled = false;
         return out;
-    });
+    }, FLUEGEL);
 
     if (erreichbar(check, "Soul-Sync Tests laufen", v834Results)) {
         check("frischer Peer ist Cone+Sphere-Platzhalter", v834Results.placeholderKind);

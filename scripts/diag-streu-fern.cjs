@@ -48,8 +48,7 @@ const server = statikServer();
 const { errs, check } = pruefer();
 
 hauptLauf(async () => {
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 600000 });
+    const { browser, page } = await nullSeite({ frist: 600000 }, server);
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
     await server.zeige(page, 60000);
 

@@ -21,8 +21,7 @@ const { errs, check } = pruefer();
 
 hauptLauf(async () => {
     console.log("=== RELOAD-TREUE — der Guss-Pin am Verhalten ===");
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 300000 });
+    const { browser, page } = await nullSeite({ frist: 300000 }, server);
     await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {
