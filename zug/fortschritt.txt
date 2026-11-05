@@ -1861,3 +1861,4 @@
 2026-11-05 12:39:54 omen-z226 8df3365a w12-ankunft-bild gate:fenster-wechsel GRÜN 25 min
 2026-11-05 12:40:13 omen-speicher ENTWARNUNG Commit 14.7/18.2 GB
 2026-11-05 12:49:15 omen-speicher ALARM Commit 16.6/18.2 GB - 12xclaude 2.1G, 10xchrome 1.9G, 8xDropbox 0.7G, 87xsvchost 0.6G, 1xMsMpEng 0.4G, 5xpowershell 0.4G
+2026-11-05 12:51:46 omen-speicher ENTWARNUNG Commit 14.9/18.2 GB
