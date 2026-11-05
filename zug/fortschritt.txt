@@ -1834,3 +1834,4 @@
 2026-11-05 10:39:13 omen-speicher ENTWARNUNG Commit 14.7/18.5 GB
 2026-11-05 10:39:43 omen-speicher ALARM Commit 17.5/18.5 GB - 8xchrome 2.7G, 12xclaude 2.1G, 8xDropbox 0.7G, 1xOneDrive 0.6G, 87xsvchost 0.6G, 1xMsMpEng 0.5G
 2026-11-05 10:43:44 omen-speicher ENTWARNUNG Commit 14.5/18.3 GB
+2026-11-05 11:10:55 omen-z226 START 4 Köpfe je gate:kamera-leib + gate:fenster-wechsel (CI=true swiftshader, CI_KLASSE=gpu)
