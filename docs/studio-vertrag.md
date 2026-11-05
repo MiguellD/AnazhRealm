@@ -1015,11 +1015,14 @@ der weiche Schnee dieses Winters über die Dichte der gesetzten Decke, ρ des Wa
 `schneeTritt`, seiner Tafel des Tags `schneeTafel` und dem Tritt am Ort `schneeTrittAm` (gedeckt nach dem Weiß von `schnee` —
 der Grund jedes Körpers und der Stand der Sicht lesen ihn), die Lava `LAVA`/`lava` (stoffe.K3-2: Newton-Abkühlung der
 Zeile `stein` des Wirts, an der Luft und unter Dampf am Wasser, die Glut über dem Draper-Punkt) — ihr Gang und ihre Glut als EIN
-Gesetz jedes heißen Körpers `waermeGang`/`glutAus` (die Lava, der Stahl der Esse) —, der Pegel `PEGEL`/`abfluss`/`pegelTafel`/
-`pegelHub` (stoffe.K3-2: der Abfluss der Schmelze hebt den Spiegel jedes Sees und Flusses nach Manning bis zur Krone des Betts;
-die Lage trägt die Tafel des Tags, `L.pegel`, der Spiegel des Kerns liest sie, nie das Bett) mit dem Regen `pegelRegen`
-(wetter.K3: der Regen des Wetter-Felds als zweiter Term des Abflusses, eine Funktion des Felds auf der Stufe des Hubs, an der
-Krone gedeckelt), die
+Gesetz jedes heißen Körpers `waermeGang`/`glutAus` (die Lava, der Stahl der Esse) —, der Pegel `PEGEL`/`abfluss`/`pegelSchmelze`/
+`pegelTafel`/`pegelHub` (stoffe.K3-2: der Abfluss der Schmelze hebt den Spiegel jedes Sees und Flusses nach Manning bis zur Krone
+des Betts, die Dürre senkt ihn bis zum leeren Bett; die Lage trägt die Tafel, `L.pegel`, je Höhe und Lag-Klasse des Laufs, der
+Spiegel des Kerns liest sie, nie das Bett; `koerperY` der Spiegel jedes stehenden Körpers) mit dem Lauf des Regens `LAUF`/`pegelLauf`
+(wetter.K3: die Faltung der Stempel des Regens über die Welt-Uhr mit der Nash-Ganglinie je Lag-Klasse, dazu der Grund gegen das
+Mittel des Klimas — eine Funktion der Uhr, kein Speicher), der Lag-Klasse eines Laufs `laufKlasse` (Snyder aus Lauflänge und
+Einzugsgebiet, die Länge stromauf nach Hack `hackLaenge`; der Kanal trägt sie je Segment, das Wasser-Feld je See-Zelle) und den
+Klassen am Rechteck `pegelKlassen` (die Marke des Chunks), die
 Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchluessel`. DIE HYDROSPHÄRE (Karte hydro-faden): das
 Drainage-Netz einer Region `hydrosphaere(L, H, boden, origin)` (Flüsse, Seen, Fälle, der gepackte Kanal `kanal` mit
 `KANAL_FELDER` Zahlen je Segment, Wasser-Feld; `H` das Gesetz des Wirts, `boden` seine gebaute Fläche — der voxel-worker rechnet
