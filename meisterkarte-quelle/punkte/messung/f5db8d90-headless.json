@@ -1,0 +1,33 @@
+{
+ "sha": "f5db8d904ae0f50187c9b3e2e37de3fa38da73e0",
+ "geraet": "headless",
+ "zeit": "2026-11-05T20:07:00.512Z",
+ "host": "farm:42100219015",
+ "je": {
+  "streaming.K1#1": {
+   "gruen": false,
+   "zahl": "sprint 5.175 m/s 60.005 s: 0 von 3275 Bildern mit Lücke · gt 15.998 m/s 60.009 s: 81 von 2555 Bildern mit Lücke (bau 657, baum 32, wuchs 15; a:-6514,-8571:bau bau 103 m · a:-6700,-8596:bau bau 112 m · a:-6849,-8761:bau bau 112 m) · Weg 1255 m, Ring 4, Takt p95 26.6 ms · ROT gt 81 Lücken-Bilder (Soll 0 Lücken-Bilder)",
+   "exit": 0,
+   "minuten": 2.68,
+   "grund": "ROT: sprint 5.175 m/s 60.005 s: 0 von 3275 Bildern mit Lücke · gt 15.998 m/s 60.009 s: 81 von 2555 Bildern mit Lücke (bau 657, baum 32, wuchs 15; a:-6514,-8571:bau bau 103 m · a:-6700,-8596:bau bau 112 m · a:-6849,-8761:bau bau 112 m) · Weg 1255 m, Ring 4, Takt p95 26.6 ms · ROT gt 81 Lücken-Bilder (Soll 0 Lücken-Bilder)",
+   "zeit": "2026-11-05T20:07:00.512Z",
+   "abdruck": "6caf085861a3",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "farm:42100219015/1"
+  },
+  "streaming.K2#1": {
+   "gruen": false,
+   "zahl": "fertig beim Eintritt: boden 482/482 (100 %) · baum 554/1044 (53.1 %, spät -1/-1/-1 s) · karte 3382/3421 (98.9 %, spät 0.665/0.513/0.513 s) · bau 351/371 (94.6 %, spät -1/2.182/2.121 s) · wuchs 251/253 (99.2 %, spät 0.191/0.153 s) · streu 15/15 (100 %) · ROT baum 53.1 %, bau 94.6 % (Soll je Klasse ≥ 95 %)",
+   "exit": 0,
+   "minuten": 2.68,
+   "grund": "ROT: fertig beim Eintritt: boden 482/482 (100 %) · baum 554/1044 (53.1 %, spät -1/-1/-1 s) · karte 3382/3421 (98.9 %, spät 0.665/0.513/0.513 s) · bau 351/371 (94.6 %, spät -1/2.182/2.121 s) · wuchs 251/253 (99.2 %, spät 0.191/0.153 s) · streu 15/15 (100 %) · ROT baum 53.1 %, bau 94.6 % (Soll je Klasse ≥ 95 %)",
+   "zeit": "2026-11-05T20:07:00.512Z",
+   "abdruck": "812b543d4746",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "farm:42100219015/1",
+   "zwilling": "streaming.K1#1"
+  }
+ }
+}
