@@ -1067,10 +1067,12 @@ class AnazhRealm_speicher_welten {
             // der Anker doppelt und sein Erdbau-Schlüssel): der Anker einmal als Ort der Trasse (`wx`/`wz` — `x`/`z` sind derselbe
             // Punkt), `ort` nie, wo er `_ortSchluessel` aus Same und Anker ist; eine Zeile der Varianten-Saat nie, wo sie
             // `_variantenSaat` gleicht. `_weltMetaHeil` stellt beides beim Laden wieder; was abweicht, reist ganz. Der Trampelpfad reist
-            // gepackt (`_trittStand`: ~4 Bytes je Zelle statt ~24 im JSON-Paar; 1 km in 6 min am Dorf trug 6,1 kB).
+            // gepackt (`_trittStand`: ~4 Bytes je Zelle statt ~24 im JSON-Paar; 1 km in 6 min am Dorf trug 6,1 kB). Ein Ort ohne
+            // Änderung reist gar nicht (`_ortReistNicht`: er ist eine Funktion von Saat und Gesetz und erwacht nach dem Reload am
+            // selben Anker; w12-tritt, 5,1 km in 30 min ohne Leben roh 5,5 → 4,3 kB).
             [
                 "worldMeta",
-                (stand) => {
+                (stand, K) => {
                     const wm = { ...st().worldMeta };
                     const orte = new Set(Object.values(wm.settlementCells || {}).map((c) => c && c.seed >>> 0));
                     if (wm.erdbau && typeof wm.erdbau === "object") {
@@ -1081,7 +1083,9 @@ class AnazhRealm_speicher_welten {
                     const zellen =
                         wm.settlementCells && typeof wm.settlementCells === "object" ? wm.settlementCells : {};
                     wm.settlementCells = {};
+                    const bauten = K && K.bauten ? K.bauten : this._standBauten();
                     for (const [k, c] of Object.entries(zellen)) {
+                        if (this._ortReistNicht(k, c, bauten)) continue;
                         const knapp = c && c.x === c.wx && c.z === c.wz && c.ort === AnazhRealm._ortSchluessel(c, c);
                         wm.settlementCells[k] = knapp ? { ...c, x: undefined, z: undefined, ort: undefined } : c;
                     }
