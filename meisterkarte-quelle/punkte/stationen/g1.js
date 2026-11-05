@@ -2585,7 +2585,13 @@ module.exports = [
     // (Null-Renderer, Cloud): GRÜN — Halt 95 Zellen, 3× am nassen Gras, 11× am Stein (Mutante 7 nasse), Regen 7 s (Mutante 300), Flammen 21 bis
     // 2,23 m, Deckung 0,989 (Mutante 0,163), Kante Achse 0,31 · Linie 1,25 m (Mutante 0,963 · 0), Asche voll 0,81 → Gras 0, je Bild
     // p95 0,2 ms, Schirm 0,7 ms bei 2 000 Zellen. Der Schritt des Brands fällt mit einem Hauch (bis dahin hing ein Lauf, der die Uhr
-    // auf `_brandUhr + schrittS` stellte, an ~0,1 % der Uhren: derselbe Herd trug 0 bis 95 Aschen). GPU: an der Station.
+    // auf `_brandUhr + schrittS` stellte, an ~0,1 % der Uhren: derselbe Herd trug 0 bis 95 Aschen). Am main 9c545df2 ROT in sechs
+    // Farm-Läufen: w12-brand-bild fiel in z232 am Konflikt (scripts/diag-stand-takt.cjs:2277) und kam nie auf main — Halt 0 (der Schritt
+    // hing 3 600 Takte an der Uhr), Kante, Flammen, Deckung undefined. Am Zweig w12-brand-halt (Null-Renderer, Radeon-Laptop, drei Läufe
+    // byte-gleich bis auf die ms): der Herd wartet ab der Welt-Uhr 600 s auf seinen Wind (bis dahin las der Strahl den Wind zur Boot-Uhr:
+    // an der festen Uhr 1 800 / 2 400 / 3 600 / 7 200 s kein Herd), die Bild-Uhr der Leser läuft ab der Welt-Uhr — GRÜN: Halt 99 Zellen,
+    // 3× nass, 10× Fels (Mutante 7 nasse), Regen 7 s (Mutante 300), Flammen 22 bis 2,93 m, Deckung 0,91 (Mutante 0,161), Kante 0,263 ·
+    // 1,543 m (Mutante 0,944 · 0), Asche voll 0,809 → Gras 0, je Bild p95 0,2–0,3 ms, Schirm 0,3–0,8 ms bei 2 000 Zellen. GPU: an der Station.
     {
         kriterium: "stoffe.K2",
         staffel: 2,
@@ -2888,6 +2894,8 @@ module.exports = [
     // Narbe ist eine weiche Grenze, kein Quadrat). Am Zweig w3v-brand-bild (Null-Renderer, Cloud): GRÜN — auf voller Asche (0,81 der
     // Zelle) kein Halm und kein Kraut, Gras 464/477, Busch 20/23 Kräuter, Sämling 0 → 0,06 → 0,18 → 0,7 → 1 (Skala = Alter),
     // Gestalt [5 Ordnungen, 1 461 Glieder] gegen [9, 2 933] (Mutante gleich), Wald 79 Bäume: der Brand nimmt 79, Jungwuchs 79, heil 79.
+    // Am Zweig w12-brand-halt (Null-Renderer, Radeon-Laptop, drei Läufe byte-gleich): voll 0,809, Halme 477 → 70 (auf voller Asche 0) →
+    // 491, Kräuter 23 → 3 → 3 → 21, Sämling 0 → 0,06 → 0,18 → 0,7 → 1, Gestalt [5, 1 461] gegen [9, 2 933], Wald 71: Brand 71, jung 71, heil 71.
     {
         kriterium: "stoffe.K5",
         staffel: 2,
