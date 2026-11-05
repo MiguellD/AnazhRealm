@@ -815,7 +815,17 @@ async function speicherBildSeite(setzen, wasser) {
     const [st, p] = [r.state, r.state.playerMesh.position];
     const ort = (vor, quer) => [p.x + Math.sin(st.yaw) * vor - Math.cos(st.yaw) * quer, p.z + Math.cos(st.yaw) * vor + Math.sin(st.yaw) * quer];
     const [b, g] = [ort(6, -2.5), ort(9, 2.5)];
-    if (setzen) r.spawnArchitecture("stein_block", { x: b[0], y: r._terrainMacroSurfaceY(...b), z: b[1] }, { silent: true });
+    // DER STEIN DES SPIELERS (w12-proben-s): der Bau-Modus setzt ihn (`confirmBuild`) — eine Text-id (`_newArchId`, die Marke `werk`:
+    // Werk weicht keinem Räumer, `_weichtDemBau`), ein Natur-Stoff durch die Natur-Wand (`_naturSetzen`), deren Absage beim Namen steht.
+    // Bis hier setzte die Probe ihn auf dem Weltgen-Pfad (`silent`, Zahlen-id, herkunft 1): basalt ist Natur, der Stand lud ihn mit
+    // werk false, ein Räumer nahm ihn nach dem Laden (Radeon 8ef49bef: nach {bau: false}) — die Probe maß die Saat, nie die Wiederkehr
+    if (setzen) {
+        const pos = { x: b[0], y: r._terrainMacroSurfaceY(...b), z: b[1] };
+        const setze = () => r.spawnArchitecture("stein_block", pos, { id: r._newArchId(), rotationY: st.yaw });
+        let wand = null;
+        const steht = r._istNatur({ type: "stein_block" }) ? r._naturSetzen("stein_block", pos, {}, setze, (wo) => (wand = wo)) : setze();
+        if (!steht) throw new Error("(B) der Bau-Modus setzt den Stein nicht bei " + pos.x.toFixed(1) + "/" + pos.z.toFixed(1) + ": " + (wand || "spawnArchitecture null"));
+    }
     if (setzen) r.carveVoxel(g[0], r._voxelSurfaceY(...g), g[1], 2);
     if (st.cameraMode !== "third") r.setCameraMode("third");
     st.pitch = -0.5;
