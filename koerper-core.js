@@ -970,10 +970,10 @@
         mundLinie: Object.freeze([0.6, 0.2, 0.2]),
     });
     function _hexLab(hx) {
-        var c = [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255].map(function (v) {
-            v /= 255;
-            return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-        });
+        return _linLab(_hexLin(hx));
+    }
+    // CIELAB (D65) eines linearen Tripels — die EINE Lab des Gesetzes (die Töne des Gesichts, ihr Maß im Bild)
+    function _linLab(c) {
         var X = (0.4124 * c[0] + 0.3576 * c[1] + 0.1805 * c[2]) / 0.95047,
             Y = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2],
             Z = (0.0193 * c[0] + 0.1192 * c[1] + 0.9505 * c[2]) / 1.08883;
@@ -1071,10 +1071,12 @@
         return _linHex([a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k]);
     }
     function _hexLin(hx) {
-        return [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255].map(function (v) {
-            v /= 255;
-            return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-        });
+        return [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255].map(_byteLin);
+    }
+    // ein sRGB-Byte (0–255) linear
+    function _byteLin(v) {
+        v /= 255;
+        return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
     }
     function _linHex(c) {
         var h = 0;
@@ -1084,6 +1086,176 @@
             h = h * 256 + Math.round(v * 255);
         }
         return h;
+    }
+    // DAS GESICHT IM BILD (K63-n2; seit w12-gesicht beim Gesetz: der Kern URTEILT, `werkbank bild --klasse …:kopf/` MISST — Leser
+    // `K.gesichtMasse` in der Seite, die Soll-Tafel mensch-kopf): die Züge, die KOPF_SOLL nennt, wie die AUSGABE sie zeigt (Prüfer K63 R2: Augen, Mund und Haar-Fleck maß nichts). `proben` sind die Vertices des Kopfs,
+    // projiziert: { z: iris|lippe|hoehle|haut|kappe, x, y, k (Teil der Teilung + 1), vorn, kalotte, a (die Albedo der Ecke, linear),
+    // seite und frei (die Iris: ihr Auge, und ob der Strahl der Kamera sie ohne Haut, Lid, Braue und Haar erreicht) };
+    // eine Probe ist SICHTBAR, wenn die Teilung an ihrem Pixel ihren eigenen Teil zeigt. `mit`: `gemischt` (je Pixel: mehr als eine
+    // Klasse ändert es, klassenTeilung) und `spur` (je Teil k: das Fehlen von k ändert das Pixel über der Schwelle).
+    //   augeFrei     freie vordere Iris-Proben / vordere Iris-Proben: frei ist eine Probe, die der Strahl der Kamera erreicht (`frei`;
+    //                ohne Strahl: an ihrem Pixel steht das Auge), und nur in einem Auge, das das BILD zeigt — mindestens eine seiner
+    //                Proben trägt die Spur des Auges (sein Teil, oder sein Fehlen ändert das Pixel). Lider und Haut davor verdecken.
+    //                Bis w12-gesicht entschied das Pixel allein: an der Kamera des Spiels (6 m) trägt die Iris 1,3 Bildpunkte, jedes
+    //                Pixel der Lidspalte teilt Lid und Auge — dasselbe Gesicht las 0,06–0,71 je nach Phase des Bildpunkts und Licht
+    //   lippeL/A     ΔL*, Δa* der Lippe gegen die Wange (Haut-Proben zwischen Augen- und Mund-Zeile, ohne ihre Ränder) · hoehleL/A
+    //                dasselbe für die Augenhöhle. Je Fläche nur REINE Pixel — ihr Teil, keine zweite Klasse ändert sie (die Sklera
+    //                im Saum der Höhle ist nicht die Haut der Höhle), keine zweite Zone liegt in ihnen (die Braue, der Lid-Rand) —
+    //                und erst ab 2 × 2 von ihnen (darunter UNAUFGELÖST: ungemessen, nie GRÜN); an der Kamera des Spiels (der Kopf
+    //                17 × 22 Bildpunkte) tragen Lippe und Höhle keinen solchen Block. In CIELAB unter dem LICHT DES GESICHTS: Weiß ist die Diffus-
+    //                Fläche am Gesicht, Y_n = Y(Wange im Bild) / Y(Albedo der Wange) — die Farbe eines Körpers gegen einen anderen
+    //                unter demselben Licht (KOPF_SOLL: Spektral-Normen der Lippe gegen die Haut). Bis w12-gesicht galt das Weiß des
+    //                Schirms: im Schatten der Kamera des Spiels las die Wange L* 4,5, dort hat ΔL* ≤ −4 UND Δa* ≥ +4 keine Lösung
+    //                (L* ≤ 0,5 trägt höchstens a* 2,2) — kein Gesicht konnte das Band halten
+    //   haarDeckung  Anteil der vorderen Kalotten-Proben (über der Haarlinie KOPF_SOLL haarLinie), die als Haar lesen: dort zeigt
+    //                die Teilung eine Strähne (`haarK`), oder die Haut zeigt einen Ton näher am Haar als an der Wange
+    //   weiss        Y_n, das Licht des Gesichts als Anteil am Weiß des Schirms (die Probe, unter welchem Licht die Züge standen)
+    function gesichtMasse(F, teil, W, H, proben, haarK, mit) {
+        const lab = _linLab;
+        const px = (x, y) => y * W + x;
+        const gem = mit && mit.gemischt;
+        const spur = (mit && mit.spur) || {};
+        const sicht = (p) => teil[px(p.x, p.y)] === p.k;
+        // DIE ZONE JE PIXEL: trägt ein Pixel vordere Proben zweier Zonen (Haut, Lippe, Höhle, Braue, Iris, Kappe), ist seine Farbe
+        // keine EINER Fläche — auf 6 m liegt der Ring der Höhle (≈ 10 mm, 1,1 Bildpunkte) in jedem Pixel mit Braue, Lid oder Wange
+        const zone = new Map();
+        for (const p of proben) if (p.vorn) zone.set(px(p.x, p.y), zone.has(px(p.x, p.y)) && zone.get(px(p.x, p.y)) !== p.z ? "*" : p.z);
+        const rein = (p) => sicht(p) && !(gem && gem[px(p.x, p.y)]) && zone.get(px(p.x, p.y)) === p.z;
+        const zeigt = (p) => sicht(p) || !!(spur[p.k] && spur[p.k][px(p.x, p.y)]);
+        const Y = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+        // das Mittel der linearisierten Pixel (je Pixel einmal) und der Albedo der Proben
+        const farbMittel = (liste) => {
+            const seen = new Set(),
+                c = [0, 0, 0],
+                a = [0, 0, 0];
+            let na = 0;
+            for (const p of liste) {
+                if (p.a) for (let ch = 0; ch < 3; ch++) a[ch] += p.a[ch];
+                if (p.a) na++;
+                const i = px(p.x, p.y);
+                if (seen.has(i)) continue;
+                seen.add(i);
+                for (let ch = 0; ch < 3; ch++) c[ch] += _byteLin(F[i * 4 + ch]);
+            }
+            // AUFGELÖST ist eine Fläche ab einem Block von 2 × 2 reinen Pixeln — darunter trägt das Bild ihre Farbe nicht
+            if (seen.size < 4) return null;
+            const lin = c.map((v) => v / seen.size);
+            return { lin, lab: lab(lin), n: seen.size, alb: na === liste.length ? a.map((v) => v / na) : null };
+        };
+        const von = (z, f) => proben.filter((p) => p.z === z && (!f || f(p)));
+        const r = (x, d) => (x == null || !Number.isFinite(x) ? null : +x.toFixed(d));
+        const irisV = von("iris", (p) => p.vorn);
+        const steht = new Set(irisV.filter(zeigt).map((p) => p.seite));
+        const irisS = irisV.filter((p) => steht.has(p.seite) && (typeof p.frei === "boolean" ? p.frei : zeigt(p)));
+        const mittelY = (l) => (l.length ? l.reduce((a, p) => a + p.y, 0) / l.length : null);
+        const yAuge = mittelY(irisV),
+            lippeS = von("lippe", rein),
+            yMund = mittelY(von("lippe", (p) => p.vorn));
+        let wange = null;
+        if (yAuge != null && yMund != null && yMund > yAuge) {
+            const a = yAuge + 0.15 * (yMund - yAuge),
+                b = yMund - 0.15 * (yMund - yAuge);
+            wange = farbMittel(von("haut", (p) => p.vorn && rein(p) && p.y >= a && p.y <= b));
+        }
+        const lippe = farbMittel(lippeS),
+            hoehle = farbMittel(von("hoehle", rein));
+        // DAS LICHT DES GESICHTS: Y_n aus der Wange — ohne die Albedo ihrer Proben bleibt es ungemessen (nie das Weiß des Schirms)
+        const weiss = wange && wange.alb && Y(wange.alb) > 0 && Y(wange.lin) > 0 ? Y(wange.lin) / Y(wange.alb) : null;
+        const unterLicht = (m) => (m && weiss ? lab(m.lin.map((v) => v / weiss)) : null);
+        const [wL, liL, hoL] = [wange, lippe, hoehle].map(unterLicht);
+        const hk = new Set(haarK || []);
+        const haarPx = [];
+        for (let i = 0; i < W * H; i++) if (hk.has(teil[i])) haarPx.push({ x: i % W, y: Math.floor(i / W) });
+        const haar = farbMittel(haarPx.length ? haarPx : von("kappe", sicht));
+        let haarDeckung = null,
+            kal = 0;
+        if (wange && haar) {
+            let h = 0;
+            const d2 = (u, v) => (u[0] - v[0]) ** 2 + (u[1] - v[1]) ** 2 + (u[2] - v[2]) ** 2;
+            for (const p of proben) {
+                if (!p.kalotte || !p.vorn) continue;
+                const t = teil[px(p.x, p.y)];
+                if (hk.has(t)) {
+                    kal++;
+                    h++;
+                } else if (t === p.k) {
+                    kal++;
+                    const i = px(p.x, p.y);
+                    const c = lab([_byteLin(F[i * 4]), _byteLin(F[i * 4 + 1]), _byteLin(F[i * 4 + 2])]);
+                    if (d2(c, haar.lab) < d2(c, wange.lab)) h++;
+                }
+            }
+            haarDeckung = kal ? h / kal : null;
+        }
+        const d = (a, b, ch) => (a && b ? r(a[ch] - b[ch], 2) : null);
+        return {
+            augeFrei: irisV.length ? r(irisS.length / irisV.length, 3) : null,
+            lippeL: d(liL, wL, 0),
+            lippeA: d(liL, wL, 1),
+            hoehleL: d(hoL, wL, 0),
+            hoehleA: d(hoL, wL, 1),
+            haarDeckung: r(haarDeckung, 3),
+            weiss: r(weiss, 4),
+            proben: {
+                iris: irisV.length,
+                irisSicht: irisS.length,
+                lippe: lippeS.length,
+                hoehle: hoehle ? hoehle.n : 0,
+                wange: wange ? wange.n : 0,
+                kalotte: kal,
+                haarPixel: haarPx.length,
+            },
+            zeilen: { auge: r(yAuge, 1), mund: r(yMund, 1) },
+        };
+    }
+    // DAS GESICHT UNTER SEINEM LICHT (w12-gesicht, `gesichtMasse`): ein gemaltes Gesicht — Zeile 0 die Iris je Auge, 1 die Höhle,
+    // 2–3 die Wange in der Albedo der Mahagoni-Haut, 4 die Lippe, jede Fläche mal EINEM Licht — liest die Verschiebung seiner Albedo
+    // (Lippe ΔL* −10 Δa* +9, Höhle −6/+3) im Schatten der Kamera des Spiels (Y_n 0,07) wie in der Sonne (0,5); unter dem Weiß des
+    // Schirms trug der Schatten nie ΔL* ≤ −4 UND Δa* ≥ +4 (der Bruch bis w12-gesicht). Die Mutanten fallen beim Namen: die Lippe im Ton
+    // der Wange, die Sklera im Saum der Höhle (ohne `gemischt` läse sie hell), die Lider über der Iris (`frei`), das Auge ohne Spur im
+    // Bild, die Wange ohne Albedo (ungemessen, nie das Weiß des Schirms).
+    function gesichtSelbsttest() {
+        const v = [], W = 12; // prettier-ignore
+        // die Albedo (linear): Wange, Lippe (ΔL* −10 Δa* +9 gegen sie), Höhle (−6/+3), die Sklera
+        const [haut, lippe, hoehle, weiss] = [[0.144, 0.054, 0.029], [0.1043, 0.0176, 0.0091], [0.1127, 0.0318, 0.0154], [0.6, 0.6, 0.6]];
+        const fall = (licht, o = {}) => {
+            const F = new Uint8Array(W * 24), teil = new Uint8Array(W * 6).fill(2), gemischt = new Uint8Array(W * 6), spur = new Uint8Array(W * 6); // prettier-ignore
+            const proben = [];
+            const male = (x, y, c, z, p) => {
+                const h = _linHex(c.map((k) => k * licht));
+                F.set([(h >> 16) & 255, (h >> 8) & 255, h & 255], (y * W + x) * 4);
+                if (z) proben.push(Object.assign({ z, x, y, k: 2, vorn: true }, p));
+            };
+            for (let x = 0; x < W; x++) {
+                const auge = x === 2 || x === 9,
+                    sklera = (o.sklera || o.braue) && x === 5;
+                if (auge && !o.ohneSpur) (teil[x] = 1), (spur[x] = 1);
+                male(x, 0, auge ? weiss : haut, auge && "iris", { k: 1, seite: x, frei: !o.lider });
+                male(x, 1, sklera ? weiss : hoehle, "hoehle", { a: hoehle });
+                gemischt[W + x] = o.sklera && sklera && !o.ohneMisch ? 1 : 0;
+                if (o.braue && sklera) proben.push({ z: "braue", x, y: 1, k: 2, vorn: !o.ohneZone });
+                for (const y of [2, 3]) male(x, y, haut, "haut", { a: o.ohneAlbedo ? null : haut });
+                male(x, 4, o.lippeHaut ? haut : lippe, x < 3 || !o.schmal ? "lippe" : "haut", { a: lippe });
+                male(x, 5, haut);
+            }
+            return gesichtMasse(F, teil, W, 6, proben, [], { gemischt, spur: { 1: spur } });
+        };
+        const nahe = (g, l, h) => [g.lippeL + 10, g.lippeA - 9, g.hoehleL + 6, g.hoehleA - 3].every((d) => Math.abs(d) <= 1) && g.augeFrei === 1 && Math.abs(g.weiss - l) <= l * h; // prettier-ignore
+        for (const l of [0.07, 0.5]) if (!nahe(fall(l), l, 0.1)) v.push(`Gesicht unter Licht ${l}: ${JSON.stringify(fall(l))}`);
+        const schirm = (c) => _hexLab(_linHex(c.map((k) => k * 0.07)));
+        if (schirm(lippe)[0] - schirm(haut)[0] <= -4 && schirm(lippe)[1] - schirm(haut)[1] >= 4) v.push("der Selbsttest zeigt den Bruch des Schirm-Weiß nicht");
+        const m = (o) => fall(0.07, o);
+        const faelle = [
+            ["die Lippe im Ton der Wange", (g) => Math.abs(m({ lippeHaut: 1 }).lippeA) < 1],
+            ["die Sklera im Saum der Höhle", () => m({ sklera: 1 }).hoehleL < -5 && m({ sklera: 1, ohneMisch: 1 }).hoehleL > -3],
+            ["die Braue im Pixel der Höhle", () => m({ braue: 1 }).hoehleL < -5 && m({ braue: 1, ohneZone: 1 }).hoehleL > -3],
+            ["die Lider über der Iris", () => m({ lider: 1 }).augeFrei === 0],
+            ["das Auge ohne Spur im Bild", () => m({ ohneSpur: 1 }).augeFrei === 0],
+            ["die Lippe auf drei Bildpunkten (unaufgelöst)", () => m({ schmal: 1 }).lippeA === null],
+            ["die Wange ohne Albedo", () => m({ ohneAlbedo: 1 }).lippeL === null && m({ ohneAlbedo: 1 }).weiss === null],
+        ];
+        for (const [n, ok] of faelle) if (!ok()) v.push(`Gesicht: Mutante „${n}" fällt nicht`);
+        return v;
     }
     // die Palette (Float-Reihe, MENSCH_TON.length × 3, linear wie der Guss): Haut und Haar als Hex des Gusses (der Farb-Münzer des
     // Wirts reicht sie, sonst die Wahl der Dials), die Kleid-Zonen aus kleidZonen(dials); eine fehlende Zone und das Feste sind 1
@@ -6011,6 +6183,10 @@
         MENSCH_SOLL: MENSCH_SOLL,
         KOPF_SOLL: KOPF_SOLL,
         kopfToene: kopfToene,
+        // w12-gesicht — das Gesicht im Bild: seine Züge unter seinem Licht (Leser: werkbank bild, die Soll-Tafel mensch-kopf) und sein
+        // Selbsttest mit Mutanten (Leser: diag-kamera-laub K5)
+        gesichtMasse: gesichtMasse,
+        gesichtSelbsttest: gesichtSelbsttest,
         haarKappe: haarKappe,
         HAAR_VOLUMEN: HAAR_VOLUMEN,
         // studios.K1 — die Fülle des Leibs (der Regler mass): das Unterhaut-Fett je Gelenk (Leser: der Mensch-Guss)

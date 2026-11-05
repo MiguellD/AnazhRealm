@@ -1439,7 +1439,7 @@ async function starte() {
                     });
                     // DIE PROBEN DES GESICHTS: je Vertex des Kopfs sein Zug (Iris am Gelenk, auf der
                     // Kopf-Haut der Ton seiner Ecke, `aTon` — koerper `menschTon`: Haut, Lippe, Höhle, Haar-Kappe), projiziert auf den
-                    // Schirm; `__gesichtMasse` liest das BILD dort, wo die Teilung den Teil des Vertex zeigt (abnahme-urteil). Die Töne
+                    // Schirm; `K.gesichtMasse` (koerper-core) liest das BILD dort, wo die Teilung den Teil des Vertex zeigt. Die Töne
                     // kommen aus dem Leib selbst, nie von Hand — bis mensch.K4 aus der Farbe der Ecke, die die Verdeckung der Haut dunkelt.
                     // Die Maße gehören der Klasse, die die Kopf-Haut eines Leibs wählt (mensch-kopf `^spieler:kopf/`, `^bewohner:kopf/`);
                     // wählt sie sie nicht (haar `^spieler:kopf/hair$`), misst sie kein Gesicht — bis dahin warf jeder Haar-Schuss „keine
@@ -1454,8 +1454,8 @@ async function starte() {
                     if (namen.some((n) => kopfHaut.test(n))) {
                         const T = THREE;
                         const K = window.__koerperCore;
-                        if (!K || typeof K.menschTon !== "function" || !K.KOPF_SOLL)
-                            throw new Error("--gesicht: koerper-core ohne menschTon/KOPF_SOLL in der Seite");
+                        if (!K || typeof K.menschTon !== "function" || typeof K.gesichtMasse !== "function" || !K.KOPF_SOLL)
+                            throw new Error("--gesicht: koerper-core ohne menschTon/gesichtMasse/KOPF_SOLL in der Seite");
                         const ab = (L) => L.position.distanceTo(cam.position);
                         const [wahlLeib] = namen
                             .filter((n) => kopfHaut.test(n))
@@ -1482,6 +1482,7 @@ async function starte() {
                             [K.menschTon("lips"), "lippe"],
                             [K.menschTon("socket"), "hoehle"],
                             [K.menschTon("haarKappe"), "kappe"],
+                            [K.menschTon("braue"), "braue"],
                         ]);
                         const v = new T.Vector3();
                         // DIE ALBEDO DER ECKE (das Licht des Gesichts, `gesichtMasse` weiss): ihre Farbe im Guss (linear), für einen
@@ -1527,7 +1528,7 @@ async function starte() {
                                     if (!z) continue;
                                     o.getVertexPosition(i, v);
                                     v.applyMatrix4(o.matrixWorld);
-                                    if (z !== "iris") {
+                                    if (z !== "iris" && z !== "braue") {
                                         minY = Math.min(minY, v.y);
                                         maxY = Math.max(maxY, v.y);
                                         mitte.add(v);
@@ -1604,7 +1605,7 @@ async function starte() {
                                 m[p] = Math.abs(G[i] - O[i]) + Math.abs(G[i + 1] - O[i + 1]) + Math.abs(G[i + 2] - O[i + 2]) > schwelle ? 1 : 0;
                             spur[j + 1] = m;
                         });
-                        gesicht = __gesichtMasse(u8, teil, W, H, proben, haarK, { gemischt, spur });
+                        gesicht = K.gesichtMasse(u8, teil, W, H, proben, haarK, { gemischt, spur });
                     }
                     let abstand = null;
                     if (k.abstand) {
