@@ -585,9 +585,12 @@ class AnazhRealm_bild_kosten {
                     return;
                 }
                 let bau = -1;
-                // DER BAU IN RATEN (`_knotenRate`): im laufenden Spiel nach dem Weltbild baut kein Bild einen Knoten-Graphen am
-                // Stück — wer seinen noch nicht hat, wartet wie ein verschobener; ruhender Loop und Ladeschirm bauen wie bisher
-                if (ungebaut && welt.state._weltbildDa && !welt._loopRuht()) {
+                // DER BAU IN RATEN (`_knotenRate`): kein Bild baut einen Knoten-Graphen am Stück — im Spiel nach dem Weltbild unter
+                // ERST_BAU_MS, unter dem Ladeschirm unter der EINEN Frist des Lade-Frames, die im Lade-Bild dem Bild gehört
+                // (`_ladeFrist`); wer seinen noch nicht hat, wartet wie ein verschobener, nur der ruhende Loop baut am Stück. Bis
+                // w12-ankunft-faden baute ein Lade-Bild je Render-Aufruf am Stück bis LADE_TAKT_MS (ein Stoff 60–180 ms, swiftshader
+                // Holz voll: die erste Aufgabe des Boots 1 703 ms, darin der Szenen-Pass 522 ms)
+                if (ungebaut && !welt._loopRuht() && (welt.state._weltbildDa || welt._ladeTakt())) {
                     if (!welt._knotenRate(N, ro, E)) {
                         E.verschoben++;
                         if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
@@ -691,12 +694,15 @@ class AnazhRealm_bild_kosten {
     // eines Geists, die Kaskaden eines Satzes: Radeon kalt V18.546.159 im Vorbau 48 Zwillings-Bauten, bis neun je Schlüssel).
     _knotenRate(N, ro, E) {
         const d = N.get(ro);
-        if (E.rateFrist === null) {
-            E.rateFrist = performance.now() + AnazhRealm.ERST_BAU_MS;
+        // DIE FRIST DER AUFGABE (der erste Schritt immer): im Spiel ERST_BAU_MS, unter dem Ladeschirm die EINE des Lade-Frames
+        // (`_ladeFrist(true)`, w12-ankunft-faden) — im Lade-Bild gehört sie dem Bau, im Takt ohne Bild trug die Welt sie schon
+        const erst = E.rateFrist === null;
+        if (erst) {
+            E.rateFrist = this._ladeTakt() ? this._ladeFrist(true) : performance.now() + AnazhRealm.ERST_BAU_MS;
             Promise.resolve().then(() => (E.rateFrist = null));
         }
         const t0 = performance.now();
-        if (t0 >= E.rateFrist) return false;
+        if (!erst && t0 >= E.rateFrist) return false;
         const key = N.getForRenderCacheKey(ro);
         let s = N.nodeBuilderCache.get(key);
         // ein Bau, den ein Zwilling vollendete, dessen Eintrag mit seinem letzten Leser fiel (`usedTimes`), tritt wieder ein
@@ -726,7 +732,9 @@ class AnazhRealm_bild_kosten {
                 arbeit = b.flowNodes[shader].length > 0; // eine leere Shader-Stufe geht im selben Schritt mit
             }
             [E.rateN, E.rateMs] = [E.rateN + 1, E.rateMs + performance.now() - t0];
-            if (arbeit) return false;
+            // EIN KNOTEN-BAU, ZWEI WEGE: `bauN`/`bauMs` zählen den Bau am Stück und den in Raten (die Kalt-Zeile, der Flugschreiber
+            // und die Erst-Zeichnung im Boot lesen sie; seit w12-ankunft-faden baut der Ladeschirm in Raten), `rateN`/`rateMs` die Schritte
+            if (arbeit) return ((E.bauMs += performance.now() - t0), false);
             if (R) {
                 b.setBuildStage(null);
                 b.setShaderStage(null);
@@ -734,7 +742,9 @@ class AnazhRealm_bild_kosten {
                 b.buildUpdateNodes();
                 N.nodeBuilderCache.set(key, (s = R.s = N._createNodeBuilderState(b)));
                 E.imFlug.delete(key);
+                E.bauN++;
             }
+            E.bauMs += performance.now() - t0;
         } catch (e) {
             d.rate = undefined;
             E.imFlug.delete(key);

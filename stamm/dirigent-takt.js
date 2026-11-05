@@ -61,6 +61,8 @@ class AnazhRealm_dirigent_takt {
                 // jeder Takt.
                 const bild = this._gpuLeineFrei();
                 const ruht = !bild && this._ladeTakt();
+                // das Lade-Bild: seine Frist gehört dem Bild (`_ladeFrist`), bis zum Ende dieses Takts
+                this._ladeBildTakt = bild && this._ladeTakt();
                 // DER SCHIRM einmal je Takt (die EINE Quelle jeder Schirm-Größe, `_schirm`) — und mit ihm die Schwellen der Stufen
                 // (das Gesetz des Wechsels, `_stufenSchirm`: sie folgen dem Schirm, nie der Bildrate).
                 this._schirmMessen();
@@ -327,6 +329,7 @@ class AnazhRealm_dirigent_takt {
             this._tickFoundryIngest(wandDelta);
             // DER STAND DER WELT je Takt (A9, `_weltSteht`): auf der LÄUFT-IMMER-Seite wie das Laden, das ihn bewegt
             this._weltStandTakt();
+            this._ladeBildTakt = false; // jede andere Aufgabe (Faden-Antwort, Scheibe) liest die Frist wieder für die Welt
 
             // Deferierter Avatar-Bau: EINMAL bauen, sobald seine zwei Vorlagen aus dem Faden im Memo liegen (`_leibBereit`,
             // K60-2 — bis dahin hielt der Guss im sechsten Frame den Haupt-Faden 2,4 s, und nach dem Buch goss er neu).
@@ -623,11 +626,18 @@ class AnazhRealm_dirigent_takt {
     // bevor das Bild steht — und sobald am Anfang des Takts keine Lücke mehr fehlt: der Takt trägt dann das ganze Spiel vor
     // dem Bild, nach dem `_ankunftsBild` urteilt (eine Lücke, die erst im Takt schließt, zeichnet der nächste). Radeon kalt
     // zeichnete jeder Lade-Takt (3,3 s Render bis zum Bild, K602/p2.cpuprofile), die Erst-Zeichnung trug davon ~1,6 s.
+    // DER BAU WARTET (w12-ankunft-faden): das Lade-Bild baut nur bis zu seiner Frist (`_ladeFrist`, `_knotenRate`) — schob es einen
+    // Knoten-Bau auf (`verschoben` der Erst-Zeichnung wuchs), kommt das nächste nach EINEM Takt ohne Bild, nicht nach LADE_BILD_MS:
+    // die Welt behält jeden zweiten Takt, der Bau seinen Durchsatz. Der erste Takt des Ladeschirms zeichnet nicht (bis hier trug er
+    // jede Erst-Arbeit der Welt zugleich: Ort, Himmel, Horizont und das erste Bild in einer Aufgabe).
     _ladeBildFaellig(L) {
         if (!this._ladeTakt()) return true;
         const jetzt = performance.now();
-        if (jetzt - (L.ladeBild || -Infinity) >= AnazhRealm.LADE_BILD_MS || this._weltbildLuecken().length === 0) {
-            L.ladeBild = jetzt;
+        const E = this._erstZeichnung;
+        const bau = L.ladeBild !== undefined && !!E && E.verschoben > L.bauVerschoben && L.ladeAus > L.ladeAusBild;
+        if (L.ladeBild === undefined) L.ladeBild = jetzt - AnazhRealm.LADE_BILD_MS;
+        else if (bau || jetzt - L.ladeBild >= AnazhRealm.LADE_BILD_MS || this._weltbildLuecken().length === 0) {
+            [L.ladeBild, L.bauVerschoben, L.ladeAusBild] = [jetzt, E ? E.verschoben : 0, L.ladeAus || 0];
             return true;
         }
         L.ladeAus = (L.ladeAus || 0) + 1;
@@ -1575,7 +1585,9 @@ class AnazhRealm_dirigent_takt {
     _deferrableBudgetMs() {
         const st = this.state;
         if (st.renderer && st.renderer._isHeadlessNull) return Infinity;
-        if (this._ladeTakt()) return AnazhRealm.LADE_TAKT_MS;
+        // unter dem Ladeschirm trägt jeder Takt ohne Bild LADE_TAKT_MS Welt, das Lade-Bild nur den Boden (seine Frist gehört dem
+        // Bild, `_ladeFrist`)
+        if (this._ladeTakt()) return this._ladeBildTakt ? AnazhRealm.FRAME_SCHED_MIN_MS : AnazhRealm.LADE_TAKT_MS;
         const throttleMs = Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS;
         const sense = st.perfSense;
         if (!sense || !sense.phase) return Math.max(AnazhRealm.FRAME_SCHED_MIN_MS, throttleMs - 8);
@@ -1611,9 +1623,13 @@ class AnazhRealm_dirigent_takt {
     // der Aufgabe (Mikro-Task). LADE_TAKT_MS für alle Leser mit Kappe zusammen (bis G2-n1 gab jeder Ruf „jetzt + 100 ms",
     // fünf Leser streckten den Lade-Frame auf 500 ms). Am Frame-Stempel des Loops las die Ort-Wahl außerhalb des Frames
     // die verbrauchte Frist des letzten und rechnete 3 ms je Scheibe (Radeon kalt Dorf nach Export 0,1–0,5 → 1,6–8,4 s).
-    // Außerhalb des Lade-Takts −∞.
-    _ladeFrist() {
+    // Außerhalb des Lade-Takts −∞. IM LADE-BILD GEHÖRT SIE DEM BILD (w12-ankunft-faden, ankunft.K5): der Takt, der zeichnet
+    // (`_ladeBildTakt`), gibt sie dem Knoten-Bau der Erst-Zeichnung (`_knotenRate`, `bild` true) — die Leser der Welt tragen dort nur
+    // ihre Kappe (−∞), ihre Arbeit gehört den Takten ohne Bild. Bis dahin trug ein Lade-Bild beides, die Welt bis zur Frist und danach
+    // je Render-Aufruf den Bau am Stück bis LADE_TAKT_MS (Radeon kalt: längste Aufgabe vor der Kontrolle 866–1 075 ms).
+    _ladeFrist(bild = false) {
         if (!this._ladeTakt()) return -Infinity;
+        if (this._ladeBildTakt && !bild) return -Infinity;
         if (this._ladeFristBis == null) {
             this._ladeFristBis = performance.now() + AnazhRealm.LADE_TAKT_MS;
             Promise.resolve().then(() => (this._ladeFristBis = null));
