@@ -1969,6 +1969,28 @@ async function unterwasserSeite(o) {
             return je;
         };
         aus.ego = await reihe("first", o.tiefen, "ego");
+        {
+            const lu = s.luft && s.luft.U, uw = () => lu && { u: lu.unterWasser.value, beta: R(lu.beta.value, 4), farbe: lu.farbe.value.toArray().map((v) => R(v, 4)), spY: R(lu.spiegelY.value, 2), fog: !!s.scene.fogNode, kuw: !!s.kameraUnterWasser };
+            const flaechen = [];
+            s.scene.traverse((m) => { if (m.material && m.material === s.hydroSurfaceMaterial && m.visible) flaechen.push(m); });
+            aus.diag = { vorher: uw(), flaechen: flaechen.length, wasserMeshes: [] };
+            s.scene.traverse((m) => { if (m.isMesh && m.visible && /wasser|water|hydro|see|lake|ocean|meer/i.test((m.name || "") + " " + ((m.material && m.material.name) || ""))) aus.diag.wasserMeshes.push((m.name || "?") + "|" + ((m.material && m.material.name) || "") + "|" + R(m.position.y, 2)); });
+            aus.diag.wasserMeshes = aus.diag.wasserMeshes.slice(0, 20);
+            for (const m of flaechen) m.visible = false;
+            try {
+                const b1 = await schuss("diag-ohne-flaeche", false);
+                aus.diag.ohneFlaeche = { L: b1.L, m: uw() };
+            } finally {
+                for (const m of flaechen) m.visible = true;
+            }
+            const y0 = cam.position.y;
+            cam.position.y = sp0 + 3;
+            cam.updateMatrixWorld(true);
+            const b2 = await schuss("diag-ueber", false);
+            aus.diag.ueber = { L: b2.L, m: uw() };
+            cam.position.y = y0;
+            cam.updateMatrixWorld(true);
+        }
         aus.third = await reihe("third", o.tiefen, "third");
         const memo = AnazhRealm._gesetzStromMemo, key = "terrain:WASSER_GESETZ";
         const halb = (K) => Object.assign({}, K, { kd: K.kd.map((v) => v / 2) });
