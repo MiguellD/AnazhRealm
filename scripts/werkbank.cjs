@@ -1189,7 +1189,6 @@ async function starte() {
                 try {
                     if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
                 } catch {}
-                r._schattenAlleNeu();
                 auf = await __ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: w });
                 if (w) gewaehlt = auf.abnahme.wahl || null;
             }
@@ -1295,7 +1294,6 @@ async function starte() {
                     r._kopfKahl(aus);
                     bundlesNeu();
                     try {
-                        r._schattenAlleNeu();
                         return (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
                     } finally {
                         for (const o of aus) zeig(o);

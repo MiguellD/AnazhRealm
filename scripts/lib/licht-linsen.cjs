@@ -2690,7 +2690,7 @@ function kontaktSicht(o) {
             return c.map((v) => v * k + (m < 0.04 ? x - 6.25 * x * x : 0.04));
         };
         const schuss = async () => {
-            for (let i = 0; i < 2; i++) r._schattenAlleNeu(), (o.u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8);
+            for (let i = 0; i < 2; i++) o.u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
             const L = new Float32Array(W * H);
             for (let i = 0; i < W * H; i++) {
                 const c = zurueck([lin[o.u8[4 * i]], lin[o.u8[4 * i + 1]], lin[o.u8[4 * i + 2]]]);
