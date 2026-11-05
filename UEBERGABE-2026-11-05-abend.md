@@ -41,7 +41,7 @@ Log: /tmp/claude/w3/offen-w6.txt Einträge 119–164.
   - Auch die GTX misst leib.K3#2 ROT, mit demselben Muster.
 - material.K3#2 ROT: Karte zu L1 bei Birke 0,939 und Fichte 1,12–1,17 (Soll 0,95–1,05).
 - material.K1#2/K3#2 bleiben auf der GTX ohne Urteil: Welt 81 s und Labor laufen parallel, das reißt die Frist von 84 s (FUND).
-- Die OMEN misst profiband.K2#1/#2 am f5db8d90 (Test, ob takt-band die Belegung senkt). Ergebnis abholen.
+- profiband.K2 GTX am f5db8d90 ROT: Belegung wiese-ego-steht 33,32 (bbca6407 13,27), genesis-ego 108,3 (Läufe streuen 36,7–108 je Kopf, 1 Lauf je Kopf) — takt-band ist auf der GTX nicht als Gewinn messbar; für E braucht es ≥ 4 Läufe je Seite (ABAB).
 
 ## Stationen in koordination
 - Heute gemergt: g2-proben, kontakt, pegel, dorf-probe, albedo, unterwasser, kronen (Nadel-Band 0,08–0,15), laub-kante (nennt den Verdecker), brand-halt (Kommentare).
