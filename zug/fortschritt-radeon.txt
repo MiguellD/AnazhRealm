@@ -2116,3 +2116,4 @@
 2026-11-05 15:52:43 vp-main-2 START 3 Stationen
 2026-11-05 15:54:11 vp-main-2 ankunft.K2#1 ROT 0.8 · 1/3
 2026-11-05 15:54:15 vp-main-2 ankunft.K1#1 ROT 0.8 · 2/3
+2026-11-05 15:54:20 vp-main-2 ankunft.K5#1 ROT 0.8 · 3/3
