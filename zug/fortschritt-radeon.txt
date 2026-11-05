@@ -2037,3 +2037,4 @@
 2026-11-05 08:31:57 5322b4d2-radeon ankunft.K1#1 ROT 0.8 · 2/2
 2026-11-05 08:33:23 5322b4d2-radeon ENDE 1 grün / 1 rot · 2.9 min
 2026-11-05 08:33:53 5322b4d2-radeon START 2 Stationen
+2026-11-05 08:35:17 5322b4d2-radeon ankunft.K2#1 GRÜN 0.8 · 1/2
