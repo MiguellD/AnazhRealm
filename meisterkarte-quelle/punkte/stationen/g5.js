@@ -1931,7 +1931,7 @@ async function unterwasserSeite(o) {
         if (tn) tn.updateBefore = function (f) { z.nTn++; return tnU.call(this, f); };
         let u8, k;
         try { u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8; k = s.renderer.toneMappingExposure; } finally { sp.updateBefore = spU; if (tn) tn.updateBefore = tnU; }
-        (aus.zaehl ||= []).push([name, z.nSp, z.nTn, z.objs, z.cy[0], z.cy[z.cy.length - 1], tn && tn._anlauf && tn._anlauf.value, s._traaR && s._traaR.sprung, s._loopRuht && r._loopRuht(), r._bildSchuld, s.postProcessingFailed].join(" "));
+        (aus.zaehl ||= []).push([name, z.nSp, z.nTn, z.objs, z.cy[0], z.cy[z.cy.length - 1], tn && tn._anlauf && tn._anlauf.value, s._traaR && s._traaR.sprung, typeof r._loopRuht === "function" && r._loopRuht(), r._bildSchuld, s.postProcessingFailed].join(" "));
         if (o.bilder) aus.bilder[name] = window.__png(u8, W, H);
         const b = { L: median(u8, k, 0, W, 0, H), k: R(k, 4) };
         if (leib) {
