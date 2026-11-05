@@ -148,10 +148,11 @@ async function bedienung2(vor) {
             document.getElementById("inventory-overlay"),
             ...document.querySelectorAll(".drawer[data-drawer]"),
         ]) {
-            r._menueZeigen(d.dataset.drawer || "ich");
+            const z = d.dataset.drawer || "ich";
+            r._menueZeigen(z, r._menueScheiben(z));
             await r._menueSteht();
             await bilder(2);
-            schrift[d.dataset.drawer || "ich"] = r._schriftZensus(d);
+            schrift[z] = r._schriftZensus(d);
         }
         r.resetKeybindings();
         r._menueZeigen("einstellungen");

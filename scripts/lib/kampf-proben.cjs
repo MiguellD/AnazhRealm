@@ -1794,7 +1794,7 @@ async function WELLE_L(ort) {
                 equipHeld: "Gerät",
                 equipArmor: "Gerät",
                 repairHeldDevice: "Gerät",
-                _ichHandleOverlay: "Panel",
+                _ichScheiben: "Panel",
                 tickPlayerBoosts: "Boost",
                 addPlayerBoost: "Boost",
                 tickPlayerVitals: "Tod-Takt",
@@ -1861,7 +1861,7 @@ async function WELLE_L(ort) {
                 r._setBlueprintWear(dolch, 1);
                 ausruesten(null);
                 // Panel
-                schritt("_ichHandleOverlay", () => r._ichHandleOverlay(true));
+                schritt("_ichScheiben", () => r._ichScheiben().forEach((f) => f())); // der Nachbau des Ich, am Stück
                 try {
                     r._ichHandleOverlay(false);
                 } catch {}

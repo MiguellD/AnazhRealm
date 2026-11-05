@@ -483,7 +483,7 @@ class AnazhRealm_werkstatt_hof {
         const el = document.getElementById("inventory-overlay");
         if (!el) return;
         const open = typeof force === "boolean" ? force : el.hasAttribute("hidden");
-        if (open) this._menueZeigen("ich");
+        if (open) this._menueZeigen("ich", this._ichScheiben());
         else if (this.state.inventoryOpen || !el.hidden) this._menueZeigen(null);
     }
 
@@ -1384,6 +1384,17 @@ class AnazhRealm_werkstatt_hof {
         stage.active = true;
         this._ichStageShow((this.state.player && this.state.player.soul) || "human");
         this._ichStartRAF();
+    }
+
+    // DIE SCHEIBEN DES ICH (sein Nachbau, `_menueNachbau`): Habe, Rüstung und Rezeptbuch (es baut nur, was sich änderte) · frische
+    // Werte, equip-gefaltet, ins Spec-Sheet · die Bühne. Sein Öffner (Tab, `toggleInventoryOverlay`) reicht nur sie, der Tisch der
+    // Tafeln (`_menueScheiben`) liest sie für den Reiter „spieler"; die Kampf-Probe fährt sie als Weg „Panel" (T27).
+    _ichScheiben() {
+        return [
+            () => this.renderInventoryUI(),
+            () => (this.recomputePlayerStats(), this._ichRenderSpecSheet()),
+            () => this._ichBuehneAn(),
+        ];
     }
 
     // DER VORBAU DER ICH-BÜHNE (spielgang.K3, aus `_vorbauBedienung`): Tab öffnet die Bühne, und ihr erster Render baute die

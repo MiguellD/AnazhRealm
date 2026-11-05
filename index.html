@@ -1242,26 +1242,32 @@
                 color: var(--brass-1);
                 margin: 10px 0 4px;
             }
+            /* DIE ZEILE ALS RASTER (w12-menue, bauen.K1): Name und Knopf oben, die Kosten darunter über die volle Breite — bei
+               16 px brach die Kosten-Zeile neben dem Knopf um (77 statt 40 px je Zeile), und das Griffbereite fiel unter den Saum
+               des Buchs (Haus zwei Rad-Rasten tief). */
             .inventory-recipes .recipe-row {
-                display: flex;
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
                 align-items: center;
-                justify-content: space-between;
-                gap: 8px;
-                padding: 4px 8px;
-                margin-bottom: 2px;
+                column-gap: 8px;
+                row-gap: 0;
+                padding: 2px 8px;
+                margin-bottom: 1px;
+                line-height: 1.2;
                 background: linear-gradient(180deg, rgba(255, 235, 190, 0.08), rgba(60, 40, 18, 0.22));
                 border: 1px solid var(--brass-3);
                 border-radius: 3px;
                 /* DAS ICH ÖFFNET OHNE NEUBAU (spielgang.K3): von 109 Rezept-Zeilen stehen 14 im Bild — die übrigen legt und
-                   malt Tab erst, wenn das Buch sie zeigt (28 px Inhalt + Rand = die gemessene Zeile, 38 px) */
+                   malt Tab erst, wenn das Buch sie zeigt (42 px Inhalt + Rand = die gemessene Zeile bei 16 px, 48 px) */
                 content-visibility: auto;
-                contain-intrinsic-size: auto 28px;
+                contain-intrinsic-size: auto 42px;
             }
             .inventory-recipes .recipe-row .recipe-info {
-                display: flex;
-                flex-direction: column;
-                gap: 1px;
-                min-width: 0;
+                display: contents;
+            }
+            .inventory-recipes .recipe-row button {
+                grid-column: 2;
+                grid-row: 1;
             }
             .inventory-recipes .recipe-row .recipe-name {
                 font-size: var(--schrift-min);
@@ -1271,13 +1277,18 @@
                 text-overflow: ellipsis;
             }
             .inventory-recipes .recipe-row .recipe-cost {
+                grid-column: 1 / -1;
                 font-family: "JetBrains Mono", monospace;
                 font-size: var(--schrift-min);
                 color: var(--parch-ink-faded);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
             .inventory-recipes .recipe-row button {
                 flex: none;
-                padding: 4px 10px;
+                padding: 2px 10px;
+                line-height: 1.2;
                 font-family: "Cinzel", Georgia, serif;
                 font-size: var(--schrift-min);
                 background: linear-gradient(180deg, var(--brass-1), var(--brass-2));
@@ -8797,13 +8808,18 @@
                         <div data-t="ui.eingebaut-zum-bearbeiten-klonen" id="workshop-readonly-banner" hidden></div>
                     </div>
                     <aside id="workshop-side-palette-right" data-t-aria-label="ui.material-werkzeug-farb-palette">
-                        <!-- V18.42 — MATERIALIEN · WERKZEUGE · WERK sind DREI gleichwertige Sektionen in
+                        <!-- V18.42 — MATERIALIEN · WERK · WERKZEUGE sind DREI gleichwertige Sektionen in
                              EINEM Fluss, auf EINER Ebene (Schöpfer „WERK muss auf derselben Ebene sein,
                              keine zwei Schichten"). Kein innerer Scroll, der WERK abtrennt — die ganze
                              Spalte fliesst; bei sehr vielen Werkzeugen trägt der Drawer-Scroll alles
-                             gemeinsam (eine Ebene). -->
+                             gemeinsam (eine Ebene). WERK steht VOR den Werkzeugen (w12-menue): mit 16 px trägt
+                             jede Station eine volle Zeile, und die Stationen des Genesis-Orts schoben FERTIGEN
+                             bei 1280×720 unter den Saum der Tafel (bauen.K1: der Werk-Akt in ≤ 3 Eingaben). -->
                         <h4 data-t="ui.materialien"></h4>
                         <div id="workshop-material-palette" role="group" data-t-aria-label="ui.material-palette"></div>
+                        <!-- Die WERK-Sektion (Mach-Akt): gleiche Ebene wie Material/Werkzeug — „womit ich mache".
+                             _workshopAppendFertigenRow + Werk-Heading + Signatur füllen sie. -->
+                        <div id="workshop-action-zone" data-t-aria-label="ui.mach-aktion"></div>
                         <h4>
                             <span data-t="ui.werkzeuge"></span><span
                                 class="help-dot dot-right"
@@ -8816,9 +8832,6 @@
                             >
                         </h4>
                         <div id="workshop-tool-palette" role="group" data-t-aria-label="ui.werkzeug-palette"></div>
-                        <!-- Die WERK-Sektion (Mach-Akt): dritte Sektion, gleiche Ebene wie Material/Werkzeug —
-                             „womit ich mache". _workshopAppendFertigenRow + Werk-Heading + Signatur füllen sie. -->
-                        <div id="workshop-action-zone" data-t-aria-label="ui.mach-aktion"></div>
                     </aside>
                 </div>
                 <!-- V18.37 — die Ausgabe-Tabelle auf GANZE Breite (Schöpfer): aus dem

@@ -617,24 +617,27 @@ class AnazhRealm_werkstatt_hud {
     }
 
     // Die Taste einer Schublade (K/P/B/I, `_verbTaste`): ist sie offen, schließt sie, sonst zeigt sie sich — über den EINEN
-    // Schalter (`_menueZeigen`), wie ihr Reiter.
+    // Schalter (`_menueZeigen`) mit ihren Scheiben (`_menueScheiben`), wie ihr Reiter.
     toggleDrawer(name) {
         if (typeof document === "undefined") return;
         const drawer = document.querySelector(`.drawer[data-drawer="${name}"]`);
         if (!drawer) return;
         if (!drawer.hidden) this.closeAllDrawers();
-        else this._menueZeigen(name);
+        else this._menueZeigen(name, this._menueScheiben(name));
     }
 
     // DAS MENÜ ZEIGT SICH IN EINEM BILD (spielgang.K3) — der EINE Schalter jeder Tafel: das Ich (`ziel` "ich": Tab, sein Reiter
     // „spieler") und jede Schublade (ihr Name: ihre Taste, ihr Reiter); null verbirgt jede (Esc, das Zurück, der Schließ-Knopf).
     // Offen ist höchstens EINE Tafel. Im Hörer läuft nur der Schalter — [hidden], die Reiter, der Zustand, der freie Zeiger, jede
     // Bühne ruht —; was die Tafel füllt (Habe, Spec-Sheet und Bühne des Ich, Liste und Vorschau der Werkstatt, Listen und Bühne
-    // des Hofs, die Bibliothek), kommt nach ihrem ersten Bild, je Bild EINE Scheibe (`_menueNachbau`). Vorher öffnete jeder der
-    // vier Öffner (Taste, Reiter, Tab, Esc) mit eigenem Bau im Hörer: headless am Null-Renderer, Tab · Tab · I · Esc in fünf
-    // Runden, hielt das erste Tab den Hörer 99 ms (Rezeptbuch 29 ms, Bauplan-Massen 29 ms, Spec-Sheet, Bühne), jedes weitere
-    // 6–7 ms, davon 4,5 ms ein erzwungenes Layout (das Rezeptbuch nach oben gerollt im Öffnen).
-    _menueZeigen(ziel) {
+    // des Hofs, die Bibliothek), reicht ihr Öffner als `scheiben` (`_menueScheiben`, das Ich `_ichScheiben`) und kommt nach ihrem
+    // ersten Bild, je Bild EINE Scheibe (`_menueNachbau`). Der Schalter selbst kennt keine Tafel: das Schließen (null, ohne
+    // Scheiben) erreicht nichts, was eine Tafel füllt — ein Schalter mit dem Tisch aller Tafeln verband jedes Schließen (Fertigen,
+    // Esc) und das Ich mit der Bibliothek und darüber der Welt (gate:v1-pfad W7, z224: ein Zeit-Kreis aus 430 Gliedern um
+    // `_foundryAwaitBook`). Vorher öffnete jeder der vier Öffner (Taste, Reiter, Tab, Esc) mit eigenem Bau im Hörer: headless am
+    // Null-Renderer, Tab · Tab · I · Esc in fünf Runden, hielt das erste Tab den Hörer 99 ms (Rezeptbuch 29 ms, Bauplan-Massen
+    // 29 ms, Spec-Sheet, Bühne), jedes weitere 6–7 ms, davon 4,5 ms ein erzwungenes Layout (das Rezeptbuch nach oben gerollt).
+    _menueZeigen(ziel, scheiben = []) {
         if (typeof document === "undefined") return;
         const st = this.state;
         const ich = document.getElementById("inventory-overlay");
@@ -663,24 +666,16 @@ class AnazhRealm_werkstatt_hud {
         this._hofHandleDrawerChange(null);
         this._feedHandleDrawerChange(null);
         if (ziel) this._uiZeigerFrei(); // die Tafel gehört der Maus (Welle L, V-D2)
-        this._menueNachbau(ziel);
+        this._menueNachbau(scheiben);
     }
 
-    // DER NACHBAU DER TAFEL (spielgang.K3, aus `_menueZeigen`): was die eben gezeigte Tafel füllt, nach ihrem ersten Bild, je
-    // Bild EINE Scheibe — ein Bild läuft (`requestAnimationFrame`), die Scheibe ist die Aufgabe nach ihm (`setTimeout`), keine
-    // fällt in den Hörer einer Taste und keine in das Bild, das die Tafel zeigt. Ein neuer Schalter verwirft, was für die alte
-    // Tafel noch ansteht; `_menueSteht()` verspricht das Ende des laufenden Nachbaus. Eine Scheibe, die wirft, bricht laut
-    // (der Fehler der Seite), der Nachbau geht weiter.
-    _menueNachbau(ziel) {
-        const N = this._menueStand || (this._menueStand = { n: 0, fertig: Promise.resolve(), ende: null });
-        const n = ++N.n;
-        const scheiben =
+    // DIE SCHEIBEN JEDER TAFEL (spielgang.K3, für `_menueZeigen`): was die Tafel `ziel` nach ihrem ersten Bild füllt — die des Ich
+    // (`_ichScheiben`), der Werkstatt, des Hofs und der Bibliothek. Nur die Öffner, die jede Tafel öffnen (ihre Taste, ihr Reiter),
+    // lesen diesen Tisch; das Ich öffnet sein Tab mit seinen eigenen Scheiben.
+    _menueScheiben(ziel) {
+        if (ziel === "ich") return this._ichScheiben();
+        return (
             {
-                ich: [
-                    () => this.renderInventoryUI(), // Habe, Rüstung, Rezeptbuch (es baut nur, was sich änderte)
-                    () => (this.recomputePlayerStats(), this._ichRenderSpecSheet()), // frische Werte, equip-gefaltet
-                    () => this._ichBuehneAn(),
-                ],
                 werkstatt: [() => this._workshopHandleDrawerChange("werkstatt")],
                 kreaturen: [() => this._hofHandleDrawerChange("kreaturen")],
                 bibliothek: [
@@ -688,7 +683,19 @@ class AnazhRealm_werkstatt_hud {
                     () => this.renderLibraryUI(),
                     () => this._feedHandleDrawerChange("bibliothek"),
                 ],
-            }[ziel] || [];
+            }[ziel] || []
+        );
+    }
+
+    // DER NACHBAU DER TAFEL (spielgang.K3, aus `_menueZeigen`): ihre Scheiben nach ihrem ersten Bild, je Bild EINE — ein Bild
+    // läuft (`requestAnimationFrame`), die Scheibe ist die Aufgabe nach ihm (`setTimeout`), keine fällt in den Hörer einer Taste
+    // und keine in das Bild, das die Tafel zeigt. Ein neuer Schalter verwirft, was für die alte Tafel noch ansteht (das Schließen
+    // reicht keine Scheibe); `_menueSteht()` verspricht das Ende des laufenden Nachbaus. Eine Scheibe, die wirft, bricht laut
+    // (der Fehler der Seite), der Nachbau geht weiter.
+    _menueNachbau(liste) {
+        const N = this._menueStand || (this._menueStand = { n: 0, fertig: Promise.resolve(), ende: null });
+        const n = ++N.n;
+        const scheiben = [...liste];
         if (N.ende) N.ende();
         N.fertig = new Promise((ok) => (N.ende = ok));
         const weiter = () => {
@@ -721,7 +728,8 @@ class AnazhRealm_werkstatt_hud {
         for (const tab of tabs) {
             tab.addEventListener("click", () => {
                 const name = tab.getAttribute("data-tab");
-                if (name) this._menueZeigen(name === "spieler" ? "ich" : name);
+                const ziel = name === "spieler" ? "ich" : name;
+                if (ziel) this._menueZeigen(ziel, this._menueScheiben(ziel));
             });
         }
         // Close-Buttons schließen den eigenen Drawer und entaktivieren den Tab.
@@ -2748,7 +2756,8 @@ class AnazhRealm_werkstatt_hud {
     // `wurzel` (ein Element, sonst die Seite) — jeder Text-Knoten und jedes ::before/::after mit Inhalt, seine berechnete Größe mal
     // dem Maßstab der transform-Kette; die gefalteten Sektionen zeigen ihren Inhalt, solange er zählt. Was unter der kleinsten
     // Schrift liegt, steht beim Namen (Ort im Baum, Größe, Text). Der Leser: `werkbank bedienung --staffel 2` am Gerät und die
-    // Tasten-Tafel-Probe im Playtest. → { knoten, klein: [{ wo, px, text, n }], bild: [w, h] }
+    // Tasten-Tafel-Probe im Playtest. → { knoten, klein: [{ wo, px, text, n }], bild: [w, h] } — das Bild ist der Schirm der Welt
+    // (`_schirm`, die EINE Quelle jeder Schirm-Größe; gate:schirm-monotonie Q), in dem der Spieler die Schrift liest.
     _schriftZensus(wurzel = document.body) {
         const min = parseFloat(window.getComputedStyle(document.documentElement).getPropertyValue("--schrift-min"));
         const gefaltet = [...wurzel.querySelectorAll(".collapsed")];
@@ -2779,7 +2788,8 @@ class AnazhRealm_werkstatt_hud {
         };
         const sichtbar = (el) =>
             el.checkVisibility({ opacityProperty: true, visibilityProperty: true }) && el.getClientRects().length > 0;
-        const [klein, aus] = [new Map(), { knoten: 0, klein: [], bild: [window.innerWidth, window.innerHeight] }];
+        const schirm = this._schirm();
+        const [klein, aus] = [new Map(), { knoten: 0, klein: [], bild: [schirm.breite, schirm.hoehe] }];
         const zaehle = (el, text, cs) => {
             const px = +(parseFloat(cs.fontSize) * massstab(el)).toFixed(1);
             aus.knoten++;

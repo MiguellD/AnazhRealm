@@ -378,12 +378,12 @@ async function betreten(page, welt) {
         UEBERSETZT
     );
     if (!b.weg) return b;
-    // W gehalten, die Probe taktet die Heimat (headless taktet sie nicht selbst), bis das Tor aufgeht: jedes Tor des Rings ist
+    // vor gehalten (die Aktion der EINEN Tasten-Tafel, `halt`), die Probe taktet die Heimat (headless taktet sie nicht selbst), bis das Tor aufgeht: jedes Tor des Rings ist
     // eine porta-Gestalt (`weg` = die Gestalt, die der Wirt aus dem Gesetzbuch liest, `_torGesetzFor`), der Weg führt durch
     // ihre Apertur — der E-Weg der Teile-Tore fiel mit ihnen (w4-tore-teile); ein Tor ohne Gesetz ist rot beim Namen (oben)
     await halteBis(page, {
-        druck: () => page.evaluate('dispatchEvent(new KeyboardEvent("keydown", { key: "w" })); window.__takt = setInterval(() => anazhRealm._gameLoopTick(performance.now()), 20)'),
-        los: () => page.evaluate('clearInterval(__takt); dispatchEvent(new KeyboardEvent("keyup", { key: "w" }))'),
+        druck: () => page.evaluate("halt.vor = true; window.__takt = setInterval(() => anazhRealm._gameLoopTick(performance.now()), 20)"),
+        los: () => page.evaluate("clearInterval(__takt); halt.vor = false"),
         ziel: () => !!r._portalOverlay,
     });
     return (await page.evaluate(() => !!r._portalOverlay)) ? b : { fehler: `das Tor geht nicht auf (${b.weg})` };
