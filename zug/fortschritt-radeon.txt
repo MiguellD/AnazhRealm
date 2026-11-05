@@ -1960,3 +1960,4 @@
 2026-11-05 01:38:52 f833ae88-radeon ENDE 0 grün / 2 rot · 0.7 min
 2026-11-05 01:43:22 f833ae88-radeon START 2 Stationen
 2026-11-05 01:47:05 f833ae88-radeon ENDE 0 grün / 0 rot · 3.7 min
+2026-11-05 01:47:34 ea7def47-radeon START 1 Stationen
