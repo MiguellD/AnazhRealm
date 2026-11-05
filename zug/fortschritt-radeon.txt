@@ -1967,3 +1967,4 @@
 2026-11-05 01:54:19 ba87b158-radeon vegetation.K1#1 ROT 0.3 · 1/1
 2026-11-05 01:55:49 ba87b158-radeon ENDE 0 grün / 1 rot · 2.7 min
 2026-11-05 02:00:09 ba87b158-radeon START 1 Stationen
+2026-11-05 02:01:10 ba87b158-radeon mensch.K4#1 ROT 0.4 · 1/1
