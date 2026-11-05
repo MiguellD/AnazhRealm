@@ -1059,6 +1059,12 @@ function waterSurfaceAt(x, z) {
     if (s[0] < W.SW) return s[1];
     return null;
 }
+// Die Art des Wassers an (x, z) fuer den Koerper unter Wasser (WASSER_GESETZ.koerper, w12-unterwasser): der Bach fuehrt Schwebstoff, Teich und Meer stehen klar
+function waterArtAt(x, z) {
+    const W = water();
+    const teich = Math.hypot(x - W.pondLo.x, z - W.pondLo.z) < W.pondLo.rs || Math.hypot(x - W.pondHi.x, z - W.pondHi.z) < W.pondHi.rs;
+    return !teich && !(seaward(x, z) > 0) && _streamDH(x, z)[0] < W.SW ? "fluss" : "see";
+}
 function waterDepress(x, z) {
     const W = water();
     let d = 0;
@@ -3520,14 +3526,14 @@ function updateWorld(dt) {
         _camUnder = _ws !== null && camera.position.y < _ws - 0.12;
         if (_camUnder) {
             const dl = 0.2 + 0.8 * atm.lum; // Tageslicht dringt ein: nachts fast schwarz, mittags tuerkis
-            // W10 + w12-unterwasser: die EINE Wasser-Wahrheit (WASSER_GESETZ, dieselbe Zeile wie die Welt, stamm/bild-himmel.js): die Farbe ist das Licht in der Tiefe der Kamera unter dem Spiegel (Beer-Lambert exp(-wK*Tiefe)), die Sicht endet am 550-nm-Kanal der Extinktion des Wasser-Koerpers (wK + koerperStreu) nach Koschmieder (ATMO_GESETZ.luft.kontrast) — bis dahin die festen ersten 0,3 m und ein Nebel 0,3–7,5 m, die Welt sah 30 m
-            const _uw = WASSER_GESETZ,
+            // W10 + w12-unterwasser: die EINE Wasser-Wahrheit (WASSER_GESETZ.koerper je Art, dieselbe Zeile wie die Welt, stamm/bild-himmel.js): die Farbe ist das Licht in der Tiefe der Kamera unter dem Spiegel (Beer-Lambert exp(-kd*Tiefe)), die Sicht endet am 550-nm-Kanal der Strahl-Schwaechung c nach Koschmieder (ATMO_GESETZ.luft.kontrast) — bis dahin die festen ersten 0,3 m der Look-Zahl wK und ein Nebel 0,3–7,5 m, die Welt sah 30 m
+            const _uw = WASSER_GESETZ.koerper[waterArtAt(camera.position.x, camera.position.z)],
                 _uwT = _ws - camera.position.y;
-            _w3.setRGB(Math.exp(-_uw.wK[0] * _uwT), Math.exp(-_uw.wK[1] * _uwT), Math.exp(-_uw.wK[2] * _uwT)).multiplyScalar(dl);
+            _w3.setRGB(Math.exp(-_uw.kd[0] * _uwT), Math.exp(-_uw.kd[1] * _uwT), Math.exp(-_uw.kd[2] * _uwT)).multiplyScalar(dl);
             scene.fog.color.copy(_w3);
             if (scene.background && scene.background.isColor) scene.background.copy(_w3);
             scene.fog.near = 0;
-            scene.fog.far = -Math.log(ATMO_GESETZ.luft.kontrast) / (_uw.wK[1] + _uw.koerperStreu);
+            scene.fog.far = -Math.log(ATMO_GESETZ.luft.kontrast) / _uw.c[1];
         } else {
             scene.fog.near = _sightDist * 0.35;
             scene.fog.far = _sightDist;

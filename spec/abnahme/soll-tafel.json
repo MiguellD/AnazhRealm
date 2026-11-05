@@ -1030,9 +1030,9 @@
                     },
                     {
                         "groesse": "sichtAbfall",
-                        "band": [0.9, 1.1],
-                        "einheit": "K ÷ K_REF, K(z) = −ln(L(z) ÷ L(0,5 m)) ÷ (z − 0,5 m) der Szenen-Luma unter Wasser in 1,5 und 2,5 m",
-                        "quelle": "Beer-Lambert: Licht in der Tiefe z ∝ exp(−wK·z) je Kanal (Kirk 2011), wK aus foundry-core WASSER_GESETZ"
+                        "band": [0.17, 0.57],
+                        "einheit": "1/m, K(z) = −ln(L(z) ÷ L(0,5 m)) ÷ (z − 0,5 m) der Szenen-Luma unter Wasser in 1,5 und 2,5 m, der Blick waagrecht ins offene Wasser",
+                        "quelle": "klarer Binnensee: Secchi-Tiefe 3–10 m, kd ≈ 1,7 ÷ Secchi (Poole & Atkins 1929; Kirk 2011) — unabhängig vom Gesetz der Welt"
                     }
                 ]
             },

@@ -2651,20 +2651,14 @@ class AnazhRealm_bild_himmel {
     // DAS SPEKTRUM DER LUFT (ferne-luft): die Extinktion je Kanal relativ zu β (550 nm, der Koschmieder-Anker) aus dem Medium
     // der EINEN Atmosphäre — Rayleigh je Kanal (`ATMO_GESETZ.rayleighTiefe`, blau ~5× rot) und das Aerosol je Kanal nach
     // Ångström (`ATMO_GESETZ.mieAngstroem`, blau 1,34 × grün, rot 0,76 ×): blau verlischt zuerst, mit der Weglänge wird die
-    // Luft vor dem Fernen blau. Unter Wasser die Extinktion des Wasser-Körpers je Kanal relativ zu β: Absorption + Rückstreuung
-    // (`WASSER_GESETZ.wK` + `koerperStreu`, 1/m — rot verlischt zuerst); mit β = 1 die Extinktion selbst, ihr 550-nm-Kanal ist das β
-    // des Wassers (`_dayNightApplyHemiUndLuft`). Bis w12-unterwasser trug das Wasser nur das Spektrum der Absorption und ein β aus
-    // einer Stamm-Sichtweite von 30 m (`LUFT.unterwasserM`) — das Studio zog seinen Nebel auf 0,3–7,5 m: Labor ≠ Welt. Bis
+    // Luft vor dem Fernen blau. Unter Wasser (`wasser`: der Körper seiner Art, `WASSER_GESETZ.koerper`) die Strahl-Schwächung c
+    // je Kanal relativ zu β — rot verlischt zuerst. Bis w12-unterwasser das Spektrum der Look-Zahl `wK` (eine Absorption über der
+    // normierten Tiefe des Studio-Spiegels, nie je Meter) und ein β aus einer Stamm-Sichtweite von 30 m (`LUFT.unterwasserM`) — das
+    // Studio zog seinen Nebel auf 0,3–7,5 m: Labor ≠ Welt. Bis
     // ferne-luft löschte die Luft grau (EIN Skalar β), bis w4-ferne-blau trug das Aerosol kein Spektrum (Spektrum
     // 0,97/1/1,09 statt 0,74/1/1,40).
-    _luftSpektrum(beta, unterWasser, out) {
-        if (unterWasser) {
-            const WG =
-                AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) ||
-                AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
-            const b = WG.koerperStreu;
-            return out.set((WG.wK[0] + b) / beta, (WG.wK[1] + b) / beta, (WG.wK[2] + b) / beta);
-        }
+    _luftSpektrum(beta, wasser, out) {
+        if (wasser) return out.set(wasser.c[0] / beta, wasser.c[1] / beta, wasser.c[2] / beta);
         const M = this._atmoMedium(beta);
         const k = 1000 * beta;
         return out.set((M.betaR[0] + M.mieExt[0]) / k, (M.betaR[1] + M.mieExt[1]) / k, (M.betaR[2] + M.mieExt[2]) / k);
@@ -2703,13 +2697,13 @@ class AnazhRealm_bild_himmel {
         const klar = this._luftBeta(AnazhRealm.WEATHER_FIELD.sunny);
         const U = this._uniformHeimatTeilen({
             beta: T.uniform(klar),
-            spektrum: T.uniform(this._luftSpektrum(klar, false, new THREE.Vector3())),
+            spektrum: T.uniform(this._luftSpektrum(klar, null, new THREE.Vector3())),
             hoehe: T.uniform(L.skalenHoeheM),
             bezugY: T.uniform(0),
             farbe: T.uniform(new THREE.Color(0, 0, 0)),
             unterWasser: T.uniform(0),
             spiegelY: T.uniform(0),
-            absorption: T.uniform(new THREE.Vector3(0, 0, 0)),
+            abfall: T.uniform(new THREE.Vector3(0, 0, 0)),
         });
         const faktor = T.Fn(([auge, punkt]) => {
             const v = punkt.sub(auge);
@@ -2739,13 +2733,13 @@ class AnazhRealm_bild_himmel {
         // (`scene.fogNode`, der Fern-Ring darunter), der Feld-Pass und sein Panorama (`imDunst`) und der Spiegel des Wassers;
         // bis dahin setzte jeder Pass `mix(·, farbe, faktor)` selbst zusammen.
         // UNTER WASSER erreicht das Licht des Tags einen Punkt nur durch die Säule über ihm (w12-unterwasser): sein Licht trägt den
-        // Durchlass nach Beer-Lambert exp(−wK · Tiefe unter dem Spiegel der Kamera) — dieselbe Absorption, die die Farbe des
-        // Mediums trägt; bis dahin lag der Grund des Sees in 3,4 m im vollen Mittag (heller als das Wasser vor ihm). Über Wasser
+        // Durchlass nach Beer-Lambert exp(−kd · Tiefe unter dem Spiegel der Kamera) — derselbe Abfall, den die Farbe des Mediums
+        // trägt; bis dahin lag der Grund des Sees in 3,4 m im vollen Mittag (heller als das Wasser vor ihm). Über Wasser
         // ist der Durchlass 1 (dasselbe Bild).
         const durchlass = T.Fn(([punkt]) =>
             T.select(
                 U.unterWasser.greaterThan(0.5),
-                T.exp(U.absorption.mul(T.max(U.spiegelY.sub(punkt.y), 0.0)).negate()),
+                T.exp(U.abfall.mul(T.max(U.spiegelY.sub(punkt.y), 0.0)).negate()),
                 T.vec3(1)
             )
         );
@@ -2808,39 +2802,41 @@ class AnazhRealm_bild_himmel {
             U.unterWasser.value = kameraUnterWasser ? 1 : 0;
             if (kameraUnterWasser) {
                 // Unter Wasser: DIESELBE Formel, Wasser-Trübung ohne Höhen-Abnahme (H → ∞), aus der EINEN Wasser-Wahrheit
-                // (WASSER_GESETZ, dieselbe Zeile, die das Terrain-Studio liest). Die Farbe ist das Licht in der Tiefe der Kamera
-                // unter dem örtlichen Spiegel (`_koerperWasser`, die Wahrheit, die sie eben unter Wasser nannte): der Durchlass
-                // nach Beer-Lambert exp(−wK · Tiefe) × das Tageslicht — die Leuchtdichte des Himmels über dem Wasser (E/π einer
-                // waagrechten Normale aus der Umgebung der EINEN Atmosphäre, `_himmelsIrradianz`): mittags unter dem Spiegel
-                // türkis, mit jedem Meter dunkler und blauer, nachts dunkler als die Nacht darüber. β ist der 550-nm-Kanal der
-                // Extinktion des Wasser-Körpers (`_luftSpektrum` mit β = 1: Absorption + Rückstreuung). Bis w12-unterwasser
+                // (WASSER_GESETZ.koerper, je Art: der Fluss führt Schwebstoff, See und Meer stehen klar — `_hydroRiverAt`; dieselbe
+                // Zeile liest das Terrain-Studio). Die Farbe ist das Licht in der Tiefe der Kamera unter dem örtlichen Spiegel
+                // (`_koerperWasser`, die Wahrheit, die sie eben unter Wasser nannte): Beer-Lambert exp(−kd · Tiefe) × das Tageslicht —
+                // die Leuchtdichte des Himmels über dem Wasser (E/π einer waagrechten Normale aus der Umgebung der EINEN Atmosphäre,
+                // `_himmelsIrradianz`): mittags unter dem Spiegel hell, mit jedem Meter dunkler und blauer, nachts dunkler als die
+                // Nacht darüber. β ist der 550-nm-Kanal der Strahl-Schwächung c (die Sicht des klaren Sees ~15 m). Bis w12-unterwasser
                 // trug die Farbe die festen ersten 0,3 m (Radeon: Szenen-Luma 2,5 m ÷ 0,5 m = 1,24, kein Abfall) und β eine
                 // Stamm-Sichtweite von 30 m (`LUFT.unterwasserM`): ein blauer Filter vor klarer Sicht auf Berge und Himmel.
                 const WGu =
                     AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) ||
                     AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
                 const p = cam.position;
+                const WK = WGu.koerper[this._hydroRiverAt(p.x, p.z) ? "fluss" : "see"];
                 const tiefe = Math.max(0, this._koerperWasser(p.x, p.z, p.y) - p.y);
                 const e = this._himmelsIrradianz();
                 const tagesLicht = e ? 0.2126 * e.mitte[0] + 0.7152 * e.mitte[1] + 0.0722 * e.mitte[2] : 0;
                 U.farbe.value.setRGB(
-                    Math.exp(-WGu.wK[0] * tiefe) * tagesLicht,
-                    Math.exp(-WGu.wK[1] * tiefe) * tagesLicht,
-                    Math.exp(-WGu.wK[2] * tiefe) * tagesLicht
+                    Math.exp(-WK.kd[0] * tiefe) * tagesLicht,
+                    Math.exp(-WK.kd[1] * tiefe) * tagesLicht,
+                    Math.exp(-WK.kd[2] * tiefe) * tagesLicht
                 );
-                U.beta.value = this._luftSpektrum(1, true, luft.wasser || (luft.wasser = new THREE.Vector3())).y;
+                U.beta.value = WK.c[1];
                 U.hoehe.value = 1e9;
                 U.spiegelY.value = p.y + tiefe;
-                U.absorption.value.set(WGu.wK[0], WGu.wK[1], WGu.wK[2]);
+                U.abfall.value.set(WK.kd[0], WK.kd[1], WK.kd[2]);
+                luft.wasser = WK;
             } else {
                 U.beta.value = this._luftBeta();
                 U.hoehe.value = L.skalenHoeheM;
             }
-            // das Spektrum je neuem β und Medium (eine Rechnung des Mediums je Wechsel, nie je Anwendung; unter Wasser mit
-            // negativem Vorzeichen, ein anderes Gesetz des Wassers rechnet neu)
-            const fuer = kameraUnterWasser ? -U.beta.value : U.beta.value;
+            // das Spektrum je neuem β und Medium (eine Rechnung des Mediums je Wechsel, nie je Anwendung; unter Wasser je Körper)
+            const wasser = kameraUnterWasser ? luft.wasser : null;
+            const fuer = wasser || U.beta.value;
             if (luft.spektrumFuer !== fuer) {
-                this._luftSpektrum(U.beta.value, kameraUnterWasser, U.spektrum.value);
+                this._luftSpektrum(U.beta.value, wasser, U.spektrum.value);
                 luft.spektrumFuer = fuer;
             }
         }
