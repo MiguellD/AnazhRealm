@@ -725,7 +725,7 @@ async function leibGang(G) {
                 const z3 = (o) => [+o.x.toFixed(2), +o.y.toFixed(2), +o.z.toFixed(2)];
                 if (t.length) g.taeter.push({ bild: n, phase, taeter: [...new Set(t)], c: z3(c), ziel: st._kamZiel && z3(st._kamZiel) });
                 if (n % G.nahJe === 0) {
-                    const d = window.__nahDeckung({ radien: G.nahRadien, gw: G.gw, gh: G.gh, ort: { id: `gang-${art}`, x: p.x, z: p.z, r: 14 }, neu: n === G.nahJe });
+                    const d = window.__nahDeckung({ radien: G.nahRadien, gw: G.gw, gh: G.gh, ort: { id: `gang-${art}`, r: 4 }, neu: n === G.nahJe });
                     if (d.deckung > 0) g.nah.push({ bild: n, phase, jeKlasse: d.jeKlasse });
                 }
                 if (n % 20 === 0) await sleep(0);
@@ -1190,9 +1190,7 @@ hauptLauf(async () => {
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
     if (!BILD) await nullRenderer(page);
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhAutoSettlement = false; // der Dorf-Zug ruht: die Häuser der Mess-Wiese setzt die Linse (fest)
-    });
+    // der Dorf-Zug ruht (die Häuser der Mess-Wiese setzt die Linse fest): die Ankunft trägt ihn (`server.zeige`, haushalt genesis)
     // DER START DER WELT — die EINE Stelle jeder Seite der Linse, auch der Prüfbühne und des Körper-Studios (CI 26./27.10.,
     // swiftshader: 43–50 kalte Programme an der Mess-Wiese, der Regen der Front seit fk2-uhr 71 s, der Reload riss nach 60 s
     // hinter `renderPipeline_spiegel:strahl`, gezeichnet vom rAF-Loop zwischen zwei Aufrufen). Auf dem CPU-Raster das Holz

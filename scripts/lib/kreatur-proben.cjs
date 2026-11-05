@@ -2417,10 +2417,7 @@ async function kreaturProben(r, T, opts) {
         dorf.hier = true;
         W.__dorfVon = W.__dorfVon || dorf.probe;
         const altHook = W.__anazhAutoSettlement;
-        restore.push(() => {
-            if (altHook === undefined) delete W.__anazhAutoSettlement;
-            else W.__anazhAutoSettlement = altHook;
-        });
+        restore.push(() => (W.__anazhAutoSettlement = altHook));
         W.__anazhAutoSettlement = true;
         if (!(wm.settlementCells && wm.settlementCells.start)) r._startDorfBestellen(pm);
         for (
