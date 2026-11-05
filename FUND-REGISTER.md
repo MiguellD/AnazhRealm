@@ -25,6 +25,7 @@ Eine Zeile je Fund: Datei:Zeile · Wurzel · was es bewegt · Größe. Wer eine 
 - physik.K2#2 „DER BAU STEHT NICHT: haus_alemannisch#429“, siedlung.K4#2 ROT · in Arbeit (heil:urteile)
 - B Ankunft ≤ 5 s: 55 strukturelle Programm-Varianten vor Kontrolle (bauSatz, arena, streuSatz, fern-ring) → Stoff-Foundry (Messen zuerst) · B · L
 - stamm/stoff-instanz.js `_renderObjekteLoesen`/`_renderObjektRegister` · eine gelöste Sampler-Bindung wird danach noch gelesen (Bündel-Wiedergabe oder lebendes Objekt nach dem Lösen; `texture = null` traf so die Leinwand, z161 3/3 ROT) — den Leser benennen, dann das Lösen erst nach seinem letzten Zug · gate:kamera-leib (CI-swiftshader) · S
+- `stamm/stoff-karte.js:881` Karten-Sonne der Nadel-Karte L2 · die Karte (fimp) leuchtet heller als die L0 am Wechsel-Abstand (Radeon 2d6439c1, 1920 × 1080, gemittelte Luma der Masken L0 gegen L2: Tanne +6,2 % bei 52,7 m, Fichte +4,7 % bei 61,5 m; Birke +5,7 %, Eiche +3,4 %, Buche −21,6 %), und ihr Umriss weicht 5,9–7,5 px ab (Weide 2,5) — mit w10-lod (Laub-L1 = L0-Krone) trägt sie allein lod.K4#1: 2,27 % über 18 958 px → 6,16 % über 9 821 px · lod.K4, lod.K5 Baum, A · M (nächste lod.K4-Karte)
 
 ## Welle w5 (03.11.)
 - `meisterkarte-quelle/punkte/punkte.cjs` fahrtSumme · die GPU-Fahrt steht Radeon 1798 / GTX 1799 von 1800 s — jede weitere GPU-Station (leib.K3#2, spielgang.K4#2, tore.K5#2, physik.K3#2, wetter.K3#2/K4#2, stoffe.K1#2) wartet auf schnellere Proben (Prüfbühne: Ortswechsel/Grundstellung 5–23 s je Probe) · ~30 Staffel-2-Punkte · L
