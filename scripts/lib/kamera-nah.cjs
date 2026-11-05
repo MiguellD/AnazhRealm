@@ -264,7 +264,7 @@ function nahDeckungInSeite(o) {
     const feld = (cx, cz, R) => (s) => Math.abs(s.center.x - cx) <= R + s.radius && Math.abs(s.center.z - cz) <= R + s.radius;
     const durchs = (region, fn) => st.scene.traverseVisible((obj) => zaehlt(obj) && jeInstanz(obj, region, (ob, i) => dynamisch(ob, i) || fn(ob, i)));
     const bestand = (region, a = []) => (durchs(region, (ob, i) => (satzVon.has(ob) ? satzVon.get(ob).bloecke.forEach((b, k) => b.zellen.forEach((z, j) => region(z.huelle.getBoundingSphere(zs)) && a.push(k, j, z.idx.length))) : a.push(ob.id, i, ...m4.elements))), a.join()); // prettier-ignore
-    if (o.neu || !C || !o.ort || C.id !== o.ort.id || !C.innen({ center: E, radius: D }) || C.bestand !== bestand(C.region)) {
+    if (o.neu || !C || !o.ort || C.id !== o.ort.id || !C.innen?.({ center: E, radius: D }) || C.bestand !== bestand(C.region)) {
         const tris = [];
         const uvs = [];
         const metas = [];
