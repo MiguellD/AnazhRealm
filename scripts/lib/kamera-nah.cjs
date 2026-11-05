@@ -273,9 +273,9 @@ function nahDeckungInSeite(o) {
         const tris = [];
         const uvs = [];
         const metas = [];
+        // das Feld liegt um das AUGE der Frage (gefragt wird nur die Kugel um es; `innen` hält es, solange sie darin liegt)
         const R = o.ort ? o.ort.r : 60;
-        const cx = o.ort ? o.ort.x : E.x;
-        const cz = o.ort ? o.ort.z : E.z;
+        const { x: cx, z: cz } = E;
         // die Hülle in x/z gegen das Feld
         const region = feld(cx, cz, R);
         const imFeld = (a, b, c) =>
