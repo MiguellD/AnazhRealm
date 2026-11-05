@@ -1855,3 +1855,4 @@
 2026-11-05 12:21:00 omen-speicher ENTWARNUNG Commit 14.6/18.3 GB
 2026-11-05 12:21:31 omen-speicher ALARM Commit 17.5/18.3 GB - 10xchrome 2.8G, 12xclaude 2.1G, 8xDropbox 0.7G, 86xsvchost 0.6G, 1xOneDrive 0.5G, 1xMsMpEng 0.4G
 2026-11-05 12:27:02 omen-speicher ALARM Commit 17.9/18.3 GB - 9xchrome 3.1G, 12xclaude 2.0G, 8xDropbox 0.7G, 86xsvchost 0.6G, 1xOneDrive 0.5G, 1xMsMpEng 0.4G
+2026-11-05 12:32:04 omen-speicher ALARM Commit 18.5/19.4 GB - 9xchrome 3.8G, 12xclaude 2.0G, 8xDropbox 0.7G, 87xsvchost 0.6G, 1xOneDrive 0.5G, 1xMsMpEng 0.4G
