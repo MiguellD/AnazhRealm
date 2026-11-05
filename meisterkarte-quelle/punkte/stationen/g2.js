@@ -4349,7 +4349,9 @@ const stationen = [
     // DIE SPIEL-UHR VOR DER WANDUHR (w12-proben-tempo): Radeon 8ef49bef am Deckel 90 s bei 465 Spiel-s (Radeon 3ef20f9f ohne Schuss 14,6
     // Spiel-s je s Wanduhr: die Prüfung je 250 ms Wanduhr, der Raffer am VSync, bis zu zwei Bilder je Raffer-Bild). Jetzt taktet der Kreis
     // selbst: je Urteils-Punkt 20 Takte (2 Spiel-s), 19 ohne Bild unter der gespannten Leine (`ohneBild`, das Argument des Befehls), das
-    // Bild am Punkt, geschossen nur dort (proben-welt.cjs `tierKreis`, `__kreisTakte`)
+    // Bild am Punkt, geschossen nur dort (proben-welt.cjs `tierKreis`, `__kreisTakte`). Headless b62542c9 A/B unter gleicher Last
+    // (420 s): vorher 213 ↔ nachher 214 Spiel-s, je 1 Schuss — auf der CPU gleich (ohne Schuss 1,73 → 2,06 Spiel-s je s, swiftshader
+    // zeichnet die Leine ohnehin kaum); der Gewinn liegt an der Karte: 2 Bilder je 10 Takte → 1 je 20, kein VSync-Raster
     {
         kriterium: "tiere.K5",
         staffel: 1,

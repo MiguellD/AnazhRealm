@@ -661,7 +661,8 @@ async function leibK2Seite(H) {
 // DIE ZEIT DES GANGS (w12-proben-tempo; Radeon und GTX rissen die Frist 39 bzw. 27 s an jedem Kopf der Sitzung): headless b62542c9
 // 395–410 s, davon ≈ 70 % in der Nah-Linse — ihr Orts-Speicher legte in 204 von 224 Fragen neu (der Stand war die Summe der `slotStand`
 // ALLER Gruppen der Welt), und das Urteil hing am Takt der Neulagen (innen „Bau 1“ ↔ „{}“ bei demselben Code). Geschnitten an der
-// Wurzel, in der Linse des Spiels (scripts/lib/kamera-nah.cjs, Zweig w12-proben-tempo-spiel): der Speicher gilt seinem Feld.
+// Wurzel, in der Linse des Spiels (scripts/lib/kamera-nah.cjs, Zweig w12-proben-tempo-spiel): der Speicher gilt, solange die Quellen
+// in den Zellen DIESER Frage dieselben sind wie beim Legen, und was wandert (die Vögel, jede Schar ohne Gruppe) liegt je Frage frisch.
 async function leibK4Seite(H) {
     const D = H.quelle("scripts/diag-kamera-laub.cjs", ["ORTE", "LEIB_R", "pct", "quantil", "GANG", "GANG_ARTEN", "urteilGang", "leibInstall", "leibWiese", "leibGang"]);
     const M = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
