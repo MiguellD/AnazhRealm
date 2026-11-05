@@ -1926,7 +1926,12 @@ async function unterwasserSeite(o) {
     const schirm = (v) => ((v = v.clone().project(cam)), [((v.x + 1) / 2) * W, ((1 - v.y) / 2) * H]);
     const schuss = async (name, leib) => {
         r._applyDayNightToScene();
-        const u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8, k = s.renderer.toneMappingExposure;
+        const sp = s.scenePass, tn = s.traaNode, spU = sp.updateBefore, tnU = tn && tn.updateBefore, z = { nSp: 0, nTn: 0, objs: 0, cy: [] };
+        sp.updateBefore = function (f) { z.nSp++; z.cy.push(+cam.matrixWorld.elements[13].toFixed(2)); const ri = s.renderer.info.render; const v = spU.call(this, f); z.objs = ri && ri.drawCalls; return v; };
+        if (tn) tn.updateBefore = function (f) { z.nTn++; return tnU.call(this, f); };
+        let u8, k;
+        try { u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8; k = s.renderer.toneMappingExposure; } finally { sp.updateBefore = spU; if (tn) tn.updateBefore = tnU; }
+        (aus.zaehl ||= []).push([name, z.nSp, z.nTn, z.objs, z.cy[0], z.cy[z.cy.length - 1], tn && tn._anlauf && tn._anlauf.value, s._traaR && s._traaR.sprung, s._loopRuht && r._loopRuht(), r._bildSchuld, s.postProcessingFailed].join(" "));
         if (o.bilder) aus.bilder[name] = window.__png(u8, W, H);
         const b = { L: median(u8, k, 0, W, 0, H), k: R(k, 4) };
         if (leib) {
