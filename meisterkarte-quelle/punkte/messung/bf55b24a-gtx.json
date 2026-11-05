@@ -1,0 +1,72 @@
+{
+ "sha": "bf55b24a80ced839fd30293942ff2cb27dbddcc2",
+ "geraet": "gtx",
+ "zeit": "2026-11-05T15:43:00.853Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "vegetation.K5#2": {
+   "gruen": true,
+   "zahl": "Krone sommer 192360 px · winter 20796 px · fruehling 148693 px → Winter 0.108 × Sommer, Wiese LAI 2–10 m sommer 2.46 · winter 1.05 · fruehling 1.89 → Winter 0.426 × Sommer",
+   "exit": 0,
+   "minuten": 1.34,
+   "gpu": "nvidia/pascal",
+   "s": 80.2,
+   "zeit": "2026-11-05T15:41:40.600Z",
+   "abdruck": "3b5d6b96f324",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "speicher.K2#2": {
+   "gruen": true,
+   "zahl": "Speicher-Bild frisch p50 0.02 / p95 0.05 / max 0.18 ms (562 Bilder), 0 von 39 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0.015 / p95 0.045 / max 0.375 ms (667 Bilder), 0 von 90 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ 0,1)",
+   "exit": 0,
+   "minuten": 0.64,
+   "gpu": "nvidia/pascal",
+   "s": 38.6,
+   "zeit": "2026-11-05T15:43:00.853Z",
+   "abdruck": "9fd03137c637",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-05T15:38:20.573Z",
+  "port": 7804,
+  "warten": 2.71,
+  "bootS": 8.4,
+  "grundstellungS": [],
+  "proben": 2,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K5#2",
+    "s": 28.5,
+    "takte": 745,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 3,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 129,
+   "luecken": 2,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 156.2,
+  "minuten": 5.36
+ }
+}
