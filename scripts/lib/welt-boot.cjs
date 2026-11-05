@@ -471,10 +471,21 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
         });
     });
     server.lausche = (port) => new Promise((ok) => server.listen(port, "127.0.0.1", () => ok(server)));
-    server.zeige = (seite, frist, rest = "index.html", warte = "domcontentloaded") =>
-        seite.goto(`http://127.0.0.1:${server.address().port}/${rest}`, { waitUntil: warte, timeout: frist });
+    // DER ORT DER ANKUNFT (w12-dorf-probe): jede Seite kommt an der Ankunft an und trägt ihren im Haushalt erklärten Dorf-Zug
+    // (`ortZug`, genesis: er ruht, sein Inhalt hinge an der Bildrate), solange sie selbst keinen erklärt hat — in jedem Renderer
+    // derselbe. Bis w12-dorf-probe hielt ihn nur der Null-Renderer an (das Spiel fragte den Renderer), mit Bild lief er.
+    server.zeige = async (seite, frist, rest = "index.html", warte = "domcontentloaded") => {
+        await ortZug(seite, "genesis");
+        return seite.goto(`http://127.0.0.1:${server.address().port}/${rest}`, { waitUntil: warte, timeout: frist });
+    };
     return server;
 }
+
+// DER ZUG DES ORTS (`await ortZug(page, id)`, vor dem ersten Skript der Seite): der Dorf-Zug des Messorts aus dem Haushalt
+// (scripts/lib/welt-orte.cjs `messort`, `dorfZug`) als Haken `__anazhAutoSettlement`, wo die Seite noch keinen trägt (das erste
+// Wort gilt: `server.zeige` erklärt so die Ankunft) — derselbe in jedem Renderer: seit w12-dorf-probe hält den Zug nur der Ort, nie
+// der Null-Renderer (bis dahin urteilte jede headless Probe am Dorf eine leere Welt).
+const ortZug = (page, id) => page.evaluateOnNewDocument((z) => window.__anazhAutoSettlement ??= z, require("./welt-orte.cjs").messort(id).dorfZug);
 
 // Die Browser-Rezepte: null (kein GPU-Prozess, der Null-Renderer) · webgl (WebGL2 an der Weiche) · standard (Chromes Wahl) ·
 // linse (WebGPU an der Weiche: lokal die Karte, die CI swiftshader) · echt (der Hardware-Adapter); `zeit: true` → swiftshader.
@@ -1650,6 +1661,7 @@ module.exports = {
     WARTEN_SEITE,
     pngDatei,
     statikServer,
+    ortZug,
     starteBrowser,
     startePuppeteer,
     tempNeu,

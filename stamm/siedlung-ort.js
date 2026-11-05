@@ -2099,7 +2099,7 @@ class AnazhRealm_siedlung_ort {
     // `rarity`), Seed, Größe, Anker; Wände: flach · über Wasser · spawnClearM (sonst FindSite).
     // Export async über den Foundry-Worker, Häuser budgetiert (nur `!_frameOverBudget`) über
     // `_spawnSettlementSlot`; `worldMeta.settlementCells` markiert bei Export-ANKUNFT (nie Doppel-Dorf).
-    // Headless ruht der Zug (Gate-Hook `__anazhAutoSettlement`). Unten: Zelle → {seed, nH, Anker} | null.
+    // Der Ort hält den Zug an (Haken `__anazhAutoSettlement = false`, `_dorfTaktLebt`). Unten: Zelle → {seed, nH, Anker} | null.
     // DAS RANG-GESETZ (siedlung.K2): Existenz, Anker, Stufe, Größe und Verdrängung rechnet der Kern (fachwerk `siedlungsZelle`:
     // je Raster der Stufe die Stadt seines Siegers, Pareto-Größe, kein Ort in der Reichweite eines höheren); der Wirt reicht
     // den Zell-Hash (FNV-1a über „<Welt-Same>:dorf:cx,cz") und hält das Gedächtnis je Welt-Same. `mehrM`: so viel weiter als
@@ -2757,7 +2757,7 @@ class AnazhRealm_siedlung_ort {
     // ihrem eigenen Takt (1×/s), nie hinter den Dorf-Akten. Bis 06.10. lagen sie im Siedlungs-Takt hinter
     // `_frameOverBudget` (und der Siedlungs-Takt im Deko-Job, der bei leerem Budget wartet): auf der echten GPU (Radeon
     // 890M, frische Welt) war das Budget in 160 von 160 Proben über 40 s überschritten — kein Ring, kein GT am Ring, der
-    // v1-Schritt 6 ohne Wagen. Headless ruht er wie der Siedlungs-Takt (der Hook führt, Gate-Treue).
+    // v1-Schritt 6 ohne Wagen. Unter dem Haken des Orts ruht er wie der Siedlungs-Takt (`_dorfTaktLebt`).
     _tickGenesisOrt(currentTime) {
         const st = this.state;
         const pm = st.playerMesh;
@@ -2993,13 +2993,13 @@ class AnazhRealm_siedlung_ort {
         return (this._genesisGitter = { plan: P, m, zellen });
     }
 
-    // DER DORF-TAKT LEBT (Gate-Treue): headless ruht der Auto-Zug, der Hook `__anazhAutoSettlement` führt — EIN Urteil für
-    // den Siedlungs-Takt, den Genesis-Ort und das erste Weltbild (Term „dorf", `_weltbildLuecken`): ein Dorf, das kein Takt
-    // baut, hält kein Bild.
+    // DER DORF-TAKT LEBT, wo der Ort ihn nicht anhält: der Hook `__anazhAutoSettlement = false` (der Zustand des Messorts,
+    // haushalt.json `dorfZug`) — EIN Urteil für den Siedlungs-Takt, den Genesis-Ort und das erste Weltbild (Term „dorf",
+    // `_weltbildLuecken`): ein Dorf, das kein Takt baut, hält kein Bild. Der Bau am Ort ist Simulation, nie Bild: bis
+    // w12-dorf-probe ruhte der Zug auch, wenn nur der Null-Renderer stand — jede headless Probe am Messort dorf (dorfZug
+    // true) urteilte eine leere Welt (0 Häuser nach 9000 Takten; mit Renderer 16, derselbe Bau-Hash).
     _dorfTaktLebt() {
-        const hook = typeof window !== "undefined" ? window.__anazhAutoSettlement : undefined;
-        if (hook === false) return false;
-        return hook === true || !(this.state.renderer && this.state.renderer._isHeadlessNull);
+        return (typeof window !== "undefined" ? window.__anazhAutoSettlement : undefined) !== false;
     }
 
     // DAS START-DORF IST FÄLLIG (EIN Urteil für den Takt und das erste Weltbild, K60-4): einmalig je Welt, solange es weder

@@ -1203,7 +1203,7 @@ const BRANDLAUF = process.argv.includes("--brand");
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
         window.__anazhFernRing = true; // der Fern-Ring (die Saum-Wache) läuft auch ohne GPU — sein Haken
-        window.__anazhAutoSettlement = false; // kein Start-Dorf: was es baut, hinge an der Bildrate (die Mess-Bühne)
+        // kein Start-Dorf (was es baut, hinge an der Bildrate): die Ankunft trägt ihren Dorf-Zug (`server.zeige`, haushalt genesis)
     });
     let befund = null;
     try {
