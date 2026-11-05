@@ -945,11 +945,13 @@ class AnazhRealm_dirigent_ankunft {
     }
     // STEHT DIE STUFE IM BILD? (unter dem Ladeschirm, „bauten" in `_weltbildLuecken`) — der Vorlauf-Baum trägt seine L1, nach
     // dem Bild aus der Ferne (`_fernbildDa`) jedes Ding, dessen Stufe der Takt wählt (`_archStufeWaehlt`), seine Wahl am Abstand
-    // (`_lodAmAbstand`, `_archStufeUrteil`). Dann: jede seiner Gruppen, die das Hauptbild sieht, trat in ihre Arena, die Arena
-    // zeichnete (`gezeichnet` der Erst-Zeichnung) ODER fand sich ohne Draw (`_arenaImBild`: keine ihrer Instanzen fällt in den
-    // Kegel der Kamera — ihr Vorbau ist vorgemerkt und baut nach dem Bild), und danach lief ein weiteres Bild auf dieser Stufe
-    // (die GPU-Leine zählt sie): in ihm zeichnete jede Kaskade, in die er wirft — ein Wurf-Teil (Ebene 0 aus) lebt nur in den
-    // Kaskaden. Befund b-ankunft (Radeon kalt, main 8f1802b1, 4 von 4 Läufen): die Rinde der Birke in 31 m am Rand des Blicks
+    // (`_lodAmAbstand`, `_archStufeUrteil`). Trägt ein Baum dann eine feine Stufe (L0, L1 — seine Karte stand schon im Bild aus
+    // der Ferne), tritt die Probe seines Programms dazu wie beim Vorlauf; ein Bau nicht (ein Fels auf seiner Grobstufe zeichnet nie
+    // im Hauptbild: zacken L2 in 38 m hielt den Schirm bis zur Ruhe-Uhr, Radeon kalt ae066b23). Die Probe: jede seiner Gruppen,
+    // die das Hauptbild sieht, trat in ihre Arena, die Arena zeichnete (`gezeichnet` der Erst-Zeichnung) ODER fand sich ohne
+    // Draw (`_arenaImBild`: keine ihrer Instanzen fällt in den Kegel der Kamera — ihr Vorbau ist vorgemerkt und baut nach dem
+    // Bild), und danach lief ein weiteres Bild auf dieser Stufe (die GPU-Leine zählt sie): in ihm zeichnete jede Kaskade, in die
+    // er wirft — ein Wurf-Teil (Ebene 0 aus) lebt nur in den Kaskaden. Befund b-ankunft (Radeon kalt, main 8f1802b1, 4 von 4 Läufen): die Rinde der Birke in 31 m am Rand des Blicks
     // zeichnete nie, ihr Programm stand vorgebaut — der Baum hielt das Bild, bis die Ruhe-Uhr nach 15 s laut wich (das halbe
     // Weltbild). Ohne Arena (WebGL2) zeichnet der Zeichner im Bild.
     _stufeOffen(e) {
@@ -958,6 +960,7 @@ class AnazhRealm_dirigent_ankunft {
         if (!vorlauf && !(st._fernbildDa && !st._weltbildDa && this._archStufeWaehlt(e))) return false;
         if (vorlauf ? e._lodLevel !== 1 : e._lodAmAbstand !== true) return true;
         if (!e.instSlots || !e.instSlots.length) return vorlauf;
+        if (!vorlauf && !(e._lodSpecies && e._lodLevel <= 1)) return false;
         const L = this._gpuLeine;
         if (AnazhRealm.__arenaOhne || !L) return false;
         const G = st.archInstanceGroups;
