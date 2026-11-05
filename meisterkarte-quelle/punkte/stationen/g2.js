@@ -3505,7 +3505,11 @@ const stationen = [
         // DER DECKEL (w4-proben-tempo2): GTX takt27b 94c079cb riss 33 s nach der Probe herde (15 s), Radeon 3ef20f9f 34,2 s; die drei
         // Schüsse jetzt mit `nurPixel` und dem PNG ohne Rückruf je Byte — Radeon 7521ca51 unter fremder Last riss 43 s nach der herde
         // (16 s). 41 s, über dem Gesetz der Zahl, bis die Schüsse der Herde fallen
-        probe: { sek: 41, befehl: [
+        // DIE AUSNAHME (w12-proben-s): der Hang, an dem der Wurf trägt (das Geburts-Prädikat, `herdeSzene`), liegt an keinem Messort im
+        // warmen Ring — die Suche in der Welt b62542c9: Wiese 312 m (6 757 von 7 351 Orten ohne 15–30°), Genesis 252 m, Dorf 264 m; die
+        // drei Schüsse stehen dort im kalten Ring (Radeon b62542c9 je Schuss 16–21 s, riss 45 s vor dem dritten). Der Deckel je Karte in
+        // deckel.json
+        probe: { sek: 41, ausnahme: "die Herde am Hang 300 m von der Mess-Wiese (der nächste, an dem der Wurf trägt) mit drei Schüssen im kalten Ring", befehl: [
             "node",
             "-e",
             "(" + knapp(herdeHang) + ")()",
