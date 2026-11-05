@@ -1067,7 +1067,7 @@ async function brandSeite(MESS) {
                 const PC = globalThis.__phytoCore;
                 const tp = PC.treeParams;
                 S.gestalt = gestalt(e);
-                PC.treeParams = (dl, sd, sf, art, w) => tp(dl, sd, sf, art, w);
+                PC.treeParams = (dl, sd, sf, art, w, alter, g) => tp(dl, sd, sf, art, w, undefined, g);
                 S.mutante = gestalt(e);
                 PC.treeParams = tp;
             }
