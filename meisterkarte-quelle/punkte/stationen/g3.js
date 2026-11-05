@@ -562,6 +562,17 @@ const laubKanteRoh = (s) => {
         return null;
     }
 };
+// DER GRUND EINES SCHUSSES OHNE BILD beim Namen: die Abnahme des Ausgabe-Pfads (`ausgabeAufnahme`) wirft „ABNAHME ROT [<Gründe>] ·
+// <Satz> · Sicht · Ziel · Luma · Stand · Bühne · Gerät — die Aufnahme speichert nichts“; der Kopf trägt den Verdecker. Bis
+// w12-laub-kante las die Zahl die letzten 160 Zeichen, der Kopf fiel ab — am Spielgang (Radeon 9c545df2) stand nur „Luma 48.8 σ 31.7 …
+// die Aufnahme speichert nichts“, der Grund war „Ziel Blickziel verdeckt von Rinde baum_tanne in 45.09 m“ (das Auge zielt 100 m
+// weit in den Waldhang, nie die Sicht-Deckung: Sicht 0,0 %)
+function laubSchussGrund(o, s) {
+    const t = String((o && o.fehler) || (s && s.rest) || "kein Bild der Klassen in 1920 × 1080");
+    const rot = /ABNAHME ROT \[([^\]]*)\]/.exec(t),
+        sicht = / · (Sicht [^·]*?) · /.exec(t);
+    return rot ? "die Aufnahme speichert nichts — " + rot[1] + (sicht ? " · " + sicht[1] : "") : t.slice(-160);
+}
 function laubKanteUrteil(e) {
     if (!e) return { gruen: false, zahl: "keine Messung in {AUS}" };
     const hw = !!e.adapter && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(e.adapter);
@@ -579,7 +590,7 @@ function laubKanteUrteil(e) {
         const b = a && a.bild;
         if (!k || !k.klassen || !b || b.w !== 1920 || b.h !== 1080) {
             gruen = false;
-            teile.push(titel + ": " + String((o && o.fehler) || (s && s.rest) || "kein Bild der Klassen in 1920 × 1080").slice(-160));
+            teile.push(titel + ": " + laubSchussGrund(o, s));
             continue;
         }
         const je = Object.entries(k.klassen).filter(([, m]) => m.pixel >= LAUB_PIXEL_MIN && m.kante != null);
@@ -630,6 +641,11 @@ function laubKanteProben() {
         { name: "Spielgang ohne Karte", stdout: zeile({ schritte: { spielgang: schuss(ohne("fimp:atlas:L2")) } }), gruen: false },
         { name: "Schuss in 1280 × 720", stdout: zeile({ schritte: { spielgang: schuss(kl(), 1280) } }), gruen: false },
         { name: "der Spielgang fehlt", stdout: zeile({ schritte: { spielgang: { exit: 1, json: null, rest: "Exit 1" } } }), gruen: false },
+        {
+            name: "der Spielgang ohne Bild, das Ziel verdeckt (Radeon 9c545df2)",
+            stdout: zeile({ schritte: { spielgang: { exit: 1, json: { fehler: "ABNAHME ROT [Ziel Blickziel verdeckt von Rinde baum_tanne in 45.09 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 100 m · Luma 48.8 σ 31.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.190 — die Aufnahme speichert nichts" } } } }),
+            gruen: false,
+        },
         { name: "die Tafel ohne Begleit-JSON (die Leinwand nur in der Zeile)", stdout: zeile({ schritte: { tafel: { exit: 0, json: { klasse: { klassen: kl() }, abnahme: "ABNAHME ok" } } } }), gruen: false },
         { name: "swiftshader", stdout: zeile({ adapter: "[linse-gpu] google/swiftshader" }), gruen: false },
     ];
