@@ -2141,3 +2141,4 @@
 2026-11-05 20:03:03 9c545df2-radeon-pt2-vorher klang.K4#1 GRÜN 0.4 · 3/8
 2026-11-05 20:03:08 9c545df2-radeon-pt2-vorher klang.K4#2 GRÜN 0.4 · 4/8
 2026-11-05 20:04:33 9c545df2-radeon-pt2-vorher ENDE 3 grün / 1 rot · 9.4 min
+2026-11-05 20:05:11 9c545df2-radeon-pt2-nachher START 8 Stationen
