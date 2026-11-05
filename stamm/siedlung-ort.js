@@ -2494,6 +2494,25 @@ class AnazhRealm_siedlung_ort {
         yield true;
         yield* this._dorfErlebnis(v2, { x: anchor.x, z: anchor.z }, Object.assign({ key }, so));
     }
+    // Der Grund eines Vorrats, der nie erwachte (der Spieler ging, `_tickAutoSettlement`), fällt mit ihm — der Ort liegt
+    // nur als Welt, wenn er erwacht; kehrt der Spieler zurück, legt der neue Vorrat ihn wieder.
+    _dorfVorratGrundFaellt(w) {
+        const wm = this.state.worldMeta;
+        const splats = w.grund && wm && wm.erdbau ? wm.erdbau[w.ort] : null;
+        if (!Array.isArray(splats)) return false;
+        const ohne = [];
+        let i = 0;
+        for (const k of Object.keys(wm.erdbau)) {
+            const l = wm.erdbau[k];
+            if (!Array.isArray(l)) continue;
+            if (k === w.ort) for (let j = 0; j < l.length; j++) ohne.push(i + j);
+            i += l.length;
+        }
+        delete wm.erdbau[w.ort];
+        this._erdbauWirkt(splats, w.wasser.nass, { erdbauOhne: ohne });
+        w.grund = false;
+        return true;
+    }
     // DAS WASSER-URTEIL DES ERDBAUS IM VORLAUF (Lehre 14: im Idle vorgebacken): ändert der Erdbau des Plans v2 (seine Splats
     // `erdbau`) den Grund an gezeichnetem Wasser (`_erdbauAmWasser` VOR dem Eintrag)? Ein Gang in Raten — die Normalform, dann je
     // Rate `AUTO_SETTLEMENT.wasserZellenJeTakt` Zellen —, den der Takt im Vorlauf-Ring treibt (`_tickAutoSettlement`) und
@@ -2558,6 +2577,7 @@ class AnazhRealm_siedlung_ort {
             const v2 = this._ortPlaene.get(AnazhRealm._ortSchluessel(b.plan, anker));
             v.wasser = this._dorfWasserUrteil(v2 ? v2.erdbau : null);
             v.v2 = v2;
+            v.ort = AnazhRealm._ortSchluessel(b.plan, anker);
             v.da = true;
             return { plan: b.plan, anker, wasser: v.wasser };
         });
@@ -3142,10 +3162,20 @@ class AnazhRealm_siedlung_ort {
         let rate = 1; // je Takt EINE Rate des Wasser-Urteils eines bereiten Vorrats (`_dorfWasserUrteil`)
         for (const [k, w] of V) {
             fliegt = fliegt || !w.da;
-            if (w.da && (w.x - playerPos.x) ** 2 + (w.z - playerPos.z) ** 2 > (A.nearM + w.mehrM + 2 * A.vorlaufM) ** 2)
+            if (w.da && (w.x - playerPos.x) ** 2 + (w.z - playerPos.z) ** 2 > (A.nearM + w.mehrM + 2 * A.vorlaufM) ** 2) {
+                this._dorfVorratGrundFaellt(w);
                 V.delete(k);
-            else if (w.da && rate && w.wasser.nass === undefined) {
+            } else if (w.da && rate && w.wasser.nass === undefined) {
                 this._dorfWasserSchritt(w.wasser);
+                rate = 0;
+            } else if (w.da && rate && !w.grund && w.v2) {
+                // DER GRUND LIEGT IM VORLAUF (w12-dorf-strom): der Erdbau ist Funktion des Orts, nie seines Erwachens — er
+                // liegt, sobald das Wasser-Urteil des Vorrats steht, und der Wald um den Ort plant am künftigen Grund, bevor
+                // seine Bäume in den Kegel treten (`_forestDartsFallen` fällt hier, im Vorlauf-Ring). Das Erwachen findet ihn
+                // liegend (`_erdbauSetzen` legt keinen Schlüssel zweimal). Bis w12-dorf-strom legte erst das Erwachen ihn:
+                // 576 von 578 Bäumen, die unfertig in den Kegel traten, verloren ihren Plan in diesem Bild (Fahrt-Probe dorf).
+                this._erdbauSetzen(w.ort, w.v2.erdbau, w.wasser.nass);
+                w.grund = true;
                 rate = 0;
             }
             if (w.da && V.has(k)) w.vorgebacken = this._dorfVorbacken(w, playerPos);
