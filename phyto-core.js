@@ -2017,7 +2017,7 @@
             oak: 0x4a7a2c,
             conifer: 0x2e5526,
             sequoia: 0x3a6a30,
-            birch: 0x8ab84a,
+            birch: 0x6a8e37, // Laubkrone im Band der Karte 0,15–0,26 (Betts & Ball 1997, BOREAS: Espe 0,15): 0x8ab84a trug den Baum auf 0,294, derselbe Ton linear × 0,57
             willow: 0x6a9a3a,
             smooth: 0x4a7a2c,
         };
