@@ -1,4 +1,4 @@
-# Übergabe 05.11. abends (Konto-Woche bei 95 % um 20:50; wird bis 98 % fortgeschrieben)
+# Übergabe 05.11. abends (Konto-Woche bei 96 % um 22:00; wird bis 98 % fortgeschrieben)
 
 **Gebucht 206/330** am Kopf f5db8d90 (z235) (Artifact https://claude.ai/artifact/Un9gX5VgRzYy77kzKUGeM2 v40). main = f5db8d90 bzw. neuer — `git ls-remote origin main`.
 Heute: 198 → 206. Zuletzt material.K1#1 an der Radeon 13/13, nach der Landung von w12-kronen-albedo.
@@ -13,11 +13,13 @@ Werkzeuge:
 Log: /tmp/claude/w3/offen-w6.txt Einträge 119–164.
 
 ## Züge
+- **z237 GELANDET** b01cc8b8 (21:43): w12-dorf-probe, w12-proben-tempo-spiel, w12-riesenhalm. Noch nicht gemessen — nach z238/z239 die Farm `bash /tmp/claude/w3/farm-lauf.sh <main>` (CPU-Last nicht während eines echt-Jobs auf dem Radeon-Läufer), dann Radeon für die sichtbaren (riesenhalm: Jungwuchs-Gestalt), dann buchen; streaming.K1/K2 fallen dabei ehrlich (−2), stoffe.K4#1 misst jetzt ein echtes Dorf.
 - **z235 GELANDET** f5db8d90: w12-unterwasser, w12-kronen-albedo (mit w12-albedo-tafel), w12-takt-band (K06-Wurzel, Bild je Frame im Null-Renderer Wiese Ego 13,9/17,9 → 4,0/6,3 ms).
 - **z236 ROT** (voll 9/18 Werk im Wasser):
   - Rote Zeile: „R: das Wasser am Seerand ändert sich mit dem Dorf — nasse Punkte 6397 → 6396, gezeichnete Spalten 7345 → 7249“.
   - Täter ist w12-brand-halt (siedlung-ort.js +195 aus brand-bild); tuch-grob bestand das Gate in z234. Die Post steht in cloud-post/w12-brand-halt.md.
   - **z238** = w12-tuch-grob allein hinter z237.
+  - **z239** = w12-brand-halt 0d1b2396 (main f5db8d90 gemergt) hinter z238: lokal werk-im-wasser 2× GRÜN (R 6594 → 6594, 7477 → 7477), das CI-Rot (−96 Spalten, 1,3 % > 1 %) ist nicht nachgestellt; Verdacht `_brandBild(delta)` je Takt (stamm/dirigent-takt.js:253) vor dem Chunk-Neubau am Seerand. Fällt z239 wieder: R auf dem CI-Läufer je Chunk zählen gegen main allein.
   - Der lokale Brand-Champion kann über seinen Zweig fortsetzen. Zu brand-halt die Angaben von vorher:
   - w12-brand-halt bringt w12-brand-bild endlich nach main. Der Zweig war in z232 an einem Konflikt in diag-stand-takt gefallen.
   - Der Herd ist deterministisch, stoffe.K2#2/K5#2 headless GRÜN am Zweig. Die Bilder habe ich gesehen: Der Rauch ist jetzt eine Fahne statt einer Kugelkette.
@@ -29,11 +31,24 @@ Log: /tmp/claude/w3/offen-w6.txt Einträge 119–164.
 - **z234 ROT** war Wackeln: Fenster-Wand E Lauf, am Ufer kein Wasser gezeichnet (wie z225, FUND). Die Zweige fuhren in z235/z236 weiter.
 
 ## Ausstehende Messungen
-- OMEN GTX nach der Jagd, eingereiht: nachmessen.sh f5db8d90 "material.K1#2,material.K3#2,leib.K3#2". Ist material.K1#2 auf der GTX GRÜN, dann buchen: material.K1 Staffel 2 (+1).
+- **streaming.K1#1/K2#1** (gebucht, nur gehalten; die nächste Farm misst sie ROT = −2):
+  - Champion w12-dorf-strom e7756259, nichts geheilt.
+  - Bäume: 572 von 578 unfertigen Bäumen fehlt der Wald-Plan (`_waldPlanSteht` false).
+  - Häuser: Der Dorf-Vorlauf bemisst sich nach Strecke (Vorbereitung bei 269 m, nur ein Export zur Zeit).
+  - Ohne Dorf ist K2#1 GRÜN.
+  - Die Proben und der Befund liegen in koordination `bericht/0511-dorf-strom/`. Die Verdächtigen stehen in der Commit-Message von e7756259.
 - **leib.K3#2 ROT** an der Radeon f5db8d90: Der Sicht-Abfall unter Wasser misst 0 /m (L auf 0,5/1,5/2,5 m gleich 0,1788), der Leib-Kontrast 0,01.
   - Die Probe zog 6430 m vom Sitzungs-Ort, der Ring fiel 4 → 0. Wahrscheinlich steht die Kamera in einer Welt ohne geladenes Wasser.
   - Das ist zuerst eine Frage der Probe, dann des Spiels.
+  - **Probe-Zweig w12-unterwasser-probe 45e044c3** (nicht gemergt):
+    - Die 40 Takte der Probe laufen über `__werkTakt` statt über die eigene, voreilende Uhr. Die Höhle steigt damit von 0,03 auf 0,14 und liegt im Band.
+    - Am See zeigt der Schuss weiter den alten Blick über dem Wasser (L 0,1764 auf allen Tiefen), obwohl Medium und Kamera richtig stehen.
+    - Verdacht: TRAA (`st._traaR`/`_traaReprojektion`) behält das Bild über `neubeginn()` (scripts/lib/ausgabe-aufnahme.cjs) hinweg.
+    - Die Diagnose-Schüsse `diag-ohne-flaeche`/`diag-ueber` müssen vor dem Merge fallen.
+  - Auch die GTX misst leib.K3#2 ROT, mit demselben Muster.
 - material.K3#2 ROT: Karte zu L1 bei Birke 0,939 und Fichte 1,12–1,17 (Soll 0,95–1,05).
+- material.K1#2/K3#2 bleiben auf der GTX ohne Urteil: Welt 81 s und Labor laufen parallel, das reißt die Frist von 84 s (FUND).
+- profiband.K2 GTX am f5db8d90 ROT: Belegung wiese-ego-steht 33,32 (bbca6407 13,27), genesis-ego 108,3 (Läufe streuen 36,7–108 je Kopf, 1 Lauf je Kopf) — takt-band ist auf der GTX nicht als Gewinn messbar; für E braucht es ≥ 4 Läufe je Seite (ABAB).
 
 ## Stationen in koordination
 - Heute gemergt: g2-proben, kontakt, pegel, dorf-probe, albedo, unterwasser, kronen (Nadel-Band 0,08–0,15), laub-kante (nennt den Verdecker), brand-halt (Kommentare).
