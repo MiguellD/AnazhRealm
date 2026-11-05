@@ -37,7 +37,7 @@
 // Port: WASSER_LEBEN_PORT (Standard 4623).
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, pngDatei, argOpt, jsonKlon, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, pngDatei, argOpt, jsonKlon, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { quellTeileVereinen, QUELL_KACHELN, WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 const { tslLecks } = require("./lib/shader-kosten.cjs");
 
@@ -894,7 +894,7 @@ async function lauf() {
             const helfer = teilen
                 ? Array.from({ length: QUELL_TEILE - 1 }, (_, i) =>
                       quellTeil(browser, server, i + 1, ORTE).catch((e) => ({
-                          fehler: `Teil ${i + 1}/${QUELL_TEILE} der Quell-Probe: ${String((e && e.message) || e).split("\n")[0]}`,
+                          fehler: `Teil ${i + 1}/${QUELL_TEILE} der Quell-Probe: ${fehlerText(e).split("\n")[0]}`,
                       }))
                   )
                 : [];
@@ -955,7 +955,7 @@ async function lauf() {
     } catch (e) {
         // der Stapel nennt die Zeile, die las (aus der Seite: die Probe `__wasser*` oder der Stamm), nie nur die Meldung
         console.log("WASSER-LEBEN ABBRUCH:", (e && (e.stack || e.message)) || e);
-        annotation(`ABBRUCH ${String((e && e.message) || e).split("\n")[0]}`);
+        annotation(`ABBRUCH ${fehlerText(e).split("\n")[0]}`);
         exit = 1;
     } finally {
         await browser.close().catch(() => {});

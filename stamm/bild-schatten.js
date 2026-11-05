@@ -160,14 +160,8 @@ class AnazhRealm_bild_schatten {
     _rueckstrahlZeichne() {
         const st = this.state;
         const L = this._rueckstrahlLeser();
-        if (!st.scenePass || !st._skyEnvRT || st.rueckstrahlBruch) {
-            L.an.value = 0;
-            return;
-        }
-        // DIE DECKE ÜBER DEM AUGE (`_augeUnterDach`, je Takt): der Rückstrahl ist das Licht des Bodens unter dem offenen Himmel —
-        // steht das Auge unter einer Decke, ruht er. Bis dahin nahm der Innenraum des Dorf-Hauses den gemessenen Boden: im Regen
-        // heller als in der Sonne (gate:naesse:echt Regenbild 1,065 > 1, GTX), 8 861 Regen-Punkte innen
-        L.an.value = L.gelesen && !this._augeUnterDach() ? 1 : 0;
+        L.an.value = this._rueckstrahlAn(L);
+        if (!st.scenePass || !st._skyEnvRT || st.rueckstrahlBruch) return;
         try {
             const P = this._rueckstrahlPass();
             const cam = st.camera;
@@ -224,14 +218,39 @@ class AnazhRealm_bild_schatten {
     // `bild` misst den Boden der Szene, die jetzt gilt, und die Lesung kommt zurück, bevor der Schuss zählt. Bis dahin trug jeder
     // Schuss den Boden des vorigen (gate:naesse:echt, Dorf: der nasse Schuss den frischen Boden, der Schuss ohne Schliere den
     // nassen — 510 Punkte innen trennten zwei Bilder derselben Nässe). Ohne Pass (Holz ohne Szenen-Pass) misst niemand.
+    // DER BODEN GILT AB DEM NÄCHSTEN BILD (w10-treue, 04.11.): `an` stellt das Bild der Messung an seinem Ende — BEVOR seine Lesung
+    // zurückkommt. Der erste Schuss nach dem Lesen zeichnete darum ohne den Boden, den er eben gemessen hatte, jeder weitere mit ihm:
+    // zwei Aufnahmen derselben Szene wichen ab (Radeon, Wiese 960 × 540: 487 652 von 2 073 600 Bytes, die dritte gleich der zweiten;
+    // GTX lod.K2#1 547 572, lod.K5#1 2 216 057 — „EINE Aufnahme je Schuss trägt hier nicht“). Nach der Lesung stellt die EINE Regel
+    // `_rueckstrahlAn` den Schalter für die Bilder des Schusses. ZWEI Messbilder: das erste zeichnet OHNE Rückstrahl (der Boden der
+    // Szene allein), das zweite unter dem Boden, den das erste maß — der Boden des Schusses hängt an keinem Boden davor (bis
+    // w12-lod-ende trug das erste den Schalter und den Boden des vorigen Schusses: Radeon, Wiese, leer → Tanne, 9 Bytes zwischen
+    // zwei Aufnahmen). Der Boden, den es misst, liegt unter den
+    // Schatten-Karten DIESES Blicks: die Aufnahme legt sie vor dem ersten Messbild neu (`neubeginn`, w12-lod-ende) — bis dahin
+    // trug er die Kaskaden, die der Lauf davor hielt (Radeon, Wiese: Boden 0,069 statt 0,095, Stamm und Laub der ersten Aufnahme
+    // 1 786 078 Bytes neben der zweiten).
     async _rueckstrahlJetzt(bild) {
         const st = this.state;
         const L = st.rueckstrahlLeser;
         if (!L || !st.rueckstrahlPass) return;
         if (L.lesung) await L.lesung;
-        st.rueckstrahlPass.sprung = true;
-        bild();
-        if (L.lesung) await L.lesung;
+        L.an.value = 0;
+        for (let i = 0; i < 2; i++) {
+            st.rueckstrahlPass.sprung = true;
+            bild();
+            if (L.lesung) await L.lesung;
+            L.an.value = this._rueckstrahlAn(L);
+        }
+    }
+    // DER SCHALTER DES RÜCKSTRAHLS (die EINE Regel, `_rueckstrahlZeichne` je Bild und `_rueckstrahlJetzt` nach der Lesung): an erst,
+    // wenn ein Boden gelesen ist; ohne Szenen-Pass, ohne Umgebung oder nach einem Bruch nie. DIE DECKE ÜBER DEM AUGE
+    // (`_augeUnterDach`, je Takt): der Rückstrahl ist das Licht des Bodens unter dem offenen Himmel — steht das Auge unter einer
+    // Decke, ruht er. Bis dahin nahm der Innenraum des Dorf-Hauses den gemessenen Boden: im Regen heller als in der Sonne
+    // (gate:naesse:echt Regenbild 1,065 > 1, GTX), 8 861 Regen-Punkte innen
+    _rueckstrahlAn(L) {
+        const st = this.state;
+        if (!st.scenePass || !st._skyEnvRT || st.rueckstrahlBruch) return 0;
+        return L.gelesen && !this._augeUnterDach() ? 1 : 0;
     }
 
     // DIE RUHE DES RÜCKSTRAHLS: er misst neu, wenn das Auge weiter als `ruheM` wandert oder der Blick weiter als `ruheRad` dreht (die
@@ -747,6 +766,14 @@ class AnazhRealm_bild_schatten {
         f.H = H;
         f.texel = tx;
         f.texelMin = Math.min(tx, ty); // der feinere Texel der Karte (die Stufe der Sonne, der Licht-Rand)
+        // DER URSPRUNG DES WELT-RASTERS (schatten.K2, `_ditherIGN` in der Kaskade): Spalte s der Karte liegt auf dem Welt-Index
+        // bx0/tx + s, Zeile z (von oben, r184 dreht y im Schatten-Koordinaten-Satz) auf by0/ty + Höhe − z — beide Ursprünge ganz
+        // (das Zentrum rastet, die Box trägt ganze Texel), modulo BLENDE_RASTER
+        const P = AnazhRealm.BLENDE_RASTER;
+        const modP = (x) => ((Math.round(x) % P) + P) % P;
+        if (!f.raster) f.raster = [0, 0];
+        f.raster[0] = modP(bx0 / tx);
+        f.raster[1] = modP(by0 / ty + sh.mapSize.height);
         // DER LÄNGSTE LICHT-WEG der Box (die Stufe der Sonne, `_sonnenStufe`): ein Schatten fällt vom Werfer (höchstens
         // `S.werferY`, eben von `_kaskadenWerferOben` über dieser Box gemessen) zum Empfänger (wenigstens der tiefste Punkt der
         // Scheibe) — sein Weg entlang des Lichts ist der Fall geteilt durch die Höhe des Lichts, nie länger als die Box tief.
@@ -1169,6 +1196,291 @@ class AnazhRealm_bild_schatten {
             }
         }
     }
+
+    // ═══ DIE KONTAKT-VERDECKUNG (schatten.K3) ═══
+    // Zwischen den Dingen gab es keine Verdeckung: der Himmel erreichte den Boden am Fuß eines Leibs, am Sockel eines Hauses
+    // und am Stamm wie auf freier Wiese (Radeon am 5fba36ea: das Kontaktband 2–18 cm vor der Fläche bei 98,9 % bzw. 100 % des
+    // freien Bodens, die Sonne aus). Die Himmels-Sicht (`aHimmel`, das Gelände-Gesetz) kennt nur das Gelände. EIN Baustein des
+    // Welt-Renderers schließt die Lücke: GTAO (Jimenez et al. 2016, „Practical Realtime Strategies for Accurate Indirect
+    // Occlusion"; das Integral wie XeGTAO) aus DEM Tiefen-Puffer des Szenen-Passes, in HALBER Auflösung, NACH dem Bild (wie der
+    // Spiegel, `_spiegelPassZeichne`), RÄUMLICH gefiltert (3 × 3 gleicher Tiefe). Das Rauschen der Scheiben ist DIE PHASE DER
+    // BLENDE (`uDitherT`, `_loopRender`; XeGTAO „NoiseIndex": mit TAA der Bild-Zähler, ohne 0): wo die zeitliche Auflösung in der
+    // Kette steht, dreht sie je Bild und die Auflösung mittelt die Richtungen, ohne sie (Holz kienspan) steht sie. Die
+    // Verdeckung ist damit eine FUNKTION von Tiefe, Ansicht und Phase — eine stehende Welt zeichnet dieselbe Verdeckung.
+    // Bis w5-kontakt trug der Pass eine eigene Geschichte (je Lauf die nächste von 8 Phasen, 0,2 neu gemischt): die stehende
+    // Welt wanderte (Ziel-Zensus, Ruhe 0,0092 der Pixel an der GTX, z191). Der Boden des nächsten Bilds liest das Ergebnis
+    // reprojiziert in dessen Ansicht (`_kontaktVerdeckung`, EINE Ladung je Fragment) und multipliziert es in seinen aoNode:
+    // r184 trägt aoNode NUR ins indirekte Licht (diffus und Glanz, spec/vendor-anker.json), Sonne und Licht-Pool bleiben.
+    // DÜNNE UND NAHE WERFER (XeGTAO „ThinOccluderCompensation"): ein Halm vor dem Boden liegt längs des Blicks weit vor ihm, eine
+    // Wand am Fuß in seiner Tiefe — der Abfall misst die Tiefen-Achse des Abstands × (1 + `duenn`); näher als `nahM` verdeckt
+    // nichts (der Nachbar-Halm, das Korn des Bodens), die Wand und der Leib reichen darüber hinauf.
+    // DER HALM LIEST SIE NICHT (bis w6-kontakt: ja): im Halm-Fragment las sie die Tiefe der Nachbar-Halme — das Gras dunkelte sich
+    // selbst (Radeon, Station am Dorf: der freie Boden im Gras 0,02–0,6), schimmerte im Schatten beim Gehen (schatten.K2 in
+    // derselben Welt 4,66 → 5,93 % mit, 4,96 % ohne den Halm) und kostete je Gras-Fragment (GTX a085a06c: ~1,4 ms an der Wiese).
+    // GEMESSEN (Radeon 890M, die Geometrie der Station schatten.K3 an der Mess-Wiese, die Halm-Schicht ruht — der gemähte Boden):
+    // Fuß 0,56 · Sockel 0,39 des freien Bodens (5fba36ea: 1,059 · 1,010).
+    _kontaktLeser() {
+        const st = this.state;
+        if (st.kontaktLeser) return st.kontaktLeser;
+        const T = THREE.TSL;
+        const ziel = (name) => {
+            const rt = new THREE.RenderTarget(1, 1, {
+                type: THREE.HalfFloatType,
+                format: THREE.RGFormat,
+                depthBuffer: false,
+            });
+            rt.name = rt.texture.name = name;
+            rt.texture.minFilter = rt.texture.magFilter = THREE.NearestFilter;
+            rt.texture.generateMipmaps = false;
+            return rt;
+        };
+        // `rt` das Ergebnis (Verdeckung, Sicht-Tiefe) — die Leser lesen es; `neu` das Ziel des Passes, geglättet in `rt` (die
+        // Leser tragen EINE Textur, kein Tausch der Bindung je Bild)
+        // Ansicht und Schalter wechseln je Bild: sie reisen in der GETEILTEN renderGroup (`_uniformHeimatTeilen`, wie der Spiegel)
+        st.kontaktLeser = Object.assign(
+            { rt: ziel("kontakt:verdeckung"), neu: ziel("kontakt:verdeckung:neu") },
+            this._uniformHeimatTeilen({ vp: T.uniform(new THREE.Matrix4()), an: T.uniform(0) })
+        );
+        return st.kontaktLeser;
+    }
+
+    // DER LESER (der aoNode des Bodens): der Welt-Punkt des Fragments in der Ansicht des letzten Laufs, EIN Texel
+    // des geglätteten Ergebnisses (der räumliche Filter ist im Pass gerechnet — der Leser zahlt je Fragment eine Ladung), gewogen
+    // mit dem Zelt seiner Sicht-Tiefe gegen die des Punkts (`tiefeRand` relativ: die Kante eines Leibs vor dem Boden reicht ihm
+    // nichts); außerhalb des Ziels und ohne Lauf (`an` 0: Direktpfad, Bruch) 1.
+    // DER KNOTEN LEBT IM EINEN HALTER (`L.knoten`, er reist mit der Seite, `WELT_GRENZE.seite`): bis w5-kontakt lag er am Wirt
+    // (`this._kontaktK`) — der Abschied der Welt (`_weltAbschied`) zählte jedes Feld am Wirt als fallend, fand in ihm die
+    // Textur des Ziels und gab sie frei, der Boden der nächsten Welt band die zerstörte Textur (gate:kamera-leib am Tor der
+    // Prüfbühne: „Destroyed texture [kontakt:verdeckung] used in a submit", z191/z197).
+    _kontaktVerdeckung() {
+        const L = this._kontaktLeser();
+        if (L.knoten) return L.knoten;
+        const T = THREE.TSL;
+        const K = AnazhRealm.KONTAKT;
+        const tex = T.texture(L.rt.texture);
+        const clip = L.vp.mul(T.vec4(T.positionWorld, 1));
+        const w = T.max(clip.w, 1e-4);
+        const uv = T.vec2(clip.x.div(w).mul(0.5).add(0.5), T.float(0.5).sub(clip.y.div(w).mul(0.5)));
+        const gr = T.vec2(tex.size());
+        const t = tex.load(T.ivec2(T.clamp(T.floor(uv.mul(gr)), T.vec2(0), gr.sub(1))));
+        const gilt = T.max(T.float(1).sub(T.abs(t.y.sub(w)).div(w.mul(K.tiefeRand))), 0);
+        const drin = T.step(0, uv.x)
+            .mul(T.step(uv.x, 1))
+            .mul(T.step(0, uv.y))
+            .mul(T.step(uv.y, 1))
+            .mul(T.step(0, clip.w));
+        L.knoten = T.mix(T.float(1), t.x, gilt.mul(drin).mul(L.an));
+        return L.knoten;
+    }
+
+    // DER PASS (je Texel des halben Szenen-Ziels): Tiefe → Lage → Normale → `scheiben` × 2 Seiten × `schritte` Horizont-Proben,
+    // gedreht in der Phase der Blende (`uDitherT`) — kein Zustand aus einem vorigen Lauf.
+    _kontaktPass() {
+        const st = this.state;
+        if (st.kontaktPass) return st.kontaktPass;
+        const T = THREE.TSL;
+        const { Fn, If, float, vec2, vec3, vec4, uniform, texture, screenUV, ivec2, floor, clamp, max, dot } = T;
+        const { cross, normalize, length, acos, cos, sin, select, mix, fract, abs } = T;
+        const phase = this._ensureLodUniforms().uDitherT; // DIE Phase der Blende (`_loopRender`: dreht nur mit der Auflösung)
+        const K = AnazhRealm.KONTAKT;
+        const L = this._kontaktLeser();
+        const tiefe = texture(st.scenePass.getTextureNode("depth").value);
+        const webgpuRaum = st.renderer.coordinateSystem === THREE.WebGPUCoordinateSystem;
+        const U = {
+            invP: uniform(new THREE.Matrix4()),
+            p11: uniform(1),
+        };
+        const H = Math.PI / 2;
+        const mat = new THREE.MeshBasicNodeMaterial();
+        mat.name = "kontakt:verdeckung";
+        mat.fog = false;
+        mat.depthTest = false;
+        mat.depthWrite = false;
+        mat.fragmentNode = Fn(() => {
+            const gr = vec2(tiefe.size());
+            // die Sicht-Lage des Texels q (ganzzahlig) aus der Tiefe des Szenen-Passes
+            const sicht = (q) => {
+                const qq = clamp(q, vec2(0), gr.sub(1));
+                const d = tiefe.load(ivec2(qq)).r;
+                const u = qq.add(0.5).div(gr);
+                const h = U.invP.mul(
+                    vec4(u.x.mul(2).sub(1), float(1).sub(u.y).mul(2).sub(1), webgpuRaum ? d : d.mul(2).sub(1), 1)
+                );
+                return h.xyz.div(h.w);
+            };
+            const aus = vec4(1, 0, 0, 1).toVar();
+            const q = floor(screenUV.mul(gr));
+            If(tiefe.load(ivec2(q)).r.lessThan(0.99999), () => {
+                const P = sicht(q).toVar();
+                const naeher = (a, b) => select(length(a).lessThan(length(b)), a, b);
+                const dx = naeher(sicht(q.add(vec2(1, 0))).sub(P), P.sub(sicht(q.sub(vec2(1, 0)))));
+                const dy = naeher(sicht(q.add(vec2(0, 1))).sub(P), P.sub(sicht(q.sub(vec2(0, 1)))));
+                const V = normalize(P.negate()).toVar();
+                const n0 = normalize(cross(dx, dy));
+                const N = select(dot(n0, V).lessThan(0), n0.negate(), n0).toVar();
+                // der Radius im Schirm (Texel des Szenen-Ziels) — fern unter `minPx` verdeckt nichts mehr
+                const rpx = float(K.radiusM).mul(U.p11).mul(gr.y.mul(0.5)).div(max(P.z.negate(), 1e-3)).toVar();
+                const neu = float(1).toVar();
+                If(rpx.greaterThan(K.minPx), () => {
+                    // das Rauschen des Texels in der Phase der Blende (Interleaved-Gradient wie `_ditherIGN`, rotiert mit
+                    // `uDitherT`; die zweite Folge um 7,13 px versetzt)
+                    const ign = (o) => {
+                        const qo = q.add(o);
+                        return fract(
+                            float(52.9829189)
+                                .mul(fract(qo.x.mul(0.06711056).add(qo.y.mul(0.00583715))))
+                                .add(phase)
+                        );
+                    };
+                    const phi0 = ign(0),
+                        jit = ign(7.13);
+                    let vis = float(0),
+                        vis0 = float(0);
+                    for (let s = 0; s < K.scheiben; s++) {
+                        const phi = phi0.add(s).mul(Math.PI / K.scheiben);
+                        const dir = vec2(cos(phi), sin(phi));
+                        const dV = vec3(dir.x, dir.y.negate(), 0);
+                        const ortho = dV.sub(V.mul(dot(dV, V)));
+                        const achse = normalize(cross(ortho, V));
+                        const nP = N.sub(achse.mul(dot(N, achse)));
+                        const nL = max(length(nP), 1e-4);
+                        const cosN = clamp(dot(nP, V).div(nL), -1, 1);
+                        const n = select(dot(ortho, nP).lessThan(0), float(-1), float(1)).mul(acos(cosN)).toVar();
+                        const tief0 = cos(n.add(H)),
+                            tief1 = cos(n.sub(H));
+                        let hc0 = tief0,
+                            hc1 = tief1;
+                        for (let t = 0; t < K.schritte; t++) {
+                            const k = jit.add(t).div(K.schritte);
+                            const spx = max(k.mul(k).mul(rpx), 1);
+                            for (const seite of [1, -1]) {
+                                const S = sicht(floor(q.add(0.5).add(dir.mul(spx.mul(seite)))));
+                                const del = S.sub(P);
+                                const weit = max(length(del), 1e-5);
+                                // der Abfall über den Abstand mit der Tiefen-Achse × (1 + duenn): dünne Werfer vor dem Punkt;
+                                // näher als `nahM` verdeckt nichts (der Nachbar-Halm, das Korn des Bodens — die Wand und der Leib
+                                // reichen über `nahM` hinauf)
+                                const abfall = length(vec3(del.x, del.y, del.z.mul(1 + K.duenn)));
+                                const g = clamp(
+                                    float(K.radiusM)
+                                        .sub(abfall)
+                                        .div(K.radiusM * K.saum),
+                                    0,
+                                    1
+                                ).mul(T.smoothstep(K.nahM * 0.5, K.nahM, weit));
+                                const tief = seite > 0 ? tief0 : tief1;
+                                const hc = mix(tief, dot(del, V).div(weit), g);
+                                if (seite > 0) hc0 = max(hc0, hc);
+                                else hc1 = max(hc1, hc);
+                            }
+                        }
+                        const h0 = n.add(
+                            clamp(
+                                acos(clamp(hc1, -1, 1))
+                                    .negate()
+                                    .sub(n),
+                                -H,
+                                H
+                            )
+                        );
+                        const h1 = n.add(clamp(acos(clamp(hc0, -1, 1)).sub(n), -H, H));
+                        const sn = sin(n);
+                        const bogen = (h) =>
+                            cosN
+                                .add(h.mul(2).mul(sn))
+                                .sub(cos(h.mul(2).sub(n)))
+                                .mul(0.25);
+                        vis = vis.add(nL.mul(bogen(h0).add(bogen(h1))));
+                        vis0 = vis0.add(nL.mul(cosN.add(n.mul(sn))));
+                    }
+                    neu.assign(clamp(vis.div(max(vis0, 1e-4)), 0, 1).pow(K.potenz));
+                });
+                aus.assign(vec4(neu, P.z.negate(), 0, 1));
+            });
+            return aus;
+        })();
+        // DAS VOLLBILD ist ein Pass der Post-Kette: das Quad ihrer Klasse (`pp._quadMesh`, wie der Spiegel)
+        const pp = st.postProcessing;
+        const Quad = pp && pp._quadMesh && pp._quadMesh.constructor;
+        if (typeof Quad !== "function") throw new Error("KONTAKT-PASS: Quad der Post-Kette fehlt (Vendor-Drift)");
+        const quad = new Quad(mat);
+        quad.name = "kontakt:verdeckung";
+        // DER RÄUMLICHE FILTER (neu → rt): je Texel das Mittel seiner 3 × 3 Nachbarn gleicher Sicht-Tiefe (Zelt über
+        // `tiefeRand`) — das Rauschen der Scheiben-Wahl fällt, die Kante eines Leibs vor dem Boden bleibt
+        const roh = texture(L.neu.texture);
+        const glatt = new THREE.MeshBasicNodeMaterial();
+        glatt.name = "kontakt:verdeckung:glatt";
+        glatt.fog = false;
+        glatt.depthTest = false;
+        glatt.depthWrite = false;
+        glatt.fragmentNode = Fn(() => {
+            const gr = vec2(roh.size());
+            const q = floor(screenUV.mul(gr));
+            const m = roh.load(ivec2(q));
+            const rand = max(m.y.mul(K.tiefeRand), 1e-4);
+            let summe = float(0),
+                gewicht = float(0);
+            for (let j = -1; j <= 1; j++)
+                for (let i = -1; i <= 1; i++) {
+                    const t = i || j ? roh.load(ivec2(clamp(q.add(vec2(i, j)), vec2(0), gr.sub(1)))) : m;
+                    const g = max(float(1).sub(abs(t.y.sub(m.y)).div(rand)), 0);
+                    summe = summe.add(t.x.mul(g));
+                    gewicht = gewicht.add(g);
+                }
+            return vec4(select(gewicht.greaterThan(1e-4), summe.div(max(gewicht, 1e-4)), m.x), m.y, 0, 1);
+        })();
+        const quadGlatt = new Quad(glatt);
+        quadGlatt.name = "kontakt:verdeckung:glatt";
+        st.kontaktPass = { quad, mat, quadGlatt, glatt, U, vp: new THREE.Matrix4() };
+        return st.kontaktPass;
+    }
+
+    // NACH DEM BILD (`_loopRender`, nur auf der Post-Kette — der Szenen-Pass trägt die Tiefe): der Pass rechnet aus Tiefe und
+    // Ansicht DIESES Bilds in halber Auflösung des Szenen-Ziels in `neu` und legt es geglättet in `rt`; der Boden des nächsten
+    // Bilds liest es in dieser Ansicht. Er läuft je Bild (die Tiefe lebt: Leiber, Wind, das Zittern der Zeit-Auflösung) — seine
+    // Kosten hängen am Schirm, nie an der Welt; steht die Welt (Tiefe, Ansicht, Phase der Blende), steht sein Ergebnis.
+    // Läuft er nicht, liest der Boden 1 (`an` 0); ein Bruch meldet laut beim Namen.
+    _kontaktPassZeichne(direkt) {
+        const st = this.state;
+        const L = this._kontaktLeser();
+        if (direkt || !st.scenePass || st.kontaktBruch) {
+            L.an.value = 0;
+            return;
+        }
+        try {
+            const rend = st.renderer;
+            const cam = st.camera;
+            const sz = st.scenePass.renderTarget;
+            const w = Math.max(1, Math.ceil(sz.width / 2)),
+                h = Math.max(1, Math.ceil(sz.height / 2));
+            const frisch = L.rt.width !== w || L.rt.height !== h;
+            // ein neues Maß: die Ziele wachsen, die Pässe binden neu (r184 hielt im Filter die Bindung des alten Ziels —
+            // Radeon, Fenster 1920 → 640: der Filter las 0)
+            if (frisch) {
+                for (const z of [L.rt, L.neu]) z.setSize(w, h);
+                if (st.kontaktPass) for (const m of [st.kontaktPass.mat, st.kontaktPass.glatt]) m.dispose();
+                st.kontaktPass = null;
+            }
+            const P = this._kontaktPass();
+            // die Matrizen DIESES Bilds (der Render rechnete sie, die Zeit-Auflösung nahm ihren Versatz zurück)
+            P.U.invP.value.copy(cam.projectionMatrixInverse);
+            P.U.p11.value = cam.projectionMatrix.elements[5];
+            P.vp.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+            const vor = rend.getRenderTarget();
+            rend.setRenderTarget(L.neu);
+            P.quad.render(rend);
+            rend.setRenderTarget(L.rt);
+            P.quadGlatt.render(rend);
+            rend.setRenderTarget(vor);
+            L.vp.value.copy(P.vp);
+            L.an.value = 1;
+            st._kontaktLaeufe = (st._kontaktLaeufe || 0) + 1;
+        } catch (err) {
+            st.kontaktBruch = true;
+            L.an.value = 0;
+            this._stoffBruch("der Kontakt-Pass (schatten.K3) — der Boden trägt keine Kontakt-Verdeckung", err);
+        }
+    }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_bild_schatten]);
 
@@ -1187,6 +1499,29 @@ AnazhRealm.SCHATTEN_TAKT = Object.freeze({ nahMax: 2, fernFaktor: 3 });
 // Die Ruhe der Kamera für den Schatten-Takt (_loopShadowUpdate): jedes Element der Welt-Matrix höchstens so weit vom
 // vorigen Frame (Meter bzw. Drehung) — darüber gilt die Kamera als bewegt, die nahe Kaskade folgt jedem Frame.
 AnazhRealm.SCHATTEN_RUHE_EPS = 1e-4;
+// DAS WELT-RASTER DER BLENDE in der Kaskade (`_ditherIGN`, schatten.K2): der Schlüssel des Rauschens ist der Index des
+// Texels der Welt im Licht-Raum modulo dieser Periode (ganze Zahlen — ein Versatz der Box um n Texel verschiebt Spalte und
+// Ursprung gegenläufig, der Rest bleibt; `_kaskadeFit` legt den Ursprung).
+AnazhRealm.BLENDE_RASTER = 256;
+// DIE KONTAKT-VERDECKUNG (`_kontaktPass`, schatten.K3): GTAO in halber Auflösung des Szenen-Ziels, räumlich gefiltert.
+// `radiusM` = die Reichweite der Horizont-Suche (Welt-m; die Wand 1,5 m vor dem Boden verdeckt nichts mehr, `saum` blendet die
+// letzten 40 % aus; mit 1,0 trug im engen Blick, 25°, der schmale Leib 0,79 statt 0,76, der Sockel 0,61 statt 0,54),
+// `scheiben` × 2 Seiten × `schritte` Proben je Texel (16 Tiefen + 5 für Lage und Normale), gedreht in der Phase der
+// Blende (`uDitherT`: mit der zeitlichen Auflösung je Bild, ohne sie fest); `duenn` streckt die Tiefen-Achse des Abfalls (XeGTAO-Dünn-Werfer: der Halm vor dem Boden verdeckt wenig, die
+// Wand an seinem Fuß voll), `nahM` die Nähe, unter der nichts verdeckt (der Nachbar-Halm); `minPx` = unter so vielen
+// Szenen-Texeln Radius rechnet der Texel nicht (fern), `potenz` die Endpotenz der Sicht (XeGTAO „FinalValuePower", dort 2,2),
+// `tiefeRand` die relative Sicht-Tiefe, in der ein Texel dem Leser und dem Filter gilt.
+AnazhRealm.KONTAKT = Object.freeze({
+    radiusM: 1.5,
+    saum: 0.4,
+    scheiben: 2,
+    schritte: 4,
+    duenn: 0.7,
+    nahM: 0.08,
+    minPx: 2,
+    potenz: 2.5,
+    tiefeRand: 0.04,
+});
 // DER RÜCKSTRAHL DES BODENS (schatten.K4, `_rueckstrahlPass`): ein Raster `raster`² über das Bild; Boden ist, was `unterAugeM`
 // unter dem Auge und im `umkreisM` liegt und waagrecht ist (|n.y| > `normalY`); der Messwert folgt je Bild mit `folge`.
 AnazhRealm.RUECKSTRAHL = Object.freeze({ raster: 12, unterAugeM: 0.5, umkreisM: 16, normalY: 0.7, folge: 0.5 });
@@ -1214,8 +1549,8 @@ AnazhRealm.LICHT_WURF = Object.freeze({
 // `randM` = Saum der Werfer-Hülle (Wind, Morph), `luftM` = Saum über dem höchsten Werfer und unter der tiefsten
 // Scheibe. DER BIAS (0710-12, `_schattenBias`) in Texeln der Karte, nie in Metern: `normalTexel` = der normalBias je Texel
 // (mal dem Hebel `atmosphere.shadowBias`), `tiefeTexel` = der Tiefen-Nudge entlang des Lichts. Den Versatz trägt die
-// End-Normale des Empfänger-Stoffs (r184 `normalWorld`), am geflachten Boden also die Senkrechte (TERRAIN_NORMAL_FLATTEN);
-// darum trägt der Boden die Zuwendung seiner wahren Normale selbst (`receivedShadowNode`, 1110-5): abgewandt im Schatten,
+// End-Normale des Empfänger-Stoffs (r184 `normalWorld`), am Boden seine wahre Normale (ferne.K4: die 2.5D-Lichtung fiel);
+// der Boden trägt die Zuwendung seiner wahren Normale dazu selbst (`receivedShadowNode`, 1110-5): abgewandt im Schatten,
 // über N·L 0 … `zuwendungSaum` weich (der Saum am Terminator, sonst die Hang-Akne).
 // DIE KONTAKT-KASKADE (schatten.K1): die ersten `kontaktM` Meter tragen eine eigene Kaskade bei `texelM[0]` (≤ 5 cm, 1024²);
 // DER FILTER jeder Kaskade ist das EINE Gesetz der Sonnen-Scheibe (`_schattenFilter`): Halbschatten = Abstand Werfer →

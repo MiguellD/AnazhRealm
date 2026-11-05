@@ -3996,6 +3996,71 @@ function fernRingTeile(x, z, law, fuss, schutt, gen) {
     return f;
 }
 
+// DIE KAMM-KRONE (ferne.K3, w10-ferne, `_kammKroneTakt`): die Bäume DESSELBEN Bestands, deren Krone den Kamm gegen den Himmel
+// trägt (phyto-core `forestKammKronen`) — der Plan (`planForestCell`) mit dem FERN-LESER des Bodens: die Fläche ist das Gesetz
+// ohne Detail (dieselbe Funktion, die der Ring zeichnet und die Station als Kamm misst, `_terrainMacroSurfaceY(x, z, false)`),
+// Wasser, Steilheit (±2 m wie `bodenSteilheit`), Feuchte, Ort und Same wie der Wald-Faden (`waldCtx`); das Urteil der
+// Kronen-Schüchternheit ist das EINE `forestStehende`. Das Gedächtnis der geborenen Darts hält je Same und Stand (`stand` des
+// Mains) — der nächste Anker liest die Zellen des letzten. Per Transfer zurück: je Baum KAMM_FELDER Zahlen, die Arten.
+let kammGeboren = { schluessel: null, karte: new Map() };
+function kammKrone(msg) {
+    const pc = self.__phytoCore;
+    if (!pc || typeof pc.forestKammKronen !== "function")
+        throw new Error("Kamm-Krone: phyto-core forestKammKronen fehlt (KERN-PFLICHT)");
+    const schluessel = state.seed + "|" + msg.seedInt + "|" + msg.stand;
+    if (kammGeboren.schluessel !== schluessel || kammGeboren.karte.size > 65536)
+        kammGeboren = { schluessel, karte: new Map() };
+    const K = kammGeboren.karte;
+    const law = (x, z) => G.hoehe(state, x, z, false);
+    let [bx, bz, by] = [NaN, NaN, null];
+    const ctx = {
+        F: fernK().forest,
+        baseH: state.baseHeight || 0,
+        extras: msg.extras,
+        fbm: forestFbm,
+        surfaceYAt: (x, z) => {
+            [bx, bz, by] = [x, z, law(x, z)];
+            return by;
+        },
+        waterYAt: (x, z) => atlasWaterLevelAt(x, z, x === bx && z === bz ? by : law(x, z)),
+        slopeAt: (x, z) => Math.hypot((law(x + 2, z) - law(x - 2, z)) / 4, (law(x, z + 2) - law(x, z - 2)) / 4),
+        feuchteAt: (x, z, sy) => feuchteAt(x, z, sy),
+        ortFrei: (x, z, T) => ortFrei(x, z, T),
+    };
+    const geboren = (cx, cz) => {
+        const k = cx * 1048576 + cz;
+        let a = K.get(k);
+        if (!a) K.set(k, (a = pc.planForestCell(cx, cz, msg.seedInt, ctx)));
+        return a;
+    };
+    const t0 = self.performance ? self.performance.now() : Date.now();
+    const r = pc.forestKammKronen({
+        ax: msg.ax,
+        az: msg.az,
+        grundY: law(msg.ax, msg.az),
+        augen: msg.augen,
+        dVon: msg.dVon,
+        dBis: msg.dBis,
+        azN: msg.azN,
+        azVon: msg.azVon,
+        azBis: msg.azBis,
+        marsch: msg.marsch,
+        hMax: msg.hMax,
+        tiefeM: msg.tiefeM,
+        saumM: msg.saumM,
+        cell: ctx.F.cell,
+        pk: ctx.F.pack,
+        hoehe: law,
+        geboren,
+        art: (sp) => msg.arten[sp] || null,
+    });
+    const ms = (self.performance ? self.performance.now() : Date.now()) - t0;
+    return {
+        antwort: { baeume: r.baeume, arten: r.arten, zellen: r.zellen, rufe: r.rufe, kandidaten: r.kandidaten, ms },
+        transfer: [r.baeume.buffer],
+    };
+}
+
 // DER AUFTRAG DER FERNE. ring: je Punkt (x, z, Masche ht/hr, Reihen-Radius, Bau-Zone) die Gesetzes-Höhe (in der Bau-Zone
 // mit dem vollen Gesetz gemischt, die Deck-Mischung), der Schutt, Fläche und Spiegel des Bodens (`fernNass`), der Fluss der
 // Masche (Anteil und Spiegel) und die Teile (trocken; nasse Punkte jenseits der Bau-Zone tragen keine — dort setzt der Main
@@ -4034,6 +4099,7 @@ function fernAuftrag(msg) {
                 hoehen[j * msg.nx + i] = G.hoehe(state, msg.x0 + i * msg.d, msg.z0 + j * msg.d, false);
         return { antwort: { hoehen }, transfer: [hoehen.buffer] };
     }
+    if (msg.art === "kamm") return kammKrone(msg);
     fernLaub = msg.laub;
     fernWasser = msg.wasser;
     const p = msg.punkte;

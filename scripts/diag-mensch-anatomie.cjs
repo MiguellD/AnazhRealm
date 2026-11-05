@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // diag-mensch-anatomie.cjs — DIE ANATOMIE-LINSE DES MENSCHEN („der Mensch nah: Hände, Gesicht, Augen")
 // (npm run gate:mensch-anatomie). Sie misst das GESETZ, aus dem Lab und Welt den Menschen bauen — koerper-core
-// bauMensch + morphAuf mit den Start-Dials (START_PARAMS), three r128 im node-vm wie der Foundry-Worker —, die Arme
+// bauMensch + morphAuf mit den Start-Dials (START_PARAMS), three r184 im node-vm wie der Foundry-Worker —, die Arme
 // gerade hängend (Arm-Gelenke auf 0 gedreht), normiert auf die Körperhöhe Hk, gegen die Anthropometrie-Bänder des
 // Gesetzbuchs (koerper-core MENSCH_SOLL, erwachsener Mann 1,80 m):
 //   handL · handB · handgelenk (Hand-Länge, Mittelhand-Breite, Handgelenk-Breite)
@@ -12,9 +12,9 @@
 //   doppelt → augenAbstand rot. Die Linse feuert, sonst ist sie vakuös.
 //   node scripts/diag-mensch-anatomie.cjs [--selftest]
 "use strict";
-const { urteilEnde, fadenScope, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { urteilEnde, fadenScope, SELBSTTEST, OFEN_KERNE } = require("./lib/welt-boot.cjs");
 
-const ladeWelt = () => fadenScope(["worlds/terrain/lib/three-r128.min.js", "koerper-core.js"]);
+const ladeWelt = () => fadenScope(["koerper-core.js"]);
 
 // Der Mensch aus dem Gesetz (THREE-Fabrik wie der Bäcker; die Hornhaut ist im Bäcker keine Fläche) — mit den Start-Dials oder
 // den Dials eines Bewohner-Typs (mensch.K4: die Probe der Menge, `kreatur-proben`).
@@ -144,14 +144,7 @@ function messe(sb, verzerre, dials) {
 // Mund, Ohr) misst das Gesetz (bauMensch, wie oben); was erst der Guss zeigt — die Hornhaut vor der Haut, die Töne von
 // Lippe, Höhle und Haar, die Dreiecke — misst der OFEN L0 (foundry-core BAKERS_BY_KIND.koerper, wie Welt und Labor ihn
 // zeichnen). Farben in CIELAB (D65) aus den linearen Stoff- und Vertex-Farben.
-const OFEN_QUELLEN = [
-    "worlds/terrain/lib/three-r128.min.js",
-    "phyto-core.js",
-    "koerper-core.js",
-    "tetrapoda-core.js",
-    "foundry-core.js",
-];
-const ladeOfen = () => fadenScope(OFEN_QUELLEN);
+const ladeOfen = () => fadenScope(OFEN_KERNE);
 // CIELAB, sRGB und Luma: die EINEN der Linsen (abnahme-urteil)
 const { cielab, srgbLin, luma709 } = require("./lib/abnahme-urteil.cjs");
 const lab = (r, g, b) => cielab([r, g, b]);

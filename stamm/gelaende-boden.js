@@ -2131,8 +2131,8 @@ class AnazhRealm_gelaende_boden {
     _voxelGradientNormals(positions, sample, step, preGrid = null) {
         const normals = new Float32Array(positions.length);
         // NIE up-Normalen in die Geometrie backen: die Geometrie trägt die echte Oberflächen-Normale (der Boden-Stoff
-        // liest sie als `normalWorldGeometry` — das Bump-Tor nach Hangneigung, die Mischung zur Senkrechten), das
-        // Shading flacht im Material-normalNode (TERRAIN_NORMAL_FLATTEN). Der Schatten-Versatz liest NICHT die
+        // liest sie als `normalWorldGeometry` — das Bump-Tor nach Hangneigung und die Licht-Normale selbst, ferne.K4). Der
+        // Schatten-Versatz liest NICHT die
         // Geometrie, sondern die End-Normale dieses normalNode (r184 `normalWorld`).
         const eps = step * 1.5;
         // Schneller Trilinear-Sampler aus dem Grid. Wenn preGrid==null oder

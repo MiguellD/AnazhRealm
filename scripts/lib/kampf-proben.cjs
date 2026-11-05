@@ -734,7 +734,7 @@ async function WELLE_L(ort) {
             try {
                 rueck = r._kreaturTrefferGlieder(frisch);
             } catch (e) {
-                bruch = String((e && e.message) || e);
+                bruch = fehlerText(e);
             } finally {
                 globalThis.__tetrapodaCore = tcEcht;
             }
@@ -1825,7 +1825,7 @@ async function WELLE_L(ort) {
                     try {
                         f();
                     } catch (e) {
-                        fehler = String((e && e.message) || e).slice(0, 120);
+                        fehler = fehlerText(e).slice(0, 120);
                     }
                     const b = lage();
                     schritte.push({

@@ -44,7 +44,7 @@
 // Port über REGLER_WIRKT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4561; der Stamm des
 // Ofen-Kanals über REGLER_WIRKT_OFEN_PORT, Standard Port + 1.
 "use strict";
-const { statikServer, starteBrowser, ROOT, hauptLauf, SELBSTTEST, path, stammLib, fadenScope, jsonLesen } = require("./lib/welt-boot.cjs");
+const { statikServer, nullSeite, ROOT, hauptLauf, SELBSTTEST, path, stammLib, fadenScope, jsonLesen } = require("./lib/welt-boot.cjs");
 const { runWithWorker, bauBild, bauAbdruck, BAU_BILD_QUELLE } = require("./lib/asset-worker-harness.cjs");
 // DIE BILD-SCHWELLE (studios.K1, das Schlupfloch „0,1 mm am Hash"): ein Regler wirkt, wo sein Rand das Bild des Baus
 // (`bauBild`, die Vorschau-Pose) an mindestens 1 % der Gestalt-Pixel um mehr als 18 Luma bewegt — ein Hash allein zählt nie.
@@ -103,13 +103,8 @@ const OFEN_PORT = Number(process.env.REGLER_WIRKT_OFEN_PORT || PORT + 1);
 async function imStamm(cb) {
     const server = statikServer();
     await server.lausche(OFEN_PORT);
-    const browser = await starteBrowser({ art: "null", frist: 300000 });
+    const { browser, page } = await nullSeite({ frist: 300000 });
     try {
-        const page = await browser.newPage();
-        await page.evaluateOnNewDocument(() => {
-            if (window.top !== window) return;
-            window.__anazhHeadlessNullRenderer = true;
-        });
         await server.zeige(page, 60000);
         // Warm: die Heimat steht, die Foundry ist bereit, das Buch (Rezepte + PARAMS) ist da, die Kerne der Öfen sind
         // geladen und der Boot-Prefetch der Gattungen ist durch.
@@ -120,8 +115,7 @@ async function imStamm(cb) {
             },
             { timeout: 240000, polling: 250 }
         );
-        const out = await cb(page);
-        return out;
+        return await cb(page);
     } finally {
         await browser.close();
         server.close();
@@ -522,8 +516,10 @@ async function stufenMessen(h, opts) {
     for (const art of Object.keys(pbk).sort()) {
         const B = budgetVonArt(rc, art);
         if (!B || (o.ohneArten || []).includes(art) || (o.nurArt && art !== o.nurArt)) continue;
+        // eine Karten-Stufe (`karte: true`, die Fernform des Baums) zeichnet der Wirt als Karte aus seiner Höhen-Stufe — ihr Bau
+        // über die Brücke ist Back-Quelle, nie Zeichnung; die Wand des Asset-Vertrags richtet sie nie nach Dreiecken (dasselbe Gesetz)
         const stufen = Object.keys(B)
-            .filter((k) => /^\d+$/.test(k))
+            .filter((k) => /^\d+$/.test(k) && !B[k].karte)
             .map(Number);
         const lod = Math.min(...stufen);
         const s = B[lod].schatten;

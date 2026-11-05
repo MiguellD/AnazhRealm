@@ -144,8 +144,8 @@ function urteil(b) {
     // (j) DAS LICHT DES AUGES (K02a, Auge 11): in der Höhle trägt die Fläche ihre wahre Normale und das Auge sein Licht
     if (!c.normaleHoehle)
         v.push(
-            "CODE: `_buildPbrNodeMaterial` flacht die Normale auch in der Höhle (die 2.5D-Lichtung ohne `aHimmel`) — jede Decke " +
-                "und Wand liegt als Wiese im Licht von oben, kein Licht von unten erreicht sie"
+            "CODE: `_buildPbrNodeMaterial` flacht die Normale des Bodens (eine 2.5D-Lichtung zur Senkrechten) — jede Decke " +
+                "und Wand liegt als Wiese im Licht von oben, kein Licht von unten erreicht sie, kein Hang nimmt sein N·L"
         );
     if (!c.augenTerm)
         v.push(
@@ -1388,7 +1388,7 @@ const server = statikServer();
             }
             // ── (f) DER BODEN-STOFF AM GRAPH (D3c: der gebaute Knoten-Graph und der Ruf, nie der Quelltext): die Himmels-Sicht
             // reist in der vierten Komponente des Normal-Ziels (K51-2, `_bodenStufenKnoten`), der Chunk-Stoff legt sie als
-            // Verdeckung; die 2.5D-Lichtung und der Licht-Pool lesen sie nur mit `himmelsSicht` (in der Höhle die wahre Normale)
+            // Verdeckung; der Licht-Pool liest sie nur mit `himmelsSicht` (die Normale ist überall die wahre, ferne.K4)
             const haelt = (w, n) => {
                 const seen = new Set();
                 const geh = (x) => {
@@ -1426,7 +1426,8 @@ const server = statikServer();
                     haelt(r._getVoxelChunkMaterial().aoNode, kh) &&
                     haelt(m1.aoNode, kh) &&
                     !haelt(m0.aoNode, kh);
-                aus.code.normaleHoehle = haelt(m1.normalNode, kh) && !haelt(m0.normalNode, kh);
+                // die wahre Normale (ferne.K4, w10-ferne): der normalNode trägt die Geometrie-Normale der Stufen, keine 2.5D-Lichtung
+                aus.code.normaleHoehle = haelt(m0.normalNode, r._bodenStufenKnoten().normalWelt);
                 // der Boden reicht dem Pool seine Himmels-Sicht, jeder Himmels-Ersatz hängt im gebauten Term; im selben Ruf: der
                 // Pool ruft die EINE BRDF, und die Bedingung jedes Zweigs (`select`) liest normalView/positionView (r184 baut
                 // das Emissiv VOR der Lichtung)
@@ -1479,12 +1480,7 @@ const server = statikServer();
             aus.code.feinEigenHash = !__fehlt(r._terrainGeologyAlbedo, /43758|fract\([^;]*\bsin\(/);
             aus.code.feinRechenwerk = (() => {
                 const GKc = globalThis.__gelaendeCore;
-                if (
-                    !GKc ||
-                    typeof GKc.felsFein !== "function" ||
-                    typeof AnazhRealm._felsRechenwerkTSL !== "function"
-                )
-                    return null;
+                if (!GKc) return null;
                 const V = (x) => (typeof x === "number" ? x : x.v);
                 // die Knoten-Methoden lesen den Wert beim Aufruf (`this.v`): eine Variable (`toVar`, K17-3 `fest`/`falte`)
                 // ändert ihn mit `assign`, ein Lese-Glied eines vec4 (`.x` … `.w`) liest den Wert seiner Variable jetzt

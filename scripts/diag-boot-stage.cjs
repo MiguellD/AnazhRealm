@@ -39,7 +39,7 @@
 // die Platte trug, ist ROT beim Namen, ebenso ein Leser, der noch von der Platte kommt (`wechselUrteil`; --selftest füttert
 // es mit Bruch-Daten).
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, sleep, hauptLauf, nullSeite, urteilEnde, pngDatei, path, fs, os, SELBSTTEST, argOpt: OPT, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, sleep, hauptLauf, nullSeite, urteilEnde, pngDatei, path, fs, SELBSTTEST, argOpt: OPT, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const HL = require("./lib/haenger-linse.cjs");
 
 const PORT = Number(process.env.BOOT_STAGE_PORT || 4406);
@@ -72,8 +72,7 @@ async function SCHUSS(W, H, mut, r = window.anazhRealm, cam = r.state.camera) {
     window.__buehne();
     let auf = null;
     try {
-        for (let i = 0; i < 2; i++)
-            (r._schattenAlleNeu(), (auf = await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })));
+        for (let i = 0; i < 2; i++) auf = await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" });
     } finally {
         cam.far = far;
         cam.updateProjectionMatrix();
@@ -207,12 +206,13 @@ async function kaltLauf() {
     // und der Lauf nennt seinen Adapter, damit keine Kalt-Zeile ein swiftshader-Ergebnis als Radeon ausgibt
     await server.lausche(PORT);
     // DIE ZWEIT-ZEILE (1310-16): `--profil <ordner>` hält das Profil (die Foundry-Platte, der HTTP-Cache) über den Lauf hinaus —
-    // der erste Lauf in einem neuen Ordner ist kalt, jeder weitere ein Zweit-Boot; ohne die Option ein leeres Wegwerf-Profil.
+    // der erste Lauf in einem neuen Ordner ist kalt, jeder weitere ein Zweit-Boot; ohne die Option das leere Scratch-Profil des
+    // EINEN Starters (welt-boot `startePuppeteer`: es stirbt mit dem Browser, auch beim Abbruch).
     // Mit ihr wartet die Zeile auf die Ruhe der Foundry: der Erst-Boot füllt die Platte ganz, der Zweit-Boot zählt jede Lieferung.
     const profilBenannt = OPT("--profil");
     const zweit = !!(profilBenannt && fs.existsSync(profilBenannt));
-    const profil = profilBenannt ? path.resolve(profilBenannt) : fs.mkdtempSync(path.join(os.tmpdir(), "kalt-zeile-"));
-    fs.mkdirSync(profil, { recursive: true });
+    const profil = profilBenannt && path.resolve(profilBenannt);
+    if (profil) fs.mkdirSync(profil, { recursive: true });
     const browser = await starteBrowser({
         art: ECHT ? "echt" : "linse",
         headless: !ECHT,
@@ -294,13 +294,12 @@ async function kaltLauf() {
             lieferung: r._foundry.lieferung,
         });
     });
-    const liste = path.join(profil, "lieferung.json");
+    const liste = path.join(browser.profil || profil, "lieferung.json");
     const wechsel = KERN && wechselUrteil(jsonLesen(liste), out.lieferung.liste, KERN.id);
     if (profilBenannt && !KERN) fs.writeFileSync(liste, JSON.stringify(out.lieferung.liste));
     Object.assign(out, { tK, druecke, offen, bild, zweit });
     await browser.close();
     server.close();
-    if (!profilBenannt) fs.rmSync(profil, { recursive: true, force: true });
     // DIE PHASEN der Ankunft (Seiten-Uhr): das Laden (HTML, Skripte, DOM), das Buch, je Term des ersten Weltbilds sein Schluss
     // (die erste Probe nach seiner letzten), der Ring an seinem Ziel, das erste Lade-Bild, das Weltbild, die Kontrolle
     const P0 = out.proben.filter((p) => p.t <= out.weltbildDa);

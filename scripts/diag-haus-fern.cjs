@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // diag-haus-fern.cjs — DIE LINSE DES HAUS-FERNKÖRPERS (S3 haus, Plan §3.3 1a; gate:haus-fern, in `npm run check`).
 // Die Linse misst je Kultur (32) × Samen (1, 7) und je Ausstattung (3 × ihre Gestalten) direkt am Gesetzbuch (Node,
-// worlds/terrain/lib/three-r128.min.js + fachwerk-core.js):
+// die Engine des Foundry-Fadens three r184 (welt-boot `ENGINE_THREE`) + fachwerk-core.js):
 //
 //   W  WURF-DECKUNG: der Werfer jeder gezeigten Stufe (B2c `schatten`) gegen die L0 — IoU der Schatten-Fußabdrücke
 //      (Projektion entlang der Sonne auf y = 0, Raster 10 cm) unter drei Sonnen (25° · 40° · 60° Höhe, drei Azimute):

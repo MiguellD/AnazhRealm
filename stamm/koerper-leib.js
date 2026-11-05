@@ -289,14 +289,8 @@ class AnazhRealm_koerper_leib {
             this._bruchMelden(`LEIB-VORWÄRMEN: kein Leib für „${name}"`);
             return false;
         }
-        leib.name = "vorwaermen:" + name;
-        leib.scale.setScalar(0);
-        leib.traverse((o) => {
-            o.frustumCulled = false;
-            if (o.isMesh) o.__vorbauGast = true; // er baut ohne Draw, höchstens einen Bau je Bild, nie mitten in der Eingabe
-        });
-        st.scene.add(leib);
-        Object.assign(V, { leib, takte: 0 });
+        // er baut ohne Draw, höchstens einen Bau je Bild, nie mitten in der Eingabe — als Gast ohne Raum (`_vorbauGast`)
+        Object.assign(V, { leib: this._vorbauGast(leib, "vorwaermen:" + name), takte: 0 });
         return false;
     }
 
