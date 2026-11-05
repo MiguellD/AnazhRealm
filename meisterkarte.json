@@ -1,13 +1,13 @@
 {
   "stand": "2026-11-05",
-  "kopf": "c8292dd3",
-  "version": "V18.546.187",
+  "kopf": "bf55b24a",
+  "version": "V18.546.188",
   "skala": "2.0",
   "summe": 202,
   "max": 330,
   "maschine": {
-    "kopf": "c8292dd3",
-    "zeit": "2026-11-05T13:30:37.157Z",
+    "kopf": "bf55b24a",
+    "zeit": "2026-11-05T14:24:20.730Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -245,7 +245,7 @@
           {
             "station": "ankunft.K1#1",
             "geraet": "radeon",
-            "zeile": "ROT: t(Kontrolle) kalt 13.24 s von außen (Eigenmeldung 12.22 s), Bild 0.02 % Lücke bis zur Ruhe, offen im Bild nichts (Soll ≤ 5 s an dieser Karte, ein Kalt-Boot) · [linse-gpu] amd/rdna-3 an c8292dd3"
+            "zeile": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs)"
           },
           {
             "station": "ankunft.K1#1",
@@ -1104,7 +1104,7 @@
           "punkte": 1,
           "staffel": "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose · 2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte",
           "messung": "Zeitraffer-Linse an der Mess-Wiese: werkbank bild mit Saison-Phase 0,375 / 0,625 / 0,875 über das Spieler-Wort (steht seit wetter-saat, 428fb6fe). Schnee-Decke zählt Wetter K4, Wachstum Stoffe K5, die Spur der Tat Feld K4.",
-          "beleg": "Maschine: Krone sommer 191410 px · winter 20532 px → Winter 0.107 × Sommer an c8292dd3 radeon · gehalten: Krone sommer 193187 px · winter 21705 px → Winter 0.112 × Sommer an b4bcf19c gtx · Krone sommer 191410 px · winter 20533 px · fruehling 148957 px → Winter 0.107 × Sommer, Wiese LAI 2–10 m sommer 2.46 · winter 1.05 · fruehling 1.89 → Winter 0.426 × Sommer an c8292dd3 radeon — offen: vegetation.K5#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: gehalten: Krone sommer 191410 px · winter 20532 px → Winter 0.107 × Sommer an c8292dd3 radeon · gehalten: Krone sommer 193187 px · winter 21705 px → Winter 0.112 × Sommer an b4bcf19c gtx · gehalten: Krone sommer 191410 px · winter 20533 px · fruehling 148957 px → Winter 0.107 × Sommer, Wiese LAI 2–10 m sommer 2.46 · winter 1.05 · fruehling 1.89 → Winter 0.426 × Sommer an c8292dd3 radeon — offen: vegetation.K5#2 gtx: Station seit der Messung geändert — zuletzt an c8292dd3: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /bild 10.8 s)",
           "schlupfloch": "Den Winter grau-braun zu färben (heute) erfüllt die Farbe, nicht die Gestalt: gezählt wird die Deckung (Pixel-Anteil der Krone).",
           "aenderung": "Wachstum und Spur wanderten in ihre Heime (Stoffe K5, Feld K4; V-Wachstum).",
           "maschine": true
@@ -1183,7 +1183,7 @@
           "punkte": 1,
           "staffel": "1 = (a) Kohäsion an einem Gerät · 2 = (a)–(d) auf beiden Geräten mit der Bild-Serie „Herde am Hang“",
           "messung": "Band herde in `scripts/lib/kreatur-proben.cjs` mit dem echten Wurf `_kreaturWurf` (scheue Hirsche, Wurf 3–7), wandernd UND fliehend: (a) Kohäsion beim Wandern ≥ 0,9, auf der Flucht ≥ 0,8; (b) Ausrichtung Φ = |Σv̂|/N ≥ 0,8 über laufende Glieder (|v| > 1 m/s); (c) der letzte Flüchter läuft ≤ 1,0 s nach dem ersten; (d) die Verbands-ID hält 600 s, fremde Verbände verschmelzen nie. Spielgang-Station Herde am Hang: Ego auf 40 m, die Herde flieht als EIN Pulk im Bild.",
-          "beleg": "Maschine: Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.323) an b62542c9 headless — offen: tiere.K1#2 radeon: Station seit der Messung geändert · tiere.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/werkbank.cjs)",
+          "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.323) an b62542c9 headless — offen: tiere.K1#2 radeon: Station seit der Messung geändert · tiere.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/werkbank.cjs)",
           "schlupfloch": "Glieder, die an einem Punkt kleben, ergeben Kohäsion 1 und ein triviales Φ: das Band ist ROT bei vakuöser Probe (Glieder ≥ 3, Fluchtanteil ≥ 0,1), dazu Mindestabstand, Fluchtweg ≥ 30 m und Φ nur über laufende Tiere.",
           "maschine": true
         },
@@ -1192,7 +1192,7 @@
           "punkte": 2,
           "staffel": "1 = Hetze und Riss mit HP aus dem Leib-Gesetz, Quote im Band über ≥ 10 Seeds · 2 = dazu Fressen ≥ 60 s, der Kadaver lockt Fuchs oder Bär ≤ 120 s, Station Wolfsrevier im Bild beider Geräte",
           "messung": "Jagd-Band C mit echter HP aus dem Leib (Masse), 20 Seeds: 4 Wölfe gegen den erwachsenen Hirsch 20–40 %, 1 Wolf < 10 %, gegen ein Kitz > 60 % (MacNulty); der Kadaver wird Geruchs-Quelle (`_scentAt`).",
-          "beleg": "Maschine: Riss je Jagd einWolf 0/20 (HP 168) · rudel 17/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 43.5 s an b62542c9 headless · gehalten: Fressen 99 s nach dem Riss bei 44.6 s, am Aas fuchs 19.7 s, baer 16.5 s · Wolfsrevier wald, Riss 26.7 s, 3 fressen: tier:wolf 10616 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.21 m · Luma 54.6 σ 32.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.179 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 2674ff9a radeon · gehalten: Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 13.6 s, 3 fressen: tier:wolf 12459 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.18 m · Luma 89.2 σ 39.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an 715754fc gtx",
+          "beleg": "Maschine: gehalten: Riss je Jagd einWolf 0/20 (HP 168) · rudel 17/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 43.5 s an b62542c9 headless · gehalten: Fressen 99 s nach dem Riss bei 44.6 s, am Aas fuchs 19.7 s, baer 16.5 s · Wolfsrevier wald, Riss 26.7 s, 3 fressen: tier:wolf 10616 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.21 m · Luma 54.6 σ 32.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.179 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 2674ff9a radeon · gehalten: Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 13.6 s, 3 fressen: tier:wolf 12459 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.18 m · Luma 89.2 σ 39.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an 715754fc gtx",
           "schlupfloch": "Mit hp = 1e6 zählte ein Biss als Jagd; mit HP 1 wäre die Quote 100 %: die Quote hat ein Band nach oben UND unten, die HP kommt aus dem Leib, und der Kadaver muss gelesen werden (Ankunft des Fuchses).",
           "aenderung": "Die 1 der Synthese stand auf einer Pose ohne Spieler (hp 1e6) → 0 (B27).",
           "maschine": true
@@ -1202,7 +1202,7 @@
           "punkte": 1,
           "staffel": "1 = der Fuß steht (Schlupf ≤ 0,05) · 2 = Fußfolge aus Fr für alle 4 Gattungen, Tastgrad im Band, Querhang 20°, Labor = Welt über die Phasen, Third-Bild aus 10 m",
           "messung": "gate:tier-gang (Schlupf des Stand-Fußes ≤ 0,05; Gangart und Tastgrad je Gattung bei v̂ 0,3 · 0,74 · 1,2 · 3,5 in Welt UND Labor, REF Schritt 0,6–0,7, Trab 0,4–0,6, Galopp 0,25–0,35; Welt − Labor ≤ 0,05 Zyklus) + gate:kreatur-takt Teil querhang (Hang 20,8° und Rampe 29,9°: Bein-Lot ≤ 10°, Schlupf ≤ 0,05); Schritt → Trab bei Fr ≈ 0,5, Trab → Galopp bei 2–3; Kreuz-Probe Stimmung × Tempo; das Gang-Bild aus 10 m (`werkbank bild … --ziel gang` mit der Bühne `gang-buehne.js`, je Tier drei Füße am Boden).",
-          "beleg": "Maschine: Schlupf des Stand-Fußes max 0.011 in 25 Läufen als Leib (4 Gattungen), max 0.036 in 16 im Satz (4 Gattungen) an b62542c9 headless · gehalten: Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2800/1122/6513/4028 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.3 m · Luma 71.8 σ 35.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.185 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 8ef49bef radeon — offen: tiere.K3#2 gtx: Linse seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs) — zuletzt an 8ef49bef: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 72.5 σ 35 schwarz 0.0 % weiß 0.0 % · Stand 18.546.185 ",
+          "beleg": "Maschine: gehalten: Schlupf des Stand-Fußes max 0.011 in 25 Läufen als Leib (4 Gattungen), max 0.036 in 16 im Satz (4 Gattungen) an b62542c9 headless · gehalten: Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2800/1122/6513/4028 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.3 m · Luma 71.8 σ 35.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.185 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 8ef49bef radeon — offen: tiere.K3#2 gtx: Linse seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs) — zuletzt an 8ef49bef: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 72.5 σ 35 schwarz 0.0 % weiß 0.0 % · Stand 18.546.185 ",
           "schlupfloch": "Den Galopp an die Stimmung flee zu hängen bestünde beim Flucht-Tempo zufällig: die Kreuz-Probe Stimmung × Tempo zeigt, dass nur Fr entscheidet; Labor = Welt wird über die Phasen gemessen, nie über den Code-Text; der Tastgrad ist ein Band nach oben UND unten je Gangart, nie eine Zeile im Gesetz.",
           "aenderung": "Die 1 stand auf dem Schlupf; geschnitten 1 → 2 (tier-gang-k3, e5003509): der Tastgrad kommt aus dem Gesetz, beide Geräte im Bild.; nach R6 (tier-satz, `_tierSatzGang`) 23.10. 2 → 1.",
           "maschine": true
@@ -1212,7 +1212,7 @@
           "punkte": 2,
           "staffel": "1 = ≥ 0,9 der Geburten in der Boden-Klasse der Gattung, mit Gegenprobe bei anderem Seed · 2 = dazu das Tages-Budget je Gattung ±20 % am Ethogramm, Trinken aus Durst (Mutante „Durst aus“ → 0), am Fluss Bären-Sichtung ≥ 2× wahrscheinlicher",
           "messung": "Familie diag-kreatur-leben: 200 Würfe über das Gelände (Landform aus dem Gelände-Kern: Hirsch Wiese und Waldrand, Wolf Wald, Bär Fluss und Hang); Zeitraffer über 24 Spielstunden (die Uhr ist Spieler-Wort).",
-          "beleg": "Maschine: im Lebensraum 463/463 = 1 (Saat anazh-realm-seed, {\"fox\":35,\"deer\":261,\"bear\":29,\"wolf\":138}) · Gegenprobe 431/431 = 1 (Saat lebensraum-gegen) an b62542c9 headless · gehalten: Budget deer ruhen 0.409/0.4 · deer nahrung 0.485/0.5 · deer ziehen 0.106/0.1 · bear ruhen 0.446/0.45 · bear nahrung 0.409/0.4 · bear ziehen 0.144/0.15 · fox ruhen 0.602/0.6 · fox nahrung 0/0 · fox ziehen 0.398/0.4 · wolf ruhen 0.601/0.6 · wolf nahrung 0/0 · wolf ziehen 0.399/0.4 · Trünke 4,4,4,4,4,4,4,4,4,4,4,4 (am Wasser 48, Durst aus 0) · Ruhe bewegt 2693/219886 · Bär am Fluss 24/24 Würfe, abseits 40/368 an b62542c9 headless",
+          "beleg": "Maschine: gehalten: im Lebensraum 463/463 = 1 (Saat anazh-realm-seed, {\"fox\":35,\"deer\":261,\"bear\":29,\"wolf\":138}) · Gegenprobe 431/431 = 1 (Saat lebensraum-gegen) an b62542c9 headless · gehalten: Budget deer ruhen 0.409/0.4 · deer nahrung 0.485/0.5 · deer ziehen 0.106/0.1 · bear ruhen 0.446/0.45 · bear nahrung 0.409/0.4 · bear ziehen 0.144/0.15 · fox ruhen 0.602/0.6 · fox nahrung 0/0 · fox ziehen 0.398/0.4 · wolf ruhen 0.601/0.6 · wolf nahrung 0/0 · wolf ziehen 0.399/0.4 · Trünke 4,4,4,4,4,4,4,4,4,4,4,4 (am Wasser 48, Durst aus 0) · Ruhe bewegt 2693/219886 · Bär am Fluss 24/24 Würfe, abseits 40/368 an b62542c9 headless",
           "schlupfloch": "Arten von Hand an Koordinaten zu setzen oder einen Zeitplan zu skripten erfüllte Anteile ohne Gesetz: Seed-Wechsel und Bedürfnis-Mutante beweisen das Lesen.",
           "aenderung": "Staffel neu (B28).",
           "maschine": true
@@ -1284,7 +1284,7 @@
           "punkte": 2,
           "staffel": "1 = jede Art bleibt in [⅓×, 3×] des Starts, ohne Aussterben und ohne Ausbruch, über ≥ 8 Seeds · 2 = die drei Richtungen (Wölfe weg → Hirsche +≥ 30 % und Jungwuchs −≥ 20 %; Hirsche bejagt → Wölfe nehmen ab) mit Konfidenz-Intervall, das 0 nicht schneidet; die Mutante „Fraß-Leser aus“ ist ROT",
           "messung": "Zeitraffer-Linse (Familie diag-kreatur-leben), 6 Spielstunden je Szenario in einem Tal mit echten Regeln, ≥ 8 Seeds je Szenario, deterministisch je Seed.",
-          "beleg": "Maschine: 8 Saaten · 29 ansässige Bestände · Stunde 8 gegen 2: 0.34–2.00× · außer Band 0 · Takte an der Kappe 0 an b62542c9 headless · 8 Saaten · hirsche 0.515 [0.343, 0.746] · jungwuchs -0.295 [-0.432, -0.193] · woelfe -0.486 [-0.652, -0.25] · mutante 0.562 [0.441, 0.634] · Mutante ROT an b62542c9 headless",
+          "beleg": "Maschine: gehalten: 8 Saaten · 29 ansässige Bestände · Stunde 8 gegen 2: 0.34–2.00× · außer Band 0 · Takte an der Kappe 0 an b62542c9 headless · gehalten: 8 Saaten · hirsche 0.515 [0.343, 0.746] · jungwuchs -0.295 [-0.432, -0.193] · woelfe -0.486 [-0.652, -0.25] · mutante 0.562 [0.441, 0.634] · Mutante ROT an b62542c9 headless",
           "schlupfloch": "Ein Skript-Zähler „Wölfe < 1 → Hirsche++“ täuscht die Kaskade vor: die Mutanten-Probe verlangt echte Leser. Bei 20 Tieren wären +30 % zwei Tiere — Rauschen: darum ≥ 8 Seeds und ein Intervall (B33).",
           "aenderung": "Aus Leben-Feld K3; unentscheidbar, solange der Deckel den Bestand setzt (B33) — K2 kommt zuerst.",
           "maschine": true
@@ -1294,7 +1294,7 @@
           "punkte": 2,
           "staffel": "1 = Geburt und Tod folgen der Nahrung an einem Ort (Mutante Nahrung halbiert → Bestand fällt) · 2 = überall; fern als Zahl, nah als Körper; die Kappe am Schirm ändert nur, wer gezeichnet wird, nie den Bestand; im Profi-Band",
           "messung": "werkbank eval über Spielzeit-Sprünge, Gegenlauf mit halbierter Nahrung; Kosten im Zerleger (updateCreatures) in derselben Sitzung.",
-          "beleg": "Maschine: 8 Saaten · Grundbestand min 7.79 · halbe Nahrung -0.327 [-0.464, -0.19] · 17591 Hungertode, 17591 die Ältesten · Takte an der Kappe 0 an b62542c9 headless · 8 Saaten · Kappe halbiert: 0 von 17280 Takten andere Tiere in 4 nahen Regionen, Leiber 20/10 bei Bestand 34.4 · halbe Nahrung senkt 8 von 8 Regionen (4 fern, Effekt -0.307 … -0.406) · Takt p95 3.6 ms an b62542c9 headless",
+          "beleg": "Maschine: gehalten: 8 Saaten · Grundbestand min 7.79 · halbe Nahrung -0.327 [-0.464, -0.19] · 17591 Hungertode, 17591 die Ältesten · Takte an der Kappe 0 an b62542c9 headless · gehalten: 8 Saaten · Kappe halbiert: 0 von 17280 Takten andere Tiere in 4 nahen Regionen, Leiber 20/10 bei Bestand 34.4 · halbe Nahrung senkt 8 von 8 Regionen (4 fern, Effekt -0.307 … -0.406) · Takt p95 3.6 ms an b62542c9 headless",
           "schlupfloch": "Den Deckel zu heben (20 → 150) bläht nur die Zahl und belastet E: die Mutante verlangt das Gesetz (V32).",
           "aenderung": "Neu als EIN Bestands-Gesetz statt zweier Bauten (Tiere H4 hob den Deckel, Leben-Feld H3 ersetzte ihn; V32).",
           "maschine": true
@@ -1304,7 +1304,7 @@
           "punkte": 2,
           "staffel": "1 = ein Wesen, das der Spieler schlug, hält bei der nächsten Begegnung Abstand (Median ≥ 2× ein Kontroll-Wesen), ein gefüttertes nähert sich, ohne Modell, über Speichern · 2 = dazu deponiert ein Riss Furcht am Ort, und die Herde meidet die Zelle (Aufenthalt −50 % gegen den Gegenlauf)",
           "messung": "werkbank eval am Spieler-Weg mit echten Verben; Gegenlauf mit gelöschtem Gedächtnis bzw. Feld-Furcht 0.",
-          "beleg": "Maschine: geschlagen 96.95 m gegen Kontrolle 36.22 m · gefüttert 1.77 m, selbst 6.21 m näher · Gedächtnis nach dem Laden 1,1,1,1 / 2,1,1,1 · Riss-Zelle Aufenthalt 0.025 gegen Gegenlauf 1 an b62542c9 headless · geschlagen 96.95 m gegen Kontrolle 36.22 m · gefüttert 1.77 m, selbst 6.21 m näher · Gedächtnis nach dem Laden 1,1,1,1 / 2,1,1,1 · Riss-Zelle Aufenthalt 0.025 gegen Gegenlauf 1 an b62542c9 headless",
+          "beleg": "Maschine: gehalten: geschlagen 96.95 m gegen Kontrolle 36.22 m · gefüttert 1.77 m, selbst 6.21 m näher · Gedächtnis nach dem Laden 1,1,1,1 / 2,1,1,1 · Riss-Zelle Aufenthalt 0.025 gegen Gegenlauf 1 an b62542c9 headless · gehalten: geschlagen 96.95 m gegen Kontrolle 36.22 m · gefüttert 1.77 m, selbst 6.21 m näher · Gedächtnis nach dem Laden 1,1,1,1 / 2,1,1,1 · Riss-Zelle Aufenthalt 0.025 gegen Gegenlauf 1 an b62542c9 headless",
           "schlupfloch": "Erinnerungen, die nur UI und Prompt lesen, zählen nicht: Konsum heißt Abstand und Weg in der Welt.",
           "aenderung": "Aus KI K3(a) und Leben-Feld (Furcht) zusammengeführt — zwei geplante Bauten für dieselbe Furcht (V32).",
           "maschine": true
@@ -1314,7 +1314,7 @@
           "punkte": 2,
           "staffel": "1 = im Wolfsrevier wird der Spieler in 10 Spielminuten ≥ 1× gepirscht und umstellt (im Bild) · 2 = seine Emotion-Achsen antworten (Furcht beim Umstellen, Triumph nach dem Fall des Jägers) gegen einen Gegenlauf, beide Geräte",
           "messung": "Spielgang-Station Wolfsrevier, Ego und Third; die Emotion aus der Situation (`_playerSituationWohl`), nie gestempelt.",
-          "beleg": "Maschine: 6 Wölfe aus dem Wurf, der Spieler 45 m im Revier: Pirsch 0 s · umstellt 17.9 s · Lücke beim ersten Biss 86° · Pirsch im Frieden / am leeren Anker 0 / 0 Takte (Soll ≤ 600 s Kreatur-Uhr, 0 / 0) an b62542c9 headless · gehalten: first GRÜN: Wurf 6 Wölfe, umstellt 19.05 s, Furcht chaos 1 (Gegenlauf 0), 4 Jäger fallen, Triumph joy+hope 0.357 (Gegenlauf 0) an 71ef6a0d radeon · gehalten: first GRÜN: Wurf 6 Wölfe, umstellt 16.85 s, Furcht chaos 0.908 (Gegenlauf 0), 4 Jäger fallen, Triumph joy+hope 0.42 (Gegenlauf 0) an eeb5d2bf gtx",
+          "beleg": "Maschine: gehalten: 6 Wölfe aus dem Wurf, der Spieler 45 m im Revier: Pirsch 0 s · umstellt 17.9 s · Lücke beim ersten Biss 86° · Pirsch im Frieden / am leeren Anker 0 / 0 Takte (Soll ≤ 600 s Kreatur-Uhr, 0 / 0) an b62542c9 headless · gehalten: first GRÜN: Wurf 6 Wölfe, umstellt 19.05 s, Furcht chaos 1 (Gegenlauf 0), 4 Jäger fallen, Triumph joy+hope 0.357 (Gegenlauf 0) an 71ef6a0d radeon · gehalten: first GRÜN: Wurf 6 Wölfe, umstellt 16.85 s, Furcht chaos 0.908 (Gegenlauf 0), 4 Jäger fallen, Triumph joy+hope 0.42 (Gegenlauf 0) an eeb5d2bf gtx",
           "schlupfloch": "Einen Affekt zu stempeln (fear setzen) täuscht: gelesen wird δ aus der Situation.",
           "aenderung": "Neu (V13).",
           "maschine": true
@@ -1324,7 +1324,7 @@
           "punkte": 2,
           "staffel": "1 = ein gebundenes Tier folgt ≥ 10 min über Hindernisse · 2 = die Ansteckung verschiebt die Stimmung des Spielers messbar gegen einen Gegenlauf mit bond = 0, und die Bindung übersteht den Reload",
           "messung": "Spielgang über 10 Spielminuten mit einem gebundenen Tier; Mutation bond = 0 als Gegenlauf.",
-          "beleg": "Maschine: 600 s gebunden (bond 0.12 → 1): Abstand p50 3.57 · p95 4.91 · max 5.7 m · 3 Wände ohne Durchdringung, Sockel 208 Takte darüber · Hang > 15° 300 s, nass 43 s · ungebunden 144.7 m an b62542c9 headless · gehalten: Stimmung nach 120 s gebunden 0.1164/0.1164 gegen bond = 0 0.0818/0.0818 (Δ 0.0346, Rauschen 0.0000) · bond A 0.12 → 1, 0.12 → 1 · Abstand p50 3/3/3/3 m, Spieler verschoben 0/0/0/0 m · Reload [1,\"follow_player\"] → [1,\"follow_player\"] an b62542c9 headless",
+          "beleg": "Maschine: gehalten: 600 s gebunden (bond 0.12 → 1): Abstand p50 3.57 · p95 4.91 · max 5.7 m · 3 Wände ohne Durchdringung, Sockel 208 Takte darüber · Hang > 15° 300 s, nass 43 s · ungebunden 144.7 m an b62542c9 headless · gehalten: Stimmung nach 120 s gebunden 0.1164/0.1164 gegen bond = 0 0.0818/0.0818 (Δ 0.0346, Rauschen 0.0000) · bond A 0.12 → 1, 0.12 → 1 · Abstand p50 3/3/3/3 m, Spieler verschoben 0/0/0/0 m · Reload [1,\"follow_player\"] → [1,\"follow_player\"] an b62542c9 headless",
           "schlupfloch": "Ein Tier, das per Leinen-Skript folgt, ohne bond zu lesen, fällt an der Mutation bond = 0.",
           "aenderung": "Neu (V13); gemessen 21.10. 0 → 1 (M19).",
           "maschine": true
@@ -1778,7 +1778,7 @@
           "punkte": 2,
           "staffel": "1 = Vogel- oder Fischschwarm mit Φ ≥ 0,8 und Kohäsion ≥ 0,9 aus `verbandZug` · 2 = Flucht vor dem Spieler als EIN Pulk, Landung auf Bäumen der Welt",
           "messung": "Band schwarm in kreatur-proben mit derselben Verbands-Zahl wie die Herde.",
-          "beleg": "Maschine: Φ 0.968, Kohäsion 1 (min 1, Glied zu Glied ≤ 2.5 m) bei 100 Gliedern, 1 Züge je Glied und Takt durch verbandZug (Soll Φ ≥ 0,8, Kohäsion ≥ 0,9, 1 Zug) an b62542c9 headless · gehalten: Flucht nach 5.3 s, Abstand 30.3 → 95.8 m, 1 der Glieder mit, Verbund 1; Landung nach 26.0 s auf a:1153, Δ 0 m zum Scheitel 84.564 m, 1 auf der Krone (Soll + 40 m, 0,95, 0,9; ± 0,25 m, 0,99) an b62542c9 headless",
+          "beleg": "Maschine: gehalten: Φ 0.968, Kohäsion 1 (min 1, Glied zu Glied ≤ 2.5 m) bei 100 Gliedern, 1 Züge je Glied und Takt durch verbandZug (Soll Φ ≥ 0,8, Kohäsion ≥ 0,9, 1 Zug) an b62542c9 headless · gehalten: Flucht nach 5.3 s, Abstand 30.3 → 95.8 m, 1 der Glieder mit, Verbund 1; Landung nach 26.0 s auf a:1153, Δ 0 m zum Scheitel 84.564 m, 1 auf der Krone (Soll + 40 m, 0,95, 0,9; ± 0,25 m, 0,99) an b62542c9 headless",
           "schlupfloch": "Ein eigener Boid-Code wäre ein Zwilling des Verbands: die Probe verlangt dieselbe Funktion.",
           "maschine": true
         },
@@ -3657,7 +3657,7 @@
           "punkte": 2,
           "staffel": "1 = fuseWorlds(A, B) byte-gleich auf zwei Geräten · 2 = 0 Schreibe auf den frozen Kern, die gemischten Regeln werten nach Affekt K3",
           "messung": "Fusion auf Radeon und OMEN mit gleichen Eingaben; Byte-Vergleich des Ergebnis-Stands.",
-          "beleg": "Maschine: ✅ FUSION A+B byte-gleich — 1146 Bytes | ✅ GERICHTET: B+A ≠ A+B | ✅ TÄTER-PROBE: Date.now in der Geburt ist ROT an b62542c9 headless · gehalten: Schreibe 0 (Selbsttest 1) · heilA 30× v 0.2934 ern. 3 · heilB 30× v 0.5778 ern. 3 · leer 8× v 0 verfiel · pflug fehlt · steil fehlt · im Stand heilA/leer/heilB · Exit 0 an b62542c9 headless",
+          "beleg": "Maschine: gehalten: ✅ FUSION A+B byte-gleich — 1146 Bytes | ✅ GERICHTET: B+A ≠ A+B | ✅ TÄTER-PROBE: Date.now in der Geburt ist ROT an b62542c9 headless · gehalten: Schreibe 0 (Selbsttest 1) · heilA 30× v 0.2934 ern. 3 · heilB 30× v 0.5778 ern. 3 · leer 8× v 0 verfiel · pflug fehlt · steil fehlt · im Stand heilA/leer/heilB · Exit 0 an b62542c9 headless",
           "schlupfloch": "Eine Fusion, die nur Namen mischt: der Byte-Vergleich der Regel-Programme.",
           "aenderung": "Neu (V06).",
           "maschine": true
@@ -3667,7 +3667,7 @@
           "punkte": 2,
           "staffel": "1 = Welten, Regeln und Baupläne liegen signiert vor, je Gesetz ≤ 8 KB, auffindbar über einen Code · 2 = forkbar mit Herkunfts-Kette, offen lesbar",
           "messung": "Größe je Eintrag, Signatur-Prüfung, Fork mit Herkunft.",
-          "beleg": "Maschine: Welt 1041 B · Regel 335 B · Bauplan 428 B · signatur · code · gross 17850 B an b62542c9 headless · ✅ FORK: Herkunfts-Kette (Autor und Code je Vorgänger), eigene Signatur, das Gesetz verände | ✅ BIBLIOTHEK offen lesbar: das Gesetz im Eintrag = das Gesetz der Welt an b62542c9 headless",
+          "beleg": "Maschine: gehalten: Welt 1041 B · Regel 335 B · Bauplan 428 B · signatur · code · gross 17850 B an b62542c9 headless · gehalten: ✅ FORK: Herkunfts-Kette (Autor und Code je Vorgänger), eigene Signatur, das Gesetz verände | ✅ BIBLIOTHEK offen lesbar: das Gesetz im Eintrag = das Gesetz der Welt an b62542c9 headless",
           "schlupfloch": "Mesh-Bytes statt Gesetz in der Bibliothek: die Größe je Eintrag.",
           "aenderung": "Neu (V06; Schöpfer: „die Bibliothek von Alexandria, voll open source“).",
           "maschine": true
@@ -3765,7 +3765,7 @@
           "punkte": 0,
           "staffel": "1 = Median ≤ 5 s an einem Gerät UND ≤ 10 s am anderen · 2 = ≤ 5 s an beiden",
           "messung": "`diag-boot-stage --kalt --echt`, ≥ 4 Boots je Gerät mit leerer Platte (IDB und Cache geleert, auch direkt nach bump-version); t = erste angenommene Eingabe (ein KeyboardEvent bewegt den Leib ≥ 0,1 m) UND erstes Ausgabe-Bild über `ausgabe-aufnahme.cjs`, das K2 besteht — nie `state._weltbildDa`.",
-          "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: ROT: t(Kontrolle) kalt 13.24 s von außen (Eigenmeldung 12.22 s), Bild 0.02 % Lücke bis zur Ruhe, offen im Bild nichts (Soll ≤ 5 s an dieser Karte, ein Kalt-Boot) · [linse-gpu] amd/rdna-3 an c8292dd3 · ankunft.K1#1 gtx: ungemessen (R10) · ankunft.K1#2 radeon: ungemessen (R10) · ankunft.K1#2 gtx: ungemessen (R10)",
+          "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs) · ankunft.K1#1 gtx: ungemessen (R10) · ankunft.K1#2 radeon: ungemessen (R10) · ankunft.K1#2 gtx: ungemessen (R10)",
           "schlupfloch": "Den Ladeschirm früher fallen lassen, während das Bild halb ist, oder `_weltbildDa` früher setzen: t entsteht nur aus einer Eingabe mit Wirkung und einem Bild, das K2 besteht; ein gefälschtes `_weltbildDa` ändert die Zahl nicht (Selbsttest).",
           "maschine": true
         },
@@ -3774,7 +3774,7 @@
           "punkte": 1,
           "staffel": "1 = das Ankunftsbild ist an einem Gerät ganz (≤ 2 % Lücke gegen dieselbe Pose nach 60 s), gemessen von außen · 2 = auch nach 180°-Drehung 2 s nach der Kontrolle und aus 30 m Höhe, beide Geräte",
           "messung": "Spielgang-Station ankunft: Ausgabe-Bild bei t(Kontrolle von außen) gegen dieselbe Pose nach 60 s Ruhe (`bild-diff.cjs`; Lücke = offener Bedarf im Bild plus Pixel-Diff), dazu 180°-Drehung nach 2 s und Blick aus 30 m.",
-          "beleg": "Maschine: 0.02 % Lücke nach 1.5 s bis zur Ruhe der Foundry · offen im Bild nichts · t(Kontrolle) kalt 13.24 s von außen (Eigenmeldung 12.22 s) · [linse-gpu] amd/rdna-3 an c8292dd3 radeon",
+          "beleg": "Maschine: gehalten: 0.02 % Lücke nach 1.5 s bis zur Ruhe der Foundry · offen im Bild nichts · t(Kontrolle) kalt 13.24 s von außen (Eigenmeldung 12.22 s) · [linse-gpu] amd/rdna-3 an c8292dd3 radeon",
           "schlupfloch": "Die Ankunfts-Pose auf Himmel richten oder alles außer Blick hinter die Kontrolle schieben: die Pose ist die des Spawns, die 180°-Drehung nach 2 s zählt mit demselben Soll.",
           "aenderung": "Die 1 der Synthese stand auf Bildern zur Zeit der Eigenmeldung (B65) → 0; die Messung von außen steht als Messschuld M10.",
           "maschine": true
@@ -4143,7 +4143,7 @@
           "punkte": 1,
           "staffel": "1 = die Kosten sind an das Hörbare gebunden (gemessen) · 2 = dazu Klang-Takt ≤ 0,2 ms Haupt-Faden p95 in Bewegung und 0 Aussetzer in 10 min Spielgang, beide Geräte",
           "messung": "Zensus (K): Welt-Abfragen des Klang-Takts bei 4000 fernen Bauten und 200 Fluss-Läufen; Profil in Bewegung; Aussetzer-Zähler am AudioContext.",
-          "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":12.2,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":173.38} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":12.22,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an b62542c9 headless · gehalten: Klang-Takt p95 gehen 0.13 · fahrt 0.14 · nacht 0.14 ms · Aussetzer 0 in 602 s Wiedergabe (0 s still) (Exit 0) an b3f9ae95 gtx — offen: klang.K5#2 radeon: ROT: Klang-Takt p95 gehen 0.3 · fahrt 0.4 · nacht 0.29 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) an c8292dd3",
+          "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":12.2,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":173.38} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":12.22,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an b62542c9 headless · gehalten: Klang-Takt p95 gehen 0.13 · fahrt 0.14 · nacht 0.14 ms · Aussetzer 0 in 602 s Wiedergabe (0 s still) (Exit 0) an b3f9ae95 gtx — offen: klang.K5#2 radeon: Pfad seit der Messung geändert (R6: stamm/kreatur-leben.js)",
           "schlupfloch": "Stummschalten spart alles: K1 und K4 gelten in derselben Sitzung.",
           "maschine": true
         }
@@ -4215,7 +4215,7 @@
           "punkte": 1,
           "staffel": "1 = ≤ 0,3 ms je Bild (p95) in einer frischen Welt, auf dem Pfad des Spielers · 2 = ≤ 0,1 ms in der frischen Welt UND nach 2 h mit 10 000 Edits, kein Frame > 16,7 ms wegen des Speicherns, beide Geräte",
           "messung": "Trace im Spiel: Haupt-Faden-ms des Speicher-Bilds (saveState, Edit-Timer); saveToProjectFolder zählt nur auf dem lokalen Host.",
-          "beleg": "Maschine: gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 100 Rufe in 4733 Bildern; aufgefüllt je Bild p95 0, blind) an 715754fc gtx — offen: speicher.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs) · speicher.K2#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 100 Rufe in 4733 Bildern; aufgefüllt je Bild p95 0, blind) an 715754fc gtx · Speicher-Bild frisch p50 0.03 / p95 0.095 / max 0.465 ms (498 Bilder), 0 von 160 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0.025 / p95 0.075 / max 0.565 ms (420 Bilder), 0 von 72 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ 0,1) an bf55b24a radeon — offen: speicher.K2#2 gtx: Station seit der Messung geändert",
           "schlupfloch": "Das Intervall strecken, also seltener speichern: K1 verlangt höchstens 10 s Verlust.",
           "aenderung": "Teilweise verworfen (B71): der Punkt bleibt, weil der Teil, den der Spieler zahlt (saveState 0,12 ms), gemessen ist; die Neumessung auf einem Host ohne save-server (M16, 21.10.) bestätigt die 1; nach R6 (speicher-h1) 1 → 0, am neuen Pfad gemessen 22.10. 0 → 1; nach R6 (fahrt-takt 36ef06e6) 22.10. 1 → 0; an 6cfce28a gemessen (M35) 22.10. 0 → 1.; nach R6 (stadt-erwachen be20b0153, 16dd81d0 `_imLeerlauf`) 23.10. 1 → 0.",
           "maschine": true
@@ -4755,7 +4755,7 @@
     },
     {
       "stand": "2026-11-05",
-      "kopf": "c8292dd3",
+      "kopf": "bf55b24a",
       "summe": 202,
       "max": 330,
       "skala": "2.0",
@@ -4763,7 +4763,7 @@
     }
   ],
   "text": {
-    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 05.11.2026, Kopf main c8292dd3 (V18.546.187)",
+    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 05.11.2026, Kopf main bf55b24a (V18.546.188)",
     "einleitung": [
       "Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.",
       "",
