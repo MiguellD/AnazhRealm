@@ -3141,8 +3141,11 @@
         masseDichte: 150,
         // ── w11-fahrzeug (rein additive DATEN-Zeile — Praezedenz: masseDichte) — DAS ANTRIEBS-GESETZ (carPhys): Luftdichte,
         //    Wirkungsgrad des Triebstrangs, das Tempo, ab dem der Motor seine volle Leistung trägt (darunter das Moment), die
-        //    Rollreibung des Gummis auf Asphalt (cr) und das Halten des Gespanns ohne Peitsche (m/s²). ──
-        antrieb: { rho: 1.2, eta: 0.85, vKnick: 12, reibung: 0.013, zugHalt: 1.5 },
+        //    Rollreibung des Gummis auf Asphalt (cr) und das Halten des Gespanns ohne Peitsche (m/s²). Die STEIGFÄHIGKEIT
+        //    des ersten Gangs (tan θ, w11-fahrzeug 05.11.): seine Übersetzung trägt das Moment so, dass jeder Motorwagen 50 %
+        //    Steigung nimmt — der Rückwärtsgang übersetzt wie er (FAHR.schritt.rueckAntrieb). Vorher war die Anfahrt die
+        //    Leistung durch vKnick: der Kompakt (31 kW/t) stieg 11,9°, rückwärts am 15°-Hang 0,54 m in 2,5 s (gate:fahr-leben FK). ──
+        antrieb: { rho: 1.2, eta: 0.85, vKnick: 12, reibung: 0.013, zugHalt: 1.5, steig: 0.5 },
         // ── 0710-4 Klasse 4 (rein additive DATEN-Zeilen — Praezedenz: masseDichte) — DER REITER IM WAGEN: die Lehne des
         //    Fahrersitzes (rad nach hinten; der Bau der Sitzreihe liest sie, der Wirt neigt den Rumpf des Reiters mindestens
         //    so weit), der Kopf-Freiraum unter der Dachlinie (m: Dachhaut + Luft ueber dem Scheitel) und die steilste
@@ -3201,12 +3204,13 @@
             azEase: 0.0016,
             elEase: 0.02,
             posEase: 0.0016,
-            // H3 (20.10., rein additiv — Praezedenz: F1) — DIE KAMERA ATMET DAS TEMPO (chaseKamera): bei vmax waechst das FOV
-            // um fovV Grad und der Arm um distV, beide folgen dem Tempo-Anteil als Feder (Rest 1 − tempoEase^dt); der Azimut
+            // H3 (20.10., rein additiv — Praezedenz: F1) — DIE KAMERA ATMET DAS TEMPO (chaseKamera): ab tempoV m/s waechst das
+            // FOV um fovV Grad und der Arm um distV, beide folgen dem Tempo-Anteil als Feder (Rest 1 − tempoEase^dt); der Azimut
             // zielt um driftFolge × Drift-Winkel auf den Fahrtvektor (unter driftMinV m/s laengs zaehlt driftMinV); nach einem
             // Maus-Orbit kehrt er in rueckS Sekunden zurueck; die Maus hebt die Elevation zwischen elMin und elMax.
             fovV: 10,
             distV: 0.2,
+            tempoV: 16, // m/s: das Tempo des vollen Atems — das Auge misst die Fahrt, nie den Anteil am vmax des Wagens
             tempoEase: 0.1,
             driftFolge: 0.8,
             driftMinV: 2,
@@ -3385,7 +3389,8 @@
     //   Luft       = ½ ρ · cw · Spur · Dach / Masse (cw der Gattung; vor heute und in der Zukunft der Zeit — der offene Karren 1,1)
     //   Reibung    = cr · g (die Kufe gleitet mit 0,2, das Vollrad rollt mit 0,06, der Gummi mit 0,013)
     //   Leistung   = das Zugtier (Zahl × Watt, Zugkraft am Stand, gedeckelt bei seiner Gangart) oder der Motor (kW/t der Gattung ×
-    //                der Stufe, Wirkungsgrad η, die volle Leistung ab vKnick, darunter das Moment: a = min(aEngine, aLeist / v))
+    //                der Stufe, Wirkungsgrad η, die volle Leistung ab vKnick, darunter das Moment: a = min(aEngine, aLeist / v);
+    //                das Moment im ersten Gang trägt mindestens die Steigfähigkeit: aEngine ≥ g · (sin θ + cr · cos θ))
     //   vmax       = das Gleichgewicht aLeist / v = Reibung + Luft · v² (das Zugtier höchstens in seiner Gangart).
     // Ohne Gas zieht der Motor (Schleppmoment) bzw. hält das Gespann (`schlepp`); das Ausrollen von heute bleibt FAHR.rollDecel.
     function carPhys(P) {
@@ -3406,7 +3411,8 @@
             schlepp = A.zugHalt;
         } else {
             aLeist = P.leistung * (Z.leistung != null ? Z.leistung : 1) * A.eta; // kW/t = W/kg
-            aEngine = aLeist / A.vKnick;
+            const th = Math.atan(A.steig);
+            aEngine = Math.max(aLeist / A.vKnick, FAHR.G * Math.sin(th) + reibung * Math.cos(th));
             vGang = Infinity;
             schlepp = Math.max(0, FAHR.rollDecel - reibung);
         }
@@ -3657,7 +3663,12 @@
             maxGrip: zs.maxGrip,
             aEngine: aEngine,
             aLeist: zs.aLeist, // die Leistung je Masse: a = min(aEngine, aLeist / v) (carPhys)
-            dragK: zs.dragK, // die Luft: ½ ρ cw A / m
+            // DAS GLEICHGEWICHT AM TEMPO DES SATZES (w11-fahrzeug, 05.11.): die Luft ½ ρ cw A / m — oder mehr, wenn der Satz
+            // ein langsameres Tempo trägt als seine Leistung (das emergente Werk des Wirts: vmax aus seinen Rädern): dann hält
+            // der Widerstand ihn dort, min(aEngine, aLeist / vmax) = Reibung + dragK · vmax². Im Gesetz des Kerns ist vmax das
+            // Gleichgewicht (carPhys), dieselbe Zahl. Vorher fuhr der Pad-Wagen (vmax 1,76 m/s) mit der Luft des GT ungebremst
+            // in die Klemme des Tempos (gate:playtest leib.K5: Gas 0,644/1,284/1,758 m/s, die Hälfte des Abzugs 73 % des Vollen).
+            dragK: Math.max(zs.dragK, (Math.min(aEngine, zs.aLeist / d.vmax) - zs.reibung) / (d.vmax * d.vmax)),
             reibung: zs.reibung, // Roll- bzw. Gleitreibung der Räder (Kufe) der Zeit
             schlepp: zs.schlepp, // ohne Gas: Schleppmoment des Motors bzw. das haltende Gespann
             vmax: d.vmax,
@@ -3808,12 +3819,17 @@
                 z.vy = 0;
                 z.luft = false;
             }
+            const warLuft = z.luft === true;
+            // AM BODEN IST DIE VERTIKALE KEIN FREIER ZUSTAND (w11-fahrzeug, 05.11.): der Wagen fährt in der Ebene seiner Räder,
+            // seine Steig-Rate ist die JETZIGE Fahrt auf der Ebene des letzten Schritts. Vorher trug z.vy die Rate von gestern:
+            // jeder Sprung der Fahrt (der Stoß an den Geparkten, die Antwort der Hülle) ließ die Vertikale zurück — am Gefälle
+            // hob der gestoßene GT ab (24 m/s: 0,11 m in der Luft nach 7 Schritten, gate:klang-zensus F „die Vorbeifahrt schweigt").
+            if (!warLuft && Number.isFinite(z.steig) && Number.isFinite(z.wank)) z.vy = vBoden(z);
             const yBall = z.y + z.vy * dt - 0.5 * g * dt * dt; // wohin die Fallkurve den Wagen legt
             // Was ein Rad in einem Schritt hinaufsteigt (die Stufe + die Steig-Rate des Bodens); hoeher ist eine WAND — die
             // Vertikale hebt den Wagen nie hinein (der Kontakt-Loeser des Wirts schiebt ihn heraus). Vorher nahm der Wagen
             // Stufen bis 1,075 m in einem Takt.
             const stufe = S.stufeRad * G.radR + Math.abs(z.vy) * dt; // radR ist Pflicht des Fahr-Satzes (fahrGesetz)
-            const warLuft = z.luft === true;
             // DIE WAND IST EIN SPRUNG DES BODENS, nie die Lage des Wagens (Hangfuss-Falle, Leben-Schau 07.10. an
             // -852/-861,2: die Box eines Glutbrunnens schob den GT in EINEM Schritt 0,97 m quer auf 0,25 m hoeheren Grund;
             // der Wand-Zweig verglich den Boden mit der HOEHE des Wagens, fror sie ein, und der Wagen sank am Hangfuss 1,16 m
@@ -3977,9 +3993,10 @@
             else if (!motor && dt > 0) Fr -= Math.min(G.handDecel, Math.abs(vL) / dt) * m * sgn;
             const capL = cap * m * gN;
             let Fx = Math.max(-capL, Math.min(capL, Fr));
-            // Rollwiderstand (die Reibung der Zeit) und ohne Gas, Bremse und Handbremse das Schleppmoment (heute zusammen
-            // FAHR.rollDecel: das Ausrollen von gestern bleibt)
-            if (Math.abs(vL) > 0.02) Fx -= (G.reibung + (thr === 0 && brk === 0 && !hand ? G.schlepp : 0)) * m * sgn;
+            // Rollwiderstand (die Reibung der Zeit) und ohne Bremse und Handbremse das Schleppmoment, STETIG im Gas: der Motor
+            // trägt thr · Antrieb − (1 − thr) · Schlepp (Volllast ist netto, geschlossen bremst er; heute zusammen FAHR.rollDecel:
+            // das Ausrollen von gestern bleibt). Vorher sprang der Schlepp bei Gas 0 → 0,001 von 0,87 auf 0 m/s².
+            if (Math.abs(vL) > 0.02) Fx -= (G.reibung + (brk === 0 && !hand ? (1 - thr) * G.schlepp : 0)) * m * sgn;
             // SCHAU 2 (10.10., fahr-bahn) — UNTER SCHRITTTEMPO ROLLT DAS GELENKTE RAD KINEMATISCH: die Gier ist dort
             // kinematisch geblendet (lowBlendV, unten), der Schlupf im Nenner gedaempft (slipEps) — er meldet am Stand den
             // vollen Einschlag als Schlupf, und die gesaettigte Seitenkraft des Vorderrads bremste mit ihrem Laengsanteil
@@ -4217,8 +4234,9 @@
     //     (zur Welt K.el − steig) und folgt ihr als Feder mit Daempfer, zwei Stufen mit dem Rest 1 − elEase^dt (die Ebene der
     //     Raeder springt je Schritt mit jeder Welle, eine Stufe gab den Sprung als Knick der Kamera weiter).
     //     → der Ort der Kamera um die Lage des Wagens {x, y, z} (y traegt K.blickHoehe). REIN + THREE-frei.
-    //   H3 (20.10., rein additiv — Praezedenz: F1) — DIE KAMERA ATMET DAS TEMPO: z (fahrZustand) und vmax (das Gesetz des
-    //     Wagens) geben den Tempo-Anteil |speed|/vmax (≤ 1) und den Drift-Winkel atan2(vlat, max(|vlong|, driftMinV)) — den
+    //   H3 (20.10., rein additiv — Praezedenz: F1) — DIE KAMERA ATMET DAS TEMPO: z (fahrZustand) gibt den Tempo-Anteil
+    //     |speed|/K.tempoV (≤ 1; w11-fahrzeug 05.11.: das Auge misst die Fahrt — mit dem vmax der Zeit-Achse atmete der GT
+    //     (63,8 m/s) bei 10 m/s nur 1,29°, der Schlitten (1,1 m/s) im Schritt voll) und den Drift-Winkel atan2(vlat, max(|vlong|, driftMinV)) — den
     //     Fahrtvektor gegen den Bug, rueckwaerts bleibt die Kamera hinter dem Wagen; beide folgen als Feder (c.tF, c.dF). Der
     //     Arm steht dist·(1 + distV·tF), das FOV waechst um fovPlus = fovV·tF Grad (der Wirt legt es auf seine Ruhe), der Azimut
     //     zielt auf Gier + driftFolge·dF. Ohne z steht die Kamera wie zuvor (tF = dF = 0). DIE MAUS: Gier NaN = sie haelt
@@ -4248,11 +4266,11 @@
             gz = -ts * Math.sin(gier) - tw * Math.cos(gier);
         return Math.atan(gz * Math.sin(az) - gx * Math.cos(az));
     }
-    function chaseKamera(c, gier, steig, dt, K, z, vmax) {
+    function chaseKamera(c, gier, steig, dt, K, z) {
         K = K || FAHR.kamera;
         const st = Number.isFinite(steig) ? steig : 0;
         const wk = z && Number.isFinite(z.wank) ? z.wank : 0;
-        const s = z && vmax > 0 ? Math.min(1, Math.abs(z.speed) / vmax) : 0;
+        const s = z ? Math.min(1, Math.abs(z.speed) / K.tempoV) : 0;
         const drift = z ? Math.atan2(z.vlat, Math.max(Math.abs(z.vlong), K.driftMinV)) : 0;
         const frisch = !Number.isFinite(c.az) || !(dt > 0);
         if (frisch || !Number.isFinite(c.tF)) {

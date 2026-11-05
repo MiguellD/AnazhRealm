@@ -236,7 +236,7 @@ hauptLauf(async () => {
     await zug(8, 2);
     await page.click("#start");
     await sleep(300);
-    await page.evaluate(`window.__m7 = (${tempoSpion})(__vehicleCore, cam, (z, vm) => z === car && vm === fahrGesetzLab().vmax)`);
+    await page.evaluate(`window.__m7 = (${tempoSpion})(__vehicleCore, cam, (z) => z === car)`);
     await zug(-8, 0);
     await page.waitForFunction(() => __m7.rueck !== null, { timeout: 30000, polling: 100 }).catch(() => {});
     // G2 der HUD im Fahr-Modus · G6 die Schilder (Sprites) am Wagen, die der Renderer zeichnet

@@ -1825,7 +1825,7 @@ hauptLauf(async () => {
             [
                 kernTempo({
                     ...VCk,
-                    chaseKamera: (c, g, s, dt, K, z, vm) => VCk.chaseKamera(c, g, s, dt, K, z && { ...z, vlat: 0 }, vm),
+                    chaseKamera: (c, g, s, dt, K, z) => VCk.chaseKamera(c, g, s, dt, K, z && { ...z, vlat: 0 }),
                 }),
                 "drift",
             ],

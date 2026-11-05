@@ -619,7 +619,7 @@ let dragging=false,_lpx=0,_lpy=0;
 // schreibt EINER (camFov): die Ruhe CAM_FOV, in der Fahrt dazu fovPlus.
 function camFov(plus){const f=CAM_FOV+plus;if(cam.fov!==f){cam.fov=f;cam.updateProjectionMatrix();}}
 function updateChaseCam(dt,snap){
-  const v=VC.chaseKamera(camOrb,camOrb.follow?car.yaw:NaN,car.steig,snap?0:dt,FAHR.kamera,car,fahrGesetzLab().vmax);
+  const v=VC.chaseKamera(camOrb,camOrb.follow?car.yaw:NaN,car.steig,snap?0:dt,FAHR.kamera,car);
   camFov(v.fovPlus);
   const by=Number.isFinite(car.y)?car.y:bodenY(car.x,car.z);
   cam.position.set(car.x+v.x,by+v.y,car.z+v.z);

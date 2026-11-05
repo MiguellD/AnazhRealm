@@ -91,6 +91,8 @@ async function probefahrt(page, fr) {
     });
     const spd = halt.erreicht ? halt.wert : 0;
     await route("werkstatt");
+    // die Lehren auf Knopf (w11-fahrzeug): erst sie zeichnen die Maß-Schilder, das Sprite-Quad des Neubaus — K6 sieht sie
+    await fr.evaluate(() => document.getElementById("lehrenB").click());
     return { ok: hud && spd > 0, notiz: `Probefahrt: HUD ${hud ? "sichtbar" : "fehlt"}, Tacho ${spd} nach ${halt.ms} ms W` };
 }
 
