@@ -2134,3 +2134,4 @@
 2026-11-05 17:15:31 9b5ea4c1-radeon ENDE 0 grün / 1 rot · 2.9 min
 2026-11-05 18:10:42 9c545df2-radeon START 1 Stationen
 2026-11-05 18:11:47 9c545df2-radeon schatten.K1#2 GRÜN 0.6 · 1/1
+2026-11-05 18:13:17 9c545df2-radeon ENDE 1 grün / 0 rot · 4.6 min
