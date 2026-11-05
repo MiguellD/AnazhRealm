@@ -2517,6 +2517,9 @@ class AnazhRealm_feld_leben {
             this._brandFlammen || (this._brandFlammen = []),
             this._flammenVorrat || (this._flammenVorrat = []),
         ];
+        // DAS BILD KOSTET, WAS BRENNT (Gebot 7): ohne Feuer im Feld, ohne Flamme des letzten Bilds und ohne Ballen am Himmel geht
+        // kein Bild — bis w12-brand-halt rechnete jeder Takt der Welt Flackern, Wind-Merker und Fahne, auch wo nie ein Brand fing
+        if (!fl.length && !st.brandRauch.teilchen.length && !(st.brandFeld && st.brandFeld.size)) return;
         fl.length = 0;
         const qu = [];
         const [B, K, t] = [AnazhRealm.BRAND.bild, AnazhRealm.LIFE_FIELD.cell, st.spielZeit];
