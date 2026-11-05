@@ -282,6 +282,28 @@ class AnazhRealm_kreatur_leben {
         };
     }
 
+    // DIE MARKE DES WESENS im Stand (speicher.K2#2): jeder Wert, den `_serializeCreature` liest — gleiche Marke, gleiches JSON.
+    // Die Reihen (Gedächtnis, steckende Pfeile) wachsen am Ende und verlieren vorn (`_creatureRemember`, `_pfeilInsTier`): sie
+    // selbst, ihre Länge, ihr jüngstes Glied. Ein Wesen, das ruht, fragt der Besen so ohne neues JSON.
+    _kreaturMarke(creature) {
+        const ud = creature.userData;
+        const [p, rot, mem, pf, wa, t, eq] = [
+            creature.position,
+            creature.rotation,
+            ud.memory,
+            ud._steckPfeile,
+            ud.wanderAnchor,
+            ud.task,
+            ud.equipped,
+        ];
+        const m = [ud.name, ud.soul, mem, mem && mem.length, mem && mem[mem.length - 1], ud.bornAt, ud.alterS];
+        m.push(p && p.x, p && p.y, p && p.z, rot && rot.y, ud.bodySize, ud.verband, ud.feldWurf, ud.hp, ud.hpMax);
+        m.push(wa, wa && wa.x, wa && wa.z, pf, pf && pf.length, pf && pf[pf.length - 1], ud.bond, ud.gussDials);
+        m.push(eq, eq && eq.tool, eq && eq.armor, t, t && t.name, t && t.args);
+        if (t && t.args && typeof t.args === "object") m.push(...Object.values(t.args));
+        return m;
+    }
+
     // Spawnt am alten Ort mit alter Seele, setzt den persistierten Namen + memory; Specs nicht direkt
     // (live aus memory). Liefert die THREE.Group oder null.
     _restoreCreatureFromSnapshot(snap, emotion = "happy") {

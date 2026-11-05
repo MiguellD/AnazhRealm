@@ -807,9 +807,8 @@ async function starte() {
     // Erst-Boot-Zahl („17 von 319 von der Platte"). Benannt (`--serie`) unter der Ablage, sonst das Scratch-Profil des EINEN
     // Starters (welt-boot `startePuppeteer`: es stirbt mit dem Browser, am Prozess-Ende und am Signal, ein toter Lauf wird gefegt).
     const profil = SERIE && ablage("profil-" + SERIE.replace(/[^a-z0-9_-]+/gi, "_"));
-    const serieNeu = !SERIE || !fs.existsSync(profil);
+    const serieNeu = !fs.existsSync(profil); // ohne --serie ist profil "" (existsSync: false) — jeder Start ist neu
     if (SERIE) fs.mkdirSync(profil, { recursive: true });
-    const boot = { serie: SERIE || null, profil, serieNeu, ladungen: 0 };
     const bootArt = () => (boot.serieNeu && boot.ladungen <= 1 ? "erst" : "zweit");
     // die Boot-Zeile jeder Messung: Erst- oder Zweit-Boot, die Serie und die Ladungen der Seite
     const bootZeile = () => ({ art: bootArt(), serie: boot.serie, ladungen: boot.ladungen });
@@ -817,11 +816,15 @@ async function starte() {
         headless: !ECHT,
         userDataDir: profil,
         protocolTimeout: 10800000,
-        defaultViewport: ECHT ? { width: 1920, height: 1080, deviceScaleFactor: 1 } : null,
+        defaultViewport: ECHT ? { width: 1920, height: 1080 } : null, // deviceScaleFactor: puppeteers Vorgabe 1
         // Echt: der Hardware-Adapter im Fenster; sonst die Weiche (lokal der Hardware-Adapter headless, in der CI swiftshader)
         // — die Schalter je Plattform trägt das EINE Rezept.
         args: ECHT ? [...echteWebGpuArgs(), "--window-size=1940,1200"] : linsenWebGpuArgs(),
     });
+    // /status NENNT DAS PROFIL IMMER (`boot.profil`): die Proben der Punkte-Maschine hängen sich über sein DevToolsActivePort an
+    // den Browser der Sitzung — die Serie ihr benanntes, sonst das Scratch-Profil des Starters (`browser.profil`). Bis hier nannte
+    // /status ohne --serie keins (z216, w11-profil-leck): neun Stationen der Sitzung blieben an jedem Kopf UNGEMESSEN.
+    const boot = { serie: SERIE || null, profil: profil || browser.profil, serieNeu, ladungen: 0 };
     await adapterZeile(browser);
     const page = await browser.newPage();
     const loopAus = () => page.evaluate("__loop()"); // die Welt steht zwischen den Befehlen
@@ -1185,7 +1188,6 @@ async function starte() {
                 try {
                     if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
                 } catch {}
-                r._schattenAlleNeu();
                 auf = await __ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: w });
                 if (w) gewaehlt = auf.abnahme.wahl || null;
             }
@@ -1291,7 +1293,6 @@ async function starte() {
                     r._kopfKahl(aus);
                     bundlesNeu();
                     try {
-                        r._schattenAlleNeu();
                         return (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
                     } finally {
                         for (const o of aus) zeig(o);
@@ -1319,7 +1320,7 @@ async function starte() {
                     }
                     const schwelle = 18;
                     const rauschen = __bildRauschen(G, G2, W, H, schwelle);
-                    const { teil, misch } = __klassenTeilung(G, Os, W, H, schwelle);
+                    const { teil, misch, gemischt } = __klassenTeilung(G, Os, W, H, schwelle);
                     // die Teilung des Schusses für ein folgendes `eval` (der Pulk der Herde, tiere.K1): je Pixel 1 + Index in `namen`
                     window.__letzteTeilung = { teil, namen, W, H };
                     const klassen = {};
@@ -1439,7 +1440,7 @@ async function starte() {
                     });
                     // DIE PROBEN DES GESICHTS: je Vertex des Kopfs sein Zug (Iris am Gelenk, auf der
                     // Kopf-Haut der Ton seiner Ecke, `aTon` — koerper `menschTon`: Haut, Lippe, Höhle, Haar-Kappe), projiziert auf den
-                    // Schirm; `__gesichtMasse` liest das BILD dort, wo die Teilung den Teil des Vertex zeigt (abnahme-urteil). Die Töne
+                    // Schirm; `K.gesichtMasse` (koerper-core) liest das BILD dort, wo die Teilung den Teil des Vertex zeigt. Die Töne
                     // kommen aus dem Leib selbst, nie von Hand — bis mensch.K4 aus der Farbe der Ecke, die die Verdeckung der Haut dunkelt.
                     // Die Maße gehören der Klasse, die die Kopf-Haut eines Leibs wählt (mensch-kopf `^spieler:kopf/`, `^bewohner:kopf/`);
                     // wählt sie sie nicht (haar `^spieler:kopf/hair$`), misst sie kein Gesicht — bis dahin warf jeder Haar-Schuss „keine
@@ -1454,8 +1455,8 @@ async function starte() {
                     if (namen.some((n) => kopfHaut.test(n))) {
                         const T = THREE;
                         const K = window.__koerperCore;
-                        if (!K || typeof K.menschTon !== "function" || !K.KOPF_SOLL)
-                            throw new Error("--gesicht: koerper-core ohne menschTon/KOPF_SOLL in der Seite");
+                        if (!K || typeof K.menschTon !== "function" || typeof K.gesichtMasse !== "function" || !K.KOPF_SOLL)
+                            throw new Error("--gesicht: koerper-core ohne menschTon/gesichtMasse/KOPF_SOLL in der Seite");
                         const ab = (L) => L.position.distanceTo(cam.position);
                         const [wahlLeib] = namen
                             .filter((n) => kopfHaut.test(n))
@@ -1482,8 +1483,26 @@ async function starte() {
                             [K.menschTon("lips"), "lippe"],
                             [K.menschTon("socket"), "hoehle"],
                             [K.menschTon("haarKappe"), "kappe"],
+                            [K.menschTon("braue"), "braue"],
                         ]);
                         const v = new T.Vector3();
+                        // DIE ALBEDO DER ECKE (das Licht des Gesichts, `gesichtMasse` weiss): ihre Farbe im Guss (linear), für einen
+                        // Bewohner mal dem Verhältnis seiner Palette zu der seiner Gestalt am Ton der Ecke (`_tonFaktor`, die Ton-Tafel)
+                        const tafel = r.state.tonTafel && r.state.tonTafel.image ? r.state.tonTafel.image : null;
+                        const albedo = (o, i) => {
+                            const c = o.geometry.attributes.color;
+                            if (!c) return null;
+                            const a = [c.getX(i), c.getY(i), c.getZ(i)];
+                            const z = o.userData && o.userData.__ton;
+                            const ta = o.geometry.attributes.aTon;
+                            if (z && tafel && ta && (z[0] || z[1])) {
+                                const t = Math.round(ta.getX(i));
+                                const zeile = (j) => tafel.data.subarray((j * tafel.width + t) * 4, (j * tafel.width + t) * 4 + 3);
+                                const [x, y] = [zeile(z[0]), zeile(z[1])];
+                                for (let ch = 0; ch < 3; ch++) a[ch] *= x[ch] / Math.max(1e-4, y[ch]);
+                            }
+                            return a;
+                        };
                         const roh = [];
                         let minY = Infinity,
                             maxY = -Infinity,
@@ -1510,7 +1529,7 @@ async function starte() {
                                     if (!z) continue;
                                     o.getVertexPosition(i, v);
                                     v.applyMatrix4(o.matrixWorld);
-                                    if (z !== "iris") {
+                                    if (z !== "iris" && z !== "braue") {
                                         minY = Math.min(minY, v.y);
                                         maxY = Math.max(maxY, v.y);
                                         mitte.add(v);
@@ -1521,6 +1540,7 @@ async function starte() {
                                         z,
                                         seite,
                                         k: kix,
+                                        a: z === "iris" ? null : albedo(o, i),
                                         w: v.clone(),
                                         d: v.distanceTo(cam.position),
                                         x: Math.floor(((ndc.x + 1) / 2) * W),
@@ -1540,19 +1560,57 @@ async function starte() {
                                 .sort(aufsteigend);
                             median[sd] = ds.length ? ds[Math.floor(ds.length / 2)] : null;
                         }
+                        // DER STRAHL DER KAMERA ZUR IRIS (KOPF_SOLL augeFrei: „Strahl", die Lider sind das Rig): je vordere Iris-Probe,
+                        // ob der Strahl von der Kamera dieses Schusses sie erreicht, ohne Haut, Lid, Braue oder Haar des Kopfs zu kreuzen —
+                        // die Verdeckung ist Geometrie und gilt unter jedem Bildpunkt; das Bild zeigt, DASS das Auge steht (`spur`).
+                        // Bis w12-gesicht entschied das Pixel allein: an der Kamera des Spiels (6 m) trägt die Iris 1,3 Bildpunkte
+                        const decke = [];
+                        for (const [n, os] of teile)
+                            if (!/:kopf\/auge$/.test(n)) for (const o of os) if (o.isMesh && r._leibWurzel(o) === wahlLeib) decke.push(o);
+                        for (const o of decke) (o.isSkinnedMesh ? o : o.geometry).computeBoundingSphere();
+                        const strahl = new T.Raycaster();
+                        const richt = new T.Vector3();
+                        // der Täter beim Namen: je verdeckte Probe die Klasse des ersten Treffers (Lid und Haut, Haar und Braue)
+                        const decktZu = {};
+                        const frei = (p) => {
+                            const lang = richt.copy(p.w).sub(cam.position).length();
+                            strahl.set(cam.position, richt.divideScalar(lang));
+                            strahl.near = 0;
+                            strahl.far = lang - 1e-4;
+                            const [h] = strahl.intersectObjects(decke, false);
+                            if (h) decktZu[r._kopfKlasse(h.object)[1]] = (decktZu[r._kopfKlasse(h.object)[1]] || 0) + 1;
+                            return !h;
+                        };
                         const proben = roh
                             .filter((p) => p.x >= 0 && p.y >= 0 && p.x < W && p.y < H)
-                            .map((p) => ({
-                                z: p.z,
-                                x: p.x,
-                                y: p.y,
-                                k: p.k,
-                                vorn: p.z === "iris" ? p.d < median[p.seite] : p.w.clone().sub(mitte).dot(zurCam) > 0,
-                                kalotte: p.z !== "iris" && p.w.y > yHaar,
-                            }));
+                            .map((p) => {
+                                const vorn = p.z === "iris" ? p.d < median[p.seite] : p.w.clone().sub(mitte).dot(zurCam) > 0;
+                                return {
+                                    z: p.z,
+                                    x: p.x,
+                                    y: p.y,
+                                    k: p.k,
+                                    a: p.a,
+                                    seite: p.seite,
+                                    frei: p.z === "iris" && vorn ? frei(p) : undefined,
+                                    vorn,
+                                    kalotte: p.z !== "iris" && p.w.y > yHaar,
+                                };
+                            });
                         const haarK = namen.map((n, j) => (n === `${r._menschLeib(wahlLeib)}:kopf/hair` ? j + 1 : 0)).filter(Boolean);
                         if (!nm) throw new Error("--gesicht: keine Kopf-Haut am Gelenk head");
-                        gesicht = __gesichtMasse(u8, teil, W, H, proben, haarK);
+                        // DIE SPUR DES AUGES (`gesichtMasse` augeFrei): je Teil des Auges, wo sein Fehlen das Pixel über der Schwelle
+                        // ändert — dort steht es im Bild, auch wo ein Lid den Bildpunkt mit ihm teilt (die Iris unter einem Bildpunkt)
+                        const spur = {};
+                        namen.forEach((n, j) => {
+                            if (!/:kopf\/auge$/.test(n)) return;
+                            const O = Os[j],
+                                m = new Uint8Array(W * H);
+                            for (let p = 0, i = 0; p < W * H; p++, i += 4)
+                                m[p] = Math.abs(G[i] - O[i]) + Math.abs(G[i + 1] - O[i + 1]) + Math.abs(G[i + 2] - O[i + 2]) > schwelle ? 1 : 0;
+                            spur[j + 1] = m;
+                        });
+                        gesicht = Object.assign(K.gesichtMasse(u8, teil, W, H, proben, haarK, { gemischt, spur }), { irisDecke: decktZu });
                     }
                     let abstand = null;
                     if (k.abstand) {
@@ -1577,13 +1635,16 @@ async function starte() {
                         // gezeichneten Boden, nie an Saison, Uhr oder Klasse — ein Schuss an derselben Kamera über demselben Boden (das
                         // Jahr der Vegetation: drei Jahreszeiten an EINER Pose, vegetation.K5) liest den Treffer des vorigen
                         // (`window.__abstandSpeicher`); ein Block, den der vorige nicht marschierte, marschiert jetzt. Die Matrizen der
-                        // Kamera und der Abdruck des Bodens (je Chunk Eintrag, Karte, Ziel-Karte, Stufe, Geometrie und der Stand ihrer
-                        // Lage; das Auge der Stufen, der Geomorph, die vorläufigen Säulen — alles, was `_bodenSichtAt` liest) fallen
-                        // den Speicher bei jeder Änderung. Bis dahin rief jeder Wiesen-Schuss `_bodenSichtAt` ~20,8 Mio.-mal (≈ 1 µs je
-                        // Ruf, die Mess-Wiese in der Null-Welt 20,5 s; GTX b4bcf19c je Wiesen-Schuss 30 s, die Krone 6–8 s)
+                        // Kamera und der Abdruck des Bodens (je Chunk Stufe, Netz und der INHALT seiner Karte und seiner Ziel-Karte; das
+                        // Auge der Stufen, der Geomorph, die vorläufigen Säulen — alles, was `_bodenSichtAt` liest) fallen den Speicher
+                        // bei jeder Änderung. Bis dahin rief jeder Wiesen-Schuss `_bodenSichtAt` ~20,8 Mio.-mal (≈ 1 µs je Ruf, die
+                        // Mess-Wiese in der Null-Welt 20,5 s; GTX b4bcf19c je Wiesen-Schuss 30 s, die Krone 6–8 s). DER INHALT, NIE DIE
+                        // IDENTITÄT (w12-wintergras): die Saison baut die Chunks im Band der Schneegrenze und am Pegel neu (`_schneeTakt`,
+                        // `_pegelTakt`: neue Farbe, dieselben Höhen) — der Abdruck aus Eintrag, Karte und Netz fiel mit jedem Neubau, die
+                        // Wiese des Jahrs marschierte an EINER Kamera dreimal (Radeon 79595d21: 19,2 · 17,4 · 16,4 s)
                         const abdruck = () => {
                             const a = [...cam.matrixWorld.elements, ...cam.projectionMatrix.elements, W, H, st.stufeAuge?.x, st.stufeAuge?.z];
-                            for (const e of st.voxelChunks.values()) a.push(e, e.surfMap, e.surfMapZiel, e.lod, e.mesh, e.mesh?.geometry.userData.naht?.lage?.stand);
+                            for (const [k, e] of st.voxelChunks) a.push(k, e.lod, !e.mesh, e.surfMap?.join(), e.surfMapZiel?.join());
                             for (const s of st.saeulenVorlaeufig?.values() || []) a.push(s.x, s.z, s.rr, s.krone);
                             return a.concat(st.atmoUniforms?.geomorph?.value);
                         };
@@ -2756,6 +2817,9 @@ async function starte() {
                     const runden = Math.max(4, Number(b.runden) || 4);
                     const kette = ZL.KETTE.map((x) => x.uniform);
                     let last = null;
+                    // der Pool beginnt leer: die Aufnahmen einer Linse davor ließen ihn voll (Radeon nach `licht --kontakt`: Spitze
+                    // 2048/2048, die ersten Bank-Bilder der Zerlegung ohne Abfrage, STEMPEL-POOL ROT 30)
+                    await page.evaluate(() => st.renderer.resolveTimestampsAsync("render"));
                     const zw0 = await stempel();
                     if (b.selbsttest) {
                         await page.evaluate(() => {
@@ -3257,20 +3321,20 @@ hauptLauf(async () => {
         urteilEnde("TAG-ACHSE", u);
     } else if (cmd === "licht" && hat("kontakt")) {
         // DER KONTAKT-SCHATTEN (schatten.K1): `kontaktSicht` an der Platte saat-s7-platte der Prüfbühne je Uhr, das Urteil `kontaktUrteil`
-        // (Staffel 1 am Fuß; `--zuwachs` dazu Staffel 2, der Zuwachs je m). DIE GESETZ-PROBE DES RADIUS (schatten.K1#2) am Stamm: im
-        // `_schattenFilter` legt sich der Halbschatten der Sonne auf den Boden-Radius (Halbschatten/2 + `filterTexel`), nie max(…) —
-        // unter dem max trug der Boden jede Kante bis 4,9 m gleich breit; die Mutante (der Radius ohne Boden) macht die Probe ROT
-        const summe = (q) => !stammLib.fehlt("_schattenFilter", /\.div\(box\)\.add\(r\)/, q);
-        const fehl = LL.kontaktSelbsttest().concat(summe() && !summe((t) => stammLib.ersetze(t, "_schattenFilter", ".add(r)", "")) ? [] : ["RADIUS nicht Boden + Sonne"]);
-        console.log(`KONTAKT Selbsttest ${fehl.length ? "ROT: " + fehl.join(" | ") : "5/5"}`);
+        // (Staffel 1 am Fuß; `--zuwachs` dazu Staffel 2, der Zuwachs je m — der Richter des Gesetzes im `_schattenFilter`: die Text-Probe
+        // des Radius fiel mit w12-kontakt-zuwachs, unter der alten Summe der Radien misst der Zuwachs am Mittag 0,503 cm je m, ROT beim
+        // Namen). Bühne und Platte stehen EINMAL vor den Uhren (die Uhr springt in der Sicht): je Uhr zwei Umstellen kosteten an der
+        // Radeon drei kalte Ringe, 17,9 s
+        const fehl = LL.kontaktSelbsttest();
+        console.log(`KONTAKT Selbsttest ${fehl.length ? "ROT: " + fehl.join(" | ") : "4/4"}`);
         if (fehl.length || SELBST) process.exit(fehl.length ? 1 : 0);
         const welt = {};
         const P = require("../spec/pruefbuehne/welt.json").architectures.find((a) => a.id === "saat-s7-platte");
+        await umstellen({ ort: "buehne", sicht: "ego" });
+        await umstellen({ x: P.position.x, z: P.position.z - 8 });
         for (const uhr of opt("--uhr", "0.5").split(",").map(Number)) {
-            await umstellen({ ort: "buehne", sicht: "ego" });
-            await umstellen({ x: P.position.x, z: P.position.z - 8 });
             const o = { uhr, png: !!opt("--bilder"), platte: P.id };
-            const m = (welt[uhr] = (await evalRuf(`return await (${LL.kontaktSicht})(${JSON.stringify(o)});`)).ergebnis);
+            const m = (welt[uhr] = ergebnis(await evalRuf(`return await (${LL.kontaktSicht})(${JSON.stringify(o)});`)));
             for (const [pose, p] of Object.entries((m && m.posen) || {}))
                 if (p.png) pngDatei(path.resolve(opt("--bilder"), `kontakt-${uhr}-${pose}.png`), p.png), delete p.png;
         }

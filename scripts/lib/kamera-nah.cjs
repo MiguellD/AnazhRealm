@@ -104,8 +104,12 @@ function nahDeckungInSeite(o) {
             return { klasse: "Fels", name: "Streu-Stein" };
         }
         if (ritt && e === ritt) return { klasse: "Wagen", name: "Wagen " + (e.type || "?") };
-        if (art === "laub") return { klasse: "Laub", name: "Laub " + ((e && e.type) || nm || "Streu") };
-        if (art === "rinde") return { klasse: "Rinde", name: "Rinde " + ((e && e.type) || nm || "Streu") };
+        // ohne Eintrag und Namen nennt die EINE Täter-Klasse des Stamms den Täter (`_taeterKlasse`: die Gruppe einer Instanz
+        // `fscatter:<art>:L<n>` · `f:<art>:L<n>`, sonst der oberste Knoten) — bis w10-wiese hieß jede solche Fläche „Streu“, und
+        // vegetation.K2 nannte am Kopf 2674ff9a „Rinde Streu 14,4 %“, ohne dass ein Leser wusste, welche Gestalt dort stand
+        const wer = () => (e && e.type) || nm || r._taeterKlasse(obj);
+        if (art === "laub") return { klasse: "Laub", name: "Laub " + wer() };
+        if (art === "rinde") return { klasse: "Rinde", name: "Rinde " + wer() };
         if (e && r._istNatur(e)) return { klasse: "Fels", name: "Natur " + e.type };
         return { klasse: "Bau", name: (e && e.type) || nm || r._taeterKlasse(obj) };
     };

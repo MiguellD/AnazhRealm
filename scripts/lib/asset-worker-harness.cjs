@@ -457,9 +457,8 @@ function kernKontext(mit = { THREE: absorber() }) {
 function kanalImVm(quellen = {}) {
     const vm = require("vm");
     const posts = [];
-    // DER START DES FADENS (studios.K1): die Brücke startet im vm wie im Foundry-Worker (`_foundryStart`: die Engine der Welt
-    // als THREE, `foundryModus`: die Stoffe, der Sommer, der Foundry-Modus) — ohne ihn backte der erste Baum den Blatt-Atlas in
-    // einen ungebauten Stoff und lieferte 0 Teile
+    // DER START DES FADENS (studios.K1): die Brücke startet im vm wie im Foundry-Worker (`foundryModus`: die Stoffe, der Sommer,
+    // der Foundry-Modus) — ohne ihn backte der erste Baum den Blatt-Atlas in einen ungebauten Stoff und lieferte 0 Teile
     const ctx = kernKontext({
         THREE: ENGINE_THREE(),
         OffscreenCanvas: absorber(),

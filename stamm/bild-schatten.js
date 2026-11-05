@@ -70,7 +70,7 @@ class AnazhRealm_bild_schatten {
             boden: T.uniform(new THREE.Vector3()),
             atmo: T.uniform(new THREE.Vector3()),
         });
-        st.rueckstrahlLeser = Object.assign({ rt, lesung: null, gelesen: false }, U);
+        st.rueckstrahlLeser = Object.assign({ rt, lesung: null, gelesen: false, licht: 0 }, U);
         // die Strahldichte, die die untere Hemisphäre ändert — EIN Knoten für jeden Leser
         st.rueckstrahlLeser.unten = U.boden.sub(U.atmo).mul(U.an);
         return st.rueckstrahlLeser;
@@ -160,14 +160,8 @@ class AnazhRealm_bild_schatten {
     _rueckstrahlZeichne() {
         const st = this.state;
         const L = this._rueckstrahlLeser();
-        if (!st.scenePass || !st._skyEnvRT || st.rueckstrahlBruch) {
-            L.an.value = 0;
-            return;
-        }
-        // DIE DECKE ÜBER DEM AUGE (`_augeUnterDach`, je Takt): der Rückstrahl ist das Licht des Bodens unter dem offenen Himmel —
-        // steht das Auge unter einer Decke, ruht er. Bis dahin nahm der Innenraum des Dorf-Hauses den gemessenen Boden: im Regen
-        // heller als in der Sonne (gate:naesse:echt Regenbild 1,065 > 1, GTX), 8 861 Regen-Punkte innen
-        L.an.value = L.gelesen && !this._augeUnterDach() ? 1 : 0;
+        L.an.value = this._rueckstrahlAn(L);
+        if (!st.scenePass || !st._skyEnvRT || st.rueckstrahlBruch) return;
         try {
             const P = this._rueckstrahlPass();
             const cam = st.camera;
@@ -190,9 +184,11 @@ class AnazhRealm_bild_schatten {
             const folge = P.sprung ? 1 : AnazhRealm.RUECKSTRAHL.folge;
             P.sprung = false;
             P.laeufe++;
+            const licht = L.licht; // das Licht dieser Messung: springt der Himmel, bis sie zurück ist, verfällt sie
             L.lesung = rend.readRenderTargetPixelsAsync(L.rt, 0, 0, 2, 1).then(
                 (px) => {
                     L.lesung = null;
+                    if (L.licht !== licht) return;
                     const w = (i) => (px instanceof Uint16Array ? AnazhRealm._halbZuFloat(px[i]) : px[i]);
                     L.atmo.value.set(w(4), w(5), w(6));
                     if (!(w(0) >= 0)) return;
@@ -224,14 +220,55 @@ class AnazhRealm_bild_schatten {
     // `bild` misst den Boden der Szene, die jetzt gilt, und die Lesung kommt zurück, bevor der Schuss zählt. Bis dahin trug jeder
     // Schuss den Boden des vorigen (gate:naesse:echt, Dorf: der nasse Schuss den frischen Boden, der Schuss ohne Schliere den
     // nassen — 510 Punkte innen trennten zwei Bilder derselben Nässe). Ohne Pass (Holz ohne Szenen-Pass) misst niemand.
+    // DER BODEN GILT AB DEM NÄCHSTEN BILD (w10-treue, 04.11.): `an` stellt das Bild der Messung an seinem Ende — BEVOR seine Lesung
+    // zurückkommt. Der erste Schuss nach dem Lesen zeichnete darum ohne den Boden, den er eben gemessen hatte, jeder weitere mit ihm:
+    // zwei Aufnahmen derselben Szene wichen ab (Radeon, Wiese 960 × 540: 487 652 von 2 073 600 Bytes, die dritte gleich der zweiten;
+    // GTX lod.K2#1 547 572, lod.K5#1 2 216 057 — „EINE Aufnahme je Schuss trägt hier nicht“). Nach der Lesung stellt die EINE Regel
+    // `_rueckstrahlAn` den Schalter für die Bilder des Schusses. ZWEI Messbilder: das erste zeichnet OHNE Rückstrahl (der Boden der
+    // Szene allein), das zweite unter dem Boden, den das erste maß — der Boden des Schusses hängt an keinem Boden davor (bis
+    // w12-lod-ende trug das erste den Schalter und den Boden des vorigen Schusses: Radeon, Wiese, leer → Tanne, 9 Bytes zwischen
+    // zwei Aufnahmen). Der Boden, den es misst, liegt unter den
+    // Schatten-Karten DIESES Blicks: die Aufnahme legt sie vor dem ersten Messbild neu (`neubeginn`, w12-lod-ende) — bis dahin
+    // trug er die Kaskaden, die der Lauf davor hielt (Radeon, Wiese: Boden 0,069 statt 0,095, Stamm und Laub der ersten Aufnahme
+    // 1 786 078 Bytes neben der zweiten).
     async _rueckstrahlJetzt(bild) {
         const st = this.state;
         const L = st.rueckstrahlLeser;
         if (!L || !st.rueckstrahlPass) return;
         if (L.lesung) await L.lesung;
-        st.rueckstrahlPass.sprung = true;
-        bild();
-        if (L.lesung) await L.lesung;
+        L.an.value = 0;
+        for (let i = 0; i < 2; i++) {
+            st.rueckstrahlPass.sprung = true;
+            bild();
+            if (L.lesung) await L.lesung;
+            L.an.value = this._rueckstrahlAn(L);
+        }
+    }
+    // DER SCHALTER DES RÜCKSTRAHLS (die EINE Regel, `_rueckstrahlZeichne` je Bild und `_rueckstrahlJetzt` nach der Lesung): an erst,
+    // wenn ein Boden gelesen ist; ohne Szenen-Pass, ohne Umgebung oder nach einem Bruch nie. DIE DECKE ÜBER DEM AUGE
+    // (`_augeUnterDach`, je Takt): der Rückstrahl ist das Licht des Bodens unter dem offenen Himmel — steht das Auge unter einer
+    // Decke, ruht er. Bis dahin nahm der Innenraum des Dorf-Hauses den gemessenen Boden: im Regen heller als in der Sonne
+    // (gate:naesse:echt Regenbild 1,065 > 1, GTX), 8 861 Regen-Punkte innen
+    _rueckstrahlAn(L) {
+        const st = this.state;
+        if (!st.scenePass || !st._skyEnvRT || st.rueckstrahlBruch) return 0;
+        return L.gelesen && !this._augeUnterDach() ? 1 : 0;
+    }
+
+    // DER SPRUNG DES LICHTS (w12-karte-licht): der gemessene Boden ist Sonne × cos × Albedo und Himmel × Albedo DES LICHTS, unter
+    // dem er gemessen wurde — springt der Himmel (`_himmelSprung`: der Uhr-Schreiber, die Bühne), verfallen er und jede Lesung
+    // unterwegs; bis die erste Lesung des neuen Lichts zurück ist (ganz, ohne `folge`), trägt der Boden der Atmosphäre den
+    // Halbraum (`an` 0). Bis dahin trug jeder Schuss nach einem Sprung den Boden der Stunde davor: die Bühne der Linsen ruht am
+    // Mittag, ihr Schuss steht in der Dämmerung — der Mittags-Boden minus die Atmosphäre der Dämmerung lag unter jeder
+    // abwärts gewandten Normale, geklemmt je Kanal (`_rueckstrahlHalbraum`), und hob die Karte gegen ihre Gestalt (licht.K3#1,
+    // Radeon, Dorf, Fichte aus 8 m, Uhr 0,27 · 0,05: 1,217 · 1,594 → 1,001 · 1,064, ΔC* 3,2–6,9 → 0,0–0,7).
+    _rueckstrahlSprung() {
+        const L = this.state.rueckstrahlLeser;
+        if (!L) return;
+        L.licht++;
+        L.gelesen = false;
+        L.an.value = 0;
+        if (this.state.rueckstrahlPass) this.state.rueckstrahlPass.sprung = true;
     }
 
     // DIE RUHE DES RÜCKSTRAHLS: er misst neu, wenn das Auge weiter als `ruheM` wandert oder der Blick weiter als `ruheRad` dreht (die
@@ -877,8 +914,11 @@ class AnazhRealm_bild_schatten {
     // ohne Vergleich) — ein Werfer verdunkelt ihn nur, wo er in seinem halben Halbschatten liegt, und der fernste liegt `luftM` unter
     // der nahen Ebene der Kaskade (`_kaskadeFit`): der Radius ist (Tiefe des Empfängers unter ihr − `luftM`) · sonneTan/2, höchstens
     // `sucheM`. Ihr Mittel längs des Lichts in Metern (`anazhTiefeM`, orthographisch linear); dann der Vergleich wie r184-PCF
-    // (5 Vogel-Punkte, gedreht je Bildpunkt) im Radius Halbschatten/2 + Boden — die Sonne weicht ab dem ersten Zentimeter
-    // Abstand (schatten.K1#2: unter max(Halbschatten/2, Boden) trug der Boden jede Kante bis 4,9 m gleich breit). Bis w4-licht-uhr
+    // (5 Vogel-Punkte, gedreht je Bildpunkt), und die BREITE der Sonne legt sich auf die des Bodens: der Vergleich ist bilinear,
+    // jeder Abgriff trägt die Rampe eines Texels (10–90 % 0,8 Texel, wie eine Scheibe vom Radius `rampeTexel`), Radien summiert
+    // läge die Sonne in Quadratur auf ihr (Radeon, Prüfbühne, Mittag: Ego 0,503 cm je m statt 0,9); der Radius
+    // √((Halbschatten/2 + Boden)² − Rampe²) mit Boden = √(filterTexel² + Rampe²) trägt Boden + Sonne auf ±1 % über 0–3 Texel und
+    // am Kontakt genau `filterTexel` (schatten.K1#2: unter max(Halbschatten/2, Boden) trug der Boden jede Kante bis 4,9 m gleich breit). Bis w4-licht-uhr
     // suchte er im festen Umkreis `sucheM` (0,25 m): am Mittag ragte er über die Spitze eines kurzen Schattens hinaus, die Treffer
     // lagen tiefer am Werfer, der Abstand fiel bis 0,8 m zu kurz — der Zuwachs 0,484 statt 0,9 cm je m (GTX, takt24c). Ohne Suche
     // (k0 ab 15 m, k1: `sucheM` 0; WebGL2: GLSL lädt keine Tiefe aus sampler2DShadow, gate:webgl-probe W5) bleibt der Boden-Radius,
@@ -920,7 +960,12 @@ class AnazhRealm_bild_schatten {
                     .abs()
                     .mul(tiefe);
                 const halb = T.select(zahl.greaterThan(0), abstand.mul(K.sonneTan * 0.5).min(sucheM), 0);
-                r = T.vec2(halb).div(box).add(r);
+                const boden = T.vec2(Math.hypot(je(K.filterTexel), K.rampeTexel)).div(karte);
+                const q = T.vec2(halb).div(box).add(boden);
+                r = q
+                    .mul(q)
+                    .sub(T.vec2(K.rampeTexel ** 2).div(karte.mul(karte)))
+                    .sqrt();
             }
             let s = T.texture(depthTexture, vogel(0, r)).compare(z);
             for (let k = 1; k < 5; k++) s = s.add(T.texture(depthTexture, vogel(k, r)).compare(z));
@@ -1536,12 +1581,14 @@ AnazhRealm.LICHT_WURF = Object.freeze({
 // DIE KONTAKT-KASKADE (schatten.K1): die ersten `kontaktM` Meter tragen eine eigene Kaskade bei `texelM[0]` (≤ 5 cm, 1024²);
 // DER FILTER jeder Kaskade ist das EINE Gesetz der Sonnen-Scheibe (`_schattenFilter`): Halbschatten = Abstand Werfer →
 // Empfänger längs des Lichts × `sonneTan` (0,53°), die Werfer gesucht im Kegel der Sonne über dem Empfänger (höchstens `sucheM`
-// je Kaskade; der Saum `luftM` über dem höchsten Werfer ist sein Scheitel), der Radius `filterTexel`
-// Texel + Halbschatten/2 (k0 und k1: 1 Texel ohne Suche, der r184-PCF bis K1 — ihr Texel trägt den Halbschatten der Sonne nie).
+// je Kaskade; der Saum `luftM` über dem höchsten Werfer ist sein Scheitel), die Breite der Sonne auf der des Bodens: `filterTexel`
+// Texel und die Rampe des bilinearen Vergleichs `rampeTexel` (k0 und k1: 1 Texel ohne Suche, der r184-PCF bis K1 — ihr Texel trägt
+// den Halbschatten der Sonne nie).
 AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
     kontaktM: 15,
     texelM: Object.freeze([0.045, 0.17, 0.47]),
     filterTexel: Object.freeze([0.25, 1, 1]),
+    rampeTexel: 0.6,
     sonneTan: 0.00925,
     sucheM: Object.freeze([0.25, 0, 0]),
     bezugAspekt: 16 / 9,

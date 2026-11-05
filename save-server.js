@@ -877,6 +877,7 @@ function sendStaticFile(req, res) {
                 ETag: kopf.ETag,
                 "Cache-Control": kopf["Cache-Control"],
                 "Access-Control-Allow-Origin": "*",
+                ...ISOLATION_KOPF,
             });
             res.end();
             return;
@@ -892,12 +893,24 @@ function sendStaticFile(req, res) {
 // der Server 304 ohne Körper. Kein `immutable` auf `?v=`: der Stempel ist die VERSION, nicht der Inhalt — main ändert Code
 // auch ohne Versions-Sprung, ein immutabler Eintrag hielte dann alten Code bis zum nächsten Sprung (die Linse: gate:persistence
 // (C)).
+// DIE ISOLATION (klang.K5#2): ohne COOP + COEP ist die Seite nicht cross-origin-isoliert und Chrome rastert
+// `performance.now()` auf 100 µs — jede Takt-Messung der Sitzung lag auf dem 0,1-ms-Raster. Jede statische Antwort trägt
+// dasselbe Paar wie die Linse (diag-klang-zensus --takt); ein Portal-iframe erbt require-corp und lädt so nur Dokumente mit
+// COEP. CORP `cross-origin`: die null-origin-Welt (sandbox ohne allow-same-origin) ist für jede Datei des Servers eine fremde
+// Herkunft — ihre no-cors-Skripte, Bilder und importScripts ihrer Blob-Worker brauchen die Freigabe; lesbar war jede Datei
+// schon (ACAO *).
+const ISOLATION_KOPF = {
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Cross-Origin-Embedder-Policy": "require-corp",
+    "Cross-Origin-Resource-Policy": "cross-origin",
+};
 function statischerKopf(body, contentType) {
     return {
         "Content-Type": contentType,
         "Access-Control-Allow-Origin": "*",
         "Cache-Control": "no-cache",
         ETag: '"' + crypto.createHash("sha1").update(body).digest("base64url") + '"',
+        ...ISOLATION_KOPF,
     };
 }
 function frischBeimLeser(req, etag) {

@@ -266,3 +266,32 @@
     width: auto;
     z-index: 60;
 }
+/* DIE MATRIX-TAFEL (w11-leib): der Kern-Zustand des gezeigten Leibs, schwebend oben rechts — auch im Spiel, wenn die UI ruht */
+.h-matrix {
+    position: fixed;
+    right: 14px;
+    top: 14px;
+    width: 176px;
+    padding: 6px 8px 8px;
+    background: rgba(8, 8, 10, 0.78);
+    border: 1px solid rgba(232, 216, 168, 0.22);
+    border-radius: 4px;
+    color: #d8cfb4;
+    font: 10px/1.35 monospace;
+    pointer-events: none;
+    z-index: 55;
+}
+.h-matrix-quelle {
+    color: #998866;
+    margin-bottom: 4px;
+}
+.h-matrix-bild {
+    display: block;
+    width: 160px;
+    height: 160px;
+    background: rgba(255, 255, 255, 0.03);
+}
+.h-matrix-text {
+    white-space: pre-line;
+    margin-top: 4px;
+}

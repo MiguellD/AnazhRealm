@@ -452,6 +452,7 @@ class AnazhRealm_studio_bruecke {
             const clone = this._autoArtGeburt(id, rec, pol);
             if (!clone) continue; // fail-closed je kind (Blueprint UND Tabelle leer)
             bps[name] = clone;
+            this._bauplanGeboren(clone); // der Stand fragt ihn nie neu, bis er sich regt (speicher.K2#2)
             registered++;
         }
         if (registered > 0) {
@@ -1156,8 +1157,8 @@ class AnazhRealm_studio_bruecke {
         wo = rang.wo;
         const f = this._foundry;
         if (!f) return Promise.resolve(null);
-        // Die Gestalt des Orts (K20): die Solitär-Gestalt einer Baum-Art reist mit ihrer Prägung (`_foundryGestaltOv`).
-        ov = this._foundryGestaltOv(presetId, seed, ov);
+        // Die Prägung des Bestellers (`_foundryGestaltOv`); die Gestalt des Orts (K20, der Solitär) trägt der Same im Kern.
+        ov = this._foundryGestaltOv(ov);
         // Regler-Kanal: ein nicht-leeres ov formt den Körper; sein Hash trennt den Schlüssel (geprägt und ungeprägt
         // vergiften sich nie). Die Werkstatt-Vorschau (wo === 0) umgeht die Platte KOMPLETT — ein Unikat je Regler-Stand.
         const hasOv = !!(ov && typeof ov === "object" && Object.keys(ov).length);
@@ -2502,8 +2503,10 @@ class AnazhRealm_studio_bruecke {
         // Bedarf-Stempel für den Karten-Takt (nah zuerst): die kleinste Distanz² eines wartenden Lesers zum Spieler — der
         // Eintrag an seinem Ort, der Wartende in seinem Rang (`_foundryAuftragD2`, ohne Ort ∞).
         if (!z.gebacken) {
-            const d2 = this._foundryAuftragD2(wer ? wer.wo : entry && (entry.position || entry.wo));
+            const wo = wer ? wer.wo : entry && (entry.position || entry.wo);
+            const d2 = this._foundryAuftragD2(wo);
             if (!(z._bedarfD2 <= d2)) z._bedarfD2 = d2;
+            if (z._imBlick !== true) z._imBlick = this._rangImBlick(wo); // die Lücke im Blick (`_weltbildLuecken`)
         }
         // Mit echtem Renderer trägt die Karte erst gebacken: bis dahin liefert der Flatten für die Baum-Fernstufe NICHTS
         // (false), nie Geometrie — nah trägt die Wunsch-Stufe, fern wartet der Baum (ein Karten-Ding hat keinen Satz).

@@ -72,8 +72,7 @@ async function SCHUSS(W, H, mut, r = window.anazhRealm, cam = r.state.camera) {
     window.__buehne();
     let auf = null;
     try {
-        for (let i = 0; i < 2; i++)
-            (r._schattenAlleNeu(), (auf = await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })));
+        for (let i = 0; i < 2; i++) auf = await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" });
     } finally {
         cam.far = far;
         cam.updateProjectionMatrix();

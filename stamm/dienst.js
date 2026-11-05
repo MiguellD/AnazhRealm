@@ -270,6 +270,12 @@ class AnazhRealm_dienst {
             d: 1,
         };
         if (Array.isArray(zeile)) {
+            // DIE WAND AM SCHREIBER: eine Zeile ohne Schlüssel der Tafel bräche erst beim Lesen (`_tIn`), in einer anderen Welt,
+            // beim Tausch am Ort (w12-heimtor, ultiversum.K1) — sie wirft hier, beim Namen des Rufers im Stapel
+            if (typeof zeile[0] !== "string" || !AnazhRealm.TEXTE.de[zeile[0]])
+                throw new Error(
+                    `TAGEBUCH: die Zeile trägt keinen Schlüssel der Tafel (${JSON.stringify(zeile[0])}, Typ ${type})`
+                );
             entry.t = zeile[1] ? [zeile[0], zeile[1]] : [zeile[0]];
             AnazhRealm._journalZeile(entry);
             if (ctx && typeof ctx === "object") entry.ctx = ctx;
@@ -1381,7 +1387,7 @@ class AnazhRealm_dienst {
         // letzten Stand änderte (`_standAenderung`, per Transfer); er setzt das JSON zusammen und schreibt es in EINER
         // Transaktion samt .bak. Bis speicher-faden baute jeder Ruf den ganzen Stand, serialisierte und schrieb ihn zweimal
         // im Haupt-Faden (IndexedDB und das Abbild im localStorage): je Ruf p50 4,0 ms in der frischen Welt (headless).
-        this._standSichern(worldId, Date.now(), takt);
+        this._standSichern(worldId, takt);
         if (this._aktivZeiger !== worldId) this.activeWorldSet(worldId);
         const lastVersion = this.state.versionHistory[this.state.versionHistory.length - 1];
         if (lastVersion !== this.state.currentVersion) {

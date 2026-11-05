@@ -2,7 +2,7 @@ class AnazhRealm_studio_gestalt {
     // ===== ATLAS · Studio/gestalt — Foundry-Gestalt · Gruppen · Bibliothek · Bereitschaft =====
     // DER GEFÜHLTE BAUM DER GESTALT (K20): zeichnet das Studio einen Baum oder Strauch (Rezept-Art tree/shrub), wächst sein
     // gefühlter Leib aus DERSELBEN Gestalt wie das Bild — die Gestalt des Eintrags (`_foundryGestaltFor`, V synchron aus dem
-    // Kern wie beim Fels), die Prägung des Orts samt Besteller (`_foundryGestaltOv`: der Solitär trägt FREISTAND), das
+    // Kern wie beim Fels), die Prägung des Bestellers (`_foundryGestaltOv`; den Solitär trägt der Kern), das
     // Skelett, wie der Worker es baut (`_growTreeBlueprintRich` mit `gestalt`, L0). Gemerkt je Art, Gestalt und Prägung (je
     // Art höchstens V+1 Gestalten). Rückgabe: die Teile · false = kein Studio-Baum (der Bauplan ist das Bild) · null = die
     // Gestalt wartet auf ihren Ort (`entry._huelleWartet`; `_foundryGestaltFor` setzt die Hülle, sobald sie steht).
@@ -22,7 +22,7 @@ class AnazhRealm_studio_gestalt {
             return null;
         }
         entry._huelleG = g;
-        const ov = this._foundryGestaltOv(preset, g, entry.studioOv);
+        const ov = this._foundryGestaltOv(entry.studioOv);
         const k = preset + "|" + g + "|" + (ov ? JSON.stringify(ov) : "");
         if (!this._baumGestaltMerk) this._baumGestaltMerk = new Map();
         let teile = this._baumGestaltMerk.get(k);
@@ -781,14 +781,13 @@ class AnazhRealm_studio_gestalt {
         const h = Math.imul(seed >>> 0 || 0, 2654435761) >>> 0; // Knuth-Mix
         return 1 + Math.floor((h * V) / 4294967296);
     }
-    // DIE GESTALT DES ORTS (K20, nordstern §4.5: „die Gestalt folgt dem Ort, nicht der Art allein"): eine Baum-Art mit V ≥ 2
-    // Bestand-Gestalten (budget.gestalten) trägt DAZU ihren Solitär als Gestalt T = V+1 (phyto-core `solitaerGestalt`,
-    // gebaut mit FREISTAND_OV — growSkeleton: kein Schaft-Hub, der gedrungene Stamm); der Bestand behält 1..V (kein Klon).
-    // Der EINE Leser je Worker-Naht (`_foundryRequest`, `_foundryBakeImpostorRequest`): jeder Körper und jede Karte der
-    // Gestalt T ist der Solitär — auch unter der Prägung eines Bestellers (`ov`, die Regler der Werkstatt, die Wald-
-    // Overrides): die Prägung des Orts tritt DAZU, sie ersetzt sie nie (ein geprägter Solitär wuchs sonst als Bestand).
-    // Rückgabe: die vereinte Prägung, null ohne jede (ein leeres ov ist keine).
-    _foundryGestaltOv(preset, gestalt, ov) {
+    // DIE PRÄGUNG EINES BESTELLERS (`ov`: die Regler der Werkstatt, die Wald-Overrides, das Werk eines Studios) auf dem Weg
+    // zum Kern, der EINE Leser je Worker-Naht (`_foundryRequest`) und des gefühlten Baums (`_baumGestaltTeile`). Die Gestalt
+    // des Orts (K20, nordstern §4.5) trägt der Kern selbst: der Same V+1 einer Baum-Art mit V ≥ 2 Bestand-Gestalten IST ihr
+    // Solitär (phyto-core `treeParams` mit `solitaerGestalt`) — für die Welt wie für Bühne, Werk und Wald des Studios. Bis
+    // w12-eiche-same prägte ihn hier der Wirt (FREISTAND), die Bühne nie: dieselbe Eiche Same 3 stand im Studio als Bestand.
+    // Rückgabe: die Prägung, null ohne jede (ein leeres ov ist keine).
+    _foundryGestaltOv(ov) {
         let hat = ov && typeof ov === "object" && Object.keys(ov).length ? ov : null;
         // Der Same eines Studio-Werks (`__gestalt`, der Übergabe-Kanal) wählt die Gestalt (`_foundryGestaltFor`) und reist als
         // seed — nie im ov zum Kern.
@@ -797,9 +796,7 @@ class AnazhRealm_studio_gestalt {
             delete hat.__gestalt;
             if (!Object.keys(hat).length) hat = null;
         }
-        const T = this._foundryGestalten(preset);
-        if (!(T >= 2 && gestalt === T && AnazhRealm._solitaerVon(preset, T - 1) === T)) return hat;
-        return hat ? Object.assign({}, hat, AnazhRealm.FREISTAND_OV) : AnazhRealm.FREISTAND_OV;
+        return hat;
     }
     // DIE GESTALT EINES EINTRAGS (K20), der EINE Leser: ein Baum mit Lage fragt die Gestalt seines Orts (`_ortGestaltSame`),
     // sein Same bleibt; null = sie wartet (wie auf ein kaltes Buch). Ein Datensatz ohne Lage trägt den Samen seines Orts schon.
@@ -1403,8 +1400,7 @@ AnazhRealm._ortWaehlt = function (preset) {
     return ja;
 };
 // Die Gestalt des Solitärs einer Art mit V Bestand-Gestalten (K20, phyto-core `solitaerGestalt`: V+1 für eine Baum-Art mit
-// V ≥ FREISTAND.ab), 0 = die Art trägt keinen. Leser: `_foundryGestalten`, `_studioGestaltenKern`, `_foundryGestaltOv`,
-// `_ortWaehlt`.
+// V ≥ FREISTAND.ab), 0 = die Art trägt keinen. Leser: `_foundryGestalten`, `_studioGestaltenKern`, `_ortWaehlt`.
 AnazhRealm._solitaerVon = function (preset, V) {
     const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
     const rec = tc && tc.PHYTO_PRESETS ? tc.PHYTO_PRESETS[preset] : null;
@@ -1413,9 +1409,6 @@ AnazhRealm._solitaerVon = function (preset, V) {
     if (!PC || typeof PC.solitaerGestalt !== "function") return AnazhRealm._kernPflichtBruch("phyto:solitaerGestalt");
     return PC.solitaerGestalt(rec.kind, V);
 };
-// DER SOLITÄR (K20): die Prägung der Gestalt V einer Baum-Art (`_foundryGestaltOv`) — phyto-core growSkeleton liest
-// `P.freistand`. Und das Inverse des Knuth-Faktors 2654435761 mod 2^32 (`_foundryGestaltSame`: der Same zum Eimer).
-AnazhRealm.FREISTAND_OV = Object.freeze({ freistand: 1 });
 // DIE HÜLLEN DER ANKUNFT (`_tickHuellenNach`): so viele ms fühlen die Bäume je Takt ihre Hülle aus dem Gedächtnis ihrer Gestalt —
 // ein neues Skelett beendet den Takt sofort.
 AnazhRealm.HUELLE_NACH_MS = 2;
