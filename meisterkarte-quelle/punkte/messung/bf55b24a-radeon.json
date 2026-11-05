@@ -1,0 +1,59 @@
+{
+ "sha": "bf55b24a80ced839fd30293942ff2cb27dbddcc2",
+ "geraet": "radeon",
+ "zeit": "2026-11-05T14:18:36.598Z",
+ "host": "MiguellD",
+ "je": {
+  "speicher.K2#2": {
+   "gruen": true,
+   "zahl": "Speicher-Bild frisch p50 0.03 / p95 0.095 / max 0.465 ms (498 Bilder), 0 von 160 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0.025 / p95 0.075 / max 0.565 ms (420 Bilder), 0 von 72 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ 0,1)",
+   "exit": 0,
+   "minuten": 0.56,
+   "gpu": "amd/rdna-3",
+   "s": 33.6,
+   "zeit": "2026-11-05T14:18:36.598Z",
+   "abdruck": "f93d36e16c03",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-05T14:11:01.907Z",
+  "port": 7804,
+  "warten": 7.07,
+  "bootS": 5.8,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "speicher.K2#2",
+    "s": 16.7,
+    "takte": 747,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 62,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 63.9,
+  "minuten": 8.26
+ }
+}
