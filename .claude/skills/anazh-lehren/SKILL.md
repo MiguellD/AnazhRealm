@@ -20,8 +20,10 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 - **Kerne** (9 Kerne in 10 Dateien, cores.manifest.json): Daten+Mathe, Vertrag v1.2 `PARAMS_BY_KIND` + must-ignore + fail-closed
   (`docs/studio-vertrag.md`); der Host ist der OFEN (bauMensch-/bauTier-Guss + Lofi).
 - **Studios** `worlds/` (14 Verzeichnisse + die Hülle): die Gesetzbücher und Nebenwelten. Die EINE Hülle `worlds/huelle` ist NUR UI
-  (Regler · Sitzung · Kosten-Leiste · Portal-Brücke, 12 von 12 trusted Studios). Heute fährt die Engine der Welt nur `gelaende` (Modus
-  `index.html?studio=gelaende`), die übrigen zeichnen mit eigenem `WebGLRenderer` (r128 bis r183) — Labor = Welt ist dort Gesetz, nicht Stand.
+  (Regler · Sitzung · Kosten-Leiste · Portal-Brücke, 12 von 12 trusted Studios). Die Bühne der Welt ist EIN Baustein (`welt-licht.js`
+  `buehne`: Tafeln der EINEN Atmosphäre, Sonne, Umgebung, Belichtung, Tonkurve — derselbe, den der Stamm ruft); auf ihr zeichnet die
+  garage, `gelaende` fährt die Welt selbst (`index.html?studio=gelaende`). Heute zeichnen portale · schmiede · fachwerk · terrain ·
+  koerperstudio · tetrapoda mit eigenem r128-`WebGLRenderer` und eigenem Licht — Labor = Welt ist dort Gesetz, nicht Stand.
 - **Worker:** Foundry lädt die EINE Brücke `foundry-bruecke.js` auf der Engine der Welt (three r184 per `import()` aus ihrer
   Import-Karte, Manifest `engine`; kein ColorManagement, die Kerne rechnen ihr FARB-GESETZ selbst; Manifest per fetch) (`get-book` 1×Boot · `build-asset(id,seed,lod,ov)` ·
   `export-settlement`; die IDB-Platte der Schale trägt jede Lieferung — build-asset · Dorf-Export · Blatt-Atlas · Karte —
@@ -55,7 +57,8 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   (`skelettDerGestalt`), EIN Wind-Term über die Naht `_weltNaht`, Blende je Instanz, laut (`_blendeBruch`) · Haus und Tor fern NUR-WURF,
   das Fenster Glas in jeder Stufe, der Tor-Hinterflügel eine Instanz (`_foundryFluegelInstanz`).
 - BODEN Rausch-Gesetz, Fels und Halm-Schichten als reine WGSL-Funktionen, EIN Leser `_bodenSichtAt`, Fels-Stoff im Worker (`_felsStoff`).
-- LICHT EIN Leuchtquellen-Gesetz (`kelvin`, EIN Pool) · EIN Himmel · EINE Koschmieder-Luft · Schatten 2 Kaskaden (`_schattenBias`), EIN
+- LICHT EIN Leuchtquellen-Gesetz (`kelvin`, EIN Pool) · EIN Himmel (die Tafeln, Anker, Belichtung und Tag-Achse im Baustein
+  `welt-licht.js`, Welt und Studio-Bühne rufen ihn; die Luft selbst ist Kern: foundry-core `ATMO_GESETZ`) · EINE Koschmieder-Luft · Schatten 2 Kaskaden (`_schattenBias`), EIN
   Werfer je Gestalt · Sätze EIN Pool je Stoff, EIN Programm je Signatur · alles Opake in EINER Reihe (`_zeichenRang`: Bau · Boden · Fern ·
   Himmel), Kinder `_buendelKinderReihe`. Heute doppelt: Tag-Achsen ×5, Belichtungs-Schreiber ×3, Lichtwege ×4 (W7).
 - KOSTEN die EINE Skala (TAAU: `SZENE_SKALA` 0,75, Spieler-Wahl `state.szeneSkala`, `_zeitAufloesung` auf volle Ausgabe) · `_passTrifft`

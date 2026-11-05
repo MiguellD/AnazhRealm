@@ -8,40 +8,31 @@
 // Kernsatz: ändere den Rahmen → Haut und Lehren folgen live.
 // ════════════════════════════════════════════════════════════════════
 
-const scene=new THREE.Scene();scene.background=new THREE.Color(0x070b10);scene.fog=new THREE.FogExp2(0x070b10,0.020);
+// DIE BÜHNE DER WELT (w12-studio-buehne, studios.K4 — Studio = Modus der Welt-Engine): die Werkstatt zeichnet ihr Werk im Licht der
+// Welt (welt-licht.js `buehne`): Himmel, Sonne, Umgebung, Belichtung und Tonkurve der Welt an ihrem Mittag. Bis hierher stand der
+// Wagen auf einer schwarzen Bühne (0x070b10) mit Nebel unter drei Studio-Lichtern (Key 2,93π Bernstein, Fill, Rim) bei Belichtung
+// 1,04 — die Welt zeigt denselben Wagen unter Sonne 6,9 und Himmel bei 0,51 (Radeon: Bild-Differenz Labor ↔ Welt 84,5 %).
+const scene=new THREE.Scene();
 const CAM_FOV=34,cam=new THREE.PerspectiveCamera(CAM_FOV,innerWidth/innerHeight,0.1,200);cam.position.set(6.2,3.1,7.4);
 // DIE EINE ENGINE (18.10.): die Werkstatt rendert auf der Engine der Welt — three r184 WebGPU (vendor/three-bootstrap.js),
-// Ausgabe sRGB mit der Tonkurve der Welt (BELICHTUNG.kurve, Khronos PBR Neutral); die Farben sind sRGB-Absichten
-// (ColorManagement an, Lehre 21), die Lichter physikalisch: r128 trug π im Legacy-Modus selbst, jetzt tragen es die Stärken.
+// Ausgabe sRGB; Tonkurve und Belichtung setzt die Bühne der Welt aus dem Licht (`welt.belichtung`, BELICHTUNG der Welt).
 const R=new THREE.WebGPURenderer({antialias:true});R.setSize(innerWidth,innerHeight);R.setPixelRatio(Math.min(devicePixelRatio,2));
-R.toneMapping=THREE.NeutralToneMapping;R.toneMappingExposure=1.04;
 R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFShadowMap;   // PCF statt PCF-weich: swiftshader Iso 105 → 90 ms (02.11.)
 document.body.appendChild(R.domElement);
 
-// KEINE STUDIO-UMGEBUNG (01.11.): die gemalte Grauverlauf-Env lag als PMREM in jedem PBR-Stoff — unter swiftshader die Hälfte
-// des Bildes (Isometrie 1280×720: 262 → 86 ms mit der Abtastung unten), im Bild kaum sichtbar (Bildpaar v2-iso ↔ v2env0-iso).
-// Den Lack zeichnen die drei Lichter der Werkstatt; der Spiegel-Himmel gehört der Welt (Lehre 21).
+// DIE UMGEBUNG IST DER HIMMEL DER WELT (w12-studio-buehne): die PMREM-Lage der Equirekt-Tafel der EINEN Atmosphäre × das Licht
+// jetzt, wie die Welt sie jedem Stoff reicht — der Lack spiegelt den Himmel, den er in der Welt spiegelt. Die gemalte
+// Grauverlauf-Env fiel am 01.11. (swiftshader 262 → 86 ms je Bild), die drei Studio-Lichter fallen hier.
 
-// ── DIE BÜHNE (Boden · Raster · Zifferblatt · Kontaktschatten) — das Möbel der Werkstatt, die Probefahrt fährt auf ihrem Gelände ──
-// DER BODEN IST UNBELEUCHTET (01.11., gemessen unter swiftshader, Isometrie 1280×720): der metallische PBR-Boden spiegelte die
-// Umgebung über die halbe Fläche und kostete 813 → 505 ms je Bild; die Bronze-Kante färbte ihn sandfarben. Er ist jetzt Grund
-// der Matrix (ein Ton, kein Licht), der Wagen steht auf seinem Kontaktschatten (EIN Bild, EIN Befehl, aus der Hülle des Baus).
+// ── DIE BÜHNE (Boden · Raster · Zifferblatt) — das Möbel der Werkstatt, die Probefahrt fährt auf ihrem Gelände ──
+// DER BODEN IST DER BODEN DER ATMOSPHÄRE (w12-studio-buehne): die gemessene Welt-Albedo (`ATMO_BODEN`, linear — dieselbe, die die
+// untere Hälfte der Umgebung trägt), matt im Licht der Welt; der Wagen wirft seinen Schatten der Sonne auf ihn. Bis hierher war er
+// unbeleuchteter Grund der Matrix (0x080c11) und der Wagen stand auf einem gemalten Kontakt-Fleck (ein eigenes Bild je Bau) —
+// die Welt kennt keinen; der Schatten der Sonne trägt den Kontakt.
 const PI=Math.PI;
 const buehne=new THREE.Group();scene.add(buehne);
-const floor=new THREE.Mesh(new THREE.PlaneGeometry(60,60),new THREE.MeshBasicMaterial({color:0x080c11}));
-floor.rotation.x=-PI/2;buehne.add(floor);
-// DER WEICHE BODEN-KONTAKT (02.11.): drei Schichten in EINEM Bild am Bau gemalt — der weite Hof, der Kern unter dem Boden des
-// Wagens und je Rad (Kufe) der dunkle Auflagepunkt; das Bild spannt die Hülle des Baus plus 0,6 m, gezeichnet in EINEM Befehl.
-const kontaktBild=document.createElement('canvas');kontaktBild.width=256;kontaktBild.height=128;
-const kontaktTex=new THREE.CanvasTexture(kontaktBild);kontaktTex.colorSpace=THREE.SRGBColorSpace;
-const kontakt=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:kontaktTex,transparent:true,depthWrite:false,color:0x000000}));
-kontakt.rotation.x=-PI/2;kontakt.position.y=0.002;kontakt.renderOrder=1;buehne.add(kontakt);
-function kontaktMalen(H,P){const L=H.NOSE[0]-H.TAIL[0]+1.2,B=P.spur+1.2,xm=(H.NOSE[0]+H.TAIL[0])/2,x=kontaktBild.getContext('2d');
-  const u=wx=>(wx-xm)/L*256+128,v=wz=>wz/B*128+64,fleck=(a,b,c,d,r,al,bl)=>{x.filter=`blur(${bl}px)`;x.fillStyle=`rgba(0,0,0,${al})`;x.beginPath();x.roundRect(a,b,c,d,r);x.fill();};
-  x.clearRect(0,0,256,128);const k=0.6/L*256,q=0.6/B*128;
-  fleck(k*0.4,q*0.4,256-k*0.8,128-q*0.8,40,0.45,14);fleck(k,q,256-2*k,128-2*q,26,0.75,8);
-  const r=(P.radR||0.3)*256/L;for(const n of['HUB_FL','HUB_FR','HUB_RL','HUB_RR'])fleck(u(H[n][0])-r*0.9,v(H[n][2])-6,r*1.8,12,6,0.95,3);
-  kontaktTex.needsUpdate=true;kontakt.scale.set(L,B,1);kontakt.position.x=xm;}
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(60,60),new THREE.MeshStandardMaterial({color:new THREE.Color().setRGB(...__weltLicht.ATMO_BODEN,THREE.LinearSRGBColorSpace),roughness:1,metalness:0}));
+floor.rotation.x=-PI/2;floor.receiveShadow=true;buehne.add(floor);
 // DAS RASTER DER MATRIX (Stahl-Cyan): ein feines Halbmeter-Netz und darüber das Fünfmeter-Netz — zwei Linien-Befehle
 const grid=new THREE.GridHelper(60,120,0x1e3c4a,0x0d1a22);grid.position.y=0.001;grid.material.opacity=0.55;grid.material.transparent=true;buehne.add(grid);
 const gridGrob=new THREE.GridHelper(60,12,0x2f6476,0x1d4352);gridGrob.position.y=0.0015;gridGrob.material.opacity=0.6;gridGrob.material.transparent=true;buehne.add(gridGrob);
@@ -54,26 +45,17 @@ const zifferblatt=(function(){const v=[],R0=3.35,R1=3.48,N=144;
   const ls=new THREE.LineSegments(ge,new THREE.LineBasicMaterial({color:0xb98a52,transparent:true,opacity:0.7}));ls.position.y=0.003;return ls;})();
 buehne.add(zifferblatt);
 
-// ── Licht ── (die Studio-Lichter sind unter r128 roh, also linear, eingestellt: `_lin` hält ihren Ton — als sRGB dekodiert
-// sättigten Füll-, Rand- und Himmelslicht den Lack cyan; der Lack selbst bleibt FARB-GESETZ des Kerns, sRGB → linear)
-// DAS STUDIO-LICHT DER MATRIX-ANTIKE (02.11.): drei Richtungen, die DEM BLICK FOLGEN (die Werkstatt-Kugel, `werkOrbit`) — das
-// Haupt (Bernstein, wirft den Schatten) 46° neben der Kamera und 49° hoch, die Blick-Füllung (Stahl) 20° neben ihr und flach
-// (8,5°): sie trägt den Lack der Flanke, den kein Himmel spiegelt; die Gegenkante (Cyan) hinter dem Wagen flach (15°) zeichnet
-// den Umriss. Jede Ansicht (Isometrie, Riss, Explosion, Drehteller) steht im selben Licht; vorher lag die Flanke im Riss im
-// Dunkel, und der Himmel fiel (er erhellte nur Stoff, nie Lack; unter swiftshader kostet jede Richtung ~6–12 ms je Bild).
-// EIN Regler „Licht" (warm 0 ↔ kühl 1) über die Hülle: warm das Haupt in Bernstein und die Kante in Cyan, kühl das Haupt im
-// Tageslicht und die Kante in Bronze, die Füllung gegenläufig. Die Leuchtdichte des Hauptlichts bleibt (2,6 · π über die
-// Luminanz seiner Farbe) — der Regler färbt, er hellt nie. Nur Farben und Stärken (Uniformen): kein Programm, kein Post.
-const _lin=h=>new THREE.Color().setHex(h,THREE.LinearSRGBColorSpace);
-const key=new THREE.DirectionalLight(0xfff0dc,2.93*PI);key.castShadow=true;
-key.shadow.mapSize.set(1024,1024);key.shadow.bias=-0.0002;Object.assign(key.shadow.camera,{left:-6,right:6,top:5,bottom:-3,far:26});scene.add(key);
-const fill=new THREE.DirectionalLight(0xffffff,0.7*PI);scene.add(fill);
-const rim=new THREE.DirectionalLight(0xffffff,0.9*PI);scene.add(rim);
-const LICHT={key:[0xffe2bf,0xe2ebff],fill:[0x9fc4d8,0xd8c0a0],rim:[0x52d4ff,0xffa65a]},_lc=[new THREE.Color(),new THREE.Color()];
-function lichtSetzen(w){const mix=(c,[a,b],lin)=>c.lerpColors(lin?_lin(a):_lc[0].set(a),lin?_lin(b):_lc[1].set(b),w);
-  mix(key.color,LICHT.key);key.intensity=2.6*PI/(0.2126*key.color.r+0.7152*key.color.g+0.0722*key.color.b);
-  mix(rim.color,LICHT.rim,1);mix(fill.color,LICHT.fill,1);}
-lichtSetzen(0);
+// ── Licht ── DIE SONNE DER WELT (w12-studio-buehne): EIN Richtlicht, Farbe und Stärke setzt die Bühne der Welt (E0 · Durchlass
+// der EINEN Luft am Mittag), seine Richtung ist die der Sonne (`welt.richtung`); es wirft den Schatten. Die drei Lichter der
+// Matrix-Antike (Key Bernstein · Blick-Füllung Stahl · Gegenkante Cyan, dem Blick folgend) und ihr Regler „Licht" fielen —
+// sie zeichneten einen Wagen, den die Welt nie zeigt.
+const sonne=new THREE.DirectionalLight();sonne.castShadow=true;
+sonne.shadow.mapSize.set(1024,1024);sonne.shadow.bias=-0.0002;Object.assign(sonne.shadow.camera,{left:-6,right:6,top:6,bottom:-6,far:40});
+scene.add(sonne);scene.add(sonne.target);
+let welt=null;   // die Bühne der Welt (welt-licht.js `buehne`), sobald der Renderer steht
+// die Sonne über dem Punkt (x, y, z): ihr Ziel dort, sie selbst 20 m die Richtung zur Sonne hinauf (der Schatten folgt dem Wagen)
+function sonneUeber(x,y,z){sonne.target.position.set(x,y,z);sonne.target.updateMatrixWorld();
+  if(welt)sonne.position.copy(sonne.target.position).addScaledVector(welt.richtung,20);}
 
 /* ── DER KERN-ANSCHLUSS (W7a, Studio-Vertrag Phase 1 — docs/studio-vertrag.md §7):
    die generative Substanz (Lehren · Rahmen · Räder · Haut · Baukörper · Presets/
@@ -85,7 +67,7 @@ const M=VC.materials();            // dieselben geteilten Materialien (nie dispo
 // DIE BÜHNE STEHT IM LACK (studios.K4, Labor = Welt): sie zeigt die Gestalt, die „In der Welt ansehen" trägt (`werkSame`) —
 // das Ton-Modell (Clay) ist die Anatomie-Ansicht auf Zuruf, die Welt kennt keins (LACK_VIS host).
 let lackMat=VC.lackStoff(5), bodyMat=lackMat; // Start Azurblau; umschaltbar Clay/Lack
-const {box,cyl,dot,seg,ring,hardpoints,evalLehren,scal,taperBody,CULTURES,PRESETS}=VC;
+const {box,cyl,dot,seg,ring,hardpoints,evalLehren,scal,taperBody,CULTURES}=VC;   // die Gattungen liest die Werkstatt als VC.PRESETS (foundry-core trägt ein eigenes PRESETS im selben Raum der Seite)
 const PARAMS=VC.PARAMS_BY_KIND.vehicle; // SYNERGIE-WELLE (Vertrag v1.2): die EINE B4-Form ist die Map — die Shell liest ihren kind-Eintrag
 
 // ── Geometrie-Helfer (wie s/c/b in der Körperbasis) ──
@@ -255,7 +237,6 @@ function rebuild(){_wecke();RAEDER.length=0;
   gSprung.position.set(0,0,0);gSprung.rotation.set(0,0,0);
   const gelenke=new Set([...corners.flatMap(c=>[c.grp,c.wheelSpin]),...doors.map(d=>d.pv)]);
   for(const s of[gPackage,gBody,gWheels,gFrame])falten(s,gelenke);
-  kontaktMalen(H,PE);
   explosionsPlan(PE);   // die Achsen der Explosion stehen am neuen Bau; die Ansicht legt sie im selben Bild an
   raederFalten();
   if(mode!=='fahren'&&proj!=='persp')einpassen();   // orthografisch füllt jeder Bau (Schlitten 3 m bis Zukunft 5 m) das Bild
@@ -287,7 +268,7 @@ let presetId='gt',kulturId=null;
 // Gattung und Kultur (Strg+Z · Strg+Umschalt+Z); der Rückweg baut wie der Hinweg.
 // (markiert: ob die Gattung noch leuchtet — ein Regler-Zug löscht die Marke, sein Rückgängig stellt sie wieder her)
 const sitz=AnazhHuelle.sitzung({werte:P,zustand:()=>({presetId,kulturId,markiert:[...pdiv.children].some(c=>c.classList.contains('on'))}),
-  zustandSetzen:z=>{presetId=z.presetId;kulturId=z.kulturId;const ids=Object.keys(PRESETS);
+  zustandSetzen:z=>{presetId=z.presetId;kulturId=z.kulturId;const ids=Object.keys(VC.PRESETS);
     [...pdiv.children].forEach((c,i)=>c.classList.toggle('on',z.markiert&&ids[i]===presetId));
     const cids=Object.keys(CULTURES);[...cdiv.querySelectorAll('button')].forEach((c,i)=>c.classList.toggle('on',cids[i]===kulturId));},
   anwenden:()=>rebuild()});
@@ -298,7 +279,7 @@ function kulturSetzen(kid){const alt=kulturId?CULTURES[kulturId].fx:{};const bas
   for(const k in alt){if(k in basis)P[k]=basis[k];else delete P[k];}   // die alte Kultur fällt ganz, die Regler bleiben
   kulturId=kid;if(kid)Object.assign(P,CULTURES[kid].fx);rebuild();}
 const pdiv=document.getElementById('presets');
-for(const pid in PRESETS){const b=document.createElement('button');b.className='btn';b.textContent=PRESETS[pid].lab;
+for(const pid in VC.PRESETS){const b=document.createElement('button');b.className='btn';b.textContent=VC.PRESETS[pid].lab;
   if(pid==='gt')b.classList.add('on');
   b.onclick=()=>{[...pdiv.children].forEach(c=>c.classList.remove('on'));b.classList.add('on');sitz.schritt(()=>presetSetzen(pid));};pdiv.appendChild(b);}
 // Kultur-Selektor (orthogonal zum Typ)
@@ -443,14 +424,13 @@ function animSchritt(dt,t){const z=t%7;inA.throttle=z<3?1:0;inA.brake=z>=3&&z<4.
   corners.forEach(cc=>{cc.wheelSpin.rotation.z=-carA.wheelAng;if(cc.front)cc.grp.rotation.y=carA.steer;});raederSetzen();}
 
 // Die Regler der Ansicht trägt die Hülle (derselbe Generator wie die Gesetz-Regler, ohne Sitzung: die Ansicht ist kein Bau).
-const ANS={explode:0,anim:0,dreh:0,licht:0};
+const ANS={explode:0,anim:0,dreh:0};
 const ansichtRegler=AnazhHuelle.regler(document.getElementById('ansichtRegler'),[
   {id:'explode',lab:'Explosion',min:0,max:1,step:0.01,def:0,law:'gestaffelt: Haut hebt ab · Baukörper steigt · Räder gleiten aus — die Achsen zeigen die Herkunft'},
   {id:'anim',lab:'Animation',min:0,max:1,step:1,def:0,law:'VC.fahrSchritt — Räder rollen, Federn arbeiten, Lenkung schlägt ein'},
-  {id:'dreh',lab:'Drehteller',min:0,max:1,step:1,def:0,law:'20°/s um die Hochachse über dem Zifferblatt'},
-  {id:'licht',lab:'Licht',min:0,max:1,step:0.01,def:0,law:'warm (Bernstein-Haupt, Cyan-Kante) ↔ kühl (Tageslicht-Haupt, Bronze-Kante)'}],
+  {id:'dreh',lab:'Drehteller',min:0,max:1,step:1,def:0,law:'20°/s um die Hochachse über dem Zifferblatt'}],
   {werte:ANS,ruheMs:0,zuruecksetzen:false,gruppen:false,
-   bei:(id,v)=>{_wecke();if(id==='anim'&&mode!=='fahren')animSetzen(!!v);if(id==='licht')lichtSetzen(+v);
+   bei:(id,v)=>{_wecke();if(id==='anim'&&mode!=='fahren')animSetzen(!!v);
      if(id==='explode'&&v>0&&!explGezeigt){explGezeigt=true;Object.assign(show,{frame:true,pkg:true});applyVis();syncLayerButtons();}}});
 let explGezeigt=false;   // die erste Explosion legt die Anatomie frei (Rahmen · Baukörper), danach gehören die Ebenen dem Schöpfer
 function ansichtLebt(){return ANS.anim||ANS.dreh||Math.abs(eZeig-ANS.explode)>1e-4;}
@@ -468,7 +448,7 @@ function ansichtSchritt(dt,t){
 // Steifigkeit k aus der Federrate, Dämpfung c aus dem Regler — beide wirken jetzt ECHT auf den Winkel, nicht nur aufs Tempo.
 
 // Boden + Raster (nur im Fahrmodus sichtbar)
-const ground=new THREE.Group();ground.visible=false;scene.add(ground);scene.add(key.target);
+const ground=new THREE.Group();ground.visible=false;scene.add(ground);
 {const gp=new THREE.Mesh(new THREE.PlaneGeometry(800,800),new THREE.MeshStandardMaterial({color:0x1c222a,roughness:1,metalness:0}));
  gp.rotation.x=-Math.PI/2;gp.position.y=-0.004;gp.receiveShadow=true;ground.add(gp);
  const grid=new THREE.GridHelper(800,400,0x33485a,0x192833);grid.material.transparent=true;grid.material.opacity=0.5;ground.add(grid);}
@@ -561,7 +541,7 @@ function updateVehicle(dt,t){
   vehicle.position.set(car.x,car.y,car.z);vehicle.rotation.set(car.wank,car.yaw,car.steig,'YZX');
   // STEER_VIS.compound = "hub-yaw" — Feel .124 Lab-parity (front hub yaw). Räder: Abrollen ω=v/r (der Kern zählt wheelAng).
   corners.forEach(cc=>{cc.wheelSpin.rotation.z=-car.wheelAng;if(cc.front)cc.grp.rotation.y=car.steer;cc.grp.position.y=cc.baseY;});
-  key.position.set(car.x+5,car.y+9,car.z+4);key.target.position.set(car.x,car.y,car.z);key.target.updateMatrixWorld(); // Schatten folgt
+  sonneUeber(car.x,car.y,car.z); // der Schatten folgt dem Wagen
 }
 
 // Verfolgerkamera als Kugel-Orbit ums Auto: folgt hinterher, lässt sich aber greifen (frei umsehen), schwingt beim Loslassen zurück.
@@ -597,7 +577,7 @@ function exitDrive(){mode='werkstatt';fahrSicht=false;applyVis();
   ground.visible=false;
   vehicle.position.set(0,0,0);vehicle.rotation.set(0,0,0);gSprung.position.set(0,0,0);gSprung.rotation.set(0,0,0);
   corners.forEach(c=>{if(c.front)c.grp.rotation.y=0;});Object.assign(car,VC.fahrZustand(0,0,0));dragging=false;camOrb.follow=true;
-  key.position.set(5,9,4);key.target.position.set(0,0,0);key.target.updateMatrixWorld();
+  sonneUeber(0,0,0);
   buehne.visible=true;explosionAnwenden(eZeig);if(ANS.anim)animSetzen(true);
   camFov(0);werkOrbit();}   // der Blick kehrt auf die Werkstatt-Kugel zurück, wie er sie verließ
 
@@ -615,7 +595,7 @@ addEventListener('keydown',e=>{keys[e.code]=true;
   const pk={Digit8:'persp',Digit9:'iso',Digit0:'seite'}[e.code];if(pk)projSetzen(pk);
   const ak={KeyX:'explode',KeyN:'anim',KeyT:'dreh'}[e.code];   // X Explosion ganz/zu · N Animation · T Drehteller — über den Regler der Hülle
   if(ak){const inp=ansichtRegler.eingabe(ak);if(inp.type==='checkbox')inp.click();else{inp.value=String(ANS.explode>0.5?0:1);inp.dispatchEvent(new Event('input',{bubbles:true}));}}
-  if(e.code==='KeyP'){const names=Object.keys(PRESETS);const cur=[...pdiv.children].findIndex(c=>c.classList.contains('on'));
+  if(e.code==='KeyP'){const names=Object.keys(VC.PRESETS);const cur=[...pdiv.children].findIndex(c=>c.classList.contains('on'));
     pdiv.children[(cur+1+names.length)%names.length].click();}
 });
 function readKeys(){
@@ -644,8 +624,7 @@ function werkOrbit(dt){dt=dt||0;if(ANS.dreh)oc.az+=0.349*dt;
   cam.position.set(_ziel.x+dx*oc.dist,_ziel.y+dy*oc.dist,_ziel.z+dz*oc.dist);cam.lookAt(_ziel);
   const h=oc.dist*Math.tan(CAM_FOV*PI/360)+eZeig*explHub*0.35,w=h*cam.aspect;
   if(camO.top!==h||camO.right!==w){camO.left=-w;camO.right=w;camO.top=h;camO.bottom=-h;camO.updateProjectionMatrix();}
-  camO.position.copy(cam.position);camO.lookAt(_ziel);
-  for(const[l,d,y]of[[key,-0.8,8],[fill,0.35,1.2],[rim,PI,2.2]])l.position.set(Math.cos(oc.az+d)*7,y,Math.sin(oc.az+d)*7);}   // derselbe Ort wie die Perspektive: der Nebel liest dieselbe Tiefe
+  camO.position.copy(cam.position);camO.lookAt(_ziel);}
 // Maus/Touch: in der Werkstatt die Kugel (links drehen, rechts schieben, Rad zoomen); in der Fahrt greifen → frei umsehen,
 // loslassen → sanft zurück hinter das Auto
 R.domElement.style.touchAction='none';
@@ -685,13 +664,17 @@ function animate(zeit){const dt=tAlt?Math.min(1/30,(zeit-tAlt)/1000):0;tAlt=zeit
   const open=kin?0.62:0;let tuerZieht=false;                        // Türen — in beiden Modi animiert
   doors.forEach(d=>{const tgt=(d.sd<0?-open:open);d.pv.rotation.y+=(tgt-d.pv.rotation.y)*0.08;if(Math.abs(tgt-d.pv.rotation.y)>1e-3)tuerZieht=true;});
   const K=kamera();K.updateMatrixWorld();
+  if(!welt||welt.belichtung==null)return;   // die Bühne zeichnet erst im Licht der Welt (die Belichtung liegt)
   if(mode!=='fahren'&&!tuerZieht&&!ansichtLebt()&&performance.now()>wachBis&&_camGleich(K))return;
   _kamAlt=K;_camAlt.copy(K.matrixWorld);_projAlt.copy(K.projectionMatrix);raederSetzen();R.render(scene,K);}
 // DAS CPU-RASTER ZEICHNET OHNE VIELFACH-ABTASTUNG: liefert der Adapter Software (swiftshader, llvmpipe, lavapipe), fällt das
 // MSAA vor dem ersten Bild — wie three es im Kompatibilitäts-Modus selbst tut (backend.init: _samples = 0); die Karte behält es.
 // Gemessen (Isometrie 1280×720, swiftshader): 196 → 86 ms je Bild.
 const _softwareRaster=i=>!!i&&/swiftshader|llvmpipe|lavapipe|software|subzero/i.test([i.vendor,i.architecture,i.device,i.description].join(' '));
-R.init().then(()=>{const d=R.backend&&R.backend.device;if(d&&_softwareRaster(d.adapterInfo))R._samples=0;});
+// DIE BÜHNE DER WELT steht, sobald der Renderer steht: Tafeln, Umgebung, Sonne, Tonkurve — die Belichtung, sobald die
+// Bestrahlungs-Tafel zurückkam (`welt.steht`); ein Bruch der Bühne bricht laut (kein Bild unter einem anderen Licht)
+R.init().then(()=>{const d=R.backend&&R.backend.device;if(d&&_softwareRaster(d.adapterInfo))R._samples=0;
+  welt=__weltLicht.buehne({renderer:R,szene:scene,sonne});sonneUeber(0,0,0);welt.steht.then(()=>{_wecke();_kamAlt=null;});});
 presetSetzen('gt');werkOrbit();R.setAnimationLoop(animate);   // Welle L: das erste Laden geht denselben Weg (der Federraten-Regler zeigte 95 bei Zustand 100)
 addEventListener('resize',()=>{_wecke();cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();R.setSize(innerWidth,innerHeight);if(mode!=='fahren')werkOrbit();});
 

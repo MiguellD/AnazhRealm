@@ -1093,8 +1093,8 @@ function scan(files) {
 
 // Die Stamm-Dateien, wie index.html sie lädt (scripts/lib/stamm.cjs — die EINE Liste; vor dem Schnitt die eine Datei).
 const STAMM = stammLib.dateien(path.join(__dirname, ".."));
-// das Gesetzbuch der Himmels-Sicht: die Stamm-Datei, die den Wandel-Pass `_atmoLutBau` trägt (am Glied, nie am Datei-Namen)
-const HIMMEL_BUCH = stammLib.dateiVon(path.join(__dirname, ".."), "_atmoLutBau");
+// das Gesetzbuch der Himmels-Sicht: der Baustein, der den Wandel-Pass trägt (welt-licht.js `atmoTafeln`; Welt und Studio-Bühne rufen ihn)
+const HIMMEL_BUCH = "welt-licht.js";
 const WORT_BUCH = stammLib.dateiVon(path.join(__dirname, ".."), "_schreibWorte");
 
 // ULTRAGUSS U2 — DIE ZWILLINGS-WAND: getötete Formel-Zwillinge dürfen nicht
@@ -1295,7 +1295,7 @@ const ZWILLINGE = [
     })),
     // D3 — DIE EINE ATMOSPHÄRE als MUSTER (Lehre 7: ein Zwillings-Abdruck ist ein Muster, nie ein Variablen-Name): die Luftmasse
     // als Kehrwert der Sonnenhöhe (die Luftmassen-Sonne, `1 / (max(e, 0) + 0,06)`) in keiner Datei, und eine Equirekt-Umgebung
-    // nur im Wandel-Pass der Himmels-Sicht (`_atmoLutBau`, HIMMEL_BUCH) — jede andere ist eine gemalte Umgebung neben der EINEN.
+    // nur im Wandel-Pass der Himmels-Sicht (`atmoTafeln`, HIMMEL_BUCH) — jede andere ist eine gemalte Umgebung neben der EINEN.
     {
         muster: /1(?:\.0)?\s*\/\s*\(\s*Math\.max\(\s*[\w.]+\s*,\s*0(?:\.0)?\s*\)\s*\+\s*0\.\d+\s*\)/,
         gefallen: true,
