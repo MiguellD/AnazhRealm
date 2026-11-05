@@ -14,7 +14,11 @@ Log: /tmp/claude/w3/offen-w6.txt Einträge 119–164.
 
 ## Züge
 - **z235 GELANDET** f5db8d90: w12-unterwasser, w12-kronen-albedo (mit w12-albedo-tafel), w12-takt-band (K06-Wurzel, Bild je Frame im Null-Renderer Wiese Ego 13,9/17,9 → 4,0/6,3 ms).
-- **z236 sammelt/fährt**: w12-brand-halt 8e74bee4 + w12-tuch-grob bc1013ec.
+- **z236 ROT** (voll 9/18 Werk im Wasser):
+  - Rote Zeile: „R: das Wasser am Seerand ändert sich mit dem Dorf — nasse Punkte 6397 → 6396, gezeichnete Spalten 7345 → 7249“.
+  - Täter ist w12-brand-halt (siedlung-ort.js +195 aus brand-bild); tuch-grob bestand das Gate in z234. Die Post steht in cloud-post/w12-brand-halt.md.
+  - **z238** = w12-tuch-grob allein hinter z237.
+  - Der lokale Brand-Champion kann über seinen Zweig fortsetzen. Zu brand-halt die Angaben von vorher:
   - w12-brand-halt bringt w12-brand-bild endlich nach main. Der Zweig war in z232 an einem Konflikt in diag-stand-takt gefallen.
   - Der Herd ist deterministisch, stoffe.K2#2/K5#2 headless GRÜN am Zweig. Die Bilder habe ich gesehen: Der Rauch ist jetzt eine Fahne statt einer Kugelkette.
   - Nach der Landung: Farm, dann buchen (+2).
