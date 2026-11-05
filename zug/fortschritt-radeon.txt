@@ -2136,3 +2136,4 @@
 2026-11-05 18:11:47 9c545df2-radeon schatten.K1#2 GRÜN 0.6 · 1/1
 2026-11-05 18:13:17 9c545df2-radeon ENDE 1 grün / 0 rot · 4.6 min
 2026-11-05 19:55:08 9c545df2-radeon-pt2-vorher START 8 Stationen
+2026-11-05 19:58:01 9c545df2-radeon-pt2-vorher vegetation.K2#1 GRÜN 0.3 · 1/8
