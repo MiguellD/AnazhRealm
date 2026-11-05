@@ -2097,3 +2097,4 @@
 2026-11-05 15:20:43 410c3ffd-radeon START 3 Stationen
 2026-11-05 15:24:04 410c3ffd-radeon ENDE 0 grün / 0 rot · 3.9 min
 2026-11-05 15:30:47 vp-ankunft-merge-1 START 3 Stationen
+2026-11-05 15:32:31 vp-ankunft-merge-1 ankunft.K2#1 ROT 0.9 · 1/3
