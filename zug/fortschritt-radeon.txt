@@ -2084,3 +2084,4 @@
 2026-11-05 14:24:24 c8292dd3-radeon klang.K5#2 ROT 0.5 · 3/5
 2026-11-05 14:25:22 c8292dd3-radeon ankunft.K2#1 GRÜN 0.8 · 4/5
 2026-11-05 14:25:28 c8292dd3-radeon ankunft.K1#1 ROT 0.8 · 5/5
+2026-11-05 14:26:52 c8292dd3-radeon ENDE 3 grün / 2 rot · 5.5 min
