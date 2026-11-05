@@ -2189,8 +2189,9 @@ class AnazhRealm_vegetation_wiese {
     // Stand-Schlüssel), mit ihnen die Freistand-Antwort jedes Orts, der diesen Bestand liest (±4 Zellen darum,
     // `_forestStehtFrei`), und die Gestalt des Orts dort (`_ortSameFaellt`). Bis K69 fiel das Gedächtnis der ganzen Welt
     // (`_forestDartMemo = null`, ein neuer Stand) — und mit ihm jede Gestalt jedes Orts. → die Zahl der gefallenen Zellen.
-    // Jeder Fall merkt seinen Kasten am Erdbau-Stand (`_erdbauFielIm`), auch wenn das Gedächtnis leer ist: eine Zelle im Flug fällt mit.
     _forestDartsFallen(x0, z0, x1, z1) {
+        const memo = this._forestDartMemo;
+        if (!memo || !memo.size) return 0;
         const C = AnazhRealm.FOREST.cell;
         const U = AnazhRealm.WALD_PLAN.urteil;
         const R = Math.max(globalThis.__gelaendeCore.ERDBAU.reichweiteM + 2, AnazhRealm.KRONE_MAX_M);
@@ -2198,11 +2199,6 @@ class AnazhRealm_vegetation_wiese {
         const gb = Math.floor((x1 + R) / C);
         const ha = Math.floor((z0 - R) / C);
         const hb = Math.floor((z1 + R) / C);
-        const F = this._erdbauFaelle || (this._erdbauFaelle = []); // Instanz-Feld (die _editSaveTimer-Klasse)
-        F.push([this._erdbauStand | 0, (ga - U) * C, (ha - U) * C, (gb + U + 1) * C, (hb + U + 1) * C]);
-        if (F.length > AnazhRealm.WALD_PLAN.faelle) F.shift();
-        const memo = this._forestDartMemo;
-        if (!memo || !memo.size) return 0;
         let n = 0;
         for (let gx = ga - U; gx <= gb + U; gx++)
             for (let gz = ha - U; gz <= hb + U; gz++) if (memo.delete(gx + "," + gz)) n++;
@@ -2217,24 +2213,6 @@ class AnazhRealm_vegetation_wiese {
             }
         this._ortSameFaellt((ga - 6) * C, (ha - 6) * C, (gb + 7) * C, (hb + 7) * C);
         return n;
-    }
-    // DIE WIRKUNG DER ERDBAUTEN SEIT EINEM AUFTRAG (w12-dorf-strom, Gebot 7: die Kosten an der Änderung, nie an der Welt): fiel seit
-    // dem Erdbau-Stand `erd` ein Kasten (`_forestDartsFallen`: die Fläche samt Böschung, größter Krone und den Urteils-Nachbarn des
-    // Walds) in x0…x1 · z0…z1? Ein Faden, der am Stand `erd` rechnete, rechnete dort am alten Grund, anderswo am selben. Trägt ein
-    // Wechsel seit `erd` keinen Kasten (der Boden-Umzug, ein Fall jenseits des Gedächtnisses `WALD_PLAN.faelle`), fiel überall
-    // etwas. Leser: die Lieferung des Wald-Fadens (`_waldDartsAn`) und der Streu (`_streuFadenSchicken`). Bis w12-dorf-strom verwarf
-    // jede Lieferung, wenn IRGENDWO ein Erdbau fiel — ein wachsendes Dorf legt je Haus seinen Grund, und der Plan des Walds im Kegel
-    // landete nicht (Fahrt-Probe am Messort dorf, main f5db8d90: 513 von 519 Bäumen, die unfertig eintraten, ohne Plan des Walds).
-    _erdbauFielIm(erd, x0, z0, x1, z1) {
-        const jetzt = this._erdbauStand | 0;
-        if (jetzt === erd) return false;
-        let n = 0;
-        for (const f of this._erdbauFaelle || AnazhRealm.STAND_LEER)
-            if (f[0] > erd) {
-                if (f[1] < x1 && f[3] > x0 && f[2] < z1 && f[4] > z0) return true;
-                n++;
-            }
-        return n !== jetzt - erd;
     }
 
     // DER BESTAND EINER ZELLE (w4-b-pflanzen): ihre STEHENDEN Darts — die geborenen (`_forestGeborene`), die das Urteil der
@@ -2590,18 +2568,14 @@ class AnazhRealm_vegetation_wiese {
             for (let i = 0; i < zellen.length; i += 2) this._waldFlug.delete(zellen[i] + "," + zellen[i + 1]);
         const Q = this._waldPlanSchlange;
         let n = 0;
-        if (r && this._forestDartMemo === memo) {
+        if (r && this._forestDartMemo === memo && (this._erdbauStand | 0) === erd) {
             if (memo.size + zellen.length / 2 > 8192) {
                 memo.clear(); // bounded wie `_forestCellDarts`
                 this._forestDartFall = (this._forestDartFall | 0) + 1;
             }
-            const C = AnazhRealm.FOREST.cell;
             const alle = this._waldDartsEntpacken(r, zellen.length / 2);
             for (let i = 0; i < alle.length; i++) {
-                const [gx, gz] = [zellen[i * 2], zellen[i * 2 + 1]];
-                // nur die Zelle, über die seit dem Auftrag ein Erdbau fiel, rechnete am alten Grund: sie bleibt in der Schlange
-                if (this._erdbauFielIm(erd, gx * C, gz * C, (gx + 1) * C, (gz + 1) * C)) continue;
-                const k = gx + "," + gz;
+                const k = zellen[i * 2] + "," + zellen[i * 2 + 1];
                 if (!memo.has(k)) memo.set(k, alle[i]);
                 if (Q) Q.delete(k);
                 n++;
@@ -2796,6 +2770,4 @@ AnazhRealm.WALD_PLAN = Object.freeze({
     urteil: Math.max(...globalThis.__phytoCore.FOREST_URTEIL_REIHE.map(Math.abs)),
     ms: 3,
     faden: 64,
-    // so viele Kästen gefallener Erdbauten merkt die Welt (`_erdbauFielIm`); ein älterer Auftrag gilt nirgends mehr
-    faelle: 256,
 });
