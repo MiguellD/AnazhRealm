@@ -467,6 +467,14 @@ class AnazhRealm_daten {
     // Anzahl folgt dem Ziel der Deckung: Anzahl × s = 1 bis `voll` (die Wiese der Nähe, an der Übergabe stetig), dahinter
     // (voll/d)^`fall`; ein Büschel steht, solange seine Ordnung o darunter liegt, im Band `rand` (relativ) sinkt es in den
     // Boden statt zu springen, vor `bis` über `saum`. Die Kosten hängen am Schirm, nie an der Weite der Welt (Lehre 25).
+    // DER SAUM DER FESTEN RINGE (w10-wiese, vegetation.K1): bis dahin hielt `voll` 21 m und `fall` 1,5 — jenseits 21 m fiel
+    // die Deckung, die Ringe der Meisterkarte maßen 10–20 m LAI 1,87 · 20–40 m 1,07 (Radeon 2674ff9a, der Saum sprang 43 %), und
+    // jenseits der Streckung (~34 m) stiegen die Büschel je Pixel mit d^1,5 (bei 180 m 6× die der Übergabe). Jetzt hält die
+    // Deckung bis zum Rand der festen Ringe (40 m), dahinter fällt sie mit d^−3,25 — eine Spur steiler als das Gesetz des
+    // Schirms der Streckung (d^−3, die Büschel je Pixel gleich), damit die Ferne nicht mehr Büschel zählt als zuvor (Σ 1330 →
+    // 1319 je Zelle; der Sicht-Satz trägt den CPU-Takt, E): die Büschel je Pixel bleiben jenseits der Übergabe ≤ 1,67× (der
+    // Sprung der Streckung zwischen ~34 und 40 m) — weniger, größere Büschel statt eines Saums. Modell der Station
+    // (flache Wiese, Third 2,43 m, Nilson je Ring): 20–40 m 1,29 → 1,73; die Wand gate:profiband P-Ferne.
     // Bis w4-gras-l2 fiel die Anzahl mit (radius/d)^4 und nur die Mitten rückten (höchstens 2,5×, die Füße √): an der
     // Mess-Wiese Third LAI 14–30 m 0,36 · 30–80 m 0,02 · 80–200 m 0 (Radeon), der Boden jenseits 30 m frei. Im Modell der
     // Station (Messung w4-gras-l2: flache Wiese, Wurf 0,85, Third 2,43 m, Blick −9,4°, 1920 × 1080, die Vorlagen der Brücke,
@@ -494,8 +502,8 @@ class AnazhRealm_daten {
                     kachel: 12,
                     bis: 200,
                     saum: 20,
-                    voll: 21,
-                    fall: 1.5,
+                    voll: 40,
+                    fall: 3.25,
                     streck: 3,
                     streckMax: 14,
                     rand: 0.2,
